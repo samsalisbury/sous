@@ -1,15 +1,16 @@
 package main
 
-import "github.com/samsalisbury/semv"
+import (
+	"fmt"
 
-var (
-	Revision string
-	Version  semv.Version
+	"github.com/samsalisbury/semv"
 )
 
-func init() {
-	if Revision == "" {
-		Revision = "unknown-revision"
-	}
-	Version = semv.MustParse("1.0.0-alpha+" + Revision)
-}
+const version = "1.0.0-alpha"
+
+var (
+	// Revision should be set by the build process using build flags.
+	Revision string
+	// Version is the current version of Sous
+	Version = semv.MustParse(fmt.Sprintf("%s+%s", version, Revision))
+)

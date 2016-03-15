@@ -13,13 +13,11 @@ func main() {
 		}
 	}()
 
-	deps, err := buildDeps()
-	if err != nil {
-		panic(err)
-	}
+	graph, err := buildGraph()
+	fatalInternalError(err)
 
 	c := BuildCommand{}
-	fatalInternalError(deps.Inject(&c))
+	fatalInternalError(graph.Inject(&c))
 
 	fmt.Println(c.Git)
 }

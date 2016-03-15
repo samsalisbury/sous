@@ -5,16 +5,20 @@ import (
 	"os"
 	"os/user"
 
+	"github.com/opentable/sous2/core"
 	"github.com/opentable/sous2/ext/git"
 	"github.com/opentable/sous2/util/shell"
 	"github.com/samsalisbury/psyringe"
+	"github.com/samsalisbury/semv"
 )
 
 type (
+	// SousVersion represents a version of Sous.
+	SousVersion semv.Version
 	// LocalUser is the logged in user who invoked Sous
 	LocalUser *user.User
 	// LocalSousConfig is the configuration for Sous.
-	LocalSousConfig Config
+	LocalSousConfig core.Config
 	// WorkDir is the user's current working directory when they invoke Sous.
 	LocalWorkDir string
 	// WorkdirShell is a shell for working in the user's current working
@@ -33,7 +37,7 @@ type (
 )
 
 func initError(what string, err error) error {
-	message := fmt.Sprintf("error initialising %s:", what)
+	message := fmt.Sprintf("error %s:", what)
 	if shellErr, ok := err.(shell.Error); ok {
 		message += fmt.Sprintf("\ncommand failed:\nshell> %s\n%s",
 			shellErr.Command.String(), shellErr.Result.Combined.String())
@@ -43,9 +47,12 @@ func initError(what string, err error) error {
 	return fmt.Errorf(message)
 }
 
-func buildDeps() (*psyringe.Psyringe, error) {
+// buildGraph builds the dependency injection graph, used to populate commands
+// invoked by the user.
+func buildGraph() (*psyringe.Psyringe, error) {
 	s := psyringe.New()
 	err := s.Fill(
+		SousVersion(Version),
 		newLocalUser,
 		newLocalSousConfig,
 		newLocalWorkDir,
@@ -61,7 +68,7 @@ func buildDeps() (*psyringe.Psyringe, error) {
 func newLocalWorkDir() (LocalWorkDir, error) {
 	wd, err := os.Getwd()
 	if err != nil {
-		return "", initError("determine working directory", err)
+		return "", initError("determining working directory", err)
 	}
 	return LocalWorkDir(wd), nil
 }
@@ -69,7 +76,7 @@ func newLocalWorkDir() (LocalWorkDir, error) {
 func newLocalUser() (LocalUser, error) {
 	u, err := user.Current()
 	if err != nil {
-		return nil, initError("get current user", err)
+		return nil, initError("getting current user", err)
 	}
 	return u, nil
 }
@@ -77,7 +84,7 @@ func newLocalUser() (LocalUser, error) {
 func newLocalSousConfig(u LocalUser) (LocalSousConfig, error) {
 	c, err := newDefaultConfig(u)
 	if err != nil {
-		return LocalSousConfig{}, initError("get default config", err)
+		return LocalSousConfig{}, initError("getting default config", err)
 	}
 	return LocalSousConfig(c), nil
 }
@@ -85,18 +92,18 @@ func newLocalSousConfig(u LocalUser) (LocalSousConfig, error) {
 func newLocalWorkDirShell(LocalWorkDir) (LocalWorkDirShell, error) {
 	s, err := shell.Default()
 	if err != nil {
-		return nil, initError("get current working directory", err)
+		return nil, initError("getting current working directory", err)
 	}
 	return s, nil
 }
 
 func newScratchDirShell(c LocalSousConfig) (ScratchDirShell, error) {
-	const what = "get scratch directory"
+	const what = "getting scratch directory"
 	s, err := shell.Default()
 	if err != nil {
 		return nil, initError(what, err)
 	}
-	if err := s.CD(c.SousSettingsDir); err != nil {
+	if err := s.CD(c.SettingsDir); err != nil {
 		return nil, initError(what, err)
 	}
 	return s, nil

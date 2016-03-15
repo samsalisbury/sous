@@ -4,7 +4,7 @@ import "testing"
 
 func TestGraph(t *testing.T) {
 
-	deps, err := buildDeps()
+	deps, err := buildGraph()
 
 	if err != nil {
 		t.Fatalf("unexpected error: %s", err)
