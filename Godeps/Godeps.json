@@ -1,0 +1,14 @@
+{
+	"ImportPath": "github.com/opentable/sous2",
+	"GoVersion": "go1.6",
+	"Deps": [
+		{
+			"ImportPath": "github.com/samsalisbury/psyringe",
+			"Rev": "29e39c632d6d62392049e675e4da60030d4fac41"
+		},
+		{
+			"ImportPath": "github.com/samsalisbury/semv",
+			"Rev": "81c0e6fddf050c32cca2aed416eb458852b87965"
+		}
+	]
+}
