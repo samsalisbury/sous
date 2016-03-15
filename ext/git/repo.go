@@ -1,6 +1,10 @@
 package git
 
-import "sync"
+import (
+	"path/filepath"
+
+	"github.com/opentable/sous2/util/parallel"
+)
 
 type Repo struct {
 	// Root is the root dir of this repo
@@ -38,19 +42,25 @@ func NewRepo(c *Client) (*Repo, error) {
 // such as its current branch, revision, nearest tag, nearest semver tag, etc.
 func (r *Repo) Context() (*Context, error) {
 	var revision, nearestTagName, nearestTagRevision, repoRelativeDir string
-	if err := DoAll(
-		//func(err *error) { revision, *err = r.Client.Revision() },
+	var allTags []string
+	err := parallel.Do(
+		func(err *error) { revision, *err = r.Client.Revision() },
 		func(err *error) {
-			//repoRelativeDir, *err = filepath.Rel(r.Root, r.Client.Sh.Dir)
+			repoRelativeDir, *err = filepath.Rel(r.Root, r.Client.Sh.Dir)
 		},
 		func(err *error) {
-			//nearestTagName, *err = r.Client.NearestTag()
-			if *err != nil {
+			allTags, *err = r.Client.ListTags()
+			if err != nil || len(allTags) == 0 {
 				return
 			}
-			//nearestTagRevision, *err = r.Client.RevisionAt(nearestTagName)
+			nearestTagName, *err = r.Client.NearestTag()
+			if err != nil {
+				return
+			}
+			nearestTagRevision, *err = r.Client.RevisionAt(nearestTagName)
 		},
-	); err != nil {
+	)
+	if err != nil {
 		return nil, err
 	}
 	return &Context{
@@ -61,22 +71,4 @@ func (r *Repo) Context() (*Context, error) {
 			Revision: nearestTagRevision,
 		},
 	}, nil
-}
-
-func DoAll(fs ...func(*error)) error {
-	wg := sync.WaitGroup{}
-	wg.Add(len(fs))
-	errs := make(chan error)
-	go func() { wg.Wait(); close(errs) }()
-	for _, f := range fs {
-		go func() {
-			var err error
-			f(&err)
-			if err != nil {
-				errs <- err
-			}
-			wg.Done()
-		}()
-	}
-	return <-errs
 }

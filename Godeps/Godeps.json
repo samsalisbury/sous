@@ -4,7 +4,7 @@
 	"Deps": [
 		{
 			"ImportPath": "github.com/samsalisbury/psyringe",
-			"Rev": "29e39c632d6d62392049e675e4da60030d4fac41"
+			"Rev": "ac33701d5b34cfa8726dfdea0ba91d981be098a9"
 		},
 		{
 			"ImportPath": "github.com/samsalisbury/semv",

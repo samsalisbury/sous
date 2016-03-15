@@ -28,7 +28,29 @@ type (
 		Err                      error
 		ExitCode                 int
 	}
+	Error struct {
+		// Err is the original error that was returned.
+		Err error
+		// Result is the complete result of the command execution that caused
+		// this error.
+		Result *Result
+		// Command is the command which caused this error.
+		Command *Command
+	}
 )
+
+func (e Error) Error() string {
+	return fmt.Sprintf("shell> %s\n%s\ncommand failed: %s",
+		e.Result.Command.String(), e.Result.Combined.String(), e.Err)
+}
+
+func newError(err error, r *Result) Error {
+	return Error{
+		Err:     err,
+		Result:  r,
+		Command: r.Command,
+	}
+}
 
 // Stdout returns the stdout stream as a string. It returns an error for the
 // same reasons as .Succeed
@@ -131,7 +153,7 @@ func (c *Command) SucceedResult() (*Result, error) {
 		return r, err
 	}
 	if r.Err != nil {
-		return r, r.Err
+		return r, newError(r.Err, r)
 	}
 	return r, nil
 }
@@ -164,4 +186,9 @@ func (c *Command) FailResult() (*Result, error) {
 		return r, fmt.Errorf("command %s succeeded, expected failure")
 	}
 	return r, nil
+}
+
+func (c *Command) String() string {
+	args := strings.Join(c.Args, " ")
+	return fmt.Sprintf("%s %s", c.Name, args)
 }

@@ -65,6 +65,11 @@ func (c *Client) stdout(name string, args ...interface{}) (string, error) {
 	return c.Sh.Stdout(c.Bin, args...)
 }
 
+func (c *Client) stdoutLines(name string, args ...interface{}) ([]string, error) {
+	args = append([]interface{}{name}, args...)
+	return c.Sh.Cmd(c.Bin, args...).StdoutLines()
+}
+
 func (c *Client) Dir() string {
 	return c.Sh.Dir
 }
@@ -79,6 +84,10 @@ func (c *Client) Revision() (string, error) {
 
 func (c *Client) RepoRoot() (string, error) {
 	return c.stdout("rev-parse", "--show-toplevel")
+}
+
+func (c *Client) ListTags() ([]string, error) {
+	return c.stdoutLines("tag")
 }
 
 func (c *Client) NearestTag() (string, error) {

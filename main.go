@@ -2,16 +2,7 @@ package main
 
 import (
 	"fmt"
-	"log"
-
-	"github.com/opentable/sous2/ext/git"
-	"github.com/opentable/sous2/util/shell"
-	"github.com/samsalisbury/psyringe"
-)
-
-type (
-	WorkdirShell    *shell.Sh
-	ScratchDirShell *shell.Sh
+	"os"
 )
 
 func main() {
@@ -21,42 +12,34 @@ func main() {
 			panic(r)
 		}
 	}()
-	s := psyringe.New()
-	if err := s.Fill(
-		func() (WorkdirShell, error) {
-			return shell.Default()
-		},
-		func() (ScratchDirShell, error) {
-			s, err := shell.Default()
-			if err != nil {
-				return nil, err
-			}
-			return s, s.CD("/tmp")
-		},
-		func(sh WorkdirShell) (*git.Client, error) {
-			return git.NewClient(sh)
-		},
-		func(c *git.Client) (*git.Repo, error) {
-			return c.OpenRepo(".")
-		},
-		func(r *git.Repo) (*git.Context, error) {
-			return r.Context()
-		},
-	); err != nil {
-		log.Fatal(err)
+
+	deps, err := buildDeps()
+	if err != nil {
+		panic(err)
 	}
 
 	c := BuildCommand{}
-	if err := s.Inject(&c); err != nil {
-		log.Fatal(err)
-	}
+	fatalInternalError(deps.Inject(&c))
 
 	fmt.Println(c.Git)
 }
 
+// fatalInternalError does nothing if it is passed nil, otherwise it prints the
+// error message, and exits with exit code 2. This should be used only where
+// Sous itself is at fault, or fails to initialise. After initialisation, if
+// something goes wrong with performing the user action, you should exit with
+// exit code 1.
+func fatalInternalError(err error) {
+	if err == nil {
+		return
+	}
+	fmt.Fprintln(os.Stderr, err)
+	os.Exit(2)
+}
+
 type BuildCommand struct {
-	Git   *git.Context
-	Shell WorkdirShell
+	Git   LocalGitContext
+	Shell LocalWorkDirShell
 }
 
 func unhandledError() {
