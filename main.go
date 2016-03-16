@@ -3,9 +3,13 @@ package main
 import (
 	"fmt"
 	"os"
+
+	"github.com/opentable/sous2/cli"
 )
 
 func main() {
+	// wrap any panics which leak up to this level, to ask the user to report
+	// errors.
 	defer func() {
 		if r := recover(); r != nil {
 			unhandledError()
@@ -13,31 +17,16 @@ func main() {
 		}
 	}()
 
-	graph, err := buildGraph()
-	fatalInternalError(err)
-
-	c := BuildCommand{}
-	fatalInternalError(graph.Inject(&c))
-
-	fmt.Println(c.Git)
-}
-
-// fatalInternalError does nothing if it is passed nil, otherwise it prints the
-// error message, and exits with exit code 2. This should be used only where
-// Sous itself is at fault, or fails to initialise. After initialisation, if
-// something goes wrong with performing the user action, you should exit with
-// exit code 1.
-func fatalInternalError(err error) {
-	if err == nil {
-		return
+	c := cli.CLI{
+		Version: Version,
 	}
-	fmt.Fprintln(os.Stderr, err)
-	os.Exit(2)
-}
 
-type BuildCommand struct {
-	Git   LocalGitContext
-	Shell LocalWorkDirShell
+	// The CLI itself should manage exiting cleanly.
+	c.Invoke(os.Args)
+
+	// If it fails to exit due to programmer error, let the user know.
+	fmt.Fprintf(os.Stderr, "error: sous did not exit cleanly")
+	os.Exit(70)
 }
 
 func unhandledError() {

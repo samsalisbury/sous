@@ -44,6 +44,11 @@ func Default() (*Sh, error) {
 	}, nil
 }
 
+func DefaultInDir(path string) (*Sh, error) {
+	sh := &Sh{Env: os.Environ()}
+	return sh, sh.CD(path)
+}
+
 // Clone returns a deep copy of this shell.
 func (s *Sh) Clone() *Sh {
 	cp := *s
