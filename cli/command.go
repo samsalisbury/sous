@@ -1,9 +1,19 @@
 package cli
 
+import "flag"
+
 type (
 	Command interface {
 		Help() string
-		Execute() error
+	}
+	CanExecute interface {
+		Execute() Result
+	}
+	AddsFlags interface {
+		AddFlags(*flag.FlagSet)
+	}
+	HasSubcommand interface {
+		Subcommand(name string) (Command, error)
 	}
 )
 

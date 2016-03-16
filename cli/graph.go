@@ -5,8 +5,8 @@ import (
 	"os"
 	"os/user"
 
-	"github.com/opentable/sous2/core"
 	"github.com/opentable/sous2/ext/git"
+	"github.com/opentable/sous2/sous"
 	"github.com/opentable/sous2/util/shell"
 	"github.com/samsalisbury/psyringe"
 	"github.com/samsalisbury/semv"
@@ -21,7 +21,7 @@ type (
 	// LocalUser is the logged in user who invoked Sous
 	LocalUser struct{ *user.User }
 	// LocalSousConfig is the configuration for Sous.
-	LocalSousConfig struct{ core.Config }
+	LocalSousConfig struct{ sous.Config }
 	// WorkDir is the user's current working directory when they invoke Sous.
 	LocalWorkDir string
 	// WorkdirShell is a shell for working in the user's current working
@@ -41,7 +41,7 @@ type (
 
 // buildGraph builds the dependency injection graph, used to populate commands
 // invoked by the user.
-func (c *CLI) buildGraph() error {
+func (c *Sous) buildGraph() error {
 	c.Graph = SousCLIGraph{psyringe.New()}
 	return c.Graph.Fill(
 		SousVersion(c.Version),

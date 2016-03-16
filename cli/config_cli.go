@@ -5,19 +5,19 @@ import (
 	"os/user"
 	"path/filepath"
 
-	"github.com/opentable/sous2/core"
+	"github.com/opentable/sous2/sous"
 )
 
 const defaultSettingsDirName = ".sous"
 
-func newDefaultConfig(u *user.User) (core.Config, error) {
+func newDefaultConfig(u *user.User) (sous.Config, error) {
 	var settingsDir string
 	if sd := os.Getenv("SOUS_SETTINGS_DIR"); sd != "" {
 		settingsDir = sd
 	} else {
 		settingsDir = defaultSettingsDir(u)
 	}
-	return core.Config{
+	return sous.Config{
 		SettingsDir: settingsDir,
 	}, nil
 }

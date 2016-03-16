@@ -17,13 +17,13 @@ func main() {
 		}
 	}()
 
-	c := cli.CLI{
-		Version: Version,
-	}
+	// Create a new Sous CLI
+	c := &cli.Sous{Version: Version}
+
+	// Invoke Sous...
+	cli.Invoke(c, os.Args, os.Environ())
 
 	// The CLI itself should manage exiting cleanly.
-	c.Invoke(os.Args)
-
 	// If it fails to exit due to programmer error, let the user know.
 	fmt.Fprintf(os.Stderr, "error: sous did not exit cleanly")
 	os.Exit(70)

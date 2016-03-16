@@ -4,7 +4,7 @@ import "testing"
 
 func TestBuildGraph(t *testing.T) {
 
-	c := &CLI{}
+	c := &Sous{}
 
 	if err := c.buildGraph(); err != nil {
 		t.Fatalf("unexpected error: %s", err)

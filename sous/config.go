@@ -1,4 +1,4 @@
-package core
+package sous
 
 type Config struct {
 	SettingsDir string
