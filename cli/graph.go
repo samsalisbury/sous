@@ -41,10 +41,9 @@ type (
 
 // buildGraph builds the dependency injection graph, used to populate commands
 // invoked by the user.
-func (c *Sous) buildGraph() error {
-	c.Graph = SousCLIGraph{psyringe.New()}
-	return c.Graph.Fill(
-		SousVersion(c.Version),
+func BuildGraph() (SousCLIGraph, error) {
+	g := SousCLIGraph{psyringe.New()}
+	return g, g.Fill(
 		newLocalUser,
 		newLocalSousConfig,
 		newLocalWorkDir,

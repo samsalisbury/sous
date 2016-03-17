@@ -1,23 +1,17 @@
 package cli
 
-import (
-	"fmt"
-	"os"
-)
-
-type VersionCommand struct {
+type SousVersionCommand struct {
 	Version SousVersion
 }
 
-const versionCommandHelp = `
+const sousVersionHelp = `
 version prints the current version and revision of sous
 `
 
-func (v *VersionCommand) Help() string {
-	return versionCommandHelp
+func (v *SousVersionCommand) Help() string {
+	return sousVersionHelp
 }
 
-func (vc *VersionCommand) Execute() error {
-	_, err := fmt.Fprintln(os.Stdout, vc.Version)
-	return err
+func (vc *SousVersionCommand) Execute(args []string) Result {
+	return Success(vc.Version)
 }

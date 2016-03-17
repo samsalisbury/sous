@@ -3,6 +3,12 @@ package cli
 import "fmt"
 
 type (
+	// An ErrorResult is both an error and a result, and has a tip for the user.
+	ErrorResult interface {
+		error
+		Result
+		Tipper
+	}
 	// Error is a generic error, and should only be used when none of the other
 	// error types are applicable. Note that it implements error but not Result,
 	// so it cannot be used by itself to return from commands. This is by
@@ -33,21 +39,32 @@ type (
 	UnknownError Error
 )
 
-func ErrorResult(err error) Result {
-	switch result := err.(type) {
-	default:
-		return UnknownError{Err: err}
-	case InternalError:
-		return result
-	case UsageError:
-		return result
-	case OSError:
-		return result
-	case IOError:
-		return result
-	case UnknownError:
+// EnsureErrorResult takes an error, and if it is not already also a Result,
+// makes it an UnknownError. Otherwise, the original error is left unchanged.
+func EnsureErrorResult(err error) Result {
+	if result, ok := err.(Result); ok {
 		return result
 	}
+	return UnknownError{Err: err}
+}
+
+func Errorf(err error, format string, v ...interface{}) Error {
+	return Error{Err: err, Message: fmt.Sprintf(format, v...)}
+}
+func InternalErrorf(err error, format string, v ...interface{}) InternalError {
+	return InternalError(Errorf(err, format, v...))
+}
+func UsageErrorf(err error, format string, v ...interface{}) UsageError {
+	return UsageError(Errorf(err, format, v...))
+}
+func OSErrorf(err error, format string, v ...interface{}) OSError {
+	return OSError(Errorf(err, format, v...))
+}
+func IOErrorf(err error, format string, v ...interface{}) IOError {
+	return IOError(Errorf(err, format, v...))
+}
+func UnknownErrorf(err error, format string, v ...interface{}) UnknownError {
+	return UnknownError(Errorf(err, format, v...))
 }
 
 func (e InternalError) ExitCode() int { return EX_SOFTWARE }

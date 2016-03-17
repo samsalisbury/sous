@@ -46,23 +46,14 @@ func (c *Sous) AddFlags(fs *flag.FlagSet) {
 }
 
 func (c *Sous) Execute(args []string) Result {
-	c.Output = os.Stdout
-	if err := c.init(); err != nil {
-		return ErrorResult(err)
-	}
-	return nil
+	return Success("welcome to sous")
 }
 
-// init builds the dependency graph, and injects any relevant values into the
-// CLI iteslf.
-func (c *Sous) init() error {
-	if err := c.buildGraph(); err != nil {
-		return InternalError{
-			Err:     err,
-			Message: "unable to build dependency graph",
-		}
+func (c *Sous) Subcommands() Commands {
+	return Commands{
+		"version": &SousVersionCommand{},
+		"help":    &SousHelp{},
 	}
-	return c.Graph.Inject(c)
 }
 
 func (c *Sous) Success() {

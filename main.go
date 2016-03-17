@@ -8,30 +8,54 @@ import (
 )
 
 func main() {
-	// wrap any panics which leak up to this level, to ask the user to report
-	// errors.
-	defer func() {
-		if r := recover(); r != nil {
-			unhandledError()
-			panic(r)
-		}
-	}()
 
-	// Create a new Sous CLI
-	c := &cli.Sous{Version: Version}
+	defer handlePanic()
 
-	// Invoke Sous...
-	cli.Invoke(c, os.Args, os.Environ())
+	// Create the dependency graph.
+	g, err := cli.BuildGraph()
+	if err != nil {
+		die(err)
+	}
 
-	// The CLI itself should manage exiting cleanly.
-	// If it fails to exit due to programmer error, let the user know.
-	fmt.Fprintf(os.Stderr, "error: sous did not exit cleanly")
+	// Create a CLI
+	c := &cli.CLI{
+		OutWriter: os.Stdout,
+		ErrWriter: os.Stderr,
+		Env:       map[string]string{},
+		Hooks: cli.Hooks{
+			PreExecute: func(c cli.Command) error { return g.Inject(c) },
+		},
+	}
+
+	// Create a new Sous command
+	s := &cli.Sous{Version: Version}
+
+	// Invoke Sous command
+	c.Invoke(s, os.Args)
+
+	// The CLI itself should manage exiting cleanly. If it fails to exit due to
+	// so, that's due to programmer error, let the user know.
+	die("error: sous did not exit correctly; please let the maintainers know")
+}
+
+func die(v ...interface{}) {
+	fmt.Fprintln(os.Stderr, v...)
 	os.Exit(70)
 }
 
-func unhandledError() {
-	fmt.Println(panicMessage)
-	fmt.Printf("Sous Version: %s\n\n", Version)
+// handlePanic gives us one last chance to send a message to the user in case a
+// panic leaks right up to the top of the program.
+//
+// To see the real panic message, disable panic handling by setting DEBUG=YES.
+func handlePanic() {
+	if os.Getenv("DEBUG") == "YES" {
+		return
+	}
+	if r := recover(); r != nil {
+		fmt.Println(panicMessage)
+		fmt.Printf("Sous Version: %s\n\n", Version)
+		panic(r)
+	}
 }
 
 const panicMessage = `

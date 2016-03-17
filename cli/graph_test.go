@@ -4,13 +4,12 @@ import "testing"
 
 func TestBuildGraph(t *testing.T) {
 
-	c := &Sous{}
-
-	if err := c.buildGraph(); err != nil {
+	g, err := BuildGraph()
+	if err != nil {
 		t.Fatalf("unexpected error: %s", err)
 	}
 
-	if err := c.Graph.Test(); err != nil {
+	if err := g.Test(); err != nil {
 		t.Fatalf("unexpected error: %s", err)
 	}
 
