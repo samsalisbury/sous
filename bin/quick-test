@@ -6,7 +6,7 @@ echo BUILDING
 time go build -o $NAME || { echo "BUILD FAILED"; exit 1; }
 
 echo TESTING
-time go test ./... || { echo "TESTS FAILED"; exit 1; }
+time go test ./... || { echo "TESTS FAILED"; echo; $NAME $@; exit 1; }
 
 echo RUNNING
 time $NAME $@ 

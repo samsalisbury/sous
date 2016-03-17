@@ -8,31 +8,33 @@ import (
 )
 
 type (
-	// CLI encapsulates a command line interface, and knows how to execute commands
-	// and their subcommands and parse flags.
+	// CLI encapsulates a command line interface, and knows how to execute
+	// commands and their subcommands and parse flags.
 	CLI struct {
-		// OutWriter will be sent the output of the CLI. This is typically set to
-		// os.Stdout
+		// OutWriter will be sent the output of the CLI. This is typically set
+		// to os.Stdout
 		OutWriter,
-		// ErrWriter will be sent all log messages from the CLI. This is typically
-		// set to os.Stderr
+		// ErrWriter will be sent all log messages from the CLI. This is
+		// typically set to os.Stderr
 		ErrWriter io.Writer
 		// Env is a map of environment variable names to their values.
 		Env map[string]string
-		// Hooks allow you to perform pre and post processing on Commands at various
-		// points in their lifecycle.
+		// Hooks allow you to perform pre and post processing on Commands at
+		// various points in their lifecycle.
 		Hooks Hooks
 	}
-	// Hooks is a collection of command hooks.
+	// Hooks is a collection of command hooks. If a hook returns a non-nil error
+	// it cancels execution and the error is displayed to the user.
 	Hooks struct {
 		// PreExecute is run on a command before it executes.
 		PreExecute func(Command) error
 	}
 )
 
-// Invoke begins invoking the CLI starting with the base command.
-func (c *CLI) Invoke(base Command, args []string) {
-	result := c.invoke(base, args, []func(*flag.FlagSet){})
+// Invoke begins invoking the CLI starting with the base command, and handles
+// all command output. It then returns the result for further processing.
+func (c *CLI) Invoke(base Command, args []string) Result {
+	result := c.invoke(base, args, nil)
 	if success, ok := result.(SuccessResult); ok {
 		c.handleSuccessResult(success)
 	}
@@ -42,8 +44,12 @@ func (c *CLI) Invoke(base Command, args []string) {
 	if err, ok := result.(ErrorResult); ok {
 		c.handleErrorResult(err)
 	}
+	return result
+}
 
-	os.Exit(result.ExitCode())
+// InvokeAndExit calls Invoke, and exits with the returned exit code.
+func (c *CLI) InvokeAndExit(base Command, args []string) {
+	os.Exit(c.Invoke(base, args).ExitCode())
 }
 
 func (c *CLI) PreExecute(command Command) error {
@@ -54,16 +60,22 @@ func (c *CLI) PreExecute(command Command) error {
 }
 
 func (c *CLI) Info(v ...interface{}) {
+	if c.ErrWriter == nil {
+		return
+	}
 	fmt.Fprintln(c.ErrWriter, v...)
 }
 
 func (c *CLI) handleSuccessResult(s SuccessResult) {
-	if len(s.Data) != 0 {
+	if len(s.Data) != 0 && c.OutWriter != nil {
 		c.OutWriter.Write(s.Data)
 	}
 }
 
 func (c *CLI) handleErrorResult(e ErrorResult) {
+	if c.ErrWriter == nil {
+		return
+	}
 	fmt.Fprintln(c.ErrWriter, e.Error())
 	if tip := e.UserTip(); len(tip) != 0 {
 		fmt.Fprintln(c.ErrWriter, tip)
@@ -84,6 +96,9 @@ func (c *CLI) invoke(base Command, args []string, ff []func(*flag.FlagSet)) Resu
 	args = args[1:]
 	// Add and parse flags for this command.
 	if command, ok := base.(AddsFlags); ok {
+		if ff == nil {
+			ff = []func(*flag.FlagSet){}
+		}
 		// add these flags to the agglomeration
 		ff = append(ff, command.AddFlags)
 		// make a flag.FlagSet named for this command.
@@ -97,6 +112,7 @@ func (c *CLI) invoke(base Command, args []string, ff []func(*flag.FlagSet)) Resu
 		if err := fs.Parse(args); err != nil {
 			return UsageError{Message: err.Error()}
 		}
+		// get the remaining args
 		args = fs.Args()
 	}
 	// If this command has subcommands, first try to descend into one of them.
@@ -110,7 +126,9 @@ func (c *CLI) invoke(base Command, args []string, ff []func(*flag.FlagSet)) Resu
 	}
 	// If the command can itself be executed, do that now.
 	if command, ok := base.(CanExecute); ok {
-		c.PreExecute(base)
+		if err := c.PreExecute(base); err != nil {
+			return EnsureErrorResult(err)
+		}
 		return command.Execute(args)
 	}
 	// If we get here, this command is not configured correctly and cannot run.

@@ -30,12 +30,8 @@ func main() {
 	// Create a new Sous command
 	s := &cli.Sous{Version: Version}
 
-	// Invoke Sous command
-	c.Invoke(s, os.Args)
-
-	// The CLI itself should manage exiting cleanly. If it fails to exit due to
-	// so, that's due to programmer error, let the user know.
-	die("error: sous did not exit correctly; please let the maintainers know")
+	// Invoke Sous command, and let it handle exiting.
+	c.InvokeAndExit(s, os.Args)
 }
 
 func die(v ...interface{}) {

@@ -1,17 +1,31 @@
 package cli
 
 import (
+	"bytes"
 	"strings"
 	"testing"
 )
 
+type TestCommand struct{}
+
+func (tc *TestCommand) Help() string { return "" }
+func (tc *TestCommand) Execute(args []string) Result {
+	return Success("Congratulations, caller: ", args)
+}
+
 func TestCli(t *testing.T) {
 
-	c := &CLI{}
+	outBuf := &bytes.Buffer{}
+	errBuf := &bytes.Buffer{}
+
+	c := &CLI{
+		OutWriter: outBuf,
+		ErrWriter: errBuf,
+	}
 
 	args := makeArgs("sous")
 
-	result := c.invoke(&Sous{}, args, nil)
+	result := c.Invoke(&TestCommand{}, args)
 
 	actual := result.ExitCode()
 	expected := 0
@@ -19,6 +33,27 @@ func TestCli(t *testing.T) {
 	if result.ExitCode() != 0 {
 		t.Errorf("got exit code %d; want %d", actual, expected)
 		t.Error(result)
+	}
+
+	success, isSuccess := result.(SuccessResult)
+	if !isSuccess {
+		t.Errorf("got a %T; want SuccessResult")
+	}
+
+	commandOut := string(success.Data)
+	expectedCommandOut := "Congratulations, caller: []"
+
+	if commandOut != expectedCommandOut {
+		t.Errorf("got %q; want %q", commandOut, expectedCommandOut)
+	}
+
+	cliOut := outBuf.String()
+	if cliOut != expectedCommandOut {
+		t.Errorf("got %q; want %q", cliOut, expectedCommandOut)
+	}
+
+	if errBuf.Len() != 0 {
+		t.Errorf("unexpected write to stderr: %q", errBuf)
 	}
 
 }
