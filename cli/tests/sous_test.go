@@ -18,7 +18,12 @@ func TestSous(t *testing.T) {
 }
 
 func TestSousVersion(t *testing.T) {
+
 	term := NewTerminal(t)
+
+	// This prints the whole shell session if the test fails.
+	defer term.PrintFailureSummary()
+
 	term.RunCommand("sous version")
 	term.Stderr.ShouldHaveNumLines(0)
 	term.Stdout.ShouldHaveNumLines(1)

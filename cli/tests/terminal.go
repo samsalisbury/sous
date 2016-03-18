@@ -3,6 +3,7 @@ package tests
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"strings"
 	"testing"
 
@@ -17,8 +18,9 @@ type (
 	Terminal struct {
 		Sous *cli.Sous
 		*cli.CLI
-		Stdout, Stderr Output
-		T              *testing.T
+		Stdout, Stderr, Combined Output
+		History                  []string
+		T                        *testing.T
 	}
 	// Output allows inspection of output streams from the Terminal.
 	Output struct {
@@ -31,13 +33,14 @@ type (
 func NewTerminal(t *testing.T) *Terminal {
 	out := Output{"stdout", &bytes.Buffer{}, t}
 	err := Output{"stderr", &bytes.Buffer{}, t}
+	combined := Output{"combined output", &bytes.Buffer{}, t}
 	return &Terminal{
 		&cli.Sous{Version: semv.MustParse("0-test")},
 		&cli.CLI{
-			OutWriter: out.Buffer,
-			ErrWriter: err.Buffer,
+			OutWriter: io.MultiWriter(out.Buffer, combined.Buffer),
+			ErrWriter: io.MultiWriter(err.Buffer, combined.Buffer),
 		},
-		out, err, t,
+		out, err, combined, []string{}, t,
 	}
 }
 
@@ -50,6 +53,23 @@ func NewTerminal(t *testing.T) *Terminal {
 func (t *Terminal) RunCommand(commandline string) {
 	args := strings.Split(commandline, " ")
 	t.CLI.Invoke(t.Sous, args)
+	rr := fmt.Sprintf("shell> %s\n%s", commandline, t.Combined)
+	t.History = append(t.History, rr)
+}
+
+// Summary prints a summary of the session.
+func (t *Terminal) Summary() string {
+	buf := &bytes.Buffer{}
+	for _, h := range t.History {
+		buf.WriteString(h + "\n")
+	}
+	return buf.String()
+}
+
+func (t *Terminal) PrintFailureSummary() {
+	if t.T.Failed() {
+		t.T.Logf("Terminal Session Summary:\n%s", t.Summary())
+	}
 }
 
 func (out Output) String() string { return out.Buffer.String() }
