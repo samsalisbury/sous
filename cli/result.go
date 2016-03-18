@@ -1,9 +1,16 @@
 package cli
 
-import "fmt"
+import (
+	"encoding/base64"
+	"fmt"
+	"unicode/utf8"
+)
 
 type (
+	// Result is a result of a CLI invokation.
 	Result interface {
+		// ExitCode is the exit code the program should exit with based on this
+		// result.
 		ExitCode() int
 	}
 	Tipper interface {
@@ -18,6 +25,13 @@ type (
 )
 
 func (s SuccessResult) ExitCode() int { return EX_OK }
+
+func (s SuccessResult) String() string {
+	if utf8.Valid(s.Data) {
+		return string(s.Data)
+	}
+	return base64.StdEncoding.EncodeToString(s.Data)
+}
 
 func Success(v ...interface{}) SuccessResult {
 	return SuccessResult{Data: []byte(fmt.Sprint(v...))}

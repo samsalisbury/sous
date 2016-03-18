@@ -3,13 +3,11 @@ package cli
 import (
 	"flag"
 	"io"
-	"os"
 
 	"github.com/samsalisbury/semv"
 )
 
-// CLI represents the Sous CLI client. It is the root command, and so implements
-// Command.
+// Sous is the main sous command.
 type Sous struct {
 	// Version is the version of Sous itself.
 	Version semv.Version
@@ -46,7 +44,10 @@ func (c *Sous) AddFlags(fs *flag.FlagSet) {
 }
 
 func (c *Sous) Execute(args []string) Result {
-	return Success("welcome to sous")
+	return UsageError{
+		Message: "usage: sous [options] command",
+		Tip:     "try `sous help` for a list of commands",
+	}
 }
 
 func (c *Sous) Subcommands() Commands {
@@ -54,10 +55,6 @@ func (c *Sous) Subcommands() Commands {
 		"version": &SousVersionCommand{},
 		"help":    &SousHelp{},
 	}
-}
-
-func (c *Sous) Success() {
-	os.Exit(0)
 }
 
 func (c *Sous) Verbosity() Verbosity {

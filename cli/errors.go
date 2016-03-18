@@ -41,8 +41,8 @@ type (
 
 // EnsureErrorResult takes an error, and if it is not already also a Result,
 // makes it an UnknownError. Otherwise, the original error is left unchanged.
-func EnsureErrorResult(err error) Result {
-	if result, ok := err.(Result); ok {
+func EnsureErrorResult(err error) ErrorResult {
+	if result, ok := err.(ErrorResult); ok {
 		return result
 	}
 	return UnknownError{Err: err}
@@ -74,7 +74,7 @@ func (e IOError) ExitCode() int       { return EX_IOERR }
 func (e UnknownError) ExitCode() int  { return 255 }
 
 func (e InternalError) Error() string { return (Error)(e).Pre("internal") }
-func (e UsageError) Error() string    { return (Error)(e).Pre("usage") }
+func (e UsageError) Error() string    { return (Error)(e).Error() }
 func (e OSError) Error() string       { return (Error)(e).Pre("os") }
 func (e IOError) Error() string       { return (Error)(e).Pre("io") }
 func (e UnknownError) Error() string  { return (Error)(e).Pre("unknown") }
