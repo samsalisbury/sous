@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+
+# This script is designed to speed up the development feedback cycle on OS X.
+#
+# It relies on fswatch and terminal-notifier (you can get them both using homebrew)
+#
+# It watches for changes, and if it detects them it takes the following actions:
+#
+#    1. If you have sous installed via Homebrew, it's removed.
+#    2. If you have sous installed via `go install` it's removed.
+#    3. Runs `go install`
+#    4. Runs `go test ./...`
+#    5. Notifies you of the result verbally, and with desktop notifications.
+#
+
+(command -v fswatch >/dev/null) || { echo "please install fswatch first (it's on homebrew)"; exit 1; }
+(command -v terminal-notifier >/dev/null) || { echo "please install terminal-notifier first (it's on homebrew)"; exit 1; }
+
+s() { say -v Amelie "$@" & }
+fin() { s "Bye!"; echo; exit 0; }
+say -v Amelie "Bonjour!" 
+n() { terminal-notifier -title "$1" -message "$2" -group "sous-build" -contentImage "$3" > /dev/null; }
+IMAGE_OK="/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ToolbarInfo.icns"
+IMAGE_FAIL="/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/AlertStopIcon.icns"
+build() {
+	afplay -v 0.5 /System/Library/Sounds/Glass.aiff &
+	if [ -z "$1" ]; then
+		CHANGED_FILES="No changes."
+	else
+		CHANGED_FILES="Changed files: $1"
+	fi
+	if result=$(./bin/install-dev); then
+		s "Sous OK!"
+		n "Sous OK" "$CHANGED_FILES" "$IMAGE_OK" &
+	else
+		s "Non!"
+		n "Sous Build Failed!" "$CHANGED_FILES" "$IMAGE_FAIL" &
+	fi
+	echo "$result"
+}
+trap fin SIGINT SIGTERM
+echo "Building current version..."
+build
+echo
+while true; do
+	CHANGES=""
+	echo "Waiting for changes..."
+	fswatch -1ri '\.go$' -e '.*' . |
+	{
+		while read x; do
+			CF="${x#$PWD/}"
+			CHANGES="$CHANGES$CF "
+		done
+		echo "CHANGES: $CHANGES"
+		build "$CHANGES"
+		echo
+	}
+done
+
