@@ -51,7 +51,7 @@ management), sous may add features to polyfill those requirements.
 
 ### For Operations
 
-Sous must make the job of operations teams easier by revealing, and
+Sous must make the job of operations teams easier by revealing and
 allowing the control of applications running on their infrastructure.
 
 Sous must always provide all its data in easy-to-use formats.
@@ -59,7 +59,7 @@ Sous must always provide all its data in easy-to-use formats.
 ### For Organisations
 
 Sous must help to decouple software engineering teams writing
-applications and services, from operations teams managing
+applications and services from operations teams managing
 infrastructure. It must make it easier for these two forces in
 engineering to work together, solving the problems of the organisation
 at their own pace, without requiring constant synchronisation.
@@ -88,4 +88,3 @@ at their own pace, without requiring constant synchronisation.
   - It should be possible to work completely offline.
 - **CLI first:**
   - You should be able to do _everything_ through the command line, including interacting with the server.
-
