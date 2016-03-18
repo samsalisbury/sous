@@ -10,7 +10,7 @@ type TestCommand struct{}
 
 func (tc *TestCommand) Help() string { return "" }
 func (tc *TestCommand) Execute(args []string) Result {
-	return Success("Congratulations, caller: ", args)
+	return Success("Congratulations, caller:", args)
 }
 
 func TestCli(t *testing.T) {
@@ -41,7 +41,7 @@ func TestCli(t *testing.T) {
 	}
 
 	commandOut := string(success.Data)
-	expectedCommandOut := "Congratulations, caller: []"
+	expectedCommandOut := "Congratulations, caller: []\n"
 
 	if commandOut != expectedCommandOut {
 		t.Errorf("got %q; want %q", commandOut, expectedCommandOut)

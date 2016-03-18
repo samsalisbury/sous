@@ -1,7 +1,7 @@
 package cli
 
 type SousVersionCommand struct {
-	Version SousVersion
+	Version Version
 }
 
 const sousVersionHelp = `
@@ -13,5 +13,6 @@ func (v *SousVersionCommand) Help() string {
 }
 
 func (vc *SousVersionCommand) Execute(args []string) Result {
-	return Success(vc.Version)
+	v := vc.Version.Format("")
+	return Successf("sous version %s", v)
 }

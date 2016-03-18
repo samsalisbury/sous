@@ -1,10 +1,16 @@
 package tests
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/opentable/sous/cli"
+	"github.com/samsalisbury/psyringe"
+	"github.com/samsalisbury/semv"
+)
 
 func TestSous(t *testing.T) {
 
-	term := NewTerminal(t)
+	term := NewTerminal(t, &cli.Sous{})
 
 	// Invoke the CLI
 	term.RunCommand("sous")
@@ -19,7 +25,13 @@ func TestSous(t *testing.T) {
 
 func TestSousVersion(t *testing.T) {
 
-	term := NewTerminal(t)
+	term := NewTerminal(t, &cli.Sous{})
+
+	term.CLI.Hooks.PreExecute = func(c cli.Command) error {
+		g := psyringe.New()
+		g.Fill(cli.Version{semv.MustParse("1.0.0-test")})
+		return g.Inject(c)
+	}
 
 	// This prints the whole shell session if the test fails.
 	defer term.PrintFailureSummary()
@@ -27,5 +39,5 @@ func TestSousVersion(t *testing.T) {
 	term.RunCommand("sous version")
 	term.Stderr.ShouldHaveNumLines(0)
 	term.Stdout.ShouldHaveNumLines(1)
-	term.Stdout.ShouldHaveExactLine("sous version 0.0.0-test")
+	term.Stdout.ShouldHaveExactLine("sous version 1.0.0-test")
 }

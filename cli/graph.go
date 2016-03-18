@@ -17,7 +17,7 @@ type (
 	// with their dependencies.
 	SousCLIGraph struct{ *psyringe.Psyringe }
 	// SousVersion represents a version of Sous.
-	SousVersion semv.Version
+	Version struct{ semv.Version }
 	// LocalUser is the logged in user who invoked Sous
 	LocalUser struct{ *user.User }
 	// LocalSousConfig is the configuration for Sous.

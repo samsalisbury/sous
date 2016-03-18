@@ -34,11 +34,11 @@ func (s SuccessResult) String() string {
 }
 
 func Success(v ...interface{}) SuccessResult {
-	return SuccessResult{Data: []byte(fmt.Sprint(v...))}
+	return SuccessResult{Data: []byte(fmt.Sprintln(v...))}
 }
 
 func SuccessData(d []byte) SuccessResult { return SuccessResult{Data: d} }
 
 func Successf(format string, v ...interface{}) Result {
-	return SuccessResult{Data: []byte(fmt.Sprintf(format, v...))}
+	return SuccessResult{Data: []byte(fmt.Sprintf(format+"\n", v...))}
 }

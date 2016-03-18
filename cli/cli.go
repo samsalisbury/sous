@@ -118,7 +118,6 @@ func (c *CLI) invoke(base Command, args []string, ff []func(*flag.FlagSet)) Resu
 	// If this command has subcommands, first try to descend into one of them.
 	if command, ok := base.(HasSubcommands); ok && len(args) != 0 {
 		subcommandName := args[0]
-		args = args[1:]
 		subcommands := command.Subcommands()
 		if subcommand, ok := subcommands[subcommandName]; ok {
 			return c.invoke(subcommand, args, ff)

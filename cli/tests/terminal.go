@@ -8,15 +8,14 @@ import (
 	"testing"
 
 	"github.com/opentable/sous/cli"
-	"github.com/samsalisbury/semv"
 	"github.com/xrash/smetrics"
 )
 
 type (
-	// Terminal is a test harness for the sous CLI, providing easy
+	// Terminal is a test harness for the CLI, providing easy
 	// introspection into its inputs and outputs.
 	Terminal struct {
-		Sous *cli.Sous
+		Base cli.Command
 		*cli.CLI
 		Stdout, Stderr, Combined Output
 		History                  []string
@@ -30,13 +29,12 @@ type (
 	}
 )
 
-func NewTerminal(t *testing.T) *Terminal {
+func NewTerminal(t *testing.T, base cli.Command) *Terminal {
 	out := Output{"stdout", &bytes.Buffer{}, t}
 	err := Output{"stderr", &bytes.Buffer{}, t}
 	combined := Output{"combined output", &bytes.Buffer{}, t}
 	return &Terminal{
-		&cli.Sous{Version: semv.MustParse("0-test")},
-		&cli.CLI{
+		base, &cli.CLI{
 			OutWriter: io.MultiWriter(out.Buffer, combined.Buffer),
 			ErrWriter: io.MultiWriter(err.Buffer, combined.Buffer),
 		},
@@ -52,8 +50,11 @@ func NewTerminal(t *testing.T) *Terminal {
 // surrounded by quotes. We should add this feature if we need it.
 func (t *Terminal) RunCommand(commandline string) {
 	args := strings.Split(commandline, " ")
-	t.CLI.Invoke(t.Sous, args)
+	t.CLI.Invoke(t.Base, args)
 	rr := fmt.Sprintf("shell> %s\n%s", commandline, t.Combined)
+	if !strings.HasSuffix(rr, "\n") {
+		rr += "<MISSING TRAILING NEWLINE>"
+	}
 	t.History = append(t.History, rr)
 }
 
@@ -119,8 +120,12 @@ func (out Output) ShouldHaveLineContaining(s string) {
 
 func (out Output) ShouldHaveNumLines(expected int) {
 	actual := out.NumLines()
-	if actual != expected {
-		out.T.Errorf("%s has %d lines; want %d", out.Name, actual, expected)
+	if actual == expected {
+		return
+	}
+	out.T.Errorf("%s has %d lines; want %d", out.Name, actual, expected)
+	if !strings.HasSuffix(out.String(), "\n") {
+		out.T.Logf("MISSING TRAILING NEWLINE")
 	}
 }
 
