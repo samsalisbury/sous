@@ -5,7 +5,7 @@ import (
 	"os/user"
 	"path/filepath"
 
-	"github.com/opentable/sous2/sous"
+	"github.com/opentable/sous/sous"
 )
 
 const defaultSettingsDirName = ".sous"

@@ -3,7 +3,7 @@ package git
 import (
 	"path/filepath"
 
-	"github.com/opentable/sous2/util/parallel"
+	"github.com/opentable/sous/util/parallel"
 )
 
 type Repo struct {

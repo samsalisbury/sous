@@ -3,7 +3,7 @@ package tests
 import (
 	"testing"
 
-	"github.com/opentable/sous2/cli"
+	"github.com/opentable/sous/cli"
 )
 
 func TestSous(t *testing.T) {

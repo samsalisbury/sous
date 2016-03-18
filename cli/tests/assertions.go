@@ -1,6 +1,6 @@
 package tests
 
-import "github.com/opentable/sous2/cli"
+import "github.com/opentable/sous/cli"
 
 // CanExecute fails the build if the thing passed does not implement the
 // CanExecute interface.

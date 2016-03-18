@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/opentable/sous2/cli"
+	"github.com/opentable/sous/cli"
 )
 
 func main() {

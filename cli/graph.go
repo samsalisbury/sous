@@ -5,9 +5,9 @@ import (
 	"os"
 	"os/user"
 
-	"github.com/opentable/sous2/ext/git"
-	"github.com/opentable/sous2/sous"
-	"github.com/opentable/sous2/util/shell"
+	"github.com/opentable/sous/ext/git"
+	"github.com/opentable/sous/sous"
+	"github.com/opentable/sous/util/shell"
 	"github.com/samsalisbury/psyringe"
 	"github.com/samsalisbury/semv"
 )

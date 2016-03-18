@@ -3,7 +3,7 @@ package git
 import (
 	"fmt"
 
-	"github.com/opentable/sous2/util/shell"
+	"github.com/opentable/sous/util/shell"
 	"github.com/samsalisbury/semv"
 )
 
