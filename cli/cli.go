@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sort"
 )
 
 type (
@@ -81,6 +82,23 @@ func (c *CLI) handleErrorResult(e ErrorResult) {
 	if tip := e.UserTip(); len(tip) != 0 {
 		fmt.Fprintln(c.ErrWriter, tip)
 	}
+}
+
+// ListSubcommands returns a slice of strings with the names of each subcommand
+// as they need to be entered by the user, arranged alphabetically.
+func (c *CLI) ListSubcommands(base Command) []string {
+	hs, ok := base.(HasSubcommands)
+	if !ok {
+		return nil
+	}
+	subcommands := hs.Subcommands()
+	list := make([]string, len(subcommands))
+	i := 0
+	for name := range subcommands {
+		list[i] = name
+	}
+	sort.Strings(list)
+	return list
 }
 
 // invoke invokes this command, resolving subcommands and flags, and forwarding
