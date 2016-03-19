@@ -26,18 +26,20 @@ if SOUSPATH="$(command -v sous)"; then
 	fi
 fi
 if ! go generate; then
-	echo "Generate failed."
+	echo "> Generate failed."
 	exit 1
 fi
 if ! go install; then
-	echo "Build failed."
+	echo "> Build failed."
 	exit 1
 fi
 if ! TESTOUT=$(go test ./...); then
 	echo "$TESTOUT" | grep -v 'no test files'
-	echo "Tests failed."
+	echo "> Tests failed."
 	exit 1
 fi
+
+echo "> Build and test OK"
 
 # Finally, make sure we can still execute sous version
 sous version
