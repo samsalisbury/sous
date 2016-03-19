@@ -27,6 +27,9 @@ func main() {
 		},
 	}
 
+	// Add the CLI itself to the graph
+	g.Fill(c)
+
 	// Create a new Sous command
 	s := &cli.Sous{Version: Version}
 
