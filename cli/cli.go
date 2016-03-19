@@ -52,13 +52,6 @@ func (c *CLI) InvokeAndExit(base Command, args []string) {
 	os.Exit(c.Invoke(base, args).ExitCode())
 }
 
-func (c *CLI) PreExecute(command Command) error {
-	if c.Hooks.PreExecute == nil {
-		return nil
-	}
-	return c.Hooks.PreExecute(command)
-}
-
 func (c *CLI) Info(v ...interface{}) {
 	if c.ErrWriter == nil {
 		return
@@ -70,6 +63,14 @@ func (c *CLI) handleSuccessResult(s SuccessResult) {
 	if len(s.Data) != 0 && c.OutWriter != nil {
 		c.OutWriter.Write(s.Data)
 	}
+}
+
+// runHook runs the hook if it's not nil, and returns the hook's error.
+func (c *CLI) runHook(hook func(Command) error, command Command) error {
+	if hook == nil {
+		return nil
+	}
+	return hook(command)
 }
 
 func (c *CLI) handleErrorResult(e ErrorResult) {
@@ -125,7 +126,7 @@ func (c *CLI) invoke(base Command, args []string, ff []func(*flag.FlagSet)) Resu
 	}
 	// If the command can itself be executed, do that now.
 	if command, ok := base.(CanExecute); ok {
-		if err := c.PreExecute(base); err != nil {
+		if err := c.runHook(c.Hooks.PreExecute, base); err != nil {
 			return EnsureErrorResult(err)
 		}
 		return command.Execute(args)
