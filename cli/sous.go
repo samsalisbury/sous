@@ -2,7 +2,6 @@ package cli
 
 import (
 	"flag"
-	"io"
 
 	"github.com/samsalisbury/semv"
 )
@@ -11,10 +10,6 @@ import (
 type Sous struct {
 	// Version is the version of Sous itself.
 	Version semv.Version
-	// Output is where the return value of commands that have one gets printed.
-	Output io.Writer
-	// Graph is the dependency injector used to flesh out command dependencies.
-	Graph SousCLIGraph
 	// flags holds the values of flags passed to this command
 	flags struct {
 		Help      bool
