@@ -2,6 +2,11 @@
 
 # This script is designed to speed up the development feedback cycle on OS X.
 #
+# usage: ./bin/watch [command]
+#
+# [command] will be executed after every successful build and test, you can use it
+# e.g. to run a particular sous subcommand after each build to monitor its output.
+#
 # It relies on fswatch and terminal-notifier (you can get them both using homebrew)
 #
 # It watches for changes, and if it detects them it takes the following actions:
@@ -12,6 +17,9 @@
 #    4. Runs `go test ./...`
 #    5. Notifies you of the result verbally, and with desktop notifications.
 #
+
+COMMAND="$@"
+echo "Command: '$COMMAND'"
 
 (command -v fswatch >/dev/null) || { echo "please install fswatch first (it's on homebrew)"; exit 1; }
 (command -v terminal-notifier >/dev/null) || { echo "please install terminal-notifier first (it's on homebrew)"; exit 1; }
@@ -24,14 +32,19 @@ IMAGE_OK="/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/Toolb
 IMAGE_FAIL="/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/AlertStopIcon.icns"
 build() {
 	afplay -v 0.5 /System/Library/Sounds/Glass.aiff &
-	if [ -z "$1" ]; then
+	[ -z "$1" ] && {
 		CHANGED_FILES="No changes."
-	else
+	} || {
 		CHANGED_FILES="Changed files: $1"
-	fi
-	if result=$(./bin/install-dev); then
+	}
+	if result=$(./bin/install-dev)l; then
 		s "Sous OK!"
 		n "Sous OK" "$CHANGED_FILES" "$IMAGE_OK" &
+		[ -n "$COMMAND" ] && {
+			echo "Running '$COMMAND'"
+			echo
+			$COMMAND
+		}
 	else
 		s "Non!"
 		n "Sous Build Failed!" "$CHANGED_FILES" "$IMAGE_FAIL" &
@@ -51,7 +64,7 @@ while true; do
 			CF="${x#$PWD/}"
 			CHANGES="$CHANGES$CF "
 		done
-		echo "CHANGES: $CHANGES"
+		echo "Changes: $CHANGES"
 		build "$CHANGES"
 		echo
 	}
