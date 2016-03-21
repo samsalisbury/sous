@@ -22,7 +22,7 @@ See also our [rationale for building sous].
 ## Feature Matrix
 
 | Tool        | Deploy state                         | Packaging        | Scheduling                     |
-| ---         | -                                    | -                | -                              |
+| ---         | ---                                  | ---              | ---                            |
 | [Spinnaker] | automatic                            | VM image         | Cloud service                  |
 | [PaaSTA]    | declarative                          | free-form Docker | Mesos/Marathon                 |
 | [Nomad]     | declarative descs, imperative update | docker, VM, ...  | Nomad                          |
