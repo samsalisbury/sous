@@ -37,7 +37,7 @@ build() {
 	} || {
 		CHANGED_FILES="Changed files: $1"
 	}
-	if result=$(./bin/install-dev)l; then
+	if result=$(./bin/install-dev); then
 		s "Sous OK!"
 		n "Sous OK" "$CHANGED_FILES" "$IMAGE_OK" &
 		[ -n "$COMMAND" ] && {

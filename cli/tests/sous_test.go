@@ -29,7 +29,9 @@ func TestSousVersion(t *testing.T) {
 
 	term.CLI.Hooks.PreExecute = func(c cli.Command) error {
 		g := psyringe.New()
-		g.Fill(cli.Version{semv.MustParse("1.0.0-test")})
+		g.Fill(
+			&cli.Sous{Version: semv.MustParse("1.0.0-test")},
+		)
 		return g.Inject(c)
 	}
 

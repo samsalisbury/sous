@@ -1,19 +1,31 @@
 package cli
 
-import "flag"
+import (
+	"flag"
+	"sort"
+)
 
 type (
 	// Commands is a mapping of strings (the command name) to commands.
 	Commands map[string]Command
 	// Command is a command that can be invoked.
 	Command interface {
-		// Help is the help message for a command. To be a working command, all
-		// you need is a help message.
-		Help() string
+		// Help is the help message for a command. To be a command, all you need
+		// is a help message.
+		//
+		// Help messages must follow some conventions:
+		// The first line must be 50 characters or fewer, and describe
+		// succinctly what the command does.
+		// The second line must be blank.
+		// The third line should begin with "args: " followed by a list of named
+		// arguments (not flags or options)
+		// The remaining non-blank lines should contain a detailed description
+		// of how the command works, including usage examples.
+		Help() *Help
 	}
 	// CanExecute means the command can itself be executed to do something.
 	CanExecute interface {
-		Execute(args []string) Result
+		Execute(args []string, o, e Output) Result
 	}
 	// HasSubcommands means this command has subcommands.
 	HasSubcommands interface {
@@ -31,3 +43,14 @@ type (
 		AddFlags(*flag.FlagSet)
 	}
 )
+
+func (cs Commands) SortedKeys() []string {
+	keys := make([]string, len(cs))
+	i := 0
+	for k := range cs {
+		keys[i] = k
+		i++
+	}
+	sort.Strings(keys)
+	return keys
+}

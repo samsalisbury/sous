@@ -8,8 +8,8 @@ import (
 
 type TestCommand struct{}
 
-func (tc *TestCommand) Help() string { return "" }
-func (tc *TestCommand) Execute(args []string) Result {
+func (tc *TestCommand) Help() *Help { return ParseHelp("") }
+func (tc *TestCommand) Execute(args []string, out, errout Output) Result {
 	return Success("Congratulations, caller:", args)
 }
 
@@ -37,7 +37,7 @@ func TestCli(t *testing.T) {
 
 	success, isSuccess := result.(SuccessResult)
 	if !isSuccess {
-		t.Errorf("got a %T; want SuccessResult")
+		t.Errorf("got a %T; want %T", result, SuccessResult{})
 	}
 
 	commandOut := string(success.Data)

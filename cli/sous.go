@@ -20,35 +20,51 @@ type Sous struct {
 }
 
 const sousHelp = `
-Sous is a tool to help with building, testing, and deploying code.
+the main sous command
+
+args: <command>
+
+sous is a tool for automating the boring bits of the build/test/deploy cycle. It
+provides commands in this CLI for performing all the actions the sous server is
+capable of, like building container images, testing them, and instigating
+deployments.
+
+sous also has some extra convenience commands for doing things like getting free
+ports and host names, managing its own configuration, and spinning up
+subsections of your production environment locally, for easy testing.
+
+For a list of commands, use 'sous help'
+
+Please report any issue with sous to https://github.com/opentable/sous/issues
+pull requests are welcome.
 `
 
-func (c *Sous) Help() string { return sousHelp }
+func (*Sous) Help() *Help { return ParseHelp(sousHelp) }
 
-func (c *Sous) AddFlags(fs *flag.FlagSet) {
-	fs.BoolVar(&c.flags.Help, "-help", false,
+func (s *Sous) AddFlags(fs *flag.FlagSet) {
+	fs.BoolVar(&s.flags.Help, "-help", false,
 		"show help")
-	fs.BoolVar(&c.flags.Verbosity.Silent, "s", false,
+	fs.BoolVar(&s.flags.Verbosity.Silent, "s", false,
 		"silent verbosity: silence all nonessential output")
-	fs.BoolVar(&c.flags.Verbosity.Quiet, "q", false,
+	fs.BoolVar(&s.flags.Verbosity.Quiet, "q", false,
 		"quiet verbosity: output only essential error messages")
-	fs.BoolVar(&c.flags.Verbosity.Loud, "v", false,
+	fs.BoolVar(&s.flags.Verbosity.Loud, "v", false,
 		"loud verbosity: output extra info, including all shell commands")
-	fs.BoolVar(&c.flags.Verbosity.Debug, "debug", false,
+	fs.BoolVar(&s.flags.Verbosity.Debug, "debug", false,
 		"debug level verbosity: output detailed logs of internal operations")
 }
 
-func (c *Sous) Execute(args []string) Result {
+func (*Sous) Execute(args []string, out, errout Output) Result {
 	return UsageError{
 		Message: "usage: sous [options] command",
 		Tip:     "try `sous help` for a list of commands",
 	}
 }
 
-func (c *Sous) Subcommands() Commands {
+func (Sous) Subcommands() Commands {
 	return Commands{
-		"version": &SousVersionCommand{},
 		"help":    &SousHelp{},
+		"version": &SousVersion{},
 	}
 }
 

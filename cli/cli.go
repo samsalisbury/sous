@@ -18,6 +18,10 @@ type (
 		// ErrWriter will be sent all log messages from the CLI. This is
 		// typically set to os.Stderr
 		ErrWriter io.Writer
+		// Out is an Output wired up to OutWriter
+		Out,
+		// Err is an Output wired up to ErrWriter
+		Err Output
 		// Env is a map of environment variable names to their values.
 		Env map[string]string
 		// Hooks allow you to perform pre and post processing on Commands at
@@ -96,6 +100,7 @@ func (c *CLI) ListSubcommands(base Command) []string {
 	i := 0
 	for name := range subcommands {
 		list[i] = name
+		i++
 	}
 	sort.Strings(list)
 	return list
@@ -147,7 +152,11 @@ func (c *CLI) invoke(base Command, args []string, ff []func(*flag.FlagSet)) Resu
 		if err := c.runHook(c.Hooks.PreExecute, base); err != nil {
 			return EnsureErrorResult(err)
 		}
-		return command.Execute(args)
+		out := Output{Writer: c.OutWriter}
+		errout := Output{Writer: c.ErrWriter}
+		out.SetIndentStyle("\t")
+		errout.SetIndentStyle("\t")
+		return command.Execute(args, out, errout)
 	}
 	// If we get here, this command is not configured correctly and cannot run.
 	m := fmt.Sprintf("command %q cannot execute and has no subcommands", name)

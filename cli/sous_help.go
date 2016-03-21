@@ -1,21 +1,50 @@
 package cli
 
 type SousHelp struct {
-	*CLI
+	Sous *Sous
 }
 
 const sousHelpHelp = `
-usage: sous help <command>
+show help information
+
+args: [command]
+
+sous help shows help information for sous itself, as well as all its subcommands
+for detailed help with any command, use 'sous help <command>'
 `
 
-func (sc *SousHelp) Help() string { return sousHelpHelp }
+func (sh *SousHelp) Help() *Help { return ParseHelp(sousHelpHelp) }
 
-func (sc *SousHelp) Execute(args []string) Result {
-
+func (sh *SousHelp) Execute(args []string, out, _ Output) Result {
+	commands := sh.Sous.Subcommands()
 	if len(args) == 0 {
-		sc.Info(sousHelpHelp)
-		return Success()
+		out.Println(sh.Sous.Help().Usage(""), "\n")
+		out.Println("commands:")
+		out.Indent()
+		out.Table(commandTable(commands))
+		out.Outdent()
+		out.Println()
+		return Successf("sous version %s", sh.Sous.Version)
 	}
+	name := args[0]
+	c, ok := commands[name]
+	if !ok {
+		return UsageErrorf(nil, "command %s does not exist, try `sous help`",
+			name)
+	}
+	return commandHelp(out, c)
+}
 
-	return InternalErrorf(nil, "sous help is not yet implemented")
+func commandHelp(out Output, c Command) Result {
+	return Success()
+}
+
+func commandTable(cs Commands) [][]string {
+	t := make([][]string, len(cs))
+	for i, name := range cs.SortedKeys() {
+		t[i] = make([]string, 2)
+		t[i][0] = name
+		t[i][1] = cs[name].Help().Short
+	}
+	return t
 }

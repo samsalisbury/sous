@@ -27,11 +27,11 @@ func main() {
 		},
 	}
 
-	// Add the CLI itself to the graph
-	g.Fill(c)
-
 	// Create a new Sous command
 	s := &cli.Sous{Version: Version}
+
+	// Add the CLI, and Sous itself to the graph
+	g.Fill(c, s)
 
 	// Invoke Sous command, and let it handle exiting.
 	c.InvokeAndExit(s, os.Args)
