@@ -26,10 +26,10 @@ See also our [rationale for building sous].
 | [Spinnaker] | automatic                            | VM image         | Cloud service                  |
 | [PaaSTA]    | declarative                          | free-form Docker | Mesos/Marathon                 |
 | [Nomad]     | declarative descs, imperative update | docker, VM, ...  | Nomad                          |
-| [Otto]      |                                      |                  |                                |
 | [Swarm]     | imperative                           | docker           | is a scheduler, or Mesos or... |
 | [Compose]   | describtive, no update(?)            | docker           | none - just docker             |
 | Sous        | declarative                          | buildpack Docker | Mesos/Singularity              |
+| [Otto]      |                                      |                  |                                |
 
 ## Spinnaker
 
@@ -107,13 +107,13 @@ with the Sous design principles.
 Packer abstracts over e.g. AWS setup vs. Dockerfiles to use a single
 configuration to build many different kinds of packaging.
 
-# Docker Swarm
+## Docker Swarm
 
 Docker API compatible docker scheduler. `docker up`s happen "somewhere" in the
 cluster. Provides scheduling or can be run on top of Mesos. More analogous to
 Singularity than to Sous.
 
-# Docker Compose
+## Docker Compose
 
 Take a description file of a multi-container app, boot up all the described
 containers. Recommended use cases are development and testing. Notably, I don't
@@ -123,6 +123,40 @@ cluster.
 
 Swarm + Compose does *resemble* a PaaS, but Swarm is early days and Compose is
 mostly targeted at development activities at the moment.
+
+# Observations
+
+## Context
+
+Sous comes into being at a particular time at OpenTable.
+We've already established expertise and dependencies on Mesos, Singularity and Docker.
+We've built FrontDoor and Discovery.
+These are very much the components from which a platform service is built from.
+As a result, many potential alternatives to Sous would involve replacing these known components.
+For instance, Kubernates would replace Mesos and Discovery at a bare minimum.
+Interestingly, Yelp appears to have found themselves in the same position when they embarked on PaaSTA,
+so at least we're in good company.
+
+## Problems Addressed Elsewhere
+
+There are a number of features of alternative tools that address problems in the platform service space.
+At a bare minimum, these features stand as an example of problems other engineers have encountered
+and determined were worth addressing.
+It may not be that Sous needs to also address these issues, but a principled decision _not_ to seem meet.
+
+Build pipelines are a integral part of the [Spinnaker].
+We needn't provide the same kind of configurability -
+in fact, that would be contrary to the consolidation goals of Sous.
+However, the idea of build pipelines is important and possibly useful.
+It may be worthwhile to consider a pipeline as we design the Sous build process.
+For instance, it may make sense to provide some kind of lifecycle hooks along the way.
+There's also the interesting concern of manual gating e.g. by QA staff.
+
+It may be that the Sous pipeline will be the default outlet of whatever pipelines development teams develop
+e.g. in TeamCity.
+
+Nomad treats environments and location as a top level concern -
+it seems worthwhile to examine that concern, and consider whether Sous is the right place to address it.
 
 [Spinnaker]: http://spinnaker.io
 [PaaSTA]: https://github.com/Yelp/paasta
