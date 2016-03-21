@@ -21,15 +21,15 @@ See also our [rationale for building sous].
 
 ## Feature Matrix
 
-| Tool | Deploy state | Packaging | Scheduling |
-| ---  | - | - | - |
-| [Spinnaker] | automatic | VM image | Cloud service |
-| [PaaSTA] | declarative | free-form Docker | Mesos/Marathon |
-| [Nomad] | declarative descs, imperative update | docker, VM, ... | Nomad |
-| [Otto] |
-| [Swarm] | imperative | docker | is a scheduler, or Mesos or... |
-| [Compose] | describtive, no update(?) | docker | none - just docker |
-| Sous | declarative | buildpack Docker | Mesos/Singularity |
+| Tool        | Deploy state                         | Packaging        | Scheduling                     |
+| ---         | -                                    | -                | -                              |
+| [Spinnaker] | automatic                            | VM image         | Cloud service                  |
+| [PaaSTA]    | declarative                          | free-form Docker | Mesos/Marathon                 |
+| [Nomad]     | declarative descs, imperative update | docker, VM, ...  | Nomad                          |
+| [Otto]      |                                      |                  |                                |
+| [Swarm]     | imperative                           | docker           | is a scheduler, or Mesos or... |
+| [Compose]   | describtive, no update(?)            | docker           | none - just docker             |
+| Sous        | declarative                          | buildpack Docker | Mesos/Singularity              |
 
 ## Spinnaker
 
