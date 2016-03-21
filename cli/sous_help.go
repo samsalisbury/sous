@@ -1,5 +1,7 @@
 package cli
 
+import "flag"
+
 type SousHelp struct {
 	Sous *Sous
 }
@@ -16,27 +18,60 @@ for detailed help with any command, use 'sous help <command>'
 func (sh *SousHelp) Help() *Help { return ParseHelp(sousHelpHelp) }
 
 func (sh *SousHelp) Execute(args []string, out, _ Output) Result {
-	commands := sh.Sous.Subcommands()
 	if len(args) == 0 {
-		out.Println(sh.Sous.Help().Usage(""), "\n")
-		out.Println("commands:")
-		out.Indent()
-		out.Table(commandTable(commands))
-		out.Outdent()
-		out.Println()
-		return Successf("sous version %s", sh.Sous.Version)
+		sh.printMainSousHelp(out)
+	} else if err := sh.printCommandHelp(out, args, "sous", sh.Sous); err != nil {
+		return err
 	}
-	name := args[0]
-	c, ok := commands[name]
-	if !ok {
-		return UsageErrorf(nil, "command %s does not exist, try `sous help`",
-			name)
-	}
-	return commandHelp(out, c)
+	return Successf("\nsous version %s", sh.Sous.Version)
 }
 
-func commandHelp(out Output, c Command) Result {
-	return Success()
+func (sh *SousHelp) printCommandHelp(out Output, args []string, name string, base HasSubcommands) ErrorResult {
+	subcommandName := args[0]
+	name = name + " " + subcommandName
+	args = args[1:]
+	commands := base.Subcommands()
+	fullName := name
+	c, ok := commands[subcommandName]
+	if !ok {
+		return UsageErrorf(nil, "command %q does not exist", name)
+	}
+	if len(args) != 0 {
+		if hasSubCommands, ok := c.(HasSubcommands); ok {
+			return sh.printCommandHelp(out, args, name, hasSubCommands)
+		}
+		return UsageErrorf(nil, "command %q does not exist", name)
+	}
+	help := c.Help()
+	out.Println(help.Usage(fullName))
+	out.Println()
+	out.Println(help.Long)
+	return nil
+}
+
+func (sh *SousHelp) printMainSousHelp(out Output) {
+	sh.printSubcommands(out, "sous", sh.Sous.Subcommands())
+	out.Println("\nglobal options:")
+	sh.printOptions(out, "sous", sh.Sous)
+}
+
+func (sh *SousHelp) printSubcommands(out Output, name string, cs Commands) {
+	out.Println(sh.Sous.Help().Usage(name))
+	out.Println("\ncommands:")
+	out.Indent()
+	defer out.Outdent()
+	out.Table(commandTable(cs))
+}
+
+func (sh *SousHelp) printOptions(out Output, name string, command Command) {
+	addsFlags, ok := command.(AddsFlags)
+	if !ok {
+		return
+	}
+	fs := flag.NewFlagSet(name, flag.ContinueOnError)
+	addsFlags.AddFlags(fs)
+	fs.SetOutput(out.Writer)
+	fs.PrintDefaults()
 }
 
 func commandTable(cs Commands) [][]string {

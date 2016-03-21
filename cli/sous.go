@@ -42,15 +42,13 @@ pull requests are welcome.
 func (*Sous) Help() *Help { return ParseHelp(sousHelp) }
 
 func (s *Sous) AddFlags(fs *flag.FlagSet) {
-	fs.BoolVar(&s.flags.Help, "-help", false,
-		"show help")
 	fs.BoolVar(&s.flags.Verbosity.Silent, "s", false,
 		"silent verbosity: silence all nonessential output")
 	fs.BoolVar(&s.flags.Verbosity.Quiet, "q", false,
 		"quiet verbosity: output only essential error messages")
 	fs.BoolVar(&s.flags.Verbosity.Loud, "v", false,
 		"loud verbosity: output extra info, including all shell commands")
-	fs.BoolVar(&s.flags.Verbosity.Debug, "debug", false,
+	fs.BoolVar(&s.flags.Verbosity.Debug, "d", false,
 		"debug level verbosity: output detailed logs of internal operations")
 }
 

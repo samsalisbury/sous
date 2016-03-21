@@ -27,7 +27,7 @@ func ParseHelp(s string) *Help {
 		hc.Short = pieces[0]
 	}
 	if len(pieces) > 1 {
-		hc.Args = strings.TrimPrefix(pieces[1], "args: ")
+		hc.Args = whitespace.Trim(strings.TrimPrefix(pieces[1], "args:"))
 	}
 	if len(pieces) == 3 {
 		hc.Long = pieces[2]
@@ -36,8 +36,5 @@ func ParseHelp(s string) *Help {
 }
 
 func (c *Help) Usage(name string) string {
-	if name != "" {
-		name = name + " "
-	}
-	return fmt.Sprintf("usage: sous %s[options] %s", name, c.Args)
+	return fmt.Sprintf("usage: %s %s", name, c.Args)
 }

@@ -154,8 +154,8 @@ func (c *CLI) invoke(base Command, args []string, ff []func(*flag.FlagSet)) Resu
 		}
 		out := Output{Writer: c.OutWriter}
 		errout := Output{Writer: c.ErrWriter}
-		out.SetIndentStyle("\t")
-		errout.SetIndentStyle("\t")
+		out.SetIndentStyle("  ")
+		errout.SetIndentStyle("  ")
 		return command.Execute(args, out, errout)
 	}
 	// If we get here, this command is not configured correctly and cannot run.
