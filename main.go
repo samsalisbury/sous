@@ -12,34 +12,32 @@ func main() {
 	panicking := true
 	defer handlePanic(&panicking)
 
-	// Create the default CLI dependency graph.
-	g, err := cli.BuildGraph()
-	if err != nil {
-		die(err)
-	}
+	var g *cli.SousCLIGraph
 
 	// Create a CLI for Sous
 	c := &cli.CLI{
 		OutWriter: os.Stdout,
 		ErrWriter: os.Stderr,
-		Hooks: cli.Hooks{
-			// Before Execute is called on any command, inject it with values
-			// from the graph.
-			PreExecute: func(c cli.Command) error { return g.Inject(c) },
-		},
 		// HelpCommand is shown to the user if they type something that looks
 		// like they want help, but which isn't recognised by Sous properly. It
 		// uses the standard flag.ErrHelp value to decide whether or not to show
 		// this.
 		HelpCommand: os.Args[0] + " help",
+		// Before Execute is called on any command, inject it with values
+		// from the graph.
+		Hooks: cli.Hooks{
+			PreExecute: func(c cli.Command) error { return g.Inject(c) },
+		},
 	}
 
 	// Create a new Sous command
 	s := &cli.Sous{Version: Version}
 
-	// Add the CLI, and Sous itself to the graph, so they can be injected into
-	// the commands.
-	g.Fill(c, s)
+	// Create the CLI dependency graph.
+	g, err := cli.BuildGraph(c, s)
+	if err != nil {
+		die(err)
+	}
 
 	// Invoke Sous command, and let it handle exiting.
 	result := c.Invoke(s, os.Args)

@@ -13,6 +13,16 @@ import (
 )
 
 type (
+	// Out is an output used for real data a Command returns. This should only
+	// be used when a command needs to write directly to stdout, using the
+	// formatting options that come with an output. Usually, you should use a
+	// SuccessResult with Data to return data.
+	Out struct{ Output }
+	// ErrOut is an output used for logging from a Command. This should only be
+	// used when a Command needs to write a lot of data to stderr, using the
+	// formatting options that come with and Output. Usually you should use and
+	// ErrorResult to return error messages.
+	ErrOut struct{ Output }
 	// SousCLIGraph is a dependency injector used to flesh out Sous commands
 	// with their dependencies.
 	SousCLIGraph struct{ *psyringe.Psyringe }
@@ -41,9 +51,12 @@ type (
 
 // buildGraph builds the dependency injection graph, used to populate commands
 // invoked by the user.
-func BuildGraph() (SousCLIGraph, error) {
-	g := SousCLIGraph{psyringe.New()}
+func BuildGraph(c *CLI, s *Sous) (*SousCLIGraph, error) {
+	g := &SousCLIGraph{psyringe.New()}
 	return g, g.Fill(
+		c, s,
+		newOut,
+		newErrOut,
 		newLocalUser,
 		newLocalSousConfig,
 		newLocalWorkDir,
@@ -53,6 +66,14 @@ func BuildGraph() (SousCLIGraph, error) {
 		newLocalGitRepo,
 		newLocalGitContext,
 	)
+}
+
+func newOut(c *CLI) Out {
+	return Out{c.out}
+}
+
+func newErrOut(c *CLI) ErrOut {
+	return ErrOut{c.err}
 }
 
 func newLocalWorkDir() (LocalWorkDir, error) {

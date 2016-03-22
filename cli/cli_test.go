@@ -9,7 +9,7 @@ import (
 type TestCommand struct{}
 
 func (tc *TestCommand) Help() *Help { return ParseHelp("") }
-func (tc *TestCommand) Execute(args []string, out, errout Output) Result {
+func (tc *TestCommand) Execute(args []string) Result {
 	return Success("Congratulations, caller:", args)
 }
 

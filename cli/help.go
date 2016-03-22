@@ -7,10 +7,10 @@ import (
 	"github.com/opentable/sous/util/whitespace"
 )
 
-type Help struct{ Short, Args, Long string }
+type Help struct{ Short, Desc, Args, Long string }
 
 func ParseHelp(s string) *Help {
-	chunks := strings.SplitN(s, "\n\n", 3)
+	chunks := strings.SplitN(s, "\n\n", 4)
 	pieces := []string{}
 	for _, c := range chunks {
 		c = whitespace.Trim(c)
@@ -20,6 +20,7 @@ func ParseHelp(s string) *Help {
 	}
 	hc := &Help{
 		"error: no short description defined",
+		"error: no description defined",
 		"",
 		"error: no help text defined",
 	}
@@ -27,7 +28,10 @@ func ParseHelp(s string) *Help {
 		hc.Short = pieces[0]
 	}
 	if len(pieces) > 1 {
-		hc.Args = whitespace.Trim(strings.TrimPrefix(pieces[1], "args:"))
+		hc.Desc = pieces[1]
+	}
+	if len(pieces) > 2 {
+		hc.Args = whitespace.Trim(strings.TrimPrefix(pieces[2], "args:"))
 	}
 	if len(pieces) == 3 {
 		hc.Long = pieces[2]

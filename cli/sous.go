@@ -20,11 +20,13 @@ type Sous struct {
 }
 
 const sousHelp = `
-the main sous command
+invoke sous
+
+sous is a tool to help speed up the build/test/deploy cycle at your organisation
 
 args: <command>
 
-sous is a tool for automating the boring bits of the build/test/deploy cycle. It
+sous helps by automating the boring bits of the build/test/deploy cycle. It
 provides commands in this CLI for performing all the actions the sous server is
 capable of, like building container images, testing them, and instigating
 deployments.
@@ -52,7 +54,7 @@ func (s *Sous) AddFlags(fs *flag.FlagSet) {
 		"debug level verbosity: output detailed logs of internal operations")
 }
 
-func (*Sous) Execute(args []string, out, errout Output) Result {
+func (*Sous) Execute(args []string) Result {
 	return UsageError{
 		Message: "usage: sous [options] command",
 		Tip:     "try `sous help` for a list of commands",

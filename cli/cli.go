@@ -123,7 +123,7 @@ func (c *CLI) handleErrorResult(e ErrorResult) {
 // ListSubcommands returns a slice of strings with the names of each subcommand
 // as they need to be entered by the user, arranged alphabetically.
 func (c *CLI) ListSubcommands(base Command) []string {
-	hs, ok := base.(HasSubcommands)
+	hs, ok := base.(Subcommander)
 	if !ok {
 		return nil
 	}
@@ -180,7 +180,7 @@ func (c *CLI) invoke(base Command, args []string, ff []func(*flag.FlagSet)) Resu
 		args = fs.Args()
 	}
 	// If this command has subcommands, first try to descend into one of them.
-	if command, ok := base.(HasSubcommands); ok && len(args) != 0 {
+	if command, ok := base.(Subcommander); ok && len(args) != 0 {
 		subcommandName := args[0]
 		subcommands := command.Subcommands()
 		if subcommand, ok := subcommands[subcommandName]; ok {
@@ -188,12 +188,12 @@ func (c *CLI) invoke(base Command, args []string, ff []func(*flag.FlagSet)) Resu
 		}
 	}
 	// If the command can itself be executed, do that now.
-	if command, ok := base.(CanExecute); ok {
+	if command, ok := base.(Executor); ok {
+		c.init()
 		if err := c.runHook(c.Hooks.PreExecute, base); err != nil {
 			return EnsureErrorResult(err)
 		}
-		c.init()
-		return command.Execute(args, c.out, c.err)
+		return command.Execute(args)
 	}
 	// If we get here, this command is not configured correctly and cannot run.
 	m := fmt.Sprintf("command %q cannot execute and has no subcommands", name)

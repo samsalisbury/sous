@@ -24,11 +24,11 @@ type (
 		Help() *Help
 	}
 	// CanExecute means the command can itself be executed to do something.
-	CanExecute interface {
-		Execute(args []string, o, e Output) Result
+	Executor interface {
+		Execute(args []string) Result
 	}
 	// HasSubcommands means this command has subcommands.
-	HasSubcommands interface {
+	Subcommander interface {
 		// Subcommands returns a map of command names to Commands.
 		Subcommands() Commands
 	}
