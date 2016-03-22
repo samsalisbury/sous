@@ -12,26 +12,28 @@ type (
 	// CLI encapsulates a command line interface, and knows how to execute
 	// commands and their subcommands and parse flags.
 	CLI struct {
-		// OutWriter will be sent the output of the CLI. This is typically set
-		// to os.Stdout
+		// OutWriter will be sent the output of the CLI. If left nil, defaults
+		// to os.Stdout.
 		OutWriter,
-		// ErrWriter will be sent all log messages from the CLI. This is
-		// typically set to os.Stderr
+		// ErrWriter will be sent all log messages from the CLI. If left nil,
+		// defaults to os.Stderr
 		ErrWriter io.Writer
-		// Out is an Output wired up to OutWriter
-		Out,
-		// Err is an Output wired up to ErrWriter
-		Err Output
 		// Env is a map of environment variable names to their values.
 		Env map[string]string
 		// Hooks allow you to perform pre and post processing on Commands at
 		// various points in their lifecycle.
 		Hooks Hooks
-		// HelpCommand tells the user how to get help.
+		// HelpCommand tells the user how to get help. It should be a command
+		// they can type in to get help.
 		HelpCommand string
-		// IndentString is the default indent to use for command output.
-		// Defaults to two spaces, if left empty.
+		// IndentString is the default indent to use for indenting command
+		// output when Output.Indent() is called inside a command. If left
+		// empty, defaults to DefaultIndentString.
 		IndentString string
+		// out is an Output wired up to OutWriter
+		out,
+		// err is an Output wired up to ErrWriter
+		err Output
 	}
 	// Hooks is a collection of command hooks. If a hook returns a non-nil error
 	// it cancels execution and the error is displayed to the user.
@@ -42,8 +44,29 @@ type (
 )
 
 const (
-	defaultIndentString = "  "
+	// DefaultIndentString is the default indent to use when writing
+	// procedurally to the CLI outputs. It is set to two consecutive spaces,
+	// matching default output from the flag package.
+	DefaultIndentString = "  "
 )
+
+// init populates CLI with default values where none have been set already.
+func (c *CLI) init() {
+	if c.OutWriter == nil {
+		c.OutWriter = os.Stdout
+	}
+	if c.ErrWriter == nil {
+		c.ErrWriter = os.Stderr
+	}
+	c.out = NewOutput(c.OutWriter)
+	c.err = NewOutput(c.ErrWriter)
+	indentString := DefaultIndentString
+	if c.IndentString != "" {
+		indentString = c.IndentString
+	}
+	c.out.SetIndentStyle(indentString)
+	c.err.SetIndentStyle(indentString)
+}
 
 // Invoke begins invoking the CLI starting with the base command, and handles
 // all command output. It then returns the result for further processing.
@@ -169,15 +192,8 @@ func (c *CLI) invoke(base Command, args []string, ff []func(*flag.FlagSet)) Resu
 		if err := c.runHook(c.Hooks.PreExecute, base); err != nil {
 			return EnsureErrorResult(err)
 		}
-		out := Output{Writer: c.OutWriter}
-		errout := Output{Writer: c.ErrWriter}
-		indentString := c.IndentString
-		if indentString == "" {
-			indentString = defaultIndentString
-		}
-		out.SetIndentStyle(indentString)
-		errout.SetIndentStyle(indentString)
-		return command.Execute(args, out, errout)
+		c.init()
+		return command.Execute(args, c.out, c.err)
 	}
 	// If we get here, this command is not configured correctly and cannot run.
 	m := fmt.Sprintf("command %q cannot execute and has no subcommands", name)

@@ -3,7 +3,10 @@ package cli
 import (
 	"fmt"
 	"io"
+	"os"
 	"strings"
+
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 type (
@@ -12,11 +15,11 @@ type (
 	// emit tables. It is designed to be used sequentially, writing and changing
 	// context on each call to one of its methods.
 	Output struct {
-		// Writer is the io.Writer that this output writes to.
-		Writer io.Writer
 		// Errors contains any errors this output has encountered whilst
 		// writing to Writer.
 		Errors []error
+		// Writer is the io.Writer that this output writes to.
+		writer io.Writer
 		// indentSize is the number of times to repeat IndentStyle in the
 		// current context.
 		indentSize int
@@ -25,11 +28,29 @@ type (
 		indentStyle string
 		// indent is the eagerly managed current indent string
 		indent string
+		// isTerm reflects whether or not this output is connected to a terminal.
+		isTerm bool
 	}
 )
 
+func isTerm(w io.Writer) bool {
+	file, isFile := w.(*os.File)
+	return isFile && terminal.IsTerminal(int(file.Fd()))
+}
+
+func NewOutput(w io.Writer) Output {
+	return Output{
+		writer: w,
+		isTerm: isTerm(w),
+	}
+}
+
+func (o *Output) Writer() io.Writer {
+	return o.writer
+}
+
 func (o *Output) Write(b []byte) {
-	n, err := o.Writer.Write(b)
+	n, err := o.writer.Write(b)
 	if err != nil {
 		o.Errors = append(o.Errors, err)
 	}

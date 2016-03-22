@@ -70,7 +70,7 @@ func (sh *SousHelp) printOptions(out Output, name string, command Command) {
 	}
 	fs := flag.NewFlagSet(name, flag.ContinueOnError)
 	addsFlags.AddFlags(fs)
-	fs.SetOutput(out.Writer)
+	fs.SetOutput(out.writer)
 	fs.PrintDefaults()
 }
 
