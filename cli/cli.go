@@ -27,6 +27,11 @@ type (
 		// Hooks allow you to perform pre and post processing on Commands at
 		// various points in their lifecycle.
 		Hooks Hooks
+		// HelpCommand tells the user how to get help.
+		HelpCommand string
+		// IndentString is the default indent to use for command output.
+		// Defaults to two spaces, if left empty.
+		IndentString string
 	}
 	// Hooks is a collection of command hooks. If a hook returns a non-nil error
 	// it cancels execution and the error is displayed to the user.
@@ -34,6 +39,10 @@ type (
 		// PreExecute is run on a command before it executes.
 		PreExecute func(Command) error
 	}
+)
+
+const (
+	defaultIndentString = "  "
 )
 
 // Invoke begins invoking the CLI starting with the base command, and handles
@@ -127,6 +136,11 @@ func (c *CLI) invoke(base Command, args []string, ff []func(*flag.FlagSet)) Resu
 		ff = append(ff, command.AddFlags)
 		// make a flag.FlagSet named for this command.
 		fs := flag.NewFlagSet(name, flag.ContinueOnError)
+		devNull, err := os.Open(os.DevNull)
+		if err != nil {
+			return OSError{Err: err}
+		}
+		fs.SetOutput(devNull)
 		// add own and forwarded flags to the flagset, note that it will panic
 		// if multiple flags with the same name are added.
 		for _, addFlags := range ff {
@@ -134,6 +148,9 @@ func (c *CLI) invoke(base Command, args []string, ff []func(*flag.FlagSet)) Resu
 		}
 		// parse the entire flagset for this command
 		if err := fs.Parse(args); err != nil {
+			if err == flag.ErrHelp {
+				return UsageErrorf(nil, "for help, use `%s`", c.HelpCommand)
+			}
 			return UsageError{Message: err.Error()}
 		}
 		// get the remaining args
@@ -154,8 +171,12 @@ func (c *CLI) invoke(base Command, args []string, ff []func(*flag.FlagSet)) Resu
 		}
 		out := Output{Writer: c.OutWriter}
 		errout := Output{Writer: c.ErrWriter}
-		out.SetIndentStyle("  ")
-		errout.SetIndentStyle("  ")
+		indentString := c.IndentString
+		if indentString == "" {
+			indentString = defaultIndentString
+		}
+		out.SetIndentStyle(indentString)
+		errout.SetIndentStyle(indentString)
 		return command.Execute(args, out, errout)
 	}
 	// If we get here, this command is not configured correctly and cannot run.

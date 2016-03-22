@@ -25,6 +25,7 @@ func main() {
 		Hooks: cli.Hooks{
 			PreExecute: func(c cli.Command) error { return g.Inject(c) },
 		},
+		HelpCommand: "sous help",
 	}
 
 	// Create a new Sous command
