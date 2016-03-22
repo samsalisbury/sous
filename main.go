@@ -9,53 +9,60 @@ import (
 
 func main() {
 
-	defer handlePanic()
+	panicking := true
+	defer handlePanic(&panicking)
 
-	// Create the dependency graph.
+	// Create the default CLI dependency graph.
 	g, err := cli.BuildGraph()
 	if err != nil {
 		die(err)
 	}
 
-	// Create a CLI
+	// Create a CLI for Sous
 	c := &cli.CLI{
 		OutWriter: os.Stdout,
 		ErrWriter: os.Stderr,
-		Env:       map[string]string{},
 		Hooks: cli.Hooks{
+			// Before Execute is called on any command, inject it with values
+			// from the graph.
 			PreExecute: func(c cli.Command) error { return g.Inject(c) },
 		},
-		HelpCommand: "sous help",
+		// HelpCommand is shown to the user if they type something that looks
+		// like they want help, but which isn't recognised by Sous properly. It
+		// uses the standard flag.ErrHelp value to decide whether or not to show
+		// this.
+		HelpCommand: os.Args[0] + " help",
 	}
 
 	// Create a new Sous command
 	s := &cli.Sous{Version: Version}
 
-	// Add the CLI, and Sous itself to the graph
+	// Add the CLI, and Sous itself to the graph, so they can be injected into
+	// the commands.
 	g.Fill(c, s)
 
 	// Invoke Sous command, and let it handle exiting.
-	c.InvokeAndExit(s, os.Args)
+	result := c.Invoke(s, os.Args)
+	panicking = false
+	os.Exit(result.ExitCode())
 }
 
+// die is used to exit during very early initialisation, before sous itself only
+// can be used to handle exiting.
 func die(v ...interface{}) {
 	fmt.Fprintln(os.Stderr, v...)
 	os.Exit(70)
 }
 
 // handlePanic gives us one last chance to send a message to the user in case a
-// panic leaks right up to the top of the program.
-//
-// To see the real panic message, disable panic handling by setting DEBUG=YES.
-func handlePanic() {
-	if os.Getenv("DEBUG") == "YES" {
+// panic leaks right up to the top of the program. You can disable this message
+// for brevity of output by setting DEBUG=YES
+func handlePanic(panicking *bool) {
+	if !*panicking || os.Getenv("DEBUG") == "YES" {
 		return
 	}
-	if r := recover(); r != nil {
-		fmt.Println(panicMessage)
-		fmt.Printf("Sous Version: %s\n\n", Version)
-		panic(r)
-	}
+	fmt.Println(panicMessage)
+	fmt.Printf("Sous Version: %s\n\n", Version)
 }
 
 const panicMessage = `
