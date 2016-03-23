@@ -16,14 +16,11 @@ func main() {
 	var g *cli.SousCLIGraph
 
 	stdout := cmdr.NewOutput(os.Stdout)
-	stderr := cmdr.NewOutput(os.Stderr, func(o *cmdr.Output) {
-		o.Style.Add(cmdr.Red)
-	})
+	stderr := cmdr.NewOutput(os.Stderr)
 
 	// Create a CLI for Sous
 	c := &cmdr.CLI{
-		Out: stdout,
-		Err: stderr,
+		Out: stdout, Err: stderr,
 		// HelpCommand is shown to the user if they type something that looks
 		// like they want help, but which isn't recognised by Sous properly. It
 		// uses the standard flag.ErrHelp value to decide whether or not to show

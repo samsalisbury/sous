@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"sort"
+
+	"github.com/opentable/sous/util/cmdr/style"
 )
 
 type (
@@ -80,12 +82,6 @@ func (c *CLI) InvokeAndExit(base Command, args []string) {
 	os.Exit(c.Invoke(base, args).ExitCode())
 }
 
-func (c *CLI) handleSuccessResult(s SuccessResult) {
-	if len(s.Data) != 0 {
-		c.Out.Write(s.Data)
-	}
-}
-
 // runHook runs the hook if it's not nil, and returns the hook's error.
 func (c *CLI) runHook(hook func(Command) error, command Command) error {
 	if hook == nil {
@@ -94,11 +90,25 @@ func (c *CLI) runHook(hook func(Command) error, command Command) error {
 	return hook(command)
 }
 
+func (c *CLI) handleSuccessResult(s SuccessResult) {
+	if len(s.Data) != 0 {
+		c.Out.Write(s.Data)
+	}
+}
+
 func (c *CLI) handleErrorResult(e ErrorResult) {
 	c.Err.Println(e)
-	if tip := e.UserTip(); len(tip) != 0 {
-		c.Err.Println(tip)
+	c.printTip(e.UserTip())
+}
+
+func (c *CLI) printTip(tip string) {
+	if tip == "" {
+		return
 	}
+	c.Err.PushStyle(style.Style{style.Blue, style.Bold})
+	c.Err.Printf("Tip: ")
+	c.Err.PopStyle()
+	c.Err.Printfln(tip)
 }
 
 // ListSubcommands returns a slice of strings with the names of each subcommand

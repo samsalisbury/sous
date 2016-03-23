@@ -7,6 +7,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/opentable/sous/util/cmdr/style"
+
 	"golang.org/x/crypto/ssh/terminal"
 )
 
@@ -21,7 +23,8 @@ type (
 		Errors []error
 		// Style is the default style for this output. Note that styles are only
 		// used when the output is connected to a terminal.
-		Style Style
+		Style      style.Style
+		styleStack []style.Style
 		// Writer is the io.Writer that this output writes to.
 		writer io.Writer
 		// indentSize is the number of times to repeat IndentStyle in the
@@ -48,7 +51,7 @@ func isTerm(w io.Writer) bool {
 // You can use this to create and configure an output in a single statement.
 func NewOutput(w io.Writer, configFunc ...func(*Output)) *Output {
 	out := &Output{
-		Style:  defaultStyle,
+		Style:  style.DefaultStyle(),
 		writer: w,
 		isTerm: isTerm(w),
 	}
@@ -56,6 +59,21 @@ func NewOutput(w io.Writer, configFunc ...func(*Output)) *Output {
 		f(out)
 	}
 	return out
+}
+
+func (o *Output) PushStyle(s style.Style) {
+	o.styleStack = append(o.styleStack, o.Style)
+	o.Style = s
+}
+
+func (o *Output) PopStyle() {
+	l := len(o.styleStack)
+	if l == 0 {
+		return
+	}
+	i := l - 1
+	o.Style = o.styleStack[i]
+	o.styleStack = o.styleStack[:i]
 }
 
 func (o *Output) Write(b []byte) (int, error) {
@@ -87,6 +105,10 @@ func (o *Output) Println(v ...interface{}) {
 // Printfln is similar to Println, except it takes a format string.
 func (o *Output) Printfln(format string, v ...interface{}) {
 	o.Println(fmt.Sprintf(format, v...))
+}
+
+func (o *Output) Printf(format string, v ...interface{}) {
+	fmt.Fprintf(o, format, v...)
 }
 
 func (o *Output) SetIndentStyle(s string) {
