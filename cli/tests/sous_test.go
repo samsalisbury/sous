@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/opentable/sous/cli"
+	"github.com/opentable/sous/util/cmdr"
 	"github.com/samsalisbury/psyringe"
 	"github.com/samsalisbury/semv"
 )
@@ -27,7 +28,7 @@ func TestSousVersion(t *testing.T) {
 
 	term := NewTerminal(t, &cli.Sous{})
 
-	term.CLI.Hooks.PreExecute = func(c cli.Command) error {
+	term.CLI.Hooks.PreExecute = func(c cmdr.Command) error {
 		g := psyringe.New()
 		g.Fill(
 			&cli.Sous{Version: semv.MustParse("1.0.0-test")},

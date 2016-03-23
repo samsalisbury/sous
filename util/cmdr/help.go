@@ -1,4 +1,4 @@
-package cli
+package cmdr
 
 import (
 	"fmt"
@@ -7,7 +7,9 @@ import (
 	"github.com/opentable/sous/util/whitespace"
 )
 
-type Help struct{ Short, Desc, Args, Long string }
+type (
+	Help struct{ Short, Desc, Args, Long string }
+)
 
 func ParseHelp(s string) *Help {
 	chunks := strings.SplitN(s, "\n\n", 4)

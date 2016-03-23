@@ -1,10 +1,11 @@
-package cli
+package cmdr
 
 import (
 	"fmt"
 	"io"
 	"os"
 	"strings"
+	"unicode/utf8"
 
 	"golang.org/x/crypto/ssh/terminal"
 )
@@ -18,6 +19,9 @@ type (
 		// Errors contains any errors this output has encountered whilst
 		// writing to Writer.
 		Errors []error
+		// Style is the default style for this output. Note that styles are only
+		// used when the output is connected to a terminal.
+		Style Style
 		// Writer is the io.Writer that this output writes to.
 		writer io.Writer
 		// indentSize is the number of times to repeat IndentStyle in the
@@ -28,7 +32,8 @@ type (
 		indentStyle string
 		// indent is the eagerly managed current indent string
 		indent string
-		// isTerm reflects whether or not this output is connected to a terminal.
+		// isTerm reflects whether or not this output is connected to a
+		// terminal.
 		isTerm bool
 	}
 )
@@ -38,18 +43,26 @@ func isTerm(w io.Writer) bool {
 	return isFile && terminal.IsTerminal(int(file.Fd()))
 }
 
-func NewOutput(w io.Writer) Output {
-	return Output{
+// NewOutput creates a new Output, you may optionally pass any number of
+// functions, each of which will be called on the Output before it is returned.
+// You can use this to create and configure an output in a single statement.
+func NewOutput(w io.Writer, configFunc ...func(*Output)) *Output {
+	out := &Output{
+		Style:  defaultStyle,
 		writer: w,
 		isTerm: isTerm(w),
 	}
+	for _, f := range configFunc {
+		f(out)
+	}
+	return out
 }
 
-func (o *Output) Writer() io.Writer {
-	return o.writer
-}
-
-func (o *Output) Write(b []byte) {
+func (o *Output) Write(b []byte) (int, error) {
+	if o.isTerm && utf8.Valid(b) {
+		fmt.Fprintf(o.writer, "\033[%sm", o.Style)
+		defer fmt.Fprintf(o.writer, "\033[0m")
+	}
 	n, err := o.writer.Write(b)
 	if err != nil {
 		o.Errors = append(o.Errors, err)
@@ -58,17 +71,20 @@ func (o *Output) Write(b []byte) {
 		e := fmt.Errorf("wrote only %d bytes of %d", n, len(b))
 		o.Errors = append(o.Errors, e)
 	}
+	return n, err
 }
 
 func (o *Output) WriteString(s string) {
 	o.Write([]byte(s))
 }
 
+// Println prints a line, respecting current indentation.
 func (o *Output) Println(v ...interface{}) {
 	out := strings.Replace(fmt.Sprint(v...), "\n", "\n"+o.indent, -1)
 	o.WriteString(o.indent + out + "\n")
 }
 
+// Printfln is similar to Println, except it takes a format string.
 func (o *Output) Printfln(format string, v ...interface{}) {
 	o.Println(fmt.Sprintf(format, v...))
 }

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/opentable/sous/cli"
+	"github.com/opentable/sous/util/cmdr"
 	"github.com/xrash/smetrics"
 )
 
@@ -15,28 +15,28 @@ type (
 	// Terminal is a test harness for the CLI, providing easy
 	// introspection into its inputs and outputs.
 	Terminal struct {
-		Base cli.Command
-		*cli.CLI
-		Stdout, Stderr, Combined Output
+		Base cmdr.Command
+		*cmdr.CLI
+		Stdout, Stderr, Combined TestOutput
 		History                  []string
 		T                        *testing.T
 	}
 	// Output allows inspection of output streams from the Terminal.
-	Output struct {
+	TestOutput struct {
 		Name   string
 		Buffer *bytes.Buffer
 		T      *testing.T
 	}
 )
 
-func NewTerminal(t *testing.T, base cli.Command) *Terminal {
-	out := Output{"stdout", &bytes.Buffer{}, t}
-	err := Output{"stderr", &bytes.Buffer{}, t}
-	combined := Output{"combined output", &bytes.Buffer{}, t}
+func NewTerminal(t *testing.T, base cmdr.Command) *Terminal {
+	out := TestOutput{"stdout", &bytes.Buffer{}, t}
+	err := TestOutput{"stderr", &bytes.Buffer{}, t}
+	combined := TestOutput{"combined output", &bytes.Buffer{}, t}
 	return &Terminal{
-		base, &cli.CLI{
-			OutWriter: io.MultiWriter(out.Buffer, combined.Buffer),
-			ErrWriter: io.MultiWriter(err.Buffer, combined.Buffer),
+		base, &cmdr.CLI{
+			Out: cmdr.NewOutput(io.MultiWriter(out.Buffer, combined.Buffer)),
+			Err: cmdr.NewOutput(io.MultiWriter(err.Buffer, combined.Buffer)),
 		},
 		out, err, combined, []string{}, t,
 	}
@@ -73,11 +73,11 @@ func (t *Terminal) PrintFailureSummary() {
 	}
 }
 
-func (out Output) String() string { return out.Buffer.String() }
+func (out TestOutput) String() string { return out.Buffer.String() }
 
-func (out Output) Lines() []string { return strings.Split(out.String(), "\n") }
+func (out TestOutput) Lines() []string { return strings.Split(out.String(), "\n") }
 
-func (out Output) LinesContaining(s string) []string {
+func (out TestOutput) LinesContaining(s string) []string {
 	lines := []string{}
 	for _, l := range out.Lines() {
 		if strings.Contains(l, s) {
@@ -87,11 +87,11 @@ func (out Output) LinesContaining(s string) []string {
 	return lines
 }
 
-func (out Output) NumLines() int {
+func (out TestOutput) NumLines() int {
 	return strings.Count(out.String(), "\n")
 }
 
-func (out Output) HasLineMatching(s string) bool {
+func (out TestOutput) HasLineMatching(s string) bool {
 	for _, l := range out.Lines() {
 		if l == s {
 			return true
@@ -100,7 +100,7 @@ func (out Output) HasLineMatching(s string) bool {
 	return false
 }
 
-func (out Output) ShouldHaveExactLine(s string) {
+func (out TestOutput) ShouldHaveExactLine(s string) {
 	if out.HasLineMatching(s) {
 		return
 	}
@@ -108,7 +108,7 @@ func (out Output) ShouldHaveExactLine(s string) {
 	out.T.Errorf("expected %s to have exact line %q%s", out.Name, s, hint)
 }
 
-func (out Output) ShouldHaveLineContaining(s string) {
+func (out TestOutput) ShouldHaveLineContaining(s string) {
 	for _, line := range out.Lines() {
 		if strings.Contains(line, s) {
 			return
@@ -118,7 +118,7 @@ func (out Output) ShouldHaveLineContaining(s string) {
 	out.T.Errorf("expected %s to have line containing %q%s", out.Name, s, hint)
 }
 
-func (out Output) ShouldHaveNumLines(expected int) {
+func (out TestOutput) ShouldHaveNumLines(expected int) {
 	actual := out.NumLines()
 	if actual == expected {
 		return
@@ -129,7 +129,7 @@ func (out Output) ShouldHaveNumLines(expected int) {
 	}
 }
 
-func (out Output) similarLineHint(s string) string {
+func (out TestOutput) similarLineHint(s string) string {
 	similar, i, goodMatch := out.MostSimilarLineTo(s)
 	if !goodMatch {
 		return ""
@@ -143,7 +143,7 @@ func (out Output) similarLineHint(s string) string {
 // string, if any of them have a JaroWinkler score >0.1. It returns the string
 // (or empty), the index of that line, and a bool indicating if the score was
 // greater than 0.1
-func (out Output) MostSimilarLineTo(s string) (
+func (out TestOutput) MostSimilarLineTo(s string) (
 	winner string, index int, goodMatch bool) {
 	index = -1
 	if s == "" {

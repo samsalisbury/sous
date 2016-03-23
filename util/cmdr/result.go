@@ -1,4 +1,4 @@
-package cli
+package cmdr
 
 import (
 	"encoding/base64"

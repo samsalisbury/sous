@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/opentable/sous/cli"
+	"github.com/opentable/sous/util/cmdr"
 )
 
 func main() {
@@ -14,10 +15,15 @@ func main() {
 
 	var g *cli.SousCLIGraph
 
+	stdout := cmdr.NewOutput(os.Stdout)
+	stderr := cmdr.NewOutput(os.Stderr, func(o *cmdr.Output) {
+		o.Style.Add(cmdr.Red)
+	})
+
 	// Create a CLI for Sous
-	c := &cli.CLI{
-		OutWriter: os.Stdout,
-		ErrWriter: os.Stderr,
+	c := &cmdr.CLI{
+		Out: stdout,
+		Err: stderr,
 		// HelpCommand is shown to the user if they type something that looks
 		// like they want help, but which isn't recognised by Sous properly. It
 		// uses the standard flag.ErrHelp value to decide whether or not to show
@@ -25,8 +31,8 @@ func main() {
 		HelpCommand: os.Args[0] + " help",
 		// Before Execute is called on any command, inject it with values
 		// from the graph.
-		Hooks: cli.Hooks{
-			PreExecute: func(c cli.Command) error { return g.Inject(c) },
+		Hooks: cmdr.Hooks{
+			PreExecute: func(c cmdr.Command) error { return g.Inject(c) },
 		},
 	}
 

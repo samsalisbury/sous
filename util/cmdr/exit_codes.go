@@ -1,4 +1,4 @@
-package cli
+package cmdr
 
 type ExitCode int
 

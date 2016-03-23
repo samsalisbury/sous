@@ -1,4 +1,4 @@
-package cli
+package cmdr
 
 import (
 	"bytes"
@@ -19,11 +19,11 @@ func TestCli(t *testing.T) {
 	errBuf := &bytes.Buffer{}
 
 	c := &CLI{
-		OutWriter: outBuf,
-		ErrWriter: errBuf,
+		Out: NewOutput(outBuf),
+		Err: NewOutput(errBuf),
 	}
 
-	args := makeArgs("sous")
+	args := makeArgs("a-command")
 
 	result := c.Invoke(&TestCommand{}, args)
 

@@ -1,10 +1,14 @@
 package cli
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/opentable/sous/util/cmdr"
+)
 
 func TestBuildGraph(t *testing.T) {
 
-	g, err := BuildGraph(&CLI{}, &Sous{})
+	g, err := BuildGraph(&cmdr.CLI{}, &Sous{})
 	if err != nil {
 		t.Fatalf("unexpected error: %s", err)
 	}

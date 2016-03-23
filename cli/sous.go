@@ -3,6 +3,7 @@ package cli
 import (
 	"flag"
 
+	"github.com/opentable/sous/util/cmdr"
 	"github.com/samsalisbury/semv"
 )
 
@@ -41,7 +42,7 @@ Please report any issue with sous to https://github.com/opentable/sous/issues
 pull requests are welcome.
 `
 
-func (*Sous) Help() *Help { return ParseHelp(sousHelp) }
+func (*Sous) Help() *cmdr.Help { return cmdr.ParseHelp(sousHelp) }
 
 func (s *Sous) AddFlags(fs *flag.FlagSet) {
 	fs.BoolVar(&s.flags.Verbosity.Silent, "s", false,
@@ -54,32 +55,33 @@ func (s *Sous) AddFlags(fs *flag.FlagSet) {
 		"debug level verbosity: output detailed logs of internal operations")
 }
 
-func (*Sous) Execute(args []string) Result {
-	return UsageError{
+func (*Sous) Execute(args []string) cmdr.Result {
+	return cmdr.UsageErr{
 		Message: "usage: sous [options] command",
 		Tip:     "try `sous help` for a list of commands",
 	}
 }
 
-func (Sous) Subcommands() Commands {
-	return Commands{
+func (Sous) Subcommands() cmdr.Commands {
+	return cmdr.Commands{
 		"help":    &SousHelp{},
 		"version": &SousVersion{},
+		"build":   &SousBuild{},
 	}
 }
 
-func (c *Sous) Verbosity() Verbosity {
+func (c *Sous) Verbosity() cmdr.Verbosity {
 	if c.flags.Verbosity.Debug {
-		return Debug
+		return cmdr.Debug
 	}
 	if c.flags.Verbosity.Loud {
-		return Loud
+		return cmdr.Loud
 	}
 	if c.flags.Verbosity.Quiet {
-		return Quiet
+		return cmdr.Quiet
 	}
 	if c.flags.Verbosity.Silent {
-		return Silent
+		return cmdr.Silent
 	}
-	return Normal
+	return cmdr.Normal
 }

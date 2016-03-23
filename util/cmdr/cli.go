@@ -1,9 +1,8 @@
-package cli
+package cmdr
 
 import (
 	"flag"
 	"fmt"
-	"io"
 	"os"
 	"sort"
 )
@@ -12,12 +11,10 @@ type (
 	// CLI encapsulates a command line interface, and knows how to execute
 	// commands and their subcommands and parse flags.
 	CLI struct {
-		// OutWriter will be sent the output of the CLI. If left nil, defaults
-		// to os.Stdout.
-		OutWriter,
-		// ErrWriter will be sent all log messages from the CLI. If left nil,
-		// defaults to os.Stderr
-		ErrWriter io.Writer
+		// Out is an *Output, defaults to a plain os.Stdout writer if left nil.
+		Out,
+		// Err is an *Output, defaults to a plain os.Stderr writer if left nil.
+		Err *Output
 		// Env is a map of environment variable names to their values.
 		Env map[string]string
 		// Hooks allow you to perform pre and post processing on Commands at
@@ -30,10 +27,6 @@ type (
 		// output when Output.Indent() is called inside a command. If left
 		// empty, defaults to DefaultIndentString.
 		IndentString string
-		// out is an Output wired up to OutWriter
-		out,
-		// err is an Output wired up to ErrWriter
-		err Output
 	}
 	// Hooks is a collection of command hooks. If a hook returns a non-nil error
 	// it cancels execution and the error is displayed to the user.
@@ -52,20 +45,18 @@ const (
 
 // init populates CLI with default values where none have been set already.
 func (c *CLI) init() {
-	if c.OutWriter == nil {
-		c.OutWriter = os.Stdout
+	if c.Out == nil {
+		c.Out = NewOutput(os.Stdout)
 	}
-	if c.ErrWriter == nil {
-		c.ErrWriter = os.Stderr
+	if c.Err == nil {
+		c.Err = NewOutput(os.Stdout)
 	}
-	c.out = NewOutput(c.OutWriter)
-	c.err = NewOutput(c.ErrWriter)
 	indentString := DefaultIndentString
 	if c.IndentString != "" {
 		indentString = c.IndentString
 	}
-	c.out.SetIndentStyle(indentString)
-	c.err.SetIndentStyle(indentString)
+	c.Out.SetIndentStyle(indentString)
+	c.Err.SetIndentStyle(indentString)
 }
 
 // Invoke begins invoking the CLI starting with the base command, and handles
@@ -76,7 +67,7 @@ func (c *CLI) Invoke(base Command, args []string) Result {
 		c.handleSuccessResult(success)
 	}
 	if result == nil {
-		result = InternalErrorf(nil, "nil result returned from %T", base)
+		result = InternalError(nil, "nil result returned from %T", base)
 	}
 	if err, ok := result.(ErrorResult); ok {
 		c.handleErrorResult(err)
@@ -89,16 +80,9 @@ func (c *CLI) InvokeAndExit(base Command, args []string) {
 	os.Exit(c.Invoke(base, args).ExitCode())
 }
 
-func (c *CLI) Info(v ...interface{}) {
-	if c.ErrWriter == nil {
-		return
-	}
-	fmt.Fprintln(c.ErrWriter, v...)
-}
-
 func (c *CLI) handleSuccessResult(s SuccessResult) {
-	if len(s.Data) != 0 && c.OutWriter != nil {
-		c.OutWriter.Write(s.Data)
+	if len(s.Data) != 0 {
+		c.Out.Write(s.Data)
 	}
 }
 
@@ -111,12 +95,9 @@ func (c *CLI) runHook(hook func(Command) error, command Command) error {
 }
 
 func (c *CLI) handleErrorResult(e ErrorResult) {
-	if c.ErrWriter == nil {
-		return
-	}
-	fmt.Fprintln(c.ErrWriter, e.Error())
+	c.Err.Println(e)
 	if tip := e.UserTip(); len(tip) != 0 {
-		fmt.Fprintln(c.ErrWriter, tip)
+		c.Err.Println(tip)
 	}
 }
 
@@ -146,7 +127,7 @@ func (c *CLI) ListSubcommands(base Command) []string {
 // flags.
 func (c *CLI) invoke(base Command, args []string, ff []func(*flag.FlagSet)) Result {
 	if len(args) == 0 {
-		return InternalErrorf(nil, "command %T received zero args", base)
+		return InternalError(nil, "command %T received zero args", base)
 	}
 	name := args[0]
 	args = args[1:]
@@ -161,7 +142,7 @@ func (c *CLI) invoke(base Command, args []string, ff []func(*flag.FlagSet)) Resu
 		fs := flag.NewFlagSet(name, flag.ContinueOnError)
 		devNull, err := os.Open(os.DevNull)
 		if err != nil {
-			return OSError{Err: err}
+			return OSErr{Err: err}
 		}
 		fs.SetOutput(devNull)
 		// add own and forwarded flags to the flagset, note that it will panic
@@ -172,9 +153,9 @@ func (c *CLI) invoke(base Command, args []string, ff []func(*flag.FlagSet)) Resu
 		// parse the entire flagset for this command
 		if err := fs.Parse(args); err != nil {
 			if err == flag.ErrHelp {
-				return UsageErrorf(nil, "for help, use `%s`", c.HelpCommand)
+				return UsageError(nil, "for help, use `%s`", c.HelpCommand)
 			}
-			return UsageError{Message: err.Error()}
+			return UsageErr{Message: err.Error()}
 		}
 		// get the remaining args
 		args = fs.Args()
@@ -197,5 +178,5 @@ func (c *CLI) invoke(base Command, args []string, ff []func(*flag.FlagSet)) Resu
 	}
 	// If we get here, this command is not configured correctly and cannot run.
 	m := fmt.Sprintf("command %q cannot execute and has no subcommands", name)
-	return InternalError{Message: m}
+	return InternalErr{Message: m}
 }
