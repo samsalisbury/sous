@@ -3,6 +3,7 @@ package shell
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 )
@@ -66,14 +67,14 @@ func (s *Sh) CD(dir string) error {
 	if !filepath.IsAbs(dir) {
 		dir = filepath.Clean(filepath.Join(s.Dir, dir))
 	}
-	f, err := os.Stat(dir)
+	s.Dir = dir
+	f, err := os.Stat(s.Dir)
 	if err != nil {
 		return err
 	}
 	if !f.IsDir() {
-		return fmt.Errorf("%s is not a directory", dir)
+		return fmt.Errorf("%s is not a directory", s.Dir)
 	}
-	s.Dir = dir
 	return nil
 }
 
@@ -90,12 +91,32 @@ func (s *Sh) Cmd(name string, args ...interface{}) *Command {
 	}
 }
 
+// List returns all files (including dotfiles) inside Dir.
+func (s *Sh) List() ([]os.FileInfo, error) {
+	return ioutil.ReadDir(s.Dir)
+}
+
 // Stdout(...) is a shortcut for shell.Cmd(...).Stdout()
 func (s *Sh) Stdout(name string, args ...interface{}) (string, error) {
 	return s.Cmd(name, args...).Stdout()
 }
 
-// Stderr(...) is a shorcut for shell.Cmd(...).Stderr()
+// Stderr(...) is a shortcut for shell.Cmd(...).Stderr()
 func (s *Sh) Stderr(name string, args ...interface{}) (string, error) {
 	return s.Cmd(name, args...).Stderr()
+}
+
+// ExitCode(...) is a shortcut for shell.Cmd(...).ExitCode()
+func (s *Sh) ExitCode(name string, args ...interface{}) (int, error) {
+	return s.Cmd(name, args...).ExitCode()
+}
+
+// Lines(...) is a shortcut for shell.Cmd(...).Lines()
+func (s *Sh) Lines(name string, args ...interface{}) ([]string, error) {
+	return s.Cmd(name, args...).Lines()
+}
+
+// JSON(x, ...) is a shortcut for shell.Cmd(...).JSON(x)
+func (s *Sh) JSON(v interface{}, name string, args ...interface{}) error {
+	return s.Cmd(name, args...).JSON(v)
 }

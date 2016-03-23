@@ -3,6 +3,7 @@ package cli
 import (
 	"flag"
 
+	"github.com/opentable/sous/sous"
 	"github.com/opentable/sous/util/cmdr"
 )
 
@@ -43,7 +44,13 @@ func (sb *SousBuild) Execute(args []string) cmdr.Result {
 			return cmdr.EnsureErrorResult(err)
 		}
 	}
-	//build := sous.NewBuild(sb.WDShell.Dir, sb.ScratchShell.Dir)
+	build, err := sous.NewBuildWithShells(sb.WDShell.Sh, sb.ScratchShell.Sh)
+	if err != nil {
+		return cmdr.EnsureErrorResult(err)
+	}
+	if err := build.Start(); err != nil {
+		return cmdr.EnsureErrorResult(err)
+	}
 
 	return cmdr.InternalError(nil, "not implemented")
 }

@@ -4,15 +4,18 @@ package shell
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os/exec"
 	"strings"
 	"syscall"
+
+	"github.com/opentable/sous/util/whitespace"
 )
 
 type (
-	// Command is a wrapper around exec.Cmds
+	// Command is a wrapper around an exec.Cmd
 	Command struct {
 		// Sh is a copy of the shell this command is executing in.
 		*Sh
@@ -72,27 +75,40 @@ func (c *Command) Stderr() (string, error) {
 	return r.Stderr.String(), nil
 }
 
-func (c *Command) StdoutLines() ([]string, error) {
+// Lines returns Stdout split by newline. Leading and trailing empty lines are
+// removed, and each line is trimmed of whitespace.
+func (c *Command) Lines() ([]string, error) {
 	stdout, err := c.Stdout()
 	if err != nil {
 		return nil, err
 	}
-	return strings.Split(stdout, "\n"), nil
-}
-
-func (c *Command) StdoutLinesTrimmed(
-	cmd string, args ...interface{}) ([]string, error) {
-	_, err := c.StdoutLines()
-	if err != nil {
-		return nil, err
+	rawLines := strings.Split(stdout, "\n")
+	lines := []string{}
+	for _, l := range rawLines {
+		trimmed := whitespace.Trim(l)
+		if len(trimmed) == 0 {
+			continue
+		}
+		lines = append(lines, trimmed)
 	}
-	panic("not implemented")
+	return lines, nil
 }
 
-// ExitCode only returns an error if there were i/o issues starting the command,
-// it does not return an error for a command which fails and returns an error code,
-// which is unlike most of Sh's methods. If it returns an error, then it also
-// returns -1 for the exit code.
+// JSON tries to parse the stdout from the command as JSON, populating the
+// value you pass. (This value should be a pointer.)
+func (c *Command) JSON(v interface{}) error {
+	r, err := c.Result()
+	if err != nil {
+		return err
+	}
+	decoder := json.NewDecoder(r.Stdout.Reader())
+	return decoder.Decode(v)
+}
+
+// ExitCode only returns an error if there were io issues starting the command,
+// it does not return an error for a command which fails and returns an error
+// code, which is unlike most of Sh's methods. If it returns an error, then it
+// also returns -1 for the exit code.
 func (c *Command) ExitCode() (int, error) {
 	r, err := c.Result()
 	if err != nil {

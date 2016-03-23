@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/user"
 
@@ -14,6 +15,7 @@ import (
 )
 
 type (
+	SousCLI struct{ *cmdr.CLI }
 	// Out is an output used for real data a Command returns. This should only
 	// be used when a command needs to write directly to stdout, using the
 	// formatting options that come with an output. Usually, you should use a
@@ -46,7 +48,8 @@ type (
 	// Sous.
 	LocalGitContext struct{ *git.Context }
 	// ScratchDirShell is a shell for working in the scratch area where things
-	// like artifacts, and build metadata are stored.
+	// like artefacts, and build metadata are stored. It is a new, empty
+	// directory, and should be cleaned up eventually.
 	ScratchDirShell struct{ *shell.Sh }
 )
 
@@ -97,9 +100,16 @@ func newLocalWorkDirShell(l LocalWorkDir) (v LocalWorkDirShell, err error) {
 	return v, initErr(err, "getting current working directory")
 }
 
-func newScratchDirShell(c LocalSousConfig) (v ScratchDirShell, err error) {
-	v.Sh, err = shell.DefaultInDir(c.SettingsDir)
-	return v, initErr(err, "getting scratch directory")
+// TODO: This should register a cleanup task with the cli, to delete the temp
+// dir.
+func newScratchDirShell(c *cmdr.CLI) (v ScratchDirShell, err error) {
+	what := "getting scratch directory"
+	dir, err := ioutil.TempDir("", "sous")
+	if err != nil {
+		return v, initErr(err, what)
+	}
+	v.Sh, err = shell.DefaultInDir(dir)
+	return v, initErr(err, what)
 }
 
 func newLocalGitClient(sh LocalWorkDirShell) (v LocalGitClient, err error) {

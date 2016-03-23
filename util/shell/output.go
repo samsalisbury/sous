@@ -18,8 +18,8 @@ func (o *Output) String() string {
 
 // Lines gives the entire output as a string slice, with each item in the slice
 // representing one line of the output. Lines are determined by splitting the
-// string on newline characters. Preceeding and trailing empty lines  are
-// removed from the output, and each line is trimmed of whitespace.
+// string on newline characters. Preceding and trailing empty lines are removed
+// from the output, and each line is trimmed of whitespace.
 func (o *Output) Lines() []string {
 	lines := strings.Split(o.String(), "\n")
 	for i, s := range lines {
