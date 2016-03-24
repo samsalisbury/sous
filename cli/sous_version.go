@@ -18,9 +18,7 @@ Sous is versioned using semver. There are three versioned pieces of Sous:
 Sous Engine, Sous Server, and Sous CLI.
 `
 
-func (*SousVersion) Help() *cmdr.Help {
-	return cmdr.ParseHelp(sousVersionHelp)
-}
+func (*SousVersion) Help() string { return sousVersionHelp }
 
 func (sv *SousVersion) Execute(args []string) cmdr.Result {
 	return cmdr.Successf("sous version %s", sv.Sous.Version)

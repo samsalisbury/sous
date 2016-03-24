@@ -42,7 +42,7 @@ Please report any issue with sous to https://github.com/opentable/sous/issues
 pull requests are welcome.
 `
 
-func (*Sous) Help() *cmdr.Help { return cmdr.ParseHelp(sousHelp) }
+func (*Sous) Help() string { return sousHelp }
 
 func (s *Sous) AddFlags(fs *flag.FlagSet) {
 	fs.BoolVar(&s.flags.Verbosity.Silent, "s", false,
@@ -56,10 +56,9 @@ func (s *Sous) AddFlags(fs *flag.FlagSet) {
 }
 
 func (*Sous) Execute(args []string) cmdr.Result {
-	return cmdr.UsageErr{
-		Message: "usage: sous [options] command",
-		Tip:     "try `sous help` for a list of commands",
-	}
+	err := UsageErrorf("usage: sous [options] command")
+	err.Tip = "try `sous help` for a list of commands"
+	return err
 }
 
 func (Sous) Subcommands() cmdr.Commands {

@@ -26,7 +26,7 @@ path, it will instead build the project at that path.
 args: [path]
 `
 
-func (*SousBuild) Help() *cmdr.Help { return cmdr.ParseHelp(sousBuildHelp) }
+func (*SousBuild) Help() string { return sousBuildHelp }
 
 func (sb *SousBuild) AddFlags(fs *flag.FlagSet) {
 	fs.StringVar(&sb.flags.target, "target", "app",
@@ -52,5 +52,5 @@ func (sb *SousBuild) Execute(args []string) cmdr.Result {
 		return cmdr.EnsureErrorResult(err)
 	}
 
-	return cmdr.InternalError(nil, "not implemented")
+	return InternalErrorf("not implemented")
 }

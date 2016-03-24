@@ -15,7 +15,6 @@ type (
 	// Terminal is a test harness for the CLI, providing easy
 	// introspection into its inputs and outputs.
 	Terminal struct {
-		Base cmdr.Command
 		*cmdr.CLI
 		Stdout, Stderr, Combined TestOutput
 		History                  []string
@@ -29,14 +28,15 @@ type (
 	}
 )
 
-func NewTerminal(t *testing.T, base cmdr.Command) *Terminal {
+func NewTerminal(t *testing.T, root cmdr.Command) *Terminal {
 	out := TestOutput{"stdout", &bytes.Buffer{}, t}
 	err := TestOutput{"stderr", &bytes.Buffer{}, t}
 	combined := TestOutput{"combined output", &bytes.Buffer{}, t}
 	return &Terminal{
-		base, &cmdr.CLI{
-			Out: cmdr.NewOutput(io.MultiWriter(out.Buffer, combined.Buffer)),
-			Err: cmdr.NewOutput(io.MultiWriter(err.Buffer, combined.Buffer)),
+		&cmdr.CLI{
+			Root: root,
+			Out:  cmdr.NewOutput(io.MultiWriter(out.Buffer, combined.Buffer)),
+			Err:  cmdr.NewOutput(io.MultiWriter(err.Buffer, combined.Buffer)),
 		},
 		out, err, combined, []string{}, t,
 	}
@@ -50,7 +50,7 @@ func NewTerminal(t *testing.T, base cmdr.Command) *Terminal {
 // surrounded by quotes. We should add this feature if we need it.
 func (t *Terminal) RunCommand(commandline string) {
 	args := strings.Split(commandline, " ")
-	t.CLI.Invoke(t.Base, args)
+	t.CLI.Invoke(args)
 	rr := fmt.Sprintf("shell> %s\n%s", commandline, t.Combined)
 	if !strings.HasSuffix(rr, "\n") {
 		rr += "<MISSING TRAILING NEWLINE>"

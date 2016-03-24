@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/opentable/sous/cli"
-	"github.com/opentable/sous/util/cmdr"
 )
 
 func main() {
@@ -13,38 +12,14 @@ func main() {
 	panicking := true
 	defer handlePanic(&panicking)
 
-	var g *cli.SousCLIGraph
-
-	stdout := cmdr.NewOutput(os.Stdout)
-	stderr := cmdr.NewOutput(os.Stderr)
-
-	// Create a CLI for Sous
-	c := &cmdr.CLI{
-		Out: stdout, Err: stderr,
-		// HelpCommand is shown to the user if they type something that looks
-		// like they want help, but which isn't recognised by Sous properly. It
-		// uses the standard flag.ErrHelp value to decide whether or not to show
-		// this.
-		HelpCommand: os.Args[0] + " help",
-		// Before Execute is called on any command, inject it with values
-		// from the graph.
-		Hooks: cmdr.Hooks{
-			PreExecute: func(c cmdr.Command) error { return g.Inject(c) },
-		},
-	}
-
-	// Create a new Sous command
-	s := &cli.Sous{Version: Version}
-
-	// Create the CLI dependency graph.
-	g, err := cli.BuildGraph(c, s)
+	c, err := cli.NewSousCLI(Version, os.Stdout, os.Stderr)
 	if err != nil {
 		die(err)
 	}
 
-	// Invoke Sous command, and let it handle exiting.
-	result := c.Invoke(s, os.Args)
-	panicking = false
+	result := c.Invoke(os.Args)
+
+	//panicking = false
 	os.Exit(result.ExitCode())
 }
 

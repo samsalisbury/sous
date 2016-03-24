@@ -8,7 +8,8 @@ import (
 
 func TestBuildGraph(t *testing.T) {
 
-	g, err := BuildGraph(&cmdr.CLI{}, &Sous{})
+	g, err := BuildGraph(&Sous{}, &cmdr.CLI{})
+
 	if err != nil {
 		t.Fatalf("unexpected error: %s", err)
 	}

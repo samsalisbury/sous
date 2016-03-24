@@ -15,7 +15,6 @@ import (
 )
 
 type (
-	SousCLI struct{ *cmdr.CLI }
 	// Out is an output used for real data a Command returns. This should only
 	// be used when a command needs to write directly to stdout, using the
 	// formatting options that come with an output. Usually, you should use a
@@ -31,10 +30,10 @@ type (
 	SousCLIGraph struct{ *psyringe.Psyringe }
 	// SousVersion represents a version of Sous.
 	Version struct{ semv.Version }
-	// LocalUser is the logged in user who invoked Sous
-	LocalUser struct{ *user.User }
+	// LocalUser is the currently logged in user.
+	LocalUser struct{ *User }
 	// LocalSousConfig is the configuration for Sous.
-	LocalSousConfig struct{ sous.Config }
+	LocalSousConfig struct{ *sous.Config }
 	// WorkDir is the user's current working directory when they invoke Sous.
 	LocalWorkDir string
 	// WorkdirShell is a shell for working in the user's current working
@@ -55,10 +54,10 @@ type (
 
 // buildGraph builds the dependency injection graph, used to populate commands
 // invoked by the user.
-func BuildGraph(c *cmdr.CLI, s *Sous) (*SousCLIGraph, error) {
+func BuildGraph(s *Sous, c *cmdr.CLI) (*SousCLIGraph, error) {
 	g := &SousCLIGraph{psyringe.New()}
 	return g, g.Fill(
-		c, s,
+		s, c,
 		newOut,
 		newErrOut,
 		newLocalUser,
@@ -69,6 +68,7 @@ func BuildGraph(c *cmdr.CLI, s *Sous) (*SousCLIGraph, error) {
 		newLocalGitClient,
 		newLocalGitRepo,
 		newLocalGitContext,
+		//newBuildContext,
 	)
 }
 
@@ -86,7 +86,8 @@ func newLocalWorkDir() (LocalWorkDir, error) {
 }
 
 func newLocalUser() (v LocalUser, err error) {
-	v.User, err = user.Current()
+	u, err := user.Current()
+	v.User = &User{u}
 	return v, initErr(err, "getting current user")
 }
 
@@ -102,7 +103,7 @@ func newLocalWorkDirShell(l LocalWorkDir) (v LocalWorkDirShell, err error) {
 
 // TODO: This should register a cleanup task with the cli, to delete the temp
 // dir.
-func newScratchDirShell(c *cmdr.CLI) (v ScratchDirShell, err error) {
+func newScratchDirShell() (v ScratchDirShell, err error) {
 	what := "getting scratch directory"
 	dir, err := ioutil.TempDir("", "sous")
 	if err != nil {
@@ -126,6 +127,37 @@ func newLocalGitContext(r LocalGitRepo) (v LocalGitContext, err error) {
 	v.Context, err = r.Context()
 	return v, initErr(err, "getting git context")
 }
+
+//func newSourceContext(r LocalGitRepo) (v sous.SourceContext, err error) {
+//	what := "getting source code context"
+//	c, err := r.Context()
+//	if err != nil {
+//		return v, initErr(err, what)
+//	}
+//	return sous.SourceContext{
+//		Branch:           c.Branch,
+//		Revision:         c.Revision,
+//		NearestTag:       c.NearestTag,
+//		NearestSemverTag: c.NearestSemverTag,
+//		DirtyWorkingTree: c.Dirty(),
+//	}
+//}
+
+//func newBuildContext(
+//	source sous.SourceContext,
+//	scratch sous.ScratchContext,
+//	machine sous.Machine,
+//	user user.User,
+//	changes sous.Changes) *sous.BuildContext {
+//
+//	return &sous.BuildContext{
+//		Source:  source,
+//		Scratch: scratch,
+//		Machine: machine,
+//		User:    user,
+//		Changes: changes,
+//	}
+//}
 
 // initErr returns nil if error is nil, otherwise an initialisation error.
 func initErr(err error, what string) error {

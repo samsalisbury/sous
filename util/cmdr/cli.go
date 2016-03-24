@@ -13,6 +13,8 @@ type (
 	// CLI encapsulates a command line interface, and knows how to execute
 	// commands and their subcommands and parse flags.
 	CLI struct {
+		// Root is the root command to execute.
+		Root Command
 		// Out is an *Output, defaults to a plain os.Stdout writer if left nil.
 		Out,
 		// Err is an *Output, defaults to a plain os.Stderr writer if left nil.
@@ -63,13 +65,13 @@ func (c *CLI) init() {
 
 // Invoke begins invoking the CLI starting with the base command, and handles
 // all command output. It then returns the result for further processing.
-func (c *CLI) Invoke(base Command, args []string) Result {
-	result := c.invoke(base, args, nil)
+func (c *CLI) Invoke(args []string) Result {
+	result := c.invoke(c.Root, args, nil)
 	if success, ok := result.(SuccessResult); ok {
 		c.handleSuccessResult(success)
 	}
 	if result == nil {
-		result = InternalError(nil, "nil result returned from %T", base)
+		result = InternalErrorf("nil result returned from %T", c.Root)
 	}
 	if err, ok := result.(ErrorResult); ok {
 		c.handleErrorResult(err)
@@ -78,8 +80,8 @@ func (c *CLI) Invoke(base Command, args []string) Result {
 }
 
 // InvokeAndExit calls Invoke, and exits with the returned exit code.
-func (c *CLI) InvokeAndExit(base Command, args []string) {
-	os.Exit(c.Invoke(base, args).ExitCode())
+func (c *CLI) InvokeAndExit(args []string) {
+	os.Exit(c.Invoke(args).ExitCode())
 }
 
 // runHook runs the hook if it's not nil, and returns the hook's error.
@@ -137,7 +139,7 @@ func (c *CLI) ListSubcommands(base Command) []string {
 // flags.
 func (c *CLI) invoke(base Command, args []string, ff []func(*flag.FlagSet)) Result {
 	if len(args) == 0 {
-		return InternalError(nil, "command %T received zero args", base)
+		return InternalErrorf("command %T received zero args", base)
 	}
 	name := args[0]
 	args = args[1:]
@@ -150,11 +152,10 @@ func (c *CLI) invoke(base Command, args []string, ff []func(*flag.FlagSet)) Resu
 		ff = append(ff, command.AddFlags)
 		// make a flag.FlagSet named for this command.
 		fs := flag.NewFlagSet(name, flag.ContinueOnError)
-		devNull, err := os.Open(os.DevNull)
-		if err != nil {
-			return OSErr{Err: err}
+		// try to pipe normal flag output to /dev/null, don't fail if not though
+		if devNull, err := os.Open(os.DevNull); err == nil {
+			fs.SetOutput(devNull)
 		}
-		fs.SetOutput(devNull)
 		// add own and forwarded flags to the flagset, note that it will panic
 		// if multiple flags with the same name are added.
 		for _, addFlags := range ff {
@@ -162,10 +163,11 @@ func (c *CLI) invoke(base Command, args []string, ff []func(*flag.FlagSet)) Resu
 		}
 		// parse the entire flagset for this command
 		if err := fs.Parse(args); err != nil {
+			tip := fmt.Sprintf("for help, use `%s`", c.HelpCommand)
 			if err == flag.ErrHelp {
-				return UsageError(nil, "for help, use `%s`", c.HelpCommand)
+				return UsageErrorf(tip)
 			}
-			return UsageErr{Message: err.Error()}
+			return UsageErrorf(err.Error()).WithTip(tip)
 		}
 		// get the remaining args
 		args = fs.Args()
@@ -187,6 +189,5 @@ func (c *CLI) invoke(base Command, args []string, ff []func(*flag.FlagSet)) Resu
 		return command.Execute(args)
 	}
 	// If we get here, this command is not configured correctly and cannot run.
-	m := fmt.Sprintf("command %q cannot execute and has no subcommands", name)
-	return InternalErr{Message: m}
+	return InternalErrorf("%q is not runnable and has no subcommands", name)
 }

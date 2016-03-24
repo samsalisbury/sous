@@ -8,16 +8,23 @@ import (
 )
 
 // Client is a git client that shells out to locally installed git. It requires
-// that git is in the path. Client is used to perform git commands within a
-// particular directory, determined by its shell.Sh instance.
+// that git is in the path by default, although you can override that by setting
+// the Bin field to a path to a different Git.
+// Client is used to perform git commands within a particular directory,
+// determined by its shell.Sh instance.
 type Client struct {
-	Sh      *shell.Sh
-	Bin     string
+	// Sh is the *shell.Sh instance this client uses for all shell interaction.
+	Sh *shell.Sh
+	// Bin is the path to the git binary. This defaults to "git", therefore
+	// relying that git is in the path.
+	Bin string
+	// Version is the version of git at Bin.
 	Version semv.Version
 }
 
 // NewClient returns a git client, as long as `git --version` succeeds. The
-// *shell.Sh is used for all commands.
+// *shell.Sh is used for all commands. The client created by this func uses
+// git in your path.
 func NewClient(sh *shell.Sh) (*Client, error) {
 	bin := "git"
 	s, err := sh.Cmd(bin, "version").Stdout()
@@ -67,7 +74,7 @@ func (c *Client) stdout(name string, args ...interface{}) (string, error) {
 
 func (c *Client) stdoutLines(name string, args ...interface{}) ([]string, error) {
 	args = append([]interface{}{name}, args...)
-	return c.Sh.Cmd(c.Bin, args...).StdoutLines()
+	return c.Sh.Cmd(c.Bin, args...).Lines()
 }
 
 func (c *Client) Dir() string {

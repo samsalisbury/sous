@@ -21,7 +21,7 @@ type (
 		// arguments (not flags or options)
 		// The remaining non-blank lines should contain a detailed description
 		// of how the command works, including usage examples.
-		Help() *Help
+		Help() string
 	}
 	// CanExecute means the command can itself be executed to do something.
 	Executor interface {

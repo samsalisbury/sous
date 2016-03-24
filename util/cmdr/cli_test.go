@@ -8,7 +8,8 @@ import (
 
 type TestCommand struct{}
 
-func (tc *TestCommand) Help() *Help { return ParseHelp("") }
+func (tc *TestCommand) Help() string { return "" }
+
 func (tc *TestCommand) Execute(args []string) Result {
 	return Success("Congratulations, caller:", args)
 }
@@ -19,13 +20,14 @@ func TestCli(t *testing.T) {
 	errBuf := &bytes.Buffer{}
 
 	c := &CLI{
-		Out: NewOutput(outBuf),
-		Err: NewOutput(errBuf),
+		Root: &TestCommand{},
+		Out:  NewOutput(outBuf),
+		Err:  NewOutput(errBuf),
 	}
 
 	args := makeArgs("a-command")
 
-	result := c.Invoke(&TestCommand{}, args)
+	result := c.Invoke(args)
 
 	actual := result.ExitCode()
 	expected := 0

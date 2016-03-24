@@ -6,22 +6,24 @@ import (
 	"github.com/opentable/sous/util/parallel"
 )
 
-type Repo struct {
-	// Root is the root dir of this repo
-	Root string
-	// Client is a git client inside this repo.
-	Client *Client
-}
-
-type Context struct {
-	Revision        string
-	NearestTag      Tag
-	RepoRelativeDir string
-}
-
-type Tag struct {
-	Name, Revision string
-}
+type (
+	// Repo is a git repository.
+	Repo struct {
+		// Root is the root dir of this repo
+		Root string
+		// Client is a git client inside this repo.
+		Client *Client
+	}
+	// Context is a snapshot of data from this Git repository.
+	Context struct {
+		Revision        string
+		NearestTag      Tag
+		RepoRelativeDir string
+	}
+	Tag struct {
+		Name, Revision string
+	}
+)
 
 // NewRepo takes a client, which it expects to already be inside a repo
 // directory. It returns an error if the client is not inside a repository
