@@ -86,6 +86,6 @@ func (r *Repo) SourceContext() (*sous.SourceContext, error) {
 		NewFiles:         newFiles,
 		Tags:             allTags,
 		NearestTagName:   nearestTagName,
-		DirtyWorkingTree: len(modifiedFiles) == 0 && len(newFiles) == 0,
+		DirtyWorkingTree: len(modifiedFiles)+len(newFiles) != 0,
 	}, nil
 }
