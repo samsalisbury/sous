@@ -95,8 +95,21 @@ func (c *Client) RepoRoot() (string, error) {
 	return c.stdout("rev-parse", "--show-toplevel")
 }
 
+// ListFiles lists all files that are tracked in the repo.
+func (c *Client) ListFiles() ([]string, error) {
+	return c.stdoutLines("ls-files")
+}
+
+func (c *Client) ModifiedFiles() ([]string, error) {
+	return c.stdoutLines("ls-files", "--modified")
+}
+
+func (c *Client) NewFiles() ([]string, error) {
+	return c.stdoutLines("ls-files", "--others", "--exclude-standard")
+}
+
 func (c *Client) ListTags() ([]sous.Tag, error) {
-	lines, err := c.stdoutLines("log", "--date-order", "--tags", "--simplify-by-decoration", `--pretty=format:"%H %aI %D"`)
+	lines, err := c.stdoutLines("log", "--date-order", "--tags", "--simplify-by-decoration", `--pretty=format:%H %aI %D`)
 	if err != nil {
 		return nil, err
 	}
@@ -111,6 +124,7 @@ func (c *Client) ListTags() ([]sous.Tag, error) {
 		cleanTags := strings.Replace(r[2], "tag: ", "", -1)
 		ts := strings.Split(cleanTags, ", ")
 		for _, t := range ts {
+
 			tags = append(tags, sous.Tag{Name: t, Revision: r[0]})
 		}
 	}
@@ -119,4 +133,8 @@ func (c *Client) ListTags() ([]sous.Tag, error) {
 
 func (c *Client) NearestTag() (string, error) {
 	return c.stdout("describe", "--tags", "--abbrev=0")
+}
+
+func (c *Client) CurrentBranch() (string, error) {
+	return c.stdout("rev-parse", "--abbrev-ref", "HEAD")
 }

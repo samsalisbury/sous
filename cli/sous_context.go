@@ -8,10 +8,10 @@ import (
 )
 
 type SousContext struct {
-	Context sous.BuildContext
+	SourceContext *sous.SourceContext
 }
 
-func init() { TopLevelCommands["version"] = &SousVersion{} }
+func init() { TopLevelCommands["context"] = &SousContext{} }
 
 const sousContextHelp = `
 show the current build context
@@ -21,10 +21,10 @@ context prints out sous's view of your current context
 args:
 `
 
-func (*SousContext) Help() string { return sousVersionHelp }
+func (*SousContext) Help() string { return sousContextHelp }
 
 func (sv *SousContext) Execute(args []string) cmdr.Result {
-	b, err := json.MarshalIndent(sv.Context, "", "  ")
+	b, err := json.MarshalIndent(sv.SourceContext, "", "  ")
 	if err != nil {
 		return EnsureErrorResult(err)
 	}

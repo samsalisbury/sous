@@ -5,8 +5,9 @@ type (
 	// built.
 	SourceContext struct {
 		RootDir, OffsetDir, Branch, Revision string
-		Files                                []string
+		Files, ModifiedFiles, NewFiles       []string
 		Tags                                 []Tag
+		NearestTagName                       string
 		DirtyWorkingTree                     bool
 	}
 	// Tag represents a revision control commit tag.

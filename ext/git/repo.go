@@ -45,10 +45,16 @@ func NewRepo(c *Client) (*Repo, error) {
 // repository such as its current branch, revision, nearest tag, nearest semver
 // tag, etc.
 func (r *Repo) SourceContext() (*sous.SourceContext, error) {
-	var revision, nearestTagName, nearestTagRevision, repoRelativeDir string
-	var allTags []sous.Tag
+	var (
+		revision, branch, nearestTagName, nearestTagRevision,
+		repoRelativeDir string
+		files, modifiedFiles, newFiles []string
+		allTags                        []sous.Tag
+	)
+	c := r.Client
 	err := parallel.Do(
-		func(err *error) { revision, *err = r.Client.Revision() },
+		func(err *error) { branch, *err = c.CurrentBranch() },
+		func(err *error) { revision, *err = c.Revision() },
 		func(err *error) {
 			repoRelativeDir, *err = filepath.Rel(r.Root, r.Client.Sh.Dir)
 		},
@@ -57,20 +63,29 @@ func (r *Repo) SourceContext() (*sous.SourceContext, error) {
 			if err != nil || len(allTags) == 0 {
 				return
 			}
-			nearestTagName, *err = r.Client.NearestTag()
+			nearestTagName, *err = c.NearestTag()
 			if err != nil {
 				return
 			}
-			nearestTagRevision, *err = r.Client.RevisionAt(nearestTagName)
+			nearestTagRevision, *err = c.RevisionAt(nearestTagName)
 		},
+		func(err *error) { files, *err = c.ListFiles() },
+		func(err *error) { modifiedFiles, *err = c.ModifiedFiles() },
+		func(err *error) { newFiles, *err = c.NewFiles() },
 	)
 	if err != nil {
 		return nil, err
 	}
 	return &sous.SourceContext{
-		RootDir:   r.Root,
-		OffsetDir: repoRelativeDir,
-		Revision:  revision,
-		Tags:      allTags,
+		RootDir:          r.Root,
+		OffsetDir:        repoRelativeDir,
+		Branch:           branch,
+		Revision:         revision,
+		Files:            files,
+		ModifiedFiles:    modifiedFiles,
+		NewFiles:         newFiles,
+		Tags:             allTags,
+		NearestTagName:   nearestTagName,
+		DirtyWorkingTree: len(modifiedFiles) == 0 && len(newFiles) == 0,
 	}, nil
 }
