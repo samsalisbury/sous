@@ -60,7 +60,6 @@ func BuildGraph(s *Sous, c *cmdr.CLI) (*SousCLIGraph, error) {
 		s, c,
 		newOut,
 		newErrOut,
-		newBuildContext,
 		newLocalUser,
 		newLocalSousConfig,
 		newLocalWorkDir,
@@ -68,8 +67,7 @@ func BuildGraph(s *Sous, c *cmdr.CLI) (*SousCLIGraph, error) {
 		newScratchDirShell,
 		newLocalGitClient,
 		newLocalGitRepo,
-		newLocalGitContext,
-		//newBuildContext,
+		newSourceContext,
 	)
 }
 
@@ -81,8 +79,8 @@ func newErrOut(c *cmdr.CLI) ErrOut {
 	return ErrOut{c.Err}
 }
 
-func newSourceContext(sh WorkdirShell, out Out, errout ErrOut) (*sous.BuildContext, error) {
-	e := sous.NewEngine()
+func newSourceContext(g LocalGitRepo) (*sous.SourceContext, error) {
+	return g.SourceContext()
 }
 
 func newLocalWorkDir() (LocalWorkDir, error) {
@@ -127,42 +125,6 @@ func newLocalGitRepo(c LocalGitClient) (v LocalGitRepo, err error) {
 	v.Repo, err = c.OpenRepo(".")
 	return v, initErr(err, "opening local git repository")
 }
-
-func newLocalGitContext(r LocalGitRepo) (v LocalGitContext, err error) {
-	v.Context, err = r.Context()
-	return v, initErr(err, "getting git context")
-}
-
-//func newSourceContext(r LocalGitRepo) (v sous.SourceContext, err error) {
-//	what := "getting source code context"
-//	c, err := r.Context()
-//	if err != nil {
-//		return v, initErr(err, what)
-//	}
-//	return sous.SourceContext{
-//		Branch:           c.Branch,
-//		Revision:         c.Revision,
-//		NearestTag:       c.NearestTag,
-//		NearestSemverTag: c.NearestSemverTag,
-//		DirtyWorkingTree: c.Dirty(),
-//	}
-//}
-
-//func newBuildContext(
-//	source sous.SourceContext,
-//	scratch sous.ScratchContext,
-//	machine sous.Machine,
-//	user user.User,
-//	changes sous.Changes) *sous.BuildContext {
-//
-//	return &sous.BuildContext{
-//		Source:  source,
-//		Scratch: scratch,
-//		Machine: machine,
-//		User:    user,
-//		Changes: changes,
-//	}
-//}
 
 // initErr returns nil if error is nil, otherwise an initialisation error.
 func initErr(err error, what string) error {

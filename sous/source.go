@@ -4,9 +4,13 @@ type (
 	// SourceContext contains contextual information about the source code being
 	// built.
 	SourceContext struct {
-		Branch, Revision, OffsetDir  string
-		Files                        []string
-		NearestTag, NearestSemverTag Tag
-		DirtyWorkingTree             bool
+		RootDir, OffsetDir, Branch, Revision string
+		Files                                []string
+		Tags                                 []Tag
+		DirtyWorkingTree                     bool
+	}
+	// Tag represents a revision control commit tag.
+	Tag struct {
+		Name, Revision string
 	}
 )

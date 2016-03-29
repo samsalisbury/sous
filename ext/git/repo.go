@@ -3,6 +3,7 @@ package git
 import (
 	"path/filepath"
 
+	"github.com/opentable/sous/sous"
 	"github.com/opentable/sous/util/parallel"
 )
 
@@ -40,11 +41,12 @@ func NewRepo(c *Client) (*Repo, error) {
 	}, nil
 }
 
-// Context gathers together a number of bits of information about the repository
-// such as its current branch, revision, nearest tag, nearest semver tag, etc.
-func (r *Repo) Context() (*Context, error) {
+// SourceContext gathers together a number of bits of information about the
+// repository such as its current branch, revision, nearest tag, nearest semver
+// tag, etc.
+func (r *Repo) SourceContext() (*sous.SourceContext, error) {
 	var revision, nearestTagName, nearestTagRevision, repoRelativeDir string
-	var allTags []string
+	var allTags []sous.Tag
 	err := parallel.Do(
 		func(err *error) { revision, *err = r.Client.Revision() },
 		func(err *error) {
@@ -65,12 +67,10 @@ func (r *Repo) Context() (*Context, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Context{
-		RepoRelativeDir: repoRelativeDir,
-		Revision:        revision,
-		NearestTag: Tag{
-			Name:     nearestTagName,
-			Revision: nearestTagRevision,
-		},
+	return &sous.SourceContext{
+		RootDir:   r.Root,
+		OffsetDir: repoRelativeDir,
+		Revision:  revision,
+		Tags:      allTags,
 	}, nil
 }

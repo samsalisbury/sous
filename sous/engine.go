@@ -1,13 +1,11 @@
 package sous
 
-import "github.com/opentable/sous/util/shell"
-
 type (
 	Engine struct {
 		MessageHandler func(Message)
 	}
 )
 
-func (e *Engine) GetSourceContext(sh *shell.Sh) (*BuildContext, error) {
+func (e *Engine) GetSourceContext() (*SourceContext, error) {
 	return nil, nil
 }

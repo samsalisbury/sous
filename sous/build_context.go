@@ -16,10 +16,6 @@ type (
 	ScratchContext struct {
 		RootDir, OffsetDir string
 	}
-	// Tag represents a revision control commit tag.
-	Tag struct {
-		Name, Revision string
-	}
 	// Machine represents a specific computer.
 	Machine struct {
 		Host, FullHost string

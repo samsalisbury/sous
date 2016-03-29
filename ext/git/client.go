@@ -2,7 +2,9 @@ package git
 
 import (
 	"fmt"
+	"strings"
 
+	"github.com/opentable/sous/sous"
 	"github.com/opentable/sous/util/shell"
 	"github.com/samsalisbury/semv"
 )
@@ -93,8 +95,26 @@ func (c *Client) RepoRoot() (string, error) {
 	return c.stdout("rev-parse", "--show-toplevel")
 }
 
-func (c *Client) ListTags() ([]string, error) {
-	return c.stdoutLines("tag")
+func (c *Client) ListTags() ([]sous.Tag, error) {
+	lines, err := c.stdoutLines("log", "--date-order", "--tags", "--simplify-by-decoration", `--pretty=format:"%H %aI %D"`)
+	if err != nil {
+		return nil, err
+	}
+	// E.g. output...
+	//1141dde555492ea0a6073a222b2607900d09b0b5 2015-10-02T12:12:01+01:00 tag: v0.0.1-alpha1, tag: v0.0.1-alpha
+	tags := []sous.Tag{}
+	for _, l := range lines {
+		r := strings.SplitN(l, " ", 3)
+		if len(r) != 3 || !strings.Contains(r[2], "tag: ") {
+			continue
+		}
+		cleanTags := strings.Replace(r[2], "tag: ", "", -1)
+		ts := strings.Split(cleanTags, ", ")
+		for _, t := range ts {
+			tags = append(tags, sous.Tag{Name: t, Revision: r[0]})
+		}
+	}
+	return tags, nil
 }
 
 func (c *Client) NearestTag() (string, error) {
