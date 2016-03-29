@@ -11,6 +11,8 @@ type SousHelp struct {
 	Sous *Sous
 }
 
+func init() { TopLevelCommands["help"] = &SousHelp{} }
+
 const sousHelpHelp = `
 get help with sous
 

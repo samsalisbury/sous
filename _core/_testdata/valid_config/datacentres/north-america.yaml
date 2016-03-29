@@ -1,0 +1,9 @@
+---
+Name: north-america
+Desc: Production North America
+SingularityURL: &singURL http://singularity-north-america.company.com
+DockerRegistryHost: docker-north-america.company.com
+Env:
+  SINGULARITY_URL: *singURL
+  SOME_UNIVERSAL_VAR: http://something-north-america.company.com
+

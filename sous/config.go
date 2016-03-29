@@ -11,5 +11,8 @@ type (
 		// considers the master. If this is not set, this node is considered
 		// to be a master.
 		Server string `env:"SOUS_SERVER"`
+		// BuildStateLocation is a directory where information about builds
+		// performed by this user on this machine are stored.
+		BuildStateDir string `env:"SOUS_BUILD_STATE_DIR"`
 	}
 )

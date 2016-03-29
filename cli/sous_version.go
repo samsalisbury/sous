@@ -6,6 +6,8 @@ type SousVersion struct {
 	Sous *Sous
 }
 
+func init() { TopLevelCommands["version"] = &SousVersion{} }
+
 const sousVersionHelp = `
 print the version of sous
 

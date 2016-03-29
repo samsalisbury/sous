@@ -17,6 +17,8 @@ type SousBuild struct {
 	}
 }
 
+func init() { TopLevelCommands["build"] = &SousBuild{} }
+
 const sousBuildHelp = `
 build your project
 

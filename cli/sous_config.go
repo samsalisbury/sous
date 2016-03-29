@@ -3,6 +3,8 @@ package cli
 type SousConfig struct {
 }
 
+func init() { TopLevelCommands["config"] = SousConfig }
+
 const sousConfigHelp = `
 view and edit sous configuration
 

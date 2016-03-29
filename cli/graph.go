@@ -60,6 +60,7 @@ func BuildGraph(s *Sous, c *cmdr.CLI) (*SousCLIGraph, error) {
 		s, c,
 		newOut,
 		newErrOut,
+		newBuildContext,
 		newLocalUser,
 		newLocalSousConfig,
 		newLocalWorkDir,
@@ -78,6 +79,10 @@ func newOut(c *cmdr.CLI) Out {
 
 func newErrOut(c *cmdr.CLI) ErrOut {
 	return ErrOut{c.Err}
+}
+
+func newSourceContext(sh WorkdirShell, out Out, errout ErrOut) (*sous.BuildContext, error) {
+	e := sous.NewEngine()
 }
 
 func newLocalWorkDir() (LocalWorkDir, error) {

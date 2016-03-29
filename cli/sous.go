@@ -20,6 +20,8 @@ type Sous struct {
 	}
 }
 
+var TopLevelCommands = cmdr.Commands{}
+
 const sousHelp = `
 invoke sous
 
@@ -62,11 +64,7 @@ func (*Sous) Execute(args []string) cmdr.Result {
 }
 
 func (Sous) Subcommands() cmdr.Commands {
-	return cmdr.Commands{
-		"help":    &SousHelp{},
-		"version": &SousVersion{},
-		"build":   &SousBuild{},
-	}
+	return TopLevelCommands
 }
 
 func (c *Sous) Verbosity() cmdr.Verbosity {

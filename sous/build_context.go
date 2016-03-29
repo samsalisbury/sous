@@ -11,14 +11,6 @@ type (
 		User    user.User
 		Changes Changes
 	}
-	// SourceContext contains contextual information about the source code being
-	// built.
-	SourceContext struct {
-		Branch, Revision, OffsetDir  string
-		Files                        []string
-		NearestTag, NearestSemverTag Tag
-		DirtyWorkingTree             bool
-	}
 	// ScratchContext represents an isolated copy of a project's source code
 	// somewhere on the host machine running Sous.
 	ScratchContext struct {
