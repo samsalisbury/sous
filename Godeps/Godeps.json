@@ -14,8 +14,16 @@
 			"Rev": "81c0e6fddf050c32cca2aed416eb458852b87965"
 		},
 		{
+			"ImportPath": "github.com/samsalisbury/yaml",
+			"Rev": "47bc14906f408f98d35bfb508fd25fb2640febc1"
+		},
+		{
 			"ImportPath": "github.com/xrash/smetrics",
 			"Rev": "c56542adca38e4f51055c08dc741d5a48b657c9f"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/ssh/terminal",
+			"Rev": "e74b0352e547e3830f8471e7ae9609239c52606f"
 		}
 	]
 }
