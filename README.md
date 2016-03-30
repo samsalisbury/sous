@@ -175,3 +175,7 @@ can do this:
 
 Replacing `<image>` with the name of the image you want to test.
 
+## LICENSE
+
+MIT
+
