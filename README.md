@@ -54,6 +54,8 @@ Mac using homebrew:
 
 We plan to begin releasing versioned pre-built binaries soon.
 
+(for development guides, see [here](docs/contributing.md)
+
 ### Initial Setup
 
 Currently, sous cannot do much without a sous server instance to provide
@@ -174,8 +176,13 @@ can do this:
     sous contracts -image <image>
 
 Replacing `<image>` with the name of the image you want to test.
+<<<<<<< 58f2f781b62ba7bf9c51db3d6661831ccc63788e
 
 ## LICENSE
 
 MIT
 
+||||||| merged common ancestors
+
+=======
+>>>>>>> Quick guide to getting set up with Go and Sous
