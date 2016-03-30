@@ -12,7 +12,7 @@ if SOUSPATH="$(command -v sous)"; then
 		rm "$SOUSPATH"
 	else
 		if (command -v brew 2>&1>/dev/null); then
-			if (brew list | grep '\bsous\b'); then
+			if (brew list | grep '^sous$'); then
 				echo "Detected sous installed by homebrew, uninstalling..."
 				if ! brew uninstall sous; then
 					echo "uninstall failed."
@@ -29,8 +29,8 @@ if ! go generate; then
 	echo "> Generate failed."
 	exit 1
 fi
-if ! go install; then
-	echo "> Build failed."
+if ! ./bin/safe-build "$GOPATH/bin/sous"; then
+	echo "> Install failed."
 	exit 1
 fi
 if ! TESTOUT=$(go test ./...); then
