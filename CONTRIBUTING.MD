@@ -1,7 +1,9 @@
 Contributing guidelines
 =======================
 
-Contributions are more than welcome.
+Contributions are more than welcome. Please follow the [code guidelines].
+
+[code guidelines]: https://github.com/opentable/sous/blob/master/doc/code.md
 
 ### Sending a Pull Request
 
