@@ -2,6 +2,12 @@ language: go
 
 go:
   - 1.6
+  - tip
+
+install:
+  # Disable the default install step, as we want the build to rely only on vendored
+  # dependencies. (The default install step at present performs a go get.)
+  - echo "Default install step disabled by .travis.yml"
 
 script:
-  - go test ./...
+  - go test ./... | grep -v 'no test files'
