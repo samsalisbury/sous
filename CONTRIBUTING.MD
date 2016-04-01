@@ -1,7 +1,7 @@
 Contributing guidelines
 =======================
 
-Contributes are more than welcome.
+Contributions are more than welcome.
 
 ### Sending a Pull Request
 
