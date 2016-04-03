@@ -199,7 +199,7 @@ func (c *Command) FailResult() (*Result, error) {
 		return r, err
 	}
 	if r.Err == nil {
-		return r, fmt.Errorf("command %s succeeded, expected failure")
+		return r, fmt.Errorf("command %q succeeded, expected failure", c)
 	}
 	return r, nil
 }
