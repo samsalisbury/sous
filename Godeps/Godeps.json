@@ -19,7 +19,7 @@
 		},
 		{
 			"ImportPath": "github.com/xrash/smetrics",
-			"Rev": "c56542adca38e4f51055c08dc741d5a48b657c9f"
+			"Rev": "1a0de75d2e90a30c613537d9fbb67ee060c9cab9"
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/ssh/terminal",

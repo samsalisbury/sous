@@ -11,3 +11,5 @@ install:
 
 script:
   - go test ./... | grep -v 'no test files'
+  - ./bin/check-gofmt
+
