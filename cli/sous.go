@@ -67,17 +67,17 @@ func (Sous) Subcommands() cmdr.Commands {
 	return TopLevelCommands
 }
 
-func (c *Sous) Verbosity() cmdr.Verbosity {
-	if c.flags.Verbosity.Debug {
+func (s *Sous) Verbosity() cmdr.Verbosity {
+	if s.flags.Verbosity.Debug {
 		return cmdr.Debug
 	}
-	if c.flags.Verbosity.Loud {
+	if s.flags.Verbosity.Loud {
 		return cmdr.Loud
 	}
-	if c.flags.Verbosity.Quiet {
+	if s.flags.Verbosity.Quiet {
 		return cmdr.Quiet
 	}
-	if c.flags.Verbosity.Silent {
+	if s.flags.Verbosity.Silent {
 		return cmdr.Silent
 	}
 	return cmdr.Normal

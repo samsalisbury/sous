@@ -120,28 +120,28 @@ func (c *Command) ExitCode() (int, error) {
 // Result only returns an error if it's a startup error, not if the command
 // itself exits with an error code. If you need an error to be returned on
 // non-zero exit codes, use SucceedResult instead.
-func (s *Command) Result() (*Result, error) {
-	c := exec.Command(s.Name, s.Args...)
+func (c *Command) Result() (*Result, error) {
+	command := exec.Command(c.Name, c.Args...)
 	outbuf := &bytes.Buffer{}
 	errbuf := &bytes.Buffer{}
 	combinedbuf := &bytes.Buffer{}
 	outWriters := []io.Writer{outbuf, combinedbuf}
 	errWriters := []io.Writer{errbuf, combinedbuf}
-	if s.TeeOut != nil {
-		outWriters = append(outWriters, s.TeeOut)
+	if c.TeeOut != nil {
+		outWriters = append(outWriters, c.TeeOut)
 	}
-	if s.TeeErr != nil {
-		errWriters = append(errWriters, s.TeeErr)
+	if c.TeeErr != nil {
+		errWriters = append(errWriters, c.TeeErr)
 	}
 
-	c.Stdout = io.MultiWriter(outWriters...)
-	c.Stderr = io.MultiWriter(errWriters...)
+	command.Stdout = io.MultiWriter(outWriters...)
+	command.Stderr = io.MultiWriter(errWriters...)
 
-	if err := c.Start(); err != nil {
+	if err := command.Start(); err != nil {
 		return nil, err
 	}
 	code := 0
-	err := c.Wait()
+	err := command.Wait()
 	if err != nil {
 		code = -1 // in case the following fails
 		if exiterr, ok := err.(*exec.ExitError); ok {
@@ -152,7 +152,7 @@ func (s *Command) Result() (*Result, error) {
 		// TODO: Consider handling ErrNotFound as a special case here.
 	}
 	return &Result{
-		Command:  s,
+		Command:  c,
 		Stdout:   &Output{outbuf},
 		Stderr:   &Output{errbuf},
 		Combined: &Output{combinedbuf},
