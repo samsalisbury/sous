@@ -1,0 +1,9 @@
+#!/bin/sh
+
+# check-gofmt lists all files that are not gofmt formatted and
+# exits with a non-zero exit code if that list is non-empty.
+
+U="$(gofmt -l .)"
+[ -z "$U" ] && exit 0
+printf "Some files not gofmt formatted:\n%s\n" "$U"
+exit 1
