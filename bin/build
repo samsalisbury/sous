@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-set -x
-
 # Config
 ARTIFACTS_DIR="artifacts"
 # End Config
@@ -52,33 +50,33 @@ log "BRANCH: '$BRANCH'; EXACT_TAG: '$EXACT_TAG'; NEAREST_TAG: '$NEAREST_TAG'"
 
 log "BRANCH: '$BRANCH'; EXACT_TAG: '$EXACT_TAG'; NEAREST_TAG: '$NEAREST_TAG'"
 
-# Good enough semver regex
-#SEMVER='^v?\d+\.\d+\.\d+(-[a-zA-Z0-9_\-\.]+)?(\+[a-zA-Z0-9_\-\.]+)?'
-SEMVER='^v\?\d\+\.\d\+\.\d\+\(-[a-zA-Z0-9_\-\.]\+\)\?\(+[a-zA-Z0-9_\-\.]\+\)\?'
-
-log "SEMVER: $SEMVER"
+# Neither of the below regexes work in Travis, using the corresponding -E flag or not, respectively.
+# semver regex (extended)
+##SEMVER='^v?\d+\.\d+\.\d+(-[a-zA-Z0-9_\-\.]+)?(\+[a-zA-Z0-9_\-\.]+)?'
+# semver regex (basic)
+##SEMVER='^v\?\d\+\.\d\+\.\d\+\(-[a-zA-Z0-9_\-\.]\+\)\?\(+[a-zA-Z0-9_\-\.]\+\)\?'
+#log "SEMVER: $SEMVER"
 
 # Try to get a semver version from, in order of preference:
 # exact tag, nearest tag + commit ID, branch name + commit ID, or just use
 # "0.0.0-unversioned+$COMMIT"
-set +eo pipefail
-echo "$EXACT_TAG" | grep -o "$SEMVER"
 
-VERSION="$(echo "$EXACT_TAG" | grep -o "$SEMVER")"
+##VERSION="$(echo "$EXACT_TAG" | grep -o "$SEMVER")"
+##
+##log "VERSION: $VERSION"
+##
+##PLUS_COMMIT="+plus-$COMMIT_ABBREV"
+##if [ -z "$VERSION" ]; then 
+##	VERSION="$(echo "$NEAREST_TAG" | grep -oE "$SEMVER")$PLUS_COMMIT"
+##fi
+##if [ "$VERSION" = "$PLUS_COMMIT" ]; then
+##	VERSION="$(echo "$BRANCH" | grep -oE "$SEMVER")$PLUS_COMMIT"
+##fi
+##if [ "$VERSION" = "$PLUS_COMMIT" ]; then
+##	VERSION="0.0.0-unversioned+$COMMIT_ABBREV"
+##fi
 
-log "VERSION: $VERSION"
-
-PLUS_COMMIT="+plus-$COMMIT_ABBREV"
-if [ -z "$VERSION" ]; then 
-	VERSION="$(echo "$NEAREST_TAG" | grep -oE "$SEMVER")$PLUS_COMMIT"
-fi
-if [ "$VERSION" = "$PLUS_COMMIT" ]; then
-	VERSION="$(echo "$BRANCH" | grep -oE "$SEMVER")$PLUS_COMMIT"
-fi
-if [ "$VERSION" = "$PLUS_COMMIT" ]; then
-	VERSION="0.0.0-unversioned+$COMMIT_ABBREV"
-fi
-set -eo pipefail
+VERSION="$EXACT_TAG"
 
 log "Building sous version $VERSION ($COMMIT)"
 
