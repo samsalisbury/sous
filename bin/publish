@@ -9,7 +9,7 @@ TAG="$1"
 #git checkout "$TAG"
 
 PRERELEASE=""
-echo "$TAG" | grep -E '\-' && PRERELEASE="--pre-release"
+echo "$TAG" | grep -E '-' && PRERELEASE="--pre-release"
 
 # Build the archives
 ./bin/build "$TAG" || { echo "Build failed."; exit 1; }
@@ -25,7 +25,7 @@ go get github.com/aktau/github-release || { exit 1; }
 if ! github-release info -t "$TAG" > /dev/null 2>&1; then
 	echo "Converting tag $TAG into GitHub release..."
 	# Get the tag message by itself.
-	MSG="$(git tag -ln999 "$TAG" | sed "s/$TAG  //")"
+	MSG="$(git tag -ln999 "$TAG" | sed "s/$TAG//" | xargs)"
 	github-release release -t "$TAG" -d "$MSG" -n "$TAG" -c "$COMMIT" $PRERELEASE || {
 		echo "Failed to create release."
 		exit 1;
