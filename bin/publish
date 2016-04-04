@@ -7,11 +7,18 @@ set -x
 grep --version
 grep --help
 SEMVER='^v?\d+\.\d+\.\d+(\-[a-zA-Z0-9_\-\.]+)?(\+[a-zA-Z0-9_\-\.]+)?'
+echo "$TAG"
 echo "$TAG" | grep -oE "$SEMVER"
 pwd
 ls -lah
 git version
+git status
+git add -A .
+git status
+git reset
+git status
 git diff-index HEAD
+git diff-index -p HEAD
 git rev-parse --show-toplevel
 git diff
 git rev-parse HEAD
