@@ -1,0 +1,126 @@
+#!/usr/bin/env bash
+
+# Config
+ARTIFACTS_DIR="artifacts"
+# End Config
+
+log() { echo "$@" 1>&2; }
+die() { log "$@"; exit 1; }
+if [ -z "$1" ]; then
+	die "usage: $0 self | all | TARGET..."
+fi
+if [ -z "$GOOS" ]; then
+	GOOS=$(uname | tr '[:upper:]' '[:lower:]')
+	export GOOS
+fi
+if [ -z "$GOARCH" ]; then
+	export GOARCH=amd64
+fi
+set -euo pipefail
+ARTIFACTS_DIR="$PWD/$ARTIFACTS_DIR"
+REQUESTED_TARGETS=($@)
+STANDARD_TARGETS=(linux/amd64 darwin/amd64)
+
+GOVERSION="$(go version)"
+
+if [[ "$1" == "all" ]]; then
+	REQUESTED_TARGETS=(${STANDARD_TARGETS[@]})
+elif [[ "$1" == "self" ]]; then
+	REQUESTED_TARGETS=($GOOS/$GOARCH)
+fi
+
+log "Building for ${REQUESTED_TARGETS[*]}"
+
+# Get the commit ID
+COMMIT=$(git rev-parse HEAD)
+COMMIT_ABBREV=${COMMIT:0:8}
+
+# Mark the build as dirty if any indexed files are modified
+git diff-index --quiet HEAD || {
+	COMMIT="dirty-$COMMIT"
+	COMMIT_ABBREV="dirty-$COMMIT_ABBREV"
+}
+
+# Get the exact tag, branch, nearest tag for this commit
+BRANCH=$(git rev-parse --abbrev-ref HEAD) || true
+EXACT_TAG=$(git describe --exact-match --abbrev=0) || true
+NEAREST_TAG=$(git describe --abbrev=0) || true
+
+# Good enough semver regex
+SEMVER='^v?\d+\.\d+\.\d+(\-[a-zA-Z0-9_\-\.]+)?(\+[a-zA-Z0-9_\-\.]+)?'
+
+# Try to get a semver version from, in order of preference:
+# exact tag, nearest tag + commit ID, branch name + commit ID, or just use
+# "0.0.0-unversioned+$COMMIT"
+VERSION="$(echo "$EXACT_TAG" | grep -oE "$SEMVER")" || \
+	VERSION="$(echo "$NEAREST_TAG" | grep -oE "$SEMVER")+plus-$COMMIT_ABBREV" || \
+	VERSION="$(echo "$BRANCH" | grep -oE "$SEMVER")+plus-$COMMIT_ABBREV" || \
+	VERSION="0.0.0-unversioned+$COMMIT_ABBREV"
+
+log "Building sous version $VERSION ($COMMIT)"
+
+# Empty the artifacts dir...
+if [ -d "$ARTIFACTS_DIR" ]; then
+	rm -r "$ARTIFACTS_DIR" && mkdir "$ARTIFACTS_DIR"
+	echo "Do not check in this directory, it is used for ephemeral build artifacts." > \
+		"$ARTIFACTS_DIR/README.md"
+fi
+
+log "Cleaned $ARTIFACTS_DIR."
+
+log "Generate resources."
+go generate
+
+BUILDS_FAILED=0
+BUILDS_SUCCEEDED=0
+for T in "${REQUESTED_TARGETS[@]}"; do
+	log "Starting compile for $T"
+	IFS='/' read -ra PARTS <<< "$T"
+
+	export GOOS="${PARTS[0]}" GOARCH="${PARTS[1]}"
+
+	flags="-X 'main.RevisionID=$COMMIT' \
+		-X 'main.VersionString=$VERSION' \
+		-X 'main.OS=$GOOS' -X 'main.Arch=$GOARCH' \
+		-X 'main.GoVersion=$GOVERSION'"
+
+	ART_PATH="$ARTIFACTS_DIR/$VERSION/$GOOS/$GOARCH"
+	
+	# Compile
+	if ! go build -ldflags="$flags" -o "$ART_PATH/sous"; then
+		log "Build failed for $T"
+		((BUILDS_FAILED++))
+		continue
+	fi
+
+	log "Compile successful."
+
+	# Create the archive
+	ARCHIVE_PATH="$ARTIFACTS_DIR/sous-$VERSION-$GOOS-$GOARCH.tar.gz"
+	log "Archiving $ART_PATH as $ARCHIVE_PATH"
+	if ! [ -d "$ART_PATH" ]; then
+		log "Archive path does not exist: $ART_PATH"
+		BUILDS_FAILED=$((BUILDS_FAILED+1))
+		continue
+	fi
+	if ! (cd "$ART_PATH" && tar -czvf "$ARCHIVE_PATH" .); then
+		log "Failed to create archive for $V"
+		BUILDS_FAILED=$((BUILDS_FAILED+1))
+		continue
+	fi
+	BUILDS_SUCCEEDED=$((BUILDS_SUCCEEDED+1))
+done
+TOTAL_BUILDS=$((BUILDS_SUCCEEDED+BUILDS_FAILED))
+if [[ "$BUILDS_FAILED" == 1 ]]; then
+	die "1 build of $TOTAL_BUILDS failed."
+elif [[ "$BUILDS_FAILED" != 0 ]]; then
+	die "$BUILDS_FAILED of $TOTAL_BUILDS builds failed"
+fi
+
+log "========================= Contents of $ARTIFACTS_DIR:"
+ls -lah "$ARTIFACTS_DIR"
+log "========================= END"
+
+
+log "All $BUILDS_SUCCEEDED of $BUILDS_SUCCEEDED builds were successful."
+
