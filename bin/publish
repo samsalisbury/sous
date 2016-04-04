@@ -6,7 +6,7 @@ TAG="$1"
 
 # Make sure we're actually on the tag specified, as some CI systems (e.g. Travis)
 # leave the repo with a detached head.
-git checkout "$TAG"
+#git checkout "$TAG"
 
 PRERELEASE=""
 echo "$TAG" | grep -E '\-' && PRERELEASE="--pre-release"
