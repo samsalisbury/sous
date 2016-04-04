@@ -29,8 +29,11 @@ COMMIT_ABBREV=${COMMIT:0:8}
 
 [ -n "$COMMIT" ] || die "Unable to determine commit."
 
+log "Building commit $COMMIT_ABBREV ($COMMIT)"
+
 # Mark the build as dirty if any indexed files are modified
 git diff-index --quiet HEAD || {
+	log "Working tree is dirty, marking commit ID as dirty."
 	COMMIT="dirty-$COMMIT"
 	COMMIT_ABBREV="dirty-$COMMIT_ABBREV"
 }
@@ -40,8 +43,12 @@ BRANCH=$(git rev-parse --abbrev-ref HEAD) || true
 EXACT_TAG=$(git describe --exact-match --abbrev=0) || true
 NEAREST_TAG=$(git describe --abbrev=0) || true
 
+log "BRANCH: '$BRANCH'; EXACT_TAG: '$EXACT_TAG'; NEAREST_TAG: '$NEAREST_TAG'"
+
 [ -z "$EXACT_TAG" ] && EXACT_TAG="$TAG"
 [ -z "$EXACT_TAG" ] && die "Unable to determine tag. Either supply a tag as the first argument, or build inside a git repo."
+
+log "BRANCH: '$BRANCH'; EXACT_TAG: '$EXACT_TAG'; NEAREST_TAG: '$NEAREST_TAG'"
 
 # Good enough semver regex
 SEMVER='^v?\d+\.\d+\.\d+(\-[a-zA-Z0-9_\-\.]+)?(\+[a-zA-Z0-9_\-\.]+)?'

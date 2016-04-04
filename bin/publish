@@ -43,6 +43,6 @@ find artifacts/*.tar.gz | {
 			FAILED=YES
 		}
 	done
-	[ "$FAILED" = "YES" ] && exit 1
+	[ "$FAILED" = "NO" ] || exit 1
 }
 
