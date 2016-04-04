@@ -17,6 +17,9 @@ git add -A .
 git status
 git reset
 git status
+git remote -v
+git tag -ln999
+git checkout "$TAG"
 git diff-index HEAD
 git diff-index -p HEAD
 git rev-parse --show-toplevel
