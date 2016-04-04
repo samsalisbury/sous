@@ -1,0 +1,27 @@
+#!/bin/sh
+
+TAG="$1"
+[ -z "$TAG" ] && { echo "Not tagged - not running build/publish"; exit 0; }
+
+# Build the archives
+./bin/build all || { echo "Build failed."; exit 1; }
+
+# github-release config
+[ -z "$GITHUB_TOKEN" ] && export GITHUB_TOKEN="$GH_ACCESS"
+[ -z "$GITHUB_USER" ]  && export GITHUB_USER=opentable
+[ -z "$GITHUB_REPO" ]  && export GITHUB_REPO=sous
+
+go get github.com/aktau/github-release || { exit 1; } 
+
+# Transform the tag into a release if it's not already.
+if ! github-release info -t "$TAG"; then
+	# Get the tag message by itself.
+	MSG="$(git tag -ln999 "$TAG" | sed "s/$TAG  //")"
+	github-release release -t "$TAG" -d "$MSG" -n "$TAG" -c "$COMMIT" || { exit 1; }
+fi
+
+# Upload the archives.
+find artifacts/*.tar.gz | while read -r FILEPATH; do 
+	FILENAME="$(basename "$FILEPATH")"
+	github-release upload -t "$TAG" -f "$FILEPATH" -n "$FILENAME"
+done
