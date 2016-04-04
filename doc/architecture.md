@@ -27,22 +27,16 @@ Once those commands have been carried out, and the new Actual Manifest matches t
 the new GDM is marked as "current" and "achieved"
 and the previous "current" GDM version loses "current" but retains an "achieved" flag.
 
-_
-Discussion:
+_Discussion:
 It is possible that if multiple steps of "intended" manifest state were received
 that intermediate states might not ever have been achieved.
 Alternatively, proposed updates might be rejected while the deployment state is in flux.
-Or the new proposed GDMs might be queued and walked up, achieving each in turn until no new intended states exist.
-_
+Or the new proposed GDMs might be queued and walked up, achieving each in turn until no new intended states exist._
 
-_
-The drawback of reject-in-flux is the perceived friction introduced into the Sous process.
-Conversely, queue-and-walk might fail at some point, in which case later intended states would need to be treated as failed, and there's a problem of notification.
-_
+_The drawback of reject-in-flux is the perceived friction introduced into the Sous process.
+Conversely, queue-and-walk might fail at some point, in which case later intended states would need to be treated as failed, and there's a problem of notification._
 
-_
-One possibility would be to treat services as the versionable entities, and the global "current" and "acheived" states to be sets of particular versioned service manifests.
-_
+_One possibility would be to treat services as the versionable entities, and the global "current" and "acheived" states to be sets of particular versioned service manifests._
 
 **Buildpacks** are sets of instructions to build containers.
 The bare minimum buildpack starts from an existing Dockerfile, builds the associated container and labels it for use by Sous Server.
@@ -87,21 +81,15 @@ Pins
 (`v1.0.0,cabbagedeadbeef`)
 can sometimes be provided in the context of an artifact name in order indicate the associated pinned artifact.
 
-_
-Open question:
-using , and ; as delimiters implies that they're forbidden in the delimited text - what if a subdir or tag name uses those characters?
-_
+_Open question:
+using , and ; as delimiters implies that they're forbidden in the delimited text - what if a subdir or tag name uses those characters?_
 
-_
-Alternative:
+_Alternative:
 treat these complex data types as exactly that and use dictionaries where ever they appear.
 This will make CLI UIs somewhat more cumbersome,
-and admit the failure case of (temporarily) inconsistent state when one k/v in the dictionary changes out of sync with the rest.
-_
+and admit the failure case of (temporarily) inconsistent state when one k/v in the dictionary changes out of sync with the rest._
 
-_
-Open question:
+_Open question:
 tying tag and revsha together leads to this problem: what if a tag is republished?
 The git manual strongly implies that public tags shouldn't be republished, but like many things you shouldn't do, git figures you know best.
-How does Sous handle the case where a known pinned artifact name is no longer accurate because the named revision isn't the tag anymore?
-_
+How does Sous handle the case where a known pinned artifact name is no longer accurate because the named revision isn't the tag anymore?_
