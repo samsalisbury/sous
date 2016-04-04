@@ -6,34 +6,28 @@ ARTIFACTS_DIR="artifacts"
 
 log() { echo "$@" 1>&2; }
 die() { log "$@"; exit 1; }
-if [ -z "$1" ]; then
-	die "usage: $0 self | all | TARGET..."
-fi
-if [ -z "$GOOS" ]; then
-	GOOS=$(uname | tr '[:upper:]' '[:lower:]')
-	export GOOS
-fi
-if [ -z "$GOARCH" ]; then
-	export GOARCH=amd64
-fi
+TAG="$1"
+shift
+PLATFORMS="$1"
+[ -z "$PLATFORMS" ] && PLATFORMS="all"
+
 set -euo pipefail
 ARTIFACTS_DIR="$PWD/$ARTIFACTS_DIR"
-REQUESTED_TARGETS=($@)
 STANDARD_TARGETS=(linux/amd64 darwin/amd64)
 
 GOVERSION="$(go version)"
 
-if [[ "$1" == "all" ]]; then
-	REQUESTED_TARGETS=(${STANDARD_TARGETS[@]})
-elif [[ "$1" == "self" ]]; then
-	REQUESTED_TARGETS=($GOOS/$GOARCH)
-fi
+[ "$PLATFORMS" = "all" ] && REQUESTED_TARGETS=(${STANDARD_TARGETS[@]})
+[ "$PLATFORMS" == "self" ] && { eval "$(go env)"; REQUESTED_TARGETS=($GOOS/$GOARCH); }
+[ -n "${REQUESTED_TARGETS[0]}" ] || REQUESTED_TARGETS=($@)
 
 log "Building for ${REQUESTED_TARGETS[*]}"
 
 # Get the commit ID
 COMMIT=$(git rev-parse HEAD)
 COMMIT_ABBREV=${COMMIT:0:8}
+
+[ -n "$COMMIT" ] || die "Unable to determine commit."
 
 # Mark the build as dirty if any indexed files are modified
 git diff-index --quiet HEAD || {
@@ -45,6 +39,9 @@ git diff-index --quiet HEAD || {
 BRANCH=$(git rev-parse --abbrev-ref HEAD) || true
 EXACT_TAG=$(git describe --exact-match --abbrev=0) || true
 NEAREST_TAG=$(git describe --abbrev=0) || true
+
+[ -z "$EXACT_TAG" ] && EXACT_TAG="$TAG"
+[ -z "$EXACT_TAG" ] && die "Unable to determine tag. Either supply a tag as the first argument, or build inside a git repo."
 
 # Good enough semver regex
 SEMVER='^v?\d+\.\d+\.\d+(\-[a-zA-Z0-9_\-\.]+)?(\+[a-zA-Z0-9_\-\.]+)?'

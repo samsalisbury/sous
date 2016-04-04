@@ -4,7 +4,7 @@ TAG="$1"
 [ -z "$TAG" ] && { echo "Not tagged - not running build/publish"; exit 0; }
 
 # Build the archives
-./bin/build all || { echo "Build failed."; exit 1; }
+./bin/build "$TAG" || { echo "Build failed."; exit 1; }
 
 # github-release config
 [ -z "$GITHUB_TOKEN" ] && export GITHUB_TOKEN="$GH_ACCESS"
