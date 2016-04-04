@@ -47,18 +47,23 @@ NEAREST_TAG=$(git describe --abbrev=0) || true
 
 log "BRANCH: '$BRANCH'; EXACT_TAG: '$EXACT_TAG'; NEAREST_TAG: '$NEAREST_TAG'"
 
-[ -z "$EXACT_TAG" ] && EXACT_TAG="$TAG"
-[ -z "$EXACT_TAG" ] && die "Unable to determine tag. Either supply a tag as the first argument, or build inside a git repo."
+[ -n "$EXACT_TAG" ] || EXACT_TAG="$TAG"
+[ -n "$EXACT_TAG" ] || die "Unable to determine tag. Either supply a tag as the first argument, or build inside a git repo."
 
 log "BRANCH: '$BRANCH'; EXACT_TAG: '$EXACT_TAG'; NEAREST_TAG: '$NEAREST_TAG'"
 
 # Good enough semver regex
 SEMVER='^v?\d+\.\d+\.\d+(\-[a-zA-Z0-9_\-\.]+)?(\+[a-zA-Z0-9_\-\.]+)?'
 
+log "SEMVER: $SEMVER"
+
 # Try to get a semver version from, in order of preference:
 # exact tag, nearest tag + commit ID, branch name + commit ID, or just use
 # "0.0.0-unversioned+$COMMIT"
 VERSION="$(echo "$EXACT_TAG" | grep -oE "$SEMVER")"
+
+log "VERSION: $VERSION"
+
 PLUS_COMMIT="+plus-$COMMIT_ABBREV"
 if [ -z "$VERSION" ]; then 
 	VERSION="$(echo "$NEAREST_TAG" | grep -oE "$SEMVER")$PLUS_COMMIT"
