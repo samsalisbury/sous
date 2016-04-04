@@ -33,7 +33,7 @@
 
 # feature comparison
 
-This is a work in progress... 
+This is a work in progress...
 
 | Feature                              | Spinnaker | PaaSTA | Nomad | Swarm | Compose | Otto | Sous |
 | ---                                  | ---       | ---    | ---   | ---   | ---     | ---  | ---  |
@@ -43,9 +43,9 @@ This is a work in progress...
 | Run universal platform contracts.    | ?         | YES    | ?     | ?     | ?       | ?    | YES  |
 | Run custom smoke tests in all envs.  | ?         | YES    | ?     | ?     | ?       | ?    | YES  |
 |                                      | ?         | YES    | ?     | ?     | ?       | ?    | YES  |
-| Single, unified deployment workflow.                                     | ?         | YES    | ?     | ?     | ?       | ?    | YES  |
-| Easily deploy any application.                                     | ?         | YES    | ?     | ?     | ?       | ?    | YES  |
-| Centralised environment config.                                     | ?         | YES    | ?     | ?     | ?       | ?    | YES  |
+| Single, unified deployment workflow. | ?         | YES    | ?     | ?     | ?       | ?    | YES  |
+| Easily deploy any application.       | ?         | YES    | ?     | ?     | ?       | ?    | YES  |
+| Centralised environment config.      | ?         | YES    | ?     | ?     | ?       | ?    | YES  |
 |                                      | ?         | YES    | ?     | ?     | ?       | ?    | YES  |
 |                                      | ?         | YES    | ?     | ?     | ?       | ?    | YES  |
 |                                      | ?         | YES    | ?     | ?     | ?       | ?    | YES  |
