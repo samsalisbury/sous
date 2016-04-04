@@ -1,5 +1,20 @@
 #!/bin/sh
 
+echo "DEBUG>>>>>>>>>>>>>>>>>>>>"
+set -x
+pwd
+ls -lah
+git version
+git rev-parse --show-toplevel
+git diff
+git rev-parse HEAD
+git rev-parse --abbrev-ref HEAD
+git describe --exact-match --abbrev=0
+git describe --abbrev=0
+env
+set +x
+echo "<<<<<<<<<<<<<<<<<<<<DEBUG"
+
 TAG="$1"
 [ -z "$TAG" ] && { echo "Not tagged - not running build/publish"; exit 0; }
 
