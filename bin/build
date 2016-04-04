@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set +x
+
 # Config
 ARTIFACTS_DIR="artifacts"
 # End Config
