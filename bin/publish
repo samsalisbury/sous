@@ -1,10 +1,17 @@
 #!/bin/sh
 
+TAG="$1"
+
 echo "DEBUG>>>>>>>>>>>>>>>>>>>>"
 set -x
+grep --version
+grep --help
+SEMVER='^v?\d+\.\d+\.\d+(\-[a-zA-Z0-9_\-\.]+)?(\+[a-zA-Z0-9_\-\.]+)?'
+echo "$TAG" | grep -oE "$SEMVER"
 pwd
 ls -lah
 git version
+git diff-index HEAD
 git rev-parse --show-toplevel
 git diff
 git rev-parse HEAD
@@ -15,7 +22,6 @@ env
 set +x
 echo "<<<<<<<<<<<<<<<<<<<<DEBUG"
 
-TAG="$1"
 [ -z "$TAG" ] && { echo "Not tagged - not running build/publish"; exit 0; }
 
 PRERELEASE=""
@@ -32,14 +38,27 @@ echo "$TAG" | grep -E '\-' && PRERELEASE="--pre-release"
 go get github.com/aktau/github-release || { exit 1; } 
 
 # Transform the tag into a release if it's not already.
-if ! github-release info -t "$TAG"; then
+if ! github-release info -t "$TAG" > /dev/null 2>&1; then
+	echo "Converting tag $TAG into GitHub release..."
 	# Get the tag message by itself.
 	MSG="$(git tag -ln999 "$TAG" | sed "s/$TAG  //")"
-	github-release release -t "$TAG" -d "$MSG" -n "$TAG" -c "$COMMIT" $PRERELEASE || { exit 1; }
+	github-release release -t "$TAG" -d "$MSG" -n "$TAG" -c "$COMMIT" $PRERELEASE || {
+		echo "Failed to create release."
+		exit 1;
+	}
 fi
 
 # Upload the archives.
-find artifacts/*.tar.gz | while read -r FILEPATH; do 
-	FILENAME="$(basename "$FILEPATH")"
-	github-release upload -t "$TAG" -f "$FILEPATH" -n "$FILENAME"
-done
+FAILED=NO
+find artifacts/*.tar.gz | {
+	while read -r FILEPATH; do 
+		FILENAME="$(basename "$FILEPATH")"
+		echo "Uploading archive $FILENAME..."
+		github-release upload -t "$TAG" -f "$FILEPATH" -n "$FILENAME" || {
+			echo "Upload failed."
+			FAILED=YES
+		}
+	done
+	[ "$FAILED" = "YES" ] && exit 1
+}
+
