@@ -53,13 +53,14 @@ log "BRANCH: '$BRANCH'; EXACT_TAG: '$EXACT_TAG'; NEAREST_TAG: '$NEAREST_TAG'"
 log "BRANCH: '$BRANCH'; EXACT_TAG: '$EXACT_TAG'; NEAREST_TAG: '$NEAREST_TAG'"
 
 # Good enough semver regex
-SEMVER='^v?\d+\.\d+\.\d+(\-[a-zA-Z0-9_\-\.]+)?(\+[a-zA-Z0-9_\-\.]+)?'
+SEMVER='^v?\d+\.\d+\.\d+(-[a-zA-Z0-9_\-\.]+)?(\+[a-zA-Z0-9_\-\.]+)?'
 
 log "SEMVER: $SEMVER"
 
 # Try to get a semver version from, in order of preference:
 # exact tag, nearest tag + commit ID, branch name + commit ID, or just use
 # "0.0.0-unversioned+$COMMIT"
+set +eo pipefail
 VERSION="$(echo "$EXACT_TAG" | grep -oE "$SEMVER")"
 
 log "VERSION: $VERSION"
@@ -74,6 +75,7 @@ fi
 if [ -z "$VERSION" ]; then
 	VERSION="0.0.0-unversioned+$COMMIT_ABBREV"
 fi
+set -eo pipefail
 
 log "Building sous version $VERSION ($COMMIT)"
 
