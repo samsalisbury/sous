@@ -2,37 +2,11 @@
 
 TAG="$1"
 
-echo "DEBUG>>>>>>>>>>>>>>>>>>>>"
-set -x
-grep --version
-grep --help
-SEMVER='^v?\d+\.\d+\.\d+(\-[a-zA-Z0-9_\-\.]+)?(\+[a-zA-Z0-9_\-\.]+)?'
-echo "$TAG"
-echo "$TAG" | grep -oE "$SEMVER"
-pwd
-ls -lah
-git version
-git status
-git add -A .
-git status
-git reset
-git status
-git remote -v
-git tag -ln999
-git checkout "$TAG"
-git diff-index HEAD
-git diff-index -p HEAD
-git rev-parse --show-toplevel
-git diff
-git rev-parse HEAD
-git rev-parse --abbrev-ref HEAD
-git describe --exact-match --abbrev=0
-git describe --abbrev=0
-env
-set +x
-echo "<<<<<<<<<<<<<<<<<<<<DEBUG"
-
 [ -z "$TAG" ] && { echo "Not tagged - not running build/publish"; exit 0; }
+
+# Make sure we're actually on the tag specified, as some CI systems (e.g. Travis)
+# leave the repo with a detached head.
+git checkout "$TAG"
 
 PRERELEASE=""
 echo "$TAG" | grep -E '\-' && PRERELEASE="--pre-release"

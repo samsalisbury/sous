@@ -49,10 +49,17 @@ SEMVER='^v?\d+\.\d+\.\d+(\-[a-zA-Z0-9_\-\.]+)?(\+[a-zA-Z0-9_\-\.]+)?'
 # Try to get a semver version from, in order of preference:
 # exact tag, nearest tag + commit ID, branch name + commit ID, or just use
 # "0.0.0-unversioned+$COMMIT"
-VERSION="$(echo "$EXACT_TAG" | grep -oE "$SEMVER")" || \
-	VERSION="$(echo "$NEAREST_TAG" | grep -oE "$SEMVER")+plus-$COMMIT_ABBREV" || \
-	VERSION="$(echo "$BRANCH" | grep -oE "$SEMVER")+plus-$COMMIT_ABBREV" || \
+VERSION="$(echo "$EXACT_TAG" | grep -oE "$SEMVER")"
+PLUS_COMMIT="+plus-$COMMIT_ABBREV"
+if [ -z "$VERSION" ]; then 
+	VERSION="$(echo "$NEAREST_TAG" | grep -oE "$SEMVER")$PLUS_COMMIT"
+fi
+if [ -z "$VERSION" ]; then
+	VERSION="$(echo "$BRANCH" | grep -oE "$SEMVER")$PLUS_COMMIT"
+fi
+if [ -z "$VERSION" ]; then
 	VERSION="0.0.0-unversioned+$COMMIT_ABBREV"
+fi
 
 log "Building sous version $VERSION ($COMMIT)"
 
