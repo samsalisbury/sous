@@ -3,6 +3,9 @@
 TAG="$1"
 [ -z "$TAG" ] && { echo "Not tagged - not running build/publish"; exit 0; }
 
+PRERELEASE=""
+echo "$TAG" | grep -E '\-' && PRERELEASE="--pre-release"
+
 # Build the archives
 ./bin/build "$TAG" || { echo "Build failed."; exit 1; }
 
@@ -17,7 +20,7 @@ go get github.com/aktau/github-release || { exit 1; }
 if ! github-release info -t "$TAG"; then
 	# Get the tag message by itself.
 	MSG="$(git tag -ln999 "$TAG" | sed "s/$TAG  //")"
-	github-release release -t "$TAG" -d "$MSG" -n "$TAG" -c "$COMMIT" || { exit 1; }
+	github-release release -t "$TAG" -d "$MSG" -n "$TAG" -c "$COMMIT" $PRERELEASE || { exit 1; }
 fi
 
 # Upload the archives.
