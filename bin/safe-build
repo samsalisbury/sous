@@ -12,6 +12,7 @@ fi
 
 export GOPATH="${TMPDIR%/}"
 TARGET="$GOPATH/src/github.com/opentable/sous"
+[ -d "$TARGET" ] && rm -rf "$TARGET"
 mkdir -p "$TARGET"
 cp -R . "$TARGET"
 

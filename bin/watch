@@ -18,7 +18,7 @@
 #    5. Notifies you of the result verbally, and with desktop notifications.
 #
 
-COMMAND="$@"
+COMMAND="$*"
 echo "Command: '$COMMAND'"
 
 (command -v fswatch >/dev/null) || { echo "please install fswatch first (it's on homebrew)"; exit 1; }
@@ -32,11 +32,11 @@ IMAGE_OK="/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/Toolb
 IMAGE_FAIL="/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/AlertStopIcon.icns"
 build() {
 	afplay -v 0.5 /System/Library/Sounds/Glass.aiff &
-	[ -z "$1" ] && {
+	if [ -z "$1" ]; then
 		CHANGED_FILES="No changes."
-	} || {
+	else
 		CHANGED_FILES="Changed files: $1"
-	}
+	fi
 	if result=$(./bin/install-dev); then
 		s "Sous OK!"
 		n "Sous OK" "$CHANGED_FILES" "$IMAGE_OK" &
@@ -60,7 +60,7 @@ while true; do
 	echo "Waiting for changes..."
 	fswatch -1ri '\.go$' -e '.*' . |
 	{
-		while read x; do
+		while read -r x; do
 			CF="${x#$PWD/}"
 			CHANGES="$CHANGES$CF "
 		done
