@@ -176,13 +176,7 @@ can do this:
     sous contracts -image <image>
 
 Replacing `<image>` with the name of the image you want to test.
-<<<<<<< 58f2f781b62ba7bf9c51db3d6661831ccc63788e
 
 ## LICENSE
 
 MIT
-
-||||||| merged common ancestors
-
-=======
->>>>>>> Quick guide to getting set up with Go and Sous
