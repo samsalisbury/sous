@@ -2,6 +2,10 @@
 
 A collection of single-approaches, domain modelling, and overall structure of the Sous project.
 
+Please read the [sous ontology] first, as it contains definitions for many of the words used in this document.
+
+[sous ontology]: ontology.md
+
 ## Components
 
 **Sous Build** is a tool used both for local development and on build servers.
