@@ -8,23 +8,23 @@ Docker, Mesos, and Singularity.
 ## Features
 
 - Runs on Mac and Linux (Windows support not currently planned) -
-Use the same tool for local development and in your CI pipeline
+  Use the same tool for local development and in your CI pipeline
 - Easily distribute shared configuration using the built-in sous
-server - Automatically adds rich metadata to your Docker images - Run
-executable contracts against any Docker image, to ensure it behaves
-appropriately for your platform. - Define platform contracts in terms of
-application interactions - Automatically build NodeJS and Go code using
-a multi-stage build process that eliminates build-time dependencies from
-your production containers. (Java, C#, Ruby, and other languages coming
-soon.)
+  server - Automatically adds rich metadata to your Docker images - Run
+  executable contracts against any Docker image, to ensure it behaves
+  appropriately for your platform. - Define platform contracts in terms of
+  application interactions - Automatically build NodeJS and Go code using
+  a multi-stage build process that eliminates build-time dependencies from
+  your production containers. (Java, C#, Ruby, and other languages coming
+  soon.)
 
 ### Planned features
 
 - Multi-datacentre deployment orchestration (coming very soon)
 - Declarative YAML-based DSL to define deployments (coming very soon)
 - Safely deploy source code to production Global event log HTTP API
-- to interrogate, and instigate changes to global state Run projects
-- locally in a simulated production environment
+  to interrogate, and instigate changes to global state Run projects
+  locally in a simulated production environment
 
 ## Ethos
 
@@ -50,7 +50,7 @@ typing
 Alternatively, you can install the latest development version on your
 Mac using homebrew:
 
- $ brew install --HEAD opentable/osx-tools/sous
+    $ brew install --HEAD opentable/osx-tools/sous
 
 We plan to begin releasing versioned pre-built binaries soon.
 
@@ -74,9 +74,10 @@ the power to re-play what happened, and figure out the issue.
 
 You will need:
 
-- Git >=2.2 Docker >=1.10                                             .0
+- Git >=2.2
+- Docker >=1.10
 
-On Mac, I would recommend installing Docker by installing docker-machine
+On Mac, we recommend installing Docker by installing docker-machine
 via the Docker Toolbox available at https://www.docker.com/toolbox
 
 ## Basic Usage
@@ -93,23 +94,37 @@ issues, as well as other diagnostic information.
 
 ### Commands
 
-```shell $ sous help Sous is a tool to help with building and testing
-docker images, verifying your code against platform contracts, and
-deploying to Singularity.
+```shell
+$ sous help
+Sous is a tool to help with building and testing docker images, verifying your
+code against platform contracts, and deploying to Singularity.
 
-Commands: build build your project build-path build state directory
-clean delete your project's containers and images config get/set config
-properties contracts check project against platform contracts detect
-detect available actions dockerfile print current dockerfile help show
-this help image print last built docker image tag logs view stdout and
-stderr from containers ls list images, containers and other artifacts
-parse parse global state directory push push your project run run your
-project server run the sous server stamp stamp labels onto docker images
-state global deployment state task_host get task host task_port get
-task port test test your project update update sous config version show
-version info
+Commands:
+build build your project
+build-path build state directory
+clean delete your project's containers and images
+config get/set config properties
+contracts check project against platform contracts
+detect detect available actions
+dockerfile print current dockerfile
+help show this help
+image print last built docker image tag
+logs view stdout and stderr from containers
+ls list images, containers and other artifacts
+parse parse global state directory
+push push your project
+run run your project
+server run the sous server
+stamp stamp labels onto docker images
+state global deployment state
+task_host get task host
+task_port get task port
+test test your project
+update update sous config
+version show version info
 
-Tip: for help with any command, use `sous help <COMMAND> ``            `
+Tip: for help with any command, use sous help <COMMAND>
+```
 
 
 ### Building
@@ -178,4 +193,3 @@ Replacing `<image>` with the name of the image you want to test.
 ## LICENSE
 
 MIT
-
