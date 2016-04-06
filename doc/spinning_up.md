@@ -1,8 +1,9 @@
 # Contributing
 
-It's natural to be concerned that Sous is being written in Go, which isn't (yet) a very common language at OpenTable.
-There were a number of good reasons for this decision,
-but here we want to streamline the process of going from zero to contributions.
+In the interest of streamlining the process of going from zero to contributions,
+here's a quick guide to getting going with [Go.]
+
+[Go.](golang.org)
 
 ## Setting up
 
@@ -37,6 +38,7 @@ You're already ready to branch, hack, and pull-request.
 ## Workflow
 
 We've adopted a pull-request, git-flow-y model of development for Sous.
-Commit changes on a branch and issue pull-requests with your changes.
+Start by forking the project, then
+commit changes on a branch and issue pull-requests with your changes.
 We would appreciate tests for new code,
 (and new tests for old code...)

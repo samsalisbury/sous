@@ -54,7 +54,7 @@ Mac using homebrew:
 
 We plan to begin releasing versioned pre-built binaries soon.
 
-(for development guides, see [here](docs/contributing.md)
+(for development guides, see [here](docs/spinning_up.md)
 
 ### Initial Setup
 
