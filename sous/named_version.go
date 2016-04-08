@@ -1,8 +1,8 @@
 package sous
 
 import (
-	"bytes"
 	"fmt"
+	"strings"
 
 	"github.com/samsalisbury/semv"
 	"golang.org/x/text/unicode/norm"
@@ -76,7 +76,7 @@ func (self *CanonicalName) NamedVersion(version semv.Version) (nv NamedVersion) 
 	return nv
 }
 
-var DefaultDelim = []byte(",")
+const DefaultDelim = ","
 
 func (err *IncludesVersion) Error() string {
 	return fmt.Sprintf("Three parts found (includes a version?) in a canonical name: %q", err.parsing)
@@ -94,62 +94,41 @@ func (err *MissingPath) Error() string {
 	return fmt.Sprintf("No path found in %q (did find repo: %q)", err.parsing, err.repo)
 }
 
-func parseChunks(sourceStr string) [3][]byte {
-	source := []byte(sourceStr)
+func parseChunks(sourceStr string) []string {
+	source := norm.NFC.String(sourceStr)
 
-	var chunks [3][]byte
-
-	var iter norm.Iter
-	iter.Init(norm.NFC, source)
-
-	start := 0
 	delim := DefaultDelim
-	first := iter.Next()
-	if !('A' <= first[0] && first[0] <= 'Z') && !('a' <= first[0] && first[0] <= 'z') {
-		delim = first
-		start = iter.Pos()
+	if !('A' <= source[0] && source[0] <= 'Z') && !('a' <= source[0] && source[0] <= 'z') {
+		delim = source[0:1]
+		source = source[1:]
 	}
 
-	for char := iter.Next(); !iter.Done() && !bytes.Equal(char, delim); char = iter.Next() {
-	}
-	chunks[0] = source[start : iter.Pos()-1]
-	start = iter.Pos()
-
-	for char := iter.Next(); !iter.Done() && !bytes.Equal(char, delim); char = iter.Next() {
-	}
-	chunks[1] = source[start : iter.Pos()-1]
-	start = iter.Pos()
-
-	for char := iter.Next(); !iter.Done() && !bytes.Equal(char, delim); char = iter.Next() {
-	}
-	chunks[2] = source[start:]
-	start = iter.Pos()
-
-	return chunks
+	return strings.Split(source, delim)
 }
 
-func namedVersionFromChunks(source string, chunks [3][]byte) (nv NamedVersion, err error) {
+func namedVersionFromChunks(source string, chunks []string) (nv NamedVersion, err error) {
 	if !(len(chunks[0]) > 0) {
 		err = &MissingRepo{source}
 		return
 	}
+
 	nv.RepositoryName = RepositoryName(chunks[0])
 
 	nv.Version, err = semv.Parse(string(chunks[1]))
 	if err != nil {
 		return
 	}
-	if !(len(chunks[2]) > 0) {
-		err = &MissingPath{string(nv.RepositoryName), source}
-		return
+	if len(chunks) < 3 {
+		nv.Path = ""
+	} else {
+		nv.Path = Path(chunks[2])
 	}
-	nv.Path = Path(chunks[2])
 
 	return
 }
 
-func canonicalNameFromChunks(source string, chunks [3][]byte) (cn CanonicalName, err error) {
-	if !(len(chunks[2]) > 0) {
+func canonicalNameFromChunks(source string, chunks []string) (cn CanonicalName, err error) {
+	if len(chunks) > 2 {
 		err = &IncludesVersion{source}
 		return
 	}
@@ -160,11 +139,11 @@ func canonicalNameFromChunks(source string, chunks [3][]byte) (cn CanonicalName,
 	}
 	cn.RepositoryName = RepositoryName(chunks[0])
 
-	if !(len(chunks[1]) > 0) {
-		err = &MissingPath{string(cn.RepositoryName), source}
-		return
+	if len(chunks) < 2 {
+		cn.Path = ""
+	} else {
+		cn.Path = Path(chunks[1])
 	}
-	cn.Path = Path(chunks[1])
 
 	return
 }
@@ -181,9 +160,13 @@ func ParseCanonicalName(source string) (cn CanonicalName, err error) {
 
 func ParseGenName(source string) (name EntityName, err error) {
 	chunks := parseChunks(source)
-	name, err = namedVersionFromChunks(source, chunks)
-	if _, ok := err.(*MissingPath); ok {
-		name, err = canonicalNameFromChunks(source, chunks)
+	switch len(chunks) {
+	case 3:
+		return namedVersionFromChunks(source, chunks)
+	case 2:
+		return canonicalNameFromChunks(source, chunks)
+	default:
+		return nil, fmt.Errorf("cannot parse %q - divides into %d chunks", source, len(chunks))
 	}
 	return
 }
