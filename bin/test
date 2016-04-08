@@ -1,0 +1,17 @@
+#!/bin/sh
+
+FAILED=YES
+
+# grab the output, set failed status
+OUT="$(go test ./... 2>&1)" && FAILED=NO
+
+# print output, filtering out the "no test files" packages
+printf "%s" "$OUT" | grep -v 'no test files'
+
+# exit with correct error code
+[ "$FAILED" != "NO" ] && {
+	echo "Tests failed."
+	exit 1
+}
+
+echo "All tests passed."
