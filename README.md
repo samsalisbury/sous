@@ -54,6 +54,8 @@ Mac using homebrew:
 
 We plan to begin releasing versioned pre-built binaries soon.
 
+(for development guides, see [here](docs/spinning_up.md)
+
 ### Initial Setup
 
 Currently, sous cannot do much without a sous server instance to provide
