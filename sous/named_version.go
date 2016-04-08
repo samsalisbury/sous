@@ -94,37 +94,36 @@ func (err *MissingPath) Error() string {
 	return fmt.Sprintf("No path found in %q (did find repo: %q)", err.parsing, err.repo)
 }
 
-func parseChunks(source string) [3][]byte {
+func parseChunks(sourceStr string) [3][]byte {
+	source := []byte(sourceStr)
+
 	var chunks [3][]byte
 
 	var iter norm.Iter
-	chunk := make([]byte, 50)
-	iter.InitString(norm.NFC, source)
+	iter.Init(norm.NFC, source)
 
+	start := 0
 	delim := DefaultDelim
 	first := iter.Next()
-	if ('A' <= first[0] && first[0] <= 'Z') || ('a' <= first[0] && first[0] <= 'z') {
+	if !('A' <= first[0] && first[0] <= 'Z') && !('a' <= first[0] && first[0] <= 'z') {
 		delim = first
-	} else {
-		chunk = append(chunk, first...)
+		start = iter.Pos()
 	}
 
 	for char := iter.Next(); !iter.Done() && !bytes.Equal(char, delim); char = iter.Next() {
-		chunk = append(chunk, char...)
 	}
-	chunks[0] = chunk
+	chunks[0] = source[start : iter.Pos()-1]
+	start = iter.Pos()
 
-	chunk = make([]byte, 50)
 	for char := iter.Next(); !iter.Done() && !bytes.Equal(char, delim); char = iter.Next() {
-		chunk = append(chunk, char...)
 	}
-	chunks[1] = chunk
+	chunks[1] = source[start : iter.Pos()-1]
+	start = iter.Pos()
 
-	chunk = make([]byte, 50)
 	for char := iter.Next(); !iter.Done() && !bytes.Equal(char, delim); char = iter.Next() {
-		chunk = append(chunk, char...)
 	}
-	chunks[2] = chunk
+	chunks[2] = source[start:]
+	start = iter.Pos()
 
 	return chunks
 }
