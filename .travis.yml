@@ -6,7 +6,7 @@ install:
   # dependencies. (The default install step at present performs a go get.)
   - echo "Default install step disabled by .travis.yml"
 script:
-  - go test ./... | grep -v 'no test files'
+  - ./bin/test
   - ./bin/check-gofmt
   - '[ $TRAVIS_SECURE_ENV_VARS == false ] || ./bin/publish "$TRAVIS_TAG"'
 env:
