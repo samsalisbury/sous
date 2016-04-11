@@ -16,8 +16,7 @@ func TestParseName_NamedVersion(t *testing.T) {
 
 	nv, ok := name.(NamedVersion)
 	if !ok {
-		t.Errorf("Didn't parse a NamedVersion, instead: %T", nv)
-		return
+		t.Fatalf("Parsed a %T; want a  NamedVersion", nv)
 	}
 
 	if string(nv.RepositoryName) != "git+ssh://github.com/opentable/sous" {

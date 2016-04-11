@@ -47,33 +47,35 @@ type (
 	}
 )
 
-func (self *NamedVersion) RevId() string {
-	return self.Version.Meta
+func (nv *NamedVersion) RevId() string {
+	return nv.Version.Meta
 }
 
-func (self *NamedVersion) TagName() string {
-	return self.Version.Format("M.m.s-?")
+func (nv *NamedVersion) TagName() string {
+	return nv.Version.Format("M.m.s-?")
 }
 
-func (self *NamedVersion) CanonicalName() (cn CanonicalName) {
-	cn.RepositoryName = self.RepositoryName
-	cn.Path = self.Path
-	return cn
+func (nv *NamedVersion) CanonicalName() CanonicalName {
+	return CanonicalName{
+		RepositoryName: nv.RepositoryName,
+		Path:           nv.Path,
+	}
 }
 
-func (self NamedVersion) Repo() RepositoryName {
-	return self.RepositoryName
+func (nv NamedVersion) Repo() RepositoryName {
+	return nv.RepositoryName
 }
 
-func (self CanonicalName) Repo() RepositoryName {
-	return self.RepositoryName
+func (cn CanonicalName) Repo() RepositoryName {
+	return cn.RepositoryName
 }
 
-func (self *CanonicalName) NamedVersion(version semv.Version) (nv NamedVersion) {
-	nv.RepositoryName = self.RepositoryName
-	nv.Path = self.Path
-	nv.Version = version
-	return nv
+func (cn *CanonicalName) NamedVersion(version semv.Version) NamedVersion {
+	return NamedVersion{
+		RepositoryName: cn.RepositoryName,
+		Path:           cn.Path,
+		Version:        version,
+	}
 }
 
 const DefaultDelim = ","
@@ -107,7 +109,7 @@ func parseChunks(sourceStr string) []string {
 }
 
 func namedVersionFromChunks(source string, chunks []string) (nv NamedVersion, err error) {
-	if !(len(chunks[0]) > 0) {
+	if len(chunks[0]) == 0 {
 		err = &MissingRepo{source}
 		return
 	}
@@ -133,7 +135,7 @@ func canonicalNameFromChunks(source string, chunks []string) (cn CanonicalName, 
 		return
 	}
 
-	if !(len(chunks[0]) > 0) {
+	if len(chunks[0]) == 0 {
 		err = &MissingRepo{source}
 		return
 	}
@@ -148,25 +150,23 @@ func canonicalNameFromChunks(source string, chunks []string) (cn CanonicalName, 
 	return
 }
 
-func ParseNamedVersion(source string) (nv NamedVersion, err error) {
+func ParseNamedVersion(source string) (NamedVersion, error) {
 	chunks := parseChunks(source)
 	return namedVersionFromChunks(source, chunks)
 }
 
-func ParseCanonicalName(source string) (cn CanonicalName, err error) {
+func ParseCanonicalName(source string) (CanonicalName, error) {
 	chunks := parseChunks(source)
 	return canonicalNameFromChunks(source, chunks)
 }
 
-func ParseGenName(source string) (name EntityName, err error) {
-	chunks := parseChunks(source)
-	switch len(chunks) {
+func ParseGenName(source string) (EntityName, error) {
+	switch chunks := parseChunks(source); len(chunks) {
+	default:
+		return nil, fmt.Errorf("cannot parse %q - divides into %d chunks", source, len(chunks))
 	case 3:
 		return namedVersionFromChunks(source, chunks)
 	case 2:
 		return canonicalNameFromChunks(source, chunks)
-	default:
-		return nil, fmt.Errorf("cannot parse %q - divides into %d chunks", source, len(chunks))
 	}
-	return
 }
