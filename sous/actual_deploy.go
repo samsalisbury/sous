@@ -8,8 +8,6 @@ import (
 type ActualDeploy struct {
 }
 
-type Singularity int //bogus
-
 func GetActualDeploy() (adc *ActualDeploy, err error) {
 	var singularities []*singularity.Client
 	reqCh := make(chan dtos.SingularityRequestParentList)

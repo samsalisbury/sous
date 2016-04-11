@@ -28,7 +28,7 @@ type ContainerConfig struct {
 // c.f. https://github.com/docker/distribution/blob/master/docs/spec/manifest-v2-1.md
 // and  https://github.com/docker/distribution/blob/master/docs/spec/manifest-v2-2.md
 //
-// labelsForImage(
+// labelsForTaggedImage(
 //  "http://artifactory.otenv.com/artifactory/api/docker/docker-v2/v2",
 //	"demo-server",
 //	"demo-server-0.7.3-SNAPSHOT-20160329_202654_teamcity-unconfigured"
@@ -74,7 +74,7 @@ func labelsForTaggedImage(registryUrl, repositoryName, tag string) (labels map[s
 			}
 		}
 	default:
-		err = fmt.Errorf("Cripes! v2 manifest, which is awesome, but we have not idea how to parse it. Contact your nearest sous chef.")
+		err = fmt.Errorf("Cripes! v2 manifest, which is awesome, but we have no idea how to parse it. Contact your nearest sous chef.")
 	}
 
 	return
