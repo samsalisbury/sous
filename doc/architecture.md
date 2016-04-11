@@ -72,6 +72,52 @@ The current challenge is to provide either/both of
  setup/teardown of real instances of those service dependences.
 In the latter case, the contracts are more properly considered integration tests.
 
+## Deployment Descriptions
+
+Every application deployed by Sous corresponds to a deployment description.
+These descriptions are a concept internal to the Sous system;
+users will usually manipulate applications or instances, which are each views over deployment descriptions.
+(Deployment descriptions are sometimes referred to simply as 'deployments.')
+
+A deployment description is a tuple which binds:
+- A cluster
+- A set of dependant resources
+- A [named version](#named_versions)
+- A dictionary of environment variables
+- A list of project owners
+- An application kind
+- The number of instances the application should reside in
+
+Not only can a particular deployment description refer to multiple running application instances (by virtue of the instance count),
+deployment descriptions can refer, for instance to intended states which haven't been realized yet.
+
+Generally speaking, deployment descriptions have two sources:
+they can be built from the deployment commands issued by users
+or
+they can be synthesized from data collected from the running clusters.
+
+"Intended" deployments (that is, those build as the result of user commands)
+exist in a number of states -
+waiting,
+current,
+achieved (but no longer current),
+passed over (older than current, but was never itself current).
+These states are determined as the server checks the state of the running clusters and issues commands to update them.
+
+Deployments are also frequently organized into deployment sets.
+The criteria by which a deployment set is selected from all possible deployments is used to describe the set.
+The most basic sets are
+the _actual_ set (all the deployments collected from running clusters),
+and
+the _current_ set (all the deployments that are current i.e. match the last known state of clusters).
+The ADM is represented internally exactly by the actual deployment set,
+and
+the GDM is represented internally by the current deployment set.
+Other sets include the set of deployments in a particular cluster,
+or
+the historical deployments of a particular service, as represented by a canonical package name.
+
+
 ## Named Versions ##
 
 Named Versions are used to identify a number of items related to a specific version of a piece of software.
@@ -102,7 +148,7 @@ If other kinds of source are to be defined, the unique identifier requirement wo
 
 [semantic version]:(http://semver.org/)
 
-(As a practical matter, the actual version would be used as a tag to trigger builds in Sous - 
+(As a practical matter, the actual version would be used as a tag to trigger builds in Sous -
 that's an interaction with the entity name definition, not a part of it.)
 
 Finally, the path is used to specify a particular entity to be found within the source.
@@ -120,9 +166,9 @@ However, where name is being used in a batch context,
 	but if the corresponding version tag has been moved,
 	the user should be notified.
 
-### Canonical Package Names 
+### Canonical Package Names
 
-To refer to a piece of software over time, independent of a particular version in its evolution, 
+To refer to a piece of software over time, independent of a particular version in its evolution,
 it's possible to use just the source URL and path components of the appropriate entity name.
 	This pair is known as the "Canonical Package Name".
 This will be appropriate in particular contexts, such as to identify manifests,
@@ -159,7 +205,7 @@ In some contexts, the components of an entity name may not be acceptable.
 For instance, Docker image names treat '/', ':' and '+' specially.
 
 For these uses, the opaque representation exists.
-To produce an opaque representation, begin by 
+To produce an opaque representation, begin by
 choosing any string, excepting that it cannot contain 'sous' as a substring.
  (the string should be chosen to suggest to a human the entity's identity,
  and in order to disambiguate the resulting string for e.g. tab completion.)
@@ -169,4 +215,3 @@ Concatenate the string with 'sous',
 	Concatenate the encoded representation.
 
 In general, opaque representations should be useful as exactly that, but note that the original entity name can be recovered from them if needed.
-
