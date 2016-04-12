@@ -6,6 +6,7 @@ import (
 
 	"github.com/opentable/sous/sous"
 	"github.com/opentable/sous/util/configloader"
+	"github.com/opentable/sous/util/whitespace"
 	"github.com/opentable/sous/util/yaml"
 )
 
@@ -15,11 +16,11 @@ func newDefaultConfig(u *User) (*sous.Config, error) {
 }
 
 func (c *LocalSousConfig) Save(u *User) error {
-	return ioutil.WriteFile(u.ConfigFile(), c.Bytes(), 600)
+	return ioutil.WriteFile(u.ConfigFile(), c.Bytes(), 0600)
 }
 
 func (c *LocalSousConfig) Bytes() []byte {
-	y, err := yaml.Marshal(c)
+	y, err := yaml.Marshal(c.Config)
 	if err != nil {
 		panic("error marshalling config as yaml:" + err.Error())
 	}
@@ -27,10 +28,18 @@ func (c *LocalSousConfig) Bytes() []byte {
 }
 
 func (c *LocalSousConfig) GetValue(name string) (string, error) {
-	v, err := configloader.New().GetFieldValue(c.Config, name)
+	v, err := configloader.New().GetValue(c.Config, name)
 	return fmt.Sprint(v), err
 }
 
+func (c *LocalSousConfig) SetValue(user *User, name, value string) error {
+	if err := configloader.New().SetValue(c.Config, name, value); err != nil {
+		return err
+	}
+	return c.Save(user)
+}
+
 func (c *LocalSousConfig) String() string {
-	return string(c.Bytes())
+	// yaml marshaller adds a trailing newline
+	return whitespace.Trim(string(c.Bytes()))
 }

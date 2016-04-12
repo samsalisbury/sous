@@ -3,12 +3,14 @@
 package configloader
 
 import (
-	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"reflect"
 	"strconv"
 	"strings"
+
+	"github.com/opentable/sous/util/yaml"
 )
 
 func New() ConfigLoader {
@@ -25,7 +27,14 @@ func (cl ConfigLoader) Load(target interface{}, filePath string) error {
 	if target == nil {
 		return fmt.Errorf("target was nil, need a value")
 	}
-	if err := cl.loadJSONFile(target, filePath); err != nil {
+	_, err := os.Stat(filePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+	if err := cl.loadYAMLFile(target, filePath); err != nil {
 		return err
 	}
 	return cl.overrideWithEnv(target)
@@ -50,21 +59,47 @@ func (cl ConfigLoader) forEachField(target interface{}, f func(field reflect.Str
 	return nil
 }
 
-func (cl ConfigLoader) GetFieldValue(from interface{}, name string) (x interface{}, err error) {
-	err = fmt.Errorf("config value %s does not exist", name)
-	callErr := cl.forEachField(from, func(field reflect.StructField, val reflect.Value) error {
+func (cl ConfigLoader) forFieldNamed(target interface{}, name string, f func(field reflect.StructField, val reflect.Value) error) error {
+	found := false
+	err := cl.forEachField(target, func(field reflect.StructField, val reflect.Value) error {
 		if strings.ToLower(field.Name) == strings.ToLower(name) {
-			if field.Type.Kind() != reflect.Ptr || !val.IsNil() {
-				x = val.Interface()
-			}
-			err = nil
+			found = true
+			return f(field, val)
 		}
 		return nil
 	})
-	if callErr != nil {
-		err = callErr
+	if !found {
+		return fmt.Errorf("config value %s does not exist", name)
 	}
-	return
+	return err
+}
+
+func (cl ConfigLoader) GetValue(from interface{}, name string) (interface{}, error) {
+	var x interface{}
+	return x, cl.forFieldNamed(from, name, func(field reflect.StructField, val reflect.Value) error {
+		if field.Type.Kind() != reflect.Ptr || !val.IsNil() {
+			x = val.Interface()
+		}
+		return nil
+	})
+}
+
+func (cl ConfigLoader) SetValue(target interface{}, name, value string) error {
+	return cl.forFieldNamed(target, name, func(field reflect.StructField, val reflect.Value) error {
+		switch k := field.Type.Kind(); k {
+		default:
+			return fmt.Errorf("configloader does not know how to set fields of kind %s", k)
+		case reflect.String:
+			val.Set(reflect.ValueOf(value))
+		case reflect.Int:
+			v, err := strconv.Atoi(value)
+			if err != nil {
+				return err
+			}
+			val.Set(reflect.ValueOf(v))
+		}
+		return nil
+	})
 }
 
 func (cl ConfigLoader) overrideField(sf reflect.StructField, originalVal reflect.Value) error {
@@ -93,13 +128,13 @@ func (cl ConfigLoader) overrideField(sf reflect.StructField, originalVal reflect
 	return nil
 }
 
-func (cl ConfigLoader) loadJSONFile(target interface{}, filePath string) error {
+func (cl ConfigLoader) loadYAMLFile(target interface{}, filePath string) error {
 	if filePath == "" {
 		return fmt.Errorf("filepath was empty")
 	}
-	f, err := os.Open(filePath)
+	b, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		return err
 	}
-	return json.NewDecoder(f).Decode(target)
+	return yaml.Unmarshal(b, target)
 }

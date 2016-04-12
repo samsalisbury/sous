@@ -5,7 +5,7 @@ import (
 )
 
 type SousConfig struct {
-	User   *User
+	User   LocalUser
 	Config LocalSousConfig
 }
 
@@ -30,12 +30,17 @@ func (sc *SousConfig) Execute(args []string) cmdr.Result {
 	case 0:
 		return Successf(sc.Config.String())
 	case 1:
-		v, err := sc.Config.GetValue(args[0])
+		name := args[0]
+		v, err := sc.Config.GetValue(name)
 		if err != nil {
 			return UsageErrorf("%s", err)
 		}
 		return Successf(v)
 	case 2:
-		return InternalErrorf("setting config values not implemented")
+		name, value := args[0], args[1]
+		if err := sc.Config.SetValue(sc.User.User, name, value); err != nil {
+			return EnsureErrorResult(err)
+		}
+		return Successf("set %s to %q", name, value)
 	}
 }
