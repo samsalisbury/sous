@@ -136,7 +136,7 @@ func initErr(err error, what string) error {
 		message += fmt.Sprintf("\ncommand failed:\nshell> %s\n%s",
 			shellErr.Command.String(), shellErr.Result.Combined.String())
 	} else {
-		message += err.Error()
+		message += " " + err.Error()
 	}
 	return fmt.Errorf(message)
 }

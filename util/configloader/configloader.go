@@ -8,6 +8,7 @@ import (
 	"os"
 	"reflect"
 	"strconv"
+	"strings"
 )
 
 func New() ConfigLoader {
@@ -31,17 +32,39 @@ func (cl ConfigLoader) Load(target interface{}, filePath string) error {
 }
 
 func (cl ConfigLoader) overrideWithEnv(target interface{}) error {
+	return cl.forEachField(target, cl.overrideField)
+}
+
+func (cl ConfigLoader) forEachField(target interface{}, f func(field reflect.StructField, val reflect.Value) error) error {
 	v := reflect.ValueOf(target)
-	if v.Kind() != reflect.Struct {
-		return fmt.Errorf("target was %T; need a struct", target)
+	if v.Kind() != reflect.Ptr && v.Elem().Kind() != reflect.Struct {
+		return fmt.Errorf("target was %T; need a pointer to struct", target)
 	}
+	v = v.Elem()
 	t := v.Type()
 	for i := 0; i < v.NumField(); i++ {
-		if err := cl.overrideField(t.Field(i), v.Field(i)); err != nil {
+		if err := f(t.Field(i), v.Field(i)); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func (cl ConfigLoader) GetFieldValue(from interface{}, name string) (x interface{}, err error) {
+	err = fmt.Errorf("config value %s does not exist", name)
+	callErr := cl.forEachField(from, func(field reflect.StructField, val reflect.Value) error {
+		if strings.ToLower(field.Name) == strings.ToLower(name) {
+			if field.Type.Kind() != reflect.Ptr || !val.IsNil() {
+				x = val.Interface()
+			}
+			err = nil
+		}
+		return nil
+	})
+	if callErr != nil {
+		err = callErr
+	}
+	return
 }
 
 func (cl ConfigLoader) overrideField(sf reflect.StructField, originalVal reflect.Value) error {

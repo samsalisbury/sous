@@ -20,3 +20,7 @@ func (u *User) ConfigDir() string {
 	}
 	return filepath.Join(u.HomeDir, DefaultConfigDir)
 }
+
+func (u *User) ConfigFile() string {
+	return filepath.Join(u.ConfigDir(), "config")
+}
