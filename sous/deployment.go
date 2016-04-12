@@ -55,22 +55,18 @@ const (
 	PassedOver                 = iota
 )
 
-func BuildDeployment(mfst *Manifest, inst *Instance) (dep *Deployment, err error) {
-	dep = &Deployment{
+func BuildDeployment(mfst *Manifest, inst *Instance) (*Deployment, error) {
+	ver, err := semv.Parse(inst.Version)
+	if err != nil {
+		return nil, err
+	}
+	return &Deployment{
 		Cluster:      inst.Cluster,
 		Resources:    inst.Resources,
 		Env:          inst.Env,
 		NumInstances: inst.NumInstances,
 		Owners:       mfst.Owners,
 		Kind:         mfst.Kind,
-	}
-
-	ver, err := semv.Parse(inst.Version)
-	if err != nil {
-		dep = nil
-		return
-	}
-	dep.NamedVersion = mfst.Source.NamedVersion(ver)
-
-	return
+		NamedVersion: mfst.Source.NamedVersion(ver),
+	}, nil
 }
