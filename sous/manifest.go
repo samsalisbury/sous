@@ -1,11 +1,17 @@
 package sous
 
+import "github.com/samsalisbury/semv"
+
 type (
 	// Manifests is a collection of Manifest
-	Manifests []Manifest
-	// Manifest represents all the global deployments of a single application.
+	Manifests []*Manifest
+	// Manifest is a minimal representation of the global deployment state of
+	// a particular named application. It is designed to be written and read by
+	// humans as-is, and expanded into full Deployments internally.
+	//
+	// Manifest has a direct two-way mapping to/from Deployments.
 	Manifest struct {
-		// SourceRepo is the canonical name of the source code repository
+		// Source is the canonical name of the source code repository
 		// containing the code for this application.
 		Source CanonicalName
 		// Owners is a list of named owners of this repository. The type of this
@@ -13,21 +19,46 @@ type (
 		Owners []string
 		// Kind is the kind of software that SourceRepo represents.
 		Kind ManifestKind
+		// Deployments is a map of cluster names to DeploymentSpecs
+		Deployments map[string]DeploymentSpec
 	}
 	// ManifestKind describes the broad category of a piece of software, such as
-	// a long-running HTTP service, or a scheduled task, etc.
+	// a long-running HTTP service, or a scheduled task, etc. It is used to
+	// determine resource sets and contracts that can be run on this
+	// application.
 	ManifestKind string
-	// Instance
-	Instance struct {
-		// Cluster is the name of the cluster this deployment belongs to. Upon
+
+	// DeploymentSpecs is a list of DeploymentSpecs.
+	DeploymentSpecs []DeploymentSpec
+
+	// DeploymentSpec is the interface to describe a cluster-wide deployment of
+	// an application described by a Manifest. Together with the manifest, one
+	// can assemble full Deployments.
+	//
+	// Unexported fields in DeploymentSpec are not intended to be serialised
+	// to/from yaml, but are useful when set internally.
+	DeploymentSpec struct {
+		DeploymentConfig `yaml:"inline"`
+		// Version is a semantic version with the following properties:
+		//
+		//     1. The major/minor/patch/pre-release fields exist as a tag in
+		//        the source code repository containing this application.
+		//     2. The metadata field is the full revision ID of the commit
+		//        which the tag in 1. points to.
+		Version semv.Version
+		// clusterName is the name of the cluster this deployment belongs to. Upon
 		// parsing the Manifest, this will be set to the key in
 		// Manifests.Deployments which points at this Deployment.
-		Cluster string
+		clusterName string
+	}
+
+	// DeploymentConfig represents the configuration of a deployment's tasks,
+	// in a specific cluster. i.e. their resources, environment, and the number
+	// of instances.
+	DeploymentConfig struct {
 		// Resources represents the resources each instance of this software
 		// will be given by the execution environment.
 		Resources Resources
-		// The precise version of the software to be deployed
-		Version string
 		// Env is a list of environment variables to set for each instance of
 		// of this deployment. It will be checked for conflict with the
 		// definitions found in State.Defs.EnvVars, and if not in conflict
@@ -37,8 +68,6 @@ type (
 		// deployed in this cluster, note that the actual number may differ due
 		// to decisions made by Sous.
 		NumInstances int
-		// Owners is a list of named owners of this repository. The type of this
-		// field is subject to change.
 	}
 
 	// Resources is a mapping of resource name to value, used to provision
