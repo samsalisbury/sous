@@ -34,7 +34,7 @@ type ContainerConfig struct {
 //	"demo-server-0.7.3-SNAPSHOT-20160329_202654_teamcity-unconfigured"
 // )
 // ( which returns an empty map, since the demo-server doesn't have labels... )
-func labelsForTaggedImage(registryUrl, repositoryName, tag string) (labels map[string]string, err error) {
+func LabelsForTaggedImage(registryUrl, repositoryName, tag string) (labels map[string]string, err error) {
 
 	ctx := context.Background()
 	name, err := reference.ParseNamed(repositoryName)
