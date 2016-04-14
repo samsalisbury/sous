@@ -3,6 +3,8 @@
 Sous is a tool for building, testing, and deploying applications, using
 Docker, Mesos, and Singularity.
 
+[View documentation in the doc/ directory.](https://github.com/opentable/sous/tree/master/doc)
+
 ## Planned features
 
 - Multi-datacentre deployment orchestration (coming very soon)
@@ -44,13 +46,6 @@ machine, and have your GOPATH set up correctly, you can install it by
 typing
 
     $ go get -u -v github.com/opentable/sous
-
-Alternatively, you can install the latest development version on your
-Mac using homebrew:
-
-    $ brew install --HEAD opentable/osx-tools/sous
-
-We plan to begin releasing versioned pre-built binaries soon.
 
 (for development guides, see [here](docs/spinning_up.md)
 
