@@ -9,22 +9,35 @@ import (
 )
 
 type (
-	RepositoryName string
-	Path           string
-
-	CanonicalName struct {
-		RepositoryName
-		Path
+	// RepoURL is a URL to a source code repository.
+	RepoURL string
+	// RepoOffsetDir is a path within a repository containing a single piece of
+	// software.
+	RepoOffset string
+	// SourceLocation identifies a directory inside a source code repository.
+	// Note that the directory has no meaning without the addition of a revision
+	// ID. This type is used as a shorthand for deploy manifests, enabling the
+	// logical grouping of deploys of different versions of a particular
+	// service.
+	SourceLocation struct {
+		// RepoURL is the URL of a source code repository.
+		RepoURL
+		// RepoOffset is a relative path to a directory within the repository
+		// at RepoURL
+		RepoOffset
 	}
-
-	NamedVersion struct {
-		RepositoryName
+	// SourceID is similar to SourceLocation except that it also includes
+	// version information. This means that a SourceID completely describes
+	// exactly one snapshot of a body of source code, from which a piece of
+	// software can be built.
+	SourceID struct {
+		RepoURL
 		semv.Version
-		Path
+		RepoOffset
 	}
 
 	EntityName interface {
-		Repo() RepositoryName
+		Repo() RepoURL
 	}
 
 	//Errors
@@ -47,34 +60,34 @@ type (
 	}
 )
 
-func (nv *NamedVersion) RevId() string {
+func (nv *SourceID) RevId() string {
 	return nv.Version.Meta
 }
 
-func (nv *NamedVersion) TagName() string {
+func (nv *SourceID) TagName() string {
 	return nv.Version.Format("M.m.s-?")
 }
 
-func (nv *NamedVersion) CanonicalName() CanonicalName {
-	return CanonicalName{
-		RepositoryName: nv.RepositoryName,
-		Path:           nv.Path,
+func (nv *SourceID) CanonicalName() SourceLocation {
+	return SourceLocation{
+		RepoURL:    nv.RepoURL,
+		RepoOffset: nv.RepoOffset,
 	}
 }
 
-func (nv NamedVersion) Repo() RepositoryName {
-	return nv.RepositoryName
+func (nv SourceID) Repo() RepoURL {
+	return nv.RepoURL
 }
 
-func (cn CanonicalName) Repo() RepositoryName {
-	return cn.RepositoryName
+func (cn SourceLocation) Repo() RepoURL {
+	return cn.RepoURL
 }
 
-func (cn *CanonicalName) NamedVersion(version semv.Version) NamedVersion {
-	return NamedVersion{
-		RepositoryName: cn.RepositoryName,
-		Path:           cn.Path,
-		Version:        version,
+func (cn *SourceLocation) NamedVersion(version semv.Version) SourceID {
+	return SourceID{
+		RepoURL:    cn.RepoURL,
+		RepoOffset: cn.RepoOffset,
+		Version:    version,
 	}
 }
 
@@ -108,28 +121,28 @@ func parseChunks(sourceStr string) []string {
 	return strings.Split(source, delim)
 }
 
-func namedVersionFromChunks(source string, chunks []string) (nv NamedVersion, err error) {
+func namedVersionFromChunks(source string, chunks []string) (nv SourceID, err error) {
 	if len(chunks[0]) == 0 {
 		err = &MissingRepo{source}
 		return
 	}
 
-	nv.RepositoryName = RepositoryName(chunks[0])
+	nv.RepoURL = RepoURL(chunks[0])
 
 	nv.Version, err = semv.Parse(string(chunks[1]))
 	if err != nil {
 		return
 	}
 	if len(chunks) < 3 {
-		nv.Path = ""
+		nv.RepoOffset = ""
 	} else {
-		nv.Path = Path(chunks[2])
+		nv.RepoOffset = RepoOffset(chunks[2])
 	}
 
 	return
 }
 
-func canonicalNameFromChunks(source string, chunks []string) (cn CanonicalName, err error) {
+func canonicalNameFromChunks(source string, chunks []string) (cn SourceLocation, err error) {
 	if len(chunks) > 2 {
 		err = &IncludesVersion{source}
 		return
@@ -139,23 +152,23 @@ func canonicalNameFromChunks(source string, chunks []string) (cn CanonicalName, 
 		err = &MissingRepo{source}
 		return
 	}
-	cn.RepositoryName = RepositoryName(chunks[0])
+	cn.RepoURL = RepoURL(chunks[0])
 
 	if len(chunks) < 2 {
-		cn.Path = ""
+		cn.RepoOffset = ""
 	} else {
-		cn.Path = Path(chunks[1])
+		cn.RepoOffset = RepoOffset(chunks[1])
 	}
 
 	return
 }
 
-func ParseNamedVersion(source string) (NamedVersion, error) {
+func ParseNamedVersion(source string) (SourceID, error) {
 	chunks := parseChunks(source)
 	return namedVersionFromChunks(source, chunks)
 }
 
-func ParseCanonicalName(source string) (CanonicalName, error) {
+func ParseCanonicalName(source string) (SourceLocation, error) {
 	chunks := parseChunks(source)
 	return canonicalNameFromChunks(source, chunks)
 }

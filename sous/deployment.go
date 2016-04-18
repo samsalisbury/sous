@@ -1,27 +1,22 @@
 package sous
 
 type (
+	// Deployments is a collection of Deployment.
 	Deployments []Deployment
 	// Deployment is a completely configured deployment of a piece of software.
+	// It contains all the data necessary for Sous to create a single
+	// deployment, which is a single version of a piece of software, running in
+	// a single cluster.
 	Deployment struct {
-		DeploymentConfig
-		// will be given by the execution environment.
-		Resources Resources
-		// Env is a list of environment variables to set for each instance of
-		// of this deployment. It will be checked for conflict with the
-		// definitions found in State.Defs.EnvVars, and if not in conflict
-		// assumes the greatest priority.
-		Env map[string]string
-		// NumInstances is a guide to the number of instances that should be
-		// deployed in this cluster, note that the actual number may differ due
-		// to decisions made by Sous.
-		NumInstances int
+		// DeployConfig contains configuration info for this deployment,
+		// including environment variables, resources, suggested instance count.
+		DeployConfig `yaml:"inline"`
 		// Cluster is the name of the cluster this deployment belongs to. Upon
 		// parsing the Manifest, this will be set to the key in
 		// Manifests.Deployments which points at this Deployment.
 		Cluster string
-		// The precise version of the software to be deployed
-		NamedVersion
+		// SourceID is the precise version of the software to be deployed.
+		SourceID
 		// Owners is a list of named owners of this repository. The type of this
 		// field is subject to change.
 		Owners []string
@@ -32,11 +27,11 @@ type (
 	DeploymentState uint
 	LogicalSequence uint
 
-	// Represents deployments commanded by a user
+	// DeploymentIntentions represents deployments commanded by a user.
 	DeploymentIntentions []DeploymentIntention
 	DeploymentIntention  struct {
 		Deployment
-		// The relative state of this intention
+		// State is the relative state of this intention.
 		State DeploymentState
 		// The sequence this intention was resolved in - might be e.g. synthesized while walking
 		// a git history. This might be left as implicit on the sequence of DIs in a []DI,
@@ -53,14 +48,16 @@ const (
 	PassedOver                 = iota
 )
 
-func BuildDeployment(m *Manifest, spec DeploymentSpec, inherit DeploymentSpecs) (*Deployment, error) {
+func BuildDeployment(m *Manifest, spec PartialDeploySpec, inherit DeploymentSpecs) (*Deployment, error) {
 	return &Deployment{
-		Cluster:      spec.clusterName,
-		Resources:    spec.Resources,
-		Env:          spec.Env,
-		NumInstances: spec.NumInstances,
-		Owners:       m.Owners,
-		Kind:         m.Kind,
-		NamedVersion: m.Source.NamedVersion(spec.Version),
+		Cluster: spec.clusterName,
+		DeployConfig: DeployConfig{
+			Resources:    spec.Resources,
+			Env:          spec.Env,
+			NumInstances: spec.NumInstances,
+		},
+		Owners:   m.Owners,
+		Kind:     m.Kind,
+		SourceID: m.Source.NamedVersion(spec.Version),
 	}, nil
 }

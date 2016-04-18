@@ -7,7 +7,7 @@ type (
 		RootDir, OffsetDir, Branch, Revision string
 		Files, ModifiedFiles, NewFiles       []string
 		Tags                                 []Tag
-		NearestTagName                       string
+		NearestTagName, NearestTagRevision   string
 		DirtyWorkingTree                     bool
 	}
 	// Tag represents a revision control commit tag.
