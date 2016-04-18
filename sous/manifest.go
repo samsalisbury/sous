@@ -13,14 +13,14 @@ type (
 	// Manifest has a direct two-way mapping to/from Deployments.
 	Manifest struct {
 		// Source is the location of the source code for this piece of software.
-		Source SourceLocation `validate:"nonZero"`
+		Source SourceLocation `validate:"nonzero"`
 		// Owners is a list of named owners of this repository. The type of this
 		// field is subject to change.
 		Owners []string
 		// Kind is the kind of software that SourceRepo represents.
-		Kind ManifestKind `validate:"nonZero"`
+		Kind ManifestKind `validate:"nonzero"`
 		// Deployments is a map of cluster names to DeploymentSpecs
-		Deployments map[string]PartialDeploySpec `validate:"nonEmpty,valuesNonZero"`
+		Deployments map[string]PartialDeploySpec `validate:"keys=nonempty,values=nonzero"`
 	}
 	// ManifestKind describes the broad category of a piece of software, such as
 	// a long-running HTTP service, or a scheduled task, etc. It is used to
@@ -47,7 +47,7 @@ type (
 		//        the source code repository containing this application.
 		//     2. The metadata field is the full revision ID of the commit
 		//        which the tag in 1. points to.
-		Version semv.Version `validate:"nonZero"`
+		Version semv.Version `validate:"nonzero"`
 		// clusterName is the name of the cluster this deployment belongs to. Upon
 		// parsing the Manifest, this will be set to the key in
 		// Manifests.Deployments which points at this Deployment.
@@ -60,12 +60,12 @@ type (
 	DeployConfig struct {
 		// Resources represents the resources each instance of this software
 		// will be given by the execution environment.
-		Resources Resources `validate:"nonZero"`
+		Resources Resources `validate:"keys=nonempty,values=nonempty"`
 		// Env is a list of environment variables to set for each instance of
 		// of this deployment. It will be checked for conflict with the
 		// definitions found in State.Defs.EnvVars, and if not in conflict
 		// assumes the greatest priority.
-		Env map[string]string
+		Env map[string]string `validate:"keys=nonempty,values=nonempty"`
 		// NumInstances is a guide to the number of instances that should be
 		// deployed in this cluster, note that the actual number may differ due
 		// to decisions made by Sous. If set to zero, Sous will decide how many
