@@ -5,8 +5,10 @@ import (
 	"log"
 	"sync"
 
+	"github.com/docker/docker/reference"
 	"github.com/opentable/singularity"
 	"github.com/opentable/singularity/dtos"
+	"github.com/opentable/sous/util/docker_registry"
 )
 
 type ActualDeploy struct {
@@ -183,7 +185,7 @@ Deployment struct {
 	Kind ManifestKind
 }
 */
-func deploymentFromRequest(cluster string, req *dtos.SingularityRequestParent, registryUrl string, depCh chan Deployment) {
+func deploymentFromRequest(cluster string, req *dtos.SingularityRequestParent, registryUrl string, depCh chan Deployment, errCh chan error) {
 	rezzes := make(Resources)
 	singDep := req.ActiveDeploy
 	singReq := req.Request
@@ -203,8 +205,23 @@ func deploymentFromRequest(cluster string, req *dtos.SingularityRequestParent, r
 	//   additional processing of the swagger JSON files before we process it
 
 	imageName := singDep.ContainerInfo.Docker.Image
+	ref := reference.ParseNamed(imageName)
 
-	labels, err := LabelsForTaggedImage(registryUrl, repositoryName, tag)
+	var labels map[string]string
+	switch ref.(type) {
+	default:
+		errCh <- fmt.Errorf("couldn't parse %s into a tagged image name", imageName)
+		return
+	case reference.NamedTagged:
+		regUrl, repName := reference.SplitHostname(ref)
+		tag := ref.Tag()
+		labels, err := docker_registry.LabelsForTaggedImage(regUrl, repName, tag)
+	}
+
+	if err != nil {
+		errCh <- err
+		return
+	}
 
 	// We should probably check what kind of Container it is...
 	// Which has a similar problem to RequestType - another Java enum that isn't Swaggered
