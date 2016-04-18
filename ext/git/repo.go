@@ -46,7 +46,7 @@ func NewRepo(c *Client) (*Repo, error) {
 // tag, etc.
 func (r *Repo) SourceContext() (*sous.SourceContext, error) {
 	var (
-		revision, branch, nearestTagName, nearestTagRevision,
+		revision, branch, nearestTagName,
 		repoRelativeDir string
 		files, modifiedFiles, newFiles []string
 		allTags                        []sous.Tag
@@ -67,7 +67,7 @@ func (r *Repo) SourceContext() (*sous.SourceContext, error) {
 			if err != nil {
 				return
 			}
-			nearestTagRevision, *err = c.RevisionAt(nearestTagName)
+			//nearestTagRevision, *err = c.RevisionAt(nearestTagName)
 		},
 		func(err *error) { files, *err = c.ListFiles() },
 		func(err *error) { modifiedFiles, *err = c.ModifiedFiles() },

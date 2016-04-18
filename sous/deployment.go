@@ -16,7 +16,7 @@ type (
 		// Manifests.Deployments which points at this Deployment.
 		Cluster string
 		// SourceID is the precise version of the software to be deployed.
-		SourceID
+		SourceVersion
 		// Owners is a list of named owners of this repository. The type of this
 		// field is subject to change.
 		Owners []string
@@ -56,8 +56,8 @@ func BuildDeployment(m *Manifest, spec PartialDeploySpec, inherit DeploymentSpec
 			Env:          spec.Env,
 			NumInstances: spec.NumInstances,
 		},
-		Owners:   m.Owners,
-		Kind:     m.Kind,
-		SourceID: m.Source.NamedVersion(spec.Version),
+		Owners:        m.Owners,
+		Kind:          m.Kind,
+		SourceVersion: m.Source.NamedVersion(spec.Version),
 	}, nil
 }

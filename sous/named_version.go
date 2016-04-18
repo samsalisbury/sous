@@ -26,11 +26,11 @@ type (
 		// at RepoURL
 		RepoOffset
 	}
-	// SourceID is similar to SourceLocation except that it also includes
+	// SourceVersion is similar to SourceLocation except that it also includes
 	// version information. This means that a SourceID completely describes
 	// exactly one snapshot of a body of source code, from which a piece of
 	// software can be built.
-	SourceID struct {
+	SourceVersion struct {
 		RepoURL
 		semv.Version
 		RepoOffset
@@ -60,22 +60,22 @@ type (
 	}
 )
 
-func (nv *SourceID) RevId() string {
+func (nv *SourceVersion) RevId() string {
 	return nv.Version.Meta
 }
 
-func (nv *SourceID) TagName() string {
+func (nv *SourceVersion) TagName() string {
 	return nv.Version.Format("M.m.s-?")
 }
 
-func (nv *SourceID) CanonicalName() SourceLocation {
+func (nv *SourceVersion) CanonicalName() SourceLocation {
 	return SourceLocation{
 		RepoURL:    nv.RepoURL,
 		RepoOffset: nv.RepoOffset,
 	}
 }
 
-func (nv SourceID) Repo() RepoURL {
+func (nv SourceVersion) Repo() RepoURL {
 	return nv.RepoURL
 }
 
@@ -83,8 +83,8 @@ func (cn SourceLocation) Repo() RepoURL {
 	return cn.RepoURL
 }
 
-func (cn *SourceLocation) NamedVersion(version semv.Version) SourceID {
-	return SourceID{
+func (cn *SourceLocation) NamedVersion(version semv.Version) SourceVersion {
+	return SourceVersion{
 		RepoURL:    cn.RepoURL,
 		RepoOffset: cn.RepoOffset,
 		Version:    version,
@@ -121,7 +121,7 @@ func parseChunks(sourceStr string) []string {
 	return strings.Split(source, delim)
 }
 
-func namedVersionFromChunks(source string, chunks []string) (nv SourceID, err error) {
+func namedVersionFromChunks(source string, chunks []string) (nv SourceVersion, err error) {
 	if len(chunks[0]) == 0 {
 		err = &MissingRepo{source}
 		return
@@ -163,7 +163,7 @@ func canonicalNameFromChunks(source string, chunks []string) (cn SourceLocation,
 	return
 }
 
-func ParseNamedVersion(source string) (SourceID, error) {
+func ParseNamedVersion(source string) (SourceVersion, error) {
 	chunks := parseChunks(source)
 	return namedVersionFromChunks(source, chunks)
 }
