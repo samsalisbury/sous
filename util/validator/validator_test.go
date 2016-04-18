@@ -1,6 +1,9 @@
 package validator
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
 type (
 	inout struct {
@@ -33,13 +36,69 @@ type (
 		String string
 		Int    int
 	}
-	NonzeroStructMapKey struct {
+	NonZeroStructMapKey struct {
 		Map map[Struct]Struct `validate:"keys=nonzero"`
 	}
-	NonzeroStructMapValue struct {
+	NonZeroStructMapValue struct {
 		Map map[Struct]Struct `validate:"values=nonzero"`
 	}
+	InterfaceInvalidKey struct {
+		Map map[Name]InterfaceInvalidKey
+	}
+	InterfaceInvalidValue struct {
+		Map map[string]Name
+	}
+	InterfaceInvalidField struct {
+		Name Name
+	}
+	Name string
 )
+
+func (n Name) Validate() error {
+	if len(n) > 3 {
+		return fmt.Errorf("(%T(%s)) is too big; must be less than 3 characters", n, n)
+	}
+	return nil
+}
+
+func TestValidate_Interface_InvalidKey(t *testing.T) {
+	iik := InterfaceInvalidKey{Map: map[Name]InterfaceInvalidKey{Name("hello"): InterfaceInvalidKey{}}}
+	err := Validate(iik)
+	if err == nil {
+		t.Fatalf("%T (%+v) should have failed validation", iik, iik)
+	}
+	actual := err.Error()
+	expected := fmt.Sprintf(`%T.Map.(key) (%T(hello)) is too big; must be less than 3 characters`, iik, Name(""))
+	if actual != expected {
+		t.Errorf("got %q for %+v; want %q", actual, iik, expected)
+	}
+}
+
+func TestValidate_Interface_InvalidValue(t *testing.T) {
+	iiv := InterfaceInvalidValue{Map: map[string]Name{"hello": Name("toolong")}}
+	err := Validate(iiv)
+	if err == nil {
+		t.Fatalf("%T (%+v) should have failed validation", iiv, iiv)
+	}
+	actual := err.Error()
+	expected := fmt.Sprintf(`%T.Map.[hello] (%T(toolong)) is too big; must be less than 3 characters`, iiv, Name(""))
+	if actual != expected {
+		t.Errorf("got %q for %+v; want %q", actual, iiv, expected)
+	}
+}
+
+func TestValidate_Interface_InvalidField(t *testing.T) {
+	iif := InterfaceInvalidField{Name("toolong")}
+	err := Validate(iif)
+	if err == nil {
+		t.Fatalf("%T (%+v) should have failed validation", iif, iif)
+	}
+	actual := err.Error()
+	expected := fmt.Sprintf(`%T.Name (%T(toolong)) is too big; must be less than 3 characters`, iif, Name(""))
+	if actual != expected {
+		t.Errorf("got %q for %+v; want %q", actual, iif, expected)
+	}
+}
 
 func TestValidate_Invalid(t *testing.T) {
 	invalid := []inout{
@@ -67,6 +126,14 @@ func TestValidate_Invalid(t *testing.T) {
 			"validator.NonZeroStruct.Struct is equal to zero value ({String: Int:0})"},
 		{NonZeroStruct{Struct{Int: 0}},
 			"validator.NonZeroStruct.Struct is equal to zero value ({String: Int:0})"},
+		{NonZeroStructMapKey{map[Struct]Struct{Struct{}: Struct{}}},
+			"validator.NonZeroStructMapKey.Map.(key) is equal to zero value ({String: Int:0})"},
+		{NonZeroStructMapKey{map[Struct]Struct{Struct{}: Struct{"x", 1}}},
+			"validator.NonZeroStructMapKey.Map.(key) is equal to zero value ({String: Int:0})"},
+		{NonZeroStructMapValue{map[Struct]Struct{Struct{}: Struct{}}},
+			"validator.NonZeroStructMapValue.Map.[{String: Int:0}] is equal to zero value ({String: Int:0})"},
+		{NonZeroStructMapValue{map[Struct]Struct{Struct{"x", 1}: Struct{}}},
+			"validator.NonZeroStructMapValue.Map.[{String:x Int:1}] is equal to zero value ({String: Int:0})"},
 		{InvalidNonemptyInt{Int: 80085},
 			"validation rule invalid: validator.InvalidNonemptyInt.Int `validate:\"nonempty\"` (nonempty validation not possible for int)"},
 	}

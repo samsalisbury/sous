@@ -12,11 +12,9 @@ type (
 	}
 	validator func(reflect.Value) error
 	ctx       struct {
-		parent *ctx
-		field  *reflect.StructField
-		typ    reflect.Type
-		key    bool
-		index  *string
+		parent                                *ctx
+		field                                 *reflect.StructField
+		keyVal, valueVal, fieldVal, structVal *reflect.Value
 	}
 	// ValidationError indicates an error with validation.
 	ValidationError struct {
@@ -25,13 +23,17 @@ type (
 	}
 )
 
-var validators = map[string]func(reflect.Value, *ctx) error{
-	"nonempty":        nonempty,
-	"keys=nonempty":   keys(nonempty),
-	"values=nonempty": values(nonempty),
-	"nonzero":         nonzero,
-	"keys=nonzero":    keys(nonzero),
-	"values=nonzero":  values(nonzero),
+var validators map[string]func(reflect.Value, ctx) error
+
+func init() {
+	validators = map[string]func(reflect.Value, ctx) error{
+		"nonempty":        nonempty,
+		"keys=nonempty":   keys(nonempty),
+		"values=nonempty": values(nonempty),
+		"nonzero":         nonzero,
+		"keys=nonzero":    keys(nonzero),
+		"values=nonzero":  values(nonzero),
+	}
 }
 
 func (e ValidationError) Error() string {
@@ -46,17 +48,18 @@ func (c ctx) String() string {
 }
 
 func (c ctx) ownString() string {
-	if c.typ != nil {
-		return c.typ.String()
+	if c.keyVal != nil {
+		if c.valueVal == nil {
+			return "(key)"
+		} else {
+			return fmt.Sprintf("[%+v]", c.keyVal.Interface())
+		}
+	}
+	if c.structVal != nil {
+		return c.structVal.Type().String()
 	}
 	if c.field != nil {
 		return c.field.Name
-	}
-	if c.key {
-		return "(key)"
-	}
-	if c.index != nil {
-		return fmt.Sprintf("[%s]", *c.index)
 	}
 	return "?"
 }
@@ -73,32 +76,28 @@ func (c ctx) err(err error) error {
 	return c.validationErrorf(err.Error())
 }
 
-func (c ctx) enterField(f reflect.StructField) ctx {
-	return ctx{parent: &c, field: &f}
+func (c ctx) enterStruct(v reflect.Value) ctx {
+	return ctx{parent: nil, structVal: &v}
 }
 
-func (c ctx) enterKey() ctx {
-	return ctx{parent: &c, key: true}
+func (c ctx) enterField(v reflect.Value, f reflect.StructField) ctx {
+	return ctx{parent: &c, fieldVal: &v, field: &f}
 }
 
-func (c ctx) enterIndex(index reflect.Value) ctx {
-	i := fmt.Sprint(index.Interface())
-	return ctx{parent: &c, index: &i}
+func (c ctx) enterKey(key reflect.Value) ctx {
+	return ctx{parent: &c, keyVal: &key, field: c.field}
 }
 
-func errIf(condition bool, format string, a ...interface{}) error {
-	if !condition {
-		return nil
-	}
-	return fmt.Errorf(format, a...)
+func (c ctx) enterKeyValue(key, value reflect.Value) ctx {
+	return ctx{parent: &c, keyVal: &key, valueVal: &value, field: c.field}
 }
 
-func (c *ctx) validationNotPossible(which, format string, a ...interface{}) error {
+func (c ctx) validationNotPossible(which, format string, a ...interface{}) error {
 	m := fmt.Sprintf(format, a...)
 	return fmt.Errorf("validation rule invalid: %s `validate:%q` (%s)", c, which, m)
 }
 
-func nonempty(v reflect.Value, c *ctx) error {
+func nonempty(v reflect.Value, c ctx) error {
 	switch v.Kind() {
 	case reflect.Array, reflect.Chan, reflect.Map, reflect.Slice, reflect.String:
 		if v.Len() != 0 {
@@ -109,7 +108,7 @@ func nonempty(v reflect.Value, c *ctx) error {
 	return c.validationNotPossible("nonempty", "nonempty validation not possible for %s", v.Type())
 }
 
-func nonzero(v reflect.Value, c *ctx) error {
+func nonzero(v reflect.Value, c ctx) error {
 	zero := reflect.Zero(v.Type())
 	if v.Interface() == zero.Interface() {
 		return c.validationErrorf("is equal to zero value (%+v)", zero.Interface())
@@ -117,22 +116,29 @@ func nonzero(v reflect.Value, c *ctx) error {
 	return nil
 }
 
-func keys(f func(reflect.Value, *ctx) error) func(reflect.Value, *ctx) error {
-	return func(v reflect.Value, c *ctx) error {
+// keys creates a validator that validates each key in a map, slice, or array
+func keys(f func(reflect.Value, ctx) error) func(reflect.Value, ctx) error {
+	return func(v reflect.Value, c ctx) error {
 		if v.Kind() != reflect.Map {
 			return fmt.Errorf("keys validator used on %s; only allowed on maps", v.Type())
 		}
-		for _, k := range v.MapKeys() {
-			if err := f(k, c); err != nil {
-				return c.enterKey().err(err)
+		for _, vk := range v.MapKeys() {
+			c := c.enterKey(vk)
+			if err := c.validateInterface(vk); err != nil {
+				return err
+			}
+			if err := f(vk, c); err != nil {
+				return err
 			}
 		}
 		return nil
 	}
 }
 
-func values(f func(reflect.Value, *ctx) error) func(reflect.Value, *ctx) error {
-	return func(v reflect.Value, c *ctx) error {
+// values creates a validator that validates each value in a map, slice, or
+// array
+func values(f func(reflect.Value, ctx) error) func(reflect.Value, ctx) error {
+	return func(v reflect.Value, c ctx) error {
 		if v.Kind() == reflect.Map {
 			return mapValues(f, v, c)
 		}
@@ -143,27 +149,30 @@ func values(f func(reflect.Value, *ctx) error) func(reflect.Value, *ctx) error {
 	}
 }
 
-func mapValues(f func(reflect.Value, *ctx) error, v reflect.Value, c *ctx) error {
-	for _, k := range v.MapKeys() {
-		vk := v.MapIndex(k)
-		if err := validateInterface(vk, c); err != nil {
-			return c.enterIndex(k).err(err)
+func mapValues(f func(reflect.Value, ctx) error, v reflect.Value, c ctx) error {
+	for _, vk := range v.MapKeys() {
+		k := v.MapIndex(vk)
+		c := c.enterKeyValue(vk, k)
+		if err := c.validateInterface(k); err != nil {
+			return err
 		}
-		if err := f(vk, c); err != nil {
-			return c.enterIndex(k).err(err)
+		if err := f(k, c); err != nil {
+			return err
 		}
 	}
 	return nil
 }
 
-func sliceValues(f func(reflect.Value, *ctx) error, v reflect.Value, c *ctx) error {
+func sliceValues(f func(reflect.Value, ctx) error, v reflect.Value, c ctx) error {
 	for i := 0; i < v.Len(); i++ {
-		vi := v.Index(i)
-		if err := validateInterface(vi, c); err != nil {
-			return c.enterIndex(reflect.ValueOf(i)).err(err)
+		vi := reflect.ValueOf(i)
+		v := v.Index(i)
+		c := c.enterKeyValue(vi, v)
+		if err := c.validateInterface(v); err != nil {
+			return err
 		}
 		if err := f(vi, c); err != nil {
-			return c.enterIndex(reflect.ValueOf(i)).err(err)
+			return err
 		}
 	}
 	return nil
@@ -173,60 +182,90 @@ func Validate(x interface{}) error {
 	if x == nil {
 		return fmt.Errorf("cannot validate nil")
 	}
-	v := reflect.ValueOf(x)
-	c := &ctx{typ: v.Type()}
-	return validateStruct(v, c)
+	return (&ctx{}).enterStruct(reflect.ValueOf(x)).validate()
 }
 
-func validateStruct(v reflect.Value, c *ctx) error {
-	if err := validateInterface(v, c); err != nil {
+func (c ctx) validate() error {
+	if c.fieldVal != nil {
+		return c.validateStructField()
+	}
+	if c.structVal != nil {
+		return c.validateStruct()
+	}
+	panic("neither index, value, field, typ set")
+}
+
+func (c ctx) validateStruct() error {
+	v := *c.structVal
+	if err := c.validateInterface(v); err != nil {
 		return err
 	}
 	k := v.Kind()
 	t := v.Type()
 	if k != reflect.Struct {
 		if k == reflect.Ptr {
-			return validateStruct(v.Elem(), c)
+			e := v.Elem()
+			c.structVal = &e
+			return c.validateStruct()
 		}
 		return fmt.Errorf("cannot validate %s (non-struct value) without context", t)
 	}
 	for i := 0; i < v.NumField(); i++ {
-		f := t.Field(i)
-		if err := validateStructField(v.Field(i), f, c.enterField(f)); err != nil {
+		if err := c.enterField(v.Field(i), t.Field(i)).validate(); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func validateInterface(v reflect.Value, c *ctx) error {
-	if v.CanInterface() {
-		if vi, ok := v.Interface().(Interface); ok {
-			if err := vi.Validate(); err != nil {
-				return c.validationErrorf(err.Error())
-			}
-		}
-	}
-	return nil
-}
-
-func validateStructField(v reflect.Value, f reflect.StructField, c ctx) error {
+func (c ctx) validateStructField() error {
+	v := *c.fieldVal
+	f := c.field
 	// Get validators first as a separate step, so we can fail for
 	// misconfiguration before failing for any validation errors.
-	validators, err := getValidators(f.Tag.Get("validate"), f.Type)
+	validators, err := getValidators(*f)
 	if err != nil {
 		return err
 	}
 	for _, validate := range validators {
-		if err := validate(v, &c); err != nil {
+		if err := validate(v, c); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func getValidators(tag string, typ reflect.Type) ([]func(reflect.Value, *ctx) error, error) {
-	vs := []func(reflect.Value, *ctx) error{}
+func (c ctx) validateInterface(v reflect.Value) error {
+	if !v.CanInterface() {
+		return fmt.Errorf("unable to interface %s", v.Type())
+	}
+	vi, implementsInterface := v.Interface().(Interface)
+	if !implementsInterface {
+		return nil
+	}
+	if err := vi.Validate(); err != nil {
+		return c.validationErrorf(err.Error())
+	}
+	return nil
+}
+
+func validateInterface(v reflect.Value, c ctx) error {
+	return c.validateInterface(v)
+}
+
+func getValidators(f reflect.StructField) ([]func(reflect.Value, ctx) error, error) {
+	vs := []func(reflect.Value, ctx) error{validateInterface}
+	k := f.Type.Kind()
+	if k == reflect.Map {
+		vs = append(vs, keys(validateInterface))
+	}
+	if k == reflect.Map || k == reflect.Slice || k == reflect.Array {
+		vs = append(vs, values(validateInterface))
+	}
+	tag := f.Tag.Get("validate")
+	if len(tag) == 0 {
+		return vs, nil
+	}
 	tags := strings.Split(tag, ",")
 	for _, tag := range tags {
 		validate, ok := validators[tag]
