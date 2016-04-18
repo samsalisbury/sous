@@ -85,71 +85,24 @@ func TestValidate_Invalid(t *testing.T) {
 	}
 }
 
-func TestValidate_NonZeroStruct(t *testing.T) {
-	shouldBeValid := []NonZeroStruct{
-		{Struct{String: "x"}},
-		{Struct{Int: 1}},
+func TestValidate_Valid(t *testing.T) {
+	valid := []interface{}{
+		NonemptyString{"x"},
+		NonZeroStruct{Struct{String: "x"}},
+		NonZeroStruct{Struct{Int: 1}},
+		NonemptyMap{Map: map[string]string{"": ""}},
+		NonemptyMap{Map: map[string]string{"": "x"}},
+		NonemptyMap{Map: map[string]string{"x": ""}},
+		NonemptySlice{Slice: []string{""}},
+		NonemptySlice{Slice: []string{"hi"}},
+		NonemptyStringMapKey{Map: nil},
+		NonemptyStringMapKey{Map: map[string]string{"x": ""}},
+		NonemptyStringMapVal{Map: nil},
+		NonemptyStringMapVal{Map: map[string]string{"": "x"}},
 	}
-	for _, x := range shouldBeValid {
+	for _, x := range valid {
 		if err := Validate(x); err != nil {
 			t.Errorf("unexpected error %q for %+v", err, x)
-		}
-	}
-}
-
-func TestValidate_NonemptyStringMapKey(t *testing.T) {
-	shouldBeValid := []NonemptyStringMapKey{
-		{Map: nil},
-		{Map: map[string]string{"x": ""}},
-	}
-	for _, x := range shouldBeValid {
-		if err := Validate(x); err != nil {
-			t.Errorf("unexpected error %q for %+v", err, x)
-		}
-	}
-}
-
-func TestValidate_NonemptyStringMapVal(t *testing.T) {
-	shouldBeValid := []NonemptyStringMapVal{
-		{Map: nil},
-		{Map: map[string]string{"": "x"}},
-	}
-	for _, x := range shouldBeValid {
-		if err := Validate(x); err != nil {
-			t.Errorf("unexpected error %q for %+v", err, x)
-		}
-	}
-}
-
-func TestValidate_NonemptyString(t *testing.T) {
-	x := NonemptyString{"x"}
-	if err := Validate(x); err != nil {
-		t.Errorf("unexpected error %q", err)
-	}
-}
-
-func TestValidate_NonemptyMap(t *testing.T) {
-	shouldBeValid := []NonemptyMap{
-		{Map: map[string]string{"": ""}},
-		{Map: map[string]string{"": "x"}},
-		{Map: map[string]string{"x": ""}},
-	}
-	for _, x := range shouldBeValid {
-		if err := Validate(x); err != nil {
-			t.Errorf("unexpected error %q", err)
-		}
-	}
-}
-
-func TestValidate_NonemptySlice(t *testing.T) {
-	shouldBeValid := []NonemptySlice{
-		{Slice: []string{""}},
-		{Slice: []string{"hi"}},
-	}
-	for _, x := range shouldBeValid {
-		x.Slice = []string{""}
-		if err := Validate(x); err != nil {
-			t.Errorf("unexpected error %q", err)
 		}
 	}
 }
