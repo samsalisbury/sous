@@ -52,6 +52,12 @@ type (
 		Name Name
 	}
 	Name string
+	// NestedStructs can never be valid in finite space, since it's recursive.
+	// Don't really make structs like this!
+	NestedStructs struct {
+		Map   map[Name]*NestedStructs `validate:"values=nonzero"`
+		Other *NestedStructs
+	}
 )
 
 func (n Name) Validate() error {
@@ -59,6 +65,25 @@ func (n Name) Validate() error {
 		return fmt.Errorf("(%T(%s)) is too big; must be less than 3 characters", n, n)
 	}
 	return nil
+}
+
+func TestValidate_NestedStructs(t *testing.T) {
+	nested := NestedStructs{
+		Map: map[Name]*NestedStructs{"hi": &NestedStructs{
+			Other: &NestedStructs{
+				Map: map[Name]*NestedStructs{"ho": &NestedStructs{
+					Map: map[Name]*NestedStructs{"its": nil}}}}}}}
+
+	err := Validate(nested)
+
+	if err == nil {
+		t.Fatalf("%T (%+v) should have failed validation", nested, nested)
+	}
+	expected := "validator.NestedStructs.Map.[its] is equal to its zero value (nil)"
+	actual := err.Error()
+	if actual != expected {
+		t.Errorf("got %q for %+v; want %q", actual, nested, expected)
+	}
 }
 
 func TestValidate_Interface_InvalidKey(t *testing.T) {
@@ -121,19 +146,19 @@ func TestValidate_Invalid(t *testing.T) {
 		{NonemptyStringMapVal{Map: map[string]string{"x": ""}},
 			"validator.NonemptyStringMapVal.Map.[x] is nil or empty"},
 		{NonZeroStruct{},
-			"validator.NonZeroStruct.Struct is equal to zero value ({String: Int:0})"},
+			"validator.NonZeroStruct.Struct is equal to its zero value ({String: Int:0})"},
 		{NonZeroStruct{Struct{String: ""}},
-			"validator.NonZeroStruct.Struct is equal to zero value ({String: Int:0})"},
+			"validator.NonZeroStruct.Struct is equal to its zero value ({String: Int:0})"},
 		{NonZeroStruct{Struct{Int: 0}},
-			"validator.NonZeroStruct.Struct is equal to zero value ({String: Int:0})"},
+			"validator.NonZeroStruct.Struct is equal to its zero value ({String: Int:0})"},
 		{NonZeroStructMapKey{map[Struct]Struct{Struct{}: Struct{}}},
-			"validator.NonZeroStructMapKey.Map.(key) is equal to zero value ({String: Int:0})"},
+			"validator.NonZeroStructMapKey.Map.(key) is equal to its zero value ({String: Int:0})"},
 		{NonZeroStructMapKey{map[Struct]Struct{Struct{}: Struct{"x", 1}}},
-			"validator.NonZeroStructMapKey.Map.(key) is equal to zero value ({String: Int:0})"},
+			"validator.NonZeroStructMapKey.Map.(key) is equal to its zero value ({String: Int:0})"},
 		{NonZeroStructMapValue{map[Struct]Struct{Struct{}: Struct{}}},
-			"validator.NonZeroStructMapValue.Map.[{String: Int:0}] is equal to zero value ({String: Int:0})"},
+			"validator.NonZeroStructMapValue.Map.[{String: Int:0}] is equal to its zero value ({String: Int:0})"},
 		{NonZeroStructMapValue{map[Struct]Struct{Struct{"x", 1}: Struct{}}},
-			"validator.NonZeroStructMapValue.Map.[{String:x Int:1}] is equal to zero value ({String: Int:0})"},
+			"validator.NonZeroStructMapValue.Map.[{String:x Int:1}] is equal to its zero value ({String: Int:0})"},
 		{InvalidNonemptyInt{Int: 80085},
 			"validation rule invalid: validator.InvalidNonemptyInt.Int `validate:\"nonempty\"` (nonempty validation not possible for int)"},
 	}

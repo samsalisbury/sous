@@ -108,10 +108,26 @@ func nonempty(v reflect.Value, c ctx) error {
 	return c.validationNotPossible("nonempty", "nonempty validation not possible for %s", v.Type())
 }
 
+func canBeNil(v reflect.Value) bool {
+	switch v.Kind() {
+	default:
+		return false
+	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Ptr, reflect.Slice:
+		return true
+	}
+}
+
+func safeIsNil(v reflect.Value) bool {
+	return canBeNil(v) && v.IsNil()
+}
+
 func nonzero(v reflect.Value, c ctx) error {
+	if safeIsNil(v) {
+		return c.validationErrorf("is equal to its zero value (nil)")
+	}
 	zero := reflect.Zero(v.Type())
-	if v.Interface() == zero.Interface() {
-		return c.validationErrorf("is equal to zero value (%+v)", zero.Interface())
+	if reflect.DeepEqual(v.Interface(), zero.Interface()) {
+		return c.validationErrorf("is equal to its zero value (%+v)", zero.Interface())
 	}
 	return nil
 }
@@ -218,6 +234,17 @@ func (c ctx) validateStruct() error {
 	return nil
 }
 
+func validateStruct(v reflect.Value, c ctx) error {
+	k := v.Kind()
+	if k == reflect.Ptr && !v.IsNil() {
+		return validateStruct(v.Elem(), c)
+	}
+	if v.Kind() != reflect.Struct {
+		return nil
+	}
+	return c.enterStruct(v).validate()
+}
+
 func (c ctx) validateStructField() error {
 	v := *c.fieldVal
 	f := c.field
@@ -253,14 +280,32 @@ func validateInterface(v reflect.Value, c ctx) error {
 	return c.validateInterface(v)
 }
 
+func canValidateAsStruct(t reflect.Type) bool {
+	k := t.Kind()
+	r := k == reflect.Struct || (k == reflect.Ptr && t.Elem().Kind() == reflect.Struct)
+	return r
+}
+
 func getValidators(f reflect.StructField) ([]func(reflect.Value, ctx) error, error) {
+	// Add defaulf validators (Interface and struct) to this field.
 	vs := []func(reflect.Value, ctx) error{validateInterface}
+	if canValidateAsStruct(f.Type) {
+		vs = append(vs, validateStruct)
+	}
 	k := f.Type.Kind()
+	// For maps, add default validators to their key values.
 	if k == reflect.Map {
 		vs = append(vs, keys(validateInterface))
+		if canValidateAsStruct(f.Type.Key()) {
+			vs = append(vs, keys(validateStruct))
+		}
 	}
+	// For map, slice and array, add default validators to their item values.
 	if k == reflect.Map || k == reflect.Slice || k == reflect.Array {
 		vs = append(vs, values(validateInterface))
+		if canValidateAsStruct(f.Type.Elem()) {
+			vs = append(vs, values(validateStruct))
+		}
 	}
 	tag := f.Tag.Get("validate")
 	if len(tag) == 0 {
