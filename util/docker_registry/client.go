@@ -10,6 +10,7 @@ import (
 	"github.com/docker/distribution/manifest/schema1"
 	"github.com/docker/distribution/reference"
 	"github.com/docker/distribution/registry/client"
+	"github.com/samsalisbury/semv"
 	"golang.org/x/net/context"
 )
 
@@ -76,6 +77,53 @@ func LabelsForTaggedImage(registryUrl, repositoryName, tag string) (labels map[s
 	default:
 		err = fmt.Errorf("Cripes! v2 manifest, which is awesome, but we have no idea how to parse it. Contact your nearest sous chef.")
 	}
+
+	return
+}
+
+func LabelsForImageName(imageName string) (repo, path string, version semv.Version, err error) {
+	ref, err := reference.ParseNamed(imageName)
+	if err != nil {
+		return
+	}
+
+	var labels map[string]string
+	switch ref := ref.(type) {
+	default:
+		err = fmt.Errorf("couldn't parse %s into a tagged image name", imageName)
+		return
+	case reference.NamedTagged:
+		regUrl, repName := reference.SplitHostname(ref)
+		tag := ref.Tag()
+		labels, err = LabelsForTaggedImage(regUrl, repName, tag)
+	}
+
+	if err != nil {
+		return
+	}
+
+	missingLabels := make([]string, 0, 3)
+	repo, present := labels[DockerRepoLabel]
+	if !present {
+		missingLabels = append(missingLabels, DockerRepoLabel)
+	}
+
+	versionStr, present := labels[DockerVersionLabel]
+	if !present {
+		missingLabels = append(missingLabels, DockerVersionLabel)
+	}
+
+	path, present = labels[DockerPathLabel]
+	if !present {
+		missingLabels = append(missingLabels, DockerPathLabel)
+	}
+
+	if len(missingLabels) > 0 {
+		err = fmt.Errorf("Missing labels on manifest for %s: %v", imageName, missingLabels)
+		return
+	}
+
+	version, err = semv.Parse(versionStr)
 
 	return
 }

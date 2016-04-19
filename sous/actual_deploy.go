@@ -5,238 +5,177 @@ import (
 	"log"
 	"sync"
 
-	"github.com/docker/docker/reference"
 	"github.com/opentable/singularity"
 	"github.com/opentable/singularity/dtos"
 	"github.com/opentable/sous/util/docker_registry"
 )
 
-type ActualDeploy struct {
-}
-
 const ReqsPerServer = 10
 
-func GetRunningDeploymentSet(singularities []*singularity.Client, registryUrl string) (deps Deployments) {
-	errCh := make(chan error, 1)
-	reqCh := make(chan *dtos.SingularityRequestParent, len(singularities)*ReqsPerServer)
+type singReq struct {
+	sourceUrl string
+	req       *dtos.SingularityRequestParent
+}
+
+func GetRunningDeploymentSet(singUrls []string) (deps Deployments, err error) {
+	// XXX: the biggest issue I'm currently aware of here is how the various clients are managed.
+	//      Be aware: a client is created for every image data request, even though they'll all be
+	//      directed to the same server - fixing this would require changes inside the docker/distribution code.
+	//      Maybe worse: if there's a problem, all outstanding HTTP requests will be allowed to complete, even though
+	//      Sous may not be available to receive the response.
+	//      The biggest concrete problem I can imagine with that at the moment is if Sous were to run in
+	//      tight loop and fail, possibly exhausting connections at the docker registry.
+	errCh := make(chan error)
+	deps = make(Deployments, 0)
+
+	reqCh := make(chan singReq, len(singUrls)*ReqsPerServer)
 	depCh := make(chan Deployment, ReqsPerServer)
+	defer close(depCh)
 
 	var singWait, depWait sync.WaitGroup
 
-	singWait.Add(len(singularities))
-	for _, singularity := range singularities {
-		go getReqs(singularity, reqCh, errCh)
+	singWait.Add(len(singUrls))
+	for _, url := range singUrls {
+		go singPipeline(url, singWait, reqCh, errCh)
 	}
 
-	go handleSingErrs(errCh)
+	depWait.Add(1)
+	go depPipeline(depWait, reqCh, depCh, errCh)
 
-	go depPipeline(depWait, reqCh, depCh)
+	go func() {
+		catchAndSend("closing up", errCh)
+		singWait.Wait()
+		close(reqCh)
 
-	for dep := range depCh {
-		depWait.Done()
-		deps = append(deps, dep)
-	}
-	return
-}
+		depWait.Wait()
+		close(errCh)
+	}()
 
-func handleSingErrs(errs chan error) {
-	for err := range errs {
-		log.Print(err)
-	}
-}
-
-func depPipeline(wait sync.WaitGroup, reqCh chan *dtos.SingularityRequestParent, registryClient string, depCh chan Deployment) {
-	var once sync.Once
-	for req := range reqCh {
-		wait.Add(1)
-		once.Do(func() {
-			go func() {
-				wait.Wait()
-				close(reqCh)
-				close(depCh)
-			}()
-		})
-		go deploymentFromRequest(req, registryClient, depCh)
+	for {
+		select {
+		case dep := <-depCh:
+			deps = append(deps, dep)
+			depWait.Done()
+		case err = <-errCh:
+			return
+		}
 	}
 }
 
-func getReqs(client *singularity.Client, reqCh chan *dtos.SingularityRequestParent, errCh chan error) {
-	requests, err := client.GetRequests()
+func catchAll(from string) {
+	if err := recover(); err != nil {
+		log.Printf("Recovering from %s where we received %v", from, err)
+	}
+}
+
+func catchAndSend(from string, errs chan error) {
+	defer catchAll(from)
+	if err := recover(); err != nil {
+		switch err := err.(type) {
+		default:
+			if err != nil {
+				errs <- fmt.Errorf("Panicked with not-error: %v", err)
+			}
+		case error:
+			errs <- err
+		}
+	}
+}
+
+func singPipeline(url string, wg sync.WaitGroup, reqs chan singReq, errs chan error) {
+	defer wg.Done()
+	defer catchAndSend(fmt.Sprintf("get requests: %s", url), errs)
+	rs, err := getRequestsFromSingularity(url)
 	if err != nil {
-		errCh <- err
+		errs <- err
 		return
 	}
-	for _, req := range requests {
-		reqCh <- req
+	for _, r := range rs {
+		reqs <- r
 	}
 }
 
-/*
-type SingularityRequestParent struct {
-	ActiveDeploy             *SingularityDeploy
-	PendingDeploy            *SingularityDeploy
-	PendingDeployState       *SingularityPendingDeploy
-	Request                  *SingularityRequest
-	RequestDeployState       *SingularityRequestDeployState
-	//	State *RequestState
+func depPipeline(wait sync.WaitGroup, reqCh chan singReq, depCh chan Deployment, errCh chan error) {
+	defer catchAndSend("dependency building", errCh)
+	for req := range reqCh {
+		wait.Add(1)
+		go func() {
+			defer catchAndSend(fmt.Sprintf("dep from req %s", req.sourceUrl), errCh)
+			dep, err := deploymentFromRequest(req)
+			if err != nil {
+				errCh <- err
+			}
+
+			depCh <- dep
+		}()
+	}
+	wait.Done()
 }
 
-type SingularityDeploy struct {
-	Id                        string
-
-	Command                               string
-	Arguments                             StringList
-	AutoAdvanceDeploySteps                bool
-	ConsiderHealthyAfterRunningForSeconds int64
-	ContainerInfo                         *SingularityContainerInfo
-	CustomExecutorCmd                     string
-	CustomExecutorId                      string
-	CustomExecutorResources               *Resources
-	CustomExecutorSource                  string
-	CustomExecutorUser                    string
-	DeployHealthTimeoutSeconds            int64
-	DeployInstanceCountPerStep            int32
-	DeployStepWaitTimeMs                  int32
-	Env                                   map[string]string
-	ExecutorData                          *ExecutorData
-	HealthcheckIntervalSeconds            int64
-	HealthcheckMaxRetries                 int32
-	HealthcheckMaxTotalTimeoutSeconds     int64
-	HealthcheckPortIndex                  int32
-	HealthcheckTimeoutSeconds int64
-	HealthcheckUri            string
-	Labels                    map[string]string
-	LoadBalancerGroups        StringList
-	LoadBalancerPortIndex int32
-	MaxTaskRetries        int32
-	Metadata              map[string]string
-	RequestId             string
-	ServiceBasePath          string
-	SkipHealthchecksOnDeploy bool
-	Timestamp                int64
-	Uris                     StringList
-	Version                  string
-}
-
-type SingularityContainerInfo struct {
-	Docker *SingularityDockerInfo
-	//	Type *SingularityContainerType
-	Volumes SingularityVolumeList
-}
-
-type SingularityDockerInfo struct {
-	ForcePullImage bool
-	Image          string
-	//	Network *SingularityDockerNetworkType
-	Parameters   map[string]string
-	PortMappings SingularityDockerPortMappingList
-	Privileged   bool
-}
-
-type Resources struct {
-	Cpus     float64
-	MemoryMb float64
-	NumPorts int32
-}
-
-type SingularityRequest struct {
-	//	RequestType *RequestType
-	//	ScheduleType *ScheduleType
-	//	SlavePlacement *SlavePlacement
-	AllowedSlaveAttributes map[string]string
-	BounceAfterScale       bool
-	Group                                 string
-	Id                                    string
-	Instances                             int32
-	KillOldNonLongRunningTasksAfterMillis int64
-	LoadBalanced                          bool
-	NumRetriesOnFailure                   int32
-	Owners                                StringList
-	QuartzSchedule                        string
-	RackAffinity                          StringList
-	RackSensitive                         bool
-	ReadOnlyGroups                        StringList
-	RequiredSlaveAttributes map[string]string
-	Schedule                string
-	ScheduledExpectedRuntimeMillis int64
-	SkipHealthchecks               bool
-	WaitAtLeastMillisAfterTaskFinishesForReschedule int64
-}
-*/
-
-/*
-Deployment struct {
-	DeploymentConfig struct {
-		Resources Resources
-		//   map[string]string
-		Env map[string]string
-		NumInstances int
+func getRequestsFromSingularity(singUrl string) ([]singReq, error) {
+	client := singularity.NewClient(singUrl)
+	singRequests, err := client.GetRequests()
+	if err != nil {
+		return nil, err
 	}
 
-	Cluster string
-	NamedVersion
-	NamedVersion struct {
-		RepositoryName
-		semv.Version
-		Path
+	reqs := make([]singReq, 0, len(singRequests))
+	for _, sr := range singRequests {
+		reqs = append(reqs, singReq{singUrl, sr})
 	}
 
-	Owners []string
-	Kind ManifestKind
+	return reqs, nil
 }
-*/
-func deploymentFromRequest(cluster string, req *dtos.SingularityRequestParent, registryUrl string, depCh chan Deployment, errCh chan error) {
-	rezzes := make(Resources)
+
+func deploymentFromRequest(sr singReq) (Deployment, error) {
+	cluster := sr.sourceUrl
+	req := sr.req
+
 	singDep := req.ActiveDeploy
-	singReq := req.Request
+	env := singDep.Env
 	singRez := singDep.CustomExecutorResources
+	rezzes := make(Resources)
 	rezzes["cpus"] = fmt.Sprintf("%d", singRez.Cpus)
 	rezzes["memory"] = fmt.Sprintf("%d", singRez.MemoryMb)
 	rezzes["ports"] = fmt.Sprintf("%d", singRez.NumPorts)
-	env := singDep.Env
+
+	singReq := req.Request
 	numinst := int(singReq.Instances)
 	owners := singReq.Owners
-	kind := ManifestKind("service")
+
 	// Singularity's RequestType is an enum of
 	//   SERVICE, WORKER, SCHEDULED, ON_DEMAND, RUN_ONCE;
 	// Their annotations don't successfully list RequestType into their swagger.
 	// Need an approach to handling the type -
 	//   either manual Go structs that the resolving context is informed of OR
 	//   additional processing of the swagger JSON files before we process it
-
-	imageName := singDep.ContainerInfo.Docker.Image
-	ref := reference.ParseNamed(imageName)
-
-	var labels map[string]string
-	switch ref.(type) {
-	default:
-		errCh <- fmt.Errorf("couldn't parse %s into a tagged image name", imageName)
-		return
-	case reference.NamedTagged:
-		regUrl, repName := reference.SplitHostname(ref)
-		tag := ref.Tag()
-		labels, err := docker_registry.LabelsForTaggedImage(regUrl, repName, tag)
-	}
-
-	if err != nil {
-		errCh <- err
-		return
-	}
+	kind := ManifestKind("service")
 
 	// We should probably check what kind of Container it is...
 	// Which has a similar problem to RequestType - another Java enum that isn't Swaggered
+	imageName := singDep.ContainerInfo.Docker.Image
 
-	depCh <- Deployment{
-		Cluster: cluster,
+	repo, path, version, err := docker_registry.LabelsForImageName(imageName)
 
-		Resources:    rezzes,
-		Env:          env,
-		NumInstances: numinst,
-		Owners:       owners,
-		Kind:         kind,
-
-		RepositoryName: repo,
-		Version:        version,
-		Path:           path,
+	if err != nil {
+		return Deployment{}, err
 	}
+
+	return Deployment{
+		Cluster: cluster,
+		Owners:  owners,
+		Kind:    kind,
+
+		DeployConfig: DeployConfig{
+			Resources:    rezzes,
+			Env:          env,
+			NumInstances: numinst,
+		},
+
+		SourceVersion: SourceVersion{
+			RepoURL:    RepoURL(repo),
+			Version:    version,
+			RepoOffset: RepoOffset(path),
+		},
+	}, nil
 }
