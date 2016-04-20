@@ -62,33 +62,33 @@ func (sl SourceLocation) String() string {
 	return b.String()
 }
 
-func (nv *SourceVersion) RevId() string {
-	return nv.Version.Meta
+func (sv *SourceVersion) RevId() string {
+	return sv.Version.Meta
 }
 
-func (nv *SourceVersion) TagName() string {
-	return nv.Version.Format("M.m.s-?")
+func (sv *SourceVersion) TagName() string {
+	return sv.Version.Format("M.m.s-?")
 }
 
-func (nv *SourceVersion) CanonicalName() SourceLocation {
+func (sv *SourceVersion) CanonicalName() SourceLocation {
 	return SourceLocation{
-		RepoURL:    nv.RepoURL,
-		RepoOffset: nv.RepoOffset,
+		RepoURL:    sv.RepoURL,
+		RepoOffset: sv.RepoOffset,
 	}
 }
 
-func (nv SourceVersion) Repo() RepoURL {
-	return nv.RepoURL
+func (sv SourceVersion) Repo() RepoURL {
+	return sv.RepoURL
 }
 
-func (cn SourceLocation) Repo() RepoURL {
-	return cn.RepoURL
+func (sl SourceLocation) Repo() RepoURL {
+	return sl.RepoURL
 }
 
-func (cn *SourceLocation) SourceVersion(version semv.Version) SourceVersion {
+func (sl *SourceLocation) SourceVersion(version semv.Version) SourceVersion {
 	return SourceVersion{
-		RepoURL:    cn.RepoURL,
-		RepoOffset: cn.RepoOffset,
+		RepoURL:    sl.RepoURL,
+		RepoOffset: sl.RepoOffset,
 		Version:    version,
 	}
 }
@@ -123,28 +123,28 @@ func parseChunks(sourceStr string) []string {
 	return strings.Split(source, delim)
 }
 
-func sourceVersionFromChunks(source string, chunks []string) (nv SourceVersion, err error) {
+func sourceVersionFromChunks(source string, chunks []string) (sv SourceVersion, err error) {
 	if len(chunks[0]) == 0 {
 		err = &MissingRepo{source}
 		return
 	}
 
-	nv.RepoURL = RepoURL(chunks[0])
+	sv.RepoURL = RepoURL(chunks[0])
 
-	nv.Version, err = semv.Parse(string(chunks[1]))
+	sv.Version, err = semv.Parse(string(chunks[1]))
 	if err != nil {
 		return
 	}
 	if len(chunks) < 3 {
-		nv.RepoOffset = ""
+		sv.RepoOffset = ""
 	} else {
-		nv.RepoOffset = RepoOffset(chunks[2])
+		sv.RepoOffset = RepoOffset(chunks[2])
 	}
 
 	return
 }
 
-func canonicalNameFromChunks(source string, chunks []string) (cn SourceLocation, err error) {
+func canonicalNameFromChunks(source string, chunks []string) (sl SourceLocation, err error) {
 	if len(chunks) > 2 {
 		err = &IncludesVersion{source}
 		return
@@ -154,12 +154,12 @@ func canonicalNameFromChunks(source string, chunks []string) (cn SourceLocation,
 		err = &MissingRepo{source}
 		return
 	}
-	cn.RepoURL = RepoURL(chunks[0])
+	sl.RepoURL = RepoURL(chunks[0])
 
 	if len(chunks) < 2 {
-		cn.RepoOffset = ""
+		sl.RepoOffset = ""
 	} else {
-		cn.RepoOffset = RepoOffset(chunks[1])
+		sl.RepoOffset = RepoOffset(chunks[1])
 	}
 
 	return
