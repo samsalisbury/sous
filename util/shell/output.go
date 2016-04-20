@@ -34,9 +34,9 @@ func (o *Output) Lines() []string {
 func (o *Output) Table() [][]string {
 	lines := o.Lines()
 	rows := make([][]string, len(lines))
-	for _, line := range lines {
+	for i, line := range lines {
 		cells := whitespace.Split(line)
-		rows = append(rows, cells)
+		rows[i] = cells
 	}
 	return rows
 }
