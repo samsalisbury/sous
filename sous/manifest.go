@@ -22,6 +22,18 @@ type (
 		// Deployments is a map of cluster names to DeploymentSpecs
 		Deployments map[string]PartialDeploySpec `validate:"keys=nonempty,values=nonzero"`
 	}
+	// SourceLocation identifies a directory inside a specific source code repo.
+	// Note that the directory has no meaning without the addition of a revision
+	// ID. This type is used as a shorthand for deploy manifests, enabling the
+	// logical grouping of deploys of different versions of a particular
+	// service.
+	SourceLocation struct {
+		// RepoURL is the URL of a source code repository.
+		RepoURL
+		// RepoOffset is a relative path to a directory within the repository
+		// at RepoURL
+		RepoOffset `yaml:",omitempty"`
+	}
 	// ManifestKind describes the broad category of a piece of software, such as
 	// a long-running HTTP service, or a scheduled task, etc. It is used to
 	// determine resource sets and contracts that can be run on this

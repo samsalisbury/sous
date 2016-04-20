@@ -1,6 +1,7 @@
 package sous
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 
@@ -14,18 +15,6 @@ type (
 	// RepoOffsetDir is a path within a repository containing a single piece of
 	// software.
 	RepoOffset string
-	// SourceLocation identifies a directory inside a source code repository.
-	// Note that the directory has no meaning without the addition of a revision
-	// ID. This type is used as a shorthand for deploy manifests, enabling the
-	// logical grouping of deploys of different versions of a particular
-	// service.
-	SourceLocation struct {
-		// RepoURL is the URL of a source code repository.
-		RepoURL
-		// RepoOffset is a relative path to a directory within the repository
-		// at RepoURL
-		RepoOffset
-	}
 	// SourceVersion is similar to SourceLocation except that it also includes
 	// version information. This means that a SourceID completely describes
 	// exactly one snapshot of a body of source code, from which a piece of
@@ -33,7 +22,7 @@ type (
 	SourceVersion struct {
 		RepoURL
 		semv.Version
-		RepoOffset
+		RepoOffset `yaml:",omitempty"`
 	}
 
 	EntityName interface {
@@ -59,6 +48,19 @@ type (
 		parsing string
 	}
 )
+
+func (sl SourceLocation) MarshalYAML() (interface{}, error) {
+	return sl.String(), nil
+}
+
+func (sl SourceLocation) String() string {
+	b := &bytes.Buffer{}
+	fmt.Fprint(b, sl.RepoURL)
+	if sl.RepoOffset != "" {
+		fmt.Fprintf(b, ":%s", sl.RepoOffset)
+	}
+	return b.String()
+}
 
 func (nv *SourceVersion) RevId() string {
 	return nv.Version.Meta
