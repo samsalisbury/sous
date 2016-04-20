@@ -4,11 +4,17 @@ import (
 	"flag"
 
 	"github.com/opentable/sous/util/cmdr"
+	"github.com/opentable/sous/util/whitespace"
 	"github.com/samsalisbury/semv"
 )
 
 // Sous is the main sous command.
 type Sous struct {
+	// CLI is a reference to the CLI singleton. We use it here to set global
+	// verbosity.
+	CLI *cmdr.CLI
+	// Err is the error message stream.
+	Err *ErrOut
 	// Version is the version of Sous itself.
 	Version semv.Version
 	// flags holds the values of flags passed to this command
@@ -20,6 +26,8 @@ type Sous struct {
 	}
 }
 
+// TopLevelCommands is populated once per command file (beginning sous_) in this
+// directory.
 var TopLevelCommands = cmdr.Commands{}
 
 const sousHelp = `
@@ -48,22 +56,32 @@ func (*Sous) Help() string { return sousHelp }
 
 func (s *Sous) AddFlags(fs *flag.FlagSet) {
 	fs.BoolVar(&s.flags.Verbosity.Silent, "s", false,
-		"silent verbosity: silence all nonessential output")
+		"silent: silence all non-essential output")
 	fs.BoolVar(&s.flags.Verbosity.Quiet, "q", false,
-		"quiet verbosity: output only essential error messages")
+		"quiet: output only essential error messages")
 	fs.BoolVar(&s.flags.Verbosity.Loud, "v", false,
-		"loud verbosity: output extra info, including all shell commands")
+		"loud: output extra info, including all shell commands")
 	fs.BoolVar(&s.flags.Verbosity.Debug, "d", false,
-		"debug level verbosity: output detailed logs of internal operations")
+		"debug: output detailed logs of internal operations")
 }
 
-func (*Sous) Execute(args []string) cmdr.Result {
+func (s *Sous) Execute(args []string) cmdr.Result {
+	r := s.CLI.InvokeWithoutPrinting([]string{"sous", "help"})
+	success, ok := r.(cmdr.SuccessResult)
+	if !ok {
+		return s.usage()
+	}
+	return UsageErrorf(whitespace.Trim(success.String()) + "\n")
+}
+
+func (s *Sous) usage() cmdr.ErrorResult {
 	err := UsageErrorf("usage: sous [options] command")
 	err.Tip = "try `sous help` for a list of commands"
 	return err
 }
 
-func (Sous) Subcommands() cmdr.Commands {
+func (s *Sous) Subcommands() cmdr.Commands {
+	//s.CLI.SetVerbosity(s.Verbosity())
 	return TopLevelCommands
 }
 

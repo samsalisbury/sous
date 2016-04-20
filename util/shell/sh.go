@@ -1,3 +1,18 @@
+// The shell package provides convenience wrappers around os/exec.
+//
+// Specifically, it is designed to loosely emulate an ordinary shell session,
+// with persistent directory context. It provides many helper functions around
+// processing output streams into Go-friendly structures, and returning errors
+// in an expected way.
+//
+// In general, and functions that specifically look for exit codes or output on
+// stderr do not return an error for non-zero exit codes; they still return
+// errors for other problems, like the process not starting due to failure to
+// attach pipes, the binary not existing, etc. All other helper functions return
+// errors for non-zero exit codes.
+//
+// This package is designed to aid with logging sessions, good for building CLI
+// applications that shell out, and exposing these sessions to the user.
 package shell
 
 import (
@@ -45,6 +60,9 @@ func Default() (*Sh, error) {
 	}, nil
 }
 
+// DefaultInDir is similar to Default, but immediately CDs into the specified
+// directory. The path can be relative or absolute. If relative, it begins from
+// the current working directory.
 func DefaultInDir(path string) (*Sh, error) {
 	sh := &Sh{Env: os.Environ()}
 	return sh, sh.CD(path)

@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/opentable/sous/cli"
 	"github.com/opentable/sous/util/cmdr"
 	"github.com/xrash/smetrics"
 )
@@ -30,16 +31,22 @@ type (
 
 func NewTerminal(t *testing.T, root cmdr.Command) *Terminal {
 	out := TestOutput{"stdout", &bytes.Buffer{}, t}
-	err := TestOutput{"stderr", &bytes.Buffer{}, t}
+	errout := TestOutput{"stderr", &bytes.Buffer{}, t}
 	combined := TestOutput{"combined output", &bytes.Buffer{}, t}
-	return &Terminal{
-		&cmdr.CLI{
-			Root: root,
-			Out:  cmdr.NewOutput(io.MultiWriter(out.Buffer, combined.Buffer)),
-			Err:  cmdr.NewOutput(io.MultiWriter(err.Buffer, combined.Buffer)),
-		},
-		out, err, combined, []string{}, t,
+	s := &cli.Sous{}
+	c := &cmdr.CLI{
+		Root: root,
+		Out:  cmdr.NewOutput(io.MultiWriter(out.Buffer, combined.Buffer)),
+		Err:  cmdr.NewOutput(io.MultiWriter(errout.Buffer, combined.Buffer)),
 	}
+	g, err := cli.BuildGraph(s, c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	c.Hooks.PreExecute = func(c cmdr.Command) error {
+		return g.Inject(c)
+	}
+	return &Terminal{c, out, errout, combined, []string{}, t}
 }
 
 // RunCommand takes a command line, turns it into args, and passes it to a CLI

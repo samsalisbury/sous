@@ -68,7 +68,7 @@ func (c *Command) Stdout() (string, error) {
 // Stderr is returns the stderr stream as a string. It returns an error for the
 // same reasons as .Result
 func (c *Command) Stderr() (string, error) {
-	r, err := c.SucceedResult()
+	r, err := c.Result()
 	if err != nil {
 		return "", err
 	}
@@ -92,6 +92,15 @@ func (c *Command) Lines() ([]string, error) {
 		lines = append(lines, trimmed)
 	}
 	return lines, nil
+}
+
+// Table is similar to Lines, except lines are further split by whitespace.
+func (c *Command) Table() ([][]string, error) {
+	r, err := c.SucceedResult()
+	if err != nil {
+		return nil, err
+	}
+	return r.Stdout.Table(), nil
 }
 
 // JSON tries to parse the stdout from the command as JSON, populating the

@@ -18,6 +18,8 @@ type (
 	// emit tables. It is designed to be used sequentially, writing and changing
 	// context on each call to one of its methods.
 	Output struct {
+		// Verbosity is the verbosity of this output.
+		Verbosity Verbosity
 		// Errors contains any errors this output has encountered whilst
 		// writing to Writer.
 		Errors []error
@@ -51,9 +53,10 @@ func isTerm(w io.Writer) bool {
 // You can use this to create and configure an output in a single statement.
 func NewOutput(w io.Writer, configFunc ...func(*Output)) *Output {
 	out := &Output{
-		Style:  style.DefaultStyle(),
-		writer: w,
-		isTerm: isTerm(w),
+		Style:       style.DefaultStyle(),
+		indentStyle: DefaultIndentString,
+		writer:      w,
+		isTerm:      isTerm(w),
 	}
 	for _, f := range configFunc {
 		f(out)

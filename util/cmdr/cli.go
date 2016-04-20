@@ -66,7 +66,7 @@ func (c *CLI) init() {
 // Invoke begins invoking the CLI starting with the base command, and handles
 // all command output. It then returns the result for further processing.
 func (c *CLI) Invoke(args []string) Result {
-	result := c.invoke(c.Root, args, nil)
+	result := c.InvokeWithoutPrinting(args)
 	if success, ok := result.(SuccessResult); ok {
 		c.handleSuccessResult(success)
 	}
@@ -77,6 +77,10 @@ func (c *CLI) Invoke(args []string) Result {
 		c.handleErrorResult(err)
 	}
 	return result
+}
+
+func (c *CLI) InvokeWithoutPrinting(args []string) Result {
+	return c.invoke(c.Root, args, nil)
 }
 
 // InvokeAndExit calls Invoke, and exits with the returned exit code.
@@ -111,6 +115,10 @@ func (c *CLI) printTip(tip string) {
 	c.Err.Printf("Tip: ")
 	c.Err.PopStyle()
 	c.Err.Printfln(tip)
+}
+
+func (c *CLI) SetVerbosity(v Verbosity) {
+	c.Err.Verbosity = v
 }
 
 // ListSubcommands returns a slice of strings with the names of each subcommand
@@ -177,6 +185,9 @@ func (c *CLI) invoke(base Command, args []string, ff []func(*flag.FlagSet)) Resu
 		subcommandName := args[0]
 		subcommands := command.Subcommands()
 		if subcommand, ok := subcommands[subcommandName]; ok {
+			if err := c.runHook(c.Hooks.PreExecute, base); err != nil {
+				return EnsureErrorResult(err)
+			}
 			return c.invoke(subcommand, args, ff)
 		}
 	}

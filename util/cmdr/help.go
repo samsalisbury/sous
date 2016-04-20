@@ -1,6 +1,7 @@
 package cmdr
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"strings"
@@ -46,18 +47,29 @@ func (h *Help) Usage(name string) string {
 	return fmt.Sprintf("usage: %s %s", name, h.Args)
 }
 
-// printHelp recursively descends down the commands and subcommands named in its
+// PrintHelp recursively descends down the commands and subcommands named in its
 // arguments, and prints the help for the deepest member it meets, or returns an
 // error if no such command exists.
 func (cli *CLI) PrintHelp(base Command, name string, args []string) error {
-	out := cli.Out
+	return cli.printHelp(cli.Out, base, name, args)
+}
+
+// Help is similar to PrintHelp, except it returns the result as a string
+// instead of writing to the CLI's default Output.
+func (cli *CLI) Help(base Command, name string, args []string) (string, error) {
+	b := &bytes.Buffer{}
+	err := cli.printHelp(NewOutput(b), base, name, args)
+	return b.String(), err
+}
+
+func (cli *CLI) printHelp(out *Output, base Command, name string, args []string) error {
 	if len(args) == 0 {
 		help := ParseHelp(base.Help())
 		out.Println(help.Usage(name))
 		out.Println()
 		out.Println(help.Desc)
-		cli.printSubcommands(base, name)
-		cli.printOptions(base, name)
+		cli.printSubcommands(out, base, name)
+		cli.printOptions(out, base, name)
 		return nil
 	}
 	hasSubCommands, ok := base.(Subcommander)
@@ -72,11 +84,10 @@ func (cli *CLI) PrintHelp(base Command, name string, args []string) error {
 		return UsageErrorf("command %q does not exist", name)
 	}
 	args = args[1:]
-	return cli.PrintHelp(sc, name, args)
+	return cli.printHelp(out, sc, name, args)
 }
 
-func (cli *CLI) printSubcommands(c Command, name string) {
-	out := cli.Out
+func (cli *CLI) printSubcommands(out *Output, c Command, name string) {
 	subcommander, ok := c.(Subcommander)
 	if !ok {
 		return
@@ -88,8 +99,7 @@ func (cli *CLI) printSubcommands(c Command, name string) {
 	out.Table(commandTable(cs))
 }
 
-func (cli *CLI) printOptions(command Command, name string) {
-	out := cli.Out
+func (cli *CLI) printOptions(out *Output, command Command, name string) {
 	addsFlags, ok := command.(AddsFlags)
 	if !ok {
 		return
