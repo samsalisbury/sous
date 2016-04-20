@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 	"testing"
 
@@ -57,6 +58,7 @@ func NewTerminal(t *testing.T, root cmdr.Command) *Terminal {
 // surrounded by quotes. We should add this feature if we need it.
 func (t *Terminal) RunCommand(commandline string) {
 	args := strings.Split(commandline, " ")
+	os.Args[0] = args[0]
 	t.CLI.Invoke(args)
 	rr := fmt.Sprintf("shell> %s\n%s", commandline, t.Combined)
 	if !strings.HasSuffix(rr, "\n") {

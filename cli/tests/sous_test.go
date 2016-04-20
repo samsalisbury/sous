@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"log"
 	"testing"
 
 	"github.com/opentable/sous/cli"
@@ -16,12 +17,12 @@ func TestSous(t *testing.T) {
 	// Invoke the CLI
 	term.RunCommand("sous")
 
-	//term.Stdout.ShouldHaveNumLines(0)
-	//term.Stderr.ShouldHaveNumLines(2)
+	log.Print(term.Stderr)
+	term.Stdout.ShouldHaveNumLines(0)
+	term.Stderr.ShouldHaveNumLines(17)
 
-	//term.Stderr.ShouldHaveExactLine("usage: sous [options] command")
-	//term.Stderr.ShouldHaveLineContaining(
-	//	"try `sous help` for a list of commands")
+	term.Stderr.ShouldHaveExactLine("usage: sous <command>")
+	term.Stderr.ShouldHaveLineContaining("help     get help with sous")
 }
 
 func TestSousVersion(t *testing.T) {
