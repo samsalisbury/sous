@@ -8,6 +8,7 @@ import (
 	"github.com/opentable/singularity"
 	"github.com/opentable/singularity/dtos"
 	"github.com/opentable/sous/util/docker_registry"
+	"github.com/samsalisbury/semv"
 )
 
 const ReqsPerServer = 10
@@ -32,6 +33,9 @@ func GetRunningDeploymentSet(singUrls []string) (deps Deployments, err error) {
 	depCh := make(chan Deployment, ReqsPerServer)
 	defer close(depCh)
 
+	regClient := docker_registry.NewClient()
+	defer regClient.Cancel()
+
 	var singWait, depWait sync.WaitGroup
 
 	singWait.Add(len(singUrls))
@@ -40,7 +44,7 @@ func GetRunningDeploymentSet(singUrls []string) (deps Deployments, err error) {
 	}
 
 	depWait.Add(1)
-	go depPipeline(depWait, reqCh, depCh, errCh)
+	go depPipeline(depWait, regClient, reqCh, depCh, errCh)
 
 	go func() {
 		catchAndSend("closing up", errCh)
@@ -95,13 +99,13 @@ func singPipeline(url string, wg sync.WaitGroup, reqs chan singReq, errs chan er
 	}
 }
 
-func depPipeline(wait sync.WaitGroup, reqCh chan singReq, depCh chan Deployment, errCh chan error) {
+func depPipeline(wait sync.WaitGroup, cl *docker_registry.Client, reqCh chan singReq, depCh chan Deployment, errCh chan error) {
 	defer catchAndSend("dependency building", errCh)
 	for req := range reqCh {
 		wait.Add(1)
 		go func() {
 			defer catchAndSend(fmt.Sprintf("dep from req %s", req.sourceUrl), errCh)
-			dep, err := deploymentFromRequest(req)
+			dep, err := deploymentFromRequest(cl, req)
 			if err != nil {
 				errCh <- err
 			}
@@ -127,7 +131,7 @@ func getRequestsFromSingularity(singUrl string) ([]singReq, error) {
 	return reqs, nil
 }
 
-func deploymentFromRequest(sr singReq) (Deployment, error) {
+func deploymentFromRequest(cl *docker_registry.Client, sr singReq) (Deployment, error) {
 	cluster := sr.sourceUrl
 	req := sr.req
 
@@ -155,8 +159,12 @@ func deploymentFromRequest(sr singReq) (Deployment, error) {
 	// Which has a similar problem to RequestType - another Java enum that isn't Swaggered
 	imageName := singDep.ContainerInfo.Docker.Image
 
-	repo, path, version, err := docker_registry.LabelsForImageName(imageName)
+	labels, err := cl.LabelsForImageName(imageName)
+	if err != nil {
+		return Deployment{}, err
+	}
 
+	sv, err := buildSourceVersion(labels)
 	if err != nil {
 		return Deployment{}, err
 	}
@@ -172,10 +180,37 @@ func deploymentFromRequest(sr singReq) (Deployment, error) {
 			NumInstances: numinst,
 		},
 
-		SourceVersion: SourceVersion{
-			RepoURL:    RepoURL(repo),
-			Version:    version,
-			RepoOffset: RepoOffset(path),
-		},
+		SourceVersion: sv,
 	}, nil
+}
+
+func buildSourceVersion(labels map[string]string) (SourceVersion, error) {
+	missingLabels := make([]string, 0, 3)
+	repo, present := labels[DockerRepoLabel]
+	if !present {
+		missingLabels = append(missingLabels, DockerRepoLabel)
+	}
+
+	versionStr, present := labels[DockerVersionLabel]
+	if !present {
+		missingLabels = append(missingLabels, DockerVersionLabel)
+	}
+
+	path, present := labels[DockerPathLabel]
+	if !present {
+		missingLabels = append(missingLabels, DockerPathLabel)
+	}
+
+	if len(missingLabels) > 0 {
+		err := fmt.Errorf("Missing labels on manifest for %v", missingLabels)
+		return SourceVersion{}, err
+	}
+
+	version, err := semv.Parse(versionStr)
+
+	return SourceVersion{
+		RepoURL:    RepoURL(repo),
+		Version:    version,
+		RepoOffset: RepoOffset(path),
+	}, err
 }
