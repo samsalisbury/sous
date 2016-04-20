@@ -79,6 +79,11 @@ func (c *Client) stdoutLines(name string, args ...interface{}) ([]string, error)
 	return c.Sh.Cmd(c.Bin, args...).Lines()
 }
 
+func (c *Client) table(name string, args ...interface{}) ([][]string, error) {
+	args = append([]interface{}{name}, args...)
+	return c.Sh.Cmd(c.Bin, args...).Table()
+}
+
 func (c *Client) Dir() string {
 	return c.Sh.Dir
 }
@@ -129,6 +134,32 @@ func (c *Client) ListTags() ([]sous.Tag, error) {
 		}
 	}
 	return tags, nil
+}
+
+func (c *Client) ListRemotes() (Remotes, error) {
+	t, err := c.table("remote", "-v")
+	if err != nil {
+		return nil, err
+	}
+	remotes := Remotes{}
+	for _, row := range t {
+		if len(row) != 3 {
+			fmt.Println("%s", t)
+			return nil, fmt.Errorf("git remote -v output in unexpected format, please report this error")
+		}
+		name := row[0]
+		url := row[1]
+		kind := row[2]
+		switch kind {
+		default:
+			return nil, fmt.Errorf("git remote -v returned a remote URL type %s; expected (push) or (fetch)")
+		case "(push)":
+			remotes.AddPush(name, url)
+		case "(fetch)":
+			remotes.AddFetch(name, url)
+		}
+	}
+	return remotes, nil
 }
 
 func (c *Client) NearestTag() (string, error) {

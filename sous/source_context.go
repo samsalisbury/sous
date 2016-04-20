@@ -8,6 +8,7 @@ type (
 		Files, ModifiedFiles, NewFiles       []string
 		Tags                                 []Tag
 		NearestTagName, NearestTagRevision   string
+		PossiblePrimaryRemoteURL             string
 		DirtyWorkingTree                     bool
 	}
 	// Tag represents a revision control commit tag.

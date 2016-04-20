@@ -24,7 +24,30 @@ type (
 	Tag struct {
 		Name, Revision string
 	}
+	Remote struct {
+		Name, PushURL, FetchURL string
+	}
+	Remotes map[string]Remote
 )
+
+func (rs Remotes) AddFetch(name, url string) {
+	r := rs.ensureExists(name)
+	r.FetchURL = url
+	rs[name] = r
+}
+
+func (rs Remotes) AddPush(name, url string) {
+	r := rs.ensureExists(name)
+	r.PushURL = url
+	rs[name] = r
+}
+
+func (rs Remotes) ensureExists(name string) Remote {
+	if _, ok := rs[name]; !ok {
+		rs[name] = Remote{}
+	}
+	return rs[name]
+}
 
 // NewRepo takes a client, which it expects to already be inside a repo
 // directory. It returns an error if the client is not inside a repository
@@ -50,13 +73,17 @@ func (r *Repo) SourceContext() (*sous.SourceContext, error) {
 		repoRelativeDir string
 		files, modifiedFiles, newFiles []string
 		allTags                        []sous.Tag
+		remotes                        Remotes
 	)
 	c := r.Client
-	err := parallel.Do(
+	if err := parallel.Do(
 		func(err *error) { branch, *err = c.CurrentBranch() },
 		func(err *error) { revision, *err = c.Revision() },
 		func(err *error) {
 			repoRelativeDir, *err = filepath.Rel(r.Root, r.Client.Sh.Dir)
+			if repoRelativeDir == "." {
+				repoRelativeDir = ""
+			}
 		},
 		func(err *error) {
 			allTags, *err = r.Client.ListTags()
@@ -72,20 +99,36 @@ func (r *Repo) SourceContext() (*sous.SourceContext, error) {
 		func(err *error) { files, *err = c.ListFiles() },
 		func(err *error) { modifiedFiles, *err = c.ModifiedFiles() },
 		func(err *error) { newFiles, *err = c.NewFiles() },
-	)
-	if err != nil {
+		func(err *error) { remotes, *err = c.ListRemotes() },
+	); err != nil {
 		return nil, err
 	}
+
+	var (
+		primaryRemote    Remote
+		primaryRemoteURL string
+		ok               = false
+	)
+
+	primaryRemote, ok = remotes["upstream"]
+	if !ok {
+		primaryRemote, ok = remotes["origin"]
+	}
+	if ok {
+		primaryRemoteURL = primaryRemote.FetchURL
+	}
+
 	return &sous.SourceContext{
-		RootDir:          r.Root,
-		OffsetDir:        repoRelativeDir,
-		Branch:           branch,
-		Revision:         revision,
-		Files:            files,
-		ModifiedFiles:    modifiedFiles,
-		NewFiles:         newFiles,
-		Tags:             allTags,
-		NearestTagName:   nearestTagName,
-		DirtyWorkingTree: len(modifiedFiles)+len(newFiles) != 0,
+		RootDir:                  r.Root,
+		OffsetDir:                repoRelativeDir,
+		Branch:                   branch,
+		Revision:                 revision,
+		Files:                    files,
+		ModifiedFiles:            modifiedFiles,
+		NewFiles:                 newFiles,
+		Tags:                     allTags,
+		NearestTagName:           nearestTagName,
+		PossiblePrimaryRemoteURL: primaryRemoteURL,
+		DirtyWorkingTree:         len(modifiedFiles)+len(newFiles) != 0,
 	}, nil
 }
