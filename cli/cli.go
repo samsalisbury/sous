@@ -7,11 +7,13 @@ import (
 	"os"
 
 	"github.com/opentable/sous/util/cmdr"
+	"github.com/opentable/sous/util/yaml"
 	"github.com/samsalisbury/semv"
 )
 
 // Func aliases, for convenience returning from commands.
 var (
+	SuccessData       = cmdr.SuccessData
 	Successf          = cmdr.Successf
 	Success           = cmdr.Success
 	UsageErrorf       = cmdr.UsageErrorf
@@ -20,6 +22,14 @@ var (
 	InternalErrorf    = cmdr.InternalErrorf
 	EnsureErrorResult = cmdr.EnsureErrorResult
 )
+
+func SuccessYAML(v interface{}) cmdr.Result {
+	b, err := yaml.Marshal(v)
+	if err != nil {
+		return InternalErrorf("unable to marshal YAML: %s", err)
+	}
+	return SuccessData(b)
+}
 
 func NewSousCLI(v semv.Version, out, errout io.Writer) (*cmdr.CLI, error) {
 

@@ -79,8 +79,9 @@ func newErrOut(c *cmdr.CLI) ErrOut {
 	return ErrOut{c.Err}
 }
 
-func newSourceContext(g LocalGitRepo) (*sous.SourceContext, error) {
-	return g.SourceContext()
+func newSourceContext(g LocalGitRepo) (c *sous.SourceContext, err error) {
+	c, err = g.SourceContext()
+	return c, initErr(err, "getting local git context")
 }
 
 func newLocalWorkDir() (LocalWorkDir, error) {
