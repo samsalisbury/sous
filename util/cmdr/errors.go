@@ -95,7 +95,10 @@ func (e *cliErr) Error() string {
 	if e.Err == nil {
 		return e.Message
 	}
-	return fmt.Sprintf("%s: %s", e.Message, e.Err)
+	if e.Message != "" {
+		return fmt.Sprintf("%s: %s", e.Message, e.Err)
+	}
+	return e.Err.Error()
 }
 
 func (e *cliErr) WithTip(tip string) ErrorResult {
