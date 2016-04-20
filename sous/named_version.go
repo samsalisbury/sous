@@ -85,7 +85,7 @@ func (cn SourceLocation) Repo() RepoURL {
 	return cn.RepoURL
 }
 
-func (cn *SourceLocation) NamedVersion(version semv.Version) SourceVersion {
+func (cn *SourceLocation) SourceVersion(version semv.Version) SourceVersion {
 	return SourceVersion{
 		RepoURL:    cn.RepoURL,
 		RepoOffset: cn.RepoOffset,
@@ -123,7 +123,7 @@ func parseChunks(sourceStr string) []string {
 	return strings.Split(source, delim)
 }
 
-func namedVersionFromChunks(source string, chunks []string) (nv SourceVersion, err error) {
+func sourceVersionFromChunks(source string, chunks []string) (nv SourceVersion, err error) {
 	if len(chunks[0]) == 0 {
 		err = &MissingRepo{source}
 		return
@@ -165,9 +165,9 @@ func canonicalNameFromChunks(source string, chunks []string) (cn SourceLocation,
 	return
 }
 
-func ParseNamedVersion(source string) (SourceVersion, error) {
+func ParseSourceVersion(source string) (SourceVersion, error) {
 	chunks := parseChunks(source)
-	return namedVersionFromChunks(source, chunks)
+	return sourceVersionFromChunks(source, chunks)
 }
 
 func ParseCanonicalName(source string) (SourceLocation, error) {
@@ -180,7 +180,7 @@ func ParseGenName(source string) (EntityName, error) {
 	default:
 		return nil, fmt.Errorf("cannot parse %q - divides into %d chunks", source, len(chunks))
 	case 3:
-		return namedVersionFromChunks(source, chunks)
+		return sourceVersionFromChunks(source, chunks)
 	case 2:
 		return canonicalNameFromChunks(source, chunks)
 	}

@@ -58,6 +58,6 @@ func BuildDeployment(m *Manifest, spec PartialDeploySpec, inherit DeploymentSpec
 		},
 		Owners:        m.Owners,
 		Kind:          m.Kind,
-		SourceVersion: m.Source.NamedVersion(spec.Version),
+		SourceVersion: m.Source.SourceVersion(spec.Version),
 	}, nil
 }
