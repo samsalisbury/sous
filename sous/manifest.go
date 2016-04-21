@@ -52,7 +52,7 @@ type (
 	PartialDeploySpec struct {
 		// DeployConfig contains config information for this deployment, see
 		// DeployConfig.
-		DeployConfig `yaml:"inline"`
+		DeployConfig `yaml:",inline"`
 		// Version is a semantic version with the following properties:
 		//
 		//     1. The major/minor/patch/pre-release fields exist as a tag in
@@ -72,12 +72,12 @@ type (
 	DeployConfig struct {
 		// Resources represents the resources each instance of this software
 		// will be given by the execution environment.
-		Resources Resources `validate:"keys=nonempty,values=nonempty"`
+		Resources Resources `yaml:",omitempty" validate:"keys=nonempty,values=nonempty"`
 		// Env is a list of environment variables to set for each instance of
 		// of this deployment. It will be checked for conflict with the
 		// definitions found in State.Defs.EnvVars, and if not in conflict
 		// assumes the greatest priority.
-		Env map[string]string `validate:"keys=nonempty,values=nonempty"`
+		Env map[string]string `yaml:",omitempty" validate:"keys=nonempty,values=nonempty"`
 		// NumInstances is a guide to the number of instances that should be
 		// deployed in this cluster, note that the actual number may differ due
 		// to decisions made by Sous. If set to zero, Sous will decide how many
