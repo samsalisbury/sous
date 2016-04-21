@@ -43,9 +43,9 @@ type (
 	// DeploymentSpecs is a list of DeploymentSpecs.
 	DeploymentSpecs []PartialDeploySpec
 
-	// DeploymentSpec is the interface to describe a cluster-wide deployment of
-	// an application described by a Manifest. Together with the manifest, one
-	// can assemble full Deployments.
+	// PartialDeploySpec is the interface to describe a cluster-wide deployment
+	// of an application described by a Manifest. Together with the manifest,
+	// one can assemble full Deployments.
 	//
 	// Unexported fields in DeploymentSpec are not intended to be serialised
 	// to/from yaml, but are useful when set internally.
