@@ -2,46 +2,194 @@ package test
 
 import (
 	"bytes"
+	"crypto/md5"
 	"crypto/x509"
 	"encoding/pem"
+	"fmt"
+	"io"
 	"log"
 	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
+	"strings"
 	"testing"
 	"text/template"
 
+	"github.com/opentable/sous/sous"
+	"github.com/opentable/sous/util/docker_registry"
 	"github.com/opentable/test_with_docker"
+	"github.com/stretchr/testify/assert"
 )
 
-var ip string
+var ip, registryName, imageName string
 
 func TestMain(m *testing.M) {
 	os.Exit(wrapCompose(m))
 }
 
-func wrapCompose(m *testing.M) int {
+func TestGetLabels(t *testing.T) {
+	assert := assert.New(t)
+	cl := docker_registry.NewClient()
+	cl.BecomeFoolishlyTrusting()
+
+	labels, err := cl.LabelsForImageName(imageName)
+
+	assert.Nil(err)
+	assert.Contains(labels, sous.DockerRepoLabel)
+}
+
+func wrapCompose(m *testing.M) (resultCode int) {
 	log.SetFlags(log.Flags() | log.Lshortfile)
+	defer func() {
+		if err := recover(); err != nil {
+			log.Print(err)
+			resultCode = 1
+		}
+	}()
 
 	machineName := "default"
-	composeDir := "test/test-registry"
-
-	err := registryCerts(composeDir, machineName)
+	ip, err := test_with_docker.MachineIP(machineName)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
-	ipstr, started, err := test_with_docker.ComposeServices("default", composeDir, map[string]uint{"Singularity": 7099, "Registry": 5000})
-	ip = ipstr
+	composeDir := "test-registry"
+	registryCertName := "testing.crt"
+	registryName = fmt.Sprintf("%s:%d", ip, 5000)
 
+	err = registryCerts(composeDir, registryCertName, machineName, ip)
+	if err != nil {
+		panic(fmt.Errorf("building registry certs failed: %s", err))
+	}
+
+	_, started, err := test_with_docker.ComposeServices("default", composeDir, map[string]uint{"Singularity": 7099, "Registry": 5000})
 	defer test_with_docker.Shutdown(started)
 
+	imageName = fmt.Sprintf("%s/%s:%s", registryName, "hello-labels", "latest")
+	err = buildAndPushContainer("test/hello-labels", imageName)
 	if err != nil {
-		log.Panic(err)
+		panic(fmt.Errorf("building test container failed: %s", err))
 	}
 
-	return m.Run()
+	log.Println("Beginnging tests...\n\n")
+	resultCode = m.Run()
+	return
+}
+
+var successfulBuildRE = regexp.MustCompile(`Successfully built (\w+)`)
+
+func buildAndPushContainer(containerDir, tagName string) error {
+	build := exec.Command("docker", "build", ".")
+	build.Dir = "hello-labels"
+	output, err := build.CombinedOutput()
+	if err != nil {
+		log.Print(build.Args)
+		log.Print(string(output))
+		return err
+	}
+
+	match := successfulBuildRE.FindStringSubmatch(string(output))
+	if match == nil {
+		return fmt.Errorf("Couldn't find container id in:\n%s", output)
+	}
+
+	containerId := match[1]
+	tag := exec.Command("docker", "tag", containerId, tagName)
+	tag.Dir = "hello-labels"
+	output, err = tag.CombinedOutput()
+	if err != nil {
+		log.Print(tag.Args)
+		log.Print(string(output))
+		return err
+	}
+
+	push := exec.Command("docker", "push", tagName)
+	push.Dir = "hello-labels"
+	output, err = push.CombinedOutput()
+	if err != nil {
+		log.Print(push.Args)
+		log.Print(string(output))
+		return err
+	}
+
+	return nil
+}
+
+// registryCerts makes sure that we'll be able to reach the test registry
+// Find the docker-machine IP
+// Get the SAN from the existing test cert
+//   If different, template out a new openssl config
+//   Regenerate the key/cert pair
+//   docker-compose rebuild the registry service
+func registryCerts(composeDir, registryCertName, machineName, ipstr string) error {
+	ip := net.ParseIP(ipstr)
+	certPath := filepath.Join(composeDir, registryCertName)
+	caPath := fmt.Sprintf("/etc/docker/certs.d/%s/ca.crt", registryName)
+
+	certIPs, err := getCertIPSans(filepath.Join(composeDir, registryCertName))
+	if err != nil {
+		return err
+	}
+
+	haveIP := false
+
+	for _, certIP := range certIPs {
+		if certIP.Equal(ip) {
+			log.Print("Registry cert includes registry IP")
+			haveIP = true
+			break
+		}
+	}
+
+	if !haveIP {
+		log.Print("Rebuilding the registry certificate")
+		certIPs = append(certIPs, ip)
+		err = buildTestingKeypair(composeDir, certIPs)
+		if err != nil {
+			return err
+		}
+
+		err = test_with_docker.RebuildService(machineName, composeDir, "registry")
+		if err != nil {
+			return err
+		}
+	}
+
+	certFile, err := os.Open(filepath.Join(composeDir, "testing.crt"))
+	if err != nil {
+		return err
+	}
+
+	hash := md5.New()
+	io.Copy(hash, certFile)
+	caHash := fmt.Sprintf("%x", hash.Sum(nil))
+	md5s, err := test_with_docker.MachineMD5s(machineName, caPath)
+	if err != nil {
+		return err
+	}
+
+	remoteHash, present := md5s[caPath]
+	if !present {
+		return fmt.Errorf("Could not determine hash of CA on machine at %s", caPath)
+	}
+
+	if strings.Compare(remoteHash, caHash) != 0 {
+		log.Printf("Remote and local registry certs differ (%q vs %q)", remoteHash, caHash)
+		err = test_with_docker.InstallMachineFile(machineName, certPath, caPath)
+
+		//err = installCA(machineName, registryName, composeDir, registryCertName)
+		if err != nil {
+			return fmt.Errorf("installCA failed: %s", err)
+		}
+
+		err = test_with_docker.SshSudo(machineName, "/etc/init.d/docker", "restart")
+		if err != nil {
+			return fmt.Errorf("restarting docker machine's daemon failed: %s", err)
+		}
+	}
+	return err
 }
 
 func buildTestingKeypair(dir string, certIPs []net.IP) (err error) {
@@ -58,6 +206,7 @@ default_keyfile=testing.key
 default_md = sha256
 
 [ va_c3 ]
+basicConstraints=critical,CA:true,pathlen:1
 {{range . -}}
 subjectAltName = IP:{{.}}
 {{end}}
@@ -108,48 +257,4 @@ func getCertIPSans(certPath string) ([]net.IP, error) {
 	}
 
 	return cert.IPAddresses, nil
-}
-
-// registryCerts makes sure that we'll be able to reach the test registry
-// Find the docker-machine IP
-// Get the SAN from the existing test cert
-//   If different, template out a new openssl config
-//   Regenerate the key/cert pair
-//   docker-compose rebuild the registry service
-func registryCerts(composeDir string, machineName string) error {
-	ipstr, err := test_with_docker.MachineIP(machineName)
-	if err != nil {
-		return err
-	}
-	ip := net.ParseIP(ipstr)
-
-	certIPs, err := getCertIPSans(filepath.Join(composeDir, "testing.crt"))
-	if err != nil {
-		return err
-	}
-
-	haveIP := false
-
-	for _, certIP := range certIPs {
-		if certIP.Equal(ip) {
-			log.Print("Registry cert includes registry IP")
-			haveIP = true
-			break
-		}
-	}
-
-	if !haveIP {
-		log.Print("Rebuilding the registry certificate")
-		certIPs = append(certIPs, ip)
-		err = buildTestingKeypair(composeDir, certIPs)
-		if err != nil {
-			return err
-		}
-
-		err = test_with_docker.RebuildService(machineName, composeDir, "registry")
-		if err != nil {
-			return err
-		}
-	}
-	return err
 }

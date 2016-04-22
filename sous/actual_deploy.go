@@ -196,6 +196,11 @@ func buildSourceVersion(labels map[string]string) (SourceVersion, error) {
 		missingLabels = append(missingLabels, DockerVersionLabel)
 	}
 
+	revision, present := labels[DockerRevisionLabel]
+	if !present {
+		missingLabels = append(missingLabels, DockerRevisionLabel)
+	}
+
 	path, present := labels[DockerPathLabel]
 	if !present {
 		missingLabels = append(missingLabels, DockerPathLabel)
@@ -207,6 +212,7 @@ func buildSourceVersion(labels map[string]string) (SourceVersion, error) {
 	}
 
 	version, err := semv.Parse(versionStr)
+	version.Meta = revision
 
 	return SourceVersion{
 		RepoURL:    RepoURL(repo),
