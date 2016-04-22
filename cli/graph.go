@@ -43,9 +43,6 @@ type (
 	LocalGitClient struct{ *git.Client }
 	// LocalGitRepo is the git repository containing WorkDir.
 	LocalGitRepo struct{ *git.Repo }
-	// LocalGitContext is the git context snapshot of the user when they invok
-	// Sous.
-	LocalGitContext struct{ *git.Context }
 	// ScratchDirShell is a shell for working in the scratch area where things
 	// like artefacts, and build metadata are stored. It is a new, empty
 	// directory, and should be cleaned up eventually.
