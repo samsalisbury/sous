@@ -17,6 +17,8 @@ import (
 	"testing"
 	"text/template"
 
+	"github.com/opentable/singularity"
+	"github.com/opentable/singularity/dtos"
 	"github.com/opentable/sous/sous"
 	"github.com/opentable/sous/util/docker_registry"
 	"github.com/opentable/test_with_docker"
@@ -43,8 +45,9 @@ func TestGetLabels(t *testing.T) {
 func wrapCompose(m *testing.M) (resultCode int) {
 	log.SetFlags(log.Flags() | log.Lshortfile)
 	defer func() {
+		log.Println("Cleaning up...")
 		if err := recover(); err != nil {
-			log.Print(err)
+			log.Print("Panic: ", err)
 			resultCode = 1
 		}
 	}()
@@ -73,12 +76,72 @@ func wrapCompose(m *testing.M) (resultCode int) {
 		panic(fmt.Errorf("building test container failed: %s", err))
 	}
 
-	log.Println("Beginnging tests...\n\n")
+	err = startInstance(fmt.Sprintf("http://%s:%d/singularity", ip, 7099), imageName)
+	if err != nil {
+		panic(fmt.Errorf("starting a singularity instance failed: %s", err))
+	}
+
+	log.Println("   *** Beginning tests... ***\n\n")
 	resultCode = m.Run()
 	return
 }
 
 var successfulBuildRE = regexp.MustCompile(`Successfully built (\w+)`)
+
+func loadMap(fielder dtos.Fielder, m map[string]interface{}) dtos.Fielder {
+	_, err := dtos.LoadMap(fielder, m)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return fielder
+}
+
+func startInstance(url, imageName string) error {
+	reqId := "sous-test-service"
+
+	sing := singularity.NewClient(url)
+
+	req := dtos.SingularityRequest{}
+	req.LoadMap(map[string]interface{}{
+		"Id":          reqId,
+		"RequestType": dtos.SingularityRequestRequestTypeSERVICE,
+		"Instances":   1,
+	})
+
+	log.Printf("req = %+v\n", req)
+	reqParent, err := sing.PostRequest(&req)
+	if err != nil {
+		log.Print(err)
+		return err
+	}
+
+	log.Printf("reqParent = %+v\n", reqParent)
+
+	depReq := loadMap(&dtos.SingularityDeployRequest{}, map[string]interface{}{
+		"Deploy": loadMap(&dtos.SingularityDeploy{}, map[string]interface{}{
+			"Id":        "deployid",
+			"RequestId": reqId,
+			"ContainerInfo": loadMap(&dtos.SingularityContainerInfo{}, map[string]interface{}{
+				"Type": dtos.SingularityContainerInfoSingularityContainerTypeDOCKER,
+				"Docker": loadMap(&dtos.SingularityDockerInfo{}, map[string]interface{}{
+					"Image": imageName,
+				}),
+			}),
+		}),
+	}).(*dtos.SingularityDeployRequest)
+
+	log.Printf("depReq = %+v\n", depReq)
+	reqParent, err = sing.Deploy(depReq)
+	if err != nil {
+		log.Print(err)
+		return err
+	}
+
+	log.Printf("reqParent = %+v\n", reqParent)
+
+	return nil
+}
 
 func buildAndPushContainer(containerDir, tagName string) error {
 	build := exec.Command("docker", "build", ".")
