@@ -59,30 +59,44 @@ func (ts targets) unmarshalAll(parent *reflect.Value, unmarshalFunc func([]byte,
 	for _, t := range ts {
 		log.Printf("Target: %s\n", t.path)
 		iface := t.val.Interface()
-		if t.val.Kind() != reflect.Ptr {
-			return fmt.Errorf("internal error: targets.unmarshalAll was fed a non-pointer: %T", t.val.Interface())
-		}
 		if isFile(t.path) {
+			if t.val.Kind() != reflect.Ptr || t.val.Elem().Kind() != reflect.Struct {
+				return fmt.Errorf("tried to unmarshal file %s to %T; want a pointer to struct", t.path, iface)
+			}
 			log.Printf("Path: %s; Type: %s; ValType: %s; IfaceType: %s\n", t.path, t.typ, t.val.Type(), reflect.TypeOf(t.val.Interface()))
 			b, err := ioutil.ReadFile(t.path)
 			if err != nil {
 				return err
-			}
-			if t.val.Kind() != reflect.Ptr {
-				return fmt.Errorf("internal error: targets.unmarshalAll was fed a non-pointer")
 			}
 			if err := unmarshalFunc(b, iface); err != nil {
 				return err
 			}
 			log.Printf("Unmarshalled: val: %v; type: %T", iface, iface)
 		}
-		if parent != nil && parent.Kind() != reflect.Ptr {
-			return fmt.Errorf("parent was %T; want a pointer", parent.Interface())
-		}
-		if t.name != "" && parent != nil && parent.Elem().Kind() == reflect.Struct {
-			log.Println("Setting field:", t.name)
-			f := parent.Elem().FieldByName(t.name)
-			f.Set(t.val.Elem())
+		if parent != nil {
+			parentTypeErr := fmt.Errorf("parent was %T; want a pointer or map", parent.Interface())
+			switch parent.Kind() {
+			default:
+				return parentTypeErr
+			case reflect.Ptr:
+				if parent.Elem().Kind() != reflect.Struct {
+					return parentTypeErr
+				}
+				log.Printf("Setting field %s on %s\n", t.name, parent.Elem().Type())
+				f := parent.Elem().FieldByName(t.name)
+				f.Set(*getConcreteValRef(t.val))
+			case reflect.Map:
+				if parent.Type().Key().Kind() != reflect.String {
+					return parentTypeErr
+				}
+				log.Printf("Setting key %q on %s\n", t.name, parent.Type())
+				if parent.IsNil() {
+					pvp := reflect.MakeMap(parent.Type())
+					log.Printf("Parent was nil, setting empty map of %s\n", parent.Type())
+					parent.Set(pvp)
+				}
+				parent.SetMapIndex(reflect.ValueOf(t.name), t.val.Elem())
+			}
 		}
 		if len(t.subTargets) != 0 {
 			if err := t.subTargets.unmarshalAll(&t.val, unmarshalFunc); err != nil {
@@ -91,6 +105,16 @@ func (ts targets) unmarshalAll(parent *reflect.Value, unmarshalFunc func([]byte,
 		}
 	}
 	return nil
+}
+
+func getConcreteValRef(v reflect.Value) *reflect.Value {
+	switch v.Kind() {
+	default:
+		return &v
+	case reflect.Ptr:
+		e := v.Elem()
+		return &e
+	}
 }
 
 func (c ctx) unmarshalDir(v interface{}) error {
@@ -132,6 +156,32 @@ func (c ctx) getStructTargets(v interface{}) (targets, error) {
 	return targets{t}, nil
 }
 
+func (c ctx) getDirTargets(source, name string, typ reflect.Type, val reflect.Value) (targets, error) {
+	if typ.Kind() != reflect.Map {
+		return nil, fmt.Errorf("directory targets only accept maps for now")
+	}
+	elemType, err := getElemType(typ)
+	if err != nil {
+		return nil, err
+	}
+	c = c.enter(source)
+	yamlFiles, err := filepath.Glob(c.enter("*.yaml").path)
+	if err != nil {
+		return nil, err
+	}
+	subTargets := make(targets, len(yamlFiles))
+	for i, filename := range yamlFiles {
+		filename = strings.TrimPrefix(filename, c.path)
+		name := strings.TrimPrefix(strings.TrimSuffix(filename, ".yaml"), "/")
+		subTargets[i], err = c.getFileTarget(filename, name, elemType, newValue(elemType))
+		if err != nil {
+			return nil, err
+		}
+	}
+	t := &target{path: c.path, name: name, typ: typ, val: val, subTargets: subTargets}
+	return targets{t}, nil
+}
+
 func (c ctx) getTarget(name, tag string, typ reflect.Type, val reflect.Value) (targets, error) {
 	source := strings.Split(tag, ",")[0]
 	if strings.HasSuffix(source, ".yaml") {
@@ -148,6 +198,7 @@ func (c ctx) getTarget(name, tag string, typ reflect.Type, val reflect.Value) (t
 }
 
 func (c ctx) getTreeTargets(source, name string, typ reflect.Type, val reflect.Value) (targets, error) {
+	panic("this should not be getting called yet")
 	elemType, err := getElemType(typ)
 	if err != nil {
 		return nil, err
@@ -199,26 +250,6 @@ func newValue(typ reflect.Type) reflect.Value {
 		panic("newValue passed a pointer type")
 	}
 	return reflect.New(typ).Elem()
-}
-
-func (c ctx) getDirTargets(source, name string, typ reflect.Type, val reflect.Value) (targets, error) {
-	elemType, err := getElemType(typ)
-	if err != nil {
-		return nil, err
-	}
-	c = c.enter(source)
-	yamlFiles, err := filepath.Glob(c.enter("*.yaml").path)
-	if err != nil {
-		return nil, err
-	}
-	targets := make(targets, len(yamlFiles))
-	for i, filename := range yamlFiles {
-		targets[i], err = c.getFileTarget(filename, filename, elemType, newValue(elemType))
-		if err != nil {
-			return nil, err
-		}
-	}
-	return targets, nil
 }
 
 func (c ctx) getFileTarget(source, name string, typ reflect.Type, val reflect.Value) (*target, error) {
