@@ -9,16 +9,15 @@ import (
 
 type (
 	Base struct {
-		Config Config           `hy:"config.yaml"`
-		Things map[string]Thing `hy:"things/"`
-	}
-	Config struct {
-		Name string
+		Config  Config            `hy:"config.yaml"`
+		Things  map[string]Thing  `hy:"things/"`
+		Widgets map[string]Widget `hy:"widgets/**"`
 	}
 	Thing struct {
-		Name string
-		Desc string
+		Name, Desc string
 	}
+	Config Thing
+	Widget Thing
 )
 
 func TestUnmarshal_GoodData(t *testing.T) {
@@ -39,5 +38,15 @@ func TestUnmarshal_GoodData(t *testing.T) {
 	}
 	if thing.Name != "Thing One" {
 		t.Errorf("Thing[thing1].Name was %s; want Thing One", thing.Name)
+	}
+	if len(b.Widgets) == 0 {
+		t.Fatal("Widgets had length zero")
+	}
+	widget, ok := b.Widgets["wodgets/pingu/widget1"]
+	if !ok {
+		t.Fatalf("Widgets[wodgets/pingu/widget1] not set")
+	}
+	if widget.Name != "Pingu" {
+		t.Errorf("Widgets[wodgets/pingu/widget1] = %s; want Pingu", widget.Name)
 	}
 }

@@ -172,14 +172,44 @@ func (c ctx) getDirTargets(source, name string, typ reflect.Type, val reflect.Va
 	subTargets := make(targets, len(yamlFiles))
 	for i, filename := range yamlFiles {
 		filename = strings.TrimPrefix(filename, c.path)
-		name := strings.TrimPrefix(strings.TrimSuffix(filename, ".yaml"), "/")
-		subTargets[i], err = c.getFileTarget(filename, name, elemType, newValue(elemType))
+		subTargets[i], err = c.getFileTarget(filename, pathToName(filename), elemType, newValue(elemType))
 		if err != nil {
 			return nil, err
 		}
 	}
 	t := &target{path: c.path, name: name, typ: typ, val: val, subTargets: subTargets}
 	return targets{t}, nil
+}
+
+func (c ctx) getTreeTargets(source, name string, typ reflect.Type, val reflect.Value) (targets, error) {
+	elemType, err := getElemType(typ)
+	if err != nil {
+		return nil, err
+	}
+	source = strings.TrimSuffix(source, "**")
+	subTargets := targets{}
+	c = c.enter(source)
+	err = filepath.Walk(c.path, func(path string, f os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if f.IsDir() || !strings.HasSuffix(path, ".yaml") {
+			return nil
+		}
+		path = strings.TrimPrefix(path, c.path)
+		t, err := c.getFileTarget(path, pathToName(path), elemType, newValue(elemType))
+		if err != nil {
+			return err
+		}
+		subTargets = append(subTargets, t)
+		return nil
+	})
+	t := &target{path: c.path, name: name, typ: typ, val: val, subTargets: subTargets}
+	return targets{t}, nil
+}
+
+func pathToName(path string) string {
+	return strings.TrimPrefix(strings.TrimSuffix(path, ".yaml"), "/")
 }
 
 func (c ctx) getTarget(name, tag string, typ reflect.Type, val reflect.Value) (targets, error) {
@@ -195,32 +225,6 @@ func (c ctx) getTarget(name, tag string, typ reflect.Type, val reflect.Value) (t
 		return c.getTreeTargets(source, name, typ, val)
 	}
 	return nil, fmt.Errorf("%s.%s has hy tag %q; source does not end with .yaml, /, nor /**", typ, name, tag)
-}
-
-func (c ctx) getTreeTargets(source, name string, typ reflect.Type, val reflect.Value) (targets, error) {
-	panic("this should not be getting called yet")
-	elemType, err := getElemType(typ)
-	if err != nil {
-		return nil, err
-	}
-	source = strings.TrimSuffix(source, "**")
-	targets := targets{}
-	c = c.enter(source)
-	err = filepath.Walk(c.path, func(path string, f os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if f.IsDir() || !strings.HasSuffix(path, ".yaml") {
-			return nil
-		}
-		t, err := c.getFileTarget(path, path, elemType, newValue(elemType))
-		if err != nil {
-			return err
-		}
-		targets = append(targets, t)
-		return nil
-	})
-	return targets, nil
 }
 
 // getElemType tries to get element type of a map or slice, and if that type is
