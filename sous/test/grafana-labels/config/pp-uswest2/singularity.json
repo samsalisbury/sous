@@ -1,0 +1,10 @@
+{
+    "requestId": "pp-grafana",
+    "resources": {
+        "cpus": 0.1,
+        "memoryMb": 512,
+        "numPorts": 1
+    },
+    "healthcheckUri": "/",
+    "considerHealthyAfterRunningForSeconds": 10
+}

@@ -3,6 +3,7 @@ package sous
 import (
 	"fmt"
 	"log"
+	"runtime/debug"
 	"sync"
 
 	"github.com/opentable/singularity"
@@ -13,10 +14,24 @@ import (
 
 const ReqsPerServer = 10
 
-type singReq struct {
-	sourceUrl string
-	req       *dtos.SingularityRequestParent
-}
+type (
+	sDeploy    *dtos.SingularityDeploy
+	sRequest   *dtos.SingularityRequest
+	sDepMarker *dtos.SingularityDeployMarker
+
+	underConstruction struct {
+		target    Deployment
+		depMarker sDepMarker
+		deploy    sDeploy
+		request   sRequest
+	}
+
+	singReq struct {
+		sourceUrl string
+		sing      *singularity.Client
+		reqParent *dtos.SingularityRequestParent
+	}
+)
 
 func GetRunningDeploymentSet(singUrls []string) (deps Deployments, err error) {
 	// XXX: the biggest issue I'm currently aware of here is how the various clients are managed.
@@ -28,23 +43,27 @@ func GetRunningDeploymentSet(singUrls []string) (deps Deployments, err error) {
 	//      tight loop and fail, possibly exhausting connections at the docker registry.
 	errCh := make(chan error)
 	deps = make(Deployments, 0)
+	sings := make(map[string]*singularity.Client)
 
 	reqCh := make(chan singReq, len(singUrls)*ReqsPerServer)
 	depCh := make(chan Deployment, ReqsPerServer)
 	defer close(depCh)
 
 	regClient := docker_registry.NewClient()
+	regClient.BecomeFoolishlyTrusting()
 	defer regClient.Cancel()
 
 	var singWait, depWait sync.WaitGroup
 
 	singWait.Add(len(singUrls))
 	for _, url := range singUrls {
-		go singPipeline(url, singWait, reqCh, errCh)
+		sing := singularity.NewClient(url)
+		sings[url] = sing
+		go singPipeline(sing, &singWait, reqCh, errCh)
 	}
 
 	depWait.Add(1)
-	go depPipeline(depWait, regClient, reqCh, depCh, errCh)
+	go depPipeline(&depWait, regClient, reqCh, depCh, errCh)
 
 	go func() {
 		catchAndSend("closing up", errCh)
@@ -58,9 +77,11 @@ func GetRunningDeploymentSet(singUrls []string) (deps Deployments, err error) {
 	for {
 		select {
 		case dep := <-depCh:
+			log.Printf("dep = %s(%T)", dep.String(), dep)
 			deps = append(deps, dep)
 			depWait.Done()
 		case err = <-errCh:
+			log.Printf("err = %+v\n", err)
 			return
 		}
 	}
@@ -75,21 +96,23 @@ func catchAll(from string) {
 func catchAndSend(from string, errs chan error) {
 	defer catchAll(from)
 	if err := recover(); err != nil {
+		log.Printf("from = %s err = %+v\n", from, err)
+		log.Printf("debug.Stack() = %+v\n", string(debug.Stack()))
 		switch err := err.(type) {
 		default:
 			if err != nil {
 				errs <- fmt.Errorf("Panicked with not-error: %v", err)
 			}
 		case error:
-			errs <- err
+			errs <- fmt.Errorf("at %s: %v", from, err)
 		}
 	}
 }
 
-func singPipeline(url string, wg sync.WaitGroup, reqs chan singReq, errs chan error) {
+func singPipeline(client *singularity.Client, wg *sync.WaitGroup, reqs chan singReq, errs chan error) {
 	defer wg.Done()
-	defer catchAndSend(fmt.Sprintf("get requests: %s", url), errs)
-	rs, err := getRequestsFromSingularity(url)
+	defer catchAndSend(fmt.Sprintf("get requests: %s", client), errs)
+	rs, err := getRequestsFromSingularity(client)
 	if err != nil {
 		errs <- err
 		return
@@ -99,89 +122,124 @@ func singPipeline(url string, wg sync.WaitGroup, reqs chan singReq, errs chan er
 	}
 }
 
-func depPipeline(wait sync.WaitGroup, cl *docker_registry.Client, reqCh chan singReq, depCh chan Deployment, errCh chan error) {
+func depPipeline(wait *sync.WaitGroup, cl *docker_registry.Client, reqCh chan singReq, depCh chan Deployment, errCh chan error) {
 	defer catchAndSend("dependency building", errCh)
 	for req := range reqCh {
 		wait.Add(1)
-		go func() {
+		go func(cl *docker_registry.Client, req singReq) {
 			defer catchAndSend(fmt.Sprintf("dep from req %s", req.sourceUrl), errCh)
-			dep, err := deploymentFromRequest(cl, req)
+
+			dep, err := assembleDeployment(cl, req)
+
 			if err != nil {
 				errCh <- err
 			}
 
 			depCh <- dep
-		}()
+		}(cl, req)
 	}
 	wait.Done()
 }
 
-func getRequestsFromSingularity(singUrl string) ([]singReq, error) {
-	client := singularity.NewClient(singUrl)
+func assembleDeployment(cl *docker_registry.Client, req singReq) (Deployment, error) {
+	rp := req.reqParent
+	sing := req.sing
+
+	uc := underConstruction{
+		target: Deployment{
+			Cluster: req.sourceUrl,
+		},
+		request: rp.Request,
+	}
+
+	rds := rp.RequestDeployState
+	if rds == nil {
+		return Deployment{}, fmt.Errorf("Singularity response didn't include a deploy state")
+	}
+	uc.depMarker = rds.PendingDeploy
+	if uc.depMarker == nil {
+		uc.depMarker = rds.ActiveDeploy
+	}
+	if uc.depMarker == nil {
+		return Deployment{}, fmt.Errorf("Singularity deploy state included no dep markers")
+	}
+
+	dh, err := sing.GetDeploy(uc.depMarker.RequestId, uc.depMarker.DeployId) // !!! makes HTTP req
+	if err != nil {
+		return Deployment{}, err
+	}
+
+	uc.deploy = dh.Deploy
+	if uc.deploy == nil {
+		return Deployment{}, fmt.Errorf("Singularity deploy history included no deploy")
+	}
+
+	uc.target.Env = uc.deploy.Env
+	if uc.target.Env == nil {
+		uc.target.Env = make(map[string]string)
+	}
+
+	singRez := uc.deploy.Resources
+	uc.target.Resources = make(Resources)
+	uc.target.Resources["cpus"] = fmt.Sprintf("%f", singRez.Cpus)
+	uc.target.Resources["memory"] = fmt.Sprintf("%f", singRez.MemoryMb)
+	uc.target.Resources["ports"] = fmt.Sprintf("%d", singRez.NumPorts)
+
+	uc.target.NumInstances = int(uc.request.Instances)
+	uc.target.Owners = uc.request.Owners
+
+	switch uc.request.RequestType {
+	default:
+		return Deployment{}, fmt.Errorf("Unrecognized response tupe returned by Singularlity: %v", uc.request.RequestType)
+	case dtos.SingularityRequestRequestTypeSERVICE:
+		uc.target.Kind = ManifestKindService
+	case dtos.SingularityRequestRequestTypeWORKER:
+		uc.target.Kind = ManifestKindWorker
+	case dtos.SingularityRequestRequestTypeON_DEMAND:
+		uc.target.Kind = ManifestKindOnDemand
+	case dtos.SingularityRequestRequestTypeSCHEDULED:
+		uc.target.Kind = ManifestKindScheduled
+	case dtos.SingularityRequestRequestTypeRUN_ONCE:
+		uc.target.Kind = ManifestKindOnce
+	}
+
+	ci := uc.deploy.ContainerInfo
+	if ci.Type != dtos.SingularityContainerInfoSingularityContainerTypeDOCKER {
+		return Deployment{}, fmt.Errorf("Singularity container isn't a docker container")
+	}
+	dkr := ci.Docker
+	if dkr == nil {
+		return Deployment{}, fmt.Errorf("Singularity deploy didn't include a docker info")
+	}
+
+	imageName := dkr.Image
+
+	labels, err := cl.LabelsForImageName(imageName) // !!! HTTP request
+	if err != nil {
+		return Deployment{}, err
+	}
+
+	uc.target.SourceVersion, err = buildSourceVersion(labels)
+	if err != nil {
+		return Deployment{}, err
+	}
+
+	return uc.target, nil
+}
+
+func getRequestsFromSingularity(client *singularity.Client) ([]singReq, error) {
 	singRequests, err := client.GetRequests()
+	log.Printf("singRequests = %+v\n", singRequests)
 	if err != nil {
 		return nil, err
 	}
 
 	reqs := make([]singReq, 0, len(singRequests))
 	for _, sr := range singRequests {
-		reqs = append(reqs, singReq{singUrl, sr})
+		reqs = append(reqs, singReq{client.BaseUrl, client, sr})
 	}
 
 	return reqs, nil
-}
-
-func deploymentFromRequest(cl *docker_registry.Client, sr singReq) (Deployment, error) {
-	cluster := sr.sourceUrl
-	req := sr.req
-
-	singDep := req.ActiveDeploy
-	env := singDep.Env
-	singRez := singDep.CustomExecutorResources
-	rezzes := make(Resources)
-	rezzes["cpus"] = fmt.Sprintf("%d", singRez.Cpus)
-	rezzes["memory"] = fmt.Sprintf("%d", singRez.MemoryMb)
-	rezzes["ports"] = fmt.Sprintf("%d", singRez.NumPorts)
-
-	singReq := req.Request
-	numinst := int(singReq.Instances)
-	owners := singReq.Owners
-
-	// Singularity's RequestType is an enum of
-	//   SERVICE, WORKER, SCHEDULED, ON_DEMAND, RUN_ONCE;
-	// Their annotations don't successfully list RequestType into their swagger.
-	// Need an approach to handling the type -
-	//   either manual Go structs that the resolving context is informed of OR
-	//   additional processing of the swagger JSON files before we process it
-	kind := ManifestKind("service")
-
-	// We should probably check what kind of Container it is...
-	// Which has a similar problem to RequestType - another Java enum that isn't Swaggered
-	imageName := singDep.ContainerInfo.Docker.Image
-
-	labels, err := cl.LabelsForImageName(imageName)
-	if err != nil {
-		return Deployment{}, err
-	}
-
-	sv, err := buildSourceVersion(labels)
-	if err != nil {
-		return Deployment{}, err
-	}
-
-	return Deployment{
-		Cluster: cluster,
-		Owners:  owners,
-		Kind:    kind,
-
-		DeployConfig: DeployConfig{
-			Resources:    rezzes,
-			Env:          env,
-			NumInstances: numinst,
-		},
-
-		SourceVersion: sv,
-	}, nil
 }
 
 func buildSourceVersion(labels map[string]string) (SourceVersion, error) {

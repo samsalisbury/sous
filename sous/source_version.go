@@ -1,7 +1,6 @@
 package sous
 
 import (
-	"bytes"
 	"fmt"
 	"strings"
 
@@ -54,12 +53,19 @@ func (sl SourceLocation) MarshalYAML() (interface{}, error) {
 }
 
 func (sl SourceLocation) String() string {
-	b := &bytes.Buffer{}
-	fmt.Fprint(b, sl.RepoURL)
-	if sl.RepoOffset != "" {
-		fmt.Fprintf(b, ":%s", sl.RepoOffset)
+	if sl.RepoOffset == "" {
+		return fmt.Sprintf("%s", sl.RepoURL)
+	} else {
+		return fmt.Sprintf("%s:%ss", sl.RepoURL, sl.RepoOffset)
 	}
-	return b.String()
+}
+
+func (sv SourceVersion) String() string {
+	if sv.RepoOffset == "" {
+		return fmt.Sprintf("%s %s", sv.RepoURL, sv.Version)
+	} else {
+		return fmt.Sprintf("%s:%s %s", sv.RepoURL, sv.RepoOffset, sv.Version)
+	}
 }
 
 func (nv *SourceVersion) RevId() string {

@@ -1,5 +1,7 @@
 package sous
 
+import "fmt"
+
 type (
 	// Deployments is a collection of Deployment.
 	Deployments []Deployment
@@ -31,6 +33,7 @@ type (
 	DeploymentIntentions []DeploymentIntention
 	DeploymentIntention  struct {
 		Deployment
+
 		// State is the relative state of this intention.
 		State DeploymentState
 		// The sequence this intention was resolved in - might be e.g. synthesized while walking
@@ -40,6 +43,10 @@ type (
 		Sequence LogicalSequence
 	}
 )
+
+func (dep *Deployment) String() string {
+	return fmt.Sprintf("%s @ %s %s", dep.SourceVersion, dep.Cluster, dep.DeployConfig.String())
+}
 
 const (
 	Current    DeploymentState = iota

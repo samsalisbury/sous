@@ -22,10 +22,11 @@ import (
 	"github.com/opentable/sous/sous"
 	"github.com/opentable/sous/util/docker_registry"
 	"github.com/opentable/test_with_docker"
+	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 )
 
-var ip, registryName, imageName string
+var ip, registryName, imageName, singularityUrl string
 
 func TestMain(m *testing.M) {
 	os.Exit(wrapCompose(m))
@@ -40,6 +41,29 @@ func TestGetLabels(t *testing.T) {
 
 	assert.Nil(err)
 	assert.Contains(labels, sous.DockerRepoLabel)
+}
+
+func TestGetRunningDeploymentSet(t *testing.T) {
+	assert := assert.New(t)
+
+	deps, err := sous.GetRunningDeploymentSet([]string{singularityUrl})
+	assert.Nil(err)
+	assert.Equal(3, len(deps))
+	var grafana *sous.Deployment
+	for i := range deps {
+		if deps[i].SourceVersion.RepoURL == "https://github.com/opentable/docker-grafana.git" {
+			grafana = &deps[i]
+		}
+	}
+	assert.NotNil(grafana)
+	assert.Equal(singularityUrl, grafana.Cluster)
+	assert.Regexp("^0\\.1", grafana.Resources["cpus"])    // XXX strings and floats...
+	assert.Regexp("^100\\.", grafana.Resources["memory"]) // XXX strings and floats...
+	assert.Equal("1", grafana.Resources["ports"])         // XXX strings and floats...
+	assert.Equal(17, grafana.Patch)
+	assert.Equal("91495f1b1630084e301241100ecf2e775f6b672c", grafana.Meta)
+	assert.Equal(1, grafana.NumInstances)
+	assert.Equal(sous.ManifestKindService, grafana.Kind)
 }
 
 func wrapCompose(m *testing.M) (resultCode int) {
@@ -70,25 +94,37 @@ func wrapCompose(m *testing.M) (resultCode int) {
 	_, started, err := test_with_docker.ComposeServices("default", composeDir, map[string]uint{"Singularity": 7099, "Registry": 5000})
 	defer test_with_docker.Shutdown(started)
 
-	imageName = fmt.Sprintf("%s/%s:%s", registryName, "hello-labels", "latest")
-	err = buildAndPushContainer("test/hello-labels", imageName)
-	if err != nil {
-		panic(fmt.Errorf("building test container failed: %s", err))
-	}
-
-	err = startInstance(fmt.Sprintf("http://%s:%d/singularity", ip, 7099), imageName)
-	if err != nil {
-		panic(fmt.Errorf("starting a singularity instance failed: %s", err))
-	}
+	registerAndDeploy(ip, "hello-labels", "hello-labels", []int32{})
+	registerAndDeploy(ip, "hello-server-labels", "hello-server-labels", []int32{80})
+	registerAndDeploy(ip, "grafana-repo", "grafana-labels", []int32{})
+	imageName = fmt.Sprintf("%s/%s:%s", registryName, "grafana-repo", "latest")
 
 	log.Println("   *** Beginning tests... ***\n\n")
 	resultCode = m.Run()
 	return
 }
 
+func registerAndDeploy(ip, reponame, dir string, ports []int32) (err error) {
+	imageName := fmt.Sprintf("%s/%s:%s", registryName, reponame, "latest")
+	err = buildAndPushContainer(dir, imageName)
+	if err != nil {
+		panic(fmt.Errorf("building test container failed: %s", err))
+	}
+
+	singularityUrl = fmt.Sprintf("http://%s:%d/singularity", ip, 7099)
+	err = startInstance(singularityUrl, imageName, ports)
+	if err != nil {
+		panic(fmt.Errorf("starting a singularity instance failed: %s", err))
+	}
+
+	return
+}
+
 var successfulBuildRE = regexp.MustCompile(`Successfully built (\w+)`)
 
-func loadMap(fielder dtos.Fielder, m map[string]interface{}) dtos.Fielder {
+type dtoMap map[string]interface{}
+
+func loadMap(fielder dtos.Fielder, m dtoMap) dtos.Fielder {
 	_, err := dtos.LoadMap(fielder, m)
 	if err != nil {
 		log.Fatal(err)
@@ -97,20 +133,25 @@ func loadMap(fielder dtos.Fielder, m map[string]interface{}) dtos.Fielder {
 	return fielder
 }
 
-func startInstance(url, imageName string) error {
-	reqId := "sous-test-service"
+var notInIdRE = regexp.MustCompile(`[-/]`)
+
+func idify(in string) string {
+	return notInIdRE.ReplaceAllString(in, "")
+}
+
+func startInstance(url, imageName string, ports []int32) error {
+	reqId := idify(imageName)
 
 	sing := singularity.NewClient(url)
 
-	req := dtos.SingularityRequest{}
-	req.LoadMap(map[string]interface{}{
+	req := loadMap(&dtos.SingularityRequest{}, map[string]interface{}{
 		"Id":          reqId,
 		"RequestType": dtos.SingularityRequestRequestTypeSERVICE,
-		"Instances":   1,
-	})
+		"Instances":   int32(1),
+	}).(*dtos.SingularityRequest)
 
 	log.Printf("req = %+v\n", req)
-	reqParent, err := sing.PostRequest(&req)
+	reqParent, err := sing.PostRequest(req)
 	if err != nil {
 		log.Print(err)
 		return err
@@ -118,15 +159,22 @@ func startInstance(url, imageName string) error {
 
 	log.Printf("reqParent = %+v\n", reqParent)
 
-	depReq := loadMap(&dtos.SingularityDeployRequest{}, map[string]interface{}{
-		"Deploy": loadMap(&dtos.SingularityDeploy{}, map[string]interface{}{
-			"Id":        "deployid",
+	dockerInfo := loadMap(&dtos.SingularityDockerInfo{}, dtoMap{
+		"Image": imageName,
+	}).(*dtos.SingularityDockerInfo)
+
+	depReq := loadMap(&dtos.SingularityDeployRequest{}, dtoMap{
+		"Deploy": loadMap(&dtos.SingularityDeploy{}, dtoMap{
+			"Id":        idify(uuid.NewV4().String()),
 			"RequestId": reqId,
-			"ContainerInfo": loadMap(&dtos.SingularityContainerInfo{}, map[string]interface{}{
-				"Type": dtos.SingularityContainerInfoSingularityContainerTypeDOCKER,
-				"Docker": loadMap(&dtos.SingularityDockerInfo{}, map[string]interface{}{
-					"Image": imageName,
-				}),
+			"Resources": loadMap(&dtos.Resources{}, dtoMap{
+				"Cpus":     0.1,
+				"MemoryMb": 100.0,
+				"NumPorts": int32(1),
+			}),
+			"ContainerInfo": loadMap(&dtos.SingularityContainerInfo{}, dtoMap{
+				"Type":   dtos.SingularityContainerInfoSingularityContainerTypeDOCKER,
+				"Docker": dockerInfo,
 			}),
 		}),
 	}).(*dtos.SingularityDeployRequest)
@@ -145,7 +193,7 @@ func startInstance(url, imageName string) error {
 
 func buildAndPushContainer(containerDir, tagName string) error {
 	build := exec.Command("docker", "build", ".")
-	build.Dir = "hello-labels"
+	build.Dir = containerDir
 	output, err := build.CombinedOutput()
 	if err != nil {
 		log.Print(build.Args)
@@ -160,7 +208,7 @@ func buildAndPushContainer(containerDir, tagName string) error {
 
 	containerId := match[1]
 	tag := exec.Command("docker", "tag", containerId, tagName)
-	tag.Dir = "hello-labels"
+	tag.Dir = containerDir
 	output, err = tag.CombinedOutput()
 	if err != nil {
 		log.Print(tag.Args)
@@ -169,7 +217,7 @@ func buildAndPushContainer(containerDir, tagName string) error {
 	}
 
 	push := exec.Command("docker", "push", tagName)
-	push.Dir = "hello-labels"
+	push.Dir = containerDir
 	output, err = push.CombinedOutput()
 	if err != nil {
 		log.Print(push.Args)

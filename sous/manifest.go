@@ -1,6 +1,10 @@
 package sous
 
-import "github.com/samsalisbury/semv"
+import (
+	"fmt"
+
+	"github.com/samsalisbury/semv"
+)
 
 type (
 	// Manifests is a collection of Manifest.
@@ -92,10 +96,18 @@ type (
 	Resources map[string]string
 )
 
+func (dc *DeployConfig) String() string {
+	return fmt.Sprintf("#%d %+v : %+v", dc.NumInstances, dc.Resources, dc.Env)
+}
+
 const (
 	// HTTP Service represents an HTTP service which is a long-running process,
 	// and listens and responds to HTTP requests.
-	HTTPService (ManifestKind) = "http-service"
+	ManifestKindService   (ManifestKind) = "http-service"
+	ManifestKindWorker    (ManifestKind) = "worker"
+	ManifestKindOnDemand  (ManifestKind) = "on-demand"
+	ManifestKindScheduled (ManifestKind) = "scheduled"
+	ManifestKindOnce      (ManifestKind) = "once"
 	// ScheduledJob represents a process which starts on some schedule, and
 	// exits when it completes its task.
 	ScheduledJob = "scheduled-job"
