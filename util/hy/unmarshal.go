@@ -182,10 +182,6 @@ func getConcreteValRef(v reflect.Value) *reflect.Value {
 	}
 }
 
-func pathToName(path string) string {
-	return strings.TrimPrefix(strings.TrimSuffix(path, ".yaml"), "/")
-}
-
 func isFile(path string) bool {
 	return strings.HasSuffix(path, ".yaml")
 }

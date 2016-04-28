@@ -125,3 +125,7 @@ func (c ctx) enter(path string) ctx {
 		unmarshal: c.unmarshal,
 	}
 }
+
+func pathToName(path string) string {
+	return strings.TrimPrefix(strings.TrimSuffix(path, ".yaml"), "/")
+}
