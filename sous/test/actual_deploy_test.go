@@ -150,14 +150,10 @@ func startInstance(url, imageName string, ports []int32) error {
 		"Instances":   int32(1),
 	}).(*dtos.SingularityRequest)
 
-	log.Printf("req = %+v\n", req)
-	reqParent, err := sing.PostRequest(req)
+	_, err := sing.PostRequest(req)
 	if err != nil {
-		log.Print(err)
 		return err
 	}
-
-	log.Printf("reqParent = %+v\n", reqParent)
 
 	dockerInfo := loadMap(&dtos.SingularityDockerInfo{}, dtoMap{
 		"Image": imageName,
@@ -179,14 +175,10 @@ func startInstance(url, imageName string, ports []int32) error {
 		}),
 	}).(*dtos.SingularityDeployRequest)
 
-	log.Printf("depReq = %+v\n", depReq)
-	reqParent, err = sing.Deploy(depReq)
+	_, err = sing.Deploy(depReq)
 	if err != nil {
-		log.Print(err)
 		return err
 	}
-
-	log.Printf("reqParent = %+v\n", reqParent)
 
 	return nil
 }
@@ -196,8 +188,6 @@ func buildAndPushContainer(containerDir, tagName string) error {
 	build.Dir = containerDir
 	output, err := build.CombinedOutput()
 	if err != nil {
-		log.Print(build.Args)
-		log.Print(string(output))
 		return err
 	}
 
@@ -211,8 +201,6 @@ func buildAndPushContainer(containerDir, tagName string) error {
 	tag.Dir = containerDir
 	output, err = tag.CombinedOutput()
 	if err != nil {
-		log.Print(tag.Args)
-		log.Print(string(output))
 		return err
 	}
 
@@ -220,8 +208,6 @@ func buildAndPushContainer(containerDir, tagName string) error {
 	push.Dir = containerDir
 	output, err = push.CombinedOutput()
 	if err != nil {
-		log.Print(push.Args)
-		log.Print(string(output))
 		return err
 	}
 
@@ -248,7 +234,6 @@ func registryCerts(composeDir, registryCertName, machineName, ipstr string) erro
 
 	for _, certIP := range certIPs {
 		if certIP.Equal(ip) {
-			log.Print("Registry cert includes registry IP")
 			haveIP = true
 			break
 		}
@@ -332,15 +317,14 @@ CN=registry.test
 	}
 	err = temp.Execute(reqFile, certIPs)
 	if err != nil {
-		return err
+		return
 	}
 
 	// This is the openssl command to produce a (very weak) self-signed keypair based on the conf templated above.
 	// Ultimately, this provides the bare minimum to use the docker registry on a "remote" server
 	openssl := exec.Command("openssl", "req", "-newkey", "rsa:512", "-x509", "-days", "365", "-out", "testing.crt", "-config", selfSignConf, "-batch")
 	openssl.Dir = dir
-	out, err := openssl.CombinedOutput()
-	log.Print(string(out))
+	_, err = openssl.CombinedOutput()
 
 	return
 }
@@ -357,7 +341,7 @@ func getCertIPSans(certPath string) ([]net.IP, error) {
 	certBuf := bytes.Buffer{}
 	_, err = certBuf.ReadFrom(certFile)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	block, _ := pem.Decode(certBuf.Bytes())

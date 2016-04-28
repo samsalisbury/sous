@@ -77,11 +77,9 @@ func GetRunningDeploymentSet(singUrls []string) (deps Deployments, err error) {
 	for {
 		select {
 		case dep := <-depCh:
-			log.Printf("dep = %s(%T)", dep.String(), dep)
 			deps = append(deps, dep)
 			depWait.Done()
 		case err = <-errCh:
-			log.Printf("err = %+v\n", err)
 			return
 		}
 	}
@@ -229,7 +227,6 @@ func assembleDeployment(cl *docker_registry.Client, req singReq) (Deployment, er
 
 func getRequestsFromSingularity(client *singularity.Client) ([]singReq, error) {
 	singRequests, err := client.GetRequests()
-	log.Printf("singRequests = %+v\n", singRequests)
 	if err != nil {
 		return nil, err
 	}
