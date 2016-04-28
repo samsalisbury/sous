@@ -7,7 +7,6 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y mini-httpd uuid-runtime
 RUN curl -s http://grafanarel.s3.amazonaws.com/$package.tar.gz | tar -xz --strip-components=1 -C /srv
 COPY config.js /srv/
 RUN rm /srv/config.sample.js
-COPY discovery-wrapper /srv/
 
 WORKDIR /
 
