@@ -116,6 +116,10 @@
 			"Rev": "35b06af0720201bc2f326773a80767387544f8c4"
 		},
 		{
+			"ImportPath": "golang.org/x/sys/unix",
+			"Rev": "c8bc69bc2db9c57ccf979550bc69655df5039a8a"
+		},
+		{
 			"ImportPath": "golang.org/x/text/transform",
 			"Rev": "601048ad6acbab6cedd582db09b8c4839ff25b15"
 		},
