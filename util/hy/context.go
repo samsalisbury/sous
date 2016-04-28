@@ -15,7 +15,7 @@ func (c ctx) getStructTargets(v interface{}) (targets, error) {
 	val := reflect.ValueOf(v)
 	k := val.Kind()
 	if k != reflect.Ptr {
-		return nil, fmt.Errorf("getStructTargets passed non-pointer")
+		panic("getStructTargets passed non-pointer")
 	}
 	typ := val.Type().Elem()
 	nf := typ.NumField()
@@ -24,18 +24,18 @@ func (c ctx) getStructTargets(v interface{}) (targets, error) {
 		f := typ.Field(i)
 		tag := f.Tag.Get("hy")
 		if tag != "" {
-			ts, err := c.getTarget(f.Name, tag, val.Elem().Field(i))
+			t, err := c.getTarget(f.Name, tag, val.Elem().Field(i))
 			if err != nil {
 				return nil, err
 			}
-			subTargets = append(subTargets, ts...)
+			subTargets = append(subTargets, t)
 		}
 	}
 	t := c.makeTarget("", val, subTargets)
 	return targets{t}, nil
 }
 
-func (c ctx) getDirTargets(source, name string, val reflect.Value) (targets, error) {
+func (c ctx) getDirTarget(source, name string, val reflect.Value) (*target, error) {
 	typ := val.Type()
 	if typ.Kind() != reflect.Map {
 		return nil, fmt.Errorf("directory targets only accept maps for now")
@@ -57,11 +57,10 @@ func (c ctx) getDirTargets(source, name string, val reflect.Value) (targets, err
 			return nil, err
 		}
 	}
-	t := c.makeTarget(name, val, subTargets)
-	return targets{t}, nil
+	return c.makeTarget(name, val, subTargets), nil
 }
 
-func (c ctx) getTreeTargets(source, name string, val reflect.Value) (targets, error) {
+func (c ctx) getTreeTarget(source, name string, val reflect.Value) (*target, error) {
 	typ := val.Type()
 	elemType, err := getElemType(typ)
 	if err != nil {
@@ -85,8 +84,7 @@ func (c ctx) getTreeTargets(source, name string, val reflect.Value) (targets, er
 		subTargets = append(subTargets, t)
 		return nil
 	})
-	t := c.makeTarget(name, val, subTargets)
-	return targets{t}, nil
+	return c.makeTarget(name, val, subTargets), nil
 }
 
 func (c ctx) makeTarget(name string, val reflect.Value, subTargets targets) *target {
@@ -100,17 +98,16 @@ func (c ctx) makeTarget(name string, val reflect.Value, subTargets targets) *tar
 	}
 }
 
-func (c ctx) getTarget(name, tag string, val reflect.Value) (targets, error) {
+func (c ctx) getTarget(name, tag string, val reflect.Value) (*target, error) {
 	source := strings.Split(tag, ",")[0]
 	if strings.HasSuffix(source, ".yaml") {
-		t, err := c.getFileTarget(source, name, val)
-		return targets{t}, err
+		return c.getFileTarget(source, name, val)
 	}
 	if strings.HasSuffix(source, "/") {
-		return c.getDirTargets(source, name, val)
+		return c.getDirTarget(source, name, val)
 	}
 	if strings.HasSuffix(source, "/**") {
-		return c.getTreeTargets(source, name, val)
+		return c.getTreeTarget(source, name, val)
 	}
 	return nil, fmt.Errorf("%s.%s has hy tag %q; source does not end with .yaml, /, nor /**", val.Type(), name, tag)
 }
