@@ -26,13 +26,6 @@ type (
 )
 
 func GetRunningDeploymentSet(singUrls []string) (deps Deployments, err error) {
-	// XXX: the biggest issue I'm currently aware of here is how the various clients are managed.
-	//      Be aware: a client is created for every image data request, even though they'll all be
-	//      directed to the same server - fixing this would require changes inside the docker/distribution code.
-	//      Maybe worse: if there's a problem, all outstanding HTTP requests will be allowed to complete, even though
-	//      Sous may not be available to receive the response.
-	//      The biggest concrete problem I can imagine with that at the moment is if Sous were to run in
-	//      tight loop and fail, possibly exhausting connections at the docker registry.
 	errCh := make(chan error)
 	deps = make(Deployments, 0)
 	sings := make(map[string]*singularity.Client)
