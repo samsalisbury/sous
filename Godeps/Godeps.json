@@ -2,11 +2,18 @@
 	"ImportPath": "github.com/opentable/sous",
 	"GoVersion": "go1.6",
 	"GodepVersion": "v62",
+	"Packages": [
+		"./..."
+	],
 	"Deps": [
 		{
 			"ImportPath": "github.com/Sirupsen/logrus",
 			"Comment": "v0.10.0-16-gcd7d1bb",
 			"Rev": "cd7d1bbe41066b6c1f19780f895901052150a575"
+		},
+		{
+			"ImportPath": "github.com/davecgh/go-spew/spew",
+			"Rev": "5215b55f46b2b919f50a1df0eaa5886afe4e3b3d"
 		},
 		{
 			"ImportPath": "github.com/docker/distribution",
@@ -78,6 +85,11 @@
 			"Rev": "c8d2b36d60a84f3fa7d5e5e355be64f0fbe0b481"
 		},
 		{
+			"ImportPath": "github.com/docopt/docopt-go",
+			"Comment": "0.6.2",
+			"Rev": "784ddc588536785e7299f7272f39101f7faccc3f"
+		},
+		{
 			"ImportPath": "github.com/gorilla/context",
 			"Comment": "v1.1-2-ga8d44e7",
 			"Rev": "a8d44e7d8e4d532b6a27a02dd82abb31cc1b01bd"
@@ -96,6 +108,14 @@
 			"Rev": "2cda90992c1f065eff5d89083b78fcead977e39a"
 		},
 		{
+			"ImportPath": "github.com/opentable/test_with_docker",
+			"Rev": "69c26ee7fe0299a8fc1385d3015855536a9ace27"
+		},
+		{
+			"ImportPath": "github.com/pmezard/go-difflib/difflib",
+			"Rev": "792786c7400a136282c1664665ae0a8db921c6c2"
+		},
+		{
 			"ImportPath": "github.com/samsalisbury/psyringe",
 			"Rev": "ac33701d5b34cfa8726dfdea0ba91d981be098a9"
 		},
@@ -106,6 +126,20 @@
 		{
 			"ImportPath": "github.com/samsalisbury/yaml",
 			"Rev": "47bc14906f408f98d35bfb508fd25fb2640febc1"
+		},
+		{
+			"ImportPath": "github.com/satori/go.uuid",
+			"Comment": "v1.0.0",
+			"Rev": "f9ab0dce87d815821e221626b772e3475a0d2749"
+		},
+		{
+			"ImportPath": "github.com/stretchr/testify/assert",
+			"Comment": "v1.1.3-8-g0744955",
+			"Rev": "0744955171b0b6e1871ff9d7366abc2b7a7fcec0"
+		},
+		{
+			"ImportPath": "github.com/xrash/smetrics",
+			"Rev": "1a0de75d2e90a30c613537d9fbb67ee060c9cab9"
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/ssh/terminal",
