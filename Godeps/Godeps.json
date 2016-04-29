@@ -109,7 +109,7 @@
 		},
 		{
 			"ImportPath": "github.com/opentable/test_with_docker",
-			"Rev": "69c26ee7fe0299a8fc1385d3015855536a9ace27"
+			"Rev": "9d4d5fd5cb513cf3f58591ce5587f375fcadd4ae"
 		},
 		{
 			"ImportPath": "github.com/pmezard/go-difflib/difflib",
@@ -148,10 +148,6 @@
 		{
 			"ImportPath": "golang.org/x/net/context",
 			"Rev": "35b06af0720201bc2f326773a80767387544f8c4"
-		},
-		{
-			"ImportPath": "golang.org/x/sys/unix",
-			"Rev": "c8bc69bc2db9c57ccf979550bc69655df5039a8a"
 		},
 		{
 			"ImportPath": "golang.org/x/text/transform",
