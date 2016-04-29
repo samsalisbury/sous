@@ -1,6 +1,10 @@
 package test_with_docker
 
-import "net"
+import (
+	"log"
+	"net"
+	"path/filepath"
+)
 
 type LocalDaemon struct {
 }
@@ -13,7 +17,10 @@ func (ld *LocalDaemon) ComposeServices(dir string, svcs serviceMap) (*command, e
 
 // InstallFile puts a path found on the local machine to a path on the docker host.
 func (ld *LocalDaemon) InstallFile(src string, dest string) error {
+	destDir := filepath.Dir(destPath)
+	mkdir := runCommand("mkdir", "-p", destDir)
 	cmd := runCommand("cp", src, dest)
+	log.Printf("cmd = %+v\n", cmd)
 
 	return cmd.err
 }
