@@ -2,18 +2,15 @@ package test
 
 import (
 	"bytes"
-	"crypto/md5"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"io"
 	"log"
 	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
-	"strings"
 	"testing"
 	"text/template"
 
@@ -76,8 +73,9 @@ func wrapCompose(m *testing.M) (resultCode int) {
 		}
 	}()
 
-	machineName := "default"
-	ip, err := test_with_docker.MachineIP(machineName)
+	test_agent := test_with_docker.NewAgent("default")
+
+	ip, err := test_agent.IP()
 	if err != nil {
 		panic(err)
 	}
@@ -86,13 +84,13 @@ func wrapCompose(m *testing.M) (resultCode int) {
 	registryCertName := "testing.crt"
 	registryName = fmt.Sprintf("%s:%d", ip, 5000)
 
-	err = registryCerts(composeDir, registryCertName, machineName, ip)
+	err = registryCerts(test_agent, composeDir, registryCertName, ip)
 	if err != nil {
 		panic(fmt.Errorf("building registry certs failed: %s", err))
 	}
 
-	_, started, err := test_with_docker.ComposeServices("default", composeDir, map[string]uint{"Singularity": 7099, "Registry": 5000})
-	defer test_with_docker.Shutdown(started)
+	started, err := test_agent.ComposeServices(composeDir, map[string]uint{"Singularity": 7099, "Registry": 5000})
+	defer test_agent.Shutdown(started)
 
 	registerAndDeploy(ip, "hello-labels", "hello-labels", []int32{})
 	registerAndDeploy(ip, "hello-server-labels", "hello-server-labels", []int32{80})
@@ -104,7 +102,7 @@ func wrapCompose(m *testing.M) (resultCode int) {
 	return
 }
 
-func registerAndDeploy(ip, reponame, dir string, ports []int32) (err error) {
+func registerAndDeploy(ip net.IP, reponame, dir string, ports []int32) (err error) {
 	imageName := fmt.Sprintf("%s/%s:%s", registryName, reponame, "latest")
 	err = buildAndPushContainer(dir, imageName)
 	if err != nil {
@@ -214,14 +212,7 @@ func buildAndPushContainer(containerDir, tagName string) error {
 	return nil
 }
 
-// registryCerts makes sure that we'll be able to reach the test registry
-// Find the docker-machine IP
-// Get the SAN from the existing test cert
-//   If different, template out a new openssl config
-//   Regenerate the key/cert pair
-//   docker-compose rebuild the registry service
-func registryCerts(composeDir, registryCertName, machineName, ipstr string) error {
-	ip := net.ParseIP(ipstr)
+func registryCerts(test_agent test_with_docker.Agent, composeDir, registryCertName string, ip net.IP) error {
 	certPath := filepath.Join(composeDir, registryCertName)
 	caPath := fmt.Sprintf("/etc/docker/certs.d/%s/ca.crt", registryName)
 
@@ -247,40 +238,28 @@ func registryCerts(composeDir, registryCertName, machineName, ipstr string) erro
 			return err
 		}
 
-		err = test_with_docker.RebuildService(machineName, composeDir, "registry")
+		err = test_agent.RebuildService(composeDir, "registry")
 		if err != nil {
 			return err
 		}
 	}
 
-	certFile, err := os.Open(filepath.Join(composeDir, "testing.crt"))
+	differs, err := test_agent.DifferingFiles([]string{certPath, caPath})
 	if err != nil {
 		return err
 	}
 
-	hash := md5.New()
-	io.Copy(hash, certFile)
-	caHash := fmt.Sprintf("%x", hash.Sum(nil))
-	md5s, err := test_with_docker.MachineMD5s(machineName, caPath)
-	if err != nil {
-		return err
-	}
+	for _, diff := range differs {
+		local, remote := diff[0], diff[1]
+		err = test_agent.InstallFile(local, remote)
 
-	remoteHash, present := md5s[caPath]
-	if !present {
-		return fmt.Errorf("Could not determine hash of CA on machine at %s", caPath)
-	}
-
-	if strings.Compare(remoteHash, caHash) != 0 {
-		log.Printf("Remote and local registry certs differ (%q vs %q)", remoteHash, caHash)
-		err = test_with_docker.InstallMachineFile(machineName, certPath, caPath)
-
-		//err = installCA(machineName, registryName, composeDir, registryCertName)
 		if err != nil {
-			return fmt.Errorf("installCA failed: %s", err)
+			return fmt.Errorf("installFile failed: %s", err)
 		}
+	}
 
-		err = test_with_docker.SshSudo(machineName, "/etc/init.d/docker", "restart")
+	if len(differs) > 0 {
+		err = test_agent.RestartDaemon()
 		if err != nil {
 			return fmt.Errorf("restarting docker machine's daemon failed: %s", err)
 		}
