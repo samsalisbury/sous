@@ -18,12 +18,8 @@ func (ld *LocalDaemon) ComposeServices(dir string, svcs serviceMap) (*command, e
 // InstallFile puts a path found on the local machine to a path on the docker host.
 func (ld *LocalDaemon) InstallFile(src string, dest string) error {
 	destDir := filepath.Dir(dest)
-	mkdir := runCommand("mkdir", "-p", destDir)
-	log.Printf("mkdir = %+v\n", mkdir)
-	cmd := runCommand("cp", src, dest)
-	log.Printf("cp = %+v\n", cmd)
-
-	return cmd.err
+	ld.Exec("mkdir", "-p", destDir)
+	return ld.Exec("cp", src, dest)
 }
 
 func (ld *LocalDaemon) DifferingFiles(pathPairs ...[]string) (differentPairs [][]string, err error) {
@@ -81,7 +77,8 @@ func (ld *LocalDaemon) RestartDaemon() error {
 // Exec executes commands as root on the daemon host
 // It uses sudo
 func (ld *LocalDaemon) Exec(args ...string) error {
-	cmd := runCommand(args[0], args[1:]...)
+	cmd := runCommand("sudo", args...)
+	log.Println(cmd.String())
 	return cmd.err
 }
 
