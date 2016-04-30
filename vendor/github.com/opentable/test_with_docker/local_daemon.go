@@ -71,7 +71,11 @@ func (ld *LocalDaemon) Shutdown(c *command) {
 
 // RestartDaemon reboots the docker daemon
 func (ld *LocalDaemon) RestartDaemon() error {
-	return ld.Exec("/etc/init.d/docker", "restart")
+	err := ld.Exec("/etc/init.d/docker", "restart")
+	if err != nil {
+		err = ld.Exec("service", "docker", "restart")
+	}
+	return err
 }
 
 // Exec executes commands as root on the daemon host
