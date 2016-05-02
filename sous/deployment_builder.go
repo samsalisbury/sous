@@ -8,17 +8,77 @@ import (
 	"github.com/samsalisbury/semv"
 )
 
-type deploymentBuilder struct {
-	target    Deployment
-	depMarker sDepMarker
-	deploy    sDeploy
-	request   sRequest
+type (
+	deploymentBuilder struct {
+		target         Deployment
+		depMarker      sDepMarker
+		deploy         sDeploy
+		request        sRequest
+		req            singReq
+		registryClient *docker_registry.Client
+	}
+
+	canRetryRequest struct {
+		cause error
+		req   singReq
+	}
+)
+
+func (cr *canRetryRequest) Error() string {
+	return fmt.Sprintf("%s: %s", cr.cause, cr.name())
 }
 
-func (uc *deploymentBuilder) retrieveDeploy(req singReq) error {
-	rp := req.reqParent
+func (cr *canRetryRequest) name() string {
+	return fmt.Sprintf("%s:%s", cr.req.sourceUrl, cr.req.reqParent.Request.Id)
+}
+
+func newDeploymentBuilder(cl *docker_registry.Client, req singReq) deploymentBuilder {
+	return deploymentBuilder{registryClient: cl, req: req}
+}
+
+func (uc *deploymentBuilder) canRetry(err error) error {
+	if uc.req.sourceUrl != "" &&
+		uc.req.reqParent != nil &&
+		uc.req.reqParent.Request != nil &&
+		uc.req.reqParent.Request.Id != "" {
+		return &canRetryRequest{err, uc.req}
+	} else {
+		return err
+	}
+}
+
+func (uc *deploymentBuilder) completeConstruction() error {
+	uc.target.Cluster = uc.req.sourceUrl
+	uc.request = uc.req.reqParent.Request
+
+	err := uc.retrieveDeploy()
+	if err != nil {
+		return uc.canRetry(err)
+	}
+
+	err = uc.retrieveImageLabels()
+	if err != nil {
+		return uc.canRetry(err)
+	}
+
+	err = uc.unpackDeployConfig()
+	if err != nil {
+		return uc.canRetry(err)
+	}
+
+	err = uc.determineManifestKind()
+	if err != nil {
+		return uc.canRetry(err)
+	}
+
+	return nil
+}
+
+func (uc *deploymentBuilder) retrieveDeploy() error {
+
+	rp := uc.req.reqParent
 	rds := rp.RequestDeployState
-	sing := req.sing
+	sing := uc.req.sing
 
 	if rds == nil {
 		return fmt.Errorf("Singularity response didn't include a deploy state")
@@ -44,7 +104,7 @@ func (uc *deploymentBuilder) retrieveDeploy(req singReq) error {
 	return nil
 }
 
-func (uc *deploymentBuilder) retrieveImageLabels(cl *docker_registry.Client) error {
+func (uc *deploymentBuilder) retrieveImageLabels() error {
 	ci := uc.deploy.ContainerInfo
 	if ci.Type != dtos.SingularityContainerInfoSingularityContainerTypeDOCKER {
 		return fmt.Errorf("Singularity container isn't a docker container")
@@ -56,7 +116,7 @@ func (uc *deploymentBuilder) retrieveImageLabels(cl *docker_registry.Client) err
 
 	imageName := dkr.Image
 
-	labels, err := cl.LabelsForImageName(imageName) // !!! HTTP request
+	labels, err := uc.registryClient.LabelsForImageName(imageName) // !!! HTTP request
 	if err != nil {
 		return err
 	}
@@ -102,33 +162,6 @@ func (uc *deploymentBuilder) determineManifestKind() error {
 	case dtos.SingularityRequestRequestTypeRUN_ONCE:
 		uc.target.Kind = ManifestKindOnce
 	}
-	return nil
-}
-
-func (uc *deploymentBuilder) completeConstruction(cl *docker_registry.Client, req singReq) error {
-	uc.target.Cluster = req.sourceUrl
-	uc.request = req.reqParent.Request
-
-	err := uc.retrieveDeploy(req)
-	if err != nil {
-		return err
-	}
-
-	err = uc.retrieveImageLabels(cl)
-	if err != nil {
-		return err
-	}
-
-	err = uc.unpackDeployConfig()
-	if err != nil {
-		return err
-	}
-
-	err = uc.determineManifestKind()
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 

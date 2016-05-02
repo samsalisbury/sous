@@ -5,6 +5,7 @@ import (
 	"log"
 	"runtime/debug"
 	"sync"
+	"time"
 
 	"github.com/opentable/singularity"
 	"github.com/opentable/singularity/dtos"
@@ -23,9 +24,12 @@ type (
 		sing      *singularity.Client
 		reqParent *dtos.SingularityRequestParent
 	}
+
+	retryCounter map[string]uint
 )
 
 func GetRunningDeploymentSet(singUrls []string) (deps Deployments, err error) {
+	retries := make(retryCounter)
 	errCh := make(chan error)
 	deps = make(Deployments, 0)
 	sings := make(map[string]*singularity.Client)
@@ -44,11 +48,10 @@ func GetRunningDeploymentSet(singUrls []string) (deps Deployments, err error) {
 	for _, url := range singUrls {
 		sing := singularity.NewClient(url)
 		sings[url] = sing
-		go singPipeline(sing, &singWait, reqCh, errCh)
+		go singPipeline(sing, &depWait, &singWait, reqCh, errCh)
 	}
 
-	depWait.Add(1)
-	go depPipeline(&depWait, regClient, reqCh, depCh, errCh)
+	go depPipeline(regClient, reqCh, depCh, errCh)
 
 	go func() {
 		catchAndSend("closing up", errCh)
@@ -65,9 +68,37 @@ func GetRunningDeploymentSet(singUrls []string) (deps Deployments, err error) {
 			deps = append(deps, dep)
 			depWait.Done()
 		case err = <-errCh:
-			return
+			retried := retries.maybe(err, reqCh)
+			if !retried {
+				return
+			}
 		}
 	}
+}
+
+const retryLimit = 3
+
+func (rc retryCounter) maybe(err error, reqCh chan singReq) bool {
+	rt, ok := err.(*canRetryRequest)
+	if !ok {
+		return false
+	}
+
+	count, ok := rc[rt.name()]
+	if !ok {
+		count = 0
+	}
+	if count > retryLimit {
+		return false
+	}
+
+	rc[rt.name()] = count + 1
+	go func() {
+		time.Sleep(time.Millisecond * 50)
+		reqCh <- rt.req
+	}()
+
+	return true
 }
 
 func catchAll(from string) {
@@ -92,7 +123,7 @@ func catchAndSend(from string, errs chan error) {
 	}
 }
 
-func singPipeline(client *singularity.Client, wg *sync.WaitGroup, reqs chan singReq, errs chan error) {
+func singPipeline(client *singularity.Client, dw, wg *sync.WaitGroup, reqs chan singReq, errs chan error) {
 	defer wg.Done()
 	defer catchAndSend(fmt.Sprintf("get requests: %s", client), errs)
 	rs, err := getRequestsFromSingularity(client)
@@ -101,6 +132,7 @@ func singPipeline(client *singularity.Client, wg *sync.WaitGroup, reqs chan sing
 		return
 	}
 	for _, r := range rs {
+		dw.Add(1)
 		reqs <- r
 	}
 }
@@ -119,10 +151,9 @@ func getRequestsFromSingularity(client *singularity.Client) ([]singReq, error) {
 	return reqs, nil
 }
 
-func depPipeline(wait *sync.WaitGroup, cl *docker_registry.Client, reqCh chan singReq, depCh chan Deployment, errCh chan error) {
+func depPipeline(cl *docker_registry.Client, reqCh chan singReq, depCh chan Deployment, errCh chan error) {
 	defer catchAndSend("dependency building", errCh)
 	for req := range reqCh {
-		wait.Add(1)
 		go func(cl *docker_registry.Client, req singReq) {
 			defer catchAndSend(fmt.Sprintf("dep from req %s", req.sourceUrl), errCh)
 
@@ -135,12 +166,11 @@ func depPipeline(wait *sync.WaitGroup, cl *docker_registry.Client, reqCh chan si
 			depCh <- dep
 		}(cl, req)
 	}
-	wait.Done()
 }
 
 func assembleDeployment(cl *docker_registry.Client, req singReq) (Deployment, error) {
-	uc := deploymentBuilder{}
-	err := uc.completeConstruction(cl, req)
+	uc := newDeploymentBuilder(cl, req)
+	err := uc.completeConstruction()
 	if err != nil {
 		return Deployment{}, err
 	}
