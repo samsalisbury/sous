@@ -73,7 +73,7 @@ func wrapCompose(m *testing.M) (resultCode int) {
 		}
 	}()
 
-	test_agent := test_with_docker.NewAgent("default")
+	test_agent := test_with_docker.NewAgent(300.0, "default")
 
 	ip, err := test_agent.IP()
 	if err != nil {

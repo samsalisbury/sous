@@ -82,13 +82,13 @@ var (
 	ip           string
 )
 
-func NewAgent(maybeMachineName string) Agent {
+func NewAgent(timeout float32, maybeMachineName string) Agent {
 	if shouldMachine() {
 		log.Println("Using docker-machine")
-		return &Machine{name: maybeMachineName}
+		return &Machine{name: maybeMachineName, serviceTimeout: timeout}
 	} else {
 		log.Println("Using local docker daemon")
-		return &LocalDaemon{}
+		return &LocalDaemon{serviceTimeout: timeout}
 	}
 }
 
@@ -120,11 +120,11 @@ func fileDiffs(pathPairs [][]string, localMD5, remoteMD5 map[string]string) [][]
 	return differentPairs
 }
 
-func composeService(dir string, ip net.IP, env []string, servicePorts serviceMap) (shutdown *command, err error) {
+func composeService(dir string, ip net.IP, env []string, servicePorts serviceMap, timeout float32) (shutdown *command, err error) {
 	if !servicesRunning(3.0, ip, servicePorts) {
 		log.Printf("Services need to be started - tip: running `docker-compose up` in %s will speed tests up.", dir)
 
-		shutdownCmd := dockerComposeUp(dir, ip, env, servicePorts)
+		shutdownCmd := dockerComposeUp(dir, ip, env, servicePorts, timeout)
 		shutdown = &shutdownCmd
 	} else {
 		log.Printf("All services already up and running")
@@ -132,7 +132,7 @@ func composeService(dir string, ip net.IP, env []string, servicePorts serviceMap
 	return
 }
 
-func dockerComposeUp(dir string, ip net.IP, env []string, services serviceMap) (upCmd command) {
+func dockerComposeUp(dir string, ip net.IP, env []string, services serviceMap, timeout float32) (upCmd command) {
 	upCmd = buildCommand("docker-compose", "up")
 
 	upCmd.itself.Env = env
@@ -143,7 +143,7 @@ func dockerComposeUp(dir string, ip net.IP, env []string, services serviceMap) (
 		log.Panic(upCmd.err)
 	}
 
-	if servicesRunning(60.0, ip, services) {
+	if servicesRunning(timeout, ip, services) {
 		return
 	}
 	panic(fmt.Sprintf("Services were not available!"))

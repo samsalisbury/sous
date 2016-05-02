@@ -7,12 +7,13 @@ import (
 )
 
 type LocalDaemon struct {
+	serviceTimeout float32
 }
 
 func (ld *LocalDaemon) ComposeServices(dir string, svcs serviceMap) (*command, error) {
 	ip, _ := ld.IP()
 
-	return composeService(dir, ip, []string{}, svcs)
+	return composeService(dir, ip, []string{}, svcs, ld.serviceTimeout)
 }
 
 // InstallFile puts a path found on the local machine to a path on the docker host.

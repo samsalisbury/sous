@@ -11,13 +11,8 @@ import (
 )
 
 type Machine struct {
-	name string
-}
-
-func dockerMachine(args ...string) (stdoutStr, stderrStr string, err error) {
-	dmCmd := runCommand("docker-machine", args...)
-	log.Print(dmCmd.String(), "\n")
-	return dmCmd.stdout, dmCmd.stderr, dmCmd.err
+	name           string
+	serviceTimeout float32
 }
 
 func (m *Machine) ComposeServices(dir string, servicePorts serviceMap) (shutdown *command, err error) {
@@ -27,7 +22,7 @@ func (m *Machine) ComposeServices(dir string, servicePorts serviceMap) (shutdown
 	}
 	env := m.env()
 
-	return composeService(dir, ip, env, servicePorts)
+	return composeService(dir, ip, env, servicePorts, m.serviceTimeout)
 }
 
 func (m *Machine) DifferingFiles(pathPairs ...[]string) (differentPairs [][]string, err error) {
@@ -45,21 +40,6 @@ func (m *Machine) DifferingFiles(pathPairs ...[]string) (differentPairs [][]stri
 	}
 
 	return fileDiffs(pathPairs, localMD5s, remoteMD5s), nil
-}
-
-func (m *Machine) env() []string {
-	setPrefix := regexp.MustCompile("^SET ")
-	envStr, _, err := dockerMachine("env", "--shell", "cmd", m.name) //other shells get extraneous quotes
-	if err != nil {
-		log.Panic("env", err)
-	}
-
-	env := make([]string, 0, 4)
-	for _, str := range strings.Split(envStr, "\n") {
-		env = append(env, setPrefix.ReplaceAllString(str, ""))
-	}
-
-	return env
 }
 
 func (m *Machine) IP() (ip net.IP, err error) {
@@ -167,4 +147,25 @@ func (m *Machine) Shutdown(c *command) {
 	if c != nil {
 		dockerComposeDown(c)
 	}
+}
+
+func dockerMachine(args ...string) (stdoutStr, stderrStr string, err error) {
+	dmCmd := runCommand("docker-machine", args...)
+	log.Print(dmCmd.String(), "\n")
+	return dmCmd.stdout, dmCmd.stderr, dmCmd.err
+}
+
+func (m *Machine) env() []string {
+	setPrefix := regexp.MustCompile("^SET ")
+	envStr, _, err := dockerMachine("env", "--shell", "cmd", m.name) //other shells get extraneous quotes
+	if err != nil {
+		log.Panic("env", err)
+	}
+
+	env := make([]string, 0, 4)
+	for _, str := range strings.Split(envStr, "\n") {
+		env = append(env, setPrefix.ReplaceAllString(str, ""))
+	}
+
+	return env
 }
