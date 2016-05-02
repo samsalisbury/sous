@@ -4,6 +4,8 @@ services:
 language: go
 go:
   - 1.6
+before_install:
+  - sudo hostname "$(hostname | cut -c1-63)" # Otherwise, Java gets a buffer overflow
 install:
   # Disable the default install step, as we want the build to rely only on vendored
   # dependencies. (The default install step at present performs a go get.)
