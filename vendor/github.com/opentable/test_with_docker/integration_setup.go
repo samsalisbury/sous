@@ -137,7 +137,8 @@ func dockerComposeUp(dir string, ip net.IP, env []string, services serviceMap, t
 	pullCmd := buildCommand("docker-compose", "pull")
 	pullCmd.itself.Env = env
 	pullCmd.itself.Dir = dir
-	pullCmd.wait()
+	pullCmd.run()
+	log.Println("\n", pullCmd.err)
 	log.Println("\n", pullCmd.stdout)
 	log.Println("\n", pullCmd.stderr)
 
