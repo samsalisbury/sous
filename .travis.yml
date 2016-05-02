@@ -7,7 +7,7 @@ go:
 before_install:
   - cat /etc/hosts # optionally check the content *before*
   - sudo hostname "$(hostname | cut -c1-63)" # Otherwise, Java gets a buffer overflow
-  - sed -e "s/^\\(127\\.0\\.0\\.1.*\\)/\\1 $(hostname | cut -c1-63)/" /etc/hosts | sudo tee /etc/hosts
+  - sed -E -e "s/^(127\\.0\\.0\\.1.*|::1.*)/\\1 $(hostname | cut -c1-63)/" /etc/hosts
   - cat /etc/hosts # optionally check the content *after*
 install:
   # Disable the default install step, as we want the build to rely only on vendored
