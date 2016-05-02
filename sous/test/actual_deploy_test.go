@@ -186,7 +186,7 @@ func buildAndPushContainer(containerDir, tagName string) error {
 	build.Dir = containerDir
 	output, err := build.CombinedOutput()
 	if err != nil {
-		log.Print("Problem building container: ", containerDir, "\n", output)
+		log.Print("Problem building container: ", containerDir, "\n", string(output))
 		return err
 	}
 
