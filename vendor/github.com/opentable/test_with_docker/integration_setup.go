@@ -133,11 +133,13 @@ func composeService(dir string, ip net.IP, env []string, servicePorts serviceMap
 }
 
 func dockerComposeUp(dir string, ip net.IP, env []string, services serviceMap, timeout float32) (upCmd command) {
+	log.Println("Pulling compose config in ", dir)
 	pullCmd := buildCommand("docker-compose", "pull")
 	pullCmd.itself.Env = env
 	pullCmd.itself.Dir = dir
 	pullCmd.wait()
 	log.Println("\n", pullCmd.stdout)
+	log.Println("\n", pullCmd.stderr)
 
 	upCmd = buildCommand("docker-compose", "up")
 
@@ -152,6 +154,8 @@ func dockerComposeUp(dir string, ip net.IP, env []string, services serviceMap, t
 	if servicesRunning(timeout, ip, services) {
 		return
 	}
+	log.Println("\n", upCmd.stdout)
+	log.Println("\n", upCmd.stderr)
 	panic(fmt.Sprintf("Services were not available!"))
 }
 
