@@ -153,7 +153,7 @@ func dockerComposeUp(dir string, ip net.IP, env []string, services serviceMap, t
 	}
 	log.Println(upCmd.String())
 
-	logCmd := buildCommand("docker-compose", "log")
+	logCmd := buildCommand("docker-compose", "logs")
 	logCmd.itself.Env = env
 	logCmd.itself.Dir = dir
 	logCmd.start()
