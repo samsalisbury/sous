@@ -52,7 +52,9 @@ func TestGetRunningDeploymentSet(t *testing.T) {
 			grafana = &deps[i]
 		}
 	}
-	assert.NotNil(grafana)
+	if !assert.NotNil(grafana) {
+		assert.FailNow("If deployment is nil, other tests will crash")
+	}
 	assert.Equal(singularityUrl, grafana.Cluster)
 	assert.Regexp("^0\\.1", grafana.Resources["cpus"])    // XXX strings and floats...
 	assert.Regexp("^100\\.", grafana.Resources["memory"]) // XXX strings and floats...
