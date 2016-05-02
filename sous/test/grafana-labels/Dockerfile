@@ -1,8 +1,8 @@
-FROM docker.otenv.com/ot-ubuntu:latest
+FROM ubuntu:latest
 
 ENV package grafana-1.9.1
 RUN apt-get update
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y mini-httpd uuid-runtime
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y curl mini-httpd uuid-runtime
 
 RUN curl -s http://grafanarel.s3.amazonaws.com/$package.tar.gz | tar -xz --strip-components=1 -C /srv
 COPY config.js /srv/
