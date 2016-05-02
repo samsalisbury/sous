@@ -12,7 +12,6 @@ import (
 	"os"
 	"regexp"
 	"strings"
-	"syscall"
 	"time"
 )
 
@@ -138,15 +137,12 @@ func dockerComposeUp(dir string, ip net.IP, env []string, services serviceMap, t
 	pullCmd.itself.Env = env
 	pullCmd.itself.Dir = dir
 	pullCmd.run()
-	log.Println("\n", pullCmd.err)
-	log.Println("\n", pullCmd.stdout)
-	log.Println("\n", pullCmd.stderr)
-
-	upCmd = buildCommand("docker-compose", "up")
+	log.Println(pullCmd.String())
+	upCmd = buildCommand("docker-compose", "up", "-d")
 
 	upCmd.itself.Env = env
 	upCmd.itself.Dir = dir
-	upCmd.start()
+	upCmd.run()
 
 	if upCmd.err != nil {
 		log.Panic(upCmd.err)
@@ -155,14 +151,18 @@ func dockerComposeUp(dir string, ip net.IP, env []string, services serviceMap, t
 	if servicesRunning(timeout, ip, services) {
 		return
 	}
-	log.Println("\n", upCmd.stdout)
-	log.Println("\n", upCmd.stderr)
-	panic(fmt.Sprintf("Services were not available!"))
-}
+	log.Println(upCmd.String())
 
-func (c *command) interrupt() {
-	c.itself.Process.Signal(syscall.SIGTERM)
-	c.wait()
+	logCmd := buildCommand("docker-compose", "log")
+	logCmd.itself.Env = env
+	logCmd.itself.Dir = dir
+	logCmd.start()
+	time.Sleep(10 * time.Second)
+	logCmd.interrupt()
+
+	log.Println(logCmd.String())
+
+	panic(fmt.Sprintf("Services were not available!"))
 }
 
 func dockerComposeDown(cmd *command) error {

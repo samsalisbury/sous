@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"os/exec"
+	"syscall"
 )
 
 type (
@@ -58,6 +59,11 @@ func (c *command) run() error {
 	c.wait()
 
 	return c.err
+}
+
+func (c *command) interrupt() {
+	c.itself.Process.Signal(syscall.SIGTERM)
+	c.wait()
 }
 
 func (c *command) String() string {
