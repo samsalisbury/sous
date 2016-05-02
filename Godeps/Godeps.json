@@ -109,7 +109,7 @@
 		},
 		{
 			"ImportPath": "github.com/opentable/test_with_docker",
-			"Rev": "3db54f4c7080543e59286ccc336c87824ea834da"
+			"Rev": "88f499687d293fbd1734d8d2a699570fb09bc317"
 		},
 		{
 			"ImportPath": "github.com/pmezard/go-difflib/difflib",

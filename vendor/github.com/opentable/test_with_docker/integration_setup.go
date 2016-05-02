@@ -133,6 +133,12 @@ func composeService(dir string, ip net.IP, env []string, servicePorts serviceMap
 }
 
 func dockerComposeUp(dir string, ip net.IP, env []string, services serviceMap, timeout float32) (upCmd command) {
+	pullCmd := buildCommand("docker-compose", "pull")
+	pullCmd.itself.Env = env
+	pullCmd.itself.Dir = dir
+	pullCmd.wait()
+	log.Println("\n", pullCmd.stdout)
+
 	upCmd = buildCommand("docker-compose", "up")
 
 	upCmd.itself.Env = env
