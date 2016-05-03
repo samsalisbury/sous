@@ -17,9 +17,9 @@ type (
 		Cluster string
 		// SourceID is the precise version of the software to be deployed.
 		SourceVersion
-		// Owners is a list of named owners of this repository. The type of this
+		// Owners is a map of named owners of this repository. The type of this
 		// field is subject to change.
-		Owners []string
+		Owners map[string]bool
 		// Kind is the kind of software that SourceRepo represents.
 		Kind ManifestKind
 	}
@@ -39,6 +39,11 @@ type (
 		// the sequence is useful
 		Sequence LogicalSequence
 	}
+
+	DepName struct {
+		cluster string
+		source  SourceLocation
+	}
 )
 
 const (
@@ -49,6 +54,10 @@ const (
 )
 
 func BuildDeployment(m *Manifest, spec PartialDeploySpec, inherit DeploymentSpecs) (*Deployment, error) {
+	ownMap := make(map[string]bool)
+	for i := range m.Owners {
+		ownMap[m.Owners[i]] = true
+	}
 	return &Deployment{
 		Cluster: spec.clusterName,
 		DeployConfig: DeployConfig{
@@ -56,8 +65,28 @@ func BuildDeployment(m *Manifest, spec PartialDeploySpec, inherit DeploymentSpec
 			Env:          spec.Env,
 			NumInstances: spec.NumInstances,
 		},
-		Owners:        m.Owners,
+		Owners:        ownMap,
 		Kind:          m.Kind,
 		SourceVersion: m.Source.SourceVersion(spec.Version),
 	}, nil
+}
+
+func (d *Deployment) Name() DepName {
+	return DepName{
+		cluster: d.Cluster,
+		source:  d.SourceVersion.CanonicalName(),
+	}
+}
+
+func (d *Deployment) Equal(o *Deployment) bool {
+	if !(d.Cluster == o.Cluster && d.SourceVersion == o.SourceVersion && d.Kind == o.Kind && len(d.Owners) == len(o.Owners)) {
+		return false
+	}
+
+	for ownr := range d.Owners {
+		if _, has := o.Owners[ownr]; !has {
+			return false
+		}
+	}
+	return d.DeployConfig.Equal(&o.DeployConfig)
 }

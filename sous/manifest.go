@@ -100,3 +100,18 @@ const (
 	// exits when it completes its task.
 	ScheduledJob = "scheduled-job"
 )
+
+func (dc *DeployConfig) Equal(o *DeployConfig) bool {
+	if dc.NumInstances != o.NumInstances || len(dc.Env) != len(o.Env) {
+		return false
+	}
+	if dc.Resources[""] != o.Resources[""] || dc.Resources[""] != o.Resources[""] || dc.Resources[""] != o.Resources[""] {
+		return false
+	}
+	for name, value := range dc.Env {
+		if ov, ok := o.Env[name]; !ok || ov != value {
+			return false
+		}
+	}
+	return true
+}
