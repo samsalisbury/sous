@@ -2,6 +2,7 @@ package sous
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/samsalisbury/semv"
@@ -81,6 +82,10 @@ func (sv *SourceVersion) CanonicalName() SourceLocation {
 		RepoURL:    sv.RepoURL,
 		RepoOffset: sv.RepoOffset,
 	}
+}
+
+func (sv *SourceVersion) Equal(o SourceVersion) bool {
+	return sv.RepoURL == o.RepoURL && sv.RepoOffset == o.RepoOffset && sv.Version.Equals(o.Version)
 }
 
 func (sv SourceVersion) Repo() RepoURL {
@@ -169,6 +174,17 @@ func canonicalNameFromChunks(source string, chunks []string) (sl SourceLocation,
 	}
 
 	return
+}
+
+var stripRE = regexp.MustCompile("^([[:alpha:]]+://)?(github.com(/opentable)?)?")
+
+func (sl *SourceVersion) DockerImageName() string {
+	name := string(sl.RepoURL)
+
+	name = stripRE.ReplaceAllString(name, "")
+	name = strings.Join([]string{name, string(sl.RepoOffset)}, "/")
+	name = strings.Join([]string{name, sl.Version.String()}, ":")
+	return name
 }
 
 func ParseSourceVersion(source string) (SourceVersion, error) {

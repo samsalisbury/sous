@@ -24,10 +24,21 @@ type (
 		Owners OwnerSet
 		// Kind is the kind of software that SourceRepo represents.
 		Kind ManifestKind
+
+		// Notes collected from the deployment's source
+		Annotation
 	}
 
 	DeploymentState uint
 	LogicalSequence uint
+
+	// Annotations store notes about data available from the source of
+	// of a Deployment. For instance, the Id field from the source
+	// SingularityRequest for a Deployment can be stored to refer to the source post-diff.
+	// They don't participate in equality checks on the deployment
+	Annotation struct {
+		RequestId string
+	}
 
 	// DeploymentIntentions represents deployments commanded by a user.
 	DeploymentIntentions []DeploymentIntention
@@ -36,6 +47,7 @@ type (
 
 		// State is the relative state of this intention.
 		State DeploymentState
+
 		// The sequence this intention was resolved in - might be e.g. synthesized while walking
 		// a git history. This might be left as implicit on the sequence of DIs in a []DI,
 		// but if there's a change in storage (i.e. not git), or two single DIs need to be compared,
@@ -68,6 +80,19 @@ func (os OwnerSet) Add(owner string) {
 
 func (os OwnerSet) Remove(owner string) {
 	delete(os, owner)
+}
+
+func (os OwnerSet) Equal(o OwnerSet) bool {
+	if len(os) != len(o) {
+		return false
+	}
+	for ownr := range os {
+		if _, has := o[ownr]; !has {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (ds *Deployments) Add(d Deployment) {

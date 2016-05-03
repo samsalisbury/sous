@@ -46,11 +46,25 @@ func (dc *DiffChans) Collect() DiffSet {
 	return ds
 }
 
+func NewDiffChans(sizes ...int) DiffChans {
+	var size int
+	if len(sizes) > 0 {
+		size = sizes[0]
+	}
+
+	return DiffChans{
+		Created:  make(chan Deployment, size),
+		Deleted:  make(chan Deployment, size),
+		Retained: make(chan Deployment, size),
+		Modified: make(chan DeploymentPair, size),
+	}
+}
+
 func (d *DiffChans) Close() {
 	close(d.Created)
-	close(d.Deleted)
 	close(d.Retained)
 	close(d.Modified)
+	close(d.Deleted)
 }
 
 func (d Deployments) Diff(other Deployments) DiffChans {
@@ -68,13 +82,8 @@ func newDiffer(intended Deployments) *differ {
 		startMap[dep.Name()] = dep
 	}
 	return &differ{
-		from: startMap,
-		DiffChans: DiffChans{
-			Created:  make(chan Deployment, len(intended)),
-			Deleted:  make(chan Deployment, len(intended)),
-			Retained: make(chan Deployment, len(intended)),
-			Modified: make(chan DeploymentPair, len(intended)),
-		},
+		from:      startMap,
+		DiffChans: NewDiffChans(len(intended)),
 	}
 }
 
