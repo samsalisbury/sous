@@ -1,22 +1,33 @@
 # Architecture
 
-A collection of single-approaches, domain modelling, and overall structure of the Sous project.
+In the large, Sous has been consciously designed to be as simple as possible.
+It's purpose is to shepherd software projects from git repos into production on Singularity clusters.
+Along the way, it makes sure that services are built into minimal docker containers.
+
+In this document, we try to lay out the approaches we've chosen,
+how we're modeling the domain,
+and the overall structure of the Sous project.
 
 Please read the [sous ontology] first, as it contains definitions for many of the words used in this document.
 
 [sous ontology]: ontology.md
 
+_N.b. while this document is written in the present tense, at the time of writing it refers more to intention than implementation.
+That is, not everything described in this document exists yet._
+
 ## Components
 
 **Sous Build** is a tool used both for local development and on build servers.
-It makes use of buildpacks to convert source code into a production container image.
+It makes use of "buildpacks" to convert source code into a production container image.
 There are a number of steps involved in this process.
-The key requirement, beyond producing the container image, is labelling it with the revision of the source code from which it was derived
+The key requirement, beyond producing the container image,
+is labelling it with the revision of the source code from which it was derived
 and registering it with the container image registry.
 
 The **Sous Server** manages the Global Deploy Manifest (GDM).
 
-The GDM is made up of service manifests.
+The GDM is made up of service manifests:
+small descriptions of a service, e.g. where to find its implementation and where to put the running artifact.
 The overall GDM is maintained as a versioned history, so that changes can be tracked over time.
 
 A service manifest is identified with a canonical package name that points to a location within a source code repository.
@@ -32,10 +43,10 @@ Sous Server receives proposed updates to the GDM,
 validates them using a series of automated checks
 and commits the new GDM as the "intended" state.
 
-Sous Server continuously compares the GDM to the real world, represented as an **actual deploy manifest**, or **ADM**.
-The ADM is produced by interrogating all the known clusters for their actual deployment state.
-The server then computes and issues commands to transform the ADM to match the GDM.
-Once those commands have been carried out, and the ADM matches the GDM,
+Sous Server continuously compares the GDM to the real world, represented as an **actual deployment set**, or **ADS**.
+The ADS is produced by interrogating all the known Singularity clusters for their actual state.
+The server then computes and issues commands to transform the ADS to match the GDM.
+Once those commands have been carried out, and the ADS matches the GDM,
 the new GDM is marked as "current" and "achieved"
 and the previous "current" GDM version loses "current" but retains an "achieved" flag.
 
@@ -45,7 +56,7 @@ the nature of the update
 and the updates already in the queue.
 If there aren't any updates in the queue for the same manifest already
 (i.e. no updates that refer to the same piece of software)
-the update is accepted into the queue, and the deployer is notified of their position in the queue.
+the update is compared to the current ADS and deployment instructions are generated.
 If there are are updates with the same service, the update is rejected _a la_ a failed HTTP conditional update.
 This should only ever happen if a service team tries to make multiple deploy updates at the same time, for the same software.
 This type of conflict is assumed to be rare, so the incidence of rejected deployments should be small.
@@ -96,7 +107,7 @@ they can be built from the deployment commands issued by users
 or
 they can be synthesized from data collected from the running clusters.
 
-"Intended" deployments (that is, those build as the result of user commands)
+"Intended" deployments (that is, those built as the result of user commands)
 exist in a number of states -
 waiting,
 current,
@@ -104,13 +115,13 @@ achieved (but no longer current),
 passed over (older than current, but was never itself current).
 These states are determined as the server checks the state of the running clusters and issues commands to update them.
 
-Deployments are also frequently organized into deployment sets.
+Deployments are also frequently organized into "deployment sets".
 The criteria by which a deployment set is selected from all possible deployments is used to describe the set.
 The most basic sets are
 the _actual_ set (all the deployments collected from running clusters),
 and
 the _current_ set (all the deployments that are current i.e. match the last known state of clusters).
-The ADM is represented internally exactly by the actual deployment set,
+The ADS is represented internally exactly by the actual deployment set,
 and
 the GDM is represented internally by the current deployment set.
 Other sets include the set of deployments in a particular cluster,
@@ -118,23 +129,23 @@ or
 the historical deployments of a particular service, as represented by a canonical package name.
 
 
-## Named Versions ##
+## Source Versions ##
 
-Named Versions are used to identify a number of items related to a specific version of a piece of software.
+Source Versions are used to identify a number of items related to a specific version of a piece of software.
 They consist of a triple of a source repository, a version identifier and a path.
 
 The source repository is a URL, typically to a git repository. For example:
 `https://example.com/gitproject.git`
 or
-`git://example.com/project.git`
-.
-While in theory other kinds of source URL might be contemplated, git is the only kind contemplated at the moment.
+`git://example.com/project.git`.
+
+While in theory other kinds of source URL might be contemplated, git is the only kind at the moment.
 
 The version identifier consists of both an absolute revision ID,
 	and a human-readable tag, bound to that revision ID.
-The tag should be a [semantic version].
+The tag is required to be (and recognized because it is) a [semantic version].
 
-The version identifier is used to identify corresponding container images, using build metadata.
+The version identifier is used to identify corresponding container images, using Dockerfile labels.
 
 A common manifestation of the version identifier is in docker image names.
 Here, it is transformed into another semantic version by
@@ -176,7 +187,7 @@ This will be appropriate in particular contexts, such as to identify manifests,
 
 ### String Representations
 
-While named versions are triples of values, they must sometimes be represented and manipulated as strings.
+While source versions are triples of values, they must sometimes be represented and manipulated as strings.
 Specifically, at the interfaces of Sous, both with human beings and other software.
 
 The default string representation of an entity name begins with a character not matching `[A-Za-z0-9]`
