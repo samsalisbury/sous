@@ -1,6 +1,10 @@
 package sous
 
-import "github.com/samsalisbury/semv"
+import (
+	"path/filepath"
+
+	"github.com/samsalisbury/semv"
+)
 
 type (
 	// Manifests is a collection of Manifest.
@@ -77,7 +81,8 @@ type (
 		// of this deployment. It will be checked for conflict with the
 		// definitions found in State.Defs.EnvVars, and if not in conflict
 		// assumes the greatest priority.
-		Env map[string]string `yaml:",omitempty" validate:"keys=nonempty,values=nonempty"`
+		Env  map[string]string `yaml:",omitempty" validate:"keys=nonempty,values=nonempty"`
+		Args []string          `yaml:",omitempty" validate:"values=nonempty"`
 		// NumInstances is a guide to the number of instances that should be
 		// deployed in this cluster, note that the actual number may differ due
 		// to decisions made by Sous. If set to zero, Sous will decide how many
@@ -91,6 +96,10 @@ type (
 	// values must parse to the defined types.
 	Resources map[string]string
 )
+
+func (m *Manifest) FileLocation() string {
+	return filepath.Join(string(m.Source.RepoURL), string(m.Source.RepoOffset))
+}
 
 const (
 	// HTTP Service represents an HTTP service which is a long-running process,

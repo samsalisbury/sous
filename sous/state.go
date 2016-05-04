@@ -7,20 +7,20 @@ type (
 	// State is also known as the "Global Deploy Manifest" or GDM.
 	State struct {
 		// Defs contains global definitions for this organisation.
-		Defs Defs
+		Defs Defs `hy:"defs/"`
 		// Manifests contains a mapping of source code repositories to global
 		// deployment configurations for artifacts built using that source code.
-		Manifests Manifests
+		Manifests Manifests `hy:"manifests/**"`
 	}
 	// Defs holds definitions for organisation-level objects.
 	Defs struct {
 		// Clusters is a collection of logical deployment environments.
-		Clusters Clusters
+		Clusters Clusters `hy:"clusters/"`
 		// EnvVars contains definitions for global environment variables.
-		EnvVars EnvDefs
+		EnvVars EnvDefs `hy:"env.yaml"`
 		// Resources contains definitions for resource types available to
 		// deployment manifests.
-		Resources ResDefs
+		Resources ResDefs `hy:"resources.yaml"`
 	}
 	// EnvDefs is a collection of EnvDef
 	EnvDefs []EnvDef
@@ -44,7 +44,11 @@ type (
 	// Cluster is a logical deployment target, often named for its region,
 	// purpose, etc.
 	Cluster struct {
-		Name, Kind string
+		// Name is the unique name of this cluster.
+		Name string `hy:",filename"`
+		// Kind is the kid of cluster. Currently the only legal value is
+		// "singularity"
+		Kind string
 		// BaseURL is the main entrypoint URL for interacting with this cluster.
 		BaseURL url.URL
 		// Env is the default environment for all deployments in this region.
