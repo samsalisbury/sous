@@ -25,6 +25,8 @@ func TestEmptyDiff(t *testing.T) {
 
 func makeDepl(repo string, num int) Deployment {
 	version, _ := semv.Parse("1.1.1-latest")
+	owners := OwnerSet{}
+	owners.Add("judson")
 	return Deployment{
 		SourceVersion: SourceVersion{
 			RepoURL:    RepoURL(repo),
@@ -40,7 +42,7 @@ func makeDepl(repo string, num int) Deployment {
 				"ports":  "1",
 			},
 		},
-		Owners: map[string]bool{"judson": true, "sam": true},
+		Owners: owners,
 	}
 }
 
@@ -56,28 +58,28 @@ func TestRealDiff(t *testing.T) {
 	repoThree := "https://github.com/opentable/three"
 	repoFour := "https://github.com/opentable/four"
 
-	intended = append(intended, makeDepl(repoOne, 1)) //remove
+	intended.Add(makeDepl(repoOne, 1)) //remove
 
-	existing = append(existing, makeDepl(repoTwo, 1)) //same
-	intended = append(intended, makeDepl(repoTwo, 1)) //same
+	existing.Add(makeDepl(repoTwo, 1)) //same
+	intended.Add(makeDepl(repoTwo, 1)) //same
 
-	existing = append(existing, makeDepl(repoThree, 1)) //changed
-	intended = append(intended, makeDepl(repoThree, 2)) //changed
+	existing.Add(makeDepl(repoThree, 1)) //changed
+	intended.Add(makeDepl(repoThree, 2)) //changed
 
-	existing = append(existing, makeDepl(repoFour, 1)) //create
+	existing.Add(makeDepl(repoFour, 1)) //create
 
 	dc := intended.Diff(existing)
 	ds := dc.Collect()
 
-	if assert.Len(ds.Gone, 1) {
+	if assert.Len(ds.Gone, 1, "Should have one deleted item.") {
 		assert.Equal(string(ds.Gone[0].RepoURL), repoOne)
 	}
 
-	if assert.Len(ds.Same, 1) {
+	if assert.Len(ds.Same, 1, "Should have one unchanged item.") {
 		assert.Equal(string(ds.Same[0].RepoURL), repoTwo)
 	}
 
-	if assert.Len(ds.Changed, 1) {
+	if assert.Len(ds.Changed, 1, "Should have one modified item.") {
 		assert.Equal(repoThree, string(ds.Changed[0].name.source.RepoURL))
 		assert.Equal(repoThree, string(ds.Changed[0].prior.RepoURL))
 		assert.Equal(repoThree, string(ds.Changed[0].post.RepoURL))
@@ -85,7 +87,7 @@ func TestRealDiff(t *testing.T) {
 		assert.Equal(ds.Changed[0].post.NumInstances, 2)
 	}
 
-	if assert.Len(ds.New, 1) {
+	if assert.Len(ds.New, 1, "Should have one added item.") {
 		assert.Equal(string(ds.New[0].RepoURL), repoFour)
 	}
 

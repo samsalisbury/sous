@@ -19,7 +19,7 @@ type (
 		SourceVersion
 		// Owners is a map of named owners of this repository. The type of this
 		// field is subject to change.
-		Owners map[string]bool
+		Owners OwnerSet
 		// Kind is the kind of software that SourceRepo represents.
 		Kind ManifestKind
 	}
@@ -44,6 +44,8 @@ type (
 		cluster string
 		source  SourceLocation
 	}
+
+	OwnerSet map[string]struct{}
 )
 
 const (
@@ -53,10 +55,22 @@ const (
 	PassedOver                 = iota
 )
 
+func (os OwnerSet) Add(owner string) {
+	os[owner] = struct{}{}
+}
+
+func (os OwnerSet) Remove(owner string) {
+	delete(os, owner)
+}
+
+func (ds *Deployments) Add(d Deployment) {
+	*ds = append(*ds, d)
+}
+
 func BuildDeployment(m *Manifest, spec PartialDeploySpec, inherit DeploymentSpecs) (*Deployment, error) {
-	ownMap := make(map[string]bool)
+	ownMap := OwnerSet{}
 	for i := range m.Owners {
-		ownMap[m.Owners[i]] = true
+		ownMap.Add(m.Owners[i])
 	}
 	return &Deployment{
 		Cluster: spec.clusterName,
@@ -78,7 +92,7 @@ func (d *Deployment) Name() DepName {
 	}
 }
 
-func (d *Deployment) Equal(o *Deployment) bool {
+func (d *Deployment) Equal(o Deployment) bool {
 	if !(d.Cluster == o.Cluster && d.SourceVersion == o.SourceVersion && d.Kind == o.Kind && len(d.Owners) == len(o.Owners)) {
 		return false
 	}
@@ -88,5 +102,5 @@ func (d *Deployment) Equal(o *Deployment) bool {
 			return false
 		}
 	}
-	return d.DeployConfig.Equal(&o.DeployConfig)
+	return d.DeployConfig.Equal(o.DeployConfig)
 }

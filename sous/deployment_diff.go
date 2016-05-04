@@ -83,7 +83,7 @@ func (d *differ) diff(existing Deployments) {
 		name := existing[i].Name()
 		if indep, ok := d.from[name]; ok {
 			delete(d.from, name)
-			if indep.Equal(&existing[i]) {
+			if indep.Equal(existing[i]) {
 				d.Retained <- indep
 			} else {
 				d.Modified <- DeploymentPair{name, &existing[i], &indep}
