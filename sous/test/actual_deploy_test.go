@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/x509"
 	"encoding/pem"
+	"flag"
 	"fmt"
 	"log"
 	"net"
@@ -17,17 +18,13 @@ import (
 	"github.com/opentable/singularity"
 	"github.com/opentable/singularity/dtos"
 	"github.com/opentable/sous/sous"
+	"github.com/opentable/sous/test_with_docker"
 	"github.com/opentable/sous/util/docker_registry"
-	"github.com/opentable/test_with_docker"
 	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 )
 
 var ip, registryName, imageName, singularityUrl string
-
-func TestMain(m *testing.M) {
-	os.Exit(wrapCompose(m))
-}
 
 func TestGetLabels(t *testing.T) {
 	assert := assert.New(t)
@@ -65,8 +62,18 @@ func TestGetRunningDeploymentSet(t *testing.T) {
 	assert.Equal(sous.ManifestKindService, grafana.Kind)
 }
 
+func TestMain(m *testing.M) {
+	flag.Parse()
+	os.Exit(wrapCompose(m))
+}
+
 func wrapCompose(m *testing.M) (resultCode int) {
 	log.SetFlags(log.Flags() | log.Lshortfile)
+
+	if testing.Short() {
+		return 0
+	}
+
 	defer func() {
 		log.Println("Cleaning up...")
 		if err := recover(); err != nil {
@@ -75,7 +82,11 @@ func wrapCompose(m *testing.M) (resultCode int) {
 		}
 	}()
 
-	test_agent := test_with_docker.NewAgent(300.0, "default")
+	machineName := "default"
+	if envMN := os.Getenv("TEST_DOCKER_MACHINE"); len(envMN) > 0 {
+		machineName = envMN
+	}
+	test_agent := test_with_docker.NewAgent(300.0, machineName)
 
 	ip, err := test_agent.IP()
 	if err != nil {
