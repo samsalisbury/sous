@@ -20,7 +20,7 @@ type (
 	Widget Thing
 )
 
-func TestUnmarshal_GoodData(t *testing.T) {
+func _TestUnmarshal_GoodData(t *testing.T) {
 	b := Base{}
 	u := hy.NewUnmarshaler(yaml.Unmarshal)
 	if err := u.Unmarshal("./data", &b); err != nil {

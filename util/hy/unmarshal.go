@@ -15,28 +15,9 @@ import (
 	"strings"
 )
 
-type (
-	Unmarshaler struct {
-		UnmarshalFunc func([]byte, interface{}) error
-	}
-	ctx struct {
-		path      string
-		unmarshal func([]byte, interface{}) error
-		marshal   func(interface{}) ([]byte, error)
-	}
-	target struct {
-		path string
-		val  reflect.Value
-		typ  reflect.Type
-		// name is the name of this value in its parent struct or map
-		name string
-		// subTargets includes both map and slice element targets, as well as
-		// struct field targets.
-		subTargets    targets
-		unmarshalFunc func([]byte, interface{}) error
-	}
-	targets []*target
-)
+type Unmarshaler struct {
+	UnmarshalFunc func([]byte, interface{}) error
+}
 
 func NewUnmarshaler(unmarshalFunc func([]byte, interface{}) error) Unmarshaler {
 	if unmarshalFunc == nil {
@@ -173,12 +154,17 @@ func newValue(typ reflect.Type) reflect.Value {
 }
 
 func getConcreteValRef(v reflect.Value) *reflect.Value {
+	v = getConcreteVal(&v)
+	return &v
+}
+
+func getConcreteVal(v *reflect.Value) reflect.Value {
 	switch v.Kind() {
 	default:
-		return &v
+		return *v
 	case reflect.Ptr:
 		e := v.Elem()
-		return &e
+		return e
 	}
 }
 

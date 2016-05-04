@@ -8,7 +8,20 @@ import (
 	"strings"
 )
 
-func (c ctx) getStructTargets(v interface{}) (targets, error) {
+type (
+	ctx struct {
+		path      string
+		unmarshal func([]byte, interface{}) error
+		marshal   func(interface{}) ([]byte, error)
+	}
+	walkFunc func(name, tag string, val reflect.Value) (*target, error)
+)
+
+func (c ctx) writeStructTargets(v interface{}) (targets, error) {
+	return c.walkStruct(v, c.writeTarget)
+}
+
+func (c ctx) walkStruct(v interface{}, walkFunc walkFunc) (targets, error) {
 	if v == nil {
 		panic("hy tried to unmarshal to nil, please report this")
 	}
@@ -24,7 +37,7 @@ func (c ctx) getStructTargets(v interface{}) (targets, error) {
 		f := typ.Field(i)
 		tag := f.Tag.Get("hy")
 		if tag != "" {
-			t, err := c.getTarget(f.Name, tag, val.Elem().Field(i))
+			t, err := walkFunc(f.Name, tag, val.Elem().Field(i))
 			if err != nil {
 				return nil, err
 			}
@@ -35,7 +48,11 @@ func (c ctx) getStructTargets(v interface{}) (targets, error) {
 	return targets{t}, nil
 }
 
-func (c ctx) getDirTarget(source, name string, val reflect.Value) (*target, error) {
+func (c ctx) getStructTargets(v interface{}) (targets, error) {
+	return c.walkStruct(v, c.readTarget)
+}
+
+func (c ctx) readDirTarget(source, name string, val reflect.Value) (*target, error) {
 	typ := val.Type()
 	if typ.Kind() != reflect.Map {
 		return nil, fmt.Errorf("directory targets only accept maps for now")
@@ -60,16 +77,13 @@ func (c ctx) getDirTarget(source, name string, val reflect.Value) (*target, erro
 	return c.makeTarget(name, val, subTargets), nil
 }
 
-func (c ctx) getTreeTarget(source, name string, val reflect.Value) (*target, error) {
-	typ := val.Type()
-	elemType, err := getElemType(typ)
-	if err != nil {
-		return nil, err
-	}
-	source = strings.TrimSuffix(source, "**")
-	subTargets := targets{}
-	c = c.enter(source)
-	err = filepath.Walk(c.path, func(path string, f os.FileInfo, err error) error {
+func (c ctx) writeDirTarget(source, name string, val reflect.Value) (*target, error) {
+	return c.writeTreeTarget(source, name, val)
+}
+
+func (c ctx) readTree(elemType reflect.Type) (targets, error) {
+	ts := targets{}
+	err := filepath.Walk(c.path, func(path string, f os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -81,9 +95,46 @@ func (c ctx) getTreeTarget(source, name string, val reflect.Value) (*target, err
 		if err != nil {
 			return err
 		}
-		subTargets = append(subTargets, t)
+		ts = append(ts, t)
 		return nil
 	})
+	return ts, err
+}
+
+func (c ctx) writeTree(m map[string]interface{}) (targets, error) {
+	ts := make(targets, len(m))
+	i := 0
+	for name, val := range m {
+		ts[i] = c.makeTarget(name, reflect.ValueOf(val), nil)
+		i++
+	}
+	return ts, nil
+}
+
+func (c ctx) readTreeTarget(source, name string, val reflect.Value) (*target, error) {
+	typ := val.Type()
+	elemType, err := getElemType(typ)
+	if err != nil {
+		return nil, err
+	}
+	source = strings.TrimSuffix(source, "**")
+	c = c.enter(source)
+	subTargets, err := c.readTree(elemType)
+	return c.makeTarget(name, val, subTargets), nil
+}
+
+func (c ctx) writeTreeTarget(source, name string, val reflect.Value) (*target, error) {
+	source = strings.TrimSuffix(source, "**")
+	c = c.enter(source)
+	m := reflect.MakeMap(reflect.TypeOf(map[string]interface{}{}))
+	for _, k := range val.MapKeys() {
+		elemVal := val.MapIndex(k)
+		m.SetMapIndex(k, elemVal)
+	}
+	subTargets, err := c.writeTree(m.Interface().(map[string]interface{}))
+	if err != nil {
+		return nil, err
+	}
 	return c.makeTarget(name, val, subTargets), nil
 }
 
@@ -95,19 +146,34 @@ func (c ctx) makeTarget(name string, val reflect.Value, subTargets targets) *tar
 		val:           val,
 		subTargets:    subTargets,
 		unmarshalFunc: c.unmarshal,
+		marshalFunc:   c.marshal,
 	}
 }
 
-func (c ctx) getTarget(name, tag string, val reflect.Value) (*target, error) {
+func (c ctx) readTarget(name, tag string, val reflect.Value) (*target, error) {
 	source := strings.Split(tag, ",")[0]
 	if strings.HasSuffix(source, ".yaml") {
 		return c.getFileTarget(source, name, val)
 	}
 	if strings.HasSuffix(source, "/") {
-		return c.getDirTarget(source, name, val)
+		return c.readDirTarget(source, name, val)
 	}
 	if strings.HasSuffix(source, "/**") {
-		return c.getTreeTarget(source, name, val)
+		return c.readTreeTarget(source, name, val)
+	}
+	return nil, fmt.Errorf("%s.%s has hy tag %q; source does not end with .yaml, /, nor /**", val.Type(), name, tag)
+}
+
+func (c ctx) writeTarget(name, tag string, val reflect.Value) (*target, error) {
+	source := strings.Split(tag, ",")[0]
+	if strings.HasSuffix(source, ".yaml") {
+		return c.getFileTarget(source, name, val)
+	}
+	if strings.HasSuffix(source, "/") {
+		return c.writeDirTarget(source, name, val)
+	}
+	if strings.HasSuffix(source, "/**") {
+		return c.writeTreeTarget(source, name, val)
 	}
 	return nil, fmt.Errorf("%s.%s has hy tag %q; source does not end with .yaml, /, nor /**", val.Type(), name, tag)
 }
@@ -123,6 +189,7 @@ func (c ctx) enter(path string) ctx {
 	return ctx{
 		path:      filepath.Join(c.path, path),
 		unmarshal: c.unmarshal,
+		marshal:   c.marshal,
 	}
 }
 
