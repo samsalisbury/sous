@@ -102,27 +102,22 @@ func (m *Machine) MD5s(paths ...string) (md5s map[string]string, err error) {
 	return
 }
 
+func tempFilePath() string {
+	//stolen from ioutil.tempfile
+	return "/tmp/temp-" + strconv.Itoa(int(1e9 + rnums.Int31()%1e9))[1:]
+}
+
 func (m *Machine) InstallFile(sourcePath, destPath string) error {
-	tmpFile := "/tmp/temp-" + strconv.Itoa(int(1e9 + rnums.Int31()%1e9))[1:] //stolen from ioutil.tempfile
+	tmpFile := tempFilePath()
 	destDir := filepath.Dir(destPath)
-
 	scpTmp := fmt.Sprintf("%s:%s", m.name, tmpFile)
-	_, _, err := dockerMachine("scp", sourcePath, scpTmp)
-	if err != nil {
+	if _, _, err := dockerMachine("scp", sourcePath, scpTmp); err != nil {
 		return err
 	}
-
-	err = m.Exec("mkdir", "-p", destDir)
-	if err != nil {
+	if err := m.Exec("mkdir", "-p", destDir); err != nil {
 		return err
 	}
-
-	err = m.Exec("mv", tmpFile, destPath)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return m.Exec("mv", tmpFile, destPath)
 }
 
 func (m *Machine) RestartDaemon() error {
