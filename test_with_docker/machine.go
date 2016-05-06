@@ -109,11 +109,11 @@ func tempFilePath() string {
 
 func (m *Machine) InstallFile(sourcePath, destPath string) error {
 	tmpFile := tempFilePath()
-	destDir := filepath.Dir(destPath)
 	scpTmp := fmt.Sprintf("%s:%s", m.name, tmpFile)
 	if _, _, err := dockerMachine("scp", sourcePath, scpTmp); err != nil {
 		return err
 	}
+	destDir := filepath.Dir(destPath)
 	if err := m.Exec("mkdir", "-p", destDir); err != nil {
 		return err
 	}
