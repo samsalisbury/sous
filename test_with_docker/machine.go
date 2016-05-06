@@ -86,7 +86,8 @@ func (m *Machine) MD5s(paths ...string) (md5s map[string]string, err error) {
 
 		err = nil
 		if len(newPaths) > 0 {
-			stdout, stderr, err = dockerMachine(append([]string{"ssh", m.name, "sudo", "md5sum"}, newPaths...)...)
+			args := append([]string{"ssh", m.name, "sudo", "md5sum"}, newPaths...)
+			stdout, stderr, err = dockerMachine(args...)
 			if err != nil {
 				md5s = nil
 				return
@@ -124,7 +125,7 @@ func (m *Machine) RestartDaemon() error {
 	return m.Exec("/etc/init.d/docker", "restart")
 }
 
-// DockerMachineSshSudo is your out for anything that test_with_docker doesn't provide.
+// Exec is your out for anything that test_with_docker doesn't provide.
 // It executes `docker-machine ssh <machineName> sudo <args...>` so that you
 // can manipulate the running docker machine
 func (m *Machine) Exec(args ...string) error {
