@@ -1,10 +1,12 @@
 package sous
 
 import (
+	"log"
 	"regexp"
 	"strconv"
 	"sync"
 
+	"github.com/opentable/singularity"
 	"github.com/opentable/singularity/dtos"
 	"github.com/satori/go.uuid"
 )
@@ -37,6 +39,11 @@ type (
 
 		//ImageName finds or guesses a docker image name for a Deployment
 		ImageName(*Deployment) string
+	}
+
+	RectiAgent struct {
+		singClients map[string]singularity.Client
+		dockClient  docker_registry.Client
 	}
 
 	RectifyComm struct{}
@@ -79,8 +86,8 @@ func (r *Rectifier) rectifyModifys(mc chan DeploymentPair, done *sync.WaitGroup)
 	defer func(c *sync.WaitGroup) { c.Done() }(done)
 	for pair := range mc {
 		if r.ChangesReq(pair) {
-			reqID := computeRequestId(pair.post)
-			r.sing.Scale(pair.post.Cluster, reqID, pair.post.NumInstances, "rectified scaling")
+			log.Println("scaling")
+			r.sing.Scale(pair.post.Cluster, computeRequestId(pair.post), pair.post.NumInstances, "rectified scaling")
 		}
 
 		if r.ChangesDep(pair) {
@@ -94,7 +101,7 @@ func (r *Rectifier) computeImageName(d *Deployment) string {
 }
 
 func (r Rectifier) ChangesReq(pair DeploymentPair) bool {
-	return pair.prior.NumInstances != pair.prior.NumInstances
+	return pair.prior.NumInstances != pair.post.NumInstances
 }
 
 func (r Rectifier) ChangesDep(pair DeploymentPair) bool {
