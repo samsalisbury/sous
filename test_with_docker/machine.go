@@ -144,10 +144,10 @@ func (m *Machine) Shutdown(c *command) {
 	}
 }
 
-func dockerMachine(args ...string) (stdoutStr, stderrStr string, err error) {
-	dmCmd := runCommand("docker-machine", args...)
-	log.Print(dmCmd.String(), "\n")
-	return dmCmd.stdout, dmCmd.stderr, dmCmd.err
+func dockerMachine(args ...string) (stdout, stderr string, err error) {
+	c := runCommand("docker-machine", args...)
+	log.Print(c.String(), "\n")
+	return c.stdout, c.stderr, c.err
 }
 
 func (m *Machine) env() []string {
