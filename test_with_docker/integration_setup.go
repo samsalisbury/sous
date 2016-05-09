@@ -86,19 +86,22 @@ const (
 	DefaultTimeout = 30 * time.Second
 )
 
-func NewAgent() Agent {
+func NewAgent() (Agent, error) {
 	return NewAgentWithTimeout(DefaultTimeout)
 }
 
-func NewAgentWithTimeout(timeout time.Duration) Agent {
+func NewAgentWithTimeout(timeout time.Duration) (Agent, error) {
 	dm := dockerMachineName()
 	if dm != "" {
 		log.Println("Using docker-machine", dm)
-		return &Machine{name: dm, serviceTimeout: timeout}
-	} else {
-		log.Println("Using local docker daemon")
-		return &LocalDaemon{serviceTimeout: timeout}
+		return &Machine{name: dm, serviceTimeout: timeout}, nil
 	}
+	ps := runCommand("docker", "ps")
+	if ps.err != nil {
+		return nil, fmt.Errorf("no docker machines found, and `docker ps` failed: %s", ps.err)
+	}
+	log.Println("Using local docker daemon")
+	return &LocalDaemon{serviceTimeout: timeout}, nil
 }
 
 // dockerMachineName returns the name of an existing docker machine by invoking

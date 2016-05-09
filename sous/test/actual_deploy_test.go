@@ -83,7 +83,10 @@ func wrapCompose(m *testing.M) (resultCode int) {
 		}
 	}()
 
-	test_agent := test_with_docker.NewAgentWithTimeout(5 * time.Minute)
+	test_agent, err := test_with_docker.NewAgentWithTimeout(5 * time.Minute)
+	if err != nil {
+		panic(err)
+	}
 
 	ip, err := test_agent.IP()
 	if err != nil {
