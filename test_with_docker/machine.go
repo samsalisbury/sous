@@ -8,11 +8,12 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Machine struct {
 	name           string
-	serviceTimeout float32
+	serviceTimeout time.Duration
 }
 
 func (m *Machine) ComposeServices(dir string, servicePorts serviceMap) (shutdown *command, err error) {
