@@ -8,11 +8,12 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Machine struct {
 	name           string
-	serviceTimeout float32
+	serviceTimeout time.Duration
 }
 
 func (m *Machine) ComposeServices(dir string, servicePorts serviceMap) (shutdown *command, err error) {
@@ -86,7 +87,8 @@ func (m *Machine) MD5s(paths ...string) (md5s map[string]string, err error) {
 
 		err = nil
 		if len(newPaths) > 0 {
-			stdout, stderr, err = dockerMachine(append([]string{"ssh", m.name, "sudo", "md5sum"}, newPaths...)...)
+			args := append([]string{"ssh", m.name, "sudo", "md5sum"}, newPaths...)
+			stdout, stderr, err = dockerMachine(args...)
 			if err != nil {
 				md5s = nil
 				return
@@ -102,34 +104,29 @@ func (m *Machine) MD5s(paths ...string) (md5s map[string]string, err error) {
 	return
 }
 
+func tempFilePath() string {
+	//stolen from ioutil.tempfile
+	return "/tmp/temp-" + strconv.Itoa(int(1e9 + rnums.Int31()%1e9))[1:]
+}
+
 func (m *Machine) InstallFile(sourcePath, destPath string) error {
-	tmpFile := "/tmp/temp-" + strconv.Itoa(int(1e9 + rnums.Int31()%1e9))[1:] //stolen from ioutil.tempfile
-	destDir := filepath.Dir(destPath)
-
+	tmpFile := tempFilePath()
 	scpTmp := fmt.Sprintf("%s:%s", m.name, tmpFile)
-	_, _, err := dockerMachine("scp", sourcePath, scpTmp)
-	if err != nil {
+	if _, _, err := dockerMachine("scp", sourcePath, scpTmp); err != nil {
 		return err
 	}
-
-	err = m.Exec("mkdir", "-p", destDir)
-	if err != nil {
+	destDir := filepath.Dir(destPath)
+	if err := m.Exec("mkdir", "-p", destDir); err != nil {
 		return err
 	}
-
-	err = m.Exec("mv", tmpFile, destPath)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return m.Exec("mv", tmpFile, destPath)
 }
 
 func (m *Machine) RestartDaemon() error {
 	return m.Exec("/etc/init.d/docker", "restart")
 }
 
-// DockerMachineSshSudo is your out for anything that test_with_docker doesn't provide.
+// Exec is your out for anything that test_with_docker doesn't provide.
 // It executes `docker-machine ssh <machineName> sudo <args...>` so that you
 // can manipulate the running docker machine
 func (m *Machine) Exec(args ...string) error {
@@ -149,10 +146,10 @@ func (m *Machine) Shutdown(c *command) {
 	}
 }
 
-func dockerMachine(args ...string) (stdoutStr, stderrStr string, err error) {
-	dmCmd := runCommand("docker-machine", args...)
-	log.Print(dmCmd.String(), "\n")
-	return dmCmd.stdout, dmCmd.stderr, dmCmd.err
+func dockerMachine(args ...string) (stdout, stderr string, err error) {
+	c := runCommand("docker-machine", args...)
+	log.Println(c)
+	return c.stdout, c.stderr, c.err
 }
 
 func (m *Machine) env() []string {

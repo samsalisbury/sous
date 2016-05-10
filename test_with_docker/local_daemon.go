@@ -4,10 +4,11 @@ import (
 	"log"
 	"net"
 	"path/filepath"
+	"time"
 )
 
 type LocalDaemon struct {
-	serviceTimeout float32
+	serviceTimeout time.Duration
 }
 
 func (ld *LocalDaemon) ComposeServices(dir string, svcs serviceMap) (*command, error) {

@@ -14,6 +14,7 @@ import (
 	"regexp"
 	"testing"
 	"text/template"
+	"time"
 
 	"github.com/opentable/singularity"
 	"github.com/opentable/singularity/dtos"
@@ -82,11 +83,10 @@ func wrapCompose(m *testing.M) (resultCode int) {
 		}
 	}()
 
-	machineName := "default"
-	if envMN := os.Getenv("TEST_DOCKER_MACHINE"); len(envMN) > 0 {
-		machineName = envMN
+	test_agent, err := test_with_docker.NewAgentWithTimeout(5 * time.Minute)
+	if err != nil {
+		panic(err)
 	}
-	test_agent := test_with_docker.NewAgent(300.0, machineName)
 
 	ip, err := test_agent.IP()
 	if err != nil {
@@ -265,6 +265,7 @@ func registryCerts(test_agent test_with_docker.Agent, composeDir, registryCertNa
 
 	for _, diff := range differs {
 		local, remote := diff[0], diff[1]
+		log.Printf("Copying %q to %q\n", local, remote)
 		err = test_agent.InstallFile(local, remote)
 
 		if err != nil {

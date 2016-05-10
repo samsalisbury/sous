@@ -81,26 +81,47 @@ var (
 	ip           string
 )
 
-func NewAgent(timeout float32, maybeMachineName string) Agent {
-	if shouldMachine() {
-		log.Println("Using docker-machine")
-		return &Machine{name: maybeMachineName, serviceTimeout: timeout}
-	} else {
-		log.Println("Using local docker daemon")
-		return &LocalDaemon{serviceTimeout: timeout}
-	}
+const (
+	// DefaultTimeout is the default timeout for docker operations.
+	DefaultTimeout = 30 * time.Second
+)
+
+func NewAgent() (Agent, error) {
+	return NewAgentWithTimeout(DefaultTimeout)
 }
 
-func shouldMachine() bool {
-	info := runCommand("docker", "info")
-	ip := runCommand("docker-machine", "ip")
-	if ip.err == nil {
-		return true
+func NewAgentWithTimeout(timeout time.Duration) (Agent, error) {
+	dm := dockerMachineName()
+	if dm != "" {
+		log.Println("Using docker-machine", dm)
+		return &Machine{name: dm, serviceTimeout: timeout}, nil
 	}
-	if info.stderr == "Cannot connect to the Docker daemon. Is the docker daemon running on this host?\n" {
-		return true
+	ps := runCommand("docker", "ps")
+	if ps.err != nil {
+		return nil, fmt.Errorf("no docker machines found, and `docker ps` failed: %s", ps.err)
 	}
-	return false
+	log.Println("Using local docker daemon")
+	return &LocalDaemon{serviceTimeout: timeout}, nil
+}
+
+// dockerMachineName returns the name of an existing docker machine by invoking
+// `docker-machine ls -q`
+//
+// If any  docker machines are called "default", it returns "default". If there
+// are no docker machines, or the command fails, it returns  an empty string. In
+// all other cases, it returns the first machine name output by the command.
+func dockerMachineName() string {
+	ls := runCommand("docker-machine", "ls", "-q")
+	if ls.err != nil {
+		return ""
+	}
+	machines := strings.Split(ls.stdout, "\n")
+	for _, m := range machines {
+		if m == "default" {
+			return m
+		}
+	}
+	return machines[0]
 }
 
 func fileDiffs(pathPairs [][]string, localMD5, remoteMD5 map[string]string) [][]string {
@@ -119,7 +140,7 @@ func fileDiffs(pathPairs [][]string, localMD5, remoteMD5 map[string]string) [][]
 	return differentPairs
 }
 
-func composeService(dir string, ip net.IP, env []string, servicePorts serviceMap, timeout float32) (shutdown *command, err error) {
+func composeService(dir string, ip net.IP, env []string, servicePorts serviceMap, timeout time.Duration) (shutdown *command, err error) {
 	if !servicesRunning(3.0, ip, servicePorts) {
 		log.Printf("Services need to be started - tip: running `docker-compose up` in %s will speed tests up.", dir)
 
@@ -131,7 +152,7 @@ func composeService(dir string, ip net.IP, env []string, servicePorts serviceMap
 	return
 }
 
-func dockerComposeUp(dir string, ip net.IP, env []string, services serviceMap, timeout float32) (upCmd command) {
+func dockerComposeUp(dir string, ip net.IP, env []string, services serviceMap, timeout time.Duration) (upCmd command) {
 	log.Println("Pulling compose config in ", dir)
 	pullCmd := buildCommand("docker-compose", "pull")
 	pullCmd.itself.Env = env
@@ -188,7 +209,7 @@ func rebuildService(dir, name string, env []string) error {
 	return cmd.err
 }
 
-func servicesRunning(limit float32, ip net.IP, services map[string]uint) bool {
+func servicesRunning(timeout time.Duration, ip net.IP, services map[string]uint) bool {
 	goodCh := make(chan string)
 	badCh := make(chan string)
 	done := make(chan bool)
@@ -212,8 +233,8 @@ func servicesRunning(limit float32, ip net.IP, services map[string]uint) bool {
 		case bad := <-badCh:
 			log.Printf("  Error trying to connect to %s", bad)
 			return false
-		case <-time.After(time.Duration(limit * float32(time.Second))):
-			log.Printf("Attempt to contact remaining service expired after %f seconds", limit)
+		case <-time.After(timeout):
+			log.Printf("Attempt to contact remaining service expired after %s", timeout)
 			for service, port := range services {
 				log.Printf("  Still unavailable: %s at %s:%d", service, ip, port)
 			}
