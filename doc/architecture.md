@@ -91,13 +91,13 @@ users will usually manipulate applications or instances, which are each views ov
 (Deployment descriptions are sometimes referred to simply as 'deployments.')
 
 A deployment description is a tuple which binds:
-- A cluster
-- A set of dependant resources
-- A [named version](#named_versions)
+- A cluster name
+- A [declaration of required resources](#resource-declaration)
+- A [source version](#source-version)
 - A dictionary of environment variables
 - A list of project owners
 - An application kind
-- The number of instances the application should reside in
+- The number of instances the application should be scaled to in the named cluster
 
 Not only can a particular deployment description refer to multiple running application instances (by virtue of the instance count),
 deployment descriptions can refer, for instance to intended states which haven't been realized yet.
@@ -128,62 +128,75 @@ Other sets include the set of deployments in a particular cluster,
 or
 the historical deployments of a particular service, as represented by a canonical package name.
 
+## Version Name ##
 
-## Source Versions ##
+A version name consists of a [semantic version] \(semver\) compatible source code repo tag,
+paired with the revision ID that tag points to.
+By itself, it does not identify anything, but is used as part of a [source version](#source-version)
 
-Source Versions are used to identify a number of items related to a specific version of a piece of software.
-They consist of a triple of a source repository, a version identifier and a path.
+Version names are typically represented as semantic versions, where we use the revision ID as the
+semver metadata. This means that any semver metadata from your source code tags is ignored,
+and replaced internally by sous with the revision ID.
 
-The source repository is a URL, typically to a git repository. For example:
-`https://example.com/gitproject.git`
-or
-`git://example.com/project.git`.
+Versions names can be constructed from git tags, for example, for a git tag "v1.0.0" pointing at
+commit SHA c4bba9e, the version name would be:
 
-While in theory other kinds of source URL might be contemplated, git is the only kind at the moment.
+    1.0.0+c4bba9e
 
-The version identifier consists of both an absolute revision ID,
-	and a human-readable tag, bound to that revision ID.
-The tag is required to be (and recognized because it is) a [semantic version].
+For git tag "1.0.0-beta.5", the version name would be:
 
-The version identifier is used to identify corresponding container images, using Dockerfile labels.
+    1.0.0-beta.5+c4bba9e
 
-A common manifestation of the version identifier is in docker image names.
-Here, it is transformed into another semantic version by
-	affixing the revision ID to the version using the semver metadata field
-	(i.e. text after a '+').
+And, for git tag "0.2.33-beta.5+this.bit.is.metadata.3" the version name would be:
 
-It is used to identify a precise, unique version of the software.
+    1.0.0-beta.5+c4bba9e
 
-Note: in practical terms, "revision ID" means the git commit SHA.
-If other kinds of source are to be defined, the unique identifier requirement would need to be satisfied.
+[semantic version]: http://semver.org
 
-[semantic version]:(http://semver.org/)
+## Source Version ##
 
-(As a practical matter, the actual version would be used as a tag to trigger builds in Sous -
-that's an interaction with the entity name definition, not a part of it.)
+A **source version** completely identifies a specific version of a piece of software.
 
-Finally, the path is used to specify a particular entity to be found within the source.
-For instance, a single directory within a git repository.
+Within sous, a source version serves as as a pointer to everything that represents that version of the software,
+like the source code, resultant docker images, a set of running instances etc.
 
-### Checking Names
+A source version consists of a [source location] paired with a [version name].
 
-The use of version number plus unique id over-specifies the entity in question.
-Where the name is being used in an interactive context,
+Typically, a source version can be written as a triple, in the format `<repo>,<version name>[,<path>]` e.g.
+
+    github.com/opentable/sous,1.0.0,src
+
+[version name]: #version-name
+[source location]: #source-location
+
+### Source Location
+
+A **source location** refers to the location of source code describing a piece of software,
+but is not bound to a particular version of that software.
+
+As a data structure, source location is a repository URL paired with a directory offset within that repository.
+The directory offset is necessary since some repositories describe multiple pieces of software
+which must be differentiated.
+
+Source locations are useful in particular contexts,
+	such in the manifests, which contain version information adjacent, allowing full deployments to be constructed.
+
+Example source locations:
+
+    github.com/opentable/sous
+	github.com/opentable/sous,server
+
+### Checking Versions
+
+The use of a tag plus a revision ID provides redundant information.
+Where a [source version](#source-version) is being used in an interactive context,
 	and the version number no longer matches the recorded revision ID
 		(i.e. the git tag has been moved)
 	an error should be reported and the operation should be rejected.
-However, where name is being used in a batch context,
+However, where name is being used in a context where no human is present,
 	the revision ID (e.g. the git SHA) should be used, and considered correct,
 	but if the corresponding version tag has been moved,
 	the user should be notified.
-
-### Canonical Package Names
-
-To refer to a piece of software over time, independent of a particular version in its evolution,
-it's possible to use just the source URL and path components of the appropriate entity name.
-	This pair is known as the "Canonical Package Name".
-This will be appropriate in particular contexts, such as to identify manifests,
-	and always mutually exclusive to the use of the fully qualified entity name.
 
 ### String Representations
 
@@ -202,13 +215,13 @@ the delimiter,
 and then the path.
 
 For example:
-`^git://example.com/project.git^v1.0.0-rc+132984adf^/my-app`
+`^example.com/project^v1.0.0-rc+132984adf^my-app`
 
 When ',' is a legitimate choice as the delimiter, it should be preferred, and it may be omitted from the first position in the string.
 If the first character in an entity name string is alphabetic, the delimiter should be taken to be ','.
 
 Using the default delimiter rule:
-`git://example.com/project.git,v1.0.0-rc+132984adf,/src/package.json`
+`git://example.com/project.git,v1.0.0-rc+132984adf,src`
 
 ### Opaque Representations
 
