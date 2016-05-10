@@ -142,7 +142,9 @@ func (uc *deploymentBuilder) unpackDeployConfig() error {
 	uc.target.Resources["ports"] = fmt.Sprintf("%d", singRez.NumPorts)
 
 	uc.target.NumInstances = int(uc.request.Instances)
-	uc.target.Owners = uc.request.Owners
+	for _, o := range uc.request.Owners {
+		uc.target.Owners.Add(o)
+	}
 
 	return nil
 }
