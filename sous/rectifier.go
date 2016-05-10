@@ -8,6 +8,7 @@ import (
 
 	"github.com/opentable/singularity"
 	"github.com/opentable/singularity/dtos"
+	"github.com/opentable/sous/util/docker_registry"
 	"github.com/satori/go.uuid"
 )
 
