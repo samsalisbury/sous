@@ -76,12 +76,12 @@ type (
 	DeployConfig struct {
 		// Resources represents the resources each instance of this software
 		// will be given by the execution environment.
-		Resources Resources `validate:"keys=nonempty,values=nonempty"`
+		Resources `validate:"keys=nonempty,values=nonempty"`
 		// Env is a list of environment variables to set for each instance of
 		// of this deployment. It will be checked for conflict with the
 		// definitions found in State.Defs.EnvVars, and if not in conflict
 		// assumes the greatest priority.
-		Env map[string]string `validate:"keys=nonempty,values=nonempty"`
+		Env `validate:"keys=nonempty,values=nonempty"`
 		// NumInstances is a guide to the number of instances that should be
 		// deployed in this cluster, note that the actual number may differ due
 		// to decisions made by Sous. If set to zero, Sous will decide how many
@@ -94,6 +94,10 @@ type (
 	// State.Defs.Resources. The keys must match defined resource names, and the
 	// values must parse to the defined types.
 	Resources map[string]string
+
+	// Env is a mapping of environment variable name to value, used to provision
+	// single instances of an application.
+	Env map[string]string
 )
 
 func (dc *DeployConfig) String() string {
@@ -112,3 +116,33 @@ const (
 	// exits when it completes its task.
 	ScheduledJob = "scheduled-job"
 )
+
+func (dc *DeployConfig) Equal(o DeployConfig) bool {
+	return (dc.NumInstances == o.NumInstances && dc.Env.Equal(o.Env) && dc.Resources.Equal(o.Resources))
+}
+
+func (r Resources) Equal(o Resources) bool {
+	if len(r) != len(o) {
+		return false
+	}
+
+	for name, value := range r {
+		if ov, ok := o[name]; !ok || ov != value {
+			return false
+		}
+	}
+	return true
+}
+
+func (e Env) Equal(o Env) bool {
+	if len(e) != len(o) {
+		return false
+	}
+
+	for name, value := range e {
+		if ov, ok := o[name]; !ok || ov != value {
+			return false
+		}
+	}
+	return true
+}

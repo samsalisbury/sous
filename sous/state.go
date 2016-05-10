@@ -48,10 +48,10 @@ type (
 		// BaseURL is the main entrypoint URL for interacting with this cluster.
 		BaseURL url.URL
 		// Env is the default environment for all deployments in this region.
-		Env Env
+		Env EnvDefaults
 	}
 	// Env is a list of named environment variables along with their values.
-	Env map[string]Var
+	EnvDefaults map[string]Var
 	// Var is a strongly typed string for use in environment variables and YAML
 	// files. It will implement sane YAML marshalling and unmarshalling. (Not
 	// yet implemented.)
