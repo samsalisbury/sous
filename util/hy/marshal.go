@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
+	"path"
 	"reflect"
 )
 
@@ -12,6 +14,22 @@ type (
 		MarshalFunc func(interface{}) ([]byte, error)
 	}
 )
+
+var Debug = true
+
+func debugf(format string, a ...interface{}) {
+	if !Debug {
+		return
+	}
+	log.Printf(format+"\n", a...)
+}
+
+func debug(a ...interface{}) {
+	if !Debug {
+		return
+	}
+	log.Println(a...)
+}
 
 func NewMarshaller(marshalFunc func(interface{}) ([]byte, error)) Marshaller {
 	if marshalFunc == nil {
@@ -29,55 +47,60 @@ func (c ctx) marshalDir(v interface{}) error {
 	if err != nil {
 		return err
 	}
-	ts.marshalAll(nil)
-	return nil
+	return ts.marshalAll(nil)
 }
 
 func (ts targets) marshalAll(parent *reflect.Value) error {
 	for _, t := range ts {
-		// first marshal children
-		if t.subTargets != nil {
-			log.Printf("Marshalling %d children of %s", len(t.subTargets), t.val.Type())
-			if err := t.subTargets.marshalAll(&t.val); err != nil {
-				return err
-			}
-		} else {
-			log.Printf("No children of %s", t.val.Type())
-		}
-		if parent != nil {
-			log.Printf("Begin zeroing parent: %s.%s (%v)", parent.Type(), t.name, parent.Interface())
-			// zero out the field in the parent
-			switch parent.Kind() {
-			default:
-				return fmt.Errorf("parents may only be structs or map[string]T")
-			case reflect.Ptr:
-				field := parent.Elem().FieldByName(t.name)
-				if !field.CanSet() {
-					return fmt.Errorf("unable to set %s on %s", t.name, parent.Type())
-				}
-				z := reflect.Zero(field.Type())
-				log.Printf("Zeroing %s.%s (%v)\n", parent.Type(), t.name, z.Interface())
-				field.Set(z)
-			case reflect.Struct:
-				panic("parent is struct, want *struct")
-			case reflect.Map:
-				z := reflect.Zero(parent.Type())
-				log.Printf("Zeroing %s (%v)\n", parent.Type(), z.Interface())
-				parent.Set(z)
-				// do nothing, we already zero out entire maps via struct
-				// field zeroing.
-			}
-			log.Printf("Done zeroing: %s.%s (%v)", parent.Type(), t.name, parent.Interface())
-		}
-		log.Printf("Final %s.%s (%v)", t.val.Type(), t.name, t.val.Interface())
-		if err := t.marshal(); err != nil {
-			return err
-		}
+		t.marshal(parent)
 	}
 	return nil
 }
 
-func (t target) marshal() error {
+func (t target) marshal(parent *reflect.Value) error {
+	// first marshal children
+	if len(t.subTargets) != 0 {
+		debugf("Marshalling %d children of %s", len(t.subTargets), t.val.Type())
+		if err := t.subTargets.marshalAll(&t.val); err != nil {
+			return err
+		}
+	} else {
+		debugf("No children of %s", t.val.Type())
+	}
+	if parent != nil {
+		debugf("Begin zeroing parent: %s.%s (%v)", parent.Type(), t.name, parent.Interface())
+		// zero out the field in the parent
+		switch parent.Kind() {
+		default:
+			return fmt.Errorf("parents may only be structs or map[string]T")
+		case reflect.Ptr:
+			field := parent.Elem().FieldByName(t.name)
+			if !field.CanSet() {
+				return fmt.Errorf("unable to set %s on %s", t.name, parent.Type())
+			}
+			z := reflect.Zero(field.Type())
+			debugf("Zeroing %s.%s (%v)\n", parent.Type(), t.name, z.Interface())
+			field.Set(z)
+		case reflect.Struct:
+			panic("parent is struct, want *struct or map")
+		case reflect.Map:
+			z := reflect.Zero(parent.Type())
+			debugf("Zeroing %s (%v)\n", parent.Type(), z.Interface())
+			parent.Set(z)
+			// do nothing, we already zero out entire maps via struct
+			// field zeroing.
+		}
+		debugf("Done zeroing: %s.%s (%v)", parent.Type(), t.name, parent.Interface())
+	}
+	if t.typ.Kind() == reflect.Map {
+		debugf("Not writing map %s (%s)", t.name, t.typ)
+		return nil
+	}
+	debugf("Final %s.%s (%v)", t.val.Type(), t.name, t.val.Interface())
+	return t.write()
+}
+
+func (t target) write() error {
 	// first convert to map[string]interface{}, then delete keys that have
 	// hy tags, and finally marshal what's left.
 	// this will cause issues with field name mappings used by the marshaller/
@@ -90,5 +113,24 @@ func (t target) marshal() error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(t.path, b, 0666)
+	dir := path.Dir(t.path)
+	if err := ensureDirExists(dir); err != nil {
+		return err
+	}
+	debug("Writing file", t.path, string(b))
+	return ioutil.WriteFile(t.path, b, 0777)
+}
+
+func ensureDirExists(path string) error {
+	d, err := os.Stat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return os.MkdirAll(path, 0777)
+		}
+		return err
+	}
+	if d.IsDir() {
+		return nil
+	}
+	return fmt.Errorf("%s exists and is not a directory", path)
 }

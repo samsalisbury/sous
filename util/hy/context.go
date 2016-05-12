@@ -77,10 +77,6 @@ func (c ctx) readDirTarget(source, name string, val reflect.Value) (*target, err
 	return c.makeTarget(name, val, subTargets), nil
 }
 
-func (c ctx) writeDirTarget(source, name string, val reflect.Value) (*target, error) {
-	return c.writeTreeTarget(source, name, val)
-}
-
 func (c ctx) readTree(elemType reflect.Type) (targets, error) {
 	ts := targets{}
 	err := filepath.Walk(c.path, func(path string, f os.FileInfo, err error) error {
@@ -101,16 +97,6 @@ func (c ctx) readTree(elemType reflect.Type) (targets, error) {
 	return ts, err
 }
 
-func (c ctx) writeTree(m map[string]interface{}) (targets, error) {
-	ts := make(targets, len(m))
-	i := 0
-	for name, val := range m {
-		ts[i] = c.makeTarget(name, reflect.ValueOf(val), nil)
-		i++
-	}
-	return ts, nil
-}
-
 func (c ctx) readTreeTarget(source, name string, val reflect.Value) (*target, error) {
 	typ := val.Type()
 	elemType, err := getElemType(typ)
@@ -121,6 +107,10 @@ func (c ctx) readTreeTarget(source, name string, val reflect.Value) (*target, er
 	c = c.enter(source)
 	subTargets, err := c.readTree(elemType)
 	return c.makeTarget(name, val, subTargets), nil
+}
+
+func (c ctx) writeDirTarget(source, name string, val reflect.Value) (*target, error) {
+	return c.writeTreeTarget(source, name, val)
 }
 
 func (c ctx) writeTreeTarget(source, name string, val reflect.Value) (*target, error) {
@@ -136,6 +126,16 @@ func (c ctx) writeTreeTarget(source, name string, val reflect.Value) (*target, e
 		return nil, err
 	}
 	return c.makeTarget(name, val, subTargets), nil
+}
+
+func (c ctx) writeTree(m map[string]interface{}) (targets, error) {
+	ts := make(targets, len(m))
+	i := 0
+	for name, val := range m {
+		ts[i] = c.enter(name).makeTarget(name, reflect.ValueOf(val), nil)
+		i++
+	}
+	return ts, nil
 }
 
 func (c ctx) makeTarget(name string, val reflect.Value, subTargets targets) *target {
