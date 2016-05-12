@@ -83,8 +83,7 @@ func (t target) marshal(parent *reflect.Value) error {
 		}
 		debugf("Done zeroing: %s.%s (%v)", parent.Type(), t.name, parent.Interface())
 	}
-	if t.typ.Kind() == reflect.Map {
-		debugf("Not writing map %s (%s)", t.name, t.typ)
+	if parent == nil {
 		return nil
 	}
 	debugf("Final %s.%s (%v)", t.val.Type(), t.name, t.val.Interface())
