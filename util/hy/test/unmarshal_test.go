@@ -10,6 +10,7 @@ import (
 type (
 	Base struct {
 		Config  Config            `hy:"config.yaml"`
+		Dict    map[string]string `hy:"dict.yaml"`
 		Things  map[string]Thing  `hy:"things/"`
 		Widgets map[string]Widget `hy:"widgets/**"`
 	}

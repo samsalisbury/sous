@@ -13,6 +13,10 @@ func TestMarshal_GoodData(t *testing.T) {
 		Config: Config{
 			Name: "Config name",
 		},
+		Dict: map[string]string{
+			"a": "α",
+			"b": "β",
+		},
 		Things: map[string]Thing{
 			"thingio": Thing{Name: "Thingio"},
 			"thingy":  Thing{Name: "Thingy"},

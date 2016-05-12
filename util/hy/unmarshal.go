@@ -9,10 +9,11 @@ package hy
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"reflect"
 	"strings"
+
+	"github.com/opentable/sous/util/yaml"
 )
 
 type Unmarshaler struct {
@@ -24,6 +25,11 @@ func NewUnmarshaler(unmarshalFunc func([]byte, interface{}) error) Unmarshaler {
 		panic("unmarshalFunc must not be nil")
 	}
 	return Unmarshaler{unmarshalFunc}
+}
+
+// Unmarshal is shorthand for NewUnmarshaler(yaml.Unmarshal).Unmarshal
+func Unmarshal(path string, v interface{}) error {
+	return NewUnmarshaler(yaml.Unmarshal).Unmarshal(path, v)
 }
 
 func (u Unmarshaler) Unmarshal(path string, v interface{}) error {
@@ -58,7 +64,7 @@ func (ts targets) unmarshalAll(parent *reflect.Value) error {
 }
 
 func (t target) unmarshal(parent *reflect.Value) error {
-	log.Printf("Target: %s\n", t.path)
+	debugf("Target: %s\n", t.path)
 	iface := t.val.Interface()
 	if isFile(t.path) {
 		if err := t.unmarshalFile(iface); err != nil {
@@ -90,17 +96,17 @@ func (t target) insertIntoParent(parent *reflect.Value) error {
 		if parent.Elem().Kind() != reflect.Struct {
 			return parentTypeError(parent)
 		}
-		log.Printf("Setting field %s on %s\n", t.name, parent.Elem().Type())
+		debugf("Setting field %s on %s\n", t.name, parent.Elem().Type())
 		f := parent.Elem().FieldByName(t.name)
 		f.Set(*getConcreteValRef(t.val))
 	case reflect.Map:
 		if parent.Type().Key().Kind() != reflect.String {
 			return parentTypeError(parent)
 		}
-		log.Printf("Setting key %q on %s\n", t.name, parent.Type())
+		debugf("Setting key %q on %s\n", t.name, parent.Type())
 		if parent.IsNil() {
 			pvp := reflect.MakeMap(parent.Type())
-			log.Printf("Parent was nil, setting empty map of %s\n", parent.Type())
+			debugf("Parent was nil, setting empty map of %s\n", parent.Type())
 			parent.Set(pvp)
 		}
 		parent.SetMapIndex(reflect.ValueOf(t.name), t.val.Elem())
@@ -112,7 +118,7 @@ func (t target) unmarshalFile(iface interface{}) error {
 	if t.val.Kind() != reflect.Ptr || t.val.Elem().Kind() != reflect.Struct {
 		return fmt.Errorf("tried to unmarshal file %s to %T; want a pointer to struct", t.path, iface)
 	}
-	log.Printf("Path: %s; Type: %s; ValType: %s; IfaceType: %s\n", t.path, t.typ, t.val.Type(), reflect.TypeOf(t.val.Interface()))
+	debugf("Path: %s; Type: %s; ValType: %s; IfaceType: %s\n", t.path, t.typ, t.val.Type(), reflect.TypeOf(t.val.Interface()))
 	b, err := ioutil.ReadFile(t.path)
 	if err != nil {
 		return err
@@ -120,7 +126,7 @@ func (t target) unmarshalFile(iface interface{}) error {
 	if err := t.unmarshalFunc(b, iface); err != nil {
 		return err
 	}
-	log.Printf("Unmarshalled: val: %v; type: %T", iface, iface)
+	debugf("Unmarshalled: val: %v; type: %T", iface, iface)
 	return nil
 }
 

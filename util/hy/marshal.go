@@ -3,10 +3,12 @@ package hy
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"path"
 	"reflect"
+	"strings"
+
+	"github.com/opentable/sous/util/yaml"
 )
 
 type (
@@ -15,27 +17,16 @@ type (
 	}
 )
 
-var Debug = true
-
-func debugf(format string, a ...interface{}) {
-	if !Debug {
-		return
-	}
-	log.Printf(format+"\n", a...)
-}
-
-func debug(a ...interface{}) {
-	if !Debug {
-		return
-	}
-	log.Println(a...)
-}
-
 func NewMarshaller(marshalFunc func(interface{}) ([]byte, error)) Marshaller {
 	if marshalFunc == nil {
 		panic("marshalFunc cannot be nil")
 	}
 	return Marshaller{marshalFunc}
+}
+
+// Marshal is shorthand for NewMarshaller(yaml.Marshal).Marshal
+func Marshal(dir string, v interface{}) error {
+	return NewMarshaller(yaml.Marshal).Marshal(dir, v)
 }
 
 func (m Marshaller) Marshal(path string, v interface{}) error {
@@ -117,8 +108,12 @@ func (t target) write() error {
 	if err := ensureDirExists(dir); err != nil {
 		return err
 	}
-	debug("Writing file", t.path, string(b))
-	return ioutil.WriteFile(t.path, b, 0777)
+	path := t.path
+	if !strings.HasSuffix(path, ".yaml") {
+		path += ".yaml"
+	}
+	debug("Writing file", path, string(b))
+	return ioutil.WriteFile(path, b, 0777)
 }
 
 func ensureDirExists(path string) error {
