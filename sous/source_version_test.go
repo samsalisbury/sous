@@ -14,36 +14,36 @@ func TestParseName_SourceVersion(t *testing.T) {
 		t.Error(err)
 	}
 
-	nv, ok := name.(SourceVersion)
+	sv, ok := name.(SourceVersion)
 	if !ok {
-		t.Fatalf("Parsed a %T; want a  SourceVersion", nv)
+		t.Fatalf("Parsed a %T; want a  SourceVersion", sv)
 	}
 
-	if string(nv.RepoURL) != "git+ssh://github.com/opentable/sous" {
-		t.Errorf("Bad repo: %q", nv.RepoURL)
+	if string(sv.RepoURL) != "git+ssh://github.com/opentable/sous" {
+		t.Errorf("Bad repo: %q", sv.RepoURL)
 	}
 
-	if nv.RepoOffset != "/sous/" {
-		t.Errorf("Bad path: %q", nv.RepoOffset)
+	if sv.RepoOffset != "/sous/" {
+		t.Errorf("Bad path: %q", sv.RepoOffset)
 	}
 
-	if nv.Version.Major != 1 || nv.Version.Pre != "pre" {
-		t.Errorf("Bad version: %q", nv.Version)
+	if sv.Version.Major != 1 || sv.Version.Pre != "pre" {
+		t.Errorf("Bad version: %q", sv.Version)
 	}
 
-	if nv.RevId() != "4f850e9030224f528cfdb085d558f8508d06a6d3" {
-		t.Errorf("Bad revision: %q", nv.RevId())
+	if sv.RevId() != "4f850e9030224f528cfdb085d558f8508d06a6d3" {
+		t.Errorf("Bad revision: %q", sv.RevId())
 	}
 }
 
 func TestParseSourceVersion(t *testing.T) {
 	assert := assert.New(t)
 	mustParse := func(str string) SourceVersion {
-		nv, err := ParseSourceVersion(str)
+		sv, err := ParseSourceVersion(str)
 		if err != nil {
 			t.Errorf("unexpected error %q while parsing %q", err, str)
 		}
-		return nv
+		return sv
 	}
 
 	assert.Equal(SourceVersion{"git+ssh://github.com/opentable/sous", semv.MustParse("1.0.0-pre+4f850e9030224f528cfdb085d558f8508d06a6d3"), "sous"},

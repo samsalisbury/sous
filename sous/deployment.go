@@ -1,5 +1,7 @@
 package sous
 
+import "fmt"
+
 type (
 	// Deployments is a collection of Deployment.
 	Deployments []Deployment
@@ -17,9 +19,9 @@ type (
 		Cluster string
 		// SourceID is the precise version of the software to be deployed.
 		SourceVersion
-		// Owners is a list of named owners of this repository. The type of this
+		// Owners is a map of named owners of this repository. The type of this
 		// field is subject to change.
-		Owners []string
+		Owners OwnerSet
 		// Kind is the kind of software that SourceRepo represents.
 		Kind ManifestKind
 	}
@@ -31,6 +33,7 @@ type (
 	DeploymentIntentions []DeploymentIntention
 	DeploymentIntention  struct {
 		Deployment
+
 		// State is the relative state of this intention.
 		State DeploymentState
 		// The sequence this intention was resolved in - might be e.g. synthesized while walking
@@ -39,7 +42,18 @@ type (
 		// the sequence is useful
 		Sequence LogicalSequence
 	}
+
+	DepName struct {
+		cluster string
+		source  SourceLocation
+	}
+
+	OwnerSet map[string]struct{}
 )
+
+func (dep *Deployment) String() string {
+	return fmt.Sprintf("%s @ %s %s", dep.SourceVersion, dep.Cluster, dep.DeployConfig.String())
+}
 
 const (
 	Current    DeploymentState = iota
@@ -48,7 +62,23 @@ const (
 	PassedOver                 = iota
 )
 
+func (os OwnerSet) Add(owner string) {
+	os[owner] = struct{}{}
+}
+
+func (os OwnerSet) Remove(owner string) {
+	delete(os, owner)
+}
+
+func (ds *Deployments) Add(d Deployment) {
+	*ds = append(*ds, d)
+}
+
 func BuildDeployment(m *Manifest, spec PartialDeploySpec, inherit DeploymentSpecs) (*Deployment, error) {
+	ownMap := OwnerSet{}
+	for i := range m.Owners {
+		ownMap.Add(m.Owners[i])
+	}
 	return &Deployment{
 		Cluster: spec.clusterName,
 		DeployConfig: DeployConfig{
@@ -56,8 +86,28 @@ func BuildDeployment(m *Manifest, spec PartialDeploySpec, inherit DeploymentSpec
 			Env:          spec.Env,
 			NumInstances: spec.NumInstances,
 		},
-		Owners:        m.Owners,
+		Owners:        ownMap,
 		Kind:          m.Kind,
 		SourceVersion: m.Source.SourceVersion(spec.Version),
 	}, nil
+}
+
+func (d *Deployment) Name() DepName {
+	return DepName{
+		cluster: d.Cluster,
+		source:  d.SourceVersion.CanonicalName(),
+	}
+}
+
+func (d *Deployment) Equal(o Deployment) bool {
+	if !(d.Cluster == o.Cluster && d.SourceVersion == o.SourceVersion && d.Kind == o.Kind && len(d.Owners) == len(o.Owners)) {
+		return false
+	}
+
+	for ownr := range d.Owners {
+		if _, has := o.Owners[ownr]; !has {
+			return false
+		}
+	}
+	return d.DeployConfig.Equal(o.DeployConfig)
 }
