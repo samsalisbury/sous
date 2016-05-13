@@ -24,22 +24,26 @@ Rectify(dChans)
 */
 
 type (
-	Rectifier struct {
+	rectifier struct {
 		sing RectificationClient
 	}
 
+	// RectificationClient abstracts the raw interactions with Singularity.
+	// The methods on this interface are tightly bound to the semantics of Singularity itself -
+	// it's recommended to interact with the Sous Recify function or the recitification driver
+	// rather than with implentations of this interface directly.
 	RectificationClient interface {
-		// Deploy(cluster, dep id, req id, docker image name, resources)
-		Deploy(string, string, string, string, Resources) error
+		// Deploy creates a new deploy on a particular requeust
+		Deploy(cluster, depID, reqId, dockerImage string, r Resources) error
 
-		// PostRequest(cluster, request id, instance count)
-		PostRequest(string, string, int) error
+		// PostRequest sends a request to a Singularity cluster to initiate
+		PostRequest(cluster, reqID string, instanceCount int) error
 
-		//Scale(cluster url, request id, instance count, message)
-		Scale(string, string, int, string) error
+		//Scale updates the instanceCount associated with a request
+		Scale(cluster, reqID string, instanceCount int, message string) error
 
 		//ImageName finds or guesses a docker image name for a Deployment
-		ImageName(*Deployment) string
+		ImageName(d *Deployment) string
 	}
 
 	RectiAgent struct {
@@ -51,7 +55,7 @@ type (
 )
 
 func Rectify(dcs DiffChans, s RectificationClient) chan struct{} {
-	rect := Rectifier{s}
+	rect := rectifier{s}
 	done := make(chan struct{})
 	wg := &sync.WaitGroup{}
 	wg.Add(3)
@@ -67,8 +71,8 @@ func Rectify(dcs DiffChans, s RectificationClient) chan struct{} {
 	return done
 }
 
-func (r *Rectifier) rectifyCreates(cc chan Deployment, done *sync.WaitGroup) {
-	defer func(c *sync.WaitGroup) { c.Done() }(done)
+func (r *rectifier) rectifyCreates(cc chan Deployment, done *sync.WaitGroup) {
+	defer done.Done()
 	for d := range cc {
 		reqID := computeRequestId(&d)
 		r.sing.PostRequest(d.Cluster, reqID, d.NumInstances)
@@ -76,36 +80,36 @@ func (r *Rectifier) rectifyCreates(cc chan Deployment, done *sync.WaitGroup) {
 	}
 }
 
-func (r *Rectifier) rectifyDeletes(dc chan Deployment, done *sync.WaitGroup) {
+func (r *rectifier) rectifyDeletes(dc chan Deployment, done *sync.WaitGroup) {
 	defer func(c *sync.WaitGroup) { c.Done() }(done)
 	for d := range dc {
 		r.sing.Scale(d.Cluster, computeRequestId(&d), 0, "scaling deleted manifest to zero")
 	}
 }
 
-func (r *Rectifier) rectifyModifys(mc chan DeploymentPair, done *sync.WaitGroup) {
+func (r *rectifier) rectifyModifys(mc chan DeploymentPair, done *sync.WaitGroup) {
 	defer func(c *sync.WaitGroup) { c.Done() }(done)
 	for pair := range mc {
-		if r.ChangesReq(pair) {
+		if r.changesReq(pair) {
 			log.Println("scaling")
 			r.sing.Scale(pair.post.Cluster, computeRequestId(pair.post), pair.post.NumInstances, "rectified scaling")
 		}
 
-		if r.ChangesDep(pair) {
+		if changesDep(pair) {
 			r.sing.Deploy(pair.post.Cluster, newDepID(), computeRequestId(pair.prior), r.computeImageName(pair.post), pair.post.Resources)
 		}
 	}
 }
 
-func (r *Rectifier) computeImageName(d *Deployment) string {
+func (r *rectifier) computeImageName(d *Deployment) string {
 	return r.sing.ImageName(d)
 }
 
-func (r Rectifier) ChangesReq(pair DeploymentPair) bool {
+func (r rectifier) changesReq(pair DeploymentPair) bool {
 	return pair.prior.NumInstances != pair.post.NumInstances
 }
 
-func (r Rectifier) ChangesDep(pair DeploymentPair) bool {
+func changesDep(pair DeploymentPair) bool {
 	return !(pair.prior.SourceVersion.Equal(pair.post.SourceVersion) && pair.prior.Resources.Equal(pair.prior.Resources))
 }
 

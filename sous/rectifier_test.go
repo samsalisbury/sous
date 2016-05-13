@@ -256,7 +256,7 @@ func TestCreates(t *testing.T) {
 	if assert.Len(client.deployed, 1) {
 		dep := client.deployed[0]
 		assert.Equal("cluster", dep.cluster)
-		assert.Equal("0.0.0", dep.imageName)
+		assert.Equal("reqid 0.0.0", dep.imageName)
 	}
 
 	if assert.Len(client.created, 1) {
