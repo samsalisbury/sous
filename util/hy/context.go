@@ -114,6 +114,10 @@ func (c ctx) writeDirTarget(source, name string, val reflect.Value) (*target, er
 }
 
 func (c ctx) writeTreeTarget(source, name string, val reflect.Value) (*target, error) {
+	t := val.Type()
+	if t.Kind() != reflect.Map || t.Key().Kind() != reflect.String {
+		return nil, fmt.Errorf("internal error: writeTarget passed %s; want map[string]T", t)
+	}
 	source = strings.TrimSuffix(source, "**")
 	c = c.enter(source)
 	m := reflect.MakeMap(reflect.TypeOf(map[string]interface{}{}))

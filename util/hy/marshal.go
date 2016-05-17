@@ -86,6 +86,9 @@ func (t target) marshal(parent *reflect.Value) error {
 	if parent == nil {
 		return nil
 	}
+	if t.val.Type().Kind() == reflect.Map && t.val.Len() == 0 {
+		return nil
+	}
 	debugf("Final %s.%s (%v)", t.val.Type(), t.name, t.val.Interface())
 	return t.write()
 }
