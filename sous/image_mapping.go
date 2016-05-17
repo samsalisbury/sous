@@ -13,20 +13,22 @@ type (
 	}
 
 	SourceRecord struct {
-		SourceLocation SourceLocation
-		etag           string
+		SourceVersion SourceVersion
+		etag          string
 	}
 
 	ImageName string
 
 	SourceNameLookup map[ImageName]SourceRecord
-	DockerNameLookup map[SourceLocation]ImageName
+	DockerNameLookup map[SourceVersion]ImageName
+
+	NotModifiedErr struct{}
 
 	NoImageNameFound struct {
-		SourceLocation
+		SourceVersion
 	}
 
-	NoSourceLocationFound struct {
+	NoSourceVersionFound struct {
 		ImageName
 	}
 )
@@ -37,18 +39,23 @@ var theNameCache = NameCache{
 }
 
 func (e NoImageNameFound) Error() string {
-	return fmt.Sprintf("No image name for %v", e.SourceLocation)
+	return fmt.Sprintf("No image name for %v", e.SourceVersion)
 }
 
-func (e NoSourceLocationFound) Error() string {
+func (e NoSourceVersionFound) Error() string {
 	return fmt.Sprintf("No image name for %v", e.ImageName)
 }
 
-func (dl DockerNameLookup) GetImageName(sl SourceLocation) (ImageName, error) {
-	if in, ok := dl[sl]; ok {
+func (e NotModifiedErr) Error() string {
+	return "Not modified"
+
+}
+
+func (dl DockerNameLookup) GetImageName(sv SourceVersion) (ImageName, error) {
+	if in, ok := dl[sv]; ok {
 		return in, nil
 	} else {
-		return "", NoImageNameFound{sl}
+		return "", NoImageNameFound{sv}
 	}
 }
 
@@ -56,35 +63,35 @@ func (sn SourceNameLookup) getSourceRecord(in ImageName) (SourceRecord, error) {
 	if sr, ok := sn[in]; ok {
 		return sr, nil
 	} else {
-		return SourceRecord{}, NoSourceLocationFound{in}
+		return SourceRecord{}, NoSourceVersionFound{in}
 	}
 }
 
-func (sn SourceNameLookup) GetSourceLocation(in ImageName) (SourceLocation, error) {
+func (sn SourceNameLookup) GetSourceVersion(in ImageName) (SourceVersion, error) {
 	if sr, ok := sn[in]; ok {
-		return sr.SourceLocation, nil
+		return sr.SourceVersion, nil
 	} else {
-		return SourceLocation{}, NoSourceLocationFound{in}
+		return SourceVersion{}, NoSourceVersionFound{in}
 	}
 }
 
-func (dl DockerNameLookup) InsertDockerName(sl SourceLocation, in ImageName) error {
-	dl[sl] = in
+func (dl DockerNameLookup) InsertDockerName(sv SourceVersion, in ImageName) error {
+	dl[sv] = in
 	return nil
 }
 
-func (sn SourceNameLookup) InsertSourceLocation(in ImageName, sl SourceLocation, etag string) error {
-	sn[in] = SourceRecord{sl, etag}
+func (sn SourceNameLookup) InsertSourceVersion(in ImageName, sv SourceVersion, etag string) error {
+	sn[in] = SourceRecord{sv, etag}
 	return nil
 }
 
-func (nc *NameCache) Insert(sl SourceLocation, in ImageName, etag string) error {
-	err := nc.InsertSourceLocation(in, sl, etag)
+func (nc *NameCache) Insert(sv SourceVersion, in ImageName, etag string) error {
+	err := nc.InsertSourceVersion(in, sv, etag)
 	if err != nil {
 		return err
 	}
 
-	err = nc.InsertDockerName(sl, in)
+	err = nc.InsertDockerName(sv, in)
 	if err != nil {
 		return err
 	}
@@ -92,19 +99,35 @@ func (nc *NameCache) Insert(sl SourceLocation, in ImageName, etag string) error 
 	return nil
 }
 
-func GetSourceLocation(dr docker_registry.Client, in ImageName) (SourceLocation, error) {
+// GetSourceVersion retreives a source version for an image name, updating it from the server if necessary
+// Each call to GetSourceVersion implies an HTTP request, although it may be abbreviated by the use of an etag.
+func GetSourceVersion(dr docker_registry.Client, in ImageName) (SourceVersion, error) {
 	sr, err := theNameCache.getSourceRecord(in)
 
-	newSL, etag, err := retreiveSourceLocation(in, sr.etag)
-	if exists, ok := err.(NotModifiedErr); ok {
-		return sr.SourceLocation, nil
+	newSV, etag, err := retreiveSourceVersion(dr, in, sr.etag)
+	if _, ok := err.(NotModifiedErr); ok {
+		return sr.SourceVersion, nil
 	}
 	if err != nil {
-		return SourceLocation{}, err
+		return SourceVersion{}, err
 	}
 
-	if sr.SourceLocation != newSL {
-		theNameCache.Insert(newSL, in, etag)
+	if sr.SourceVersion != newSV {
+		theNameCache.Insert(newSV, in, etag)
 	}
-	return newSL, nil
+	return newSV, nil
+}
+
+func retreiveSourceVersion(dc docker_registry.Client, in ImageName, etag string) (SourceVersion, string, error) {
+	md, err := dc.GetImageMetadata(string(in), etag)
+	if err != nil {
+		return SourceVersion{}, "", err
+	}
+
+	sv, err := SourceVersionFromLabels(md.Labels)
+	if err != nil {
+		return SourceVersion{}, "", err
+	}
+
+	return sv, md.Etag, err
 }

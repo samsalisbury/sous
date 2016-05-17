@@ -71,6 +71,18 @@ func (sl SourceLocation) String() string {
 	}
 }
 
+func (sl SourceLocation) Repo() RepoURL {
+	return sl.RepoURL
+}
+
+func (sl *SourceLocation) SourceVersion(version semv.Version) SourceVersion {
+	return SourceVersion{
+		RepoURL:    sl.RepoURL,
+		RepoOffset: sl.RepoOffset,
+		Version:    version,
+	}
+}
+
 func (sv SourceVersion) String() string {
 	if sv.RepoOffset == "" {
 		return fmt.Sprintf("%s %s", sv.RepoURL, sv.Version)
@@ -184,6 +196,43 @@ func canonicalNameFromChunks(source string, chunks []string) (sl SourceLocation,
 	}
 
 	return
+}
+
+func SourceVersionFromLabels(labels map[string]string) (SourceVersion, error) {
+	missingLabels := make([]string, 0, 3)
+	repo, present := labels[DockerRepoLabel]
+	if !present {
+		missingLabels = append(missingLabels, DockerRepoLabel)
+	}
+
+	versionStr, present := labels[DockerVersionLabel]
+	if !present {
+		missingLabels = append(missingLabels, DockerVersionLabel)
+	}
+
+	revision, present := labels[DockerRevisionLabel]
+	if !present {
+		missingLabels = append(missingLabels, DockerRevisionLabel)
+	}
+
+	path, present := labels[DockerPathLabel]
+	if !present {
+		missingLabels = append(missingLabels, DockerPathLabel)
+	}
+
+	if len(missingLabels) > 0 {
+		err := fmt.Errorf("Missing labels on manifest for %v", missingLabels)
+		return SourceVersion{}, err
+	}
+
+	version, err := semv.Parse(versionStr)
+	version.Meta = revision
+
+	return SourceVersion{
+		RepoURL:    RepoURL(repo),
+		Version:    version,
+		RepoOffset: RepoOffset(path),
+	}, err
 }
 
 var stripRE = regexp.MustCompile("^([[:alpha:]]+://)?(github.com(/opentable)?)?")
