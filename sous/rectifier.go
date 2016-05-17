@@ -117,7 +117,7 @@ func computeRequestId(d *Deployment) string {
 	if len(d.RequestId) > 0 {
 		return d.RequestId
 	}
-	return d.CanonicalName().String()
+	return d.SourceVersion.CanonicalName().String()
 }
 
 var notInIdRE = regexp.MustCompile(`[-/]`)

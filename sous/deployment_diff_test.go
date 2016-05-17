@@ -72,23 +72,23 @@ func TestRealDiff(t *testing.T) {
 	ds := dc.Collect()
 
 	if assert.Len(ds.Gone, 1, "Should have one deleted item.") {
-		assert.Equal(string(ds.Gone[0].RepoURL), repoOne)
+		assert.Equal(string(ds.Gone[0].SourceVersion.RepoURL), repoOne)
 	}
 
 	if assert.Len(ds.Same, 1, "Should have one unchanged item.") {
-		assert.Equal(string(ds.Same[0].RepoURL), repoTwo)
+		assert.Equal(string(ds.Same[0].SourceVersion.RepoURL), repoTwo)
 	}
 
 	if assert.Len(ds.Changed, 1, "Should have one modified item.") {
 		assert.Equal(repoThree, string(ds.Changed[0].name.source.RepoURL))
-		assert.Equal(repoThree, string(ds.Changed[0].prior.RepoURL))
-		assert.Equal(repoThree, string(ds.Changed[0].post.RepoURL))
+		assert.Equal(repoThree, string(ds.Changed[0].prior.SourceVersion.RepoURL))
+		assert.Equal(repoThree, string(ds.Changed[0].post.SourceVersion.RepoURL))
 		assert.Equal(ds.Changed[0].prior.NumInstances, 1)
 		assert.Equal(ds.Changed[0].post.NumInstances, 2)
 	}
 
 	if assert.Len(ds.New, 1, "Should have one added item.") {
-		assert.Equal(string(ds.New[0].RepoURL), repoFour)
+		assert.Equal(string(ds.New[0].SourceVersion.RepoURL), repoFour)
 	}
 
 }
