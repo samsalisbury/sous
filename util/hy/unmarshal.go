@@ -109,7 +109,11 @@ func (t target) insertIntoParent(parent *reflect.Value) error {
 			debugf("Parent was nil, setting empty map of %s\n", parent.Type())
 			parent.Set(pvp)
 		}
-		parent.SetMapIndex(reflect.ValueOf(t.name), t.val.Elem())
+		elem := t.val
+		if parent.Type().Elem().Kind() != reflect.Ptr {
+			elem = elem.Elem()
+		}
+		parent.SetMapIndex(reflect.ValueOf(t.name), elem)
 	}
 	return nil
 }
