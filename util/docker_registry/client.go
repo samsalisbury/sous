@@ -31,10 +31,15 @@ type (
 
 	// Client for v2 of the docker registry. Maintains state and accumulates e.g. endpoints to make requests against.
 	// Although it's developed in concert with Sous, there's a conscious effort to avoid coupling to Sous concepts like e.g. SourceVersion
-	Client struct {
+	liveClient struct {
 		ctx        context.Context
 		xport      *http.Transport
 		registries map[string]*registry
+	}
+
+	Client interface {
+		LabelsForImageName(string) (map[string]string, error)
+		GetImageMetadata(imageName, etag string) (Metadata, error)
 	}
 
 	Metadata struct {
@@ -45,8 +50,8 @@ type (
 	}
 )
 
-func NewClient() *Client {
-	return &Client{
+func NewClient() Client {
+	return &liveClient{
 		ctx:        context.Background(),
 		xport:      &http.Transport{},
 		registries: make(map[string]*registry),
@@ -55,25 +60,25 @@ func NewClient() *Client {
 
 // BecomeFoolishlyTrusting instructs the client to cease verifying the certificates of registry hosts. This is a terrible idea and
 // this method is slated for removal without notice - do not depend on it.
-func (c *Client) BecomeFoolishlyTrusting() {
+func (c *liveClient) BecomeFoolishlyTrusting() {
 	c.xport.TLSClientConfig = &tls.Config{
 		InsecureSkipVerify: true,
 	}
 }
 
-func (c *Client) Cancel() {
+func (c *liveClient) Cancel() {
 	//at some point, this might cancel contexts/requests outstanding related to this client
 }
 
 // LabelsForImageName retrieves the labels on a particular container from its ImageName
 // At the moment the image name has to include a registry hostname and use a tag to identify the image
-func (c *Client) LabelsForImageName(imageName string) (labels map[string]string, err error) {
+func (c *liveClient) LabelsForImageName(imageName string) (labels map[string]string, err error) {
 	md, err := c.GetImageMetadata(imageName, "")
 	return md.Labels, err
 }
 
 // LabelsForEtaggedImageName works like LabelsForImageName, with the additional option to send an etag with the request
-func (c *Client) GetImageMetadata(imageName string, etag string) (Metadata, error) {
+func (c *liveClient) GetImageMetadata(imageName string, etag string) (Metadata, error) {
 	regHost, ref, err := splitHost(imageName)
 
 	if err != nil {
@@ -131,7 +136,7 @@ func digestRef(ref reference.Named, digst string) (reference.Canonical, error) {
 	return reference.WithDigest(rn, d)
 }
 
-func (c *Client) registryForUrl(url string) (*registry, error) {
+func (c *liveClient) registryForUrl(url string) (*registry, error) {
 	if reg, ok := c.registries[url]; ok {
 		return reg, nil
 	}
@@ -156,8 +161,15 @@ func (c *Client) registryForUrl(url string) (*registry, error) {
 //	"demo-server-0.7.3-SNAPSHOT-20160329_202654_teamcity-unconfigured"
 // )
 // ( which returns an empty map, since the demo-server doesn't have labels... )
-func (c *Client) metadataForImage(regHost string, ref reference.Named, etag string) (md Metadata, err error) {
+func (c *liveClient) metadataForImage(regHost string, ref reference.Named, etag string) (md Metadata, err error) {
 	registryUrl := fmt.Sprintf("https://%s", regHost)
+
+	// slightly weird but: a non-empty etag implies that we've seen this
+	// digest-named container before - and a digest reference should be
+	// immutable.
+	if _, ok := ref.(reference.Digested); ok && etag != "" {
+		return Metadata{}, distribution.ErrManifestNotModified
+	}
 
 	rep, err := c.registryForUrl(registryUrl)
 	if err != nil {
@@ -270,9 +282,7 @@ func (ms *registry) manifestFromResponse(resp *http.Response) (distribution.Mani
 }
 
 func (ms *registry) getManifestWithEtag(ctx context.Context, ref reference.Named, etag string) (distribution.Manifest, http.Header, error) {
-	var (
-		err error
-	)
+	var err error
 
 	req, err := ms.getRequest(ref, etag)
 	if err != nil {

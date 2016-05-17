@@ -246,6 +246,15 @@ func (sl *SourceVersion) DockerImageName() string {
 	return name
 }
 
+func (sv *SourceVersion) DockerLabels() map[string]string {
+	labels := make(map[string]string)
+	labels[DockerVersionLabel] = sv.Version.Format(`M.m.p-?`)
+	labels[DockerRevisionLabel] = sv.RevId()
+	labels[DockerPathLabel] = string(sv.RepoOffset)
+	labels[DockerRepoLabel] = string(sv.RepoURL)
+	return labels
+}
+
 func ParseSourceVersion(source string) (SourceVersion, error) {
 	chunks := parseChunks(source)
 	return sourceVersionFromChunks(source, chunks)
