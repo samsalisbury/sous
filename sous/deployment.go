@@ -17,8 +17,8 @@ type (
 		// parsing the Manifest, this will be set to the key in
 		// Manifests.Deployments which points at this Deployment.
 		Cluster string
-		// SourceID is the precise version of the software to be deployed.
-		SourceVersion
+		// SourceVersion is the precise version of the software to be deployed.
+		SourceVersion SourceVersion
 		// Owners is a map of named owners of this repository. The type of this
 		// field is subject to change.
 		Owners OwnerSet
@@ -33,7 +33,6 @@ type (
 	DeploymentIntentions []DeploymentIntention
 	DeploymentIntention  struct {
 		Deployment
-
 		// State is the relative state of this intention.
 		State DeploymentState
 		// The sequence this intention was resolved in - might be e.g. synthesized while walking

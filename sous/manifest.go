@@ -10,7 +10,7 @@ import (
 
 type (
 	// Manifests is a collection of Manifest.
-	Manifests []*Manifest
+	Manifests map[string]*Manifest
 	// Manifest is a minimal representation of the global deployment state of
 	// a particular named application. It is designed to be written and read by
 	// humans as-is, and expanded into full Deployments internally. It is a DTO,
