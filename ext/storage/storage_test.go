@@ -4,8 +4,8 @@ import (
 	"os/exec"
 	"testing"
 
-	"github.com/go-yaml/yaml"
 	"github.com/opentable/sous/sous"
+	"github.com/opentable/sous/util/yaml"
 	"github.com/samsalisbury/semv"
 )
 
