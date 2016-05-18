@@ -14,7 +14,7 @@ type (
 		deploy         sDeploy
 		request        sRequest
 		req            singReq
-		registryClient *docker_registry.Client
+		registryClient docker_registry.Client
 	}
 
 	canRetryRequest struct {
@@ -31,7 +31,7 @@ func (cr *canRetryRequest) name() string {
 	return fmt.Sprintf("%s:%s", cr.req.sourceUrl, cr.req.reqParent.Request.Id)
 }
 
-func newDeploymentBuilder(cl *docker_registry.Client, req singReq) deploymentBuilder {
+func newDeploymentBuilder(cl docker_registry.Client, req singReq) deploymentBuilder {
 	return deploymentBuilder{registryClient: cl, req: req}
 }
 

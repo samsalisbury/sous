@@ -151,10 +151,10 @@ func getRequestsFromSingularity(client *singularity.Client) ([]singReq, error) {
 	return reqs, nil
 }
 
-func depPipeline(cl *docker_registry.Client, reqCh chan singReq, depCh chan Deployment, errCh chan error) {
+func depPipeline(cl docker_registry.Client, reqCh chan singReq, depCh chan Deployment, errCh chan error) {
 	defer catchAndSend("dependency building", errCh)
 	for req := range reqCh {
-		go func(cl *docker_registry.Client, req singReq) {
+		go func(cl docker_registry.Client, req singReq) {
 			defer catchAndSend(fmt.Sprintf("dep from req %s", req.sourceUrl), errCh)
 
 			dep, err := assembleDeployment(cl, req)
@@ -168,7 +168,7 @@ func depPipeline(cl *docker_registry.Client, reqCh chan singReq, depCh chan Depl
 	}
 }
 
-func assembleDeployment(cl *docker_registry.Client, req singReq) (Deployment, error) {
+func assembleDeployment(cl docker_registry.Client, req singReq) (Deployment, error) {
 	uc := newDeploymentBuilder(cl, req)
 	err := uc.completeConstruction()
 	if err != nil {

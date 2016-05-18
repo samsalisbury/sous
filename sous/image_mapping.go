@@ -62,19 +62,19 @@ func (sr *SourceRecord) Update(other *SourceRecord) {
 
 // GetSourceVersion retreives a source version for an image name, updating it from the server if necessary
 // Each call to GetSourceVersion implies an HTTP request, although it may be abbreviated by the use of an etag.
-func GetSourceVersion(in ImageName) (SourceVersion, error) {
+func GetSourceVersion(in string) (SourceVersion, error) {
 	return theNameCache.GetSourceVersion(in)
 }
 
 // InsertContainerRecord stores a SourceVersion/image name pair into the global name cache
-func InsertContainerRecord(sv SourceVersion, in ImageName, etag string) error {
+func InsertContainerRecord(sv SourceVersion, in, etag string) error {
 	return theNameCache.Insert(sv, in, etag)
 }
 
-func (nc *NameCache) Insert(sv SourceVersion, in ImageName, etag string) error {
+func (nc *NameCache) Insert(sv SourceVersion, in, etag string) error {
 	record := SourceRecord{docker_registry.Metadata{
-		CanonicalName: string(in),
-		AllNames:      []string{string(in)},
+		CanonicalName: in,
+		AllNames:      []string{in},
 		Etag:          etag,
 		Labels:        sv.DockerLabels(),
 	}}
@@ -83,12 +83,12 @@ func (nc *NameCache) Insert(sv SourceVersion, in ImageName, etag string) error {
 }
 
 func (nc *NameCache) insertRecord(sr *SourceRecord) error {
-	err := nc.InsertSourceVersion(sr)
+	err := nc.insertSourceVersion(sr)
 	if err != nil {
 		return err
 	}
 
-	err = nc.InsertDockerName(sr)
+	err = nc.insertDockerName(sr)
 	if err != nil {
 		return err
 	}
@@ -96,8 +96,8 @@ func (nc *NameCache) insertRecord(sr *SourceRecord) error {
 	return nil
 }
 
-func (nc *NameCache) GetSourceVersion(in ImageName) (SourceVersion, error) {
-	sr, err := nc.getSourceRecord(in)
+func (nc *NameCache) GetSourceVersion(in string) (SourceVersion, error) {
+	sr, err := nc.getSourceRecord(ImageName(in))
 
 	oldSV, err := sr.SourceVersion()
 
@@ -146,23 +146,23 @@ func (sn SourceNameLookup) getSourceRecord(in ImageName) (*SourceRecord, error) 
 	}
 }
 
-func (sn SourceNameLookup) GetSourceVersion(in ImageName) (SourceVersion, error) {
-	if sr, ok := sn[in]; ok {
+func (sn SourceNameLookup) GetSourceVersion(in string) (SourceVersion, error) {
+	if sr, ok := sn[ImageName(in)]; ok {
 		return sr.SourceVersion()
 	} else {
-		return SourceVersion{}, NoSourceVersionFound{in}
+		return SourceVersion{}, NoSourceVersionFound{ImageName(in)}
 	}
 }
 
-func (sn SourceNameLookup) GetCanonicalName(in ImageName) (ImageName, error) {
-	if sr, ok := sn[in]; ok {
-		return ImageName(sr.md.CanonicalName), nil
+func (sn SourceNameLookup) GetCanonicalName(in string) (string, error) {
+	if sr, ok := sn[ImageName(in)]; ok {
+		return sr.md.CanonicalName, nil
 	} else {
-		return ImageName(""), NoSourceVersionFound{in}
+		return "", NoSourceVersionFound{ImageName(in)}
 	}
 }
 
-func (sn SourceNameLookup) InsertSourceVersion(sr *SourceRecord) error {
+func (sn SourceNameLookup) insertSourceVersion(sr *SourceRecord) error {
 	for _, n := range sr.md.AllNames {
 		existing, yes := sn[ImageName(n)]
 		if yes {
@@ -174,15 +174,15 @@ func (sn SourceNameLookup) InsertSourceVersion(sr *SourceRecord) error {
 	return nil
 }
 
-func (dl DockerNameLookup) GetImageName(sv SourceVersion) (ImageName, error) {
+func (dl DockerNameLookup) GetImageName(sv SourceVersion) (string, error) {
 	if sr, ok := dl[sv]; ok {
-		return ImageName(sr.md.CanonicalName), nil
+		return sr.md.CanonicalName, nil
 	} else {
 		return "", NoImageNameFound{sv}
 	}
 }
 
-func (dl DockerNameLookup) InsertDockerName(sr *SourceRecord) error {
+func (dl DockerNameLookup) insertDockerName(sr *SourceRecord) error {
 	sv, err := sr.SourceVersion()
 	if err != nil {
 		return err

@@ -40,6 +40,8 @@ type (
 	Client interface {
 		LabelsForImageName(string) (map[string]string, error)
 		GetImageMetadata(imageName, etag string) (Metadata, error)
+		Cancel()
+		BecomeFoolishlyTrusting()
 	}
 
 	Metadata struct {
