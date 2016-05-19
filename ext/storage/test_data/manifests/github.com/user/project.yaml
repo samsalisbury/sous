@@ -1,0 +1,10 @@
+Source: github.com/user/project
+Owners:
+- Sous Team
+Kind: http-service
+Deployments:
+  other-cluster:
+    Env:
+      DEBUG: "YES"
+    NumInstances: 0
+    Version: 0.3.1-beta+b4d455ee

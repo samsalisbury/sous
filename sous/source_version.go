@@ -53,11 +53,21 @@ func (sl SourceLocation) MarshalYAML() (interface{}, error) {
 	return sl.String(), nil
 }
 
+func (sl *SourceLocation) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	s := ""
+	if err := unmarshal(&s); err != nil {
+		return err
+	}
+	var err error
+	*sl, err = ParseCanonicalName(s)
+	return err
+}
+
 func (sl SourceLocation) String() string {
 	if sl.RepoOffset == "" {
 		return fmt.Sprintf("%s", sl.RepoURL)
 	} else {
-		return fmt.Sprintf("%s:%ss", sl.RepoURL, sl.RepoOffset)
+		return fmt.Sprintf("%s:%s", sl.RepoURL, sl.RepoOffset)
 	}
 }
 

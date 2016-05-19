@@ -68,13 +68,13 @@ func (err PrecedingZero) Error() string {
 }
 
 const (
-	modeMajor            mode = iota
-	modeMinor                 = iota
-	modePatch                 = iota
-	modePre                   = iota
-	modeMeta                  = iota
-	digits                    = "01234567890"
-	validPreAndMetaChars      = digits + ".-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	modeMajor mode = iota
+	modeMinor
+	modePatch
+	modePre
+	modeMeta
+	digits               = "01234567890"
+	validPreAndMetaChars = digits + ".-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	// PreDelim is the character separating major.minor.patch from the prerelease field.
 	PreDelim = "-"
 	// MetaDelim is the character separating major.minor.patch[-pre] from the metadata field.
@@ -294,7 +294,7 @@ func (v Version) IncrementPatch() Version {
 	return v
 }
 
-// SetPre retrns a new Version with the prerelease field set to the provided
+// SetPre returns a new Version with the prerelease field set to the provided
 // string.
 func (v Version) SetPre(s string) Version {
 	v.Pre = s
@@ -305,4 +305,19 @@ func (v Version) SetPre(s string) Version {
 func (v Version) SetMeta(s string) Version {
 	v.Meta = s
 	return v
+}
+
+// MarshalYAML allows sensible YAML marshalling by gopkg.in/yaml.v2
+func (v Version) MarshalYAML() (interface{}, error) {
+	return v.String(), nil
+}
+
+// UnmarshalYAML allows sensible YAML unmarshalling by gopkg.in/yaml.v2
+func (v *Version) UnmarshalYAML(f func(interface{}) error) (err error) {
+	var s string
+	if err = f(&s); err != nil {
+		return
+	}
+	*v, err = Parse(s)
+	return
 }

@@ -1,16 +1,14 @@
 package sous
 
-import "net/url"
-
 type (
 	// State contains the mutable state of an organisation's deployments.
 	// State is also known as the "Global Deploy Manifest" or GDM.
 	State struct {
 		// Defs contains global definitions for this organisation.
-		Defs Defs
+		Defs Defs `hy:"defs.yaml"`
 		// Manifests contains a mapping of source code repositories to global
 		// deployment configurations for artifacts built using that source code.
-		Manifests Manifests
+		Manifests Manifests `hy:"manifests/**"`
 	}
 	// Defs holds definitions for organisation-level objects.
 	Defs struct {
@@ -40,13 +38,17 @@ type (
 		Type VarType
 	}
 	// Clusters is a collection of Cluster
-	Clusters []Cluster
+	Clusters map[string]Cluster
 	// Cluster is a logical deployment target, often named for its region,
 	// purpose, etc.
 	Cluster struct {
-		Name, Kind string
+		// Name is the unique name of this cluster.
+		Name string `hy:",filename"`
+		// Kind is the kid of cluster. Currently the only legal value is
+		// "singularity"
+		Kind string
 		// BaseURL is the main entrypoint URL for interacting with this cluster.
-		BaseURL url.URL
+		BaseURL string
 		// Env is the default environment for all deployments in this region.
 		Env EnvDefaults
 	}
