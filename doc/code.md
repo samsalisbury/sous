@@ -22,3 +22,18 @@ The `bin/safe-build` script performs a build using only the vendored dependencie
 
 [govendor]: https://github.com/kardianos/govendor
 
+## Organisation of this repo
+
+In order to keep the repo organised, we have a number of top-level directories for specific
+parts of the code-base:
+
+- **bin**: standalone scripts and binary utils used to build, test, experiment with sous
+- **cli**: the Sous command line interface, using util/cmdr
+- **doc**: documentation
+- **ext**: libraries talking to external services, e.g. the filesystem, network, shell etc. Packages in ext will typically talk to these services to construct or act upon structures defined in lib.
+- **server**: the sous HTTP server library.
+- **lib**: the main sous library providing core sous functionality. MUST NOT reference ext, cli, server.
+- **util**: completely standalone, generic utility libraries. MUST NOT reference anything outside of util, vendor. Util libs can be consumed from anywhere else in the code base.
+- **vendor**: standard vendor directory.
+
+
