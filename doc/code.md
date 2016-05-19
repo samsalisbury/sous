@@ -12,20 +12,13 @@ The `bin/check-gofmt` script is run in CI to ensure badly formatted code fails t
 
 ## Managing dependencies
 
+Sous' dependencies are managed using [govendor]. You can install it by running
+
+    $ go get -u github.com/kardianos/govendor
+
 Sous must always have all of its dependencies vendored into the `/vendor` directory,
-this helps keep the builds repeatable, and enables offline work.
+this helps keep the builds repeatable, and simplifies offline work.
 The `bin/safe-build` script performs a build using only the vendored dependencies.
 
-You should use a recent version of [godep] to manage the dependencies in the vendor directory, e.g.
+[govendor]: https://github.com/kardianos/govendor
 
-```sh
-$ godep save ./...   # to add new dependencies, or
-$ godep update ./... # to update existing dependencies
-$ git add vendor/ Godeps/
-$ git commit "Describe the dependencies updated or added"
-```
-
-**Warning: never use `godep save` without adding `./...`
-because that will delete dependencies of the sub-packages, which is probably not what you want.**
-
-[godep]: https://github.com/tools/godep
