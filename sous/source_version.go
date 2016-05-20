@@ -114,18 +114,6 @@ func (sv SourceVersion) Repo() RepoURL {
 	return sv.RepoURL
 }
 
-func (sl SourceLocation) Repo() RepoURL {
-	return sl.RepoURL
-}
-
-func (sl *SourceLocation) SourceVersion(version semv.Version) SourceVersion {
-	return SourceVersion{
-		RepoURL:    sl.RepoURL,
-		RepoOffset: sl.RepoOffset,
-		Version:    version,
-	}
-}
-
 const DefaultDelim = ","
 
 func (err *IncludesVersion) Error() string {

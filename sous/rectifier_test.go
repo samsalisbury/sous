@@ -1,6 +1,7 @@
 package sous
 
 import (
+	"log"
 	"testing"
 
 	"github.com/samsalisbury/semv"
@@ -59,13 +60,14 @@ func (t *TestRectClient) Scale(cluster, reqid string, count int, message string)
 }
 
 //ImageName finds or guesses a docker image name for a Deployment
-func (t *TestRectClient) ImageName(d *Deployment) string {
-	return d.SourceVersion.String()
+func (t *TestRectClient) ImageName(d *Deployment) (string, error) {
+	return d.SourceVersion.String(), nil
 }
 
 /* TESTS BEGIN */
 
 func TestModifyScale(t *testing.T) {
+	log.SetFlags(log.Flags() | log.Lshortfile)
 	assert := assert.New(t)
 	pair := DeploymentPair{
 		prior: &Deployment{
@@ -91,7 +93,7 @@ func TestModifyScale(t *testing.T) {
 	chanset := NewDiffChans(1)
 	client := TestRectClient{}
 
-	done := Rectify(chanset, &client)
+	_, done := Rectify(chanset, &client)
 	chanset.Modified <- pair
 	chanset.Close()
 	<-done
@@ -134,7 +136,7 @@ func TestModifyImage(t *testing.T) {
 	chanset := NewDiffChans(1)
 	client := TestRectClient{}
 
-	done := Rectify(chanset, &client)
+	_, done := Rectify(chanset, &client)
 	chanset.Modified <- pair
 	chanset.Close()
 	<-done
@@ -177,7 +179,7 @@ func TestModify(t *testing.T) {
 	chanset := NewDiffChans(1)
 	client := TestRectClient{}
 
-	done := Rectify(chanset, &client)
+	_, done := Rectify(chanset, &client)
 	chanset.Modified <- pair
 	chanset.Close()
 	<-done
@@ -209,7 +211,7 @@ func TestDeletes(t *testing.T) {
 	chanset := NewDiffChans(1)
 	client := TestRectClient{}
 
-	done := Rectify(chanset, &client)
+	_, done := Rectify(chanset, &client)
 
 	chanset.Deleted <- deleted
 
@@ -234,7 +236,7 @@ func TestCreates(t *testing.T) {
 	chanset := NewDiffChans(1)
 	client := TestRectClient{}
 
-	done := Rectify(chanset, &client)
+	_, done := Rectify(chanset, &client)
 
 	created := Deployment{
 		SourceVersion: SourceVersion{
