@@ -12,20 +12,28 @@ The `bin/check-gofmt` script is run in CI to ensure badly formatted code fails t
 
 ## Managing dependencies
 
+Sous' dependencies are managed using [govendor]. You can install it by running
+
+    $ go get -u github.com/kardianos/govendor
+
 Sous must always have all of its dependencies vendored into the `/vendor` directory,
-this helps keep the builds repeatable, and enables offline work.
+this helps keep the builds repeatable, and simplifies offline work.
 The `bin/safe-build` script performs a build using only the vendored dependencies.
 
-You should use a recent version of [godep] to manage the dependencies in the vendor directory, e.g.
+[govendor]: https://github.com/kardianos/govendor
 
-```sh
-$ godep save ./...   # to add new dependencies, or
-$ godep update ./... # to update existing dependencies
-$ git add vendor/ Godeps/
-$ git commit "Describe the dependencies updated or added"
-```
+## Organisation of this repo
 
-**Warning: never use `godep save` without adding `./...`
-because that will delete dependencies of the sub-packages, which is probably not what you want.**
+In order to keep the repo organised, we have a number of top-level directories for specific
+parts of the code-base:
 
-[godep]: https://github.com/tools/godep
+- **bin**: standalone scripts and binary utils used to build, test, experiment with sous
+- **cli**: the Sous command line interface, using util/cmdr
+- **doc**: documentation
+- **ext**: libraries talking to external services, e.g. the filesystem, network, shell etc. Packages in ext will typically talk to these services to construct or act upon structures defined in lib.
+- **server**: the sous HTTP server library.
+- **lib**: the main sous library providing core sous functionality. MUST NOT reference ext, cli, server.
+- **util**: completely standalone, generic utility libraries. MUST NOT reference anything outside of util, vendor. Util libs can be consumed from anywhere else in the code base.
+- **vendor**: standard vendor directory.
+
+
