@@ -66,12 +66,12 @@ func GetSourceVersion(in string) (SourceVersion, error) {
 	return theNameCache.GetSourceVersion(in)
 }
 
-// InsertContainerRecord stores a SourceVersion/image name pair into the global name cache
-func InsertContainerRecord(sv SourceVersion, in, etag string) error {
+// InsertImageRecord stores a SourceVersion/image name pair into the global name cache
+func InsertImageRecord(sv SourceVersion, in, etag string) error {
 	return theNameCache.Insert(sv, in, etag)
 }
 
-func GetContainerName(sv SourceVersion) (string, error) {
+func GetImageName(sv SourceVersion) (string, error) {
 	return theNameCache.GetImageName(sv)
 }
 
@@ -89,15 +89,20 @@ func (nc *NameCache) Insert(sv SourceVersion, in, etag string) error {
 func (dl DockerNameLookup) GetImageName(sv SourceVersion) (string, error) {
 	if sr, ok := dl[sv]; ok {
 		return sr.md.CanonicalName, nil
-	} else {
-		return "", NoImageNameFound{sv}
 	}
+	return "", NoImageNameFound{sv}
 }
 
 func (nc *NameCache) GetSourceVersion(in string) (SourceVersion, error) {
 	sr, err := nc.getSourceRecord(ImageName(in))
+	if err != nil {
+		return SourceVersion{}, err
+	}
 
 	oldSV, err := sr.SourceVersion()
+	if err != nil {
+		return SourceVersion{}, err
+	}
 
 	md, err := nc.registryClient.GetImageMetadata(string(in), sr.md.Etag)
 	if _, ok := err.(NotModifiedErr); ok {
@@ -120,9 +125,8 @@ func (nc *NameCache) GetSourceVersion(in string) (SourceVersion, error) {
 func (sn SourceNameLookup) GetCanonicalName(in string) (string, error) {
 	if sr, ok := sn[ImageName(in)]; ok {
 		return sr.md.CanonicalName, nil
-	} else {
-		return "", NoSourceVersionFound{ImageName(in)}
 	}
+	return "", NoSourceVersionFound{ImageName(in)}
 }
 
 func (nc *NameCache) insertRecord(sr *SourceRecord) error {
@@ -131,12 +135,7 @@ func (nc *NameCache) insertRecord(sr *SourceRecord) error {
 		return err
 	}
 
-	err = nc.insertDockerName(sr)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return nc.insertDockerName(sr)
 }
 
 func union(left, right []string) []string {
@@ -149,7 +148,7 @@ func union(left, right []string) []string {
 		set[s] = struct{}{}
 	}
 
-	res := make([]string, len(set))
+	res := make([]string, 0, len(set))
 
 	for k, _ := range set {
 		res = append(res, k)
@@ -161,17 +160,15 @@ func union(left, right []string) []string {
 func (sn SourceNameLookup) getSourceVersion(in string) (SourceVersion, error) {
 	if sr, ok := sn[ImageName(in)]; ok {
 		return sr.SourceVersion()
-	} else {
-		return SourceVersion{}, NoSourceVersionFound{ImageName(in)}
 	}
+	return SourceVersion{}, NoSourceVersionFound{ImageName(in)}
 }
 
 func (sn SourceNameLookup) getSourceRecord(in ImageName) (*SourceRecord, error) {
 	if sr, ok := sn[in]; ok {
 		return sr, nil
-	} else {
-		return nil, NoSourceVersionFound{in}
 	}
+	return nil, NoSourceVersionFound{in}
 }
 
 func (sn SourceNameLookup) insertSourceVersion(sr *SourceRecord) error {
