@@ -1,51 +1,56 @@
 package sous
 
 type (
+	// DeploymentPair is a pair of deployments that represent a "before and after" style relationship
 	DeploymentPair struct {
 		name        DepName
 		prior, post *Deployment
 	}
-	DeploymentPairs []DeploymentPair
+	// DeploymentPairs is a list of DeploymentPair
+	DeploymentPairs []*DeploymentPair
 
-	DiffSet struct {
+	diffSet struct {
 		New, Gone, Same Deployments
 		Changed         DeploymentPairs
 	}
 
 	differ struct {
-		from map[DepName]Deployment
+		from map[DepName]*Deployment
 		DiffChans
 	}
 
+	// DiffChans is a set of channels that represent differences between two sets
+	// of Deployments as they're discovered
 	DiffChans struct {
-		Created, Deleted, Retained chan Deployment
-		Modified                   chan DeploymentPair
+		Created, Deleted, Retained chan *Deployment
+		Modified                   chan *DeploymentPair
 	}
 )
 
-func (dc *DiffChans) Collect() DiffSet {
-	ds := DiffSet{
+func (d *DiffChans) collect() diffSet {
+	ds := diffSet{
 		make(Deployments, 0),
 		make(Deployments, 0),
 		make(Deployments, 0),
 		make(DeploymentPairs, 0),
 	}
 
-	for g := range dc.Deleted {
+	for g := range d.Deleted {
 		ds.Gone = append(ds.Gone, g)
 	}
-	for n := range dc.Created {
+	for n := range d.Created {
 		ds.New = append(ds.New, n)
 	}
-	for m := range dc.Modified {
+	for m := range d.Modified {
 		ds.Changed = append(ds.Changed, m)
 	}
-	for s := range dc.Retained {
+	for s := range d.Retained {
 		ds.Same = append(ds.Same, s)
 	}
 	return ds
 }
 
+// NewDiffChans constructs a DiffChans
 func NewDiffChans(sizes ...int) DiffChans {
 	var size int
 	if len(sizes) > 0 {
@@ -53,13 +58,14 @@ func NewDiffChans(sizes ...int) DiffChans {
 	}
 
 	return DiffChans{
-		Created:  make(chan Deployment, size),
-		Deleted:  make(chan Deployment, size),
-		Retained: make(chan Deployment, size),
-		Modified: make(chan DeploymentPair, size),
+		Created:  make(chan *Deployment, size),
+		Deleted:  make(chan *Deployment, size),
+		Retained: make(chan *Deployment, size),
+		Modified: make(chan *DeploymentPair, size),
 	}
 }
 
+// Close closes all the channels in a DiffChans in a single action
 func (d *DiffChans) Close() {
 	close(d.Created)
 	close(d.Retained)
@@ -67,6 +73,7 @@ func (d *DiffChans) Close() {
 	close(d.Deleted)
 }
 
+// Diff computes the differences between two sets of Deployments
 func (d Deployments) Diff(other Deployments) DiffChans {
 	difr := newDiffer(d)
 	go func(d *differ, o Deployments) {
@@ -77,7 +84,7 @@ func (d Deployments) Diff(other Deployments) DiffChans {
 }
 
 func newDiffer(intended Deployments) *differ {
-	startMap := make(map[DepName]Deployment)
+	startMap := make(map[DepName]*Deployment)
 	for _, dep := range intended {
 		startMap[dep.Name()] = dep
 	}
@@ -95,7 +102,7 @@ func (d *differ) diff(existing Deployments) {
 			if indep.Equal(existing[i]) {
 				d.Retained <- indep
 			} else {
-				d.Modified <- DeploymentPair{name, &existing[i], &indep}
+				d.Modified <- &DeploymentPair{name, existing[i], indep}
 			}
 		} else {
 			d.Created <- existing[i]

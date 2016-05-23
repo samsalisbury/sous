@@ -28,7 +28,7 @@ func (cr *canRetryRequest) Error() string {
 }
 
 func (cr *canRetryRequest) name() string {
-	return fmt.Sprintf("%s:%s", cr.req.sourceUrl, cr.req.reqParent.Request.Id)
+	return fmt.Sprintf("%s:%s", cr.req.sourceURL, cr.req.reqParent.Request.Id)
 }
 
 func newDeploymentBuilder(cl docker_registry.Client, req singReq) deploymentBuilder {
@@ -36,18 +36,17 @@ func newDeploymentBuilder(cl docker_registry.Client, req singReq) deploymentBuil
 }
 
 func (uc *deploymentBuilder) canRetry(err error) error {
-	if uc.req.sourceUrl != "" &&
+	if uc.req.sourceURL != "" &&
 		uc.req.reqParent != nil &&
 		uc.req.reqParent.Request != nil &&
 		uc.req.reqParent.Request.Id != "" {
 		return &canRetryRequest{err, uc.req}
-	} else {
-		return err
 	}
+	return err
 }
 
 func (uc *deploymentBuilder) completeConstruction() error {
-	uc.target.Cluster = uc.req.sourceUrl
+	uc.target.Cluster = uc.req.sourceURL
 	uc.request = uc.req.reqParent.Request
 
 	err := uc.retrieveDeploy()

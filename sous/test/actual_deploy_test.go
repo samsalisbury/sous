@@ -47,7 +47,7 @@ func TestGetRunningDeploymentSet(t *testing.T) {
 	var grafana *sous.Deployment
 	for i := range deps {
 		if deps[i].SourceVersion.RepoURL == "https://github.com/opentable/docker-grafana.git" {
-			grafana = &deps[i]
+			grafana = deps[i]
 		}
 	}
 	if !assert.NotNil(grafana) {

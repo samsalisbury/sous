@@ -33,8 +33,8 @@ func TestRoundTrip(t *testing.T) {
 	mds := make(mdChan, 10)
 	nc := NameCache{
 		&DummyRegistryClient{mds},
-		make(DockerNameLookup),
-		make(SourceNameLookup),
+		make(dockerNameLookup),
+		make(sourceNameLookup),
 	}
 
 	v := semv.MustParse("1.2.3")

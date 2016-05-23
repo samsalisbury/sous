@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/opentable/singularity"
 	"github.com/opentable/singularity/dtos"
 	"github.com/satori/go.uuid"
 )
@@ -33,7 +32,7 @@ type (
 	// rather than with implentations of this interface directly.
 	RectificationClient interface {
 		// Deploy creates a new deploy on a particular requeust
-		Deploy(cluster, depID, reqId, dockerImage string, r Resources) error
+		Deploy(cluster, depID, reqID, dockerImage string, r Resources) error
 
 		// PostRequest sends a request to a Singularity cluster to initiate
 		PostRequest(cluster, reqID string, instanceCount int) error
@@ -45,28 +44,28 @@ type (
 		ImageName(d *Deployment) (string, error)
 	}
 
-	RectiAgent struct {
-		singClients map[string]*singularity.Client
-		nameCache   NameCache
-	}
-
 	dtoMap map[string]interface{}
 
+	// CreateError is returned when there's an error trying to create a deployment
 	CreateError struct {
 		Deployment *Deployment
 		Err        error
 	}
 
+	// DeleteError is returned when there's an error while trying to delete a deployment
 	DeleteError struct {
 		Deployment *Deployment
 		Err        error
 	}
 
+	// ChangeError describes an error that occurred while trying to change one deployment into another
 	ChangeError struct {
-		Deployments DeploymentPair
+		Deployments *DeploymentPair
 		Err         error
 	}
 
+	// RectificationError is an interface that extends error with methods to get
+	// the deployments the preceeded and were intended when the error occurred
 	RectificationError interface {
 		error
 		ExistingDeployment() *Deployment
@@ -78,10 +77,12 @@ func (e *CreateError) Error() string {
 	return fmt.Sprintf("Couldn't create deployment %+v: %v", e.Deployment, e.Err)
 }
 
+// ExistingDeployment returns the deployment that was already existent in a change error
 func (e *CreateError) ExistingDeployment() *Deployment {
 	return nil
 }
 
+// IntendedDeployment returns the deployment that was intended in a ChangeError
 func (e *CreateError) IntendedDeployment() *Deployment {
 	return e.Deployment
 }
@@ -90,10 +91,12 @@ func (e *DeleteError) Error() string {
 	return fmt.Sprintf("Couldn't delete deployment %+v: %v", e.Deployment, e.Err)
 }
 
+// ExistingDeployment returns the deployment that was already existent in a change error
 func (e *DeleteError) ExistingDeployment() *Deployment {
 	return e.Deployment
 }
 
+// IntendedDeployment returns the deployment that was intended in a ChangeError
 func (e *DeleteError) IntendedDeployment() *Deployment {
 	return nil
 }
@@ -102,14 +105,17 @@ func (e *ChangeError) Error() string {
 	return fmt.Sprintf("Couldn't change from deployment %+v to deployment %+v: %v", e.Deployments.prior, e.Deployments.post, e.Err)
 }
 
+// ExistingDeployment returns the deployment that was already existent in a change error
 func (e *ChangeError) ExistingDeployment() *Deployment {
 	return e.Deployments.prior
 }
 
+// IntendedDeployment returns the deployment that was intended in a ChangeError
 func (e *ChangeError) IntendedDeployment() *Deployment {
 	return e.Deployments.post
 }
 
+// Rectify takes a DiffChans and issues the commands to the infrastructure to reconcile the differences
 func Rectify(dcs DiffChans, errs chan<- RectificationError, s RectificationClient) {
 	rect := rectifier{s}
 	wg := &sync.WaitGroup{}
@@ -120,126 +126,43 @@ func Rectify(dcs DiffChans, errs chan<- RectificationError, s RectificationClien
 	go func() { wg.Wait(); close(errs) }()
 }
 
-func (ra *RectiAgent) Deploy(cluster, depID, reqId, dockerImage string, r Resources) error {
-	dockerInfo, err := dtos.LoadMap(&dtos.SingularityDockerInfo{}, dtoMap{
-		"Image": dockerImage,
-	})
-	if err != nil {
-		return err
-	}
-
-	res, err := dtos.LoadMap(&dtos.Resources{}, dtoMap{
-		"Cpus":     0.1,
-		"MemoryMb": 100.0,
-		"NumPorts": int32(1),
-	})
-	if err != nil {
-		return err
-	}
-
-	ci, err := dtos.LoadMap(&dtos.SingularityContainerInfo{}, dtoMap{
-		"Type":   dtos.SingularityContainerInfoSingularityContainerTypeDOCKER,
-		"Docker": dockerInfo,
-	})
-	if err != nil {
-		return err
-	}
-
-	dep, err := dtos.LoadMap(&dtos.SingularityDeploy{}, dtoMap{
-		"Id":            idify(uuid.NewV4().String()),
-		"RequestId":     reqId,
-		"Resources":     res,
-		"ContainerInfo": ci,
-	})
-
-	depReq, err := dtos.LoadMap(&dtos.SingularityDeployRequest{}, dtoMap{"Deploy": dep})
-	if err != nil {
-		return err
-	}
-
-	_, err = ra.singularityClient(cluster).Deploy(depReq.(*dtos.SingularityDeployRequest))
-	return err
-}
-
-func (ra *RectiAgent) PostRequest(cluster, reqID string, instanceCount int) error {
-	req, err := dtos.LoadMap(&dtos.SingularityRequest{}, dtoMap{
-		"Id":          reqID,
-		"RequestType": dtos.SingularityRequestRequestTypeSERVICE,
-		"Instances":   int32(instanceCount),
-	})
-
-	if err != nil {
-		return err
-	}
-
-	_, err = ra.singularityClient(cluster).PostRequest(req.(*dtos.SingularityRequest))
-	return err
-}
-
-func (ra *RectiAgent) Scale(cluster, reqID string, instanceCount int, message string) error {
-	sr, err := dtos.LoadMap(&dtos.SingularityScaleRequest{}, dtoMap{
-		"ActionId": idify(uuid.NewV4().String()), // not positive this is appropriate
-		// omitting DurationMillis - bears discussion
-		"Instances":        int32(instanceCount),
-		"Message":          message,
-		"SkipHealthchecks": false,
-	})
-
-	_, err = ra.singularityClient(cluster).Scale(reqID, sr.(*dtos.SingularityScaleRequest))
-	return err
-}
-
-func (ra *RectiAgent) ImageName(d *Deployment) (string, error) {
-	return ra.nameCache.GetImageName(d.SourceVersion)
-}
-
-func (ra *RectiAgent) singularityClient(url string) *singularity.Client {
-	if cl, ok := ra.singClients[url]; ok {
-		return cl
-	} else {
-		cl = singularity.NewClient(url)
-		ra.singClients[url] = cl
-		return cl
-	}
-}
-
-func (r *rectifier) rectifyCreates(cc chan Deployment, errs chan<- RectificationError) {
+func (r *rectifier) rectifyCreates(cc chan *Deployment, errs chan<- RectificationError) {
 	for d := range cc {
-		name, err := r.sing.ImageName(&d)
+		name, err := r.sing.ImageName(d)
 		if err != nil {
-			errs <- &CreateError{Deployment: &d, Err: err}
+			errs <- &CreateError{Deployment: d, Err: err}
 			continue
 		}
 
-		reqID := computeRequestId(&d)
+		reqID := computeRequestID(d)
 		err = r.sing.PostRequest(d.Cluster, reqID, d.NumInstances)
 		if err != nil {
-			errs <- &CreateError{Deployment: &d, Err: err}
+			errs <- &CreateError{Deployment: d, Err: err}
 			continue
 		}
 
 		err = r.sing.Deploy(d.Cluster, newDepID(), reqID, name, d.Resources)
 		if err != nil {
-			errs <- &CreateError{Deployment: &d, Err: err}
+			errs <- &CreateError{Deployment: d, Err: err}
 			continue
 		}
 	}
 }
 
-func (r *rectifier) rectifyDeletes(dc chan Deployment, errs chan<- RectificationError) {
+func (r *rectifier) rectifyDeletes(dc chan *Deployment, errs chan<- RectificationError) {
 	for d := range dc {
-		err := r.sing.Scale(d.Cluster, computeRequestId(&d), 0, "scaling deleted manifest to zero")
+		err := r.sing.Scale(d.Cluster, computeRequestID(d), 0, "scaling deleted manifest to zero")
 		if err != nil {
-			errs <- &DeleteError{Deployment: &d, Err: err}
+			errs <- &DeleteError{Deployment: d, Err: err}
 			continue
 		}
 	}
 }
 
-func (r *rectifier) rectifyModifys(mc chan DeploymentPair, errs chan<- RectificationError) {
+func (r *rectifier) rectifyModifys(mc chan *DeploymentPair, errs chan<- RectificationError) {
 	for pair := range mc {
 		if r.changesReq(pair) {
-			err := r.sing.Scale(pair.post.Cluster, computeRequestId(pair.post), pair.post.NumInstances, "rectified scaling")
+			err := r.sing.Scale(pair.post.Cluster, computeRequestID(pair.post), pair.post.NumInstances, "rectified scaling")
 			if err != nil {
 				errs <- &ChangeError{Deployments: pair, Err: err}
 				continue
@@ -253,7 +176,7 @@ func (r *rectifier) rectifyModifys(mc chan DeploymentPair, errs chan<- Rectifica
 				continue
 			}
 
-			err = r.sing.Deploy(pair.post.Cluster, newDepID(), computeRequestId(pair.prior), name, pair.post.Resources)
+			err = r.sing.Deploy(pair.post.Cluster, newDepID(), computeRequestID(pair.prior), name, pair.post.Resources)
 			if err != nil {
 				errs <- &ChangeError{Deployments: pair, Err: err}
 				continue
@@ -262,31 +185,32 @@ func (r *rectifier) rectifyModifys(mc chan DeploymentPair, errs chan<- Rectifica
 	}
 }
 
-func (r rectifier) changesReq(pair DeploymentPair) bool {
+func (r rectifier) changesReq(pair *DeploymentPair) bool {
 	return pair.prior.NumInstances != pair.post.NumInstances
 }
 
-func changesDep(pair DeploymentPair) bool {
+func changesDep(pair *DeploymentPair) bool {
 	return !(pair.prior.SourceVersion.Equal(pair.post.SourceVersion) && pair.prior.Resources.Equal(pair.prior.Resources))
 }
 
-func computeRequestId(d *Deployment) string {
-	if len(d.RequestId) > 0 {
-		return d.RequestId
+func computeRequestID(d *Deployment) string {
+	if len(d.RequestID) > 0 {
+		return d.RequestID
 	}
 	return d.SourceVersion.CanonicalName().String()
 }
 
-var notInIdRE = regexp.MustCompile(`[-/]`)
+var notInIDRE = regexp.MustCompile(`[-/]`)
 
 func idify(in string) string {
-	return notInIdRE.ReplaceAllString(in, "")
+	return notInIDRE.ReplaceAllString(in, "")
 }
 
 func newDepID() string {
 	return idify(uuid.NewV4().String())
 }
 
+// BuildSingRequest builds a singularity request
 func BuildSingRequest(reqID string, instances int) *dtos.SingularityRequest {
 	req := dtos.SingularityRequest{}
 	req.LoadMap(map[string]interface{}{
@@ -297,14 +221,15 @@ func BuildSingRequest(reqID string, instances int) *dtos.SingularityRequest {
 	return &req
 }
 
+// BuildSingDeployRequest builds a singularity deploy request
 func BuildSingDeployRequest(depID, reqID, imageName string, res Resources) *dtos.SingularityDeployRequest {
-	resCpuS, ok := res["cpus"]
+	resCPUS, ok := res["cpus"]
 	if !ok {
 		return nil
 	}
 
 	// Ugh. Double blinding of the types for this...
-	resCpu, err := strconv.ParseFloat(resCpuS, 64)
+	resCPU, err := strconv.ParseFloat(resCPUS, 64)
 	if err != nil {
 		return nil
 	}
@@ -336,7 +261,7 @@ func BuildSingDeployRequest(depID, reqID, imageName string, res Resources) *dtos
 
 	rez := dtos.Resources{}
 	rez.LoadMap(map[string]interface{}{
-		"Cpus":     resCpu,
+		"Cpus":     resCPU,
 		"MemoryMb": resMem,
 		"NumPorts": resPorts,
 	})

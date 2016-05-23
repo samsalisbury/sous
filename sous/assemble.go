@@ -1,8 +1,8 @@
 package sous
 
 // Deployments returns all deployments described by the state.
-func (s *State) Deployments() ([]*Deployment, error) {
-	ds := []*Deployment{}
+func (s *State) Deployments() (Deployments, error) {
+	ds := Deployments{}
 	for _, m := range s.Manifests {
 		deployments, err := s.DeploymentsFromManifest(m)
 		if err != nil {

@@ -11,14 +11,14 @@ func TestDeploymentEqual(t *testing.T) {
 	assert := assert.New(t)
 
 	dep := Deployment{}
-	assert.True(dep.Equal(Deployment{}))
+	assert.True(dep.Equal(&Deployment{}))
 
 	other := Deployment{
 		Annotation: Annotation{
-			RequestId: "somewhere around here",
+			RequestID: "somewhere around here",
 		},
 	}
-	assert.True(dep.Equal(other))
+	assert.True(dep.Equal(&other))
 }
 
 func TestCannonName(t *testing.T) {

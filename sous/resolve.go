@@ -1,32 +1,52 @@
 package sous
 
-import "log"
+import (
+	"log"
 
-func Resolve(dir string) error {
+	"github.com/opentable/sous/util/hy"
+	"github.com/opentable/sous/util/yaml"
+)
+
+// Resolve drives the Sous deployment resolution process. It calls out to the
+// appropriate components to compute the intended deployment set, collect the
+// actual set, compute the diffs and then issue the commands to rectify those
+// differences.
+func Resolve(config State) error {
+	gdm, err := config.Deployments()
+	if err != nil {
+		return err
+	}
+
+	ads, err := GetRunningDeploymentSet(baseURLs(config))
+	if err != nil {
+		return err
+	}
+
+	differ := gdm.Diff(ads)
+
+	errs := make(chan RectificationError)
+
+	rc := NewRectiAgent()
+
+	Rectify(differ, errs, rc)
+
+	for err := range errs {
+		log.Printf("err = %+v\n", err)
+	}
+	return nil
+}
+
+//ResolveFromDir does everything that Resolve does, plus it adds loading the
+//Sous config from a directory of YAML files. This use case is important for
+//proof-of-concept, but long term we expect to be able to abstract the storage
+//of the Sous state away, so this might be deprecated at some point.
+func ResolveFromDir(dir string) error {
 	config, err := loadConfig(dir)
 	if err != nil {
 		return err
 	}
 
-	gdm := collectIntendedSet(config)
-	ads,err := collectActualSet(baseURLs(config))
-	if err != nil {
-		return err
-	}
-
-	differ := buildDiffer(gdm, ads)
-	errs, done := Rectify(differ, rc)
-	go handleErrors(errs)
-	<-done
-	return nil
-}
-
-func handleErrors(errs chan RectificationError) {
-	go func() {
-		for err := range errs {
-			log.Printf("err = %+v\n", err)
-		}
-	}()
+	return Resolve(config)
 }
 
 func loadConfig(dir string) (st State, err error) {
@@ -37,26 +57,8 @@ func loadConfig(dir string) (st State, err error) {
 
 func baseURLs(st State) []string {
 	urls := make([]string, len(st.Defs.Clusters))
-	for cl := range st.Defs.Clusters {
+	for _, cl := range st.Defs.Clusters {
 		urls = append(urls, cl.BaseURL)
 	}
 	return urls
-}
-
-func collectIntendedSet(st State) Deployments {
-	deps := make(Deployments)
-	for m := range st.Manifests {
-		for ds := m.Deployments {
-			deps = append(deps, BuildDeployment(m, ds))
-		}
-	}
-	return deps
-}
-
-func collectActualSet(singularityUrls []string) (Deployments, error) {
-	return GetRunningDeploymentSet(singularityUrls)
-}
-
-func buildDiffer(gdm, ads Deployments) DiffChans {
-	return gdm.Diff(ads)
 }

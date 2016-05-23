@@ -69,7 +69,7 @@ func (t *TestRectClient) ImageName(d *Deployment) (string, error) {
 func TestModifyScale(t *testing.T) {
 	log.SetFlags(log.Flags() | log.Lshortfile)
 	assert := assert.New(t)
-	pair := DeploymentPair{
+	pair := &DeploymentPair{
 		prior: &Deployment{
 			SourceVersion: SourceVersion{
 				RepoURL: RepoURL("reqid"),
@@ -113,7 +113,7 @@ func TestModifyImage(t *testing.T) {
 	assert := assert.New(t)
 	before, _ := semv.Parse("1.2.3-test")
 	after, _ := semv.Parse("2.3.4-new")
-	pair := DeploymentPair{
+	pair := &DeploymentPair{
 		prior: &Deployment{
 			SourceVersion: SourceVersion{
 				RepoURL: RepoURL("reqid"),
@@ -159,7 +159,7 @@ func TestModify(t *testing.T) {
 	assert := assert.New(t)
 	before, _ := semv.Parse("1.2.3-test")
 	after, _ := semv.Parse("2.3.4-new")
-	pair := DeploymentPair{
+	pair := &DeploymentPair{
 		prior: &Deployment{
 			SourceVersion: SourceVersion{
 				RepoURL: RepoURL("reqid"),
@@ -207,7 +207,7 @@ func TestModify(t *testing.T) {
 func TestDeletes(t *testing.T) {
 	assert := assert.New(t)
 
-	deleted := Deployment{
+	deleted := &Deployment{
 		SourceVersion: SourceVersion{
 			RepoURL: RepoURL("reqid"),
 		},
@@ -248,7 +248,7 @@ func TestCreates(t *testing.T) {
 	errs := make(chan RectificationError)
 	Rectify(chanset, errs, &client)
 
-	created := Deployment{
+	created := &Deployment{
 		SourceVersion: SourceVersion{
 			RepoURL: RepoURL("reqid"),
 		},
