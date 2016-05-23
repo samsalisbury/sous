@@ -5,7 +5,6 @@ import (
 
 	"github.com/opentable/singularity/dtos"
 	"github.com/opentable/sous/util/docker_registry"
-	"github.com/samsalisbury/semv"
 )
 
 type (
@@ -15,7 +14,7 @@ type (
 		deploy         sDeploy
 		request        sRequest
 		req            singReq
-		registryClient *docker_registry.Client
+		registryClient docker_registry.Client
 	}
 
 	canRetryRequest struct {
@@ -32,7 +31,7 @@ func (cr *canRetryRequest) name() string {
 	return fmt.Sprintf("%s:%s", cr.req.sourceUrl, cr.req.reqParent.Request.Id)
 }
 
-func newDeploymentBuilder(cl *docker_registry.Client, req singReq) deploymentBuilder {
+func newDeploymentBuilder(cl docker_registry.Client, req singReq) deploymentBuilder {
 	return deploymentBuilder{registryClient: cl, req: req}
 }
 
@@ -121,7 +120,7 @@ func (uc *deploymentBuilder) retrieveImageLabels() error {
 		return err
 	}
 
-	uc.target.SourceVersion, err = buildSourceVersion(labels)
+	uc.target.SourceVersion, err = SourceVersionFromLabels(labels)
 	if err != nil {
 		return err
 	}
@@ -165,41 +164,4 @@ func (uc *deploymentBuilder) determineManifestKind() error {
 		uc.target.Kind = ManifestKindOnce
 	}
 	return nil
-}
-
-func buildSourceVersion(labels map[string]string) (SourceVersion, error) {
-	missingLabels := make([]string, 0, 3)
-	repo, present := labels[DockerRepoLabel]
-	if !present {
-		missingLabels = append(missingLabels, DockerRepoLabel)
-	}
-
-	versionStr, present := labels[DockerVersionLabel]
-	if !present {
-		missingLabels = append(missingLabels, DockerVersionLabel)
-	}
-
-	revision, present := labels[DockerRevisionLabel]
-	if !present {
-		missingLabels = append(missingLabels, DockerRevisionLabel)
-	}
-
-	path, present := labels[DockerPathLabel]
-	if !present {
-		missingLabels = append(missingLabels, DockerPathLabel)
-	}
-
-	if len(missingLabels) > 0 {
-		err := fmt.Errorf("Missing labels on manifest for %v", missingLabels)
-		return SourceVersion{}, err
-	}
-
-	version, err := semv.Parse(versionStr)
-	version.Meta = revision
-
-	return SourceVersion{
-		RepoURL:    RepoURL(repo),
-		Version:    version,
-		RepoOffset: RepoOffset(path),
-	}, err
 }
