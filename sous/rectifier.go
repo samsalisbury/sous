@@ -2,7 +2,6 @@ package sous
 
 import (
 	"fmt"
-	"log"
 	"regexp"
 	"strconv"
 	"sync"
@@ -111,25 +110,14 @@ func (e *ChangeError) IntendedDeployment() *Deployment {
 	return e.Deployments.post
 }
 
-func Rectify(dcs DiffChans, s RectificationClient) (chan RectificationError, chan struct{}) {
+func Rectify(dcs DiffChans, errs chan<- RectificationError, s RectificationClient) {
 	rect := rectifier{s}
-	done := make(chan struct{})
-	errs := make(chan RectificationError)
 	wg := &sync.WaitGroup{}
 	wg.Add(3)
-	go rect.rectifyCreates(dcs.Created, errs, wg)
-	go rect.rectifyDeletes(dcs.Deleted, errs, wg)
-	go rect.rectifyModifys(dcs.Modified, errs, wg)
-
-	go func(r *sync.WaitGroup) {
-		log.Println("")
-		r.Wait()
-		log.Println("")
-		close(done)
-		log.Println("")
-	}(wg)
-
-	return errs, done
+	go func() { rect.rectifyCreates(dcs.Created, errs); wg.Done() }()
+	go func() { rect.rectifyDeletes(dcs.Deleted, errs); wg.Done() }()
+	go func() { rect.rectifyModifys(dcs.Modified, errs); wg.Done() }()
+	go func() { wg.Wait(); close(errs) }()
 }
 
 func (ra *RectiAgent) Deploy(cluster, depID, reqId, dockerImage string, r Resources) error {
@@ -215,85 +203,63 @@ func (ra *RectiAgent) singularityClient(url string) *singularity.Client {
 	}
 }
 
-func (r *rectifier) rectifyCreates(cc chan Deployment, errs chan RectificationError, done *sync.WaitGroup) {
-	defer done.Done()
-	log.Println("")
+func (r *rectifier) rectifyCreates(cc chan Deployment, errs chan<- RectificationError) {
 	for d := range cc {
-		log.Println("")
 		name, err := r.sing.ImageName(&d)
 		if err != nil {
-			log.Println("")
 			errs <- &CreateError{Deployment: &d, Err: err}
 			continue
 		}
-		log.Println("")
 
 		reqID := computeRequestId(&d)
 		err = r.sing.PostRequest(d.Cluster, reqID, d.NumInstances)
 		if err != nil {
-			log.Println("")
 			errs <- &CreateError{Deployment: &d, Err: err}
 			continue
 		}
-		log.Println("")
 
 		err = r.sing.Deploy(d.Cluster, newDepID(), reqID, name, d.Resources)
 		if err != nil {
-			log.Println("")
 			errs <- &CreateError{Deployment: &d, Err: err}
 			continue
 		}
 	}
-	log.Println("")
 }
 
-func (r *rectifier) rectifyDeletes(dc chan Deployment, errs chan RectificationError, done *sync.WaitGroup) {
-	defer func(c *sync.WaitGroup) { c.Done() }(done)
-	log.Println("")
+func (r *rectifier) rectifyDeletes(dc chan Deployment, errs chan<- RectificationError) {
 	for d := range dc {
-		log.Println("")
 		err := r.sing.Scale(d.Cluster, computeRequestId(&d), 0, "scaling deleted manifest to zero")
 		if err != nil {
-			log.Println("")
 			errs <- &DeleteError{Deployment: &d, Err: err}
 			continue
 		}
 	}
-	log.Println("")
 }
 
-func (r *rectifier) rectifyModifys(mc chan DeploymentPair, errs chan RectificationError, done *sync.WaitGroup) {
-	defer func(c *sync.WaitGroup) { c.Done() }(done)
+func (r *rectifier) rectifyModifys(mc chan DeploymentPair, errs chan<- RectificationError) {
 	for pair := range mc {
-		log.Println("")
 		if r.changesReq(pair) {
-			log.Println("")
 			err := r.sing.Scale(pair.post.Cluster, computeRequestId(pair.post), pair.post.NumInstances, "rectified scaling")
 			if err != nil {
-				log.Println("")
 				errs <- &ChangeError{Deployments: pair, Err: err}
 				continue
 			}
 		}
 
 		if changesDep(pair) {
-			log.Println("")
 			name, err := r.sing.ImageName(pair.post)
 			if err != nil {
-				log.Println("")
 				errs <- &ChangeError{Deployments: pair, Err: err}
 				continue
 			}
 
 			err = r.sing.Deploy(pair.post.Cluster, newDepID(), computeRequestId(pair.prior), name, pair.post.Resources)
 			if err != nil {
-				log.Println("")
 				errs <- &ChangeError{Deployments: pair, Err: err}
 				continue
 			}
 		}
 	}
-	log.Println("")
 }
 
 func (r rectifier) changesReq(pair DeploymentPair) bool {

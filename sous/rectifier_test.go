@@ -93,10 +93,13 @@ func TestModifyScale(t *testing.T) {
 	chanset := NewDiffChans(1)
 	client := TestRectClient{}
 
-	_, done := Rectify(chanset, &client)
+	errs := make(chan RectificationError)
+	Rectify(chanset, errs, &client)
 	chanset.Modified <- pair
 	chanset.Close()
-	<-done
+	for e := range errs {
+		t.Error(e)
+	}
 
 	assert.Len(client.deployed, 0)
 	assert.Len(client.created, 0)
@@ -136,10 +139,13 @@ func TestModifyImage(t *testing.T) {
 	chanset := NewDiffChans(1)
 	client := TestRectClient{}
 
-	_, done := Rectify(chanset, &client)
+	errs := make(chan RectificationError)
+	Rectify(chanset, errs, &client)
 	chanset.Modified <- pair
 	chanset.Close()
-	<-done
+	for e := range errs {
+		t.Error(e)
+	}
 
 	assert.Len(client.created, 0)
 	assert.Len(client.scaled, 0)
@@ -179,10 +185,13 @@ func TestModify(t *testing.T) {
 	chanset := NewDiffChans(1)
 	client := TestRectClient{}
 
-	_, done := Rectify(chanset, &client)
+	errs := make(chan RectificationError)
+	Rectify(chanset, errs, &client)
 	chanset.Modified <- pair
 	chanset.Close()
-	<-done
+	for e := range errs {
+		t.Error(e)
+	}
 
 	assert.Len(client.created, 0)
 
@@ -211,13 +220,13 @@ func TestDeletes(t *testing.T) {
 	chanset := NewDiffChans(1)
 	client := TestRectClient{}
 
-	_, done := Rectify(chanset, &client)
-
+	errs := make(chan RectificationError)
+	Rectify(chanset, errs, &client)
 	chanset.Deleted <- deleted
-
 	chanset.Close()
-
-	<-done
+	for e := range errs {
+		t.Error(e)
+	}
 
 	assert.Len(client.deployed, 0)
 	assert.Len(client.created, 0)
@@ -236,7 +245,8 @@ func TestCreates(t *testing.T) {
 	chanset := NewDiffChans(1)
 	client := TestRectClient{}
 
-	_, done := Rectify(chanset, &client)
+	errs := make(chan RectificationError)
+	Rectify(chanset, errs, &client)
 
 	created := Deployment{
 		SourceVersion: SourceVersion{
@@ -252,7 +262,9 @@ func TestCreates(t *testing.T) {
 
 	chanset.Close()
 
-	<-done
+	for e := range errs {
+		t.Error(e)
+	}
 
 	assert.Len(client.scaled, 0)
 	if assert.Len(client.deployed, 1) {

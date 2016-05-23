@@ -37,14 +37,14 @@ func TestRoundTrip(t *testing.T) {
 		make(SourceNameLookup),
 	}
 
-	v, _ := semv.Parse("1.2.3")
+	v := semv.MustParse("1.2.3")
 	sv := SourceVersion{
 		Version:    v,
 		RepoURL:    RepoURL("https://github.com/opentable/wackadoo"),
 		RepoOffset: RepoOffset("nested/there"),
 	}
 	base := "docker.repo.io/wackadoo"
-	in := string(append([]byte(base), ":version-1.2.3"...))
+	in := base + ":version-1.2.3"
 	digest := "sha256:deadbeef1234567890"
 	nc.Insert(sv, in, digest)
 
@@ -59,7 +59,7 @@ func TestRoundTrip(t *testing.T) {
 
 	//assert.Equal(sv, nc.GetSourceVersion(in))
 
-	newV, _ := semv.Parse("1.2.42")
+	newV := semv.MustParse("1.2.42")
 	newSV := SourceVersion{
 		Version:    newV,
 		RepoURL:    RepoURL("https://github.com/opentable/wackadoo"),
@@ -83,4 +83,18 @@ func TestRoundTrip(t *testing.T) {
 		assert.Equal(cn, ncn)
 	}
 
+}
+
+func TestUnion(t *testing.T) {
+	assert := assert.New(t)
+
+	left := []string{"a", "b", "c"}
+	right := []string{"b", "c", "d"}
+
+	all := union(left, right)
+	assert.Equal(len(all), 4)
+	assert.Contains(all, "a")
+	assert.Contains(all, "b")
+	assert.Contains(all, "c")
+	assert.Contains(all, "d")
 }
