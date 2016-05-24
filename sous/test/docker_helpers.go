@@ -1,4 +1,3 @@
-var ip, registryName, singularityURL string
 package test
 
 import (
@@ -13,42 +12,74 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"testing"
+	"time"
 
-	"github.com/opentable/test_with_docker"
+	"github.com/opentable/singularity"
+	"github.com/opentable/singularity/dtos"
+	"github.com/opentable/sous/test_with_docker"
+	"github.com/satori/go.uuid"
 )
+
+var ip net.IP
+var registryName, singularityURL string
 
 var successfulBuildRE = regexp.MustCompile(`Successfully built (\w+)`)
 
-func buildAndPushContainer(containerDir, tagName string) error {
-	build := exec.Command("docker", "build", ".")
-	build.Dir = containerDir
-	output, err := build.CombinedOutput()
+func wrapCompose(m *testing.M) (resultCode int) {
+	log.SetFlags(log.Flags() | log.Lshortfile)
+
+	if testing.Short() {
+		return 0
+	}
+
+	log.Println("Running setup")
+	defer func() {
+		log.Println("Cleaning up...")
+		if err := recover(); err != nil {
+			log.Print("Panic: ", err)
+			resultCode = 1
+		}
+	}()
+
+	testAgent, err := test_with_docker.NewAgentWithTimeout(5 * time.Minute)
 	if err != nil {
-		log.Print("Problem building container: ", containerDir, "\n", string(output))
-		return err
+		panic(err)
 	}
 
-	match := successfulBuildRE.FindStringSubmatch(string(output))
-	if match == nil {
-		return fmt.Errorf("Couldn't find container id in:\n%s", output)
-	}
-
-	containerID := match[1]
-	tag := exec.Command("docker", "tag", containerID, tagName)
-	tag.Dir = containerDir
-	output, err = tag.CombinedOutput()
+	ip, err := testAgent.IP()
 	if err != nil {
-		return err
+		panic(err)
 	}
 
-	push := exec.Command("docker", "push", tagName)
-	push.Dir = containerDir
-	output, err = push.CombinedOutput()
+	composeDir := "test-registry"
+	registryName = fmt.Sprintf("%s:%d", ip, 5000)
+	singularityURL = fmt.Sprintf("http://%s:%d/singularity", ip, 7099)
+
+	registryCerts(testAgent, composeDir)
+
+	started, err := testAgent.ComposeServices(composeDir, map[string]uint{"Singularity": 7099, "Registry": 5000})
+	defer testAgent.Shutdown(started)
+
+	log.Print("   *** Beginning tests... ***\n\n")
+	resultCode = m.Run()
+	return
+}
+
+func resetSingularity() {
+	sing := singularity.NewClient(singularityURL)
+
+	reqList, err := sing.GetRequests()
 	if err != nil {
-		return err
+		panic(err)
 	}
 
-	return nil
+	for _, r := range reqList {
+		_, err := sing.DeleteRequest(r.Request.Id, nil)
+		if err != nil {
+			panic(err)
+		}
+	}
 }
 
 func registryCerts(testAgent test_with_docker.Agent, composeDir string) {
@@ -172,4 +203,116 @@ func getCertIPSans(certPath string) ([]net.IP, error) {
 	}
 
 	return cert.IPAddresses, nil
+}
+
+func buildImageName(reponame, tag) string {
+	return fmt.Sprintf("%s/%s:%s", registryName, reponame, tag)
+}
+
+func registerAndDeploy(ip net.IP, reponame, dir string, ports []int32) (err error) {
+	imageName := buildImageName(reponame, "latest")
+	err = buildAndPushContainer(dir, imageName)
+	if err != nil {
+		panic(fmt.Errorf("building test container failed: %s", err))
+	}
+
+	err = startInstance(singularityURL, imageName, ports)
+	if err != nil {
+		panic(fmt.Errorf("starting a singularity instance failed: %s", err))
+	}
+
+	return
+}
+
+func buildAndPushContainer(containerDir, tagName string) error {
+	build := exec.Command("docker", "build", ".")
+	build.Dir = containerDir
+	output, err := build.CombinedOutput()
+	if err != nil {
+		log.Print("Problem building container: ", containerDir, "\n", string(output))
+		return err
+	}
+
+	match := successfulBuildRE.FindStringSubmatch(string(output))
+	if match == nil {
+		return fmt.Errorf("Couldn't find container id in:\n%s", output)
+	}
+
+	containerID := match[1]
+	tag := exec.Command("docker", "tag", containerID, tagName)
+	tag.Dir = containerDir
+	output, err = tag.CombinedOutput()
+	if err != nil {
+		return err
+	}
+
+	push := exec.Command("docker", "push", tagName)
+	push.Dir = containerDir
+	output, err = push.CombinedOutput()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+type dtoMap map[string]interface{}
+
+func loadMap(fielder dtos.Fielder, m dtoMap) dtos.Fielder {
+	_, err := dtos.LoadMap(fielder, m)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return fielder
+}
+
+var notInIDre = regexp.MustCompile(`[-/]`)
+
+func idify(in string) string {
+	return notInIDre.ReplaceAllString(in, "")
+}
+
+func startInstance(url, imageName string, ports []int32) error {
+	reqID := idify(imageName)
+
+	sing := singularity.NewClient(url)
+
+	req := loadMap(&dtos.SingularityRequest{}, map[string]interface{}{
+		"Id":          reqID,
+		"RequestType": dtos.SingularityRequestRequestTypeSERVICE,
+		"Instances":   int32(1),
+	}).(*dtos.SingularityRequest)
+
+	_, err := sing.PostRequest(req)
+	if err != nil {
+		return err
+	}
+
+	dockerInfo := loadMap(&dtos.SingularityDockerInfo{}, dtoMap{
+		"Image": imageName,
+	}).(*dtos.SingularityDockerInfo)
+
+	depReq := loadMap(&dtos.SingularityDeployRequest{}, dtoMap{
+		"Deploy": loadMap(&dtos.SingularityDeploy{}, dtoMap{
+			"Id":        idify(uuid.NewV4().String()),
+			"RequestId": reqID,
+			"Resources": loadMap(&dtos.Resources{}, dtoMap{
+				"Cpus":     0.1,
+				"MemoryMb": 100.0,
+				"NumPorts": int32(1),
+			}),
+			"ContainerInfo": loadMap(&dtos.SingularityContainerInfo{}, dtoMap{
+				"Type":   dtos.SingularityContainerInfoSingularityContainerTypeDOCKER,
+				"Docker": dockerInfo,
+			}),
+		}),
+	}).(*dtos.SingularityDeployRequest)
+
+	_, err = sing.Deploy(depReq)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
