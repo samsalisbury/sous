@@ -244,6 +244,7 @@ func buildAndPushContainer(containerDir, tagName string) error {
 	tag.Dir = containerDir
 	output, err = tag.CombinedOutput()
 	if err != nil {
+		log.Print("Problem tagging container: ", containerDir, "\n", string(output))
 		return err
 	}
 
@@ -251,6 +252,7 @@ func buildAndPushContainer(containerDir, tagName string) error {
 	push.Dir = containerDir
 	output, err = push.CombinedOutput()
 	if err != nil {
+		log.Print("Problem pushing container: ", containerDir, "\n", string(output))
 		return err
 	}
 
