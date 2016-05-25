@@ -149,9 +149,10 @@
 			"revision": "0eeaf8392f5b04950925b8a69fe70f110fa7cbfc"
 		},
 		{
-			"checksumSHA1": "ubDZeFKeYhASuFq6pVOkBoNXAHo=",
+			"checksumSHA1": "Mwn1kAKDdCPsYSD+Jit2G8+fcLI=",
 			"path": "github.com/opentable/singularity",
-			"revision": "2cda90992c1f065eff5d89083b78fcead977e39a"
+			"revision": "f23284a220117e97669bb174886519c0d100bce2",
+			"revisionTime": "2016-05-24T23:04:38Z"
 		},
 		{
 			"checksumSHA1": "F06JS5g9fjEa+nOVRgVXQcK0z8w=",

@@ -14,15 +14,17 @@ import (
 func Resolve(config State) error {
 	gdm, err := config.Deployments()
 	if err != nil {
+		log.Print(err.Error())
 		return err
 	}
 
 	ads, err := GetRunningDeploymentSet(baseURLs(config))
 	if err != nil {
+		log.Print(err.Error())
 		return err
 	}
 
-	differ := gdm.Diff(ads)
+	differ := ads.Diff(gdm)
 
 	errs := make(chan RectificationError)
 
@@ -56,9 +58,10 @@ func loadConfig(dir string) (st State, err error) {
 }
 
 func baseURLs(st State) []string {
-	urls := make([]string, len(st.Defs.Clusters))
+	urls := make([]string, 0, len(st.Defs.Clusters))
 	for _, cl := range st.Defs.Clusters {
 		urls = append(urls, cl.BaseURL)
 	}
+	log.Print(urls)
 	return urls
 }

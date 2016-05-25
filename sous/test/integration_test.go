@@ -3,6 +3,7 @@ package test
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"testing"
 
@@ -37,18 +38,14 @@ func TestGetRunningDeploymentSet(t *testing.T) {
 
 	registerLabelledContainers()
 
-	deps, err := sous.GetRunningDeploymentSet([]string{singularityURL})
-	assert.Nil(err)
+	deps, which := deploymentWithRepo(assert, "https://github.com/opentable/docker-grafana.git")
 	assert.Equal(3, len(deps))
-	var grafana *sous.Deployment
-	for i := range deps {
-		if deps[i].SourceVersion.RepoURL == "https://github.com/opentable/docker-grafana.git" {
-			grafana = deps[i]
-		}
-	}
-	if !assert.NotNil(grafana) {
+
+	if which < 0 {
 		assert.FailNow("If deployment is nil, other tests will crash")
 	}
+
+	grafana := deps[which]
 	assert.Equal(singularityURL, grafana.Cluster)
 	assert.Regexp("^0\\.1", grafana.Resources["cpus"])    // XXX strings and floats...
 	assert.Regexp("^100\\.", grafana.Resources["memory"]) // XXX strings and floats...
@@ -71,32 +68,98 @@ func TestResolve(t *testing.T) {
 			},
 		},
 	}
+	repoOne := "https://github.com/opentable/one"
+	repoTwo := "https://github.com/opentable/two"
+	repoThree := "https://github.com/opentable/three"
 
 	stateOneTwo := sous.State{
 		Defs: clusterDefs,
 		Manifests: sous.Manifests{
-			"one": manifest("https://github.com/opentable/one", "1.1.1"),
-			"two": manifest("https://github.com/opentable/two", "1.1.1"),
+			"one": manifest("opentable/one", "test-one", repoOne, "1.1.1"),
+			"two": manifest("opentable/two", "test-two", repoTwo, "1.1.1"),
 		},
 	}
 	stateTwoThree := sous.State{
 		Defs: clusterDefs,
 		Manifests: sous.Manifests{
-			"two":   manifest("https://github.com/opentable/two", "1.1.1"),
-			"three": manifest("https://github.com/opentable/three", "1.1.1"),
+			"two":   manifest("opentable/two", "test-two", repoTwo, "1.1.1"),
+			"three": manifest("opentable/three", "test-three", repoThree, "1.1.1"),
 		},
 	}
 
-	Resolve(stateOneTwo)
-	// one and two are running
-	Resolve(stateTwoThree)
-	// two and three are running, not one
+	// ****
+	err := sous.Resolve(stateOneTwo)
+	if err != nil {
+		assert.Fail(err.Error())
+	}
+
+	// ****
+
+	deps, which := deploymentWithRepo(assert, repoOne)
+	log.Print(deps)
+	assert.NotEqual(which, -1, "opentable/one not successfully deployed")
+	one := deps[which]
+	assert.Equal(1, one.NumInstances)
+
+	which = findRepo(deps, repoTwo)
+	assert.NotEqual(-1, which, "opentable/two not successfully deployed")
+	two := deps[which]
+	assert.Equal(1, two.NumInstances)
+
+	// ****
+	err = sous.Resolve(stateTwoThree)
+	if err != nil {
+		assert.Fail(err.Error())
+	}
+
+	// ****
+
+	deps, which = deploymentWithRepo(assert, repoTwo)
+	assert.NotEqual(-1, which, "opentable/two no longer deployed after resolve")
+	assert.Equal(1, deps[which].NumInstances)
+
+	which = findRepo(deps, repoThree)
+	assert.NotEqual(-1, which, "opentable/three not successfully deployed")
+	assert.Equal(1, deps[which].NumInstances)
+
+	which = findRepo(deps, repoOne)
+	if which != -1 {
+		assert.Equal(0, deps[which].NumInstances)
+	}
 
 	resetSingularity()
 }
 
-func manifest(sourceURL, version string) sous.Manifest {
-	return sous.Manifest{
+func deploymentWithRepo(assert *assert.Assertions, repo string) (sous.Deployments, int) {
+	deps, err := sous.GetRunningDeploymentSet([]string{singularityURL})
+	if assert.Nil(err) {
+		return deps, findRepo(deps, repo)
+	}
+	return sous.Deployments{}, -1
+}
+
+func findRepo(deps sous.Deployments, repo string) int {
+	for i := range deps {
+		if deps[i].SourceVersion.RepoURL == sous.RepoURL(repo) {
+			return i
+		}
+	}
+	return -1
+}
+
+func manifest(drepo, containerDir, sourceURL, version string) *sous.Manifest {
+	sv := sous.SourceVersion{
+		RepoURL:    sous.RepoURL(sourceURL),
+		RepoOffset: sous.RepoOffset(""),
+		Version:    semv.MustParse(version),
+	}
+
+	in := buildImageName(drepo, version)
+	buildAndPushContainer(containerDir, in)
+
+	sous.InsertImageRecord(sv, in, "")
+
+	return &sous.Manifest{
 		Source: sous.SourceLocation{
 			RepoURL:    sous.RepoURL(sourceURL),
 			RepoOffset: sous.RepoOffset(""),

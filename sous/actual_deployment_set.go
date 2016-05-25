@@ -12,6 +12,8 @@ import (
 	"github.com/opentable/sous/util/docker_registry"
 )
 
+// ReqsPerServer limits the number of simultaneous number of requests made
+// against a single Singularity server
 const ReqsPerServer = 10
 
 type (

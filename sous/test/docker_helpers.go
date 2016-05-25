@@ -33,7 +33,6 @@ func wrapCompose(m *testing.M) (resultCode int) {
 		return 0
 	}
 
-	log.Println("Running setup")
 	defer func() {
 		log.Println("Cleaning up...")
 		if err := recover(); err != nil {
@@ -47,9 +46,12 @@ func wrapCompose(m *testing.M) (resultCode int) {
 		panic(err)
 	}
 
-	ip, err := testAgent.IP()
+	ip, err = testAgent.IP()
 	if err != nil {
 		panic(err)
+	}
+	if ip == nil {
+		panic(fmt.Errorf("Test agent returned nil IP"))
 	}
 
 	composeDir := "test-registry"
@@ -102,22 +104,22 @@ func registryCerts(testAgent test_with_docker.Agent, composeDir string) {
 	}
 
 	if !haveIP {
-		log.Print("Rebuilding the registry certificate")
+		log.Printf("Rebuilding the registry certificate to add %v", ip)
 		certIPs = append(certIPs, ip)
 		err = buildTestingKeypair(composeDir, certIPs)
 		if err != nil {
-			panic(err)
+			panic(fmt.Errorf("While building testing keypair: %s", err))
 		}
 
 		err = testAgent.RebuildService(composeDir, "registry")
 		if err != nil {
-			panic(err)
+			panic(fmt.Errorf("While rebuilding the registry service: %s", err))
 		}
 	}
 
 	differs, err := testAgent.DifferingFiles([]string{certPath, caPath})
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("While checking for differing certs: %s", err))
 	}
 
 	for _, diff := range differs {
@@ -140,7 +142,6 @@ func registryCerts(testAgent test_with_docker.Agent, composeDir string) {
 }
 
 func buildTestingKeypair(dir string, certIPs []net.IP) (err error) {
-	log.Print(certIPs)
 	selfSignConf := "self-signed.conf"
 	temp := template.Must(template.New("req").Parse(`
 {{- "" -}}
@@ -205,7 +206,7 @@ func getCertIPSans(certPath string) ([]net.IP, error) {
 	return cert.IPAddresses, nil
 }
 
-func buildImageName(reponame, tag) string {
+func buildImageName(reponame, tag string) string {
 	return fmt.Sprintf("%s/%s:%s", registryName, reponame, tag)
 }
 
@@ -284,9 +285,16 @@ func startInstance(url, imageName string, ports []int32) error {
 		"Instances":   int32(1),
 	}).(*dtos.SingularityRequest)
 
-	_, err := sing.PostRequest(req)
-	if err != nil {
-		return err
+	for {
+		_, err := sing.PostRequest(req)
+		if err != nil {
+			if rerr, ok := err.(*singularity.ReqError); ok && rerr.Status == 409 { //not done deleting the request
+				continue
+			}
+
+			return err
+		}
+		break
 	}
 
 	dockerInfo := loadMap(&dtos.SingularityDockerInfo{}, dtoMap{
@@ -309,7 +317,7 @@ func startInstance(url, imageName string, ports []int32) error {
 		}),
 	}).(*dtos.SingularityDeployRequest)
 
-	_, err = sing.Deploy(depReq)
+	_, err := sing.Deploy(depReq)
 	if err != nil {
 		return err
 	}
