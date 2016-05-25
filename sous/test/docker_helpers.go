@@ -240,7 +240,7 @@ func buildAndPushContainer(containerDir, tagName string) error {
 	}
 
 	containerID := match[1]
-	tag := exec.Command("docker", "tag", containerID, tagName)
+	tag := exec.Command("docker", "tag", "-f", containerID, tagName)
 	tag.Dir = containerDir
 	output, err = tag.CombinedOutput()
 	if err != nil {
