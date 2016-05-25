@@ -36,9 +36,6 @@ type (
 		// TeeErr is similar to TeeOut, except that it has stderr written to it
 		// instead of stdout.
 		TeeErr io.Writer
-		// MonitorFuncs is a slice of funcs that are called for each command,
-		// they are passed the command name, and a slice of args.
-		MonitorFuncs []func(string, []string)
 	}
 )
 
@@ -73,8 +70,6 @@ func (s *Sh) Clone() *Sh {
 	cp := *s
 	cp.Env = make([]string, len(s.Env))
 	copy(cp.Env, s.Env)
-	cp.MonitorFuncs = make([]func(string, []string), len(s.MonitorFuncs))
-	copy(cp.MonitorFuncs, s.MonitorFuncs)
 	return &cp
 }
 
@@ -112,6 +107,35 @@ func (s *Sh) Cmd(name string, args ...interface{}) *Command {
 // List returns all files (including dotfiles) inside Dir.
 func (s *Sh) List() ([]os.FileInfo, error) {
 	return ioutil.ReadDir(s.Dir)
+}
+
+// Exists returns true if the path definitely exists. It swallows
+// any errors and returns false, in the case that e.g. permissions
+// prevent the check from working correctly.
+func (s *Sh) Exists(path string) bool {
+	_, err := s.Stat(path)
+	return err == nil
+}
+
+// Stat calls os.Stat on the path provided, relative to the current
+// shell's working directory.
+func (s *Sh) Stat(path string) (os.FileInfo, error) {
+	return os.Stat(s.Abs(path))
+}
+
+// Abs returns the absolute path of the path provided in relation to this shell.
+// If the path is already absolute, it is returned simplified but otherwise
+// unchanged.
+func (s *Sh) Abs(path string) string {
+	if filepath.IsAbs(path) {
+		return filepath.Clean(path)
+	}
+	return filepath.Join(s.Dir, path)
+}
+
+// Run(...) is a shortcut for shell.Cmd(...).Succeed()
+func (s *Sh) Run(name string, args ...interface{}) error {
+	return s.Cmd(name, args...).Succeed()
 }
 
 // Stdout(...) is a shortcut for shell.Cmd(...).Stdout()

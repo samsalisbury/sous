@@ -3,15 +3,17 @@ package cli
 import (
 	"flag"
 
+	"github.com/opentable/sous/ext/docker"
 	"github.com/opentable/sous/sous"
 	"github.com/opentable/sous/util/cmdr"
 )
 
 type SousBuild struct {
-	Sous         *Sous
-	WDShell      LocalWorkDirShell
-	ScratchShell ScratchDirShell
-	flags        struct {
+	Sous          *Sous
+	WDShell       LocalWorkDirShell
+	ScratchShell  ScratchDirShell
+	SourceContext *sous.SourceContext
+	flags         struct {
 		target              string
 		rebuild, rebuildAll bool
 	}
@@ -46,13 +48,15 @@ func (sb *SousBuild) Execute(args []string) cmdr.Result {
 			return cmdr.EnsureErrorResult(err)
 		}
 	}
-	build, err := sous.NewBuildWithShells(sb.WDShell.Sh, sb.ScratchShell.Sh)
+	dbp := docker.NewDockerfileBuildpack("docker.otenv.com")
+	build, err := sous.NewBuildWithShells(dbp, sb.SourceContext, sb.WDShell.Sh, sb.ScratchShell.Sh)
 	if err != nil {
 		return cmdr.EnsureErrorResult(err)
 	}
-	if err := build.Start(); err != nil {
+	result, err := build.Start()
+	if err != nil {
 		return cmdr.EnsureErrorResult(err)
 	}
 
-	return InternalErrorf("not implemented")
+	return Success(result)
 }

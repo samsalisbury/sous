@@ -57,8 +57,8 @@ func TestGetRunningDeploymentSet(t *testing.T) {
 	assert.Regexp("^0\\.1", grafana.Resources["cpus"])    // XXX strings and floats...
 	assert.Regexp("^100\\.", grafana.Resources["memory"]) // XXX strings and floats...
 	assert.Equal("1", grafana.Resources["ports"])         // XXX strings and floats...
-	assert.Equal(17, grafana.SourceVersion.Patch)
-	assert.Equal("91495f1b1630084e301241100ecf2e775f6b672c", grafana.SourceVersion.Meta)
+	assert.Equal(17, grafana.SourceVersion.Version.Patch)
+	assert.Equal("91495f1b1630084e301241100ecf2e775f6b672c", grafana.SourceVersion.Version.Meta)
 	assert.Equal(1, grafana.NumInstances)
 	assert.Equal(sous.ManifestKindService, grafana.Kind)
 }

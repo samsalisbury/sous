@@ -20,9 +20,9 @@ type (
 	// exactly one snapshot of a body of source code, from which a piece of
 	// software can be built.
 	SourceVersion struct {
-		RepoURL
-		semv.Version
-		RepoOffset `yaml:",omitempty"`
+		RepoURL    RepoURL
+		Version    semv.Version
+		RepoOffset RepoOffset `yaml:",omitempty"`
 	}
 
 	EntityName interface {
