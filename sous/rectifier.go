@@ -2,11 +2,10 @@ package sous
 
 import (
 	"fmt"
+	"log"
 	"regexp"
-	"strconv"
 	"sync"
 
-	"github.com/opentable/singularity/dtos"
 	"github.com/satori/go.uuid"
 )
 
@@ -37,8 +36,11 @@ type (
 		// PostRequest sends a request to a Singularity cluster to initiate
 		PostRequest(cluster, reqID string, instanceCount int) error
 
-		//Scale updates the instanceCount associated with a request
+		// Scale updates the instanceCount associated with a request
 		Scale(cluster, reqID string, instanceCount int, message string) error
+
+		// DeleteRequest instructs Singularity to delete a particular request
+		DeleteRequest(cluster, reqID, message string) error
 
 		//ImageName finds or guesses a docker image name for a Deployment
 		ImageName(d *Deployment) (string, error)
@@ -130,6 +132,7 @@ func (r *rectifier) rectifyCreates(cc chan *Deployment, errs chan<- Rectificatio
 	for d := range cc {
 		name, err := r.sing.ImageName(d)
 		if err != nil {
+			log.Printf("% +v", d)
 			errs <- &CreateError{Deployment: d, Err: err}
 			continue
 		}
@@ -137,12 +140,14 @@ func (r *rectifier) rectifyCreates(cc chan *Deployment, errs chan<- Rectificatio
 		reqID := computeRequestID(d)
 		err = r.sing.PostRequest(d.Cluster, reqID, d.NumInstances)
 		if err != nil {
+			log.Printf("%T %#v", d, d)
 			errs <- &CreateError{Deployment: d, Err: err}
 			continue
 		}
 
 		err = r.sing.Deploy(d.Cluster, newDepID(), reqID, name, d.Resources)
 		if err != nil {
+			log.Printf("% +v", d)
 			errs <- &CreateError{Deployment: d, Err: err}
 			continue
 		}
@@ -151,7 +156,7 @@ func (r *rectifier) rectifyCreates(cc chan *Deployment, errs chan<- Rectificatio
 
 func (r *rectifier) rectifyDeletes(dc chan *Deployment, errs chan<- RectificationError) {
 	for d := range dc {
-		err := r.sing.Scale(d.Cluster, computeRequestID(d), 0, "scaling deleted manifest to zero")
+		err := r.sing.DeleteRequest(d.Cluster, computeRequestID(d), "deleting request for removed manifest")
 		if err != nil {
 			errs <- &DeleteError{Deployment: d, Err: err}
 			continue
@@ -197,10 +202,11 @@ func computeRequestID(d *Deployment) string {
 	if len(d.RequestID) > 0 {
 		return d.RequestID
 	}
-	return d.SourceVersion.CanonicalName().String()
+	log.Printf("d. = %+v\n", d.SourceVersion.CanonicalName())
+	return idify(d.SourceVersion.CanonicalName().String())
 }
 
-var notInIDRE = regexp.MustCompile(`[-/]`)
+var notInIDRE = regexp.MustCompile(`[-/:]`)
 
 func idify(in string) string {
 	return notInIDRE.ReplaceAllString(in, "")
@@ -210,6 +216,7 @@ func newDepID() string {
 	return idify(uuid.NewV4().String())
 }
 
+/*
 // BuildSingRequest builds a singularity request
 func BuildSingRequest(reqID string, instances int) *dtos.SingularityRequest {
 	req := dtos.SingularityRequest{}
@@ -298,3 +305,4 @@ func BuildScaleRequest(num int, message string) *dtos.SingularityScaleRequest {
 	})
 	return &sr
 }
+*/

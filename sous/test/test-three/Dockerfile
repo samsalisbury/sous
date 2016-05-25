@@ -11,7 +11,7 @@ RUN rm /srv/config.sample.js
 WORKDIR /
 
 LABEL \
-  com.opentable.sous.repo_url=https://github.com/opentable/one.git \
+  com.opentable.sous.repo_url=https://github.com/opentable/three.git \
   com.opentable.sous.repo_offset= \
   com.opentable.sous.version=1.1.1 \
   com.opentable.sous.revision=91495f1b1630084e301241100ecf2e775f6b672c

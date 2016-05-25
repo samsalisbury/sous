@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/opentable/sous/sous"
 	"github.com/opentable/sous/util/docker_registry"
@@ -63,14 +64,14 @@ func TestResolve(t *testing.T) {
 
 	clusterDefs := sous.Defs{
 		Clusters: sous.Clusters{
-			"it": sous.Cluster{
+			singularityURL: sous.Cluster{
 				BaseURL: singularityURL,
 			},
 		},
 	}
-	repoOne := "https://github.com/opentable/one"
-	repoTwo := "https://github.com/opentable/two"
-	repoThree := "https://github.com/opentable/three"
+	repoOne := "https://github.com/opentable/one.git"
+	repoTwo := "https://github.com/opentable/two.git"
+	repoThree := "https://github.com/opentable/three.git"
 
 	stateOneTwo := sous.State{
 		Defs: clusterDefs,
@@ -92,8 +93,8 @@ func TestResolve(t *testing.T) {
 	if err != nil {
 		assert.Fail(err.Error())
 	}
-
 	// ****
+	time.Sleep(1 * time.Second)
 
 	deps, which := deploymentWithRepo(assert, repoOne)
 	log.Print(deps)
@@ -111,7 +112,6 @@ func TestResolve(t *testing.T) {
 	if err != nil {
 		assert.Fail(err.Error())
 	}
-
 	// ****
 
 	deps, which = deploymentWithRepo(assert, repoTwo)
@@ -140,6 +140,8 @@ func deploymentWithRepo(assert *assert.Assertions, repo string) (sous.Deployment
 
 func findRepo(deps sous.Deployments, repo string) int {
 	for i := range deps {
+		log.Printf("deps[%d] = %+v\n", i, deps[i].SourceVersion.RepoURL)
+		log.Printf("repo = %+v\n", repo)
 		if deps[i].SourceVersion.RepoURL == sous.RepoURL(repo) {
 			return i
 		}
@@ -167,7 +169,7 @@ func manifest(drepo, containerDir, sourceURL, version string) *sous.Manifest {
 		Owners: []string{`xyz`},
 		Kind:   sous.ManifestKindService,
 		Deployments: sous.DeploySpecs{
-			"it": sous.PartialDeploySpec{
+			singularityURL: sous.PartialDeploySpec{
 				DeployConfig: sous.DeployConfig{
 					Resources:    sous.Resources{}, //map[string]string
 					Args:         []string{},

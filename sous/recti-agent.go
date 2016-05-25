@@ -1,6 +1,8 @@
 package sous
 
 import (
+	"sync"
+
 	"github.com/opentable/singularity"
 	"github.com/opentable/singularity/dtos"
 	"github.com/satori/go.uuid"
@@ -9,7 +11,8 @@ import (
 // RectiAgent is an implementation of the RectificationClient interface
 type RectiAgent struct {
 	singClients map[string]*singularity.Client
-	nameCache   NameCache
+	sync.RWMutex
+	nameCache NameCache
 }
 
 // NewRectiAgent returns a set-up RectiAgent
@@ -78,6 +81,15 @@ func (ra *RectiAgent) PostRequest(cluster, reqID string, instanceCount int) erro
 	return err
 }
 
+// DeleteRequest sends a request to Singularity to delete a request
+func (ra *RectiAgent) DeleteRequest(cluster, reqID, message string) error {
+	req, err := dtos.LoadMap(&dtos.SingularityDeleteRequestRequest{}, dtoMap{
+		"Message": "Sous: " + message,
+	})
+	_, err = ra.singularityClient(cluster).DeleteRequest(reqID, req.(*dtos.SingularityDeleteRequestRequest))
+	return err
+}
+
 // Scale sends requests to Singularity to change the number of instances
 // running for a given Request
 func (ra *RectiAgent) Scale(cluster, reqID string, instanceCount int, message string) error {
@@ -85,7 +97,7 @@ func (ra *RectiAgent) Scale(cluster, reqID string, instanceCount int, message st
 		"ActionId": idify(uuid.NewV4().String()), // not positive this is appropriate
 		// omitting DurationMillis - bears discussion
 		"Instances":        int32(instanceCount),
-		"Message":          message,
+		"Message":          "Sous" + message,
 		"SkipHealthchecks": false,
 	})
 
@@ -98,11 +110,20 @@ func (ra *RectiAgent) ImageName(d *Deployment) (string, error) {
 	return ra.nameCache.GetImageName(d.SourceVersion)
 }
 
-func (ra *RectiAgent) singularityClient(url string) *singularity.Client {
+func (ra *RectiAgent) getSingularityClient(url string) (*singularity.Client, bool) {
+	ra.RLock()
+	defer ra.RUnlock()
 	cl, ok := ra.singClients[url]
+	return cl, ok
+}
+
+func (ra *RectiAgent) singularityClient(url string) *singularity.Client {
+	cl, ok := ra.getSingularityClient(url)
 	if ok {
 		return cl
 	}
+	ra.Lock()
+	defer ra.Unlock()
 	cl = singularity.NewClient(url)
 	ra.singClients[url] = cl
 	return cl

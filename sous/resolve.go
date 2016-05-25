@@ -14,13 +14,11 @@ import (
 func Resolve(config State) error {
 	gdm, err := config.Deployments()
 	if err != nil {
-		log.Print(err.Error())
 		return err
 	}
 
 	ads, err := GetRunningDeploymentSet(baseURLs(config))
 	if err != nil {
-		log.Print(err.Error())
 		return err
 	}
 

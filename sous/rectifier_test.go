@@ -13,6 +13,7 @@ type (
 		created  []dummyRequest
 		deployed []dummyDeploy
 		scaled   []dummyScale
+		deleted  []dummyDelete
 	}
 
 	dummyDeploy struct {
@@ -33,6 +34,10 @@ type (
 		cluster, reqid string
 		count          int
 		message        string
+	}
+
+	dummyDelete struct {
+		cluster, reqid, message string
 	}
 )
 
@@ -56,6 +61,12 @@ func (t *TestRectClient) PostRequest(cluster string, id string, count int) error
 //Scale(cluster url, request id, instance count, message)
 func (t *TestRectClient) Scale(cluster, reqid string, count int, message string) error {
 	t.scaled = append(t.scaled, dummyScale{cluster, reqid, count, message})
+	return nil
+}
+
+// DeleteRequest(cluster url, request id, instance count, message)
+func (t *TestRectClient) DeleteRequest(cluster, reqid, message string) error {
+	t.deleted = append(t.deleted, dummyDelete{cluster, reqid, message})
 	return nil
 }
 
@@ -231,11 +242,10 @@ func TestDeletes(t *testing.T) {
 	assert.Len(client.deployed, 0)
 	assert.Len(client.created, 0)
 
-	if assert.Len(client.scaled, 1) {
-		req := client.scaled[0]
+	if assert.Len(client.deleted, 1) {
+		req := client.deleted[0]
 		assert.Equal("cluster", req.cluster)
 		assert.Equal("reqid", req.reqid)
-		assert.Equal(0, req.count)
 	}
 }
 
