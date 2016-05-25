@@ -11,6 +11,10 @@ import (
 type (
 	// Manifests is a collection of Manifest.
 	Manifests map[string]*Manifest
+
+	// DeploySpecs is a collection of Deployments associated with a manifest
+	DeploySpecs map[string]PartialDeploySpec
+
 	// Manifest is a minimal representation of the global deployment state of
 	// a particular named application. It is designed to be written and read by
 	// humans as-is, and expanded into full Deployments internally. It is a DTO,
@@ -26,7 +30,7 @@ type (
 		// Kind is the kind of software that SourceRepo represents.
 		Kind ManifestKind `validate:"nonzero"`
 		// Deployments is a map of cluster names to DeploymentSpecs
-		Deployments map[string]PartialDeploySpec `validate:"keys=nonempty,values=nonzero"`
+		Deployments DeploySpecs `validate:"keys=nonempty,values=nonzero"`
 	}
 	// SourceLocation identifies a directory inside a specific source code repo.
 	// Note that the directory has no meaning without the addition of a revision

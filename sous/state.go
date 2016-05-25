@@ -10,6 +10,7 @@ type (
 		// deployment configurations for artifacts built using that source code.
 		Manifests Manifests `hy:"manifests/**"`
 	}
+
 	// Defs holds definitions for organisation-level objects.
 	Defs struct {
 		// Clusters is a collection of logical deployment environments.
@@ -20,6 +21,7 @@ type (
 		// deployment manifests.
 		Resources ResDefs
 	}
+
 	// EnvDefs is a collection of EnvDef
 	EnvDefs []EnvDef
 	// EnvDef is an environment variable definition.
@@ -27,6 +29,7 @@ type (
 		Name, Desc, Scope string
 		Type              VarType
 	}
+
 	// ResDefs is a collection of ResDef.
 	ResDefs []ResDef
 	// ResDef is a resource type definition.
@@ -37,6 +40,7 @@ type (
 		// of this resource, e.g. MemorySize, Float, or Int (not yet implemented).
 		Type VarType
 	}
+
 	// Clusters is a collection of Cluster
 	Clusters map[string]Cluster
 	// Cluster is a logical deployment target, often named for its region,
@@ -52,7 +56,8 @@ type (
 		// Env is the default environment for all deployments in this region.
 		Env EnvDefaults
 	}
-	// Env is a list of named environment variables along with their values.
+
+	// EnvDefaults is a list of named environment variables along with their values.
 	EnvDefaults map[string]Var
 	// Var is a strongly typed string for use in environment variables and YAML
 	// files. It will implement sane YAML marshalling and unmarshalling. (Not

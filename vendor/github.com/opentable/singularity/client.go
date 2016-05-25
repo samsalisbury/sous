@@ -24,13 +24,14 @@ type Client struct {
 }
 
 type ReqError struct {
-	method, path string
-	message      string
-	body         bytes.Buffer
+	Method, Path string
+	Message      string
+	Status       int
+	Body         bytes.Buffer
 }
 
 func (e *ReqError) Error() string {
-	return fmt.Sprintf("%s %s => %s: \n%s", e.method, e.path, e.message, e.body.String())
+	return fmt.Sprintf("%s %s => %s: \n%s", e.Method, e.Path, e.Message, e.Body.String())
 }
 
 func NewClient(apiBase string) (client *Client) {
@@ -59,12 +60,13 @@ func (client *Client) Request(method, path string, pathParams, queryParams urlPa
 	}
 	if res.StatusCode > 299 {
 		rerr := &ReqError{
-			message: res.Status,
-			method:  method,
-			path:    path,
-			body:    bytes.Buffer{},
+			Status:  res.StatusCode,
+			Message: res.Status,
+			Method:  method,
+			Path:    path,
+			Body:    bytes.Buffer{},
 		}
-		rerr.body.ReadFrom(res.Body)
+		rerr.Body.ReadFrom(res.Body)
 		res.Body.Close()
 		err = rerr
 		return

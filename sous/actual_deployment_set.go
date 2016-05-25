@@ -12,6 +12,8 @@ import (
 	"github.com/opentable/sous/util/docker_registry"
 )
 
+// ReqsPerServer limits the number of simultaneous number of requests made
+// against a single Singularity server
 const ReqsPerServer = 10
 
 type (
@@ -20,7 +22,7 @@ type (
 	sDepMarker *dtos.SingularityDeployMarker
 
 	singReq struct {
-		sourceUrl string
+		sourceURL string
 		sing      *singularity.Client
 		reqParent *dtos.SingularityRequestParent
 	}
@@ -28,6 +30,8 @@ type (
 	retryCounter map[string]uint
 )
 
+// GetRunningDeploymentSet collects data from the Singularity clusters and
+// returns a list of actual deployments
 func GetRunningDeploymentSet(singUrls []string) (deps Deployments, err error) {
 	retries := make(retryCounter)
 	errCh := make(chan error)
@@ -35,7 +39,7 @@ func GetRunningDeploymentSet(singUrls []string) (deps Deployments, err error) {
 	sings := make(map[string]*singularity.Client)
 
 	reqCh := make(chan singReq, len(singUrls)*ReqsPerServer)
-	depCh := make(chan Deployment, ReqsPerServer)
+	depCh := make(chan *Deployment, ReqsPerServer)
 	defer close(depCh)
 
 	regClient := docker_registry.NewClient()
@@ -151,11 +155,11 @@ func getRequestsFromSingularity(client *singularity.Client) ([]singReq, error) {
 	return reqs, nil
 }
 
-func depPipeline(cl docker_registry.Client, reqCh chan singReq, depCh chan Deployment, errCh chan error) {
+func depPipeline(cl docker_registry.Client, reqCh chan singReq, depCh chan *Deployment, errCh chan error) {
 	defer catchAndSend("dependency building", errCh)
 	for req := range reqCh {
 		go func(cl docker_registry.Client, req singReq) {
-			defer catchAndSend(fmt.Sprintf("dep from req %s", req.sourceUrl), errCh)
+			defer catchAndSend(fmt.Sprintf("dep from req %s", req.sourceURL), errCh)
 
 			dep, err := assembleDeployment(cl, req)
 
@@ -168,12 +172,12 @@ func depPipeline(cl docker_registry.Client, reqCh chan singReq, depCh chan Deplo
 	}
 }
 
-func assembleDeployment(cl docker_registry.Client, req singReq) (Deployment, error) {
+func assembleDeployment(cl docker_registry.Client, req singReq) (*Deployment, error) {
 	uc := newDeploymentBuilder(cl, req)
 	err := uc.completeConstruction()
 	if err != nil {
-		return Deployment{}, err
+		return nil, err
 	}
 
-	return uc.target, nil
+	return &uc.target, nil
 }
