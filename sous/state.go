@@ -12,6 +12,8 @@ type (
 	}
 	// Defs holds definitions for organisation-level objects.
 	Defs struct {
+		// DockerRepo is the host:port (no schema) to connect to the Docker repository
+		DockerRepo string
 		// Clusters is a collection of logical deployment environments.
 		Clusters Clusters
 		// EnvVars contains definitions for global environment variables.

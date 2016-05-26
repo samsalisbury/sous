@@ -3,6 +3,8 @@ package sous
 import (
 	"fmt"
 
+	"github.com/opentable/sous/ext/docker"
+	"github.com/opentable/sous/sous"
 	"github.com/opentable/sous/util/shell"
 )
 
@@ -39,7 +41,6 @@ type (
 // temporary storage.
 func NewBuildWithShells(bp Buildpack, c *SourceContext, sourceShell, scratchShell *shell.Sh) (*Build, error) {
 	b := &Build{
-		Pack:         bp,
 		Context:      c,
 		SourceShell:  sourceShell,
 		ScratchShell: scratchShell,
@@ -60,4 +61,26 @@ func (b *Build) Start() (*BuildResult, error) {
 		Sh: b.SourceShell,
 	}
 	return b.Pack.Build(bc)
+}
+
+// Run does a complete build run
+func (b *Build) Run(st *State, ctx *SourceContext, source, scratch *shell.Sh) (*sous.BuildResult, error) {
+	bp, err := b.FindBuildpack(st, source)
+	if err != nil {
+		return nil, err
+	}
+
+	build, err := sous.NewBuildWithShells(bp, ctx, source, scratch)
+	if err != nil {
+		return nil, err
+	}
+
+	return build.Start()
+}
+
+// FindBuildpack finds the appropriate buildpack for a project
+// ( except right now, we just return a hardcoded Dockerfile BP )
+// returns an error if no buildpack applies
+func FindBuildpack(st *State, s *shell.Sh) (Buildpack, error) {
+	return docker.NewDockerfileBuildpack(st.Defs.DockerRepo), nil
 }

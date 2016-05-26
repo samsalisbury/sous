@@ -3,11 +3,12 @@ package cli
 import (
 	"flag"
 
-	"github.com/opentable/sous/ext/docker"
 	"github.com/opentable/sous/sous"
 	"github.com/opentable/sous/util/cmdr"
 )
 
+// SousBuild is the command description for `sous build`
+// Implements cmdr.Command, cmdr.Executor and cmdr.AddFlags
 type SousBuild struct {
 	Sous          *Sous
 	WDShell       LocalWorkDirShell
@@ -30,8 +31,10 @@ path, it will instead build the project at that path.
 args: [path]
 `
 
+// Help returns the help string for this command
 func (*SousBuild) Help() string { return sousBuildHelp }
 
+// AddFlags fulfills the cmdr.AddFlags interface
 func (sb *SousBuild) AddFlags(fs *flag.FlagSet) {
 	fs.StringVar(&sb.flags.target, "target", "app",
 		"build a specific target")
@@ -41,6 +44,7 @@ func (sb *SousBuild) AddFlags(fs *flag.FlagSet) {
 		"similar to rebuild, but also rebuilds all transitive dependencies")
 }
 
+// Execute fulfills the cmdr.Executor interface
 func (sb *SousBuild) Execute(args []string) cmdr.Result {
 	if len(args) != 0 {
 		path := args[0]
@@ -48,12 +52,8 @@ func (sb *SousBuild) Execute(args []string) cmdr.Result {
 			return cmdr.EnsureErrorResult(err)
 		}
 	}
-	dbp := docker.NewDockerfileBuildpack("docker.otenv.com")
-	build, err := sous.NewBuildWithShells(dbp, sb.SourceContext, sb.WDShell.Sh, sb.ScratchShell.Sh)
-	if err != nil {
-		return cmdr.EnsureErrorResult(err)
-	}
-	result, err := build.Start()
+
+	result, err := build.Run()
 	if err != nil {
 		return cmdr.EnsureErrorResult(err)
 	}
