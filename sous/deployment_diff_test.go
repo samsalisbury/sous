@@ -15,7 +15,7 @@ func TestEmptyDiff(t *testing.T) {
 	existing := make(Deployments, 0)
 
 	dc := intended.Diff(existing)
-	ds := dc.Collect()
+	ds := dc.collect()
 
 	assert.Len(ds.New, 0)
 	assert.Len(ds.Gone, 0)
@@ -23,11 +23,11 @@ func TestEmptyDiff(t *testing.T) {
 	assert.Len(ds.Changed, 0)
 }
 
-func makeDepl(repo string, num int) Deployment {
+func makeDepl(repo string, num int) *Deployment {
 	version, _ := semv.Parse("1.1.1-latest")
 	owners := OwnerSet{}
 	owners.Add("judson")
-	return Deployment{
+	return &Deployment{
 		SourceVersion: SourceVersion{
 			RepoURL:    RepoURL(repo),
 			Version:    version,
@@ -69,7 +69,7 @@ func TestRealDiff(t *testing.T) {
 	existing.Add(makeDepl(repoFour, 1)) //create
 
 	dc := intended.Diff(existing)
-	ds := dc.Collect()
+	ds := dc.collect()
 
 	if assert.Len(ds.Gone, 1, "Should have one deleted item.") {
 		assert.Equal(string(ds.Gone[0].SourceVersion.RepoURL), repoOne)

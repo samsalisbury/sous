@@ -13,6 +13,7 @@ type (
 		created  []dummyRequest
 		deployed []dummyDeploy
 		scaled   []dummyScale
+		deleted  []dummyDelete
 	}
 
 	dummyDeploy struct {
@@ -33,6 +34,10 @@ type (
 		cluster, reqid string
 		count          int
 		message        string
+	}
+
+	dummyDelete struct {
+		cluster, reqid, message string
 	}
 )
 
@@ -59,6 +64,12 @@ func (t *TestRectClient) Scale(cluster, reqid string, count int, message string)
 	return nil
 }
 
+// DeleteRequest(cluster url, request id, instance count, message)
+func (t *TestRectClient) DeleteRequest(cluster, reqid, message string) error {
+	t.deleted = append(t.deleted, dummyDelete{cluster, reqid, message})
+	return nil
+}
+
 //ImageName finds or guesses a docker image name for a Deployment
 func (t *TestRectClient) ImageName(d *Deployment) (string, error) {
 	return d.SourceVersion.String(), nil
@@ -69,7 +80,7 @@ func (t *TestRectClient) ImageName(d *Deployment) (string, error) {
 func TestModifyScale(t *testing.T) {
 	log.SetFlags(log.Flags() | log.Lshortfile)
 	assert := assert.New(t)
-	pair := DeploymentPair{
+	pair := &DeploymentPair{
 		prior: &Deployment{
 			SourceVersion: SourceVersion{
 				RepoURL: RepoURL("reqid"),
@@ -113,7 +124,7 @@ func TestModifyImage(t *testing.T) {
 	assert := assert.New(t)
 	before, _ := semv.Parse("1.2.3-test")
 	after, _ := semv.Parse("2.3.4-new")
-	pair := DeploymentPair{
+	pair := &DeploymentPair{
 		prior: &Deployment{
 			SourceVersion: SourceVersion{
 				RepoURL: RepoURL("reqid"),
@@ -159,7 +170,7 @@ func TestModify(t *testing.T) {
 	assert := assert.New(t)
 	before, _ := semv.Parse("1.2.3-test")
 	after, _ := semv.Parse("2.3.4-new")
-	pair := DeploymentPair{
+	pair := &DeploymentPair{
 		prior: &Deployment{
 			SourceVersion: SourceVersion{
 				RepoURL: RepoURL("reqid"),
@@ -207,7 +218,7 @@ func TestModify(t *testing.T) {
 func TestDeletes(t *testing.T) {
 	assert := assert.New(t)
 
-	deleted := Deployment{
+	deleted := &Deployment{
 		SourceVersion: SourceVersion{
 			RepoURL: RepoURL("reqid"),
 		},
@@ -231,11 +242,10 @@ func TestDeletes(t *testing.T) {
 	assert.Len(client.deployed, 0)
 	assert.Len(client.created, 0)
 
-	if assert.Len(client.scaled, 1) {
-		req := client.scaled[0]
+	if assert.Len(client.deleted, 1) {
+		req := client.deleted[0]
 		assert.Equal("cluster", req.cluster)
 		assert.Equal("reqid", req.reqid)
-		assert.Equal(0, req.count)
 	}
 }
 
@@ -248,7 +258,7 @@ func TestCreates(t *testing.T) {
 	errs := make(chan RectificationError)
 	Rectify(chanset, errs, &client)
 
-	created := Deployment{
+	created := &Deployment{
 		SourceVersion: SourceVersion{
 			RepoURL: RepoURL("reqid"),
 		},
