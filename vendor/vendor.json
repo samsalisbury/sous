@@ -215,6 +215,30 @@
 			"checksumSHA1": "DZjiEZueh7I0dV8c/+rAJdCgaDI=",
 			"path": "golang.org/x/text/unicode/norm",
 			"revision": "601048ad6acbab6cedd582db09b8c4839ff25b15"
+		},
+		{
+			"checksumSHA1": "8QUPOpsU35L0haBAhsFzsV4gPDs=",
+			"path": "golang.org/x/tools/go/ast/astutil",
+			"revision": "e48e17a0b53ae4153fa6507c56e898a9ad9e0d89",
+			"revisionTime": "2016-04-28T02:41:15Z"
+		},
+		{
+			"checksumSHA1": "2bj5Jq3+RmE2blLnFUfkASYGTlg=",
+			"path": "golang.org/x/tools/godoc/vfs",
+			"revision": "e48e17a0b53ae4153fa6507c56e898a9ad9e0d89",
+			"revisionTime": "2016-04-28T02:41:15Z"
+		},
+		{
+			"checksumSHA1": "Qwc7VecyIh84Ol8n9J9DUwZQtII=",
+			"path": "golang.org/x/tools/godoc/vfs/mapfs",
+			"revision": "e48e17a0b53ae4153fa6507c56e898a9ad9e0d89",
+			"revisionTime": "2016-04-28T02:41:15Z"
+		},
+		{
+			"checksumSHA1": "VNlrj4hgABcsAE2QC6oLWYJPNl8=",
+			"path": "golang.org/x/tools/imports",
+			"revision": "e48e17a0b53ae4153fa6507c56e898a9ad9e0d89",
+			"revisionTime": "2016-04-28T02:41:15Z"
 		}
 	],
 	"rootPath": "github.com/opentable/sous"
