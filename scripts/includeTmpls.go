@@ -1,12 +1,16 @@
 package main
 
 import (
+	"bytes"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
+
+	"golang.org/x/tools/imports"
 )
 
 // started from http://stackoverflow.com/questions/17796043/golang-embedding-text-file-into-compiled-executable
@@ -21,7 +25,8 @@ const header = `// This file was automatically generated based on the contents o
 `
 
 func main() {
-	out, err := os.Create("templates.go")
+	out := &bytes.Buffer{}
+	file, err := os.Create("templates.go")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -47,6 +52,18 @@ func main() {
 		}
 	}
 	out.Write([]byte(")\n"))
+	cwd, err := os.Getwd()
+	if err != nil {
+		log.Fatal("Couldn't get current working directory")
+	}
+	fullpath := filepath.Join(cwd, "templates.go")
+
+	formattedBytes, err := imports.Process(fullpath, out.Bytes(), nil)
+	if err != nil {
+		log.Print("Problem formatting to ", fullpath, ": ", err)
+		formattedBytes = out.Bytes()
+	}
+	file.Write(formattedBytes)
 }
 
 type escaper struct {
