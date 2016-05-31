@@ -23,7 +23,7 @@ func (r *Repo) SourceContext() (*sous.SourceContext, error) {
 		func(err *error) { branch, *err = c.CurrentBranch() },
 		func(err *error) { revision, *err = c.Revision() },
 		func(err *error) {
-			repoRelativeDir, *err = filepath.Rel(r.Root, c.Sh.Dir)
+			repoRelativeDir, *err = filepath.Rel(r.Root, c.Sh.Dir())
 			if repoRelativeDir == "." {
 				repoRelativeDir = ""
 			}

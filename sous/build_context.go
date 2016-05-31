@@ -9,7 +9,7 @@ import (
 type (
 	// BuildContext contains all the data required to perform a build.
 	BuildContext struct {
-		Sh      *shell.Sh
+		Sh      shell.Shell
 		Source  SourceContext
 		Scratch ScratchContext
 		Machine Machine
@@ -22,6 +22,7 @@ type (
 		Sh                 *shell.Sh
 		RootDir, OffsetDir string
 	}
+
 	// Machine represents a specific computer.
 	Machine struct {
 		Host, FullHost string

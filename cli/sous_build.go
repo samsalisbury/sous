@@ -53,7 +53,7 @@ func (sb *SousBuild) Execute(args []string) cmdr.Result {
 		}
 	}
 
-	result, err := build.Run()
+	result, err := sous.RunBuild("docker.otenv.com", sb.SourceContext, sb.WDShell, sb.ScratchShell)
 	if err != nil {
 		return cmdr.EnsureErrorResult(err)
 	}

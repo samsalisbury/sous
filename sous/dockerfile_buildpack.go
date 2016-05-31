@@ -1,53 +1,49 @@
-package docker
+package sous
 
 import (
 	"fmt"
-	"log"
-	"os/exec"
-	"path/filepath"
+	"regexp"
 	"time"
-
-	"github.com/opentable/sous/sous"
 )
 
 type (
 	// DockerfileBuildpack is a simple buildpack for building projects using
 	// their own Dockerfile.
 	DockerfileBuildpack struct {
-		DockerRegistryHost string
 	}
 )
 
 // NewDockerfileBuildpack creates a Dockerfile buildpack
-func NewDockerfileBuildpack(registry string) *DockerfileBuildpack {
-	return &DockerfileBuildpack{
-		DockerRegistryHost: registry,
-	}
+func NewDockerfileBuildpack() *DockerfileBuildpack {
+	return &DockerfileBuildpack{}
 }
 
-// Build implements sous.Buildpack.Build
-func (d *DockerfileBuildpack) Build(c *sous.BuildContext) (*sous.BuildResult, error) {
+var successfulBuildRE = regexp.MustCompile(`Successfully built (\w+)`)
+
+// Build implements Buildpack.Build
+func (d *DockerfileBuildpack) Build(c *BuildContext) (*BuildResult, error) {
 	if !c.Sh.Exists("Dockerfile") {
 		return nil, fmt.Errorf("Dockerfile does not exist")
 	}
-	v := c.Source.Version()
+
 	start := time.Now()
-	err := c.Sh.Run("docker", "build", ".")
+	output, err := c.Sh.Stdout("docker", "build", ".")
 	if err != nil {
 		return nil, err
 	}
-	return &sous.BuildResult{
-		ImageName: dockerTag,
-		Elapsed:   time.Since(start),
+
+	match := successfulBuildRE.FindStringSubmatch(string(output))
+	if match == nil {
+		return nil, fmt.Errorf("Couldn't find container id in:\n%s", output)
+	}
+
+	return &BuildResult{
+		ImageID: match[1],
+		Elapsed: time.Since(start),
 	}, nil
 }
 
-// ImageTag computes an image tag from a SourceVersion
-func (d *DockerfileBuildpack) ImageTag(v sous.SourceVersion) string {
-	regRepo := filepath.Join(d.DockerRegistryHost, v.CanonicalName().String())
-	return fmt.Sprintf("%s:%s", regRepo, v.Version)
-}
-
+/*
 func buildAndPushContainer(containerDir, tagName string) error {
 	build := exec.Command("docker", "build", ".")
 	build.Dir = containerDir
@@ -79,3 +75,4 @@ func buildAndPushContainer(containerDir, tagName string) error {
 
 	return nil
 }
+*/
