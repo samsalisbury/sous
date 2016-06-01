@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/opentable/sous/sous"
+	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/shell"
 	"github.com/samsalisbury/semv"
 )

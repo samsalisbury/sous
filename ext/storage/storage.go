@@ -13,7 +13,7 @@
 package storage
 
 import (
-	"github.com/opentable/sous/sous"
+	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/hy"
 )
 

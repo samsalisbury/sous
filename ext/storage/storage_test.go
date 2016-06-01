@@ -4,7 +4,7 @@ import (
 	"os/exec"
 	"testing"
 
-	"github.com/opentable/sous/sous"
+	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/yaml"
 	"github.com/samsalisbury/semv"
 )

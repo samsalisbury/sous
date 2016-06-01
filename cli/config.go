@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	"github.com/opentable/sous/sous"
+	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/configloader"
 	"github.com/opentable/sous/util/whitespace"
 	"github.com/opentable/sous/util/yaml"

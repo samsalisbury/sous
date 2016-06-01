@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/opentable/sous/sous"
+	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/docker_registry"
 	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/assert"

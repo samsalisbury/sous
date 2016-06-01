@@ -3,7 +3,7 @@ package cli
 import (
 	"encoding/json"
 
-	"github.com/opentable/sous/sous"
+	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
 )
 

@@ -7,7 +7,7 @@ import (
 	"os/user"
 
 	"github.com/opentable/sous/ext/git"
-	"github.com/opentable/sous/sous"
+	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
 	"github.com/opentable/sous/util/shell"
 	"github.com/samsalisbury/psyringe"
