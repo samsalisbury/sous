@@ -6,11 +6,12 @@ import (
 
 	"github.com/docopt/docopt-go"
 	"github.com/opentable/sous/util/docker_registry"
+	"github.com/opentable/sous/util/whitespace"
 )
 
 func main() {
 	log.SetFlags(log.Flags() | log.Lshortfile)
-	parsed, err := docopt.Parse(cleanWS(`
+	parsed, err := docopt.Parse(whitespace.CleanWS(`
 	Usage:
 	  docker_labels [options] <image-name>
 

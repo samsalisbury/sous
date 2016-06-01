@@ -9,7 +9,7 @@ import (
 	"github.com/opentable/sous/util/shell"
 )
 
-//go:generate go run ../scripts/includeTmpls.go
+//go:generate go run ../bin/includeTmpls.go
 
 type (
 	// Build represents a single build of a project.
