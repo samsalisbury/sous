@@ -7,11 +7,14 @@ import (
 	"github.com/opentable/sous/util/cmdr"
 )
 
+// SousBuild is the command description for `sous build`
+// Implements cmdr.Command, cmdr.Executor and cmdr.AddFlags
 type SousBuild struct {
-	Sous         *Sous
-	WDShell      LocalWorkDirShell
-	ScratchShell ScratchDirShell
-	flags        struct {
+	Sous          *Sous
+	WDShell       LocalWorkDirShell
+	ScratchShell  ScratchDirShell
+	SourceContext *sous.SourceContext
+	flags         struct {
 		target              string
 		rebuild, rebuildAll bool
 	}
@@ -28,8 +31,10 @@ path, it will instead build the project at that path.
 args: [path]
 `
 
+// Help returns the help string for this command
 func (*SousBuild) Help() string { return sousBuildHelp }
 
+// AddFlags fulfills the cmdr.AddFlags interface
 func (sb *SousBuild) AddFlags(fs *flag.FlagSet) {
 	fs.StringVar(&sb.flags.target, "target", "app",
 		"build a specific target")
@@ -39,6 +44,7 @@ func (sb *SousBuild) AddFlags(fs *flag.FlagSet) {
 		"similar to rebuild, but also rebuilds all transitive dependencies")
 }
 
+// Execute fulfills the cmdr.Executor interface
 func (sb *SousBuild) Execute(args []string) cmdr.Result {
 	if len(args) != 0 {
 		path := args[0]
@@ -46,13 +52,11 @@ func (sb *SousBuild) Execute(args []string) cmdr.Result {
 			return cmdr.EnsureErrorResult(err)
 		}
 	}
-	build, err := sous.NewBuildWithShells(sb.WDShell.Sh, sb.ScratchShell.Sh)
+
+	result, err := sous.RunBuild("docker.otenv.com", sb.SourceContext, sb.WDShell, sb.ScratchShell)
 	if err != nil {
 		return cmdr.EnsureErrorResult(err)
 	}
-	if err := build.Start(); err != nil {
-		return cmdr.EnsureErrorResult(err)
-	}
 
-	return InternalErrorf("not implemented")
+	return Success(result)
 }

@@ -18,19 +18,26 @@ type (
 	// Command is a wrapper around an exec.Cmd
 	Command struct {
 		// Sh is a copy of the shell this command is executing in.
-		*Sh
+		Sh
+
 		// Name is the name of the command itself.
 		Name string
+
 		// Args is a list of args to be passed to the command.
 		Args []string
+
+		// Stdin is (possibly) a string to feed to the command.
+		SI io.Reader
 	}
 	// Result is the result of running a command to completion.
 	Result struct {
-		Command                  *Command
+		Command                  Cmd
 		Stdout, Stderr, Combined *Output
 		Err                      error
 		ExitCode                 int
 	}
+
+	// Error wraps command errors
 	Error struct {
 		// Err is the original error that was returned.
 		Err error
@@ -38,7 +45,7 @@ type (
 		// this error.
 		Result *Result
 		// Command is the command which caused this error.
-		Command *Command
+		Command Cmd
 	}
 )
 
@@ -53,6 +60,11 @@ func newError(err error, r *Result) Error {
 		Result:  r,
 		Command: r.Command,
 	}
+}
+
+// Stdin sets the stdin on the command
+func (c *Command) Stdin(in io.Reader) {
+	c.SI = in
 }
 
 // Stdout returns the stdout stream as a string. It returns an error for the
@@ -145,6 +157,7 @@ func (c *Command) Result() (*Result, error) {
 
 	command.Stdout = io.MultiWriter(outWriters...)
 	command.Stderr = io.MultiWriter(errWriters...)
+	command.Stdin = c.SI
 
 	if err := command.Start(); err != nil {
 		return nil, err

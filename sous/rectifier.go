@@ -202,7 +202,6 @@ func computeRequestID(d *Deployment) string {
 	if len(d.RequestID) > 0 {
 		return d.RequestID
 	}
-	log.Printf("d. = %+v\n", d.SourceVersion.CanonicalName())
 	return idify(d.SourceVersion.CanonicalName().String())
 }
 

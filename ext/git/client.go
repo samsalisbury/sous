@@ -55,12 +55,14 @@ func NewClientInVersionRange(sh *shell.Sh, r semv.Range) (*Client, error) {
 	return c, nil
 }
 
+// Clone produces a clone of the client
 func (c *Client) Clone() *Client {
 	cp := *c
-	cp.Sh = cp.Sh.Clone()
+	cp.Sh = cp.Sh.Clone().(*shell.Sh)
 	return &cp
 }
 
+// OpenRepo opens a repo
 func (c *Client) OpenRepo(dirpath string) (*Repo, error) {
 	sh := c.Sh.Clone()
 	if err := sh.CD(dirpath); err != nil {
@@ -85,7 +87,7 @@ func (c *Client) table(name string, args ...interface{}) ([][]string, error) {
 }
 
 func (c *Client) Dir() string {
-	return c.Sh.Dir
+	return c.Sh.Dir()
 }
 
 func (c *Client) RevisionAt(ref string) (string, error) {

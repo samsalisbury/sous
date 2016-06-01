@@ -1,24 +1,10 @@
-// The shell package provides convenience wrappers around os/exec.
-//
-// Specifically, it is designed to loosely emulate an ordinary shell session,
-// with persistent directory context. It provides many helper functions around
-// processing output streams into Go-friendly structures, and returning errors
-// in an expected way.
-//
-// In general, and functions that specifically look for exit codes or output on
-// stderr do not return an error for non-zero exit codes; they still return
-// errors for other problems, like the process not starting due to failure to
-// attach pipes, the binary not existing, etc. All other helper functions return
-// errors for non-zero exit codes.
-//
-// This package is designed to aid with logging sessions, good for building CLI
-// applications that shell out, and exposing these sessions to the user.
 package shell
 
 import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 )
@@ -26,8 +12,8 @@ import (
 type (
 	// Sh is a shell helper.
 	Sh struct {
-		// Dir is the working directory of the shell.
-		Dir string
+		// Cwd is the working directory of the shell.
+		Cwd string
 		// Env is the environment variables of the shell.
 		Env []string
 		// If TeeOut is non-nil, then all stdout commands get written to it, in
@@ -36,9 +22,6 @@ type (
 		// TeeErr is similar to TeeOut, except that it has stderr written to it
 		// instead of stdout.
 		TeeErr io.Writer
-		// MonitorFuncs is a slice of funcs that are called for each command,
-		// they are passed the command name, and a slice of args.
-		MonitorFuncs []func(string, []string)
 	}
 )
 
@@ -55,7 +38,7 @@ func Default() (*Sh, error) {
 		return nil, err
 	}
 	return &Sh{
-		Dir: wd,
+		Cwd: wd,
 		Env: os.Environ(),
 	}, nil
 }
@@ -68,13 +51,20 @@ func DefaultInDir(path string) (*Sh, error) {
 	return sh, sh.CD(path)
 }
 
+// Dir returns the directory for this shell
+func (s *Sh) Dir() string {
+	return s.Cwd
+}
+
 // Clone returns a deep copy of this shell.
-func (s *Sh) Clone() *Sh {
+func (s *Sh) Clone() Shell {
+	return s.clone()
+}
+
+func (s *Sh) clone() *Sh {
 	cp := *s
 	cp.Env = make([]string, len(s.Env))
 	copy(cp.Env, s.Env)
-	cp.MonitorFuncs = make([]func(string, []string), len(s.MonitorFuncs))
-	copy(cp.MonitorFuncs, s.MonitorFuncs)
 	return &cp
 }
 
@@ -83,27 +73,27 @@ func (s *Sh) Clone() *Sh {
 // dir. If the directory does not exist, CD returns an error.
 func (s *Sh) CD(dir string) error {
 	if !filepath.IsAbs(dir) {
-		dir = filepath.Clean(filepath.Join(s.Dir, dir))
+		dir = filepath.Clean(filepath.Join(s.Cwd, dir))
 	}
-	s.Dir = dir
-	f, err := os.Stat(s.Dir)
+	s.Cwd = dir
+	f, err := os.Stat(s.Cwd)
 	if err != nil {
 		return err
 	}
 	if !f.IsDir() {
-		return fmt.Errorf("%s is not a directory", s.Dir)
+		return fmt.Errorf("%s is not a directory", s.Cwd)
 	}
 	return nil
 }
 
 // Cmd creates a new Command based on this shell.
-func (s *Sh) Cmd(name string, args ...interface{}) *Command {
+func (s *Sh) Cmd(name string, args ...interface{}) Cmd {
 	sargs := make([]string, len(args))
 	for i, a := range args {
 		sargs[i] = fmt.Sprint(a)
 	}
 	return &Command{
-		Sh:   s.Clone(),
+		Sh:   *s.clone(),
 		Name: name,
 		Args: sargs,
 	}
@@ -111,30 +101,62 @@ func (s *Sh) Cmd(name string, args ...interface{}) *Command {
 
 // List returns all files (including dotfiles) inside Dir.
 func (s *Sh) List() ([]os.FileInfo, error) {
-	return ioutil.ReadDir(s.Dir)
+	log.Println("")
+	return ioutil.ReadDir(s.Cwd)
 }
 
-// Stdout(...) is a shortcut for shell.Cmd(...).Stdout()
+// Exists returns true if the path definitely exists. It swallows
+// any errors and returns false, in the case that e.g. permissions
+// prevent the check from working correctly.
+func (s *Sh) Exists(path string) bool {
+	log.Println("")
+	_, err := s.Stat(path)
+	return err == nil
+}
+
+// Stat calls os.Stat on the path provided, relative to the current
+// shell's working directory.
+func (s *Sh) Stat(path string) (os.FileInfo, error) {
+	log.Println("")
+	return os.Stat(s.Abs(path))
+}
+
+// Abs returns the absolute path of the path provided in relation to this shell.
+// If the path is already absolute, it is returned simplified but otherwise
+// unchanged.
+func (s *Sh) Abs(path string) string {
+	if filepath.IsAbs(path) {
+		return filepath.Clean(path)
+	}
+	return filepath.Join(s.Cwd, path)
+}
+
+// Run (...) is a shortcut for shell.Cmd(...).Succeed()
+func (s *Sh) Run(name string, args ...interface{}) error {
+	return s.Cmd(name, args...).Succeed()
+}
+
+// Stdout (...) is a shortcut for shell.Cmd(...).Stdout()
 func (s *Sh) Stdout(name string, args ...interface{}) (string, error) {
 	return s.Cmd(name, args...).Stdout()
 }
 
-// Stderr(...) is a shortcut for shell.Cmd(...).Stderr()
+// Stderr (...) is a shortcut for shell.Cmd(...).Stderr()
 func (s *Sh) Stderr(name string, args ...interface{}) (string, error) {
 	return s.Cmd(name, args...).Stderr()
 }
 
-// ExitCode(...) is a shortcut for shell.Cmd(...).ExitCode()
+// ExitCode (...) is a shortcut for shell.Cmd(...).ExitCode()
 func (s *Sh) ExitCode(name string, args ...interface{}) (int, error) {
 	return s.Cmd(name, args...).ExitCode()
 }
 
-// Lines(...) is a shortcut for shell.Cmd(...).Lines()
+// Lines (...) is a shortcut for shell.Cmd(...).Lines()
 func (s *Sh) Lines(name string, args ...interface{}) ([]string, error) {
 	return s.Cmd(name, args...).Lines()
 }
 
-// JSON(x, ...) is a shortcut for shell.Cmd(...).JSON(x)
+// JSON (x, ...) is a shortcut for shell.Cmd(...).JSON(x)
 func (s *Sh) JSON(v interface{}, name string, args ...interface{}) error {
 	return s.Cmd(name, args...).JSON(v)
 }
