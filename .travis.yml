@@ -1,22 +1,25 @@
 sudo: required
 services:
-  - docker
+- docker
 language: go
 go:
-  - 1.6
+- 1.6
 before_install:
-  - cat /etc/hosts # optionally check the content *before*
-  - sudo hostname "$(hostname | cut -c1-63)" # Otherwise, Java gets a buffer overflow
-  - sudo sed -i -E -e "s/^(127\\.0\\.0\\.1.*|::1.*)/\\1 $(hostname | cut -c1-63)/" /etc/hosts
-  - cat /etc/hosts # optionally check the content *after*
+- cat /etc/hosts
+- sudo hostname "$(hostname | cut -c1-63)"
+- sudo sed -i -E -e "s/^(127\\.0\\.0\\.1.*|::1.*)/\\1 $(hostname | cut -c1-63)/" /etc/hosts
+- cat /etc/hosts
 install:
-  # Disable the default install step, as we want the build to rely only on vendored
-  # dependencies. (The default install step at present performs a go get.)
-  - echo "Default install step disabled by .travis.yml"
+- echo "Default install step disabled by .travis.yml"
 script:
-  - ./bin/test
-  - ./bin/check-gofmt
-  - '[ $TRAVIS_SECURE_ENV_VARS == false ] || ./bin/publish "$TRAVIS_TAG"'
+- "./bin/test"
+- "./bin/check-gofmt"
+- '[ $TRAVIS_SECURE_ENV_VARS == false ] || ./bin/publish "$TRAVIS_TAG"'
 env:
   global:
-    - secure: jQv4im3Imakryl54Z7qR2BEa1+Gq//sAwo3XP/1J6sSdtBjtOYY1SgdAYh7pVB111HV546vKPJqQ6GsAtHM7tjnVjlF1PabAHEWl/ZP3ZXj3SvuFNaV5j5PmrJvxPlK7nbr0uG6PPspxFkZg+X87GGIyFGCp7F3EWKIU6aX6rEeBbY/greAxISmtGYHrDwK4sQnMXl4+WoagbKwoi16fK94XweU2Etg40rLwtYRdRJTPMdhrinkkkfQ4Jga5uepsmkZFjgZJySgyEzxvVuUuEYHaQreRLHzJBjPXw96tQOGpw4OT5aRJjga6PlEJRp68pC3KPrzW7lQQMMCHpxrauEqR1r1ltg+UD2GIixAT80duOl7mD6aPyx3L04L/bg4u1sI26JyHN34X/mpg9OufE47zSOC48RicSA6y4D+ZyD/dubu626NScnLufAveWaVH/mu5brVZ3ni+8BgVqDW/vfIJTyELegz7DD9wS/xaoUVnAjnTH73efce8bDAaAOvpa4dlkZEcBDU2LjasP735FNh0/sLeVsuwhopMIKPsnpwce1Fxg83ls+KRDqXj8/l67Db5nQqTvsWk3S12nvrgPO1uX/we8fqwUKuLNlnU3befd7KugvUamixGoxlX65etwt4hvFWT11Qfv/IB7JXjLToUAfXm/QpiprEm/VqZWTM=
+  - secure: jQv4im3Imakryl54Z7qR2BEa1+Gq//sAwo3XP/1J6sSdtBjtOYY1SgdAYh7pVB111HV546vKPJqQ6GsAtHM7tjnVjlF1PabAHEWl/ZP3ZXj3SvuFNaV5j5PmrJvxPlK7nbr0uG6PPspxFkZg+X87GGIyFGCp7F3EWKIU6aX6rEeBbY/greAxISmtGYHrDwK4sQnMXl4+WoagbKwoi16fK94XweU2Etg40rLwtYRdRJTPMdhrinkkkfQ4Jga5uepsmkZFjgZJySgyEzxvVuUuEYHaQreRLHzJBjPXw96tQOGpw4OT5aRJjga6PlEJRp68pC3KPrzW7lQQMMCHpxrauEqR1r1ltg+UD2GIixAT80duOl7mD6aPyx3L04L/bg4u1sI26JyHN34X/mpg9OufE47zSOC48RicSA6y4D+ZyD/dubu626NScnLufAveWaVH/mu5brVZ3ni+8BgVqDW/vfIJTyELegz7DD9wS/xaoUVnAjnTH73efce8bDAaAOvpa4dlkZEcBDU2LjasP735FNh0/sLeVsuwhopMIKPsnpwce1Fxg83ls+KRDqXj8/l67Db5nQqTvsWk3S12nvrgPO1uX/we8fqwUKuLNlnU3befd7KugvUamixGoxlX65etwt4hvFWT11Qfv/IB7JXjLToUAfXm/QpiprEm/VqZWTM=
+notifications:
+  hipchat:
+    notify: true
+    rooms:
+      secure: MYcyZu5zXfvu72SKPt5vdF/LYtzKdybmL0RIIiiTJzGjb08Cz7LyvyfBBkFc9KWxHT3qK/swUUeCxLHYXHDFfzMDiWYPD+QB7Z2704f4/V8Vg3BjGz2CXlnNC3x1ehj3EbryMfg9C2K/dmYXI7YDjvZwT1iGM/63tMBZSUPE25mfnX6CoIpiIqznMB68JmJzTu9k8BxHKVOkwyvzmKKe7bcG+poiurXM60ly2qUqO11gmT019HOQMMUsxqVUXPoSALhZMArqXQzWG7t/408SGByI7CG1RwGuT8h+iGgsDMH4j30quormEG+y+7VzTjetRFae5BPZ0iCIu11p5atFc2ejNbDVGHdagK7H6hCuPzACWtRHDyVV1ZZ6Bv3pAtId1iCXeHebdagMe5BAsAv6G0Li+6WNQL3o7Tj6wSMPeJ/Zz9XwKHeoFocrERMhfCuhyx/M1mPZPYDVFZ/H4/GiNquDppRxUiCWK61XGmQI0fTY+R0mW6pX9l40oELV1kf6PoJCjYPRJI/kXqTi5x6dfLDctKhrUk662iXSailMtaJJKYREa30OvEaXjNrC0OSw+PTmK9zavVtsSkwkgRnBes1ZlYZnH3VKMGM0mV/L/aKzAAY9xsIuUOl8gvHK3NZ/yUWW58ncVqv+++cEM1ZxuFVuVFtIP/EpV5fc0h0/+Wc=
