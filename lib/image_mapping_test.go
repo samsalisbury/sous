@@ -31,11 +31,7 @@ func TestRoundTrip(t *testing.T) {
 	assert := assert.New(t)
 
 	mds := make(mdChan, 10)
-	nc := NameCache{
-		&DummyRegistryClient{mds},
-		make(dockerNameLookup),
-		make(sourceNameLookup),
-	}
+	nc := NewNameCache(&DummyRegistryClient{mds})
 
 	v := semv.MustParse("1.2.3")
 	sv := SourceVersion{
@@ -56,8 +52,6 @@ func TestRoundTrip(t *testing.T) {
 	if assert.Nil(err) {
 		assert.Equal(in, nin)
 	}
-
-	//assert.Equal(sv, nc.GetSourceVersion(in))
 
 	newV := semv.MustParse("1.2.42")
 	newSV := SourceVersion{
