@@ -11,7 +11,7 @@ import (
 // appropriate components to compute the intended deployment set, collect the
 // actual set, compute the diffs and then issue the commands to rectify those
 // differences.
-func Resolve(config State) error {
+func Resolve(nc NameCache, config State) error {
 	gdm, err := config.Deployments()
 	if err != nil {
 		return err
@@ -26,7 +26,7 @@ func Resolve(config State) error {
 
 	errs := make(chan RectificationError)
 
-	rc := NewRectiAgent()
+	rc := NewRectiAgent(nc)
 
 	Rectify(differ, errs, rc)
 
@@ -40,13 +40,13 @@ func Resolve(config State) error {
 //Sous config from a directory of YAML files. This use case is important for
 //proof-of-concept, but long term we expect to be able to abstract the storage
 //of the Sous state away, so this might be deprecated at some point.
-func ResolveFromDir(dir string) error {
+func ResolveFromDir(nc NameCache, dir string) error {
 	config, err := loadConfig(dir)
 	if err != nil {
 		return err
 	}
 
-	return Resolve(config)
+	return Resolve(nc, config)
 }
 
 func loadConfig(dir string) (st State, err error) {

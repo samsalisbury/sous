@@ -73,23 +73,25 @@ func TestResolve(t *testing.T) {
 	repoTwo := "https://github.com/opentable/two.git"
 	repoThree := "https://github.com/opentable/three.git"
 
+	nc := sous.NewNameCache(docker_registry.NewClient())
+
 	stateOneTwo := sous.State{
 		Defs: clusterDefs,
 		Manifests: sous.Manifests{
-			"one": manifest("opentable/one", "test-one", repoOne, "1.1.1"),
-			"two": manifest("opentable/two", "test-two", repoTwo, "1.1.1"),
+			"one": manifest(nc, "opentable/one", "test-one", repoOne, "1.1.1"),
+			"two": manifest(nc, "opentable/two", "test-two", repoTwo, "1.1.1"),
 		},
 	}
 	stateTwoThree := sous.State{
 		Defs: clusterDefs,
 		Manifests: sous.Manifests{
-			"two":   manifest("opentable/two", "test-two", repoTwo, "1.1.1"),
-			"three": manifest("opentable/three", "test-three", repoThree, "1.1.1"),
+			"two":   manifest(nc, "opentable/two", "test-two", repoTwo, "1.1.1"),
+			"three": manifest(nc, "opentable/three", "test-three", repoThree, "1.1.1"),
 		},
 	}
 
 	// ****
-	err := sous.Resolve(stateOneTwo)
+	err := sous.Resolve(nc, stateOneTwo)
 	if err != nil {
 		assert.Fail(err.Error())
 	}
@@ -108,7 +110,7 @@ func TestResolve(t *testing.T) {
 	assert.Equal(1, two.NumInstances)
 
 	// ****
-	err = sous.Resolve(stateTwoThree)
+	err = sous.Resolve(nc, stateTwoThree)
 	if err != nil {
 		assert.Fail(err.Error())
 	}
@@ -149,7 +151,7 @@ func findRepo(deps sous.Deployments, repo string) int {
 	return -1
 }
 
-func manifest(drepo, containerDir, sourceURL, version string) *sous.Manifest {
+func manifest(nc sous.NameCache, drepo, containerDir, sourceURL, version string) *sous.Manifest {
 	sv := sous.SourceVersion{
 		RepoURL:    sous.RepoURL(sourceURL),
 		RepoOffset: sous.RepoOffset(""),
@@ -159,7 +161,7 @@ func manifest(drepo, containerDir, sourceURL, version string) *sous.Manifest {
 	in := buildImageName(drepo, version)
 	buildAndPushContainer(containerDir, in)
 
-	sous.InsertImageRecord(sv, in, "")
+	nc.Insert(sv, in, "")
 
 	return &sous.Manifest{
 		Source: sous.SourceLocation{

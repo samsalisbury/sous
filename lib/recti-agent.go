@@ -16,10 +16,10 @@ type RectiAgent struct {
 }
 
 // NewRectiAgent returns a set-up RectiAgent
-func NewRectiAgent() *RectiAgent {
+func NewRectiAgent(nc NameCache) *RectiAgent {
 	return &RectiAgent{
 		singClients: make(map[string]*singularity.Client),
-		nameCache:   theNameCache,
+		nameCache:   nc,
 	}
 }
 
