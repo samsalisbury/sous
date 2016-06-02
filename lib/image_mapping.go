@@ -16,14 +16,9 @@ type (
 	NameCache struct {
 		registryClient docker_registry.Client
 		db             *sql.DB
-		dockerNameLookup
-		sourceNameLookup
 	}
 
 	imageName string
-
-	sourceNameLookup map[imageName]*sourceRecord
-	dockerNameLookup map[SourceVersion]*sourceRecord
 
 	// NotModifiedErr is returned when an HTTP server returns Not Modified in
 	// response to a conditional request
@@ -56,10 +51,18 @@ func (e NotModifiedErr) Error() string {
 	return "Not modified"
 }
 
-var theNameCache = NewNameCache(docker_registry.NewClient())
+func getDatabase(cfg ...string) (*sql.DB, error) {
+	driver := "sqlite3"
+	conn := ":memory:"
+	if len(cfg) >= 1 {
+		driver = cfg[0]
+	}
 
-func getDatabase() (*sql.DB, error) {
-	db, err := sql.Open("sqlite3", ":memory:") //only call once
+	if len(cfg) >= 2 {
+		conn = cfg[1]
+	}
+
+	db, err := sql.Open(driver, conn) //only call once
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +72,7 @@ func getDatabase() (*sql.DB, error) {
 		return nil, err
 	}
 
-	_, err = db.Exec("create table if not exists metadata(" +
+	_, err = db.Exec("create table if not exists docker_search_metadata(" +
 		"metadata_id integer primary key autoincrement, " +
 		"etag text not null, " +
 		"canonicalName text not null, " +
@@ -82,9 +85,10 @@ func getDatabase() (*sql.DB, error) {
 		return nil, err
 	}
 
-	_, err = db.Exec("create table if not exists name(" +
+	_, err = db.Exec("create table if not exists docker_search_name(" +
 		"name_id integer primary key autoincrement, " +
-		"metadata_id references metadata on delete cascade on update cascade not null, " +
+		"metadata_id references docker_search_metadata " +
+		"   on delete cascade on update cascade not null, " +
 		"name text not null unique on conflict replace" +
 		");")
 
@@ -92,18 +96,13 @@ func getDatabase() (*sql.DB, error) {
 }
 
 // NewNameCache builds a new name cache
-func NewNameCache(cl docker_registry.Client) NameCache {
-	db, err := getDatabase()
+func NewNameCache(cl docker_registry.Client, dbCfg ...string) NameCache {
+	db, err := getDatabase(dbCfg...)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	return NameCache{
-		cl,
-		db,
-		make(dockerNameLookup),
-		make(sourceNameLookup),
-	}
+	return NameCache{cl, db}
 }
 
 func (sr *sourceRecord) SourceVersion() (SourceVersion, error) {
@@ -114,75 +113,60 @@ func (sr *sourceRecord) Update(other *sourceRecord) {
 	sr.md = other.md
 }
 
-// InsertImageRecord stores a SourceVersion/image name pair into the global name cache
-func InsertImageRecord(sv SourceVersion, in, etag string) error {
-	return theNameCache.Insert(sv, in, etag)
-}
-
-// GetImageName looks up the image name for a given SourceVersion - uses the global name cache
-func GetImageName(sv SourceVersion) (string, error) {
-	return theNameCache.GetImageName(sv)
-}
-
-// GetSourceVersion retreives a source version for an image name, updating it from the server if necessary
-// Each call to GetSourceVersion implies an HTTP request, although it may be abbreviated by the use of an etag.
-func GetSourceVersion(in string) (SourceVersion, error) {
-	return theNameCache.GetSourceVersion(in)
-}
-
 // Insert puts a given SourceVersion/image name pair into the name cache
 func (nc *NameCache) Insert(sv SourceVersion, in, etag string) error {
-	nc.dbInsert(sv, in, etag)
-
-	record := sourceRecord{docker_registry.Metadata{
-		CanonicalName: in,
-		AllNames:      []string{in},
-		Etag:          etag,
-		Labels:        sv.DockerLabels(),
-	}}
-
-	return nc.insertRecord(&record)
+	return nc.dbInsert(sv, in, etag)
 }
 
-func (dl dockerNameLookup) GetImageName(sv SourceVersion) (string, error) {
-	if sr, ok := dl[sv]; ok {
-		return sr.md.CanonicalName, nil
+// GetImageName returns the docker image name for a given source version
+func (nc *NameCache) GetImageName(sv SourceVersion) (string, error) {
+	cn, _, err := nc.dbQueryOnSV(sv)
+	if err != nil {
+		return "", err
 	}
-	return "", NoImageNameFound{sv}
+	return cn, nil
 }
 
 func (nc *NameCache) dbInsert(sv SourceVersion, in, etag string) error {
-	res, err := nc.db.Exec("insert into metadata (etag, canonicalName, repo, offset, version) values ($1, $2, $3, $4, $5);",
-		etag, in, sv.RepoURL, sv.RepoOffset, sv.Version.String())
+	res, err := nc.db.Exec("insert into docker_search_metadata "+
+		"(etag, canonicalName, repo, offset, version) values ($1, $2, $3, $4, $5);",
+		etag, in, string(sv.RepoURL), string(sv.RepoOffset), sv.Version.String())
+	log.Printf("res = %+v\n", res)
 
 	if err != nil {
 		return err
 	}
+	log.Printf("res = %+v\n", res)
 
 	id, err := res.LastInsertId()
 	if err != nil {
 		return err
 	}
 
-	_, err = nc.db.Exec("insert into name (metadata_id, name) values ($1, $2)", id, in)
+	res, err = nc.db.Exec("insert into docker_search_name "+
+		"(metadata_id, name) values ($1, $2)", id, in)
+	log.Printf("res = %+v\n", res)
 
 	return err
 }
 
 func (nc *NameCache) dbAddNames(cn string, ins []string) error {
 	var id int
-	row := nc.db.QueryRow("select metadata_id from metadata where canonicalName = $1", cn)
+	row := nc.db.QueryRow("select metadata_id from docker_search_metadata "+
+		"where canonicalName = $1", cn)
 	err := row.Scan(&id)
 	if err != nil {
 		return err
 	}
-	add, err := nc.db.Prepare("insert into name (metadata_id, name) values ($1, $2)")
+	add, err := nc.db.Prepare("insert into docker_search_name " +
+		"(metadata_id, name) values ($1, $2)")
 	if err != nil {
 		return err
 	}
 
 	for _, n := range ins {
-		_, err := add.Exec(id, n)
+		res, err := add.Exec(id, n)
+		log.Printf("res = %+v\n", res)
 		if err != nil {
 			return err
 		}
@@ -192,16 +176,29 @@ func (nc *NameCache) dbAddNames(cn string, ins []string) error {
 }
 
 func (nc *NameCache) dbQueryOnName(in string) (etag, repo, offset, version, cname string, err error) {
-	row := nc.db.QueryRow("select metadata.etag, metadata.repo, metadata.offset, metadata.version, metadata.canonicalName from name natural join metadata where name.name = $1", in)
+	row := nc.db.QueryRow("select "+
+		"docker_search_metadata.etag, "+
+		"docker_search_metadata.repo, "+
+		"docker_search_metadata.offset, "+
+		"docker_search_metadata.version, "+
+		"docker_search_metadata.canonicalName "+
+		"from "+
+		"docker_search_name natural join docker_search_metadata "+
+		"where docker_search_name.name = $1", in)
 	err = row.Scan(&etag, &repo, &offset, &version, &cname)
 	return
 }
 
 func (nc *NameCache) dbQueryOnSV(sv SourceVersion) (cn string, ins []string, err error) {
 	ins = make([]string, 0)
-	rows, err := nc.db.Query("select metadata.canonicalName, name.name from name natural join metadata where "+
-		"metadata.repo = $1 and metadata.offset = $2 and metadata.version = $3",
-		sv.RepoURL, sv.RepoOffset, sv.Version.String())
+	rows, err := nc.db.Query("select docker_search_metadata.canonicalName, "+
+		"docker_search_name.name "+
+		"from "+
+		"docker_search_name natural join docker_search_metadata where "+
+		"docker_search_metadata.repo = $1 and "+
+		"docker_search_metadata.offset = $2 and "+
+		"docker_search_metadata.version = $3",
+		string(sv.RepoURL), string(sv.RepoOffset), sv.Version.String())
 	if err != nil {
 		return
 	}
@@ -264,23 +261,6 @@ func (nc *NameCache) GetCanonicalName(in string) (string, error) {
 	return cn, err
 }
 
-func (sn sourceNameLookup) GetCanonicalName(in string) (string, error) {
-
-	if sr, ok := sn[imageName(in)]; ok {
-		return sr.md.CanonicalName, nil
-	}
-	return "", NoSourceVersionFound{imageName(in)}
-}
-
-func (nc *NameCache) insertRecord(sr *sourceRecord) error {
-	err := nc.insertSourceVersion(sr)
-	if err != nil {
-		return err
-	}
-
-	return nc.insertDockerName(sr)
-}
-
 func union(left, right []string) []string {
 	set := make(map[string]struct{})
 	for _, s := range left {
@@ -298,45 +278,4 @@ func union(left, right []string) []string {
 	}
 
 	return res
-}
-
-func (sn sourceNameLookup) getSourceVersion(in string) (SourceVersion, error) {
-	if sr, ok := sn[imageName(in)]; ok {
-		return sr.SourceVersion()
-	}
-	return SourceVersion{}, NoSourceVersionFound{imageName(in)}
-}
-
-func (sn sourceNameLookup) getSourceRecord(in imageName) (*sourceRecord, error) {
-	if sr, ok := sn[in]; ok {
-		return sr, nil
-	}
-	return nil, NoSourceVersionFound{in}
-}
-
-func (sn sourceNameLookup) insertSourceVersion(sr *sourceRecord) error {
-	for _, n := range sr.md.AllNames {
-		existing, yes := sn[imageName(n)]
-		if yes {
-			existing.Update(sr)
-		} else {
-			sn[imageName(n)] = sr
-		}
-	}
-	return nil
-}
-
-func (dl dockerNameLookup) insertDockerName(sr *sourceRecord) error {
-	sv, err := sr.SourceVersion()
-	if err != nil {
-		return err
-	}
-
-	existing, yes := dl[sv]
-	if yes {
-		existing.Update(sr)
-	} else {
-		dl[sv] = sr
-	}
-	return nil
 }

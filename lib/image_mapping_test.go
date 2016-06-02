@@ -42,14 +42,15 @@ func TestRoundTrip(t *testing.T) {
 	base := "docker.repo.io/wackadoo"
 	in := base + ":version-1.2.3"
 	digest := "sha256:deadbeef1234567890"
-	nc.Insert(sv, in, digest)
+	err := nc.Insert(sv, in, digest)
+	assert.NoError(err)
 
 	cn, err := nc.GetCanonicalName(in)
-	if assert.Nil(err) {
+	if assert.NoError(err) {
 		assert.Equal(in, cn)
 	}
 	nin, err := nc.GetImageName(sv)
-	if assert.Nil(err) {
+	if assert.NoError(err) {
 		assert.Equal(in, nin)
 	}
 
