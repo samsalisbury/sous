@@ -229,11 +229,15 @@ func (sl *SourceVersion) DockerImageName() string {
 	name := string(sl.RepoURL)
 
 	name = stripRE.ReplaceAllString(name, "")
-	name = strings.Join([]string{name, string(sl.RepoOffset)}, "/")
-	name = strings.Join([]string{name, sl.Version.String()}, ":")
+	if string(sl.RepoOffset) != "" {
+		name = strings.Join([]string{name, string(sl.RepoOffset)}, "/")
+	}
+	name = strings.Join([]string{name, sl.Version.Format(`M.m.p-?`)}, ":")
 	return name
 }
 
+// DockerLabels computes a map of labels that should be applied to a container
+// image that is built based on this SourceVersion
 func (sv *SourceVersion) DockerLabels() map[string]string {
 	labels := make(map[string]string)
 	labels[DockerVersionLabel] = sv.Version.Format(`M.m.p-?`)

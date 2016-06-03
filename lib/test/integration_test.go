@@ -73,7 +73,7 @@ func TestResolve(t *testing.T) {
 	repoTwo := "https://github.com/opentable/two.git"
 	repoThree := "https://github.com/opentable/three.git"
 
-	nc := sous.NewNameCache(docker_registry.NewClient())
+	nc := sous.NewNameCache(docker_registry.NewClient(), "sqlite3", ":memory:")
 
 	stateOneTwo := sous.State{
 		Defs: clusterDefs,
@@ -99,7 +99,6 @@ func TestResolve(t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	deps, which := deploymentWithRepo(assert, repoOne)
-	log.Print(deps)
 	assert.NotEqual(which, -1, "opentable/one not successfully deployed")
 	one := deps[which]
 	assert.Equal(1, one.NumInstances)

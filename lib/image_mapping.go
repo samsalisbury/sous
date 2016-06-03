@@ -44,11 +44,21 @@ func (e NoImageNameFound) Error() string {
 }
 
 func (e NoSourceVersionFound) Error() string {
-	return fmt.Sprintf("No image name for %v", e.imageName)
+	return fmt.Sprintf("No source version for %v", e.imageName)
 }
 
 func (e NotModifiedErr) Error() string {
 	return "Not modified"
+}
+
+// NewNameCache builds a new name cache
+func NewNameCache(cl docker_registry.Client, dbCfg ...string) NameCache {
+	db, err := getDatabase(dbCfg...)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return NameCache{cl, db}
 }
 
 func getDatabase(cfg ...string) (*sql.DB, error) {
@@ -95,16 +105,6 @@ func getDatabase(cfg ...string) (*sql.DB, error) {
 	return db, err
 }
 
-// NewNameCache builds a new name cache
-func NewNameCache(cl docker_registry.Client, dbCfg ...string) NameCache {
-	db, err := getDatabase(dbCfg...)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return NameCache{cl, db}
-}
-
 func (sr *sourceRecord) SourceVersion() (SourceVersion, error) {
 	return SourceVersionFromLabels(sr.md.Labels)
 }
@@ -131,12 +131,10 @@ func (nc *NameCache) dbInsert(sv SourceVersion, in, etag string) error {
 	res, err := nc.db.Exec("insert into docker_search_metadata "+
 		"(etag, canonicalName, repo, offset, version) values ($1, $2, $3, $4, $5);",
 		etag, in, string(sv.RepoURL), string(sv.RepoOffset), sv.Version.String())
-	log.Printf("res = %+v\n", res)
 
 	if err != nil {
 		return err
 	}
-	log.Printf("res = %+v\n", res)
 
 	id, err := res.LastInsertId()
 	if err != nil {
@@ -145,7 +143,6 @@ func (nc *NameCache) dbInsert(sv SourceVersion, in, etag string) error {
 
 	res, err = nc.db.Exec("insert into docker_search_name "+
 		"(metadata_id, name) values ($1, $2)", id, in)
-	log.Printf("res = %+v\n", res)
 
 	return err
 }
@@ -165,8 +162,7 @@ func (nc *NameCache) dbAddNames(cn string, ins []string) error {
 	}
 
 	for _, n := range ins {
-		res, err := add.Exec(id, n)
-		log.Printf("res = %+v\n", res)
+		_, err := add.Exec(id, n)
 		if err != nil {
 			return err
 		}
@@ -186,6 +182,9 @@ func (nc *NameCache) dbQueryOnName(in string) (etag, repo, offset, version, cnam
 		"docker_search_name natural join docker_search_metadata "+
 		"where docker_search_name.name = $1", in)
 	err = row.Scan(&etag, &repo, &offset, &version, &cname)
+	if err == sql.ErrNoRows {
+		err = NoSourceVersionFound{imageName(in)}
+	}
 	return
 }
 
@@ -199,6 +198,10 @@ func (nc *NameCache) dbQueryOnSV(sv SourceVersion) (cn string, ins []string, err
 		"docker_search_metadata.offset = $2 and "+
 		"docker_search_metadata.version = $3",
 		string(sv.RepoURL), string(sv.RepoOffset), sv.Version.String())
+	if err == sql.ErrNoRows {
+		err = NoImageNameFound{sv}
+		return
+	}
 	if err != nil {
 		return
 	}
@@ -228,30 +231,36 @@ func makeSourceVersion(repo, offset, version string) (SourceVersion, error) {
 func (nc *NameCache) GetSourceVersion(in string) (SourceVersion, error) {
 	etag, repo, offset, version, _, err := nc.dbQueryOnName(in)
 	if err != nil {
+		log.Printf("err = %+v %T\n", err, err)
 		return SourceVersion{}, err
 	}
 
 	sv, err := makeSourceVersion(repo, offset, version)
 	if err != nil {
+		log.Printf("err = %+v\n", err)
 		return sv, err
 	}
 
 	md, err := nc.registryClient.GetImageMetadata(in, etag)
 	if _, ok := err.(NotModifiedErr); ok {
+		log.Printf("sv = %+v\n", sv)
 		return sv, nil
 	}
 	if err != nil {
+		log.Printf("err = %+v\n", err)
 		return sv, err
 	}
 
 	newSV, err := SourceVersionFromLabels(md.Labels)
 	if err != nil {
+		log.Printf("err = %+v\n", err)
 		return sv, err
 	}
 
 	nc.dbInsert(newSV, md.CanonicalName, md.Etag)
 	nc.dbAddNames(md.CanonicalName, md.AllNames)
 
+	log.Printf("sv = %+v\n", newSV)
 	return newSV, nil
 }
 

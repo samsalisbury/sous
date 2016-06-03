@@ -1,8 +1,6 @@
 package cli
 
 import (
-	"flag"
-
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
 )
@@ -11,6 +9,8 @@ import (
 // Implements cmdr.Command, cmdr.Executor and cmdr.AddFlags
 type SousBuild struct {
 	Sous          *Sous
+	DockerClient  LocalDockerClient
+	Config        LocalSousConfig
 	WDShell       LocalWorkDirShell
 	ScratchShell  ScratchDirShell
 	SourceContext *sous.SourceContext
@@ -34,16 +34,6 @@ args: [path]
 // Help returns the help string for this command
 func (*SousBuild) Help() string { return sousBuildHelp }
 
-// AddFlags fulfills the cmdr.AddFlags interface
-func (sb *SousBuild) AddFlags(fs *flag.FlagSet) {
-	fs.StringVar(&sb.flags.target, "target", "app",
-		"build a specific target")
-	fs.BoolVar(&sb.flags.rebuild, "rebuild", false,
-		"force a rebuild of the top-level target")
-	fs.BoolVar(&sb.flags.rebuildAll, "rebuild-all", false,
-		"similar to rebuild, but also rebuilds all transitive dependencies")
-}
-
 // Execute fulfills the cmdr.Executor interface
 func (sb *SousBuild) Execute(args []string) cmdr.Result {
 	if len(args) != 0 {
@@ -53,7 +43,9 @@ func (sb *SousBuild) Execute(args []string) cmdr.Result {
 		}
 	}
 
-	result, err := sous.RunBuild("docker.otenv.com", sb.SourceContext, sb.WDShell, sb.ScratchShell)
+	nc := sous.NewNameCache(sb.DockerClient, sb.Config.DatabaseDriver, sb.Config.DatabaseConnection)
+
+	result, err := sous.RunBuild(&nc, "docker.otenv.com", sb.SourceContext, sb.WDShell, sb.ScratchShell)
 	if err != nil {
 		return cmdr.EnsureErrorResult(err)
 	}

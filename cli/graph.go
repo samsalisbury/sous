@@ -9,6 +9,7 @@ import (
 	"github.com/opentable/sous/ext/git"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
+	"github.com/opentable/sous/util/docker_registry"
 	"github.com/opentable/sous/util/shell"
 	"github.com/samsalisbury/psyringe"
 	"github.com/samsalisbury/semv"
@@ -28,15 +29,15 @@ type (
 	// SousCLIGraph is a dependency injector used to flesh out Sous commands
 	// with their dependencies.
 	SousCLIGraph struct{ *psyringe.Psyringe }
-	// SousVersion represents a version of Sous.
+	// Version represents a version of Sous.
 	Version struct{ semv.Version }
 	// LocalUser is the currently logged in user.
 	LocalUser struct{ *User }
 	// LocalSousConfig is the configuration for Sous.
 	LocalSousConfig struct{ *sous.Config }
-	// WorkDir is the user's current working directory when they invoke Sous.
+	// LocalWorkDir is the user's current working directory when they invoke Sous.
 	LocalWorkDir string
-	// WorkdirShell is a shell for working in the user's current working
+	// LocalWorkDirShell is a shell for working in the user's current working
 	// directory.
 	LocalWorkDirShell struct{ *shell.Sh }
 	// LocalGitClient is a git client rooted in WorkdirShell.Dir.
@@ -47,9 +48,11 @@ type (
 	// like artefacts, and build metadata are stored. It is a new, empty
 	// directory, and should be cleaned up eventually.
 	ScratchDirShell struct{ *shell.Sh }
+	// LocalDockerClient is a docker client object
+	LocalDockerClient struct{ docker_registry.Client }
 )
 
-// buildGraph builds the dependency injection graph, used to populate commands
+// BuildGraph builds the dependency injection graph, used to populate commands
 // invoked by the user.
 func BuildGraph(s *Sous, c *cmdr.CLI) (*SousCLIGraph, error) {
 	g := &SousCLIGraph{psyringe.New()}
@@ -65,6 +68,7 @@ func BuildGraph(s *Sous, c *cmdr.CLI) (*SousCLIGraph, error) {
 		newLocalGitClient,
 		newLocalGitRepo,
 		newSourceContext,
+		newDockerClient,
 	)
 }
 
@@ -93,7 +97,7 @@ func newLocalUser() (v LocalUser, err error) {
 }
 
 func newLocalSousConfig(u LocalUser) (v LocalSousConfig, err error) {
-	v.Config, err = newDefaultConfig(u.User)
+	v.Config, err = newConfig(u.User)
 	return v, initErr(err, "getting default config")
 }
 
@@ -126,6 +130,10 @@ func newLocalGitClient(sh LocalWorkDirShell) (v LocalGitClient, err error) {
 func newLocalGitRepo(c LocalGitClient) (v LocalGitRepo, err error) {
 	v.Repo, err = c.OpenRepo(".")
 	return v, initErr(err, "opening local git repository")
+}
+
+func newDockerClient() LocalDockerClient {
+	return LocalDockerClient{docker_registry.NewClient()}
 }
 
 // initErr returns nil if error is nil, otherwise an initialisation error.
