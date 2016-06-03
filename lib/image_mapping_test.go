@@ -9,29 +9,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type mdChan chan docker_registry.Metadata
-
-type DummyRegistryClient struct {
-	mds mdChan
-}
-
-func (drc *DummyRegistryClient) Cancel()                  {}
-func (drc *DummyRegistryClient) BecomeFoolishlyTrusting() {}
-
-func (drc *DummyRegistryClient) GetImageMetadata(in, et string) (docker_registry.Metadata, error) {
-	return <-drc.mds, nil
-}
-
-func (drc *DummyRegistryClient) LabelsForImageName(in string) (map[string]string, error) {
-	md := <-drc.mds
-	return md.Labels, nil
-}
-
 func TestRoundTrip(t *testing.T) {
 	assert := assert.New(t)
 
-	mds := make(mdChan, 10)
-	nc := NewNameCache(&DummyRegistryClient{mds})
+	dc := docker_registry.NewDummyClient()
+	nc := NewNameCache(dc)
 
 	v := semv.MustParse("1.2.3")
 	sv := SourceVersion{
@@ -62,12 +44,12 @@ func TestRoundTrip(t *testing.T) {
 	}
 
 	cn = strings.Join([]string{base, "@", digest}, "")
-	mds <- docker_registry.Metadata{
+	dc.FeedMetadata(docker_registry.Metadata{
 		Labels:        newSV.DockerLabels(),
 		Etag:          digest,
 		CanonicalName: cn,
 		AllNames:      []string{cn, in},
-	}
+	})
 	sv, err = nc.GetSourceVersion(in)
 	if assert.Nil(err) {
 		assert.Equal(newSV, sv)

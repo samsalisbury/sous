@@ -22,9 +22,16 @@ func TestBuild(t *testing.T) {
 	assert := assert.New(t)
 	log.SetFlags(log.Flags() | log.Lshortfile)
 
-	sourceCtx := testSourceContext()
-
 	repoName := "github.com/opentable/awesomeproject"
+	revision := "987654321987654312"
+	version := "1.2.3"
+
+	sourceCtx := &SourceContext{
+		PossiblePrimaryRemoteURL: repoName,
+		NearestTagName:           version,
+		Revision:                 revision,
+	}
+
 	dockerID := "1234512345"
 	tagStr := "docker.wearenice.com/awesomeproject:1.2.3"
 
@@ -56,7 +63,8 @@ func TestBuild(t *testing.T) {
 		return nil
 	}
 
-	nc := NewNameCache(docker_registry.NewClient())
+	docker := docker_registry.NewDummyClient()
+	nc := NewNameCache(docker)
 
 	br, err := RunBuild(&nc, "docker.wearenice.com", sourceCtx, sourceSh, scratchSh)
 	assert.NotNil(br)
@@ -70,6 +78,17 @@ func TestBuild(t *testing.T) {
 
 	assert.Regexp("^"+regexp.QuoteMeta("docker push "+tagStr)+`\s*(#.*)?$`, sourceSh.History[2])
 	log.Printf("tagStr = %+v\n", tagStr)
+	docker.FeedMetadata(docker_registry.Metadata{
+		Labels: map[string]string{
+			DockerVersionLabel:  "1.2.3",
+			DockerRevisionLabel: revision,
+			DockerPathLabel:     "",
+			DockerRepoLabel:     repoName,
+		},
+		Etag:          "digest",
+		CanonicalName: tagStr,
+		AllNames:      []string{tagStr},
+	})
 	sv, err := nc.GetSourceVersion(tagStr)
 	if assert.NoError(err) {
 		assert.Equal(repoName, string(sv.Repo()))
