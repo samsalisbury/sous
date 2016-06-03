@@ -13,7 +13,7 @@ func TestRoundTrip(t *testing.T) {
 	assert := assert.New(t)
 
 	dc := docker_registry.NewDummyClient()
-	nc := NewNameCache(dc)
+	nc := NewNameCache(dc, "sqlite3", ":memory:")
 
 	v := semv.MustParse("1.2.3")
 	sv := SourceVersion{

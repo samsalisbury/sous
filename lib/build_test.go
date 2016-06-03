@@ -64,20 +64,22 @@ func TestBuild(t *testing.T) {
 	}
 
 	docker := docker_registry.NewDummyClient()
-	nc := NewNameCache(docker)
+	nc := NewNameCache(docker, "sqlite3", ":memory:")
 
 	br, err := RunBuild(&nc, "docker.wearenice.com", sourceCtx, sourceSh, scratchSh)
 	assert.NotNil(br)
 	assert.NoError(err)
 	assert.Equal(len(sourceSh.History), 3)
-	assert.Regexp("^"+regexp.QuoteMeta("docker build ."), sourceSh.History[0])
 
-	assert.Regexp("^"+regexp.QuoteMeta("docker build -t "+tagStr)+".*", sourceSh.History[1])
+	reTail := `\s*(#.*)?$` //dummy commands include a #comment to that effect
+
+	assert.Regexp("^"+regexp.QuoteMeta("docker build .")+reTail, sourceSh.History[0])
+
+	assert.Regexp("^"+regexp.QuoteMeta("docker build -t "+tagStr+" -")+reTail, sourceSh.History[1])
 	assert.Regexp("FROM "+dockerID, sourceSh.History[1].StdinString())
 	assert.Regexp("com.opentable.sous.repo_url=github.com/opentable/awesomeproject", sourceSh.History[1].StdinString())
 
-	assert.Regexp("^"+regexp.QuoteMeta("docker push "+tagStr)+`\s*(#.*)?$`, sourceSh.History[2])
-	log.Printf("tagStr = %+v\n", tagStr)
+	assert.Regexp("^"+regexp.QuoteMeta("docker push "+tagStr)+reTail, sourceSh.History[2])
 	docker.FeedMetadata(docker_registry.Metadata{
 		Labels: map[string]string{
 			DockerVersionLabel:  "1.2.3",
