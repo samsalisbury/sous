@@ -3,7 +3,6 @@ package test
 import (
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"testing"
 	"time"
@@ -177,10 +176,7 @@ func deploymentWithRepo(assert *assert.Assertions, repo string) (sous.Deployment
 
 func findRepo(deps sous.Deployments, repo string) int {
 	for i := range deps {
-		log.Printf("deps[%d] = %+v\n", i, deps[i])
 		if deps[i] != nil {
-			log.Printf("deps[%d].SV.RUrl = %+v\n", i, deps[i].SourceVersion.RepoURL)
-			log.Printf("repo = %+v\n", repo)
 			if deps[i].SourceVersion.RepoURL == sous.RepoURL(repo) {
 				return i
 			}

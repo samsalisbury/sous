@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 )
@@ -101,7 +100,6 @@ func (s *Sh) Cmd(name string, args ...interface{}) Cmd {
 
 // List returns all files (including dotfiles) inside Dir.
 func (s *Sh) List() ([]os.FileInfo, error) {
-	log.Println("")
 	return ioutil.ReadDir(s.Cwd)
 }
 
@@ -109,7 +107,6 @@ func (s *Sh) List() ([]os.FileInfo, error) {
 // any errors and returns false, in the case that e.g. permissions
 // prevent the check from working correctly.
 func (s *Sh) Exists(path string) bool {
-	log.Println("")
 	_, err := s.Stat(path)
 	return err == nil
 }
@@ -117,7 +114,6 @@ func (s *Sh) Exists(path string) bool {
 // Stat calls os.Stat on the path provided, relative to the current
 // shell's working directory.
 func (s *Sh) Stat(path string) (os.FileInfo, error) {
-	log.Println("")
 	return os.Stat(s.Abs(path))
 }
 
