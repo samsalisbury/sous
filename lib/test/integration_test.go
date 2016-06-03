@@ -59,6 +59,42 @@ func TestGetRunningDeploymentSet(t *testing.T) {
 	resetSingularity()
 }
 
+func TestMissingImage(t *testing.T) {
+	assert := assert.New(t)
+
+	clusterDefs := sous.Defs{
+		Clusters: sous.Clusters{
+			singularityURL: sous.Cluster{
+				BaseURL: singularityURL,
+			},
+		},
+	}
+	repoOne := "https://github.com/opentable/one.git"
+
+	// easiest way to make sure that the manifest doesn't actually get registered
+	dummyNc := sous.NewNameCache(docker_registry.NewClient(), "sqlite3", ":memory:")
+
+	stateOne := sous.State{
+		Defs: clusterDefs,
+		Manifests: sous.Manifests{
+			"one": manifest(dummyNc, "opentable/one", "test-one", repoOne, "1.1.1"),
+		},
+	}
+
+	// ****
+	nc := sous.NewNameCache(docker_registry.NewClient(), "sqlite3", ":memory:")
+	err := sous.Resolve(nc, stateOne)
+	assert.Error(err)
+
+	// ****
+	time.Sleep(1 * time.Second)
+
+	_, which := deploymentWithRepo(assert, repoOne)
+	assert.Equal(which, -1, "opentable/one was deployed")
+
+	resetSingularity()
+}
+
 func TestResolve(t *testing.T) {
 	assert := assert.New(t)
 
@@ -141,10 +177,13 @@ func deploymentWithRepo(assert *assert.Assertions, repo string) (sous.Deployment
 
 func findRepo(deps sous.Deployments, repo string) int {
 	for i := range deps {
-		log.Printf("deps[%d] = %+v\n", i, deps[i].SourceVersion.RepoURL)
-		log.Printf("repo = %+v\n", repo)
-		if deps[i].SourceVersion.RepoURL == sous.RepoURL(repo) {
-			return i
+		log.Printf("deps[%d] = %+v\n", i, deps[i])
+		if deps[i] != nil {
+			log.Printf("deps[%d].SV.RUrl = %+v\n", i, deps[i].SourceVersion.RepoURL)
+			log.Printf("repo = %+v\n", repo)
+			if deps[i].SourceVersion.RepoURL == sous.RepoURL(repo) {
+				return i
+			}
 		}
 	}
 	return -1

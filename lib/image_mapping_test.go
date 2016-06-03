@@ -1,6 +1,7 @@
 package sous
 
 import (
+	"log"
 	"strings"
 	"testing"
 
@@ -60,6 +61,24 @@ func TestRoundTrip(t *testing.T) {
 		assert.Equal(cn, ncn)
 	}
 
+}
+
+func TestMissingName(t *testing.T) {
+	assert := assert.New(t)
+	log.SetFlags(log.Flags() | log.Lshortfile)
+	dc := docker_registry.NewDummyClient()
+	nc := NewNameCache(dc, "sqlite3", ":memory:")
+
+	v := semv.MustParse("4.5.6")
+	sv := SourceVersion{
+		Version:    v,
+		RepoURL:    RepoURL("https://github.com/opentable/brand-new-idea"),
+		RepoOffset: RepoOffset("nested/there"),
+	}
+
+	name, err := nc.GetImageName(sv)
+	assert.Equal("", name)
+	assert.Error(err)
 }
 
 func TestUnion(t *testing.T) {
