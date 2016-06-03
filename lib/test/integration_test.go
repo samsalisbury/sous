@@ -3,7 +3,6 @@ package test
 import (
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"testing"
 	"time"
@@ -55,6 +54,42 @@ func TestGetRunningDeploymentSet(t *testing.T) {
 	assert.Equal("91495f1b1630084e301241100ecf2e775f6b672c", grafana.SourceVersion.Version.Meta)
 	assert.Equal(1, grafana.NumInstances)
 	assert.Equal(sous.ManifestKindService, grafana.Kind)
+
+	resetSingularity()
+}
+
+func TestMissingImage(t *testing.T) {
+	assert := assert.New(t)
+
+	clusterDefs := sous.Defs{
+		Clusters: sous.Clusters{
+			singularityURL: sous.Cluster{
+				BaseURL: singularityURL,
+			},
+		},
+	}
+	repoOne := "https://github.com/opentable/one.git"
+
+	// easiest way to make sure that the manifest doesn't actually get registered
+	dummyNc := sous.NewNameCache(docker_registry.NewClient(), "sqlite3", ":memory:")
+
+	stateOne := sous.State{
+		Defs: clusterDefs,
+		Manifests: sous.Manifests{
+			"one": manifest(dummyNc, "opentable/one", "test-one", repoOne, "1.1.1"),
+		},
+	}
+
+	// ****
+	nc := sous.NewNameCache(docker_registry.NewClient(), "sqlite3", ":memory:")
+	err := sous.Resolve(nc, stateOne)
+	assert.Error(err)
+
+	// ****
+	time.Sleep(1 * time.Second)
+
+	_, which := deploymentWithRepo(assert, repoOne)
+	assert.Equal(which, -1, "opentable/one was deployed")
 
 	resetSingularity()
 }
@@ -141,10 +176,10 @@ func deploymentWithRepo(assert *assert.Assertions, repo string) (sous.Deployment
 
 func findRepo(deps sous.Deployments, repo string) int {
 	for i := range deps {
-		log.Printf("deps[%d] = %+v\n", i, deps[i].SourceVersion.RepoURL)
-		log.Printf("repo = %+v\n", repo)
-		if deps[i].SourceVersion.RepoURL == sous.RepoURL(repo) {
-			return i
+		if deps[i] != nil {
+			if deps[i].SourceVersion.RepoURL == sous.RepoURL(repo) {
+				return i
+			}
 		}
 	}
 	return -1

@@ -2,7 +2,6 @@ package sous
 
 import (
 	"fmt"
-	"log"
 	"regexp"
 	"sync"
 
@@ -132,7 +131,7 @@ func (r *rectifier) rectifyCreates(cc chan *Deployment, errs chan<- Rectificatio
 	for d := range cc {
 		name, err := r.sing.ImageName(d)
 		if err != nil {
-			log.Printf("% +v", d)
+			// log.Printf("% +v", d)
 			errs <- &CreateError{Deployment: d, Err: err}
 			continue
 		}
@@ -140,14 +139,14 @@ func (r *rectifier) rectifyCreates(cc chan *Deployment, errs chan<- Rectificatio
 		reqID := computeRequestID(d)
 		err = r.sing.PostRequest(d.Cluster, reqID, d.NumInstances)
 		if err != nil {
-			log.Printf("%T %#v", d, d)
+			// log.Printf("%T %#v", d, d)
 			errs <- &CreateError{Deployment: d, Err: err}
 			continue
 		}
 
 		err = r.sing.Deploy(d.Cluster, newDepID(), reqID, name, d.Resources)
 		if err != nil {
-			log.Printf("% +v", d)
+			// log.Printf("% +v", d)
 			errs <- &CreateError{Deployment: d, Err: err}
 			continue
 		}

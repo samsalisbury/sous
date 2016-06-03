@@ -33,10 +33,6 @@ type (
 	NoSourceVersionFound struct {
 		imageName
 	}
-
-	sourceRecord struct {
-		md docker_registry.Metadata
-	}
 )
 
 func (e NoImageNameFound) Error() string {
@@ -61,6 +57,75 @@ func NewNameCache(cl docker_registry.Client, dbCfg ...string) NameCache {
 	return NameCache{cl, db}
 }
 
+// GetSourceVersion looks up the source version for a given image name
+func (nc *NameCache) GetSourceVersion(in string) (SourceVersion, error) {
+	etag, repo, offset, version, _, err := nc.dbQueryOnName(in)
+	if err != nil {
+		return SourceVersion{}, err
+	}
+
+	sv, err := makeSourceVersion(repo, offset, version)
+	if err != nil {
+		return sv, err
+	}
+
+	md, err := nc.registryClient.GetImageMetadata(in, etag)
+	if _, ok := err.(NotModifiedErr); ok {
+		return sv, nil
+	}
+	if err != nil {
+		return sv, err
+	}
+
+	newSV, err := SourceVersionFromLabels(md.Labels)
+	if err != nil {
+		return sv, err
+	}
+
+	nc.dbInsert(newSV, md.CanonicalName, md.Etag)
+	nc.dbAddNames(md.CanonicalName, md.AllNames)
+
+	return newSV, nil
+}
+
+// GetCanonicalName returns the canonical name for an image given any known name
+func (nc *NameCache) GetCanonicalName(in string) (string, error) {
+	_, _, _, _, cn, err := nc.dbQueryOnName(in)
+	return cn, err
+}
+
+// Insert puts a given SourceVersion/image name pair into the name cache
+func (nc *NameCache) Insert(sv SourceVersion, in, etag string) error {
+	return nc.dbInsert(sv, in, etag)
+}
+
+// GetImageName returns the docker image name for a given source version
+func (nc *NameCache) GetImageName(sv SourceVersion) (string, error) {
+	cn, _, err := nc.dbQueryOnSV(sv)
+	if err != nil {
+		return "", err
+	}
+	return cn, nil
+}
+
+func union(left, right []string) []string {
+	set := make(map[string]struct{})
+	for _, s := range left {
+		set[s] = struct{}{}
+	}
+
+	for _, s := range right {
+		set[s] = struct{}{}
+	}
+
+	res := make([]string, 0, len(set))
+
+	for k := range set {
+		res = append(res, k)
+	}
+
+	return res
+}
 func getDatabase(cfg ...string) (*sql.DB, error) {
 	driver := "sqlite3"
 	conn := ":memory:"
@@ -103,28 +168,6 @@ func getDatabase(cfg ...string) (*sql.DB, error) {
 		");")
 
 	return db, err
-}
-
-func (sr *sourceRecord) SourceVersion() (SourceVersion, error) {
-	return SourceVersionFromLabels(sr.md.Labels)
-}
-
-func (sr *sourceRecord) Update(other *sourceRecord) {
-	sr.md = other.md
-}
-
-// Insert puts a given SourceVersion/image name pair into the name cache
-func (nc *NameCache) Insert(sv SourceVersion, in, etag string) error {
-	return nc.dbInsert(sv, in, etag)
-}
-
-// GetImageName returns the docker image name for a given source version
-func (nc *NameCache) GetImageName(sv SourceVersion) (string, error) {
-	cn, _, err := nc.dbQueryOnSV(sv)
-	if err != nil {
-		return "", err
-	}
-	return cn, nil
 }
 
 func (nc *NameCache) dbInsert(sv SourceVersion, in, etag string) error {
@@ -198,6 +241,7 @@ func (nc *NameCache) dbQueryOnSV(sv SourceVersion) (cn string, ins []string, err
 		"docker_search_metadata.offset = $2 and "+
 		"docker_search_metadata.version = $3",
 		string(sv.RepoURL), string(sv.RepoOffset), sv.Version.String())
+
 	if err == sql.ErrNoRows {
 		err = NoImageNameFound{sv}
 		return
@@ -212,6 +256,9 @@ func (nc *NameCache) dbQueryOnSV(sv SourceVersion) (cn string, ins []string, err
 		ins = append(ins, in)
 	}
 	err = rows.Err()
+	if len(ins) == 0 {
+		err = NoImageNameFound{sv}
+	}
 
 	return
 }
@@ -225,66 +272,4 @@ func makeSourceVersion(repo, offset, version string) (SourceVersion, error) {
 	return SourceVersion{
 		RepoURL(repo), v, RepoOffset(offset),
 	}, nil
-}
-
-// GetSourceVersion looks up the source version for a given image name
-func (nc *NameCache) GetSourceVersion(in string) (SourceVersion, error) {
-	etag, repo, offset, version, _, err := nc.dbQueryOnName(in)
-	if err != nil {
-		log.Printf("err = %+v %T\n", err, err)
-		return SourceVersion{}, err
-	}
-
-	sv, err := makeSourceVersion(repo, offset, version)
-	if err != nil {
-		log.Printf("err = %+v\n", err)
-		return sv, err
-	}
-
-	md, err := nc.registryClient.GetImageMetadata(in, etag)
-	if _, ok := err.(NotModifiedErr); ok {
-		log.Printf("sv = %+v\n", sv)
-		return sv, nil
-	}
-	if err != nil {
-		log.Printf("err = %+v\n", err)
-		return sv, err
-	}
-
-	newSV, err := SourceVersionFromLabels(md.Labels)
-	if err != nil {
-		log.Printf("err = %+v\n", err)
-		return sv, err
-	}
-
-	nc.dbInsert(newSV, md.CanonicalName, md.Etag)
-	nc.dbAddNames(md.CanonicalName, md.AllNames)
-
-	log.Printf("sv = %+v\n", newSV)
-	return newSV, nil
-}
-
-// GetCanonicalName returns the canonical name for an image given any known name
-func (nc *NameCache) GetCanonicalName(in string) (string, error) {
-	_, _, _, _, cn, err := nc.dbQueryOnName(in)
-	return cn, err
-}
-
-func union(left, right []string) []string {
-	set := make(map[string]struct{})
-	for _, s := range left {
-		set[s] = struct{}{}
-	}
-
-	for _, s := range right {
-		set[s] = struct{}{}
-	}
-
-	res := make([]string, 0, len(set))
-
-	for k := range set {
-		res = append(res, k)
-	}
-
-	return res
 }
