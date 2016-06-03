@@ -21,5 +21,7 @@ env:
 notifications:
   hipchat:
     notify: true
+    template:
+      - '%{repository}#%{build_number} (%{branch} - %{commit} : %{author}): %{message}'
     rooms:
       secure: MYcyZu5zXfvu72SKPt5vdF/LYtzKdybmL0RIIiiTJzGjb08Cz7LyvyfBBkFc9KWxHT3qK/swUUeCxLHYXHDFfzMDiWYPD+QB7Z2704f4/V8Vg3BjGz2CXlnNC3x1ehj3EbryMfg9C2K/dmYXI7YDjvZwT1iGM/63tMBZSUPE25mfnX6CoIpiIqznMB68JmJzTu9k8BxHKVOkwyvzmKKe7bcG+poiurXM60ly2qUqO11gmT019HOQMMUsxqVUXPoSALhZMArqXQzWG7t/408SGByI7CG1RwGuT8h+iGgsDMH4j30quormEG+y+7VzTjetRFae5BPZ0iCIu11p5atFc2ejNbDVGHdagK7H6hCuPzACWtRHDyVV1ZZ6Bv3pAtId1iCXeHebdagMe5BAsAv6G0Li+6WNQL3o7Tj6wSMPeJ/Zz9XwKHeoFocrERMhfCuhyx/M1mPZPYDVFZ/H4/GiNquDppRxUiCWK61XGmQI0fTY+R0mW6pX9l40oELV1kf6PoJCjYPRJI/kXqTi5x6dfLDctKhrUk662iXSailMtaJJKYREa30OvEaXjNrC0OSw+PTmK9zavVtsSkwkgRnBes1ZlYZnH3VKMGM0mV/L/aKzAAY9xsIuUOl8gvHK3NZ/yUWW58ncVqv+++cEM1ZxuFVuVFtIP/EpV5fc0h0/+Wc=
