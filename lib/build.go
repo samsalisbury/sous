@@ -14,6 +14,7 @@ import (
 type (
 	// Build represents a single build of a project.
 	Build struct {
+		NameCache                 *NameCache
 		DockerRegistryHost        string
 		Context                   *SourceContext
 		SourceShell, ScratchShell shell.Shell
@@ -27,8 +28,8 @@ type (
 )
 
 // RunBuild does a complete build run
-func RunBuild(drh string, ctx *SourceContext, source, scratch shell.Shell) (*BuildResult, error) {
-	build, err := NewBuildWithShells(drh, ctx, source, scratch)
+func RunBuild(nc *NameCache, drh string, ctx *SourceContext, source, scratch shell.Shell) (*BuildResult, error) {
+	build, err := NewBuildWithShells(nc, drh, ctx, source, scratch)
 	if err != nil {
 		return nil, err
 	}
@@ -39,8 +40,9 @@ func RunBuild(drh string, ctx *SourceContext, source, scratch shell.Shell) (*Bui
 // NewBuildWithShells creates a new build using source code in the working
 // directory of sourceShell, and using the working dir of scratchShell as
 // temporary storage.
-func NewBuildWithShells(drh string, c *SourceContext, sourceShell, scratchShell shell.Shell) (*Build, error) {
+func NewBuildWithShells(nc *NameCache, drh string, c *SourceContext, sourceShell, scratchShell shell.Shell) (*Build, error) {
 	b := &Build{
+		NameCache:          nc,
 		DockerRegistryHost: drh,
 		Context:            c,
 		SourceShell:        sourceShell,
@@ -86,6 +88,11 @@ func (b *Build) Start() (*BuildResult, error) {
 		return nil, err
 	}
 
+	err = b.RecordName(br)
+	if err != nil {
+		return nil, err
+	}
+
 	return br, nil
 }
 
@@ -114,6 +121,13 @@ func (b *Build) ApplyMetadata(br *BuildResult) error {
 // PushToRegistry sends the built image to the registry
 func (b *Build) PushToRegistry(br *BuildResult) error {
 	return b.SourceShell.Run("docker", "push", br.ImageName)
+}
+
+// RecordName inserts metadata about the newly built image into our local name cache
+func (b *Build) RecordName(br *BuildResult) error {
+	sv := b.Context.Version()
+	in := br.ImageName
+	return b.NameCache.Insert(sv, in, "")
 }
 
 // ImageTag computes an image tag from a SourceVersion

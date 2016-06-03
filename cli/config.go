@@ -11,14 +11,17 @@ import (
 )
 
 func newDefaultConfig(u *User) (*sous.Config, error) {
-	var config sous.Config
+	config := sous.DefaultConfig()
 	return &config, configloader.New().Load(&config, u.ConfigFile())
 }
 
+// Save the configuration to the configuration path (by default:
+// $HOME/.config/sous/config)
 func (c *LocalSousConfig) Save(u *User) error {
 	return ioutil.WriteFile(u.ConfigFile(), c.Bytes(), 0600)
 }
 
+// Bytes marshals the config to a []byte
 func (c *LocalSousConfig) Bytes() []byte {
 	y, err := yaml.Marshal(c.Config)
 	if err != nil {
@@ -27,11 +30,13 @@ func (c *LocalSousConfig) Bytes() []byte {
 	return y
 }
 
+// GetValue retreives and returns a particular value from the configuration
 func (c *LocalSousConfig) GetValue(name string) (string, error) {
 	v, err := configloader.New().GetValue(c.Config, name)
 	return fmt.Sprint(v), err
 }
 
+// SetValue stores a particular value on the config
 func (c *LocalSousConfig) SetValue(user *User, name, value string) error {
 	if err := configloader.New().SetValue(c.Config, name, value); err != nil {
 		return err

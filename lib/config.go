@@ -14,5 +14,18 @@ type (
 		// BuildStateLocation is a directory where information about builds
 		// performed by this user on this machine are stored.
 		BuildStateDir string `env:"SOUS_BUILD_STATE_DIR"`
+		// DatabaseDriver is the name of the driver to use for local persistence
+		DatabaseDriver string `env:"SOUS_DB_DRIVER"`
+		// DatabaseConnection is the database connection string for local persistence
+		DatabaseConnection string `env:"SOUS_DB_CONN"`
 	}
 )
+
+// DefaultConfig builds a default configuation, which can be then overridden by
+// client code
+func DefaultConfig() Config {
+	return Config{
+		DatabaseDriver:     "sqlite3",
+		DatabaseConnection: ":memory:",
+	}
+}

@@ -6,6 +6,7 @@ import (
 	"github.com/samsalisbury/semv"
 )
 
+// SousInit is the command description for `sous init`
 type SousInit struct {
 	User          LocalUser
 	Config        LocalSousConfig
@@ -24,8 +25,10 @@ repository to generate a basic configuration for that project. You will need to
 flesh out some additional details.
 `
 
+// Help returns the help string for this command
 func (si *SousInit) Help() string { return sousInitHelp }
 
+// Execute fulfills the cmdr.Executor interface
 func (si *SousInit) Execute(args []string) cmdr.Result {
 	c := si.SourceContext
 	v, err := semv.Parse(c.NearestTagName + "+" + c.Revision)
@@ -34,8 +37,8 @@ func (si *SousInit) Execute(args []string) cmdr.Result {
 	}
 	m := sous.Manifest{
 		Source: sous.SourceLocation{
-			sous.RepoURL(c.PossiblePrimaryRemoteURL),
-			sous.RepoOffset(c.OffsetDir),
+			RepoURL:    sous.RepoURL(c.PossiblePrimaryRemoteURL),
+			RepoOffset: sous.RepoOffset(c.OffsetDir),
 		},
 		Deployments: map[string]sous.PartialDeploySpec{
 			"Global": sous.PartialDeploySpec{

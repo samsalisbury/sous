@@ -2,6 +2,7 @@ package sous
 
 import (
 	"fmt"
+	"log"
 	"regexp"
 	"strings"
 
@@ -228,9 +229,15 @@ var stripRE = regexp.MustCompile("^([[:alpha:]]+://)?(github.com(/opentable)?)?"
 func (sl *SourceVersion) DockerImageName() string {
 	name := string(sl.RepoURL)
 
+	log.Printf("name = %+v\n", name)
 	name = stripRE.ReplaceAllString(name, "")
-	name = strings.Join([]string{name, string(sl.RepoOffset)}, "/")
-	name = strings.Join([]string{name, sl.Version.String()}, ":")
+	log.Printf("name = %+v\n", name)
+	if string(sl.RepoOffset) != "" {
+		name = strings.Join([]string{name, string(sl.RepoOffset)}, "/")
+	}
+	log.Printf("name = %+v\n", name)
+	name = strings.Join([]string{name, sl.Version.Format(`M.m.p-?`)}, ":")
+	log.Printf("name = %+v\n", name)
 	return name
 }
 
