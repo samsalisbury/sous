@@ -10,8 +10,8 @@ import (
 	"github.com/opentable/sous/util/yaml"
 )
 
-func newDefaultConfig(u *User) (*sous.Config, error) {
-	config := sous.DefaultConfig()
+func newConfig(u *User) (*sous.Config, error) {
+	config := u.DefaultConfig()
 	return &config, configloader.New().Load(&config, u.ConfigFile())
 }
 
