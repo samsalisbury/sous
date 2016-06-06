@@ -127,6 +127,7 @@ func (b *Build) PushToRegistry(br *BuildResult) error {
 func (b *Build) RecordName(br *BuildResult) error {
 	sv := b.Context.Version()
 	in := br.ImageName
+	b.SourceShell.ConsoleEcho(fmt.Sprintf("[recording \"%s\" as the docker name for \"%s\"]", in, sv.String()))
 	return b.NameCache.Insert(sv, in, "")
 }
 

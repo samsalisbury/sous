@@ -15,6 +15,9 @@ type (
 		Cwd string
 		// Env is the environment variables of the shell.
 		Env []string
+		// If TeeEcho is non-nil, all the commands executed on this shell will be
+		// written to it
+		TeeEcho,
 		// If TeeOut is non-nil, then all stdout commands get written to it, in
 		// addition to being preserved in the Result.
 		TeeOut,
@@ -95,6 +98,13 @@ func (s *Sh) Cmd(name string, args ...interface{}) Cmd {
 		Sh:   *s.clone(),
 		Name: name,
 		Args: sargs,
+	}
+}
+
+// ConsoleEcho prints the command that sous is executing out
+func (s *Sh) ConsoleEcho(line string) {
+	if s.TeeEcho != nil {
+		s.TeeEcho.Write([]byte(fmt.Sprintf("  (Sous)> %s\n", line)))
 	}
 }
 
