@@ -98,6 +98,7 @@ func (c *CLI) runHook(hook func(Command) error, command Command) error {
 
 func (c *CLI) handleSuccessResult(s SuccessResult) {
 	if len(s.Data) != 0 {
+		// Hm.
 		c.Out.Write(s.Data)
 	}
 }
