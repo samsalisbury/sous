@@ -30,8 +30,9 @@ func (sr *SousRectify) Execute(args []string) cmdr.Result {
 	dir := args[0]
 
 	nc := sous.NewNameCache(sr.DockerClient, sr.Config.DatabaseDriver, sr.Config.DatabaseConnection)
+	rc := sous.NewRectiAgent(nc)
 
-	err := sous.ResolveFromDir(nc, dir)
+	err := sous.ResolveFromDir(rc, dir)
 	if err != nil {
 		return EnsureErrorResult(err)
 	}

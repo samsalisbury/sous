@@ -82,7 +82,8 @@ func TestMissingImage(t *testing.T) {
 
 	// ****
 	nc := sous.NewNameCache(docker_registry.NewClient(), "sqlite3", ":memory:")
-	err := sous.Resolve(nc, stateOne)
+	rc := sous.NewRectiAgent(nc)
+	err := sous.Resolve(rc, stateOne)
 	assert.Error(err)
 
 	// ****
@@ -109,6 +110,7 @@ func TestResolve(t *testing.T) {
 	repoThree := "https://github.com/opentable/three.git"
 
 	nc := sous.NewNameCache(docker_registry.NewClient(), "sqlite3", ":memory:")
+	rc := sous.NewRectiAgent(nc)
 
 	stateOneTwo := sous.State{
 		Defs: clusterDefs,
@@ -126,7 +128,7 @@ func TestResolve(t *testing.T) {
 	}
 
 	// ****
-	err := sous.Resolve(nc, stateOneTwo)
+	err := sous.Resolve(rc, stateOneTwo)
 	if err != nil {
 		assert.Fail(err.Error())
 	}
@@ -144,7 +146,7 @@ func TestResolve(t *testing.T) {
 	assert.Equal(1, two.NumInstances)
 
 	// ****
-	err = sous.Resolve(nc, stateTwoThree)
+	err = sous.Resolve(rc, stateTwoThree)
 	if err != nil {
 		assert.Fail(err.Error())
 	}
