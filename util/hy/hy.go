@@ -42,7 +42,12 @@ With file contents you would expect:
 */
 package hy
 
-import "log"
+import (
+	"fmt"
+	"log"
+	"path/filepath"
+	"runtime"
+)
 
 // Debug is a global flag, set it to true to print debug messages when
 // marshaling and unmarshaling using the log package.
@@ -52,12 +57,24 @@ func debugf(format string, a ...interface{}) {
 	if !Debug {
 		return
 	}
-	log.Printf(format+"\n", a...)
+	_, fn, ln, ok := runtime.Caller(1)
+	if ok {
+		fn := filepath.Base(fn)
+		log.Printf("%s:%d %s", fn, ln, fmt.Sprintf(format, a...))
+	} else {
+		log.Printf(format, a...)
+	}
 }
 
 func debug(a ...interface{}) {
 	if !Debug {
 		return
 	}
-	log.Println(a...)
+	_, fn, ln, ok := runtime.Caller(1)
+	if ok {
+		fn := filepath.Base(fn)
+		log.Printf("%s:%d %s", fn, ln, fmt.Sprintln(a...))
+	} else {
+		log.Println(a...)
+	}
 }

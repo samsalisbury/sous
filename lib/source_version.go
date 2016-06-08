@@ -12,7 +12,7 @@ import (
 type (
 	// RepoURL is a URL to a source code repository.
 	RepoURL string
-	// RepoOffsetDir is a path within a repository containing a single piece of
+	// RepoOffset is a path within a repository containing a single piece of
 	// software.
 	RepoOffset string
 	// SourceVersion is similar to SourceLocation except that it also includes
@@ -25,34 +25,40 @@ type (
 		RepoOffset RepoOffset `yaml:",omitempty"`
 	}
 
+	// EntityName is an interface over items with an arbitrary source repository
 	EntityName interface {
 		Repo() RepoURL
 	}
 
-	//Errors
+	//MissingRepo indicates that Sous couldn't determine which repo was intended for this SL
 	MissingRepo struct {
 		parsing string
 	}
 
+	//MissingVersion indicates that Sous couldn't determine what version was intended for this SL
 	MissingVersion struct {
 		repo    string
 		parsing string
 	}
 
+	//MissingPath indicates that Sous couldn't determine what repo offset was intended for this SL
 	MissingPath struct {
 		repo    string
 		parsing string
 	}
 
+	//IncludesVersion indicates that Sous couldn't determine what version was intended for this SL
 	IncludesVersion struct {
 		parsing string
 	}
 )
 
+// MarshalYAML serializes this SourceLocation to a YAML document.
 func (sl SourceLocation) MarshalYAML() (interface{}, error) {
 	return sl.String(), nil
 }
 
+// UnmarshalYAML deserializes a YAML document into this SourceLocation
 func (sl *SourceLocation) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	s := ""
 	if err := unmarshal(&s); err != nil {
@@ -66,15 +72,16 @@ func (sl *SourceLocation) UnmarshalYAML(unmarshal func(interface{}) error) error
 func (sl SourceLocation) String() string {
 	if sl.RepoOffset == "" {
 		return fmt.Sprintf("%s", sl.RepoURL)
-	} else {
-		return fmt.Sprintf("%s:%s", sl.RepoURL, sl.RepoOffset)
 	}
+	return fmt.Sprintf("%s:%s", sl.RepoURL, sl.RepoOffset)
 }
 
+// Repo return the repository URL for this SourceLocation
 func (sl SourceLocation) Repo() RepoURL {
 	return sl.RepoURL
 }
 
+// SourceVersion returns a SourceVersion built from this location with the addition of a version
 func (sl *SourceLocation) SourceVersion(version semv.Version) SourceVersion {
 	return SourceVersion{
 		RepoURL:    sl.RepoURL,
@@ -86,19 +93,21 @@ func (sl *SourceLocation) SourceVersion(version semv.Version) SourceVersion {
 func (sv SourceVersion) String() string {
 	if sv.RepoOffset == "" {
 		return fmt.Sprintf("%s %s", sv.RepoURL, sv.Version)
-	} else {
-		return fmt.Sprintf("%s:%s %s", sv.RepoURL, sv.RepoOffset, sv.Version)
 	}
+	return fmt.Sprintf("%s:%s %s", sv.RepoURL, sv.RepoOffset, sv.Version)
 }
 
-func (sv *SourceVersion) RevId() string {
+// RevID returns the revision id for this SourceVersion
+func (sv *SourceVersion) RevID() string {
 	return sv.Version.Meta
 }
 
+// TagName returns the tag name for this SourceVersion
 func (sv *SourceVersion) TagName() string {
 	return sv.Version.Format("M.m.s-?")
 }
 
+// CanonicalName returns a stable and consistent name for this SourceLocation
 func (sv *SourceVersion) CanonicalName() SourceLocation {
 	return SourceLocation{
 		RepoURL:    sv.RepoURL,
@@ -106,14 +115,17 @@ func (sv *SourceVersion) CanonicalName() SourceLocation {
 	}
 }
 
+// Equal tests the equality between this SV and another
 func (sv *SourceVersion) Equal(o SourceVersion) bool {
 	return sv.RepoURL == o.RepoURL && sv.RepoOffset == o.RepoOffset && sv.Version.Equals(o.Version)
 }
 
+// Repo returns the repository URL for this SV
 func (sv SourceVersion) Repo() RepoURL {
 	return sv.RepoURL
 }
 
+// DefaultDelim is a comma
 const DefaultDelim = ","
 
 func (err *IncludesVersion) Error() string {
@@ -186,6 +198,8 @@ func canonicalNameFromChunks(source string, chunks []string) (sl SourceLocation,
 	return
 }
 
+// SourceVersionFromLabels builds a SourceVersion from a map of labels,
+// generally acquired from a Docker image
 func SourceVersionFromLabels(labels map[string]string) (SourceVersion, error) {
 	missingLabels := make([]string, 0, 3)
 	repo, present := labels[DockerRepoLabel]
@@ -241,7 +255,7 @@ func (sl *SourceVersion) DockerImageName() string {
 func (sv *SourceVersion) DockerLabels() map[string]string {
 	labels := make(map[string]string)
 	labels[DockerVersionLabel] = sv.Version.Format(`M.m.p-?`)
-	labels[DockerRevisionLabel] = sv.RevId()
+	labels[DockerRevisionLabel] = sv.RevID()
 	labels[DockerPathLabel] = string(sv.RepoOffset)
 	labels[DockerRepoLabel] = string(sv.RepoURL)
 	return labels

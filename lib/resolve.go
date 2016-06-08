@@ -94,6 +94,5 @@ func baseURLs(st State) []string {
 	for _, cl := range st.Defs.Clusters {
 		urls = append(urls, cl.BaseURL)
 	}
-	log.Print(urls)
 	return urls
 }

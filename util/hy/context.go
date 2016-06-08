@@ -18,10 +18,10 @@ type (
 )
 
 func (c ctx) writeStructTargets(v interface{}) (targets, error) {
-	return c.walkStruct(v, c.writeTarget)
+	return c.walkStructTree(v, c.writeTarget)
 }
 
-func (c ctx) walkStruct(v interface{}, walkFunc walkFunc) (targets, error) {
+func (c ctx) walkStructTree(v interface{}, walkFunc walkFunc) (targets, error) {
 	if v == nil {
 		panic("hy tried to unmarshal to nil, please report this")
 	}
@@ -30,26 +30,59 @@ func (c ctx) walkStruct(v interface{}, walkFunc walkFunc) (targets, error) {
 	if k != reflect.Ptr {
 		panic("getStructTargets passed non-pointer")
 	}
-	typ := val.Type().Elem()
-	nf := typ.NumField()
+
+	t := c.makeTarget("", val, targets{})
+
+	q := targets{t}
+	res := q
+
+	for len(q) > 0 {
+		n := q[0]
+		q = q[1:]
+		ts, err := c.walkTarget(n, walkFunc)
+		debug(ts)
+		if err != nil {
+			return nil, err
+		}
+		n.subTargets = append(n.subTargets, ts...)
+		debug(n)
+		q = append(q, ts...)
+	}
+
+	return res, nil
+}
+
+func (c ctx) walkTarget(t *target, walkFunc walkFunc) (targets, error) {
+	typ := t.typ
+
+	if typ.Kind() != reflect.Ptr {
+		return targets{}, nil
+	}
+	debug(typ)
+	st := typ.Elem()
+	if st.Kind() != reflect.Struct {
+		return targets{}, nil
+	}
+	nf := st.NumField()
 	subTargets := targets{}
 	for i := 0; i < nf; i++ {
-		f := typ.Field(i)
+		f := st.Field(i)
 		tag := f.Tag.Get("hy")
 		if tag != "" {
-			t, err := walkFunc(f.Name, tag, val.Elem().Field(i))
+			debugf("field: %s hy tag: %s", f.Name, tag)
+			t, err := walkFunc(f.Name, tag, t.val.Elem().Field(i))
+			debug(t)
 			if err != nil {
 				return nil, err
 			}
 			subTargets = append(subTargets, t)
 		}
 	}
-	t := c.makeTarget("", val, subTargets)
-	return targets{t}, nil
+	return subTargets, nil
 }
 
 func (c ctx) getStructTargets(v interface{}) (targets, error) {
-	return c.walkStruct(v, c.readTarget)
+	return c.walkStructTree(v, c.readTarget)
 }
 
 func (c ctx) readDirTarget(source, name string, val reflect.Value) (*target, error) {
@@ -157,12 +190,15 @@ func (c ctx) makeTarget(name string, val reflect.Value, subTargets targets) *tar
 func (c ctx) readTarget(name, tag string, val reflect.Value) (*target, error) {
 	source := strings.Split(tag, ",")[0]
 	if strings.HasSuffix(source, ".yaml") {
+		debug("file")
 		return c.getFileTarget(source, name, val)
 	}
 	if strings.HasSuffix(source, "/") {
+		debug("dir")
 		return c.readDirTarget(source, name, val)
 	}
 	if strings.HasSuffix(source, "/**") {
+		debug("tree")
 		return c.readTreeTarget(source, name, val)
 	}
 	return nil, fmt.Errorf("%s.%s has hy tag %q; source does not end with .yaml, /, nor /**", val.Type(), name, tag)

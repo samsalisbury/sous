@@ -173,7 +173,7 @@ func getDatabase(cfg ...string) (*sql.DB, error) {
 func (nc *NameCache) dbInsert(sv SourceVersion, in, etag string) error {
 	res, err := nc.db.Exec("insert into docker_search_metadata "+
 		"(etag, canonicalName, repo, offset, version) values ($1, $2, $3, $4, $5);",
-		etag, in, string(sv.RepoURL), string(sv.RepoOffset), sv.Version.String())
+		etag, in, string(sv.RepoURL), string(sv.RepoOffset), sv.Version.Format(semv.MMPPre))
 
 	if err != nil {
 		return err

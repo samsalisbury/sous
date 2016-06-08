@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/opentable/sous/cli"
 )
 
 func main() {
-
+	log.SetFlags(log.Flags() | log.Lshortfile)
 	panicking := true
 	defer handlePanic(&panicking)
 
@@ -51,7 +52,7 @@ const panicMessage = `
 #                                                                              #
 #                https://github.com/opentable/sous/issues                      #
 #                                                                              #
-#        Please include this entire message and the stack trace below          # 
+#        Please include this entire message and the stack trace below          #
 #        and we will investigate and fix it as soon as possible.               #
 #                                                                              #
 #        Thanks for your help in improving Sous for all!                       #

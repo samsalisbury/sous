@@ -72,9 +72,14 @@ func GetRunningDeploymentSet(singUrls []string) (deps Deployments, err error) {
 			deps = append(deps, dep)
 			depWait.Done()
 		case err = <-errCh:
-			retried := retries.maybe(err, reqCh)
-			if !retried {
-				return
+			if _, ok := err.(malformedResponse); ok {
+				log.Printf("err = %+v\n", err)
+				depWait.Done()
+			} else {
+				retried := retries.maybe(err, reqCh)
+				if !retried {
+					return
+				}
 			}
 		}
 	}
@@ -88,6 +93,7 @@ func (rc retryCounter) maybe(err error, reqCh chan singReq) bool {
 		return false
 	}
 
+	log.Printf("%T err = %+v\n", err, err)
 	count, ok := rc[rt.name()]
 	if !ok {
 		count = 0

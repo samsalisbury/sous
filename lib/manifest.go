@@ -39,7 +39,7 @@ type (
 	// service.
 	SourceLocation struct {
 		// RepoURL is the URL of a source code repository.
-		RepoURL
+		RepoURL RepoURL
 		// RepoOffset is a relative path to a directory within the repository
 		// at RepoURL
 		RepoOffset `yaml:",omitempty"`

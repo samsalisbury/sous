@@ -21,7 +21,15 @@ type (
 		cause error
 		req   singReq
 	}
+
+	malformedResponse struct {
+		message string
+	}
 )
+
+func (mr malformedResponse) Error() string {
+	return mr.message
+}
 
 func (cr *canRetryRequest) Error() string {
 	return fmt.Sprintf("%s: %s", cr.cause, cr.name())
@@ -36,13 +44,26 @@ func newDeploymentBuilder(cl docker_registry.Client, req singReq) deploymentBuil
 }
 
 func (uc *deploymentBuilder) canRetry(err error) error {
-	if uc.req.sourceURL != "" &&
-		uc.req.reqParent != nil &&
-		uc.req.reqParent.Request != nil &&
-		uc.req.reqParent.Request.Id != "" {
-		return &canRetryRequest{err, uc.req}
+	if _, ok := err.(malformedResponse); ok {
+		return err
 	}
-	return err
+
+	if uc.req.sourceURL == "" {
+		return err
+	}
+
+	if uc.req.reqParent == nil {
+		return err
+	}
+	if uc.req.reqParent.Request == nil {
+		return err
+	}
+
+	if uc.req.reqParent.Request.Id == "" {
+		return err
+	}
+
+	return &canRetryRequest{err, uc.req}
 }
 
 func (uc *deploymentBuilder) completeConstruction() error {
@@ -79,14 +100,14 @@ func (uc *deploymentBuilder) retrieveDeploy() error {
 	sing := uc.req.sing
 
 	if rds == nil {
-		return fmt.Errorf("Singularity response didn't include a deploy state")
+		return malformedResponse{"Singularity response didn't include a deploy state"}
 	}
 	uc.depMarker = rds.PendingDeploy
 	if uc.depMarker == nil {
 		uc.depMarker = rds.ActiveDeploy
 	}
 	if uc.depMarker == nil {
-		return fmt.Errorf("Singularity deploy state included no dep markers")
+		return malformedResponse{"Singularity deploy state included no dep markers"}
 	}
 
 	dh, err := sing.GetDeploy(uc.depMarker.RequestId, uc.depMarker.DeployId) // !!! makes HTTP req
@@ -96,7 +117,7 @@ func (uc *deploymentBuilder) retrieveDeploy() error {
 
 	uc.deploy = dh.Deploy
 	if uc.deploy == nil {
-		return fmt.Errorf("Singularity deploy history included no deploy")
+		return malformedResponse{"Singularity deploy history included no deploy"}
 	}
 
 	return nil
@@ -109,7 +130,7 @@ func (uc *deploymentBuilder) retrieveImageLabels() error {
 	}
 	dkr := ci.Docker
 	if dkr == nil {
-		return fmt.Errorf("Singularity deploy didn't include a docker info")
+		return malformedResponse{"Singularity deploy didn't include a docker info"}
 	}
 
 	imageName := dkr.Image
@@ -121,7 +142,7 @@ func (uc *deploymentBuilder) retrieveImageLabels() error {
 
 	uc.target.SourceVersion, err = SourceVersionFromLabels(labels)
 	if err != nil {
-		return err
+		return malformedResponse{err.Error()}
 	}
 
 	return nil

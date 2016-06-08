@@ -1,14 +1,3 @@
-DockerRepo: ""
-Clusters:
-  cluster-1:
-    Name: ""
-    Kind: singularity
-    BaseURL: http://singularity.example.com
-    Env: {}
-  other-cluster:
-    Name: ""
-    Kind: singularity
-    BaseURL: http://some.singularity.cluster
-    Env: {}
+DockerRepo: docker.somewhere.horse
 EnvVars: []
 Resources: []
