@@ -14,7 +14,7 @@ import (
 type (
 	// Build represents a single build of a project.
 	Build struct {
-		NameCache                 *NameCache
+		ImageMapper               ImageMapper
 		DockerRegistryHost        string
 		Context                   *SourceContext
 		SourceShell, ScratchShell shell.Shell
@@ -28,7 +28,7 @@ type (
 )
 
 // RunBuild does a complete build run
-func RunBuild(nc *NameCache, drh string, ctx *SourceContext, source, scratch shell.Shell) (*BuildResult, error) {
+func RunBuild(nc ImageMapper, drh string, ctx *SourceContext, source, scratch shell.Shell) (*BuildResult, error) {
 	build, err := NewBuildWithShells(nc, drh, ctx, source, scratch)
 	if err != nil {
 		return nil, err
@@ -40,9 +40,9 @@ func RunBuild(nc *NameCache, drh string, ctx *SourceContext, source, scratch she
 // NewBuildWithShells creates a new build using source code in the working
 // directory of sourceShell, and using the working dir of scratchShell as
 // temporary storage.
-func NewBuildWithShells(nc *NameCache, drh string, c *SourceContext, sourceShell, scratchShell shell.Shell) (*Build, error) {
+func NewBuildWithShells(nc ImageMapper, drh string, c *SourceContext, sourceShell, scratchShell shell.Shell) (*Build, error) {
 	b := &Build{
-		NameCache:          nc,
+		ImageMapper:        nc,
 		DockerRegistryHost: drh,
 		Context:            c,
 		SourceShell:        sourceShell,
@@ -128,7 +128,7 @@ func (b *Build) RecordName(br *BuildResult) error {
 	sv := b.Context.Version()
 	in := br.ImageName
 	b.SourceShell.ConsoleEcho(fmt.Sprintf("[recording \"%s\" as the docker name for \"%s\"]", in, sv.String()))
-	return b.NameCache.Insert(sv, in, "")
+	return b.ImageMapper.Insert(sv, in, "")
 }
 
 // ImageTag computes an image tag from a SourceVersion

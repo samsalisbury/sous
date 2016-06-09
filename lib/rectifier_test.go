@@ -8,82 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type (
-	DummyRectificationClient struct {
-		logger   *log.Logger
-		created  []dummyRequest
-		deployed []dummyDeploy
-		scaled   []dummyScale
-		deleted  []dummyDelete
-	}
-
-	dummyDeploy struct {
-		cluster   string
-		depID     string
-		reqID     string
-		imageName string
-		res       Resources
-	}
-
-	dummyRequest struct {
-		cluster string
-		id      string
-		count   int
-	}
-
-	dummyScale struct {
-		cluster, reqid string
-		count          int
-		message        string
-	}
-
-	dummyDelete struct {
-		cluster, reqid, message string
-	}
-)
-
-func (t *DummyRectificationClient) log(v ...interface{}) {
-	if t.logger != nil {
-		t.logger.Print(v...)
-	}
-}
-
-func (t *DummyRectificationClient) Deploy(cluster string, depID string, reqID string, imageName string, res Resources) error {
-	t.log("Deploying instance", cluster, depID, reqID, imageName, res)
-	t.deployed = append(t.deployed, dummyDeploy{cluster, depID, reqID, imageName, res})
-	return nil
-}
-
-// PostRequest(cluster, request id, instance count)
-func (t *DummyRectificationClient) PostRequest(cluster string, id string, count int) error {
-	t.log("Creating application", cluster, id, count)
-	t.created = append(t.created, dummyRequest{cluster, id, count})
-	return nil
-}
-
-//Scale(cluster url, request id, instance count, message)
-func (t *DummyRectificationClient) Scale(cluster, reqid string, count int, message string) error {
-	t.log("Scaling", cluster, reqid, count, message)
-	t.scaled = append(t.scaled, dummyScale{cluster, reqid, count, message})
-	return nil
-}
-
-// DeleteRequest(cluster url, request id, instance count, message)
-func (t *DummyRectificationClient) DeleteRequest(cluster, reqid, message string) error {
-	t.log("Deleting application", cluster, reqid, message)
-	t.deleted = append(t.deleted, dummyDelete{cluster, reqid, message})
-	return nil
-}
-
-//ImageName finds or guesses a docker image name for a Deployment
-func (t *DummyRectificationClient) ImageName(d *Deployment) (string, error) {
-	return d.SourceVersion.String(), nil
-}
-
-func NewTRC() DummyRectificationClient {
-	return DummyRectificationClient{}
-}
-
 /* TESTS BEGIN */
 
 func TestModifyScale(t *testing.T) {
@@ -111,10 +35,11 @@ func TestModifyScale(t *testing.T) {
 	}
 
 	chanset := NewDiffChans(1)
-	client := DummyRectificationClient{}
+	nc := NewDummyNameCache()
+	client := NewDummyRectificationClient(nc)
 
 	errs := make(chan RectificationError)
-	Rectify(chanset, errs, &client)
+	Rectify(chanset, errs, client)
 	chanset.Modified <- pair
 	chanset.Close()
 	for e := range errs {
@@ -157,10 +82,12 @@ func TestModifyImage(t *testing.T) {
 	}
 
 	chanset := NewDiffChans(1)
-	client := DummyRectificationClient{}
+
+	nc := NewDummyNameCache()
+	client := NewDummyRectificationClient(nc)
 
 	errs := make(chan RectificationError)
-	Rectify(chanset, errs, &client)
+	Rectify(chanset, errs, client)
 	chanset.Modified <- pair
 	chanset.Close()
 	for e := range errs {
@@ -203,10 +130,11 @@ func TestModify(t *testing.T) {
 	}
 
 	chanset := NewDiffChans(1)
-	client := DummyRectificationClient{}
+	nc := NewDummyNameCache()
+	client := NewDummyRectificationClient(nc)
 
 	errs := make(chan RectificationError)
-	Rectify(chanset, errs, &client)
+	Rectify(chanset, errs, client)
 	chanset.Modified <- pair
 	chanset.Close()
 	for e := range errs {
@@ -238,10 +166,11 @@ func TestDeletes(t *testing.T) {
 	}
 
 	chanset := NewDiffChans(1)
-	client := DummyRectificationClient{}
+	nc := NewDummyNameCache()
+	client := NewDummyRectificationClient(nc)
 
 	errs := make(chan RectificationError)
-	Rectify(chanset, errs, &client)
+	Rectify(chanset, errs, client)
 	chanset.Deleted <- deleted
 	chanset.Close()
 	for e := range errs {
@@ -262,10 +191,11 @@ func TestCreates(t *testing.T) {
 	assert := assert.New(t)
 
 	chanset := NewDiffChans(1)
-	client := DummyRectificationClient{}
+	nc := NewDummyNameCache()
+	client := NewDummyRectificationClient(nc)
 
 	errs := make(chan RectificationError)
-	Rectify(chanset, errs, &client)
+	Rectify(chanset, errs, client)
 
 	created := &Deployment{
 		SourceVersion: SourceVersion{

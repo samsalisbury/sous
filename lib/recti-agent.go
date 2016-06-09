@@ -12,11 +12,11 @@ import (
 type RectiAgent struct {
 	singClients map[string]*singularity.Client
 	sync.RWMutex
-	nameCache NameCache
+	nameCache ImageMapper
 }
 
 // NewRectiAgent returns a set-up RectiAgent
-func NewRectiAgent(nc NameCache) *RectiAgent {
+func NewRectiAgent(nc ImageMapper) *RectiAgent {
 	return &RectiAgent{
 		singClients: make(map[string]*singularity.Client),
 		nameCache:   nc,

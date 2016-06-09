@@ -187,7 +187,7 @@ func findRepo(deps sous.Deployments, repo string) int {
 	return -1
 }
 
-func manifest(nc sous.NameCache, drepo, containerDir, sourceURL, version string) *sous.Manifest {
+func manifest(nc sous.ImageMapper, drepo, containerDir, sourceURL, version string) *sous.Manifest {
 	sv := sous.SourceVersion{
 		RepoURL:    sous.RepoURL(sourceURL),
 		RepoOffset: sous.RepoOffset(""),

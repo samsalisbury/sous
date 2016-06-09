@@ -45,7 +45,8 @@ func (sb *SousBuild) Execute(args []string) cmdr.Result {
 
 	nc := sous.NewNameCache(sb.DockerClient, sb.Config.DatabaseDriver, sb.Config.DatabaseConnection)
 
-	_, err := sous.RunBuild(&nc, "docker.otenv.com", sb.SourceContext, sb.WDShell, sb.ScratchShell)
+	_, err := sous.RunBuild(nc, "docker.otenv.com",
+		sb.SourceContext, sb.WDShell, sb.ScratchShell)
 	if err != nil {
 		return cmdr.EnsureErrorResult(err)
 	}

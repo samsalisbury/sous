@@ -2,7 +2,6 @@ package sous
 
 import (
 	"fmt"
-	"log"
 	"runtime/debug"
 	"sync"
 	"time"
@@ -69,11 +68,12 @@ func GetRunningDeploymentSet(singUrls []string) (deps Deployments, err error) {
 	for {
 		select {
 		case dep := <-depCh:
+			Log.Debug.Print(dep)
 			deps = append(deps, dep)
 			depWait.Done()
 		case err = <-errCh:
 			if _, ok := err.(malformedResponse); ok {
-				log.Printf("err = %+v\n", err)
+				Log.Warn.Print(err)
 				depWait.Done()
 			} else {
 				retried := retries.maybe(err, reqCh)
@@ -93,7 +93,7 @@ func (rc retryCounter) maybe(err error, reqCh chan singReq) bool {
 		return false
 	}
 
-	log.Printf("%T err = %+v\n", err, err)
+	Log.Debug.Printf("%T err = %+v\n", err, err)
 	count, ok := rc[rt.name()]
 	if !ok {
 		count = 0
@@ -113,15 +113,15 @@ func (rc retryCounter) maybe(err error, reqCh chan singReq) bool {
 
 func catchAll(from string) {
 	if err := recover(); err != nil {
-		log.Printf("Recovering from %s where we received %v", from, err)
+		Log.Warn.Printf("Recovering from %s where we received %v", from, err)
 	}
 }
 
 func catchAndSend(from string, errs chan error) {
 	defer catchAll(from)
 	if err := recover(); err != nil {
-		log.Printf("from = %s err = %+v\n", from, err)
-		log.Printf("debug.Stack() = %+v\n", string(debug.Stack()))
+		Log.Debug.Printf("from = %s err = %+v\n", from, err)
+		Log.Debug.Printf("debug.Stack() = %+v\n", string(debug.Stack()))
 		switch err := err.(type) {
 		default:
 			if err != nil {
@@ -133,7 +133,12 @@ func catchAndSend(from string, errs chan error) {
 	}
 }
 
-func singPipeline(client *singularity.Client, dw, wg *sync.WaitGroup, reqs chan singReq, errs chan error) {
+func singPipeline(
+	client *singularity.Client,
+	dw, wg *sync.WaitGroup,
+	reqs chan singReq,
+	errs chan error,
+) {
 	defer wg.Done()
 	defer catchAndSend(fmt.Sprintf("get requests: %s", client), errs)
 	rs, err := getRequestsFromSingularity(client)
@@ -161,7 +166,12 @@ func getRequestsFromSingularity(client *singularity.Client) ([]singReq, error) {
 	return reqs, nil
 }
 
-func depPipeline(cl docker_registry.Client, reqCh chan singReq, depCh chan *Deployment, errCh chan error) {
+func depPipeline(
+	cl docker_registry.Client,
+	reqCh chan singReq,
+	depCh chan *Deployment,
+	errCh chan error,
+) {
 	defer catchAndSend("dependency building", errCh)
 	for req := range reqCh {
 		go func(cl docker_registry.Client, req singReq) {
@@ -171,9 +181,10 @@ func depPipeline(cl docker_registry.Client, reqCh chan singReq, depCh chan *Depl
 
 			if err != nil {
 				errCh <- err
+			} else {
+				Log.Debug.Print(dep)
+				depCh <- dep
 			}
-
-			depCh <- dep
 		}(cl, req)
 	}
 }
@@ -185,5 +196,6 @@ func assembleDeployment(cl docker_registry.Client, req singReq) (*Deployment, er
 		return nil, err
 	}
 
+	Log.Debug.Print(uc)
 	return &uc.target, nil
 }
