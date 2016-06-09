@@ -61,18 +61,24 @@ func (t *DummyRectificationClient) log(v ...interface{}) {
 	}
 }
 
+func (t *DummyRectificationClient) logf(f string, v ...interface{}) {
+	if t.logger != nil {
+		t.logger.Printf(f, v...)
+	}
+}
+
 // Deploy implements part of the RectificationClient interface
 func (t *DummyRectificationClient) Deploy(
-	cluster string, depID string, reqID string, imageName string, res Resources) error {
-	t.log("Deploying instance", cluster, depID, reqID, imageName, res)
+	cluster, depID, reqID, imageName string, res Resources) error {
+	t.logf("Deploying instance %s %s %s %s %v", cluster, depID, reqID, imageName, res)
 	t.deployed = append(t.deployed, dummyDeploy{cluster, depID, reqID, imageName, res})
 	return nil
 }
 
 // PostRequest (cluster, request id, instance count)
 func (t *DummyRectificationClient) PostRequest(
-	cluster string, id string, count int) error {
-	t.log("Creating application", cluster, id, count)
+	cluster, id string, count int) error {
+	t.logf("Creating application %s %s %d", cluster, id, count)
 	t.created = append(t.created, dummyRequest{cluster, id, count})
 	return nil
 }
@@ -80,7 +86,7 @@ func (t *DummyRectificationClient) PostRequest(
 //Scale (cluster url, request id, instance count, message)
 func (t *DummyRectificationClient) Scale(
 	cluster, reqid string, count int, message string) error {
-	t.log("Scaling", cluster, reqid, count, message)
+	t.logf("Scaling %s %s %d %s", cluster, reqid, count, message)
 	t.scaled = append(t.scaled, dummyScale{cluster, reqid, count, message})
 	return nil
 }
@@ -88,7 +94,7 @@ func (t *DummyRectificationClient) Scale(
 // DeleteRequest (cluster url, request id, instance count, message)
 func (t *DummyRectificationClient) DeleteRequest(
 	cluster, reqid, message string) error {
-	t.log("Deleting application", cluster, reqid, message)
+	t.logf("Deleting application %s %s %s", cluster, reqid, message)
 	t.deleted = append(t.deleted, dummyDelete{cluster, reqid, message})
 	return nil
 }

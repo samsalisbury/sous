@@ -84,7 +84,7 @@ func (d Deployments) Diff(other Deployments) DiffChans {
 }
 
 func newDiffer(intended Deployments) *differ {
-	Log.Debug.Print(intended)
+	Log.Debug.Print("Computing diff to:", intended)
 
 	startMap := make(map[DepName]*Deployment)
 	for _, dep := range intended {

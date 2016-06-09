@@ -6,12 +6,12 @@ import (
 	"os"
 
 	"github.com/opentable/sous/cli"
-	"github.com/opentable/sous/lib"
 )
 
 func main() {
-	sous.Log.Info.SetOutput(os.Stderr)
-	sous.Log.Debug.SetOutput(os.Stderr)
+	// Eventually, these should become flags on the top level application
+	//sous.Log.Info.SetOutput(os.Stderr)
+	//sous.Log.Debug.SetOutput(os.Stderr)
 	log.SetFlags(log.Flags() | log.Lshortfile)
 	panicking := true
 	defer handlePanic(&panicking)

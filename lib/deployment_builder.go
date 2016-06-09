@@ -100,17 +100,18 @@ func (uc *deploymentBuilder) retrieveDeploy() error {
 	sing := uc.req.sing
 
 	if rds == nil {
-		return malformedResponse{"Singularity response didn't include a deploy state"}
+		return malformedResponse{"Singularity response didn't include a deploy state. ReqId: " + rp.Request.Id}
 	}
 	uc.depMarker = rds.PendingDeploy
 	if uc.depMarker == nil {
 		uc.depMarker = rds.ActiveDeploy
 	}
 	if uc.depMarker == nil {
-		return malformedResponse{"Singularity deploy state included no dep markers"}
+		return malformedResponse{"Singularity deploy state included no dep markers. ReqID: " + rp.Request.Id}
 	}
 
-	dh, err := sing.GetDeploy(uc.depMarker.RequestId, uc.depMarker.DeployId) // !!! makes HTTP req
+	// !!! makes HTTP req
+	dh, err := sing.GetDeploy(uc.depMarker.RequestId, uc.depMarker.DeployId)
 	if err != nil {
 		return err
 	}
@@ -135,14 +136,15 @@ func (uc *deploymentBuilder) retrieveImageLabels() error {
 
 	imageName := dkr.Image
 
-	labels, err := uc.registryClient.LabelsForImageName(imageName) // !!! HTTP request
+	// !!! HTTP request
+	labels, err := uc.registryClient.LabelsForImageName(imageName)
 	if err != nil {
 		return err
 	}
 
 	uc.target.SourceVersion, err = SourceVersionFromLabels(labels)
 	if err != nil {
-		return malformedResponse{err.Error()}
+		return malformedResponse{fmt.Sprintf("For reqID: %s, %s", uc.req.reqParent.Request.Id, err.Error())}
 	}
 
 	return nil

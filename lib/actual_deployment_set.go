@@ -73,7 +73,7 @@ func GetRunningDeploymentSet(singUrls []string) (deps Deployments, err error) {
 			depWait.Done()
 		case err = <-errCh:
 			if _, ok := err.(malformedResponse); ok {
-				Log.Warn.Print(err)
+				Log.Info.Print(err)
 				depWait.Done()
 			} else {
 				retried := retries.maybe(err, reqCh)
