@@ -1,7 +1,9 @@
 package sous
 
 import (
+	"math"
 	"path/filepath"
+	"strconv"
 
 	"fmt"
 
@@ -132,6 +134,58 @@ func (dc *DeployConfig) Equal(o DeployConfig) bool {
 	return (dc.NumInstances == o.NumInstances && dc.Env.Equal(o.Env) && dc.Resources.Equal(o.Resources))
 }
 
+// SingMap produces a dtoMap appropriate for building a Singularity
+// dto.Resources struct from
+func (r Resources) SingMap() dtoMap {
+	return dtoMap{
+		"Cpus":     r.cpus(),
+		"MemoryMb": r.memory(),
+		"NumPorts": int32(r.ports()),
+	}
+}
+
+func (r Resources) cpus() float64 {
+	cpuStr, present := r["cpus"]
+	cpus, err := strconv.ParseFloat(cpuStr, 64)
+	if err != nil {
+		cpus = 0.1
+		if present {
+			Log.Warn.Printf("Could not parse value: '%s' for cpus as a float, using default: %f", cpuStr, cpus)
+		} else {
+			Log.Info.Printf("Using default value for cpus: %f", cpus)
+		}
+	}
+	return cpus
+}
+
+func (r Resources) memory() float64 {
+	memStr, present := r["memory"]
+	memory, err := strconv.ParseFloat(memStr, 64)
+	if err != nil {
+		memory = 100
+		if present {
+			Log.Warn.Printf("Could not parse value: '%s' for memory as an int, using default: %f", memStr, memory)
+		} else {
+			Log.Info.Printf("Using default value for memory: %f", memory)
+		}
+	}
+	return memory
+}
+
+func (r Resources) ports() int32 {
+	portStr, present := r["ports"]
+	ports, err := strconv.ParseInt(portStr, 10, 32)
+	if err != nil {
+		ports = 1
+		if present {
+			Log.Warn.Printf("Could not parse value: '%s' for ports as a int, using default: %d", portStr, ports)
+		} else {
+			Log.Info.Printf("Using default value for ports: %d", ports)
+		}
+	}
+	return int32(ports)
+}
+
 // Equal checks equivalence between resource maps
 func (r Resources) Equal(o Resources) bool {
 	Log.Debug.Printf("Comparing resources: %+ v ?= %+ v", r, o)
@@ -139,12 +193,18 @@ func (r Resources) Equal(o Resources) bool {
 		return false
 	}
 
-	for name, value := range r {
-		Log.Debug.Printf("%s: %s", name, value)
-		if ov, ok := o[name]; !ok || ov != value {
-			return false
-		}
+	if r.ports() != o.ports() {
+		return false
 	}
+
+	if math.Abs(r.cpus()-o.cpus()) > 0.001 {
+		return false
+	}
+
+	if math.Abs(r.memory()-o.memory()) > 0.001 {
+		return false
+	}
+
 	return true
 }
 

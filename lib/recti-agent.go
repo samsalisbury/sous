@@ -1,7 +1,6 @@
 package sous
 
 import (
-	"strconv"
 	"sync"
 
 	"github.com/opentable/singularity"
@@ -34,42 +33,7 @@ func (ra *RectiAgent) Deploy(cluster, depID, reqID, dockerImage string, r Resour
 		return err
 	}
 
-	cpuStr, present := r["cpus"]
-	cpus, err := strconv.ParseFloat(cpuStr, 64)
-	if err != nil {
-		cpus = 0.1
-		if present {
-			Log.Warn.Printf("Could not parse value: '%s' for cpus as a float, using default: %f", cpuStr, cpus)
-		} else {
-			Log.Info.Printf("Using default value for cpus: %f", cpus)
-		}
-	}
-	memStr, present := r["memory"]
-	memory, err := strconv.ParseFloat(memStr, 64)
-	if err != nil {
-		memory = 100
-		if present {
-			Log.Warn.Printf("Could not parse value: '%s' for memory as an int, using default: %d", memStr, memory)
-		} else {
-			Log.Info.Printf("Using default value for memory: %d", memory)
-		}
-	}
-	portStr, present := r["ports"]
-	ports, err := strconv.ParseInt(portStr, 10, 32)
-	if err != nil {
-		ports = 1
-		if present {
-			Log.Warn.Printf("Could not parse value: '%s' for ports as a int, using default: %d", portStr, ports)
-		} else {
-			Log.Info.Printf("Using default value for ports: %d", ports)
-		}
-	}
-
-	res, err := dtos.LoadMap(&dtos.Resources{}, dtoMap{
-		"Cpus":     cpus,
-		"MemoryMb": memory,
-		"NumPorts": int32(ports),
-	})
+	res, err := dtos.LoadMap(&dtos.Resources{}, r.SingMap())
 	if err != nil {
 		return err
 	}
