@@ -102,6 +102,58 @@ func TestModifyImage(t *testing.T) {
 	}
 }
 
+func TestModifyResources(t *testing.T) {
+	assert := assert.New(t)
+	version := semv.MustParse("1.2.3-test")
+	pair := &DeploymentPair{
+		prior: &Deployment{
+			SourceVersion: SourceVersion{
+				RepoURL: RepoURL("reqid"),
+				Version: version,
+			},
+			DeployConfig: DeployConfig{
+				NumInstances: 1,
+				Resources: Resources{
+					"memory": "100",
+				},
+			},
+			Cluster: "cluster",
+		},
+		post: &Deployment{
+			SourceVersion: SourceVersion{
+				RepoURL: RepoURL("reqid"),
+				Version: version,
+			},
+			DeployConfig: DeployConfig{
+				NumInstances: 1,
+				Resources: Resources{
+					"memory": "500",
+				},
+			},
+			Cluster: "cluster",
+		},
+	}
+
+	chanset := NewDiffChans(1)
+	nc := NewDummyNameCache()
+	client := NewDummyRectificationClient(nc)
+
+	errs := make(chan RectificationError)
+	Rectify(chanset, errs, client)
+	chanset.Modified <- pair
+	chanset.Close()
+	for e := range errs {
+		t.Error(e)
+	}
+
+	assert.Len(client.created, 0)
+
+	if assert.Len(client.deployed, 1) {
+		assert.Regexp("1.2.3", client.deployed[0].imageName)
+		assert.Regexp("500", client.deployed[0].res["memory"])
+	}
+}
+
 func TestModify(t *testing.T) {
 	assert := assert.New(t)
 	before, _ := semv.Parse("1.2.3-test")

@@ -132,12 +132,15 @@ func (dc *DeployConfig) Equal(o DeployConfig) bool {
 	return (dc.NumInstances == o.NumInstances && dc.Env.Equal(o.Env) && dc.Resources.Equal(o.Resources))
 }
 
+// Equal checks equivalence between resource maps
 func (r Resources) Equal(o Resources) bool {
+	Log.Debug.Printf("Comparing resources: %+ v ?= %+ v", r, o)
 	if len(r) != len(o) {
 		return false
 	}
 
 	for name, value := range r {
+		Log.Debug.Printf("%s: %s", name, value)
 		if ov, ok := o[name]; !ok || ov != value {
 			return false
 		}

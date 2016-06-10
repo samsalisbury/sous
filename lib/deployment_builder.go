@@ -173,7 +173,7 @@ func (uc *deploymentBuilder) unpackDeployConfig() error {
 func (uc *deploymentBuilder) determineManifestKind() error {
 	switch uc.request.RequestType {
 	default:
-		return fmt.Errorf("Unrecognized response tupe returned by Singularlity: %v", uc.request.RequestType)
+		return fmt.Errorf("Unrecognized response type returned by Singularity: %v", uc.request.RequestType)
 	case dtos.SingularityRequestRequestTypeSERVICE:
 		uc.target.Kind = ManifestKindService
 	case dtos.SingularityRequestRequestTypeWORKER:
