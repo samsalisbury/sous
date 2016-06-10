@@ -103,6 +103,7 @@ func newLocalSousConfig(u LocalUser) (v LocalSousConfig, err error) {
 
 func newLocalWorkDirShell(l LocalWorkDir) (v LocalWorkDirShell, err error) {
 	v.Sh, err = shell.DefaultInDir(string(l))
+	v.TeeEcho = os.Stdout
 	v.TeeOut = os.Stdout
 	v.TeeErr = os.Stderr
 	return v, initErr(err, "getting current working directory")

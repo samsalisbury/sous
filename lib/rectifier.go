@@ -163,10 +163,16 @@ func (r *rectifier) rectifyDeletes(dc chan *Deployment, errs chan<- Rectificatio
 	}
 }
 
-func (r *rectifier) rectifyModifys(mc chan *DeploymentPair, errs chan<- RectificationError) {
+func (r *rectifier) rectifyModifys(
+	mc chan *DeploymentPair, errs chan<- RectificationError) {
 	for pair := range mc {
+		Log.Debug.Printf("Rectifying modify: \n  %+ v \n    =>  \n  %+ v", pair.prior, pair.post)
 		if r.changesReq(pair) {
-			err := r.sing.Scale(pair.post.Cluster, computeRequestID(pair.post), pair.post.NumInstances, "rectified scaling")
+			err := r.sing.Scale(
+				pair.post.Cluster,
+				computeRequestID(pair.post),
+				pair.post.NumInstances,
+				"rectified scaling")
 			if err != nil {
 				errs <- &ChangeError{Deployments: pair, Err: err}
 				continue
@@ -180,7 +186,12 @@ func (r *rectifier) rectifyModifys(mc chan *DeploymentPair, errs chan<- Rectific
 				continue
 			}
 
-			err = r.sing.Deploy(pair.post.Cluster, newDepID(), computeRequestID(pair.prior), name, pair.post.Resources)
+			err = r.sing.Deploy(
+				pair.post.Cluster,
+				newDepID(),
+				computeRequestID(pair.prior),
+				name,
+				pair.post.Resources)
 			if err != nil {
 				errs <- &ChangeError{Deployments: pair, Err: err}
 				continue
@@ -194,7 +205,7 @@ func (r rectifier) changesReq(pair *DeploymentPair) bool {
 }
 
 func changesDep(pair *DeploymentPair) bool {
-	return !(pair.prior.SourceVersion.Equal(pair.post.SourceVersion) && pair.prior.Resources.Equal(pair.prior.Resources))
+	return !(pair.prior.SourceVersion.Equal(pair.post.SourceVersion) && pair.prior.Resources.Equal(pair.post.Resources))
 }
 
 func computeRequestID(d *Deployment) string {

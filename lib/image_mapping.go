@@ -12,7 +12,8 @@ import (
 )
 
 type (
-	// NameCache is a primative database for looking up SourceVersions based on Docker image names and vice versa.
+	// NameCache is a database for looking up SourceVersions based on
+	// Docker image names and vice versa.
 	NameCache struct {
 		registryClient docker_registry.Client
 		db             *sql.DB
@@ -24,14 +25,30 @@ type (
 	// response to a conditional request
 	NotModifiedErr struct{}
 
-	// NoImageNameFound is returned when we cannot find an image name for a given SourceVersion
+	// NoImageNameFound is returned when we cannot find an image name for a given
+	// SourceVersion
 	NoImageNameFound struct {
 		SourceVersion
 	}
 
-	// NoSourceVersionFound is returned when we cannot find a SourceVersion for a given image name
+	// NoSourceVersionFound is returned when we cannot find a SourceVersion for a
+	// given image name
 	NoSourceVersionFound struct {
 		imageName
+	}
+
+	// ImageMapper interface describes the component responsible for mapping
+	// source versions to names
+	ImageMapper interface {
+		// GetCanonicalName returns the canonical name for an image given any known
+		// name
+		GetCanonicalName(in string) (string, error)
+
+		// Insert puts a given SourceVersion/image name pair into the name cache
+		Insert(sv SourceVersion, in, etag string) error
+
+		// GetImageName returns the docker image name for a given source version
+		GetImageName(sv SourceVersion) (string, error)
 	}
 )
 
@@ -48,13 +65,13 @@ func (e NotModifiedErr) Error() string {
 }
 
 // NewNameCache builds a new name cache
-func NewNameCache(cl docker_registry.Client, dbCfg ...string) NameCache {
+func NewNameCache(cl docker_registry.Client, dbCfg ...string) *NameCache {
 	db, err := getDatabase(dbCfg...)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	return NameCache{cl, db}
+	return &NameCache{cl, db}
 }
 
 // GetSourceVersion looks up the source version for a given image name
@@ -173,7 +190,7 @@ func getDatabase(cfg ...string) (*sql.DB, error) {
 func (nc *NameCache) dbInsert(sv SourceVersion, in, etag string) error {
 	res, err := nc.db.Exec("insert into docker_search_metadata "+
 		"(etag, canonicalName, repo, offset, version) values ($1, $2, $3, $4, $5);",
-		etag, in, string(sv.RepoURL), string(sv.RepoOffset), sv.Version.String())
+		etag, in, string(sv.RepoURL), string(sv.RepoOffset), sv.Version.Format(semv.MMPPre))
 
 	if err != nil {
 		return err

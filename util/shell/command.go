@@ -142,6 +142,8 @@ func (c *Command) ExitCode() (int, error) {
 // itself exits with an error code. If you need an error to be returned on
 // non-zero exit codes, use SucceedResult instead.
 func (c *Command) Result() (*Result, error) {
+	line := strings.Join([]string{c.Name, strings.Join(c.Args, " ")}, " ")
+	c.Sh.ConsoleEcho(line)
 	command := exec.Command(c.Name, c.Args...)
 	outbuf := &bytes.Buffer{}
 	errbuf := &bytes.Buffer{}

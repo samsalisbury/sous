@@ -17,13 +17,11 @@ type MissingImageNamesError struct {
 // appropriate components to compute the intended deployment set, collect the
 // actual set, compute the diffs and then issue the commands to rectify those
 // differences.
-func Resolve(nc NameCache, config State) error {
+func Resolve(rc RectificationClient, config State) error {
 	gdm, err := config.Deployments()
 	if err != nil {
 		return err
 	}
-
-	rc := NewRectiAgent(nc)
 
 	err = guardImageNamesKnown(rc, gdm)
 	if err != nil {
@@ -74,13 +72,13 @@ func guardImageNamesKnown(rc RectificationClient, gdm Deployments) error {
 //Sous config from a directory of YAML files. This use case is important for
 //proof-of-concept, but long term we expect to be able to abstract the storage
 //of the Sous state away, so this might be deprecated at some point.
-func ResolveFromDir(nc NameCache, dir string) error {
+func ResolveFromDir(rc RectificationClient, dir string) error {
 	config, err := loadConfig(dir)
 	if err != nil {
 		return err
 	}
 
-	return Resolve(nc, config)
+	return Resolve(rc, config)
 }
 
 func loadConfig(dir string) (st State, err error) {
@@ -94,6 +92,5 @@ func baseURLs(st State) []string {
 	for _, cl := range st.Defs.Clusters {
 		urls = append(urls, cl.BaseURL)
 	}
-	log.Print(urls)
 	return urls
 }

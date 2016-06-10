@@ -1,5 +1,10 @@
 package sous
 
+import (
+	"fmt"
+	"strings"
+)
+
 // Deployments returns all deployments described by the state.
 func (s *State) Deployments() (Deployments, error) {
 	ds := Deployments{}
@@ -23,7 +28,15 @@ func (s *State) DeploymentsFromManifest(m *Manifest) ([]*Deployment, error) {
 		inherit = append(inherit, global)
 	}
 	for clusterName, spec := range m.Deployments {
-		spec.clusterName = clusterName
+		n, ok := s.Defs.Clusters[clusterName]
+		if !ok {
+			us := make([]string, 0, len(s.Defs.Clusters))
+			for n := range s.Defs.Clusters {
+				us = append(us, n)
+			}
+			return nil, fmt.Errorf("Could not find an cluster configured for name '%s' in [%s] (for %+v)", clusterName, strings.Join(us, ", "), m)
+		}
+		spec.clusterName = n.BaseURL
 		d, err := BuildDeployment(m, spec, inherit)
 		if err != nil {
 			return nil, err
