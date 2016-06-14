@@ -211,7 +211,8 @@ func (d *Deployment) Name() DepName {
 // Equal returns true if two Deployments are equal
 func (d *Deployment) Equal(o *Deployment) bool {
 	Log.Debug.Printf("%+ v ?= %+ v", d, o)
-	if !(d.Cluster == o.Cluster && d.SourceVersion == o.SourceVersion && d.Kind == o.Kind && len(d.Owners) == len(o.Owners)) {
+	if !(d.Cluster == o.Cluster && d.SourceVersion.Equal(o.SourceVersion) && d.Kind == o.Kind) { // && len(d.Owners) == len(o.Owners)) {
+		Log.Debug.Printf("C: %t V: %t, K: %t, #O: %t", d.Cluster == o.Cluster, d.SourceVersion.Equal(o.SourceVersion), d.Kind == o.Kind, len(d.Owners) == len(o.Owners))
 		return false
 	}
 

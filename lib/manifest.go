@@ -191,18 +191,22 @@ func (r Resources) ports() int32 {
 func (r Resources) Equal(o Resources) bool {
 	Log.Debug.Printf("Comparing resources: %+ v ?= %+ v", r, o)
 	if len(r) != len(o) {
+		Log.Debug.Println("Lengths differ")
 		return false
 	}
 
 	if r.ports() != o.ports() {
+		Log.Debug.Println("Ports differ")
 		return false
 	}
 
 	if math.Abs(r.cpus()-o.cpus()) > 0.001 {
+		Log.Debug.Println("Cpus differ")
 		return false
 	}
 
 	if math.Abs(r.memory()-o.memory()) > 0.001 {
+		Log.Debug.Println("Memory differ")
 		return false
 	}
 
