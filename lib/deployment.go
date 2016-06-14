@@ -1,6 +1,9 @@
 package sous
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type (
 	// Deployments is a collection of Deployment.
@@ -138,6 +141,65 @@ func (d *Deployment) String() string {
 	return fmt.Sprintf("%s @ %s %s", d.SourceVersion, d.Cluster, d.DeployConfig.String())
 }
 
+/*
+	Deployment struct {
+		DeployConfig `yaml:"inline"`
+			Args []string `yaml:",omitempty" validate:"values=nonempty"`
+			Env  `yaml:",omitempty" validate:"keys=nonempty,values=nonempty"`
+			NumInstances int
+		Kind ManifestKind
+	}
+*/
+
+// TabbedDeploymentHeaders returns the names of the fields for Tabbed, suitable for use with text/tabwriter
+func TabbedDeploymentHeaders() string {
+	return "Cluster\t" +
+		"Repo\t" +
+		"Version\t" +
+		"Offset\t" +
+		"NumInstances\t" +
+		"Owner\t" +
+		"Resources\t" +
+		"Env"
+}
+
+// Tabbed returns the fields of a deployment formatted in a tab delimited list
+func (d *Deployment) Tabbed() string {
+	o := "<?>"
+	for onr := range d.Owners {
+		o = onr
+		break
+	}
+
+	rs := []string{}
+	for k, v := range d.DeployConfig.Resources {
+		rs = append(rs, fmt.Sprintf("%s: %s", k, v))
+	}
+	es := []string{}
+	for k, v := range d.DeployConfig.Env {
+		es = append(es, fmt.Sprintf("%s: %s", k, v))
+	}
+
+	return fmt.Sprintf(
+		"%s\t"+ //"Cluster\t" +
+			"%s\t"+ //"Repo\t" +
+			"%s\t"+ //"Version\t" +
+			"%s\t"+ //"Offset\t" +
+			"%d\t"+ //"NumInstances\t" +
+			"%s\t"+ //"Owner\t" +
+			"%s\t"+ //"Resources\t" +
+			"%s", //"Env"
+		d.Cluster,
+		string(d.SourceVersion.RepoURL),
+		d.SourceVersion.Version.String(),
+		string(d.SourceVersion.RepoOffset),
+		d.NumInstances,
+		o,
+		strings.Join(rs, ", "),
+		strings.Join(es, ", "),
+	)
+}
+
 // Name returns the DepName for a Deployment
 func (d *Deployment) Name() DepName {
 	return DepName{
@@ -148,6 +210,7 @@ func (d *Deployment) Name() DepName {
 
 // Equal returns true if two Deployments are equal
 func (d *Deployment) Equal(o *Deployment) bool {
+	Log.Debug.Printf("%+ v ?= %+ v", d, o)
 	if !(d.Cluster == o.Cluster && d.SourceVersion == o.SourceVersion && d.Kind == o.Kind && len(d.Owners) == len(o.Owners)) {
 		return false
 	}

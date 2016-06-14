@@ -20,6 +20,7 @@ type (
 		reqID     string
 		imageName string
 		res       Resources
+		e         Env
 	}
 
 	dummyRequest struct {
@@ -69,9 +70,9 @@ func (t *DummyRectificationClient) logf(f string, v ...interface{}) {
 
 // Deploy implements part of the RectificationClient interface
 func (t *DummyRectificationClient) Deploy(
-	cluster, depID, reqID, imageName string, res Resources) error {
-	t.logf("Deploying instance %s %s %s %s %v", cluster, depID, reqID, imageName, res)
-	t.deployed = append(t.deployed, dummyDeploy{cluster, depID, reqID, imageName, res})
+	cluster, depID, reqID, imageName string, res Resources, e Env) error {
+	t.logf("Deploying instance %s %s %s %s %v %v", cluster, depID, reqID, imageName, res, e)
+	t.deployed = append(t.deployed, dummyDeploy{cluster, depID, reqID, imageName, res, e})
 	return nil
 }
 

@@ -1,5 +1,10 @@
 package sous
 
+import (
+	"github.com/opentable/sous/util/hy"
+	"github.com/opentable/sous/util/yaml"
+)
+
 type (
 	// State contains the mutable state of an organisation's deployments.
 	// State is also known as the "Global Deploy Manifest" or GDM.
@@ -68,3 +73,19 @@ type (
 	// VarType represents the type of a Var (not yet implemented).
 	VarType string
 )
+
+// LoadState loads the state from a directory
+func LoadState(dir string) (st State, err error) {
+	u := hy.NewUnmarshaler(yaml.Unmarshal)
+	err = u.Unmarshal(dir, &st)
+	return
+}
+
+// BaseURLs returns the urls for all the clusters referred to in this state
+func (st *State) BaseURLs() []string {
+	urls := make([]string, 0, len(st.Defs.Clusters))
+	for _, cl := range st.Defs.Clusters {
+		urls = append(urls, cl.BaseURL)
+	}
+	return urls
+}

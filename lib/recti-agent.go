@@ -24,8 +24,8 @@ func NewRectiAgent(nc ImageMapper) *RectiAgent {
 }
 
 // Deploy sends requests to Singularity to make a deployment happen
-func (ra *RectiAgent) Deploy(cluster, depID, reqID, dockerImage string, r Resources) error {
-	Log.Debug.Printf("Deploying instance %s %s %s %s %v", cluster, depID, reqID, dockerImage, r)
+func (ra *RectiAgent) Deploy(cluster, depID, reqID, dockerImage string, r Resources, e Env) error {
+	Log.Debug.Printf("Deploying instance %s %s %s %s %v %v", cluster, depID, reqID, dockerImage, r, e)
 	dockerInfo, err := dtos.LoadMap(&dtos.SingularityDockerInfo{}, dtoMap{
 		"Image": dockerImage,
 	})
@@ -51,13 +51,16 @@ func (ra *RectiAgent) Deploy(cluster, depID, reqID, dockerImage string, r Resour
 		"RequestId":     reqID,
 		"Resources":     res,
 		"ContainerInfo": ci,
+		"Env":           map[string]string(e),
 	})
+	Log.Debug.Printf("Deploy: %+ v", dep)
 
 	depReq, err := dtos.LoadMap(&dtos.SingularityDeployRequest{}, dtoMap{"Deploy": dep})
 	if err != nil {
 		return err
 	}
 
+	Log.Debug.Printf("Deploy req: %+ v", depReq)
 	_, err = ra.singularityClient(cluster).Deploy(depReq.(*dtos.SingularityDeployRequest))
 	return err
 }
@@ -75,6 +78,7 @@ func (ra *RectiAgent) PostRequest(cluster, reqID string, instanceCount int) erro
 		return err
 	}
 
+	Log.Debug.Printf("Create Request: %+ v", req)
 	_, err = ra.singularityClient(cluster).PostRequest(req.(*dtos.SingularityRequest))
 	return err
 }
@@ -85,6 +89,8 @@ func (ra *RectiAgent) DeleteRequest(cluster, reqID, message string) error {
 	req, err := dtos.LoadMap(&dtos.SingularityDeleteRequestRequest{}, dtoMap{
 		"Message": "Sous: " + message,
 	})
+
+	Log.Debug.Printf("Delete req: %+ v", req)
 	_, err = ra.singularityClient(cluster).DeleteRequest(reqID, req.(*dtos.SingularityDeleteRequestRequest))
 	return err
 }
@@ -101,6 +107,7 @@ func (ra *RectiAgent) Scale(cluster, reqID string, instanceCount int, message st
 		"SkipHealthchecks": false,
 	})
 
+	Log.Debug.Printf("Scale req: %+ v", sr)
 	_, err = ra.singularityClient(cluster).Scale(reqID, sr.(*dtos.SingularityScaleRequest))
 	return err
 }

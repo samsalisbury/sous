@@ -131,6 +131,7 @@ const (
 )
 
 func (dc *DeployConfig) Equal(o DeployConfig) bool {
+	Log.Debug.Printf("%+ v ?= %+ v", dc, o)
 	return (dc.NumInstances == o.NumInstances && dc.Env.Equal(o.Env) && dc.Resources.Equal(o.Resources))
 }
 

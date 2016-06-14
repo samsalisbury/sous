@@ -30,7 +30,7 @@ type (
 	// rather than with implentations of this interface directly.
 	RectificationClient interface {
 		// Deploy creates a new deploy on a particular requeust
-		Deploy(cluster, depID, reqID, dockerImage string, r Resources) error
+		Deploy(cluster, depID, reqID, dockerImage string, r Resources, e Env) error
 
 		// PostRequest sends a request to a Singularity cluster to initiate
 		PostRequest(cluster, reqID string, instanceCount int) error
@@ -144,7 +144,7 @@ func (r *rectifier) rectifyCreates(cc chan *Deployment, errs chan<- Rectificatio
 			continue
 		}
 
-		err = r.sing.Deploy(d.Cluster, newDepID(), reqID, name, d.Resources)
+		err = r.sing.Deploy(d.Cluster, newDepID(), reqID, name, d.Resources, d.Env)
 		if err != nil {
 			// log.Printf("% +v", d)
 			errs <- &CreateError{Deployment: d, Err: err}
@@ -168,6 +168,7 @@ func (r *rectifier) rectifyModifys(
 	for pair := range mc {
 		Log.Debug.Printf("Rectifying modify: \n  %+ v \n    =>  \n  %+ v", pair.prior, pair.post)
 		if r.changesReq(pair) {
+			Log.Debug.Printf("Scaling...")
 			err := r.sing.Scale(
 				pair.post.Cluster,
 				computeRequestID(pair.post),
@@ -180,6 +181,7 @@ func (r *rectifier) rectifyModifys(
 		}
 
 		if changesDep(pair) {
+			Log.Debug.Printf("Deploying...")
 			name, err := r.sing.ImageName(pair.post)
 			if err != nil {
 				errs <- &ChangeError{Deployments: pair, Err: err}
@@ -191,7 +193,9 @@ func (r *rectifier) rectifyModifys(
 				newDepID(),
 				computeRequestID(pair.prior),
 				name,
-				pair.post.Resources)
+				pair.post.Resources,
+				pair.post.Env,
+			)
 			if err != nil {
 				errs <- &ChangeError{Deployments: pair, Err: err}
 				continue
@@ -205,7 +209,9 @@ func (r rectifier) changesReq(pair *DeploymentPair) bool {
 }
 
 func changesDep(pair *DeploymentPair) bool {
-	return !(pair.prior.SourceVersion.Equal(pair.post.SourceVersion) && pair.prior.Resources.Equal(pair.post.Resources))
+	return !(pair.prior.SourceVersion.Equal(pair.post.SourceVersion) &&
+		pair.prior.Resources.Equal(pair.post.Resources) &&
+		pair.prior.Env.Equal(pair.post.Env))
 }
 
 func computeRequestID(d *Deployment) string {
@@ -224,94 +230,3 @@ func idify(in string) string {
 func newDepID() string {
 	return idify(uuid.NewV4().String())
 }
-
-/*
-// BuildSingRequest builds a singularity request
-func BuildSingRequest(reqID string, instances int) *dtos.SingularityRequest {
-	req := dtos.SingularityRequest{}
-	req.LoadMap(map[string]interface{}{
-		"Id":          reqID,
-		"RequestType": dtos.SingularityRequestRequestTypeSERVICE,
-		"Instances":   int32(instances),
-	})
-	return &req
-}
-
-// BuildSingDeployRequest builds a singularity deploy request
-func BuildSingDeployRequest(depID, reqID, imageName string, res Resources) *dtos.SingularityDeployRequest {
-	resCPUS, ok := res["cpus"]
-	if !ok {
-		return nil
-	}
-
-	// Ugh. Double blinding of the types for this...
-	resCPU, err := strconv.ParseFloat(resCPUS, 64)
-	if err != nil {
-		return nil
-	}
-
-	resMemS, ok := res["memoryMb"]
-	if !ok {
-		return nil
-	}
-
-	resMem, err := strconv.ParseFloat(resMemS, 64)
-	if err != nil {
-		return nil
-	}
-
-	resPortsS, ok := res["numPorts"]
-	if !ok {
-		return nil
-	}
-
-	resPorts, err := strconv.ParseInt(resPortsS, 10, 32)
-	if err != nil {
-		return nil
-	}
-
-	di := dtos.SingularityDockerInfo{}
-	di.LoadMap(map[string]interface{}{
-		"Image": imageName,
-	})
-
-	rez := dtos.Resources{}
-	rez.LoadMap(map[string]interface{}{
-		"Cpus":     resCPU,
-		"MemoryMb": resMem,
-		"NumPorts": resPorts,
-	})
-
-	ci := dtos.SingularityContainerInfo{}
-	ci.LoadMap(map[string]interface{}{
-		"Type":   dtos.SingularityContainerInfoSingularityContainerTypeDOCKER,
-		"Docker": di,
-	})
-
-	dep := dtos.SingularityDeploy{}
-	dep.LoadMap(map[string]interface{}{
-		"Id":            depID,
-		"RequestId":     reqID,
-		"Resources":     rez,
-		"ContainerInfo": ci,
-	})
-
-	dr := dtos.SingularityDeployRequest{}
-	dr.LoadMap(map[string]interface{}{
-		"Deploy": &dep,
-	})
-
-	return &dr
-}
-
-func BuildScaleRequest(num int, message string) *dtos.SingularityScaleRequest {
-	sr := dtos.SingularityScaleRequest{}
-	sr.LoadMap(map[string]interface{}{
-		"Id":             newDepID(),
-		"Instances":      int32(num),
-		"Message":        message,
-		"DurationMillis": 60000, // N.b. yo creo this is how long Singularity will allow this attempt to take.
-	})
-	return &sr
-}
-*/

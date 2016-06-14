@@ -1,11 +1,15 @@
 package cli
 
 import (
-	"flag"
+	"fmt"
+	"os"
+	"text/tabwriter"
 
+	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
 )
 
+// SousQueryAdc is the description of the `sous query adc` command
 type SousQueryAdc struct {
 	Sous  *Sous
 	flags struct {
@@ -22,15 +26,34 @@ Queries the Singularity server and container registry to determine a synthetic g
 This should resemble the manifest that was used to establish the current state of deployment.
 `
 
+// Help prints the help
 func (*SousQueryAdc) Help() string { return sousBuildHelp }
 
-func (sb *SousQueryAdc) AddFlags(fs *flag.FlagSet) {
-	fs.StringVar(&sb.flags.singularity, "singularity", "",
-		"the singularity server to query")
-	fs.StringVar(&sb.flags.registry, "registry", "",
-		"the container registry to query")
-}
-
+// Execute defines the behavior of `sous query adc`
 func (sb *SousQueryAdc) Execute(args []string) cmdr.Result {
-	return InternalErrorf("not implemented")
+	if len(args) < 1 {
+		return UsageErrorf("sous querry adc: directory to load deployment configuration required")
+	}
+	dir := args[0]
+
+	state, err := sous.LoadState(dir)
+	if err != nil {
+		return EnsureErrorResult(err)
+	}
+
+	ads, err := sous.GetRunningDeploymentSet(state.BaseURLs())
+	if err != nil {
+		return EnsureErrorResult(err)
+	}
+
+	w := &tabwriter.Writer{}
+	w.Init(os.Stdout, 2, 4, 2, ' ', 0)
+	fmt.Fprintln(w, sous.TabbedDeploymentHeaders())
+
+	for _, d := range ads {
+		fmt.Fprintln(w, d.Tabbed())
+	}
+	w.Flush()
+
+	return Success()
 }

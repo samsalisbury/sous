@@ -3,9 +3,6 @@ package sous
 import (
 	"log"
 	"strings"
-
-	"github.com/opentable/sous/util/hy"
-	"github.com/opentable/sous/util/yaml"
 )
 
 // MissingImageNamesError reports that we couldn't get names for one or more source versions
@@ -28,7 +25,7 @@ func Resolve(rc RectificationClient, config State) error {
 		return err
 	}
 
-	ads, err := GetRunningDeploymentSet(baseURLs(config))
+	ads, err := GetRunningDeploymentSet(config.BaseURLs())
 	if err != nil {
 		return err
 	}
@@ -73,24 +70,10 @@ func guardImageNamesKnown(rc RectificationClient, gdm Deployments) error {
 //proof-of-concept, but long term we expect to be able to abstract the storage
 //of the Sous state away, so this might be deprecated at some point.
 func ResolveFromDir(rc RectificationClient, dir string) error {
-	config, err := loadConfig(dir)
+	config, err := LoadState(dir)
 	if err != nil {
 		return err
 	}
 
 	return Resolve(rc, config)
-}
-
-func loadConfig(dir string) (st State, err error) {
-	u := hy.NewUnmarshaler(yaml.Unmarshal)
-	err = u.Unmarshal(dir, &st)
-	return
-}
-
-func baseURLs(st State) []string {
-	urls := make([]string, 0, len(st.Defs.Clusters))
-	for _, cl := range st.Defs.Clusters {
-		urls = append(urls, cl.BaseURL)
-	}
-	return urls
 }

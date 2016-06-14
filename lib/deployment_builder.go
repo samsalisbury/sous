@@ -152,6 +152,7 @@ func (uc *deploymentBuilder) retrieveImageLabels() error {
 
 func (uc *deploymentBuilder) unpackDeployConfig() error {
 	uc.target.Env = uc.deploy.Env
+	Log.Debug.Printf("%+v", uc.deploy.Env)
 	if uc.target.Env == nil {
 		uc.target.Env = make(map[string]string)
 	}
