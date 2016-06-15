@@ -72,7 +72,7 @@ func TestMissingImage(t *testing.T) {
 	repoOne := "https://github.com/opentable/one.git"
 
 	// easiest way to make sure that the manifest doesn't actually get registered
-	dummyNc := sous.NewNameCache(docker_registry.NewClient(), "sqlite3", ":memory:")
+	dummyNc := sous.NewNameCache(docker_registry.NewClient(), "sqlite3", sous.InMemory)
 
 	stateOne := sous.State{
 		Defs: clusterDefs,
@@ -82,7 +82,7 @@ func TestMissingImage(t *testing.T) {
 	}
 
 	// ****
-	nc := sous.NewNameCache(docker_registry.NewClient(), "sqlite3", ":memory:")
+	nc := sous.NewNameCache(docker_registry.NewClient(), "sqlite3", sous.InMemory)
 	rc := sous.NewRectiAgent(nc)
 	err := sous.Resolve(rc, stateOne)
 	assert.Error(err)
@@ -110,7 +110,7 @@ func TestResolve(t *testing.T) {
 	repoTwo := "https://github.com/opentable/two.git"
 	repoThree := "https://github.com/opentable/three.git"
 
-	nc := sous.NewNameCache(docker_registry.NewClient(), "sqlite3", ":memory:")
+	nc := sous.NewNameCache(docker_registry.NewClient(), "sqlite3", sous.InMemory)
 	rc := sous.NewRectiAgent(nc)
 
 	stateOneTwo := sous.State{
