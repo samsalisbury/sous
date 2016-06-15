@@ -3,6 +3,7 @@ package test
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"testing"
 	"time"
@@ -128,6 +129,7 @@ func TestResolve(t *testing.T) {
 	}
 
 	// ****
+	log.Print("Resolving from nothing to one+two")
 	err := sous.Resolve(rc, stateOneTwo)
 	if err != nil {
 		assert.Fail(err.Error())
@@ -146,6 +148,7 @@ func TestResolve(t *testing.T) {
 	assert.Equal(1, two.NumInstances)
 
 	// ****
+	log.Println("Resolving from one+two to two+three")
 	err = sous.Resolve(rc, stateTwoThree)
 	if err != nil {
 		assert.Fail(err.Error())
