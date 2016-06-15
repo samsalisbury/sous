@@ -4,13 +4,12 @@ import (
 	"os/exec"
 	"testing"
 
-	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/yaml"
 	"github.com/samsalisbury/semv"
 )
 
 func TestWriteState(t *testing.T) {
-	t.Skip("Doesn't marshal fields of child structs to files - see DCOPS-7430")
 
 	s := exampleState()
 

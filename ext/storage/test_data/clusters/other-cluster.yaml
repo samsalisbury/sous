@@ -1,4 +1,0 @@
-Name: ""
-Kind: singularity
-BaseURL: http://some.singularity.cluster
-Env: {}

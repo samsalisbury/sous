@@ -88,7 +88,7 @@ func (c ctx) getStructTargets(v interface{}) (targets, error) {
 func (c ctx) readDirTarget(source, name string, val reflect.Value) (*target, error) {
 	typ := val.Type()
 	if typ.Kind() != reflect.Map {
-		return nil, fmt.Errorf("directory targets only accept maps for now")
+		return nil, fmt.Errorf("directory targets only accept maps")
 	}
 	elemType, err := getElemType(typ)
 	if err != nil {

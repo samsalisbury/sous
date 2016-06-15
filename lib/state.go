@@ -21,7 +21,7 @@ type (
 		// DockerRepo is the host:port (no schema) to connect to the Docker repository
 		DockerRepo string
 		// Clusters is a collection of logical deployment environments.
-		Clusters Clusters `hy:"clusters/"`
+		Clusters Clusters
 		// EnvVars contains definitions for global environment variables.
 		EnvVars EnvDefs
 		// Resources contains definitions for resource types available to
@@ -54,7 +54,7 @@ type (
 	// purpose, etc.
 	Cluster struct {
 		// Name is the unique name of this cluster.
-		Name string `hy:",filename"`
+		Name string
 		// Kind is the kind of cluster. Currently the only legal value is
 		// "singularity"
 		Kind string
