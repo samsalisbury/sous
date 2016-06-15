@@ -156,12 +156,14 @@ func TestResolve(t *testing.T) {
 	// ****
 
 	deps, which = deploymentWithRepo(assert, repoTwo)
-	assert.NotEqual(-1, which, "opentable/two no longer deployed after resolve")
-	assert.Equal(1, deps[which].NumInstances)
+	if assert.NotEqual(-1, which, "opentable/two no longer deployed after resolve") {
+		assert.Equal(1, deps[which].NumInstances)
+	}
 
 	which = findRepo(deps, repoThree)
-	assert.NotEqual(-1, which, "opentable/three not successfully deployed")
-	assert.Equal(1, deps[which].NumInstances)
+	if assert.NotEqual(-1, which, "opentable/three not successfully deployed") {
+		assert.Equal(1, deps[which].NumInstances)
+	}
 
 	which = findRepo(deps, repoOne)
 	if which != -1 {
