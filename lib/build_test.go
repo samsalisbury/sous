@@ -5,7 +5,6 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/docker_registry"
 	"github.com/opentable/sous/util/shell"
 	"github.com/stretchr/testify/assert"
@@ -65,7 +64,7 @@ func TestBuild(t *testing.T) {
 	}
 
 	docker := docker_registry.NewDummyClient()
-	nc := NewNameCache(docker, "sqlite3", sous.InMemory)
+	nc := NewNameCache(docker, "sqlite3", InMemory)
 
 	br, err := RunBuild(nc, "docker.wearenice.com", sourceCtx, sourceSh, scratchSh)
 	assert.NotNil(br)

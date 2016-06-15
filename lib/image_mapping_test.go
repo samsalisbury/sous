@@ -5,7 +5,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/docker_registry"
 	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/assert"
@@ -15,7 +14,7 @@ func TestRoundTrip(t *testing.T) {
 	assert := assert.New(t)
 
 	dc := docker_registry.NewDummyClient()
-	nc := NewNameCache(dc, "sqlite3", sous.InMemory)
+	nc := NewNameCache(dc, "sqlite3", InMemory)
 
 	v := semv.MustParse("1.2.3")
 	sv := SourceVersion{
@@ -68,7 +67,7 @@ func TestMissingName(t *testing.T) {
 	assert := assert.New(t)
 	log.SetFlags(log.Flags() | log.Lshortfile)
 	dc := docker_registry.NewDummyClient()
-	nc := NewNameCache(dc, "sqlite3", sous.InMemory)
+	nc := NewNameCache(dc, "sqlite3", InMemory)
 
 	v := semv.MustParse("4.5.6")
 	sv := SourceVersion{

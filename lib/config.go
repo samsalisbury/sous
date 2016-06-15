@@ -1,7 +1,5 @@
 package sous
 
-import "github.com/opentable/sous/lib"
-
 // Config contains the core Sous configuration, shared by both the client and
 // server. The client and server may additionally have their own configuration.
 type (
@@ -28,6 +26,6 @@ type (
 func DefaultConfig() Config {
 	return Config{
 		DatabaseDriver:     "sqlite3",
-		DatabaseConnection: sous.InMemory,
+		DatabaseConnection: InMemory,
 	}
 }
