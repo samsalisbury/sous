@@ -64,7 +64,7 @@ func TestBuild(t *testing.T) {
 	}
 
 	docker := docker_registry.NewDummyClient()
-	nc := NewNameCache(docker, "sqlite3", ":memory:")
+	nc := NewNameCache(docker, "sqlite3", InMemory)
 
 	br, err := RunBuild(nc, "docker.wearenice.com", sourceCtx, sourceSh, scratchSh)
 	assert.NotNil(br)

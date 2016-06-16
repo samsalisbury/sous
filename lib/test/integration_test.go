@@ -3,6 +3,7 @@ package test
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"testing"
 	"time"
@@ -71,7 +72,7 @@ func TestMissingImage(t *testing.T) {
 	repoOne := "https://github.com/opentable/one.git"
 
 	// easiest way to make sure that the manifest doesn't actually get registered
-	dummyNc := sous.NewNameCache(docker_registry.NewClient(), "sqlite3", ":memory:")
+	dummyNc := sous.NewNameCache(docker_registry.NewClient(), "sqlite3", sous.InMemoryConnection("bitbucket"))
 
 	stateOne := sous.State{
 		Defs: clusterDefs,
@@ -81,7 +82,7 @@ func TestMissingImage(t *testing.T) {
 	}
 
 	// ****
-	nc := sous.NewNameCache(docker_registry.NewClient(), "sqlite3", ":memory:")
+	nc := sous.NewNameCache(docker_registry.NewClient(), "sqlite3", sous.InMemoryConnection("missingimage"))
 	rc := sous.NewRectiAgent(nc)
 	err := sous.Resolve(rc, stateOne)
 	assert.Error(err)
@@ -109,7 +110,7 @@ func TestResolve(t *testing.T) {
 	repoTwo := "https://github.com/opentable/two.git"
 	repoThree := "https://github.com/opentable/three.git"
 
-	nc := sous.NewNameCache(docker_registry.NewClient(), "sqlite3", ":memory:")
+	nc := sous.NewNameCache(docker_registry.NewClient(), "sqlite3", sous.InMemoryConnection("testresolve"))
 	rc := sous.NewRectiAgent(nc)
 
 	stateOneTwo := sous.State{
@@ -128,6 +129,7 @@ func TestResolve(t *testing.T) {
 	}
 
 	// ****
+	log.Print("Resolving from nothing to one+two")
 	err := sous.Resolve(rc, stateOneTwo)
 	if err != nil {
 		assert.Fail(err.Error())
@@ -146,6 +148,7 @@ func TestResolve(t *testing.T) {
 	assert.Equal(1, two.NumInstances)
 
 	// ****
+	log.Println("Resolving from one+two to two+three")
 	err = sous.Resolve(rc, stateTwoThree)
 	if err != nil {
 		assert.Fail(err.Error())
@@ -153,12 +156,14 @@ func TestResolve(t *testing.T) {
 	// ****
 
 	deps, which = deploymentWithRepo(assert, repoTwo)
-	assert.NotEqual(-1, which, "opentable/two no longer deployed after resolve")
-	assert.Equal(1, deps[which].NumInstances)
+	if assert.NotEqual(-1, which, "opentable/two no longer deployed after resolve") {
+		assert.Equal(1, deps[which].NumInstances)
+	}
 
 	which = findRepo(deps, repoThree)
-	assert.NotEqual(-1, which, "opentable/three not successfully deployed")
-	assert.Equal(1, deps[which].NumInstances)
+	if assert.NotEqual(-1, which, "opentable/three not successfully deployed") {
+		assert.Equal(1, deps[which].NumInstances)
+	}
 
 	which = findRepo(deps, repoOne)
 	if which != -1 {
