@@ -56,6 +56,12 @@ type (
 // The dummy file allows multiple goroutines see the same in-memory DB
 const InMemory = "file:dummy.db?mode=memory&cache=shared"
 
+// InMemoryConnection builds a connection string based on a base name
+// This is mostly useful for testing, so that we can have separate cache DBs per test
+func InMemoryConnection(base string) string {
+	return "file:" + base + "?mode=memory&cache=shared"
+}
+
 func (e NoImageNameFound) Error() string {
 	return fmt.Sprintf("No image name for %v", e.SourceVersion)
 }
