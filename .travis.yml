@@ -21,6 +21,8 @@ env:
 notifications:
   hipchat:
     notify: true
+    on_failure: always
+    on_success: change
     template: |-
       Travis: %{message}<br />
       %{repository_slug}#%{build_number} (%{branch} : %{author}):<br />
