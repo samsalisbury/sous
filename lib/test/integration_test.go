@@ -72,7 +72,7 @@ func TestMissingImage(t *testing.T) {
 	repoOne := "https://github.com/opentable/one.git"
 
 	// easiest way to make sure that the manifest doesn't actually get registered
-	dummyNc := sous.NewNameCache(docker_registry.NewClient(), "sqlite3", InMemoryConnection("bitbucket"))
+	dummyNc := sous.NewNameCache(docker_registry.NewClient(), "sqlite3", sous.InMemoryConnection("bitbucket"))
 
 	stateOne := sous.State{
 		Defs: clusterDefs,
