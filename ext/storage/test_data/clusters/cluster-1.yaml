@@ -1,4 +1,0 @@
-Name: ""
-Kind: singularity
-BaseURL: http://singularity.example.com
-Env: {}
