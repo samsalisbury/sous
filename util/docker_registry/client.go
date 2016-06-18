@@ -18,12 +18,14 @@ import (
 )
 
 type (
+	// V1Schema Represents the original v1 schema data for a container
 	V1Schema struct {
 		//ContainerConfig ContainerConfig `json:"container_config"`
 		CC        ContainerConfig `json:"container_config""`
 		Container string          `json:"container"`
 	}
 
+	// ContainerConfig captures the configuration of a docker container
 	ContainerConfig struct {
 		Labels map[string]string
 		Cmd    []string
@@ -37,13 +39,16 @@ type (
 		registries map[string]*registry
 	}
 
+	// Client is the interface for interacting with a docker registry
 	Client interface {
 		LabelsForImageName(string) (map[string]string, error)
 		GetImageMetadata(imageName, etag string) (Metadata, error)
+		AllTags(repoName string) ([]string, error)
 		Cancel()
 		BecomeFoolishlyTrusting()
 	}
 
+	// Metadata represents the descriptive data for a docker image
 	Metadata struct {
 		Labels        map[string]string
 		Etag          string
@@ -52,6 +57,7 @@ type (
 	}
 )
 
+// NewClient builds a new client
 func NewClient() Client {
 	return &liveClient{
 		ctx:        context.Background(),
@@ -60,8 +66,8 @@ func NewClient() Client {
 	}
 }
 
-// BecomeFoolishlyTrusting instructs the client to cease verifying the certificates of registry hosts. This is a terrible idea and
-// this method is slated for removal without notice - do not depend on it.
+// BecomeFoolishlyTrusting instructs the client to cease verifying the certificates of registry hosts.
+// This is a terrible idea and this method is slated for removal without notice - do not depend on it.
 func (c *liveClient) BecomeFoolishlyTrusting() {
 	c.xport.TLSClientConfig = &tls.Config{
 		InsecureSkipVerify: true,
@@ -88,6 +94,21 @@ func (c *liveClient) GetImageMetadata(imageName string, etag string) (Metadata, 
 	}
 
 	return c.metadataForImage(regHost, ref, etag)
+}
+
+// AllTags returns a list of tags for a particular repo
+func (c *liveClient) AllTags(repoName string) ([]string, error) {
+	regHost, ref, err := splitHost(repoName)
+	if err != nil {
+		return []string{}, err
+	}
+
+	rep, err := c.registryForHostname(regHost)
+	if err != nil {
+		return []string{}, err
+	}
+
+	return rep.getRepoTags(ref)
 }
 
 func splitHost(in string) (url string, ref reference.Named, err error) {
@@ -138,7 +159,8 @@ func digestRef(ref reference.Named, digst string) (reference.Canonical, error) {
 	return reference.WithDigest(rn, d)
 }
 
-func (c *liveClient) registryForUrl(url string) (*registry, error) {
+func (c *liveClient) registryForHostname(regHost string) (*registry, error) {
+	url := fmt.Sprintf("https://%s", regHost)
 	if reg, ok := c.registries[url]; ok {
 		return reg, nil
 	}
@@ -164,8 +186,6 @@ func (c *liveClient) registryForUrl(url string) (*registry, error) {
 // )
 // ( which returns an empty map, since the demo-server doesn't have labels... )
 func (c *liveClient) metadataForImage(regHost string, ref reference.Named, etag string) (md Metadata, err error) {
-	registryUrl := fmt.Sprintf("https://%s", regHost)
-
 	// slightly weird but: a non-empty etag implies that we've seen this
 	// digest-named container before - and a digest reference should be
 	// immutable.
@@ -173,7 +193,7 @@ func (c *liveClient) metadataForImage(regHost string, ref reference.Named, etag 
 		return Metadata{}, distribution.ErrManifestNotModified
 	}
 
-	rep, err := c.registryForUrl(registryUrl)
+	rep, err := c.registryForHostname(regHost)
 	if err != nil {
 		return
 	}
@@ -219,7 +239,10 @@ func (c *liveClient) metadataForImage(regHost string, ref reference.Named, etag 
 	return
 }
 
-// NewRepository creates a new Repository for the given repository name and base URL.
+/*
+ */
+
+// All returns all tag// NewRepository creates a new Repository for the given repository name and base URL.
 func newRegistry(baseURL string, transport http.RoundTripper) (*registry, error) {
 	ub, err := v2.NewURLBuilderFromString(baseURL, false)
 	if err != nil {
@@ -243,12 +266,7 @@ type registry struct {
 	ub     *v2.URLBuilder
 }
 
-func (ms *registry) getRequest(ref reference.Named, etag string) (req *http.Request, err error) {
-	u, err := ms.ub.BuildManifestURL(ref)
-	if err != nil {
-		return nil, err
-	}
-
+func (r *registry) getRequest(u, etag string) (req *http.Request, err error) {
 	req, err = http.NewRequest("GET", u, nil)
 	if err != nil {
 		return nil, err
@@ -264,7 +282,71 @@ func (ms *registry) getRequest(ref reference.Named, etag string) (req *http.Requ
 	return req, nil
 }
 
-func (ms *registry) manifestFromResponse(resp *http.Response) (distribution.Manifest, error) {
+type tagsResponse struct {
+	Tags []string `json:"tags"`
+}
+
+func (r *registry) getRepoTags(ref reference.Named) (tags []string, err error) {
+	u, err := r.ub.BuildTagsURL(ref)
+	if err != nil {
+		return tags, err
+	}
+
+	req, err := r.getRequest(u, "")
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := r.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if !client.SuccessStatus(resp.StatusCode) {
+		return tags, client.HandleErrorResponse(resp)
+	}
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return tags, err
+	}
+
+	var tr tagsResponse
+	if err := json.Unmarshal(b, &tr); err != nil {
+		return tags, err
+	}
+	tags = tr.Tags
+	return tags, nil
+}
+
+func (r *registry) getManifestWithEtag(ctx context.Context, ref reference.Named, etag string) (distribution.Manifest, http.Header, error) {
+	var err error
+
+	u, err := r.ub.BuildManifestURL(ref)
+	if err != nil {
+		return nil, http.Header{}, err
+	}
+
+	req, err := r.getRequest(u, etag)
+	if err != nil {
+		return nil, http.Header{}, err
+	}
+
+	resp, err := r.client.Do(req)
+	if err != nil {
+		return nil, http.Header{}, err
+	}
+	defer resp.Body.Close()
+	mf, err := r.manifestFromResponse(resp)
+	if err != nil {
+		return nil, http.Header{}, err
+	}
+
+	return mf, resp.Header, err
+}
+
+func (r *registry) manifestFromResponse(resp *http.Response) (distribution.Manifest, error) {
 	if resp.StatusCode == http.StatusNotModified {
 		return nil, distribution.ErrManifestNotModified
 	} else if client.SuccessStatus(resp.StatusCode) {
@@ -281,25 +363,4 @@ func (ms *registry) manifestFromResponse(resp *http.Response) (distribution.Mani
 		return m, nil
 	}
 	return nil, client.HandleErrorResponse(resp)
-}
-
-func (ms *registry) getManifestWithEtag(ctx context.Context, ref reference.Named, etag string) (distribution.Manifest, http.Header, error) {
-	var err error
-
-	req, err := ms.getRequest(ref, etag)
-	if err != nil {
-		return nil, http.Header{}, err
-	}
-
-	resp, err := ms.client.Do(req)
-	if err != nil {
-		return nil, http.Header{}, err
-	}
-	defer resp.Body.Close()
-	mf, err := ms.manifestFromResponse(resp)
-	if err != nil {
-		return nil, http.Header{}, err
-	}
-
-	return mf, resp.Header, err
 }

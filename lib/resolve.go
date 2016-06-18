@@ -30,7 +30,8 @@ func Resolve(nc NameCache, config State) error {
 		return err
 	}
 
-	ads, err := GetRunningDeploymentSet(baseURLs(config))
+	sc := NewSetCollector(nc.registryClient)
+	ads, err := sc.GetRunningDeployment(baseURLs(config))
 	if err != nil {
 		return err
 	}

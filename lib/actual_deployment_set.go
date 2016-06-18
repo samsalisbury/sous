@@ -17,6 +17,12 @@ import (
 const ReqsPerServer = 10
 
 type (
+	// SetCollector is the agent responsible for collecting sets of deployments
+	// For now, it can collect the actual running set
+	SetCollector struct {
+		regClient docker_registry.Client
+	}
+
 	sDeploy    *dtos.SingularityDeploy
 	sRequest   *dtos.SingularityRequest
 	sDepMarker *dtos.SingularityDeployMarker
@@ -30,21 +36,23 @@ type (
 	retryCounter map[string]uint
 )
 
-// GetRunningDeploymentSet collects data from the Singularity clusters and
+// NewSetCollector returns a new set collector
+func NewSetCollector(rc docker_registry.Client) *SetCollector {
+	return &SetCollector{rc}
+}
+
+// GetRunningDeployment collects data from the Singularity clusters and
 // returns a list of actual deployments
-func GetRunningDeploymentSet(singUrls []string) (deps Deployments, err error) {
+func (sc *SetCollector) GetRunningDeployment(singUrls []string) (deps Deployments, err error) {
 	retries := make(retryCounter)
 	errCh := make(chan error)
 	deps = make(Deployments, 0)
 	sings := make(map[string]*singularity.Client)
-
 	reqCh := make(chan singReq, len(singUrls)*ReqsPerServer)
 	depCh := make(chan *Deployment, ReqsPerServer)
-	defer close(depCh)
 
-	regClient := docker_registry.NewClient()
-	regClient.BecomeFoolishlyTrusting()
-	defer regClient.Cancel()
+	defer close(depCh)
+	defer sc.regClient.Cancel()
 
 	var singWait, depWait sync.WaitGroup
 
@@ -55,7 +63,7 @@ func GetRunningDeploymentSet(singUrls []string) (deps Deployments, err error) {
 		go singPipeline(sing, &depWait, &singWait, reqCh, errCh)
 	}
 
-	go depPipeline(regClient, reqCh, depCh, errCh)
+	go depPipeline(sc.regClient, reqCh, depCh, errCh)
 
 	go func() {
 		catchAndSend("closing up", errCh)
@@ -72,6 +80,7 @@ func GetRunningDeploymentSet(singUrls []string) (deps Deployments, err error) {
 			deps = append(deps, dep)
 			depWait.Done()
 		case err = <-errCh:
+			Log.Debug.Println(err)
 			retried := retries.maybe(err, reqCh)
 			if !retried {
 				return
@@ -98,6 +107,7 @@ func (rc retryCounter) maybe(err error, reqCh chan singReq) bool {
 
 	rc[rt.name()] = count + 1
 	go func() {
+		defer catchAll("retrying: " + req.sourceURL)
 		time.Sleep(time.Millisecond * 50)
 		reqCh <- rt.req
 	}()

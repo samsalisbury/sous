@@ -34,11 +34,13 @@ func TestGetLabels(t *testing.T) {
 }
 
 func TestGetRunningDeploymentSet(t *testing.T) {
+	sous.Log.Debug.SetOutput(os.Stderr)
 	assert := assert.New(t)
 
 	registerLabelledContainers()
+	rc := docker_registry.NewClient()
 
-	deps, which := deploymentWithRepo(assert, "https://github.com/opentable/docker-grafana.git")
+	deps, which := deploymentWithRepo(assert, rc, "https://github.com/opentable/docker-grafana.git")
 	assert.Equal(3, len(deps))
 
 	if which < 0 {
@@ -70,8 +72,9 @@ func TestMissingImage(t *testing.T) {
 	}
 	repoOne := "https://github.com/opentable/one.git"
 
+	rc := docker_registry.NewClient()
 	// easiest way to make sure that the manifest doesn't actually get registered
-	dummyNc := sous.NewNameCache(docker_registry.NewClient(), "sqlite3", ":memory:")
+	dummyNc := sous.NewNameCache(rc, "sqlite3", ":memory:")
 
 	stateOne := sous.State{
 		Defs: clusterDefs,
@@ -81,14 +84,14 @@ func TestMissingImage(t *testing.T) {
 	}
 
 	// ****
-	nc := sous.NewNameCache(docker_registry.NewClient(), "sqlite3", ":memory:")
+	nc := sous.NewNameCache(rc, "sqlite3", ":memory:")
 	err := sous.Resolve(nc, stateOne)
 	assert.Error(err)
 
 	// ****
 	time.Sleep(1 * time.Second)
 
-	_, which := deploymentWithRepo(assert, repoOne)
+	_, which := deploymentWithRepo(assert, rc, repoOne)
 	assert.Equal(which, -1, "opentable/one was deployed")
 
 	resetSingularity()
@@ -108,7 +111,9 @@ func TestResolve(t *testing.T) {
 	repoTwo := "https://github.com/opentable/two.git"
 	repoThree := "https://github.com/opentable/three.git"
 
-	nc := sous.NewNameCache(docker_registry.NewClient(), "sqlite3", ":memory:")
+	rc := docker_registry.NewClient()
+
+	nc := sous.NewNameCache(rc, "sqlite3", ":memory:")
 
 	stateOneTwo := sous.State{
 		Defs: clusterDefs,
@@ -133,7 +138,7 @@ func TestResolve(t *testing.T) {
 	// ****
 	time.Sleep(1 * time.Second)
 
-	deps, which := deploymentWithRepo(assert, repoOne)
+	deps, which := deploymentWithRepo(assert, rc, repoOne)
 	assert.NotEqual(which, -1, "opentable/one not successfully deployed")
 	one := deps[which]
 	assert.Equal(1, one.NumInstances)
@@ -150,7 +155,7 @@ func TestResolve(t *testing.T) {
 	}
 	// ****
 
-	deps, which = deploymentWithRepo(assert, repoTwo)
+	deps, which = deploymentWithRepo(assert, rc, repoTwo)
 	assert.NotEqual(-1, which, "opentable/two no longer deployed after resolve")
 	assert.Equal(1, deps[which].NumInstances)
 
@@ -166,8 +171,9 @@ func TestResolve(t *testing.T) {
 	resetSingularity()
 }
 
-func deploymentWithRepo(assert *assert.Assertions, repo string) (sous.Deployments, int) {
-	deps, err := sous.GetRunningDeploymentSet([]string{singularityURL})
+func deploymentWithRepo(assert *assert.Assertions, rc docker_registry.Client, repo string) (sous.Deployments, int) {
+	sc := sous.NewSetCollector(rc)
+	deps, err := sc.GetRunningDeployment([]string{singularityURL})
 	if assert.Nil(err) {
 		return deps, findRepo(deps, repo)
 	}
