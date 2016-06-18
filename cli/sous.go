@@ -2,7 +2,10 @@ package cli
 
 import (
 	"flag"
+	"fmt"
+	"os"
 
+	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
 	"github.com/opentable/sous/util/whitespace"
 	"github.com/samsalisbury/semv"
@@ -82,14 +85,19 @@ func (s *Sous) usage() cmdr.ErrorResult {
 
 func (s *Sous) Subcommands() cmdr.Commands {
 	//s.CLI.SetVerbosity(s.Verbosity())
+	s.Verbosity()
 	return TopLevelCommands
 }
 
 func (s *Sous) Verbosity() cmdr.Verbosity {
 	if s.flags.Verbosity.Debug {
+		fmt.Println("debug level")
+		sous.Log.Debug.SetOutput(os.Stderr)
+		sous.Log.Info.SetOutput(os.Stderr)
 		return cmdr.Debug
 	}
 	if s.flags.Verbosity.Loud {
+		sous.Log.Info.SetOutput(os.Stderr)
 		return cmdr.Loud
 	}
 	if s.flags.Verbosity.Quiet {

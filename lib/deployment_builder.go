@@ -21,7 +21,15 @@ type (
 		cause error
 		req   singReq
 	}
+
+	malformedResponse struct {
+		message string
+	}
 )
+
+func (mr malformedResponse) Error() string {
+	return mr.message
+}
 
 func (cr *canRetryRequest) Error() string {
 	return fmt.Sprintf("%s: %s", cr.cause, cr.name())
@@ -36,13 +44,26 @@ func newDeploymentBuilder(cl docker_registry.Client, req singReq) deploymentBuil
 }
 
 func (uc *deploymentBuilder) canRetry(err error) error {
-	if uc.req.sourceURL != "" &&
-		uc.req.reqParent != nil &&
-		uc.req.reqParent.Request != nil &&
-		uc.req.reqParent.Request.Id != "" {
-		return &canRetryRequest{err, uc.req}
+	if _, ok := err.(malformedResponse); ok {
+		return err
 	}
-	return err
+
+	if uc.req.sourceURL == "" {
+		return err
+	}
+
+	if uc.req.reqParent == nil {
+		return err
+	}
+	if uc.req.reqParent.Request == nil {
+		return err
+	}
+
+	if uc.req.reqParent.Request.Id == "" {
+		return err
+	}
+
+	return &canRetryRequest{err, uc.req}
 }
 
 func (uc *deploymentBuilder) completeConstruction() error {
@@ -79,24 +100,25 @@ func (uc *deploymentBuilder) retrieveDeploy() error {
 	sing := uc.req.sing
 
 	if rds == nil {
-		return fmt.Errorf("Singularity response didn't include a deploy state")
+		return malformedResponse{"Singularity response didn't include a deploy state. ReqId: " + rp.Request.Id}
 	}
 	uc.depMarker = rds.PendingDeploy
 	if uc.depMarker == nil {
 		uc.depMarker = rds.ActiveDeploy
 	}
 	if uc.depMarker == nil {
-		return fmt.Errorf("Singularity deploy state included no dep markers")
+		return malformedResponse{"Singularity deploy state included no dep markers. ReqID: " + rp.Request.Id}
 	}
 
-	dh, err := sing.GetDeploy(uc.depMarker.RequestId, uc.depMarker.DeployId) // !!! makes HTTP req
+	// !!! makes HTTP req
+	dh, err := sing.GetDeploy(uc.depMarker.RequestId, uc.depMarker.DeployId)
 	if err != nil {
 		return err
 	}
 
 	uc.deploy = dh.Deploy
 	if uc.deploy == nil {
-		return fmt.Errorf("Singularity deploy history included no deploy")
+		return malformedResponse{"Singularity deploy history included no deploy"}
 	}
 
 	return nil
@@ -109,19 +131,20 @@ func (uc *deploymentBuilder) retrieveImageLabels() error {
 	}
 	dkr := ci.Docker
 	if dkr == nil {
-		return fmt.Errorf("Singularity deploy didn't include a docker info")
+		return malformedResponse{"Singularity deploy didn't include a docker info"}
 	}
 
 	imageName := dkr.Image
 
-	labels, err := uc.registryClient.LabelsForImageName(imageName) // !!! HTTP request
+	// !!! HTTP request
+	labels, err := uc.registryClient.LabelsForImageName(imageName)
 	if err != nil {
 		return err
 	}
 
 	uc.target.SourceVersion, err = SourceVersionFromLabels(labels)
 	if err != nil {
-		return err
+		return malformedResponse{fmt.Sprintf("For reqID: %s, %s", uc.req.reqParent.Request.Id, err.Error())}
 	}
 
 	return nil
@@ -129,6 +152,7 @@ func (uc *deploymentBuilder) retrieveImageLabels() error {
 
 func (uc *deploymentBuilder) unpackDeployConfig() error {
 	uc.target.Env = uc.deploy.Env
+	Log.Debug.Printf("%+v", uc.deploy.Env)
 	if uc.target.Env == nil {
 		uc.target.Env = make(map[string]string)
 	}
@@ -150,7 +174,7 @@ func (uc *deploymentBuilder) unpackDeployConfig() error {
 func (uc *deploymentBuilder) determineManifestKind() error {
 	switch uc.request.RequestType {
 	default:
-		return fmt.Errorf("Unrecognized response tupe returned by Singularlity: %v", uc.request.RequestType)
+		return fmt.Errorf("Unrecognized response type returned by Singularity: %v", uc.request.RequestType)
 	case dtos.SingularityRequestRequestTypeSERVICE:
 		uc.target.Kind = ManifestKindService
 	case dtos.SingularityRequestRequestTypeWORKER:

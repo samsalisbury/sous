@@ -84,6 +84,8 @@ func (d Deployments) Diff(other Deployments) DiffChans {
 }
 
 func newDiffer(intended Deployments) *differ {
+	Log.Debug.Print("Computing diff from:", intended)
+
 	startMap := make(map[DepName]*Deployment)
 	for _, dep := range intended {
 		startMap[dep.Name()] = dep
@@ -95,6 +97,7 @@ func newDiffer(intended Deployments) *differ {
 }
 
 func (d *differ) diff(existing Deployments) {
+	Log.Debug.Print("Computing diff to: ", existing)
 	for i := range existing {
 		name := existing[i].Name()
 		if indep, ok := d.from[name]; ok {
@@ -102,7 +105,7 @@ func (d *differ) diff(existing Deployments) {
 			if indep.Equal(existing[i]) {
 				d.Retained <- indep
 			} else {
-				d.Modified <- &DeploymentPair{name, existing[i], indep}
+				d.Modified <- &DeploymentPair{name, indep, existing[i]}
 			}
 		} else {
 			d.Created <- existing[i]

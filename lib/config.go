@@ -26,6 +26,6 @@ type (
 func DefaultConfig() Config {
 	return Config{
 		DatabaseDriver:     "sqlite3",
-		DatabaseConnection: ":memory:",
+		DatabaseConnection: InMemory,
 	}
 }

@@ -46,6 +46,9 @@ type (
 		// prevent the check from working correctly.
 		Exists(path string) bool
 
+		// ConsoleEcho outputs the line as if it were typed at the console
+		ConsoleEcho(line string)
+
 		// Cmd creates a new Command based on this shell.
 		Cmd(name string, args ...interface{}) Cmd
 

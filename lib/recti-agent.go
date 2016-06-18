@@ -12,11 +12,11 @@ import (
 type RectiAgent struct {
 	singClients map[string]*singularity.Client
 	sync.RWMutex
-	nameCache NameCache
+	nameCache ImageMapper
 }
 
 // NewRectiAgent returns a set-up RectiAgent
-func NewRectiAgent(nc NameCache) *RectiAgent {
+func NewRectiAgent(nc ImageMapper) *RectiAgent {
 	return &RectiAgent{
 		singClients: make(map[string]*singularity.Client),
 		nameCache:   nc,
@@ -24,7 +24,8 @@ func NewRectiAgent(nc NameCache) *RectiAgent {
 }
 
 // Deploy sends requests to Singularity to make a deployment happen
-func (ra *RectiAgent) Deploy(cluster, depID, reqID, dockerImage string, r Resources) error {
+func (ra *RectiAgent) Deploy(cluster, depID, reqID, dockerImage string, r Resources, e Env) error {
+	Log.Debug.Printf("Deploying instance %s %s %s %s %v %v", cluster, depID, reqID, dockerImage, r, e)
 	dockerInfo, err := dtos.LoadMap(&dtos.SingularityDockerInfo{}, dtoMap{
 		"Image": dockerImage,
 	})
@@ -32,11 +33,7 @@ func (ra *RectiAgent) Deploy(cluster, depID, reqID, dockerImage string, r Resour
 		return err
 	}
 
-	res, err := dtos.LoadMap(&dtos.Resources{}, dtoMap{
-		"Cpus":     0.1,
-		"MemoryMb": 100.0,
-		"NumPorts": int32(1),
-	})
+	res, err := dtos.LoadMap(&dtos.Resources{}, r.SingMap())
 	if err != nil {
 		return err
 	}
@@ -54,19 +51,23 @@ func (ra *RectiAgent) Deploy(cluster, depID, reqID, dockerImage string, r Resour
 		"RequestId":     reqID,
 		"Resources":     res,
 		"ContainerInfo": ci,
+		"Env":           map[string]string(e),
 	})
+	Log.Debug.Printf("Deploy: %+ v", dep)
 
 	depReq, err := dtos.LoadMap(&dtos.SingularityDeployRequest{}, dtoMap{"Deploy": dep})
 	if err != nil {
 		return err
 	}
 
+	Log.Debug.Printf("Deploy req: %+ v", depReq)
 	_, err = ra.singularityClient(cluster).Deploy(depReq.(*dtos.SingularityDeployRequest))
 	return err
 }
 
 // PostRequest sends requests to Singularity to create a new Request
 func (ra *RectiAgent) PostRequest(cluster, reqID string, instanceCount int) error {
+	Log.Debug.Printf("Creating application %s %s %d", cluster, reqID, instanceCount)
 	req, err := dtos.LoadMap(&dtos.SingularityRequest{}, dtoMap{
 		"Id":          reqID,
 		"RequestType": dtos.SingularityRequestRequestTypeSERVICE,
@@ -77,15 +78,19 @@ func (ra *RectiAgent) PostRequest(cluster, reqID string, instanceCount int) erro
 		return err
 	}
 
+	Log.Debug.Printf("Create Request: %+ v", req)
 	_, err = ra.singularityClient(cluster).PostRequest(req.(*dtos.SingularityRequest))
 	return err
 }
 
 // DeleteRequest sends a request to Singularity to delete a request
 func (ra *RectiAgent) DeleteRequest(cluster, reqID, message string) error {
+	Log.Debug.Printf("Deleting application %s %s %s", cluster, reqID, message)
 	req, err := dtos.LoadMap(&dtos.SingularityDeleteRequestRequest{}, dtoMap{
 		"Message": "Sous: " + message,
 	})
+
+	Log.Debug.Printf("Delete req: %+ v", req)
 	_, err = ra.singularityClient(cluster).DeleteRequest(reqID, req.(*dtos.SingularityDeleteRequestRequest))
 	return err
 }
@@ -93,6 +98,7 @@ func (ra *RectiAgent) DeleteRequest(cluster, reqID, message string) error {
 // Scale sends requests to Singularity to change the number of instances
 // running for a given Request
 func (ra *RectiAgent) Scale(cluster, reqID string, instanceCount int, message string) error {
+	Log.Debug.Printf("Scaling %s %s %d %s", cluster, reqID, instanceCount, message)
 	sr, err := dtos.LoadMap(&dtos.SingularityScaleRequest{}, dtoMap{
 		"ActionId": idify(uuid.NewV4().String()), // not positive this is appropriate
 		// omitting DurationMillis - bears discussion
@@ -101,6 +107,7 @@ func (ra *RectiAgent) Scale(cluster, reqID string, instanceCount int, message st
 		"SkipHealthchecks": false,
 	})
 
+	Log.Debug.Printf("Scale req: %+ v", sr)
 	_, err = ra.singularityClient(cluster).Scale(reqID, sr.(*dtos.SingularityScaleRequest))
 	return err
 }

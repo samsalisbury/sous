@@ -3,9 +3,6 @@ package sous
 import (
 	"log"
 	"strings"
-
-	"github.com/opentable/sous/util/hy"
-	"github.com/opentable/sous/util/yaml"
 )
 
 // MissingImageNamesError reports that we couldn't get names for one or more source versions
@@ -17,20 +14,18 @@ type MissingImageNamesError struct {
 // appropriate components to compute the intended deployment set, collect the
 // actual set, compute the diffs and then issue the commands to rectify those
 // differences.
-func Resolve(nc NameCache, config State) error {
+func Resolve(rc RectificationClient, config State) error {
 	gdm, err := config.Deployments()
 	if err != nil {
 		return err
 	}
-
-	rc := NewRectiAgent(nc)
 
 	err = guardImageNamesKnown(rc, gdm)
 	if err != nil {
 		return err
 	}
 
-	ads, err := GetRunningDeploymentSet(baseURLs(config))
+	ads, err := GetRunningDeploymentSet(config.BaseURLs())
 	if err != nil {
 		return err
 	}
@@ -74,26 +69,11 @@ func guardImageNamesKnown(rc RectificationClient, gdm Deployments) error {
 //Sous config from a directory of YAML files. This use case is important for
 //proof-of-concept, but long term we expect to be able to abstract the storage
 //of the Sous state away, so this might be deprecated at some point.
-func ResolveFromDir(nc NameCache, dir string) error {
-	config, err := loadConfig(dir)
+func ResolveFromDir(rc RectificationClient, dir string) error {
+	config, err := LoadState(dir)
 	if err != nil {
 		return err
 	}
 
-	return Resolve(nc, config)
-}
-
-func loadConfig(dir string) (st State, err error) {
-	u := hy.NewUnmarshaler(yaml.Unmarshal)
-	err = u.Unmarshal(dir, &st)
-	return
-}
-
-func baseURLs(st State) []string {
-	urls := make([]string, 0, len(st.Defs.Clusters))
-	for _, cl := range st.Defs.Clusters {
-		urls = append(urls, cl.BaseURL)
-	}
-	log.Print(urls)
-	return urls
+	return Resolve(rc, config)
 }

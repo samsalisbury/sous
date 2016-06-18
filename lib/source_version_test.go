@@ -31,8 +31,8 @@ func TestParseName_SourceVersion(t *testing.T) {
 		t.Errorf("Bad version: %q", sv.Version)
 	}
 
-	if sv.RevId() != "4f850e9030224f528cfdb085d558f8508d06a6d3" {
-		t.Errorf("Bad revision: %q", sv.RevId())
+	if sv.RevID() != "4f850e9030224f528cfdb085d558f8508d06a6d3" {
+		t.Errorf("Bad revision: %q", sv.RevID())
 	}
 }
 
