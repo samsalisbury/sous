@@ -16,7 +16,7 @@ type (
 )
 
 const (
-	defaultConfigDir = ".sous"
+	defaultConfigDir = "sous"
 	xdgConfigDefault = ".config"
 	configFileBase   = "config.yaml"
 )

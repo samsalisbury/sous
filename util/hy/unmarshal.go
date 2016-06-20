@@ -1,4 +1,4 @@
-// hy is a two-way hierarchical YAML parser.
+// Package hy is a two-way hierarchical YAML parser.
 //
 // hy allows you to read and write YAML files in a directory hierarchy
 // to and from go structs. It uses tags to define the locations of
@@ -16,10 +16,19 @@ import (
 	"github.com/opentable/sous/util/yaml"
 )
 
+// Error wraps YAML errors in order to indicate which file contains them
+type Error struct {
+	file  string
+	cause error
+}
+
+// Unmarshaler tracks the process of deserializing a directory of yaml files
+// into a set of structs
 type Unmarshaler struct {
 	UnmarshalFunc func([]byte, interface{}) error
 }
 
+// NewUnmarshaler creates an Unmarshaler
 func NewUnmarshaler(unmarshalFunc func([]byte, interface{}) error) Unmarshaler {
 	if unmarshalFunc == nil {
 		panic("unmarshalFunc must not be nil")
@@ -32,6 +41,11 @@ func Unmarshal(path string, v interface{}) error {
 	return NewUnmarshaler(yaml.Unmarshal).Unmarshal(path, v)
 }
 
+func (e *Error) Error() string {
+	return fmt.Sprintf("In %s: %s", e.file, e.cause)
+}
+
+// Unmarshal deserializes from a directory
 func (u Unmarshaler) Unmarshal(path string, v interface{}) error {
 	if v == nil {
 		return fmt.Errorf("hy cannot unmarshal to nil")
@@ -57,8 +71,22 @@ func (c ctx) unmarshalDir(v interface{}) error {
 func (ts targets) unmarshalAll(parent *reflect.Value) error {
 	for _, t := range ts {
 		if err := t.unmarshal(parent); err != nil {
-			return err
+			if _, ok := err.(*Error); ok {
+				return err
+			}
+			return &Error{t.path, err}
 		}
+		debug(t.val.Type(), t.val.Interface())
+		if parent == nil {
+			debug(parent, "\n")
+		} else if parent.Kind() == reflect.Struct {
+			debug(parent, parent.FieldByName(t.name), "\n")
+		} else if parent.Kind() == reflect.Ptr && parent.Elem().Kind() == reflect.Struct {
+			debug(parent, parent.Elem().FieldByName(t.name), "\n")
+		} else {
+			debug(parent, "\n")
+		}
+
 	}
 	return nil
 }
@@ -67,20 +95,24 @@ func (t target) unmarshal(parent *reflect.Value) error {
 	debugf("Target: %s\n", t.path)
 	iface := t.val.Interface()
 	if isFile(t.path) {
+		debug("unmarshall file", t)
 		if err := t.unmarshalFile(iface); err != nil {
 			return err
 		}
 	}
-	if parent != nil {
-		if err := t.insertIntoParent(parent); err != nil {
-			return err
-		}
-	}
 	if len(t.subTargets) != 0 {
+		debug("subtargets", t)
 		if err := t.subTargets.unmarshalAll(&t.val); err != nil {
 			return err
 		}
 	}
+	if parent != nil {
+		debug("insert into parent", parent, t)
+		if err := t.insertIntoParent(parent); err != nil {
+			return err
+		}
+	}
+	debug(t.val.Interface(), "\n")
 	return nil
 }
 
@@ -89,6 +121,7 @@ func parentTypeError(parent *reflect.Value) error {
 }
 
 func (t target) insertIntoParent(parent *reflect.Value) error {
+	debug(parent, parent.Kind())
 	switch parent.Kind() {
 	default:
 		return parentTypeError(parent)
@@ -114,6 +147,7 @@ func (t target) insertIntoParent(parent *reflect.Value) error {
 			elem = elem.Elem()
 		}
 		parent.SetMapIndex(reflect.ValueOf(t.name), elem)
+		debug(parent.Interface())
 	}
 	return nil
 }

@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/configloader"
@@ -12,6 +13,12 @@ import (
 
 func newConfig(u *User) (*sous.Config, error) {
 	config := u.DefaultConfig()
+
+	err := os.MkdirAll(u.ConfigDir(), os.ModeDir|0755)
+	if err != nil {
+		return nil, err
+	}
+
 	return &config, configloader.New().Load(&config, u.ConfigFile())
 }
 

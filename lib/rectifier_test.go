@@ -8,73 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type (
-	TestRectClient struct {
-		created  []dummyRequest
-		deployed []dummyDeploy
-		scaled   []dummyScale
-		deleted  []dummyDelete
-	}
-
-	dummyDeploy struct {
-		cluster   string
-		depID     string
-		reqID     string
-		imageName string
-		res       Resources
-	}
-
-	dummyRequest struct {
-		cluster string
-		id      string
-		count   int
-	}
-
-	dummyScale struct {
-		cluster, reqid string
-		count          int
-		message        string
-	}
-
-	dummyDelete struct {
-		cluster, reqid, message string
-	}
-)
-
-func NewTRC() TestRectClient {
-	return TestRectClient{
-		created: []dummyRequest{},
-	}
-}
-
-func (t *TestRectClient) Deploy(cluster string, depID string, reqID string, imageName string, res Resources) error {
-	t.deployed = append(t.deployed, dummyDeploy{cluster, depID, reqID, imageName, res})
-	return nil
-}
-
-// PostRequest(cluster, request id, instance count)
-func (t *TestRectClient) PostRequest(cluster string, id string, count int) error {
-	t.created = append(t.created, dummyRequest{cluster, id, count})
-	return nil
-}
-
-//Scale(cluster url, request id, instance count, message)
-func (t *TestRectClient) Scale(cluster, reqid string, count int, message string) error {
-	t.scaled = append(t.scaled, dummyScale{cluster, reqid, count, message})
-	return nil
-}
-
-// DeleteRequest(cluster url, request id, instance count, message)
-func (t *TestRectClient) DeleteRequest(cluster, reqid, message string) error {
-	t.deleted = append(t.deleted, dummyDelete{cluster, reqid, message})
-	return nil
-}
-
-//ImageName finds or guesses a docker image name for a Deployment
-func (t *TestRectClient) ImageName(d *Deployment) (string, error) {
-	return d.SourceVersion.String(), nil
-}
-
 /* TESTS BEGIN */
 
 func TestModifyScale(t *testing.T) {
@@ -102,10 +35,11 @@ func TestModifyScale(t *testing.T) {
 	}
 
 	chanset := NewDiffChans(1)
-	client := TestRectClient{}
+	nc := NewDummyNameCache()
+	client := NewDummyRectificationClient(nc)
 
 	errs := make(chan RectificationError)
-	Rectify(chanset, errs, &client)
+	Rectify(chanset, errs, client)
 	chanset.Modified <- pair
 	chanset.Close()
 	for e := range errs {
@@ -148,10 +82,12 @@ func TestModifyImage(t *testing.T) {
 	}
 
 	chanset := NewDiffChans(1)
-	client := TestRectClient{}
+
+	nc := NewDummyNameCache()
+	client := NewDummyRectificationClient(nc)
 
 	errs := make(chan RectificationError)
-	Rectify(chanset, errs, &client)
+	Rectify(chanset, errs, client)
 	chanset.Modified <- pair
 	chanset.Close()
 	for e := range errs {
@@ -163,6 +99,58 @@ func TestModifyImage(t *testing.T) {
 
 	if assert.Len(client.deployed, 1) {
 		assert.Regexp("2.3.4", client.deployed[0].imageName)
+	}
+}
+
+func TestModifyResources(t *testing.T) {
+	assert := assert.New(t)
+	version := semv.MustParse("1.2.3-test")
+	pair := &DeploymentPair{
+		prior: &Deployment{
+			SourceVersion: SourceVersion{
+				RepoURL: RepoURL("reqid"),
+				Version: version,
+			},
+			DeployConfig: DeployConfig{
+				NumInstances: 1,
+				Resources: Resources{
+					"memory": "100",
+				},
+			},
+			Cluster: "cluster",
+		},
+		post: &Deployment{
+			SourceVersion: SourceVersion{
+				RepoURL: RepoURL("reqid"),
+				Version: version,
+			},
+			DeployConfig: DeployConfig{
+				NumInstances: 1,
+				Resources: Resources{
+					"memory": "500",
+				},
+			},
+			Cluster: "cluster",
+		},
+	}
+
+	chanset := NewDiffChans(1)
+	nc := NewDummyNameCache()
+	client := NewDummyRectificationClient(nc)
+
+	errs := make(chan RectificationError)
+	Rectify(chanset, errs, client)
+	chanset.Modified <- pair
+	chanset.Close()
+	for e := range errs {
+		t.Error(e)
+	}
+
+	assert.Len(client.created, 0)
+
+	if assert.Len(client.deployed, 1) {
+		assert.Regexp("1.2.3", client.deployed[0].imageName)
+		assert.Regexp("500", client.deployed[0].res["memory"])
 	}
 }
 
@@ -194,10 +182,11 @@ func TestModify(t *testing.T) {
 	}
 
 	chanset := NewDiffChans(1)
-	client := TestRectClient{}
+	nc := NewDummyNameCache()
+	client := NewDummyRectificationClient(nc)
 
 	errs := make(chan RectificationError)
-	Rectify(chanset, errs, &client)
+	Rectify(chanset, errs, client)
 	chanset.Modified <- pair
 	chanset.Close()
 	for e := range errs {
@@ -229,10 +218,11 @@ func TestDeletes(t *testing.T) {
 	}
 
 	chanset := NewDiffChans(1)
-	client := TestRectClient{}
+	nc := NewDummyNameCache()
+	client := NewDummyRectificationClient(nc)
 
 	errs := make(chan RectificationError)
-	Rectify(chanset, errs, &client)
+	Rectify(chanset, errs, client)
 	chanset.Deleted <- deleted
 	chanset.Close()
 	for e := range errs {
@@ -253,10 +243,11 @@ func TestCreates(t *testing.T) {
 	assert := assert.New(t)
 
 	chanset := NewDiffChans(1)
-	client := TestRectClient{}
+	nc := NewDummyNameCache()
+	client := NewDummyRectificationClient(nc)
 
 	errs := make(chan RectificationError)
-	Rectify(chanset, errs, &client)
+	Rectify(chanset, errs, client)
 
 	created := &Deployment{
 		SourceVersion: SourceVersion{

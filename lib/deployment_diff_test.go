@@ -83,8 +83,8 @@ func TestRealDiff(t *testing.T) {
 		assert.Equal(repoThree, string(ds.Changed[0].name.source.RepoURL))
 		assert.Equal(repoThree, string(ds.Changed[0].prior.SourceVersion.RepoURL))
 		assert.Equal(repoThree, string(ds.Changed[0].post.SourceVersion.RepoURL))
-		assert.Equal(ds.Changed[0].prior.NumInstances, 1)
-		assert.Equal(ds.Changed[0].post.NumInstances, 2)
+		assert.Equal(ds.Changed[0].post.NumInstances, 1)
+		assert.Equal(ds.Changed[0].prior.NumInstances, 2)
 	}
 
 	if assert.Len(ds.New, 1, "Should have one added item.") {

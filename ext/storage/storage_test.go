@@ -4,7 +4,7 @@ import (
 	"os/exec"
 	"testing"
 
-	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/yaml"
 	"github.com/samsalisbury/semv"
 )
@@ -22,7 +22,7 @@ func TestWriteState(t *testing.T) {
 	if err != nil {
 		t.Log("Output not as expected:")
 		t.Log(string(out))
-		t.Fatal()
+		t.Fatal("")
 	}
 }
 
@@ -46,11 +46,11 @@ func TestReadState(t *testing.T) {
 	}
 
 	if string(actualYAML) != string(expectedYAML) {
-		t.Log("Got >>>>>>>>>>>>>>>>>>>>>>")
-		t.Logf("% +v", actualYAML)
 		t.Log("Expected >>>>>>>>>>>>>>>>>")
-		t.Logf("% +v", expectedYAML)
-		t.Fatal()
+		t.Logf("\n% +v", string(expectedYAML))
+		t.Log("Got >>>>>>>>>>>>>>>>>>>>>>")
+		t.Logf("\n% +v", string(actualYAML))
+		t.Fatal("")
 	}
 }
 
@@ -104,6 +104,7 @@ func exampleState() *sous.State {
 			},
 		},
 		Defs: sous.Defs{
+			DockerRepo: "docker.somewhere.horse",
 			Clusters: sous.Clusters{
 				"cluster-1": sous.Cluster{
 					Kind:    "singularity",

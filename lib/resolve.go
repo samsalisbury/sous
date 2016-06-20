@@ -17,13 +17,11 @@ type MissingImageNamesError struct {
 // appropriate components to compute the intended deployment set, collect the
 // actual set, compute the diffs and then issue the commands to rectify those
 // differences.
-func Resolve(nc NameCache, config State) error {
+func Resolve(rc RectificationClient, config State) error {
 	gdm, err := config.Deployments()
 	if err != nil {
 		return err
 	}
-
-	rc := NewRectiAgent(nc)
 
 	err = guardImageNamesKnown(rc, gdm)
 	if err != nil {
@@ -81,20 +79,5 @@ func ResolveFromDir(nc NameCache, dir string) error {
 		return err
 	}
 
-	return Resolve(nc, config)
-}
-
-func loadConfig(dir string) (st State, err error) {
-	u := hy.NewUnmarshaler(yaml.Unmarshal)
-	err = u.Unmarshal(dir, &st)
-	return
-}
-
-func baseURLs(st State) []string {
-	urls := make([]string, 0, len(st.Defs.Clusters))
-	for _, cl := range st.Defs.Clusters {
-		urls = append(urls, cl.BaseURL)
-	}
-	log.Print(urls)
-	return urls
+	return Resolve(rc, config)
 }

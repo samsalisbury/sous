@@ -1,4 +1,4 @@
-DockerRepo: ""
+DockerRepo: docker.somewhere.horse
 Clusters:
   cluster-1:
     Name: ""
