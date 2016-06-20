@@ -2,7 +2,6 @@ package sous
 
 import (
 	"fmt"
-	"log"
 	"runtime/debug"
 	"sync"
 	"time"
@@ -113,7 +112,7 @@ func (rc retryCounter) maybe(err error, reqCh chan singReq) bool {
 
 	rc[rt.name()] = count + 1
 	go func() {
-		defer catchAll("retrying: " + req.sourceURL)
+		defer catchAll("retrying: " + rt.req.sourceURL)
 		time.Sleep(time.Millisecond * 50)
 		reqCh <- rt.req
 	}()

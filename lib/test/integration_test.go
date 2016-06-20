@@ -39,9 +39,9 @@ func TestGetRunningDeploymentSet(t *testing.T) {
 	assert := assert.New(t)
 
 	registerLabelledContainers()
-	rc := docker_registry.NewClient()
+	drc := docker_registry.NewClient()
 
-	deps, which := deploymentWithRepo(assert, rc, "https://github.com/opentable/docker-grafana.git")
+	deps, which := deploymentWithRepo(assert, drc, "https://github.com/opentable/docker-grafana.git")
 	assert.Equal(3, len(deps))
 
 	if which < 0 {
@@ -73,9 +73,9 @@ func TestMissingImage(t *testing.T) {
 	}
 	repoOne := "https://github.com/opentable/one.git"
 
-	rc := docker_registry.NewClient()
+	drc := docker_registry.NewClient()
 	// easiest way to make sure that the manifest doesn't actually get registered
-	dummyNc := sous.NewNameCache(docker_registry.NewClient(), "sqlite3", sous.InMemoryConnection("bitbucket"))
+	dummyNc := sous.NewNameCache(drc, "sqlite3", sous.InMemoryConnection("bitbucket"))
 
 	stateOne := sous.State{
 		Defs: clusterDefs,
@@ -85,16 +85,15 @@ func TestMissingImage(t *testing.T) {
 	}
 
 	// ****
-	nc := sous.NewNameCache(rc, "sqlite3", ":memory:")
-	nc := sous.NewNameCache(docker_registry.NewClient(), "sqlite3", sous.InMemoryConnection("missingimage"))
-	rc := sous.NewRectiAgent(nc)
-	err := sous.Resolve(rc, stateOne)
+	nc := sous.NewNameCache(drc, "sqlite3", sous.InMemoryConnection("missingimage"))
+	ra := sous.NewRectiAgent(nc)
+	err := sous.Resolve(ra, stateOne)
 	assert.Error(err)
 
 	// ****
 	time.Sleep(1 * time.Second)
 
-	_, which := deploymentWithRepo(assert, rc, repoOne)
+	_, which := deploymentWithRepo(assert, drc, repoOne)
 	assert.Equal(which, -1, "opentable/one was deployed")
 
 	resetSingularity()
@@ -114,11 +113,10 @@ func TestResolve(t *testing.T) {
 	repoTwo := "https://github.com/opentable/two.git"
 	repoThree := "https://github.com/opentable/three.git"
 
-	rc := docker_registry.NewClient()
+	drc := docker_registry.NewClient()
 
-	nc := sous.NewNameCache(rc, "sqlite3", ":memory:")
-	nc := sous.NewNameCache(docker_registry.NewClient(), "sqlite3", sous.InMemoryConnection("testresolve"))
-	rc := sous.NewRectiAgent(nc)
+	nc := sous.NewNameCache(drc, "sqlite3", sous.InMemoryConnection("testresolve"))
+	ra := sous.NewRectiAgent(nc)
 
 	stateOneTwo := sous.State{
 		Defs: clusterDefs,
@@ -137,14 +135,14 @@ func TestResolve(t *testing.T) {
 
 	// ****
 	log.Print("Resolving from nothing to one+two")
-	err := sous.Resolve(rc, stateOneTwo)
+	err := sous.Resolve(ra, stateOneTwo)
 	if err != nil {
 		assert.Fail(err.Error())
 	}
 	// ****
 	time.Sleep(1 * time.Second)
 
-	deps, which := deploymentWithRepo(assert, rc, repoOne)
+	deps, which := deploymentWithRepo(assert, drc, repoOne)
 	assert.NotEqual(which, -1, "opentable/one not successfully deployed")
 	one := deps[which]
 	assert.Equal(1, one.NumInstances)
@@ -156,13 +154,13 @@ func TestResolve(t *testing.T) {
 
 	// ****
 	log.Println("Resolving from one+two to two+three")
-	err = sous.Resolve(rc, stateTwoThree)
+	err = sous.Resolve(ra, stateTwoThree)
 	if err != nil {
 		assert.Fail(err.Error())
 	}
 	// ****
 
-	deps, which = deploymentWithRepo(assert, rc, repoTwo)
+	deps, which = deploymentWithRepo(assert, drc, repoTwo)
 	if assert.NotEqual(-1, which, "opentable/two no longer deployed after resolve") {
 		assert.Equal(1, deps[which].NumInstances)
 	}

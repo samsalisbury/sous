@@ -3,9 +3,6 @@ package sous
 import (
 	"log"
 	"strings"
-
-	"github.com/opentable/sous/util/hy"
-	"github.com/opentable/sous/util/yaml"
 )
 
 // MissingImageNamesError reports that we couldn't get names for one or more source versions
@@ -73,8 +70,8 @@ func guardImageNamesKnown(rc RectificationClient, gdm Deployments) error {
 //Sous config from a directory of YAML files. This use case is important for
 //proof-of-concept, but long term we expect to be able to abstract the storage
 //of the Sous state away, so this might be deprecated at some point.
-func ResolveFromDir(nc NameCache, dir string) error {
-	config, err := loadConfig(dir)
+func ResolveFromDir(rc RectificationClient, dir string) error {
+	config, err := LoadState(dir)
 	if err != nil {
 		return err
 	}
