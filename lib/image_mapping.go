@@ -6,6 +6,7 @@ import (
 	"log"
 
 	// triggers the loading of sqlite3 as a database driver
+	"github.com/docker/distribution/reference"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/opentable/sous/util/docker_registry"
 	"github.com/samsalisbury/semv"
@@ -94,14 +95,13 @@ func (nc *NameCache) GetSourceVersion(in string) (SourceVersion, error) {
 	Log.Debug.Print(in)
 
 	etag, repo, offset, version, _, err := nc.dbQueryOnName(in)
-	Log.Debug.Print(repo, offset, version, err)
 	if nif, ok := err.(NoSourceVersionFound); ok {
 		Log.Debug.Print(nif)
 	} else if err != nil {
-		Log.Debug.Print(err)
+		Log.Debug.Print("Err: ", err)
 		return SourceVersion{}, err
 	} else {
-		Log.Debug.Print(repo, offset, version)
+		Log.Debug.Printf("Found: %v %v %v", repo, offset, version)
 
 		sv, err = makeSourceVersion(repo, offset, version)
 		if err != nil {
@@ -110,7 +110,7 @@ func (nc *NameCache) GetSourceVersion(in string) (SourceVersion, error) {
 	}
 
 	md, err := nc.registryClient.GetImageMetadata(in, etag)
-	Log.Debug.Print(md, err)
+	Log.Debug.Printf("%+ v %v", md, err)
 	if _, ok := err.(NotModifiedErr); ok {
 		return sv, nil
 	}
@@ -123,30 +123,69 @@ func (nc *NameCache) GetSourceVersion(in string) (SourceVersion, error) {
 		return sv, err
 	}
 
-	nc.dbInsert(newSV, md.CanonicalName, md.Etag)
-	nc.dbAddNames(md.CanonicalName, md.AllNames)
+	err = nc.dbInsert(newSV, md.CanonicalName, md.Etag)
+	if err != nil {
+		return sv, err
+	}
 
-	return newSV, nil
+	Log.Debug.Printf("cn: %v all: %v", md.CanonicalName, md.AllNames)
+	err = nc.dbAddNames(md.CanonicalName, md.AllNames)
+
+	return newSV, err
+}
+
+func (nc *NameCache) harvest(sl SourceLocation) error {
+	repos, err := nc.dbQueryOnSL(sl)
+	if err != nil {
+		return err
+	}
+	for _, r := range repos {
+		ref, err := reference.ParseNamed(r)
+		if err != nil {
+			return fmt.Errorf("%v for %v", err, r)
+		}
+		ts, err := nc.registryClient.AllTags(r)
+		if err == nil {
+			for _, t := range ts {
+				in, err := reference.WithTag(ref, t)
+				if err == nil {
+					nc.GetSourceVersion(in.String()) //pull it into the cache...
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// GetImageName returns the docker image name for a given source version
+func (nc *NameCache) GetImageName(sv SourceVersion) (string, error) {
+	cn, _, err := nc.dbQueryOnSV(sv)
+	if _, ok := err.(NoImageNameFound); ok {
+		err = nc.harvest(sv.CanonicalName())
+		if err != nil {
+			return "", err
+		}
+
+		cn, _, err = nc.dbQueryOnSV(sv)
+		if err != nil {
+			return "", err
+		}
+	} else if err != nil {
+		return "", err
+	}
+	return cn, nil
 }
 
 // GetCanonicalName returns the canonical name for an image given any known name
 func (nc *NameCache) GetCanonicalName(in string) (string, error) {
 	_, _, _, _, cn, err := nc.dbQueryOnName(in)
+	Log.Debug.Print(cn)
 	return cn, err
 }
 
 // Insert puts a given SourceVersion/image name pair into the name cache
 func (nc *NameCache) Insert(sv SourceVersion, in, etag string) error {
 	return nc.dbInsert(sv, in, etag)
-}
-
-// GetImageName returns the docker image name for a given source version
-func (nc *NameCache) GetImageName(sv SourceVersion) (string, error) {
-	cn, _, err := nc.dbQueryOnSV(sv)
-	if err != nil {
-		return "", err
-	}
-	return cn, nil
 }
 
 func union(left, right []string) []string {
@@ -184,45 +223,82 @@ func getDatabase(cfg ...string) (*sql.DB, error) {
 		return nil, err
 	}
 
-	_, err = db.Exec("create table if not exists docker_search_location(" +
-		"location_id integer primary key autoincrement, " +
-		"repo text not null, " +
-		"offset text not null," +
-		"constraint upsertable unique (repo, offset) on conflict replace" +
-		");")
-	if err != nil {
+	if err := sqlExec(db, "pragma foreign_keys = ON;"); err != nil {
 		return nil, err
 	}
 
-	_, err = db.Exec("create table if not exists docker_search_metadata(" +
-		"metadata_id integer primary key autoincrement, " +
-		"location_id references docker_search_location " +
-		"   on delete cascade on update cascade not null, " +
-		"etag text not null, " +
-		"canonicalName text not null, " +
-		"version text not null, " +
-		"constraint upsertable unique (location_id, version) on conflict replace" +
-		");")
-	if err != nil {
+	if err := sqlExec(db, "create table if not exists docker_repo_name("+
+		"repo_name_id integer primary key autoincrement"+
+		", name text not null"+
+		", constraint upsertable unique (name) on conflict replace"+
+		");"); err != nil {
 		return nil, err
 	}
 
-	_, err = db.Exec("create table if not exists docker_search_name(" +
-		"name_id integer primary key autoincrement, " +
-		"metadata_id references docker_search_metadata " +
-		"   on delete cascade on update cascade not null, " +
-		"name text not null unique on conflict replace" +
-		");")
+	if err := sqlExec(db, "create table if not exists docker_search_location("+
+		"location_id integer primary key autoincrement, "+
+		"repo text not null, "+
+		"offset text not null, "+
+		"constraint upsertable unique (repo, offset) on conflict replace"+
+		");"); err != nil {
+		return nil, err
+	}
 
-	_, err = db.Exec("pragma foreign_keys = ON;")
-	if err != nil {
+	if err := sqlExec(db, "create table if not exists repo_through_location("+
+		"repo_name_id references docker_repo_name "+
+		"   on delete cascade on update cascade not null, "+
+		"location_id references docker_search_location "+
+		"   on delete cascade on update cascade not null "+
+		",  primary key (repo_name_id, location_id) on conflict replace"+
+		");"); err != nil {
+		return nil, err
+	}
+
+	if err := sqlExec(db, "create table if not exists docker_search_metadata("+
+		"metadata_id integer primary key autoincrement, "+
+		"location_id references docker_search_location "+
+		"   on delete cascade on update cascade not null, "+
+		"etag text not null, "+
+		"canonicalName text not null, "+
+		"version text not null, "+
+		"constraint upsertable unique (location_id, version) on conflict replace"+
+		");"); err != nil {
+		return nil, err
+	}
+
+	if err := sqlExec(db, "create table if not exists docker_search_name("+
+		"name_id integer primary key autoincrement, "+
+		"metadata_id references docker_search_metadata "+
+		"   on delete cascade on update cascade not null, "+
+		"name text not null unique on conflict replace"+
+		");"); err != nil {
 		return nil, err
 	}
 
 	return db, err
 }
 
+func sqlExec(db *sql.DB, sql string) error {
+	if _, err := db.Exec(sql); err != nil {
+		return fmt.Errorf("Error: %s in SQL: %s", err, sql)
+	}
+	return nil
+}
+
 func (nc *NameCache) dbInsert(sv SourceVersion, in, etag string) error {
+	ref, err := reference.ParseNamed(in)
+	if err != nil {
+		return fmt.Errorf("%v for %v", err, in)
+	}
+
+	Log.Debug.Print(ref.Name())
+	nr, err := nc.db.Exec("insert into docker_repo_name "+
+		"(name) values ($1);", ref.Name())
+	nid, err := nr.LastInsertId()
+	if err != nil {
+		return err
+	}
+
 	res, err := nc.db.Exec("insert into docker_search_location "+
 		"(repo, offset) values ($1, $2);",
 		string(sv.RepoURL), string(sv.RepoOffset))
@@ -236,6 +312,13 @@ func (nc *NameCache) dbInsert(sv SourceVersion, in, etag string) error {
 		return err
 	}
 
+	_, err = nc.db.Exec("insert into repo_through_location "+
+		"(repo_name_id, location_id) values ($1, $2)", nid, id)
+	if err != nil {
+		return err
+	}
+
+	Log.Debug.Printf("%v %v %v %v", id, etag, in, sv.Version)
 	res, err = nc.db.Exec("insert into docker_search_metadata "+
 		"(location_id, etag, canonicalName, version) values ($1, $2, $3, $4);",
 		id, etag, in, sv.Version.Format(semv.MMPPre))
@@ -293,6 +376,35 @@ func (nc *NameCache) dbQueryOnName(in string) (etag, repo, offset, version, cnam
 	err = row.Scan(&etag, &repo, &offset, &version, &cname)
 	if err == sql.ErrNoRows {
 		err = NoSourceVersionFound{imageName(in)}
+	}
+	return
+}
+
+func (nc *NameCache) dbQueryOnSL(sl SourceLocation) (rs []string, err error) {
+	rows, err := nc.db.Query("select docker_repo_name.name "+
+		"from "+
+		"docker_repo_name natural join repo_through_location "+
+		"  natural join docker_search_location "+
+		"where "+
+		"docker_search_location.repo = $1 and "+
+		"docker_search_location.offset = $2",
+		string(sl.RepoURL), string(sl.RepoOffset))
+
+	if err == sql.ErrNoRows {
+		return []string{}, err
+	}
+	if err != nil {
+		return []string{}, err
+	}
+
+	for rows.Next() {
+		var r string
+		rows.Scan(&r)
+		rs = append(rs, r)
+	}
+	err = rows.Err()
+	if len(rs) == 0 {
+		err = fmt.Errorf("no repos found")
 	}
 	return
 }

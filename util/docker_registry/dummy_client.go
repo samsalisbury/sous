@@ -46,3 +46,11 @@ func (drc *DummyRegistryClient) LabelsForImageName(in string) (map[string]string
 func (drc *DummyRegistryClient) FeedMetadata(md Metadata) {
 	drc.mds <- md
 }
+
+// FeedTags is the strings on the marrionette of DummyRegistryClient -
+// having triggered a call to GetImageMetadata or LabelsForImageName, use
+// FeedMetadata to send the Metadata that the notional docker
+// registry might return
+func (drc *DummyRegistryClient) FeedTags(ts []string) {
+	drc.ts <- ts
+}

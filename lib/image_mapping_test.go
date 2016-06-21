@@ -2,7 +2,7 @@ package sous
 
 import (
 	"log"
-	"strings"
+	"os"
 	"testing"
 
 	"github.com/opentable/sous/util/docker_registry"
@@ -14,7 +14,7 @@ func TestRoundTrip(t *testing.T) {
 	assert := assert.New(t)
 
 	dc := docker_registry.NewDummyClient()
-	nc := NewNameCache(dc, "sqlite3", InMemory)
+	nc := NewNameCache(dc, "sqlite3", InMemoryConnection("roundtrip"))
 
 	v := semv.MustParse("1.2.3")
 	sv := SourceVersion{
@@ -22,9 +22,9 @@ func TestRoundTrip(t *testing.T) {
 		RepoURL:    RepoURL("https://github.com/opentable/wackadoo"),
 		RepoOffset: RepoOffset("nested/there"),
 	}
-	base := "docker.repo.io/wackadoo"
+	base := "docker.repo.io/ot/wackadoo"
 	in := base + ":version-1.2.3"
-	digest := "sha256:deadbeef1234567890"
+	digest := "sha256:012345678901234567890123456789AB012345678901234567890123456789AB"
 	err := nc.Insert(sv, in, digest)
 	assert.NoError(err)
 
@@ -44,7 +44,8 @@ func TestRoundTrip(t *testing.T) {
 		RepoOffset: RepoOffset("nested/there"),
 	}
 
-	cn = strings.Join([]string{base, "@", digest}, "")
+	Log.Debug.SetOutput(os.Stderr)
+	cn = base + "@" + digest
 	dc.FeedMetadata(docker_registry.Metadata{
 		Labels:        newSV.DockerLabels(),
 		Etag:          digest,
@@ -60,7 +61,61 @@ func TestRoundTrip(t *testing.T) {
 	if assert.Nil(err) {
 		assert.Equal(cn, ncn)
 	}
+}
 
+func TestHarvesting(t *testing.T) {
+	assert := assert.New(t)
+
+	dc := docker_registry.NewDummyClient()
+	nc := NewNameCache(dc, "sqlite3", InMemoryConnection("roundtrip"))
+
+	v := semv.MustParse("1.2.3")
+	sv := SourceVersion{
+		Version:    v,
+		RepoURL:    RepoURL("https://github.com/opentable/wackadoo"),
+		RepoOffset: RepoOffset("nested/there"),
+	}
+
+	v2 := semv.MustParse("2.3.4")
+	sisterSV := SourceVersion{
+		Version:    v2,
+		RepoURL:    RepoURL("https://github.com/opentable/wackadoo"),
+		RepoOffset: RepoOffset("nested/there"),
+	}
+
+	base := "docker.repo.io/ot/wackadoo"
+	tag := "version-1.2.3"
+	digest := "sha256:012345678901234567890123456789AB012345678901234567890123456789AB"
+	cn := base + "@" + digest
+	in := base + ":" + tag
+
+	dc.FeedMetadata(docker_registry.Metadata{
+		Labels:        sv.DockerLabels(),
+		Etag:          digest,
+		CanonicalName: cn,
+		AllNames:      []string{cn, in},
+	})
+
+	// a la a SetCollector getting the SV
+	_, err := nc.GetSourceVersion(in)
+	assert.Nil(err)
+
+	tag = "version-2.3.4"
+	dc.FeedTags([]string{tag})
+	cn = base + "@" + digest
+	in = base + ":" + tag
+	digest = "sha256:abcdefabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdefffffffff"
+	dc.FeedMetadata(docker_registry.Metadata{
+		Labels:        sisterSV.DockerLabels(),
+		Etag:          digest,
+		CanonicalName: cn,
+		AllNames:      []string{cn, in},
+	})
+
+	nin, err := nc.GetImageName(sisterSV)
+	if assert.NoError(err) {
+		assert.Equal(cn, nin)
+	}
 }
 
 func TestMissingName(t *testing.T) {
