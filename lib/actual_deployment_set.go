@@ -8,7 +8,6 @@ import (
 
 	"github.com/opentable/singularity"
 	"github.com/opentable/singularity/dtos"
-	"github.com/opentable/sous/util/docker_registry"
 )
 
 // ReqsPerServer limits the number of simultaneous number of requests made
@@ -19,7 +18,7 @@ type (
 	// SetCollector is the agent responsible for collecting sets of deployments
 	// For now, it can collect the actual running set
 	SetCollector struct {
-		regClient docker_registry.Client
+		rectClient RectificationClient
 	}
 
 	sDeploy    *dtos.SingularityDeploy
@@ -36,7 +35,7 @@ type (
 )
 
 // NewSetCollector returns a new set collector
-func NewSetCollector(rc docker_registry.Client) *SetCollector {
+func NewSetCollector(rc RectificationClient) *SetCollector {
 	return &SetCollector{rc}
 }
 
@@ -51,7 +50,9 @@ func (sc *SetCollector) GetRunningDeployment(singUrls []string) (deps Deployment
 	depCh := make(chan *Deployment, ReqsPerServer)
 
 	defer close(depCh)
-	defer sc.regClient.Cancel()
+	// XXX The intention here was to use something like the gotools context to
+	// manage NW cancellation
+	//defer sc.rectClient.Cancel()
 
 	var singWait, depWait sync.WaitGroup
 
@@ -62,14 +63,14 @@ func (sc *SetCollector) GetRunningDeployment(singUrls []string) (deps Deployment
 		go singPipeline(sing, &depWait, &singWait, reqCh, errCh)
 	}
 
-	go depPipeline(sc.regClient, reqCh, depCh, errCh)
+	go depPipeline(sc.rectClient, reqCh, depCh, errCh)
 
 	go func() {
 		catchAndSend("closing up", errCh)
 		singWait.Wait()
-		close(reqCh)
-
 		depWait.Wait()
+
+		close(reqCh)
 		close(errCh)
 	}()
 
@@ -176,14 +177,14 @@ func getRequestsFromSingularity(client *singularity.Client) ([]singReq, error) {
 }
 
 func depPipeline(
-	cl docker_registry.Client,
+	cl RectificationClient,
 	reqCh chan singReq,
 	depCh chan *Deployment,
 	errCh chan error,
 ) {
 	defer catchAndSend("dependency building", errCh)
 	for req := range reqCh {
-		go func(cl docker_registry.Client, req singReq) {
+		go func(cl RectificationClient, req singReq) {
 			defer catchAndSend(fmt.Sprintf("dep from req %s", req.sourceURL), errCh)
 
 			dep, err := assembleDeployment(cl, req)
@@ -198,7 +199,7 @@ func depPipeline(
 	}
 }
 
-func assembleDeployment(cl docker_registry.Client, req singReq) (*Deployment, error) {
+func assembleDeployment(cl RectificationClient, req singReq) (*Deployment, error) {
 	uc := newDeploymentBuilder(cl, req)
 	err := uc.completeConstruction()
 	if err != nil {

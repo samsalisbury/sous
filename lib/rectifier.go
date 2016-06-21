@@ -43,6 +43,9 @@ type (
 
 		//ImageName finds or guesses a docker image name for a Deployment
 		ImageName(d *Deployment) (string, error)
+
+		//ImageLabels finds the (sous) docker labels for a given image name
+		ImageLabels(imageName string) (labels map[string]string, err error)
 	}
 
 	dtoMap map[string]interface{}

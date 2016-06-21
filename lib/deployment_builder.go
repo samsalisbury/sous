@@ -4,17 +4,16 @@ import (
 	"fmt"
 
 	"github.com/opentable/singularity/dtos"
-	"github.com/opentable/sous/util/docker_registry"
 )
 
 type (
 	deploymentBuilder struct {
-		target         Deployment
-		depMarker      sDepMarker
-		deploy         sDeploy
-		request        sRequest
-		req            singReq
-		registryClient docker_registry.Client
+		target        Deployment
+		depMarker     sDepMarker
+		deploy        sDeploy
+		request       sRequest
+		req           singReq
+		rectification RectificationClient
 	}
 
 	canRetryRequest struct {
@@ -39,8 +38,8 @@ func (cr *canRetryRequest) name() string {
 	return fmt.Sprintf("%s:%s", cr.req.sourceURL, cr.req.reqParent.Request.Id)
 }
 
-func newDeploymentBuilder(cl docker_registry.Client, req singReq) deploymentBuilder {
-	return deploymentBuilder{registryClient: cl, req: req}
+func newDeploymentBuilder(cl RectificationClient, req singReq) deploymentBuilder {
+	return deploymentBuilder{rectification: cl, req: req}
 }
 
 func (uc *deploymentBuilder) canRetry(err error) error {
@@ -137,7 +136,8 @@ func (uc *deploymentBuilder) retrieveImageLabels() error {
 	imageName := dkr.Image
 
 	// !!! HTTP request
-	labels, err := uc.registryClient.LabelsForImageName(imageName)
+	labels, err := uc.rectification.ImageLabels(imageName)
+	Log.Debug.Print("Labels: ", labels, err)
 	if err != nil {
 		return err
 	}
