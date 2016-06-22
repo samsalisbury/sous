@@ -25,7 +25,8 @@ func Resolve(rc RectificationClient, config State) error {
 		return err
 	}
 
-	ads, err := GetRunningDeploymentSet(config.BaseURLs())
+	sc := NewSetCollector(rc)
+	ads, err := sc.GetRunningDeployment(config.BaseURLs())
 	if err != nil {
 		return err
 	}

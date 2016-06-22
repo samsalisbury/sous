@@ -105,6 +105,16 @@ func (t *DummyRectificationClient) ImageName(d *Deployment) (string, error) {
 	return t.nameCache.GetImageName(d.SourceVersion)
 }
 
+// ImageLabels gets the labels for an image name
+func (t *DummyRectificationClient) ImageLabels(in string) (map[string]string, error) {
+	sv, err := t.nameCache.GetSourceVersion(in)
+	if err != nil {
+		return map[string]string{}, nil
+	}
+
+	return sv.DockerLabels(), nil
+}
+
 // NewDummyNameCache builds a new DummyNameCache
 func NewDummyNameCache() *DummyNameCache {
 	return &DummyNameCache{}
@@ -125,4 +135,9 @@ func (dc *DummyNameCache) GetCanonicalName(in string) (string, error) {
 // it drops the sv/in pair on the floor
 func (dc *DummyNameCache) Insert(sv SourceVersion, in, etag string) error {
 	return nil
+}
+
+// GetSourceVersion implements part of ImageMapper
+func (dc *DummyNameCache) GetSourceVersion(in string) (SourceVersion, error) {
+	return SourceVersion{}, nil
 }

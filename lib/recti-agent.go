@@ -91,7 +91,8 @@ func (ra *RectiAgent) DeleteRequest(cluster, reqID, message string) error {
 	})
 
 	Log.Debug.Printf("Delete req: %+ v", req)
-	_, err = ra.singularityClient(cluster).DeleteRequest(reqID, req.(*dtos.SingularityDeleteRequestRequest))
+	_, err = ra.singularityClient(cluster).DeleteRequest(reqID,
+		req.(*dtos.SingularityDeleteRequestRequest))
 	return err
 }
 
@@ -115,6 +116,16 @@ func (ra *RectiAgent) Scale(cluster, reqID string, instanceCount int, message st
 // ImageName gets the container image name for a given deployment
 func (ra *RectiAgent) ImageName(d *Deployment) (string, error) {
 	return ra.nameCache.GetImageName(d.SourceVersion)
+}
+
+// ImageLabels gets the labels for an image name
+func (ra *RectiAgent) ImageLabels(in string) (map[string]string, error) {
+	sv, err := ra.nameCache.GetSourceVersion(in)
+	if err != nil {
+		return map[string]string{}, err
+	}
+
+	return sv.DockerLabels(), nil
 }
 
 func (ra *RectiAgent) getSingularityClient(url string) (*singularity.Client, bool) {

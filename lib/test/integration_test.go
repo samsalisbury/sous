@@ -17,6 +17,7 @@ import (
 var imageName string
 
 func TestMain(m *testing.M) {
+	log.Print("hello there")
 	flag.Parse()
 	os.Exit(wrapCompose(m))
 }
@@ -35,26 +36,29 @@ func TestGetLabels(t *testing.T) {
 }
 
 func TestGetRunningDeploymentSet(t *testing.T) {
+	sous.Log.Debug.SetFlags(sous.Log.Debug.Flags() | log.Ltime)
+	sous.Log.Debug.SetOutput(os.Stderr)
+	sous.Log.Debug.Print("Starting stderr output")
 	assert := assert.New(t)
 
 	registerLabelledContainers()
+	drc := docker_registry.NewClient()
+	drc.BecomeFoolishlyTrusting()
+	nc := sous.NewNameCache(drc, "sqlite3", sous.InMemoryConnection("grds"))
+	ra := sous.NewRectiAgent(nc)
 
-	deps, which := deploymentWithRepo(assert, "https://github.com/opentable/docker-grafana.git")
-	assert.Equal(3, len(deps))
-
-	if which < 0 {
-		assert.FailNow("If deployment is nil, other tests will crash")
+	deps, which := deploymentWithRepo(assert, ra, "https://github.com/opentable/docker-grafana.git")
+	if assert.Equal(3, len(deps)) {
+		grafana := deps[which]
+		assert.Equal(singularityURL, grafana.Cluster)
+		assert.Regexp("^0\\.1", grafana.Resources["cpus"])    // XXX strings and floats...
+		assert.Regexp("^100\\.", grafana.Resources["memory"]) // XXX strings and floats...
+		assert.Equal("1", grafana.Resources["ports"])         // XXX strings and floats...
+		assert.Equal(17, grafana.SourceVersion.Version.Patch)
+		assert.Equal("91495f1b1630084e301241100ecf2e775f6b672c", grafana.SourceVersion.Version.Meta)
+		assert.Equal(1, grafana.NumInstances)
+		assert.Equal(sous.ManifestKindService, grafana.Kind)
 	}
-
-	grafana := deps[which]
-	assert.Equal(singularityURL, grafana.Cluster)
-	assert.Regexp("^0\\.1", grafana.Resources["cpus"])    // XXX strings and floats...
-	assert.Regexp("^100\\.", grafana.Resources["memory"]) // XXX strings and floats...
-	assert.Equal("1", grafana.Resources["ports"])         // XXX strings and floats...
-	assert.Equal(17, grafana.SourceVersion.Version.Patch)
-	assert.Equal("91495f1b1630084e301241100ecf2e775f6b672c", grafana.SourceVersion.Version.Meta)
-	assert.Equal(1, grafana.NumInstances)
-	assert.Equal(sous.ManifestKindService, grafana.Kind)
 
 	resetSingularity()
 }
@@ -71,8 +75,10 @@ func TestMissingImage(t *testing.T) {
 	}
 	repoOne := "https://github.com/opentable/one.git"
 
+	drc := docker_registry.NewClient()
+	drc.BecomeFoolishlyTrusting()
 	// easiest way to make sure that the manifest doesn't actually get registered
-	dummyNc := sous.NewNameCache(docker_registry.NewClient(), "sqlite3", sous.InMemoryConnection("bitbucket"))
+	dummyNc := sous.NewNameCache(drc, "sqlite3", sous.InMemoryConnection("bitbucket"))
 
 	stateOne := sous.State{
 		Defs: clusterDefs,
@@ -82,15 +88,15 @@ func TestMissingImage(t *testing.T) {
 	}
 
 	// ****
-	nc := sous.NewNameCache(docker_registry.NewClient(), "sqlite3", sous.InMemoryConnection("missingimage"))
-	rc := sous.NewRectiAgent(nc)
-	err := sous.Resolve(rc, stateOne)
+	nc := sous.NewNameCache(drc, "sqlite3", sous.InMemoryConnection("missingimage"))
+	ra := sous.NewRectiAgent(nc)
+	err := sous.Resolve(ra, stateOne)
 	assert.Error(err)
 
 	// ****
 	time.Sleep(1 * time.Second)
 
-	_, which := deploymentWithRepo(assert, repoOne)
+	_, which := deploymentWithRepo(assert, ra, repoOne)
 	assert.Equal(which, -1, "opentable/one was deployed")
 
 	resetSingularity()
@@ -110,8 +116,11 @@ func TestResolve(t *testing.T) {
 	repoTwo := "https://github.com/opentable/two.git"
 	repoThree := "https://github.com/opentable/three.git"
 
-	nc := sous.NewNameCache(docker_registry.NewClient(), "sqlite3", sous.InMemoryConnection("testresolve"))
-	rc := sous.NewRectiAgent(nc)
+	drc := docker_registry.NewClient()
+	drc.BecomeFoolishlyTrusting()
+
+	nc := sous.NewNameCache(drc, "sqlite3", sous.InMemoryConnection("testresolve"))
+	ra := sous.NewRectiAgent(nc)
 
 	stateOneTwo := sous.State{
 		Defs: clusterDefs,
@@ -130,32 +139,34 @@ func TestResolve(t *testing.T) {
 
 	// ****
 	log.Print("Resolving from nothing to one+two")
-	err := sous.Resolve(rc, stateOneTwo)
+	err := sous.Resolve(ra, stateOneTwo)
 	if err != nil {
 		assert.Fail(err.Error())
 	}
 	// ****
-	time.Sleep(1 * time.Second)
+	time.Sleep(3 * time.Second)
 
-	deps, which := deploymentWithRepo(assert, repoOne)
-	assert.NotEqual(which, -1, "opentable/one not successfully deployed")
-	one := deps[which]
-	assert.Equal(1, one.NumInstances)
+	deps, which := deploymentWithRepo(assert, ra, repoOne)
+	if assert.NotEqual(which, -1, "opentable/one not successfully deployed") {
+		one := deps[which]
+		assert.Equal(1, one.NumInstances)
+	}
 
 	which = findRepo(deps, repoTwo)
-	assert.NotEqual(-1, which, "opentable/two not successfully deployed")
-	two := deps[which]
-	assert.Equal(1, two.NumInstances)
+	if assert.NotEqual(-1, which, "opentable/two not successfully deployed") {
+		two := deps[which]
+		assert.Equal(1, two.NumInstances)
+	}
 
 	// ****
 	log.Println("Resolving from one+two to two+three")
-	err = sous.Resolve(rc, stateTwoThree)
+	err = sous.Resolve(ra, stateTwoThree)
 	if err != nil {
 		assert.Fail(err.Error())
 	}
 	// ****
 
-	deps, which = deploymentWithRepo(assert, repoTwo)
+	deps, which = deploymentWithRepo(assert, ra, repoTwo)
 	if assert.NotEqual(-1, which, "opentable/two no longer deployed after resolve") {
 		assert.Equal(1, deps[which].NumInstances)
 	}
@@ -173,8 +184,9 @@ func TestResolve(t *testing.T) {
 	resetSingularity()
 }
 
-func deploymentWithRepo(assert *assert.Assertions, repo string) (sous.Deployments, int) {
-	deps, err := sous.GetRunningDeploymentSet([]string{singularityURL})
+func deploymentWithRepo(assert *assert.Assertions, ra sous.RectificationClient, repo string) (sous.Deployments, int) {
+	sc := sous.NewSetCollector(ra)
+	deps, err := sc.GetRunningDeployment([]string{singularityURL})
 	if assert.Nil(err) {
 		return deps, findRepo(deps, repo)
 	}

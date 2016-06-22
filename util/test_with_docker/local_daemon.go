@@ -73,9 +73,18 @@ func (ld *LocalDaemon) Shutdown(c *command) {
 
 // RestartDaemon reboots the docker daemon
 func (ld *LocalDaemon) RestartDaemon() error {
-	err := ld.Exec("/etc/init.d/docker", "restart")
-	if err != nil {
-		err = ld.Exec("service", "docker", "restart")
+	rss := [][]string{
+		[]string{"/etc/init.d/docker", "restart"},
+		[]string{"service", "docker", "restart"},
+		[]string{"systemctl", "restart", "docker", "docker.socket"},
+	}
+	var err error
+
+	for _, rs := range rss {
+		err = ld.Exec(rs...)
+		if err == nil {
+			return err
+		}
 	}
 	return err
 }

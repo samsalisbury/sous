@@ -161,54 +161,6 @@ func (r *repository) Blobs(ctx context.Context) distribution.BlobStore {
 }
 */
 
-func (r *registry) Tags(ctx context.Context) *tags {
-	return &tags{
-		client: r.client,
-		ub:     r.ub,
-	}
-}
-
-// tags implements remote tagging operations.
-type tags struct {
-	client  *http.Client
-	ub      *v2.URLBuilder
-	context context.Context
-	name    reference.Named
-}
-
-// All returns all tags
-func (t *tags) All(ctx context.Context) ([]string, error) {
-	var tags []string
-
-	u, err := t.ub.BuildTagsURL(t.name)
-	if err != nil {
-		return tags, err
-	}
-
-	resp, err := t.client.Get(u)
-	if err != nil {
-		return tags, err
-	}
-	defer resp.Body.Close()
-
-	if client.SuccessStatus(resp.StatusCode) {
-		b, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return tags, err
-		}
-
-		tagsResponse := struct {
-			Tags []string `json:"tags"`
-		}{}
-		if err := json.Unmarshal(b, &tagsResponse); err != nil {
-			return tags, err
-		}
-		tags = tagsResponse.Tags
-		return tags, nil
-	}
-	return tags, client.HandleErrorResponse(resp)
-}
-
 func descriptorFromResponse(response *http.Response) (distribution.Descriptor, error) {
 	desc := distribution.Descriptor{}
 	headers := response.Header
@@ -250,6 +202,21 @@ func descriptorFromResponse(response *http.Response) (distribution.Descriptor, e
 
 	return desc, nil
 
+}
+
+func (r *registry) Tags(ctx context.Context) *tags {
+	return &tags{
+		client: r.client,
+		ub:     r.ub,
+	}
+}
+
+// tags implements remote tagging operations.
+type tags struct {
+	client  *http.Client
+	ub      *v2.URLBuilder
+	context context.Context
+	name    reference.Named
 }
 
 // Get issues a HEAD request for a Manifest against its named endpoint in order
