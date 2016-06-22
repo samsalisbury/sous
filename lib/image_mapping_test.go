@@ -2,7 +2,6 @@ package sous
 
 import (
 	"log"
-	"os"
 	"testing"
 
 	"github.com/opentable/sous/util/docker_registry"
@@ -44,7 +43,6 @@ func TestRoundTrip(t *testing.T) {
 		RepoOffset: RepoOffset("nested/there"),
 	}
 
-	Log.Debug.SetOutput(os.Stderr)
 	cn = base + "@" + digest
 	dc.FeedMetadata(docker_registry.Metadata{
 		Labels:        newSV.DockerLabels(),

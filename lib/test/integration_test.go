@@ -36,9 +36,9 @@ func TestGetLabels(t *testing.T) {
 }
 
 func TestGetRunningDeploymentSet(t *testing.T) {
-	sous.Log.Debug.SetFlags(sous.Log.Debug.Flags() | log.Ltime)
-	sous.Log.Debug.SetOutput(os.Stderr)
-	sous.Log.Debug.Print("Starting stderr output")
+	//	sous.Log.Debug.SetFlags(sous.Log.Debug.Flags() | log.Ltime)
+	//	sous.Log.Debug.SetOutput(os.Stderr)
+	//	sous.Log.Debug.Print("Starting stderr output")
 	assert := assert.New(t)
 
 	registerLabelledContainers()
