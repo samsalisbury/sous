@@ -118,6 +118,18 @@ func (ds *Deployments) Add(d *Deployment) {
 	*ds = append(*ds, d)
 }
 
+// Filter returns a new Deployments, filtered based on a predicate. A predicate
+// value of nil returns an unfiltered copy of ds.
+func (ds *Deployments) Filter(predicate func(*Deployment) bool) Deployments {
+	out := Deployments{}
+	for _, d := range *ds {
+		if predicate == nil || predicate(d) {
+			out = append(out, d)
+		}
+	}
+	return out
+}
+
 // BuildDeployment constructs a deployment out of a Manifest
 func BuildDeployment(m *Manifest, spec PartialDeploySpec, inherit DeploymentSpecs) (*Deployment, error) {
 	ownMap := OwnerSet{}
