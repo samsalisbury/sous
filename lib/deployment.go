@@ -49,6 +49,10 @@ type (
 		RequestID string
 	}
 
+	// DeploymentPredicate takes a *Deployment and returns true if the deployment
+	// matches the predicate. Used by Filter to select a subset of a Deployments
+	DeploymentPredicate func(*Deployment) bool
+
 	// DeploymentIntentions represents deployments commanded by a user.
 	DeploymentIntentions []DeploymentIntention
 
@@ -119,11 +123,14 @@ func (ds *Deployments) Add(d *Deployment) {
 }
 
 // Filter returns a new Deployments, filtered based on a predicate. A predicate
-// value of nil returns an unfiltered copy of ds.
-func (ds *Deployments) Filter(predicate func(*Deployment) bool) Deployments {
+// value of nil returns ds.
+func (ds Deployments) Filter(p DeploymentPredicate) Deployments {
+	if p == nil {
+		return ds
+	}
 	out := Deployments{}
-	for _, d := range *ds {
-		if predicate == nil || predicate(d) {
+	for _, d := range ds {
+		if p(d) {
 			out = append(out, d)
 		}
 	}

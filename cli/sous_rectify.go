@@ -68,7 +68,7 @@ func (sr *SousRectify) Execute(args []string) cmdr.Result {
 	} else {
 		rc = sous.NewRectiAgent(nc)
 	}
-	var predicate func(*sous.Deployment) bool
+	var predicate sous.DeploymentPredicate
 	if sr.flags.manifest != "" {
 		predicate = func(d *sous.Deployment) bool {
 			return d.SourceVersion.RepoURL == sous.RepoURL(sr.flags.manifest)

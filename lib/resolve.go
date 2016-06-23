@@ -20,9 +20,9 @@ func Resolve(rc RectificationClient, state State) error {
 
 // ResolveFilteredDeployments is similar to Resolve, but also accepts a
 // predicate to filter those deployments. See Deploments.Filter for details.
-func ResolveFilteredDeployments(rc RectificationClient, state State, predicate func(*Deployment) bool) error {
+func ResolveFilteredDeployments(rc RectificationClient, state State, pr DeploymentPredicate) error {
 	gdm, err := state.Deployments()
-	gdm = gdm.Filter(predicate)
+	gdm = gdm.Filter(pr)
 	if err != nil {
 		return err
 	}
@@ -84,11 +84,11 @@ func ResolveFromDir(rc RectificationClient, dir string) error {
 
 // ResolveFromDirFiltered is similar to ResolveFromDir, but additionally filters
 // the deployments to be resolved based on the predicate.
-func ResolveFromDirFiltered(rc RectificationClient, dir string, predicate func(*Deployment) bool) error {
+func ResolveFromDirFiltered(rc RectificationClient, dir string, pr DeploymentPredicate) error {
 	config, err := LoadState(dir)
 	if err != nil {
 		return err
 	}
 
-	return ResolveFilteredDeployments(rc, config, predicate)
+	return ResolveFilteredDeployments(rc, config, pr)
 }
