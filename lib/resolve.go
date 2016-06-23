@@ -40,10 +40,7 @@ func ResolveFilteredDeployments(rc RectificationClient, state State, pr Deployme
 
 	differ := ads.Diff(gdm)
 
-	errs := make(chan RectificationError)
-	defer close(errs)
-
-	Rectify(differ, errs, rc)
+	errs := Rectify(differ, rc)
 
 	for err := range errs {
 		log.Printf("err = %+v\n", err)
