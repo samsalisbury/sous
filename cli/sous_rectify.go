@@ -14,7 +14,8 @@ type SousRectify struct {
 	Config       LocalSousConfig
 	DockerClient LocalDockerClient
 	flags        struct {
-		dryrun string
+		dryrun,
+		manifest string
 	}
 }
 
@@ -37,9 +38,11 @@ func (sr *SousRectify) AddFlags(fs *flag.FlagSet) {
 	fs.StringVar(&sr.flags.dryrun, "dry-run", "none",
 		"prevent rectify from actually changing things - "+
 			"values are none,scheduler,registry,both")
+	fs.StringVar(&sr.flags.manifest, "manifest", "",
+		"consider only the named manifest for rectification")
 }
 
-// Execute fulfills the cmdr.Executor interface
+// Execute fulfils the cmdr.Executor interface
 func (sr *SousRectify) Execute(args []string) cmdr.Result {
 	var nc sous.ImageMapper
 	var rc sous.RectificationClient
@@ -65,8 +68,15 @@ func (sr *SousRectify) Execute(args []string) cmdr.Result {
 	} else {
 		rc = sous.NewRectiAgent(nc)
 	}
+	var predicate func(*sous.Deployment) bool
+	if sr.flags.manifest != "" {
+		predicate = func(d *sous.Deployment) bool {
+			return d.SourceVersion.RepoURL == sous.RepoURL(sr.flags.manifest)
+		}
+	}
 
-	err := sous.ResolveFromDir(rc, dir)
+	// If predicate is still nil, that means resolve all. See Deployments.Filter.
+	err := sous.ResolveFromDirFiltered(rc, dir, predicate)
 	if err != nil {
 		return EnsureErrorResult(err)
 	}
