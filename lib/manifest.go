@@ -137,7 +137,7 @@ func (m *Manifest) FileLocation() string {
 }
 
 func (dc *DeployConfig) String() string {
-	return fmt.Sprintf("#%d %+v : %+v", dc.NumInstances, dc.Resources, dc.Env)
+	return fmt.Sprintf("#%d %+v : %+v %+v", dc.NumInstances, dc.Resources, dc.Env, dc.Volumes)
 }
 
 const (
@@ -174,6 +174,14 @@ func (vs Volumes) Equal(o Volumes) bool {
 		}
 	}
 	return len(c) == 0
+}
+
+func (vs Volumes) String() string {
+	res := "["
+	for _, v := range vs {
+		res += fmt.Sprintf("%v,", v)
+	}
+	return res + "]"
 }
 
 // SingMap produces a dtoMap appropriate for building a Singularity

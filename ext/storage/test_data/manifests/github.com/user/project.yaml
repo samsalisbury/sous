@@ -7,4 +7,5 @@ Deployments:
     Env:
       DEBUG: "YES"
     NumInstances: 0
+    Volumes: []
     Version: 0.3.1-beta+b4d455ee
