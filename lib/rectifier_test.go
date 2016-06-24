@@ -40,8 +40,7 @@ func TestModifyScale(t *testing.T) {
 	nc := NewDummyNameCache()
 	client := NewDummyRectificationClient(nc)
 
-	errs := make(chan RectificationError)
-	Rectify(chanset, errs, client)
+	errs := Rectify(chanset, client)
 	chanset.Modified <- pair
 	chanset.Close()
 	for e := range errs {
@@ -88,8 +87,7 @@ func TestModifyImage(t *testing.T) {
 	nc := NewDummyNameCache()
 	client := NewDummyRectificationClient(nc)
 
-	errs := make(chan RectificationError)
-	Rectify(chanset, errs, client)
+	errs := Rectify(chanset, client)
 	chanset.Modified <- pair
 	chanset.Close()
 	for e := range errs {
@@ -140,8 +138,7 @@ func TestModifyResources(t *testing.T) {
 	nc := NewDummyNameCache()
 	client := NewDummyRectificationClient(nc)
 
-	errs := make(chan RectificationError)
-	Rectify(chanset, errs, client)
+	errs := Rectify(chanset, client)
 	chanset.Modified <- pair
 	chanset.Close()
 	for e := range errs {
@@ -195,8 +192,7 @@ func TestModify(t *testing.T) {
 	nc := NewDummyNameCache()
 	client := NewDummyRectificationClient(nc)
 
-	errs := make(chan RectificationError)
-	Rectify(chanset, errs, client)
+	errs := Rectify(chanset, client)
 	chanset.Modified <- pair
 	chanset.Close()
 	for e := range errs {
@@ -233,8 +229,7 @@ func TestDeletes(t *testing.T) {
 	nc := NewDummyNameCache()
 	client := NewDummyRectificationClient(nc)
 
-	errs := make(chan RectificationError)
-	Rectify(chanset, errs, client)
+	errs := Rectify(chanset, client)
 	chanset.Deleted <- deleted
 	chanset.Close()
 	for e := range errs {
@@ -258,8 +253,7 @@ func TestCreates(t *testing.T) {
 	nc := NewDummyNameCache()
 	client := NewDummyRectificationClient(nc)
 
-	errs := make(chan RectificationError)
-	Rectify(chanset, errs, client)
+	errs := Rectify(chanset, client)
 
 	created := &Deployment{
 		SourceVersion: SourceVersion{

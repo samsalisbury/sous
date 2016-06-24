@@ -120,7 +120,8 @@ func (e *ChangeError) IntendedDeployment() *Deployment {
 }
 
 // Rectify takes a DiffChans and issues the commands to the infrastructure to reconcile the differences
-func Rectify(dcs DiffChans, errs chan<- RectificationError, s RectificationClient) {
+func Rectify(dcs DiffChans, s RectificationClient) chan RectificationError {
+	errs := make(chan RectificationError)
 	rect := rectifier{s}
 	wg := &sync.WaitGroup{}
 	wg.Add(3)
@@ -128,6 +129,8 @@ func Rectify(dcs DiffChans, errs chan<- RectificationError, s RectificationClien
 	go func() { rect.rectifyDeletes(dcs.Deleted, errs); wg.Done() }()
 	go func() { rect.rectifyModifys(dcs.Modified, errs); wg.Done() }()
 	go func() { wg.Wait(); close(errs) }()
+
+	return errs
 }
 
 func (r *rectifier) rectifyCreates(cc chan *Deployment, errs chan<- RectificationError) {

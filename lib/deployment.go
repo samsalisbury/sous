@@ -53,6 +53,10 @@ type (
 		RequestID string
 	}
 
+	// DeploymentPredicate takes a *Deployment and returns true if the deployment
+	// matches the predicate. Used by Filter to select a subset of a Deployments
+	DeploymentPredicate func(*Deployment) bool
+
 	// DeploymentIntentions represents deployments commanded by a user.
 	DeploymentIntentions []DeploymentIntention
 
@@ -123,6 +127,21 @@ func (os OwnerSet) Equal(o OwnerSet) bool {
 // Add adds a deployment to a Deployments
 func (ds *Deployments) Add(d *Deployment) {
 	*ds = append(*ds, d)
+}
+
+// Filter returns a new Deployments, filtered based on a predicate. A predicate
+// value of nil returns ds.
+func (ds Deployments) Filter(p DeploymentPredicate) Deployments {
+	if p == nil {
+		return ds
+	}
+	out := Deployments{}
+	for _, d := range ds {
+		if p(d) {
+			out = append(out, d)
+		}
+	}
+	return out
 }
 
 // BuildDeployment constructs a deployment out of a Manifest
