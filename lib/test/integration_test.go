@@ -230,6 +230,9 @@ func manifest(nc sous.ImageMapper, drepo, containerDir, sourceURL, version strin
 					Args:         []string{},
 					Env:          sous.Env{}, //map[s]s
 					NumInstances: 1,
+					Volumes: sous.Volumes{
+						&sous.Volume{"h", "c", sous.VolumeMode("RO")},
+					},
 				},
 				Version: semv.MustParse(version),
 				//clusterName: "it",

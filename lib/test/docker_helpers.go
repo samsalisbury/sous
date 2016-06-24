@@ -15,8 +15,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/opentable/singularity"
-	"github.com/opentable/singularity/dtos"
+	"github.com/opentable/go-singularity"
+	"github.com/opentable/go-singularity/dtos"
 	"github.com/opentable/sous/util/test_with_docker"
 	"github.com/satori/go.uuid"
 )

@@ -156,6 +156,7 @@ func BuildDeployment(m *Manifest, spec PartialDeploySpec, inherit DeploymentSpec
 			Resources:    spec.Resources,
 			Env:          spec.Env,
 			NumInstances: spec.NumInstances,
+			Volumes:      spec.Volumes,
 		},
 		Owners:        ownMap,
 		Kind:          m.Kind,

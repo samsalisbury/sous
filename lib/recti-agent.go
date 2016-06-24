@@ -3,8 +3,8 @@ package sous
 import (
 	"sync"
 
-	"github.com/opentable/singularity"
-	"github.com/opentable/singularity/dtos"
+	"github.com/opentable/go-singularity"
+	"github.com/opentable/go-singularity/dtos"
 	"github.com/satori/go.uuid"
 )
 
@@ -43,7 +43,7 @@ func (ra *RectiAgent) Deploy(cluster, depID, reqID, dockerImage string, r Resour
 		sv, err := dtos.LoadMap(&dtos.SingularityVolume{}, dtoMap{
 			"ContainerPath": v.Container,
 			"HostPath":      v.Host,
-			"Mode":          v.Mode,
+			"Mode":          dtos.SingularityVolumeSingularityDockerVolumeMode(string(v.Mode)),
 		})
 		if err != nil {
 			return err

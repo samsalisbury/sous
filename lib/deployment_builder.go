@@ -3,7 +3,7 @@ package sous
 import (
 	"fmt"
 
-	"github.com/opentable/singularity/dtos"
+	"github.com/opentable/go-singularity/dtos"
 )
 
 type (
@@ -166,6 +166,15 @@ func (uc *deploymentBuilder) unpackDeployConfig() error {
 	uc.target.NumInstances = int(uc.request.Instances)
 	for _, o := range uc.request.Owners {
 		uc.target.Owners.Add(o)
+	}
+
+	for _, v := range uc.deploy.ContainerInfo.Volumes {
+		uc.target.DeployConfig.Volumes = append(uc.target.DeployConfig.Volumes,
+			&Volume{
+				Host:      v.HostPath,
+				Container: v.ContainerPath,
+				Mode:      VolumeMode(v.Mode),
+			})
 	}
 
 	return nil
