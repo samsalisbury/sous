@@ -174,6 +174,9 @@ func TestResolve(t *testing.T) {
 	which = findRepo(deps, repoThree)
 	if assert.NotEqual(-1, which, "opentable/three not successfully deployed") {
 		assert.Equal(1, deps[which].NumInstances)
+		if assert.Len(deps[which].DeployConfig.Volumes, 1) {
+			assert.Equal("RO", string(deps[which].DeployConfig.Volumes[0].Mode))
+		}
 	}
 
 	which = findRepo(deps, repoOne)
