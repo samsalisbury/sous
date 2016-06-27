@@ -25,10 +25,10 @@ type (
 	sRequest   *dtos.SingularityRequest
 	sDepMarker *dtos.SingularityDeployMarker
 
-	singReq struct {
-		sourceURL string
-		sing      *singularity.Client
-		reqParent *dtos.SingularityRequestParent
+	SingReq struct {
+		SourceURL string
+		Sing      *singularity.Client
+		ReqParent *dtos.SingularityRequestParent
 	}
 
 	retryCounter map[string]uint
@@ -46,7 +46,7 @@ func (sc *SetCollector) GetRunningDeployment(singUrls []string) (deps Deployment
 	errCh := make(chan error)
 	deps = make(Deployments, 0)
 	sings := make(map[string]*singularity.Client)
-	reqCh := make(chan singReq, len(singUrls)*ReqsPerServer)
+	reqCh := make(chan SingReq, len(singUrls)*ReqsPerServer)
 	depCh := make(chan *Deployment, ReqsPerServer)
 
 	defer close(depCh)
@@ -96,7 +96,7 @@ func (sc *SetCollector) GetRunningDeployment(singUrls []string) (deps Deployment
 
 const retryLimit = 3
 
-func (rc retryCounter) maybe(err error, reqCh chan singReq) bool {
+func (rc retryCounter) maybe(err error, reqCh chan SingReq) bool {
 	rt, ok := err.(*canRetryRequest)
 	if !ok {
 		return false
@@ -113,7 +113,7 @@ func (rc retryCounter) maybe(err error, reqCh chan singReq) bool {
 
 	rc[rt.name()] = count + 1
 	go func() {
-		defer catchAll("retrying: " + rt.req.sourceURL)
+		defer catchAll("retrying: " + rt.req.SourceURL)
 		time.Sleep(time.Millisecond * 50)
 		reqCh <- rt.req
 	}()
@@ -146,7 +146,7 @@ func catchAndSend(from string, errs chan error) {
 func singPipeline(
 	client *singularity.Client,
 	dw, wg *sync.WaitGroup,
-	reqs chan singReq,
+	reqs chan SingReq,
 	errs chan error,
 ) {
 	defer wg.Done()
@@ -162,15 +162,15 @@ func singPipeline(
 	}
 }
 
-func getRequestsFromSingularity(client *singularity.Client) ([]singReq, error) {
+func getRequestsFromSingularity(client *singularity.Client) ([]SingReq, error) {
 	singRequests, err := client.GetRequests()
 	if err != nil {
 		return nil, err
 	}
 
-	reqs := make([]singReq, 0, len(singRequests))
+	reqs := make([]SingReq, 0, len(singRequests))
 	for _, sr := range singRequests {
-		reqs = append(reqs, singReq{client.BaseUrl, client, sr})
+		reqs = append(reqs, SingReq{client.BaseUrl, client, sr})
 	}
 
 	return reqs, nil
@@ -178,14 +178,14 @@ func getRequestsFromSingularity(client *singularity.Client) ([]singReq, error) {
 
 func depPipeline(
 	cl RectificationClient,
-	reqCh chan singReq,
+	reqCh chan SingReq,
 	depCh chan *Deployment,
 	errCh chan error,
 ) {
 	defer catchAndSend("dependency building", errCh)
 	for req := range reqCh {
-		go func(cl RectificationClient, req singReq) {
-			defer catchAndSend(fmt.Sprintf("dep from req %s", req.sourceURL), errCh)
+		go func(cl RectificationClient, req SingReq) {
+			defer catchAndSend(fmt.Sprintf("dep from req %s", req.SourceURL), errCh)
 
 			dep, err := assembleDeployment(cl, req)
 
@@ -199,13 +199,13 @@ func depPipeline(
 	}
 }
 
-func assembleDeployment(cl RectificationClient, req singReq) (*Deployment, error) {
-	uc := newDeploymentBuilder(cl, req)
-	err := uc.completeConstruction()
+func assembleDeployment(cl RectificationClient, req SingReq) (*Deployment, error) {
+	uc := NewDeploymentBuilder(cl, req)
+	err := uc.CompleteConstruction()
 	if err != nil {
 		return nil, err
 	}
 
 	Log.Debug.Print(uc)
-	return &uc.target, nil
+	return &uc.Target, nil
 }

@@ -8,17 +8,17 @@ import (
 
 type (
 	deploymentBuilder struct {
-		target        Deployment
+		Target        Deployment
 		depMarker     sDepMarker
 		deploy        sDeploy
 		request       sRequest
-		req           singReq
+		req           SingReq
 		rectification RectificationClient
 	}
 
 	canRetryRequest struct {
 		cause error
-		req   singReq
+		req   SingReq
 	}
 
 	malformedResponse struct {
@@ -35,10 +35,10 @@ func (cr *canRetryRequest) Error() string {
 }
 
 func (cr *canRetryRequest) name() string {
-	return fmt.Sprintf("%s:%s", cr.req.sourceURL, cr.req.reqParent.Request.Id)
+	return fmt.Sprintf("%s:%s", cr.req.SourceURL, cr.req.ReqParent.Request.Id)
 }
 
-func newDeploymentBuilder(cl RectificationClient, req singReq) deploymentBuilder {
+func NewDeploymentBuilder(cl RectificationClient, req SingReq) deploymentBuilder {
 	return deploymentBuilder{rectification: cl, req: req}
 }
 
@@ -47,27 +47,27 @@ func (uc *deploymentBuilder) canRetry(err error) error {
 		return err
 	}
 
-	if uc.req.sourceURL == "" {
+	if uc.req.SourceURL == "" {
 		return err
 	}
 
-	if uc.req.reqParent == nil {
+	if uc.req.ReqParent == nil {
 		return err
 	}
-	if uc.req.reqParent.Request == nil {
+	if uc.req.ReqParent.Request == nil {
 		return err
 	}
 
-	if uc.req.reqParent.Request.Id == "" {
+	if uc.req.ReqParent.Request.Id == "" {
 		return err
 	}
 
 	return &canRetryRequest{err, uc.req}
 }
 
-func (uc *deploymentBuilder) completeConstruction() error {
-	uc.target.Cluster = uc.req.sourceURL
-	uc.request = uc.req.reqParent.Request
+func (uc *deploymentBuilder) CompleteConstruction() error {
+	uc.Target.Cluster = uc.req.SourceURL
+	uc.request = uc.req.ReqParent.Request
 
 	err := uc.retrieveDeploy()
 	if err != nil {
@@ -94,9 +94,9 @@ func (uc *deploymentBuilder) completeConstruction() error {
 
 func (uc *deploymentBuilder) retrieveDeploy() error {
 
-	rp := uc.req.reqParent
+	rp := uc.req.ReqParent
 	rds := rp.RequestDeployState
-	sing := uc.req.sing
+	sing := uc.req.Sing
 
 	if rds == nil {
 		return malformedResponse{"Singularity response didn't include a deploy state. ReqId: " + rp.Request.Id}
@@ -142,39 +142,43 @@ func (uc *deploymentBuilder) retrieveImageLabels() error {
 		return err
 	}
 
-	uc.target.SourceVersion, err = SourceVersionFromLabels(labels)
+	uc.Target.SourceVersion, err = SourceVersionFromLabels(labels)
 	if err != nil {
-		return malformedResponse{fmt.Sprintf("For reqID: %s, %s", uc.req.reqParent.Request.Id, err.Error())}
+		return malformedResponse{fmt.Sprintf("For reqID: %s, %s", uc.req.ReqParent.Request.Id, err.Error())}
 	}
 
 	return nil
 }
 
 func (uc *deploymentBuilder) unpackDeployConfig() error {
-	uc.target.Env = uc.deploy.Env
+	uc.Target.Env = uc.deploy.Env
 	Log.Debug.Printf("%+v", uc.deploy.Env)
-	if uc.target.Env == nil {
-		uc.target.Env = make(map[string]string)
+	if uc.Target.Env == nil {
+		uc.Target.Env = make(map[string]string)
 	}
 
 	singRez := uc.deploy.Resources
-	uc.target.Resources = make(Resources)
-	uc.target.Resources["cpus"] = fmt.Sprintf("%f", singRez.Cpus)
-	uc.target.Resources["memory"] = fmt.Sprintf("%f", singRez.MemoryMb)
-	uc.target.Resources["ports"] = fmt.Sprintf("%d", singRez.NumPorts)
+	uc.Target.Resources = make(Resources)
+	uc.Target.Resources["cpus"] = fmt.Sprintf("%f", singRez.Cpus)
+	uc.Target.Resources["memory"] = fmt.Sprintf("%f", singRez.MemoryMb)
+	uc.Target.Resources["ports"] = fmt.Sprintf("%d", singRez.NumPorts)
 
-	uc.target.NumInstances = int(uc.request.Instances)
+	uc.Target.NumInstances = int(uc.request.Instances)
 	for _, o := range uc.request.Owners {
-		uc.target.Owners.Add(o)
+		uc.Target.Owners.Add(o)
 	}
 
 	for _, v := range uc.deploy.ContainerInfo.Volumes {
-		uc.target.DeployConfig.Volumes = append(uc.target.DeployConfig.Volumes,
+		uc.Target.DeployConfig.Volumes = append(uc.Target.DeployConfig.Volumes,
 			&Volume{
 				Host:      v.HostPath,
 				Container: v.ContainerPath,
 				Mode:      VolumeMode(v.Mode),
 			})
+	}
+	Log.Debug.Printf("%+v", uc.Target.DeployConfig.Volumes)
+	if len(uc.Target.DeployConfig.Volumes) > 0 {
+		Log.Debug.Printf("%+v", uc.Target.DeployConfig.Volumes[0])
 	}
 
 	return nil
@@ -185,15 +189,15 @@ func (uc *deploymentBuilder) determineManifestKind() error {
 	default:
 		return fmt.Errorf("Unrecognized response type returned by Singularity: %v", uc.request.RequestType)
 	case dtos.SingularityRequestRequestTypeSERVICE:
-		uc.target.Kind = ManifestKindService
+		uc.Target.Kind = ManifestKindService
 	case dtos.SingularityRequestRequestTypeWORKER:
-		uc.target.Kind = ManifestKindWorker
+		uc.Target.Kind = ManifestKindWorker
 	case dtos.SingularityRequestRequestTypeON_DEMAND:
-		uc.target.Kind = ManifestKindOnDemand
+		uc.Target.Kind = ManifestKindOnDemand
 	case dtos.SingularityRequestRequestTypeSCHEDULED:
-		uc.target.Kind = ManifestKindScheduled
+		uc.Target.Kind = ManifestKindScheduled
 	case dtos.SingularityRequestRequestTypeRUN_ONCE:
-		uc.target.Kind = ManifestKindOnce
+		uc.Target.Kind = ManifestKindOnce
 	}
 	return nil
 }

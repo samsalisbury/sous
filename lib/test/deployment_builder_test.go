@@ -2,28 +2,29 @@ package test
 
 import (
 	"bytes"
+	"io"
+	"io/ioutil"
+	"log"
 	"net/http"
+	"os"
 	"testing"
-	"whitespace"
+	"time"
 
+	"github.com/opentable/go-singularity"
+	"github.com/opentable/go-singularity/dtos"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/docker_registry"
+	"github.com/opentable/sous/util/whitespace"
+	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestBuildDeployments(t *testing.T) {
 	assert := assert.New(t)
+	sous.Log.Debug.SetOutput(os.Stdout)
 
-	clusterDefs := sous.Defs{
-		Clusters: sous.Clusters{
-			singularityURL: sous.Cluster{
-				BaseURL: singularityURL,
-			},
-		},
-	}
-	repoOne := "https://github.com/opentable/one.git"
-	repoTwo := "https://github.com/opentable/two.git"
-	repoThree := "https://github.com/opentable/three.git"
+	resetSingularity()
+	defer resetSingularity()
 
 	drc := docker_registry.NewClient()
 	drc.BecomeFoolishlyTrusting()
@@ -31,58 +32,101 @@ func TestBuildDeployments(t *testing.T) {
 	nc := sous.NewNameCache(drc, "sqlite3", sous.InMemoryConnection("testresolve"))
 	ra := sous.NewRectiAgent(nc)
 
-	singReqDep(
+	singCl := singularity.NewClient(singularityURL)
+	singCl.Debug = true
+
+	sr, err := singReqDep(
 		singularityURL,
 		whitespace.CleanWS(`
 		{
 			"instances": 1,
-			"id": "test-grafana-request",
-			"requestType": "SERVICE",
+			"id": "test-hello-request",
+			"requestType": "SERVICE"
 		}`),
 		whitespace.CleanWS(`
 		{
-			id: "test-grafana-deploy",
-			requestId: "test-grafana-request",
-			"resources": {
-				"cpu": 0.1,
-				"mem": 32,
-				"ports": 1,
-			},
-			containerInfo: {
-
-			},
-			env: {
-				"TEST": "yes"
-			},
-
-
-		}
-			`),
+			"deploy": {
+				"id": "`+idify(uuid.NewV4().String())+`",
+				"requestId": "test-hello-request",
+				"resources": {
+					"cpus": 0.1,
+					"memoryMb": 32,
+					"numPorts": 1
+				},
+				"containerInfo": {
+					"type": "DOCKER",
+					"docker": {
+						"image": "`+buildImageName("hello-server-labels", "latest")+`"
+					},
+					"volumes": [{"hostPath":"/tmp", "containerPath":"/tmp","mode":"RO"}]
+				},
+				"env": {
+					"TEST": "yes"
+				}
+			}
+		}`),
 	)
 
-	resetSingularity()
+	req := sous.SingReq{
+		SourceURL: singularityURL,
+		Sing:      singCl,
+		ReqParent: sr,
+	}
+
+	if assert.NoError(err) {
+		uc := sous.NewDeploymentBuilder(ra, req)
+		err = uc.CompleteConstruction()
+
+		if assert.NoError(err) {
+			dep := uc.Target
+			if assert.Len(dep.DeployConfig.Volumes, 1) {
+				assert.Equal(dep.DeployConfig.Volumes[0].Host, "/tmp")
+			}
+			assert.Equal("https://github.com/docker/dockercloud-hello-world.git", string(dep.SourceVersion.RepoURL))
+		}
+
+	}
+
 }
 
 func pushLabelledContainers() {
 	//buildAndPushContainer(buildImageName("hello-labels", "latest"), "hello-labels")
-	//buildAndPushContainer(buildImageName("hello-server-labels", "latest"), "hello-server-labels")
-	buildAndPushContainer(buildImageName("grafana-repo", "latest"), "grafana-labels")
+	buildAndPushContainer(buildImageName("hello-server-labels", "latest"), "hello-server-labels")
+	//buildAndPushContainer(buildImageName("grafana-repo", "latest"), "grafana-labels")
 }
 
-func singReqDep(url, ryaml, dyaml string) error {
+func singReqDep(url, ryaml, dyaml string) (*dtos.SingularityRequestParent, error) {
 	h := &http.Client{}
 	ru := url + `/api/requests`
 	du := url + `/api/deploys`
 
-	_, err := h.Post(ru, `application/json`, bytes.NewBufferString(ryaml))
+	rrz, err := h.Post(ru, `application/json`, bytes.NewBufferString(ryaml))
 	if err != nil {
-		return err
+		return nil, err
 	}
+	logBody("POST /api/requests", rrz)
 
-	_, err = h.Post(du, `application/json`, bytes.NewBufferString(dyaml))
+	dqz, err := h.Post(du, `application/json`, bytes.NewBufferString(dyaml))
 	if err != nil {
-		return err
+		return nil, err
 	}
+	logBody("POST /api/deploys", dqz)
 
-	return nil
+	rqz, err := h.Get(ru)
+
+	time.Sleep(3 * time.Second)
+
+	resBody := logBody("GET /api/requests", rqz)
+
+	var sr dtos.SingularityRequestParentList
+	sr.Populate(resBody)
+
+	return sr[0], nil
+}
+
+func logBody(from string, rqz *http.Response) io.ReadCloser {
+	buf := bytes.Buffer{}
+	buf.ReadFrom(rqz.Body)
+	log.Printf("%s -> %+v\n", from, buf.String())
+	return ioutil.NopCloser(&buf)
 }

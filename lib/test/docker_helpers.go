@@ -70,6 +70,7 @@ func wrapCompose(m *testing.M) (resultCode int) {
 
 func resetSingularity() {
 	sing := singularity.NewClient(singularityURL)
+	//sing.Debug = true
 
 	reqList, err := sing.GetRequests()
 	if err != nil {
