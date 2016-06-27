@@ -1,7 +1,9 @@
 package sous
 
 import (
+	"io/ioutil"
 	"log"
+	"os"
 	"testing"
 
 	"github.com/samsalisbury/semv"
@@ -152,9 +154,11 @@ func TestModifyResources(t *testing.T) {
 }
 
 func TestModify(t *testing.T) {
+	Log.Debug.SetOutput(os.Stderr)
+	defer Log.Debug.SetOutput(ioutil.Discard)
 	assert := assert.New(t)
-	before, _ := semv.Parse("1.2.3-test")
-	after, _ := semv.Parse("2.3.4-new")
+	before := semv.MustParse("1.2.3-test")
+	after := semv.MustParse("2.3.4-new")
 	pair := &DeploymentPair{
 		prior: &Deployment{
 			SourceVersion: SourceVersion{
@@ -163,6 +167,9 @@ func TestModify(t *testing.T) {
 			},
 			DeployConfig: DeployConfig{
 				NumInstances: 1,
+				Volumes: Volumes{
+					&Volume{"host", "container", "RO"},
+				},
 			},
 			Cluster: "cluster",
 		},
@@ -173,6 +180,9 @@ func TestModify(t *testing.T) {
 			},
 			DeployConfig: DeployConfig{
 				NumInstances: 24,
+				Volumes: Volumes{
+					&Volume{"host", "container", "RW"},
+				},
 			},
 			Cluster: "cluster",
 		},
@@ -193,6 +203,8 @@ func TestModify(t *testing.T) {
 
 	if assert.Len(client.deployed, 1) {
 		assert.Regexp("2.3.4", client.deployed[0].imageName)
+		log.Print(client.deployed[0].vols)
+		assert.Equal("RW", string(client.deployed[0].vols[0].Mode))
 	}
 
 	if assert.Len(client.scaled, 1) {

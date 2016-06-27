@@ -30,7 +30,7 @@ type (
 	// rather than with implentations of this interface directly.
 	RectificationClient interface {
 		// Deploy creates a new deploy on a particular requeust
-		Deploy(cluster, depID, reqID, dockerImage string, r Resources, e Env) error
+		Deploy(cluster, depID, reqID, dockerImage string, r Resources, e Env, vols Volumes) error
 
 		// PostRequest sends a request to a Singularity cluster to initiate
 		PostRequest(cluster, reqID string, instanceCount int) error
@@ -150,7 +150,7 @@ func (r *rectifier) rectifyCreates(cc chan *Deployment, errs chan<- Rectificatio
 			continue
 		}
 
-		err = r.sing.Deploy(d.Cluster, newDepID(), reqID, name, d.Resources, d.Env)
+		err = r.sing.Deploy(d.Cluster, newDepID(), reqID, name, d.Resources, d.Env, d.DeployConfig.Volumes)
 		if err != nil {
 			// log.Printf("% +v", d)
 			errs <- &CreateError{Deployment: d, Err: err}
@@ -201,6 +201,7 @@ func (r *rectifier) rectifyModifys(
 				name,
 				pair.post.Resources,
 				pair.post.Env,
+				pair.post.DeployConfig.Volumes,
 			)
 			if err != nil {
 				errs <- &ChangeError{Deployments: pair, Err: err}

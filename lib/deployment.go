@@ -28,6 +28,9 @@ type (
 		// Kind is the kind of software that SourceRepo represents.
 		Kind ManifestKind
 
+		// Volumes enumerates the volume mappings required
+		Volumes Volumes
+
 		// Notes collected from the deployment's source
 		Annotation
 	}
@@ -40,12 +43,13 @@ type (
 	// canonical order in which they should be satisfied
 	LogicalSequence uint
 
-	// An Annotation stores notes about data available from the source of
-	// of a Deployment. For instance, the Id field from the source
-	// SingularityRequest for a Deployment can be stored to refer to the source post-diff.
-	// They don't participate in equality checks on the deployment
+	// An Annotation stores notes about data available from the source of of a
+	// Deployment. For instance, the Id field from the source SingularityRequest
+	// for a Deployment can be stored to refer to the source post-diff.  They
+	// don't participate in equality checks on the deployment
 	Annotation struct {
-		// RequestID stores the Singularity Request ID that was used for this deployment
+		// RequestID stores the Singularity Request ID that was used for this
+		// deployment
 		RequestID string
 	}
 
@@ -56,16 +60,17 @@ type (
 	// DeploymentIntentions represents deployments commanded by a user.
 	DeploymentIntentions []DeploymentIntention
 
-	// A DeploymentIntention represents a deployment commanded by a user, possibly not yet acheived
+	// A DeploymentIntention represents a deployment commanded by a user,
+	// possibly not yet acheived
 	DeploymentIntention struct {
 		Deployment
 		// State is the relative state of this intention.
 		State DeploymentState
 
-		// The sequence this intention was resolved in - might be e.g. synthesized while walking
-		// a git history. This might be left as implicit on the sequence of DIs in a []DI,
-		// but if there's a change in storage (i.e. not git), or two single DIs need to be compared,
-		// the sequence is useful
+		// The sequence this intention was resolved in - might be e.g. synthesized
+		// while walking a git history. This might be left as implicit on the
+		// sequence of DIs in a []DI, but if there's a change in storage (i.e. not
+		// git), or two single DIs need to be compared, the sequence is useful
 		Sequence LogicalSequence
 	}
 
@@ -83,13 +88,15 @@ const (
 	// Current means the the deployment is the one currently running
 	Current DeploymentState = iota
 
-	// Acheived means that the deployment was realized in infrastructure at some point
+	// Acheived means that the deployment was realized in infrastructure at some
+	// point
 	Acheived = iota
 
 	// Waiting means the deployment hasn't yet been acheived
 	Waiting = iota
 
-	// PassedOver means that the deployment was received but a different deployment was received before this one could be deployed
+	// PassedOver means that the deployment was received but a different
+	// deployment was received before this one could be deployed
 	PassedOver = iota
 )
 
@@ -149,6 +156,7 @@ func BuildDeployment(m *Manifest, spec PartialDeploySpec, inherit DeploymentSpec
 			Resources:    spec.Resources,
 			Env:          spec.Env,
 			NumInstances: spec.NumInstances,
+			Volumes:      spec.Volumes,
 		},
 		Owners:        ownMap,
 		Kind:          m.Kind,

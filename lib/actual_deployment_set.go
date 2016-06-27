@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/opentable/singularity"
-	"github.com/opentable/singularity/dtos"
+	"github.com/opentable/go-singularity"
+	"github.com/opentable/go-singularity/dtos"
 )
 
 // ReqsPerServer limits the number of simultaneous number of requests made
