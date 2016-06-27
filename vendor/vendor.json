@@ -155,15 +155,16 @@
 			"revisionTime": "2016-05-14T12:23:48Z"
 		},
 		{
-			"checksumSHA1": "Mwn1kAKDdCPsYSD+Jit2G8+fcLI=",
-			"path": "github.com/opentable/singularity",
-			"revision": "f23284a220117e97669bb174886519c0d100bce2",
-			"revisionTime": "2016-05-24T23:04:38Z"
+			"checksumSHA1": "CDYYB5PQgrLoALawhs5Q1BCSeTU=",
+			"path": "github.com/opentable/go-singularity",
+			"revision": "b89e1ddc2d821be379258fd29a00a56c2ed1b0b4",
+			"revisionTime": "2016-06-24T20:33:55Z"
 		},
 		{
-			"checksumSHA1": "F06JS5g9fjEa+nOVRgVXQcK0z8w=",
-			"path": "github.com/opentable/singularity/dtos",
-			"revision": "2cda90992c1f065eff5d89083b78fcead977e39a"
+			"checksumSHA1": "9ur0sqS6GXQQS/p8OBwNj9dno0U=",
+			"path": "github.com/opentable/go-singularity/dtos",
+			"revision": "b89e1ddc2d821be379258fd29a00a56c2ed1b0b4",
+			"revisionTime": "2016-06-24T20:33:55Z"
 		},
 		{
 			"checksumSHA1": "LuFv4/jlrmFNnDb/5SCSEPAM9vU=",
@@ -245,6 +246,14 @@
 			"path": "golang.org/x/tools/imports",
 			"revision": "e48e17a0b53ae4153fa6507c56e898a9ad9e0d89",
 			"revisionTime": "2016-04-28T02:41:15Z"
+		},
+		{
+			"path": "help",
+			"revision": ""
+		},
+		{
+			"path": "help]",
+			"revision": ""
 		}
 	],
 	"rootPath": "github.com/opentable/sous"

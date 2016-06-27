@@ -96,6 +96,9 @@ type (
 		// to decisions made by Sous. If set to zero, Sous will decide how many
 		// instances to launch.
 		NumInstances int
+
+		// Volumes lists the volume mappings for this deploy
+		Volumes Volumes
 	}
 
 	// Resources is a mapping of resource name to value, used to provision
@@ -107,14 +110,34 @@ type (
 	// Env is a mapping of environment variable name to value, used to provision
 	// single instances of an application.
 	Env map[string]string
+
+	// Volume describes a deployment's volume mapping
+	Volume struct {
+		Host, Container string
+		Mode            VolumeMode
+	}
+
+	// Volumes represents a list of volume mappings
+	Volumes []*Volume
+
+	//VolumeMode is either readwrite or readonly
+	VolumeMode string
 )
 
+const (
+	// ReadOnly specifies that a volume can only be read
+	ReadOnly VolumeMode = "RO"
+	// ReadWrite specifies that the container can write to the volume
+	ReadWrite VolumeMode = "RW"
+)
+
+// FileLocation returns the path that the manifest should be saved to
 func (m *Manifest) FileLocation() string {
 	return filepath.Join(string(m.Source.RepoURL), string(m.Source.RepoOffset))
 }
 
 func (dc *DeployConfig) String() string {
-	return fmt.Sprintf("#%d %+v : %+v", dc.NumInstances, dc.Resources, dc.Env)
+	return fmt.Sprintf("#%d %+v : %+v %+v", dc.NumInstances, dc.Resources, dc.Env, dc.Volumes)
 }
 
 const (
@@ -130,9 +153,35 @@ const (
 	ScheduledJob = "scheduled-job"
 )
 
+// Equal is used to compare DeployConfigs
 func (dc *DeployConfig) Equal(o DeployConfig) bool {
 	Log.Debug.Printf("%+ v ?= %+ v", dc, o)
-	return (dc.NumInstances == o.NumInstances && dc.Env.Equal(o.Env) && dc.Resources.Equal(o.Resources))
+	return (dc.NumInstances == o.NumInstances && dc.Env.Equal(o.Env) && dc.Resources.Equal(o.Resources) && dc.Volumes.Equal(o.Volumes))
+}
+
+// Equal is used to compare Volumes pairs
+func (vs Volumes) Equal(o Volumes) bool {
+	if len(vs) != len(o) {
+		return false
+	}
+	c := append(Volumes{}, o...)
+	for _, v := range vs {
+		for i, ov := range c {
+			if v == ov {
+				c[i] = c[len(c)-1]
+				c = c[:len(c)-1]
+			}
+		}
+	}
+	return len(c) == 0
+}
+
+func (vs Volumes) String() string {
+	res := "["
+	for _, v := range vs {
+		res += fmt.Sprintf("%v,", v)
+	}
+	return res + "]"
 }
 
 // SingMap produces a dtoMap appropriate for building a Singularity

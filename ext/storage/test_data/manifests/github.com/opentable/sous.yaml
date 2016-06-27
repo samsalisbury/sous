@@ -9,9 +9,11 @@ Deployments:
       cpu: "0.1"
       mem: 2GB
     NumInstances: 3
+    Volumes: []
     Version: 1.0.0
   cluster-1:
     Env:
       SOME_DB_URL: https://some.database
     NumInstances: 6
+    Volumes: []
     Version: 1.0.0-rc.1+deadbeef

@@ -3,8 +3,8 @@ package sous
 import (
 	"sync"
 
-	"github.com/opentable/singularity"
-	"github.com/opentable/singularity/dtos"
+	"github.com/opentable/go-singularity"
+	"github.com/opentable/go-singularity/dtos"
 	"github.com/satori/go.uuid"
 )
 
@@ -24,7 +24,7 @@ func NewRectiAgent(nc ImageMapper) *RectiAgent {
 }
 
 // Deploy sends requests to Singularity to make a deployment happen
-func (ra *RectiAgent) Deploy(cluster, depID, reqID, dockerImage string, r Resources, e Env) error {
+func (ra *RectiAgent) Deploy(cluster, depID, reqID, dockerImage string, r Resources, e Env, vols Volumes) error {
 	Log.Debug.Printf("Deploying instance %s %s %s %s %v %v", cluster, depID, reqID, dockerImage, r, e)
 	dockerInfo, err := dtos.LoadMap(&dtos.SingularityDockerInfo{}, dtoMap{
 		"Image": dockerImage,
@@ -38,9 +38,23 @@ func (ra *RectiAgent) Deploy(cluster, depID, reqID, dockerImage string, r Resour
 		return err
 	}
 
+	vs := dtos.SingularityVolumeList{}
+	for _, v := range vols {
+		sv, err := dtos.LoadMap(&dtos.SingularityVolume{}, dtoMap{
+			"ContainerPath": v.Container,
+			"HostPath":      v.Host,
+			"Mode":          dtos.SingularityVolumeSingularityDockerVolumeMode(string(v.Mode)),
+		})
+		if err != nil {
+			return err
+		}
+		vs = append(vs, sv.(*dtos.SingularityVolume))
+	}
+
 	ci, err := dtos.LoadMap(&dtos.SingularityContainerInfo{}, dtoMap{
-		"Type":   dtos.SingularityContainerInfoSingularityContainerTypeDOCKER,
-		"Docker": dockerInfo,
+		"Type":    dtos.SingularityContainerInfoSingularityContainerTypeDOCKER,
+		"Docker":  dockerInfo,
+		"Volumes": vs,
 	})
 	if err != nil {
 		return err
