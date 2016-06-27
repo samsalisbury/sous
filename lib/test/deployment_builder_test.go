@@ -41,7 +41,8 @@ func TestBuildDeployments(t *testing.T) {
 		{
 			"instances": 1,
 			"id": "test-hello-request",
-			"requestType": "SERVICE"
+			"requestType": "SERVICE",
+			"owners": ["tom@hanna.net", "jerry@barbera.org"]
 		}`),
 		whitespace.CleanWS(`
 		{

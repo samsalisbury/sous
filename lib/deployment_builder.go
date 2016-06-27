@@ -38,6 +38,8 @@ func (cr *canRetryRequest) name() string {
 	return fmt.Sprintf("%s:%s", cr.req.SourceURL, cr.req.ReqParent.Request.Id)
 }
 
+// NewDeploymentBuilder creates a deploymentBuilder prepared to collect the
+// data associated with req and return a Deployment
 func NewDeploymentBuilder(cl RectificationClient, req SingReq) deploymentBuilder {
 	return deploymentBuilder{rectification: cl, req: req}
 }
@@ -164,6 +166,7 @@ func (uc *deploymentBuilder) unpackDeployConfig() error {
 	uc.Target.Resources["ports"] = fmt.Sprintf("%d", singRez.NumPorts)
 
 	uc.Target.NumInstances = int(uc.request.Instances)
+	uc.Target.Owners = make(OwnerSet)
 	for _, o := range uc.request.Owners {
 		uc.Target.Owners.Add(o)
 	}
