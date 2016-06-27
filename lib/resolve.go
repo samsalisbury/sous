@@ -21,22 +21,29 @@ func Resolve(rc RectificationClient, state State) error {
 // ResolveFilteredDeployments is similar to Resolve, but also accepts a
 // predicate to filter those deployments. See Deploments.Filter for details.
 func ResolveFilteredDeployments(rc RectificationClient, state State, pr DeploymentPredicate) error {
+	Log.Debug.Print("Loading GDM")
 	gdm, err := state.Deployments()
 	gdm = gdm.Filter(pr)
 	if err != nil {
 		return err
 	}
 
-	err = guardImageNamesKnown(rc, gdm)
-	if err != nil {
-		return err
-	}
+	Log.Debug.Print("Loaded. Collecting ADC...")
 
 	sc := NewSetCollector(rc)
 	ads, err := sc.GetRunningDeployment(state.BaseURLs())
 	if err != nil {
 		return err
 	}
+
+	Log.Debug.Print("Collected. Checking readiness to deploy...")
+
+	err = guardImageNamesKnown(rc, gdm)
+	if err != nil {
+		return err
+	}
+
+	Log.Debug.Print("Looks good. Proceeding...")
 
 	differ := ads.Diff(gdm)
 

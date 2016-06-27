@@ -159,6 +159,7 @@ func (nc *NameCache) harvest(sl SourceLocation) error {
 
 // GetImageName returns the docker image name for a given source version
 func (nc *NameCache) GetImageName(sv SourceVersion) (string, error) {
+	Log.Debug.Printf("Getting image name for %+v", sv)
 	cn, _, err := nc.dbQueryOnSV(sv)
 	if _, ok := err.(NoImageNameFound); ok {
 		err = nc.harvest(sv.CanonicalName())
@@ -404,7 +405,7 @@ func (nc *NameCache) dbQueryOnSL(sl SourceLocation) (rs []string, err error) {
 	}
 	err = rows.Err()
 	if len(rs) == 0 {
-		err = fmt.Errorf("no repos found")
+		err = fmt.Errorf("no repos found for %+v", sl)
 	}
 	return
 }

@@ -141,7 +141,7 @@ func (uc *deploymentBuilder) retrieveImageLabels() error {
 	labels, err := uc.rectification.ImageLabels(imageName)
 	Log.Debug.Print("Labels: ", labels, err)
 	if err != nil {
-		return err
+		return malformedResponse{err.Error()}
 	}
 
 	uc.Target.SourceVersion, err = SourceVersionFromLabels(labels)
