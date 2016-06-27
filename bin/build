@@ -13,7 +13,10 @@ PLATFORMS="$1"
 
 set -euo pipefail
 ARTIFACTS_DIR="$PWD/$ARTIFACTS_DIR"
-STANDARD_TARGETS=(linux/amd64 darwin/amd64)
+
+# NOTE: Removed Darwin build for now; cross-compiling cgo not possible.
+#STANDARD_TARGETS=(linux/amd64 darwin/amd64)
+STANDARD_TARGETS=(linux/amd64)
 
 GOVERSION="$(go version)"
 
