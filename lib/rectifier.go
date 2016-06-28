@@ -218,7 +218,8 @@ func (r rectifier) changesReq(pair *DeploymentPair) bool {
 func changesDep(pair *DeploymentPair) bool {
 	return !(pair.prior.SourceVersion.Equal(pair.post.SourceVersion) &&
 		pair.prior.Resources.Equal(pair.post.Resources) &&
-		pair.prior.Env.Equal(pair.post.Env))
+		pair.prior.Env.Equal(pair.post.Env) &&
+		pair.prior.DeployConfig.Volumes.Equal(pair.post.DeployConfig.Volumes))
 }
 
 func computeRequestID(d *Deployment) string {

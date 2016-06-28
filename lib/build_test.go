@@ -33,7 +33,9 @@ func TestBuild(t *testing.T) {
 	}
 
 	dockerID := "1234512345"
-	tagStr := "docker.wearenice.com/awesomeproject:1.2.3"
+	tagStr := "awesomeproject:1.2.3"
+	dockerHost := "docker.wearenice.com"
+	imageName := dockerHost + "/" + tagStr
 
 	sourceDir := "/home/jenny-dev/project"
 	sourceFiles := map[string]string{
@@ -75,12 +77,13 @@ func TestBuild(t *testing.T) {
 
 	assert.Regexp("^"+regexp.QuoteMeta("docker build .")+reTail, sourceSh.History[0])
 
-	assert.Regexp("^"+regexp.QuoteMeta("docker build -t "+tagStr+" -")+reTail, sourceSh.History[1])
+	assert.Regexp("^"+regexp.QuoteMeta("docker build -t "+imageName+" -")+reTail, sourceSh.History[1])
 	assert.Regexp("FROM "+dockerID, sourceSh.History[1].StdinString())
 	assert.Regexp("com.opentable.sous.repo_url=github.com/opentable/awesomeproject", sourceSh.History[1].StdinString())
 
-	assert.Regexp("^"+regexp.QuoteMeta("docker push "+tagStr)+reTail, sourceSh.History[2])
+	assert.Regexp("^"+regexp.QuoteMeta("docker push "+imageName)+reTail, sourceSh.History[2])
 	docker.FeedMetadata(docker_registry.Metadata{
+		Registry: dockerHost,
 		Labels: map[string]string{
 			DockerVersionLabel:  "1.2.3",
 			DockerRevisionLabel: revision,

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strings"
 
@@ -50,6 +51,7 @@ type (
 
 	// Metadata represents the descriptive data for a docker image
 	Metadata struct {
+		Registry      string
 		Labels        map[string]string
 		Etag          string
 		CanonicalName string
@@ -204,6 +206,7 @@ func (c *liveClient) metadataForImage(regHost string, ref reference.Named, etag 
 	}
 
 	md = Metadata{
+		Registry: regHost,
 		AllNames: make([]string, 2),
 		Labels:   make(map[string]string),
 		Etag:     headers.Get("Etag"),
@@ -324,6 +327,8 @@ func (r *registry) getManifestWithEtag(ctx context.Context, ref reference.Named,
 	var err error
 
 	u, err := r.ub.BuildManifestURL(ref)
+
+	log.Print(u)
 	if err != nil {
 		return nil, http.Header{}, err
 	}

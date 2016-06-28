@@ -21,7 +21,8 @@ func TestRoundTrip(t *testing.T) {
 		RepoURL:    RepoURL("https://github.com/opentable/wackadoo"),
 		RepoOffset: RepoOffset("nested/there"),
 	}
-	base := "docker.repo.io/ot/wackadoo"
+	host := "docker.repo.io"
+	base := "ot/wackadoo"
 	in := base + ":version-1.2.3"
 	digest := "sha256:012345678901234567890123456789AB012345678901234567890123456789AB"
 	err := nc.Insert(sv, in, digest)
@@ -45,6 +46,7 @@ func TestRoundTrip(t *testing.T) {
 
 	cn = base + "@" + digest
 	dc.FeedMetadata(docker_registry.Metadata{
+		Registry:      host,
 		Labels:        newSV.DockerLabels(),
 		Etag:          digest,
 		CanonicalName: cn,
@@ -55,9 +57,9 @@ func TestRoundTrip(t *testing.T) {
 		assert.Equal(newSV, sv)
 	}
 
-	ncn, err := nc.GetCanonicalName(in)
+	ncn, err := nc.GetCanonicalName(host + "/" + in)
 	if assert.Nil(err) {
-		assert.Equal(cn, ncn)
+		assert.Equal(host+"/"+cn, ncn)
 	}
 }
 
@@ -81,13 +83,15 @@ func TestHarvesting(t *testing.T) {
 		RepoOffset: RepoOffset("nested/there"),
 	}
 
-	base := "docker.repo.io/ot/wackadoo"
+	host := "docker.repo.io"
+	base := "ot/wackadoo"
 	tag := "version-1.2.3"
 	digest := "sha256:012345678901234567890123456789AB012345678901234567890123456789AB"
 	cn := base + "@" + digest
 	in := base + ":" + tag
 
 	dc.FeedMetadata(docker_registry.Metadata{
+		Registry:      host,
 		Labels:        sv.DockerLabels(),
 		Etag:          digest,
 		CanonicalName: cn,
@@ -104,6 +108,7 @@ func TestHarvesting(t *testing.T) {
 	in = base + ":" + tag
 	digest = "sha256:abcdefabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdefffffffff"
 	dc.FeedMetadata(docker_registry.Metadata{
+		Registry:      host,
 		Labels:        sisterSV.DockerLabels(),
 		Etag:          digest,
 		CanonicalName: cn,
@@ -112,7 +117,7 @@ func TestHarvesting(t *testing.T) {
 
 	nin, err := nc.GetImageName(sisterSV)
 	if assert.NoError(err) {
-		assert.Equal(cn, nin)
+		assert.Equal(host+"/"+cn, nin)
 	}
 }
 

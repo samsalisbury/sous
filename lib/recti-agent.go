@@ -68,6 +68,7 @@ func (ra *RectiAgent) Deploy(cluster, depID, reqID, dockerImage string, r Resour
 		"Env":           map[string]string(e),
 	})
 	Log.Debug.Printf("Deploy: %+ v", dep)
+	Log.Debug.Printf("  Container: %+ v", ci)
 
 	depReq, err := dtos.LoadMap(&dtos.SingularityDeployRequest{}, dtoMap{"Deploy": dep})
 	if err != nil {
@@ -157,6 +158,7 @@ func (ra *RectiAgent) singularityClient(url string) *singularity.Client {
 	ra.Lock()
 	defer ra.Unlock()
 	cl = singularity.NewClient(url)
+	//cl.Debug = true
 	ra.singClients[url] = cl
 	return cl
 }

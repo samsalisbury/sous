@@ -155,25 +155,36 @@ const (
 
 // Equal is used to compare DeployConfigs
 func (dc *DeployConfig) Equal(o DeployConfig) bool {
-	Log.Debug.Printf("%+ v ?= %+ v", dc, o)
+	Log.Vomit.Printf("%+ v ?= %+ v", dc, o)
 	return (dc.NumInstances == o.NumInstances && dc.Env.Equal(o.Env) && dc.Resources.Equal(o.Resources) && dc.Volumes.Equal(o.Volumes))
 }
 
 // Equal is used to compare Volumes pairs
 func (vs Volumes) Equal(o Volumes) bool {
 	if len(vs) != len(o) {
+		Log.Debug.Print("Volume lengths differ")
 		return false
 	}
 	c := append(Volumes{}, o...)
 	for _, v := range vs {
+		m := false
 		for i, ov := range c {
 			if v == ov {
+				m = true
 				c[i] = c[len(c)-1]
 				c = c[:len(c)-1]
 			}
 		}
+		if !m {
+			Log.Debug.Printf("missing volume: %v", v)
+			return false
+		}
 	}
-	return len(c) == 0
+	if len(c) == 0 {
+		return true
+	}
+	Log.Debug.Printf("missing volumes: %v", c)
+	return false
 }
 
 func (vs Volumes) String() string {
@@ -238,24 +249,24 @@ func (r Resources) ports() int32 {
 
 // Equal checks equivalence between resource maps
 func (r Resources) Equal(o Resources) bool {
-	Log.Debug.Printf("Comparing resources: %+ v ?= %+ v", r, o)
+	Log.Vomit.Printf("Comparing resources: %+ v ?= %+ v", r, o)
 	if len(r) != len(o) {
-		Log.Debug.Println("Lengths differ")
+		Log.Vomit.Println("Lengths differ")
 		return false
 	}
 
 	if r.ports() != o.ports() {
-		Log.Debug.Println("Ports differ")
+		Log.Vomit.Println("Ports differ")
 		return false
 	}
 
 	if math.Abs(r.cpus()-o.cpus()) > 0.001 {
-		Log.Debug.Println("Cpus differ")
+		Log.Vomit.Println("Cpus differ")
 		return false
 	}
 
 	if math.Abs(r.memory()-o.memory()) > 0.001 {
-		Log.Debug.Println("Memory differ")
+		Log.Vomit.Println("Memory differ")
 		return false
 	}
 
