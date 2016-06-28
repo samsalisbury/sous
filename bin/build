@@ -79,7 +79,7 @@ log "BRANCH: '$BRANCH'; EXACT_TAG: '$EXACT_TAG'; NEAREST_TAG: '$NEAREST_TAG'"
 ##	VERSION="0.0.0-unversioned+$COMMIT_ABBREV"
 ##fi
 
-VERSION="$EXACT_TAG"
+VERSION="${EXACT_TAG#v}"
 
 log "Building sous version $VERSION ($COMMIT)"
 
