@@ -199,7 +199,7 @@ func (c *liveClient) metadataForImage(regHost string, ref reference.Named, etag 
 		return
 	}
 
-	mani, headers, err := rep.getManifestWithEtag(c.ctx, ref, etag)
+	mani, dg, headers, err := rep.getManifestWithEtag(c.ctx, ref, etag)
 	if err != nil {
 		return
 	}
@@ -211,11 +211,8 @@ func (c *liveClient) metadataForImage(regHost string, ref reference.Named, etag 
 		Etag:     headers.Get("Etag"),
 	}
 	md.AllNames[0] = ref.String()
-	dr, err := digestRef(ref, headers.Get("Docker-Content-Digest"))
-	if err == nil {
-		md.AllNames[1] = dr.String()
-		md.CanonicalName = dr.String()
-	}
+	md.AllNames[1] = dg.String()
+	md.CanonicalName = dg.String()
 
 	switch mani := mani.(type) {
 	case *schema1.SignedManifest:
@@ -322,48 +319,45 @@ func (r *registry) getRepoTags(ref reference.Named) (tags []string, err error) {
 	return tags, nil
 }
 
-func (r *registry) getManifestWithEtag(ctx context.Context, ref reference.Named, etag string) (distribution.Manifest, http.Header, error) {
-	var err error
-
+func (r *registry) getManifestWithEtag(ctx context.Context, ref reference.Named, etag string) (mf distribution.Manifest, d digest.Digest, h http.Header, err error) {
 	u, err := r.ub.BuildManifestURL(ref)
 
 	if err != nil {
-		return nil, http.Header{}, err
+		return
 	}
 
 	req, err := r.getRequest(u, etag)
 	if err != nil {
-		return nil, http.Header{}, err
+		return
 	}
 
 	resp, err := r.client.Do(req)
-	if err != nil {
-		return nil, http.Header{}, err
-	}
 	defer resp.Body.Close()
-	mf, err := r.manifestFromResponse(resp)
+
 	if err != nil {
-		return nil, http.Header{}, err
+		return
 	}
 
-	return mf, resp.Header, err
+	h = resp.Header
+	mf, d, err = r.manifestFromResponse(resp)
+	return
 }
 
-func (r *registry) manifestFromResponse(resp *http.Response) (distribution.Manifest, error) {
+func (r *registry) manifestFromResponse(resp *http.Response) (distribution.Manifest, digest.Digest, error) {
 	if resp.StatusCode == http.StatusNotModified {
-		return nil, distribution.ErrManifestNotModified
+		return nil, "", distribution.ErrManifestNotModified
 	} else if client.SuccessStatus(resp.StatusCode) {
 		mt := resp.Header.Get("Content-Type")
 		body, err := ioutil.ReadAll(resp.Body)
 
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
-		m, _, err := distribution.UnmarshalManifest(mt, body)
+		m, d, err := distribution.UnmarshalManifest(mt, body)
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
-		return m, nil
+		return m, d.Digest, nil
 	}
-	return nil, client.HandleErrorResponse(resp)
+	return nil, "", client.HandleErrorResponse(resp)
 }
