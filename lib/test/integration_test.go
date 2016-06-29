@@ -177,7 +177,7 @@ func TestResolve(t *testing.T) {
 	}
 
 	if !assert.NoError(err) {
-		assert.Fail(err)
+		assert.Fail(err.Error())
 	}
 	// ****
 
