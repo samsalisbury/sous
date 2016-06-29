@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"regexp"
 	"testing"
 	"time"
 
@@ -160,9 +161,19 @@ func TestResolve(t *testing.T) {
 
 	// ****
 	log.Println("Resolving from one+two to two+three")
-	err = sous.Resolve(ra, stateTwoThree)
-	if err != nil {
-		assert.Fail(err.Error())
+	conflictRE := regexp.MustCompile(`Pending deploy already in progress`)
+
+	// XXX Let's hope this is a temporary solution to a testing issue
+	// The problem is laid out in DCOPS-7625
+	for tries := 0; tries < 10; tries++ {
+		err = sous.Resolve(ra, stateTwoThree)
+		if err != nil {
+			if !conflictRE.MatchString(err.Error()) {
+				assert.Fail(err.Error())
+			}
+			log.Printf("Singularity conflict - waiting for previous deploy to complete - try #%d", tries+1)
+			time.Sleep(1 * time.Second)
+		}
 	}
 	// ****
 

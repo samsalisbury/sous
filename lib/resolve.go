@@ -1,13 +1,27 @@
 package sous
 
-import (
-	"log"
-	"strings"
+import "strings"
+
+type (
+	// ResolveErrors collect all the errors for a resolve action into a single
+	// error to be handled elsewhere
+	ResolveErrors struct {
+		Causes []error
+	}
+
+	// MissingImageNamesError reports that we couldn't get names for one or more
+	// source versions
+	MissingImageNamesError struct {
+		Causes []error
+	}
 )
 
-// MissingImageNamesError reports that we couldn't get names for one or more source versions
-type MissingImageNamesError struct {
-	Causes []error
+func (re *ResolveErrors) Error() string {
+	s := []string{"Errors during resolve:"}
+	for _, e := range re.Causes {
+		s = append(s, e.Error())
+	}
+	return strings.Join(s, "\n  ")
 }
 
 // Resolve drives the Sous deployment resolution process. It calls out to the
@@ -49,8 +63,14 @@ func ResolveFilteredDeployments(rc RectificationClient, state State, pr Deployme
 
 	errs := Rectify(differ, rc)
 
+	re := &ResolveErrors{Causes: []error{}}
 	for err := range errs {
-		log.Printf("err = %+v\n", err)
+		re.Causes = append(re.Causes, err)
+		Log.Vomit.Printf("resolve error = %+v\n", err)
+	}
+
+	if len(re.Causes) > 0 {
+		return re
 	}
 	return nil
 }
