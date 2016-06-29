@@ -165,7 +165,7 @@ func TestResolve(t *testing.T) {
 
 	// XXX Let's hope this is a temporary solution to a testing issue
 	// The problem is laid out in DCOPS-7625
-	for tries := 0; tries < 10; tries++ {
+	for tries := 0; tries < 30; tries++ {
 		err = sous.Resolve(ra, stateTwoThree)
 		if err != nil {
 			if !conflictRE.MatchString(err.Error()) {
