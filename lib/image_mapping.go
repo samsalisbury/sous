@@ -109,7 +109,7 @@ func (nc *NameCache) GetSourceVersion(in string) (SourceVersion, error) {
 	}
 
 	md, err := nc.registryClient.GetImageMetadata(in, etag)
-	Log.Debug.Printf("%+ v %v", md, err)
+	Log.Vomit.Printf("%+ v %v", md, err)
 	if _, ok := err.(NotModifiedErr); ok {
 		Log.Debug.Printf("Image name: %s -> Source version: %v", in, sv)
 		return sv, nil
@@ -303,7 +303,7 @@ func (nc *NameCache) dbInsert(sv SourceVersion, in, etag string) error {
 		return fmt.Errorf("%v for %v", err, in)
 	}
 
-	Log.Debug.Printf("Inserting name %s", ref.Name())
+	Log.Vomit.Printf("Inserting name %s", ref.Name())
 	nr, err := nc.db.Exec("insert into docker_repo_name "+
 		"(name) values ($1);", ref.Name())
 	nid, err := nr.LastInsertId()
@@ -330,7 +330,7 @@ func (nc *NameCache) dbInsert(sv SourceVersion, in, etag string) error {
 		return err
 	}
 
-	Log.Debug.Printf("Inserting metadata %v %v %v %v", id, etag, in, sv.Version)
+	Log.Vomit.Printf("Inserting metadata %v %v %v %v", id, etag, in, sv.Version)
 	res, err = nc.db.Exec("insert into docker_search_metadata "+
 		"(location_id, etag, canonicalName, version) values ($1, $2, $3, $4);",
 		id, etag, in, sv.Version.Format(semv.MMPPre))

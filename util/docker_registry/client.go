@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strings"
 
@@ -328,7 +327,6 @@ func (r *registry) getManifestWithEtag(ctx context.Context, ref reference.Named,
 
 	u, err := r.ub.BuildManifestURL(ref)
 
-	log.Print(u)
 	if err != nil {
 		return nil, http.Header{}, err
 	}
