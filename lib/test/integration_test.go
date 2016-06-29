@@ -175,6 +175,10 @@ func TestResolve(t *testing.T) {
 			time.Sleep(1 * time.Second)
 		}
 	}
+
+	if !assert.NoError(err) {
+		assert.Fail(err)
+	}
 	// ****
 
 	deps, which = deploymentWithRepo(assert, ra, repoTwo)
