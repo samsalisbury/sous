@@ -105,6 +105,8 @@ func TestMissingImage(t *testing.T) {
 
 func TestResolve(t *testing.T) {
 	assert := assert.New(t)
+	sous.Log.Vomit.SetOutput(os.Stderr)
+	sous.Log.Debug.SetOutput(os.Stderr)
 
 	clusterDefs := sous.Defs{
 		Clusters: sous.Clusters{
@@ -199,7 +201,7 @@ func TestResolve(t *testing.T) {
 		assert.Equal(0, deps[which].NumInstances)
 	}
 
-	resetSingularity()
+	// XXX DON'T MERGE WITH THIS COMMENTED resetSingularity()
 }
 
 func deploymentWithRepo(assert *assert.Assertions, ra sous.RectificationClient, repo string) (sous.Deployments, int) {
@@ -249,7 +251,7 @@ func manifest(nc sous.ImageMapper, drepo, containerDir, sourceURL, version strin
 					Args:         []string{},
 					Env:          sous.Env{"repo": drepo}, //map[s]s
 					NumInstances: 1,
-					Volumes:      sous.Volumes{&sous.Volume{"h", "c", sous.VolumeMode("RO")}},
+					Volumes:      sous.Volumes{&sous.Volume{"/tmp", "/tmp", sous.VolumeMode("RO")}},
 				},
 				Version: semv.MustParse(version),
 				//clusterName: "it",

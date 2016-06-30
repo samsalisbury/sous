@@ -6,6 +6,7 @@ import (
 	"log"
 
 	// triggers the loading of sqlite3 as a database driver
+	"github.com/docker/distribution"
 	"github.com/docker/distribution/reference"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/opentable/sous/util/docker_registry"
@@ -109,8 +110,12 @@ func (nc *NameCache) GetSourceVersion(in string) (SourceVersion, error) {
 	}
 
 	md, err := nc.registryClient.GetImageMetadata(in, etag)
-	Log.Vomit.Printf("%+ v %v", md, err)
+	Log.Vomit.Printf("%+ v %v %T %#v", md, err, err, err)
 	if _, ok := err.(NotModifiedErr); ok {
+		Log.Debug.Printf("Image name: %s -> Source version: %v", in, sv)
+		return sv, nil
+	}
+	if err == distribution.ErrManifestNotModified {
 		Log.Debug.Printf("Image name: %s -> Source version: %v", in, sv)
 		return sv, nil
 	}

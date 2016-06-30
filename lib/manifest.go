@@ -110,25 +110,6 @@ type (
 	// Env is a mapping of environment variable name to value, used to provision
 	// single instances of an application.
 	Env map[string]string
-
-	// Volume describes a deployment's volume mapping
-	Volume struct {
-		Host, Container string
-		Mode            VolumeMode
-	}
-
-	// Volumes represents a list of volume mappings
-	Volumes []*Volume
-
-	//VolumeMode is either readwrite or readonly
-	VolumeMode string
-)
-
-const (
-	// ReadOnly specifies that a volume can only be read
-	ReadOnly VolumeMode = "RO"
-	// ReadWrite specifies that the container can write to the volume
-	ReadWrite VolumeMode = "RW"
 )
 
 // FileLocation returns the path that the manifest should be saved to
@@ -157,42 +138,6 @@ const (
 func (dc *DeployConfig) Equal(o DeployConfig) bool {
 	Log.Vomit.Printf("%+ v ?= %+ v", dc, o)
 	return (dc.NumInstances == o.NumInstances && dc.Env.Equal(o.Env) && dc.Resources.Equal(o.Resources) && dc.Volumes.Equal(o.Volumes))
-}
-
-// Equal is used to compare Volumes pairs
-func (vs Volumes) Equal(o Volumes) bool {
-	if len(vs) != len(o) {
-		Log.Debug.Print("Volume lengths differ")
-		return false
-	}
-	c := append(Volumes{}, o...)
-	for _, v := range vs {
-		m := false
-		for i, ov := range c {
-			if v == ov {
-				m = true
-				c[i] = c[len(c)-1]
-				c = c[:len(c)-1]
-			}
-		}
-		if !m {
-			Log.Debug.Printf("missing volume: %v", v)
-			return false
-		}
-	}
-	if len(c) == 0 {
-		return true
-	}
-	Log.Debug.Printf("missing volumes: %v", c)
-	return false
-}
-
-func (vs Volumes) String() string {
-	res := "["
-	for _, v := range vs {
-		res += fmt.Sprintf("%v,", v)
-	}
-	return res + "]"
 }
 
 // SingMap produces a dtoMap appropriate for building a Singularity

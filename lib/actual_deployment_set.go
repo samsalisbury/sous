@@ -155,10 +155,12 @@ func singPipeline(
 	defer catchAndSend(fmt.Sprintf("get requests: %s", client), errs)
 	rs, err := getRequestsFromSingularity(client)
 	if err != nil {
+		Log.Vomit.Print(err)
 		errs <- err
 		return
 	}
 	for _, r := range rs {
+		Log.Vomit.Print("Req: ", r)
 		dw.Add(1)
 		reqs <- r
 	}
@@ -201,9 +203,11 @@ func depPipeline(
 }
 
 func assembleDeployment(cl RectificationClient, req SingReq) (*Deployment, error) {
+	Log.Vomit.Print("Assembling from: ", req)
 	uc := NewDeploymentBuilder(cl, req)
 	err := uc.CompleteConstruction()
 	if err != nil {
+		Log.Vomit.Print(err)
 		return nil, err
 	}
 
