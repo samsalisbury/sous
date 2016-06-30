@@ -121,6 +121,10 @@
 			"revision": "20fa47886d8ab72eb1e29b1160ed716e7ffac36a"
 		},
 		{
+			"path": "github.com/docker/image",
+			"revision": ""
+		},
+		{
 			"checksumSHA1": "kwd8rShKDCxGTQA0qkxsE1NFJFo=",
 			"path": "github.com/docker/libtrust",
 			"revision": "c8d2b36d60a84f3fa7d5e5e355be64f0fbe0b481"

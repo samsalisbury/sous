@@ -12,7 +12,6 @@ import (
 func TestNameCache(t *testing.T) {
 	assert := assert.New(t)
 	sous.Log.Debug.SetOutput(os.Stdout)
-	sous.Log.Vomit.SetOutput(os.Stdout)
 
 	resetSingularity()
 	defer resetSingularity()
