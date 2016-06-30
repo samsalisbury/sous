@@ -66,7 +66,7 @@ func ResolveFilteredDeployments(rc RectificationClient, state State, pr Deployme
 	re := &ResolveErrors{Causes: []error{}}
 	for err := range errs {
 		re.Causes = append(re.Causes, err)
-		Log.Vomit.Printf("resolve error = %+v\n", err)
+		Log.Debug.Printf("resolve error = %+v\n", err)
 	}
 
 	if len(re.Causes) > 0 {

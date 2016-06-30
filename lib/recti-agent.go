@@ -69,6 +69,7 @@ func (ra *RectiAgent) Deploy(cluster, depID, reqID, dockerImage string, r Resour
 	})
 	Log.Debug.Printf("Deploy: %+ v", dep)
 	Log.Debug.Printf("  Container: %+ v", ci)
+	Log.Debug.Printf("  Docker: %+ v", dockerInfo)
 
 	depReq, err := dtos.LoadMap(&dtos.SingularityDeployRequest{}, dtoMap{"Deploy": dep})
 	if err != nil {

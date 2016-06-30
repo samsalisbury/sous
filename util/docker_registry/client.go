@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strings"
 
@@ -211,8 +212,9 @@ func (c *liveClient) metadataForImage(regHost string, ref reference.Named, etag 
 		Etag:     headers.Get("Etag"),
 	}
 	md.AllNames[0] = ref.String()
-	md.AllNames[1] = dg.String()
-	md.CanonicalName = dg.String()
+
+	md.CanonicalName = ref.Name() + "@" + dg.String()
+	md.AllNames[1] = md.CanonicalName
 
 	switch mani := mani.(type) {
 	case *schema1.SignedManifest:
@@ -232,6 +234,11 @@ func (c *liveClient) metadataForImage(regHost string, ref reference.Named, etag 
 			}
 		}
 	default:
+		// We shouldn't receive this, because we shouldn't include the Accept
+		// header that would trigger it. To begin work on this (because...?) start
+		// by adding schema2 as an import - it's a sibling of schema1. Schema2
+		// includes a 'config' key, which has a digest for a blob - see
+		// distribution/pull_v2 pullSchema2ImageConfig() (~ ln 677)
 		err = fmt.Errorf("Cripes! v2 manifest, which is awesome, but we have no idea how to parse it. Contact your nearest sous chef.")
 	}
 
@@ -353,11 +360,33 @@ func (r *registry) manifestFromResponse(resp *http.Response) (distribution.Manif
 		if err != nil {
 			return nil, "", err
 		}
-		m, d, err := distribution.UnmarshalManifest(mt, body)
+		m, _, err := distribution.UnmarshalManifest(mt, body)
 		if err != nil {
 			return nil, "", err
 		}
-		return m, d.Digest, nil
+
+		var d digest.Digest
+		switch v := m.(type) {
+		case *schema1.SignedManifest:
+			log.Print(string(v.Canonical))
+			d = digest.FromBytes(v.Canonical)
+			//		case *schema2.DeserializedManifest:
+			//			_, pl, err := m.Payload()
+			//			if err != nil {
+			//				return nil, "", err
+			//			}
+			//
+			//			log.Print(string(pl))
+			//			d = digest.FromBytes(pl)
+		default:
+			return nil, "", fmt.Errorf("unsupported manifest format")
+
+		}
+		log.Printf("%T", m)
+		log.Print(d)
+		log.Print(resp.Header.Get("Docker-Content-Digest"))
+		log.Print("sha256:d3d75a393555a8eb6bf1e94736b90b84712638e5f3dbd7728355310dbd4f1684") //docker pull
+		return m, d, nil
 	}
 	return nil, "", client.HandleErrorResponse(resp)
 }

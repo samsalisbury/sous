@@ -165,11 +165,11 @@ func TestResolve(t *testing.T) {
 
 	// XXX Let's hope this is a temporary solution to a testing issue
 	// The problem is laid out in DCOPS-7625
-	for tries := 0; tries < 30; tries++ {
+	for tries := 0; tries < 3; tries++ {
 		err = sous.Resolve(ra, stateTwoThree)
 		if err != nil {
 			if !conflictRE.MatchString(err.Error()) {
-				assert.Fail(err.Error())
+				assert.FailNow(err.Error())
 			}
 			log.Printf("Singularity conflict - waiting for previous deploy to complete - try #%d", tries+1)
 			time.Sleep(1 * time.Second)
@@ -223,16 +223,17 @@ func findRepo(deps sous.Deployments, repo string) int {
 }
 
 func manifest(nc sous.ImageMapper, drepo, containerDir, sourceURL, version string) *sous.Manifest {
-	sv := sous.SourceVersion{
-		RepoURL:    sous.RepoURL(sourceURL),
-		RepoOffset: sous.RepoOffset(""),
-		Version:    semv.MustParse(version),
-	}
+	//	sv := sous.SourceVersion{
+	//		RepoURL:    sous.RepoURL(sourceURL),
+	//		RepoOffset: sous.RepoOffset(""),
+	//		Version:    semv.MustParse(version),
+	//	}
 
 	in := buildImageName(drepo, version)
 	buildAndPushContainer(containerDir, in)
 
-	nc.Insert(sv, in, "")
+	//nc.Insert(sv, in, "")
+	nc.GetSourceVersion(in)
 
 	return &sous.Manifest{
 		Source: sous.SourceLocation{
@@ -244,13 +245,11 @@ func manifest(nc sous.ImageMapper, drepo, containerDir, sourceURL, version strin
 		Deployments: sous.DeploySpecs{
 			singularityURL: sous.PartialDeploySpec{
 				DeployConfig: sous.DeployConfig{
-					Resources:    sous.Resources{}, //map[string]string
+					Resources:    sous.Resources{"cpus": "0.1", "memory": "100", "ports": "1"}, //map[string]string
 					Args:         []string{},
-					Env:          sous.Env{}, //map[s]s
+					Env:          sous.Env{"repo": drepo}, //map[s]s
 					NumInstances: 1,
-					Volumes: sous.Volumes{
-						&sous.Volume{"h", "c", sous.VolumeMode("RO")},
-					},
+					Volumes:      sous.Volumes{&sous.Volume{"h", "c", sous.VolumeMode("RO")}},
 				},
 				Version: semv.MustParse(version),
 				//clusterName: "it",
