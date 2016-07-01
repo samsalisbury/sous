@@ -10,8 +10,8 @@ type (
 	}
 	// BuildResult represents the result of a build made with a Buildpack.
 	BuildResult struct {
-		ImageID   string
-		ImageName string
-		Elapsed   time.Duration
+		ImageID                   string
+		VersionName, RevisionName string
+		Elapsed                   time.Duration
 	}
 )

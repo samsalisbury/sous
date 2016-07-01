@@ -104,7 +104,7 @@ func (sv *SourceVersion) RevID() string {
 
 // TagName returns the tag name for this SourceVersion
 func (sv *SourceVersion) TagName() string {
-	return sv.Version.Format("M.m.s-?")
+	return sv.Version.Format("M.m.p-?")
 }
 
 // CanonicalName returns a stable and consistent name for this SourceLocation
@@ -239,15 +239,24 @@ func SourceVersionFromLabels(labels map[string]string) (SourceVersion, error) {
 
 var stripRE = regexp.MustCompile("^([[:alpha:]]+://)?(github.com(/opentable)?)?")
 
-func (sl *SourceVersion) DockerImageName() string {
-	name := string(sl.RepoURL)
+func (sv *SourceVersion) dockerImageNameBase() string {
+	name := string(sv.RepoURL)
 
 	name = stripRE.ReplaceAllString(name, "")
-	if string(sl.RepoOffset) != "" {
-		name = strings.Join([]string{name, string(sl.RepoOffset)}, "/")
+	if string(sv.RepoOffset) != "" {
+		name = strings.Join([]string{name, string(sv.RepoOffset)}, "/")
 	}
-	name = strings.Join([]string{name, sl.Version.Format(`M.m.p-?`)}, ":")
 	return name
+}
+
+// DockerVersionName gives the (registry relative) repo name for a source version
+func (sv *SourceVersion) DockerVersionName() string {
+	return strings.Join([]string{sv.dockerImageNameBase(), sv.TagName()}, ":")
+}
+
+// DockerRevisionName gives the (registry relative) repo name for a source revision id
+func (sv *SourceVersion) DockerRevisionName() string {
+	return strings.Join([]string{sv.dockerImageNameBase(), sv.RevID()}, ":")
 }
 
 // DockerLabels computes a map of labels that should be applied to a container

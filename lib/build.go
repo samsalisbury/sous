@@ -98,10 +98,11 @@ func (b *Build) Start() (*BuildResult, error) {
 
 // ApplyMetadata applies container metadata etc. to a container
 func (b *Build) ApplyMetadata(br *BuildResult) error {
-	br.ImageName = b.ImageTag(b.Context.Version())
+	br.VersionName = b.VersionTag(b.Context.Version())
+	br.RevisionName = b.RevisionTag(b.Context.Version())
 	bf := bytes.Buffer{}
 
-	c := b.SourceShell.Cmd("docker", "build", "-t", br.ImageName, "-")
+	c := b.SourceShell.Cmd("docker", "build", "-t", br.VersionName, "-t", br.RevisionName, "-")
 	c.Stdin(&bf)
 
 	sv := b.Context.Version()
@@ -120,20 +121,30 @@ func (b *Build) ApplyMetadata(br *BuildResult) error {
 
 // PushToRegistry sends the built image to the registry
 func (b *Build) PushToRegistry(br *BuildResult) error {
-	return b.SourceShell.Run("docker", "push", br.ImageName)
+	ve := b.SourceShell.Run("docker", "push", br.VersionName)
+	re := b.SourceShell.Run("docker", "push", br.RevisionName)
+	if ve != nil {
+		return ve
+	}
+	return re
 }
 
 // RecordName inserts metadata about the newly built image into our local name cache
 func (b *Build) RecordName(br *BuildResult) error {
 	sv := b.Context.Version()
-	in := br.ImageName
+	in := br.VersionName
 	b.SourceShell.ConsoleEcho(fmt.Sprintf("[recording \"%s\" as the docker name for \"%s\"]", in, sv.String()))
 	return b.ImageMapper.Insert(sv, in, "")
 }
 
-// ImageTag computes an image tag from a SourceVersion
-func (b *Build) ImageTag(v SourceVersion) string {
-	return filepath.Join(b.DockerRegistryHost, v.DockerImageName())
+// VersionTag computes an image tag from a SourceVersion's version
+func (b *Build) VersionTag(v SourceVersion) string {
+	return filepath.Join(b.DockerRegistryHost, v.DockerVersionName())
+}
+
+// RevisionTag computes an image tag from a SourceVersion's revision id
+func (b *Build) RevisionTag(v SourceVersion) string {
+	return filepath.Join(b.DockerRegistryHost, v.DockerRevisionName())
 }
 
 // FindBuildpack finds the appropriate buildpack for a project

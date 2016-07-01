@@ -2,6 +2,7 @@ package sous
 
 import (
 	"log"
+	"os"
 	"regexp"
 	"testing"
 
@@ -21,6 +22,8 @@ func testSourceContext() *SourceContext {
 func TestBuild(t *testing.T) {
 	assert := assert.New(t)
 	log.SetFlags(log.Flags() | log.Lshortfile)
+	Log.Debug.SetOutput(os.Stderr)
+	Log.Vomit.SetOutput(os.Stderr)
 
 	repoName := "github.com/opentable/awesomeproject"
 	revision := "987654321987654312"
@@ -33,9 +36,10 @@ func TestBuild(t *testing.T) {
 	}
 
 	dockerID := "1234512345"
-	tagStr := "awesomeproject:1.2.3"
+	tagStr := "awesomeproject:"
 	dockerHost := "docker.wearenice.com"
-	imageName := dockerHost + "/" + tagStr
+	versionName := dockerHost + "/" + tagStr + version
+	revisionName := dockerHost + "/" + tagStr + revision
 
 	sourceDir := "/home/jenny-dev/project"
 	sourceFiles := map[string]string{
@@ -71,17 +75,18 @@ func TestBuild(t *testing.T) {
 	br, err := RunBuild(nc, "docker.wearenice.com", sourceCtx, sourceSh, scratchSh)
 	assert.NotNil(br)
 	assert.NoError(err)
-	assert.Equal(len(sourceSh.History), 3)
+	assert.Equal(len(sourceSh.History), 4)
 
 	reTail := `\s*(#.*)?$` //dummy commands include a #comment to that effect
 
 	assert.Regexp("^"+regexp.QuoteMeta("docker build .")+reTail, sourceSh.History[0])
 
-	assert.Regexp("^"+regexp.QuoteMeta("docker build -t "+imageName+" -")+reTail, sourceSh.History[1])
+	assert.Regexp("^"+regexp.QuoteMeta("docker build -t "+versionName+" -t "+revisionName+" - ")+reTail, sourceSh.History[1])
 	assert.Regexp("FROM "+dockerID, sourceSh.History[1].StdinString())
 	assert.Regexp("com.opentable.sous.repo_url=github.com/opentable/awesomeproject", sourceSh.History[1].StdinString())
 
-	assert.Regexp("^"+regexp.QuoteMeta("docker push "+imageName)+reTail, sourceSh.History[2])
+	assert.Regexp("^"+regexp.QuoteMeta("docker push "+versionName)+reTail, sourceSh.History[2])
+	assert.Regexp("^"+regexp.QuoteMeta("docker push "+revisionName)+reTail, sourceSh.History[3])
 	docker.FeedMetadata(docker_registry.Metadata{
 		Registry: dockerHost,
 		Labels: map[string]string{
@@ -91,10 +96,10 @@ func TestBuild(t *testing.T) {
 			DockerRepoLabel:     repoName,
 		},
 		Etag:          "digest",
-		CanonicalName: tagStr,
+		CanonicalName: versionName,
 		AllNames:      []string{tagStr},
 	})
-	sv, err := nc.GetSourceVersion(tagStr)
+	sv, err := nc.GetSourceVersion(versionName)
 	if assert.NoError(err) {
 		assert.Equal(repoName, string(sv.Repo()))
 	}
