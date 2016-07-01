@@ -26,7 +26,7 @@ const (
 // Equal is used to compare Volumes pairs
 func (vs Volumes) Equal(o Volumes) bool {
 	if len(vs) != len(o) {
-		Log.Debug.Print("Volume lengths differ")
+		Log.Vomit.Print("Volume lengths differ")
 		return false
 	}
 	c := append(Volumes{}, o...)
@@ -43,14 +43,14 @@ func (vs Volumes) Equal(o Volumes) bool {
 			}
 		}
 		if !m {
-			Log.Debug.Printf("missing volume: %v", v)
+			Log.Vomit.Printf("missing volume: %v", v)
 			return false
 		}
 	}
 	if len(c) == 0 {
 		return true
 	}
-	Log.Debug.Printf("missing volumes: %v", c)
+	Log.Vomit.Printf("missing volumes: %v", c)
 	return false
 }
 
