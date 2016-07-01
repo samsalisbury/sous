@@ -11,9 +11,11 @@ import (
 	"github.com/docker/distribution"
 	"github.com/docker/distribution/digest"
 	"github.com/docker/distribution/manifest/schema1"
+	"github.com/docker/distribution/manifest/schema2"
 	"github.com/docker/distribution/reference"
 	"github.com/docker/distribution/registry/api/v2"
 	"github.com/docker/distribution/registry/client"
+	"github.com/docker/distribution/registry/client/transport"
 	"golang.org/x/net/context"
 )
 
@@ -50,6 +52,7 @@ type (
 
 	// Metadata represents the descriptive data for a docker image
 	Metadata struct {
+		Registry      string
 		Labels        map[string]string
 		Etag          string
 		CanonicalName string
@@ -172,6 +175,14 @@ func (c *liveClient) registryForHostname(regHost string) (*registry, error) {
 	return reg, nil
 }
 
+type stubConfig struct {
+	Config stubImage `json:config`
+}
+
+type stubImage struct {
+	Labels map[string]string
+}
+
 // LabelsForTaggedImage makes a query to a docker registry an returns a map of the labels on that image.
 // Currently supports the v2.0 registry Schema v1 (not to be confused with Schema v2)
 // This shouldn't be a problem, since the second version of the schema isn't due until the summer
@@ -198,22 +209,21 @@ func (c *liveClient) metadataForImage(regHost string, ref reference.Named, etag 
 		return
 	}
 
-	mani, headers, err := rep.getManifestWithEtag(c.ctx, ref, etag)
+	mani, dg, headers, err := rep.getManifestWithEtag(c.ctx, ref, etag)
 	if err != nil {
 		return
 	}
 
 	md = Metadata{
+		Registry: regHost,
 		AllNames: make([]string, 2),
 		Labels:   make(map[string]string),
 		Etag:     headers.Get("Etag"),
 	}
 	md.AllNames[0] = ref.String()
-	dr, err := digestRef(ref, headers.Get("Docker-Content-Digest"))
-	if err == nil {
-		md.AllNames[1] = dr.String()
-		md.CanonicalName = dr.String()
-	}
+
+	md.CanonicalName = ref.Name() + "@" + dg.String()
+	md.AllNames[1] = md.CanonicalName
 
 	switch mani := mani.(type) {
 	case *schema1.SignedManifest:
@@ -232,8 +242,25 @@ func (c *liveClient) metadataForImage(regHost string, ref reference.Named, etag 
 				md.Labels[k] = v
 			}
 		}
+	case *schema2.DeserializedManifest:
+		var cj []byte
+		cj, err = rep.getBlob(c.ctx, ref, mani.Config.Digest)
+
+		var c stubConfig
+		err = json.Unmarshal(cj, &c)
+
+		if err != nil {
+			return
+		}
+
+		md.Labels = c.Config.Labels
 	default:
-		err = fmt.Errorf("Cripes! v2 manifest, which is awesome, but we have no idea how to parse it. Contact your nearest sous chef.")
+		// We shouldn't receive this, because we shouldn't include the Accept
+		// header that would trigger it. To begin work on this (because...?) start
+		// by adding schema2 as an import - it's a sibling of schema1. Schema2
+		// includes a 'config' key, which has a digest for a blob - see
+		// distribution/pull_v2 pullSchema2ImageConfig() (~ ln 677)
+		err = fmt.Errorf("Cripes! Don't know that format of manifest")
 	}
 
 	return
@@ -286,6 +313,28 @@ type tagsResponse struct {
 	Tags []string `json:"tags"`
 }
 
+func (r *registry) getBlob(ctx context.Context, name reference.Named, dgst digest.Digest) ([]byte, error) {
+	ref, err := reference.WithDigest(name, dgst)
+	if err != nil {
+		return nil, err
+	}
+	blobURL, err := r.ub.BuildBlobURL(ref)
+	if err != nil {
+		return nil, err
+	}
+
+	reader := transport.NewHTTPReadSeeker(r.client, blobURL,
+		func(resp *http.Response) error {
+			if resp.StatusCode == http.StatusNotFound {
+				return distribution.ErrBlobUnknown
+			}
+			return client.HandleErrorResponse(resp)
+		})
+	defer reader.Close()
+
+	return ioutil.ReadAll(reader)
+}
+
 func (r *registry) getRepoTags(ref reference.Named) (tags []string, err error) {
 	u, err := r.ub.BuildTagsURL(ref)
 	if err != nil {
@@ -320,47 +369,67 @@ func (r *registry) getRepoTags(ref reference.Named) (tags []string, err error) {
 	return tags, nil
 }
 
-func (r *registry) getManifestWithEtag(ctx context.Context, ref reference.Named, etag string) (distribution.Manifest, http.Header, error) {
-	var err error
-
+func (r *registry) getManifestWithEtag(ctx context.Context, ref reference.Named, etag string) (mf distribution.Manifest, d digest.Digest, h http.Header, err error) {
 	u, err := r.ub.BuildManifestURL(ref)
+
 	if err != nil {
-		return nil, http.Header{}, err
+		return
 	}
 
 	req, err := r.getRequest(u, etag)
 	if err != nil {
-		return nil, http.Header{}, err
+		return
 	}
 
 	resp, err := r.client.Do(req)
-	if err != nil {
-		return nil, http.Header{}, err
-	}
 	defer resp.Body.Close()
-	mf, err := r.manifestFromResponse(resp)
+
 	if err != nil {
-		return nil, http.Header{}, err
+		return
 	}
 
-	return mf, resp.Header, err
+	h = resp.Header
+	mf, d, err = r.manifestFromResponse(resp)
+	return
 }
 
-func (r *registry) manifestFromResponse(resp *http.Response) (distribution.Manifest, error) {
+func (r *registry) manifestFromResponse(resp *http.Response) (distribution.Manifest, digest.Digest, error) {
 	if resp.StatusCode == http.StatusNotModified {
-		return nil, distribution.ErrManifestNotModified
+		return nil, "", distribution.ErrManifestNotModified
 	} else if client.SuccessStatus(resp.StatusCode) {
 		mt := resp.Header.Get("Content-Type")
 		body, err := ioutil.ReadAll(resp.Body)
 
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
 		m, _, err := distribution.UnmarshalManifest(mt, body)
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
-		return m, nil
+
+		var d digest.Digest
+		switch v := m.(type) {
+		case *schema1.SignedManifest:
+			//log.Print(string(v.Canonical))
+			d = digest.FromBytes(v.Canonical)
+		case *schema2.DeserializedManifest:
+			_, pl, err := m.Payload()
+			if err != nil {
+				return nil, "", err
+			}
+
+			//log.Print(string(pl))
+			d = digest.FromBytes(pl)
+		default:
+			return nil, "", fmt.Errorf("unsupported manifest format")
+
+		}
+		//		log.Printf("%T", m)
+		//		log.Print("Calced: ", d)
+		//		log.Print("Header: ", resp.Header.Get("Docker-Content-Digest"))
+		//		log.Print("Docker: sha256:d3d75a393555a8eb6bf1e94736b90b84712638e5f3dbd7728355310dbd4f1684") //docker pull
+		return m, d, nil
 	}
-	return nil, client.HandleErrorResponse(resp)
+	return nil, "", client.HandleErrorResponse(resp)
 }

@@ -110,25 +110,6 @@ type (
 	// Env is a mapping of environment variable name to value, used to provision
 	// single instances of an application.
 	Env map[string]string
-
-	// Volume describes a deployment's volume mapping
-	Volume struct {
-		Host, Container string
-		Mode            VolumeMode
-	}
-
-	// Volumes represents a list of volume mappings
-	Volumes []*Volume
-
-	//VolumeMode is either readwrite or readonly
-	VolumeMode string
-)
-
-const (
-	// ReadOnly specifies that a volume can only be read
-	ReadOnly VolumeMode = "RO"
-	// ReadWrite specifies that the container can write to the volume
-	ReadWrite VolumeMode = "RW"
 )
 
 // FileLocation returns the path that the manifest should be saved to
@@ -155,33 +136,8 @@ const (
 
 // Equal is used to compare DeployConfigs
 func (dc *DeployConfig) Equal(o DeployConfig) bool {
-	Log.Debug.Printf("%+ v ?= %+ v", dc, o)
+	Log.Vomit.Printf("%+ v ?= %+ v", dc, o)
 	return (dc.NumInstances == o.NumInstances && dc.Env.Equal(o.Env) && dc.Resources.Equal(o.Resources) && dc.Volumes.Equal(o.Volumes))
-}
-
-// Equal is used to compare Volumes pairs
-func (vs Volumes) Equal(o Volumes) bool {
-	if len(vs) != len(o) {
-		return false
-	}
-	c := append(Volumes{}, o...)
-	for _, v := range vs {
-		for i, ov := range c {
-			if v == ov {
-				c[i] = c[len(c)-1]
-				c = c[:len(c)-1]
-			}
-		}
-	}
-	return len(c) == 0
-}
-
-func (vs Volumes) String() string {
-	res := "["
-	for _, v := range vs {
-		res += fmt.Sprintf("%v,", v)
-	}
-	return res + "]"
 }
 
 // SingMap produces a dtoMap appropriate for building a Singularity
@@ -238,24 +194,24 @@ func (r Resources) ports() int32 {
 
 // Equal checks equivalence between resource maps
 func (r Resources) Equal(o Resources) bool {
-	Log.Debug.Printf("Comparing resources: %+ v ?= %+ v", r, o)
+	Log.Vomit.Printf("Comparing resources: %+ v ?= %+ v", r, o)
 	if len(r) != len(o) {
-		Log.Debug.Println("Lengths differ")
+		Log.Vomit.Println("Lengths differ")
 		return false
 	}
 
 	if r.ports() != o.ports() {
-		Log.Debug.Println("Ports differ")
+		Log.Vomit.Println("Ports differ")
 		return false
 	}
 
 	if math.Abs(r.cpus()-o.cpus()) > 0.001 {
-		Log.Debug.Println("Cpus differ")
+		Log.Vomit.Println("Cpus differ")
 		return false
 	}
 
 	if math.Abs(r.memory()-o.memory()) > 0.001 {
-		Log.Debug.Println("Memory differ")
+		Log.Vomit.Println("Memory differ")
 		return false
 	}
 

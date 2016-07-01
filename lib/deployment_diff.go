@@ -1,5 +1,7 @@
 package sous
 
+import "strings"
+
 type (
 	// DeploymentPair is a pair of deployments that represent a "before and after" style relationship
 	DeploymentPair struct {
@@ -84,7 +86,11 @@ func (d Deployments) Diff(other Deployments) DiffChans {
 }
 
 func newDiffer(intended Deployments) *differ {
-	Log.Debug.Print("Computing diff from:", intended)
+	ds := []string{"Computing diff from:"}
+	for _, e := range intended {
+		ds = append(ds, e.String())
+	}
+	Log.Debug.Print(strings.Join(ds, "\n    "))
 
 	startMap := make(map[DepName]*Deployment)
 	for _, dep := range intended {
@@ -97,7 +103,12 @@ func newDiffer(intended Deployments) *differ {
 }
 
 func (d *differ) diff(existing Deployments) {
-	Log.Debug.Print("Computing diff to: ", existing)
+	ds := []string{"Computing diff to:"}
+	for _, e := range existing {
+		ds = append(ds, e.String())
+	}
+	Log.Debug.Print(strings.Join(ds, "\n    "))
+
 	for i := range existing {
 		name := existing[i].Name()
 		if indep, ok := d.from[name]; ok {

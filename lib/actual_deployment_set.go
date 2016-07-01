@@ -25,6 +25,7 @@ type (
 	sRequest   *dtos.SingularityRequest
 	sDepMarker *dtos.SingularityDeployMarker
 
+	// SingReq captures a request made to singularity with its initial response
 	SingReq struct {
 		SourceURL string
 		Sing      *singularity.Client
@@ -59,6 +60,7 @@ func (sc *SetCollector) GetRunningDeployment(singUrls []string) (deps Deployment
 	singWait.Add(len(singUrls))
 	for _, url := range singUrls {
 		sing := singularity.NewClient(url)
+		//sing.Debug = true
 		sings[url] = sing
 		go singPipeline(sing, &depWait, &singWait, reqCh, errCh)
 	}
@@ -77,12 +79,12 @@ func (sc *SetCollector) GetRunningDeployment(singUrls []string) (deps Deployment
 	for {
 		select {
 		case dep := <-depCh:
-			Log.Debug.Print(dep)
 			deps = append(deps, dep)
+			Log.Debug.Printf("Deployment #%d: %+v", len(deps), dep)
 			depWait.Done()
 		case err = <-errCh:
 			if _, ok := err.(malformedResponse); ok {
-				Log.Info.Print(err)
+				Log.Notice.Print(err)
 				depWait.Done()
 			} else {
 				retried := retries.maybe(err, reqCh)
@@ -153,10 +155,12 @@ func singPipeline(
 	defer catchAndSend(fmt.Sprintf("get requests: %s", client), errs)
 	rs, err := getRequestsFromSingularity(client)
 	if err != nil {
+		Log.Vomit.Print(err)
 		errs <- err
 		return
 	}
 	for _, r := range rs {
+		Log.Vomit.Print("Req: ", r)
 		dw.Add(1)
 		reqs <- r
 	}
@@ -192,7 +196,6 @@ func depPipeline(
 			if err != nil {
 				errCh <- err
 			} else {
-				Log.Debug.Print(dep)
 				depCh <- dep
 			}
 		}(cl, req)
@@ -200,12 +203,14 @@ func depPipeline(
 }
 
 func assembleDeployment(cl RectificationClient, req SingReq) (*Deployment, error) {
+	Log.Vomit.Print("Assembling from: ", req)
 	uc := NewDeploymentBuilder(cl, req)
 	err := uc.CompleteConstruction()
 	if err != nil {
+		Log.Vomit.Print(err)
 		return nil, err
 	}
 
-	Log.Debug.Print(uc)
+	Log.Vomit.Printf("Collected deployment: %v", uc)
 	return &uc.Target, nil
 }

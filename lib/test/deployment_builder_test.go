@@ -36,7 +36,7 @@ func TestBuildDeployments(t *testing.T) {
 	ra := sous.NewRectiAgent(nc)
 
 	singCl := singularity.NewClient(singularityURL)
-	singCl.Debug = true
+	//singCl.Debug = true
 
 	sr, err := singReqDep(
 		singularityURL,

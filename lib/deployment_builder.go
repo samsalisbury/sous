@@ -139,10 +139,10 @@ func (uc *deploymentBuilder) retrieveImageLabels() error {
 
 	// !!! HTTP request
 	labels, err := uc.rectification.ImageLabels(imageName)
-	Log.Debug.Print("Labels: ", labels, err)
 	if err != nil {
 		return malformedResponse{err.Error()}
 	}
+	Log.Vomit.Print("Labels: ", labels)
 
 	uc.Target.SourceVersion, err = SourceVersionFromLabels(labels)
 	if err != nil {
@@ -154,7 +154,7 @@ func (uc *deploymentBuilder) retrieveImageLabels() error {
 
 func (uc *deploymentBuilder) unpackDeployConfig() error {
 	uc.Target.Env = uc.deploy.Env
-	Log.Debug.Printf("%+v", uc.deploy.Env)
+	Log.Vomit.Printf("Env %+v", uc.deploy.Env)
 	if uc.Target.Env == nil {
 		uc.Target.Env = make(map[string]string)
 	}
@@ -179,7 +179,7 @@ func (uc *deploymentBuilder) unpackDeployConfig() error {
 				Mode:      VolumeMode(v.Mode),
 			})
 	}
-	Log.Debug.Printf("%+v", uc.Target.DeployConfig.Volumes)
+	Log.Vomit.Printf("Volumes %+v", uc.Target.DeployConfig.Volumes)
 	if len(uc.Target.DeployConfig.Volumes) > 0 {
 		Log.Debug.Printf("%+v", uc.Target.DeployConfig.Volumes[0])
 	}
