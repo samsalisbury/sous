@@ -21,13 +21,14 @@ Rectify(dChans)
 
 type (
 	rectifier struct {
-		sing RectificationClient
+		Client RectificationClient
 	}
 
 	// RectificationClient abstracts the raw interactions with Singularity.
 	// The methods on this interface are tightly bound to the semantics of Singularity itself -
 	// it's recommended to interact with the Sous Recify function or the recitification driver
 	// rather than with implentations of this interface directly.
+	// TODO: RectificationClient leaks Singularity concepts, make it so it doesn't.
 	RectificationClient interface {
 		// Deploy creates a new deploy on a particular requeust
 		Deploy(cluster, depID, reqID, dockerImage string, r Resources, e Env, vols Volumes) error
@@ -48,7 +49,8 @@ type (
 		ImageLabels(imageName string) (labels map[string]string, err error)
 	}
 
-	dtoMap map[string]interface{}
+	// DTOMap is shorthand for map[string]interface{}
+	DTOMap map[string]interface{}
 
 	// CreateError is returned when there's an error trying to create a deployment
 	CreateError struct {
@@ -120,9 +122,9 @@ func (e *ChangeError) IntendedDeployment() *Deployment {
 }
 
 // Rectify takes a DiffChans and issues the commands to the infrastructure to reconcile the differences
-func Rectify(dcs DiffChans, s RectificationClient) chan RectificationError {
+func Rectify(dcs DiffChans, rc RectificationClient) chan RectificationError {
 	errs := make(chan RectificationError)
-	rect := rectifier{s}
+	rect := rectifier{rc}
 	wg := &sync.WaitGroup{}
 	wg.Add(3)
 	go func() { rect.rectifyCreates(dcs.Created, errs); wg.Done() }()
@@ -135,7 +137,7 @@ func Rectify(dcs DiffChans, s RectificationClient) chan RectificationError {
 
 func (r *rectifier) rectifyCreates(cc chan *Deployment, errs chan<- RectificationError) {
 	for d := range cc {
-		name, err := r.sing.ImageName(d)
+		name, err := r.Client.ImageName(d)
 		if err != nil {
 			// log.Printf("% +v", d)
 			errs <- &CreateError{Deployment: d, Err: err}
@@ -143,14 +145,14 @@ func (r *rectifier) rectifyCreates(cc chan *Deployment, errs chan<- Rectificatio
 		}
 
 		reqID := computeRequestID(d)
-		err = r.sing.PostRequest(d.Cluster, reqID, d.NumInstances)
+		err = r.Client.PostRequest(d.Cluster, reqID, d.NumInstances)
 		if err != nil {
 			// log.Printf("%T %#v", d, d)
 			errs <- &CreateError{Deployment: d, Err: err}
 			continue
 		}
 
-		err = r.sing.Deploy(d.Cluster, newDepID(), reqID, name, d.Resources, d.Env, d.DeployConfig.Volumes)
+		err = r.Client.Deploy(d.Cluster, newDepID(), reqID, name, d.Resources, d.Env, d.DeployConfig.Volumes)
 		if err != nil {
 			// log.Printf("% +v", d)
 			errs <- &CreateError{Deployment: d, Err: err}
@@ -161,7 +163,7 @@ func (r *rectifier) rectifyCreates(cc chan *Deployment, errs chan<- Rectificatio
 
 func (r *rectifier) rectifyDeletes(dc chan *Deployment, errs chan<- RectificationError) {
 	for d := range dc {
-		err := r.sing.DeleteRequest(d.Cluster, computeRequestID(d), "deleting request for removed manifest")
+		err := r.Client.DeleteRequest(d.Cluster, computeRequestID(d), "deleting request for removed manifest")
 		if err != nil {
 			errs <- &DeleteError{Deployment: d, Err: err}
 			continue
@@ -175,7 +177,7 @@ func (r *rectifier) rectifyModifys(
 		Log.Debug.Printf("Rectifying modify: \n  %+ v \n    =>  \n  %+ v", pair.prior, pair.post)
 		if r.changesReq(pair) {
 			Log.Debug.Printf("Scaling...")
-			err := r.sing.Scale(
+			err := r.Client.Scale(
 				pair.post.Cluster,
 				computeRequestID(pair.post),
 				pair.post.NumInstances,
@@ -188,13 +190,13 @@ func (r *rectifier) rectifyModifys(
 
 		if changesDep(pair) {
 			Log.Debug.Printf("Deploying...")
-			name, err := r.sing.ImageName(pair.post)
+			name, err := r.Client.ImageName(pair.post)
 			if err != nil {
 				errs <- &ChangeError{Deployments: pair, Err: err}
 				continue
 			}
 
-			err = r.sing.Deploy(
+			err = r.Client.Deploy(
 				pair.post.Cluster,
 				newDepID(),
 				computeRequestID(pair.prior),

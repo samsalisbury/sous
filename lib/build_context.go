@@ -16,6 +16,7 @@ type (
 		User    user.User
 		Changes Changes
 	}
+
 	// ScratchContext represents an isolated copy of a project's source code
 	// somewhere on the host machine running Sous.
 	ScratchContext struct {
@@ -27,6 +28,7 @@ type (
 	Machine struct {
 		Host, FullHost string
 	}
+
 	// Changes represents a set of changes that have happened since this project
 	// was last built on the current machine by the current user.
 	Changes struct {

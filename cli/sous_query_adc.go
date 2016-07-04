@@ -11,6 +11,7 @@ import (
 
 // SousQueryAdc is the description of the `sous query adc` command
 type SousQueryAdc struct {
+	Deployer     sous.Deployer
 	Config       LocalSousConfig
 	DockerClient LocalDockerClient
 	Sous         *Sous
@@ -43,13 +44,7 @@ func (sb *SousQueryAdc) Execute(args []string) cmdr.Result {
 		return EnsureErrorResult(err)
 	}
 
-	nc := sous.NewNameCache(
-		sb.DockerClient,
-		sb.Config.DatabaseDriver,
-		sb.Config.DatabaseConnection)
-	ra := sous.NewRectiAgent(nc)
-	sc := sous.NewSetCollector(ra)
-	ads, err := sc.GetRunningDeployment(state.BaseURLs())
+	ads, err := sb.Deployer.GetRunningDeployment(state.BaseURLs())
 	if err != nil {
 		return EnsureErrorResult(err)
 	}

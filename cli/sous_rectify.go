@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/opentable/sous/ext/singularity"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
 )
@@ -13,6 +14,8 @@ import (
 type SousRectify struct {
 	Config       LocalSousConfig
 	DockerClient LocalDockerClient
+	Builder      sous.Builder
+	Deployer     sous.Deployer
 	flags        struct {
 		dryrun,
 		manifest string
@@ -44,8 +47,8 @@ func (sr *SousRectify) AddFlags(fs *flag.FlagSet) {
 
 // Execute fulfils the cmdr.Executor interface
 func (sr *SousRectify) Execute(args []string) cmdr.Result {
-	var nc sous.ImageMapper
-	var rc sous.RectificationClient
+	var nc sous.Builder
+	var rc sous.Deployer
 
 	if len(args) < 1 {
 		return UsageErrorf("sous rectify requires a directory to load the intended deployment from")
@@ -53,20 +56,17 @@ func (sr *SousRectify) Execute(args []string) cmdr.Result {
 	dir := args[0]
 
 	if sr.flags.dryrun == "both" || sr.flags.dryrun == "registry" {
-		nc = sous.NewDummyNameCache()
+		nc = singularity.NewDummyNameCache()
 	} else {
-		nc = sous.NewNameCache(
-			sr.DockerClient,
-			sr.Config.DatabaseDriver,
-			sr.Config.DatabaseConnection)
+		nc = sr.Builder
 	}
 
 	if sr.flags.dryrun == "both" || sr.flags.dryrun == "scheduler" {
-		drc := sous.NewDummyRectificationClient(nc)
+		drc := singularity.NewDummyRectificationClient(nc)
 		drc.SetLogger(log.New(os.Stdout, "rectify: ", 0))
 		rc = drc
 	} else {
-		rc = sous.NewRectiAgent(nc)
+		rc = sr.Deployer
 	}
 	var predicate sous.DeploymentPredicate
 	if sr.flags.manifest != "" {

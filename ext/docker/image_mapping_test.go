@@ -1,4 +1,4 @@
-package sous
+package docker
 
 import (
 	"log"
@@ -47,7 +47,7 @@ func TestRoundTrip(t *testing.T) {
 	cn = base + "@" + digest
 	dc.FeedMetadata(docker_registry.Metadata{
 		Registry:      host,
-		Labels:        newSV.DockerLabels(),
+		Labels:        DockerLabels(newSV),
 		Etag:          digest,
 		CanonicalName: cn,
 		AllNames:      []string{cn, in},
@@ -92,7 +92,7 @@ func TestHarvesting(t *testing.T) {
 
 	dc.FeedMetadata(docker_registry.Metadata{
 		Registry:      host,
-		Labels:        sv.DockerLabels(),
+		Labels:        DockerLabels(sv),
 		Etag:          digest,
 		CanonicalName: cn,
 		AllNames:      []string{cn, in},
@@ -109,7 +109,7 @@ func TestHarvesting(t *testing.T) {
 	digest = "sha256:abcdefabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdefffffffff"
 	dc.FeedMetadata(docker_registry.Metadata{
 		Registry:      host,
-		Labels:        sisterSV.DockerLabels(),
+		Labels:        DockerLabels(sisterSV),
 		Etag:          digest,
 		CanonicalName: cn,
 		AllNames:      []string{cn, in},

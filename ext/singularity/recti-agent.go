@@ -1,32 +1,44 @@
-package sous
+package singularity
 
 import (
+	"regexp"
 	"sync"
 
 	"github.com/opentable/go-singularity"
 	"github.com/opentable/go-singularity/dtos"
+	"github.com/opentable/sous/ext/docker"
+	"github.com/opentable/sous/lib"
 	"github.com/satori/go.uuid"
 )
+
+// TODO: notInIDRE is copied from sous/lib. It should only live in this package.
+var notInIDRE = regexp.MustCompile(`[-/:]`)
+
+// TODO: idify is copied from sous/lib. It should only live in this package.
+func idify(in string) string {
+	return notInIDRE.ReplaceAllString(in, "")
+}
 
 // RectiAgent is an implementation of the RectificationClient interface
 type RectiAgent struct {
 	singClients map[string]*singularity.Client
 	sync.RWMutex
-	nameCache ImageMapper
+	nameCache sous.Builder
 }
 
 // NewRectiAgent returns a set-up RectiAgent
-func NewRectiAgent(nc ImageMapper) *RectiAgent {
+func NewRectiAgent(b sous.Builder) *RectiAgent {
 	return &RectiAgent{
 		singClients: make(map[string]*singularity.Client),
-		nameCache:   nc,
+		nameCache:   b,
 	}
 }
 
 // Deploy sends requests to Singularity to make a deployment happen
-func (ra *RectiAgent) Deploy(cluster, depID, reqID, dockerImage string, r Resources, e Env, vols Volumes) error {
+func (ra *RectiAgent) Deploy(cluster, depID, reqID, dockerImage string,
+	r sous.Resources, e sous.Env, vols sous.Volumes) error {
 	Log.Debug.Printf("Deploying instance %s %s %s %s %v %v", cluster, depID, reqID, dockerImage, r, e)
-	dockerInfo, err := dtos.LoadMap(&dtos.SingularityDockerInfo{}, dtoMap{
+	dockerInfo, err := dtos.LoadMap(&dtos.SingularityDockerInfo{}, sous.DTOMap{
 		"Image": dockerImage,
 	})
 	if err != nil {
@@ -40,7 +52,7 @@ func (ra *RectiAgent) Deploy(cluster, depID, reqID, dockerImage string, r Resour
 
 	vs := dtos.SingularityVolumeList{}
 	for _, v := range vols {
-		sv, err := dtos.LoadMap(&dtos.SingularityVolume{}, dtoMap{
+		sv, err := dtos.LoadMap(&dtos.SingularityVolume{}, sous.DTOMap{
 			"ContainerPath": v.Container,
 			"HostPath":      v.Host,
 			"Mode":          dtos.SingularityVolumeSingularityDockerVolumeMode(string(v.Mode)),
@@ -51,7 +63,7 @@ func (ra *RectiAgent) Deploy(cluster, depID, reqID, dockerImage string, r Resour
 		vs = append(vs, sv.(*dtos.SingularityVolume))
 	}
 
-	ci, err := dtos.LoadMap(&dtos.SingularityContainerInfo{}, dtoMap{
+	ci, err := dtos.LoadMap(&dtos.SingularityContainerInfo{}, sous.DTOMap{
 		"Type":    dtos.SingularityContainerInfoSingularityContainerTypeDOCKER,
 		"Docker":  dockerInfo,
 		"Volumes": vs,
@@ -60,7 +72,7 @@ func (ra *RectiAgent) Deploy(cluster, depID, reqID, dockerImage string, r Resour
 		return err
 	}
 
-	dep, err := dtos.LoadMap(&dtos.SingularityDeploy{}, dtoMap{
+	dep, err := dtos.LoadMap(&dtos.SingularityDeploy{}, sous.DTOMap{
 		"Id":            idify(uuid.NewV4().String()),
 		"RequestId":     reqID,
 		"Resources":     res,
@@ -71,7 +83,7 @@ func (ra *RectiAgent) Deploy(cluster, depID, reqID, dockerImage string, r Resour
 	Log.Debug.Printf("  Container: %+ v", ci)
 	Log.Debug.Printf("  Docker: %+ v", dockerInfo)
 
-	depReq, err := dtos.LoadMap(&dtos.SingularityDeployRequest{}, dtoMap{"Deploy": dep})
+	depReq, err := dtos.LoadMap(&dtos.SingularityDeployRequest{}, sous.DTOMap{"Deploy": dep})
 	if err != nil {
 		return err
 	}
@@ -84,7 +96,7 @@ func (ra *RectiAgent) Deploy(cluster, depID, reqID, dockerImage string, r Resour
 // PostRequest sends requests to Singularity to create a new Request
 func (ra *RectiAgent) PostRequest(cluster, reqID string, instanceCount int) error {
 	Log.Debug.Printf("Creating application %s %s %d", cluster, reqID, instanceCount)
-	req, err := dtos.LoadMap(&dtos.SingularityRequest{}, dtoMap{
+	req, err := dtos.LoadMap(&dtos.SingularityRequest{}, sous.DTOMap{
 		"Id":          reqID,
 		"RequestType": dtos.SingularityRequestRequestTypeSERVICE,
 		"Instances":   int32(instanceCount),
@@ -102,7 +114,7 @@ func (ra *RectiAgent) PostRequest(cluster, reqID string, instanceCount int) erro
 // DeleteRequest sends a request to Singularity to delete a request
 func (ra *RectiAgent) DeleteRequest(cluster, reqID, message string) error {
 	Log.Debug.Printf("Deleting application %s %s %s", cluster, reqID, message)
-	req, err := dtos.LoadMap(&dtos.SingularityDeleteRequestRequest{}, dtoMap{
+	req, err := dtos.LoadMap(&dtos.SingularityDeleteRequestRequest{}, sous.DTOMap{
 		"Message": "Sous: " + message,
 	})
 
@@ -116,7 +128,7 @@ func (ra *RectiAgent) DeleteRequest(cluster, reqID, message string) error {
 // running for a given Request
 func (ra *RectiAgent) Scale(cluster, reqID string, instanceCount int, message string) error {
 	Log.Debug.Printf("Scaling %s %s %d %s", cluster, reqID, instanceCount, message)
-	sr, err := dtos.LoadMap(&dtos.SingularityScaleRequest{}, dtoMap{
+	sr, err := dtos.LoadMap(&dtos.SingularityScaleRequest{}, sous.DTOMap{
 		"ActionId": idify(uuid.NewV4().String()), // not positive this is appropriate
 		// omitting DurationMillis - bears discussion
 		"Instances":        int32(instanceCount),
@@ -130,18 +142,23 @@ func (ra *RectiAgent) Scale(cluster, reqID string, instanceCount int, message st
 }
 
 // ImageName gets the container image name for a given deployment
-func (ra *RectiAgent) ImageName(d *Deployment) (string, error) {
-	return ra.nameCache.GetImageName(d.SourceVersion)
+func (ra *RectiAgent) ImageName(d *sous.Deployment) (string, error) {
+	a, err := ra.nameCache.GetArtifact(d.SourceVersion)
+	if err != nil {
+		return "", err
+	}
+	return a.Name, nil
 }
 
-// ImageLabels gets the labels for an image name
+// ImageLabels gets the labels for an image name.
 func (ra *RectiAgent) ImageLabels(in string) (map[string]string, error) {
-	sv, err := ra.nameCache.GetSourceVersion(in)
+	a := &sous.BuildArtifact{Name: in}
+	sv, err := ra.nameCache.GetSourceVersion(a)
 	if err != nil {
 		return map[string]string{}, err
 	}
 
-	return sv.DockerLabels(), nil
+	return docker.DockerLabels(sv), nil
 }
 
 func (ra *RectiAgent) getSingularityClient(url string) (*singularity.Client, bool) {

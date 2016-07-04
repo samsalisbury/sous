@@ -1,9 +1,11 @@
-package sous
+package docker
 
 import (
 	"fmt"
 	"regexp"
 	"time"
+
+	"github.com/opentable/sous/lib"
 )
 
 type (
@@ -21,7 +23,7 @@ func NewDockerfileBuildpack() *DockerfileBuildpack {
 var successfulBuildRE = regexp.MustCompile(`Successfully built (\w+)`)
 
 // Build implements Buildpack.Build
-func (d *DockerfileBuildpack) Build(c *BuildContext) (*BuildResult, error) {
+func (d *DockerfileBuildpack) Build(c *sous.BuildContext) (*sous.BuildResult, error) {
 	if !c.Sh.Exists("Dockerfile") {
 		return nil, fmt.Errorf("Dockerfile does not exist")
 	}
@@ -37,10 +39,17 @@ func (d *DockerfileBuildpack) Build(c *BuildContext) (*BuildResult, error) {
 		return nil, fmt.Errorf("Couldn't find container id in:\n%s", output)
 	}
 
-	return &BuildResult{
+	return &sous.BuildResult{
 		ImageID: match[1],
 		Elapsed: time.Since(start),
 	}, nil
+}
+
+func (d *DockerfileBuildpack) Detect(c *sous.BuildContext) (*sous.DetectResult, error) {
+	if !c.Sh.Exists("Dockerfile") {
+		return nil, fmt.Errorf("Dockerfile does not exist")
+	}
+	return &sous.DetectResult{Compatible: true}, nil
 }
 
 /*

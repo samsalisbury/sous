@@ -1,4 +1,4 @@
-package sous
+package singularity
 
 import (
 	"fmt"
@@ -8,6 +8,7 @@ import (
 
 	"github.com/opentable/go-singularity"
 	"github.com/opentable/go-singularity/dtos"
+	"github.com/opentable/sous/lib"
 )
 
 // ReqsPerServer limits the number of simultaneous number of requests made
@@ -18,7 +19,7 @@ type (
 	// SetCollector is the agent responsible for collecting sets of deployments
 	// For now, it can collect the actual running set
 	SetCollector struct {
-		rectClient RectificationClient
+		rectClient sous.RectificationClient
 	}
 
 	sDeploy    *dtos.SingularityDeploy
@@ -36,19 +37,19 @@ type (
 )
 
 // NewSetCollector returns a new set collector
-func NewSetCollector(rc RectificationClient) *SetCollector {
+func NewSetCollector(rc sous.RectificationClient) *SetCollector {
 	return &SetCollector{rc}
 }
 
 // GetRunningDeployment collects data from the Singularity clusters and
 // returns a list of actual deployments
-func (sc *SetCollector) GetRunningDeployment(singUrls []string) (deps Deployments, err error) {
+func (sc *SetCollector) GetRunningDeployment(singUrls []string) (deps sous.Deployments, err error) {
 	retries := make(retryCounter)
 	errCh := make(chan error)
-	deps = make(Deployments, 0)
+	deps = make(sous.Deployments, 0)
 	sings := make(map[string]*singularity.Client)
 	reqCh := make(chan SingReq, len(singUrls)*ReqsPerServer)
-	depCh := make(chan *Deployment, ReqsPerServer)
+	depCh := make(chan *sous.Deployment, ReqsPerServer)
 
 	defer close(depCh)
 	// XXX The intention here was to use something like the gotools context to
@@ -181,14 +182,14 @@ func getRequestsFromSingularity(client *singularity.Client) ([]SingReq, error) {
 }
 
 func depPipeline(
-	cl RectificationClient,
+	cl sous.RectificationClient,
 	reqCh chan SingReq,
-	depCh chan *Deployment,
+	depCh chan *sous.Deployment,
 	errCh chan error,
 ) {
 	defer catchAndSend("dependency building", errCh)
 	for req := range reqCh {
-		go func(cl RectificationClient, req SingReq) {
+		go func(cl sous.RectificationClient, req SingReq) {
 			defer catchAndSend(fmt.Sprintf("dep from req %s", req.SourceURL), errCh)
 
 			dep, err := assembleDeployment(cl, req)
@@ -202,7 +203,7 @@ func depPipeline(
 	}
 }
 
-func assembleDeployment(cl RectificationClient, req SingReq) (*Deployment, error) {
+func assembleDeployment(cl sous.RectificationClient, req SingReq) (*sous.Deployment, error) {
 	Log.Vomit.Print("Assembling from: ", req)
 	uc := NewDeploymentBuilder(cl, req)
 	err := uc.CompleteConstruction()

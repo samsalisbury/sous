@@ -1,7 +1,8 @@
 package cli
 
 import (
-	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/ext/docker"
+	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
 )
 
@@ -14,6 +15,8 @@ type SousBuild struct {
 	WDShell       LocalWorkDirShell
 	ScratchShell  ScratchDirShell
 	SourceContext *sous.SourceContext
+	BuildContext  *sous.BuildContext
+	Builder       sous.Builder
 	flags         struct {
 		target              string
 		rebuild, rebuildAll bool
@@ -43,14 +46,22 @@ func (sb *SousBuild) Execute(args []string) cmdr.Result {
 		}
 	}
 
-	nc := sous.NewNameCache(sb.DockerClient, sb.Config.DatabaseDriver, sb.Config.DatabaseConnection)
+	bp := docker.NewDockerfileBuildpack()
+	dr, err := bp.Detect(sb.BuildContext)
+	if err != nil {
+		return cmdr.EnsureErrorResult(err)
+	}
 
-	_, err := sous.RunBuild(nc, "docker.otenv.com",
-		sb.SourceContext, sb.WDShell, sb.ScratchShell)
+	result, err := sb.Builder.Build(sb.BuildContext, bp, dr)
+
+	//nc := sous.NewNameCache(sb.DockerClient, sb.Config.DatabaseDriver, sb.Config.DatabaseConnection)
+
+	//_, err := sous.RunBuild(nc, "docker.otenv.com",
+	//	sb.SourceContext, sb.WDShell, sb.ScratchShell)
 	if err != nil {
 		return cmdr.EnsureErrorResult(err)
 	}
 
 	//	return Success(result)
-	return Success()
+	return Success(result)
 }

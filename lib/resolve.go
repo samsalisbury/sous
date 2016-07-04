@@ -28,13 +28,13 @@ func (re *ResolveErrors) Error() string {
 // appropriate components to compute the intended deployment set, collect the
 // actual set, compute the diffs and then issue the commands to rectify those
 // differences.
-func Resolve(rc RectificationClient, state State) error {
-	return ResolveFilteredDeployments(rc, state, nil)
+func Resolve(d Deployer, state State) error {
+	return ResolveFilteredDeployments(d, state, nil)
 }
 
 // ResolveFilteredDeployments is similar to Resolve, but also accepts a
 // predicate to filter those deployments. See Deploments.Filter for details.
-func ResolveFilteredDeployments(rc RectificationClient, state State, pr DeploymentPredicate) error {
+func ResolveFilteredDeployments(deployer Deployer, state State, pr DeploymentPredicate) error {
 	Log.Debug.Print("Loading GDM")
 	gdm, err := state.Deployments()
 	gdm = gdm.Filter(pr)
@@ -44,16 +44,14 @@ func ResolveFilteredDeployments(rc RectificationClient, state State, pr Deployme
 
 	Log.Debug.Print("Loaded. Collecting ADC...")
 
-	sc := NewSetCollector(rc)
-	ads, err := sc.GetRunningDeployment(state.BaseURLs())
+	ads, err := deployer.GetRunningDeployment(state.BaseURLs())
 	if err != nil {
 		return err
 	}
 
 	Log.Debug.Print("Collected. Checking readiness to deploy...")
 
-	err = guardImageNamesKnown(rc, gdm)
-	if err != nil {
+	if err := guardImageNamesKnown(deployer, gdm); err != nil {
 		return err
 	}
 
@@ -61,7 +59,7 @@ func ResolveFilteredDeployments(rc RectificationClient, state State, pr Deployme
 
 	differ := ads.Diff(gdm)
 
-	errs := Rectify(differ, rc)
+	errs := Rectify(differ, deployer)
 
 	re := &ResolveErrors{Causes: []error{}}
 	for err := range errs {
@@ -102,17 +100,17 @@ func guardImageNamesKnown(rc RectificationClient, gdm Deployments) error {
 // Sous config from a directory of YAML files. This use case is important for
 // proof-of-concept, but long term we expect to be able to abstract the storage
 // of the Sous state away, so this might be deprecated at some point.
-func ResolveFromDir(rc RectificationClient, dir string) error {
-	return ResolveFromDirFiltered(rc, dir, nil)
+func ResolveFromDir(d Deployer, dir string) error {
+	return ResolveFromDirFiltered(d, dir, nil)
 }
 
 // ResolveFromDirFiltered is similar to ResolveFromDir, but additionally filters
 // the deployments to be resolved based on the predicate.
-func ResolveFromDirFiltered(rc RectificationClient, dir string, pr DeploymentPredicate) error {
+func ResolveFromDirFiltered(d Deployer, dir string, pr DeploymentPredicate) error {
 	config, err := LoadState(dir)
 	if err != nil {
 		return err
 	}
 
-	return ResolveFilteredDeployments(rc, config, pr)
+	return ResolveFilteredDeployments(d, config, pr)
 }

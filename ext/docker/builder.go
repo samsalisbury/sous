@@ -1,4 +1,4 @@
-package sous
+package docker
 
 import (
 	"bytes"
@@ -6,19 +6,20 @@ import (
 	"path/filepath"
 	"text/template"
 
+	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/shell"
 )
 
-//go:generate go run ../bin/includeTmpls.go
+//go:generate go run ../../bin/includeTmpls.go
 
 type (
 	// Build represents a single build of a project.
-	Build struct {
+	Builder struct {
 		ImageMapper               ImageMapper
 		DockerRegistryHost        string
-		Context                   *SourceContext
+		Context                   *sous.SourceContext
 		SourceShell, ScratchShell shell.Shell
-		Pack                      Buildpack
+		Pack                      sous.Buildpack
 	}
 	// BuildTarget represents a single target within a Build.
 	BuildTarget interface {
@@ -27,21 +28,11 @@ type (
 	}
 )
 
-// RunBuild does a complete build run
-func RunBuild(nc ImageMapper, drh string, ctx *SourceContext, source, scratch shell.Shell) (*BuildResult, error) {
-	build, err := NewBuildWithShells(nc, drh, ctx, source, scratch)
-	if err != nil {
-		return nil, err
-	}
-
-	return build.Start()
-}
-
 // NewBuildWithShells creates a new build using source code in the working
 // directory of sourceShell, and using the working dir of scratchShell as
 // temporary storage.
-func NewBuildWithShells(nc ImageMapper, drh string, c *SourceContext, sourceShell, scratchShell shell.Shell) (*Build, error) {
-	b := &Build{
+func NewBuilder(nc ImageMapper, drh string, c *sous.SourceContext, sourceShell, scratchShell shell.Shell) (*Builder, error) {
+	b := &Builder{
 		ImageMapper:        nc,
 		DockerRegistryHost: drh,
 		Context:            c,
@@ -61,18 +52,23 @@ func NewBuildWithShells(nc ImageMapper, drh string, c *SourceContext, sourceShel
 	return b, nil
 }
 
-// Start begins the build.
-func (b *Build) Start() (*BuildResult, error) {
-	bc := &BuildContext{
-		Sh: b.SourceShell,
-	}
-
-	bp, err := bc.FindBuildpack()
+func (b *Builder) GetArtifact(sv sous.SourceVersion) (*sous.BuildArtifact, error) {
+	name, err := b.ImageMapper.GetImageName(sv)
 	if err != nil {
-
 		return nil, err
 	}
+	return &sous.BuildArtifact{
+		Name: name,
+		Type: "docker",
+	}, nil
+}
 
+func (b *Builder) GetSourceVersion(a *sous.BuildArtifact) (sous.SourceVersion, error) {
+	return b.ImageMapper.GetSourceVersion(a.Name)
+}
+
+// Build performs the build.
+func (b *Builder) Build(bc *sous.BuildContext, bp sous.Buildpack, _ *sous.DetectResult) (*sous.BuildResult, error) {
 	br, err := bp.Build(bc)
 	if err != nil {
 		return nil, err
@@ -97,7 +93,7 @@ func (b *Build) Start() (*BuildResult, error) {
 }
 
 // ApplyMetadata applies container metadata etc. to a container
-func (b *Build) ApplyMetadata(br *BuildResult) error {
+func (b *Builder) ApplyMetadata(br *sous.BuildResult) error {
 	br.ImageName = b.ImageTag(b.Context.Version())
 	bf := bytes.Buffer{}
 
@@ -112,19 +108,19 @@ func (b *Build) ApplyMetadata(br *BuildResult) error {
 		Labels  map[string]string
 	}{
 		br.ImageID,
-		sv.DockerLabels(),
+		DockerLabels(sv),
 	})
 
 	return c.Succeed()
 }
 
 // PushToRegistry sends the built image to the registry
-func (b *Build) PushToRegistry(br *BuildResult) error {
+func (b *Builder) PushToRegistry(br *sous.BuildResult) error {
 	return b.SourceShell.Run("docker", "push", br.ImageName)
 }
 
 // RecordName inserts metadata about the newly built image into our local name cache
-func (b *Build) RecordName(br *BuildResult) error {
+func (b *Builder) RecordName(br *sous.BuildResult) error {
 	sv := b.Context.Version()
 	in := br.ImageName
 	b.SourceShell.ConsoleEcho(fmt.Sprintf("[recording \"%s\" as the docker name for \"%s\"]", in, sv.String()))
@@ -132,13 +128,6 @@ func (b *Build) RecordName(br *BuildResult) error {
 }
 
 // ImageTag computes an image tag from a SourceVersion
-func (b *Build) ImageTag(v SourceVersion) string {
-	return filepath.Join(b.DockerRegistryHost, v.DockerImageName())
-}
-
-// FindBuildpack finds the appropriate buildpack for a project
-// ( except right now, we just return a hardcoded Dockerfile BP )
-// returns an error if no buildpack applies
-func (c *BuildContext) FindBuildpack() (Buildpack, error) {
-	return NewDockerfileBuildpack(), nil
+func (b *Builder) ImageTag(v sous.SourceVersion) string {
+	return filepath.Join(b.DockerRegistryHost, DockerImageName(v))
 }

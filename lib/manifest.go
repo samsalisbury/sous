@@ -140,10 +140,10 @@ func (dc *DeployConfig) Equal(o DeployConfig) bool {
 	return (dc.NumInstances == o.NumInstances && dc.Env.Equal(o.Env) && dc.Resources.Equal(o.Resources) && dc.Volumes.Equal(o.Volumes))
 }
 
-// SingMap produces a dtoMap appropriate for building a Singularity
+// SingMap produces a DTOMap appropriate for building a Singularity
 // dto.Resources struct from
-func (r Resources) SingMap() dtoMap {
-	return dtoMap{
+func (r Resources) SingMap() DTOMap {
+	return DTOMap{
 		"Cpus":     r.cpus(),
 		"MemoryMb": r.memory(),
 		"NumPorts": int32(r.ports()),

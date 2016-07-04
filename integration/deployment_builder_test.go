@@ -1,4 +1,4 @@
-package test
+package integration
 
 import (
 	"bytes"
@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/opentable/go-singularity"
+	sing "github.com/opentable/go-singularity"
 	"github.com/opentable/go-singularity/dtos"
-	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/docker_registry"
 	"github.com/opentable/sous/util/whitespace"
 	"github.com/satori/go.uuid"
@@ -35,7 +35,7 @@ func TestBuildDeployments(t *testing.T) {
 	nc := sous.NewNameCache(drc, "sqlite3", sous.InMemoryConnection("testresolve"))
 	ra := sous.NewRectiAgent(nc)
 
-	singCl := singularity.NewClient(singularityURL)
+	singCl := sing.NewClient(singularityURL)
 	//singCl.Debug = true
 
 	sr, err := singReqDep(
