@@ -22,11 +22,19 @@ import (
 )
 
 var ip net.IP
-var registryName, singularityURL string
+var registryName, SingularityURL string
 
 var successfulBuildRE = regexp.MustCompile(`Successfully built (\w+)`)
 
-func wrapCompose(m *testing.M) (resultCode int) {
+// WrapCompose is used to set up the docker/singularity testing environment.
+// Use like this:
+//  func TestMain(m *testing.M) {
+//  	flag.Parse()
+//  	os.Exit(wrapCompose(m))
+//  }
+// Importantly, WrapCompose handles panics so that defers will still happen
+// (including shutting down singularity)
+func WrapCompose(m *testing.M) (resultCode int) {
 	log.SetFlags(log.Flags() | log.Lshortfile)
 
 	if testing.Short() {
@@ -56,7 +64,7 @@ func wrapCompose(m *testing.M) (resultCode int) {
 
 	composeDir := "test-registry"
 	registryName = fmt.Sprintf("%s:%d", ip, 5000)
-	singularityURL = fmt.Sprintf("http://%s:%d/singularity", ip, 7099)
+	SingularityURL = fmt.Sprintf("http://%s:%d/singularity", ip, 7099)
 
 	registryCerts(testAgent, composeDir)
 
@@ -68,9 +76,11 @@ func wrapCompose(m *testing.M) (resultCode int) {
 	return
 }
 
-func resetSingularity() {
-	sing := singularity.NewClient(singularityURL)
-	//sing.Debug = true
+// ResetSingularity clears out the state from the integration singularity service
+// Call it (with and extra call deferred) anywhere integration tests use Singularity
+func ResetSingularity() {
+	sing := singularity.NewClient(SingularityURL)
+	sing.Debug = true
 
 	reqList, err := sing.GetRequests()
 	if err != nil {
@@ -207,18 +217,19 @@ func getCertIPSans(certPath string) ([]net.IP, error) {
 	return cert.IPAddresses, nil
 }
 
-func buildImageName(reponame, tag string) string {
+// BuildImageName constructs a simple image name rooted at the SingularityURL
+func BuildImageName(reponame, tag string) string {
 	return fmt.Sprintf("%s/%s:%s", registryName, reponame, tag)
 }
 
 func registerAndDeploy(ip net.IP, reponame, dir string, ports []int32) (err error) {
-	imageName := buildImageName(reponame, "latest")
-	err = buildAndPushContainer(dir, imageName)
+	imageName := BuildImageName(reponame, "latest")
+	err = BuildAndPushContainer(dir, imageName)
 	if err != nil {
 		panic(fmt.Errorf("building test container failed: %s", err))
 	}
 
-	err = startInstance(singularityURL, imageName, ports)
+	err = startInstance(SingularityURL, imageName, ports)
 	if err != nil {
 		panic(fmt.Errorf("starting a singularity instance failed: %s", err))
 	}
@@ -226,7 +237,10 @@ func registerAndDeploy(ip net.IP, reponame, dir string, ports []int32) (err erro
 	return
 }
 
-func buildAndPushContainer(containerDir, tagName string) error {
+// BuildAndPushContainer builds a container based on the source found in
+// containerDir, and then pushes it to the integration docker registration
+// under tagName
+func BuildAndPushContainer(containerDir, tagName string) error {
 	build := exec.Command("docker", "build", ".")
 	build.Dir = containerDir
 	output, err := build.CombinedOutput()

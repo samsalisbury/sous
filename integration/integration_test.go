@@ -21,9 +21,8 @@ import (
 var imageName string
 
 func TestMain(m *testing.M) {
-	log.Print("hello there")
 	flag.Parse()
-	os.Exit(wrapCompose(m))
+	os.Exit(WrapCompose(m))
 }
 
 func TestGetLabels(t *testing.T) {
@@ -36,7 +35,7 @@ func TestGetLabels(t *testing.T) {
 
 	assert.Nil(err)
 	assert.Contains(labels, docker.DockerRepoLabel)
-	resetSingularity()
+	ResetSingularity()
 }
 
 func newInMemoryDB(name string) *sql.DB {
@@ -62,7 +61,7 @@ func TestGetRunningDeploymentSet(t *testing.T) {
 	deps, which := deploymentWithRepo(assert, ra, "https://github.com/opentable/docker-grafana.git")
 	if assert.Equal(3, len(deps)) {
 		grafana := deps[which]
-		assert.Equal(singularityURL, grafana.Cluster)
+		assert.Equal(SingularityURL, grafana.Cluster)
 		assert.Regexp("^0\\.1", grafana.Resources["cpus"])    // XXX strings and floats...
 		assert.Regexp("^100\\.", grafana.Resources["memory"]) // XXX strings and floats...
 		assert.Equal("1", grafana.Resources["ports"])         // XXX strings and floats...
@@ -72,7 +71,7 @@ func TestGetRunningDeploymentSet(t *testing.T) {
 		assert.Equal(sous.ManifestKindService, grafana.Kind)
 	}
 
-	resetSingularity()
+	ResetSingularity()
 }
 
 func TestMissingImage(t *testing.T) {
@@ -80,8 +79,8 @@ func TestMissingImage(t *testing.T) {
 
 	clusterDefs := sous.Defs{
 		Clusters: sous.Clusters{
-			singularityURL: sous.Cluster{
-				BaseURL: singularityURL,
+			SingularityURL: sous.Cluster{
+				BaseURL: SingularityURL,
 			},
 		},
 	}
@@ -111,7 +110,7 @@ func TestMissingImage(t *testing.T) {
 	_, which := deploymentWithRepo(assert, ra, repoOne)
 	assert.Equal(which, -1, "opentable/one was deployed")
 
-	resetSingularity()
+	ResetSingularity()
 }
 
 func TestResolve(t *testing.T) {
@@ -119,10 +118,13 @@ func TestResolve(t *testing.T) {
 	sous.Log.Vomit.SetOutput(os.Stderr)
 	sous.Log.Debug.SetOutput(os.Stderr)
 
+	ResetSingularity()
+	defer ResetSingularity()
+
 	clusterDefs := sous.Defs{
 		Clusters: sous.Clusters{
-			singularityURL: sous.Cluster{
-				BaseURL: singularityURL,
+			SingularityURL: sous.Cluster{
+				BaseURL: SingularityURL,
 			},
 		},
 	}
@@ -214,12 +216,11 @@ func TestResolve(t *testing.T) {
 		assert.Equal(0, deps[which].NumInstances)
 	}
 
-	// XXX DON'T MERGE WITH THIS COMMENTED resetSingularity()
 }
 
 func deploymentWithRepo(assert *assert.Assertions, ra sous.RectificationClient, repo string) (sous.Deployments, int) {
 	sc := singularity.NewSetCollector(ra)
-	deps, err := sc.GetRunningDeployment([]string{singularityURL})
+	deps, err := sc.GetRunningDeployment([]string{SingularityURL})
 	if assert.Nil(err) {
 		return deps, findRepo(deps, repo)
 	}
@@ -244,8 +245,8 @@ func manifest(nc docker.ImageMapper, drepo, containerDir, sourceURL, version str
 	//		Version:    semv.MustParse(version),
 	//	}
 
-	in := buildImageName(drepo, version)
-	buildAndPushContainer(containerDir, in)
+	in := BuildImageName(drepo, version)
+	BuildAndPushContainer(containerDir, in)
 
 	//nc.Insert(sv, in, "")
 	nc.GetSourceVersion(in)
@@ -258,7 +259,7 @@ func manifest(nc docker.ImageMapper, drepo, containerDir, sourceURL, version str
 		Owners: []string{`xyz`},
 		Kind:   sous.ManifestKindService,
 		Deployments: sous.DeploySpecs{
-			singularityURL: sous.PartialDeploySpec{
+			SingularityURL: sous.PartialDeploySpec{
 				DeployConfig: sous.DeployConfig{
 					Resources:    sous.Resources{"cpus": "0.1", "memory": "100", "ports": "1"}, //map[string]string
 					Args:         []string{},

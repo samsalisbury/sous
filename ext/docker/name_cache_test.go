@@ -1,14 +1,21 @@
 package docker
 
 import (
+	"flag"
 	"os"
 	"testing"
 
+	"github.com/opentable/sous/integration"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/docker_registry"
 	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestMain(m *testing.M) {
+	flag.Parse()
+	os.Exit(integration.WrapCompose(m))
+}
 
 // TODO: copied from integration/integration_test.go, need to de-dupe
 func manifest(nc ImageMapper, drepo, containerDir, sourceURL, version string) *sous.Manifest {
@@ -18,8 +25,8 @@ func manifest(nc ImageMapper, drepo, containerDir, sourceURL, version string) *s
 	//		Version:    semv.MustParse(version),
 	//	}
 
-	in := buildImageName(drepo, version)
-	buildAndPushContainer(containerDir, in)
+	in := integration.BuildImageName(drepo, version)
+	integration.BuildAndPushContainer(containerDir, in)
 
 	//nc.Insert(sv, in, "")
 	nc.GetSourceVersion(in)
@@ -32,7 +39,7 @@ func manifest(nc ImageMapper, drepo, containerDir, sourceURL, version string) *s
 		Owners: []string{`xyz`},
 		Kind:   sous.ManifestKindService,
 		Deployments: sous.DeploySpecs{
-			singularityURL: sous.PartialDeploySpec{
+			integration.SingularityURL: sous.PartialDeploySpec{
 				DeployConfig: sous.DeployConfig{
 					Resources:    sous.Resources{"cpus": "0.1", "memory": "100", "ports": "1"}, //map[string]string
 					Args:         []string{},
@@ -51,8 +58,8 @@ func TestNameCache(t *testing.T) {
 	assert := assert.New(t)
 	sous.Log.Debug.SetOutput(os.Stdout)
 
-	resetSingularity()
-	defer resetSingularity()
+	integration.ResetSingularity()
+	defer integration.ResetSingularity()
 
 	drc := docker_registry.NewClient()
 	drc.BecomeFoolishlyTrusting()
@@ -66,7 +73,7 @@ func TestNameCache(t *testing.T) {
 	repoOne := "https://github.com/opentable/one.git"
 	manifest(nc, "opentable/one", "test-one", repoOne, "1.1.1")
 
-	cn, err := nc.GetCanonicalName(buildImageName("opentable/one", "1.1.1"))
+	cn, err := nc.GetCanonicalName(integration.BuildImageName("opentable/one", "1.1.1"))
 	if err != nil {
 		assert.FailNow(err.Error())
 	}
