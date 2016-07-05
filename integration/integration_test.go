@@ -22,7 +22,7 @@ var imageName string
 
 func TestMain(m *testing.M) {
 	flag.Parse()
-	os.Exit(WrapCompose(m))
+	os.Exit(WrapCompose(m, "../test-registry"))
 }
 
 func TestGetLabels(t *testing.T) {

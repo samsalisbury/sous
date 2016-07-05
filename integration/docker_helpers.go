@@ -22,7 +22,10 @@ import (
 )
 
 var ip net.IP
-var registryName, SingularityURL string
+var registryName string
+
+// SingularityURL captures the URL discovered during docker-compose for Singularity
+var SingularityURL string
 
 var successfulBuildRE = regexp.MustCompile(`Successfully built (\w+)`)
 
@@ -30,11 +33,11 @@ var successfulBuildRE = regexp.MustCompile(`Successfully built (\w+)`)
 // Use like this:
 //  func TestMain(m *testing.M) {
 //  	flag.Parse()
-//  	os.Exit(wrapCompose(m))
+//  	os.Exit(WrapCompose(m))
 //  }
 // Importantly, WrapCompose handles panics so that defers will still happen
 // (including shutting down singularity)
-func WrapCompose(m *testing.M) (resultCode int) {
+func WrapCompose(m *testing.M, composeDir string) (resultCode int) {
 	log.SetFlags(log.Flags() | log.Lshortfile)
 
 	if testing.Short() {
@@ -62,7 +65,6 @@ func WrapCompose(m *testing.M) (resultCode int) {
 		panic(fmt.Errorf("Test agent returned nil IP"))
 	}
 
-	composeDir := "test-registry"
 	registryName = fmt.Sprintf("%s:%d", ip, 5000)
 	SingularityURL = fmt.Sprintf("http://%s:%d/singularity", ip, 7099)
 

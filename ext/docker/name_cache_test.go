@@ -14,7 +14,7 @@ import (
 
 func TestMain(m *testing.M) {
 	flag.Parse()
-	os.Exit(integration.WrapCompose(m))
+	os.Exit(integration.WrapCompose(m, "../../test-registry"))
 }
 
 // TODO: copied from integration/integration_test.go, need to de-dupe
