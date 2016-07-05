@@ -149,7 +149,7 @@ func TestMissingName(t *testing.T) {
 	sv := sous.SourceVersion{
 		Version:    v,
 		RepoURL:    sous.RepoURL("https://github.com/opentable/brand-new-idea"),
-		RepoOffset: RepoOffset("nested/there"),
+		RepoOffset: sous.RepoOffset("nested/there"),
 	}
 
 	name, err := nc.GetImageName(sv)

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/opentable/sous/ext/docker"
+	"github.com/opentable/sous/ext/singularity"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/docker_registry"
 	"github.com/samsalisbury/semv"
@@ -39,7 +40,7 @@ func TestGetLabels(t *testing.T) {
 }
 
 func newInMemoryDB(name string) *sql.DB {
-	db, err := docker.GetDatabase(docker.DBConfig{"sqlite3", sous.InMemoryConnection(name)})
+	db, err := docker.GetDatabase(&docker.DBConfig{"sqlite3", docker.InMemoryConnection(name)})
 	if err != nil {
 		panic(err)
 	}
@@ -56,7 +57,7 @@ func TestGetRunningDeploymentSet(t *testing.T) {
 	drc := docker_registry.NewClient()
 	drc.BecomeFoolishlyTrusting()
 	nc := docker.NewNameCache(drc, newInMemoryDB("grds"))
-	ra := sous.NewRectiAgent(nc)
+	ra := singularity.NewRectiAgent(&docker.Builder{ImageMapper: nc})
 
 	deps, which := deploymentWithRepo(assert, ra, "https://github.com/opentable/docker-grafana.git")
 	if assert.Equal(3, len(deps)) {
@@ -100,8 +101,8 @@ func TestMissingImage(t *testing.T) {
 
 	// ****
 	nc := docker.NewNameCache(drc, newInMemoryDB("missingimage"))
-	ra := sous.NewRectiAgent(nc)
-	err := sous.Resolve(ra, stateOne)
+	ra := singularity.NewRectiAgent(&docker.Builder{ImageMapper: nc})
+	err := sous.Resolve(&singularity.Deployer{RectiAgent: ra}, stateOne)
 	assert.Error(err)
 
 	// ****
@@ -132,8 +133,10 @@ func TestResolve(t *testing.T) {
 	drc := docker_registry.NewClient()
 	drc.BecomeFoolishlyTrusting()
 
-	nc := docker.NewNameCache(drc, "sqlite3", newInMemoryDB("testresolve"))
-	ra := sous.NewRectiAgent(nc)
+	db := newInMemoryDB("testresolve")
+
+	nc := docker.NewNameCache(drc, db)
+	ra := singularity.NewRectiAgent(&docker.Builder{ImageMapper: nc})
 
 	stateOneTwo := sous.State{
 		Defs: clusterDefs,
@@ -152,7 +155,7 @@ func TestResolve(t *testing.T) {
 
 	// ****
 	log.Print("Resolving from nothing to one+two")
-	err := sous.Resolve(ra, stateOneTwo)
+	err := sous.Resolve(singularity.Deployer{RectiAgent: ra}, stateOneTwo)
 	if err != nil {
 		assert.Fail(err.Error())
 	}
@@ -178,7 +181,7 @@ func TestResolve(t *testing.T) {
 	// XXX Let's hope this is a temporary solution to a testing issue
 	// The problem is laid out in DCOPS-7625
 	for tries := 0; tries < 3; tries++ {
-		err = sous.Resolve(ra, stateTwoThree)
+		err = sous.Resolve(singularity.Deployer{RectiAgent: ra}, stateTwoThree)
 		if err != nil {
 			if !conflictRE.MatchString(err.Error()) {
 				assert.FailNow(err.Error())
@@ -215,7 +218,7 @@ func TestResolve(t *testing.T) {
 }
 
 func deploymentWithRepo(assert *assert.Assertions, ra sous.RectificationClient, repo string) (sous.Deployments, int) {
-	sc := sous.NewSetCollector(ra)
+	sc := singularity.NewSetCollector(ra)
 	deps, err := sc.GetRunningDeployment([]string{singularityURL})
 	if assert.Nil(err) {
 		return deps, findRepo(deps, repo)

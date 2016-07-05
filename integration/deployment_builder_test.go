@@ -12,6 +12,8 @@ import (
 
 	sing "github.com/opentable/go-singularity"
 	"github.com/opentable/go-singularity/dtos"
+	"github.com/opentable/sous/ext/docker"
+	"github.com/opentable/sous/ext/singularity"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/docker_registry"
 	"github.com/opentable/sous/util/whitespace"
@@ -32,8 +34,14 @@ func TestBuildDeployments(t *testing.T) {
 	drc := docker_registry.NewClient()
 	drc.BecomeFoolishlyTrusting()
 
-	nc := sous.NewNameCache(drc, "sqlite3", sous.InMemoryConnection("testresolve"))
-	ra := sous.NewRectiAgent(nc)
+	db, err := docker.GetDatabase(&docker.DBConfig{"sqlite3", docker.InMemoryConnection("testresolve")})
+	if err != nil {
+		panic(err)
+	}
+
+	nc := docker.NewNameCache(drc, db)
+	builder := &docker.Builder{ImageMapper: nc}
+	ra := singularity.NewRectiAgent(builder)
 
 	singCl := sing.NewClient(singularityURL)
 	//singCl.Debug = true
@@ -71,14 +79,14 @@ func TestBuildDeployments(t *testing.T) {
 		}`),
 	)
 
-	req := sous.SingReq{
+	req := singularity.SingReq{
 		SourceURL: singularityURL,
 		Sing:      singCl,
 		ReqParent: sr,
 	}
 
 	if assert.NoError(err) {
-		uc := sous.NewDeploymentBuilder(ra, req)
+		uc := singularity.NewDeploymentBuilder(ra, req)
 		err = uc.CompleteConstruction()
 
 		if assert.NoError(err) {
