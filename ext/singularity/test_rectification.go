@@ -58,6 +58,7 @@ func NewDummyRectificationClient(nc sous.Builder) *DummyRectificationClient {
 
 // TODO: Factor out name cache concept from core sous lib & get rid of this func.
 func (t *DummyRectificationClient) GetRunningDeployment([]string) (sous.Deployments, error) {
+	return nil, nil
 	panic("not implemented")
 }
 
@@ -138,11 +139,13 @@ func NewDummyNameCache() *DummyNameCache {
 
 // TODO: Factor out name cache concept from core sous lib & get rid of this func.
 func (dc *DummyNameCache) Build(*sous.BuildContext, sous.Buildpack, *sous.DetectResult) (*sous.BuildResult, error) {
+	return nil, nil
 	panic("not implemented")
 }
 
 // TODO: Factor out name cache concept from core sous lib & get rid of this func.
 func (dc *DummyNameCache) GetArtifact(sous.SourceVersion) (*sous.BuildArtifact, error) {
+	return nil, nil
 	panic("not implemented")
 }
 
