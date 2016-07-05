@@ -108,17 +108,17 @@ func (e *DeleteError) IntendedDeployment() *Deployment {
 }
 
 func (e *ChangeError) Error() string {
-	return fmt.Sprintf("Couldn't change from deployment %+v to deployment %+v: %v", e.Deployments.prior, e.Deployments.post, e.Err)
+	return fmt.Sprintf("Couldn't change from deployment %+v to deployment %+v: %v", e.Deployments.Prior, e.Deployments.Post, e.Err)
 }
 
 // ExistingDeployment returns the deployment that was already existent in a change error
 func (e *ChangeError) ExistingDeployment() *Deployment {
-	return e.Deployments.prior
+	return e.Deployments.Prior
 }
 
 // IntendedDeployment returns the deployment that was intended in a ChangeError
 func (e *ChangeError) IntendedDeployment() *Deployment {
-	return e.Deployments.post
+	return e.Deployments.Post
 }
 
 // Rectify takes a DiffChans and issues the commands to the infrastructure to reconcile the differences
@@ -174,13 +174,13 @@ func (r *rectifier) rectifyDeletes(dc chan *Deployment, errs chan<- Rectificatio
 func (r *rectifier) rectifyModifys(
 	mc chan *DeploymentPair, errs chan<- RectificationError) {
 	for pair := range mc {
-		Log.Debug.Printf("Rectifying modify: \n  %+ v \n    =>  \n  %+ v", pair.prior, pair.post)
+		Log.Debug.Printf("Rectifying modify: \n  %+ v \n    =>  \n  %+ v", pair.Prior, pair.Post)
 		if r.changesReq(pair) {
 			Log.Debug.Printf("Scaling...")
 			err := r.Client.Scale(
-				pair.post.Cluster,
-				computeRequestID(pair.post),
-				pair.post.NumInstances,
+				pair.Post.Cluster,
+				computeRequestID(pair.Post),
+				pair.Post.NumInstances,
 				"rectified scaling")
 			if err != nil {
 				errs <- &ChangeError{Deployments: pair, Err: err}
@@ -190,20 +190,20 @@ func (r *rectifier) rectifyModifys(
 
 		if changesDep(pair) {
 			Log.Debug.Printf("Deploying...")
-			name, err := r.Client.ImageName(pair.post)
+			name, err := r.Client.ImageName(pair.Post)
 			if err != nil {
 				errs <- &ChangeError{Deployments: pair, Err: err}
 				continue
 			}
 
 			err = r.Client.Deploy(
-				pair.post.Cluster,
+				pair.Post.Cluster,
 				newDepID(),
-				computeRequestID(pair.prior),
+				computeRequestID(pair.Prior),
 				name,
-				pair.post.Resources,
-				pair.post.Env,
-				pair.post.DeployConfig.Volumes,
+				pair.Post.Resources,
+				pair.Post.Env,
+				pair.Post.DeployConfig.Volumes,
 			)
 			if err != nil {
 				errs <- &ChangeError{Deployments: pair, Err: err}
@@ -214,14 +214,14 @@ func (r *rectifier) rectifyModifys(
 }
 
 func (r rectifier) changesReq(pair *DeploymentPair) bool {
-	return pair.prior.NumInstances != pair.post.NumInstances
+	return pair.Prior.NumInstances != pair.Post.NumInstances
 }
 
 func changesDep(pair *DeploymentPair) bool {
-	return !(pair.prior.SourceVersion.Equal(pair.post.SourceVersion) &&
-		pair.prior.Resources.Equal(pair.post.Resources) &&
-		pair.prior.Env.Equal(pair.post.Env) &&
-		pair.prior.DeployConfig.Volumes.Equal(pair.post.DeployConfig.Volumes))
+	return !(pair.Prior.SourceVersion.Equal(pair.Post.SourceVersion) &&
+		pair.Prior.Resources.Equal(pair.Post.Resources) &&
+		pair.Prior.Env.Equal(pair.Post.Env) &&
+		pair.Prior.DeployConfig.Volumes.Equal(pair.Post.DeployConfig.Volumes))
 }
 
 func computeRequestID(d *Deployment) string {

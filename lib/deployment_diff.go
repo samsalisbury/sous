@@ -6,7 +6,7 @@ type (
 	// DeploymentPair is a pair of deployments that represent a "before and after" style relationship
 	DeploymentPair struct {
 		name        DepName
-		prior, post *Deployment
+		Prior, Post *Deployment
 	}
 	// DeploymentPairs is a list of DeploymentPair
 	DeploymentPairs []*DeploymentPair

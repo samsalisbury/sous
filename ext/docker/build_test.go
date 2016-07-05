@@ -1,17 +1,18 @@
-package sous
+package docker
 
 import (
 	"log"
 	"regexp"
 	"testing"
 
+	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/docker_registry"
 	"github.com/opentable/sous/util/shell"
 	"github.com/stretchr/testify/assert"
 )
 
-func testSourceContext() *SourceContext {
-	return &SourceContext{
+func testSourceContext() *sous.SourceContext {
+	return &sous.SourceContext{
 		PossiblePrimaryRemoteURL: "github.com/opentable/awesomeproject",
 		NearestTagName:           "1.2.3",
 		Revision:                 "987654321987654312",
@@ -26,7 +27,7 @@ func TestBuild(t *testing.T) {
 	revision := "987654321987654312"
 	version := "1.2.3"
 
-	sourceCtx := &SourceContext{
+	sourceCtx := &sous.SourceContext{
 		PossiblePrimaryRemoteURL: repoName,
 		NearestTagName:           version,
 		Revision:                 revision,
@@ -66,9 +67,23 @@ func TestBuild(t *testing.T) {
 	}
 
 	docker := docker_registry.NewDummyClient()
-	nc := NewNameCache(docker, "sqlite3", InMemory)
+	nc := NewNameCache(docker, inMemoryDB())
 
-	br, err := RunBuild(nc, "docker.wearenice.com", sourceCtx, sourceSh, scratchSh)
+	builder, err := NewBuilder(nc, "docker.wearenice.com", sourceCtx, sourceSh, scratchSh)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bp := NewDockerfileBuildpack()
+	bc := &sous.BuildContext{
+		Sh:     sourceSh,
+		Source: *sourceCtx,
+	}
+	dr, err := bp.Detect(bc)
+	if err != nil {
+		t.Fatal("Buildpack detect failed:", err)
+	}
+	br, err := builder.Build(bc, bp, dr)
+
 	assert.NotNil(br)
 	assert.NoError(err)
 	assert.Equal(len(sourceSh.History), 3)

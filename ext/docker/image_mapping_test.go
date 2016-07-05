@@ -1,25 +1,43 @@
 package docker
 
 import (
+	"database/sql"
 	"log"
 	"testing"
 
+	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/docker_registry"
 	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/assert"
 )
 
+func inMemoryRoundtripDB() *sql.DB {
+	db, err := GetDatabase(&DBConfig{"sqlite3", InMemoryConnection("roundtrip")})
+	if err != nil {
+		panic(err)
+	}
+	return db
+}
+
+func inMemoryDB() *sql.DB {
+	db, err := GetDatabase(&DBConfig{"sqlite3", InMemory})
+	if err != nil {
+		panic(err)
+	}
+	return db
+}
+
 func TestRoundTrip(t *testing.T) {
 	assert := assert.New(t)
 
 	dc := docker_registry.NewDummyClient()
-	nc := NewNameCache(dc, "sqlite3", InMemoryConnection("roundtrip"))
+	nc := NewNameCache(dc, inMemoryRoundtripDB())
 
 	v := semv.MustParse("1.2.3")
-	sv := SourceVersion{
+	sv := sous.SourceVersion{
 		Version:    v,
-		RepoURL:    RepoURL("https://github.com/opentable/wackadoo"),
-		RepoOffset: RepoOffset("nested/there"),
+		RepoURL:    sous.RepoURL("https://github.com/opentable/wackadoo"),
+		RepoOffset: sous.RepoOffset("nested/there"),
 	}
 	host := "docker.repo.io"
 	base := "ot/wackadoo"
@@ -38,10 +56,10 @@ func TestRoundTrip(t *testing.T) {
 	}
 
 	newV := semv.MustParse("1.2.42")
-	newSV := SourceVersion{
+	newSV := sous.SourceVersion{
 		Version:    newV,
-		RepoURL:    RepoURL("https://github.com/opentable/wackadoo"),
-		RepoOffset: RepoOffset("nested/there"),
+		RepoURL:    sous.RepoURL("https://github.com/opentable/wackadoo"),
+		RepoOffset: sous.RepoOffset("nested/there"),
 	}
 
 	cn = base + "@" + digest
@@ -67,20 +85,20 @@ func TestHarvesting(t *testing.T) {
 	assert := assert.New(t)
 
 	dc := docker_registry.NewDummyClient()
-	nc := NewNameCache(dc, "sqlite3", InMemoryConnection("roundtrip"))
+	nc := NewNameCache(dc, inMemoryRoundtripDB())
 
 	v := semv.MustParse("1.2.3")
-	sv := SourceVersion{
+	sv := sous.SourceVersion{
 		Version:    v,
-		RepoURL:    RepoURL("https://github.com/opentable/wackadoo"),
-		RepoOffset: RepoOffset("nested/there"),
+		RepoURL:    sous.RepoURL("https://github.com/opentable/wackadoo"),
+		RepoOffset: sous.RepoOffset("nested/there"),
 	}
 
 	v2 := semv.MustParse("2.3.4")
-	sisterSV := SourceVersion{
+	sisterSV := sous.SourceVersion{
 		Version:    v2,
-		RepoURL:    RepoURL("https://github.com/opentable/wackadoo"),
-		RepoOffset: RepoOffset("nested/there"),
+		RepoURL:    sous.RepoURL("https://github.com/opentable/wackadoo"),
+		RepoOffset: sous.RepoOffset("nested/there"),
 	}
 
 	host := "docker.repo.io"
@@ -125,12 +143,12 @@ func TestMissingName(t *testing.T) {
 	assert := assert.New(t)
 	log.SetFlags(log.Flags() | log.Lshortfile)
 	dc := docker_registry.NewDummyClient()
-	nc := NewNameCache(dc, "sqlite3", InMemory)
+	nc := NewNameCache(dc, inMemoryDB())
 
 	v := semv.MustParse("4.5.6")
-	sv := SourceVersion{
+	sv := sous.SourceVersion{
 		Version:    v,
-		RepoURL:    RepoURL("https://github.com/opentable/brand-new-idea"),
+		RepoURL:    sous.RepoURL("https://github.com/opentable/brand-new-idea"),
 		RepoOffset: RepoOffset("nested/there"),
 	}
 

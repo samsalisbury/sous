@@ -1,6 +1,7 @@
-package test
+package integration
 
 import (
+	"database/sql"
 	"flag"
 	"fmt"
 	"log"
@@ -9,7 +10,8 @@ import (
 	"testing"
 	"time"
 
-	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/ext/docker"
+	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/docker_registry"
 	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/assert"
@@ -32,8 +34,16 @@ func TestGetLabels(t *testing.T) {
 	labels, err := cl.LabelsForImageName(imageName)
 
 	assert.Nil(err)
-	assert.Contains(labels, sous.DockerRepoLabel)
+	assert.Contains(labels, docker.DockerRepoLabel)
 	resetSingularity()
+}
+
+func newInMemoryDB(name string) *sql.DB {
+	db, err := docker.GetDatabase(docker.DBConfig{"sqlite3", sous.InMemoryConnection(name)})
+	if err != nil {
+		panic(err)
+	}
+	return db
 }
 
 func TestGetRunningDeploymentSet(t *testing.T) {
@@ -45,7 +55,7 @@ func TestGetRunningDeploymentSet(t *testing.T) {
 	registerLabelledContainers()
 	drc := docker_registry.NewClient()
 	drc.BecomeFoolishlyTrusting()
-	nc := sous.NewNameCache(drc, "sqlite3", sous.InMemoryConnection("grds"))
+	nc := docker.NewNameCache(drc, newInMemoryDB("grds"))
 	ra := sous.NewRectiAgent(nc)
 
 	deps, which := deploymentWithRepo(assert, ra, "https://github.com/opentable/docker-grafana.git")
@@ -79,7 +89,7 @@ func TestMissingImage(t *testing.T) {
 	drc := docker_registry.NewClient()
 	drc.BecomeFoolishlyTrusting()
 	// easiest way to make sure that the manifest doesn't actually get registered
-	dummyNc := sous.NewNameCache(drc, "sqlite3", sous.InMemoryConnection("bitbucket"))
+	dummyNc := docker.NewNameCache(drc, newInMemoryDB("bitbucket"))
 
 	stateOne := sous.State{
 		Defs: clusterDefs,
@@ -89,7 +99,7 @@ func TestMissingImage(t *testing.T) {
 	}
 
 	// ****
-	nc := sous.NewNameCache(drc, "sqlite3", sous.InMemoryConnection("missingimage"))
+	nc := docker.NewNameCache(drc, newInMemoryDB("missingimage"))
 	ra := sous.NewRectiAgent(nc)
 	err := sous.Resolve(ra, stateOne)
 	assert.Error(err)
@@ -122,7 +132,7 @@ func TestResolve(t *testing.T) {
 	drc := docker_registry.NewClient()
 	drc.BecomeFoolishlyTrusting()
 
-	nc := sous.NewNameCache(drc, "sqlite3", sous.InMemoryConnection("testresolve"))
+	nc := docker.NewNameCache(drc, "sqlite3", newInMemoryDB("testresolve"))
 	ra := sous.NewRectiAgent(nc)
 
 	stateOneTwo := sous.State{
@@ -224,7 +234,7 @@ func findRepo(deps sous.Deployments, repo string) int {
 	return -1
 }
 
-func manifest(nc sous.ImageMapper, drepo, containerDir, sourceURL, version string) *sous.Manifest {
+func manifest(nc docker.ImageMapper, drepo, containerDir, sourceURL, version string) *sous.Manifest {
 	//	sv := sous.SourceVersion{
 	//		RepoURL:    sous.RepoURL(sourceURL),
 	//		RepoOffset: sous.RepoOffset(""),

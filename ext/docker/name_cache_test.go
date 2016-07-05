@@ -1,4 +1,4 @@
-package test
+package docker
 
 import (
 	"os"
@@ -19,7 +19,11 @@ func TestNameCache(t *testing.T) {
 	drc := docker_registry.NewClient()
 	drc.BecomeFoolishlyTrusting()
 
-	nc := sous.NewNameCache(drc, "sqlite3", sous.InMemoryConnection("testnamecache"))
+	db, err := GetDatabase(&DBConfig{"sqlite3", sous.InMemoryConnection("testnamecache")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	nc := sous.NewNameCache(drc, db)
 
 	repoOne := "https://github.com/opentable/one.git"
 	manifest(nc, "opentable/one", "test-one", repoOne, "1.1.1")
