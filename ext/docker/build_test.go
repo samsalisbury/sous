@@ -109,7 +109,7 @@ func TestBuild(t *testing.T) {
 		CanonicalName: tagStr,
 		AllNames:      []string{tagStr},
 	})
-	sv, err := nc.GetSourceVersion(tagStr)
+	sv, err := nc.GetSourceVersion(DockerBuildArtifact(tagStr))
 	if assert.NoError(err) {
 		assert.Equal(repoName, string(sv.Repo()))
 	}

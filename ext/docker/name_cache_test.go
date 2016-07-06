@@ -18,7 +18,7 @@ func TestMain(m *testing.M) {
 }
 
 // TODO: copied from integration/integration_test.go, need to de-dupe
-func manifest(nc ImageMapper, drepo, containerDir, sourceURL, version string) *sous.Manifest {
+func manifest(nc sous.Registry, drepo, containerDir, sourceURL, version string) *sous.Manifest {
 	//	sv := sous.SourceVersion{
 	//		RepoURL:    sous.RepoURL(sourceURL),
 	//		RepoOffset: sous.RepoOffset(""),
@@ -29,7 +29,7 @@ func manifest(nc ImageMapper, drepo, containerDir, sourceURL, version string) *s
 	integration.BuildAndPushContainer(containerDir, in)
 
 	//nc.Insert(sv, in, "")
-	nc.GetSourceVersion(in)
+	nc.GetSourceVersion(DockerBuildArtifact(in))
 
 	return &sous.Manifest{
 		Source: sous.SourceLocation{

@@ -17,8 +17,8 @@ const ReqsPerServer = 10
 
 type (
 	// SetCollector implements sous.Deployer
-	SetCollector struct {
-		sous.RectificationClient
+	Deployer struct {
+		RectificationClient
 	}
 
 	sDeploy    *dtos.SingularityDeploy
@@ -35,14 +35,14 @@ type (
 	retryCounter map[string]uint
 )
 
-// NewSetCollector returns a new set collector
-func NewSetCollector(rc sous.RectificationClient) *SetCollector {
-	return &SetCollector{rc}
+// NewSetCollector returns a new *Deployer.
+func NewSetCollector(rc RectificationClient) *Deployer {
+	return &Deployer{rc}
 }
 
 // GetRunningDeployment collects data from the Singularity clusters and
 // returns a list of actual deployments
-func (sc *SetCollector) GetRunningDeployment(singUrls []string) (deps sous.Deployments, err error) {
+func (sc *rectifier) GetRunningDeployment(singUrls []string) (deps sous.Deployments, err error) {
 	retries := make(retryCounter)
 	errCh := make(chan error)
 	deps = make(sous.Deployments, 0)
@@ -65,7 +65,7 @@ func (sc *SetCollector) GetRunningDeployment(singUrls []string) (deps sous.Deplo
 		go singPipeline(sing, &depWait, &singWait, reqCh, errCh)
 	}
 
-	go depPipeline(sc.RectificationClient, reqCh, depCh, errCh)
+	go depPipeline(sc.Client, reqCh, depCh, errCh)
 
 	go func() {
 		catchAndSend("closing up", errCh)
@@ -181,14 +181,14 @@ func getRequestsFromSingularity(client *singularity.Client) ([]SingReq, error) {
 }
 
 func depPipeline(
-	cl sous.RectificationClient,
+	cl RectificationClient,
 	reqCh chan SingReq,
 	depCh chan *sous.Deployment,
 	errCh chan error,
 ) {
 	defer catchAndSend("dependency building", errCh)
 	for req := range reqCh {
-		go func(cl sous.RectificationClient, req SingReq) {
+		go func(cl RectificationClient, req SingReq) {
 			defer catchAndSend(fmt.Sprintf("dep from req %s", req.SourceURL), errCh)
 
 			dep, err := assembleDeployment(cl, req)
@@ -202,7 +202,7 @@ func depPipeline(
 	}
 }
 
-func assembleDeployment(cl sous.RectificationClient, req SingReq) (*sous.Deployment, error) {
+func assembleDeployment(cl RectificationClient, req SingReq) (*sous.Deployment, error) {
 	Log.Vomit.Print("Assembling from: ", req)
 	uc := NewDeploymentBuilder(cl, req)
 	err := uc.CompleteConstruction()

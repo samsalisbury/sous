@@ -38,24 +38,11 @@ type (
 	NoSourceVersionFound struct {
 		imageName
 	}
-
-	// ImageMapper interface describes the component responsible for mapping
-	// source versions to names
-	ImageMapper interface {
-		// GetCanonicalName returns the canonical name for an image given any known
-		// name
-		GetCanonicalName(in string) (string, error)
-
-		// Insert puts a given SourceVersion/image name pair into the name cache
-		Insert(sv sous.SourceVersion, in, etag string) error
-
-		// GetImageName returns the docker image name for a given source version
-		GetImageName(sv sous.SourceVersion) (string, error)
-
-		// GetSourceVersion returns the source version for a given image name
-		GetSourceVersion(in string) (sous.SourceVersion, error)
-	}
 )
+
+func DockerBuildArtifact(imageName string) *sous.BuildArtifact {
+	return &sous.BuildArtifact{Name: imageName, Type: "docker"}
+}
 
 // InMemory configures SQLite to use an in-memory database
 // The dummy file allows multiple goroutines see the same in-memory DB
@@ -84,8 +71,18 @@ func NewNameCache(cl docker_registry.Client, db *sql.DB) *NameCache {
 	return &NameCache{cl, db}
 }
 
+// GetArtifact implements sous.Registry.GetArtifact
+func (nc *NameCache) GetArtifact(sv sous.SourceVersion) (*sous.BuildArtifact, error) {
+	name, err := nc.GetImageName(sv)
+	if err != nil {
+		return nil, err
+	}
+	return DockerBuildArtifact(name), nil
+}
+
 // GetSourceVersion looks up the source version for a given image name
-func (nc *NameCache) GetSourceVersion(in string) (sous.SourceVersion, error) {
+func (nc *NameCache) GetSourceVersion(a *sous.BuildArtifact) (sous.SourceVersion, error) {
+	in := a.Name
 	var sv sous.SourceVersion
 
 	Log.Vomit.Printf("Getting source version for %s", in)
@@ -190,7 +187,8 @@ func (nc *NameCache) harvest(sl sous.SourceLocation) error {
 				Log.Debug.Printf("Harvested tag: %v", t)
 				in, err := reference.WithTag(ref, t)
 				if err == nil {
-					nc.GetSourceVersion(in.String()) //pull it into the cache...
+					a := DockerBuildArtifact(in.String())
+					nc.GetSourceVersion(a) //pull it into the cache...
 				}
 			}
 		}

@@ -38,10 +38,12 @@ func TestModifyScale(t *testing.T) {
 	}
 
 	chanset := sous.NewDiffChans(1)
-	nc := NewDummyNameCache()
+	nc := NewDummyRegistry()
 	client := NewDummyRectificationClient(nc)
 
-	errs := sous.Rectify(chanset, client)
+	deployer := NewRectifier(nc, client)
+
+	errs := sous.Rectify(chanset, deployer, nc)
 	chanset.Modified <- pair
 	chanset.Close()
 	for e := range errs {
@@ -85,10 +87,10 @@ func TestModifyImage(t *testing.T) {
 
 	chanset := sous.NewDiffChans(1)
 
-	nc := NewDummyNameCache()
+	nc := NewDummyRegistry()
 	client := NewDummyRectificationClient(nc)
 
-	errs := sous.Rectify(chanset, client)
+	errs := sous.Rectify(chanset, NewRectifier(nc, client), nc)
 	chanset.Modified <- pair
 	chanset.Close()
 	for e := range errs {
@@ -136,10 +138,10 @@ func TestModifyResources(t *testing.T) {
 	}
 
 	chanset := sous.NewDiffChans(1)
-	nc := NewDummyNameCache()
+	nc := NewDummyRegistry()
 	client := NewDummyRectificationClient(nc)
 
-	errs := sous.Rectify(chanset, client)
+	errs := sous.Rectify(chanset, NewRectifier(nc, client), nc)
 	chanset.Modified <- pair
 	chanset.Close()
 	for e := range errs {
@@ -190,10 +192,10 @@ func TestModify(t *testing.T) {
 	}
 
 	chanset := sous.NewDiffChans(1)
-	nc := NewDummyNameCache()
+	nc := NewDummyRegistry()
 	client := NewDummyRectificationClient(nc)
 
-	errs := sous.Rectify(chanset, client)
+	errs := sous.Rectify(chanset, NewRectifier(nc, client), nc)
 	chanset.Modified <- pair
 	chanset.Close()
 	for e := range errs {
@@ -227,10 +229,10 @@ func TestDeletes(t *testing.T) {
 	}
 
 	chanset := sous.NewDiffChans(1)
-	nc := NewDummyNameCache()
+	nc := NewDummyRegistry()
 	client := NewDummyRectificationClient(nc)
 
-	errs := sous.Rectify(chanset, client)
+	errs := sous.Rectify(chanset, NewRectifier(nc, client), nc)
 	chanset.Deleted <- deleted
 	chanset.Close()
 	for e := range errs {
@@ -251,10 +253,10 @@ func TestCreates(t *testing.T) {
 	assert := assert.New(t)
 
 	chanset := sous.NewDiffChans(1)
-	nc := NewDummyNameCache()
+	nc := NewDummyRegistry()
 	client := NewDummyRectificationClient(nc)
 
-	errs := sous.Rectify(chanset, client)
+	errs := sous.Rectify(chanset, NewRectifier(nc, client), nc)
 
 	created := &sous.Deployment{
 		SourceVersion: sous.SourceVersion{

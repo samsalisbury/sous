@@ -56,9 +56,10 @@ func TestGetRunningDeploymentSet(t *testing.T) {
 	drc := docker_registry.NewClient()
 	drc.BecomeFoolishlyTrusting()
 	nc := docker.NewNameCache(drc, newInMemoryDB("grds"))
-	ra := singularity.NewRectiAgent(&docker.Builder{ImageMapper: nc})
+	client := singularity.NewRectiAgent(nc)
+	d := singularity.NewRectifier(nc, client)
 
-	deps, which := deploymentWithRepo(assert, ra, "https://github.com/opentable/docker-grafana.git")
+	deps, which := deploymentWithRepo(assert, d, "https://github.com/opentable/docker-grafana.git")
 	if assert.Equal(3, len(deps)) {
 		grafana := deps[which]
 		assert.Equal(SingularityURL, grafana.Cluster)
@@ -100,14 +101,20 @@ func TestMissingImage(t *testing.T) {
 
 	// ****
 	nc := docker.NewNameCache(drc, newInMemoryDB("missingimage"))
-	ra := singularity.NewRectiAgent(&docker.Builder{ImageMapper: nc})
-	err := sous.Resolve(&singularity.SetCollector{ra}, stateOne)
+
+	client := singularity.NewRectiAgent(nc)
+	deployer := singularity.NewRectifier(nc, client)
+
+	r := sous.NewResolver(deployer, nc, stateOne)
+
+	err := r.Resolve()
+
 	assert.Error(err)
 
 	// ****
 	time.Sleep(1 * time.Second)
 
-	_, which := deploymentWithRepo(assert, ra, repoOne)
+	_, which := deploymentWithRepo(assert, deployer, repoOne)
 	assert.Equal(which, -1, "opentable/one was deployed")
 
 	ResetSingularity()
@@ -138,7 +145,6 @@ func TestResolve(t *testing.T) {
 	db := newInMemoryDB("testresolve")
 
 	nc := docker.NewNameCache(drc, db)
-	ra := singularity.NewRectiAgent(&docker.Builder{ImageMapper: nc})
 
 	stateOneTwo := sous.State{
 		Defs: clusterDefs,
@@ -157,14 +163,19 @@ func TestResolve(t *testing.T) {
 
 	// ****
 	log.Print("Resolving from nothing to one+two")
-	err := sous.Resolve(&singularity.SetCollector{ra}, stateOneTwo)
+	client := singularity.NewRectiAgent(nc)
+	deployer := singularity.NewRectifier(nc, client)
+
+	r := sous.NewResolver(deployer, nc, stateOneTwo)
+
+	err := r.Resolve()
 	if err != nil {
 		assert.Fail(err.Error())
 	}
 	// ****
 	time.Sleep(3 * time.Second)
 
-	deps, which := deploymentWithRepo(assert, ra, repoOne)
+	deps, which := deploymentWithRepo(assert, deployer, repoOne)
 	if assert.NotEqual(which, -1, "opentable/one not successfully deployed") {
 		one := deps[which]
 		assert.Equal(1, one.NumInstances)
@@ -183,7 +194,12 @@ func TestResolve(t *testing.T) {
 	// XXX Let's hope this is a temporary solution to a testing issue
 	// The problem is laid out in DCOPS-7625
 	for tries := 0; tries < 3; tries++ {
-		err = sous.Resolve(&singularity.SetCollector{ra}, stateTwoThree)
+		client := singularity.NewRectiAgent(nc)
+		deployer := singularity.NewRectifier(nc, client)
+
+		r := sous.NewResolver(deployer, nc, stateTwoThree)
+
+		err := r.Resolve()
 		if err != nil {
 			if !conflictRE.MatchString(err.Error()) {
 				assert.FailNow(err.Error())
@@ -198,7 +214,7 @@ func TestResolve(t *testing.T) {
 	}
 	// ****
 
-	deps, which = deploymentWithRepo(assert, ra, repoTwo)
+	deps, which = deploymentWithRepo(assert, deployer, repoTwo)
 	if assert.NotEqual(-1, which, "opentable/two no longer deployed after resolve") {
 		assert.Equal(1, deps[which].NumInstances)
 	}
@@ -218,8 +234,7 @@ func TestResolve(t *testing.T) {
 
 }
 
-func deploymentWithRepo(assert *assert.Assertions, ra sous.RectificationClient, repo string) (sous.Deployments, int) {
-	sc := singularity.NewSetCollector(ra)
+func deploymentWithRepo(assert *assert.Assertions, sc sous.Deployer, repo string) (sous.Deployments, int) {
 	deps, err := sc.GetRunningDeployment([]string{SingularityURL})
 	if assert.Nil(err) {
 		return deps, findRepo(deps, repo)
@@ -238,18 +253,11 @@ func findRepo(deps sous.Deployments, repo string) int {
 	return -1
 }
 
-func manifest(nc docker.ImageMapper, drepo, containerDir, sourceURL, version string) *sous.Manifest {
-	//	sv := sous.SourceVersion{
-	//		RepoURL:    sous.RepoURL(sourceURL),
-	//		RepoOffset: sous.RepoOffset(""),
-	//		Version:    semv.MustParse(version),
-	//	}
-
+func manifest(nc sous.Registry, drepo, containerDir, sourceURL, version string) *sous.Manifest {
 	in := BuildImageName(drepo, version)
 	BuildAndPushContainer(containerDir, in)
 
-	//nc.Insert(sv, in, "")
-	nc.GetSourceVersion(in)
+	nc.GetSourceVersion(docker.DockerBuildArtifact(in))
 
 	return &sous.Manifest{
 		Source: sous.SourceLocation{
@@ -261,14 +269,13 @@ func manifest(nc docker.ImageMapper, drepo, containerDir, sourceURL, version str
 		Deployments: sous.DeploySpecs{
 			SingularityURL: sous.PartialDeploySpec{
 				DeployConfig: sous.DeployConfig{
-					Resources:    sous.Resources{"cpus": "0.1", "memory": "100", "ports": "1"}, //map[string]string
+					Resources:    sous.Resources{"cpus": "0.1", "memory": "100", "ports": "1"},
 					Args:         []string{},
 					Env:          sous.Env{"repo": drepo}, //map[s]s
 					NumInstances: 1,
 					Volumes:      sous.Volumes{&sous.Volume{"/tmp", "/tmp", sous.VolumeMode("RO")}},
 				},
 				Version: semv.MustParse(version),
-				//clusterName: "it",
 			},
 		},
 	}

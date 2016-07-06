@@ -12,7 +12,7 @@ type (
 	// instead it collects the changes that would be performed and options
 	DummyRectificationClient struct {
 		logger    *log.Logger
-		nameCache sous.Builder
+		nameCache sous.Registry
 		created   []dummyRequest
 		deployed  []dummyDeploy
 		scaled    []dummyScale
@@ -44,15 +44,10 @@ type (
 	dummyDelete struct {
 		cluster, reqid, message string
 	}
-
-	// DummyNameCache implements the Builder interface by returning a
-	// computed image name for a given source version
-	DummyNameCache struct {
-	}
 )
 
 // NewDummyRectificationClient builds a new DummyRectificationClient
-func NewDummyRectificationClient(nc sous.Builder) *DummyRectificationClient {
+func NewDummyRectificationClient(nc sous.Registry) *DummyRectificationClient {
 	return &DummyRectificationClient{nameCache: nc}
 }
 
@@ -112,61 +107,13 @@ func (t *DummyRectificationClient) DeleteRequest(
 	return nil
 }
 
-//ImageName finds or guesses a docker image name for a Deployment
-func (t *DummyRectificationClient) ImageName(d *sous.Deployment) (string, error) {
-	a, err := t.nameCache.GetArtifact(d.SourceVersion)
-	if err != nil {
-		return "", err
-	}
-	return a.Name, nil
-}
-
 // ImageLabels gets the labels for an image name
 func (t *DummyRectificationClient) ImageLabels(in string) (map[string]string, error) {
-	a := &sous.BuildArtifact{Name: in}
+	a := docker.DockerBuildArtifact(in)
 	sv, err := t.nameCache.GetSourceVersion(a)
 	if err != nil {
 		return map[string]string{}, nil
 	}
 
 	return docker.DockerLabels(sv), nil
-}
-
-// NewDummyNameCache builds a new DummyNameCache
-func NewDummyNameCache() *DummyNameCache {
-	return &DummyNameCache{}
-}
-
-// TODO: Factor out name cache concept from core sous lib & get rid of this func.
-func (dc *DummyNameCache) Build(*sous.BuildContext, sous.Buildpack, *sous.DetectResult) (*sous.BuildResult, error) {
-	return nil, nil
-	panic("not implemented")
-}
-
-// TODO: Factor out name cache concept from core sous lib & get rid of this func.
-func (dc *DummyNameCache) GetArtifact(sous.SourceVersion) (*sous.BuildArtifact, error) {
-	return nil, nil
-	panic("not implemented")
-}
-
-// GetImageName implements part of the interface for ImageMapper
-func (dc *DummyNameCache) GetImageName(sv sous.SourceVersion) (string, error) {
-	return sv.String(), nil
-}
-
-// GetCanonicalName implements part of the interface for ImageMapper
-// It simply returns whatever it was given
-func (dc *DummyNameCache) GetCanonicalName(in string) (string, error) {
-	return in, nil
-}
-
-// Insert implements part of ImageMapper
-// it drops the sv/in pair on the floor
-func (dc *DummyNameCache) Insert(sv sous.SourceVersion, in, etag string) error {
-	return nil
-}
-
-// GetSourceVersion implements part of ImageMapper
-func (dc *DummyNameCache) GetSourceVersion(*sous.BuildArtifact) (sous.SourceVersion, error) {
-	return sous.SourceVersion{}, nil
 }

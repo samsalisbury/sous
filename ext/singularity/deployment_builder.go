@@ -15,7 +15,7 @@ type (
 		deploy        sDeploy
 		request       sRequest
 		req           SingReq
-		rectification sous.RectificationClient
+		rectification RectificationClient
 	}
 
 	canRetryRequest struct {
@@ -42,7 +42,7 @@ func (cr *canRetryRequest) name() string {
 
 // NewDeploymentBuilder creates a deploymentBuilder prepared to collect the
 // data associated with req and return a Deployment
-func NewDeploymentBuilder(cl sous.RectificationClient, req SingReq) deploymentBuilder {
+func NewDeploymentBuilder(cl RectificationClient, req SingReq) deploymentBuilder {
 	return deploymentBuilder{rectification: cl, req: req}
 }
 

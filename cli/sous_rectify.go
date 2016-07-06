@@ -14,8 +14,8 @@ import (
 type SousRectify struct {
 	Config       LocalSousConfig
 	DockerClient LocalDockerClient
-	Builder      sous.Builder
 	Deployer     sous.Deployer
+	Registry     sous.Registry
 	flags        struct {
 		dryrun,
 		manifest string
@@ -47,27 +47,13 @@ func (sr *SousRectify) AddFlags(fs *flag.FlagSet) {
 
 // Execute fulfils the cmdr.Executor interface
 func (sr *SousRectify) Execute(args []string) cmdr.Result {
-	var nc sous.Builder
-	var rc sous.Deployer
-
 	if len(args) < 1 {
 		return UsageErrorf("sous rectify requires a directory to load the intended deployment from")
 	}
 	dir := args[0]
 
-	if sr.flags.dryrun == "both" || sr.flags.dryrun == "registry" {
-		nc = singularity.NewDummyNameCache()
-	} else {
-		nc = sr.Builder
-	}
+	sr.resolveDryRunFlag(sr.flags.dryrun)
 
-	if sr.flags.dryrun == "both" || sr.flags.dryrun == "scheduler" {
-		drc := singularity.NewDummyRectificationClient(nc)
-		drc.SetLogger(log.New(os.Stdout, "rectify: ", 0))
-		rc = drc
-	} else {
-		rc = sr.Deployer
-	}
 	var predicate sous.DeploymentPredicate
 	if sr.flags.manifest != "" {
 		predicate = func(d *sous.Deployment) bool {
@@ -75,11 +61,28 @@ func (sr *SousRectify) Execute(args []string) cmdr.Result {
 		}
 	}
 
-	// If predicate is still nil, that means resolve all. See Deployments.Filter.
-	err := sous.ResolveFromDirFiltered(rc, dir, predicate)
+	intendedState, err := sous.LoadState(dir)
 	if err != nil {
 		return EnsureErrorResult(err)
 	}
 
+	r := sous.NewResolver(sr.Deployer, sr.Registry, intendedState)
+
+	// If predicate is still nil, that means resolve all. See Deployments.Filter.
+	if err := r.ResolveFilteredDeployments(predicate); err != nil {
+		return EnsureErrorResult(err)
+	}
+
 	return Success()
+}
+
+func (sr *SousRectify) resolveDryRunFlag(dryrun string) {
+	if dryrun == "both" || dryrun == "registry" {
+		sr.Registry = singularity.NewDummyRegistry()
+	}
+	if dryrun == "both" || dryrun == "scheduler" {
+		drc := singularity.NewDummyRectificationClient(sr.Registry)
+		drc.SetLogger(log.New(os.Stdout, "rectify: ", 0))
+		sr.Deployer = singularity.NewRectifier(sr.Registry, drc)
+	}
 }

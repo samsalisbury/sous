@@ -15,7 +15,7 @@ import (
 type (
 	// Build represents a single build of a project.
 	Builder struct {
-		ImageMapper               ImageMapper
+		ImageMapper               *NameCache
 		DockerRegistryHost        string
 		Context                   *sous.SourceContext
 		SourceShell, ScratchShell shell.Shell
@@ -31,7 +31,7 @@ type (
 // NewBuildWithShells creates a new build using source code in the working
 // directory of sourceShell, and using the working dir of scratchShell as
 // temporary storage.
-func NewBuilder(nc ImageMapper, drh string, c *sous.SourceContext, sourceShell, scratchShell shell.Shell) (*Builder, error) {
+func NewBuilder(nc *NameCache, drh string, c *sous.SourceContext, sourceShell, scratchShell shell.Shell) (*Builder, error) {
 	b := &Builder{
 		ImageMapper:        nc,
 		DockerRegistryHost: drh,
@@ -53,18 +53,11 @@ func NewBuilder(nc ImageMapper, drh string, c *sous.SourceContext, sourceShell, 
 }
 
 func (b *Builder) GetArtifact(sv sous.SourceVersion) (*sous.BuildArtifact, error) {
-	name, err := b.ImageMapper.GetImageName(sv)
-	if err != nil {
-		return nil, err
-	}
-	return &sous.BuildArtifact{
-		Name: name,
-		Type: "docker",
-	}, nil
+	return b.ImageMapper.GetArtifact(sv)
 }
 
 func (b *Builder) GetSourceVersion(a *sous.BuildArtifact) (sous.SourceVersion, error) {
-	return b.ImageMapper.GetSourceVersion(a.Name)
+	return b.ImageMapper.GetSourceVersion(a)
 }
 
 // Build performs the build.
