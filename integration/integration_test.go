@@ -56,7 +56,8 @@ func TestGetRunningDeploymentSet(t *testing.T) {
 	drc := docker_registry.NewClient()
 	drc.BecomeFoolishlyTrusting()
 	nc := docker.NewNameCache(drc, newInMemoryDB("grds"))
-	d := singularity.NewRectifier(nc)
+	client := singularity.NewRectiAgent(nc)
+	d := singularity.NewRectifier(nc, client)
 
 	deps, which := deploymentWithRepo(assert, d, "https://github.com/opentable/docker-grafana.git")
 	if assert.Equal(3, len(deps)) {
@@ -100,7 +101,9 @@ func TestMissingImage(t *testing.T) {
 
 	// ****
 	nc := docker.NewNameCache(drc, newInMemoryDB("missingimage"))
-	deployer := singularity.NewRectifier(nc)
+
+	client := singularity.NewRectiAgent(nc)
+	deployer := singularity.NewRectifier(nc, client)
 
 	r := sous.NewResolver(deployer, nc, stateOne)
 
@@ -160,7 +163,8 @@ func TestResolve(t *testing.T) {
 
 	// ****
 	log.Print("Resolving from nothing to one+two")
-	deployer := singularity.NewRectifier(nc)
+	client := singularity.NewRectiAgent(nc)
+	deployer := singularity.NewRectifier(nc, client)
 
 	r := sous.NewResolver(deployer, nc, stateOneTwo)
 
@@ -190,7 +194,8 @@ func TestResolve(t *testing.T) {
 	// XXX Let's hope this is a temporary solution to a testing issue
 	// The problem is laid out in DCOPS-7625
 	for tries := 0; tries < 3; tries++ {
-		deployer := singularity.NewRectifier(nc)
+		client := singularity.NewRectiAgent(nc)
+		deployer := singularity.NewRectifier(nc, client)
 
 		r := sous.NewResolver(deployer, nc, stateTwoThree)
 

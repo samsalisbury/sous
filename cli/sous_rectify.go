@@ -14,7 +14,6 @@ import (
 type SousRectify struct {
 	Config       LocalSousConfig
 	DockerClient LocalDockerClient
-	Builder      sous.Registry
 	Deployer     sous.Deployer
 	Registry     sous.Registry
 	flags        struct {
@@ -79,11 +78,11 @@ func (sr *SousRectify) Execute(args []string) cmdr.Result {
 
 func (sr *SousRectify) resolveDryRunFlag(dryrun string) {
 	if dryrun == "both" || dryrun == "registry" {
-		sr.Builder = singularity.NewDummyRegistry()
+		sr.Registry = singularity.NewDummyRegistry()
 	}
 	if dryrun == "both" || dryrun == "scheduler" {
-		drc := singularity.NewDummyRectificationClient(sr.Builder)
+		drc := singularity.NewDummyRectificationClient(sr.Registry)
 		drc.SetLogger(log.New(os.Stdout, "rectify: ", 0))
-		sr.Deployer = drc
+		sr.Deployer = singularity.NewRectifier(sr.Registry, drc)
 	}
 }

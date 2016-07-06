@@ -49,9 +49,8 @@ type (
 	DTOMap map[string]interface{}
 )
 
-func NewRectifier(r sous.Registry) sous.Deployer {
-	client := NewRectiAgent(r)
-	return &rectifier{Client: client, Registry: r}
+func NewRectifier(r sous.Registry, c RectificationClient) sous.Deployer {
+	return &rectifier{Client: c, Registry: r}
 }
 
 func (r *rectifier) RectifyCreates(cc <-chan *sous.Deployment, errs chan<- sous.RectificationError) {
