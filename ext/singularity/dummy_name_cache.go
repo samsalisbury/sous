@@ -20,12 +20,6 @@ func (dc *DummyNameCache) GetArtifact(sv sous.SourceVersion) (*sous.BuildArtifac
 	return docker.DockerBuildArtifact(sv.String()), nil
 }
 
-// GetCanonicalName implements part of the interface for ImageMapper
-// It simply returns whatever it was given
-func (dc *DummyNameCache) GetCanonicalName(in string) (string, error) {
-	return in, nil
-}
-
 // Insert implements part of ImageMapper
 // it drops the sv/in pair on the floor
 func (dc *DummyNameCache) Insert(sv sous.SourceVersion, in, etag string) error {
