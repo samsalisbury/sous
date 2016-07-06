@@ -38,23 +38,6 @@ type (
 	NoSourceVersionFound struct {
 		imageName
 	}
-
-	// ImageMapper interface describes the component responsible for mapping
-	// source versions to names
-	ImageMapper interface {
-		// GetCanonicalName returns the canonical name for an image given any known
-		// name
-		GetCanonicalName(in string) (string, error)
-
-		// Insert puts a given SourceVersion/image name pair into the name cache
-		Insert(sv sous.SourceVersion, in, etag string) error
-
-		// GetImageName returns the docker image name for a given source version
-		GetImageName(sous.SourceVersion) (string, error)
-
-		// GetSourceVersion returns the source version for a given image name
-		GetSourceVersion(*sous.BuildArtifact) (sous.SourceVersion, error)
-	}
 )
 
 func DockerBuildArtifact(imageName string) *sous.BuildArtifact {
