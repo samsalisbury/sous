@@ -46,14 +46,19 @@ func (c *command) start() error {
 
 func (c *command) wait() error {
 	c.err = c.itself.Wait()
+	c.bufferStreams()
+	return c.err
+}
+
+func (c *command) bufferStreams() {
 	c.stdout = c.itself.Stdout.(*bytes.Buffer).String()
 	c.stderr = c.itself.Stderr.(*bytes.Buffer).String()
-	return c.err
 }
 
 func (c *command) run() error {
 	c.start()
 	if c.err != nil {
+		c.bufferStreams()
 		return c.err
 	}
 	c.wait()
