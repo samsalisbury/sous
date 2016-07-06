@@ -144,9 +144,12 @@ func (dc *DummyNameCache) Build(*sous.BuildContext, sous.Buildpack, *sous.Detect
 }
 
 // TODO: Factor out name cache concept from core sous lib & get rid of this func.
-func (dc *DummyNameCache) GetArtifact(sous.SourceVersion) (*sous.BuildArtifact, error) {
-	return nil, nil
-	panic("not implemented")
+func (dc *DummyNameCache) GetArtifact(sv sous.SourceVersion) (*sous.BuildArtifact, error) {
+	imageName, err := dc.GetImageName(sv)
+	if err != nil {
+		return nil, err
+	}
+	return &sous.BuildArtifact{Name: imageName, Type: "docker"}, nil
 }
 
 // GetImageName implements part of the interface for ImageMapper
