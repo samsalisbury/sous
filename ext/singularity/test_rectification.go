@@ -123,7 +123,7 @@ func (t *DummyRectificationClient) DeleteRequest(
 
 // ImageLabels gets the labels for an image name
 func (t *DummyRectificationClient) ImageLabels(in string) (map[string]string, error) {
-	a := &sous.BuildArtifact{Name: in}
+	a := docker.DockerBuildArtifact(in)
 	sv, err := t.nameCache.GetSourceVersion(a)
 	if err != nil {
 		return map[string]string{}, nil
@@ -149,7 +149,7 @@ func (dc *DummyNameCache) GetArtifact(sv sous.SourceVersion) (*sous.BuildArtifac
 	if err != nil {
 		return nil, err
 	}
-	return &sous.BuildArtifact{Name: imageName, Type: "docker"}, nil
+	return docker.DockerBuildArtifact(imageName), nil
 }
 
 // GetImageName implements part of the interface for ImageMapper

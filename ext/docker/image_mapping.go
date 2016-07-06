@@ -94,10 +94,7 @@ func (nc *NameCache) GetArtifact(sv sous.SourceVersion) (*sous.BuildArtifact, er
 	if err != nil {
 		return nil, err
 	}
-	return &sous.BuildArtifact{
-		Name: name,
-		Type: "docker",
-	}, nil
+	return DockerBuildArtifact(name), nil
 }
 
 // GetSourceVersion looks up the source version for a given image name
@@ -207,7 +204,7 @@ func (nc *NameCache) harvest(sl sous.SourceLocation) error {
 				Log.Debug.Printf("Harvested tag: %v", t)
 				in, err := reference.WithTag(ref, t)
 				if err == nil {
-					a := &sous.BuildArtifact{Name: in.String(), Type: "docker"}
+					a := DockerBuildArtifact(in.String())
 					nc.GetSourceVersion(a) //pull it into the cache...
 				}
 			}
