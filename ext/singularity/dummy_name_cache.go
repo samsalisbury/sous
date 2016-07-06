@@ -16,12 +16,6 @@ func NewDummyNameCache() *DummyNameCache {
 }
 
 // TODO: Factor out name cache concept from core sous lib & get rid of this func.
-func (dc *DummyNameCache) Build(*sous.BuildContext, sous.Buildpack, *sous.DetectResult) (*sous.BuildResult, error) {
-	return nil, nil
-	panic("not implemented")
-}
-
-// TODO: Factor out name cache concept from core sous lib & get rid of this func.
 func (dc *DummyNameCache) GetArtifact(sv sous.SourceVersion) (*sous.BuildArtifact, error) {
 	imageName, err := dc.GetImageName(sv)
 	if err != nil {
