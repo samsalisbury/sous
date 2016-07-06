@@ -20,12 +20,6 @@ func (dc *DummyNameCache) GetArtifact(sv sous.SourceVersion) (*sous.BuildArtifac
 	return docker.DockerBuildArtifact(sv.String()), nil
 }
 
-// Insert implements part of ImageMapper
-// it drops the sv/in pair on the floor
-func (dc *DummyNameCache) Insert(sv sous.SourceVersion, in, etag string) error {
-	return nil
-}
-
 // GetSourceVersion implements part of ImageMapper
 func (dc *DummyNameCache) GetSourceVersion(*sous.BuildArtifact) (sous.SourceVersion, error) {
 	return sous.SourceVersion{}, nil
