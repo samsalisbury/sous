@@ -252,16 +252,9 @@ func findRepo(deps sous.Deployments, repo string) int {
 }
 
 func manifest(nc sous.Registry, drepo, containerDir, sourceURL, version string) *sous.Manifest {
-	//	sv := sous.SourceVersion{
-	//		RepoURL:    sous.RepoURL(sourceURL),
-	//		RepoOffset: sous.RepoOffset(""),
-	//		Version:    semv.MustParse(version),
-	//	}
-
 	in := BuildImageName(drepo, version)
 	BuildAndPushContainer(containerDir, in)
 
-	//nc.Insert(sv, in, "")
 	nc.GetSourceVersion(docker.DockerBuildArtifact(in))
 
 	return &sous.Manifest{
@@ -274,14 +267,13 @@ func manifest(nc sous.Registry, drepo, containerDir, sourceURL, version string) 
 		Deployments: sous.DeploySpecs{
 			SingularityURL: sous.PartialDeploySpec{
 				DeployConfig: sous.DeployConfig{
-					Resources:    sous.Resources{"cpus": "0.1", "memory": "100", "ports": "1"}, //map[string]string
+					Resources:    sous.Resources{"cpus": "0.1", "memory": "100", "ports": "1"},
 					Args:         []string{},
 					Env:          sous.Env{"repo": drepo}, //map[s]s
 					NumInstances: 1,
 					Volumes:      sous.Volumes{&sous.Volume{"/tmp", "/tmp", sous.VolumeMode("RO")}},
 				},
 				Version: semv.MustParse(version),
-				//clusterName: "it",
 			},
 		},
 	}
