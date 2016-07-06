@@ -38,7 +38,7 @@ func TestModifyScale(t *testing.T) {
 	}
 
 	chanset := sous.NewDiffChans(1)
-	nc := NewDummyNameCache()
+	nc := NewDummyRegistry()
 	client := NewDummyRectificationClient(nc)
 
 	errs := sous.Rectify(chanset, client, nc)
@@ -85,7 +85,7 @@ func TestModifyImage(t *testing.T) {
 
 	chanset := sous.NewDiffChans(1)
 
-	nc := NewDummyNameCache()
+	nc := NewDummyRegistry()
 	client := NewDummyRectificationClient(nc)
 
 	errs := sous.Rectify(chanset, client, nc)
@@ -136,7 +136,7 @@ func TestModifyResources(t *testing.T) {
 	}
 
 	chanset := sous.NewDiffChans(1)
-	nc := NewDummyNameCache()
+	nc := NewDummyRegistry()
 	client := NewDummyRectificationClient(nc)
 
 	errs := sous.Rectify(chanset, client, nc)
@@ -190,7 +190,7 @@ func TestModify(t *testing.T) {
 	}
 
 	chanset := sous.NewDiffChans(1)
-	nc := NewDummyNameCache()
+	nc := NewDummyRegistry()
 	client := NewDummyRectificationClient(nc)
 
 	errs := sous.Rectify(chanset, client, nc)
@@ -227,7 +227,7 @@ func TestDeletes(t *testing.T) {
 	}
 
 	chanset := sous.NewDiffChans(1)
-	nc := NewDummyNameCache()
+	nc := NewDummyRegistry()
 	client := NewDummyRectificationClient(nc)
 
 	errs := sous.Rectify(chanset, client, nc)
@@ -251,7 +251,7 @@ func TestCreates(t *testing.T) {
 	assert := assert.New(t)
 
 	chanset := sous.NewDiffChans(1)
-	nc := NewDummyNameCache()
+	nc := NewDummyRegistry()
 	client := NewDummyRectificationClient(nc)
 
 	errs := sous.Rectify(chanset, client, nc)
