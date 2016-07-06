@@ -17,7 +17,7 @@ const ReqsPerServer = 10
 
 type (
 	// SetCollector implements sous.Deployer
-	SetCollector struct {
+	Deployer struct {
 		sous.RectificationClient
 	}
 
@@ -36,13 +36,13 @@ type (
 )
 
 // NewSetCollector returns a new set collector
-func NewSetCollector(rc sous.RectificationClient) *SetCollector {
-	return &SetCollector{rc}
+func NewSetCollector(rc sous.RectificationClient) *Deployer {
+	return &Deployer{rc}
 }
 
 // GetRunningDeployment collects data from the Singularity clusters and
 // returns a list of actual deployments
-func (sc *SetCollector) GetRunningDeployment(singUrls []string) (deps sous.Deployments, err error) {
+func (sc *Deployer) GetRunningDeployment(singUrls []string) (deps sous.Deployments, err error) {
 	retries := make(retryCounter)
 	errCh := make(chan error)
 	deps = make(sous.Deployments, 0)

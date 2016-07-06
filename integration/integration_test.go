@@ -101,7 +101,7 @@ func TestMissingImage(t *testing.T) {
 	// ****
 	nc := docker.NewNameCache(drc, newInMemoryDB("missingimage"))
 	ra := singularity.NewRectiAgent(&docker.Builder{ImageMapper: nc})
-	err := sous.Resolve(&singularity.SetCollector{ra}, stateOne)
+	err := sous.Resolve(&singularity.Deployer{ra}, stateOne)
 	assert.Error(err)
 
 	// ****
@@ -157,7 +157,7 @@ func TestResolve(t *testing.T) {
 
 	// ****
 	log.Print("Resolving from nothing to one+two")
-	err := sous.Resolve(&singularity.SetCollector{ra}, stateOneTwo)
+	err := sous.Resolve(&singularity.Deployer{ra}, stateOneTwo)
 	if err != nil {
 		assert.Fail(err.Error())
 	}
@@ -183,7 +183,7 @@ func TestResolve(t *testing.T) {
 	// XXX Let's hope this is a temporary solution to a testing issue
 	// The problem is laid out in DCOPS-7625
 	for tries := 0; tries < 3; tries++ {
-		err = sous.Resolve(&singularity.SetCollector{ra}, stateTwoThree)
+		err = sous.Resolve(&singularity.Deployer{ra}, stateTwoThree)
 		if err != nil {
 			if !conflictRE.MatchString(err.Error()) {
 				assert.FailNow(err.Error())
