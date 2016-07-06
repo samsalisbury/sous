@@ -41,7 +41,7 @@ func TestModifyScale(t *testing.T) {
 	nc := NewDummyNameCache()
 	client := NewDummyRectificationClient(nc)
 
-	errs := sous.Rectify(chanset, client)
+	errs := sous.Rectify(chanset, client, nc)
 	chanset.Modified <- pair
 	chanset.Close()
 	for e := range errs {
@@ -88,7 +88,7 @@ func TestModifyImage(t *testing.T) {
 	nc := NewDummyNameCache()
 	client := NewDummyRectificationClient(nc)
 
-	errs := sous.Rectify(chanset, client)
+	errs := sous.Rectify(chanset, client, nc)
 	chanset.Modified <- pair
 	chanset.Close()
 	for e := range errs {
@@ -139,7 +139,7 @@ func TestModifyResources(t *testing.T) {
 	nc := NewDummyNameCache()
 	client := NewDummyRectificationClient(nc)
 
-	errs := sous.Rectify(chanset, client)
+	errs := sous.Rectify(chanset, client, nc)
 	chanset.Modified <- pair
 	chanset.Close()
 	for e := range errs {
@@ -193,7 +193,7 @@ func TestModify(t *testing.T) {
 	nc := NewDummyNameCache()
 	client := NewDummyRectificationClient(nc)
 
-	errs := sous.Rectify(chanset, client)
+	errs := sous.Rectify(chanset, client, nc)
 	chanset.Modified <- pair
 	chanset.Close()
 	for e := range errs {
@@ -230,7 +230,7 @@ func TestDeletes(t *testing.T) {
 	nc := NewDummyNameCache()
 	client := NewDummyRectificationClient(nc)
 
-	errs := sous.Rectify(chanset, client)
+	errs := sous.Rectify(chanset, client, nc)
 	chanset.Deleted <- deleted
 	chanset.Close()
 	for e := range errs {
@@ -254,7 +254,7 @@ func TestCreates(t *testing.T) {
 	nc := NewDummyNameCache()
 	client := NewDummyRectificationClient(nc)
 
-	errs := sous.Rectify(chanset, client)
+	errs := sous.Rectify(chanset, client, nc)
 
 	created := &sous.Deployment{
 		SourceVersion: sous.SourceVersion{

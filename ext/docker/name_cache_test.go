@@ -29,7 +29,7 @@ func manifest(nc ImageMapper, drepo, containerDir, sourceURL, version string) *s
 	integration.BuildAndPushContainer(containerDir, in)
 
 	//nc.Insert(sv, in, "")
-	nc.GetSourceVersion(in)
+	nc.GetSourceVersion(DockerBuildArtifact(in))
 
 	return &sous.Manifest{
 		Source: sous.SourceLocation{

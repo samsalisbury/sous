@@ -74,6 +74,7 @@ func BuildGraph(s *Sous, c *cmdr.CLI) (*SousCLIGraph, error) {
 		newDockerClient,
 		newBuilder,
 		newDeployer,
+		newRegistry,
 	)
 }
 
@@ -146,6 +147,14 @@ func newLocalGitRepo(c LocalGitClient) (v LocalGitRepo, err error) {
 }
 
 func newBuilder(cl LocalDockerClient, ctx *sous.SourceContext, source LocalWorkDirShell, scratch ScratchDirShell, u LocalUser) (sous.Builder, error) {
+	return makeDockerBuilder(cl, ctx, source, scratch, u)
+}
+
+func newRegistry(cl LocalDockerClient, ctx *sous.SourceContext, source LocalWorkDirShell, scratch ScratchDirShell, u LocalUser) (sous.Registry, error) {
+	return makeDockerBuilder(cl, ctx, source, scratch, u)
+}
+
+func makeDockerBuilder(cl LocalDockerClient, ctx *sous.SourceContext, source LocalWorkDirShell, scratch ScratchDirShell, u LocalUser) (*docker.Builder, error) {
 	cfg := u.DefaultConfig()
 	dbCfg := &docker.DBConfig{Driver: cfg.DatabaseDriver, Connection: cfg.DatabaseConnection}
 	db, err := docker.GetDatabase(dbCfg)
@@ -153,10 +162,8 @@ func newBuilder(cl LocalDockerClient, ctx *sous.SourceContext, source LocalWorkD
 		return nil, fmt.Errorf("unable to build name cache DB: ", err)
 	}
 	nc := &docker.NameCache{cl.Client, db}
-
 	// TODO: Get this from config.
 	drh := "docker.otenv.com"
-
 	return docker.NewBuilder(nc, drh, ctx, source.Sh, scratch.Sh)
 }
 

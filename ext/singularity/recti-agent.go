@@ -141,15 +141,6 @@ func (ra *RectiAgent) Scale(cluster, reqID string, instanceCount int, message st
 	return err
 }
 
-// ImageName gets the container image name for a given deployment
-func (ra *RectiAgent) ImageName(d *sous.Deployment) (string, error) {
-	a, err := ra.nameCache.GetArtifact(d.SourceVersion)
-	if err != nil {
-		return "", err
-	}
-	return a.Name, nil
-}
-
 // ImageLabels gets the labels for an image name.
 func (ra *RectiAgent) ImageLabels(in string) (map[string]string, error) {
 	a := &sous.BuildArtifact{Name: in}

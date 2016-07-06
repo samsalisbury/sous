@@ -21,7 +21,8 @@ Rectify(dChans)
 
 type (
 	rectifier struct {
-		Client RectificationClient
+		Client   RectificationClient
+		Registry Registry
 	}
 
 	// RectificationClient abstracts the raw interactions with Singularity.  The
@@ -42,9 +43,6 @@ type (
 
 		// DeleteRequest instructs Singularity to delete a particular request
 		DeleteRequest(cluster, reqID, message string) error
-
-		//ImageName finds or guesses a docker image name for a Deployment
-		ImageName(d *Deployment) (string, error)
 
 		//ImageLabels finds the (sous) docker labels for a given image name
 		ImageLabels(imageName string) (labels map[string]string, err error)
@@ -123,9 +121,9 @@ func (e *ChangeError) IntendedDeployment() *Deployment {
 }
 
 // Rectify takes a DiffChans and issues the commands to the infrastructure to reconcile the differences
-func Rectify(dcs DiffChans, rc RectificationClient) chan RectificationError {
+func Rectify(dcs DiffChans, rc RectificationClient, reg Registry) chan RectificationError {
 	errs := make(chan RectificationError)
-	rect := rectifier{rc}
+	rect := rectifier{Client: rc, Registry: reg}
 	wg := &sync.WaitGroup{}
 	wg.Add(3)
 	go func() { rect.rectifyCreates(dcs.Created, errs); wg.Done() }()
@@ -138,36 +136,39 @@ func Rectify(dcs DiffChans, rc RectificationClient) chan RectificationError {
 
 func (r *rectifier) rectifyCreates(cc chan *Deployment, errs chan<- RectificationError) {
 	for d := range cc {
-		name, err := r.Client.ImageName(d)
-		if err != nil {
-			// log.Printf("% +v", d)
+		if err := r.rectifySingleCreate(d); err != nil {
 			errs <- &CreateError{Deployment: d, Err: err}
-			continue
-		}
-
-		reqID := computeRequestID(d)
-		err = r.Client.PostRequest(d.Cluster, reqID, d.NumInstances)
-		if err != nil {
-			// log.Printf("%T %#v", d, d)
-			errs <- &CreateError{Deployment: d, Err: err}
-			continue
-		}
-
-		err = r.Client.Deploy(d.Cluster, newDepID(), reqID, name, d.Resources, d.Env, d.DeployConfig.Volumes)
-		if err != nil {
-			// log.Printf("% +v", d)
-			errs <- &CreateError{Deployment: d, Err: err}
-			continue
 		}
 	}
 }
 
+func (r *rectifier) ImageName(d *Deployment) (string, error) {
+	a, err := r.Registry.GetArtifact(d.SourceVersion)
+	if err != nil {
+		return "", err
+	}
+	return a.Name, err
+}
+
+func (r *rectifier) rectifySingleCreate(d *Deployment) error {
+	name, err := r.ImageName(d)
+	if err != nil {
+		return err
+	}
+	reqID := computeRequestID(d)
+	if err := r.Client.PostRequest(d.Cluster, reqID, d.NumInstances); err != nil {
+		return err
+	}
+	return r.Client.Deploy(
+		d.Cluster, newDepID(), reqID, name, d.Resources,
+		d.Env, d.DeployConfig.Volumes)
+}
+
 func (r *rectifier) rectifyDeletes(dc chan *Deployment, errs chan<- RectificationError) {
 	for d := range dc {
-		err := r.Client.DeleteRequest(d.Cluster, computeRequestID(d), "deleting request for removed manifest")
-		if err != nil {
+		if err := r.Client.DeleteRequest(d.Cluster, computeRequestID(d),
+			"deleting request for removed manifest"); err != nil {
 			errs <- &DeleteError{Deployment: d, Err: err}
-			continue
 		}
 	}
 }
@@ -175,43 +176,45 @@ func (r *rectifier) rectifyDeletes(dc chan *Deployment, errs chan<- Rectificatio
 func (r *rectifier) rectifyModifys(
 	mc chan *DeploymentPair, errs chan<- RectificationError) {
 	for pair := range mc {
-		Log.Debug.Printf("Rectifying modify: \n  %+ v \n    =>  \n  %+ v", pair.Prior, pair.Post)
-		if r.changesReq(pair) {
-			Log.Debug.Printf("Scaling...")
-			err := r.Client.Scale(
-				pair.Post.Cluster,
-				computeRequestID(pair.Post),
-				pair.Post.NumInstances,
-				"rectified scaling")
-			if err != nil {
-				errs <- &ChangeError{Deployments: pair, Err: err}
-				continue
-			}
-		}
-
-		if changesDep(pair) {
-			Log.Debug.Printf("Deploying...")
-			name, err := r.Client.ImageName(pair.Post)
-			if err != nil {
-				errs <- &ChangeError{Deployments: pair, Err: err}
-				continue
-			}
-
-			err = r.Client.Deploy(
-				pair.Post.Cluster,
-				newDepID(),
-				computeRequestID(pair.Prior),
-				name,
-				pair.Post.Resources,
-				pair.Post.Env,
-				pair.Post.DeployConfig.Volumes,
-			)
-			if err != nil {
-				errs <- &ChangeError{Deployments: pair, Err: err}
-				continue
-			}
+		if err := r.rectifySingleModification(pair); err != nil {
+			errs <- &ChangeError{Deployments: pair, Err: err}
 		}
 	}
+}
+
+func (r *rectifier) rectifySingleModification(pair *DeploymentPair) error {
+	Log.Debug.Printf("Rectifying modify: \n  %+ v \n    =>  \n  %+ v", pair.Prior, pair.Post)
+	if r.changesReq(pair) {
+		Log.Debug.Printf("Scaling...")
+		if err := r.Client.Scale(
+			pair.Post.Cluster,
+			computeRequestID(pair.Post),
+			pair.Post.NumInstances,
+			"rectified scaling"); err != nil {
+			return err
+		}
+	}
+
+	if changesDep(pair) {
+		Log.Debug.Printf("Deploying...")
+		name, err := r.ImageName(pair.Post)
+		if err != nil {
+			return err
+		}
+
+		if err := r.Client.Deploy(
+			pair.Post.Cluster,
+			newDepID(),
+			computeRequestID(pair.Prior),
+			name,
+			pair.Post.Resources,
+			pair.Post.Env,
+			pair.Post.DeployConfig.Volumes,
+		); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (r rectifier) changesReq(pair *DeploymentPair) bool {

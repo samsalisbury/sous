@@ -101,7 +101,12 @@ func TestMissingImage(t *testing.T) {
 	// ****
 	nc := docker.NewNameCache(drc, newInMemoryDB("missingimage"))
 	ra := singularity.NewRectiAgent(&docker.Builder{ImageMapper: nc})
-	err := sous.Resolve(&singularity.Deployer{ra}, stateOne)
+	deployer := singularity.NewSetCollector(ra)
+
+	r := sous.NewResolver(deployer, nc, stateOne)
+
+	err := r.Resolve()
+
 	assert.Error(err)
 
 	// ****
@@ -157,7 +162,11 @@ func TestResolve(t *testing.T) {
 
 	// ****
 	log.Print("Resolving from nothing to one+two")
-	err := sous.Resolve(&singularity.Deployer{ra}, stateOneTwo)
+	deployer := singularity.NewSetCollector(ra)
+
+	r := sous.NewResolver(deployer, nc, stateOneTwo)
+
+	err := r.Resolve()
 	if err != nil {
 		assert.Fail(err.Error())
 	}
@@ -183,7 +192,11 @@ func TestResolve(t *testing.T) {
 	// XXX Let's hope this is a temporary solution to a testing issue
 	// The problem is laid out in DCOPS-7625
 	for tries := 0; tries < 3; tries++ {
-		err = sous.Resolve(&singularity.Deployer{ra}, stateTwoThree)
+		deployer := singularity.NewSetCollector(ra)
+
+		r := sous.NewResolver(deployer, nc, stateTwoThree)
+
+		err := r.Resolve()
 		if err != nil {
 			if !conflictRE.MatchString(err.Error()) {
 				assert.FailNow(err.Error())
@@ -249,7 +262,7 @@ func manifest(nc docker.ImageMapper, drepo, containerDir, sourceURL, version str
 	BuildAndPushContainer(containerDir, in)
 
 	//nc.Insert(sv, in, "")
-	nc.GetSourceVersion(in)
+	nc.GetSourceVersion(&sous.BuildArtifact{Name: in, Type: "docker"})
 
 	return &sous.Manifest{
 		Source: sous.SourceLocation{

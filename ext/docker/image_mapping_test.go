@@ -70,7 +70,7 @@ func TestRoundTrip(t *testing.T) {
 		CanonicalName: cn,
 		AllNames:      []string{cn, in},
 	})
-	sv, err = nc.GetSourceVersion(in)
+	sv, err = nc.GetSourceVersion(DockerBuildArtifact(in))
 	if assert.Nil(err) {
 		assert.Equal(newSV, sv)
 	}
@@ -117,7 +117,7 @@ func TestHarvesting(t *testing.T) {
 	})
 
 	// a la a SetCollector getting the SV
-	_, err := nc.GetSourceVersion(in)
+	_, err := nc.GetSourceVersion(DockerBuildArtifact(in))
 	assert.Nil(err)
 
 	tag = "version-2.3.4"
