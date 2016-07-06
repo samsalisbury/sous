@@ -21,7 +21,7 @@ func testSourceContext() *sous.SourceContext {
 
 func TestBuild(t *testing.T) {
 	assert := assert.New(t)
-	log.SetFlags(log.Flags() | log.Lshortfile)
+	log.SetFlags(log.Flags() | log.Llongfile)
 
 	repoName := "github.com/opentable/awesomeproject"
 	revision := "987654321987654312"

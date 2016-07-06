@@ -2,7 +2,6 @@ package docker
 
 import (
 	"database/sql"
-	"log"
 	"testing"
 
 	"github.com/opentable/sous/lib"
@@ -141,7 +140,6 @@ func TestHarvesting(t *testing.T) {
 
 func TestMissingName(t *testing.T) {
 	assert := assert.New(t)
-	log.SetFlags(log.Flags() | log.Lshortfile)
 	dc := docker_registry.NewDummyClient()
 	nc := NewNameCache(dc, inMemoryDB())
 

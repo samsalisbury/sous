@@ -38,8 +38,6 @@ var successfulBuildRE = regexp.MustCompile(`Successfully built (\w+)`)
 // Importantly, WrapCompose handles panics so that defers will still happen
 // (including shutting down singularity)
 func WrapCompose(m *testing.M, composeDir string) (resultCode int) {
-	log.SetFlags(log.Flags() | log.Lshortfile)
-
 	if testing.Short() {
 		return 0
 	}
@@ -248,6 +246,7 @@ func BuildAndPushContainer(containerDir, tagName string) error {
 	output, err := build.CombinedOutput()
 	if err != nil {
 		log.Print("Problem building container: ", containerDir, "\n", string(output))
+		log.Print(err)
 		return err
 	}
 

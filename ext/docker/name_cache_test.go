@@ -2,6 +2,7 @@ package docker
 
 import (
 	"flag"
+	"log"
 	"os"
 	"testing"
 
@@ -13,6 +14,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	log.SetFlags(log.Flags() | log.Lshortfile)
 	flag.Parse()
 	os.Exit(integration.WrapCompose(m, "../../test-registry"))
 }
@@ -71,7 +73,7 @@ func TestNameCache(t *testing.T) {
 	nc := NewNameCache(drc, db)
 
 	repoOne := "https://github.com/opentable/one.git"
-	manifest(nc, "opentable/one", "test-one", repoOne, "1.1.1")
+	manifest(nc, "opentable/one", "../../integration/test-one", repoOne, "1.1.1")
 
 	cn, err := nc.GetCanonicalName(integration.BuildImageName("opentable/one", "1.1.1"))
 	if err != nil {

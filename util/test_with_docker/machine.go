@@ -109,6 +109,7 @@ func tempFilePath() string {
 	return "/tmp/temp-" + strconv.Itoa(int(1e9 + rnums.Int31()%1e9))[1:]
 }
 
+// InstallFile installs a file into the docker-machine
 func (m *Machine) InstallFile(sourcePath, destPath string) error {
 	tmpFile := tempFilePath()
 	scpTmp := fmt.Sprintf("%s:%s", m.name, tmpFile)
@@ -122,6 +123,7 @@ func (m *Machine) InstallFile(sourcePath, destPath string) error {
 	return m.Exec("mv", tmpFile, destPath)
 }
 
+// RestartDaemon restarts the docker daemon on the docker machine VM
 func (m *Machine) RestartDaemon() error {
 	return m.Exec("/etc/init.d/docker", "restart")
 }
@@ -148,7 +150,7 @@ func (m *Machine) Shutdown(c *command) {
 
 func dockerMachine(args ...string) (stdout, stderr string, err error) {
 	c := runCommand("docker-machine", args...)
-	log.Println(c)
+	log.Printf("%+v %+v %#v\n\n", c.itself, c.err, c)
 	return c.stdout, c.stderr, c.err
 }
 
