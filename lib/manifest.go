@@ -140,17 +140,7 @@ func (dc *DeployConfig) Equal(o DeployConfig) bool {
 	return (dc.NumInstances == o.NumInstances && dc.Env.Equal(o.Env) && dc.Resources.Equal(o.Resources) && dc.Volumes.Equal(o.Volumes))
 }
 
-// SingMap produces a DTOMap appropriate for building a Singularity
-// dto.Resources struct from
-func (r Resources) SingMap() DTOMap {
-	return DTOMap{
-		"Cpus":     r.cpus(),
-		"MemoryMb": r.memory(),
-		"NumPorts": int32(r.ports()),
-	}
-}
-
-func (r Resources) cpus() float64 {
+func (r Resources) Cpus() float64 {
 	cpuStr, present := r["cpus"]
 	cpus, err := strconv.ParseFloat(cpuStr, 64)
 	if err != nil {
@@ -164,7 +154,7 @@ func (r Resources) cpus() float64 {
 	return cpus
 }
 
-func (r Resources) memory() float64 {
+func (r Resources) Memory() float64 {
 	memStr, present := r["memory"]
 	memory, err := strconv.ParseFloat(memStr, 64)
 	if err != nil {
@@ -178,7 +168,7 @@ func (r Resources) memory() float64 {
 	return memory
 }
 
-func (r Resources) ports() int32 {
+func (r Resources) Ports() int32 {
 	portStr, present := r["ports"]
 	ports, err := strconv.ParseInt(portStr, 10, 32)
 	if err != nil {
@@ -200,17 +190,17 @@ func (r Resources) Equal(o Resources) bool {
 		return false
 	}
 
-	if r.ports() != o.ports() {
+	if r.Ports() != o.Ports() {
 		Log.Vomit.Println("Ports differ")
 		return false
 	}
 
-	if math.Abs(r.cpus()-o.cpus()) > 0.001 {
+	if math.Abs(r.Cpus()-o.Cpus()) > 0.001 {
 		Log.Vomit.Println("Cpus differ")
 		return false
 	}
 
-	if math.Abs(r.memory()-o.memory()) > 0.001 {
+	if math.Abs(r.Memory()-o.Memory()) > 0.001 {
 		Log.Vomit.Println("Memory differ")
 		return false
 	}

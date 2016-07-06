@@ -117,3 +117,13 @@ func (t *DummyRectificationClient) ImageLabels(in string) (map[string]string, er
 
 	return docker.DockerLabels(sv), nil
 }
+
+func (t *DummyRectificationClient) RectifyCreates(<-chan *sous.Deployment, chan<- sous.RectificationError) {
+	// TODO: Log this or something
+}
+func (t *DummyRectificationClient) RectifyDeletes(<-chan *sous.Deployment, chan<- sous.RectificationError) {
+	// TODO: Log this or something
+}
+func (t *DummyRectificationClient) RectifyModifies(<-chan *sous.DeploymentPair, chan<- sous.RectificationError) {
+	// TODO: Log this or something
+}

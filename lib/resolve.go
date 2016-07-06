@@ -1,6 +1,10 @@
 package sous
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+	"sync"
+)
 
 type (
 	// Resolver is responsible for resolving intended and actual deployment
@@ -21,7 +25,74 @@ type (
 	MissingImageNamesError struct {
 		Causes []error
 	}
+	// CreateError is returned when there's an error trying to create a deployment
+	CreateError struct {
+		Deployment *Deployment
+		Err        error
+	}
+
+	// DeleteError is returned when there's an error while trying to delete a deployment
+	DeleteError struct {
+		Deployment *Deployment
+		Err        error
+	}
+
+	// ChangeError describes an error that occurred while trying to change one deployment into another
+	ChangeError struct {
+		Deployments *DeploymentPair
+		Err         error
+	}
+
+	// RectificationError is an interface that extends error with methods to get
+	// the deployments the preceeded and were intended when the error occurred
+	RectificationError interface {
+		error
+		ExistingDeployment() *Deployment
+		IntendedDeployment() *Deployment
+	}
 )
+
+func (e *CreateError) Error() string {
+	return fmt.Sprintf("Couldn't create deployment %+v: %v", e.Deployment, e.Err)
+}
+
+// ExistingDeployment returns the deployment that was already existent in a change error
+func (e *CreateError) ExistingDeployment() *Deployment {
+	return nil
+}
+
+// IntendedDeployment returns the deployment that was intended in a ChangeError
+func (e *CreateError) IntendedDeployment() *Deployment {
+	return e.Deployment
+}
+
+func (e *DeleteError) Error() string {
+	return fmt.Sprintf("Couldn't delete deployment %+v: %v", e.Deployment, e.Err)
+}
+
+// ExistingDeployment returns the deployment that was already existent in a change error
+func (e *DeleteError) ExistingDeployment() *Deployment {
+	return e.Deployment
+}
+
+// IntendedDeployment returns the deployment that was intended in a ChangeError
+func (e *DeleteError) IntendedDeployment() *Deployment {
+	return nil
+}
+
+func (e *ChangeError) Error() string {
+	return fmt.Sprintf("Couldn't change from deployment %+v to deployment %+v: %v", e.Deployments.Prior, e.Deployments.Post, e.Err)
+}
+
+// ExistingDeployment returns the deployment that was already existent in a change error
+func (e *ChangeError) ExistingDeployment() *Deployment {
+	return e.Deployments.Prior
+}
+
+// IntendedDeployment returns the deployment that was intended in a ChangeError
+func (e *ChangeError) IntendedDeployment() *Deployment {
+	return e.Deployments.Post
+}
 
 func NewResolver(d Deployer, r Registry, intended State) *Resolver {
 	return &Resolver{
@@ -31,6 +102,18 @@ func NewResolver(d Deployer, r Registry, intended State) *Resolver {
 	}
 }
 
+// Rectify takes a DiffChans and issues the commands to the infrastructure to reconcile the differences
+func Rectify(dcs DiffChans, d Deployer, reg Registry) chan RectificationError {
+	errs := make(chan RectificationError)
+	wg := &sync.WaitGroup{}
+	wg.Add(3)
+	go func() { d.RectifyCreates(dcs.Created, errs); wg.Done() }()
+	go func() { d.RectifyDeletes(dcs.Deleted, errs); wg.Done() }()
+	go func() { d.RectifyModifies(dcs.Modified, errs); wg.Done() }()
+	go func() { wg.Wait(); close(errs) }()
+
+	return errs
+}
 func (re *ResolveErrors) Error() string {
 	s := []string{"Errors during resolve:"}
 	for _, e := range re.Causes {
@@ -72,9 +155,9 @@ func (r *Resolver) ResolveFilteredDeployments(pr DeploymentPredicate) error {
 
 	Log.Debug.Print("Looks good. Proceeding...")
 
-	differ := ads.Diff(gdm)
+	diffs := ads.Diff(gdm)
 
-	errs := Rectify(differ, r.Deployer, r.Registry)
+	errs := Rectify(diffs, r.Deployer, r.Registry)
 
 	re := &ResolveErrors{Causes: []error{}}
 	for err := range errs {
