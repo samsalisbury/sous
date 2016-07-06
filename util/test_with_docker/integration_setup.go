@@ -207,8 +207,8 @@ func rebuildService(dir, name string, env []string) error {
 	cmd.itself.Dir = dir
 	cmd.run()
 	if cmd.err != nil {
-		log.Print(c.stdout)
-		log.Print(c.stderr)
+		log.Print(cmd.stdout)
+		log.Print(cmd.stderr)
 	}
 	return cmd.err
 }
