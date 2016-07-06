@@ -107,15 +107,6 @@ func (t *DummyRectificationClient) DeleteRequest(
 	return nil
 }
 
-////ImageName finds or guesses a docker image name for a Deployment
-//func (t *DummyRectificationClient) ImageName(d *sous.Deployment) (string, error) {
-//	a, err := t.nameCache.GetArtifact(d.SourceVersion)
-//	if err != nil {
-//		return "", err
-//	}
-//	return a.Name, nil
-//}
-
 // ImageLabels gets the labels for an image name
 func (t *DummyRectificationClient) ImageLabels(in string) (map[string]string, error) {
 	a := docker.DockerBuildArtifact(in)
