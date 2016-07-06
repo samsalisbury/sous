@@ -16,10 +16,9 @@ import (
 const ReqsPerServer = 10
 
 type (
-	// SetCollector is the agent responsible for collecting sets of deployments
-	// For now, it can collect the actual running set
+	// SetCollector implements sous.Deployer
 	SetCollector struct {
-		rectClient sous.RectificationClient
+		sous.RectificationClient
 	}
 
 	sDeploy    *dtos.SingularityDeploy
@@ -66,7 +65,7 @@ func (sc *SetCollector) GetRunningDeployment(singUrls []string) (deps sous.Deplo
 		go singPipeline(sing, &depWait, &singWait, reqCh, errCh)
 	}
 
-	go depPipeline(sc.rectClient, reqCh, depCh, errCh)
+	go depPipeline(sc.RectificationClient, reqCh, depCh, errCh)
 
 	go func() {
 		catchAndSend("closing up", errCh)

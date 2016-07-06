@@ -162,8 +162,7 @@ func newBuilder(cl LocalDockerClient, ctx *sous.SourceContext, source LocalWorkD
 
 func newDeployer(b sous.Builder) (sous.Deployer, error) {
 	ra := singularity.NewRectiAgent(b)
-	c := singularity.NewSetCollector(ra)
-	return singularity.Deployer{ra, c}, nil
+	return singularity.NewSetCollector(ra), nil
 }
 
 func newDockerClient() LocalDockerClient {

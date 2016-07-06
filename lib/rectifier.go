@@ -24,10 +24,11 @@ type (
 		Client RectificationClient
 	}
 
-	// RectificationClient abstracts the raw interactions with Singularity.
-	// The methods on this interface are tightly bound to the semantics of Singularity itself -
-	// it's recommended to interact with the Sous Recify function or the recitification driver
-	// rather than with implentations of this interface directly.
+	// RectificationClient abstracts the raw interactions with Singularity.  The
+	// methods on this interface are tightly bound to the semantics of
+	// Singularity itself - it's recommended to interact with the Sous Rectify
+	// function or the rectification driver rather than with implentations of
+	// this interface directly.
 	// TODO: RectificationClient leaks Singularity concepts, make it so it doesn't.
 	RectificationClient interface {
 		// Deploy creates a new deploy on a particular requeust
