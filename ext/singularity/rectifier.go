@@ -46,7 +46,7 @@ type (
 	}
 
 	// DTOMap is shorthand for map[string]interface{}
-	DTOMap map[string]interface{}
+	dtoMap map[string]interface{}
 )
 
 func NewRectifier(r sous.Registry, c RectificationClient) sous.Deployer {
