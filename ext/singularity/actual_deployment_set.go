@@ -18,7 +18,7 @@ const ReqsPerServer = 10
 type (
 	// SetCollector implements sous.Deployer
 	Deployer struct {
-		RectificationClient
+		rectificationClient
 	}
 
 	sDeploy    *dtos.SingularityDeploy
@@ -36,7 +36,7 @@ type (
 )
 
 // NewSetCollector returns a new *Deployer.
-func NewSetCollector(rc RectificationClient) *Deployer {
+func NewSetCollector(rc rectificationClient) *Deployer {
 	return &Deployer{rc}
 }
 
@@ -181,14 +181,14 @@ func getRequestsFromSingularity(client *singularity.Client) ([]SingReq, error) {
 }
 
 func depPipeline(
-	cl RectificationClient,
+	cl rectificationClient,
 	reqCh chan SingReq,
 	depCh chan *sous.Deployment,
 	errCh chan error,
 ) {
 	defer catchAndSend("dependency building", errCh)
 	for req := range reqCh {
-		go func(cl RectificationClient, req SingReq) {
+		go func(cl rectificationClient, req SingReq) {
 			defer catchAndSend(fmt.Sprintf("dep from req %s", req.SourceURL), errCh)
 
 			dep, err := assembleDeployment(cl, req)
@@ -202,7 +202,7 @@ func depPipeline(
 	}
 }
 
-func assembleDeployment(cl RectificationClient, req SingReq) (*sous.Deployment, error) {
+func assembleDeployment(cl rectificationClient, req SingReq) (*sous.Deployment, error) {
 	Log.Vomit.Print("Assembling from: ", req)
 	uc := NewDeploymentBuilder(cl, req)
 	err := uc.CompleteConstruction()

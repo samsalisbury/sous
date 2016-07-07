@@ -18,7 +18,7 @@ Rectify(dChans)
 
 type (
 	deployer struct {
-		Client   RectificationClient
+		Client   rectificationClient
 		Registry sous.Registry
 	}
 
@@ -28,7 +28,7 @@ type (
 	// function or the rectification driver rather than with implentations of
 	// this interface directly.
 	// TODO: RectificationClient leaks Singularity concepts, make it so it doesn't.
-	RectificationClient interface {
+	rectificationClient interface {
 		// Deploy creates a new deploy on a particular requeust
 		Deploy(cluster, depID, reqID, dockerImage string, r sous.Resources, e sous.Env, vols sous.Volumes) error
 
@@ -49,7 +49,7 @@ type (
 	dtoMap map[string]interface{}
 )
 
-func NewDeployer(r sous.Registry, c RectificationClient) sous.Deployer {
+func NewDeployer(r sous.Registry, c rectificationClient) sous.Deployer {
 	return &deployer{Client: c, Registry: r}
 }
 
