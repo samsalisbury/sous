@@ -42,7 +42,7 @@ func NewSetCollector(rc RectificationClient) *Deployer {
 
 // GetRunningDeployment collects data from the Singularity clusters and
 // returns a list of actual deployments
-func (sc *rectifier) GetRunningDeployment(singUrls []string) (deps sous.Deployments, err error) {
+func (sc *deployer) GetRunningDeployment(singUrls []string) (deps sous.Deployments, err error) {
 	retries := make(retryCounter)
 	errCh := make(chan error)
 	deps = make(sous.Deployments, 0)

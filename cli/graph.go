@@ -169,7 +169,7 @@ func makeDockerBuilder(cl LocalDockerClient, ctx *sous.SourceContext, source Loc
 
 func newDeployer(r sous.Registry) (sous.Deployer, error) {
 	ra := singularity.NewRectiAgent(r)
-	return singularity.NewRectifier(r, ra), nil
+	return singularity.NewDeployer(r, ra), nil
 }
 
 func newDockerClient() LocalDockerClient {

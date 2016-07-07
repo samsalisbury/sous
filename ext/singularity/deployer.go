@@ -17,7 +17,7 @@ Rectify(dChans)
 */
 
 type (
-	rectifier struct {
+	deployer struct {
 		Client   RectificationClient
 		Registry sous.Registry
 	}
@@ -49,11 +49,11 @@ type (
 	dtoMap map[string]interface{}
 )
 
-func NewRectifier(r sous.Registry, c RectificationClient) sous.Deployer {
-	return &rectifier{Client: c, Registry: r}
+func NewDeployer(r sous.Registry, c RectificationClient) sous.Deployer {
+	return &deployer{Client: c, Registry: r}
 }
 
-func (r *rectifier) RectifyCreates(cc <-chan *sous.Deployment, errs chan<- sous.RectificationError) {
+func (r *deployer) RectifyCreates(cc <-chan *sous.Deployment, errs chan<- sous.RectificationError) {
 	for d := range cc {
 		if err := r.RectifySingleCreate(d); err != nil {
 			errs <- &sous.CreateError{Deployment: d, Err: err}
@@ -61,7 +61,7 @@ func (r *rectifier) RectifyCreates(cc <-chan *sous.Deployment, errs chan<- sous.
 	}
 }
 
-func (r *rectifier) ImageName(d *sous.Deployment) (string, error) {
+func (r *deployer) ImageName(d *sous.Deployment) (string, error) {
 	a, err := r.Registry.GetArtifact(d.SourceVersion)
 	if err != nil {
 		return "", err
@@ -69,7 +69,7 @@ func (r *rectifier) ImageName(d *sous.Deployment) (string, error) {
 	return a.Name, err
 }
 
-func (r *rectifier) RectifySingleCreate(d *sous.Deployment) error {
+func (r *deployer) RectifySingleCreate(d *sous.Deployment) error {
 	name, err := r.ImageName(d)
 	if err != nil {
 		return err
@@ -83,7 +83,7 @@ func (r *rectifier) RectifySingleCreate(d *sous.Deployment) error {
 		d.Env, d.DeployConfig.Volumes)
 }
 
-func (r *rectifier) RectifyDeletes(dc <-chan *sous.Deployment, errs chan<- sous.RectificationError) {
+func (r *deployer) RectifyDeletes(dc <-chan *sous.Deployment, errs chan<- sous.RectificationError) {
 	for d := range dc {
 		if err := r.Client.DeleteRequest(d.Cluster, computeRequestID(d),
 			"deleting request for removed manifest"); err != nil {
@@ -92,7 +92,7 @@ func (r *rectifier) RectifyDeletes(dc <-chan *sous.Deployment, errs chan<- sous.
 	}
 }
 
-func (r *rectifier) RectifyModifies(
+func (r *deployer) RectifyModifies(
 	mc <-chan *sous.DeploymentPair, errs chan<- sous.RectificationError) {
 	for pair := range mc {
 		if err := r.RectifySingleModification(pair); err != nil {
@@ -101,7 +101,7 @@ func (r *rectifier) RectifyModifies(
 	}
 }
 
-func (r *rectifier) RectifySingleModification(pair *sous.DeploymentPair) error {
+func (r *deployer) RectifySingleModification(pair *sous.DeploymentPair) error {
 	Log.Debug.Printf("Rectifying modify: \n  %+ v \n    =>  \n  %+ v", pair.Prior, pair.Post)
 	if r.changesReq(pair) {
 		Log.Debug.Printf("Scaling...")
@@ -136,7 +136,7 @@ func (r *rectifier) RectifySingleModification(pair *sous.DeploymentPair) error {
 	return nil
 }
 
-func (r rectifier) changesReq(pair *sous.DeploymentPair) bool {
+func (r deployer) changesReq(pair *sous.DeploymentPair) bool {
 	return pair.Prior.NumInstances != pair.Post.NumInstances
 }
 

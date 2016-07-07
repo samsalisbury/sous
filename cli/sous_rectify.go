@@ -83,6 +83,6 @@ func (sr *SousRectify) resolveDryRunFlag(dryrun string) {
 	if dryrun == "both" || dryrun == "scheduler" {
 		drc := singularity.NewDummyRectificationClient(sr.Registry)
 		drc.SetLogger(log.New(os.Stdout, "rectify: ", 0))
-		sr.Deployer = singularity.NewRectifier(sr.Registry, drc)
+		sr.Deployer = singularity.NewDeployer(sr.Registry, drc)
 	}
 }
