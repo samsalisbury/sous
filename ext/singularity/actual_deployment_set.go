@@ -16,11 +16,6 @@ import (
 const ReqsPerServer = 10
 
 type (
-	// SetCollector implements sous.Deployer
-	Deployer struct {
-		rectificationClient
-	}
-
 	sDeploy    *dtos.SingularityDeploy
 	sRequest   *dtos.SingularityRequest
 	sDepMarker *dtos.SingularityDeployMarker
@@ -34,11 +29,6 @@ type (
 
 	retryCounter map[string]uint
 )
-
-// NewSetCollector returns a new *Deployer.
-func NewSetCollector(rc rectificationClient) *Deployer {
-	return &Deployer{rc}
-}
 
 // GetRunningDeployment collects data from the Singularity clusters and
 // returns a list of actual deployments
