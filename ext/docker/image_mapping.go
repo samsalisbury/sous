@@ -73,7 +73,7 @@ func NewNameCache(cl docker_registry.Client, db *sql.DB) *NameCache {
 
 // GetArtifact implements sous.Registry.GetArtifact
 func (nc *NameCache) GetArtifact(sv sous.SourceVersion) (*sous.BuildArtifact, error) {
-	name, err := nc.GetImageName(sv)
+	name, err := nc.getImageName(sv)
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +137,7 @@ func (nc *NameCache) GetSourceVersion(a *sous.BuildArtifact) (sous.SourceVersion
 }
 
 // GetImageName returns the docker image name for a given source version
-func (nc *NameCache) GetImageName(sv sous.SourceVersion) (string, error) {
+func (nc *NameCache) getImageName(sv sous.SourceVersion) (string, error) {
 	Log.Vomit.Printf("Getting image name for %+v", sv)
 	cn, _, err := nc.dbQueryOnSV(sv)
 	if _, ok := err.(NoImageNameFound); ok {

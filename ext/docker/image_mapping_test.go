@@ -49,7 +49,7 @@ func TestRoundTrip(t *testing.T) {
 	if assert.NoError(err) {
 		assert.Equal(in, cn)
 	}
-	nin, err := nc.GetImageName(sv)
+	nin, err := nc.getImageName(sv)
 	if assert.NoError(err) {
 		assert.Equal(in, nin)
 	}
@@ -132,7 +132,7 @@ func TestHarvesting(t *testing.T) {
 		AllNames:      []string{cn, in},
 	})
 
-	nin, err := nc.GetImageName(sisterSV)
+	nin, err := nc.getImageName(sisterSV)
 	if assert.NoError(err) {
 		assert.Equal(host+"/"+cn, nin)
 	}
@@ -150,7 +150,7 @@ func TestMissingName(t *testing.T) {
 		RepoOffset: sous.RepoOffset("nested/there"),
 	}
 
-	name, err := nc.GetImageName(sv)
+	name, err := nc.getImageName(sv)
 	assert.Equal("", name)
 	assert.Error(err)
 }
