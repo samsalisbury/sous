@@ -167,7 +167,7 @@ func (nc *NameCache) getCanonicalName(in string) (string, error) {
 }
 
 // Insert puts a given SourceVersion/image name pair into the name cache
-func (nc *NameCache) Insert(sv sous.SourceVersion, in, etag string) error {
+func (nc *NameCache) insert(sv sous.SourceVersion, in, etag string) error {
 	return nc.dbInsert(sv, in, etag)
 }
 

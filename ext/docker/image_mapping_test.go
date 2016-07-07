@@ -42,7 +42,7 @@ func TestRoundTrip(t *testing.T) {
 	base := "ot/wackadoo"
 	in := base + ":version-1.2.3"
 	digest := "sha256:012345678901234567890123456789AB012345678901234567890123456789AB"
-	err := nc.Insert(sv, in, digest)
+	err := nc.insert(sv, in, digest)
 	assert.NoError(err)
 
 	cn, err := nc.getCanonicalName(in)
