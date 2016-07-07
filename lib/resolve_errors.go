@@ -1,6 +1,9 @@
 package sous
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type (
 	// ResolveErrors collect all the errors for a resolve action into a single
@@ -40,6 +43,23 @@ type (
 		IntendedDeployment() *Deployment
 	}
 )
+
+func (re *ResolveErrors) Error() string {
+	s := []string{"Errors during resolve:"}
+	for _, e := range re.Causes {
+		s = append(s, e.Error())
+	}
+	return strings.Join(s, "\n  ")
+}
+
+func (e *MissingImageNamesError) Error() string {
+	causeStrs := make([]string, 0, len(e.Causes)+1)
+	causeStrs = append(causeStrs, "Image names are unknown to Sous for source versions")
+	for _, c := range e.Causes {
+		causeStrs = append(causeStrs, c.Error())
+	}
+	return strings.Join(causeStrs, "  \n")
+}
 
 func (e *CreateError) Error() string {
 	return fmt.Sprintf("Couldn't create deployment %+v: %v", e.Deployment, e.Err)

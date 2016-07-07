@@ -66,10 +66,10 @@ func (sr *SousRectify) Execute(args []string) cmdr.Result {
 		return EnsureErrorResult(err)
 	}
 
-	r := sous.NewResolver(sr.Deployer, sr.Registry, intendedState)
+	r := sous.NewResolver(sr.Deployer, sr.Registry)
 
 	// If predicate is still nil, that means resolve all. See Deployments.Filter.
-	if err := r.ResolveFilteredDeployments(predicate); err != nil {
+	if err := r.ResolveFilteredDeployments(intendedState, predicate); err != nil {
 		return EnsureErrorResult(err)
 	}
 

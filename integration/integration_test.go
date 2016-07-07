@@ -105,9 +105,9 @@ func TestMissingImage(t *testing.T) {
 	client := singularity.NewRectiAgent(nc)
 	deployer := singularity.NewRectifier(nc, client)
 
-	r := sous.NewResolver(deployer, nc, stateOne)
+	r := sous.NewResolver(deployer, nc)
 
-	err := r.Resolve()
+	err := r.Resolve(stateOne)
 
 	assert.Error(err)
 
@@ -166,9 +166,9 @@ func TestResolve(t *testing.T) {
 	client := singularity.NewRectiAgent(nc)
 	deployer := singularity.NewRectifier(nc, client)
 
-	r := sous.NewResolver(deployer, nc, stateOneTwo)
+	r := sous.NewResolver(deployer, nc)
 
-	err := r.Resolve()
+	err := r.Resolve(stateOneTwo)
 	if err != nil {
 		assert.Fail(err.Error())
 	}
@@ -197,9 +197,9 @@ func TestResolve(t *testing.T) {
 		client := singularity.NewRectiAgent(nc)
 		deployer := singularity.NewRectifier(nc, client)
 
-		r := sous.NewResolver(deployer, nc, stateTwoThree)
+		r := sous.NewResolver(deployer, nc)
 
-		err := r.Resolve()
+		err := r.Resolve(stateTwoThree)
 		if err != nil {
 			if !conflictRE.MatchString(err.Error()) {
 				assert.FailNow(err.Error())
