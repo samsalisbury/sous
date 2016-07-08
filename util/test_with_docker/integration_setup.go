@@ -166,6 +166,8 @@ func dockerComposeUp(dir string, ip net.IP, env []string, services serviceMap, t
 	upCmd.run()
 
 	if upCmd.err != nil {
+		log.Println(upCmd.stdout)
+		log.Println(upCmd.stderr)
 		log.Panic(upCmd.err)
 	}
 
