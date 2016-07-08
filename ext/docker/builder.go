@@ -52,32 +52,34 @@ func NewBuilder(nc *NameCache, drh string, c *sous.SourceContext, sourceShell, s
 	return b, nil
 }
 
+// GetArtifact implements sous.Registry.GetArtifact
 func (b *Builder) GetArtifact(sv sous.SourceVersion) (*sous.BuildArtifact, error) {
 	return b.ImageMapper.GetArtifact(sv)
 }
 
+// GetSourceVersion implements sous.Registry.GetSourceVersion
 func (b *Builder) GetSourceVersion(a *sous.BuildArtifact) (sous.SourceVersion, error) {
 	return b.ImageMapper.GetSourceVersion(a)
 }
 
-// Build performs the build.
+// Build implements sous.Builder.Build
 func (b *Builder) Build(bc *sous.BuildContext, bp sous.Buildpack, _ *sous.DetectResult) (*sous.BuildResult, error) {
 	br, err := bp.Build(bc)
 	if err != nil {
 		return nil, err
 	}
 
-	err = b.ApplyMetadata(br)
+	err = b.applyMetadata(br)
 	if err != nil {
 		return nil, err
 	}
 
-	err = b.PushToRegistry(br)
+	err = b.pushToRegistry(br)
 	if err != nil {
 		return nil, err
 	}
 
-	err = b.RecordName(br)
+	err = b.recordName(br)
 	if err != nil {
 		return nil, err
 	}
@@ -85,9 +87,9 @@ func (b *Builder) Build(bc *sous.BuildContext, bp sous.Buildpack, _ *sous.Detect
 	return br, nil
 }
 
-// ApplyMetadata applies container metadata etc. to a container
-func (b *Builder) ApplyMetadata(br *sous.BuildResult) error {
-	br.ImageName = b.ImageTag(b.Context.Version())
+// applyMetadata applies container metadata etc. to a container
+func (b *Builder) applyMetadata(br *sous.BuildResult) error {
+	br.ImageName = b.imageTag(b.Context.Version())
 	bf := bytes.Buffer{}
 
 	c := b.SourceShell.Cmd("docker", "build", "-t", br.ImageName, "-")
@@ -107,20 +109,20 @@ func (b *Builder) ApplyMetadata(br *sous.BuildResult) error {
 	return c.Succeed()
 }
 
-// PushToRegistry sends the built image to the registry
-func (b *Builder) PushToRegistry(br *sous.BuildResult) error {
+// pushToRegistry sends the built image to the registry
+func (b *Builder) pushToRegistry(br *sous.BuildResult) error {
 	return b.SourceShell.Run("docker", "push", br.ImageName)
 }
 
-// RecordName inserts metadata about the newly built image into our local name cache
-func (b *Builder) RecordName(br *sous.BuildResult) error {
+// recordName inserts metadata about the newly built image into our local name cache
+func (b *Builder) recordName(br *sous.BuildResult) error {
 	sv := b.Context.Version()
 	in := br.ImageName
 	b.SourceShell.ConsoleEcho(fmt.Sprintf("[recording \"%s\" as the docker name for \"%s\"]", in, sv.String()))
 	return b.ImageMapper.insert(sv, in, "")
 }
 
-// ImageTag computes an image tag from a SourceVersion
-func (b *Builder) ImageTag(v sous.SourceVersion) string {
+// imageTag computes an image tag from a SourceVersion
+func (b *Builder) imageTag(v sous.SourceVersion) string {
 	return filepath.Join(b.DockerRegistryHost, DockerImageName(v))
 }
