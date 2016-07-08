@@ -6,8 +6,10 @@ import (
 	"os"
 	"os/user"
 
+	"github.com/opentable/sous/ext/docker"
 	"github.com/opentable/sous/ext/git"
-	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/ext/singularity"
+	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
 	"github.com/opentable/sous/util/docker_registry"
 	"github.com/opentable/sous/util/shell"
@@ -68,7 +70,11 @@ func BuildGraph(s *Sous, c *cmdr.CLI) (*SousCLIGraph, error) {
 		newLocalGitClient,
 		newLocalGitRepo,
 		newSourceContext,
+		newBuildContext,
 		newDockerClient,
+		newBuilder,
+		newDeployer,
+		newRegistry,
 	)
 }
 
@@ -83,6 +89,13 @@ func newErrOut(c *cmdr.CLI) ErrOut {
 func newSourceContext(g LocalGitRepo) (c *sous.SourceContext, err error) {
 	c, err = g.SourceContext()
 	return c, initErr(err, "getting local git context")
+}
+
+func newBuildContext(wd LocalWorkDirShell, c *sous.SourceContext) *sous.BuildContext {
+	return &sous.BuildContext{
+		Sh:     wd.Sh,
+		Source: *c,
+	}
 }
 
 func newLocalWorkDir() (LocalWorkDir, error) {
@@ -131,6 +144,32 @@ func newLocalGitClient(sh LocalWorkDirShell) (v LocalGitClient, err error) {
 func newLocalGitRepo(c LocalGitClient) (v LocalGitRepo, err error) {
 	v.Repo, err = c.OpenRepo(".")
 	return v, initErr(err, "opening local git repository")
+}
+
+func newBuilder(cl LocalDockerClient, ctx *sous.SourceContext, source LocalWorkDirShell, scratch ScratchDirShell, u LocalUser) (sous.Builder, error) {
+	return makeDockerBuilder(cl, ctx, source, scratch, u)
+}
+
+func newRegistry(cl LocalDockerClient, ctx *sous.SourceContext, source LocalWorkDirShell, scratch ScratchDirShell, u LocalUser) (sous.Registry, error) {
+	return makeDockerBuilder(cl, ctx, source, scratch, u)
+}
+
+func makeDockerBuilder(cl LocalDockerClient, ctx *sous.SourceContext, source LocalWorkDirShell, scratch ScratchDirShell, u LocalUser) (*docker.Builder, error) {
+	cfg := u.DefaultConfig()
+	dbCfg := &docker.DBConfig{Driver: cfg.DatabaseDriver, Connection: cfg.DatabaseConnection}
+	db, err := docker.GetDatabase(dbCfg)
+	if err != nil {
+		return nil, fmt.Errorf("unable to build name cache DB: ", err)
+	}
+	nc := &docker.NameCache{cl.Client, db}
+	// TODO: Get this from config.
+	drh := "docker.otenv.com"
+	return docker.NewBuilder(nc, drh, ctx, source.Sh, scratch.Sh)
+}
+
+func newDeployer(r sous.Registry) (sous.Deployer, error) {
+	ra := singularity.NewRectiAgent(r)
+	return singularity.NewDeployer(r, ra), nil
 }
 
 func newDockerClient() LocalDockerClient {

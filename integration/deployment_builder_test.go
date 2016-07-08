@@ -1,4 +1,4 @@
-package test
+package integration
 
 import (
 	"bytes"
@@ -10,9 +10,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/opentable/go-singularity"
+	sing "github.com/opentable/go-singularity"
 	"github.com/opentable/go-singularity/dtos"
-	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/ext/docker"
+	"github.com/opentable/sous/ext/singularity"
+	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/docker_registry"
 	"github.com/opentable/sous/util/whitespace"
 	"github.com/satori/go.uuid"
@@ -26,20 +28,26 @@ func TestBuildDeployments(t *testing.T) {
 	assert := assert.New(t)
 	sous.Log.Debug.SetOutput(os.Stdout)
 
-	resetSingularity()
-	defer resetSingularity()
+	ResetSingularity()
+	defer ResetSingularity()
 
 	drc := docker_registry.NewClient()
 	drc.BecomeFoolishlyTrusting()
 
-	nc := sous.NewNameCache(drc, "sqlite3", sous.InMemoryConnection("testresolve"))
-	ra := sous.NewRectiAgent(nc)
+	db, err := docker.GetDatabase(&docker.DBConfig{"sqlite3", docker.InMemoryConnection("testresolve")})
+	if err != nil {
+		panic(err)
+	}
 
-	singCl := singularity.NewClient(singularityURL)
+	nc := docker.NewNameCache(drc, db)
+	builder := &docker.Builder{ImageMapper: nc}
+	ra := singularity.NewRectiAgent(builder)
+
+	singCl := sing.NewClient(SingularityURL)
 	//singCl.Debug = true
 
 	sr, err := singReqDep(
-		singularityURL,
+		SingularityURL,
 		whitespace.CleanWS(`
 		{
 			"instances": 1,
@@ -60,7 +68,7 @@ func TestBuildDeployments(t *testing.T) {
 				"containerInfo": {
 					"type": "DOCKER",
 					"docker": {
-						"image": "`+buildImageName("hello-server-labels", "latest")+`"
+						"image": "`+BuildImageName("hello-server-labels", "latest")+`"
 					},
 					"volumes": [{"hostPath":"/tmp", "containerPath":"/tmp","mode":"RO"}]
 				},
@@ -71,14 +79,14 @@ func TestBuildDeployments(t *testing.T) {
 		}`),
 	)
 
-	req := sous.SingReq{
-		SourceURL: singularityURL,
+	req := singularity.SingReq{
+		SourceURL: SingularityURL,
 		Sing:      singCl,
 		ReqParent: sr,
 	}
 
 	if assert.NoError(err) {
-		uc := sous.NewDeploymentBuilder(ra, req)
+		uc := singularity.NewDeploymentBuilder(ra, req)
 		err = uc.CompleteConstruction()
 
 		if assert.NoError(err) {
@@ -94,9 +102,9 @@ func TestBuildDeployments(t *testing.T) {
 }
 
 func pushLabelledContainers() {
-	//buildAndPushContainer(buildImageName("hello-labels", "latest"), "hello-labels")
-	buildAndPushContainer(buildImageName("hello-server-labels", "latest"), "hello-server-labels")
-	//buildAndPushContainer(buildImageName("grafana-repo", "latest"), "grafana-labels")
+	//BuildAndPushContainer(BuildImageName("hello-labels", "latest"), "hello-labels")
+	BuildAndPushContainer(BuildImageName("hello-server-labels", "latest"), "hello-server-labels")
+	//BuildAndPushContainer(BuildImageName("grafana-repo", "latest"), "grafana-labels")
 }
 
 func singReqDep(url, ryaml, dyaml string) (*dtos.SingularityRequestParent, error) {

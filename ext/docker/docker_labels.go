@@ -1,4 +1,4 @@
-package sous
+package docker
 
 const (
 	DockerRepoLabel     = "com.opentable.sous.repo_url"

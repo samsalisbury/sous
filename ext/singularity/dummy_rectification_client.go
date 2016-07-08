@@ -1,13 +1,18 @@
-package sous
+package singularity
 
-import "log"
+import (
+	"log"
+
+	"github.com/opentable/sous/ext/docker"
+	"github.com/opentable/sous/lib"
+)
 
 type (
 	// DummyRectificationClient implements RectificationClient but doesn't act on the Mesos scheduler;
 	// instead it collects the changes that would be performed and options
 	DummyRectificationClient struct {
 		logger    *log.Logger
-		nameCache ImageMapper
+		nameCache sous.Registry
 		created   []dummyRequest
 		deployed  []dummyDeploy
 		scaled    []dummyScale
@@ -19,9 +24,9 @@ type (
 		depID     string
 		reqID     string
 		imageName string
-		res       Resources
-		e         Env
-		vols      Volumes
+		res       sous.Resources
+		e         sous.Env
+		vols      sous.Volumes
 	}
 
 	dummyRequest struct {
@@ -39,16 +44,17 @@ type (
 	dummyDelete struct {
 		cluster, reqid, message string
 	}
-
-	// DummyNameCache implements the ImageMapper interface by returning a
-	// computed image name for a given source version
-	DummyNameCache struct {
-	}
 )
 
 // NewDummyRectificationClient builds a new DummyRectificationClient
-func NewDummyRectificationClient(nc ImageMapper) *DummyRectificationClient {
+func NewDummyRectificationClient(nc sous.Registry) *DummyRectificationClient {
 	return &DummyRectificationClient{nameCache: nc}
+}
+
+// TODO: Factor out name cache concept from core sous lib & get rid of this func.
+func (t *DummyRectificationClient) GetRunningDeployment([]string) (sous.Deployments, error) {
+	return nil, nil
+	panic("not implemented")
 }
 
 // SetLogger sets the logger for the client
@@ -71,7 +77,7 @@ func (t *DummyRectificationClient) logf(f string, v ...interface{}) {
 
 // Deploy implements part of the RectificationClient interface
 func (t *DummyRectificationClient) Deploy(
-	cluster, depID, reqID, imageName string, res Resources, e Env, vols Volumes) error {
+	cluster, depID, reqID, imageName string, res sous.Resources, e sous.Env, vols sous.Volumes) error {
 	t.logf("Deploying instance %s %s %s %s %v %v %v", cluster, depID, reqID, imageName, res, e, vols)
 	t.deployed = append(t.deployed, dummyDeploy{cluster, depID, reqID, imageName, res, e, vols})
 	return nil
@@ -101,44 +107,13 @@ func (t *DummyRectificationClient) DeleteRequest(
 	return nil
 }
 
-//ImageName finds or guesses a docker image name for a Deployment
-func (t *DummyRectificationClient) ImageName(d *Deployment) (string, error) {
-	return t.nameCache.GetImageName(d.SourceVersion)
-}
-
 // ImageLabels gets the labels for an image name
 func (t *DummyRectificationClient) ImageLabels(in string) (map[string]string, error) {
-	sv, err := t.nameCache.GetSourceVersion(in)
+	a := docker.DockerBuildArtifact(in)
+	sv, err := t.nameCache.GetSourceVersion(a)
 	if err != nil {
 		return map[string]string{}, nil
 	}
 
-	return sv.DockerLabels(), nil
-}
-
-// NewDummyNameCache builds a new DummyNameCache
-func NewDummyNameCache() *DummyNameCache {
-	return &DummyNameCache{}
-}
-
-// GetImageName implements part of the interface for ImageMapper
-func (dc *DummyNameCache) GetImageName(sv SourceVersion) (string, error) {
-	return sv.String(), nil
-}
-
-// GetCanonicalName implements part of the interface for ImageMapper
-// It simply returns whatever it was given
-func (dc *DummyNameCache) GetCanonicalName(in string) (string, error) {
-	return in, nil
-}
-
-// Insert implements part of ImageMapper
-// it drops the sv/in pair on the floor
-func (dc *DummyNameCache) Insert(sv SourceVersion, in, etag string) error {
-	return nil
-}
-
-// GetSourceVersion implements part of ImageMapper
-func (dc *DummyNameCache) GetSourceVersion(in string) (SourceVersion, error) {
-	return SourceVersion{}, nil
+	return docker.DockerLabels(sv), nil
 }

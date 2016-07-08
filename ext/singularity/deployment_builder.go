@@ -1,19 +1,21 @@
-package sous
+package singularity
 
 import (
 	"fmt"
 
 	"github.com/opentable/go-singularity/dtos"
+	"github.com/opentable/sous/ext/docker"
+	"github.com/opentable/sous/lib"
 )
 
 type (
 	deploymentBuilder struct {
-		Target        Deployment
+		Target        sous.Deployment
 		depMarker     sDepMarker
 		deploy        sDeploy
 		request       sRequest
 		req           SingReq
-		rectification RectificationClient
+		rectification rectificationClient
 	}
 
 	canRetryRequest struct {
@@ -40,7 +42,7 @@ func (cr *canRetryRequest) name() string {
 
 // NewDeploymentBuilder creates a deploymentBuilder prepared to collect the
 // data associated with req and return a Deployment
-func NewDeploymentBuilder(cl RectificationClient, req SingReq) deploymentBuilder {
+func NewDeploymentBuilder(cl rectificationClient, req SingReq) deploymentBuilder {
 	return deploymentBuilder{rectification: cl, req: req}
 }
 
@@ -67,6 +69,7 @@ func (uc *deploymentBuilder) canRetry(err error) error {
 	return &canRetryRequest{err, uc.req}
 }
 
+// TODO: Unexport this method.
 func (uc *deploymentBuilder) CompleteConstruction() error {
 	uc.Target.Cluster = uc.req.SourceURL
 	uc.request = uc.req.ReqParent.Request
@@ -144,7 +147,7 @@ func (uc *deploymentBuilder) retrieveImageLabels() error {
 	}
 	Log.Vomit.Print("Labels: ", labels)
 
-	uc.Target.SourceVersion, err = SourceVersionFromLabels(labels)
+	uc.Target.SourceVersion, err = docker.SourceVersionFromLabels(labels)
 	if err != nil {
 		return malformedResponse{fmt.Sprintf("For reqID: %s, %s", uc.req.ReqParent.Request.Id, err.Error())}
 	}
@@ -160,23 +163,23 @@ func (uc *deploymentBuilder) unpackDeployConfig() error {
 	}
 
 	singRez := uc.deploy.Resources
-	uc.Target.Resources = make(Resources)
+	uc.Target.Resources = make(sous.Resources)
 	uc.Target.Resources["cpus"] = fmt.Sprintf("%f", singRez.Cpus)
 	uc.Target.Resources["memory"] = fmt.Sprintf("%f", singRez.MemoryMb)
 	uc.Target.Resources["ports"] = fmt.Sprintf("%d", singRez.NumPorts)
 
 	uc.Target.NumInstances = int(uc.request.Instances)
-	uc.Target.Owners = make(OwnerSet)
+	uc.Target.Owners = make(sous.OwnerSet)
 	for _, o := range uc.request.Owners {
 		uc.Target.Owners.Add(o)
 	}
 
 	for _, v := range uc.deploy.ContainerInfo.Volumes {
 		uc.Target.DeployConfig.Volumes = append(uc.Target.DeployConfig.Volumes,
-			&Volume{
+			&sous.Volume{
 				Host:      v.HostPath,
 				Container: v.ContainerPath,
-				Mode:      VolumeMode(v.Mode),
+				Mode:      sous.VolumeMode(v.Mode),
 			})
 	}
 	Log.Vomit.Printf("Volumes %+v", uc.Target.DeployConfig.Volumes)
@@ -192,15 +195,15 @@ func (uc *deploymentBuilder) determineManifestKind() error {
 	default:
 		return fmt.Errorf("Unrecognized response type returned by Singularity: %v", uc.request.RequestType)
 	case dtos.SingularityRequestRequestTypeSERVICE:
-		uc.Target.Kind = ManifestKindService
+		uc.Target.Kind = sous.ManifestKindService
 	case dtos.SingularityRequestRequestTypeWORKER:
-		uc.Target.Kind = ManifestKindWorker
+		uc.Target.Kind = sous.ManifestKindWorker
 	case dtos.SingularityRequestRequestTypeON_DEMAND:
-		uc.Target.Kind = ManifestKindOnDemand
+		uc.Target.Kind = sous.ManifestKindOnDemand
 	case dtos.SingularityRequestRequestTypeSCHEDULED:
-		uc.Target.Kind = ManifestKindScheduled
+		uc.Target.Kind = sous.ManifestKindScheduled
 	case dtos.SingularityRequestRequestTypeRUN_ONCE:
-		uc.Target.Kind = ManifestKindOnce
+		uc.Target.Kind = sous.ManifestKindOnce
 	}
 	return nil
 }

@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/opentable/sous/ext/singularity"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
 )
@@ -13,6 +14,8 @@ import (
 type SousRectify struct {
 	Config       LocalSousConfig
 	DockerClient LocalDockerClient
+	Deployer     sous.Deployer
+	Registry     sous.Registry
 	flags        struct {
 		dryrun,
 		manifest string
@@ -44,30 +47,13 @@ func (sr *SousRectify) AddFlags(fs *flag.FlagSet) {
 
 // Execute fulfils the cmdr.Executor interface
 func (sr *SousRectify) Execute(args []string) cmdr.Result {
-	var nc sous.ImageMapper
-	var rc sous.RectificationClient
-
 	if len(args) < 1 {
 		return UsageErrorf("sous rectify requires a directory to load the intended deployment from")
 	}
 	dir := args[0]
 
-	if sr.flags.dryrun == "both" || sr.flags.dryrun == "registry" {
-		nc = sous.NewDummyNameCache()
-	} else {
-		nc = sous.NewNameCache(
-			sr.DockerClient,
-			sr.Config.DatabaseDriver,
-			sr.Config.DatabaseConnection)
-	}
+	sr.resolveDryRunFlag(sr.flags.dryrun)
 
-	if sr.flags.dryrun == "both" || sr.flags.dryrun == "scheduler" {
-		drc := sous.NewDummyRectificationClient(nc)
-		drc.SetLogger(log.New(os.Stdout, "rectify: ", 0))
-		rc = drc
-	} else {
-		rc = sous.NewRectiAgent(nc)
-	}
 	var predicate sous.DeploymentPredicate
 	if sr.flags.manifest != "" {
 		predicate = func(d *sous.Deployment) bool {
@@ -75,11 +61,28 @@ func (sr *SousRectify) Execute(args []string) cmdr.Result {
 		}
 	}
 
-	// If predicate is still nil, that means resolve all. See Deployments.Filter.
-	err := sous.ResolveFromDirFiltered(rc, dir, predicate)
+	intendedState, err := sous.LoadState(dir)
 	if err != nil {
 		return EnsureErrorResult(err)
 	}
 
+	r := sous.NewResolver(sr.Deployer, sr.Registry)
+
+	// If predicate is still nil, that means resolve all. See Deployments.Filter.
+	if err := r.ResolveFilteredDeployments(intendedState, predicate); err != nil {
+		return EnsureErrorResult(err)
+	}
+
 	return Success()
+}
+
+func (sr *SousRectify) resolveDryRunFlag(dryrun string) {
+	if dryrun == "both" || dryrun == "registry" {
+		sr.Registry = singularity.NewDummyRegistry()
+	}
+	if dryrun == "both" || dryrun == "scheduler" {
+		drc := singularity.NewDummyRectificationClient(sr.Registry)
+		drc.SetLogger(log.New(os.Stdout, "rectify: ", 0))
+		sr.Deployer = singularity.NewDeployer(sr.Registry, drc)
+	}
 }

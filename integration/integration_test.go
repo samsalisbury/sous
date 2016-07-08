@@ -1,6 +1,7 @@
-package test
+package integration
 
 import (
+	"database/sql"
 	"flag"
 	"fmt"
 	"log"
@@ -9,7 +10,9 @@ import (
 	"testing"
 	"time"
 
-	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/ext/docker"
+	"github.com/opentable/sous/ext/singularity"
+	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/docker_registry"
 	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/assert"
@@ -18,9 +21,8 @@ import (
 var imageName string
 
 func TestMain(m *testing.M) {
-	log.Print("hello there")
 	flag.Parse()
-	os.Exit(wrapCompose(m))
+	os.Exit(WrapCompose(m, "../test-registry"))
 }
 
 func TestGetLabels(t *testing.T) {
@@ -32,8 +34,16 @@ func TestGetLabels(t *testing.T) {
 	labels, err := cl.LabelsForImageName(imageName)
 
 	assert.Nil(err)
-	assert.Contains(labels, sous.DockerRepoLabel)
-	resetSingularity()
+	assert.Contains(labels, docker.DockerRepoLabel)
+	ResetSingularity()
+}
+
+func newInMemoryDB(name string) *sql.DB {
+	db, err := docker.GetDatabase(&docker.DBConfig{"sqlite3", docker.InMemoryConnection(name)})
+	if err != nil {
+		panic(err)
+	}
+	return db
 }
 
 func TestGetRunningDeploymentSet(t *testing.T) {
@@ -45,13 +55,14 @@ func TestGetRunningDeploymentSet(t *testing.T) {
 	registerLabelledContainers()
 	drc := docker_registry.NewClient()
 	drc.BecomeFoolishlyTrusting()
-	nc := sous.NewNameCache(drc, "sqlite3", sous.InMemoryConnection("grds"))
-	ra := sous.NewRectiAgent(nc)
+	nc := docker.NewNameCache(drc, newInMemoryDB("grds"))
+	client := singularity.NewRectiAgent(nc)
+	d := singularity.NewDeployer(nc, client)
 
-	deps, which := deploymentWithRepo(assert, ra, "https://github.com/opentable/docker-grafana.git")
+	deps, which := deploymentWithRepo(assert, d, "https://github.com/opentable/docker-grafana.git")
 	if assert.Equal(3, len(deps)) {
 		grafana := deps[which]
-		assert.Equal(singularityURL, grafana.Cluster)
+		assert.Equal(SingularityURL, grafana.Cluster)
 		assert.Regexp("^0\\.1", grafana.Resources["cpus"])    // XXX strings and floats...
 		assert.Regexp("^100\\.", grafana.Resources["memory"]) // XXX strings and floats...
 		assert.Equal("1", grafana.Resources["ports"])         // XXX strings and floats...
@@ -61,7 +72,7 @@ func TestGetRunningDeploymentSet(t *testing.T) {
 		assert.Equal(sous.ManifestKindService, grafana.Kind)
 	}
 
-	resetSingularity()
+	ResetSingularity()
 }
 
 func TestMissingImage(t *testing.T) {
@@ -69,8 +80,8 @@ func TestMissingImage(t *testing.T) {
 
 	clusterDefs := sous.Defs{
 		Clusters: sous.Clusters{
-			singularityURL: sous.Cluster{
-				BaseURL: singularityURL,
+			SingularityURL: sous.Cluster{
+				BaseURL: SingularityURL,
 			},
 		},
 	}
@@ -79,7 +90,7 @@ func TestMissingImage(t *testing.T) {
 	drc := docker_registry.NewClient()
 	drc.BecomeFoolishlyTrusting()
 	// easiest way to make sure that the manifest doesn't actually get registered
-	dummyNc := sous.NewNameCache(drc, "sqlite3", sous.InMemoryConnection("bitbucket"))
+	dummyNc := docker.NewNameCache(drc, newInMemoryDB("bitbucket"))
 
 	stateOne := sous.State{
 		Defs: clusterDefs,
@@ -89,18 +100,24 @@ func TestMissingImage(t *testing.T) {
 	}
 
 	// ****
-	nc := sous.NewNameCache(drc, "sqlite3", sous.InMemoryConnection("missingimage"))
-	ra := sous.NewRectiAgent(nc)
-	err := sous.Resolve(ra, stateOne)
+	nc := docker.NewNameCache(drc, newInMemoryDB("missingimage"))
+
+	client := singularity.NewRectiAgent(nc)
+	deployer := singularity.NewDeployer(nc, client)
+
+	r := sous.NewResolver(deployer, nc)
+
+	err := r.Resolve(stateOne)
+
 	assert.Error(err)
 
 	// ****
 	time.Sleep(1 * time.Second)
 
-	_, which := deploymentWithRepo(assert, ra, repoOne)
+	_, which := deploymentWithRepo(assert, deployer, repoOne)
 	assert.Equal(which, -1, "opentable/one was deployed")
 
-	resetSingularity()
+	ResetSingularity()
 }
 
 func TestResolve(t *testing.T) {
@@ -108,10 +125,13 @@ func TestResolve(t *testing.T) {
 	sous.Log.Vomit.SetOutput(os.Stderr)
 	sous.Log.Debug.SetOutput(os.Stderr)
 
+	ResetSingularity()
+	defer ResetSingularity()
+
 	clusterDefs := sous.Defs{
 		Clusters: sous.Clusters{
-			singularityURL: sous.Cluster{
-				BaseURL: singularityURL,
+			SingularityURL: sous.Cluster{
+				BaseURL: SingularityURL,
 			},
 		},
 	}
@@ -122,8 +142,9 @@ func TestResolve(t *testing.T) {
 	drc := docker_registry.NewClient()
 	drc.BecomeFoolishlyTrusting()
 
-	nc := sous.NewNameCache(drc, "sqlite3", sous.InMemoryConnection("testresolve"))
-	ra := sous.NewRectiAgent(nc)
+	db := newInMemoryDB("testresolve")
+
+	nc := docker.NewNameCache(drc, db)
 
 	stateOneTwo := sous.State{
 		Defs: clusterDefs,
@@ -142,14 +163,19 @@ func TestResolve(t *testing.T) {
 
 	// ****
 	log.Print("Resolving from nothing to one+two")
-	err := sous.Resolve(ra, stateOneTwo)
+	client := singularity.NewRectiAgent(nc)
+	deployer := singularity.NewDeployer(nc, client)
+
+	r := sous.NewResolver(deployer, nc)
+
+	err := r.Resolve(stateOneTwo)
 	if err != nil {
 		assert.Fail(err.Error())
 	}
 	// ****
 	time.Sleep(3 * time.Second)
 
-	deps, which := deploymentWithRepo(assert, ra, repoOne)
+	deps, which := deploymentWithRepo(assert, deployer, repoOne)
 	if assert.NotEqual(which, -1, "opentable/one not successfully deployed") {
 		one := deps[which]
 		assert.Equal(1, one.NumInstances)
@@ -168,7 +194,12 @@ func TestResolve(t *testing.T) {
 	// XXX Let's hope this is a temporary solution to a testing issue
 	// The problem is laid out in DCOPS-7625
 	for tries := 0; tries < 3; tries++ {
-		err = sous.Resolve(ra, stateTwoThree)
+		client := singularity.NewRectiAgent(nc)
+		deployer := singularity.NewDeployer(nc, client)
+
+		r := sous.NewResolver(deployer, nc)
+
+		err := r.Resolve(stateTwoThree)
 		if err != nil {
 			if !conflictRE.MatchString(err.Error()) {
 				assert.FailNow(err.Error())
@@ -183,7 +214,7 @@ func TestResolve(t *testing.T) {
 	}
 	// ****
 
-	deps, which = deploymentWithRepo(assert, ra, repoTwo)
+	deps, which = deploymentWithRepo(assert, deployer, repoTwo)
 	if assert.NotEqual(-1, which, "opentable/two no longer deployed after resolve") {
 		assert.Equal(1, deps[which].NumInstances)
 	}
@@ -201,12 +232,10 @@ func TestResolve(t *testing.T) {
 		assert.Equal(0, deps[which].NumInstances)
 	}
 
-	// XXX DON'T MERGE WITH THIS COMMENTED resetSingularity()
 }
 
-func deploymentWithRepo(assert *assert.Assertions, ra sous.RectificationClient, repo string) (sous.Deployments, int) {
-	sc := sous.NewSetCollector(ra)
-	deps, err := sc.GetRunningDeployment([]string{singularityURL})
+func deploymentWithRepo(assert *assert.Assertions, sc sous.Deployer, repo string) (sous.Deployments, int) {
+	deps, err := sc.GetRunningDeployment([]string{SingularityURL})
 	if assert.Nil(err) {
 		return deps, findRepo(deps, repo)
 	}
@@ -224,18 +253,11 @@ func findRepo(deps sous.Deployments, repo string) int {
 	return -1
 }
 
-func manifest(nc sous.ImageMapper, drepo, containerDir, sourceURL, version string) *sous.Manifest {
-	//	sv := sous.SourceVersion{
-	//		RepoURL:    sous.RepoURL(sourceURL),
-	//		RepoOffset: sous.RepoOffset(""),
-	//		Version:    semv.MustParse(version),
-	//	}
+func manifest(nc sous.Registry, drepo, containerDir, sourceURL, version string) *sous.Manifest {
+	in := BuildImageName(drepo, version)
+	BuildAndPushContainer(containerDir, in)
 
-	in := buildImageName(drepo, version)
-	buildAndPushContainer(containerDir, in)
-
-	//nc.Insert(sv, in, "")
-	nc.GetSourceVersion(in)
+	nc.GetSourceVersion(docker.DockerBuildArtifact(in))
 
 	return &sous.Manifest{
 		Source: sous.SourceLocation{
@@ -245,16 +267,15 @@ func manifest(nc sous.ImageMapper, drepo, containerDir, sourceURL, version strin
 		Owners: []string{`xyz`},
 		Kind:   sous.ManifestKindService,
 		Deployments: sous.DeploySpecs{
-			singularityURL: sous.PartialDeploySpec{
+			SingularityURL: sous.PartialDeploySpec{
 				DeployConfig: sous.DeployConfig{
-					Resources:    sous.Resources{"cpus": "0.1", "memory": "100", "ports": "1"}, //map[string]string
+					Resources:    sous.Resources{"cpus": "0.1", "memory": "100", "ports": "1"},
 					Args:         []string{},
 					Env:          sous.Env{"repo": drepo}, //map[s]s
 					NumInstances: 1,
 					Volumes:      sous.Volumes{&sous.Volume{"/tmp", "/tmp", sous.VolumeMode("RO")}},
 				},
 				Version: semv.MustParse(version),
-				//clusterName: "it",
 			},
 		},
 	}

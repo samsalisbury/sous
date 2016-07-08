@@ -1,30 +1,52 @@
-package sous
+package singularity
 
 import (
+	"regexp"
 	"sync"
 
 	"github.com/opentable/go-singularity"
 	"github.com/opentable/go-singularity/dtos"
+	"github.com/opentable/sous/ext/docker"
+	"github.com/opentable/sous/lib"
 	"github.com/satori/go.uuid"
 )
+
+// TODO: notInIDRE is copied from sous/lib. It should only live in this package.
+var notInIDRE = regexp.MustCompile(`[-/:]`)
+
+// TODO: idify is copied from sous/lib. It should only live in this package.
+func idify(in string) string {
+	return notInIDRE.ReplaceAllString(in, "")
+}
 
 // RectiAgent is an implementation of the RectificationClient interface
 type RectiAgent struct {
 	singClients map[string]*singularity.Client
 	sync.RWMutex
-	nameCache ImageMapper
+	nameCache sous.Registry
 }
 
 // NewRectiAgent returns a set-up RectiAgent
-func NewRectiAgent(nc ImageMapper) *RectiAgent {
+func NewRectiAgent(b sous.Registry) *RectiAgent {
 	return &RectiAgent{
 		singClients: make(map[string]*singularity.Client),
-		nameCache:   nc,
+		nameCache:   b,
+	}
+}
+
+// SingMap produces a DTOMap appropriate for building a Singularity
+// dto.Resources struct from
+func MapResources(r sous.Resources) dtoMap {
+	return dtoMap{
+		"Cpus":     r.Cpus(),
+		"MemoryMb": r.Memory(),
+		"NumPorts": int32(r.Ports()),
 	}
 }
 
 // Deploy sends requests to Singularity to make a deployment happen
-func (ra *RectiAgent) Deploy(cluster, depID, reqID, dockerImage string, r Resources, e Env, vols Volumes) error {
+func (ra *RectiAgent) Deploy(cluster, depID, reqID, dockerImage string,
+	r sous.Resources, e sous.Env, vols sous.Volumes) error {
 	Log.Debug.Printf("Deploying instance %s %s %s %s %v %v", cluster, depID, reqID, dockerImage, r, e)
 	dockerInfo, err := dtos.LoadMap(&dtos.SingularityDockerInfo{}, dtoMap{
 		"Image": dockerImage,
@@ -33,7 +55,7 @@ func (ra *RectiAgent) Deploy(cluster, depID, reqID, dockerImage string, r Resour
 		return err
 	}
 
-	res, err := dtos.LoadMap(&dtos.Resources{}, r.SingMap())
+	res, err := dtos.LoadMap(&dtos.Resources{}, MapResources(r))
 	if err != nil {
 		return err
 	}
@@ -129,19 +151,15 @@ func (ra *RectiAgent) Scale(cluster, reqID string, instanceCount int, message st
 	return err
 }
 
-// ImageName gets the container image name for a given deployment
-func (ra *RectiAgent) ImageName(d *Deployment) (string, error) {
-	return ra.nameCache.GetImageName(d.SourceVersion)
-}
-
-// ImageLabels gets the labels for an image name
+// ImageLabels gets the labels for an image name.
 func (ra *RectiAgent) ImageLabels(in string) (map[string]string, error) {
-	sv, err := ra.nameCache.GetSourceVersion(in)
+	a := docker.DockerBuildArtifact(in)
+	sv, err := ra.nameCache.GetSourceVersion(a)
 	if err != nil {
 		return map[string]string{}, err
 	}
 
-	return sv.DockerLabels(), nil
+	return docker.DockerLabels(sv), nil
 }
 
 func (ra *RectiAgent) getSingularityClient(url string) (*singularity.Client, bool) {

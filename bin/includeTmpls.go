@@ -37,7 +37,7 @@ func main() {
 	}
 
 	out.Write([]byte(header))
-	out.Write([]byte("package sous \n\nconst (\n"))
+	out.Write([]byte("package docker \n\nconst (\n"))
 	for _, f := range fs {
 		if strings.HasSuffix(f.Name(), ".tmpl") {
 			out.Write([]byte(strings.TrimSuffix(f.Name(), ".tmpl") + "Tmpl = \""))

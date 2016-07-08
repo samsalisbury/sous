@@ -21,8 +21,12 @@ type (
 	}
 )
 
-// DefaultConfig builds a default configuation, which can be then overridden by
-// client code
+// InMemory configures SQLite to use an in-memory database
+// The dummy file allows multiple goroutines see the same in-memory DB
+const InMemory = "file:dummy.db?mode=memory&cache=shared"
+
+// DefaultConfig builds a default configuration, which can be then overridden by
+// client code.
 func DefaultConfig() Config {
 	return Config{
 		DatabaseDriver:     "sqlite3",

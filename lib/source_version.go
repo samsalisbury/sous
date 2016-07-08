@@ -2,7 +2,6 @@ package sous
 
 import (
 	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/samsalisbury/semv"
@@ -196,78 +195,6 @@ func canonicalNameFromChunks(source string, chunks []string) (sl SourceLocation,
 	}
 
 	return
-}
-
-// SourceVersionFromLabels builds a SourceVersion from a map of labels,
-// generally acquired from a Docker image
-func SourceVersionFromLabels(labels map[string]string) (SourceVersion, error) {
-	missingLabels := make([]string, 0, 3)
-	repo, present := labels[DockerRepoLabel]
-	if !present {
-		missingLabels = append(missingLabels, DockerRepoLabel)
-	}
-
-	versionStr, present := labels[DockerVersionLabel]
-	if !present {
-		missingLabels = append(missingLabels, DockerVersionLabel)
-	}
-
-	revision, present := labels[DockerRevisionLabel]
-	if !present {
-		missingLabels = append(missingLabels, DockerRevisionLabel)
-	}
-
-	path, present := labels[DockerPathLabel]
-	if !present {
-		missingLabels = append(missingLabels, DockerPathLabel)
-	}
-
-	if len(missingLabels) > 0 {
-		err := fmt.Errorf("Missing labels on manifest for %v", missingLabels)
-		return SourceVersion{}, err
-	}
-
-	version, err := semv.Parse(versionStr)
-	version.Meta = revision
-
-	return SourceVersion{
-		RepoURL:    RepoURL(repo),
-		Version:    version,
-		RepoOffset: RepoOffset(path),
-	}, err
-}
-
-var stripRE = regexp.MustCompile("^([[:alpha:]]+://)?(github.com(/opentable)?)?")
-
-func (sv *SourceVersion) dockerImageNameBase() string {
-	name := string(sv.RepoURL)
-
-	name = stripRE.ReplaceAllString(name, "")
-	if string(sv.RepoOffset) != "" {
-		name = strings.Join([]string{name, string(sv.RepoOffset)}, "/")
-	}
-	return name
-}
-
-// DockerVersionName gives the (registry relative) repo name for a source version
-func (sv *SourceVersion) DockerVersionName() string {
-	return strings.Join([]string{sv.dockerImageNameBase(), sv.TagName()}, ":")
-}
-
-// DockerRevisionName gives the (registry relative) repo name for a source revision id
-func (sv *SourceVersion) DockerRevisionName() string {
-	return strings.Join([]string{sv.dockerImageNameBase(), sv.RevID()}, ":")
-}
-
-// DockerLabels computes a map of labels that should be applied to a container
-// image that is built based on this SourceVersion
-func (sv *SourceVersion) DockerLabels() map[string]string {
-	labels := make(map[string]string)
-	labels[DockerVersionLabel] = sv.Version.Format(`M.m.p-?`)
-	labels[DockerRevisionLabel] = sv.RevID()
-	labels[DockerPathLabel] = string(sv.RepoOffset)
-	labels[DockerRepoLabel] = string(sv.RepoURL)
-	return labels
 }
 
 func ParseSourceVersion(source string) (SourceVersion, error) {

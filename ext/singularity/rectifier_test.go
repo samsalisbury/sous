@@ -1,4 +1,4 @@
-package sous
+package singularity
 
 import (
 	"io/ioutil"
@@ -6,6 +6,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/opentable/sous/lib"
 	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/assert"
 )
@@ -15,32 +16,34 @@ import (
 func TestModifyScale(t *testing.T) {
 	log.SetFlags(log.Flags() | log.Lshortfile)
 	assert := assert.New(t)
-	pair := &DeploymentPair{
-		prior: &Deployment{
-			SourceVersion: SourceVersion{
-				RepoURL: RepoURL("reqid"),
+	pair := &sous.DeploymentPair{
+		Prior: &sous.Deployment{
+			SourceVersion: sous.SourceVersion{
+				RepoURL: sous.RepoURL("reqid"),
 			},
-			DeployConfig: DeployConfig{
+			DeployConfig: sous.DeployConfig{
 				NumInstances: 12,
 			},
 			Cluster: "cluster",
 		},
-		post: &Deployment{
-			SourceVersion: SourceVersion{
-				RepoURL: RepoURL("reqid"),
+		Post: &sous.Deployment{
+			SourceVersion: sous.SourceVersion{
+				RepoURL: sous.RepoURL("reqid"),
 			},
-			DeployConfig: DeployConfig{
+			DeployConfig: sous.DeployConfig{
 				NumInstances: 24,
 			},
 			Cluster: "cluster",
 		},
 	}
 
-	chanset := NewDiffChans(1)
-	nc := NewDummyNameCache()
+	chanset := sous.NewDiffChans(1)
+	nc := NewDummyRegistry()
 	client := NewDummyRectificationClient(nc)
 
-	errs := Rectify(chanset, client)
+	deployer := NewDeployer(nc, client)
+
+	errs := sous.Rectify(chanset, deployer, nc)
 	chanset.Modified <- pair
 	chanset.Close()
 	for e := range errs {
@@ -59,35 +62,35 @@ func TestModifyImage(t *testing.T) {
 	assert := assert.New(t)
 	before, _ := semv.Parse("1.2.3-test")
 	after, _ := semv.Parse("2.3.4-new")
-	pair := &DeploymentPair{
-		prior: &Deployment{
-			SourceVersion: SourceVersion{
-				RepoURL: RepoURL("reqid"),
+	pair := &sous.DeploymentPair{
+		Prior: &sous.Deployment{
+			SourceVersion: sous.SourceVersion{
+				RepoURL: sous.RepoURL("reqid"),
 				Version: before,
 			},
-			DeployConfig: DeployConfig{
+			DeployConfig: sous.DeployConfig{
 				NumInstances: 1,
 			},
 			Cluster: "cluster",
 		},
-		post: &Deployment{
-			SourceVersion: SourceVersion{
-				RepoURL: RepoURL("reqid"),
+		Post: &sous.Deployment{
+			SourceVersion: sous.SourceVersion{
+				RepoURL: sous.RepoURL("reqid"),
 				Version: after,
 			},
-			DeployConfig: DeployConfig{
+			DeployConfig: sous.DeployConfig{
 				NumInstances: 1,
 			},
 			Cluster: "cluster",
 		},
 	}
 
-	chanset := NewDiffChans(1)
+	chanset := sous.NewDiffChans(1)
 
-	nc := NewDummyNameCache()
+	nc := NewDummyRegistry()
 	client := NewDummyRectificationClient(nc)
 
-	errs := Rectify(chanset, client)
+	errs := sous.Rectify(chanset, NewDeployer(nc, client), nc)
 	chanset.Modified <- pair
 	chanset.Close()
 	for e := range errs {
@@ -105,28 +108,28 @@ func TestModifyImage(t *testing.T) {
 func TestModifyResources(t *testing.T) {
 	assert := assert.New(t)
 	version := semv.MustParse("1.2.3-test")
-	pair := &DeploymentPair{
-		prior: &Deployment{
-			SourceVersion: SourceVersion{
-				RepoURL: RepoURL("reqid"),
+	pair := &sous.DeploymentPair{
+		Prior: &sous.Deployment{
+			SourceVersion: sous.SourceVersion{
+				RepoURL: sous.RepoURL("reqid"),
 				Version: version,
 			},
-			DeployConfig: DeployConfig{
+			DeployConfig: sous.DeployConfig{
 				NumInstances: 1,
-				Resources: Resources{
+				Resources: sous.Resources{
 					"memory": "100",
 				},
 			},
 			Cluster: "cluster",
 		},
-		post: &Deployment{
-			SourceVersion: SourceVersion{
-				RepoURL: RepoURL("reqid"),
+		Post: &sous.Deployment{
+			SourceVersion: sous.SourceVersion{
+				RepoURL: sous.RepoURL("reqid"),
 				Version: version,
 			},
-			DeployConfig: DeployConfig{
+			DeployConfig: sous.DeployConfig{
 				NumInstances: 1,
-				Resources: Resources{
+				Resources: sous.Resources{
 					"memory": "500",
 				},
 			},
@@ -134,11 +137,11 @@ func TestModifyResources(t *testing.T) {
 		},
 	}
 
-	chanset := NewDiffChans(1)
-	nc := NewDummyNameCache()
+	chanset := sous.NewDiffChans(1)
+	nc := NewDummyRegistry()
 	client := NewDummyRectificationClient(nc)
 
-	errs := Rectify(chanset, client)
+	errs := sous.Rectify(chanset, NewDeployer(nc, client), nc)
 	chanset.Modified <- pair
 	chanset.Close()
 	for e := range errs {
@@ -159,40 +162,40 @@ func TestModify(t *testing.T) {
 	assert := assert.New(t)
 	before := semv.MustParse("1.2.3-test")
 	after := semv.MustParse("2.3.4-new")
-	pair := &DeploymentPair{
-		prior: &Deployment{
-			SourceVersion: SourceVersion{
-				RepoURL: RepoURL("reqid"),
+	pair := &sous.DeploymentPair{
+		Prior: &sous.Deployment{
+			SourceVersion: sous.SourceVersion{
+				RepoURL: sous.RepoURL("reqid"),
 				Version: before,
 			},
-			DeployConfig: DeployConfig{
+			DeployConfig: sous.DeployConfig{
 				NumInstances: 1,
-				Volumes: Volumes{
-					&Volume{"host", "container", "RO"},
+				Volumes: sous.Volumes{
+					&sous.Volume{"host", "container", "RO"},
 				},
 			},
 			Cluster: "cluster",
 		},
-		post: &Deployment{
-			SourceVersion: SourceVersion{
-				RepoURL: RepoURL("reqid"),
+		Post: &sous.Deployment{
+			SourceVersion: sous.SourceVersion{
+				RepoURL: sous.RepoURL("reqid"),
 				Version: after,
 			},
-			DeployConfig: DeployConfig{
+			DeployConfig: sous.DeployConfig{
 				NumInstances: 24,
-				Volumes: Volumes{
-					&Volume{"host", "container", "RW"},
+				Volumes: sous.Volumes{
+					&sous.Volume{"host", "container", "RW"},
 				},
 			},
 			Cluster: "cluster",
 		},
 	}
 
-	chanset := NewDiffChans(1)
-	nc := NewDummyNameCache()
+	chanset := sous.NewDiffChans(1)
+	nc := NewDummyRegistry()
 	client := NewDummyRectificationClient(nc)
 
-	errs := Rectify(chanset, client)
+	errs := sous.Rectify(chanset, NewDeployer(nc, client), nc)
 	chanset.Modified <- pair
 	chanset.Close()
 	for e := range errs {
@@ -215,21 +218,21 @@ func TestModify(t *testing.T) {
 func TestDeletes(t *testing.T) {
 	assert := assert.New(t)
 
-	deleted := &Deployment{
-		SourceVersion: SourceVersion{
-			RepoURL: RepoURL("reqid"),
+	deleted := &sous.Deployment{
+		SourceVersion: sous.SourceVersion{
+			RepoURL: sous.RepoURL("reqid"),
 		},
-		DeployConfig: DeployConfig{
+		DeployConfig: sous.DeployConfig{
 			NumInstances: 12,
 		},
 		Cluster: "cluster",
 	}
 
-	chanset := NewDiffChans(1)
-	nc := NewDummyNameCache()
+	chanset := sous.NewDiffChans(1)
+	nc := NewDummyRegistry()
 	client := NewDummyRectificationClient(nc)
 
-	errs := Rectify(chanset, client)
+	errs := sous.Rectify(chanset, NewDeployer(nc, client), nc)
 	chanset.Deleted <- deleted
 	chanset.Close()
 	for e := range errs {
@@ -249,17 +252,17 @@ func TestDeletes(t *testing.T) {
 func TestCreates(t *testing.T) {
 	assert := assert.New(t)
 
-	chanset := NewDiffChans(1)
-	nc := NewDummyNameCache()
+	chanset := sous.NewDiffChans(1)
+	nc := NewDummyRegistry()
 	client := NewDummyRectificationClient(nc)
 
-	errs := Rectify(chanset, client)
+	errs := sous.Rectify(chanset, NewDeployer(nc, client), nc)
 
-	created := &Deployment{
-		SourceVersion: SourceVersion{
-			RepoURL: RepoURL("reqid"),
+	created := &sous.Deployment{
+		SourceVersion: sous.SourceVersion{
+			RepoURL: sous.RepoURL("reqid"),
 		},
-		DeployConfig: DeployConfig{
+		DeployConfig: sous.DeployConfig{
 			NumInstances: 12,
 		},
 		Cluster: "cluster",
