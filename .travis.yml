@@ -21,9 +21,7 @@ before_install:
 - sudo mv docker-compose /usr/local/bin
 - docker version
 - docker-compose version
-- cd test-registry
-- docker-compose pull
-- docker-compose build --no-cache registry
+- (cd test-registry && docker-compose pull && docker-compose build --no-cache registry)
 
 install:
 - echo "Default install step disabled by .travis.yml"
