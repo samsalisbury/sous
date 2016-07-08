@@ -86,8 +86,7 @@ func TestBuildDeployments(t *testing.T) {
 	}
 
 	if assert.NoError(err) {
-		uc := singularity.NewDeploymentBuilder(ra, req)
-		err = uc.CompleteConstruction()
+		uc, err := singularity.NewDeploymentBuilder(ra, req)
 
 		if assert.NoError(err) {
 			dep := uc.Target

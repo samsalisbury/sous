@@ -42,8 +42,9 @@ func (cr *canRetryRequest) name() string {
 
 // NewDeploymentBuilder creates a deploymentBuilder prepared to collect the
 // data associated with req and return a Deployment
-func NewDeploymentBuilder(cl rectificationClient, req SingReq) deploymentBuilder {
-	return deploymentBuilder{rectification: cl, req: req}
+func NewDeploymentBuilder(cl rectificationClient, req SingReq) (deploymentBuilder, error) {
+	d := deploymentBuilder{rectification: cl, req: req}
+	return d, d.completeConstruction()
 }
 
 func (uc *deploymentBuilder) canRetry(err error) error {
@@ -70,7 +71,7 @@ func (uc *deploymentBuilder) canRetry(err error) error {
 }
 
 // TODO: Unexport this method.
-func (uc *deploymentBuilder) CompleteConstruction() error {
+func (uc *deploymentBuilder) completeConstruction() error {
 	uc.Target.Cluster = uc.req.SourceURL
 	uc.request = uc.req.ReqParent.Request
 
