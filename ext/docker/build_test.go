@@ -1,4 +1,4 @@
-package sous
+package docker
 
 import (
 	"log"
@@ -37,9 +37,10 @@ func TestBuild(t *testing.T) {
 	}
 
 	dockerID := "1234512345"
-	tagStr := "awesomeproject:1.2.3"
+	tagStr := "awesomeproject:"
 	dockerHost := "docker.wearenice.com"
-	imageName := dockerHost + "/" + tagStr
+	vName := dockerHost + "/" + tagStr + version
+	rName := dockerHost + "/" + tagStr + revision
 
 	sourceDir := "/home/jenny-dev/project"
 	sourceFiles := map[string]string{
@@ -95,12 +96,12 @@ func TestBuild(t *testing.T) {
 
 	assert.Regexp("^"+regexp.QuoteMeta("docker build .")+reTail, sourceSh.History[0])
 
-	assert.Regexp("^"+regexp.QuoteMeta("docker build -t "+versionName+" -t "+revisionName+" - ")+reTail, sourceSh.History[1])
+	assert.Regexp("^"+regexp.QuoteMeta("docker build -t "+vName+" -t "+rName+" - ")+reTail, sourceSh.History[1])
 	assert.Regexp("FROM "+dockerID, sourceSh.History[1].StdinString())
 	assert.Regexp("com.opentable.sous.repo_url=github.com/opentable/awesomeproject", sourceSh.History[1].StdinString())
 
-	assert.Regexp("^"+regexp.QuoteMeta("docker push "+versionName)+reTail, sourceSh.History[2])
-	assert.Regexp("^"+regexp.QuoteMeta("docker push "+revisionName)+reTail, sourceSh.History[3])
+	assert.Regexp("^"+regexp.QuoteMeta("docker push "+vName)+reTail, sourceSh.History[2])
+	assert.Regexp("^"+regexp.QuoteMeta("docker push "+rName)+reTail, sourceSh.History[3])
 	docker.FeedMetadata(docker_registry.Metadata{
 		Registry: dockerHost,
 		Labels: map[string]string{
@@ -110,7 +111,7 @@ func TestBuild(t *testing.T) {
 			DockerRepoLabel:     repoName,
 		},
 		Etag:          "digest",
-		CanonicalName: versionName,
+		CanonicalName: vName,
 		AllNames:      []string{tagStr},
 	})
 	sv, err := nc.GetSourceVersion(DockerBuildArtifact(tagStr))

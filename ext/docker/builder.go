@@ -13,7 +13,7 @@ import (
 //go:generate go run ../../bin/includeTmpls.go
 
 type (
-	// Build represents a single build of a project.
+	// Builder represents a single build of a project.
 	Builder struct {
 		ImageMapper               *NameCache
 		DockerRegistryHost        string
@@ -28,7 +28,7 @@ type (
 	}
 )
 
-// NewBuildWithShells creates a new build using source code in the working
+// NewBuilder creates a new build using source code in the working
 // directory of sourceShell, and using the working dir of scratchShell as
 // temporary storage.
 func NewBuilder(nc *NameCache, drh string, c *sous.SourceContext, sourceShell, scratchShell shell.Shell) (*Builder, error) {
@@ -52,10 +52,12 @@ func NewBuilder(nc *NameCache, drh string, c *sous.SourceContext, sourceShell, s
 	return b, nil
 }
 
+// GetArtifact should be unexported
 func (b *Builder) GetArtifact(sv sous.SourceVersion) (*sous.BuildArtifact, error) {
 	return b.ImageMapper.GetArtifact(sv)
 }
 
+// GetSourceVersion should be unexported
 func (b *Builder) GetSourceVersion(a *sous.BuildArtifact) (sous.SourceVersion, error) {
 	return b.ImageMapper.GetSourceVersion(a)
 }
@@ -110,7 +112,13 @@ func (b *Builder) ApplyMetadata(br *sous.BuildResult) error {
 
 // PushToRegistry sends the built image to the registry
 func (b *Builder) PushToRegistry(br *sous.BuildResult) error {
-	return b.SourceShell.Run("docker", "push", br.ImageName)
+	verr := b.SourceShell.Run("docker", "push", br.VersionName)
+	rerr := b.SourceShell.Run("docker", "push", br.RevisionName)
+
+	if verr == nil {
+		return rerr
+	}
+	return verr
 }
 
 // RecordName inserts metadata about the newly built image into our local name cache
@@ -122,18 +130,11 @@ func (b *Builder) RecordName(br *sous.BuildResult) error {
 }
 
 // VersionTag computes an image tag from a SourceVersion's version
-func (b *Build) VersionTag(v SourceVersion) string {
-	return filepath.Join(b.DockerRegistryHost, v.DockerVersionName())
+func (b *Builder) VersionTag(v sous.SourceVersion) string {
+	return filepath.Join(b.DockerRegistryHost, versionName(v))
 }
 
 // RevisionTag computes an image tag from a SourceVersion's revision id
-func (b *Build) RevisionTag(v SourceVersion) string {
-	return filepath.Join(b.DockerRegistryHost, v.DockerRevisionName())
-}
-
-// FindBuildpack finds the appropriate buildpack for a project
-// ( except right now, we just return a hardcoded Dockerfile BP )
-// returns an error if no buildpack applies
-func (c *BuildContext) FindBuildpack() (Buildpack, error) {
-	return NewDockerfileBuildpack(), nil
+func (b *Builder) RevisionTag(v sous.SourceVersion) string {
+	return filepath.Join(b.DockerRegistryHost, revisionName(v))
 }

@@ -50,17 +50,17 @@ func SourceVersionFromLabels(labels map[string]string) (sous.SourceVersion, erro
 
 var stripRE = regexp.MustCompile("^([[:alpha:]]+://)?(github.com(/opentable)?)?")
 
-func DockerImageName(sv sous.SourceVersion) string {
-	name := string(sv.RepoURL)
-
-	name = stripRE.ReplaceAllString(name, "")
-	if string(sv.RepoOffset) != "" {
-		name = strings.Join([]string{name, string(sv.RepoOffset)}, "/")
-	}
-	name = strings.Join([]string{name, sv.Version.Format(`M.m.p-?`)}, ":")
-	return name
-}
-
+//func DockerImageName(sv sous.SourceVersion) string {
+//	name := string(sv.RepoURL)
+//
+//	name = stripRE.ReplaceAllString(name, "")
+//	if string(sv.RepoOffset) != "" {
+//		name = strings.Join([]string{name, string(sv.RepoOffset)}, "/")
+//	}
+//	name = strings.Join([]string{name, sv.Version.Format(`M.m.p-?`)}, ":")
+//	return name
+//}
+//
 // DockerLabels computes a map of labels that should be applied to a container
 // image that is built based on this SourceVersion
 func DockerLabels(sv sous.SourceVersion) map[string]string {
@@ -70,4 +70,22 @@ func DockerLabels(sv sous.SourceVersion) map[string]string {
 	labels[DockerPathLabel] = string(sv.RepoOffset)
 	labels[DockerRepoLabel] = string(sv.RepoURL)
 	return labels
+}
+
+func imageNameBase(sv sous.SourceVersion) string {
+	name := string(sv.RepoURL)
+
+	name = stripRE.ReplaceAllString(name, "")
+	if string(sv.RepoOffset) != "" {
+		name = strings.Join([]string{name, string(sv.RepoOffset)}, "/")
+	}
+	return name
+}
+
+func versionName(sv sous.SourceVersion) string {
+	return strings.Join([]string{imageNameBase(sv), sv.TagName()}, ":")
+}
+
+func revisionName(sv sous.SourceVersion) string {
+	return strings.Join([]string{imageNameBase(sv), sv.RevID()}, ":")
 }
