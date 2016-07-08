@@ -37,15 +37,19 @@ func TestModifyScale(t *testing.T) {
 		},
 	}
 
-	chanset := sous.NewDiffChans(1)
+	mods := make(chan *sous.DeploymentPair, 1)
+	errs := make(chan sous.RectificationError)
+
 	nc := NewDummyRegistry()
 	client := NewDummyRectificationClient(nc)
 
 	deployer := NewDeployer(nc, client)
 
-	errs := sous.Rectify(chanset, deployer, nc)
-	chanset.Modified <- pair
-	chanset.Close()
+	mods <- pair
+	close(mods)
+	deployer.RectifyModifies(mods, errs)
+	close(errs)
+
 	for e := range errs {
 		t.Error(e)
 	}
@@ -85,14 +89,18 @@ func TestModifyImage(t *testing.T) {
 		},
 	}
 
-	chanset := sous.NewDiffChans(1)
+	mods := make(chan *sous.DeploymentPair, 1)
+	errs := make(chan sous.RectificationError)
 
 	nc := NewDummyRegistry()
 	client := NewDummyRectificationClient(nc)
+	deployer := NewDeployer(nc, client)
 
-	errs := sous.Rectify(chanset, NewDeployer(nc, client), nc)
-	chanset.Modified <- pair
-	chanset.Close()
+	mods <- pair
+	close(mods)
+	deployer.RectifyModifies(mods, errs)
+	close(errs)
+
 	for e := range errs {
 		t.Error(e)
 	}
@@ -137,13 +145,18 @@ func TestModifyResources(t *testing.T) {
 		},
 	}
 
-	chanset := sous.NewDiffChans(1)
+	mods := make(chan *sous.DeploymentPair, 1)
+	errs := make(chan sous.RectificationError)
+
 	nc := NewDummyRegistry()
 	client := NewDummyRectificationClient(nc)
+	deployer := NewDeployer(nc, client)
 
-	errs := sous.Rectify(chanset, NewDeployer(nc, client), nc)
-	chanset.Modified <- pair
-	chanset.Close()
+	mods <- pair
+	close(mods)
+	deployer.RectifyModifies(mods, errs)
+	close(errs)
+
 	for e := range errs {
 		t.Error(e)
 	}
@@ -191,13 +204,18 @@ func TestModify(t *testing.T) {
 		},
 	}
 
-	chanset := sous.NewDiffChans(1)
+	mods := make(chan *sous.DeploymentPair, 1)
+	errs := make(chan sous.RectificationError)
+
 	nc := NewDummyRegistry()
 	client := NewDummyRectificationClient(nc)
+	deployer := NewDeployer(nc, client)
 
-	errs := sous.Rectify(chanset, NewDeployer(nc, client), nc)
-	chanset.Modified <- pair
-	chanset.Close()
+	mods <- pair
+	close(mods)
+	deployer.RectifyModifies(mods, errs)
+	close(errs)
+
 	for e := range errs {
 		t.Error(e)
 	}
@@ -228,13 +246,18 @@ func TestDeletes(t *testing.T) {
 		Cluster: "cluster",
 	}
 
-	chanset := sous.NewDiffChans(1)
+	dels := make(chan *sous.Deployment, 1)
+	errs := make(chan sous.RectificationError)
+
 	nc := NewDummyRegistry()
 	client := NewDummyRectificationClient(nc)
+	deployer := NewDeployer(nc, client)
 
-	errs := sous.Rectify(chanset, NewDeployer(nc, client), nc)
-	chanset.Deleted <- deleted
-	chanset.Close()
+	dels <- deleted
+	close(dels)
+	deployer.RectifyDeletes(dels, errs)
+	close(errs)
+
 	for e := range errs {
 		t.Error(e)
 	}
@@ -252,12 +275,6 @@ func TestDeletes(t *testing.T) {
 func TestCreates(t *testing.T) {
 	assert := assert.New(t)
 
-	chanset := sous.NewDiffChans(1)
-	nc := NewDummyRegistry()
-	client := NewDummyRectificationClient(nc)
-
-	errs := sous.Rectify(chanset, NewDeployer(nc, client), nc)
-
 	created := &sous.Deployment{
 		SourceVersion: sous.SourceVersion{
 			RepoURL: sous.RepoURL("reqid"),
@@ -268,9 +285,17 @@ func TestCreates(t *testing.T) {
 		Cluster: "cluster",
 	}
 
-	chanset.Created <- created
+	crts := make(chan *sous.Deployment, 1)
+	errs := make(chan sous.RectificationError)
 
-	chanset.Close()
+	nc := NewDummyRegistry()
+	client := NewDummyRectificationClient(nc)
+	deployer := NewDeployer(nc, client)
+
+	crts <- created
+	close(crts)
+	deployer.RectifyCreates(crts, errs)
+	close(errs)
 
 	for e := range errs {
 		t.Error(e)

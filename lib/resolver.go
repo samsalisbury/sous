@@ -27,7 +27,8 @@ func (r *Resolver) Resolve(intended State) error {
 }
 
 // Rectify takes a DiffChans and issues the commands to the infrastructure to reconcile the differences
-func Rectify(dcs DiffChans, d Deployer, reg Registry) chan RectificationError {
+func (r *Resolver) rectify(dcs DiffChans) chan RectificationError {
+	d := r.Deployer
 	errs := make(chan RectificationError)
 	wg := &sync.WaitGroup{}
 	wg.Add(3)
@@ -66,7 +67,7 @@ func (r *Resolver) ResolveFilteredDeployments(intended State, pr DeploymentPredi
 
 	diffs := ads.Diff(gdm)
 
-	errs := Rectify(diffs, r.Deployer, r.Registry)
+	errs := r.rectify(diffs)
 
 	re := &ResolveErrors{Causes: []error{}}
 	for err := range errs {

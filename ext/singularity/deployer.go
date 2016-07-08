@@ -12,8 +12,6 @@ intendedSet := getFromManifests()
 existingSet := getFromSingularity()
 
 dChans := intendedSet.Diff(existingSet)
-
-Rectify(dChans)
 */
 
 type (
