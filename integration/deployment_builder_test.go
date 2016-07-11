@@ -89,18 +89,15 @@ func TestBuildDeployments(t *testing.T) {
 	}
 
 	if assert.NoError(err) {
-		uc, err := singularity.NewDeploymentBuilder(ra, map[string]string{clusterNick: SingularityURL}, req)
+		dep, err := singularity.BuildDeployment(ra, map[string]string{clusterNick: SingularityURL}, req)
 
 		if assert.NoError(err) {
-			dep := uc.Target
 			if assert.Len(dep.DeployConfig.Volumes, 1) {
 				assert.Equal(dep.DeployConfig.Volumes[0].Host, "/tmp")
 			}
 			assert.Equal("https://github.com/docker/dockercloud-hello-world.git", string(dep.SourceVersion.RepoURL))
 		}
-
 	}
-
 }
 
 func pushLabelledContainers() {

@@ -41,16 +41,15 @@ func (cr *canRetryRequest) name() string {
 	return fmt.Sprintf("%s:%s", cr.req.SourceURL, cr.req.ReqParent.Request.Id)
 }
 
-// NewDeploymentBuilder creates a deploymentBuilder prepared to collect the
-// data associated with req and return a Deployment
-// XXX
-func NewDeploymentBuilder(cl rectificationClient, nicks map[string]string, req SingReq) (deploymentBuilder, error) {
+// BuildDeployment does all the work to collect the data for a Deployment
+// from Singularity based on the initial SingularityRequest
+func BuildDeployment(cl rectificationClient, nicks map[string]string, req SingReq) (sous.Deployment, error) {
 	db := deploymentBuilder{rectification: cl, nicks: nicks, req: req}
 
 	db.Target.Cluster = req.SourceURL
 	db.request = req.ReqParent.Request
 
-	return db, db.completeConstruction()
+	return db.Target, db.completeConstruction()
 }
 
 func (db *deploymentBuilder) canRetry(err error) error {

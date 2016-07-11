@@ -198,12 +198,12 @@ func depPipeline(
 
 func assembleDeployment(cl rectificationClient, nicks map[string]string, req SingReq) (*sous.Deployment, error) {
 	Log.Vomit.Print("Assembling from: ", req)
-	uc, err := NewDeploymentBuilder(cl, nicks, req)
+	tgt, err := BuildDeployment(cl, nicks, req)
 	if err != nil {
 		Log.Vomit.Print(err)
 		return nil, err
 	}
 
-	Log.Vomit.Printf("Collected deployment: %v", uc)
-	return &uc.Target, nil
+	Log.Vomit.Printf("Collected deployment: %v", tgt)
+	return &tgt, nil
 }
