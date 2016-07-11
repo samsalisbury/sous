@@ -5,7 +5,6 @@ import "time"
 type (
 	// Builder defines a container-based build system.
 	Builder interface {
-		Registry // TODO: Remove registry from here.
 		// Build performs a build and returns the result.
 		Build(*BuildContext, Buildpack, *DetectResult) (*BuildResult, error)
 	}

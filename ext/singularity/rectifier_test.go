@@ -40,7 +40,7 @@ func TestModifyScale(t *testing.T) {
 	mods := make(chan *sous.DeploymentPair, 1)
 	errs := make(chan sous.RectificationError)
 
-	nc := NewDummyRegistry()
+	nc := sous.NewDummyRegistry()
 	client := NewDummyRectificationClient(nc)
 
 	deployer := NewDeployer(nc, client)
@@ -92,7 +92,7 @@ func TestModifyImage(t *testing.T) {
 	mods := make(chan *sous.DeploymentPair, 1)
 	errs := make(chan sous.RectificationError)
 
-	nc := NewDummyRegistry()
+	nc := sous.NewDummyRegistry()
 	client := NewDummyRectificationClient(nc)
 	deployer := NewDeployer(nc, client)
 
@@ -148,7 +148,7 @@ func TestModifyResources(t *testing.T) {
 	mods := make(chan *sous.DeploymentPair, 1)
 	errs := make(chan sous.RectificationError)
 
-	nc := NewDummyRegistry()
+	nc := sous.NewDummyRegistry()
 	client := NewDummyRectificationClient(nc)
 	deployer := NewDeployer(nc, client)
 
@@ -207,7 +207,7 @@ func TestModify(t *testing.T) {
 	mods := make(chan *sous.DeploymentPair, 1)
 	errs := make(chan sous.RectificationError)
 
-	nc := NewDummyRegistry()
+	nc := sous.NewDummyRegistry()
 	client := NewDummyRectificationClient(nc)
 	deployer := NewDeployer(nc, client)
 
@@ -249,7 +249,7 @@ func TestDeletes(t *testing.T) {
 	dels := make(chan *sous.Deployment, 1)
 	errs := make(chan sous.RectificationError)
 
-	nc := NewDummyRegistry()
+	nc := sous.NewDummyRegistry()
 	client := NewDummyRectificationClient(nc)
 	deployer := NewDeployer(nc, client)
 
@@ -289,7 +289,7 @@ func TestCreates(t *testing.T) {
 	crts := make(chan *sous.Deployment, 1)
 	errs := make(chan sous.RectificationError)
 
-	nc := NewDummyRegistry()
+	nc := sous.NewDummyRegistry()
 	client := NewDummyRectificationClient(nc)
 	deployer := NewDeployer(nc, client)
 

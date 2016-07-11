@@ -78,7 +78,7 @@ func (sr *SousRectify) Execute(args []string) cmdr.Result {
 
 func (sr *SousRectify) resolveDryRunFlag(dryrun string) {
 	if dryrun == "both" || dryrun == "registry" {
-		sr.Registry = singularity.NewDummyRegistry()
+		sr.Registry = sous.NewDummyRegistry()
 	}
 	if dryrun == "both" || dryrun == "scheduler" {
 		drc := singularity.NewDummyRectificationClient(sr.Registry)

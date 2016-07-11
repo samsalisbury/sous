@@ -43,8 +43,14 @@ func (cr *canRetryRequest) name() string {
 
 // NewDeploymentBuilder creates a deploymentBuilder prepared to collect the
 // data associated with req and return a Deployment
-func NewDeploymentBuilder(cl rectificationClient, nicks map[string]string, req SingReq) deploymentBuilder {
-	return deploymentBuilder{rectification: cl, nicks: nicks, req: req}
+// XXX
+func NewDeploymentBuilder(cl rectificationClient, nicks map[string]string, req SingReq) (deploymentBuilder, error) {
+	db := deploymentBuilder{rectification: cl, nicks: nicks, req: req}
+
+	db.Target.Cluster = req.SourceURL
+	db.request = req.ReqParent.Request
+
+	return db, db.completeConstruction()
 }
 
 func (db *deploymentBuilder) canRetry(err error) error {
@@ -70,28 +76,17 @@ func (db *deploymentBuilder) canRetry(err error) error {
 	return &canRetryRequest{err, db.req}
 }
 
-// TODO: Unexport this method.
-func (db *deploymentBuilder) CompleteConstruction() error {
-	db.Target.Cluster = db.req.SourceURL
-	db.request = db.req.ReqParent.Request
-
-	err := db.retrieveDeploy()
-	if err != nil {
+func (db *deploymentBuilder) completeConstruction() error {
+	if err := db.retrieveDeploy(); err != nil {
 		return db.canRetry(err)
 	}
-
-	err = db.retrieveImageLabels()
-	if err != nil {
+	if err := db.retrieveImageLabels(); err != nil {
 		return db.canRetry(err)
 	}
-
-	err = db.unpackDeployConfig()
-	if err != nil {
+	if err := db.unpackDeployConfig(); err != nil {
 		return db.canRetry(err)
 	}
-
-	err = db.determineManifestKind()
-	if err != nil {
+	if err := db.determineManifestKind(); err != nil {
 		return db.canRetry(err)
 	}
 

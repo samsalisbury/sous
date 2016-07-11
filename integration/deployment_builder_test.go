@@ -23,7 +23,7 @@ import (
 
 func TestBuildDeployments(t *testing.T) {
 
-	t.Skipf("Failing test on master preventing progress on other stories.")
+	//t.Skipf("Failing test on master preventing progress on other stories.")
 
 	assert := assert.New(t)
 	sous.Log.Debug.SetOutput(os.Stdout)
@@ -44,8 +44,7 @@ func TestBuildDeployments(t *testing.T) {
 	reqID := appLocation + clusterNick
 
 	nc := docker.NewNameCache(drc, db)
-	builder := &docker.Builder{ImageMapper: nc}
-	ra := singularity.NewRectiAgent(builder)
+	ra := singularity.NewRectiAgent(nc)
 
 	singCl := sing.NewClient(SingularityURL)
 	//singCl.Debug = true
@@ -90,8 +89,7 @@ func TestBuildDeployments(t *testing.T) {
 	}
 
 	if assert.NoError(err) {
-		uc := singularity.NewDeploymentBuilder(ra, map[string]string{clusterNick: SingularityURL}, req)
-		err = uc.CompleteConstruction()
+		uc, err := singularity.NewDeploymentBuilder(ra, map[string]string{clusterNick: SingularityURL}, req)
 
 		if assert.NoError(err) {
 			dep := uc.Target

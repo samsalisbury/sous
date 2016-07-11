@@ -198,8 +198,7 @@ func depPipeline(
 
 func assembleDeployment(cl rectificationClient, nicks map[string]string, req SingReq) (*sous.Deployment, error) {
 	Log.Vomit.Print("Assembling from: ", req)
-	uc := NewDeploymentBuilder(cl, nicks, req)
-	err := uc.CompleteConstruction()
+	uc, err := NewDeploymentBuilder(cl, nicks, req)
 	if err != nil {
 		Log.Vomit.Print(err)
 		return nil, err
