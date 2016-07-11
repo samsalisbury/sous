@@ -8,5 +8,7 @@ type (
 		// GetSourceVersion gets the source version associated with the
 		// artifact, regardless of the existence of the artifact.
 		GetSourceVersion(*BuildArtifact) (SourceVersion, error)
+		// GetMetadata returns metadata for source version.
+		//GetMetadata(SourceVersion) (map[string]string, error)
 	}
 )
