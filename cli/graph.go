@@ -150,18 +150,25 @@ func newBuilder(cl LocalDockerClient, ctx *sous.SourceContext, source LocalWorkD
 	return makeDockerBuilder(cl, ctx, source, scratch, u)
 }
 
-func newRegistry(cl LocalDockerClient, ctx *sous.SourceContext, source LocalWorkDirShell, scratch ScratchDirShell, u LocalUser) (sous.Registry, error) {
-	return makeDockerBuilder(cl, ctx, source, scratch, u)
+func newRegistry(cl LocalDockerClient, u LocalUser) (sous.Registry, error) {
+	return makeDockerRegistry(cl, u)
 }
 
-func makeDockerBuilder(cl LocalDockerClient, ctx *sous.SourceContext, source LocalWorkDirShell, scratch ScratchDirShell, u LocalUser) (*docker.Builder, error) {
+func makeDockerRegistry(cl LocalDockerClient, u LocalUser) (*docker.NameCache, error) {
 	cfg := u.DefaultConfig()
 	dbCfg := &docker.DBConfig{Driver: cfg.DatabaseDriver, Connection: cfg.DatabaseConnection}
 	db, err := docker.GetDatabase(dbCfg)
 	if err != nil {
 		return nil, fmt.Errorf("unable to build name cache DB: ", err)
 	}
-	nc := &docker.NameCache{cl.Client, db}
+	return &docker.NameCache{cl.Client, db}, nil
+}
+
+func makeDockerBuilder(cl LocalDockerClient, ctx *sous.SourceContext, source LocalWorkDirShell, scratch ScratchDirShell, u LocalUser) (*docker.Builder, error) {
+	nc, err := makeDockerRegistry(cl, u)
+	if err != nil {
+		return nil, err
+	}
 	// TODO: Get this from config.
 	drh := "docker.otenv.com"
 	return docker.NewBuilder(nc, drh, ctx, source.Sh, scratch.Sh)

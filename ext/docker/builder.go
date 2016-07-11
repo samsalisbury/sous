@@ -52,17 +52,7 @@ func NewBuilder(nc *NameCache, drh string, c *sous.SourceContext, sourceShell, s
 	return b, nil
 }
 
-// GetArtifact should be unexported
-func (b *Builder) GetArtifact(sv sous.SourceVersion) (*sous.BuildArtifact, error) {
-	return b.ImageMapper.GetArtifact(sv)
-}
-
-// GetSourceVersion should be unexported
-func (b *Builder) GetSourceVersion(a *sous.BuildArtifact) (sous.SourceVersion, error) {
-	return b.ImageMapper.GetSourceVersion(a)
-}
-
-// Build performs the build.
+// Build implements sous.Builder.Build
 func (b *Builder) Build(bc *sous.BuildContext, bp sous.Buildpack, _ *sous.DetectResult) (*sous.BuildResult, error) {
 	br, err := bp.Build(bc)
 	if err != nil {
@@ -74,12 +64,12 @@ func (b *Builder) Build(bc *sous.BuildContext, bp sous.Buildpack, _ *sous.Detect
 		return nil, err
 	}
 
-	err = b.PushToRegistry(br)
+	err = b.pushToRegistry(br)
 	if err != nil {
 		return nil, err
 	}
 
-	err = b.RecordName(br)
+	err = b.recordName(br)
 	if err != nil {
 		return nil, err
 	}
@@ -110,8 +100,8 @@ func (b *Builder) ApplyMetadata(br *sous.BuildResult) error {
 	return c.Succeed()
 }
 
-// PushToRegistry sends the built image to the registry
-func (b *Builder) PushToRegistry(br *sous.BuildResult) error {
+// pushToRegistry sends the built image to the registry
+func (b *Builder) pushToRegistry(br *sous.BuildResult) error {
 	verr := b.SourceShell.Run("docker", "push", br.VersionName)
 	rerr := b.SourceShell.Run("docker", "push", br.RevisionName)
 
@@ -121,8 +111,8 @@ func (b *Builder) PushToRegistry(br *sous.BuildResult) error {
 	return verr
 }
 
-// RecordName inserts metadata about the newly built image into our local name cache
-func (b *Builder) RecordName(br *sous.BuildResult) error {
+// recordName inserts metadata about the newly built image into our local name cache
+func (b *Builder) recordName(br *sous.BuildResult) error {
 	sv := b.Context.Version()
 	in := br.VersionName
 	b.SourceShell.ConsoleEcho(fmt.Sprintf("[recording \"%s\" as the docker name for \"%s\"]", in, sv.String()))
