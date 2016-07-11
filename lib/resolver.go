@@ -52,7 +52,7 @@ func (r *Resolver) ResolveFilteredDeployments(intended State, pr DeploymentPredi
 
 	Log.Debug.Print("Loaded. Collecting ADC...")
 
-	ads, err := r.Deployer.GetRunningDeployment(intended.BaseURLs())
+	ads, err := r.Deployer.GetRunningDeployment(intended.ClusterMap())
 	if err != nil {
 		return err
 	}

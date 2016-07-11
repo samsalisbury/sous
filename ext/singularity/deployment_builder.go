@@ -10,6 +10,7 @@ import (
 
 type (
 	deploymentBuilder struct {
+		nicks         map[string]string
 		Target        sous.Deployment
 		depMarker     sDepMarker
 		deploy        sDeploy
@@ -42,94 +43,94 @@ func (cr *canRetryRequest) name() string {
 
 // NewDeploymentBuilder creates a deploymentBuilder prepared to collect the
 // data associated with req and return a Deployment
-func NewDeploymentBuilder(cl rectificationClient, req SingReq) deploymentBuilder {
-	return deploymentBuilder{rectification: cl, req: req}
+func NewDeploymentBuilder(cl rectificationClient, nicks map[string]string, req SingReq) deploymentBuilder {
+	return deploymentBuilder{rectification: cl, nicks: nicks, req: req}
 }
 
-func (uc *deploymentBuilder) canRetry(err error) error {
+func (db *deploymentBuilder) canRetry(err error) error {
 	if _, ok := err.(malformedResponse); ok {
 		return err
 	}
 
-	if uc.req.SourceURL == "" {
+	if db.req.SourceURL == "" {
 		return err
 	}
 
-	if uc.req.ReqParent == nil {
+	if db.req.ReqParent == nil {
 		return err
 	}
-	if uc.req.ReqParent.Request == nil {
-		return err
-	}
-
-	if uc.req.ReqParent.Request.Id == "" {
+	if db.req.ReqParent.Request == nil {
 		return err
 	}
 
-	return &canRetryRequest{err, uc.req}
+	if db.req.ReqParent.Request.Id == "" {
+		return err
+	}
+
+	return &canRetryRequest{err, db.req}
 }
 
 // TODO: Unexport this method.
-func (uc *deploymentBuilder) CompleteConstruction() error {
-	uc.Target.Cluster = uc.req.SourceURL
-	uc.request = uc.req.ReqParent.Request
+func (db *deploymentBuilder) CompleteConstruction() error {
+	db.Target.Cluster = db.req.SourceURL
+	db.request = db.req.ReqParent.Request
 
-	err := uc.retrieveDeploy()
+	err := db.retrieveDeploy()
 	if err != nil {
-		return uc.canRetry(err)
+		return db.canRetry(err)
 	}
 
-	err = uc.retrieveImageLabels()
+	err = db.retrieveImageLabels()
 	if err != nil {
-		return uc.canRetry(err)
+		return db.canRetry(err)
 	}
 
-	err = uc.unpackDeployConfig()
+	err = db.unpackDeployConfig()
 	if err != nil {
-		return uc.canRetry(err)
+		return db.canRetry(err)
 	}
 
-	err = uc.determineManifestKind()
+	err = db.determineManifestKind()
 	if err != nil {
-		return uc.canRetry(err)
+		return db.canRetry(err)
 	}
 
 	return nil
 }
 
-func (uc *deploymentBuilder) retrieveDeploy() error {
+func (db *deploymentBuilder) retrieveDeploy() error {
 
-	rp := uc.req.ReqParent
+	rp := db.req.ReqParent
 	rds := rp.RequestDeployState
-	sing := uc.req.Sing
+	sing := db.req.Sing
 
 	if rds == nil {
 		return malformedResponse{"Singularity response didn't include a deploy state. ReqId: " + rp.Request.Id}
 	}
-	uc.depMarker = rds.PendingDeploy
-	if uc.depMarker == nil {
-		uc.depMarker = rds.ActiveDeploy
+	db.depMarker = rds.PendingDeploy
+	if db.depMarker == nil {
+		db.depMarker = rds.ActiveDeploy
 	}
-	if uc.depMarker == nil {
+	if db.depMarker == nil {
 		return malformedResponse{"Singularity deploy state included no dep markers. ReqID: " + rp.Request.Id}
 	}
 
 	// !!! makes HTTP req
-	dh, err := sing.GetDeploy(uc.depMarker.RequestId, uc.depMarker.DeployId)
+	dh, err := sing.GetDeploy(db.depMarker.RequestId, db.depMarker.DeployId)
 	if err != nil {
 		return err
 	}
 
-	uc.deploy = dh.Deploy
-	if uc.deploy == nil {
+	db.deploy = dh.Deploy
+	if db.deploy == nil {
 		return malformedResponse{"Singularity deploy history included no deploy"}
 	}
 
 	return nil
 }
 
-func (uc *deploymentBuilder) retrieveImageLabels() error {
-	ci := uc.deploy.ContainerInfo
+func (db *deploymentBuilder) retrieveImageLabels() error {
+	ci := db.deploy.ContainerInfo
 	if ci.Type != dtos.SingularityContainerInfoSingularityContainerTypeDOCKER {
 		return fmt.Errorf("Singularity container isn't a docker container")
 	}
@@ -140,70 +141,97 @@ func (uc *deploymentBuilder) retrieveImageLabels() error {
 
 	imageName := dkr.Image
 
+	// XXX coupled to Docker registry as ImageMapper
 	// !!! HTTP request
-	labels, err := uc.rectification.ImageLabels(imageName)
+	labels, err := db.rectification.ImageLabels(imageName)
 	if err != nil {
 		return malformedResponse{err.Error()}
 	}
 	Log.Vomit.Print("Labels: ", labels)
 
-	uc.Target.SourceVersion, err = docker.SourceVersionFromLabels(labels)
+	db.Target.SourceVersion, err = docker.SourceVersionFromLabels(labels)
 	if err != nil {
-		return malformedResponse{fmt.Sprintf("For reqID: %s, %s", uc.req.ReqParent.Request.Id, err.Error())}
+		return malformedResponse{fmt.Sprintf("For reqID: %s, %s", db.req.ReqParent.Request.Id, err.Error())}
+	}
+
+	var posNick string
+	matchCount := 0
+	for nn, url := range db.nicks {
+		if url != db.req.SourceURL {
+			continue
+		}
+		posNick = nn
+		matchCount++
+
+		checkID := buildReqID(db.Target.SourceVersion, nn)
+		sous.Log.Vomit.Printf("Trying hypothetical request ID: %s", checkID)
+		if checkID == db.request.Id {
+			db.Target.ClusterNickname = nn
+			sous.Log.Debug.Printf("Found cluster: %s", nn)
+			break
+		}
+	}
+	if db.Target.ClusterNickname == "" {
+		if matchCount == 1 {
+			db.Target.ClusterNickname = posNick
+			return nil
+		}
+		sous.Log.Debug.Printf("No cluster nickname (%#v) matched request id %s for %s", db.nicks, db.request.Id, imageName)
+		return malformedResponse{fmt.Sprintf("No cluster nickname (%#v) matched request id %s", db.nicks, db.request.Id)}
 	}
 
 	return nil
 }
 
-func (uc *deploymentBuilder) unpackDeployConfig() error {
-	uc.Target.Env = uc.deploy.Env
-	Log.Vomit.Printf("Env %+v", uc.deploy.Env)
-	if uc.Target.Env == nil {
-		uc.Target.Env = make(map[string]string)
+func (db *deploymentBuilder) unpackDeployConfig() error {
+	db.Target.Env = db.deploy.Env
+	Log.Vomit.Printf("Env %+v", db.deploy.Env)
+	if db.Target.Env == nil {
+		db.Target.Env = make(map[string]string)
 	}
 
-	singRez := uc.deploy.Resources
-	uc.Target.Resources = make(sous.Resources)
-	uc.Target.Resources["cpus"] = fmt.Sprintf("%f", singRez.Cpus)
-	uc.Target.Resources["memory"] = fmt.Sprintf("%f", singRez.MemoryMb)
-	uc.Target.Resources["ports"] = fmt.Sprintf("%d", singRez.NumPorts)
+	singRez := db.deploy.Resources
+	db.Target.Resources = make(sous.Resources)
+	db.Target.Resources["cpus"] = fmt.Sprintf("%f", singRez.Cpus)
+	db.Target.Resources["memory"] = fmt.Sprintf("%f", singRez.MemoryMb)
+	db.Target.Resources["ports"] = fmt.Sprintf("%d", singRez.NumPorts)
 
-	uc.Target.NumInstances = int(uc.request.Instances)
-	uc.Target.Owners = make(sous.OwnerSet)
-	for _, o := range uc.request.Owners {
-		uc.Target.Owners.Add(o)
+	db.Target.NumInstances = int(db.request.Instances)
+	db.Target.Owners = make(sous.OwnerSet)
+	for _, o := range db.request.Owners {
+		db.Target.Owners.Add(o)
 	}
 
-	for _, v := range uc.deploy.ContainerInfo.Volumes {
-		uc.Target.DeployConfig.Volumes = append(uc.Target.DeployConfig.Volumes,
+	for _, v := range db.deploy.ContainerInfo.Volumes {
+		db.Target.DeployConfig.Volumes = append(db.Target.DeployConfig.Volumes,
 			&sous.Volume{
 				Host:      v.HostPath,
 				Container: v.ContainerPath,
 				Mode:      sous.VolumeMode(v.Mode),
 			})
 	}
-	Log.Vomit.Printf("Volumes %+v", uc.Target.DeployConfig.Volumes)
-	if len(uc.Target.DeployConfig.Volumes) > 0 {
-		Log.Debug.Printf("%+v", uc.Target.DeployConfig.Volumes[0])
+	Log.Vomit.Printf("Volumes %+v", db.Target.DeployConfig.Volumes)
+	if len(db.Target.DeployConfig.Volumes) > 0 {
+		Log.Debug.Printf("%+v", db.Target.DeployConfig.Volumes[0])
 	}
 
 	return nil
 }
 
-func (uc *deploymentBuilder) determineManifestKind() error {
-	switch uc.request.RequestType {
+func (db *deploymentBuilder) determineManifestKind() error {
+	switch db.request.RequestType {
 	default:
-		return fmt.Errorf("Unrecognized response type returned by Singularity: %v", uc.request.RequestType)
+		return fmt.Errorf("Unrecognized response type returned by Singularity: %v", db.request.RequestType)
 	case dtos.SingularityRequestRequestTypeSERVICE:
-		uc.Target.Kind = sous.ManifestKindService
+		db.Target.Kind = sous.ManifestKindService
 	case dtos.SingularityRequestRequestTypeWORKER:
-		uc.Target.Kind = sous.ManifestKindWorker
+		db.Target.Kind = sous.ManifestKindWorker
 	case dtos.SingularityRequestRequestTypeON_DEMAND:
-		uc.Target.Kind = sous.ManifestKindOnDemand
+		db.Target.Kind = sous.ManifestKindOnDemand
 	case dtos.SingularityRequestRequestTypeSCHEDULED:
-		uc.Target.Kind = sous.ManifestKindScheduled
+		db.Target.Kind = sous.ManifestKindScheduled
 	case dtos.SingularityRequestRequestTypeRUN_ONCE:
-		uc.Target.Kind = sous.ManifestKindOnce
+		db.Target.Kind = sous.ManifestKindOnce
 	}
 	return nil
 }

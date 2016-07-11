@@ -149,7 +149,11 @@ func computeRequestID(d *sous.Deployment) string {
 	if len(d.RequestID) > 0 {
 		return d.RequestID
 	}
-	return idify(d.SourceVersion.CanonicalName().String())
+	return buildReqID(d.SourceVersion, d.ClusterNickname)
+}
+
+func buildReqID(sv sous.SourceVersion, nick string) string {
+	return idify(sv.CanonicalName().String() + nick)
 }
 
 func newDepID() string {

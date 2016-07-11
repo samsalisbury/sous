@@ -47,9 +47,12 @@ func newInMemoryDB(name string) *sql.DB {
 }
 
 func TestGetRunningDeploymentSet(t *testing.T) {
-	//	sous.Log.Debug.SetFlags(sous.Log.Debug.Flags() | log.Ltime)
-	//	sous.Log.Debug.SetOutput(os.Stderr)
-	//	sous.Log.Debug.Print("Starting stderr output")
+	sous.Log.Vomit.SetFlags(sous.Log.Vomit.Flags() | log.Ltime)
+	sous.Log.Vomit.SetOutput(os.Stderr)
+	sous.Log.Vomit.Print("Starting stderr output")
+	sous.Log.Debug.SetFlags(sous.Log.Debug.Flags() | log.Ltime)
+	sous.Log.Debug.SetOutput(os.Stderr)
+	sous.Log.Debug.Print("Starting stderr output")
 	assert := assert.New(t)
 
 	registerLabelledContainers()
@@ -80,7 +83,7 @@ func TestMissingImage(t *testing.T) {
 
 	clusterDefs := sous.Defs{
 		Clusters: sous.Clusters{
-			SingularityURL: sous.Cluster{
+			"test-cluster": sous.Cluster{
 				BaseURL: SingularityURL,
 			},
 		},
@@ -130,7 +133,7 @@ func TestResolve(t *testing.T) {
 
 	clusterDefs := sous.Defs{
 		Clusters: sous.Clusters{
-			SingularityURL: sous.Cluster{
+			"test-cluster": sous.Cluster{
 				BaseURL: SingularityURL,
 			},
 		},
@@ -235,7 +238,7 @@ func TestResolve(t *testing.T) {
 }
 
 func deploymentWithRepo(assert *assert.Assertions, sc sous.Deployer, repo string) (sous.Deployments, int) {
-	deps, err := sc.GetRunningDeployment([]string{SingularityURL})
+	deps, err := sc.GetRunningDeployment(map[string]string{"test-cluster": SingularityURL})
 	if assert.Nil(err) {
 		return deps, findRepo(deps, repo)
 	}
@@ -267,7 +270,7 @@ func manifest(nc sous.Registry, drepo, containerDir, sourceURL, version string) 
 		Owners: []string{`xyz`},
 		Kind:   sous.ManifestKindService,
 		Deployments: sous.DeploySpecs{
-			SingularityURL: sous.PartialDeploySpec{
+			"test-cluster": sous.PartialDeploySpec{
 				DeployConfig: sous.DeployConfig{
 					Resources:    sous.Resources{"cpus": "0.1", "memory": "100", "ports": "1"},
 					Args:         []string{},

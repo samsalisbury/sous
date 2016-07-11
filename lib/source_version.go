@@ -52,43 +52,6 @@ type (
 	}
 )
 
-// MarshalYAML serializes this SourceLocation to a YAML document.
-func (sl SourceLocation) MarshalYAML() (interface{}, error) {
-	return sl.String(), nil
-}
-
-// UnmarshalYAML deserializes a YAML document into this SourceLocation
-func (sl *SourceLocation) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	s := ""
-	if err := unmarshal(&s); err != nil {
-		return err
-	}
-	var err error
-	*sl, err = ParseCanonicalName(s)
-	return err
-}
-
-func (sl SourceLocation) String() string {
-	if sl.RepoOffset == "" {
-		return fmt.Sprintf("%s", sl.RepoURL)
-	}
-	return fmt.Sprintf("%s:%s", sl.RepoURL, sl.RepoOffset)
-}
-
-// Repo return the repository URL for this SourceLocation
-func (sl SourceLocation) Repo() RepoURL {
-	return sl.RepoURL
-}
-
-// SourceVersion returns a SourceVersion built from this location with the addition of a version
-func (sl *SourceLocation) SourceVersion(version semv.Version) SourceVersion {
-	return SourceVersion{
-		RepoURL:    sl.RepoURL,
-		RepoOffset: sl.RepoOffset,
-		Version:    version,
-	}
-}
-
 func (sv SourceVersion) String() string {
 	if sv.RepoOffset == "" {
 		return fmt.Sprintf("%s %s", sv.RepoURL, sv.Version)

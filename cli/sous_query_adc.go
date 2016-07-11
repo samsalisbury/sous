@@ -44,7 +44,7 @@ func (sb *SousQueryAdc) Execute(args []string) cmdr.Result {
 		return EnsureErrorResult(err)
 	}
 
-	ads, err := sb.Deployer.GetRunningDeployment(state.BaseURLs())
+	ads, err := sb.Deployer.GetRunningDeployment(state.ClusterMap())
 	if err != nil {
 		return EnsureErrorResult(err)
 	}

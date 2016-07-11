@@ -39,6 +39,10 @@ func TestBuildDeployments(t *testing.T) {
 		panic(err)
 	}
 
+	appLocation := "testhelloreq"
+	clusterNick := "tcluster"
+	reqID := appLocation + clusterNick
+
 	nc := docker.NewNameCache(drc, db)
 	builder := &docker.Builder{ImageMapper: nc}
 	ra := singularity.NewRectiAgent(builder)
@@ -51,7 +55,7 @@ func TestBuildDeployments(t *testing.T) {
 		whitespace.CleanWS(`
 		{
 			"instances": 1,
-			"id": "test-hello-request",
+			"id": "`+reqID+`",
 			"requestType": "SERVICE",
 			"owners": ["tom@hanna.net", "jerry@barbera.org"]
 		}`),
@@ -59,7 +63,7 @@ func TestBuildDeployments(t *testing.T) {
 		{
 			"deploy": {
 				"id": "`+idify(uuid.NewV4().String())+`",
-				"requestId": "test-hello-request",
+				"requestId": "`+reqID+`",
 				"resources": {
 					"cpus": 0.1,
 					"memoryMb": 32,
@@ -86,7 +90,7 @@ func TestBuildDeployments(t *testing.T) {
 	}
 
 	if assert.NoError(err) {
-		uc := singularity.NewDeploymentBuilder(ra, req)
+		uc := singularity.NewDeploymentBuilder(ra, map[string]string{clusterNick: SingularityURL}, req)
 		err = uc.CompleteConstruction()
 
 		if assert.NoError(err) {

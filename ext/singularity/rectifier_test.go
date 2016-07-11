@@ -282,7 +282,8 @@ func TestCreates(t *testing.T) {
 		DeployConfig: sous.DeployConfig{
 			NumInstances: 12,
 		},
-		Cluster: "cluster",
+		Cluster:         "cluster",
+		ClusterNickname: "nick",
 	}
 
 	crts := make(chan *sous.Deployment, 1)
@@ -311,7 +312,7 @@ func TestCreates(t *testing.T) {
 	if assert.Len(client.created, 1) {
 		req := client.created[0]
 		assert.Equal("cluster", req.cluster)
-		assert.Equal("reqid", req.id)
+		assert.Equal("reqidnick", req.id)
 		assert.Equal(12, req.count)
 	}
 }

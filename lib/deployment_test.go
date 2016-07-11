@@ -58,12 +58,14 @@ func TestBuildDeployment(t *testing.T) {
 		clusterName: "cluster.name",
 	}
 	ih := DeploymentSpecs{}
+	nick := "cn"
 
-	d, err := BuildDeployment(m, sp, ih)
+	d, err := BuildDeployment(m, nick, sp, ih)
 
 	if assert.NoError(err) {
 		if assert.Len(d.DeployConfig.Volumes, 1) {
 			assert.Equal("c", d.DeployConfig.Volumes[0].Container)
 		}
+		assert.Equal(nick, d.ClusterNickname)
 	}
 }

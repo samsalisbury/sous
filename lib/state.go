@@ -81,7 +81,18 @@ func LoadState(dir string) (st State, err error) {
 	return
 }
 
+// ClusterMap returns the nicknames for all the clusters referred to in this state
+// paired with the URL for the named cluster
+func (st *State) ClusterMap() (m map[string]string) {
+	m = make(map[string]string)
+	for nn, cl := range st.Defs.Clusters {
+		m[nn] = cl.BaseURL
+	}
+	return
+}
+
 // BaseURLs returns the urls for all the clusters referred to in this state
+// XXX - deprecate/remove
 func (st *State) BaseURLs() []string {
 	urls := make([]string, 0, len(st.Defs.Clusters))
 	for _, cl := range st.Defs.Clusters {

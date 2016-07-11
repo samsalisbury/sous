@@ -37,7 +37,7 @@ func (s *State) DeploymentsFromManifest(m *Manifest) ([]*Deployment, error) {
 			return nil, fmt.Errorf("Could not find an cluster configured for name '%s' in [%s] (for %+v)", clusterName, strings.Join(us, ", "), m)
 		}
 		spec.clusterName = n.BaseURL
-		d, err := BuildDeployment(m, spec, inherit)
+		d, err := BuildDeployment(m, clusterName, spec, inherit)
 		if err != nil {
 			return nil, err
 		}

@@ -293,7 +293,7 @@ func idify(in string) string {
 }
 
 func startInstance(url, imageName string, ports []int32) error {
-	reqID := idify(imageName)
+	reqID := idify(imageName + "test-cluster") //XXX This become increasingly brittle
 
 	sing := singularity.NewClient(url)
 

@@ -16,6 +16,10 @@ type (
 		// DeployConfig contains configuration info for this deployment,
 		// including environment variables, resources, suggested instance count.
 		DeployConfig `yaml:"inline"`
+		// ClusterNickname is the human name for a cluster - it's taken from the
+		// hash key that defines the cluster and is used in manifests to configure
+		// cluster-local deployment config.
+		ClusterNickname string
 		// Cluster is the name of the cluster this deployment belongs to. Upon
 		// parsing the Manifest, this will be set to the key in
 		// Manifests.Deployments which points at this Deployment.
@@ -145,13 +149,14 @@ func (ds Deployments) Filter(p DeploymentPredicate) Deployments {
 }
 
 // BuildDeployment constructs a deployment out of a Manifest
-func BuildDeployment(m *Manifest, spec PartialDeploySpec, inherit DeploymentSpecs) (*Deployment, error) {
+func BuildDeployment(m *Manifest, nick string, spec PartialDeploySpec, inherit DeploymentSpecs) (*Deployment, error) {
 	ownMap := OwnerSet{}
 	for i := range m.Owners {
 		ownMap.Add(m.Owners[i])
 	}
 	return &Deployment{
-		Cluster: spec.clusterName,
+		ClusterNickname: nick,
+		Cluster:         spec.clusterName,
 		DeployConfig: DeployConfig{
 			Resources:    spec.Resources,
 			Env:          spec.Env,

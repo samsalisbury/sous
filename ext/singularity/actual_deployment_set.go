@@ -32,12 +32,12 @@ type (
 
 // GetRunningDeployment collects data from the Singularity clusters and
 // returns a list of actual deployments
-func (sc *deployer) GetRunningDeployment(singUrls []string) (deps sous.Deployments, err error) {
+func (sc *deployer) GetRunningDeployment(singMap map[string]string) (deps sous.Deployments, err error) {
 	retries := make(retryCounter)
 	errCh := make(chan error)
 	deps = make(sous.Deployments, 0)
 	sings := make(map[string]*singularity.Client)
-	reqCh := make(chan SingReq, len(singUrls)*ReqsPerServer)
+	reqCh := make(chan SingReq, len(singMap)*ReqsPerServer)
 	depCh := make(chan *sous.Deployment, ReqsPerServer)
 
 	defer close(depCh)
@@ -47,15 +47,18 @@ func (sc *deployer) GetRunningDeployment(singUrls []string) (deps sous.Deploymen
 
 	var singWait, depWait sync.WaitGroup
 
-	singWait.Add(len(singUrls))
-	for _, url := range singUrls {
+	singWait.Add(len(singMap))
+	for _, url := range singMap {
+		if _, ok := sings[url]; ok {
+			continue
+		}
 		sing := singularity.NewClient(url)
 		//sing.Debug = true
 		sings[url] = sing
 		go singPipeline(sing, &depWait, &singWait, reqCh, errCh)
 	}
 
-	go depPipeline(sc.Client, reqCh, depCh, errCh)
+	go depPipeline(sc.Client, singMap, reqCh, depCh, errCh)
 
 	go func() {
 		catchAndSend("closing up", errCh)
@@ -172,6 +175,7 @@ func getRequestsFromSingularity(client *singularity.Client) ([]SingReq, error) {
 
 func depPipeline(
 	cl rectificationClient,
+	nicks map[string]string,
 	reqCh chan SingReq,
 	depCh chan *sous.Deployment,
 	errCh chan error,
@@ -181,7 +185,7 @@ func depPipeline(
 		go func(cl rectificationClient, req SingReq) {
 			defer catchAndSend(fmt.Sprintf("dep from req %s", req.SourceURL), errCh)
 
-			dep, err := assembleDeployment(cl, req)
+			dep, err := assembleDeployment(cl, nicks, req)
 
 			if err != nil {
 				errCh <- err
@@ -192,9 +196,9 @@ func depPipeline(
 	}
 }
 
-func assembleDeployment(cl rectificationClient, req SingReq) (*sous.Deployment, error) {
+func assembleDeployment(cl rectificationClient, nicks map[string]string, req SingReq) (*sous.Deployment, error) {
 	Log.Vomit.Print("Assembling from: ", req)
-	uc := NewDeploymentBuilder(cl, req)
+	uc := NewDeploymentBuilder(cl, nicks, req)
 	err := uc.CompleteConstruction()
 	if err != nil {
 		Log.Vomit.Print(err)
