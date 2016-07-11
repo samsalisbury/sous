@@ -52,16 +52,6 @@ func NewBuilder(nc *NameCache, drh string, c *sous.SourceContext, sourceShell, s
 	return b, nil
 }
 
-// GetArtifact should be unexported
-func (b *Builder) GetArtifact(sv sous.SourceVersion) (*sous.BuildArtifact, error) {
-	return b.ImageMapper.GetArtifact(sv)
-}
-
-// GetSourceVersion should be unexported
-func (b *Builder) GetSourceVersion(a *sous.BuildArtifact) (sous.SourceVersion, error) {
-	return b.ImageMapper.GetSourceVersion(a)
-}
-
 // Build implements sous.Builder.Build
 func (b *Builder) Build(bc *sous.BuildContext, bp sous.Buildpack, _ *sous.DetectResult) (*sous.BuildResult, error) {
 	br, err := bp.Build(bc)

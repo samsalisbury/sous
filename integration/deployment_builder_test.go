@@ -40,8 +40,7 @@ func TestBuildDeployments(t *testing.T) {
 	}
 
 	nc := docker.NewNameCache(drc, db)
-	builder := &docker.Builder{ImageMapper: nc}
-	ra := singularity.NewRectiAgent(builder)
+	ra := singularity.NewRectiAgent(nc)
 
 	singCl := sing.NewClient(SingularityURL)
 	//singCl.Debug = true
