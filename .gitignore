@@ -1,4 +1,5 @@
 *.swp
 artifacts/
+samples/
 sous
 .agignore

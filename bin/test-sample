@@ -1,0 +1,42 @@
+#!/bin/sh
+
+OUT_DIR=samples
+DEFAULT_SAMPLE_SIZE=10
+SAMPLE_SIZE=${1:-$DEFAULT_SAMPLE_SIZE}
+
+I=0
+
+date=$(date +%FT%T)
+DIR="$OUT_DIR/$date"
+mkdir -p "$DIR"
+
+set -o pipefail
+FAILURES=0
+PASSES=0
+
+echo "Running tests $SAMPLE_SIZE times, results in $DIR"
+
+PADLEN="${#SAMPLE_SIZE}"
+PADSTR="%0${PADLEN}d"
+
+while [ "$I" -lt "$SAMPLE_SIZE" ]; do
+	I=$((I+1))
+	I_PAD="$(printf "$PADSTR" "$I")"
+	FILE="$DIR/$I_PAD"
+	START="$(date +%s)"
+	echo "### Beginning test run $I"
+	./bin/test 2>&1 | tee "$FILE"
+	if [ "$?" = 0 ]; then RESULT=pass; else RESULT=fail; fi
+	END="$(date +%s)"
+	DURATION="$((END-START))s"
+	mv "$FILE" "$FILE.$RESULT.$DURATION"
+	
+	if [ "$RESULT" = pass ]; then
+		PASSES=$((PASSES+1))
+	else
+		FAILURES=$((FAILURES+1))
+	fi
+done
+
+echo "Passes: $PASSES; Failures: $FAILURES"
+
