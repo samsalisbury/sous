@@ -3,6 +3,7 @@
 OUT_DIR=samples
 DEFAULT_SAMPLE_SIZE=10
 SAMPLE_SIZE=${1:-$DEFAULT_SAMPLE_SIZE}
+QUIT_ON_SUCCESS=${2:-NO}
 
 I=0
 
@@ -33,10 +34,18 @@ while [ "$I" -lt "$SAMPLE_SIZE" ]; do
 	
 	if [ "$RESULT" = pass ]; then
 		PASSES=$((PASSES+1))
+		if [ "$QUIT_ON_SUCCESS" = "YES" ]; then
+			echo "Passes: $PASSES; Failures: $FAILURES"
+			exit 0
+		fi
 	else
 		FAILURES=$((FAILURES+1))
 	fi
 done
 
 echo "Passes: $PASSES; Failures: $FAILURES"
+
+if [ "$FAILURES" != 0 ]; then
+	exit 1
+fi
 
