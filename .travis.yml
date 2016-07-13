@@ -7,7 +7,9 @@ go:
 before_install:
 - ps -p $$
 - which sh
-- sh -v
+- type help
+- help
+- type set
 - help set
 - bash -v
 - bash --version
