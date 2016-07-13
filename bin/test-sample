@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 OUT_DIR=samples
 DEFAULT_SAMPLE_SIZE=10
