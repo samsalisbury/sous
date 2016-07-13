@@ -8,6 +8,9 @@ before_install:
 - ps -p $$
 - which sh
 - sh -v
+- help set
+- bash -v
+- bash --version
 - cat /etc/hosts
 - sudo hostname "$(hostname | cut -c1-63)"
 - sudo sed -i -E -e "s/^(127\\.0\\.0\\.1.*|::1.*)/\\1 $(hostname | cut -c1-63)/" /etc/hosts
