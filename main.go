@@ -9,12 +9,11 @@ import (
 )
 
 func main() {
+	defer handlePanic()
 	// Eventually, these should become flags on the top level application
 	//sous.Log.Info.SetOutput(os.Stderr)
 	//sous.Log.Debug.SetOutput(os.Stderr)
 	log.SetFlags(log.Flags() | log.Lshortfile)
-	panicking := true
-	defer handlePanic(&panicking)
 
 	c, err := cli.NewSousCLI(Version, os.Stdout, os.Stderr)
 	if err != nil {
@@ -22,13 +21,12 @@ func main() {
 	}
 
 	result := c.Invoke(os.Args)
+	exitCode := result.ExitCode()
 
-	//panicking = false
-	os.Exit(result.ExitCode())
+	os.Exit(exitCode)
 }
 
-// die is used to exit during very early initialisation, before sous itself only
-// can be used to handle exiting.
+// die is only used to exit during very early initialisation
 func die(v ...interface{}) {
 	fmt.Fprintln(os.Stderr, v...)
 	os.Exit(70)
@@ -37,8 +35,8 @@ func die(v ...interface{}) {
 // handlePanic gives us one last chance to send a message to the user in case a
 // panic leaks right up to the top of the program. You can disable this message
 // for brevity of output by setting DEBUG=YES
-func handlePanic(panicking *bool) {
-	if !*panicking || os.Getenv("DEBUG") == "YES" {
+func handlePanic() {
+	if os.Getenv("DEBUG") == "YES" {
 		return
 	}
 	fmt.Println(panicMessage)
