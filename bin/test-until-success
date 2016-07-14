@@ -1,0 +1,6 @@
+#!/bin/sh
+
+ATTEMPTS=${1:-10}
+
+./bin/test-sample "$ATTEMPTS" YES
+

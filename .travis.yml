@@ -5,6 +5,12 @@ language: go
 go:
 - 1.6
 before_install:
+- ps -p $$
+- which sh
+- type help
+- help
+- type set
+- help set
 - cat /etc/hosts
 - sudo hostname "$(hostname | cut -c1-63)"
 - sudo sed -i -E -e "s/^(127\\.0\\.0\\.1.*|::1.*)/\\1 $(hostname | cut -c1-63)/" /etc/hosts
@@ -26,7 +32,7 @@ before_install:
 install:
 - echo "Default install step disabled by .travis.yml"
 script:
-- "./bin/test"
+- "./bin/test-until-success 10"
 - "./bin/check-gofmt"
 - '[ $TRAVIS_SECURE_ENV_VARS == false ] || ./bin/publish "$TRAVIS_TAG"'
 env:
