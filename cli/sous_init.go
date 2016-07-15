@@ -100,7 +100,7 @@ func (si *SousInit) ResolveRepoOffset() (string, error) {
 		repoOffset := si.SourceContext.OffsetDir
 		sous.Log.Info.Printf("using current workdir repo offset: %q", repoOffset)
 	}
-	if repoOffset[:1] == "/" {
+	if len(repoOffset) != 0 && repoOffset[:1] == "/" {
 		return "", fmt.Errorf("repo offset cannot begin with /, it is relative")
 	}
 	return repoOffset, nil
