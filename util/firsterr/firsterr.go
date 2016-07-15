@@ -100,37 +100,35 @@ func Returned(fs ...func() error) error {
 	return s.Returned(fs...)
 }
 
-// Parallel returns an Interface which runs funcs in parallel.
-func Parallel() Interface { return p }
+// Parallel returns a P, which runs funcs in parallel.
+func Parallel() P { return p }
 
-// Sequential returns an Interface which runs funcs sequentially.
-func Sequential() Interface { return s }
-
-// Interface is the main interface used for running a slice of functions and
-// returning the first error encountered.
-type Interface interface {
-	// Set takes a list of func(*error) and calls them all concurrently. Each
-	// function can optionally set the error pointer passed in to an error
-	// value.  If the error pointer is non-nil after a function completes, Set
-	// immediately returns that error, and abandons the other functions which
-	// are running in their own goroutines.
-	Set(...func(*error)) error
-	// Returned is similar to set, but rather than passing in a nil error
-	// pointer, allows that func to return an error.
-	Returned(...func() error) error
-}
+// Sequential returns an S, which runs funcs sequentially.
+func Sequential() S { return s }
 
 type (
-	parallel   struct{}
-	sequential struct{}
+	// S holds methods for running functions sequentially. When running
+	// sequentially, each function is called one at a time. If any of the
+	// functions fail, none of the following ones will be run.
+	S struct{}
+	// P holds methods for running functions in parallel.
+	// Note that under P, all functions will be called regardless of any of them
+	// failing. There is no cancellation mechanism, therefore, you need to make
+	// sure they finish, or you will leak goroutines.
+	P struct{}
 )
 
 var (
-	p parallel
-	s sequential
+	s S
+	p P
 )
 
-func (sequential) Set(fs ...func(*error)) error {
+// Set takes a list of func(*error) and calls them one at a time, in the order
+// they were passed in. Each function can optionally set the error pointer
+// passed in to an error value.  If the error pointer is non-nil after a
+// function completes, Set returns that error and does not run any further
+// functions.
+func (S) Set(fs ...func(*error)) error {
 	for _, f := range fs {
 		var err error
 		if f(&err); err != nil {
@@ -140,7 +138,10 @@ func (sequential) Set(fs ...func(*error)) error {
 	return nil
 }
 
-func (sequential) Returned(fs ...func() error) error {
+// Returned takes a list of func() error and calls them one at a time in the
+// order they are passed in. If any of them return a non-nil error, Return
+// returns that error, and does not run any further functions.
+func (S) Returned(fs ...func() error) error {
 	for _, f := range fs {
 		if err := f(); err != nil {
 			return err
@@ -149,7 +150,12 @@ func (sequential) Returned(fs ...func() error) error {
 	return nil
 }
 
-func (parallel) Set(fs ...func(*error)) error {
+// Set takes a list of func(*error) and calls them all concurrently. Each
+// function can optionally set the error pointer passed in to an error
+// value.  If the error pointer is non-nil after a function completes, Set
+// immediately returns that error, and abandons the other functions which
+// are running in their own goroutines.
+func (P) Set(fs ...func(*error)) error {
 	wg, errs := pinit(len(fs))
 	for _, f := range fs {
 		f := f
@@ -164,7 +170,11 @@ func (parallel) Set(fs ...func(*error)) error {
 	return <-errs
 }
 
-func (parallel) Returned(fs ...func() error) error {
+// Returned takes a list of func() error and calls them all concurrently.
+// The moment that any of them return a non-nil error, Return immediately
+// returns that error, and abandons the other functions which are running in
+// their own goroutines.
+func (P) Returned(fs ...func() error) error {
 	wg, errs := pinit(len(fs))
 	for _, f := range fs {
 		f := f

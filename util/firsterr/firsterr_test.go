@@ -11,27 +11,27 @@ func setNil(err *error)                  { *err = nil }
 func returnErr(name string) func() error { return func() error { return Error(name) } }
 func returnNil() error                   { return nil }
 
-func (s sequential) testSet(fs ...func(*error)) setTest       { return setTest{s, fs} }
-func (p parallel) testSet(fs ...func(*error)) setTest         { return setTest{p, fs} }
-func (s sequential) testReturn(fs ...func() error) returnTest { return returnTest{s, fs} }
-func (p parallel) testReturn(fs ...func() error) returnTest   { return returnTest{p, fs} }
+func (s S) testSet(fs ...func(*error)) setTest       { return setTest{s.Set, fs} }
+func (p P) testSet(fs ...func(*error)) setTest       { return setTest{p.Set, fs} }
+func (s S) testReturn(fs ...func() error) returnTest { return returnTest{s.Returned, fs} }
+func (p P) testReturn(fs ...func() error) returnTest { return returnTest{p.Returned, fs} }
 
 type setTest struct {
-	using Interface
-	fs    []func(*error)
+	set func(...func(*error)) error
+	fs  []func(*error)
 }
 
 type returnTest struct {
-	using Interface
-	fs    []func() error
+	returned func(...func() error) error
+	fs       []func() error
 }
 
 func (st setTest) shouldReturn(expected error) error {
-	return assert(st.using.Set(st.fs...), expected)
+	return assert(st.set(st.fs...), expected)
 }
 
 func (rt returnTest) shouldReturn(expected error) error {
-	return assert(rt.using.Returned(rt.fs...), expected)
+	return assert(rt.returned(rt.fs...), expected)
 }
 
 func assert(actual, expected error) error {
