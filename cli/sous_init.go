@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/opentable/sous/ext/otpl"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
 	"github.com/opentable/sous/util/firsterr"
-	"github.com/samsalisbury/semv"
 )
 
 // SousInit is the command description for `sous init`
@@ -17,8 +17,10 @@ type SousInit struct {
 	User          LocalUser
 	Config        LocalSousConfig
 	SourceContext *sous.SourceContext
+	WD            LocalWorkDirShell
 	flags         struct {
-		RepoURL, RepoOffset string
+		RepoURL, RepoOffset             string
+		UseOTPLDeploy, IgnoreOTPLDeploy bool
 	}
 }
 
@@ -42,15 +44,21 @@ func (si *SousInit) AddFlags(fs *flag.FlagSet) {
 		"the source code repo for this project (e.g. github.com/user/project)")
 	fs.StringVar(&si.flags.RepoOffset, "repo-offset", "",
 		"the subdir within the repo where the source code lives (empty for root)")
+	fs.BoolVar(&si.flags.UseOTPLDeploy, "use-otpl-deploy", false,
+		"if specified, copies OpenTable-specific otpl-deploy configuration to the manifest")
+	fs.BoolVar(&si.flags.UseOTPLDeploy, "ignore-otpl-deploy", false,
+		"if specified, ignores OpenTable-specific otpl-deploy configuration")
 }
 
 // Execute fulfills the cmdr.Executor interface
 func (si *SousInit) Execute(args []string) cmdr.Result {
-	c := si.SourceContext
-	v, err := semv.Parse(c.NearestTagName + "+" + c.Revision)
-	if err != nil {
-		v = semv.MustParse("0.0.0-unversioned+" + c.Revision)
-	}
+
+	// Version is only set once we have a build.
+	//c := si.SourceContext
+	//v, err := semv.Parse(c.NearestTagName + "+" + c.Revision)
+	//if err != nil {
+	//	v = semv.MustParse("0.0.0-unversioned+" + c.Revision)
+	//}
 
 	var repoURL, repoOffset string
 	if err := firsterr.Parallel().Set(
@@ -60,23 +68,42 @@ func (si *SousInit) Execute(args []string) cmdr.Result {
 		return EnsureErrorResult(err)
 	}
 
+	otplParser := otpl.NewDeploySpecParser()
+	otplDeploySpecs := otplParser.GetDeploySpecs(si.WD.Sh)
+	var deploySpecs sous.DeploySpecs
+	if !si.flags.UseOTPLDeploy && !si.flags.IgnoreOTPLDeploy && len(otplDeploySpecs) != 0 {
+		return UsageErrorf("otpl-deploy detected in config/, please specify either -use-otpl-deploy, or -ignore-otpl-deploy to proceed")
+	}
+	if si.flags.UseOTPLDeploy {
+		if len(otplDeploySpecs) == 0 {
+			return UsageErrorf("you specified -use-otpl-deploy, but no valid deployments were found in config/")
+		}
+		deploySpecs = otplDeploySpecs
+	}
+	if len(deploySpecs) == 0 {
+		deploySpecs = defaultDeploySpecs()
+	}
+
 	m := sous.Manifest{
 		Source: sous.SourceLocation{
 			RepoURL:    sous.RepoURL(repoURL),
 			RepoOffset: sous.RepoOffset(repoOffset),
 		},
-		Deployments: sous.DeploySpecs{
-			"Global": {
-				DeployConfig: sous.DeployConfig{
-					Resources:    sous.Resources{},
-					Env:          map[string]string{},
-					NumInstances: 3,
-				},
-				Version: v,
+		Deployments: deploySpecs,
+	}
+	return SuccessYAML(m)
+}
+
+func defaultDeploySpecs() sous.DeploySpecs {
+	return sous.DeploySpecs{
+		"Global": {
+			DeployConfig: sous.DeployConfig{
+				Resources:    sous.Resources{},
+				Env:          map[string]string{},
+				NumInstances: 3,
 			},
 		},
 	}
-	return SuccessYAML(m)
 }
 
 func (si *SousInit) ResolveRepoURL() (string, error) {
