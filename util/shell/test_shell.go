@@ -141,7 +141,7 @@ func (c *DummyCommand) StdinString() string {
 }
 
 // Stdout returns the stdout stream as a string. It returns an error for the
-// same reasons as .Succeed
+// same reasons as Succeed.
 func (c *DummyCommand) Stdout() (string, error) {
 	r, err := c.SucceedResult()
 	if err != nil {
@@ -151,7 +151,7 @@ func (c *DummyCommand) Stdout() (string, error) {
 }
 
 // Stderr is returns the stderr stream as a string. It returns an error for the
-// same reasons as .Result
+// same reasons as Result.
 func (c *DummyCommand) Stderr() (string, error) {
 	r, err := c.Result()
 	if err != nil {
