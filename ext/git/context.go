@@ -3,8 +3,8 @@ package git
 import (
 	"path/filepath"
 
-	sous "github.com/opentable/sous/lib"
-	"github.com/opentable/sous/util/parallel"
+	"github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/firsterr"
 )
 
 // SourceContext gathers together a number of bits of information about the
@@ -19,7 +19,7 @@ func (r *Repo) SourceContext() (*sous.SourceContext, error) {
 		remotes                        Remotes
 	)
 	c := r.Client
-	if err := parallel.Do(
+	if err := firsterr.Parallel().Set(
 		func(err *error) { branch, *err = c.CurrentBranch() },
 		func(err *error) { revision, *err = c.Revision() },
 		func(err *error) {
