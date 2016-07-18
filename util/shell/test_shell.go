@@ -81,7 +81,7 @@ func (s *TestShell) Cmd(name string, args ...interface{}) Cmd {
 	dc := &DummyCommand{
 		DummyResult: *r,
 		Command: Command{
-			Sh:   *s.clone(), // is therefore the live shell...
+			Dir:  s.Dir(), // is therefore the live shell...
 			Name: name,
 			Args: sargs,
 		},
@@ -120,21 +120,21 @@ func (s *TestShell) Stat(path string) (os.FileInfo, error) {
 	return s.FS.Stat(s.Abs(path))
 }
 
-// Stdin sets the stdin on the command
-func (c *DummyCommand) Stdin(in io.Reader) {
-	c.SI = in
+// SetStdin sets the stdin on the command
+func (c *DummyCommand) SetStdin(in io.Reader) {
+	c.Stdin = in
 }
 
 // StdinString returns the Stdin provided for this command as a string
 func (c *DummyCommand) StdinString() string {
-	if c.SI == nil {
+	if c.Stdin == nil {
 		return ""
 	}
 	if c.siStr != nil {
 		return *c.siStr
 	}
 	bf := &bytes.Buffer{}
-	io.Copy(bf, c.SI)
+	io.Copy(bf, c.Stdin)
 	s := bf.String()
 	c.siStr = &s
 	return *c.siStr
