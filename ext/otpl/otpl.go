@@ -5,6 +5,8 @@ package otpl
 import (
 	"log"
 	"path"
+	"strconv"
+	"sync"
 
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/shell"
@@ -17,10 +19,10 @@ type (
 		WD     shell.Shell
 	}
 	SingularityJSON struct {
-		Resources sous.Resources
+		Resources SingularityResources
 		Env       sous.Env
 	}
-
+	SingularityResources   map[string]float64
 	SingularityRequestJSON struct {
 		Instances int
 		// NOTE: Owners are not supported at DeploySpec level, only at Manifest
@@ -31,8 +33,21 @@ type (
 	}
 )
 
+func (sr SingularityResources) SousResources() sous.Resources {
+	r := make(sous.Resources, len(sr))
+	for k, v := range sr {
+		r[k] = strconv.FormatFloat(v, 'g', -1, 64)
+	}
+	return r
+}
+
 func NewDeploySpecParser() *DeploySpecParser {
 	return &DeploySpecParser{debugf: log.Printf, debug: log.Println}
+}
+
+type namedDeploySpec struct {
+	Name string
+	Spec *sous.PartialDeploySpec
 }
 
 func (dsp *DeploySpecParser) GetDeploySpecs(wd shell.Shell) sous.DeploySpecs {
@@ -44,20 +59,30 @@ func (dsp *DeploySpecParser) GetDeploySpecs(wd shell.Shell) sous.DeploySpecs {
 	if err != nil {
 		return nil
 	}
-	deployConfigs := sous.DeploySpecs{}
+	c := make(chan namedDeploySpec)
+	wg := sync.WaitGroup{}
+	wg.Add(len(l))
+	go func() { wg.Wait(); close(c) }()
 	for _, f := range l {
-		if !f.IsDir() {
-			continue
-		}
-		wd := wd.Clone()
-		if err := wd.CD(f.Name()); err != nil {
-			dsp.debug(err)
-			continue
-		}
-		if otplConfig := dsp.GetSingleDeploySpec(wd); otplConfig != nil {
-			name := path.Base(wd.Dir())
-			deployConfigs[name] = *otplConfig
-		}
+		go func() {
+			defer wg.Done()
+			if !f.IsDir() {
+				return
+			}
+			wd := wd.Clone()
+			if err := wd.CD(f.Name()); err != nil {
+				dsp.debug(err)
+				return
+			}
+			if otplConfig := dsp.GetSingleDeploySpec(wd); otplConfig != nil {
+				name := path.Base(wd.Dir())
+				c <- namedDeploySpec{name, otplConfig}
+			}
+		}()
+	}
+	deployConfigs := sous.DeploySpecs{}
+	for s := range c {
+		deployConfigs[s.Name] = *s.Spec
 	}
 	return deployConfigs
 }
@@ -75,7 +100,7 @@ func (dsp *DeploySpecParser) GetSingleDeploySpec(wd shell.Shell) *sous.PartialDe
 	}
 	deploySpec := sous.PartialDeploySpec{
 		DeployConfig: sous.DeployConfig{
-			Resources: v.Resources,
+			Resources: v.Resources.SousResources(),
 			Env:       v.Env,
 		},
 	}
