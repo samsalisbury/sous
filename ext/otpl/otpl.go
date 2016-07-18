@@ -57,6 +57,7 @@ func (dsp *DeploySpecParser) GetDeploySpecs(wd shell.Shell) sous.DeploySpecs {
 	}
 	l, err := wd.List()
 	if err != nil {
+		dsp.debug(err)
 		return nil
 	}
 	c := make(chan namedDeploySpec)
@@ -64,6 +65,7 @@ func (dsp *DeploySpecParser) GetDeploySpecs(wd shell.Shell) sous.DeploySpecs {
 	wg.Add(len(l))
 	go func() { wg.Wait(); close(c) }()
 	for _, f := range l {
+		f := f
 		go func() {
 			defer wg.Done()
 			if !f.IsDir() {

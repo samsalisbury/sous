@@ -46,7 +46,7 @@ func (si *SousInit) AddFlags(fs *flag.FlagSet) {
 		"the subdir within the repo where the source code lives (empty for root)")
 	fs.BoolVar(&si.flags.UseOTPLDeploy, "use-otpl-deploy", false,
 		"if specified, copies OpenTable-specific otpl-deploy configuration to the manifest")
-	fs.BoolVar(&si.flags.UseOTPLDeploy, "ignore-otpl-deploy", false,
+	fs.BoolVar(&si.flags.IgnoreOTPLDeploy, "ignore-otpl-deploy", false,
 		"if specified, ignores OpenTable-specific otpl-deploy configuration")
 }
 
@@ -68,9 +68,11 @@ func (si *SousInit) Execute(args []string) cmdr.Result {
 		return EnsureErrorResult(err)
 	}
 
-	otplParser := otpl.NewDeploySpecParser()
-	otplDeploySpecs := otplParser.GetDeploySpecs(si.WD.Sh)
-	var deploySpecs sous.DeploySpecs
+	var deploySpecs, otplDeploySpecs sous.DeploySpecs
+	if !si.flags.IgnoreOTPLDeploy {
+		otplParser := otpl.NewDeploySpecParser()
+		otplDeploySpecs = otplParser.GetDeploySpecs(si.WD.Sh)
+	}
 	if !si.flags.UseOTPLDeploy && !si.flags.IgnoreOTPLDeploy && len(otplDeploySpecs) != 0 {
 		return UsageErrorf("otpl-deploy detected in config/, please specify either -use-otpl-deploy, or -ignore-otpl-deploy to proceed")
 	}
