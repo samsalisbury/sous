@@ -64,7 +64,13 @@ func (dsp *DeploySpecParser) GetDeploySpecs(wd shell.Shell) sous.DeploySpecs {
 
 func (dsp *DeploySpecParser) GetSingleDeploySpec(wd shell.Shell) *sous.PartialDeploySpec {
 	v := SingularityJSON{}
+	if !wd.Exists("singularity.json") {
+		dsp.debugf("no singularity.json in %s", wd.Dir())
+		return nil
+	}
 	if err := wd.JSON(&v, "cat", "singularity.json"); err != nil {
+		dsp.debugf("error reading %s: %s", path.Join(wd.Dir(),
+			"singularity.json"), err)
 		return nil
 	}
 	deploySpec := sous.PartialDeploySpec{
@@ -75,12 +81,12 @@ func (dsp *DeploySpecParser) GetSingleDeploySpec(wd shell.Shell) *sous.PartialDe
 	}
 	request := SingularityRequestJSON{}
 	if !wd.Exists("singularity-request.json") {
-		dsp.debugf("%s/singularity-request.json not found", wd.Dir())
+		dsp.debugf("no singularity-request.json in %s", wd.Dir())
 		return &deploySpec
 	}
 	dsp.debugf("%s/singularity-request.json exists, parsing it", wd.Dir())
 	if err := wd.JSON(&request, "cat", "singularity-request.json"); err != nil {
-		dsp.debugf("error parsing singularity-request.json: %s", err)
+		dsp.debugf("error reading singularity-request.json: %s", err)
 		return &deploySpec
 	}
 	deploySpec.NumInstances = request.Instances
