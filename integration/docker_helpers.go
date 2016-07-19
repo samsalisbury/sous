@@ -18,6 +18,7 @@ import (
 	"github.com/opentable/go-singularity"
 	"github.com/opentable/go-singularity/dtos"
 	"github.com/opentable/sous/util/test_with_docker"
+	"github.com/opentable/swaggering"
 	"github.com/satori/go.uuid"
 )
 
@@ -80,7 +81,6 @@ func WrapCompose(m *testing.M, composeDir string) (resultCode int) {
 // Call it (with and extra call deferred) anywhere integration tests use Singularity
 func ResetSingularity() {
 	sing := singularity.NewClient(SingularityURL)
-	sing.Debug = true
 
 	reqList, err := sing.GetRequests()
 	if err != nil {
@@ -277,8 +277,8 @@ func BuildAndPushContainer(containerDir, tagName string) error {
 
 type dtoMap map[string]interface{}
 
-func loadMap(fielder dtos.Fielder, m dtoMap) dtos.Fielder {
-	_, err := dtos.LoadMap(fielder, m)
+func loadMap(fielder swaggering.Fielder, m dtoMap) swaggering.Fielder {
+	_, err := swaggering.LoadMap(fielder, m)
 	if err != nil {
 		log.Fatal(err)
 	}
