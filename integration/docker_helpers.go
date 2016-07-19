@@ -306,7 +306,7 @@ func startInstance(url, imageName string, ports []int32) error {
 	for {
 		_, err := sing.PostRequest(req)
 		if err != nil {
-			if rerr, ok := err.(*singularity.ReqError); ok && rerr.Status == 409 { //not done deleting the request
+			if rerr, ok := err.(*swaggering.ReqError); ok && rerr.Status == 409 { //not done deleting the request
 				continue
 			}
 

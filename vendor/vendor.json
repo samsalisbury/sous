@@ -171,6 +171,12 @@
 			"revisionTime": "2016-07-18T23:20:50Z"
 		},
 		{
+			"checksumSHA1": "5GnAp0RETgoWf+Asq2DCw3ceE+w=",
+			"path": "github.com/opentable/swaggering",
+			"revision": "48c3213297e582f0e3c5aa1ca440ff27f5c4c311",
+			"revisionTime": "2016-07-18T22:12:07Z"
+		},
+		{
 			"checksumSHA1": "LuFv4/jlrmFNnDb/5SCSEPAM9vU=",
 			"path": "github.com/pmezard/go-difflib/difflib",
 			"revision": "792786c7400a136282c1664665ae0a8db921c6c2"

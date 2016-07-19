@@ -8,6 +8,7 @@ import (
 	"github.com/opentable/go-singularity/dtos"
 	"github.com/opentable/sous/ext/docker"
 	"github.com/opentable/sous/lib"
+	"github.com/opentable/swaggering"
 	"github.com/satori/go.uuid"
 )
 
@@ -48,21 +49,21 @@ func MapResources(r sous.Resources) dtoMap {
 func (ra *RectiAgent) Deploy(cluster, depID, reqID, dockerImage string,
 	r sous.Resources, e sous.Env, vols sous.Volumes) error {
 	Log.Debug.Printf("Deploying instance %s %s %s %s %v %v", cluster, depID, reqID, dockerImage, r, e)
-	dockerInfo, err := dtos.LoadMap(&dtos.SingularityDockerInfo{}, dtoMap{
+	dockerInfo, err := swaggering.LoadMap(&dtos.SingularityDockerInfo{}, dtoMap{
 		"Image": dockerImage,
 	})
 	if err != nil {
 		return err
 	}
 
-	res, err := dtos.LoadMap(&dtos.Resources{}, MapResources(r))
+	res, err := swaggering.LoadMap(&dtos.Resources{}, MapResources(r))
 	if err != nil {
 		return err
 	}
 
 	vs := dtos.SingularityVolumeList{}
 	for _, v := range vols {
-		sv, err := dtos.LoadMap(&dtos.SingularityVolume{}, dtoMap{
+		sv, err := swaggering.LoadMap(&dtos.SingularityVolume{}, dtoMap{
 			"ContainerPath": v.Container,
 			"HostPath":      v.Host,
 			"Mode":          dtos.SingularityVolumeSingularityDockerVolumeMode(string(v.Mode)),
@@ -73,7 +74,7 @@ func (ra *RectiAgent) Deploy(cluster, depID, reqID, dockerImage string,
 		vs = append(vs, sv.(*dtos.SingularityVolume))
 	}
 
-	ci, err := dtos.LoadMap(&dtos.SingularityContainerInfo{}, dtoMap{
+	ci, err := swaggering.LoadMap(&dtos.SingularityContainerInfo{}, dtoMap{
 		"Type":    dtos.SingularityContainerInfoSingularityContainerTypeDOCKER,
 		"Docker":  dockerInfo,
 		"Volumes": vs,
@@ -82,7 +83,7 @@ func (ra *RectiAgent) Deploy(cluster, depID, reqID, dockerImage string,
 		return err
 	}
 
-	dep, err := dtos.LoadMap(&dtos.SingularityDeploy{}, dtoMap{
+	dep, err := swaggering.LoadMap(&dtos.SingularityDeploy{}, dtoMap{
 		"Id":            idify(uuid.NewV4().String()),
 		"RequestId":     reqID,
 		"Resources":     res,
@@ -93,7 +94,7 @@ func (ra *RectiAgent) Deploy(cluster, depID, reqID, dockerImage string,
 	Log.Debug.Printf("  Container: %+ v", ci)
 	Log.Debug.Printf("  Docker: %+ v", dockerInfo)
 
-	depReq, err := dtos.LoadMap(&dtos.SingularityDeployRequest{}, dtoMap{"Deploy": dep})
+	depReq, err := swaggering.LoadMap(&dtos.SingularityDeployRequest{}, dtoMap{"Deploy": dep})
 	if err != nil {
 		return err
 	}
@@ -106,7 +107,7 @@ func (ra *RectiAgent) Deploy(cluster, depID, reqID, dockerImage string,
 // PostRequest sends requests to Singularity to create a new Request
 func (ra *RectiAgent) PostRequest(cluster, reqID string, instanceCount int) error {
 	Log.Debug.Printf("Creating application %s %s %d", cluster, reqID, instanceCount)
-	req, err := dtos.LoadMap(&dtos.SingularityRequest{}, dtoMap{
+	req, err := swaggering.LoadMap(&dtos.SingularityRequest{}, dtoMap{
 		"Id":          reqID,
 		"RequestType": dtos.SingularityRequestRequestTypeSERVICE,
 		"Instances":   int32(instanceCount),
@@ -124,7 +125,7 @@ func (ra *RectiAgent) PostRequest(cluster, reqID string, instanceCount int) erro
 // DeleteRequest sends a request to Singularity to delete a request
 func (ra *RectiAgent) DeleteRequest(cluster, reqID, message string) error {
 	Log.Debug.Printf("Deleting application %s %s %s", cluster, reqID, message)
-	req, err := dtos.LoadMap(&dtos.SingularityDeleteRequestRequest{}, dtoMap{
+	req, err := swaggering.LoadMap(&dtos.SingularityDeleteRequestRequest{}, dtoMap{
 		"Message": "Sous: " + message,
 	})
 
@@ -138,7 +139,7 @@ func (ra *RectiAgent) DeleteRequest(cluster, reqID, message string) error {
 // running for a given Request
 func (ra *RectiAgent) Scale(cluster, reqID string, instanceCount int, message string) error {
 	Log.Debug.Printf("Scaling %s %s %d %s", cluster, reqID, instanceCount, message)
-	sr, err := dtos.LoadMap(&dtos.SingularityScaleRequest{}, dtoMap{
+	sr, err := swaggering.LoadMap(&dtos.SingularityScaleRequest{}, dtoMap{
 		"ActionId": idify(uuid.NewV4().String()), // not positive this is appropriate
 		// omitting DurationMillis - bears discussion
 		"Instances":        int32(instanceCount),
