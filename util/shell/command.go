@@ -17,17 +17,23 @@ import (
 type (
 	// Command is a wrapper around an exec.Cmd
 	Command struct {
-		// Sh is a copy of the shell this command is executing in.
-		Sh
-
+		// Dir is the directory this command will execute in.
+		Dir,
 		// Name is the name of the command itself.
 		Name string
-
 		// Args is a list of args to be passed to the command.
 		Args []string
-
 		// Stdin is (possibly) a string to feed to the command.
-		SI io.Reader
+		Stdin io.Reader
+		// ConsoleEcho will be passed the command just before it is executed,
+		// and the resultant combined output afterwards.
+		ConsoleEcho func(string)
+		// TeeOut will be connected to stdout via a multireader, unless it is
+		// nil.
+		TeeOut,
+		// TeeErr will be connected to stderr via a multireader, unless it is
+		// nil.
+		TeeErr io.Writer
 	}
 	// Result is the result of running a command to completion.
 	Result struct {
@@ -36,7 +42,6 @@ type (
 		Err                      error
 		ExitCode                 int
 	}
-
 	// Error wraps command errors
 	Error struct {
 		// Err is the original error that was returned.
@@ -49,6 +54,7 @@ type (
 	}
 )
 
+// Error returns the error, prefixed with "shell> "
 func (e Error) Error() string {
 	return fmt.Sprintf("shell> %s\n%s\ncommand failed: %s",
 		e.Result.Command.String(), e.Result.Combined.String(), e.Err)
@@ -62,9 +68,9 @@ func newError(err error, r *Result) Error {
 	}
 }
 
-// Stdin sets the stdin on the command
-func (c *Command) Stdin(in io.Reader) {
-	c.SI = in
+// SetStdin sets the stdin on the command
+func (c *Command) SetStdin(in io.Reader) {
+	c.Stdin = in
 }
 
 // Stdout returns the stdout stream as a string. It returns an error for the
@@ -143,8 +149,9 @@ func (c *Command) ExitCode() (int, error) {
 // non-zero exit codes, use SucceedResult instead.
 func (c *Command) Result() (*Result, error) {
 	line := strings.Join([]string{c.Name, strings.Join(c.Args, " ")}, " ")
-	c.Sh.ConsoleEcho(line)
+	c.ConsoleEcho(line)
 	command := exec.Command(c.Name, c.Args...)
+	command.Dir = c.Dir
 	outbuf := &bytes.Buffer{}
 	errbuf := &bytes.Buffer{}
 	combinedbuf := &bytes.Buffer{}
@@ -159,7 +166,7 @@ func (c *Command) Result() (*Result, error) {
 
 	command.Stdout = io.MultiWriter(outWriters...)
 	command.Stderr = io.MultiWriter(errWriters...)
-	command.Stdin = c.SI
+	command.Stdin = c.Stdin
 
 	if err := command.Start(); err != nil {
 		return nil, err

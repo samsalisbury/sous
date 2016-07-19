@@ -84,7 +84,7 @@ func (b *Builder) ApplyMetadata(br *sous.BuildResult) error {
 	bf := bytes.Buffer{}
 
 	c := b.SourceShell.Cmd("docker", "build", "-t", br.VersionName, "-t", br.RevisionName, "-")
-	c.Stdin(&bf)
+	c.SetStdin(&bf)
 
 	sv := b.Context.Version()
 

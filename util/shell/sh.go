@@ -95,9 +95,12 @@ func (s *Sh) Cmd(name string, args ...interface{}) Cmd {
 		sargs[i] = fmt.Sprint(a)
 	}
 	return &Command{
-		Sh:   *s.clone(),
-		Name: name,
-		Args: sargs,
+		Dir:         s.Dir(),
+		Name:        name,
+		Args:        sargs,
+		ConsoleEcho: s.ConsoleEcho,
+		TeeOut:      s.TeeOut,
+		TeeErr:      s.TeeErr,
 	}
 }
 
