@@ -80,6 +80,18 @@ func (ld *LocalDaemon) RestartDaemon() error {
 	}
 	var err error
 
+	c := runCommand("sudo", "ls", "/etc/init.d")
+	log.Println(c.stdout)
+	log.Println(c.stderr)
+
+	c := runCommand("sudo", "cat", "/etc/init.d/docker")
+	log.Println(c.stdout)
+	log.Println(c.stderr)
+
+	c := runCommand("sudo", "cat", "/etc/init.d/docker.conf")
+	log.Println(c.stdout)
+	log.Println(c.stderr)
+
 	for _, rs := range rss {
 		err = ld.Exec(rs...)
 		if err == nil {
