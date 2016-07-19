@@ -98,7 +98,7 @@ func NewAgentWithTimeout(timeout time.Duration) (Agent, error) {
 	}
 	ps := runCommand("docker", "ps")
 	if ps.err != nil {
-		return nil, fmt.Errorf("no docker machines found, and `docker ps` failed: %s", ps.err)
+		return nil, fmt.Errorf("no docker machines found, and `docker ps` failed: %s\nStdout:\n%s\n\nStderr:\n%s", ps.err, ps.stdout, ps.stderr)
 	}
 	log.Println("Using local docker daemon")
 	return &LocalDaemon{serviceTimeout: timeout}, nil
