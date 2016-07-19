@@ -84,11 +84,11 @@ func (ld *LocalDaemon) RestartDaemon() error {
 	log.Println(c.stdout)
 	log.Println(c.stderr)
 
-	c := runCommand("sudo", "cat", "/etc/init.d/docker")
+	c = runCommand("sudo", "cat", "/etc/init.d/docker")
 	log.Println(c.stdout)
 	log.Println(c.stderr)
 
-	c := runCommand("sudo", "cat", "/etc/init.d/docker.conf")
+	c = runCommand("sudo", "cat", "/etc/init.d/docker.conf")
 	log.Println(c.stdout)
 	log.Println(c.stderr)
 
