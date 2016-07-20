@@ -29,6 +29,7 @@ type (
 		Build(*BuildContext) (*BuildResult, error)
 	}
 
+	DockerClient LocalDockerClient
 	// DetectResult represents the result of a detection.
 	DetectResult struct {
 		Compatible  bool
