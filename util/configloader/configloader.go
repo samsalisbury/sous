@@ -103,22 +103,22 @@ func (cl ConfigLoader) SetValue(target interface{}, name, value string) error {
 }
 
 func (cl ConfigLoader) overrideField(sf reflect.StructField, originalVal reflect.Value) error {
-	tag := sf.Tag.Get("env")
-	if tag == "" {
+	envName := sf.Tag.Get("env")
+	if envName == "" {
 		return nil
 	}
-	envStr := os.Getenv(tag)
-	if envStr == "" {
+	envVal := os.Getenv(envName)
+	if envVal == "" {
 		return nil
 	}
 	var finalVal reflect.Value
-	switch vt := originalVal.Interface().(type) {
+	switch originalVal.Interface().(type) {
 	default:
 		return fmt.Errorf("unable to override fields of type %T", originalVal.Interface())
 	case string:
-		finalVal = reflect.ValueOf(vt)
+		finalVal = reflect.ValueOf(envVal)
 	case int:
-		i, err := strconv.Atoi(envStr)
+		i, err := strconv.Atoi(envVal)
 		if err != nil {
 			return err
 		}
