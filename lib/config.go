@@ -1,9 +1,12 @@
 package sous
 
 import (
+	"fmt"
 	"os"
 	"os/user"
 	"path"
+
+	"github.com/opentable/sous/util/firsterr"
 )
 
 // Config contains the core Sous configuration, shared by both the client and
@@ -40,14 +43,34 @@ func DefaultConfig() Config {
 	}
 }
 
-func (c *Config) DefaultStateLocation() string {
+func (c *Config) FillDefaults() error {
+	return firsterr.Parallel().Set(
+		func(e *error) { c.StateLocation, *e = c.defaultStateLocation() },
+	)
+}
+
+func (*Config) defaultStateLocation() (string, error) {
 	dataRoot := os.Getenv("XDG_DATA_HOME")
 	if dataRoot == "" {
 		u, err := user.Current()
 		if err != nil {
-			panic(err)
+			return "", err
 		}
 		dataRoot = path.Join(u.HomeDir, ".local", "share")
 	}
-	return path.Join(dataRoot, "sous", "state")
+	stateLocation := path.Join(dataRoot, "sous", "state")
+	s, err := os.Stat(stateLocation)
+	if err == nil {
+		if s.IsDir() {
+			return stateLocation, nil
+		}
+		return "", fmt.Errorf("state location %q exists and is not a directory",
+			stateLocation)
+	}
+	if os.IsExist(err) {
+		if err := os.Mkdir(stateLocation, 0600); err != nil {
+			return "", fmt.Errorf("unable to create state location dir: %s", err)
+		}
+	}
+	return "", fmt.Errorf("unable to get state location: %s", err)
 }
