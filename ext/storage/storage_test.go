@@ -13,7 +13,12 @@ func TestWriteState(t *testing.T) {
 
 	s := exampleState()
 
-	if err := WriteState("test_output", s); err != nil {
+	dsm, err := NewDiskStateManager("test_output")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := dsm.WriteState(s); err != nil {
 		t.Fatal(err)
 	}
 
@@ -28,7 +33,12 @@ func TestWriteState(t *testing.T) {
 
 func TestReadState(t *testing.T) {
 
-	actual, err := ReadState("test_data/")
+	dsm, err := NewDiskStateManager("test_data")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	actual, err := dsm.ReadState()
 	if err != nil {
 		t.Fatal(err)
 	}
