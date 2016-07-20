@@ -23,7 +23,7 @@ PADLEN="${#SAMPLE_SIZE}"
 PADSTR="%0${PADLEN}d"
 
 echo '****************   DOCKER MALARKY  ****************'
-sudo cat /etc/init.d/docker
+sudo ls -R /etc/docker/certs.d/
 sudo docker ps
 sudo docker images
 echo $(sudo cat /var/run/docker.pid)
@@ -48,6 +48,7 @@ while [ "$I" -lt "$SAMPLE_SIZE" ]; do
   fi
 
   echo '****************   DOCKER MALARKY  ****************'
+  sudo ls -R /etc/docker/certs.d/
   sudo docker ps
   sudo docker images
   docker version
