@@ -6,7 +6,7 @@ type BuildConfig struct {
 	Strict, ForceClone          bool
 }
 
-// SetupAdvisories does this:
+// ComputeAdvisories does this:
 // If --repo is present, and we're in a git workspace, compare the --repo to
 // the remotes of the workspace. If it's present, assume that we're working in
 // the current workspace. If it's absent, we'll be building from a shallow
@@ -39,6 +39,6 @@ type BuildConfig struct {
 // Issue warnings to the user of any advisories on the build, perform the
 // build. --strict behaves like an "errors are warnings" feature, and refuses
 // to build if there are advisories.
-func SetupAdvisories(c *BuildConfig) error {
+func ComputeAdvisories(c *BuildConfig, ctx *BuildContext) ([]string, error) {
 	return nil
 }

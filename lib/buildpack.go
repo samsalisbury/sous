@@ -39,6 +39,7 @@ type (
 	BuildResult struct {
 		ImageID                   string
 		VersionName, RevisionName string
+		Advisories                []string
 		Elapsed                   time.Duration
 	}
 )
