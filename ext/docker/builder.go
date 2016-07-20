@@ -64,17 +64,22 @@ func (b *Builder) Build(bc *sous.BuildContext, bp sous.Buildpack, _ *sous.Detect
 		return nil, err
 	}
 
-	err = b.pushToRegistry(br)
-	if err != nil {
-		return nil, err
-	}
-
-	err = b.recordName(br)
+	err = b.Register(br)
 	if err != nil {
 		return nil, err
 	}
 
 	return br, nil
+}
+
+// Register registers the build artifact to the the registry
+func (b *Builder) Register(br *sous.BuildResult) error {
+	err = b.pushToRegistry(br)
+	if err != nil {
+		return nil, err
+	}
+
+	return b.recordName(br)
 }
 
 // ApplyMetadata applies container metadata etc. to a container
