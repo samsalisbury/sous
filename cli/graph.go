@@ -100,8 +100,8 @@ func newErrOut(c *cmdr.CLI) ErrOut {
 	return ErrOut{c.Err}
 }
 
-func newSourceContext(g LocalGitRepo) (c *sous.SourceContext, err error) {
-	c, err = g.SourceContext()
+func newSourceContext(g LocalGitRepo) (*sous.SourceContext, error) {
+	c, err := g.SourceContext()
 	return c, initErr(err, "getting local git context")
 }
 
@@ -125,7 +125,7 @@ func newLocalUser() (v LocalUser, err error) {
 
 func newLocalSousConfig(u LocalUser) (v LocalSousConfig, err error) {
 	v.Config, err = newConfig(u.User)
-	return v, initErr(err, "getting default config")
+	return v, initErr(err, "getting configuration")
 }
 
 func newLocalWorkDirShell(l LocalWorkDir) (v LocalWorkDirShell, err error) {
@@ -139,7 +139,7 @@ func newLocalWorkDirShell(l LocalWorkDir) (v LocalWorkDirShell, err error) {
 // TODO: This should register a cleanup task with the cli, to delete the temp
 // dir.
 func newScratchDirShell() (v ScratchDirShell, err error) {
-	what := "getting scratch directory"
+	const what = "getting scratch directory"
 	dir, err := ioutil.TempDir("", "sous")
 	if err != nil {
 		return v, initErr(err, what)
@@ -160,37 +160,19 @@ func newLocalGitRepo(c LocalGitClient) (v LocalGitRepo, err error) {
 	return v, initErr(err, "opening local git repository")
 }
 
-func newBuilder(cl LocalDockerClient, ctx *sous.SourceContext, source LocalWorkDirShell, scratch ScratchDirShell, u LocalUser) (sous.Builder, error) {
-	return makeDockerBuilder(cl, ctx, source, scratch, u)
+func newBuilder(cfg LocalSousConfig, cl LocalDockerClient, ctx *sous.SourceContext, source LocalWorkDirShell, scratch ScratchDirShell, u LocalUser) (sous.Builder, error) {
+	return makeDockerBuilder(cfg, cl, ctx, source, scratch)
 }
 
-func newRegistry(cl LocalDockerClient, u LocalUser) (sous.Registry, error) {
-	return makeDockerRegistry(cl, u)
+func newRegistry(cfg LocalSousConfig, cl LocalDockerClient) (sous.Registry, error) {
+	// Eventually, based on configuration, we may make different decisions here.
+	r, err := makeDockerRegistry(cfg, cl)
+	return r, initErr(err, "getting container registry")
 }
 
-func makeDockerRegistry(cl LocalDockerClient, u LocalUser) (*docker.NameCache, error) {
-	cfg := u.DefaultConfig()
-	dbCfg := &docker.DBConfig{Driver: cfg.DatabaseDriver, Connection: cfg.DatabaseConnection}
-	db, err := docker.GetDatabase(dbCfg)
-	if err != nil {
-		return nil, fmt.Errorf("unable to build name cache DB: ", err)
-	}
-	return &docker.NameCache{cl.Client, db}, nil
-}
-
-func makeDockerBuilder(cl LocalDockerClient, ctx *sous.SourceContext, source LocalWorkDirShell, scratch ScratchDirShell, u LocalUser) (*docker.Builder, error) {
-	nc, err := makeDockerRegistry(cl, u)
-	if err != nil {
-		return nil, err
-	}
-	// TODO: Get this from config.
-	drh := "docker.otenv.com"
-	return docker.NewBuilder(nc, drh, ctx, source.Sh, scratch.Sh)
-}
-
-func newDeployer(r sous.Registry) (sous.Deployer, error) {
-	ra := singularity.NewRectiAgent(r)
-	return singularity.NewDeployer(r, ra), nil
+func newDeployer(r sous.Registry) sous.Deployer {
+	// Eventually, based on configuration, we may make different decisions here.
+	return singularity.NewDeployer(r, singularity.NewRectiAgent(r))
 }
 
 func newDockerClient() LocalDockerClient {
@@ -215,7 +197,33 @@ func newCurrentGDM(sr LocalStateReader) (CurrentGDM, error) {
 	return CurrentGDM{gdm}, initErr(err, "reading sous state")
 }
 
+// The funcs named makeXXX below are used to create specific implementations of
+// sous native types.
+
+// makeDockerRegistry creates a Docker version of sous.Registry
+func makeDockerRegistry(cfg LocalSousConfig, cl LocalDockerClient) (*docker.NameCache, error) {
+	dbCfg := &docker.DBConfig{Driver: cfg.DatabaseDriver, Connection: cfg.DatabaseConnection}
+	db, err := docker.GetDatabase(dbCfg)
+	if err != nil {
+		return nil, fmt.Errorf("unable to build name cache DB: %s", err)
+	}
+	return &docker.NameCache{cl.Client, db}, nil
+}
+
+// makeDockerBuilder creates a Docker version of sous.Builder
+func makeDockerBuilder(cfg LocalSousConfig, cl LocalDockerClient, ctx *sous.SourceContext, source LocalWorkDirShell, scratch ScratchDirShell) (*docker.Builder, error) {
+	nc, err := makeDockerRegistry(cfg, cl)
+	if err != nil {
+		return nil, err
+	}
+	// TODO: Get this from config.
+	drh := "docker.otenv.com"
+	return docker.NewBuilder(nc, drh, ctx, source.Sh, scratch.Sh)
+}
+
 // initErr returns nil if error is nil, otherwise an initialisation error.
+// The second argument "what" should be a very short description of the
+// initialisation task, e.g. "getting widget" or "reading state" etc.
 func initErr(err error, what string) error {
 	if err == nil {
 		return nil
