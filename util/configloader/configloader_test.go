@@ -9,6 +9,13 @@ type TestConfig struct {
 	SomeVar string `env:"TEST_SOME_VAR"`
 }
 
+func (tc *TestConfig) FillDefaults() error {
+	if tc.SomeVar == "" {
+		tc.SomeVar = "default value"
+	}
+	return nil
+}
+
 func TestLoad(t *testing.T) {
 	cl := New()
 	c := TestConfig{}
@@ -16,6 +23,18 @@ func TestLoad(t *testing.T) {
 		t.Fatal(err)
 	}
 	expected := "some value"
+	if c.SomeVar != expected {
+		t.Errorf("got SomeVar=%q; want %q", c.SomeVar, expected)
+	}
+}
+
+func TestLoad_Defaults(t *testing.T) {
+	cl := New()
+	c := TestConfig{}
+	if err := cl.Load(&c, "test_empty_config.yaml"); err != nil {
+		t.Fatal(err)
+	}
+	expected := "default value"
 	if c.SomeVar != expected {
 		t.Errorf("got SomeVar=%q; want %q", c.SomeVar, expected)
 	}

@@ -17,11 +17,16 @@ func New() ConfigLoader {
 	return ConfigLoader{}
 }
 
-// ConfigLoader loads configuration.
-type ConfigLoader struct {
-	// Log is called with debug level logs about how values are resolved.
-	Debug, Info, Warn func(string)
-}
+type (
+	// ConfigLoader loads configuration.
+	ConfigLoader struct {
+		// Log is called with debug level logs about how values are resolved.
+		Debug, Info, Warn func(string)
+	}
+	DefaultFiller interface {
+		FillDefaults() error
+	}
+)
 
 func (cl ConfigLoader) Load(target interface{}, filePath string) error {
 	if target == nil {
@@ -37,7 +42,15 @@ func (cl ConfigLoader) Load(target interface{}, filePath string) error {
 	if err := cl.loadYAMLFile(target, filePath); err != nil {
 		return err
 	}
-	return cl.overrideWithEnv(target)
+	if err := cl.overrideWithEnv(target); err != nil {
+		return err
+	}
+	if fd, ok := target.(DefaultFiller); ok {
+		if err := fd.FillDefaults(); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (cl ConfigLoader) overrideWithEnv(target interface{}) error {
