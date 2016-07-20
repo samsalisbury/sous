@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+set -x
+PS4="==>"
 
 OUT_DIR=samples
 DEFAULT_SAMPLE_SIZE=10
@@ -24,6 +26,9 @@ echo '****************   DOCKER MALARKY  ****************'
 sudo cat /etc/init.d/docker
 sudo docker ps
 sudo docker images
+echo $(sudo cat /var/run/docker.pid)
+sudo ps -lf $(sudo cat /var/run/docker.pid)
+docker version
 echo '****************   DOCKER MALARKY  ****************'
 
 while [ "$I" -lt "$SAMPLE_SIZE" ]; do
@@ -38,10 +43,16 @@ while [ "$I" -lt "$SAMPLE_SIZE" ]; do
   else
     RESULT=fail;
     sudo docker daemon -D
-    echo &(sudo cat /var/run/docker.pid)
+    echo $(sudo cat /var/run/docker.pid)
     sudo ps -lf $(sudo cat /var/run/docker.pid)
-    sudo ls -lR /proc/$(sudo cat /var/run/docker.pid)
   fi
+
+  echo '****************   DOCKER MALARKY  ****************'
+  sudo docker ps
+  sudo docker images
+  docker version
+  echo '****************   DOCKER MALARKY  ****************'
+
 	END="$(date +%s)"
 	DURATION="$((END-START))s"
 	mv "$FILE" "$FILE.$RESULT.$DURATION"
