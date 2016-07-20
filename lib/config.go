@@ -67,10 +67,11 @@ func (*Config) defaultStateLocation() (string, error) {
 		return "", fmt.Errorf("state location %q exists and is not a directory",
 			stateLocation)
 	}
-	if os.IsExist(err) {
-		if err := os.Mkdir(stateLocation, 0600); err != nil {
+	if os.IsNotExist(err) || os.IsPermission(err) {
+		if err := os.MkdirAll(stateLocation, 0777); err != nil {
 			return "", fmt.Errorf("unable to create state location dir: %s", err)
 		}
+		return stateLocation, nil
 	}
 	return "", fmt.Errorf("unable to get state location: %s", err)
 }
