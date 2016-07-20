@@ -63,7 +63,7 @@ func (si *SousInit) Execute(args []string) cmdr.Result {
 
 	existingManifest := si.GDM.GetManifest(sourceLocation)
 	if existingManifest != nil {
-		return UsageErrorf("cannot init; manifest %q already exists", sourceLocation)
+		return UsageErrorf("init failed: manifest %q already exists", sourceLocation)
 	}
 
 	var deploySpecs, otplDeploySpecs sous.DeploySpecs
@@ -84,12 +84,20 @@ func (si *SousInit) Execute(args []string) cmdr.Result {
 		deploySpecs = defaultDeploySpecs()
 	}
 
-	m := sous.Manifest{
+	m := &sous.Manifest{
 		Source: sous.SourceLocation{
 			RepoURL:    sous.RepoURL(repoURL),
 			RepoOffset: sous.RepoOffset(repoOffset),
 		},
 		Deployments: deploySpecs,
+	}
+
+	if err := si.GDM.AddManifest(m); err != nil {
+		return EnsureErrorResult(err)
+	}
+
+	if err := si.StateWriter.WriteState(si.GDM.State); err != nil {
+		return EnsureErrorResult(err)
 	}
 
 	return SuccessYAML(m)

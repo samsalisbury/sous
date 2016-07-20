@@ -1,5 +1,7 @@
 package sous
 
+import "fmt"
+
 type (
 	// State contains the mutable state of an organisation's deployments.
 	// State is also known as the "Global Deploy Manifest" or GDM.
@@ -97,5 +99,21 @@ func (s *State) GetManifest(sl SourceLocation) *Manifest {
 			return m
 		}
 	}
+	return nil
+}
+
+// AddManifest adds a new manifest. It returns an error if you try to add nil or
+// if a manifest with the same source location already exists.
+func (s *State) AddManifest(m *Manifest) error {
+	if m == nil {
+		return fmt.Errorf("cannot add nil manifest")
+	}
+	if a := s.GetManifest(m.Source); a != nil {
+		return fmt.Errorf("manifest %q already exists", m.Source)
+	}
+	if s.Manifests == nil {
+		s.Manifests = Manifests{}
+	}
+	s.Manifests[m.Source.String()] = m
 	return nil
 }
