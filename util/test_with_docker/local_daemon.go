@@ -24,6 +24,7 @@ func (ld *LocalDaemon) InstallFile(src string, dest string) error {
 	return ld.Exec("cp", src, dest)
 }
 
+// DifferingFiles compares specific files involved in docker
 func (ld *LocalDaemon) DifferingFiles(pathPairs ...[]string) (differentPairs [][]string, err error) {
 	localPaths, remotePaths := make([]string, 0, len(pathPairs)), make([]string, 0, len(pathPairs))
 

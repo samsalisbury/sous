@@ -132,6 +132,9 @@ func fileDiffs(pathPairs [][]string, localMD5, remoteMD5 map[string]string) [][]
 		localHash, localPresent := localMD5[localPath]
 		remoteHash, remotePresent := remoteMD5[remotePath]
 
+		log.Printf("%s(%t %s)/%s(%t %s)",
+			localPath, localPresent, localHash,
+			remotePath, remotePresent, presentHash)
 		if localPresent != remotePresent || strings.Compare(remoteHash, localHash) != 0 {
 			differentPairs = append(differentPairs, []string{localPath, remotePath})
 		}

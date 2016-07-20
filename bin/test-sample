@@ -32,6 +32,8 @@ while [ "$I" -lt "$SAMPLE_SIZE" ]; do
   else
     RESULT=fail;
     sudo docker daemon -D
+    cat /var/run/docker.pid
+    ps -lf $(/var/run/docker.pid)
   fi
 	END="$(date +%s)"
 	DURATION="$((END-START))s"
