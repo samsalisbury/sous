@@ -21,6 +21,11 @@ type (
 	}
 )
 
+// NewSourceLocation creates a new SourceLocation from strings.
+func NewSourceLocation(repoURL, repoOffset string) SourceLocation {
+	return SourceLocation{RepoURL(repoURL), RepoOffset(repoOffset)}
+}
+
 // MarshalYAML serializes this SourceLocation to a YAML document.
 func (sl SourceLocation) MarshalYAML() (interface{}, error) {
 	return sl.String(), nil

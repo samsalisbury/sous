@@ -38,13 +38,13 @@ func (c *LocalSousConfig) Bytes() []byte {
 }
 
 // GetValue retreives and returns a particular value from the configuration
-func (c *LocalSousConfig) GetValue(name string) (string, error) {
+func (c *LocalSousConfig) getValue(name string) (string, error) {
 	v, err := configloader.New().GetValue(c.Config, name)
 	return fmt.Sprint(v), err
 }
 
 // SetValue stores a particular value on the config
-func (c *LocalSousConfig) SetValue(user *User, name, value string) error {
+func (c *LocalSousConfig) setValue(user *User, name, value string) error {
 	if err := configloader.New().SetValue(c.Config, name, value); err != nil {
 		return err
 	}

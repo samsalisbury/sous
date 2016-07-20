@@ -9,6 +9,7 @@ import (
 	"github.com/opentable/sous/ext/docker"
 	"github.com/opentable/sous/ext/git"
 	"github.com/opentable/sous/ext/singularity"
+	"github.com/opentable/sous/ext/storage"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
 	"github.com/opentable/sous/util/docker_registry"
@@ -52,6 +53,15 @@ type (
 	ScratchDirShell struct{ *shell.Sh }
 	// LocalDockerClient is a docker client object
 	LocalDockerClient struct{ docker_registry.Client }
+	// LocalStateReader wraps a storage.StateReader, and should be configured
+	// to use the current user's local storage.
+	LocalStateReader struct{ storage.StateReader }
+	// LocalStateWriter wraps a storage.StateWriter, and should be configured to
+	// use the current user's local storage.
+	LocalStateWriter struct{ storage.StateWriter }
+	// CurrentGDM is a snapshot of the GDM at application start. In a CLI
+	// context, which this is, that is all we need to simply read the GDM.
+	CurrentGDM struct{ *sous.State }
 )
 
 // BuildGraph builds the dependency injection graph, used to populate commands
@@ -75,6 +85,10 @@ func BuildGraph(s *Sous, c *cmdr.CLI) (*SousCLIGraph, error) {
 		newBuilder,
 		newDeployer,
 		newRegistry,
+		newLocalDiskStateManager,
+		newLocalStateReader,
+		newLocalStateWriter,
+		newCurrentGDM,
 	)
 }
 
@@ -181,6 +195,24 @@ func newDeployer(r sous.Registry) (sous.Deployer, error) {
 
 func newDockerClient() LocalDockerClient {
 	return LocalDockerClient{docker_registry.NewClient()}
+}
+
+func newLocalDiskStateManager(c LocalSousConfig) (*storage.DiskStateManager, error) {
+	sm, err := storage.NewDiskStateManager(c.StateLocation)
+	return sm, initErr(err, "initialising sous state")
+}
+
+func newLocalStateReader(sm *storage.DiskStateManager) LocalStateReader {
+	return LocalStateReader{sm}
+}
+
+func newLocalStateWriter(sm *storage.DiskStateManager) LocalStateWriter {
+	return LocalStateWriter{sm}
+}
+
+func newCurrentGDM(sr LocalStateReader) (CurrentGDM, error) {
+	gdm, err := sr.ReadState()
+	return CurrentGDM{gdm}, initErr(err, "reading sous state")
 }
 
 // initErr returns nil if error is nil, otherwise an initialisation error.

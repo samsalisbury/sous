@@ -35,7 +35,7 @@ type (
 	Env map[string]string
 )
 
-// FileLocation returns the path that the manifest should be saved to
+// FileLocation returns the path that the manifest should be saved to.
 func (m *Manifest) FileLocation() string {
 	return filepath.Join(string(m.Source.RepoURL), string(m.Source.RepoOffset))
 }

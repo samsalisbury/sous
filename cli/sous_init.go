@@ -13,11 +13,10 @@ import (
 
 // SousInit is the command description for `sous init`
 type SousInit struct {
-	Sous          *Sous
-	User          LocalUser
-	Config        LocalSousConfig
 	SourceContext *sous.SourceContext
 	WD            LocalWorkDirShell
+	GDM           CurrentGDM
+	StateWriter   LocalStateWriter
 	flags         struct {
 		RepoURL, RepoOffset             string
 		UseOTPLDeploy, IgnoreOTPLDeploy bool
@@ -52,20 +51,19 @@ func (si *SousInit) AddFlags(fs *flag.FlagSet) {
 
 // Execute fulfills the cmdr.Executor interface
 func (si *SousInit) Execute(args []string) cmdr.Result {
-
-	// Version is only set once we have a build.
-	//c := si.SourceContext
-	//v, err := semv.Parse(c.NearestTagName + "+" + c.Revision)
-	//if err != nil {
-	//	v = semv.MustParse("0.0.0-unversioned+" + c.Revision)
-	//}
-
 	var repoURL, repoOffset string
 	if err := firsterr.Parallel().Set(
 		func(e *error) { repoURL, *e = si.ResolveRepoURL() },
 		func(e *error) { repoOffset, *e = si.ResolveRepoOffset() },
 	); err != nil {
 		return EnsureErrorResult(err)
+	}
+
+	sourceLocation := sous.NewSourceLocation(repoURL, repoOffset)
+
+	existingManifest := si.GDM.GetManifest(sourceLocation)
+	if existingManifest != nil {
+		return UsageErrorf("cannot init; manifest %q already exists", sourceLocation)
 	}
 
 	var deploySpecs, otplDeploySpecs sous.DeploySpecs
@@ -93,6 +91,7 @@ func (si *SousInit) Execute(args []string) cmdr.Result {
 		},
 		Deployments: deploySpecs,
 	}
+
 	return SuccessYAML(m)
 }
 

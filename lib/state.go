@@ -1,10 +1,5 @@
 package sous
 
-import (
-	"github.com/opentable/sous/util/hy"
-	"github.com/opentable/sous/util/yaml"
-)
-
 type (
 	// State contains the mutable state of an organisation's deployments.
 	// State is also known as the "Global Deploy Manifest" or GDM.
@@ -74,29 +69,33 @@ type (
 	VarType string
 )
 
-// LoadState loads the state from a directory
-func LoadState(dir string) (st State, err error) {
-	u := hy.NewUnmarshaler(yaml.Unmarshal)
-	err = u.Unmarshal(dir, &st)
-	return
-}
-
 // ClusterMap returns the nicknames for all the clusters referred to in this state
 // paired with the URL for the named cluster
-func (st *State) ClusterMap() (m map[string]string) {
-	m = make(map[string]string)
-	for nn, cl := range st.Defs.Clusters {
-		m[nn] = cl.BaseURL
+func (s *State) ClusterMap() map[string]string {
+	m := make(map[string]string, len(s.Defs.Clusters))
+	for name, cluster := range s.Defs.Clusters {
+		m[name] = cluster.BaseURL
 	}
-	return
+	return m
 }
 
 // BaseURLs returns the urls for all the clusters referred to in this state
 // XXX - deprecate/remove
-func (st *State) BaseURLs() []string {
-	urls := make([]string, 0, len(st.Defs.Clusters))
-	for _, cl := range st.Defs.Clusters {
-		urls = append(urls, cl.BaseURL)
+func (s *State) BaseURLs() []string {
+	urls := make([]string, 0, len(s.Defs.Clusters))
+	for _, cluster := range s.Defs.Clusters {
+		urls = append(urls, cluster.BaseURL)
 	}
 	return urls
+}
+
+// GetManifest returns the manifest matching a SourceLocation. If no such
+// manifest exists, returns nil.
+func (s *State) GetManifest(sl SourceLocation) *Manifest {
+	for _, m := range s.Manifests {
+		if m.Source == sl {
+			return m
+		}
+	}
+	return nil
 }

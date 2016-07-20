@@ -31,14 +31,14 @@ func (sc *SousConfig) Execute(args []string) cmdr.Result {
 		return Successf(sc.Config.String())
 	case 1:
 		name := args[0]
-		v, err := sc.Config.GetValue(name)
+		v, err := sc.Config.getValue(name)
 		if err != nil {
 			return UsageErrorf("%s", err)
 		}
 		return Successf(v)
 	case 2:
 		name, value := args[0], args[1]
-		if err := sc.Config.SetValue(sc.User.User, name, value); err != nil {
+		if err := sc.Config.setValue(sc.User.User, name, value); err != nil {
 			return EnsureErrorResult(err)
 		}
 		return Successf("set %s to %q", name, value)

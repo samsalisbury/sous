@@ -1,5 +1,11 @@
 package sous
 
+import (
+	"os"
+	"os/user"
+	"path"
+)
+
 // Config contains the core Sous configuration, shared by both the client and
 // server. The client and server may additionally have their own configuration.
 type (
@@ -32,4 +38,16 @@ func DefaultConfig() Config {
 		DatabaseDriver:     "sqlite3",
 		DatabaseConnection: InMemory,
 	}
+}
+
+func (c *Config) DefaultStateLocation() string {
+	dataRoot := os.Getenv("XDG_DATA_HOME")
+	if dataRoot == "" {
+		u, err := user.Current()
+		if err != nil {
+			panic(err)
+		}
+		dataRoot = path.Join(u.HomeDir, ".local", "share")
+	}
+	return path.Join(dataRoot, "sous", "state")
 }
