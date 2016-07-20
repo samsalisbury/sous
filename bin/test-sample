@@ -20,6 +20,12 @@ echo "Running tests $SAMPLE_SIZE times, results in $DIR"
 PADLEN="${#SAMPLE_SIZE}"
 PADSTR="%0${PADLEN}d"
 
+echo '****************   DOCKER MALARKY  ****************'
+sudo cat /etc/init.d/docker
+sudo docker ps
+sudo docker images
+echo '****************   DOCKER MALARKY  ****************'
+
 while [ "$I" -lt "$SAMPLE_SIZE" ]; do
 	I=$((I+1))
 	I_PAD="$(printf "$PADSTR" "$I")"
@@ -34,7 +40,7 @@ while [ "$I" -lt "$SAMPLE_SIZE" ]; do
     sudo docker daemon -D
     echo &(sudo cat /var/run/docker.pid)
     sudo ps -lf $(sudo cat /var/run/docker.pid)
-    sudo ls -lR $(sudo cat /var/run/docker.pid)
+    sudo ls -lR /proc/$(sudo cat /var/run/docker.pid)
   fi
 	END="$(date +%s)"
 	DURATION="$((END-START))s"
