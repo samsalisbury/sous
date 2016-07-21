@@ -180,7 +180,6 @@ func (c *Command) Result() (*Result, error) {
 				code = status.ExitStatus()
 			}
 		}
-		// TODO: Consider handling ErrNotFound as a special case here.
 	}
 	return &Result{
 		Command:  c,
