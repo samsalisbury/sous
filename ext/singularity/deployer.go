@@ -148,9 +148,9 @@ func computeRequestID(d *sous.Deployment) string {
 }
 
 func buildReqID(sv sous.SourceVersion, nick string) string {
-	return idify(sv.SourceLocation().String() + nick)
+	return MakeDeployID(sv.SourceLocation().String() + nick)
 }
 
 func newDepID() string {
-	return idify(uuid.NewV4().String())
+	return MakeDeployID(uuid.NewV4().String())
 }

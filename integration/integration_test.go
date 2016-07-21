@@ -2,7 +2,6 @@ package integration
 
 import (
 	"database/sql"
-	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -19,11 +18,6 @@ import (
 )
 
 var imageName string
-
-func TestMain(m *testing.M) {
-	flag.Parse()
-	os.Exit(WrapCompose(m, "../test-registry"))
-}
 
 func TestGetLabels(t *testing.T) {
 	registerLabelledContainers()

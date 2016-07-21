@@ -160,7 +160,7 @@ func (nc *NameCache) getImageName(sv sous.SourceVersion) (string, error) {
 }
 
 // GetCanonicalName returns the canonical name for an image given any known name
-func (nc *NameCache) getCanonicalName(in string) (string, error) {
+func (nc *NameCache) GetCanonicalName(in string) (string, error) {
 	_, _, _, _, cn, err := nc.dbQueryOnName(in)
 	Log.Debug.Printf("Canonicalizing %s - got %s / %v", in, cn, err)
 	return cn, err

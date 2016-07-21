@@ -45,7 +45,7 @@ func TestRoundTrip(t *testing.T) {
 	err := nc.insert(sv, in, digest)
 	assert.NoError(err)
 
-	cn, err := nc.getCanonicalName(in)
+	cn, err := nc.GetCanonicalName(in)
 	if assert.NoError(err) {
 		assert.Equal(in, cn)
 	}
@@ -74,7 +74,7 @@ func TestRoundTrip(t *testing.T) {
 		assert.Equal(newSV, sv)
 	}
 
-	ncn, err := nc.getCanonicalName(host + "/" + in)
+	ncn, err := nc.GetCanonicalName(host + "/" + in)
 	if assert.Nil(err) {
 		assert.Equal(host+"/"+cn, ncn)
 	}

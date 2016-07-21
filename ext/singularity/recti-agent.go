@@ -15,8 +15,8 @@ import (
 // TODO: notInIDRE is copied from sous/lib. It should only live in this package.
 var notInIDRE = regexp.MustCompile(`[-/:]`)
 
-// TODO: idify is copied from sous/lib. It should only live in this package.
-func idify(in string) string {
+// MakeDeployID cleans a string to be used as a Singularity deploy ID.
+func MakeDeployID(in string) string {
 	return notInIDRE.ReplaceAllString(in, "")
 }
 
@@ -84,7 +84,7 @@ func (ra *RectiAgent) Deploy(cluster, depID, reqID, dockerImage string,
 	}
 
 	dep, err := swaggering.LoadMap(&dtos.SingularityDeploy{}, dtoMap{
-		"Id":            idify(uuid.NewV4().String()),
+		"Id":            MakeDeployID(uuid.NewV4().String()),
 		"RequestId":     reqID,
 		"Resources":     res,
 		"ContainerInfo": ci,
@@ -140,7 +140,7 @@ func (ra *RectiAgent) DeleteRequest(cluster, reqID, message string) error {
 func (ra *RectiAgent) Scale(cluster, reqID string, instanceCount int, message string) error {
 	Log.Debug.Printf("Scaling %s %s %d %s", cluster, reqID, instanceCount, message)
 	sr, err := swaggering.LoadMap(&dtos.SingularityScaleRequest{}, dtoMap{
-		"ActionId": idify(uuid.NewV4().String()), // not positive this is appropriate
+		"ActionId": MakeDeployID(uuid.NewV4().String()), // not positive this is appropriate
 		// omitting DurationMillis - bears discussion
 		"Instances":        int32(instanceCount),
 		"Message":          "Sous" + message,

@@ -15,8 +15,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/opentable/go-singularity"
+	sing "github.com/opentable/go-singularity"
 	"github.com/opentable/go-singularity/dtos"
+	"github.com/opentable/sous/ext/singularity"
 	"github.com/opentable/sous/util/test_with_docker"
 	"github.com/opentable/swaggering"
 	"github.com/satori/go.uuid"
@@ -80,15 +81,15 @@ func WrapCompose(m *testing.M, composeDir string) (resultCode int) {
 // ResetSingularity clears out the state from the integration singularity service
 // Call it (with and extra call deferred) anywhere integration tests use Singularity
 func ResetSingularity() {
-	sing := singularity.NewClient(SingularityURL)
+	singClient := sing.NewClient(SingularityURL)
 
-	reqList, err := sing.GetRequests()
+	reqList, err := singClient.GetRequests()
 	if err != nil {
 		panic(err)
 	}
 
 	for _, r := range reqList {
-		_, err := sing.DeleteRequest(r.Request.Id, nil)
+		_, err := singClient.DeleteRequest(r.Request.Id, nil)
 		if err != nil {
 			panic(err)
 		}
@@ -288,14 +289,10 @@ func loadMap(fielder swaggering.Fielder, m dtoMap) swaggering.Fielder {
 
 var notInIDre = regexp.MustCompile(`[-/]`)
 
-func idify(in string) string {
-	return notInIDre.ReplaceAllString(in, "")
-}
-
 func startInstance(url, imageName string, ports []int32) error {
-	reqID := idify(imageName + "test-cluster") //XXX This become increasingly brittle
+	reqID := singularity.MakeDeployID(imageName + "test-cluster") //XXX This become increasingly brittle
 
-	sing := singularity.NewClient(url)
+	sing := sing.NewClient(url)
 
 	req := loadMap(&dtos.SingularityRequest{}, map[string]interface{}{
 		"Id":          reqID,
@@ -321,7 +318,7 @@ func startInstance(url, imageName string, ports []int32) error {
 
 	depReq := loadMap(&dtos.SingularityDeployRequest{}, dtoMap{
 		"Deploy": loadMap(&dtos.SingularityDeploy{}, dtoMap{
-			"Id":        idify(uuid.NewV4().String()),
+			"Id":        singularity.MakeDeployID(uuid.NewV4().String()),
 			"RequestId": reqID,
 			"Resources": loadMap(&dtos.Resources{}, dtoMap{
 				"Cpus":     0.1,
