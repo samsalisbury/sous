@@ -22,16 +22,6 @@ echo "Running tests $SAMPLE_SIZE times, results in $DIR"
 PADLEN="${#SAMPLE_SIZE}"
 PADSTR="%0${PADLEN}d"
 
-echo '****************   DOCKER MALARKY  ****************'
-sudo ls -R /etc/docker/certs.d/
-sudo ls -l /var/run/
-sudo docker ps
-sudo docker images
-echo $(sudo cat /var/run/docker.pid)
-sudo ps -lf $(sudo cat /var/run/docker.pid)
-docker version
-echo '****************   DOCKER MALARKY  ****************'
-
 while [ "$I" -lt "$SAMPLE_SIZE" ]; do
 	I=$((I+1))
 	I_PAD="$(printf "$PADSTR" "$I")"
@@ -43,18 +33,7 @@ while [ "$I" -lt "$SAMPLE_SIZE" ]; do
     RESULT=pass;
   else
     RESULT=fail;
-    sudo docker daemon -D
-    echo $(sudo cat /var/run/docker.pid)
-    sudo ps -lf $(sudo cat /var/run/docker.pid)
   fi
-
-  echo '****************   DOCKER MALARKY  ****************'
-  sudo ls -R /etc/docker/certs.d/
-  sudo ls -l /var/run/
-  sudo docker ps
-  sudo docker images
-  docker version
-  echo '****************   DOCKER MALARKY  ****************'
 
 	END="$(date +%s)"
 	DURATION="$((END-START))s"
