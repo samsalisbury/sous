@@ -38,7 +38,7 @@ type (
 	// LocalUser is the currently logged in user.
 	LocalUser struct{ *User }
 	// LocalSousConfig is the configuration for Sous.
-	LocalSousConfig struct{ *sous.Config }
+	LocalSousConfig struct{ *Config }
 	// LocalWorkDir is the user's current working directory when they invoke Sous.
 	LocalWorkDir string
 	// LocalWorkDirShell is a shell for working in the user's current working
