@@ -208,8 +208,8 @@ func newCurrentGDM(sr LocalStateReader) (CurrentGDM, error) {
 
 // makeDockerRegistry creates a Docker version of sous.Registry
 func makeDockerRegistry(cfg LocalSousConfig, cl LocalDockerClient) (*docker.NameCache, error) {
-	dbCfg := &docker.DBConfig{Driver: cfg.DatabaseDriver, Connection: cfg.DatabaseConnection}
-	db, err := docker.GetDatabase(dbCfg)
+	dbCfg := cfg.Docker.DBConfig()
+	db, err := docker.GetDatabase(&dbCfg)
 	if err != nil {
 		return nil, fmt.Errorf("unable to build name cache DB: %s", err)
 	}

@@ -6,6 +6,7 @@ import (
 	"os/user"
 	"path"
 
+	"github.com/opentable/sous/ext/docker"
 	"github.com/opentable/sous/util/firsterr"
 )
 
@@ -23,23 +24,18 @@ type (
 		// BuildStateLocation is a directory where information about builds
 		// performed by this user on this machine are stored.
 		BuildStateDir string `env:"SOUS_BUILD_STATE_DIR"`
-		// DatabaseDriver is the name of the driver to use for local persistence
-		DatabaseDriver string `env:"SOUS_DB_DRIVER"`
-		// DatabaseConnection is the database connection string for local persistence
-		DatabaseConnection string `env:"SOUS_DB_CONN"`
+		// Docker is the Docker configuration.
+		Docker docker.Config
 	}
 )
 
 // InMemory configures SQLite to use an in-memory database
 // The dummy file allows multiple goroutines see the same in-memory DB
-const InMemory = "file:dummy.db?mode=memory&cache=shared"
+//const InMemory = "file:dummy.db?mode=memory&cache=shared"
 
-// DefaultConfig builds a default configuration, which can be then overridden by
-// client code.
 func DefaultConfig() Config {
 	return Config{
-		DatabaseDriver:     "sqlite3",
-		DatabaseConnection: InMemory,
+		Docker: docker.DefaultConfig(),
 	}
 }
 
