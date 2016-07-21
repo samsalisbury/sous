@@ -70,7 +70,7 @@ func (ld *LocalDaemon) MD5s(paths ...string) (map[string]string, error) {
 		tgts = append(tgts, tgt)
 		md5[p] = tgt
 	}
-	ld.Exec("chmod", "-R", "gwo+rw", dir)
+	ld.Exec("chmod", "-R", "a+rw", dir)
 	tmd5s := localMD5s(tgts...)
 	os.RemoveAll(dir)
 	for p, t := range md5 {
