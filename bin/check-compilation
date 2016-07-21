@@ -1,24 +1,18 @@
 #!/usr/bin/env sh
-
-go list ./... | grep -vE '/vendor/' | (
-	while read -r P; do	
-		FAILED=NO
-		# compile the package itself
-		if ! BUILDOUT=$(go build -o /dev/null "$P" 2>&1); then
-			FAILED=YES
-			printf "Compile Failed for %s:" "$P"
-			echo "$BUILDOUT"
-		fi
-		# compile the package's tests
-		if ! TESTBUILDOUT=$(go test -c -o /dev/null "$P" 2>&1); then
-			FAILED=YES
-			printf "Compile Tests failed for %s:" "$P"
-			echo "$TESTBUILDOUT"
-		fi
-		if [ "$FAILED" = NO ]; then
-			echo "OK: $P"
-		else
-			echo "FAILED: $P"
-		fi
-	done
-)
+FAILED=0
+SUCCEEDED=0
+PACKAGES="$(go list ./... | grep -vE '/vendor/')"
+for P in $PACKAGES; do
+	printf '.'
+	if ! TESTBUILDOUT=$(go test -c -o /dev/null "$P" 2>&1); then
+		printf '\n%s\n' "$TESTBUILDOUT"
+		FAILED=$((FAILED+1))
+	else
+		SUCCEEDED=$((SUCCEEDED+1))
+	fi
+done
+if [ "$F" != "0" ]; then
+	printf '\n%d packages failed (%d succeeded)\n' "$FAILED" "$SUCCEEDED"
+	exit 1
+fi
+printf '\nAll %d packages OK\n' "$SUCCEEDED"
