@@ -120,11 +120,11 @@ func (b *Builder) recordName(br *sous.BuildResult) error {
 }
 
 // VersionTag computes an image tag from a SourceVersion's version
-func (b *Builder) VersionTag(v sous.SourceVersion) string {
+func (b *Builder) VersionTag(v sous.SourceID) string {
 	return filepath.Join(b.DockerRegistryHost, versionName(v))
 }
 
 // RevisionTag computes an image tag from a SourceVersion's revision id
-func (b *Builder) RevisionTag(v sous.SourceVersion) string {
+func (b *Builder) RevisionTag(v sous.SourceID) string {
 	return filepath.Join(b.DockerRegistryHost, revisionName(v))
 }

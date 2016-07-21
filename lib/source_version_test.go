@@ -14,7 +14,7 @@ func TestParseName_SourceVersion(t *testing.T) {
 		t.Error(err)
 	}
 
-	sv, ok := name.(SourceVersion)
+	sv, ok := name.(SourceID)
 	if !ok {
 		t.Fatalf("Parsed a %T; want a  SourceVersion", sv)
 	}
@@ -38,7 +38,7 @@ func TestParseName_SourceVersion(t *testing.T) {
 
 func TestParseSourceVersion(t *testing.T) {
 	assert := assert.New(t)
-	mustParse := func(str string) SourceVersion {
+	mustParse := func(str string) SourceID {
 		sv, err := ParseSourceVersion(str)
 		if err != nil {
 			t.Errorf("unexpected error %q while parsing %q", err, str)
@@ -46,14 +46,14 @@ func TestParseSourceVersion(t *testing.T) {
 		return sv
 	}
 
-	assert.Equal(SourceVersion{"git+ssh://github.com/opentable/sous", semv.MustParse("1.0.0-pre+4f850e9030224f528cfdb085d558f8508d06a6d3"), "sous"},
+	assert.Equal(SourceID{"git+ssh://github.com/opentable/sous", semv.MustParse("1.0.0-pre+4f850e9030224f528cfdb085d558f8508d06a6d3"), "sous"},
 		mustParse("git+ssh://github.com/opentable/sous,1.0.0-pre+4f850e9030224f528cfdb085d558f8508d06a6d3,sous"))
 
-	assert.Equal(SourceVersion{"github.com/opentable/sous", semv.MustParse("1"), "util"}, mustParse(",github.com/opentable/sous,1,util"))
-	assert.Equal(SourceVersion{"github.com/opentable/sous", semv.MustParse("1"), "util"}, mustParse("github.com/opentable/sous,1,util"))
-	assert.Equal(SourceVersion{"github.com/opentable/sous", semv.MustParse("1"), "util"}, mustParse(":github.com/opentable/sous:1:util"))
+	assert.Equal(SourceID{"github.com/opentable/sous", semv.MustParse("1"), "util"}, mustParse(",github.com/opentable/sous,1,util"))
+	assert.Equal(SourceID{"github.com/opentable/sous", semv.MustParse("1"), "util"}, mustParse("github.com/opentable/sous,1,util"))
+	assert.Equal(SourceID{"github.com/opentable/sous", semv.MustParse("1"), "util"}, mustParse(":github.com/opentable/sous:1:util"))
 
-	assert.Equal(SourceVersion{"github.com/opentable/sous", semv.MustParse("1"), ""}, mustParse("github.com/opentable/sous,1,"))
-	assert.Equal(SourceVersion{"github.com/opentable/sous", semv.MustParse("1"), ""}, mustParse(":github.com/opentable/sous:1:"))
-	assert.Equal(SourceVersion{"github.com/opentable/sous", semv.MustParse("1"), ""}, mustParse("github.com/opentable/sous,1"))
+	assert.Equal(SourceID{"github.com/opentable/sous", semv.MustParse("1"), ""}, mustParse("github.com/opentable/sous,1,"))
+	assert.Equal(SourceID{"github.com/opentable/sous", semv.MustParse("1"), ""}, mustParse(":github.com/opentable/sous:1:"))
+	assert.Equal(SourceID{"github.com/opentable/sous", semv.MustParse("1"), ""}, mustParse("github.com/opentable/sous,1"))
 }

@@ -18,7 +18,7 @@ func TestModifyScale(t *testing.T) {
 	assert := assert.New(t)
 	pair := &sous.DeploymentPair{
 		Prior: &sous.Deployment{
-			SourceVersion: sous.SourceVersion{
+			SourceVersion: sous.SourceID{
 				RepoURL: sous.RepoURL("reqid"),
 			},
 			DeployConfig: sous.DeployConfig{
@@ -27,7 +27,7 @@ func TestModifyScale(t *testing.T) {
 			Cluster: "cluster",
 		},
 		Post: &sous.Deployment{
-			SourceVersion: sous.SourceVersion{
+			SourceVersion: sous.SourceID{
 				RepoURL: sous.RepoURL("reqid"),
 			},
 			DeployConfig: sous.DeployConfig{
@@ -68,7 +68,7 @@ func TestModifyImage(t *testing.T) {
 	after, _ := semv.Parse("2.3.4-new")
 	pair := &sous.DeploymentPair{
 		Prior: &sous.Deployment{
-			SourceVersion: sous.SourceVersion{
+			SourceVersion: sous.SourceID{
 				RepoURL: sous.RepoURL("reqid"),
 				Version: before,
 			},
@@ -78,7 +78,7 @@ func TestModifyImage(t *testing.T) {
 			Cluster: "cluster",
 		},
 		Post: &sous.Deployment{
-			SourceVersion: sous.SourceVersion{
+			SourceVersion: sous.SourceID{
 				RepoURL: sous.RepoURL("reqid"),
 				Version: after,
 			},
@@ -118,7 +118,7 @@ func TestModifyResources(t *testing.T) {
 	version := semv.MustParse("1.2.3-test")
 	pair := &sous.DeploymentPair{
 		Prior: &sous.Deployment{
-			SourceVersion: sous.SourceVersion{
+			SourceVersion: sous.SourceID{
 				RepoURL: sous.RepoURL("reqid"),
 				Version: version,
 			},
@@ -131,7 +131,7 @@ func TestModifyResources(t *testing.T) {
 			Cluster: "cluster",
 		},
 		Post: &sous.Deployment{
-			SourceVersion: sous.SourceVersion{
+			SourceVersion: sous.SourceID{
 				RepoURL: sous.RepoURL("reqid"),
 				Version: version,
 			},
@@ -177,7 +177,7 @@ func TestModify(t *testing.T) {
 	after := semv.MustParse("2.3.4-new")
 	pair := &sous.DeploymentPair{
 		Prior: &sous.Deployment{
-			SourceVersion: sous.SourceVersion{
+			SourceVersion: sous.SourceID{
 				RepoURL: sous.RepoURL("reqid"),
 				Version: before,
 			},
@@ -190,7 +190,7 @@ func TestModify(t *testing.T) {
 			Cluster: "cluster",
 		},
 		Post: &sous.Deployment{
-			SourceVersion: sous.SourceVersion{
+			SourceVersion: sous.SourceID{
 				RepoURL: sous.RepoURL("reqid"),
 				Version: after,
 			},
@@ -237,7 +237,7 @@ func TestDeletes(t *testing.T) {
 	assert := assert.New(t)
 
 	deleted := &sous.Deployment{
-		SourceVersion: sous.SourceVersion{
+		SourceVersion: sous.SourceID{
 			RepoURL: sous.RepoURL("reqid"),
 		},
 		DeployConfig: sous.DeployConfig{
@@ -276,7 +276,7 @@ func TestCreates(t *testing.T) {
 	assert := assert.New(t)
 
 	created := &sous.Deployment{
-		SourceVersion: sous.SourceVersion{
+		SourceVersion: sous.SourceID{
 			RepoURL: sous.RepoURL("reqid"),
 		},
 		DeployConfig: sous.DeployConfig{

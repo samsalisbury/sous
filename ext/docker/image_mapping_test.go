@@ -33,7 +33,7 @@ func TestRoundTrip(t *testing.T) {
 	nc := NewNameCache(dc, inMemoryRoundtripDB())
 
 	v := semv.MustParse("1.2.3")
-	sv := sous.SourceVersion{
+	sv := sous.SourceID{
 		Version:    v,
 		RepoURL:    sous.RepoURL("https://github.com/opentable/wackadoo"),
 		RepoOffset: sous.RepoOffset("nested/there"),
@@ -55,7 +55,7 @@ func TestRoundTrip(t *testing.T) {
 	}
 
 	newV := semv.MustParse("1.2.42")
-	newSV := sous.SourceVersion{
+	newSV := sous.SourceID{
 		Version:    newV,
 		RepoURL:    sous.RepoURL("https://github.com/opentable/wackadoo"),
 		RepoOffset: sous.RepoOffset("nested/there"),
@@ -87,14 +87,14 @@ func TestHarvesting(t *testing.T) {
 	nc := NewNameCache(dc, inMemoryRoundtripDB())
 
 	v := semv.MustParse("1.2.3")
-	sv := sous.SourceVersion{
+	sv := sous.SourceID{
 		Version:    v,
 		RepoURL:    sous.RepoURL("https://github.com/opentable/wackadoo"),
 		RepoOffset: sous.RepoOffset("nested/there"),
 	}
 
 	v2 := semv.MustParse("2.3.4")
-	sisterSV := sous.SourceVersion{
+	sisterSV := sous.SourceID{
 		Version:    v2,
 		RepoURL:    sous.RepoURL("https://github.com/opentable/wackadoo"),
 		RepoOffset: sous.RepoOffset("nested/there"),
@@ -144,7 +144,7 @@ func TestMissingName(t *testing.T) {
 	nc := NewNameCache(dc, inMemoryDB())
 
 	v := semv.MustParse("4.5.6")
-	sv := sous.SourceVersion{
+	sv := sous.SourceID{
 		Version:    v,
 		RepoURL:    sous.RepoURL("https://github.com/opentable/brand-new-idea"),
 		RepoOffset: sous.RepoOffset("nested/there"),

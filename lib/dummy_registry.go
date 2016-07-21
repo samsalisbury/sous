@@ -10,11 +10,11 @@ func NewDummyRegistry() *DummyRegistry {
 	return &DummyRegistry{}
 }
 
-func (dc *DummyRegistry) GetArtifact(sv SourceVersion) (*BuildArtifact, error) {
+func (dc *DummyRegistry) GetArtifact(sv SourceID) (*BuildArtifact, error) {
 	return &BuildArtifact{Name: sv.String(), Type: "dummy"}, nil
 }
 
 // GetSourceVersion implements part of ImageMapper
-func (dc *DummyRegistry) GetSourceVersion(*BuildArtifact) (SourceVersion, error) {
-	return SourceVersion{}, nil
+func (dc *DummyRegistry) GetSourceVersion(*BuildArtifact) (SourceID, error) {
+	return SourceID{}, nil
 }

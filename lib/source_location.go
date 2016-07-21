@@ -55,8 +55,8 @@ func (sl SourceLocation) Repo() RepoURL {
 }
 
 // SourceVersion returns a SourceVersion built from this location with the addition of a version
-func (sl *SourceLocation) SourceVersion(version semv.Version) SourceVersion {
-	return SourceVersion{
+func (sl *SourceLocation) SourceVersion(version semv.Version) SourceID {
+	return SourceID{
 		RepoURL:    sl.RepoURL,
 		RepoOffset: sl.RepoOffset,
 		Version:    version,

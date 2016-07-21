@@ -28,7 +28,7 @@ func makeDepl(repo string, num int) *Deployment {
 	owners := OwnerSet{}
 	owners.Add("judson")
 	return &Deployment{
-		SourceVersion: SourceVersion{
+		SourceVersion: SourceID{
 			RepoURL:    RepoURL(repo),
 			Version:    version,
 			RepoOffset: "",

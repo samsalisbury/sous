@@ -26,7 +26,7 @@ func TestCanonName(t *testing.T) {
 
 	vers, _ := semv.Parse("1.2.3-test+thing")
 	dep := Deployment{
-		SourceVersion: SourceVersion{
+		SourceVersion: SourceID{
 			RepoURL:    RepoURL("one"),
 			RepoOffset: RepoOffset("two"),
 			Version:    vers,

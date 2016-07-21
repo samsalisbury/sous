@@ -14,11 +14,9 @@ type (
 	// RepoOffset is a path within a repository containing a single piece of
 	// software.
 	RepoOffset string
-	// SourceVersion is similar to SourceLocation except that it also includes
-	// version information. This means that a SourceID completely describes
-	// exactly one snapshot of a body of source code, from which a piece of
-	// software can be built.
-	SourceVersion struct {
+	// SourceID identifies a specific snapshot of a body of source code,
+	// including its location and version.
+	SourceID struct {
 		RepoURL    RepoURL
 		Version    semv.Version
 		RepoOffset RepoOffset `yaml:",omitempty"`
@@ -52,7 +50,7 @@ type (
 	}
 )
 
-func (sv SourceVersion) String() string {
+func (sv SourceID) String() string {
 	if sv.RepoOffset == "" {
 		return fmt.Sprintf("%s %s", sv.RepoURL, sv.Version)
 	}
@@ -60,17 +58,17 @@ func (sv SourceVersion) String() string {
 }
 
 // RevID returns the revision id for this SourceVersion
-func (sv *SourceVersion) RevID() string {
+func (sv *SourceID) RevID() string {
 	return sv.Version.Meta
 }
 
 // TagName returns the tag name for this SourceVersion
-func (sv *SourceVersion) TagName() string {
+func (sv *SourceID) TagName() string {
 	return sv.Version.Format("M.m.p-?")
 }
 
 // SourceLocation returns the location component of this SourceVersion.
-func (sv *SourceVersion) SourceLocation() SourceLocation {
+func (sv *SourceID) SourceLocation() SourceLocation {
 	return SourceLocation{
 		RepoURL:    sv.RepoURL,
 		RepoOffset: sv.RepoOffset,
@@ -78,12 +76,12 @@ func (sv *SourceVersion) SourceLocation() SourceLocation {
 }
 
 // Equal tests the equality between this SV and another
-func (sv *SourceVersion) Equal(o SourceVersion) bool {
+func (sv *SourceID) Equal(o SourceID) bool {
 	return sv.RepoURL == o.RepoURL && sv.RepoOffset == o.RepoOffset && sv.Version.Equals(o.Version)
 }
 
 // Repo returns the repository URL for this SV
-func (sv SourceVersion) Repo() RepoURL {
+func (sv SourceID) Repo() RepoURL {
 	return sv.RepoURL
 }
 
@@ -118,7 +116,7 @@ func parseChunks(sourceStr string) []string {
 	return strings.Split(source, delim)
 }
 
-func sourceVersionFromChunks(source string, chunks []string) (sv SourceVersion, err error) {
+func sourceVersionFromChunks(source string, chunks []string) (sv SourceID, err error) {
 	if len(chunks[0]) == 0 {
 		err = &MissingRepo{source}
 		return
@@ -160,7 +158,7 @@ func sourceLocationFromChunks(source string, chunks []string) (sl SourceLocation
 	return
 }
 
-func ParseSourceVersion(source string) (SourceVersion, error) {
+func ParseSourceVersion(source string) (SourceID, error) {
 	chunks := parseChunks(source)
 	return sourceVersionFromChunks(source, chunks)
 }

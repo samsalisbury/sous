@@ -23,14 +23,14 @@ type (
 	}
 )
 
-func (sc *SourceContext) Version() SourceVersion {
+func (sc *SourceContext) Version() SourceID {
 	v, err := semv.Parse(sc.NearestTagName)
 	if err != nil {
 		v = nearestVersion(sc.Tags)
 	}
 	// Append revision ID.
 	v = semv.MustParse(v.Format("M.m.p-?") + "+" + sc.Revision)
-	sv := SourceVersion{
+	sv := SourceID{
 		RepoURL:    RepoURL(sc.PossiblePrimaryRemoteURL),
 		Version:    v,
 		RepoOffset: RepoOffset(sc.OffsetDir),

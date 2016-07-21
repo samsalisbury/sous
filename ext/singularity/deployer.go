@@ -147,7 +147,7 @@ func computeRequestID(d *sous.Deployment) string {
 	return buildReqID(d.SourceVersion, d.ClusterNickname)
 }
 
-func buildReqID(sv sous.SourceVersion, nick string) string {
+func buildReqID(sv sous.SourceID, nick string) string {
 	return MakeDeployID(sv.SourceLocation().String() + nick)
 }
 

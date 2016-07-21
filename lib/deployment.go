@@ -25,7 +25,7 @@ type (
 		// Manifests.Deployments which points at this Deployment.
 		Cluster string
 		// SourceVersion is the precise version of the software to be deployed.
-		SourceVersion SourceVersion
+		SourceVersion SourceID
 		// Owners is a map of named owners of this repository. The type of this
 		// field is subject to change.
 		Owners OwnerSet
