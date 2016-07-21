@@ -292,6 +292,7 @@ func localMD5s(paths ...string) (md5s map[string]string) {
 	for _, path := range paths {
 		file, err := os.Open(path)
 		if err != nil {
+			log.Print("while MD5ing: ", err)
 			continue
 		}
 
