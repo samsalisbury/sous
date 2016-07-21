@@ -69,8 +69,8 @@ func (sv *SourceVersion) TagName() string {
 	return sv.Version.Format("M.m.p-?")
 }
 
-// CanonicalName returns a stable and consistent name for this SourceLocation
-func (sv *SourceVersion) CanonicalName() SourceLocation {
+// SourceLocation returns the location component of this SourceVersion.
+func (sv *SourceVersion) SourceLocation() SourceLocation {
 	return SourceLocation{
 		RepoURL:    sv.RepoURL,
 		RepoOffset: sv.RepoOffset,
@@ -139,7 +139,7 @@ func sourceVersionFromChunks(source string, chunks []string) (sv SourceVersion, 
 	return
 }
 
-func canonicalNameFromChunks(source string, chunks []string) (sl SourceLocation, err error) {
+func sourceLocationFromChunks(source string, chunks []string) (sl SourceLocation, err error) {
 	if len(chunks) > 2 {
 		err = &IncludesVersion{source}
 		return
@@ -165,9 +165,9 @@ func ParseSourceVersion(source string) (SourceVersion, error) {
 	return sourceVersionFromChunks(source, chunks)
 }
 
-func ParseCanonicalName(source string) (SourceLocation, error) {
+func ParseSourceLocation(source string) (SourceLocation, error) {
 	chunks := parseChunks(source)
-	return canonicalNameFromChunks(source, chunks)
+	return sourceLocationFromChunks(source, chunks)
 }
 
 func ParseGenName(source string) (EntityName, error) {
@@ -177,6 +177,6 @@ func ParseGenName(source string) (EntityName, error) {
 	case 3:
 		return sourceVersionFromChunks(source, chunks)
 	case 2:
-		return canonicalNameFromChunks(source, chunks)
+		return sourceLocationFromChunks(source, chunks)
 	}
 }

@@ -141,7 +141,7 @@ func (nc *NameCache) getImageName(sv sous.SourceVersion) (string, error) {
 	Log.Vomit.Printf("Getting image name for %+v", sv)
 	cn, _, err := nc.dbQueryOnSV(sv)
 	if _, ok := err.(NoImageNameFound); ok {
-		err = nc.harvest(sv.CanonicalName())
+		err = nc.harvest(sv.SourceLocation())
 		if err != nil {
 			Log.Vomit.Printf("Err: %v", err)
 			return "", err

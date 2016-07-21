@@ -153,7 +153,7 @@ func computeRequestID(d *sous.Deployment) string {
 }
 
 func buildReqID(sv sous.SourceVersion, nick string) string {
-	return idify(sv.CanonicalName().String() + nick)
+	return idify(sv.SourceLocation().String() + nick)
 }
 
 func newDepID() string {

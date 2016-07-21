@@ -38,7 +38,7 @@ func (sl *SourceLocation) UnmarshalYAML(unmarshal func(interface{}) error) error
 		return err
 	}
 	var err error
-	*sl, err = ParseCanonicalName(s)
+	*sl, err = ParseSourceLocation(s)
 	return err
 }
 
