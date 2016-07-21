@@ -1,8 +1,10 @@
 package test_with_docker
 
 import (
+	"io/ioutil"
 	"log"
 	"net"
+	"os"
 	"path/filepath"
 	"time"
 )
@@ -55,7 +57,26 @@ func (ld *LocalDaemon) IP() (net.IP, error) {
 // This can be used to compare to local digests and avoid copying files or
 // restarting the daemon
 func (ld *LocalDaemon) MD5s(paths ...string) (map[string]string, error) {
-	return localMD5s(paths...), nil
+	dir, err := ioutil.TempDir("/tmp", "md5")
+	if err != nil {
+		return nil, err
+	}
+	tgts := make([]string)
+	md5 := make(map[string]string)
+	for _, p := range paths {
+		tgt := filepath.Join(dir, p)
+		os.MkdirAll(filepath.Dir(tgt), os.ModeDir|os.ModePerm)
+		ld.Exec("cp", p, tgt)
+		tgts = append(tgts, tgt)
+		md5[p] = tgt
+	}
+	ld.Exec("chmod", "-R", "gwo+rw", dir)
+	tmd5s := localMD5s(tgts...)
+	os.RemoveAll(dir)
+	for p, t := range md5 {
+		md5[p] = tmd5s[t]
+	}
+	return md5, nil
 }
 
 // RebuildService forces the rebuild of a docker-compose service.

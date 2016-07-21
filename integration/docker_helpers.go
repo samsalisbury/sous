@@ -45,6 +45,8 @@ func WrapCompose(m *testing.M, composeDir string) (resultCode int) {
 
 	defer func() {
 		log.Println("Cleaning up...")
+		o, _ := exec.Command("sudo", "ls", "-l", "/var/run/").CombinedOutput()
+		log.Print(string(o))
 		if err := recover(); err != nil {
 			log.Print("Panic: ", err)
 			resultCode = 1
