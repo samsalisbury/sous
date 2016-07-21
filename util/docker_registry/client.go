@@ -33,8 +33,10 @@ type (
 		Cmd    []string
 	}
 
-	// Client for v2 of the docker registry. Maintains state and accumulates e.g. endpoints to make requests against.
-	// Although it's developed in concert with Sous, there's a conscious effort to avoid coupling to Sous concepts like e.g. SourceVersion
+	// Client for v2 of the docker registry. Maintains state and accumulates
+	// e.g. endpoints to make requests against. Although it's developed in
+	// concert with Sous, there's a conscious effort to avoid coupling to Sous
+	// concepts like SourceID.
 	liveClient struct {
 		ctx        context.Context
 		xport      *http.Transport

@@ -63,8 +63,8 @@ func TestGetRunningDeploymentSet(t *testing.T) {
 		assert.Regexp("^0\\.1", grafana.Resources["cpus"])    // XXX strings and floats...
 		assert.Regexp("^100\\.", grafana.Resources["memory"]) // XXX strings and floats...
 		assert.Equal("1", grafana.Resources["ports"])         // XXX strings and floats...
-		assert.Equal(17, grafana.SourceVersion.Version.Patch)
-		assert.Equal("91495f1b1630084e301241100ecf2e775f6b672c", grafana.SourceVersion.Version.Meta)
+		assert.Equal(17, grafana.SourceID.Version.Patch)
+		assert.Equal("91495f1b1630084e301241100ecf2e775f6b672c", grafana.SourceID.Version.Meta)
 		assert.Equal(1, grafana.NumInstances)
 		assert.Equal(sous.ManifestKindService, grafana.Kind)
 	}
@@ -242,7 +242,7 @@ func deploymentWithRepo(assert *assert.Assertions, sc sous.Deployer, repo string
 func findRepo(deps sous.Deployments, repo string) int {
 	for i := range deps {
 		if deps[i] != nil {
-			if deps[i].SourceVersion.RepoURL == sous.RepoURL(repo) {
+			if deps[i].SourceID.RepoURL == sous.RepoURL(repo) {
 				return i
 			}
 		}
@@ -254,7 +254,7 @@ func manifest(nc sous.Registry, drepo, containerDir, sourceURL, version string) 
 	in := BuildImageName(drepo, version)
 	BuildAndPushContainer(containerDir, in)
 
-	nc.GetSourceVersion(docker.DockerBuildArtifact(in))
+	nc.GetSourceID(docker.DockerBuildArtifact(in))
 
 	return &sous.Manifest{
 		Source: sous.SourceLocation{

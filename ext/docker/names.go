@@ -9,9 +9,9 @@ import (
 	"github.com/samsalisbury/semv"
 )
 
-// SourceVersionFromLabels builds a SourceVersion from a map of labels,
-// generally acquired from a Docker image
-func SourceVersionFromLabels(labels map[string]string) (sous.SourceID, error) {
+// SourceIDFromLabels builds a SourceID from a map of labels, generally
+// acquired from a Docker image.
+func SourceIDFromLabels(labels map[string]string) (sous.SourceID, error) {
 	missingLabels := make([]string, 0, 3)
 	repo, present := labels[DockerRepoLabel]
 	if !present {
@@ -50,19 +50,8 @@ func SourceVersionFromLabels(labels map[string]string) (sous.SourceID, error) {
 
 var stripRE = regexp.MustCompile("^([[:alpha:]]+://)?(github.com(/opentable)?)?")
 
-//func DockerImageName(sv sous.SourceVersion) string {
-//	name := string(sv.RepoURL)
-//
-//	name = stripRE.ReplaceAllString(name, "")
-//	if string(sv.RepoOffset) != "" {
-//		name = strings.Join([]string{name, string(sv.RepoOffset)}, "/")
-//	}
-//	name = strings.Join([]string{name, sv.Version.Format(`M.m.p-?`)}, ":")
-//	return name
-//}
-//
 // DockerLabels computes a map of labels that should be applied to a container
-// image that is built based on this SourceVersion
+// image that is built based on this SourceID.
 func DockerLabels(sv sous.SourceID) map[string]string {
 	labels := make(map[string]string)
 	labels[DockerVersionLabel] = sv.Version.Format(`M.m.p-?`)

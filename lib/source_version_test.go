@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestParseName_SourceVersion(t *testing.T) {
+func TestParseName_SourceID(t *testing.T) {
 	commas := "git+ssh://github.com/opentable/sous,1.0.0-pre+4f850e9030224f528cfdb085d558f8508d06a6d3,/sous/"
 	name, err := ParseGenName(commas)
 	if err != nil {
@@ -16,7 +16,7 @@ func TestParseName_SourceVersion(t *testing.T) {
 
 	sv, ok := name.(SourceID)
 	if !ok {
-		t.Fatalf("Parsed a %T; want a  SourceVersion", sv)
+		t.Fatalf("Parsed a %T; want a  SourceID", sv)
 	}
 
 	if string(sv.RepoURL) != "git+ssh://github.com/opentable/sous" {
@@ -36,10 +36,10 @@ func TestParseName_SourceVersion(t *testing.T) {
 	}
 }
 
-func TestParseSourceVersion(t *testing.T) {
+func TestParseSourceID(t *testing.T) {
 	assert := assert.New(t)
 	mustParse := func(str string) SourceID {
-		sv, err := ParseSourceVersion(str)
+		sv, err := ParseSourceID(str)
 		if err != nil {
 			t.Errorf("unexpected error %q while parsing %q", err, str)
 		}

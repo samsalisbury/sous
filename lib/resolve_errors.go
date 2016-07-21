@@ -12,8 +12,8 @@ type (
 		Causes []error
 	}
 
-	// MissingImageNamesError reports that we couldn't get names for one or more
-	// source versions
+	// MissingImageNamesError reports that we couldn't get names for one or
+	// more source IDs.
 	MissingImageNamesError struct {
 		Causes []error
 	}
@@ -54,7 +54,7 @@ func (re *ResolveErrors) Error() string {
 
 func (e *MissingImageNamesError) Error() string {
 	causeStrs := make([]string, 0, len(e.Causes)+1)
-	causeStrs = append(causeStrs, "Image names are unknown to Sous for source versions")
+	causeStrs = append(causeStrs, "Image names are unknown to Sous for source IDs")
 	for _, c := range e.Causes {
 		causeStrs = append(causeStrs, c.Error())
 	}

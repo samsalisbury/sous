@@ -54,7 +54,7 @@ func (sr *SousRectify) Execute(args []string) cmdr.Result {
 	var predicate sous.DeploymentPredicate
 	if sr.flags.manifest != "" {
 		predicate = func(d *sous.Deployment) bool {
-			return d.SourceVersion.RepoURL == sous.RepoURL(sr.flags.manifest)
+			return d.SourceID.RepoURL == sous.RepoURL(sr.flags.manifest)
 		}
 	}
 

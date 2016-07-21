@@ -57,17 +57,17 @@ func (sv SourceID) String() string {
 	return fmt.Sprintf("%s:%s %s", sv.RepoURL, sv.RepoOffset, sv.Version)
 }
 
-// RevID returns the revision id for this SourceVersion
+// RevID returns the revision id for this SourceID.
 func (sv *SourceID) RevID() string {
 	return sv.Version.Meta
 }
 
-// TagName returns the tag name for this SourceVersion
+// TagName returns the tag name for this SourceID.
 func (sv *SourceID) TagName() string {
 	return sv.Version.Format("M.m.p-?")
 }
 
-// SourceLocation returns the location component of this SourceVersion.
+// SourceLocation returns the location component of this SourceID
 func (sv *SourceID) SourceLocation() SourceLocation {
 	return SourceLocation{
 		RepoURL:    sv.RepoURL,
@@ -158,7 +158,7 @@ func sourceLocationFromChunks(source string, chunks []string) (sl SourceLocation
 	return
 }
 
-func ParseSourceVersion(source string) (SourceID, error) {
+func ParseSourceID(source string) (SourceID, error) {
 	chunks := parseChunks(source)
 	return sourceVersionFromChunks(source, chunks)
 }
