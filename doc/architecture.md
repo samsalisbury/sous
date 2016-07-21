@@ -93,7 +93,7 @@ users will usually manipulate applications or instances, which are each views ov
 A deployment description is a tuple which binds:
 - A cluster name
 - A [declaration of required resources](#resource-declaration)
-- A [source version](#source-version)
+- A [source ID](#source-id)
 - A dictionary of environment variables
 - A list of project owners
 - An application kind
@@ -132,7 +132,7 @@ the historical deployments of a particular service, as represented by a canonica
 
 A version name consists of a [semantic version] \(semver\) compatible source code repo tag,
 paired with the revision ID that tag points to.
-By itself, it does not identify anything, but is used as part of a [source version](#source-version)
+By itself, it does not identify anything, but is used as part of a [source ID](#source-id)
 
 Version names are typically represented as semantic versions, where we use the revision ID as the
 semver metadata. This means that any semver metadata from your source code tags is ignored,
@@ -153,16 +153,16 @@ And, for git tag "0.2.33-beta.5+this.bit.is.metadata.3" the version name would b
 
 [semantic version]: http://semver.org
 
-## Source Version ##
+## Source ID ##
 
-A **source version** completely identifies a specific version of a piece of software.
+A **source ID** completely identifies a specific version of a piece of software.
 
-Within sous, a source version serves as as a pointer to everything that represents that version of the software,
+Within sous, a source ID serves as as a pointer to everything that represents that version of the software,
 like the source code, resultant docker images, a set of running instances etc.
 
-A source version consists of a [source location] paired with a [version name].
+A source ID consists of a [source location] paired with a [version name].
 
-Typically, a source version can be written as a triple, in the format `<repo>,<version name>[,<path>]` e.g.
+Typically, a source ID can be written as a triple, in the format `<repo>,<version name>[,<path>]` e.g.
 
     github.com/opentable/sous,1.0.0,src
 
@@ -189,7 +189,7 @@ Example source locations:
 ### Checking Versions
 
 The use of a tag plus a revision ID provides redundant information.
-Where a [source version](#source-version) is being used in an interactive context,
+Where a [source ID](#source-id) is being used in an interactive context,
 	and the version number no longer matches the recorded revision ID
 		(i.e. the git tag has been moved)
 	an error should be reported and the operation should be rejected.
@@ -200,7 +200,7 @@ However, where name is being used in a context where no human is present,
 
 ### String Representations
 
-While source versions are triples of values, they must sometimes be represented and manipulated as strings.
+While source IDs are triples of values, they must sometimes be represented and manipulated as strings.
 Specifically, at the interfaces of Sous, both with human beings and other software.
 
 The default string representation of an entity name begins with a character not matching `[A-Za-z0-9]`
