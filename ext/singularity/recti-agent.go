@@ -12,12 +12,11 @@ import (
 	"github.com/satori/go.uuid"
 )
 
-// TODO: notInIDRE is copied from sous/lib. It should only live in this package.
-var notInIDRE = regexp.MustCompile(`[-/:]`)
+var illegalDeployIDChars = regexp.MustCompile(`[-/:]`)
 
 // MakeDeployID cleans a string to be used as a Singularity deploy ID.
 func MakeDeployID(in string) string {
-	return notInIDRE.ReplaceAllString(in, "")
+	return illegalDeployIDChars.ReplaceAllString(in, "")
 }
 
 // RectiAgent is an implementation of the RectificationClient interface
