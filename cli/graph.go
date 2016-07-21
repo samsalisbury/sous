@@ -222,8 +222,7 @@ func makeDockerBuilder(cfg LocalSousConfig, cl LocalDockerClient, ctx *sous.Sour
 	if err != nil {
 		return nil, err
 	}
-	// TODO: Get this from config.
-	drh := "docker.otenv.com"
+	drh := cfg.Docker.RegistryHost
 	return docker.NewBuilder(nc, drh, ctx, source.Sh, scratch.Sh)
 }
 

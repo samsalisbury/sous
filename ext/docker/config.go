@@ -1,6 +1,7 @@
 package docker
 
 type Config struct {
+	RegistryHost string `env:"SOUS_DOCKER_REGISTRY_HOST"`
 	// DatabaseDriver is the name of the driver to use for local
 	// persistence.
 	DatabaseDriver string `env:"SOUS_DB_DRIVER"`
@@ -13,13 +14,15 @@ type Config struct {
 // client code.
 func DefaultConfig() Config {
 	return Config{
+		RegistryHost:       "docker.otenv.com",
 		DatabaseDriver:     "sqlite3",
 		DatabaseConnection: InMemory,
 	}
 }
 
 func (c Config) DBConfig() DBConfig {
-	return DBConfig{Driver: c.DatabaseDriver,
+	return DBConfig{
+		Driver:     c.DatabaseDriver,
 		Connection: c.DatabaseConnection,
 	}
 }
