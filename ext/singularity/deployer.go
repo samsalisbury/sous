@@ -20,12 +20,7 @@ type (
 		Registry sous.Registry
 	}
 
-	// RectificationClient abstracts the raw interactions with Singularity.  The
-	// methods on this interface are tightly bound to the semantics of
-	// Singularity itself - it's recommended to interact with the Sous Rectify
-	// function or the rectification driver rather than with implentations of
-	// this interface directly.
-	// TODO: RectificationClient leaks Singularity concepts, make it so it doesn't.
+	// rectificationClient abstracts the raw interactions with Singularity.
 	rectificationClient interface {
 		// Deploy creates a new deploy on a particular requeust
 		Deploy(cluster, depID, reqID, dockerImage string, r sous.Resources, e sous.Env, vols sous.Volumes) error
