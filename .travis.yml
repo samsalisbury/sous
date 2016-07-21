@@ -4,10 +4,6 @@ services:
 language: go
 go:
 - 1.6
-cache:
-  directories:
-    - test-registry
-    - /var/lib/docker
 before_install:
 - ps -p $$
 - which sh
