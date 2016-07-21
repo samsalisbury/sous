@@ -61,7 +61,7 @@ func (ld *LocalDaemon) MD5s(paths ...string) (map[string]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	tgts := make([]string)
+	var tgts []string
 	md5 := make(map[string]string)
 	for _, p := range paths {
 		tgt := filepath.Join(dir, p)
