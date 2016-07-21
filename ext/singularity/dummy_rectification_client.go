@@ -51,12 +51,6 @@ func NewDummyRectificationClient(nc sous.Registry) *DummyRectificationClient {
 	return &DummyRectificationClient{nameCache: nc}
 }
 
-// TODO: Factor out name cache concept from core sous lib & get rid of this func.
-func (t *DummyRectificationClient) GetRunningDeployment([]string) (sous.Deployments, error) {
-	return nil, nil
-	panic("not implemented")
-}
-
 // SetLogger sets the logger for the client
 func (t *DummyRectificationClient) SetLogger(l *log.Logger) {
 	l.Println("dummy begin")
