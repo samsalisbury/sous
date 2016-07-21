@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"time"
 )
@@ -105,9 +106,19 @@ func (ld *LocalDaemon) RestartDaemon() error {
 	for _, rs := range rss {
 		err = ld.Exec(rs...)
 		if err == nil {
-			return err
+			break
 		}
 	}
+
+	UntilReady(time.Second/5, 30*time.Second, func() (string, func() bool, func()) {
+		return "Docker socket recreated",
+			func() bool {
+				err := exec.Command("sudo", "ls", "-l", "/var/run/docker.sock").Run()
+				return err == nil
+			},
+			func() {}
+	})
+
 	return err
 }
 

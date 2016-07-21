@@ -186,7 +186,7 @@ func dockerComposeUp(dir string, ip net.IP, env []string, services serviceMap, t
 	logCmd.itself.Env = env
 	logCmd.itself.Dir = dir
 	logCmd.start()
-	time.Sleep(10 * time.Second)
+	time.Sleep(1 * time.Second)
 	logCmd.interrupt()
 
 	log.Println(logCmd.String())
@@ -222,67 +222,48 @@ func rebuildService(dir, name string, env []string) error {
 }
 
 func servicesRunning(timeout time.Duration, ip net.IP, services map[string]uint) bool {
-	goodCh := make(chan string)
-	badCh := make(chan string)
-	done := make(chan bool)
-	defer close(done)
+	var serviceChecks []ReadyFn
 
 	for name, port := range services {
-		go func(name string, ip net.IP, port uint) {
-			if serviceRunning(done, ip, port) {
-				goodCh <- name
-			} else {
-				badCh <- name
-			}
-		}(name, ip, port)
+		serviceChecks = append(serviceChecks, serviceReadyFn(name, ip, port))
 	}
 
-	for len(services) > 0 {
-		select {
-		case good := <-goodCh:
-			log.Printf("  %s up and running", good)
-			delete(services, good)
-		case bad := <-badCh:
-			log.Printf("  Error trying to connect to %s", bad)
-			return false
-		case <-time.After(timeout):
-			log.Printf("Attempt to contact remaining service expired after %s", timeout)
-			for service, port := range services {
-				log.Printf("  Still unavailable: %s at %s:%d", service, ip, port)
-			}
-
-			return false
-		}
+	err := UntilReady(time.Second/2, timeout, serviceChecks...)
+	if err != nil {
+		log.Print(err)
+		return false
 	}
 	return true
 }
 
-func serviceRunning(done chan bool, ip net.IP, port uint) bool {
-	addr := fmt.Sprintf("%s:%d", ip, port)
-	log.Print("Attempting connection: ", addr)
+func serviceReadyFn(name string, ip net.IP, port uint) ReadyFn {
+	return func() (string, func() bool, func()) {
+		var conn net.Conn
+		var err error
+		addr := fmt.Sprintf("%s:%d", ip, port)
+		log.Print("Attempting connection: ", addr)
 
-	for {
-		select {
-		case <-done:
-			return false
-		default:
-			conn, err := net.Dial("tcp", addr)
-			defer func() {
-				if conn != nil {
-					conn.Close()
-				}
-			}()
-
+		test := func() bool {
+			conn, err = net.Dial("tcp", addr)
 			if err != nil {
 				if _, ok := err.(*net.OpError); ok {
-					time.Sleep(time.Duration(0.5 * float32(time.Second)))
-					continue
+					return false
 				}
-				return false
+				panic(err)
 			}
-
+			log.Printf("  %s up and running", addr)
 			return true
 		}
+		teardown := func() {
+			if conn != nil {
+				conn.Close()
+			}
+			if err != nil {
+				panic(fmt.Errorf("Still unavailable: %s at %s:%d", name, ip, port))
+			}
+		}
+
+		return fmt.Sprintf("%s at %s:%d", name, ip, port), test, teardown
 	}
 }
 
