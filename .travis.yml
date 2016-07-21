@@ -33,7 +33,7 @@ before_install:
 install:
 - echo "Default install step disabled by .travis.yml"
 script:
-- "./bin/test-sample 50"
+  - "./bin/test-until-success 3"
 - "./bin/check-gofmt"
 - '[ $TRAVIS_SECURE_ENV_VARS == false ] || ./bin/publish "$TRAVIS_TAG"'
 env:
