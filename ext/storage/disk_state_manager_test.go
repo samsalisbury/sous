@@ -73,8 +73,8 @@ func exampleState() *sous.State {
 				},
 				Owners: []string{"Judson", "Sam"},
 				Kind:   "http-service",
-				Deployments: map[string]sous.PartialDeploySpec{
-					"Global": sous.PartialDeploySpec{
+				Deployments: map[string]sous.DeploySpec{
+					"Global": sous.DeploySpec{
 						DeployConfig: sous.DeployConfig{
 							Resources: sous.Resources{
 								"cpu": "0.1",
@@ -84,7 +84,7 @@ func exampleState() *sous.State {
 						},
 						Version: semv.MustParse("1.0.0"),
 					},
-					"cluster-1": sous.PartialDeploySpec{
+					"cluster-1": sous.DeploySpec{
 						DeployConfig: sous.DeployConfig{
 							Env: sous.Env{
 								"SOME_DB_URL": "https://some.database",
@@ -101,7 +101,7 @@ func exampleState() *sous.State {
 				},
 				Owners: []string{"Sous Team"},
 				Kind:   "http-service",
-				Deployments: map[string]sous.PartialDeploySpec{
+				Deployments: map[string]sous.DeploySpec{
 					"other-cluster": {
 						DeployConfig: sous.DeployConfig{
 							Env: sous.Env{

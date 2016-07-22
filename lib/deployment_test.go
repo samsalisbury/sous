@@ -44,7 +44,7 @@ func TestBuildDeployment(t *testing.T) {
 		Owners: []string{"test@testerson.com"},
 		Kind:   ManifestKindService,
 	}
-	sp := PartialDeploySpec{
+	sp := DeploySpec{
 		DeployConfig: DeployConfig{
 			Resources:    Resources{},
 			Args:         []string{},
@@ -57,7 +57,7 @@ func TestBuildDeployment(t *testing.T) {
 		Version:     semv.MustParse("1.2.3"),
 		clusterName: "cluster.name",
 	}
-	var ih []PartialDeploySpec
+	var ih []DeploySpec
 	nick := "cn"
 
 	d, err := BuildDeployment(m, nick, sp, ih)

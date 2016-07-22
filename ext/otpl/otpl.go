@@ -47,7 +47,7 @@ func NewDeploySpecParser() *DeploySpecParser {
 
 type namedDeploySpec struct {
 	Name string
-	Spec *sous.PartialDeploySpec
+	Spec *sous.DeploySpec
 }
 
 func (dsp *DeploySpecParser) GetDeploySpecs(wd shell.Shell) sous.DeploySpecs {
@@ -89,7 +89,7 @@ func (dsp *DeploySpecParser) GetDeploySpecs(wd shell.Shell) sous.DeploySpecs {
 	return deployConfigs
 }
 
-func (dsp *DeploySpecParser) GetSingleDeploySpec(wd shell.Shell) *sous.PartialDeploySpec {
+func (dsp *DeploySpecParser) GetSingleDeploySpec(wd shell.Shell) *sous.DeploySpec {
 	v := SingularityJSON{}
 	if !wd.Exists("singularity.json") {
 		dsp.debugf("no singularity.json in %s", wd.Dir())
@@ -100,7 +100,7 @@ func (dsp *DeploySpecParser) GetSingleDeploySpec(wd shell.Shell) *sous.PartialDe
 			"singularity.json"), err)
 		return nil
 	}
-	deploySpec := sous.PartialDeploySpec{
+	deploySpec := sous.DeploySpec{
 		DeployConfig: sous.DeployConfig{
 			Resources: v.Resources.SousResources(),
 			Env:       v.Env,

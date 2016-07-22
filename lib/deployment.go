@@ -150,7 +150,7 @@ func (ds Deployments) Filter(p DeploymentPredicate) Deployments {
 }
 
 // BuildDeployment constructs a deployment out of a Manifest.
-func BuildDeployment(m *Manifest, nick string, spec PartialDeploySpec, inherit []PartialDeploySpec) (*Deployment, error) {
+func BuildDeployment(m *Manifest, nick string, spec DeploySpec, inherit []DeploySpec) (*Deployment, error) {
 	ownMap := OwnerSet{}
 	for i := range m.Owners {
 		ownMap.Add(m.Owners[i])

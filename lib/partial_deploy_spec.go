@@ -4,15 +4,15 @@ import "github.com/samsalisbury/semv"
 
 type (
 	// DeploySpecs is a collection of Deployments associated with a manifest.
-	DeploySpecs map[string]PartialDeploySpec
+	DeploySpecs map[string]DeploySpec
 
-	// PartialDeploySpec is the interface to describe a cluster-wide deployment
+	// DeploySpec is the interface to describe a cluster-wide deployment
 	// of an application described by a Manifest. Together with the manifest,
 	// one can assemble full Deployments.
 	//
 	// Unexported fields in DeploymentSpec are not intended to be serialised
 	// to/from yaml, but are useful when set internally.
-	PartialDeploySpec struct {
+	DeploySpec struct {
 		// DeployConfig contains config information for this deployment, see
 		// DeployConfig.
 		DeployConfig `yaml:",inline"`

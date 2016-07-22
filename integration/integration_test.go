@@ -264,7 +264,7 @@ func manifest(nc sous.Registry, drepo, containerDir, sourceURL, version string) 
 		Owners: []string{`xyz`},
 		Kind:   sous.ManifestKindService,
 		Deployments: sous.DeploySpecs{
-			"test-cluster": sous.PartialDeploySpec{
+			"test-cluster": sous.DeploySpec{
 				DeployConfig: sous.DeployConfig{
 					Resources:    sous.Resources{"cpus": "0.1", "memory": "100", "ports": "1"},
 					Args:         []string{},
