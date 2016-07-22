@@ -29,11 +29,10 @@ before_install:
 - docker-compose version
 - env | grep '^DOCKER_'
 - (cd test-registry && docker-compose pull && docker-compose build --no-cache registry)
-
 install:
 - echo "Default install step disabled by .travis.yml"
 script:
-  - "./bin/test-until-success 3"
+- "./bin/test-until-success 3"
 - "./bin/check-gofmt"
 - '[ $TRAVIS_SECURE_ENV_VARS == false ] || ./bin/publish "$TRAVIS_TAG"'
 env:
@@ -43,7 +42,6 @@ env:
   - secure: jQv4im3Imakryl54Z7qR2BEa1+Gq//sAwo3XP/1J6sSdtBjtOYY1SgdAYh7pVB111HV546vKPJqQ6GsAtHM7tjnVjlF1PabAHEWl/ZP3ZXj3SvuFNaV5j5PmrJvxPlK7nbr0uG6PPspxFkZg+X87GGIyFGCp7F3EWKIU6aX6rEeBbY/greAxISmtGYHrDwK4sQnMXl4+WoagbKwoi16fK94XweU2Etg40rLwtYRdRJTPMdhrinkkkfQ4Jga5uepsmkZFjgZJySgyEzxvVuUuEYHaQreRLHzJBjPXw96tQOGpw4OT5aRJjga6PlEJRp68pC3KPrzW7lQQMMCHpxrauEqR1r1ltg+UD2GIixAT80duOl7mD6aPyx3L04L/bg4u1sI26JyHN34X/mpg9OufE47zSOC48RicSA6y4D+ZyD/dubu626NScnLufAveWaVH/mu5brVZ3ni+8BgVqDW/vfIJTyELegz7DD9wS/xaoUVnAjnTH73efce8bDAaAOvpa4dlkZEcBDU2LjasP735FNh0/sLeVsuwhopMIKPsnpwce1Fxg83ls+KRDqXj8/l67Db5nQqTvsWk3S12nvrgPO1uX/we8fqwUKuLNlnU3befd7KugvUamixGoxlX65etwt4hvFWT11Qfv/IB7JXjLToUAfXm/QpiprEm/VqZWTM=
 notifications:
   hipchat:
-    notify: true
     on_failure: always
     on_success: change
     template: |-
