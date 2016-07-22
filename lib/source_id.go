@@ -58,17 +58,17 @@ func (sv SourceID) String() string {
 }
 
 // RevID returns the revision id for this SourceID.
-func (sv *SourceID) RevID() string {
+func (sv SourceID) RevID() string {
 	return sv.Version.Meta
 }
 
 // TagName returns the tag name for this SourceID.
-func (sv *SourceID) TagName() string {
+func (sv SourceID) TagName() string {
 	return sv.Version.Format("M.m.p-?")
 }
 
 // SourceLocation returns the location component of this SourceID
-func (sv *SourceID) SourceLocation() SourceLocation {
+func (sv SourceID) SourceLocation() SourceLocation {
 	return SourceLocation{
 		RepoURL:    sv.RepoURL,
 		RepoOffset: sv.RepoOffset,
@@ -76,7 +76,7 @@ func (sv *SourceID) SourceLocation() SourceLocation {
 }
 
 // Equal tests the equality between this SV and another
-func (sv *SourceID) Equal(o SourceID) bool {
+func (sv SourceID) Equal(o SourceID) bool {
 	return sv.RepoURL == o.RepoURL && sv.RepoOffset == o.RepoOffset && sv.Version.Equals(o.Version)
 }
 
@@ -158,16 +158,19 @@ func sourceLocationFromChunks(source string, chunks []string) (sl SourceLocation
 	return
 }
 
+// ParseSourceID parses an entire SourceID.
 func ParseSourceID(source string) (SourceID, error) {
 	chunks := parseChunks(source)
 	return sourceVersionFromChunks(source, chunks)
 }
 
+// ParseSourceLocation parses an entire SourceLocation.
 func ParseSourceLocation(source string) (SourceLocation, error) {
 	chunks := parseChunks(source)
 	return sourceLocationFromChunks(source, chunks)
 }
 
+// ParseGenName tries to parse either a SourceID or a SourceLocation.
 func ParseGenName(source string) (EntityName, error) {
 	switch chunks := parseChunks(source); len(chunks) {
 	default:
