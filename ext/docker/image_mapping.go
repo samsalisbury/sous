@@ -40,7 +40,9 @@ type (
 	}
 )
 
-func DockerBuildArtifact(imageName string) *sous.BuildArtifact {
+// NewBuildArtifact creates a new sous.BuildArtifact representing a Docker
+// image.
+func NewBuildArtifact(imageName string) *sous.BuildArtifact {
 	return &sous.BuildArtifact{Name: imageName, Type: "docker"}
 }
 
@@ -77,7 +79,7 @@ func (nc *NameCache) GetArtifact(sid sous.SourceID) (*sous.BuildArtifact, error)
 	if err != nil {
 		return nil, err
 	}
-	return DockerBuildArtifact(name), nil
+	return NewBuildArtifact(name), nil
 }
 
 // GetSourceID looks up the source ID for a given image name
@@ -187,7 +189,7 @@ func (nc *NameCache) harvest(sl sous.SourceLocation) error {
 				Log.Debug.Printf("Harvested tag: %v", t)
 				in, err := reference.WithTag(ref, t)
 				if err == nil {
-					a := DockerBuildArtifact(in.String())
+					a := NewBuildArtifact(in.String())
 					nc.GetSourceID(a) //pull it into the cache...
 				}
 			}
@@ -215,10 +217,12 @@ func union(left, right []string) []string {
 	return res
 }
 
+// DBConfig is a database configuration for a NameCache.
 type DBConfig struct {
 	Driver, Connection string
 }
 
+// GetDatabase initialises a new database for a NameCache.
 func GetDatabase(cfg *DBConfig) (*sql.DB, error) {
 	driver := "sqlite3"
 	conn := InMemory
@@ -464,7 +468,6 @@ func makeSourceID(repo, offset, version string) (sous.SourceID, error) {
 	if err != nil {
 		return sous.SourceID{}, err
 	}
-
 	return sous.SourceID{
 		sous.RepoURL(repo), v, sous.RepoOffset(offset),
 	}, nil

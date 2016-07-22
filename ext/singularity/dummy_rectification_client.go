@@ -103,7 +103,7 @@ func (t *DummyRectificationClient) DeleteRequest(
 
 // ImageLabels gets the labels for an image name
 func (t *DummyRectificationClient) ImageLabels(in string) (map[string]string, error) {
-	a := docker.DockerBuildArtifact(in)
+	a := docker.NewBuildArtifact(in)
 	sv, err := t.nameCache.GetSourceID(a)
 	if err != nil {
 		return map[string]string{}, nil
