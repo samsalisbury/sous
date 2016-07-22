@@ -1,4 +1,4 @@
-package test
+package hy_test
 
 import (
 	"os"
@@ -17,16 +17,16 @@ func TestMarshal_GoodData(t *testing.T) {
 			"a": "α",
 			"b": "β",
 		},
-		Things: map[string]Thing{
-			"thingio": Thing{Name: "Thingio"},
-			"thingy":  Thing{Name: "Thingy"},
+		Things: map[string]TestThing{
+			"thingio": TestThing{Name: "Thingio"},
+			"thingy":  TestThing{Name: "Thingy"},
 		},
-		Widgets: map[string]Widget{
-			"some/random/dir/widge": Widget{Name: "Widge"},
-			"some/other/tree/wodge": Widget{Name: "Wodge"},
+		Widgets: map[string]TestWidget{
+			"some/random/dir/widge": TestWidget{Name: "Widge"},
+			"some/other/tree/wodge": TestWidget{Name: "Wodge"},
 		},
 	}
-	outDir := "./test_output"
+	outDir := "./test/output"
 	marshaller := hy.NewMarshaller(yaml.Marshal)
 	if err := marshaller.Marshal(outDir, base); err != nil {
 		t.Fatalf("unexpected error: %s", err)

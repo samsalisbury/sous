@@ -24,8 +24,8 @@ type (
 		// parsing the Manifest, this will be set to the key in
 		// Manifests.Deployments which points at this Deployment.
 		Cluster string
-		// SourceVersion is the precise version of the software to be deployed.
-		SourceVersion SourceVersion
+		// SourceID is the precise version of the software to be deployed.
+		SourceID SourceID
 		// Owners is a map of named owners of this repository. The type of this
 		// field is subject to change.
 		Owners OwnerSet
@@ -163,14 +163,14 @@ func BuildDeployment(m *Manifest, nick string, spec PartialDeploySpec, inherit D
 			NumInstances: spec.NumInstances,
 			Volumes:      spec.Volumes,
 		},
-		Owners:        ownMap,
-		Kind:          m.Kind,
-		SourceVersion: m.Source.SourceVersion(spec.Version),
+		Owners:   ownMap,
+		Kind:     m.Kind,
+		SourceID: m.Source.SourceID(spec.Version),
 	}, nil
 }
 
 func (d *Deployment) String() string {
-	return fmt.Sprintf("%s @ %s %s", d.SourceVersion, d.Cluster, d.DeployConfig.String())
+	return fmt.Sprintf("%s @ %s %s", d.SourceID, d.Cluster, d.DeployConfig.String())
 }
 
 /*
@@ -222,9 +222,9 @@ func (d *Deployment) Tabbed() string {
 			"%s\t"+ //"Resources\t" +
 			"%s", //"Env"
 		d.Cluster,
-		string(d.SourceVersion.RepoURL),
-		d.SourceVersion.Version.String(),
-		string(d.SourceVersion.RepoOffset),
+		string(d.SourceID.RepoURL),
+		d.SourceID.Version.String(),
+		string(d.SourceID.RepoOffset),
 		d.NumInstances,
 		o,
 		strings.Join(rs, ", "),
@@ -236,15 +236,15 @@ func (d *Deployment) Tabbed() string {
 func (d *Deployment) Name() DepName {
 	return DepName{
 		cluster: d.Cluster,
-		source:  d.SourceVersion.CanonicalName(),
+		source:  d.SourceID.SourceLocation(),
 	}
 }
 
 // Equal returns true if two Deployments are equal
 func (d *Deployment) Equal(o *Deployment) bool {
 	Log.Debug.Printf("%+ v ?= %+ v", d, o)
-	if !(d.Cluster == o.Cluster && d.SourceVersion.Equal(o.SourceVersion) && d.Kind == o.Kind) { // && len(d.Owners) == len(o.Owners)) {
-		Log.Debug.Printf("C: %t V: %t, K: %t, #O: %t", d.Cluster == o.Cluster, d.SourceVersion.Equal(o.SourceVersion), d.Kind == o.Kind, len(d.Owners) == len(o.Owners))
+	if !(d.Cluster == o.Cluster && d.SourceID.Equal(o.SourceID) && d.Kind == o.Kind) { // && len(d.Owners) == len(o.Owners)) {
+		Log.Debug.Printf("C: %t V: %t, K: %t, #O: %t", d.Cluster == o.Cluster, d.SourceID.Equal(o.SourceID), d.Kind == o.Kind, len(d.Owners) == len(o.Owners))
 		return false
 	}
 

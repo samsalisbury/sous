@@ -17,11 +17,16 @@ func New() ConfigLoader {
 	return ConfigLoader{}
 }
 
-// ConfigLoader loads configuration.
-type ConfigLoader struct {
-	// Log is called with debug level logs about how values are resolved.
-	Debug, Info, Warn func(string)
-}
+type (
+	// ConfigLoader loads configuration.
+	ConfigLoader struct {
+		// Log is called with debug level logs about how values are resolved.
+		Debug, Info, Warn func(string)
+	}
+	DefaultFiller interface {
+		FillDefaults() error
+	}
+)
 
 func (cl ConfigLoader) Load(target interface{}, filePath string) error {
 	if target == nil {
@@ -37,7 +42,15 @@ func (cl ConfigLoader) Load(target interface{}, filePath string) error {
 	if err := cl.loadYAMLFile(target, filePath); err != nil {
 		return err
 	}
-	return cl.overrideWithEnv(target)
+	if err := cl.overrideWithEnv(target); err != nil {
+		return err
+	}
+	if fd, ok := target.(DefaultFiller); ok {
+		if err := fd.FillDefaults(); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (cl ConfigLoader) overrideWithEnv(target interface{}) error {
@@ -103,22 +116,22 @@ func (cl ConfigLoader) SetValue(target interface{}, name, value string) error {
 }
 
 func (cl ConfigLoader) overrideField(sf reflect.StructField, originalVal reflect.Value) error {
-	tag := sf.Tag.Get("env")
-	if tag == "" {
+	envName := sf.Tag.Get("env")
+	if envName == "" {
 		return nil
 	}
-	envStr := os.Getenv(tag)
-	if envStr == "" {
+	envVal := os.Getenv(envName)
+	if envVal == "" {
 		return nil
 	}
 	var finalVal reflect.Value
-	switch vt := originalVal.Interface().(type) {
+	switch originalVal.Interface().(type) {
 	default:
 		return fmt.Errorf("unable to override fields of type %T", originalVal.Interface())
 	case string:
-		finalVal = reflect.ValueOf(vt)
+		finalVal = reflect.ValueOf(envVal)
 	case int:
-		i, err := strconv.Atoi(envStr)
+		i, err := strconv.Atoi(envVal)
 		if err != nil {
 			return err
 		}

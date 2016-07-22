@@ -33,7 +33,7 @@ func TestRoundTrip(t *testing.T) {
 	nc := NewNameCache(dc, inMemoryRoundtripDB())
 
 	v := semv.MustParse("1.2.3")
-	sv := sous.SourceVersion{
+	sv := sous.SourceID{
 		Version:    v,
 		RepoURL:    sous.RepoURL("https://github.com/opentable/wackadoo"),
 		RepoOffset: sous.RepoOffset("nested/there"),
@@ -45,7 +45,7 @@ func TestRoundTrip(t *testing.T) {
 	err := nc.insert(sv, in, digest)
 	assert.NoError(err)
 
-	cn, err := nc.getCanonicalName(in)
+	cn, err := nc.GetCanonicalName(in)
 	if assert.NoError(err) {
 		assert.Equal(in, cn)
 	}
@@ -55,7 +55,7 @@ func TestRoundTrip(t *testing.T) {
 	}
 
 	newV := semv.MustParse("1.2.42")
-	newSV := sous.SourceVersion{
+	newSV := sous.SourceID{
 		Version:    newV,
 		RepoURL:    sous.RepoURL("https://github.com/opentable/wackadoo"),
 		RepoOffset: sous.RepoOffset("nested/there"),
@@ -69,12 +69,12 @@ func TestRoundTrip(t *testing.T) {
 		CanonicalName: cn,
 		AllNames:      []string{cn, in},
 	})
-	sv, err = nc.GetSourceVersion(DockerBuildArtifact(in))
+	sv, err = nc.GetSourceID(DockerBuildArtifact(in))
 	if assert.Nil(err) {
 		assert.Equal(newSV, sv)
 	}
 
-	ncn, err := nc.getCanonicalName(host + "/" + in)
+	ncn, err := nc.GetCanonicalName(host + "/" + in)
 	if assert.Nil(err) {
 		assert.Equal(host+"/"+cn, ncn)
 	}
@@ -87,14 +87,14 @@ func TestHarvesting(t *testing.T) {
 	nc := NewNameCache(dc, inMemoryRoundtripDB())
 
 	v := semv.MustParse("1.2.3")
-	sv := sous.SourceVersion{
+	sv := sous.SourceID{
 		Version:    v,
 		RepoURL:    sous.RepoURL("https://github.com/opentable/wackadoo"),
 		RepoOffset: sous.RepoOffset("nested/there"),
 	}
 
 	v2 := semv.MustParse("2.3.4")
-	sisterSV := sous.SourceVersion{
+	sisterSV := sous.SourceID{
 		Version:    v2,
 		RepoURL:    sous.RepoURL("https://github.com/opentable/wackadoo"),
 		RepoOffset: sous.RepoOffset("nested/there"),
@@ -116,7 +116,7 @@ func TestHarvesting(t *testing.T) {
 	})
 
 	// a la a SetCollector getting the SV
-	_, err := nc.GetSourceVersion(DockerBuildArtifact(in))
+	_, err := nc.GetSourceID(DockerBuildArtifact(in))
 	assert.Nil(err)
 
 	tag = "version-2.3.4"
@@ -144,7 +144,7 @@ func TestMissingName(t *testing.T) {
 	nc := NewNameCache(dc, inMemoryDB())
 
 	v := semv.MustParse("4.5.6")
-	sv := sous.SourceVersion{
+	sv := sous.SourceID{
 		Version:    v,
 		RepoURL:    sous.RepoURL("https://github.com/opentable/brand-new-idea"),
 		RepoOffset: sous.RepoOffset("nested/there"),

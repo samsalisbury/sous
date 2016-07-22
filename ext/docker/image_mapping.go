@@ -14,7 +14,7 @@ import (
 )
 
 type (
-	// NameCache is a database for looking up SourceVersions based on
+	// NameCache is a database for looking up SourceIDs based on
 	// Docker image names and vice versa.
 	NameCache struct {
 		RegistryClient docker_registry.Client
@@ -27,15 +27,15 @@ type (
 	// response to a conditional request
 	NotModifiedErr struct{}
 
-	// NoImageNameFound is returned when we cannot find an image name for a given
-	// SourceVersion
+	// NoImageNameFound is returned when we cannot find an image name for a
+	// given SourceID.
 	NoImageNameFound struct {
-		sous.SourceVersion
+		sous.SourceID
 	}
 
-	// NoSourceVersionFound is returned when we cannot find a SourceVersion for a
+	// NoSourceIDFound is returned when we cannot find a SourceID for a
 	// given image name
-	NoSourceVersionFound struct {
+	NoSourceIDFound struct {
 		imageName
 	}
 )
@@ -55,11 +55,11 @@ func InMemoryConnection(base string) string {
 }
 
 func (e NoImageNameFound) Error() string {
-	return fmt.Sprintf("No image name for %v", e.SourceVersion)
+	return fmt.Sprintf("No image name for %v", e.SourceID)
 }
 
-func (e NoSourceVersionFound) Error() string {
-	return fmt.Sprintf("No source version for %v", e.imageName)
+func (e NoSourceIDFound) Error() string {
+	return fmt.Sprintf("No source ID for %v", e.imageName)
 }
 
 func (e NotModifiedErr) Error() string {
@@ -72,7 +72,7 @@ func NewNameCache(cl docker_registry.Client, db *sql.DB) *NameCache {
 }
 
 // GetArtifact implements sous.Registry.GetArtifact
-func (nc *NameCache) GetArtifact(sv sous.SourceVersion) (*sous.BuildArtifact, error) {
+func (nc *NameCache) GetArtifact(sv sous.SourceID) (*sous.BuildArtifact, error) {
 	name, err := nc.getImageName(sv)
 	if err != nil {
 		return nil, err
@@ -80,22 +80,22 @@ func (nc *NameCache) GetArtifact(sv sous.SourceVersion) (*sous.BuildArtifact, er
 	return DockerBuildArtifact(name), nil
 }
 
-// GetSourceVersion looks up the source version for a given image name
-func (nc *NameCache) GetSourceVersion(a *sous.BuildArtifact) (sous.SourceVersion, error) {
+// GetSourceID looks up the source ID for a given image name
+func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
 	in := a.Name
-	var sv sous.SourceVersion
+	var sv sous.SourceID
 
-	Log.Vomit.Printf("Getting source version for %s", in)
+	Log.Vomit.Printf("Getting source ID for %s", in)
 
 	etag, repo, offset, version, _, err := nc.dbQueryOnName(in)
-	if nif, ok := err.(NoSourceVersionFound); ok {
+	if nif, ok := err.(NoSourceIDFound); ok {
 		Log.Vomit.Print(nif)
 	} else if err != nil {
 		Log.Vomit.Print("Err: ", err)
-		return sous.SourceVersion{}, err
+		return sous.SourceID{}, err
 	} else {
 
-		sv, err = makeSourceVersion(repo, offset, version)
+		sv, err = makeSourceID(repo, offset, version)
 		if err != nil {
 			return sv, err
 		}
@@ -104,18 +104,18 @@ func (nc *NameCache) GetSourceVersion(a *sous.BuildArtifact) (sous.SourceVersion
 	md, err := nc.RegistryClient.GetImageMetadata(in, etag)
 	Log.Vomit.Printf("%+ v %v %T %#v", md, err, err, err)
 	if _, ok := err.(NotModifiedErr); ok {
-		Log.Debug.Printf("Image name: %s -> Source version: %v", in, sv)
+		Log.Debug.Printf("Image name: %s -> Source ID: %v", in, sv)
 		return sv, nil
 	}
 	if err == distribution.ErrManifestNotModified {
-		Log.Debug.Printf("Image name: %s -> Source version: %v", in, sv)
+		Log.Debug.Printf("Image name: %s -> Source ID: %v", in, sv)
 		return sv, nil
 	}
 	if err != nil {
 		return sv, err
 	}
 
-	newSV, err := SourceVersionFromLabels(md.Labels)
+	newSV, err := SourceIDFromLabels(md.Labels)
 	if err != nil {
 		return sv, err
 	}
@@ -132,16 +132,16 @@ func (nc *NameCache) GetSourceVersion(a *sous.BuildArtifact) (sous.SourceVersion
 	}
 	err = nc.dbAddNames(md.Registry+"/"+md.CanonicalName, names)
 
-	Log.Debug.Printf("Image name: %s -> (updated) Source version: %v", in, newSV)
+	Log.Debug.Printf("Image name: %s -> (updated) Source ID: %v", in, newSV)
 	return newSV, err
 }
 
-// GetImageName returns the docker image name for a given source version
-func (nc *NameCache) getImageName(sv sous.SourceVersion) (string, error) {
+// GetImageName returns the docker image name for a given source ID
+func (nc *NameCache) getImageName(sv sous.SourceID) (string, error) {
 	Log.Vomit.Printf("Getting image name for %+v", sv)
 	cn, _, err := nc.dbQueryOnSV(sv)
 	if _, ok := err.(NoImageNameFound); ok {
-		err = nc.harvest(sv.CanonicalName())
+		err = nc.harvest(sv.SourceLocation())
 		if err != nil {
 			Log.Vomit.Printf("Err: %v", err)
 			return "", err
@@ -155,19 +155,19 @@ func (nc *NameCache) getImageName(sv sous.SourceVersion) (string, error) {
 	} else if err != nil {
 		return "", err
 	}
-	Log.Debug.Printf("Source version: %v -> image name %s", sv, cn)
+	Log.Debug.Printf("Source ID: %v -> image name %s", sv, cn)
 	return cn, nil
 }
 
 // GetCanonicalName returns the canonical name for an image given any known name
-func (nc *NameCache) getCanonicalName(in string) (string, error) {
+func (nc *NameCache) GetCanonicalName(in string) (string, error) {
 	_, _, _, _, cn, err := nc.dbQueryOnName(in)
 	Log.Debug.Printf("Canonicalizing %s - got %s / %v", in, cn, err)
 	return cn, err
 }
 
-// Insert puts a given SourceVersion/image name pair into the name cache
-func (nc *NameCache) insert(sv sous.SourceVersion, in, etag string) error {
+// Insert puts a given SourceID/image name pair into the name cache
+func (nc *NameCache) insert(sv sous.SourceID, in, etag string) error {
 	return nc.dbInsert(sv, in, etag)
 }
 
@@ -188,7 +188,7 @@ func (nc *NameCache) harvest(sl sous.SourceLocation) error {
 				in, err := reference.WithTag(ref, t)
 				if err == nil {
 					a := DockerBuildArtifact(in.String())
-					nc.GetSourceVersion(a) //pull it into the cache...
+					nc.GetSourceID(a) //pull it into the cache...
 				}
 			}
 		}
@@ -299,7 +299,7 @@ func sqlExec(db *sql.DB, sql string) error {
 	return nil
 }
 
-func (nc *NameCache) dbInsert(sv sous.SourceVersion, in, etag string) error {
+func (nc *NameCache) dbInsert(sv sous.SourceID, in, etag string) error {
 	ref, err := reference.ParseNamed(in)
 	Log.Debug.Printf("Parsed image name: %v", ref)
 	if err != nil {
@@ -391,7 +391,7 @@ func (nc *NameCache) dbQueryOnName(in string) (etag, repo, offset, version, cnam
 		"where docker_search_name.name = $1", in)
 	err = row.Scan(&etag, &repo, &offset, &version, &cname)
 	if err == sql.ErrNoRows {
-		err = NoSourceVersionFound{imageName(in)}
+		err = NoSourceIDFound{imageName(in)}
 	}
 	return
 }
@@ -425,7 +425,7 @@ func (nc *NameCache) dbQueryOnSL(sl sous.SourceLocation) (rs []string, err error
 	return
 }
 
-func (nc *NameCache) dbQueryOnSV(sv sous.SourceVersion) (cn string, ins []string, err error) {
+func (nc *NameCache) dbQueryOnSV(sv sous.SourceID) (cn string, ins []string, err error) {
 	ins = make([]string, 0)
 	rows, err := nc.DB.Query("select docker_search_metadata.canonicalName, "+
 		"docker_search_name.name "+
@@ -459,13 +459,13 @@ func (nc *NameCache) dbQueryOnSV(sv sous.SourceVersion) (cn string, ins []string
 	return
 }
 
-func makeSourceVersion(repo, offset, version string) (sous.SourceVersion, error) {
+func makeSourceID(repo, offset, version string) (sous.SourceID, error) {
 	v, err := semv.Parse(version)
 	if err != nil {
-		return sous.SourceVersion{}, err
+		return sous.SourceID{}, err
 	}
 
-	return sous.SourceVersion{
+	return sous.SourceID{
 		sous.RepoURL(repo), v, sous.RepoOffset(offset),
 	}, nil
 }

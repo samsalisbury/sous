@@ -20,12 +20,7 @@ type (
 		Registry sous.Registry
 	}
 
-	// RectificationClient abstracts the raw interactions with Singularity.  The
-	// methods on this interface are tightly bound to the semantics of
-	// Singularity itself - it's recommended to interact with the Sous Rectify
-	// function or the rectification driver rather than with implentations of
-	// this interface directly.
-	// TODO: RectificationClient leaks Singularity concepts, make it so it doesn't.
+	// rectificationClient abstracts the raw interactions with Singularity.
 	rectificationClient interface {
 		// Deploy creates a new deploy on a particular requeust
 		Deploy(cluster, depID, reqID, dockerImage string, r sous.Resources, e sous.Env, vols sous.Volumes) error
@@ -60,7 +55,7 @@ func (r *deployer) RectifyCreates(cc <-chan *sous.Deployment, errs chan<- sous.R
 }
 
 func (r *deployer) ImageName(d *sous.Deployment) (string, error) {
-	a, err := r.Registry.GetArtifact(d.SourceVersion)
+	a, err := r.Registry.GetArtifact(d.SourceID)
 	if err != nil {
 		return "", err
 	}
@@ -139,7 +134,7 @@ func (r deployer) changesReq(pair *sous.DeploymentPair) bool {
 }
 
 func changesDep(pair *sous.DeploymentPair) bool {
-	return !(pair.Prior.SourceVersion.Equal(pair.Post.SourceVersion) &&
+	return !(pair.Prior.SourceID.Equal(pair.Post.SourceID) &&
 		pair.Prior.Resources.Equal(pair.Post.Resources) &&
 		pair.Prior.Env.Equal(pair.Post.Env) &&
 		pair.Prior.DeployConfig.Volumes.Equal(pair.Post.DeployConfig.Volumes))
@@ -149,13 +144,13 @@ func computeRequestID(d *sous.Deployment) string {
 	if len(d.RequestID) > 0 {
 		return d.RequestID
 	}
-	return buildReqID(d.SourceVersion, d.ClusterNickname)
+	return buildReqID(d.SourceID, d.ClusterNickname)
 }
 
-func buildReqID(sv sous.SourceVersion, nick string) string {
-	return idify(sv.CanonicalName().String() + nick)
+func buildReqID(sv sous.SourceID, nick string) string {
+	return MakeDeployID(sv.SourceLocation().String() + nick)
 }
 
 func newDepID() string {
-	return idify(uuid.NewV4().String())
+	return MakeDeployID(uuid.NewV4().String())
 }

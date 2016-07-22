@@ -14,7 +14,7 @@ type SousQueryAdc struct {
 	Deployer     sous.Deployer
 	Config       LocalSousConfig
 	DockerClient LocalDockerClient
-	Sous         *Sous
+	GDM          CurrentGDM
 	flags        struct {
 		singularity string
 		registry    string
@@ -34,17 +34,8 @@ func (*SousQueryAdc) Help() string { return sousBuildHelp }
 
 // Execute defines the behavior of `sous query adc`
 func (sb *SousQueryAdc) Execute(args []string) cmdr.Result {
-	if len(args) < 1 {
-		return UsageErrorf("sous querry adc: directory to load deployment configuration required")
-	}
-	dir := args[0]
 
-	state, err := sous.LoadState(dir)
-	if err != nil {
-		return EnsureErrorResult(err)
-	}
-
-	ads, err := sb.Deployer.GetRunningDeployment(state.ClusterMap())
+	ads, err := sb.Deployer.GetRunningDeployment(sb.GDM.ClusterMap())
 	if err != nil {
 		return EnsureErrorResult(err)
 	}

@@ -28,7 +28,7 @@ func makeDepl(repo string, num int) *Deployment {
 	owners := OwnerSet{}
 	owners.Add("judson")
 	return &Deployment{
-		SourceVersion: SourceVersion{
+		SourceID: SourceID{
 			RepoURL:    RepoURL(repo),
 			Version:    version,
 			RepoOffset: "",
@@ -72,23 +72,23 @@ func TestRealDiff(t *testing.T) {
 	ds := dc.collect()
 
 	if assert.Len(ds.Gone, 1, "Should have one deleted item.") {
-		assert.Equal(string(ds.Gone[0].SourceVersion.RepoURL), repoOne)
+		assert.Equal(string(ds.Gone[0].SourceID.RepoURL), repoOne)
 	}
 
 	if assert.Len(ds.Same, 1, "Should have one unchanged item.") {
-		assert.Equal(string(ds.Same[0].SourceVersion.RepoURL), repoTwo)
+		assert.Equal(string(ds.Same[0].SourceID.RepoURL), repoTwo)
 	}
 
 	if assert.Len(ds.Changed, 1, "Should have one modified item.") {
 		assert.Equal(repoThree, string(ds.Changed[0].name.source.RepoURL))
-		assert.Equal(repoThree, string(ds.Changed[0].Prior.SourceVersion.RepoURL))
-		assert.Equal(repoThree, string(ds.Changed[0].Post.SourceVersion.RepoURL))
+		assert.Equal(repoThree, string(ds.Changed[0].Prior.SourceID.RepoURL))
+		assert.Equal(repoThree, string(ds.Changed[0].Post.SourceID.RepoURL))
 		assert.Equal(ds.Changed[0].Post.NumInstances, 1)
 		assert.Equal(ds.Changed[0].Prior.NumInstances, 2)
 	}
 
 	if assert.Len(ds.New, 1, "Should have one added item.") {
-		assert.Equal(string(ds.New[0].SourceVersion.RepoURL), repoFour)
+		assert.Equal(string(ds.New[0].SourceID.RepoURL), repoFour)
 	}
 
 }

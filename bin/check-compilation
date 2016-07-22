@@ -1,0 +1,18 @@
+#!/usr/bin/env sh
+FAILED=0
+SUCCEEDED=0
+PACKAGES="$(go list ./... | grep -vE '/vendor/')"
+for P in $PACKAGES; do
+	printf '.'
+	if ! TESTBUILDOUT=$(go test -c -o /dev/null "$P" 2>&1); then
+		printf '\n%s\n' "$TESTBUILDOUT"
+		FAILED=$((FAILED+1))
+	else
+		SUCCEEDED=$((SUCCEEDED+1))
+	fi
+done
+if [ "$F" != "0" ]; then
+	printf '\n%d packages failed (%d succeeded)\n' "$FAILED" "$SUCCEEDED"
+	exit 1
+fi
+printf '\nAll %d packages OK\n' "$SUCCEEDED"

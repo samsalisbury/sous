@@ -129,7 +129,7 @@ func (db *deploymentBuilder) retrieveImageLabels() error {
 	}
 	Log.Vomit.Print("Labels: ", labels)
 
-	db.Target.SourceVersion, err = docker.SourceVersionFromLabels(labels)
+	db.Target.SourceID, err = docker.SourceIDFromLabels(labels)
 	if err != nil {
 		return malformedResponse{fmt.Sprintf("For reqID: %s, %s", db.req.ReqParent.Request.Id, err.Error())}
 	}
@@ -143,7 +143,7 @@ func (db *deploymentBuilder) retrieveImageLabels() error {
 		posNick = nn
 		matchCount++
 
-		checkID := buildReqID(db.Target.SourceVersion, nn)
+		checkID := buildReqID(db.Target.SourceID, nn)
 		sous.Log.Vomit.Printf("Trying hypothetical request ID: %s", checkID)
 		if checkID == db.request.Id {
 			db.Target.ClusterNickname = nn

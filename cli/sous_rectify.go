@@ -16,6 +16,7 @@ type SousRectify struct {
 	DockerClient LocalDockerClient
 	Deployer     sous.Deployer
 	Registry     sous.Registry
+	GDM          CurrentGDM
 	flags        struct {
 		dryrun,
 		manifest string
@@ -25,12 +26,12 @@ type SousRectify struct {
 func init() { TopLevelCommands["rectify"] = &SousRectify{} }
 
 const sousRectifyHelp = `
-force Sous to make the deployment match the contents of a state directory
+force Sous to make the deployment match the contents of the local state directory
 
-usage: sous rectify <dir>
+usage: sous rectify
 
 Note: by default this command will query a live docker registry and make
-changes to live Mesos schedulers
+changes to live Singularity clusters.
 `
 
 // Help returns the help string
@@ -47,29 +48,20 @@ func (sr *SousRectify) AddFlags(fs *flag.FlagSet) {
 
 // Execute fulfils the cmdr.Executor interface
 func (sr *SousRectify) Execute(args []string) cmdr.Result {
-	if len(args) < 1 {
-		return UsageErrorf("sous rectify requires a directory to load the intended deployment from")
-	}
-	dir := args[0]
 
 	sr.resolveDryRunFlag(sr.flags.dryrun)
 
 	var predicate sous.DeploymentPredicate
 	if sr.flags.manifest != "" {
 		predicate = func(d *sous.Deployment) bool {
-			return d.SourceVersion.RepoURL == sous.RepoURL(sr.flags.manifest)
+			return d.SourceID.RepoURL == sous.RepoURL(sr.flags.manifest)
 		}
-	}
-
-	intendedState, err := sous.LoadState(dir)
-	if err != nil {
-		return EnsureErrorResult(err)
 	}
 
 	r := sous.NewResolver(sr.Deployer, sr.Registry)
 
 	// If predicate is still nil, that means resolve all. See Deployments.Filter.
-	if err := r.ResolveFilteredDeployments(intendedState, predicate); err != nil {
+	if err := r.ResolveFilteredDeployments(*sr.GDM.State, predicate); err != nil {
 		return EnsureErrorResult(err)
 	}
 

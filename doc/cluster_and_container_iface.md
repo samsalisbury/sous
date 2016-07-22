@@ -1,15 +1,15 @@
 # Cluster and Container Interface
 
-Sous uses an abstraction of a running service called a Source Version.
+Sous uses an abstraction of a running service called a Source ID.
 This incorporates
 the official repository for the source code,
 and offset within that repository (usually a relative path from the root)
 the [version](http://semver.org) of the software
 and the revision of the software.
-The Source Versions are composed out of the manifests in the GDM
+The Source IDs are composed out of the manifests in the GDM
 to determine what should be deployed where.
 
-Sous has to be able to record and recover metadata sufficient to construct a source version
+Sous has to be able to record and recover metadata sufficient to construct a source ID
 from both the running cluster
 and from the container registry.
 
@@ -24,18 +24,18 @@ and the images available in the registry.
 
 Using Docker and Singularity as an example,
 Docker allows for labels on its images.
-Sous uses these labels to record the source version
+Sous uses these labels to record the source ID
 and build advisory metadata
 into the images themselves.
 
 So, given a GDM,
-Sous composes the source versions from the manifests.
+Sous composes the source ID from the manifests.
 It retrieves the image names from the clusters
 and gathers the labels from the registry
-to compute the source versions that are deployed.
+to compute the source IDs that are deployed.
 It compares the two,
 and where changes need to be made,
-it looks up the appropriate images from source versions
+it looks up the appropriate images from source IDs
 and issues deploy commands to the Singularity clusters.
 
 However,
@@ -47,7 +47,7 @@ to suit the demands of various projects.
 Sous does exactly that.
 
 Every node where Sous is run collects image names
-with useful source versions.
+with useful source IDs.
 Key is that these local search caches are built
 by making requests of the central registry
 and caching the results.
