@@ -22,11 +22,6 @@ type (
 		RepoOffset RepoOffset `yaml:",omitempty"`
 	}
 
-	// EntityName is an interface over items with an arbitrary source repository
-	EntityName interface {
-		Repo() RepoURL
-	}
-
 	//MissingRepo indicates that Sous couldn't determine which repo was intended for this SL
 	MissingRepo struct {
 		parsing string
@@ -168,16 +163,4 @@ func ParseSourceID(source string) (SourceID, error) {
 func ParseSourceLocation(source string) (SourceLocation, error) {
 	chunks := parseChunks(source)
 	return sourceLocationFromChunks(source, chunks)
-}
-
-// ParseGenName tries to parse either a SourceID or a SourceLocation.
-func ParseGenName(source string) (EntityName, error) {
-	switch chunks := parseChunks(source); len(chunks) {
-	default:
-		return nil, fmt.Errorf("cannot parse %q - divides into %d chunks", source, len(chunks))
-	case 3:
-		return sourceVersionFromChunks(source, chunks)
-	case 2:
-		return sourceLocationFromChunks(source, chunks)
-	}
 }
