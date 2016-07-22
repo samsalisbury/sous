@@ -2,7 +2,6 @@ package integration
 
 import (
 	"database/sql"
-	"flag"
 	"fmt"
 	"log"
 	"os"
