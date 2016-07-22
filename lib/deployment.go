@@ -39,14 +39,6 @@ type (
 		Annotation
 	}
 
-	// DeploymentState is used in a DeploymentIntention to describe the state of
-	// the deployment: e.g. whether it's been acheived or not.
-	DeploymentState uint
-
-	// LogicalSequence is used to order DeploymentIntentions and keep track of a
-	// canonical order in which they should be satisfied.
-	LogicalSequence uint
-
 	// An Annotation stores notes about data available from the source of of a
 	// Deployment. For instance, the Id field from the source SingularityRequest
 	// for a Deployment can be stored to refer to the source post-diff.  They
@@ -62,23 +54,6 @@ type (
 	// Deployments.
 	DeploymentPredicate func(*Deployment) bool
 
-	// DeploymentIntentions represents deployments commanded by a user.
-	DeploymentIntentions []DeploymentIntention
-
-	// A DeploymentIntention represents a deployment commanded by a user,
-	// possibly not yet acheived.
-	DeploymentIntention struct {
-		Deployment
-		// State is the relative state of this intention.
-		State DeploymentState
-
-		// The sequence this intention was resolved in - might be e.g. synthesized
-		// while walking a git history. This might be left as implicit on the
-		// sequence of DIs in a []DI, but if there's a change in storage (i.e. not
-		// git), or two single DIs need to be compared, the sequence is useful.
-		Sequence LogicalSequence
-	}
-
 	// A DepName is the name of a deployment.
 	DepName struct {
 		cluster string
@@ -87,22 +62,6 @@ type (
 
 	// OwnerSet collects the names of the owners of a deployment.
 	OwnerSet map[string]struct{}
-)
-
-const (
-	// Current means the the deployment is the one currently running.
-	Current DeploymentState = iota
-
-	// Acheived means that the deployment was realized in infrastructure at some
-	// point.
-	Acheived = iota
-
-	// Waiting means the deployment hasn't yet been acheived.
-	Waiting = iota
-
-	// PassedOver means that the deployment was received but a different
-	// deployment was received before this one could be deployed.
-	PassedOver = iota
 )
 
 // Add adds an owner to an ownerset.
