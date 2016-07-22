@@ -45,6 +45,10 @@ type (
 	}
 )
 
+// DefaultDelim is the default delimiter between parts of the string
+// representation of a SourceID or a SourceLocation.
+const DefaultDelim = ","
+
 func (sid SourceID) String() string {
 	if sid.RepoOffset == "" {
 		return fmt.Sprintf("%s %s", sid.RepoURL, sid.Version)
@@ -69,9 +73,6 @@ func (sid SourceID) SourceLocation() SourceLocation {
 func (sid SourceID) Equal(o SourceID) bool {
 	return sid == o
 }
-
-// DefaultDelim is a comma
-const DefaultDelim = ","
 
 func (err *IncludesVersion) Error() string {
 	return fmt.Sprintf("Three parts found (includes a version?) in a canonical name: %q", err.parsing)
