@@ -64,7 +64,7 @@ func TestRoundTrip(t *testing.T) {
 	cn = base + "@" + digest
 	dc.FeedMetadata(docker_registry.Metadata{
 		Registry:      host,
-		Labels:        DockerLabels(newSV),
+		Labels:        Labels(newSV),
 		Etag:          digest,
 		CanonicalName: cn,
 		AllNames:      []string{cn, in},
@@ -109,7 +109,7 @@ func TestHarvesting(t *testing.T) {
 
 	dc.FeedMetadata(docker_registry.Metadata{
 		Registry:      host,
-		Labels:        DockerLabels(sv),
+		Labels:        Labels(sv),
 		Etag:          digest,
 		CanonicalName: cn,
 		AllNames:      []string{cn, in},
@@ -126,7 +126,7 @@ func TestHarvesting(t *testing.T) {
 	digest = "sha256:abcdefabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdefffffffff"
 	dc.FeedMetadata(docker_registry.Metadata{
 		Registry:      host,
-		Labels:        DockerLabels(sisterSV),
+		Labels:        Labels(sisterSV),
 		Etag:          digest,
 		CanonicalName: cn,
 		AllNames:      []string{cn, in},

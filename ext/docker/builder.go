@@ -94,7 +94,7 @@ func (b *Builder) ApplyMetadata(br *sous.BuildResult) error {
 		Labels  map[string]string
 	}{
 		br.ImageID,
-		DockerLabels(sv),
+		Labels(sv),
 	})
 
 	return c.Succeed()

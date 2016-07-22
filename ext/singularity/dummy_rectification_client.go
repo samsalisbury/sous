@@ -109,5 +109,5 @@ func (t *DummyRectificationClient) ImageLabels(in string) (map[string]string, er
 		return map[string]string{}, nil
 	}
 
-	return docker.DockerLabels(sv), nil
+	return docker.Labels(sv), nil
 }

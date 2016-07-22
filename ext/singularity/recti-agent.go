@@ -159,7 +159,7 @@ func (ra *RectiAgent) ImageLabels(in string) (map[string]string, error) {
 		return map[string]string{}, err
 	}
 
-	return docker.DockerLabels(sv), nil
+	return docker.Labels(sv), nil
 }
 
 func (ra *RectiAgent) getSingularityClient(url string) (*singularity.Client, bool) {
