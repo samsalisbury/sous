@@ -1,4 +1,4 @@
-package sous
+package singularity
 
 // XXX I got started with this, but it needs a dummy implementation of the
 // singularity client, which needs extension of go-singularity and
