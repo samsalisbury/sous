@@ -57,11 +57,6 @@ func (sid SourceID) RevID() string {
 	return sid.Version.Meta
 }
 
-// TagName returns the tag name for this SourceID.
-func (sid SourceID) TagName() string {
-	return sid.Version.Format("M.m.p-?")
-}
-
 // SourceLocation returns the location component of this SourceID
 func (sid SourceID) SourceLocation() SourceLocation {
 	return SourceLocation{

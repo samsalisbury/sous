@@ -71,8 +71,12 @@ func imageNameBase(sv sous.SourceID) string {
 	return name
 }
 
+func tagName(v semv.Version) string {
+	return v.Format("M.m.p-?")
+}
+
 func versionName(sv sous.SourceID) string {
-	return strings.Join([]string{imageNameBase(sv), sv.TagName()}, ":")
+	return strings.Join([]string{imageNameBase(sv), tagName(sv.Version)}, ":")
 }
 
 func revisionName(sv sous.SourceID) string {
