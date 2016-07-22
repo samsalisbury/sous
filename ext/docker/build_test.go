@@ -116,6 +116,6 @@ func TestBuild(t *testing.T) {
 	})
 	sv, err := nc.GetSourceID(DockerBuildArtifact(tagStr))
 	if assert.NoError(err) {
-		assert.Equal(repoName, string(sv.Repo()))
+		assert.Equal(repoName, string(sv.RepoURL))
 	}
 }

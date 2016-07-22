@@ -75,11 +75,6 @@ func (sv SourceID) Equal(o SourceID) bool {
 	return sv.RepoURL == o.RepoURL && sv.RepoOffset == o.RepoOffset && sv.Version.Equals(o.Version)
 }
 
-// Repo returns the repository URL for this SV
-func (sv SourceID) Repo() RepoURL {
-	return sv.RepoURL
-}
-
 // DefaultDelim is a comma
 const DefaultDelim = ","
 
