@@ -45,34 +45,34 @@ type (
 	}
 )
 
-func (sv SourceID) String() string {
-	if sv.RepoOffset == "" {
-		return fmt.Sprintf("%s %s", sv.RepoURL, sv.Version)
+func (sid SourceID) String() string {
+	if sid.RepoOffset == "" {
+		return fmt.Sprintf("%s %s", sid.RepoURL, sid.Version)
 	}
-	return fmt.Sprintf("%s:%s %s", sv.RepoURL, sv.RepoOffset, sv.Version)
+	return fmt.Sprintf("%s:%s %s", sid.RepoURL, sid.RepoOffset, sid.Version)
 }
 
 // RevID returns the revision id for this SourceID.
-func (sv SourceID) RevID() string {
-	return sv.Version.Meta
+func (sid SourceID) RevID() string {
+	return sid.Version.Meta
 }
 
 // TagName returns the tag name for this SourceID.
-func (sv SourceID) TagName() string {
-	return sv.Version.Format("M.m.p-?")
+func (sid SourceID) TagName() string {
+	return sid.Version.Format("M.m.p-?")
 }
 
 // SourceLocation returns the location component of this SourceID
-func (sv SourceID) SourceLocation() SourceLocation {
+func (sid SourceID) SourceLocation() SourceLocation {
 	return SourceLocation{
-		RepoURL:    sv.RepoURL,
-		RepoOffset: sv.RepoOffset,
+		RepoURL:    sid.RepoURL,
+		RepoOffset: sid.RepoOffset,
 	}
 }
 
-// Equal tests the equality between this SV and another
-func (sv SourceID) Equal(o SourceID) bool {
-	return sv.RepoURL == o.RepoURL && sv.RepoOffset == o.RepoOffset && sv.Version.Equals(o.Version)
+// Equal tests the equality between this SourceID and another.
+func (sid SourceID) Equal(o SourceID) bool {
+	return sid == o
 }
 
 // DefaultDelim is a comma
