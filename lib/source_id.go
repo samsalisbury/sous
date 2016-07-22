@@ -111,56 +111,49 @@ func parseChunks(sourceStr string) []string {
 	return strings.Split(source, delim)
 }
 
-func sourceVersionFromChunks(source string, chunks []string) (sv SourceID, err error) {
+func sourceIDFromChunks(source string, chunks []string) (SourceID, error) {
 	if len(chunks[0]) == 0 {
-		err = &MissingRepo{source}
-		return
+		return SourceID{}, &MissingRepo{source}
 	}
-
-	sv.RepoURL = RepoURL(chunks[0])
-
-	sv.Version, err = semv.Parse(string(chunks[1]))
+	repoURL := RepoURL(chunks[0])
+	version, err := semv.Parse(string(chunks[1]))
 	if err != nil {
-		return
+		return SourceID{}, err
 	}
-	if len(chunks) < 3 {
-		sv.RepoOffset = ""
-	} else {
-		sv.RepoOffset = RepoOffset(chunks[2])
+	repoOffset := RepoOffset("")
+	if len(chunks) > 2 {
+		repoOffset = RepoOffset(chunks[2])
 	}
-
-	return
+	return SourceID{
+		Version:    version,
+		RepoURL:    repoURL,
+		RepoOffset: repoOffset,
+	}, nil
 }
 
-func sourceLocationFromChunks(source string, chunks []string) (sl SourceLocation, err error) {
+func sourceLocationFromChunks(source string, chunks []string) (SourceLocation, error) {
 	if len(chunks) > 2 {
-		err = &IncludesVersion{source}
-		return
+		return SourceLocation{}, &IncludesVersion{source}
 	}
-
 	if len(chunks[0]) == 0 {
-		err = &MissingRepo{source}
-		return
+		return SourceLocation{}, &MissingRepo{source}
 	}
-	sl.RepoURL = RepoURL(chunks[0])
-
-	if len(chunks) < 2 {
-		sl.RepoOffset = ""
-	} else {
-		sl.RepoOffset = RepoOffset(chunks[1])
+	repoURL := RepoURL(chunks[0])
+	repoOffset := RepoOffset("")
+	if len(chunks) > 1 {
+		repoOffset = RepoOffset(chunks[1])
 	}
-
-	return
+	return SourceLocation{RepoURL: repoURL, RepoOffset: repoOffset}, nil
 }
 
 // ParseSourceID parses an entire SourceID.
-func ParseSourceID(source string) (SourceID, error) {
-	chunks := parseChunks(source)
-	return sourceVersionFromChunks(source, chunks)
+func ParseSourceID(s string) (SourceID, error) {
+	chunks := parseChunks(s)
+	return sourceIDFromChunks(s, chunks)
 }
 
 // ParseSourceLocation parses an entire SourceLocation.
-func ParseSourceLocation(source string) (SourceLocation, error) {
-	chunks := parseChunks(source)
-	return sourceLocationFromChunks(source, chunks)
+func ParseSourceLocation(s string) (SourceLocation, error) {
+	chunks := parseChunks(s)
+	return sourceLocationFromChunks(s, chunks)
 }
