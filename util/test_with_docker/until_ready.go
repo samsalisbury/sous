@@ -2,7 +2,6 @@ package test_with_docker
 
 import (
 	"fmt"
-	"log"
 	"time"
 )
 
@@ -91,14 +90,15 @@ func fanInReady(waitCount int, readies chan error, to time.Duration, re *ReadyEr
 		select {
 		case err := <-readies:
 			waitCount--
-			log.Printf("%v %T", err, err)
+			//  log.Printf("Got %v %T. Now waiting for %d checks", err, err, waitCount)
 			if err != nil {
-				log.Print(re.Errs)
+				// log.Print(re.Errs)
 				re.Errs = append(re.Errs, err)
 			}
 		case <-timeout:
+			//log.Printf("timeout")
 			re.message = re.message + exMsg
-			break
+			return waitCount
 		}
 	}
 	return waitCount
