@@ -54,10 +54,10 @@ type (
 	// Deployments.
 	DeploymentPredicate func(*Deployment) bool
 
-	// A DepName is the name of a deployment.
-	DepName struct {
-		cluster string
-		source  SourceLocation
+	// A DeployID identifies a deployment.
+	DeployID struct {
+		Cluster string
+		Source  SourceLocation
 	}
 
 	// OwnerSet collects the names of the owners of a deployment.
@@ -184,10 +184,10 @@ func (d *Deployment) Tabbed() string {
 }
 
 // Name returns the DepName for a Deployment.
-func (d *Deployment) Name() DepName {
-	return DepName{
-		cluster: d.Cluster,
-		source:  d.SourceID.Location(),
+func (d *Deployment) Name() DeployID {
+	return DeployID{
+		Cluster: d.Cluster,
+		Source:  d.SourceID.Location(),
 	}
 }
 
