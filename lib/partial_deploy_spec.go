@@ -3,12 +3,8 @@ package sous
 import "github.com/samsalisbury/semv"
 
 type (
-	// XXX These two type aliases are super confusing. -jdl
-
-	// DeploySpecs is a collection of Deployments associated with a manifest
+	// DeploySpecs is a collection of Deployments associated with a manifest.
 	DeploySpecs map[string]PartialDeploySpec
-	// DeploymentSpecs is a list of DeploymentSpecs.
-	DeploymentSpecs []PartialDeploySpec
 
 	// PartialDeploySpec is the interface to describe a cluster-wide deployment
 	// of an application described by a Manifest. Together with the manifest,

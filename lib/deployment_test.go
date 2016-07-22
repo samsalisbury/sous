@@ -57,7 +57,7 @@ func TestBuildDeployment(t *testing.T) {
 		Version:     semv.MustParse("1.2.3"),
 		clusterName: "cluster.name",
 	}
-	ih := DeploymentSpecs{}
+	var ih []PartialDeploySpec
 	nick := "cn"
 
 	d, err := BuildDeployment(m, nick, sp, ih)
