@@ -5,7 +5,7 @@ import "strings"
 type (
 	// DeploymentPair is a pair of deployments that represent a "before and after" style relationship
 	DeploymentPair struct {
-		name        DepName
+		name        DeployID
 		Prior, Post *Deployment
 	}
 	// DeploymentPairs is a list of DeploymentPair
@@ -17,7 +17,7 @@ type (
 	}
 
 	differ struct {
-		from map[DepName]*Deployment
+		from map[DeployID]*Deployment
 		DiffChans
 	}
 
@@ -92,7 +92,7 @@ func newDiffer(intended Deployments) *differ {
 	}
 	Log.Debug.Print(strings.Join(ds, "\n    "))
 
-	startMap := make(map[DepName]*Deployment)
+	startMap := make(map[DeployID]*Deployment)
 	for _, dep := range intended {
 		startMap[dep.Name()] = dep
 	}

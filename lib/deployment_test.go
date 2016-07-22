@@ -32,7 +32,7 @@ func TestCanonName(t *testing.T) {
 			Version:    vers,
 		},
 	}
-	str := dep.SourceID.SourceLocation().String()
+	str := dep.SourceID.Location().String()
 	assert.Regexp("one", str)
 	assert.Regexp("two", str)
 }
@@ -44,7 +44,7 @@ func TestBuildDeployment(t *testing.T) {
 		Owners: []string{"test@testerson.com"},
 		Kind:   ManifestKindService,
 	}
-	sp := PartialDeploySpec{
+	sp := DeploySpec{
 		DeployConfig: DeployConfig{
 			Resources:    Resources{},
 			Args:         []string{},
@@ -57,7 +57,7 @@ func TestBuildDeployment(t *testing.T) {
 		Version:     semv.MustParse("1.2.3"),
 		clusterName: "cluster.name",
 	}
-	ih := DeploymentSpecs{}
+	var ih []DeploySpec
 	nick := "cn"
 
 	d, err := BuildDeployment(m, nick, sp, ih)

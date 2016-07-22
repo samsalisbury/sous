@@ -254,7 +254,7 @@ func manifest(nc sous.Registry, drepo, containerDir, sourceURL, version string) 
 	in := BuildImageName(drepo, version)
 	BuildAndPushContainer(containerDir, in)
 
-	nc.GetSourceID(docker.DockerBuildArtifact(in))
+	nc.GetSourceID(docker.NewBuildArtifact(in))
 
 	return &sous.Manifest{
 		Source: sous.SourceLocation{
@@ -264,7 +264,7 @@ func manifest(nc sous.Registry, drepo, containerDir, sourceURL, version string) 
 		Owners: []string{`xyz`},
 		Kind:   sous.ManifestKindService,
 		Deployments: sous.DeploySpecs{
-			"test-cluster": sous.PartialDeploySpec{
+			"test-cluster": sous.DeploySpec{
 				DeployConfig: sous.DeployConfig{
 					Resources:    sous.Resources{"cpus": "0.1", "memory": "100", "ports": "1"},
 					Args:         []string{},

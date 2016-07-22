@@ -153,13 +153,13 @@ func (ra *RectiAgent) Scale(cluster, reqID string, instanceCount int, message st
 
 // ImageLabels gets the labels for an image name.
 func (ra *RectiAgent) ImageLabels(in string) (map[string]string, error) {
-	a := docker.DockerBuildArtifact(in)
+	a := docker.NewBuildArtifact(in)
 	sv, err := ra.nameCache.GetSourceID(a)
 	if err != nil {
 		return map[string]string{}, err
 	}
 
-	return docker.DockerLabels(sv), nil
+	return docker.Labels(sv), nil
 }
 
 func (ra *RectiAgent) getSingularityClient(url string) (*singularity.Client, bool) {

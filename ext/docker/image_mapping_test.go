@@ -64,12 +64,12 @@ func TestRoundTrip(t *testing.T) {
 	cn = base + "@" + digest
 	dc.FeedMetadata(docker_registry.Metadata{
 		Registry:      host,
-		Labels:        DockerLabels(newSV),
+		Labels:        Labels(newSV),
 		Etag:          digest,
 		CanonicalName: cn,
 		AllNames:      []string{cn, in},
 	})
-	sv, err = nc.GetSourceID(DockerBuildArtifact(in))
+	sv, err = nc.GetSourceID(NewBuildArtifact(in))
 	if assert.Nil(err) {
 		assert.Equal(newSV, sv)
 	}
@@ -109,14 +109,14 @@ func TestHarvesting(t *testing.T) {
 
 	dc.FeedMetadata(docker_registry.Metadata{
 		Registry:      host,
-		Labels:        DockerLabels(sv),
+		Labels:        Labels(sv),
 		Etag:          digest,
 		CanonicalName: cn,
 		AllNames:      []string{cn, in},
 	})
 
 	// a la a SetCollector getting the SV
-	_, err := nc.GetSourceID(DockerBuildArtifact(in))
+	_, err := nc.GetSourceID(NewBuildArtifact(in))
 	assert.Nil(err)
 
 	tag = "version-2.3.4"
@@ -126,7 +126,7 @@ func TestHarvesting(t *testing.T) {
 	digest = "sha256:abcdefabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdefffffffff"
 	dc.FeedMetadata(docker_registry.Metadata{
 		Registry:      host,
-		Labels:        DockerLabels(sisterSV),
+		Labels:        Labels(sisterSV),
 		Etag:          digest,
 		CanonicalName: cn,
 		AllNames:      []string{cn, in},

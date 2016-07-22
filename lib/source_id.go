@@ -22,11 +22,6 @@ type (
 		RepoOffset RepoOffset `yaml:",omitempty"`
 	}
 
-	// EntityName is an interface over items with an arbitrary source repository
-	EntityName interface {
-		Repo() RepoURL
-	}
-
 	//MissingRepo indicates that Sous couldn't determine which repo was intended for this SL
 	MissingRepo struct {
 		parsing string
@@ -50,43 +45,34 @@ type (
 	}
 )
 
-func (sv SourceID) String() string {
-	if sv.RepoOffset == "" {
-		return fmt.Sprintf("%s %s", sv.RepoURL, sv.Version)
+// DefaultDelim is the default delimiter between parts of the string
+// representation of a SourceID or a SourceLocation.
+const DefaultDelim = ","
+
+func (sid SourceID) String() string {
+	if sid.RepoOffset == "" {
+		return fmt.Sprintf("%s %s", sid.RepoURL, sid.Version)
 	}
-	return fmt.Sprintf("%s:%s %s", sv.RepoURL, sv.RepoOffset, sv.Version)
+	return fmt.Sprintf("%s:%s %s", sid.RepoURL, sid.RepoOffset, sid.Version)
 }
 
 // RevID returns the revision id for this SourceID.
-func (sv *SourceID) RevID() string {
-	return sv.Version.Meta
-}
-
-// TagName returns the tag name for this SourceID.
-func (sv *SourceID) TagName() string {
-	return sv.Version.Format("M.m.p-?")
+func (sid SourceID) RevID() string {
+	return sid.Version.Meta
 }
 
 // SourceLocation returns the location component of this SourceID
-func (sv *SourceID) SourceLocation() SourceLocation {
+func (sid SourceID) Location() SourceLocation {
 	return SourceLocation{
-		RepoURL:    sv.RepoURL,
-		RepoOffset: sv.RepoOffset,
+		RepoURL:    sid.RepoURL,
+		RepoOffset: sid.RepoOffset,
 	}
 }
 
-// Equal tests the equality between this SV and another
-func (sv *SourceID) Equal(o SourceID) bool {
-	return sv.RepoURL == o.RepoURL && sv.RepoOffset == o.RepoOffset && sv.Version.Equals(o.Version)
+// Equal tests the equality between this SourceID and another.
+func (sid SourceID) Equal(o SourceID) bool {
+	return sid == o
 }
-
-// Repo returns the repository URL for this SV
-func (sv SourceID) Repo() RepoURL {
-	return sv.RepoURL
-}
-
-// DefaultDelim is a comma
-const DefaultDelim = ","
 
 func (err *IncludesVersion) Error() string {
 	return fmt.Sprintf("Three parts found (includes a version?) in a canonical name: %q", err.parsing)
@@ -116,65 +102,49 @@ func parseChunks(sourceStr string) []string {
 	return strings.Split(source, delim)
 }
 
-func sourceVersionFromChunks(source string, chunks []string) (sv SourceID, err error) {
+func sourceIDFromChunks(source string, chunks []string) (SourceID, error) {
 	if len(chunks[0]) == 0 {
-		err = &MissingRepo{source}
-		return
+		return SourceID{}, &MissingRepo{source}
 	}
-
-	sv.RepoURL = RepoURL(chunks[0])
-
-	sv.Version, err = semv.Parse(string(chunks[1]))
+	repoURL := RepoURL(chunks[0])
+	version, err := semv.Parse(string(chunks[1]))
 	if err != nil {
-		return
+		return SourceID{}, err
 	}
-	if len(chunks) < 3 {
-		sv.RepoOffset = ""
-	} else {
-		sv.RepoOffset = RepoOffset(chunks[2])
-	}
-
-	return
-}
-
-func sourceLocationFromChunks(source string, chunks []string) (sl SourceLocation, err error) {
+	repoOffset := RepoOffset("")
 	if len(chunks) > 2 {
-		err = &IncludesVersion{source}
-		return
+		repoOffset = RepoOffset(chunks[2])
 	}
+	return SourceID{
+		Version:    version,
+		RepoURL:    repoURL,
+		RepoOffset: repoOffset,
+	}, nil
+}
 
+func sourceLocationFromChunks(source string, chunks []string) (SourceLocation, error) {
+	if len(chunks) > 2 {
+		return SourceLocation{}, &IncludesVersion{source}
+	}
 	if len(chunks[0]) == 0 {
-		err = &MissingRepo{source}
-		return
+		return SourceLocation{}, &MissingRepo{source}
 	}
-	sl.RepoURL = RepoURL(chunks[0])
-
-	if len(chunks) < 2 {
-		sl.RepoOffset = ""
-	} else {
-		sl.RepoOffset = RepoOffset(chunks[1])
+	repoURL := RepoURL(chunks[0])
+	repoOffset := RepoOffset("")
+	if len(chunks) > 1 {
+		repoOffset = RepoOffset(chunks[1])
 	}
-
-	return
+	return SourceLocation{RepoURL: repoURL, RepoOffset: repoOffset}, nil
 }
 
-func ParseSourceID(source string) (SourceID, error) {
-	chunks := parseChunks(source)
-	return sourceVersionFromChunks(source, chunks)
+// ParseSourceID parses an entire SourceID.
+func ParseSourceID(s string) (SourceID, error) {
+	chunks := parseChunks(s)
+	return sourceIDFromChunks(s, chunks)
 }
 
-func ParseSourceLocation(source string) (SourceLocation, error) {
-	chunks := parseChunks(source)
-	return sourceLocationFromChunks(source, chunks)
-}
-
-func ParseGenName(source string) (EntityName, error) {
-	switch chunks := parseChunks(source); len(chunks) {
-	default:
-		return nil, fmt.Errorf("cannot parse %q - divides into %d chunks", source, len(chunks))
-	case 3:
-		return sourceVersionFromChunks(source, chunks)
-	case 2:
-		return sourceLocationFromChunks(source, chunks)
-	}
+// ParseSourceLocation parses an entire SourceLocation.
+func ParseSourceLocation(s string) (SourceLocation, error) {
+	chunks := parseChunks(s)
+	return sourceLocationFromChunks(s, chunks)
 }

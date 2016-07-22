@@ -80,7 +80,7 @@ func TestRealDiff(t *testing.T) {
 	}
 
 	if assert.Len(ds.Changed, 1, "Should have one modified item.") {
-		assert.Equal(repoThree, string(ds.Changed[0].name.source.RepoURL))
+		assert.Equal(repoThree, string(ds.Changed[0].name.Source.RepoURL))
 		assert.Equal(repoThree, string(ds.Changed[0].Prior.SourceID.RepoURL))
 		assert.Equal(repoThree, string(ds.Changed[0].Post.SourceID.RepoURL))
 		assert.Equal(ds.Changed[0].Post.NumInstances, 1)

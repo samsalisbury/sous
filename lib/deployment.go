@@ -32,103 +32,36 @@ type (
 		// Kind is the kind of software that SourceRepo represents.
 		Kind ManifestKind
 
-		// Volumes enumerates the volume mappings required
+		// Volumes enumerates the volume mappings required.
 		Volumes Volumes
 
-		// Notes collected from the deployment's source
+		// Notes collected from the deployment's source.
 		Annotation
 	}
-
-	// DeploymentState is used in a DeploymentIntention to describe the state of
-	// the deployment: e.g. whether it's been acheived or not
-	DeploymentState uint
-
-	// LogicalSequence is used to order DeploymentIntentions and keep track of a
-	// canonical order in which they should be satisfied
-	LogicalSequence uint
 
 	// An Annotation stores notes about data available from the source of of a
 	// Deployment. For instance, the Id field from the source SingularityRequest
 	// for a Deployment can be stored to refer to the source post-diff.  They
-	// don't participate in equality checks on the deployment
+	// don't participate in equality checks on the deployment.
 	Annotation struct {
 		// RequestID stores the Singularity Request ID that was used for this
-		// deployment
+		// deployment.
 		RequestID string
 	}
 
-	// DeploymentPredicate takes a *Deployment and returns true if the deployment
-	// matches the predicate. Used by Filter to select a subset of a Deployments
+	// DeploymentPredicate takes a *Deployment and returns true if the
+	// deployment matches the predicate. Used by Filter to select a subset of a
+	// Deployments.
 	DeploymentPredicate func(*Deployment) bool
 
-	// DeploymentIntentions represents deployments commanded by a user.
-	DeploymentIntentions []DeploymentIntention
-
-	// A DeploymentIntention represents a deployment commanded by a user,
-	// possibly not yet acheived
-	DeploymentIntention struct {
-		Deployment
-		// State is the relative state of this intention.
-		State DeploymentState
-
-		// The sequence this intention was resolved in - might be e.g. synthesized
-		// while walking a git history. This might be left as implicit on the
-		// sequence of DIs in a []DI, but if there's a change in storage (i.e. not
-		// git), or two single DIs need to be compared, the sequence is useful
-		Sequence LogicalSequence
+	// A DeployID identifies a deployment.
+	DeployID struct {
+		Cluster string
+		Source  SourceLocation
 	}
-
-	// A DepName is the name of a deployment
-	DepName struct {
-		cluster string
-		source  SourceLocation
-	}
-
-	// OwnerSet collects the names of the owners of a deployment
-	OwnerSet map[string]struct{}
 )
 
-const (
-	// Current means the the deployment is the one currently running
-	Current DeploymentState = iota
-
-	// Acheived means that the deployment was realized in infrastructure at some
-	// point
-	Acheived = iota
-
-	// Waiting means the deployment hasn't yet been acheived
-	Waiting = iota
-
-	// PassedOver means that the deployment was received but a different
-	// deployment was received before this one could be deployed
-	PassedOver = iota
-)
-
-// Add adds an owner to an ownerset
-func (os OwnerSet) Add(owner string) {
-	os[owner] = struct{}{}
-}
-
-// Remove removes an owner from an ownerset
-func (os OwnerSet) Remove(owner string) {
-	delete(os, owner)
-}
-
-// Equal returns true if two ownersets contain the same owner names
-func (os OwnerSet) Equal(o OwnerSet) bool {
-	if len(os) != len(o) {
-		return false
-	}
-	for ownr := range os {
-		if _, has := o[ownr]; !has {
-			return false
-		}
-	}
-
-	return true
-}
-
-// Add adds a deployment to a Deployments
+// Add adds a deployment to a Deployments.
 func (ds *Deployments) Add(d *Deployment) {
 	*ds = append(*ds, d)
 }
@@ -148,8 +81,8 @@ func (ds Deployments) Filter(p DeploymentPredicate) Deployments {
 	return out
 }
 
-// BuildDeployment constructs a deployment out of a Manifest
-func BuildDeployment(m *Manifest, nick string, spec PartialDeploySpec, inherit DeploymentSpecs) (*Deployment, error) {
+// BuildDeployment constructs a deployment out of a Manifest.
+func BuildDeployment(m *Manifest, nick string, spec DeploySpec, inherit []DeploySpec) (*Deployment, error) {
 	ownMap := OwnerSet{}
 	for i := range m.Owners {
 		ownMap.Add(m.Owners[i])
@@ -173,17 +106,8 @@ func (d *Deployment) String() string {
 	return fmt.Sprintf("%s @ %s %s", d.SourceID, d.Cluster, d.DeployConfig.String())
 }
 
-/*
-	Deployment struct {
-		DeployConfig `yaml:"inline"`
-			Args []string `yaml:",omitempty" validate:"values=nonempty"`
-			Env  `yaml:",omitempty" validate:"keys=nonempty,values=nonempty"`
-			NumInstances int
-		Kind ManifestKind
-	}
-*/
-
-// TabbedDeploymentHeaders returns the names of the fields for Tabbed, suitable for use with text/tabwriter
+// TabbedDeploymentHeaders returns the names of the fields for Tabbed, suitable
+// for use with text/tabwriter.
 func TabbedDeploymentHeaders() string {
 	return "Cluster\t" +
 		"Repo\t" +
@@ -195,7 +119,7 @@ func TabbedDeploymentHeaders() string {
 		"Env"
 }
 
-// Tabbed returns the fields of a deployment formatted in a tab delimited list
+// Tabbed returns the fields of a deployment formatted in a tab delimited list.
 func (d *Deployment) Tabbed() string {
 	o := "<?>"
 	for onr := range d.Owners {
@@ -232,15 +156,15 @@ func (d *Deployment) Tabbed() string {
 	)
 }
 
-// Name returns the DepName for a Deployment
-func (d *Deployment) Name() DepName {
-	return DepName{
-		cluster: d.Cluster,
-		source:  d.SourceID.SourceLocation(),
+// Name returns the DepName for a Deployment.
+func (d *Deployment) Name() DeployID {
+	return DeployID{
+		Cluster: d.Cluster,
+		Source:  d.SourceID.Location(),
 	}
 }
 
-// Equal returns true if two Deployments are equal
+// Equal returns true if two Deployments are equal.
 func (d *Deployment) Equal(o *Deployment) bool {
 	Log.Debug.Printf("%+ v ?= %+ v", d, o)
 	if !(d.Cluster == o.Cluster && d.SourceID.Equal(o.SourceID) && d.Kind == o.Kind) { // && len(d.Owners) == len(o.Owners)) {

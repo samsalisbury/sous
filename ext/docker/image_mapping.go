@@ -4,9 +4,9 @@ import (
 	"database/sql"
 	"fmt"
 
-	// triggers the loading of sqlite3 as a database driver
 	"github.com/docker/distribution"
 	"github.com/docker/distribution/reference"
+	// triggers the loading of sqlite3 as a database driver
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/docker_registry"
@@ -40,7 +40,9 @@ type (
 	}
 )
 
-func DockerBuildArtifact(imageName string) *sous.BuildArtifact {
+// NewBuildArtifact creates a new sous.BuildArtifact representing a Docker
+// image.
+func NewBuildArtifact(imageName string) *sous.BuildArtifact {
 	return &sous.BuildArtifact{Name: imageName, Type: "docker"}
 }
 
@@ -72,18 +74,18 @@ func NewNameCache(cl docker_registry.Client, db *sql.DB) *NameCache {
 }
 
 // GetArtifact implements sous.Registry.GetArtifact
-func (nc *NameCache) GetArtifact(sv sous.SourceID) (*sous.BuildArtifact, error) {
-	name, err := nc.getImageName(sv)
+func (nc *NameCache) GetArtifact(sid sous.SourceID) (*sous.BuildArtifact, error) {
+	name, err := nc.getImageName(sid)
 	if err != nil {
 		return nil, err
 	}
-	return DockerBuildArtifact(name), nil
+	return NewBuildArtifact(name), nil
 }
 
 // GetSourceID looks up the source ID for a given image name
 func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
 	in := a.Name
-	var sv sous.SourceID
+	var sid sous.SourceID
 
 	Log.Vomit.Printf("Getting source ID for %s", in)
 
@@ -95,34 +97,34 @@ func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
 		return sous.SourceID{}, err
 	} else {
 
-		sv, err = makeSourceID(repo, offset, version)
+		sid, err = makeSourceID(repo, offset, version)
 		if err != nil {
-			return sv, err
+			return sid, err
 		}
 	}
 
 	md, err := nc.RegistryClient.GetImageMetadata(in, etag)
 	Log.Vomit.Printf("%+ v %v %T %#v", md, err, err, err)
 	if _, ok := err.(NotModifiedErr); ok {
-		Log.Debug.Printf("Image name: %s -> Source ID: %v", in, sv)
-		return sv, nil
+		Log.Debug.Printf("Image name: %s -> Source ID: %v", in, sid)
+		return sid, nil
 	}
 	if err == distribution.ErrManifestNotModified {
-		Log.Debug.Printf("Image name: %s -> Source ID: %v", in, sv)
-		return sv, nil
+		Log.Debug.Printf("Image name: %s -> Source ID: %v", in, sid)
+		return sid, nil
 	}
 	if err != nil {
-		return sv, err
-	}
-
-	newSV, err := SourceIDFromLabels(md.Labels)
-	if err != nil {
-		return sv, err
+		return sid, err
 	}
 
-	err = nc.dbInsert(newSV, md.Registry+"/"+md.CanonicalName, md.Etag)
+	newSID, err := SourceIDFromLabels(md.Labels)
 	if err != nil {
-		return sv, err
+		return sid, err
+	}
+
+	err = nc.dbInsert(newSID, md.Registry+"/"+md.CanonicalName, md.Etag)
+	if err != nil {
+		return sid, err
 	}
 
 	Log.Vomit.Printf("cn: %v all: %v", md.CanonicalName, md.AllNames)
@@ -132,22 +134,22 @@ func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
 	}
 	err = nc.dbAddNames(md.Registry+"/"+md.CanonicalName, names)
 
-	Log.Debug.Printf("Image name: %s -> (updated) Source ID: %v", in, newSV)
-	return newSV, err
+	Log.Debug.Printf("Image name: %s -> (updated) Source ID: %v", in, newSID)
+	return newSID, err
 }
 
 // GetImageName returns the docker image name for a given source ID
-func (nc *NameCache) getImageName(sv sous.SourceID) (string, error) {
-	Log.Vomit.Printf("Getting image name for %+v", sv)
-	cn, _, err := nc.dbQueryOnSV(sv)
+func (nc *NameCache) getImageName(sid sous.SourceID) (string, error) {
+	Log.Vomit.Printf("Getting image name for %+v", sid)
+	cn, _, err := nc.dbQueryOnSourceID(sid)
 	if _, ok := err.(NoImageNameFound); ok {
-		err = nc.harvest(sv.SourceLocation())
+		err = nc.harvest(sid.Location())
 		if err != nil {
 			Log.Vomit.Printf("Err: %v", err)
 			return "", err
 		}
 
-		cn, _, err = nc.dbQueryOnSV(sv)
+		cn, _, err = nc.dbQueryOnSourceID(sid)
 		if err != nil {
 			Log.Vomit.Printf("Err: %v", err)
 			return "", err
@@ -155,7 +157,7 @@ func (nc *NameCache) getImageName(sv sous.SourceID) (string, error) {
 	} else if err != nil {
 		return "", err
 	}
-	Log.Debug.Printf("Source ID: %v -> image name %s", sv, cn)
+	Log.Debug.Printf("Source ID: %v -> image name %s", sid, cn)
 	return cn, nil
 }
 
@@ -167,8 +169,8 @@ func (nc *NameCache) GetCanonicalName(in string) (string, error) {
 }
 
 // Insert puts a given SourceID/image name pair into the name cache
-func (nc *NameCache) insert(sv sous.SourceID, in, etag string) error {
-	return nc.dbInsert(sv, in, etag)
+func (nc *NameCache) insert(sid sous.SourceID, in, etag string) error {
+	return nc.dbInsert(sid, in, etag)
 }
 
 func (nc *NameCache) harvest(sl sous.SourceLocation) error {
@@ -187,7 +189,7 @@ func (nc *NameCache) harvest(sl sous.SourceLocation) error {
 				Log.Debug.Printf("Harvested tag: %v", t)
 				in, err := reference.WithTag(ref, t)
 				if err == nil {
-					a := DockerBuildArtifact(in.String())
+					a := NewBuildArtifact(in.String())
 					nc.GetSourceID(a) //pull it into the cache...
 				}
 			}
@@ -215,10 +217,12 @@ func union(left, right []string) []string {
 	return res
 }
 
+// DBConfig is a database configuration for a NameCache.
 type DBConfig struct {
 	Driver, Connection string
 }
 
+// GetDatabase initialises a new database for a NameCache.
 func GetDatabase(cfg *DBConfig) (*sql.DB, error) {
 	driver := "sqlite3"
 	conn := InMemory
@@ -299,7 +303,7 @@ func sqlExec(db *sql.DB, sql string) error {
 	return nil
 }
 
-func (nc *NameCache) dbInsert(sv sous.SourceID, in, etag string) error {
+func (nc *NameCache) dbInsert(sid sous.SourceID, in, etag string) error {
 	ref, err := reference.ParseNamed(in)
 	Log.Debug.Printf("Parsed image name: %v", ref)
 	if err != nil {
@@ -316,7 +320,7 @@ func (nc *NameCache) dbInsert(sv sous.SourceID, in, etag string) error {
 
 	res, err := nc.DB.Exec("insert into docker_search_location "+
 		"(repo, offset) values ($1, $2);",
-		string(sv.RepoURL), string(sv.RepoOffset))
+		string(sid.RepoURL), string(sid.RepoOffset))
 
 	if err != nil {
 		return err
@@ -333,10 +337,10 @@ func (nc *NameCache) dbInsert(sv sous.SourceID, in, etag string) error {
 		return err
 	}
 
-	Log.Vomit.Printf("Inserting metadata %v %v %v %v", id, etag, in, sv.Version)
+	Log.Vomit.Printf("Inserting metadata %v %v %v %v", id, etag, in, sid.Version)
 	res, err = nc.DB.Exec("insert into docker_search_metadata "+
 		"(location_id, etag, canonicalName, version) values ($1, $2, $3, $4);",
-		id, etag, in, sv.Version.Format(semv.MMPPre))
+		id, etag, in, sid.Version.Format(semv.MMPPre))
 
 	if err != nil {
 		return err
@@ -425,7 +429,7 @@ func (nc *NameCache) dbQueryOnSL(sl sous.SourceLocation) (rs []string, err error
 	return
 }
 
-func (nc *NameCache) dbQueryOnSV(sv sous.SourceID) (cn string, ins []string, err error) {
+func (nc *NameCache) dbQueryOnSourceID(sid sous.SourceID) (cn string, ins []string, err error) {
 	ins = make([]string, 0)
 	rows, err := nc.DB.Query("select docker_search_metadata.canonicalName, "+
 		"docker_search_name.name "+
@@ -436,10 +440,10 @@ func (nc *NameCache) dbQueryOnSV(sv sous.SourceID) (cn string, ins []string, err
 		"docker_search_location.repo = $1 and "+
 		"docker_search_location.offset = $2 and "+
 		"docker_search_metadata.version = $3",
-		string(sv.RepoURL), string(sv.RepoOffset), sv.Version.String())
+		string(sid.RepoURL), string(sid.RepoOffset), sid.Version.String())
 
 	if err == sql.ErrNoRows {
-		err = NoImageNameFound{sv}
+		err = NoImageNameFound{sid}
 		return
 	}
 	if err != nil {
@@ -453,7 +457,7 @@ func (nc *NameCache) dbQueryOnSV(sv sous.SourceID) (cn string, ins []string, err
 	}
 	err = rows.Err()
 	if len(ins) == 0 {
-		err = NoImageNameFound{sv}
+		err = NoImageNameFound{sid}
 	}
 
 	return
@@ -464,7 +468,6 @@ func makeSourceID(repo, offset, version string) (sous.SourceID, error) {
 	if err != nil {
 		return sous.SourceID{}, err
 	}
-
 	return sous.SourceID{
 		sous.RepoURL(repo), v, sous.RepoOffset(offset),
 	}, nil

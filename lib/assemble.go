@@ -23,7 +23,7 @@ func (s *State) Deployments() (Deployments, error) {
 // and configuration).
 func (s *State) DeploymentsFromManifest(m *Manifest) ([]*Deployment, error) {
 	ds := []*Deployment{}
-	inherit := DeploymentSpecs{}
+	var inherit []DeploySpec
 	if global, ok := m.Deployments["Global"]; ok {
 		inherit = append(inherit, global)
 	}

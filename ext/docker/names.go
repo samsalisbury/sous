@@ -50,31 +50,35 @@ func SourceIDFromLabels(labels map[string]string) (sous.SourceID, error) {
 
 var stripRE = regexp.MustCompile("^([[:alpha:]]+://)?(github.com(/opentable)?)?")
 
-// DockerLabels computes a map of labels that should be applied to a container
+// Labels computes a map of labels that should be applied to a container
 // image that is built based on this SourceID.
-func DockerLabels(sv sous.SourceID) map[string]string {
+func Labels(sid sous.SourceID) map[string]string {
 	labels := make(map[string]string)
-	labels[DockerVersionLabel] = sv.Version.Format(`M.m.p-?`)
-	labels[DockerRevisionLabel] = sv.RevID()
-	labels[DockerPathLabel] = string(sv.RepoOffset)
-	labels[DockerRepoLabel] = string(sv.RepoURL)
+	labels[DockerVersionLabel] = sid.Version.Format(`M.m.p-?`)
+	labels[DockerRevisionLabel] = sid.RevID()
+	labels[DockerPathLabel] = string(sid.RepoOffset)
+	labels[DockerRepoLabel] = string(sid.RepoURL)
 	return labels
 }
 
-func imageNameBase(sv sous.SourceID) string {
-	name := string(sv.RepoURL)
+func imageNameBase(sid sous.SourceID) string {
+	name := string(sid.RepoURL)
 
 	name = stripRE.ReplaceAllString(name, "")
-	if string(sv.RepoOffset) != "" {
-		name = strings.Join([]string{name, string(sv.RepoOffset)}, "/")
+	if string(sid.RepoOffset) != "" {
+		name = strings.Join([]string{name, string(sid.RepoOffset)}, "/")
 	}
 	return name
 }
 
-func versionName(sv sous.SourceID) string {
-	return strings.Join([]string{imageNameBase(sv), sv.TagName()}, ":")
+func tagName(v semv.Version) string {
+	return v.Format("M.m.p-?")
 }
 
-func revisionName(sv sous.SourceID) string {
-	return strings.Join([]string{imageNameBase(sv), sv.RevID()}, ":")
+func versionName(sid sous.SourceID) string {
+	return strings.Join([]string{imageNameBase(sid), tagName(sid.Version)}, ":")
+}
+
+func revisionName(sid sous.SourceID) string {
+	return strings.Join([]string{imageNameBase(sid), sid.RevID()}, ":")
 }
