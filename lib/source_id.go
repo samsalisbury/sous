@@ -62,7 +62,7 @@ func (sid SourceID) RevID() string {
 }
 
 // SourceLocation returns the location component of this SourceID
-func (sid SourceID) SourceLocation() SourceLocation {
+func (sid SourceID) Location() SourceLocation {
 	return SourceLocation{
 		RepoURL:    sid.RepoURL,
 		RepoOffset: sid.RepoOffset,

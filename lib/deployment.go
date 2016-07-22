@@ -228,7 +228,7 @@ func (d *Deployment) Tabbed() string {
 func (d *Deployment) Name() DepName {
 	return DepName{
 		cluster: d.Cluster,
-		source:  d.SourceID.SourceLocation(),
+		source:  d.SourceID.Location(),
 	}
 }
 
