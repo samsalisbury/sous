@@ -27,12 +27,13 @@ before_install:
 - sudo mv docker-compose /usr/local/bin
 - docker version
 - docker-compose version
+- env | grep '^DOCKER_'
 - (cd test-registry && docker-compose pull && docker-compose build --no-cache registry)
 
 install:
 - echo "Default install step disabled by .travis.yml"
 script:
-- "./bin/test-until-success 10"
+  - "./bin/test-until-success 3"
 - "./bin/check-gofmt"
 - '[ $TRAVIS_SECURE_ENV_VARS == false ] || ./bin/publish "$TRAVIS_TAG"'
 env:

@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+set -x
+PS4="==>"
 
 OUT_DIR=samples
 DEFAULT_SAMPLE_SIZE=10
@@ -26,12 +28,17 @@ while [ "$I" -lt "$SAMPLE_SIZE" ]; do
 	FILE="$DIR/$I_PAD"
 	START="$(date +%s)"
 	echo "### Beginning test run $I"
-	./bin/test 2>&1 | tee "$FILE"
-	if [ "$?" = 0 ]; then RESULT=pass; else RESULT=fail; fi
+	./bin/test -v 2>&1 | tee "$FILE"
+	if [ "$?" = 0 ]; then
+    RESULT=pass;
+  else
+    RESULT=fail;
+  fi
+
 	END="$(date +%s)"
 	DURATION="$((END-START))s"
 	mv "$FILE" "$FILE.$RESULT.$DURATION"
-	
+
 	if [ "$RESULT" = pass ]; then
 		PASSES=$((PASSES+1))
 		if [ "$QUIT_ON_SUCCESS" = "YES" ]; then
@@ -48,4 +55,3 @@ echo "Passes: $PASSES; Failures: $FAILURES"
 if [ "$FAILURES" != 0 ]; then
 	exit 1
 fi
-
