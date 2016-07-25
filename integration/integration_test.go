@@ -21,6 +21,7 @@ import (
 var imageName string
 
 func TestMain(m *testing.M) {
+	log.SetFlags(log.Flags() | log.Lshortfile)
 	flag.Parse()
 	os.Exit(WrapCompose(m, "../test-registry"))
 }
