@@ -40,5 +40,5 @@ type BuildConfig struct {
 // build. --strict behaves like an "errors are warnings" feature, and refuses
 // to build if there are advisories.
 func ComputeAdvisories(c *BuildConfig, ctx *BuildContext) ([]string, error) {
-	return nil
+	return nil, nil
 }

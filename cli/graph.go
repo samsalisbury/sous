@@ -72,7 +72,9 @@ func BuildGraph(s *Sous, c *cmdr.CLI) (*SousCLIGraph, error) {
 		newSourceContext,
 		newBuildContext,
 		newDockerClient,
+		newDockerBuilder,
 		newBuilder,
+		newRegistrar,
 		newDeployer,
 		newRegistry,
 	)
@@ -146,8 +148,16 @@ func newLocalGitRepo(c LocalGitClient) (v LocalGitRepo, err error) {
 	return v, initErr(err, "opening local git repository")
 }
 
-func newBuilder(cl LocalDockerClient, ctx *sous.SourceContext, source LocalWorkDirShell, scratch ScratchDirShell, u LocalUser) (sous.Builder, error) {
+func newDockerBuilder(cl LocalDockerClient, ctx *sous.SourceContext, source LocalWorkDirShell, scratch ScratchDirShell, u LocalUser) (*docker.Builder, error) {
 	return makeDockerBuilder(cl, ctx, source, scratch, u)
+}
+
+func newBuilder(db *docker.Builder) (sous.Builder, error) {
+	return db, nil
+}
+
+func newRegistrar(db *docker.Builder) (sous.Registrar, error) {
+	return db, nil
 }
 
 func newRegistry(cl LocalDockerClient, u LocalUser) (sous.Registry, error) {

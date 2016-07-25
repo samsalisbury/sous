@@ -14,6 +14,7 @@ type SousBuild struct {
 	Config       LocalSousConfig
 	BuildContext *sous.BuildContext
 	Builder      sous.Builder
+	Registrar    sous.Registrar
 	flags        struct {
 		config              sous.BuildConfig
 		target              string
@@ -37,17 +38,17 @@ func (*SousBuild) Help() string { return sousBuildHelp }
 
 // AddFlags adds flags for sous build
 func (sb *SousBuild) AddFlags(fs *flag.FlagSet) {
-	fs.StringVar(&sb.flags.config.Repo, "repo",
+	fs.StringVar(&sb.flags.config.Repo, "repo", "",
 		"The authoritive repository for this project")
-	fs.StringVar(&sb.flags.config.Offset, "offset",
+	fs.StringVar(&sb.flags.config.Offset, "offset", "",
 		"The offset within repository for this project")
-	fs.StringVar(&sb.flags.config.Tag, "tag",
+	fs.StringVar(&sb.flags.config.Tag, "tag", "",
 		"The tag to build for this project - should conform to semver (e.g. 1.2.3-pre)")
-	fs.StringVar(&sb.flags.config.Repo, "revision",
+	fs.StringVar(&sb.flags.config.Repo, "revision", "",
 		"The revision of this project to build - a git digest")
-	fs.BoolVar(&sb.flags.config.Strict, "strict",
+	fs.BoolVar(&sb.flags.config.Strict, "strict", false,
 		"If advisories would be added to the build, fail instead")
-	fs.BoolVar(&sb.flags.config.ForceClone, "force-clone",
+	fs.BoolVar(&sb.flags.config.ForceClone, "force-clone", false,
 		"Ignore the current directory and work in a shallow clone of the project")
 }
 
@@ -60,11 +61,11 @@ func (sb *SousBuild) Execute(args []string) cmdr.Result {
 		}
 	}
 
-	mgr := &BuildManager{
+	mgr := &sous.BuildManager{
 		BuildConfig:  &sb.flags.config,
 		BuildContext: sb.BuildContext,
 		Builder:      sb.Builder,
-		Registrar:    sb.Builder,
+		Registrar:    sb.Registrar,
 	}
 
 	result, err := mgr.Build()

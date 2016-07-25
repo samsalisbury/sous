@@ -52,31 +52,11 @@ func NewBuilder(nc *NameCache, drh string, c *sous.SourceContext, sourceShell, s
 	return b, nil
 }
 
-// Build implements sous.Builder.Build
-func (b *Builder) Build(bc *sous.BuildContext, bp sous.Buildpack, _ *sous.DetectResult) (*sous.BuildResult, error) {
-	br, err := bp.Build(bc)
-	if err != nil {
-		return nil, err
-	}
-
-	err = b.ApplyMetadata(br)
-	if err != nil {
-		return nil, err
-	}
-
-	err = b.Register(br)
-	if err != nil {
-		return nil, err
-	}
-
-	return br, nil
-}
-
 // Register registers the build artifact to the the registry
 func (b *Builder) Register(br *sous.BuildResult) error {
-	err = b.pushToRegistry(br)
+	err := b.pushToRegistry(br)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	return b.recordName(br)
@@ -84,8 +64,8 @@ func (b *Builder) Register(br *sous.BuildResult) error {
 
 // ApplyMetadata applies container metadata etc. to a container
 func (b *Builder) ApplyMetadata(br *sous.BuildResult) error {
-	versionName = b.VersionTag(b.Context.Version())
-	revisionName = b.RevisionTag(b.Context.Version())
+	versionName := b.VersionTag(b.Context.Version())
+	revisionName := b.RevisionTag(b.Context.Version())
 	bf := bytes.Buffer{}
 
 	c := b.SourceShell.Cmd("docker", "build", "-t", versionName, "-t", revisionName, "-")
@@ -107,8 +87,8 @@ func (b *Builder) ApplyMetadata(br *sous.BuildResult) error {
 
 // pushToRegistry sends the built image to the registry
 func (b *Builder) pushToRegistry(br *sous.BuildResult) error {
-	versionName = b.VersionTag(b.Context.Version())
-	revisionName = b.RevisionTag(b.Context.Version())
+	versionName := b.VersionTag(b.Context.Version())
+	revisionName := b.RevisionTag(b.Context.Version())
 	verr := b.SourceShell.Run("docker", "push", versionName)
 	rerr := b.SourceShell.Run("docker", "push", revisionName)
 
@@ -121,7 +101,7 @@ func (b *Builder) pushToRegistry(br *sous.BuildResult) error {
 // recordName inserts metadata about the newly built image into our local name cache
 func (b *Builder) recordName(br *sous.BuildResult) error {
 	sv := b.Context.Version()
-	in = b.VersionTag(b.Context.Version())
+	in := b.VersionTag(b.Context.Version())
 	b.SourceShell.ConsoleEcho(fmt.Sprintf("[recording \"%s\" as the docker name for \"%s\"]", in, sv.String()))
 	return b.ImageMapper.insert(sv, in, "")
 }

@@ -6,13 +6,13 @@ type (
 	// Builder defines a container-based build system.
 	Builder interface {
 		// Build performs a build and returns the result.
-		Build(*BuildContext, Buildpack, *DetectResult) (*BuildResult, error)
+		//Build(*BuildContext, Buildpack, *DetectResult) (*BuildResult, error)
 		ApplyMetadata(*BuildResult) error
 	}
 
-	// Registerer defines the interface to register build results to be deployed
+	// Registrar defines the interface to register build results to be deployed
 	// later
-	Registerer interface {
+	Registrar interface {
 		// Register takes a BuildResult and makes it available for the deployment
 		// target system to find during deployment
 		Register(*BuildResult) error
@@ -29,7 +29,6 @@ type (
 		Build(*BuildContext) (*BuildResult, error)
 	}
 
-	DockerClient LocalDockerClient
 	// DetectResult represents the result of a detection.
 	DetectResult struct {
 		Compatible  bool
