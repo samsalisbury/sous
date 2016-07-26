@@ -3,8 +3,13 @@ package sous
 import "time"
 
 type (
-	// Builder defines a container-based build system.
-	Builder interface {
+	// A Selector selects the buildpack for a given build context
+	Selector interface {
+		SelectBuildpack(*BuildContext) (Buildpack, error)
+	}
+
+	// Labeller defines a container-based build system.
+	Labeller interface {
 		// Build performs a build and returns the result.
 		//Build(*BuildContext, Buildpack, *DetectResult) (*BuildResult, error)
 		ApplyMetadata(*BuildResult) error
@@ -42,4 +47,12 @@ type (
 		Advisories                []string
 		Elapsed                   time.Duration
 	}
+
+	EchoSelector struct {
+		Factory func(*BuildContext) (Buildpack, error)
+	}
 )
+
+func (s *EchoSelector) SelectBuildpack(c *BuildContext) (Buildpack, error) {
+	return s.Factory(c)
+}

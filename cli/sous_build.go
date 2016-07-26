@@ -13,8 +13,9 @@ type SousBuild struct {
 	Sous         *Sous
 	Config       LocalSousConfig
 	BuildContext *sous.BuildContext
-	Builder      sous.Builder
+	Builder      sous.Labeller
 	Registrar    sous.Registrar
+	Selector     sous.Selector
 	flags        struct {
 		config              sous.BuildConfig
 		target              string
@@ -64,7 +65,8 @@ func (sb *SousBuild) Execute(args []string) cmdr.Result {
 	mgr := &sous.BuildManager{
 		BuildConfig:  &sb.flags.config,
 		BuildContext: sb.BuildContext,
-		Builder:      sb.Builder,
+		Selector:     sb.Selector,
+		Labeller:     sb.Builder,
 		Registrar:    sb.Registrar,
 	}
 
