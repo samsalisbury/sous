@@ -11,7 +11,7 @@ import (
 
 // SousQueryGDM is the description of the `sous query gdm` command
 type SousQueryGDM struct {
-	Sous  *Sous
+	GDM   CurrentGDM
 	flags struct {
 		singularity string
 		registry    string
@@ -31,17 +31,7 @@ func (*SousQueryGDM) Help() string { return sousQueryGDMHelp }
 
 // Execute defines the behavior of `sous query gdm`
 func (sb *SousQueryGDM) Execute(args []string) cmdr.Result {
-	if len(args) < 1 {
-		return UsageErrorf("sous querry gdm: directory to load deployment configuration required")
-	}
-	dir := args[0]
-
-	state, err := sous.LoadState(dir)
-	if err != nil {
-		return EnsureErrorResult(err)
-	}
-
-	gdm, err := state.Deployments()
+	gdm, err := sb.GDM.Deployments()
 	if err != nil {
 		return EnsureErrorResult(err)
 	}

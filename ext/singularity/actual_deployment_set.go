@@ -36,7 +36,7 @@ func (sc *deployer) GetRunningDeployment(singMap map[string]string) (deps sous.D
 	retries := make(retryCounter)
 	errCh := make(chan error)
 	deps = make(sous.Deployments, 0)
-	sings := make(map[string]*singularity.Client)
+	sings := make(map[string]struct{})
 	reqCh := make(chan SingReq, len(singMap)*ReqsPerServer)
 	depCh := make(chan *sous.Deployment, ReqsPerServer)
 
@@ -52,10 +52,9 @@ func (sc *deployer) GetRunningDeployment(singMap map[string]string) (deps sous.D
 		if _, ok := sings[url]; ok {
 			continue
 		}
-		sing := singularity.NewClient(url)
 		//sing.Debug = true
-		sings[url] = sing
-		go singPipeline(sing, &depWait, &singWait, reqCh, errCh)
+		sings[url] = struct{}{}
+		go singPipeline(url, &depWait, &singWait, reqCh, errCh)
 	}
 
 	go depPipeline(sc.Client, singMap, reqCh, depCh, errCh)
@@ -139,14 +138,15 @@ func catchAndSend(from string, errs chan error) {
 }
 
 func singPipeline(
-	client *singularity.Client,
+	url string,
 	dw, wg *sync.WaitGroup,
 	reqs chan SingReq,
 	errs chan error,
 ) {
 	defer wg.Done()
-	defer catchAndSend(fmt.Sprintf("get requests: %s", client), errs)
-	rs, err := getRequestsFromSingularity(client)
+	defer catchAndSend(fmt.Sprintf("get requests: %s", url), errs)
+	client := singularity.NewClient(url)
+	rs, err := getRequestsFromSingularity(url, client)
 	if err != nil {
 		Log.Vomit.Print(err)
 		errs <- err
@@ -159,7 +159,7 @@ func singPipeline(
 	}
 }
 
-func getRequestsFromSingularity(client *singularity.Client) ([]SingReq, error) {
+func getRequestsFromSingularity(url string, client *singularity.Client) ([]SingReq, error) {
 	singRequests, err := client.GetRequests()
 	if err != nil {
 		return nil, err
@@ -167,7 +167,7 @@ func getRequestsFromSingularity(client *singularity.Client) ([]SingReq, error) {
 
 	reqs := make([]SingReq, 0, len(singRequests))
 	for _, sr := range singRequests {
-		reqs = append(reqs, SingReq{client.BaseUrl, client, sr})
+		reqs = append(reqs, SingReq{url, client, sr})
 	}
 
 	return reqs, nil

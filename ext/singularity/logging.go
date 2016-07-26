@@ -7,8 +7,7 @@ import (
 )
 
 var (
-	// Log collects various loggers to use for different levels of logging
-	// TODO: Copied from sous/lib; replace with externally provided logger.
+	// TODO: Injected logging and remove this.
 	Log = struct {
 		Debug  *log.Logger
 		Info   *log.Logger

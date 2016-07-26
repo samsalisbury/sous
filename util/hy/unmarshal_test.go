@@ -1,4 +1,4 @@
-package test
+package hy_test
 
 import (
 	"testing"
@@ -9,22 +9,22 @@ import (
 
 type (
 	Base struct {
-		Config  Config            `hy:"config.yaml"`
-		Dict    map[string]string `hy:"dict.yaml"`
-		Things  map[string]Thing  `hy:"things/"`
-		Widgets map[string]Widget `hy:"widgets/**"`
+		Config  Config                `hy:"config.yaml"`
+		Dict    map[string]string     `hy:"dict.yaml"`
+		Things  map[string]TestThing  `hy:"things/"`
+		Widgets map[string]TestWidget `hy:"widgets/**"`
 	}
-	Thing struct {
+	TestThing struct {
 		Name, Desc string
 	}
-	Config Thing
-	Widget Thing
+	Config     TestThing
+	TestWidget TestThing
 )
 
 func _TestUnmarshal_GoodData(t *testing.T) {
 	b := Base{}
 	u := hy.NewUnmarshaler(yaml.Unmarshal)
-	if err := u.Unmarshal("./data", &b); err != nil {
+	if err := u.Unmarshal("./test/data", &b); err != nil {
 		t.Fatal(err)
 	}
 	if b.Config.Name != "Dave" {

@@ -21,6 +21,11 @@ type (
 	}
 )
 
+// NewSourceLocation creates a new SourceLocation from strings.
+func NewSourceLocation(repoURL, repoOffset string) SourceLocation {
+	return SourceLocation{RepoURL(repoURL), RepoOffset(repoOffset)}
+}
+
 // MarshalYAML serializes this SourceLocation to a YAML document.
 func (sl SourceLocation) MarshalYAML() (interface{}, error) {
 	return sl.String(), nil
@@ -33,7 +38,7 @@ func (sl *SourceLocation) UnmarshalYAML(unmarshal func(interface{}) error) error
 		return err
 	}
 	var err error
-	*sl, err = ParseCanonicalName(s)
+	*sl, err = ParseSourceLocation(s)
 	return err
 }
 
@@ -49,9 +54,9 @@ func (sl SourceLocation) Repo() RepoURL {
 	return sl.RepoURL
 }
 
-// SourceVersion returns a SourceVersion built from this location with the addition of a version
-func (sl *SourceLocation) SourceVersion(version semv.Version) SourceVersion {
-	return SourceVersion{
+// SourceID returns a SourceID built from this location with the addition of a version.
+func (sl *SourceLocation) SourceID(version semv.Version) SourceID {
+	return SourceID{
 		RepoURL:    sl.RepoURL,
 		RepoOffset: sl.RepoOffset,
 		Version:    version,

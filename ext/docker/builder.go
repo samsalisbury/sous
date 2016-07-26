@@ -69,7 +69,7 @@ func (b *Builder) ApplyMetadata(br *sous.BuildResult) error {
 	bf := bytes.Buffer{}
 
 	c := b.SourceShell.Cmd("docker", "build", "-t", versionName, "-t", revisionName, "-")
-	c.Stdin(&bf)
+	c.SetStdin(&bf)
 
 	sv := b.Context.Version()
 
@@ -79,7 +79,7 @@ func (b *Builder) ApplyMetadata(br *sous.BuildResult) error {
 		Labels  map[string]string
 	}{
 		br.ImageID,
-		DockerLabels(sv),
+		Labels(sv),
 	})
 
 	return c.Succeed()
@@ -107,11 +107,11 @@ func (b *Builder) recordName(br *sous.BuildResult) error {
 }
 
 // VersionTag computes an image tag from a SourceVersion's version
-func (b *Builder) VersionTag(v sous.SourceVersion) string {
+func (b *Builder) VersionTag(v sous.SourceID) string {
 	return filepath.Join(b.DockerRegistryHost, versionName(v))
 }
 
 // RevisionTag computes an image tag from a SourceVersion's revision id
-func (b *Builder) RevisionTag(v sous.SourceVersion) string {
+func (b *Builder) RevisionTag(v sous.SourceID) string {
 	return filepath.Join(b.DockerRegistryHost, revisionName(v))
 }

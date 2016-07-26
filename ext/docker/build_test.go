@@ -96,23 +96,23 @@ func TestBuild(t *testing.T) {
 			assert.Regexp("FROM "+dockerID, sourceSh.History[1].StdinString())
 			assert.Regexp("com.opentable.sous.repo_url=github.com/opentable/awesomeproject", sourceSh.History[1].StdinString())
 
-			assert.Regexp("^"+regexp.QuoteMeta("docker push "+vName)+reTail, sourceSh.History[2])
-			assert.Regexp("^"+regexp.QuoteMeta("docker push "+rName)+reTail, sourceSh.History[3])
-			docker.FeedMetadata(docker_registry.Metadata{
-				Registry: dockerHost,
-				Labels: map[string]string{
-					DockerVersionLabel:  "1.2.3",
-					DockerRevisionLabel: revision,
-					DockerPathLabel:     "",
-					DockerRepoLabel:     repoName,
-				},
-				Etag:          "digest",
-				CanonicalName: vName,
-				AllNames:      []string{tagStr},
-			})
-			sv, err := nc.GetSourceVersion(DockerBuildArtifact(tagStr))
-			if assert.NoError(err) {
-				assert.Equal(repoName, string(sv.Repo()))
-			}
-	*/
+	assert.Regexp("^"+regexp.QuoteMeta("docker push "+vName)+reTail, sourceSh.History[2])
+	assert.Regexp("^"+regexp.QuoteMeta("docker push "+rName)+reTail, sourceSh.History[3])
+	docker.FeedMetadata(docker_registry.Metadata{
+		Registry: dockerHost,
+		Labels: map[string]string{
+			DockerVersionLabel:  "1.2.3",
+			DockerRevisionLabel: revision,
+			DockerPathLabel:     "",
+			DockerRepoLabel:     repoName,
+		},
+		Etag:          "digest",
+		CanonicalName: vName,
+		AllNames:      []string{tagStr},
+	})
+	sv, err := nc.GetSourceID(NewBuildArtifact(tagStr))
+	if assert.NoError(err) {
+		assert.Equal(repoName, string(sv.RepoURL))
+	}
+*/
 }

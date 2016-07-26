@@ -1,45 +1,15 @@
 #!/usr/bin/env bash
 
-# This script removes the local go-installed version if it exists, and
-# uninstalls any homebrew-installed version. It then compiles and installs
-# the local working tree to $GOPATH/bin ready for system-wide use.
-# 
-# The local version is tagged with the SHA and the time built, you can
-# check this with `sous version`.
-
-if SOUSPATH="$(command -v sous)"; then
-	if [[ "$SOUSPATH" == "$GOPATH/bin/sous" ]]; then
-		rm "$SOUSPATH"
-	else
-		if (command -v brew >/dev/null 2>&1); then
-			if (brew list | grep '^sous$'); then
-				echo "Detected sous installed by homebrew, uninstalling..."
-				if ! brew uninstall sous; then
-					echo "uninstall failed."
-					exit 1
-				fi
-			fi
-		else
-			echo "Existing sous not recognised, please remove $SOUSPATH"
-			exit 1
-		fi
-	fi
-fi
 if ! go generate; then
 	echo "> Generate failed."
 	exit 1
 fi
-if ! ./bin/safe-build "$GOPATH/bin/sous"; then
+if ! go install; then
 	echo "> Install failed."
 	exit 1
 fi
-if ! TESTOUT=$(go test -short ./...); then
-	echo "$TESTOUT" | grep -v 'no test files'
-	echo "> Tests failed."
-	exit 1
-fi
 
-echo "> Build and test OK"
+echo "> Install OK"
 
 # Finally, make sure we can still execute sous version
 sous version

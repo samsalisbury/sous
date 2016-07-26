@@ -35,7 +35,7 @@ type (
 	Env map[string]string
 )
 
-// FileLocation returns the path that the manifest should be saved to
+// FileLocation returns the path that the manifest should be saved to.
 func (m *Manifest) FileLocation() string {
 	return filepath.Join(string(m.Source.RepoURL), string(m.Source.RepoOffset))
 }
@@ -43,11 +43,15 @@ func (m *Manifest) FileLocation() string {
 const (
 	// ManifestKindService represents an HTTP service which is a long-running process,
 	// and listens and responds to HTTP requests.
-	ManifestKindService   (ManifestKind) = "http-service"
-	ManifestKindWorker    (ManifestKind) = "worker"
-	ManifestKindOnDemand  (ManifestKind) = "on-demand"
+	ManifestKindService (ManifestKind) = "http-service"
+	// ManifestKindWorker represents a worker process.
+	ManifestKindWorker (ManifestKind) = "worker"
+	// ManifestKindOnDemand represents an on-demand service.
+	ManifestKindOnDemand (ManifestKind) = "on-demand"
+	// ManifestKindScheduled represents a scheduled task.
 	ManifestKindScheduled (ManifestKind) = "scheduled"
-	ManifestKindOnce      (ManifestKind) = "once"
+	// ManifestKindOnce represents a one-off job.
+	ManifestKindOnce (ManifestKind) = "once"
 	// ScheduledJob represents a process which starts on some schedule, and
 	// exits when it completes its task.
 	ScheduledJob = "scheduled-job"

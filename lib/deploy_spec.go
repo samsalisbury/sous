@@ -3,20 +3,16 @@ package sous
 import "github.com/samsalisbury/semv"
 
 type (
-	// XXX These two type aliases are super confusing. -jdl
+	// DeploySpecs is a collection of Deployments associated with a manifest.
+	DeploySpecs map[string]DeploySpec
 
-	// DeploySpecs is a collection of Deployments associated with a manifest
-	DeploySpecs map[string]PartialDeploySpec
-	// DeploymentSpecs is a list of DeploymentSpecs.
-	DeploymentSpecs []PartialDeploySpec
-
-	// PartialDeploySpec is the interface to describe a cluster-wide deployment
+	// DeploySpec is the interface to describe a cluster-wide deployment
 	// of an application described by a Manifest. Together with the manifest,
 	// one can assemble full Deployments.
 	//
 	// Unexported fields in DeploymentSpec are not intended to be serialised
 	// to/from yaml, but are useful when set internally.
-	PartialDeploySpec struct {
+	DeploySpec struct {
 		// DeployConfig contains config information for this deployment, see
 		// DeployConfig.
 		DeployConfig `yaml:",inline"`

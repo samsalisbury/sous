@@ -42,7 +42,7 @@ func Unmarshal(path string, v interface{}) error {
 }
 
 func (e *Error) Error() string {
-	return fmt.Sprintf("In %s: %s", e.file, e.cause)
+	return fmt.Sprintf("%s: %s", e.file, e.cause)
 }
 
 // Unmarshal deserializes from a directory
@@ -72,6 +72,9 @@ func (ts targets) unmarshalAll(parent *reflect.Value) error {
 	for _, t := range ts {
 		if err := t.unmarshal(parent); err != nil {
 			if _, ok := err.(*Error); ok {
+				return err
+			}
+			if os.IsNotExist(err) || os.IsPermission(err) {
 				return err
 			}
 			return &Error{t.path, err}

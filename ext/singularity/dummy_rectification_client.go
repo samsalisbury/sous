@@ -51,12 +51,6 @@ func NewDummyRectificationClient(nc sous.Registry) *DummyRectificationClient {
 	return &DummyRectificationClient{nameCache: nc}
 }
 
-// TODO: Factor out name cache concept from core sous lib & get rid of this func.
-func (t *DummyRectificationClient) GetRunningDeployment([]string) (sous.Deployments, error) {
-	return nil, nil
-	panic("not implemented")
-}
-
 // SetLogger sets the logger for the client
 func (t *DummyRectificationClient) SetLogger(l *log.Logger) {
 	l.Println("dummy begin")
@@ -109,11 +103,11 @@ func (t *DummyRectificationClient) DeleteRequest(
 
 // ImageLabels gets the labels for an image name
 func (t *DummyRectificationClient) ImageLabels(in string) (map[string]string, error) {
-	a := docker.DockerBuildArtifact(in)
-	sv, err := t.nameCache.GetSourceVersion(a)
+	a := docker.NewBuildArtifact(in)
+	sv, err := t.nameCache.GetSourceID(a)
 	if err != nil {
 		return map[string]string{}, nil
 	}
 
-	return docker.DockerLabels(sv), nil
+	return docker.Labels(sv), nil
 }

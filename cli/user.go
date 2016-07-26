@@ -4,8 +4,6 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
-
-	"github.com/opentable/sous/lib"
 )
 
 type (
@@ -22,9 +20,9 @@ const (
 )
 
 // DefaultConfig builds a default configuration for this user
-func (u *User) DefaultConfig() sous.Config {
-	c := sous.DefaultConfig()
-	c.DatabaseConnection = filepath.Join(u.ConfigDir(), "data.db")
+func (u *User) DefaultConfig() Config {
+	c := DefaultConfig()
+	c.Docker.DatabaseConnection = filepath.Join(u.ConfigDir(), "data.db")
 	return c
 }
 

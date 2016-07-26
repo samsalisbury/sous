@@ -10,6 +10,7 @@ import (
 	"math/rand"
 	"net"
 	"os"
+	"os/exec"
 	"regexp"
 	"strings"
 	"time"
@@ -96,9 +97,11 @@ func NewAgentWithTimeout(timeout time.Duration) (Agent, error) {
 		log.Println("Using docker-machine", dm)
 		return &Machine{name: dm, serviceTimeout: timeout}, nil
 	}
+	o, _ := exec.Command("sudo", "ls", "-l", "/var/run/docker.sock").CombinedOutput()
+	log.Print(string(o))
 	ps := runCommand("docker", "ps")
 	if ps.err != nil {
-		return nil, fmt.Errorf("no docker machines found, and `docker ps` failed: %s", ps.err)
+		return nil, fmt.Errorf("no docker machines found, and `docker ps` failed: %s\nStdout:\n%s\nStderr:\n%s\n", ps.err, ps.stdout, ps.stderr)
 	}
 	log.Println("Using local docker daemon")
 	return &LocalDaemon{serviceTimeout: timeout}, nil
@@ -132,6 +135,9 @@ func fileDiffs(pathPairs [][]string, localMD5, remoteMD5 map[string]string) [][]
 		localHash, localPresent := localMD5[localPath]
 		remoteHash, remotePresent := remoteMD5[remotePath]
 
+		log.Printf("%s(%t %s)/%s(%t %s)",
+			localPath, localPresent, localHash,
+			remotePath, remotePresent, remoteHash)
 		if localPresent != remotePresent || strings.Compare(remoteHash, localHash) != 0 {
 			differentPairs = append(differentPairs, []string{localPath, remotePath})
 		}
@@ -180,7 +186,7 @@ func dockerComposeUp(dir string, ip net.IP, env []string, services serviceMap, t
 	logCmd.itself.Env = env
 	logCmd.itself.Dir = dir
 	logCmd.start()
-	time.Sleep(10 * time.Second)
+	time.Sleep(1 * time.Second)
 	logCmd.interrupt()
 
 	log.Println(logCmd.String())
@@ -216,67 +222,48 @@ func rebuildService(dir, name string, env []string) error {
 }
 
 func servicesRunning(timeout time.Duration, ip net.IP, services map[string]uint) bool {
-	goodCh := make(chan string)
-	badCh := make(chan string)
-	done := make(chan bool)
-	defer close(done)
+	var serviceChecks []ReadyFn
 
 	for name, port := range services {
-		go func(name string, ip net.IP, port uint) {
-			if serviceRunning(done, ip, port) {
-				goodCh <- name
-			} else {
-				badCh <- name
-			}
-		}(name, ip, port)
+		serviceChecks = append(serviceChecks, serviceReadyFn(name, ip, port))
 	}
 
-	for len(services) > 0 {
-		select {
-		case good := <-goodCh:
-			log.Printf("  %s up and running", good)
-			delete(services, good)
-		case bad := <-badCh:
-			log.Printf("  Error trying to connect to %s", bad)
-			return false
-		case <-time.After(timeout):
-			log.Printf("Attempt to contact remaining service expired after %s", timeout)
-			for service, port := range services {
-				log.Printf("  Still unavailable: %s at %s:%d", service, ip, port)
-			}
-
-			return false
-		}
+	err := UntilReady(time.Second/2, timeout, serviceChecks...)
+	if err != nil {
+		log.Print(err)
+		return false
 	}
 	return true
 }
 
-func serviceRunning(done chan bool, ip net.IP, port uint) bool {
-	addr := fmt.Sprintf("%s:%d", ip, port)
-	log.Print("Attempting connection: ", addr)
+func serviceReadyFn(name string, ip net.IP, port uint) ReadyFn {
+	return func() (string, func() bool, func()) {
+		var conn net.Conn
+		var err error
+		addr := fmt.Sprintf("%s:%d", ip, port)
+		log.Print("Attempting connection: ", addr)
 
-	for {
-		select {
-		case <-done:
-			return false
-		default:
-			conn, err := net.Dial("tcp", addr)
-			defer func() {
-				if conn != nil {
-					conn.Close()
-				}
-			}()
-
+		test := func() bool {
+			conn, err = net.Dial("tcp", addr)
 			if err != nil {
 				if _, ok := err.(*net.OpError); ok {
-					time.Sleep(time.Duration(0.5 * float32(time.Second)))
-					continue
+					return false
 				}
-				return false
+				panic(err)
 			}
-
+			log.Printf("  %s up and running", addr)
 			return true
 		}
+		teardown := func() {
+			if conn != nil {
+				conn.Close()
+			}
+			if err != nil {
+				panic(fmt.Errorf("Still unavailable: %s at %s:%d", name, ip, port))
+			}
+		}
+
+		return fmt.Sprintf("%s at %s:%d", name, ip, port), test, teardown
 	}
 }
 
@@ -286,6 +273,7 @@ func localMD5s(paths ...string) (md5s map[string]string) {
 	for _, path := range paths {
 		file, err := os.Open(path)
 		if err != nil {
+			log.Print("while MD5ing: ", err)
 			continue
 		}
 

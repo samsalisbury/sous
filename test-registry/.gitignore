@@ -1,0 +1,8 @@
+*
+!.gitignore
+!Dockerfile
+!docker-compose.yml
+!README.md
+self-signed.conf
+testing.crt
+testing.key

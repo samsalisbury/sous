@@ -1,9 +1,6 @@
 package sous
 
-import (
-	"github.com/opentable/sous/util/hy"
-	"github.com/opentable/sous/util/yaml"
-)
+import "fmt"
 
 type (
 	// State contains the mutable state of an organisation's deployments.
@@ -74,29 +71,49 @@ type (
 	VarType string
 )
 
-// LoadState loads the state from a directory
-func LoadState(dir string) (st State, err error) {
-	u := hy.NewUnmarshaler(yaml.Unmarshal)
-	err = u.Unmarshal(dir, &st)
-	return
-}
-
 // ClusterMap returns the nicknames for all the clusters referred to in this state
 // paired with the URL for the named cluster
-func (st *State) ClusterMap() (m map[string]string) {
-	m = make(map[string]string)
-	for nn, cl := range st.Defs.Clusters {
-		m[nn] = cl.BaseURL
+func (s *State) ClusterMap() map[string]string {
+	m := make(map[string]string, len(s.Defs.Clusters))
+	for name, cluster := range s.Defs.Clusters {
+		m[name] = cluster.BaseURL
 	}
-	return
+	return m
 }
 
 // BaseURLs returns the urls for all the clusters referred to in this state
 // XXX - deprecate/remove
-func (st *State) BaseURLs() []string {
-	urls := make([]string, 0, len(st.Defs.Clusters))
-	for _, cl := range st.Defs.Clusters {
-		urls = append(urls, cl.BaseURL)
+func (s *State) BaseURLs() []string {
+	urls := make([]string, 0, len(s.Defs.Clusters))
+	for _, cluster := range s.Defs.Clusters {
+		urls = append(urls, cluster.BaseURL)
 	}
 	return urls
+}
+
+// GetManifest returns the manifest matching a SourceLocation. If no such
+// manifest exists, returns nil.
+func (s *State) GetManifest(sl SourceLocation) *Manifest {
+	for _, m := range s.Manifests {
+		if m.Source == sl {
+			return m
+		}
+	}
+	return nil
+}
+
+// AddManifest adds a new manifest. It returns an error if you try to add nil or
+// if a manifest with the same source location already exists.
+func (s *State) AddManifest(m *Manifest) error {
+	if m == nil {
+		return fmt.Errorf("cannot add nil manifest")
+	}
+	if a := s.GetManifest(m.Source); a != nil {
+		return fmt.Errorf("manifest %q already exists", m.Source)
+	}
+	if s.Manifests == nil {
+		s.Manifests = Manifests{}
+	}
+	s.Manifests[m.Source.String()] = m
+	return nil
 }

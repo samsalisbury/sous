@@ -84,7 +84,7 @@ func (r *Resolver) ResolveFilteredDeployments(intended State, pr DeploymentPredi
 func guardImageNamesKnown(r Registry, gdm Deployments) error {
 	es := make([]error, 0, len(gdm))
 	for _, d := range gdm {
-		_, err := r.GetArtifact(d.SourceVersion)
+		_, err := r.GetArtifact(d.SourceID)
 		if err != nil {
 			es = append(es, err)
 		}
