@@ -188,16 +188,41 @@ func TestEphemeralTag(t *testing.T) {
 		Tag: "1.2.3",
 		Context: &BuildContext{
 			Source: SourceContext{
+				RemoteURL:          "github.com/opentable/present",
 				Revision:           "abcd",
 				NearestTagName:     "1.2.0",
-				NearestTagRevision: "def0",
+				NearestTagRevision: "abcd",
 			},
 		},
 	}
+	/*
+		bc := BuildConfig{
+			Strict:   true,
+			Tag:      "1.2.3",
+			Repo:     "github.com/opentable/present",
+			Revision: "abcdef",
+			Context: &BuildContext{
+				Source: SourceContext{
+					RemoteURL: "github.com/opentable/present",
+					RemoteURLs: []string{
+						"github.com/opentable/present",
+						"github.com/opentable/also",
+					},
+					Revision:           "abcdef",
+					NearestTagName:     "1.2.3",
+					NearestTagRevision: "abcdef",
+					Tags: []Tag{
+						Tag{Name: "1.2.3"},
+					},
+				},
+			},
+		}
+	*/
 
 	ctx := bc.NewContext()
 	assert.Equal(`1.2.3+abcd`, ctx.Source.Version().Version.String())
 	assert.Contains(ctx.Advisories, string(EphemeralTag))
+	assert.NoError(bc.GuardRegister())
 }
 
 func TestSetsOffset(t *testing.T) {
@@ -232,12 +257,14 @@ func TestDirtyWorkspaceAdvisory(t *testing.T) {
 
 	ctx := bc.NewContext()
 	assert.Contains(ctx.Advisories, string(DirtyWS))
+	assert.Error(bc.GuardRegister())
 }
 
 func TestUnpushedRevisionAdvisory(t *testing.T) {
 	assert := assert.New(t)
 
 	bc := BuildConfig{
+		Strict: true,
 		Context: &BuildContext{
 			Source: SourceContext{
 				RevisionUnpushed: true,
@@ -247,12 +274,31 @@ func TestUnpushedRevisionAdvisory(t *testing.T) {
 
 	ctx := bc.NewContext()
 	assert.Contains(ctx.Advisories, string(UnpushedRev))
+	assert.Error(bc.GuardStrict())
+}
+
+func TestPermissiveGuard(t *testing.T) {
+	assert := assert.New(t)
+
+	bc := BuildConfig{
+		Strict: false,
+		Context: &BuildContext{
+			Source: SourceContext{
+				RevisionUnpushed: true,
+			},
+		},
+	}
+
+	ctx := bc.NewContext()
+	assert.Contains(ctx.Advisories, string(UnpushedRev))
+	assert.NoError(bc.GuardStrict())
 }
 
 func TestProductionReady(t *testing.T) {
 	assert := assert.New(t)
 
 	bc := BuildConfig{
+		Strict:   true,
 		Tag:      "1.2.3",
 		Repo:     "github.com/opentable/present",
 		Revision: "abcdef",
@@ -275,4 +321,5 @@ func TestProductionReady(t *testing.T) {
 
 	ctx := bc.NewContext()
 	assert.Len(ctx.Advisories, 0)
+	assert.NoError(bc.GuardStrict())
 }

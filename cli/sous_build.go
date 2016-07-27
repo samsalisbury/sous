@@ -66,12 +66,12 @@ func (sb *SousBuild) Execute(args []string) cmdr.Result {
 	// build. --strict behaves like an "errors are warnings" feature, and refuses
 	// to build if there are advisories.
 	mgr := &sous.BuildManager{
-		BuildConfig:  &sb.flags.config,
-		BuildContext: sb.BuildContext,
-		Selector:     sb.Selector,
-		Labeller:     sb.Builder,
-		Registrar:    sb.Registrar,
+		BuildConfig: &sb.flags.config,
+		Selector:    sb.Selector,
+		Labeller:    sb.Builder,
+		Registrar:   sb.Registrar,
 	}
+	mgr.BuildConfig.Context = sb.BuildContext
 
 	result, err := mgr.Build()
 

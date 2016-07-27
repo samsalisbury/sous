@@ -1,6 +1,10 @@
 package sous
 
-import "path/filepath"
+import (
+	"fmt"
+	"path/filepath"
+	"strings"
+)
 
 type (
 	// BuildConfig captures the user's intent as they build a repo
@@ -83,6 +87,30 @@ func (c *BuildConfig) chooseOffset() string {
 	return clean
 }
 
+// GuardStrict returns an error if there are imperfections in the proposed build
+func (c *BuildConfig) GuardStrict() error {
+	if !c.Strict {
+		return nil
+	}
+	as := c.Advisories()
+	if len(as) > 0 {
+		return fmt.Errorf("Strict built encountered advisories:\n  %s", strings.Join(as, "  \n"))
+	}
+	return nil
+}
+
+// GuardRegister returns an error if any development-only advisories exist
+func (c *BuildConfig) GuardRegister() error {
+	for _, a := range c.Advisories() {
+		switch a {
+		case string(DirtyWS), string(UnpushedRev),
+			string(NoRepoAdv), string(NotRequestedRevision):
+			return fmt.Errorf("Refusing to register build because of advisory: %s", a)
+		}
+	}
+	return nil
+}
+
 // Advisories does this:
 func (c *BuildConfig) Advisories() (advs []string) {
 	s := c.Context.Source
@@ -101,7 +129,7 @@ func (c *BuildConfig) Advisories() (advs []string) {
 		advs = append(advs, string(NoRepoAdv))
 	}
 
-	if c.Revision != s.Revision {
+	if c.Revision != "" && c.Revision != s.Revision {
 		advs = append(advs, string(NotRequestedRevision))
 	}
 
