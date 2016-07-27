@@ -138,6 +138,15 @@ func (c *Client) ListTags() ([]sous.Tag, error) {
 	return tags, nil
 }
 
+// ListUnpushedCommits returns a list of commit sha1s for commits that haven't been pushed to any remote
+func (c *Client) ListUnpushedCommits() ([]string, error) {
+	lines, err := c.stdoutLines("log", "--branches", "--not", "--remotes", "--pretty=%H")
+	if err != nil {
+		return nil, err
+	}
+	return lines, nil
+}
+
 func (c *Client) ListRemotes() (Remotes, error) {
 	t, err := c.table("remote", "-v")
 	if err != nil {

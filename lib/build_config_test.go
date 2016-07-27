@@ -249,8 +249,30 @@ func TestUnpushedRevisionAdvisory(t *testing.T) {
 	assert.Contains(ctx.Advisories, string(UnpushedRev))
 }
 
-// If the revision isn't present in
-// the remote repo, add "unpushed revision".
-// Issue warnings to the user of any advisories on the build, perform the
-// build. --strict behaves like an "errors are warnings" feature, and refuses
-// to build if there are advisories.
+func TestProductionReady(t *testing.T) {
+	assert := assert.New(t)
+
+	bc := BuildConfig{
+		Tag:      "1.2.3",
+		Repo:     "github.com/opentable/present",
+		Revision: "abcdef",
+		Context: &BuildContext{
+			Source: SourceContext{
+				RemoteURL: "github.com/opentable/present",
+				RemoteURLs: []string{
+					"github.com/opentable/present",
+					"github.com/opentable/also",
+				},
+				Revision:           "abcdef",
+				NearestTagName:     "1.2.3",
+				NearestTagRevision: "abcdef",
+				Tags: []Tag{
+					Tag{Name: "1.2.3"},
+				},
+			},
+		},
+	}
+
+	ctx := bc.NewContext()
+	assert.Len(ctx.Advisories, 0)
+}

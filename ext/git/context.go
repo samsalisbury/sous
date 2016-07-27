@@ -17,6 +17,7 @@ func (r *Repo) SourceContext() (*sous.SourceContext, error) {
 		files, modifiedFiles, newFiles []string
 		allTags                        []sous.Tag
 		remotes                        Remotes
+		unpushedCommits                []string
 	)
 	c := r.Client
 	if err := firsterr.Parallel().Set(
@@ -43,6 +44,7 @@ func (r *Repo) SourceContext() (*sous.SourceContext, error) {
 		func(err *error) { modifiedFiles, *err = c.ModifiedFiles() },
 		func(err *error) { newFiles, *err = c.NewFiles() },
 		func(err *error) { remotes, *err = c.ListRemotes() },
+		func(err *error) { unpushedCommits, *err = c.ListUnpushedCommits() },
 	); err != nil {
 		return nil, err
 	}
