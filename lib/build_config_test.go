@@ -17,6 +17,11 @@ import (
 // the remotes of the workspace. If it's present, assume that we're working in
 // the current workspace.
 
+// We're now either working locally
+// (in the git workspace) or in a clone.
+// If --force-clone is present, we ignore
+// the presence of a valid workspace and do a shallow clone anyway.
+
 func TestPresentExplicitRepo(t *testing.T) {
 	assert := assert.New(t)
 
@@ -36,6 +41,8 @@ func TestPresentExplicitRepo(t *testing.T) {
 	assert.Equal(`github.com/opentable/present`, ctx.Source.RemoteURL)
 }
 
+// If it's absent, we'll be building from a shallow
+// clone of the given --repo.
 func TestMissingExplicitRepo(t *testing.T) {
 	assert := assert.New(t)
 
@@ -56,33 +63,194 @@ func TestMissingExplicitRepo(t *testing.T) {
 	assert.Contains(ctx.Advisories, string(UnknownRepo))
 }
 
-// If it's absent, we'll be building from a shallow
-// clone of the given --repo.
 // If --repo is absent, guess the repo from the
 // remotes of the current workspace: first the upstream workspace, then the
-// origin. If neither are present on the current workspace (or we're not in a
-// git workspace), add the advisory "no repo." We're now either working locally
-// (in the git workspace) or in a clone.
-// If --force-clone is present, we ignore
-// the presence of a valid workspace and do a shallow clone anyway.
-// Now, capture the tag and revision. First, prefer the appropriate --tag and
-// --revision flags. If both are missing and we're working locally, use the
-// current workspace HEAD revision. If --tag is missing, use the "closest
-// semver" tag to the revision determined (either HEAD or --revision). If only
-// --tag is specified, and the named tag exists and points to a revision, use
-// that revision. If the tag is missing or doesn't point to a revision, use
-// HEAD.
-// Check that the tag and the revision align (i.e. that the tag in the repo
-// points to the named revision). If the tag exists and points to a different
-// revision, add the "tag mismatch" advisory. If the tag doesn't exist in the
-// remote, add the "ephemeral tag" advisory. If the revision isn't present in
-// the remote repo, add "unpushed revision". If it also isn't present in the
-// current workspace, add "bogus revision."
-// If --offset is absent, and we're working locally, set offset to the relative
-// path from the root of the workspace (or empty in the special case that
-// they're identical.)
-// If we're working locally, and there are modified files, add the "dirty
-// workspace" advisory.
+// origin.
+func TestAbsentRepoConfig(t *testing.T) {
+	assert := assert.New(t)
+
+	bc := BuildConfig{
+		Repo: "",
+		Context: &BuildContext{
+			Source: SourceContext{
+				PossiblePrimaryRemoteURL: "github.com/guessed/upstream",
+				RemoteURLs: []string{
+					"github.com/opentable/also",
+				},
+			},
+		},
+	}
+
+	ctx := bc.NewContext()
+	assert.Equal(`github.com/guessed/upstream`, ctx.Source.RemoteURL)
+}
+
+// If neither are present on the current workspace (or we're not in a
+// git workspace), add the advisory "no repo."
+func TestNoRepo(t *testing.T) {
+	assert := assert.New(t)
+
+	bc := BuildConfig{
+		Repo: "",
+		Context: &BuildContext{
+			Source: SourceContext{
+				PossiblePrimaryRemoteURL: "",
+				RemoteURLs: []string{
+					"github.com/opentable/also",
+				},
+			},
+		},
+	}
+
+	ctx := bc.NewContext()
+	assert.Contains(ctx.Advisories, string(NoRepoAdv))
+}
+
+// If a revision is specified, but that's not what's checked out,
+// add an advisory
+func TestNotRequestedRevision(t *testing.T) {
+	assert := assert.New(t)
+
+	bc := BuildConfig{
+		Revision: "abcdef",
+		Context: &BuildContext{
+			Source: SourceContext{
+				Revision: "100100100",
+			},
+		},
+	}
+
+	ctx := bc.NewContext()
+	assert.Equal(`100100100`, ctx.Source.Revision)
+	assert.Contains(ctx.Advisories, string(NotRequestedRevision))
+
+}
+
+func TestUsesRequestedTag(t *testing.T) {
+	assert := assert.New(t)
+
+	bc := BuildConfig{
+		Tag: "1.2.3",
+		Context: &BuildContext{
+			Source: SourceContext{
+				Revision: "abcd",
+			},
+		},
+	}
+
+	ctx := bc.NewContext()
+	assert.Equal(`1.2.3+abcd`, ctx.Source.Version().Version.String())
+}
+
+func TestAdvisesOfDefaultVersion(t *testing.T) {
+	assert := assert.New(t)
+
+	bc := BuildConfig{
+		Context: &BuildContext{
+			Source: SourceContext{
+				Revision: "abcd",
+			},
+		},
+	}
+
+	ctx := bc.NewContext()
+	assert.Equal(`0.0.0-unversioned+abcd`, ctx.Source.Version().Version.String())
+	assert.Contains(ctx.Advisories, string(Unversioned))
+}
+
+func TestTagNotHead(t *testing.T) {
+	assert := assert.New(t)
+
+	bc := BuildConfig{
+		Tag: "1.2.3",
+		Context: &BuildContext{
+			Source: SourceContext{
+				Revision:           "abcd",
+				NearestTagName:     "1.2.3",
+				NearestTagRevision: "def0",
+				Tags: []Tag{
+					Tag{Name: "1.2.3"},
+				},
+			},
+		},
+	}
+
+	ctx := bc.NewContext()
+	assert.Equal(`1.2.3+abcd`, ctx.Source.Version().Version.String())
+	assert.Contains(ctx.Advisories, string(TagNotHead))
+	assert.NotContains(ctx.Advisories, string(EphemeralTag))
+}
+
+func TestEphemeralTag(t *testing.T) {
+	assert := assert.New(t)
+
+	bc := BuildConfig{
+		Tag: "1.2.3",
+		Context: &BuildContext{
+			Source: SourceContext{
+				Revision:           "abcd",
+				NearestTagName:     "1.2.0",
+				NearestTagRevision: "def0",
+			},
+		},
+	}
+
+	ctx := bc.NewContext()
+	assert.Equal(`1.2.3+abcd`, ctx.Source.Version().Version.String())
+	assert.Contains(ctx.Advisories, string(EphemeralTag))
+}
+
+func TestSetsOffset(t *testing.T) {
+	assert := assert.New(t)
+
+	bc := BuildConfig{
+		Offset: "sub/",
+		Context: &BuildContext{
+			Source: SourceContext{
+				OffsetDir:          "",
+				Revision:           "abcd",
+				NearestTagName:     "1.2.0",
+				NearestTagRevision: "def0",
+			},
+		},
+	}
+
+	ctx := bc.NewContext()
+	assert.Equal(`sub`, ctx.Source.OffsetDir)
+}
+
+func TestDirtyWorkspaceAdvisory(t *testing.T) {
+	assert := assert.New(t)
+
+	bc := BuildConfig{
+		Context: &BuildContext{
+			Source: SourceContext{
+				DirtyWorkingTree: true,
+			},
+		},
+	}
+
+	ctx := bc.NewContext()
+	assert.Contains(ctx.Advisories, string(DirtyWS))
+}
+
+func TestUnpushedRevisionAdvisory(t *testing.T) {
+	assert := assert.New(t)
+
+	bc := BuildConfig{
+		Context: &BuildContext{
+			Source: SourceContext{
+				RevisionUnpushed: true,
+			},
+		},
+	}
+
+	ctx := bc.NewContext()
+	assert.Contains(ctx.Advisories, string(UnpushedRev))
+}
+
+// If the revision isn't present in
+// the remote repo, add "unpushed revision".
 // Issue warnings to the user of any advisories on the build, perform the
 // build. --strict behaves like an "errors are warnings" feature, and refuses
 // to build if there are advisories.
