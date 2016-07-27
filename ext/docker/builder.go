@@ -75,11 +75,13 @@ func (b *Builder) ApplyMetadata(br *sous.BuildResult) error {
 
 	md := template.Must(template.New("metadata").Parse(metadataDockerfileTmpl))
 	md.Execute(&bf, struct {
-		ImageID string
-		Labels  map[string]string
+		ImageID    string
+		Labels     map[string]string
+		Advisories []string
 	}{
 		br.ImageID,
 		Labels(sv),
+		br.Advisories,
 	})
 
 	return c.Succeed()

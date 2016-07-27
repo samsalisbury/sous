@@ -1,0 +1,11 @@
+FROM {{.ImageID}}
+LABEL
+  {{- range $key, $value := .Labels}} \
+  {{$key}}="{{$value}}"
+  {{- end -}} \
+  {{- with .Advisories -}}
+  advisories="
+  {{- range . -}}
+  {{.}},
+  {{- end}}"
+  {{- end -}}
