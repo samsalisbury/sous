@@ -41,7 +41,11 @@ func DefaultConfig() Config {
 
 func (c *Config) FillDefaults() error {
 	return firsterr.Parallel().Set(
-		func(e *error) { c.StateLocation, *e = c.defaultStateLocation() },
+		func(e *error) {
+			if c.StateLocation == "" {
+				c.StateLocation, *e = c.defaultStateLocation()
+			}
+		},
 	)
 }
 
