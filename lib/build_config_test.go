@@ -36,6 +36,26 @@ func TestPresentExplicitRepo(t *testing.T) {
 	assert.Equal(`github.com/opentable/present`, ctx.Source.RemoteURL)
 }
 
+func TestMissingExplicitRepo(t *testing.T) {
+	assert := assert.New(t)
+
+	bc := BuildConfig{
+		Repo: "github.com/opentable/present",
+		Context: &BuildContext{
+			Source: SourceContext{
+				PossiblePrimaryRemoteURL: "github.com/guessed/upstream",
+				RemoteURLs: []string{
+					"github.com/opentable/also",
+				},
+			},
+		},
+	}
+
+	ctx := bc.NewContext()
+	assert.Equal(`github.com/opentable/present`, ctx.Source.RemoteURL)
+	assert.Contains(ctx.Advisories, string(UnknownRepo))
+}
+
 // If it's absent, we'll be building from a shallow
 // clone of the given --repo.
 // If --repo is absent, guess the repo from the
@@ -66,14 +86,3 @@ func TestPresentExplicitRepo(t *testing.T) {
 // Issue warnings to the user of any advisories on the build, perform the
 // build. --strict behaves like an "errors are warnings" feature, and refuses
 // to build if there are advisories.
-func TestComputeAdvisories(t *testing.T) {
-	assert := assert.New(t)
-
-	bc := BuildConfig{
-		Context: &BuildContext{
-			Source: SourceContext{},
-		},
-	}
-
-	//assert.Contains(advs, NoRepoAdv)
-}

@@ -52,10 +52,10 @@ func (c *BuildConfig) NewContext() *BuildContext {
 }
 
 func (c *BuildConfig) chooseRemoteURL() string {
-	if Repo == "" {
+	if c.Repo == "" {
 		return c.Context.Source.PossiblePrimaryRemoteURL
 	}
-	return Repo
+	return c.Repo
 }
 
 // Advisories does this:
