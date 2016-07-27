@@ -15,6 +15,8 @@ type (
 		Tags                                 []Tag
 		NearestTagName, NearestTagRevision   string
 		PossiblePrimaryRemoteURL             string
+		RemoteURL                            string
+		RemoteURLs                           []string
 		DirtyWorkingTree                     bool
 	}
 	// Tag represents a revision control commit tag.

@@ -116,11 +116,6 @@ func newBuildContext(wd LocalWorkDirShell, c *sous.SourceContext) *sous.BuildCon
 	}
 }
 
-func newLocalWorkDir() (LocalWorkDir, error) {
-	s, err := os.Getwd()
-	return LocalWorkDir(s), initErr(err, "determining working directory")
-}
-
 func newLocalUser() (v LocalUser, err error) {
 	u, err := user.Current()
 	v.User = &User{u}
@@ -130,14 +125,6 @@ func newLocalUser() (v LocalUser, err error) {
 func newLocalSousConfig(u LocalUser) (v LocalSousConfig, err error) {
 	v.Config, err = newConfig(u.User)
 	return v, initErr(err, "getting configuration")
-}
-
-func newLocalWorkDirShell(l LocalWorkDir) (v LocalWorkDirShell, err error) {
-	v.Sh, err = shell.DefaultInDir(string(l))
-	v.TeeEcho = os.Stdout
-	v.TeeOut = os.Stdout
-	v.TeeErr = os.Stderr
-	return v, initErr(err, "getting current working directory")
 }
 
 // TODO: This should register a cleanup task with the cli, to delete the temp
@@ -154,6 +141,19 @@ func newScratchDirShell() (v ScratchDirShell, err error) {
 	return v, initErr(err, what)
 }
 
+func newLocalWorkDir() (LocalWorkDir, error) {
+	s, err := os.Getwd()
+	return LocalWorkDir(s), initErr(err, "determining working directory")
+}
+
+func newLocalWorkDirShell(l LocalWorkDir) (v LocalWorkDirShell, err error) {
+	v.Sh, err = shell.DefaultInDir(string(l))
+	v.TeeEcho = os.Stdout
+	v.TeeOut = os.Stdout
+	v.TeeErr = os.Stderr
+	return v, initErr(err, "getting current working directory")
+}
+
 func newLocalGitClient(sh LocalWorkDirShell) (v LocalGitClient, err error) {
 	v.Client, err = git.NewClient(sh.Sh)
 	return v, initErr(err, "initialising git client")
@@ -164,10 +164,10 @@ func newLocalGitRepo(c LocalGitClient) (v LocalGitRepo, err error) {
 	return v, initErr(err, "opening local git repository")
 }
 
-func newSelector() Selector {
-	return sous.EchoSelector{
-		Factory: func(*sous.BuildContext) sous.Buildpack {
-			return docker.NewDockerfileBuildpack()
+func newSelector() sous.Selector {
+	return &sous.EchoSelector{
+		Factory: func(*sous.BuildContext) (sous.Buildpack, error) {
+			return docker.NewDockerfileBuildpack(), nil
 		},
 	}
 }
