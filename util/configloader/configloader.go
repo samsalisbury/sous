@@ -5,6 +5,7 @@ package configloader
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"reflect"
 	"strconv"
@@ -21,12 +22,21 @@ type (
 	// ConfigLoader loads configuration.
 	ConfigLoader struct {
 		// Log is called with debug level logs about how values are resolved.
-		Debug, Info, Warn func(string)
+		Debug, Info func(...interface{})
 	}
 	DefaultFiller interface {
 		FillDefaults() error
 	}
 )
+
+func (cl *ConfigLoader) SetLogFunc(f func(...interface{})) {
+	log.Print("setting info f")
+	cl.Info = f
+}
+
+func (cl *ConfigLoader) SetDebugFunc(f func(...interface{})) {
+	cl.Debug = f
+}
 
 func (cl ConfigLoader) Load(target interface{}, filePath string) error {
 	if target == nil {
@@ -34,13 +44,14 @@ func (cl ConfigLoader) Load(target interface{}, filePath string) error {
 	}
 	_, err := os.Stat(filePath)
 	if err != nil {
-		if os.IsNotExist(err) {
-			return nil
+		if !os.IsNotExist(err) {
+			return err
 		}
-		return err
-	}
-	if err := cl.loadYAMLFile(target, filePath); err != nil {
-		return err
+		cl.Info("Missing config file, using defaults", map[string]interface{}{"path": filePath})
+	} else {
+		if err := cl.loadYAMLFile(target, filePath); err != nil {
+			return err
+		}
 	}
 	if err := cl.overrideWithEnv(target); err != nil {
 		return err

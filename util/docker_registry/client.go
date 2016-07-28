@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/docker/distribution"
 	"github.com/docker/distribution/digest"
@@ -38,9 +40,15 @@ type (
 	// concert with Sous, there's a conscious effort to avoid coupling to Sous
 	// concepts like SourceID.
 	liveClient struct {
-		ctx        context.Context
-		xport      *http.Transport
-		registries map[string]*registry
+		ctx   context.Context
+		xport *http.Transport
+		Registries
+	}
+
+	// Registries is a map+Mutex
+	Registries struct {
+		regs map[string]*registry
+		sync.Mutex
 	}
 
 	// Client is the interface for interacting with a docker registry
@@ -62,12 +70,38 @@ type (
 	}
 )
 
+// NewRegistries makes a Registries
+func NewRegistries() Registries {
+	return Registries{regs: make(map[string]*registry)}
+}
+
+// AddRegistry adds a registry to the registry map
+func (rs *Registries) AddRegistry(n string, r *registry) error {
+	rs.Lock()
+	defer rs.Unlock()
+	rs.regs[n] = r
+	return nil
+}
+
+// GetRegistry gets a registry from the registry map
+func (rs *Registries) GetRegistry(n string) *registry {
+	return rs.regs[n]
+}
+
+// DeleteRegistry deletes a registry from the map
+func (rs *Registries) DeleteRegistry(n string) error {
+	rs.Lock()
+	defer rs.Unlock()
+	delete(rs.regs, n)
+	return nil
+}
+
 // NewClient builds a new client
 func NewClient() Client {
 	return &liveClient{
 		ctx:        context.Background(),
 		xport:      &http.Transport{},
-		registries: make(map[string]*registry),
+		Registries: NewRegistries(),
 	}
 }
 
@@ -103,6 +137,7 @@ func (c *liveClient) GetImageMetadata(imageName string, etag string) (Metadata, 
 
 // AllTags returns a list of tags for a particular repo
 func (c *liveClient) AllTags(repoName string) ([]string, error) {
+	log.Printf("AllTags(%s)", repoName)
 	regHost, ref, err := splitHost(repoName)
 	if err != nil {
 		return []string{}, err
@@ -113,6 +148,7 @@ func (c *liveClient) AllTags(repoName string) ([]string, error) {
 		return []string{}, err
 	}
 
+	log.Printf("Getting tags for %v from %s", ref, regHost)
 	return rep.getRepoTags(ref)
 }
 
@@ -141,13 +177,17 @@ func updateName(rn reference.Named, name string) (ref reference.Named, err error
 		return
 	}
 
+	log.Printf("updateName: %#v %#v", rn, nr)
+
 	switch r := rn.(type) {
 	default:
-		return nil, fmt.Errorf("Image name has neither tag nor digest")
+		return nil, fmt.Errorf("Image name has neither tag nor digest (%T)", rn)
 	case reference.Digested:
 		ref, err = reference.WithDigest(nr, r.Digest())
 	case reference.Tagged:
 		ref, err = reference.WithTag(nr, r.Tag())
+	case reference.Named:
+		ref, err = nr, err
 	}
 
 	return
@@ -166,14 +206,14 @@ func digestRef(ref reference.Named, digst string) (reference.Canonical, error) {
 
 func (c *liveClient) registryForHostname(regHost string) (*registry, error) {
 	url := fmt.Sprintf("https://%s", regHost)
-	if reg, ok := c.registries[url]; ok {
+	if reg := c.GetRegistry(url); reg != nil {
 		return reg, nil
 	}
 	reg, err := newRegistry(url, c.xport)
 	if err != nil {
 		return nil, err
 	}
-	c.registries[url] = reg
+	c.AddRegistry(url, reg)
 	return reg, nil
 }
 
@@ -355,6 +395,7 @@ func (r *registry) getRepoTags(ref reference.Named) (tags []string, err error) {
 	defer resp.Body.Close()
 
 	if !client.SuccessStatus(resp.StatusCode) {
+		log.Printf("Error response to %#v %v", req, req.URL)
 		return tags, client.HandleErrorResponse(resp)
 	}
 

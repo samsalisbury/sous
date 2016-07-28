@@ -29,3 +29,30 @@ type (
 		clusterName string
 	}
 )
+
+func flattenDeploySpecs(dss []DeploySpec) DeploySpec {
+
+	var dcs []DeployConfig
+
+	for _, s := range dss {
+		dcs = append(dcs, s.DeployConfig)
+	}
+
+	ds := DeploySpec{DeployConfig: flattenDeployConfigs(dcs)}
+	var zeroVersion semv.Version
+
+	for _, s := range dss {
+		if s.Version != zeroVersion {
+			ds.Version = s.Version
+			break
+		}
+	}
+	for _, s := range dss {
+		if s.clusterName != "" {
+			ds.clusterName = s.clusterName
+			break
+		}
+	}
+
+	return ds
+}
