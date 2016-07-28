@@ -10,5 +10,5 @@ import (
 func TestMain(m *testing.M) {
 	log.SetFlags(log.Flags() | log.Lshortfile)
 	flag.Parse()
-	os.Exit(WrapCompose(m, "../test-registry"))
+	os.Exit(WrapCompose(m, "./test-registry"))
 }
