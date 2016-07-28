@@ -34,7 +34,7 @@ func (sc *SourceContext) Version() SourceID {
 	// Append revision ID.
 	v = semv.MustParse(v.Format("M.m.p-?") + "+" + sc.Revision)
 	sv := SourceID{
-		RepoURL:    RepoURL(sc.PossiblePrimaryRemoteURL),
+		RepoURL:    RepoURL(sc.RemoteURL),
 		Version:    v,
 		RepoOffset: RepoOffset(sc.OffsetDir),
 	}

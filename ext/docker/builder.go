@@ -3,6 +3,7 @@ package docker
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"path/filepath"
 	"text/template"
 
@@ -66,13 +67,17 @@ func (b *Builder) Register(br *sous.BuildResult) error {
 func (b *Builder) ApplyMetadata(br *sous.BuildResult) error {
 	versionName := b.VersionTag(b.Context.Version())
 	revisionName := b.RevisionTag(b.Context.Version())
-	bf := bytes.Buffer{}
 
 	c := b.SourceShell.Cmd("docker", "build", "-t", versionName, "-t", revisionName, "-")
-	c.SetStdin(&bf)
+	bf := b.metadataDockerfile(br)
+	c.SetStdin(bf)
 
+	return c.Succeed()
+}
+
+func (b *Builder) metadataDockerfile(br *sous.BuildResult) io.Reader {
+	bf := bytes.Buffer{}
 	sv := b.Context.Version()
-
 	md := template.Must(template.New("metadata").Parse(metadataDockerfileTmpl))
 	md.Execute(&bf, struct {
 		ImageID    string
@@ -83,8 +88,7 @@ func (b *Builder) ApplyMetadata(br *sous.BuildResult) error {
 		Labels(sv),
 		br.Advisories,
 	})
-
-	return c.Succeed()
+	return &bf
 }
 
 // pushToRegistry sends the built image to the registry
