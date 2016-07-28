@@ -83,7 +83,10 @@ func BuildGraph(s *Sous, c *cmdr.CLI) (*SousCLIGraph, error) {
 		newSourceContext,
 		newBuildContext,
 		newDockerClient,
+		newDockerBuilder,
+		newSelector,
 		newBuilder,
+		newRegistrar,
 		newDeployer,
 		newRegistry,
 		newLocalDiskStateManager,
@@ -113,11 +116,6 @@ func newBuildContext(wd LocalWorkDirShell, c *sous.SourceContext) *sous.BuildCon
 	}
 }
 
-func newLocalWorkDir() (LocalWorkDir, error) {
-	s, err := os.Getwd()
-	return LocalWorkDir(s), initErr(err, "determining working directory")
-}
-
 func newLocalUser() (v LocalUser, err error) {
 	u, err := user.Current()
 	v.User = &User{u}
@@ -127,14 +125,6 @@ func newLocalUser() (v LocalUser, err error) {
 func newLocalSousConfig(u LocalUser) (v LocalSousConfig, err error) {
 	v.Config, err = newConfig(u.User)
 	return v, initErr(err, "getting configuration")
-}
-
-func newLocalWorkDirShell(l LocalWorkDir) (v LocalWorkDirShell, err error) {
-	v.Sh, err = shell.DefaultInDir(string(l))
-	v.TeeEcho = os.Stdout
-	v.TeeOut = os.Stdout
-	v.TeeErr = os.Stderr
-	return v, initErr(err, "getting current working directory")
 }
 
 // TODO: This should register a cleanup task with the cli, to delete the temp
@@ -151,6 +141,19 @@ func newScratchDirShell() (v ScratchDirShell, err error) {
 	return v, initErr(err, what)
 }
 
+func newLocalWorkDir() (LocalWorkDir, error) {
+	s, err := os.Getwd()
+	return LocalWorkDir(s), initErr(err, "determining working directory")
+}
+
+func newLocalWorkDirShell(l LocalWorkDir) (v LocalWorkDirShell, err error) {
+	v.Sh, err = shell.DefaultInDir(string(l))
+	v.TeeEcho = os.Stdout
+	v.TeeOut = os.Stdout
+	v.TeeErr = os.Stderr
+	return v, initErr(err, "getting current working directory")
+}
+
 func newLocalGitClient(sh LocalWorkDirShell) (v LocalGitClient, err error) {
 	v.Client, err = git.NewClient(sh.Sh)
 	return v, initErr(err, "initialising git client")
@@ -161,16 +164,29 @@ func newLocalGitRepo(c LocalGitClient) (v LocalGitRepo, err error) {
 	return v, initErr(err, "opening local git repository")
 }
 
-func newBuilder(cfg LocalSousConfig, cl LocalDockerClient, ctx *sous.SourceContext, source LocalWorkDirShell, scratch ScratchDirShell, u LocalUser) (sous.Builder, error) {
+func newSelector() sous.Selector {
+	return &sous.EchoSelector{
+		Factory: func(*sous.BuildContext) (sous.Buildpack, error) {
+			return docker.NewDockerfileBuildpack(), nil
+		},
+	}
+}
+
+func newDockerBuilder(cfg LocalSousConfig, cl LocalDockerClient, ctx *sous.SourceContext, source LocalWorkDirShell, scratch ScratchDirShell) (*docker.Builder, error) {
 	return makeDockerBuilder(cfg, cl, ctx, source, scratch)
 }
 
-func newRegistry(cfg LocalSousConfig, cl LocalDockerClient) (sous.Registry, error) {
-	// Eventually, based on configuration, we may make different decisions here.
-	r, err := makeDockerRegistry(cfg, cl)
-	return r, initErr(err, "getting container registry")
+func newBuilder(db *docker.Builder) (sous.Labeller, error) {
+	return db, nil
 }
 
+func newRegistrar(db *docker.Builder) (sous.Registrar, error) {
+	return db, nil
+}
+
+func newRegistry(cfg LocalSousConfig, cl LocalDockerClient) (sous.Registry, error) {
+	return makeDockerRegistry(cfg, cl)
+}
 func newDeployer(r sous.Registry) sous.Deployer {
 	// Eventually, based on configuration, we may make different decisions here.
 	return singularity.NewDeployer(r, singularity.NewRectiAgent(r))
@@ -211,7 +227,7 @@ func makeDockerRegistry(cfg LocalSousConfig, cl LocalDockerClient) (*docker.Name
 	dbCfg := cfg.Docker.DBConfig()
 	db, err := docker.GetDatabase(&dbCfg)
 	if err != nil {
-		return nil, fmt.Errorf("unable to build name cache DB: %s", err)
+		return nil, fmt.Errorf("unable to build name cache DB: ", err)
 	}
 	return &docker.NameCache{cl.Client, db}, nil
 }

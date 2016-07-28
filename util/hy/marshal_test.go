@@ -26,7 +26,7 @@ func TestMarshal_GoodData(t *testing.T) {
 			"some/other/tree/wodge": TestWidget{Name: "Wodge"},
 		},
 	}
-	outDir := "./test/output"
+	outDir := "./testdata/output"
 	marshaller := hy.NewMarshaller(yaml.Marshal)
 	if err := marshaller.Marshal(outDir, base); err != nil {
 		t.Fatalf("unexpected error: %s", err)

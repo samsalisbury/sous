@@ -1,0 +1,10 @@
+FROM {{.ImageID}}
+LABEL {{- range $key, $value := .Labels}} \
+  {{$key}}="{{$value}}"
+  {{- end -}}
+  {{- with .Advisories}} \
+  com.opentable.sous.advisories="
+  {{- range . -}}
+  {{.}},
+  {{- end}}"
+  {{- end -}}

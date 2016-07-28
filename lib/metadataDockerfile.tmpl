@@ -1,5 +1,0 @@
-FROM {{.ImageID}}
-LABEL
-  {{- range $key, $value := .Labels}} \
-  {{$key}}={{$value}}
-  {{- end -}}

@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+engulf -coverdir /tmp/sous-cover -covermode=count -short ./...
+legendary .cadre/coverage.vim /tmp/sous-cover/*.coverprofile
+legendary --hitlist /tmp/sous-cover/*.coverprofile

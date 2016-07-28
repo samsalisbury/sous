@@ -1,8 +1,6 @@
 package sous
 
 import (
-	"log"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,8 +12,8 @@ type vpair struct {
 }
 
 func TestVolumesEqual(t *testing.T) {
-	Log.Vomit.SetOutput(os.Stderr)
-	Log.Debug.SetOutput(os.Stderr)
+	//Log.Vomit.SetOutput(os.Stderr)
+	//Log.Debug.SetOutput(os.Stderr)
 	assert := assert.New(t)
 	vs := []vpair{
 		vpair{Volumes{&Volume{"a", "a", "RO"}, &Volume{"a", "a", "RO"}}, 1},
@@ -28,10 +26,8 @@ func TestVolumesEqual(t *testing.T) {
 	for _, l := range vs {
 		for _, r := range vs {
 			if l.i == r.i {
-				log.Print("=", l, r)
 				assert.True(l.v.Equal(r.v))
 			} else {
-				log.Print("!=", l, r)
 				assert.False(l.v.Equal(r.v))
 			}
 		}
