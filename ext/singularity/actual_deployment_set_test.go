@@ -63,7 +63,8 @@ func TestGetDepSetWorks(t *testing.T) {
 		},
 	}
 
-	res, err := dep.GetRunningDeployment(map[string]string{`test`: `http://test-singularity.org/`})
+	clusters := sous.Clusters{"test": {BaseURL: "http://test-singularity.org/"}}
+	res, err := dep.GetRunningDeployment(clusters)
 	assert.NoError(err)
 	assert.NotNil(res)
 }

@@ -12,23 +12,20 @@ import (
 )
 
 // SousRectify is the injectable command object used for `sous rectify`
-type (
-	SousRectify struct {
-		Config       LocalSousConfig
-		DockerClient LocalDockerClient
-		Deployer     sous.Deployer
-		Registry     sous.Registry
-		GDM          CurrentGDM
-		flags        rectifyFlags
-		SourceFlags  DeployFilterFlags
-	}
-
-	rectifyFlags struct {
+type SousRectify struct {
+	Config       LocalSousConfig
+	DockerClient LocalDockerClient
+	Deployer     sous.Deployer
+	Registry     sous.Registry
+	State        *sous.State
+	GDM          CurrentGDM
+	SourceFlags  DeployFilterFlags
+	flags        struct {
 		dryrun,
 		repo, offset, cluster string
 		all bool
 	}
-)
+}
 
 func init() { TopLevelCommands["rectify"] = &SousRectify{} }
 
@@ -81,7 +78,7 @@ func (sr *SousRectify) Execute(args []string) cmdr.Result {
 
 	r := sous.NewResolver(sr.Deployer, sr.Registry)
 
-	if err := r.ResolveFilteredDeployments(*sr.GDM.State, predicate); err != nil {
+	if err := r.Resolve(sr.GDM.Filter(predicate), sr.State.Defs.Clusters); err != nil {
 		return EnsureErrorResult(err)
 	}
 

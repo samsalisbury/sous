@@ -82,6 +82,7 @@ func (d *Deployment) String() string {
 	return fmt.Sprintf("%s @ %s %s", d.SourceID, d.Cluster, d.DeployConfig.String())
 }
 
+// ID returns the DeployID of this deployment.
 func (d *Deployment) ID() DeployID {
 	return DeployID{
 		Source:  d.SourceID.Location(),

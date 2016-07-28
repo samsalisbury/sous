@@ -26,11 +26,11 @@ func MakeCMap(capacity int) CMap {
 	}
 }
 
-// NewCMap creates a new CMap.
+// NewCMapFromMap creates a new CMap.
 // You may optionally pass any number of map[Key]Values,
 // which will be merged key-wise into the new CMap,
 // with keys from the right-most map taking precedence.
-func NewCMap(from ...map[Key]Value) CMap {
+func NewCMapFromMap(from ...map[Key]Value) CMap {
 	cm := CMap{
 		mu: &sync.RWMutex{},
 		m:  map[Key]Value{},
@@ -41,6 +41,22 @@ func NewCMap(from ...map[Key]Value) CMap {
 		}
 	}
 	return cm
+}
+
+// NewCMap creates a new CMap.
+// You may optionally pass any number of Values,
+// which will be added to this map.
+func NewCMap(from ...Value) CMap {
+	m := CMap{
+		mu: &sync.RWMutex{},
+		m:  map[Key]Value{},
+	}
+	for _, v := range from {
+		if !m.Add(v) {
+			panic(fmt.Sprintf("conflicting key: %q", v.ID()))
+		}
+	}
+	return m
 }
 
 // Get returns (value, true) if k is in the map, or (zero value, false)
@@ -74,7 +90,7 @@ func (m *CMap) Filter(predicate func(Value) bool) CMap {
 			out[k] = v
 		}
 	}
-	return NewCMap(out)
+	return NewCMapFromMap(out)
 }
 
 // Single returns
@@ -107,7 +123,7 @@ func (m *CMap) Any(predicate func(Value) bool) (Value, bool) {
 
 // Clone returns a pairwise copy of CMap.
 func (m *CMap) Clone() CMap {
-	return NewCMap(m.Snapshot())
+	return NewCMapFromMap(m.Snapshot())
 }
 
 // Merge returns a new *CMap with
@@ -116,7 +132,7 @@ func (m *CMap) Clone() CMap {
 // keys from other will appear in the returned
 // *CMap.
 func (m *CMap) Merge(other CMap) CMap {
-	return NewCMap(m.Snapshot(), other.Snapshot())
+	return NewCMapFromMap(m.Snapshot(), other.Snapshot())
 }
 
 // Add adds a (k, v) pair into a map if it is not already there. Returns true if

@@ -38,12 +38,12 @@ type (
 
 // GetRunningDeployment collects data from the Singularity clusters and
 // returns a list of actual deployments
-func (sc *deployer) GetRunningDeployment(singMap map[string]string) (deps sous.Deployments, err error) {
+func (sc *deployer) GetRunningDeployment(clusters sous.Clusters) (deps sous.Deployments, err error) {
 	retries := make(retryCounter)
 	errCh := make(chan error)
 	deps = sous.NewDeployments()
 	sings := make(map[string]struct{})
-	reqCh := make(chan SingReq, len(singMap)*ReqsPerServer)
+	reqCh := make(chan SingReq, len(clusters)*ReqsPerServer)
 	depCh := make(chan *sous.Deployment, ReqsPerServer)
 
 	defer close(depCh)
@@ -53,8 +53,9 @@ func (sc *deployer) GetRunningDeployment(singMap map[string]string) (deps sous.D
 
 	var singWait, depWait sync.WaitGroup
 
-	singWait.Add(len(singMap))
-	for _, url := range singMap {
+	singWait.Add(len(clusters))
+	for _, url := range clusters {
+		url := url.BaseURL
 		if _, ok := sings[url]; ok {
 			continue
 		}
@@ -64,7 +65,7 @@ func (sc *deployer) GetRunningDeployment(singMap map[string]string) (deps sous.D
 		go singPipeline(url, client, &depWait, &singWait, reqCh, errCh)
 	}
 
-	go depPipeline(sc.Client, singMap, MaxAssemblers, reqCh, depCh, errCh)
+	go depPipeline(sc.Client, clusters, MaxAssemblers, reqCh, depCh, errCh)
 
 	go func() {
 		catchAndSend("closing up", errCh)
@@ -209,7 +210,7 @@ func getRequestsFromSingularity(url string, client *singularity.Client) ([]SingR
 
 func depPipeline(
 	cl rectificationClient,
-	nicks map[string]string,
+	clusters sous.Clusters,
 	poolCount int,
 	reqCh chan SingReq,
 	depCh chan *sous.Deployment,
@@ -224,7 +225,7 @@ func depPipeline(
 			poolLimit <- struct{}{}
 			defer func() { <-poolLimit }()
 
-			dep, err := assembleDeployment(cl, nicks, req)
+			dep, err := assembleDeployment(cl, clusters, req)
 
 			if err != nil {
 				errCh <- errors.Wrap(err, "assembly problem")
@@ -235,9 +236,9 @@ func depPipeline(
 	}
 }
 
-func assembleDeployment(cl rectificationClient, nicks map[string]string, req SingReq) (*sous.Deployment, error) {
+func assembleDeployment(cl rectificationClient, clusters sous.Clusters, req SingReq) (*sous.Deployment, error) {
 	Log.Vomit.Printf("Assembling from: %s %s", req.SourceURL, reqID(req.ReqParent))
-	tgt, err := BuildDeployment(cl, nicks, req)
+	tgt, err := BuildDeployment(cl, clusters, req)
 	if err != nil {
 		return nil, errors.Wrap(err, "Building deployment")
 	}

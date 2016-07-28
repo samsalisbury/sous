@@ -20,7 +20,10 @@ func TestNameCache(t *testing.T) {
 	drc := docker_registry.NewClient()
 	drc.BecomeFoolishlyTrusting()
 
-	db, err := docker.GetDatabase(&docker.DBConfig{"sqlite3", docker.InMemoryConnection("testnamecache")})
+	db, err := docker.GetDatabase(&docker.DBConfig{
+		Driver:     "sqlite3",
+		Connection: docker.InMemoryConnection("testnamecache"),
+	})
 	if err != nil {
 		t.Fatal(err)
 	}

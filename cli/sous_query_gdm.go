@@ -31,16 +31,11 @@ func (*SousQueryGDM) Help() string { return sousQueryGDMHelp }
 
 // Execute defines the behavior of `sous query gdm`
 func (sb *SousQueryGDM) Execute(args []string) cmdr.Result {
-	gdm, err := sb.GDM.Deployments()
-	if err != nil {
-		return EnsureErrorResult(err)
-	}
-
 	w := &tabwriter.Writer{}
 	w.Init(os.Stdout, 2, 4, 2, ' ', 0)
 	fmt.Fprintln(w, sous.TabbedDeploymentHeaders())
 
-	for _, d := range gdm.Snapshot() {
+	for _, d := range sb.GDM.Snapshot() {
 		fmt.Fprintln(w, d.Tabbed())
 	}
 	w.Flush()

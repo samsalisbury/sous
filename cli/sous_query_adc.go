@@ -15,6 +15,7 @@ type SousQueryAdc struct {
 	Config       LocalSousConfig
 	DockerClient LocalDockerClient
 	GDM          CurrentGDM
+	State        *sous.State
 	flags        struct {
 		singularity string
 		registry    string
@@ -34,8 +35,7 @@ func (*SousQueryAdc) Help() string { return sousBuildHelp }
 
 // Execute defines the behavior of `sous query adc`
 func (sb *SousQueryAdc) Execute(args []string) cmdr.Result {
-
-	ads, err := sb.Deployer.GetRunningDeployment(sb.GDM.ClusterMap())
+	ads, err := sb.Deployer.GetRunningDeployment(sb.State.Defs.Clusters)
 	if err != nil {
 		return EnsureErrorResult(err)
 	}

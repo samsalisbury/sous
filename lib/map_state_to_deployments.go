@@ -8,7 +8,7 @@ import (
 // Deployments returns all deployments described by the state.
 func (s *State) Deployments() (Deployments, error) {
 	ds := NewDeployments()
-	for _, m := range s.Manifests {
+	for _, m := range s.Manifests.Snapshot() {
 		deployments, err := s.DeploymentsFromManifest(m)
 		if err != nil {
 			return ds, err

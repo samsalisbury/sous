@@ -74,7 +74,7 @@ type (
 	LocalStateWriter struct{ storage.StateWriter }
 	// CurrentGDM is a snapshot of the GDM at application start. In a CLI
 	// context, which this is, that is all we need to simply read the GDM.
-	CurrentGDM struct{ *sous.State }
+	CurrentGDM struct{ *sous.Deployments }
 )
 
 // BuildGraph builds the dependency injection graph, used to populate commands
@@ -110,6 +110,7 @@ func BuildGraph(c *cmdr.CLI, out, err io.Writer) *SousCLIGraph {
 		newLocalStateReader,
 		newLocalStateWriter,
 		newCurrentGDM,
+		newCurrentState,
 	)}
 }
 
@@ -306,14 +307,19 @@ func newLocalStateWriter(sm *storage.DiskStateManager) LocalStateWriter {
 	return LocalStateWriter{sm}
 }
 
-func newCurrentGDM(sr LocalStateReader) (CurrentGDM, error) {
-	gdm, err := sr.ReadState()
-	if os.IsNotExist(err) {
-		log.Printf("error reading state: %s", err)
-		log.Println("defaulting to empty state")
-		return CurrentGDM{&sous.State{}}, nil
+func newCurrentState(sr LocalStateReader) (*sous.State, error) {
+	state, err := sr.ReadState()
+	if !os.IsNotExist(err) {
+		return state, initErr(err, "reading sous state")
 	}
-	return CurrentGDM{gdm}, initErr(err, "reading sous state")
+	log.Println("error reading state: %s", err)
+	log.Println("defaulting to empty state")
+	return &sous.State{}, nil
+}
+
+func newCurrentGDM(state *sous.State) (CurrentGDM, error) {
+	deployments, err := state.Deployments()
+	return CurrentGDM{&deployments}, initErr(err, "expanding state")
 }
 
 // The funcs named makeXXX below are used to create specific implementations of

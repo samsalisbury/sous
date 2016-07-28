@@ -12,7 +12,7 @@ import (
 type SousDeploy struct {
 	*sous.SourceContext
 	WD          LocalWorkDirShell
-	GDM         CurrentGDM
+	GDM         *sous.State
 	StateWriter LocalStateWriter
 
 	// Rectify fields
@@ -47,21 +47,19 @@ func (su *SousDeploy) AddFlags(fs *flag.FlagSet) {
 
 // Execute fulfills the cmdr.Executor interface.
 func (su *SousDeploy) Execute(args []string) cmdr.Result {
-	ctx := su.SourceContext
-
 	if su.flags.Cluster == "" {
 		return UsageErrorf("You must a select a cluster using the -cluster flag.")
 	}
 
-	sl := ctx.SourceLocation()
-
-	m := su.GDM.GetManifest(sl)
-	if m == nil {
-		return UsageErrorf("update failed: manifest %q does not exist", sl)
-	}
+	sl := su.SourceContext.SourceLocation()
 
 	clusterName := su.flags.Cluster
-	cluster, ok := m.Deployments[clusterName]
+	deployments, err := su.GDM.Deployments()
+	if err != nil {
+		return EnsureErrorResult(err)
+	}
+	id := sous.DeployID{Source: sl, Cluster: clusterName}
+	deployment, ok := deployments.Get(id)
 	if !ok {
 		return UsageErrorf("Cluster %q does not exist.")
 	}
@@ -71,10 +69,10 @@ func (su *SousDeploy) Execute(args []string) cmdr.Result {
 	if err != nil {
 		return UsageErrorf("version not valid: %s", err)
 	}
-	cluster.Version = newVersion
-	m.Deployments[clusterName] = cluster
+	deployment.SourceID.Version = newVersion
+	deployments.Set(id, deployment)
 
-	if err := su.StateWriter.WriteState(su.GDM.State); err != nil {
+	if err := su.StateWriter.WriteState(su.GDM); err != nil {
 		return EnsureErrorResult(err)
 	}
 
@@ -83,12 +81,12 @@ func (su *SousDeploy) Execute(args []string) cmdr.Result {
 		DockerClient: su.DockerClient,
 		Deployer:     su.Deployer,
 		Registry:     su.Registry,
-		GDM:          su.GDM,
-		flags: rectifyFlags{
-			repo:    string(sl.RepoURL),
-			offset:  string(sl.RepoOffset),
-			cluster: clusterName,
-		},
+		//GDM:          su.GDM,
+		//flags: rectifyFlags{
+		//	repo:    string(sl.RepoURL),
+		//	offset:  string(sl.RepoOffset),
+		//	cluster: clusterName,
+		//},
 	}
 	return rectify.Execute(nil)
 }

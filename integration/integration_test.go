@@ -95,9 +95,9 @@ func TestMissingImage(t *testing.T) {
 
 	stateOne := sous.State{
 		Defs: clusterDefs,
-		Manifests: sous.Manifests{
-			"one": manifest(dummyNc, "opentable/one", "test-one", repoOne, "1.1.1"),
-		},
+		Manifests: sous.NewManifests(
+			manifest(dummyNc, "opentable/one", "test-one", repoOne, "1.1.1"),
+		),
 	}
 
 	// ****
@@ -108,7 +108,11 @@ func TestMissingImage(t *testing.T) {
 
 	r := sous.NewResolver(deployer, nc)
 
-	err := r.Resolve(stateOne)
+	deploymentsOne, err := stateOne.Deployments()
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = r.Resolve(deploymentsOne, clusterDefs.Clusters)
 
 	assert.Error(err)
 
@@ -149,17 +153,25 @@ func TestResolve(t *testing.T) {
 
 	stateOneTwo := sous.State{
 		Defs: clusterDefs,
-		Manifests: sous.Manifests{
-			"one": manifest(nc, "opentable/one", "test-one", repoOne, "1.1.1"),
-			"two": manifest(nc, "opentable/two", "test-two", repoTwo, "1.1.1"),
-		},
+		Manifests: sous.NewManifests(
+			manifest(nc, "opentable/one", "test-one", repoOne, "1.1.1"),
+			manifest(nc, "opentable/two", "test-two", repoTwo, "1.1.1"),
+		),
+	}
+	deploymentsOneTwo, err := stateOneTwo.Deployments()
+	if err != nil {
+		t.Fatal(err)
 	}
 	stateTwoThree := sous.State{
 		Defs: clusterDefs,
-		Manifests: sous.Manifests{
-			"two":   manifest(nc, "opentable/two", "test-two", repoTwo, "1.1.1"),
-			"three": manifest(nc, "opentable/three", "test-three", repoThree, "1.1.1"),
-		},
+		Manifests: sous.NewManifests(
+			manifest(nc, "opentable/two", "test-two", repoTwo, "1.1.1"),
+			manifest(nc, "opentable/three", "test-three", repoThree, "1.1.1"),
+		),
+	}
+	deploymentsTwoThree, err := stateTwoThree.Deployments()
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	// ****
@@ -169,7 +181,7 @@ func TestResolve(t *testing.T) {
 
 	r := sous.NewResolver(deployer, nc)
 
-	err := r.Resolve(stateOneTwo)
+	err = r.Resolve(deploymentsOneTwo, clusterDefs.Clusters)
 	if err != nil {
 		assert.Fail(err.Error())
 	}
@@ -201,7 +213,7 @@ func TestResolve(t *testing.T) {
 
 		r := sous.NewResolver(deployer, nc)
 
-		err := r.Resolve(stateTwoThree)
+		err := r.Resolve(deploymentsTwoThree, clusterDefs.Clusters)
 		if err != nil {
 			if !conflictRE.MatchString(err.Error()) {
 				assert.FailNow(err.Error())
@@ -240,7 +252,8 @@ func TestResolve(t *testing.T) {
 var none = sous.DeployID{}
 
 func deploymentWithRepo(assert *assert.Assertions, sc sous.Deployer, repo string) (sous.Deployments, sous.DeployID) {
-	deps, err := sc.GetRunningDeployment(map[string]string{"test-cluster": SingularityURL})
+	clusters := sous.Clusters{"test-cluster": {BaseURL: SingularityURL}}
+	deps, err := sc.GetRunningDeployment(clusters)
 	if assert.Nil(err) {
 		return deps, findRepo(deps, repo)
 	}

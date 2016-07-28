@@ -12,7 +12,7 @@ import (
 
 type (
 	deploymentBuilder struct {
-		nicks         map[string]string
+		clusters      sous.Clusters
 		Target        sous.Deployment
 		depMarker     sDepMarker
 		deploy        sDeploy
@@ -67,8 +67,8 @@ func (db *deploymentBuilder) isRetryable(err error) bool {
 
 // BuildDeployment does all the work to collect the data for a Deployment
 // from Singularity based on the initial SingularityRequest
-func BuildDeployment(cl rectificationClient, nicks map[string]string, req SingReq) (sous.Deployment, error) {
-	db := deploymentBuilder{rectification: cl, nicks: nicks, req: req}
+func BuildDeployment(cl rectificationClient, clusters sous.Clusters, req SingReq) (sous.Deployment, error) {
+	db := deploymentBuilder{rectification: cl, clusters: clusters, req: req}
 
 	db.Target.Cluster = req.SourceURL
 	db.request = req.ReqParent.Request
@@ -165,7 +165,8 @@ func (db *deploymentBuilder) retrieveImageLabels() error {
 
 	var posNick string
 	matchCount := 0
-	for nn, url := range db.nicks {
+	for nn, url := range db.clusters {
+		url := url.BaseURL
 		if url != db.req.SourceURL {
 			continue
 		}
@@ -185,8 +186,8 @@ func (db *deploymentBuilder) retrieveImageLabels() error {
 			db.Target.ClusterNickname = posNick
 			return nil
 		}
-		sous.Log.Debug.Printf("No cluster nickname (%#v) matched request id %s for %s", db.nicks, db.request.Id, imageName)
-		return malformedResponse{fmt.Sprintf("No cluster nickname (%#v) matched request id %s", db.nicks, db.request.Id)}
+		sous.Log.Debug.Printf("No cluster nickname (%#v) matched request id %s for %s", db.clusters, db.request.Id, imageName)
+		return malformedResponse{fmt.Sprintf("No cluster nickname (%#v) matched request id %s", db.clusters, db.request.Id)}
 	}
 
 	return nil

@@ -2,9 +2,11 @@ package sous
 
 import "path/filepath"
 
+//go:generate ggen cmap.CMap(cmap.go) sous.Manifests(manifests.go) Key:SourceLocation Value:*Manifest
+
 type (
 	// Manifests is a collection of Manifest.
-	Manifests map[string]*Manifest
+	//Manifests map[string]*Manifest
 
 	// Manifest is a minimal representation of the global deployment state of
 	// a particular named application. It is designed to be written and read by
@@ -34,6 +36,11 @@ type (
 	// single instances of an application.
 	Env map[string]string
 )
+
+// ID returns the SourceLocation.
+func (m *Manifest) ID() SourceLocation {
+	return m.Source
+}
 
 // FileLocation returns the path that the manifest should be saved to.
 func (m *Manifest) FileLocation() string {

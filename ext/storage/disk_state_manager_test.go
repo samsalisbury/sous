@@ -65,12 +65,16 @@ func TestReadState(t *testing.T) {
 }
 
 func exampleState() *sous.State {
+	sl := sous.SourceLocation{
+		RepoURL: sous.RepoURL("github.com/opentable/sous"),
+	}
+	sl2 := sous.SourceLocation{
+		RepoURL: sous.RepoURL("github.com/user/project"),
+	}
 	return &sous.State{
-		Manifests: sous.Manifests{
-			"github.com/opentable/sous": {
-				Source: sous.SourceLocation{
-					RepoURL: sous.RepoURL("github.com/opentable/sous"),
-				},
+		Manifests: sous.NewManifests(
+			&sous.Manifest{
+				Source: sl,
 				Owners: []string{"Judson", "Sam"},
 				Kind:   "http-service",
 				Deployments: map[string]sous.DeploySpec{
@@ -95,10 +99,8 @@ func exampleState() *sous.State {
 					},
 				},
 			},
-			"github.com/user/project": {
-				Source: sous.SourceLocation{
-					RepoURL: sous.RepoURL("github.com/user/project"),
-				},
+			&sous.Manifest{
+				Source: sl2,
 				Owners: []string{"Sous Team"},
 				Kind:   "http-service",
 				Deployments: map[string]sous.DeploySpec{
@@ -112,7 +114,7 @@ func exampleState() *sous.State {
 					},
 				},
 			},
-		},
+		),
 		Defs: sous.Defs{
 			DockerRepo: "docker.somewhere.horse",
 			Clusters: sous.Clusters{

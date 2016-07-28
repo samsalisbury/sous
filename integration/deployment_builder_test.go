@@ -34,7 +34,10 @@ func TestBuildDeployments(t *testing.T) {
 	drc := docker_registry.NewClient()
 	drc.BecomeFoolishlyTrusting()
 
-	db, err := docker.GetDatabase(&docker.DBConfig{"sqlite3", docker.InMemoryConnection("testresolve")})
+	db, err := docker.GetDatabase(&docker.DBConfig{
+		Driver:     "sqlite3",
+		Connection: docker.InMemoryConnection("testresolve"),
+	})
 	if err != nil {
 		panic(err)
 	}
@@ -89,7 +92,8 @@ func TestBuildDeployments(t *testing.T) {
 	}
 
 	if assert.NoError(err) {
-		dep, err := singularity.BuildDeployment(ra, map[string]string{clusterNick: SingularityURL}, req)
+		clusters := sous.Clusters{clusterNick: {BaseURL: SingularityURL}}
+		dep, err := singularity.BuildDeployment(ra, clusters, req)
 
 		if assert.NoError(err) {
 			if assert.Len(dep.DeployConfig.Volumes, 1) {

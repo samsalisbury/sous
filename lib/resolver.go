@@ -19,14 +19,6 @@ func NewResolver(d Deployer, r Registry) *Resolver {
 	}
 }
 
-// Resolve drives the Sous deployment resolution process. It calls out to the
-// appropriate components to compute the intended deployment set, collect the
-// actual set, compute the diffs and then issue the commands to rectify those
-// differences.
-func (r *Resolver) Resolve(intended State) error {
-	return r.ResolveFilteredDeployments(intended, nil)
-}
-
 // Rectify takes a DiffChans and issues the commands to the infrastructure to reconcile the differences
 func (r *Resolver) rectify(dcs DiffChans) chan RectificationError {
 	d := r.Deployer
@@ -41,32 +33,25 @@ func (r *Resolver) rectify(dcs DiffChans) chan RectificationError {
 	return errs
 }
 
-// ResolveFilteredDeployments is similar to Resolve, but also accepts a
-// predicate to filter those deployments. See Deploments.Filter for details.
-func (r *Resolver) ResolveFilteredDeployments(intended State, pr DeploymentPredicate) error {
-	Log.Debug.Print("Loading GDM")
-	gdm, err := intended.Deployments()
-	gdm = gdm.Filter(pr)
-	if err != nil {
-		return err
-	}
-
-	Log.Debug.Print("Loaded. Collecting ADC...")
-
-	ads, err := r.Deployer.GetRunningDeployment(intended.ClusterMap())
+// Resolve drives the Sous deployment resolution process. It calls out to the
+// appropriate components to compute the intended deployment set, collect the
+// actual set, compute the diffs and then issue the commands to rectify those
+// differences.
+func (r *Resolver) Resolve(intended Deployments, clusters Clusters) error {
+	ads, err := r.Deployer.GetRunningDeployment(clusters)
 	if err != nil {
 		return err
 	}
 
 	Log.Debug.Print("Collected. Checking readiness to deploy...")
 
-	if err := guardImageNamesKnown(r.Registry, gdm); err != nil {
+	if err := guardImageNamesKnown(r.Registry, intended); err != nil {
 		return err
 	}
 
 	Log.Debug.Print("Looks good. Proceeding...")
 
-	diffs := ads.Diff(gdm)
+	diffs := ads.Diff(intended)
 
 	errs := r.rectify(diffs)
 

@@ -22,11 +22,11 @@ func MakeDeployments(capacity int) Deployments {
 	}
 }
 
-// NewDeployments creates a new Deployments.
+// NewDeploymentsFromMap creates a new Deployments.
 // You may optionally pass any number of map[DeployID]*Deployments,
 // which will be merged key-wise into the new Deployments,
 // with keys from the right-most map taking precedence.
-func NewDeployments(from ...map[DeployID](*Deployment)) Deployments {
+func NewDeploymentsFromMap(from ...map[DeployID](*Deployment)) Deployments {
 	cm := Deployments{
 		mu: &sync.RWMutex{},
 		m:  map[DeployID](*Deployment){},
@@ -37,6 +37,22 @@ func NewDeployments(from ...map[DeployID](*Deployment)) Deployments {
 		}
 	}
 	return cm
+}
+
+// NewDeployments creates a new Deployments.
+// You may optionally pass any number of *Deployments,
+// which will be added to this map.
+func NewDeployments(from ...(*Deployment)) Deployments {
+	m := Deployments{
+		mu: &sync.RWMutex{},
+		m:  map[DeployID](*Deployment){},
+	}
+	for _, v := range from {
+		if !m.Add(v) {
+			panic(fmt.Sprintf("conflicting key: %q", v.ID()))
+		}
+	}
+	return m
 }
 
 // Get returns (value, true) if k is in the map, or (zero value, false)
@@ -70,7 +86,7 @@ func (m *Deployments) Filter(predicate func(*Deployment) bool) Deployments {
 			out[k] = v
 		}
 	}
-	return NewDeployments(out)
+	return NewDeploymentsFromMap(out)
 }
 
 // Single returns
@@ -103,7 +119,7 @@ func (m *Deployments) Any(predicate func(*Deployment) bool) (*Deployment, bool) 
 
 // Clone returns a pairwise copy of Deployments.
 func (m *Deployments) Clone() Deployments {
-	return NewDeployments(m.Snapshot())
+	return NewDeploymentsFromMap(m.Snapshot())
 }
 
 // Merge returns a new *Deployments with
@@ -112,7 +128,7 @@ func (m *Deployments) Clone() Deployments {
 // keys from other will appear in the returned
 // *Deployments.
 func (m *Deployments) Merge(other Deployments) Deployments {
-	return NewDeployments(m.Snapshot(), other.Snapshot())
+	return NewDeploymentsFromMap(m.Snapshot(), other.Snapshot())
 }
 
 // Add adds a (k, v) pair into a map if it is not already there. Returns true if

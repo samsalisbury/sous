@@ -10,11 +10,13 @@ import (
 
 // SousInit is the command description for `sous init`
 type SousInit struct {
-	*sous.SourceContext
-	WD          LocalWorkDirShell
-	GDM         CurrentGDM
-	StateWriter LocalStateWriter
-	flags       struct {
+	SourceContext *sous.SourceContext
+	WD            LocalWorkDirShell
+	GDM           CurrentGDM
+	State         *sous.State
+	StateWriter   LocalStateWriter
+	flags         struct {
+		RepoURL, RepoOffset             string
 		UseOTPLDeploy, IgnoreOTPLDeploy bool
 	}
 }
@@ -47,8 +49,10 @@ func (si *SousInit) Execute(args []string) cmdr.Result {
 	ctx := si.SourceContext
 	sourceLocation := ctx.SourceLocation()
 
-	existingManifest := si.GDM.GetManifest(sourceLocation)
-	if existingManifest != nil {
+	ds := si.GDM.Filter(func(d *sous.Deployment) bool {
+		return d.SourceID.Location() == sourceLocation
+	})
+	if ds.Len() != 0 {
 		return UsageErrorf("init failed: manifest %q already exists", sourceLocation)
 	}
 
@@ -75,11 +79,11 @@ func (si *SousInit) Execute(args []string) cmdr.Result {
 		Deployments: deploySpecs,
 	}
 
-	if err := si.GDM.AddManifest(m); err != nil {
-		return EnsureErrorResult(err)
+	if ok := si.State.Manifests.Add(m); !ok {
+		return UsageErrorf("manifest %q already exists", m.ID())
 	}
 
-	if err := si.StateWriter.WriteState(si.GDM.State); err != nil {
+	if err := si.StateWriter.WriteState(si.State); err != nil {
 		return EnsureErrorResult(err)
 	}
 
