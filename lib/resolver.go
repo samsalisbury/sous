@@ -11,6 +11,7 @@ type (
 	}
 )
 
+// NewResolver creates a new Resolver.
 func NewResolver(d Deployer, r Registry) *Resolver {
 	return &Resolver{
 		Deployer: d,
@@ -82,8 +83,9 @@ func (r *Resolver) ResolveFilteredDeployments(intended State, pr DeploymentPredi
 }
 
 func guardImageNamesKnown(r Registry, gdm Deployments) error {
-	es := make([]error, 0, len(gdm))
-	for _, d := range gdm {
+	g := gdm.Snapshot()
+	es := make([]error, 0, len(g))
+	for _, d := range g {
 		_, err := r.GetArtifact(d.SourceID)
 		if err != nil {
 			es = append(es, err)

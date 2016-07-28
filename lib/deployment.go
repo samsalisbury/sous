@@ -1,5 +1,7 @@
 package sous
 
+//go:generate ggen cmap.CMap(cmap.go) sous.Deployments(deployments.go) Key:DeployID Value:*Deployment
+
 import (
 	"fmt"
 	"strings"
@@ -7,7 +9,7 @@ import (
 
 type (
 	// Deployments is a collection of Deployment.
-	Deployments []*Deployment
+	//Deployments []*Deployment
 	// Deployment is a completely configured deployment of a piece of software.
 	// It contains all the data necessary for Sous to create a single
 	// deployment, which is a single version of a piece of software, running in
@@ -61,26 +63,6 @@ type (
 	}
 )
 
-// Add adds a deployment to a Deployments.
-func (ds *Deployments) Add(d *Deployment) {
-	*ds = append(*ds, d)
-}
-
-// Filter returns a new Deployments, filtered based on a predicate. A predicate
-// value of nil returns ds.
-func (ds Deployments) Filter(p DeploymentPredicate) Deployments {
-	if p == nil {
-		return ds
-	}
-	out := Deployments{}
-	for _, d := range ds {
-		if p(d) {
-			out = append(out, d)
-		}
-	}
-	return out
-}
-
 // BuildDeployment constructs a deployment out of a Manifest.
 func BuildDeployment(m *Manifest, nick string, spec DeploySpec, inherit []DeploySpec) (*Deployment, error) {
 	ownMap := OwnerSet{}
@@ -100,6 +82,13 @@ func BuildDeployment(m *Manifest, nick string, spec DeploySpec, inherit []Deploy
 
 func (d *Deployment) String() string {
 	return fmt.Sprintf("%s @ %s %s", d.SourceID, d.Cluster, d.DeployConfig.String())
+}
+
+func (d *Deployment) ID() DeployID {
+	return DeployID{
+		Source:  d.SourceID.Location(),
+		Cluster: d.Cluster,
+	}
 }
 
 // TabbedDeploymentHeaders returns the names of the fields for Tabbed, suitable

@@ -44,7 +44,7 @@ func (sb *SousQueryAdc) Execute(args []string) cmdr.Result {
 	w.Init(os.Stdout, 2, 4, 2, ' ', 0)
 	fmt.Fprintln(w, sous.TabbedDeploymentHeaders())
 
-	for _, d := range ads {
+	for _, d := range ads.Snapshot() {
 		fmt.Fprintln(w, d.Tabbed())
 	}
 	w.Flush()

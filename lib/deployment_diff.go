@@ -29,25 +29,29 @@ type (
 	}
 )
 
-func (d *DiffChans) collect() diffSet {
-	ds := diffSet{
-		make(Deployments, 0),
-		make(Deployments, 0),
-		make(Deployments, 0),
-		make(DeploymentPairs, 0),
+func newDiffSet() diffSet {
+	return diffSet{
+		New:     NewDeployments(),
+		Gone:    NewDeployments(),
+		Same:    NewDeployments(),
+		Changed: make(DeploymentPairs, 0),
 	}
+}
+
+func (d *DiffChans) collect() diffSet {
+	ds := newDiffSet()
 
 	for g := range d.Deleted {
-		ds.Gone = append(ds.Gone, g)
+		ds.Gone.Add(g)
 	}
 	for n := range d.Created {
-		ds.New = append(ds.New, n)
+		ds.New.Add(n)
 	}
 	for m := range d.Modified {
 		ds.Changed = append(ds.Changed, m)
 	}
 	for s := range d.Retained {
-		ds.Same = append(ds.Same, s)
+		ds.Same.Add(s)
 	}
 	return ds
 }
@@ -86,40 +90,42 @@ func (d Deployments) Diff(other Deployments) DiffChans {
 }
 
 func newDiffer(intended Deployments) *differ {
+	i := intended.Snapshot()
 	ds := []string{"Computing diff from:"}
-	for _, e := range intended {
+	for _, e := range i {
 		ds = append(ds, e.String())
 	}
 	Log.Debug.Print(strings.Join(ds, "\n    "))
 
 	startMap := make(map[DeployID]*Deployment)
-	for _, dep := range intended {
+	for _, dep := range i {
 		startMap[dep.Name()] = dep
 	}
 	return &differ{
 		from:      startMap,
-		DiffChans: NewDiffChans(len(intended)),
+		DiffChans: NewDiffChans(len(i)),
 	}
 }
 
 func (d *differ) diff(existing Deployments) {
+	e := existing.Snapshot()
 	ds := []string{"Computing diff to:"}
-	for _, e := range existing {
+	for _, e := range e {
 		ds = append(ds, e.String())
 	}
 	Log.Debug.Print(strings.Join(ds, "\n    "))
 
-	for i := range existing {
-		name := existing[i].Name()
+	for i := range e {
+		name := e[i].Name()
 		if indep, ok := d.from[name]; ok {
 			delete(d.from, name)
-			if indep.Equal(existing[i]) {
+			if indep.Equal(e[i]) {
 				d.Retained <- indep
 			} else {
-				d.Modified <- &DeploymentPair{name, indep, existing[i]}
+				d.Modified <- &DeploymentPair{name, indep, e[i]}
 			}
 		} else {
-			d.Created <- existing[i]
+			d.Created <- e[i]
 		}
 	}
 

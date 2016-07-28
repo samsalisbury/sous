@@ -41,7 +41,7 @@ type (
 func (sc *deployer) GetRunningDeployment(singMap map[string]string) (deps sous.Deployments, err error) {
 	retries := make(retryCounter)
 	errCh := make(chan error)
-	deps = make(sous.Deployments, 0)
+	deps = sous.NewDeployments()
 	sings := make(map[string]struct{})
 	reqCh := make(chan SingReq, len(singMap)*ReqsPerServer)
 	depCh := make(chan *sous.Deployment, ReqsPerServer)
@@ -78,8 +78,8 @@ func (sc *deployer) GetRunningDeployment(singMap map[string]string) (deps sous.D
 	for {
 		select {
 		case dep := <-depCh:
-			deps = append(deps, dep)
-			Log.Debug.Printf("Deployment #%d: %+v", len(deps), dep)
+			deps.Add(dep)
+			Log.Debug.Printf("Deployment #%d: %+v", deps.Len(), dep)
 			depWait.Done()
 		case err = <-errCh:
 			if isMalformed(err) {

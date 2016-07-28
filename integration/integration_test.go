@@ -33,7 +33,10 @@ func TestGetLabels(t *testing.T) {
 }
 
 func newInMemoryDB(name string) *sql.DB {
-	db, err := docker.GetDatabase(&docker.DBConfig{"sqlite3", docker.InMemoryConnection(name)})
+	db, err := docker.GetDatabase(&docker.DBConfig{
+		Driver:     "sqlite3",
+		Connection: docker.InMemoryConnection(name),
+	})
 	if err != nil {
 		panic(err)
 	}
@@ -56,7 +59,8 @@ func TestGetRunningDeploymentSet(t *testing.T) {
 	client := singularity.NewRectiAgent(nc)
 	d := singularity.NewDeployer(nc, client)
 
-	deps, which := deploymentWithRepo(assert, d, "https://github.com/opentable/docker-grafana.git")
+	ds, which := deploymentWithRepo(assert, d, "https://github.com/opentable/docker-grafana.git")
+	deps := ds.Snapshot()
 	if assert.Equal(3, len(deps)) {
 		grafana := deps[which]
 		assert.Equal(SingularityURL, grafana.Cluster)
@@ -112,7 +116,7 @@ func TestMissingImage(t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	_, which := deploymentWithRepo(assert, deployer, repoOne)
-	assert.Equal(which, -1, "opentable/one was deployed")
+	assert.Equal(which, none, "opentable/one was deployed")
 
 	ResetSingularity()
 }
@@ -172,14 +176,15 @@ func TestResolve(t *testing.T) {
 	// ****
 	time.Sleep(3 * time.Second)
 
-	deps, which := deploymentWithRepo(assert, deployer, repoOne)
-	if assert.NotEqual(which, -1, "opentable/one not successfully deployed") {
+	ds, which := deploymentWithRepo(assert, deployer, repoOne)
+	deps := ds.Snapshot()
+	if assert.NotEqual(which, none, "opentable/one not successfully deployed") {
 		one := deps[which]
 		assert.Equal(1, one.NumInstances)
 	}
 
-	which = findRepo(deps, repoTwo)
-	if assert.NotEqual(-1, which, "opentable/two not successfully deployed") {
+	which = findRepo(ds, repoTwo)
+	if assert.NotEqual(none, which, "opentable/two not successfully deployed") {
 		two := deps[which]
 		assert.Equal(1, two.NumInstances)
 	}
@@ -211,43 +216,46 @@ func TestResolve(t *testing.T) {
 	}
 	// ****
 
-	deps, which = deploymentWithRepo(assert, deployer, repoTwo)
-	if assert.NotEqual(-1, which, "opentable/two no longer deployed after resolve") {
+	ds, which = deploymentWithRepo(assert, deployer, repoTwo)
+	deps = ds.Snapshot()
+	if assert.NotEqual(none, which, "opentable/two no longer deployed after resolve") {
 		assert.Equal(1, deps[which].NumInstances)
 	}
 
-	which = findRepo(deps, repoThree)
-	if assert.NotEqual(-1, which, "opentable/three not successfully deployed") {
+	which = findRepo(ds, repoThree)
+	if assert.NotEqual(none, which, "opentable/three not successfully deployed") {
 		assert.Equal(1, deps[which].NumInstances)
 		if assert.Len(deps[which].DeployConfig.Volumes, 1) {
 			assert.Equal("RO", string(deps[which].DeployConfig.Volumes[0].Mode))
 		}
 	}
 
-	which = findRepo(deps, repoOne)
-	if which != -1 {
+	which = findRepo(ds, repoOne)
+	if which != none {
 		assert.Equal(0, deps[which].NumInstances)
 	}
 
 }
 
-func deploymentWithRepo(assert *assert.Assertions, sc sous.Deployer, repo string) (sous.Deployments, int) {
+var none = sous.DeployID{}
+
+func deploymentWithRepo(assert *assert.Assertions, sc sous.Deployer, repo string) (sous.Deployments, sous.DeployID) {
 	deps, err := sc.GetRunningDeployment(map[string]string{"test-cluster": SingularityURL})
 	if assert.Nil(err) {
 		return deps, findRepo(deps, repo)
 	}
-	return sous.Deployments{}, -1
+	return sous.Deployments{}, none
 }
 
-func findRepo(deps sous.Deployments, repo string) int {
-	for i := range deps {
-		if deps[i] != nil {
-			if deps[i].SourceID.RepoURL == sous.RepoURL(repo) {
+func findRepo(deps sous.Deployments, repo string) sous.DeployID {
+	for i, d := range deps.Snapshot() {
+		if d != nil {
+			if d.SourceID.RepoURL == sous.RepoURL(repo) {
 				return i
 			}
 		}
 	}
-	return -1
+	return none
 }
 
 func manifest(nc sous.Registry, drepo, containerDir, sourceURL, version string) *sous.Manifest {
@@ -270,7 +278,7 @@ func manifest(nc sous.Registry, drepo, containerDir, sourceURL, version string) 
 					Args:         []string{},
 					Env:          sous.Env{"repo": drepo}, //map[s]s
 					NumInstances: 1,
-					Volumes:      sous.Volumes{&sous.Volume{"/tmp", "/tmp", sous.VolumeMode("RO")}},
+					Volumes:      sous.Volumes{{"/tmp", "/tmp", sous.VolumeMode("RO")}},
 				},
 				Version: semv.MustParse(version),
 			},
