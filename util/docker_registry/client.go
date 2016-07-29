@@ -425,7 +425,7 @@ func (r *registry) getManifestWithEtag(ctx context.Context, ref reference.Named,
 	}
 
 	resp, err := r.client.Do(req)
-	defer resp.Body.Close()
+	defer safeCloseBody(resp)
 
 	if err != nil {
 		return
@@ -434,6 +434,11 @@ func (r *registry) getManifestWithEtag(ctx context.Context, ref reference.Named,
 	h = resp.Header
 	mf, d, err = r.manifestFromResponse(resp)
 	return
+}
+
+func safeCloseBody(r *http.Response) {
+	defer recover()
+	r.Body.Close()
 }
 
 func (r *registry) manifestFromResponse(resp *http.Response) (distribution.Manifest, digest.Digest, error) {
