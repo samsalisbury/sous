@@ -137,7 +137,7 @@ func (c *liveClient) GetImageMetadata(imageName string, etag string) (Metadata, 
 
 // AllTags returns a list of tags for a particular repo
 func (c *liveClient) AllTags(repoName string) ([]string, error) {
-	log.Printf("AllTags(%s)", repoName)
+	//log.Printf("AllTags(%s)", repoName)
 	regHost, ref, err := splitHost(repoName)
 	if err != nil {
 		return []string{}, err
@@ -148,7 +148,7 @@ func (c *liveClient) AllTags(repoName string) ([]string, error) {
 		return []string{}, err
 	}
 
-	log.Printf("Getting tags for %v from %s", ref, regHost)
+	//log.Printf("Getting tags for %v from %s", ref, regHost)
 	return rep.getRepoTags(ref)
 }
 
@@ -177,7 +177,7 @@ func updateName(rn reference.Named, name string) (ref reference.Named, err error
 		return
 	}
 
-	log.Printf("updateName: %#v %#v", rn, nr)
+	//log.Printf("updateName: %#v %#v", rn, nr)
 
 	switch r := rn.(type) {
 	default:

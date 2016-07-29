@@ -5,7 +5,6 @@ package configloader
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"reflect"
 	"strconv"
@@ -30,7 +29,6 @@ type (
 )
 
 func (cl *ConfigLoader) SetLogFunc(f func(...interface{})) {
-	log.Print("setting info f")
 	cl.Info = f
 }
 

@@ -92,7 +92,7 @@ func (s *Sous) Subcommands() cmdr.Commands {
 func (s *Sous) Verbosity() cmdr.Verbosity {
 	if s.flags.Verbosity.Debug {
 		fmt.Println("debug level")
-		sous.Log.Vomit.SetOutput(os.Stderr)
+		//sous.Log.Vomit.SetOutput(os.Stderr)
 		sous.Log.Debug.SetOutput(os.Stderr)
 		sous.Log.Info.SetOutput(os.Stderr)
 		return cmdr.Debug
