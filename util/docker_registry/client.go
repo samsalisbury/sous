@@ -437,7 +437,7 @@ func (r *registry) getManifestWithEtag(ctx context.Context, ref reference.Named,
 }
 
 func safeCloseBody(r *http.Response) {
-	defer recover()
+	defer func() { recover() }()
 	r.Body.Close()
 }
 
