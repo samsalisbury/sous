@@ -36,3 +36,41 @@ func (dc *DeployConfig) Equal(o DeployConfig) bool {
 	Log.Vomit.Printf("%+ v ?= %+ v", dc, o)
 	return (dc.NumInstances == o.NumInstances && dc.Env.Equal(o.Env) && dc.Resources.Equal(o.Resources) && dc.Volumes.Equal(o.Volumes))
 }
+
+func flattenDeployConfigs(dcs []DeployConfig) DeployConfig {
+	dc := DeployConfig{
+		Resources: make(Resources),
+		Env:       make(Env),
+	}
+	for _, c := range dcs {
+		if c.NumInstances != 0 {
+			dc.NumInstances = c.NumInstances
+			break
+		}
+	}
+	for _, c := range dcs {
+		if len(c.Volumes) != 0 {
+			dc.Volumes = c.Volumes
+			break
+		}
+	}
+	for _, c := range dcs {
+		if len(c.Args) != 0 {
+			dc.Args = c.Args
+			break
+		}
+	}
+	for _, c := range dcs {
+		for n, v := range c.Resources {
+			if _, set := dc.Resources[n]; !set {
+				dc.Resources[n] = v
+			}
+		}
+		for n, v := range c.Env {
+			if _, set := dc.Env[n]; !set {
+				dc.Env[n] = v
+			}
+		}
+	}
+	return dc
+}

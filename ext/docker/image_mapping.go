@@ -174,16 +174,20 @@ func (nc *NameCache) insert(sid sous.SourceID, in, etag string) error {
 }
 
 func (nc *NameCache) harvest(sl sous.SourceLocation) error {
+	Log.Vomit.Printf("Havesting source location %#v", sl)
 	repos, err := nc.dbQueryOnSL(sl)
 	if err != nil {
+		Log.Vomit.Printf("Err harvesting %v", err)
 		return err
 	}
+	Log.Vomit.Printf("Attempting to harvest %d repos", len(repos))
 	for _, r := range repos {
 		ref, err := reference.ParseNamed(r)
 		if err != nil {
 			return fmt.Errorf("%v for %v", err, r)
 		}
 		ts, err := nc.RegistryClient.AllTags(r)
+		Log.Vomit.Printf("Found %d tags (err?: %v)", len(ts), err)
 		if err == nil {
 			for _, t := range ts {
 				Log.Debug.Printf("Harvested tag: %v", t)

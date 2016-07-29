@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 
+	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/configloader"
 	"github.com/opentable/sous/util/whitespace"
 	"github.com/opentable/sous/util/yaml"
@@ -18,7 +19,10 @@ func newConfig(u *User) (*Config, error) {
 		return nil, err
 	}
 
-	return &config, configloader.New().Load(&config, u.ConfigFile())
+	cl := configloader.New()
+	sous.SetupLogging(&cl)
+
+	return &config, cl.Load(&config, u.ConfigFile())
 }
 
 // Save the configuration to the configuration path (by default:

@@ -87,18 +87,14 @@ func BuildDeployment(m *Manifest, nick string, spec DeploySpec, inherit []Deploy
 	for i := range m.Owners {
 		ownMap.Add(m.Owners[i])
 	}
+	ds := flattenDeploySpecs(append([]DeploySpec{spec}, inherit...))
 	return &Deployment{
 		ClusterNickname: nick,
-		Cluster:         spec.clusterName,
-		DeployConfig: DeployConfig{
-			Resources:    spec.Resources,
-			Env:          spec.Env,
-			NumInstances: spec.NumInstances,
-			Volumes:      spec.Volumes,
-		},
-		Owners:   ownMap,
-		Kind:     m.Kind,
-		SourceID: m.Source.SourceID(spec.Version),
+		Cluster:         ds.clusterName,
+		DeployConfig:    ds.DeployConfig,
+		Owners:          ownMap,
+		Kind:            m.Kind,
+		SourceID:        m.Source.SourceID(ds.Version),
 	}, nil
 }
 

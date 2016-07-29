@@ -212,7 +212,7 @@ func newLocalStateWriter(sm *storage.DiskStateManager) LocalStateWriter {
 func newCurrentGDM(sr LocalStateReader) (CurrentGDM, error) {
 	gdm, err := sr.ReadState()
 	if os.IsNotExist(err) {
-		log.Println("error reading state: %s", err)
+		log.Printf("error reading state: %s", err)
 		log.Println("defaulting to empty state")
 		return CurrentGDM{&sous.State{}}, nil
 	}
