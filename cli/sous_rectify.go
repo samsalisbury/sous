@@ -24,6 +24,7 @@ type (
 	rectifyFlags struct {
 		dryrun,
 		repo, offset, cluster string
+		all bool
 	}
 )
 
@@ -40,6 +41,11 @@ together, the result is the intersection of their images - that is, the
 conditions are "anded." By implication, each can only be used once.
 NOTE: the successful use of these predicates requires all-team coordination.
 Use with great care.
+
+Because of the hazard involved in doing complete rectification at the command
+line, sous rectify requires the -all flag to consider the whole tree. This is
+almost certainly not what you want. Even if it is, you certainly want to trial
+your rectifies with -dry-run=scheduler first.
 
 Note: by default this command will query a live docker registry and make
 changes to live Singularity clusters.
@@ -59,6 +65,8 @@ func (sr *SousRectify) AddFlags(fs *flag.FlagSet) {
 		"consider only the offset `path` for rectification")
 	fs.StringVar(&sr.flags.cluster, "cluster", "",
 		"consider only the cluster `name` for rectification")
+	fs.BoolVar(&sr.flags.all, "all", false,
+		"actually do a full-tree recitification")
 }
 
 // Execute fulfils the cmdr.Executor interface
@@ -80,6 +88,10 @@ func (sr *SousRectify) Execute(args []string) cmdr.Result {
 
 func (f rectifyFlags) buildPredicate() sous.DeploymentPredicate {
 	var preds []sous.DeploymentPredicate
+
+	if f.all {
+		return func(*sous.Deployment) bool { return true }
+	}
 
 	if f.repo != "" {
 		preds = append(preds, func(d *sous.Deployment) bool {

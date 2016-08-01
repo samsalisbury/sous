@@ -70,6 +70,12 @@ func TestPredicateBuilder(t *testing.T) {
 	assert.Contains(filtered, ds[6])
 	assert.Contains(filtered, ds[7])
 	assert.Len(filtered, 4)
+
+	f = rectifyFlags{all: true}
+	pd = f.buildPredicate()
+	assert.NotNil(pd)
+	filtered = filter(ds, pd)
+	assert.Len(filtered, 8)
 }
 
 func filter(ds []*sous.Deployment, pd sous.DeploymentPredicate) (fd []*sous.Deployment) {
