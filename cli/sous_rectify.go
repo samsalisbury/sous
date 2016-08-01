@@ -53,9 +53,9 @@ func (sr *SousRectify) AddFlags(fs *flag.FlagSet) {
 	fs.StringVar(&sr.flags.dryrun, "dry-run", "none",
 		"prevent rectify from actually changing things - "+
 			"values are none,scheduler,registry,both")
-	fs.StringVar(&sr.flags.manifest, "repo", "",
+	fs.StringVar(&sr.flags.repo, "repo", "",
 		"consider only the repo `repository` for rectification")
-	fs.StringVar(&sr.flags.manifest, "offset", "",
+	fs.StringVar(&sr.flags.offset, "offset", "",
 		"consider only the offset `path` for rectification")
 	fs.StringVar(&sr.flags.cluster, "cluster", "",
 		"consider only the cluster `name` for rectification")
@@ -81,21 +81,21 @@ func (sr *SousRectify) Execute(args []string) cmdr.Result {
 func (f rectifyFlags) buildPredicate() sous.DeploymentPredicate {
 	var preds []sous.DeploymentPredicate
 
-	if sr.flags.repo != "" {
+	if f.repo != "" {
 		preds = append(preds, func(d *sous.Deployment) bool {
-			return d.SourceID.RepoURL == sous.RepoURL(sr.flags.repo)
+			return d.SourceID.RepoURL == sous.RepoURL(f.repo)
 		})
 	}
 
-	if sr.flags.offset != "" {
+	if f.offset != "" {
 		preds = append(preds, func(d *sous.Deployment) bool {
-			return d.SourceID.RepoOffset == sous.RepoOffset(sr.flags.offset)
+			return d.SourceID.RepoOffset == sous.RepoOffset(f.offset)
 		})
 	}
 
-	if sr.flags.cluster != "" {
+	if f.cluster != "" {
 		preds = append(preds, func(d *sous.Deployment) bool {
-			return d.ClusterNickname == sr.flags.cluster
+			return d.ClusterNickname == f.cluster
 		})
 	}
 
