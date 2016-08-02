@@ -6,6 +6,7 @@ type (
 	// State contains the mutable state of an organisation's deployments.
 	// State is also known as the "Global Deploy Manifest" or GDM.
 	State struct {
+		singleCluster string
 		// Defs contains global definitions for this organisation.
 		Defs Defs `hy:"defs.yaml"`
 		// Manifests contains a mapping of source code repositories to global
@@ -71,12 +72,19 @@ type (
 	VarType string
 )
 
+// OnlyCluster sets a contraint on the State such that it will only consider a particular cluster
+func (s *State) OnlyCluster(nick string) {
+	s.singleCluster = nick
+}
+
 // ClusterMap returns the nicknames for all the clusters referred to in this state
 // paired with the URL for the named cluster
 func (s *State) ClusterMap() map[string]string {
 	m := make(map[string]string, len(s.Defs.Clusters))
 	for name, cluster := range s.Defs.Clusters {
-		m[name] = cluster.BaseURL
+		if s.singleCluster == "" || s.singleCluster == name {
+			m[name] = cluster.BaseURL
+		}
 	}
 	return m
 }
