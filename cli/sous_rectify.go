@@ -2,6 +2,7 @@ package cli
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"os"
 
@@ -76,9 +77,12 @@ func (sr *SousRectify) Execute(args []string) cmdr.Result {
 
 	predicate := sr.flags.buildPredicate()
 
+	if predicate == nil {
+		return EnsureErrorResult(fmt.Errorf("Cowardly refusing rectify with neither contraint nor `-all`! (see `sous help rectify`)"))
+	}
+
 	r := sous.NewResolver(sr.Deployer, sr.Registry)
 
-	// If predicate is still nil, that means resolve all. See Deployments.Filter.
 	if err := r.ResolveFilteredDeployments(*sr.GDM.State, predicate); err != nil {
 		return EnsureErrorResult(err)
 	}
@@ -111,7 +115,6 @@ func (f rectifyFlags) buildPredicate() sous.DeploymentPredicate {
 		})
 	}
 
-	// These aren't strictly necessary, but an easy optimization
 	switch len(preds) {
 	case 0:
 		return nil
