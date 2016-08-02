@@ -239,7 +239,7 @@ func makeDockerBuilder(cfg LocalSousConfig, cl LocalDockerClient, ctx *sous.Sour
 		return nil, err
 	}
 	drh := cfg.Docker.RegistryHost
-	return docker.NewBuilder(nc, drh, ctx, source.Sh, scratch.Sh)
+	return docker.NewBuilder(nc, drh, source.Sh, scratch.Sh)
 }
 
 // initErr returns nil if error is nil, otherwise an initialisation error.

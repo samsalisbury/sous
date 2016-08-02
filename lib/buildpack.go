@@ -10,9 +10,7 @@ type (
 
 	// Labeller defines a container-based build system.
 	Labeller interface {
-		// Build performs a build and returns the result.
-		//Build(*BuildContext, Buildpack, *DetectResult) (*BuildResult, error)
-		ApplyMetadata(*BuildResult) error
+		ApplyMetadata(*BuildResult, *BuildContext) error
 	}
 
 	// Registrar defines the interface to register build results to be deployed
@@ -20,7 +18,7 @@ type (
 	Registrar interface {
 		// Register takes a BuildResult and makes it available for the deployment
 		// target system to find during deployment
-		Register(*BuildResult) error
+		Register(*BuildResult, *BuildContext) error
 	}
 
 	// BuildArtifact describes the actual built binary Sous will deploy

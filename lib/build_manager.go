@@ -20,14 +20,14 @@ func (m *BuildManager) Build() (br *BuildResult, e error) {
 	var bc *BuildContext
 
 	e = firsterr.Returned(
-		func() (e error) { e = m.BuildConfig.GuardStrict(); return },
 		func() (e error) { bc = m.BuildConfig.NewContext(); return nil },
+		func() (e error) { e = m.BuildConfig.GuardStrict(bc); return },
 		func() (e error) { bp, e = m.SelectBuildpack(bc); return },
 		func() (e error) { br, e = bp.Build(bc); return },
-		func() (e error) { br.Advisories = m.BuildConfig.Advisories(); return nil },
-		func() (e error) { e = m.ApplyMetadata(br); return },
-		func() (e error) { e = m.BuildConfig.GuardRegister(); return },
-		func() (e error) { e = m.Register(br); return },
+		func() (e error) { br.Advisories = bc.Advisories; return nil },
+		func() (e error) { e = m.ApplyMetadata(br, bc); return },
+		func() (e error) { e = m.BuildConfig.GuardRegister(bc); return },
+		func() (e error) { e = m.Register(br, bc); return },
 	)
 	return
 }

@@ -38,6 +38,7 @@ func (sc *SourceContext) Version() SourceID {
 		Version:    v,
 		RepoOffset: RepoOffset(sc.OffsetDir),
 	}
+	Log.Debug.Printf("Version: % #v", sv)
 	return sv
 }
 
