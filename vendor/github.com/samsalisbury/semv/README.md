@@ -74,41 +74,58 @@ Version string parsing using `Parse()` is permissive by default. All of the foll
 - `"1.2+abc"` parses as `{Major: 1, Minor: 2, Patch: 0, Pre: "", Meta: "abc"}`
 - `"1.2-beta+abc"` parses as `{Major: 1, Minor: 2, Patch: 0, Pre: "beta", Meta: "abc"}`
 
-Note that whilts permissive, parse will still return errors for the following conditions:
+Note that whilst permissive, parse will still return errors for the following conditions:
 
 - `UnexpectedCharacter` when encountering anything other than:
-  - `[0-9.]` in a major or minor field,
-  - `[0-9]-+`, in a patch field,
-  - `[0-9a-zA-Z-]` in a prerelease or meta field.
+  - `[0-9\.]` in a major or minor field,
+  - `[0-9\-]+`, in a patch field,
+  - `[0-9a-zA-Z\-]` in a prerelease or meta field.
 - `ZeroLengthNumeric` when encountering 2 dots together in the major, minor,
   patch fields.
 
 If you want to validate that input is in exact semver 2.0.0 format, you should use `ParseExactSemver2` instead, which returns these additional errors:
 - `VersionIncomplete` when either the minor or patch fields are missing
-- `PrecedingZero` when a major, minor, or patch contains an erroneous preceding
+- `LeadingZero` when a major, minor, or patch contains an erroneous preceding
   zero character.
 
 ### Range Parsing
 
-Range parsing  using `ParseRange` and `MustParseRange` allows common range specifiers like `>`, `>=`, `<`, `<=`, as well as modern range shorcuts as used in npm and other tools: `^` and `~`.
+Range parsing  using `ParseRange` and `MustParseRange` allows common range specifiers like `>`, `>=`, `<`, `<=`, as well as modern range shortcuts as used in npm and other tools: `^` and `~`.
 
 Currently, only single-version ranges are supported, so the only way to parse a range with both an upper and a lower limit is by using the `^` and `~` characters.
 
 - `^1.2.3 == >=1.2.3 and <2.0.0`
 - `~1.2.3 == >=1.2.3 and <1.3.0`
 
+### VersionList
+
+The `VersionList` type is a slice of versions. It implements `sort.Interface` so you can order arbitrary lists of versions.
+
+You can find the greatest version in a `VersionList` satisfying a `Range` using the `GreatestSatisfying` method, e.g.:
+
+```go
+v, ok := MustParseList("1.0.0", "0.9.1", "1.2.0").GreatestSatisfying(MustParseRange("^1.0.0"))
+if !ok {
+	fmt.Println("No matching version found.")
+} else {
+	fmt.Println(v)
+}
+// Output:
+// 1.2.0
+```
+
 ### Version.String()
 
-Simply calling `.String()` on a version created using one of the `New(Version|MajorMinorPatch)` funcs will print the full version string, ommitting the optional prerelease and/or metadata sections depending on if they contain any data.
+Simply calling `.String()` on a version created using one of the `New(Version|MajorMinorPatch)` funcs will print the full version string, omitting the optional prerelease and/or metadata sections depending on if they contain any data.
 
 If a version is created by parsing a string, its original format is recorded with the version. In this case, calling `.String()` will print the version it its original format. E.g.:
 
-- `Parse("1").String() == "1"`
-- `Parse("1.0").String() == "1.0"`
-- `Parse("1.0.0").String() == "1.0.0"`
-- `Parse("1.0.0-beta").String() == "1.0.0-beta"`
-- `Parse("1.0.0-beta+abc").String() == "1.0.0-beta+abc"`
-- `Parse("1.0.0+abc").String() == "1.0.0+abc"`
+- `MustParse("1").String() == "1"`
+- `MustParse("1.0").String() == "1.0"`
+- `MustParse("1.0.0").String() == "1.0.0"`
+- `MustParse("1.0.0-beta").String() == "1.0.0-beta"`
+- `MustParse("1.0.0-beta+abc").String() == "1.0.0-beta+abc"`
+- `MustParse("1.0.0+abc").String() == "1.0.0+abc"`
 
 This feature is useful when dealing with partial versions, as used by many popular projects, e.g. [Go], [NPM], and others. You can always use `.Format()` to print an exact format.
 
@@ -119,11 +136,11 @@ This feature is useful when dealing with partial versions, as used by many popul
 
 If you want to print your version in a specific format, you can use `.Format()` with a format string, e.g.:
 
-- `Parse("1.2.3-beta.1+abc-def.2").Format("M") == "1"`
-- `Parse("1.2.3-beta.1+abc-def.2").Format("M.m") == "1.2"`
-- `Parse("1.2.3-beta.1+abc-def.2").Format("M.m.p") == "1.2.3"`
-- `Parse("1.2.3-beta.1+abc-def.2").Format("M.m.p-?") == "1.2.3-beta.1"`
-- `Parse("1.2.3-beta.1+abc-def.2").Format("M.m.p+?") == "1.2.3+abc-def.2"`
-- `Parse("1.2.3-beta.1+abc-def.2").Format("M.m.p-?+?") == "1.2.3-beta.1+abc-def.2"`
+- `MustParse("1.2.3-beta.1+abc-def.2").Format("M") == "1"`
+- `MustParse("1.2.3-beta.1+abc-def.2").Format("M.m") == "1.2"`
+- `MustParse("1.2.3-beta.1+abc-def.2").Format("M.m.p") == "1.2.3"`
+- `MustParse("1.2.3-beta.1+abc-def.2").Format("M.m.p-?") == "1.2.3-beta.1"`
+- `MustParse("1.2.3-beta.1+abc-def.2").Format("M.m.p+?") == "1.2.3+abc-def.2"`
+- `MustParse("1.2.3-beta.1+abc-def.2").Format("M.m.p-?+?") == "1.2.3-beta.1+abc-def.2"`
 
 

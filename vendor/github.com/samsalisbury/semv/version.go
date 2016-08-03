@@ -7,7 +7,7 @@ import (
 )
 
 type (
-	// Version is a semver version
+	// Version is a semver version.
 	Version struct {
 		Major, Minor, Patch      int
 		Pre, Meta, DefaultFormat string
@@ -29,12 +29,12 @@ type (
 	ZeroLengthNumeric struct {
 		ZeroLengthPart string
 	}
-	// PrecedingZero is an error returned when one of the major, minor, or
+	// LeadingZero is an error returned when one of the major, minor, or
 	// patch parts contains a preceding zero. This error is only returned
 	// when using ParseExactSemver2_0_0, and this validation is ignored
 	// otherwise.
-	PrecedingZero struct {
-		PrecedingZeroPart, InputString string
+	LeadingZero struct {
+		LeadingZeroPart, InputString string
 	}
 	mode uint
 )
@@ -62,9 +62,9 @@ func (err ZeroLengthNumeric) Error() string {
 	return fmt.Sprintf("unexpected zero-length %s component", err.ZeroLengthPart)
 }
 
-func (err PrecedingZero) Error() string {
+func (err LeadingZero) Error() string {
 	return fmt.Sprintf("unexpected preceding zero in %s component: %q",
-		err.PrecedingZeroPart, err.InputString)
+		err.LeadingZeroPart, err.InputString)
 }
 
 const (
@@ -174,6 +174,12 @@ func (v Version) Format(format string) string {
 	return formatted
 }
 
+// SetFormat sets the default format string to use when calling String()
+// see Format for acceptable format strings.
+func (v Version) SetFormat(format string) {
+	v.DefaultFormat = format
+}
+
 // Less returns true if the version it is invoked on is less than the version
 // passed in, according to the precendence rules in semver 2.0.0
 func (v Version) Less(than Version) bool {
@@ -266,7 +272,10 @@ func (v *Version) ValueEquals(other *Version) bool {
 	return (*v).Equals(*other)
 }
 
-// Satisfies is a convenience function. v.Satisfies(r) == r.IsSatisfied(v)
+// Satisfies is a convenience function. For any version, range pair (v,r):
+//
+//     v.Satisfies(r) == r.IsSatisfied(v)
+//
 func (v Version) Satisfies(r Range) bool {
 	return r.SatisfiedBy(v)
 }
@@ -320,4 +329,21 @@ func (v *Version) UnmarshalYAML(f func(interface{}) error) (err error) {
 	}
 	*v, err = Parse(s)
 	return
+}
+
+// MarshalJSON marshals this version to a JSON string.
+func (v Version) MarshalJSON() ([]byte, error) {
+	return []byte(`"` + v.String() + `"`), nil
+}
+
+// UnmarshalJSON unmarshals from a JSON string.
+func (v *Version) UnmarshalJSON(b []byte) error {
+	s := string(b)
+	if !strings.HasPrefix(s, `"`) || !strings.HasSuffix(s, `"`) {
+		return fmt.Errorf("missing surrounding quotation marks")
+	}
+	vs := string(b[1 : len(b)-1])
+	var err error
+	*v, err = Parse(vs)
+	return err
 }
