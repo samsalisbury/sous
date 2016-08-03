@@ -38,6 +38,7 @@ flesh out some additional details.
 // Help returns the help string for this command
 func (si *SousInit) Help() string { return sousInitHelp }
 
+// AddFlags adds the flags for sous init.
 func (si *SousInit) AddFlags(fs *flag.FlagSet) {
 	fs.StringVar(&si.flags.RepoURL, "repo-url", "",
 		"the source code repo for this project (e.g. github.com/user/project)")
@@ -53,8 +54,8 @@ func (si *SousInit) AddFlags(fs *flag.FlagSet) {
 func (si *SousInit) Execute(args []string) cmdr.Result {
 	var repoURL, repoOffset string
 	if err := firsterr.Parallel().Set(
-		func(e *error) { repoURL, *e = si.ResolveRepoURL() },
-		func(e *error) { repoOffset, *e = si.ResolveRepoOffset() },
+		func(e *error) { repoURL, *e = si.resolveRepoURL() },
+		func(e *error) { repoOffset, *e = si.resolveRepoOffset() },
 	); err != nil {
 		return EnsureErrorResult(err)
 	}
@@ -115,7 +116,7 @@ func defaultDeploySpecs() sous.DeploySpecs {
 	}
 }
 
-func (si *SousInit) ResolveRepoURL() (string, error) {
+func (si *SousInit) resolveRepoURL() (string, error) {
 	repoURL := si.flags.RepoURL
 	if repoURL == "" {
 		repoURL = si.SourceContext.PossiblePrimaryRemoteURL
@@ -130,7 +131,7 @@ func (si *SousInit) ResolveRepoURL() (string, error) {
 	return repoURL, nil
 }
 
-func (si *SousInit) ResolveRepoOffset() (string, error) {
+func (si *SousInit) resolveRepoOffset() (string, error) {
 	repoOffset := si.flags.RepoOffset
 	if repoOffset == "" {
 		repoOffset := si.SourceContext.OffsetDir
