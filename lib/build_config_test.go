@@ -188,10 +188,10 @@ func TestEphemeralTag(t *testing.T) {
 		Tag: "1.2.3",
 		Context: &BuildContext{
 			Source: SourceContext{
-				RemoteURL:          "github.com/opentable/present",
-				Revision:           "abcd",
-				NearestTagName:     "1.2.0",
-				NearestTagRevision: "abcd",
+				PossiblePrimaryRemoteURL: "github.com/opentable/present",
+				Revision:                 "abcd",
+				NearestTagName:           "1.2.0",
+				NearestTagRevision:       "abcd",
 			},
 		},
 	}
@@ -222,7 +222,7 @@ func TestEphemeralTag(t *testing.T) {
 	ctx := bc.NewContext()
 	assert.Equal(`1.2.3+abcd`, ctx.Source.Version().Version.String())
 	assert.Contains(ctx.Advisories, string(EphemeralTag))
-	assert.NoError(bc.GuardRegister())
+	assert.NoError(bc.GuardRegister(ctx))
 }
 
 func TestSetsOffset(t *testing.T) {
@@ -257,7 +257,7 @@ func TestDirtyWorkspaceAdvisory(t *testing.T) {
 
 	ctx := bc.NewContext()
 	assert.Contains(ctx.Advisories, string(DirtyWS))
-	assert.Error(bc.GuardRegister())
+	assert.Error(bc.GuardRegister(ctx))
 }
 
 func TestUnpushedRevisionAdvisory(t *testing.T) {
@@ -274,7 +274,7 @@ func TestUnpushedRevisionAdvisory(t *testing.T) {
 
 	ctx := bc.NewContext()
 	assert.Contains(ctx.Advisories, string(UnpushedRev))
-	assert.Error(bc.GuardStrict())
+	assert.Error(bc.GuardStrict(ctx))
 }
 
 func TestPermissiveGuard(t *testing.T) {
@@ -291,7 +291,7 @@ func TestPermissiveGuard(t *testing.T) {
 
 	ctx := bc.NewContext()
 	assert.Contains(ctx.Advisories, string(UnpushedRev))
-	assert.NoError(bc.GuardStrict())
+	assert.NoError(bc.GuardStrict(ctx))
 }
 
 func TestProductionReady(t *testing.T) {
@@ -321,5 +321,5 @@ func TestProductionReady(t *testing.T) {
 
 	ctx := bc.NewContext()
 	assert.Len(ctx.Advisories, 0)
-	assert.NoError(bc.GuardStrict())
+	assert.NoError(bc.GuardStrict(ctx))
 }

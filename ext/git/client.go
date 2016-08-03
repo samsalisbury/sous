@@ -2,6 +2,7 @@ package git
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	sous "github.com/opentable/sous/lib"
@@ -91,7 +92,7 @@ func (c *Client) Dir() string {
 }
 
 func (c *Client) RevisionAt(ref string) (string, error) {
-	return c.stdout("rev-parse", ref)
+	return c.stdout("rev-list", "-n", "1", ref)
 }
 
 func (c *Client) Revision() (string, error) {
@@ -122,20 +123,26 @@ func (c *Client) ListTags() ([]sous.Tag, error) {
 	}
 	// E.g. output...
 	//1141dde555492ea0a6073a222b2607900d09b0b5 2015-10-02T12:12:01+01:00 tag: v0.0.1-alpha1, tag: v0.0.1-alpha
-	tags := []sous.Tag{}
+	tags := c.parseTags(lines)
+	return tags, nil
+}
+
+var tagRE = regexp.MustCompile(`tag: (.*)`)
+
+func (c *Client) parseTags(lines []string) []sous.Tag {
+	var tags []sous.Tag
 	for _, l := range lines {
 		r := strings.SplitN(l, " ", 3)
-		if len(r) != 3 || !strings.Contains(r[2], "tag: ") {
+		if len(r) < 3 {
 			continue
 		}
-		cleanTags := strings.Replace(r[2], "tag: ", "", -1)
-		ts := strings.Split(cleanTags, ", ")
-		for _, t := range ts {
-
-			tags = append(tags, sous.Tag{Name: t, Revision: r[0]})
+		for _, tq := range strings.Split(r[2], ", ") {
+			if m := tagRE.FindStringSubmatch(tq); m != nil {
+				tags = append(tags, sous.Tag{Name: m[1], Revision: r[0]})
+			}
 		}
 	}
-	return tags, nil
+	return tags
 }
 
 // ListUnpushedCommits returns a list of commit sha1s for commits that haven't been pushed to any remote

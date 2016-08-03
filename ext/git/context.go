@@ -12,7 +12,8 @@ import (
 // tag, etc.
 func (r *Repo) SourceContext() (*sous.SourceContext, error) {
 	var (
-		revision, branch, nearestTagName,
+		revision, branch,
+		nearestTagName, nearestTagRevision,
 		repoRelativeDir string
 		files, modifiedFiles, newFiles []string
 		allTags                        []sous.Tag
@@ -31,14 +32,19 @@ func (r *Repo) SourceContext() (*sous.SourceContext, error) {
 		},
 		func(err *error) {
 			allTags, *err = r.Client.ListTags()
-			if err != nil || len(allTags) == 0 {
+			if *err != nil || len(allTags) == 0 {
 				return
 			}
 			nearestTagName, *err = c.NearestTag()
-			if err != nil {
+			if *err != nil {
 				return
 			}
-			//nearestTagRevision, *err = c.RevisionAt(nearestTagName)
+
+			ntr, terr := c.RevisionAt(nearestTagName)
+
+			if terr == nil {
+				nearestTagRevision = ntr
+			}
 		},
 		func(err *error) { files, *err = c.ListFiles() },
 		func(err *error) { modifiedFiles, *err = c.ModifiedFiles() },
@@ -60,6 +66,7 @@ func (r *Repo) SourceContext() (*sous.SourceContext, error) {
 		NewFiles:                 newFiles,
 		Tags:                     allTags,
 		NearestTagName:           nearestTagName,
+		NearestTagRevision:       nearestTagRevision,
 		PossiblePrimaryRemoteURL: primaryRemoteURL,
 		RemoteURLs:               allFetchURLs(remotes),
 		DirtyWorkingTree:         len(modifiedFiles)+len(newFiles) != 0,

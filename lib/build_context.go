@@ -36,3 +36,8 @@ type (
 		SousUpdated, NewCommit, NewTag, NewFiles, ChangedFiles []string
 	}
 )
+
+// Version returns the SourceID for this build
+func (bc *BuildContext) Version() SourceID {
+	return bc.Source.Version()
+}

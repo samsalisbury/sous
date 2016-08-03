@@ -36,13 +36,12 @@ const (
 func (c *BuildConfig) NewContext() *BuildContext {
 	ctx := c.Context
 	sc := c.Context.Source
-	return &BuildContext{
-		Sh:         ctx.Sh,
-		Scratch:    ctx.Scratch,
-		Machine:    ctx.Machine,
-		User:       ctx.User,
-		Changes:    ctx.Changes,
-		Advisories: c.Advisories(),
+	bc := BuildContext{
+		Sh:      ctx.Sh,
+		Scratch: ctx.Scratch,
+		Machine: ctx.Machine,
+		User:    ctx.User,
+		Changes: ctx.Changes,
 		Source: SourceContext{
 			RootDir:                  sc.RootDir,
 			OffsetDir:                c.chooseOffset(),
@@ -58,12 +57,18 @@ func (c *BuildConfig) NewContext() *BuildContext {
 			PossiblePrimaryRemoteURL: sc.PossiblePrimaryRemoteURL,
 			RemoteURLs:               sc.RemoteURLs,
 			DirtyWorkingTree:         sc.DirtyWorkingTree,
+			RevisionUnpushed:         sc.RevisionUnpushed,
 		},
 	}
+
+	bc.Advisories = c.Advisories(&bc)
+
+	return &bc
 }
 
 func (c *BuildConfig) chooseRemoteURL() string {
 	if c.Repo == "" {
+		Log.Debug.Printf("Using best guess: % #v", c.Context.Source.PossiblePrimaryRemoteURL)
 		return c.Context.Source.PossiblePrimaryRemoteURL
 	}
 	return c.Repo
@@ -88,11 +93,11 @@ func (c *BuildConfig) chooseOffset() string {
 }
 
 // GuardStrict returns an error if there are imperfections in the proposed build
-func (c *BuildConfig) GuardStrict() error {
+func (c *BuildConfig) GuardStrict(bc *BuildContext) error {
 	if !c.Strict {
 		return nil
 	}
-	as := c.Advisories()
+	as := bc.Advisories
 	if len(as) > 0 {
 		return fmt.Errorf("Strict built encountered advisories:\n  %s", strings.Join(as, "  \n"))
 	}
@@ -100,20 +105,24 @@ func (c *BuildConfig) GuardStrict() error {
 }
 
 // GuardRegister returns an error if any development-only advisories exist
-func (c *BuildConfig) GuardRegister() error {
-	for _, a := range c.Advisories() {
+func (c *BuildConfig) GuardRegister(bc *BuildContext) error {
+	var blockers []string
+	for _, a := range bc.Advisories {
 		switch a {
 		case string(DirtyWS), string(UnpushedRev),
 			string(NoRepoAdv), string(NotRequestedRevision):
-			return fmt.Errorf("Refusing to register build because of advisory: %s", a)
+			blockers = append(blockers, a)
 		}
+	}
+	if len(blockers) > 0 {
+		return fmt.Errorf("Refusing to register build because of advisories:\n  %s", strings.Join(blockers, "  \n"))
 	}
 	return nil
 }
 
 // Advisories does this:
-func (c *BuildConfig) Advisories() (advs []string) {
-	s := c.Context.Source
+func (c *BuildConfig) Advisories(ctx *BuildContext) (advs []string) {
+	s := ctx.Source
 	knowsRepo := false
 	for _, r := range s.RemoteURLs {
 		if s.RemoteURL == r {
@@ -125,7 +134,7 @@ func (c *BuildConfig) Advisories() (advs []string) {
 		advs = append(advs, string(UnknownRepo))
 	}
 
-	if c.Repo == "" && s.RemoteURL == "" {
+	if s.RemoteURL == "" {
 		advs = append(advs, string(NoRepoAdv))
 	}
 
@@ -138,18 +147,21 @@ func (c *BuildConfig) Advisories() (advs []string) {
 	}
 
 	if s.NearestTagRevision != s.Revision {
+		Log.Debug.Printf("%s != %s", s.NearestTagRevision, s.Revision)
 		advs = append(advs, string(TagNotHead))
 	}
 
-	hasTag := false
-	for _, t := range s.Tags {
-		if t.Name == c.Tag {
-			hasTag = true
-			break
+	if c.Tag != "" {
+		hasTag := false
+		for _, t := range s.Tags {
+			if t.Name == c.Tag {
+				hasTag = true
+				break
+			}
 		}
-	}
-	if !hasTag {
-		advs = append(advs, string(EphemeralTag))
+		if !hasTag {
+			advs = append(advs, string(EphemeralTag))
+		}
 	}
 
 	if s.DirtyWorkingTree {

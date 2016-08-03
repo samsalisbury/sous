@@ -40,8 +40,9 @@ func (d *DockerfileBuildpack) Build(c *sous.BuildContext) (*sous.BuildResult, er
 	}
 
 	return &sous.BuildResult{
-		ImageID: match[1],
-		Elapsed: time.Since(start),
+		ImageID:    match[1],
+		Elapsed:    time.Since(start),
+		Advisories: c.Advisories,
 	}, nil
 }
 
