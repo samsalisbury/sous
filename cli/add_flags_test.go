@@ -11,7 +11,7 @@ var expectedHelpText = `
   -offset string
         source code relative repository offset
   -repo string
-        source code repository root
+        source code repository location
   -revision string
         source code revision ID
   -tag string
@@ -28,7 +28,10 @@ func TestAddFlags(t *testing.T) {
 	}
 
 	expected := SourceFlags{
-		Repo: "github.com/opentable/sous",
+		Repo:     "github.com/opentable/sous",
+		Offset:   "",
+		Tag:      "v1.0.0",
+		Revision: "cabba9e",
 	}
 
 	args := []string{
@@ -57,8 +60,33 @@ func TestAddFlags(t *testing.T) {
 	fs.PrintDefaults()
 	actualHelp := strings.TrimSpace(buf.String())
 	expectedHelp := strings.TrimSpace(expectedHelpText)
-	if actualHelp != expectedHelp {
-		t.Errorf("got help text:\n%s\nwant:\n%s", actualHelp, expectedHelp)
+	actualFields := strings.Fields(actualHelp)
+	expectedFields := strings.Fields(expectedHelp)
+	// we're comparing the same words in the same order rather than being
+	// concerned with whitespace differences.
+	for i := range actualFields {
+		if len(expectedFields)-1 < i || (actualFields[i] != expectedFields[i]) {
+			t.Errorf("got help text:\n%s\nwant:\n%s", actualHelp, expectedHelp)
+		}
+	}
+}
+
+func TestParseUsage(t *testing.T) {
+	in := `
+		-someflag
+			some usage text
+	`
+	out, err := parseUsage(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	actual, ok := out["someflag"]
+	expected := "some usage text"
+	if !ok {
+		t.Fatalf("no usage text for -someflag; want %q", expected)
+	}
+	if actual != expected {
+		t.Errorf("got %q; want %q", actual, expected)
 	}
 }
 
@@ -78,12 +106,13 @@ func TestAddFlags_badInputs(t *testing.T) {
 	var s string
 	stringPtr := &s
 	var badAddFlagsInputs = map[AddFlagsInput]string{
-		{nil, nil, ""}:                  "cannot add flags to nil *flag.FlagSet",
-		{newFS(), nil, ""}:              "target is <nil>; want pointer to struct",
-		{newFS(), "", ""}:               "target is string; want pointer to struct",
-		{newFS(), SourceFlags{}, ""}:    "target is cli.SourceFlags; want pointer to struct",
-		{newFS(), stringPtr, ""}:        "target is *string; want pointer to struct",
-		{newFS(), &BadFlagStruct{}, ""}: "target field cli.BadFlagStruct.PtrField is *string; want string, int",
+		{nil, nil, ""}:                                     "cannot add flags to nil *flag.FlagSet",
+		{newFS(), nil, ""}:                                 "target is <nil>; want pointer to struct",
+		{newFS(), "", ""}:                                  "target is string; want pointer to struct",
+		{newFS(), SourceFlags{}, ""}:                       "target is cli.SourceFlags; want pointer to struct",
+		{newFS(), stringPtr, ""}:                           "target is *string; want pointer to struct",
+		{newFS(), &BadFlagStruct{}, "\t-ptrfield\n\tblah"}: "target field cli.BadFlagStruct.PtrField is *string; want string, int",
+		{newFS(), &SourceFlags{}, ""}:                      "no usage text for flag -repo",
 	}
 	for in, expected := range badAddFlagsInputs {
 		actualErr := AddFlags(in.FlagSet, in.Target, in.Help)

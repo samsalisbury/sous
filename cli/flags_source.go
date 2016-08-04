@@ -10,8 +10,8 @@ type SourceFlags struct {
 }
 
 const sourceFlagsHelp = `
-	-repo=REPOSITORY_NAME
-		set source context: repository
+	-repo REPOSITORY_NAME
+		source code repository location
 
 		The repository context is the name of a source code repository whose
 		code, configuration, artifacts, deployments, etc. will be acted upon.
@@ -23,8 +23,8 @@ const sourceFlagsHelp = `
 		based repositories, e.g. "github.com/user/repo"
 
 	
-	-offset=RELATIVE_PATH
-		set source context: repository offset
+	-offset RELATIVE_PATH
+		source code relative repository offset
 
 		Repository context offset is the relative path within a repository where
 		a piece of software is defined.
@@ -36,13 +36,13 @@ const sourceFlagsHelp = `
 		Note: if you supply the -repo flag but not -offset, then -offset
 		defaults to "".
 	
-	-tag=TAG_NAME
-		set source context: repository tag
+	-tag TAG_NAME
+		source code revision tag
 
 		Repository tag is the name of a tag in the repository to act upon.
 
-	-revision=REVISION_ID
-		set source context: revision ID
+	-revision REVISION_ID
+		source code revision ID
 
 		Revision ID is the ID of a revision in the repository to act upon.
 `
