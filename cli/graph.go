@@ -227,9 +227,9 @@ func makeDockerRegistry(cfg LocalSousConfig, cl LocalDockerClient) (*docker.Name
 	dbCfg := cfg.Docker.DBConfig()
 	db, err := docker.GetDatabase(&dbCfg)
 	if err != nil {
-		return nil, fmt.Errorf("unable to build name cache DB: ", err)
+		return nil, fmt.Errorf("unable to build name cache DB: %s", err)
 	}
-	return &docker.NameCache{cl.Client, db}, nil
+	return &docker.NameCache{RegistryClient: cl.Client, DB: db}, nil
 }
 
 // makeDockerBuilder creates a Docker version of sous.Builder
