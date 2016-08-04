@@ -27,6 +27,7 @@ before_install:
 - go get github.com/nyarly/engulf github.com/nyarly/legendary
 - env | grep '^DOCKER_'
 - "(cd test-registry && docker-compose pull)"
+- mkdir .cadre
 install:
 - echo "Default install step disabled by .travis.yml"
 script:
