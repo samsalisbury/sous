@@ -2,7 +2,6 @@ package cli
 
 import (
 	"flag"
-	"log"
 	"reflect"
 	"strings"
 
@@ -34,7 +33,6 @@ func AddFlags(fs *flag.FlagSet, target interface{}, help string) error {
 			return errors.Errorf("target field %s.%s is %s; want string, int",
 				t, f.Name, ft)
 		case *string:
-			log.Println("Adding field", name)
 			fs.StringVar(field, name, "", "usage")
 		}
 	}

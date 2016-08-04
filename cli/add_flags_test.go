@@ -1,9 +1,22 @@
 package cli
 
 import (
+	"bytes"
 	"flag"
+	"strings"
 	"testing"
 )
+
+var expectedHelpText = `
+  -offset string
+        source code relative repository offset
+  -repo string
+        source code repository root
+  -revision string
+        source code revision ID
+  -tag string
+        source code revision tag
+`
 
 func TestAddFlags(t *testing.T) {
 	fs := flag.NewFlagSet("source", flag.ContinueOnError)
@@ -18,12 +31,34 @@ func TestAddFlags(t *testing.T) {
 		Repo: "github.com/opentable/sous",
 	}
 
-	args := []string{"-repo", expected.Repo}
+	args := []string{
+		"-repo", expected.Repo,
+		"-offset", expected.Offset,
+		"-tag", expected.Tag,
+		"-revision", expected.Revision,
+	}
 	if err := fs.Parse(args); err != nil {
 		t.Fatal(err)
 	}
 	if actual.Repo != expected.Repo {
-		t.Errorf("got repo %q; want %q", actual.Repo, expected.Repo)
+		t.Errorf("got %q; want %q", actual.Repo, expected.Repo)
+	}
+	if actual.Offset != expected.Offset {
+		t.Errorf("got %q; want %q", actual.Offset, expected.Offset)
+	}
+	if actual.Tag != expected.Tag {
+		t.Errorf("got %q; want %q", actual.Tag, expected.Tag)
+	}
+	if actual.Revision != expected.Revision {
+		t.Errorf("got %q; want %q", actual.Revision, expected.Revision)
+	}
+	buf := &bytes.Buffer{}
+	fs.SetOutput(buf)
+	fs.PrintDefaults()
+	actualHelp := strings.TrimSpace(buf.String())
+	expectedHelp := strings.TrimSpace(expectedHelpText)
+	if actualHelp != expectedHelp {
+		t.Errorf("got help text:\n%s\nwant:\n%s", actualHelp, expectedHelp)
 	}
 }
 
