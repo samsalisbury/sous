@@ -177,6 +177,12 @@
 			"revisionTime": "2016-07-18T22:12:07Z"
 		},
 		{
+			"checksumSHA1": "2HSjyUZ4IMkCeA34TjJ0/f+Kk/k=",
+			"path": "github.com/pkg/errors",
+			"revision": "1d2e60385a13aaa66134984235061c2f9302520e",
+			"revisionTime": "2016-07-24T02:43:27Z"
+		},
+		{
 			"checksumSHA1": "LuFv4/jlrmFNnDb/5SCSEPAM9vU=",
 			"path": "github.com/pmezard/go-difflib/difflib",
 			"revision": "792786c7400a136282c1664665ae0a8db921c6c2"
