@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
-engulf -coverdir /tmp/sous-cover -covermode=count -short ./...
-legendary .cadre/coverage.vim /tmp/sous-cover/*.coverprofile
-legendary --hitlist /tmp/sous-cover/*.coverprofile
+engulf -s --coverdir=/tmp/sous-cover --exclude=vendor/,integration/ --merge-base=_merged.txt ./...
+mkdir -p .cadre
+legendary --hitlist .cadre/coverage.vim /tmp/sous-cover/*_merged.txt
