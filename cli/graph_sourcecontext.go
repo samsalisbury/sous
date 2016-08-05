@@ -7,27 +7,31 @@ import (
 
 func newSourceContextFunc(g GitSourceContext, f *SourceFlags) SourceContextFunc {
 	c := g.SourceContext
+	if c == nil {
+		c = &sous.SourceContext{}
+	}
 	return func() (*sous.SourceContext, error) {
 		sl, err := resolveSourceLocation(f, c)
 		if err != nil {
 			return nil, errors.Wrap(err, "resolving source location")
 		}
-		if sl != g.SourceLocation() {
+		if sl != c.SourceLocation() {
 			// TODO: Clone the repository, and use the cloned dir as source context.
-			return nil, errors.Errorf("source location outside of current directory not yet supported")
+			return nil, errors.Errorf("source location %q is not the same as the remote %q",
+				sl, c.SourceLocation())
 		}
 		return c, nil
 	}
 }
 
-func resolveSourceLocation(f *SourceFlags, g *sous.SourceContext) (sous.SourceLocation, error) {
-	if g == nil {
-		g = &sous.SourceContext{}
+func resolveSourceLocation(f *SourceFlags, c *sous.SourceContext) (sous.SourceLocation, error) {
+	if c == nil {
+		c = &sous.SourceContext{}
 	}
 	if f == nil {
 		f = &SourceFlags{}
 	}
-	var repo, offset = g.PrimaryRemoteURL, g.OffsetDir
+	var repo, offset = c.PrimaryRemoteURL, c.OffsetDir
 	if f.Repo != "" {
 		repo = f.Repo
 	}

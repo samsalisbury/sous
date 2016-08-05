@@ -46,7 +46,7 @@ func (sc *SourceContext) Version() SourceID {
 // SourceLocation returns the source location in this context.
 func (sc *SourceContext) SourceLocation() SourceLocation {
 	return SourceLocation{
-		RepoURL:    RepoURL(sc.RemoteURL),
+		RepoURL:    RepoURL(sc.PrimaryRemoteURL),
 		RepoOffset: RepoOffset(sc.OffsetDir),
 	}
 }

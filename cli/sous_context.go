@@ -1,10 +1,6 @@
 package cli
 
-import (
-	"encoding/json"
-
-	"github.com/opentable/sous/util/cmdr"
-)
+import "github.com/opentable/sous/util/cmdr"
 
 // SousContext is the 'sous context' command.
 type SousContext struct {
@@ -30,9 +26,5 @@ func (sv *SousContext) Execute(args []string) cmdr.Result {
 	if err != nil {
 		return EnsureErrorResult(err)
 	}
-	b, err := json.MarshalIndent(sc, "", "  ")
-	if err != nil {
-		return EnsureErrorResult(err)
-	}
-	return Successf(string(b))
+	return SuccessYAML(sc)
 }

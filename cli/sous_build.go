@@ -9,16 +9,12 @@ import (
 // SousBuild is the command description for `sous build`
 // Implements cmdr.Command, cmdr.Executor and cmdr.AddFlags
 type SousBuild struct {
-	Sous   *Sous
-	Config LocalSousConfig
 	BuildContextFunc
 	LabellerFunc
 	RegistrarFunc
 	Selector sous.Selector
 	flags    struct {
-		config              sous.BuildConfig
-		target              string
-		rebuild, rebuildAll bool
+		config sous.BuildConfig
 	}
 }
 

@@ -2,13 +2,10 @@ package cli
 
 import (
 	"flag"
-	"fmt"
-	"strings"
 
 	"github.com/opentable/sous/ext/otpl"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
-	"github.com/opentable/sous/util/firsterr"
 )
 
 // SousInit is the command description for `sous init`
@@ -18,7 +15,6 @@ type SousInit struct {
 	GDM         CurrentGDM
 	StateWriter LocalStateWriter
 	flags       struct {
-		RepoURL, RepoOffset             string
 		UseOTPLDeploy, IgnoreOTPLDeploy bool
 	}
 }
@@ -52,15 +48,7 @@ func (si *SousInit) Execute(args []string) cmdr.Result {
 	if err != nil {
 		return EnsureErrorResult(err)
 	}
-	var repoURL, repoOffset string
-	if err := firsterr.Parallel().Set(
-		func(e *error) { repoURL, *e = si.resolveRepoURL(ctx) },
-		func(e *error) { repoOffset, *e = si.resolveRepoOffset(ctx) },
-	); err != nil {
-		return EnsureErrorResult(err)
-	}
-
-	sourceLocation := sous.NewSourceLocation(repoURL, repoOffset)
+	sourceLocation := ctx.SourceLocation()
 
 	existingManifest := si.GDM.GetManifest(sourceLocation)
 	if existingManifest != nil {
@@ -86,10 +74,7 @@ func (si *SousInit) Execute(args []string) cmdr.Result {
 	}
 
 	m := &sous.Manifest{
-		Source: sous.SourceLocation{
-			RepoURL:    sous.RepoURL(repoURL),
-			RepoOffset: sous.RepoOffset(repoOffset),
-		},
+		Source:      sourceLocation,
 		Deployments: deploySpecs,
 	}
 
@@ -114,31 +99,4 @@ func defaultDeploySpecs() sous.DeploySpecs {
 			},
 		},
 	}
-}
-
-func (si *SousInit) resolveRepoURL(ctx *sous.SourceContext) (string, error) {
-	repoURL := si.flags.RepoURL
-	if repoURL == "" {
-		repoURL = ctx.PrimaryRemoteURL
-		if repoURL == "" {
-			return "", fmt.Errorf("no repo URL found, please use -repo-url")
-		}
-		sous.Log.Info.Printf("using repo URL %q (from git remotes)", repoURL)
-	}
-	if !strings.HasPrefix(repoURL, "github.com/") {
-		return "", fmt.Errorf("repo URL must begin with github.com/")
-	}
-	return repoURL, nil
-}
-
-func (si *SousInit) resolveRepoOffset(ctx *sous.SourceContext) (string, error) {
-	repoOffset := si.flags.RepoOffset
-	if repoOffset == "" {
-		repoOffset := ctx.OffsetDir
-		sous.Log.Info.Printf("using current workdir repo offset: %q", repoOffset)
-	}
-	if len(repoOffset) != 0 && repoOffset[:1] == "/" {
-		return "", fmt.Errorf("repo offset cannot begin with /, it is relative")
-	}
-	return repoOffset, nil
 }
