@@ -50,7 +50,7 @@ type (
 	// LocalGitRepo is the git repository containing WorkDir.
 	LocalGitRepo struct{ *git.Repo }
 	// GitSourceContext is the source context according to the local git repo.
-	GitSourceContext *sous.SourceContext
+	GitSourceContext struct{ *sous.SourceContext }
 	// SourceContextFunc returns the current source context.
 	SourceContextFunc func() (*sous.SourceContext, error)
 	// BuildContextFunc returns the current build context.
@@ -125,20 +125,7 @@ func newSourceFlags(c *cmdr.CLI) (*SourceFlags, error) {
 
 func newGitSourceContext(g LocalGitRepo) (GitSourceContext, error) {
 	c, err := g.SourceContext()
-	return c, initErr(err, "getting local git context")
-}
-
-func newSourceContextFunc(g GitSourceContext, f *SourceFlags) SourceContextFunc {
-	var c *sous.SourceContext = g
-	return func() (*sous.SourceContext, error) {
-		if f.Repo != "" {
-			if c.RemoteURL != f.Repo {
-				return nil, fmt.Errorf("repo %q (in flag) does not match local repo %q",
-					f.Repo, c.RemoteURL)
-			}
-		}
-		return c, nil
-	}
+	return GitSourceContext{c}, initErr(err, "getting local git context")
 }
 
 func newBuildContextFunc(wd LocalWorkDirShell, cf SourceContextFunc) BuildContextFunc {

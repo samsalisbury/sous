@@ -119,7 +119,7 @@ func defaultDeploySpecs() sous.DeploySpecs {
 func (si *SousInit) resolveRepoURL(ctx *sous.SourceContext) (string, error) {
 	repoURL := si.flags.RepoURL
 	if repoURL == "" {
-		repoURL = ctx.PossiblePrimaryRemoteURL
+		repoURL = ctx.PrimaryRemoteURL
 		if repoURL == "" {
 			return "", fmt.Errorf("no repo URL found, please use -repo-url")
 		}

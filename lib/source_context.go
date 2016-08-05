@@ -14,7 +14,7 @@ type (
 		Files, ModifiedFiles, NewFiles       []string
 		Tags                                 []Tag
 		NearestTagName, NearestTagRevision   string
-		PossiblePrimaryRemoteURL             string
+		PrimaryRemoteURL                     string
 		RemoteURL                            string
 		RemoteURLs                           []string
 		DirtyWorkingTree                     bool
@@ -26,6 +26,7 @@ type (
 	}
 )
 
+// Version returns the SourceID.
 func (sc *SourceContext) Version() SourceID {
 	v, err := semv.Parse(sc.NearestTagName)
 	if err != nil {
@@ -40,6 +41,14 @@ func (sc *SourceContext) Version() SourceID {
 	}
 	Log.Debug.Printf("Version: % #v", sv)
 	return sv
+}
+
+// SourceLocation returns the source location in this context.
+func (sc *SourceContext) SourceLocation() SourceLocation {
+	return SourceLocation{
+		RepoURL:    RepoURL(sc.RemoteURL),
+		RepoOffset: RepoOffset(sc.OffsetDir),
+	}
 }
 
 // AbsDir returns the absolute path of this source code.

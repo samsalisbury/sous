@@ -2,12 +2,9 @@ package cli
 
 import (
 	"flag"
-	"fmt"
-	"strings"
 
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
-	"github.com/opentable/sous/util/firsterr"
 	"github.com/samsalisbury/semv"
 )
 
@@ -54,19 +51,12 @@ func (su *SousDeploy) Execute(args []string) cmdr.Result {
 	if err != nil {
 		return EnsureErrorResult(err)
 	}
-	var repoURL, repoOffset string
-	if err := firsterr.Parallel().Set(
-		func(e *error) { repoURL, *e = su.resolveRepoURL(ctx) },
-		func(e *error) { repoOffset, *e = su.resolveRepoOffset(ctx) },
-	); err != nil {
-		return EnsureErrorResult(err)
-	}
 
 	if su.flags.Cluster == "" {
 		return UsageErrorf("You must a select a cluster using the -cluster flag.")
 	}
 
-	sl := sous.NewSourceLocation(repoURL, repoOffset)
+	sl := ctx.SourceLocation()
 
 	m := su.GDM.GetManifest(sl)
 	if m == nil {
@@ -98,37 +88,10 @@ func (su *SousDeploy) Execute(args []string) cmdr.Result {
 		Registry:     su.Registry,
 		GDM:          su.GDM,
 		flags: rectifyFlags{
-			repo:    repoURL,
-			offset:  repoOffset,
+			repo:    string(sl.RepoURL),
+			offset:  string(sl.RepoOffset),
 			cluster: clusterName,
 		},
 	}
 	return rectify.Execute(nil)
-}
-
-func (su *SousDeploy) resolveRepoURL(ctx *sous.SourceContext) (string, error) {
-	repoURL := su.flags.RepoURL
-	if repoURL == "" {
-		repoURL = ctx.PossiblePrimaryRemoteURL
-		if repoURL == "" {
-			return "", fmt.Errorf("no repo URL found, please use -repo-url")
-		}
-		sous.Log.Info.Printf("using repo URL %q (from git remotes)", repoURL)
-	}
-	if !strings.HasPrefix(repoURL, "github.com/") {
-		return "", fmt.Errorf("repo URL must begin with github.com/")
-	}
-	return repoURL, nil
-}
-
-func (su *SousDeploy) resolveRepoOffset(ctx *sous.SourceContext) (string, error) {
-	repoOffset := su.flags.RepoOffset
-	if repoOffset == "" {
-		repoOffset := ctx.OffsetDir
-		sous.Log.Info.Printf("using current workdir repo offset: %q", repoOffset)
-	}
-	if len(repoOffset) != 0 && repoOffset[:1] == "/" {
-		return "", fmt.Errorf("repo offset cannot begin with /, it is relative")
-	}
-	return repoOffset, nil
 }
