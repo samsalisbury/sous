@@ -1,120 +1,156 @@
-// psyringe is a lazy dependency injector for Go
+/*
+Package psyringe provides an easy to use, lazy and concurrent dependency
+injector.
+
+Psyringe makes dependency injection very easy for well-written Go code. It
+uses Go's type system to decide what to inject, and uses channels to orchestrate
+value construction, automatically being as concurrent as your dependency graph
+allows.
+
+Psyringe does not rely on messy struct field tags nor verbose graph construction
+syntax. It is very flexible and has a small interface, allowing you to tailor
+things like scopes and object lifetimes very easily using standard Go code.
+
+The example tests should speak for themselves, but if you want a deeper
+explanation of how Psyringe works, read on.
+
+Injection Type
+
+Constructors and values added to psyringe have an implicit "injection type".
+This is the type of value that constructor or value represents in the graph. For
+non-constructor values, the injection type is the type of the value itself,
+determined by reflect.GetType(). For constructors, it is the type of the first
+output (return) value. It is important to understand this concept, since a
+single psyringe can have only one value or constructor per injection type.
+
+Constructors
+
+Go does not have an explicit concept of "constructor". In Psyringe, constructors
+are defined as any function that returns either a single value, or two values
+where the second is an error. They can have any number of input parameters.
+
+How Injection Works
+
+A Psyringe knows how to populate fields in a struct with values of any injection
+type that has been added to it.
+
+When called upon to generate a value, via a call to Inject, the Psyringe
+implicitly constructs a directed acyclic graph (DAG) from the constructors and
+values, channelling values of each injection type into the relevant parameter
+of any constructors which require it, and ultimately into any fields of that
+type in the target struct which require it.
+
+For a given Psyringe, each constructor will be called at most once. After that,
+the generated value is provided directly without calling the constructor again.
+Thus every value in a Psyringe is effectively a singleton. The Clone method
+allows taking snapshots of a Psyringe in order to re-use its constructor graph
+whilst generating new values. It is idiomatic to use multiple Psyringes with
+differing scopes to inject different fields into the same object.
+*/
 package psyringe
 
 import (
 	"fmt"
 	"reflect"
 	"sync"
+
+	"github.com/pkg/errors"
 )
 
-type (
-	Psyringe struct {
-		values         map[reflect.Type]reflect.Value
-		ctors          map[reflect.Type]*ctor
-		injectionTypes map[reflect.Type]struct{}
-		ctorMutex      sync.Mutex
-		debug          chan string
-	}
-	ctor struct {
-		outType   reflect.Type
-		inTypes   []reflect.Type
-		construct func(in []reflect.Value) (reflect.Value, error)
-		errChan   chan error
-		once      sync.Once
-		value     *reflect.Value
-	}
-	NoConstructorOrValue struct {
-		ForType               reflect.Type
-		ConstructorType       *reflect.Type
-		ConstructorParamIndex *int
-	}
-)
-
-func (e NoConstructorOrValue) Error() string {
-	message := ""
-	if e.ConstructorType != nil {
-		message += fmt.Sprintf("unable to construct %s", *e.ConstructorType)
-	}
-	if e.ConstructorParamIndex != nil {
-		message += fmt.Sprintf(" (missing param %d)", *e.ConstructorParamIndex)
-	}
-	if message != "" {
-		message += ": "
-	}
-	return message + fmt.Sprintf("no constructor or value for %s", e.ForType)
+// Psyringe is a dependency injection container.
+type Psyringe struct {
+	values         map[reflect.Type]reflect.Value
+	ctors          map[reflect.Type]*ctor
+	injectionTypes map[reflect.Type]struct{}
 }
 
-var (
-	globalPs = &Psyringe{}
-	terror   = reflect.TypeOf((*error)(nil)).Elem()
-)
-
-// New returns a new Psyringe. It is equivalent to simply using &Psyringe{}
-// and may be removed soon.
-func New() *Psyringe {
-	return &Psyringe{}
-}
-
-func (s *Psyringe) init() *Psyringe {
-	if s.values != nil {
-		return s
+// New creates a new Psyringe, and adds the provided constructors and values to
+// it. New will panic if any two arguments have the same injection type. See
+// package level documentation for definition of "injection type".
+func New(constructorsAndValues ...interface{}) *Psyringe {
+	p, err := NewErr(constructorsAndValues...)
+	if err != nil {
+		panic(err)
 	}
-	s.values = map[reflect.Type]reflect.Value{}
-	s.ctors = map[reflect.Type]*ctor{}
-	s.injectionTypes = map[reflect.Type]struct{}{}
-	return s
+	return p
 }
 
-// Fill calls Fill on the default, global Psyringe.
-func Fill(things ...interface{}) error { return globalPs.Fill(things...) }
+// NewErr is similar to New, but returns an error instead of panicking. This is
+// useful if you are dynamically generating the arguments.
+func NewErr(constructorsAndValues ...interface{}) (*Psyringe, error) {
+	p := &Psyringe{
+		values:         map[reflect.Type]reflect.Value{},
+		ctors:          map[reflect.Type]*ctor{},
+		injectionTypes: map[reflect.Type]struct{}{},
+	}
+	return p, errors.Wrap(p.AddErr(constructorsAndValues...), "Add failed")
+}
 
-// Inject calls Inject on the default, global Psyringe.
-func Inject(targets ...interface{}) error { return globalPs.Inject(targets...) }
+// Add adds constructors and values to the Psyringe. It panics if any
+// pair of constructors and values have the same injection type. See package
+// documentation for definition of "injection type".
+//
+// Add uses reflection to determine whether each passed value is a constructor
+// or not. For each constructor, it then generates a generic function in terms
+// of reflect.Values ready to be used by a call to Inject. As such, Add is a
+// relatively expensive call. See Clone for how to avoid calling Add too often.
+func (p *Psyringe) Add(constructorsAndValues ...interface{}) {
+	if err := p.AddErr(constructorsAndValues...); err != nil {
+		panic(err)
+	}
+}
 
-// Fill fills the psyringe with values and constructors. Any function that
-// returns a single value, or two return values, the second of which is an
-// error, is considered to be a constructor. Everything else is considered to be
-// a fully realised value.
-func (s *Psyringe) Fill(things ...interface{}) error {
-	s.init()
-	for _, thing := range things {
+// AddErr is similar to Add, but returns an error instead of panicking. This is
+// useful if you are dynamically generating the arguments.
+func (p *Psyringe) AddErr(constructorsAndValues ...interface{}) error {
+	for i, thing := range constructorsAndValues {
 		if thing == nil {
-			return fmt.Errorf("Fill requires non-nil items")
+			return fmt.Errorf("cannot add nil (argument %d)", i)
 		}
-		if err := s.add(thing); err != nil {
+		if err := p.add(thing); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-// Clone is not yet implemented. It will eventually return a deep copy of this
-// psyringe.
-func (s *Psyringe) Clone() *Psyringe {
-	panic("Clone is not yet implemented")
+func (p *Psyringe) add(thing interface{}) error {
+	v := reflect.ValueOf(thing)
+	t := v.Type()
+	if c := newCtor(t, v); c != nil {
+		return errors.Wrapf(p.addCtor(c), "adding constructor %s failed", c.funcType)
+	}
+	return errors.Wrapf(p.addValue(t, v), "adding %s value failed", t)
 }
 
-// DebugFunc allows you to pass a func(string) which will be sent debugging
-// information as it arises. Note that this func has the ability to block
-// Fill and Inject calls, so be careful, and make sure you return from the
-// passed func as soon as possible.
-func (s *Psyringe) DebugFunc(f func(string)) {
-	s.debug = make(chan string)
-	go func() {
-		for {
-			f(<-s.debug)
-		}
-	}()
+// Clone returns a clone of this Psyringe.
+//
+// Clone exists to provide efficiency by allowing you to Add constructors and
+// values once, and then invoke them multiple times for different instances.
+// This is especially important in long-running applications where the cost of
+// calling Add or New repeatedly may get expensive.
+func (p *Psyringe) Clone() *Psyringe {
+	q := *p
+	q.ctors = map[reflect.Type]*ctor{}
+	q.values = map[reflect.Type]reflect.Value{}
+	for t, c := range p.ctors {
+		q.ctors[t] = c.clone()
+	}
+	for t, v := range p.values {
+		q.values[t] = v
+	}
+	return &q
 }
 
-// Inject takes a list of targets, which must be pointers to struct types. It
+// Inject takes a list of targets, which must be pointers to structs. It
 // tries to inject a value for each field in each target, if a value is known
 // for that field's type. All targets, and all fields in each target, are
-// resolved concurrently.
-func (s *Psyringe) Inject(targets ...interface{}) error {
-	if s.values == nil {
-		return fmt.Errorf("Inject called before Fill")
-	}
+// resolved concurrently where the graph allows. In the instance that the
+// Psyringe knows no injection type for a given field's type, that field is
+// passed over, leaving it with whatever value it already had.
+//
+// See package documentation for details on how a Psyringe injects values.
+func (p *Psyringe) Inject(targets ...interface{}) error {
 	wg := sync.WaitGroup{}
 	wg.Add(len(targets))
 	errs := make(chan error)
@@ -125,61 +161,48 @@ func (s *Psyringe) Inject(targets ...interface{}) error {
 	for _, t := range targets {
 		go func(target interface{}) {
 			defer wg.Done()
-			if err := s.inject(target); err != nil {
-				s.debugf("error injecting into %T: %s", target, err)
-				errs <- err
+			if err := p.inject(target); err != nil {
+				errs <- errors.Wrapf(err, "inject into %T target failed", target)
 			}
-			s.debugf("finished injecting into %T", target)
 		}(t)
 	}
 	return <-errs
 }
 
+// MustInject wraps Inject and panics if Inject returns an error.
+func (p *Psyringe) MustInject(targets ...interface{}) {
+	if err := p.Inject(targets...); err != nil {
+		panic(err)
+	}
+}
+
 // Test checks that all constructors' parameters are satisfied within this
-// Psyringe. It does not invoke those constructors, it only checks that the
-// structure is valid. If any constructor parameters are not satisfiable, an
-// error is returned. This func should only be used in tests.
-func (s *Psyringe) Test() error {
-	for _, c := range s.ctors {
-		if err := c.testParametersAreRegisteredIn(s); err != nil {
-			return err
+// Psyringe. This method can be used in your own tests to ensure you have a
+// complete graph.
+func (p *Psyringe) Test() error {
+	for _, c := range p.ctors {
+		if err := c.testParametersAreRegisteredIn(p); err != nil {
+			return errors.Wrapf(err, "unable to satisfy constructor %s", c.funcType)
 		}
 	}
 	return nil
 }
 
-func (c *ctor) testParametersAreRegisteredIn(s *Psyringe) error {
-	for paramIndex, paramType := range c.inTypes {
-		if _, constructorExists := s.ctors[paramType]; constructorExists {
-			continue
-		}
-		if _, valueExists := s.values[paramType]; valueExists {
-			continue
-		}
-		return NoConstructorOrValue{
-			ForType:               paramType,
-			ConstructorParamIndex: &paramIndex,
-			ConstructorType:       &c.outType,
-		}
-	}
-	return nil
-}
-
-// inject just tries to inject a value for each field, no errors if it
-// fails, as maybe those other fields are just not meant to receive
-// injected values
-func (s *Psyringe) inject(target interface{}) error {
+// inject just tries to inject a value for each field in target, no errors if it
+// doesn't know how to inject a value for a given field's type, those fields are
+// just left as-is.
+func (p *Psyringe) inject(target interface{}) error {
 	v := reflect.ValueOf(target)
 	ptr := v.Type()
 	if ptr.Kind() != reflect.Ptr {
-		return fmt.Errorf("got a %s; want a pointer", ptr)
+		return fmt.Errorf("target must be a pointer")
 	}
 	t := ptr.Elem()
 	if t.Kind() != reflect.Struct {
-		return fmt.Errorf("got a %s, but %s is not a struct", ptr, t)
+		return fmt.Errorf("target must be a pointer to struct")
 	}
 	if v.IsNil() {
-		return fmt.Errorf("got a %s, but it was nil", ptr)
+		return fmt.Errorf("target is nil")
 	}
 	nfs := t.NumField()
 	wg := sync.WaitGroup{}
@@ -192,13 +215,9 @@ func (s *Psyringe) inject(target interface{}) error {
 	for i := 0; i < nfs; i++ {
 		go func(f reflect.Value, fieldName string) {
 			defer wg.Done()
-			fv, err := s.getValue(f.Type())
-			if err == nil {
+			if fv, ok, err := p.getValueForStructField(f.Type(), fieldName); ok && err == nil {
 				f.Set(fv)
-				s.debugf("Inject: populated %s.%s with %v", t, fieldName, fv)
-			} else if _, ok := err.(NoConstructorOrValue); ok {
-				s.debugf("Inject: not populating %s.%s: %s", t, fieldName, err)
-			} else {
+			} else if err != nil {
 				errs <- err
 			}
 		}(v.Elem().Field(i), t.Field(i).Name)
@@ -206,139 +225,54 @@ func (s *Psyringe) inject(target interface{}) error {
 	return <-errs
 }
 
-func (s *Psyringe) add(thing interface{}) error {
-	v := reflect.ValueOf(thing)
-	t := v.Type()
-	var err error
-	var what string
-	if c := s.tryMakeCtor(t, v); c != nil {
-		what = "constructor for " + c.outType.Name()
-		err = s.addCtor(c)
-	} else {
-		what = "fully realised value"
-		err = s.addValue(t, v)
+func (p *Psyringe) getValueForStructField(t reflect.Type, name string) (reflect.Value, bool, error) {
+	if v, ok := p.values[t]; ok {
+		return v, true, nil
 	}
-	if err != nil {
-		s.debugf("Fill: error adding %s (%T): %s", what, thing, err)
-	} else {
-		s.debugf("Fill: added %s (%T)", what, thing)
+	c, ok := p.ctors[t]
+	if !ok {
+		return reflect.Value{}, false, nil
 	}
-	return err
+	v, err := c.getValue(p)
+	return v, true, errors.Wrapf(err, "getting field %s (%s) failed", name, t)
 }
 
-func (s *Psyringe) getValue(t reflect.Type) (reflect.Value, error) {
-	if v, ok := s.values[t]; ok {
+func (p *Psyringe) getValueForConstructor(forCtor *ctor, paramIndex int, t reflect.Type) (reflect.Value, error) {
+	if v, ok := p.values[t]; ok {
 		return v, nil
 	}
-	c, ok := s.ctors[t]
+	c, ok := p.ctors[t]
 	if !ok {
-		return reflect.Value{}, NoConstructorOrValue{ForType: t}
+		return reflect.Value{}, errors.Errorf("no constructor or value for %s", t)
 	}
-	return c.getValue(s)
+	v, err := c.getValue(p)
+	return v, errors.Wrapf(err, "getting argument %d failed", paramIndex)
 }
 
-func (s *Psyringe) tryMakeCtor(t reflect.Type, v reflect.Value) *ctor {
-	if t.Kind() != reflect.Func || t.IsVariadic() {
-		return nil
-	}
-	if v.IsNil() {
-		panic("psyringe internal error: tryMakeCtor received a nil value")
-	}
-	if !v.IsValid() {
-		panic("psyringe internal error: tryMakeCtor received a zero Value value")
-	}
-	numOut := t.NumOut()
-	if numOut == 0 || numOut > 2 || (numOut == 2 && t.Out(1) != terror) {
-		return nil
-	}
-	outType := t.Out(0)
-	numIn := t.NumIn()
-	inTypes := make([]reflect.Type, numIn)
-	for i := range inTypes {
-		inTypes[i] = t.In(i)
-	}
-	construct := func(in []reflect.Value) (reflect.Value, error) {
-		for i, arg := range in {
-			if !arg.IsValid() {
-				return reflect.Value{}, fmt.Errorf("unable to create arg %d (%s) of %s constructor", i, inTypes[i], outType)
-			}
-		}
-		out := v.Call(in)
-		var err error
-		if len(out) == 2 && !out[1].IsNil() {
-			err = out[1].Interface().(error)
-		}
-		return out[0], err
-	}
-	return &ctor{
-		outType:   outType,
-		inTypes:   inTypes,
-		construct: construct,
-		errChan:   make(chan error),
-	}
+func (p *Psyringe) addCtor(c *ctor) error {
+	p.ctors[c.outType] = c
+	return p.registerInjectionType(c.outType)
 }
 
-func (c *ctor) getValue(s *Psyringe) (reflect.Value, error) {
-	if c.value != nil {
-		return *c.value, nil
-	}
-	go c.once.Do(func() {
-		defer close(c.errChan)
-		wg := sync.WaitGroup{}
-		numArgs := len(c.inTypes)
-		wg.Add(numArgs)
-		args := make([]reflect.Value, numArgs)
-		for i, t := range c.inTypes {
-			i, t := i, t
-			go func() {
-				defer wg.Done()
-				v, err := s.getValue(t)
-				if err != nil {
-					c.errChan <- err
-				}
-				args[i] = v
-			}()
-		}
-		wg.Wait()
-		v, err := c.construct(args)
-		if err != nil {
-			c.errChan <- err
-		}
-		c.value = &v
-	})
-	if err := <-c.errChan; err != nil {
-		return reflect.Value{}, err
-	}
-	return *c.value, nil
+func (p *Psyringe) addValue(t reflect.Type, v reflect.Value) error {
+	p.values[t] = v
+	return p.registerInjectionType(t)
 }
 
-func (s *Psyringe) addCtor(c *ctor) error {
-	if err := s.registerInjectionType(c.outType); err != nil {
-		return err
-	}
-	s.ctors[c.outType] = c
-	return nil
-}
-
-func (s *Psyringe) addValue(t reflect.Type, v reflect.Value) error {
-	if err := s.registerInjectionType(t); err != nil {
-		return err
-	}
-	s.values[t] = v
-	return nil
-}
-
-func (s *Psyringe) registerInjectionType(t reflect.Type) error {
-	if _, alreadyRegistered := s.injectionTypes[t]; alreadyRegistered {
+func (p *Psyringe) registerInjectionType(t reflect.Type) error {
+	if _, alreadyRegistered := p.injectionTypes[t]; alreadyRegistered {
 		return fmt.Errorf("injection type %s already registered", t)
 	}
-	s.injectionTypes[t] = struct{}{}
+	p.injectionTypes[t] = struct{}{}
 	return nil
 }
 
-func (s *Psyringe) debugf(format string, a ...interface{}) {
-	if s.debug == nil {
-		return
+func (p *Psyringe) testValueOrConstructorIsRegistered(paramType reflect.Type) error {
+	if _, constructorExists := p.ctors[paramType]; constructorExists {
+		return nil
 	}
-	s.debug <- fmt.Sprintf(format, a...)
+	if _, valueExists := p.values[paramType]; valueExists {
+		return nil
+	}
+	return errors.Errorf("no constructor or value for %s", paramType)
 }

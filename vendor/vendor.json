@@ -182,9 +182,10 @@
 			"revision": "792786c7400a136282c1664665ae0a8db921c6c2"
 		},
 		{
-			"checksumSHA1": "vNLZL9W2JAyUxeU1kRfSHw2gQ2s=",
+			"checksumSHA1": "gkzEM1oht7y2Z0NBtRjvucWCWg8=",
 			"path": "github.com/samsalisbury/psyringe",
-			"revision": "ac33701d5b34cfa8726dfdea0ba91d981be098a9"
+			"revision": "2be630abc79d2541e3c890cc4b9eb7cdaf1e2352",
+			"revisionTime": "2016-08-05T08:38:32Z"
 		},
 		{
 			"checksumSHA1": "IRgb8yeKkWGY5gp1TLk9rpGitB0=",

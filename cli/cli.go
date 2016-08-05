@@ -51,10 +51,7 @@ func NewSousCLI(v semv.Version, out, errout io.Writer) (*cmdr.CLI, error) {
 	}
 
 	// Create the CLI dependency graph.
-	g, err := BuildGraph(s, c)
-	if err != nil {
-		return nil, err
-	}
+	g := BuildGraph(s, c)
 
 	// Before Execute is called on any command, inject it with values from the
 	// graph.

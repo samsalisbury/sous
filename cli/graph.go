@@ -74,10 +74,8 @@ type (
 
 // BuildGraph builds the dependency injection graph, used to populate commands
 // invoked by the user.
-func BuildGraph(s *Sous, c *cmdr.CLI) (*SousCLIGraph, error) {
-	g := &SousCLIGraph{psyringe.New()}
-	return g, g.Fill(
-		s, c,
+func BuildGraph(s *Sous, c *cmdr.CLI) *SousCLIGraph {
+	return &SousCLIGraph{psyringe.New(s, c,
 		newOut,
 		newErrOut,
 		newLocalUser,
@@ -102,7 +100,7 @@ func BuildGraph(s *Sous, c *cmdr.CLI) (*SousCLIGraph, error) {
 		newLocalStateReader,
 		newLocalStateWriter,
 		newCurrentGDM,
-	)
+	)}
 }
 
 func newOut(c *cmdr.CLI) Out {

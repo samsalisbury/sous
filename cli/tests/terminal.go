@@ -40,10 +40,7 @@ func NewTerminal(t *testing.T, root cmdr.Command) *Terminal {
 		Out:  cmdr.NewOutput(io.MultiWriter(out.Buffer, combined.Buffer)),
 		Err:  cmdr.NewOutput(io.MultiWriter(errout.Buffer, combined.Buffer)),
 	}
-	g, err := cli.BuildGraph(s, c)
-	if err != nil {
-		t.Fatal(err)
-	}
+	g := cli.BuildGraph(s, c)
 	c.Hooks.PreExecute = func(c cmdr.Command) error {
 		return g.Inject(c)
 	}
