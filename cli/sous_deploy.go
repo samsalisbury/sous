@@ -63,7 +63,7 @@ func (su *SousDeploy) Execute(args []string) cmdr.Result {
 	}
 
 	if su.flags.Cluster == "" {
-		return UsageErrorf("You must a cluster using the -cluster flag.")
+		return UsageErrorf("You must a select a cluster using the -cluster flag.")
 	}
 
 	sl := sous.NewSourceLocation(repoURL, repoOffset)
