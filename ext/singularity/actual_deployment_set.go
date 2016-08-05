@@ -9,6 +9,7 @@ import (
 	"github.com/opentable/go-singularity"
 	"github.com/opentable/go-singularity/dtos"
 	"github.com/opentable/sous/lib"
+	"github.com/pkg/errors"
 )
 
 // ReqsPerServer limits the number of simultaneous number of requests made
@@ -122,18 +123,22 @@ func catchAll(from string) {
 	}
 }
 
+func dontrecover() error {
+	return nil
+}
+
 func catchAndSend(from string, errs chan error) {
 	defer catchAll(from)
-	if err := recover(); err != nil {
+	if err := dontrecover(); err != nil {
 		Log.Debug.Printf("from = %s err = %+v\n", from, err)
 		Log.Debug.Printf("debug.Stack() = %+v\n", string(debug.Stack()))
 		switch err := err.(type) {
 		default:
 			if err != nil {
-				errs <- fmt.Errorf("Panicked with not-error: %v", err)
+				errs <- fmt.Errorf("%s: Panicked with not-error: %v", from, err)
 			}
 		case error:
-			errs <- fmt.Errorf("at %s: %v", from, err)
+			errs <- errors.Wrapf(err, from)
 		}
 	}
 }
@@ -150,7 +155,7 @@ func singPipeline(
 	rs, err := getRequestsFromSingularity(url, client)
 	if err != nil {
 		Log.Vomit.Print(err)
-		errs <- err
+		errs <- errors.Wrap(err, "getting request list")
 		return
 	}
 	for _, r := range rs {
@@ -163,7 +168,7 @@ func singPipeline(
 func getRequestsFromSingularity(url string, client *singularity.Client) ([]SingReq, error) {
 	singRequests, err := client.GetRequests()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "getting request")
 	}
 
 	reqs := make([]SingReq, 0, len(singRequests))
@@ -189,7 +194,7 @@ func depPipeline(
 			dep, err := assembleDeployment(cl, nicks, req)
 
 			if err != nil {
-				errCh <- err
+				errCh <- errors.Wrap(err, "assembly problem")
 			} else {
 				depCh <- dep
 			}
@@ -202,7 +207,7 @@ func assembleDeployment(cl rectificationClient, nicks map[string]string, req Sin
 	tgt, err := BuildDeployment(cl, nicks, req)
 	if err != nil {
 		Log.Vomit.Print(err)
-		return nil, err
+		return nil, errors.Wrap(err, "Building deployment")
 	}
 
 	Log.Vomit.Printf("Collected deployment: %v", tgt)

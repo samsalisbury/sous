@@ -78,6 +78,20 @@ func (db *deploymentBuilder) completeConstruction() error {
 	)
 }
 
+func reqID(rp *dtos.SingularityRequestParent) (ID string) {
+	defer func() {
+		if e := recover(); e != nil {
+			return
+		}
+	}()
+	ID = "<null RP>"
+	if rp != nil {
+		ID = "<null Request>"
+	}
+	ID = rp.Request.Id
+	return
+}
+
 func (db *deploymentBuilder) retrieveDeploy() error {
 
 	rp := db.req.ReqParent
@@ -85,14 +99,14 @@ func (db *deploymentBuilder) retrieveDeploy() error {
 	sing := db.req.Sing
 
 	if rds == nil {
-		return malformedResponse{"Singularity response didn't include a deploy state. ReqId: " + rp.Request.Id}
+		return malformedResponse{"Singularity response didn't include a deploy state. ReqId: " + reqID(rp)}
 	}
 	db.depMarker = rds.PendingDeploy
 	if db.depMarker == nil {
 		db.depMarker = rds.ActiveDeploy
 	}
 	if db.depMarker == nil {
-		return malformedResponse{"Singularity deploy state included no dep markers. ReqID: " + rp.Request.Id}
+		return malformedResponse{"Singularity deploy state included no dep markers. ReqID: " + reqID(rp)}
 	}
 
 	// !!! makes HTTP req
@@ -111,8 +125,12 @@ func (db *deploymentBuilder) retrieveDeploy() error {
 
 func (db *deploymentBuilder) retrieveImageLabels() error {
 	ci := db.deploy.ContainerInfo
+	if ci == nil {
+		return malformedResponse{"Blank container info"}
+	}
+
 	if ci.Type != dtos.SingularityContainerInfoSingularityContainerTypeDOCKER {
-		return fmt.Errorf("Singularity container isn't a docker container")
+		return malformedResponse{"Singularity container isn't a docker container"}
 	}
 	dkr := ci.Docker
 	if dkr == nil {
@@ -171,6 +189,9 @@ func (db *deploymentBuilder) unpackDeployConfig() error {
 	}
 
 	singRez := db.deploy.Resources
+	if singRez == nil {
+		return malformedResponse{"Deploy object lacks resources field"}
+	}
 	db.Target.Resources = make(sous.Resources)
 	db.Target.Resources["cpus"] = fmt.Sprintf("%f", singRez.Cpus)
 	db.Target.Resources["memory"] = fmt.Sprintf("%f", singRez.MemoryMb)
