@@ -21,8 +21,6 @@ import (
 )
 
 type (
-	// Flags is the global flag set.
-	Flags *flag.FlagSet
 	// Out is an output used for real data a Command returns. This should only
 	// be used when a command needs to write directly to stdout, using the
 	// formatting options that come with an output. Usually, you should use a
