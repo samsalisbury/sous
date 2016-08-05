@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -20,6 +21,8 @@ import (
 )
 
 type (
+	// Flags is the global flag set.
+	Flags *flag.FlagSet
 	// Out is an output used for real data a Command returns. This should only
 	// be used when a command needs to write directly to stdout, using the
 	// formatting options that come with an output. Usually, you should use a
@@ -48,6 +51,11 @@ type (
 	LocalGitClient struct{ *git.Client }
 	// LocalGitRepo is the git repository containing WorkDir.
 	LocalGitRepo struct{ *git.Repo }
+	// GitSourceContext is the source context according to the local git repo.
+	GitSourceContext *sous.SourceContext
+	// SourceContextFunc returns the true source context for this sous
+	// invocation.
+	SourceContextFunc func() (*sous.SourceContext, error)
 	// ScratchDirShell is a shell for working in the scratch area where things
 	// like artefacts, and build metadata are stored. It is a new, empty
 	// directory, and should be cleaned up eventually.
@@ -80,7 +88,9 @@ func BuildGraph(s *Sous, c *cmdr.CLI) (*SousCLIGraph, error) {
 		newScratchDirShell,
 		newLocalGitClient,
 		newLocalGitRepo,
-		newSourceContext,
+		newSourceFlags,
+		newGitSourceContext,
+		newSourceContextFunc,
 		newBuildContext,
 		newDockerClient,
 		newDockerBuilder,
@@ -104,16 +114,42 @@ func newErrOut(c *cmdr.CLI) ErrOut {
 	return ErrOut{c.Err}
 }
 
-func newSourceContext(g LocalGitRepo) (*sous.SourceContext, error) {
+func newSourceFlags(c *cmdr.CLI) (*SourceFlags, error) {
+	sourceFlags := &SourceFlags{}
+	var err error
+	c.AddGlobalFlagSetFunc(func(fs *flag.FlagSet) {
+		err = AddFlags(fs, sourceFlags, sourceFlagsHelp)
+		if err != nil {
+			panic(err)
+		}
+	})
+	return sourceFlags, err
+}
+
+func newGitSourceContext(g LocalGitRepo) (GitSourceContext, error) {
 	c, err := g.SourceContext()
 	return c, initErr(err, "getting local git context")
 }
 
-func newBuildContext(wd LocalWorkDirShell, c *sous.SourceContext) *sous.BuildContext {
+func newSourceContextFunc(g GitSourceContext, f *SourceFlags) SourceContextFunc {
+	var c *sous.SourceContext = g
+	return func() (*sous.SourceContext, error) {
+		if f.Repo != "" {
+			if c.RemoteURL != f.Repo {
+				return nil, fmt.Errorf("repo %q (in flag) does not match local repo %q",
+					f.Repo, c.RemoteURL)
+			}
+		}
+		return c, nil
+	}
+}
+
+func newBuildContext(wd LocalWorkDirShell, cf SourceContextFunc) (*sous.BuildContext, error) {
+	c, err := cf()
 	return &sous.BuildContext{
 		Sh:     wd.Sh,
 		Source: *c,
-	}
+	}, initErr(err, "getting build context")
 }
 
 func newLocalUser() (v LocalUser, err error) {

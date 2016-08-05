@@ -7,8 +7,9 @@ import (
 	"github.com/opentable/sous/util/cmdr"
 )
 
+// SousContext is the 'sous context' command.
 type SousContext struct {
-	SourceContext *sous.SourceContext
+	SourceContext func() (*sous.SourceContext, error)
 }
 
 func init() { TopLevelCommands["context"] = &SousContext{} }
@@ -21,10 +22,16 @@ context prints out sous's view of your current context
 args:
 `
 
+// Help provides help for sous context.
 func (*SousContext) Help() string { return sousContextHelp }
 
+// Execute prints the detected sous context.
 func (sv *SousContext) Execute(args []string) cmdr.Result {
-	b, err := json.MarshalIndent(sv.SourceContext, "", "  ")
+	sc, err := sv.SourceContext()
+	if err != nil {
+		return EnsureErrorResult(err)
+	}
+	b, err := json.MarshalIndent(sc, "", "  ")
 	if err != nil {
 		return EnsureErrorResult(err)
 	}

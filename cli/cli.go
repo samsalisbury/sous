@@ -1,4 +1,4 @@
-// The cli package implements the Sous Command Line Interface. It is a
+// Package cli implements the Sous Command Line Interface. It is a
 // presentation layer, and contains no core logic.
 package cli
 
@@ -23,6 +23,7 @@ var (
 	EnsureErrorResult = cmdr.EnsureErrorResult
 )
 
+// SuccessYAML lets you return YAML on the command line.
 func SuccessYAML(v interface{}) cmdr.Result {
 	b, err := yaml.Marshal(v)
 	if err != nil {
@@ -31,6 +32,7 @@ func SuccessYAML(v interface{}) cmdr.Result {
 	return SuccessData(b)
 }
 
+// NewSousCLI creates a new Sous cli app.
 func NewSousCLI(v semv.Version, out, errout io.Writer) (*cmdr.CLI, error) {
 
 	s := &Sous{Version: v}
