@@ -13,11 +13,11 @@ import (
 
 // SousInit is the command description for `sous init`
 type SousInit struct {
-	SourceContext *sous.SourceContext
-	WD            LocalWorkDirShell
-	GDM           CurrentGDM
-	StateWriter   LocalStateWriter
-	flags         struct {
+	SourceContextFunc
+	WD          LocalWorkDirShell
+	GDM         CurrentGDM
+	StateWriter LocalStateWriter
+	flags       struct {
 		RepoURL, RepoOffset             string
 		UseOTPLDeploy, IgnoreOTPLDeploy bool
 	}
@@ -40,10 +40,6 @@ func (si *SousInit) Help() string { return sousInitHelp }
 
 // AddFlags adds the flags for sous init.
 func (si *SousInit) AddFlags(fs *flag.FlagSet) {
-	fs.StringVar(&si.flags.RepoURL, "repo-url", "",
-		"the source code repo for this project (e.g. github.com/user/project)")
-	fs.StringVar(&si.flags.RepoOffset, "repo-offset", "",
-		"the subdir within the repo where the source code lives (empty for root)")
 	fs.BoolVar(&si.flags.UseOTPLDeploy, "use-otpl-deploy", false,
 		"if specified, copies OpenTable-specific otpl-deploy configuration to the manifest")
 	fs.BoolVar(&si.flags.IgnoreOTPLDeploy, "ignore-otpl-deploy", false,
@@ -52,10 +48,14 @@ func (si *SousInit) AddFlags(fs *flag.FlagSet) {
 
 // Execute fulfills the cmdr.Executor interface
 func (si *SousInit) Execute(args []string) cmdr.Result {
+	ctx, err := si.SourceContextFunc()
+	if err != nil {
+		return EnsureErrorResult(err)
+	}
 	var repoURL, repoOffset string
 	if err := firsterr.Parallel().Set(
-		func(e *error) { repoURL, *e = si.resolveRepoURL() },
-		func(e *error) { repoOffset, *e = si.resolveRepoOffset() },
+		func(e *error) { repoURL, *e = si.resolveRepoURL(ctx) },
+		func(e *error) { repoOffset, *e = si.resolveRepoOffset(ctx) },
 	); err != nil {
 		return EnsureErrorResult(err)
 	}
@@ -116,10 +116,10 @@ func defaultDeploySpecs() sous.DeploySpecs {
 	}
 }
 
-func (si *SousInit) resolveRepoURL() (string, error) {
+func (si *SousInit) resolveRepoURL(ctx *sous.SourceContext) (string, error) {
 	repoURL := si.flags.RepoURL
 	if repoURL == "" {
-		repoURL = si.SourceContext.PossiblePrimaryRemoteURL
+		repoURL = ctx.PossiblePrimaryRemoteURL
 		if repoURL == "" {
 			return "", fmt.Errorf("no repo URL found, please use -repo-url")
 		}
@@ -131,10 +131,10 @@ func (si *SousInit) resolveRepoURL() (string, error) {
 	return repoURL, nil
 }
 
-func (si *SousInit) resolveRepoOffset() (string, error) {
+func (si *SousInit) resolveRepoOffset(ctx *sous.SourceContext) (string, error) {
 	repoOffset := si.flags.RepoOffset
 	if repoOffset == "" {
-		repoOffset := si.SourceContext.OffsetDir
+		repoOffset := ctx.OffsetDir
 		sous.Log.Info.Printf("using current workdir repo offset: %q", repoOffset)
 	}
 	if len(repoOffset) != 0 && repoOffset[:1] == "/" {

@@ -3,13 +3,12 @@ package cli
 import (
 	"encoding/json"
 
-	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
 )
 
 // SousContext is the 'sous context' command.
 type SousContext struct {
-	SourceContext func() (*sous.SourceContext, error)
+	SourceContextFunc
 }
 
 func init() { TopLevelCommands["context"] = &SousContext{} }
@@ -27,7 +26,7 @@ func (*SousContext) Help() string { return sousContextHelp }
 
 // Execute prints the detected sous context.
 func (sv *SousContext) Execute(args []string) cmdr.Result {
-	sc, err := sv.SourceContext()
+	sc, err := sv.SourceContextFunc()
 	if err != nil {
 		return EnsureErrorResult(err)
 	}

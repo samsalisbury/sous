@@ -13,10 +13,10 @@ import (
 
 // SousDeploy is the command description for `sous init`
 type SousDeploy struct {
-	SourceContext *sous.SourceContext
-	WD            LocalWorkDirShell
-	GDM           CurrentGDM
-	StateWriter   LocalStateWriter
+	SourceContextFunc
+	WD          LocalWorkDirShell
+	GDM         CurrentGDM
+	StateWriter LocalStateWriter
 
 	// Rectify fields
 	Config       LocalSousConfig
@@ -42,10 +42,6 @@ func (su *SousDeploy) Help() string { return sousInitHelp }
 
 // AddFlags adds the flags for sous init.
 func (su *SousDeploy) AddFlags(fs *flag.FlagSet) {
-	fs.StringVar(&su.flags.RepoURL, "repo-url", "",
-		"the source code repo for this project (e.g. github.com/user/project)")
-	fs.StringVar(&su.flags.RepoOffset, "repo-offset", "",
-		"the subdir within the repo where the source code lives (empty for root)")
 	fs.StringVar(&su.flags.Cluster, "cluster", "",
 		"which cluster to update the config in")
 	fs.StringVar(&su.flags.Version, "version", "",
@@ -54,10 +50,14 @@ func (su *SousDeploy) AddFlags(fs *flag.FlagSet) {
 
 // Execute fulfills the cmdr.Executor interface.
 func (su *SousDeploy) Execute(args []string) cmdr.Result {
+	ctx, err := su.SourceContextFunc()
+	if err != nil {
+		return EnsureErrorResult(err)
+	}
 	var repoURL, repoOffset string
 	if err := firsterr.Parallel().Set(
-		func(e *error) { repoURL, *e = su.resolveRepoURL() },
-		func(e *error) { repoOffset, *e = su.resolveRepoOffset() },
+		func(e *error) { repoURL, *e = su.resolveRepoURL(ctx) },
+		func(e *error) { repoOffset, *e = su.resolveRepoOffset(ctx) },
 	); err != nil {
 		return EnsureErrorResult(err)
 	}
@@ -106,10 +106,10 @@ func (su *SousDeploy) Execute(args []string) cmdr.Result {
 	return rectify.Execute(nil)
 }
 
-func (su *SousDeploy) resolveRepoURL() (string, error) {
+func (su *SousDeploy) resolveRepoURL(ctx *sous.SourceContext) (string, error) {
 	repoURL := su.flags.RepoURL
 	if repoURL == "" {
-		repoURL = su.SourceContext.PossiblePrimaryRemoteURL
+		repoURL = ctx.PossiblePrimaryRemoteURL
 		if repoURL == "" {
 			return "", fmt.Errorf("no repo URL found, please use -repo-url")
 		}
@@ -121,10 +121,10 @@ func (su *SousDeploy) resolveRepoURL() (string, error) {
 	return repoURL, nil
 }
 
-func (su *SousDeploy) resolveRepoOffset() (string, error) {
+func (su *SousDeploy) resolveRepoOffset(ctx *sous.SourceContext) (string, error) {
 	repoOffset := su.flags.RepoOffset
 	if repoOffset == "" {
-		repoOffset := su.SourceContext.OffsetDir
+		repoOffset := ctx.OffsetDir
 		sous.Log.Info.Printf("using current workdir repo offset: %q", repoOffset)
 	}
 	if len(repoOffset) != 0 && repoOffset[:1] == "/" {
