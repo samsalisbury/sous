@@ -54,7 +54,8 @@ func (sc *deployer) GetRunningDeployment(singMap map[string]string) (deps sous.D
 		}
 		//sing.Debug = true
 		sings[url] = struct{}{}
-		go singPipeline(url, &depWait, &singWait, reqCh, errCh)
+		client := sc.buildSingClient(url)
+		go singPipeline(url, client, &depWait, &singWait, reqCh, errCh)
 	}
 
 	go depPipeline(sc.Client, singMap, reqCh, depCh, errCh)
@@ -139,13 +140,13 @@ func catchAndSend(from string, errs chan error) {
 
 func singPipeline(
 	url string,
+	client *singularity.Client,
 	dw, wg *sync.WaitGroup,
 	reqs chan SingReq,
 	errs chan error,
 ) {
 	defer wg.Done()
 	defer catchAndSend(fmt.Sprintf("get requests: %s", url), errs)
-	client := singularity.NewClient(url)
 	rs, err := getRequestsFromSingularity(url, client)
 	if err != nil {
 		Log.Vomit.Print(err)
