@@ -32,6 +32,7 @@ func TestGetDepSetWorks(t *testing.T) {
 					Request: &dtos.SingularityRequest{
 						Id:          "testreq",
 						RequestType: dtos.SingularityRequestRequestTypeSERVICE,
+						Owners:      swaggering.StringList{"jlester@opentable.com"},
 					},
 				},
 			}, nil)
@@ -42,6 +43,13 @@ func TestGetDepSetWorks(t *testing.T) {
 					ContainerInfo: &dtos.SingularityContainerInfo{
 						Type:   dtos.SingularityContainerInfoSingularityContainerTypeDOCKER,
 						Docker: &dtos.SingularityDockerInfo{},
+						Volumes: dtos.SingularityVolumeList{
+							&dtos.SingularityVolume{
+								HostPath:      "/onhost",
+								ContainerPath: "/indocker",
+								Mode:          dtos.SingularityVolumeSingularityDockerVolumeModeRW,
+							},
+						},
 					},
 					Resources: &dtos.Resources{},
 				},
