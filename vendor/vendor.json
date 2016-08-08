@@ -177,19 +177,27 @@
 			"revisionTime": "2016-07-18T22:12:07Z"
 		},
 		{
+			"checksumSHA1": "2HSjyUZ4IMkCeA34TjJ0/f+Kk/k=",
+			"path": "github.com/pkg/errors",
+			"revision": "1d2e60385a13aaa66134984235061c2f9302520e",
+			"revisionTime": "2016-07-24T02:43:27Z"
+		},
+		{
 			"checksumSHA1": "LuFv4/jlrmFNnDb/5SCSEPAM9vU=",
 			"path": "github.com/pmezard/go-difflib/difflib",
 			"revision": "792786c7400a136282c1664665ae0a8db921c6c2"
 		},
 		{
-			"checksumSHA1": "vNLZL9W2JAyUxeU1kRfSHw2gQ2s=",
+			"checksumSHA1": "gkzEM1oht7y2Z0NBtRjvucWCWg8=",
 			"path": "github.com/samsalisbury/psyringe",
-			"revision": "ac33701d5b34cfa8726dfdea0ba91d981be098a9"
+			"revision": "2be630abc79d2541e3c890cc4b9eb7cdaf1e2352",
+			"revisionTime": "2016-08-05T08:38:32Z"
 		},
 		{
-			"checksumSHA1": "t/73GjySCNTBfBAI0eKYiCvzMUA=",
+			"checksumSHA1": "IRgb8yeKkWGY5gp1TLk9rpGitB0=",
 			"path": "github.com/samsalisbury/semv",
-			"revision": "dcfea12f0df0494785e2fdf4eb5426d4a1fbd92e"
+			"revision": "89e7c49965c4aaf21d4c4b27f4c69e2ddaaa9c86",
+			"revisionTime": "2016-08-03T15:34:45Z"
 		},
 		{
 			"checksumSHA1": "fV2uEKIgQJGaej5Yj0OnuOkmiM4=",

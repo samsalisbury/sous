@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -48,6 +49,12 @@ type (
 	LocalGitClient struct{ *git.Client }
 	// LocalGitRepo is the git repository containing WorkDir.
 	LocalGitRepo struct{ *git.Repo }
+	// GitSourceContext is the source context according to the local git repo.
+	GitSourceContext struct{ *sous.SourceContext }
+	// SourceContextFunc returns the current source context.
+	SourceContextFunc func() (*sous.SourceContext, error)
+	// BuildContextFunc returns the current build context.
+	BuildContextFunc func() (*sous.BuildContext, error)
 	// ScratchDirShell is a shell for working in the scratch area where things
 	// like artefacts, and build metadata are stored. It is a new, empty
 	// directory, and should be cleaned up eventually.
@@ -67,10 +74,8 @@ type (
 
 // BuildGraph builds the dependency injection graph, used to populate commands
 // invoked by the user.
-func BuildGraph(s *Sous, c *cmdr.CLI) (*SousCLIGraph, error) {
-	g := &SousCLIGraph{psyringe.New()}
-	return g, g.Fill(
-		s, c,
+func BuildGraph(s *Sous, c *cmdr.CLI) *SousCLIGraph {
+	return &SousCLIGraph{psyringe.New(s, c,
 		newOut,
 		newErrOut,
 		newLocalUser,
@@ -80,12 +85,14 @@ func BuildGraph(s *Sous, c *cmdr.CLI) (*SousCLIGraph, error) {
 		newScratchDirShell,
 		newLocalGitClient,
 		newLocalGitRepo,
-		newSourceContext,
-		newBuildContext,
+		newSourceFlags,
+		newGitSourceContext,
+		newSourceContextFunc,
+		newBuildContextFunc,
 		newDockerClient,
 		newDockerBuilder,
 		newSelector,
-		newBuilder,
+		newLabellerFunc,
 		newRegistrar,
 		newDeployer,
 		newRegistry,
@@ -93,7 +100,7 @@ func BuildGraph(s *Sous, c *cmdr.CLI) (*SousCLIGraph, error) {
 		newLocalStateReader,
 		newLocalStateWriter,
 		newCurrentGDM,
-	)
+	)}
 }
 
 func newOut(c *cmdr.CLI) Out {
@@ -104,15 +111,30 @@ func newErrOut(c *cmdr.CLI) ErrOut {
 	return ErrOut{c.Err}
 }
 
-func newSourceContext(g LocalGitRepo) (*sous.SourceContext, error) {
-	c, err := g.SourceContext()
-	return c, initErr(err, "getting local git context")
+func newSourceFlags(c *cmdr.CLI) (*SourceFlags, error) {
+	sourceFlags := &SourceFlags{}
+	var err error
+	c.AddGlobalFlagSetFunc(func(fs *flag.FlagSet) {
+		err = AddFlags(fs, sourceFlags, sourceFlagsHelp)
+		if err != nil {
+			panic(err)
+		}
+	})
+	return sourceFlags, err
 }
 
-func newBuildContext(wd LocalWorkDirShell, c *sous.SourceContext) *sous.BuildContext {
-	return &sous.BuildContext{
-		Sh:     wd.Sh,
-		Source: *c,
+func newGitSourceContext(g LocalGitRepo) (GitSourceContext, error) {
+	c, err := g.SourceContext()
+	return GitSourceContext{c}, initErr(err, "getting local git context")
+}
+
+func newBuildContextFunc(wd LocalWorkDirShell, cf SourceContextFunc) BuildContextFunc {
+	return func() (*sous.BuildContext, error) {
+		c, err := cf()
+		return &sous.BuildContext{
+			Sh:     wd.Sh,
+			Source: *c,
+		}, initErr(err, "getting build context")
 	}
 }
 
@@ -172,16 +194,33 @@ func newSelector() sous.Selector {
 	}
 }
 
-func newDockerBuilder(cfg LocalSousConfig, cl LocalDockerClient, ctx *sous.SourceContext, source LocalWorkDirShell, scratch ScratchDirShell) (*docker.Builder, error) {
-	return makeDockerBuilder(cfg, cl, ctx, source, scratch)
+func newDockerBuilder(cfg LocalSousConfig, cl LocalDockerClient, cf SourceContextFunc, source LocalWorkDirShell, scratch ScratchDirShell) DockerBuilderFunc {
+	return func() (*docker.Builder, error) {
+		ctx, err := cf()
+		if err != nil {
+			return nil, err
+		}
+		return makeDockerBuilder(cfg, cl, ctx, source, scratch)
+	}
 }
 
-func newBuilder(db *docker.Builder) (sous.Labeller, error) {
-	return db, nil
+// LabellerFunc returns a labeller.
+type LabellerFunc func() (sous.Labeller, error)
+
+func newLabellerFunc(dbf DockerBuilderFunc) LabellerFunc {
+	return func() (sous.Labeller, error) {
+		db, err := dbf()
+		return db, initErr(err, "getting docker builder")
+	}
 }
 
-func newRegistrar(db *docker.Builder) (sous.Registrar, error) {
-	return db, nil
+// RegistrarFunc returns a docker registrar.
+type RegistrarFunc func() (sous.Registrar, error)
+
+func newRegistrar(dbf DockerBuilderFunc) RegistrarFunc {
+	return func() (sous.Registrar, error) {
+		return dbf()
+	}
 }
 
 func newRegistry(cfg LocalSousConfig, cl LocalDockerClient) (sous.Registry, error) {
@@ -227,10 +266,13 @@ func makeDockerRegistry(cfg LocalSousConfig, cl LocalDockerClient) (*docker.Name
 	dbCfg := cfg.Docker.DBConfig()
 	db, err := docker.GetDatabase(&dbCfg)
 	if err != nil {
-		return nil, fmt.Errorf("unable to build name cache DB: ", err)
+		return nil, fmt.Errorf("unable to build name cache DB: %s", err)
 	}
-	return &docker.NameCache{cl.Client, db}, nil
+	return &docker.NameCache{RegistryClient: cl.Client, DB: db}, nil
 }
+
+// DockerBuilderFunc gets a docker builder.
+type DockerBuilderFunc func() (*docker.Builder, error)
 
 // makeDockerBuilder creates a Docker version of sous.Builder
 func makeDockerBuilder(cfg LocalSousConfig, cl LocalDockerClient, ctx *sous.SourceContext, source LocalWorkDirShell, scratch ScratchDirShell) (*docker.Builder, error) {
