@@ -43,21 +43,21 @@ func (c *BuildConfig) NewContext() *BuildContext {
 		User:    ctx.User,
 		Changes: ctx.Changes,
 		Source: SourceContext{
-			RootDir:                  sc.RootDir,
-			OffsetDir:                c.chooseOffset(),
-			Branch:                   sc.Branch,
-			Revision:                 sc.Revision,
-			Files:                    sc.Files,
-			ModifiedFiles:            sc.ModifiedFiles,
-			NewFiles:                 sc.NewFiles,
-			Tags:                     sc.Tags,
-			NearestTagName:           c.chooseTag(),
-			NearestTagRevision:       sc.NearestTagRevision,
-			RemoteURL:                c.chooseRemoteURL(),
-			PossiblePrimaryRemoteURL: sc.PossiblePrimaryRemoteURL,
-			RemoteURLs:               sc.RemoteURLs,
-			DirtyWorkingTree:         sc.DirtyWorkingTree,
-			RevisionUnpushed:         sc.RevisionUnpushed,
+			RootDir:            sc.RootDir,
+			OffsetDir:          c.chooseOffset(),
+			Branch:             sc.Branch,
+			Revision:           sc.Revision,
+			Files:              sc.Files,
+			ModifiedFiles:      sc.ModifiedFiles,
+			NewFiles:           sc.NewFiles,
+			Tags:               sc.Tags,
+			NearestTagName:     c.chooseTag(),
+			NearestTagRevision: sc.NearestTagRevision,
+			RemoteURL:          c.chooseRemoteURL(),
+			PrimaryRemoteURL:   sc.PrimaryRemoteURL,
+			RemoteURLs:         sc.RemoteURLs,
+			DirtyWorkingTree:   sc.DirtyWorkingTree,
+			RevisionUnpushed:   sc.RevisionUnpushed,
 		},
 	}
 
@@ -68,8 +68,8 @@ func (c *BuildConfig) NewContext() *BuildContext {
 
 func (c *BuildConfig) chooseRemoteURL() string {
 	if c.Repo == "" {
-		Log.Debug.Printf("Using best guess: % #v", c.Context.Source.PossiblePrimaryRemoteURL)
-		return c.Context.Source.PossiblePrimaryRemoteURL
+		Log.Debug.Printf("Using best guess: % #v", c.Context.Source.PrimaryRemoteURL)
+		return c.Context.Source.PrimaryRemoteURL
 	}
 	return c.Repo
 }
