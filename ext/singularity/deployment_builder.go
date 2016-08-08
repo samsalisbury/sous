@@ -93,6 +93,8 @@ func reqID(rp *dtos.SingularityRequestParent) (ID string) {
 }
 
 func (db *deploymentBuilder) retrieveDeploy() error {
+	logFDs("before retrieveDeploy")
+	defer logFDs("after retrieveDeploy")
 
 	rp := db.req.ReqParent
 	rds := rp.RequestDeployState
@@ -124,6 +126,8 @@ func (db *deploymentBuilder) retrieveDeploy() error {
 }
 
 func (db *deploymentBuilder) retrieveImageLabels() error {
+	logFDs("before retrieveImageLabels")
+	defer logFDs("after retrieveImageLabels")
 	ci := db.deploy.ContainerInfo
 	if ci == nil {
 		return malformedResponse{"Blank container info"}

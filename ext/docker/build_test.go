@@ -20,7 +20,7 @@ func TestBuild(t *testing.T) {
 			assert := assert.New(t)
 			log.SetFlags(log.Flags() | log.Lshortfile)
 			Log.Debug.SetOutput(os.Stderr)
-			Log.Vomit.SetOutput(os.Stderr)
+			//Log.Vomit.SetOutput(os.Stderr)
 
 			repoName := "github.com/opentable/awesomeproject"
 			revision := "987654321987654312"

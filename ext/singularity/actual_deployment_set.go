@@ -2,6 +2,8 @@ package singularity
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
 	"runtime/debug"
 	"sync"
 	"time"
@@ -14,7 +16,10 @@ import (
 
 // ReqsPerServer limits the number of simultaneous number of requests made
 // against a single Singularity server
-const ReqsPerServer = 10
+const (
+	ReqsPerServer = 10
+	MaxAssemblers = 100
+)
 
 type (
 	sDeploy    *dtos.SingularityDeploy
@@ -59,7 +64,7 @@ func (sc *deployer) GetRunningDeployment(singMap map[string]string) (deps sous.D
 		go singPipeline(url, client, &depWait, &singWait, reqCh, errCh)
 	}
 
-	go depPipeline(sc.Client, singMap, reqCh, depCh, errCh)
+	go depPipeline(sc.Client, singMap, MaxAssemblers, reqCh, depCh, errCh)
 
 	go func() {
 		catchAndSend("closing up", errCh)
@@ -143,6 +148,26 @@ func catchAndSend(from string, errs chan error) {
 	}
 }
 
+func logFDs(when string) {
+	defer func() { recover() }() // this is just diagnostic
+	pid := os.Getpid()
+	fdDir, err := ioutil.ReadDir(fmt.Sprintf("/proc/%d/fd", pid))
+	if err != nil {
+		Log.Debug.Print(err)
+		return
+	}
+	for _, f := range fdDir {
+		n, e := os.Readlink(fmt.Sprintf("/proc/%d/fd/%s", pid, f.Name()))
+		if e != nil {
+			n = f.Name()
+		}
+
+		Log.Vomit.Printf("%s: %s", f.Mode(), n)
+	}
+
+	Log.Debug.Printf("%s: %d", when, len(fdDir))
+}
+
 func singPipeline(
 	url string,
 	client *singularity.Client,
@@ -166,6 +191,8 @@ func singPipeline(
 }
 
 func getRequestsFromSingularity(url string, client *singularity.Client) ([]SingReq, error) {
+	logFDs("before getRequestsFromSingularity")
+	defer logFDs("after getRequestsFromSingularity")
 	singRequests, err := client.GetRequests()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting request")
@@ -182,14 +209,19 @@ func getRequestsFromSingularity(url string, client *singularity.Client) ([]SingR
 func depPipeline(
 	cl rectificationClient,
 	nicks map[string]string,
+	poolCount int,
 	reqCh chan SingReq,
 	depCh chan *sous.Deployment,
 	errCh chan error,
 ) {
 	defer catchAndSend("dependency building", errCh)
+	poolLimit := make(chan struct{}, poolCount)
 	for req := range reqCh {
 		go func(cl rectificationClient, req SingReq) {
 			defer catchAndSend(fmt.Sprintf("dep from req %s", req.SourceURL), errCh)
+
+			poolLimit <- struct{}{}
+			defer func() { <-poolLimit }()
 
 			dep, err := assembleDeployment(cl, nicks, req)
 

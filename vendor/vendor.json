@@ -121,10 +121,6 @@
 			"revision": "20fa47886d8ab72eb1e29b1160ed716e7ffac36a"
 		},
 		{
-			"path": "github.com/docker/image",
-			"revision": ""
-		},
-		{
 			"checksumSHA1": "kwd8rShKDCxGTQA0qkxsE1NFJFo=",
 			"path": "github.com/docker/libtrust",
 			"revision": "c8d2b36d60a84f3fa7d5e5e355be64f0fbe0b481"
@@ -175,6 +171,12 @@
 			"path": "github.com/opentable/swaggering",
 			"revision": "48c3213297e582f0e3c5aa1ca440ff27f5c4c311",
 			"revisionTime": "2016-07-18T22:12:07Z"
+		},
+		{
+			"checksumSHA1": "QoVjlQFru1ixgV8vh63T4/JAtLI=",
+			"path": "github.com/pkg/errors",
+			"revision": "a22138067af1c4942683050411a841ade67fe1eb",
+			"revisionTime": "2016-08-08T05:55:40Z"
 		},
 		{
 			"checksumSHA1": "LuFv4/jlrmFNnDb/5SCSEPAM9vU=",

@@ -1,6 +1,7 @@
 package singularity
 
 import (
+	"os"
 	"testing"
 
 	"github.com/opentable/go-singularity"
@@ -12,6 +13,8 @@ import (
 
 func TestGetDepSetWorks(t *testing.T) {
 	assert := assert.New(t)
+
+	Log.Debug.SetOutput(os.Stderr)
 
 	whip := make(map[string]swaggering.DummyControl)
 
