@@ -49,7 +49,8 @@ func (ra *RectiAgent) Deploy(cluster, depID, reqID, dockerImage string,
 	r sous.Resources, e sous.Env, vols sous.Volumes) error {
 	Log.Debug.Printf("Deploying instance %s %s %s %s %v %v", cluster, depID, reqID, dockerImage, r, e)
 	dockerInfo, err := swaggering.LoadMap(&dtos.SingularityDockerInfo{}, dtoMap{
-		"Image": dockerImage,
+		"Image":   dockerImage,
+		"Network": dtos.SingularityDockerInfoSingularityDockerNetworkTypeBRIDGE, //defaulting to all bridge
 	})
 	if err != nil {
 		return err
