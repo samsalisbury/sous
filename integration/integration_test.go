@@ -41,9 +41,9 @@ func newInMemoryDB(name string) *sql.DB {
 }
 
 func TestGetRunningDeploymentSet(t *testing.T) {
-	sous.Log.Vomit.SetFlags(sous.Log.Vomit.Flags() | log.Ltime)
-	sous.Log.Vomit.SetOutput(os.Stderr)
-	sous.Log.Vomit.Print("Starting stderr output")
+	//sous.Log.Vomit.SetFlags(sous.Log.Vomit.Flags() | log.Ltime)
+	//sous.Log.Vomit.SetOutput(os.Stderr)
+	//sous.Log.Vomit.Print("Starting stderr output")
 	sous.Log.Debug.SetFlags(sous.Log.Debug.Flags() | log.Ltime)
 	sous.Log.Debug.SetOutput(os.Stderr)
 	sous.Log.Debug.Print("Starting stderr output")
@@ -119,7 +119,7 @@ func TestMissingImage(t *testing.T) {
 
 func TestResolve(t *testing.T) {
 	assert := assert.New(t)
-	sous.Log.Vomit.SetOutput(os.Stderr)
+	//sous.Log.Vomit.SetOutput(os.Stderr)
 	sous.Log.Debug.SetOutput(os.Stderr)
 
 	ResetSingularity()

@@ -50,7 +50,7 @@ func TestMissingExplicitRepo(t *testing.T) {
 		Repo: "github.com/opentable/present",
 		Context: &BuildContext{
 			Source: SourceContext{
-				PossiblePrimaryRemoteURL: "github.com/guessed/upstream",
+				PrimaryRemoteURL: "github.com/guessed/upstream",
 				RemoteURLs: []string{
 					"github.com/opentable/also",
 				},
@@ -73,7 +73,7 @@ func TestAbsentRepoConfig(t *testing.T) {
 		Repo: "",
 		Context: &BuildContext{
 			Source: SourceContext{
-				PossiblePrimaryRemoteURL: "github.com/guessed/upstream",
+				PrimaryRemoteURL: "github.com/guessed/upstream",
 				RemoteURLs: []string{
 					"github.com/opentable/also",
 				},
@@ -94,7 +94,7 @@ func TestNoRepo(t *testing.T) {
 		Repo: "",
 		Context: &BuildContext{
 			Source: SourceContext{
-				PossiblePrimaryRemoteURL: "",
+				PrimaryRemoteURL: "",
 				RemoteURLs: []string{
 					"github.com/opentable/also",
 				},
@@ -188,10 +188,10 @@ func TestEphemeralTag(t *testing.T) {
 		Tag: "1.2.3",
 		Context: &BuildContext{
 			Source: SourceContext{
-				PossiblePrimaryRemoteURL: "github.com/opentable/present",
-				Revision:                 "abcd",
-				NearestTagName:           "1.2.0",
-				NearestTagRevision:       "abcd",
+				PrimaryRemoteURL:   "github.com/opentable/present",
+				Revision:           "abcd",
+				NearestTagName:     "1.2.0",
+				NearestTagRevision: "abcd",
 			},
 		},
 	}

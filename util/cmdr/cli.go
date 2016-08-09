@@ -27,6 +27,8 @@ type (
 		// HelpCommand tells the user how to get help. It should be a command
 		// they can type in to get help.
 		HelpCommand string
+		// GlobalFlagSetFuncs allow global flags to be added to the CLI.
+		GlobalFlagSetFuncs []func(*flag.FlagSet)
 		// IndentString is the default indent to use for indenting command
 		// output when Output.Indent() is called inside a command. If left
 		// empty, defaults to DefaultIndentString.
@@ -63,6 +65,12 @@ func (c *CLI) init() {
 	c.Err.SetIndentStyle(indentString)
 }
 
+// AddGlobalFlagSetFunc adds a new function for adding flags to the global flag
+// set.
+func (c *CLI) AddGlobalFlagSetFunc(f func(*flag.FlagSet)) {
+	c.GlobalFlagSetFuncs = append(c.GlobalFlagSetFuncs, f)
+}
+
 // Invoke begins invoking the CLI starting with the base command, and handles
 // all command output. It then returns the result for further processing.
 func (c *CLI) Invoke(args []string) Result {
@@ -79,8 +87,9 @@ func (c *CLI) Invoke(args []string) Result {
 	return result
 }
 
+// InvokeWithoutPrinting invokes the CLI without printing the results.
 func (c *CLI) InvokeWithoutPrinting(args []string) Result {
-	return c.invoke(c.Root, args, nil)
+	return c.invoke(c.Root, args, c.GlobalFlagSetFuncs)
 }
 
 // InvokeAndExit calls Invoke, and exits with the returned exit code.
@@ -118,6 +127,7 @@ func (c *CLI) printTip(tip string) {
 	c.Err.Printfln(tip)
 }
 
+// SetVerbosity sets the verbosity.
 func (c *CLI) SetVerbosity(v Verbosity) {
 	c.Err.Verbosity = v
 }
@@ -159,27 +169,6 @@ func (c *CLI) invoke(base Command, args []string, ff []func(*flag.FlagSet)) Resu
 		}
 		// add these flags to the agglomeration
 		ff = append(ff, command.AddFlags)
-		// make a flag.FlagSet named for this command.
-		fs := flag.NewFlagSet(name, flag.ContinueOnError)
-		// try to pipe normal flag output to /dev/null, don't fail if not though
-		if devNull, err := os.Open(os.DevNull); err == nil {
-			fs.SetOutput(devNull)
-		}
-		// add own and forwarded flags to the flagset, note that it will panic
-		// if multiple flags with the same name are added.
-		for _, addFlags := range ff {
-			addFlags(fs)
-		}
-		// parse the entire flagset for this command
-		if err := fs.Parse(args); err != nil {
-			tip := fmt.Sprintf("for help, use `%s`", c.HelpCommand)
-			if err == flag.ErrHelp {
-				return UsageErrorf(tip)
-			}
-			return UsageErrorf(err.Error()).WithTip(tip)
-		}
-		// get the remaining args
-		args = fs.Args()
 	}
 	// If this command has subcommands, first try to descend into one of them.
 	if command, ok := base.(Subcommander); ok && len(args) != 0 {
@@ -198,6 +187,31 @@ func (c *CLI) invoke(base Command, args []string, ff []func(*flag.FlagSet)) Resu
 		if err := c.runHook(c.Hooks.PreExecute, base); err != nil {
 			return EnsureErrorResult(err)
 		}
+		// make a flag.FlagSet named for this command.
+		fs := flag.NewFlagSet(name, flag.ContinueOnError)
+		// try to pipe normal flag output to /dev/null, don't fail if not though
+		if devNull, err := os.Open(os.DevNull); err == nil {
+			fs.SetOutput(devNull)
+		}
+		// add global flags
+		for _, addFlags := range c.GlobalFlagSetFuncs {
+			addFlags(fs)
+		}
+		// add own and forwarded flags to the flagset, note that it will panic
+		// if multiple flags with the same name are added.
+		for _, addFlags := range ff {
+			addFlags(fs)
+		}
+		// parse the entire flagset for this command
+		if err := fs.Parse(args); err != nil {
+			tip := fmt.Sprintf("for help, use `%s`", c.HelpCommand)
+			if err == flag.ErrHelp {
+				return UsageErrorf(tip)
+			}
+			return UsageErrorf(err.Error()).WithTip(tip)
+		}
+		// get the remaining args
+		args = fs.Args()
 		return command.Execute(args)
 	}
 	// If we get here, this command is not configured correctly and cannot run.

@@ -66,7 +66,7 @@ func (self *DockerInfo) Absorb(other swaggering.DTO) error {
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A DockerInfo cannot absorb the values from %v", other)
+	return fmt.Errorf("A DockerInfo cannot copy the values from %#v", other)
 }
 
 func (self *DockerInfo) MarshalJSON() ([]byte, error) {
@@ -401,7 +401,7 @@ func (self *DockerInfoList) Absorb(other swaggering.DTO) error {
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A DockerInfo cannot absorb the values from %v", other)
+	return fmt.Errorf("A DockerInfoList cannot copy the values from %#v", other)
 }
 
 func (list *DockerInfoList) Populate(jsonReader io.ReadCloser) (err error) {

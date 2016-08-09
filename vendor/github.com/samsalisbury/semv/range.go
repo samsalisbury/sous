@@ -171,8 +171,9 @@ func (r Range) String() string {
 	return out
 }
 
-// Equals returns true if the version passed in has exactly the same
-// allowable version range as the version Equals was invoked on.
+// Equals returns true if the range passed in is semantically equivalent to the
+// range it is invoked on. (That is, if the same set of versions satisfies each
+// range.)
 func (r Range) Equals(other Range) bool {
 	return r.Min.ValueEquals(other.Min) &&
 		r.Max.ValueEquals(other.Max) &&

@@ -14,11 +14,6 @@
 			"revision": "5215b55f46b2b919f50a1df0eaa5886afe4e3b3d"
 		},
 		{
-			"checksumSHA1": "a2yC46a1qsJomgY6rb+FkTFiqmE=",
-			"path": "github.com/davecgh/go-spew/spew/testdata",
-			"revision": "5215b55f46b2b919f50a1df0eaa5886afe4e3b3d"
-		},
-		{
 			"checksumSHA1": "0IOrVLH+hzdsou+VtYQaR+2xrPQ=",
 			"comment": "v2.4.0-rc.1-14-g20fa478",
 			"path": "github.com/docker/distribution",
@@ -40,12 +35,6 @@
 			"checksumSHA1": "9ymKULEPvYfNX+PCqIZfq5CMP/c=",
 			"comment": "v2.4.0-rc.1-14-g20fa478",
 			"path": "github.com/docker/distribution/manifest",
-			"revision": "20fa47886d8ab72eb1e29b1160ed716e7ffac36a"
-		},
-		{
-			"checksumSHA1": "wj3LS+c2DaFy95T29X7JI4mwvBI=",
-			"comment": "v2.4.0-rc.1-14-g20fa478",
-			"path": "github.com/docker/distribution/manifest/manifestlist",
 			"revision": "20fa47886d8ab72eb1e29b1160ed716e7ffac36a"
 		},
 		{
@@ -97,21 +86,9 @@
 			"revision": "20fa47886d8ab72eb1e29b1160ed716e7ffac36a"
 		},
 		{
-			"checksumSHA1": "0yIIrPIBy3pb5GuElgPQJG/qyWM=",
-			"comment": "v2.4.0-rc.1-14-g20fa478",
-			"path": "github.com/docker/distribution/registry/storage/cache/cachecheck",
-			"revision": "20fa47886d8ab72eb1e29b1160ed716e7ffac36a"
-		},
-		{
 			"checksumSHA1": "Uly2iPDPUbNtilosM7ERs1ZrcAY=",
 			"comment": "v2.4.0-rc.1-14-g20fa478",
 			"path": "github.com/docker/distribution/registry/storage/cache/memory",
-			"revision": "20fa47886d8ab72eb1e29b1160ed716e7ffac36a"
-		},
-		{
-			"checksumSHA1": "hflaGgR4IpXcb4o4Q7hxJnjie+k=",
-			"comment": "v2.4.0-rc.1-14-g20fa478",
-			"path": "github.com/docker/distribution/testutil",
 			"revision": "20fa47886d8ab72eb1e29b1160ed716e7ffac36a"
 		},
 		{
@@ -121,17 +98,8 @@
 			"revision": "20fa47886d8ab72eb1e29b1160ed716e7ffac36a"
 		},
 		{
-			"path": "github.com/docker/image",
-			"revision": ""
-		},
-		{
 			"checksumSHA1": "kwd8rShKDCxGTQA0qkxsE1NFJFo=",
 			"path": "github.com/docker/libtrust",
-			"revision": "c8d2b36d60a84f3fa7d5e5e355be64f0fbe0b481"
-		},
-		{
-			"checksumSHA1": "ej5H4I19BGtX42Dfe1ozH1Gcd6k=",
-			"path": "github.com/docker/libtrust/testutil",
 			"revision": "c8d2b36d60a84f3fa7d5e5e355be64f0fbe0b481"
 		},
 		{
@@ -159,13 +127,13 @@
 			"revisionTime": "2016-05-14T12:23:48Z"
 		},
 		{
-			"checksumSHA1": "DoqVkbE8URZrZhYxPoBHkzYYnAk=",
+			"checksumSHA1": "lTct/AoeIDfVutd6K65O1wXXdUI=",
 			"path": "github.com/opentable/go-singularity",
 			"revision": "7e48532975dd564e10fc5100e00753ae00283613",
 			"revisionTime": "2016-07-18T23:20:50Z"
 		},
 		{
-			"checksumSHA1": "3Bkxlfye0txanhbBS4jLj9tdktQ=",
+			"checksumSHA1": "LY3JY2gqvKZ1+CNgIs/MxGCqsAE=",
 			"path": "github.com/opentable/go-singularity/dtos",
 			"revision": "7e48532975dd564e10fc5100e00753ae00283613",
 			"revisionTime": "2016-07-18T23:20:50Z"
@@ -177,19 +145,27 @@
 			"revisionTime": "2016-07-18T22:12:07Z"
 		},
 		{
+			"checksumSHA1": "QoVjlQFru1ixgV8vh63T4/JAtLI=",
+			"path": "github.com/pkg/errors",
+			"revision": "a22138067af1c4942683050411a841ade67fe1eb",
+			"revisionTime": "2016-08-08T05:55:40Z"
+		},
+		{
 			"checksumSHA1": "LuFv4/jlrmFNnDb/5SCSEPAM9vU=",
 			"path": "github.com/pmezard/go-difflib/difflib",
 			"revision": "792786c7400a136282c1664665ae0a8db921c6c2"
 		},
 		{
-			"checksumSHA1": "vNLZL9W2JAyUxeU1kRfSHw2gQ2s=",
+			"checksumSHA1": "gkzEM1oht7y2Z0NBtRjvucWCWg8=",
 			"path": "github.com/samsalisbury/psyringe",
-			"revision": "ac33701d5b34cfa8726dfdea0ba91d981be098a9"
+			"revision": "2be630abc79d2541e3c890cc4b9eb7cdaf1e2352",
+			"revisionTime": "2016-08-05T08:38:32Z"
 		},
 		{
-			"checksumSHA1": "t/73GjySCNTBfBAI0eKYiCvzMUA=",
+			"checksumSHA1": "IRgb8yeKkWGY5gp1TLk9rpGitB0=",
 			"path": "github.com/samsalisbury/semv",
-			"revision": "dcfea12f0df0494785e2fdf4eb5426d4a1fbd92e"
+			"revision": "89e7c49965c4aaf21d4c4b27f4c69e2ddaaa9c86",
+			"revisionTime": "2016-08-03T15:34:45Z"
 		},
 		{
 			"checksumSHA1": "fV2uEKIgQJGaej5Yj0OnuOkmiM4=",

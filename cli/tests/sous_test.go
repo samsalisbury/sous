@@ -19,7 +19,7 @@ func TestSous(t *testing.T) {
 
 	log.Print(term.Stderr)
 	term.Stdout.ShouldHaveNumLines(0)
-	term.Stderr.ShouldHaveNumLines(20)
+	term.Stderr.ShouldHaveNumLines(21)
 
 	term.Stderr.ShouldHaveExactLine("usage: sous <command>")
 	term.Stderr.ShouldHaveLineContaining("help     get help with sous")
@@ -31,7 +31,7 @@ func TestSousVersion(t *testing.T) {
 
 	term.CLI.Hooks.PreExecute = func(c cmdr.Command) error {
 		g := psyringe.New()
-		g.Fill(
+		g.Add(
 			&cli.Sous{Version: semv.MustParse("1.0.0-test")},
 		)
 		return g.Inject(c)

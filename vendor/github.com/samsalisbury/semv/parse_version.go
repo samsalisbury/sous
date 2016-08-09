@@ -7,18 +7,42 @@ import (
 	"strings"
 )
 
-// Parse permissively parses the string as a semver value. The minimal string
+// Parse permissively parses a string as a semver value. The minimal string
 // which will not error is a single digit, which will be interpreted as a major
 // version, e.g. Parse("1").Format("M.m.p") == "1.0.0".
+//
+// All of the following will parse into a Version instance:
+//
+//     "1" parses as {Major: 1, Minor: 0, Patch: 0, Pre: "", Meta: ""}
+//     "1.2" parses as {Major: 1, Minor: 2, Patch: 0, Pre: "", Meta: ""}
+//     "1.2.3" parses as {Major: 1, Minor: 2, Patch: 3, Pre: "", Meta: ""}
+//     "1-beta" parses as {Major: 1, Minor: 0, Patch: 0, Pre: "beta", Meta: ""}
+//     "1.2+abc" parses as {Major: 1, Minor: 2, Patch: 0, Pre: "", Meta: "abc"}
+//     "1.2-beta+abc" parses as {Major: 1, Minor: 2, Patch: 0, Pre: "beta", Meta: "abc"}
+//
+// Note that whilst permissive, parse will still return errors for the following
+// conditions:
+//
+//     UnexpectedCharacter when encountering anything other than:
+//
+//         [0-9\.] in a major or minor field,
+//         [0-9\-]+, in a patch field,
+//         [0-9a-zA-Z\-] in a prerelease or meta field.
+//
+//     ZeroLengthNumeric when encountering 2 dots together in the major, minor,
+//     patch fields.
+//
+// If you want to validate that input is in exact semver 2.0.0 format, you
+// should use ParseExactSemver2 instead.
 func Parse(s string) (Version, error) {
 	v, errs := parse(s)
-	// Skip nil, PrecedingZero, and VersionIncomplete errors in this
+	// Skip nil, LeadingZero, and VersionIncomplete errors in this
 	// permissive parse func.
 	for _, err := range errs {
 		if err == nil {
 			continue
 		}
-		if _, ok := err.(PrecedingZero); ok {
+		if _, ok := err.(LeadingZero); ok {
 			continue
 		}
 		if _, ok := err.(VersionIncomplete); ok {
@@ -39,8 +63,14 @@ func MustParse(s string) Version {
 	return v
 }
 
-// ParseExactSemver2 returns an error, and an incomplete Version if the
-// string passed in does not conform exactly to semver 2.0.0
+// ParseExactSemver2 returns an error, and an incomplete Version if the string
+// passed in does not conform exactly to semver 2.0.0. It can return the same
+// errors as Parse, plus these two additional ones:
+//
+//     VersionIncomplete when either the minor or patch fields are missing
+//
+//     LeadingZero when a major, minor, or patch contains an erroneous preceding zero character.
+//
 func ParseExactSemver2(s string) (Version, error) {
 	v, errs := parse(s)
 	return v, firstErr(errs...)
@@ -224,7 +254,7 @@ func validateMMPFormat(s, name string) error {
 		return ZeroLengthNumeric{name}
 	}
 	if len(s) > 1 && s[0] == '0' {
-		return PrecedingZero{name, s}
+		return LeadingZero{name, s}
 	}
 	return nil
 }
