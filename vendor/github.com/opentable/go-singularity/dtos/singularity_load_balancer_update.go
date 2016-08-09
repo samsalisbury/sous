@@ -7,6 +7,16 @@ import (
 	"github.com/opentable/swaggering"
 )
 
+type SingularityLoadBalancerUpdateLoadBalancerMethod string
+
+const (
+	SingularityLoadBalancerUpdateLoadBalancerMethodPRE_ENQUEUE SingularityLoadBalancerUpdateLoadBalancerMethod = "PRE_ENQUEUE"
+	SingularityLoadBalancerUpdateLoadBalancerMethodENQUEUE     SingularityLoadBalancerUpdateLoadBalancerMethod = "ENQUEUE"
+	SingularityLoadBalancerUpdateLoadBalancerMethodCHECK_STATE SingularityLoadBalancerUpdateLoadBalancerMethod = "CHECK_STATE"
+	SingularityLoadBalancerUpdateLoadBalancerMethodCANCEL      SingularityLoadBalancerUpdateLoadBalancerMethod = "CANCEL"
+	SingularityLoadBalancerUpdateLoadBalancerMethodDELETE      SingularityLoadBalancerUpdateLoadBalancerMethod = "DELETE"
+)
+
 type SingularityLoadBalancerUpdateBaragonRequestState string
 
 const (
@@ -17,16 +27,6 @@ const (
 	SingularityLoadBalancerUpdateBaragonRequestStateCANCELING            SingularityLoadBalancerUpdateBaragonRequestState = "CANCELING"
 	SingularityLoadBalancerUpdateBaragonRequestStateCANCELED             SingularityLoadBalancerUpdateBaragonRequestState = "CANCELED"
 	SingularityLoadBalancerUpdateBaragonRequestStateINVALID_REQUEST_NOOP SingularityLoadBalancerUpdateBaragonRequestState = "INVALID_REQUEST_NOOP"
-)
-
-type SingularityLoadBalancerUpdateLoadBalancerMethod string
-
-const (
-	SingularityLoadBalancerUpdateLoadBalancerMethodPRE_ENQUEUE SingularityLoadBalancerUpdateLoadBalancerMethod = "PRE_ENQUEUE"
-	SingularityLoadBalancerUpdateLoadBalancerMethodENQUEUE     SingularityLoadBalancerUpdateLoadBalancerMethod = "ENQUEUE"
-	SingularityLoadBalancerUpdateLoadBalancerMethodCHECK_STATE SingularityLoadBalancerUpdateLoadBalancerMethod = "CHECK_STATE"
-	SingularityLoadBalancerUpdateLoadBalancerMethodCANCEL      SingularityLoadBalancerUpdateLoadBalancerMethod = "CANCEL"
-	SingularityLoadBalancerUpdateLoadBalancerMethodDELETE      SingularityLoadBalancerUpdateLoadBalancerMethod = "DELETE"
 )
 
 type SingularityLoadBalancerUpdate struct {
@@ -54,7 +54,7 @@ func (self *SingularityLoadBalancerUpdate) Absorb(other swaggering.DTO) error {
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A SingularityLoadBalancerUpdate cannot copy the values from %#v", other)
+	return fmt.Errorf("A SingularityLoadBalancerUpdate cannot absorb the values from %v", other)
 }
 
 func (self *SingularityLoadBalancerUpdate) MarshalJSON() ([]byte, error) {
@@ -242,7 +242,7 @@ func (self *SingularityLoadBalancerUpdateList) Absorb(other swaggering.DTO) erro
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A SingularityLoadBalancerUpdateList cannot copy the values from %#v", other)
+	return fmt.Errorf("A SingularityLoadBalancerUpdate cannot absorb the values from %v", other)
 }
 
 func (list *SingularityLoadBalancerUpdateList) Populate(jsonReader io.ReadCloser) (err error) {

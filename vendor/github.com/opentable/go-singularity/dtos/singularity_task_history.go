@@ -20,6 +20,8 @@ type SingularityTaskHistory struct {
 
 	Task *SingularityTask `json:"task"`
 
+	TaskMetadata SingularityTaskMetadataList `json:"taskMetadata"`
+
 	TaskUpdates SingularityTaskHistoryUpdateList `json:"taskUpdates"`
 }
 
@@ -32,7 +34,7 @@ func (self *SingularityTaskHistory) Absorb(other swaggering.DTO) error {
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A SingularityTaskHistory cannot copy the values from %#v", other)
+	return fmt.Errorf("A SingularityTaskHistory cannot absorb the values from %v", other)
 }
 
 func (self *SingularityTaskHistory) MarshalJSON() ([]byte, error) {
@@ -109,6 +111,16 @@ func (self *SingularityTaskHistory) SetField(name string, value interface{}) err
 			return fmt.Errorf("Field task/Task: value %v(%T) couldn't be cast to type *SingularityTask", value, value)
 		}
 
+	case "taskMetadata", "TaskMetadata":
+		v, ok := value.(SingularityTaskMetadataList)
+		if ok {
+			self.TaskMetadata = v
+			self.present["taskMetadata"] = true
+			return nil
+		} else {
+			return fmt.Errorf("Field taskMetadata/TaskMetadata: value %v(%T) couldn't be cast to type SingularityTaskMetadataList", value, value)
+		}
+
 	case "taskUpdates", "TaskUpdates":
 		v, ok := value.(SingularityTaskHistoryUpdateList)
 		if ok {
@@ -167,6 +179,14 @@ func (self *SingularityTaskHistory) GetField(name string) (interface{}, error) {
 		}
 		return nil, fmt.Errorf("Field Task no set on Task %+v", self)
 
+	case "taskMetadata", "TaskMetadata":
+		if self.present != nil {
+			if _, ok := self.present["taskMetadata"]; ok {
+				return self.TaskMetadata, nil
+			}
+		}
+		return nil, fmt.Errorf("Field TaskMetadata no set on TaskMetadata %+v", self)
+
 	case "taskUpdates", "TaskUpdates":
 		if self.present != nil {
 			if _, ok := self.present["taskUpdates"]; ok {
@@ -201,6 +221,9 @@ func (self *SingularityTaskHistory) ClearField(name string) error {
 	case "task", "Task":
 		self.present["task"] = false
 
+	case "taskMetadata", "TaskMetadata":
+		self.present["taskMetadata"] = false
+
 	case "taskUpdates", "TaskUpdates":
 		self.present["taskUpdates"] = false
 
@@ -220,7 +243,7 @@ func (self *SingularityTaskHistoryList) Absorb(other swaggering.DTO) error {
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A SingularityTaskHistoryList cannot copy the values from %#v", other)
+	return fmt.Errorf("A SingularityTaskHistory cannot absorb the values from %v", other)
 }
 
 func (list *SingularityTaskHistoryList) Populate(jsonReader io.ReadCloser) (err error) {

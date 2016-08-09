@@ -27,7 +27,7 @@ func (self *EnvironmentOrBuilder) Absorb(other swaggering.DTO) error {
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A EnvironmentOrBuilder cannot copy the values from %#v", other)
+	return fmt.Errorf("A EnvironmentOrBuilder cannot absorb the values from %v", other)
 }
 
 func (self *EnvironmentOrBuilder) MarshalJSON() ([]byte, error) {
@@ -110,7 +110,7 @@ func (self *EnvironmentOrBuilderList) Absorb(other swaggering.DTO) error {
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A EnvironmentOrBuilderList cannot copy the values from %#v", other)
+	return fmt.Errorf("A EnvironmentOrBuilder cannot absorb the values from %v", other)
 }
 
 func (list *EnvironmentOrBuilderList) Populate(jsonReader io.ReadCloser) (err error) {
