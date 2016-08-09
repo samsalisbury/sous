@@ -90,11 +90,18 @@ func (s *Sous) Subcommands() cmdr.Commands {
 }
 
 func (s *Sous) Verbosity() cmdr.Verbosity {
+	fmt.Println(s.flags.Verbosity)
 	if s.flags.Verbosity.Debug {
 		fmt.Println("debug level")
-		//sous.Log.Vomit.SetOutput(os.Stderr)
+		if s.flags.Verbosity.Loud {
+			sous.Log.Vomit.SetOutput(os.Stderr)
+		}
 		sous.Log.Debug.SetOutput(os.Stderr)
 		sous.Log.Info.SetOutput(os.Stderr)
+
+		sous.Log.Vomit.Println("Verbose debugging enabled")
+		sous.Log.Debug.Println("Regular debugging enabled")
+		sous.Log.Info.Println("Informational messages enabled")
 		return cmdr.Debug
 	}
 	if s.flags.Verbosity.Loud {

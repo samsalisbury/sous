@@ -75,6 +75,11 @@ func (c *CLI) AddGlobalFlagSetFunc(f func(*flag.FlagSet)) {
 // all command output. It then returns the result for further processing.
 func (c *CLI) Invoke(args []string) Result {
 	result := c.InvokeWithoutPrinting(args)
+	c.outputResult(result)
+	return result
+}
+
+func (c *CLI) outputResult(result Result) {
 	if success, ok := result.(SuccessResult); ok {
 		c.handleSuccessResult(success)
 	}
@@ -84,17 +89,30 @@ func (c *CLI) Invoke(args []string) Result {
 	if err, ok := result.(ErrorResult); ok {
 		c.handleErrorResult(err)
 	}
-	return result
 }
 
 // InvokeWithoutPrinting invokes the CLI without printing the results.
 func (c *CLI) InvokeWithoutPrinting(args []string) Result {
-	return c.invoke(c.Root, args, c.GlobalFlagSetFuncs)
+	prepped, err := c.Prepare(args)
+	if err != nil {
+		return EnsureErrorResult(err)
+	}
+	return prepped.Cmd.Execute(prepped.Args)
 }
 
 // InvokeAndExit calls Invoke, and exits with the returned exit code.
 func (c *CLI) InvokeAndExit(args []string) {
 	os.Exit(c.Invoke(args).ExitCode())
+}
+
+// Prepare sets up a command for execution, resolving subcommands and flags, and forwarding
+// flags from lower commands to higher ones. This means that flags defined on
+// the base command are also defined by default all its nested subcommands,
+// which is usually a nicer user experience than having to remember strictly
+// which subcommand a flag is applicable to.
+func (c *CLI) Prepare(args []string) (*PreparedExecution, error) {
+	base, ff := c.Root, c.GlobalFlagSetFuncs
+	return c.prepare(base, args, ff)
 }
 
 // runHook runs the hook if it's not nil, and returns the hook's error.
@@ -150,15 +168,14 @@ func (c *CLI) ListSubcommands(base Command) []string {
 	return list
 }
 
-// invoke invokes this command, resolving subcommands and flags, and forwarding
-// flags from lower commands to higher ones. This means that flags defined on
-// the base command are also defined by default all its nested subcommands,
-// which is usually a nicer user experience than having to remember strictly
-// which subcommand a flag is applicable to. The ff parameter deals with these
-// flags.
-func (c *CLI) invoke(base Command, args []string, ff []func(*flag.FlagSet)) Result {
+type PreparedExecution struct {
+	Cmd  Executor
+	Args []string
+}
+
+func (c *CLI) prepare(base Command, args []string, ff []func(*flag.FlagSet)) (*PreparedExecution, error) {
 	if len(args) == 0 {
-		return InternalErrorf("command %T received zero args", base)
+		return nil, InternalErrorf("command %T received zero args", base)
 	}
 	name := args[0]
 	args = args[1:]
@@ -176,16 +193,16 @@ func (c *CLI) invoke(base Command, args []string, ff []func(*flag.FlagSet)) Resu
 		subcommands := command.Subcommands()
 		if subcommand, ok := subcommands[subcommandName]; ok {
 			if err := c.runHook(c.Hooks.PreExecute, base); err != nil {
-				return EnsureErrorResult(err)
+				return nil, EnsureErrorResult(err)
 			}
-			return c.invoke(subcommand, args, ff)
+			return c.prepare(subcommand, args, ff)
 		}
 	}
 	// If the command can itself be executed, do that now.
 	if command, ok := base.(Executor); ok {
 		c.init()
 		if err := c.runHook(c.Hooks.PreExecute, base); err != nil {
-			return EnsureErrorResult(err)
+			return nil, err
 		}
 		// make a flag.FlagSet named for this command.
 		fs := flag.NewFlagSet(name, flag.ContinueOnError)
@@ -206,14 +223,14 @@ func (c *CLI) invoke(base Command, args []string, ff []func(*flag.FlagSet)) Resu
 		if err := fs.Parse(args); err != nil {
 			tip := fmt.Sprintf("for help, use `%s`", c.HelpCommand)
 			if err == flag.ErrHelp {
-				return UsageErrorf(tip)
+				return nil, UsageErrorf(tip)
 			}
-			return UsageErrorf(err.Error()).WithTip(tip)
+			return nil, UsageErrorf(err.Error()).WithTip(tip)
 		}
 		// get the remaining args
 		args = fs.Args()
-		return command.Execute(args)
+		return &PreparedExecution{Cmd: command, Args: args}, nil
 	}
 	// If we get here, this command is not configured correctly and cannot run.
-	return InternalErrorf("%q is not runnable and has no subcommands", name)
+	return nil, InternalErrorf("%q is not runnable and has no subcommands", name)
 }
