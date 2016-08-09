@@ -2,6 +2,8 @@ package singularity
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
 	"runtime/debug"
 	"sync"
 	"time"
@@ -9,11 +11,15 @@ import (
 	"github.com/opentable/go-singularity"
 	"github.com/opentable/go-singularity/dtos"
 	"github.com/opentable/sous/lib"
+	"github.com/pkg/errors"
 )
 
 // ReqsPerServer limits the number of simultaneous number of requests made
 // against a single Singularity server
-const ReqsPerServer = 10
+const (
+	ReqsPerServer = 10
+	MaxAssemblers = 100
+)
 
 type (
 	sDeploy    *dtos.SingularityDeploy
@@ -54,10 +60,11 @@ func (sc *deployer) GetRunningDeployment(singMap map[string]string) (deps sous.D
 		}
 		//sing.Debug = true
 		sings[url] = struct{}{}
-		go singPipeline(url, &depWait, &singWait, reqCh, errCh)
+		client := sc.buildSingClient(url)
+		go singPipeline(url, client, &depWait, &singWait, reqCh, errCh)
 	}
 
-	go depPipeline(sc.Client, singMap, reqCh, depCh, errCh)
+	go depPipeline(sc.Client, singMap, MaxAssemblers, reqCh, depCh, errCh)
 
 	go func() {
 		catchAndSend("closing up", errCh)
@@ -121,35 +128,59 @@ func catchAll(from string) {
 	}
 }
 
+func dontrecover() error {
+	return nil
+}
+
 func catchAndSend(from string, errs chan error) {
 	defer catchAll(from)
-	if err := recover(); err != nil {
+	if err := dontrecover(); err != nil {
 		Log.Debug.Printf("from = %s err = %+v\n", from, err)
 		Log.Debug.Printf("debug.Stack() = %+v\n", string(debug.Stack()))
 		switch err := err.(type) {
 		default:
 			if err != nil {
-				errs <- fmt.Errorf("Panicked with not-error: %v", err)
+				errs <- fmt.Errorf("%s: Panicked with not-error: %v", from, err)
 			}
 		case error:
-			errs <- fmt.Errorf("at %s: %v", from, err)
+			errs <- errors.Wrapf(err, from)
 		}
 	}
 }
 
+func logFDs(when string) {
+	defer func() { recover() }() // this is just diagnostic
+	pid := os.Getpid()
+	fdDir, err := ioutil.ReadDir(fmt.Sprintf("/proc/%d/fd", pid))
+	if err != nil {
+		Log.Debug.Print(err)
+		return
+	}
+	for _, f := range fdDir {
+		n, e := os.Readlink(fmt.Sprintf("/proc/%d/fd/%s", pid, f.Name()))
+		if e != nil {
+			n = f.Name()
+		}
+
+		Log.Vomit.Printf("%s: %s", f.Mode(), n)
+	}
+
+	Log.Debug.Printf("%s: %d", when, len(fdDir))
+}
+
 func singPipeline(
 	url string,
+	client *singularity.Client,
 	dw, wg *sync.WaitGroup,
 	reqs chan SingReq,
 	errs chan error,
 ) {
 	defer wg.Done()
 	defer catchAndSend(fmt.Sprintf("get requests: %s", url), errs)
-	client := singularity.NewClient(url)
 	rs, err := getRequestsFromSingularity(url, client)
 	if err != nil {
 		Log.Vomit.Print(err)
-		errs <- err
+		errs <- errors.Wrap(err, "getting request list")
 		return
 	}
 	for _, r := range rs {
@@ -160,9 +191,11 @@ func singPipeline(
 }
 
 func getRequestsFromSingularity(url string, client *singularity.Client) ([]SingReq, error) {
+	logFDs("before getRequestsFromSingularity")
+	defer logFDs("after getRequestsFromSingularity")
 	singRequests, err := client.GetRequests()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "getting request")
 	}
 
 	reqs := make([]SingReq, 0, len(singRequests))
@@ -176,19 +209,24 @@ func getRequestsFromSingularity(url string, client *singularity.Client) ([]SingR
 func depPipeline(
 	cl rectificationClient,
 	nicks map[string]string,
+	poolCount int,
 	reqCh chan SingReq,
 	depCh chan *sous.Deployment,
 	errCh chan error,
 ) {
 	defer catchAndSend("dependency building", errCh)
+	poolLimit := make(chan struct{}, poolCount)
 	for req := range reqCh {
 		go func(cl rectificationClient, req SingReq) {
 			defer catchAndSend(fmt.Sprintf("dep from req %s", req.SourceURL), errCh)
 
+			poolLimit <- struct{}{}
+			defer func() { <-poolLimit }()
+
 			dep, err := assembleDeployment(cl, nicks, req)
 
 			if err != nil {
-				errCh <- err
+				errCh <- errors.Wrap(err, "assembly problem")
 			} else {
 				depCh <- dep
 			}
@@ -201,7 +239,7 @@ func assembleDeployment(cl rectificationClient, nicks map[string]string, req Sin
 	tgt, err := BuildDeployment(cl, nicks, req)
 	if err != nil {
 		Log.Vomit.Print(err)
-		return nil, err
+		return nil, errors.Wrap(err, "Building deployment")
 	}
 
 	Log.Vomit.Printf("Collected deployment: %v", tgt)

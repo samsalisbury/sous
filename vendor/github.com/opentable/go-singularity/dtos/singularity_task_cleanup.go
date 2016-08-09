@@ -49,7 +49,7 @@ func (self *SingularityTaskCleanup) Absorb(other swaggering.DTO) error {
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A SingularityTaskCleanup cannot absorb the values from %v", other)
+	return fmt.Errorf("A SingularityTaskCleanup cannot copy the values from %#v", other)
 }
 
 func (self *SingularityTaskCleanup) MarshalJSON() ([]byte, error) {
@@ -237,7 +237,7 @@ func (self *SingularityTaskCleanupList) Absorb(other swaggering.DTO) error {
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A SingularityTaskCleanup cannot absorb the values from %v", other)
+	return fmt.Errorf("A SingularityTaskCleanupList cannot copy the values from %#v", other)
 }
 
 func (list *SingularityTaskCleanupList) Populate(jsonReader io.ReadCloser) (err error) {

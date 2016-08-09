@@ -59,7 +59,7 @@ func (self *SingularityPendingRequest) Absorb(other swaggering.DTO) error {
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A SingularityPendingRequest cannot absorb the values from %v", other)
+	return fmt.Errorf("A SingularityPendingRequest cannot copy the values from %#v", other)
 }
 
 func (self *SingularityPendingRequest) MarshalJSON() ([]byte, error) {
@@ -331,7 +331,7 @@ func (self *SingularityPendingRequestList) Absorb(other swaggering.DTO) error {
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A SingularityPendingRequest cannot absorb the values from %v", other)
+	return fmt.Errorf("A SingularityPendingRequestList cannot copy the values from %#v", other)
 }
 
 func (list *SingularityPendingRequestList) Populate(jsonReader io.ReadCloser) (err error) {

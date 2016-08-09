@@ -1,6 +1,7 @@
 package singularity
 
 import (
+	"github.com/opentable/go-singularity"
 	"github.com/opentable/sous/lib"
 	"github.com/satori/go.uuid"
 )
@@ -18,6 +19,7 @@ type (
 	deployer struct {
 		Client   rectificationClient
 		Registry sous.Registry
+		singFac  func(string) *singularity.Client
 	}
 
 	// rectificationClient abstracts the raw interactions with Singularity.
@@ -52,6 +54,17 @@ func (r *deployer) RectifyCreates(cc <-chan *sous.Deployment, errs chan<- sous.R
 			errs <- &sous.CreateError{Deployment: d, Err: err}
 		}
 	}
+}
+
+func (r *deployer) SetSingularityFactory(fn func(string) *singularity.Client) {
+	r.singFac = fn
+}
+
+func (r *deployer) buildSingClient(url string) *singularity.Client {
+	if r.singFac == nil {
+		return singularity.NewClient(url)
+	}
+	return r.singFac(url)
 }
 
 func (r *deployer) ImageName(d *sous.Deployment) (string, error) {

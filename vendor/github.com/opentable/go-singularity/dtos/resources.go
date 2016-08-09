@@ -26,7 +26,7 @@ func (self *Resources) Absorb(other swaggering.DTO) error {
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A Resources cannot absorb the values from %v", other)
+	return fmt.Errorf("A Resources cannot copy the values from %#v", other)
 }
 
 func (self *Resources) MarshalJSON() ([]byte, error) {
@@ -151,7 +151,7 @@ func (self *ResourcesList) Absorb(other swaggering.DTO) error {
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A Resources cannot absorb the values from %v", other)
+	return fmt.Errorf("A ResourcesList cannot copy the values from %#v", other)
 }
 
 func (list *ResourcesList) Populate(jsonReader io.ReadCloser) (err error) {

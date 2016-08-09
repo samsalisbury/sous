@@ -64,7 +64,7 @@ func (self *CommandInfo) Absorb(other swaggering.DTO) error {
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A CommandInfo cannot absorb the values from %v", other)
+	return fmt.Errorf("A CommandInfo cannot copy the values from %#v", other)
 }
 
 func (self *CommandInfo) MarshalJSON() ([]byte, error) {
@@ -504,7 +504,7 @@ func (self *CommandInfoList) Absorb(other swaggering.DTO) error {
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A CommandInfo cannot absorb the values from %v", other)
+	return fmt.Errorf("A CommandInfoList cannot copy the values from %#v", other)
 }
 
 func (list *CommandInfoList) Populate(jsonReader io.ReadCloser) (err error) {

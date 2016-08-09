@@ -42,17 +42,6 @@ func (cr *canRetryRequest) name() string {
 	return fmt.Sprintf("%s:%s", cr.req.SourceURL, cr.req.ReqParent.Request.Id)
 }
 
-// BuildDeployment does all the work to collect the data for a Deployment
-// from Singularity based on the initial SingularityRequest
-func BuildDeployment(cl rectificationClient, nicks map[string]string, req SingReq) (sous.Deployment, error) {
-	db := deploymentBuilder{rectification: cl, nicks: nicks, req: req}
-
-	db.Target.Cluster = req.SourceURL
-	db.request = req.ReqParent.Request
-
-	return db.Target, db.canRetry(db.completeConstruction())
-}
-
 func (db *deploymentBuilder) canRetry(err error) error {
 	if err == nil || !db.isRetryable(err) {
 		return err
@@ -69,6 +58,17 @@ func (db *deploymentBuilder) isRetryable(err error) bool {
 		db.req.ReqParent.Request.Id != ""
 }
 
+// BuildDeployment does all the work to collect the data for a Deployment
+// from Singularity based on the initial SingularityRequest
+func BuildDeployment(cl rectificationClient, nicks map[string]string, req SingReq) (sous.Deployment, error) {
+	db := deploymentBuilder{rectification: cl, nicks: nicks, req: req}
+
+	db.Target.Cluster = req.SourceURL
+	db.request = req.ReqParent.Request
+
+	return db.Target, db.canRetry(db.completeConstruction())
+}
+
 func (db *deploymentBuilder) completeConstruction() error {
 	return firsterr.Returned(
 		db.retrieveDeploy,
@@ -78,21 +78,37 @@ func (db *deploymentBuilder) completeConstruction() error {
 	)
 }
 
+func reqID(rp *dtos.SingularityRequestParent) (ID string) {
+	defer func() {
+		if e := recover(); e != nil {
+			return
+		}
+	}()
+	ID = "<null RP>"
+	if rp != nil {
+		ID = "<null Request>"
+	}
+	ID = rp.Request.Id
+	return
+}
+
 func (db *deploymentBuilder) retrieveDeploy() error {
+	logFDs("before retrieveDeploy")
+	defer logFDs("after retrieveDeploy")
 
 	rp := db.req.ReqParent
 	rds := rp.RequestDeployState
 	sing := db.req.Sing
 
 	if rds == nil {
-		return malformedResponse{"Singularity response didn't include a deploy state. ReqId: " + rp.Request.Id}
+		return malformedResponse{"Singularity response didn't include a deploy state. ReqId: " + reqID(rp)}
 	}
 	db.depMarker = rds.PendingDeploy
 	if db.depMarker == nil {
 		db.depMarker = rds.ActiveDeploy
 	}
 	if db.depMarker == nil {
-		return malformedResponse{"Singularity deploy state included no dep markers. ReqID: " + rp.Request.Id}
+		return malformedResponse{"Singularity deploy state included no dep markers. ReqID: " + reqID(rp)}
 	}
 
 	// !!! makes HTTP req
@@ -110,9 +126,15 @@ func (db *deploymentBuilder) retrieveDeploy() error {
 }
 
 func (db *deploymentBuilder) retrieveImageLabels() error {
+	logFDs("before retrieveImageLabels")
+	defer logFDs("after retrieveImageLabels")
 	ci := db.deploy.ContainerInfo
+	if ci == nil {
+		return malformedResponse{"Blank container info"}
+	}
+
 	if ci.Type != dtos.SingularityContainerInfoSingularityContainerTypeDOCKER {
-		return fmt.Errorf("Singularity container isn't a docker container")
+		return malformedResponse{"Singularity container isn't a docker container"}
 	}
 	dkr := ci.Docker
 	if dkr == nil {
@@ -171,6 +193,9 @@ func (db *deploymentBuilder) unpackDeployConfig() error {
 	}
 
 	singRez := db.deploy.Resources
+	if singRez == nil {
+		return malformedResponse{"Deploy object lacks resources field"}
+	}
 	db.Target.Resources = make(sous.Resources)
 	db.Target.Resources["cpus"] = fmt.Sprintf("%f", singRez.Cpus)
 	db.Target.Resources["memory"] = fmt.Sprintf("%f", singRez.MemoryMb)

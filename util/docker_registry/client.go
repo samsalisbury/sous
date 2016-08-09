@@ -389,10 +389,11 @@ func (r *registry) getRepoTags(ref reference.Named) (tags []string, err error) {
 	}
 
 	resp, err := r.client.Do(req)
+	defer safeCloseBody(resp)
+
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
 	if !client.SuccessStatus(resp.StatusCode) {
 		log.Printf("Error response to %#v %v", req, req.URL)
