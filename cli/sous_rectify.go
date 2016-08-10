@@ -58,7 +58,7 @@ func (*SousRectify) Help() string { return sousRectifyHelp }
 
 // AddFlags adds flags for sous rectify
 func (sr *SousRectify) AddFlags(fs *flag.FlagSet) {
-	err := AddFlags(fs, &sr.SourceFlags, sourceFlagsHelp)
+	err := AddFlags(fs, &sr.SourceFlags, rectifyFilterFlagsHelp)
 	if err != nil {
 		panic(err)
 	}
@@ -66,14 +66,6 @@ func (sr *SousRectify) AddFlags(fs *flag.FlagSet) {
 	fs.StringVar(&sr.flags.dryrun, "dry-run", "none",
 		"prevent rectify from actually changing things - "+
 			"values are none,scheduler,registry,both")
-	fs.StringVar(&sr.flags.repo, "repo", "",
-		"consider only the repo `repository` for rectification")
-	fs.StringVar(&sr.flags.offset, "offset", "",
-		"consider only the offset `path` for rectification")
-	fs.StringVar(&sr.flags.cluster, "cluster", "",
-		"consider only the cluster `name` for rectification")
-	fs.BoolVar(&sr.flags.all, "all", false,
-		"actually do a full-tree recitification")
 }
 
 // Execute fulfils the cmdr.Executor interface

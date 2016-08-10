@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -85,7 +84,6 @@ func BuildGraph(s *Sous, c *cmdr.CLI) *SousCLIGraph {
 		newScratchDirShell,
 		newLocalGitClient,
 		newLocalGitRepo,
-		newSourceFlags,
 		newGitSourceContext,
 		newSourceContextFunc,
 		newBuildContextFunc,
@@ -111,6 +109,7 @@ func newErrOut(c *cmdr.CLI) ErrOut {
 	return ErrOut{c.Err}
 }
 
+/*
 func newSourceFlags(c *cmdr.CLI) (*DeployFilterFlags, error) {
 	sourceFlags := &DeployFilterFlags{}
 	var err error
@@ -122,6 +121,7 @@ func newSourceFlags(c *cmdr.CLI) (*DeployFilterFlags, error) {
 	})
 	return sourceFlags, err
 }
+*/
 
 func newGitSourceContext(g LocalGitRepo) (GitSourceContext, error) {
 	c, err := g.SourceContext()
