@@ -5,7 +5,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func newSourceContextFunc(g GitSourceContext, f *SourceFlags) SourceContextFunc {
+func newSourceContextFunc(g GitSourceContext, f *DeployFilterFlags) SourceContextFunc {
 	c := g.SourceContext
 	if c == nil {
 		c = &sous.SourceContext{}
@@ -24,12 +24,12 @@ func newSourceContextFunc(g GitSourceContext, f *SourceFlags) SourceContextFunc 
 	}
 }
 
-func resolveSourceLocation(f *SourceFlags, c *sous.SourceContext) (sous.SourceLocation, error) {
+func resolveSourceLocation(f *DeployFilterFlags, c *sous.SourceContext) (sous.SourceLocation, error) {
 	if c == nil {
 		c = &sous.SourceContext{}
 	}
 	if f == nil {
-		f = &SourceFlags{}
+		f = &DeployFilterFlags{}
 	}
 	var repo, offset = c.PrimaryRemoteURL, c.OffsetDir
 	if f.Repo != "" {

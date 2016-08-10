@@ -111,8 +111,8 @@ func newErrOut(c *cmdr.CLI) ErrOut {
 	return ErrOut{c.Err}
 }
 
-func newSourceFlags(c *cmdr.CLI) (*SourceFlags, error) {
-	sourceFlags := &SourceFlags{}
+func newSourceFlags(c *cmdr.CLI) (*DeployFilterFlags, error) {
+	sourceFlags := &DeployFilterFlags{}
 	var err error
 	c.AddGlobalFlagSetFunc(func(fs *flag.FlagSet) {
 		err = AddFlags(fs, sourceFlags, sourceFlagsHelp)
