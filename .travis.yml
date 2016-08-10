@@ -33,6 +33,7 @@ before_install:
 - sudo mv docker-compose /usr/local/bin
 - docker version
 - docker-compose version
+- id
 - go get github.com/nyarly/engulf github.com/nyarly/legendary
 - env | grep '^DOCKER_'
 - "(cd test-registry && docker-compose pull)"
