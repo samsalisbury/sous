@@ -105,23 +105,27 @@ func newFS() *flag.FlagSet { return flag.NewFlagSet("", flag.ContinueOnError) }
 func TestAddFlags_badInputs(t *testing.T) {
 	var s string
 	stringPtr := &s
-	var badAddFlagsInputs = map[AddFlagsInput]string{
-		{nil, nil, ""}:                                     "cannot add flags to nil *flag.FlagSet",
-		{newFS(), nil, ""}:                                 "target is <nil>; want pointer to struct",
-		{newFS(), "", ""}:                                  "target is string; want pointer to struct",
-		{newFS(), SourceFlags{}, ""}:                       "target is cli.SourceFlags; want pointer to struct",
-		{newFS(), stringPtr, ""}:                           "target is *string; want pointer to struct",
-		{newFS(), &BadFlagStruct{}, "\t-ptrfield\n\tblah"}: "target field cli.BadFlagStruct.PtrField is *string; want string, int",
-		{newFS(), &SourceFlags{}, ""}:                      "no usage text for flag -repo",
+	testError(nil, nil, "", "cannot add flags to nil *flag.FlagSet", t)
+	testError(newFS(), nil, "", "target is <nil>; want pointer to struct", t)
+	testError(newFS(), "", "", "target is string; want pointer to struct", t)
+	testError(newFS(), SourceFlags{}, "", "target is cli.SourceFlags; want pointer to struct", t)
+	testError(newFS(), stringPtr, "", "target is *string; want pointer to struct", t)
+	testError(newFS(), &BadFlagStruct{}, "\t-ptrfield\n\tblah", "target field cli.BadFlagStruct.PtrField is *string; want string, int", t)
+
+	if err := AddFlags(newFS(), &SourceFlags{}, ""); err != nil { // Not:  "no usage text for flag -repo", t)
+		t.Errorf("got error %q; want no error", err)
 	}
-	for in, expected := range badAddFlagsInputs {
-		actualErr := AddFlags(in.FlagSet, in.Target, in.Help)
-		if actualErr == nil {
-			t.Fatalf("got nil; want error %q", expected)
-		}
-		actual := actualErr.Error()
-		if actual != expected {
-			t.Errorf("got error %q; want error %q", actual, expected)
-		}
+
+}
+
+func testError(fs *flag.FlagSet, tgt interface{}, help string, expected string, t *testing.T) {
+	in := AddFlagsInput{fs, tgt, help}
+	actualErr := AddFlags(in.FlagSet, in.Target, in.Help)
+	if actualErr == nil {
+		t.Fatalf("got nil; want error %q", expected)
+	}
+	actual := actualErr.Error()
+	if actual != expected {
+		t.Errorf("got error %q; want error %q", actual, expected)
 	}
 }

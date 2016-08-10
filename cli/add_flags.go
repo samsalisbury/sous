@@ -35,7 +35,7 @@ func AddFlags(fs *flag.FlagSet, target interface{}, help string) error {
 		name := strings.ToLower(f.Name)
 		u, ok := usage[name]
 		if !ok {
-			return errors.Errorf("no usage text for flag -%s", name)
+			continue
 		}
 		switch field := fp.(type) {
 		default:
