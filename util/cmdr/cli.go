@@ -201,9 +201,6 @@ func (c *CLI) prepare(base Command, args []string, ff []func(*flag.FlagSet)) (*P
 	// If the command can itself be executed, do that now.
 	if command, ok := base.(Executor); ok {
 		c.init()
-		if err := c.runHook(c.Hooks.PreExecute, base); err != nil {
-			return nil, err
-		}
 		// make a flag.FlagSet named for this command.
 		fs := flag.NewFlagSet(name, flag.ContinueOnError)
 		// try to pipe normal flag output to /dev/null, don't fail if not though
@@ -229,6 +226,10 @@ func (c *CLI) prepare(base Command, args []string, ff []func(*flag.FlagSet)) (*P
 		}
 		// get the remaining args
 		args = fs.Args()
+
+		if err := c.runHook(c.Hooks.PreExecute, base); err != nil {
+			return nil, err
+		}
 		return &PreparedExecution{Cmd: command, Args: args}, nil
 	}
 	// If we get here, this command is not configured correctly and cannot run.

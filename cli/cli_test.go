@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"fmt"
 	"testing"
 
 	"github.com/samsalisbury/semv"
@@ -31,5 +32,6 @@ func TestInvokeRectifyWithDebugFlags(t *testing.T) {
 	assert.NotNil(rect.Registry)
 	assert.NotNil(rect.GDM)
 	require.NotNil(rect.flags)
+	fmt.Println(rect.flags)
 	assert.Equal(rect.flags.all, true)
 }

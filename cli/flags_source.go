@@ -22,20 +22,20 @@ const sourceFlagsHelp = `
 		Sous uses go-style repository URLs, and currently only supports GitHub-
 		based repositories, e.g. "github.com/user/repo"
 
-	
+
 	-offset RELATIVE_PATH
 		source code relative repository offset
 
 		Repository context offset is the relative path within a repository where
 		a piece of software is defined.
-		
+
 		If you are working in a subdirectory of a repository, the default value
 		for offset will be the relative path of the current working directory
 		from the repository root.
 
 		Note: if you supply the -repo flag but not -offset, then -offset
 		defaults to "".
-	
+
 	-tag TAG_NAME
 		source code revision tag
 

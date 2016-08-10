@@ -20,6 +20,7 @@ type (
 		Registry     sous.Registry
 		GDM          CurrentGDM
 		flags        rectifyFlags
+		SourceFlags  SourceFlags
 	}
 
 	rectifyFlags struct {
@@ -57,6 +58,11 @@ func (*SousRectify) Help() string { return sousRectifyHelp }
 
 // AddFlags adds flags for sous rectify
 func (sr *SousRectify) AddFlags(fs *flag.FlagSet) {
+	err := AddFlags(fs, &sr.SourceFlags, sourceFlagsHelp)
+	if err != nil {
+		panic(err)
+	}
+
 	fs.StringVar(&sr.flags.dryrun, "dry-run", "none",
 		"prevent rectify from actually changing things - "+
 			"values are none,scheduler,registry,both")
