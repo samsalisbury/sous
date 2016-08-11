@@ -61,12 +61,17 @@ func NewSousCLI(v semv.Version, out, errout io.Writer) (*cmdr.CLI, error) {
 		HelpCommand: os.Args[0] + " help",
 	}
 
+	var chain []cmdr.Command
+	cli.Hooks.Parsed = func(cmd cmdr.Command) error {
+		chain = append(chain, cmd)
+	}
+
 	// Before Execute is called on any command, inject it with values from the
 	// graph.
-	cli.Hooks.PreExecute = func(exe *cmdr.PreparedExecution) error {
+	cli.Hooks.PreExecute = func(cmd cmdr.Command) error {
 		// Create the CLI dependency graph.
 		g := BuildGraph(cli)
-		for _, c := range exe.Chain {
+		for _, c := range chain {
 			if r, ok := c.(Registrant); ok {
 				r.RegisterOn(g)
 			}

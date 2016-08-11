@@ -37,15 +37,16 @@ type (
 	// Hooks is a collection of command hooks. If a hook returns a non-nil error
 	// it cancels execution and the error is displayed to the user.
 	Hooks struct {
+		// Parsed is run on a command when it's found on the command line
+		Parsed func(Command) error
 		// PreExecute is run on a command before it executes.
-		PreExecute func(PreparedExecution) error
+		PreExecute func(Command) error
 	}
 
 	// A PreparedExecution collects all the information needed to execute a command
 	PreparedExecution struct {
-		Cmd   Executor
-		Chain []Command
-		Args  []string
+		Cmd  Executor
+		Args []string
 	}
 )
 
@@ -194,12 +195,10 @@ func (c *CLI) prepare(base Command, args []string, ff []func(*flag.FlagSet)) (*P
 		subcommandName := args[0]
 		subcommands := command.Subcommands()
 		if subcommand, ok := subcommands[subcommandName]; ok {
-			if err := c.runHook(c.Hooks.PreExecute, base); err != nil {
+			if err := c.runHook(c.Hooks.Parsed, base); err != nil {
 				return nil, EnsureErrorResult(err)
 			}
-			prepped := c.prepare(subcommand, args, ff)
-			prepped.Chain = append(prepped.Chain, base)
-			return prepped
+			return c.prepare(subcommand, args, ff)
 		}
 	}
 	// If the command can itself be executed, do that now.
@@ -231,10 +230,13 @@ func (c *CLI) prepare(base Command, args []string, ff []func(*flag.FlagSet)) (*P
 		// get the remaining args
 		args = fs.Args()
 
+		if err := c.runHook(c.Hooks.Parsed, base); err != nil {
+			return nil, err
+		}
 		if err := c.runHook(c.Hooks.PreExecute, base); err != nil {
 			return nil, err
 		}
-		return &PreparedExecution{Cmd: command, Chain: []Command{command}, Args: args}, nil
+		return &PreparedExecution{Cmd: command, Args: args}, nil
 	}
 	// If we get here, this command is not configured correctly and cannot run.
 	return nil, InternalErrorf("%q is not runnable and has no subcommands", name)

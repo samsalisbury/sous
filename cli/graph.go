@@ -146,7 +146,7 @@ func newSourceContext(g GitSourceContext, f *DeployFilterFlags) (*sous.SourceCon
 	return c, nil
 }
 
-func newBuildContext(wd LocalWorkDirShell, c *sous.SourceContext) BuildContext {
+func newBuildContext(wd LocalWorkDirShell, c *sous.SourceContext) *sous.BuildContext {
 	return &sous.BuildContext{Sh: wd.Sh, Source: *c}
 }
 

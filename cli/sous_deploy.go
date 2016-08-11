@@ -8,7 +8,7 @@ import (
 	"github.com/samsalisbury/semv"
 )
 
-// SousDeploy is the command description for `sous init`
+// SousDeploy is the command description for `sous deploy`
 type SousDeploy struct {
 	SourceContextFunc
 	WD          LocalWorkDirShell

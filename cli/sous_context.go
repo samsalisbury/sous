@@ -1,10 +1,13 @@
 package cli
 
-import "github.com/opentable/sous/util/cmdr"
+import (
+	"github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/cmdr"
+)
 
 // SousContext is the 'sous context' command.
 type SousContext struct {
-	SourceContextFunc
+	*sous.SourceContext
 }
 
 func init() { TopLevelCommands["context"] = &SousContext{} }
@@ -22,9 +25,8 @@ func (*SousContext) Help() string { return sousContextHelp }
 
 // Execute prints the detected sous context.
 func (sv *SousContext) Execute(args []string) cmdr.Result {
-	sc, err := sv.SourceContextFunc()
 	if err != nil {
 		return EnsureErrorResult(err)
 	}
-	return SuccessYAML(sc)
+	return SuccessYAML(sv.SourceContext)
 }
