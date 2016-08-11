@@ -1,0 +1,19 @@
+#! /usr/bin/env bash
+PS4='~~~>'
+set -x
+
+sudo hostname "$(hostname | cut -c1-63)"
+sudo sed -i -E -e "s/^(127\\.0\\.0\\.1.*|::1.*)/\\1 $(hostname | cut -c1-63)/" /etc/hosts
+apt-cache madison docker-engine
+sudo apt-get -o Dpkg::Options::="--force-confnew" install -y --force-yes docker-engine=${DOCKER_VERSION}
+sudo rm -rf /usr/local/bin/docker-compose
+curl -L https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-`uname -s`-`uname -m` > docker-compose
+chmod +x docker-compose
+sudo mkdir -p /usr/local/bin
+sudo mv docker-compose /usr/local/bin
+go get github.com/nyarly/engulf github.com/nyarly/legendary
+(cd test-registry && docker-compose pull)
+cat /etc/hosts
+docker version
+docker-compose version
+env | grep '^DOCKER_'
