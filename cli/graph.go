@@ -120,9 +120,7 @@ func newErrOut(c *cmdr.CLI) ErrOut {
 }
 
 func newLogSet(s *Sous, err ErrWriter) *sous.LogSet { // XXX temporary until we settle on logging
-	fmt.Println(s.flags.Verbosity)
 	if s.flags.Verbosity.Debug {
-		fmt.Println("debug level")
 		if s.flags.Verbosity.Loud {
 			sous.Log.Vomit.SetOutput(err)
 		}
