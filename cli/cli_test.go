@@ -34,4 +34,6 @@ func TestInvokeRectifyWithDebugFlags(t *testing.T) {
 	require.NotNil(rect.SourceFlags)
 	fmt.Println(rect.flags)
 	assert.Equal(rect.SourceFlags.All, true)
+	assert.Regexp(`Verbose debugging`, stderr.String())
+	assert.Regexp(`Regular debugging`, stderr.String())
 }
