@@ -38,7 +38,14 @@ type (
 	// it cancels execution and the error is displayed to the user.
 	Hooks struct {
 		// PreExecute is run on a command before it executes.
-		PreExecute func(Command) error
+		PreExecute func(PreparedExecution) error
+	}
+
+	// A PreparedExecution collects all the information needed to execute a command
+	PreparedExecution struct {
+		Cmd   Executor
+		Chain []Command
+		Args  []string
 	}
 )
 
@@ -168,11 +175,6 @@ func (c *CLI) ListSubcommands(base Command) []string {
 	return list
 }
 
-type PreparedExecution struct {
-	Cmd  Executor
-	Args []string
-}
-
 func (c *CLI) prepare(base Command, args []string, ff []func(*flag.FlagSet)) (*PreparedExecution, error) {
 	if len(args) == 0 {
 		return nil, InternalErrorf("command %T received zero args", base)
@@ -195,7 +197,9 @@ func (c *CLI) prepare(base Command, args []string, ff []func(*flag.FlagSet)) (*P
 			if err := c.runHook(c.Hooks.PreExecute, base); err != nil {
 				return nil, EnsureErrorResult(err)
 			}
-			return c.prepare(subcommand, args, ff)
+			prepped := c.prepare(subcommand, args, ff)
+			prepped.Chain = append(prepped.Chain, base)
+			return prepped
 		}
 	}
 	// If the command can itself be executed, do that now.
@@ -230,7 +234,7 @@ func (c *CLI) prepare(base Command, args []string, ff []func(*flag.FlagSet)) (*P
 		if err := c.runHook(c.Hooks.PreExecute, base); err != nil {
 			return nil, err
 		}
-		return &PreparedExecution{Cmd: command, Args: args}, nil
+		return &PreparedExecution{Cmd: command, Chain: []Command{command}, Args: args}, nil
 	}
 	// If we get here, this command is not configured correctly and cannot run.
 	return nil, InternalErrorf("%q is not runnable and has no subcommands", name)

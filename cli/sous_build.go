@@ -12,8 +12,9 @@ type SousBuild struct {
 	BuildContextFunc
 	LabellerFunc
 	RegistrarFunc
-	Selector sous.Selector
-	flags    struct {
+	Selector         sous.Selector
+	DeploymentConfig DeployFilterFlags
+	flags            struct {
 		config sous.BuildConfig
 	}
 }
@@ -29,8 +30,21 @@ path, it will instead build the project at that path.
 args: [path]
 `
 
+func (sb *SousBuild) AddFlags(fs *flags.FlagSet) {
+	err := AddFlags(fs, &sb.DeploymentConfig, sourceFlagsHelp)
+	if err != nil {
+		panic(err)
+	}
+}
+
 // Help returns the help string for this command
 func (*SousBuild) Help() string { return sousBuildHelp }
+
+// RegisterOn adds the DeploymentConfig to the psyringe to configure the
+// labeller and registrar
+func (sb *SousBuild) RegisterOn(psy Addable) {
+	psy.Add(sb.DeploymentConfig)
+}
 
 // Execute fulfills the cmdr.Executor interface
 func (sb *SousBuild) Execute(args []string) cmdr.Result {

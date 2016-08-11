@@ -68,6 +68,11 @@ func (s *Sous) AddFlags(fs *flag.FlagSet) {
 		"debug: output detailed logs of internal operations")
 }
 
+// RegisterOn adds the Sous object itself to the Psyringe
+func (s *Sous) RegisterOn(psy Addable) {
+	psy.Add(s)
+}
+
 func (s *Sous) Execute(args []string) cmdr.Result {
 	r := s.CLI.InvokeWithoutPrinting([]string{"sous", "help"})
 	success, ok := r.(cmdr.SuccessResult)
