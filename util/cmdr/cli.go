@@ -63,7 +63,7 @@ func (c *CLI) init() {
 		c.Out = NewOutput(os.Stdout)
 	}
 	if c.Err == nil {
-		c.Err = NewOutput(os.Stdout)
+		c.Err = NewOutput(os.Stderr)
 	}
 	indentString := DefaultIndentString
 	if c.IndentString != "" {

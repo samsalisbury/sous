@@ -25,8 +25,5 @@ func (*SousContext) Help() string { return sousContextHelp }
 
 // Execute prints the detected sous context.
 func (sv *SousContext) Execute(args []string) cmdr.Result {
-	if err != nil {
-		return EnsureErrorResult(err)
-	}
 	return SuccessYAML(sv.SourceContext)
 }

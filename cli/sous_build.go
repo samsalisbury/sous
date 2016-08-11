@@ -49,11 +49,7 @@ func (sb *SousBuild) RegisterOn(psy Addable) {
 
 // Execute fulfills the cmdr.Executor interface
 func (sb *SousBuild) Execute(args []string) cmdr.Result {
-	var (
-		bc        *sous.BuildContext
-		labeller  sous.Labeller
-		registrar sous.Registrar
-	)
+	var bc *sous.BuildContext
 	if len(args) != 0 {
 		path := args[0]
 		if err := bc.Sh.CD(path); err != nil {

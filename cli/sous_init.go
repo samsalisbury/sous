@@ -10,7 +10,7 @@ import (
 
 // SousInit is the command description for `sous init`
 type SousInit struct {
-	SourceContextFunc
+	*sous.SourceContext
 	WD          LocalWorkDirShell
 	GDM         CurrentGDM
 	StateWriter LocalStateWriter
@@ -44,10 +44,7 @@ func (si *SousInit) AddFlags(fs *flag.FlagSet) {
 
 // Execute fulfills the cmdr.Executor interface
 func (si *SousInit) Execute(args []string) cmdr.Result {
-	ctx, err := si.SourceContextFunc()
-	if err != nil {
-		return EnsureErrorResult(err)
-	}
+	ctx := si.SourceContext
 	sourceLocation := ctx.SourceLocation()
 
 	existingManifest := si.GDM.GetManifest(sourceLocation)

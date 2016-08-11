@@ -2,8 +2,6 @@ package cli
 
 import (
 	"flag"
-	"fmt"
-	"os"
 
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
@@ -16,6 +14,7 @@ type Sous struct {
 	// CLI is a reference to the CLI singleton. We use it here to set global
 	// verbosity.
 	CLI *cmdr.CLI
+	*sous.LogSet
 	// Err is the error message stream.
 	Err *ErrOut
 	// Version is the version of Sous itself.
@@ -90,34 +89,5 @@ func (s *Sous) usage() cmdr.ErrorResult {
 
 func (s *Sous) Subcommands() cmdr.Commands {
 	//s.CLI.SetVerbosity(s.Verbosity())
-	s.Verbosity()
 	return TopLevelCommands
-}
-
-func (s *Sous) Verbosity() cmdr.Verbosity {
-	fmt.Println(s.flags.Verbosity)
-	if s.flags.Verbosity.Debug {
-		fmt.Println("debug level")
-		if s.flags.Verbosity.Loud {
-			sous.Log.Vomit.SetOutput(os.Stderr)
-		}
-		sous.Log.Debug.SetOutput(os.Stderr)
-		sous.Log.Info.SetOutput(os.Stderr)
-
-		sous.Log.Vomit.Println("Verbose debugging enabled")
-		sous.Log.Debug.Println("Regular debugging enabled")
-		sous.Log.Info.Println("Informational messages enabled")
-		return cmdr.Debug
-	}
-	if s.flags.Verbosity.Loud {
-		sous.Log.Info.SetOutput(os.Stderr)
-		return cmdr.Loud
-	}
-	if s.flags.Verbosity.Quiet {
-		return cmdr.Quiet
-	}
-	if s.flags.Verbosity.Silent {
-		return cmdr.Silent
-	}
-	return cmdr.Normal
 }

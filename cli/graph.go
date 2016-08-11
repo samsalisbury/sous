@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -35,6 +36,11 @@ type (
 	// with their dependencies.
 	SousCLIGraph struct{ *psyringe.Psyringe }
 	// Version represents a version of Sous.
+
+	// OutWriter is an alias on io.Writer to disguish "stderr"
+	OutWriter io.Writer
+	// ErrWriter is an alias on io.Writer to disguish "stderr"
+	ErrWriter io.Writer
 )
 
 type (
@@ -73,10 +79,14 @@ type (
 
 // BuildGraph builds the dependency injection graph, used to populate commands
 // invoked by the user.
-func BuildGraph(c *cmdr.CLI) *SousCLIGraph {
-	return &SousCLIGraph{psyringe.New(c,
+func BuildGraph(c *cmdr.CLI, out, err io.Writer) *SousCLIGraph {
+	return &SousCLIGraph{psyringe.New(
+		c,
+		func() OutWriter { return out },
+		func() ErrWriter { return err },
 		newOut,
 		newErrOut,
+		newLogSet,
 		newLocalUser,
 		newLocalSousConfig,
 		newLocalWorkDir,
@@ -107,6 +117,31 @@ func newOut(c *cmdr.CLI) Out {
 
 func newErrOut(c *cmdr.CLI) ErrOut {
 	return ErrOut{c.Err}
+}
+
+func newLogSet(s *Sous, err ErrWriter) *sous.LogSet { // XXX temporary until we settle on logging
+	fmt.Println(s.flags.Verbosity)
+	if s.flags.Verbosity.Debug {
+		fmt.Println("debug level")
+		if s.flags.Verbosity.Loud {
+			sous.Log.Vomit.SetOutput(err)
+		}
+		sous.Log.Debug.SetOutput(err)
+		sous.Log.Info.SetOutput(err)
+
+	}
+	if s.flags.Verbosity.Loud {
+		sous.Log.Info.SetOutput(err)
+	}
+	if s.flags.Verbosity.Quiet {
+	}
+	if s.flags.Verbosity.Silent {
+	}
+
+	sous.Log.Vomit.Println("Verbose debugging enabled")
+	sous.Log.Debug.Println("Regular debugging enabled")
+	sous.Log.Info.Println("Informational messages enabled")
+	return &sous.Log
 }
 
 /*

@@ -31,7 +31,7 @@ func TestInvokeRectifyWithDebugFlags(t *testing.T) {
 	assert.NotNil(rect.Deployer)
 	assert.NotNil(rect.Registry)
 	assert.NotNil(rect.GDM)
-	require.NotNil(rect.flags)
+	require.NotNil(rect.SourceFlags)
 	fmt.Println(rect.flags)
-	assert.Equal(rect.flags.all, true)
+	assert.Equal(rect.SourceFlags.All, true)
 }

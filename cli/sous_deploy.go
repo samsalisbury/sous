@@ -10,7 +10,7 @@ import (
 
 // SousDeploy is the command description for `sous deploy`
 type SousDeploy struct {
-	SourceContextFunc
+	*sous.SourceContext
 	WD          LocalWorkDirShell
 	GDM         CurrentGDM
 	StateWriter LocalStateWriter
@@ -47,10 +47,7 @@ func (su *SousDeploy) AddFlags(fs *flag.FlagSet) {
 
 // Execute fulfills the cmdr.Executor interface.
 func (su *SousDeploy) Execute(args []string) cmdr.Result {
-	ctx, err := su.SourceContextFunc()
-	if err != nil {
-		return EnsureErrorResult(err)
-	}
+	ctx := su.SourceContext
 
 	if su.flags.Cluster == "" {
 		return UsageErrorf("You must a select a cluster using the -cluster flag.")
