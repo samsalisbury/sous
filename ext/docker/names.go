@@ -1,11 +1,11 @@
 package docker
 
 import (
-	"fmt"
 	"regexp"
 	"strings"
 
 	"github.com/opentable/sous/lib"
+	"github.com/pkg/errors"
 	"github.com/samsalisbury/semv"
 )
 
@@ -34,7 +34,7 @@ func SourceIDFromLabels(labels map[string]string) (sous.SourceID, error) {
 	}
 
 	if len(missingLabels) > 0 {
-		err := fmt.Errorf("Missing labels on manifest for %v", missingLabels)
+		err := errors.Errorf("Missing labels: %v", missingLabels)
 		return sous.SourceID{}, err
 	}
 

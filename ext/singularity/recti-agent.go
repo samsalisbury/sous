@@ -9,6 +9,7 @@ import (
 	"github.com/opentable/sous/ext/docker"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/swaggering"
+	"github.com/pkg/errors"
 	"github.com/satori/go.uuid"
 )
 
@@ -156,7 +157,7 @@ func (ra *RectiAgent) ImageLabels(in string) (map[string]string, error) {
 	a := docker.NewBuildArtifact(in)
 	sv, err := ra.nameCache.GetSourceID(a)
 	if err != nil {
-		return map[string]string{}, err
+		return map[string]string{}, errors.Wrapf(err, "Image name: %s", in)
 	}
 
 	return docker.Labels(sv), nil

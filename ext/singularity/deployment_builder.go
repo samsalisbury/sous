@@ -7,6 +7,7 @@ import (
 	"github.com/opentable/sous/ext/docker"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/firsterr"
+	"github.com/pkg/errors"
 )
 
 type (
@@ -34,6 +35,13 @@ func (mr malformedResponse) Error() string {
 	return mr.message
 }
 
+func isMalformed(err error) bool {
+	err = errors.Cause(err)
+	_, yes := err.(malformedResponse)
+	Log.Vomit.Printf("err: %#v %T %t", err, err, yes)
+	return yes
+}
+
 func (cr *canRetryRequest) Error() string {
 	return fmt.Sprintf("%s: %s", cr.cause, cr.name())
 }
@@ -50,8 +58,7 @@ func (db *deploymentBuilder) canRetry(err error) error {
 }
 
 func (db *deploymentBuilder) isRetryable(err error) bool {
-	_, isMalformed := err.(malformedResponse)
-	return !isMalformed &&
+	return !isMalformed(err) &&
 		db.req.SourceURL != "" &&
 		db.req.ReqParent != nil &&
 		db.req.ReqParent.Request != nil &&
@@ -153,7 +160,7 @@ func (db *deploymentBuilder) retrieveImageLabels() error {
 
 	db.Target.SourceID, err = docker.SourceIDFromLabels(labels)
 	if err != nil {
-		return malformedResponse{fmt.Sprintf("For reqID: %s, %s", db.req.ReqParent.Request.Id, err.Error())}
+		return errors.Wrapf(malformedResponse{err.Error()}, "For reqID: %s", reqID(db.req.ReqParent))
 	}
 
 	var posNick string

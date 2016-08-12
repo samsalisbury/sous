@@ -82,12 +82,13 @@ func (sc *deployer) GetRunningDeployment(singMap map[string]string) (deps sous.D
 			Log.Debug.Printf("Deployment #%d: %+v", len(deps), dep)
 			depWait.Done()
 		case err = <-errCh:
-			if _, ok := err.(malformedResponse); ok {
-				Log.Notice.Print(err)
+			if isMalformed(err) {
+				Log.Debug.Print(err)
 				depWait.Done()
 			} else {
 				retried := retries.maybe(err, reqCh)
 				if !retried {
+					Log.Notice.Print("Cannot retry: ", err)
 					return
 				}
 			}
@@ -153,7 +154,7 @@ func logFDs(when string) {
 	pid := os.Getpid()
 	fdDir, err := ioutil.ReadDir(fmt.Sprintf("/proc/%d/fd", pid))
 	if err != nil {
-		Log.Debug.Print(err)
+		Log.Vomit.Print(err)
 		return
 	}
 	for _, f := range fdDir {
@@ -179,12 +180,12 @@ func singPipeline(
 	defer catchAndSend(fmt.Sprintf("get requests: %s", url), errs)
 	rs, err := getRequestsFromSingularity(url, client)
 	if err != nil {
-		Log.Vomit.Print(err)
+		Log.Vomit.Print(err) //XXX connection reset by peer should be retried
 		errs <- errors.Wrap(err, "getting request list")
 		return
 	}
 	for _, r := range rs {
-		Log.Vomit.Print("Req: ", r)
+		Log.Vomit.Printf("Req: %s %s", r.SourceURL, reqID(r.ReqParent))
 		dw.Add(1)
 		reqs <- r
 	}
@@ -235,10 +236,9 @@ func depPipeline(
 }
 
 func assembleDeployment(cl rectificationClient, nicks map[string]string, req SingReq) (*sous.Deployment, error) {
-	Log.Vomit.Print("Assembling from: ", req)
+	Log.Vomit.Printf("Assembling from: %s %s", req.SourceURL, reqID(req.ReqParent))
 	tgt, err := BuildDeployment(cl, nicks, req)
 	if err != nil {
-		Log.Vomit.Print(err)
 		return nil, errors.Wrap(err, "Building deployment")
 	}
 
