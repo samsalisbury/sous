@@ -22,6 +22,6 @@ func TestNewClient(t *testing.T) {
 	assert := assert.New(t)
 
 	c := NewClient()
-	asset.NotNil(c)
+	assert.NotNil(c)
 	c.Cancel()
 }
