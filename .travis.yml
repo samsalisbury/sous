@@ -5,38 +5,7 @@ language: go
 go:
 - 1.6
 before_install:
-- ps -p $$
-- which sh
-- type help
-- help
-- type set
-- help set
-- cat /etc/hosts
-- sudo hostname "$(hostname | cut -c1-63)"
-- sudo sed -i -E -e "s/^(127\\.0\\.0\\.1.*|::1.*)/\\1 $(hostname | cut -c1-63)/" /etc/hosts
-- cat /etc/hosts
-- |
-  if [ ! -e /usr/local/bin/docker-compose ]; then
-    #get latest docker compose released tag
-    docker_compose_version="$(git ls-remote https://github.com/docker/compose | grep "refs/tag" | grep -oP "[0-9]+\.[0-9]+\.[0-9]+" | tail -n1)"
-    # Install docker-compose
-    sudo sh -c "curl -L https://github.com/docker/compose/releases/download/$docker_compose_version/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose"
-    sudo chmod +x /usr/local/bin/docker-compose
-    docker-compose --version
-  fi
-- apt-cache madison docker-engine
-- sudo apt-get -o Dpkg::Options::="--force-confnew" install -y --force-yes docker-engine=${DOCKER_VERSION}
-- sudo rm -rf /usr/local/bin/docker-compose
-- curl -L https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-`uname -s`-`uname -m` > docker-compose
-- chmod +x docker-compose
-- sudo mkdir -p /usr/local/bin
-- sudo mv docker-compose /usr/local/bin
-- docker version
-- docker-compose version
-- id
-- go get github.com/nyarly/engulf github.com/nyarly/legendary
-- env | grep '^DOCKER_'
-- "(cd test-registry && docker-compose pull)"
+- bin/ci-setup
 install:
 - echo "Default install step disabled by .travis.yml"
 script:
