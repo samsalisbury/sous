@@ -16,3 +16,12 @@ func TestRegistries(t *testing.T) {
 	assert.NoError(rs.DeleteRegistry("x"))
 	assert.Nil(rs.GetRegistry("x"))
 }
+
+// This test is terrible, but the current design of the client is hard to test
+func TestNewClient(t *testing.T) {
+	assert := assert.New(t)
+
+	c := NewClient()
+	asset.NotNil(c)
+	c.Cancel()
+}
