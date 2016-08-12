@@ -23,6 +23,17 @@ var (
 	EnsureErrorResult = cmdr.EnsureErrorResult
 )
 
+// Addable objects are able to receive lists of interface{}, presumably to add
+// them to a DI registry. Abstracts Psyringe's Add()
+type Addable interface {
+	Add(...interface{})
+}
+
+// A Registrant is able to add values to an Addable (implicitly: a Psyringe)
+type Registrant interface {
+	RegisterOn(Addable)
+}
+
 // SuccessYAML lets you return YAML on the command line.
 func SuccessYAML(v interface{}) cmdr.Result {
 	b, err := yaml.Marshal(v)
@@ -40,7 +51,7 @@ func NewSousCLI(v semv.Version, out, errout io.Writer) (*cmdr.CLI, error) {
 	stdout := cmdr.NewOutput(out)
 	stderr := cmdr.NewOutput(errout)
 
-	c := &cmdr.CLI{
+	cli := &cmdr.CLI{
 		Root: s,
 		Out:  stdout, Err: stderr,
 		// HelpCommand is shown to the user if they type something that looks
@@ -50,12 +61,32 @@ func NewSousCLI(v semv.Version, out, errout io.Writer) (*cmdr.CLI, error) {
 		HelpCommand: os.Args[0] + " help",
 	}
 
-	// Create the CLI dependency graph.
-	g := BuildGraph(s, c)
+	g := BuildGraph(cli, out, errout)
+
+	var chain []cmdr.Command
+	cli.Hooks.Parsed = func(cmd cmdr.Command) error {
+		chain = append(chain, cmd)
+		return nil
+	}
 
 	// Before Execute is called on any command, inject it with values from the
 	// graph.
-	c.Hooks.PreExecute = func(c cmdr.Command) error { return g.Inject(c) }
+	cli.Hooks.PreExecute = func(cmd cmdr.Command) error {
+		// Create the CLI dependency graph.
 
-	return c, nil
+		for _, c := range chain {
+			if r, ok := c.(Registrant); ok {
+				r.RegisterOn(g)
+			}
+		}
+
+		for _, c := range chain {
+			if err := g.Inject(c); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	return cli, nil
 }

@@ -33,10 +33,10 @@ func TestPredicateBuilder(t *testing.T) {
 	//		fmt.Printf("%d: %#v\n", i, d)
 	//	}
 	//
-	f := rectifyFlags{}
+	f := DeployFilterFlags{}
 	assert.Nil(f.buildPredicate())
 
-	f.repo = string(rs[0])
+	f.Repo = string(rs[0])
 	pd := f.buildPredicate()
 	assert.NotNil(pd)
 	filtered := filter(ds, pd)
@@ -46,7 +46,7 @@ func TestPredicateBuilder(t *testing.T) {
 	assert.Contains(filtered, ds[5])
 	assert.Len(filtered, 4)
 
-	f.offset = string(os[0])
+	f.Offset = string(os[0])
 	pd = f.buildPredicate()
 	assert.NotNil(pd)
 	filtered = filter(ds, pd)
@@ -54,14 +54,14 @@ func TestPredicateBuilder(t *testing.T) {
 	assert.Contains(filtered, ds[4])
 	assert.Len(filtered, 2)
 
-	f.cluster = cs[0]
+	f.Cluster = cs[0]
 	pd = f.buildPredicate()
 	assert.NotNil(pd)
 	filtered = filter(ds, pd)
 	assert.Contains(filtered, ds[0])
 	assert.Len(filtered, 1)
 
-	f = rectifyFlags{cluster: cs[1]}
+	f = DeployFilterFlags{Cluster: cs[1]}
 	pd = f.buildPredicate()
 	assert.NotNil(pd)
 	filtered = filter(ds, pd)
@@ -71,7 +71,7 @@ func TestPredicateBuilder(t *testing.T) {
 	assert.Contains(filtered, ds[7])
 	assert.Len(filtered, 4)
 
-	f = rectifyFlags{all: true}
+	f = DeployFilterFlags{All: true}
 	pd = f.buildPredicate()
 	assert.NotNil(pd)
 	filtered = filter(ds, pd)

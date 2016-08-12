@@ -35,14 +35,18 @@ func AddFlags(fs *flag.FlagSet, target interface{}, help string) error {
 		name := strings.ToLower(f.Name)
 		u, ok := usage[name]
 		if !ok {
-			return errors.Errorf("no usage text for flag -%s", name)
+			continue
 		}
 		switch field := fp.(type) {
 		default:
-			return errors.Errorf("target field %s.%s is %s; want string, int",
+			return errors.Errorf("target field %s.%s is %s; want string, int, or bool",
 				t, f.Name, ft)
 		case *string:
 			fs.StringVar(field, name, "", u)
+		case *bool:
+			fs.BoolVar(field, name, false, u)
+		case *int:
+			fs.IntVar(field, name, 0, u)
 		}
 	}
 

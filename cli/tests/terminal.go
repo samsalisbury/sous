@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
@@ -40,7 +41,8 @@ func NewTerminal(t *testing.T, root cmdr.Command) *Terminal {
 		Out:  cmdr.NewOutput(io.MultiWriter(out.Buffer, combined.Buffer)),
 		Err:  cmdr.NewOutput(io.MultiWriter(errout.Buffer, combined.Buffer)),
 	}
-	g := cli.BuildGraph(s, c)
+	g := cli.BuildGraph(c, ioutil.Discard, ioutil.Discard)
+	g.Add(s)
 	c.Hooks.PreExecute = func(c cmdr.Command) error {
 		return g.Inject(c)
 	}
