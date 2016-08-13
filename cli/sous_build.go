@@ -1,19 +1,21 @@
 package cli
 
 import (
+	"flag"
+
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
-	"github.com/opentable/sous/util/firsterr"
 )
 
 // SousBuild is the command description for `sous build`
 // Implements cmdr.Command, cmdr.Executor and cmdr.AddFlags
 type SousBuild struct {
-	BuildContextFunc
-	LabellerFunc
-	RegistrarFunc
-	Selector sous.Selector
-	flags    struct {
+	*sous.BuildContext
+	sous.Labeller
+	sous.Registrar
+	Selector         sous.Selector
+	DeploymentConfig DeployFilterFlags
+	flags            struct {
 		config sous.BuildConfig
 	}
 }
@@ -29,24 +31,25 @@ path, it will instead build the project at that path.
 args: [path]
 `
 
+func (sb *SousBuild) AddFlags(fs *flag.FlagSet) {
+	err := AddFlags(fs, &sb.DeploymentConfig, sourceFlagsHelp)
+	if err != nil {
+		panic(err)
+	}
+}
+
 // Help returns the help string for this command
 func (*SousBuild) Help() string { return sousBuildHelp }
 
+// RegisterOn adds the DeploymentConfig to the psyringe to configure the
+// labeller and registrar
+func (sb *SousBuild) RegisterOn(psy Addable) {
+	psy.Add(sb.DeploymentConfig)
+}
+
 // Execute fulfills the cmdr.Executor interface
 func (sb *SousBuild) Execute(args []string) cmdr.Result {
-	var (
-		bc        *sous.BuildContext
-		labeller  sous.Labeller
-		registrar sous.Registrar
-	)
-	err := firsterr.Set(
-		func(err *error) { bc, *err = sb.BuildContextFunc() },
-		func(err *error) { labeller, *err = sb.LabellerFunc() },
-		func(err *error) { registrar, *err = sb.RegistrarFunc() },
-	)
-	if err != nil {
-		return EnsureErrorResult(err)
-	}
+	var bc *sous.BuildContext
 	if len(args) != 0 {
 		path := args[0]
 		if err := bc.Sh.CD(path); err != nil {
@@ -57,8 +60,8 @@ func (sb *SousBuild) Execute(args []string) cmdr.Result {
 	mgr := &sous.BuildManager{
 		BuildConfig: &sb.flags.config,
 		Selector:    sb.Selector,
-		Labeller:    labeller,
-		Registrar:   registrar,
+		Labeller:    sb.Labeller,
+		Registrar:   sb.Registrar,
 	}
 	mgr.BuildConfig.Context = bc
 

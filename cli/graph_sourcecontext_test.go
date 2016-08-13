@@ -7,18 +7,18 @@ import (
 )
 
 type resolveSourceLocationInput struct {
-	Flags   *SourceFlags
+	Flags   *DeployFilterFlags
 	Context *sous.SourceContext
 }
 
 var badResolveSourceLocationCalls = map[string][]resolveSourceLocationInput{
 	"no repo specified, please use -repo or run sous inside a git repo": {
-		{Flags: &SourceFlags{}, Context: &sous.SourceContext{}},
+		{Flags: &DeployFilterFlags{}, Context: &sous.SourceContext{}},
 		{Flags: nil, Context: &sous.SourceContext{}},
-		{Flags: &SourceFlags{}, Context: nil},
+		{Flags: &DeployFilterFlags{}, Context: nil},
 	},
 	"you specified -offset but not -repo": {
-		{Flags: &SourceFlags{Offset: "some/offset"}},
+		{Flags: &DeployFilterFlags{Offset: "some/offset"}},
 	},
 }
 
@@ -40,11 +40,11 @@ func TestResolveSourceLocation_failure(t *testing.T) {
 
 var goodResolveSourceLocationCalls = map[sous.SourceLocation][]resolveSourceLocationInput{
 	{RepoURL: "github.com/user/project", RepoOffset: ""}: {
-		{Flags: &SourceFlags{Repo: "github.com/user/project"}},
+		{Flags: &DeployFilterFlags{Repo: "github.com/user/project"}},
 		{Context: &sous.SourceContext{PrimaryRemoteURL: "github.com/user/project"}},
 	},
 	{RepoURL: "github.com/user/project", RepoOffset: "some/path"}: {
-		{Flags: &SourceFlags{Repo: "github.com/user/project", Offset: "some/path"}},
+		{Flags: &DeployFilterFlags{Repo: "github.com/user/project", Offset: "some/path"}},
 		{Context: &sous.SourceContext{
 			PrimaryRemoteURL: "github.com/user/project",
 			OffsetDir:        "some/path",
@@ -56,7 +56,7 @@ var goodResolveSourceLocationCalls = map[sous.SourceLocation][]resolveSourceLoca
 				PrimaryRemoteURL: "github.com/original/context",
 				OffsetDir:        "the/detected/offset",
 			},
-			Flags: &SourceFlags{
+			Flags: &DeployFilterFlags{
 				Repo: "github.com/from/flags",
 			},
 		},

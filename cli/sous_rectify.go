@@ -20,6 +20,7 @@ type (
 		Registry     sous.Registry
 		GDM          CurrentGDM
 		flags        rectifyFlags
+		SourceFlags  DeployFilterFlags
 	}
 
 	rectifyFlags struct {
@@ -57,17 +58,14 @@ func (*SousRectify) Help() string { return sousRectifyHelp }
 
 // AddFlags adds flags for sous rectify
 func (sr *SousRectify) AddFlags(fs *flag.FlagSet) {
+	err := AddFlags(fs, &sr.SourceFlags, rectifyFilterFlagsHelp)
+	if err != nil {
+		panic(err)
+	}
+
 	fs.StringVar(&sr.flags.dryrun, "dry-run", "none",
 		"prevent rectify from actually changing things - "+
 			"values are none,scheduler,registry,both")
-	fs.StringVar(&sr.flags.repo, "repo", "",
-		"consider only the repo `repository` for rectification")
-	fs.StringVar(&sr.flags.offset, "offset", "",
-		"consider only the offset `path` for rectification")
-	fs.StringVar(&sr.flags.cluster, "cluster", "",
-		"consider only the cluster `name` for rectification")
-	fs.BoolVar(&sr.flags.all, "all", false,
-		"actually do a full-tree recitification")
 }
 
 // Execute fulfils the cmdr.Executor interface
@@ -75,7 +73,7 @@ func (sr *SousRectify) Execute(args []string) cmdr.Result {
 
 	sr.resolveDryRunFlag(sr.flags.dryrun)
 
-	predicate := sr.flags.buildPredicate()
+	predicate := sr.SourceFlags.buildPredicate()
 
 	if predicate == nil {
 		return EnsureErrorResult(fmt.Errorf("Cowardly refusing rectify with neither contraint nor `-all`! (see `sous help rectify`)"))
@@ -88,48 +86,6 @@ func (sr *SousRectify) Execute(args []string) cmdr.Result {
 	}
 
 	return Success()
-}
-
-func (f rectifyFlags) buildPredicate() sous.DeploymentPredicate {
-	var preds []sous.DeploymentPredicate
-
-	if f.all {
-		return func(*sous.Deployment) bool { return true }
-	}
-
-	if f.repo != "" {
-		preds = append(preds, func(d *sous.Deployment) bool {
-			return d.SourceID.RepoURL == sous.RepoURL(f.repo)
-		})
-	}
-
-	if f.offset != "" {
-		preds = append(preds, func(d *sous.Deployment) bool {
-			return d.SourceID.RepoOffset == sous.RepoOffset(f.offset)
-		})
-	}
-
-	if f.cluster != "" {
-		preds = append(preds, func(d *sous.Deployment) bool {
-			return d.ClusterNickname == f.cluster
-		})
-	}
-
-	switch len(preds) {
-	case 0:
-		return nil
-	case 1:
-		return preds[0]
-	default:
-		return func(d *sous.Deployment) bool {
-			for _, f := range preds {
-				if !f(d) { // AND(preds...)
-					return false
-				}
-			}
-			return true
-		}
-	}
 }
 
 func (sr *SousRectify) resolveDryRunFlag(dryrun string) {

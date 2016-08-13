@@ -12,21 +12,26 @@ type (
 	// XXX This is a complete placeholder for work in the ilog branch
 	// I needed some extra logging for config process, and didn't want to double
 	// down on a process we knew we were going to abandon
+	// XXX Further thought: I really think we should look log15 (or something) as our logging platform.
+	// It won't be perfect, but it also won't suck up work
 	ILogger interface {
 		SetLogFunc(func(...interface{}))
 		SetDebugFunc(func(...interface{}))
 	}
-)
 
-var (
-	// Log collects various loggers to use for different levels of logging
-	Log = struct {
+	// LogSet is the stopgap for a decent injectable logger
+	LogSet struct {
 		Debug  *log.Logger
 		Info   *log.Logger
 		Warn   *log.Logger
 		Notice *log.Logger
 		Vomit  *log.Logger
-	}{
+	}
+)
+
+var (
+	// Log collects various loggers to use for different levels of logging
+	Log = LogSet{
 		// Debug is a logger - use log.SetOutput to get output from
 		Vomit:  log.New(ioutil.Discard, "vomit: ", log.Lshortfile),
 		Debug:  log.New(ioutil.Discard, "debug: ", log.Lshortfile),

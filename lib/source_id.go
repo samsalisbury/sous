@@ -56,6 +56,11 @@ func (sid SourceID) String() string {
 	return fmt.Sprintf("%s:%s %s", sid.RepoURL, sid.RepoOffset, sid.Version)
 }
 
+// Returns the version tag for this source ID
+func (sid SourceID) Tag() string {
+	return sid.Version.Format(semv.MajorMinorPatch)
+}
+
 // RevID returns the revision id for this SourceID.
 func (sid SourceID) RevID() string {
 	return sid.Version.Meta
