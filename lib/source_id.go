@@ -56,7 +56,7 @@ func (sid SourceID) String() string {
 	return fmt.Sprintf("%s:%s %s", sid.RepoURL, sid.RepoOffset, sid.Version)
 }
 
-// Returns the version tag for this source ID
+// Tag returns the version tag for this source ID.
 func (sid SourceID) Tag() string {
 	return sid.Version.Format(semv.MajorMinorPatch)
 }
@@ -66,7 +66,7 @@ func (sid SourceID) RevID() string {
 	return sid.Version.Meta
 }
 
-// SourceLocation returns the location component of this SourceID
+// Location returns the location component of this SourceID.
 func (sid SourceID) Location() SourceLocation {
 	return SourceLocation{
 		RepoURL:    sid.RepoURL,

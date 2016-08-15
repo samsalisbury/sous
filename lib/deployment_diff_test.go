@@ -9,7 +9,6 @@ import (
 )
 
 func TestEmptyDiff(t *testing.T) {
-	assert := assert.New(t)
 
 	intended := NewDeployments()
 	existing := NewDeployments()
@@ -17,10 +16,18 @@ func TestEmptyDiff(t *testing.T) {
 	dc := intended.Diff(existing)
 	ds := dc.collect()
 
-	assert.Len(ds.New, 0)
-	assert.Len(ds.Gone, 0)
-	assert.Len(ds.Same, 0)
-	assert.Len(ds.Changed, 0)
+	if ds.New.Len() != 0 {
+		t.Errorf("got %d new; want 0", ds.New.Len())
+	}
+	if ds.Gone.Len() != 0 {
+		t.Errorf("got %d gone; want 0", ds.Gone.Len())
+	}
+	if ds.Same.Len() != 0 {
+		t.Errorf("got %d same; want 0", ds.Same.Len())
+	}
+	if len(ds.Changed) != 0 {
+		t.Errorf("got %d changed; want 0", len(ds.Changed))
+	}
 }
 
 func makeDepl(repo string, num int) *Deployment {
@@ -87,7 +94,7 @@ func TestRealDiff(t *testing.T) {
 		assert.Equal(ds.Changed[0].Prior.NumInstances, 2)
 	}
 
-	if assert.Len(ds.New, 1, "Should have one added item.") {
+	if assert.Equal(ds.New.Len(), 1, "Should have one added item.") {
 		//assert.Equal(string(ds.New[0].SourceID.RepoURL), repoFour)
 	}
 

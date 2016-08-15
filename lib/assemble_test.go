@@ -85,8 +85,18 @@ func TestInheritingFromGlobal(t *testing.T) {
 
 	deps, err := s.DeploymentsFromManifest(m)
 	assert.NoError(err)
-	assert.Len(deps, 2)
-	qa := deps[0]
+	expectedLen := 2
+	actualLen := deps.Len()
+	if actualLen != expectedLen {
+		t.Fatalf("got %d deployments; want %d", actualLen, expectedLen)
+	}
+
+	id := DeployID{Source: m.Source, Cluster: "http://singularity-qa-sf.otenv.com"}
+	qa, ok := deps.Get(id)
+	if !ok {
+		t.Errorf("deployment %s not found", id)
+		t.Fatal(deps.DeployIDs())
+	}
 	assert.Equal(qa.NumInstances, 1)
 	assert.Equal(qa.SourceID.Version.String(), `0.1.5`)
 }

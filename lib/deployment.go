@@ -8,8 +8,6 @@ import (
 )
 
 type (
-	// Deployments is a collection of Deployment.
-	//Deployments []*Deployment
 	// Deployment is a completely configured deployment of a piece of software.
 	// It contains all the data necessary for Sous to create a single
 	// deployment, which is a single version of a piece of software, running in
