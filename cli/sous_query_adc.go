@@ -35,7 +35,7 @@ func (*SousQueryAdc) Help() string { return sousBuildHelp }
 
 // Execute defines the behavior of `sous query adc`
 func (sb *SousQueryAdc) Execute(args []string) cmdr.Result {
-	ads, err := sb.Deployer.GetRunningDeployments(sb.State.Defs.Clusters)
+	ads, err := sb.Deployer.RunningDeployments(sb.State.Defs.Clusters)
 	if err != nil {
 		return EnsureErrorResult(err)
 	}

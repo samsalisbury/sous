@@ -38,7 +38,7 @@ func (r *Resolver) rectify(dcs DiffChans) chan RectificationError {
 // actual set, compute the diffs and then issue the commands to rectify those
 // differences.
 func (r *Resolver) Resolve(intended Deployments, clusters Clusters) error {
-	ads, err := r.Deployer.GetRunningDeployments(clusters)
+	ads, err := r.Deployer.RunningDeployments(clusters)
 	if err != nil {
 		return err
 	}

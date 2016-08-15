@@ -64,7 +64,7 @@ func TestGetDepSetWorks(t *testing.T) {
 	}
 
 	clusters := sous.Clusters{"test": {BaseURL: "http://test-singularity.org/"}}
-	res, err := dep.GetRunningDeployments(clusters)
+	res, err := dep.RunningDeployments(clusters)
 	assert.NoError(err)
 	assert.NotNil(res)
 }

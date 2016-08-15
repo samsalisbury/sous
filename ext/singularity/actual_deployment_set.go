@@ -38,7 +38,7 @@ type (
 
 // GetRunningDeployment collects data from the Singularity clusters and
 // returns a list of actual deployments
-func (sc *deployer) GetRunningDeployments(clusters sous.Clusters) (deps sous.Deployments, err error) {
+func (sc *deployer) RunningDeployments(clusters sous.Clusters) (deps sous.Deployments, err error) {
 	retries := make(retryCounter)
 	errCh := make(chan error)
 	deps = sous.NewDeployments()
