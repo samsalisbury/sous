@@ -9,9 +9,26 @@ import (
 	"github.com/opentable/sous/lib"
 	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 /* TESTS BEGIN */
+
+func TestBuildDeployRequest(t *testing.T) {
+	assert := assert.New(t)
+	require := require.New(t)
+
+	di := "dockerImage"
+	rID := "reqID"
+	env := sous.Env{"test": "yes"}
+	rez := sous.Resources{"cpus": "0.1"}
+	vols := sous.Volumes{&sous.Volume{}}
+
+	dr, err := buildDeployRequest(di, env, rez, rID, vols)
+	require.NoError(err)
+	assert.NotNil(dr)
+	assert.Equal(dr.Deploy.RequestId, rID)
+}
 
 func TestModifyScale(t *testing.T) {
 	log.SetFlags(log.Flags() | log.Lshortfile)

@@ -48,16 +48,29 @@ func MapResources(r sous.Resources) dtoMap {
 func (ra *RectiAgent) Deploy(cluster, depID, reqID, dockerImage string,
 	r sous.Resources, e sous.Env, vols sous.Volumes) error {
 	Log.Debug.Printf("Deploying instance %s %s %s %s %v %v", cluster, depID, reqID, dockerImage, r, e)
-	dockerInfo, err := swaggering.LoadMap(&dtos.SingularityDockerInfo{}, dtoMap{
-		"Image": dockerImage,
-	})
+	depReq, err := buildDeployRequest(dockerImage, e, r, reqID, vols)
 	if err != nil {
 		return err
 	}
 
+	Log.Debug.Printf("Deploy req: %+ v", depReq)
+	_, err = ra.singularityClient(cluster).Deploy(depReq)
+	return err
+}
+
+func buildDeployRequest(dockerImage string, e sous.Env, r sous.Resources, reqID string, vols sous.Volumes) (*dtos.SingularityDeployRequest, error) {
+	var depReq swaggering.Fielder
+	dockerInfo, err := swaggering.LoadMap(&dtos.SingularityDockerInfo{}, dtoMap{
+		"Image":   dockerImage,
+		"Network": dtos.SingularityDockerInfoSingularityDockerNetworkTypeBRIDGE, //defaulting to all bridge
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	res, err := swaggering.LoadMap(&dtos.Resources{}, MapResources(r))
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	vs := dtos.SingularityVolumeList{}
@@ -68,7 +81,7 @@ func (ra *RectiAgent) Deploy(cluster, depID, reqID, dockerImage string,
 			"Mode":          dtos.SingularityVolumeSingularityDockerVolumeMode(string(v.Mode)),
 		})
 		if err != nil {
-			return err
+			return nil, err
 		}
 		vs = append(vs, sv.(*dtos.SingularityVolume))
 	}
@@ -79,7 +92,7 @@ func (ra *RectiAgent) Deploy(cluster, depID, reqID, dockerImage string,
 		"Volumes": vs,
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	dep, err := swaggering.LoadMap(&dtos.SingularityDeploy{}, dtoMap{
@@ -93,14 +106,11 @@ func (ra *RectiAgent) Deploy(cluster, depID, reqID, dockerImage string,
 	Log.Debug.Printf("  Container: %+ v", ci)
 	Log.Debug.Printf("  Docker: %+ v", dockerInfo)
 
-	depReq, err := swaggering.LoadMap(&dtos.SingularityDeployRequest{}, dtoMap{"Deploy": dep})
+	depReq, err = swaggering.LoadMap(&dtos.SingularityDeployRequest{}, dtoMap{"Deploy": dep})
 	if err != nil {
-		return err
+		return nil, err
 	}
-
-	Log.Debug.Printf("Deploy req: %+ v", depReq)
-	_, err = ra.singularityClient(cluster).Deploy(depReq.(*dtos.SingularityDeployRequest))
-	return err
+	return depReq.(*dtos.SingularityDeployRequest), nil
 }
 
 // PostRequest sends requests to Singularity to create a new Request

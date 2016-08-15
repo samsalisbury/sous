@@ -1,5 +1,5 @@
 #! /usr/bin/env bash
-PS4='~~~> '
+PS4='~> '
 set -x
 
 echo Cleaning up hostname
