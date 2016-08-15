@@ -253,7 +253,7 @@ var none = sous.DeployID{}
 
 func deploymentWithRepo(assert *assert.Assertions, sc sous.Deployer, repo string) (sous.Deployments, sous.DeployID) {
 	clusters := sous.Clusters{"test-cluster": {BaseURL: SingularityURL}}
-	deps, err := sc.GetRunningDeployment(clusters)
+	deps, err := sc.GetRunningDeployments(clusters)
 	if assert.Nil(err) {
 		return deps, findRepo(deps, repo)
 	}
