@@ -61,9 +61,15 @@ func NewSousCLI(v semv.Version, out, errout io.Writer) (*cmdr.CLI, error) {
 		HelpCommand: os.Args[0] + " help",
 	}
 
-	g := BuildGraph(cli, out, errout)
-
+	var g *SousCLIGraph
 	var chain []cmdr.Command
+
+	cli.Hooks.Startup = func(*cmdr.CLI) error {
+		g = BuildGraph(cli, out, errout)
+		chain = make([]cmdr.Command, 0)
+		return nil
+	}
+
 	cli.Hooks.Parsed = func(cmd cmdr.Command) error {
 		chain = append(chain, cmd)
 		return nil

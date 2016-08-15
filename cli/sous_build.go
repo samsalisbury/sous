@@ -44,7 +44,7 @@ func (*SousBuild) Help() string { return sousBuildHelp }
 // RegisterOn adds the DeploymentConfig to the psyringe to configure the
 // labeller and registrar
 func (sb *SousBuild) RegisterOn(psy Addable) {
-	psy.Add(sb.DeploymentConfig)
+	psy.Add(&sb.DeploymentConfig)
 }
 
 // Execute fulfills the cmdr.Executor interface
