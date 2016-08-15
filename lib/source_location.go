@@ -14,16 +14,16 @@ type (
 	// service.
 	SourceLocation struct {
 		// RepoURL is the URL of a source code repository.
-		RepoURL RepoURL
+		RepoURL string
 		// RepoOffset is a relative path to a directory within the repository
 		// at RepoURL
-		RepoOffset `yaml:",omitempty"`
+		RepoOffset string `yaml:",omitempty"`
 	}
 )
 
 // NewSourceLocation creates a new SourceLocation from strings.
 func NewSourceLocation(repoURL, repoOffset string) SourceLocation {
-	return SourceLocation{RepoURL(repoURL), RepoOffset(repoOffset)}
+	return SourceLocation{repoURL, repoOffset}
 }
 
 // MarshalYAML serializes this SourceLocation to a YAML document.
@@ -50,7 +50,7 @@ func (sl SourceLocation) String() string {
 }
 
 // Repo return the repository URL for this SourceLocation
-func (sl SourceLocation) Repo() RepoURL {
+func (sl SourceLocation) Repo() string {
 	return sl.RepoURL
 }
 

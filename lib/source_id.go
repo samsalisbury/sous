@@ -9,17 +9,12 @@ import (
 )
 
 type (
-	// RepoURL is a URL to a source code repository.
-	RepoURL string
-	// RepoOffset is a path within a repository containing a single piece of
-	// software.
-	RepoOffset string
 	// SourceID identifies a specific snapshot of a body of source code,
 	// including its location and version.
 	SourceID struct {
-		RepoURL    RepoURL
+		RepoURL    string
 		Version    semv.Version
-		RepoOffset RepoOffset `yaml:",omitempty"`
+		RepoOffset string `yaml:",omitempty"`
 	}
 
 	//MissingRepo indicates that Sous couldn't determine which repo was intended for this SL
@@ -111,14 +106,14 @@ func sourceIDFromChunks(source string, chunks []string) (SourceID, error) {
 	if len(chunks[0]) == 0 {
 		return SourceID{}, &MissingRepo{source}
 	}
-	repoURL := RepoURL(chunks[0])
+	repoURL := (chunks[0])
 	version, err := semv.Parse(string(chunks[1]))
 	if err != nil {
 		return SourceID{}, err
 	}
-	repoOffset := RepoOffset("")
+	repoOffset := ("")
 	if len(chunks) > 2 {
-		repoOffset = RepoOffset(chunks[2])
+		repoOffset = (chunks[2])
 	}
 	return SourceID{
 		Version:    version,
@@ -134,10 +129,10 @@ func sourceLocationFromChunks(source string, chunks []string) (SourceLocation, e
 	if len(chunks[0]) == 0 {
 		return SourceLocation{}, &MissingRepo{source}
 	}
-	repoURL := RepoURL(chunks[0])
-	repoOffset := RepoOffset("")
+	repoURL := (chunks[0])
+	repoOffset := ("")
 	if len(chunks) > 1 {
-		repoOffset = RepoOffset(chunks[1])
+		repoOffset = (chunks[1])
 	}
 	return SourceLocation{RepoURL: repoURL, RepoOffset: repoOffset}, nil
 }

@@ -35,8 +35,8 @@ func TestRoundTrip(t *testing.T) {
 	v := semv.MustParse("1.2.3")
 	sv := sous.SourceID{
 		Version:    v,
-		RepoURL:    sous.RepoURL("https://github.com/opentable/wackadoo"),
-		RepoOffset: sous.RepoOffset("nested/there"),
+		RepoURL:    "https://github.com/opentable/wackadoo",
+		RepoOffset: "nested/there",
 	}
 	host := "docker.repo.io"
 	base := "ot/wackadoo"
@@ -57,8 +57,8 @@ func TestRoundTrip(t *testing.T) {
 	newV := semv.MustParse("1.2.42")
 	newSV := sous.SourceID{
 		Version:    newV,
-		RepoURL:    sous.RepoURL("https://github.com/opentable/wackadoo"),
-		RepoOffset: sous.RepoOffset("nested/there"),
+		RepoURL:    "https://github.com/opentable/wackadoo",
+		RepoOffset: "nested/there",
 	}
 
 	cn = base + "@" + digest
@@ -89,15 +89,15 @@ func TestHarvesting(t *testing.T) {
 	v := semv.MustParse("1.2.3")
 	sv := sous.SourceID{
 		Version:    v,
-		RepoURL:    sous.RepoURL("https://github.com/opentable/wackadoo"),
-		RepoOffset: sous.RepoOffset("nested/there"),
+		RepoURL:    "https://github.com/opentable/wackadoo",
+		RepoOffset: "nested/there",
 	}
 
 	v2 := semv.MustParse("2.3.4")
 	sisterSV := sous.SourceID{
 		Version:    v2,
-		RepoURL:    sous.RepoURL("https://github.com/opentable/wackadoo"),
-		RepoOffset: sous.RepoOffset("nested/there"),
+		RepoURL:    "https://github.com/opentable/wackadoo",
+		RepoOffset: "nested/there",
 	}
 
 	host := "docker.repo.io"
@@ -146,8 +146,8 @@ func TestMissingName(t *testing.T) {
 	v := semv.MustParse("4.5.6")
 	sv := sous.SourceID{
 		Version:    v,
-		RepoURL:    sous.RepoURL("https://github.com/opentable/brand-new-idea"),
-		RepoOffset: sous.RepoOffset("nested/there"),
+		RepoURL:    "https://github.com/opentable/brand-new-idea",
+		RepoOffset: "nested/there",
 	}
 
 	name, err := nc.getImageName(sv)

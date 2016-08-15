@@ -43,8 +43,8 @@ func TestTagStrings(t *testing.T) {
 	assert := assert.New(t)
 
 	sid := sous.SourceID{
-		RepoURL:    sous.RepoURL("github.com/opentable/sous"),
-		RepoOffset: sous.RepoOffset("docker"),
+		RepoURL:    "github.com/opentable/sous",
+		RepoOffset: "docker",
 		Version:    semv.MustParse("1.2.3+deadbeef"),
 	}
 

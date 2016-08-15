@@ -12,8 +12,7 @@ func TestInheritingFromGlobal(t *testing.T) {
 
 	m := &Manifest{
 		Source: SourceLocation{
-			RepoURL:    RepoURL("github.com/opentable/sms-continual-test"),
-			RepoOffset: RepoOffset(""),
+			RepoURL: "github.com/opentable/sms-continual-test",
 		},
 		Owners: []string{
 			"Connect Services",

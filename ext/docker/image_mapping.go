@@ -473,6 +473,6 @@ func makeSourceID(repo, offset, version string) (sous.SourceID, error) {
 		return sous.SourceID{}, err
 	}
 	return sous.SourceID{
-		sous.RepoURL(repo), v, sous.RepoOffset(offset),
+		RepoURL: repo, Version: v, RepoOffset: offset,
 	}, nil
 }

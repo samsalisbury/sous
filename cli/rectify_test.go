@@ -12,8 +12,8 @@ func TestPredicateBuilder(t *testing.T) {
 
 	ds := make([]*sous.Deployment, 0, 8)
 	cs := []string{"cluster1", "cluster2"}
-	rs := []sous.RepoURL{"github.com/ot/one", "github.com/ot/two"}
-	os := []sous.RepoOffset{"up", "down"}
+	rs := []string{"github.com/ot/one", "github.com/ot/two"}
+	os := []string{"up", "down"}
 
 	for _, c := range cs {
 		for _, r := range rs {

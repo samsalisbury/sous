@@ -23,13 +23,13 @@ func (f *DeployFilterFlags) buildPredicate() sous.DeploymentPredicate {
 
 	if f.Repo != "" {
 		preds = append(preds, func(d *sous.Deployment) bool {
-			return d.SourceID.RepoURL == sous.RepoURL(f.Repo)
+			return d.SourceID.RepoURL == f.Repo
 		})
 	}
 
 	if f.Offset != "" {
 		preds = append(preds, func(d *sous.Deployment) bool {
-			return d.SourceID.RepoOffset == sous.RepoOffset(f.Offset)
+			return d.SourceID.RepoOffset == f.Offset
 		})
 	}
 

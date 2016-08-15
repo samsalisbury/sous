@@ -36,7 +36,7 @@ func TestModifyScale(t *testing.T) {
 	pair := &sous.DeploymentPair{
 		Prior: &sous.Deployment{
 			SourceID: sous.SourceID{
-				RepoURL: sous.RepoURL("reqid"),
+				RepoURL: ("reqid"),
 			},
 			DeployConfig: sous.DeployConfig{
 				NumInstances: 12,
@@ -45,7 +45,7 @@ func TestModifyScale(t *testing.T) {
 		},
 		Post: &sous.Deployment{
 			SourceID: sous.SourceID{
-				RepoURL: sous.RepoURL("reqid"),
+				RepoURL: ("reqid"),
 			},
 			DeployConfig: sous.DeployConfig{
 				NumInstances: 24,
@@ -86,7 +86,7 @@ func TestModifyImage(t *testing.T) {
 	pair := &sous.DeploymentPair{
 		Prior: &sous.Deployment{
 			SourceID: sous.SourceID{
-				RepoURL: sous.RepoURL("reqid"),
+				RepoURL: ("reqid"),
 				Version: before,
 			},
 			DeployConfig: sous.DeployConfig{
@@ -96,7 +96,7 @@ func TestModifyImage(t *testing.T) {
 		},
 		Post: &sous.Deployment{
 			SourceID: sous.SourceID{
-				RepoURL: sous.RepoURL("reqid"),
+				RepoURL: ("reqid"),
 				Version: after,
 			},
 			DeployConfig: sous.DeployConfig{
@@ -136,7 +136,7 @@ func TestModifyResources(t *testing.T) {
 	pair := &sous.DeploymentPair{
 		Prior: &sous.Deployment{
 			SourceID: sous.SourceID{
-				RepoURL: sous.RepoURL("reqid"),
+				RepoURL: ("reqid"),
 				Version: version,
 			},
 			DeployConfig: sous.DeployConfig{
@@ -149,7 +149,7 @@ func TestModifyResources(t *testing.T) {
 		},
 		Post: &sous.Deployment{
 			SourceID: sous.SourceID{
-				RepoURL: sous.RepoURL("reqid"),
+				RepoURL: ("reqid"),
 				Version: version,
 			},
 			DeployConfig: sous.DeployConfig{
@@ -195,26 +195,26 @@ func TestModify(t *testing.T) {
 	pair := &sous.DeploymentPair{
 		Prior: &sous.Deployment{
 			SourceID: sous.SourceID{
-				RepoURL: sous.RepoURL("reqid"),
+				RepoURL: ("reqid"),
 				Version: before,
 			},
 			DeployConfig: sous.DeployConfig{
 				NumInstances: 1,
 				Volumes: sous.Volumes{
-					&sous.Volume{"host", "container", "RO"},
+					{"host", "container", "RO"},
 				},
 			},
 			Cluster: "cluster",
 		},
 		Post: &sous.Deployment{
 			SourceID: sous.SourceID{
-				RepoURL: sous.RepoURL("reqid"),
+				RepoURL: ("reqid"),
 				Version: after,
 			},
 			DeployConfig: sous.DeployConfig{
 				NumInstances: 24,
 				Volumes: sous.Volumes{
-					&sous.Volume{"host", "container", "RW"},
+					{"host", "container", "RW"},
 				},
 			},
 			Cluster: "cluster",
@@ -255,7 +255,7 @@ func TestDeletes(t *testing.T) {
 
 	deleted := &sous.Deployment{
 		SourceID: sous.SourceID{
-			RepoURL: sous.RepoURL("reqid"),
+			RepoURL: ("reqid"),
 		},
 		DeployConfig: sous.DeployConfig{
 			NumInstances: 12,
@@ -294,7 +294,7 @@ func TestCreates(t *testing.T) {
 
 	created := &sous.Deployment{
 		SourceID: sous.SourceID{
-			RepoURL: sous.RepoURL("reqid"),
+			RepoURL: ("reqid"),
 		},
 		DeployConfig: sous.DeployConfig{
 			NumInstances: 12,

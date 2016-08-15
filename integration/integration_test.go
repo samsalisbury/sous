@@ -263,7 +263,7 @@ func deploymentWithRepo(assert *assert.Assertions, sc sous.Deployer, repo string
 func findRepo(deps sous.Deployments, repo string) sous.DeployID {
 	for i, d := range deps.Snapshot() {
 		if d != nil {
-			if d.SourceID.RepoURL == sous.RepoURL(repo) {
+			if d.SourceID.RepoURL == repo {
 				return i
 			}
 		}
@@ -279,8 +279,7 @@ func manifest(nc sous.Registry, drepo, containerDir, sourceURL, version string) 
 
 	return &sous.Manifest{
 		Source: sous.SourceLocation{
-			RepoURL:    sous.RepoURL(sourceURL),
-			RepoOffset: sous.RepoOffset(""),
+			RepoURL: sourceURL,
 		},
 		Owners: []string{`xyz`},
 		Kind:   sous.ManifestKindService,

@@ -42,9 +42,9 @@ func SourceIDFromLabels(labels map[string]string) (sous.SourceID, error) {
 	version.Meta = revision
 
 	return sous.SourceID{
-		RepoURL:    sous.RepoURL(repo),
+		RepoURL:    repo,
 		Version:    version,
-		RepoOffset: sous.RepoOffset(path),
+		RepoOffset: path,
 	}, err
 }
 
