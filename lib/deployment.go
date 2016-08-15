@@ -1,6 +1,6 @@
 package sous
 
-//go:generate ggen cmap.CMap(cmap.go) sous.Deployments(deployments.go) Key:DeployID Value:*Deployment
+//go:generate ggen cmap.CMap(cmap.go) sous.Deployments(deployments.go) CMKey:DeployID Value:*Deployment
 
 import (
 	"fmt"

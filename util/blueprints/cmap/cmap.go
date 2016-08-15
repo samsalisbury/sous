@@ -5,15 +5,15 @@ import (
 	"sync"
 )
 
-// CMap is a wrapper around map[Key]Value
+// CMap is a wrapper around map[CMKey]Value
 // which is safe for concurrent read and write.
 type CMap struct {
 	mu *sync.RWMutex
-	m  map[Key]Value
+	m  map[CMKey]Value
 }
 
-// Key is the map key type.
-type Key string
+// CMKey is the map key type.
+type CMKey string
 
 // Value is the map value type.
 type Value string
@@ -22,18 +22,19 @@ type Value string
 func MakeCMap(capacity int) CMap {
 	return CMap{
 		mu: &sync.RWMutex{},
-		m:  make(map[Key]Value, capacity),
+		m:  make(map[CMKey]Value, capacity),
 	}
 }
 
 // NewCMapFromMap creates a new CMap.
-// You may optionally pass any number of map[Key]Values,
+// You may optionally pass any number of
+// map[CMKey]Values,
 // which will be merged key-wise into the new CMap,
 // with keys from the right-most map taking precedence.
-func NewCMapFromMap(from ...map[Key]Value) CMap {
+func NewCMapFromMap(from ...map[CMKey]Value) CMap {
 	cm := CMap{
 		mu: &sync.RWMutex{},
-		m:  map[Key]Value{},
+		m:  map[CMKey]Value{},
 	}
 	for _, m := range from {
 		for k, v := range m {
@@ -49,7 +50,7 @@ func NewCMapFromMap(from ...map[Key]Value) CMap {
 func NewCMap(from ...Value) CMap {
 	m := CMap{
 		mu: &sync.RWMutex{},
-		m:  map[Key]Value{},
+		m:  map[CMKey]Value{},
 	}
 	for _, v := range from {
 		if !m.Add(v) {
@@ -61,18 +62,18 @@ func NewCMap(from ...Value) CMap {
 
 // Get returns (value, true) if k is in the map, or (zero value, false)
 // otherwise.
-func (m *CMap) Get(k Key) (Value, bool) {
+func (m *CMap) Get(key CMKey) (Value, bool) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	v, ok := m.m[k]
+	v, ok := m.m[key]
 	return v, ok
 }
 
 // Set sets the value of index k to v.
-func (m *CMap) Set(k Key, v Value) {
+func (m *CMap) Set(key CMKey, value Value) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.m[k] = v
+	m.m[key] = value
 }
 
 // Filter returns a new CMap containing only the entries
@@ -82,7 +83,7 @@ func (m *CMap) Filter(predicate func(Value) bool) CMap {
 	if predicate == nil {
 		return m.Clone()
 	}
-	out := map[Key]Value{}
+	out := map[CMKey]Value{}
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	for k, v := range m.m {
@@ -109,7 +110,7 @@ func (m *CMap) Single(predicate func(Value) bool) (Value, bool) {
 }
 
 // Any returns
-// (a single Value mathing predicate, true),
+// (a single Value matching predicate, true),
 // if there are any Values matching predicate in
 // CMap. Otherwise returns (zero Value, false).
 func (m *CMap) Any(predicate func(Value) bool) (Value, bool) {
@@ -126,8 +127,8 @@ func (m *CMap) Clone() CMap {
 	return NewCMapFromMap(m.Snapshot())
 }
 
-// Merge returns a new *CMap with
-// all entries from this *CMap and the other.
+// Merge returns a new CMap with
+// all entries from this CMap and the other.
 // If any keys in other match keys in this *CMap,
 // keys from other will appear in the returned
 // *CMap.
@@ -155,11 +156,11 @@ func (m *CMap) MustAdd(v Value) {
 	}
 }
 
-// AddAll returns (zero Key, true) if all  entries from the passed in
-// CMap have different keys and and all are added to this CMap.
+// AddAll returns (zero CMKey, true) if all  entries from the passed in
+// CMap have different keys and all are added to this CMap.
 // If any of the keys conflict, nothing will be added to this
-// CMap and AddAll will return the conflicting Key and false.
-func (m *CMap) AddAll(from CMap) (conflicting Key, success bool) {
+// CMap and AddAll will return the conflicting CMKey and false.
+func (m *CMap) AddAll(from CMap) (conflicting CMKey, success bool) {
 	ss := from.Snapshot()
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -176,10 +177,10 @@ func (m *CMap) AddAll(from CMap) (conflicting Key, success bool) {
 }
 
 // Remove value for a key k if present, a no-op otherwise.
-func (m *CMap) Remove(k Key) {
+func (m *CMap) Remove(key CMKey) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	delete(m.m, k)
+	delete(m.m, key)
 }
 
 // Len returns number of elements in a map.
@@ -190,10 +191,10 @@ func (m *CMap) Len() int {
 }
 
 // Keys returns a slice containing all the keys in the map.
-func (m *CMap) Keys() []Key {
+func (m *CMap) Keys() []CMKey {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	keys := make([]Key, len(m.m))
+	keys := make([]CMKey, len(m.m))
 	i := 0
 	for k := range m.m {
 		keys[i] = k
@@ -203,11 +204,11 @@ func (m *CMap) Keys() []Key {
 }
 
 // Snapshot returns a moment-in-time copy of the current underlying
-// map[Key]Value.
-func (m *CMap) Snapshot() map[Key]Value {
+// map[CMKey]Value.
+func (m *CMap) Snapshot() map[CMKey]Value {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	clone := make(map[Key]Value, len(m.m))
+	clone := make(map[CMKey]Value, len(m.m))
 	for k, v := range m.m {
 		clone[k] = v
 	}
@@ -215,13 +216,13 @@ func (m *CMap) Snapshot() map[Key]Value {
 }
 
 // FilteredSnapshot returns a moment-in-time filtered copy of the current
-// underlying map[Key]Value.
-// (Key, Value) pairs are included
+// underlying map[CMKey]Value.
+// (CMKey, Value) pairs are included
 // if they satisfy predicate.
-func (m *CMap) FilteredSnapshot(predicate func(Value) bool) map[Key]Value {
+func (m *CMap) FilteredSnapshot(predicate func(Value) bool) map[CMKey]Value {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	clone := map[Key]Value{}
+	clone := map[CMKey]Value{}
 	for k, v := range m.m {
 		if predicate(v) {
 			clone[k] = v

@@ -23,7 +23,8 @@ func MakeManifests(capacity int) Manifests {
 }
 
 // NewManifestsFromMap creates a new Manifests.
-// You may optionally pass any number of map[SourceLocation]*Manifests,
+// You may optionally pass any number of
+// map[SourceLocation]*Manifests,
 // which will be merged key-wise into the new Manifests,
 // with keys from the right-most map taking precedence.
 func NewManifestsFromMap(from ...map[SourceLocation](*Manifest)) Manifests {
@@ -57,18 +58,18 @@ func NewManifests(from ...(*Manifest)) Manifests {
 
 // Get returns (value, true) if k is in the map, or (zero value, false)
 // otherwise.
-func (m *Manifests) Get(k SourceLocation) (*Manifest, bool) {
+func (m *Manifests) Get(key SourceLocation) (*Manifest, bool) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	v, ok := m.m[k]
+	v, ok := m.m[key]
 	return v, ok
 }
 
 // Set sets the value of index k to v.
-func (m *Manifests) Set(k SourceLocation, v *Manifest) {
+func (m *Manifests) Set(key SourceLocation, value *Manifest) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.m[k] = v
+	m.m[key] = value
 }
 
 // Filter returns a new Manifests containing only the entries
@@ -105,7 +106,7 @@ func (m *Manifests) Single(predicate func(*Manifest) bool) (*Manifest, bool) {
 }
 
 // Any returns
-// (a single *Manifest mathing predicate, true),
+// (a single *Manifest matching predicate, true),
 // if there are any *Manifests matching predicate in
 // Manifests. Otherwise returns (zero *Manifest, false).
 func (m *Manifests) Any(predicate func(*Manifest) bool) (*Manifest, bool) {
@@ -122,8 +123,8 @@ func (m *Manifests) Clone() Manifests {
 	return NewManifestsFromMap(m.Snapshot())
 }
 
-// Merge returns a new *Manifests with
-// all entries from this *Manifests and the other.
+// Merge returns a new Manifests with
+// all entries from this Manifests and the other.
 // If any keys in other match keys in this *Manifests,
 // keys from other will appear in the returned
 // *Manifests.
@@ -152,7 +153,7 @@ func (m *Manifests) MustAdd(v *Manifest) {
 }
 
 // AddAll returns (zero SourceLocation, true) if all  entries from the passed in
-// Manifests have different keys and and all are added to this Manifests.
+// Manifests have different keys and all are added to this Manifests.
 // If any of the keys conflict, nothing will be added to this
 // Manifests and AddAll will return the conflicting SourceLocation and false.
 func (m *Manifests) AddAll(from Manifests) (conflicting SourceLocation, success bool) {
@@ -172,10 +173,10 @@ func (m *Manifests) AddAll(from Manifests) (conflicting SourceLocation, success 
 }
 
 // Remove value for a key k if present, a no-op otherwise.
-func (m *Manifests) Remove(k SourceLocation) {
+func (m *Manifests) Remove(key SourceLocation) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	delete(m.m, k)
+	delete(m.m, key)
 }
 
 // Len returns number of elements in a map.
@@ -185,8 +186,8 @@ func (m *Manifests) Len() int {
 	return len(m.m)
 }
 
-// SourceLocations returns a slice containing all the keys in the map.
-func (m *Manifests) SourceLocations() []SourceLocation {
+// Keys returns a slice containing all the keys in the map.
+func (m *Manifests) Keys() []SourceLocation {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	keys := make([]SourceLocation, len(m.m))

@@ -95,7 +95,7 @@ func TestInheritingFromGlobal(t *testing.T) {
 	qa, ok := deps.Get(id)
 	if !ok {
 		t.Errorf("deployment %s not found", id)
-		t.Fatal(deps.DeployIDs())
+		t.Fatal(deps.Keys())
 	}
 	assert.Equal(qa.NumInstances, 1)
 	assert.Equal(qa.SourceID.Version.String(), `0.1.5`)

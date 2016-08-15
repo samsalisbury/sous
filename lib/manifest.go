@@ -2,12 +2,9 @@ package sous
 
 import "path/filepath"
 
-//go:generate ggen cmap.CMap(cmap.go) sous.Manifests(manifests.go) Key:SourceLocation Value:*Manifest
+//go:generate ggen cmap.CMap(cmap.go) sous.Manifests(manifests.go) CMKey:SourceLocation Value:*Manifest
 
 type (
-	// Manifests is a collection of Manifest.
-	//Manifests map[string]*Manifest
-
 	// Manifest is a minimal representation of the global deployment state of
 	// a particular named application. It is designed to be written and read by
 	// humans as-is, and expanded into full Deployments internally. It is a DTO,

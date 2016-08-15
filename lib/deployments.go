@@ -23,7 +23,8 @@ func MakeDeployments(capacity int) Deployments {
 }
 
 // NewDeploymentsFromMap creates a new Deployments.
-// You may optionally pass any number of map[DeployID]*Deployments,
+// You may optionally pass any number of
+// map[DeployID]*Deployments,
 // which will be merged key-wise into the new Deployments,
 // with keys from the right-most map taking precedence.
 func NewDeploymentsFromMap(from ...map[DeployID](*Deployment)) Deployments {
@@ -57,18 +58,18 @@ func NewDeployments(from ...(*Deployment)) Deployments {
 
 // Get returns (value, true) if k is in the map, or (zero value, false)
 // otherwise.
-func (m *Deployments) Get(k DeployID) (*Deployment, bool) {
+func (m *Deployments) Get(key DeployID) (*Deployment, bool) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	v, ok := m.m[k]
+	v, ok := m.m[key]
 	return v, ok
 }
 
 // Set sets the value of index k to v.
-func (m *Deployments) Set(k DeployID, v *Deployment) {
+func (m *Deployments) Set(key DeployID, value *Deployment) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.m[k] = v
+	m.m[key] = value
 }
 
 // Filter returns a new Deployments containing only the entries
@@ -105,7 +106,7 @@ func (m *Deployments) Single(predicate func(*Deployment) bool) (*Deployment, boo
 }
 
 // Any returns
-// (a single *Deployment mathing predicate, true),
+// (a single *Deployment matching predicate, true),
 // if there are any *Deployments matching predicate in
 // Deployments. Otherwise returns (zero *Deployment, false).
 func (m *Deployments) Any(predicate func(*Deployment) bool) (*Deployment, bool) {
@@ -122,8 +123,8 @@ func (m *Deployments) Clone() Deployments {
 	return NewDeploymentsFromMap(m.Snapshot())
 }
 
-// Merge returns a new *Deployments with
-// all entries from this *Deployments and the other.
+// Merge returns a new Deployments with
+// all entries from this Deployments and the other.
 // If any keys in other match keys in this *Deployments,
 // keys from other will appear in the returned
 // *Deployments.
@@ -152,7 +153,7 @@ func (m *Deployments) MustAdd(v *Deployment) {
 }
 
 // AddAll returns (zero DeployID, true) if all  entries from the passed in
-// Deployments have different keys and and all are added to this Deployments.
+// Deployments have different keys and all are added to this Deployments.
 // If any of the keys conflict, nothing will be added to this
 // Deployments and AddAll will return the conflicting DeployID and false.
 func (m *Deployments) AddAll(from Deployments) (conflicting DeployID, success bool) {
@@ -172,10 +173,10 @@ func (m *Deployments) AddAll(from Deployments) (conflicting DeployID, success bo
 }
 
 // Remove value for a key k if present, a no-op otherwise.
-func (m *Deployments) Remove(k DeployID) {
+func (m *Deployments) Remove(key DeployID) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	delete(m.m, k)
+	delete(m.m, key)
 }
 
 // Len returns number of elements in a map.
@@ -185,8 +186,8 @@ func (m *Deployments) Len() int {
 	return len(m.m)
 }
 
-// DeployIDs returns a slice containing all the keys in the map.
-func (m *Deployments) DeployIDs() []DeployID {
+// Keys returns a slice containing all the keys in the map.
+func (m *Deployments) Keys() []DeployID {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	keys := make([]DeployID, len(m.m))
