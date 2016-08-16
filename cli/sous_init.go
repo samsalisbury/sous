@@ -10,12 +10,13 @@ import (
 
 // SousInit is the command description for `sous init`
 type SousInit struct {
+	DeployFilterFlags
 	SourceContext *sous.SourceContext
 	WD            LocalWorkDirShell
 	GDM           CurrentGDM
 	State         *sous.State
 	StateWriter   LocalStateWriter
-	flags         struct {
+	Flags         struct {
 		RepoURL, RepoOffset             string
 		UseOTPLDeploy, IgnoreOTPLDeploy bool
 	}
@@ -36,11 +37,16 @@ flesh out some additional details.
 // Help returns the help string for this command
 func (si *SousInit) Help() string { return sousInitHelp }
 
+// RegisterOn adds a zero DFF to the graph, because Init should assume a clean build
+func (si *SousInit) RegisterOn(psy Addable) {
+	psy.Add(&si.DeployFilterFlags)
+}
+
 // AddFlags adds the flags for sous init.
 func (si *SousInit) AddFlags(fs *flag.FlagSet) {
-	fs.BoolVar(&si.flags.UseOTPLDeploy, "use-otpl-deploy", false,
+	fs.BoolVar(&si.Flags.UseOTPLDeploy, "use-otpl-deploy", false,
 		"if specified, copies OpenTable-specific otpl-deploy configuration to the manifest")
-	fs.BoolVar(&si.flags.IgnoreOTPLDeploy, "ignore-otpl-deploy", false,
+	fs.BoolVar(&si.Flags.IgnoreOTPLDeploy, "ignore-otpl-deploy", false,
 		"if specified, ignores OpenTable-specific otpl-deploy configuration")
 }
 
@@ -57,14 +63,14 @@ func (si *SousInit) Execute(args []string) cmdr.Result {
 	}
 
 	var deploySpecs, otplDeploySpecs sous.DeploySpecs
-	if !si.flags.IgnoreOTPLDeploy {
+	if !si.Flags.IgnoreOTPLDeploy {
 		otplParser := otpl.NewDeploySpecParser()
 		otplDeploySpecs = otplParser.GetDeploySpecs(si.WD.Sh)
 	}
-	if !si.flags.UseOTPLDeploy && !si.flags.IgnoreOTPLDeploy && len(otplDeploySpecs) != 0 {
+	if !si.Flags.UseOTPLDeploy && !si.Flags.IgnoreOTPLDeploy && len(otplDeploySpecs) != 0 {
 		return UsageErrorf("otpl-deploy detected in config/, please specify either -use-otpl-deploy, or -ignore-otpl-deploy to proceed")
 	}
-	if si.flags.UseOTPLDeploy {
+	if si.Flags.UseOTPLDeploy {
 		if len(otplDeploySpecs) == 0 {
 			return UsageErrorf("you specified -use-otpl-deploy, but no valid deployments were found in config/")
 		}
