@@ -1,4 +1,4 @@
-// DO NOT EDIT. Generated with goinline -package=github.com/opentable/sous/util/blueprints/cmap --target-package-name=sous --target-dir=. -w SourceLocation->SourceLocation *Manifest->*Manifest
+// DO NOT EDIT. Generated with goinline -package=github.com/opentable/sous/util/blueprints/cmap --target-package-name=sous --target-dir=. -w *Manifest->*Manifest SourceLocation->SourceLocation
 
 package sous
 
@@ -225,4 +225,17 @@ func (m *Manifests) FilteredSnapshot(predicate func(*Manifest) bool) map[SourceL
 		}
 	}
 	return clone
+}
+
+// GetAll returns SnapShot (it allows hy to marshal Manifests).
+func (m *Manifests) GetAll() map[SourceLocation](*Manifest) {
+	return m.Snapshot()
+}
+
+// SetAll sets the internal map (it allows hy to unmarshal Manifests).
+func (m *Manifests) SetAll(v map[SourceLocation](*Manifest)) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.m = nil
+	m.m = v
 }

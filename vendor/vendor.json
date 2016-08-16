@@ -140,6 +140,12 @@
 			"revisionTime": "2016-08-09T08:42:26Z"
 		},
 		{
+			"checksumSHA1": "N5wm0guKr2RPywW6dUyZS9rnkO0=",
+			"path": "github.com/opentable/hy",
+			"revision": "e382c9c85a9c8ef625060099f653bb5370434eb0",
+			"revisionTime": "2016-08-16T13:41:12Z"
+		},
+		{
 			"checksumSHA1": "5GnAp0RETgoWf+Asq2DCw3ceE+w=",
 			"path": "github.com/opentable/swaggering",
 			"revision": "48c3213297e582f0e3c5aa1ca440ff27f5c4c311",

@@ -226,3 +226,16 @@ func (m *Deployments) FilteredSnapshot(predicate func(*Deployment) bool) map[Dep
 	}
 	return clone
 }
+
+// GetAll returns SnapShot (it allows hy to marshal Deployments).
+func (m *Deployments) GetAll() map[DeployID](*Deployment) {
+	return m.Snapshot()
+}
+
+// SetAll sets the internal map (it allows hy to unmarshal Deployments).
+func (m *Deployments) SetAll(v map[DeployID](*Deployment)) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.m = nil
+	m.m = v
+}

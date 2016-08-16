@@ -6,10 +6,10 @@ type (
 	State struct {
 		singleCluster string
 		// Defs contains global definitions for this organisation.
-		Defs Defs `hy:"defs.yaml"`
+		Defs Defs `hy:"defs"`
 		// Manifests contains a mapping of source code repositories to global
 		// deployment configurations for artifacts built using that source code.
-		Manifests Manifests `hy:"manifests/**"`
+		Manifests Manifests `hy:"manifests/"`
 	}
 
 	// Defs holds definitions for organisation-level objects.

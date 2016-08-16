@@ -230,3 +230,16 @@ func (m *CMap) FilteredSnapshot(predicate func(Value) bool) map[CMKey]Value {
 	}
 	return clone
 }
+
+// GetAll returns SnapShot (it allows hy to marshal CMap).
+func (m *CMap) GetAll() map[CMKey]Value {
+	return m.Snapshot()
+}
+
+// SetAll sets the internal map (it allows hy to unmarshal CMap).
+func (m *CMap) SetAll(v map[CMKey]Value) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.m = nil
+	m.m = v
+}
