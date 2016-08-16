@@ -37,6 +37,8 @@ type (
 	// Hooks is a collection of command hooks. If a hook returns a non-nil error
 	// it cancels execution and the error is displayed to the user.
 	Hooks struct {
+		// Startup is run at the beginning of every invocation
+		Startup func(*CLI) error
 		// Parsed is run on a command when it's found on the command line
 		Parsed func(Command) error
 		// PreExecute is run on a command before it executes.
@@ -120,6 +122,9 @@ func (c *CLI) InvokeAndExit(args []string) {
 // which subcommand a flag is applicable to.
 func (c *CLI) Prepare(args []string) (*PreparedExecution, error) {
 	base, ff := c.Root, c.GlobalFlagSetFuncs
+	if c.Hooks.Startup != nil {
+		c.Hooks.Startup(c)
+	}
 	return c.prepare(base, args, ff)
 }
 
