@@ -13,7 +13,7 @@ func TestWriteState(t *testing.T) {
 
 	s := exampleState()
 
-	dsm, err := NewDiskStateManager("test_output")
+	dsm, err := NewDiskStateManager("testdata/out")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -22,7 +22,7 @@ func TestWriteState(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	d := exec.Command("diff", "-r", "test_data/", "test_output/")
+	d := exec.Command("diff", "-r", "testdata/in", "testdata/out")
 	out, err := d.CombinedOutput()
 	if err != nil {
 		t.Log("Output not as expected:")
@@ -33,7 +33,7 @@ func TestWriteState(t *testing.T) {
 
 func TestReadState(t *testing.T) {
 
-	dsm, err := NewDiskStateManager("test_data")
+	dsm, err := NewDiskStateManager("testdata/in")
 	if err != nil {
 		t.Fatal(err)
 	}
