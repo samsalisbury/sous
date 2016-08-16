@@ -7,21 +7,66 @@ import (
 )
 
 // Codec provides the primary encoding and decoding facility of this package.
+// Codecs should be re-used to take advantage of their caching of reflection
+// data.
 type Codec struct {
+	// MarshalFunc is used to write file data. The signature matches
+	// json.Marshal as well as many other standard marshalers.
+	MarshalFunc func(interface{}) ([]byte, error)
+	// UnmarshalFunc is used to read file data. The signature matches
+	// json.Unmarshal as well as many other standard unmarshalers.
+	UnmarshalFunc func([]byte, interface{}) error
+	// FileExtension is the extension to use for reading and writing files. It
+	// must not be empty.
+	FileExtension,
+	// RootFileName is the file name (without extension) to use for any fields
+	// left over from the root struct, after its hy-tagged fields have been
+	// taken out.
+	// It defaults to _ if not set.
+	RootFileName string
+
 	nodes      NodeSet
-	Writer     FileWriter
-	Reader     FileReader
-	TreeReader *FileTreeReader
+	writer     FileWriter
+	reader     FileReader
+	treeReader *FileTreeReader
 }
 
 // NewCodec creates a new codec.
 func NewCodec(configure ...func(*Codec)) *Codec {
 	c := &Codec{nodes: NewNodeSet()}
 	for _, cfg := range configure {
+		if cfg == nil {
+			continue
+		}
 		cfg(c)
 	}
-	if c.Writer == nil {
-		c.Writer = JSONWriter
+	if c.UnmarshalFunc == nil && c.MarshalFunc == nil && c.FileExtension == "" {
+		c.FileExtension = "json"
+	}
+	if c.UnmarshalFunc == nil {
+		c.UnmarshalFunc = JSONWriter.UnmarshalFunc
+	}
+	if c.MarshalFunc == nil {
+		c.MarshalFunc = JSONWriter.MarshalFunc
+	}
+	if c.RootFileName == "" {
+		c.RootFileName = "_"
+	}
+
+	marshaler := FileMarshaler{
+		UnmarshalFunc: c.UnmarshalFunc,
+		MarshalFunc:   c.MarshalFunc,
+		FileExtension: c.FileExtension,
+		RootFileName:  c.RootFileName,
+	}
+	if c.writer == nil {
+		c.writer = marshaler
+	}
+	if c.reader == nil {
+		c.reader = marshaler
+	}
+	if c.treeReader == nil {
+		c.treeReader = NewFileTreeReader(c.FileExtension, c.RootFileName)
 	}
 	return c
 }
@@ -57,11 +102,11 @@ func (c *Codec) Read(prefix string, root interface{}) error {
 	if err != nil {
 		return errors.Wrapf(err, "analysing structure")
 	}
-	targets, err := c.TreeReader.ReadTree(prefix)
+	targets, err := c.treeReader.ReadTree(prefix)
 	if err != nil {
 		return errors.Wrapf(err, "reading tree at %q", prefix)
 	}
-	rc := NewReadContext(prefix, targets, c.Reader)
+	rc := NewReadContext(prefix, targets, c.reader)
 	rootVal := rootNode.NewVal()
 	if err := rootNode.Read(rc, rootVal); err != nil {
 		return errors.Wrapf(err, "reading root")
@@ -82,7 +127,7 @@ func (c *Codec) Write(prefix string, root interface{}) error {
 		return errors.Wrapf(err, "generating write targets")
 	}
 	for _, t := range wc.targets.Snapshot() {
-		if err := c.Writer.WriteFile(prefix, t); err != nil {
+		if err := c.writer.WriteFile(prefix, t); err != nil {
 			return errors.Wrapf(err, "writing target %q", t.Path())
 		}
 	}

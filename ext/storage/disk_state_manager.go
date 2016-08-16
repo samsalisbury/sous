@@ -38,16 +38,10 @@ type (
 // NewDiskStateManager returns a new DiskStateManager configured to read and
 // write from a filesystem tree containing YAML files.
 func NewDiskStateManager(baseDir string) (*DiskStateManager, error) {
-	marshaler := hy.FileMarshaler{
-		UnmarshalFunc: yaml.Unmarshal,
-		MarshalFunc:   yaml.Marshal,
-		FileExtension: "yaml",
-		RootFileName:  "_",
-	}
 	c := hy.NewCodec(func(c *hy.Codec) {
-		c.Writer = marshaler
-		c.Reader = marshaler
-		c.TreeReader = hy.NewFileTreeReader("yaml", "_")
+		c.FileExtension = "yaml"
+		c.MarshalFunc = yaml.Marshal
+		c.UnmarshalFunc = yaml.Unmarshal
 	})
 	return &DiskStateManager{Codec: c, baseDir: baseDir}, nil
 }
