@@ -79,6 +79,6 @@ func TestInvokeBuildWithRepoSelector(t *testing.T) {
 
 	assert.NotNil(build.Labeller)
 	assert.NotNil(build.Registrar)
-	assert.Equal(build.DeploymentConfig.Repo, `github.com/opentable/sous`)
+	assert.Equal(build.DeployFilterFlags.Repo, `github.com/opentable/sous`)
 
 }

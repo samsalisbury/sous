@@ -7,18 +7,21 @@ import (
 	"github.com/opentable/sous/util/cmdr"
 )
 
-// SousBuild is the command description for `sous build`
-// Implements cmdr.Command, cmdr.Executor and cmdr.AddFlags
-type SousBuild struct {
-	*sous.BuildContext
-	sous.Labeller
-	sous.Registrar
-	Selector         sous.Selector
-	DeploymentConfig DeployFilterFlags
-	flags            struct {
-		config sous.BuildConfig
+type (
+	// PolicyFlags capture user intent about the processing of a build
+	PolicyFlags struct {
+		ForceClone, Strict bool
 	}
-}
+
+	// SousBuild is the command description for `sous build`
+	// Implements cmdr.Command, cmdr.Executor and cmdr.AddFlags
+	SousBuild struct {
+		DeployFilterFlags
+		PolicyFlags
+
+		*sous.BuildManager
+	}
+)
 
 func init() { TopLevelCommands["build"] = &SousBuild{} }
 
@@ -32,10 +35,13 @@ args: [path]
 `
 
 func (sb *SousBuild) AddFlags(fs *flag.FlagSet) {
-	err := AddFlags(fs, &sb.DeploymentConfig, sourceFlagsHelp)
+	err := AddFlags(fs, &sb.DeployFilterFlags, sourceFlagsHelp)
 	if err != nil {
 		panic(err)
 	}
+	fs.BoolVar(&sb.PolicyFlags.Strict, "strict", false, "require that the build be pristine")
+	//fs.BoolVar(&sb.PolicyFlags.ForceClone, "force-clone", false, "force a shallow clone of the codebase before build")
+	// above is commented prior to impl.
 }
 
 // Help returns the help string for this command
@@ -44,33 +50,26 @@ func (*SousBuild) Help() string { return sousBuildHelp }
 // RegisterOn adds the DeploymentConfig to the psyringe to configure the
 // labeller and registrar
 func (sb *SousBuild) RegisterOn(psy Addable) {
-	psy.Add(&sb.DeploymentConfig)
+	psy.Add(&sb.DeployFilterFlags)
+	psy.Add(&sb.PolicyFlags)
 }
 
 // Execute fulfills the cmdr.Executor interface
 func (sb *SousBuild) Execute(args []string) cmdr.Result {
-	var bc *sous.BuildContext
+	// XXX is there a way to move this into DI?
 	if len(args) != 0 {
+		bc := sb.BuildManager.BuildConfig.Context
 		path := args[0]
 		if err := bc.Sh.CD(path); err != nil {
 			return cmdr.EnsureErrorResult(err)
 		}
 	}
 
-	mgr := &sous.BuildManager{
-		BuildConfig: &sb.flags.config,
-		Selector:    sb.Selector,
-		Labeller:    sb.Labeller,
-		Registrar:   sb.Registrar,
-	}
-	mgr.BuildConfig.Context = bc
-
-	result, err := mgr.Build()
+	result, err := sb.BuildManager.Build()
 
 	if err != nil {
 		return cmdr.EnsureErrorResult(err)
 	}
-
 	//	return Success(result)
 	return Success(result)
 }

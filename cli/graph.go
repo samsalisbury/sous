@@ -97,6 +97,8 @@ func BuildGraph(c *cmdr.CLI, out, err io.Writer) *SousCLIGraph {
 		newGitSourceContext,
 		newSourceContext,
 		newBuildContext,
+		newBuildConfig,
+		newBuildManager,
 		newDockerClient,
 		newDockerBuilder,
 		newSelector,
@@ -138,7 +140,6 @@ func newLogSet(s *Sous, err ErrWriter) *sous.LogSet { // XXX temporary until we 
 
 	sous.Log.Vomit.Println("Verbose debugging enabled")
 	sous.Log.Debug.Println("Regular debugging enabled")
-	sous.Log.Info.Println("Informational messages enabled")
 	return &sous.Log
 }
 
@@ -181,6 +182,30 @@ func newSourceContext(g GitSourceContext, f *DeployFilterFlags) (*sous.SourceCon
 
 func newBuildContext(wd LocalWorkDirShell, c *sous.SourceContext) *sous.BuildContext {
 	return &sous.BuildContext{Sh: wd.Sh, Source: *c}
+}
+
+func newBuildConfig(f *DeployFilterFlags, p *PolicyFlags, bc *sous.BuildContext) *sous.BuildConfig {
+	cfg := sous.BuildConfig{
+		Repo:       f.Repo,
+		Offset:     f.Offset,
+		Tag:        f.Tag,
+		Revision:   f.Revision,
+		Strict:     p.Strict,
+		ForceClone: p.ForceClone,
+		Context:    bc,
+	}
+
+	return &cfg
+}
+
+func newBuildManager(bc *sous.BuildConfig, sl sous.Selector, lb sous.Labeller, rg sous.Registrar) *sous.BuildManager {
+	mgr := &sous.BuildManager{
+		BuildConfig: bc,
+		Selector:    sl,
+		Labeller:    lb,
+		Registrar:   rg,
+	}
+	return mgr
 }
 
 func newLocalUser() (v LocalUser, err error) {
