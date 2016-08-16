@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"os"
 	"os/exec"
 	"testing"
 
@@ -12,6 +13,10 @@ import (
 func TestWriteState(t *testing.T) {
 
 	s := exampleState()
+
+	if err := os.RemoveAll("testdata/out"); err != nil {
+		t.Fatal(err)
+	}
 
 	dsm, err := NewDiskStateManager("testdata/out")
 	if err != nil {
