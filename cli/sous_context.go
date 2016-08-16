@@ -1,12 +1,15 @@
 package cli
 
 import (
+	"flag"
+
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
 )
 
 // SousContext is the 'sous context' command.
 type SousContext struct {
+	DeployFilterFlags
 	*sous.SourceContext
 }
 
@@ -22,6 +25,21 @@ args:
 
 // Help provides help for sous context.
 func (*SousContext) Help() string { return sousContextHelp }
+
+// RegisterOn adds the DeploymentConfig to the psyringe to configure the
+// labeller and registrar
+func (sc *SousContext) RegisterOn(psy Addable) {
+	psy.Add(&sc.DeployFilterFlags)
+}
+
+func (sc *SousContext) AddFlags(fs *flag.FlagSet) {
+	err := AddFlags(fs, &sc.DeployFilterFlags, sourceFlagsHelp)
+	if err != nil {
+		panic(err)
+	}
+	//fs.BoolVar(&sb.PolicyFlags.ForceClone, "force-clone", false, "force a shallow clone of the codebase before build")
+	// above is commented prior to impl.
+}
 
 // Execute prints the detected sous context.
 func (sv *SousContext) Execute(args []string) cmdr.Result {
