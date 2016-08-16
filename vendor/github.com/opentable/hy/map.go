@@ -13,9 +13,9 @@ type MapNode struct {
 	*DirNodeBase
 	KeyType reflect.Type
 	// MarshalKey gets a string from the key.
-	MarshalKey func(reflect.Value) string
+	MarshalKey func(key Val) string
 	// UnmarshalKey sets a key from a string.
-	UnmarshalKey func(string, reflect.Value) error
+	UnmarshalKey func(key string, val reflect.Value) error
 }
 
 // Detect returns nil if this base is a map.
@@ -41,8 +41,8 @@ func (MapNode) New(base NodeBase, c *Codec) (Node, error) {
 		n.MarshalKey = defaultMarshalKey
 		n.UnmarshalKey = defaultUnmarshalKey
 	case reflect.String:
-		n.MarshalKey = func(key reflect.Value) string {
-			return fmt.Sprint(key)
+		n.MarshalKey = func(key Val) string {
+			return fmt.Sprint(key.Final())
 		}
 		n.UnmarshalKey = func(s string, key reflect.Value) error {
 			key.Set(reflect.ValueOf(s))
@@ -52,20 +52,15 @@ func (MapNode) New(base NodeBase, c *Codec) (Node, error) {
 	return n, errors.Wrap(n.AnalyseElemNode(n, c), "analysing map element node")
 }
 
-func defaultMarshalKey(key reflect.Value) string {
-	i := key.Interface()
-	tm, ok := i.(encoding.TextMarshaler)
+func defaultMarshalKey(key Val) string {
+	i, ok := key.Interface(func(v interface{}) bool {
+		_, ok := v.(encoding.TextMarshaler)
+		return ok
+	})
 	if !ok {
-		if key.Kind() == reflect.Ptr {
-			i = key.Elem().Interface()
-		} else {
-			i = key.Addr().Interface()
-		}
-		tm, ok = i.(encoding.TextMarshaler)
+		panic(errors.Errorf("%s does not implement %s", key.Ptr.Elem().Type(), tmType))
 	}
-	if !ok {
-		panic(errors.Errorf("%s does not implement %s"+key.Type().String(), tmType))
-	}
+	tm := i.(encoding.TextMarshaler)
 	b, err := tm.MarshalText()
 	if err != nil {
 		panic(errors.Errorf("marshal failed: %s", err.Error()))
@@ -95,7 +90,8 @@ var tuType = reflect.TypeOf((*encoding.TextUnmarshaler)(nil)).Elem()
 
 // ChildPathName returns the key as a string.
 func (n *MapNode) ChildPathName(child Node, key, val reflect.Value) string {
-	return n.MarshalKey(key)
+	keyVal := NewFreeValFrom(key)
+	return n.MarshalKey(keyVal)
 }
 
 // ReadTargets reads targets into map entries.

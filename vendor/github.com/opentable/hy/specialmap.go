@@ -10,8 +10,8 @@ import (
 type SpecialMapNode struct {
 	NodeBase
 	Map    *MapNode
-	GetAll func(reflect.Value) (reflect.Value, error)
-	SetAll func(on, to reflect.Value) error
+	GetAll func(Val) (reflect.Value, error)
+	SetAll func(on Val, to reflect.Value) error
 }
 
 // Detect returns nil if base is a struct with appropriate GetAll and SetAll
@@ -20,8 +20,21 @@ func (SpecialMapNode) Detect(base NodeBase) error {
 	if base.Kind != reflect.Struct {
 		return errors.Errorf("got kind %s; want struct", base.Kind)
 	}
-	_, _, err := getMapMethods(base.Type)
+	_, _, err := getAllMapMethods(base.Type)
 	return err
+}
+
+func getAllMapMethods(baseType reflect.Type) (get, set reflect.Type, err error) {
+	get, set, err = getMapMethods(baseType)
+	if err == nil {
+		return
+	}
+	if baseType.Kind() == reflect.Ptr {
+		baseType = baseType.Elem()
+	} else {
+		baseType = reflect.PtrTo(baseType)
+	}
+	return getMapMethods(baseType)
 }
 
 func getMapMethods(baseType reflect.Type) (get, set reflect.Type, err error) {
@@ -57,7 +70,7 @@ func getMapType(get, set reflect.Type) (reflect.Type, error) {
 
 // New returns a new SpecialMapNode.
 func (SpecialMapNode) New(base NodeBase, c *Codec) (Node, error) {
-	get, set, err := getMapMethods(base.Type)
+	get, set, err := getAllMapMethods(base.Type)
 	if err != nil {
 		return nil, err
 	}
@@ -65,12 +78,12 @@ func (SpecialMapNode) New(base NodeBase, c *Codec) (Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	getAllFunc := func(from reflect.Value) (reflect.Value, error) {
-		out := from.MethodByName("GetAll").Call(nil)
+	getAllFunc := func(from Val) (reflect.Value, error) {
+		out := from.Method("GetAll").Call(nil)
 		return out[0], nil
 	}
-	setAllFunc := func(on, to reflect.Value) error {
-		on.MethodByName("SetAll").Call([]reflect.Value{on, to})
+	setAllFunc := func(on Val, to reflect.Value) error {
+		on.Method("SetAll").Call([]reflect.Value{to})
 		return nil
 	}
 	innerID, err := NewNodeID(base.Type, mapType, "")
@@ -100,12 +113,12 @@ func (n *SpecialMapNode) ReadTargets(c ReadContext, val Val) error {
 	if err := n.Map.ReadTargets(c, mapVal); err != nil {
 		return err
 	}
-	return errors.Wrapf(n.SetAll(val.Final(), mapVal.Final()), "setting map")
+	return errors.Wrapf(n.SetAll(val, mapVal.Final()), "setting map")
 }
 
 // WriteTargets delegates to MapNode.
 func (n *SpecialMapNode) WriteTargets(c WriteContext, val Val) error {
-	m, err := n.GetAll(val.Final())
+	m, err := n.GetAll(val)
 	if err != nil {
 		return errors.Wrapf(err, "getting map values")
 	}

@@ -234,6 +234,9 @@ func (m *Deployments) GetAll() map[DeployID](*Deployment) {
 
 // SetAll sets the internal map (it allows hy to unmarshal Deployments).
 func (m *Deployments) SetAll(v map[DeployID](*Deployment)) {
+	if m.mu == nil {
+		m.mu = &sync.RWMutex{}
+	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.m = nil

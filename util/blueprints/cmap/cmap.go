@@ -238,6 +238,9 @@ func (m *CMap) GetAll() map[CMKey]Value {
 
 // SetAll sets the internal map (it allows hy to unmarshal CMap).
 func (m *CMap) SetAll(v map[CMKey]Value) {
+	if m.mu == nil {
+		m.mu = &sync.RWMutex{}
+	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.m = nil

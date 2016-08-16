@@ -1,4 +1,4 @@
-// DO NOT EDIT. Generated with goinline -package=github.com/opentable/sous/util/blueprints/cmap --target-package-name=sous --target-dir=. -w *Manifest->*Manifest SourceLocation->SourceLocation
+// DO NOT EDIT. Generated with goinline -package=github.com/opentable/sous/util/blueprints/cmap --target-package-name=sous --target-dir=. -w SourceLocation->SourceLocation *Manifest->*Manifest
 
 package sous
 
@@ -234,6 +234,9 @@ func (m *Manifests) GetAll() map[SourceLocation](*Manifest) {
 
 // SetAll sets the internal map (it allows hy to unmarshal Manifests).
 func (m *Manifests) SetAll(v map[SourceLocation](*Manifest)) {
+	if m.mu == nil {
+		m.mu = &sync.RWMutex{}
+	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.m = nil

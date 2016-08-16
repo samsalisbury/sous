@@ -9,6 +9,8 @@
 ## TODO
 - Improve memory efficiency (currently loads everything eagerly in-memory, should use readers and (de)coders rather than []byte and marshalers).
 - Add test cases for all failure modes.
+  - Attempt to specify a directory for a struct field.
+  - SpecialMap has wrong method signatures.
 - Make analysis concurrent.
 - Make writing concurrent.
 - Make reading concurrent.
