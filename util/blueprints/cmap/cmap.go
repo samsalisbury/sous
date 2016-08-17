@@ -34,8 +34,8 @@ type CMKey string
 type Value string
 
 // MakeCMap creates a new CMap with capacity set.
-func MakeCMap(capacity int) CMap {
-	return CMap{
+func MakeCMap(capacity int) *CMap {
+	return &CMap{
 		mu: &sync.RWMutex{},
 		m:  make(map[CMKey]Value, capacity),
 	}
@@ -46,8 +46,8 @@ func MakeCMap(capacity int) CMap {
 // map[CMKey]Values,
 // which will be merged key-wise into the new CMap,
 // with keys from the right-most map taking precedence.
-func NewCMapFromMap(from ...map[CMKey]Value) CMap {
-	cm := CMap{
+func NewCMapFromMap(from ...map[CMKey]Value) *CMap {
+	cm := &CMap{
 		mu: &sync.RWMutex{},
 		m:  map[CMKey]Value{},
 	}
@@ -62,8 +62,8 @@ func NewCMapFromMap(from ...map[CMKey]Value) CMap {
 // NewCMap creates a new CMap.
 // You may optionally pass any number of Values,
 // which will be added to this map.
-func NewCMap(from ...Value) CMap {
-	m := CMap{
+func NewCMap(from ...Value) *CMap {
+	m := &CMap{
 		mu: &sync.RWMutex{},
 		m:  map[CMKey]Value{},
 	}
@@ -96,7 +96,7 @@ func (m *CMap) Set(key CMKey, value Value) {
 // Filter returns a new CMap containing only the entries
 // where the predicate returns true for the given value.
 // A nil predicate is equivalent to calling Clone.
-func (m *CMap) Filter(predicate func(Value) bool) CMap {
+func (m *CMap) Filter(predicate func(Value) bool) *CMap {
 	if predicate == nil {
 		return m.Clone()
 	}
@@ -141,7 +141,7 @@ func (m *CMap) Any(predicate func(Value) bool) (Value, bool) {
 }
 
 // Clone returns a pairwise copy of CMap.
-func (m *CMap) Clone() CMap {
+func (m *CMap) Clone() *CMap {
 	return NewCMapFromMap(m.Snapshot())
 }
 
@@ -150,7 +150,7 @@ func (m *CMap) Clone() CMap {
 // If any keys in other match keys in this *CMap,
 // keys from other will appear in the returned
 // *CMap.
-func (m *CMap) Merge(other CMap) CMap {
+func (m *CMap) Merge(other *CMap) *CMap {
 	return NewCMapFromMap(m.Snapshot(), other.Snapshot())
 }
 
@@ -179,7 +179,7 @@ func (m *CMap) MustAdd(v Value) {
 // CMap have different keys and all are added to this CMap.
 // If any of the keys conflict, nothing will be added to this
 // CMap and AddAll will return the conflicting CMKey and false.
-func (m *CMap) AddAll(from CMap) (conflicting CMKey, success bool) {
+func (m *CMap) AddAll(from *CMap) (conflicting CMKey, success bool) {
 	ss := from.Snapshot()
 	initCMap(m)
 	m.mu.Lock()
