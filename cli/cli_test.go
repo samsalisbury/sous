@@ -213,6 +213,20 @@ options:
   -repo string
     	source code repository location
 
+func TestInvokeQueryArtifacts(t *testing.T) {
+	assert := assert.New(t)
+
+	stdout := &bytes.Buffer{}
+	stderr := &bytes.Buffer{}
+
+	c, err := NewSousCLI(semv.MustParse(`1.2.3`), stdout, stderr)
+	assert.NoError(err)
+
+	exe, err := c.Prepare([]string{`sous`, `query`, `artifacts`})
+	assert.NoError(err)
+	assert.NotNil(exe)
+}
+
 */
 func TestInvokeRectifyWithDebugFlags(t *testing.T) {
 	assert := assert.New(t)

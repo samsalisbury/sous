@@ -106,6 +106,7 @@ func BuildGraph(c *cmdr.CLI, out, err io.Writer) *SousCLIGraph {
 		newRegistrar,
 		newDeployer,
 		newRegistry,
+		newRegistryDumper,
 		newLocalDiskStateManager,
 		newLocalStateReader,
 		newLocalStateWriter,
@@ -120,6 +121,10 @@ func newOut(c *cmdr.CLI) Out {
 
 func newErrOut(c *cmdr.CLI) ErrOut {
 	return ErrOut{c.Err}
+}
+
+func newRegistryDumper(r sous.Registry) *sous.RegistryDumper {
+	return sous.NewRegistryDumper(r)
 }
 
 func newLogSet(s *Sous, err ErrWriter) *sous.LogSet { // XXX temporary until we settle on logging

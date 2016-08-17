@@ -23,6 +23,15 @@ var (
 	EnsureErrorResult = cmdr.EnsureErrorResult
 )
 
+// ProduceResult converts errors into Results
+func ProduceResult(err error) cmdr.Result {
+	if err != nil {
+		return EnsureErrorResult(err)
+	}
+
+	return Success()
+}
+
 // Addable objects are able to receive lists of interface{}, presumably to add
 // them to a DI registry. Abstracts Psyringe's Add()
 type Addable interface {
