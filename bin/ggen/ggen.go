@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"strings"
 )
 
@@ -56,6 +57,9 @@ func main() {
 		do("rm", out.File+".bak")
 	}
 	do("goimports", "-w", out.File)
+	ext := filepath.Ext(out.File)
+	finalFileName := strings.TrimSuffix(out.File, ext) + "_generated" + ext
+	os.Rename(out.File, finalFileName)
 }
 
 func do(name string, args ...string) {
