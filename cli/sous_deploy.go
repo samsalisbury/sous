@@ -81,12 +81,6 @@ func (su *SousDeploy) Execute(args []string) cmdr.Result {
 		DockerClient: su.DockerClient,
 		Deployer:     su.Deployer,
 		Registry:     su.Registry,
-		//GDM:          su.GDM,
-		//flags: rectifyFlags{
-		//	repo:    string(sl.RepoURL),
-		//	offset:  string(sl.RepoOffset),
-		//	cluster: clusterName,
-		//},
 	}
 	return rectify.Execute(nil)
 }

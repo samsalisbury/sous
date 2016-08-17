@@ -106,14 +106,14 @@ func sourceIDFromChunks(source string, chunks []string) (SourceID, error) {
 	if len(chunks[0]) == 0 {
 		return SourceID{}, &MissingRepo{source}
 	}
-	repoURL := (chunks[0])
+	repoURL := chunks[0]
 	version, err := semv.Parse(string(chunks[1]))
 	if err != nil {
 		return SourceID{}, err
 	}
-	repoOffset := ("")
+	repoOffset := ""
 	if len(chunks) > 2 {
-		repoOffset = (chunks[2])
+		repoOffset = chunks[2]
 	}
 	return SourceID{
 		Version:    version,
@@ -129,10 +129,10 @@ func sourceLocationFromChunks(source string, chunks []string) (SourceLocation, e
 	if len(chunks[0]) == 0 {
 		return SourceLocation{}, &MissingRepo{source}
 	}
-	repoURL := (chunks[0])
-	repoOffset := ("")
+	repoURL := chunks[0]
+	repoOffset := ""
 	if len(chunks) > 1 {
-		repoOffset = (chunks[1])
+		repoOffset = chunks[1]
 	}
 	return SourceLocation{RepoURL: repoURL, RepoOffset: repoOffset}, nil
 }
