@@ -18,3 +18,7 @@ func (dc *DummyRegistry) GetArtifact(sid SourceID) (*BuildArtifact, error) {
 func (dc *DummyRegistry) GetSourceID(*BuildArtifact) (SourceID, error) {
 	return SourceID{}, nil
 }
+
+func (dc *DummyRegistry) ListSourceIDs() ([]SourceID, error) {
+	return []SourceID{}, nil
+}
