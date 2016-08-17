@@ -45,7 +45,7 @@ func (rd *RegistryDumper) AsTable(to io.Writer) error {
 
 // TabbedHeaders outputs the headers for the dump
 func (rd *RegistryDumper) TabbedHeaders() string {
-	return `Repo\tOffset\tVersion\tName\tType`
+	return "Repo\tOffset\tVersion\tName\tType"
 }
 
 // Entries emits the list of entries for the Resgistry
