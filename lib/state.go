@@ -70,6 +70,13 @@ type (
 	VarType string
 )
 
+// NewState returns a valid empty state.
+func NewState() *State {
+	return &State{
+		Manifests: NewManifests(),
+	}
+}
+
 // OnlyCluster sets a contraint on the State such that it will only consider a particular cluster
 func (s *State) OnlyCluster(nick string) {
 	s.singleCluster = nick

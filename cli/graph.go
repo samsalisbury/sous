@@ -314,7 +314,7 @@ func newCurrentState(sr LocalStateReader) (*sous.State, error) {
 	}
 	log.Println("error reading state: %s", err)
 	log.Println("defaulting to empty state")
-	return &sous.State{}, nil
+	return sous.NewState(), nil
 }
 
 func newCurrentGDM(state *sous.State) (CurrentGDM, error) {

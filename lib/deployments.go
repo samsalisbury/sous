@@ -7,6 +7,21 @@ import (
 	"sync"
 )
 
+// masterDeploymentsInitMutex is global state allows us to use &Deployments{} rather than
+// having to call a constructor.
+var masterDeploymentsInitMutex = &sync.Mutex{}
+
+func initDeployments(m *Deployments) {
+	masterDeploymentsInitMutex.Lock()
+	defer masterDeploymentsInitMutex.Unlock()
+	if m.m == nil {
+		m.m = map[DeployID](*Deployment){}
+	}
+	if m.mu == nil {
+		m.mu = &sync.RWMutex{}
+	}
+}
+
 // Deployments is a wrapper around map[DeployID]*Deployment
 // which is safe for concurrent read and write.
 type Deployments struct {
@@ -59,6 +74,7 @@ func NewDeployments(from ...(*Deployment)) Deployments {
 // Get returns (value, true) if k is in the map, or (zero value, false)
 // otherwise.
 func (m *Deployments) Get(key DeployID) (*Deployment, bool) {
+	initDeployments(m)
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	v, ok := m.m[key]
@@ -67,6 +83,7 @@ func (m *Deployments) Get(key DeployID) (*Deployment, bool) {
 
 // Set sets the value of index k to v.
 func (m *Deployments) Set(key DeployID, value *Deployment) {
+	initDeployments(m)
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.m[key] = value
@@ -80,6 +97,7 @@ func (m *Deployments) Filter(predicate func(*Deployment) bool) Deployments {
 		return m.Clone()
 	}
 	out := map[DeployID](*Deployment){}
+	initDeployments(m)
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	for k, v := range m.m {
@@ -135,6 +153,7 @@ func (m *Deployments) Merge(other Deployments) Deployments {
 // Add adds a (k, v) pair into a map if it is not already there. Returns true if
 // the value was added, false if not.
 func (m *Deployments) Add(v *Deployment) bool {
+	initDeployments(m)
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	k := v.ID()
@@ -158,6 +177,7 @@ func (m *Deployments) MustAdd(v *Deployment) {
 // Deployments and AddAll will return the conflicting DeployID and false.
 func (m *Deployments) AddAll(from Deployments) (conflicting DeployID, success bool) {
 	ss := from.Snapshot()
+	initDeployments(m)
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	for k := range ss {
@@ -174,6 +194,7 @@ func (m *Deployments) AddAll(from Deployments) (conflicting DeployID, success bo
 
 // Remove value for a key k if present, a no-op otherwise.
 func (m *Deployments) Remove(key DeployID) {
+	initDeployments(m)
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	delete(m.m, key)
@@ -181,6 +202,7 @@ func (m *Deployments) Remove(key DeployID) {
 
 // Len returns number of elements in a map.
 func (m *Deployments) Len() int {
+	initDeployments(m)
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	return len(m.m)
@@ -188,6 +210,7 @@ func (m *Deployments) Len() int {
 
 // Keys returns a slice containing all the keys in the map.
 func (m *Deployments) Keys() []DeployID {
+	initDeployments(m)
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	keys := make([]DeployID, len(m.m))
@@ -202,9 +225,7 @@ func (m *Deployments) Keys() []DeployID {
 // Snapshot returns a moment-in-time copy of the current underlying
 // map[DeployID]*Deployment.
 func (m *Deployments) Snapshot() map[DeployID](*Deployment) {
-	if m.mu == nil {
-		m.mu = &sync.RWMutex{}
-	}
+	initDeployments(m)
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	clone := make(map[DeployID](*Deployment), len(m.m))
@@ -219,6 +240,7 @@ func (m *Deployments) Snapshot() map[DeployID](*Deployment) {
 // (DeployID, *Deployment) pairs are included
 // if they satisfy predicate.
 func (m *Deployments) FilteredSnapshot(predicate func(*Deployment) bool) map[DeployID](*Deployment) {
+	initDeployments(m)
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	clone := map[DeployID](*Deployment){}
@@ -237,9 +259,7 @@ func (m *Deployments) GetAll() map[DeployID](*Deployment) {
 
 // SetAll sets the internal map (it allows hy to unmarshal Deployments).
 func (m *Deployments) SetAll(v map[DeployID](*Deployment)) {
-	if m.mu == nil {
-		m.mu = &sync.RWMutex{}
-	}
+	initDeployments(m)
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.m = nil
