@@ -5,5 +5,5 @@ coverage:
       default:
         threshold: 5
 ignore:
-  - bin/.*
-  - .*\._generated.go
+- bin/.*
+- *._generated.go
