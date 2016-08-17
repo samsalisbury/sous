@@ -106,6 +106,7 @@ func BuildGraph(c *cmdr.CLI, out, err io.Writer) *SousCLIGraph {
 		newRegistrar,
 		newDeployer,
 		newRegistry,
+		NewRegistryDumper,
 		newLocalDiskStateManager,
 		newLocalStateReader,
 		newLocalStateWriter,

@@ -73,6 +73,11 @@ func NewNameCache(cl docker_registry.Client, db *sql.DB) *NameCache {
 	return &NameCache{cl, db}
 }
 
+// ListSourceIDs implements Registry
+func (nc *NameCache) ListSourceIDs() ([]sous.SourceID, error) {
+	return nc.dbQueryAllSourceIds()
+}
+
 // GetArtifact implements sous.Registry.GetArtifact
 func (nc *NameCache) GetArtifact(sid sous.SourceID) (*sous.BuildArtifact, error) {
 	name, err := nc.getImageName(sid)
@@ -430,6 +435,24 @@ func (nc *NameCache) dbQueryOnSL(sl sous.SourceLocation) (rs []string, err error
 	if len(rs) == 0 {
 		err = fmt.Errorf("no repos found for %+v", sl)
 	}
+	return
+}
+
+func (nc *NameCache) dbQueryAllSourceIds() (ids []sous.SourceID, err error) {
+	rows, err := nc.DB.Query("select docker_search_location.repo, " +
+		"docker_search_location.offset, " +
+		"docker_search_metadata.version " +
+		"from " +
+		"docker_search_location natural join docker_search_metadata")
+	if err != nil {
+		return
+	}
+	for rows.Next() {
+		var r, o, v string
+		rows.Scan(&r, &o, &v)
+		ids = append(ids, sous.SourceID{RepoURL: sous.RepoURL(r), RepoOffset: sous.RepoOffset(o), Version: semv.MustParse(v)})
+	}
+	err = rows.Err()
 	return
 }
 

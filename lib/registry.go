@@ -1,6 +1,7 @@
 package sous
 
 type (
+	// Registry describes a system for mapping SourceIDs to BuildArtifacts and vice versa
 	Registry interface {
 		// GetArtifact gets the build artifact address for a source ID.
 		// It does not guarantee that that artifact exists.
@@ -10,5 +11,8 @@ type (
 		GetSourceID(*BuildArtifact) (SourceID, error)
 		// GetMetadata returns metadata for a source ID.
 		//GetMetadata(SourceID) (map[string]string, error)
+
+		// ListSourceIDs returns a list of known SourceIDs
+		ListSourceIDs() ([]SourceID, error)
 	}
 )
