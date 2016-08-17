@@ -22,8 +22,8 @@ sudo mv docker-compose /usr/local/bin
 
 
 echo Installing local tools
-go get github.com/samsalisbury/engulf github.com/nyarly/legendary
-(cd integtation/test-registry && docker-compose pull)
+go get github.com/nyarly/engulf github.com/nyarly/legendary
+(cd integration/test-registry && docker-compose pull)
 
 echo Results:
 cat /etc/hosts
