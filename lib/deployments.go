@@ -202,6 +202,9 @@ func (m *Deployments) Keys() []DeployID {
 // Snapshot returns a moment-in-time copy of the current underlying
 // map[DeployID]*Deployment.
 func (m *Deployments) Snapshot() map[DeployID](*Deployment) {
+	if m.mu == nil {
+		m.mu = &sync.RWMutex{}
+	}
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	clone := make(map[DeployID](*Deployment), len(m.m))

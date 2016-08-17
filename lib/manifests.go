@@ -202,6 +202,9 @@ func (m *Manifests) Keys() []SourceLocation {
 // Snapshot returns a moment-in-time copy of the current underlying
 // map[SourceLocation]*Manifest.
 func (m *Manifests) Snapshot() map[SourceLocation](*Manifest) {
+	if m.mu == nil {
+		m.mu = &sync.RWMutex{}
+	}
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	clone := make(map[SourceLocation](*Manifest), len(m.m))

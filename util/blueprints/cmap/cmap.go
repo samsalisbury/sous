@@ -206,6 +206,9 @@ func (m *CMap) Keys() []CMKey {
 // Snapshot returns a moment-in-time copy of the current underlying
 // map[CMKey]Value.
 func (m *CMap) Snapshot() map[CMKey]Value {
+	if m.mu == nil {
+		m.mu = &sync.RWMutex{}
+	}
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	clone := make(map[CMKey]Value, len(m.m))
