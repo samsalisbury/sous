@@ -1,6 +1,9 @@
 package firsterr
 
-import "testing"
+import (
+	"sync/atomic"
+	"testing"
+)
 
 type Error string
 
@@ -131,8 +134,8 @@ func TestParallel_Set_Err(t *testing.T) {
 	}
 
 	// Check functions are actually run...
-	callCount := 0
-	spy := func(*error) { callCount++ }
+	callCount := int64(0)
+	spy := func(*error) { atomic.AddInt64(&callCount, 1) }
 	p.Set(spy, spy, spy, spy, spy)
 	if callCount != 5 {
 		t.Fatalf("spy called %d times; want 5", callCount)
