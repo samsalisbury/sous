@@ -9,9 +9,10 @@ before_install:
 install:
 - echo "Default install step disabled by .travis.yml"
 script:
-- "./bin/cover"
-- "./bin/test-until-success 3"
 - "./bin/check-gofmt"
+- "go test -short ./..."
+- "./bin/test-until-success 3"
+- "./bin/cover"
 - '[ $TRAVIS_SECURE_ENV_VARS == false ] || ./bin/publish "$TRAVIS_TAG"'
 after_success:
 - bin/codecov -f /tmp/sous-cover/count_merged.txt
