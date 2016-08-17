@@ -22,7 +22,7 @@ sudo mv docker-compose /usr/local/bin
 
 
 echo Installing local tools
-go get github.com/nyarly/engulf github.com/nyarly/legendary
+go get github.com/samsalisbury/engulf github.com/nyarly/legendary
 (cd integtation/test-registry && docker-compose pull)
 
 echo Results:
