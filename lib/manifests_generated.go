@@ -7,21 +7,6 @@ import (
 	"sync"
 )
 
-// masterManifestsInitMutex is global state allows us to use &Manifests{} rather than
-// having to call a constructor.
-var masterManifestsInitMutex = &sync.Mutex{}
-
-func initManifests(m *Manifests) {
-	masterManifestsInitMutex.Lock()
-	defer masterManifestsInitMutex.Unlock()
-	if m.m == nil {
-		m.m = map[SourceLocation](*Manifest){}
-	}
-	if m.mu == nil {
-		m.mu = &sync.RWMutex{}
-	}
-}
-
 // Manifests is a wrapper around map[SourceLocation]*Manifest
 // which is safe for concurrent read and write.
 type Manifests struct {
@@ -35,6 +20,24 @@ func MakeManifests(capacity int) Manifests {
 		mu: &sync.RWMutex{},
 		m:  make(map[SourceLocation](*Manifest), capacity),
 	}
+}
+
+func (m Manifests) write(f func()) {
+	if m.m == nil || m.mu == nil {
+		panic("uninitialised Manifests (you should use NewManifests)")
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	f()
+}
+
+func (m Manifests) read(f func()) {
+	if m.m == nil || m.mu == nil {
+		panic("uninitialised Manifests (you should use NewManifests)")
+	}
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	f()
 }
 
 // NewManifestsFromMap creates a new Manifests.
@@ -73,38 +76,35 @@ func NewManifests(from ...(*Manifest)) Manifests {
 
 // Get returns (value, true) if k is in the map, or (zero value, false)
 // otherwise.
-func (m *Manifests) Get(key SourceLocation) (*Manifest, bool) {
-	initManifests(m)
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-	v, ok := m.m[key]
-	return v, ok
+func (m Manifests) Get(key SourceLocation) (v *Manifest, ok bool) {
+	m.read(func() {
+		v, ok = m.m[key]
+	})
+	return
 }
 
 // Set sets the value of index k to v.
-func (m *Manifests) Set(key SourceLocation, value *Manifest) {
-	initManifests(m)
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.m[key] = value
+func (m Manifests) Set(key SourceLocation, value *Manifest) {
+	m.write(func() {
+		m.m[key] = value
+	})
 }
 
 // Filter returns a new Manifests containing only the entries
 // where the predicate returns true for the given value.
 // A nil predicate is equivalent to calling Clone.
-func (m *Manifests) Filter(predicate func(*Manifest) bool) Manifests {
+func (m Manifests) Filter(predicate func(*Manifest) bool) Manifests {
 	if predicate == nil {
 		return m.Clone()
 	}
 	out := map[SourceLocation](*Manifest){}
-	initManifests(m)
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-	for k, v := range m.m {
-		if predicate(v) {
-			out[k] = v
+	m.read(func() {
+		for k, v := range m.m {
+			if predicate(v) {
+				out[k] = v
+			}
 		}
-	}
+	})
 	return NewManifestsFromMap(out)
 }
 
@@ -112,7 +112,7 @@ func (m *Manifests) Filter(predicate func(*Manifest) bool) Manifests {
 // (the single *Manifest satisfying predicate, true),
 // if there is exactly one *Manifest satisfying predicate in
 // Manifests. Otherwise, returns (zero *Manifest, false).
-func (m *Manifests) Single(predicate func(*Manifest) bool) (*Manifest, bool) {
+func (m Manifests) Single(predicate func(*Manifest) bool) (*Manifest, bool) {
 	f := m.FilteredSnapshot(predicate)
 	if len(f) == 1 {
 		for _, v := range f {
@@ -127,7 +127,7 @@ func (m *Manifests) Single(predicate func(*Manifest) bool) (*Manifest, bool) {
 // (a single *Manifest matching predicate, true),
 // if there are any *Manifests matching predicate in
 // Manifests. Otherwise returns (zero *Manifest, false).
-func (m *Manifests) Any(predicate func(*Manifest) bool) (*Manifest, bool) {
+func (m Manifests) Any(predicate func(*Manifest) bool) (*Manifest, bool) {
 	f := m.Filter(predicate)
 	for _, v := range f.Snapshot() {
 		return v, true
@@ -137,7 +137,7 @@ func (m *Manifests) Any(predicate func(*Manifest) bool) (*Manifest, bool) {
 }
 
 // Clone returns a pairwise copy of Manifests.
-func (m *Manifests) Clone() Manifests {
+func (m Manifests) Clone() Manifests {
 	return NewManifestsFromMap(m.Snapshot())
 }
 
@@ -146,26 +146,26 @@ func (m *Manifests) Clone() Manifests {
 // If any keys in other match keys in this *Manifests,
 // keys from other will appear in the returned
 // *Manifests.
-func (m *Manifests) Merge(other Manifests) Manifests {
+func (m Manifests) Merge(other Manifests) Manifests {
 	return NewManifestsFromMap(m.Snapshot(), other.Snapshot())
 }
 
 // Add adds a (k, v) pair into a map if it is not already there. Returns true if
 // the value was added, false if not.
-func (m *Manifests) Add(v *Manifest) bool {
-	initManifests(m)
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	k := v.ID()
-	if _, exists := m.m[k]; exists {
-		return false
-	}
-	m.m[k] = v
-	return true
+func (m Manifests) Add(v *Manifest) (ok bool) {
+	m.write(func() {
+		k := v.ID()
+		if _, exists := m.m[k]; exists {
+			return
+		}
+		m.m[k] = v
+		ok = true
+	})
+	return
 }
 
 // MustAdd is a wrapper around Add which panics whenever Add returns false.
-func (m *Manifests) MustAdd(v *Manifest) {
+func (m Manifests) MustAdd(v *Manifest) {
 	if !m.Add(v) {
 		panic(fmt.Sprintf("item with ID %v already in the graph", v.ID()))
 	}
@@ -175,93 +175,92 @@ func (m *Manifests) MustAdd(v *Manifest) {
 // Manifests have different keys and all are added to this Manifests.
 // If any of the keys conflict, nothing will be added to this
 // Manifests and AddAll will return the conflicting SourceLocation and false.
-func (m *Manifests) AddAll(from Manifests) (conflicting SourceLocation, success bool) {
+func (m Manifests) AddAll(from Manifests) (conflicting SourceLocation, success bool) {
 	ss := from.Snapshot()
-	initManifests(m)
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	for k := range ss {
-		if _, exists := m.m[k]; exists {
-			m.mu.RUnlock()
-			return k, false
+	var exists bool
+	m.write(func() {
+		for k := range ss {
+			if _, exists = m.m[k]; exists {
+				conflicting = k
+				return
+			}
 		}
-	}
-	for k, v := range ss {
-		m.m[k] = v
-	}
-	return conflicting, true
+		for k, v := range ss {
+			m.m[k] = v
+		}
+	})
+	return conflicting, !exists
 }
 
 // Remove value for a key k if present, a no-op otherwise.
-func (m *Manifests) Remove(key SourceLocation) {
-	initManifests(m)
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	delete(m.m, key)
+func (m Manifests) Remove(key SourceLocation) {
+	m.write(func() {
+		delete(m.m, key)
+	})
 }
 
 // Len returns number of elements in a map.
-func (m *Manifests) Len() int {
-	initManifests(m)
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-	return len(m.m)
+func (m Manifests) Len() int {
+	var l int
+	m.read(func() {
+		l = len(m.m)
+	})
+	return l
 }
 
 // Keys returns a slice containing all the keys in the map.
-func (m *Manifests) Keys() []SourceLocation {
-	initManifests(m)
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-	keys := make([]SourceLocation, len(m.m))
-	i := 0
-	for k := range m.m {
-		keys[i] = k
-		i++
-	}
+func (m Manifests) Keys() []SourceLocation {
+	var keys []SourceLocation
+	m.read(func() {
+		keys = make([]SourceLocation, len(m.m))
+		i := 0
+		for k := range m.m {
+			keys[i] = k
+			i++
+		}
+	})
 	return keys
 }
 
 // Snapshot returns a moment-in-time copy of the current underlying
 // map[SourceLocation]*Manifest.
-func (m *Manifests) Snapshot() map[SourceLocation](*Manifest) {
-	initManifests(m)
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-	clone := make(map[SourceLocation](*Manifest), len(m.m))
-	for k, v := range m.m {
-		clone[k] = v
-	}
-	return clone
+func (m Manifests) Snapshot() map[SourceLocation](*Manifest) {
+	var ss map[SourceLocation](*Manifest)
+	m.read(func() {
+		ss = make(map[SourceLocation](*Manifest), len(m.m))
+		for k, v := range m.m {
+			ss[k] = v
+		}
+	})
+	return ss
 }
 
 // FilteredSnapshot returns a moment-in-time filtered copy of the current
 // underlying map[SourceLocation]*Manifest.
 // (SourceLocation, *Manifest) pairs are included
 // if they satisfy predicate.
-func (m *Manifests) FilteredSnapshot(predicate func(*Manifest) bool) map[SourceLocation](*Manifest) {
-	initManifests(m)
-	m.mu.RLock()
-	defer m.mu.RUnlock()
+func (m Manifests) FilteredSnapshot(predicate func(*Manifest) bool) map[SourceLocation](*Manifest) {
 	clone := map[SourceLocation](*Manifest){}
-	for k, v := range m.m {
-		if predicate(v) {
-			clone[k] = v
+	m.read(func() {
+		for k, v := range m.m {
+			if predicate(v) {
+				clone[k] = v
+			}
 		}
-	}
+	})
 	return clone
 }
 
 // GetAll returns SnapShot (it allows hy to marshal Manifests).
-func (m *Manifests) GetAll() map[SourceLocation](*Manifest) {
+func (m Manifests) GetAll() map[SourceLocation](*Manifest) {
 	return m.Snapshot()
 }
 
 // SetAll sets the internal map (it allows hy to unmarshal Manifests).
+// Note: SetAll is the only method that is not safe for concurrent access.
 func (m *Manifests) SetAll(v map[SourceLocation](*Manifest)) {
-	initManifests(m)
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.m = nil
+	if m.mu == nil {
+		m.mu = &sync.RWMutex{}
+	}
 	m.m = v
 }

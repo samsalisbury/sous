@@ -3,23 +3,23 @@ package cmap
 import "testing"
 
 type CMapTest struct {
-	CMap     *CMap
+	CMap     CMap
 	Do       func(c *CMap)
 	Expected map[CMKey]Value
 }
 
 var cmapTests = []CMapTest{
 	{
-		CMap:     &CMap{},
+		CMap:     NewCMap(),
 		Expected: map[CMKey]Value{},
 	},
 	{
 		CMap:     MakeCMap(999),
-		Expected: (&CMap{}).Snapshot(),
+		Expected: NewCMap().Snapshot(),
 	},
 	{
 		CMap:     NewCMap(),
-		Expected: (&CMap{}).Snapshot(),
+		Expected: NewCMap().Snapshot(),
 	},
 	{
 		CMap:     NewCMap("one"),
@@ -36,21 +36,21 @@ var cmapTests = []CMapTest{
 	{
 		CMap: NewCMapFromMap(map[CMKey]Value{"one": "one"}),
 		Do: func(c *CMap) {
-			*c = *c.Filter(func(v Value) bool { return v.ID() == "one" })
+			*c = c.Filter(func(v Value) bool { return v.ID() == "one" })
 		},
 		Expected: map[CMKey]Value{"one": "one"},
 	},
 	{
 		CMap: NewCMapFromMap(map[CMKey]Value{"one": "one"}),
 		Do: func(c *CMap) {
-			*c = *c.Filter(nil)
+			*c = c.Filter(nil)
 		},
 		Expected: map[CMKey]Value{"one": "one"},
 	},
 	{
 		CMap: NewCMapFromMap(map[CMKey]Value{"one": "one"}),
 		Do: func(c *CMap) {
-			*c = *c.Filter(func(v Value) bool { return v.ID() == "two" })
+			*c = c.Filter(func(v Value) bool { return v.ID() == "two" })
 		},
 		Expected: map[CMKey]Value{},
 	},
@@ -99,14 +99,14 @@ var cmapTests = []CMapTest{
 	{
 		CMap: NewCMapFromMap(map[CMKey]Value{"one": "one"}),
 		Do: func(c *CMap) {
-			*c = *NewCMapFromMap(c.FilteredSnapshot(func(v Value) bool {
+			*c = NewCMapFromMap(c.FilteredSnapshot(func(v Value) bool {
 				return v == "two"
 			}))
 		},
 		Expected: map[CMKey]Value{},
 	},
 	{
-		CMap: &CMap{},
+		CMap: NewCMap(),
 		Do: func(c *CMap) {
 			c.SetAll(map[CMKey]Value{"set": "set", "all": "all"})
 		},
@@ -115,14 +115,14 @@ var cmapTests = []CMapTest{
 	{
 		CMap: NewCMapFromMap(map[CMKey]Value{"set": "set", "all": "all"}),
 		Do: func(c *CMap) {
-			*c = *NewCMapFromMap(c.GetAll())
+			*c = NewCMapFromMap(c.GetAll())
 		},
 		Expected: map[CMKey]Value{"set": "set", "all": "all"},
 	},
 	{
 		CMap: NewCMapFromMap(map[CMKey]Value{"set": "set", "all": "all"}),
 		Do: func(c *CMap) {
-			*c = *c.Clone()
+			*c = c.Clone()
 		},
 		Expected: map[CMKey]Value{"set": "set", "all": "all"},
 	},
@@ -133,7 +133,7 @@ var cmapTests = []CMapTest{
 			if !ok {
 				panic("missing key two")
 			}
-			*c = *NewCMap(v)
+			*c = NewCMap(v)
 		},
 		Expected: map[CMKey]Value{"two": "two"},
 	},
@@ -153,7 +153,7 @@ var cmapTests = []CMapTest{
 			if !ok {
 				panic("no single value two")
 			}
-			*c = *NewCMap(v)
+			*c = NewCMap(v)
 		},
 		Expected: map[CMKey]Value{"two": "two"},
 	},
@@ -166,7 +166,7 @@ var cmapTests = []CMapTest{
 			if ok {
 				panic("found nonexistent value")
 			}
-			*c = *NewCMap(v)
+			*c = NewCMap(v)
 		},
 		Expected: map[CMKey]Value{"": ""},
 	},
@@ -179,7 +179,7 @@ var cmapTests = []CMapTest{
 			if !ok {
 				panic("no value two")
 			}
-			*c = *NewCMap(v)
+			*c = NewCMap(v)
 		},
 		Expected: map[CMKey]Value{"two": "two"},
 	},
@@ -192,7 +192,7 @@ var cmapTests = []CMapTest{
 			if ok {
 				panic("found value; should not have")
 			}
-			*c = *NewCMap(v)
+			*c = NewCMap(v)
 		},
 		Expected: map[CMKey]Value{"": ""},
 	},
@@ -200,7 +200,7 @@ var cmapTests = []CMapTest{
 		CMap: NewCMapFromMap(map[CMKey]Value{"one": "one"}),
 		Do: func(c *CMap) {
 			other := NewCMapFromMap(map[CMKey]Value{"two": "two"})
-			*c = *c.Merge(other)
+			*c = c.Merge(other)
 		},
 		Expected: map[CMKey]Value{"one": "one", "two": "two"},
 	},
@@ -212,7 +212,7 @@ var cmapTests = []CMapTest{
 				vals = append(vals, Value(string(k)))
 			}
 			other := NewCMap(vals...)
-			*c = *c.Merge(other)
+			*c = c.Merge(other)
 		},
 		Expected: map[CMKey]Value{"one": "one"},
 	},
@@ -222,7 +222,7 @@ func TestCMap(t *testing.T) {
 
 	for _, test := range cmapTests {
 		if test.Do != nil {
-			test.Do(test.CMap)
+			test.Do(&test.CMap)
 		}
 		actual := test.CMap.Snapshot()
 		expected := test.Expected
