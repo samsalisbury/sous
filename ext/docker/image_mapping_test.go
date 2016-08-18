@@ -1,7 +1,9 @@
 package docker
 
 import (
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"testing"
 
 	"github.com/opentable/sous/lib"
@@ -78,6 +80,57 @@ func TestRoundTrip(t *testing.T) {
 	if assert.Nil(err) {
 		assert.Equal(host+"/"+cn, ncn)
 	}
+}
+
+// I'm still exploring what the problem is here...
+func TestHavestAlso(t *testing.T) {
+	assert := assert.New(t)
+
+	dc := docker_registry.NewDummyClient()
+	nc := NewNameCache(dc, inMemoryRoundtripDB())
+
+	host := "docker.repo.io"
+	base := "ot/wackadoo"
+	repo := "github.com/opentable/test-app"
+
+	stuffBA := func(n, v string) sous.SourceID {
+		vs := semv.MustParse(v)
+		ba := &sous.BuildArtifact{
+			Name: n,
+			Type: "docker",
+		}
+		sv := sous.SourceID{
+			Repo:    repo,
+			Dir:     "",
+			Version: vs,
+		}
+		in := base + ":version-" + v
+		digBs := sha256.Sum256([]byte(in))
+		digest := hex.EncodeToString(digBs[:])
+		cn := "sha256:" + digest
+
+		dc.FeedMetadata(docker_registry.Metadata{
+			Registry:      host,
+			Labels:        Labels(sv),
+			Etag:          digest,
+			CanonicalName: cn,
+			AllNames:      []string{cn, in},
+		})
+		sid, err := nc.GetSourceID(ba) //several times
+		assert.NoError(err)
+		assert.NotNil(sid)
+		return sid
+	}
+	sid1 := stuffBA("tom", "0.2.1")
+	sid2 := stuffBA("dick", "0.2.2")
+	sid3 := stuffBA("harry", "0.2.3")
+
+	_, err := nc.GetArtifact(sid1) //which should not miss
+	assert.NoError(err)
+	_, err = nc.GetArtifact(sid2) //which should not miss
+	assert.NoError(err)
+	_, err = nc.GetArtifact(sid3) //which should not miss
+	assert.NoError(err)
 }
 
 func TestHarvesting(t *testing.T) {
