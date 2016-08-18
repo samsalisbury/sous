@@ -4,27 +4,52 @@ import (
 	"testing"
 
 	"github.com/samsalisbury/semv"
-	"github.com/stretchr/testify/assert"
 )
 
+var parseSourceIDTests = map[string]SourceID{
+	"github.com/opentable/sous,1,": {
+		RepoURL: "github.com/opentable/sous",
+		Version: semv.MustParse("1"),
+	},
+	":github.com/opentable/sous:1:": {
+		RepoURL: "github.com/opentable/sous",
+		Version: semv.MustParse("1"),
+	},
+	"github.com/opentable/sous,1": {
+		RepoURL: "github.com/opentable/sous",
+		Version: semv.MustParse("1"),
+	},
+	",github.com/opentable/sous,1,util": {
+		RepoURL:    "github.com/opentable/sous",
+		Version:    semv.MustParse("1"),
+		RepoOffset: "util",
+	},
+	"github.com/opentable/sous,1,util": {
+		RepoURL:    "github.com/opentable/sous",
+		Version:    semv.MustParse("1"),
+		RepoOffset: "util",
+	},
+	":github.com/opentable/sous:1:util": {
+		RepoURL:    "github.com/opentable/sous",
+		Version:    semv.MustParse("1"),
+		RepoOffset: "util",
+	},
+	"git+ssh://github.com/opentable/sous,1.0.0-pre+4f850e9030224f528cfdb085d558f8508d06a6d3,sous": {
+		RepoURL:    "git+ssh://github.com/opentable/sous",
+		Version:    semv.MustParse("1.0.0-pre+4f850e9030224f528cfdb085d558f8508d06a6d3"),
+		RepoOffset: "sous",
+	},
+}
+
 func TestParseSourceID(t *testing.T) {
-	assert := assert.New(t)
-	mustParse := func(str string) SourceID {
-		sv, err := ParseSourceID(str)
+	for in, expected := range parseSourceIDTests {
+		actual, err := ParseSourceID(in)
 		if err != nil {
-			t.Errorf("unexpected error %q while parsing %q", err, str)
+			t.Error(err)
+			continue
 		}
-		return sv
+		if actual != expected {
+			t.Errorf("got %v; want %v", actual, expected)
+		}
 	}
-
-	assert.Equal(SourceID{"git+ssh://github.com/opentable/sous", semv.MustParse("1.0.0-pre+4f850e9030224f528cfdb085d558f8508d06a6d3"), "sous"},
-		mustParse("git+ssh://github.com/opentable/sous,1.0.0-pre+4f850e9030224f528cfdb085d558f8508d06a6d3,sous"))
-
-	assert.Equal(SourceID{"github.com/opentable/sous", semv.MustParse("1"), "util"}, mustParse(",github.com/opentable/sous,1,util"))
-	assert.Equal(SourceID{"github.com/opentable/sous", semv.MustParse("1"), "util"}, mustParse("github.com/opentable/sous,1,util"))
-	assert.Equal(SourceID{"github.com/opentable/sous", semv.MustParse("1"), "util"}, mustParse(":github.com/opentable/sous:1:util"))
-
-	assert.Equal(SourceID{"github.com/opentable/sous", semv.MustParse("1"), ""}, mustParse("github.com/opentable/sous,1,"))
-	assert.Equal(SourceID{"github.com/opentable/sous", semv.MustParse("1"), ""}, mustParse(":github.com/opentable/sous:1:"))
-	assert.Equal(SourceID{"github.com/opentable/sous", semv.MustParse("1"), ""}, mustParse("github.com/opentable/sous,1"))
 }

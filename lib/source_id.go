@@ -122,29 +122,8 @@ func sourceIDFromChunks(source string, chunks []string) (SourceID, error) {
 	}, nil
 }
 
-func sourceLocationFromChunks(source string, chunks []string) (SourceLocation, error) {
-	if len(chunks) > 2 {
-		return SourceLocation{}, &IncludesVersion{source}
-	}
-	if len(chunks[0]) == 0 {
-		return SourceLocation{}, &MissingRepo{source}
-	}
-	repoURL := chunks[0]
-	repoOffset := ""
-	if len(chunks) > 1 {
-		repoOffset = chunks[1]
-	}
-	return SourceLocation{RepoURL: repoURL, RepoOffset: repoOffset}, nil
-}
-
 // ParseSourceID parses an entire SourceID.
 func ParseSourceID(s string) (SourceID, error) {
 	chunks := parseChunks(s)
 	return sourceIDFromChunks(s, chunks)
-}
-
-// ParseSourceLocation parses an entire SourceLocation.
-func ParseSourceLocation(s string) (SourceLocation, error) {
-	chunks := parseChunks(s)
-	return sourceLocationFromChunks(s, chunks)
 }
