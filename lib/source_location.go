@@ -28,6 +28,27 @@ func NewSourceLocation(repoURL, repoOffset string) SourceLocation {
 	return SourceLocation{repoURL, repoOffset}
 }
 
+// ParseSourceLocation parses an entire SourceLocation.
+func ParseSourceLocation(s string) (SourceLocation, error) {
+	chunks := parseChunks(s)
+	return sourceLocationFromChunks(s, chunks)
+}
+
+func sourceLocationFromChunks(source string, chunks []string) (SourceLocation, error) {
+	if len(chunks) > 2 {
+		return SourceLocation{}, &IncludesVersion{source}
+	}
+	if len(chunks[0]) == 0 {
+		return SourceLocation{}, &MissingRepo{source}
+	}
+	repoURL := chunks[0]
+	repoOffset := ""
+	if len(chunks) > 1 {
+		repoOffset = chunks[1]
+	}
+	return SourceLocation{RepoURL: repoURL, RepoOffset: repoOffset}, nil
+}
+
 // MarshalYAML serializes this SourceLocation to a YAML document.
 func (sl SourceLocation) MarshalYAML() (interface{}, error) {
 	return sl.String(), nil
