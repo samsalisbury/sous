@@ -107,7 +107,7 @@ func (c *Codec) Read(prefix string, root interface{}) error {
 		return errors.Wrapf(err, "reading tree at %q", prefix)
 	}
 	rc := NewReadContext(prefix, targets, c.reader)
-	rootVal := rootNode.NewVal()
+	rootVal := rootNode.NewValFrom(reflect.ValueOf(root))
 	if err := rootNode.Read(rc, rootVal); err != nil {
 		return errors.Wrapf(err, "reading root")
 	}

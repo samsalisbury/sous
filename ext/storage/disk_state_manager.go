@@ -48,7 +48,7 @@ func NewDiskStateManager(baseDir string) *DiskStateManager {
 
 // ReadState loads the entire intended state of the world from a dir.
 func (dsm *DiskStateManager) ReadState() (*sous.State, error) {
-	s := &sous.State{}
+	s := sous.NewState()
 	return s, dsm.Codec.Read(dsm.baseDir, s)
 }
 
