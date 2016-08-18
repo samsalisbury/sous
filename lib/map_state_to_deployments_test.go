@@ -3,7 +3,7 @@ package sous
 import "testing"
 
 func makeTestState() *State {
-	project1 := SourceLocation{RepoURL: "github.com/user/project"}
+	project1 := SourceLocation{Repo: "github.com/user/project"}
 	return &State{
 		Defs: Defs{
 			DockerRepo: "some.docker.repo",

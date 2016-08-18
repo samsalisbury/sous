@@ -30,7 +30,7 @@ func resolveSourceLocation(f *DeployFilterFlags, c *sous.SourceContext) (sous.So
 		return sous.SourceLocation{}, errors.Errorf("no repo specified, please use -repo or run sous inside a git repo")
 	}
 	return sous.SourceLocation{
-		RepoURL:    repo,
-		RepoOffset: offset,
+		Repo:   repo,
+		Offset: offset,
 	}, nil
 }

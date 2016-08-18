@@ -43,9 +43,9 @@ func TestTagStrings(t *testing.T) {
 	assert := assert.New(t)
 
 	sid := sous.SourceID{
-		RepoURL:    "github.com/opentable/sous",
-		RepoOffset: "docker",
-		Version:    semv.MustParse("1.2.3+deadbeef"),
+		Repo:    "github.com/opentable/sous",
+		Offset:  "docker",
+		Version: semv.MustParse("1.2.3+deadbeef"),
 	}
 
 	assert.Equal("/sous/docker:1.2.3", versionName(sid))

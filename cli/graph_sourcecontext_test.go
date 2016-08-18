@@ -39,18 +39,18 @@ func TestResolveSourceLocation_failure(t *testing.T) {
 }
 
 var goodResolveSourceLocationCalls = map[sous.SourceLocation][]resolveSourceLocationInput{
-	{RepoURL: "github.com/user/project", RepoOffset: ""}: {
+	{Repo: "github.com/user/project", Offset: ""}: {
 		{Flags: &DeployFilterFlags{Repo: "github.com/user/project"}},
 		{Context: &sous.SourceContext{PrimaryRemoteURL: "github.com/user/project"}},
 	},
-	{RepoURL: "github.com/user/project", RepoOffset: "some/path"}: {
+	{Repo: "github.com/user/project", Offset: "some/path"}: {
 		{Flags: &DeployFilterFlags{Repo: "github.com/user/project", Offset: "some/path"}},
 		{Context: &sous.SourceContext{
 			PrimaryRemoteURL: "github.com/user/project",
 			OffsetDir:        "some/path",
 		}},
 	},
-	{RepoURL: "github.com/from/flags", RepoOffset: ""}: {
+	{Repo: "github.com/from/flags", Offset: ""}: {
 		{
 			Context: &sous.SourceContext{
 				PrimaryRemoteURL: "github.com/original/context",
@@ -71,11 +71,11 @@ func TestResolveSourceLocation_success(t *testing.T) {
 				t.Error(err)
 				continue
 			}
-			if actual.RepoURL != expected.RepoURL {
-				t.Errorf("got repo %q; want %q", actual.RepoURL, expected.RepoURL)
+			if actual.Repo != expected.Repo {
+				t.Errorf("got repo %q; want %q", actual.Repo, expected.Repo)
 			}
-			if actual.RepoOffset != expected.RepoOffset {
-				t.Errorf("got offset %q; want %q", actual.RepoOffset, expected.RepoOffset)
+			if actual.Offset != expected.Offset {
+				t.Errorf("got offset %q; want %q", actual.Offset, expected.Offset)
 			}
 		}
 	}

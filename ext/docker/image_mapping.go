@@ -329,7 +329,7 @@ func (nc *NameCache) dbInsert(sid sous.SourceID, in, etag string) error {
 
 	res, err := nc.DB.Exec("insert into docker_search_location "+
 		"(repo, offset) values ($1, $2);",
-		string(sid.RepoURL), string(sid.RepoOffset))
+		string(sid.Repo), string(sid.Offset))
 
 	if err != nil {
 		return err
@@ -417,7 +417,7 @@ func (nc *NameCache) dbQueryOnSL(sl sous.SourceLocation) (rs []string, err error
 		"where "+
 		"docker_search_location.repo = $1 and "+
 		"docker_search_location.offset = $2",
-		string(sl.RepoURL), string(sl.RepoOffset))
+		string(sl.Repo), string(sl.Offset))
 
 	if err == sql.ErrNoRows {
 		return []string{}, err
@@ -450,7 +450,7 @@ func (nc *NameCache) dbQueryAllSourceIds() (ids []sous.SourceID, err error) {
 	for rows.Next() {
 		var r, o, v string
 		rows.Scan(&r, &o, &v)
-		ids = append(ids, sous.SourceID{RepoURL: r, RepoOffset: o, Version: semv.MustParse(v)})
+		ids = append(ids, sous.SourceID{Repo: r, Offset: o, Version: semv.MustParse(v)})
 	}
 	err = rows.Err()
 	return
@@ -467,7 +467,7 @@ func (nc *NameCache) dbQueryOnSourceID(sid sous.SourceID) (cn string, ins []stri
 		"docker_search_location.repo = $1 and "+
 		"docker_search_location.offset = $2 and "+
 		"docker_search_metadata.version = $3",
-		string(sid.RepoURL), string(sid.RepoOffset), sid.Version.String())
+		string(sid.Repo), string(sid.Offset), sid.Version.String())
 
 	if err == sql.ErrNoRows {
 		err = NoImageNameFound{sid}
@@ -496,6 +496,6 @@ func makeSourceID(repo, offset, version string) (sous.SourceID, error) {
 		return sous.SourceID{}, err
 	}
 	return sous.SourceID{
-		RepoURL: repo, Version: v, RepoOffset: offset,
+		Repo: repo, Version: v, Offset: offset,
 	}, nil
 }
