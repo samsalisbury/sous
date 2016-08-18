@@ -7,28 +7,30 @@ import (
 )
 
 var project1 = SourceLocation{Repo: "github.com/user/project"}
+var cluster1 = &Cluster{
+	Name:    "cluster-1",
+	Kind:    "singularity",
+	BaseURL: "http://nothing.here.one",
+	Env: EnvDefaults{
+		"CLUSTER_LONG_NAME": Var("Cluster One"),
+	},
+}
+var cluster2 = &Cluster{
+	Name:    "cluster-2",
+	Kind:    "singularity",
+	BaseURL: "http://nothing.here.two",
+	Env: EnvDefaults{
+		"CLUSTER_LONG_NAME": Var("Cluster Two"),
+	},
+}
 
 func makeTestState() *State {
 	return &State{
 		Defs: Defs{
 			DockerRepo: "some.docker.repo",
 			Clusters: Clusters{
-				"cluster-1": {
-					Name:    "cluster-1",
-					Kind:    "singularity",
-					BaseURL: "http://nothing.here.one",
-					Env: EnvDefaults{
-						"CLUSTER_LONG_NAME": Var("Cluster One"),
-					},
-				},
-				"cluster-2": {
-					Name:    "cluster-2",
-					Kind:    "singularity",
-					BaseURL: "http://nothing.here.two",
-					Env: EnvDefaults{
-						"CLUSTER_LONG_NAME": Var("Cluster Two"),
-					},
-				},
+				"cluster-1": cluster1,
+				"cluster-2": cluster2,
 			},
 			EnvVars: EnvDefs{
 				{
@@ -81,9 +83,9 @@ func makeTestState() *State {
 
 var expectedDeployments = NewDeployments(
 	&Deployment{
-		SourceID:        project1.SourceID(semv.MustParse("1.0.0")),
-		Cluster:         "cluster-1",
-		ClusterNickname: "cluster-1",
+		SourceID:    project1.SourceID(semv.MustParse("1.0.0")),
+		ClusterName: "cluster-1",
+		Cluster:     cluster1,
 		DeployConfig: DeployConfig{
 			Resources: Resources{
 				"cpus": "1",
@@ -97,9 +99,9 @@ var expectedDeployments = NewDeployments(
 		},
 	},
 	&Deployment{
-		SourceID:        project1.SourceID(semv.MustParse("2.0.0")),
-		Cluster:         "cluster-2",
-		ClusterNickname: "cluster-2",
+		SourceID:    project1.SourceID(semv.MustParse("2.0.0")),
+		ClusterName: "cluster-2",
+		Cluster:     cluster2,
 		DeployConfig: DeployConfig{
 			Resources: Resources{
 				"cpus": "2",

@@ -47,7 +47,7 @@ func (f *DeployFilterFlags) buildPredicate() sous.DeploymentPredicate {
 
 	if f.Cluster != "" {
 		preds = append(preds, func(d *sous.Deployment) bool {
-			return d.ClusterNickname == f.Cluster
+			return d.ClusterName == f.Cluster
 		})
 	}
 

@@ -19,7 +19,7 @@ func TestPredicateBuilder(t *testing.T) {
 		for _, r := range rs {
 			for _, o := range os {
 				ds = append(ds, &sous.Deployment{
-					ClusterNickname: c,
+					ClusterName: c,
 					SourceID: sous.SourceID{
 						Repo: r,
 						Dir:  o,

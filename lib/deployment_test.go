@@ -60,12 +60,14 @@ func TestBuildDeployment(t *testing.T) {
 	var ih []DeploySpec
 	nick := "cn"
 
-	d, err := BuildDeployment(m, nick, sp, ih)
+	state := &State{Defs: Defs{Clusters: Clusters{nick: &Cluster{BaseURL: "http://not"}}}}
+
+	d, err := BuildDeployment(state, m, nick, sp, ih)
 
 	if assert.NoError(err) {
 		if assert.Len(d.DeployConfig.Volumes, 1) {
 			assert.Equal("c", d.DeployConfig.Volumes[0].Container)
 		}
-		assert.Equal(nick, d.ClusterNickname)
+		assert.Equal(nick, d.ClusterName)
 	}
 }

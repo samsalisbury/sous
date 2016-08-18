@@ -44,7 +44,7 @@ func (s *State) DeploymentsFromManifest(m *Manifest) (Deployments, error) {
 				clusterName, strings.Join(us, ", "), m)
 		}
 		spec.clusterName = n.BaseURL
-		d, err := BuildDeployment(m, clusterName, spec, inherit)
+		d, err := BuildDeployment(s, m, clusterName, spec, inherit)
 		if err != nil {
 			return ds, err
 		}

@@ -70,7 +70,7 @@ func (db *deploymentBuilder) isRetryable(err error) bool {
 func BuildDeployment(cl rectificationClient, clusters sous.Clusters, req SingReq) (sous.Deployment, error) {
 	db := deploymentBuilder{rectification: cl, clusters: clusters, req: req}
 
-	db.Target.Cluster = req.SourceURL
+	db.Target.Cluster.BaseURL = req.SourceURL
 	db.request = req.ReqParent.Request
 
 	return db.Target, db.canRetry(db.completeConstruction())
@@ -176,14 +176,14 @@ func (db *deploymentBuilder) retrieveImageLabels() error {
 		checkID := buildReqID(db.Target.SourceID, nn)
 		sous.Log.Vomit.Printf("Trying hypothetical request ID: %s", checkID)
 		if checkID == db.request.Id {
-			db.Target.ClusterNickname = nn
+			db.Target.ClusterName = nn
 			sous.Log.Debug.Printf("Found cluster: %s", nn)
 			break
 		}
 	}
-	if db.Target.ClusterNickname == "" {
+	if db.Target.ClusterName == "" {
 		if matchCount == 1 {
-			db.Target.ClusterNickname = posNick
+			db.Target.ClusterName = posNick
 			return nil
 		}
 		sous.Log.Debug.Printf("No cluster nickname (%#v) matched request id %s for %s", db.clusters, db.request.Id, imageName)

@@ -299,8 +299,8 @@ func TestCreates(t *testing.T) {
 		DeployConfig: sous.DeployConfig{
 			NumInstances: 12,
 		},
-		Cluster:         "cluster",
-		ClusterNickname: "nick",
+		Cluster:     "cluster",
+		ClusterName: "nick",
 	}
 
 	crts := make(chan *sous.Deployment, 1)

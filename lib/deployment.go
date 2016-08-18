@@ -19,11 +19,11 @@ type (
 		// ClusterNickname is the human name for a cluster - it's taken from the
 		// hash key that defines the cluster and is used in manifests to configure
 		// cluster-local deployment config.
-		ClusterNickname string
+		ClusterName string
 		// Cluster is the name of the cluster this deployment belongs to. Upon
 		// parsing the Manifest, this will be set to the key in
 		// Manifests.Deployments which points at this Deployment.
-		Cluster string
+		Cluster *Cluster
 		// SourceID is the precise version of the software to be deployed.
 		SourceID SourceID
 		// Owners is a map of named owners of this repository. The type of this
@@ -62,19 +62,19 @@ type (
 )
 
 // BuildDeployment constructs a deployment out of a Manifest.
-func BuildDeployment(m *Manifest, nick string, spec DeploySpec, inherit []DeploySpec) (*Deployment, error) {
+func BuildDeployment(s *State, m *Manifest, nick string, spec DeploySpec, inherit []DeploySpec) (*Deployment, error) {
 	ownMap := OwnerSet{}
 	for i := range m.Owners {
 		ownMap.Add(m.Owners[i])
 	}
 	ds := flattenDeploySpecs(append([]DeploySpec{spec}, inherit...))
 	return &Deployment{
-		ClusterNickname: nick,
-		Cluster:         ds.clusterName,
-		DeployConfig:    ds.DeployConfig,
-		Owners:          ownMap,
-		Kind:            m.Kind,
-		SourceID:        m.Source.SourceID(ds.Version),
+		ClusterName:  nick,
+		Cluster:      s.Defs.Clusters[nick],
+		DeployConfig: ds.DeployConfig,
+		Owners:       ownMap,
+		Kind:         m.Kind,
+		SourceID:     m.Source.SourceID(ds.Version),
 	}, nil
 }
 
@@ -86,7 +86,7 @@ func (d *Deployment) String() string {
 func (d *Deployment) ID() DeployID {
 	return DeployID{
 		Source:  d.SourceID.Location(),
-		Cluster: d.Cluster,
+		Cluster: d.ClusterName,
 	}
 }
 
@@ -140,10 +140,10 @@ func (d *Deployment) Tabbed() string {
 	)
 }
 
-// Name returns the DepName for a Deployment.
+// Name returns the DeployID.
 func (d *Deployment) Name() DeployID {
 	return DeployID{
-		Cluster: d.Cluster,
+		Cluster: d.ClusterName,
 		Source:  d.SourceID.Location(),
 	}
 }
@@ -151,8 +151,8 @@ func (d *Deployment) Name() DeployID {
 // Equal returns true if two Deployments are equal.
 func (d *Deployment) Equal(o *Deployment) bool {
 	Log.Vomit.Printf("Comparing: %+ v ?= %+ v", d, o)
-	if !(d.Cluster == o.Cluster && d.SourceID.Equal(o.SourceID) && d.Kind == o.Kind) { // && len(d.Owners) == len(o.Owners)) {
-		Log.Debug.Printf("C: %t V: %t, K: %t, #O: %t", d.Cluster == o.Cluster, d.SourceID.Equal(o.SourceID), d.Kind == o.Kind, len(d.Owners) == len(o.Owners))
+	if !(d.ClusterName == o.ClusterName && d.SourceID.Equal(o.SourceID) && d.Kind == o.Kind) { // && len(d.Owners) == len(o.Owners)) {
+		Log.Debug.Printf("C: %t V: %t, K: %t, #O: %t", d.ClusterName == o.ClusterName, d.SourceID.Equal(o.SourceID), d.Kind == o.Kind, len(d.Owners) == len(o.Owners))
 		return false
 	}
 

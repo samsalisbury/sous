@@ -12,8 +12,8 @@ func TestClusterMap(t *testing.T) {
 	s := State{
 		Defs: Defs{
 			Clusters: Clusters{
-				"one": Cluster{},
-				"two": Cluster{},
+				"one": &Cluster{},
+				"two": &Cluster{},
 			},
 		},
 	}
