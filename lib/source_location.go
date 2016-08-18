@@ -34,6 +34,16 @@ func ParseSourceLocation(s string) (SourceLocation, error) {
 	return sourceLocationFromChunks(s, chunks)
 }
 
+// MustParseSourceLocation wraps ParseSourceLocation but panics instead of
+// returning a non-nil error.
+func MustParseSourceLocation(s string) SourceLocation {
+	sl, err := ParseSourceLocation(s)
+	if err != nil {
+		panic(err)
+	}
+	return sl
+}
+
 func sourceLocationFromChunks(source string, chunks []string) (SourceLocation, error) {
 	if len(chunks) > 2 {
 		return SourceLocation{}, &IncludesVersion{source}

@@ -9,14 +9,7 @@ var parseSourceLocationTests = map[string]SourceLocation{
 	":github.com/opentable/sous": {
 		RepoURL: "github.com/opentable/sous",
 	},
-	"github.com/opentable/sous,,": {
-		RepoURL: "github.com/opentable/sous",
-	},
 	",github.com/opentable/sous,util": {
-		RepoURL:    "github.com/opentable/sous",
-		RepoOffset: "util",
-	},
-	"github.com/opentable/sous,,util": {
 		RepoURL:    "github.com/opentable/sous",
 		RepoOffset: "util",
 	},
@@ -28,41 +21,24 @@ var parseSourceLocationTests = map[string]SourceLocation{
 		RepoURL:    "git+ssh://github.com/opentable/sous",
 		RepoOffset: "sous",
 	},
-	// ParseSourceLocation ignores embedded versions.
-	"github.com/opentable/sous,1,": {
-		RepoURL: "github.com/opentable/sous",
-	},
-	":github.com/opentable/sous:1:": {
-		RepoURL: "github.com/opentable/sous",
-	},
-	"github.com/opentable/sous,1": {
-		RepoURL: "github.com/opentable/sous",
-	},
-	",github.com/opentable/sous,1,util": {
-		RepoURL:    "github.com/opentable/sous",
-		RepoOffset: "util",
-	},
-	"github.com/opentable/sous,1,util": {
-		RepoURL:    "github.com/opentable/sous",
-		RepoOffset: "util",
-	},
-	":github.com/opentable/sous:1:util": {
-		RepoURL:    "github.com/opentable/sous",
-		RepoOffset: "util",
-	},
-	"git+ssh://github.com/opentable/sous,1.0.0-pre+4f850e9030224f528cfdb085d558f8508d06a6d3,sous": {
-		RepoURL:    "git+ssh://github.com/opentable/sous",
-		RepoOffset: "sous",
-	},
 }
 
-func TestParseSourceVersion(t *testing.T) {
-	for in, expected := range parseSourceIDTests {
-		actual, err := ParseSourceID(in)
+func TestParseSourceLocation(t *testing.T) {
+	for in, expected := range parseSourceLocationTests {
+		actual, err := ParseSourceLocation(in)
 		if err != nil {
 			t.Error(err)
 			continue
 		}
+		if actual != expected {
+			t.Errorf("got %v; want %v", actual, expected)
+		}
+	}
+}
+
+func TestMustParseSourceLocation(t *testing.T) {
+	for in, expected := range parseSourceLocationTests {
+		actual := MustParseSourceLocation(in)
 		if actual != expected {
 			t.Errorf("got %v; want %v", actual, expected)
 		}
