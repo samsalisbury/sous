@@ -3,6 +3,32 @@ package sous
 import "testing"
 
 var parseSourceLocationTests = map[string]SourceLocation{
+	"github.com/opentable/sous,": {
+		RepoURL: "github.com/opentable/sous",
+	},
+	":github.com/opentable/sous": {
+		RepoURL: "github.com/opentable/sous",
+	},
+	"github.com/opentable/sous,,": {
+		RepoURL: "github.com/opentable/sous",
+	},
+	",github.com/opentable/sous,util": {
+		RepoURL:    "github.com/opentable/sous",
+		RepoOffset: "util",
+	},
+	"github.com/opentable/sous,,util": {
+		RepoURL:    "github.com/opentable/sous",
+		RepoOffset: "util",
+	},
+	":github.com/opentable/sous:util": {
+		RepoURL:    "github.com/opentable/sous",
+		RepoOffset: "util",
+	},
+	"git+ssh://github.com/opentable/sous,sous": {
+		RepoURL:    "git+ssh://github.com/opentable/sous",
+		RepoOffset: "sous",
+	},
+	// ParseSourceLocation ignores embedded versions.
 	"github.com/opentable/sous,1,": {
 		RepoURL: "github.com/opentable/sous",
 	},
