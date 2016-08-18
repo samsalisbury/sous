@@ -2,8 +2,9 @@ package sous
 
 import (
 	"fmt"
-	"log"
 	"strings"
+
+	"github.com/samsalisbury/semv"
 )
 
 // Deployments returns all deployments described by the state.
@@ -19,8 +20,50 @@ func (s *State) Deployments() (Deployments, error) {
 			return ds, fmt.Errorf("conflicting deploys: %s", conflict)
 		}
 	}
-	log.Println("OK", ds.Keys())
+	for _, id := range ds.Keys() {
+		d, _ := ds.Get(id)
+		for name, val := range d.Cluster.Env {
+			if _, ok := d.Env[name]; ok {
+				continue
+			}
+			d.Env[name] = string(val)
+		}
+	}
 	return ds, nil
+}
+
+// Manifests creates manifests from deployments.
+func (ds Deployments) Manifests() (Manifests, error) {
+	ms := NewManifests()
+	for _, d := range ds.Snapshot() {
+		sl := d.SourceID.Location()
+		m, ok := ms.Get(sl)
+		if !ok {
+			m = &Manifest{Deployments: DeploySpecs{}}
+			for o := range d.Owners {
+				// TODO: de-dupe or use a set on manifests.
+				m.Owners = append(m.Owners, o)
+			}
+			m.Source = sl
+		}
+		spec := DeploySpec{
+			Version:      d.SourceID.Version,
+			DeployConfig: d.DeployConfig,
+		}
+		for k, v := range spec.DeployConfig.Env {
+			clusterVal, ok := d.Cluster.Env[k]
+			if !ok {
+				continue
+			}
+			if string(clusterVal) == v {
+				delete(spec.DeployConfig.Env, k)
+			}
+		}
+
+		m.Deployments[d.Cluster.Name] = spec
+		ms.Set(sl, m)
+	}
+	return ms, nil
 }
 
 // DeploymentsFromManifest returns all deployments described by a single
@@ -51,4 +94,43 @@ func (s *State) DeploymentsFromManifest(m *Manifest) (Deployments, error) {
 		ds.Add(d)
 	}
 	return ds, nil
+}
+
+// BuildDeployment constructs a deployment out of a Manifest.
+func BuildDeployment(s *State, m *Manifest, nick string, spec DeploySpec, inherit []DeploySpec) (*Deployment, error) {
+	ownMap := OwnerSet{}
+	for i := range m.Owners {
+		ownMap.Add(m.Owners[i])
+	}
+	ds := flattenDeploySpecs(append([]DeploySpec{spec}, inherit...))
+	return &Deployment{
+		ClusterName:  nick,
+		Cluster:      s.Defs.Clusters[nick],
+		DeployConfig: ds.DeployConfig,
+		Owners:       ownMap,
+		Kind:         m.Kind,
+		SourceID:     m.Source.SourceID(ds.Version),
+	}, nil
+}
+
+func flattenDeploySpecs(dss []DeploySpec) DeploySpec {
+	var dcs []DeployConfig
+	for _, s := range dss {
+		dcs = append(dcs, s.DeployConfig)
+	}
+	ds := DeploySpec{DeployConfig: flattenDeployConfigs(dcs)}
+	var zeroVersion semv.Version
+	for _, s := range dss {
+		if s.Version != zeroVersion {
+			ds.Version = s.Version
+			break
+		}
+	}
+	for _, s := range dss {
+		if s.clusterName != "" {
+			ds.clusterName = s.clusterName
+			break
+		}
+	}
+	return ds
 }

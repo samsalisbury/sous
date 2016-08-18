@@ -61,6 +61,36 @@ const (
 	ScheduledJob = "scheduled-job"
 )
 
+// Equal returns true iff o is equal to m.
+func (m *Manifest) Equal(o *Manifest) bool {
+	if m == o {
+		return true
+	}
+	if m.Source != o.Source {
+		return false
+	}
+	if m.Kind != o.Kind {
+		return false
+	}
+	if len(m.Owners) != len(o.Owners) {
+		return false
+	}
+	for i, owner := range m.Owners {
+		if o.Owners[i] != owner {
+			return false
+		}
+	}
+	if len(m.Deployments) != len(o.Deployments) {
+		return false
+	}
+	for clusterName, deploySpec := range m.Deployments {
+		if !o.Deployments[clusterName].Equal(deploySpec) {
+			return false
+		}
+	}
+	return true
+}
+
 // Equal compares Envs
 func (e Env) Equal(o Env) bool {
 	if len(e) != len(o) {
