@@ -160,11 +160,11 @@ func (P) Set(fs ...func(*error)) error {
 	for _, f := range fs {
 		f := f
 		go func() {
+			defer wg.Done()
 			var err error
 			if f(&err); err != nil {
 				errs <- err
 			}
-			wg.Done()
 		}()
 	}
 	return <-errs
