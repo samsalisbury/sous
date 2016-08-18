@@ -70,7 +70,7 @@ func (db *deploymentBuilder) isRetryable(err error) bool {
 func BuildDeployment(cl rectificationClient, clusters sous.Clusters, req SingReq) (sous.Deployment, error) {
 	db := deploymentBuilder{rectification: cl, clusters: clusters, req: req}
 
-	db.Target.Cluster.BaseURL = req.SourceURL
+	db.Target.Cluster = &sous.Cluster{BaseURL: req.SourceURL}
 	db.request = req.ReqParent.Request
 
 	return db.Target, db.canRetry(db.completeConstruction())

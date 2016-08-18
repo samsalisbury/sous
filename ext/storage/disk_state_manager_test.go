@@ -133,11 +133,11 @@ func exampleState() *sous.State {
 		Defs: sous.Defs{
 			DockerRepo: "docker.somewhere.horse",
 			Clusters: sous.Clusters{
-				"cluster-1": sous.Cluster{
+				"cluster-1": &sous.Cluster{
 					Kind:    "singularity",
 					BaseURL: "http://singularity.example.com",
 				},
-				"other-cluster": sous.Cluster{
+				"other-cluster": &sous.Cluster{
 					Kind:    "singularity",
 					BaseURL: "http://some.singularity.cluster",
 				},

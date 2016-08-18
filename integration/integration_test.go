@@ -81,7 +81,7 @@ func TestMissingImage(t *testing.T) {
 
 	clusterDefs := sous.Defs{
 		Clusters: sous.Clusters{
-			"test-cluster": sous.Cluster{
+			"test-cluster": &sous.Cluster{
 				BaseURL: SingularityURL,
 			},
 		},
@@ -135,7 +135,7 @@ func TestResolve(t *testing.T) {
 
 	clusterDefs := sous.Defs{
 		Clusters: sous.Clusters{
-			"test-cluster": sous.Cluster{
+			"test-cluster": &sous.Cluster{
 				BaseURL: SingularityURL,
 			},
 		},

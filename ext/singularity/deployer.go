@@ -44,6 +44,7 @@ type (
 	dtoMap map[string]interface{}
 )
 
+// NewDeployer creates a new Singularity-based sous.Deployer.
 func NewDeployer(r sous.Registry, c rectificationClient) sous.Deployer {
 	return &deployer{Client: c, Registry: r}
 }
