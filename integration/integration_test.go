@@ -63,7 +63,7 @@ func TestGetRunningDeploymentSet(t *testing.T) {
 	deps := ds.Snapshot()
 	if assert.Equal(3, len(deps)) {
 		grafana := deps[which]
-		assert.Equal(SingularityURL, grafana.Cluster)
+		assert.Equal(SingularityURL, grafana.Cluster.BaseURL)
 		assert.Regexp("^0\\.1", grafana.Resources["cpus"])    // XXX strings and floats...
 		assert.Regexp("^100\\.", grafana.Resources["memory"]) // XXX strings and floats...
 		assert.Equal("1", grafana.Resources["ports"])         // XXX strings and floats...
@@ -263,7 +263,7 @@ func deploymentWithRepo(assert *assert.Assertions, sc sous.Deployer, repo string
 func findRepo(deps sous.Deployments, repo string) sous.DeployID {
 	for i, d := range deps.Snapshot() {
 		if d != nil {
-			if d.SourceID.Repo == repo {
+			if i.Source.Repo == repo {
 				return i
 			}
 		}
