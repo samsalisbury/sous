@@ -1,6 +1,9 @@
 package cmap
 
-import "testing"
+import (
+	"sync"
+	"testing"
+)
 
 type CMapTest struct {
 	CMap     CMap
@@ -220,28 +223,35 @@ var cmapTests = []CMapTest{
 
 func TestCMap(t *testing.T) {
 
+	wg := sync.WaitGroup{}
+	wg.Add(len(cmapTests))
 	for _, test := range cmapTests {
-		if test.Do != nil {
-			test.Do(&test.CMap)
-		}
-		actual := test.CMap.Snapshot()
-		expected := test.Expected
-		if test.CMap.Len() != len(actual) {
-			t.Errorf("Len ≠ len")
-		}
-		if len(actual) != len(expected) {
-			t.Errorf("got len %d; want %d", len(actual), len(expected))
-		}
-		for actualKey := range actual {
-			if _, ok := expected[actualKey]; !ok {
-				t.Errorf("extra key %q", actualKey)
+		test := test
+		go func() {
+			defer wg.Done()
+			if test.Do != nil {
+				test.Do(&test.CMap)
 			}
-		}
-		for expectedKey := range expected {
-			if _, ok := actual[expectedKey]; !ok {
-				t.Errorf("missing key %q", expectedKey)
+			actual := test.CMap.Snapshot()
+			expected := test.Expected
+			if test.CMap.Len() != len(actual) {
+				t.Errorf("Len ≠ len")
 			}
-		}
+			if len(actual) != len(expected) {
+				t.Errorf("got len %d; want %d", len(actual), len(expected))
+			}
+			for actualKey := range actual {
+				if _, ok := expected[actualKey]; !ok {
+					t.Errorf("extra key %q", actualKey)
+				}
+			}
+			for expectedKey := range expected {
+				if _, ok := actual[expectedKey]; !ok {
+					t.Errorf("missing key %q", expectedKey)
+				}
+			}
+		}()
 	}
+	wg.Wait()
 
 }
