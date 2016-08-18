@@ -41,7 +41,10 @@ func TestModifyScale(t *testing.T) {
 			DeployConfig: sous.DeployConfig{
 				NumInstances: 12,
 			},
-			Cluster: "cluster",
+			ClusterName: "cluster",
+			Cluster: &sous.Cluster{
+				BaseURL: "cluster",
+			},
 		},
 		Post: &sous.Deployment{
 			SourceID: sous.SourceID{
@@ -50,7 +53,10 @@ func TestModifyScale(t *testing.T) {
 			DeployConfig: sous.DeployConfig{
 				NumInstances: 24,
 			},
-			Cluster: "cluster",
+			ClusterName: "cluster",
+			Cluster: &sous.Cluster{
+				BaseURL: "cluster",
+			},
 		},
 	}
 
@@ -92,7 +98,10 @@ func TestModifyImage(t *testing.T) {
 			DeployConfig: sous.DeployConfig{
 				NumInstances: 1,
 			},
-			Cluster: "cluster",
+			ClusterName: "cluster",
+			Cluster: &sous.Cluster{
+				BaseURL: "cluster",
+			},
 		},
 		Post: &sous.Deployment{
 			SourceID: sous.SourceID{
@@ -102,7 +111,10 @@ func TestModifyImage(t *testing.T) {
 			DeployConfig: sous.DeployConfig{
 				NumInstances: 1,
 			},
-			Cluster: "cluster",
+			ClusterName: "cluster",
+			Cluster: &sous.Cluster{
+				BaseURL: "cluster",
+			},
 		},
 	}
 
@@ -145,7 +157,10 @@ func TestModifyResources(t *testing.T) {
 					"memory": "100",
 				},
 			},
-			Cluster: "cluster",
+			ClusterName: "cluster",
+			Cluster: &sous.Cluster{
+				BaseURL: "cluster",
+			},
 		},
 		Post: &sous.Deployment{
 			SourceID: sous.SourceID{
@@ -158,7 +173,10 @@ func TestModifyResources(t *testing.T) {
 					"memory": "500",
 				},
 			},
-			Cluster: "cluster",
+			ClusterName: "cluster",
+			Cluster: &sous.Cluster{
+				BaseURL: "cluster",
+			},
 		},
 	}
 
@@ -204,7 +222,10 @@ func TestModify(t *testing.T) {
 					{"host", "container", "RO"},
 				},
 			},
-			Cluster: "cluster",
+			ClusterName: "cluster",
+			Cluster: &sous.Cluster{
+				BaseURL: "cluster",
+			},
 		},
 		Post: &sous.Deployment{
 			SourceID: sous.SourceID{
@@ -217,7 +238,10 @@ func TestModify(t *testing.T) {
 					{"host", "container", "RW"},
 				},
 			},
-			Cluster: "cluster",
+			ClusterName: "cluster",
+			Cluster: &sous.Cluster{
+				BaseURL: "cluster",
+			},
 		},
 	}
 
@@ -260,7 +284,10 @@ func TestDeletes(t *testing.T) {
 		DeployConfig: sous.DeployConfig{
 			NumInstances: 12,
 		},
-		Cluster: "cluster",
+		ClusterName: "",
+		Cluster: &sous.Cluster{
+			BaseURL: "cluster",
+		},
 	}
 
 	dels := make(chan *sous.Deployment, 1)
@@ -299,8 +326,8 @@ func TestCreates(t *testing.T) {
 		DeployConfig: sous.DeployConfig{
 			NumInstances: 12,
 		},
-		Cluster:         "cluster",
-		ClusterNickname: "nick",
+		Cluster:     &sous.Cluster{BaseURL: "cluster"},
+		ClusterName: "nick",
 	}
 
 	crts := make(chan *sous.Deployment, 1)

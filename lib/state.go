@@ -45,7 +45,7 @@ type (
 	}
 
 	// Clusters is a collection of Cluster
-	Clusters map[string]Cluster
+	Clusters map[string]*Cluster
 	// Cluster is a logical deployment target, often named for its region,
 	// purpose, etc.
 	Cluster struct {

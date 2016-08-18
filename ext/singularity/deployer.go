@@ -44,6 +44,7 @@ type (
 	dtoMap map[string]interface{}
 )
 
+// NewDeployer creates a new Singularity-based sous.Deployer.
 func NewDeployer(r sous.Registry, c rectificationClient) sous.Deployer {
 	return &deployer{Client: c, Registry: r}
 }
@@ -81,17 +82,17 @@ func (r *deployer) RectifySingleCreate(d *sous.Deployment) error {
 		return err
 	}
 	reqID := computeRequestID(d)
-	if err := r.Client.PostRequest(d.Cluster, reqID, d.NumInstances); err != nil {
+	if err := r.Client.PostRequest(d.Cluster.BaseURL, reqID, d.NumInstances); err != nil {
 		return err
 	}
 	return r.Client.Deploy(
-		d.Cluster, newDepID(), reqID, name, d.Resources,
+		d.Cluster.BaseURL, newDepID(), reqID, name, d.Resources,
 		d.Env, d.DeployConfig.Volumes)
 }
 
 func (r *deployer) RectifyDeletes(dc <-chan *sous.Deployment, errs chan<- sous.RectificationError) {
 	for d := range dc {
-		if err := r.Client.DeleteRequest(d.Cluster, computeRequestID(d),
+		if err := r.Client.DeleteRequest(d.Cluster.BaseURL, computeRequestID(d),
 			"deleting request for removed manifest"); err != nil {
 			errs <- &sous.DeleteError{Deployment: d, Err: err}
 		}
@@ -112,7 +113,7 @@ func (r *deployer) RectifySingleModification(pair *sous.DeploymentPair) error {
 	if r.changesReq(pair) {
 		Log.Debug.Printf("Scaling...")
 		if err := r.Client.Scale(
-			pair.Post.Cluster,
+			pair.Post.Cluster.BaseURL,
 			computeRequestID(pair.Post),
 			pair.Post.NumInstances,
 			"rectified scaling"); err != nil {
@@ -128,7 +129,7 @@ func (r *deployer) RectifySingleModification(pair *sous.DeploymentPair) error {
 		}
 
 		if err := r.Client.Deploy(
-			pair.Post.Cluster,
+			pair.Post.Cluster.BaseURL,
 			newDepID(),
 			computeRequestID(pair.Prior),
 			name,
@@ -157,7 +158,7 @@ func computeRequestID(d *sous.Deployment) string {
 	if len(d.RequestID) > 0 {
 		return d.RequestID
 	}
-	return buildReqID(d.SourceID, d.ClusterNickname)
+	return buildReqID(d.SourceID, d.ClusterName)
 }
 
 func buildReqID(sv sous.SourceID, nick string) string {

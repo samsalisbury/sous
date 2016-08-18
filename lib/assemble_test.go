@@ -50,12 +50,12 @@ func TestInheritingFromGlobal(t *testing.T) {
 	s := &State{
 		Defs: Defs{
 			Clusters: Clusters{
-				"sf-qa-ci": Cluster{
+				"sf-qa-ci": &Cluster{
 					Kind:    "singularity",
 					BaseURL: "http://singularity-qa-sf.otenv.com",
 					Env:     EnvDefaults{"OT_DISCO_INIT_URL": "discovery-ci-sf.otenv.com"},
 				},
-				"prod-sc": Cluster{
+				"prod-sc": &Cluster{
 					Kind:    "singularity",
 					BaseURL: "http://singularity-prod-sc.otenv.com",
 					Env:     EnvDefaults{"OT_DISCO_INIT_URL": "discovery-prod-sc.otenv.com"},
@@ -90,7 +90,7 @@ func TestInheritingFromGlobal(t *testing.T) {
 		t.Fatalf("got %d deployments; want %d", actualLen, expectedLen)
 	}
 
-	id := DeployID{Source: m.Source, Cluster: "http://singularity-qa-sf.otenv.com"}
+	id := DeployID{Source: m.Source, Cluster: "sf-qa-ci"}
 	qa, ok := deps.Get(id)
 	if !ok {
 		t.Errorf("deployment %s not found", id)
