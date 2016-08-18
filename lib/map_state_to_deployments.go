@@ -32,6 +32,40 @@ func (s *State) Deployments() (Deployments, error) {
 	return ds, nil
 }
 
+// Manifests creates manifests from deployments.
+func (ds Deployments) Manifests() (Manifests, error) {
+	ms := NewManifests()
+	for _, d := range ds.Snapshot() {
+		sl := d.SourceID.Location()
+		m, ok := ms.Get(sl)
+		if !ok {
+			m = &Manifest{Deployments: DeploySpecs{}}
+			for o := range d.Owners {
+				// TODO: de-dupe or use a set on manifests.
+				m.Owners = append(m.Owners, o)
+			}
+			m.Source = sl
+		}
+		spec := DeploySpec{
+			Version:      d.SourceID.Version,
+			DeployConfig: d.DeployConfig,
+		}
+		for k, v := range spec.DeployConfig.Env {
+			clusterVal, ok := d.Cluster.Env[k]
+			if !ok {
+				continue
+			}
+			if string(clusterVal) == v {
+				delete(spec.DeployConfig.Env, k)
+			}
+		}
+
+		m.Deployments[d.Cluster.Name] = spec
+		ms.Set(sl, m)
+	}
+	return ms, nil
+}
+
 // DeploymentsFromManifest returns all deployments described by a single
 // manifest, in terms of the wider state (i.e. global and cluster definitions
 // and configuration).

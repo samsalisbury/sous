@@ -137,4 +137,28 @@ func TestState_Deployments(t *testing.T) {
 	}
 }
 
+func TestDeployments_Manifests(t *testing.T) {
+	actualManifests, err := expectedDeployments.Manifests()
+	if err != nil {
+		t.Fatal(err)
+	}
+	expectedManifests := makeTestState().Manifests
+	actualLen := actualManifests.Len()
+	expectedLen := expectedManifests.Len()
+	if actualLen != expectedLen {
+		t.Fatalf("got %d manifests; want %d", actualLen, expectedLen)
+	}
+	for _, sl := range expectedManifests.Keys() {
+		expected, _ := expectedManifests.Get(sl)
+		actual, ok := actualManifests.Get(sl)
+		if !ok {
+			t.Errorf("missing manifest %q", sl)
+			continue
+		}
+		if !actual.Equal(expected) {
+			t.Errorf("\n\ngot:\n%v\n\nwant:\n%v\n", jsonDump(actual), jsonDump(expected))
+		}
+	}
+}
+
 func jsonDump(v interface{}) string { b, _ := json.MarshalIndent(v, "", "  "); return string(b) }

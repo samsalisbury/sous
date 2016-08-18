@@ -29,3 +29,8 @@ type (
 		clusterName string
 	}
 )
+
+// Equal returns true if other equals spec.
+func (spec DeploySpec) Equal(other DeploySpec) bool {
+	return spec.Version == other.Version && spec.DeployConfig.Equal(other.DeployConfig)
+}
