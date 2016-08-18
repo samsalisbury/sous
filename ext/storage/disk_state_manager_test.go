@@ -7,6 +7,7 @@ import (
 
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/yaml"
+	"github.com/pkg/errors"
 	"github.com/samsalisbury/semv"
 )
 
@@ -18,10 +19,7 @@ func TestWriteState(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	dsm, err := NewDiskStateManager("testdata/out")
-	if err != nil {
-		t.Fatal(err)
-	}
+	dsm := NewDiskStateManager("testdata/out")
 
 	if err := dsm.WriteState(s); err != nil {
 		t.Fatal(err)
@@ -38,10 +36,7 @@ func TestWriteState(t *testing.T) {
 
 func TestReadState(t *testing.T) {
 
-	dsm, err := NewDiskStateManager("testdata/in")
-	if err != nil {
-		t.Fatal(err)
-	}
+	dsm := NewDiskStateManager("testdata/in")
 
 	actual, err := dsm.ReadState()
 	if err != nil {
@@ -66,6 +61,21 @@ func TestReadState(t *testing.T) {
 		t.Log("Got >>>>>>>>>>>>>>>>>>>>>>")
 		t.Logf("\n% +v", string(actualYAML))
 		t.Fatal("")
+	}
+}
+
+func TestReadState_empty(t *testing.T) {
+	dsm := NewDiskStateManager("testdata/nonexistent")
+	actual, err := dsm.ReadState()
+	if err != nil && !os.IsNotExist(errors.Cause(err)) {
+		t.Fatal(err)
+	}
+	d, err := actual.Deployments()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if d.Len() != 0 {
+		t.Errorf("got len %d; want %d", d.Len(), 0)
 	}
 }
 

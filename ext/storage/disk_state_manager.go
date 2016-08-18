@@ -37,13 +37,13 @@ type (
 
 // NewDiskStateManager returns a new DiskStateManager configured to read and
 // write from a filesystem tree containing YAML files.
-func NewDiskStateManager(baseDir string) (*DiskStateManager, error) {
+func NewDiskStateManager(baseDir string) *DiskStateManager {
 	c := hy.NewCodec(func(c *hy.Codec) {
 		c.FileExtension = "yaml"
 		c.MarshalFunc = yaml.Marshal
 		c.UnmarshalFunc = yaml.Unmarshal
 	})
-	return &DiskStateManager{Codec: c, baseDir: baseDir}, nil
+	return &DiskStateManager{Codec: c, baseDir: baseDir}
 }
 
 // ReadState loads the entire intended state of the world from a dir.
