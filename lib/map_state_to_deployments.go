@@ -2,8 +2,9 @@ package sous
 
 import (
 	"fmt"
-	"log"
 	"strings"
+
+	"github.com/samsalisbury/semv"
 )
 
 // Deployments returns all deployments described by the state.
@@ -19,7 +20,15 @@ func (s *State) Deployments() (Deployments, error) {
 			return ds, fmt.Errorf("conflicting deploys: %s", conflict)
 		}
 	}
-	log.Println("OK", ds.Keys())
+	for _, id := range ds.Keys() {
+		d, _ := ds.Get(id)
+		for name, val := range d.Cluster.Env {
+			if _, ok := d.Env[name]; ok {
+				continue
+			}
+			d.Env[name] = string(val)
+		}
+	}
 	return ds, nil
 }
 
@@ -51,4 +60,43 @@ func (s *State) DeploymentsFromManifest(m *Manifest) (Deployments, error) {
 		ds.Add(d)
 	}
 	return ds, nil
+}
+
+// BuildDeployment constructs a deployment out of a Manifest.
+func BuildDeployment(s *State, m *Manifest, nick string, spec DeploySpec, inherit []DeploySpec) (*Deployment, error) {
+	ownMap := OwnerSet{}
+	for i := range m.Owners {
+		ownMap.Add(m.Owners[i])
+	}
+	ds := flattenDeploySpecs(append([]DeploySpec{spec}, inherit...))
+	return &Deployment{
+		ClusterName:  nick,
+		Cluster:      s.Defs.Clusters[nick],
+		DeployConfig: ds.DeployConfig,
+		Owners:       ownMap,
+		Kind:         m.Kind,
+		SourceID:     m.Source.SourceID(ds.Version),
+	}, nil
+}
+
+func flattenDeploySpecs(dss []DeploySpec) DeploySpec {
+	var dcs []DeployConfig
+	for _, s := range dss {
+		dcs = append(dcs, s.DeployConfig)
+	}
+	ds := DeploySpec{DeployConfig: flattenDeployConfigs(dcs)}
+	var zeroVersion semv.Version
+	for _, s := range dss {
+		if s.Version != zeroVersion {
+			ds.Version = s.Version
+			break
+		}
+	}
+	for _, s := range dss {
+		if s.clusterName != "" {
+			ds.clusterName = s.clusterName
+			break
+		}
+	}
+	return ds
 }

@@ -1,6 +1,7 @@
 package sous
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/samsalisbury/semv"
@@ -48,6 +49,7 @@ func makeTestState() *State {
 		Manifests: NewManifests(
 			&Manifest{
 				Source: project1,
+				Owners: []string{"owner1"},
 				Deployments: DeploySpecs{
 					"cluster-1": {
 						Version: semv.MustParse("1.0.0"),
@@ -86,6 +88,7 @@ var expectedDeployments = NewDeployments(
 		SourceID:    project1.SourceID(semv.MustParse("1.0.0")),
 		ClusterName: "cluster-1",
 		Cluster:     cluster1,
+		Owners:      OwnerSet{"owner1": struct{}{}},
 		DeployConfig: DeployConfig{
 			Resources: Resources{
 				"cpus": "1",
@@ -102,6 +105,7 @@ var expectedDeployments = NewDeployments(
 		SourceID:    project1.SourceID(semv.MustParse("2.0.0")),
 		ClusterName: "cluster-2",
 		Cluster:     cluster2,
+		Owners:      OwnerSet{"owner1": struct{}{}},
 		DeployConfig: DeployConfig{
 			Resources: Resources{
 				"cpus": "2",
@@ -117,7 +121,6 @@ var expectedDeployments = NewDeployments(
 )
 
 func TestState_Deployments(t *testing.T) {
-	t.Skipf("until cluster/clusternickname sorted")
 	actualDeployments, err := makeTestState().Deployments()
 	if err != nil {
 		t.Fatal(err)
@@ -128,8 +131,10 @@ func TestState_Deployments(t *testing.T) {
 			t.Errorf("missing deployment %q", id)
 			continue
 		}
-		if actual != expected {
-			t.Errorf("got %v; want %v", actual, expected)
+		if !actual.Equal(expected) {
+			t.Errorf("\n\ngot:\n%v\n\nwant:\n%v\n", jsonDump(actual), jsonDump(expected))
 		}
 	}
 }
+
+func jsonDump(v interface{}) string { b, _ := json.MarshalIndent(v, "", "  "); return string(b) }

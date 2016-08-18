@@ -61,23 +61,6 @@ type (
 	}
 )
 
-// BuildDeployment constructs a deployment out of a Manifest.
-func BuildDeployment(s *State, m *Manifest, nick string, spec DeploySpec, inherit []DeploySpec) (*Deployment, error) {
-	ownMap := OwnerSet{}
-	for i := range m.Owners {
-		ownMap.Add(m.Owners[i])
-	}
-	ds := flattenDeploySpecs(append([]DeploySpec{spec}, inherit...))
-	return &Deployment{
-		ClusterName:  nick,
-		Cluster:      s.Defs.Clusters[nick],
-		DeployConfig: ds.DeployConfig,
-		Owners:       ownMap,
-		Kind:         m.Kind,
-		SourceID:     m.Source.SourceID(ds.Version),
-	}, nil
-}
-
 func (d *Deployment) String() string {
 	return fmt.Sprintf("%s @ %s %s", d.SourceID, d.Cluster, d.DeployConfig.String())
 }
