@@ -299,9 +299,8 @@ func newDockerClient() LocalDockerClient {
 	return LocalDockerClient{docker_registry.NewClient()}
 }
 
-func newLocalDiskStateManager(c LocalSousConfig) (*storage.DiskStateManager, error) {
-	sm, err := storage.NewDiskStateManager(c.StateLocation)
-	return sm, initErr(err, "initialising sous state")
+func newLocalDiskStateManager(c LocalSousConfig) *storage.DiskStateManager {
+	return storage.NewDiskStateManager(c.StateLocation)
 }
 
 func newLocalStateReader(sm *storage.DiskStateManager) LocalStateReader {
