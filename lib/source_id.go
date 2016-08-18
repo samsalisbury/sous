@@ -12,9 +12,12 @@ type (
 	// SourceID identifies a specific snapshot of a body of source code,
 	// including its location and version.
 	SourceID struct {
-		RepoURL    string
-		Version    semv.Version
-		RepoOffset string `yaml:",omitempty"`
+		// Repo: see SourceLocation.Repo.
+		Repo string
+		// Version identifies a specific version of the source code at Repo/Dir.
+		Version semv.Version
+		// Dir: See SourceLocation.Dir.
+		Dir string `yaml:",omitempty"`
 	}
 
 	//MissingRepo indicates that Sous couldn't determine which repo was intended for this SL
@@ -45,10 +48,10 @@ type (
 const DefaultDelim = ","
 
 func (sid SourceID) String() string {
-	if sid.RepoOffset == "" {
-		return fmt.Sprintf("%s %s", sid.RepoURL, sid.Version)
+	if sid.Dir == "" {
+		return fmt.Sprintf("%s %s", sid.Repo, sid.Version)
 	}
-	return fmt.Sprintf("%s:%s %s", sid.RepoURL, sid.RepoOffset, sid.Version)
+	return fmt.Sprintf("%s:%s %s", sid.Repo, sid.Dir, sid.Version)
 }
 
 // Tag returns the version tag for this source ID.
@@ -64,8 +67,8 @@ func (sid SourceID) RevID() string {
 // Location returns the location component of this SourceID.
 func (sid SourceID) Location() SourceLocation {
 	return SourceLocation{
-		RepoURL:    sid.RepoURL,
-		RepoOffset: sid.RepoOffset,
+		Repo: sid.Repo,
+		Dir:  sid.Dir,
 	}
 }
 
@@ -116,9 +119,9 @@ func sourceIDFromChunks(source string, chunks []string) (SourceID, error) {
 		repoOffset = chunks[2]
 	}
 	return SourceID{
-		Version:    version,
-		RepoURL:    repoURL,
-		RepoOffset: repoOffset,
+		Version: version,
+		Repo:    repoURL,
+		Dir:     repoOffset,
 	}, nil
 }
 

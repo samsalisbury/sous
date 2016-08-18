@@ -81,10 +81,10 @@ func TestReadState_empty(t *testing.T) {
 
 func exampleState() *sous.State {
 	sl := sous.SourceLocation{
-		RepoURL: "github.com/opentable/sous",
+		Repo: "github.com/opentable/sous",
 	}
 	sl2 := sous.SourceLocation{
-		RepoURL: "github.com/user/project",
+		Repo: "github.com/user/project",
 	}
 	return &sous.State{
 		Manifests: sous.NewManifests(

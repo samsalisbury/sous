@@ -178,10 +178,10 @@ func newSourceContext(g GitSourceContext, f *DeployFilterFlags) (*sous.SourceCon
 	if err != nil {
 		return nil, errors.Wrap(err, "resolving source location")
 	}
-	if sl.RepoURL != c.SourceLocation().RepoURL {
+	if sl.Repo != c.SourceLocation().Repo {
 		// TODO: Clone the repository, and use the cloned dir as source context.
 		return nil, errors.Errorf("source location %q is not the same as the remote %q",
-			sl.RepoURL, c.SourceLocation().RepoURL)
+			sl.Repo, c.SourceLocation().Repo)
 	}
 	return c, nil
 }

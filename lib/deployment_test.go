@@ -27,9 +27,9 @@ func TestCanonName(t *testing.T) {
 	vers, _ := semv.Parse("1.2.3-test+thing")
 	dep := Deployment{
 		SourceID: SourceID{
-			RepoURL:    "one",
-			RepoOffset: "two",
-			Version:    vers,
+			Repo:    "one",
+			Dir:     "two",
+			Version: vers,
 		},
 	}
 	str := dep.SourceID.Location().String()

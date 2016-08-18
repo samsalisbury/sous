@@ -4,22 +4,22 @@ import "testing"
 
 var parseSourceLocationTests = map[string]SourceLocation{
 	"github.com/opentable/sous,": {
-		RepoURL: "github.com/opentable/sous",
+		Repo: "github.com/opentable/sous",
 	},
 	":github.com/opentable/sous": {
-		RepoURL: "github.com/opentable/sous",
+		Repo: "github.com/opentable/sous",
 	},
 	",github.com/opentable/sous,util": {
-		RepoURL:    "github.com/opentable/sous",
-		RepoOffset: "util",
+		Repo: "github.com/opentable/sous",
+		Dir:  "util",
 	},
 	":github.com/opentable/sous:util": {
-		RepoURL:    "github.com/opentable/sous",
-		RepoOffset: "util",
+		Repo: "github.com/opentable/sous",
+		Dir:  "util",
 	},
 	"git+ssh://github.com/opentable/sous,sous": {
-		RepoURL:    "git+ssh://github.com/opentable/sous",
-		RepoOffset: "sous",
+		Repo: "git+ssh://github.com/opentable/sous",
+		Dir:  "sous",
 	},
 }
 

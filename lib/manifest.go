@@ -41,7 +41,7 @@ func (m *Manifest) ID() SourceLocation {
 
 // FileLocation returns the path that the manifest should be saved to.
 func (m *Manifest) FileLocation() string {
-	return filepath.Join(string(m.Source.RepoURL), string(m.Source.RepoOffset))
+	return filepath.Join(string(m.Source.Repo), string(m.Source.Dir))
 }
 
 const (
