@@ -1,9 +1,14 @@
 package sous
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/samsalisbury/semv"
+)
+
+var project1 = SourceLocation{Repo: "github.com/user/project"}
 
 func makeTestState() *State {
-	project1 := SourceLocation{Repo: "github.com/user/project"}
 	return &State{
 		Defs: Defs{
 			DockerRepo: "some.docker.repo",
@@ -41,11 +46,88 @@ func makeTestState() *State {
 		Manifests: NewManifests(
 			&Manifest{
 				Source: project1,
+				Deployments: DeploySpecs{
+					"cluster-1": {
+						Version: semv.MustParse("1.0.0"),
+						DeployConfig: DeployConfig{
+							Resources: Resources{
+								"cpus": "1",
+								"mem":  "1024",
+							},
+							Env: Env{
+								"ENV_1": "ENV ONE",
+							},
+							NumInstances: 2,
+						},
+					},
+					"cluster-2": {
+						Version: semv.MustParse("2.0.0"),
+						DeployConfig: DeployConfig{
+							Resources: Resources{
+								"cpus": "2",
+								"mem":  "2048",
+							},
+							Env: Env{
+								"ENV_2": "ENV TWO",
+							},
+							NumInstances: 3,
+						},
+					},
+				},
 			},
 		),
 	}
 }
 
+var expectedDeployments = NewDeployments(
+	&Deployment{
+		SourceID:        project1.SourceID(semv.MustParse("1.0.0")),
+		Cluster:         "cluster-1",
+		ClusterNickname: "cluster-1",
+		DeployConfig: DeployConfig{
+			Resources: Resources{
+				"cpus": "1",
+				"mem":  "1024",
+			},
+			Env: Env{
+				"ENV_1":             "ENV ONE",
+				"CLUSTER_LONG_NAME": "Cluster One",
+			},
+			NumInstances: 2,
+		},
+	},
+	&Deployment{
+		SourceID:        project1.SourceID(semv.MustParse("2.0.0")),
+		Cluster:         "cluster-2",
+		ClusterNickname: "cluster-2",
+		DeployConfig: DeployConfig{
+			Resources: Resources{
+				"cpus": "2",
+				"mem":  "2048",
+			},
+			Env: Env{
+				"ENV_2":             "ENV TWO",
+				"CLUSTER_LONG_NAME": "Cluster Two",
+			},
+			NumInstances: 3,
+		},
+	},
+)
+
 func TestState_Deployments(t *testing.T) {
-	_ = makeTestState()
+	t.Skipf("until cluster/clusternickname sorted")
+	actualDeployments, err := makeTestState().Deployments()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for id, expected := range expectedDeployments.Snapshot() {
+		actual, ok := actualDeployments.Get(id)
+		if !ok {
+			t.Errorf("missing deployment %q", id)
+			continue
+		}
+		if actual != expected {
+			t.Errorf("got %v; want %v", actual, expected)
+		}
+	}
 }

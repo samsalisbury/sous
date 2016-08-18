@@ -2,6 +2,7 @@ package sous
 
 import (
 	"fmt"
+	"log"
 	"strings"
 )
 
@@ -18,6 +19,7 @@ func (s *State) Deployments() (Deployments, error) {
 			return ds, fmt.Errorf("conflicting deploys: %s", conflict)
 		}
 	}
+	log.Println("OK", ds.Keys())
 	return ds, nil
 }
 
@@ -38,7 +40,8 @@ func (s *State) DeploymentsFromManifest(m *Manifest) (Deployments, error) {
 			for n := range s.Defs.Clusters {
 				us = append(us, n)
 			}
-			return ds, fmt.Errorf("Could not find an cluster configured for name '%s' in [%s] (for %+v)", clusterName, strings.Join(us, ", "), m)
+			return ds, fmt.Errorf("no cluster %q in [%s] (for %+v)",
+				clusterName, strings.Join(us, ", "), m)
 		}
 		spec.clusterName = n.BaseURL
 		d, err := BuildDeployment(m, clusterName, spec, inherit)
