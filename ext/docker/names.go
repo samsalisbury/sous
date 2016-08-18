@@ -44,7 +44,7 @@ func SourceIDFromLabels(labels map[string]string) (sous.SourceID, error) {
 	return sous.SourceID{
 		Repo:    repo,
 		Version: version,
-		Offset:  path,
+		Dir:     path,
 	}, err
 }
 
@@ -56,7 +56,7 @@ func Labels(sid sous.SourceID) map[string]string {
 	labels := make(map[string]string)
 	labels[DockerVersionLabel] = sid.Version.Format(`M.m.p-?`)
 	labels[DockerRevisionLabel] = sid.RevID()
-	labels[DockerPathLabel] = string(sid.Offset)
+	labels[DockerPathLabel] = string(sid.Dir)
 	labels[DockerRepoLabel] = string(sid.Repo)
 	return labels
 }
@@ -65,8 +65,8 @@ func imageNameBase(sid sous.SourceID) string {
 	name := string(sid.Repo)
 
 	name = stripRE.ReplaceAllString(name, "")
-	if string(sid.Offset) != "" {
-		name = strings.Join([]string{name, string(sid.Offset)}, "/")
+	if string(sid.Dir) != "" {
+		name = strings.Join([]string{name, string(sid.Dir)}, "/")
 	}
 	return name
 }

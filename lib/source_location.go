@@ -9,16 +9,17 @@ import (
 )
 
 type (
-	// SourceLocation identifies a directory inside a specific source code repo.
-	// Note that the directory has no meaning without the addition of a revision
+	// SourceLocation identifies a directory inside a source code repository.
+	// Note that the directory is ambiguous without the addition of a revision
 	// ID. This type is used as a shorthand for deploy manifests, enabling the
 	// logical grouping of deploys of different versions of a particular
 	// service.
 	SourceLocation struct {
-		// Repo is the name of a source code repository.
+		// Repo identifies a source code repository.
 		Repo,
-		// Offset is a relative path within Repo.
-		Offset string `yaml:",omitempty"`
+		// Dir is a directory within the repository at Repo containing the
+		// source code for one piece of software.
+		Dir string `yaml:",omitempty"`
 	}
 )
 
@@ -55,7 +56,7 @@ func sourceLocationFromChunks(source string, chunks []string) (SourceLocation, e
 	if len(chunks) > 1 {
 		repoOffset = chunks[1]
 	}
-	return SourceLocation{Repo: repoURL, Offset: repoOffset}, nil
+	return SourceLocation{Repo: repoURL, Dir: repoOffset}, nil
 }
 
 // MarshalYAML serializes this SourceLocation to a YAML document.
@@ -71,7 +72,7 @@ func (sl SourceLocation) MarshalText() ([]byte, error) {
 // UnmarshalText implements encoding.TextMarshaler.
 func (sl *SourceLocation) UnmarshalText(b []byte) error {
 	s := string(b)
-	n, err := fmt.Sscanf(s, "%s %s", &sl.Repo, &sl.Offset)
+	n, err := fmt.Sscanf(s, "%s %s", &sl.Repo, &sl.Dir)
 	if err != nil && err != io.EOF {
 		return errors.Wrapf(err, "unable to unmarshal source location %q", s)
 	}
@@ -93,17 +94,17 @@ func (sl *SourceLocation) UnmarshalYAML(unmarshal func(interface{}) error) error
 }
 
 func (sl SourceLocation) String() string {
-	if sl.Offset == "" {
+	if sl.Dir == "" {
 		return fmt.Sprintf("%s", sl.Repo)
 	}
-	return fmt.Sprintf("%s:%s", sl.Repo, sl.Offset)
+	return fmt.Sprintf("%s:%s", sl.Repo, sl.Dir)
 }
 
 // SourceID returns a SourceID built from this location with the addition of a version.
 func (sl *SourceLocation) SourceID(version semv.Version) SourceID {
 	return SourceID{
 		Repo:    sl.Repo,
-		Offset:  sl.Offset,
+		Dir:     sl.Dir,
 		Version: version,
 	}
 }

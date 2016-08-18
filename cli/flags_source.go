@@ -29,7 +29,7 @@ func (f *DeployFilterFlags) buildPredicate() sous.DeploymentPredicate {
 
 	if f.Offset != "" {
 		preds = append(preds, func(d *sous.Deployment) bool {
-			return d.SourceID.Offset == f.Offset
+			return d.SourceID.Dir == f.Offset
 		})
 	}
 

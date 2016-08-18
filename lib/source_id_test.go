@@ -22,22 +22,22 @@ var parseSourceIDTests = map[string]SourceID{
 	",github.com/opentable/sous,1,util": {
 		Repo:    "github.com/opentable/sous",
 		Version: semv.MustParse("1"),
-		Offset:  "util",
+		Dir:     "util",
 	},
 	"github.com/opentable/sous,1,util": {
 		Repo:    "github.com/opentable/sous",
 		Version: semv.MustParse("1"),
-		Offset:  "util",
+		Dir:     "util",
 	},
 	":github.com/opentable/sous:1:util": {
 		Repo:    "github.com/opentable/sous",
 		Version: semv.MustParse("1"),
-		Offset:  "util",
+		Dir:     "util",
 	},
 	"git+ssh://github.com/opentable/sous,1.0.0-pre+4f850e9030224f528cfdb085d558f8508d06a6d3,sous": {
 		Repo:    "git+ssh://github.com/opentable/sous",
 		Version: semv.MustParse("1.0.0-pre+4f850e9030224f528cfdb085d558f8508d06a6d3"),
-		Offset:  "sous",
+		Dir:     "sous",
 	},
 }
 

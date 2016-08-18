@@ -37,7 +37,7 @@ func (sc *SourceContext) Version() SourceID {
 	sv := SourceID{
 		Repo:    sc.RemoteURL,
 		Version: v,
-		Offset:  sc.OffsetDir,
+		Dir:     sc.OffsetDir,
 	}
 	Log.Debug.Printf("Version: % #v", sv)
 	return sv
@@ -46,8 +46,8 @@ func (sc *SourceContext) Version() SourceID {
 // SourceLocation returns the source location in this context.
 func (sc *SourceContext) SourceLocation() SourceLocation {
 	return SourceLocation{
-		Repo:   sc.PrimaryRemoteURL,
-		Offset: sc.OffsetDir,
+		Repo: sc.PrimaryRemoteURL,
+		Dir:  sc.OffsetDir,
 	}
 }
 

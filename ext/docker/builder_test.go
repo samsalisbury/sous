@@ -44,7 +44,7 @@ func TestTagStrings(t *testing.T) {
 
 	sid := sous.SourceID{
 		Repo:    "github.com/opentable/sous",
-		Offset:  "docker",
+		Dir:     "docker",
 		Version: semv.MustParse("1.2.3+deadbeef"),
 	}
 

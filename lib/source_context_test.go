@@ -16,6 +16,6 @@ func TestVersion(t *testing.T) {
 	}
 	id := sc.Version()
 	assert.Equal("github.com/opentable/test", string(id.Repo))
-	assert.Equal("sub", string(id.Offset))
+	assert.Equal("sub", string(id.Dir))
 	assert.Equal("1.2.3", id.Version.String())
 }

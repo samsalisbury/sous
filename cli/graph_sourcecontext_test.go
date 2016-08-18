@@ -39,18 +39,18 @@ func TestResolveSourceLocation_failure(t *testing.T) {
 }
 
 var goodResolveSourceLocationCalls = map[sous.SourceLocation][]resolveSourceLocationInput{
-	{Repo: "github.com/user/project", Offset: ""}: {
+	{Repo: "github.com/user/project", Dir: ""}: {
 		{Flags: &DeployFilterFlags{Repo: "github.com/user/project"}},
 		{Context: &sous.SourceContext{PrimaryRemoteURL: "github.com/user/project"}},
 	},
-	{Repo: "github.com/user/project", Offset: "some/path"}: {
+	{Repo: "github.com/user/project", Dir: "some/path"}: {
 		{Flags: &DeployFilterFlags{Repo: "github.com/user/project", Offset: "some/path"}},
 		{Context: &sous.SourceContext{
 			PrimaryRemoteURL: "github.com/user/project",
 			OffsetDir:        "some/path",
 		}},
 	},
-	{Repo: "github.com/from/flags", Offset: ""}: {
+	{Repo: "github.com/from/flags", Dir: ""}: {
 		{
 			Context: &sous.SourceContext{
 				PrimaryRemoteURL: "github.com/original/context",
@@ -74,8 +74,8 @@ func TestResolveSourceLocation_success(t *testing.T) {
 			if actual.Repo != expected.Repo {
 				t.Errorf("got repo %q; want %q", actual.Repo, expected.Repo)
 			}
-			if actual.Offset != expected.Offset {
-				t.Errorf("got offset %q; want %q", actual.Offset, expected.Offset)
+			if actual.Dir != expected.Dir {
+				t.Errorf("got offset %q; want %q", actual.Dir, expected.Dir)
 			}
 		}
 	}

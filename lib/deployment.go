@@ -132,7 +132,7 @@ func (d *Deployment) Tabbed() string {
 		d.Cluster,
 		string(d.SourceID.Repo),
 		d.SourceID.Version.String(),
-		string(d.SourceID.Offset),
+		string(d.SourceID.Dir),
 		d.NumInstances,
 		o,
 		strings.Join(rs, ", "),

@@ -36,7 +36,7 @@ func TestRoundTrip(t *testing.T) {
 	sv := sous.SourceID{
 		Version: v,
 		Repo:    "https://github.com/opentable/wackadoo",
-		Offset:  "nested/there",
+		Dir:     "nested/there",
 	}
 	host := "docker.repo.io"
 	base := "ot/wackadoo"
@@ -58,7 +58,7 @@ func TestRoundTrip(t *testing.T) {
 	newSV := sous.SourceID{
 		Version: newV,
 		Repo:    "https://github.com/opentable/wackadoo",
-		Offset:  "nested/there",
+		Dir:     "nested/there",
 	}
 
 	cn = base + "@" + digest
@@ -90,14 +90,14 @@ func TestHarvesting(t *testing.T) {
 	sv := sous.SourceID{
 		Version: v,
 		Repo:    "https://github.com/opentable/wackadoo",
-		Offset:  "nested/there",
+		Dir:     "nested/there",
 	}
 
 	v2 := semv.MustParse("2.3.4")
 	sisterSV := sous.SourceID{
 		Version: v2,
 		Repo:    "https://github.com/opentable/wackadoo",
-		Offset:  "nested/there",
+		Dir:     "nested/there",
 	}
 
 	host := "docker.repo.io"
@@ -147,7 +147,7 @@ func TestMissingName(t *testing.T) {
 	sv := sous.SourceID{
 		Version: v,
 		Repo:    "https://github.com/opentable/brand-new-idea",
-		Offset:  "nested/there",
+		Dir:     "nested/there",
 	}
 
 	name, err := nc.getImageName(sv)

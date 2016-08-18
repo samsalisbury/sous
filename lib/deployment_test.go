@@ -28,7 +28,7 @@ func TestCanonName(t *testing.T) {
 	dep := Deployment{
 		SourceID: SourceID{
 			Repo:    "one",
-			Offset:  "two",
+			Dir:     "two",
 			Version: vers,
 		},
 	}
