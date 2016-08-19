@@ -313,8 +313,6 @@ func newLocalStateWriter(sm *storage.DiskStateManager) LocalStateWriter {
 
 func newCurrentState(sr LocalStateReader) (*sous.State, error) {
 	state, err := sr.ReadState()
-	log.Println(state)
-	log.Println(err)
 	if !os.IsNotExist(err) {
 		return state, initErr(err, "reading sous state")
 	}
@@ -324,10 +322,7 @@ func newCurrentState(sr LocalStateReader) (*sous.State, error) {
 }
 
 func newCurrentGDM(state *sous.State) (CurrentGDM, error) {
-	log.Println(state)
 	deployments, err := state.Deployments()
-	log.Println(deployments)
-	log.Println(err)
 	return CurrentGDM{&deployments}, initErr(err, "expanding state")
 }
 

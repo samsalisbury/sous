@@ -10,17 +10,12 @@ import (
 // Deployments returns all deployments described by the state.
 func (s *State) Deployments() (Deployments, error) {
 	ds := NewDeployments()
-	Log.Vomit.Printf("%+v", s)
-	Log.Vomit.Printf("%+v", s.Manifests)
-	Log.Vomit.Printf("%#v", s.Manifests.Snapshot())
 	for _, m := range s.Manifests.Snapshot() {
 		deployments, err := s.DeploymentsFromManifest(m)
-		Log.Vomit.Printf("%+v", deployments)
 		if err != nil {
 			return ds, err
 		}
 		conflict, ok := ds.AddAll(deployments)
-		Log.Vomit.Printf("%+v", conflict)
 		if !ok {
 			return ds, fmt.Errorf("conflicting deploys: %s", conflict)
 		}
@@ -34,7 +29,6 @@ func (s *State) Deployments() (Deployments, error) {
 			d.Env[name] = string(val)
 		}
 	}
-	Log.Vomit.Printf("%+v", ds)
 	return ds, nil
 }
 
@@ -82,8 +76,6 @@ func (s *State) DeploymentsFromManifest(m *Manifest) (Deployments, error) {
 		inherit = append(inherit, global)
 		delete(m.Deployments, "Global")
 	}
-	Log.Vomit.Printf("%+v", m)
-	Log.Vomit.Println(m.Deployments)
 	for clusterName, spec := range m.Deployments {
 		n, ok := s.Defs.Clusters[clusterName]
 		if !ok {
@@ -96,7 +88,6 @@ func (s *State) DeploymentsFromManifest(m *Manifest) (Deployments, error) {
 		}
 		spec.clusterName = n.BaseURL
 		d, err := BuildDeployment(s, m, clusterName, spec, inherit)
-		Log.Vomit.Println(d)
 		if err != nil {
 			return ds, err
 		}
