@@ -8,10 +8,10 @@ import (
 	"os"
 	"testing"
 
+	"github.com/nyarly/testify/assert"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/docker_registry"
 	"github.com/samsalisbury/semv"
-	"github.com/stretchr/testify/assert"
 )
 
 func inMemoryRoundtripDB() *sql.DB {

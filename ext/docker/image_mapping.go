@@ -149,7 +149,7 @@ func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
 func (nc *NameCache) getImageName(sid sous.SourceID) (string, error) {
 	Log.Vomit.Printf("Getting image name for %+v", sid)
 	cn, _, err := nc.dbQueryOnSourceID(sid)
-	if _, ok := err.(NoImageNameFound); ok {
+	if _, ok := errors.Cause(err).(NoImageNameFound); ok {
 		err = nc.harvest(sid.Location())
 		if err != nil {
 			Log.Vomit.Printf("Err: %v", err)
@@ -507,7 +507,7 @@ func (nc *NameCache) dbQueryOnSourceID(sid sous.SourceID) (cn string, ins []stri
 		string(sid.Repo), string(sid.Dir), sid.Version.String())
 
 	if err == sql.ErrNoRows {
-		err = NoImageNameFound{sid}
+		err = errors.Wrap(NoImageNameFound{sid}, "")
 		return
 	}
 	if err != nil {
@@ -521,7 +521,7 @@ func (nc *NameCache) dbQueryOnSourceID(sid sous.SourceID) (cn string, ins []stri
 	}
 	err = rows.Err()
 	if len(ins) == 0 {
-		err = NoImageNameFound{sid}
+		err = errors.Wrap(NoImageNameFound{sid}, "")
 	}
 
 	return
