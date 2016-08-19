@@ -1,11 +1,11 @@
 package docker
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/nyarly/testify/assert"
@@ -136,9 +136,6 @@ func TestHarvestAlso(t *testing.T) {
 
 func TestHarvesting(t *testing.T) {
 	assert := assert.New(t)
-	Log.Debug.SetOutput(os.Stderr)
-	Log.Vomit.SetOutput(os.Stderr)
-
 	dc := docker_registry.NewDummyClient()
 	nc := NewNameCache(dc, inMemoryRoundtripDB())
 
@@ -192,10 +189,21 @@ func TestHarvesting(t *testing.T) {
 	})
 
 	nin, err := nc.GetArtifact(sisterSV)
-	nc.dump(os.Stderr)
 	if assert.NoError(err) {
 		assert.Equal(host+"/"+cn, nin.Name)
 	}
+}
+
+func TestDump(t *testing.T) {
+	assert := assert.New(t)
+
+	io := &bytes.Buffer{}
+
+	dc := docker_registry.NewDummyClient()
+	nc := NewNameCache(dc, inMemoryRoundtripDB())
+
+	nc.dump(io)
+	assert.Regexp(`name_id`, io.String())
 }
 
 func TestMissingName(t *testing.T) {
