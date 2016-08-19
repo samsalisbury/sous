@@ -16,6 +16,7 @@ import (
 	"github.com/opentable/hy"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/yaml"
+	"github.com/pkg/errors"
 )
 
 type (
@@ -49,7 +50,24 @@ func NewDiskStateManager(baseDir string) *DiskStateManager {
 // ReadState loads the entire intended state of the world from a dir.
 func (dsm *DiskStateManager) ReadState() (*sous.State, error) {
 	s := sous.NewState()
-	return s, dsm.Codec.Read(dsm.baseDir, s)
+	err := dsm.Codec.Read(dsm.baseDir, s)
+	if err != nil {
+		return nil, err
+	}
+	if s.Defs.Clusters == nil {
+		return nil, errors.Errorf("no clusters defined in %s", dsm.baseDir)
+	}
+	for _, k := range s.Manifests.Keys() {
+		m, _ := s.Manifests.Get(k)
+		for clusterName := range m.Deployments {
+			_, ok := s.Defs.Clusters[clusterName]
+			if !ok {
+				return nil, errors.Errorf("cluster %q not defined (from manifest %q)",
+					clusterName, k)
+			}
+		}
+	}
+	return s, nil
 }
 
 // WriteState records the entire intended state of the world to a dir.
