@@ -3,6 +3,7 @@ package docker
 import (
 	"database/sql"
 	"fmt"
+	"regexp"
 
 	"github.com/docker/distribution"
 	"github.com/docker/distribution/reference"
@@ -313,6 +314,38 @@ func sqlExec(db *sql.DB, sql string) error {
 	return nil
 }
 
+var sqlBindingRE = regexp.MustCompile(`[$]\d+`)
+
+func (nc *NameCache) ensureInDB(sel, ins string, args ...interface{}) (id int64, err error) {
+	selN := len(sqlBindingRE.FindAllString(sel, -1))
+	insN := len(sqlBindingRE.FindAllString(ins, -1))
+	if selN > len(args) {
+		return 0, errors.Errorf("only %d args when %d needed for %q", len(args), selN, sel)
+	}
+	if insN > len(args) {
+		return 0, errors.Errorf("only %d args when %d needed for %q", len(args), insN, ins)
+	}
+
+	row := nc.DB.QueryRow(sel, args[0:selN]...)
+	err = row.Scan(&id)
+	fmt.Printf("Found: %d %v\n", id, err)
+	if err == nil {
+		return
+	}
+
+	if errors.Cause(err) != sql.ErrNoRows {
+		return 0, errors.Wrapf(err, "getting id with %q %v", sel, args[0:selN])
+	}
+
+	nr, err := nc.DB.Exec(ins, args[0:insN]...)
+	if err != nil {
+		return 0, errors.Wrapf(err, "inserting new value: %q %v", ins, args[0:insN])
+	}
+	id, err = nr.LastInsertId()
+	fmt.Printf("Made: %d %v\n", id, err)
+	return id, errors.Wrapf(err, "getting id of new value: %q %v", ins, args[0:insN])
+}
+
 func (nc *NameCache) dbInsert(sid sous.SourceID, in, etag string) error {
 	ref, err := reference.ParseNamed(in)
 	Log.Debug.Printf("Parsed image name: %v", ref)
@@ -323,105 +356,50 @@ func (nc *NameCache) dbInsert(sid sous.SourceID, in, etag string) error {
 	Log.Vomit.Printf("Inserting name %s", ref.Name())
 
 	var nid, id int64
-	row := nc.DB.QueryRow("select"+
-		" repo_name_id from docker_repo_name"+
-		" where name = $1", ref.Name())
-	err = row.Scan(&nid)
-	if errors.Cause(err) == sql.ErrNoRows {
-		nr, err := nc.DB.Exec("insert into docker_repo_name "+
-			"(name) values ($1);", ref.Name())
-		if err != nil {
-			return errors.Wrap(err, "inserting name")
-		}
-		nid, err = nr.LastInsertId()
-		if err != nil {
-			return errors.Wrap(err, "inserting name")
-		}
-	} else if err != nil {
-		return errors.Wrap(err, "getting name")
+	nid, err = nc.ensureInDB(
+		"select repo_name_id from docker_repo_name where name = $1",
+		"insert into docker_repo_name (name) values ($1);",
+		ref.Name())
+
+	if err != nil {
+		return err
 	}
 
 	Log.Vomit.Printf("name: %s -> id: %d", ref.Name(), nid)
 
-	row = nc.DB.QueryRow("select"+
-		" location_id from docker_search_location"+
-		" where"+
-		" repo = $1 and offset = $2", sid.Repo, sid.Dir)
-	err = row.Scan(&id)
-	if errors.Cause(err) == sql.ErrNoRows {
-		res, err := nc.DB.Exec("insert into docker_search_location "+
-			"(repo, offset) values ($1, $2);", sid.Repo, sid.Dir)
+	id, err = nc.ensureInDB(
+		"select location_id from docker_search_location where repo = $1 and offset = $2",
+		"insert into docker_search_location (repo, offset) values ($1, $2);",
+		sid.Repo, sid.Dir)
 
-		if err != nil {
-			return errors.Wrap(err, "inserting location")
-		}
-
-		id, err = res.LastInsertId()
-		if err != nil {
-			return errors.Wrap(err, "inserting location")
-		}
-	} else if err != nil {
-		return errors.Wrap(err, "getting metadata")
+	if err != nil {
+		return err
 	}
 
 	_, err = nc.DB.Exec("insert or ignore into repo_through_location "+
 		"(repo_name_id, location_id) values ($1, $2)", nid, id)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "inserting (%d, %d) into repo_through_location", nid, id)
 	}
 
 	versionString := sid.Version.Format(semv.MMPPre)
 	Log.Vomit.Printf("Inserting metadata %v %v %v %v", id, etag, in, versionString)
 
-	row = nc.DB.QueryRow("select"+
-		" metadata_id from docker_search_metadata "+
-		" where"+
-		" location_id = $1 and"+
-		" etag = $2 and"+
-		" canonicalName = $3 and"+
-		" version = $4",
-		id, etag, in, versionString)
+	id, err = nc.ensureInDB(
+		"select metadata_id from docker_search_metadata  where canonicalName = $1",
+		"insert into docker_search_metadata (canonicalName, location_id, etag, version) values ($1, $2, $3, $4);",
+		in, id, etag, versionString)
 
-	err = row.Scan(&id)
-	Log.Vomit.Printf("%#v", err)
-	if errors.Cause(err) == sql.ErrNoRows {
-		res, err := nc.DB.Exec("insert into docker_search_metadata "+
-			"(location_id, etag, canonicalName, version) values ($1, $2, $3, $4);",
-			id, etag, in, versionString)
-
-		if err != nil {
-			Log.Vomit.Printf("%v %T", errors.Cause(err), errors.Cause(err))
-			return err
-		}
-
-		id, err = res.LastInsertId()
-		if err != nil {
-			Log.Vomit.Printf("%v %T", errors.Cause(err), errors.Cause(err))
-			return err
-		}
-	} else if err != nil {
-		return errors.Wrap(err, "getting metadata")
-	}
-
-	Log.Vomit.Printf("Inserting search name %v %v", id, in)
-	_, err = nc.DB.Exec("insert or replace into docker_search_name "+
-		"(metadata_id, name) values ($1, $2)", id, in)
-	if err != nil {
-		Log.Vomit.Printf("%v %T", errors.Cause(err), errors.Cause(err))
-	}
-
-	return errors.Wrap(err, "inserting")
-}
-
-func (nc *NameCache) dbAddNames(cn string, ins []string) error {
-	var id int
-	Log.Debug.Printf("Adding names for %s: %+v", cn, ins)
-	row := nc.DB.QueryRow("select metadata_id from docker_search_metadata "+
-		"where canonicalName = $1", cn)
-	err := row.Scan(&id)
 	if err != nil {
 		return err
 	}
+
+	Log.Vomit.Printf("Inserting search name %v %v", id, in)
+
+	return nc.dbAddNamesForID(id, []string{in})
+}
+
+func (nc *NameCache) dbAddNamesForID(id int64, ins []string) error {
 	add, err := nc.DB.Prepare("insert or replace into docker_search_name " +
 		"(metadata_id, name) values ($1, $2)")
 	if err != nil {
@@ -435,8 +413,19 @@ func (nc *NameCache) dbAddNames(cn string, ins []string) error {
 			return errors.Wrapf(err, "adding name: %s", n)
 		}
 	}
-
 	return nil
+}
+
+func (nc *NameCache) dbAddNames(cn string, ins []string) error {
+	var id int64
+	Log.Debug.Printf("Adding names for %s: %+v", cn, ins)
+	row := nc.DB.QueryRow("select metadata_id from docker_search_metadata "+
+		"where canonicalName = $1", cn)
+	err := row.Scan(&id)
+	if err != nil {
+		return err
+	}
+	return nc.dbAddNamesForID(id, ins)
 }
 
 func (nc *NameCache) dbQueryOnName(in string) (etag, repo, offset, version, cname string, err error) {

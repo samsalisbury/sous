@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
+	"fmt"
 	"os"
 	"testing"
 
@@ -31,9 +32,6 @@ func inMemoryDB() *sql.DB {
 
 func TestRoundTrip(t *testing.T) {
 	assert := assert.New(t)
-	Log.Debug.SetOutput(os.Stderr)
-	Log.Vomit.SetOutput(os.Stderr)
-
 	dc := docker_registry.NewDummyClient()
 	nc := NewNameCache(dc, inMemoryRoundtripDB())
 
@@ -138,6 +136,8 @@ func TestHarvestAlso(t *testing.T) {
 
 func TestHarvesting(t *testing.T) {
 	assert := assert.New(t)
+	Log.Debug.SetOutput(os.Stderr)
+	Log.Vomit.SetOutput(os.Stderr)
 
 	dc := docker_registry.NewDummyClient()
 	nc := NewNameCache(dc, inMemoryRoundtripDB())
@@ -173,6 +173,9 @@ func TestHarvesting(t *testing.T) {
 
 	// a la a SetCollector getting the SV
 	_, err := nc.GetSourceID(NewBuildArtifact(in))
+	if err != nil {
+		fmt.Printf("%+v", err)
+	}
 	assert.Nil(err)
 
 	tag = "version-2.3.4"
