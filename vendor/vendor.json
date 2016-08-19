@@ -201,10 +201,10 @@
 			"revisionTime": "2016-07-31T20:44:43Z"
 		},
 		{
-			"checksumSHA1": "t/73GjySCNTBfBAI0eKYiCvzMUA=",
+			"checksumSHA1": "IRgb8yeKkWGY5gp1TLk9rpGitB0=",
 			"path": "github.com/samsalisbury/semv",
-			"revision": "dcfea12f0df0494785e2fdf4eb5426d4a1fbd92e",
-			"revisionTime": "2016-03-30T10:57:04Z"
+			"revision": "89e7c49965c4aaf21d4c4b27f4c69e2ddaaa9c86",
+			"revisionTime": "2016-08-03T15:34:45Z"
 		},
 		{
 			"checksumSHA1": "fV2uEKIgQJGaej5Yj0OnuOkmiM4=",
@@ -239,7 +239,6 @@
 		},
 		{
 			"checksumSHA1": "DWm5iz5FvadHwann9QfLyD8zX38=",
-			"origin": "github.com/opentable/sous/vendor/golang.org/x/sys/unix",
 			"path": "golang.org/x/sys/unix",
 			"revision": "c8bc69bc2db9c57ccf979550bc69655df5039a8a",
 			"revisionTime": "2016-04-27T20:13:20Z"
