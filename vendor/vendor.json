@@ -10,8 +10,10 @@
 			"revisionTime": "2016-04-25T09:32:37Z"
 		},
 		{
+			"checksumSHA1": "5rPfda8jFccr3A6heL+JAmi9K9g=",
 			"path": "github.com/davecgh/go-spew/spew",
-			"revision": ""
+			"revision": "6cf5744a041a0022271cefed95ba843f6d87fd51",
+			"revisionTime": "2016-08-16T17:40:47Z"
 		},
 		{
 			"checksumSHA1": "/ZPjHuGHzMOd7RtfbPDbGOFLwb0=",
@@ -145,12 +147,16 @@
 			"revisionTime": "2016-05-14T12:23:48Z"
 		},
 		{
+			"checksumSHA1": "xe9ZSO5u8uyDZiCe7lq5wkKfNt0=",
 			"path": "github.com/nyarly/testify/assert",
-			"revision": ""
+			"revision": "6f5bbd18d38b3a9cfdd46245d737bab4b73f2179",
+			"revisionTime": "2016-08-19T18:41:27Z"
 		},
 		{
+			"checksumSHA1": "GQIdpG8UqlnqKkKIuauVW0yLkfM=",
 			"path": "github.com/nyarly/testify/require",
-			"revision": ""
+			"revision": "6f5bbd18d38b3a9cfdd46245d737bab4b73f2179",
+			"revisionTime": "2016-08-19T18:41:27Z"
 		},
 		{
 			"checksumSHA1": "kWGq4b6rFLLV5fD18ZlzF32wgSM=",
@@ -183,8 +189,10 @@
 			"revisionTime": "2016-08-01T10:26:19Z"
 		},
 		{
+			"checksumSHA1": "LuFv4/jlrmFNnDb/5SCSEPAM9vU=",
 			"path": "github.com/pmezard/go-difflib/difflib",
-			"revision": ""
+			"revision": "792786c7400a136282c1664665ae0a8db921c6c2",
+			"revisionTime": "2016-01-10T10:55:54Z"
 		},
 		{
 			"checksumSHA1": "Ozhf9K8LrymZoRLH6OGkvKonHOM=",
