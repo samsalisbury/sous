@@ -52,6 +52,9 @@ func NewCodec(configure ...func(*Codec)) *Codec {
 	if c.RootFileName == "" {
 		c.RootFileName = "_"
 	}
+	if c.FileExtension == "" {
+		c.FileExtension = "json"
+	}
 
 	marshaler := FileMarshaler{
 		UnmarshalFunc: c.UnmarshalFunc,
