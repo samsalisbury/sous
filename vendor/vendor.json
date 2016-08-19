@@ -279,14 +279,6 @@
 			"path": "golang.org/x/tools/imports",
 			"revision": "1cf0a337cd20f304e6caa20d6a07392e7f071245",
 			"revisionTime": "2016-08-17T05:08:34Z"
-		},
-		{
-			"path": "help",
-			"revision": ""
-		},
-		{
-			"path": "help]",
-			"revision": ""
 		}
 	],
 	"rootPath": "github.com/opentable/sous"

@@ -180,9 +180,9 @@ func TestHarvesting(t *testing.T) {
 
 	tag = "version-2.3.4"
 	dc.FeedTags([]string{tag})
+	digest = "sha256:abcdefabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeffffffff"
 	cn = base + "@" + digest
 	in = base + ":" + tag
-	digest = "sha256:abcdefabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdefffffffff"
 	dc.FeedMetadata(docker_registry.Metadata{
 		Registry:      host,
 		Labels:        Labels(sisterSV),
@@ -191,9 +191,10 @@ func TestHarvesting(t *testing.T) {
 		AllNames:      []string{cn, in},
 	})
 
-	nin, err := nc.getImageName(sisterSV)
+	nin, err := nc.GetArtifact(sisterSV)
+	nc.dump(os.Stderr)
 	if assert.NoError(err) {
-		assert.Equal(host+"/"+cn, nin)
+		assert.Equal(host+"/"+cn, nin.Name)
 	}
 }
 
