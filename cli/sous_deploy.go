@@ -72,15 +72,14 @@ func (su *SousDeploy) Execute(args []string) cmdr.Result {
 	deployment.SourceID.Version = newVersion
 	deployments.Set(id, deployment)
 
+	manifests, err := deployments.Manifests()
+	if err != nil {
+		return EnsureErrorResult(err)
+	}
+	su.GDM.Manifests = manifests
+
 	if err := su.StateWriter.WriteState(su.GDM); err != nil {
 		return EnsureErrorResult(err)
 	}
-
-	rectify := SousRectify{
-		Config:       su.Config,
-		DockerClient: su.DockerClient,
-		Deployer:     su.Deployer,
-		Registry:     su.Registry,
-	}
-	return rectify.Execute(nil)
+	return Success()
 }
