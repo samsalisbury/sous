@@ -83,7 +83,7 @@ func TestRoundTrip(t *testing.T) {
 }
 
 // I'm still exploring what the problem is here...
-func TestHavestAlso(t *testing.T) {
+func TestHarvestAlso(t *testing.T) {
 	assert := assert.New(t)
 
 	dc := docker_registry.NewDummyClient()
@@ -107,7 +107,7 @@ func TestHavestAlso(t *testing.T) {
 		in := base + ":version-" + v
 		digBs := sha256.Sum256([]byte(in))
 		digest := hex.EncodeToString(digBs[:])
-		cn := "sha256:" + digest
+		cn := base + "@sha256:" + digest
 
 		dc.FeedMetadata(docker_registry.Metadata{
 			Registry:      host,
@@ -116,7 +116,7 @@ func TestHavestAlso(t *testing.T) {
 			CanonicalName: cn,
 			AllNames:      []string{cn, in},
 		})
-		sid, err := nc.GetSourceID(ba) //several times
+		sid, err := nc.GetSourceID(ba)
 		assert.NoError(err)
 		assert.NotNil(sid)
 		return sid

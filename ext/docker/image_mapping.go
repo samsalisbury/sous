@@ -6,6 +6,7 @@ import (
 
 	"github.com/docker/distribution"
 	"github.com/docker/distribution/reference"
+	"github.com/pkg/errors"
 	// triggers the loading of sqlite3 as a database driver
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/opentable/sous/lib"
@@ -256,7 +257,7 @@ func GetDatabase(cfg *DBConfig) (*sql.DB, error) {
 	if err := sqlExec(db, "create table if not exists docker_repo_name("+
 		"repo_name_id integer primary key autoincrement"+
 		", name text not null"+
-		", constraint upsertable unique (name) on conflict replace"+
+		", constraint upsertable unique (name)"+
 		");"); err != nil {
 		return nil, err
 	}
@@ -265,17 +266,17 @@ func GetDatabase(cfg *DBConfig) (*sql.DB, error) {
 		"location_id integer primary key autoincrement"+
 		", repo text not null"+
 		", offset text not null"+
-		", constraint upsertable unique (repo, offset) on conflict replace"+
+		", constraint upsertable unique (repo, offset)"+
 		");"); err != nil {
 		return nil, err
 	}
 
 	if err := sqlExec(db, "create table if not exists repo_through_location("+
 		"repo_name_id references docker_repo_name"+
-		"   on delete cascade on update cascade not null"+
+		"    not null"+
 		", location_id references docker_search_location"+
-		"   on delete cascade on update cascade not null"+
-		",  primary key (repo_name_id, location_id) on conflict replace"+
+		"    not null"+
+		",  primary key (repo_name_id, location_id)"+
 		");"); err != nil {
 		return nil, err
 	}
@@ -283,12 +284,12 @@ func GetDatabase(cfg *DBConfig) (*sql.DB, error) {
 	if err := sqlExec(db, "create table if not exists docker_search_metadata("+
 		"metadata_id integer primary key autoincrement"+
 		", location_id references docker_search_location"+
-		"   on delete cascade on update cascade not null"+
+		"    not null"+
 		", etag text not null"+
 		", canonicalName text not null"+
 		", version text not null"+
-		", constraint upsertable unique (location_id, version) on conflict replace"+
-		", constraint canonical unique (canonicalName) on conflict replace"+
+		", constraint upsertable unique (location_id, version)"+
+		", constraint canonical unique (canonicalName)"+
 		");"); err != nil {
 		return nil, err
 	}
@@ -296,8 +297,8 @@ func GetDatabase(cfg *DBConfig) (*sql.DB, error) {
 	if err := sqlExec(db, "create table if not exists docker_search_name("+
 		"name_id integer primary key autoincrement"+
 		", metadata_id references docker_search_metadata"+
-		"   on delete cascade on update cascade not null"+
-		", name text not null unique on conflict replace"+
+		"    not null"+
+		", name text not null unique"+
 		");"); err != nil {
 		return nil, err
 	}
@@ -320,50 +321,77 @@ func (nc *NameCache) dbInsert(sid sous.SourceID, in, etag string) error {
 	}
 
 	Log.Vomit.Printf("Inserting name %s", ref.Name())
-	nr, err := nc.DB.Exec("insert into docker_repo_name "+
-		"(name) values ($1);", ref.Name())
-	nid, err := nr.LastInsertId()
-	if err != nil {
-		return err
+
+	var nid, id int64
+	row := nc.DB.QueryRow("select"+
+		" repo_name_id from docker_repo_name"+
+		" where name = $1", ref.Name())
+	err = row.Scan(&nid)
+	if errors.Cause(err) == sql.ErrNoRows {
+		nr, err := nc.DB.Exec("insert into docker_repo_name "+
+			"(name) values ($1);", ref.Name())
+		if err != nil {
+			return errors.Wrap(err, "inserting name")
+		}
+		nid, err = nr.LastInsertId()
+		if err != nil {
+			return errors.Wrap(err, "inserting name")
+		}
+	} else if err != nil {
+		return errors.Wrap(err, "getting name")
 	}
 
-	res, err := nc.DB.Exec("insert into docker_search_location "+
-		"(repo, offset) values ($1, $2);",
-		string(sid.Repo), string(sid.Dir))
+	Log.Vomit.Printf("name: %s -> id: %d", ref.Name(), nid)
 
-	if err != nil {
-		return err
+	row = nc.DB.QueryRow("select"+
+		" location_id from docker_search_location"+
+		" where"+
+		" repo = $1 and offset = $2", sid.Repo, sid.Dir)
+	err = row.Scan(&id)
+	if errors.Cause(err) == sql.ErrNoRows {
+		res, err := nc.DB.Exec("insert into docker_search_location "+
+			"(repo, offset) values ($1, $2);", sid.Repo, sid.Dir)
+
+		if err != nil {
+			return errors.Wrap(err, "inserting location")
+		}
+
+		id, err = res.LastInsertId()
+		if err != nil {
+			return errors.Wrap(err, "inserting location")
+		}
 	}
 
-	id, err := res.LastInsertId()
-	if err != nil {
-		return err
-	}
-
-	_, err = nc.DB.Exec("insert into repo_through_location "+
+	_, err = nc.DB.Exec("insert or ignore into repo_through_location "+
 		"(repo_name_id, location_id) values ($1, $2)", nid, id)
 	if err != nil {
 		return err
 	}
 
 	Log.Vomit.Printf("Inserting metadata %v %v %v %v", id, etag, in, sid.Version)
-	res, err = nc.DB.Exec("insert into docker_search_metadata "+
+	res, err := nc.DB.Exec("insert into docker_search_metadata "+
 		"(location_id, etag, canonicalName, version) values ($1, $2, $3, $4);",
 		id, etag, in, sid.Version.Format(semv.MMPPre))
 
 	if err != nil {
+		Log.Vomit.Printf("%v %T", errors.Cause(err), errors.Cause(err))
 		return err
 	}
 
 	id, err = res.LastInsertId()
 	if err != nil {
+		Log.Vomit.Printf("%v %T", errors.Cause(err), errors.Cause(err))
 		return err
 	}
 
-	res, err = nc.DB.Exec("insert into docker_search_name "+
+	Log.Vomit.Printf("Inserting search name %v %v", id, in)
+	res, err = nc.DB.Exec("insert or replace into docker_search_name "+
 		"(metadata_id, name) values ($1, $2)", id, in)
+	if err != nil {
+		Log.Vomit.Printf("%v %T", errors.Cause(err), errors.Cause(err))
+	}
 
-	return err
+	return errors.Wrap(err, "inserting")
 }
 
 func (nc *NameCache) dbAddNames(cn string, ins []string) error {
@@ -375,16 +403,17 @@ func (nc *NameCache) dbAddNames(cn string, ins []string) error {
 	if err != nil {
 		return err
 	}
-	add, err := nc.DB.Prepare("insert into docker_search_name " +
+	add, err := nc.DB.Prepare("insert or replace into docker_search_name " +
 		"(metadata_id, name) values ($1, $2)")
 	if err != nil {
-		return err
+		return errors.Wrap(err, "adding names")
 	}
 
 	for _, n := range ins {
 		_, err := add.Exec(id, n)
 		if err != nil {
-			return err
+			Log.Vomit.Printf("%v %T", errors.Cause(err), errors.Cause(err))
+			return errors.Wrapf(err, "adding name: %s", n)
 		}
 	}
 
