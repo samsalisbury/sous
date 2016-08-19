@@ -360,6 +360,8 @@ func (nc *NameCache) dbInsert(sid sous.SourceID, in, etag string) error {
 		if err != nil {
 			return errors.Wrap(err, "inserting location")
 		}
+	} else if err != nil {
+		return errors.Wrap(err, "getting metadata")
 	}
 
 	_, err = nc.DB.Exec("insert or ignore into repo_through_location "+
@@ -368,24 +370,41 @@ func (nc *NameCache) dbInsert(sid sous.SourceID, in, etag string) error {
 		return err
 	}
 
-	Log.Vomit.Printf("Inserting metadata %v %v %v %v", id, etag, in, sid.Version)
-	res, err := nc.DB.Exec("insert into docker_search_metadata "+
-		"(location_id, etag, canonicalName, version) values ($1, $2, $3, $4);",
-		id, etag, in, sid.Version.Format(semv.MMPPre))
+	versionString := sid.Version.Format(semv.MMPPre)
+	Log.Vomit.Printf("Inserting metadata %v %v %v %v", id, etag, in, versionString)
 
-	if err != nil {
-		Log.Vomit.Printf("%v %T", errors.Cause(err), errors.Cause(err))
-		return err
-	}
+	row = nc.DB.QueryRow("select"+
+		" metadata_id from docker_search_metadata "+
+		" where"+
+		" location_id = $1 and"+
+		" etag = $2 and"+
+		" canonicalName = $3 and"+
+		" version = $4",
+		id, etag, in, versionString)
 
-	id, err = res.LastInsertId()
-	if err != nil {
-		Log.Vomit.Printf("%v %T", errors.Cause(err), errors.Cause(err))
-		return err
+	err = row.Scan(&id)
+	Log.Vomit.Printf("%#v", err)
+	if errors.Cause(err) == sql.ErrNoRows {
+		res, err := nc.DB.Exec("insert into docker_search_metadata "+
+			"(location_id, etag, canonicalName, version) values ($1, $2, $3, $4);",
+			id, etag, in, versionString)
+
+		if err != nil {
+			Log.Vomit.Printf("%v %T", errors.Cause(err), errors.Cause(err))
+			return err
+		}
+
+		id, err = res.LastInsertId()
+		if err != nil {
+			Log.Vomit.Printf("%v %T", errors.Cause(err), errors.Cause(err))
+			return err
+		}
+	} else if err != nil {
+		return errors.Wrap(err, "getting metadata")
 	}
 
 	Log.Vomit.Printf("Inserting search name %v %v", id, in)
-	res, err = nc.DB.Exec("insert or replace into docker_search_name "+
+	_, err = nc.DB.Exec("insert or replace into docker_search_name "+
 		"(metadata_id, name) values ($1, $2)", id, in)
 	if err != nil {
 		Log.Vomit.Printf("%v %T", errors.Cause(err), errors.Cause(err))

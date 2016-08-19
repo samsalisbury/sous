@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
+	"os"
 	"testing"
 
 	"github.com/opentable/sous/lib"
@@ -30,6 +31,8 @@ func inMemoryDB() *sql.DB {
 
 func TestRoundTrip(t *testing.T) {
 	assert := assert.New(t)
+	Log.Debug.SetOutput(os.Stderr)
+	Log.Vomit.SetOutput(os.Stderr)
 
 	dc := docker_registry.NewDummyClient()
 	nc := NewNameCache(dc, inMemoryRoundtripDB())
