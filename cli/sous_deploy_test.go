@@ -62,3 +62,58 @@ func TestGetIDs(t *testing.T) {
 	}
 
 }
+
+var updateStateTests = []struct {
+	State                *sous.State
+	GDM                  CurrentGDM
+	SID                  sous.SourceID
+	DID                  sous.DeployID
+	ExpectedErr          string
+	ExpectedNumManifests int
+}{
+	{
+		State:       sous.NewState(),
+		GDM:         CurrentGDM{sous.NewDeployments()},
+		ExpectedErr: `cluster "" does not exist`,
+	},
+	{
+		State:       sous.NewState(),
+		GDM:         CurrentGDM{sous.NewDeployments()},
+		DID:         sous.DeployID{Cluster: "blah"},
+		ExpectedErr: `cluster "blah" does not exist`,
+	},
+	{
+		State: &sous.State{
+			Defs: sous.Defs{Clusters: sous.Clusters{
+				"blah": &sous.Cluster{Name: "blah"},
+			}},
+		},
+		GDM:                  CurrentGDM{sous.NewDeployments()},
+		DID:                  sous.DeployID{Cluster: "blah"},
+		ExpectedNumManifests: 1,
+	},
+}
+
+func TestUpdateState(t *testing.T) {
+	for _, test := range updateStateTests {
+		err := updateState(test.State, test.GDM, test.SID, test.DID)
+		if err != nil {
+			if test.ExpectedErr == "" {
+				t.Error(err)
+				continue
+			}
+			errStr := err.Error()
+			if errStr != test.ExpectedErr {
+				t.Errorf("got error %q; want %q", errStr, test.ExpectedErr)
+			}
+			continue
+		}
+		if test.ExpectedErr != "" {
+			t.Errorf("got nil; want error %q", test.ExpectedErr)
+		}
+		actualNumManifests := test.State.Manifests.Len()
+		if actualNumManifests != test.ExpectedNumManifests {
+			t.Errorf("got %d manifests; want %d", actualNumManifests, test.ExpectedNumManifests)
+		}
+	}
+}

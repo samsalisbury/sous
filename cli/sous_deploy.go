@@ -50,7 +50,17 @@ func (su *SousDeploy) Execute(args []string) cmdr.Result {
 	if err != nil {
 		return EnsureErrorResult(err)
 	}
-	deployment, ok := su.GDM.Get(did)
+	if err := updateState(su.State, su.GDM, sid, did); err != nil {
+		return EnsureErrorResult(err)
+	}
+	if err := su.StateWriter.WriteState(su.State); err != nil {
+		return EnsureErrorResult(err)
+	}
+	return Success()
+}
+
+func updateState(s *sous.State, gdm CurrentGDM, sid sous.SourceID, did sous.DeployID) error {
+	deployment, ok := gdm.Get(did)
 	if !ok {
 		log.Printf("Deployment %q does not exist, creating.\n", did)
 		deployment = &sous.Deployment{}
@@ -59,18 +69,14 @@ func (su *SousDeploy) Execute(args []string) cmdr.Result {
 	deployment.SourceID = sid
 	deployment.ClusterName = did.Cluster
 
-	su.GDM.Set(did, deployment)
+	gdm.Set(did, deployment)
 
-	manifests, err := su.GDM.Manifests(su.State.Defs)
+	manifests, err := gdm.Manifests(s.Defs)
 	if err != nil {
 		return EnsureErrorResult(err)
 	}
-	su.State.Manifests = manifests
-
-	if err := su.StateWriter.WriteState(su.State); err != nil {
-		return EnsureErrorResult(err)
-	}
-	return Success()
+	s.Manifests = manifests
+	return nil
 }
 
 func getIDs(flags DeployFilterFlags, sl sous.SourceLocation) (sous.SourceID, sous.DeployID, error) {

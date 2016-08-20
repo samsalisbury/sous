@@ -73,7 +73,7 @@ type (
 	LocalStateWriter struct{ storage.StateWriter }
 	// CurrentGDM is a snapshot of the GDM at application start. In a CLI
 	// context, which this is, that is all we need to simply read the GDM.
-	CurrentGDM struct{ *sous.Deployments }
+	CurrentGDM struct{ sous.Deployments }
 )
 
 // BuildGraph builds the dependency injection graph, used to populate commands
@@ -335,7 +335,7 @@ func newCurrentGDM(state *sous.State) (CurrentGDM, error) {
 		}
 		log.Println("GOT CLUSTER:", k)
 	}
-	return CurrentGDM{&deployments}, initErr(err, "expanding state")
+	return CurrentGDM{deployments}, initErr(err, "expanding state")
 }
 
 // The funcs named makeXXX below are used to create specific implementations of
