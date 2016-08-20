@@ -316,7 +316,7 @@ func newCurrentState(sr LocalStateReader) (*sous.State, error) {
 	if !os.IsNotExist(err) {
 		return state, initErr(err, "reading sous state")
 	}
-	log.Println("error reading state: %s", err)
+	log.Printf("error reading state: %s\n", err)
 	log.Println("defaulting to empty state")
 	return sous.NewState(), nil
 }

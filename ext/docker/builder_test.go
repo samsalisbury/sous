@@ -4,9 +4,9 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/nyarly/testify/assert"
 	"github.com/opentable/sous/lib"
 	"github.com/samsalisbury/semv"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestMetadataDockerfile(t *testing.T) {

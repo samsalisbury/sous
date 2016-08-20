@@ -9,6 +9,7 @@ before_install:
 install:
 - echo "Default install step disabled by .travis.yml"
 script:
+- "./bin/vendor-check"
 - "./bin/check-gofmt"
 - "./bin/test-until-success 3"
 - "./bin/cover"

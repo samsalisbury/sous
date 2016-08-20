@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/nyarly/testify/assert"
 	sing "github.com/opentable/go-singularity"
 	"github.com/opentable/go-singularity/dtos"
 	"github.com/opentable/sous/ext/docker"
@@ -18,7 +19,6 @@ import (
 	"github.com/opentable/sous/util/docker_registry"
 	"github.com/opentable/sous/util/whitespace"
 	"github.com/satori/go.uuid"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestBuildDeployments(t *testing.T) {

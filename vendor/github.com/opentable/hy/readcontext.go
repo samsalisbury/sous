@@ -2,7 +2,6 @@ package hy
 
 import (
 	"path"
-	"path/filepath"
 	"sort"
 	"strings"
 
@@ -49,7 +48,6 @@ func (c ReadContext) List() []string {
 			continue
 		}
 		p := strings.TrimPrefix(path, trim)
-		p = filepath.Base(p)
 		set[p] = struct{}{}
 	}
 	l := make([]string, len(set))

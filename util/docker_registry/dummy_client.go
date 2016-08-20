@@ -1,7 +1,11 @@
 package docker_registry
 
-type mdChan chan Metadata
-type tChan chan []string
+import "github.com/pkg/errors"
+
+type (
+	mdChan chan Metadata
+	tChan  chan []string
+)
 
 // DummyRegistryClient is a type for use in testing - it supports the Client
 // interface, while only returning metadata that are fed to it
@@ -25,12 +29,22 @@ func (drc *DummyRegistryClient) BecomeFoolishlyTrusting() {}
 
 // GetImageMetadata fulfills part of Client
 func (drc *DummyRegistryClient) GetImageMetadata(in, et string) (Metadata, error) {
-	return <-drc.mds, nil
+	select {
+	case md := <-drc.mds:
+		return md, nil
+	default:
+		return Metadata{}, errors.New("Metadata channel starved")
+	}
 }
 
 // AllTags fulfills part of Client
 func (drc *DummyRegistryClient) AllTags(rn string) ([]string, error) {
-	return <-drc.ts, nil
+	select {
+	case t := <-drc.ts:
+		return t, nil
+	default:
+		return nil, errors.New("Tags channel starved")
+	}
 }
 
 // LabelsForImageName fulfills part of Client
