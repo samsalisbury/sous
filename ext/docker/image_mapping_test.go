@@ -1,13 +1,17 @@
 package docker
 
 import (
+	"bytes"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
+	"fmt"
 	"testing"
 
+	"github.com/nyarly/testify/assert"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/docker_registry"
 	"github.com/samsalisbury/semv"
-	"github.com/stretchr/testify/assert"
 )
 
 func inMemoryRoundtripDB() *sql.DB {
@@ -28,7 +32,6 @@ func inMemoryDB() *sql.DB {
 
 func TestRoundTrip(t *testing.T) {
 	assert := assert.New(t)
-
 	dc := docker_registry.NewDummyClient()
 	nc := NewNameCache(dc, inMemoryRoundtripDB())
 
@@ -80,9 +83,59 @@ func TestRoundTrip(t *testing.T) {
 	}
 }
 
-func TestHarvesting(t *testing.T) {
+// I'm still exploring what the problem is here...
+func TestHarvestAlso(t *testing.T) {
 	assert := assert.New(t)
 
+	dc := docker_registry.NewDummyClient()
+	nc := NewNameCache(dc, inMemoryRoundtripDB())
+
+	host := "docker.repo.io"
+	base := "ot/wackadoo"
+	repo := "github.com/opentable/test-app"
+
+	stuffBA := func(n, v string) sous.SourceID {
+		vs := semv.MustParse(v)
+		ba := &sous.BuildArtifact{
+			Name: n,
+			Type: "docker",
+		}
+		sv := sous.SourceID{
+			Repo:    repo,
+			Dir:     "",
+			Version: vs,
+		}
+		in := base + ":version-" + v
+		digBs := sha256.Sum256([]byte(in))
+		digest := hex.EncodeToString(digBs[:])
+		cn := base + "@sha256:" + digest
+
+		dc.FeedMetadata(docker_registry.Metadata{
+			Registry:      host,
+			Labels:        Labels(sv),
+			Etag:          digest,
+			CanonicalName: cn,
+			AllNames:      []string{cn, in},
+		})
+		sid, err := nc.GetSourceID(ba)
+		assert.NoError(err)
+		assert.NotNil(sid)
+		return sid
+	}
+	sid1 := stuffBA("tom", "0.2.1")
+	sid2 := stuffBA("dick", "0.2.2")
+	sid3 := stuffBA("harry", "0.2.3")
+
+	_, err := nc.GetArtifact(sid1) //which should not miss
+	assert.NoError(err)
+	_, err = nc.GetArtifact(sid2) //which should not miss
+	assert.NoError(err)
+	_, err = nc.GetArtifact(sid3) //which should not miss
+	assert.NoError(err)
+}
+
+func TestHarvesting(t *testing.T) {
+	assert := assert.New(t)
 	dc := docker_registry.NewDummyClient()
 	nc := NewNameCache(dc, inMemoryRoundtripDB())
 
@@ -117,13 +170,16 @@ func TestHarvesting(t *testing.T) {
 
 	// a la a SetCollector getting the SV
 	_, err := nc.GetSourceID(NewBuildArtifact(in))
+	if err != nil {
+		fmt.Printf("%+v", err)
+	}
 	assert.Nil(err)
 
 	tag = "version-2.3.4"
 	dc.FeedTags([]string{tag})
+	digest = "sha256:abcdefabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeffffffff"
 	cn = base + "@" + digest
 	in = base + ":" + tag
-	digest = "sha256:abcdefabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdefffffffff"
 	dc.FeedMetadata(docker_registry.Metadata{
 		Registry:      host,
 		Labels:        Labels(sisterSV),
@@ -132,10 +188,22 @@ func TestHarvesting(t *testing.T) {
 		AllNames:      []string{cn, in},
 	})
 
-	nin, err := nc.getImageName(sisterSV)
+	nin, err := nc.GetArtifact(sisterSV)
 	if assert.NoError(err) {
-		assert.Equal(host+"/"+cn, nin)
+		assert.Equal(host+"/"+cn, nin.Name)
 	}
+}
+
+func TestDump(t *testing.T) {
+	assert := assert.New(t)
+
+	io := &bytes.Buffer{}
+
+	dc := docker_registry.NewDummyClient()
+	nc := NewNameCache(dc, inMemoryRoundtripDB())
+
+	nc.dump(io)
+	assert.Regexp(`name_id`, io.String())
 }
 
 func TestMissingName(t *testing.T) {

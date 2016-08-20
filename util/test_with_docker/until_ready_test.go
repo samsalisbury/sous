@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/nyarly/testify/assert"
 )
 
 func TestUntilReady(t *testing.T) {

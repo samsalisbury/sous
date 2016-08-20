@@ -3,7 +3,7 @@ package docker_registry
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/nyarly/testify/assert"
 )
 
 func TestRegistries(t *testing.T) {

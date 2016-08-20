@@ -3,9 +3,14 @@ package docker
 import (
 	"database/sql"
 	"fmt"
+	"io"
+	"regexp"
+	"strings"
+	"text/tabwriter"
 
 	"github.com/docker/distribution"
 	"github.com/docker/distribution/reference"
+	"github.com/pkg/errors"
 	// triggers the loading of sqlite3 as a database driver
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/opentable/sous/lib"
@@ -147,7 +152,8 @@ func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
 func (nc *NameCache) getImageName(sid sous.SourceID) (string, error) {
 	Log.Vomit.Printf("Getting image name for %+v", sid)
 	cn, _, err := nc.dbQueryOnSourceID(sid)
-	if _, ok := err.(NoImageNameFound); ok {
+	if _, ok := errors.Cause(err).(NoImageNameFound); ok {
+		Log.Vomit.Print(err)
 		err = nc.harvest(sid.Location())
 		if err != nil {
 			Log.Vomit.Printf("Err: %v", err)
@@ -179,7 +185,7 @@ func (nc *NameCache) insert(sid sous.SourceID, in, etag string) error {
 }
 
 func (nc *NameCache) harvest(sl sous.SourceLocation) error {
-	Log.Vomit.Printf("Havesting source location %#v", sl)
+	Log.Vomit.Printf("Harvesting source location %#v", sl)
 	repos, err := nc.dbQueryOnSL(sl)
 	if err != nil {
 		Log.Vomit.Printf("Err harvesting %v", err)
@@ -195,7 +201,7 @@ func (nc *NameCache) harvest(sl sous.SourceLocation) error {
 		Log.Vomit.Printf("Found %d tags (err?: %v)", len(ts), err)
 		if err == nil {
 			for _, t := range ts {
-				Log.Debug.Printf("Harvested tag: %v", t)
+				Log.Debug.Printf("Harvested tag: %v for repo: %v", t, r)
 				in, err := reference.WithTag(ref, t)
 				if err == nil {
 					a := NewBuildArtifact(in.String())
@@ -256,7 +262,7 @@ func GetDatabase(cfg *DBConfig) (*sql.DB, error) {
 	if err := sqlExec(db, "create table if not exists docker_repo_name("+
 		"repo_name_id integer primary key autoincrement"+
 		", name text not null"+
-		", constraint upsertable unique (name) on conflict replace"+
+		", constraint upsertable unique (name)"+
 		");"); err != nil {
 		return nil, err
 	}
@@ -265,17 +271,17 @@ func GetDatabase(cfg *DBConfig) (*sql.DB, error) {
 		"location_id integer primary key autoincrement"+
 		", repo text not null"+
 		", offset text not null"+
-		", constraint upsertable unique (repo, offset) on conflict replace"+
+		", constraint upsertable unique (repo, offset)"+
 		");"); err != nil {
 		return nil, err
 	}
 
 	if err := sqlExec(db, "create table if not exists repo_through_location("+
 		"repo_name_id references docker_repo_name"+
-		"   on delete cascade on update cascade not null"+
+		"    not null"+
 		", location_id references docker_search_location"+
-		"   on delete cascade on update cascade not null"+
-		",  primary key (repo_name_id, location_id) on conflict replace"+
+		"    not null"+
+		",  primary key (repo_name_id, location_id)"+
 		");"); err != nil {
 		return nil, err
 	}
@@ -283,12 +289,12 @@ func GetDatabase(cfg *DBConfig) (*sql.DB, error) {
 	if err := sqlExec(db, "create table if not exists docker_search_metadata("+
 		"metadata_id integer primary key autoincrement"+
 		", location_id references docker_search_location"+
-		"   on delete cascade on update cascade not null"+
+		"    not null"+
 		", etag text not null"+
 		", canonicalName text not null"+
 		", version text not null"+
-		", constraint upsertable unique (location_id, version) on conflict replace"+
-		", constraint canonical unique (canonicalName) on conflict replace"+
+		", constraint upsertable unique (location_id, version)"+
+		", constraint canonical unique (canonicalName)"+
 		");"); err != nil {
 		return nil, err
 	}
@@ -296,13 +302,57 @@ func GetDatabase(cfg *DBConfig) (*sql.DB, error) {
 	if err := sqlExec(db, "create table if not exists docker_search_name("+
 		"name_id integer primary key autoincrement"+
 		", metadata_id references docker_search_metadata"+
-		"   on delete cascade on update cascade not null"+
-		", name text not null unique on conflict replace"+
+		"    not null"+
+		", name text not null unique"+
 		");"); err != nil {
 		return nil, err
 	}
 
 	return db, err
+}
+
+func (nc *NameCache) dumpRows(io io.Writer, sql string) {
+	fmt.Fprintln(io, sql)
+	rows, err := nc.DB.Query(sql)
+	if err != nil {
+		panic(err)
+	}
+
+	w := &tabwriter.Writer{}
+	w.Init(io, 2, 4, 2, ' ', 0)
+	heads, err := rows.Columns()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Fprintln(w, strings.Join(heads, "\t"))
+
+	vals := make([]interface{}, len(heads))
+	for i := range vals {
+		vals[i] = new(string)
+	}
+
+	for rows.Next() {
+		rows.Scan(vals...)
+		for i, v := range vals {
+			if i != len(vals)-1 {
+				fmt.Fprintf(w, "%s\t", *(v.(*string)))
+			} else {
+				fmt.Fprintf(w, "%s\n", *(v.(*string)))
+			}
+		}
+	}
+	w.Flush()
+	fmt.Fprintln(io, "")
+}
+
+func (nc *NameCache) dump(io io.Writer) {
+	nc.dumpRows(io, "select * from docker_repo_name")
+	nc.dumpRows(io, "select * from docker_search_location")
+	nc.dumpRows(io, "select * from repo_through_location")
+	nc.dumpRows(io, "select * from docker_search_metadata")
+	nc.dumpRows(io, "select * from docker_search_name")
+
 }
 
 func sqlExec(db *sql.DB, sql string) error {
@@ -312,62 +362,112 @@ func sqlExec(db *sql.DB, sql string) error {
 	return nil
 }
 
+var sqlBindingRE = regexp.MustCompile(`[$]\d+`)
+
+func (nc *NameCache) ensureInDB(sel, ins string, args ...interface{}) (id int64, err error) {
+	selN := len(sqlBindingRE.FindAllString(sel, -1))
+	insN := len(sqlBindingRE.FindAllString(ins, -1))
+	if selN > len(args) {
+		return 0, errors.Errorf("only %d args when %d needed for %q", len(args), selN, sel)
+	}
+	if insN > len(args) {
+		return 0, errors.Errorf("only %d args when %d needed for %q", len(args), insN, ins)
+	}
+
+	row := nc.DB.QueryRow(sel, args[0:selN]...)
+	err = row.Scan(&id)
+	if err == nil {
+		Log.Vomit.Printf("Found id: %d with %q %v", id, sel, args)
+		return
+	}
+
+	if errors.Cause(err) != sql.ErrNoRows {
+		return 0, errors.Wrapf(err, "getting id with %q %v", sel, args[0:selN])
+	}
+
+	nr, err := nc.DB.Exec(ins, args[0:insN]...)
+	if err != nil {
+		return 0, errors.Wrapf(err, "inserting new value: %q %v", ins, args[0:insN])
+	}
+	id, err = nr.LastInsertId()
+	Log.Vomit.Printf("Made (?err: %v) id: %d with %q", err, id, ins)
+	return id, errors.Wrapf(err, "getting id of new value: %q %v", ins, args[0:insN])
+}
+
 func (nc *NameCache) dbInsert(sid sous.SourceID, in, etag string) error {
 	ref, err := reference.ParseNamed(in)
-	Log.Debug.Printf("Parsed image name: %v", ref)
+	Log.Debug.Printf("Parsed image name: %v from %q", ref, in)
 	if err != nil {
 		return fmt.Errorf("%v for %v", err, in)
 	}
 
-	Log.Vomit.Printf("Inserting name %s", ref.Name())
-	nr, err := nc.DB.Exec("insert into docker_repo_name "+
-		"(name) values ($1);", ref.Name())
-	nid, err := nr.LastInsertId()
-	if err != nil {
-		return err
-	}
+	Log.Vomit.Printf("Inserting name %s for %#v", ref.Name(), sid)
 
-	res, err := nc.DB.Exec("insert into docker_search_location "+
-		"(repo, offset) values ($1, $2);",
-		string(sid.Repo), string(sid.Dir))
+	var nid, id int64
+	nid, err = nc.ensureInDB(
+		"select repo_name_id from docker_repo_name where name = $1",
+		"insert into docker_repo_name (name) values ($1);",
+		ref.Name())
 
 	if err != nil {
 		return err
 	}
 
-	id, err := res.LastInsertId()
+	Log.Vomit.Printf("name: %s -> id: %d", ref.Name(), nid)
+
+	id, err = nc.ensureInDB(
+		"select location_id from docker_search_location where repo = $1 and offset = $2",
+		"insert into docker_search_location (repo, offset) values ($1, $2);",
+		sid.Repo, sid.Dir)
+
 	if err != nil {
 		return err
 	}
 
-	_, err = nc.DB.Exec("insert into repo_through_location "+
+	Log.Vomit.Printf("Source Loc: %s,%s -> id: %d", sid.Repo, sid.Dir, id)
+
+	_, err = nc.DB.Exec("insert or ignore into repo_through_location "+
 		"(repo_name_id, location_id) values ($1, $2)", nid, id)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "inserting (%d, %d) into repo_through_location", nid, id)
 	}
 
-	Log.Vomit.Printf("Inserting metadata %v %v %v %v", id, etag, in, sid.Version)
-	res, err = nc.DB.Exec("insert into docker_search_metadata "+
-		"(location_id, etag, canonicalName, version) values ($1, $2, $3, $4);",
-		id, etag, in, sid.Version.Format(semv.MMPPre))
+	versionString := sid.Version.Format(semv.MMPPre)
+	Log.Vomit.Printf("Inserting metadata id:%v etag:%v name:%v version:%v", id, etag, in, versionString)
+
+	id, err = nc.ensureInDB(
+		"select metadata_id from docker_search_metadata  where canonicalName = $1",
+		"insert into docker_search_metadata (canonicalName, location_id, etag, version) values ($1, $2, $3, $4);",
+		in, id, etag, versionString)
 
 	if err != nil {
 		return err
 	}
 
-	id, err = res.LastInsertId()
+	Log.Vomit.Printf("Inserting search name %v %v", id, in)
+
+	return nc.dbAddNamesForID(id, []string{in})
+}
+
+func (nc *NameCache) dbAddNamesForID(id int64, ins []string) error {
+	add, err := nc.DB.Prepare("insert or replace into docker_search_name " +
+		"(metadata_id, name) values ($1, $2)")
 	if err != nil {
-		return err
+		return errors.Wrap(err, "adding names")
 	}
 
-	res, err = nc.DB.Exec("insert into docker_search_name "+
-		"(metadata_id, name) values ($1, $2)", id, in)
-
-	return err
+	for _, n := range ins {
+		_, err := add.Exec(id, n)
+		if err != nil {
+			Log.Vomit.Printf("%v %T", errors.Cause(err), errors.Cause(err))
+			return errors.Wrapf(err, "adding name: %s", n)
+		}
+	}
+	return nil
 }
 
 func (nc *NameCache) dbAddNames(cn string, ins []string) error {
-	var id int
+	var id int64
 	Log.Debug.Printf("Adding names for %s: %+v", cn, ins)
 	row := nc.DB.QueryRow("select metadata_id from docker_search_metadata "+
 		"where canonicalName = $1", cn)
@@ -375,20 +475,7 @@ func (nc *NameCache) dbAddNames(cn string, ins []string) error {
 	if err != nil {
 		return err
 	}
-	add, err := nc.DB.Prepare("insert into docker_search_name " +
-		"(metadata_id, name) values ($1, $2)")
-	if err != nil {
-		return err
-	}
-
-	for _, n := range ins {
-		_, err := add.Exec(id, n)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return nc.dbAddNamesForID(id, ins)
 }
 
 func (nc *NameCache) dbQueryOnName(in string) (etag, repo, offset, version, cname string, err error) {
@@ -467,10 +554,12 @@ func (nc *NameCache) dbQueryOnSourceID(sid sous.SourceID) (cn string, ins []stri
 		"docker_search_location.repo = $1 and "+
 		"docker_search_location.offset = $2 and "+
 		"docker_search_metadata.version = $3",
-		string(sid.Repo), string(sid.Dir), sid.Version.String())
+		sid.Repo, sid.Dir, sid.Version.String())
+
+	Log.Vomit.Printf("Selecting on %q %q %q", sid.Repo, sid.Dir, sid.Version.String())
 
 	if err == sql.ErrNoRows {
-		err = NoImageNameFound{sid}
+		err = errors.Wrap(NoImageNameFound{sid}, "")
 		return
 	}
 	if err != nil {
@@ -484,7 +573,7 @@ func (nc *NameCache) dbQueryOnSourceID(sid sous.SourceID) (cn string, ins []stri
 	}
 	err = rows.Err()
 	if len(ins) == 0 {
-		err = NoImageNameFound{sid}
+		err = errors.Wrap(NoImageNameFound{sid}, "")
 	}
 
 	return

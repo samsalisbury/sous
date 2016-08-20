@@ -3,8 +3,8 @@ package cli
 import (
 	"testing"
 
+	"github.com/nyarly/testify/assert"
 	"github.com/opentable/sous/lib"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestPredicateBuilder(t *testing.T) {

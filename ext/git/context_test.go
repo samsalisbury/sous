@@ -3,7 +3,7 @@ package git
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/nyarly/testify/assert"
 )
 
 func TestRemoteProcessing(t *testing.T) {

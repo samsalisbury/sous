@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/opentable/go-singularity/dtos"
-	"github.com/stretchr/testify/assert"
+	"github.com/nyarly/testify/assert"
 )
 
 func TestConstructDeployment(t *testing.T) {

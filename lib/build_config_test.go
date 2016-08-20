@@ -3,7 +3,7 @@ package sous
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/nyarly/testify/assert"
 )
 
 // Things that we can't easily do yet:

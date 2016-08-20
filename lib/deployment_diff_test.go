@@ -4,8 +4,8 @@ import (
 	"log"
 	"testing"
 
+	"github.com/nyarly/testify/assert"
 	"github.com/samsalisbury/semv"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestEmptyDiff(t *testing.T) {
