@@ -1,8 +1,6 @@
 package hy
 
-import (
-	"reflect"
-)
+import "reflect"
 
 // Val wraps a reflect.Value so other code does not need to be aware of pointer
 // wrapping and unwrapping.
@@ -30,7 +28,7 @@ func NewFreeValFrom(v reflect.Value) Val {
 	return Val{Ptr: ptr}
 }
 
-// Final returns the final reflect.Value.
+// Final returns the final reflect.Value. Note that this will never be nil.
 func (v Val) Final() reflect.Value {
 	if v.IsPtr {
 		return v.Ptr
@@ -38,11 +36,14 @@ func (v Val) Final() reflect.Value {
 	return v.Ptr.Elem()
 }
 
+// FinalInterface returns the true final value as an interface{}.
+func (v Val) FinalInterface() interface{} {
+	return v.Final().Interface()
+}
+
 // IsZero means "is zero or nil or invalid".
 func (v Val) IsZero() bool {
-	return v.Ptr.IsNil() ||
-		!v.Ptr.Elem().IsValid() ||
-		reflect.DeepEqual(v.Ptr.Elem().Interface(), v.Base.Zero)
+	return v.Ptr.IsNil() || reflect.DeepEqual(v.Ptr.Elem().Interface(), v.Base.Zero)
 }
 
 // ShouldWrite returns true if this value is not zero or if it does have a key.
@@ -91,8 +92,8 @@ func (v Val) MapElements(elemNode Node) []Val {
 
 // Append appends a val to this slice.
 // It panics if v is not a slice.
-func (v Val) Append(val Val) {
-	reflect.Append(v.Ptr.Elem(), val.Final())
+func (v Val) Append(elem Val) {
+	v.Ptr.Elem().Set(reflect.Append(v.Ptr.Elem(), elem.Final()))
 }
 
 // Interface selects the pointer or non-pointer version of this val that

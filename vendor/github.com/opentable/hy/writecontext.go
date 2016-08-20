@@ -43,7 +43,7 @@ func (c WriteContext) SetValue(val Val) error {
 	if !val.ShouldWrite() {
 		return nil
 	}
-	t := &FileTarget{FilePath: c.Path(), Value: val.Final().Interface()}
+	t := &FileTarget{FilePath: c.Path(), Value: val.FinalInterface()}
 	return errors.Wrapf(c.targets.Add(t), "setting value at %q", c.Path())
 }
 

@@ -106,10 +106,20 @@ func (n *MapNode) ReadTargets(c ReadContext, val Val) error {
 		elemContext := c.Push(keyStr)
 		elemVal := elem.NewKeyedVal(keyVal)
 		err := elem.Read(elemContext, elemVal)
+		// Set key field.
+		if n.Field != nil && n.Field.KeyField != "" {
+			n.Field.SetKeyFunc.Call([]reflect.Value{elemVal.Ptr, elemVal.Key})
+		}
 		if err != nil {
 			return errors.Wrapf(err, "reading child %s", keyStr)
 		}
-		val.SetMapElement(elemVal)
+		// TODO: Don't calculate these values every time.
+		if reflect.DeepEqual(elemVal.Ptr.Elem().Interface(), reflect.New(elemVal.Ptr.Type().Elem()).Elem().Interface()) {
+			nv := reflect.New(elemVal.Ptr.Type()).Elem()
+			val.Ptr.Elem().SetMapIndex(elemVal.Key, nv)
+		} else {
+			val.Ptr.Elem().SetMapIndex(elemVal.Key, elemVal.Final())
+		}
 	}
 	return nil
 }
@@ -121,6 +131,7 @@ func (n *MapNode) WriteTargets(c WriteContext, val Val) error {
 	}
 	elemNode := *n.ElemNode
 	for _, elemVal := range val.MapElements(elemNode) {
+		// Set key field.
 		if n.Field != nil && n.Field.KeyField != "" {
 			n.Field.SetKeyFunc.Call([]reflect.Value{elemVal.Ptr, elemVal.Key})
 		}

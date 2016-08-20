@@ -25,6 +25,15 @@ func NewFileTargets(targets ...*FileTarget) (FileTargets, error) {
 	return fts.add(targets)
 }
 
+// MustNewFileTargets wraps NewFileTargets and panics if it returns an error.
+func MustNewFileTargets(targets ...*FileTarget) FileTargets {
+	fts, err := NewFileTargets(targets...)
+	if err != nil {
+		panic(err)
+	}
+	return fts
+}
+
 // MakeFileTargets creates a new FileTargets with a starting capacity.
 func MakeFileTargets(capacity int) FileTargets {
 	return FileTargets{m: make(map[string]*FileTarget, capacity)}

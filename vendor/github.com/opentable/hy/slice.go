@@ -18,7 +18,7 @@ func (SliceNode) Detect(base NodeBase) error {
 	if base.Kind == reflect.Slice {
 		return nil
 	}
-	return errors.Errorf("got kind %s; want slice")
+	return errors.Errorf("got kind %s; want slice", base.Kind)
 }
 
 // New returns a new slice node.

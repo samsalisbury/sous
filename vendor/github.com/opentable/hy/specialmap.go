@@ -113,6 +113,9 @@ func (n *SpecialMapNode) ReadTargets(c ReadContext, val Val) error {
 	if err := n.Map.ReadTargets(c, mapVal); err != nil {
 		return err
 	}
+	if err := n.SetAll(val, mapVal.Final()); err != nil {
+		return errors.Wrapf(err, "calling %s.SetAll", n.Type)
+	}
 	return errors.Wrapf(n.SetAll(val, mapVal.Final()), "setting map")
 }
 
