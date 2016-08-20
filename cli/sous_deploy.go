@@ -2,6 +2,7 @@ package cli
 
 import (
 	"flag"
+	"log"
 
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
@@ -10,20 +11,12 @@ import (
 
 // SousDeploy is the command description for `sous deploy`
 type SousDeploy struct {
+	DeployFilterFlags DeployFilterFlags
 	*sous.SourceContext
 	WD          LocalWorkDirShell
-	GDM         *sous.State
+	GDM         CurrentGDM
+	State       *sous.State
 	StateWriter LocalStateWriter
-
-	// Rectify fields
-	Config       LocalSousConfig
-	DockerClient LocalDockerClient
-	Deployer     sous.Deployer
-	Registry     sous.Registry
-
-	flags struct {
-		RepoURL, RepoOffset, Cluster, Version string
-	}
 }
 
 func init() { TopLevelCommands["deploy"] = &SousDeploy{} }
@@ -31,7 +24,7 @@ func init() { TopLevelCommands["deploy"] = &SousDeploy{} }
 const sousUpdateHelp = `
 deploy a new version
 
-usage: sous deploy -cluster <name> -version <semver>
+usage: sous deploy -cluster <name> -tag <semver>
 `
 
 // Help returns the help string for this command
@@ -39,46 +32,63 @@ func (su *SousDeploy) Help() string { return sousInitHelp }
 
 // AddFlags adds the flags for sous init.
 func (su *SousDeploy) AddFlags(fs *flag.FlagSet) {
-	fs.StringVar(&su.flags.Cluster, "cluster", "",
-		"which cluster to update the config in")
-	fs.StringVar(&su.flags.Version, "version", "",
-		"which version to deploy to this cluster")
+	err := AddFlags(fs, &su.DeployFilterFlags, rectifyFilterFlagsHelp+tagFlagHelp)
+	if err != nil {
+		panic(err)
+	}
+}
+
+// RegisterOn adds the DeploymentConfig to the psyringe to configure the
+// labeller and registrar
+func (su *SousDeploy) RegisterOn(psy Addable) {
+	psy.Add(&su.DeployFilterFlags)
 }
 
 // Execute fulfills the cmdr.Executor interface.
 func (su *SousDeploy) Execute(args []string) cmdr.Result {
-	if su.flags.Cluster == "" {
+	clusterName, tag := su.DeployFilterFlags.Cluster, su.DeployFilterFlags.Tag
+	if clusterName == "" {
 		return UsageErrorf("You must a select a cluster using the -cluster flag.")
 	}
+	if tag == "" {
+		return UsageErrorf("you must provide the -tag flag")
+	}
+	newVersion, err := semv.Parse(tag)
+	if err != nil {
+		return UsageErrorf("version %q not valid: %s", su.DeployFilterFlags.Tag, err)
+	}
+	log.Println("USING TAG:", tag)
 
 	sl := su.SourceContext.SourceLocation()
+	log.Println("USING SOURCE LOCATION:", sl)
 
-	clusterName := su.flags.Cluster
-	deployments, err := su.GDM.Deployments()
-	if err != nil {
-		return EnsureErrorResult(err)
-	}
+	sid := sl.SourceID(newVersion)
+	log.Println("USING SOURCE ID:", sid)
+
 	id := sous.DeployID{Source: sl, Cluster: clusterName}
-	deployment, ok := deployments.Get(id)
+	log.Println("USING DEPLOY ID:", id)
+
+	deployment, ok := su.GDM.Get(id)
 	if !ok {
-		return UsageErrorf("Cluster %q does not exist.")
+		log.Printf("Deployment %q does not exist, creating.\n", id)
+		for _, k := range su.GDM.Keys() {
+			log.Println("EXISTS:", k)
+		}
+		deployment = &sous.Deployment{}
 	}
 
-	versionStr := su.flags.Version
-	newVersion, err := semv.Parse(versionStr)
-	if err != nil {
-		return UsageErrorf("version not valid: %s", err)
-	}
-	deployment.SourceID.Version = newVersion
-	deployments.Set(id, deployment)
+	deployment.SourceID = id.Source.SourceID(newVersion)
+	deployment.ClusterName = clusterName
 
-	manifests, err := deployments.Manifests()
+	su.GDM.Set(id, deployment)
+
+	manifests, err := su.GDM.Manifests(su.State.Defs)
 	if err != nil {
 		return EnsureErrorResult(err)
 	}
-	su.GDM.Manifests = manifests
+	su.State.Manifests = manifests
 
-	if err := su.StateWriter.WriteState(su.GDM); err != nil {
+	if err := su.StateWriter.WriteState(su.State); err != nil {
 		return EnsureErrorResult(err)
 	}
 	return Success()

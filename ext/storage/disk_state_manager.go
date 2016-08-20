@@ -13,6 +13,8 @@
 package storage
 
 import (
+	"log"
+
 	"github.com/opentable/hy"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/yaml"
@@ -58,6 +60,7 @@ func (dsm *DiskStateManager) ReadState() (*sous.State, error) {
 		return nil, errors.Errorf("no clusters defined in %s", dsm.baseDir)
 	}
 	for _, k := range s.Manifests.Keys() {
+		log.Println("DSM READING:", k)
 		m, _ := s.Manifests.Get(k)
 		for clusterName := range m.Deployments {
 			_, ok := s.Defs.Clusters[clusterName]

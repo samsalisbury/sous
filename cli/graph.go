@@ -35,8 +35,6 @@ type (
 	// SousCLIGraph is a dependency injector used to flesh out Sous commands
 	// with their dependencies.
 	SousCLIGraph struct{ *psyringe.Psyringe }
-	// Version represents a version of Sous.
-
 	// OutWriter is an alias on io.Writer to disguish "stderr"
 	OutWriter io.Writer
 	// ErrWriter is an alias on io.Writer to disguish "stderr"
@@ -44,6 +42,7 @@ type (
 )
 
 type (
+	// Version represents a version of Sous.
 	Version struct{ semv.Version }
 	// LocalUser is the currently logged in user.
 	LocalUser struct{ *User }
@@ -247,8 +246,8 @@ func newLocalWorkDir() (LocalWorkDir, error) {
 func newLocalWorkDirShell(l LocalWorkDir) (v LocalWorkDirShell, err error) {
 	v.Sh, err = shell.DefaultInDir(string(l))
 	v.TeeEcho = os.Stdout
-	v.TeeOut = os.Stdout
-	v.TeeErr = os.Stderr
+	//v.TeeOut = os.Stdout
+	//v.TeeErr = os.Stderr
 	return v, initErr(err, "getting current working directory")
 }
 
@@ -313,16 +312,29 @@ func newLocalStateWriter(sm *storage.DiskStateManager) LocalStateWriter {
 
 func newCurrentState(sr LocalStateReader) (*sous.State, error) {
 	state, err := sr.ReadState()
-	if !os.IsNotExist(err) {
-		return state, initErr(err, "reading sous state")
+	if os.IsNotExist(err) {
+		log.Println("error reading state:", err)
+		log.Println("defaulting to empty state")
+		return sous.NewState(), nil
 	}
-	log.Println("error reading state: %s", err)
-	log.Println("defaulting to empty state")
-	return sous.NewState(), nil
+	return state, initErr(err, "reading sous state")
 }
 
 func newCurrentGDM(state *sous.State) (CurrentGDM, error) {
+	log.Println("#", state.Manifests.Len(), "MANIFESTS")
 	deployments, err := state.Deployments()
+	if err != nil {
+		return CurrentGDM{}, initErr(err, "expanding state")
+	}
+	if deployments.Len() == 0 {
+		log.Println("ZERO DEPLOYMENTS")
+	}
+	for k, d := range deployments.Snapshot() {
+		if d.Cluster == nil {
+			return CurrentGDM{}, errors.Errorf("CLUSTER IS NIL IN DEPLOYMENT %q", k)
+		}
+		log.Println("GOT CLUSTER:", k)
+	}
 	return CurrentGDM{&deployments}, initErr(err, "expanding state")
 }
 

@@ -57,6 +57,14 @@ func TestInvokeConfig(t *testing.T) {
 
 }
 
+func TestInvokeDeploy(t *testing.T) {
+	assert := assert.New(t)
+
+	exe := justCommand(t, []string{`sous`, `deploy`})
+	assert.NotNil(exe)
+	assert.Len(exe.Args, 0)
+}
+
 /*
 usage: sous context
 

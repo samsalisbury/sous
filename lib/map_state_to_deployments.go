@@ -2,19 +2,23 @@ package sous
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/samsalisbury/semv"
 )
 
 // Deployments returns all deployments described by the state.
 func (s *State) Deployments() (Deployments, error) {
 	ds := NewDeployments()
-	for _, m := range s.Manifests.Snapshot() {
+	for k, m := range s.Manifests.Snapshot() {
+		log.Println("GETTING DEPLOYMENTS FOR:", k)
 		deployments, err := s.DeploymentsFromManifest(m)
 		if err != nil {
 			return ds, err
 		}
+		log.Println("GOT:", deployments.Len())
 		conflict, ok := ds.AddAll(deployments)
 		if !ok {
 			return ds, fmt.Errorf("conflicting deploys: %s", conflict)
@@ -28,14 +32,31 @@ func (s *State) Deployments() (Deployments, error) {
 			}
 			d.Env[name] = string(val)
 		}
+		cluster, ok := s.Defs.Clusters[d.ClusterName]
+		if !ok {
+			return ds, errors.Errorf("cluster %q does not exist (specified in manifest %q)",
+				d.ClusterName, id.Source)
+		}
+		if cluster == nil {
+			return ds, errors.Errorf("cluster %q is nil, check defs.yaml", d.ClusterName)
+		}
+		d.Cluster = cluster
 	}
 	return ds, nil
 }
 
 // Manifests creates manifests from deployments.
-func (ds Deployments) Manifests() (Manifests, error) {
+func (ds Deployments) Manifests(defs Defs) (Manifests, error) {
 	ms := NewManifests()
-	for _, d := range ds.Snapshot() {
+	for _, k := range ds.Keys() {
+		d, _ := ds.Get(k)
+		if d.Cluster == nil {
+			cluster, ok := defs.Clusters[d.ClusterName]
+			if !ok {
+				return ms, errors.Errorf("cluster %q does not exist", d.ClusterName)
+			}
+			d.Cluster = cluster
+		}
 		sl := d.SourceID.Location()
 		m, ok := ms.Get(sl)
 		if !ok {
