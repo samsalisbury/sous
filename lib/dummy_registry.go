@@ -19,6 +19,12 @@ func (dc *DummyRegistry) GetSourceID(*BuildArtifact) (SourceID, error) {
 	return SourceID{}, nil
 }
 
+// ListSourceIDs implements Registry
 func (dc *DummyRegistry) ListSourceIDs() ([]SourceID, error) {
 	return []SourceID{}, nil
+}
+
+// Warmup implements Registry
+func (dc *DummyRegistry) Warmup(string) error {
+	return nil
 }
