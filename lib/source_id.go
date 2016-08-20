@@ -130,3 +130,12 @@ func ParseSourceID(s string) (SourceID, error) {
 	chunks := parseChunks(s)
 	return sourceIDFromChunks(s, chunks)
 }
+
+// MustParseSourceID wraps ParseSourceID and panics if it returns an error.
+func MustParseSourceID(s string) SourceID {
+	sid, err := ParseSourceID(s)
+	if err != nil {
+		panic(err)
+	}
+	return sid
+}

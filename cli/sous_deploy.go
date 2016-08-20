@@ -46,41 +46,20 @@ func (su *SousDeploy) RegisterOn(psy Addable) {
 
 // Execute fulfills the cmdr.Executor interface.
 func (su *SousDeploy) Execute(args []string) cmdr.Result {
-	clusterName, tag := su.DeployFilterFlags.Cluster, su.DeployFilterFlags.Tag
-	if clusterName == "" {
-		return UsageErrorf("You must a select a cluster using the -cluster flag.")
-	}
-	if tag == "" {
-		return UsageErrorf("you must provide the -tag flag")
-	}
-	newVersion, err := semv.Parse(tag)
+	sid, did, err := getIDs(su.DeployFilterFlags, su.SourceContext.SourceLocation())
 	if err != nil {
-		return UsageErrorf("version %q not valid: %s", su.DeployFilterFlags.Tag, err)
+		return EnsureErrorResult(err)
 	}
-	log.Println("USING TAG:", tag)
-
-	sl := su.SourceContext.SourceLocation()
-	log.Println("USING SOURCE LOCATION:", sl)
-
-	sid := sl.SourceID(newVersion)
-	log.Println("USING SOURCE ID:", sid)
-
-	id := sous.DeployID{Source: sl, Cluster: clusterName}
-	log.Println("USING DEPLOY ID:", id)
-
-	deployment, ok := su.GDM.Get(id)
+	deployment, ok := su.GDM.Get(did)
 	if !ok {
-		log.Printf("Deployment %q does not exist, creating.\n", id)
-		for _, k := range su.GDM.Keys() {
-			log.Println("EXISTS:", k)
-		}
+		log.Printf("Deployment %q does not exist, creating.\n", did)
 		deployment = &sous.Deployment{}
 	}
 
-	deployment.SourceID = id.Source.SourceID(newVersion)
-	deployment.ClusterName = clusterName
+	deployment.SourceID = sid
+	deployment.ClusterName = did.Cluster
 
-	su.GDM.Set(id, deployment)
+	su.GDM.Set(did, deployment)
 
 	manifests, err := su.GDM.Manifests(su.State.Defs)
 	if err != nil {
@@ -92,4 +71,21 @@ func (su *SousDeploy) Execute(args []string) cmdr.Result {
 		return EnsureErrorResult(err)
 	}
 	return Success()
+}
+
+func getIDs(flags DeployFilterFlags, sl sous.SourceLocation) (sous.SourceID, sous.DeployID, error) {
+	clusterName, tag, sid, did := flags.Cluster, flags.Tag, sous.SourceID{}, sous.DeployID{}
+	if clusterName == "" {
+		return sid, did, UsageErrorf("You must select a cluster using the -cluster flag.")
+	}
+	if tag == "" {
+		return sid, did, UsageErrorf("You must provide the -tag flag.")
+	}
+	newVersion, err := semv.Parse(tag)
+	if err != nil {
+		return sid, did, UsageErrorf("Version %q not valid: %s", flags.Tag, err)
+	}
+	sid = sl.SourceID(newVersion)
+	did = sous.DeployID{Source: sl, Cluster: clusterName}
+	return sid, did, nil
 }
