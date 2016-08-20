@@ -13,8 +13,6 @@
 package storage
 
 import (
-	"log"
-
 	"github.com/opentable/hy"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/yaml"
@@ -54,18 +52,17 @@ func (dsm *DiskStateManager) ReadState() (*sous.State, error) {
 	s := sous.NewState()
 	err := dsm.Codec.Read(dsm.baseDir, s)
 	if err != nil {
-		return nil, err
+		return s, err
 	}
 	if s.Defs.Clusters == nil {
-		return nil, errors.Errorf("no clusters defined in %s", dsm.baseDir)
+		return s, errors.Errorf("no clusters defined in %s", dsm.baseDir)
 	}
 	for _, k := range s.Manifests.Keys() {
-		log.Println("DSM READING:", k)
 		m, _ := s.Manifests.Get(k)
 		for clusterName := range m.Deployments {
 			_, ok := s.Defs.Clusters[clusterName]
-			if !ok {
-				return nil, errors.Errorf("cluster %q not defined (from manifest %q)",
+			if clusterName != "Global" && !ok {
+				return s, errors.Errorf("cluster %q not defined (from manifest %q)",
 					clusterName, k)
 			}
 		}

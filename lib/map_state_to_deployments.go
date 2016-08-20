@@ -12,6 +12,9 @@ import (
 // Deployments returns all deployments described by the state.
 func (s *State) Deployments() (Deployments, error) {
 	ds := NewDeployments()
+	if s == nil {
+		panic("NIL STATE")
+	}
 	for k, m := range s.Manifests.Snapshot() {
 		log.Println("GETTING DEPLOYMENTS FOR:", k)
 		deployments, err := s.DeploymentsFromManifest(m)

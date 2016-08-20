@@ -138,7 +138,8 @@ func TestState_Deployments(t *testing.T) {
 }
 
 func TestDeployments_Manifests(t *testing.T) {
-	actualManifests, err := expectedDeployments.Manifests()
+	defs := makeTestState().Defs
+	actualManifests, err := expectedDeployments.Manifests(defs)
 	if err != nil {
 		t.Fatal(err)
 	}
