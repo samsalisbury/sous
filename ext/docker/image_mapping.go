@@ -83,6 +83,27 @@ func (nc *NameCache) ListSourceIDs() ([]sous.SourceID, error) {
 	return nc.dbQueryAllSourceIds()
 }
 
+// Warmup implements Registry
+func (nc *NameCache) Warmup(r string) error {
+	ref, err := reference.ParseNamed(r)
+	if err != nil {
+		return errors.Errorf("%v for %v", err, r)
+	}
+	ts, err := nc.RegistryClient.AllTags(r)
+	if err != nil {
+		return errors.Wrap(err, "warming up")
+	}
+	for _, t := range ts {
+		Log.Debug.Printf("Harvested tag: %v for repo: %v", t, r)
+		in, err := reference.WithTag(ref, t)
+		if err == nil {
+			a := NewBuildArtifact(in.String())
+			nc.GetSourceID(a) //pull it into the cache...
+		}
+	}
+	return nil
+}
+
 // GetArtifact implements sous.Registry.GetArtifact
 func (nc *NameCache) GetArtifact(sid sous.SourceID) (*sous.BuildArtifact, error) {
 	name, err := nc.getImageName(sid)
@@ -193,22 +214,11 @@ func (nc *NameCache) harvest(sl sous.SourceLocation) error {
 	}
 	Log.Vomit.Printf("Attempting to harvest %d repos", len(repos))
 	for _, r := range repos {
-		ref, err := reference.ParseNamed(r)
+		err := nc.Warmup(r)
 		if err != nil {
-			return fmt.Errorf("%v for %v", err, r)
+			return err
 		}
-		ts, err := nc.RegistryClient.AllTags(r)
-		Log.Vomit.Printf("Found %d tags (err?: %v)", len(ts), err)
-		if err == nil {
-			for _, t := range ts {
-				Log.Debug.Printf("Harvested tag: %v for repo: %v", t, r)
-				in, err := reference.WithTag(ref, t)
-				if err == nil {
-					a := NewBuildArtifact(in.String())
-					nc.GetSourceID(a) //pull it into the cache...
-				}
-			}
-		}
+
 	}
 	return nil
 }
