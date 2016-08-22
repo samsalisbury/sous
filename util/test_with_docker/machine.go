@@ -16,6 +16,38 @@ type Machine struct {
 	serviceTimeout time.Duration
 }
 
+func dmTrial() agentBuilderF {
+	dm := dockerMachineName()
+	if dm != "" {
+		return func(c agentCfg) Agent {
+			log.Println("Using docker-machine", dm)
+			return &Machine{name: dm, serviceTimeout: c.timeout}
+		}
+	}
+	return nil
+}
+
+// dockerMachineName returns the name of an existing docker machine by invoking
+// `docker-machine ls -q`
+//
+// If any  docker machines are called "default", it returns "default". If there
+// are no docker machines, or the command fails, it returns  an empty string. In
+// all other cases, it returns the first machine name output by the command.
+func dockerMachineName() string {
+	ls := runCommand("docker-machine", "ls", "-q")
+	if ls.err != nil {
+		log.Printf("docker-machine ls failed:\n  Stdout:\n%s\n  Stderr:\n%s", ls.stdout, ls.stderr)
+		return ""
+	}
+	machines := strings.Split(ls.stdout, "\n")
+	for _, m := range machines {
+		if m == "default" {
+			return m
+		}
+	}
+	return machines[0]
+}
+
 func (m *Machine) ComposeServices(dir string, servicePorts serviceMap) (shutdown *command, err error) {
 	ip, err := m.IP()
 	if err != nil {
@@ -24,6 +56,10 @@ func (m *Machine) ComposeServices(dir string, servicePorts serviceMap) (shutdown
 	env := m.env()
 
 	return composeService(dir, ip, env, servicePorts, m.serviceTimeout)
+}
+
+func (m *Machine) Cleanup() error {
+	return nil
 }
 
 func (m *Machine) DifferingFiles(pathPairs ...[]string) (differentPairs [][]string, err error) {
