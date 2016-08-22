@@ -2,7 +2,6 @@ package sous
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -16,12 +15,12 @@ func (s *State) Deployments() (Deployments, error) {
 		panic("NIL STATE")
 	}
 	for k, m := range s.Manifests.Snapshot() {
-		log.Println("GETTING DEPLOYMENTS FOR:", k)
+		Log.Debug.Println("GETTING DEPLOYMENTS FOR:", k)
 		deployments, err := s.DeploymentsFromManifest(m)
 		if err != nil {
 			return ds, err
 		}
-		log.Println("GOT:", deployments.Len())
+		Log.Debug.Println("GOT:", deployments.Len())
 		conflict, ok := ds.AddAll(deployments)
 		if !ok {
 			return ds, fmt.Errorf("conflicting deploys: %s", conflict)
