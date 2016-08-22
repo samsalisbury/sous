@@ -43,7 +43,7 @@ func (drc *DummyRegistryClient) AllTags(rn string) ([]string, error) {
 	case t := <-drc.ts:
 		return t, nil
 	default:
-		return nil, errors.New("Tags channel starved")
+		return []string{}, nil
 	}
 }
 
