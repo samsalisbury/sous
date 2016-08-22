@@ -54,8 +54,10 @@ Please report any issue with sous to https://github.com/opentable/sous/issues
 pull requests are welcome.
 `
 
+// Help returns the top-level help for Sous.
 func (*Sous) Help() string { return sousHelp }
 
+// AddFlags adds sous' flags.
 func (s *Sous) AddFlags(fs *flag.FlagSet) {
 	fs.BoolVar(&s.flags.Verbosity.Silent, "s", false,
 		"silent: silence all non-essential output")
@@ -72,6 +74,8 @@ func (s *Sous) RegisterOn(psy Addable) {
 	psy.Add(s)
 }
 
+// Execute exists to present a helpful error to the user, in the case they just
+// run 'sous' with not subcommand.
 func (s *Sous) Execute(args []string) cmdr.Result {
 	r := s.CLI.InvokeWithoutPrinting([]string{"sous", "help"})
 	success, ok := r.(cmdr.SuccessResult)
@@ -87,6 +91,7 @@ func (s *Sous) usage() cmdr.ErrorResult {
 	return err
 }
 
+// Subcommands returns all the top-level sous subcommands.
 func (s *Sous) Subcommands() cmdr.Commands {
 	//s.CLI.SetVerbosity(s.Verbosity())
 	return TopLevelCommands
