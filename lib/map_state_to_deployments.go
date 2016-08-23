@@ -3,7 +3,6 @@ package sous
 import (
 	"fmt"
 	"log"
-	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/samsalisbury/semv"
@@ -53,6 +52,9 @@ func (ds Deployments) Manifests(defs Defs) (Manifests, error) {
 	ms := NewManifests()
 	for _, k := range ds.Keys() {
 		d, _ := ds.Get(k)
+		if d.ClusterName == "" {
+			return ms, fmt.Errorf("no cluster name set for %q", k)
+		}
 		if d.Cluster == nil {
 			cluster, ok := defs.Clusters[d.ClusterName]
 			if !ok {
@@ -61,6 +63,7 @@ func (ds Deployments) Manifests(defs Defs) (Manifests, error) {
 			d.Cluster = cluster
 		}
 		sl := d.SourceID.Location()
+		// Lookup the current manifest for this source location.
 		m, ok := ms.Get(sl)
 		if !ok {
 			m = &Manifest{Deployments: DeploySpecs{}}
@@ -83,8 +86,7 @@ func (ds Deployments) Manifests(defs Defs) (Manifests, error) {
 				delete(spec.DeployConfig.Env, k)
 			}
 		}
-
-		m.Deployments[d.Cluster.Name] = spec
+		m.Deployments[d.ClusterName] = spec
 		ms.Set(sl, m)
 	}
 	return ms, nil
@@ -101,16 +103,11 @@ func (s *State) DeploymentsFromManifest(m *Manifest) (Deployments, error) {
 		delete(m.Deployments, "Global")
 	}
 	for clusterName, spec := range m.Deployments {
-		n, ok := s.Defs.Clusters[clusterName]
+		cluster, ok := s.Defs.Clusters[clusterName]
 		if !ok {
-			us := make([]string, 0, len(s.Defs.Clusters))
-			for n := range s.Defs.Clusters {
-				us = append(us, n)
-			}
-			return ds, fmt.Errorf("no cluster %q in [%s] (for %+v)",
-				clusterName, strings.Join(us, ", "), m)
+			return ds, errors.Errorf("cluster %q not defined", clusterName)
 		}
-		spec.clusterName = n.BaseURL
+		spec.clusterName = cluster.BaseURL
 		d, err := BuildDeployment(s, m, clusterName, spec, inherit)
 		if err != nil {
 			return ds, err
