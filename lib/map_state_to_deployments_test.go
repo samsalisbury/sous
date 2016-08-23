@@ -139,6 +139,7 @@ func TestState_Deployments(t *testing.T) {
 
 func TestDeployments_Manifests(t *testing.T) {
 	defs := makeTestState().Defs
+
 	actualManifests, err := expectedDeployments.Manifests(defs)
 	if err != nil {
 		t.Fatal(err)
@@ -150,6 +151,7 @@ func TestDeployments_Manifests(t *testing.T) {
 		t.Fatalf("got %d manifests; want %d", actualLen, expectedLen)
 	}
 	for _, sl := range expectedManifests.Keys() {
+		t.Log(sl, "READING")
 		expected, _ := expectedManifests.Get(sl)
 		actual, ok := actualManifests.Get(sl)
 		if !ok {
@@ -159,6 +161,25 @@ func TestDeployments_Manifests(t *testing.T) {
 		if !actual.Equal(expected) {
 			t.Errorf("\n\ngot:\n%v\n\nwant:\n%v\n", jsonDump(actual), jsonDump(expected))
 		}
+		// Check all expected DeploySpecs are in actual.
+		for clusterName := range expected.Deployments {
+			did := DeployID{Cluster: clusterName, Source: expected.Source}
+			_, ok := actual.Deployments[clusterName]
+			if !ok {
+				t.Errorf("deployment %q missing", did)
+			} else {
+				t.Logf("GOT DEPLOYMENT %q", did)
+			}
+		}
+		// Check actual contains only the expected DeploySpecs.
+		for clusterName := range actual.Deployments {
+			did := DeployID{Cluster: clusterName, Source: actual.Source}
+			_, ok := expected.Deployments[clusterName]
+			if !ok {
+				t.Errorf("extra deployment %q", did)
+			}
+		}
+		t.Log(sl, "OK")
 	}
 }
 

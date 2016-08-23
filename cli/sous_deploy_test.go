@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	sous "github.com/opentable/sous/lib"
+	"github.com/samsalisbury/semv"
 )
 
 var getIDsTests = []struct {
@@ -66,7 +67,6 @@ func TestGetIDs(t *testing.T) {
 var updateStateTests = []struct {
 	State                *sous.State
 	GDM                  CurrentGDM
-	SID                  sous.SourceID
 	DID                  sous.DeployID
 	ExpectedErr          string
 	ExpectedNumManifests int
@@ -74,12 +74,15 @@ var updateStateTests = []struct {
 	{
 		State:       sous.NewState(),
 		GDM:         CurrentGDM{sous.NewDeployments()},
-		ExpectedErr: `cluster "" does not exist`,
+		ExpectedErr: "invalid deploy ID (no cluster name)",
 	},
 	{
-		State:       sous.NewState(),
-		GDM:         CurrentGDM{sous.NewDeployments()},
-		DID:         sous.DeployID{Cluster: "blah"},
+		State: sous.NewState(),
+		GDM:   CurrentGDM{sous.NewDeployments()},
+		DID: sous.DeployID{
+			Cluster: "blah",
+			Source:  sous.MustParseSourceLocation("github.com/user/project"),
+		},
 		ExpectedErr: `cluster "blah" does not exist`,
 	},
 	{
@@ -88,15 +91,23 @@ var updateStateTests = []struct {
 				"blah": &sous.Cluster{Name: "blah"},
 			}},
 		},
-		GDM:                  CurrentGDM{sous.NewDeployments()},
-		DID:                  sous.DeployID{Cluster: "blah"},
+		GDM: CurrentGDM{sous.NewDeployments()},
+		DID: sous.DeployID{
+			Cluster: "blah",
+			Source:  sous.MustParseSourceLocation("github.com/user/project"),
+		},
 		ExpectedNumManifests: 1,
 	},
 }
 
 func TestUpdateState(t *testing.T) {
 	for _, test := range updateStateTests {
-		err := updateState(test.State, test.GDM, test.SID, test.DID)
+		sid := sous.SourceID{
+			Repo:    test.DID.Source.Repo,
+			Dir:     test.DID.Source.Dir,
+			Version: semv.MustParse("1.0.0"),
+		}
+		err := updateState(test.State, test.GDM, sid, test.DID)
 		if err != nil {
 			if test.ExpectedErr == "" {
 				t.Error(err)
@@ -114,6 +125,16 @@ func TestUpdateState(t *testing.T) {
 		actualNumManifests := test.State.Manifests.Len()
 		if actualNumManifests != test.ExpectedNumManifests {
 			t.Errorf("got %d manifests; want %d", actualNumManifests, test.ExpectedNumManifests)
+		}
+		if (test.DID != sous.DeployID{}) {
+			m, ok := test.State.Manifests.Get(sid.Location())
+			if !ok {
+				t.Errorf("manifest %q not found", sid.Location())
+			}
+			_, ok = m.Deployments[test.DID.Cluster]
+			if !ok {
+				t.Errorf("missing deployment %q", test.DID)
+			}
 		}
 	}
 }

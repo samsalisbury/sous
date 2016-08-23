@@ -321,19 +321,9 @@ func newCurrentState(sr LocalStateReader) (*sous.State, error) {
 }
 
 func newCurrentGDM(state *sous.State) (CurrentGDM, error) {
-	log.Println("#", state.Manifests.Len(), "MANIFESTS")
 	deployments, err := state.Deployments()
 	if err != nil {
 		return CurrentGDM{}, initErr(err, "expanding state")
-	}
-	if deployments.Len() == 0 {
-		log.Println("ZERO DEPLOYMENTS")
-	}
-	for k, d := range deployments.Snapshot() {
-		if d.Cluster == nil {
-			return CurrentGDM{}, errors.Errorf("CLUSTER IS NIL IN DEPLOYMENT %q", k)
-		}
-		log.Println("GOT CLUSTER:", k)
 	}
 	return CurrentGDM{deployments}, initErr(err, "expanding state")
 }

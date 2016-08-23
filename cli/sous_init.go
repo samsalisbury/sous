@@ -74,7 +74,14 @@ func (si *SousInit) Execute(args []string) cmdr.Result {
 		if len(otplDeploySpecs) == 0 {
 			return UsageErrorf("you specified -use-otpl-deploy, but no valid deployments were found in config/")
 		}
-		deploySpecs = otplDeploySpecs
+		deploySpecs = sous.DeploySpecs{}
+		for clusterName, spec := range otplDeploySpecs {
+			if _, ok := si.State.Defs.Clusters[clusterName]; !ok {
+				sous.Log.Warn.Printf("otpl-deploy config for cluster %q ignored", clusterName)
+				continue
+			}
+			deploySpecs[clusterName] = spec
+		}
 	}
 	if len(deploySpecs) == 0 {
 		deploySpecs = defaultDeploySpecs()

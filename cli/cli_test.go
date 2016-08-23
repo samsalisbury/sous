@@ -3,7 +3,6 @@ package cli
 import (
 	"bytes"
 	"fmt"
-	"log"
 	"testing"
 
 	"github.com/nyarly/testify/assert"
@@ -162,6 +161,14 @@ func TestInvokeVersion(t *testing.T) {
 	assert.NotNil(exe)
 }
 
+func TestInvokeHarvest(t *testing.T) {
+	assert := assert.New(t)
+
+	exe := justCommand(t, []string{`sous`, `harvest`, `sms-continual-test`})
+	assert.NotNil(exe)
+	assert.Len(exe.Args, 1)
+}
+
 /*
 usage: sous <command>
 
@@ -195,7 +202,6 @@ func TestInvokeBareSous(t *testing.T) {
 	require.NotPanics(func() {
 		r = c.InvokeWithoutPrinting([]string{"sous", "help"})
 	})
-	log.Printf("%T %v", r, r)
 	assert.IsType(cmdr.SuccessResult{}, r)
 }
 
