@@ -58,6 +58,9 @@ type (
 		BaseURL string
 		// Env is the default environment for all deployments in this region.
 		Env EnvDefaults
+		// AllowedAdvisories lists the artifact advisories which are permissible in
+		// this cluster
+		AllowedAdvisories []string
 	}
 
 	// EnvDefaults is a list of named environment variables along with their values.

@@ -82,7 +82,20 @@ func guardImages(r Registry, gdm Deployments) error {
 		for _, q := range art.Qualities {
 			log.Printf("%+v", q)
 			if q.Kind == `advisory` {
-				es = append(es, &UnacceptableAdvisory{q, &d.SourceID})
+				found := false
+				var advs []string
+				if d.Cluster != nil {
+					advs = d.Cluster.AllowedAdvisories
+				}
+				for _, aa := range advs {
+					if aa == q.Name {
+						found = true
+						break
+					}
+				}
+				if !found {
+					es = append(es, &UnacceptableAdvisory{q, &d.SourceID})
+				}
 			}
 		}
 	}
