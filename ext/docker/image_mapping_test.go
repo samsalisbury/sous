@@ -6,28 +6,26 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/nyarly/testify/assert"
+	"github.com/nyarly/testify/require"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/docker_registry"
 	"github.com/samsalisbury/semv"
 )
 
-func inMemoryRoundtripDB() *sql.DB {
-	db, err := GetDatabase(&DBConfig{"sqlite3", InMemoryConnection("roundtrip")})
+func inMemoryDB(name string) *sql.DB {
+	db, err := GetDatabase(&DBConfig{"sqlite3", InMemoryConnection(name)})
 	if err != nil {
 		panic(err)
 	}
 	return db
 }
 
-func inMemoryDB() *sql.DB {
-	db, err := GetDatabase(&DBConfig{"sqlite3", InMemory})
-	if err != nil {
-		panic(err)
-	}
-	return db
+func inMemoryRoundtripDB() *sql.DB {
+	return inMemoryDB("roundtrip")
 }
 
 func TestRoundTrip(t *testing.T) {
@@ -45,14 +43,14 @@ func TestRoundTrip(t *testing.T) {
 	base := "ot/wackadoo"
 	in := base + ":version-1.2.3"
 	digest := "sha256:012345678901234567890123456789AB012345678901234567890123456789AB"
-	err := nc.insert(sv, in, digest)
+	err := nc.insert(sv, in, digest, []sous.Quality{})
 	assert.NoError(err)
 
 	cn, err := nc.GetCanonicalName(in)
 	if assert.NoError(err) {
 		assert.Equal(in, cn)
 	}
-	nin, err := nc.getImageName(sv)
+	nin, _, err := nc.getImageName(sv)
 	if assert.NoError(err) {
 		assert.Equal(in, nin)
 	}
@@ -72,7 +70,7 @@ func TestRoundTrip(t *testing.T) {
 		CanonicalName: cn,
 		AllNames:      []string{cn, in},
 	})
-	sv, err = nc.GetSourceID(NewBuildArtifact(in))
+	sv, err = nc.GetSourceID(NewBuildArtifact(in, nil))
 	if assert.Nil(err) {
 		assert.Equal(newSV, sv)
 	}
@@ -169,7 +167,7 @@ func TestHarvesting(t *testing.T) {
 	})
 
 	// a la a SetCollector getting the SV
-	_, err := nc.GetSourceID(NewBuildArtifact(in))
+	_, err := nc.GetSourceID(NewBuildArtifact(in, nil))
 	if err != nil {
 		fmt.Printf("%+v", err)
 	}
@@ -194,6 +192,34 @@ func TestHarvesting(t *testing.T) {
 	}
 }
 
+func TestRecordAdvisories(t *testing.T) {
+	sous.Log.Vomit.SetOutput(os.Stderr)
+	assert := assert.New(t)
+	require := require.New(t)
+	dc := docker_registry.NewDummyClient()
+	nc := NewNameCache(dc, inMemoryDB("advisories"))
+	v := semv.MustParse("1.2.3")
+	sv := sous.SourceID{
+		Version: v,
+		Repo:    "https://github.com/opentable/wackadoo",
+		Dir:     "nested/there",
+	}
+	base := "ot/wackadoo"
+	digest := "sha256:012345678901234567890123456789AB012345678901234567890123456789AB"
+	cn := base + "@" + digest
+
+	qs := []sous.Quality{{"ephemeral_tag", "advisory"}}
+
+	err := nc.insert(sv, cn, digest, qs)
+	assert.NoError(err)
+
+	arty, err := nc.GetArtifact(sv)
+	assert.NoError(err)
+	require.NotNil(arty)
+	require.Len(arty.Qualities, 1)
+	assert.Equal(arty.Qualities[0].Name, `ephemeral_tag`)
+}
+
 func TestDump(t *testing.T) {
 	assert := assert.New(t)
 
@@ -209,7 +235,7 @@ func TestDump(t *testing.T) {
 func TestMissingName(t *testing.T) {
 	assert := assert.New(t)
 	dc := docker_registry.NewDummyClient()
-	nc := NewNameCache(dc, inMemoryDB())
+	nc := NewNameCache(dc, inMemoryDB("missing"))
 
 	v := semv.MustParse("4.5.6")
 	sv := sous.SourceID{
@@ -218,7 +244,7 @@ func TestMissingName(t *testing.T) {
 		Dir:     "nested/there",
 	}
 
-	name, err := nc.getImageName(sv)
+	name, _, err := nc.getImageName(sv)
 	assert.Equal("", name)
 	assert.Error(err)
 }

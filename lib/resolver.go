@@ -86,5 +86,5 @@ func guardImageNamesKnown(r Registry, gdm Deployments) error {
 }
 
 func guardAdvisoriesAcceptable(r Registry, gdm Deployments) error {
-
+	return nil
 }

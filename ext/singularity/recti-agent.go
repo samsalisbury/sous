@@ -164,7 +164,7 @@ func (ra *RectiAgent) Scale(cluster, reqID string, instanceCount int, message st
 
 // ImageLabels gets the labels for an image name.
 func (ra *RectiAgent) ImageLabels(in string) (map[string]string, error) {
-	a := docker.NewBuildArtifact(in)
+	a := docker.NewBuildArtifact(in, nil)
 	sv, err := ra.nameCache.GetSourceID(a)
 	if err != nil {
 		return map[string]string{}, errors.Wrapf(err, "Image name: %s", in)

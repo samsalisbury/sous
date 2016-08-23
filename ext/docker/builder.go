@@ -115,9 +115,9 @@ func (b *Builder) recordName(br *sous.BuildResult, bc *sous.BuildContext) error 
 	sv := bc.Version()
 	in := b.VersionTag(bc.Version())
 	b.SourceShell.ConsoleEcho(fmt.Sprintf("[recording \"%s\" as the docker name for \"%s\"]", in, sv.String()))
-	var qs []quality
+	var qs []sous.Quality
 	for _, adv := range br.Advisories {
-		qs = append(qs, quality{name: adv, kind: "advisory"})
+		qs = append(qs, sous.Quality{Name: adv, Kind: "advisory"})
 	}
 	return b.ImageMapper.insert(sv, in, "", qs)
 }
