@@ -74,7 +74,7 @@ var updateStateTests = []struct {
 	{
 		State:       sous.NewState(),
 		GDM:         CurrentGDM{sous.NewDeployments()},
-		ExpectedErr: `cluster "" does not exist`,
+		ExpectedErr: "invalid deploy ID (no cluster name)",
 	},
 	{
 		State: sous.NewState(),

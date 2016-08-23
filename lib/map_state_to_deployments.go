@@ -2,7 +2,6 @@ package sous
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/pkg/errors"
 	"github.com/samsalisbury/semv"
@@ -11,16 +10,11 @@ import (
 // Deployments returns all deployments described by the state.
 func (s *State) Deployments() (Deployments, error) {
 	ds := NewDeployments()
-	if s == nil {
-		panic("NIL STATE")
-	}
-	for k, m := range s.Manifests.Snapshot() {
-		log.Println("GETTING DEPLOYMENTS FOR:", k)
+	for _, m := range s.Manifests.Snapshot() {
 		deployments, err := s.DeploymentsFromManifest(m)
 		if err != nil {
 			return ds, err
 		}
-		log.Println("GOT:", deployments.Len())
 		conflict, ok := ds.AddAll(deployments)
 		if !ok {
 			return ds, fmt.Errorf("conflicting deploys: %s", conflict)
@@ -53,7 +47,7 @@ func (ds Deployments) Manifests(defs Defs) (Manifests, error) {
 	for _, k := range ds.Keys() {
 		d, _ := ds.Get(k)
 		if d.ClusterName == "" {
-			return ms, fmt.Errorf("no cluster name set for %q", k)
+			return ms, errors.Errorf("invalid deploy ID (no cluster name)")
 		}
 		if d.Cluster == nil {
 			cluster, ok := defs.Clusters[d.ClusterName]
