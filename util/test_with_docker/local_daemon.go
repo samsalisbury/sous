@@ -14,10 +14,34 @@ type LocalDaemon struct {
 	serviceTimeout time.Duration
 }
 
+func ldTrial() agentBuilderF {
+	log.Println("Checking docker socket:")
+	o, _ := exec.Command("sudo", "ls", "-l", "/var/run/docker.sock").CombinedOutput()
+	log.Print(string(o))
+	ps := runCommand("docker", "ps")
+	if ps.err != nil {
+		log.Printf("docker ps failed:\n  Stdout:\n%s\n  Stderr:\n%s", ps.stdout, ps.stderr)
+		return nil
+	}
+	return ldBuild
+}
+
+func ldBuild(c agentCfg) Agent {
+	log.Println("Using local docker daemon")
+	return &LocalDaemon{serviceTimeout: c.timeout}
+}
+
 func (ld *LocalDaemon) ComposeServices(dir string, svcs serviceMap) (*command, error) {
 	ip, _ := ld.IP()
 
 	return composeService(dir, ip, []string{}, svcs, ld.serviceTimeout)
+}
+
+func (ld *LocalDaemon) Cleanup() error {
+	log.Println("Cleaning up...")
+	o, _ := exec.Command("sudo", "ls", "-l", "/var/run/docker.sock").CombinedOutput()
+	log.Print(string(o))
+	return nil
 }
 
 // InstallFile puts a path found on the local machine to a path on the docker host.

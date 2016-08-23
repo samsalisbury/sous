@@ -14,5 +14,10 @@ type (
 
 		// ListSourceIDs returns a list of known SourceIDs
 		ListSourceIDs() ([]SourceID, error)
+
+		// Warmup requests that the registry check specific artifact names for existence
+		// the details of this behavior will vary by implementation. For Docker, for instance,
+		// the corresponding repo is enumerated
+		Warmup(string) error
 	}
 )

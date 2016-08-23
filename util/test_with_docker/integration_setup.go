@@ -4,13 +4,13 @@ package test_with_docker
 
 import (
 	"crypto/md5"
+	"errors"
 	"fmt"
 	"io"
 	"log"
 	"math/rand"
 	"net"
 	"os"
-	"os/exec"
 	"regexp"
 	"strings"
 	"time"
@@ -71,7 +71,16 @@ type (
 		// Exec executes commands as root on the daemon host
 		// It uses sudo
 		Exec(...string) error
+
+		// Cleanup performs the tasks required to shut down after a test
+		Cleanup() error
 	}
+
+	agentCfg struct {
+		timeout time.Duration
+	}
+	agentTrialF   func() agentBuilderF
+	agentBuilderF func(agentCfg) Agent
 )
 
 var (
@@ -80,6 +89,7 @@ var (
 	md5RE        = regexp.MustCompile(`(?m)^([0-9a-fA-F]+)\s+(\S+)$`)
 	md5missingRE = regexp.MustCompile(`(?m)^md5sum: (?:can't open '(.*)'|(.*)): No such file or directory$`)
 	ip           string
+	agentTrials  = []agentTrialF{dmTrial, ldTrial}
 )
 
 const (
@@ -87,44 +97,19 @@ const (
 	DefaultTimeout = 30 * time.Second
 )
 
+// NewAgent returns a new agent with the DefaultTimeout
 func NewAgent() (Agent, error) {
 	return NewAgentWithTimeout(DefaultTimeout)
 }
 
+// NewAgentWithTimeout returns a new agent with a user specified timeout
 func NewAgentWithTimeout(timeout time.Duration) (Agent, error) {
-	dm := dockerMachineName()
-	if dm != "" {
-		log.Println("Using docker-machine", dm)
-		return &Machine{name: dm, serviceTimeout: timeout}, nil
-	}
-	o, _ := exec.Command("sudo", "ls", "-l", "/var/run/docker.sock").CombinedOutput()
-	log.Print(string(o))
-	ps := runCommand("docker", "ps")
-	if ps.err != nil {
-		return nil, fmt.Errorf("no docker machines found, and `docker ps` failed: %s\nStdout:\n%s\nStderr:\n%s\n", ps.err, ps.stdout, ps.stderr)
-	}
-	log.Println("Using local docker daemon")
-	return &LocalDaemon{serviceTimeout: timeout}, nil
-}
-
-// dockerMachineName returns the name of an existing docker machine by invoking
-// `docker-machine ls -q`
-//
-// If any  docker machines are called "default", it returns "default". If there
-// are no docker machines, or the command fails, it returns  an empty string. In
-// all other cases, it returns the first machine name output by the command.
-func dockerMachineName() string {
-	ls := runCommand("docker-machine", "ls", "-q")
-	if ls.err != nil {
-		return ""
-	}
-	machines := strings.Split(ls.stdout, "\n")
-	for _, m := range machines {
-		if m == "default" {
-			return m
+	for _, tf := range agentTrials {
+		if bf := tf(); bf != nil {
+			return bf(agentCfg{timeout: timeout}), nil
 		}
 	}
-	return machines[0]
+	return nil, errors.New("Couldn't determine what the docker environment was to start an agent")
 }
 
 func fileDiffs(pathPairs [][]string, localMD5, remoteMD5 map[string]string) [][]string {
