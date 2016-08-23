@@ -1,9 +1,11 @@
 package sous
 
 import (
+	"log"
 	"sync"
 
 	"github.com/opentable/sous/util/firsterr"
+	"github.com/pkg/errors"
 )
 
 type (
@@ -47,8 +49,7 @@ func (r *Resolver) Resolve(intended Deployments, clusters Clusters) error {
 	var errs chan RectificationError
 	return firsterr.Returned(
 		func() (e error) { ads, e = r.Deployer.RunningDeployments(clusters); return },
-		func() (e error) { return guardImageNamesKnown(r.Registry, intended) },
-		func() (e error) { return guardAdvisoriesAcceptable(r.Registry, intended) },
+		func() (e error) { return guardImages(r.Registry, intended) },
 		func() (e error) { diffs = ads.Diff(intended); return nil },
 		func() (e error) { errs = r.rectify(diffs); return nil },
 		func() (e error) { return foldErrors(errs) },
@@ -68,23 +69,26 @@ func foldErrors(errs chan RectificationError) error {
 	return nil
 }
 
-func guardImageNamesKnown(r Registry, gdm Deployments) error {
+func guardImages(r Registry, gdm Deployments) error {
 	Log.Debug.Print("Collected. Checking readiness to deploy...")
 	g := gdm.Snapshot()
 	es := make([]error, 0, len(g))
 	for _, d := range g {
-		_, err := r.GetArtifact(d.SourceID)
+		art, err := r.GetArtifact(d.SourceID)
 		if err != nil {
-			es = append(es, err)
+			es = append(es, &MissingImageNameError{err})
+			continue
+		}
+		for _, q := range art.Qualities {
+			log.Printf("%+v", q)
+			if q.Kind == `advisory` {
+				es = append(es, &UnacceptableAdvisory{q, &d.SourceID})
+			}
 		}
 	}
 	if len(es) > 0 {
-		return &MissingImageNamesError{es}
+		return errors.Wrap(&ResolveErrors{es}, "guard")
 	}
 	Log.Debug.Print("Looks good. Proceeding...")
-	return nil
-}
-
-func guardAdvisoriesAcceptable(r Registry, gdm Deployments) error {
 	return nil
 }
