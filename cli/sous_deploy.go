@@ -2,6 +2,7 @@ package cli
 
 import (
 	"flag"
+	"fmt"
 	"log"
 
 	"github.com/opentable/sous/lib"
@@ -17,6 +18,10 @@ type SousDeploy struct {
 	GDM         CurrentGDM
 	State       *sous.State
 	StateWriter LocalStateWriter
+	StateReader LocalStateReader
+	Flags       struct {
+		UseOTPLDeploy, IgnoreOTPLDeploy bool
+	}
 }
 
 func init() { TopLevelCommands["deploy"] = &SousDeploy{} }
@@ -36,6 +41,10 @@ func (su *SousDeploy) AddFlags(fs *flag.FlagSet) {
 	if err != nil {
 		panic(err)
 	}
+	fs.BoolVar(&su.Flags.UseOTPLDeploy, "use-otpl-deploy", false,
+		"if specified, copies OpenTable-specific otpl-deploy configuration to the manifest")
+	fs.BoolVar(&su.Flags.IgnoreOTPLDeploy, "ignore-otpl-deploy", false,
+		"if specified, ignores OpenTable-specific otpl-deploy configuration")
 }
 
 // RegisterOn adds the DeploymentConfig to the psyringe to configure the
@@ -49,6 +58,34 @@ func (su *SousDeploy) Execute(args []string) cmdr.Result {
 	sid, did, err := getIDs(su.DeployFilterFlags, su.SourceContext.SourceLocation())
 	if err != nil {
 		return EnsureErrorResult(err)
+	}
+	_, ok := su.State.Manifests.Get(sid.Location())
+	if !ok {
+		log.Printf("no manifest for %q; running sous init\n", sid.Location())
+		cmdArgs := []interface{}{"init"}
+		if su.Flags.UseOTPLDeploy {
+			cmdArgs = append(cmdArgs, "-use-otpl-deploy")
+		}
+		if su.Flags.IgnoreOTPLDeploy {
+			cmdArgs = append(cmdArgs, "-ignore-otpl-deploy")
+		}
+		if err := su.WD.Run("sous", cmdArgs...); err != nil {
+			return EnsureErrorResult(err)
+		}
+		newState, err := su.StateReader.ReadState()
+		if err != nil {
+			return EnsureErrorResult(err)
+		}
+		su.State = newState
+		newGDM, err := su.State.Deployments()
+		if err != nil {
+			return EnsureErrorResult(err)
+		}
+		su.GDM = CurrentGDM{newGDM}
+		_, ok := su.State.Manifests.Get(sid.Location())
+		if !ok {
+			return EnsureErrorResult(fmt.Errorf("sous init failed to add manifest"))
+		}
 	}
 	if err := updateState(su.State, su.GDM, sid, did); err != nil {
 		return EnsureErrorResult(err)
