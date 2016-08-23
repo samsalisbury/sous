@@ -132,7 +132,9 @@ func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
 		return sid, err
 	}
 
-	err = nc.dbInsert(newSID, md.Registry+"/"+md.CanonicalName, md.Etag)
+	qualities := qualitiesFromLabels(md.Labels)
+
+	err = nc.dbInsert(newSID, md.Registry+"/"+md.CanonicalName, md.Etag, qualities)
 	if err != nil {
 		return sid, err
 	}
@@ -172,6 +174,21 @@ func (nc *NameCache) getImageName(sid sous.SourceID) (string, error) {
 	return cn, nil
 }
 
+type quality struct {
+	name, kind string
+}
+
+func qualitiesFromLabels(lm map[string]string) []quality {
+	advs, ok := lm[`com.opentable.sous.advisories`]
+	if !ok {
+		return []quality{}
+	}
+	var qs []quality
+	for _, adv := range strings.Split(advs, `,`) {
+		qs = append(qs, quality{name: adv, kind: "advisory"})
+	}
+}
+
 // GetCanonicalName returns the canonical name for an image given any known name
 func (nc *NameCache) GetCanonicalName(in string) (string, error) {
 	_, _, _, _, cn, err := nc.dbQueryOnName(in)
@@ -180,8 +197,9 @@ func (nc *NameCache) GetCanonicalName(in string) (string, error) {
 }
 
 // Insert puts a given SourceID/image name pair into the name cache
-func (nc *NameCache) insert(sid sous.SourceID, in, etag string) error {
-	return nc.dbInsert(sid, in, etag)
+// used by Builder at the moment to register after a build
+func (nc *NameCache) insert(sid sous.SourceID, in, etag string, qs []quality) error {
+	return nc.dbInsert(sid, in, etag, qs)
 }
 
 func (nc *NameCache) harvest(sl sous.SourceLocation) error {
@@ -308,6 +326,19 @@ func GetDatabase(cfg *DBConfig) (*sql.DB, error) {
 		return nil, err
 	}
 
+	// "qualities" includes advisories. assuming that assertions will also
+	// be represented here
+	if err := sqlExec(db, "create table if not exists docker_image_qualities("+
+		"assertion_id integer primary key autoincrement"+
+		", metadata_id references docker_search_metadata"+
+		"    not null"+
+		", quality text not null"+
+		", kind text not null"+
+		", constraint upsertable unique (metadata_id, quality, kind) on conflict ignore"+
+		");"); err != nil {
+		return nil, err
+	}
+
 	return db, err
 }
 
@@ -352,7 +383,7 @@ func (nc *NameCache) dump(io io.Writer) {
 	nc.dumpRows(io, "select * from repo_through_location")
 	nc.dumpRows(io, "select * from docker_search_metadata")
 	nc.dumpRows(io, "select * from docker_search_name")
-
+	nc.dumpRows(io, "select * from docker_image_qualities")
 }
 
 func sqlExec(db *sql.DB, sql string) error {
@@ -394,7 +425,7 @@ func (nc *NameCache) ensureInDB(sel, ins string, args ...interface{}) (id int64,
 	return id, errors.Wrapf(err, "getting id of new value: %q %v", ins, args[0:insN])
 }
 
-func (nc *NameCache) dbInsert(sid sous.SourceID, in, etag string) error {
+func (nc *NameCache) dbInsert(sid sous.SourceID, in, etag string, quals []quality) error {
 	ref, err := reference.ParseNamed(in)
 	Log.Debug.Printf("Parsed image name: %v from %q", ref, in)
 	if err != nil {
@@ -442,6 +473,14 @@ func (nc *NameCache) dbInsert(sid sous.SourceID, in, etag string) error {
 
 	if err != nil {
 		return err
+	}
+
+	for _, q := range quals {
+		nc.DB.Exec("insert into docker_image_qualities"+
+			"  (metadata_id, quality, kind)"+
+			"  values"+
+			"  ($1,$2,$3)",
+			id, q.name, q.kind)
 	}
 
 	Log.Vomit.Printf("Inserting search name %v %v", id, in)

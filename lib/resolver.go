@@ -1,6 +1,10 @@
 package sous
 
-import "sync"
+import (
+	"sync"
+
+	"github.com/opentable/sous/util/firsterr"
+)
 
 type (
 	// Resolver is responsible for resolving intended and actual deployment
@@ -38,23 +42,20 @@ func (r *Resolver) rectify(dcs DiffChans) chan RectificationError {
 // actual set, compute the diffs and then issue the commands to rectify those
 // differences.
 func (r *Resolver) Resolve(intended Deployments, clusters Clusters) error {
-	ads, err := r.Deployer.RunningDeployments(clusters)
-	if err != nil {
-		return err
-	}
+	var ads Deployments
+	var diffs DiffChans
+	var errs chan RectificationError
+	return firsterr.Returned(
+		func() (e error) { ads, e = r.Deployer.RunningDeployments(clusters); return },
+		func() (e error) { return guardImageNamesKnown(r.Registry, intended) },
+		func() (e error) { return guardAdvisoriesAcceptable(r.Registry, intended) },
+		func() (e error) { diffs = ads.Diff(intended); return nil },
+		func() (e error) { errs = r.rectify(diffs); return nil },
+		func() (e error) { return foldErrors(errs) },
+	)
+}
 
-	Log.Debug.Print("Collected. Checking readiness to deploy...")
-
-	if err := guardImageNamesKnown(r.Registry, intended); err != nil {
-		return err
-	}
-
-	Log.Debug.Print("Looks good. Proceeding...")
-
-	diffs := ads.Diff(intended)
-
-	errs := r.rectify(diffs)
-
+func foldErrors(errs chan RectificationError) error {
 	re := &ResolveErrors{Causes: []error{}}
 	for err := range errs {
 		re.Causes = append(re.Causes, err)
@@ -68,6 +69,7 @@ func (r *Resolver) Resolve(intended Deployments, clusters Clusters) error {
 }
 
 func guardImageNamesKnown(r Registry, gdm Deployments) error {
+	Log.Debug.Print("Collected. Checking readiness to deploy...")
 	g := gdm.Snapshot()
 	es := make([]error, 0, len(g))
 	for _, d := range g {
@@ -79,5 +81,10 @@ func guardImageNamesKnown(r Registry, gdm Deployments) error {
 	if len(es) > 0 {
 		return &MissingImageNamesError{es}
 	}
+	Log.Debug.Print("Looks good. Proceeding...")
 	return nil
+}
+
+func guardAdvisoriesAcceptable(r Registry, gdm Deployments) error {
+
 }

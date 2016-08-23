@@ -115,7 +115,11 @@ func (b *Builder) recordName(br *sous.BuildResult, bc *sous.BuildContext) error 
 	sv := bc.Version()
 	in := b.VersionTag(bc.Version())
 	b.SourceShell.ConsoleEcho(fmt.Sprintf("[recording \"%s\" as the docker name for \"%s\"]", in, sv.String()))
-	return b.ImageMapper.insert(sv, in, "")
+	var qs []quality
+	for _, adv := range br.Advisories {
+		qs = append(qs, quality{name: adv, kind: "advisory"})
+	}
+	return b.ImageMapper.insert(sv, in, "", qs)
 }
 
 // VersionTag computes an image tag from a SourceVersion's version
