@@ -2,7 +2,6 @@ package cli
 
 import (
 	"flag"
-	"log"
 
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
@@ -62,7 +61,7 @@ func (su *SousDeploy) Execute(args []string) cmdr.Result {
 func updateState(s *sous.State, gdm CurrentGDM, sid sous.SourceID, did sous.DeployID) error {
 	deployment, ok := gdm.Get(did)
 	if !ok {
-		log.Printf("Deployment %q does not exist, creating.\n", did)
+		sous.Log.Warn.Printf("Deployment %q does not exist, creating.\n", did)
 		deployment = &sous.Deployment{}
 	}
 

@@ -2,7 +2,6 @@ package cli
 
 import (
 	"flag"
-	"log"
 
 	"github.com/opentable/sous/ext/otpl"
 	"github.com/opentable/sous/lib"
@@ -78,7 +77,7 @@ func (si *SousInit) Execute(args []string) cmdr.Result {
 		deploySpecs = sous.DeploySpecs{}
 		for clusterName, spec := range otplDeploySpecs {
 			if _, ok := si.State.Defs.Clusters[clusterName]; !ok {
-				log.Printf("otpl-deploy config for cluster %q ignored", clusterName)
+				sous.Log.Warn.Printf("otpl-deploy config for cluster %q ignored", clusterName)
 				continue
 			}
 			deploySpecs[clusterName] = spec

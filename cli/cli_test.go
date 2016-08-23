@@ -3,7 +3,6 @@ package cli
 import (
 	"bytes"
 	"fmt"
-	"log"
 	"testing"
 
 	"github.com/nyarly/testify/assert"
@@ -203,7 +202,6 @@ func TestInvokeBareSous(t *testing.T) {
 	require.NotPanics(func() {
 		r = c.InvokeWithoutPrinting([]string{"sous", "help"})
 	})
-	log.Printf("%T %v", r, r)
 	assert.IsType(cmdr.SuccessResult{}, r)
 }
 
