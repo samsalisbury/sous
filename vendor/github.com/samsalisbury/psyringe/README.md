@@ -171,7 +171,7 @@ func HandleHTTPRequest(w http.ResponseWriter, r *http.Request) {
 
 Each item you pass into `Add` or `New` is analysed to see whether or not it is a [constructor]. If it is a constructor, then the type of its first return value is registered as its [injection type]. Otherwise the item is considered to be a _value_ and its own type is used as its injection type. Your psyringe knows how to inject values of each registered injection type.
 
-All the constructors together form a dependency graph, where each parameter in each constructor needs a corresponding constructor or value in the same psyringe in order for it to be successfully invoked. You can call `Psyringe.Test` to check that all constructor parameters are satisfied within a Psyringe.
+All the constructors together form a dependency graph, where each parameter in each constructor needs a corresponding constructor or value in the same psyringe in order for it to be successfully invoked. You can call `Psyringe.Test` to check that all constructor parameters are satisfied within a Psyringe, and that the graph is acyclic.
 
 When you call `p.Inject(&someStruct)`, each field in `someStruct` is populated with an item of the corresponding injection type from the `Psyringe` `p`. For constructors, it will call that constructor exactly once to generate its value, if needed. For non-constructor values that were passed in to `p`, it will simply inject that value when called to.
 
@@ -219,6 +219,7 @@ func newFunc() func(int) (int, error) {
   (The benchmarks imply this is relatively expensive still, may be
   worth caching injection plan per target type, for use in cloned
   Psyringes.)
+- Add support for injection cancellation, maybe with golang.org/x/net/context 
 - Find other benchmarks to compare with.
 - Add Even Lazier TM injection using struct func fields.
 - Add Windows build with AppVeyor 
