@@ -33,6 +33,10 @@ func AddFlags(fs *flag.FlagSet, target interface{}, help string) error {
 		ft := f.Type
 		fp := v.Field(i).Addr().Interface()
 		name := strings.ToLower(f.Name)
+		tag, ok := f.Tag.Lookup("flag")
+		if ok {
+			name = tag
+		}
 		u, ok := usage[name]
 		if !ok {
 			continue
