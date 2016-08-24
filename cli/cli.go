@@ -3,11 +3,14 @@
 package cli
 
 import (
+	"fmt"
 	"io"
 	"os"
 
+	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
 	"github.com/opentable/sous/util/yaml"
+	"github.com/pkg/errors"
 	"github.com/samsalisbury/semv"
 )
 
@@ -101,6 +104,18 @@ func NewSousCLI(v semv.Version, out, errout io.Writer) (*cmdr.CLI, error) {
 			}
 		}
 		return nil
+	}
+
+	cli.Hooks.PreFail = func(err error) cmdr.ErrorResult {
+		if err != nil {
+			originalErr := fmt.Sprint(err)
+			err = errors.Cause(err)
+			causeStr := err.Error()
+			if originalErr != causeStr {
+				sous.Log.Debug.Println(originalErr)
+			}
+		}
+		return EnsureErrorResult(err)
 	}
 
 	return cli, nil
