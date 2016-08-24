@@ -17,7 +17,6 @@ type SousInit struct {
 	State         *sous.State
 	StateWriter   LocalStateWriter
 	Flags         struct {
-		RepoURL, RepoOffset             string
 		UseOTPLDeploy, IgnoreOTPLDeploy bool
 	}
 }
