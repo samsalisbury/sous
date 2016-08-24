@@ -10,8 +10,8 @@ import (
 	"github.com/samsalisbury/semv"
 )
 
-// SousDeploy is the command description for `sous deploy`
-type SousDeploy struct {
+// SousUpdate is the command description for `sous update`
+type SousUpdate struct {
 	DeployFilterFlags
 	OTPLFlags
 	Manifest TargetManifest
@@ -26,19 +26,22 @@ type SousDeploy struct {
 	}
 }
 
-func init() { TopLevelCommands["deploy"] = &SousDeploy{} }
+func init() { TopLevelCommands["update"] = &SousUpdate{} }
 
 const sousUpdateHelp = `
-deploy a new version
+update the version to be deployed in a cluster
 
-usage: sous deploy -cluster <name> -tag <semver>
+usage: sous update -cluster <name> -tag <semver> [-use-otpl-deploy|-ignore-otpl-deploy]
+
+sous update will update the version tag for this application in the named
+cluster. You can then use 'sous rectify' to have that version deployed.
 `
 
 // Help returns the help string for this command
-func (su *SousDeploy) Help() string { return sousInitHelp }
+func (su *SousUpdate) Help() string { return sousUpdateHelp }
 
 // AddFlags adds the flags for sous init.
-func (su *SousDeploy) AddFlags(fs *flag.FlagSet) {
+func (su *SousUpdate) AddFlags(fs *flag.FlagSet) {
 	if err := AddFlags(fs, &su.DeployFilterFlags, rectifyFilterFlagsHelp+tagFlagHelp); err != nil {
 		panic(err)
 	}
@@ -49,13 +52,13 @@ func (su *SousDeploy) AddFlags(fs *flag.FlagSet) {
 
 // RegisterOn adds the DeploymentConfig to the psyringe to configure the
 // labeller and registrar
-func (su *SousDeploy) RegisterOn(psy Addable) {
+func (su *SousUpdate) RegisterOn(psy Addable) {
 	psy.Add(&su.DeployFilterFlags)
 	psy.Add(&su.OTPLFlags)
 }
 
 // Execute fulfills the cmdr.Executor interface.
-func (su *SousDeploy) Execute(args []string) cmdr.Result {
+func (su *SousUpdate) Execute(args []string) cmdr.Result {
 	sl := su.Manifest.ID()
 	sid, did, err := getIDs(su.DeployFilterFlags, sl)
 	if err != nil {
