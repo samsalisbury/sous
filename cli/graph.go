@@ -42,6 +42,17 @@ type (
 )
 
 type (
+	// StateReader knows how to read state.
+	StateReader interface {
+		ReadState() (*sous.State, error)
+	}
+	// StateWriter know how to write state.
+	StateWriter interface {
+		WriteState(*sous.State) error
+	}
+)
+
+type (
 	// Version represents a version of Sous.
 	Version struct{ semv.Version }
 	// LocalUser is the currently logged in user.
@@ -67,13 +78,25 @@ type (
 	LocalDockerClient struct{ docker_registry.Client }
 	// LocalStateReader wraps a storage.StateReader, and should be configured
 	// to use the current user's local storage.
-	LocalStateReader struct{ storage.StateReader }
+	LocalStateReader struct{ StateReader }
 	// LocalStateWriter wraps a storage.StateWriter, and should be configured to
 	// use the current user's local storage.
-	LocalStateWriter struct{ storage.StateWriter }
+	LocalStateWriter struct{ StateWriter }
 	// CurrentGDM is a snapshot of the GDM at application start. In a CLI
 	// context, which this is, that is all we need to simply read the GDM.
 	CurrentGDM struct{ sous.Deployments }
+	// TargetManifest is a specific manifest for the current SourceLocation.
+	// If the named manifest does not exist, it is created.
+	TargetManifest struct{ *sous.Manifest }
+	// DetectedOTPLDeploySpecs is a set of otpl-deploy configured deployments
+	// that have been detected.
+	DetectedOTPLDeploySpecs struct{ sous.DeploySpecs }
+	// UserSelectedOTPLDeploySpecs is a set of otpl-deploy configured deploy
+	// specs that the user has explicitly selected. (May be empty.)
+	UserSelectedOTPLDeploySpecs struct{ sous.DeploySpecs }
+	// TargetSourceLocation is the source location being targeted, after
+	// resolving all context and flags.
+	TargetSourceLocation sous.SourceLocation
 )
 
 // BuildGraph builds the dependency injection graph, used to populate commands
@@ -111,6 +134,10 @@ func BuildGraph(c *cmdr.CLI, out, err io.Writer) *SousCLIGraph {
 		newLocalStateWriter,
 		newCurrentGDM,
 		newCurrentState,
+		newTargetManifest,
+		newDetectedOTPLConfig,
+		newUserSelectedOTPLDeploySpecs,
+		newTargetSourceLocation,
 	)}
 }
 
@@ -148,35 +175,21 @@ func newLogSet(s *Sous, err ErrWriter) *sous.LogSet { // XXX temporary until we 
 	return &sous.Log
 }
 
-/*
-func newSourceFlags(c *cmdr.CLI) (*DeployFilterFlags, error) {
-	sourceFlags := &DeployFilterFlags{}
-	var err error
-	c.AddGlobalFlagSetFunc(func(fs *flag.FlagSet) {
-		err = AddFlags(fs, sourceFlags, sourceFlagsHelp)
-		if err != nil {
-			panic(err)
-		}
-	})
-	return sourceFlags, err
-}
-*/
-
 func newGitSourceContext(g LocalGitRepo) (GitSourceContext, error) {
 	c, err := g.SourceContext()
 	return GitSourceContext{c}, initErr(err, "getting local git context")
 }
 
-func newSourceContext(g GitSourceContext, f *DeployFilterFlags) (*sous.SourceContext, error) {
+func newSourceContext(f *DeployFilterFlags, g GitSourceContext) (*sous.SourceContext, error) {
 	c := g.SourceContext
 	if c == nil {
 		c = &sous.SourceContext{}
 	}
-
-	sl, err := resolveSourceLocation(f, c)
+	tsl, err := newTargetSourceLocation(f, c)
 	if err != nil {
-		return nil, errors.Wrap(err, "resolving source location")
+		return nil, errors.Wrapf(err, "getting source location")
 	}
+	sl := sous.SourceLocation(tsl)
 	if sl.Repo != c.SourceLocation().Repo {
 		// TODO: Clone the repository, and use the cloned dir as source context.
 		return nil, errors.Errorf("source location %q is not the same as the remote %q",

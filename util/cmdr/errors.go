@@ -111,6 +111,10 @@ func (e *cliErr) WithUnderlyingError(err error) ErrorResult {
 	return e
 }
 
+func (e *cliErr) UnderlyingError() error {
+	return e.Err
+}
+
 func (e *cliErr) prefix(prefix string) string {
 	return fmt.Sprintf("%s error: %s", prefix, e.Error())
 }

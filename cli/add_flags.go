@@ -33,6 +33,9 @@ func AddFlags(fs *flag.FlagSet, target interface{}, help string) error {
 		ft := f.Type
 		fp := v.Field(i).Addr().Interface()
 		name := strings.ToLower(f.Name)
+		if tag := f.Tag.Get("flag"); tag != "" {
+			name = tag
+		}
 		u, ok := usage[name]
 		if !ok {
 			continue

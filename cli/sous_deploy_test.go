@@ -138,3 +138,19 @@ func TestUpdateState(t *testing.T) {
 		}
 	}
 }
+
+type DummyStateManager struct{}
+
+func (dsm *DummyStateManager) WriteState(s *sous.State) error  { return nil }
+func (dsm *DummyStateManager) ReadState() (*sous.State, error) { return nil, nil }
+
+func TestSousDeploy_Execute(t *testing.T) {
+	dsm := &DummyStateManager{}
+	su := SousUpdate{
+		StateReader: LocalStateReader{dsm},
+		StateWriter: LocalStateWriter{dsm},
+		GDM:         CurrentGDM{sous.MakeDeployments(0)},
+		Manifest:    TargetManifest{&sous.Manifest{}},
+	}
+	su.Execute(nil)
+}

@@ -56,10 +56,10 @@ func TestInvokeConfig(t *testing.T) {
 
 }
 
-func TestInvokeDeploy(t *testing.T) {
+func TestInvokeUpdate(t *testing.T) {
 	assert := assert.New(t)
 
-	exe := justCommand(t, []string{`sous`, `deploy`})
+	exe := justCommand(t, []string{`sous`, `update`})
 	assert.NotNil(exe)
 	assert.Len(exe.Args, 0)
 }
@@ -99,18 +99,6 @@ func TestInvokeInit(t *testing.T) {
 	assert.NotNil(init)
 	assert.False(init.Flags.IgnoreOTPLDeploy)
 	assert.False(init.Flags.IgnoreOTPLDeploy)
-
-	exe = justCommand(t, []string{`sous`, `init`, `-use-otpl-deploy`})
-	init = exe.Cmd.(*SousInit)
-	assert.NotNil(init)
-	assert.False(init.Flags.IgnoreOTPLDeploy)
-	assert.True(init.Flags.UseOTPLDeploy)
-
-	exe = justCommand(t, []string{`sous`, `init`, `-ignore-otpl-deploy`})
-	init = exe.Cmd.(*SousInit)
-	assert.NotNil(init)
-	assert.True(init.Flags.IgnoreOTPLDeploy)
-	assert.False(init.Flags.UseOTPLDeploy)
 }
 
 /*

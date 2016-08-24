@@ -43,6 +43,9 @@ type (
 		Parsed func(Command) error
 		// PreExecute is run on a command before it executes.
 		PreExecute func(Command) error
+		// PreFail is run just before a command exits with an error.
+		// Is is passed the error, and must return the final ErrorResult.
+		PreFail func(error) ErrorResult
 	}
 
 	// A PreparedExecution collects all the information needed to execute a command
@@ -144,6 +147,15 @@ func (c *CLI) handleSuccessResult(s SuccessResult) {
 }
 
 func (c *CLI) handleErrorResult(e ErrorResult) {
+	if c.Hooks.PreFail != nil {
+		var underlyingErr error
+		if ue, ok := e.(interface {
+			UnderlyingError() error
+		}); ok {
+			underlyingErr = ue.UnderlyingError()
+		}
+		e = c.Hooks.PreFail(underlyingErr)
+	}
 	c.Err.Println(e)
 	c.printTip(e.UserTip())
 }

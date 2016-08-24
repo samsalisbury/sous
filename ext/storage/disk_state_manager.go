@@ -20,14 +20,6 @@ import (
 )
 
 type (
-	// StateReader knows how to read state.
-	StateReader interface {
-		ReadState() (*sous.State, error)
-	}
-	// StateWriter know how to write state.
-	StateWriter interface {
-		WriteState(*sous.State) error
-	}
 	// DiskStateManager implements StateReader and StateWriter using disk
 	// storage as its back-end.
 	DiskStateManager struct {
