@@ -1,6 +1,12 @@
 package sous
 
-import "sync"
+import (
+	"log"
+	"sync"
+
+	"github.com/opentable/sous/util/firsterr"
+	"github.com/pkg/errors"
+)
 
 type (
 	// Resolver is responsible for resolving intended and actual deployment
@@ -38,23 +44,19 @@ func (r *Resolver) rectify(dcs DiffChans) chan RectificationError {
 // actual set, compute the diffs and then issue the commands to rectify those
 // differences.
 func (r *Resolver) Resolve(intended Deployments, clusters Clusters) error {
-	ads, err := r.Deployer.RunningDeployments(clusters)
-	if err != nil {
-		return err
-	}
+	var ads Deployments
+	var diffs DiffChans
+	var errs chan RectificationError
+	return firsterr.Returned(
+		func() (e error) { ads, e = r.Deployer.RunningDeployments(clusters); return },
+		func() (e error) { return guardImages(r.Registry, intended) },
+		func() (e error) { diffs = ads.Diff(intended); return nil },
+		func() (e error) { errs = r.rectify(diffs); return nil },
+		func() (e error) { return foldErrors(errs) },
+	)
+}
 
-	Log.Debug.Print("Collected. Checking readiness to deploy...")
-
-	if err := guardImageNamesKnown(r.Registry, intended); err != nil {
-		return err
-	}
-
-	Log.Debug.Print("Looks good. Proceeding...")
-
-	diffs := ads.Diff(intended)
-
-	errs := r.rectify(diffs)
-
+func foldErrors(errs chan RectificationError) error {
 	re := &ResolveErrors{Causes: []error{}}
 	for err := range errs {
 		re.Causes = append(re.Causes, err)
@@ -67,17 +69,39 @@ func (r *Resolver) Resolve(intended Deployments, clusters Clusters) error {
 	return nil
 }
 
-func guardImageNamesKnown(r Registry, gdm Deployments) error {
+func guardImages(r Registry, gdm Deployments) error {
+	Log.Debug.Print("Collected. Checking readiness to deploy...")
 	g := gdm.Snapshot()
 	es := make([]error, 0, len(g))
 	for _, d := range g {
-		_, err := r.GetArtifact(d.SourceID)
+		art, err := r.GetArtifact(d.SourceID)
 		if err != nil {
-			es = append(es, err)
+			es = append(es, &MissingImageNameError{err})
+			continue
+		}
+		for _, q := range art.Qualities {
+			log.Printf("%+v", q)
+			if q.Kind == `advisory` {
+				found := false
+				var advs []string
+				if d.Cluster != nil {
+					advs = d.Cluster.AllowedAdvisories
+				}
+				for _, aa := range advs {
+					if aa == q.Name {
+						found = true
+						break
+					}
+				}
+				if !found {
+					es = append(es, &UnacceptableAdvisory{q, &d.SourceID})
+				}
+			}
 		}
 	}
 	if len(es) > 0 {
-		return &MissingImageNamesError{es}
+		return errors.Wrap(&ResolveErrors{es}, "guard")
 	}
+	Log.Debug.Print("Looks good. Proceeding...")
 	return nil
 }

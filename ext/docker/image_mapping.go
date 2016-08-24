@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
+	"log"
 	"regexp"
 	"strings"
 	"text/tabwriter"
@@ -47,8 +48,13 @@ type (
 
 // NewBuildArtifact creates a new sous.BuildArtifact representing a Docker
 // image.
-func NewBuildArtifact(imageName string) *sous.BuildArtifact {
-	return &sous.BuildArtifact{Name: imageName, Type: "docker"}
+func NewBuildArtifact(imageName string, qstrs strpairs) *sous.BuildArtifact {
+	var qs []sous.Quality
+	for _, qstr := range qstrs {
+		qs = append(qs, sous.Quality{Name: qstr[0], Kind: qstr[1]})
+	}
+
+	return &sous.BuildArtifact{Name: imageName, Type: "docker", Qualities: qs}
 }
 
 // InMemory configures SQLite to use an in-memory database
@@ -97,7 +103,7 @@ func (nc *NameCache) Warmup(r string) error {
 		Log.Debug.Printf("Harvested tag: %v for repo: %v", t, r)
 		in, err := reference.WithTag(ref, t)
 		if err == nil {
-			a := NewBuildArtifact(in.String())
+			a := NewBuildArtifact(in.String(), strpairs{})
 			nc.GetSourceID(a) //pull it into the cache...
 		}
 	}
@@ -106,11 +112,11 @@ func (nc *NameCache) Warmup(r string) error {
 
 // GetArtifact implements sous.Registry.GetArtifact
 func (nc *NameCache) GetArtifact(sid sous.SourceID) (*sous.BuildArtifact, error) {
-	name, err := nc.getImageName(sid)
+	name, qls, err := nc.getImageName(sid)
 	if err != nil {
 		return nil, err
 	}
-	return NewBuildArtifact(name), nil
+	return NewBuildArtifact(name, qls), nil
 }
 
 // GetSourceID looks up the source ID for a given image name
@@ -153,7 +159,9 @@ func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
 		return sid, err
 	}
 
-	err = nc.dbInsert(newSID, md.Registry+"/"+md.CanonicalName, md.Etag)
+	qualities := qualitiesFromLabels(md.Labels)
+
+	err = nc.dbInsert(newSID, md.Registry+"/"+md.CanonicalName, md.Etag, qualities)
 	if err != nil {
 		return sid, err
 	}
@@ -170,27 +178,39 @@ func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
 }
 
 // GetImageName returns the docker image name for a given source ID
-func (nc *NameCache) getImageName(sid sous.SourceID) (string, error) {
+func (nc *NameCache) getImageName(sid sous.SourceID) (string, strpairs, error) {
 	Log.Vomit.Printf("Getting image name for %+v", sid)
-	cn, _, err := nc.dbQueryOnSourceID(sid)
+	cn, _, qls, err := nc.dbQueryOnSourceID(sid)
 	if _, ok := errors.Cause(err).(NoImageNameFound); ok {
 		Log.Vomit.Print(err)
 		err = nc.harvest(sid.Location())
 		if err != nil {
 			Log.Vomit.Printf("Err: %v", err)
-			return "", err
+			return "", nil, err
 		}
 
-		cn, _, err = nc.dbQueryOnSourceID(sid)
+		cn, _, qls, err = nc.dbQueryOnSourceID(sid)
 		if err != nil {
 			Log.Vomit.Printf("Err: %v", err)
-			return "", err
+			return "", nil, err
 		}
 	} else if err != nil {
-		return "", err
+		return "", nil, err
 	}
 	Log.Debug.Printf("Source ID: %v -> image name %s", sid, cn)
-	return cn, nil
+	return cn, qls, nil
+}
+
+func qualitiesFromLabels(lm map[string]string) []sous.Quality {
+	advs, ok := lm[`com.opentable.sous.advisories`]
+	if !ok {
+		return []sous.Quality{}
+	}
+	var qs []sous.Quality
+	for _, adv := range strings.Split(advs, `,`) {
+		qs = append(qs, sous.Quality{Name: adv, Kind: "advisory"})
+	}
+	return qs
 }
 
 // GetCanonicalName returns the canonical name for an image given any known name
@@ -201,8 +221,10 @@ func (nc *NameCache) GetCanonicalName(in string) (string, error) {
 }
 
 // Insert puts a given SourceID/image name pair into the name cache
-func (nc *NameCache) insert(sid sous.SourceID, in, etag string) error {
-	return nc.dbInsert(sid, in, etag)
+// used by Builder at the moment to register after a build
+func (nc *NameCache) insert(sid sous.SourceID, in, etag string, qs []sous.Quality) error {
+	log.Printf("%+v", qs)
+	return nc.dbInsert(sid, in, etag, qs)
 }
 
 func (nc *NameCache) harvest(sl sous.SourceLocation) error {
@@ -318,6 +340,19 @@ func GetDatabase(cfg *DBConfig) (*sql.DB, error) {
 		return nil, err
 	}
 
+	// "qualities" includes advisories. assuming that assertions will also
+	// be represented here
+	if err := sqlExec(db, "create table if not exists docker_image_qualities("+
+		"assertion_id integer primary key autoincrement"+
+		", metadata_id references docker_search_metadata"+
+		"    not null"+
+		", quality text not null"+
+		", kind text not null"+
+		", constraint upsertable unique (metadata_id, quality, kind) on conflict ignore"+
+		");"); err != nil {
+		return nil, err
+	}
+
 	return db, err
 }
 
@@ -362,7 +397,7 @@ func (nc *NameCache) dump(io io.Writer) {
 	nc.dumpRows(io, "select * from repo_through_location")
 	nc.dumpRows(io, "select * from docker_search_metadata")
 	nc.dumpRows(io, "select * from docker_search_name")
-
+	nc.dumpRows(io, "select * from docker_image_qualities")
 }
 
 func sqlExec(db *sql.DB, sql string) error {
@@ -404,11 +439,12 @@ func (nc *NameCache) ensureInDB(sel, ins string, args ...interface{}) (id int64,
 	return id, errors.Wrapf(err, "getting id of new value: %q %v", ins, args[0:insN])
 }
 
-func (nc *NameCache) dbInsert(sid sous.SourceID, in, etag string) error {
+func (nc *NameCache) dbInsert(sid sous.SourceID, in, etag string, quals []sous.Quality) error {
+	log.Printf("%+v", quals)
 	ref, err := reference.ParseNamed(in)
 	Log.Debug.Printf("Parsed image name: %v from %q", ref, in)
 	if err != nil {
-		return fmt.Errorf("%v for %v", err, in)
+		return errors.Errorf("%v for %v", err, in)
 	}
 
 	Log.Vomit.Printf("Inserting name %s for %#v", ref.Name(), sid)
@@ -452,6 +488,16 @@ func (nc *NameCache) dbInsert(sid sous.SourceID, in, etag string) error {
 
 	if err != nil {
 		return err
+	}
+
+	log.Printf("%+v", quals)
+	for _, q := range quals {
+		log.Printf("%+v", q)
+		nc.DB.Exec("insert into docker_image_qualities"+
+			"  (metadata_id, quality, kind)"+
+			"  values"+
+			"  ($1,$2,$3)",
+			id, q.Name, q.Kind)
 	}
 
 	Log.Vomit.Printf("Inserting search name %v %v", id, in)
@@ -553,8 +599,10 @@ func (nc *NameCache) dbQueryAllSourceIds() (ids []sous.SourceID, err error) {
 	return
 }
 
-func (nc *NameCache) dbQueryOnSourceID(sid sous.SourceID) (cn string, ins []string, err error) {
-	ins = make([]string, 0)
+type strpairs []strpair
+type strpair [2]string
+
+func (nc *NameCache) dbQueryOnSourceID(sid sous.SourceID) (cn string, ins []string, quals strpairs, err error) {
 	rows, err := nc.DB.Query("select docker_search_metadata.canonicalName, "+
 		"docker_search_name.name "+
 		"from "+
@@ -585,6 +633,28 @@ func (nc *NameCache) dbQueryOnSourceID(sid sous.SourceID) (cn string, ins []stri
 	if len(ins) == 0 {
 		err = errors.Wrap(NoImageNameFound{sid}, "")
 	}
+	if err != nil {
+		return
+	}
+
+	rows, err = nc.DB.Query("select"+
+		" docker_image_qualities.quality,"+
+		" docker_image_qualities.kind"+
+		"   from"+
+		" docker_image_qualities natural join docker_search_metadata"+
+		" where"+
+		" docker_search_metadata.canonicalName = $1", cn)
+
+	if err != nil {
+		return
+	}
+
+	for rows.Next() {
+		var pr strpair
+		rows.Scan(&pr[0], &pr[1])
+		quals = append(quals, pr)
+	}
+	err = rows.Err()
 
 	return
 }

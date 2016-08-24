@@ -275,7 +275,7 @@ func manifest(nc sous.Registry, drepo, containerDir, sourceURL, version string) 
 	in := BuildImageName(drepo, version)
 	BuildAndPushContainer(containerDir, in)
 
-	nc.GetSourceID(docker.NewBuildArtifact(in))
+	nc.GetSourceID(docker.NewBuildArtifact(in, nil))
 
 	return &sous.Manifest{
 		Source: sous.SourceLocation{

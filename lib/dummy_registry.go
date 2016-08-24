@@ -1,27 +1,76 @@
 package sous
 
-// DummyNameCache implements the Builder interface by returning a
-// computed image name for a given source ID.
-type DummyRegistry struct {
+type (
+	// DummyNameCache implements the Builder interface by returning a
+	// computed image name for a given source ID.
+	DummyRegistry struct {
+		ars  chan artifactReturn
+		sids chan sourceIDReturn
+		ls   chan sourceIDListReturn
+	}
+
+	artifactReturn struct {
+		*BuildArtifact
+		error
+	}
+	sourceIDReturn struct {
+		SourceID
+		error
+	}
+	sourceIDListReturn struct {
+		ids []SourceID
+		error
+	}
+)
+
+// NewDummyRegistry builds a new DummyNameCache.
+func NewDummyRegistry() *DummyRegistry {
+	return &DummyRegistry{
+		ars:  make(chan artifactReturn, 20),
+		sids: make(chan sourceIDReturn, 20),
+		ls:   make(chan sourceIDListReturn, 20),
+	}
 }
 
-// NewDummyNameCache builds a new DummyNameCache.
-func NewDummyRegistry() *DummyRegistry {
-	return &DummyRegistry{}
+func (dc *DummyRegistry) FeedArtifact(ba *BuildArtifact, e error) {
+	dc.ars <- artifactReturn{ba, e}
 }
 
 func (dc *DummyRegistry) GetArtifact(sid SourceID) (*BuildArtifact, error) {
-	return &BuildArtifact{Name: sid.String(), Type: "dummy"}, nil
+	select {
+	case ar := <-dc.ars:
+		return ar.BuildArtifact, ar.error
+	default:
+		return &BuildArtifact{Name: sid.String(), Type: "dummy"}, nil
+	}
+}
+
+func (dc *DummyRegistry) FeedSourceID(sid SourceID, e error) {
+	dc.sids <- sourceIDReturn{sid, e}
 }
 
 // GetSourceID implements part of ImageMapper
 func (dc *DummyRegistry) GetSourceID(*BuildArtifact) (SourceID, error) {
-	return SourceID{}, nil
+	select {
+	case sr := <-dc.sids:
+		return sr.SourceID, sr.error
+	default:
+		return SourceID{}, nil
+	}
+}
+
+func (dc *DummyRegistry) FeedSourceIDList(sids []SourceID, e error) {
+	dc.ls <- sourceIDListReturn{sids, e}
 }
 
 // ListSourceIDs implements Registry
 func (dc *DummyRegistry) ListSourceIDs() ([]SourceID, error) {
-	return []SourceID{}, nil
+	select {
+	case lr := <-dc.ls:
+		return lr.ids, lr.error
+	default:
+		return []SourceID{}, nil
+	}
 }
 
 // Warmup implements Registry

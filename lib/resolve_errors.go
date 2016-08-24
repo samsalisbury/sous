@@ -12,11 +12,19 @@ type (
 		Causes []error
 	}
 
-	// MissingImageNamesError reports that we couldn't get names for one or
+	// MissingImageNameError reports that we couldn't get names for one or
 	// more source IDs.
-	MissingImageNamesError struct {
-		Causes []error
+	MissingImageNameError struct {
+		Cause error
 	}
+
+	// An UnacceptableAdvisory reports that there is an advisory on an image
+	// which hasn't been whitelisted on the target cluster
+	UnacceptableAdvisory struct {
+		Quality
+		*SourceID
+	}
+
 	// CreateError is returned when there's an error trying to create a deployment
 	CreateError struct {
 		Deployment *Deployment
@@ -52,13 +60,12 @@ func (re *ResolveErrors) Error() string {
 	return strings.Join(s, "\n  ")
 }
 
-func (e *MissingImageNamesError) Error() string {
-	causeStrs := make([]string, 0, len(e.Causes)+1)
-	causeStrs = append(causeStrs, "Image names are unknown to Sous for source IDs")
-	for _, c := range e.Causes {
-		causeStrs = append(causeStrs, c.Error())
-	}
-	return strings.Join(causeStrs, "  \n")
+func (e *MissingImageNameError) Error() string {
+	return fmt.Sprintf("Image name unknown to Sous for source IDs: %s", e.Cause.Error())
+}
+
+func (e *UnacceptableAdvisory) Error() string {
+	return fmt.Sprintf("Advisory unaccepatable on image: %s for %v", e.Quality.Name, e.SourceID)
 }
 
 func (e *CreateError) Error() string {

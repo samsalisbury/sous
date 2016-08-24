@@ -24,7 +24,17 @@ type (
 	// BuildArtifact describes the actual built binary Sous will deploy
 	BuildArtifact struct {
 		Name, Type string
+		Qualities  []Quality
 	}
+
+	// A Quality represents a characteristic of a BuildArtifact that needs to be recorded.
+	Quality struct {
+		Name string
+		// Kind is the the kind of this quality
+		// Known kinds include: advisory
+		Kind string
+	}
+
 	// Buildpack is a set of instructions used to build a particular
 	// kind of project.
 	Buildpack interface {
