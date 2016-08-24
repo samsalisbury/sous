@@ -14,8 +14,13 @@ func newDetectedOTPLConfig(wd LocalWorkDirShell, otplFlags *OTPLFlags) (Detected
 	return DetectedOTPLDeploySpecs{otplDeploySpecs}, nil
 }
 
-func newUserSelectedOTPLDeploySpecs(detected DetectedOTPLDeploySpecs, flags *OTPLFlags, state *sous.State) (UserSelectedOTPLDeploySpecs, error) {
+func newUserSelectedOTPLDeploySpecs(detected DetectedOTPLDeploySpecs, tsl TargetSourceLocation, flags *OTPLFlags, state *sous.State) (UserSelectedOTPLDeploySpecs, error) {
 	var nowt UserSelectedOTPLDeploySpecs
+	sl := sous.SourceLocation(tsl)
+	// we don't care about these flags when a manifest already exists
+	if _, ok := state.Manifests.Get(sl); ok {
+		return nowt, nil
+	}
 	if !flags.UseOTPLDeploy && !flags.IgnoreOTPLDeploy && len(detected.DeploySpecs) != 0 {
 		return nowt, UsageErrorf("otpl-deploy detected in config/, please specify either -use-otpl-deploy, or -ignore-otpl-deploy to proceed")
 	}

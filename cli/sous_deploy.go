@@ -51,25 +51,21 @@ func (su *SousDeploy) AddFlags(fs *flag.FlagSet) {
 // labeller and registrar
 func (su *SousDeploy) RegisterOn(psy Addable) {
 	psy.Add(&su.DeployFilterFlags)
+	psy.Add(&su.OTPLFlags)
 }
 
 // Execute fulfills the cmdr.Executor interface.
 func (su *SousDeploy) Execute(args []string) cmdr.Result {
-	sid, did, err := getIDs(su.DeployFilterFlags, su.SourceContext.SourceLocation())
+	sl := su.Manifest.ID()
+	sid, did, err := getIDs(su.DeployFilterFlags, sl)
 	if err != nil {
 		return EnsureErrorResult(err)
 	}
-	_, ok := su.State.Manifests.Get(sid.Location())
+	_, ok := su.State.Manifests.Get(sl)
 	if !ok {
-		log.Printf("no manifest for %q; running sous init\n", sid.Location())
-		cmdArgs := []interface{}{"init"}
-		if su.Flags.UseOTPLDeploy {
-			cmdArgs = append(cmdArgs, "-use-otpl-deploy")
-		}
-		if su.Flags.IgnoreOTPLDeploy {
-			cmdArgs = append(cmdArgs, "-ignore-otpl-deploy")
-		}
-		if err := su.WD.Run("sous", cmdArgs...); err != nil {
+		log.Printf("adding new  manifest %q", did)
+		su.State.Manifests.Add(su.Manifest.Manifest)
+		if err := su.StateWriter.WriteState(su.State); err != nil {
 			return EnsureErrorResult(err)
 		}
 		newState, err := su.StateReader.ReadState()
@@ -82,7 +78,7 @@ func (su *SousDeploy) Execute(args []string) cmdr.Result {
 			return EnsureErrorResult(err)
 		}
 		su.GDM = CurrentGDM{newGDM}
-		_, ok := su.State.Manifests.Get(sid.Location())
+		_, ok := su.State.Manifests.Get(sl)
 		if !ok {
 			return EnsureErrorResult(fmt.Errorf("sous init failed to add manifest"))
 		}
