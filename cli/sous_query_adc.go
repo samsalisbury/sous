@@ -1,9 +1,7 @@
 package cli
 
 import (
-	"fmt"
 	"os"
-	"text/tabwriter"
 
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
@@ -39,15 +37,6 @@ func (sb *SousQueryAdc) Execute(args []string) cmdr.Result {
 	if err != nil {
 		return EnsureErrorResult(err)
 	}
-
-	w := &tabwriter.Writer{}
-	w.Init(os.Stdout, 2, 4, 2, ' ', 0)
-	fmt.Fprintln(w, sous.TabbedDeploymentHeaders())
-
-	for _, d := range ads.Snapshot() {
-		fmt.Fprintln(w, d.Tabbed())
-	}
-	w.Flush()
-
+	sous.DumpDeployments(os.Stdout, ads)
 	return Success()
 }

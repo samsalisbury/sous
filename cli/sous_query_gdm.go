@@ -1,9 +1,7 @@
 package cli
 
 import (
-	"fmt"
 	"os"
-	"text/tabwriter"
 
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
@@ -32,14 +30,6 @@ func (*SousQueryGDM) Help() string { return sousQueryGDMHelp }
 // Execute defines the behavior of `sous query gdm`
 func (sb *SousQueryGDM) Execute(args []string) cmdr.Result {
 	sous.Log.Vomit.Printf("%v", sb.GDM.Snapshot())
-	w := &tabwriter.Writer{}
-	w.Init(os.Stdout, 2, 4, 2, ' ', 0)
-	fmt.Fprintln(w, sous.TabbedDeploymentHeaders())
-
-	for _, d := range sb.GDM.Snapshot() {
-		fmt.Fprintln(w, d.Tabbed())
-	}
-	w.Flush()
-
+	sous.DumpDeployments(os.Stdout, sb.GDM.Deployments)
 	return Success()
 }
