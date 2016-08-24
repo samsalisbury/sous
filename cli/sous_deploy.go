@@ -12,7 +12,9 @@ import (
 
 // SousDeploy is the command description for `sous deploy`
 type SousDeploy struct {
-	DeployFilterFlags DeployFilterFlags
+	DeployFilterFlags
+	OTPLFlags
+	Manifest TargetManifest
 	*sous.SourceContext
 	WD          LocalWorkDirShell
 	GDM         CurrentGDM
@@ -37,14 +39,12 @@ func (su *SousDeploy) Help() string { return sousInitHelp }
 
 // AddFlags adds the flags for sous init.
 func (su *SousDeploy) AddFlags(fs *flag.FlagSet) {
-	err := AddFlags(fs, &su.DeployFilterFlags, rectifyFilterFlagsHelp+tagFlagHelp)
-	if err != nil {
+	if err := AddFlags(fs, &su.DeployFilterFlags, rectifyFilterFlagsHelp+tagFlagHelp); err != nil {
 		panic(err)
 	}
-	fs.BoolVar(&su.Flags.UseOTPLDeploy, "use-otpl-deploy", false,
-		"if specified, copies OpenTable-specific otpl-deploy configuration to the manifest")
-	fs.BoolVar(&su.Flags.IgnoreOTPLDeploy, "ignore-otpl-deploy", false,
-		"if specified, ignores OpenTable-specific otpl-deploy configuration")
+	if err := AddFlags(fs, &su.OTPLFlags, otplFlagsHelp); err != nil {
+		panic(err)
+	}
 }
 
 // RegisterOn adds the DeploymentConfig to the psyringe to configure the

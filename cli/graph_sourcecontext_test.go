@@ -25,7 +25,7 @@ var badResolveSourceLocationCalls = map[string][]resolveSourceLocationInput{
 func TestResolveSourceLocation_failure(t *testing.T) {
 	for expected, inGroup := range badResolveSourceLocationCalls {
 		for _, in := range inGroup {
-			_, actualErr := resolveSourceLocation(in.Flags, in.Context)
+			_, actualErr := newTargetSourceLocation(in.Flags, in.Context)
 			if actualErr == nil {
 				t.Errorf("got nil; want error %q", expected)
 				continue
@@ -66,7 +66,7 @@ var goodResolveSourceLocationCalls = map[sous.SourceLocation][]resolveSourceLoca
 func TestResolveSourceLocation_success(t *testing.T) {
 	for expected, inGroup := range goodResolveSourceLocationCalls {
 		for _, in := range inGroup {
-			actual, err := resolveSourceLocation(in.Flags, in.Context)
+			actual, err := newTargetSourceLocation(in.Flags, in.Context)
 			if err != nil {
 				t.Error(err)
 				continue
