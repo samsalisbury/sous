@@ -112,7 +112,7 @@ func (d *Deployment) Tabbed() string {
 			"%s\t"+ //"Owner\t" +
 			"%s\t"+ //"Resources\t" +
 			"%s", //"Env"
-		d.Cluster,
+		d.ClusterName,
 		string(d.SourceID.Repo),
 		d.SourceID.Version.String(),
 		string(d.SourceID.Dir),
