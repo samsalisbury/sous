@@ -41,14 +41,14 @@ func newUserSelectedOTPLDeploySpecs(detected DetectedOTPLDeploySpecs, tsl Target
 	return UserSelectedOTPLDeploySpecs{deploySpecs}, nil
 }
 
-func newTargetManifest(auto UserSelectedOTPLDeploySpecs, tsl TargetSourceLocation, s *sous.State) (TargetManifest, error) {
+func newTargetManifest(auto UserSelectedOTPLDeploySpecs, tsl TargetSourceLocation, s *sous.State) TargetManifest {
 	sl := sous.SourceLocation(tsl)
 	//ds := gdm.Filter(func(d *sous.Deployment) bool {
 	//	return d.SourceID.Location() == sl
 	//})
 	m, ok := s.Manifests.Get(sl)
 	if ok {
-		return TargetManifest{m}, nil
+		return TargetManifest{m}
 	}
 	deploySpecs := auto.DeploySpecs
 	if len(deploySpecs) == 0 {
@@ -59,5 +59,5 @@ func newTargetManifest(auto UserSelectedOTPLDeploySpecs, tsl TargetSourceLocatio
 		Source:      sl,
 		Deployments: deploySpecs,
 	}
-	return TargetManifest{m}, nil
+	return TargetManifest{m}
 }

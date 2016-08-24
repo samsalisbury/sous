@@ -92,3 +92,16 @@ func TestNewUserSelectedOTPLDeploySpecs(t *testing.T) {
 		}
 	}
 }
+
+func TestNewTargetManifest(t *testing.T) {
+	detected := UserSelectedOTPLDeploySpecs{}
+	sl := sous.MustParseSourceLocation("github.com/user/project")
+	tsl := TargetSourceLocation(sl)
+	m := &sous.Manifest{Source: sl}
+	s := sous.NewState()
+	s.Manifests.Add(m)
+	tm := newTargetManifest(detected, tsl, s)
+	if tm.Source != sl {
+		t.Errorf("unexpected manifest %q", m)
+	}
+}
