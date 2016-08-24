@@ -21,9 +21,6 @@ type SousUpdate struct {
 	State       *sous.State
 	StateWriter LocalStateWriter
 	StateReader LocalStateReader
-	Flags       struct {
-		UseOTPLDeploy, IgnoreOTPLDeploy bool
-	}
 }
 
 func init() { TopLevelCommands["update"] = &SousUpdate{} }

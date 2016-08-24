@@ -42,6 +42,17 @@ type (
 )
 
 type (
+	// StateReader knows how to read state.
+	StateReader interface {
+		ReadState() (*sous.State, error)
+	}
+	// StateWriter know how to write state.
+	StateWriter interface {
+		WriteState(*sous.State) error
+	}
+)
+
+type (
 	// Version represents a version of Sous.
 	Version struct{ semv.Version }
 	// LocalUser is the currently logged in user.
@@ -67,10 +78,10 @@ type (
 	LocalDockerClient struct{ docker_registry.Client }
 	// LocalStateReader wraps a storage.StateReader, and should be configured
 	// to use the current user's local storage.
-	LocalStateReader struct{ storage.StateReader }
+	LocalStateReader struct{ StateReader }
 	// LocalStateWriter wraps a storage.StateWriter, and should be configured to
 	// use the current user's local storage.
-	LocalStateWriter struct{ storage.StateWriter }
+	LocalStateWriter struct{ StateWriter }
 	// CurrentGDM is a snapshot of the GDM at application start. In a CLI
 	// context, which this is, that is all we need to simply read the GDM.
 	CurrentGDM struct{ sous.Deployments }
