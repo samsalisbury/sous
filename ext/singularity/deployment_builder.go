@@ -68,6 +68,7 @@ func (db *deploymentBuilder) isRetryable(err error) bool {
 // BuildDeployment does all the work to collect the data for a Deployment
 // from Singularity based on the initial SingularityRequest
 func BuildDeployment(cl rectificationClient, clusters sous.Clusters, req SingReq) (sous.Deployment, error) {
+	Log.Vomit.Printf("%#v", req.ReqParent)
 	db := deploymentBuilder{rectification: cl, clusters: clusters, req: req}
 
 	db.Target.Cluster = &sous.Cluster{BaseURL: req.SourceURL}
@@ -123,6 +124,7 @@ func (db *deploymentBuilder) retrieveDeploy() error {
 	if err != nil {
 		return err
 	}
+	Log.Vomit.Printf("%#v", dh)
 
 	db.deploy = dh.Deploy
 	if db.deploy == nil {
@@ -195,7 +197,7 @@ func (db *deploymentBuilder) retrieveImageLabels() error {
 
 func (db *deploymentBuilder) unpackDeployConfig() error {
 	db.Target.Env = db.deploy.Env
-	Log.Vomit.Printf("Env %+v", db.deploy.Env)
+	Log.Vomit.Printf("Env: %+v", db.deploy.Env)
 	if db.Target.Env == nil {
 		db.Target.Env = make(map[string]string)
 	}
