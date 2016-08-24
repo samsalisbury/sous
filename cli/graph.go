@@ -77,9 +77,6 @@ type (
 	// TargetManifest is a specific manifest for the current SourceLocation.
 	// If the named manifest does not exist, it is created.
 	TargetManifest struct{ *sous.Manifest }
-	// NewManifest is like TargetManifest, except its constructor returns an
-	// error if the manifest already existed.
-	NewManifest struct{ *sous.Manifest }
 	// DetectedOTPLDeploySpecs is a set of otpl-deploy configured deployments
 	// that have been detected.
 	DetectedOTPLDeploySpecs struct{ sous.DeploySpecs }
@@ -127,7 +124,6 @@ func BuildGraph(c *cmdr.CLI, out, err io.Writer) *SousCLIGraph {
 		newCurrentGDM,
 		newCurrentState,
 		newTargetManifest,
-		newNewManifest,
 		newDetectedOTPLConfig,
 		newUserSelectedOTPLDeploySpecs,
 		newTargetSourceLocation,

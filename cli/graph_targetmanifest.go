@@ -41,13 +41,6 @@ func newUserSelectedOTPLDeploySpecs(detected DetectedOTPLDeploySpecs, tsl Target
 	return UserSelectedOTPLDeploySpecs{deploySpecs}, nil
 }
 
-func newNewManifest(tm TargetManifest, s *sous.State) (NewManifest, error) {
-	if _, ok := s.Manifests.Get(tm.ID()); ok {
-		return NewManifest{}, UsageErrorf("manifest %q already exists", tm.ID())
-	}
-	return NewManifest(tm), nil
-}
-
 func newTargetManifest(auto UserSelectedOTPLDeploySpecs, tsl TargetSourceLocation, s *sous.State) (TargetManifest, error) {
 	sl := sous.SourceLocation(tsl)
 	//ds := gdm.Filter(func(d *sous.Deployment) bool {
