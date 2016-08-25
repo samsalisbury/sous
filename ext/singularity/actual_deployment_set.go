@@ -158,14 +158,16 @@ func logFDs(when string) {
 		Log.Vomit.Print(err)
 		return
 	}
-	for _, f := range fdDir {
-		n, e := os.Readlink(fmt.Sprintf("/proc/%d/fd/%s", pid, f.Name()))
-		if e != nil {
-			n = f.Name()
-		}
+	/*
+		for _, f := range fdDir {
+			n, e := os.Readlink(fmt.Sprintf("/proc/%d/fd/%s", pid, f.Name()))
+			if e != nil {
+				n = f.Name()
+			}
 
-		Log.Vomit.Printf("%s: %s", f.Mode(), n)
-	}
+			Log.Vomit.Printf("%s: %s", f.Mode(), n)
+		}
+	*/
 
 	Log.Debug.Printf("%s: %d", when, len(fdDir))
 }
@@ -186,7 +188,7 @@ func singPipeline(
 		return
 	}
 	for _, r := range rs {
-		Log.Vomit.Printf("Req: %s %s", r.SourceURL, reqID(r.ReqParent))
+		Log.Vomit.Printf("Req: %s %s %d", r.SourceURL, reqID(r.ReqParent), r.ReqParent.Request.Instances)
 		dw.Add(1)
 		reqs <- r
 	}

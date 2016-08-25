@@ -69,7 +69,7 @@ func (e *UnacceptableAdvisory) Error() string {
 }
 
 func (e *CreateError) Error() string {
-	return fmt.Sprintf("Couldn't create deployment %+v: %v", e.Deployment, e.Err)
+	return fmt.Sprintf("Couldn't create deployment\n  %+v: %v", e.Deployment, e.Err)
 }
 
 // ExistingDeployment returns the deployment that was already existent in a change error
@@ -83,7 +83,7 @@ func (e *CreateError) IntendedDeployment() *Deployment {
 }
 
 func (e *DeleteError) Error() string {
-	return fmt.Sprintf("Couldn't delete deployment %+v: %v", e.Deployment, e.Err)
+	return fmt.Sprintf("%v: Couldn't delete deployment %+v", e.Err, e.Deployment)
 }
 
 // ExistingDeployment returns the deployment that was already existent in a change error
@@ -97,7 +97,7 @@ func (e *DeleteError) IntendedDeployment() *Deployment {
 }
 
 func (e *ChangeError) Error() string {
-	return fmt.Sprintf("Couldn't change from deployment %+v to deployment %+v: %v", e.Deployments.Prior, e.Deployments.Post, e.Err)
+	return fmt.Sprintf("%v: Couldn't change from deployment\n  %+v\n\n  to deployment\n\n  %+v", e.Err, e.Deployments.Prior, e.Deployments.Post)
 }
 
 // ExistingDeployment returns the deployment that was already existent in a change error

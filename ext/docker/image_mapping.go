@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
-	"log"
 	"regexp"
 	"strings"
 	"text/tabwriter"
@@ -223,7 +222,6 @@ func (nc *NameCache) GetCanonicalName(in string) (string, error) {
 // Insert puts a given SourceID/image name pair into the name cache
 // used by Builder at the moment to register after a build
 func (nc *NameCache) insert(sid sous.SourceID, in, etag string, qs []sous.Quality) error {
-	log.Printf("%+v", qs)
 	return nc.dbInsert(sid, in, etag, qs)
 }
 
@@ -440,7 +438,6 @@ func (nc *NameCache) ensureInDB(sel, ins string, args ...interface{}) (id int64,
 }
 
 func (nc *NameCache) dbInsert(sid sous.SourceID, in, etag string, quals []sous.Quality) error {
-	log.Printf("%+v", quals)
 	ref, err := reference.ParseNamed(in)
 	Log.Debug.Printf("Parsed image name: %v from %q", ref, in)
 	if err != nil {
@@ -490,9 +487,7 @@ func (nc *NameCache) dbInsert(sid sous.SourceID, in, etag string, quals []sous.Q
 		return err
 	}
 
-	log.Printf("%+v", quals)
 	for _, q := range quals {
-		log.Printf("%+v", q)
 		nc.DB.Exec("insert into docker_image_qualities"+
 			"  (metadata_id, quality, kind)"+
 			"  values"+
