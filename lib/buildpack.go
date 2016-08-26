@@ -70,7 +70,7 @@ func (s *EchoSelector) SelectBuildpack(c *BuildContext) (Buildpack, error) {
 }
 
 func (br *BuildResult) String() string {
-	str := fmt.Sprintf("Built: %q", br.ImageID)
+	str := fmt.Sprintf("Built: %q", br.VersionName)
 	if len(br.Advisories) > 0 {
 		str = str + "\nAdvisories:\n  " + strings.Join(br.Advisories, "  \n")
 	}
