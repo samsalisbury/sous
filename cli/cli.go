@@ -65,7 +65,8 @@ func NewSousCLI(v semv.Version, out, errout io.Writer) (*cmdr.CLI, error) {
 
 	cli := &cmdr.CLI{
 		Root: s,
-		Out:  stdout, Err: stderr,
+		Out:  stdout,
+		Err:  stderr,
 		// HelpCommand is shown to the user if they type something that looks
 		// like they want help, but which isn't recognised by Sous properly. It
 		// uses the standard flag.ErrHelp value to decide whether or not to show

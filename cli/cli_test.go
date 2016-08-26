@@ -3,6 +3,7 @@ package cli
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"testing"
 
 	"github.com/nyarly/testify/assert"
@@ -228,8 +229,22 @@ func TestInvokeQueryArtifacts(t *testing.T) {
 	assert.NoError(err)
 	assert.NotNil(exe)
 }
-
 */
+func TestInvokeWithUnknownFlags(t *testing.T) {
+	log.SetFlags(log.Flags() | log.Lshortfile)
+	assert := assert.New(t)
+	require := require.New(t)
+
+	stdout := &bytes.Buffer{}
+	stderr := &bytes.Buffer{}
+
+	c, err := NewSousCLI(semv.MustParse(`1.2.3`), stdout, stderr)
+	require.NoError(err)
+
+	c.Invoke([]string{`sous`, `-cobblers`})
+	assert.Regexp(`flag provided but not defined`, stderr.String())
+}
+
 func TestInvokeRectifyWithDebugFlags(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
