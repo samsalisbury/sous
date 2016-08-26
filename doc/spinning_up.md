@@ -42,3 +42,10 @@ Start by forking the project, then
 commit changes on a branch and issue pull-requests with your changes.
 We would appreciate tests for new code,
 (and new tests for old code...)
+
+We've adopted the use of [Travis CI](https://travis-ci.org)
+and [CodeCov](https://codecov.io)
+to help maintain and improve the code quality on Sous.
+Note that PRs will normally be checked by these services before acceptance.
+For the most part, this means that you'll need to ensure
+that there are tests for your contributions.
