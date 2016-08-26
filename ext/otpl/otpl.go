@@ -3,7 +3,6 @@
 package otpl
 
 import (
-	"log"
 	"path"
 	"strconv"
 	"sync"
@@ -42,7 +41,7 @@ func (sr SingularityResources) SousResources() sous.Resources {
 }
 
 func NewDeploySpecParser() *DeploySpecParser {
-	return &DeploySpecParser{debugf: log.Printf, debug: log.Println}
+	return &DeploySpecParser{debugf: sous.Log.Debug.Printf, debug: sous.Log.Debug.Println}
 }
 
 type namedDeploySpec struct {
