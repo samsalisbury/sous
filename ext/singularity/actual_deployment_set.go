@@ -53,10 +53,12 @@ func (sc *deployer) RunningDeployments(clusters sous.Clusters) (deps sous.Deploy
 
 	var singWait, depWait sync.WaitGroup
 
+	Log.Vomit.Printf("Setting up to wait for %d clusters", len(clusters))
 	singWait.Add(len(clusters))
 	for _, url := range clusters {
 		url := url.BaseURL
 		if _, ok := sings[url]; ok {
+			singWait.Done()
 			continue
 		}
 		//sing.Debug = true
@@ -70,19 +72,25 @@ func (sc *deployer) RunningDeployments(clusters sous.Clusters) (deps sous.Deploy
 	go func() {
 		catchAndSend("closing up", errCh)
 		singWait.Wait()
+		Log.Vomit.Println("All singularities polled for requests")
 		depWait.Wait()
+		Log.Vomit.Println("All deploys processed")
 
 		close(reqCh)
 		close(errCh)
 	}()
 
 	for {
+		var cont bool
 		select {
 		case dep := <-depCh:
 			deps.Add(dep)
 			Log.Debug.Printf("Deployment #%d: %+v", deps.Len(), dep)
 			depWait.Done()
-		case err = <-errCh:
+		case err, cont = <-errCh:
+			if !cont {
+				return
+			}
 			if isMalformed(err) {
 				Log.Debug.Print(err)
 				depWait.Done()
@@ -179,6 +187,8 @@ func singPipeline(
 	reqs chan SingReq,
 	errs chan error,
 ) {
+	Log.Vomit.Printf("Starting cluster at %s", url)
+	defer func() { Log.Vomit.Printf("Completed cluster at %s", url) }()
 	defer wg.Done()
 	defer catchAndSend(fmt.Sprintf("get requests: %s", url), errs)
 	rs, err := getRequestsFromSingularity(url, client)
@@ -221,11 +231,15 @@ func depPipeline(
 	defer catchAndSend("dependency building", errCh)
 	poolLimit := make(chan struct{}, poolCount)
 	for req := range reqCh {
+		Log.Vomit.Printf("starting assembling for %q", reqID(req.ReqParent))
 		go func(cl rectificationClient, req SingReq) {
 			defer catchAndSend(fmt.Sprintf("dep from req %s", req.SourceURL), errCh)
 
 			poolLimit <- struct{}{}
-			defer func() { <-poolLimit }()
+			defer func() {
+				Log.Vomit.Printf("finished assembling for %q", reqID(req.ReqParent))
+				<-poolLimit
+			}()
 
 			dep, err := assembleDeployment(cl, clusters, req)
 
