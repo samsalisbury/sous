@@ -1,6 +1,17 @@
-# deployment workflow
+# Deployment Workflow
 
 This document outlines how deployments are expected to work in Sous.
+
+## TL;DR
+
+```
+export repo=github.com/opentable/myproject
+export base_version=0.1.0
+export version $base_version"-ci"$(date +%s)
+sous build -tag $version .
+sous update -cluster sf-qa-ci -tag $version
+sous rectify -repo $repo
+```
 
 ## Background
 

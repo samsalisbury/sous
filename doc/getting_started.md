@@ -10,7 +10,7 @@ Furthermore, it will probably be impossible for Sous to be
 absolutely agnostic about the kinds of services that it deploys.
 
 It may help to review
-[the deploy process](./deploying.md).
+[the deploy process](./deployment-workflow.md).
 
 # Assumptions
 
