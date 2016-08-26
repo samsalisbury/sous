@@ -191,7 +191,7 @@ func TestEphemeralTag(t *testing.T) {
 				PrimaryRemoteURL:   "github.com/opentable/present",
 				Revision:           "abcd",
 				NearestTagName:     "1.2.0",
-				NearestTagRevision: "abcd",
+				NearestTagRevision: "3541",
 			},
 		},
 	}
@@ -222,6 +222,7 @@ func TestEphemeralTag(t *testing.T) {
 	ctx := bc.NewContext()
 	assert.Equal(`1.2.3+abcd`, ctx.Source.Version().Version.String())
 	assert.Contains(ctx.Advisories, string(EphemeralTag))
+	assert.NotContains(ctx.Advisories, string(TagNotHead))
 	assert.NoError(bc.GuardRegister(ctx))
 }
 

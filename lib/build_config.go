@@ -146,11 +146,6 @@ func (c *BuildConfig) Advisories(ctx *BuildContext) (advs []string) {
 		advs = append(advs, string(Unversioned))
 	}
 
-	if s.NearestTagRevision != s.Revision {
-		Log.Debug.Printf("%s != %s", s.NearestTagRevision, s.Revision)
-		advs = append(advs, string(TagNotHead))
-	}
-
 	if c.Tag != "" {
 		hasTag := false
 		for _, t := range s.Tags {
@@ -161,6 +156,9 @@ func (c *BuildConfig) Advisories(ctx *BuildContext) (advs []string) {
 		}
 		if !hasTag {
 			advs = append(advs, string(EphemeralTag))
+		} else if s.NearestTagRevision != s.Revision {
+			Log.Debug.Printf("%s != %s", s.NearestTagRevision, s.Revision)
+			advs = append(advs, string(TagNotHead))
 		}
 	}
 
