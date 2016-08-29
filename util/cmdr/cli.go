@@ -88,13 +88,17 @@ func (c *CLI) AddGlobalFlagSetFunc(f func(*flag.FlagSet)) {
 // all command output. It then returns the result for further processing.
 func (c *CLI) Invoke(args []string) Result {
 	result := c.InvokeWithoutPrinting(args)
-	c.outputResult(result)
+	c.OutputResult(result)
 	return result
 }
 
-func (c *CLI) outputResult(result Result) {
+// OutputResult formats and outputs a cmdr.Result -
+// handles tips when the result is an error, etc.
+// returns true if the result was a success
+func (c *CLI) OutputResult(result Result) bool {
 	if success, ok := result.(SuccessResult); ok {
 		c.handleSuccessResult(success)
+		return true
 	}
 	if result == nil {
 		result = InternalErrorf("nil result returned from %T", c.Root)
@@ -102,6 +106,7 @@ func (c *CLI) outputResult(result Result) {
 	if err, ok := result.(ErrorResult); ok {
 		c.handleErrorResult(err)
 	}
+	return false
 }
 
 // InvokeWithoutPrinting invokes the CLI without printing the results.
