@@ -13,14 +13,20 @@ type (
 	Resolver struct {
 		Deployer Deployer
 		Registry Registry
+		Filter   DeploymentPredicate
 	}
 )
 
 // NewResolver creates a new Resolver.
-func NewResolver(d Deployer, r Registry) *Resolver {
+func NewResolver(d Deployer, r Registry, fv ...DeploymentPredicate) *Resolver {
+	var f DeploymentPredicate
+	if len(fv) > 0 {
+		f = fv[0]
+	}
 	return &Resolver{
 		Deployer: d,
 		Registry: r,
+		Filter:   f,
 	}
 }
 
@@ -48,6 +54,8 @@ func (r *Resolver) Resolve(intended Deployments, clusters Clusters) error {
 	var errs chan RectificationError
 	return firsterr.Returned(
 		func() (e error) { ads, e = r.Deployer.RunningDeployments(clusters); return },
+		func() (e error) { intended = intended.Filter(r.Filter); return nil },
+		func() (e error) { ads = ads.Filter(r.Filter); return nil },
 		func() (e error) { return guardImages(r.Registry, intended) },
 		func() (e error) { diffs = ads.Diff(intended); return nil },
 		func() (e error) { errs = r.rectify(diffs); return nil },
