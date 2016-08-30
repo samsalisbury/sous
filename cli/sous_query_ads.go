@@ -7,8 +7,8 @@ import (
 	"github.com/opentable/sous/util/cmdr"
 )
 
-// SousQueryAdc is the description of the `sous query adc` command
-type SousQueryAdc struct {
+// SousQueryAds is the description of the `sous query ads` command
+type SousQueryAds struct {
 	Deployer     sous.Deployer
 	Config       LocalSousConfig
 	DockerClient LocalDockerClient
@@ -20,19 +20,19 @@ type SousQueryAdc struct {
 	}
 }
 
-func init() { QuerySubcommands["adc"] = &SousQueryAdc{} }
+func init() { QuerySubcommands["ads"] = &SousQueryAds{} }
 
-const sousQueryAdcHelp = `
+const sousQueryAdsHelp = `
 Queries the Singularity server and container registry to determine a synthetic global manifest.
 
 This should resemble the manifest that was used to establish the current state of deployment.
 `
 
 // Help prints the help
-func (*SousQueryAdc) Help() string { return sousBuildHelp }
+func (*SousQueryAds) Help() string { return sousBuildHelp }
 
-// Execute defines the behavior of `sous query adc`
-func (sb *SousQueryAdc) Execute(args []string) cmdr.Result {
+// Execute defines the behavior of `sous query ads`
+func (sb *SousQueryAds) Execute(args []string) cmdr.Result {
 	ads, err := sb.Deployer.RunningDeployments(sb.State.Defs.Clusters)
 	if err != nil {
 		return EnsureErrorResult(err)

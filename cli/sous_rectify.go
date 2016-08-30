@@ -76,9 +76,9 @@ func (sr *SousRectify) Execute(args []string) cmdr.Result {
 		return EnsureErrorResult(fmt.Errorf("Cowardly refusing rectify with neither contraint nor `-all`! (see `sous help rectify`)"))
 	}
 
-	r := sous.NewResolver(sr.Deployer, sr.Registry)
+	r := sous.NewResolver(sr.Deployer, sr.Registry, predicate)
 
-	if err := r.Resolve(sr.GDM.Filter(predicate), sr.State.Defs.Clusters); err != nil {
+	if err := r.Resolve(sr.GDM.Clone(), sr.State.Defs.Clusters); err != nil {
 		return EnsureErrorResult(err)
 	}
 

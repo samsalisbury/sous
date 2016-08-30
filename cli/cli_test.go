@@ -122,11 +122,11 @@ build builds the project in your current directory by default. If you pass it a
 path, it will instead build the project at that path.
 
 subcommands:
-  adc  build your project
+  ads  build your project
   gdm  Loads the current deployment configuration and prints it out
 
 options:
-usage: sous query adc [path]
+usage: sous query ads [path]
 
 build builds the project in your current directory by default. If you pass it a
 path, it will instead build the project at that path.
@@ -142,7 +142,7 @@ func TestInvokeQuery(t *testing.T) {
 	exe := justCommand(t, []string{`sous`, `query`})
 	assert.NotNil(exe)
 
-	exe = justCommand(t, []string{`sous`, `query`, `adc`})
+	exe = justCommand(t, []string{`sous`, `query`, `ads`})
 	assert.NotNil(exe)
 
 	exe = justCommand(t, []string{`sous`, `query`, `gdm`})
