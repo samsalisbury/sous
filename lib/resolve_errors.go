@@ -65,7 +65,7 @@ func (e *MissingImageNameError) Error() string {
 }
 
 func (e *UnacceptableAdvisory) Error() string {
-	return fmt.Sprintf("Advisory unaccepatable on image: %s for %v", e.Quality.Name, e.SourceID)
+	return fmt.Sprintf("Advisory unacceptable on image: %s for %v", e.Quality.Name, e.SourceID)
 }
 
 func (e *CreateError) Error() string {
