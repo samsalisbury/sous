@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+
+	"github.com/samsalisbury/semv"
 )
 
 type (
@@ -90,6 +92,14 @@ func (c *BuildConfig) chooseOffset() string {
 		return ""
 	}
 	return clean
+}
+
+// Validate checks that the Config is well formed
+func (c *BuildConfig) Validate() error {
+	if _, ve := semv.Parse(c.Tag); ve != nil {
+		return fmt.Errorf("build config: tag format %q invalid: %s", c.Tag, ve)
+	}
+	return nil
 }
 
 // GuardStrict returns an error if there are imperfections in the proposed build

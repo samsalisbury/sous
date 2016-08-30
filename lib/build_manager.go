@@ -20,6 +20,7 @@ func (m *BuildManager) Build() (br *BuildResult, e error) {
 	var bc *BuildContext
 
 	e = firsterr.Returned(
+		func() (e error) { return m.BuildConfig.Validate() },
 		func() (e error) { bc = m.BuildConfig.NewContext(); return nil },
 		func() (e error) { e = m.BuildConfig.GuardStrict(bc); return },
 		func() (e error) { bp, e = m.SelectBuildpack(bc); return },
