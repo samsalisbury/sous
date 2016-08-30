@@ -20,5 +20,5 @@ func TestBuildResultString(t *testing.T) {
 	str := fmt.Sprintln(br)
 	assert.Regexp(`ephemeral`, str)
 	assert.Regexp(`2.3.4`, str)
-	assert.Regexp(`5`, str)
+	assert.Regexp(`5s`, str)
 }
