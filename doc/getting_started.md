@@ -32,9 +32,15 @@ from Singularity.
 
 More specifically,
 we assume the default networking mode in Singularity:
-you'll be provided with environment variables for
-the IP and port you'll be on,
-and you should bind to the network accordingly.
+you'll be provided with two environment variables you must use to configure your server:
+    `TASK_HOST` contains the host name of the node you're running on, and
+    `PORT0` contains the number of an available port you must listen on.
+If you asked for more than one port in your resources configuration, you will also have
+    `PORT1, PORT2, ... PORTN-1` also indicating free ports you can listen on.
+You must, however, listen on the IP address `0.0.0.0` (i.e. all IP addresses)
+The `TASK_HOST` environment variable is the hostname outside traffic will need to use
+to find this app.
+
 
 While there are many many options about how Singularity works,
 Sous provides a limited subset of these options.
