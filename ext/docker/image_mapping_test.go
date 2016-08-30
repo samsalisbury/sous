@@ -24,14 +24,10 @@ func inMemoryDB(name string) *sql.DB {
 	return db
 }
 
-func inMemoryRoundtripDB() *sql.DB {
-	return inMemoryDB("roundtrip")
-}
-
 func TestRoundTrip(t *testing.T) {
 	assert := assert.New(t)
 	dc := docker_registry.NewDummyClient()
-	nc := NewNameCache(dc, inMemoryRoundtripDB())
+	nc := NewNameCache(dc, inMemoryDB("roundtrip"))
 
 	v := semv.MustParse("1.2.3")
 	sv := sous.SourceID{
@@ -86,7 +82,7 @@ func TestHarvestAlso(t *testing.T) {
 	assert := assert.New(t)
 
 	dc := docker_registry.NewDummyClient()
-	nc := NewNameCache(dc, inMemoryRoundtripDB())
+	nc := NewNameCache(dc, inMemoryDB("harvest_also"))
 
 	host := "docker.repo.io"
 	base := "ot/wackadoo"
@@ -132,10 +128,62 @@ func TestHarvestAlso(t *testing.T) {
 	assert.NoError(err)
 }
 
+// This can happen e.g. if the same source gets built twice
+func TestSecondCanonicalName(t *testing.T) {
+	assert := assert.New(t)
+
+	dc := docker_registry.NewDummyClient()
+	nc := NewNameCache(dc, inMemoryDB("secondCN"))
+
+	host := "docker.repo.io"
+	base := "ot/wackadoo"
+	repo := "github.com/opentable/test-app"
+
+	stuffBA := func(digest string) sous.SourceID {
+		n := "test-service"
+		v := `0.1.2-ci1234`
+		vs := semv.MustParse(v)
+		ba := &sous.BuildArtifact{
+			Name: n,
+			Type: "docker",
+		}
+		sv := sous.SourceID{
+			Repo:    repo,
+			Dir:     "",
+			Version: vs,
+		}
+		in := base + ":version-" + v
+		cn := base + "@sha256:" + digest
+
+		dc.FeedMetadata(docker_registry.Metadata{
+			Registry:      host,
+			Labels:        Labels(sv),
+			Etag:          digest,
+			CanonicalName: cn,
+			AllNames:      []string{cn, in},
+		})
+		sid, err := nc.GetSourceID(ba)
+		if !assert.NoError(err) {
+			fmt.Println(err)
+			nc.dump(os.Stderr)
+		}
+		assert.NotNil(sid)
+		return sid
+	}
+	sid1 := stuffBA(`012345678901234567890123456789AB012345678901234567890123456789AB`)
+	sid2 := stuffBA(`ABCDEFABCDEFABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEF12341234566`)
+
+	_, err := nc.GetArtifact(sid1) //which should not miss
+	assert.NoError(err)
+
+	_, err = nc.GetArtifact(sid2) //which should not miss
+	assert.NoError(err)
+}
+
 func TestHarvesting(t *testing.T) {
 	assert := assert.New(t)
 	dc := docker_registry.NewDummyClient()
-	nc := NewNameCache(dc, inMemoryRoundtripDB())
+	nc := NewNameCache(dc, inMemoryDB("harvesting"))
 
 	v := semv.MustParse("1.2.3")
 	sv := sous.SourceID{
@@ -193,7 +241,6 @@ func TestHarvesting(t *testing.T) {
 }
 
 func TestRecordAdvisories(t *testing.T) {
-	sous.Log.Vomit.SetOutput(os.Stderr)
 	assert := assert.New(t)
 	require := require.New(t)
 	dc := docker_registry.NewDummyClient()
@@ -226,7 +273,7 @@ func TestDump(t *testing.T) {
 	io := &bytes.Buffer{}
 
 	dc := docker_registry.NewDummyClient()
-	nc := NewNameCache(dc, inMemoryRoundtripDB())
+	nc := NewNameCache(dc, inMemoryDB("dump"))
 
 	nc.dump(io)
 	assert.Regexp(`name_id`, io.String())

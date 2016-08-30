@@ -332,7 +332,7 @@ func GetDatabase(cfg *DBConfig) (*sql.DB, error) {
 	if err := sqlExec(db, "create table if not exists docker_search_name("+
 		"name_id integer primary key autoincrement"+
 		", metadata_id references docker_search_metadata"+
-		"    not null"+
+		"    on delete cascade not null"+
 		", name text not null unique"+
 		");"); err != nil {
 		return nil, err
@@ -480,7 +480,7 @@ func (nc *NameCache) dbInsert(sid sous.SourceID, in, etag string, quals []sous.Q
 
 	id, err = nc.ensureInDB(
 		"select metadata_id from docker_search_metadata  where canonicalName = $1",
-		"insert into docker_search_metadata (canonicalName, location_id, etag, version) values ($1, $2, $3, $4);",
+		"insert or replace into docker_search_metadata (canonicalName, location_id, etag, version) values ($1, $2, $3, $4);",
 		in, id, etag, versionString)
 
 	if err != nil {
