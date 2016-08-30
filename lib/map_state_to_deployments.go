@@ -30,7 +30,7 @@ func (s *State) Deployments() (Deployments, error) {
 		}
 		cluster, ok := s.Defs.Clusters[d.ClusterName]
 		if !ok {
-			return ds, errors.Errorf("cluster %q does not exist (specified in manifest %q)",
+			return ds, errors.Errorf("cluster %q is not described in defs.yaml (but specified in manifest %q)",
 				d.ClusterName, id.Source)
 		}
 		if cluster == nil {
@@ -52,7 +52,7 @@ func (ds Deployments) Manifests(defs Defs) (Manifests, error) {
 		if d.Cluster == nil {
 			cluster, ok := defs.Clusters[d.ClusterName]
 			if !ok {
-				return ms, errors.Errorf("cluster %q does not exist", d.ClusterName)
+				return ms, errors.Errorf("cluster %q is not described in defs.yaml", d.ClusterName)
 			}
 			d.Cluster = cluster
 		}
@@ -99,7 +99,7 @@ func (s *State) DeploymentsFromManifest(m *Manifest) (Deployments, error) {
 	for clusterName, spec := range m.Deployments {
 		cluster, ok := s.Defs.Clusters[clusterName]
 		if !ok {
-			return ds, errors.Errorf("cluster %q not defined", clusterName)
+			return ds, errors.Errorf("cluster %q not described in defs.yaml", clusterName)
 		}
 		spec.clusterName = cluster.BaseURL
 		d, err := BuildDeployment(s, m, clusterName, spec, inherit)
