@@ -13,7 +13,7 @@ import (
 type Sous struct {
 	// CLI is a reference to the CLI singleton. We use it here to set global
 	// verbosity.
-	CLI *cmdr.CLI
+	CLI *CLI
 	*sous.LogSet
 	// Err is the error message stream.
 	Err *ErrOut

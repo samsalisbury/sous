@@ -92,13 +92,18 @@ func (c *CLI) Invoke(args []string) Result {
 	return result
 }
 
+// IsSuccess checks if a Result is a success
+func (c *CLI) IsSuccess(result Result) bool {
+	_, ok := result.(SuccessResult)
+	return ok
+}
+
 // OutputResult formats and outputs a cmdr.Result -
 // handles tips when the result is an error, etc.
 // returns true if the result was a success
-func (c *CLI) OutputResult(result Result) bool {
+func (c *CLI) OutputResult(result Result) {
 	if success, ok := result.(SuccessResult); ok {
 		c.handleSuccessResult(success)
-		return true
 	}
 	if result == nil {
 		result = InternalErrorf("nil result returned from %T", c.Root)
@@ -106,7 +111,6 @@ func (c *CLI) OutputResult(result Result) bool {
 	if err, ok := result.(ErrorResult); ok {
 		c.handleErrorResult(err)
 	}
-	return false
 }
 
 // InvokeWithoutPrinting invokes the CLI without printing the results.

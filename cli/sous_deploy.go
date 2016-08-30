@@ -8,13 +8,11 @@ import (
 
 // SousDeploy is the command description for `sous deploy`
 type SousDeploy struct {
-	*cmdr.CLI
+	*CLI
 	DeployFilterFlags
 	OTPLFlags
-	components struct {
-		SousUpdate
-		SousRectify
-	}
+	Update       SousUpdate
+	Rectify      SousRectify
 	rectifyFlags struct {
 		dryrun string
 	}
@@ -57,17 +55,17 @@ func (sd *SousDeploy) RegisterOn(psy Addable) {
 
 // Execute fulfills the cmdr.Executor interface.
 func (sd *SousDeploy) Execute(args []string) cmdr.Result {
-	su := sd.components.SousUpdate
-	sr := sd.components.SousRectify
-
-	su.DeployFilterFlags = sd.DeployFilterFlags
-	su.OTPLFlags = sd.OTPLFlags
-	res := su.Execute(args)
-	if !sd.CLI.OutputResult(res) {
+	res := sd.CLI.Plumbing(&SousUpdate{
+		DeployFilterFlags: sd.DeployFilterFlags,
+		OTPLFlags:         sd.OTPLFlags,
+	}, []string{})
+	if !sd.CLI.IsSuccess(res) {
 		return res
 	}
+	sd.CLI.OutputResult(res)
 
-	sr.SourceFlags = sd.DeployFilterFlags
-	sr.flags.dryrun = sd.rectifyFlags.dryrun
-	return sr.Execute([]string{})
+	rect := &SousRectify{SourceFlags: sd.DeployFilterFlags}
+	rect.flags.dryrun = sd.rectifyFlags.dryrun
+
+	return sd.CLI.Plumbing(rect, []string{})
 }

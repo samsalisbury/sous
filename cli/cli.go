@@ -35,16 +35,23 @@ func ProduceResult(err error) cmdr.Result {
 	return Success()
 }
 
-// Addable objects are able to receive lists of interface{}, presumably to add
-// them to a DI registry. Abstracts Psyringe's Add()
-type Addable interface {
-	Add(...interface{})
-}
+type (
+	// CLI describes the command line interface for Sous
+	CLI struct {
+		*cmdr.CLI
+		*SousCLIGraph
+	}
+	// Addable objects are able to receive lists of interface{}, presumably to add
+	// them to a DI registry. Abstracts Psyringe's Add()
+	Addable interface {
+		Add(...interface{})
+	}
 
-// A Registrant is able to add values to an Addable (implicitly: a Psyringe)
-type Registrant interface {
-	RegisterOn(Addable)
-}
+	// A Registrant is able to add values to an Addable (implicitly: a Psyringe)
+	Registrant interface {
+		RegisterOn(Addable)
+	}
+)
 
 // SuccessYAML lets you return YAML on the command line.
 func SuccessYAML(v interface{}) cmdr.Result {
@@ -55,23 +62,32 @@ func SuccessYAML(v interface{}) cmdr.Result {
 	return SuccessData(b)
 }
 
+// Plumbing injects a command with the current psyringe,
+// then it Executes it, returning the result
+func (cli *CLI) Plumbing(cmd cmdr.Executor, args []string) cmdr.Result {
+	cli.SousCLIGraph.Inject(cmd)
+	return cmd.Execute(args)
+}
+
 // NewSousCLI creates a new Sous cli app.
-func NewSousCLI(v semv.Version, out, errout io.Writer) (*cmdr.CLI, error) {
+func NewSousCLI(v semv.Version, out, errout io.Writer) (*CLI, error) {
 
 	s := &Sous{Version: v}
 
 	stdout := cmdr.NewOutput(out)
 	stderr := cmdr.NewOutput(errout)
 
-	cli := &cmdr.CLI{
-		Root: s,
-		Out:  stdout,
-		Err:  stderr,
-		// HelpCommand is shown to the user if they type something that looks
-		// like they want help, but which isn't recognised by Sous properly. It
-		// uses the standard flag.ErrHelp value to decide whether or not to show
-		// this.
-		HelpCommand: os.Args[0] + " help",
+	cli := &CLI{
+		CLI: &cmdr.CLI{
+			Root: s,
+			Out:  stdout,
+			Err:  stderr,
+			// HelpCommand is shown to the user if they type something that looks
+			// like they want help, but which isn't recognised by Sous properly. It
+			// uses the standard flag.ErrHelp value to decide whether or not to show
+			// this.
+			HelpCommand: os.Args[0] + " help",
+		},
 	}
 
 	var g *SousCLIGraph
@@ -79,6 +95,7 @@ func NewSousCLI(v semv.Version, out, errout io.Writer) (*cmdr.CLI, error) {
 
 	cli.Hooks.Startup = func(*cmdr.CLI) error {
 		g = BuildGraph(cli, out, errout)
+		cli.SousCLIGraph = g //Ugh, weird state.
 		chain = make([]cmdr.Command, 0)
 		return nil
 	}
