@@ -83,7 +83,7 @@ var updateStateTests = []struct {
 			Cluster: "blah",
 			Source:  sous.MustParseSourceLocation("github.com/user/project"),
 		},
-		ExpectedErr: `cluster "blah" does not exist`,
+		ExpectedErr: `cluster "blah" is not described in defs.yaml`,
 	},
 	{
 		State: &sous.State{
