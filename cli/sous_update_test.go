@@ -144,7 +144,7 @@ type DummyStateManager struct{}
 func (dsm *DummyStateManager) WriteState(s *sous.State) error  { return nil }
 func (dsm *DummyStateManager) ReadState() (*sous.State, error) { return nil, nil }
 
-func TestSousDeploy_Execute(t *testing.T) {
+func TestSousUpdate_Execute(t *testing.T) {
 	dsm := &DummyStateManager{}
 	su := SousUpdate{
 		StateReader: LocalStateReader{dsm},
