@@ -55,10 +55,7 @@ func (*SousRectify) Help() string { return sousRectifyHelp }
 
 // AddFlags adds flags for sous rectify
 func (sr *SousRectify) AddFlags(fs *flag.FlagSet) {
-	err := AddFlags(fs, &sr.SourceFlags, rectifyFilterFlagsHelp)
-	if err != nil {
-		panic(err)
-	}
+	MustAddFlags(fs, &sr.SourceFlags, rectifyFilterFlagsHelp)
 
 	fs.StringVar(&sr.flags.dryrun, "dry-run", "none",
 		"prevent rectify from actually changing things - "+

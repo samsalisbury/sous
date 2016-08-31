@@ -39,12 +39,8 @@ func (su *SousUpdate) Help() string { return sousUpdateHelp }
 
 // AddFlags adds the flags for sous init.
 func (su *SousUpdate) AddFlags(fs *flag.FlagSet) {
-	if err := AddFlags(fs, &su.DeployFilterFlags, rectifyFilterFlagsHelp+tagFlagHelp); err != nil {
-		panic(err)
-	}
-	if err := AddFlags(fs, &su.OTPLFlags, otplFlagsHelp); err != nil {
-		panic(err)
-	}
+	MustAddFlags(fs, &su.DeployFilterFlags, rectifyFilterFlagsHelp+tagFlagHelp)
+	MustAddFlags(fs, &su.OTPLFlags, otplFlagsHelp)
 }
 
 // RegisterOn adds the DeploymentConfig to the psyringe to configure the

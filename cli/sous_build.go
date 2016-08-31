@@ -34,11 +34,9 @@ path, it will instead build the project at that path.
 args: [path]
 `
 
+// AddFlags adds flags to the build command.
 func (sb *SousBuild) AddFlags(fs *flag.FlagSet) {
-	err := AddFlags(fs, &sb.DeployFilterFlags, sourceFlagsHelp)
-	if err != nil {
-		panic(err)
-	}
+	MustAddFlags(fs, &sb.DeployFilterFlags, sourceFlagsHelp)
 	fs.BoolVar(&sb.PolicyFlags.Strict, "strict", false, "require that the build be pristine")
 	//fs.BoolVar(&sb.PolicyFlags.ForceClone, "force-clone", false, "force a shallow clone of the codebase before build")
 	// above is commented prior to impl.

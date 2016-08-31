@@ -32,16 +32,14 @@ func (sc *SousContext) RegisterOn(psy Addable) {
 	psy.Add(&sc.DeployFilterFlags)
 }
 
+// AddFlags adds flags to the context command.
 func (sc *SousContext) AddFlags(fs *flag.FlagSet) {
-	err := AddFlags(fs, &sc.DeployFilterFlags, sourceFlagsHelp)
-	if err != nil {
-		panic(err)
-	}
+	MustAddFlags(fs, &sc.DeployFilterFlags, sourceFlagsHelp)
 	//fs.BoolVar(&sb.PolicyFlags.ForceClone, "force-clone", false, "force a shallow clone of the codebase before build")
 	// above is commented prior to impl.
 }
 
 // Execute prints the detected sous context.
-func (sv *SousContext) Execute(args []string) cmdr.Result {
-	return SuccessYAML(sv.SourceContext)
+func (sc *SousContext) Execute(args []string) cmdr.Result {
+	return SuccessYAML(sc.SourceContext)
 }

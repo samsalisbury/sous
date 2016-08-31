@@ -8,6 +8,13 @@ import (
 	"github.com/pkg/errors"
 )
 
+// MustAddFlags wraps AddFlags and panics if AddFlags returns an error.
+func MustAddFlags(fs *flag.FlagSet, target interface{}, help string) {
+	if err := AddFlags(fs, target, help); err != nil {
+		panic(err)
+	}
+}
+
 // AddFlags sniffs out struct fields from target and adds them as var flags to
 // the flag set.
 func AddFlags(fs *flag.FlagSet, target interface{}, help string) error {
