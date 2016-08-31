@@ -279,6 +279,27 @@ func TestInvokeRectifyWithDebugFlags(t *testing.T) {
 	assert.Regexp(`Regular debugging`, stderr.String())
 }
 
+func TestInvokeRectifyDryruns(t *testing.T) {
+	assert := assert.New(t)
+	require := require.New(t)
+
+	testDryRun := func(which string) {
+		exe := justCommand(t, []string{`sous`, `rectify`, `-dry-run`, which, `-repo`, `github.com/somewhere`})
+		assert.Len(exe.Args, 0)
+		require.IsType(&SousRectify{}, exe.Cmd)
+		rect := exe.Cmd.(*SousRectify)
+		res, err := rect.buildResolver()
+		require.NoError(err)
+		assert.Equal(rect.Deployer, res.Deployer)
+		assert.Equal(rect.Registry, res.Registry)
+	}
+
+	testDryRun("both")
+	testDryRun("none")
+	testDryRun("scheduler")
+	testDryRun("registry")
+}
+
 /*
 usage: sous build [path]
 

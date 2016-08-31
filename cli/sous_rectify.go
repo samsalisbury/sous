@@ -65,21 +65,27 @@ func (sr *SousRectify) AddFlags(fs *flag.FlagSet) {
 // Execute fulfils the cmdr.Executor interface
 func (sr *SousRectify) Execute(args []string) cmdr.Result {
 
-	sr.resolveDryRunFlag(sr.flags.dryrun)
-
-	predicate := sr.SourceFlags.buildPredicate()
-
-	if predicate == nil {
-		return EnsureErrorResult(fmt.Errorf("Cowardly refusing rectify with neither contraint nor `-all`! (see `sous help rectify`)"))
+	r, err := sr.buildResolver()
+	if err != nil {
+		return EnsureErrorResult(err)
 	}
-
-	r := sous.NewResolver(sr.Deployer, sr.Registry, predicate)
-
 	if err := r.Resolve(sr.GDM.Clone(), sr.State.Defs.Clusters); err != nil {
 		return EnsureErrorResult(err)
 	}
 
 	return Success()
+}
+
+func (sr *SousRectify) buildResolver() (*sous.Resolver, error) {
+	sr.resolveDryRunFlag(sr.flags.dryrun)
+
+	predicate := sr.SourceFlags.buildPredicate()
+
+	if predicate == nil {
+		return nil, fmt.Errorf("Cowardly refusing rectify with neither contraint nor `-all`! (see `sous help rectify`)")
+	}
+
+	return sous.NewResolver(sr.Deployer, sr.Registry, predicate), nil
 }
 
 func (sr *SousRectify) resolveDryRunFlag(dryrun string) {
