@@ -4,6 +4,7 @@ import (
 	"github.com/opentable/sous/util/cmdr"
 )
 
+// SousConfig is the sous config command.
 type SousConfig struct {
 	User   LocalUser
 	Config LocalSousConfig
@@ -21,8 +22,10 @@ If you pass just a single argument (a key) sous config will output just the
 value of that key. You can set a key by providing both a key and a value.
 `
 
+// Help returns help for 'sous config'.
 func (sc *SousConfig) Help() string { return sousConfigHelp }
 
+// Execute displays or sets config properties.
 func (sc *SousConfig) Execute(args []string) cmdr.Result {
 	switch len(args) {
 	default:

@@ -14,13 +14,29 @@ import (
 func newConfig(u *User) (*Config, error) {
 	config := u.DefaultConfig()
 
-	err := os.MkdirAll(u.ConfigDir(), os.ModeDir|0755)
-	if err != nil {
+	if err := os.MkdirAll(u.ConfigDir(), os.ModeDir|0755); err != nil {
 		return nil, err
 	}
 
 	cl := configloader.New()
 	sous.SetupLogging(&cl)
+	var writeDefault bool
+	defer func() {
+		if !writeDefault {
+			return
+		}
+		lsc := &LocalSousConfig{&config}
+		lsc.Save(u)
+		sous.Log.Info.Println("initialised config file: " + u.ConfigFile())
+	}()
+	_, err := os.Stat(u.ConfigFile())
+	if os.IsNotExist(err) {
+		err = nil
+		writeDefault = true
+	}
+	if err != nil {
+		return nil, err
+	}
 
 	return &config, cl.Load(&config, u.ConfigFile())
 }
