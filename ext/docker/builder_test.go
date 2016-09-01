@@ -6,7 +6,6 @@ import (
 
 	"github.com/nyarly/testify/assert"
 	"github.com/opentable/sous/lib"
-	"github.com/samsalisbury/semv"
 )
 
 func TestMetadataDockerfile(t *testing.T) {
@@ -42,10 +41,9 @@ LABEL \
 func TestTagStrings(t *testing.T) {
 	assert := assert.New(t)
 
-	sid := sous.SourceID{
-		Repo:    "github.com/opentable/sous",
-		Dir:     "docker",
-		Version: semv.MustParse("1.2.3+deadbeef"),
+	sid, err := sous.NewSourceID("github.com/opentable/sous", "docker", "1.2.3+deadbeef")
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	assert.Equal("/sous/docker:1.2.3", versionName(sid))

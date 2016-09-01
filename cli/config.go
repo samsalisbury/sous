@@ -29,16 +29,15 @@ type (
 	}
 )
 
-// InMemory configures SQLite to use an in-memory database
-// The dummy file allows multiple goroutines see the same in-memory DB
-//const InMemory = "file:dummy.db?mode=memory&cache=shared"
-
+// DefaultConfig returns the default configuration.
 func DefaultConfig() Config {
 	return Config{
 		Docker: docker.DefaultConfig(),
 	}
 }
 
+// FillDefaults fills in default values in this Config where they are currently
+// zero values.
 func (c *Config) FillDefaults() error {
 	return firsterr.Parallel().Set(
 		func(e *error) {

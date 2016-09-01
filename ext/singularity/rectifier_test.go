@@ -9,7 +9,6 @@ import (
 	"github.com/nyarly/testify/assert"
 	"github.com/nyarly/testify/require"
 	"github.com/opentable/sous/lib"
-	"github.com/samsalisbury/semv"
 )
 
 /* TESTS BEGIN */
@@ -36,7 +35,9 @@ func TestModifyScale(t *testing.T) {
 	pair := &sous.DeploymentPair{
 		Prior: &sous.Deployment{
 			SourceID: sous.SourceID{
-				Repo: "reqid",
+				Location: sous.SourceLocation{
+					Repo: "reqid",
+				},
 			},
 			DeployConfig: sous.DeployConfig{
 				NumInstances: 12,
@@ -48,7 +49,9 @@ func TestModifyScale(t *testing.T) {
 		},
 		Post: &sous.Deployment{
 			SourceID: sous.SourceID{
-				Repo: "reqid",
+				Location: sous.SourceLocation{
+					Repo: "reqid",
+				},
 			},
 			DeployConfig: sous.DeployConfig{
 				NumInstances: 24,
@@ -87,14 +90,11 @@ func TestModifyScale(t *testing.T) {
 
 func TestModifyImage(t *testing.T) {
 	assert := assert.New(t)
-	before, _ := semv.Parse("1.2.3-test")
-	after, _ := semv.Parse("2.3.4-new")
+	before := "1.2.3-test"
+	after := "2.3.4-new"
 	pair := &sous.DeploymentPair{
 		Prior: &sous.Deployment{
-			SourceID: sous.SourceID{
-				Repo:    "reqid",
-				Version: before,
-			},
+			SourceID: sous.MustNewSourceID("reqid", "", before),
 			DeployConfig: sous.DeployConfig{
 				NumInstances: 1,
 			},
@@ -104,10 +104,7 @@ func TestModifyImage(t *testing.T) {
 			},
 		},
 		Post: &sous.Deployment{
-			SourceID: sous.SourceID{
-				Repo:    "reqid",
-				Version: after,
-			},
+			SourceID: sous.MustNewSourceID("reqid", "", after),
 			DeployConfig: sous.DeployConfig{
 				NumInstances: 1,
 			},
@@ -144,13 +141,10 @@ func TestModifyImage(t *testing.T) {
 
 func TestModifyResources(t *testing.T) {
 	assert := assert.New(t)
-	version := semv.MustParse("1.2.3-test")
+	version := "1.2.3-test"
 	pair := &sous.DeploymentPair{
 		Prior: &sous.Deployment{
-			SourceID: sous.SourceID{
-				Repo:    "reqid",
-				Version: version,
-			},
+			SourceID: sous.MustNewSourceID("reqid", "", version),
 			DeployConfig: sous.DeployConfig{
 				NumInstances: 1,
 				Resources: sous.Resources{
@@ -163,10 +157,7 @@ func TestModifyResources(t *testing.T) {
 			},
 		},
 		Post: &sous.Deployment{
-			SourceID: sous.SourceID{
-				Repo:    "reqid",
-				Version: version,
-			},
+			SourceID: sous.MustNewSourceID("reqid", "", version),
 			DeployConfig: sous.DeployConfig{
 				NumInstances: 1,
 				Resources: sous.Resources{
@@ -208,14 +199,11 @@ func TestModify(t *testing.T) {
 	Log.Debug.SetOutput(os.Stderr)
 	defer Log.Debug.SetOutput(ioutil.Discard)
 	assert := assert.New(t)
-	before := semv.MustParse("1.2.3-test")
-	after := semv.MustParse("2.3.4-new")
+	before := "1.2.3-test"
+	after := "2.3.4-new"
 	pair := &sous.DeploymentPair{
 		Prior: &sous.Deployment{
-			SourceID: sous.SourceID{
-				Repo:    "reqid",
-				Version: before,
-			},
+			SourceID: sous.MustNewSourceID("reqid", "", before),
 			DeployConfig: sous.DeployConfig{
 				NumInstances: 1,
 				Volumes: sous.Volumes{
@@ -228,10 +216,7 @@ func TestModify(t *testing.T) {
 			},
 		},
 		Post: &sous.Deployment{
-			SourceID: sous.SourceID{
-				Repo:    "reqid",
-				Version: after,
-			},
+			SourceID: sous.MustNewSourceID("reqid", "", after),
 			DeployConfig: sous.DeployConfig{
 				NumInstances: 24,
 				Volumes: sous.Volumes{
@@ -279,7 +264,9 @@ func TestDeletes(t *testing.T) {
 
 	deleted := &sous.Deployment{
 		SourceID: sous.SourceID{
-			Repo: "reqid",
+			Location: sous.SourceLocation{
+				Repo: "reqid",
+			},
 		},
 		DeployConfig: sous.DeployConfig{
 			NumInstances: 12,
@@ -321,7 +308,9 @@ func TestCreates(t *testing.T) {
 
 	created := &sous.Deployment{
 		SourceID: sous.SourceID{
-			Repo: "reqid",
+			Location: sous.SourceLocation{
+				Repo: "reqid",
+			},
 		},
 		DeployConfig: sous.DeployConfig{
 			NumInstances: 12,

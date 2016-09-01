@@ -162,7 +162,7 @@ func computeRequestID(d *sous.Deployment) string {
 }
 
 func buildReqID(sv sous.SourceID, nick string) string {
-	return MakeDeployID(sv.Location().String() + nick)
+	return MakeDeployID(sv.Location.String() + nick)
 }
 
 func newDepID() string {

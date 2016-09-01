@@ -45,7 +45,7 @@ func (cl ConfigLoader) Load(target interface{}, filePath string) error {
 		if !os.IsNotExist(err) {
 			return err
 		}
-		cl.Info("Missing config file, using defaults", map[string]interface{}{"path": filePath})
+		//cl.Info("Missing config file, using defaults", map[string]interface{}{"path": filePath})
 	} else {
 		if err := cl.loadYAMLFile(target, filePath); err != nil {
 			return err

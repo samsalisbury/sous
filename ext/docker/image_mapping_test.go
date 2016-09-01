@@ -14,7 +14,6 @@ import (
 	"github.com/nyarly/testify/require"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/docker_registry"
-	"github.com/samsalisbury/semv"
 )
 
 func inMemoryDB(name string) *sql.DB {
@@ -142,12 +141,8 @@ func TestRoundTrip(t *testing.T) {
 	dc := docker_registry.NewDummyClient()
 	nc := NewNameCache(dc, inMemoryDB("roundtrip"))
 
-	v := semv.MustParse("1.2.3")
-	sv := sous.SourceID{
-		Version: v,
-		Repo:    "https://github.com/opentable/wackadoo",
-		Dir:     "nested/there",
-	}
+	sv := sous.MustNewSourceID("https://github.com/opentable/wackadoo", "nested/there", "1.2.3")
+
 	host := "docker.repo.io"
 	base := "ot/wackadoo"
 	in := base + ":version-1.2.3"
@@ -164,12 +159,7 @@ func TestRoundTrip(t *testing.T) {
 		assert.Equal(in, nin)
 	}
 
-	newV := semv.MustParse("1.2.42")
-	newSV := sous.SourceID{
-		Version: newV,
-		Repo:    "https://github.com/opentable/wackadoo",
-		Dir:     "nested/there",
-	}
+	newSV := sous.MustNewSourceID("https://github.com/opentable/wackadoo", "nested/there", "1.2.42")
 
 	cn = base + "@" + digest
 	dc.FeedMetadata(docker_registry.Metadata{
@@ -202,16 +192,13 @@ func TestHarvestAlso(t *testing.T) {
 	repo := "github.com/opentable/test-app"
 
 	stuffBA := func(n, v string) sous.SourceID {
-		vs := semv.MustParse(v)
 		ba := &sous.BuildArtifact{
 			Name: n,
 			Type: "docker",
 		}
-		sv := sous.SourceID{
-			Repo:    repo,
-			Dir:     "",
-			Version: vs,
-		}
+
+		sv := sous.MustNewSourceID(repo, "", v)
+
 		in := base + ":version-" + v
 		digBs := sha256.Sum256([]byte(in))
 		digest := hex.EncodeToString(digBs[:])
@@ -255,16 +242,13 @@ func TestSecondCanonicalName(t *testing.T) {
 	stuffBA := func(digest string) sous.SourceID {
 		n := "test-service"
 		v := `0.1.2-ci1234`
-		vs := semv.MustParse(v)
 		ba := &sous.BuildArtifact{
 			Name: n,
 			Type: "docker",
 		}
-		sv := sous.SourceID{
-			Repo:    repo,
-			Dir:     "",
-			Version: vs,
-		}
+
+		sv := sous.MustNewSourceID(repo, "", v)
+
 		in := base + ":version-" + v
 		cn := base + "@sha256:" + digest
 
@@ -298,19 +282,11 @@ func TestHarvesting(t *testing.T) {
 	dc := docker_registry.NewDummyClient()
 	nc := NewNameCache(dc, inMemoryDB("harvesting"))
 
-	v := semv.MustParse("1.2.3")
-	sv := sous.SourceID{
-		Version: v,
-		Repo:    "https://github.com/opentable/wackadoo",
-		Dir:     "nested/there",
-	}
+	v := "1.2.3"
+	sv := sous.MustNewSourceID("https://github.com/opentable/wackadoo", "nested/there", v)
 
-	v2 := semv.MustParse("2.3.4")
-	sisterSV := sous.SourceID{
-		Version: v2,
-		Repo:    "https://github.com/opentable/wackadoo",
-		Dir:     "nested/there",
-	}
+	v2 := "2.3.4"
+	sisterSV := sous.MustNewSourceID("https://github.com/opentable/wackadoo", "nested/there", v2)
 
 	host := "docker.repo.io"
 	base := "ot/wackadoo"
@@ -358,12 +334,8 @@ func TestRecordAdvisories(t *testing.T) {
 	require := require.New(t)
 	dc := docker_registry.NewDummyClient()
 	nc := NewNameCache(dc, inMemoryDB("advisories"))
-	v := semv.MustParse("1.2.3")
-	sv := sous.SourceID{
-		Version: v,
-		Repo:    "https://github.com/opentable/wackadoo",
-		Dir:     "nested/there",
-	}
+	v := "1.2.3"
+	sv := sous.MustNewSourceID("https://github.com/opentable/wackadoo", "nested/there", v)
 	base := "ot/wackadoo"
 	digest := "sha256:012345678901234567890123456789AB012345678901234567890123456789AB"
 	cn := base + "@" + digest
@@ -397,12 +369,8 @@ func TestMissingName(t *testing.T) {
 	dc := docker_registry.NewDummyClient()
 	nc := NewNameCache(dc, inMemoryDB("missing"))
 
-	v := semv.MustParse("4.5.6")
-	sv := sous.SourceID{
-		Version: v,
-		Repo:    "https://github.com/opentable/brand-new-idea",
-		Dir:     "nested/there",
-	}
+	v := "4.5.6"
+	sv := sous.MustNewSourceID("https://github.com/opentable/brand-new-idea", "nested/there", v)
 
 	name, _, err := nc.getImageName(sv)
 	assert.Equal("", name)
