@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"os"
+	"os/exec"
 	"testing"
 
 	"github.com/nyarly/testify/assert"
@@ -22,6 +23,118 @@ func inMemoryDB(name string) *sql.DB {
 		panic(err)
 	}
 	return db
+}
+
+func BenchmarkFPSchema(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		fingerPrintSchema(schema)
+	}
+}
+
+func BenchmarkRecreateDB(b *testing.B) {
+	exec.Command("rm", "-rf", "testdata").Run()
+	os.MkdirAll("testdata", os.ModeDir|os.ModePerm)
+	defer func() {
+		b.StopTimer()
+		exec.Command("rm", "-rf", "testdata").Run()
+	}()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := GetDatabase(&DBConfig{"sqlite3", "testdata/test.db"})
+		if err != nil {
+			b.Log(err)
+		}
+	}
+}
+
+func BenchmarkCreateDB(b *testing.B) {
+	exec.Command("rm", "-rf", "testdata").Run()
+	os.MkdirAll("testdata", os.ModeDir|os.ModePerm)
+	defer func() {
+		b.StopTimer()
+		exec.Command("rm", "-rf", "testdata").Run()
+	}()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		dbName := fmt.Sprintf("testdata/test%d.db", i)
+		_, err := GetDatabase(&DBConfig{"sqlite3", dbName})
+		if err != nil {
+			b.Log(err)
+		}
+	}
+}
+
+func BenchmarkCreateInMemoryDB(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		dbName := fmt.Sprintf("inmemory%d.db", i)
+		_, err := GetDatabase(&DBConfig{"sqlite3", InMemoryConnection(dbName)})
+		if err != nil {
+			b.Log(err)
+		}
+	}
+}
+
+func TestReharvest(t *testing.T) {
+	assert := assert.New(t)
+
+	dc := docker_registry.NewDummyClient()
+	_, err := dc.GetImageMetadata("", "")
+	assert.Error(err) //because channel starved
+
+	nc := NewNameCache(dc, inMemoryDB("reharvest"))
+
+	host := "docker.repo.io"
+	base := "ot/wackadoo"
+
+	vstr := "1.2.3"
+	v := semv.MustParse(vstr)
+	sv := sous.SourceID{
+		Version: v,
+		Repo:    "https://github.com/opentable/wackadoo",
+		Dir:     "nested/there",
+	}
+	in := base + ":version-" + vstr
+	digest := "sha256:012345678901234567890123456789AB012345678901234567890123456789AB"
+	cn := base + "@" + digest
+
+	dc.FeedMetadata(docker_registry.Metadata{
+		Registry:      host,
+		Labels:        Labels(sv),
+		Etag:          digest,
+		CanonicalName: cn,
+		AllNames:      []string{cn, in},
+	})
+	gotSV, err := nc.GetSourceID(NewBuildArtifact(host+"/"+in, nil)) // XXX Really prefix with host?
+	if assert.Nil(err) {
+		assert.Equal(gotSV, sv)
+	}
+	nc.dump(os.Stderr)
+
+	sous.Log.Vomit.SetOutput(os.Stderr)
+
+	nc.DB.Exec("update _database_metadata_ set value='' where name='fingerprint'")
+
+	dc.FeedTags([]string{"version" + vstr})
+	dc.FeedMetadata(docker_registry.Metadata{
+		Registry:      host,
+		Labels:        Labels(sv),
+		Etag:          digest,
+		CanonicalName: cn,
+		AllNames:      []string{cn, in},
+	})
+	nc.dump(os.Stderr)
+	Log.Debug.SetOutput(os.Stderr)
+	Log.Vomit.SetOutput(os.Stderr)
+	err = nc.GroomDatabase()
+	assert.NoError(err)
+	nc.dump(os.Stderr)
+
+	_, err = dc.GetImageMetadata("", "")
+	assert.Error(err) //because channel starved
+	list, _ := dc.AllTags("")
+	assert.Len(list, 0) //because channel starved
 }
 
 func TestRoundTrip(t *testing.T) {

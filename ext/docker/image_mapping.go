@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strings"
 	"text/tabwriter"
+	"time"
 
 	"github.com/docker/distribution"
 	"github.com/docker/distribution/reference"
@@ -83,7 +84,9 @@ func (e NotModifiedErr) Error() string {
 
 // NewNameCache builds a new name cache
 func NewNameCache(cl docker_registry.Client, db *sql.DB) *NameCache {
-	return &NameCache{cl, db}
+	nc := &NameCache{cl, db}
+	nc.GroomDatabase()
+	return nc
 }
 
 // ListSourceIDs implements Registry
@@ -104,6 +107,7 @@ func (nc *NameCache) Warmup(r string) error {
 	for _, t := range ts {
 		Log.Debug.Printf("Harvested tag: %v for repo: %v", t, r)
 		in, err := reference.WithTag(ref, t)
+		Log.Vomit.Print(in, err)
 		if err == nil {
 			a := NewBuildArtifact(in.String(), strpairs{})
 			nc.GetSourceID(a) //pull it into the cache...
@@ -135,6 +139,7 @@ func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
 		Log.Vomit.Print("Err: ", err)
 		return sous.SourceID{}, err
 	} else {
+		Log.Vomit.Printf("Found: %v %v %v %v", repo, offset, version, etag)
 
 		sid, err = makeSourceID(repo, offset, version)
 		if err != nil {
@@ -270,28 +275,28 @@ type DBConfig struct {
 	Driver, Connection string
 }
 
-const schema = []string{
+var schema = []string{
 	"pragma foreign_keys = ON;",
 
-	"create table if not exists _database_metadata_(" +
+	"create table _database_metadata_(" +
 		"name text not null unique on conflict replace" +
 		", value text" +
 		");",
 
-	"create table if not exists docker_repo_name(" +
+	"create table docker_repo_name(" +
 		"repo_name_id integer primary key autoincrement" +
 		", name text not null" +
 		", constraint upsertable unique (name)" +
 		");",
 
-	"create table if not exists docker_search_location(" +
+	"create table docker_search_location(" +
 		"location_id integer primary key autoincrement" +
 		", repo text not null" +
 		", offset text not null" +
 		", constraint upsertable unique (repo, offset)" +
 		");",
 
-	"create table if not exists repo_through_location(" +
+	"create table repo_through_location(" +
 		"repo_name_id references docker_repo_name" +
 		"    not null" +
 		", location_id references docker_search_location" +
@@ -299,7 +304,7 @@ const schema = []string{
 		",  primary key (repo_name_id, location_id)" +
 		");",
 
-	"create table if not exists docker_search_metadata(" +
+	"create table docker_search_metadata(" +
 		"metadata_id integer primary key autoincrement" +
 		", location_id references docker_search_location" +
 		"    not null" +
@@ -310,7 +315,7 @@ const schema = []string{
 		", constraint canonical unique (canonicalName)" +
 		");",
 
-	"create table if not exists docker_search_name(" +
+	"create table docker_search_name(" +
 		"name_id integer primary key autoincrement" +
 		", metadata_id references docker_search_metadata" +
 		"    on delete cascade not null" +
@@ -319,7 +324,7 @@ const schema = []string{
 
 	// "qualities" includes advisories. assuming that assertions will also
 	// be represented here
-	"create table if not exists docker_image_qualities(" +
+	"create table docker_image_qualities(" +
 		"assertion_id integer primary key autoincrement" +
 		", metadata_id references docker_search_metadata" +
 		"    not null" +
@@ -329,13 +334,7 @@ const schema = []string{
 		");",
 }
 
-var memodSchemaFingerprint string
-
-func schemaFingerprint() string {
-	if memodSchemaFingerprint == "" {
-		memodSchemaFingerprint = fingerPrintSchema(schema)
-	}
-}
+var schemaFingerprint = fingerPrintSchema(schema)
 
 // GetDatabase initialises a new database for a NameCache.
 func GetDatabase(cfg *DBConfig) (*sql.DB, error) {
@@ -351,31 +350,62 @@ func GetDatabase(cfg *DBConfig) (*sql.DB, error) {
 	}
 
 	db, err := sql.Open(driver, conn) //only call once
-	if err != nil {
-		return nil, errors.Wrap(err, "image map")
-	}
+	return db, errors.Wrapf(err, "get DB/open: %v", cfg)
+}
 
+// GroomDatabase ensures that the database to back the cache is the correct schema
+func (nc *NameCache) GroomDatabase() error {
+	db := nc.DB
 	var tgp string
-	err = db.QueryRow("select value from _database_metadata_ where name = 'fingerprint';").Scan(&tgp)
-	if err != nil || tgp != schemaFingerprint() {
+	err := db.QueryRow("select value from _database_metadata_ where name = 'fingerprint';").Scan(&tgp)
+	if err != nil || tgp != schemaFingerprint {
+		//log.Println(err, tgp, schemaFingerprint)
 		err = nil
+		repos := captureRepos(db)
+
 		clobber(db)
 
 		for _, cmd := range schema {
 			if err := sqlExec(db, cmd); err != nil {
-				return nil, errors.Wrap(err, "image map")
+				return errors.Wrapf(err, "groom DB/create: %v", db)
+			}
+		}
+		if _, err := db.Exec("insert into _database_metadata_ (name, value) values"+
+			" ('fingerprint', ?),"+
+			" ('created', ?);",
+			schemaFingerprint, time.Now().UTC().Format(time.UnixDate)); err != nil {
+			return errors.Wrapf(err, "groom DB/fp: %v", db)
+		}
+		for _, r := range repos {
+			if err := nc.Warmup(r); err != nil {
+				return errors.Wrap(err, "groom DB")
 			}
 		}
 	}
 
-	return db, err
+	return errors.Wrap(err, "groom DB")
 }
 
 func clobber(db *sql.DB) {
+	Log.Debug.Print("DB Clobbering time!")
 	sqlExec(db, "PRAGMA writable_schema = 1;")
 	sqlExec(db, "delete from sqlite_master where type in ('table', 'index', 'trigger');")
 	sqlExec(db, "PRAGMA writable_schema = 0;")
 	sqlExec(db, "vacuum;")
+}
+
+func captureRepos(db *sql.DB) (repos []string) {
+	res, err := db.Query("select name from docker_repo_name;")
+	if err != nil {
+		Log.Debug.Print(err)
+		return
+	}
+	for res.Next() {
+		var repo string
+		res.Scan(&repo)
+		repos = append(repos, repo)
+	}
+	return
 }
 
 func fingerPrintSchema(schema []string) string {
@@ -426,6 +456,7 @@ func (nc *NameCache) dumpRows(io io.Writer, sql string) {
 }
 
 func (nc *NameCache) dump(io io.Writer) {
+	nc.dumpRows(io, "select * from _database_metadata_")
 	nc.dumpRows(io, "select * from docker_repo_name")
 	nc.dumpRows(io, "select * from docker_search_location")
 	nc.dumpRows(io, "select * from repo_through_location")
