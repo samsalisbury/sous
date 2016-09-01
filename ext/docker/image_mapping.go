@@ -133,7 +133,7 @@ func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
 		return sous.SourceID{}, err
 	} else {
 
-		sid, err = makeSourceID(repo, offset, version)
+		sid, err = sous.NewSourceID(repo, offset, version)
 		if err != nil {
 			return sid, err
 		}
@@ -182,7 +182,7 @@ func (nc *NameCache) getImageName(sid sous.SourceID) (string, strpairs, error) {
 	cn, _, qls, err := nc.dbQueryOnSourceID(sid)
 	if _, ok := errors.Cause(err).(NoImageNameFound); ok {
 		Log.Vomit.Print(err)
-		err = nc.harvest(sid.Location())
+		err = nc.harvest(sid.Location)
 		if err != nil {
 			Log.Vomit.Printf("Err: %v", err)
 			return "", nil, err
@@ -461,13 +461,13 @@ func (nc *NameCache) dbInsert(sid sous.SourceID, in, etag string, quals []sous.Q
 	id, err = nc.ensureInDB(
 		"select location_id from docker_search_location where repo = $1 and offset = $2",
 		"insert into docker_search_location (repo, offset) values ($1, $2);",
-		sid.Repo, sid.Dir)
+		sid.Location.Repo, sid.Location.Dir)
 
 	if err != nil {
 		return err
 	}
 
-	Log.Vomit.Printf("Source Loc: %s,%s -> id: %d", sid.Repo, sid.Dir, id)
+	Log.Vomit.Printf("Source Loc: %s -> id: %d", sid.Location, id)
 
 	_, err = nc.DB.Exec("insert or ignore into repo_through_location "+
 		"(repo_name_id, location_id) values ($1, $2)", nid, id)
@@ -588,7 +588,12 @@ func (nc *NameCache) dbQueryAllSourceIds() (ids []sous.SourceID, err error) {
 	for rows.Next() {
 		var r, o, v string
 		rows.Scan(&r, &o, &v)
-		ids = append(ids, sous.SourceID{Repo: r, Dir: o, Version: semv.MustParse(v)})
+		ids = append(ids, sous.SourceID{
+			Location: sous.SourceLocation{
+				Repo: r, Dir: o,
+			},
+			Version: semv.MustParse(v),
+		})
 	}
 	err = rows.Err()
 	return
@@ -607,9 +612,9 @@ func (nc *NameCache) dbQueryOnSourceID(sid sous.SourceID) (cn string, ins []stri
 		"docker_search_location.repo = $1 and "+
 		"docker_search_location.offset = $2 and "+
 		"docker_search_metadata.version = $3",
-		sid.Repo, sid.Dir, sid.Version.String())
+		sid.Location.Repo, sid.Location.Dir, sid.Version.String())
 
-	Log.Vomit.Printf("Selecting on %q %q %q", sid.Repo, sid.Dir, sid.Version.String())
+	Log.Vomit.Printf("Selecting on %q %q %q", sid.Location.Repo, sid.Location.Dir, sid.Version.String())
 
 	if err == sql.ErrNoRows {
 		err = errors.Wrap(NoImageNameFound{sid}, "")
@@ -652,14 +657,4 @@ func (nc *NameCache) dbQueryOnSourceID(sid sous.SourceID) (cn string, ins []stri
 	err = rows.Err()
 
 	return
-}
-
-func makeSourceID(repo, offset, version string) (sous.SourceID, error) {
-	v, err := semv.Parse(version)
-	if err != nil {
-		return sous.SourceID{}, err
-	}
-	return sous.SourceID{
-		Repo: repo, Version: v, Dir: offset,
-	}, nil
 }

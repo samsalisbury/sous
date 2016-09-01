@@ -38,14 +38,9 @@ func SourceIDFromLabels(labels map[string]string) (sous.SourceID, error) {
 		return sous.SourceID{}, err
 	}
 
-	version, err := semv.Parse(versionStr)
-	version.Meta = revision
-
-	return sous.SourceID{
-		Repo:    repo,
-		Version: version,
-		Dir:     path,
-	}, err
+	id, err := sous.NewSourceID(repo, path, versionStr)
+	id.Version.Meta = revision
+	return id, err
 }
 
 var stripRE = regexp.MustCompile("^([[:alpha:]]+://)?(github.com(/opentable)?)?")
@@ -56,17 +51,17 @@ func Labels(sid sous.SourceID) map[string]string {
 	labels := make(map[string]string)
 	labels[DockerVersionLabel] = sid.Version.Format(`M.m.p-?`)
 	labels[DockerRevisionLabel] = sid.RevID()
-	labels[DockerPathLabel] = string(sid.Dir)
-	labels[DockerRepoLabel] = string(sid.Repo)
+	labels[DockerPathLabel] = sid.Location.Dir
+	labels[DockerRepoLabel] = sid.Location.Repo
 	return labels
 }
 
 func imageNameBase(sid sous.SourceID) string {
-	name := string(sid.Repo)
+	name := sid.Location.Repo
 
 	name = stripRE.ReplaceAllString(name, "")
-	if string(sid.Dir) != "" {
-		name = strings.Join([]string{name, string(sid.Dir)}, "/")
+	if sid.Location.Dir != "" {
+		name = strings.Join([]string{name, sid.Location.Dir}, "/")
 	}
 	return name
 }
