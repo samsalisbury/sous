@@ -71,7 +71,7 @@ applications intending to be deployed via Sous
 should satisfy the following requirements:
 
 * Have a Dockerfile that creates an image that runs correctly when run with
-`docker run -e PORT0 12345 -e TASK_HOST somehost <image name>`.
+`docker run -e PORT0=12345 -e TASK_HOST=somehost <image name>`.
 * Binds to the http address `0.0.0.0:$PORT0`
 * Announces its outside address `$TASK_HOST:$PORT0``
 * Application configuration that varies with environment should be read from environment variables.
