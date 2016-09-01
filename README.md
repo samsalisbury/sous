@@ -4,6 +4,7 @@ Sous is a tool for building, testing, and deploying applications, using
 Docker, Mesos, and Singularity.
 
 [View documentation in the doc/ directory.](https://github.com/opentable/sous/tree/master/doc)
+Specifically, see [the getting started](./doc/getting_started.md) file.
 
 ## Planned features
 
