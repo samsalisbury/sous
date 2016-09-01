@@ -34,7 +34,7 @@ func TestCanonName(t *testing.T) {
 			Version: vers,
 		},
 	}
-	str := dep.SourceID.Location().String()
+	str := dep.SourceID.SourceLocation.String()
 	assert.Regexp("one", str)
 	assert.Regexp("two", str)
 }

@@ -56,7 +56,7 @@ func (ds Deployments) Manifests(defs Defs) (Manifests, error) {
 			}
 			d.Cluster = cluster
 		}
-		sl := d.SourceID.Location()
+		sl := d.SourceID.SourceLocation
 		// Lookup the current manifest for this source location.
 		m, ok := ms.Get(sl)
 		if !ok {

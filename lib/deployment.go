@@ -68,7 +68,7 @@ func (d *Deployment) String() string {
 // ID returns the DeployID of this deployment.
 func (d *Deployment) ID() DeployID {
 	return DeployID{
-		Source:  d.SourceID.Location(),
+		Source:  d.SourceID.SourceLocation,
 		Cluster: d.ClusterName,
 	}
 }
@@ -127,7 +127,7 @@ func (d *Deployment) Tabbed() string {
 func (d *Deployment) Name() DeployID {
 	return DeployID{
 		Cluster: d.ClusterName,
-		Source:  d.SourceID.Location(),
+		Source:  d.SourceID.SourceLocation,
 	}
 }
 

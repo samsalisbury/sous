@@ -122,9 +122,9 @@ func TestUpdateState(t *testing.T) {
 			t.Errorf("got %d manifests; want %d", actualNumManifests, test.ExpectedNumManifests)
 		}
 		if (test.DID != sous.DeployID{}) {
-			m, ok := test.State.Manifests.Get(sid.Location())
+			m, ok := test.State.Manifests.Get(sid.SourceLocation)
 			if !ok {
-				t.Errorf("manifest %q not found", sid.Location())
+				t.Errorf("manifest %q not found", sid.SourceLocation)
 			}
 			_, ok = m.Deployments[test.DID.Cluster]
 			if !ok {

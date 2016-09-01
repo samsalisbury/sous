@@ -182,7 +182,7 @@ func (nc *NameCache) getImageName(sid sous.SourceID) (string, strpairs, error) {
 	cn, _, qls, err := nc.dbQueryOnSourceID(sid)
 	if _, ok := errors.Cause(err).(NoImageNameFound); ok {
 		Log.Vomit.Print(err)
-		err = nc.harvest(sid.Location())
+		err = nc.harvest(sid.SourceLocation)
 		if err != nil {
 			Log.Vomit.Printf("Err: %v", err)
 			return "", nil, err
