@@ -55,7 +55,7 @@ var parseSourceIDTests = map[string]SourceID{
 	},
 }
 
-func TestParseSourceID(t *testing.T) {
+func TestParseSourceID_success(t *testing.T) {
 	for in, expected := range parseSourceIDTests {
 		actual, err := ParseSourceID(in)
 		if err != nil {
@@ -65,5 +65,64 @@ func TestParseSourceID(t *testing.T) {
 		if actual != expected {
 			t.Errorf("got %v; want %v", actual, expected)
 		}
+	}
+}
+
+func TestNewSourceID_success(t *testing.T) {
+	for _, sid := range parseSourceIDTests {
+		actual, err := NewSourceID(sid.SourceLocation.Repo, sid.SourceLocation.Dir, sid.Version.String())
+		if err != nil {
+			t.Error(err)
+		}
+		if actual != sid {
+			t.Errorf("Got %+v; want %+v", actual, sid)
+		}
+	}
+}
+
+func TestNewSourceID_failure(t *testing.T) {
+	sid, err := NewSourceID("", "", "not a version")
+	expected := "unexpected character 'n' at position 0"
+	if err == nil {
+		t.Errorf("got nil; want error %q", expected)
+	}
+	if (sid != SourceID{}) {
+		t.Errorf("got non-zero SourceID: %+v", sid)
+	}
+	actual := err.Error()
+	if actual != expected {
+		t.Errorf("got error %q; want %q", actual, expected)
+	}
+}
+
+func TestMustNewSourceID_success(t *testing.T) {
+	for _, sid := range parseSourceIDTests {
+		actual := MustNewSourceID(sid.SourceLocation.Repo, sid.SourceLocation.Dir, sid.Version.String())
+		if actual != sid {
+			t.Errorf("Got %+v; want %+v", actual, sid)
+		}
+	}
+}
+
+func TestMustNewSourceID_failure(t *testing.T) {
+	var actualErr error
+	sid := func() SourceID {
+		defer func() {
+			if err := recover(); err != nil {
+				actualErr = err.(error)
+			}
+		}()
+		return MustNewSourceID("", "", "_")
+	}()
+	expected := "unexpected character '_' at position 0"
+	if actualErr == nil {
+		t.Errorf("got nil; want error %q", expected)
+	}
+	if (sid != SourceID{}) {
+		t.Errorf("got non-zero SourceID: %+v", sid)
+	}
+	actual := actualErr.Error()
+	if actual != expected {
+		t.Errorf("got error %q; want %q", actual, expected)
 	}
 }
