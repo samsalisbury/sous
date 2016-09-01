@@ -6,12 +6,10 @@ import (
 	"path/filepath"
 )
 
-type (
-	// User represents the user environment of the account running Sous
-	User struct {
-		*user.User
-	}
-)
+// User represents the user environment of the account running Sous
+type User struct {
+	*user.User
+}
 
 const (
 	defaultConfigDir = "sous"

@@ -233,7 +233,7 @@ func newLocalUser() (v LocalUser, err error) {
 }
 
 func newLocalSousConfig(u LocalUser) (v LocalSousConfig, err error) {
-	v.Config, err = newConfig(u.User)
+	v.Config, err = newConfig(u.User.ConfigFile(), u.DefaultConfig())
 	return v, initErr(err, "getting configuration")
 }
 
