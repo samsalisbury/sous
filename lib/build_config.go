@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+
+	"github.com/samsalisbury/semv"
 )
 
 type (
@@ -92,6 +94,14 @@ func (c *BuildConfig) chooseOffset() string {
 	return clean
 }
 
+// Validate checks that the Config is well formed
+func (c *BuildConfig) Validate() error {
+	if _, ve := semv.Parse(c.Tag); ve != nil {
+		return fmt.Errorf("build config: tag format %q invalid: %s", c.Tag, ve)
+	}
+	return nil
+}
+
 // GuardStrict returns an error if there are imperfections in the proposed build
 func (c *BuildConfig) GuardStrict(bc *BuildContext) error {
 	if !c.Strict {
@@ -146,11 +156,6 @@ func (c *BuildConfig) Advisories(ctx *BuildContext) (advs []string) {
 		advs = append(advs, string(Unversioned))
 	}
 
-	if s.NearestTagRevision != s.Revision {
-		Log.Debug.Printf("%s != %s", s.NearestTagRevision, s.Revision)
-		advs = append(advs, string(TagNotHead))
-	}
-
 	if c.Tag != "" {
 		hasTag := false
 		for _, t := range s.Tags {
@@ -161,6 +166,9 @@ func (c *BuildConfig) Advisories(ctx *BuildContext) (advs []string) {
 		}
 		if !hasTag {
 			advs = append(advs, string(EphemeralTag))
+		} else if s.NearestTagRevision != s.Revision {
+			Log.Debug.Printf("%s != %s", s.NearestTagRevision, s.Revision)
+			advs = append(advs, string(TagNotHead))
 		}
 	}
 

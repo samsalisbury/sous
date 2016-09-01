@@ -112,6 +112,9 @@ func (e *cliErr) WithUnderlyingError(err error) ErrorResult {
 }
 
 func (e *cliErr) UnderlyingError() error {
+	if e.Err == nil {
+		return e
+	}
 	return e.Err
 }
 

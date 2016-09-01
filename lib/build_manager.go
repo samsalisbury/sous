@@ -14,20 +14,23 @@ type (
 )
 
 // Build implements sous.Builder.Build
-func (m *BuildManager) Build() (br *BuildResult, e error) {
+func (m *BuildManager) Build() (*BuildResult, error) {
 	// TODO if BuildConfig.ForceClone, then clone
-	var bp Buildpack
-	var bc *BuildContext
-
-	e = firsterr.Returned(
-		func() (e error) { bc = m.BuildConfig.NewContext(); return nil },
-		func() (e error) { e = m.BuildConfig.GuardStrict(bc); return },
-		func() (e error) { bp, e = m.SelectBuildpack(bc); return },
-		func() (e error) { br, e = bp.Build(bc); return },
-		func() (e error) { br.Advisories = bc.Advisories; return nil },
-		func() (e error) { e = m.ApplyMetadata(br, bc); return },
-		func() (e error) { e = m.BuildConfig.GuardRegister(bc); return },
-		func() (e error) { e = m.Register(br, bc); return },
+	var (
+		bp Buildpack
+		bc *BuildContext
+		br *BuildResult
 	)
-	return
+	err := firsterr.Set(
+		func(e *error) { *e = m.BuildConfig.Validate() },
+		func(e *error) { bc = m.BuildConfig.NewContext() },
+		func(e *error) { *e = m.BuildConfig.GuardStrict(bc) },
+		func(e *error) { bp, *e = m.SelectBuildpack(bc) },
+		func(e *error) { br, *e = bp.Build(bc) },
+		func(e *error) { br.Advisories = bc.Advisories },
+		func(e *error) { *e = m.ApplyMetadata(br, bc) },
+		func(e *error) { *e = m.BuildConfig.GuardRegister(bc) },
+		func(e *error) { *e = m.Register(br, bc) },
+	)
+	return br, err
 }

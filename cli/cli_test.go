@@ -3,6 +3,7 @@ package cli
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"testing"
 
 	"github.com/nyarly/testify/assert"
@@ -11,7 +12,7 @@ import (
 	"github.com/samsalisbury/semv"
 )
 
-func prepareCommand(t *testing.T, cl []string) (*cmdr.CLI, *cmdr.PreparedExecution, fmt.Stringer, fmt.Stringer) {
+func prepareCommand(t *testing.T, cl []string) (*CLI, *cmdr.PreparedExecution, fmt.Stringer, fmt.Stringer) {
 	require := require.New(t)
 
 	stdout := &bytes.Buffer{}
@@ -62,6 +63,19 @@ func TestInvokeUpdate(t *testing.T) {
 	exe := justCommand(t, []string{`sous`, `update`})
 	assert.NotNil(exe)
 	assert.Len(exe.Args, 0)
+}
+
+func TestInvokeDeploy(t *testing.T) {
+	assert := assert.New(t)
+	require := require.New(t)
+
+	exe := justCommand(t, []string{`sous`, `deploy`, `-cluster`, `ci-sf`, `-tag`, `1.2.3`})
+	assert.NotNil(exe)
+	assert.Len(exe.Args, 0)
+	deploy, good := exe.Cmd.(*SousDeploy)
+	require.True(good)
+	assert.Equal(deploy.DeployFilterFlags.Cluster, `ci-sf`)
+	assert.Equal(deploy.DeployFilterFlags.Tag, `1.2.3`)
 }
 
 /*
@@ -228,8 +242,22 @@ func TestInvokeQueryArtifacts(t *testing.T) {
 	assert.NoError(err)
 	assert.NotNil(exe)
 }
-
 */
+func TestInvokeWithUnknownFlags(t *testing.T) {
+	log.SetFlags(log.Flags() | log.Lshortfile)
+	assert := assert.New(t)
+	require := require.New(t)
+
+	stdout := &bytes.Buffer{}
+	stderr := &bytes.Buffer{}
+
+	c, err := NewSousCLI(semv.MustParse(`1.2.3`), stdout, stderr)
+	require.NoError(err)
+
+	c.Invoke([]string{`sous`, `-cobblers`})
+	assert.Regexp(`flag provided but not defined`, stderr.String())
+}
+
 func TestInvokeRectifyWithDebugFlags(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)

@@ -71,10 +71,10 @@ func (b *Builder) Register(br *sous.BuildResult, bc *sous.BuildContext) error {
 
 // ApplyMetadata applies container metadata etc. to a container
 func (b *Builder) ApplyMetadata(br *sous.BuildResult, bc *sous.BuildContext) error {
-	versionName := b.VersionTag(bc.Version())
-	revisionName := b.RevisionTag(bc.Version())
+	br.VersionName = b.VersionTag(bc.Version())
+	br.RevisionName = b.RevisionTag(bc.Version())
 
-	c := b.SourceShell.Cmd("docker", "build", "-t", versionName, "-t", revisionName, "-")
+	c := b.SourceShell.Cmd("docker", "build", "-t", br.VersionName, "-t", br.RevisionName, "-")
 	bf := b.metadataDockerfile(br, bc)
 	c.SetStdin(bf)
 

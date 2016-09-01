@@ -1,7 +1,6 @@
 package sous
 
 import (
-	"log"
 	"sync"
 
 	"github.com/opentable/sous/util/firsterr"
@@ -80,7 +79,6 @@ func guardImages(r Registry, gdm Deployments) error {
 			continue
 		}
 		for _, q := range art.Qualities {
-			log.Printf("%+v", q)
 			if q.Kind == `advisory` {
 				found := false
 				var advs []string

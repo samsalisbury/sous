@@ -7,7 +7,7 @@ import (
 )
 
 type SousHelp struct {
-	CLI  *cmdr.CLI
+	CLI  *CLI
 	Sous *Sous
 }
 

@@ -18,7 +18,7 @@ type (
 	// Terminal is a test harness for the CLI, providing easy
 	// introspection into its inputs and outputs.
 	Terminal struct {
-		*cmdr.CLI
+		*cli.CLI
 		Stdout, Stderr, Combined TestOutput
 		History                  []string
 		T                        *testing.T
@@ -36,10 +36,12 @@ func NewTerminal(t *testing.T, root cmdr.Command) *Terminal {
 	errout := TestOutput{"stderr", &bytes.Buffer{}, t}
 	combined := TestOutput{"combined output", &bytes.Buffer{}, t}
 	s := &cli.Sous{}
-	c := &cmdr.CLI{
-		Root: root,
-		Out:  cmdr.NewOutput(io.MultiWriter(out.Buffer, combined.Buffer)),
-		Err:  cmdr.NewOutput(io.MultiWriter(errout.Buffer, combined.Buffer)),
+	c := &cli.CLI{
+		CLI: &cmdr.CLI{
+			Root: root,
+			Out:  cmdr.NewOutput(io.MultiWriter(out.Buffer, combined.Buffer)),
+			Err:  cmdr.NewOutput(io.MultiWriter(errout.Buffer, combined.Buffer)),
+		},
 	}
 	g := cli.BuildGraph(c, ioutil.Discard, ioutil.Discard)
 	g.Add(s)

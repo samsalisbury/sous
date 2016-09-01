@@ -88,11 +88,20 @@ func (c *CLI) AddGlobalFlagSetFunc(f func(*flag.FlagSet)) {
 // all command output. It then returns the result for further processing.
 func (c *CLI) Invoke(args []string) Result {
 	result := c.InvokeWithoutPrinting(args)
-	c.outputResult(result)
+	c.OutputResult(result)
 	return result
 }
 
-func (c *CLI) outputResult(result Result) {
+// IsSuccess checks if a Result is a success
+func (c *CLI) IsSuccess(result Result) bool {
+	_, ok := result.(SuccessResult)
+	return ok
+}
+
+// OutputResult formats and outputs a cmdr.Result -
+// handles tips when the result is an error, etc.
+// returns true if the result was a success
+func (c *CLI) OutputResult(result Result) {
 	if success, ok := result.(SuccessResult); ok {
 		c.handleSuccessResult(success)
 	}

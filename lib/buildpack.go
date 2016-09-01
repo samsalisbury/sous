@@ -1,6 +1,10 @@
 package sous
 
-import "time"
+import (
+	"fmt"
+	"strings"
+	"time"
+)
 
 type (
 	// A Selector selects the buildpack for a given build context
@@ -56,11 +60,21 @@ type (
 		Elapsed                   time.Duration
 	}
 
+	// EchoSelector wraps a buildpack Factory. But why?
 	EchoSelector struct {
 		Factory func(*BuildContext) (Buildpack, error)
 	}
 )
 
+// SelectBuildpack tries to select a buildpack for this BuildContext.
 func (s *EchoSelector) SelectBuildpack(c *BuildContext) (Buildpack, error) {
 	return s.Factory(c)
+}
+
+func (br *BuildResult) String() string {
+	str := fmt.Sprintf("Built: %q", br.VersionName)
+	if len(br.Advisories) > 0 {
+		str = str + "\nAdvisories:\n  " + strings.Join(br.Advisories, "  \n")
+	}
+	return fmt.Sprintf("%s\nElapsed: %s", str, br.Elapsed)
 }
