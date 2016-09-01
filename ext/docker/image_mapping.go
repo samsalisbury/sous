@@ -270,6 +270,73 @@ type DBConfig struct {
 	Driver, Connection string
 }
 
+const schema = []string{
+	"pragma foreign_keys = ON;",
+
+	"create table if not exists _database_metadata_(" +
+		"name text not null unique on conflict replace" +
+		", value text" +
+		");",
+
+	"create table if not exists docker_repo_name(" +
+		"repo_name_id integer primary key autoincrement" +
+		", name text not null" +
+		", constraint upsertable unique (name)" +
+		");",
+
+	"create table if not exists docker_search_location(" +
+		"location_id integer primary key autoincrement" +
+		", repo text not null" +
+		", offset text not null" +
+		", constraint upsertable unique (repo, offset)" +
+		");",
+
+	"create table if not exists repo_through_location(" +
+		"repo_name_id references docker_repo_name" +
+		"    not null" +
+		", location_id references docker_search_location" +
+		"    not null" +
+		",  primary key (repo_name_id, location_id)" +
+		");",
+
+	"create table if not exists docker_search_metadata(" +
+		"metadata_id integer primary key autoincrement" +
+		", location_id references docker_search_location" +
+		"    not null" +
+		", etag text not null" +
+		", canonicalName text not null" +
+		", version text not null" +
+		", constraint upsertable unique (location_id, version)" +
+		", constraint canonical unique (canonicalName)" +
+		");",
+
+	"create table if not exists docker_search_name(" +
+		"name_id integer primary key autoincrement" +
+		", metadata_id references docker_search_metadata" +
+		"    on delete cascade not null" +
+		", name text not null unique" +
+		");",
+
+	// "qualities" includes advisories. assuming that assertions will also
+	// be represented here
+	"create table if not exists docker_image_qualities(" +
+		"assertion_id integer primary key autoincrement" +
+		", metadata_id references docker_search_metadata" +
+		"    not null" +
+		", quality text not null" +
+		", kind text not null" +
+		", constraint upsertable unique (metadata_id, quality, kind) on conflict ignore" +
+		");",
+}
+
+var memodSchemaFingerprint string
+
+func schemaFingerprint() string {
+	if memodSchemaFingerprint == "" {
+		memodSchemaFingerprint = fingerPrintSchema(schema)
+	}
+}
+
 // GetDatabase initialises a new database for a NameCache.
 func GetDatabase(cfg *DBConfig) (*sql.DB, error) {
 	driver := "sqlite3"
@@ -288,70 +355,9 @@ func GetDatabase(cfg *DBConfig) (*sql.DB, error) {
 		return nil, errors.Wrap(err, "image map")
 	}
 
-	schema := []string{
-		"pragma foreign_keys = ON;",
-
-		"create table if not exists _database_metadata_(" +
-			"name text not null unique on conflict replace" +
-			", value text" +
-			");",
-
-		"create table if not exists docker_repo_name(" +
-			"repo_name_id integer primary key autoincrement" +
-			", name text not null" +
-			", constraint upsertable unique (name)" +
-			");",
-
-		"create table if not exists docker_search_location(" +
-			"location_id integer primary key autoincrement" +
-			", repo text not null" +
-			", offset text not null" +
-			", constraint upsertable unique (repo, offset)" +
-			");",
-
-		"create table if not exists repo_through_location(" +
-			"repo_name_id references docker_repo_name" +
-			"    not null" +
-			", location_id references docker_search_location" +
-			"    not null" +
-			",  primary key (repo_name_id, location_id)" +
-			");",
-
-		"create table if not exists docker_search_metadata(" +
-			"metadata_id integer primary key autoincrement" +
-			", location_id references docker_search_location" +
-			"    not null" +
-			", etag text not null" +
-			", canonicalName text not null" +
-			", version text not null" +
-			", constraint upsertable unique (location_id, version)" +
-			", constraint canonical unique (canonicalName)" +
-			");",
-
-		"create table if not exists docker_search_name(" +
-			"name_id integer primary key autoincrement" +
-			", metadata_id references docker_search_metadata" +
-			"    on delete cascade not null" +
-			", name text not null unique" +
-			");",
-
-		// "qualities" includes advisories. assuming that assertions will also
-		// be represented here
-		"create table if not exists docker_image_qualities(" +
-			"assertion_id integer primary key autoincrement" +
-			", metadata_id references docker_search_metadata" +
-			"    not null" +
-			", quality text not null" +
-			", kind text not null" +
-			", constraint upsertable unique (metadata_id, quality, kind) on conflict ignore" +
-			");",
-	}
-
-	fp := fingerPrintSchema(schema)
-
 	var tgp string
 	err = db.QueryRow("select value from _database_metadata_ where name = 'fingerprint';").Scan(&tgp)
-	if err != nil || tgp != fp {
+	if err != nil || tgp != schemaFingerprint() {
 		err = nil
 		clobber(db)
 
