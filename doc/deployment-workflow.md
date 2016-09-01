@@ -4,11 +4,14 @@ This document outlines how deployments are expected to work in Sous.
 
 ## TL;DR
 
-```
+```sh
+# set some variables - not required, but makes example clearer
 export repo=github.com/opentable/myproject
 export base_version=0.1.0
 export cluster_name="my-cluster"
 export version="$base_version-ci$(date +%s)"
+
+# actual sous commands:
 sous build -tag "$version" .
 sous update -cluster "$cluster_name" -tag "$version"
 sous rectify -repo "$repo"
