@@ -68,7 +68,7 @@ func (d *Deployment) String() string {
 // ID returns the DeployID of this deployment.
 func (d *Deployment) ID() DeployID {
 	return DeployID{
-		Source:  d.SourceID.SourceLocation,
+		Source:  d.SourceID.Location,
 		Cluster: d.ClusterName,
 	}
 }
@@ -113,9 +113,9 @@ func (d *Deployment) Tabbed() string {
 			"%s\t"+ //"Resources\t" +
 			"%s", //"Env"
 		d.ClusterName,
-		d.SourceID.SourceLocation.Repo,
+		d.SourceID.Location.Repo,
 		d.SourceID.Version.String(),
-		d.SourceID.SourceLocation.Dir,
+		d.SourceID.Location.Dir,
 		d.NumInstances,
 		o,
 		strings.Join(rs, ", "),
@@ -127,7 +127,7 @@ func (d *Deployment) Tabbed() string {
 func (d *Deployment) Name() DeployID {
 	return DeployID{
 		Cluster: d.ClusterName,
-		Source:  d.SourceID.SourceLocation,
+		Source:  d.SourceID.Location,
 	}
 }
 

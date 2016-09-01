@@ -27,14 +27,14 @@ func TestCanonName(t *testing.T) {
 	vers, _ := semv.Parse("1.2.3-test+thing")
 	dep := Deployment{
 		SourceID: SourceID{
-			SourceLocation: SourceLocation{
+			Location: SourceLocation{
 				Repo: "one",
 				Dir:  "two",
 			},
 			Version: vers,
 		},
 	}
-	str := dep.SourceID.SourceLocation.String()
+	str := dep.SourceID.Location.String()
 	assert.Regexp("one", str)
 	assert.Regexp("two", str)
 }

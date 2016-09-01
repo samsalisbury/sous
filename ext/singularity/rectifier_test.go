@@ -35,7 +35,7 @@ func TestModifyScale(t *testing.T) {
 	pair := &sous.DeploymentPair{
 		Prior: &sous.Deployment{
 			SourceID: sous.SourceID{
-				SourceLocation: sous.SourceLocation{
+				Location: sous.SourceLocation{
 					Repo: "reqid",
 				},
 			},
@@ -49,7 +49,7 @@ func TestModifyScale(t *testing.T) {
 		},
 		Post: &sous.Deployment{
 			SourceID: sous.SourceID{
-				SourceLocation: sous.SourceLocation{
+				Location: sous.SourceLocation{
 					Repo: "reqid",
 				},
 			},
@@ -264,7 +264,7 @@ func TestDeletes(t *testing.T) {
 
 	deleted := &sous.Deployment{
 		SourceID: sous.SourceID{
-			SourceLocation: sous.SourceLocation{
+			Location: sous.SourceLocation{
 				Repo: "reqid",
 			},
 		},
@@ -308,7 +308,7 @@ func TestCreates(t *testing.T) {
 
 	created := &sous.Deployment{
 		SourceID: sous.SourceID{
-			SourceLocation: sous.SourceLocation{
+			Location: sous.SourceLocation{
 				Repo: "reqid",
 			},
 		},

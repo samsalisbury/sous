@@ -8,46 +8,46 @@ import (
 
 var parseSourceIDTests = map[string]SourceID{
 	"github.com/opentable/sous,1,": {
-		SourceLocation: SourceLocation{
+		Location: SourceLocation{
 			Repo: "github.com/opentable/sous",
 		},
 		Version: semv.MustParse("1"),
 	},
 	":github.com/opentable/sous:1:": {
-		SourceLocation: SourceLocation{
+		Location: SourceLocation{
 			Repo: "github.com/opentable/sous",
 		},
 		Version: semv.MustParse("1"),
 	},
 	"github.com/opentable/sous,1": {
-		SourceLocation: SourceLocation{
+		Location: SourceLocation{
 			Repo: "github.com/opentable/sous",
 		},
 		Version: semv.MustParse("1"),
 	},
 	",github.com/opentable/sous,1,util": {
-		SourceLocation: SourceLocation{
+		Location: SourceLocation{
 			Repo: "github.com/opentable/sous",
 			Dir:  "util",
 		},
 		Version: semv.MustParse("1"),
 	},
 	"github.com/opentable/sous,1,util": {
-		SourceLocation: SourceLocation{
+		Location: SourceLocation{
 			Repo: "github.com/opentable/sous",
 			Dir:  "util",
 		},
 		Version: semv.MustParse("1"),
 	},
 	":github.com/opentable/sous:1:util": {
-		SourceLocation: SourceLocation{
+		Location: SourceLocation{
 			Repo: "github.com/opentable/sous",
 			Dir:  "util",
 		},
 		Version: semv.MustParse("1"),
 	},
 	"git+ssh://github.com/opentable/sous,1.0.0-pre+4f850e9030224f528cfdb085d558f8508d06a6d3,sous": {
-		SourceLocation: SourceLocation{
+		Location: SourceLocation{
 			Repo: "git+ssh://github.com/opentable/sous",
 			Dir:  "sous",
 		},
@@ -70,7 +70,7 @@ func TestParseSourceID_success(t *testing.T) {
 
 func TestNewSourceID_success(t *testing.T) {
 	for _, sid := range parseSourceIDTests {
-		actual, err := NewSourceID(sid.SourceLocation.Repo, sid.SourceLocation.Dir, sid.Version.String())
+		actual, err := NewSourceID(sid.Location.Repo, sid.Location.Dir, sid.Version.String())
 		if err != nil {
 			t.Error(err)
 		}
@@ -97,7 +97,7 @@ func TestNewSourceID_failure(t *testing.T) {
 
 func TestMustNewSourceID_success(t *testing.T) {
 	for _, sid := range parseSourceIDTests {
-		actual := MustNewSourceID(sid.SourceLocation.Repo, sid.SourceLocation.Dir, sid.Version.String())
+		actual := MustNewSourceID(sid.Location.Repo, sid.Location.Dir, sid.Version.String())
 		if actual != sid {
 			t.Errorf("Got %+v; want %+v", actual, sid)
 		}

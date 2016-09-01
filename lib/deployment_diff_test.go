@@ -36,7 +36,7 @@ func makeDepl(repo string, num int) *Deployment {
 	owners.Add("judson")
 	return &Deployment{
 		SourceID: SourceID{
-			SourceLocation: SourceLocation{
+			Location: SourceLocation{
 				Repo: repo,
 			},
 			Version: version,
@@ -89,8 +89,8 @@ func TestRealDiff(t *testing.T) {
 
 	if assert.Len(ds.Changed, 1, "Should have one modified item.") {
 		assert.Equal(repoThree, string(ds.Changed[0].name.Source.Repo))
-		assert.Equal(repoThree, string(ds.Changed[0].Prior.SourceID.SourceLocation.Repo))
-		assert.Equal(repoThree, string(ds.Changed[0].Post.SourceID.SourceLocation.Repo))
+		assert.Equal(repoThree, string(ds.Changed[0].Prior.SourceID.Location.Repo))
+		assert.Equal(repoThree, string(ds.Changed[0].Post.SourceID.Location.Repo))
 		assert.Equal(ds.Changed[0].Post.NumInstances, 1)
 		assert.Equal(ds.Changed[0].Prior.NumInstances, 2)
 	}

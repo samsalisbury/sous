@@ -51,17 +51,17 @@ func Labels(sid sous.SourceID) map[string]string {
 	labels := make(map[string]string)
 	labels[DockerVersionLabel] = sid.Version.Format(`M.m.p-?`)
 	labels[DockerRevisionLabel] = sid.RevID()
-	labels[DockerPathLabel] = sid.SourceLocation.Dir
-	labels[DockerRepoLabel] = sid.SourceLocation.Repo
+	labels[DockerPathLabel] = sid.Location.Dir
+	labels[DockerRepoLabel] = sid.Location.Repo
 	return labels
 }
 
 func imageNameBase(sid sous.SourceID) string {
-	name := sid.SourceLocation.Repo
+	name := sid.Location.Repo
 
 	name = stripRE.ReplaceAllString(name, "")
-	if sid.SourceLocation.Dir != "" {
-		name = strings.Join([]string{name, sid.SourceLocation.Dir}, "/")
+	if sid.Location.Dir != "" {
+		name = strings.Join([]string{name, sid.Location.Dir}, "/")
 	}
 	return name
 }

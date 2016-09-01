@@ -14,8 +14,7 @@ type (
 	SourceID struct {
 		// Location is the repo/dir pair indicating the location of the source
 		// code. Note that not all locations will be valid with all Versions.
-		// TODO: Rename to Location once we have removed the Location func.
-		SourceLocation SourceLocation
+		Location SourceLocation
 		// Version identifies a specific version of the source code at Repo/Dir.
 		Version semv.Version
 	}
@@ -47,16 +46,11 @@ type (
 // representation of a SourceID or a SourceLocation.
 const DefaultDelim = ","
 
-// Location returns the SourceLocation. TODO: Remove this.
-func (sid SourceID) Location() SourceLocation {
-	return sid.SourceLocation
-}
-
 func (sid SourceID) String() string {
-	if sid.SourceLocation.Dir == "" {
-		return fmt.Sprintf("%s %s", sid.SourceLocation.Repo, sid.Version)
+	if sid.Location.Dir == "" {
+		return fmt.Sprintf("%s %s", sid.Location.Repo, sid.Version)
 	}
-	return fmt.Sprintf("%s:%s %s", sid.SourceLocation.Repo, sid.SourceLocation.Dir, sid.Version)
+	return fmt.Sprintf("%s:%s %s", sid.Location.Repo, sid.Location.Dir, sid.Version)
 }
 
 // Tag returns the version tag for this source ID.
@@ -116,7 +110,7 @@ func sourceIDFromChunks(source string, chunks []string) (SourceID, error) {
 		repoOffset = chunks[2]
 	}
 	return SourceID{
-		SourceLocation: SourceLocation{
+		Location: SourceLocation{
 			Dir:  repoOffset,
 			Repo: repoURL,
 		},
@@ -147,7 +141,7 @@ func NewSourceID(repo, offset, version string) (SourceID, error) {
 		return SourceID{}, err
 	}
 	return SourceID{
-		SourceLocation: SourceLocation{
+		Location: SourceLocation{
 			Repo: repo, Dir: offset,
 		},
 		Version: v,

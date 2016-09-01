@@ -182,7 +182,7 @@ func (nc *NameCache) getImageName(sid sous.SourceID) (string, strpairs, error) {
 	cn, _, qls, err := nc.dbQueryOnSourceID(sid)
 	if _, ok := errors.Cause(err).(NoImageNameFound); ok {
 		Log.Vomit.Print(err)
-		err = nc.harvest(sid.SourceLocation)
+		err = nc.harvest(sid.Location)
 		if err != nil {
 			Log.Vomit.Printf("Err: %v", err)
 			return "", nil, err
@@ -461,13 +461,13 @@ func (nc *NameCache) dbInsert(sid sous.SourceID, in, etag string, quals []sous.Q
 	id, err = nc.ensureInDB(
 		"select location_id from docker_search_location where repo = $1 and offset = $2",
 		"insert into docker_search_location (repo, offset) values ($1, $2);",
-		sid.SourceLocation.Repo, sid.SourceLocation.Dir)
+		sid.Location.Repo, sid.Location.Dir)
 
 	if err != nil {
 		return err
 	}
 
-	Log.Vomit.Printf("Source Loc: %s -> id: %d", sid.SourceLocation, id)
+	Log.Vomit.Printf("Source Loc: %s -> id: %d", sid.Location, id)
 
 	_, err = nc.DB.Exec("insert or ignore into repo_through_location "+
 		"(repo_name_id, location_id) values ($1, $2)", nid, id)
@@ -589,7 +589,7 @@ func (nc *NameCache) dbQueryAllSourceIds() (ids []sous.SourceID, err error) {
 		var r, o, v string
 		rows.Scan(&r, &o, &v)
 		ids = append(ids, sous.SourceID{
-			SourceLocation: sous.SourceLocation{
+			Location: sous.SourceLocation{
 				Repo: r, Dir: o,
 			},
 			Version: semv.MustParse(v),
@@ -612,9 +612,9 @@ func (nc *NameCache) dbQueryOnSourceID(sid sous.SourceID) (cn string, ins []stri
 		"docker_search_location.repo = $1 and "+
 		"docker_search_location.offset = $2 and "+
 		"docker_search_metadata.version = $3",
-		sid.SourceLocation.Repo, sid.SourceLocation.Dir, sid.Version.String())
+		sid.Location.Repo, sid.Location.Dir, sid.Version.String())
 
-	Log.Vomit.Printf("Selecting on %q %q %q", sid.SourceLocation.Repo, sid.SourceLocation.Dir, sid.Version.String())
+	Log.Vomit.Printf("Selecting on %q %q %q", sid.Location.Repo, sid.Location.Dir, sid.Version.String())
 
 	if err == sql.ErrNoRows {
 		err = errors.Wrap(NoImageNameFound{sid}, "")

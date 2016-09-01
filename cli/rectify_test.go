@@ -21,7 +21,7 @@ func TestPredicateBuilder(t *testing.T) {
 				ds = append(ds, &sous.Deployment{
 					ClusterName: c,
 					SourceID: sous.SourceID{
-						SourceLocation: sous.SourceLocation{
+						Location: sous.SourceLocation{
 							Repo: r,
 							Dir:  o,
 						},

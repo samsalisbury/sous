@@ -103,7 +103,7 @@ func (sl SourceLocation) String() string {
 // SourceID returns a SourceID built from this location with the addition of a version.
 func (sl SourceLocation) SourceID(version semv.Version) SourceID {
 	return SourceID{
-		SourceLocation: sl,
-		Version:        version,
+		Location: sl,
+		Version:  version,
 	}
 }
