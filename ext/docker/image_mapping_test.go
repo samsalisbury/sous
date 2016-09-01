@@ -88,12 +88,7 @@ func TestReharvest(t *testing.T) {
 	base := "ot/wackadoo"
 
 	vstr := "1.2.3"
-	v := semv.MustParse(vstr)
-	sv := sous.SourceID{
-		Version: v,
-		Repo:    "https://github.com/opentable/wackadoo",
-		Dir:     "nested/there",
-	}
+	sv := sous.MustNewSourceID("https://github.com/opentable/wackadoo", "nested/there", vstr)
 	in := base + ":version-" + vstr
 	digest := "sha256:012345678901234567890123456789AB012345678901234567890123456789AB"
 	cn := base + "@" + digest
