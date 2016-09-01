@@ -1,7 +1,10 @@
 package docker
 
 import (
+	"bytes"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"regexp"
@@ -282,76 +285,103 @@ func GetDatabase(cfg *DBConfig) (*sql.DB, error) {
 
 	db, err := sql.Open(driver, conn) //only call once
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "image map")
 	}
 
-	if err := sqlExec(db, "pragma foreign_keys = ON;"); err != nil {
-		return nil, err
+	schema := []string{
+		"pragma foreign_keys = ON;",
+
+		"create table if not exists _database_metadata_(" +
+			"name text not null unique on conflict replace" +
+			", value text" +
+			");",
+
+		"create table if not exists docker_repo_name(" +
+			"repo_name_id integer primary key autoincrement" +
+			", name text not null" +
+			", constraint upsertable unique (name)" +
+			");",
+
+		"create table if not exists docker_search_location(" +
+			"location_id integer primary key autoincrement" +
+			", repo text not null" +
+			", offset text not null" +
+			", constraint upsertable unique (repo, offset)" +
+			");",
+
+		"create table if not exists repo_through_location(" +
+			"repo_name_id references docker_repo_name" +
+			"    not null" +
+			", location_id references docker_search_location" +
+			"    not null" +
+			",  primary key (repo_name_id, location_id)" +
+			");",
+
+		"create table if not exists docker_search_metadata(" +
+			"metadata_id integer primary key autoincrement" +
+			", location_id references docker_search_location" +
+			"    not null" +
+			", etag text not null" +
+			", canonicalName text not null" +
+			", version text not null" +
+			", constraint upsertable unique (location_id, version)" +
+			", constraint canonical unique (canonicalName)" +
+			");",
+
+		"create table if not exists docker_search_name(" +
+			"name_id integer primary key autoincrement" +
+			", metadata_id references docker_search_metadata" +
+			"    on delete cascade not null" +
+			", name text not null unique" +
+			");",
+
+		// "qualities" includes advisories. assuming that assertions will also
+		// be represented here
+		"create table if not exists docker_image_qualities(" +
+			"assertion_id integer primary key autoincrement" +
+			", metadata_id references docker_search_metadata" +
+			"    not null" +
+			", quality text not null" +
+			", kind text not null" +
+			", constraint upsertable unique (metadata_id, quality, kind) on conflict ignore" +
+			");",
 	}
 
-	if err := sqlExec(db, "create table if not exists docker_repo_name("+
-		"repo_name_id integer primary key autoincrement"+
-		", name text not null"+
-		", constraint upsertable unique (name)"+
-		");"); err != nil {
-		return nil, err
-	}
+	fp := fingerPrintSchema(schema)
 
-	if err := sqlExec(db, "create table if not exists docker_search_location("+
-		"location_id integer primary key autoincrement"+
-		", repo text not null"+
-		", offset text not null"+
-		", constraint upsertable unique (repo, offset)"+
-		");"); err != nil {
-		return nil, err
-	}
+	var tgp string
+	err = db.QueryRow("select value from _database_metadata_ where name = 'fingerprint';").Scan(&tgp)
+	if err != nil || tgp != fp {
+		err = nil
+		clobber(db)
 
-	if err := sqlExec(db, "create table if not exists repo_through_location("+
-		"repo_name_id references docker_repo_name"+
-		"    not null"+
-		", location_id references docker_search_location"+
-		"    not null"+
-		",  primary key (repo_name_id, location_id)"+
-		");"); err != nil {
-		return nil, err
-	}
-
-	if err := sqlExec(db, "create table if not exists docker_search_metadata("+
-		"metadata_id integer primary key autoincrement"+
-		", location_id references docker_search_location"+
-		"    not null"+
-		", etag text not null"+
-		", canonicalName text not null"+
-		", version text not null"+
-		", constraint upsertable unique (location_id, version)"+
-		", constraint canonical unique (canonicalName)"+
-		");"); err != nil {
-		return nil, err
-	}
-
-	if err := sqlExec(db, "create table if not exists docker_search_name("+
-		"name_id integer primary key autoincrement"+
-		", metadata_id references docker_search_metadata"+
-		"    on delete cascade not null"+
-		", name text not null unique"+
-		");"); err != nil {
-		return nil, err
-	}
-
-	// "qualities" includes advisories. assuming that assertions will also
-	// be represented here
-	if err := sqlExec(db, "create table if not exists docker_image_qualities("+
-		"assertion_id integer primary key autoincrement"+
-		", metadata_id references docker_search_metadata"+
-		"    not null"+
-		", quality text not null"+
-		", kind text not null"+
-		", constraint upsertable unique (metadata_id, quality, kind) on conflict ignore"+
-		");"); err != nil {
-		return nil, err
+		for _, cmd := range schema {
+			if err := sqlExec(db, cmd); err != nil {
+				return nil, errors.Wrap(err, "image map")
+			}
+		}
 	}
 
 	return db, err
+}
+
+func clobber(db *sql.DB) {
+	sqlExec(db, "PRAGMA writable_schema = 1;")
+	sqlExec(db, "delete from sqlite_master where type in ('table', 'index', 'trigger');")
+	sqlExec(db, "PRAGMA writable_schema = 0;")
+	sqlExec(db, "vacuum;")
+}
+
+func fingerPrintSchema(schema []string) string {
+	h := sha256.New()
+	for i, s := range schema {
+		fmt.Fprintf(h, "%d:%s\n", i, s)
+	}
+	buf := &bytes.Buffer{}
+	b6 := base64.NewEncoder(base64.StdEncoding, buf)
+	b6.Write(h.Sum([]byte(``)))
+	b6.Close()
+	return buf.String()
 }
 
 func (nc *NameCache) dumpRows(io io.Writer, sql string) {
