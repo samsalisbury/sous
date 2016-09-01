@@ -41,7 +41,7 @@ func (sc *SousConfig) Execute(args []string) cmdr.Result {
 		return Successf(v)
 	case 2:
 		name, value := args[0], args[1]
-		if err := sc.Config.setValue(sc.User.User, name, value); err != nil {
+		if err := sc.Config.setValue(sc.User.ConfigFile(), name, value); err != nil {
 			return EnsureErrorResult(err)
 		}
 		return Successf("set %s to %q", name, value)

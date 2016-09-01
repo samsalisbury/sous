@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/configloader"
@@ -11,10 +12,11 @@ import (
 	"github.com/opentable/sous/util/yaml"
 )
 
-func newConfig(u *User) (*Config, error) {
-	config := u.DefaultConfig()
+func newConfig(path string, defaultConfig Config) (*Config, error) {
+	config := defaultConfig
 
-	if err := os.MkdirAll(u.ConfigDir(), os.ModeDir|0755); err != nil {
+	configDir := filepath.Dir(path)
+	if err := os.MkdirAll(configDir, os.ModeDir|0755); err != nil {
 		return nil, err
 	}
 
@@ -26,10 +28,10 @@ func newConfig(u *User) (*Config, error) {
 			return
 		}
 		lsc := &LocalSousConfig{&config}
-		lsc.Save(u)
-		sous.Log.Info.Println("initialised config file: " + u.ConfigFile())
+		lsc.Save(path)
+		sous.Log.Info.Println("initialised config file: " + path)
 	}()
-	_, err := os.Stat(u.ConfigFile())
+	_, err := os.Stat(path)
 	if os.IsNotExist(err) {
 		err = nil
 		writeDefault = true
@@ -38,13 +40,13 @@ func newConfig(u *User) (*Config, error) {
 		return nil, err
 	}
 
-	return &config, cl.Load(&config, u.ConfigFile())
+	return &config, cl.Load(&config, path)
 }
 
 // Save the configuration to the configuration path (by default:
 // $HOME/.config/sous/config)
-func (c *LocalSousConfig) Save(u *User) error {
-	return ioutil.WriteFile(u.ConfigFile(), c.Bytes(), 0600)
+func (c *LocalSousConfig) Save(path string) error {
+	return ioutil.WriteFile(path, c.Bytes(), 0600)
 }
 
 // Bytes marshals the config to a []byte
@@ -63,11 +65,11 @@ func (c *LocalSousConfig) getValue(name string) (string, error) {
 }
 
 // SetValue stores a particular value on the config
-func (c *LocalSousConfig) setValue(user *User, name, value string) error {
+func (c *LocalSousConfig) setValue(path, name, value string) error {
 	if err := configloader.New().SetValue(c.Config, name, value); err != nil {
 		return err
 	}
-	return c.Save(user)
+	return c.Save(path)
 }
 
 func (c *LocalSousConfig) String() string {
