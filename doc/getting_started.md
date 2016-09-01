@@ -31,43 +31,47 @@ that it therefore carries over
 from Singularity.
 
 More specifically,
-we assume the default networking mode in Singularity:
-you'll be provided with two environment variables you must use to configure your server:
-    `TASK_HOST` contains the host name of the node you're running on, and
-    `PORT0` contains the number of an available port you must listen on.
+we assume bridged networking mode in Singularity.
+You are provided with two environment variables you must use to configure your server:
+
+- `TASK_HOST` contains the host name of the node you're running on, and
+- `PORT0` contains the number of an available port you must listen on.
+
 If you asked for more than one port in your resources configuration, you will also have
-    `PORT1, PORT2, ... PORTN-1` also indicating free ports you can listen on.
-You must, however, listen on the IP address `0.0.0.0` (i.e. all IP addresses)
+    `PORT1, PORT2, ... PORTN-1` also indicating additional free ports you can listen on.
+
+You must configure your server to listen on the IP address `0.0.0.0` (i.e. all IP addresses)
 The `TASK_HOST` environment variable is the hostname outside traffic will need to use
-to find this app.
+to find your app.
 
-
-While there are many many options about how Singularity works,
-Sous provides a limited subset of these options.
-For instance, automatic port mapping is not available,
-on the grounds that a Singularity based service
-will need to announce itself somehow,
-and will need to know its outside port regardless.
-In the default networking mode, the outside and inside ports are the same.
+While there are many many options available to configure Singularity deployments,
+Sous currently provides a limited subset of these options, which satisfy OpenTable's
+current requirements.
+For instance, automatic port mapping is not currently available, since at OpenTable,
+we require each application to announce its own externally routable address.
+Therefore the information provided by the `TASK_HOST` and `PORT0` variables is canonical,
+and must be respected by the application.
+Automatic port mapping would significantly complicate this model.
 
 ## Docker
 
 Sous assumes that applications build into docker containers.
 There are a number of assumptions that Docker imposes,
-which like Singularity,
-Sous carries over.
+which Sous carries over.
 
-One of the assumptions Sous presently makes but which is
-prioritized for correction,
-is that your application will provide its own Dockerfile.
+One of the assumptions Sous presently makes is that
+your application will provide its own working Dockerfile.
+The docker image produced by a simple `docker build .` must represent your application.
+We plan to provide support for other build mechanisms in the short to medium term.
 
 # Summary
 
 Consequent to the above,
 applications intending to be deployed via Sous
-should address the following points:
+should satisfy the following requirements:
 
-* The binary artifact is a Docker container, described by a Dockerfile you write.
-* All configuration for the application should come through environment variables.
-  * One pattern to address this requirement is to build "flavors" of configuration, and select based on ENV
-* You'll need to get your network addresses from `ENV[PORT0]` and bind accordingly.
+* Have a Dockerfile that creates an image that runs correctly when run with
+`docker run -e PORT0 12345 -e TASK_HOST somehost <image name>`.
+* Binds to the http address `0.0.0.0:$PORT0`
+* Announces its outside address `$TASK_HOST:$PORT0``
+* Application configuration that varies with environment should be read from environment variables.
