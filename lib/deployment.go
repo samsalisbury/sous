@@ -113,9 +113,9 @@ func (d *Deployment) Tabbed() string {
 			"%s\t"+ //"Resources\t" +
 			"%s", //"Env"
 		d.ClusterName,
-		string(d.SourceID.Repo),
+		d.SourceID.SourceLocation.Repo,
 		d.SourceID.Version.String(),
-		string(d.SourceID.Dir),
+		d.SourceID.SourceLocation.Dir,
 		d.NumInstances,
 		o,
 		strings.Join(rs, ", "),

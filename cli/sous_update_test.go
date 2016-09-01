@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	sous "github.com/opentable/sous/lib"
-	"github.com/samsalisbury/semv"
 )
 
 var getIDsTests = []struct {
@@ -102,11 +101,7 @@ var updateStateTests = []struct {
 
 func TestUpdateState(t *testing.T) {
 	for _, test := range updateStateTests {
-		sid := sous.SourceID{
-			Repo:    test.DID.Source.Repo,
-			Dir:     test.DID.Source.Dir,
-			Version: semv.MustParse("1.0.0"),
-		}
+		sid := sous.MustNewSourceID(test.DID.Source.Repo, test.DID.Source.Dir, "1.0.0")
 		err := updateState(test.State, test.GDM, sid, test.DID)
 		if err != nil {
 			if test.ExpectedErr == "" {

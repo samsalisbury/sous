@@ -12,12 +12,12 @@ type (
 	// SourceID identifies a specific snapshot of a body of source code,
 	// including its location and version.
 	SourceID struct {
-		// Repo: see SourceLocation.Repo.
-		Repo string
+		// Location is the repo/dir pair indicating the location of the source
+		// code. Note that not all locations will be valid with all Versions.
+		// TODO: Rename to Location once we have removed the Location func.
+		SourceLocation SourceLocation
 		// Version identifies a specific version of the source code at Repo/Dir.
 		Version semv.Version
-		// Dir: See SourceLocation.Dir.
-		Dir string `yaml:",omitempty"`
 	}
 
 	//MissingRepo indicates that Sous couldn't determine which repo was intended for this SL
@@ -47,11 +47,16 @@ type (
 // representation of a SourceID or a SourceLocation.
 const DefaultDelim = ","
 
+// Location returns the SourceLocation. TODO: Remove this.
+func (sid SourceID) Location() SourceLocation {
+	return sid.SourceLocation
+}
+
 func (sid SourceID) String() string {
-	if sid.Dir == "" {
-		return fmt.Sprintf("%s %s", sid.Repo, sid.Version)
+	if sid.SourceLocation.Dir == "" {
+		return fmt.Sprintf("%s %s", sid.SourceLocation.Repo, sid.Version)
 	}
-	return fmt.Sprintf("%s:%s %s", sid.Repo, sid.Dir, sid.Version)
+	return fmt.Sprintf("%s:%s %s", sid.SourceLocation.Repo, sid.SourceLocation.Dir, sid.Version)
 }
 
 // Tag returns the version tag for this source ID.
@@ -62,14 +67,6 @@ func (sid SourceID) Tag() string {
 // RevID returns the revision id for this SourceID.
 func (sid SourceID) RevID() string {
 	return sid.Version.Meta
-}
-
-// Location returns the location component of this SourceID.
-func (sid SourceID) Location() SourceLocation {
-	return SourceLocation{
-		Repo: sid.Repo,
-		Dir:  sid.Dir,
-	}
 }
 
 // Equal tests the equality between this SourceID and another.
@@ -119,9 +116,11 @@ func sourceIDFromChunks(source string, chunks []string) (SourceID, error) {
 		repoOffset = chunks[2]
 	}
 	return SourceID{
+		SourceLocation: SourceLocation{
+			Dir:  repoOffset,
+			Repo: repoURL,
+		},
 		Version: version,
-		Repo:    repoURL,
-		Dir:     repoOffset,
 	}, nil
 }
 
@@ -134,6 +133,30 @@ func ParseSourceID(s string) (SourceID, error) {
 // MustParseSourceID wraps ParseSourceID and panics if it returns an error.
 func MustParseSourceID(s string) SourceID {
 	sid, err := ParseSourceID(s)
+	if err != nil {
+		panic(err)
+	}
+	return sid
+}
+
+// NewSourceID attempts to create a new SourceID from strings representing the
+// separate components.
+func NewSourceID(repo, offset, version string) (SourceID, error) {
+	v, err := semv.Parse(version)
+	if err != nil {
+		return SourceID{}, err
+	}
+	return SourceID{
+		SourceLocation: SourceLocation{
+			Repo: repo, Dir: offset,
+		},
+		Version: v,
+	}, nil
+}
+
+// MustNewSourceID wraps NewSourceID and panics if it returns an error.
+func MustNewSourceID(repo, offset, version string) SourceID {
+	sid, err := NewSourceID(repo, offset, version)
 	if err != nil {
 		panic(err)
 	}

@@ -15,7 +15,7 @@ func TestVersion(t *testing.T) {
 		NearestTagName: "1.2.3",
 	}
 	id := sc.Version()
-	assert.Equal("github.com/opentable/test", string(id.Repo))
-	assert.Equal("sub", string(id.Dir))
+	assert.Equal("github.com/opentable/test", id.SourceLocation.Repo)
+	assert.Equal("sub", string(id.SourceLocation.Dir))
 	assert.Equal("1.2.3", id.Version.String())
 }
