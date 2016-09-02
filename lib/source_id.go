@@ -48,9 +48,9 @@ const DefaultDelim = ","
 
 func (sid SourceID) String() string {
 	if sid.Location.Dir == "" {
-		return fmt.Sprintf("%s %s", sid.Location.Repo, sid.Version)
+		return fmt.Sprintf("%s,%s", sid.Location.Repo, sid.Version)
 	}
-	return fmt.Sprintf("%s:%s %s", sid.Location.Repo, sid.Location.Dir, sid.Version)
+	return fmt.Sprintf("%s,%s,%s", sid.Location.Repo, sid.Location.Dir, sid.Version)
 }
 
 // Tag returns the version tag for this source ID.
