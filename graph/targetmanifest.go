@@ -1,4 +1,4 @@
-package cli
+package graph
 
 import (
 	"github.com/opentable/sous/ext/otpl"

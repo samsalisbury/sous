@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/opentable/sous/graph"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
 	"github.com/opentable/sous/util/yaml"
@@ -39,7 +40,7 @@ type (
 	// CLI describes the command line interface for Sous
 	CLI struct {
 		*cmdr.CLI
-		*SousCLIGraph
+		*graph.SousCLIGraph
 	}
 	// Addable objects are able to receive lists of interface{}, presumably to add
 	// them to a DI registry. Abstracts Psyringe's Add()

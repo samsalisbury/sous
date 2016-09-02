@@ -1,4 +1,4 @@
-package cli
+package graph
 
 import (
 	"io/ioutil"

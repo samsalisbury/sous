@@ -1,4 +1,4 @@
-package cli
+package graph
 
 import (
 	"fmt"
@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/user"
 
+	"github.com/opentable/sous/cli"
 	"github.com/opentable/sous/ext/docker"
 	"github.com/opentable/sous/ext/git"
 	"github.com/opentable/sous/ext/singularity"
@@ -56,9 +57,9 @@ type (
 	// Version represents a version of Sous.
 	Version struct{ semv.Version }
 	// LocalUser is the currently logged in user.
-	LocalUser struct{ *User }
+	LocalUser struct{ *cli.User }
 	// LocalSousConfig is the configuration for Sous.
-	LocalSousConfig struct{ *Config }
+	LocalSousConfig struct{ *cli.Config }
 	// LocalWorkDir is the user's current working directory when they invoke Sous.
 	LocalWorkDir string
 	// LocalWorkDirShell is a shell for working in the user's current working
