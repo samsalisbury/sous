@@ -11,15 +11,13 @@ import (
 type (
 	// SourceLocation identifies a directory inside a source code repository.
 	// Note that the directory is ambiguous without the addition of a revision
-	// ID. This type is used as a shorthand for deploy manifests, enabling the
-	// logical grouping of deploys of different versions of a particular
-	// service.
+	// ID.
 	SourceLocation struct {
 		// Repo identifies a source code repository.
 		Repo,
 		// Dir is a directory within the repository at Repo containing the
 		// source code for one piece of software.
-		Dir string `yaml:",omitempty"`
+		Dir string
 	}
 )
 
