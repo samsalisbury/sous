@@ -97,7 +97,7 @@ func (sl SourceLocation) String() string {
 	if sl.Dir == "" {
 		return fmt.Sprintf("%s", sl.Repo)
 	}
-	return fmt.Sprintf("%s:%s", sl.Repo, sl.Dir)
+	return fmt.Sprintf("%s,%s", sl.Repo, sl.Dir)
 }
 
 // SourceID returns a SourceID built from this location with the addition of a version.
