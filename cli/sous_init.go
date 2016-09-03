@@ -57,15 +57,3 @@ func (si *SousInit) Execute(args []string) cmdr.Result {
 	}
 	return SuccessYAML(m)
 }
-
-func defaultDeploySpecs() sous.DeploySpecs {
-	return sous.DeploySpecs{
-		"Global": {
-			DeployConfig: sous.DeployConfig{
-				Resources:    sous.Resources{},
-				Env:          map[string]string{},
-				NumInstances: 3,
-			},
-		},
-	}
-}

@@ -1,4 +1,4 @@
-package cli
+package config
 
 import "github.com/opentable/sous/lib"
 

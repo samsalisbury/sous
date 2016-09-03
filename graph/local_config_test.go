@@ -1,9 +1,11 @@
-package cli
+package graph
 
 import (
 	"io/ioutil"
 	"os"
 	"testing"
+
+	"github.com/opentable/sous/config"
 )
 
 func remove(path string) error {
@@ -24,7 +26,7 @@ func TestNewConfig(t *testing.T) {
 		}
 	}()
 
-	written, err := newConfig(path, Config{})
+	written, err := newConfig(path, config.Config{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -32,7 +34,7 @@ func TestNewConfig(t *testing.T) {
 		t.Fatal("Config file not created:", path, ":", err)
 	}
 
-	read, err := newConfig(path, Config{})
+	read, err := newConfig(path, config.Config{})
 	if err != nil {
 		t.Fatal(err)
 	}

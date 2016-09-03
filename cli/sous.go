@@ -3,6 +3,7 @@ package cli
 import (
 	"flag"
 
+	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
 	"github.com/opentable/sous/util/whitespace"
@@ -21,10 +22,8 @@ type Sous struct {
 	Version semv.Version
 	// flags holds the values of flags passed to this command
 	flags struct {
-		Help      bool
-		Verbosity struct {
-			Silent, Quiet, Loud, Debug bool
-		}
+		Help bool
+		config.Verbosity
 	}
 }
 
@@ -71,7 +70,7 @@ func (s *Sous) AddFlags(fs *flag.FlagSet) {
 
 // RegisterOn adds the Sous object itself to the Psyringe
 func (s *Sous) RegisterOn(psy Addable) {
-	psy.Add(s)
+	psy.Add(&s.Verbosity)
 }
 
 // Execute exists to present a helpful error to the user, in the case they just

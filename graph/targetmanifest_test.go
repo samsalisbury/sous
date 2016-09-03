@@ -3,13 +3,14 @@ package graph
 import (
 	"testing"
 
+	"github.com/opentable/sous/config"
 	sous "github.com/opentable/sous/lib"
 )
 
 type newUserSelectedOTPLDeploySpecTest struct {
 	Detected            sous.DeploySpecs
 	TSL                 TargetSourceLocation
-	Flags               OTPLFlags
+	Flags               config.OTPLFlags
 	Clusters            sous.Clusters
 	Manifest            *sous.Manifest
 	ExpectedDeploySpecs sous.DeploySpecs
@@ -28,7 +29,7 @@ var nusodsTests = []newUserSelectedOTPLDeploySpecTest{
 		Detected: sous.DeploySpecs{
 			"some-cluster": {},
 		},
-		Flags: OTPLFlags{IgnoreOTPLDeploy: true},
+		Flags: config.OTPLFlags{IgnoreOTPLDeploy: true},
 	},
 	{
 		Clusters: sous.Clusters{
@@ -37,7 +38,7 @@ var nusodsTests = []newUserSelectedOTPLDeploySpecTest{
 		Detected: sous.DeploySpecs{
 			"some-cluster": {},
 		},
-		Flags: OTPLFlags{UseOTPLDeploy: true},
+		Flags: config.OTPLFlags{UseOTPLDeploy: true},
 		ExpectedDeploySpecs: sous.DeploySpecs{
 			"some-cluster": {},
 		},
@@ -49,10 +50,10 @@ var nusodsTests = []newUserSelectedOTPLDeploySpecTest{
 		Detected: sous.DeploySpecs{
 			"some-cluster": {},
 		},
-		Flags: OTPLFlags{IgnoreOTPLDeploy: true},
+		Flags: config.OTPLFlags{IgnoreOTPLDeploy: true},
 	},
 	{
-		Flags:       OTPLFlags{UseOTPLDeploy: true},
+		Flags:       config.OTPLFlags{UseOTPLDeploy: true},
 		ExpectedErr: "you specified -use-otpl-deploy, but no valid deployments were found in config/",
 	},
 }

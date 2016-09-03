@@ -1,4 +1,4 @@
-package cli
+package graph
 
 import (
 	"fmt"
@@ -6,13 +6,14 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/configloader"
 	"github.com/opentable/sous/util/whitespace"
 	"github.com/opentable/sous/util/yaml"
 )
 
-func newConfig(path string, defaultConfig Config) (*Config, error) {
+func newConfig(path string, defaultConfig config.Config) (*config.Config, error) {
 	config := defaultConfig
 
 	configDir := filepath.Dir(path)

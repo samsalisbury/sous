@@ -3,22 +3,23 @@ package graph
 import (
 	"testing"
 
+	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/lib"
 )
 
 type resolveSourceLocationInput struct {
-	Flags   *DeployFilterFlags
+	Flags   *config.DeployFilterFlags
 	Context *sous.SourceContext
 }
 
 var badResolveSourceLocationCalls = map[string][]resolveSourceLocationInput{
 	"no repo specified, please use -repo or run sous inside a git repo": {
-		{Flags: &DeployFilterFlags{}, Context: &sous.SourceContext{}},
+		{Flags: &config.DeployFilterFlags{}, Context: &sous.SourceContext{}},
 		{Flags: nil, Context: &sous.SourceContext{}},
-		{Flags: &DeployFilterFlags{}, Context: nil},
+		{Flags: &config.DeployFilterFlags{}, Context: nil},
 	},
 	"you specified -offset but not -repo": {
-		{Flags: &DeployFilterFlags{Offset: "some/offset"}},
+		{Flags: &config.DeployFilterFlags{Offset: "some/offset"}},
 	},
 }
 
@@ -40,11 +41,11 @@ func TestResolveSourceLocation_failure(t *testing.T) {
 
 var goodResolveSourceLocationCalls = map[sous.SourceLocation][]resolveSourceLocationInput{
 	{Repo: "github.com/user/project", Dir: ""}: {
-		{Flags: &DeployFilterFlags{Repo: "github.com/user/project"}},
+		{Flags: &config.DeployFilterFlags{Repo: "github.com/user/project"}},
 		{Context: &sous.SourceContext{PrimaryRemoteURL: "github.com/user/project"}},
 	},
 	{Repo: "github.com/user/project", Dir: "some/path"}: {
-		{Flags: &DeployFilterFlags{Repo: "github.com/user/project", Offset: "some/path"}},
+		{Flags: &config.DeployFilterFlags{Repo: "github.com/user/project", Offset: "some/path"}},
 		{Context: &sous.SourceContext{
 			PrimaryRemoteURL: "github.com/user/project",
 			OffsetDir:        "some/path",
@@ -56,7 +57,7 @@ var goodResolveSourceLocationCalls = map[sous.SourceLocation][]resolveSourceLoca
 				PrimaryRemoteURL: "github.com/original/context",
 				OffsetDir:        "the/detected/offset",
 			},
-			Flags: &DeployFilterFlags{
+			Flags: &config.DeployFilterFlags{
 				Repo: "github.com/from/flags",
 			},
 		},

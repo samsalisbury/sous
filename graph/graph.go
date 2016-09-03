@@ -8,7 +8,7 @@ import (
 	"os"
 	"os/user"
 
-	"github.com/opentable/sous/cli"
+	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/ext/docker"
 	"github.com/opentable/sous/ext/git"
 	"github.com/opentable/sous/ext/singularity"
@@ -40,9 +40,7 @@ type (
 	OutWriter io.Writer
 	// ErrWriter is an alias on io.Writer to disguish "stderr"
 	ErrWriter io.Writer
-)
 
-type (
 	// StateReader knows how to read state.
 	StateReader interface {
 		ReadState() (*sous.State, error)
@@ -51,15 +49,13 @@ type (
 	StateWriter interface {
 		WriteState(*sous.State) error
 	}
-)
 
-type (
 	// Version represents a version of Sous.
 	Version struct{ semv.Version }
 	// LocalUser is the currently logged in user.
-	LocalUser struct{ *cli.User }
+	LocalUser struct{ *config.User }
 	// LocalSousConfig is the configuration for Sous.
-	LocalSousConfig struct{ *cli.Config }
+	LocalSousConfig struct{ *config.Config }
 	// LocalWorkDir is the user's current working directory when they invoke Sous.
 	LocalWorkDir string
 	// LocalWorkDirShell is a shell for working in the user's current working
@@ -154,21 +150,21 @@ func newRegistryDumper(r sous.Registry) *sous.RegistryDumper {
 	return sous.NewRegistryDumper(r)
 }
 
-func newLogSet(s *Sous, err ErrWriter) *sous.LogSet { // XXX temporary until we settle on logging
-	if s.flags.Verbosity.Debug {
-		if s.flags.Verbosity.Loud {
+func newLogSet(v *config.Verbosity, err ErrWriter) *sous.LogSet { // XXX temporary until we settle on logging
+	if v.Debug {
+		if v.Loud {
 			sous.Log.Vomit.SetOutput(err)
 		}
 		sous.Log.Debug.SetOutput(err)
 		sous.Log.Info.SetOutput(err)
 
 	}
-	if s.flags.Verbosity.Loud {
+	if v.Loud {
 		sous.Log.Info.SetOutput(err)
 	}
-	if s.flags.Verbosity.Quiet {
+	if v.Quiet {
 	}
-	if s.flags.Verbosity.Silent {
+	if v.Silent {
 	}
 
 	sous.Log.Vomit.Println("Verbose debugging enabled")
@@ -181,7 +177,7 @@ func newGitSourceContext(g LocalGitRepo) (GitSourceContext, error) {
 	return GitSourceContext{c}, initErr(err, "getting local git context")
 }
 
-func newSourceContext(f *DeployFilterFlags, g GitSourceContext) (*sous.SourceContext, error) {
+func newSourceContext(f *config.DeployFilterFlags, g GitSourceContext) (*sous.SourceContext, error) {
 	c := g.SourceContext
 	if c == nil {
 		c = &sous.SourceContext{}
@@ -203,7 +199,7 @@ func newBuildContext(wd LocalWorkDirShell, c *sous.SourceContext) *sous.BuildCon
 	return &sous.BuildContext{Sh: wd.Sh, Source: *c}
 }
 
-func newBuildConfig(f *DeployFilterFlags, p *PolicyFlags, bc *sous.BuildContext) *sous.BuildConfig {
+func newBuildConfig(f *config.DeployFilterFlags, p *config.PolicyFlags, bc *sous.BuildContext) *sous.BuildConfig {
 	cfg := sous.BuildConfig{
 		Repo:       f.Repo,
 		Offset:     f.Offset,
@@ -229,7 +225,7 @@ func newBuildManager(bc *sous.BuildConfig, sl sous.Selector, lb sous.Labeller, r
 
 func newLocalUser() (v LocalUser, err error) {
 	u, err := user.Current()
-	v.User = &User{u}
+	v.User = &config.User{u}
 	return v, initErr(err, "getting current user")
 }
 

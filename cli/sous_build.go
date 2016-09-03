@@ -3,21 +3,17 @@ package cli
 import (
 	"flag"
 
+	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
 )
 
 type (
-	// PolicyFlags capture user intent about the processing of a build
-	PolicyFlags struct {
-		ForceClone, Strict bool
-	}
-
 	// SousBuild is the command description for `sous build`
 	// Implements cmdr.Command, cmdr.Executor and cmdr.AddFlags
 	SousBuild struct {
-		DeployFilterFlags
-		PolicyFlags
+		config.DeployFilterFlags
+		config.PolicyFlags
 
 		*sous.BuildManager
 	}

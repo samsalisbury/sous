@@ -1,4 +1,4 @@
-package cli
+package config
 
 // OTPLFlags set options for sniffing otpl-deploy configuration during manifest
 // initialisation.

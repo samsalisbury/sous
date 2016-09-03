@@ -1,16 +1,17 @@
 package graph
 
 import (
+	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/lib"
 	"github.com/pkg/errors"
 )
 
-func newTargetSourceLocation(f *DeployFilterFlags, c *sous.SourceContext) (TargetSourceLocation, error) {
+func newTargetSourceLocation(f *config.DeployFilterFlags, c *sous.SourceContext) (TargetSourceLocation, error) {
 	if c == nil {
 		c = &sous.SourceContext{}
 	}
 	if f == nil {
-		f = &DeployFilterFlags{}
+		f = &config.DeployFilterFlags{}
 	}
 	var repo, offset = c.PrimaryRemoteURL, c.OffsetDir
 	if f.Repo != "" {

@@ -1,11 +1,13 @@
 package graph
 
 import (
+	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/ext/otpl"
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/cmdr"
 )
 
-func newDetectedOTPLConfig(wd LocalWorkDirShell, otplFlags *OTPLFlags) (DetectedOTPLDeploySpecs, error) {
+func newDetectedOTPLConfig(wd LocalWorkDirShell, otplFlags *config.OTPLFlags) (DetectedOTPLDeploySpecs, error) {
 	if otplFlags.IgnoreOTPLDeploy {
 		return DetectedOTPLDeploySpecs{}, nil
 	}
@@ -14,7 +16,7 @@ func newDetectedOTPLConfig(wd LocalWorkDirShell, otplFlags *OTPLFlags) (Detected
 	return DetectedOTPLDeploySpecs{otplDeploySpecs}, nil
 }
 
-func newUserSelectedOTPLDeploySpecs(detected DetectedOTPLDeploySpecs, tsl TargetSourceLocation, flags *OTPLFlags, state *sous.State) (UserSelectedOTPLDeploySpecs, error) {
+func newUserSelectedOTPLDeploySpecs(detected DetectedOTPLDeploySpecs, tsl TargetSourceLocation, flags *config.OTPLFlags, state *sous.State) (UserSelectedOTPLDeploySpecs, error) {
 	var nowt UserSelectedOTPLDeploySpecs
 	sl := sous.SourceLocation(tsl)
 	// we don't care about these flags when a manifest already exists
@@ -22,13 +24,13 @@ func newUserSelectedOTPLDeploySpecs(detected DetectedOTPLDeploySpecs, tsl Target
 		return nowt, nil
 	}
 	if !flags.UseOTPLDeploy && !flags.IgnoreOTPLDeploy && len(detected.DeploySpecs) != 0 {
-		return nowt, UsageErrorf("otpl-deploy detected in config/, please specify either -use-otpl-deploy, or -ignore-otpl-deploy to proceed")
+		return nowt, cmdr.UsageErrorf("otpl-deploy detected in config/, please specify either -use-otpl-deploy, or -ignore-otpl-deploy to proceed")
 	}
 	if !flags.UseOTPLDeploy {
 		return nowt, nil
 	}
 	if len(detected.DeploySpecs) == 0 {
-		return nowt, UsageErrorf("you specified -use-otpl-deploy, but no valid deployments were found in config/")
+		return nowt, cmdr.UsageErrorf("you specified -use-otpl-deploy, but no valid deployments were found in config/")
 	}
 	deploySpecs := sous.DeploySpecs{}
 	for clusterName, spec := range detected.DeploySpecs {
@@ -39,6 +41,18 @@ func newUserSelectedOTPLDeploySpecs(detected DetectedOTPLDeploySpecs, tsl Target
 		deploySpecs[clusterName] = spec
 	}
 	return UserSelectedOTPLDeploySpecs{deploySpecs}, nil
+}
+
+func defaultDeploySpecs() sous.DeploySpecs {
+	return sous.DeploySpecs{
+		"Global": {
+			DeployConfig: sous.DeployConfig{
+				Resources:    sous.Resources{},
+				Env:          map[string]string{},
+				NumInstances: 3,
+			},
+		},
+	}
 }
 
 func newTargetManifest(auto UserSelectedOTPLDeploySpecs, tsl TargetSourceLocation, s *sous.State) TargetManifest {
