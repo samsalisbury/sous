@@ -2,9 +2,7 @@ package sous
 
 import (
 	"fmt"
-	"io"
 
-	"github.com/pkg/errors"
 	"github.com/samsalisbury/semv"
 )
 
@@ -69,15 +67,9 @@ func (sl SourceLocation) MarshalText() ([]byte, error) {
 
 // UnmarshalText implements encoding.TextMarshaler.
 func (sl *SourceLocation) UnmarshalText(b []byte) error {
-	s := string(b)
-	n, err := fmt.Sscanf(s, "%s %s", &sl.Repo, &sl.Dir)
-	if err != nil && err != io.EOF {
-		return errors.Wrapf(err, "unable to unmarshal source location %q", s)
-	}
-	if n == 0 {
-		return errors.Errorf("incomplete source location %q", s)
-	}
-	return nil
+	var err error
+	*sl, err = ParseSourceLocation(string(b))
+	return err
 }
 
 // UnmarshalYAML deserializes a YAML document into this SourceLocation

@@ -44,3 +44,16 @@ func TestMustParseSourceLocation(t *testing.T) {
 		}
 	}
 }
+
+func TestSourceLocation_UnmarshalText(t *testing.T) {
+	for in, expected := range parseSourceLocationTests {
+		var actual SourceLocation
+		if err := actual.UnmarshalText([]byte(in)); err != nil {
+			t.Error(err)
+			continue
+		}
+		if actual != expected {
+			t.Errorf("%q got %#v; want %#v", in, actual, expected)
+		}
+	}
+}
