@@ -35,24 +35,18 @@ type (
 	// SousCLIGraph is a dependency injector used to flesh out Sous commands
 	// with their dependencies.
 	SousCLIGraph struct{ *psyringe.Psyringe }
-	// OutWriter is an alias on io.Writer to disguish "stderr"
+	// OutWriter is typically set to os.Stdout.
 	OutWriter io.Writer
-	// ErrWriter is an alias on io.Writer to disguish "stderr"
+	// ErrWriter is typically set to os.Stderr.
 	ErrWriter io.Writer
-)
-
-type (
 	// StateReader knows how to read state.
 	StateReader interface {
 		ReadState() (*sous.State, error)
 	}
-	// StateWriter know how to write state.
+	// StateWriter knows how to write state.
 	StateWriter interface {
 		WriteState(*sous.State) error
 	}
-)
-
-type (
 	// Version represents a version of Sous.
 	Version struct{ semv.Version }
 	// LocalUser is the currently logged in user.
