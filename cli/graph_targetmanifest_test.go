@@ -98,11 +98,11 @@ func TestNewTargetManifest(t *testing.T) {
 	sl := sous.MustParseSourceLocation("github.com/user/project")
 	flavor := "some-flavor"
 	mid := sous.ManifestID{Source: sl, Flavor: flavor}
-	tsl := TargetManifestID(mid)
+	tmid := TargetManifestID(mid)
 	m := &sous.Manifest{Source: sl, Flavor: flavor}
 	s := sous.NewState()
 	s.Manifests.Add(m)
-	tm := newTargetManifest(detected, tsl, s)
+	tm := newTargetManifest(detected, tmid, s)
 	if tm.Source != sl {
 		t.Errorf("unexpected manifest %q", m)
 	}

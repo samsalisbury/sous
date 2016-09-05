@@ -5,7 +5,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func newTargetSourceLocation(f *DeployFilterFlags, c *sous.SourceContext) (TargetManifestID, error) {
+func newTargetManifestID(f *DeployFilterFlags, c *sous.SourceContext) (TargetManifestID, error) {
 	if c == nil {
 		c = &sous.SourceContext{}
 	}
