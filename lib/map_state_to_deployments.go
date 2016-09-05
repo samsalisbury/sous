@@ -122,6 +122,7 @@ func BuildDeployment(s *State, m *Manifest, nick string, spec DeploySpec, inheri
 		ClusterName:  nick,
 		Cluster:      s.Defs.Clusters[nick],
 		DeployConfig: ds.DeployConfig,
+		Flavor:       m.Flavor,
 		Owners:       ownMap,
 		Kind:         m.Kind,
 		SourceID:     m.Source.SourceID(ds.Version),
