@@ -1,44 +1,41 @@
 package cli
 
 import (
-	"github.com/opentable/sous/ext/otpl"
-	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/lib"
+	"github.com/pkg/errors"
 )
 
-func newDetectedOTPLConfig(wd LocalWorkDirShell, otplFlags *OTPLFlags) (DetectedOTPLDeploySpecs, error) {
-	if otplFlags.IgnoreOTPLDeploy {
-		return DetectedOTPLDeploySpecs{}, nil
+func newTargetManifestID(f *DeployFilterFlags, c *sous.SourceContext) (TargetManifestID, error) {
+	if c == nil {
+		c = &sous.SourceContext{}
 	}
-	otplParser := otpl.NewDeploySpecParser()
-	otplDeploySpecs := otplParser.GetDeploySpecs(wd.Sh)
-	return DetectedOTPLDeploySpecs{otplDeploySpecs}, nil
-}
-
-func newUserSelectedOTPLDeploySpecs(detected DetectedOTPLDeploySpecs, tmid TargetManifestID, flags *OTPLFlags, state *sous.State) (UserSelectedOTPLDeploySpecs, error) {
-	var nowt UserSelectedOTPLDeploySpecs
-	mid := sous.ManifestID(tmid)
-	// we don't care about these flags when a manifest already exists
-	if _, ok := state.Manifests.Get(mid); ok {
-		return nowt, nil
+	if f == nil {
+		f = &DeployFilterFlags{}
 	}
-	if !flags.UseOTPLDeploy && !flags.IgnoreOTPLDeploy && len(detected.DeploySpecs) != 0 {
-		return nowt, UsageErrorf("otpl-deploy detected in config/, please specify either -use-otpl-deploy, or -ignore-otpl-deploy to proceed")
+	var repo, offset = c.PrimaryRemoteURL, c.OffsetDir
+	if f.Repo != "" {
+		repo = f.Repo
 	}
-	if !flags.UseOTPLDeploy {
-		return nowt, nil
+	if f.Repo != "" {
+		repo = f.Repo
+		offset = ""
 	}
-	if len(detected.DeploySpecs) == 0 {
-		return nowt, UsageErrorf("you specified -use-otpl-deploy, but no valid deployments were found in config/")
-	}
-	deploySpecs := sous.DeploySpecs{}
-	for clusterName, spec := range detected.DeploySpecs {
-		if _, ok := state.Defs.Clusters[clusterName]; !ok {
-			sous.Log.Warn.Printf("otpl-deploy config for cluster %q ignored", clusterName)
-			continue
+	if f.Offset != "" {
+		if f.Repo == "" {
+			return TargetManifestID{}, errors.Errorf("you specified -offset but not -repo")
 		}
-		deploySpecs[clusterName] = spec
+		offset = f.Offset
 	}
-	return UserSelectedOTPLDeploySpecs{deploySpecs}, nil
+	if repo == "" {
+		return TargetManifestID{}, errors.Errorf("no repo specified, please use -repo or run sous inside a git repo")
+	}
+	return TargetManifestID{
+		Source: sous.SourceLocation{
+			Repo: repo,
+			Dir:  offset,
+		},
+		Flavor: f.Flavor,
+	}, nil
 }
 
 func newTargetManifest(auto UserSelectedOTPLDeploySpecs, tmid TargetManifestID, s *sous.State) TargetManifest {
