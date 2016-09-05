@@ -142,7 +142,7 @@ func (d *Deployment) Name() DeployID {
 // Equal returns true if two Deployments are equal.
 func (d *Deployment) Equal(o *Deployment) bool {
 	Log.Vomit.Printf("Comparing: %+ v ?= %+ v", d, o)
-	if !(d.ClusterName == o.ClusterName && d.SourceID.Equal(o.SourceID) && d.Kind == o.Kind) { // && len(d.Owners) == len(o.Owners)) {
+	if d.ClusterName != o.ClusterName || !d.SourceID.Equal(o.SourceID) || d.Flavor != o.Flavor || d.Kind != o.Kind {
 		Log.Debug.Printf("C: %t V: %t, K: %t, #O: %t", d.ClusterName == o.ClusterName, d.SourceID.Equal(o.SourceID), d.Kind == o.Kind, len(d.Owners) == len(o.Owners))
 		return false
 	}
