@@ -108,7 +108,7 @@ func updateState(s *sous.State, gdm CurrentGDM, sid sous.SourceID, did sous.Depl
 	return nil
 }
 
-func getIDs(flags DeployFilterFlags, sl sous.SourceLocation) (sous.SourceID, sous.DeployID, error) {
+func getIDs(flags DeployFilterFlags, mid sous.ManifestID) (sous.SourceID, sous.DeployID, error) {
 	clusterName, tag, sid, did := flags.Cluster, flags.Tag, sous.SourceID{}, sous.DeployID{}
 	if clusterName == "" {
 		return sid, did, UsageErrorf("You must select a cluster using the -cluster flag.")
@@ -120,7 +120,7 @@ func getIDs(flags DeployFilterFlags, sl sous.SourceLocation) (sous.SourceID, sou
 	if err != nil {
 		return sid, did, UsageErrorf("Version %q not valid: %s", flags.Tag, err)
 	}
-	sid = sl.SourceID(newVersion)
-	did = sous.DeployID{Source: sl, Cluster: clusterName}
+	sid = mid.Source.SourceID(newVersion)
+	did = sous.DeployID{ManifestID: mid, Cluster: clusterName}
 	return sid, did, nil
 }

@@ -8,7 +8,7 @@ import (
 
 type newUserSelectedOTPLDeploySpecTest struct {
 	Detected            sous.DeploySpecs
-	TSL                 TargetSourceLocation
+	TSL                 TargetManifestID
 	Flags               OTPLFlags
 	Clusters            sous.Clusters
 	Manifest            *sous.Manifest
@@ -96,8 +96,10 @@ func TestNewUserSelectedOTPLDeploySpecs(t *testing.T) {
 func TestNewTargetManifest(t *testing.T) {
 	detected := UserSelectedOTPLDeploySpecs{}
 	sl := sous.MustParseSourceLocation("github.com/user/project")
-	tsl := TargetSourceLocation(sl)
-	m := &sous.Manifest{Source: sl}
+	flavor := "some-flavor"
+	mid := sous.ManifestID{Source: sl, Flavor: flavor}
+	tsl := TargetManifestID(mid)
+	m := &sous.Manifest{Source: sl, Flavor: flavor}
 	s := sous.NewState()
 	s.Manifests.Add(m)
 	tm := newTargetManifest(detected, tsl, s)

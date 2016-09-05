@@ -14,9 +14,9 @@ func newDetectedOTPLConfig(wd LocalWorkDirShell, otplFlags *OTPLFlags) (Detected
 	return DetectedOTPLDeploySpecs{otplDeploySpecs}, nil
 }
 
-func newUserSelectedOTPLDeploySpecs(detected DetectedOTPLDeploySpecs, tsl TargetSourceLocation, flags *OTPLFlags, state *sous.State) (UserSelectedOTPLDeploySpecs, error) {
+func newUserSelectedOTPLDeploySpecs(detected DetectedOTPLDeploySpecs, tsl TargetManifestID, flags *OTPLFlags, state *sous.State) (UserSelectedOTPLDeploySpecs, error) {
 	var nowt UserSelectedOTPLDeploySpecs
-	sl := sous.SourceLocation(tsl)
+	sl := sous.ManifestID(tsl)
 	// we don't care about these flags when a manifest already exists
 	if _, ok := state.Manifests.Get(sl); ok {
 		return nowt, nil
@@ -41,12 +41,12 @@ func newUserSelectedOTPLDeploySpecs(detected DetectedOTPLDeploySpecs, tsl Target
 	return UserSelectedOTPLDeploySpecs{deploySpecs}, nil
 }
 
-func newTargetManifest(auto UserSelectedOTPLDeploySpecs, tsl TargetSourceLocation, s *sous.State) TargetManifest {
-	sl := sous.SourceLocation(tsl)
+func newTargetManifest(auto UserSelectedOTPLDeploySpecs, tsl TargetManifestID, s *sous.State) TargetManifest {
+	mid := sous.ManifestID(tsl)
 	//ds := gdm.Filter(func(d *sous.Deployment) bool {
 	//	return d.SourceID.Location() == sl
 	//})
-	m, ok := s.Manifests.Get(sl)
+	m, ok := s.Manifests.Get(mid)
 	if ok {
 		return TargetManifest{m}
 	}
@@ -56,8 +56,8 @@ func newTargetManifest(auto UserSelectedOTPLDeploySpecs, tsl TargetSourceLocatio
 	}
 
 	m = &sous.Manifest{
-		Source:      sl,
 		Deployments: deploySpecs,
 	}
+	m.SetID(mid)
 	return TargetManifest{m}
 }

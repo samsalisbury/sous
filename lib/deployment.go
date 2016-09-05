@@ -26,6 +26,9 @@ type (
 		Cluster *Cluster
 		// SourceID is the precise version of the software to be deployed.
 		SourceID SourceID
+		// Flavor is the flavor of this deployment. See ManifestID for a fuller
+		// description.
+		Flavor string
 		// Owners is a map of named owners of this repository. The type of this
 		// field is subject to change.
 		Owners OwnerSet
@@ -56,8 +59,8 @@ type (
 
 	// A DeployID identifies a deployment.
 	DeployID struct {
-		Cluster string
-		Source  SourceLocation
+		ManifestID ManifestID
+		Cluster    string
 	}
 )
 
@@ -68,8 +71,16 @@ func (d *Deployment) String() string {
 // ID returns the DeployID of this deployment.
 func (d *Deployment) ID() DeployID {
 	return DeployID{
-		Source:  d.SourceID.Location,
-		Cluster: d.ClusterName,
+		ManifestID: d.ManifestID(),
+		Cluster:    d.ClusterName,
+	}
+}
+
+// ManifestID returns the ID of the Manifest describing this deployment.
+func (d *Deployment) ManifestID() ManifestID {
+	return ManifestID{
+		Source: d.SourceID.Location,
+		Flavor: d.Flavor,
 	}
 }
 
@@ -125,10 +136,7 @@ func (d *Deployment) Tabbed() string {
 
 // Name returns the DeployID.
 func (d *Deployment) Name() DeployID {
-	return DeployID{
-		Cluster: d.ClusterName,
-		Source:  d.SourceID.Location,
-	}
+	return d.ID()
 }
 
 // Equal returns true if two Deployments are equal.

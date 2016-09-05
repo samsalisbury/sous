@@ -28,7 +28,7 @@ var manifestIDTests = []struct {
 		},
 	},
 	{
-		String: "github.com/user/repo,some-dir:british-flavoured",
+		String: "github.com/user/repo,some-dir~british-flavoured",
 		MID: ManifestID{
 			Source: SourceLocation{
 				Repo: "github.com/user/repo",

@@ -5,7 +5,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func newTargetSourceLocation(f *DeployFilterFlags, c *sous.SourceContext) (TargetSourceLocation, error) {
+func newTargetSourceLocation(f *DeployFilterFlags, c *sous.SourceContext) (TargetManifestID, error) {
 	if c == nil {
 		c = &sous.SourceContext{}
 	}
@@ -22,15 +22,18 @@ func newTargetSourceLocation(f *DeployFilterFlags, c *sous.SourceContext) (Targe
 	}
 	if f.Offset != "" {
 		if f.Repo == "" {
-			return TargetSourceLocation{}, errors.Errorf("you specified -offset but not -repo")
+			return TargetManifestID{}, errors.Errorf("you specified -offset but not -repo")
 		}
 		offset = f.Offset
 	}
 	if repo == "" {
-		return TargetSourceLocation{}, errors.Errorf("no repo specified, please use -repo or run sous inside a git repo")
+		return TargetManifestID{}, errors.Errorf("no repo specified, please use -repo or run sous inside a git repo")
 	}
-	return TargetSourceLocation{
-		Repo: repo,
-		Dir:  offset,
+	return TargetManifestID{
+		Source: sous.SourceLocation{
+			Repo: repo,
+			Dir:  offset,
+		},
+		Flavor: f.Flavor,
 	}, nil
 }

@@ -15,18 +15,30 @@ type ManifestID struct {
 	Flavor string
 }
 
+// FlavorSeparator separates the flavor part of a ManifestID from the
+// SourceLocation part.
+const FlavorSeparator = "~"
+
 // ParseManifestID parses a ManifestID from a SourceLocation.
 func ParseManifestID(s string) (ManifestID, error) {
 	var mid ManifestID
 	err := mid.UnmarshalText([]byte(s))
 	return mid, err
+}
 
+// MustParseManifestID wraps ParseManifestID and panics if it returns an error.
+func MustParseManifestID(s string) ManifestID {
+	mid, err := ParseManifestID(s)
+	if err != nil {
+		panic(err)
+	}
+	return mid
 }
 
 func (mid ManifestID) String() string {
 	f := ""
 	if mid.Flavor != "" {
-		f = ":" + mid.Flavor
+		f = FlavorSeparator + mid.Flavor
 	}
 	return mid.Source.String() + f
 }
@@ -40,7 +52,7 @@ func (mid ManifestID) MarshalText() ([]byte, error) {
 // UnmarshalText implements encoding.TextMarshaler.
 // This is important for deserialising maps that use ManifestID as a key.
 func (mid *ManifestID) UnmarshalText(b []byte) error {
-	parts := bytes.Split(b, []byte(":"))
+	parts := bytes.Split(b, []byte(FlavorSeparator))
 	if len(parts) > 2 {
 		return fmt.Errorf("illegal manifest ID %q (contains more than one colon)", string(b))
 	}

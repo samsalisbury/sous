@@ -163,7 +163,7 @@ func TestDeployments_Manifests(t *testing.T) {
 		}
 		// Check all expected DeploySpecs are in actual.
 		for clusterName := range expected.Deployments {
-			did := DeployID{Cluster: clusterName, Source: expected.Source}
+			did := DeployID{Cluster: clusterName, ManifestID: expected.ID()}
 			_, ok := actual.Deployments[clusterName]
 			if !ok {
 				t.Errorf("deployment %q missing", did)
@@ -173,7 +173,7 @@ func TestDeployments_Manifests(t *testing.T) {
 		}
 		// Check actual contains only the expected DeploySpecs.
 		for clusterName := range actual.Deployments {
-			did := DeployID{Cluster: clusterName, Source: actual.Source}
+			did := DeployID{Cluster: clusterName, ManifestID: actual.ID()}
 			_, ok := expected.Deployments[clusterName]
 			if !ok {
 				t.Errorf("extra deployment %q", did)

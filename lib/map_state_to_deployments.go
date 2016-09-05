@@ -31,7 +31,7 @@ func (s *State) Deployments() (Deployments, error) {
 		cluster, ok := s.Defs.Clusters[d.ClusterName]
 		if !ok {
 			return ds, errors.Errorf("cluster %q is not described in defs.yaml (but specified in manifest %q)",
-				d.ClusterName, id.Source)
+				d.ClusterName, id.ManifestID)
 		}
 		if cluster == nil {
 			return ds, errors.Errorf("cluster %q is nil, check defs.yaml", d.ClusterName)
@@ -56,16 +56,16 @@ func (ds Deployments) Manifests(defs Defs) (Manifests, error) {
 			}
 			d.Cluster = cluster
 		}
-		sl := d.SourceID.Location
-		// Lookup the current manifest for this source location.
-		m, ok := ms.Get(sl)
+		// Lookup the current manifest for this deployment.
+		mid := d.ManifestID()
+		m, ok := ms.Get(mid)
 		if !ok {
 			m = &Manifest{Deployments: DeploySpecs{}}
 			for o := range d.Owners {
 				// TODO: de-dupe or use a set on manifests.
 				m.Owners = append(m.Owners, o)
 			}
-			m.Source = sl
+			m.SetID(mid)
 		}
 		spec := DeploySpec{
 			Version:      d.SourceID.Version,
@@ -81,7 +81,7 @@ func (ds Deployments) Manifests(defs Defs) (Manifests, error) {
 			}
 		}
 		m.Deployments[d.ClusterName] = spec
-		ms.Set(sl, m)
+		ms.Set(mid, m)
 	}
 	return ms, nil
 }

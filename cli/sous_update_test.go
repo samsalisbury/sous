@@ -8,7 +8,7 @@ import (
 
 var getIDsTests = []struct {
 	Flags       DeployFilterFlags
-	SL          sous.SourceLocation
+	SL          sous.ManifestID
 	ExpectedSID sous.SourceID
 	ExpectedDID sous.DeployID
 	ExpectedErr string
@@ -30,14 +30,14 @@ var getIDsTests = []struct {
 	},
 	{
 		Flags:       DeployFilterFlags{Cluster: "blah", Tag: "1.0.0"},
-		SL:          sous.MustParseSourceLocation("github.com/blah/blah"),
+		SL:          sous.MustParseManifestID("github.com/blah/blah"),
 		ExpectedSID: sous.MustParseSourceID("github.com/blah/blah,1.0.0"),
-		ExpectedDID: sous.DeployID{Cluster: "blah", Source: sous.SourceLocation{Repo: "github.com/blah/blah"}},
+		ExpectedDID: sous.DeployID{Cluster: "blah",
+			ManifestID: sous.ManifestID{Source: sous.SourceLocation{Repo: "github.com/blah/blah"}}},
 	},
 }
 
 func TestGetIDs(t *testing.T) {
-
 	for _, test := range getIDsTests {
 		sid, did, err := getIDs(test.Flags, test.SL)
 		if err != nil {
@@ -60,7 +60,6 @@ func TestGetIDs(t *testing.T) {
 			t.Errorf("got DeployID %q; want %q", did, test.ExpectedDID)
 		}
 	}
-
 }
 
 var updateStateTests = []struct {
@@ -79,8 +78,8 @@ var updateStateTests = []struct {
 		State: sous.NewState(),
 		GDM:   CurrentGDM{sous.NewDeployments()},
 		DID: sous.DeployID{
-			Cluster: "blah",
-			Source:  sous.MustParseSourceLocation("github.com/user/project"),
+			Cluster:    "blah",
+			ManifestID: sous.MustParseManifestID("github.com/user/project"),
 		},
 		ExpectedErr: `cluster "blah" is not described in defs.yaml`,
 	},
@@ -92,8 +91,8 @@ var updateStateTests = []struct {
 		},
 		GDM: CurrentGDM{sous.NewDeployments()},
 		DID: sous.DeployID{
-			Cluster: "blah",
-			Source:  sous.MustParseSourceLocation("github.com/user/project"),
+			Cluster:    "blah",
+			ManifestID: sous.MustParseManifestID("github.com/user/project"),
 		},
 		ExpectedNumManifests: 1,
 	},
@@ -101,7 +100,7 @@ var updateStateTests = []struct {
 
 func TestUpdateState(t *testing.T) {
 	for _, test := range updateStateTests {
-		sid := sous.MustNewSourceID(test.DID.Source.Repo, test.DID.Source.Dir, "1.0.0")
+		sid := sous.MustNewSourceID(test.DID.ManifestID.Source.Repo, test.DID.ManifestID.Source.Dir, "1.0.0")
 		err := updateState(test.State, test.GDM, sid, test.DID)
 		if err != nil {
 			if test.ExpectedErr == "" {
@@ -122,7 +121,7 @@ func TestUpdateState(t *testing.T) {
 			t.Errorf("got %d manifests; want %d", actualNumManifests, test.ExpectedNumManifests)
 		}
 		if (test.DID != sous.DeployID{}) {
-			m, ok := test.State.Manifests.Get(sid.Location)
+			m, ok := test.State.Manifests.Get(test.DID.ManifestID)
 			if !ok {
 				t.Errorf("manifest %q not found", sid.Location)
 			}
