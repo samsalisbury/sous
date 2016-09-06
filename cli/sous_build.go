@@ -32,7 +32,7 @@ args: [path]
 
 // AddFlags adds flags to the build command.
 func (sb *SousBuild) AddFlags(fs *flag.FlagSet) {
-	MustAddFlags(fs, &sb.DeployFilterFlags, config.SourceFlagsHelp)
+	MustAddFlags(fs, &sb.DeployFilterFlags, SourceFlagsHelp)
 	fs.BoolVar(&sb.PolicyFlags.Strict, "strict", false, "require that the build be pristine")
 	//fs.BoolVar(&sb.PolicyFlags.ForceClone, "force-clone", false, "force a shallow clone of the codebase before build")
 	// above is commented prior to impl.

@@ -35,7 +35,7 @@ func (sc *SousContext) RegisterOn(psy Addable) {
 
 // AddFlags adds flags to the context command.
 func (sc *SousContext) AddFlags(fs *flag.FlagSet) {
-	MustAddFlags(fs, &sc.DeployFilterFlags, config.SourceFlagsHelp)
+	MustAddFlags(fs, &sc.DeployFilterFlags, SourceFlagsHelp)
 	//fs.BoolVar(&sb.PolicyFlags.ForceClone, "force-clone", false, "force a shallow clone of the codebase before build")
 	// above is commented prior to impl.
 }

@@ -6,12 +6,3 @@ type OTPLFlags struct {
 	UseOTPLDeploy    bool `flag:"use-otpl-deploy"`
 	IgnoreOTPLDeploy bool `flag:"ignore-otpl-deploy"`
 }
-
-const OtplFlagsHelp = `
-	-use-otpl-deploy
-		use existing otpl config in ./config/<cluster>/...
-
-	-ignore-otpl-deploy
-		ignore existing otpl config in ./config/<cluster>/...
-
-`

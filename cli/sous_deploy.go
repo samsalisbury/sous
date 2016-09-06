@@ -35,8 +35,8 @@ func (sd *SousDeploy) Help() string { return sousDeployHelp }
 
 // AddFlags adds the flags for sous init.
 func (sd *SousDeploy) AddFlags(fs *flag.FlagSet) {
-	MustAddFlags(fs, &sd.DeployFilterFlags, config.DeployFilterFlagsHelp)
-	AddFlags(fs, &sd.OTPLFlags, config.OtplFlagsHelp)
+	MustAddFlags(fs, &sd.DeployFilterFlags, DeployFilterFlagsHelp)
+	AddFlags(fs, &sd.OTPLFlags, OtplFlagsHelp)
 
 	fs.StringVar(&sd.rectifyFlags.dryrun, "dry-run", "none",
 		"prevent rectify from actually changing things - "+

@@ -27,7 +27,7 @@ func TestAddFlagsForRectify(t *testing.T) {
 
 	actual := config.DeployFilterFlags{}
 
-	if err := AddFlags(fs, &actual, config.RectifyFilterFlagsHelp); err != nil {
+	if err := AddFlags(fs, &actual, RectifyFilterFlagsHelp); err != nil {
 		t.Fatal(err)
 	}
 
@@ -100,7 +100,7 @@ func TestAddFlags(t *testing.T) {
 
 	actual := config.DeployFilterFlags{}
 
-	if err := AddFlags(fs, &actual, config.SourceFlagsHelp); err != nil {
+	if err := AddFlags(fs, &actual, SourceFlagsHelp); err != nil {
 		t.Fatal(err)
 	}
 
