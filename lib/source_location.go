@@ -2,24 +2,20 @@ package sous
 
 import (
 	"fmt"
-	"io"
 
-	"github.com/pkg/errors"
 	"github.com/samsalisbury/semv"
 )
 
 type (
 	// SourceLocation identifies a directory inside a source code repository.
 	// Note that the directory is ambiguous without the addition of a revision
-	// ID. This type is used as a shorthand for deploy manifests, enabling the
-	// logical grouping of deploys of different versions of a particular
-	// service.
+	// ID.
 	SourceLocation struct {
 		// Repo identifies a source code repository.
 		Repo,
 		// Dir is a directory within the repository at Repo containing the
 		// source code for one piece of software.
-		Dir string `yaml:",omitempty"`
+		Dir string
 	}
 )
 
@@ -71,15 +67,9 @@ func (sl SourceLocation) MarshalText() ([]byte, error) {
 
 // UnmarshalText implements encoding.TextMarshaler.
 func (sl *SourceLocation) UnmarshalText(b []byte) error {
-	s := string(b)
-	n, err := fmt.Sscanf(s, "%s %s", &sl.Repo, &sl.Dir)
-	if err != nil && err != io.EOF {
-		return errors.Wrapf(err, "unable to unmarshal source location %q", s)
-	}
-	if n == 0 {
-		return errors.Errorf("incomplete source location %q", s)
-	}
-	return nil
+	var err error
+	*sl, err = ParseSourceLocation(string(b))
+	return err
 }
 
 // UnmarshalYAML deserializes a YAML document into this SourceLocation
@@ -97,7 +87,7 @@ func (sl SourceLocation) String() string {
 	if sl.Dir == "" {
 		return fmt.Sprintf("%s", sl.Repo)
 	}
-	return fmt.Sprintf("%s:%s", sl.Repo, sl.Dir)
+	return fmt.Sprintf("%s,%s", sl.Repo, sl.Dir)
 }
 
 // SourceID returns a SourceID built from this location with the addition of a version.
