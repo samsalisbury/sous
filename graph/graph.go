@@ -135,8 +135,8 @@ func BuildGraph(out, err io.Writer) *SousGraph {
 	)}
 }
 
-func newEngine() sous.Engine {
-	return sous.Engine{
+func newEngine() sous.SourceHostChooser {
+	return sous.SourceHostChooser{
 		SourceHosts: []sous.SourceHost{
 			github.SourceHost{},
 		},
