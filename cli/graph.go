@@ -35,24 +35,18 @@ type (
 	// SousCLIGraph is a dependency injector used to flesh out Sous commands
 	// with their dependencies.
 	SousCLIGraph struct{ *psyringe.Psyringe }
-	// OutWriter is an alias on io.Writer to disguish "stderr"
+	// OutWriter is typically set to os.Stdout.
 	OutWriter io.Writer
-	// ErrWriter is an alias on io.Writer to disguish "stderr"
+	// ErrWriter is typically set to os.Stderr.
 	ErrWriter io.Writer
-)
-
-type (
 	// StateReader knows how to read state.
 	StateReader interface {
 		ReadState() (*sous.State, error)
 	}
-	// StateWriter know how to write state.
+	// StateWriter knows how to write state.
 	StateWriter interface {
 		WriteState(*sous.State) error
 	}
-)
-
-type (
 	// Version represents a version of Sous.
 	Version struct{ semv.Version }
 	// LocalUser is the currently logged in user.
@@ -137,7 +131,7 @@ func BuildGraph(c *CLI, out, err io.Writer) *SousCLIGraph {
 		newTargetManifest,
 		newDetectedOTPLConfig,
 		newUserSelectedOTPLDeploySpecs,
-		newTargetSourceLocation,
+		newTargetManifestID,
 	)}
 }
 
@@ -185,11 +179,11 @@ func newSourceContext(f *DeployFilterFlags, g GitSourceContext) (*sous.SourceCon
 	if c == nil {
 		c = &sous.SourceContext{}
 	}
-	tsl, err := newTargetSourceLocation(f, c)
+	mid, err := newTargetManifestID(f, c)
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting source location")
 	}
-	sl := sous.ManifestID(tsl)
+	sl := sous.ManifestID(mid)
 	if sl.Source.Repo != c.SourceLocation().Repo {
 		// TODO: Clone the repository, and use the cloned dir as source context.
 		return nil, errors.Errorf("source location %q is not the same as the remote %q",
