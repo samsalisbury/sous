@@ -3,50 +3,51 @@ package cli
 import (
 	"testing"
 
+	"github.com/opentable/sous/config"
 	sous "github.com/opentable/sous/lib"
 )
 
 var buildPredicateErrorTests = []struct {
-	Flags DeployFilterFlags
+	Flags config.DeployFilterFlags
 	Error string
 }{
 	{
-		Flags: DeployFilterFlags{
+		Flags: config.DeployFilterFlags{
 			Source: "hello",
 			Repo:   "hi",
 		},
 		Error: "you cannot specify both -source and -repo",
 	},
 	{
-		Flags: DeployFilterFlags{
+		Flags: config.DeployFilterFlags{
 			Source: "hello",
 			Offset: "hi",
 		},
 		Error: "you cannot specify both -source and -offset",
 	},
 	{
-		Flags: DeployFilterFlags{
+		Flags: config.DeployFilterFlags{
 			Source: "hello",
 			All:    true,
 		},
 		Error: "you cannot specify both -source and -all",
 	},
 	{
-		Flags: DeployFilterFlags{
+		Flags: config.DeployFilterFlags{
 			All:  true,
 			Repo: "hello",
 		},
 		Error: "you cannot specify both -all and -repo",
 	},
 	{
-		Flags: DeployFilterFlags{
+		Flags: config.DeployFilterFlags{
 			All:    true,
 			Offset: "hello",
 		},
 		Error: "you cannot specify both -all and -offset",
 	},
 	{
-		Flags: DeployFilterFlags{
+		Flags: config.DeployFilterFlags{
 			All:    true,
 			Flavor: "hello",
 		},
@@ -61,7 +62,7 @@ func TestBuildPredicate_errors(t *testing.T) {
 	for _, test := range buildPredicateErrorTests {
 		input := test.Flags
 		expected := test.Error
-		actualPredicate, actualErr := test.Flags.buildPredicate(parseSL)
+		actualPredicate, actualErr := test.Flags.BuildPredicate(parseSL)
 		if actualPredicate != nil {
 			t.Errorf("%#v returned a non-nil predicate", input)
 		}

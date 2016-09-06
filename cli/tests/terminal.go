@@ -4,13 +4,12 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
 
 	"github.com/opentable/sous/cli"
-	"github.com/opentable/sous/util/cmdr"
+	"github.com/samsalisbury/semv"
 	"github.com/xrash/smetrics"
 )
 
@@ -31,24 +30,21 @@ type (
 	}
 )
 
-func NewTerminal(t *testing.T, root cmdr.Command) *Terminal {
-	out := TestOutput{"stdout", &bytes.Buffer{}, t}
-	errout := TestOutput{"stderr", &bytes.Buffer{}, t}
+func NewTerminal(t *testing.T, vstr string) *Terminal {
+	v := semv.MustParse(vstr)
+	baseout := TestOutput{"stdout", &bytes.Buffer{}, t}
+	baseerr := TestOutput{"stderr", &bytes.Buffer{}, t}
 	combined := TestOutput{"combined output", &bytes.Buffer{}, t}
-	s := &cli.Sous{}
-	c := &cli.CLI{
-		CLI: &cmdr.CLI{
-			Root: root,
-			Out:  cmdr.NewOutput(io.MultiWriter(out.Buffer, combined.Buffer)),
-			Err:  cmdr.NewOutput(io.MultiWriter(errout.Buffer, combined.Buffer)),
-		},
+
+	out := io.MultiWriter(baseout.Buffer, combined.Buffer)
+	err := io.MultiWriter(baseerr.Buffer, combined.Buffer)
+
+	c, er := cli.NewSousCLI(v, out, err)
+	if er != nil {
+		panic(er)
 	}
-	g := cli.BuildGraph(c, ioutil.Discard, ioutil.Discard)
-	g.Add(s)
-	c.Hooks.PreExecute = func(c cmdr.Command) error {
-		return g.Inject(c)
-	}
-	return &Terminal{c, out, errout, combined, []string{}, t}
+
+	return &Terminal{c, baseout, baseerr, combined, []string{}, t}
 }
 
 // RunCommand takes a command line, turns it into args, and passes it to a CLI

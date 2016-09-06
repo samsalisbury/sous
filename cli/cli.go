@@ -40,7 +40,7 @@ type (
 	// CLI describes the command line interface for Sous
 	CLI struct {
 		*cmdr.CLI
-		*graph.SousCLIGraph
+		*graph.SousGraph
 	}
 	// Addable objects are able to receive lists of interface{}, presumably to add
 	// them to a DI registry. Abstracts Psyringe's Add()
@@ -66,8 +66,23 @@ func SuccessYAML(v interface{}) cmdr.Result {
 // Plumbing injects a command with the current psyringe,
 // then it Executes it, returning the result
 func (cli *CLI) Plumbing(cmd cmdr.Executor, args []string) cmdr.Result {
-	cli.SousCLIGraph.Inject(cmd)
+	cli.SousGraph.Inject(cmd)
 	return cmd.Execute(args)
+}
+
+func BuildCLIGraph(cli *CLI, root *Sous, out, err io.Writer) *graph.SousGraph {
+	g := graph.BuildGraph(out, err)
+	g.Add(cli)
+	g.Add(root)
+	g.Add(func(c *CLI) graph.Out {
+		return graph.Out{c.Out}
+	})
+	g.Add(func(c *CLI) graph.ErrOut {
+		return graph.ErrOut{c.Err}
+	})
+	cli.SousGraph = g //Ugh, weird state.
+
+	return g
 }
 
 // NewSousCLI creates a new Sous cli app.
@@ -91,12 +106,11 @@ func NewSousCLI(v semv.Version, out, errout io.Writer) (*CLI, error) {
 		},
 	}
 
-	var g *SousCLIGraph
+	var g *graph.SousGraph
 	var chain []cmdr.Command
 
 	cli.Hooks.Startup = func(*cmdr.CLI) error {
-		g = BuildGraph(cli, out, errout)
-		cli.SousCLIGraph = g //Ugh, weird state.
+		g = BuildCLIGraph(cli, s, out, errout)
 		chain = make([]cmdr.Command, 0)
 		return nil
 	}

@@ -3,16 +3,10 @@ package tests
 import (
 	"log"
 	"testing"
-
-	"github.com/opentable/sous/cli"
-	"github.com/opentable/sous/util/cmdr"
-	"github.com/samsalisbury/psyringe"
-	"github.com/samsalisbury/semv"
 )
 
 func TestSous(t *testing.T) {
-
-	term := NewTerminal(t, &cli.Sous{})
+	term := NewTerminal(t, `0.0.0`)
 
 	// Invoke the CLI
 	term.RunCommand("sous")
@@ -26,16 +20,7 @@ func TestSous(t *testing.T) {
 }
 
 func TestSousVersion(t *testing.T) {
-
-	term := NewTerminal(t, &cli.Sous{})
-
-	term.CLI.Hooks.PreExecute = func(c cmdr.Command) error {
-		g := psyringe.New()
-		g.Add(
-			&cli.Sous{Version: semv.MustParse("1.0.0-test")},
-		)
-		return g.Inject(c)
-	}
+	term := NewTerminal(t, "1.0.0-test")
 
 	// This prints the whole shell session if the test fails.
 	defer term.PrintFailureSummary()

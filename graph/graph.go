@@ -1,4 +1,4 @@
-package cli
+package graph
 
 import (
 	"fmt"
@@ -34,9 +34,9 @@ type (
 	// formatting options that come with and Output. Usually you should use and
 	// ErrorResult to return error messages.
 	ErrOut struct{ *cmdr.Output }
-	// SousCLIGraph is a dependency injector used to flesh out Sous commands
+	// SousGraph is a dependency injector used to flesh out Sous commands
 	// with their dependencies.
-	SousCLIGraph struct{ *psyringe.Psyringe }
+	SousGraph struct{ *psyringe.Psyringe }
 	// OutWriter is typically set to os.Stdout.
 	OutWriter io.Writer
 	// ErrWriter is typically set to os.Stderr.
@@ -97,14 +97,11 @@ type (
 
 // BuildGraph builds the dependency injection graph, used to populate commands
 // invoked by the user.
-func BuildGraph(c *CLI, out, err io.Writer) *SousCLIGraph {
-	return &SousCLIGraph{psyringe.New(
-		c,
+func BuildGraph(out, err io.Writer) *SousGraph {
+	return &SousGraph{psyringe.New(
 		func() OutWriter { return out },
 		func() ErrWriter { return err },
 		newEngine,
-		newOut,
-		newErrOut,
 		newLogSet,
 		newLocalUser,
 		newLocalSousConfig,
@@ -144,14 +141,6 @@ func newEngine() sous.Engine {
 			github.SourceHost{},
 		},
 	}
-}
-
-func newOut(c *CLI) Out {
-	return Out{c.Out}
-}
-
-func newErrOut(c *CLI) ErrOut {
-	return ErrOut{c.Err}
 }
 
 func newRegistryDumper(r sous.Registry) *sous.RegistryDumper {

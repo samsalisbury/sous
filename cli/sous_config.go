@@ -1,13 +1,14 @@
 package cli
 
 import (
+	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/util/cmdr"
 )
 
 // SousConfig is the sous config command.
 type SousConfig struct {
-	User   LocalUser
-	Config LocalSousConfig
+	User   graph.LocalUser
+	Config graph.LocalSousConfig
 }
 
 func init() { TopLevelCommands["config"] = &SousConfig{} }
@@ -34,14 +35,14 @@ func (sc *SousConfig) Execute(args []string) cmdr.Result {
 		return Successf(sc.Config.String())
 	case 1:
 		name := args[0]
-		v, err := sc.Config.getValue(name)
+		v, err := sc.Config.GetValue(name)
 		if err != nil {
 			return UsageErrorf("%s", err)
 		}
 		return Successf(v)
 	case 2:
 		name, value := args[0], args[1]
-		if err := sc.Config.setValue(sc.User.ConfigFile(), name, value); err != nil {
+		if err := sc.Config.SetValue(sc.User.ConfigFile(), name, value); err != nil {
 			return EnsureErrorResult(err)
 		}
 		return Successf("set %s to %q", name, value)

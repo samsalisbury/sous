@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
 )
@@ -8,7 +9,7 @@ import (
 // SousQueryArtifacts is the description of the `sous query gdm` command
 type SousQueryArtifacts struct {
 	*sous.RegistryDumper
-	ErrWriter
+	graph.ErrWriter
 }
 
 func init() { QuerySubcommands["artifacts"] = &SousQueryArtifacts{} }

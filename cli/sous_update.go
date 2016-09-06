@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/opentable/sous/config"
+	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
 	"github.com/samsalisbury/semv"
@@ -12,15 +14,15 @@ import (
 
 // SousUpdate is the command description for `sous update`
 type SousUpdate struct {
-	DeployFilterFlags
-	OTPLFlags
-	Manifest TargetManifest
+	config.DeployFilterFlags
+	config.OTPLFlags
+	Manifest graph.TargetManifest
 	*sous.SourceContext
-	WD          LocalWorkDirShell
-	GDM         CurrentGDM
+	WD          graph.LocalWorkDirShell
+	GDM         graph.CurrentGDM
 	State       *sous.State
-	StateWriter LocalStateWriter
-	StateReader LocalStateReader
+	StateWriter graph.LocalStateWriter
+	StateReader graph.LocalStateReader
 }
 
 func init() { TopLevelCommands["update"] = &SousUpdate{} }
@@ -39,8 +41,8 @@ func (su *SousUpdate) Help() string { return sousUpdateHelp }
 
 // AddFlags adds the flags for sous init.
 func (su *SousUpdate) AddFlags(fs *flag.FlagSet) {
-	MustAddFlags(fs, &su.DeployFilterFlags, rectifyFilterFlagsHelp+tagFlagHelp)
-	MustAddFlags(fs, &su.OTPLFlags, otplFlagsHelp)
+	MustAddFlags(fs, &su.DeployFilterFlags, config.DeployFilterFlagsHelp)
+	MustAddFlags(fs, &su.OTPLFlags, config.OtplFlagsHelp)
 }
 
 // RegisterOn adds the DeploymentConfig to the psyringe to configure the
@@ -73,7 +75,7 @@ func (su *SousUpdate) Execute(args []string) cmdr.Result {
 		if err != nil {
 			return EnsureErrorResult(err)
 		}
-		su.GDM = CurrentGDM{newGDM}
+		su.GDM = graph.CurrentGDM{newGDM}
 		_, ok := su.State.Manifests.Get(sl)
 		if !ok {
 			return EnsureErrorResult(fmt.Errorf("sous init failed to add manifest"))
@@ -88,7 +90,7 @@ func (su *SousUpdate) Execute(args []string) cmdr.Result {
 	return Success()
 }
 
-func updateState(s *sous.State, gdm CurrentGDM, sid sous.SourceID, did sous.DeployID) error {
+func updateState(s *sous.State, gdm graph.CurrentGDM, sid sous.SourceID, did sous.DeployID) error {
 	deployment, ok := gdm.Get(did)
 	if !ok {
 		sous.Log.Warn.Printf("Deployment %q does not exist, creating.\n", did)
@@ -108,7 +110,7 @@ func updateState(s *sous.State, gdm CurrentGDM, sid sous.SourceID, did sous.Depl
 	return nil
 }
 
-func getIDs(flags DeployFilterFlags, mid sous.ManifestID) (sous.SourceID, sous.DeployID, error) {
+func getIDs(flags config.DeployFilterFlags, mid sous.ManifestID) (sous.SourceID, sous.DeployID, error) {
 	clusterName, tag, sid, did := flags.Cluster, flags.Tag, sous.SourceID{}, sous.DeployID{}
 	if clusterName == "" {
 		return sid, did, UsageErrorf("You must select a cluster using the -cluster flag.")

@@ -3,13 +3,14 @@ package cli
 import (
 	"os"
 
+	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
 )
 
 // SousQueryGDM is the description of the `sous query gdm` command
 type SousQueryGDM struct {
-	GDM   CurrentGDM
+	GDM   graph.CurrentGDM
 	flags struct {
 		singularity string
 		registry    string

@@ -1,4 +1,4 @@
-package cli
+package graph
 
 import (
 	"testing"
@@ -41,7 +41,7 @@ func TestResolveSourceLocation_failure(t *testing.T) {
 
 var goodResolveSourceLocationCalls = map[sous.ManifestID][]resolveSourceLocationInput{
 	{Source: sous.SourceLocation{Repo: "github.com/user/project"}}: {
-		{Flags: &DeployFilterFlags{Repo: "github.com/user/project"}},
+		{Flags: &config.DeployFilterFlags{Repo: "github.com/user/project"}},
 		{Context: &sous.SourceContext{PrimaryRemoteURL: "github.com/user/project"}},
 	},
 	{Source: sous.SourceLocation{Repo: "github.com/user/project", Dir: "some/path"}}: {

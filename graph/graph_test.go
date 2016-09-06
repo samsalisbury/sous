@@ -8,7 +8,7 @@ import (
 )
 
 func TestBuildGraph(t *testing.T) {
-	g := BuildGraph(&CLI{}, ioutil.Discard, ioutil.Discard)
+	g := BuildGraph(ioutil.Discard, ioutil.Discard)
 	g.Add(&config.Verbosity{})
 	g.Add(&config.DeployFilterFlags{})
 	g.Add(&config.PolicyFlags{}) //provided by SousBuild

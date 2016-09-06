@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 
+	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
 )
@@ -11,7 +12,7 @@ import (
 type SousHarvest struct {
 	*sous.State
 	sous.Registry
-	ErrWriter
+	graph.ErrWriter
 }
 
 func init() { TopLevelCommands["harvest"] = &SousHarvest{} }

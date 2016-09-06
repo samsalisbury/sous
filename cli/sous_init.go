@@ -3,20 +3,22 @@ package cli
 import (
 	"flag"
 
+	"github.com/opentable/sous/config"
+	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
 )
 
 // SousInit is the command description for `sous init`
 type SousInit struct {
-	DeployFilterFlags
-	Flags         OTPLFlags
-	Target        TargetManifest
+	config.DeployFilterFlags
+	Flags         config.OTPLFlags
+	Target        graph.TargetManifest
 	SourceContext *sous.SourceContext
-	WD            LocalWorkDirShell
-	GDM           CurrentGDM
+	WD            graph.LocalWorkDirShell
+	GDM           graph.CurrentGDM
 	State         *sous.State
-	StateWriter   LocalStateWriter
+	StateWriter   graph.LocalStateWriter
 }
 
 func init() { TopLevelCommands["init"] = &SousInit{} }
@@ -43,8 +45,8 @@ func (si *SousInit) RegisterOn(psy Addable) {
 
 // AddFlags adds the flags for sous init.
 func (si *SousInit) AddFlags(fs *flag.FlagSet) {
-	MustAddFlags(fs, &si.Flags, otplFlagsHelp)
-	fs.StringVar(&si.DeployFilterFlags.Flavor, "flavor", "", flavorFlagHelp)
+	MustAddFlags(fs, &si.Flags, config.OtplFlagsHelp)
+	fs.StringVar(&si.DeployFilterFlags.Flavor, "flavor", "", config.FlavorFlagHelp)
 }
 
 // Execute fulfills the cmdr.Executor interface

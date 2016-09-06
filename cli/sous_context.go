@@ -3,13 +3,14 @@ package cli
 import (
 	"flag"
 
+	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
 )
 
 // SousContext is the 'sous context' command.
 type SousContext struct {
-	DeployFilterFlags
+	config.DeployFilterFlags
 	*sous.SourceContext
 }
 
@@ -34,7 +35,7 @@ func (sc *SousContext) RegisterOn(psy Addable) {
 
 // AddFlags adds flags to the context command.
 func (sc *SousContext) AddFlags(fs *flag.FlagSet) {
-	MustAddFlags(fs, &sc.DeployFilterFlags, sourceFlagsHelp)
+	MustAddFlags(fs, &sc.DeployFilterFlags, config.SourceFlagsHelp)
 	//fs.BoolVar(&sb.PolicyFlags.ForceClone, "force-clone", false, "force a shallow clone of the codebase before build")
 	// above is commented prior to impl.
 }

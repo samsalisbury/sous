@@ -2,8 +2,10 @@ package cli
 
 import (
 	"flag"
+	"log"
 
 	"github.com/opentable/sous/config"
+	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
 	"github.com/opentable/sous/util/whitespace"
@@ -17,7 +19,7 @@ type Sous struct {
 	CLI *CLI
 	*sous.LogSet
 	// Err is the error message stream.
-	Err *ErrOut
+	Err *graph.ErrOut
 	// Version is the version of Sous itself.
 	Version semv.Version
 	// flags holds the values of flags passed to this command
@@ -58,6 +60,10 @@ func (*Sous) Help() string { return sousHelp }
 
 // AddFlags adds sous' flags.
 func (s *Sous) AddFlags(fs *flag.FlagSet) {
+	log.Print(fs)
+	log.Print(s)
+	log.Print(s.flags)
+	log.Print(s.flags.Verbosity)
 	fs.BoolVar(&s.flags.Verbosity.Silent, "s", false,
 		"silent: silence all non-essential output")
 	fs.BoolVar(&s.flags.Verbosity.Quiet, "q", false,
@@ -70,7 +76,8 @@ func (s *Sous) AddFlags(fs *flag.FlagSet) {
 
 // RegisterOn adds the Sous object itself to the Psyringe
 func (s *Sous) RegisterOn(psy Addable) {
-	psy.Add(&s.Verbosity)
+	log.Printf("%[1]v %[1]T", &s.flags.Verbosity)
+	psy.Add(&s.flags.Verbosity)
 }
 
 // Execute exists to present a helpful error to the user, in the case they just

@@ -1,4 +1,4 @@
-package cli
+package graph
 
 import (
 	"testing"
@@ -8,9 +8,9 @@ import (
 )
 
 type newUserSelectedOTPLDeploySpecTest struct {
-	Detected            sous.DeploySpecs
+	Detected sous.DeploySpecs
 	//XXX
-        TSL                 TargetSourceLocation
+	TSL                 TargetManifestID
 	Flags               config.OTPLFlags
 	Clusters            sous.Clusters
 	Manifest            *sous.Manifest
@@ -51,11 +51,11 @@ var nusodsTests = []newUserSelectedOTPLDeploySpecTest{
 		Detected: sous.DeploySpecs{
 			"some-cluster": {},
 		},
-		Flags: OTPLFlags{IgnoreOTPLDeploy: true},
+		Flags: config.OTPLFlags{IgnoreOTPLDeploy: true},
 	},
 	{
 		Flags:       config.OTPLFlags{UseOTPLDeploy: true},
-		ExpectedErr: "you specified -use-otpl-deploy, but no valid deployments were found in config/",
+		ExpectedErr: "use of otpl configuration was specified, but no valid deployments were found in config/",
 	},
 }
 

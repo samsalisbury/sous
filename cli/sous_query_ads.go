@@ -3,6 +3,7 @@ package cli
 import (
 	"os"
 
+	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
 )
@@ -10,9 +11,9 @@ import (
 // SousQueryAds is the description of the `sous query ads` command
 type SousQueryAds struct {
 	Deployer     sous.Deployer
-	Config       LocalSousConfig
-	DockerClient LocalDockerClient
-	GDM          CurrentGDM
+	Config       graph.LocalSousConfig
+	DockerClient graph.LocalDockerClient
+	GDM          graph.CurrentGDM
 	State        *sous.State
 	flags        struct {
 		singularity string

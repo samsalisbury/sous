@@ -1,11 +1,13 @@
-package cli
+package graph
 
 import (
+	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/ext/otpl"
 	"github.com/opentable/sous/lib"
+	"github.com/pkg/errors"
 )
 
-func newDetectedOTPLConfig(wd LocalWorkDirShell, otplFlags *OTPLFlags) (DetectedOTPLDeploySpecs, error) {
+func newDetectedOTPLConfig(wd LocalWorkDirShell, otplFlags *config.OTPLFlags) (DetectedOTPLDeploySpecs, error) {
 	if otplFlags.IgnoreOTPLDeploy {
 		return DetectedOTPLDeploySpecs{}, nil
 	}
@@ -14,7 +16,7 @@ func newDetectedOTPLConfig(wd LocalWorkDirShell, otplFlags *OTPLFlags) (Detected
 	return DetectedOTPLDeploySpecs{otplDeploySpecs}, nil
 }
 
-func newUserSelectedOTPLDeploySpecs(detected DetectedOTPLDeploySpecs, tmid TargetManifestID, flags *OTPLFlags, state *sous.State) (UserSelectedOTPLDeploySpecs, error) {
+func newUserSelectedOTPLDeploySpecs(detected DetectedOTPLDeploySpecs, tmid TargetManifestID, flags *config.OTPLFlags, state *sous.State) (UserSelectedOTPLDeploySpecs, error) {
 	var nowt UserSelectedOTPLDeploySpecs
 	mid := sous.ManifestID(tmid)
 	// we don't care about these flags when a manifest already exists
@@ -22,13 +24,13 @@ func newUserSelectedOTPLDeploySpecs(detected DetectedOTPLDeploySpecs, tmid Targe
 		return nowt, nil
 	}
 	if !flags.UseOTPLDeploy && !flags.IgnoreOTPLDeploy && len(detected.DeploySpecs) != 0 {
-		return nowt, UsageErrorf("otpl-deploy detected in config/, please specify either -use-otpl-deploy, or -ignore-otpl-deploy to proceed")
+		return nowt, errors.New("otpl-deploy detected in config/, please specify either -use-otpl-deploy, or -ignore-otpl-deploy to proceed")
 	}
 	if !flags.UseOTPLDeploy {
 		return nowt, nil
 	}
 	if len(detected.DeploySpecs) == 0 {
-		return nowt, UsageErrorf("you specified -use-otpl-deploy, but no valid deployments were found in config/")
+		return nowt, errors.New("use of otpl configuration was specified, but no valid deployments were found in config/")
 	}
 	deploySpecs := sous.DeploySpecs{}
 	for clusterName, spec := range detected.DeploySpecs {

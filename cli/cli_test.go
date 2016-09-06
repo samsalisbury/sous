@@ -197,13 +197,13 @@ func TestInvokeBareSous(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
+	log.SetFlags(log.Flags() | log.Lshortfile)
 	c, exe, _, _ := prepareCommand(t, []string{`sous`})
 	assert.Len(exe.Args, 0)
 
 	var r cmdr.Result
-	require.NotPanics(func() {
-		r = c.InvokeWithoutPrinting([]string{"sous", "help"})
-	})
+	c.InvokeWithoutPrinting([]string{"sous", "help"})
+	require.NotPanics(func() { r = c.InvokeWithoutPrinting([]string{"sous", "help"}) })
 	assert.IsType(cmdr.SuccessResult{}, r)
 }
 

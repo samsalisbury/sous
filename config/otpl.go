@@ -7,10 +7,10 @@ type OTPLFlags struct {
 	IgnoreOTPLDeploy bool `flag:"ignore-otpl-deploy"`
 }
 
-const otplFlagsHelp = `
+const OtplFlagsHelp = `
 	-use-otpl-deploy
 		use existing otpl config in ./config/<cluster>/...
-	
+
 	-ignore-otpl-deploy
 		ignore existing otpl config in ./config/<cluster>/...
 

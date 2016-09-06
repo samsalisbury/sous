@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/nyarly/testify/assert"
+	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/lib"
 )
 
@@ -39,11 +40,11 @@ func TestPredicateBuilder(t *testing.T) {
 	//		fmt.Printf("%d: %#v\n", i, d)
 	//	}
 	//
-	f := DeployFilterFlags{}
-	assert.Nil(f.buildPredicate(parseSL))
+	f := config.DeployFilterFlags{}
+	assert.Nil(f.BuildPredicate(parseSL))
 
 	f.Repo = string(rs[0])
-	pd, err := f.buildPredicate(parseSL)
+	pd, err := f.BuildPredicate(parseSL)
 	assert.NoError(err)
 	assert.NotNil(pd)
 	filtered := filter(ds, pd)
@@ -54,7 +55,7 @@ func TestPredicateBuilder(t *testing.T) {
 	assert.Len(filtered, 4)
 
 	f.Offset = string(os[0])
-	pd, err = f.buildPredicate(parseSL)
+	pd, err = f.BuildPredicate(parseSL)
 	assert.NoError(err)
 	assert.NotNil(pd)
 	filtered = filter(ds, pd)
@@ -63,15 +64,15 @@ func TestPredicateBuilder(t *testing.T) {
 	assert.Len(filtered, 2)
 
 	f.Cluster = cs[0]
-	pd, err = f.buildPredicate(parseSL)
+	pd, err = f.BuildPredicate(parseSL)
 	assert.NoError(err)
 	assert.NotNil(pd)
 	filtered = filter(ds, pd)
 	assert.Contains(filtered, ds[0])
 	assert.Len(filtered, 1)
 
-	f = DeployFilterFlags{Cluster: cs[1]}
-	pd, err = f.buildPredicate(parseSL)
+	f = config.DeployFilterFlags{Cluster: cs[1]}
+	pd, err = f.BuildPredicate(parseSL)
 	assert.NoError(err)
 	assert.NotNil(pd)
 	filtered = filter(ds, pd)
@@ -81,8 +82,8 @@ func TestPredicateBuilder(t *testing.T) {
 	assert.Contains(filtered, ds[7])
 	assert.Len(filtered, 4)
 
-	f = DeployFilterFlags{All: true}
-	pd, err = f.buildPredicate(parseSL)
+	f = config.DeployFilterFlags{All: true}
+	pd, err = f.BuildPredicate(parseSL)
 	assert.NoError(err)
 	assert.NotNil(pd)
 	filtered = filter(ds, pd)

@@ -3,11 +3,13 @@ package cli
 import (
 	"testing"
 
+	"github.com/opentable/sous/config"
+	"github.com/opentable/sous/graph"
 	sous "github.com/opentable/sous/lib"
 )
 
 var getIDsTests = []struct {
-	Flags       DeployFilterFlags
+	Flags       config.DeployFilterFlags
 	SL          sous.ManifestID
 	ExpectedSID sous.SourceID
 	ExpectedDID sous.DeployID
@@ -17,19 +19,19 @@ var getIDsTests = []struct {
 		ExpectedErr: "You must select a cluster using the -cluster flag.",
 	},
 	{
-		Flags:       DeployFilterFlags{Cluster: "blah"},
+		Flags:       config.DeployFilterFlags{Cluster: "blah"},
 		ExpectedErr: "You must provide the -tag flag.",
 	},
 	{
-		Flags:       DeployFilterFlags{Cluster: "blah", Tag: "nope"},
+		Flags:       config.DeployFilterFlags{Cluster: "blah", Tag: "nope"},
 		ExpectedErr: `Version "nope" not valid: unexpected character 'n' at position 0`,
 	},
 	{
-		Flags:       DeployFilterFlags{Cluster: "blah", Tag: "nope"},
+		Flags:       config.DeployFilterFlags{Cluster: "blah", Tag: "nope"},
 		ExpectedErr: `Version "nope" not valid: unexpected character 'n' at position 0`,
 	},
 	{
-		Flags:       DeployFilterFlags{Cluster: "blah", Tag: "1.0.0"},
+		Flags:       config.DeployFilterFlags{Cluster: "blah", Tag: "1.0.0"},
 		SL:          sous.MustParseManifestID("github.com/blah/blah"),
 		ExpectedSID: sous.MustParseSourceID("github.com/blah/blah,1.0.0"),
 		ExpectedDID: sous.DeployID{Cluster: "blah",
@@ -64,19 +66,19 @@ func TestGetIDs(t *testing.T) {
 
 var updateStateTests = []struct {
 	State                *sous.State
-	GDM                  CurrentGDM
+	GDM                  graph.CurrentGDM
 	DID                  sous.DeployID
 	ExpectedErr          string
 	ExpectedNumManifests int
 }{
 	{
 		State:       sous.NewState(),
-		GDM:         CurrentGDM{sous.NewDeployments()},
+		GDM:         graph.CurrentGDM{sous.NewDeployments()},
 		ExpectedErr: "invalid deploy ID (no cluster name)",
 	},
 	{
 		State: sous.NewState(),
-		GDM:   CurrentGDM{sous.NewDeployments()},
+		GDM:   graph.CurrentGDM{sous.NewDeployments()},
 		DID: sous.DeployID{
 			Cluster:    "blah",
 			ManifestID: sous.MustParseManifestID("github.com/user/project"),
@@ -89,7 +91,7 @@ var updateStateTests = []struct {
 				"blah": &sous.Cluster{Name: "blah"},
 			}},
 		},
-		GDM: CurrentGDM{sous.NewDeployments()},
+		GDM: graph.CurrentGDM{sous.NewDeployments()},
 		DID: sous.DeployID{
 			Cluster:    "blah",
 			ManifestID: sous.MustParseManifestID("github.com/user/project"),
@@ -141,10 +143,10 @@ func (dsm *DummyStateManager) ReadState() (*sous.State, error) { return nil, nil
 func TestSousUpdate_Execute(t *testing.T) {
 	dsm := &DummyStateManager{}
 	su := SousUpdate{
-		StateReader: LocalStateReader{dsm},
-		StateWriter: LocalStateWriter{dsm},
-		GDM:         CurrentGDM{sous.MakeDeployments(0)},
-		Manifest:    TargetManifest{&sous.Manifest{}},
+		StateReader: graph.LocalStateReader{dsm},
+		StateWriter: graph.LocalStateWriter{dsm},
+		GDM:         graph.CurrentGDM{sous.MakeDeployments(0)},
+		Manifest:    graph.TargetManifest{&sous.Manifest{}},
 	}
 	su.Execute(nil)
 }

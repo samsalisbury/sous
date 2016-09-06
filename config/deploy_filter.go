@@ -21,7 +21,7 @@ type DeployFilterFlags struct {
 	All      bool
 }
 
-func (f *DeployFilterFlags) buildPredicate(parseSL func(string) (sous.SourceLocation, error)) (sous.DeploymentPredicate, error) {
+func (f *DeployFilterFlags) BuildPredicate(parseSL func(string) (sous.SourceLocation, error)) (sous.DeploymentPredicate, error) {
 	var preds []sous.DeploymentPredicate
 
 	if f.Source != "" {
@@ -119,9 +119,9 @@ const (
 		designed for humans using Sous, whereas -repo and -offset may be handy
 		for scripting contexts. If your source code is in the repository root,
 		all you need is to pass the repository name, e.g.:
-		
+
 		    -source github.com/user/repo
-		
+
 		If you need to specify an offset, just insert a comma between the repo
 		and the offset, e.g.:
 
@@ -148,9 +148,9 @@ const (
 		it to use whichever protocol is most appropriate. The host part of the
 		path is also used to support repository host specific features, like
 		querying an associated HTTP API to help with configuration etc.
-		
+
 		Currently, Sous only has full support for GitHub repositories, e.g.
-		
+
 		    "github.com/user/repo"
 
 		Support for other repository hosts may be added later as needed.
@@ -172,7 +172,7 @@ const (
 		named repo.
 
 		`
-	flavorFlagHelp = `
+	FlavorFlagHelp = `
 	-flavor FLAVOR
 		flavor is a short string used to differentiate alternative deployments
 
@@ -218,6 +218,10 @@ const (
 )
 
 var (
-	sourceFlagsHelp        = repoFlagHelp + offsetFlagHelp + flavorFlagHelp + tagFlagHelp + revisionFlagHelp
-	rectifyFilterFlagsHelp = repoFlagHelp + offsetFlagHelp + flavorFlagHelp + clusterFlagHelp + allFlagHelp
+	// SourceFlagsHelp is the text (and config) for source flags
+	SourceFlagsHelp = repoFlagHelp + offsetFlagHelp + FlavorFlagHelp + tagFlagHelp + revisionFlagHelp
+	// RectifyFilterFlagsHelp is the text (and config) for rectification flags
+	RectifyFilterFlagsHelp = repoFlagHelp + offsetFlagHelp + FlavorFlagHelp + clusterFlagHelp + allFlagHelp
+	// DeployFilterFlagsHelp is the text and config for deploy flags
+	DeployFilterFlagsHelp = repoFlagHelp + offsetFlagHelp + FlavorFlagHelp + clusterFlagHelp + allFlagHelp + tagFlagHelp
 )

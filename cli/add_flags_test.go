@@ -5,6 +5,8 @@ import (
 	"flag"
 	"strings"
 	"testing"
+
+	"github.com/opentable/sous/config"
 )
 
 func TestAddFlagsForRectify(t *testing.T) {
@@ -23,13 +25,13 @@ func TestAddFlagsForRectify(t *testing.T) {
 
 	fs := flag.NewFlagSet("rectify", flag.ContinueOnError)
 
-	actual := DeployFilterFlags{}
+	actual := config.DeployFilterFlags{}
 
-	if err := AddFlags(fs, &actual, rectifyFilterFlagsHelp); err != nil {
+	if err := AddFlags(fs, &actual, config.RectifyFilterFlagsHelp); err != nil {
 		t.Fatal(err)
 	}
 
-	expected := DeployFilterFlags{
+	expected := config.DeployFilterFlags{
 		Repo:    "github.com/opentable/sous",
 		Offset:  "cli",
 		Cluster: "test",
@@ -96,13 +98,13 @@ func TestAddFlags(t *testing.T) {
 
 	fs := flag.NewFlagSet("source", flag.ContinueOnError)
 
-	actual := DeployFilterFlags{}
+	actual := config.DeployFilterFlags{}
 
-	if err := AddFlags(fs, &actual, sourceFlagsHelp); err != nil {
+	if err := AddFlags(fs, &actual, config.SourceFlagsHelp); err != nil {
 		t.Fatal(err)
 	}
 
-	expected := DeployFilterFlags{
+	expected := config.DeployFilterFlags{
 		Repo:     "github.com/opentable/sous",
 		Offset:   "",
 		Tag:      "v1.0.0",
@@ -183,11 +185,11 @@ func TestAddFlags_badInputs(t *testing.T) {
 	testError(nil, nil, "", "cannot add flags to nil *flag.FlagSet", t)
 	testError(newFS(), nil, "", "target is <nil>; want pointer to struct", t)
 	testError(newFS(), "", "", "target is string; want pointer to struct", t)
-	testError(newFS(), DeployFilterFlags{}, "", "target is cli.DeployFilterFlags; want pointer to struct", t)
+	testError(newFS(), config.DeployFilterFlags{}, "", "target is config.DeployFilterFlags; want pointer to struct", t)
 	testError(newFS(), stringPtr, "", "target is *string; want pointer to struct", t)
 	testError(newFS(), &BadFlagStruct{}, "\t-ptrfield\n\tblah", "target field cli.BadFlagStruct.PtrField is *string; want string, int, or bool", t)
 
-	if err := AddFlags(newFS(), &DeployFilterFlags{}, ""); err != nil { // Not:  "no usage text for flag -repo", t)
+	if err := AddFlags(newFS(), &config.DeployFilterFlags{}, ""); err != nil { // Not:  "no usage text for flag -repo", t)
 		t.Errorf("got error %q; want no error", err)
 	}
 

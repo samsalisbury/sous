@@ -3,14 +3,15 @@ package cli
 import (
 	"flag"
 
+	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/util/cmdr"
 )
 
 // SousDeploy is the command description for `sous deploy`
 type SousDeploy struct {
 	*CLI
-	DeployFilterFlags
-	OTPLFlags
+	config.DeployFilterFlags
+	config.OTPLFlags
 	Update       SousUpdate
 	Rectify      SousRectify
 	rectifyFlags struct {
@@ -34,8 +35,8 @@ func (sd *SousDeploy) Help() string { return sousDeployHelp }
 
 // AddFlags adds the flags for sous init.
 func (sd *SousDeploy) AddFlags(fs *flag.FlagSet) {
-	MustAddFlags(fs, &sd.DeployFilterFlags, rectifyFilterFlagsHelp+tagFlagHelp)
-	AddFlags(fs, &sd.OTPLFlags, otplFlagsHelp)
+	MustAddFlags(fs, &sd.DeployFilterFlags, config.DeployFilterFlagsHelp)
+	AddFlags(fs, &sd.OTPLFlags, config.OtplFlagsHelp)
 
 	fs.StringVar(&sd.rectifyFlags.dryrun, "dry-run", "none",
 		"prevent rectify from actually changing things - "+

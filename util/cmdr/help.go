@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/opentable/sous/util/whitespace"
@@ -68,6 +69,8 @@ func (cli *CLI) printHelp(out *Output, base Command, name string, args []string)
 		out.Println(help.Usage(name))
 		out.Println()
 		out.Println(help.Desc)
+		log.Print(cli)
+		log.Print(out, base, name)
 		cli.printSubcommands(out, base, name)
 		cli.printOptions(out, base, name)
 		return nil

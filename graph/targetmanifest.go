@@ -2,17 +2,16 @@ package graph
 
 import (
 	"github.com/opentable/sous/config"
-	"github.com/opentable/sous/ext/otpl"
 	sous "github.com/opentable/sous/lib"
-	"github.com/opentable/sous/util/cmdr"
+	"github.com/pkg/errors"
 )
 
-func newTargetManifestID(f *DeployFilterFlags, c *sous.SourceContext) (TargetManifestID, error) {
+func newTargetManifestID(f *config.DeployFilterFlags, c *sous.SourceContext) (TargetManifestID, error) {
 	if c == nil {
 		c = &sous.SourceContext{}
 	}
 	if f == nil {
-		f = &DeployFilterFlags{}
+		f = &config.DeployFilterFlags{}
 	}
 	var repo, offset = c.PrimaryRemoteURL, c.OffsetDir
 	if f.Repo != "" {
@@ -56,4 +55,16 @@ func newTargetManifest(auto UserSelectedOTPLDeploySpecs, tmid TargetManifestID, 
 	}
 	m.SetID(mid)
 	return TargetManifest{m}
+}
+
+func defaultDeploySpecs() sous.DeploySpecs {
+	return sous.DeploySpecs{
+		"Global": {
+			DeployConfig: sous.DeployConfig{
+				Resources:    sous.Resources{},
+				Env:          map[string]string{},
+				NumInstances: 3,
+			},
+		},
+	}
 }

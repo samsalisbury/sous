@@ -6,20 +6,22 @@ import (
 	"log"
 	"os"
 
+	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/ext/singularity"
+	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
 )
 
 // SousRectify is the injectable command object used for `sous rectify`
 type SousRectify struct {
-	Config       LocalSousConfig
-	DockerClient LocalDockerClient
+	Config       graph.LocalSousConfig
+	DockerClient graph.LocalDockerClient
 	Deployer     sous.Deployer
 	Registry     sous.Registry
 	State        *sous.State
-	GDM          CurrentGDM
-	SourceFlags  DeployFilterFlags
+	GDM          graph.CurrentGDM
+	SourceFlags  config.DeployFilterFlags
 	Engine       sous.Engine
 	flags        struct {
 		dryrun,
@@ -56,7 +58,7 @@ func (*SousRectify) Help() string { return sousRectifyHelp }
 
 // AddFlags adds flags for sous rectify
 func (sr *SousRectify) AddFlags(fs *flag.FlagSet) {
-	MustAddFlags(fs, &sr.SourceFlags, rectifyFilterFlagsHelp)
+	MustAddFlags(fs, &sr.SourceFlags, config.RectifyFilterFlagsHelp)
 
 	fs.StringVar(&sr.flags.dryrun, "dry-run", "none",
 		"prevent rectify from actually changing things - "+
@@ -80,7 +82,7 @@ func (sr *SousRectify) Execute(args []string) cmdr.Result {
 func (sr *SousRectify) buildResolver() (*sous.Resolver, error) {
 	sr.resolveDryRunFlag(sr.flags.dryrun)
 
-	predicate, err := sr.SourceFlags.buildPredicate(sr.Engine.ParseSourceLocation)
+	predicate, err := sr.SourceFlags.BuildPredicate(sr.Engine.ParseSourceLocation)
 	if err != nil {
 		return nil, err
 	}
