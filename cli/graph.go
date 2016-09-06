@@ -94,9 +94,9 @@ type (
 	// UserSelectedOTPLDeploySpecs is a set of otpl-deploy configured deploy
 	// specs that the user has explicitly selected. (May be empty.)
 	UserSelectedOTPLDeploySpecs struct{ sous.DeploySpecs }
-	// TargetSourceLocation is the source location being targeted, after
-	// resolving all context and flags.
-	TargetSourceLocation sous.SourceLocation
+	// TargetManifestID is the manifest ID being targeted, after resolving all
+	// context and flags.
+	TargetManifestID sous.ManifestID
 )
 
 // BuildGraph builds the dependency injection graph, used to populate commands
@@ -189,11 +189,11 @@ func newSourceContext(f *DeployFilterFlags, g GitSourceContext) (*sous.SourceCon
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting source location")
 	}
-	sl := sous.SourceLocation(tsl)
-	if sl.Repo != c.SourceLocation().Repo {
+	sl := sous.ManifestID(tsl)
+	if sl.Source.Repo != c.SourceLocation().Repo {
 		// TODO: Clone the repository, and use the cloned dir as source context.
 		return nil, errors.Errorf("source location %q is not the same as the remote %q",
-			sl.Repo, c.SourceLocation().Repo)
+			sl.Source.Repo, c.SourceLocation().Repo)
 	}
 	return c, nil
 }

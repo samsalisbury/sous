@@ -44,6 +44,7 @@ func (si *SousInit) RegisterOn(psy Addable) {
 // AddFlags adds the flags for sous init.
 func (si *SousInit) AddFlags(fs *flag.FlagSet) {
 	MustAddFlags(fs, &si.Flags, otplFlagsHelp)
+	fs.StringVar(&si.DeployFilterFlags.Flavor, "flavor", "", flavorFlagHelp)
 }
 
 // Execute fulfills the cmdr.Executor interface

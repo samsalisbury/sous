@@ -79,6 +79,39 @@ func makeTestState() *State {
 					},
 				},
 			},
+			&Manifest{
+				Source: project1,
+				Flavor: "some-flavor",
+				Owners: []string{"owner1flav"},
+				Deployments: DeploySpecs{
+					"cluster-1": {
+						Version: semv.MustParse("1.0.1"),
+						DeployConfig: DeployConfig{
+							Resources: Resources{
+								"cpus": "1.5",
+								"mem":  "1024",
+							},
+							Env: Env{
+								"ENV_1": "ENV ONE FLAVORED",
+							},
+							NumInstances: 4,
+						},
+					},
+					"cluster-2": {
+						Version: semv.MustParse("2.0.1"),
+						DeployConfig: DeployConfig{
+							Resources: Resources{
+								"cpus": "2.5",
+								"mem":  "2048",
+							},
+							Env: Env{
+								"ENV_2": "ENV TWO FLAVORED",
+							},
+							NumInstances: 5,
+						},
+					},
+				},
+			},
 		),
 	}
 }
@@ -88,7 +121,7 @@ var expectedDeployments = NewDeployments(
 		SourceID:    project1.SourceID(semv.MustParse("1.0.0")),
 		ClusterName: "cluster-1",
 		Cluster:     cluster1,
-		Owners:      OwnerSet{"owner1": struct{}{}},
+		Owners:      NewOwnerSet("owner1"),
 		DeployConfig: DeployConfig{
 			Resources: Resources{
 				"cpus": "1",
@@ -105,7 +138,7 @@ var expectedDeployments = NewDeployments(
 		SourceID:    project1.SourceID(semv.MustParse("2.0.0")),
 		ClusterName: "cluster-2",
 		Cluster:     cluster2,
-		Owners:      OwnerSet{"owner1": struct{}{}},
+		Owners:      NewOwnerSet("owner1"),
 		DeployConfig: DeployConfig{
 			Resources: Resources{
 				"cpus": "2",
@@ -116,6 +149,42 @@ var expectedDeployments = NewDeployments(
 				"CLUSTER_LONG_NAME": "Cluster Two",
 			},
 			NumInstances: 3,
+		},
+	},
+	&Deployment{
+		Flavor:      "some-flavor",
+		SourceID:    project1.SourceID(semv.MustParse("1.0.1")),
+		ClusterName: "cluster-1",
+		Cluster:     cluster1,
+		Owners:      NewOwnerSet("owner1flav"),
+		DeployConfig: DeployConfig{
+			Resources: Resources{
+				"cpus": "1.5",
+				"mem":  "1024",
+			},
+			Env: Env{
+				"ENV_1":             "ENV ONE FLAVORED",
+				"CLUSTER_LONG_NAME": "Cluster One",
+			},
+			NumInstances: 4,
+		},
+	},
+	&Deployment{
+		Flavor:      "some-flavor",
+		SourceID:    project1.SourceID(semv.MustParse("2.0.1")),
+		ClusterName: "cluster-2",
+		Cluster:     cluster2,
+		Owners:      NewOwnerSet("owner1flav"),
+		DeployConfig: DeployConfig{
+			Resources: Resources{
+				"cpus": "2.5",
+				"mem":  "2048",
+			},
+			Env: Env{
+				"ENV_2":             "ENV TWO FLAVORED",
+				"CLUSTER_LONG_NAME": "Cluster Two",
+			},
+			NumInstances: 5,
 		},
 	},
 )
@@ -150,12 +219,12 @@ func TestDeployments_Manifests(t *testing.T) {
 	if actualLen != expectedLen {
 		t.Fatalf("got %d manifests; want %d", actualLen, expectedLen)
 	}
-	for _, sl := range expectedManifests.Keys() {
-		t.Log(sl, "READING")
-		expected, _ := expectedManifests.Get(sl)
-		actual, ok := actualManifests.Get(sl)
+	for _, mid := range expectedManifests.Keys() {
+		t.Log(mid, "READING")
+		expected, _ := expectedManifests.Get(mid)
+		actual, ok := actualManifests.Get(mid)
 		if !ok {
-			t.Errorf("missing manifest %q", sl)
+			t.Errorf("missing manifest %q", mid)
 			continue
 		}
 		if !actual.Equal(expected) {
@@ -163,7 +232,7 @@ func TestDeployments_Manifests(t *testing.T) {
 		}
 		// Check all expected DeploySpecs are in actual.
 		for clusterName := range expected.Deployments {
-			did := DeployID{Cluster: clusterName, Source: expected.Source}
+			did := DeployID{Cluster: clusterName, ManifestID: expected.ID()}
 			_, ok := actual.Deployments[clusterName]
 			if !ok {
 				t.Errorf("deployment %q missing", did)
@@ -173,13 +242,13 @@ func TestDeployments_Manifests(t *testing.T) {
 		}
 		// Check actual contains only the expected DeploySpecs.
 		for clusterName := range actual.Deployments {
-			did := DeployID{Cluster: clusterName, Source: actual.Source}
+			did := DeployID{Cluster: clusterName, ManifestID: actual.ID()}
 			_, ok := expected.Deployments[clusterName]
 			if !ok {
 				t.Errorf("extra deployment %q", did)
 			}
 		}
-		t.Log(sl, "OK")
+		t.Log(mid, "OK")
 	}
 }
 

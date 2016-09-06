@@ -8,6 +8,7 @@ import "github.com/opentable/sous/lib"
 type DeployFilterFlags struct {
 	Repo     string
 	Offset   string
+	Flavor   string
 	Tag      string
 	Revision string
 	Cluster  string
@@ -30,6 +31,12 @@ func (f *DeployFilterFlags) buildPredicate() sous.DeploymentPredicate {
 	if f.Offset != "" {
 		preds = append(preds, func(d *sous.Deployment) bool {
 			return d.SourceID.Location.Dir == f.Offset
+		})
+	}
+
+	if f.Flavor != "" {
+		preds = append(preds, func(d *sous.Deployment) bool {
+			return d.Flavor == f.Flavor
 		})
 	}
 
@@ -75,15 +82,22 @@ const (
 
 		The repository context is the name of a source code repository whose
 		code, configuration, artifacts, deployments, etc. will be acted upon.
-		If sous is run from inside a Git repository, then repo will default to
-		the normalised git-configured fetch URL of any remote named "upstream"
-		or "origin", in that order.
+		If sous is run from inside a Git repository, and this flag is not
+		provided, repo will be constructed based on the git-configured fetch URL
+		of any remote named "upstream" or "origin", in that order.
 
-		Sous uses go-style repository URLs, and currently only supports GitHub-
-		based repositories, e.g. "github.com/user/repo"
+		Sous uses repository paths of the form <host>/<repo-path>. This enables
+		it to use whichever protocol is most appropriate. The host part of the
+		path is also used to support repository host specific features, like
+		querying an associated HTTP API to help with configuration etc.
+		
+		Currently, Sous only has full support for GitHub repositories, e.g.
+		
+		    "github.com/user/repo"
+
+		Support for other repository hosts may be added later as needed.
 
 		`
-
 	offsetFlagHelp = `
 	-offset RELATIVE_PATH
 		source code relative repository offset
@@ -96,7 +110,23 @@ const (
 		from the repository root.
 
 		Note: if you supply the -repo flag but not -offset, then -offset
-		defaults to "".
+		defaults to "" (repo root), even if you are inside a subdirectory of the
+		named repo.
+
+		`
+	flavorFlagHelp = `
+	-flavor FLAVOR
+		flavor is a short string used to differentiate alternative deployments
+
+		Sometimes it is necessary to have multiple, separately defined
+		deployments of a single piece of software in the same cluster, or set of
+		clusters. In these cases, you can specify multiple deployments by
+		configuring multiple manifests for your source location (repo/offset),
+		differentiated by a short "flavor" string.
+
+		Note that by default, Sous assumes a single manifest per source
+		location. Flavor is an advanced use case, and probably not necessary for
+		most applications.
 
 		`
 	tagFlagHelp = `
@@ -130,6 +160,6 @@ const (
 )
 
 var (
-	sourceFlagsHelp        = repoFlagHelp + offsetFlagHelp + tagFlagHelp + revisionFlagHelp
-	rectifyFilterFlagsHelp = repoFlagHelp + offsetFlagHelp + clusterFlagHelp + allFlagHelp
+	sourceFlagsHelp        = repoFlagHelp + offsetFlagHelp + flavorFlagHelp + tagFlagHelp + revisionFlagHelp
+	rectifyFilterFlagsHelp = repoFlagHelp + offsetFlagHelp + flavorFlagHelp + clusterFlagHelp + allFlagHelp
 )
