@@ -42,14 +42,34 @@ var sourceLocationTests = []struct {
 		Error:  `"git://github.com:some-user/some-repo" does not begin with "github.com/"`,
 	},
 
-	// invalid characters
+	// invalid characters in username
 	{
 		String: "github.com/some:user/some-repo",
 		Error:  `username "some:user" contains illegal character ':'`,
 	},
 	{
+		String: "github.com/some_user/some-repo",
+		Error:  `username "some_user" contains illegal character '_'`,
+	},
+	{
+		String: "github.com/some~user/some-repo",
+		Error:  `username "some~user" contains illegal character '~'`,
+	},
+
+	// invalid characters in repository name
+	{
+		String: "github.com/some-user/some:repo",
+		Error:  `repository name "some:repo" contains illegal character ':'`,
+	},
+	{
 		String: "github.com/some-user/some~repo",
 		Error:  `repository name "some~repo" contains illegal character '~'`,
+	},
+
+	// invalid characters in offset directory
+	{
+		String: "github.com/some-user/some-repo/offset:dir",
+		Error:  `offset directory "offset:dir" contains illegal character ':'`,
 	},
 	{
 		String: "github.com/some-user/some-repo,offset,dir",
@@ -74,16 +94,28 @@ var sourceLocationTests = []struct {
 		Error:  `"github.com/some-user" does not identify a repository`,
 	},
 
-	// success
+	// success, repo only
 	{
-		// repo only
 		String: "github.com/some-user/some-repo",
 		SourceLocation: sous.SourceLocation{
 			Repo: "github.com/some-user/some-repo",
 		},
 	},
 	{
-		// standard offset notation using comma
+		String: "github.com/some-user/some_repo",
+		SourceLocation: sous.SourceLocation{
+			Repo: "github.com/some-user/some_repo",
+		},
+	},
+	{
+		String: "github.com/some-user/some.repo",
+		SourceLocation: sous.SourceLocation{
+			Repo: "github.com/some-user/some.repo",
+		},
+	},
+
+	// standard offset notation using comma
+	{
 		String: "github.com/some-user/some-repo,some-offset",
 		SourceLocation: sous.SourceLocation{
 			Repo: "github.com/some-user/some-repo",
@@ -91,12 +123,27 @@ var sourceLocationTests = []struct {
 		},
 	},
 	{
-		// permissive offset using slash, since we know github repos are
-		// exactly of the form "github.com/<user>/<repo>"
+		String: "github.com/some-user/some-repo,some/offset",
+		SourceLocation: sous.SourceLocation{
+			Repo: "github.com/some-user/some-repo",
+			Dir:  "some/offset",
+		},
+	},
+
+	// permissive offset using slash, since we know github repos are
+	// exactly of the form "github.com/<user>/<repo>"
+	{
 		String: "github.com/some-user/some-repo/some-offset",
 		SourceLocation: sous.SourceLocation{
 			Repo: "github.com/some-user/some-repo",
 			Dir:  "some-offset",
+		},
+	},
+	{
+		String: "github.com/some-user/some-repo/some/offset",
+		SourceLocation: sous.SourceLocation{
+			Repo: "github.com/some-user/some-repo",
+			Dir:  "some/offset",
 		},
 	},
 }
