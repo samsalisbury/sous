@@ -1,11 +1,17 @@
 package cli
 
-import "github.com/opentable/sous/lib"
+import (
+	"fmt"
+
+	"github.com/opentable/sous/lib"
+	"github.com/pkg/errors"
+)
 
 // DeployFilterFlags are CLI flags used to configure the underlying deployments
 // a given command will refer to
 // N.b. that not every command will use every filter
 type DeployFilterFlags struct {
+	Source   string
 	Repo     string
 	Offset   string
 	Flavor   string
@@ -15,11 +21,39 @@ type DeployFilterFlags struct {
 	All      bool
 }
 
-func (f *DeployFilterFlags) buildPredicate() sous.DeploymentPredicate {
+func (f *DeployFilterFlags) buildPredicate(parseSL func(string) (sous.SourceLocation, error)) (sous.DeploymentPredicate, error) {
 	var preds []sous.DeploymentPredicate
 
+	if f.Source != "" {
+		if f.Repo != "" {
+			return nil, fmt.Errorf("you cannot specify both -source and -repo")
+		}
+		if f.Offset != "" {
+			return nil, fmt.Errorf("you cannot specify both -source and -offset")
+		}
+		if f.All {
+			return nil, fmt.Errorf("you cannot specify both -source and -all")
+		}
+		sl, err := parseSL(f.Source)
+		if err != nil {
+			return nil, errors.Wrap(err, "error parsing -source flag")
+		}
+		preds = append(preds, func(d *sous.Deployment) bool {
+			return d.SourceID.Location == sl
+		})
+	}
+
 	if f.All {
-		return func(*sous.Deployment) bool { return true }
+		if f.Repo != "" {
+			return nil, fmt.Errorf("you cannot specify both -all and -repo")
+		}
+		if f.Offset != "" {
+			return nil, fmt.Errorf("you cannot specify both -all and -offset")
+		}
+		if f.Flavor != "" {
+			return nil, fmt.Errorf("you cannot specify both -all and -flavor")
+		}
+		return func(*sous.Deployment) bool { return true }, nil
 	}
 
 	if f.Repo != "" {
@@ -60,9 +94,9 @@ func (f *DeployFilterFlags) buildPredicate() sous.DeploymentPredicate {
 
 	switch len(preds) {
 	case 0:
-		return nil
+		return nil, nil
 	case 1:
-		return preds[0]
+		return preds[0], nil
 	default:
 		return func(d *sous.Deployment) bool {
 			for _, f := range preds {
@@ -71,11 +105,35 @@ func (f *DeployFilterFlags) buildPredicate() sous.DeploymentPredicate {
 				}
 			}
 			return true
-		}
+		}, nil
 	}
 }
 
 const (
+	sourceFlagHelp = `
+	-source
+		source code location (alternative to -repo and -offset combination)
+
+		The source flag allows you to specify your source code location as a
+		single string, rather than passing -repo and -offet separately. It's
+		designed for humans using Sous, whereas -repo and -offset may be handy
+		for scripting contexts. If your source code is in the repository root,
+		all you need is to pass the repository name, e.g.:
+		
+		    -source github.com/user/repo
+		
+		If you need to specify an offset, just insert a comma between the repo
+		and the offset, e.g.:
+
+			-source github.com/user/repo,some/offset/dir
+
+		It is recommended to use -source when possible, in preference to -repo
+		and -offset, as -source also checks that Sous is able to handle the
+		passed source location from end to end.
+
+		Currently -source only supports GitHub repositories.
+
+	`
 	repoFlagHelp = `
 	-repo REPOSITORY_NAME
 		source code repository location

@@ -10,6 +10,7 @@ import (
 
 	"github.com/opentable/sous/ext/docker"
 	"github.com/opentable/sous/ext/git"
+	"github.com/opentable/sous/ext/github"
 	"github.com/opentable/sous/ext/singularity"
 	"github.com/opentable/sous/ext/storage"
 	"github.com/opentable/sous/lib"
@@ -79,7 +80,7 @@ type (
 	// CurrentGDM is a snapshot of the GDM at application start. In a CLI
 	// context, which this is, that is all we need to simply read the GDM.
 	CurrentGDM struct{ sous.Deployments }
-	// TargetManifest is a specific manifest for the current SourceLocation.
+	// TargetManifest is a specific manifest for the current ManifestID.
 	// If the named manifest does not exist, it is created.
 	TargetManifest struct{ *sous.Manifest }
 	// DetectedOTPLDeploySpecs is a set of otpl-deploy configured deployments
@@ -100,6 +101,7 @@ func BuildGraph(c *CLI, out, err io.Writer) *SousCLIGraph {
 		c,
 		func() OutWriter { return out },
 		func() ErrWriter { return err },
+		newEngine,
 		newOut,
 		newErrOut,
 		newLogSet,
@@ -133,6 +135,14 @@ func BuildGraph(c *CLI, out, err io.Writer) *SousCLIGraph {
 		newUserSelectedOTPLDeploySpecs,
 		newTargetManifestID,
 	)}
+}
+
+func newEngine() sous.Engine {
+	return sous.Engine{
+		SourceHosts: []sous.SourceHost{
+			github.SourceHost{},
+		},
+	}
 }
 
 func newOut(c *CLI) Out {
