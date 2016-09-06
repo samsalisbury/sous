@@ -20,6 +20,7 @@ type SousRectify struct {
 	State        *sous.State
 	GDM          CurrentGDM
 	SourceFlags  DeployFilterFlags
+	Engine       sous.Engine
 	flags        struct {
 		dryrun,
 		repo, offset, cluster string
@@ -79,7 +80,10 @@ func (sr *SousRectify) Execute(args []string) cmdr.Result {
 func (sr *SousRectify) buildResolver() (*sous.Resolver, error) {
 	sr.resolveDryRunFlag(sr.flags.dryrun)
 
-	predicate := sr.SourceFlags.buildPredicate()
+	predicate, err := sr.SourceFlags.buildPredicate(sr.Engine.ParseSourceLocation)
+	if err != nil {
+		return nil, err
+	}
 
 	if predicate == nil {
 		return nil, fmt.Errorf("Cowardly refusing rectify with neither contraint nor `-all`! (see `sous help rectify`)")

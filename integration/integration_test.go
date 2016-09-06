@@ -263,7 +263,7 @@ func deploymentWithRepo(assert *assert.Assertions, sc sous.Deployer, repo string
 func findRepo(deps sous.Deployments, repo string) sous.DeployID {
 	for i, d := range deps.Snapshot() {
 		if d != nil {
-			if i.Source.Repo == repo {
+			if i.ManifestID.Source.Repo == repo {
 				return i
 			}
 		}

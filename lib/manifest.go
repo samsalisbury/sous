@@ -2,7 +2,7 @@ package sous
 
 import "path/filepath"
 
-//go:generate ggen cmap.CMap(cmap.go) sous.Manifests(manifests.go) CMKey:SourceLocation Value:*Manifest
+//go:generate ggen cmap.CMap(cmap.go) sous.Manifests(manifests.go) CMKey:ManifestID Value:*Manifest
 
 type (
 	// Manifest is a minimal representation of the global deployment state of
@@ -14,6 +14,11 @@ type (
 	Manifest struct {
 		// Source is the location of the source code for this piece of software.
 		Source SourceLocation `validate:"nonzero"`
+		// Flavor is an optional string, used to allow a single SourceLocation
+		// to have multiple deployments defined per cluster. The empty Flavor
+		// is perfectly valid. The pair (SourceLocation, Flavor) identifies a
+		// manifest.
+		Flavor string `yaml:",omitempty"`
 		// Owners is a list of named owners of this repository. The type of this
 		// field is subject to change.
 		Owners []string
@@ -35,8 +40,15 @@ type (
 )
 
 // ID returns the SourceLocation.
-func (m *Manifest) ID() SourceLocation {
-	return m.Source
+func (m Manifest) ID() ManifestID {
+	return ManifestID{Source: m.Source, Flavor: m.Flavor}
+}
+
+// SetID sets the Source and Flavor fields of this Manifest to those of the
+// supplied ManifestID.
+func (m *Manifest) SetID(mid ManifestID) {
+	m.Source = mid.Source
+	m.Flavor = mid.Flavor
 }
 
 // FileLocation returns the path that the manifest should be saved to.

@@ -31,15 +31,20 @@ func TestPredicateBuilder(t *testing.T) {
 		}
 	}
 
+	parseSL := func(string) (sous.SourceLocation, error) {
+		return sous.SourceLocation{}, nil
+	}
+
 	//	for i, d := range ds {
 	//		fmt.Printf("%d: %#v\n", i, d)
 	//	}
 	//
 	f := DeployFilterFlags{}
-	assert.Nil(f.buildPredicate())
+	assert.Nil(f.buildPredicate(parseSL))
 
 	f.Repo = string(rs[0])
-	pd := f.buildPredicate()
+	pd, err := f.buildPredicate(parseSL)
+	assert.NoError(err)
 	assert.NotNil(pd)
 	filtered := filter(ds, pd)
 	assert.Contains(filtered, ds[0])
@@ -49,7 +54,8 @@ func TestPredicateBuilder(t *testing.T) {
 	assert.Len(filtered, 4)
 
 	f.Offset = string(os[0])
-	pd = f.buildPredicate()
+	pd, err = f.buildPredicate(parseSL)
+	assert.NoError(err)
 	assert.NotNil(pd)
 	filtered = filter(ds, pd)
 	assert.Contains(filtered, ds[0])
@@ -57,14 +63,16 @@ func TestPredicateBuilder(t *testing.T) {
 	assert.Len(filtered, 2)
 
 	f.Cluster = cs[0]
-	pd = f.buildPredicate()
+	pd, err = f.buildPredicate(parseSL)
+	assert.NoError(err)
 	assert.NotNil(pd)
 	filtered = filter(ds, pd)
 	assert.Contains(filtered, ds[0])
 	assert.Len(filtered, 1)
 
 	f = DeployFilterFlags{Cluster: cs[1]}
-	pd = f.buildPredicate()
+	pd, err = f.buildPredicate(parseSL)
+	assert.NoError(err)
 	assert.NotNil(pd)
 	filtered = filter(ds, pd)
 	assert.Contains(filtered, ds[4])
@@ -74,7 +82,8 @@ func TestPredicateBuilder(t *testing.T) {
 	assert.Len(filtered, 4)
 
 	f = DeployFilterFlags{All: true}
-	pd = f.buildPredicate()
+	pd, err = f.buildPredicate(parseSL)
+	assert.NoError(err)
 	assert.NotNil(pd)
 	filtered = filter(ds, pd)
 	assert.Len(filtered, 8)

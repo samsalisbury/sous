@@ -1,4 +1,4 @@
-// DO NOT EDIT. Generated with goinline -package=github.com/opentable/sous/util/blueprints/cmap --target-package-name=sous --target-dir=. -w SourceLocation->SourceLocation *Manifest->*Manifest
+// DO NOT EDIT. Generated with goinline -package=github.com/opentable/sous/util/blueprints/cmap --target-package-name=sous --target-dir=. -w ManifestID->ManifestID *Manifest->*Manifest
 
 package sous
 
@@ -7,18 +7,18 @@ import (
 	"sync"
 )
 
-// Manifests is a wrapper around map[SourceLocation]*Manifest
+// Manifests is a wrapper around map[ManifestID]*Manifest
 // which is safe for concurrent read and write.
 type Manifests struct {
 	mu *sync.RWMutex
-	m  map[SourceLocation](*Manifest)
+	m  map[ManifestID](*Manifest)
 }
 
 // MakeManifests creates a new Manifests with capacity set.
 func MakeManifests(capacity int) Manifests {
 	return Manifests{
 		mu: &sync.RWMutex{},
-		m:  make(map[SourceLocation](*Manifest), capacity),
+		m:  make(map[ManifestID](*Manifest), capacity),
 	}
 }
 
@@ -42,13 +42,13 @@ func (m Manifests) read(f func()) {
 
 // NewManifestsFromMap creates a new Manifests.
 // You may optionally pass any number of
-// map[SourceLocation]*Manifests,
+// map[ManifestID]*Manifests,
 // which will be merged key-wise into the new Manifests,
 // with keys from the right-most map taking precedence.
-func NewManifestsFromMap(from ...map[SourceLocation](*Manifest)) Manifests {
+func NewManifestsFromMap(from ...map[ManifestID](*Manifest)) Manifests {
 	cm := Manifests{
 		mu: &sync.RWMutex{},
-		m:  map[SourceLocation](*Manifest){},
+		m:  map[ManifestID](*Manifest){},
 	}
 	for _, m := range from {
 		for k, v := range m {
@@ -64,7 +64,7 @@ func NewManifestsFromMap(from ...map[SourceLocation](*Manifest)) Manifests {
 func NewManifests(from ...(*Manifest)) Manifests {
 	m := Manifests{
 		mu: &sync.RWMutex{},
-		m:  map[SourceLocation](*Manifest){},
+		m:  map[ManifestID](*Manifest){},
 	}
 	for _, v := range from {
 		if !m.Add(v) {
@@ -76,7 +76,7 @@ func NewManifests(from ...(*Manifest)) Manifests {
 
 // Get returns (value, true) if k is in the map, or (zero value, false)
 // otherwise.
-func (m Manifests) Get(key SourceLocation) (v *Manifest, ok bool) {
+func (m Manifests) Get(key ManifestID) (v *Manifest, ok bool) {
 	m.read(func() {
 		v, ok = m.m[key]
 	})
@@ -84,7 +84,7 @@ func (m Manifests) Get(key SourceLocation) (v *Manifest, ok bool) {
 }
 
 // Set sets the value of index k to v.
-func (m Manifests) Set(key SourceLocation, value *Manifest) {
+func (m Manifests) Set(key ManifestID, value *Manifest) {
 	m.write(func() {
 		m.m[key] = value
 	})
@@ -97,7 +97,7 @@ func (m Manifests) Filter(predicate func(*Manifest) bool) Manifests {
 	if predicate == nil {
 		return m.Clone()
 	}
-	out := map[SourceLocation](*Manifest){}
+	out := map[ManifestID](*Manifest){}
 	m.read(func() {
 		for k, v := range m.m {
 			if predicate(v) {
@@ -171,11 +171,11 @@ func (m Manifests) MustAdd(v *Manifest) {
 	}
 }
 
-// AddAll returns (zero SourceLocation, true) if all  entries from the passed in
+// AddAll returns (zero ManifestID, true) if all  entries from the passed in
 // Manifests have different keys and all are added to this Manifests.
 // If any of the keys conflict, nothing will be added to this
-// Manifests and AddAll will return the conflicting SourceLocation and false.
-func (m Manifests) AddAll(from Manifests) (conflicting SourceLocation, success bool) {
+// Manifests and AddAll will return the conflicting ManifestID and false.
+func (m Manifests) AddAll(from Manifests) (conflicting ManifestID, success bool) {
 	ss := from.Snapshot()
 	var exists bool
 	m.write(func() {
@@ -193,7 +193,7 @@ func (m Manifests) AddAll(from Manifests) (conflicting SourceLocation, success b
 }
 
 // Remove value for a key k if present, a no-op otherwise.
-func (m Manifests) Remove(key SourceLocation) {
+func (m Manifests) Remove(key ManifestID) {
 	m.write(func() {
 		delete(m.m, key)
 	})
@@ -209,10 +209,10 @@ func (m Manifests) Len() int {
 }
 
 // Keys returns a slice containing all the keys in the map.
-func (m Manifests) Keys() []SourceLocation {
-	var keys []SourceLocation
+func (m Manifests) Keys() []ManifestID {
+	var keys []ManifestID
 	m.read(func() {
-		keys = make([]SourceLocation, len(m.m))
+		keys = make([]ManifestID, len(m.m))
 		i := 0
 		for k := range m.m {
 			keys[i] = k
@@ -223,11 +223,11 @@ func (m Manifests) Keys() []SourceLocation {
 }
 
 // Snapshot returns a moment-in-time copy of the current underlying
-// map[SourceLocation]*Manifest.
-func (m Manifests) Snapshot() map[SourceLocation](*Manifest) {
-	var ss map[SourceLocation](*Manifest)
+// map[ManifestID]*Manifest.
+func (m Manifests) Snapshot() map[ManifestID](*Manifest) {
+	var ss map[ManifestID](*Manifest)
 	m.read(func() {
-		ss = make(map[SourceLocation](*Manifest), len(m.m))
+		ss = make(map[ManifestID](*Manifest), len(m.m))
 		for k, v := range m.m {
 			ss[k] = v
 		}
@@ -236,11 +236,11 @@ func (m Manifests) Snapshot() map[SourceLocation](*Manifest) {
 }
 
 // FilteredSnapshot returns a moment-in-time filtered copy of the current
-// underlying map[SourceLocation]*Manifest.
-// (SourceLocation, *Manifest) pairs are included
+// underlying map[ManifestID]*Manifest.
+// (ManifestID, *Manifest) pairs are included
 // if they satisfy predicate.
-func (m Manifests) FilteredSnapshot(predicate func(*Manifest) bool) map[SourceLocation](*Manifest) {
-	clone := map[SourceLocation](*Manifest){}
+func (m Manifests) FilteredSnapshot(predicate func(*Manifest) bool) map[ManifestID](*Manifest) {
+	clone := map[ManifestID](*Manifest){}
 	m.read(func() {
 		for k, v := range m.m {
 			if predicate(v) {
@@ -252,13 +252,13 @@ func (m Manifests) FilteredSnapshot(predicate func(*Manifest) bool) map[SourceLo
 }
 
 // GetAll returns SnapShot (it allows hy to marshal Manifests).
-func (m Manifests) GetAll() map[SourceLocation](*Manifest) {
+func (m Manifests) GetAll() map[ManifestID](*Manifest) {
 	return m.Snapshot()
 }
 
 // SetAll sets the internal map (it allows hy to unmarshal Manifests).
 // Note: SetAll is the only method that is not safe for concurrent access.
-func (m *Manifests) SetAll(v map[SourceLocation](*Manifest)) {
+func (m *Manifests) SetAll(v map[ManifestID](*Manifest)) {
 	if m.mu == nil {
 		m.mu = &sync.RWMutex{}
 	}

@@ -1,4 +1,4 @@
-package graph
+package cli
 
 import (
 	"testing"
@@ -9,7 +9,8 @@ import (
 
 type newUserSelectedOTPLDeploySpecTest struct {
 	Detected            sous.DeploySpecs
-	TSL                 TargetSourceLocation
+	//XXX
+        TSL                 TargetSourceLocation
 	Flags               config.OTPLFlags
 	Clusters            sous.Clusters
 	Manifest            *sous.Manifest
@@ -50,7 +51,7 @@ var nusodsTests = []newUserSelectedOTPLDeploySpecTest{
 		Detected: sous.DeploySpecs{
 			"some-cluster": {},
 		},
-		Flags: config.OTPLFlags{IgnoreOTPLDeploy: true},
+		Flags: OTPLFlags{IgnoreOTPLDeploy: true},
 	},
 	{
 		Flags:       config.OTPLFlags{UseOTPLDeploy: true},
@@ -97,11 +98,13 @@ func TestNewUserSelectedOTPLDeploySpecs(t *testing.T) {
 func TestNewTargetManifest(t *testing.T) {
 	detected := UserSelectedOTPLDeploySpecs{}
 	sl := sous.MustParseSourceLocation("github.com/user/project")
-	tsl := TargetSourceLocation(sl)
-	m := &sous.Manifest{Source: sl}
+	flavor := "some-flavor"
+	mid := sous.ManifestID{Source: sl, Flavor: flavor}
+	tmid := TargetManifestID(mid)
+	m := &sous.Manifest{Source: sl, Flavor: flavor}
 	s := sous.NewState()
 	s.Manifests.Add(m)
-	tm := newTargetManifest(detected, tsl, s)
+	tm := newTargetManifest(detected, tmid, s)
 	if tm.Source != sl {
 		t.Errorf("unexpected manifest %q", m)
 	}

@@ -1,4 +1,4 @@
-package graph
+package cli
 
 import (
 	"fmt"
@@ -11,6 +11,7 @@ import (
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/ext/docker"
 	"github.com/opentable/sous/ext/git"
+	"github.com/opentable/sous/ext/github"
 	"github.com/opentable/sous/ext/singularity"
 	"github.com/opentable/sous/ext/storage"
 	"github.com/opentable/sous/lib"
@@ -36,20 +37,18 @@ type (
 	// SousCLIGraph is a dependency injector used to flesh out Sous commands
 	// with their dependencies.
 	SousCLIGraph struct{ *psyringe.Psyringe }
-	// OutWriter is an alias on io.Writer to disguish "stderr"
+	// OutWriter is typically set to os.Stdout.
 	OutWriter io.Writer
-	// ErrWriter is an alias on io.Writer to disguish "stderr"
+	// ErrWriter is typically set to os.Stderr.
 	ErrWriter io.Writer
-
 	// StateReader knows how to read state.
 	StateReader interface {
 		ReadState() (*sous.State, error)
 	}
-	// StateWriter know how to write state.
+	// StateWriter knows how to write state.
 	StateWriter interface {
 		WriteState(*sous.State) error
 	}
-
 	// Version represents a version of Sous.
 	Version struct{ semv.Version }
 	// LocalUser is the currently logged in user.
@@ -82,7 +81,7 @@ type (
 	// CurrentGDM is a snapshot of the GDM at application start. In a CLI
 	// context, which this is, that is all we need to simply read the GDM.
 	CurrentGDM struct{ sous.Deployments }
-	// TargetManifest is a specific manifest for the current SourceLocation.
+	// TargetManifest is a specific manifest for the current ManifestID.
 	// If the named manifest does not exist, it is created.
 	TargetManifest struct{ *sous.Manifest }
 	// DetectedOTPLDeploySpecs is a set of otpl-deploy configured deployments
@@ -91,9 +90,9 @@ type (
 	// UserSelectedOTPLDeploySpecs is a set of otpl-deploy configured deploy
 	// specs that the user has explicitly selected. (May be empty.)
 	UserSelectedOTPLDeploySpecs struct{ sous.DeploySpecs }
-	// TargetSourceLocation is the source location being targeted, after
-	// resolving all context and flags.
-	TargetSourceLocation sous.SourceLocation
+	// TargetManifestID is the manifest ID being targeted, after resolving all
+	// context and flags.
+	TargetManifestID sous.ManifestID
 )
 
 // BuildGraph builds the dependency injection graph, used to populate commands
@@ -103,6 +102,7 @@ func BuildGraph(c *CLI, out, err io.Writer) *SousCLIGraph {
 		c,
 		func() OutWriter { return out },
 		func() ErrWriter { return err },
+		newEngine,
 		newOut,
 		newErrOut,
 		newLogSet,
@@ -134,8 +134,16 @@ func BuildGraph(c *CLI, out, err io.Writer) *SousCLIGraph {
 		newTargetManifest,
 		newDetectedOTPLConfig,
 		newUserSelectedOTPLDeploySpecs,
-		newTargetSourceLocation,
+		newTargetManifestID,
 	)}
+}
+
+func newEngine() sous.Engine {
+	return sous.Engine{
+		SourceHosts: []sous.SourceHost{
+			github.SourceHost{},
+		},
+	}
 }
 
 func newOut(c *CLI) Out {
@@ -182,15 +190,15 @@ func newSourceContext(f *config.DeployFilterFlags, g GitSourceContext) (*sous.So
 	if c == nil {
 		c = &sous.SourceContext{}
 	}
-	tsl, err := newTargetSourceLocation(f, c)
+	mid, err := newTargetManifestID(f, c)
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting source location")
 	}
-	sl := sous.SourceLocation(tsl)
-	if sl.Repo != c.SourceLocation().Repo {
+	sl := sous.ManifestID(mid)
+	if sl.Source.Repo != c.SourceLocation().Repo {
 		// TODO: Clone the repository, and use the cloned dir as source context.
 		return nil, errors.Errorf("source location %q is not the same as the remote %q",
-			sl.Repo, c.SourceLocation().Repo)
+			sl.Source.Repo, c.SourceLocation().Repo)
 	}
 	return c, nil
 }

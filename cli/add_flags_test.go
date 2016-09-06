@@ -13,10 +13,12 @@ func TestAddFlagsForRectify(t *testing.T) {
 				all deployments should be considered
 	-cluster string
 				target deployment cluster
-  -offset string
-        source code relative repository offset
-  -repo string
-        source code repository location
+	-flavor string
+				flavor is a short string used to differentiate alternative deployments
+	-offset string
+				source code relative repository offset
+	-repo string
+				source code repository location
 `
 
 	fs := flag.NewFlagSet("rectify", flag.ContinueOnError)
@@ -80,6 +82,8 @@ func TestAddFlagsForRectify(t *testing.T) {
 
 func TestAddFlags(t *testing.T) {
 	expectedHelpText := `
+  -flavor string
+        flavor is a short string used to differentiate alternative deployments
   -offset string
         source code relative repository offset
   -repo string

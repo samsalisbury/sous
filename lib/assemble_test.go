@@ -90,7 +90,7 @@ func TestInheritingFromGlobal(t *testing.T) {
 		t.Fatalf("got %d deployments; want %d", actualLen, expectedLen)
 	}
 
-	id := DeployID{Source: m.Source, Cluster: "sf-qa-ci"}
+	id := DeployID{ManifestID: m.ID(), Cluster: "sf-qa-ci"}
 	qa, ok := deps.Get(id)
 	if !ok {
 		t.Errorf("deployment %s not found", id)

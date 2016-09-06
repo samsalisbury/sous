@@ -1,4 +1,4 @@
-package graph
+package cli
 
 import (
 	"testing"
@@ -26,7 +26,7 @@ var badResolveSourceLocationCalls = map[string][]resolveSourceLocationInput{
 func TestResolveSourceLocation_failure(t *testing.T) {
 	for expected, inGroup := range badResolveSourceLocationCalls {
 		for _, in := range inGroup {
-			_, actualErr := newTargetSourceLocation(in.Flags, in.Context)
+			_, actualErr := newTargetManifestID(in.Flags, in.Context)
 			if actualErr == nil {
 				t.Errorf("got nil; want error %q", expected)
 				continue
@@ -39,19 +39,19 @@ func TestResolveSourceLocation_failure(t *testing.T) {
 	}
 }
 
-var goodResolveSourceLocationCalls = map[sous.SourceLocation][]resolveSourceLocationInput{
-	{Repo: "github.com/user/project", Dir: ""}: {
-		{Flags: &config.DeployFilterFlags{Repo: "github.com/user/project"}},
+var goodResolveSourceLocationCalls = map[sous.ManifestID][]resolveSourceLocationInput{
+	{Source: sous.SourceLocation{Repo: "github.com/user/project"}}: {
+		{Flags: &DeployFilterFlags{Repo: "github.com/user/project"}},
 		{Context: &sous.SourceContext{PrimaryRemoteURL: "github.com/user/project"}},
 	},
-	{Repo: "github.com/user/project", Dir: "some/path"}: {
+	{Source: sous.SourceLocation{Repo: "github.com/user/project", Dir: "some/path"}}: {
 		{Flags: &config.DeployFilterFlags{Repo: "github.com/user/project", Offset: "some/path"}},
 		{Context: &sous.SourceContext{
 			PrimaryRemoteURL: "github.com/user/project",
 			OffsetDir:        "some/path",
 		}},
 	},
-	{Repo: "github.com/from/flags", Dir: ""}: {
+	{Source: sous.SourceLocation{Repo: "github.com/from/flags"}}: {
 		{
 			Context: &sous.SourceContext{
 				PrimaryRemoteURL: "github.com/original/context",
@@ -67,16 +67,19 @@ var goodResolveSourceLocationCalls = map[sous.SourceLocation][]resolveSourceLoca
 func TestResolveSourceLocation_success(t *testing.T) {
 	for expected, inGroup := range goodResolveSourceLocationCalls {
 		for _, in := range inGroup {
-			actual, err := newTargetSourceLocation(in.Flags, in.Context)
+			actual, err := newTargetManifestID(in.Flags, in.Context)
 			if err != nil {
 				t.Error(err)
 				continue
 			}
-			if actual.Repo != expected.Repo {
-				t.Errorf("got repo %q; want %q", actual.Repo, expected.Repo)
+			if actual.Source.Repo != expected.Source.Repo {
+				t.Errorf("got repo %q; want %q", actual.Source.Repo, expected.Source.Repo)
 			}
-			if actual.Dir != expected.Dir {
-				t.Errorf("got offset %q; want %q", actual.Dir, expected.Dir)
+			if actual.Source.Dir != expected.Source.Dir {
+				t.Errorf("got offset %q; want %q", actual.Source.Dir, expected.Source.Dir)
+			}
+			if actual.Flavor != expected.Flavor {
+				t.Errorf("got flavor %q; want %q", actual.Flavor, expected.Flavor)
 			}
 		}
 	}
