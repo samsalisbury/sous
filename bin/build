@@ -103,10 +103,7 @@ for T in "${REQUESTED_TARGETS[@]}"; do
 
 	export GOOS="${PARTS[0]}" GOARCH="${PARTS[1]}"
 
-	flags="-X 'main.RevisionID=$COMMIT' \
-		-X 'main.VersionString=$VERSION' \
-		-X 'main.OS=$GOOS' -X 'main.Arch=$GOARCH' \
-		-X 'main.GoVersion=$GOVERSION'"
+	flags="-X 'main.RevisionID=$COMMIT'"
 
 	ART_PATH="$ARTIFACTS_DIR/$VERSION/$GOOS/$GOARCH"
 	
