@@ -1,19 +1,23 @@
 package main
 
-import "github.com/samsalisbury/semv"
+import (
+	"runtime"
 
-var (
-	// These variables are set by build flags.
-	VersionString, OS, Arch, GoVersion string
-	// Revision should be set by the build process using build flags.
-	Revision string
-	// Version is the current version of Sous
-	Version semv.Version
+	"github.com/samsalisbury/semv"
 )
 
-func init() {
-	if VersionString == "" {
-		VersionString = "0.0.0-unversioned"
-	}
-	Version = semv.MustParse(VersionString)
-}
+// VersionString is the version of Sous.
+const VersionString = "0.0.1"
+
+var (
+	// Version is the version of Sous.
+	Version = semv.MustParse(VersionString + "+" + Revision)
+	// OS is the OS this Sous is running on.
+	OS = runtime.GOOS
+	// Arch is the architecture this Sous is running on.
+	Arch = runtime.GOARCH
+	// GoVersion is the version of Go this sous was built with.
+	GoVersion = runtime.Version()
+	// Revision may be set by the build process using build flags.
+	Revision string
+)

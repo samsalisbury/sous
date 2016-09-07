@@ -15,7 +15,13 @@ func main() {
 	//sous.Log.Debug.SetOutput(os.Stderr)
 	log.SetFlags(log.Flags() | log.Lshortfile)
 
-	c, err := cli.NewSousCLI(Version, os.Stdout, os.Stderr)
+	s := &cli.Sous{
+		Version:   Version,
+		OS:        OS,
+		Arch:      Arch,
+		GoVersion: GoVersion,
+	}
+	c, err := cli.NewSousCLI(s, os.Stdout, os.Stderr)
 	if err != nil {
 		die(err)
 	}

@@ -21,5 +21,7 @@ func (*SousVersion) Help() string { return sousVersionHelp }
 
 // Execute runs the 'sous version' command.
 func (sv *SousVersion) Execute(args []string) cmdr.Result {
-	return cmdr.Successf("sous version %s", sv.Sous.Version)
+	out := `sous version %s %s/%s (built with %s)`
+	s := sv.Sous
+	return Successf(out, s.Version, s.OS, s.Arch, s.GoVersion)
 }
