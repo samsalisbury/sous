@@ -21,6 +21,10 @@ type DeployFilterFlags struct {
 	All      bool
 }
 
+// BuildPredicate returns a predicate used for filtering targeted deployments.
+//
+// It returns an error if the combination of flags is invalid, or if parseSL
+// returns an error parsing Source.
 func (f *DeployFilterFlags) BuildPredicate(parseSL func(string) (sous.SourceLocation, error)) (sous.DeploymentPredicate, error) {
 	var preds []sous.DeploymentPredicate
 
