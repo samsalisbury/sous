@@ -222,7 +222,7 @@ func newBuildManager(bc *sous.BuildConfig, sl sous.Selector, lb sous.Labeller, r
 
 func newLocalUser() (v LocalUser, err error) {
 	u, err := user.Current()
-	v.User = &config.User{u}
+	v.User = &config.User{User: u}
 	return v, initErr(err, "getting current user")
 }
 
