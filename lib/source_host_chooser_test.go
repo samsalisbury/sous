@@ -4,8 +4,8 @@ import (
 	"testing"
 )
 
-func TestEngine_ParseSourceLocation_noHosts(t *testing.T) {
-	e := &Engine{}
+func TestSourceHostChooser_ParseSourceLocation_noHosts(t *testing.T) {
+	e := &SourceHostChooser{}
 	expected := `source location not recognised: ""`
 	sl, actualErr := e.ParseSourceLocation("")
 	if (sl != SourceLocation{}) {
@@ -20,8 +20,8 @@ func TestEngine_ParseSourceLocation_noHosts(t *testing.T) {
 	}
 }
 
-func TestEngine_ParseSourceLocation_genericHost(t *testing.T) {
-	e := &Engine{
+func TestSourceHostChooser_ParseSourceLocation_genericHost(t *testing.T) {
+	e := &SourceHostChooser{
 		SourceHosts: []SourceHost{GenericHost{}},
 	}
 	expected := SourceLocation{Repo: "hello"}
