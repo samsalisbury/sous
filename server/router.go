@@ -32,7 +32,7 @@ const (
 	DefaultMethods = []string{"GET", "POST", "PUT", "DELETE"}
 
 	SousRouteMap = RouteMap{
-		{"gdm", []string{"GET"}, "/gdm", GDMHandling},
+		{"gdm", []string{"GET"}, "/gdm", NewGDMHandler},
 	}
 )
 
@@ -69,12 +69,10 @@ func PathFor(name string, params map[string]string) (string, error) {
 func Handling(main *graph.SousGraph, factory ExchangeFactory) httprouter.Handle {
 	func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		g := main.Clone()
-		g.Add(w)
-		g.Add(r)
-		g.Add(p)
+		g.Add(w, r, p)
 
 		h := factory()
 		g.Inject(h)
-		h.Go()
+		h.Execute()
 	}
 }
