@@ -12,7 +12,6 @@ import (
 	"github.com/opentable/sous/util/cmdr"
 	"github.com/opentable/sous/util/yaml"
 	"github.com/pkg/errors"
-	"github.com/samsalisbury/semv"
 )
 
 // Func aliases, for convenience returning from commands.
@@ -70,15 +69,16 @@ func (cli *CLI) Plumbing(cmd cmdr.Executor, args []string) cmdr.Result {
 	return cmd.Execute(args)
 }
 
+// BuildCLIGraph builds the CLI DI graph.
 func BuildCLIGraph(cli *CLI, root *Sous, out, err io.Writer) *graph.SousGraph {
 	g := graph.BuildGraph(out, err)
 	g.Add(cli)
 	g.Add(root)
 	g.Add(func(c *CLI) graph.Out {
-		return graph.Out{c.Out}
+		return graph.Out{Output: c.Out}
 	})
 	g.Add(func(c *CLI) graph.ErrOut {
-		return graph.ErrOut{c.Err}
+		return graph.ErrOut{Output: c.Err}
 	})
 	cli.SousGraph = g //Ugh, weird state.
 
@@ -86,9 +86,7 @@ func BuildCLIGraph(cli *CLI, root *Sous, out, err io.Writer) *graph.SousGraph {
 }
 
 // NewSousCLI creates a new Sous cli app.
-func NewSousCLI(v semv.Version, out, errout io.Writer) (*CLI, error) {
-
-	s := &Sous{Version: v}
+func NewSousCLI(s *Sous, out, errout io.Writer) (*CLI, error) {
 
 	stdout := cmdr.NewOutput(out)
 	stderr := cmdr.NewOutput(errout)

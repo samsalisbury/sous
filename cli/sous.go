@@ -21,6 +21,12 @@ type Sous struct {
 	Err *graph.ErrOut
 	// Version is the version of Sous itself.
 	Version semv.Version
+	// OS is the OS this Sous is running on.
+	OS string
+	// Arch is the architecture this Sous is running on.
+	Arch string
+	// GoVersion is the version of Go this sous was built with.
+	GoVersion string
 	// flags holds the values of flags passed to this command
 	flags struct {
 		Help bool

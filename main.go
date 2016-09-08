@@ -8,6 +8,14 @@ import (
 	"github.com/opentable/sous/cli"
 )
 
+// Sous is the Sous CLI root command.
+var Sous = &cli.Sous{
+	Version:   Version,
+	OS:        OS,
+	Arch:      Arch,
+	GoVersion: GoVersion,
+}
+
 func main() {
 	defer handlePanic()
 	// Eventually, these should become flags on the top level application
@@ -15,7 +23,7 @@ func main() {
 	//sous.Log.Debug.SetOutput(os.Stderr)
 	log.SetFlags(log.Flags() | log.Lshortfile)
 
-	c, err := cli.NewSousCLI(Version, os.Stdout, os.Stderr)
+	c, err := cli.NewSousCLI(Sous, os.Stdout, os.Stderr)
 	if err != nil {
 		die(err)
 	}
