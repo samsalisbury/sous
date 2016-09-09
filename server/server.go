@@ -1,7 +1,6 @@
 package server
 
 import (
-	"net"
 	"net/http"
 	"os"
 
@@ -10,23 +9,25 @@ import (
 )
 
 // New creates a Sous HTTP server
-func New(rm RouteMap, gf func() *graph.SousGraph) *http.Server {
+func New(v *config.Verbosity, laddr string) *http.Server {
 	return &http.Server{
-		Handler: BuildRouter(rm, gf),
+		Addr:    laddr,
+		Handler: NewSousRouter(v),
 	}
 }
 
-// RunServer starts a server up
-func RunServer(v *config.Verbosity, nw, laddr string) error {
+// NewSousRouter builds a router for the Sous server
+func NewSousRouter(v *config.Verbosity) http.Handler {
 	gf := func() *graph.SousGraph {
 		g := graph.BuildGraph(os.Stdout, os.Stdout)
 		g.Add(v)
 		return g
 	}
-	s := New(SousRouteMap, gf)
-	l, err := net.Listen(nw, laddr)
-	if err != nil {
-		return err
-	}
-	return s.Serve(l)
+	return BuildRouter(SousRouteMap, gf)
+}
+
+// RunServer starts a server up
+func RunServer(v *config.Verbosity, laddr string) error {
+	s := New(v, laddr)
+	return s.ListenAndServe()
 }

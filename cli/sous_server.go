@@ -12,7 +12,7 @@ import (
 type SousServer struct {
 	*config.Verbosity
 	flags struct {
-		net, laddr string
+		laddr string
 	}
 }
 
@@ -31,12 +31,11 @@ func (ss *SousServer) Help() string {
 
 // AddFlags is part of the cmdr.Command interfaces(s)
 func (ss *SousServer) AddFlags(fs *flag.FlagSet) {
-	fs.StringVar(&ss.flags.net, `net`, `tcp`, "Sets the kind of network: tcp,tcp4,tcp6,unix,unixpacket")
 	fs.StringVar(&ss.flags.laddr, `listen`, `:80`, "The address to list on, like '127.0.0.1:https'")
 }
 
 // Execute is part of the cmdr.Command interface(s)
 func (ss *SousServer) Execute(args []string) cmdr.Result {
-	err := server.RunServer(ss.Verbosity, ss.flags.net, ss.flags.laddr)
+	err := server.RunServer(ss.Verbosity, ss.flags.laddr)
 	return EnsureErrorResult(err) //always non-nil
 }
