@@ -22,7 +22,7 @@ type SousRectify struct {
 	State        *sous.State
 	GDM          graph.CurrentGDM
 	SourceFlags  config.DeployFilterFlags
-	Engine       sous.Engine
+	Engine       sous.SourceHostChooser
 	flags        struct {
 		dryrun,
 		repo, offset, cluster string

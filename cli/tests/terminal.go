@@ -22,7 +22,7 @@ type (
 		History                  []string
 		T                        *testing.T
 	}
-	// Output allows inspection of output streams from the Terminal.
+	// TestOutput allows inspection of output streams from the Terminal.
 	TestOutput struct {
 		Name   string
 		Buffer *bytes.Buffer
@@ -30,6 +30,7 @@ type (
 	}
 )
 
+// NewTerminal creates a new test terminal.
 func NewTerminal(t *testing.T, vstr string) *Terminal {
 	v := semv.MustParse(vstr)
 	baseout := TestOutput{"stdout", &bytes.Buffer{}, t}
@@ -39,7 +40,8 @@ func NewTerminal(t *testing.T, vstr string) *Terminal {
 	out := io.MultiWriter(baseout.Buffer, combined.Buffer)
 	err := io.MultiWriter(baseerr.Buffer, combined.Buffer)
 
-	c, er := cli.NewSousCLI(v, out, err)
+	s := &cli.Sous{Version: v}
+	c, er := cli.NewSousCLI(s, out, err)
 	if er != nil {
 		panic(er)
 	}
@@ -73,6 +75,8 @@ func (t *Terminal) Summary() string {
 	return buf.String()
 }
 
+// PrintFailureSummary prints the entire terminal session transcript if the
+// failed. Otherwise, it does nothing.
 func (t *Terminal) PrintFailureSummary() {
 	if t.T.Failed() {
 		t.T.Logf("Terminal Session Summary:\n%s", t.Summary())
@@ -81,8 +85,11 @@ func (t *Terminal) PrintFailureSummary() {
 
 func (out TestOutput) String() string { return out.Buffer.String() }
 
+// Lines returns a slice of strings representing lines in the output.
 func (out TestOutput) Lines() []string { return strings.Split(out.String(), "\n") }
 
+// LinesContaining is similar to Lines, but filters lines based on if they have
+// a substring matching s.
 func (out TestOutput) LinesContaining(s string) []string {
 	lines := []string{}
 	for _, l := range out.Lines() {
@@ -93,10 +100,12 @@ func (out TestOutput) LinesContaining(s string) []string {
 	return lines
 }
 
+// NumLines returns the number of lines in the output.
 func (out TestOutput) NumLines() int {
 	return strings.Count(out.String(), "\n")
 }
 
+// HasLineMatching returns true if one of the output lines exactly matches s.
 func (out TestOutput) HasLineMatching(s string) bool {
 	for _, l := range out.Lines() {
 		if l == s {
@@ -106,6 +115,7 @@ func (out TestOutput) HasLineMatching(s string) bool {
 	return false
 }
 
+// ShouldHaveExactLine fails the test if the output did not contain the line s.
 func (out TestOutput) ShouldHaveExactLine(s string) {
 	if out.HasLineMatching(s) {
 		return
@@ -114,6 +124,8 @@ func (out TestOutput) ShouldHaveExactLine(s string) {
 	out.T.Errorf("expected %s to have exact line %q%s", out.Name, s, hint)
 }
 
+// ShouldHaveLineContaining is similar to ShouldHaveExactLine but only requires
+// that the line contain the substring s rather then being equal to s.
 func (out TestOutput) ShouldHaveLineContaining(s string) {
 	for _, line := range out.Lines() {
 		if strings.Contains(line, s) {
@@ -124,6 +136,7 @@ func (out TestOutput) ShouldHaveLineContaining(s string) {
 	out.T.Errorf("expected %s to have line containing %q%s", out.Name, s, hint)
 }
 
+// ShouldHaveNumLines fails the test if the output does not have expected lines.
 func (out TestOutput) ShouldHaveNumLines(expected int) {
 	actual := out.NumLines()
 	if actual == expected {

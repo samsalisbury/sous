@@ -18,7 +18,8 @@ func prepareCommand(t *testing.T, cl []string) (*CLI, *cmdr.PreparedExecution, f
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
 
-	c, err := NewSousCLI(semv.MustParse(`1.2.3`), stdout, stderr)
+	s := &Sous{Version: semv.MustParse(`1.2.3`)}
+	c, err := NewSousCLI(s, stdout, stderr)
 	require.NoError(err)
 
 	exe, err := c.Prepare(cl)
@@ -251,7 +252,8 @@ func TestInvokeWithUnknownFlags(t *testing.T) {
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
 
-	c, err := NewSousCLI(semv.MustParse(`1.2.3`), stdout, stderr)
+	s := &Sous{Version: semv.MustParse(`1.2.3`)}
+	c, err := NewSousCLI(s, stdout, stderr)
 	require.NoError(err)
 
 	c.Invoke([]string{`sous`, `-cobblers`})

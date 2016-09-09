@@ -28,5 +28,5 @@ func TestSousVersion(t *testing.T) {
 	term.RunCommand("sous version")
 	term.Stderr.ShouldHaveNumLines(0)
 	term.Stdout.ShouldHaveNumLines(1)
-	term.Stdout.ShouldHaveExactLine("sous version 1.0.0-test")
+	term.Stdout.ShouldHaveLineContaining("sous version")
 }
