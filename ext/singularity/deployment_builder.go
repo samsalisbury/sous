@@ -175,7 +175,7 @@ func (db *deploymentBuilder) retrieveImageLabels() error {
 		posNick = nn
 		matchCount++
 
-		checkID := buildReqID(db.Target.SourceID, nn)
+		checkID := MakeRequestID(db.Target.ID())
 		sous.Log.Vomit.Printf("Trying hypothetical request ID: %s", checkID)
 		if checkID == db.request.Id {
 			db.Target.ClusterName = nn

@@ -35,9 +35,9 @@ func NewRectiAgent(b sous.Registry) *RectiAgent {
 	}
 }
 
-// SingMap produces a DTOMap appropriate for building a Singularity
+// mapResources produces a dtoMap appropriate for building a Singularity
 // dto.Resources struct from
-func MapResources(r sous.Resources) dtoMap {
+func mapResources(r sous.Resources) dtoMap {
 	return dtoMap{
 		"Cpus":     r.Cpus(),
 		"MemoryMb": r.Memory(),
@@ -69,7 +69,7 @@ func buildDeployRequest(dockerImage string, e sous.Env, r sous.Resources, reqID 
 		return nil, err
 	}
 
-	res, err := swaggering.LoadMap(&dtos.Resources{}, MapResources(r))
+	res, err := swaggering.LoadMap(&dtos.Resources{}, mapResources(r))
 	if err != nil {
 		return nil, err
 	}
