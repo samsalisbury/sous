@@ -1,6 +1,9 @@
 package singularity
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/opentable/go-singularity"
 	"github.com/opentable/sous/lib"
 	"github.com/satori/go.uuid"
@@ -158,11 +161,13 @@ func computeRequestID(d *sous.Deployment) string {
 	if len(d.RequestID) > 0 {
 		return d.RequestID
 	}
-	return buildReqID(d.SourceID, d.ClusterName)
+	return MakeRequestID(d.ID())
 }
 
-func buildReqID(sv sous.SourceID, nick string) string {
-	return MakeDeployID(sv.Location.String() + nick)
+// MakeRequestID creats a Singularity request ID from a sous.DeployID.
+func MakeRequestID(mid sous.DeployID) string {
+	sl := strings.Replace(mid.ManifestID.Source.String(), "/", ">", -1)
+	return fmt.Sprintf("%s:%s:%s", sl, mid.ManifestID.Flavor, mid.Cluster)
 }
 
 func newDepID() string {

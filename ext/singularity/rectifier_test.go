@@ -299,7 +299,7 @@ func TestDeletes(t *testing.T) {
 	if assert.Len(client.deleted, 1) {
 		req := client.deleted[0]
 		assert.Equal("cluster", req.cluster)
-		assert.Equal("reqid", req.reqid)
+		assert.Equal("reqid::", req.reqid)
 	}
 }
 
@@ -345,7 +345,7 @@ func TestCreates(t *testing.T) {
 	if assert.Len(client.created, 1) {
 		req := client.created[0]
 		assert.Equal("cluster", req.cluster)
-		assert.Equal("reqidnick", req.id)
+		assert.Equal("reqid::nick", req.id)
 		assert.Equal(12, req.count)
 	}
 }
