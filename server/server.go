@@ -1,10 +1,14 @@
 package server
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/opentable/sous/graph"
+)
 
 // New creates a Sous HTTP server
-func New() *http.Server {
+func New(rm RouteMap, gf func() *graph.SousGraph) *http.Server {
 	return &http.Server{
-		Handler: BuildRouter(),
+		Handler: BuildRouter(rm, gf),
 	}
 }

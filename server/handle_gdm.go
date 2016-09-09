@@ -1,7 +1,7 @@
 package server
 
 import (
-	"net/http"
+	"encoding/json"
 
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
@@ -10,12 +10,12 @@ import (
 type (
 	// GDMHandler is an injectable request handler
 	GDMHandler struct {
-		w   http.ResponseWriter
+		*ResponseWriter
 		GDM graph.CurrentGDM
 	}
 
 	gdmWrapper struct {
-		Deployments []sous.Deployment
+		Deployments []*sous.Deployment
 	}
 )
 
@@ -24,13 +24,14 @@ func NewGDMHandler() Exchanger {
 	return &GDMHandler{}
 }
 
-// Execute implements the Handler interface
-func (h *GDMHandler) Execute() {
-	data := gdmWrapper{}
+// Exchange implements the Handler interface
+func (h *GDMHandler) Exchange() {
+	data := gdmWrapper{Deployments: make([]*sous.Deployment, 0)}
 	for _, d := range h.GDM.Snapshot() {
 		data.Deployments = append(data.Deployments, d)
 	}
 
-	e := NewEncoder(h.w)
+	h.ResponseWriter.Header().Add("Content-Type", "application/json")
+	e := json.NewEncoder(h.ResponseWriter)
 	e.Encode(data)
 }

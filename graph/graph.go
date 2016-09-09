@@ -148,22 +148,24 @@ func newRegistryDumper(r sous.Registry) *sous.RegistryDumper {
 }
 
 func newLogSet(v *config.Verbosity, err ErrWriter) *sous.LogSet { // XXX temporary until we settle on logging
+	sous.Log.Info.SetOutput(err)
+
 	if v.Debug {
 		if v.Loud {
 			sous.Log.Vomit.SetOutput(err)
 		}
 		sous.Log.Debug.SetOutput(err)
-		sous.Log.Info.SetOutput(err)
-
 	}
 	if v.Loud {
-		sous.Log.Info.SetOutput(err)
 	}
 	if v.Quiet {
+		sous.Log.Info.SetOutput(ioutil.Discard)
 	}
 	if v.Silent {
+		sous.Log.Info.SetOutput(ioutil.Discard)
 	}
 
+	//sous.Log.Warn.Println("Normal output enabled")
 	sous.Log.Vomit.Println("Verbose debugging enabled")
 	sous.Log.Debug.Println("Regular debugging enabled")
 	return &sous.Log

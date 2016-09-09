@@ -1,10 +1,14 @@
 package server
 
 import (
+	"log"
 	"net/http"
+	"runtime/debug"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/opentable/sous/graph"
+	"github.com/opentable/sous/lib"
+	"github.com/pkg/errors"
 )
 
 type (
@@ -14,6 +18,20 @@ type (
 		Exchange()
 	}
 
+	// A PanicHandler processes panics into 500s
+	PanicHandler struct {
+		*sous.LogSet
+		*ResponseWriter
+	}
+
+	// ResponseWriter wraps the the http.ResponseWriter interface
+	// XXX This is a workaround for Psyringe
+	ResponseWriter struct {
+		http.ResponseWriter
+	}
+
+	// An ExchangeFactory builds an Exchanger -
+	// they're used to configure the RouteMap
 	ExchangeFactory func() Exchanger
 
 	routeEntry struct {
@@ -27,26 +45,22 @@ type (
 	RouteMap []routeEntry
 )
 
-// RouteMap is the configuration of route for the application
-const (
-	DefaultMethods = []string{"GET", "POST", "PUT", "DELETE"}
+var (
+	defaultMethods = []string{"GET", "POST", "PUT", "DELETE"}
 
+	// SousRouteMap is the configuration of route for the application
 	SousRouteMap = RouteMap{
 		{"gdm", []string{"GET"}, "/gdm", NewGDMHandler},
 	}
 )
 
 // BuildRouter builds a returns an http.Handler based on some constant configuration
-func BuildRouter(rm RouteMap, gr graph.SousGraph) http.Handler {
+func BuildRouter(rm RouteMap, grf func() *graph.SousGraph) http.Handler {
 	r := httprouter.New()
 
 	for _, e := range rm {
-		meths := e.Methods
-		if len(meths) == 0 {
-			meths = DefaultMethods
-		}
-		for _, m := range meths {
-			r.Handle(m, e.Path, Handling(gr, e.Exchange))
+		for _, m := range e.Methods {
+			r.Handle(m, e.Path, Handling(grf, e.Exchange))
 		}
 	}
 
@@ -55,24 +69,50 @@ func BuildRouter(rm RouteMap, gr graph.SousGraph) http.Handler {
 
 // PathFor constructs a URL which should route back to the named route, with
 // supplied parameters
-func PathFor(name string, params map[string]string) (string, error) {
-	for _, e := range RouteMap {
+func (rm *RouteMap) PathFor(name string, params map[string]string) (string, error) {
+	for _, e := range *rm {
 		if e.Name == name {
 			// TODO actually handle params
 			return e.Path, nil
 		}
 	}
-	return "", errors.Newf("No route found for name %q", name)
+	return "", errors.Errorf("No route found for name %q", name)
+}
+
+func panicsAreFiveHundred(w http.ResponseWriter) {
+	if r := recover(); r != nil {
+		log.Print("paFH")
+		log.Print(r)
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+}
+
+// Handle recovers from panics, returns a 500 and logs the error
+func (ph *PanicHandler) Handle() {
+	if r := recover(); r != nil {
+		ph.ResponseWriter.WriteHeader(http.StatusInternalServerError)
+		ph.LogSet.Warn.Printf("%+v", r)
+		ph.LogSet.Warn.Print(string(debug.Stack()))
+		ph.LogSet.Warn.Print("Recovered, returned 500")
+		// XXX in a dev mode, print the panic in the response body
+		// (normal ops it might leak secure data)
+	}
 }
 
 // Handling (sometimes) updates the local copy of the GDM and formats it
-func Handling(main *graph.SousGraph, factory ExchangeFactory) httprouter.Handle {
-	func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		g := main.Clone()
-		g.Add(w, r, p)
+func Handling(graphFac func() *graph.SousGraph, factory ExchangeFactory) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		defer panicsAreFiveHundred(w)
+
+		g := graphFac()
+		g.Add(&ResponseWriter{ResponseWriter: w}, r, p)
+
+		ph := &PanicHandler{}
+		g.Inject(ph)
+		defer ph.Handle()
 
 		h := factory()
 		g.Inject(h)
-		h.Execute()
+		h.Exchange()
 	}
 }

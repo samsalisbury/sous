@@ -2,7 +2,6 @@ package cli
 
 import (
 	"flag"
-	"log"
 
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
@@ -60,10 +59,6 @@ func (*Sous) Help() string { return sousHelp }
 
 // AddFlags adds sous' flags.
 func (s *Sous) AddFlags(fs *flag.FlagSet) {
-	log.Print(fs)
-	log.Print(s)
-	log.Print(s.flags)
-	log.Print(s.flags.Verbosity)
 	fs.BoolVar(&s.flags.Verbosity.Silent, "s", false,
 		"silent: silence all non-essential output")
 	fs.BoolVar(&s.flags.Verbosity.Quiet, "q", false,
@@ -76,7 +71,6 @@ func (s *Sous) AddFlags(fs *flag.FlagSet) {
 
 // RegisterOn adds the Sous object itself to the Psyringe
 func (s *Sous) RegisterOn(psy Addable) {
-	log.Printf("%[1]v %[1]T", &s.flags.Verbosity)
 	psy.Add(&s.flags.Verbosity)
 }
 
