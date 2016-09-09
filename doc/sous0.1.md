@@ -128,6 +128,6 @@ own lives easier. We are also conscientiously working on improving test coverage
 cycle hit 54%, we expect to see that rise quickly now that we fail CI when it falls. You
 can track test coverage at https://codecov.io/gh/opentable/sous.
 
-For more gory detail, check out the [full list of commits between 0.0.1 and 0.1.0](https://github.com/opentable/sous/compare/v0.0.1...v0.1.0).
+For more gory detail, check out the [full list of commits between 0.0.1 and 0.1](https://github.com/opentable/sous/compare/v0.0.1...v0.1).
 
 
