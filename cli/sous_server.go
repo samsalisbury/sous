@@ -2,11 +2,8 @@ package cli
 
 import (
 	"flag"
-	"net"
-	"os"
 
 	"github.com/opentable/sous/config"
-	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/server"
 	"github.com/opentable/sous/util/cmdr"
 )
@@ -40,16 +37,6 @@ func (ss *SousServer) AddFlags(fs *flag.FlagSet) {
 
 // Execute is part of the cmdr.Command interface(s)
 func (ss *SousServer) Execute(args []string) cmdr.Result {
-	gf := func() *graph.SousGraph {
-		g := graph.BuildGraph(os.Stdout, os.Stdout)
-		g.Add(ss.Verbosity)
-		return g
-	}
-	s := server.New(server.SousRouteMap, gf)
-	l, err := net.Listen(ss.flags.net, ss.flags.laddr)
-	if err != nil {
-		return EnsureErrorResult(err)
-	}
-	err = s.Serve(l)
+	err := server.RunServer(ss.Verbosity, ss.flags.net, ss.flags.laddr)
 	return EnsureErrorResult(err) //always non-nil
 }
