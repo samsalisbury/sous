@@ -23,7 +23,7 @@ type (
 	// DiskStateManager implements StateReader and StateWriter using disk
 	// storage as its back-end.
 	DiskStateManager struct {
-		baseDir string
+		BaseDir string
 		Codec   *hy.Codec
 	}
 )
@@ -36,7 +36,7 @@ func NewDiskStateManager(baseDir string) *DiskStateManager {
 		c.MarshalFunc = yaml.Marshal
 		c.UnmarshalFunc = yaml.Unmarshal
 	})
-	return &DiskStateManager{Codec: c, baseDir: baseDir}
+	return &DiskStateManager{Codec: c, BaseDir: baseDir}
 }
 
 // ReadState loads the entire intended state of the world from a dir.
@@ -44,7 +44,7 @@ func (dsm *DiskStateManager) ReadState() (*sous.State, error) {
 	// TODO: Allow state dir to be passed as flag in sous/cli.
 	// TODO: Consider returning a bool to indicate if the state dir exists at all.
 	s := sous.NewState()
-	err := dsm.Codec.Read(dsm.baseDir, s)
+	err := dsm.Codec.Read(dsm.BaseDir, s)
 	if err != nil {
 		return s, err
 	}
@@ -66,5 +66,5 @@ func (dsm *DiskStateManager) ReadState() (*sous.State, error) {
 
 // WriteState records the entire intended state of the world to a dir.
 func (dsm *DiskStateManager) WriteState(s *sous.State) error {
-	return dsm.Codec.Write(dsm.baseDir, s)
+	return dsm.Codec.Write(dsm.BaseDir, s)
 }
