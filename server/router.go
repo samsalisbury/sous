@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 	"runtime/debug"
@@ -15,7 +16,7 @@ type (
 	// A Exchanger has an Exchange method - which is presumed to write to an
 	// injected ResponseWriter
 	Exchanger interface {
-		Exchange()
+		Exchange() (interface{}, int)
 	}
 
 	// A PanicHandler processes panics into 500s
@@ -113,6 +114,13 @@ func Handling(graphFac func() *graph.SousGraph, factory ExchangeFactory) httprou
 
 		h := factory()
 		g.Inject(h)
-		h.Exchange()
+
+		data, status := h.Exchange()
+
+		w.Header().Add("Content-Type", "application/json")
+		w.WriteHeader(status)
+
+		e := json.NewEncoder(w)
+		e.Encode(data)
 	}
 }
