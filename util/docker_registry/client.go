@@ -25,7 +25,7 @@ type (
 	// V1Schema Represents the original v1 schema data for a container
 	V1Schema struct {
 		//ContainerConfig ContainerConfig `json:"container_config"`
-		CC        ContainerConfig `json:"container_config""`
+		CC        ContainerConfig `json:"container_config"`
 		Container string          `json:"container"`
 	}
 
