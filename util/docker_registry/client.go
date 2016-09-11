@@ -187,7 +187,7 @@ func updateName(rn reference.Named, name string) (ref reference.Named, err error
 	case reference.Tagged:
 		ref, err = reference.WithTag(nr, r.Tag())
 	case reference.Named:
-		ref, err = nr, err
+		ref = nr
 	}
 
 	return
