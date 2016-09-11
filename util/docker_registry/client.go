@@ -218,7 +218,7 @@ func (c *liveClient) registryForHostname(regHost string) (*registry, error) {
 }
 
 type stubConfig struct {
-	Config stubImage `json:config`
+	Config stubImage `json:"config"`
 }
 
 type stubImage struct {
