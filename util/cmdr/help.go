@@ -4,16 +4,15 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/opentable/sous/util/whitespace"
 )
 
-type (
-	Help struct{ Short, Desc, Args, Long string }
-)
+// Help contains help strings describing a command.
+type Help struct{ Short, Desc, Args, Long string }
 
+// ParseHelp parses a command's help string into its component parts.
 func ParseHelp(s string) *Help {
 	chunks := strings.SplitN(s, "\n\n", 4)
 	pieces := []string{}
@@ -44,6 +43,7 @@ func ParseHelp(s string) *Help {
 	return h
 }
 
+// Usage prints the usage message.
 func (h *Help) Usage(name string) string {
 	return fmt.Sprintf("usage: %s %s", name, h.Args)
 }
@@ -69,8 +69,6 @@ func (cli *CLI) printHelp(out *Output, base Command, name string, args []string)
 		out.Println(help.Usage(name))
 		out.Println()
 		out.Println(help.Desc)
-		log.Print(cli)
-		log.Print(out, base, name)
 		cli.printSubcommands(out, base, name)
 		cli.printOptions(out, base, name)
 		return nil
