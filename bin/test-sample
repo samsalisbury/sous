@@ -28,7 +28,7 @@ while [ "$I" -lt "$SAMPLE_SIZE" ]; do
 	FILE="$DIR/$I_PAD"
 	START="$(date +%s)"
 	echo "### Beginning test run $I"
-	./bin/test -v 2>&1 | tee "$FILE"
+	./bin/test -tags=integration -v 2>&1 | tee "$FILE"
 	if [ "$?" = 0 ]; then
     RESULT=pass;
   else
