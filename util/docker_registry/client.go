@@ -25,7 +25,7 @@ type (
 	// V1Schema Represents the original v1 schema data for a container
 	V1Schema struct {
 		//ContainerConfig ContainerConfig `json:"container_config"`
-		CC        ContainerConfig `json:"container_config""`
+		CC        ContainerConfig `json:"container_config"`
 		Container string          `json:"container"`
 	}
 
@@ -187,7 +187,7 @@ func updateName(rn reference.Named, name string) (ref reference.Named, err error
 	case reference.Tagged:
 		ref, err = reference.WithTag(nr, r.Tag())
 	case reference.Named:
-		ref, err = nr, err
+		ref = nr
 	}
 
 	return
@@ -218,7 +218,7 @@ func (c *liveClient) registryForHostname(regHost string) (*registry, error) {
 }
 
 type stubConfig struct {
-	Config stubImage `json:config`
+	Config stubImage `json:"config"`
 }
 
 type stubImage struct {
