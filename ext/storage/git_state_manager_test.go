@@ -78,7 +78,7 @@ func runScript(t *testing.T, script string, dir ...string) {
 		cmd.Env = []string{"GIT_CONFIG_NOSYSTEM=true", "HOME=none", "XDG_CONFIG_HOME=none"}
 		//log.Print(cmd)
 		if out, err := cmd.CombinedOutput(); err != nil {
-			t.Fatal(err, string(out))
+			t.Fatal("x", err, cmd, string(out))
 		}
 	}
 }
@@ -88,9 +88,13 @@ func setupManagers(t *testing.T) (*GitStateManager, *DiskStateManager) {
 	cp -a testdata/in testdata/origin`)
 	runScript(t, `git init
 	git add .
-	git config --local --add receive.denyCurrentBranch ignore
+	git config --local receive.denyCurrentBranch ignore
+	git config user.email sous@opentable.com
+	git config user.name Sous
 	git commit -m ""`, `testdata/origin`)
 	runScript(t, `git clone origin target`, `testdata`)
+	runScript(t, `git config user.email sous@opentable.com
+	git config user.name Sous`, `testdata/target`)
 
 	gsm := NewGitStateManager(NewDiskStateManager("testdata/target"))
 	dsm := NewDiskStateManager(`testdata/origin`)
