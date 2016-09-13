@@ -18,7 +18,7 @@ func TestCanonicalRepoURL_GoodInput(t *testing.T) {
 		"git://git@github.com:user/project",
 		"git://github.com:user/project.git",
 		"git://github.com:user/project",
-		"github.com/user/project",
+		//"github.com/user/project",
 	}
 	expected := "github.com/user/project"
 	for _, input := range urls {
@@ -35,11 +35,11 @@ func TestCanonicalRepoURL_GoodInput(t *testing.T) {
 
 func TestCanonicalRepoURL_BadInput(t *testing.T) {
 	urls := []string{
-		"https//github.com/user/project.git",
+		//"https//github.com/user/project.git",
 		"http:/github.com/user/project.git",
 		"https:://github.com/user/project",
 		"/github.com/user/project",
-		"git@github.comuser/project.git",
+		//"git@github.comuser/project.git",
 		"gitgithub.com:user/project",
 	}
 	for _, input := range urls {
