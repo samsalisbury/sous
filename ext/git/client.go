@@ -170,7 +170,7 @@ func (c *Client) ListRemotes() (Remotes, error) {
 		kind := row[2]
 		switch kind {
 		default:
-			return nil, fmt.Errorf("git remote -v returned a remote URL type %s; expected (push) or (fetch)")
+			return nil, fmt.Errorf("git remote -v returned a remote URL type %s; expected (push) or (fetch)", kind)
 		case "(push)":
 			remotes.AddPush(name, url)
 		case "(fetch)":
