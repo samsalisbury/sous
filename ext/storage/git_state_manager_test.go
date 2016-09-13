@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"log"
 	"os"
 	"os/exec"
 	"strings"
@@ -15,6 +14,7 @@ import (
 )
 
 func TestGitWriteState(t *testing.T) {
+	require := require.New(t)
 
 	s := exampleState()
 
@@ -24,9 +24,7 @@ func TestGitWriteState(t *testing.T) {
 
 	gsm := NewGitStateManager(NewDiskStateManager("testdata/out"))
 
-	if err := gsm.WriteState(s); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(gsm.WriteState(s))
 
 	d := exec.Command("diff", "-r", "testdata/in", "testdata/out")
 	out, err := d.CombinedOutput()
@@ -78,25 +76,31 @@ func runScript(t *testing.T, script string, dir ...string) {
 			cmd.Dir = dir[0]
 		}
 		cmd.Env = []string{"GIT_CONFIG_NOSYSTEM=true", "HOME=none", "XDG_CONFIG_HOME=none"}
-		log.Print(cmd)
+		//log.Print(cmd)
 		if out, err := cmd.CombinedOutput(); err != nil {
 			t.Fatal(err, string(out))
 		}
 	}
 }
 
-func TestGitUpdates(t *testing.T) {
-	require := require.New(t)
-
+func setupManagers(t *testing.T) (*GitStateManager, *DiskStateManager) {
 	runScript(t, `rm -rf testdata/origin testdata/target
 	cp -a testdata/in testdata/origin`)
 	runScript(t, `git init
 	git add .
+	git config --local --add receive.denyCurrentBranch ignore
 	git commit -m ""`, `testdata/origin`)
 	runScript(t, `git clone origin target`, `testdata`)
 
 	gsm := NewGitStateManager(NewDiskStateManager("testdata/target"))
 	dsm := NewDiskStateManager(`testdata/origin`)
+
+	return gsm, dsm
+}
+
+func TestGitPulls(t *testing.T) {
+	require := require.New(t)
+	gsm, dsm := setupManagers(t)
 
 	actual, err := gsm.ReadState()
 	require.NoError(err)
@@ -106,9 +110,53 @@ func TestGitUpdates(t *testing.T) {
 
 	expected.Manifests.Add(&sous.Manifest{Source: sous.SourceLocation{Repo: "github.com/opentable/brandnew"}})
 	dsm.WriteState(expected)
+	expected, err = dsm.ReadState()
+	require.NoError(err)
 	runScript(t, `git add .
 	git commit -m ""`, `testdata/origin`)
 
+	actual, err = gsm.ReadState()
+	require.NoError(err)
+	sameYAML(t, actual, expected)
+}
+
+func TestGitPushes(t *testing.T) {
+	require := require.New(t)
+	gsm, dsm := setupManagers(t)
+
+	expected, err := gsm.ReadState()
+	require.NoError(err)
+
+	expected.Manifests.Add(&sous.Manifest{Source: sous.SourceLocation{Repo: "github.com/opentable/brandnew"}})
+	require.NoError(gsm.WriteState(expected))
+	expected, err = gsm.ReadState()
+	require.NoError(err)
+
+	runScript(t, `git reset --hard`, `testdata/origin`) //in order to reflect the change
+	actual, err := dsm.ReadState()
+	require.NoError(err)
+	sameYAML(t, actual, expected)
+}
+
+func TestGitConflicts(t *testing.T) {
+	assert := assert.New(t)
+	require := require.New(t)
+	gsm, dsm := setupManagers(t)
+
+	actual, err := gsm.ReadState()
+	require.NoError(err)
+
+	expected := exampleState()
+
+	expected.Manifests.Add(&sous.Manifest{Source: sous.SourceLocation{Repo: "github.com/opentable/brandnew"}})
+	dsm.WriteState(expected)
+	expected, err = dsm.ReadState()
+	require.NoError(err)
+	runScript(t, `git add .
+	git commit -m ""`, `testdata/origin`)
+
+	actual.Manifests.Add(&sous.Manifest{Source: sous.SourceLocation{Repo: "github.com/opentable/newhotness"}})
+	assert.Error(gsm.WriteState(actual))
 	actual, err = gsm.ReadState()
 	require.NoError(err)
 	sameYAML(t, actual, expected)
