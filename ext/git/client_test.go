@@ -1,10 +1,10 @@
 package git
 
 import (
-	"testing"
-
 	"github.com/nyarly/testify/assert"
 	"github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/shell"
+	"testing"
 )
 
 func TestParseTags(t *testing.T) {
@@ -23,4 +23,17 @@ func TestParseTags(t *testing.T) {
 	tags := (&Client{}).parseTags(lines)
 	assert.Len(tags, 6)
 	assert.Contains(tags, sous.Tag{Name: "0.2.0", Revision: "2f381f35ffcf57b21b4c2991635f7f825c29f003"})
+}
+
+func TestNewClient(t *testing.T) {
+	c, err := NewClient(&shell.Sh{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	switch interface{}(c).(type) {
+	case *Client:
+		t.Logf("NewClient() created a *Client %v\n", c)
+	default:
+		t.Fatalf("NewClient() did not create a *Client")
+	}
 }

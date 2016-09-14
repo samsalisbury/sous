@@ -162,7 +162,7 @@ func (c *Client) ListRemotes() (Remotes, error) {
 	remotes := Remotes{}
 	for _, row := range t {
 		if len(row) != 3 {
-			fmt.Println("%s", t)
+			fmt.Printf("%s\n", t)
 			return nil, fmt.Errorf("git remote -v output in unexpected format, please report this error")
 		}
 		name := row[0]
@@ -170,7 +170,7 @@ func (c *Client) ListRemotes() (Remotes, error) {
 		kind := row[2]
 		switch kind {
 		default:
-			return nil, fmt.Errorf("git remote -v returned a remote URL type %s; expected (push) or (fetch)")
+			return nil, fmt.Errorf("git remote -v returned a remote URL type %s; expected (push) or (fetch)", kind)
 		case "(push)":
 			remotes.AddPush(name, url)
 		case "(fetch)":
