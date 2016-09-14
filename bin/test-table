@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+
+echo "one two three"
+echo "four five six"

@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+
+echo "first"
+echo "second"
+echo "third"
