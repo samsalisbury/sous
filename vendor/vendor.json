@@ -189,6 +189,12 @@
 			"revisionTime": "2016-07-18T22:12:07Z"
 		},
 		{
+			"checksumSHA1": "xN14ZoFcgefABp24aowYtQVMDsc=",
+			"path": "github.com/pborman/uuid",
+			"revision": "c55201b036063326c5b1b89ccfe45a184973d073",
+			"revisionTime": "2016-02-16T16:37:10Z"
+		},
+		{
 			"checksumSHA1": "2HSjyUZ4IMkCeA34TjJ0/f+Kk/k=",
 			"path": "github.com/pkg/errors",
 			"revision": "2a9be18ecd8c148be18be08a811e33809206da19",

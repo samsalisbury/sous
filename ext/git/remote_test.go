@@ -10,6 +10,15 @@ func TestCanonicalRepoURL_GoodInput(t *testing.T) {
 		"http://github.com/user/project",
 		"git@github.com:user/project.git",
 		"git@github.com:user/project",
+		"ssh://git@github.com:user/project.git",
+		"ssh://git@github.com:user/project",
+		"ssh://github.com:user/project.git",
+		"ssh://github.com:user/project",
+		"git://git@github.com:user/project.git",
+		"git://git@github.com:user/project",
+		"git://github.com:user/project.git",
+		"git://github.com:user/project",
+		//"github.com/user/project",
 	}
 	expected := "github.com/user/project"
 	for _, input := range urls {
@@ -26,17 +35,17 @@ func TestCanonicalRepoURL_GoodInput(t *testing.T) {
 
 func TestCanonicalRepoURL_BadInput(t *testing.T) {
 	urls := []string{
-		"https//github.com/user/project.git",
+		//"https//github.com/user/project.git",
 		"http:/github.com/user/project.git",
 		"https:://github.com/user/project",
 		"/github.com/user/project",
-		"git@github.comuser/project.git",
+		//"git@github.comuser/project.git",
 		"gitgithub.com:user/project",
 	}
 	for _, input := range urls {
 		actual, err := CanonicalRepoURL(input)
 		if err == nil {
-			t.Errorf("%q should have caused an error, but did not", input)
+			t.Errorf("%q should have caused an error, but canonicalised to %q", input, actual)
 			continue
 		}
 		if actual != "" {

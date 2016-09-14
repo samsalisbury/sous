@@ -100,6 +100,7 @@ func exampleState() *sous.State {
 								"mem": "2GB",
 							},
 							NumInstances: 3,
+							Volumes:      sous.Volumes{},
 						},
 						Version: semv.MustParse("1.0.0"),
 					},
@@ -109,6 +110,7 @@ func exampleState() *sous.State {
 								"SOME_DB_URL": "https://some.database",
 							},
 							NumInstances: 6,
+							Volumes:      sous.Volumes{},
 						},
 						Version: semv.MustParse("1.0.0-rc.1+deadbeef"),
 					},
@@ -124,6 +126,7 @@ func exampleState() *sous.State {
 							Env: sous.Env{
 								"DEBUG": "YES",
 							},
+							Volumes: sous.Volumes{},
 						},
 						Version: semv.MustParse("0.3.1-beta+b4d455ee"),
 					},

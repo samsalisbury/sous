@@ -124,6 +124,7 @@ func BuildGraph(out, err io.Writer) *SousGraph {
 		newRegistry,
 		newRegistryDumper,
 		newLocalDiskStateManager,
+		newGitStateManager,
 		newLocalStateReader,
 		newLocalStateWriter,
 		newCurrentGDM,
@@ -311,11 +312,15 @@ func newLocalDiskStateManager(c LocalSousConfig) *storage.DiskStateManager {
 	return storage.NewDiskStateManager(c.StateLocation)
 }
 
-func newLocalStateReader(sm *storage.DiskStateManager) LocalStateReader {
+func newGitStateManager(dm *storage.DiskStateManager) *storage.GitStateManager {
+	return storage.NewGitStateManager(dm)
+}
+
+func newLocalStateReader(sm *storage.GitStateManager) LocalStateReader {
 	return LocalStateReader{sm}
 }
 
-func newLocalStateWriter(sm *storage.DiskStateManager) LocalStateWriter {
+func newLocalStateWriter(sm *storage.GitStateManager) LocalStateWriter {
 	return LocalStateWriter{sm}
 }
 
