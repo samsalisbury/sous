@@ -19,5 +19,8 @@ type (
 		// the details of this behavior will vary by implementation. For Docker, for instance,
 		// the corresponding repo is enumerated
 		Warmup(string) error
+
+		//ImageLabels finds the sous (docker) labels for a given image name
+		ImageLabels(imageName string) (labels map[string]string, err error)
 	}
 )

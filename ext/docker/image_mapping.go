@@ -116,6 +116,17 @@ func (nc *NameCache) Warmup(r string) error {
 	return nil
 }
 
+// ImageLabels gets the labels for an image name.
+func (nc *NameCache) ImageLabels(in string) (map[string]string, error) {
+	a := NewBuildArtifact(in, nil)
+	sv, err := nc.GetSourceID(a)
+	if err != nil {
+		return map[string]string{}, errors.Wrapf(err, "Image name: %s", in)
+	}
+
+	return Labels(sv), nil
+}
+
 // GetArtifact implements sous.Registry.GetArtifact
 func (nc *NameCache) GetArtifact(sid sous.SourceID) (*sous.BuildArtifact, error) {
 	name, qls, err := nc.getImageName(sid)

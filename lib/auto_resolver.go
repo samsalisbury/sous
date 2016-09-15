@@ -36,13 +36,13 @@ func (ar *AutoResolver) kickoff() triggerChannel {
 	}, done)
 
 	triggerFuncs := []func(announceChannel){
-		func(ch announceChannel) { ar.afterDone(trigger, ch) },
-		func(ch announceChannel) { ar.errorLogging(ch) },
+		func(ch announceChannel) { ar.afterDone(trigger, done, ch) },
+		func(ch announceChannel) { ar.errorLogging(trigger, done, ch) },
 	}
 	for _, f := range triggerFuncs {
 		ch := make(announceChannel)
 		fanout = append(fanout, ch)
-		go func(f func(announceChannel), cd announceChannel) {
+		go func(f func(announceChannel), ch announceChannel) {
 			loopTilDone(func() {
 				f(ch)
 			}, done)
@@ -50,7 +50,7 @@ func (ar *AutoResolver) kickoff() triggerChannel {
 	}
 
 	go loopTilDone(func() {
-		ar.multicast(announce, fanout)
+		ar.multicast(done, announce, fanout)
 	}, done)
 	trigger.trigger()
 
@@ -72,19 +72,19 @@ func (ar *AutoResolver) resolveLoop(tc, done triggerChannel, ac announceChannel)
 	select {
 	case <-done:
 		return
-	case <-ta:
+	case <-tc:
 	}
 	select {
 	default:
 		state, err := ar.StateReader.ReadState()
 		if err != nil {
 			ac <- err
-			continue
+			return
 		}
 		gdm, err := state.Deployments()
 		if err != nil {
 			ac <- err
-			continue
+			return
 		}
 
 		ac <- ar.Resolver.Resolve(gdm, state.Defs.Clusters)

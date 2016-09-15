@@ -38,9 +38,6 @@ type (
 
 		// DeleteRequest instructs Singularity to delete a particular request
 		DeleteRequest(cluster, reqID, message string) error
-
-		//ImageLabels finds the (sous) docker labels for a given image name
-		ImageLabels(imageName string) (labels map[string]string, err error)
 	}
 
 	// DTOMap is shorthand for map[string]interface{}

@@ -1,8 +1,6 @@
 package sous
 
 import (
-	"io/ioutil"
-	"log"
 	"testing"
 	"time"
 
@@ -10,10 +8,7 @@ import (
 )
 
 func dummyResolver() *Resolver {
-	registry := NewDummyRegistry()
-	drc := NewDummyRectificationClient(registry)
-	drc.SetLogger(log.New(ioutil.Discard, "rectify: ", 0))
-	return NewResolver(drc, registry)
+	return NewResolver(NewDummyDeployer(), NewDummyRegistry())
 }
 
 func setupAR() *AutoResolver {
@@ -30,5 +25,5 @@ func TestDone(t *testing.T) {
 	ar := setupAR()
 
 	done := ar.kickoff()
-	assert.NotPanics(close(done)) //pretty crap test, honestly
+	assert.NotPanics(func() { close(done) }) //pretty crap test, honestly
 }

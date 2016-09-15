@@ -67,7 +67,7 @@ func (sc *deployer) RunningDeployments(clusters sous.Clusters) (deps sous.Deploy
 		go singPipeline(url, client, &depWait, &singWait, reqCh, errCh)
 	}
 
-	go depPipeline(sc.Client, clusters, MaxAssemblers, reqCh, depCh, errCh)
+	go depPipeline(sc.Client, sc.Registry, clusters, MaxAssemblers, reqCh, depCh, errCh)
 
 	go func() {
 		catchAndSend("closing up", errCh)
@@ -222,6 +222,7 @@ func getRequestsFromSingularity(url string, client *singularity.Client) ([]SingR
 
 func depPipeline(
 	cl rectificationClient,
+	reg sous.Registry,
 	clusters sous.Clusters,
 	poolCount int,
 	reqCh chan SingReq,
@@ -232,7 +233,7 @@ func depPipeline(
 	poolLimit := make(chan struct{}, poolCount)
 	for req := range reqCh {
 		Log.Vomit.Printf("starting assembling for %q", reqID(req.ReqParent))
-		go func(cl rectificationClient, req SingReq) {
+		go func(req SingReq) {
 			defer catchAndSend(fmt.Sprintf("dep from req %s", req.SourceURL), errCh)
 
 			poolLimit <- struct{}{}
@@ -241,20 +242,21 @@ func depPipeline(
 				<-poolLimit
 			}()
 
-			dep, err := assembleDeployment(cl, clusters, req)
+			dep, err := assembleDeployment(cl, reg, clusters, req)
 
 			if err != nil {
 				errCh <- errors.Wrap(err, "assembly problem")
 			} else {
 				depCh <- dep
 			}
-		}(cl, req)
+		}(req)
 	}
 }
 
-func assembleDeployment(cl rectificationClient, clusters sous.Clusters, req SingReq) (*sous.Deployment, error) {
+func assembleDeployment(cl rectificationClient, reg sous.Registry, clusters sous.Clusters, req SingReq) (*sous.Deployment, error) {
 	Log.Vomit.Printf("Assembling from: %s %s", req.SourceURL, reqID(req.ReqParent))
-	tgt, err := BuildDeployment(cl, clusters, req)
+	tgt, err := BuildDeployment(reg, clusters, req)
+
 	if err != nil {
 		return nil, errors.Wrap(err, "Building deployment")
 	}

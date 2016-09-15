@@ -77,3 +77,8 @@ func (dc *DummyRegistry) ListSourceIDs() ([]SourceID, error) {
 func (dc *DummyRegistry) Warmup(string) error {
 	return nil
 }
+
+// ImageLabels gets the labels for an image name
+func (dc *DummyRegistry) ImageLabels(in string) (map[string]string, error) {
+	return map[string]string{}, nil
+}

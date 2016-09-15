@@ -1,18 +1,13 @@
-package singularity
+package sous
 
-import (
-	"log"
-
-	"github.com/opentable/sous/ext/docker"
-	"github.com/opentable/sous/lib"
-)
+import "log"
 
 type (
 	// DummyRectificationClient implements RectificationClient but doesn't act on the Mesos scheduler;
 	// instead it collects the changes that would be performed and options
 	DummyRectificationClient struct {
 		logger    *log.Logger
-		nameCache sous.Registry
+		nameCache Registry
 		created   []dummyRequest
 		deployed  []dummyDeploy
 		scaled    []dummyScale
@@ -24,9 +19,9 @@ type (
 		depID     string
 		reqID     string
 		imageName string
-		res       sous.Resources
-		e         sous.Env
-		vols      sous.Volumes
+		res       Resources
+		e         Env
+		vols      Volumes
 	}
 
 	dummyRequest struct {
@@ -47,7 +42,7 @@ type (
 )
 
 // NewDummyRectificationClient builds a new DummyRectificationClient
-func NewDummyRectificationClient(nc sous.Registry) *DummyRectificationClient {
+func NewDummyRectificationClient(nc Registry) *DummyRectificationClient {
 	return &DummyRectificationClient{nameCache: nc}
 }
 
@@ -71,7 +66,7 @@ func (t *DummyRectificationClient) logf(f string, v ...interface{}) {
 
 // Deploy implements part of the RectificationClient interface
 func (t *DummyRectificationClient) Deploy(
-	cluster, depID, reqID, imageName string, res sous.Resources, e sous.Env, vols sous.Volumes) error {
+	cluster, depID, reqID, imageName string, res Resources, e Env, vols Volumes) error {
 	t.logf("Deploying instance %s %s %s %s %v %v %v", cluster, depID, reqID, imageName, res, e, vols)
 	t.deployed = append(t.deployed, dummyDeploy{cluster, depID, reqID, imageName, res, e, vols})
 	return nil
@@ -99,15 +94,4 @@ func (t *DummyRectificationClient) DeleteRequest(
 	t.logf("Deleting application %s %s %s", cluster, reqid, message)
 	t.deleted = append(t.deleted, dummyDelete{cluster, reqid, message})
 	return nil
-}
-
-// ImageLabels gets the labels for an image name
-func (t *DummyRectificationClient) ImageLabels(in string) (map[string]string, error) {
-	a := docker.NewBuildArtifact(in, nil)
-	sv, err := t.nameCache.GetSourceID(a)
-	if err != nil {
-		return map[string]string{}, nil
-	}
-
-	return docker.Labels(sv), nil
 }

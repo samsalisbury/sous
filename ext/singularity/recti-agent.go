@@ -6,10 +6,8 @@ import (
 
 	"github.com/opentable/go-singularity"
 	"github.com/opentable/go-singularity/dtos"
-	"github.com/opentable/sous/ext/docker"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/swaggering"
-	"github.com/pkg/errors"
 	"github.com/satori/go.uuid"
 )
 
@@ -160,17 +158,6 @@ func (ra *RectiAgent) Scale(cluster, reqID string, instanceCount int, message st
 	Log.Debug.Printf("Scale req: %+ v", sr)
 	_, err = ra.singularityClient(cluster).Scale(reqID, sr.(*dtos.SingularityScaleRequest))
 	return err
-}
-
-// ImageLabels gets the labels for an image name.
-func (ra *RectiAgent) ImageLabels(in string) (map[string]string, error) {
-	a := docker.NewBuildArtifact(in, nil)
-	sv, err := ra.nameCache.GetSourceID(a)
-	if err != nil {
-		return map[string]string{}, errors.Wrapf(err, "Image name: %s", in)
-	}
-
-	return docker.Labels(sv), nil
 }
 
 func (ra *RectiAgent) getSingularityClient(url string) (*singularity.Client, bool) {

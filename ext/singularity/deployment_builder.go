@@ -12,13 +12,13 @@ import (
 
 type (
 	deploymentBuilder struct {
-		clusters      sous.Clusters
-		Target        sous.Deployment
-		depMarker     sDepMarker
-		deploy        sDeploy
-		request       sRequest
-		req           SingReq
-		rectification rectificationClient
+		clusters  sous.Clusters
+		Target    sous.Deployment
+		depMarker sDepMarker
+		deploy    sDeploy
+		request   sRequest
+		req       SingReq
+		registry  sous.Registry
 	}
 
 	canRetryRequest struct {
@@ -67,9 +67,9 @@ func (db *deploymentBuilder) isRetryable(err error) bool {
 
 // BuildDeployment does all the work to collect the data for a Deployment
 // from Singularity based on the initial SingularityRequest
-func BuildDeployment(cl rectificationClient, clusters sous.Clusters, req SingReq) (sous.Deployment, error) {
+func BuildDeployment(reg sous.Registry, clusters sous.Clusters, req SingReq) (sous.Deployment, error) {
 	Log.Vomit.Printf("%#v", req.ReqParent)
-	db := deploymentBuilder{rectification: cl, clusters: clusters, req: req}
+	db := deploymentBuilder{registry: reg, clusters: clusters, req: req}
 
 	db.Target.Cluster = &sous.Cluster{BaseURL: req.SourceURL}
 	db.request = req.ReqParent.Request
@@ -154,7 +154,7 @@ func (db *deploymentBuilder) retrieveImageLabels() error {
 
 	// XXX coupled to Docker registry as ImageMapper
 	// !!! HTTP request
-	labels, err := db.rectification.ImageLabels(imageName)
+	labels, err := db.registry.ImageLabels(imageName)
 	if err != nil {
 		return malformedResponse{err.Error()}
 	}
