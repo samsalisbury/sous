@@ -1,14 +1,6 @@
 package sous
 
 type (
-	// StateReader knows how to read state.
-	StateReader interface {
-		ReadState() (*State, error)
-	}
-	// StateWriter knows how to write state.
-	StateWriter interface {
-		WriteState(*State) error
-	}
 	// State contains the mutable state of an organisation's deployments.
 	// State is also known as the "Global Deploy Manifest" or GDM.
 	State struct {
