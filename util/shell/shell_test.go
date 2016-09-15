@@ -73,7 +73,7 @@ func TestCommand(t *testing.T) {
 	}
 
 	testValue = "test-stderr"
-	errPath := "../../bin/test-stderr"
+	errPath := "testdata/test-stderr"
 	errCmd := sh.Cmd(errPath)
 	output, err = errCmd.Stderr()
 	if err != nil {
@@ -86,7 +86,7 @@ func TestCommand(t *testing.T) {
 	}
 
 	expected := []string{"first", "second", "third"}
-	linePath := "../../bin/test-lines"
+	linePath := "testdata/test-lines"
 	lineCmd := sh.Cmd(linePath)
 	lines, err := lineCmd.Lines()
 	if err != nil {
@@ -123,7 +123,7 @@ func TestCommand(t *testing.T) {
 		t.Fatal("Fail() should return an error from a command that exited with a successful status.")
 	}
 
-	tableCmd := sh.Cmd("../../bin/test-table")
+	tableCmd := sh.Cmd("testdata/test-table")
 	table, err := tableCmd.Table()
 	if reflect.DeepEqual([]string{"one", "two", "three"}, table[0]) &&
 		reflect.DeepEqual([]string{"four", "five", "six"}, table[1]) {
