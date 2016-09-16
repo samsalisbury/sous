@@ -125,7 +125,14 @@ func BuildGraph(out, err io.Writer) *SousGraph {
 		newDetectedOTPLConfig,
 		newUserSelectedOTPLDeploySpecs,
 		newTargetManifestID,
+		newAutoResolver,
 	)}
+}
+
+func newAutoResolver(d sous.Deployer, r sous.Registry, sr LocalStateReader, ls *sous.LogSet) *sous.AutoResolver {
+	rez := sous.NewResolver(d, r)
+	ar := sous.NewAutoResolver(rez, sr, ls)
+	return ar
 }
 
 func newEngine() sous.SourceHostChooser {

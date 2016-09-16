@@ -4,6 +4,7 @@ import (
 	"flag"
 
 	"github.com/opentable/sous/config"
+	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/server"
 	"github.com/opentable/sous/util/cmdr"
 )
@@ -11,6 +12,7 @@ import (
 // A SousServer represents the `sous server` command
 type SousServer struct {
 	*config.Verbosity
+	*sous.AutoResolver
 	flags struct {
 		laddr string
 	}
@@ -36,6 +38,7 @@ func (ss *SousServer) AddFlags(fs *flag.FlagSet) {
 
 // Execute is part of the cmdr.Command interface(s)
 func (ss *SousServer) Execute(args []string) cmdr.Result {
+	ss.AutoResolver.Kickoff()
 	err := server.RunServer(ss.Verbosity, ss.flags.laddr)
 	return EnsureErrorResult(err) //always non-nil
 }

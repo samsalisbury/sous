@@ -51,6 +51,7 @@ package psyringe
 
 import (
 	"fmt"
+	"log"
 	"reflect"
 	"sort"
 	"sync"
@@ -119,8 +120,10 @@ func (p *Psyringe) add(thing interface{}) error {
 	v := reflect.ValueOf(thing)
 	t := v.Type()
 	if c := newCtor(t, v); c != nil {
+		log.Print("ctor: ", t)
 		return errors.Wrapf(p.addCtor(c), "adding constructor %s failed", c.funcType)
 	}
+	log.Print("value: ", t)
 	return errors.Wrapf(p.addValue(t, v), "adding %s value failed", t)
 }
 
@@ -191,6 +194,11 @@ func (p *Psyringe) Test() error {
 		i++
 	}
 	sort.Sort(byName(types))
+
+	for _, outType := range types {
+		log.Print(outType)
+	}
+
 	for _, outType := range types {
 		c := p.ctors[outType]
 		if err := c.testParametersAreRegisteredIn(p); err != nil {

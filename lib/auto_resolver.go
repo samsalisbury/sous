@@ -39,6 +39,7 @@ func NewAutoResolver(rez *Resolver, sr StateReader, ls *LogSet) *AutoResolver {
 	return ar
 }
 
+// StandardListeners adds the usual listeners into the auto-resolve cycle
 func (ar *AutoResolver) StandardListeners() {
 	ar.addListener(func(trigger, done triggerChannel, ch announceChannel) {
 		ar.afterDone(trigger, done, ch)
@@ -52,6 +53,7 @@ func (ar *AutoResolver) addListener(f AutoResolveListener) {
 	ar.listeners = append(ar.listeners, f)
 }
 
+// Kickoff starts the auto-resolve cycle
 func (ar *AutoResolver) Kickoff() triggerChannel {
 	trigger := make(triggerChannel)
 	announce := make(announceChannel)
