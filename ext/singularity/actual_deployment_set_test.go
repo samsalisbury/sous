@@ -19,7 +19,7 @@ func TestGetDepSetWorks(t *testing.T) {
 	whip := make(map[string]swaggering.DummyControl)
 
 	reg := sous.NewDummyRegistry()
-	client := NewDummyRectificationClient(reg)
+	client := sous.NewDummyRectificationClient(reg)
 	dep := deployer{client, reg,
 		func(url string) *singularity.Client {
 			cl, co := singularity.NewDummyClient(url)

@@ -9,14 +9,16 @@ type (
 	triggerChannel  chan triggerType
 	announceChannel chan error
 
+	AutoResolveListener func(tc, done triggerChannel, ac announceChannel)
+
 	// An AutoResolver sets up the interactions to automatically run an infinite loop
 	// of resolution cycles
 	AutoResolver struct {
 		UpdateTime time.Duration
-		Clusters
 		StateReader
 		*Resolver
 		*LogSet
+		listeners []AutoResolveListener
 	}
 )
 
@@ -24,7 +26,33 @@ func (tc triggerChannel) trigger() {
 	tc <- triggerType{}
 }
 
-func (ar *AutoResolver) kickoff() triggerChannel {
+// NewAutoResolver creates a new AutoResolver
+func NewAutoResolver(rez *Resolver, sr StateReader, ls *LogSet) *AutoResolver {
+	ar := &AutoResolver{
+		UpdateTime:  60 * time.Second,
+		Resolver:    rez,
+		StateReader: sr,
+		LogSet:      ls,
+		listeners:   make([]AutoResolveListener, 0),
+	}
+	ar.StandardListeners()
+	return ar
+}
+
+func (ar *AutoResolver) StandardListeners() {
+	ar.addListener(func(trigger, done triggerChannel, ch announceChannel) {
+		ar.afterDone(trigger, done, ch)
+	})
+	ar.addListener(func(trigger, done triggerChannel, ch announceChannel) {
+		ar.errorLogging(trigger, done, ch)
+	})
+}
+
+func (ar *AutoResolver) addListener(f AutoResolveListener) {
+	ar.listeners = append(ar.listeners, f)
+}
+
+func (ar *AutoResolver) Kickoff() triggerChannel {
 	trigger := make(triggerChannel)
 	announce := make(announceChannel)
 	done := make(triggerChannel)
@@ -35,18 +63,14 @@ func (ar *AutoResolver) kickoff() triggerChannel {
 		ar.resolveLoop(trigger, done, announce)
 	}, done)
 
-	triggerFuncs := []func(announceChannel){
-		func(ch announceChannel) { ar.afterDone(trigger, done, ch) },
-		func(ch announceChannel) { ar.errorLogging(trigger, done, ch) },
-	}
-	for _, f := range triggerFuncs {
+	for _, tf := range ar.listeners {
 		ch := make(announceChannel)
 		fanout = append(fanout, ch)
-		go func(f func(announceChannel), ch announceChannel) {
+		go func(f AutoResolveListener, ch announceChannel) {
 			loopTilDone(func() {
-				f(ch)
+				f(trigger, done, ch)
 			}, done)
-		}(f, ch)
+		}(tf, ch)
 	}
 
 	go loopTilDone(func() {
@@ -74,23 +98,34 @@ func (ar *AutoResolver) resolveLoop(tc, done triggerChannel, ac announceChannel)
 		return
 	case <-tc:
 	}
-	select {
-	default:
-		state, err := ar.StateReader.ReadState()
-		if err != nil {
-			ac <- err
+	for {
+		select {
+		default:
+			ar.LogSet.Debug.Print("Beginning Resolve")
+			state, err := ar.StateReader.ReadState()
+			ar.LogSet.Debug.Printf("Reading current state: err: %v", err)
+			if err != nil {
+				ac <- err
+				break
+			}
+			gdm, err := state.Deployments()
+			ar.LogSet.Debug.Printf("Reading GDM from state: err: %v", err)
+
+			if err != nil {
+				ac <- err
+				break
+			}
+
+			ac <- ar.Resolver.Resolve(gdm, state.Defs.Clusters)
+			ar.LogSet.Debug.Print("Completed resolve")
+		case <-done:
 			return
-		}
-		gdm, err := state.Deployments()
-		if err != nil {
-			ac <- err
-			return
+		case t := <-tc:
+			ar.LogSet.Debug.Printf("Received extra trigger before starting Resolve: %v", t)
+			continue
 		}
 
-		ac <- ar.Resolver.Resolve(gdm, state.Defs.Clusters)
-	case <-done:
-		return
-	case <-tc:
+		break
 	}
 }
 

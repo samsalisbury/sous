@@ -8,36 +8,36 @@ type (
 	DummyRectificationClient struct {
 		logger    *log.Logger
 		nameCache Registry
-		created   []dummyRequest
-		deployed  []dummyDeploy
-		scaled    []dummyScale
-		deleted   []dummyDelete
+		Created   []dummyRequest
+		Deployed  []dummyDeploy
+		Scaled    []dummyScale
+		Deleted   []dummyDelete
 	}
 
 	dummyDeploy struct {
-		cluster   string
-		depID     string
-		reqID     string
-		imageName string
-		res       Resources
-		e         Env
-		vols      Volumes
+		Cluster   string
+		DepID     string
+		ReqID     string
+		ImageName string
+		Res       Resources
+		E         Env
+		Vols      Volumes
 	}
 
 	dummyRequest struct {
-		cluster string
-		id      string
-		count   int
+		Cluster string
+		ID      string
+		Count   int
 	}
 
 	dummyScale struct {
-		cluster, reqid string
-		count          int
-		message        string
+		Cluster, Reqid string
+		Count          int
+		Message        string
 	}
 
 	dummyDelete struct {
-		cluster, reqid, message string
+		Cluster, Reqid, Message string
 	}
 )
 
@@ -68,7 +68,7 @@ func (t *DummyRectificationClient) logf(f string, v ...interface{}) {
 func (t *DummyRectificationClient) Deploy(
 	cluster, depID, reqID, imageName string, res Resources, e Env, vols Volumes) error {
 	t.logf("Deploying instance %s %s %s %s %v %v %v", cluster, depID, reqID, imageName, res, e, vols)
-	t.deployed = append(t.deployed, dummyDeploy{cluster, depID, reqID, imageName, res, e, vols})
+	t.Deployed = append(t.Deployed, dummyDeploy{cluster, depID, reqID, imageName, res, e, vols})
 	return nil
 }
 
@@ -76,7 +76,7 @@ func (t *DummyRectificationClient) Deploy(
 func (t *DummyRectificationClient) PostRequest(
 	cluster, id string, count int) error {
 	t.logf("Creating application %s %s %d", cluster, id, count)
-	t.created = append(t.created, dummyRequest{cluster, id, count})
+	t.Created = append(t.Created, dummyRequest{cluster, id, count})
 	return nil
 }
 
@@ -84,7 +84,7 @@ func (t *DummyRectificationClient) PostRequest(
 func (t *DummyRectificationClient) Scale(
 	cluster, reqid string, count int, message string) error {
 	t.logf("Scaling %s %s %d %s", cluster, reqid, count, message)
-	t.scaled = append(t.scaled, dummyScale{cluster, reqid, count, message})
+	t.Scaled = append(t.Scaled, dummyScale{cluster, reqid, count, message})
 	return nil
 }
 
@@ -92,6 +92,6 @@ func (t *DummyRectificationClient) Scale(
 func (t *DummyRectificationClient) DeleteRequest(
 	cluster, reqid, message string) error {
 	t.logf("Deleting application %s %s %s", cluster, reqid, message)
-	t.deleted = append(t.deleted, dummyDelete{cluster, reqid, message})
+	t.Deleted = append(t.Deleted, dummyDelete{cluster, reqid, message})
 	return nil
 }

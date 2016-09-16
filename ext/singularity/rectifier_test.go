@@ -67,7 +67,7 @@ func TestModifyScale(t *testing.T) {
 	errs := make(chan sous.RectificationError)
 
 	nc := sous.NewDummyRegistry()
-	client := NewDummyRectificationClient(nc)
+	client := sous.NewDummyRectificationClient(nc)
 
 	deployer := NewDeployer(nc, client)
 
@@ -80,11 +80,11 @@ func TestModifyScale(t *testing.T) {
 		t.Error(e)
 	}
 
-	assert.Len(client.deployed, 0)
-	assert.Len(client.created, 0)
+	assert.Len(client.Deployed, 0)
+	assert.Len(client.Created, 0)
 
-	if assert.Len(client.scaled, 1) {
-		assert.Equal(24, client.scaled[0].count)
+	if assert.Len(client.Scaled, 1) {
+		assert.Equal(24, client.Scaled[0].Count)
 	}
 }
 
@@ -119,7 +119,7 @@ func TestModifyImage(t *testing.T) {
 	errs := make(chan sous.RectificationError)
 
 	nc := sous.NewDummyRegistry()
-	client := NewDummyRectificationClient(nc)
+	client := sous.NewDummyRectificationClient(nc)
 	deployer := NewDeployer(nc, client)
 
 	mods <- pair
@@ -131,11 +131,11 @@ func TestModifyImage(t *testing.T) {
 		t.Error(e)
 	}
 
-	assert.Len(client.created, 0)
-	assert.Len(client.scaled, 0)
+	assert.Len(client.Created, 0)
+	assert.Len(client.Scaled, 0)
 
-	if assert.Len(client.deployed, 1) {
-		assert.Regexp("2.3.4", client.deployed[0].imageName)
+	if assert.Len(client.Deployed, 1) {
+		assert.Regexp("2.3.4", client.Deployed[0].ImageName)
 	}
 }
 
@@ -175,7 +175,7 @@ func TestModifyResources(t *testing.T) {
 	errs := make(chan sous.RectificationError)
 
 	nc := sous.NewDummyRegistry()
-	client := NewDummyRectificationClient(nc)
+	client := sous.NewDummyRectificationClient(nc)
 	deployer := NewDeployer(nc, client)
 
 	mods <- pair
@@ -187,11 +187,11 @@ func TestModifyResources(t *testing.T) {
 		t.Error(e)
 	}
 
-	assert.Len(client.created, 0)
+	assert.Len(client.Created, 0)
 
-	if assert.Len(client.deployed, 1) {
-		assert.Regexp("1.2.3", client.deployed[0].imageName)
-		assert.Regexp("500", client.deployed[0].res["memory"])
+	if assert.Len(client.Deployed, 1) {
+		assert.Regexp("1.2.3", client.Deployed[0].ImageName)
+		assert.Regexp("500", client.Deployed[0].Res["memory"])
 	}
 }
 
@@ -234,7 +234,7 @@ func TestModify(t *testing.T) {
 	errs := make(chan sous.RectificationError)
 
 	nc := sous.NewDummyRegistry()
-	client := NewDummyRectificationClient(nc)
+	client := sous.NewDummyRectificationClient(nc)
 	deployer := NewDeployer(nc, client)
 
 	mods <- pair
@@ -246,16 +246,16 @@ func TestModify(t *testing.T) {
 		t.Error(e)
 	}
 
-	assert.Len(client.created, 0)
+	assert.Len(client.Created, 0)
 
-	if assert.Len(client.deployed, 1) {
-		assert.Regexp("2.3.4", client.deployed[0].imageName)
-		log.Print(client.deployed[0].vols)
-		assert.Equal("RW", string(client.deployed[0].vols[0].Mode))
+	if assert.Len(client.Deployed, 1) {
+		assert.Regexp("2.3.4", client.Deployed[0].ImageName)
+		log.Print(client.Deployed[0].Vols)
+		assert.Equal("RW", string(client.Deployed[0].Vols[0].Mode))
 	}
 
-	if assert.Len(client.scaled, 1) {
-		assert.Equal(24, client.scaled[0].count)
+	if assert.Len(client.Scaled, 1) {
+		assert.Equal(24, client.Scaled[0].Count)
 	}
 }
 
@@ -281,7 +281,7 @@ func TestDeletes(t *testing.T) {
 	errs := make(chan sous.RectificationError)
 
 	nc := sous.NewDummyRegistry()
-	client := NewDummyRectificationClient(nc)
+	client := sous.NewDummyRectificationClient(nc)
 	deployer := NewDeployer(nc, client)
 
 	dels <- deleted
@@ -293,13 +293,13 @@ func TestDeletes(t *testing.T) {
 		t.Error(e)
 	}
 
-	assert.Len(client.deployed, 0)
-	assert.Len(client.created, 0)
+	assert.Len(client.Deployed, 0)
+	assert.Len(client.Created, 0)
 
-	if assert.Len(client.deleted, 1) {
-		req := client.deleted[0]
-		assert.Equal("cluster", req.cluster)
-		assert.Equal("reqid::", req.reqid)
+	if assert.Len(client.Deleted, 1) {
+		req := client.Deleted[0]
+		assert.Equal("cluster", req.Cluster)
+		assert.Equal("reqid::", req.Reqid)
 	}
 }
 
@@ -323,7 +323,7 @@ func TestCreates(t *testing.T) {
 	errs := make(chan sous.RectificationError)
 
 	nc := sous.NewDummyRegistry()
-	client := NewDummyRectificationClient(nc)
+	client := sous.NewDummyRectificationClient(nc)
 	deployer := NewDeployer(nc, client)
 
 	crts <- created
@@ -335,17 +335,17 @@ func TestCreates(t *testing.T) {
 		t.Error(e)
 	}
 
-	assert.Len(client.scaled, 0)
-	if assert.Len(client.deployed, 1) {
-		dep := client.deployed[0]
-		assert.Equal("cluster", dep.cluster)
-		assert.Equal("reqid,0.0.0", dep.imageName)
+	assert.Len(client.Scaled, 0)
+	if assert.Len(client.Deployed, 1) {
+		dep := client.Deployed[0]
+		assert.Equal("cluster", dep.Cluster)
+		assert.Equal("reqid,0.0.0", dep.ImageName)
 	}
 
-	if assert.Len(client.created, 1) {
-		req := client.created[0]
-		assert.Equal("cluster", req.cluster)
-		assert.Equal("reqid::nick", req.id)
-		assert.Equal(12, req.count)
+	if assert.Len(client.Created, 1) {
+		req := client.Created[0]
+		assert.Equal("cluster", req.Cluster)
+		assert.Equal("reqid::nick", req.ID)
+		assert.Equal(12, req.Count)
 	}
 }

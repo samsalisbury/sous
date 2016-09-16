@@ -44,6 +44,19 @@ var (
 	}()
 )
 
+// SilentLogSet returns a logset that discards everything by default
+func SilentLogSet() LogSet {
+	warnLogger := log.New(ioutil.Discard, "warn: ", 0)
+	return LogSet{
+		// Debug is a logger - use log.SetOutput to get output from
+		Vomit:  log.New(ioutil.Discard, "vomit: ", log.Lshortfile),
+		Debug:  log.New(ioutil.Discard, "debug: ", log.Lshortfile),
+		Info:   warnLogger, // XXX deprecate Info
+		Notice: warnLogger, // XXX deprecate Notice
+		Warn:   warnLogger,
+	}
+}
+
 // SetupLogging sets up an ILogger to log into the Sous logging regime
 func SetupLogging(il ILogger) {
 	il.SetLogFunc(func(args ...interface{}) {
