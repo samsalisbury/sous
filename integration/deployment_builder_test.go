@@ -49,7 +49,6 @@ func TestBuildDeployments(t *testing.T) {
 	reqID := appLocation + clusterNick
 
 	nc := docker.NewNameCache(drc, db)
-	ra := singularity.NewRectiAgent(nc)
 
 	singCl := sing.NewClient(SingularityURL)
 	//singCl.Debug = true
@@ -95,7 +94,7 @@ func TestBuildDeployments(t *testing.T) {
 
 	if assert.NoError(err) {
 		clusters := sous.Clusters{clusterNick: {BaseURL: SingularityURL}}
-		dep, err := singularity.BuildDeployment(ra, clusters, req)
+		dep, err := singularity.BuildDeployment(nc, clusters, req)
 
 		if assert.NoError(err) {
 			if assert.Len(dep.DeployConfig.Volumes, 1) {
