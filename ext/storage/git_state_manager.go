@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/opentable/sous/lib"
@@ -36,10 +37,10 @@ func (gsm *GitStateManager) git(cmd ...string) error {
 	}
 	git := exec.Command(`git`, cmd...)
 	git.Dir = gsm.DiskStateManager.BaseDir
-	git.Env = []string{"GIT_CONFIG_NOSYSTEM=true", "HOME=none", "XDG_CONFIG_HOME=none"}
-	log.Print(git)
+	//git.Env = []string{"GIT_CONFIG_NOSYSTEM=true", "HOME=none", "XDG_CONFIG_HOME=none"}
+	//log.Print(git)
 	out, err := git.CombinedOutput()
-	return errors.Wrapf(err, string(out))
+	return errors.Wrapf(err, strings.Join(git.Args, " ")+": "+string(out))
 }
 
 func (gsm *GitStateManager) revert(tn string) {
@@ -86,6 +87,7 @@ func (gsm *GitStateManager) WriteState(s *sous.State) error {
 	if err != nil {
 		gsm.revert(tn)
 	}
+	log.Print(err)
 	return err
 
 	// git commit -a -m ""

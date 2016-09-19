@@ -181,7 +181,7 @@ func (c *Client) ListRemotes() (Remotes, error) {
 }
 
 func (c *Client) NearestTag() (string, error) {
-	return c.stdout("describe", "--tags", "--abbrev=0")
+	return c.stdout("describe", "--tags", "--abbrev=0", "--always")
 }
 
 func (c *Client) CurrentBranch() (string, error) {
