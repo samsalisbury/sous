@@ -3,16 +3,16 @@ package server
 import (
 	"net/http"
 
-	"github.com/opentable/sous/graph"
+	"github.com/opentable/sous/lib"
 )
 
 type (
 	GETManifestHandler struct {
-		GDM graph.CurrentGDM
+		*sous.State
 		*QueryValues
 	}
 	PUTManifestHandler struct {
-		GDM graph.CurrentGDM
+		*sous.State
 		*http.Request
 		*QueryValues
 	}
