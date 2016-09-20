@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"net/url"
 	"runtime/debug"
 
 	"github.com/julienschmidt/httprouter"
@@ -34,6 +35,11 @@ type (
 	// An ExchangeFactory builds an Exchanger -
 	// they're used to configure the RouteMap
 	ExchangeFactory func() Exchanger
+
+	// QueryValues wrap url.Values to keep them needing to be re-exported
+	QueryValues struct {
+		url.Values
+	}
 
 	routeEntry struct {
 		Name     string
@@ -100,6 +106,11 @@ func (ph *PanicHandler) Handle() {
 	}
 }
 
+func parseQueryValues(req *http.Request) (*QueryValues, error) {
+	v, err := url.ParseQuery(req.URL.RawQuery)
+	return &QueryValues{v}, err
+}
+
 // Handling (sometimes) updates the local copy of the GDM and formats it
 func Handling(graphFac func() *graph.SousGraph, factory ExchangeFactory) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
@@ -107,6 +118,7 @@ func Handling(graphFac func() *graph.SousGraph, factory ExchangeFactory) httprou
 
 		g := graphFac()
 		g.Add(&ResponseWriter{ResponseWriter: w}, r, p)
+		g.Add(parseQueryValues)
 
 		ph := &PanicHandler{}
 		g.Inject(ph)
