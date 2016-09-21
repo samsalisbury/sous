@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -87,7 +86,7 @@ func (gsm *GitStateManager) WriteState(s *sous.State) error {
 	if err != nil {
 		gsm.revert(tn)
 	}
-	log.Print(err)
+	//log.Print(err)
 	return err
 
 	// git commit -a -m ""
