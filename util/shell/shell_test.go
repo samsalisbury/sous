@@ -68,7 +68,7 @@ func TestCommandStdout(t *testing.T) {
 
 func TestCommandStdoutExpectsError(t *testing.T) {
 	sh := &Sh{}
-	falsePath := "false"
+	falsePath := "testdata/false"
 	falseCmd := sh.Cmd(falsePath)
 	_, err := falseCmd.Stdout()
 	if err == nil {
@@ -127,7 +127,7 @@ func TestCommandExitCode(t *testing.T) {
 
 func TestCommandExpectsError(t *testing.T) {
 	sh := &Sh{}
-	failCmd := sh.Cmd("false")
+	failCmd := sh.Cmd("testdata/false")
 	err := failCmd.Fail()
 	if err == nil {
 		t.Log("Fail() correctly returns nil on a command that exited with an error status.")
@@ -138,7 +138,7 @@ func TestCommandExpectsError(t *testing.T) {
 
 func TestCommandFail(t *testing.T) {
 	sh := &Sh{}
-	successCmd := sh.Cmd("true")
+	successCmd := sh.Cmd("testdata/true")
 	err := successCmd.Fail()
 	if err != nil {
 		t.Log("Fail() correctly returns an error on a command that exited with a successful status.")
