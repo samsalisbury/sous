@@ -35,6 +35,8 @@ func TestDefaultInDir(t *testing.T) {
 	epochString := fmt.Sprintf("%d", time.Now().Unix())
 	fileName := "soustest-" + epochString
 	filePath := filepath.Join(testDir, fileName)
+	// it is important to use fileName here instead of filePath as the argument,
+	// as the test determines if testDir is the current working directory.
 	cmd := sh.Cmd("touch", fileName)
 	defer os.Remove(filePath)
 	err = cmd.Succeed()
@@ -49,71 +51,113 @@ func TestDefaultInDir(t *testing.T) {
 	}
 }
 
-func TestCommand(t *testing.T) {
+func TestCommandStdout(t *testing.T) {
 	testValue := "test-stdout"
 	sh := &Sh{}
 	echoCmd := sh.Cmd("echo", testValue)
 	output, err := echoCmd.Stdout()
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
-	if output != testValue {
-		t.Errorf("%s != %s\n", output, testValue)
+	if output == testValue {
+		t.Logf("%s ==  %s\n", output, testValue)
+	} else {
+		t.Fatalf("%s != %s\n", output, testValue)
 	}
+}
 
+func TestCommandStdoutExpectsError(t *testing.T) {
+	sh := &Sh{}
 	falsePath := "/bin/false"
 	falseCmd := sh.Cmd(falsePath)
-	_, err = falseCmd.Stdout()
+	_, err := falseCmd.Stdout()
 	if err == nil {
-		t.Errorf("Expected error executing %s not seen.", falsePath)
+		t.Fatalf("Expected error executing %s not seen.", falsePath)
+	} else {
+		t.Logf("%s correctly created an error condition.\n", falsePath)
 	}
+}
 
-	testValue = "test-stderr"
-	errPath := "../../bin/test-stderr"
+func TestCommandStderr(t *testing.T) {
+	sh := &Sh{}
+	testValue := "test-stderr"
+	errPath := "testdata/test-stderr"
 	errCmd := sh.Cmd(errPath)
-	output, err = errCmd.Stderr()
+	output, err := errCmd.Stderr()
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
-	if output != testValue {
-		t.Errorf("%s != %s\n", output, testValue)
+	if output == testValue {
+		t.Logf("%s == %s\n", output, testValue)
+	} else {
+		t.Fatalf("%s != %s\n", output, testValue)
 	}
+}
 
+func TestCommandLines(t *testing.T) {
+	sh := &Sh{}
 	expected := []string{"first", "second", "third"}
-	linePath := "../../bin/test-lines"
+	linePath := "testdata/test-lines"
 	lineCmd := sh.Cmd(linePath)
 	lines, err := lineCmd.Lines()
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
-	if !reflect.DeepEqual(expected, lines) {
-		t.Errorf("Failed to correctly parse output of %s.\n", linePath)
+	if reflect.DeepEqual(expected, lines) {
+		t.Logf("Successfully parsed output of %s.\n", linePath)
+	} else {
+		t.Fatalf("Failed to correctly parse output of %s.\n", linePath)
 	}
+}
 
+func TestCommandExitCode(t *testing.T) {
+	sh := &Sh{}
 	failStatus := -1
 	nonexistPath := "/this/file/does/not/exist"
 	nonexistCmd := sh.Cmd(nonexistPath)
 	status, err := nonexistCmd.ExitCode()
-	if status != failStatus {
-		t.Errorf("Attempted execution of %s returned %d.\n", nonexistPath, failStatus)
-	}
-
-	failCmd := sh.Cmd("../..//bin/false") // Macs don't have /bin/true
-	err = failCmd.Fail()
-	if err != nil {
-		t.Errorf("Fail() should have returned nil from a command that exited with an error status. Returned %#v", err)
-	}
-
-	successCmd := sh.Cmd("../../bin/true") // Or, apparently /bin/false
-	err = successCmd.Fail()
 	if err == nil {
-		t.Error("Fail() should return an error from a command that exited with a successful status.")
+		t.Fatalf("Attempt to execute %s should have returned an error.\n", nonexistPath)
 	}
+	if status == failStatus {
+		t.Logf("Attempted execution of %s returned %d, as expected.\n",
+			nonexistPath, failStatus)
+	}
+}
 
-	tableCmd := sh.Cmd("../../bin/test-table")
+func TestCommandExpectsError(t *testing.T) {
+	sh := &Sh{}
+	failCmd := sh.Cmd("/bin/false")
+	err := failCmd.Fail()
+	if err == nil {
+		t.Log("Fail() correctly returns nil on a command that exited with an error status.")
+	} else {
+		t.Fatal("Fail() should have returned nil from a command that exited with an error status.")
+	}
+}
+
+func TestCommandFail(t *testing.T) {
+	sh := &Sh{}
+	successCmd := sh.Cmd("/bin/true")
+	err := successCmd.Fail()
+	if err != nil {
+		t.Log("Fail() correctly returns an error on a command that exited with a successful status.")
+	} else {
+		t.Fatal("Fail() should return an error from a command that exited with a successful status.")
+	}
+}
+
+func TestCommandTable(t *testing.T) {
+	sh := &Sh{}
+	tableCmd := sh.Cmd("testdata/test-table")
 	table, err := tableCmd.Table()
-	if !(reflect.DeepEqual([]string{"one", "two", "three"}, table[0]) &&
-		reflect.DeepEqual([]string{"four", "five", "six"}, table[1])) {
-		t.Errorf("Failed to parse tabular output of %s.\n", tableCmd)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if reflect.DeepEqual([]string{"one", "two", "three"}, table[0]) &&
+		reflect.DeepEqual([]string{"four", "five", "six"}, table[1]) {
+		t.Logf("Successfully parsed tabular output of %s.\n", tableCmd)
+	} else {
+		t.Fatalf("Failed to parse tabular output of %s.\n", tableCmd)
 	}
 }
