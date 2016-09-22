@@ -9,25 +9,20 @@ import (
 )
 
 // New creates a Sous HTTP server
-func New(v *config.Verbosity, laddr string) *http.Server {
+func New(laddr string, gf GraphFactory) *http.Server {
 	return &http.Server{
 		Addr:    laddr,
-		Handler: NewSousRouter(v),
+		Handler: SousRouteMap.BuildRouter(gf),
 	}
-}
-
-// NewSousRouter builds a router for the Sous server
-func NewSousRouter(v *config.Verbosity) http.Handler {
-	gf := func() *graph.SousGraph {
-		g := graph.BuildGraph(os.Stdout, os.Stdout)
-		g.Add(v)
-		return g
-	}
-	return BuildRouter(SousRouteMap, gf)
 }
 
 // RunServer starts a server up
 func RunServer(v *config.Verbosity, laddr string) error {
-	s := New(v, laddr)
+	gf := func() Injector {
+		g := graph.BuildGraph(os.Stdout, os.Stdout)
+		g.Add(v)
+		return g
+	}
+	s := New(laddr, gf)
 	return s.ListenAndServe()
 }

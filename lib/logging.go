@@ -45,9 +45,9 @@ var (
 )
 
 // SilentLogSet returns a logset that discards everything by default
-func SilentLogSet() LogSet {
+func SilentLogSet() *LogSet {
 	warnLogger := log.New(ioutil.Discard, "warn: ", 0)
-	return LogSet{
+	return &LogSet{
 		// Debug is a logger - use log.SetOutput to get output from
 		Vomit:  log.New(ioutil.Discard, "vomit: ", log.Lshortfile),
 		Debug:  log.New(ioutil.Discard, "debug: ", log.Lshortfile),

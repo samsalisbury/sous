@@ -6,15 +6,20 @@ import (
 
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
-	"github.com/pkg/errors"
+	"github.com/opentable/sous/util/firsterr"
 )
 
 type (
+	// ManifestResource describes resources for manifests
+	ManifestResource struct{}
+
+	// GETManifestHandler handles GET exchanges for manifests
 	GETManifestHandler struct {
 		*sous.State
 		*QueryValues
 	}
 
+	// PUTManifestHandler handles PUT exchanges for manifests
 	PUTManifestHandler struct {
 		*sous.State
 		*http.Request
@@ -22,6 +27,42 @@ type (
 		StateWriter graph.LocalStateWriter
 	}
 )
+
+// Get implements Getable for ManifestResource
+func (mr *ManifestResource) Get() Exchanger { return &GETManifestHandler{} }
+
+// Put implements Putable for ManifestResource
+func (mr *ManifestResource) Put() Exchanger { return &PUTManifestHandler{} }
+
+// Exchange implements Exchanger
+func (gmh *GETManifestHandler) Exchange() (interface{}, int) {
+	mid, err := manifestIDFromValues(gmh.QueryValues)
+	if err != nil {
+		return err, http.StatusNotFound
+	}
+	m, there := gmh.State.Manifests.Get(mid)
+	if !there {
+		return nil, http.StatusNotFound
+	}
+	return m, http.StatusOK
+}
+
+// Exchange implements Exchanger
+func (pmh *PUTManifestHandler) Exchange() (interface{}, int) {
+	mid, err := manifestIDFromValues(pmh.QueryValues)
+	if err != nil {
+		return err, http.StatusNotFound
+	}
+
+	dec := json.NewDecoder(pmh.Request.Body)
+	m := &sous.Manifest{}
+	dec.Decode(m)
+	pmh.State.Manifests.Set(mid, m)
+	if err := pmh.StateWriter.WriteState(pmh.State); err != nil {
+		return err, http.StatusConflict
+	}
+	return m, http.StatusOK
+}
 
 /*
 To recap:
@@ -36,75 +77,23 @@ ManifestID{
 }
 */
 
-func manifestIDFromValues(qv *QueryValues) (ManifestID, error) {
+func manifestIDFromValues(qv *QueryValues) (sous.ManifestID, error) {
 	var r, o, f string
-	repos := qv.Get("repo")
-	switch len(repos) {
-	case 0:
-		return ManifestID{}, errors.New("No repo given")
-	case 1:
-		r = repos[0]
-	default:
-		return ManifestID{}, errors.New("Multiple repo given")
+	var err error
+	err = firsterr.Returned(
+		func() error { r, err = qv.Single("repo"); return err },
+		func() error { o, err = qv.Single("offset", ""); return err },
+		func() error { f, err = qv.Single("flavor", ""); return err },
+	)
+	if err != nil {
+		return sous.ManifestID{}, err
 	}
 
-	offsets := qv.Get("offset")
-	switch len(offsets) {
-	case 0:
-		return ManifestID{}, errors.New("No offset given")
-	case 1:
-		o = offsets[0]
-	default:
-		return ManifestID{}, errors.New("Multiple offsets given")
-	}
-
-	flavors := qv.Get("flavor")
-	switch len(flavors) {
-	case 0:
-		return ManifestID{}, errors.New("No flavor given")
-	case 1:
-		o = flavors[0]
-	default:
-		return ManifestID{}, errors.New("Multiple flavors given")
-	}
-
-	return ManifestID{
-		SourceLocation: SourceLocation{
-			Repo:   r,
-			Offset: o,
+	return sous.ManifestID{
+		Source: sous.SourceLocation{
+			Repo: r,
+			Dir:  o,
 		},
 		Flavor: f,
 	}, nil
-}
-
-// Exchange implements Exchanger
-func (gmh *GETManifestHandler) Exchange() (interface{}, int) {
-	mid, err := manifestIDFromValues(gmh.QueryValues)
-	if err != nil {
-		return nil, http.StatusGone // Gone because we know this URL will always be wrong
-	}
-	m, err := gmh.State.Manifests.Get(mid)
-	if err != nil {
-		return nil, http.StatusGone
-	}
-	return m, http.StatusOK
-}
-
-// Exchange implements Exchanger
-func (pmh *PUTManifestHandler) Exchange() (interface{}, int) {
-	mid, err := manifestIDFromValues(pmh.QueryValues)
-	if err != nil {
-		return nil, http.StatusGone
-	}
-
-	dec := json.NewDecoder(pmh.Request.Body)
-	m := &sous.Manifest{}
-	dec.Decode(m)
-	pmh.State.Manifests.Set(mid, m)
-	if err := pmh.StateWriter.WriteState(pmh.State){
-		return nil, http.StatusConflict
-	}
-	return m, http.StatusOK
-
-	// XXX SAVE the new state, possibly with 409 if push fails
 }

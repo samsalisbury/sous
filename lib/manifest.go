@@ -33,10 +33,6 @@ type (
 	// determine resource sets and contracts that can be run on this
 	// application.
 	ManifestKind string
-
-	// Env is a mapping of environment variable name to value, used to provision
-	// single instances of an application.
-	Env map[string]string
 )
 
 // ID returns the SourceLocation.
@@ -97,20 +93,6 @@ func (m *Manifest) Equal(o *Manifest) bool {
 	}
 	for clusterName, deploySpec := range m.Deployments {
 		if !o.Deployments[clusterName].Equal(deploySpec) {
-			return false
-		}
-	}
-	return true
-}
-
-// Equal compares Envs
-func (e Env) Equal(o Env) bool {
-	if len(e) != len(o) {
-		return false
-	}
-
-	for name, value := range e {
-		if ov, ok := o[name]; !ok || ov != value {
 			return false
 		}
 	}

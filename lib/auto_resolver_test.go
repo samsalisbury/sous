@@ -14,7 +14,7 @@ func dummyResolver() *Resolver {
 
 func setupAR() *AutoResolver {
 	ls := SilentLogSet()
-	return NewAutoResolver(dummyResolver(), &DummyStateManager{State: NewState()}, &ls)
+	return NewAutoResolver(dummyResolver(), &DummyStateManager{State: NewState()}, ls)
 }
 
 func TestDone(t *testing.T) {
