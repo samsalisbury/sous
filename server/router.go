@@ -125,15 +125,6 @@ func (mh *MetaHandler) renderData(status int, w http.ResponseWriter, r *http.Req
 	e := json.NewEncoder(io.MultiWriter(buf, digest))
 	e.Encode(data)
 	w.Header().Add("Content-Type", "application/json")
-	w.Header().Add("Content-Length", fmt.Sprintf("%d", buf.Len()))
-	w.Header().Add("Etag", base64.URLEncoding.EncodeToString(digest.Sum(nil)))
-	mh.writeHeaders(status, w, r, data)
-	buf.WriteTo(w)
-}
-
-func emptyBody() io.ReadCloser {
-	return ioutil.NopCloser(&bytes.Buffer{})
-}
 func copyRequest(req *http.Request) *http.Request {
 	nr := &http.Request{}
 	*nr = *req
