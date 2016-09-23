@@ -63,7 +63,7 @@ const (
 		named repo.
 
 		`
-	FlavorFlagHelp = `
+	flavorFlagHelp = `
 	-flavor FLAVOR
 		flavor is a short string used to differentiate alternative deployments
 
@@ -110,9 +110,9 @@ const (
 
 var (
 	// SourceFlagsHelp is the text (and config) for source flags
-	SourceFlagsHelp = repoFlagHelp + offsetFlagHelp + FlavorFlagHelp + tagFlagHelp + revisionFlagHelp
+	SourceFlagsHelp = repoFlagHelp + offsetFlagHelp + flavorFlagHelp + tagFlagHelp + revisionFlagHelp
 	// RectifyFilterFlagsHelp is the text (and config) for rectification flags
-	RectifyFilterFlagsHelp = repoFlagHelp + offsetFlagHelp + FlavorFlagHelp + clusterFlagHelp + allFlagHelp
+	RectifyFilterFlagsHelp = repoFlagHelp + offsetFlagHelp + flavorFlagHelp + clusterFlagHelp + allFlagHelp
 	// DeployFilterFlagsHelp is the text and config for deploy flags
-	DeployFilterFlagsHelp = repoFlagHelp + offsetFlagHelp + FlavorFlagHelp + clusterFlagHelp + allFlagHelp + tagFlagHelp
+	DeployFilterFlagsHelp = repoFlagHelp + offsetFlagHelp + flavorFlagHelp + clusterFlagHelp + allFlagHelp + tagFlagHelp
 )
