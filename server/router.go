@@ -131,15 +131,18 @@ func (mh *MetaHandler) renderData(status int, w http.ResponseWriter, r *http.Req
 	buf.WriteTo(w)
 }
 
+func emptyBody() io.ReadCloser {
+	return ioutil.NopCloser(&bytes.Buffer{})
+}
 func copyRequest(req *http.Request) *http.Request {
-	new := &http.Request{}
-	*new = *req
+	nr := &http.Request{}
+	*nr = *req
 	if req.URL != nil {
-		new.URL = &url.URL{}
-		*new.URL = *req.URL
+		nr.URL = &url.URL{}
+		*nr.URL = *req.URL
 	}
-	new.Body = emptyBody() //users must copy body themselves
-	return new
+	nr.Body = emptyBody() //users must copy body themselves
+	return nr
 }
 
 func (mh *MetaHandler) synthResponse(req *http.Request) *http.Response {
