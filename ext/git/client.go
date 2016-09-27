@@ -87,18 +87,22 @@ func (c *Client) table(name string, args ...interface{}) ([][]string, error) {
 	return c.Sh.Cmd(c.Bin, args...).Table()
 }
 
+// Dir returns the current directory.
 func (c *Client) Dir() string {
 	return c.Sh.Dir()
 }
 
+// RevisionAt returns the revision at ref.
 func (c *Client) RevisionAt(ref string) (string, error) {
 	return c.stdout("rev-list", "-n", "1", ref)
 }
 
+// Revision returns the revision at HEAD.
 func (c *Client) Revision() (string, error) {
 	return c.RevisionAt("HEAD")
 }
 
+// RepoRoot returns the absolute root directory of the current repo.
 func (c *Client) RepoRoot() (string, error) {
 	return c.stdout("rev-parse", "--show-toplevel")
 }
@@ -108,14 +112,17 @@ func (c *Client) ListFiles() ([]string, error) {
 	return c.stdoutLines("ls-files")
 }
 
+// ModifiedFiles returns the list of tracked, modified files.
 func (c *Client) ModifiedFiles() ([]string, error) {
 	return c.stdoutLines("ls-files", "--modified")
 }
 
+// NewFiles returns the list of untracked files.
 func (c *Client) NewFiles() ([]string, error) {
 	return c.stdoutLines("ls-files", "--others", "--exclude-standard")
 }
 
+// ListTags lists the tags in this repo.
 func (c *Client) ListTags() ([]sous.Tag, error) {
 	lines, err := c.stdoutLines("log", "--date-order", "--tags", "--simplify-by-decoration", `--pretty=format:%H %aI %D`)
 	if err != nil {
@@ -154,6 +161,7 @@ func (c *Client) ListUnpushedCommits() ([]string, error) {
 	return lines, nil
 }
 
+// ListRemotes lists all configured remotes.
 func (c *Client) ListRemotes() (Remotes, error) {
 	t, err := c.table("remote", "-v")
 	if err != nil {
@@ -180,10 +188,12 @@ func (c *Client) ListRemotes() (Remotes, error) {
 	return remotes, nil
 }
 
+// NearestTag returns the nearest tag contained in the HEAD revision.
 func (c *Client) NearestTag() (string, error) {
 	return c.stdout("describe", "--tags", "--abbrev=0", "--always")
 }
 
+// CurrentBranch returns the currently checked out branch name.
 func (c *Client) CurrentBranch() (string, error) {
 	return c.stdout("rev-parse", "--abbrev-ref", "HEAD")
 }
