@@ -42,7 +42,7 @@ func NewDiskStateManager(baseDir string) *DiskStateManager {
 // ReadState loads the entire intended state of the world from a dir.
 func (dsm *DiskStateManager) ReadState() (*sous.State, error) {
 	// TODO: Allow state dir to be passed as flag in sous/cli.
-	// TODO: Consider returning a bool to indicate if the state dir exists at all.
+	// TODO: Consider returning a error to indicate if the state dir exists at all.
 	s := sous.NewState()
 	err := dsm.Codec.Read(dsm.BaseDir, s)
 	if err != nil {

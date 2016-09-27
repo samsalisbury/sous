@@ -29,6 +29,6 @@ func (sm DummyStateManager) ReadState() (*State, error) {
 
 // WriteState implements StateManager
 func (sm DummyStateManager) WriteState(s *State) error {
-	sm.State = s
+	*sm.State = *s
 	return nil
 }

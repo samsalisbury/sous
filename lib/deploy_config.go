@@ -25,6 +25,10 @@ type (
 		// Volumes lists the volume mappings for this deploy
 		Volumes Volumes
 	}
+
+	// Env is a mapping of environment variable name to value, used to provision
+	// single instances of an application.
+	Env map[string]string
 )
 
 func (dc *DeployConfig) String() string {
@@ -35,6 +39,20 @@ func (dc *DeployConfig) String() string {
 func (dc *DeployConfig) Equal(o DeployConfig) bool {
 	Log.Vomit.Printf("%+ v ?= %+ v", dc, o)
 	return (dc.NumInstances == o.NumInstances && dc.Env.Equal(o.Env) && dc.Resources.Equal(o.Resources) && dc.Volumes.Equal(o.Volumes))
+}
+
+// Equal compares Envs
+func (e Env) Equal(o Env) bool {
+	if len(e) != len(o) {
+		return false
+	}
+
+	for name, value := range e {
+		if ov, ok := o[name]; !ok || ov != value {
+			return false
+		}
+	}
+	return true
 }
 
 func flattenDeployConfigs(dcs []DeployConfig) DeployConfig {

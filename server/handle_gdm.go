@@ -6,6 +6,9 @@ import (
 )
 
 type (
+	// GDMResource is the resource for the GDM
+	GDMResource struct{}
+
 	// GDMHandler is an injectable request handler
 	GDMHandler struct {
 		GDM graph.CurrentGDM
@@ -16,10 +19,8 @@ type (
 	}
 )
 
-// NewGDMHandler is the factory function for GDMHandler
-func NewGDMHandler() Exchanger {
-	return &GDMHandler{}
-}
+// Get implements Getable on GDMResource
+func (gr *GDMResource) Get() Exchanger { return &GDMHandler{} }
 
 // Exchange implements the Handler interface
 func (h *GDMHandler) Exchange() (interface{}, int) {

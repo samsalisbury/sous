@@ -93,10 +93,10 @@ func BuildGraph(out, err io.Writer) *SousGraph {
 	return &SousGraph{psyringe.New(
 		func() OutWriter { return out },
 		func() ErrWriter { return err },
-		newEngine,
-		newLogSet,
 		newLocalUser,
 		newLocalSousConfig,
+		newSourceHostChooser,
+		newLogSet,
 		newLocalWorkDir,
 		newLocalWorkDirShell,
 		newScratchDirShell,
@@ -135,7 +135,7 @@ func newAutoResolver(d sous.Deployer, r sous.Registry, sr LocalStateReader, ls *
 	return ar
 }
 
-func newEngine() sous.SourceHostChooser {
+func newSourceHostChooser() sous.SourceHostChooser {
 	return sous.SourceHostChooser{
 		SourceHosts: []sous.SourceHost{
 			github.SourceHost{},

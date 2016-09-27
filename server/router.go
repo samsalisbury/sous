@@ -1,28 +1,26 @@
 package server
 
 import (
+	"bytes"
+	"crypto/md5"
+	"encoding/base64"
 	"encoding/json"
-	"log"
+	"fmt"
+	"io"
+	"io/ioutil"
 	"net/http"
-	"runtime/debug"
+	"net/http/httptest"
+	"net/url"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/opentable/sous/graph"
-	"github.com/opentable/sous/lib"
-	"github.com/pkg/errors"
 )
 
 type (
-	// A Exchanger has an Exchange method - which is presumed to write to an
-	// injected ResponseWriter
-	Exchanger interface {
-		Exchange() (interface{}, int)
-	}
-
-	// A PanicHandler processes panics into 500s
-	PanicHandler struct {
-		*sous.LogSet
-		*ResponseWriter
+	// The MetaHandler collects common behavior for route handlers
+	MetaHandler struct {
+		router        *httprouter.Router
+		graphFac      GraphFactory
+		statusHandler *StatusHandler
 	}
 
 	// ResponseWriter wraps the the http.ResponseWriter interface
@@ -31,96 +29,160 @@ type (
 		http.ResponseWriter
 	}
 
-	// An ExchangeFactory builds an Exchanger -
-	// they're used to configure the RouteMap
-	ExchangeFactory func() Exchanger
-
-	routeEntry struct {
-		Name     string
-		Methods  []string
-		Path     string
-		Exchange ExchangeFactory
+	// Injector is an interface for DI systems
+	Injector interface {
+		Inject(...interface{}) error
+		Add(...interface{})
 	}
-
-	// RouteMap is a list of entries for routing
-	RouteMap []routeEntry
+	// A GraphFactory builds a SousGraph
+	GraphFactory func() Injector
 )
 
-var (
-	defaultMethods = []string{"GET", "POST", "PUT", "DELETE"}
-
-	// SousRouteMap is the configuration of route for the application
-	SousRouteMap = RouteMap{
-		{"gdm", []string{"GET"}, "/gdm", NewGDMHandler},
-	}
-)
-
-// BuildRouter builds a returns an http.Handler based on some constant configuration
-func BuildRouter(rm RouteMap, grf func() *graph.SousGraph) http.Handler {
-	r := httprouter.New()
-
-	for _, e := range rm {
-		for _, m := range e.Methods {
-			r.Handle(m, e.Path, Handling(grf, e.Exchange))
-		}
-	}
-
-	return r
-}
-
-// PathFor constructs a URL which should route back to the named route, with
-// supplied parameters
-func (rm *RouteMap) PathFor(name string, params map[string]string) (string, error) {
-	for _, e := range *rm {
-		if e.Name == name {
-			// TODO actually handle params
-			return e.Path, nil
-		}
-	}
-	return "", errors.Errorf("No route found for name %q", name)
-}
-
-func panicsAreFiveHundred(w http.ResponseWriter) {
-	if r := recover(); r != nil {
-		log.Print("paFH")
-		log.Print(r)
-		w.WriteHeader(http.StatusInternalServerError)
-	}
-}
-
-// Handle recovers from panics, returns a 500 and logs the error
-func (ph *PanicHandler) Handle() {
-	if r := recover(); r != nil {
-		ph.ResponseWriter.WriteHeader(http.StatusInternalServerError)
-		ph.LogSet.Warn.Printf("%+v", r)
-		ph.LogSet.Warn.Print(string(debug.Stack()))
-		ph.LogSet.Warn.Print("Recovered, returned 500")
-		// XXX in a dev mode, print the panic in the response body
-		// (normal ops it might leak secure data)
-	}
-}
-
-// Handling (sometimes) updates the local copy of the GDM and formats it
-func Handling(graphFac func() *graph.SousGraph, factory ExchangeFactory) httprouter.Handle {
+// GetHandling (sometimes) updates the local copy of the GDM and formats it
+func (mh *MetaHandler) GetHandling(factory ExchangeFactory) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		defer panicsAreFiveHundred(w)
-
-		g := graphFac()
-		g.Add(&ResponseWriter{ResponseWriter: w}, r, p)
-
-		ph := &PanicHandler{}
-		g.Inject(ph)
-		defer ph.Handle()
-
-		h := factory()
-		g.Inject(h)
-
+		h := mh.injectedHandler(factory, w, r, p)
 		data, status := h.Exchange()
-
-		w.Header().Add("Content-Type", "application/json")
-		w.WriteHeader(status)
-
-		e := json.NewEncoder(w)
-		e.Encode(data)
+		mh.renderData(status, w, r, data)
 	}
+}
+
+// HeadHandling (sometimes) updates the local copy of the GDM and formats it
+func (mh *MetaHandler) HeadHandling(factory ExchangeFactory) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		h := mh.injectedHandler(factory, w, r, p)
+		_, status := h.Exchange()
+		mh.writeHeaders(status, w, r, nil)
+	}
+}
+
+// PutHandling handles PUT requests
+func (mh *MetaHandler) PutHandling(factory ExchangeFactory) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		if r.Header.Get("If-Match") == "" && r.Header.Get("If-None-Match") == "" {
+			w.WriteHeader(http.StatusPreconditionRequired)
+			return
+		}
+
+		gr := copyRequest(r)
+		gr.Method = "GET"
+		grez := mh.synthResponse(gr)
+
+		if r.Header.Get("If-None-Match") == "*" && grez.StatusCode != 404 {
+			w.WriteHeader(http.StatusPreconditionFailed)
+			return
+		}
+		if etag := r.Header.Get("If-Match"); etag != "" {
+			if grez.Header.Get("Etag") != etag {
+				w.WriteHeader(http.StatusPreconditionFailed)
+				return
+			}
+		}
+		h := mh.injectedHandler(factory, w, r, p)
+		data, status := h.Exchange()
+		mh.renderData(status, w, r, data)
+	}
+}
+
+// InstallPanicHandler installs an panic handler into the router
+func (mh *MetaHandler) InstallPanicHandler() {
+	g := mh.graphFac()
+	g.Inject(mh.statusHandler)
+	mh.router.PanicHandler = func(w http.ResponseWriter, r *http.Request, recovered interface{}) {
+		mh.statusHandler.HandlePanic(w, r, recovered)
+	}
+
+}
+
+func (mh *MetaHandler) exchangeGraph(w http.ResponseWriter, r *http.Request, p httprouter.Params) Injector {
+	g := mh.graphFac()
+	g.Add(&ResponseWriter{ResponseWriter: w}, r, p)
+	g.Add(parseQueryValues)
+	return g
+}
+
+func (mh *MetaHandler) injectedHandler(factory ExchangeFactory, w http.ResponseWriter, r *http.Request, p httprouter.Params) Exchanger {
+	h := factory()
+
+	mh.exchangeGraph(w, r, p).Inject(h)
+
+	return h
+}
+
+func (mh *MetaHandler) writeHeaders(status int, w http.ResponseWriter, r *http.Request, data interface{}) {
+	mh.statusHandler.HandleResponse(status, w, data)
+}
+
+func (mh *MetaHandler) renderData(status int, w http.ResponseWriter, r *http.Request, data interface{}) {
+	if data == nil || status >= 300 {
+		mh.writeHeaders(status, w, r, data)
+		return
+	}
+
+	buf := &bytes.Buffer{}
+	digest := md5.New()
+	// xxx conneg
+	e := json.NewEncoder(io.MultiWriter(buf, digest))
+	e.Encode(data)
+	w.Header().Add("Content-Type", "application/json")
+	w.Header().Add("Content-Length", fmt.Sprintf("%d", buf.Len()))
+	w.Header().Add("Etag", base64.URLEncoding.EncodeToString(digest.Sum(nil)))
+	mh.writeHeaders(status, w, r, data)
+	buf.WriteTo(w)
+}
+
+func emptyBody() io.ReadCloser {
+	return ioutil.NopCloser(&bytes.Buffer{})
+}
+func copyRequest(req *http.Request) *http.Request {
+	nr := &http.Request{}
+	*nr = *req
+	if req.URL != nil {
+		nr.URL = &url.URL{}
+		*nr.URL = *req.URL
+	}
+	nr.Body = emptyBody() //users must copy body themselves
+	return nr
+}
+
+func (mh *MetaHandler) synthResponse(req *http.Request) *http.Response {
+	rw := httptest.NewRecorder()
+	mh.router.ServeHTTP(rw, req)
+	res := &http.Response{
+		Proto:      "HTTP/1.1",
+		ProtoMajor: 1,
+		ProtoMinor: 1,
+		StatusCode: rw.Code,
+		Header:     rw.HeaderMap,
+	}
+	if res.StatusCode == 0 {
+		res.StatusCode = 200
+	}
+	res.Status = http.StatusText(res.StatusCode)
+	if rw.Body != nil {
+		res.Body = ioutil.NopCloser(bytes.NewReader(rw.Body.Bytes()))
+	}
+
+	if trailers, ok := res.Header["Trailer"]; ok {
+		res.Trailer = make(http.Header, len(trailers))
+		for _, k := range trailers {
+			// TODO: use http2.ValidTrailerHeader, but we can't
+			// get at it easily because it's bundled into net/http
+			// unexported. This is good enough for now:
+			switch k {
+			case "Transfer-Encoding", "Content-Length", "Trailer":
+				// Ignore since forbidden by RFC 2616 14.40.
+				continue
+			}
+			k = http.CanonicalHeaderKey(k)
+			vv, ok := rw.HeaderMap[k]
+			if !ok {
+				continue
+			}
+			vv2 := make([]string, len(vv))
+			copy(vv2, vv)
+			res.Trailer[k] = vv2
+		}
+	}
+	return res
 }
