@@ -1,6 +1,12 @@
 package sous
 
-import "github.com/opentable/sous/util/firsterr"
+import (
+	"path/filepath"
+	"strings"
+
+	"github.com/opentable/sous/util/firsterr"
+	"github.com/pkg/errors"
+)
 
 type (
 	// BuildManager collects and orchestrates the various components that are
@@ -33,4 +39,24 @@ func (m *BuildManager) Build() (*BuildResult, error) {
 		func(e *error) { *e = m.Register(br, bc) },
 	)
 	return br, err
+}
+
+// OffsetFromWorkdir sets the offset for the BuildManager to be the indicated directory.
+// It's a convenience for command line users who can `sous build <dir>` (and therefore get tab-completion etc)
+func (m *BuildManager) OffsetFromWorkdir(workdir, offset string) error {
+	cfg := m.BuildConfig
+	if cfg.Offset != "" { // because --offset
+		return errors.New("Cannot use both --offset and path argument")
+	}
+	sc := cfg.Context.Source
+	offset, err := filepath.Rel(sc.RootDir, filepath.Join(workdir, offset))
+	if err != nil {
+		return err
+	}
+	if strings.HasPrefix(offset, "..") {
+		return errors.Errorf("Offset %q outside of project root %q", offset, sc.RootDir)
+	}
+
+	cfg.Offset = offset
+	return nil
 }

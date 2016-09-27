@@ -38,24 +38,27 @@ const (
 func (c *BuildConfig) NewContext() *BuildContext {
 	ctx := c.Context
 	sc := c.Context.Source
+	sh := ctx.Sh.Clone()
+	sh.CD(sc.RootDir)
 	bc := BuildContext{
-		Sh:      ctx.Sh,
+		Sh:      sh,
 		Scratch: ctx.Scratch,
 		Machine: ctx.Machine,
 		User:    ctx.User,
 		Changes: ctx.Changes,
 		Source: SourceContext{
+			OffsetDir:      c.chooseOffset(),
+			RemoteURL:      c.chooseRemoteURL(),
+			NearestTagName: c.chooseTag(),
+
 			RootDir:            sc.RootDir,
-			OffsetDir:          c.chooseOffset(),
 			Branch:             sc.Branch,
 			Revision:           sc.Revision,
 			Files:              sc.Files,
 			ModifiedFiles:      sc.ModifiedFiles,
 			NewFiles:           sc.NewFiles,
 			Tags:               sc.Tags,
-			NearestTagName:     c.chooseTag(),
 			NearestTagRevision: sc.NearestTagRevision,
-			RemoteURL:          c.chooseRemoteURL(),
 			PrimaryRemoteURL:   sc.PrimaryRemoteURL,
 			RemoteURLs:         sc.RemoteURLs,
 			DirtyWorkingTree:   sc.DirtyWorkingTree,

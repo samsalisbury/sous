@@ -2,6 +2,7 @@ package cli
 
 import (
 	"flag"
+	"os"
 
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/lib"
@@ -50,11 +51,12 @@ func (sb *SousBuild) RegisterOn(psy Addable) {
 
 // Execute fulfills the cmdr.Executor interface
 func (sb *SousBuild) Execute(args []string) cmdr.Result {
-	// XXX is there a way to move this into DI?
 	if len(args) != 0 {
-		bc := sb.BuildManager.BuildConfig.Context
-		path := args[0]
-		if err := bc.Sh.CD(path); err != nil {
+		pwd, err := os.Getwd()
+		if err != nil {
+			return cmdr.EnsureErrorResult(err)
+		}
+		if err := sb.BuildManager.OffsetFromWorkdir(pwd, args[0]); err != nil {
 			return cmdr.EnsureErrorResult(err)
 		}
 	}
@@ -64,6 +66,5 @@ func (sb *SousBuild) Execute(args []string) cmdr.Result {
 	if err != nil {
 		return cmdr.EnsureErrorResult(err)
 	}
-	//	return Success(result)
 	return Success(result)
 }
