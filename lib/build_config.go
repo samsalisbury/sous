@@ -9,29 +9,49 @@ import (
 )
 
 type (
-	// BuildConfig captures the user's intent as they build a repo
+	// BuildConfig captures the user's intent as they build a repo.
 	BuildConfig struct {
 		Repo, Offset, Tag, Revision string
 		Strict, ForceClone          bool
 		Context                     *BuildContext
 	}
 
-	// An AdvisoryName is the type for advisory tokens
+	// An AdvisoryName is the type for advisory tokens.
 	AdvisoryName string
-	Advisories   []AdvisoryName
 )
 
 const (
-	UnknownRepo          = AdvisoryName(`source workspace lacked repo`)
-	NoRepoAdv            = AdvisoryName(`no repository`)
+	// UnknownRepo is an advisory that the source workspace is not a repo.
+	// TODO: Disambiguate text from NoRepoAdv, they seem like the same thing.
+	UnknownRepo = AdvisoryName(`source workspace lacked repo`)
+	// NoRepoAdv means there is no repository.
+	// TODO: Disambiguate text from UnknownRepo.
+	NoRepoAdv = AdvisoryName(`no repository`)
+	// NotRequestedRevision means that a different revision was built from that
+	// which was requested.
 	NotRequestedRevision = AdvisoryName(`requested revision not built`)
-	Unversioned          = AdvisoryName(`no versioned tag`)
-	TagMismatch          = AdvisoryName(`tag mismatch`)
-	TagNotHead           = AdvisoryName(`tag not on built revision`)
-	EphemeralTag         = AdvisoryName(`ephemeral tag`)
-	UnpushedRev          = AdvisoryName(`unpushed revision`)
-	BogusRev             = AdvisoryName(`bogus revision`)
-	DirtyWS              = AdvisoryName(`dirty workspace`)
+	// Unversioned means that there was no tag at the currently checked out
+	// revision, or that the tag was not a semver tag, or the tag was 0.0.0.
+	Unversioned = AdvisoryName(`no versioned tag`)
+	// TagMismatch means that a different tag to the one which was requested was
+	// built.
+	TagMismatch = AdvisoryName(`tag mismatch`)
+	// TagNotHead means that the requested tag exists in the history, but there
+	// were more commits since, which were part of this build.
+	TagNotHead = AdvisoryName(`tag not on built revision`)
+	// EphemeralTag means the tag was an ephemeral tag rather than an annotated
+	// tag.
+	EphemeralTag = AdvisoryName(`ephemeral tag`)
+	// UnpushedRev means the revision that was build is not pushed to any
+	// remote.
+	UnpushedRev = AdvisoryName(`unpushed revision`)
+	// BogusRev means that the revision was bogus.
+	// TODO: Find out what "bogus" means.
+	BogusRev = AdvisoryName(`bogus revision`)
+	// DirtyWS means that the workspace was dirty, which means there were
+	// untracked files present, or that one or more tracked files were modified
+	// since the last commit.
+	DirtyWS = AdvisoryName(`dirty workspace`)
 )
 
 // NewContext returns a new BuildContext updated based on the user's intent as expressed in the Config
@@ -130,8 +150,9 @@ func (c *BuildConfig) GuardRegister(bc *BuildContext) error {
 	return nil
 }
 
-// Advisories does this:
-func (c *BuildConfig) Advisories(ctx *BuildContext) (advs []string) {
+// Advisories returns a list of advisories that apply to ctx.
+func (c *BuildConfig) Advisories(ctx *BuildContext) []string {
+	advs := []string{}
 	s := ctx.Source
 	knowsRepo := false
 	for _, r := range s.RemoteURLs {
@@ -199,5 +220,5 @@ func (c *BuildConfig) Advisories(ctx *BuildContext) (advs []string) {
 			DirtyWorkingTree                     bool
 		}
 	*/
-	return
+	return advs
 }
