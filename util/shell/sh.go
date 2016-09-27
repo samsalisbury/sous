@@ -66,7 +66,9 @@ func (s *Sh) Clone() Shell {
 func (s *Sh) clone() *Sh {
 	cp := *s
 	cp.Env = make([]string, len(s.Env))
-	copy(cp.Env, s.Env)
+	if s.Env != nil {
+		copy(cp.Env, s.Env)
+	}
 	return &cp
 }
 
