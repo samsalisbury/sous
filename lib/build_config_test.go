@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/nyarly/testify/assert"
+	"github.com/opentable/sous/util/shell"
 )
 
 // Things that we can't easily do yet:
@@ -28,6 +29,7 @@ func TestPresentExplicitRepo(t *testing.T) {
 	bc := BuildConfig{
 		Repo: "github.com/opentable/present",
 		Context: &BuildContext{
+			Sh: &shell.Sh{},
 			Source: SourceContext{
 				RemoteURLs: []string{
 					"github.com/opentable/present",
@@ -49,6 +51,7 @@ func TestMissingExplicitRepo(t *testing.T) {
 	bc := BuildConfig{
 		Repo: "github.com/opentable/present",
 		Context: &BuildContext{
+			Sh: &shell.Sh{},
 			Source: SourceContext{
 				PrimaryRemoteURL: "github.com/guessed/upstream",
 				RemoteURLs: []string{
@@ -72,6 +75,7 @@ func TestAbsentRepoConfig(t *testing.T) {
 	bc := BuildConfig{
 		Repo: "",
 		Context: &BuildContext{
+			Sh: &shell.Sh{},
 			Source: SourceContext{
 				PrimaryRemoteURL: "github.com/guessed/upstream",
 				RemoteURLs: []string{
@@ -93,6 +97,7 @@ func TestNoRepo(t *testing.T) {
 	bc := BuildConfig{
 		Repo: "",
 		Context: &BuildContext{
+			Sh: &shell.Sh{},
 			Source: SourceContext{
 				PrimaryRemoteURL: "",
 				RemoteURLs: []string{
@@ -114,6 +119,7 @@ func TestNotRequestedRevision(t *testing.T) {
 	bc := BuildConfig{
 		Revision: "abcdef",
 		Context: &BuildContext{
+			Sh: &shell.Sh{},
 			Source: SourceContext{
 				Revision: "100100100",
 			},
@@ -132,6 +138,7 @@ func TestUsesRequestedTag(t *testing.T) {
 	bc := BuildConfig{
 		Tag: "1.2.3",
 		Context: &BuildContext{
+			Sh: &shell.Sh{},
 			Source: SourceContext{
 				Revision: "abcd",
 			},
@@ -147,6 +154,7 @@ func TestAdvisesOfDefaultVersion(t *testing.T) {
 
 	bc := BuildConfig{
 		Context: &BuildContext{
+			Sh: &shell.Sh{},
 			Source: SourceContext{
 				Revision: "abcd",
 			},
@@ -164,6 +172,7 @@ func TestTagNotHead(t *testing.T) {
 	bc := BuildConfig{
 		Tag: "1.2.3",
 		Context: &BuildContext{
+			Sh: &shell.Sh{},
 			Source: SourceContext{
 				Revision:           "abcd",
 				NearestTagName:     "1.2.3",
@@ -187,6 +196,7 @@ func TestEphemeralTag(t *testing.T) {
 	bc := BuildConfig{
 		Tag: "1.2.3",
 		Context: &BuildContext{
+			Sh: &shell.Sh{},
 			Source: SourceContext{
 				PrimaryRemoteURL:   "github.com/opentable/present",
 				Revision:           "abcd",
@@ -202,6 +212,7 @@ func TestEphemeralTag(t *testing.T) {
 			Repo:     "github.com/opentable/present",
 			Revision: "abcdef",
 			Context: &BuildContext{
+			Sh: &shell.Sh{},
 				Source: SourceContext{
 					RemoteURL: "github.com/opentable/present",
 					RemoteURLs: []string{
@@ -232,6 +243,7 @@ func TestSetsOffset(t *testing.T) {
 	bc := BuildConfig{
 		Offset: "sub/",
 		Context: &BuildContext{
+			Sh: &shell.Sh{},
 			Source: SourceContext{
 				OffsetDir:          "",
 				Revision:           "abcd",
@@ -250,6 +262,7 @@ func TestDirtyWorkspaceAdvisory(t *testing.T) {
 
 	bc := BuildConfig{
 		Context: &BuildContext{
+			Sh: &shell.Sh{},
 			Source: SourceContext{
 				DirtyWorkingTree: true,
 			},
@@ -267,6 +280,7 @@ func TestUnpushedRevisionAdvisory(t *testing.T) {
 	bc := BuildConfig{
 		Strict: true,
 		Context: &BuildContext{
+			Sh: &shell.Sh{},
 			Source: SourceContext{
 				RevisionUnpushed: true,
 			},
@@ -284,6 +298,7 @@ func TestPermissiveGuard(t *testing.T) {
 	bc := BuildConfig{
 		Strict: false,
 		Context: &BuildContext{
+			Sh: &shell.Sh{},
 			Source: SourceContext{
 				RevisionUnpushed: true,
 			},
@@ -304,6 +319,7 @@ func TestProductionReady(t *testing.T) {
 		Repo:     "github.com/opentable/present",
 		Revision: "abcdef",
 		Context: &BuildContext{
+			Sh: &shell.Sh{},
 			Source: SourceContext{
 				RemoteURL: "github.com/opentable/present",
 				RemoteURLs: []string{
