@@ -59,6 +59,7 @@ func (su *SousUpdate) Execute(args []string) cmdr.Result {
 	if err != nil {
 		return EnsureErrorResult(err)
 	}
+
 	_, ok := su.State.Manifests.Get(sl)
 	if !ok {
 		log.Printf("adding new  manifest %q", did)
@@ -78,7 +79,7 @@ func (su *SousUpdate) Execute(args []string) cmdr.Result {
 		su.GDM = graph.CurrentGDM{newGDM}
 		_, ok := su.State.Manifests.Get(sl)
 		if !ok {
-			return EnsureErrorResult(fmt.Errorf("sous init failed to add manifest"))
+			return EnsureErrorResult(fmt.Errorf("sous build failed to add manifest"))
 		}
 	}
 	if err := updateState(su.State, su.GDM, sid, did); err != nil {
