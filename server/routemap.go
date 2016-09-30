@@ -2,6 +2,7 @@ package server
 
 import (
 	"net/http"
+	"net/url"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/pkg/errors"
@@ -84,13 +85,25 @@ func (rm *RouteMap) BuildRouter(grf func() Injector) http.Handler {
 	return r
 }
 
+// KV (Key/Value) is a convenience type for PathFor
+type KV []string
+
 // PathFor constructs a URL which should route back to the named route, with
 // supplied parameters
-func (rm *RouteMap) PathFor(name string, params map[string]string) (string, error) {
+func (rm *RouteMap) PathFor(name string, kvs ...KV) (string, error) {
+	params := url.Values{}
+	for _, kv := range kvs {
+		params.Add(kv[0], kv[1])
+	}
+
 	for _, e := range *rm {
 		if e.Name == name {
-			// TODO actually handle params
-			return e.Path, nil
+			// Path parameters will need some regexp magic, I think
+			query := ""
+			if len(params) > 0 {
+				query = "?" + url.Values(params).Encode()
+			}
+			return e.Path + query, nil
 		}
 	}
 	return "", errors.Errorf("No route found for name %q", name)
