@@ -81,6 +81,7 @@ func (dc *DiffConcentrator) collect() (concentratedDiffSet, error) {
 		return ds, err
 	}
 	for g := range dc.Deleted {
+		log.Printf("g: %#v", g)
 		ds.Gone.Add(g)
 	}
 	for n := range dc.Created {
@@ -168,6 +169,7 @@ func (db *deploymentBundle) manifestPair(defs Defs) (*ManifestPair, error) {
 
 	res := new(ManifestPair)
 	ms, err := before.Manifests(defs)
+	log.Printf("%#v", before)
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +187,8 @@ func (db *deploymentBundle) manifestPair(defs Defs) (*ManifestPair, error) {
 		res.Prior = p
 	}
 
-	ms, err = before.Manifests(defs)
+	ms, err = after.Manifests(defs)
+	log.Printf("%#v", after)
 	if err != nil {
 		return nil, err
 	}
