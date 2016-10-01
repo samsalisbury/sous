@@ -80,11 +80,13 @@ func TestRealDiff(t *testing.T) {
 	ds := dc.collect()
 
 	if assert.Len(ds.Gone.Snapshot(), 1, "Should have one deleted item.") {
-		//assert.Equal(string(ds.Gone.Snapshot()[0].SourceID.RepoURL), repoOne)
+		it, _ := ds.Gone.Any(func(*Deployment) bool { return true })
+		assert.Equal(string(it.SourceID.Location.Repo), repoOne)
 	}
 
 	if assert.Len(ds.Same.Snapshot(), 1, "Should have one unchanged item.") {
-		//assert.Equal(string(ds.Same.Snapshot()[0].SourceID.RepoURL), repoTwo)
+		it, _ := ds.Same.Any(func(*Deployment) bool { return true })
+		assert.Equal(string(it.SourceID.Location.Repo), repoTwo)
 	}
 
 	if assert.Len(ds.Changed, 1, "Should have one modified item.") {
@@ -96,7 +98,7 @@ func TestRealDiff(t *testing.T) {
 	}
 
 	if assert.Equal(ds.New.Len(), 1, "Should have one added item.") {
-		//assert.Equal(string(ds.New[0].SourceID.RepoURL), repoFour)
+		it, _ := ds.New.Any(func(*Deployment) bool { return true })
+		assert.Equal(string(it.SourceID.Location.Repo), repoFour)
 	}
-
 }

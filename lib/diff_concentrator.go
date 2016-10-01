@@ -1,6 +1,7 @@
 package sous
 
 import (
+	"log"
 	"sort"
 	"sync"
 
@@ -8,17 +9,24 @@ import (
 )
 
 type (
+	ManifestPair struct {
+		name        ManifestID
+		Prior, Post *Manifest
+	}
+	ManifestPairs []*ManifestPair
+
 	// A DiffConcentrator wraps deployment DiffChans in order to produce
 	// differences in terms of *manifests*
 	DiffConcentrator struct {
 		Defs
+		Errors                     chan error
 		Created, Deleted, Retained chan *Manifest
 		Modified                   chan *ManifestPair
 	}
 
-	ManifestPair struct {
-		name        ManifestID
-		Prior, Post *Manifest
+	concentratedDiffSet struct {
+		New, Gone, Same Manifests
+		Changed         ManifestPairs
 	}
 
 	deploymentBundle struct {
@@ -28,6 +36,14 @@ type (
 	}
 )
 
+// Concentrate returns a DiffConcentrator set up to concentrate the deployment
+// changes in a DiffChans into manifest changes
+func (d DiffChans) Concentrate(defs Defs) DiffConcentrator {
+	c := NewConcentrator(defs, d, cap(d.Created))
+	go concentrate(d, c)
+	return c
+}
+
 // NewDiffChans constructs a DiffChans
 func NewConcentrator(defs Defs, s DiffChans, sizes ...int) DiffConcentrator {
 	var size int
@@ -35,8 +51,11 @@ func NewConcentrator(defs Defs, s DiffChans, sizes ...int) DiffConcentrator {
 		size = sizes[0]
 	}
 
+	log.Printf("conc size: %d", size)
+
 	return DiffConcentrator{
 		Defs:     defs,
+		Errors:   make(chan error, size+10),
 		Created:  make(chan *Manifest, size),
 		Deleted:  make(chan *Manifest, size),
 		Retained: make(chan *Manifest, size),
@@ -44,7 +63,48 @@ func NewConcentrator(defs Defs, s DiffChans, sizes ...int) DiffConcentrator {
 	}
 }
 
+func newConcDiffSet() concentratedDiffSet {
+	return concentratedDiffSet{
+		New:     NewManifests(),
+		Gone:    NewManifests(),
+		Same:    NewManifests(),
+		Changed: make(ManifestPairs, 0),
+	}
+}
+
+func (dc *DiffConcentrator) collect() (concentratedDiffSet, error) {
+	ds := newConcDiffSet()
+
+	select {
+	default:
+	case err := <-dc.Errors:
+		return ds, err
+	}
+	for g := range dc.Deleted {
+		ds.Gone.Add(g)
+	}
+	for n := range dc.Created {
+		ds.New.Add(n)
+	}
+	for m := range dc.Modified {
+		ds.Changed = append(ds.Changed, m)
+	}
+	for s := range dc.Retained {
+		ds.Same.Add(s)
+	}
+	select {
+	default:
+	case err := <-dc.Errors:
+		return ds, err
+	}
+
+	return ds, nil
+}
+
 func (db *deploymentBundle) add(prior, post *Deployment) error {
+	if db.consumed {
+		return errors.Errorf("Attempted to add a new pair to a consumed bundle: %v %v", prior, post)
+	}
 	var cluster string
 	if prior != nil {
 		cluster = prior.ClusterName
@@ -60,47 +120,57 @@ func (db *deploymentBundle) add(prior, post *Deployment) error {
 		return errors.Errorf("Invariant violated: no cluster name given in deploy pair")
 	}
 
-	if existing, available := db.pairs[cluster]; !available {
+	db.Lock()
+	log.Printf("%#v", db.pairs)
+	if existing, used := db.pairs[cluster]; used {
 		return errors.Errorf(
 			"Deployment collision for cluster %q: %v vs %v,%v",
 			cluster, existing, prior, post,
 		)
 	}
-	db.Lock()
 	defer db.Unlock()
 
 	db.pairs[cluster] = &DeploymentPair{Prior: prior, Post: post}
+	return nil
 }
 
 func (db *deploymentBundle) clusters() []string {
-	cs := make([]string)
+	log.Printf("pairs: %v", db.pairs)
+	cs := make([]string, 0, len(db.pairs))
 	db.RLock()
 	defer db.RUnlock()
 
+	log.Printf("cls: %v %d", cs, len(cs))
 	for k := range db.pairs {
 		cs = append(cs, k)
+		log.Printf("cls: %v %d", cs, len(cs))
 	}
+	log.Printf("cls: %v %d", cs, len(cs))
 	sort.Strings(cs)
+	log.Printf("cls: %v %d", cs, len(cs))
 	return cs
 }
 
 func (db *deploymentBundle) manifestPair(defs Defs) (*ManifestPair, error) {
-	before := make(Deployments)
-	after := make(Deployments)
+	before := NewDeployments()
+	after := NewDeployments()
 	db.RLock()
 	defer db.RUnlock()
 
 	for _, v := range db.pairs {
 		if v.Prior != nil {
-			before = append(before, v.Prior)
+			before.Add(v.Prior)
 		}
 		if v.Post != nil {
-			after = append(after, v.Post)
+			after.Add(v.Post)
 		}
 	}
 
-	var res *ManifestPair
-	ms := before.Manifests(defs)
+	res := new(ManifestPair)
+	ms, err := before.Manifests(defs)
+	if err != nil {
+		return nil, err
+	}
 	switch ms.Len() {
 	default:
 		return nil, errors.Errorf(
@@ -108,10 +178,17 @@ func (db *deploymentBundle) manifestPair(defs Defs) (*ManifestPair, error) {
 			before, ms)
 	case 0:
 	case 1:
-		res.Prior = ms.Get(ms.Keys()[0])
+		p, got := ms.Get(ms.Keys()[0])
+		if !got {
+			panic("Non-empty Manifests returned no value for a reported key")
+		}
+		res.Prior = p
 	}
 
-	ms := after.Manifests(defs)
+	ms, err = before.Manifests(defs)
+	if err != nil {
+		return nil, err
+	}
 	switch ms.Len() {
 	default:
 		return nil, errors.Errorf(
@@ -119,60 +196,111 @@ func (db *deploymentBundle) manifestPair(defs Defs) (*ManifestPair, error) {
 			after, ms)
 	case 0:
 	case 1:
-		res.Post = ms.Get(ms.Keys()[0])
+		p, got := ms.Get(ms.Keys()[0])
+		if !got {
+			panic("Non-empty Manifests returned no value for a reported key")
+		}
+		res.Post = p
 	}
 	db.consumed = true
 	return res, nil
 }
 
-func newDepBundle() deploymentBundle {
-	return deploymentBundle{
+func newDepBundle() *deploymentBundle {
+	return &deploymentBundle{
 		consumed: false,
 		RWMutex:  new(sync.RWMutex),
 		pairs:    make(map[string]*DeploymentPair),
 	}
 }
 
-func concentrate(dc DiffChans, con DiffConcentrator) {
-	collect := make(map[ManifestID]deploymentBundle)
-	addPair = func(mid ManifestID, prior, post *Deployment) {
-		depps, present := collect[ManifestID]
-		if !present {
-			depps := newDepBundle()
+func (dc *DiffConcentrator) dispatch(mp *ManifestPair) error {
+	if mp.Prior == nil {
+		if mp.Post == nil {
+			return errors.Errorf("Blank manifest pair: %#v", mp)
 		}
-		collect[ManifestID].add(prior, post)
-
-		if len(collect[ManifestID].clusters()) == len(con.defs.Clusters) { //eh?
-			mp := collect[ManifestID].manifestPair(defs)
-			if mp.Prior == nil {
-				if mp.Post == nil {
-					//?
-				} else {
-					con.Created <- mp.Post
-				}
+		dc.Created <- mp.Post
+	} else {
+		if mp.Post == nil {
+			dc.Deleted <- mp.Post
+		} else {
+			if mp.Prior.Equal(mp.Post) {
+				dc.Retained <- mp.Post
 			} else {
-				if mp.Post == nil {
-					con.Deleted <- mp.Post
-				} else {
-					if mp.Prior.Equal(mp.Post) {
-						con.Retained <- mp.Post
-					} else {
-						con.Modified <- mp
-					}
-				}
+				dc.Modified <- mp
+			}
+		}
+	}
+	return nil
+}
+
+func concentrate(dc DiffChans, con DiffConcentrator) {
+	collect := make(map[ManifestID]*deploymentBundle)
+	addPair := func(mid ManifestID, prior, post *Deployment) {
+		log.Printf("addPair: %#v: %#v %#v", mid, prior, post)
+		_, present := collect[mid]
+		if !present {
+			collect[mid] = newDepBundle()
+		}
+
+		err := collect[mid].add(prior, post)
+		if err != nil {
+			log.Printf("err: %#v", err)
+			con.Errors <- err
+			return
+		}
+
+		log.Printf("Can dispatch? %v ?= %v", len(collect[mid].clusters()), len(con.Defs.Clusters))
+		if len(collect[mid].clusters()) == len(con.Defs.Clusters) { //eh?
+			mp, err := collect[mid].manifestPair(con.Defs)
+			if err != nil {
+				con.Errors <- err
+				return
+			}
+			if err := con.dispatch(mp); err != nil {
+				con.Errors <- err
 			}
 		}
 	}
 
-	select {
-	case c := <-dc.Created:
-		addPair(c.ManifestID(), nil, c)
-	case d := <-dc.Deleted:
-		addPair(c.ManifestID(), d, nil)
-	case r := <-dc.Retained:
-		addPair(c.ManifestID(), r, r)
-	case m := <-dc.Modified:
-		addPair(c.ManifestID(), m.Prior, m.Post)
-	}
+	created, deleted, retained, modified :=
+		dc.Created, dc.Deleted, dc.Retained, dc.Modified
 
+	for {
+		if created == nil && deleted == nil && retained == nil && modified == nil {
+			close(con.Retained)
+			close(con.Modified)
+			close(con.Errors)
+			break
+		}
+
+		select {
+		case c, open := <-created:
+			if !open {
+				close(con.Created)
+				created = nil
+				continue
+			}
+			addPair(c.ManifestID(), nil, c)
+		case d, open := <-deleted:
+			if !open {
+				close(con.Deleted)
+				deleted = nil
+				continue
+			}
+			addPair(d.ManifestID(), d, nil)
+		case r, open := <-retained:
+			if !open {
+				retained = nil
+				continue
+			}
+			addPair(r.ManifestID(), r, r)
+		case m, open := <-modified:
+			if !open {
+				modified = nil
+				continue
+			}
+			addPair(m.Prior.ManifestID(), m.Prior, m.Post)
+		}
+	}
 }

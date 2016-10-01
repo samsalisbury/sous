@@ -1,6 +1,9 @@
 package sous
 
-import "strings"
+import (
+	"log"
+	"strings"
+)
 
 type (
 	// DeploymentPair is a pair of deployments that represent a "before and after" style relationship
@@ -101,6 +104,7 @@ func newDiffer(intended Deployments) *differ {
 	for _, dep := range i {
 		startMap[dep.Name()] = dep
 	}
+	log.Printf("%v size %d", i, len(i))
 	return &differ{
 		from:      startMap,
 		DiffChans: NewDiffChans(len(i)),
