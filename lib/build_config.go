@@ -143,9 +143,8 @@ func (c *BuildConfig) GuardStrict(bc *BuildContext) error {
 func (c *BuildConfig) GuardRegister(bc *BuildContext) error {
 	var blockers []string
 	for _, a := range bc.Advisories {
-		switch a {
-		case string(DirtyWS), string(UnpushedRev),
-			string(NoRepoAdv), string(NotRequestedRevision):
+		switch AdvisoryName(a) {
+		case DirtyWS, UnpushedRev, NoRepoAdv, NotRequestedRevision:
 			blockers = append(blockers, a)
 		}
 	}
