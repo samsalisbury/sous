@@ -340,3 +340,18 @@ func TestProductionReady(t *testing.T) {
 	assert.Len(ctx.Advisories, 0)
 	assert.NoError(bc.GuardStrict(ctx))
 }
+
+func TestBuildConfig_GuardRegister(t *testing.T) {
+	c := &BuildConfig{}
+	bc := &BuildContext{}
+	bc.Advisories = []string{"dirty workspace"}
+	err := c.GuardRegister(bc)
+	expected := "Refusing to register build because of advisories:\n  dirty workspace"
+	if err == nil {
+		t.Fatalf("got nil; want error %q", expected)
+	}
+	actual := err.Error()
+	if actual != expected {
+		t.Errorf("got error %q; want %q", actual, expected)
+	}
+}
