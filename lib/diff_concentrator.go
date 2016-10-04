@@ -1,9 +1,7 @@
 package sous
 
 import (
-	"log"
 	"sort"
-	"sync"
 
 	"github.com/pkg/errors"
 )
@@ -31,10 +29,8 @@ type (
 
 	deploymentBundle struct {
 		consumed bool
-		*sync.RWMutex
-		// XXX this should be two Deployments
-		// instead of needing its own mutex
-		pairs map[string]*DeploymentPair
+		before   Deployments
+		after    Deployments
 	}
 )
 
@@ -52,8 +48,6 @@ func NewConcentrator(defs Defs, s DiffChans, sizes ...int) DiffConcentrator {
 	if len(sizes) > 0 {
 		size = sizes[0]
 	}
-
-	log.Printf("conc size: %d", size)
 
 	return DiffConcentrator{
 		Defs:     defs,
@@ -83,7 +77,6 @@ func (dc *DiffConcentrator) collect() (concentratedDiffSet, error) {
 		return ds, err
 	}
 	for g := range dc.Deleted {
-		log.Printf("g: %#v", g)
 		ds.Gone.Add(g)
 	}
 	for n := range dc.Created {
@@ -123,55 +116,55 @@ func (db *deploymentBundle) add(prior, post *Deployment) error {
 		return errors.Errorf("Invariant violated: no cluster name given in deploy pair")
 	}
 
-	db.Lock()
-	log.Printf("%#v", db.pairs)
-	if existing, used := db.pairs[cluster]; used {
-		return errors.Errorf(
-			"Deployment collision for cluster %q: %v vs %v,%v",
-			cluster, existing, prior, post,
-		)
+	if prior != nil {
+		if accepted := db.before.Add(prior); !accepted {
+			existing, present := db.before.Get(prior.ID())
+			if !present {
+				panic("Collided deployment not present!")
+			}
+			return errors.Errorf(
+				"Deployment collision for cluster's prior %q:\n  %v vs\n  %v",
+				cluster, existing, prior,
+			)
+		}
 	}
-	defer db.Unlock()
 
-	db.pairs[cluster] = &DeploymentPair{Prior: prior, Post: post}
+	if post != nil {
+		if accepted := db.after.Add(post); !accepted {
+			existing, present := db.after.Get(post.ID())
+			if !present {
+				panic("Collided deployment not present!")
+			}
+			return errors.Errorf(
+				"Deployment collision for cluster's post %q:\n  %v vs\n  %v",
+				cluster, existing, post,
+			)
+		}
+	}
+
 	return nil
 }
 
 func (db *deploymentBundle) clusters() []string {
-	log.Printf("pairs: %v", db.pairs)
-	cs := make([]string, 0, len(db.pairs))
-	db.RLock()
-	defer db.RUnlock()
-
-	log.Printf("cls: %v %d", cs, len(cs))
-	for k := range db.pairs {
-		cs = append(cs, k)
-		log.Printf("cls: %v %d", cs, len(cs))
+	cm := make(map[string]struct{})
+	for _, v := range db.before.Snapshot() {
+		cm[v.ClusterName] = struct{}{}
 	}
-	log.Printf("cls: %v %d", cs, len(cs))
+	for _, v := range db.after.Snapshot() {
+		cm[v.ClusterName] = struct{}{}
+	}
+	cs := make([]string, 0, len(cm))
+	for k := range cm {
+		cs = append(cs, k)
+	}
 	sort.Strings(cs)
-	log.Printf("cls: %v %d", cs, len(cs))
 	return cs
 }
 
 func (db *deploymentBundle) manifestPair(defs Defs) (*ManifestPair, error) {
-	before := NewDeployments()
-	after := NewDeployments()
-	db.RLock()
-	defer db.RUnlock()
-
-	for _, v := range db.pairs {
-		if v.Prior != nil {
-			before.Add(v.Prior)
-		}
-		if v.Post != nil {
-			after.Add(v.Post)
-		}
-	}
-
+	db.consumed = true
 	res := new(ManifestPair)
-	ms, err := before.Manifests(defs)
-	log.Printf("%#v", before)
+	ms, err := db.before.Manifests(defs)
 	if err != nil {
 		return nil, err
 	}
@@ -179,7 +172,7 @@ func (db *deploymentBundle) manifestPair(defs Defs) (*ManifestPair, error) {
 	default:
 		return nil, errors.Errorf(
 			"bundled deployments produced multiple manifests:\n%#v\n%#v",
-			before, ms)
+			db.before, ms)
 	case 0:
 	case 1:
 		p, got := ms.Get(ms.Keys()[0])
@@ -189,8 +182,7 @@ func (db *deploymentBundle) manifestPair(defs Defs) (*ManifestPair, error) {
 		res.Prior = p
 	}
 
-	ms, err = after.Manifests(defs)
-	log.Printf("%#v", after)
+	ms, err = db.after.Manifests(defs)
 	if err != nil {
 		return nil, err
 	}
@@ -198,7 +190,7 @@ func (db *deploymentBundle) manifestPair(defs Defs) (*ManifestPair, error) {
 	default:
 		return nil, errors.Errorf(
 			"bundled deployments produced multiple manifests:\n%#v\n%#v",
-			after, ms)
+			db.after, ms)
 	case 0:
 	case 1:
 		p, got := ms.Get(ms.Keys()[0])
@@ -213,15 +205,14 @@ func (db *deploymentBundle) manifestPair(defs Defs) (*ManifestPair, error) {
 		res.name = res.Post.ID()
 	}
 
-	db.consumed = true
 	return res, nil
 }
 
 func newDepBundle() *deploymentBundle {
 	return &deploymentBundle{
 		consumed: false,
-		RWMutex:  new(sync.RWMutex),
-		pairs:    make(map[string]*DeploymentPair),
+		before:   NewDeployments(),
+		after:    NewDeployments(),
 	}
 }
 
@@ -248,7 +239,6 @@ func (dc *DiffConcentrator) dispatch(mp *ManifestPair) error {
 func concentrate(dc DiffChans, con DiffConcentrator) {
 	collect := make(map[ManifestID]*deploymentBundle)
 	addPair := func(mid ManifestID, prior, post *Deployment) {
-		log.Printf("addPair: %#v: %#v %#v", mid, prior, post)
 		_, present := collect[mid]
 		if !present {
 			collect[mid] = newDepBundle()
@@ -256,19 +246,16 @@ func concentrate(dc DiffChans, con DiffConcentrator) {
 
 		err := collect[mid].add(prior, post)
 		if err != nil {
-			log.Printf("err: %#v", err)
 			con.Errors <- err
 			return
 		}
 
-		log.Printf("Can dispatch? %v ?= %v", len(collect[mid].clusters()), len(con.Defs.Clusters))
 		if len(collect[mid].clusters()) == len(con.Defs.Clusters) { //eh?
 			mp, err := collect[mid].manifestPair(con.Defs)
 			if err != nil {
 				con.Errors <- err
 				return
 			}
-			log.Printf("Dispatching %#v", mp)
 			if err := con.dispatch(mp); err != nil {
 				con.Errors <- err
 			}
