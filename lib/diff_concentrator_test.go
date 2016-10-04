@@ -82,12 +82,10 @@ func TestRealDiffConcentration(t *testing.T) {
 
 	existing.MustAdd(makeDepl(repoFour, 1)) //create
 
-	log.Printf("%#v %#v", intended, existing)
 	dc := intended.Diff(existing).Concentrate(defs)
 	ds, err := dc.collect()
 	require.NoError(err)
 
-	log.Printf("%#v", ds)
 	if assert.Len(ds.Gone.Snapshot(), 1, "Should have one deleted item.") {
 		it, _ := ds.Gone.Any(func(*Manifest) bool { return true })
 		assert.Equal(string(it.Source.Repo), repoOne)
@@ -99,9 +97,6 @@ func TestRealDiffConcentration(t *testing.T) {
 	}
 
 	if assert.Len(ds.Changed, 1, "Should have one modified item.") {
-		log.Printf("%#v", ds.Changed[0])
-		log.Printf("%#v", ds.Changed[0].Prior)
-		log.Printf("%#v", ds.Changed[0].Post)
 		assert.Equal(repoThree, string(ds.Changed[0].name.Source.Repo))
 		assert.Equal(repoThree, string(ds.Changed[0].Prior.Source.Repo))
 		assert.Equal(repoThree, string(ds.Changed[0].Post.Source.Repo))
