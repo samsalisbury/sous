@@ -149,7 +149,7 @@ func (c *BuildConfig) GuardRegister(bc *BuildContext) error {
 		}
 	}
 	if len(blockers) > 0 {
-		return fmt.Errorf("Refusing to register build because of advisories:\n  %s", strings.Join(blockers, "  \n"))
+		return fmt.Errorf("build may not be deployable in all clusters due to advisories:\n  %s", strings.Join(blockers, "\n  "))
 	}
 	return nil
 }

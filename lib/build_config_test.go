@@ -346,7 +346,7 @@ func TestBuildConfig_GuardRegister(t *testing.T) {
 	bc := &BuildContext{}
 	bc.Advisories = []string{"dirty workspace"}
 	err := c.GuardRegister(bc)
-	expected := "Refusing to register build because of advisories:\n  dirty workspace"
+	expected := "build may not be deployable in all clusters due to advisories:\n  dirty workspace"
 	if err == nil {
 		t.Fatalf("got nil; want error %q", expected)
 	}
