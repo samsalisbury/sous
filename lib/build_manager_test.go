@@ -76,3 +76,33 @@ func TestOffsetFromWorkdirWhenOffsetAlreadyConfigd(t *testing.T) {
 		t.Errorf("%q = %q (not %q)", bm.BuildConfig.Offset, off, flagOffset)
 	}
 }
+
+type FakeRegistrar struct{}
+
+func (FakeRegistrar) Register(*BuildResult, *BuildContext) error { return nil }
+
+func TestBuildManager_RegisterOrWarnAdvisories_withAdvisories(t *testing.T) {
+	br := &BuildResult{}
+	bc := &BuildContext{
+		Advisories: []string{"dirty workspace"},
+	}
+	m := &BuildManager{
+		Registrar: FakeRegistrar{},
+	}
+	if err := m.RegisterOrWarnAdvisories(br, bc); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestBuildManager_RegisterOrWarnAdvisories_noAdvisories(t *testing.T) {
+	br := &BuildResult{}
+	bc := &BuildContext{
+		Advisories: []string{},
+	}
+	m := &BuildManager{
+		Registrar: FakeRegistrar{},
+	}
+	if err := m.RegisterOrWarnAdvisories(br, bc); err != nil {
+		t.Fatal(err)
+	}
+}
