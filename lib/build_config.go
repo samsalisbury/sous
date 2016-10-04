@@ -143,14 +143,13 @@ func (c *BuildConfig) GuardStrict(bc *BuildContext) error {
 func (c *BuildConfig) GuardRegister(bc *BuildContext) error {
 	var blockers []string
 	for _, a := range bc.Advisories {
-		switch a {
-		case string(DirtyWS), string(UnpushedRev),
-			string(NoRepoAdv), string(NotRequestedRevision):
+		switch AdvisoryName(a) {
+		case DirtyWS, UnpushedRev, NoRepoAdv, NotRequestedRevision:
 			blockers = append(blockers, a)
 		}
 	}
 	if len(blockers) > 0 {
-		return fmt.Errorf("Refusing to register build because of advisories:\n  %s", strings.Join(blockers, "  \n"))
+		return fmt.Errorf("build may not be deployable in all clusters due to advisories:\n  %s", strings.Join(blockers, "\n  "))
 	}
 	return nil
 }
