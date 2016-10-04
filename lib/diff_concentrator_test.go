@@ -99,6 +99,9 @@ func TestRealDiffConcentration(t *testing.T) {
 	}
 
 	if assert.Len(ds.Changed, 1, "Should have one modified item.") {
+		log.Printf("%#v", ds.Changed[0])
+		log.Printf("%#v", ds.Changed[0].Prior)
+		log.Printf("%#v", ds.Changed[0].Post)
 		assert.Equal(repoThree, string(ds.Changed[0].name.Source.Repo))
 		assert.Equal(repoThree, string(ds.Changed[0].Prior.Source.Repo))
 		assert.Equal(repoThree, string(ds.Changed[0].Post.Source.Repo))

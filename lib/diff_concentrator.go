@@ -32,6 +32,8 @@ type (
 	deploymentBundle struct {
 		consumed bool
 		*sync.RWMutex
+		// XXX this should be two Deployments
+		// instead of needing its own mutex
 		pairs map[string]*DeploymentPair
 	}
 )
@@ -205,6 +207,12 @@ func (db *deploymentBundle) manifestPair(defs Defs) (*ManifestPair, error) {
 		}
 		res.Post = p
 	}
+	if res.Post == nil {
+		res.name = res.Prior.ID()
+	} else {
+		res.name = res.Post.ID()
+	}
+
 	db.consumed = true
 	return res, nil
 }
@@ -225,7 +233,7 @@ func (dc *DiffConcentrator) dispatch(mp *ManifestPair) error {
 		dc.Created <- mp.Post
 	} else {
 		if mp.Post == nil {
-			dc.Deleted <- mp.Post
+			dc.Deleted <- mp.Prior
 		} else {
 			if mp.Prior.Equal(mp.Post) {
 				dc.Retained <- mp.Post
@@ -260,6 +268,7 @@ func concentrate(dc DiffChans, con DiffConcentrator) {
 				con.Errors <- err
 				return
 			}
+			log.Printf("Dispatching %#v", mp)
 			if err := con.dispatch(mp); err != nil {
 				con.Errors <- err
 			}
