@@ -81,7 +81,7 @@ type FakeRegistrar struct{}
 
 func (FakeRegistrar) Register(*BuildResult, *BuildContext) error { return nil }
 
-func TestBuildManager_RegisterOrWarnAdvisories_withAdvisories(t *testing.T) {
+func TestBuildManager_RegisterAndWarnAdvisories_withAdvisories(t *testing.T) {
 	br := &BuildResult{}
 	bc := &BuildContext{
 		Advisories: []string{"dirty workspace"},
@@ -89,12 +89,12 @@ func TestBuildManager_RegisterOrWarnAdvisories_withAdvisories(t *testing.T) {
 	m := &BuildManager{
 		Registrar: FakeRegistrar{},
 	}
-	if err := m.RegisterOrWarnAdvisories(br, bc); err != nil {
+	if err := m.RegisterAndWarnAdvisories(br, bc); err != nil {
 		t.Fatal(err)
 	}
 }
 
-func TestBuildManager_RegisterOrWarnAdvisories_noAdvisories(t *testing.T) {
+func TestBuildManager_RegisterAndWarnAdvisories_noAdvisories(t *testing.T) {
 	br := &BuildResult{}
 	bc := &BuildContext{
 		Advisories: []string{},
@@ -102,7 +102,7 @@ func TestBuildManager_RegisterOrWarnAdvisories_noAdvisories(t *testing.T) {
 	m := &BuildManager{
 		Registrar: FakeRegistrar{},
 	}
-	if err := m.RegisterOrWarnAdvisories(br, bc); err != nil {
+	if err := m.RegisterAndWarnAdvisories(br, bc); err != nil {
 		t.Fatal(err)
 	}
 }
