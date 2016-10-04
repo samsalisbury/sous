@@ -35,8 +35,13 @@ func (m *BuildManager) Build() (*BuildResult, error) {
 		func(e *error) { br, *e = bp.Build(bc) },
 		func(e *error) { br.Advisories = bc.Advisories },
 		func(e *error) { *e = m.ApplyMetadata(br, bc) },
-		func(e *error) { *e = m.BuildConfig.GuardRegister(bc) },
-		func(e *error) { *e = m.Register(br, bc) },
+		func(e *error) {
+			if err := m.BuildConfig.GuardRegister(bc); err != nil {
+				Log.Warn.Println(err)
+			} else {
+				*e = m.Register(br, bc)
+			}
+		},
 	)
 	return br, err
 }
