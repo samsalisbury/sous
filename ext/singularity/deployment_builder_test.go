@@ -3,14 +3,48 @@ package singularity
 // XXX I got started with this, but it needs a dummy implementation of the
 // singularity client, which needs extension of go-singularity and
 // swagger-client-maker
-/*
 import (
 	"testing"
 
 	"github.com/opentable/go-singularity/dtos"
-	"github.com/nyarly/testify/assert"
+	"github.com/opentable/sous/lib"
 )
 
+func TestBuildingRequestID(t *testing.T) {
+	cn := "test-cluster"
+	db := &deploymentBuilder{
+		clusters: make(sous.Clusters),
+		request:  &dtos.SingularityRequest{},
+	}
+	db.clusters[cn] = &sous.Cluster{}
+	if err := db.assignClusterName(); err != nil {
+		t.Errorf("unexpect error: %v", err)
+	}
+	if db.Target.ClusterName != cn {
+		t.Errorf("db.Target.ClusterName was %v expected %v", db.Target.ClusterName, cn)
+	}
+}
+
+func TestBuildingRequestIDTwoClusters(t *testing.T) {
+	cn := "test-cluster"
+	cn2 := "test-other"
+	url := "https://a.singularity.somewhere"
+	db := &deploymentBuilder{
+		clusters: make(sous.Clusters),
+		request:  &dtos.SingularityRequest{Id: "::test-other"},
+		req:      SingReq{SourceURL: url},
+	}
+	db.clusters[cn] = &sous.Cluster{BaseURL: url}
+	db.clusters[cn2] = &sous.Cluster{BaseURL: url}
+	if err := db.assignClusterName(); err != nil {
+		t.Errorf("unexpect error: %v", err)
+	}
+	if db.Target.ClusterName != cn2 {
+		t.Errorf("db.Target.ClusterName was %v expected %v", db.Target.ClusterName, cn2)
+	}
+}
+
+/*
 func TestConstructDeployment(t *testing.T) {
 	assert := assert.New(t)
 
