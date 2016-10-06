@@ -13,6 +13,31 @@ import (
 // their own Dockerfile.
 type DockerfileBuildpack struct{}
 
+const (
+	// AppVersionBuildArg is the name of a docker build argument used to inject
+	// the version of the app being built.
+	AppVersionBuildArg = "APP_VERSION"
+	// AppRevisionBuildArg is the name of a docker build argument used to inject
+	// the revision of the app being built.
+	AppRevisionBuildArg = "APP_REVISION"
+)
+
+var (
+	appVersionPattern  = regexp.MustCompile(`(?m)^ARG ` + AppVersionBuildArg + `\b`)
+	appRevisionPattern = regexp.MustCompile(`(?m)^ARG ` + AppRevisionBuildArg + `\b`)
+)
+
+// datectData is data passed from the detect step to the build step as the
+// Data field in the DetectResult.
+type detectData struct {
+	// HasAppVersionArg is true if the Dockerfile contains a line matching
+	// appVersionPattern.
+	HasAppVersionArg,
+	// HasAppRevisionArg is true if the Dockerfile contains a line matching
+	// appRevisionPattern.
+	HasAppRevisionArg bool
+}
+
 // NewDockerfileBuildpack creates a Dockerfile buildpack
 func NewDockerfileBuildpack() *DockerfileBuildpack {
 	return &DockerfileBuildpack{}
@@ -49,5 +74,15 @@ func (d *DockerfileBuildpack) Detect(c *sous.BuildContext) (*sous.DetectResult, 
 	if !c.Sh.Exists(filepath.Join(c.Source.OffsetDir, "Dockerfile")) {
 		return nil, fmt.Errorf("Dockerfile does not exist")
 	}
-	return &sous.DetectResult{Compatible: true}, nil
+	df, err := c.Sh.Stdout("cat", "Dockerfile")
+	if err != nil {
+		return nil, err
+	}
+	hasAppVersion := appVersionPattern.MatchString(df)
+	hasAppRevision := appRevisionPattern.MatchString(df)
+	result := &sous.DetectResult{Compatible: true, Data: detectData{
+		HasAppVersionArg:  hasAppVersion,
+		HasAppRevisionArg: hasAppRevision,
+	}}
+	return result, nil
 }
