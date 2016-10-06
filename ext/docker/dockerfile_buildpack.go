@@ -52,7 +52,21 @@ func (d *DockerfileBuildpack) Build(c *sous.BuildContext, dr *sous.DetectResult)
 	if c.Source.OffsetDir != "" {
 		offset = c.Source.OffsetDir
 	}
-	output, err := c.Sh.Stdout("docker", "build", offset)
+
+	cmd := []interface{}{"build"}
+	r := dr.Data.(detectData)
+	if r.HasAppVersionArg {
+		v := c.Version().Version
+		v.Meta = ""
+		cmd = append(cmd, "--build-arg", fmt.Sprintf("%s=%s", AppVersionBuildArg, v))
+	}
+	if r.HasAppRevisionArg {
+		cmd = append(cmd, "--build-arg", fmt.Sprintf("%s=%s", AppRevisionBuildArg, c.Version().RevID()))
+	}
+
+	cmd = append(cmd, offset)
+
+	output, err := c.Sh.Stdout("docker", cmd...)
 	if err != nil {
 		return nil, err
 	}
