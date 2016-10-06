@@ -9,12 +9,9 @@ import (
 	"github.com/opentable/sous/lib"
 )
 
-type (
-	// DockerfileBuildpack is a simple buildpack for building projects using
-	// their own Dockerfile.
-	DockerfileBuildpack struct {
-	}
-)
+// DockerfileBuildpack is a simple buildpack for building projects using
+// their own Dockerfile.
+type DockerfileBuildpack struct{}
 
 // NewDockerfileBuildpack creates a Dockerfile buildpack
 func NewDockerfileBuildpack() *DockerfileBuildpack {
