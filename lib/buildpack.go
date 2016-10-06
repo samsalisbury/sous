@@ -48,9 +48,16 @@ type (
 
 	// DetectResult represents the result of a detection.
 	DetectResult struct {
-		Compatible  bool
+		// Compatible is true when the buildpack is compatible with the source
+		// context.
+		Compatible bool
+		// Description is a human-readable description of what will be built.
+		// It may for instance report back the base image that will be used,
+		// or detected runtime version etc.
 		Description string
-		Data        interface{}
+		// Data is an arbitrary value. It can be used to pass interesting
+		// detected information to the build step.
+		Data interface{}
 	}
 	// BuildResult represents the result of a build made with a Buildpack.
 	BuildResult struct {
