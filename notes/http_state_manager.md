@@ -20,3 +20,12 @@ Update the overall state. Give the changed state to the state manager to write.
   if the update doesn't impact that,
   should we re-make the change and try again?
   Or report an error to the user to handle.
+
+Which implies:
+  Channels draining the manifest change channels, and triggering HTTP actions.
+
+Next up: State != GDM; there's all the Defs component
+  Which implies that the server needs to have an endpoint for the Defs
+  (or for the State, but I lean towards keeping the State opaque...)
+  (and actually, there's a REST design concern here: that's the appropriate model?)
+  In the meantime GET /state-defs seems like an easy thing to build and helps with the HSM.
