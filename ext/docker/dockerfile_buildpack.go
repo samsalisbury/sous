@@ -24,7 +24,7 @@ func NewDockerfileBuildpack() *DockerfileBuildpack {
 var successfulBuildRE = regexp.MustCompile(`Successfully built (\w+)`)
 
 // Build implements Buildpack.Build
-func (d *DockerfileBuildpack) Build(c *sous.BuildContext) (*sous.BuildResult, error) {
+func (d *DockerfileBuildpack) Build(c *sous.BuildContext, dr *sous.DetectResult) (*sous.BuildResult, error) {
 	start := time.Now()
 	offset := "."
 	if c.Source.OffsetDir != "" {
@@ -47,6 +47,7 @@ func (d *DockerfileBuildpack) Build(c *sous.BuildContext) (*sous.BuildResult, er
 	}, nil
 }
 
+// Detect detects if c has a Dockerfile or not.
 func (d *DockerfileBuildpack) Detect(c *sous.BuildContext) (*sous.DetectResult, error) {
 	if !c.Sh.Exists(filepath.Join(c.Source.OffsetDir, "Dockerfile")) {
 		return nil, fmt.Errorf("Dockerfile does not exist")

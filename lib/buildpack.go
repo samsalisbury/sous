@@ -43,7 +43,7 @@ type (
 	// kind of project.
 	Buildpack interface {
 		Detect(*BuildContext) (*DetectResult, error)
-		Build(*BuildContext) (*BuildResult, error)
+		Build(*BuildContext, *DetectResult) (*BuildResult, error)
 	}
 
 	// DetectResult represents the result of a detection.
