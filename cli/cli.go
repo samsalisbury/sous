@@ -65,7 +65,9 @@ func SuccessYAML(v interface{}) cmdr.Result {
 // Plumbing injects a command with the current psyringe,
 // then it Executes it, returning the result
 func (cli *CLI) Plumbing(cmd cmdr.Executor, args []string) cmdr.Result {
-	cli.SousGraph.Inject(cmd)
+	if err := cli.SousGraph.Inject(cmd); err != nil {
+		return cmdr.EnsureErrorResult(err)
+	}
 	return cmd.Execute(args)
 }
 
