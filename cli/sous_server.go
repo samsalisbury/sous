@@ -14,7 +14,7 @@ import (
 	"github.com/opentable/sous/util/shell"
 )
 
-// A SousServer represents the `sous server` command
+// A SousServer represents the `sous server` command.
 type SousServer struct {
 	*config.Verbosity
 	*sous.AutoResolver
@@ -37,18 +37,18 @@ Runs the API server for Sous
 usage: sous server
 `
 
-// Help is part of the cmdr.Command interface(s)
+// Help is part of the cmdr.Command interface(s).
 func (ss *SousServer) Help() string {
 	return sousServerHelp
 }
 
-// AddFlags is part of the cmdr.Command interfaces(s)
+// AddFlags is part of the cmdr.Command interfaces(s).
 func (ss *SousServer) AddFlags(fs *flag.FlagSet) {
 	fs.StringVar(&ss.flags.laddr, `listen`, `:80`, "The address to listen on, like '127.0.0.1:https'")
 	fs.StringVar(&ss.flags.gdmRepo, "gdm-repo", "", "Git repo containing the GDM (cloned into config.SourceLocation)")
 }
 
-// Execute is part of the cmdr.Command interface(s)
+// Execute is part of the cmdr.Command interface(s).
 func (ss *SousServer) Execute(args []string) cmdr.Result {
 	if err := ss.ensureGDMExists(ss.flags.gdmRepo, ss.Config.StateLocation); err != nil {
 		return EnsureErrorResult(err)
