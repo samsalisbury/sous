@@ -1,11 +1,10 @@
 FROM golang:1.7
 
-# Install dumb-init
-RUN wget -O /usr/local/bin/dumb-init https://github.com/Yelp/dumb-init/releases/download/v1.1.3/dumb-init_1.1.3_amd64
-RUN chmod +x /usr/local/bin/dumb-init
+# Install vendored dumb-init
+COPY bin/dumb-init /usr/local/dumb-init
 ENTRYPOINT ["/usr/local/bin/dumb-init", "--"]
 
-# Install sous
+# Install sous using only vendored dependencies (no go get)
 RUN mkdir -p /go/src/github.com/opentable/sous
 WORKDIR /go/src/github.com/opentable/sous
 COPY . /go/src/github.com/opentable/sous
