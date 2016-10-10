@@ -39,11 +39,14 @@ func DefaultConfig() Config {
 // FillDefaults fills in default values in this Config where they are currently
 // zero values.
 func (c *Config) FillDefaults() error {
-	return firsterr.Parallel().Set(
+	return firsterr.Set(
 		func(e *error) {
 			if c.StateLocation == "" {
 				c.StateLocation, *e = c.defaultStateLocation()
 			}
+		},
+		func(e *error) {
+			*e = EnsureDirExists(c.StateLocation)
 		},
 	)
 }
