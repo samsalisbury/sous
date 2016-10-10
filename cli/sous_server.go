@@ -2,7 +2,6 @@ package cli
 
 import (
 	"flag"
-	"fmt"
 	"os"
 
 	"github.com/opentable/sous/config"
@@ -16,6 +15,7 @@ import (
 
 // A SousServer represents the `sous server` command.
 type SousServer struct {
+	Sous Sous
 	*config.Verbosity
 	*sous.AutoResolver
 	Config graph.LocalSousConfig
@@ -53,31 +53,24 @@ func (ss *SousServer) Execute(args []string) cmdr.Result {
 	if err := ss.ensureGDMExists(ss.flags.gdmRepo, ss.Config.StateLocation); err != nil {
 		return EnsureErrorResult(err)
 	}
+	ss.Log.Info.Println("Starting scheduled GDM resolution.")
 	ss.AutoResolver.Kickoff()
-	err := server.RunServer(ss.Verbosity, ss.flags.laddr)
-	return EnsureErrorResult(err) //always non-nil
+	ss.Log.Info.Printf("Sous Server v%s running at %s", ss.Sous.Version, ss.flags.laddr)
+	return EnsureErrorResult(server.RunServer(ss.Verbosity, ss.flags.laddr)) //always non-nil
 }
 
 func (ss *SousServer) ensureGDMExists(repo, localPath string) error {
 	log := ss.Log.Info.Printf
 	s, err := os.Stat(localPath)
-	if err == nil {
-		// The path exists, do nothing.
+	if err == nil && s.IsDir() {
+		// The directory exists, do nothing.
 		if repo != "" {
-			log("not pulling repo %q; state already exists at %q", repo, localPath)
+			log("not pulling repo %q; directory already exists: %q", repo, localPath)
 		}
 		return nil
 	}
-	log("got error %q", err)
-	if !os.IsNotExist(err) {
-		return err
-	}
-	if err := os.MkdirAll(localPath, 0777); err != nil {
-		return err
-	}
-	s, err = os.Stat(localPath)
-	if !s.IsDir() {
-		return fmt.Errorf("%q exists and is not a directory", localPath)
+	if err := config.EnsureDirExists(localPath); err != nil {
+		return EnsureErrorResult(err)
 	}
 	sh, err := shell.DefaultInDir(localPath)
 	if err != nil {

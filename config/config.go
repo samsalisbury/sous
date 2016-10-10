@@ -48,6 +48,7 @@ func (c *Config) FillDefaults() error {
 	)
 }
 
+// defaultStateLocation returns the default state location.
 func (*Config) defaultStateLocation() (string, error) {
 	dataRoot := os.Getenv("XDG_DATA_HOME")
 	if dataRoot == "" {
@@ -58,19 +59,20 @@ func (*Config) defaultStateLocation() (string, error) {
 		dataRoot = path.Join(u.HomeDir, ".local", "share")
 	}
 	stateLocation := path.Join(dataRoot, "sous", "state")
-	s, err := os.Stat(stateLocation)
+	return stateLocation, nil
+}
+
+// EnsureDirExists creates the named directory if it does not exist.
+func EnsureDirExists(dir string) error {
+	s, err := os.Stat(dir)
 	if err == nil {
 		if s.IsDir() {
-			return stateLocation, nil
+			return nil
 		}
-		return "", fmt.Errorf("state location %q exists and is not a directory",
-			stateLocation)
+		return fmt.Errorf("%q exists and is not a directory", dir)
 	}
 	if os.IsNotExist(err) || os.IsPermission(err) {
-		if err := os.MkdirAll(stateLocation, 0777); err != nil {
-			return "", fmt.Errorf("unable to create state location dir: %s", err)
-		}
-		return stateLocation, nil
+		return os.MkdirAll(dir, 0777)
 	}
-	return "", fmt.Errorf("unable to get state location: %s", err)
+	return err
 }
