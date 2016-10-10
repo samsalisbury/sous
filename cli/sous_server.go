@@ -2,6 +2,7 @@ package cli
 
 import (
 	"flag"
+	"io/ioutil"
 	"os"
 
 	"github.com/opentable/sous/config"
@@ -63,11 +64,17 @@ func (ss *SousServer) ensureGDMExists(repo, localPath string) error {
 	log := ss.Log.Info.Printf
 	s, err := os.Stat(localPath)
 	if err == nil && s.IsDir() {
-		// The directory exists, do nothing.
-		if repo != "" {
-			log("not pulling repo %q; directory already exists: %q", repo, localPath)
+		files, err := ioutil.ReadDir(localPath)
+		if err != nil {
+			return err
 		}
-		return nil
+		if len(files) != 0 {
+			// The directory exists and is not empty, do nothing.
+			if repo != "" {
+				log("not pulling repo %q; directory already exist and is not empty: %q", repo, localPath)
+			}
+			return nil
+		}
 	}
 	if err := config.EnsureDirExists(localPath); err != nil {
 		return EnsureErrorResult(err)
