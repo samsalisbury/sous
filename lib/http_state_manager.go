@@ -12,7 +12,7 @@ import (
 
 type (
 	HTTPStateManager struct {
-		serverURL url.URL
+		serverURL *url.URL
 		cached    *State
 		http.Client
 	}
@@ -22,12 +22,12 @@ type (
 	}
 )
 
-func (g *gdmWrapper) manifests() {
+func (g *gdmWrapper) manifests(defs Defs) (Manifests, error) {
 	ds := NewDeployments()
-	for d := range g.Deployments {
+	for _, d := range g.Deployments {
 		ds.Add(d)
 	}
-	return d.Manifests()
+	return ds.Manifests(defs)
 }
 
 func (g *gdmWrapper) fromJSON(reader io.Reader) {
@@ -35,80 +35,152 @@ func (g *gdmWrapper) fromJSON(reader io.Reader) {
 	dec.Decode(g)
 }
 
-func NewHTTPStateManager(url string) *HTTPStateManager {
+func NewHTTPStateManager(us string) (*HTTPStateManager, error) {
+	u, err := url.Parse(us)
 	return &HTTPStateManager{
-		serverURL: url.Parse(url),
-	}
+		serverURL: u,
+	}, errors.Wrapf(err, "new state manager")
 }
 
-func (hsm *HTTPStateManager) getDefs() Defs {
-	rq := hsm.Client.Get(hsm.serverURL.Parse("./defs"))
+func (hsm *HTTPStateManager) getDefs() (Defs, error) {
+	ds := Defs{}
+	url, err := hsm.serverURL.Parse("./defs")
+	if err != nil {
+		return ds, errors.Wrapf(err, "getting defs")
+	}
+	rq, err := hsm.Client.Get(url.String())
+	if err != nil {
+		return ds, errors.Wrapf(err, "getting defs")
+	}
+
 	dec := json.NewDecoder(rq.Body)
 
-	ds := Defs{}
-	dec.Decode(&ds)
-	return ds
+	return ds, errors.Wrapf(dec.Decode(&ds), "getting defs")
 }
 
-func (hsm *HTTPStateManager) getManifests() Manifests {
-	gdmRq := hsm.Client.Get(hsm.serverURL.Parse("./gdm"))
-	gdm = &gdmWrapper{}
-	gdm.fromJson(gdmRq.Body)
+func (hsm *HTTPStateManager) getManifests(defs Defs) (Manifests, error) {
+	url, err := hsm.serverURL.Parse("./gdm")
+	if err != nil {
+		return Manifests{}, errors.Wrapf(err, "getting manifests")
+	}
+	gdmRq, err := hsm.Client.Get(url.String())
+	if err != nil {
+		return Manifests{}, errors.Wrapf(err, "getting manifests")
+	}
+	gdm := &gdmWrapper{}
+	gdm.fromJSON(gdmRq.Body)
 	gdmRq.Body.Close()
-	return gdm.manifests()
+	return gdm.manifests(defs)
 }
 
 // ReadState implements StateReader for HTTPStateManager
 func (hsm *HTTPStateManager) ReadState() (*State, error) {
-	hsm.cached = &State{
-		Defs:      hsm.getDefs(),
-		Manifests: hsm.getManifests(),
+	defs, err := hsm.getDefs()
+	if err != nil {
+		return nil, err
 	}
-	return cached, nil
+	ms, err := hsm.getManifests(defs)
+	if err != nil {
+		return nil, err
+	}
+
+	hsm.cached = &State{
+		Defs:      defs,
+		Manifests: ms,
+	}
+	return hsm.cached, nil
 }
 
 // WriteState implements StateWriter for HTTPStateManager
 func (hsm *HTTPStateManager) WriteState(ws *State) error {
-	if cached == nil {
+	if hsm.cached == nil {
 		_, err := hsm.ReadState()
 		if err != nil {
 			return err
 		}
 	}
-	wds := ws.Deployments()
-	cds := hsm.cached.Deployments()
+	wds, err := ws.Deployments()
+	if err != nil {
+		return err
+	}
+	cds, err := hsm.cached.Deployments()
+	if err != nil {
+		return err
+	}
 	diff := wds.Diff(cds)
-	cchs := diff.Concentrate(cached.Defs)
+	cchs := diff.Concentrate(hsm.cached.Defs)
 	hsm.process(cchs)
 
 	return nil
 }
 
-func (hsm *HTTPStateManager) process(dc DiffConcentrator) chan error {
-	go hsm.creates(dc.Created, dc.Errors)
-	go hsm.deletes(dc.Deleted, dc.Errors)
-	go hsm.modifies(dc.Modified, dc.Errors)
-	go hsm.retains(dc.Retained, dc.Errors)
-	return dc.Errors
+func (hsm *HTTPStateManager) process(dc DiffConcentrator) error {
+	done := make(chan struct{})
+	defer close(done)
+
+	ce := make(chan error)
+	go hsm.creates(dc.Created, ce, done)
+
+	de := make(chan error)
+	go hsm.deletes(dc.Deleted, de, done)
+
+	me := make(chan error)
+	go hsm.modifies(dc.Modified, me, done)
+
+	re := make(chan error)
+	go hsm.retains(dc.Retained, re, done)
+
+	dce := dc.Errors
+	for {
+		if ce == nil && de == nil && me == nil && re == nil {
+			return nil
+		}
+
+		select {
+		case e, open := <-dce:
+			if open {
+				return e
+			}
+			dce = nil
+		case e, open := <-ce:
+			if open {
+				return e
+			}
+			ce = nil
+		case e, open := <-de:
+			if open {
+				return e
+			}
+			de = nil
+		case e, open := <-re:
+			if open {
+				return e
+			}
+			re = nil
+		case e, open := <-me:
+			if open {
+				return e
+			}
+			me = nil
+		}
+	}
 }
 
-func (hsm *HTTPStateManager) retains(mc chan *Manifest, ec chan error) {
-	for _ := range mc {
-	} //just drop 'em
-}
-
-func (hsm *HTTPStateManager) manifestURL(m *Manifest) url.URL {
-	murl := url.Parse("./manifests")
+func (hsm *HTTPStateManager) manifestURL(m *Manifest) (string, error) {
+	murl, err := url.Parse("./manifests")
+	if err != nil {
+		return "", err
+	}
 	mqry := url.Values{}
 	mqry.Set("repo", m.Source.Repo)
-	mqry.Set("offset", m.Source.Offset)
+	mqry.Set("offset", m.Source.Dir)
 	mqry.Set("flavor", m.Flavor)
-	murl.RawQuery = mqry.String()
-	return hsm.serverURL.ResolveReference(murl)
+	murl.RawQuery = mqry.Encode()
+	return hsm.serverURL.ResolveReference(murl).String(), nil
 }
 
 func (hsm *HTTPStateManager) manifestJSON(m *Manifest) io.Reader {
-	buf := bytes.Buffer{}
+	buf := &bytes.Buffer{}
 	enc := json.NewEncoder(buf)
 	enc.Encode(m)
 	return buf
@@ -121,37 +193,86 @@ func (hsm *HTTPStateManager) jsonManifest(buf io.Reader) *Manifest {
 	return m
 }
 
-func (hsm *HTTPStateManager) creates(mc chan *Manifest, ec chan error) {
-	for m := range mc {
-		if err := hsm.create(m); err != nil {
-			ec <- err
-		}
-	}
-}
-func (hsm *HTTPStateManager) deletes(mc chan *Manifest, ec chan error) {
-	for m := range mc {
-		if err := hsm.del(m); err != nil {
-			ec <- err
+func (hsm *HTTPStateManager) retains(mc chan *Manifest, ec chan error, done chan struct{}) {
+	defer close(ec)
+	for {
+		select {
+		case <-done:
+			return
+		case _, open := <-mc: //just drop 'em
+			if !open {
+				return
+			}
 		}
 	}
 }
 
-func (hsm *HTTPStateManager) modifies(mc chan *ManifestPair, ec chan error) {
-	for m := range mc {
-		if err := hsm.modify(m); err != nil {
-			ec <- err
+func (hsm *HTTPStateManager) creates(mc chan *Manifest, ec chan error, done chan struct{}) {
+	defer close(ec)
+	for {
+		select {
+		case <-done:
+			return
+		case m, open := <-mc:
+			if !open {
+				return
+			}
+			if err := hsm.create(m); err != nil {
+				ec <- err
+			}
+		}
+	}
+}
+
+func (hsm *HTTPStateManager) deletes(mc chan *Manifest, ec chan error, done chan struct{}) {
+	defer close(ec)
+	for {
+		select {
+		case <-done:
+			return
+		case m, open := <-mc:
+			if !open {
+				return
+			}
+			if err := hsm.del(m); err != nil {
+				ec <- err
+			}
+		}
+	}
+}
+
+func (hsm *HTTPStateManager) modifies(mc chan *ManifestPair, ec chan error, done chan struct{}) {
+	defer close(ec)
+	for {
+		select {
+		case <-done:
+			return
+		case m, open := <-mc:
+			if !open {
+				return
+			}
+			if err := hsm.modify(m); err != nil {
+				ec <- err
+			}
 		}
 	}
 }
 
 func (hsm *HTTPStateManager) create(m *Manifest) error {
-	rq := http.NewRequest("PUT", hsm.manifestURL(m), hsm.manifestJSON(m))
+	murl, err := hsm.manifestURL(m)
+	if err != nil {
+		return err
+	}
+	rq, err := http.NewRequest("PUT", murl, hsm.manifestJSON(m))
+	if err != nil {
+		return errors.Wrapf(err, "create manifest request")
+	}
 	rq.Header.Add("If-None-Match", "*")
 	rz, err := hsm.Client.Do(rq)
-	defer close(rz.Body)
 	if err != nil {
 		return err //XXX network problems? retry?
 	}
+	defer rz.Body.Close()
 	if rz.StatusCode != 200 {
 		return errors.Errorf("%s: %#v", rz.Status, m)
 	}
@@ -159,25 +280,36 @@ func (hsm *HTTPStateManager) create(m *Manifest) error {
 }
 
 func (hsm *HTTPStateManager) del(m *Manifest) error {
-	grq := http.NewRequest("GET", hsm.manifestURL(m))
-	grz, err := hsm.Client.Do(grq)
-	defer close(grz.Body)
+	murl, err := hsm.manifestURL(m)
 	if err != nil {
 		return err
 	}
+
+	grq, err := http.NewRequest("GET", murl, nil)
+	if err != nil {
+		return errors.Wrapf(err, "delete manifest request")
+	}
+	grz, err := hsm.Client.Do(grq)
+	if err != nil {
+		return errors.Wrapf(err, "delete manifest request")
+	}
+	defer grz.Body.Close()
 	if !(grz.StatusCode >= 200 && grz.StatusCode < 300) {
 		return errors.Errorf("%s: %#v", grz.Status, m)
 	}
-	rm := jsonManifest(grz.Body)
-	if !rm.Equall(m) {
+	rm := hsm.jsonManifest(grz.Body)
+	if !rm.Equal(m) {
 		return errors.Errorf("Remote and deleted manifests don't match: \n%#v\n%#v", rm, m)
 	}
 	etag := grz.Header.Get("Etag")
-	drq := http.NewRequest("DELETE", hsm.manifestURL(m))
+	drq, err := http.NewRequest("DELETE", murl, nil)
+	if err != nil {
+		return errors.Wrapf(err, "delete manifest request")
+	}
 	drq.Header.Add("If-Match", etag)
 	drz, err := hsm.Client.Do(drq)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "delete manifest request")
 	}
 	if !(drz.StatusCode >= 200 && drz.StatusCode < 300) {
 		return errors.Errorf("Delete failed: %s", drz.Status)
@@ -188,26 +320,45 @@ func (hsm *HTTPStateManager) del(m *Manifest) error {
 func (hsm *HTTPStateManager) modify(mp *ManifestPair) error {
 	bf := mp.Prior
 	af := mp.Post
-
-	grq := http.NewRequest("GET", hsm.manifestURL(bf))
-	grz, err := hsm.Client.Do(grq)
-	defer close(grz.Body)
+	murl, err := hsm.manifestURL(bf)
 	if err != nil {
 		return err
 	}
+
+	grq, err := http.NewRequest("GET", murl, nil)
+	if err != nil {
+		return errors.Wrapf(err, "modify request")
+	}
+	grz, err := hsm.Client.Do(grq)
+	if err != nil {
+		return errors.Wrapf(err, "modify request")
+	}
+	defer grz.Body.Close()
 	if !(grz.StatusCode >= 200 && grz.StatusCode < 300) {
 		return errors.Errorf("%s: %#v", grz.Status, bf)
 	}
-	rm := jsonManifest(grz.Body)
-	if !rm.Equall(bf) {
+	rm := hsm.jsonManifest(grz.Body)
+	if !rm.Equal(bf) {
 		return errors.Errorf("Remote and prior manifests don't match: \n%#v\n%#v", rm, bf)
 	}
 	etag := grz.Header.Get("Etag")
 
-	prq := http.NewRequest("PUT", hsm.manifestURL(af), hsm.manifestJSON(af))
+	murl, err = hsm.manifestURL(af)
+	if err != nil {
+		return err
+	}
+
+	prq, err := http.NewRequest("PUT", murl, hsm.manifestJSON(af))
+	if err != nil {
+		return errors.Wrapf(err, "modify request")
+	}
 	prq.Header.Add("If-Match", etag)
-	prz, err = hsm.Client.Do(prq)
+	prz, err := hsm.Client.Do(prq)
+	if err != nil {
+		return errors.Wrapf(err, "modify request")
+	}
 	if !(prz.StatusCode >= 200 && prz.StatusCode < 300) {
 		return errors.Errorf("Update failed: %s / %#v", prz.Status, af)
 	}
+	return nil
 }
