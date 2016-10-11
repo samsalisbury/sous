@@ -51,7 +51,7 @@ func (ss *SousServer) AddFlags(fs *flag.FlagSet) {
 
 // Execute is part of the cmdr.Command interface(s).
 func (ss *SousServer) Execute(args []string) cmdr.Result {
-	if err := ss.ensureGDMExists(ss.flags.gdmRepo, ss.Config.StateLocation); err != nil {
+	if err := ensureGDMExists(ss.flags.gdmRepo, ss.Config.StateLocation, ss.Log.Info.Printf); err != nil {
 		return EnsureErrorResult(err)
 	}
 	ss.Log.Info.Println("Starting scheduled GDM resolution.")
@@ -60,8 +60,7 @@ func (ss *SousServer) Execute(args []string) cmdr.Result {
 	return EnsureErrorResult(server.RunServer(ss.Verbosity, ss.flags.laddr)) //always non-nil
 }
 
-func (ss *SousServer) ensureGDMExists(repo, localPath string) error {
-	log := ss.Log.Info.Printf
+func ensureGDMExists(repo, localPath string, log func(string, ...interface{})) error {
 	s, err := os.Stat(localPath)
 	if err == nil && s.IsDir() {
 		files, err := ioutil.ReadDir(localPath)
