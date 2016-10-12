@@ -76,10 +76,10 @@ func (su *SousUpdate) Execute(args []string) cmdr.Result {
 		if err != nil {
 			return EnsureErrorResult(err)
 		}
-		su.GDM = graph.CurrentGDM{newGDM}
+		su.GDM = graph.CurrentGDM{Deployments: newGDM}
 		_, ok := su.State.Manifests.Get(sl)
 		if !ok {
-			return EnsureErrorResult(fmt.Errorf("sous build failed to add manifest"))
+			return EnsureErrorResult(fmt.Errorf("failed to add manifest"))
 		}
 	}
 	if err := updateState(su.State, su.GDM, sid, did); err != nil {
