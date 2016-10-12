@@ -7,7 +7,7 @@ import (
 	"github.com/opentable/sous/util/cmdr"
 )
 
-// SousDeploy is the command description for `sous deploy`
+// SousDeploy is the command description for `sous deploy`.
 type SousDeploy struct {
 	*CLI
 	config.DeployFilterFlags
@@ -30,7 +30,7 @@ sous deploy will deploy the version tag for this application in the named
 cluster.
 `
 
-// Help returns the help string for this command
+// Help returns the help string for this command.
 func (sd *SousDeploy) Help() string { return sousDeployHelp }
 
 // AddFlags adds the flags for sous init.
@@ -44,7 +44,7 @@ func (sd *SousDeploy) AddFlags(fs *flag.FlagSet) {
 }
 
 // RegisterOn adds the DeploymentConfig to the psyringe to configure the
-// labeller and registrar
+// labeller and registrar.
 func (sd *SousDeploy) RegisterOn(psy Addable) {
 	psy.Add(&sd.DeployFilterFlags)
 	psy.Add(&sd.OTPLFlags)
