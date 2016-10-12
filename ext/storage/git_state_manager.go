@@ -78,11 +78,11 @@ func (gsm *GitStateManager) WriteState(s *sous.State) error {
 		gsm.revert(tn)
 		return err
 	}
-	if err := gsm.git(`commit`, `-m`, `""`); err != nil {
+	if err := gsm.git("commit", "-m", "sous commit: Update State"); err != nil {
 		gsm.revert(tn)
 		return err
 	}
-	err := gsm.git(`push`)
+	err := gsm.git("push", "-u", "origin", "master")
 	if err != nil {
 		gsm.revert(tn)
 	}
