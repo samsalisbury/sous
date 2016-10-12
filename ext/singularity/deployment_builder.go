@@ -14,6 +14,7 @@ type (
 	deploymentBuilder struct {
 		clusters  sous.Clusters
 		Target    sous.Deployment
+		imageName string
 		depMarker sDepMarker
 		deploy    sDeploy
 		request   sRequest
@@ -81,6 +82,7 @@ func (db *deploymentBuilder) completeConstruction() error {
 	return firsterr.Returned(
 		db.retrieveDeploy,
 		db.retrieveImageLabels,
+		db.assignClusterName,
 		db.unpackDeployConfig,
 		db.determineManifestKind,
 	)
@@ -150,11 +152,11 @@ func (db *deploymentBuilder) retrieveImageLabels() error {
 		return malformedResponse{"Singularity deploy didn't include a docker info"}
 	}
 
-	imageName := dkr.Image
+	db.imageName = dkr.Image
 
 	// XXX coupled to Docker registry as ImageMapper
 	// !!! HTTP request
-	labels, err := db.registry.ImageLabels(imageName)
+	labels, err := db.registry.ImageLabels(db.imageName)
 	if err != nil {
 		return malformedResponse{err.Error()}
 	}
@@ -165,6 +167,10 @@ func (db *deploymentBuilder) retrieveImageLabels() error {
 		return errors.Wrapf(malformedResponse{err.Error()}, "For reqID: %s", reqID(db.req.ReqParent))
 	}
 
+	return nil
+}
+
+func (db *deploymentBuilder) assignClusterName() error {
 	var posNick string
 	matchCount := 0
 	for nn, url := range db.clusters {
@@ -175,7 +181,9 @@ func (db *deploymentBuilder) retrieveImageLabels() error {
 		posNick = nn
 		matchCount++
 
-		checkID := MakeRequestID(db.Target.ID())
+		id := db.Target.ID()
+		id.Cluster = nn
+		checkID := MakeRequestID(id)
 		sous.Log.Vomit.Printf("Trying hypothetical request ID: %s", checkID)
 		if checkID == db.request.Id {
 			db.Target.ClusterName = nn
@@ -188,7 +196,7 @@ func (db *deploymentBuilder) retrieveImageLabels() error {
 			db.Target.ClusterName = posNick
 			return nil
 		}
-		sous.Log.Debug.Printf("No cluster nickname (%#v) matched request id %s for %s", db.clusters, db.request.Id, imageName)
+		sous.Log.Debug.Printf("No cluster nickname (%#v) matched request id %s for %s", db.clusters, db.request.Id, db.imageName)
 		return malformedResponse{fmt.Sprintf("No cluster nickname (%#v) matched request id %s", db.clusters, db.request.Id)}
 	}
 

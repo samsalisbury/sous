@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/shell"
 	"github.com/samsalisbury/semv"
 )
@@ -56,20 +56,26 @@ func NewClientInVersionRange(sh *shell.Sh, r semv.Range) (*Client, error) {
 	return c, nil
 }
 
-// Clone produces a clone of the client
-func (c *Client) Clone() *Client {
+// CloneClient produces a clone of the client.
+func (c *Client) CloneClient() *Client {
 	cp := *c
 	cp.Sh = cp.Sh.Clone().(*shell.Sh)
 	return &cp
 }
 
-// OpenRepo opens a repo
+// CloneRepo clones repo into localPath.
+func (c *Client) CloneRepo(repo, localPath string) error {
+	_, err := c.stdout("clone", repo, localPath)
+	return err
+}
+
+// OpenRepo opens a repo.
 func (c *Client) OpenRepo(dirpath string) (*Repo, error) {
 	sh := c.Sh.Clone()
 	if err := sh.CD(dirpath); err != nil {
 		return nil, err
 	}
-	return NewRepo(c.Clone())
+	return NewRepo(c.CloneClient())
 }
 
 func (c *Client) stdout(name string, args ...interface{}) (string, error) {
