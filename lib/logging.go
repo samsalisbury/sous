@@ -2,6 +2,7 @@ package sous
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -32,25 +33,33 @@ type (
 var (
 	// Log collects various loggers to use for different levels of logging
 	Log = func() LogSet {
-		warnLogger := log.New(os.Stderr, "warn: ", 0)
-		return LogSet{
-			// Debug is a logger - use log.SetOutput to get output from
-			Vomit:  log.New(ioutil.Discard, "vomit: ", log.Lshortfile),
-			Debug:  log.New(ioutil.Discard, "debug: ", log.Lshortfile),
-			Info:   warnLogger, // XXX deprecate Info
-			Notice: warnLogger, // XXX deprecate Notice
-			Warn:   warnLogger,
-		}
+		return *(NewLogSet(os.Stderr, ioutil.Discard, ioutil.Discard))
+		/*
+			warnLogger := log.New(os.Stderr, "warn: ", 0)
+			return LogSet{
+				// Debug is a logger - use log.SetOutput to get output from
+				Vomit:  log.New(ioutil.Discard, "vomit: ", log.Lshortfile),
+				Debug:  log.New(ioutil.Discard, "debug: ", log.Lshortfile),
+				Info:   warnLogger, // XXX deprecate Info
+				Notice: warnLogger, // XXX deprecate Notice
+				Warn:   warnLogger,
+			}
+		*/
 	}()
 )
 
 // SilentLogSet returns a logset that discards everything by default
 func SilentLogSet() *LogSet {
-	warnLogger := log.New(ioutil.Discard, "warn: ", 0)
+	return NewLogSet(ioutil.Discard, ioutil.Discard, ioutil.Discard)
+}
+
+// NewLogSet builds a new Logset that feeds to the listed writers
+func NewLogSet(warn, debug, vomit io.Writer) *LogSet {
+	warnLogger := log.New(warn, "warn: ", 0)
 	return &LogSet{
 		// Debug is a logger - use log.SetOutput to get output from
-		Vomit:  log.New(ioutil.Discard, "vomit: ", log.Lshortfile),
-		Debug:  log.New(ioutil.Discard, "debug: ", log.Lshortfile),
+		Vomit:  log.New(vomit, "vomit: ", log.Lshortfile),
+		Debug:  log.New(debug, "debug: ", log.Lshortfile),
 		Info:   warnLogger, // XXX deprecate Info
 		Notice: warnLogger, // XXX deprecate Notice
 		Warn:   warnLogger,

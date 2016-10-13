@@ -135,15 +135,3 @@ func TestModify(t *testing.T) {
 		t.Errorf("No request issued")
 	}
 }
-
-func TestWriteState(t *testing.T) {
-	state := &State{}
-	sm := DummyStateManager{state: state}
-	// full sous server, with a StateManager,
-	// ideally in memory
-	// local HSM, pointed at the httptest.Server wrapping same
-	// ReadState -> 3 distinct manifests (by repo)
-	// Remove one, change one, add one
-	// WriteState
-	// Confirm: one manifest unchanged, one gone, one changed, new one added
-}

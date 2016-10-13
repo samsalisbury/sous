@@ -24,6 +24,9 @@ func (ph *StatusHandler) HandleResponse(status int, w http.ResponseWriter, data 
 	if status >= 400 {
 		ph.LogSet.Warn.Printf("%+v", data)
 	}
+	if status >= 200 && status < 300 {
+		ph.LogSet.Debug.Printf("%+v", data)
+	}
 	// XXX in a dev mode, print the panic in the response body
 	// (normal ops it might leak secure data)
 }
