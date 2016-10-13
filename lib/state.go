@@ -80,6 +80,25 @@ func NewState() *State {
 	}
 }
 
+func (s *State) Clone() (c *State) {
+	c = new(State)
+	*c = *s
+	c.Manifests = NewManifests()
+	for _, v := range s.Manifests.Snapshot() {
+		c.Manifests.Add(v.Clone())
+	}
+	c.Defs.Clusters = make(Clusters)
+	for k, v := range s.Defs.Clusters {
+		c.Defs.Clusters[k] = new(Cluster)
+		*c.Defs.Clusters[k] = *v
+	}
+	c.Defs.EnvVars = make(EnvDefs, len(s.Defs.EnvVars))
+	copy(s.Defs.EnvVars, c.Defs.EnvVars)
+	c.Defs.Resources = make(ResDefs, len(s.Defs.Resources))
+	copy(s.Defs.Resources, c.Defs.Resources)
+	return
+}
+
 // OnlyCluster sets a contraint on the State such that it will only consider a particular cluster
 func (s *State) OnlyCluster(nick string) {
 	s.singleCluster = nick

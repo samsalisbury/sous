@@ -38,7 +38,11 @@ type (
 	GraphFactory func() Injector
 )
 
-// GetHandling (sometimes) updates the local copy of the GDM and formats it
+// Seriously considering "BodyInBodyOut" "BodyInEmptyOut" "EmptyInBodyOut" "EmptyInEmptyOut"
+// because that covers pretty much every case for the requests themselves, and
+// the exchanger is really the crucial part of the transform
+
+// GetHandling handles Get requests
 func (mh *MetaHandler) GetHandling(factory ExchangeFactory) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		h := mh.injectedHandler(factory, w, r, p)
@@ -47,7 +51,16 @@ func (mh *MetaHandler) GetHandling(factory ExchangeFactory) httprouter.Handle {
 	}
 }
 
-// HeadHandling (sometimes) updates the local copy of the GDM and formats it
+// DeleteHandling handles Delete requests
+func (mh *MetaHandler) DeleteHandling(factory ExchangeFactory) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		h := mh.injectedHandler(factory, w, r, p)
+		_, status := h.Exchange()
+		mh.renderData(status, w, r, nil)
+	}
+}
+
+// HeadHandling handles Head requests
 func (mh *MetaHandler) HeadHandling(factory ExchangeFactory) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		h := mh.injectedHandler(factory, w, r, p)
@@ -110,7 +123,7 @@ func (mh *MetaHandler) injectedHandler(factory ExchangeFactory, w http.ResponseW
 }
 
 func (mh *MetaHandler) writeHeaders(status int, w http.ResponseWriter, r *http.Request, data interface{}) {
-	mh.statusHandler.HandleResponse(status, w, data)
+	mh.statusHandler.HandleResponse(status, r, w, data)
 }
 
 func (mh *MetaHandler) renderData(status int, w http.ResponseWriter, r *http.Request, data interface{}) {

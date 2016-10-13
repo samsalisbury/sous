@@ -26,6 +26,13 @@ type (
 		*QueryValues
 		StateWriter graph.LocalStateWriter
 	}
+
+	// DELETEManifestHandler handles DELETE exchanges for manifests
+	DELETEManifestHandler struct {
+		*sous.State
+		*QueryValues
+		StateWriter graph.LocalStateWriter
+	}
 )
 
 // Get implements Getable for ManifestResource
@@ -33,6 +40,9 @@ func (mr *ManifestResource) Get() Exchanger { return &GETManifestHandler{} }
 
 // Put implements Putable for ManifestResource
 func (mr *ManifestResource) Put() Exchanger { return &PUTManifestHandler{} }
+
+// Delete implements Deleteable for ManifestResource
+func (mr *ManifestResource) Delete() Exchanger { return &DELETEManifestHandler{} }
 
 // Exchange implements Exchanger
 func (gmh *GETManifestHandler) Exchange() (interface{}, int) {
@@ -45,6 +55,21 @@ func (gmh *GETManifestHandler) Exchange() (interface{}, int) {
 		return nil, http.StatusNotFound
 	}
 	return m, http.StatusOK
+}
+
+// Exchange implements Exchanger
+func (dmh *DELETEManifestHandler) Exchange() (interface{}, int) {
+	mid, err := manifestIDFromValues(dmh.QueryValues)
+	if err != nil {
+		return err, http.StatusNotFound
+	}
+	_, there := dmh.State.Manifests.Get(mid)
+	if !there {
+		return nil, http.StatusNotFound
+	}
+	dmh.State.Manifests.Remove(mid)
+
+	return nil, http.StatusNoContent
 }
 
 // Exchange implements Exchanger

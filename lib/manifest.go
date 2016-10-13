@@ -47,6 +47,20 @@ func (m *Manifest) SetID(mid ManifestID) {
 	m.Flavor = mid.Flavor
 }
 
+func (m *Manifest) Clone() (c *Manifest) {
+	c = new(Manifest)
+	*c = *m
+	c.Owners = make([]string, len(m.Owners))
+	copy(m.Owners, c.Owners)
+	c.Deployments = make(DeploySpecs)
+	for k, v := range m.Deployments {
+		ns := v
+		ns.DeployConfig = v.DeployConfig.Clone()
+		c.Deployments[k] = ns
+	}
+	return
+}
+
 // FileLocation returns the path that the manifest should be saved to.
 func (m *Manifest) FileLocation() string {
 	return filepath.Join(string(m.Source.Repo), string(m.Source.Dir))
