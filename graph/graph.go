@@ -397,8 +397,6 @@ func newLocalStateWriter(sm *storage.GitStateManager) LocalStateWriter {
 
 func newCurrentState(sr LocalStateReader) (*sous.State, error) {
 	state, err := sr.ReadState()
-	log.Printf("%#v", sr)
-	log.Printf("%#v", state)
 	if os.IsNotExist(err) {
 		log.Println("error reading state:", err)
 		log.Println("defaulting to empty state")

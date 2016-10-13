@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 
@@ -108,21 +107,12 @@ func (hsm *HTTPStateManager) WriteState(ws *State) error {
 	if err != nil {
 		return err
 	}
-	log.Print("before")
-	for _, d := range cds.Snapshot() {
-		log.Printf("%#v", d)
-	}
-	log.Print("after")
-	for _, d := range wds.Snapshot() {
-		log.Printf("%#v", d)
-	}
 	diff := cds.Diff(wds)
 	cchs := diff.Concentrate(ws.Defs)
 	return hsm.process(cchs)
 }
 
 func (hsm *HTTPStateManager) process(dc DiffConcentrator) error {
-	log.Printf("processing")
 	done := make(chan struct{})
 	defer close(done)
 
@@ -141,37 +131,31 @@ func (hsm *HTTPStateManager) process(dc DiffConcentrator) error {
 	dce := dc.Errors
 	for {
 		if ce == nil && de == nil && me == nil && re == nil {
-			log.Printf("done processing - all nils")
 			return nil
 		}
 
 		select {
 		case e, open := <-dce:
-			log.Printf("%#v", e)
 			if open {
 				return e
 			}
 			dce = nil
 		case e, open := <-ce:
-			log.Printf("%#v", e)
 			if open {
 				return e
 			}
 			ce = nil
 		case e, open := <-de:
-			log.Printf("%#v", e)
 			if open {
 				return e
 			}
 			de = nil
 		case e, open := <-re:
-			log.Printf("%#v", e)
 			if open {
 				return e
 			}
 			re = nil
 		case e, open := <-me:
-			log.Printf("%#v", e)
 			if open {
 				return e
 			}
@@ -213,8 +197,7 @@ func (hsm *HTTPStateManager) retains(mc chan *Manifest, ec chan error, done chan
 		select {
 		case <-done:
 			return
-		case m, open := <-mc: //just drop 'em
-			log.Printf("retains: %#v %#v", m, open)
+		case _, open := <-mc: //just drop 'em
 			if !open {
 				return
 			}
@@ -229,7 +212,6 @@ func (hsm *HTTPStateManager) creates(mc chan *Manifest, ec chan error, done chan
 		case <-done:
 			return
 		case m, open := <-mc:
-			log.Printf("%#v %#v", m, open)
 			if !open {
 				return
 			}
@@ -247,7 +229,6 @@ func (hsm *HTTPStateManager) deletes(mc chan *Manifest, ec chan error, done chan
 		case <-done:
 			return
 		case m, open := <-mc:
-			log.Printf("%#v %#v", m, open)
 			if !open {
 				return
 			}
@@ -265,7 +246,6 @@ func (hsm *HTTPStateManager) modifies(mc chan *ManifestPair, ec chan error, done
 		case <-done:
 			return
 		case m, open := <-mc:
-			log.Printf("mod: %#v %#v", m, open)
 			if !open {
 				return
 			}
@@ -277,7 +257,6 @@ func (hsm *HTTPStateManager) modifies(mc chan *ManifestPair, ec chan error, done
 }
 
 func (hsm *HTTPStateManager) create(m *Manifest) error {
-	log.Printf("create %#v", m)
 	murl, err := hsm.manifestURL(m)
 	if err != nil {
 		return err
@@ -299,54 +278,44 @@ func (hsm *HTTPStateManager) create(m *Manifest) error {
 }
 
 func (hsm *HTTPStateManager) del(m *Manifest) error {
-	log.Printf("delete %#v", m)
 	murl, err := hsm.manifestURL(m)
 	if err != nil {
-		log.Printf("err")
 		return err
 	}
 
 	grq, err := http.NewRequest("GET", murl, nil)
 	if err != nil {
-		log.Printf("err")
 		return errors.Wrapf(err, "delete manifest request")
 	}
 	grz, err := hsm.Client.Do(grq)
 	if err != nil {
-		log.Printf("err")
 		return errors.Wrapf(err, "delete manifest request")
 	}
 	defer grz.Body.Close()
 	if !(grz.StatusCode >= 200 && grz.StatusCode < 300) {
-		log.Printf("err")
 		return errors.Errorf("GET %s to delete, %s: %#v", murl, grz.Status, m)
 	}
 	rm := hsm.jsonManifest(grz.Body)
 	if !rm.Equal(m) {
-		log.Printf("err")
 		return errors.Errorf("Remote and deleted manifests don't match: \n%#v\n%#v", rm, m)
 	}
 	etag := grz.Header.Get("Etag")
 	drq, err := http.NewRequest("DELETE", murl, nil)
 	if err != nil {
-		log.Printf("err")
 		return errors.Wrapf(err, "delete manifest request")
 	}
 	drq.Header.Add("If-Match", etag)
 	drz, err := hsm.Client.Do(drq)
 	if err != nil {
-		log.Printf("err")
 		return errors.Wrapf(err, "delete manifest request")
 	}
 	if !(drz.StatusCode >= 200 && drz.StatusCode < 300) {
-		log.Printf("err")
 		return errors.Errorf("Delete %s failed: %s", murl, drz.Status)
 	}
 	return nil
 }
 
 func (hsm *HTTPStateManager) modify(mp *ManifestPair) error {
-	log.Printf("modify %#v", mp)
 	bf := mp.Post
 	af := mp.Prior
 	murl, err := hsm.manifestURL(bf)

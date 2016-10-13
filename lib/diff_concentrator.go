@@ -1,7 +1,6 @@
 package sous
 
 import (
-	"log"
 	"sort"
 
 	"github.com/pkg/errors"
@@ -228,10 +227,8 @@ func (dc *DiffConcentrator) dispatch(mp *ManifestPair) error {
 			dc.Deleted <- mp.Prior
 		} else {
 			if mp.Prior.Equal(mp.Post) {
-				log.Printf("Same\n%#v\n%#v", mp.Prior, mp.Post)
 				dc.Retained <- mp.Post
 			} else {
-				log.Printf("Dfnt\n%#v\n%#v", mp.Prior, mp.Post)
 				dc.Modified <- mp
 			}
 		}
