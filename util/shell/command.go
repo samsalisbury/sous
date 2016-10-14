@@ -170,7 +170,7 @@ func (c *Command) Result() (*Result, error) {
 	command.Stdin = c.Stdin
 
 	if err := command.Start(); err != nil {
-		return nil, errors.Wrapf(err, "%s %s", c.Name, strings.Join(c.Args))
+		return nil, errors.Wrapf(err, c.String())
 	}
 	code := 0
 	err := command.Wait()
