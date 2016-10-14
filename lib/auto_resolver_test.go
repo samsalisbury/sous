@@ -51,7 +51,7 @@ func TestAfterDone(t *testing.T) {
 	ar.afterDone(tc, done, ac)
 	select {
 	case <-tc:
-	case <-time.After(time.Duration(2)):
+	case <-time.After(time.Duration(4)):
 		t.Error("Trigger channel took too long")
 	default:
 		t.Error("Trigger channel not triggered")

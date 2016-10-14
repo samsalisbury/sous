@@ -41,6 +41,23 @@ func (dc *DeployConfig) Equal(o DeployConfig) bool {
 	return (dc.NumInstances == o.NumInstances && dc.Env.Equal(o.Env) && dc.Resources.Equal(o.Resources) && dc.Volumes.Equal(o.Volumes))
 }
 
+func (dc DeployConfig) Clone() (c DeployConfig) {
+	c.NumInstances = dc.NumInstances
+	c.Args = make([]string, len(dc.Args))
+	copy(dc.Args, c.Args)
+	c.Env = make(Env)
+	for k, v := range dc.Env {
+		c.Env[k] = v
+	}
+	c.Resources = make(Resources)
+	for k, v := range dc.Resources {
+		c.Resources[k] = v
+	}
+	c.Volumes = make(Volumes, len(dc.Volumes))
+	copy(dc.Volumes, c.Volumes)
+	return
+}
+
 // Equal compares Envs
 func (e Env) Equal(o Env) bool {
 	if len(e) != len(o) {

@@ -85,6 +85,9 @@ func (err *MissingPath) Error() string {
 }
 
 func parseChunks(sourceStr string) []string {
+	if len(sourceStr) == 0 {
+		return []string{}
+	}
 	source := norm.NFC.String(sourceStr)
 
 	delim := DefaultDelim

@@ -40,12 +40,14 @@ type (
 	Putable interface {
 		Put() Exchanger
 	}
+
+	// Deleteable tags ResourceFamilies that respond to DELETE
+	Deleteable interface {
+		Delete() Exchanger
+	}
 	/*
 		Postable interface {
 			Post() Exchanger
-		}
-		Deleteable interface {
-			Delete() Exchanger
 		}
 		// also consider Headable or Patchable
 		// which maybe should be named "SpecializedHead" or something
@@ -72,6 +74,7 @@ func (rm *RouteMap) BuildRouter(grf func() Injector) http.Handler {
 	for _, e := range *rm {
 		get, canGet := e.Resource.(Getable)
 		put, canPut := e.Resource.(Putable)
+		del, canDel := e.Resource.(Deleteable)
 
 		if canGet {
 			r.Handle("GET", e.Path, mh.GetHandling(get.Get))
@@ -79,6 +82,9 @@ func (rm *RouteMap) BuildRouter(grf func() Injector) http.Handler {
 		}
 		if canPut {
 			r.Handle("PUT", e.Path, mh.PutHandling(put.Put))
+		}
+		if canDel {
+			r.Handle("DELETE", e.Path, mh.DeleteHandling(del.Delete))
 		}
 	}
 

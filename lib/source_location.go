@@ -44,7 +44,7 @@ func sourceLocationFromChunks(source string, chunks []string) (SourceLocation, e
 	if len(chunks) > 2 {
 		return SourceLocation{}, &IncludesVersion{source}
 	}
-	if len(chunks[0]) == 0 {
+	if len(chunks) == 0 || len(chunks[0]) == 0 {
 		return SourceLocation{}, &MissingRepo{source}
 	}
 	repoURL := chunks[0]

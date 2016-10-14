@@ -40,8 +40,8 @@ func TestRealDiffConcentration(t *testing.T) {
 	existing := NewDeployments()
 	defs := Defs{Clusters: map[string]*Cluster{"test": &Cluster{}}}
 
-	makeDepl := func(repo string, num int) *Deployment {
-		version, _ := semv.Parse("1.1.1-latest")
+	makeDepl := func(repo, verstr string, num int) *Deployment {
+		version := semv.MustParse(verstr)
 		cl := defs.Clusters["test"]
 		owners := OwnerSet{}
 		owners.Add("judson")
@@ -71,16 +71,20 @@ func TestRealDiffConcentration(t *testing.T) {
 	repoTwo := "https://github.com/opentable/two"
 	repoThree := "https://github.com/opentable/three"
 	repoFour := "https://github.com/opentable/four"
+	repoFive := "https://github.com/opentable/five"
 
-	intended.MustAdd(makeDepl(repoOne, 1)) //remove
+	intended.MustAdd(makeDepl(repoOne, "111.1.1", 1)) //remove
 
-	existing.MustAdd(makeDepl(repoTwo, 1)) //same
-	intended.MustAdd(makeDepl(repoTwo, 1)) //same
+	existing.MustAdd(makeDepl(repoTwo, "1.0.0", 1)) //same
+	intended.MustAdd(makeDepl(repoTwo, "1.0.0", 1)) //same
 
-	existing.MustAdd(makeDepl(repoThree, 1)) //changed
-	intended.MustAdd(makeDepl(repoThree, 2)) //changed
+	existing.MustAdd(makeDepl(repoThree, "1.0.0", 1)) //changed
+	intended.MustAdd(makeDepl(repoThree, "1.0.0", 2)) //changed
 
-	existing.MustAdd(makeDepl(repoFour, 1)) //create
+	existing.MustAdd(makeDepl(repoFour, "1.0.0", 1)) //create
+
+	existing.MustAdd(makeDepl(repoFive, "1.0.0", 1)) //changed
+	intended.MustAdd(makeDepl(repoFive, "2.0.0", 1)) //changed
 
 	dc := intended.Diff(existing).Concentrate(defs)
 	ds, err := dc.collect()
@@ -96,12 +100,25 @@ func TestRealDiffConcentration(t *testing.T) {
 		assert.Equal(string(it.Source.Repo), repoTwo)
 	}
 
-	if assert.Len(ds.Changed, 1, "Should have one modified item.") {
-		assert.Equal(repoThree, string(ds.Changed[0].name.Source.Repo))
-		assert.Equal(repoThree, string(ds.Changed[0].Prior.Source.Repo))
-		assert.Equal(repoThree, string(ds.Changed[0].Post.Source.Repo))
-		assert.Equal(ds.Changed[0].Post.Deployments["test"].NumInstances, 1)
-		assert.Equal(ds.Changed[0].Prior.Deployments["test"].NumInstances, 2)
+	if assert.Len(ds.Changed, 2, "Should have two modified items.") {
+		chNum, chVer := ds.Changed[0], ds.Changed[1]
+		if repoThree == chVer.name.Source.Repo {
+			chNum, chVer = chVer, chNum
+		}
+		log.Printf("\n%#v\n%#v", chNum, chVer)
+		assert.Equal(repoThree, string(chNum.name.Source.Repo))
+		assert.Equal(repoThree, string(chNum.Prior.Source.Repo))
+		assert.Equal(repoThree, string(chNum.Post.Source.Repo))
+		assert.Equal(chNum.Prior.Deployments["test"].NumInstances, 1)
+		assert.Equal(chNum.Post.Deployments["test"].NumInstances, 2)
+
+		assert.Equal(repoFive, string(chVer.name.Source.Repo))
+		assert.Equal(repoFive, string(chVer.Prior.Source.Repo))
+		assert.Equal(repoFive, string(chVer.Post.Source.Repo))
+		ver1 := semv.MustParse("1.0.0")
+		ver2 := semv.MustParse("2.0.0")
+		assert.Equal(ver1, chVer.Prior.Deployments["test"].Version)
+		assert.Equal(ver2, chVer.Post.Deployments["test"].Version)
 	}
 
 	if assert.Equal(ds.New.Len(), 1, "Should have one added item.") {

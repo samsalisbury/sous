@@ -90,43 +90,115 @@ type (
 // BuildGraph builds the dependency injection graph, used to populate commands
 // invoked by the user.
 func BuildGraph(out, err io.Writer) *SousGraph {
-	return &SousGraph{psyringe.New(
+	graph := &SousGraph{psyringe.New()}
+	// stdout, stderr
+	graph.Add(
 		func() OutWriter { return out },
 		func() ErrWriter { return err },
-		newLocalUser,
-		newLocalSousConfig,
-		newSourceHostChooser,
+	)
+
+	AddLogs(graph)
+	AddUser(graph)
+	AddShells(graph)
+	AddFilesystem(graph)
+	AddNetwork(graph)
+	AddDocker(graph)
+	AddSingularity(graph)
+	AddState(graph)
+	AddInternals(graph)
+	return graph
+}
+
+type adder interface {
+	Add(...interface{})
+}
+
+// AddLogs adds a logset to the graph
+func AddLogs(graph adder) {
+	graph.Add(
 		newLogSet,
-		newLocalWorkDir,
+	)
+}
+
+// AddUser adds the OS user to the graph
+func AddUser(graph adder) {
+	graph.Add(
+		newLocalUser,
+	)
+}
+
+// AddShells adds working shells to the graph
+func AddShells(graph adder) {
+	graph.Add(
 		newLocalWorkDirShell,
 		newScratchDirShell,
-		newLocalGitClient,
-		newLocalGitRepo,
-		newGitSourceContext,
-		newSourceContext,
-		newBuildContext,
-		newBuildConfig,
-		newBuildManager,
+	)
+}
+
+// AddFilesystem adds filesystem to the graph
+func AddFilesystem(graph adder) {
+	graph.Add(
+		newLocalSousConfig,
+		newLocalWorkDir,
+	)
+}
+
+// AddNetwork adds features that require the network
+func AddNetwork(graph adder) {
+	graph.Add(
 		newDockerClient,
+	)
+}
+
+// AddDocker adds Docker to the graph
+func AddDocker(graph adder) {
+	graph.Add(
 		newDockerBuilder,
 		newSelector,
-		newLabeller,
-		newRegistrar,
+	)
+}
+
+// AddSingularity adds Singularity clients to the graph
+func AddSingularity(graph adder) {
+	graph.Add(
 		newDeployer,
-		newRegistry,
-		newRegistryDumper,
+	)
+}
+
+// AddState adds state reader and writers to the graph
+func AddState(graph adder) {
+	graph.Add(
 		newLocalDiskStateManager,
 		newGitStateManager,
 		newLocalStateReader,
 		newLocalStateWriter,
-		newCurrentGDM,
+	)
+}
+
+// AddInternals adds the dependency contructors that are internal to Sous
+func AddInternals(graph adder) {
+	// internal to Sous
+	graph.Add(
+		newRegistryDumper,
+		newRegistry,
+		newLabeller,
+		newRegistrar,
+		newBuildManager,
+		newBuildConfig,
+		newBuildContext,
+		newSourceContext,
+		newLocalGitClient,
+		newLocalGitRepo,
+		newGitSourceContext,
+		newSourceHostChooser,
 		newCurrentState,
+		newCurrentGDM,
 		newTargetManifest,
 		newDetectedOTPLConfig,
 		newUserSelectedOTPLDeploySpecs,
 		newTargetManifestID,
 		newAutoResolver,
-	)}
+	)
 }
 
 func newAutoResolver(d sous.Deployer, r sous.Registry, sr LocalStateReader, ls *sous.LogSet) *sous.AutoResolver {
@@ -254,7 +326,7 @@ func newLocalWorkDir() (LocalWorkDir, error) {
 
 func newLocalWorkDirShell(l LocalWorkDir) (v LocalWorkDirShell, err error) {
 	v.Sh, err = shell.DefaultInDir(string(l))
-	v.TeeEcho = os.Stdout
+	v.TeeEcho = os.Stdout //XXX should use a writer
 	//v.TeeOut = os.Stdout
 	//v.TeeErr = os.Stderr
 	return v, initErr(err, "getting current working directory")

@@ -299,7 +299,7 @@ func concentrate(dc DiffChans, con DiffConcentrator) {
 				modified = nil
 				continue
 			}
-			addPair(m.Prior.ManifestID(), m.Prior, m.Post)
+			addPair(m.Prior.ManifestID(), m.Post, m.Prior)
 		}
 	}
 }

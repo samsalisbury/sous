@@ -17,12 +17,15 @@ type (
 
 // HandleResponse returns a 500 and logs the error
 // It uses the LogSet provided by the graph
-func (ph *StatusHandler) HandleResponse(status int, w http.ResponseWriter, data interface{}) {
+func (ph *StatusHandler) HandleResponse(status int, r *http.Request, w http.ResponseWriter, data interface{}) {
 	w.WriteHeader(status)
 
-	ph.LogSet.Warn.Printf("Responding: %d %s", status, http.StatusText(status))
+	ph.LogSet.Warn.Printf("Responding: %d %s: %s %s", status, http.StatusText(status), r.Method, r.URL)
 	if status >= 400 {
 		ph.LogSet.Warn.Printf("%+v", data)
+	}
+	if status >= 200 && status < 300 {
+		ph.LogSet.Debug.Printf("%+v", data)
 	}
 	// XXX in a dev mode, print the panic in the response body
 	// (normal ops it might leak secure data)
