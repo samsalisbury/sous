@@ -12,6 +12,7 @@ import (
 	"syscall"
 
 	"github.com/opentable/sous/util/whitespace"
+	"github.com/pkg/errors"
 )
 
 type (
@@ -169,7 +170,7 @@ func (c *Command) Result() (*Result, error) {
 	command.Stdin = c.Stdin
 
 	if err := command.Start(); err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "%s %s", c.Name, strings.Join(c.Args))
 	}
 	code := 0
 	err := command.Wait()
@@ -186,7 +187,7 @@ func (c *Command) Result() (*Result, error) {
 		Stdout:   &Output{outbuf},
 		Stderr:   &Output{errbuf},
 		Combined: &Output{combinedbuf},
-		Err:      err,
+		Err:      errors.Wrapf(err, c.String()),
 		ExitCode: code,
 	}, nil
 }
@@ -196,7 +197,7 @@ func (c *Command) Result() (*Result, error) {
 func (c *Command) SucceedResult() (*Result, error) {
 	r, err := c.Result()
 	if err != nil {
-		return r, err
+		return r, errors.Wrapf(err, c.String())
 	}
 	if r.Err != nil {
 		return r, newError(r.Err, r)
@@ -226,7 +227,7 @@ func (c *Command) Fail() error {
 func (c *Command) FailResult() (*Result, error) {
 	r, err := c.Result()
 	if err != nil {
-		return r, err
+		return r, errors.Wrapf(err, c.String())
 	}
 	if r.Err == nil {
 		return r, fmt.Errorf("command %q succeeded, expected failure", c)
