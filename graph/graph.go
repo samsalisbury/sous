@@ -280,6 +280,7 @@ func newBuildConfig(f *config.DeployFilterFlags, p *config.PolicyFlags, bc *sous
 		ForceClone: p.ForceClone,
 		Context:    bc,
 	}
+	cfg.Resolve()
 
 	return &cfg
 }
