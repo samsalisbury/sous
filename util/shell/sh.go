@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"github.com/pkg/errors"
 )
 
 type (
@@ -37,7 +39,7 @@ type (
 func Default() (*Sh, error) {
 	wd, err := os.Getwd()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "sh default workdir")
 	}
 	return &Sh{
 		Cwd: wd,
@@ -82,10 +84,10 @@ func (s *Sh) CD(dir string) error {
 	s.Cwd = dir
 	f, err := os.Stat(s.Cwd)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "sh chdir")
 	}
 	if !f.IsDir() {
-		return fmt.Errorf("%s is not a directory", s.Cwd)
+		return errors.Errorf("%s is not a directory", s.Cwd)
 	}
 	return nil
 }

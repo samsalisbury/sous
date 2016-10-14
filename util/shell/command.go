@@ -197,7 +197,7 @@ func (c *Command) Result() (*Result, error) {
 func (c *Command) SucceedResult() (*Result, error) {
 	r, err := c.Result()
 	if err != nil {
-		return r, errors.Wrapf(err, c.String())
+		return r, err
 	}
 	if r.Err != nil {
 		return r, newError(r.Err, r)
@@ -227,7 +227,7 @@ func (c *Command) Fail() error {
 func (c *Command) FailResult() (*Result, error) {
 	r, err := c.Result()
 	if err != nil {
-		return r, errors.Wrapf(err, c.String())
+		return r, err
 	}
 	if r.Err == nil {
 		return r, fmt.Errorf("command %q succeeded, expected failure", c)
