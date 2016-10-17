@@ -8,6 +8,7 @@ import (
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/ext/storage"
 	"github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/shell"
 	"github.com/samsalisbury/psyringe"
 )
 
