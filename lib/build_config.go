@@ -119,6 +119,11 @@ func (c *BuildConfig) chooseOffset() string {
 	return clean
 }
 
+// Resolve settles configurations so that e.g. captured version tags are used in the absence of user input
+func (c *BuildConfig) Resolve() {
+	c.Tag = c.chooseTag()
+}
+
 // Validate checks that the Config is well formed
 func (c *BuildConfig) Validate() error {
 	if _, ve := semv.Parse(c.Tag); ve != nil {
