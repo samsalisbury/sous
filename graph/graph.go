@@ -64,6 +64,8 @@ type (
 	ScratchDirShell struct{ *shell.Sh }
 	// LocalDockerClient is a docker client object
 	LocalDockerClient struct{ docker_registry.Client }
+	// StateManager simply wraps the sous.StateManager interface
+	StateManager struct{ sous.StateManager }
 	// LocalStateReader wraps a storage.StateReader, and should be configured
 	// to use the current user's local storage.
 	LocalStateReader struct{ sous.StateReader }
@@ -168,8 +170,7 @@ func AddSingularity(graph adder) {
 // AddState adds state reader and writers to the graph
 func AddState(graph adder) {
 	graph.Add(
-		newLocalDiskStateManager,
-		newGitStateManager,
+		newStateManager,
 		newLocalStateReader,
 		newLocalStateWriter,
 	)
@@ -380,19 +381,23 @@ func newDockerClient() LocalDockerClient {
 	return LocalDockerClient{docker_registry.NewClient()}
 }
 
-func newLocalDiskStateManager(c LocalSousConfig) *storage.DiskStateManager {
-	return storage.NewDiskStateManager(c.StateLocation)
+func newStateManager(c LocalSousConfig) (*StateManager, error) {
+	if c.Server != "" {
+		hsm, err := sous.NewHTTPStateManager(c.Server)
+		if err != nil {
+			return nil, err
+		}
+		return &StateManager{StateManager: hsm}, nil
+	}
+	dm := storage.NewDiskStateManager(c.StateLocation)
+	return &StateManager{StateManager: storage.NewGitStateManager(dm)}, nil
 }
 
-func newGitStateManager(dm *storage.DiskStateManager) *storage.GitStateManager {
-	return storage.NewGitStateManager(dm)
-}
-
-func newLocalStateReader(sm *storage.GitStateManager) LocalStateReader {
+func newLocalStateReader(sm *StateManager) LocalStateReader {
 	return LocalStateReader{sm}
 }
 
-func newLocalStateWriter(sm *storage.GitStateManager) LocalStateWriter {
+func newLocalStateWriter(sm *StateManager) LocalStateWriter {
 	return LocalStateWriter{sm}
 }
 
