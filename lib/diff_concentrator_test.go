@@ -105,7 +105,6 @@ func TestRealDiffConcentration(t *testing.T) {
 		if repoThree == chVer.name.Source.Repo {
 			chNum, chVer = chVer, chNum
 		}
-		log.Printf("\n%#v\n%#v", chNum, chVer)
 		assert.Equal(repoThree, string(chNum.name.Source.Repo))
 		assert.Equal(repoThree, string(chNum.Prior.Source.Repo))
 		assert.Equal(repoThree, string(chNum.Post.Source.Repo))
