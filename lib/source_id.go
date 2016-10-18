@@ -2,6 +2,7 @@ package sous
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/samsalisbury/semv"
@@ -51,6 +52,15 @@ func (sid SourceID) String() string {
 		return fmt.Sprintf("%s,%s", sid.Location.Repo, sid.Version)
 	}
 	return fmt.Sprintf("%s,%s,%s", sid.Location.Repo, sid.Version, sid.Location.Dir)
+}
+
+// QueryValues returns the url.Values for this SourceIDs
+func (sid SourceID) QueryValues() url.Values {
+	v := url.Values{}
+	v.Set("repo", sid.Location.Repo)
+	v.Set("offset", sid.Location.Dir)
+	v.Set("version", sid.Version.String())
+	return v
 }
 
 // Tag returns the version tag for this source ID.

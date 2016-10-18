@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/opentable/sous/config"
+	"github.com/opentable/sous/ext/docker"
 	"github.com/opentable/sous/ext/storage"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/shell"
@@ -45,20 +46,49 @@ func injectedStateManager(t *testing.T, cfg *config.Config) *StateManager {
 }
 
 func TestStateManagerSelectsServer(t *testing.T) {
-	smgr := injectedStateManager(t, &config.Config{Server: "http://example.com"})
+	smgr := injectedStateManager(t, &config.Config{Server: "http://example.com", StateLocation: "/tmp/sous"})
 
 	if _, ok := smgr.StateManager.(*sous.HTTPStateManager); !ok {
-		t.Errorf("Injected %#v which isn't a HTTPStateManager", smgr)
+		t.Errorf("Injected %#v which isn't a HTTPStateManager", smgr.StateManager)
 	}
 }
 
 func TestStateManagerSelectsGit(t *testing.T) {
-	smgr := injectedStateManager(t, &config.Config{StateLocation: "/tmp/sous"})
+	smgr := injectedStateManager(t, &config.Config{Server: "", StateLocation: "/tmp/sous"})
 
 	if _, ok := smgr.StateManager.(*storage.GitStateManager); !ok {
-		t.Errorf("Injected %#v which isn't a GitStateManager", smgr)
+		t.Errorf("Injected %#v which isn't a GitStateManager", smgr.StateManager)
 	}
 }
+
+func testBuildInserter(t *testing.T, serverStr string) sous.Inserter {
+	ins, err := makeInserter(LocalSousConfig{Config: &config.Config{
+		Server: serverStr,
+		Docker: docker.Config{
+			DatabaseDriver:     "sqlite3",
+			DatabaseConnection: docker.InMemory,
+		},
+	}}, LocalDockerClient{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return ins
+}
+
+func TestNameInserterSelectsNameCache(t *testing.T) {
+	ins := testBuildInserter(t, "")
+	if _, ok := ins.(*docker.NameCache); !ok {
+		t.Errorf("Injected %#v which isn't a docker.NameCache", ins)
+	}
+}
+
+func TestNameInserterSelectsHTTP(t *testing.T) {
+	ins := testBuildInserter(t, "http//example.com")
+	if _, ok := ins.(*sous.HTTPNameInserter); !ok {
+		t.Errorf("Injected %#v which isn't a docker.NameCache", ins)
+	}
+}
+
 func TestNewBuildConfig(t *testing.T) {
 	f := &config.DeployFilterFlags{}
 	p := &config.PolicyFlags{}
