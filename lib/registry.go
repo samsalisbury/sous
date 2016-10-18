@@ -23,4 +23,11 @@ type (
 		//ImageLabels finds the sous (docker) labels for a given image name
 		ImageLabels(imageName string) (labels map[string]string, err error)
 	}
+
+	// An Inserter puts data into a registry.
+	Inserter interface {
+		// Insert pairs a SourceID with an imagename, and tags the pairing with Qualities
+		// The etag can be (usually will be) the empty string
+		Insert(sid SourceID, in, etag string, qs []Quality) error
+	}
 )

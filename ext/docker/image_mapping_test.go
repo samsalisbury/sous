@@ -142,7 +142,7 @@ func TestRoundTrip(t *testing.T) {
 	base := "ot/wackadoo"
 	in := base + ":version-1.2.3"
 	digest := "sha256:012345678901234567890123456789AB012345678901234567890123456789AB"
-	err := nc.insert(sv, in, digest, []sous.Quality{})
+	err := nc.Insert(sv, in, digest, []sous.Quality{})
 	assert.NoError(err)
 
 	cn, err := nc.GetCanonicalName(in)
@@ -337,7 +337,7 @@ func TestRecordAdvisories(t *testing.T) {
 
 	qs := []sous.Quality{{"ephemeral_tag", "advisory"}}
 
-	err := nc.insert(sv, cn, digest, qs)
+	err := nc.Insert(sv, cn, digest, qs)
 	assert.NoError(err)
 
 	arty, err := nc.GetArtifact(sv)

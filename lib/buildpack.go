@@ -25,6 +25,9 @@ type (
 		Register(*BuildResult, *BuildContext) error
 	}
 
+	Strpairs []Strpair
+	Strpair  [2]string
+
 	// BuildArtifact describes the actual built binary Sous will deploy
 	BuildArtifact struct {
 		Name, Type string
@@ -84,4 +87,15 @@ func (br *BuildResult) String() string {
 		str = str + "\nAdvisories:\n  " + strings.Join(br.Advisories, "  \n")
 	}
 	return fmt.Sprintf("%s\nElapsed: %s", str, br.Elapsed)
+}
+
+// NewBuildArtifact creates a new BuildArtifact representing a Docker
+// image.
+func NewBuildArtifact(imageName string, qstrs Strpairs) *BuildArtifact {
+	var qs []Quality
+	for _, qstr := range qstrs {
+		qs = append(qs, Quality{Name: qstr[0], Kind: qstr[1]})
+	}
+
+	return &BuildArtifact{Name: imageName, Type: "docker", Qualities: qs}
 }
