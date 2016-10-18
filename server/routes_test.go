@@ -2,6 +2,7 @@ package server
 
 import (
 	"log"
+	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
@@ -19,7 +20,7 @@ func testInject(thing interface{}) error {
 	}
 	mh := &MetaHandler{graphFac: gf}
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest("GET", "/test", nil)
+	r := http.NewRequest("GET", "/test", nil)
 	p := httprouter.Params{}
 
 	return mh.ExchangeGraph(w, r, p).Inject(thing)
