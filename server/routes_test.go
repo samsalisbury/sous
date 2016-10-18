@@ -20,7 +20,10 @@ func testInject(thing interface{}) error {
 	}
 	mh := &MetaHandler{graphFac: gf}
 	w := httptest.NewRecorder()
-	r := http.NewRequest("GET", "/test", nil)
+	r, err := http.NewRequest("GET", "/test", nil)
+	if err != nil {
+		panic(err)
+	}
 	p := httprouter.Params{}
 
 	return mh.ExchangeGraph(w, r, p).Inject(thing)
