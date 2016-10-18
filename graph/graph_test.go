@@ -62,7 +62,7 @@ func TestStateManagerSelectsGit(t *testing.T) {
 }
 
 func testBuildInserter(t *testing.T, serverStr string) sous.Inserter {
-	ins, err := makeInserter(LocalSousConfig{Config: &config.Config{
+	ins, err := newInserter(LocalSousConfig{Config: &config.Config{
 		Server: serverStr,
 		Docker: docker.Config{
 			DatabaseDriver:     "sqlite3",

@@ -199,6 +199,7 @@ func AddInternals(graph adder) {
 		newUserSelectedOTPLDeploySpecs,
 		newTargetManifestID,
 		newAutoResolver,
+		newInserter,
 	)
 }
 
@@ -433,7 +434,7 @@ func makeDockerRegistry(cfg LocalSousConfig, cl LocalDockerClient) (*docker.Name
 	return docker.NewNameCache(cl.Client, db), nil
 }
 
-func makeInserter(cfg LocalSousConfig, cl LocalDockerClient) (sous.Inserter, error) {
+func newInserter(cfg LocalSousConfig, cl LocalDockerClient) (sous.Inserter, error) {
 	if cfg.Server == "" {
 		return makeDockerRegistry(cfg, cl)
 	}

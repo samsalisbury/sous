@@ -19,7 +19,7 @@ type (
 	// The MetaHandler collects common behavior for route handlers
 	MetaHandler struct {
 		router        *httprouter.Router
-		graphFac      GraphFactory
+		graphFac      GraphFactory //XXX This is a workaround for a bug in psyringe.Clone()
 		statusHandler *StatusHandler
 	}
 
@@ -107,7 +107,7 @@ func (mh *MetaHandler) InstallPanicHandler() {
 
 }
 
-func (mh *MetaHandler) exchangeGraph(w http.ResponseWriter, r *http.Request, p httprouter.Params) Injector {
+func (mh *MetaHandler) ExchangeGraph(w http.ResponseWriter, r *http.Request, p httprouter.Params) Injector {
 	g := mh.graphFac()
 	g.Add(&ResponseWriter{ResponseWriter: w}, r, p)
 	g.Add(parseQueryValues)
@@ -117,7 +117,7 @@ func (mh *MetaHandler) exchangeGraph(w http.ResponseWriter, r *http.Request, p h
 func (mh *MetaHandler) injectedHandler(factory ExchangeFactory, w http.ResponseWriter, r *http.Request, p httprouter.Params) Exchanger {
 	h := factory()
 
-	mh.exchangeGraph(w, r, p).Inject(h)
+	mh.ExchangeGraph(w, r, p).Inject(h)
 
 	return h
 }
