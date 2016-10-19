@@ -35,7 +35,7 @@ LABEL \
   com.opentable.sous.repo_url="github.com/opentable/test" \
   com.opentable.sous.revision="abcd" \
   com.opentable.sous.version="2.3.7" \
-  com.opentable.sous.advisories="something is horribly wrong,"`, string(mddf))
+  com.opentable.sous.advisories="something is horribly wrong"`, string(mddf))
 }
 
 func TestTagStrings(t *testing.T) {

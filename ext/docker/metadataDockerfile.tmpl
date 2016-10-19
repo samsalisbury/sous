@@ -4,7 +4,7 @@ LABEL {{- range $key, $value := .Labels}} \
   {{- end -}}
   {{- with .Advisories}} \
   com.opentable.sous.advisories="
-  {{- range . -}}
-  {{.}},
+  {{- range $index, $element := . -}}
+  {{if $index}},{{end}}{{.}}
   {{- end}}"
   {{- end -}}

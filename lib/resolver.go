@@ -88,6 +88,9 @@ func guardImages(r Registry, gdm Deployments) error {
 		}
 		for _, q := range art.Qualities {
 			if q.Kind == `advisory` {
+				if q.Name == "" {
+					continue
+				}
 				found := false
 				var advs []string
 				if d.Cluster != nil {

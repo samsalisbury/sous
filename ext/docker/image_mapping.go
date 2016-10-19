@@ -567,6 +567,9 @@ func (nc *NameCache) dbInsert(sid sous.SourceID, in, etag string, quals []sous.Q
 	}
 
 	for _, q := range quals {
+		if q.Kind == "advisory" && q.Name == "" {
+			continue
+		}
 		nc.DB.Exec("insert into docker_image_qualities"+
 			"  (metadata_id, quality, kind)"+
 			"  values"+

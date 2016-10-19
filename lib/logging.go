@@ -34,17 +34,6 @@ var (
 	// Log collects various loggers to use for different levels of logging
 	Log = func() LogSet {
 		return *(NewLogSet(os.Stderr, ioutil.Discard, ioutil.Discard))
-		/*
-			warnLogger := log.New(os.Stderr, "warn: ", 0)
-			return LogSet{
-				// Debug is a logger - use log.SetOutput to get output from
-				Vomit:  log.New(ioutil.Discard, "vomit: ", log.Lshortfile),
-				Debug:  log.New(ioutil.Discard, "debug: ", log.Lshortfile),
-				Info:   warnLogger, // XXX deprecate Info
-				Notice: warnLogger, // XXX deprecate Notice
-				Warn:   warnLogger,
-			}
-		*/
 	}()
 )
 
@@ -58,8 +47,8 @@ func NewLogSet(warn, debug, vomit io.Writer) *LogSet {
 	warnLogger := log.New(warn, "warn: ", 0)
 	return &LogSet{
 		// Debug is a logger - use log.SetOutput to get output from
-		Vomit:  log.New(vomit, "vomit: ", log.Lshortfile),
-		Debug:  log.New(debug, "debug: ", log.Lshortfile),
+		Vomit:  log.New(vomit, "vomit: ", log.Lshortfile|log.Ldate|log.Ldate),
+		Debug:  log.New(debug, "debug: ", log.Lshortfile|log.Ldate|log.Ldate),
 		Info:   warnLogger, // XXX deprecate Info
 		Notice: warnLogger, // XXX deprecate Notice
 		Warn:   warnLogger,
