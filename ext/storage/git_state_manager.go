@@ -60,6 +60,14 @@ func (gsm *GitStateManager) ReadState() (*sous.State, error) {
 	return gsm.DiskStateManager.ReadState()
 }
 
+func (gsm *GitStateManager) needCommit() bool {
+	err := gsm.git("diff-index", "--quiet", "--cached", "HEAD")
+	if ee, is := err.(*exec.ExitError); is {
+		return !ee.Success()
+	}
+	return false
+}
+
 // WriteState writes sous state to disk, then attempts to push it to Remote.
 // If the push fails, the state is reset and an error is returned.
 func (gsm *GitStateManager) WriteState(s *sous.State) error {
@@ -78,9 +86,11 @@ func (gsm *GitStateManager) WriteState(s *sous.State) error {
 		gsm.revert(tn)
 		return err
 	}
-	if err := gsm.git("commit", "-m", "sous commit: Update State"); err != nil {
-		gsm.revert(tn)
-		return err
+	if gsm.needCommit() {
+		if err := gsm.git("commit", "-m", "sous commit: Update State"); err != nil {
+			gsm.revert(tn)
+			return err
+		}
 	}
 	err := gsm.git("push", "-u", "origin", "master")
 	if err != nil {
