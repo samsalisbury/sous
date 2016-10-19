@@ -47,8 +47,8 @@ func NewLogSet(warn, debug, vomit io.Writer) *LogSet {
 	warnLogger := log.New(warn, "warn: ", 0)
 	return &LogSet{
 		// Debug is a logger - use log.SetOutput to get output from
-		Vomit:  log.New(vomit, "vomit: ", log.Lshortfile|log.Ldate|log.Ldate),
-		Debug:  log.New(debug, "debug: ", log.Lshortfile|log.Ldate|log.Ldate),
+		Vomit:  log.New(vomit, "vomit: ", log.Lshortfile|log.Ldate|log.Ltime),
+		Debug:  log.New(debug, "debug: ", log.Lshortfile|log.Ldate|log.Ltime),
 		Info:   warnLogger, // XXX deprecate Info
 		Notice: warnLogger, // XXX deprecate Notice
 		Warn:   warnLogger,
