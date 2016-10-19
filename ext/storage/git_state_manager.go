@@ -37,7 +37,6 @@ func (gsm *GitStateManager) git(cmd ...string) error {
 	git := exec.Command(`git`, cmd...)
 	git.Dir = gsm.DiskStateManager.BaseDir
 	//git.Env = []string{"GIT_CONFIG_NOSYSTEM=true", "HOME=none", "XDG_CONFIG_HOME=none"}
-	//log.Print(git)
 	out, err := git.CombinedOutput()
 	return errors.Wrapf(err, strings.Join(git.Args, " ")+": "+string(out))
 }
@@ -61,8 +60,8 @@ func (gsm *GitStateManager) ReadState() (*sous.State, error) {
 }
 
 func (gsm *GitStateManager) needCommit() bool {
-	err := gsm.git("diff-index", "--quiet", "--cached", "HEAD")
-	if ee, is := err.(*exec.ExitError); is {
+	err := gsm.git("diff-index", "--exit-code", "HEAD")
+	if ee, is := errors.Cause(err).(*exec.ExitError); is {
 		return !ee.Success()
 	}
 	return false
@@ -70,38 +69,30 @@ func (gsm *GitStateManager) needCommit() bool {
 
 // WriteState writes sous state to disk, then attempts to push it to Remote.
 // If the push fails, the state is reset and an error is returned.
-func (gsm *GitStateManager) WriteState(s *sous.State) error {
+func (gsm *GitStateManager) WriteState(s *sous.State) (err error) {
 	// git pull
-
 	tn := "sous-fallback-" + uuid.New()
-	if err := gsm.git("tag", tn); err != nil {
-		return err
+	if err = gsm.git("tag", tn); err != nil {
+		return
 	}
 	defer gsm.git("tag", "-d", tn)
 
-	if err := gsm.DiskStateManager.WriteState(s); err != nil {
-		return err
+	if err = gsm.DiskStateManager.WriteState(s); err != nil {
+		return
 	}
-	if err := gsm.git(`add`, `.`); err != nil {
+	if err = gsm.git(`add`, `.`); err != nil {
 		gsm.revert(tn)
-		return err
+		return
 	}
 	if gsm.needCommit() {
-		if err := gsm.git("commit", "-m", "sous commit: Update State"); err != nil {
+		if err = gsm.git("commit", "-m", "sous commit: Update State"); err != nil {
 			gsm.revert(tn)
-			return err
+			return
+		}
+		err = gsm.git("push", "-u", "origin", "master")
+		if err != nil {
+			gsm.revert(tn)
 		}
 	}
-	err := gsm.git("push", "-u", "origin", "master")
-	if err != nil {
-		gsm.revert(tn)
-	}
-	//log.Print(err)
-	return err
-
-	// git commit -a -m ""
-	// git push
-	// Problems?
-	//   git checkout tag
-	// git tag -d <t>
+	return
 }
