@@ -77,6 +77,7 @@ func (r *deployer) ImageName(d *sous.Deployment) (string, error) {
 }
 
 func (r *deployer) RectifySingleCreate(d *sous.Deployment) error {
+	Log.Debug.Printf("Rectifing create:  \n %+ v", d)
 	name, err := r.ImageName(d)
 	if err != nil {
 		return err
