@@ -16,7 +16,7 @@ import (
 type (
 	// Builder represents a single build of a project.
 	Builder struct {
-		ImageMapper               *NameCache
+		ImageMapper               sous.Inserter
 		DockerRegistryHost        string
 		SourceShell, ScratchShell shell.Shell
 		Pack                      sous.Buildpack
@@ -31,7 +31,7 @@ type (
 // NewBuilder creates a new build using source code in the working
 // directory of sourceShell, and using the working dir of scratchShell as
 // temporary storage.
-func NewBuilder(nc *NameCache, drh string, sourceShell, scratchShell shell.Shell) (*Builder, error) {
+func NewBuilder(nc sous.Inserter, drh string, sourceShell, scratchShell shell.Shell) (*Builder, error) {
 	b := &Builder{
 		ImageMapper:        nc,
 		DockerRegistryHost: drh,
@@ -119,7 +119,7 @@ func (b *Builder) recordName(br *sous.BuildResult, bc *sous.BuildContext) error 
 	for _, adv := range br.Advisories {
 		qs = append(qs, sous.Quality{Name: adv, Kind: "advisory"})
 	}
-	return b.ImageMapper.insert(sv, in, "", qs)
+	return b.ImageMapper.Insert(sv, in, "", qs)
 }
 
 // VersionTag computes an image tag from a SourceVersion's version

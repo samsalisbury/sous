@@ -1,8 +1,6 @@
 package server
 
 import (
-	"log"
-
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
 )
@@ -27,7 +25,6 @@ func (gr *GDMResource) Get() Exchanger { return &GDMHandler{} }
 // Exchange implements the Handler interface
 func (h *GDMHandler) Exchange() (interface{}, int) {
 	data := gdmWrapper{Deployments: make([]*sous.Deployment, 0)}
-	log.Printf("%#v", h.GDM)
 	for _, d := range h.GDM.Snapshot() {
 		data.Deployments = append(data.Deployments, d)
 	}

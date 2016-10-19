@@ -199,6 +199,7 @@ func AddInternals(graph adder) {
 		newUserSelectedOTPLDeploySpecs,
 		newTargetManifestID,
 		newAutoResolver,
+		newInserter,
 	)
 }
 
@@ -372,6 +373,7 @@ func newRegistrar(db *docker.Builder) sous.Registrar {
 func newRegistry(cfg LocalSousConfig, cl LocalDockerClient) (sous.Registry, error) {
 	return makeDockerRegistry(cfg, cl)
 }
+
 func newDeployer(r sous.Registry) sous.Deployer {
 	// Eventually, based on configuration, we may make different decisions here.
 	return singularity.NewDeployer(r, singularity.NewRectiAgent(r))
@@ -430,6 +432,13 @@ func makeDockerRegistry(cfg LocalSousConfig, cl LocalDockerClient) (*docker.Name
 		return nil, errors.Wrap(err, "building name cache DB")
 	}
 	return docker.NewNameCache(cl.Client, db), nil
+}
+
+func newInserter(cfg LocalSousConfig, cl LocalDockerClient) (sous.Inserter, error) {
+	if cfg.Server == "" {
+		return makeDockerRegistry(cfg, cl)
+	}
+	return sous.NewHTTPNameInserter(cfg.Server)
 }
 
 // initErr returns nil if error is nil, otherwise an initialisation error.

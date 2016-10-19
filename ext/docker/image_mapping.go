@@ -51,6 +51,7 @@ type (
 
 // NewBuildArtifact creates a new sous.BuildArtifact representing a Docker
 // image.
+// XXX this should be removed in favor of sous.NewBuildArtifact
 func NewBuildArtifact(imageName string, qstrs strpairs) *sous.BuildArtifact {
 	var qs []sous.Quality
 	for _, qstr := range qstrs {
@@ -240,7 +241,7 @@ func (nc *NameCache) GetCanonicalName(in string) (string, error) {
 
 // Insert puts a given SourceID/image name pair into the name cache
 // used by Builder at the moment to register after a build
-func (nc *NameCache) insert(sid sous.SourceID, in, etag string, qs []sous.Quality) error {
+func (nc *NameCache) Insert(sid sous.SourceID, in, etag string, qs []sous.Quality) error {
 	return nc.dbInsert(sid, in, etag, qs)
 }
 
