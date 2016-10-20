@@ -84,7 +84,7 @@ func (r *deployer) RectifySingleCreate(d *sous.Deployment) (err error) {
 		if r := recover(); r != nil {
 			sous.Log.Warn.Printf("Panic in RectifySingleCreate with %# v", fd)
 			sous.Log.Warn.Printf("  %v", r)
-			sous.Log.Warn.Print(debug.Stack())
+			sous.Log.Warn.Print(string(debug.Stack()))
 			err = errors.Errorf("Panicked")
 		}
 	}(d)
@@ -114,7 +114,7 @@ func (r *deployer) RectifySingleDelete(d *sous.Deployment) (err error) {
 		if r := recover(); r != nil {
 			sous.Log.Warn.Printf("Panic in RectifySingleDelete with %# v", fd)
 			sous.Log.Warn.Printf("  %v", r)
-			sous.Log.Warn.Print(debug.Stack())
+			sous.Log.Warn.Print(string(debug.Stack()))
 			err = errors.Errorf("Panicked")
 		}
 	}(d)
@@ -136,7 +136,7 @@ func (r *deployer) RectifySingleModification(pair *sous.DeploymentPair) (err err
 		if r := recover(); r != nil {
 			sous.Log.Warn.Printf("Panic in RectifySingleModification with %# v", fp)
 			sous.Log.Warn.Printf("  %v", r)
-			sous.Log.Warn.Print(debug.Stack())
+			sous.Log.Warn.Print(string(debug.Stack()))
 			err = errors.Errorf("Panicked")
 		}
 	}(pair)
