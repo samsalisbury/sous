@@ -39,7 +39,7 @@ func (gsm *GitStateManager) git(cmd ...string) error {
 	//git.Env = []string{"GIT_CONFIG_NOSYSTEM=true", "HOME=none", "XDG_CONFIG_HOME=none"}
 	out, err := git.CombinedOutput()
 	sous.Log.Debug.Printf("%v: exit %s", git.Args, err)
-	sous.Log.Verbose.Print("git: " + out)
+	sous.Log.Vomit.Print("git: " + string(out))
 	return errors.Wrapf(err, strings.Join(git.Args, " ")+": "+string(out))
 }
 
