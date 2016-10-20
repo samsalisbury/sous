@@ -7,7 +7,7 @@ import (
 )
 
 // VersionString is the version of Sous.
-const VersionString = "0.1"
+const VersionString = "0.1.1-beta"
 
 var (
 	// Version is the version of Sous.
