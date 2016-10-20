@@ -77,7 +77,7 @@ func (r *deployer) ImageName(d *sous.Deployment) (string, error) {
 }
 
 func (r *deployer) RectifySingleCreate(d *sous.Deployment) error {
-	Log.Debug.Printf("Rectifing create:  \n %+ v", d)
+	Log.Debug.Printf("Rectifing create:  \n %# v", d)
 	name, err := r.ImageName(d)
 	if err != nil {
 		return err
@@ -110,7 +110,7 @@ func (r *deployer) RectifyModifies(
 }
 
 func (r *deployer) RectifySingleModification(pair *sous.DeploymentPair) error {
-	Log.Debug.Printf("Rectifying modify: \n  %+ v \n    =>  \n  %+ v", pair.Prior, pair.Post)
+	Log.Debug.Printf("Rectifying modify: \n  %# v \n    =>  \n  %# v", pair.Prior, pair.Post)
 	if r.changesReq(pair) {
 		Log.Debug.Printf("Scaling...")
 		if err := r.Client.Scale(

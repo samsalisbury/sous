@@ -43,6 +43,7 @@ func NewDiskStateManager(baseDir string) *DiskStateManager {
 func (dsm *DiskStateManager) ReadState() (*sous.State, error) {
 	// TODO: Allow state dir to be passed as flag in sous/cli.
 	// TODO: Consider returning a error to indicate if the state dir exists at all.
+	sous.Log.Vomit.Printf("Reading state from disk")
 	s := sous.NewState()
 	err := dsm.Codec.Read(dsm.BaseDir, s)
 	if err != nil {
@@ -66,5 +67,6 @@ func (dsm *DiskStateManager) ReadState() (*sous.State, error) {
 
 // WriteState records the entire intended state of the world to a dir.
 func (dsm *DiskStateManager) WriteState(s *sous.State) error {
+	sous.Log.Vomit.Printf("Writing state to disk")
 	return dsm.Codec.Write(dsm.BaseDir, s)
 }

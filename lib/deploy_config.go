@@ -60,15 +60,19 @@ func (dc DeployConfig) Clone() (c DeployConfig) {
 
 // Equal compares Envs
 func (e Env) Equal(o Env) bool {
+	Log.Vomit.Printf("Envs: %+ v ?= %+ v", e, o)
 	if len(e) != len(o) {
+		Log.Vomit.Printf("Envs: %+ v != %+ v (%d != %d)", e, o, len(e), len(o))
 		return false
 	}
 
 	for name, value := range e {
 		if ov, ok := o[name]; !ok || ov != value {
+			Log.Vomit.Printf("Envs: %+ v != %+ v [%q] %q != %q", e, o, name, value, ov)
 			return false
 		}
 	}
+	Log.Vomit.Printf("Envs: %+ v == %+ v !", e, o)
 	return true
 }
 

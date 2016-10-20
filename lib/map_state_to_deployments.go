@@ -69,7 +69,7 @@ func (ds Deployments) Manifests(defs Defs) (Manifests, error) {
 		}
 		spec := DeploySpec{
 			Version:      d.SourceID.Version,
-			DeployConfig: d.DeployConfig,
+			DeployConfig: d.DeployConfig.Clone(),
 		}
 		for k, v := range spec.DeployConfig.Env {
 			clusterVal, ok := d.Cluster.Env[k]

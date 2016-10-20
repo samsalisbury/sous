@@ -189,12 +189,39 @@ var expectedDeployments = NewDeployments(
 	},
 )
 
+func TestState_DeploymentsCloned(t *testing.T) {
+	actualDeployments, err := makeTestState().Deployments()
+	if err != nil {
+		t.Fatal(err)
+	}
+	actualDeployments = actualDeployments.Clone()
+
+	exSnap := expectedDeployments.Snapshot()
+	if len(actualDeployments.Snapshot()) != len(exSnap) {
+		t.Error("deployments different lengths")
+	}
+	for id, expected := range exSnap {
+		actual, ok := actualDeployments.Get(id)
+		if !ok {
+			t.Errorf("missing deployment %q", id)
+			continue
+		}
+		if !actual.Equal(expected) {
+			t.Errorf("\n\ngot:\n%v\n\nwant:\n%v\n", jsonDump(actual), jsonDump(expected))
+		}
+	}
+}
+
 func TestState_Deployments(t *testing.T) {
 	actualDeployments, err := makeTestState().Deployments()
 	if err != nil {
 		t.Fatal(err)
 	}
-	for id, expected := range expectedDeployments.Snapshot() {
+	exSnap := expectedDeployments.Snapshot()
+	if len(actualDeployments.Snapshot()) != len(exSnap) {
+		t.Error("deployments different lengths")
+	}
+	for id, expected := range exSnap {
 		actual, ok := actualDeployments.Get(id)
 		if !ok {
 			t.Errorf("missing deployment %q", id)
