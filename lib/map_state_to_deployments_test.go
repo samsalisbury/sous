@@ -212,6 +212,34 @@ func TestState_DeploymentsCloned(t *testing.T) {
 	}
 }
 
+var TestStateIndependentDeploySpecsState Manifests
+
+func TestState_IndependentDeploySpecs(t *testing.T) {
+	originalDeployments, err := makeTestState().Deployments()
+	if err != nil {
+		t.Fatal(err)
+	}
+	mid := ManifestID{Source: SourceLocation{Repo: "github.com/user/project"}}
+	did := DeployID{ManifestID: mid, Cluster: "cluster-1"}
+	originalDeployment, ok := originalDeployments.Get(did)
+	if !ok {
+		t.Fatalf("deployment %v not found", did)
+	}
+	originalJSON := jsonDump(originalDeployment)
+	// We don't care about this result, but write it to global state to avoid
+	// any compiler optimisation from eliding the call.
+	TestStateIndependentDeploySpecsState, err = originalDeployments.Manifests(makeTestState().Defs)
+	newDeployment, ok := originalDeployments.Get(did)
+	if !ok {
+		t.Fatalf("deployment %v went missing", did)
+	}
+	newJSON := jsonDump(newDeployment)
+
+	if originalJSON != newJSON {
+		t.Fatalf("original deployspec changed:\n\noriginal:\n%s\n\nnow:\n%s", originalJSON, newJSON)
+	}
+}
+
 func TestState_Deployments(t *testing.T) {
 	actualDeployments, err := makeTestState().Deployments()
 	if err != nil {
