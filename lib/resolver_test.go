@@ -16,8 +16,9 @@ func TestGuardImages(t *testing.T) {
 	svOne := MustParseSourceID(`github.com/ot/one,1.3.5`)
 	svTwo := MustParseSourceID(`github.com/ot/two,2.3.5`)
 	dr := NewDummyRegistry()
-	missing := Deployment{ClusterName: `x`, SourceID: svOne}
-	rejected := Deployment{ClusterName: `x`, SourceID: svTwo}
+	config := DeployConfig{NumInstances: 1}
+	missing := Deployment{ClusterName: `x`, SourceID: svOne, DeployConfig: config}
+	rejected := Deployment{ClusterName: `x`, SourceID: svTwo, DeployConfig: config}
 	gdm := MakeDeployments(2)
 	gdm.Add(&missing)
 	gdm.Add(&rejected)
@@ -25,9 +26,25 @@ func TestGuardImages(t *testing.T) {
 	dr.FeedArtifact(nil, fmt.Errorf("dummy error"))
 	dr.FeedArtifact(&BuildArtifact{"ot-docker/one", "docker", []Quality{{"ephemeral_tag", "advisory"}}}, nil)
 
-	err := errors.Cause(guardImages(dr, gdm)).(*ResolveErrors)
+	err, ok := errors.Cause(GuardImages(dr, gdm)).(*ResolveErrors)
+	require.True(ok)
 	assert.Error(err)
 	require.Len(err.Causes, 2)
+}
+
+func TestAllowUndeployedUglies(t *testing.T) {
+	assert := assert.New(t)
+
+	dr := NewDummyRegistry()
+	svOne := MustParseSourceID(`github.com/ot/one,1.3.5`)
+	config := DeployConfig{NumInstances: 0}
+	borken := Deployment{ClusterName: `x`, SourceID: svOne, DeployConfig: config}
+	gdm := MakeDeployments(1)
+	gdm.Add(&borken)
+
+	dr.FeedArtifact(nil, fmt.Errorf("dummy error"))
+
+	assert.NoError(GuardImages(dr, gdm))
 }
 
 func TestAllowsWhitelistedAdvisories(t *testing.T) {
@@ -36,8 +53,9 @@ func TestAllowsWhitelistedAdvisories(t *testing.T) {
 
 	svOne := MustParseSourceID(`github.com/ot/one,1.3.5`)
 	dr := NewDummyRegistry()
-	intoCI := Deployment{ClusterName: `ci`, Cluster: &Cluster{AllowedAdvisories: []string{"ephemeral_tag"}}, SourceID: svOne}
-	intoProd := Deployment{ClusterName: `prod`, Cluster: &Cluster{}, SourceID: svOne}
+	config := DeployConfig{NumInstances: 1}
+	intoCI := Deployment{ClusterName: `ci`, Cluster: &Cluster{AllowedAdvisories: []string{"ephemeral_tag"}}, SourceID: svOne, DeployConfig: config}
+	intoProd := Deployment{ClusterName: `prod`, Cluster: &Cluster{}, SourceID: svOne, DeployConfig: config}
 	gdm := MakeDeployments(2)
 	gdm.Add(&intoCI)
 	gdm.Add(&intoProd)
@@ -45,7 +63,8 @@ func TestAllowsWhitelistedAdvisories(t *testing.T) {
 	dr.FeedArtifact(&BuildArtifact{"ot-docker/one", "docker", []Quality{{"ephemeral_tag", "advisory"}}}, nil)
 	dr.FeedArtifact(&BuildArtifact{"ot-docker/one", "docker", []Quality{{"ephemeral_tag", "advisory"}}}, nil)
 
-	err := errors.Cause(guardImages(dr, gdm)).(*ResolveErrors)
+	err, ok := errors.Cause(GuardImages(dr, gdm)).(*ResolveErrors)
+	require.True(ok)
 	assert.Error(err)
 	require.Len(err.Causes, 1)
 	require.IsType(&UnacceptableAdvisory{}, err.Causes[0])
