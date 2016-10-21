@@ -244,9 +244,13 @@ func TestResolve(t *testing.T) {
 		}
 	}
 
+	// We no longer expect any deletions; See deployer.RectifySingleDelete.
+	//expectedInstances := 0
+	expectedInstances := 1
+
 	which = findRepo(ds, repoOne)
 	if which != none {
-		assert.Equal(0, deps[which].NumInstances)
+		assert.Equal(expectedInstances, deps[which].NumInstances)
 	}
 
 }
