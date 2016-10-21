@@ -56,7 +56,7 @@ func (r *Resolver) Resolve(intended Deployments, clusters Clusters) error {
 		func() (e error) { ads, e = r.Deployer.RunningDeployments(clusters); return },
 		func() (e error) { intended = intended.Filter(r.Filter); return nil },
 		func() (e error) { ads = ads.Filter(r.Filter); return nil },
-		func() (e error) { return guardImages(r.Registry, intended) },
+		func() (e error) { return GuardImages(r.Registry, intended) },
 		func() (e error) { diffs = ads.Diff(intended); return nil },
 		func() (e error) { errs = r.rectify(diffs); return nil },
 		func() (e error) { return foldErrors(errs) },
@@ -76,11 +76,14 @@ func foldErrors(errs chan RectificationError) error {
 	return nil
 }
 
-func guardImages(r Registry, gdm Deployments) error {
+func GuardImages(r Registry, gdm Deployments) error {
 	Log.Debug.Print("Collected. Checking readiness to deploy...")
 	g := gdm.Snapshot()
 	es := make([]error, 0, len(g))
 	for _, d := range g {
+		if d.NumInstances == 0 { // we're not deploying any of these, so it can be wrong for the moment
+			continue
+		}
 		art, err := r.GetArtifact(d.SourceID)
 		if err != nil {
 			es = append(es, &MissingImageNameError{err})
