@@ -78,16 +78,18 @@ func (r *deployer) ImageName(d *sous.Deployment) (string, error) {
 	return a.Name, err
 }
 
+func rectifyRecover(d interface{}, f string, err *error) {
+	if r := recover(); r != nil {
+		sous.Log.Warn.Printf("Panic in %s with %# v", f, d)
+		sous.Log.Warn.Printf("  %v", r)
+		sous.Log.Warn.Print(string(debug.Stack()))
+		*err = errors.Errorf("Panicked")
+	}
+}
+
 func (r *deployer) RectifySingleCreate(d *sous.Deployment) (err error) {
 	Log.Debug.Printf("Rectifing create:  \n %# v", d)
-	defer func(fd *sous.Deployment) {
-		if r := recover(); r != nil {
-			sous.Log.Warn.Printf("Panic in RectifySingleCreate with %# v", fd)
-			sous.Log.Warn.Printf("  %v", r)
-			sous.Log.Warn.Print(string(debug.Stack()))
-			err = errors.Errorf("Panicked")
-		}
-	}(d)
+	defer rectifyRecover(d, "RectifySingleCreate", &err)
 	name, err := r.ImageName(d)
 	if err != nil {
 		return err
@@ -110,14 +112,7 @@ func (r *deployer) RectifyDeletes(dc <-chan *sous.Deployment, errs chan<- sous.R
 }
 
 func (r *deployer) RectifySingleDelete(d *sous.Deployment) (err error) {
-	defer func(fd *sous.Deployment) {
-		if r := recover(); r != nil {
-			sous.Log.Warn.Printf("Panic in RectifySingleDelete with %# v", fd)
-			sous.Log.Warn.Printf("  %v", r)
-			sous.Log.Warn.Print(string(debug.Stack()))
-			err = errors.Errorf("Panicked")
-		}
-	}(d)
+	defer rectifyRecover(d, "RectifySingleDelete", &err)
 	return r.Client.DeleteRequest(d.Cluster.BaseURL, computeRequestID(d), "deleting request for removed manifest")
 }
 
@@ -132,14 +127,7 @@ func (r *deployer) RectifyModifies(
 
 func (r *deployer) RectifySingleModification(pair *sous.DeploymentPair) (err error) {
 	Log.Debug.Printf("Rectifying modify: \n  %# v \n    =>  \n  %# v", pair.Prior, pair.Post)
-	defer func(fp *sous.DeploymentPair) {
-		if r := recover(); r != nil {
-			sous.Log.Warn.Printf("Panic in RectifySingleModification with %# v", fp)
-			sous.Log.Warn.Printf("  %v", r)
-			sous.Log.Warn.Print(string(debug.Stack()))
-			err = errors.Errorf("Panicked")
-		}
-	}(pair)
+	defer rectifyRecover(pair, "RectifySingleModification", &err)
 	if r.changesReq(pair) {
 		Log.Debug.Printf("Scaling...")
 		if err := r.Client.Scale(
