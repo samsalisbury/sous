@@ -113,7 +113,13 @@ func (r *deployer) RectifyDeletes(dc <-chan *sous.Deployment, errs chan<- sous.R
 
 func (r *deployer) RectifySingleDelete(d *sous.Deployment) (err error) {
 	defer rectifyRecover(d, "RectifySingleDelete", &err)
-	return r.Client.DeleteRequest(d.Cluster.BaseURL, computeRequestID(d), "deleting request for removed manifest")
+	requestID := computeRequestID(d)
+	// TODO: Alert the owner of this request that there is no manifest for it;
+	// they should either delete the request manually, or else add the manifest back.
+	sous.Log.Warn.Printf("NOT DELETING REQUEST %q (FOR: %q)", requestID, d.ID())
+	return nil
+	// The following line deletes requests when it is not commented out.
+	//return r.Client.DeleteRequest(d.Cluster.BaseURL, requestID, "deleting request for removed manifest")
 }
 
 func (r *deployer) RectifyModifies(
