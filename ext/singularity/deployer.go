@@ -2,10 +2,12 @@ package singularity
 
 import (
 	"fmt"
+	"runtime/debug"
 	"strings"
 
 	"github.com/opentable/go-singularity"
 	"github.com/opentable/sous/lib"
+	"github.com/pkg/errors"
 	"github.com/satori/go.uuid"
 )
 
@@ -76,14 +78,24 @@ func (r *deployer) ImageName(d *sous.Deployment) (string, error) {
 	return a.Name, err
 }
 
-func (r *deployer) RectifySingleCreate(d *sous.Deployment) error {
+func rectifyRecover(d interface{}, f string, err *error) {
+	if r := recover(); r != nil {
+		sous.Log.Warn.Printf("Panic in %s with %# v", f, d)
+		sous.Log.Warn.Printf("  %v", r)
+		sous.Log.Warn.Print(string(debug.Stack()))
+		*err = errors.Errorf("Panicked")
+	}
+}
+
+func (r *deployer) RectifySingleCreate(d *sous.Deployment) (err error) {
 	Log.Debug.Printf("Rectifing create:  \n %# v", d)
+	defer rectifyRecover(d, "RectifySingleCreate", &err)
 	name, err := r.ImageName(d)
 	if err != nil {
 		return err
 	}
 	reqID := computeRequestID(d)
-	if err := r.Client.PostRequest(d.Cluster.BaseURL, reqID, d.NumInstances); err != nil {
+	if err = r.Client.PostRequest(d.Cluster.BaseURL, reqID, d.NumInstances); err != nil {
 		return err
 	}
 	return r.Client.Deploy(
@@ -93,11 +105,15 @@ func (r *deployer) RectifySingleCreate(d *sous.Deployment) error {
 
 func (r *deployer) RectifyDeletes(dc <-chan *sous.Deployment, errs chan<- sous.RectificationError) {
 	for d := range dc {
-		if err := r.Client.DeleteRequest(d.Cluster.BaseURL, computeRequestID(d),
-			"deleting request for removed manifest"); err != nil {
+		if err := r.RectifySingleDelete(d); err != nil {
 			errs <- &sous.DeleteError{Deployment: d, Err: err}
 		}
 	}
+}
+
+func (r *deployer) RectifySingleDelete(d *sous.Deployment) (err error) {
+	defer rectifyRecover(d, "RectifySingleDelete", &err)
+	return r.Client.DeleteRequest(d.Cluster.BaseURL, computeRequestID(d), "deleting request for removed manifest")
 }
 
 func (r *deployer) RectifyModifies(
@@ -109,8 +125,9 @@ func (r *deployer) RectifyModifies(
 	}
 }
 
-func (r *deployer) RectifySingleModification(pair *sous.DeploymentPair) error {
+func (r *deployer) RectifySingleModification(pair *sous.DeploymentPair) (err error) {
 	Log.Debug.Printf("Rectifying modify: \n  %# v \n    =>  \n  %# v", pair.Prior, pair.Post)
+	defer rectifyRecover(pair, "RectifySingleModification", &err)
 	if r.changesReq(pair) {
 		Log.Debug.Printf("Scaling...")
 		if err := r.Client.Scale(

@@ -74,3 +74,19 @@ func TestMakeRequestID(t *testing.T) {
 		}
 	}
 }
+
+func TestRectifyRecover(t *testing.T) {
+	var err error
+	expected := "Panicked"
+	func() {
+		defer rectifyRecover("something", "TestRectifyRecover", &err)
+		panic("What's that coming over the hill?!")
+	}()
+	if err == nil {
+		t.Fatalf("got nil, want error %q", expected)
+	}
+	actual := err.Error()
+	if actual != expected {
+		t.Errorf("got error %q; want %q", actual, expected)
+	}
+}
