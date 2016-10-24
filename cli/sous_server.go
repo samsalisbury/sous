@@ -16,7 +16,7 @@ import (
 
 // A SousServer represents the `sous server` command.
 type SousServer struct {
-	Sous Sous
+	Sous *Sous
 	*config.Verbosity
 	*sous.AutoResolver
 	Config graph.LocalSousConfig

@@ -89,6 +89,7 @@ func (sc *deployer) RunningDeployments(clusters sous.Clusters) (deps sous.Deploy
 			depWait.Done()
 		case err, cont = <-errCh:
 			if !cont {
+				Log.Debug.Printf("Errors channel closed. Finishing up.")
 				return
 			}
 			if isMalformed(err) {
@@ -97,7 +98,7 @@ func (sc *deployer) RunningDeployments(clusters sous.Clusters) (deps sous.Deploy
 			} else {
 				retried := retries.maybe(err, reqCh)
 				if !retried {
-					Log.Notice.Print("Cannot retry: ", err)
+					Log.Notice.Printf("Cannot retry: %v. Exiting", err)
 					return
 				}
 			}
@@ -144,7 +145,7 @@ func dontrecover() error {
 
 func catchAndSend(from string, errs chan error) {
 	defer catchAll(from)
-	if err := dontrecover(); err != nil {
+	if err := recover(); err != nil {
 		Log.Debug.Printf("from = %s err = %+v\n", from, err)
 		Log.Debug.Printf("debug.Stack() = %+v\n", string(debug.Stack()))
 		switch err := err.(type) {
