@@ -3,11 +3,8 @@ package cli
 import (
 	"flag"
 	"fmt"
-	"log"
-	"os"
 
 	"github.com/opentable/sous/config"
-	"github.com/opentable/sous/ext/singularity"
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
@@ -23,10 +20,11 @@ type SousRectify struct {
 	GDM          graph.CurrentGDM
 	SourceFlags  config.DeployFilterFlags
 	Engine       sous.SourceHostChooser
-	flags        struct {
-		dryrun,
+	sous.Resolver
+	flags struct {
+		dryrun                string
 		repo, offset, cluster string
-		all bool
+		all                   bool
 	}
 }
 
@@ -65,42 +63,22 @@ func (sr *SousRectify) AddFlags(fs *flag.FlagSet) {
 			"values are none,scheduler,registry,both")
 }
 
+// RegisterOn adds the DeploymentConfig to the psyringe to configure the
+// labeller and registrar.
+func (sr *SousRectify) RegisterOn(psy Addable) {
+	psy.Add(graph.DryrunOption(sr.flags.dryrun))
+	psy.Add(&sr.SourceFlags)
+}
+
 // Execute fulfils the cmdr.Executor interface
 func (sr *SousRectify) Execute(args []string) cmdr.Result {
-
-	r, err := sr.buildResolver()
-	if err != nil {
-		return EnsureErrorResult(err)
+	if !sr.SourceFlags.All && sr.ResolveFilter.All() {
+		return EnsureErrorResult(fmt.Errorf("Cowardly refusing rectify with neither contraint nor `-all`! (see `sous help rectify`)"))
 	}
-	if err := r.Resolve(sr.GDM.Clone(), sr.State.Defs.Clusters); err != nil {
+
+	if err := sr.Resolve(sr.GDM.Clone(), sr.State.Defs.Clusters); err != nil {
 		return EnsureErrorResult(err)
 	}
 
 	return Success()
-}
-
-func (sr *SousRectify) buildResolver() (*sous.Resolver, error) {
-	sr.resolveDryRunFlag(sr.flags.dryrun)
-
-	predicate, err := sr.SourceFlags.BuildPredicate(sr.Engine.ParseSourceLocation)
-	if err != nil {
-		return nil, err
-	}
-
-	if predicate == nil {
-		return nil, fmt.Errorf("Cowardly refusing rectify with neither contraint nor `-all`! (see `sous help rectify`)")
-	}
-
-	return sous.NewResolver(sr.Deployer, sr.Registry, predicate), nil
-}
-
-func (sr *SousRectify) resolveDryRunFlag(dryrun string) {
-	if dryrun == "both" || dryrun == "registry" {
-		sr.Registry = sous.NewDummyRegistry()
-	}
-	if dryrun == "both" || dryrun == "scheduler" {
-		drc := sous.NewDummyRectificationClient(sr.Registry)
-		drc.SetLogger(log.New(os.Stdout, "rectify: ", 0))
-		sr.Deployer = singularity.NewDeployer(sr.Registry, drc)
-	}
 }

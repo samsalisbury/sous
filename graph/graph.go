@@ -87,6 +87,15 @@ type (
 	// TargetManifestID is the manifest ID being targeted, after resolving all
 	// context and flags.
 	TargetManifestID sous.ManifestID
+	// Dryrun option
+	DryrunOption string
+)
+
+const (
+	DryrunBoth      = DryrunOption("both")
+	DryrunRegistry  = DryrunOption("registry")
+	DryrunScheduler = DryrunOption("scheduler")
+	DryrunNeither   = DryrunOption("none")
 )
 
 // BuildGraph builds the dependency injection graph, used to populate commands
@@ -198,15 +207,23 @@ func AddInternals(graph adder) {
 		newDetectedOTPLConfig,
 		newUserSelectedOTPLDeploySpecs,
 		newTargetManifestID,
+		newResolveFilter,
+		newResolver,
 		newAutoResolver,
 		newInserter,
 	)
 }
 
-func newAutoResolver(d sous.Deployer, r sous.Registry, sr LocalStateReader, ls *sous.LogSet) *sous.AutoResolver {
-	rez := sous.NewResolver(d, r)
-	ar := sous.NewAutoResolver(rez, sr, ls)
-	return ar
+func newResolveFilter(sf *config.DeployFilterFlags, shc sous.SourceHostChooser) (*sous.ResolveFilter, error) {
+	return sf.BuildFilter(shc.ParseSourceLocation)
+}
+
+func newResolver(filter *sous.ResolveFilter, d sous.Deployer, r sous.Registry) *sous.Resolver {
+	return sous.NewResolver(d, r, filter)
+}
+
+func newAutoResolver(rez *sous.Resolver, sr LocalStateReader, ls *sous.LogSet) *sous.AutoResolver {
+	return sous.NewAutoResolver(rez, sr, ls)
 }
 
 func newSourceHostChooser() sous.SourceHostChooser {
@@ -370,12 +387,20 @@ func newRegistrar(db *docker.Builder) sous.Registrar {
 	return db
 }
 
-func newRegistry(cfg LocalSousConfig, cl LocalDockerClient) (sous.Registry, error) {
+func newRegistry(dryrun DryrunOption, cfg LocalSousConfig, cl LocalDockerClient) (sous.Registry, error) {
+	if dryrun == DryrunBoth || dryrun == DryrunRegistry {
+		return sous.NewDummyRegistry(), nil
+	}
 	return makeDockerRegistry(cfg, cl)
 }
 
-func newDeployer(r sous.Registry) sous.Deployer {
+func newDeployer(dryrun DryrunOption, r sous.Registry) sous.Deployer {
 	// Eventually, based on configuration, we may make different decisions here.
+	if dryrun == DryrunBoth || dryrun == DryrunScheduler {
+		drc := sous.NewDummyRectificationClient(r)
+		drc.SetLogger(log.New(os.Stdout, "rectify: ", 0))
+		return singularity.NewDeployer(r, drc)
+	}
 	return singularity.NewDeployer(r, singularity.NewRectiAgent(r))
 }
 

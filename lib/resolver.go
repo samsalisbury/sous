@@ -1,6 +1,7 @@
 package sous
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/opentable/sous/util/firsterr"
@@ -13,20 +14,81 @@ type (
 	Resolver struct {
 		Deployer Deployer
 		Registry Registry
-		Filter   DeploymentPredicate
+		*ResolveFilter
 	}
+
+	// A ResolveFilter filters Deployments and Clusters for the purpose of Resolve.resolve()
+	ResolveFilter struct {
+		Repo     string
+		Offset   string
+		Tag      string
+		Revision string
+		Flavor   string
+		Cluster  string
+	}
+
+	// DeploymentPredicate takes a *Deployment and returns true if the
+	// deployment matches the predicate. Used by Filter to select a subset of a
+	// Deployments.
+	DeploymentPredicate func(*Deployment) bool
 )
 
-// NewResolver creates a new Resolver.
-func NewResolver(d Deployer, r Registry, fv ...DeploymentPredicate) *Resolver {
-	var f DeploymentPredicate
-	if len(fv) > 0 {
-		f = fv[0]
+// All returns true if the ResolveFilter would allow all deployments
+func (rf *ResolveFilter) All() bool {
+	return rf.Repo == "" &&
+		rf.Offset == "" &&
+		rf.Tag == "" &&
+		rf.Revision == "" &&
+		rf.Flavor == "" &&
+		rf.Cluster == ""
+}
+
+func (rf *ResolveFilter) String() string {
+	return fmt.Sprintf("cluster: %q flavor: %q repo: %q offset: %q tag: %q revision %q",
+		rf.Cluster, rf.Flavor, rf.Repo, rf.Offset, rf.Tag, rf.Revision)
+}
+
+// FilteredClusters returns a new Clusters relevant to the Deployments that this ResolveFilter would permit
+func (rf *ResolveFilter) FilteredClusters(c Clusters) Clusters {
+	newC := make(Clusters)
+	for n, c := range c {
+		if rf.Cluster != "" && n != rf.Cluster {
+			continue
+		}
+		newC[n] = c // c is a *Cluster, so be aware they need to not be changed
 	}
+	return newC
+}
+
+// FilterDeployment behaves as a DeploymentPredicate, filtering Deployments if they match its criteria
+func (rf *ResolveFilter) FilterDeployment(d *Deployment) bool {
+	if rf.Repo != "" && d.SourceID.Location.Repo != rf.Repo {
+		return false
+	}
+	if rf.Offset != "" && d.SourceID.Location.Dir != rf.Offset {
+		return false
+	}
+	if rf.Tag != "" && d.SourceID.Version.String() != rf.Tag {
+		return false
+	}
+	if rf.Revision != "" && d.SourceID.RevID() != rf.Revision {
+		return false
+	}
+	if rf.Flavor != "" && d.Flavor != rf.Flavor {
+		return false
+	}
+	if rf.Cluster != "" && d.ClusterName != rf.Cluster {
+		return false
+	}
+	return true
+}
+
+// NewResolver creates a new Resolver.
+func NewResolver(d Deployer, r Registry, rf *ResolveFilter) *Resolver {
 	return &Resolver{
-		Deployer: d,
-		Registry: r,
-		Filter:   f,
+		Deployer:      d,
+		Registry:      r,
+		ResolveFilter: rf,
 	}
 }
 
@@ -53,12 +115,13 @@ func (r *Resolver) Resolve(intended Deployments, clusters Clusters) error {
 	var diffs DiffChans
 	var errs chan RectificationError
 	return firsterr.Returned(
+		func() (e error) { clusters = r.FilteredClusters(clusters); return },
 		func() (e error) { ads, e = r.Deployer.RunningDeployments(clusters); return },
-		func() (e error) { intended = intended.Filter(r.Filter); return nil },
-		func() (e error) { ads = ads.Filter(r.Filter); return nil },
+		func() (e error) { intended = intended.Filter(r.FilterDeployment); return },
+		func() (e error) { ads = ads.Filter(r.FilterDeployment); return },
 		func() (e error) { return GuardImages(r.Registry, intended) },
-		func() (e error) { diffs = ads.Diff(intended); return nil },
-		func() (e error) { errs = r.rectify(diffs); return nil },
+		func() (e error) { diffs = ads.Diff(intended); return },
+		func() (e error) { errs = r.rectify(diffs); return },
 		func() (e error) { return foldErrors(errs) },
 	)
 }

@@ -41,7 +41,10 @@ func TestPredicateBuilder(t *testing.T) {
 	//	}
 	//
 	f := config.DeployFilterFlags{}
-	assert.Nil(f.BuildPredicate(parseSL))
+
+	rf, err := f.BuildFilter(parseSL)
+	assert.NoError(err)
+	assert.True(rf.All())
 
 	f.Repo = string(rs[0])
 	pd, err := f.BuildPredicate(parseSL)

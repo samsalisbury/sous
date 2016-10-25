@@ -52,11 +52,6 @@ type (
 		RequestID string
 	}
 
-	// DeploymentPredicate takes a *Deployment and returns true if the
-	// deployment matches the predicate. Used by Filter to select a subset of a
-	// Deployments.
-	DeploymentPredicate func(*Deployment) bool
-
 	// A DeployID identifies a deployment.
 	DeployID struct {
 		ManifestID ManifestID

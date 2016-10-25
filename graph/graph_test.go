@@ -16,6 +16,7 @@ import (
 func TestBuildGraph(t *testing.T) {
 	log.SetFlags(log.Flags() | log.Lshortfile)
 	g := BuildGraph(ioutil.Discard, ioutil.Discard)
+	g.Add(DryrunBoth)
 	g.Add(&config.Verbosity{})
 	g.Add(&config.DeployFilterFlags{})
 	g.Add(&config.PolicyFlags{}) //provided by SousBuild

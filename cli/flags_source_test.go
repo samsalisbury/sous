@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/opentable/sous/config"
@@ -30,34 +31,34 @@ var buildPredicateErrorTests = []struct {
 			Source: "hello",
 			All:    true,
 		},
-		Error: "you cannot specify both -source and -all",
+		Error: "You cannot specify both -all and filtering options",
 	},
 	{
 		Flags: config.DeployFilterFlags{
 			All:  true,
 			Repo: "hello",
 		},
-		Error: "you cannot specify both -all and -repo",
+		Error: "You cannot specify both -all and filtering options",
 	},
 	{
 		Flags: config.DeployFilterFlags{
 			All:    true,
 			Offset: "hello",
 		},
-		Error: "you cannot specify both -all and -offset",
+		Error: "You cannot specify both -all and filtering options",
 	},
 	{
 		Flags: config.DeployFilterFlags{
 			All:    true,
 			Flavor: "hello",
 		},
-		Error: "you cannot specify both -all and -flavor",
+		Error: "You cannot specify both -all and filtering options",
 	},
 }
 
 func TestBuildPredicate_errors(t *testing.T) {
 	parseSL := func(s string) (sous.SourceLocation, error) {
-		return sous.SourceLocation{}, nil
+		return sous.SourceLocation{Repo: "github.com/somewhere"}, nil
 	}
 	for _, test := range buildPredicateErrorTests {
 		input := test.Flags
@@ -71,7 +72,7 @@ func TestBuildPredicate_errors(t *testing.T) {
 			continue
 		}
 		actual := actualErr.Error()
-		if actual != expected {
+		if !strings.Contains(actual, expected) {
 			t.Errorf("%#v got error %q; want %q", input, actual, expected)
 		}
 	}
