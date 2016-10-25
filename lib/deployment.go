@@ -154,3 +154,38 @@ func (d *Deployment) Equal(o *Deployment) bool {
 	}
 	return d.DeployConfig.Equal(o.DeployConfig)
 }
+
+// Diff returns the differences between this deployment and another.
+func (d *Deployment) Diff(o *Deployment) (bool, []string) {
+	if d.ID() != o.ID() {
+		panic(fmt.Sprintf("attempt to compare deployment %q with %q", d.ID(), o.ID()))
+	}
+	//Log.Vomit.Printf("Comparing: %+ v ?= %+ v", d, o)
+	Log.Debug.Printf("Comparing two versions of deployment %q", d.ID())
+	var diffs []string
+	diff := func(format string, a ...interface{}) { diffs = append(diffs, fmt.Sprintf(format, a...)) }
+	if d.ClusterName != o.ClusterName {
+		diff("cluster name; this: %q; other: %q", d.ClusterName, o.ClusterName)
+	}
+	if !d.SourceID.Equal(o.SourceID) {
+		diff("source id; this: %q; other: %q", d.SourceID, o.SourceID)
+	}
+	if d.Flavor != o.Flavor {
+		diff("flavor; this: %q; other: %q", d.Flavor, o.Flavor)
+	}
+	if d.Kind != o.Kind {
+		diff("kind; this: %q; other: %q", d.Kind, o.Kind)
+	}
+	if len(d.Owners) != len(o.Owners) {
+		diff("number of owners; this: %+v; other: %+v", len(d.Owners), len(o.Owners))
+	}
+
+	for owner := range d.Owners {
+		if _, has := o.Owners[owner]; !has {
+			diff("owner %s", owner)
+		}
+	}
+	_, configDiffs := d.DeployConfig.Diff(o.DeployConfig)
+	diffs = append(diffs, configDiffs...)
+	return len(diffs) != 0, diffs
+}

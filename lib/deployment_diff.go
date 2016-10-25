@@ -124,9 +124,11 @@ func (d *differ) diff(existing Deployments) {
 		name := e[i].Name()
 		if indep, ok := d.from[name]; ok {
 			delete(d.from, name)
-			if indep.Equal(e[i]) {
+			different, differences := indep.Diff(e[i])
+			if !different {
 				d.Retained <- indep
 			} else {
+				Log.Debug.Printf("differences detected for %q: %#v", indep.ID(), differences)
 				d.Modified <- &DeploymentPair{name, indep, e[i]}
 			}
 		} else {

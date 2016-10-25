@@ -44,6 +44,24 @@ func (dc *DeployConfig) Equal(o DeployConfig) bool {
 		dc.Volumes.Equal(o.Volumes))
 }
 
+// Diff returns a list of differences between this and the other DeployConfig.
+func (dc *DeployConfig) Diff(o DeployConfig) (bool, []string) {
+	var diffs []string
+	if dc.NumInstances != o.NumInstances {
+		diffs = append(diffs, fmt.Sprintf("number of instances; this: %d; other: %d", dc.NumInstances, o.NumInstances))
+	}
+	if !dc.Env.Equal(o.Env) {
+		diffs = append(diffs, fmt.Sprintf("env; this: %v; other: %v", dc.Env, o.Env))
+	}
+	if !dc.Resources.Equal(o.Resources) {
+		diffs = append(diffs, fmt.Sprintf("resources; this: %v; other: %v", dc.Resources, o.Resources))
+	}
+	if !dc.Volumes.Equal(o.Volumes) {
+		diffs = append(diffs, fmt.Sprintf("volumes; this: %v; other: %v", dc.Volumes, o.Volumes))
+	}
+	return len(diffs) == 0, diffs
+}
+
 func (dc DeployConfig) Clone() (c DeployConfig) {
 	c.NumInstances = dc.NumInstances
 	c.Args = make([]string, len(dc.Args))
