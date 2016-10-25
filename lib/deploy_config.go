@@ -38,7 +38,10 @@ func (dc *DeployConfig) String() string {
 // Equal is used to compare DeployConfigs
 func (dc *DeployConfig) Equal(o DeployConfig) bool {
 	Log.Vomit.Printf("%+ v ?= %+ v", dc, o)
-	return (dc.NumInstances == o.NumInstances && dc.Env.Equal(o.Env) && dc.Resources.Equal(o.Resources) && dc.Volumes.Equal(o.Volumes))
+	return (dc.NumInstances == o.NumInstances &&
+		dc.Env.Equal(o.Env) &&
+		dc.Resources.Equal(o.Resources) &&
+		dc.Volumes.Equal(o.Volumes))
 }
 
 func (dc DeployConfig) Clone() (c DeployConfig) {

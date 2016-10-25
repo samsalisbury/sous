@@ -38,6 +38,11 @@ func newDiffSet() diffSet {
 	}
 }
 
+// ID returns the DeployID of this deployment pair.
+func (dp *DeploymentPair) ID() DeployID {
+	return dp.name
+}
+
 func (d *DiffChans) collect() diffSet {
 	ds := newDiffSet()
 
