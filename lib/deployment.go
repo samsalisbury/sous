@@ -141,18 +141,8 @@ func (d *Deployment) Name() DeployID {
 
 // Equal returns true if two Deployments are equal.
 func (d *Deployment) Equal(o *Deployment) bool {
-	Log.Vomit.Printf("Comparing: %+ v ?= %+ v", d, o)
-	if d.ClusterName != o.ClusterName || !d.SourceID.Equal(o.SourceID) || d.Flavor != o.Flavor || d.Kind != o.Kind {
-		Log.Debug.Printf("C: %t V: %t, K: %t, #O: %t", d.ClusterName == o.ClusterName, d.SourceID.Equal(o.SourceID), d.Kind == o.Kind, len(d.Owners) == len(o.Owners))
-		return false
-	}
-
-	for ownr := range d.Owners {
-		if _, has := o.Owners[ownr]; !has {
-			return false
-		}
-	}
-	return d.DeployConfig.Equal(o.DeployConfig)
+	diff, _ := d.Diff(o)
+	return !diff
 }
 
 // Diff returns the differences between this deployment and another.
@@ -160,7 +150,6 @@ func (d *Deployment) Diff(o *Deployment) (bool, []string) {
 	if d.ID() != o.ID() {
 		panic(fmt.Sprintf("attempt to compare deployment %q with %q", d.ID(), o.ID()))
 	}
-	//Log.Vomit.Printf("Comparing: %+ v ?= %+ v", d, o)
 	Log.Debug.Printf("Comparing two versions of deployment %q", d.ID())
 	var diffs []string
 	diff := func(format string, a ...interface{}) { diffs = append(diffs, fmt.Sprintf(format, a...)) }
