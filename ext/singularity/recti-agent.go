@@ -74,6 +74,10 @@ func buildDeployRequest(dockerImage string, e sous.Env, r sous.Resources, reqID 
 
 	vs := dtos.SingularityVolumeList{}
 	for _, v := range vols {
+		if v == nil {
+			Log.Warn.Printf("nil volume")
+			continue
+		}
 		sv, err := swaggering.LoadMap(&dtos.SingularityVolume{}, dtoMap{
 			"ContainerPath": v.Container,
 			"HostPath":      v.Host,
