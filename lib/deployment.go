@@ -163,15 +163,18 @@ func (d *Deployment) Diff(o *Deployment) (bool, []string) {
 		diff("flavor; this: %q; other: %q", d.Flavor, o.Flavor)
 	}
 	if d.Kind != o.Kind {
-		diff("kind; this: %q; other: %q", d.Kind, o.Kind)
+		// TODO: Make sure Kind is persisted in the manifests (currently it is empty in all).
+		//diff("kind; this: %q; other: %q", d.Kind, o.Kind)
 	}
 	if len(d.Owners) != len(o.Owners) {
-		diff("number of owners; this: %+v; other: %+v", len(d.Owners), len(o.Owners))
+		// TODO: Make sure owners get written to Singularity, then uncomment next line.
+		//diff("number of owners; this: %+v; other: %+v", len(d.Owners), len(o.Owners))
 	}
 
 	for owner := range d.Owners {
 		if _, has := o.Owners[owner]; !has {
-			diff("owner %s", owner)
+			// TODO: Make sure owners get written to Singularity, then uncomment next line.
+			//diff("owner %s", owner)
 		}
 	}
 	_, configDiffs := d.DeployConfig.Diff(o.DeployConfig)
