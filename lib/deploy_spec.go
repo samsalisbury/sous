@@ -32,5 +32,5 @@ type (
 
 // Equal returns true if other equals spec.
 func (spec DeploySpec) Equal(other DeploySpec) bool {
-	return spec.Version == other.Version && spec.DeployConfig.Equal(other.DeployConfig)
+	return spec.Version.Equals(other.Version) && spec.DeployConfig.Equal(other.DeployConfig)
 }
