@@ -88,7 +88,7 @@ func rectifyRecover(d interface{}, f string, err *error) {
 }
 
 func (r *deployer) RectifySingleCreate(d *sous.Deployment) (err error) {
-	Log.Debug.Printf("Rectifing create:  \n %# v", d)
+	Log.Debug.Printf("Rectifing creation %q:  \n %# v", d.ID(), d)
 	defer rectifyRecover(d, "RectifySingleCreate", &err)
 	name, err := r.ImageName(d)
 	if err != nil {
@@ -132,7 +132,7 @@ func (r *deployer) RectifyModifies(
 }
 
 func (r *deployer) RectifySingleModification(pair *sous.DeploymentPair) (err error) {
-	Log.Debug.Printf("Rectifying modify: \n  %# v \n    =>  \n  %# v", pair.Prior, pair.Post)
+	Log.Debug.Printf("Rectifying modified %q: \n  %# v \n    =>  \n  %# v", pair.ID(), pair.Prior, pair.Post)
 	defer rectifyRecover(pair, "RectifySingleModification", &err)
 	if r.changesReq(pair) {
 		Log.Debug.Printf("Scaling...")

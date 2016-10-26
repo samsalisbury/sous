@@ -75,6 +75,12 @@ func (sid SourceID) RevID() string {
 
 // Equal tests the equality between this SourceID and another.
 func (sid SourceID) Equal(o SourceID) bool {
+	if !sid.Version.Equals(o.Version) {
+		return false
+	}
+	// Equalise the versions so we can do a simple equality test.
+	// This is safe because sid and o are values not pointers.
+	sid.Version = o.Version
 	return sid == o
 }
 

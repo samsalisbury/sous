@@ -36,7 +36,7 @@ type (
 	retryCounter map[string]uint
 )
 
-// GetRunningDeployment collects data from the Singularity clusters and
+// RunningDeployments collects data from the Singularity clusters and
 // returns a list of actual deployments
 func (sc *deployer) RunningDeployments(clusters sous.Clusters) (deps sous.Deployments, err error) {
 	retries := make(retryCounter)
@@ -72,9 +72,9 @@ func (sc *deployer) RunningDeployments(clusters sous.Clusters) (deps sous.Deploy
 	go func() {
 		catchAndSend("closing up", errCh)
 		singWait.Wait()
-		Log.Vomit.Println("All singularities polled for requests")
+		Log.Debug.Println("All singularities polled for requests")
 		depWait.Wait()
-		Log.Vomit.Println("All deploys processed")
+		Log.Debug.Println("All deploys processed")
 
 		close(reqCh)
 		close(errCh)

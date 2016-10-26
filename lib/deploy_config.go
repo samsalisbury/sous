@@ -38,7 +38,37 @@ func (dc *DeployConfig) String() string {
 // Equal is used to compare DeployConfigs
 func (dc *DeployConfig) Equal(o DeployConfig) bool {
 	Log.Vomit.Printf("%+ v ?= %+ v", dc, o)
-	return (dc.NumInstances == o.NumInstances && dc.Env.Equal(o.Env) && dc.Resources.Equal(o.Resources) && dc.Volumes.Equal(o.Volumes))
+	diff, _ := dc.Diff(o)
+	return !diff
+}
+
+// Diff returns a list of differences between this and the other DeployConfig.
+func (dc *DeployConfig) Diff(o DeployConfig) (bool, []string) {
+	var diffs []string
+	if dc.NumInstances != o.NumInstances {
+		diffs = append(diffs, fmt.Sprintf("number of instances; this: %d; other: %d", dc.NumInstances, o.NumInstances))
+	}
+	// Only compare contents if length of either > 0.
+	// This makes nil equal to zero-length map.
+	if len(dc.Env) != 0 || len(o.Env) != 0 {
+		if !dc.Env.Equal(o.Env) {
+			diffs = append(diffs, fmt.Sprintf("env; this: %v; other: %v", dc.Env, o.Env))
+		}
+	}
+	// Only compare contents if length of either > 0.
+	if len(dc.Resources) != 0 || len(o.Resources) != 0 {
+		if !dc.Resources.Equal(o.Resources) {
+			diffs = append(diffs, fmt.Sprintf("resources; this: %v; other: %v", dc.Resources, o.Resources))
+		}
+	}
+	// Only compare contents if length of either > 0.
+	if len(dc.Volumes) != 0 || len(o.Volumes) != 0 {
+		if !dc.Volumes.Equal(o.Volumes) {
+			diffs = append(diffs, fmt.Sprintf("volumes; this: %v; other: %v", dc.Volumes, o.Volumes))
+		}
+	}
+	// TODO: Compare Args
+	return len(diffs) == 0, diffs
 }
 
 func (dc DeployConfig) Clone() (c DeployConfig) {

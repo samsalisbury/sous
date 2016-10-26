@@ -7,10 +7,12 @@ import (
 )
 
 type (
+	// ManifestPair is a pair of manifests.
 	ManifestPair struct {
 		name        ManifestID
 		Prior, Post *Manifest
 	}
+	// ManifestPairs is a slice of *ManifestPair.
 	ManifestPairs []*ManifestPair
 
 	// A DiffConcentrator wraps deployment DiffChans in order to produce
@@ -35,14 +37,14 @@ type (
 )
 
 // Concentrate returns a DiffConcentrator set up to concentrate the deployment
-// changes in a DiffChans into manifest changes
+// changes in a DiffChans into manifest changes.
 func (d DiffChans) Concentrate(defs Defs) DiffConcentrator {
 	c := NewConcentrator(defs, d, cap(d.Created))
 	go concentrate(d, c)
 	return c
 }
 
-// NewDiffChans constructs a DiffChans
+// NewConcentrator constructs a DiffConcentrator.
 func NewConcentrator(defs Defs, s DiffChans, sizes ...int) DiffConcentrator {
 	var size int
 	if len(sizes) > 0 {
@@ -222,17 +224,17 @@ func (dc *DiffConcentrator) dispatch(mp *ManifestPair) error {
 			return errors.Errorf("Blank manifest pair: %#v", mp)
 		}
 		dc.Created <- mp.Post
-	} else {
-		if mp.Post == nil {
-			dc.Deleted <- mp.Prior
-		} else {
-			if mp.Prior.Equal(mp.Post) {
-				dc.Retained <- mp.Post
-			} else {
-				dc.Modified <- mp
-			}
-		}
+		return nil
 	}
+	if mp.Post == nil {
+		dc.Deleted <- mp.Prior
+		return nil
+	}
+	if mp.Prior.Equal(mp.Post) {
+		dc.Retained <- mp.Post
+		return nil
+	}
+	dc.Modified <- mp
 	return nil
 }
 

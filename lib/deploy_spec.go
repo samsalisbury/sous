@@ -1,6 +1,10 @@
 package sous
 
-import "github.com/samsalisbury/semv"
+import (
+	"fmt"
+
+	"github.com/samsalisbury/semv"
+)
 
 type (
 	// DeploySpecs is a collection of Deployments associated with a manifest.
@@ -32,5 +36,21 @@ type (
 
 // Equal returns true if other equals spec.
 func (spec DeploySpec) Equal(other DeploySpec) bool {
-	return spec.Version == other.Version && spec.DeployConfig.Equal(other.DeployConfig)
+	different, _ := spec.Diff(other)
+	return !different
+}
+
+// Diff returns true and a list of differences if spec is different to other.
+// Otherwise returns false, nil.
+func (spec DeploySpec) Diff(other DeploySpec) (bool, []string) {
+	var diffs []string
+	diff := func(format string, a ...interface{}) { diffs = append(diffs, fmt.Sprintf(format, a...)) }
+	if !spec.Version.Equals(other.Version) {
+		diff("version; this: %q; other: %q", spec.Version, other.Version)
+	}
+	_, configDiffs := spec.DeployConfig.Diff(other.DeployConfig)
+	for _, d := range configDiffs {
+		diff(d)
+	}
+	return len(diffs) != 0, diffs
 }
