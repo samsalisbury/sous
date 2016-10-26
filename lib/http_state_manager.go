@@ -296,8 +296,9 @@ func (hsm *HTTPStateManager) del(m *Manifest) error {
 		return errors.Errorf("GET %s to delete, %s: %#v", murl, grz.Status, m)
 	}
 	rm := hsm.jsonManifest(grz.Body)
-	if !rm.Equal(m) {
-		return errors.Errorf("Remote and deleted manifests don't match: \n%#v\n%#v", rm, m)
+	different, differences := rm.Diff(m)
+	if different {
+		return errors.Errorf("Remote and deleted manifests don't match: %#v", differences)
 	}
 	etag := grz.Header.Get("Etag")
 	drq, err := http.NewRequest("DELETE", murl, nil)
@@ -336,8 +337,9 @@ func (hsm *HTTPStateManager) modify(mp *ManifestPair) error {
 		return errors.Errorf("%s: %#v", grz.Status, bf)
 	}
 	rm := hsm.jsonManifest(grz.Body)
-	if !rm.Equal(bf) {
-		return errors.Errorf("Remote and prior manifests don't match: \n%#v\n%#v", rm, bf)
+	different, differences := rm.Diff(bf)
+	if different {
+		return errors.Errorf("Remote and prior manifests don't match: %#v", differences)
 	}
 	etag := grz.Header.Get("Etag")
 
