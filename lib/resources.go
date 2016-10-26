@@ -19,7 +19,7 @@ func (r Resources) Cpus() float64 {
 		if present {
 			Log.Warn.Printf("Could not parse value: '%s' for cpus as a float, using default: %f", cpuStr, cpus)
 		} else {
-			Log.Info.Printf("Using default value for cpus: %f", cpus)
+			Log.Vomit.Printf("Using default value for cpus: %f.", cpus)
 		}
 	}
 	return cpus
@@ -33,7 +33,7 @@ func (r Resources) Memory() float64 {
 		if present {
 			Log.Warn.Printf("Could not parse value: '%s' for memory as an int, using default: %f", memStr, memory)
 		} else {
-			Log.Info.Printf("Using default value for memory: %f", memory)
+			Log.Vomit.Printf("Using default value for memory: %f.", memory)
 		}
 	}
 	return memory
@@ -47,7 +47,7 @@ func (r Resources) Ports() int32 {
 		if present {
 			Log.Warn.Printf("Could not parse value: '%s' for ports as a int, using default: %d", portStr, ports)
 		} else {
-			Log.Info.Printf("Using default value for ports: %d", ports)
+			Log.Vomit.Printf("Using default value for ports: %d", ports)
 		}
 	}
 	return int32(ports)
