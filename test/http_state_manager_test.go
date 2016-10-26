@@ -58,44 +58,48 @@ func TestWriteState(t *testing.T) {
 		return di
 	}
 
-	ts := httptest.NewServer(server.SousRouteMap.BuildRouter(gf))
-	defer ts.Close()
+	testServer := httptest.NewServer(server.SousRouteMap.BuildRouter(gf))
+	defer testServer.Close()
 
-	hsm, err := sous.NewHTTPStateManager(ts.URL)
+	hsm, err := sous.NewHTTPStateManager(testServer.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	ls, err := hsm.ReadState()
+	originalState, err := hsm.ReadState()
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
-	log.Printf("%#v", ls)
-	if ls.Manifests.Len() != state.Manifests.Len() {
-		t.Errorf("Local state has %d manifests to remote's %d", ls.Manifests.Len(), state.Manifests.Len())
+	log.Printf("original state: %#v", originalState)
+	if originalState.Manifests.Len() != state.Manifests.Len() {
+		t.Errorf("Local state has %d manifests to remote's %d", originalState.Manifests.Len(), state.Manifests.Len())
 	}
 
-	ls.Manifests.Remove(diesManifest.ID())
-	ls.Manifests.Add(newManifest)
-	ch, there := ls.Manifests.Get(changesManifest.ID())
+	originalState.Manifests.Remove(diesManifest.ID())
+	originalState.Manifests.Add(newManifest)
+	ch, there := originalState.Manifests.Get(changesManifest.ID())
 	if !there {
-		t.Fatal("Changed manifest not in local manifests!")
+		t.Fatalf("Changed manifest %q not in local manifests!", changesManifest.ID())
 	}
-	chd := ch.Deployments["test-cluster"]
-	chd.Version = semv.MustParse("0.18.0")
-	ch.Deployments["test-cluster"] = chd
-	ls.Manifests.Remove(ch.ID())
-	ls.Manifests.Add(ch)
-	log.Printf("%#v", ls)
-	err = hsm.WriteState(ls)
+	changedDeployment := ch.Deployments["test-cluster"]
+	changedDeployment.Version = semv.MustParse("0.18.0")
+	ch.Deployments["test-cluster"] = changedDeployment
+	originalState.Manifests.Set(ch.ID(), ch)
+
+	log.Printf("state after update: %#v", originalState)
+
+	err = hsm.WriteState(originalState)
 	if err != nil {
-		t.Fatalf("%+v", err)
+		t.Fatalf("Failed to write state: %+v", err)
 	}
 
-	state, err = sm.ReadState()
+	state, err = hsm.ReadState()
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	if ls.Manifests.Len() != state.Manifests.Len() {
-		t.Errorf("After write, local state has %d manifests to remote's %d", ls.Manifests.Len(), state.Manifests.Len())
+	if originalState.Manifests.Len() != state.Manifests.Len() {
+		t.Errorf("After write, local state has %d manifests to remote's %d", originalState.Manifests.Len(), state.Manifests.Len())
 	}
 
 	d, there := state.Manifests.Get(diesManifest.ID())
@@ -114,7 +118,9 @@ func TestWriteState(t *testing.T) {
 	if !there {
 		t.Errorf("Changed manifest missing from server's state")
 	}
-	if c.Deployments["test-cluster"].Version.String() != "0.18.0" {
-		t.Errorf("Server's version of changed state should be '0.18.0' was %v", c.Deployments["test-cluster"].Version)
+	expectedVersion := "0.18.0"
+	actualVersion := c.Deployments["test-cluster"].Version.String()
+	if actualVersion != expectedVersion {
+		t.Errorf("Server's version of changed state was %q; want %q", actualVersion, expectedVersion)
 	}
 }
