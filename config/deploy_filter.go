@@ -21,12 +21,15 @@ type DeployFilterFlags struct {
 	All      bool
 }
 
-// BuildPredicate returns a predicate used for filtering targeted deployments.
-//
-// It returns an error if the combination of flags is invalid, or if parseSL
-// returns an error parsing Source.
-func (f *DeployFilterFlags) BuildPredicate(parseSL func(string) (sous.SourceLocation, error)) (sous.DeploymentPredicate, error) {
-	var preds []sous.DeploymentPredicate
+func (f *DeployFilterFlags) BuildFilter(parseSL func(string) (sous.SourceLocation, error)) (*sous.ResolveFilter, error) {
+	rf := &sous.ResolveFilter{}
+
+	rf.Repo = f.Repo
+	rf.Offset = f.Offset
+	rf.Flavor = f.Flavor
+	rf.Cluster = f.Cluster
+	rf.Tag = f.Tag
+	rf.Revision = f.Revision
 
 	if f.Source != "" {
 		if f.Repo != "" {
@@ -35,80 +38,30 @@ func (f *DeployFilterFlags) BuildPredicate(parseSL func(string) (sous.SourceLoca
 		if f.Offset != "" {
 			return nil, fmt.Errorf("you cannot specify both -source and -offset")
 		}
-		if f.All {
-			return nil, fmt.Errorf("you cannot specify both -source and -all")
-		}
 		sl, err := parseSL(f.Source)
 		if err != nil {
 			return nil, errors.Wrap(err, "error parsing -source flag")
 		}
-		preds = append(preds, func(d *sous.Deployment) bool {
-			return d.SourceID.Location == sl
-		})
+		rf.Repo = sl.Repo
+		rf.Offset = sl.Dir
 	}
 
-	if f.All {
-		if f.Repo != "" {
-			return nil, fmt.Errorf("you cannot specify both -all and -repo")
-		}
-		if f.Offset != "" {
-			return nil, fmt.Errorf("you cannot specify both -all and -offset")
-		}
-		if f.Flavor != "" {
-			return nil, fmt.Errorf("you cannot specify both -all and -flavor")
-		}
-		return func(*sous.Deployment) bool { return true }, nil
+	if f.All && !rf.All() {
+		return nil, errors.Errorf("You cannot specify both -all and filtering options: %s", rf)
 	}
 
-	if f.Repo != "" {
-		preds = append(preds, func(d *sous.Deployment) bool {
-			return d.SourceID.Location.Repo == f.Repo
-		})
+	return rf, nil
+}
+
+// BuildPredicate returns a predicate used for filtering targeted deployments.
+//
+// It returns an error if the combination of flags is invalid, or if parseSL
+// returns an error parsing Source.
+func (f *DeployFilterFlags) BuildPredicate(parseSL func(string) (sous.SourceLocation, error)) (sous.DeploymentPredicate, error) {
+	rf, err := f.BuildFilter(parseSL)
+	if err != nil {
+		return nil, err
 	}
 
-	if f.Offset != "" {
-		preds = append(preds, func(d *sous.Deployment) bool {
-			return d.SourceID.Location.Dir == f.Offset
-		})
-	}
-
-	if f.Flavor != "" {
-		preds = append(preds, func(d *sous.Deployment) bool {
-			return d.Flavor == f.Flavor
-		})
-	}
-
-	if f.Tag != "" {
-		preds = append(preds, func(d *sous.Deployment) bool {
-			return d.SourceID.Tag() == f.Tag
-		})
-	}
-
-	if f.Revision != "" {
-		preds = append(preds, func(d *sous.Deployment) bool {
-			return d.SourceID.RevID() == f.Revision
-		})
-	}
-
-	if f.Cluster != "" {
-		preds = append(preds, func(d *sous.Deployment) bool {
-			return d.ClusterName == f.Cluster
-		})
-	}
-
-	switch len(preds) {
-	case 0:
-		return nil, nil
-	case 1:
-		return preds[0], nil
-	default:
-		return func(d *sous.Deployment) bool {
-			for _, f := range preds {
-				if !f(d) { // AND(preds...)
-					return false
-				}
-			}
-			return true
-		}, nil
-	}
+	return rf.FilterDeployment, nil
 }

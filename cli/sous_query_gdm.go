@@ -28,6 +28,10 @@ This should resemble the manifest that was used to establish the intended state 
 // Help prints the help
 func (*SousQueryGDM) Help() string { return sousQueryGDMHelp }
 
+func (*SousQueryGDM) RegisterOn(psy Addable) {
+	psy.Add(graph.DryrunOption("none"))
+}
+
 // Execute defines the behavior of `sous query gdm`
 func (sb *SousQueryGDM) Execute(args []string) cmdr.Result {
 	sous.Log.Vomit.Printf("%v", sb.GDM.Snapshot())

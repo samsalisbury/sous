@@ -109,6 +109,8 @@ const (
 )
 
 var (
+	// ClusterFilterFlagsHelp just exposes the -cluster flag (for server)
+	ClusterFilterFlagsHelp = clusterFlagHelp
 	// SourceFlagsHelp is the text (and config) for source flags
 	SourceFlagsHelp = repoFlagHelp + offsetFlagHelp + flavorFlagHelp + tagFlagHelp + revisionFlagHelp
 	// RectifyFilterFlagsHelp is the text (and config) for rectification flags

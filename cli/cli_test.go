@@ -8,6 +8,8 @@ import (
 
 	"github.com/nyarly/testify/assert"
 	"github.com/nyarly/testify/require"
+	"github.com/opentable/sous/ext/docker"
+	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
 	"github.com/samsalisbury/semv"
 )
@@ -150,6 +152,14 @@ func TestInvokeQuery(t *testing.T) {
 	assert.NotNil(exe)
 }
 
+func TestInvokeServer(t *testing.T) {
+	exe := justCommand(t, []string{`sous`, `server`})
+	assert.NotNil(t, exe)
+
+	exe = justCommand(t, []string{`sous`, `server`, `-cluster`, `test`})
+	assert.NotNil(t, exe)
+}
+
 /*
 usage: sous version
 
@@ -285,21 +295,26 @@ func TestInvokeRectifyDryruns(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	testDryRun := func(which string) {
+	testDryRun := func(which string) (sous.Deployer, sous.Registry) {
 		exe := justCommand(t, []string{`sous`, `rectify`, `-dry-run`, which, `-repo`, `github.com/somewhere`})
 		assert.Len(exe.Args, 0)
 		require.IsType(&SousRectify{}, exe.Cmd)
 		rect := exe.Cmd.(*SousRectify)
-		res, err := rect.buildResolver()
-		require.NoError(err)
-		assert.Equal(rect.Deployer, res.Deployer)
-		assert.Equal(rect.Registry, res.Registry)
+		// currently no easy way to tell if the deploy client is live or dummy
+		return nil, rect.Registry
 	}
 
-	testDryRun("both")
-	testDryRun("none")
-	testDryRun("scheduler")
-	testDryRun("registry")
+	_, r := testDryRun("both")
+	assert.IsType(&sous.DummyRegistry{}, r)
+
+	_, r = testDryRun("none")
+	assert.IsType(&docker.NameCache{}, r)
+
+	_, r = testDryRun("scheduler")
+	assert.IsType(&docker.NameCache{}, r)
+
+	_, r = testDryRun("registry")
+	assert.IsType(&sous.DummyRegistry{}, r)
 }
 
 /*

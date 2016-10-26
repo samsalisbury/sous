@@ -9,7 +9,7 @@ import (
 )
 
 func dummyResolver() *Resolver {
-	return NewResolver(NewDummyDeployer(), NewDummyRegistry())
+	return NewResolver(NewDummyDeployer(), NewDummyRegistry(), &ResolveFilter{})
 }
 
 func setupAR() *AutoResolver {

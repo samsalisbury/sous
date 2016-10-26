@@ -16,12 +16,15 @@ import (
 
 // A SousServer represents the `sous server` command.
 type SousServer struct {
-	Sous Sous
+	Sous *Sous
 	*config.Verbosity
+	config.DeployFilterFlags
 	*sous.AutoResolver
+
 	Config graph.LocalSousConfig
 	Log    *sous.LogSet
 	flags  struct {
+		dryrun,
 		// laddr is the listen address in the form [host]:port
 		laddr,
 		// gdmRepo is a repository to clone into config.SourceLocation
@@ -45,8 +48,19 @@ func (ss *SousServer) Help() string {
 
 // AddFlags is part of the cmdr.Command interfaces(s).
 func (ss *SousServer) AddFlags(fs *flag.FlagSet) {
+	MustAddFlags(fs, &ss.DeployFilterFlags, ClusterFilterFlagsHelp)
+	fs.StringVar(&ss.flags.dryrun, "dry-run", "none",
+		"prevent rectify from actually changing things - "+
+			"values are none,scheduler,registry,both")
 	fs.StringVar(&ss.flags.laddr, `listen`, `:80`, "The address to listen on, like '127.0.0.1:https'")
 	fs.StringVar(&ss.flags.gdmRepo, "gdm-repo", "", "Git repo containing the GDM (cloned into config.SourceLocation)")
+}
+
+// RegisterOn adds the DeploymentConfig to the psyringe to configure the
+// labeller and registrar.
+func (ss *SousServer) RegisterOn(psy Addable) {
+	psy.Add(graph.DryrunOption(ss.flags.dryrun))
+	psy.Add(&ss.DeployFilterFlags)
 }
 
 // Execute is part of the cmdr.Command interface(s).

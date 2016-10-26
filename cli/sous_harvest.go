@@ -26,6 +26,10 @@ usage: sous harvest <repo>...
 // Help prints the help
 func (*SousHarvest) Help() string { return sousHarvestHelp }
 
+func (*SousHarvest) RegisterOn(psy Addable) {
+	psy.Add(graph.DryrunNeither)
+}
+
 // Execute defines the behavior of `sous query gdm`
 func (sh *SousHarvest) Execute(args []string) cmdr.Result {
 	if len(args) == 0 {
