@@ -1,6 +1,9 @@
 package sous
 
-import "path/filepath"
+import (
+	"fmt"
+	"path/filepath"
+)
 
 //go:generate ggen cmap.CMap(cmap.go) sous.Manifests(manifests.go) CMKey:ManifestID Value:*Manifest
 
@@ -83,32 +86,45 @@ const (
 	ScheduledJob = "scheduled-job"
 )
 
-// Equal returns true iff o is equal to m.
-func (m *Manifest) Equal(o *Manifest) bool {
+// Diff returns true and a list of differences if m and o are not equal.
+// Otherwise returns false and nil.
+func (m *Manifest) Diff(o *Manifest) (bool, []string) {
 	if m == o {
-		return true
+		// They are the same pointer.
+		return false, nil
 	}
+	var diffs []string
+	diff := func(format string, a ...interface{}) { diffs = append(diffs, fmt.Sprintf(format, a...)) }
 	if m.Source != o.Source {
-		return false
+		diff("source; this: %q; other: %q", m.Source, o.Source)
 	}
 	if m.Kind != o.Kind {
-		return false
+		diff("kind; this: %q; other: %q", m.Kind, o.Kind)
 	}
 	if len(m.Owners) != len(o.Owners) {
-		return false
-	}
-	for i, owner := range m.Owners {
-		if o.Owners[i] != owner {
-			return false
+		diff("number of owners; this: %d; other: %d", len(m.Owners), len(o.Owners))
+	} else {
+		for i, owner := range m.Owners {
+			if o.Owners[i] != owner {
+				diff("owner in position %d; this: %d; other: %d", i, owner, o.Owners[i])
+			}
 		}
 	}
 	if len(m.Deployments) != len(o.Deployments) {
-		return false
-	}
-	for clusterName, deploySpec := range m.Deployments {
-		if !o.Deployments[clusterName].Equal(deploySpec) {
-			return false
+		diff("number of deployments; this: %d; other: %d", len(m.Deployments), len(o.Deployments))
+	} else {
+		for clusterName, deploySpec := range m.Deployments {
+			_, differences := deploySpec.Diff(o.Deployments[clusterName].DeployConfig)
+			for _, deploySpecDiff := range differences {
+				diff(deploySpecDiff)
+			}
 		}
 	}
-	return true
+	return len(diffs) != 0, diffs
+}
+
+// Equal returns true iff o is equal to m.
+func (m *Manifest) Equal(o *Manifest) bool {
+	diff, _ := m.Diff(o)
+	return !diff
 }
