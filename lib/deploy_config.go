@@ -1,6 +1,10 @@
 package sous
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/pkg/errors"
+)
 
 type (
 	// DeployConfig represents the configuration of a deployment's tasks,
@@ -29,7 +33,40 @@ type (
 	// Env is a mapping of environment variable name to value, used to provision
 	// single instances of an application.
 	Env map[string]string
+
+	NilVolumeFlaw struct {
+		*DeployConfig
+	}
 )
+
+// Validate implements Flawed for State
+func (dc *DeployConfig) Validate() []Flaw {
+	var flaws []Flaw
+
+	for _, v := range dc.Volumes {
+		if v == nil {
+			flaws = append(flaws, &NilVolumeFlaw{DeployConfig: dc})
+			break
+		}
+	}
+	return flaws
+}
+
+func (nvf *NilVolumeFlaw) Repair() error {
+	newVs := nvf.DeployConfig.Volumes[:0]
+	for _, v := range nvf.DeployConfig.Volumes {
+		if v != nil {
+			newVs = append(newVs, v)
+		}
+	}
+	nvf.DeployConfig.Volumes = newVs
+	return nil
+}
+
+// Repair implements Flawed for State
+func (dc *DeployConfig) Repair(fs []Flaw) error {
+	return errors.Errorf("Can't do nuffin with flaws yet")
+}
 
 func (dc *DeployConfig) String() string {
 	return fmt.Sprintf("#%d %+v : %+v %+v", dc.NumInstances, dc.Resources, dc.Env, dc.Volumes)

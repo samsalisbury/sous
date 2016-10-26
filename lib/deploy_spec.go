@@ -3,6 +3,7 @@ package sous
 import (
 	"fmt"
 
+	"github.com/pkg/errors"
 	"github.com/samsalisbury/semv"
 )
 
@@ -33,6 +34,18 @@ type (
 		clusterName string
 	}
 )
+
+// Validate implements Flawed for State
+func (spec DeploySpec) Validate() []Flaw {
+	var flaws []Flaw
+
+	return append(flaws, spec.DeployConfig.Validate()...)
+}
+
+// Repair implements Flawed for State
+func (spec DeploySpec) Repair(fs []Flaw) error {
+	return errors.Errorf("Can't do nuffin with flaws yet")
+}
 
 // Equal returns true if other equals spec.
 func (spec DeploySpec) Equal(other DeploySpec) bool {

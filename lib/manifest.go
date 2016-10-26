@@ -3,6 +3,8 @@ package sous
 import (
 	"fmt"
 	"path/filepath"
+
+	"github.com/pkg/errors"
 )
 
 //go:generate ggen cmap.CMap(cmap.go) sous.Manifests(manifests.go) CMKey:ManifestID Value:*Manifest
@@ -127,4 +129,19 @@ func (m *Manifest) Diff(o *Manifest) (bool, []string) {
 func (m *Manifest) Equal(o *Manifest) bool {
 	diff, _ := m.Diff(o)
 	return !diff
+}
+
+// Validate implements Flawed for State
+func (m *Manifest) Validate() []Flaw {
+	var flaws []Flaw
+
+	for _, depSpec := range m.Deployments {
+		flaws = append(flaws, depSpec.Validate()...)
+	}
+	return flaws
+}
+
+// Repair implements Flawed for State
+func (m *Manifest) Repair(fs []Flaw) error {
+	return errors.Errorf("Can't do nuffin with flaws yet")
 }

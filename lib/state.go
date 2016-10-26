@@ -1,5 +1,7 @@
 package sous
 
+import "github.com/pkg/errors"
+
 type (
 	// State contains the mutable state of an organisation's deployments.
 	// State is also known as the "Global Deploy Manifest" or GDM.
@@ -116,4 +118,19 @@ func (s *State) BaseURLs() []string {
 		urls = append(urls, cluster.BaseURL)
 	}
 	return urls
+}
+
+// Validate implements Flawed for State
+func (s *State) Validate() []Flaw {
+	var flaws []Flaw
+
+	for _, manifest := range s.Manifests.Snapshot() {
+		flaws = append(flaws, manifest.Validate()...)
+	}
+	return flaws
+}
+
+// Repair implements Flawed for State
+func (s *State) Repair(fs []Flaw) error {
+	return errors.Errorf("Can't do nuffin with flaws yet")
 }
