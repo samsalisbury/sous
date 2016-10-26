@@ -152,6 +152,14 @@ func TestInvokeQuery(t *testing.T) {
 	assert.NotNil(exe)
 }
 
+func TestInvokeServer(t *testing.T) {
+	exe := justCommand(t, []string{`sous`, `server`})
+	assert.NotNil(t, exe)
+
+	exe = justCommand(t, []string{`sous`, `server`, `-cluster`, `test`})
+	assert.NotNil(t, exe)
+}
+
 /*
 usage: sous version
 

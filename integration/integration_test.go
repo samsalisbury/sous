@@ -108,7 +108,7 @@ func TestMissingImage(t *testing.T) {
 	client := singularity.NewRectiAgent(nc)
 	deployer := singularity.NewDeployer(nc, client)
 
-	r := sous.NewResolver(deployer, nc)
+	r := sous.NewResolver(deployer, nc, &sous.ResolveFilter{})
 
 	deploymentsOne, err := stateOne.Deployments()
 	if err != nil {
@@ -181,7 +181,7 @@ func TestResolve(t *testing.T) {
 	client := singularity.NewRectiAgent(nc)
 	deployer := singularity.NewDeployer(nc, client)
 
-	r := sous.NewResolver(deployer, nc)
+	r := sous.NewResolver(deployer, nc, &sous.ResolveFilter{})
 
 	err = r.Resolve(deploymentsOneTwo, clusterDefs.Clusters)
 	if err != nil {
@@ -213,7 +213,7 @@ func TestResolve(t *testing.T) {
 		client := singularity.NewRectiAgent(nc)
 		deployer := singularity.NewDeployer(nc, client)
 
-		r := sous.NewResolver(deployer, nc)
+		r := sous.NewResolver(deployer, nc, &sous.ResolveFilter{})
 
 		err := r.Resolve(deploymentsTwoThree, clusterDefs.Clusters)
 		if err != nil {
