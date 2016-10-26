@@ -113,6 +113,7 @@ func newDiffer(intended Deployments) *differ {
 }
 
 func (d *differ) diff(existing Deployments) {
+	defer d.DiffChans.Close()
 	e := existing.Snapshot()
 	ds := []string{"Computing diff to:"}
 	for _, e := range e {
@@ -120,25 +121,23 @@ func (d *differ) diff(existing Deployments) {
 	}
 	Log.Debug.Print(strings.Join(ds, "\n    "))
 
-	for i := range e {
-		name := e[i].Name()
-		if indep, ok := d.from[name]; ok {
-			delete(d.from, name)
-			different, differences := indep.Diff(e[i])
-			if !different {
-				d.Retained <- indep
-			} else {
-				Log.Debug.Printf("differences detected for %q: %#v", indep.ID(), differences)
-				d.Modified <- &DeploymentPair{name, indep, e[i]}
-			}
-		} else {
-			d.Created <- e[i]
+	for id, existingDeployment := range e {
+		intendedDeployment, exists := d.from[id]
+		if !exists {
+			d.Created <- existingDeployment
+			continue
 		}
+		delete(d.from, id)
+		different, differences := existingDeployment.Diff(intendedDeployment)
+		if different {
+			Log.Warn.Printf("differences detected for %q: %#v", id, differences)
+			d.Modified <- &DeploymentPair{id, intendedDeployment, existingDeployment}
+			continue
+		}
+		d.Retained <- existingDeployment
 	}
 
-	for _, dep := range d.from {
-		d.Deleted <- dep
+	for _, deletedDeployment := range d.from {
+		d.Deleted <- deletedDeployment
 	}
-
-	d.DiffChans.Close()
 }

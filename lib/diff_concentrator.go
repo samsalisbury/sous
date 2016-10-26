@@ -224,17 +224,17 @@ func (dc *DiffConcentrator) dispatch(mp *ManifestPair) error {
 			return errors.Errorf("Blank manifest pair: %#v", mp)
 		}
 		dc.Created <- mp.Post
-	} else {
-		if mp.Post == nil {
-			dc.Deleted <- mp.Prior
-		} else {
-			if mp.Prior.Equal(mp.Post) {
-				dc.Retained <- mp.Post
-			} else {
-				dc.Modified <- mp
-			}
-		}
+		return nil
 	}
+	if mp.Post == nil {
+		dc.Deleted <- mp.Prior
+		return nil
+	}
+	if mp.Prior.Equal(mp.Post) {
+		dc.Retained <- mp.Post
+		return nil
+	}
+	dc.Modified <- mp
 	return nil
 }
 

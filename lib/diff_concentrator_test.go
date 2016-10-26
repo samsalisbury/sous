@@ -67,11 +67,11 @@ func TestRealDiffConcentration(t *testing.T) {
 		}
 	}
 
-	repoOne := "https://github.com/opentable/one"
-	repoTwo := "https://github.com/opentable/two"
-	repoThree := "https://github.com/opentable/three"
-	repoFour := "https://github.com/opentable/four"
-	repoFive := "https://github.com/opentable/five"
+	repoOne := "github.com/opentable/one"
+	repoTwo := "github.com/opentable/two"
+	repoThree := "github.com/opentable/three"
+	repoFour := "github.com/opentable/four"
+	repoFive := "github.com/opentable/five"
 
 	intended.MustAdd(makeDepl(repoOne, "111.1.1", 1)) //remove
 
