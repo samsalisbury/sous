@@ -11,6 +11,7 @@ import (
 // values must parse to the defined types.
 type Resources map[string]string
 
+// Cpus returns the number of CPUs.
 func (r Resources) Cpus() float64 {
 	cpuStr, present := r["cpus"]
 	cpus, err := strconv.ParseFloat(cpuStr, 64)
@@ -25,6 +26,7 @@ func (r Resources) Cpus() float64 {
 	return cpus
 }
 
+// Memory returns memory in MB.
 func (r Resources) Memory() float64 {
 	memStr, present := r["memory"]
 	memory, err := strconv.ParseFloat(memStr, 64)
@@ -39,6 +41,7 @@ func (r Resources) Memory() float64 {
 	return memory
 }
 
+// Ports returns the number of ports required.
 func (r Resources) Ports() int32 {
 	portStr, present := r["ports"]
 	ports, err := strconv.ParseInt(portStr, 10, 32)

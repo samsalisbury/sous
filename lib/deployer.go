@@ -10,6 +10,7 @@ type (
 		RectifyModifies(<-chan *DeploymentPair, chan<- RectificationError)
 	}
 
+	// DummyDeployer is a noop deployer.
 	DummyDeployer struct {
 		deps Deployments
 	}

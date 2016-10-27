@@ -81,6 +81,7 @@ func NewState() *State {
 	}
 }
 
+// Clone returns a deep copy of this State.
 func (s *State) Clone() (c *State) {
 	c = new(State)
 	*c = *s
