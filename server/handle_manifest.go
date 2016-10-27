@@ -82,6 +82,10 @@ func (pmh *PUTManifestHandler) Exchange() (interface{}, int) {
 	dec := json.NewDecoder(pmh.Request.Body)
 	m := &sous.Manifest{}
 	dec.Decode(m)
+	flaws := m.Validate()
+	if len(flaws) > 0 {
+		return "", http.StatusBadRequest
+	}
 	pmh.State.Manifests.Set(mid, m)
 	if err := pmh.StateWriter.WriteState(pmh.State); err != nil {
 		return err, http.StatusConflict

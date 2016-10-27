@@ -11,6 +11,8 @@ import (
 )
 
 type (
+	// An HTTPStateManager gets state from a Sous server and transmits updates
+	// back to that server
 	HTTPStateManager struct {
 		serverURL *url.URL
 		cached    *State
@@ -35,6 +37,7 @@ func (g *gdmWrapper) fromJSON(reader io.Reader) {
 	dec.Decode(g)
 }
 
+// NewHTTPStateManager creates a new HTTPStateManager
 func NewHTTPStateManager(us string) (*HTTPStateManager, error) {
 	u, err := url.Parse(us)
 	return &HTTPStateManager{
@@ -93,6 +96,10 @@ func (hsm *HTTPStateManager) ReadState() (*State, error) {
 
 // WriteState implements StateWriter for HTTPStateManager
 func (hsm *HTTPStateManager) WriteState(ws *State) error {
+	flaws := ws.Validate()
+	if len(flaws) > 0 {
+		return errors.Errorf("Invalid update to state: %v", flaws)
+	}
 	if hsm.cached == nil {
 		_, err := hsm.ReadState()
 		if err != nil {
