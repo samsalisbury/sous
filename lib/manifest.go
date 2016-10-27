@@ -52,6 +52,7 @@ func (m *Manifest) SetID(mid ManifestID) {
 	m.Flavor = mid.Flavor
 }
 
+// Clone returns a deep copy of this Manifest.
 func (m *Manifest) Clone() (c *Manifest) {
 	c = new(Manifest)
 	*c = *m
