@@ -118,12 +118,16 @@ func TestHandlesManifestPut(t *testing.T) {
 	q, err := url.ParseQuery("repo=gh")
 	require.NoError(err)
 	state := sous.NewState()
-	state.Manifests.Add(&sous.Manifest{Source: sous.SourceLocation{Repo: "gh"}})
+	state.Manifests.Add(&sous.Manifest{
+		Source: sous.SourceLocation{Repo: "gh"},
+		Kind:   sous.ManifestKindService,
+	})
 	writer := graph.LocalStateWriter{StateWriter: sous.DummyStateManager{State: state}}
 
 	manifest := &sous.Manifest{
 		Source: sous.SourceLocation{Repo: "gh"},
 		Owners: []string{"sam", "judson"},
+		Kind:   sous.ManifestKindService,
 	}
 	buf := &bytes.Buffer{}
 	enc := json.NewEncoder(buf)

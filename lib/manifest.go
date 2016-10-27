@@ -123,6 +123,8 @@ func (m *Manifest) Validate() []Flaw {
 				return nil
 			},
 		})
+	} else {
+		flaws = append(flaws, m.Kind.Validate()...)
 	}
 
 	return flaws
