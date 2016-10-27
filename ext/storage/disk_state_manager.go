@@ -39,6 +39,23 @@ func NewDiskStateManager(baseDir string) *DiskStateManager {
 	return &DiskStateManager{Codec: c, BaseDir: baseDir}
 }
 
+func repairState(s *sous.State) error {
+	sous.Log.Vomit.Printf("Validating State")
+	flaws := s.Validate()
+
+	sous.Log.Vomit.Printf("Repairing State")
+	_, es := sous.RepairAll(flaws)
+
+	if len(es) > 0 {
+		strs := []string{}
+		for _, e := range es {
+			strs = append(strs, e.Error())
+		}
+		return errors.Errorf("Couldn't repair state: %v", strs)
+	}
+	return nil
+}
+
 // ReadState loads the entire intended state of the world from a dir.
 func (dsm *DiskStateManager) ReadState() (*sous.State, error) {
 	// TODO: Allow state dir to be passed as flag in sous/cli.
@@ -49,9 +66,12 @@ func (dsm *DiskStateManager) ReadState() (*sous.State, error) {
 	if err != nil {
 		return s, err
 	}
+
+	// XXX Move to validation
 	if s.Defs.Clusters == nil {
 		return s, nil // errors.Errorf("no clusters defined in %s", dsm.baseDir)
 	}
+	// XXX Move to validation
 	for _, k := range s.Manifests.Keys() {
 		m, _ := s.Manifests.Get(k)
 		for clusterName := range m.Deployments {
@@ -62,11 +82,17 @@ func (dsm *DiskStateManager) ReadState() (*sous.State, error) {
 			}
 		}
 	}
+	if e := repairState(s); e != nil {
+		return nil, e
+	}
 	return s, nil
 }
 
 // WriteState records the entire intended state of the world to a dir.
 func (dsm *DiskStateManager) WriteState(s *sous.State) error {
+	if e := repairState(s); e != nil {
+		return e
+	}
 	sous.Log.Vomit.Printf("Writing state to disk")
 	return dsm.Codec.Write(dsm.BaseDir, s)
 }
