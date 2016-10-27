@@ -73,12 +73,12 @@ var updateStateTests = []struct {
 }{
 	{
 		State:       sous.NewState(),
-		GDM:         graph.CurrentGDM{sous.NewDeployments()},
+		GDM:         graph.CurrentGDM{Deployments: sous.NewDeployments()},
 		ExpectedErr: "invalid deploy ID (no cluster name)",
 	},
 	{
 		State: sous.NewState(),
-		GDM:   graph.CurrentGDM{sous.NewDeployments()},
+		GDM:   graph.CurrentGDM{Deployments: sous.NewDeployments()},
 		DID: sous.DeployID{
 			Cluster:    "blah",
 			ManifestID: sous.MustParseManifestID("github.com/user/project"),
@@ -91,7 +91,7 @@ var updateStateTests = []struct {
 				"blah": &sous.Cluster{Name: "blah"},
 			}},
 		},
-		GDM: graph.CurrentGDM{sous.NewDeployments()},
+		GDM: graph.CurrentGDM{Deployments: sous.NewDeployments()},
 		DID: sous.DeployID{
 			Cluster:    "blah",
 			ManifestID: sous.MustParseManifestID("github.com/user/project"),
@@ -143,10 +143,10 @@ func (dsm *DummyStateManager) ReadState() (*sous.State, error) { return nil, nil
 func TestSousUpdate_Execute(t *testing.T) {
 	dsm := &DummyStateManager{}
 	su := SousUpdate{
-		StateReader: graph.LocalStateReader{dsm},
-		StateWriter: graph.LocalStateWriter{dsm},
-		GDM:         graph.CurrentGDM{sous.MakeDeployments(0)},
-		Manifest:    graph.TargetManifest{&sous.Manifest{}},
+		StateReader: graph.LocalStateReader{StateReader: dsm},
+		StateWriter: graph.LocalStateWriter{StateWriter: dsm},
+		GDM:         graph.CurrentGDM{Deployments: sous.MakeDeployments(0)},
+		Manifest:    graph.TargetManifest{Manifest: &sous.Manifest{}},
 	}
 	su.Execute(nil)
 }

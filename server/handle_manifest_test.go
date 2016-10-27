@@ -119,7 +119,7 @@ func TestHandlesManifestPut(t *testing.T) {
 	require.NoError(err)
 	state := sous.NewState()
 	state.Manifests.Add(&sous.Manifest{Source: sous.SourceLocation{Repo: "gh"}})
-	writer := graph.LocalStateWriter{sous.DummyStateManager{state}}
+	writer := graph.LocalStateWriter{StateWriter: sous.DummyStateManager{State: state}}
 
 	manifest := &sous.Manifest{
 		Source: sous.SourceLocation{Repo: "gh"},

@@ -335,7 +335,7 @@ func TestRecordAdvisories(t *testing.T) {
 	digest := "sha256:012345678901234567890123456789AB012345678901234567890123456789AB"
 	cn := base + "@" + digest
 
-	qs := []sous.Quality{{"ephemeral_tag", "advisory"}}
+	qs := []sous.Quality{{Name: "ephemeral_tag", Kind: "advisory"}}
 
 	err := nc.Insert(sv, cn, digest, qs)
 	assert.NoError(err)
