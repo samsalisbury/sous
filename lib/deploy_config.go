@@ -50,7 +50,24 @@ func (dc *DeployConfig) Validate() []Flaw {
 			break
 		}
 	}
+	rezs := dc.Resources
+	if dc.Resources == nil {
+		flaws = append(flaws, NewFlaw("No Resources set for DeployConfig",
+			func() error { dc.Resources = make(Resources); return nil }))
+		rezs = make(Resources)
+	}
+
+	flaws = append(flaws, rezs.Validate()...)
+
+	for _, f := range flaws {
+		f.AddContext("deploy config", dc)
+	}
+
 	return flaws
+}
+
+// AddContext simply discards all context - NilVolumeFlaw doesn't need it
+func (nvf *NilVolumeFlaw) AddContext(string, interface{}) {
 }
 
 // Repair removes any nil entries in DeployConfig.Volumes.

@@ -1,15 +1,25 @@
 package sous
 
 import (
+	"fmt"
 	"math"
 	"strconv"
 )
 
-// Resources is a mapping of resource name to value, used to provision
-// single instances of an application. It is validated against
-// State.Defs.Resources. The keys must match defined resource names, and the
-// values must parse to the defined types.
-type Resources map[string]string
+type (
+	// Resources is a mapping of resource name to value, used to provision
+	// single instances of an application. It is validated against
+	// State.Defs.Resources. The keys must match defined resource names, and the
+	// values must parse to the defined types.
+	Resources map[string]string
+
+	// A MissingResourceFlaw captures the absence of a required resource field,
+	// and tries to repair it from the state defaults
+	MissingResourceFlaw struct {
+		Resources
+		Field, Default string
+	}
+)
 
 // Clone returns a deep copy of this Resources.
 func (r Resources) Clone() Resources {
@@ -18,6 +28,51 @@ func (r Resources) Clone() Resources {
 		rs[name] = value
 	}
 	return rs
+}
+
+func (f *MissingResourceFlaw) AddContext(name string, i interface{}) {
+	/*
+		// I'd misremembered that the State.Defs held the GDM-wide defaults
+		// which isn't true. Leaving this here to sort of demostrate the idea
+		if name != "state" {
+			return
+		}
+		if state, is := i.(*State); is {
+			f.State = state
+		}
+	*/
+}
+
+func (f *MissingResourceFlaw) String() string {
+	return fmt.Sprintf("Missing resource field: %s", f.Field)
+}
+
+func (f *MissingResourceFlaw) Repair() error {
+	f.Resources[f.Field] = f.Default
+	return nil
+}
+
+func (r Resources) Validate() []Flaw {
+	var flaws []Flaw
+
+	if f := r.validateField("cpus", "0.1"); f != nil {
+		flaws = append(flaws, f)
+	}
+	if f := r.validateField("memory", "100"); f != nil {
+		flaws = append(flaws, f)
+	}
+	if f := r.validateField("ports", "1"); f != nil {
+		flaws = append(flaws, f)
+	}
+
+	return flaws
+}
+
+func (r Resources) validateField(name, def string) Flaw {
+	if _, has := r[name]; !has {
+		return &MissingResourceFlaw{Resources: r, Field: name, Default: def}
+	}
+	return nil
 }
 
 // Cpus returns the number of CPUs.
