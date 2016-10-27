@@ -73,15 +73,15 @@ func (m *Manifest) FileLocation() string {
 const (
 	// ManifestKindService represents an HTTP service which is a long-running process,
 	// and listens and responds to HTTP requests.
-	ManifestKindService (ManifestKind) = "http-service"
+	ManifestKindService ManifestKind = "http-service"
 	// ManifestKindWorker represents a worker process.
-	ManifestKindWorker (ManifestKind) = "worker"
+	ManifestKindWorker = "worker"
 	// ManifestKindOnDemand represents an on-demand service.
-	ManifestKindOnDemand (ManifestKind) = "on-demand"
+	ManifestKindOnDemand = "on-demand"
 	// ManifestKindScheduled represents a scheduled task.
-	ManifestKindScheduled (ManifestKind) = "scheduled"
+	ManifestKindScheduled = "scheduled"
 	// ManifestKindOnce represents a one-off job.
-	ManifestKindOnce (ManifestKind) = "once"
+	ManifestKindOnce = "once"
 	// ScheduledJob represents a process which starts on some schedule, and
 	// exits when it completes its task.
 	ScheduledJob = "scheduled-job"
@@ -137,6 +137,17 @@ func (m *Manifest) Validate() []Flaw {
 	for _, depSpec := range m.Deployments {
 		flaws = append(flaws, depSpec.Validate()...)
 	}
+
+	if m.Kind == "" {
+		flaws = append(flaws, GenericFlaw{
+			Desc: fmt.Sprintf("manifest %q missing Kind", m.ID()),
+			RepairFunc: func() error {
+				m.Kind = ManifestKindService
+				return nil
+			},
+		})
+	}
+
 	return flaws
 }
 

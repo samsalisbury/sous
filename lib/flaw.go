@@ -1,5 +1,7 @@
 package sous
 
+import "github.com/pkg/errors"
+
 type (
 	// A Flaw captures the digression from a validation rule
 	Flaw interface {
@@ -11,6 +13,12 @@ type (
 	Flawed interface {
 		// Validate returns a list of flaws that enumerate problems with the Flawed
 		Validate() []Flaw
+	}
+
+	// GenericFlaw is a generic Flaw.
+	GenericFlaw struct {
+		Desc       string
+		RepairFunc func() error
 	}
 )
 
@@ -27,4 +35,17 @@ func RepairAll(in []Flaw) ([]Flaw, []error) {
 		}
 	}
 	return fs, es
+}
+
+// Repair implements Flaw.Repair.
+func (gf GenericFlaw) Repair() error {
+	return gf.RepairFunc()
+}
+
+func (gf GenericFlaw) String() string {
+	return gf.Desc
+}
+
+func (gf GenericFlaw) Error() error {
+	return errors.Errorf(gf.String())
 }
