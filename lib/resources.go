@@ -11,6 +11,15 @@ import (
 // values must parse to the defined types.
 type Resources map[string]string
 
+// Clone returns a deep copy of this Resources.
+func (r Resources) Clone() Resources {
+	rs := make(Resources, len(r))
+	for name, value := range r {
+		rs[name] = value
+	}
+	return rs
+}
+
 // Cpus returns the number of CPUs.
 func (r Resources) Cpus() float64 {
 	cpuStr, present := r["cpus"]
