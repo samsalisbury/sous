@@ -81,6 +81,7 @@ func (ds Deployments) Manifests(defs Defs) (Manifests, error) {
 			}
 		}
 		m.Deployments[d.ClusterName] = spec
+		m.Kind = d.Kind
 		ms.Set(mid, m)
 	}
 	return ms, nil

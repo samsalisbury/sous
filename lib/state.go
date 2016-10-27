@@ -81,23 +81,50 @@ func NewState() *State {
 	}
 }
 
-func (s *State) Clone() (c *State) {
-	c = new(State)
-	*c = *s
-	c.Manifests = NewManifests()
-	for _, v := range s.Manifests.Snapshot() {
-		c.Manifests.Add(v.Clone())
+// Clone returns a deep copy of this State.
+func (s State) Clone() *State {
+	s.Manifests = s.Manifests.Clone()
+	s.Defs = s.Defs.Clone()
+	return &s
+}
+
+// Clone returns a deep copy of this Defs.
+func (d Defs) Clone() Defs {
+	d.Clusters = d.Clusters.Clone()
+	d.EnvVars = d.EnvVars.Clone()
+	d.Resources = d.Resources.Clone()
+	return d
+}
+
+// Clone returns a deep copy of this Clusters.
+func (cs Clusters) Clone() Clusters {
+	c := make(Clusters, len(cs))
+	for name, cluster := range cs {
+		c[name] = cluster.Clone()
 	}
-	c.Defs.Clusters = make(Clusters)
-	for k, v := range s.Defs.Clusters {
-		c.Defs.Clusters[k] = new(Cluster)
-		*c.Defs.Clusters[k] = *v
-	}
-	c.Defs.EnvVars = make(EnvDefs, len(s.Defs.EnvVars))
-	copy(s.Defs.EnvVars, c.Defs.EnvVars)
-	c.Defs.Resources = make(ResDefs, len(s.Defs.Resources))
-	copy(s.Defs.Resources, c.Defs.Resources)
-	return
+	return c
+}
+
+// Clone returns a deep copy of this Cluster.
+func (c Cluster) Clone() *Cluster {
+	allowedAdvisories := make([]string, len(c.AllowedAdvisories))
+	copy(c.AllowedAdvisories, allowedAdvisories)
+	c.AllowedAdvisories = allowedAdvisories
+	return &c
+}
+
+// Clone returns a deep copy of this EnvDefs.
+func (evs EnvDefs) Clone() EnvDefs {
+	e := make(EnvDefs, len(evs))
+	copy(evs, e)
+	return e
+}
+
+// Clone returns a deep copy of this ResDefs.
+func (rdf ResDefs) Clone() ResDefs {
+	r := make(ResDefs, len(rdf))
+	copy(rdf, r)
+	return r
 }
 
 // ClusterMap returns the nicknames for all the clusters referred to in this state

@@ -25,8 +25,11 @@ type (
 		Register(*BuildResult, *BuildContext) error
 	}
 
+	// Strpairs is a slice of Strpair.
 	Strpairs []Strpair
-	Strpair  [2]string
+
+	// Strpair is a pair of strings.
+	Strpair [2]string
 
 	// BuildArtifact describes the actual built binary Sous will deploy
 	BuildArtifact struct {

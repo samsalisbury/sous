@@ -50,6 +50,7 @@ func makeTestState() *State {
 			&Manifest{
 				Source: project1,
 				Owners: []string{"owner1"},
+				Kind:   ManifestKindService,
 				Deployments: DeploySpecs{
 					"cluster-1": {
 						Version: semv.MustParse("1.0.0"),
@@ -83,6 +84,7 @@ func makeTestState() *State {
 				Source: project1,
 				Flavor: "some-flavor",
 				Owners: []string{"owner1flav"},
+				Kind:   ManifestKindService,
 				Deployments: DeploySpecs{
 					"cluster-1": {
 						Version: semv.MustParse("1.0.1"),
@@ -121,6 +123,7 @@ var expectedDeployments = NewDeployments(
 		SourceID:    project1.SourceID(semv.MustParse("1.0.0")),
 		ClusterName: "cluster-1",
 		Cluster:     cluster1,
+		Kind:        ManifestKindService,
 		Owners:      NewOwnerSet("owner1"),
 		DeployConfig: DeployConfig{
 			Resources: Resources{
@@ -138,6 +141,7 @@ var expectedDeployments = NewDeployments(
 		SourceID:    project1.SourceID(semv.MustParse("2.0.0")),
 		ClusterName: "cluster-2",
 		Cluster:     cluster2,
+		Kind:        ManifestKindService,
 		Owners:      NewOwnerSet("owner1"),
 		DeployConfig: DeployConfig{
 			Resources: Resources{
@@ -156,6 +160,7 @@ var expectedDeployments = NewDeployments(
 		SourceID:    project1.SourceID(semv.MustParse("1.0.1")),
 		ClusterName: "cluster-1",
 		Cluster:     cluster1,
+		Kind:        ManifestKindService,
 		Owners:      NewOwnerSet("owner1flav"),
 		DeployConfig: DeployConfig{
 			Resources: Resources{
@@ -174,6 +179,7 @@ var expectedDeployments = NewDeployments(
 		SourceID:    project1.SourceID(semv.MustParse("2.0.1")),
 		ClusterName: "cluster-2",
 		Cluster:     cluster2,
+		Kind:        ManifestKindService,
 		Owners:      NewOwnerSet("owner1flav"),
 		DeployConfig: DeployConfig{
 			Resources: Resources{
@@ -264,7 +270,7 @@ func TestState_Deployments(t *testing.T) {
 func TestDeployments_Manifests(t *testing.T) {
 	defs := makeTestState().Defs
 
-	actualManifests, err := expectedDeployments.Manifests(defs)
+	actualManifests, err := expectedDeployments.Clone().Manifests(defs)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -276,14 +282,20 @@ func TestDeployments_Manifests(t *testing.T) {
 	}
 	for _, mid := range expectedManifests.Keys() {
 		t.Log(mid, "READING")
-		expected, _ := expectedManifests.Get(mid)
+		expected, ok := expectedManifests.Get(mid)
+		if !ok {
+			t.Errorf("missing expected manifest %q", mid)
+			continue
+		}
 		actual, ok := actualManifests.Get(mid)
 		if !ok {
 			t.Errorf("missing manifest %q", mid)
 			continue
 		}
-		if !actual.Equal(expected) {
-			t.Errorf("\n\ngot:\n%v\n\nwant:\n%v\n", jsonDump(actual), jsonDump(expected))
+		different, differences := actual.Diff(expected)
+		if different {
+			t.Errorf("manifest not as expected: %#v", differences)
+			continue
 		}
 		// Check all expected DeploySpecs are in actual.
 		for clusterName := range expected.Deployments {

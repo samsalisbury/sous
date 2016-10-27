@@ -47,6 +47,12 @@ func (spec DeploySpec) Repair(fs []Flaw) error {
 	return errors.Errorf("Can't do nuffin with flaws yet")
 }
 
+// Clone returns a deep copy of this DeploySpec.
+func (spec DeploySpec) Clone() DeploySpec {
+	spec.DeployConfig = spec.DeployConfig.Clone()
+	return spec
+}
+
 // Equal returns true if other equals spec.
 func (spec DeploySpec) Equal(other DeploySpec) bool {
 	different, _ := spec.Diff(other)

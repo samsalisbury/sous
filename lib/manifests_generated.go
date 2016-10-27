@@ -138,7 +138,11 @@ func (m Manifests) Any(predicate func(*Manifest) bool) (*Manifest, bool) {
 
 // Clone returns a pairwise copy of Manifests.
 func (m Manifests) Clone() Manifests {
-	return NewManifestsFromMap(m.Snapshot())
+	c := NewManifests()
+	for _, v := range m.Snapshot() {
+		c.Add(v.Clone())
+	}
+	return c
 }
 
 // Merge returns a new Manifests with

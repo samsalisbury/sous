@@ -16,10 +16,13 @@ import (
 )
 
 func buildManifest(cluster, repo, version string) *sous.Manifest {
-	m := sous.Manifest{Source: sous.SourceLocation{Repo: repo}}
-	m.Deployments = make(sous.DeploySpecs)
-	m.Deployments[cluster] = sous.DeploySpec{Version: semv.MustParse(version)}
-	return &m
+	return &sous.Manifest{
+		Source: sous.SourceLocation{Repo: repo},
+		Kind:   sous.ManifestKindService,
+		Deployments: sous.DeploySpecs{
+			cluster: sous.DeploySpec{Version: semv.MustParse(version)},
+		},
+	}
 }
 
 func TestWriteState(t *testing.T) {
@@ -38,6 +41,10 @@ func TestWriteState(t *testing.T) {
 	state.Manifests.Add(diesManifest)
 	state.Manifests.Add(changesManifest)
 
+	for id, m := range state.Manifests.Snapshot() {
+		t.Logf("base state: Manifest %q; Kind = %q", id, m.Kind)
+	}
+
 	sm := sous.DummyStateManager{State: state}
 	smm, err := sm.ReadState()
 	if err != nil {
@@ -46,6 +53,11 @@ func TestWriteState(t *testing.T) {
 	if smm.Manifests.Len() <= 0 {
 		t.Fatal("State manager double is empty")
 	}
+
+	for id, m := range smm.Manifests.Snapshot() {
+		t.Logf("dummy state: Manifest %q; Kind = %q", id, m.Kind)
+	}
+
 	gf := func() server.Injector {
 		di := psyringe.New()
 		di.Add(sous.NewLogSet(os.Stderr, os.Stderr, ioutil.Discard))
@@ -70,6 +82,11 @@ func TestWriteState(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	for id, m := range originalState.Manifests.Snapshot() {
+		t.Logf("hsm read state: Manifest %q; Kind = %q", id, m.Kind)
+	}
+
 	log.Printf("original state: %#v", originalState)
 	if originalState.Manifests.Len() != state.Manifests.Len() {
 		t.Errorf("Local state has %d manifests to remote's %d", originalState.Manifests.Len(), state.Manifests.Len())
@@ -88,8 +105,7 @@ func TestWriteState(t *testing.T) {
 
 	log.Printf("state after update: %#v", originalState)
 
-	err = hsm.WriteState(originalState)
-	if err != nil {
+	if err := hsm.WriteState(originalState); err != nil {
 		t.Fatalf("Failed to write state: %+v", err)
 	}
 

@@ -138,7 +138,11 @@ func (m Deployments) Any(predicate func(*Deployment) bool) (*Deployment, bool) {
 
 // Clone returns a pairwise copy of Deployments.
 func (m Deployments) Clone() Deployments {
-	return NewDeploymentsFromMap(m.Snapshot())
+	c := NewDeployments()
+	for _, v := range m.Snapshot() {
+		c.Add(v.Clone())
+	}
+	return c
 }
 
 // Merge returns a new Deployments with

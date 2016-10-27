@@ -1,7 +1,7 @@
 package sous
 
 type (
-	// DummyNameCache implements the Builder interface by returning a
+	// DummyRegistry implements the Builder interface by returning a
 	// computed image name for a given source ID.
 	DummyRegistry struct {
 		ars  chan artifactReturn
@@ -32,10 +32,12 @@ func NewDummyRegistry() *DummyRegistry {
 	}
 }
 
+// FeedArtifact accepts one artifact and associated error.
 func (dc *DummyRegistry) FeedArtifact(ba *BuildArtifact, e error) {
 	dc.ars <- artifactReturn{ba, e}
 }
 
+// GetArtifact implements Registry.GetArtifact.
 func (dc *DummyRegistry) GetArtifact(sid SourceID) (*BuildArtifact, error) {
 	select {
 	case ar := <-dc.ars:
@@ -45,6 +47,7 @@ func (dc *DummyRegistry) GetArtifact(sid SourceID) (*BuildArtifact, error) {
 	}
 }
 
+// FeedSourceID accepts a SourceID and associated error.
 func (dc *DummyRegistry) FeedSourceID(sid SourceID, e error) {
 	dc.sids <- sourceIDReturn{sid, e}
 }
@@ -59,6 +62,7 @@ func (dc *DummyRegistry) GetSourceID(*BuildArtifact) (SourceID, error) {
 	}
 }
 
+// FeedSourceIDList accepts a slice of SourceIDs and associated error.
 func (dc *DummyRegistry) FeedSourceIDList(sids []SourceID, e error) {
 	dc.ls <- sourceIDListReturn{sids, e}
 }

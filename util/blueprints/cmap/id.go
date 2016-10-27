@@ -5,3 +5,8 @@ package cmap
 func (v Value) ID() CMKey {
 	return CMKey(string(v))
 }
+
+// Clone returns a deep copy of this value.
+func (v Value) Clone() Value {
+	return v
+}

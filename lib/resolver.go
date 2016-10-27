@@ -139,6 +139,7 @@ func foldErrors(errs chan RectificationError) error {
 	return nil
 }
 
+// GuardImages checks that all deployments have valid artifacts ready to deploy.
 func GuardImages(r Registry, gdm Deployments) error {
 	Log.Debug.Print("Collected. Checking readiness to deploy...")
 	g := gdm.Snapshot()

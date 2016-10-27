@@ -9,6 +9,7 @@ type (
 	triggerChannel  chan triggerType
 	announceChannel chan error
 
+	// AutoResolveListener listens to trigger channels and writes to announceChannel.
 	AutoResolveListener func(tc, done triggerChannel, ac announceChannel)
 
 	// An AutoResolver sets up the interactions to automatically run an infinite loop

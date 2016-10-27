@@ -142,7 +142,11 @@ func (m CMap) Any(predicate func(Value) bool) (Value, bool) {
 
 // Clone returns a pairwise copy of CMap.
 func (m CMap) Clone() CMap {
-	return NewCMapFromMap(m.Snapshot())
+	c := NewCMap()
+	for _, v := range m.Snapshot() {
+		c.Add(v.Clone())
+	}
+	return c
 }
 
 // Merge returns a new CMap with

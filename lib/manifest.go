@@ -32,12 +32,6 @@ type (
 		// Deployments is a map of cluster names to DeploymentSpecs
 		Deployments DeploySpecs `validate:"keys=nonempty,values=nonzero"`
 	}
-
-	// ManifestKind describes the broad category of a piece of software, such as
-	// a long-running HTTP service, or a scheduled task, etc. It is used to
-	// determine resource sets and contracts that can be run on this
-	// application.
-	ManifestKind string
 )
 
 // ID returns the SourceLocation.
@@ -52,41 +46,23 @@ func (m *Manifest) SetID(mid ManifestID) {
 	m.Flavor = mid.Flavor
 }
 
-func (m *Manifest) Clone() (c *Manifest) {
-	c = new(Manifest)
-	*c = *m
-	c.Owners = make([]string, len(m.Owners))
-	copy(m.Owners, c.Owners)
-	c.Deployments = make(DeploySpecs)
+// Clone returns a deep copy of this Manifest.
+func (m Manifest) Clone() (c *Manifest) {
+	owners := make([]string, len(m.Owners))
+	copy(m.Owners, owners)
+	deployments := make(DeploySpecs, len(m.Deployments))
 	for k, v := range m.Deployments {
-		ns := v
-		ns.DeployConfig = v.DeployConfig.Clone()
-		c.Deployments[k] = ns
+		deployments[k] = v.Clone()
 	}
-	return
+	m.Owners = owners
+	m.Deployments = deployments
+	return &m
 }
 
 // FileLocation returns the path that the manifest should be saved to.
 func (m *Manifest) FileLocation() string {
 	return filepath.Join(string(m.Source.Repo), string(m.Source.Dir))
 }
-
-const (
-	// ManifestKindService represents an HTTP service which is a long-running process,
-	// and listens and responds to HTTP requests.
-	ManifestKindService (ManifestKind) = "http-service"
-	// ManifestKindWorker represents a worker process.
-	ManifestKindWorker (ManifestKind) = "worker"
-	// ManifestKindOnDemand represents an on-demand service.
-	ManifestKindOnDemand (ManifestKind) = "on-demand"
-	// ManifestKindScheduled represents a scheduled task.
-	ManifestKindScheduled (ManifestKind) = "scheduled"
-	// ManifestKindOnce represents a one-off job.
-	ManifestKindOnce (ManifestKind) = "once"
-	// ScheduledJob represents a process which starts on some schedule, and
-	// exits when it completes its task.
-	ScheduledJob = "scheduled-job"
-)
 
 // Diff returns true and a list of differences if m and o are not equal.
 // Otherwise returns false and nil.
@@ -138,6 +114,19 @@ func (m *Manifest) Validate() []Flaw {
 	for _, depSpec := range m.Deployments {
 		flaws = append(flaws, depSpec.Validate()...)
 	}
+
+	if m.Kind == "" {
+		flaws = append(flaws, GenericFlaw{
+			Desc: fmt.Sprintf("manifest %q missing Kind", m.ID()),
+			RepairFunc: func() error {
+				m.Kind = ManifestKindService
+				return nil
+			},
+		})
+	} else {
+		flaws = append(flaws, m.Kind.Validate()...)
+	}
+
 	return flaws
 }
 

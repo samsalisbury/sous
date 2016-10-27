@@ -34,6 +34,7 @@ type (
 	// single instances of an application.
 	Env map[string]string
 
+	// NilVolumeFlaw is used when DeployConfig.Volumes contains a nil.
 	NilVolumeFlaw struct {
 		*DeployConfig
 	}
@@ -52,6 +53,7 @@ func (dc *DeployConfig) Validate() []Flaw {
 	return flaws
 }
 
+// Repair removes any nil entries in DeployConfig.Volumes.
 func (nvf *NilVolumeFlaw) Repair() error {
 	newVs := nvf.DeployConfig.Volumes[:0]
 	for _, v := range nvf.DeployConfig.Volumes {
@@ -108,6 +110,7 @@ func (dc *DeployConfig) Diff(o DeployConfig) (bool, []string) {
 	return len(diffs) == 0, diffs
 }
 
+// Clone returns a deep copy of this DeployConfig.
 func (dc DeployConfig) Clone() (c DeployConfig) {
 	c.NumInstances = dc.NumInstances
 	c.Args = make([]string, len(dc.Args))
