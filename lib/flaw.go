@@ -5,6 +5,7 @@ import "github.com/pkg/errors"
 type (
 	// A Flaw captures the digression from a validation rule
 	Flaw interface {
+		AddContext(string, interface{})
 		Repair() error
 	}
 
@@ -37,6 +38,26 @@ func RepairAll(in []Flaw) ([]Flaw, []error) {
 	return fs, es
 }
 
+// NewFlaw returns a new generic flaw with the given description and repair function
+func NewFlaw(desc string, repair func() error) GenericFlaw {
+	return GenericFlaw{
+		Desc:       desc,
+		RepairFunc: repair,
+	}
+}
+
+/*
+func FatalFlaw(fmt string, vals ...interface{}) GenericFlaw {
+	desc := fmt.Sprintf(fmt, vals...)
+	return GenericFlaw{
+		Desc: fmt.Sprintf(fmt, vals...),
+		Repair: func() error {
+			return errors.Errorf("%s: cannot be repaired.", desc)
+		},
+	}
+}
+*/
+
 // Repair implements Flaw.Repair.
 func (gf GenericFlaw) Repair() error {
 	return gf.RepairFunc()
@@ -44,6 +65,11 @@ func (gf GenericFlaw) Repair() error {
 
 func (gf GenericFlaw) String() string {
 	return gf.Desc
+}
+
+// AddContext discards the context - if you need the context, you should build
+// a specialized Flaw
+func (gf GenericFlaw) AddContext(name string, thing interface{}) {
 }
 
 func (gf GenericFlaw) Error() error {

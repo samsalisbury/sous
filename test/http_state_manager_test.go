@@ -20,7 +20,16 @@ func buildManifest(cluster, repo, version string) *sous.Manifest {
 		Source: sous.SourceLocation{Repo: repo},
 		Kind:   sous.ManifestKindService,
 		Deployments: sous.DeploySpecs{
-			cluster: sous.DeploySpec{Version: semv.MustParse(version)},
+			cluster: sous.DeploySpec{
+				Version: semv.MustParse(version),
+				DeployConfig: sous.DeployConfig{
+					Resources: sous.Resources{
+						"cpus":   "1",
+						"memory": "256",
+						"ports":  "1",
+					},
+				},
+			},
 		},
 	}
 }

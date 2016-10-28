@@ -4,6 +4,10 @@ Owners:
 Kind: http-service
 Deployments:
   other-cluster:
+    Resources:
+      cpus: "1"
+      memory: 256MB
+      ports: "1"
     Env:
       DEBUG: "YES"
     NumInstances: 0

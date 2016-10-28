@@ -154,6 +154,10 @@ func (s *State) Validate() []Flaw {
 	for _, manifest := range s.Manifests.Snapshot() {
 		flaws = append(flaws, manifest.Validate()...)
 	}
+
+	for _, f := range flaws {
+		f.AddContext("state", s)
+	}
 	return flaws
 }
 

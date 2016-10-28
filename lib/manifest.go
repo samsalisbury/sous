@@ -116,15 +116,16 @@ func (m *Manifest) Validate() []Flaw {
 	}
 
 	if m.Kind == "" {
-		flaws = append(flaws, GenericFlaw{
-			Desc: fmt.Sprintf("manifest %q missing Kind", m.ID()),
-			RepairFunc: func() error {
-				m.Kind = ManifestKindService
-				return nil
-			},
-		})
+		flaws = append(flaws, NewFlaw(
+			fmt.Sprintf("manifest %q missing Kind", m.ID()),
+			func() error { m.Kind = ManifestKindService; return nil },
+		))
 	} else {
 		flaws = append(flaws, m.Kind.Validate()...)
+	}
+
+	for _, f := range flaws {
+		f.AddContext("manifest", m)
 	}
 
 	return flaws

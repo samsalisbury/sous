@@ -52,12 +52,16 @@ func sameYAML(t *testing.T, actual *sous.State, expected *sous.State) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	ams := actual.Manifests.Snapshot()
-	ems := expected.Manifests.Snapshot()
-	assert.Len(ams, len(ems))
-	for n, v := range ems {
-		assert.Contains(ams, n)
-		assert.Equal(ams[n], v)
+	actualManifests := actual.Manifests.Snapshot()
+	expectedManifests := expected.Manifests.Snapshot()
+	assert.Len(actualManifests, len(expectedManifests))
+	for mid, manifest := range expectedManifests {
+		actual := *actualManifests[mid]
+		assert.Contains(actualManifests, mid)
+		if !assert.Equal(actual, *manifest) {
+			_, differences := actual.Diff(manifest)
+			t.Logf("DIFFERENCES (%q): %#v", mid, differences)
+		}
 	}
 
 	actualYAML, err := yaml.Marshal(actual)
