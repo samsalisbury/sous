@@ -30,6 +30,7 @@ func (r Resources) Clone() Resources {
 	return rs
 }
 
+// AddContext implements Flaw.AddContext.
 func (f *MissingResourceFlaw) AddContext(name string, i interface{}) {
 	/*
 		// I'd misremembered that the State.Defs held the GDM-wide defaults
@@ -47,11 +48,13 @@ func (f *MissingResourceFlaw) String() string {
 	return fmt.Sprintf("Missing resource field: %s", f.Field)
 }
 
+// Repair adds all missing fields set to default values.
 func (f *MissingResourceFlaw) Repair() error {
 	f.Resources[f.Field] = f.Default
 	return nil
 }
 
+// Validate checks that each required resource value is set.
 func (r Resources) Validate() []Flaw {
 	var flaws []Flaw
 
