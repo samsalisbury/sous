@@ -24,9 +24,9 @@ func buildManifest(cluster, repo, version string) *sous.Manifest {
 				Version: semv.MustParse(version),
 				DeployConfig: sous.DeployConfig{
 					Resources: sous.Resources{
-						"cpu":   "1",
-						"mem":   "256",
-						"ports": "1",
+						"cpus":   "1",
+						"memory": "256",
+						"ports":  "1",
 					},
 				},
 			},
