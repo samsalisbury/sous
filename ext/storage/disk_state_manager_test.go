@@ -96,8 +96,9 @@ func exampleState() *sous.State {
 					"Global": sous.DeploySpec{
 						DeployConfig: sous.DeployConfig{
 							Resources: sous.Resources{
-								"cpu": "0.1",
-								"mem": "2GB",
+								"cpus":   "0.1",
+								"memory": "2GB",
+								"ports":  "1",
 							},
 							NumInstances: 3,
 							Volumes:      sous.Volumes{},
@@ -108,6 +109,11 @@ func exampleState() *sous.State {
 						DeployConfig: sous.DeployConfig{
 							Env: sous.Env{
 								"SOME_DB_URL": "https://some.database",
+							},
+							Resources: sous.Resources{
+								"cpus":   "0.1",
+								"memory": "2GB",
+								"ports":  "1",
 							},
 							NumInstances: 6,
 							Volumes:      sous.Volumes{},
@@ -125,6 +131,11 @@ func exampleState() *sous.State {
 						DeployConfig: sous.DeployConfig{
 							Env: sous.Env{
 								"DEBUG": "YES",
+							},
+							Resources: sous.Resources{
+								"cpus":   "1",
+								"memory": "256MB",
+								"ports":  "1",
 							},
 							Volumes: sous.Volumes{},
 						},
