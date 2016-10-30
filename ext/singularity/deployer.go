@@ -33,10 +33,7 @@ type (
 		Deploy(cluster, depID, reqID, dockerImage string, r sous.Resources, e sous.Env, vols sous.Volumes) error
 
 		// PostRequest sends a request to a Singularity cluster to initiate
-		PostRequest(cluster, reqID string, instanceCount int) error
-
-		// Scale updates the instanceCount associated with a request
-		Scale(cluster, reqID string, instanceCount int, message string) error
+		PostRequest(cluster, reqID string, instanceCount int, kind sous.ManifestKind, owners sous.OwnerSet) error
 
 		// DeleteRequest instructs Singularity to delete a particular request
 		DeleteRequest(cluster, reqID, message string) error
@@ -135,12 +132,12 @@ func (r *deployer) RectifySingleModification(pair *sous.DeploymentPair) (err err
 	Log.Debug.Printf("Rectifying modified %q: \n  %# v \n    =>  \n  %# v", pair.ID(), pair.Prior, pair.Post)
 	defer rectifyRecover(pair, "RectifySingleModification", &err)
 	if r.changesReq(pair) {
-		Log.Debug.Printf("Scaling...")
-		if err := r.Client.Scale(
+		Log.Debug.Printf("Updating Request...")
+		if err := r.Client.PostRequest(
 			pair.Post.Cluster.BaseURL,
 			computeRequestID(pair.Post),
 			pair.Post.NumInstances,
-			"rectified scaling"); err != nil {
+		); err != nil {
 			return err
 		}
 	}
