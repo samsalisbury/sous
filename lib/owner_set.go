@@ -35,3 +35,11 @@ func (os OwnerSet) Equal(o OwnerSet) bool {
 
 	return true
 }
+
+func (os OwnerSet) Slice() []string {
+	slice := make([]string, 0, len(os))
+	for owner, _ := range os {
+		slice = append(slice, owner)
+	}
+	return slice
+}

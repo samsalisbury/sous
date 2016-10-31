@@ -92,7 +92,7 @@ func (r *deployer) RectifySingleCreate(d *sous.Deployment) (err error) {
 		return err
 	}
 	reqID := computeRequestID(d)
-	if err = r.Client.PostRequest(d.Cluster.BaseURL, reqID, d.NumInstances); err != nil {
+	if err = r.Client.PostRequest(d.Cluster.BaseURL, reqID, d.NumInstances, d.Kind, d.Owners); err != nil {
 		return err
 	}
 	return r.Client.Deploy(
@@ -137,6 +137,8 @@ func (r *deployer) RectifySingleModification(pair *sous.DeploymentPair) (err err
 			pair.Post.Cluster.BaseURL,
 			computeRequestID(pair.Post),
 			pair.Post.NumInstances,
+			pair.Post.Kind,
+			pair.Post.Owners,
 		); err != nil {
 			return err
 		}

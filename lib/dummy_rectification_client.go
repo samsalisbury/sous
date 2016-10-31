@@ -10,7 +10,6 @@ type (
 		nameCache Registry
 		Created   []dummyRequest
 		Deployed  []dummyDeploy
-		Scaled    []dummyScale
 		Deleted   []dummyDelete
 	}
 
@@ -28,12 +27,8 @@ type (
 		Cluster string
 		ID      string
 		Count   int
-	}
-
-	dummyScale struct {
-		Cluster, Reqid string
-		Count          int
-		Message        string
+		Kind    ManifestKind
+		Owners  OwnerSet
 	}
 
 	dummyDelete struct {
@@ -74,17 +69,12 @@ func (t *DummyRectificationClient) Deploy(
 
 // PostRequest (cluster, request id, instance count)
 func (t *DummyRectificationClient) PostRequest(
-	cluster, id string, count int) error {
-	t.logf("Creating application %s %s %d", cluster, id, count)
-	t.Created = append(t.Created, dummyRequest{cluster, id, count})
-	return nil
-}
-
-//Scale (cluster url, request id, instance count, message)
-func (t *DummyRectificationClient) Scale(
-	cluster, reqid string, count int, message string) error {
-	t.logf("Scaling %s %s %d %s", cluster, reqid, count, message)
-	t.Scaled = append(t.Scaled, dummyScale{cluster, reqid, count, message})
+	cluster, id string, count int,
+	kind ManifestKind,
+	owners OwnerSet,
+) error {
+	t.logf("Creating application %s %s %d %v %v", cluster, id, count, kind, owners)
+	t.Created = append(t.Created, dummyRequest{cluster, id, count, kind, owners})
 	return nil
 }
 

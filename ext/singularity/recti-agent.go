@@ -128,6 +128,7 @@ func (ra *RectiAgent) PostRequest(cluster, reqID string, instanceCount int, kind
 		"Id":          reqID,
 		"RequestType": reqType,
 		"Instances":   int32(instanceCount),
+		"Owners":      swaggering.StringList(owners.Slice()),
 	})
 
 	if err != nil {
@@ -142,7 +143,7 @@ func (ra *RectiAgent) PostRequest(cluster, reqID string, instanceCount int, kind
 func determineRequestType(kind sous.ManifestKind) (dtos.SingularityRequestRequestType, error) {
 	switch kind {
 	default:
-		return dtos.SingularityRequestRequestType{}, fmt.Errorf("Unrecognized Sous manifest kind: %v", kind)
+		return dtos.SingularityRequestRequestType(""), fmt.Errorf("Unrecognized Sous manifest kind: %v", kind)
 	case sous.ManifestKindService:
 		return dtos.SingularityRequestRequestTypeSERVICE, nil
 	case sous.ManifestKindWorker:
