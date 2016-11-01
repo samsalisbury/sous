@@ -1,6 +1,7 @@
 package singularity
 
 import (
+	"fmt"
 	"regexp"
 	"sync"
 
@@ -117,12 +118,17 @@ func buildDeployRequest(dockerImage string, e sous.Env, r sous.Resources, reqID 
 }
 
 // PostRequest sends requests to Singularity to create a new Request
-func (ra *RectiAgent) PostRequest(cluster, reqID string, instanceCount int) error {
+func (ra *RectiAgent) PostRequest(cluster, reqID string, instanceCount int, kind sous.ManifestKind, owners sous.OwnerSet) error {
 	Log.Debug.Printf("Creating application %s %s %d", cluster, reqID, instanceCount)
+	reqType, err := determineRequestType(kind)
+	if err != nil {
+		return err
+	}
 	req, err := swaggering.LoadMap(&dtos.SingularityRequest{}, dtoMap{
 		"Id":          reqID,
-		"RequestType": dtos.SingularityRequestRequestTypeSERVICE,
+		"RequestType": reqType,
 		"Instances":   int32(instanceCount),
+		"Owners":      swaggering.StringList(owners.Slice()),
 	})
 
 	if err != nil {
@@ -132,6 +138,23 @@ func (ra *RectiAgent) PostRequest(cluster, reqID string, instanceCount int) erro
 	Log.Debug.Printf("Create Request: %+ v", req)
 	_, err = ra.singularityClient(cluster).PostRequest(req.(*dtos.SingularityRequest))
 	return err
+}
+
+func determineRequestType(kind sous.ManifestKind) (dtos.SingularityRequestRequestType, error) {
+	switch kind {
+	default:
+		return dtos.SingularityRequestRequestType(""), fmt.Errorf("Unrecognized Sous manifest kind: %v", kind)
+	case sous.ManifestKindService:
+		return dtos.SingularityRequestRequestTypeSERVICE, nil
+	case sous.ManifestKindWorker:
+		return dtos.SingularityRequestRequestTypeWORKER, nil
+	case sous.ManifestKindOnDemand:
+		return dtos.SingularityRequestRequestTypeON_DEMAND, nil
+	case sous.ManifestKindScheduled:
+		return dtos.SingularityRequestRequestTypeSCHEDULED, nil
+	case sous.ManifestKindOnce:
+		return dtos.SingularityRequestRequestTypeRUN_ONCE, nil
+	}
 }
 
 // DeleteRequest sends a request to Singularity to delete a request

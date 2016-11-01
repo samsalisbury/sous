@@ -81,10 +81,8 @@ func TestModifyScale(t *testing.T) {
 	}
 
 	assert.Len(client.Deployed, 0)
-	assert.Len(client.Created, 0)
-
-	if assert.Len(client.Scaled, 1) {
-		assert.Equal(24, client.Scaled[0].Count)
+	if assert.Len(client.Created, 1) {
+		assert.Equal(24, client.Created[0].Count)
 	}
 }
 
@@ -132,7 +130,6 @@ func TestModifyImage(t *testing.T) {
 	}
 
 	assert.Len(client.Created, 0)
-	assert.Len(client.Scaled, 0)
 
 	if assert.Len(client.Deployed, 1) {
 		assert.Regexp("2.3.4", client.Deployed[0].ImageName)
@@ -246,7 +243,9 @@ func TestModify(t *testing.T) {
 		t.Error(e)
 	}
 
-	assert.Len(client.Created, 0)
+	if assert.Len(client.Created, 1) {
+		assert.Equal(24, client.Created[0].Count)
+	}
 
 	if assert.Len(client.Deployed, 1) {
 		assert.Regexp("2.3.4", client.Deployed[0].ImageName)
@@ -254,9 +253,6 @@ func TestModify(t *testing.T) {
 		assert.Equal("RW", string(client.Deployed[0].Vols[0].Mode))
 	}
 
-	if assert.Len(client.Scaled, 1) {
-		assert.Equal(24, client.Scaled[0].Count)
-	}
 }
 
 func TestDeletes(t *testing.T) {
@@ -340,7 +336,6 @@ func TestCreates(t *testing.T) {
 		t.Error(e)
 	}
 
-	assert.Len(client.Scaled, 0)
 	if assert.Len(client.Deployed, 1) {
 		dep := client.Deployed[0]
 		assert.Equal("cluster", dep.Cluster)
