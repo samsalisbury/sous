@@ -6,10 +6,6 @@ import (
 	"strconv"
 )
 
-//  !!!!! BEFORE CHANGING THIS AGAIN !!!!!
-//    strongly consider taking the time to update it to use the
-//    FieldDefinitions to validate presence, set defaults, etc.
-
 type (
 	// Resources is a mapping of resource name to value, used to provision
 	// single instances of an application. It is validated against

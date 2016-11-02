@@ -23,9 +23,7 @@ type (
 		EnvVars EnvDefs
 		// Resources contains definitions for resource types available to
 		// deployment manifests.
-		Resources FieldDefinitions
-		// Metadata contains the definitions for metadata fields
-		Metadata FieldDefinitions
+		Resources ResDefs
 	}
 
 	// EnvDefs is a collection of EnvDef
@@ -36,21 +34,15 @@ type (
 		Type              VarType
 	}
 
-	// FieldDefinitions is just a type alias for a slice of FieldDefinition-s
-	FieldDefinitions []FieldDefinition
-
-	// An MDDefinition describes the requirements for a Metadata field.
-	FieldDefinition struct {
+	// ResDefs is a collection of ResDef.
+	ResDefs []ResDef
+	// ResDef is a resource type definition.
+	ResDef struct {
+		// Name is the name of the resource, e.g. "Memory", "CPU", "NumPorts"
 		Name string
+		// Type is the type of value used to represent quantities or instances
+		// of this resource, e.g. MemorySize, Float, or Int (not yet implemented).
 		Type VarType
-
-		// Default adds a GDM wide default for a key.
-		// It's assumed that if this is left empty, the field must be set
-		Default string `yaml:"omitempty"`
-
-		// If the zero value is the intended default value for a field,
-		// you can mark it Optional: true.
-		Optional bool `yaml:"omitempty"`
 	}
 
 	// Clusters is a collection of Cluster
@@ -101,7 +93,6 @@ func (d Defs) Clone() Defs {
 	d.Clusters = d.Clusters.Clone()
 	d.EnvVars = d.EnvVars.Clone()
 	d.Resources = d.Resources.Clone()
-	d.Metadata = d.Metadata.Clone()
 	return d
 }
 
@@ -130,8 +121,8 @@ func (evs EnvDefs) Clone() EnvDefs {
 }
 
 // Clone returns a deep copy of this ResDefs.
-func (rdf FieldDefinitions) Clone() FieldDefinitions {
-	r := make(FieldDefinitions, len(rdf))
+func (rdf ResDefs) Clone() ResDefs {
+	r := make(ResDefs, len(rdf))
 	copy(rdf, r)
 	return r
 }
