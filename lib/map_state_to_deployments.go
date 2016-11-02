@@ -82,8 +82,18 @@ func (ds Deployments) Manifests(defs Defs) (Manifests, error) {
 		}
 		m.Deployments[d.ClusterName] = spec
 		m.Kind = d.Kind
+		global, pruned := gatherDeploySpecs(m.Deployments)
+		var zeroDeploySpec DeploySpec
+		if !global.Equal(zeroDeploySpec) {
+			m.Deployments = DeploySpecs{}
+			m.Deployments["Global"] = global
+			for _, sp := range pruned {
+				m.Deployments[sp.clusterName] = sp
+			}
+		}
 		ms.Set(mid, m)
 	}
+
 	return ms, nil
 }
 
@@ -97,6 +107,7 @@ func (s *State) DeploymentsFromManifest(m *Manifest) (Deployments, error) {
 		inherit = append(inherit, global)
 		delete(m.Deployments, "Global")
 	}
+
 	for clusterName, spec := range m.Deployments {
 		cluster, ok := s.Defs.Clusters[clusterName]
 		if !ok {
@@ -130,6 +141,36 @@ func BuildDeployment(s *State, m *Manifest, nick string, spec DeploySpec, inheri
 	}, nil
 }
 
+func gatherDeploySpecs(dss DeploySpecs) (global DeploySpec, pruned []DeploySpec) {
+	var dcs []DeployConfig
+	for _, s := range dss {
+		dcs = append(dcs, s.DeployConfig)
+	}
+	gc, pcs := gatherDeployConfigs(dcs)
+	gatherVersion := true
+
+	for _, s := range dss[1:] {
+		if dss[0].Version != s.Version {
+			gatherVersion = false
+		}
+	}
+	global = DeploySpec{DeployConfig: gc}
+	if gatherVersion {
+		global.Version = dss[0].Version
+	}
+	pruned = make([]DeploySpec, len(dss))
+	for idx := range dss {
+		pruned[idx] = DeploySpec{
+			DeployConfig: pcs[idx],
+			clusterName:  dss[idx].clusterName,
+		}
+		if !gatherVersion {
+			pruned[idx].Version = dss[idx].Version
+		}
+	}
+	return
+}
+
 func flattenDeploySpecs(dss []DeploySpec) DeploySpec {
 	var dcs []DeployConfig
 	for _, s := range dss {
@@ -143,11 +184,14 @@ func flattenDeploySpecs(dss []DeploySpec) DeploySpec {
 			break
 		}
 	}
-	for _, s := range dss {
-		if s.clusterName != "" {
-			ds.clusterName = s.clusterName
-			break
-		}
-	}
+	/*
+		DSs have to be unique by clusterName, nicht war?
+			for _, s := range dss {
+				if s.clusterName != "" {
+					ds.clusterName = s.clusterName
+					break
+				}
+			}
+	*/
 	return ds
 }

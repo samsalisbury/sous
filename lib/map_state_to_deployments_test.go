@@ -41,7 +41,7 @@ func makeTestState() *State {
 					Type:  VarType("string"),
 				},
 			},
-			Resources: ResDefs{
+			Resources: FieldDefinitions{
 				{Name: "cpus", Type: "float"},
 				{Name: "mem", Type: "memory_size"},
 			},
@@ -52,6 +52,14 @@ func makeTestState() *State {
 				Owners: []string{"owner1"},
 				Kind:   ManifestKindService,
 				Deployments: DeploySpecs{
+					"Global": {
+						DeployConfig: DeployConfig{
+							Env: Env{
+								"ALL": "IS ONE",
+							},
+						},
+					},
+
 					"cluster-1": {
 						Version: semv.MustParse("1.0.0"),
 						DeployConfig: DeployConfig{
@@ -131,6 +139,7 @@ var expectedDeployments = NewDeployments(
 				"mem":  "1024",
 			},
 			Env: Env{
+				"ALL":               "IS ONE",
 				"ENV_1":             "ENV ONE",
 				"CLUSTER_LONG_NAME": "Cluster One",
 			},
@@ -149,6 +158,7 @@ var expectedDeployments = NewDeployments(
 				"mem":  "2048",
 			},
 			Env: Env{
+				"ALL":               "IS ONE",
 				"ENV_2":             "ENV TWO",
 				"CLUSTER_LONG_NAME": "Cluster Two",
 			},

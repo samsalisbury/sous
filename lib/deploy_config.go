@@ -14,6 +14,8 @@ type (
 		// Resources represents the resources each instance of this software
 		// will be given by the execution environment.
 		Resources Resources `yaml:",omitempty" validate:"keys=nonempty,values=nonempty"`
+		// Metadata stores values about deployments for outside applications to use
+		Metadata Metadata `yaml:",omitempty" validate:"keys=nonempty,values=nonempty"`
 		// Env is a list of environment variables to set for each instance of
 		// of this deployment. It will be checked for conflict with the
 		// definitions found in State.Defs.EnvVars, and if not in conflict
@@ -33,6 +35,10 @@ type (
 	// Env is a mapping of environment variable name to value, used to provision
 	// single instances of an application.
 	Env map[string]string
+
+	// Metadata represents an opaque map of metadata - Sous is agnostic about
+	// its contents, except to validate it against the top level schema
+	Metadata map[string]string
 
 	// NilVolumeFlaw is used when DeployConfig.Volumes contains a nil.
 	NilVolumeFlaw struct {
@@ -160,6 +166,90 @@ func (e Env) Equal(o Env) bool {
 		}
 	}
 	Log.Vomit.Printf("Envs: %+ v == %+ v !", e, o)
+	return true
+}
+
+func gatherDeployConfigs(dcs []DeployConfig) (global DeployConfig, pruned []DeployConfig) {
+	global = dcs[0].Clone()
+	var niVary, volsVary, argsVary, rezVary, envVary bool
+
+	for _, c := range dcs[1:] {
+		if c.NumInstances != global.NumInstances {
+			niVary = true
+		}
+		if !c.Volumes.Equal(global.Volumes) {
+			volsVary = true
+		}
+		if !stringSlicesEqual(c.Args, global.Args) {
+			argsVary = true
+		}
+		if len(global.Resources) != len(c.Resources) {
+			rezVary = true
+		} else {
+			for n, v := range c.Resources {
+				if gv, set := global.Resources[n]; !set || v != gv {
+					rezVary = true
+				}
+			}
+		}
+		if len(global.Env) != len(c.Env) {
+			envVary = true
+		} else {
+			for n, v := range c.Env {
+				if gv, set := global.Env[n]; !set || v != gv {
+					envVary = true
+				}
+			}
+		}
+	}
+
+	if niVary {
+		global.NumInstances = 0
+	}
+	if volsVary {
+		global.Volumes = Volumes{}
+	}
+	if argsVary {
+		global.Args = []string{}
+	}
+	if rezVary {
+		global.Resources = Resources{}
+	}
+	if envVary {
+		global.Env = Env{}
+	}
+
+	pruned = make([]DeployConfig, len(dcs))
+	for idx := range dcs {
+		pruned[idx] = dcs[idx].Clone()
+		if !niVary {
+			pruned[idx].NumInstances = 0
+		}
+		if !volsVary {
+			pruned[idx].Volumes = Volumes{}
+		}
+		if !argsVary {
+			pruned[idx].Args = []string{}
+		}
+		if !rezVary {
+			pruned[idx].Resources = Resources{}
+		}
+		if !envVary {
+			pruned[idx].Env = Env{}
+		}
+	}
+	return
+}
+
+func stringSlicesEqual(left, right []string) bool {
+	if len(left) != len(right) {
+		return false
+	}
+	for idx := range left {
+		if left[idx] != right[idx] {
+			return false
+		}
+	}
 	return true
 }
 

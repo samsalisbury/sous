@@ -157,7 +157,8 @@ func exampleState() *sous.State {
 				},
 			},
 			EnvVars:   sous.EnvDefs{},
-			Resources: sous.ResDefs{},
+			Resources: sous.FieldDefinitions{},
+			Metadata:  sous.FieldDefinitions{},
 		},
 	}
 }
