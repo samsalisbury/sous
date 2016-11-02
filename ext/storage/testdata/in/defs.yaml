@@ -14,3 +14,4 @@ Clusters:
     AllowedAdvisories: []
 EnvVars: []
 Resources: []
+Metadata: []

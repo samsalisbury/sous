@@ -46,11 +46,11 @@ type (
 
 		// Default adds a GDM wide default for a key.
 		// It's assumed that if this is left empty, the field must be set
-		Default string `yaml:"omitempty"`
+		Default string `yaml:",omitempty"`
 
 		// If the zero value is the intended default value for a field,
 		// you can mark it Optional: true.
-		Optional bool `yaml:"omitempty"`
+		Optional bool `yaml:",omitempty"`
 	}
 
 	// Clusters is a collection of Cluster

@@ -73,3 +73,8 @@ func (spec DeploySpec) Diff(other DeploySpec) (bool, []string) {
 	}
 	return len(diffs) != 0, diffs
 }
+
+func (spec DeploySpec) isZero() bool {
+	var zeroSpec DeploySpec
+	return spec.Equal(zeroSpec)
+}

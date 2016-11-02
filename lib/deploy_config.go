@@ -32,6 +32,9 @@ type (
 		Volumes Volumes
 	}
 
+	// A DeployConfigs is a map from cluster name to DeployConfig
+	DeployConfigs map[string]DeployConfig
+
 	// Env is a mapping of environment variable name to value, used to provision
 	// single instances of an application.
 	Env map[string]string
@@ -169,74 +172,96 @@ func (e Env) Equal(o Env) bool {
 	return true
 }
 
-func gatherDeployConfigs(dcs []DeployConfig) (global DeployConfig, pruned []DeployConfig) {
-	global = dcs[0].Clone()
-	var niVary, volsVary, argsVary, rezVary, envVary bool
+func gatherDeployConfigs(dcs DeployConfigs) (pruned DeployConfigs) {
+	for globalName, first := range dcs {
+		global := first.Clone()
+		var niVary, volsVary, argsVary bool
+		rezVary := map[string]bool{}
+		envVary := map[string]bool{}
 
-	for _, c := range dcs[1:] {
-		if c.NumInstances != global.NumInstances {
-			niVary = true
+		for n := range global.Resources {
+			rezVary[n] = false
 		}
-		if !c.Volumes.Equal(global.Volumes) {
-			volsVary = true
+
+		for n := range global.Env {
+			envVary[n] = false
 		}
-		if !stringSlicesEqual(c.Args, global.Args) {
-			argsVary = true
-		}
-		if len(global.Resources) != len(c.Resources) {
-			rezVary = true
-		} else {
-			for n, v := range c.Resources {
-				if gv, set := global.Resources[n]; !set || v != gv {
-					rezVary = true
+
+		for name, c := range dcs {
+			if name == globalName {
+				continue
+			}
+			if c.NumInstances != global.NumInstances {
+				niVary = true
+			}
+			if !c.Volumes.Equal(global.Volumes) {
+				volsVary = true
+			}
+			if !stringSlicesEqual(c.Args, global.Args) {
+				argsVary = true
+			}
+
+			for n, v := range global.Resources {
+				if cv, set := c.Resources[n]; !set || v != cv {
+					rezVary[n] = true
+				}
+			}
+
+			for n, v := range global.Env {
+				if cv, set := c.Env[n]; !set || v != cv {
+					envVary[n] = true
 				}
 			}
 		}
-		if len(global.Env) != len(c.Env) {
-			envVary = true
-		} else {
-			for n, v := range c.Env {
-				if gv, set := global.Env[n]; !set || v != gv {
-					envVary = true
-				}
+
+		if niVary {
+			global.NumInstances = 0
+		}
+		if volsVary {
+			global.Volumes = Volumes{}
+		}
+		if argsVary {
+			global.Args = []string{}
+		}
+		for name, vary := range rezVary {
+			if vary {
+				delete(global.Resources, name)
 			}
 		}
-	}
+		for name, vary := range envVary {
+			if vary {
+				delete(global.Env, name)
+			}
+		}
 
-	if niVary {
-		global.NumInstances = 0
-	}
-	if volsVary {
-		global.Volumes = Volumes{}
-	}
-	if argsVary {
-		global.Args = []string{}
-	}
-	if rezVary {
-		global.Resources = Resources{}
-	}
-	if envVary {
-		global.Env = Env{}
-	}
-
-	pruned = make([]DeployConfig, len(dcs))
-	for idx := range dcs {
-		pruned[idx] = dcs[idx].Clone()
-		if !niVary {
-			pruned[idx].NumInstances = 0
+		pruned = DeployConfigs{}
+		for name := range dcs {
+			c := dcs[name].Clone()
+			if !niVary {
+				c.NumInstances = 0
+			}
+			if !volsVary {
+				c.Volumes = Volumes{}
+			}
+			if !argsVary {
+				c.Args = []string{}
+			}
+			for rname := range c.Resources {
+				vary, known := rezVary[rname]
+				if !vary && known {
+					delete(c.Resources, rname)
+				}
+			}
+			for ename := range c.Env {
+				vary, known := envVary[ename]
+				if !vary && known {
+					delete(c.Env, ename)
+				}
+			}
+			pruned[name] = c
 		}
-		if !volsVary {
-			pruned[idx].Volumes = Volumes{}
-		}
-		if !argsVary {
-			pruned[idx].Args = []string{}
-		}
-		if !rezVary {
-			pruned[idx].Resources = Resources{}
-		}
-		if !envVary {
-			pruned[idx].Env = Env{}
-		}
+		pruned["Global"] = global
+		return //after the first loop
 	}
 	return
 }
