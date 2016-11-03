@@ -57,6 +57,9 @@ func makeTestState() *State {
 							Env: Env{
 								"ALL": "IS ONE",
 							},
+							Metadata: Metadata{
+								"everybody": "wants to be a cat",
+							},
 						},
 					},
 
@@ -70,6 +73,9 @@ func makeTestState() *State {
 							Env: Env{
 								"ENV_1": "ENV ONE",
 							},
+							Metadata: Metadata{
+								"name": "O'Malley",
+							},
 							NumInstances: 2,
 						},
 					},
@@ -82,6 +88,9 @@ func makeTestState() *State {
 							},
 							Env: Env{
 								"ENV_2": "ENV TWO",
+							},
+							Metadata: Metadata{
+								"name": "Duchess",
 							},
 							NumInstances: 3,
 						},
@@ -143,6 +152,10 @@ var expectedDeployments = NewDeployments(
 				"ENV_1":             "ENV ONE",
 				"CLUSTER_LONG_NAME": "Cluster One",
 			},
+			Metadata: Metadata{
+				"everybody": "wants to be a cat",
+				"name":      "O'Malley",
+			},
 			NumInstances: 2,
 		},
 	},
@@ -161,6 +174,10 @@ var expectedDeployments = NewDeployments(
 				"ALL":               "IS ONE",
 				"ENV_2":             "ENV TWO",
 				"CLUSTER_LONG_NAME": "Cluster Two",
+			},
+			Metadata: Metadata{
+				"everybody": "wants to be a cat",
+				"name":      "Duchess",
 			},
 			NumInstances: 3,
 		},

@@ -2,6 +2,7 @@ package sous
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/pkg/errors"
 )
@@ -121,6 +122,13 @@ func (dc *DeployConfig) Diff(o DeployConfig) (bool, []string) {
 		}
 	}
 	// Only compare contents if length of either > 0.
+	// This makes nil equal to zero-length map.
+	if len(dc.Metadata) != 0 || len(o.Metadata) != 0 {
+		if !dc.Metadata.Equal(o.Metadata) {
+			diffs = append(diffs, fmt.Sprintf("metadata; this: %v; other: %v", dc.Metadata, o.Metadata))
+		}
+	}
+	// Only compare contents if length of either > 0.
 	if len(dc.Resources) != 0 || len(o.Resources) != 0 {
 		if !dc.Resources.Equal(o.Resources) {
 			diffs = append(diffs, fmt.Sprintf("resources; this: %v; other: %v", dc.Resources, o.Resources))
@@ -149,6 +157,10 @@ func (dc DeployConfig) Clone() (c DeployConfig) {
 	for k, v := range dc.Resources {
 		c.Resources[k] = v
 	}
+	c.Metadata = make(Metadata)
+	for k, v := range dc.Metadata {
+		c.Metadata[k] = v
+	}
 	c.Volumes = make(Volumes, len(dc.Volumes))
 	copy(dc.Volumes, c.Volumes)
 	return
@@ -172,12 +184,31 @@ func (e Env) Equal(o Env) bool {
 	return true
 }
 
+// Equal compares Metadatas
+func (e Metadata) Equal(o Metadata) bool {
+	Log.Vomit.Printf("Metadatas: %+ v ?= %+ v", e, o)
+	if len(e) != len(o) {
+		Log.Vomit.Printf("Metadatas: %+ v != %+ v (%d != %d)", e, o, len(e), len(o))
+		return false
+	}
+
+	for name, value := range e {
+		if ov, ok := o[name]; !ok || ov != value {
+			Log.Vomit.Printf("Metadatas: %+ v != %+ v [%q] %q != %q", e, o, name, value, ov)
+			return false
+		}
+	}
+	Log.Vomit.Printf("Metadatas: %+ v == %+ v !", e, o)
+	return true
+}
+
 func gatherDeployConfigs(dcs DeployConfigs) (pruned DeployConfigs) {
 	for globalName, first := range dcs {
 		global := first.Clone()
 		var niVary, volsVary, argsVary bool
 		rezVary := map[string]bool{}
 		envVary := map[string]bool{}
+		mdVary := map[string]bool{}
 
 		for n := range global.Resources {
 			rezVary[n] = false
@@ -185,6 +216,10 @@ func gatherDeployConfigs(dcs DeployConfigs) (pruned DeployConfigs) {
 
 		for n := range global.Env {
 			envVary[n] = false
+		}
+
+		for n := range global.Metadata {
+			mdVary[n] = false
 		}
 
 		for name, c := range dcs {
@@ -212,6 +247,12 @@ func gatherDeployConfigs(dcs DeployConfigs) (pruned DeployConfigs) {
 					envVary[n] = true
 				}
 			}
+
+			for n, v := range global.Metadata {
+				if cv, set := c.Metadata[n]; !set || v != cv {
+					mdVary[n] = true
+				}
+			}
 		}
 
 		if niVary {
@@ -233,10 +274,18 @@ func gatherDeployConfigs(dcs DeployConfigs) (pruned DeployConfigs) {
 				delete(global.Env, name)
 			}
 		}
+		for name, vary := range mdVary {
+			if vary {
+				delete(global.Metadata, name)
+			}
+		}
+
+		log.Printf("%#v", mdVary)
 
 		pruned = DeployConfigs{}
 		for name := range dcs {
 			c := dcs[name].Clone()
+			log.Printf("%s: %#v", name, c)
 			if !niVary {
 				c.NumInstances = 0
 			}
@@ -256,6 +305,13 @@ func gatherDeployConfigs(dcs DeployConfigs) (pruned DeployConfigs) {
 				vary, known := envVary[ename]
 				if !vary && known {
 					delete(c.Env, ename)
+				}
+			}
+
+			for mname := range c.Metadata {
+				vary, known := mdVary[mname]
+				if !vary && known {
+					delete(c.Metadata, mname)
 				}
 			}
 			pruned[name] = c
@@ -282,6 +338,7 @@ func flattenDeployConfigs(dcs []DeployConfig) DeployConfig {
 	dc := DeployConfig{
 		Resources: make(Resources),
 		Env:       make(Env),
+		Metadata:  make(Metadata),
 	}
 	for _, c := range dcs {
 		if c.NumInstances != 0 {
@@ -310,6 +367,11 @@ func flattenDeployConfigs(dcs []DeployConfig) DeployConfig {
 		for n, v := range c.Env {
 			if _, set := dc.Env[n]; !set {
 				dc.Env[n] = v
+			}
+		}
+		for n, v := range c.Metadata {
+			if _, set := dc.Metadata[n]; !set {
+				dc.Metadata[n] = v
 			}
 		}
 	}
