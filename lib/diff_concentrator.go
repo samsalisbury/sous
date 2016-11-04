@@ -1,6 +1,7 @@
 package sous
 
 import (
+	"log"
 	"sort"
 
 	"github.com/pkg/errors"
@@ -165,22 +166,18 @@ func (db *deploymentBundle) clusters() []string {
 
 func (db *deploymentBundle) manifestPair(defs Defs) (*ManifestPair, error) {
 	db.consumed = true
+	log.Print(db)
 	res := new(ManifestPair)
 	ms, err := db.before.Manifests(defs)
 	if err != nil {
 		return nil, err
 	}
-	switch ms.Len() {
-	default:
-		return nil, errors.Errorf(
-			"bundled deployments produced multiple manifests:\n%#v\n%#v",
-			db.before, ms)
-	case 0:
-	case 1:
-		p, got := ms.Get(ms.Keys()[0])
-		if !got {
-			panic("Non-empty Manifests returned no value for a reported key")
-		}
+	log.Print(ms)
+	p, err := ms.Only()
+	if err != nil {
+		return nil, err
+	}
+	if p != nil {
 		res.Prior = p
 	}
 
@@ -188,19 +185,18 @@ func (db *deploymentBundle) manifestPair(defs Defs) (*ManifestPair, error) {
 	if err != nil {
 		return nil, err
 	}
-	switch ms.Len() {
-	default:
-		return nil, errors.Errorf(
-			"bundled deployments produced multiple manifests:\n%#v\n%#v",
-			db.after, ms)
-	case 0:
-	case 1:
-		p, got := ms.Get(ms.Keys()[0])
-		if !got {
-			panic("Non-empty Manifests returned no value for a reported key")
-		}
+	p, err = ms.Only()
+	if err != nil {
+		return nil, err
+	}
+	if p != nil {
 		res.Post = p
 	}
+
+	log.Print(res)
+	log.Print(res.Prior)
+	log.Print(res.Post)
+
 	if res.Post == nil {
 		res.name = res.Prior.ID()
 	} else {

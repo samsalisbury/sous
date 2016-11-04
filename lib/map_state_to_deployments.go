@@ -82,8 +82,19 @@ func (ds Deployments) Manifests(defs Defs) (Manifests, error) {
 		}
 		m.Deployments[d.ClusterName] = spec
 		m.Kind = d.Kind
+
 		ms.Set(mid, m)
 	}
+
+	for _, k := range ms.Keys() {
+		m, there := ms.Get(k)
+		if !there {
+			continue
+		}
+		m.Deployments = gatherDeploySpecs(m.Deployments)
+		ms.Set(k, m)
+	}
+
 	return ms, nil
 }
 
@@ -97,6 +108,7 @@ func (s *State) DeploymentsFromManifest(m *Manifest) (Deployments, error) {
 		inherit = append(inherit, global)
 		delete(m.Deployments, "Global")
 	}
+
 	for clusterName, spec := range m.Deployments {
 		cluster, ok := s.Defs.Clusters[clusterName]
 		if !ok {
@@ -130,6 +142,57 @@ func BuildDeployment(s *State, m *Manifest, nick string, spec DeploySpec, inheri
 	}, nil
 }
 
+func gatherDeploySpecs(dss DeploySpecs) (pruned DeploySpecs) {
+	if len(dss) < 2 {
+		return dss
+	}
+	dcs := DeployConfigs{}
+	for cn, s := range dss {
+		dcs[cn] = s.DeployConfig
+	}
+	pcs := gatherDeployConfigs(dcs)
+	gatherVersion := true
+
+	var global DeploySpec
+
+	for fname := range dss {
+		global = dss[fname].Clone()
+
+		for name := range dss {
+			if name == fname {
+				continue
+			}
+
+			if global.Version != dss[name].Version {
+				gatherVersion = false
+			}
+		}
+
+		var zeroVersion semv.Version
+		if !gatherVersion {
+			global.Version = zeroVersion
+		}
+
+		pruned = DeploySpecs{}
+		for name := range dss {
+			ds := DeploySpec{
+				DeployConfig: pcs[name],
+				clusterName:  dss[name].clusterName,
+			}
+			if !gatherVersion {
+				ds.Version = dss[name].Version
+			}
+			pruned[name] = ds
+		}
+		global.DeployConfig = pcs["Global"]
+		if !global.isZero() {
+			pruned["Global"] = global
+		}
+		return //after first loop
+	}
+	return //useless but requires
+}
+
 func flattenDeploySpecs(dss []DeploySpec) DeploySpec {
 	var dcs []DeployConfig
 	for _, s := range dss {
@@ -143,11 +206,14 @@ func flattenDeploySpecs(dss []DeploySpec) DeploySpec {
 			break
 		}
 	}
-	for _, s := range dss {
-		if s.clusterName != "" {
-			ds.clusterName = s.clusterName
-			break
-		}
-	}
+	/*
+		DSs have to be unique by clusterName, nicht war?
+			for _, s := range dss {
+				if s.clusterName != "" {
+					ds.clusterName = s.clusterName
+					break
+				}
+			}
+	*/
 	return ds
 }

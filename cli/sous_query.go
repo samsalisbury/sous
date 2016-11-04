@@ -22,7 +22,7 @@ const sousQueryHelp = `
 inquire about sous details
 `
 
-func (*SousQuery) Help() string { return sousBuildHelp }
+func (*SousQuery) Help() string { return sousQueryHelp }
 
 func (sb *SousQuery) AddFlags(fs *flag.FlagSet) {
 }

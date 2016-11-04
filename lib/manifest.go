@@ -94,7 +94,7 @@ func (m *Manifest) Diff(o *Manifest) (bool, []string) {
 		for clusterName, deploySpec := range m.Deployments {
 			_, differences := deploySpec.Diff(o.Deployments[clusterName])
 			for _, deploySpecDiff := range differences {
-				diff(deploySpecDiff)
+				diff("%s: "+deploySpecDiff, clusterName)
 			}
 		}
 	}

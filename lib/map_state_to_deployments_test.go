@@ -41,7 +41,7 @@ func makeTestState() *State {
 					Type:  VarType("string"),
 				},
 			},
-			Resources: ResDefs{
+			Resources: FieldDefinitions{
 				{Name: "cpus", Type: "float"},
 				{Name: "mem", Type: "memory_size"},
 			},
@@ -52,6 +52,17 @@ func makeTestState() *State {
 				Owners: []string{"owner1"},
 				Kind:   ManifestKindService,
 				Deployments: DeploySpecs{
+					"Global": {
+						DeployConfig: DeployConfig{
+							Env: Env{
+								"ALL": "IS ONE",
+							},
+							Metadata: Metadata{
+								"everybody": "wants to be a cat",
+							},
+						},
+					},
+
 					"cluster-1": {
 						Version: semv.MustParse("1.0.0"),
 						DeployConfig: DeployConfig{
@@ -61,6 +72,9 @@ func makeTestState() *State {
 							},
 							Env: Env{
 								"ENV_1": "ENV ONE",
+							},
+							Metadata: Metadata{
+								"name": "O'Malley",
 							},
 							NumInstances: 2,
 						},
@@ -74,6 +88,9 @@ func makeTestState() *State {
 							},
 							Env: Env{
 								"ENV_2": "ENV TWO",
+							},
+							Metadata: Metadata{
+								"name": "Duchess",
 							},
 							NumInstances: 3,
 						},
@@ -131,8 +148,13 @@ var expectedDeployments = NewDeployments(
 				"mem":  "1024",
 			},
 			Env: Env{
+				"ALL":               "IS ONE",
 				"ENV_1":             "ENV ONE",
 				"CLUSTER_LONG_NAME": "Cluster One",
+			},
+			Metadata: Metadata{
+				"everybody": "wants to be a cat",
+				"name":      "O'Malley",
 			},
 			NumInstances: 2,
 		},
@@ -149,8 +171,13 @@ var expectedDeployments = NewDeployments(
 				"mem":  "2048",
 			},
 			Env: Env{
+				"ALL":               "IS ONE",
 				"ENV_2":             "ENV TWO",
 				"CLUSTER_LONG_NAME": "Cluster Two",
+			},
+			Metadata: Metadata{
+				"everybody": "wants to be a cat",
+				"name":      "Duchess",
 			},
 			NumInstances: 3,
 		},
@@ -251,6 +278,56 @@ func TestState_Deployments(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	compareDeployments(t, expectedDeployments, actualDeployments)
+}
+
+func TestState_DeploymentsBounce(t *testing.T) {
+	defs := makeTestState().Defs
+	bounceManifests, err := expectedDeployments.Clone().Manifests(defs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bounceState := State{
+		Defs:      defs,
+		Manifests: bounceManifests,
+	}
+	actualDeployments, err := bounceState.Deployments()
+	if err != nil {
+		t.Fatal(err)
+	}
+	compareDeployments(t, expectedDeployments, actualDeployments)
+}
+
+func TestDeployments_Manifests(t *testing.T) {
+	defs := makeTestState().Defs
+
+	actualManifests, err := expectedDeployments.Clone().Manifests(defs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expectedManifests := makeTestState().Manifests
+
+	compareManifests(t, expectedManifests, actualManifests)
+}
+
+func TestDeployments_ManifestsBounce(t *testing.T) {
+	defs := makeTestState().Defs
+
+	bounceDeployments, err := makeTestState().Deployments()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	actualManifests, err := bounceDeployments.Manifests(defs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expectedManifests := makeTestState().Manifests
+
+	compareManifests(t, expectedManifests, actualManifests)
+}
+
+func compareDeployments(t *testing.T, expectedDeployments, actualDeployments Deployments) {
 	exSnap := expectedDeployments.Snapshot()
 	if len(actualDeployments.Snapshot()) != len(exSnap) {
 		t.Error("deployments different lengths")
@@ -267,14 +344,7 @@ func TestState_Deployments(t *testing.T) {
 	}
 }
 
-func TestDeployments_Manifests(t *testing.T) {
-	defs := makeTestState().Defs
-
-	actualManifests, err := expectedDeployments.Clone().Manifests(defs)
-	if err != nil {
-		t.Fatal(err)
-	}
-	expectedManifests := makeTestState().Manifests
+func compareManifests(t *testing.T, expectedManifests, actualManifests Manifests) {
 	actualLen := actualManifests.Len()
 	expectedLen := expectedManifests.Len()
 	if actualLen != expectedLen {
