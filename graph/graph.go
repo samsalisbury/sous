@@ -41,6 +41,8 @@ type (
 	OutWriter io.Writer
 	// ErrWriter is typically set to os.Stderr.
 	ErrWriter io.Writer
+	// InReader is typicially set to os.Stdin
+	InReader io.Reader
 	// Version represents a version of Sous.
 	Version struct{ semv.Version }
 	// LocalUser is the currently logged in user.
@@ -100,10 +102,11 @@ const (
 
 // BuildGraph builds the dependency injection graph, used to populate commands
 // invoked by the user.
-func BuildGraph(out, err io.Writer) *SousGraph {
+func BuildGraph(in io.Reader, out, err io.Writer) *SousGraph {
 	graph := &SousGraph{psyringe.New()}
 	// stdout, stderr
 	graph.Add(
+		func() InReader { return in },
 		func() OutWriter { return out },
 		func() ErrWriter { return err },
 	)

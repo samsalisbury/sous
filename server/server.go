@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"net/http"
 	"os"
 
@@ -19,7 +20,7 @@ func New(laddr string, gf GraphFactory) *http.Server {
 // RunServer starts a server up.
 func RunServer(v *config.Verbosity, laddr string) error {
 	gf := func() Injector {
-		g := graph.BuildGraph(os.Stdout, os.Stdout)
+		g := graph.BuildGraph(&bytes.Buffer{}, os.Stdout, os.Stdout)
 		g.Add(v)
 		return g
 	}

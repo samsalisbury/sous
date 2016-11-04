@@ -6,7 +6,7 @@ type SousMetadata struct{}
 
 var MetadataSubcommands = cmdr.Commands{}
 
-func init() { TopLevelCommands["query"] = &SousMetadata{} }
+func init() { TopLevelCommands["metadata"] = &SousMetadata{} }
 
 const sousMetadataHelp = `
 query and manipulate deployment metadata

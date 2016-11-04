@@ -17,11 +17,12 @@ import (
 func prepareCommand(t *testing.T, cl []string) (*CLI, *cmdr.PreparedExecution, fmt.Stringer, fmt.Stringer) {
 	require := require.New(t)
 
+	stdin := &bytes.Buffer{}
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
 
 	s := &Sous{Version: semv.MustParse(`1.2.3`)}
-	c, err := NewSousCLI(s, stdout, stderr)
+	c, err := NewSousCLI(s, stdin, stdout, stderr)
 	require.NoError(err)
 
 	exe, err := c.Prepare(cl)
@@ -155,12 +156,16 @@ func TestInvokeQuery(t *testing.T) {
 func TestInvokeMetadataGet(t *testing.T) {
 	assert := assert.New(t)
 	exe := justCommand(t, []string{`sous`, `metadata`, `get`, `-repo`, `github.com/opentable/sous`})
+	t.Logf("%#v", exe)
+	t.Logf("%#v", exe.Cmd)
 	assert.NotNil(exe)
 }
 
 func TestInvokeMetadataSet(t *testing.T) {
 	assert := assert.New(t)
 	exe := justCommand(t, []string{`sous`, `metadata`, `set`, `-repo`, `github.com/opentable/sous`, `BuildBranch`, `master`})
+	t.Logf("%#v", exe)
+	t.Logf("%#v", exe.Cmd)
 	assert.NotNil(exe)
 }
 
@@ -271,11 +276,12 @@ func TestInvokeWithUnknownFlags(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
+	stdin := &bytes.Buffer{}
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
 
 	s := &Sous{Version: semv.MustParse(`1.2.3`)}
-	c, err := NewSousCLI(s, stdout, stderr)
+	c, err := NewSousCLI(s, stdin, stdout, stderr)
 	require.NoError(err)
 
 	c.Invoke([]string{`sous`, `-cobblers`})
