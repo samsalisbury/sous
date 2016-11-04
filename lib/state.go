@@ -46,11 +46,11 @@ type (
 
 		// Default adds a GDM wide default for a key.
 		// It's assumed that if this is left empty, the field must be set
-		Default string `yaml:"omitempty"`
+		Default string `yaml:",omitempty"`
 
 		// If the zero value is the intended default value for a field,
 		// you can mark it Optional: true.
-		Optional bool `yaml:"omitempty"`
+		Optional bool `yaml:",omitempty"`
 	}
 
 	// Clusters is a collection of Cluster
@@ -173,4 +173,24 @@ func (s *State) Validate() []Flaw {
 // Repair implements Flawed for State
 func (s *State) Repair(fs []Flaw) error {
 	return errors.Errorf("Can't do nuffin with flaws yet")
+}
+
+// UpdateDeployments upserts ds into the State
+func (s *State) UpdateDeployments(ds ...*Deployment) error {
+	stateDeps, err := s.Deployments()
+	if err != nil {
+		return err
+	}
+
+	for _, d := range ds {
+		stateDeps.Set(d.ID(), d)
+	}
+
+	newManifests, err := stateDeps.Manifests(s.Defs)
+	if err != nil {
+		return err
+	}
+
+	s.Manifests = newManifests
+	return nil
 }

@@ -82,16 +82,17 @@ func (ds Deployments) Manifests(defs Defs) (Manifests, error) {
 		}
 		m.Deployments[d.ClusterName] = spec
 		m.Kind = d.Kind
-		global, pruned := gatherDeploySpecs(m.Deployments)
-		var zeroDeploySpec DeploySpec
-		if !global.Equal(zeroDeploySpec) {
-			m.Deployments = DeploySpecs{}
-			m.Deployments["Global"] = global
-			for _, sp := range pruned {
-				m.Deployments[sp.clusterName] = sp
-			}
-		}
+
 		ms.Set(mid, m)
+	}
+
+	for _, k := range ms.Keys() {
+		m, there := ms.Get(k)
+		if !there {
+			continue
+		}
+		m.Deployments = gatherDeploySpecs(m.Deployments)
+		ms.Set(k, m)
 	}
 
 	return ms, nil
@@ -141,34 +142,55 @@ func BuildDeployment(s *State, m *Manifest, nick string, spec DeploySpec, inheri
 	}, nil
 }
 
-func gatherDeploySpecs(dss DeploySpecs) (global DeploySpec, pruned []DeploySpec) {
-	var dcs []DeployConfig
-	for _, s := range dss {
-		dcs = append(dcs, s.DeployConfig)
+func gatherDeploySpecs(dss DeploySpecs) (pruned DeploySpecs) {
+	if len(dss) < 2 {
+		return dss
 	}
-	gc, pcs := gatherDeployConfigs(dcs)
+	dcs := DeployConfigs{}
+	for cn, s := range dss {
+		dcs[cn] = s.DeployConfig
+	}
+	pcs := gatherDeployConfigs(dcs)
 	gatherVersion := true
 
-	for _, s := range dss[1:] {
-		if dss[0].Version != s.Version {
-			gatherVersion = false
+	var global DeploySpec
+
+	for fname := range dss {
+		global = dss[fname].Clone()
+
+		for name := range dss {
+			if name == fname {
+				continue
+			}
+
+			if global.Version != dss[name].Version {
+				gatherVersion = false
+			}
 		}
-	}
-	global = DeploySpec{DeployConfig: gc}
-	if gatherVersion {
-		global.Version = dss[0].Version
-	}
-	pruned = make([]DeploySpec, len(dss))
-	for idx := range dss {
-		pruned[idx] = DeploySpec{
-			DeployConfig: pcs[idx],
-			clusterName:  dss[idx].clusterName,
-		}
+
+		var zeroVersion semv.Version
 		if !gatherVersion {
-			pruned[idx].Version = dss[idx].Version
+			global.Version = zeroVersion
 		}
+
+		pruned = DeploySpecs{}
+		for name := range dss {
+			ds := DeploySpec{
+				DeployConfig: pcs[name],
+				clusterName:  dss[name].clusterName,
+			}
+			if !gatherVersion {
+				ds.Version = dss[name].Version
+			}
+			pruned[name] = ds
+		}
+		global.DeployConfig = pcs["Global"]
+		if !global.isZero() {
+			pruned["Global"] = global
+		}
+		return //after first loop
 	}
-	return
+	return //useless but requires
 }
 
 func flattenDeploySpecs(dss []DeploySpec) DeploySpec {

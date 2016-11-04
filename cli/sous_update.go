@@ -101,6 +101,7 @@ func updateState(s *sous.State, gdm graph.CurrentGDM, sid sous.SourceID, did sou
 	deployment.SourceID = sid
 	deployment.ClusterName = did.Cluster
 
+	// XXX switch to .UpdateDeployments
 	gdm.Set(did, deployment)
 
 	manifests, err := gdm.Manifests(s.Defs)

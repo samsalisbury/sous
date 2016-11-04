@@ -30,7 +30,7 @@ This should resemble the manifest that was used to establish the current state o
 `
 
 // Help prints the help
-func (*SousQueryAds) Help() string { return sousBuildHelp }
+func (*SousQueryAds) Help() string { return sousQueryAdsHelp }
 
 func (*SousQueryAds) RegisterOn(psy Addable) {
 	psy.Add(graph.DryrunOption("none"))
