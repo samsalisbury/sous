@@ -174,3 +174,23 @@ func (s *State) Validate() []Flaw {
 func (s *State) Repair(fs []Flaw) error {
 	return errors.Errorf("Can't do nuffin with flaws yet")
 }
+
+// UpdateDeployments upserts ds into the State
+func (s *State) UpdateDeployments(ds ...*Deployment) error {
+	stateDeps, err := s.Deployments()
+	if err != nil {
+		return err
+	}
+
+	for _, d := range ds {
+		stateDeps.Set(d.ID(), d)
+	}
+
+	newManifests, err := stateDeps.Manifests(s.Defs)
+	if err != nil {
+		return err
+	}
+
+	s.Manifests = newManifests
+	return nil
+}

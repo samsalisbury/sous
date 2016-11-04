@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"log"
 
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
@@ -43,7 +42,6 @@ func (smg *SousMetadataGet) Execute(args []string) cmdr.Result {
 		return EnsureErrorResult(errors.Errorf("-repo is required"))
 	}
 	filtered := smg.CurrentGDM.Clone().Filter(smg.ResolveFilter.FilterDeployment)
-	log.Printf("%#+v", filtered)
 	if smg.ResolveFilter.Cluster != "" {
 		dep, err := filtered.Only()
 		if err != nil {
@@ -52,7 +50,6 @@ func (smg *SousMetadataGet) Execute(args []string) cmdr.Result {
 		if dep == nil {
 			return EnsureErrorResult(errors.Errorf("No manifest deploy for %v", smg.DeployFilterFlags))
 		}
-		log.Printf("%#v", dep)
 		return outputMetadata(dep.Metadata, smg.ResolveFilter.Cluster, args, smg.OutWriter)
 	}
 
@@ -78,7 +75,6 @@ func (smg *SousMetadataGet) Execute(args []string) cmdr.Result {
 }
 
 func outputMetadata(metadata sous.Metadata, clusterName string, args []string, out io.Writer) cmdr.Result {
-	log.Printf("%v %v %v", clusterName, args, metadata)
 	if len(args) == 0 {
 		yml, err := yaml.Marshal(metadata)
 		if err != nil {

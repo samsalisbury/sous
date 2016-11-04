@@ -152,6 +152,18 @@ func TestInvokeQuery(t *testing.T) {
 	assert.NotNil(exe)
 }
 
+func TestInvokeMetadataGet(t *testing.T) {
+	assert := assert.New(t)
+	exe := justCommand(t, []string{`sous`, `metadata`, `get`, `-repo`, `github.com/opentable/sous`})
+	assert.NotNil(exe)
+}
+
+func TestInvokeMetadataSet(t *testing.T) {
+	assert := assert.New(t)
+	exe := justCommand(t, []string{`sous`, `metadata`, `set`, `-repo`, `github.com/opentable/sous`, `BuildBranch`, `master`})
+	assert.NotNil(exe)
+}
+
 func TestInvokeServer(t *testing.T) {
 	exe := justCommand(t, []string{`sous`, `server`})
 	assert.NotNil(t, exe)
