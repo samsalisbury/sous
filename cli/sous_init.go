@@ -12,13 +12,12 @@ import (
 // SousInit is the command description for `sous init`
 type SousInit struct {
 	config.DeployFilterFlags
-	Flags         config.OTPLFlags
-	Target        graph.TargetManifest
-	SourceContext *sous.SourceContext
-	WD            graph.LocalWorkDirShell
-	GDM           graph.CurrentGDM
-	State         *sous.State
-	StateWriter   graph.LocalStateWriter
+	Flags       config.OTPLFlags
+	Target      graph.TargetManifest
+	WD          graph.LocalWorkDirShell
+	GDM         graph.CurrentGDM
+	State       *sous.State
+	StateWriter graph.LocalStateWriter
 }
 
 func init() { TopLevelCommands["init"] = &SousInit{} }

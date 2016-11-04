@@ -16,8 +16,7 @@ import (
 type SousUpdate struct {
 	config.DeployFilterFlags
 	config.OTPLFlags
-	Manifest graph.TargetManifest
-	*sous.SourceContext
+	Manifest    graph.TargetManifest
 	WD          graph.LocalWorkDirShell
 	GDM         graph.CurrentGDM
 	State       *sous.State
