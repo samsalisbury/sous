@@ -270,9 +270,9 @@ func newGitSourceContext(g LocalGitRepo) (GitSourceContext, error) {
 	return GitSourceContext{c}, initErr(err, "getting local git context")
 }
 
-func newSourceContext(f *config.DeployFilterFlags, g GitSourceContext) (*sous.SourceContext, error) {
-	c := g.SourceContext
-	if c == nil {
+func newSourceContext(f *config.DeployFilterFlags, g LocalGitRepo) (*sous.SourceContext, error) {
+	c, err := g.SourceContext()
+	if err != nil {
 		c = &sous.SourceContext{}
 	}
 	mid, err := newTargetManifestID(f, c)

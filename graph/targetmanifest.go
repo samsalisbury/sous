@@ -6,8 +6,9 @@ import (
 	"github.com/pkg/errors"
 )
 
-func newTargetManifestID(f *config.DeployFilterFlags, c *sous.SourceContext) (TargetManifestID, error) {
-	if c == nil {
+func newTargetManifestID(f *config.DeployFilterFlags, g GitSourceContext) (TargetManifestID, error) {
+	c, err := g.SourceContext()
+	if err != nil {
 		c = &sous.SourceContext{}
 	}
 	if f == nil {
