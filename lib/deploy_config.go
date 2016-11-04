@@ -15,6 +15,8 @@ type (
 		// Resources represents the resources each instance of this software
 		// will be given by the execution environment.
 		Resources Resources `yaml:",omitempty" validate:"keys=nonempty,values=nonempty"`
+		// Metadata stores values about deployments for outside applications to use
+		Metadata Metadata `yaml:",omitempty" validate:"keys=nonempty,values=nonempty"`
 		// Env is a list of environment variables to set for each instance of
 		// of this deployment. It will be checked for conflict with the
 		// definitions found in State.Defs.EnvVars, and if not in conflict
@@ -37,6 +39,10 @@ type (
 	// Env is a mapping of environment variable name to value, used to provision
 	// single instances of an application.
 	Env map[string]string
+
+	// Metadata represents an opaque map of metadata - Sous is agnostic about
+	// its contents, except to validate it against the top level schema
+	Metadata map[string]string
 
 	// NilVolumeFlaw is used when DeployConfig.Volumes contains a nil.
 	NilVolumeFlaw struct {
