@@ -6,7 +6,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func newTargetManifestID(f *config.DeployFilterFlags, g GitSourceContext) (TargetManifestID, error) {
+func newTargetManifestID(f *config.DeployFilterFlags, g LocalGitRepo) (TargetManifestID, error) {
 	c, err := g.SourceContext()
 	if err != nil {
 		c = &sous.SourceContext{}
@@ -15,9 +15,6 @@ func newTargetManifestID(f *config.DeployFilterFlags, g GitSourceContext) (Targe
 		f = &config.DeployFilterFlags{}
 	}
 	var repo, offset = c.PrimaryRemoteURL, c.OffsetDir
-	if f.Repo != "" {
-		repo = f.Repo
-	}
 	if f.Repo != "" {
 		repo = f.Repo
 		offset = ""
