@@ -3,6 +3,8 @@ package graph
 import (
 	"testing"
 
+	"github.com/nyarly/testify/assert"
+	"github.com/nyarly/testify/require"
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/lib"
 )
@@ -12,75 +14,52 @@ type resolveSourceLocationInput struct {
 	Context *sous.SourceContext
 }
 
-var badResolveSourceLocationCalls = map[string][]resolveSourceLocationInput{
-	"no repo specified, please use -repo or run sous inside a git repo": {
-		{Flags: &config.DeployFilterFlags{}, Context: &sous.SourceContext{}},
-		{Flags: nil, Context: &sous.SourceContext{}},
-		{Flags: &config.DeployFilterFlags{}, Context: nil},
-	},
-	"you specified -offset but not -repo": {
-		{Flags: &config.DeployFilterFlags{Offset: "some/offset"}},
-	},
-}
-
 func TestResolveSourceLocation_failure(t *testing.T) {
-	for expected, inGroup := range badResolveSourceLocationCalls {
-		for _, in := range inGroup {
-			_, actualErr := newTargetManifestID(in.Flags, in.Context)
-			if actualErr == nil {
-				t.Errorf("got nil; want error %q", expected)
-				continue
-			}
-			actual := actualErr.Error()
-			if actual != expected {
-				t.Errorf("got error %q; want error %q", actual, expected)
-			}
-		}
-	}
+	assertSourceContextError(t, &config.DeployFilterFlags{}, &SourceContextDiscovery{}, "no repo specified, please use -repo or run sous inside a git repo")
+	assertSourceContextError(t, nil, &SourceContextDiscovery{}, "no repo specified, please use -repo or run sous inside a git repo")
+	assertSourceContextError(t,
+		&config.DeployFilterFlags{Offset: "some/offset"},
+		&SourceContextDiscovery{},
+		"-offset.*without.*-repo")
 }
 
-var goodResolveSourceLocationCalls = map[sous.ManifestID][]resolveSourceLocationInput{
-	{Source: sous.SourceLocation{Repo: "github.com/user/project"}}: {
-		{Flags: &config.DeployFilterFlags{Repo: "github.com/user/project"}},
-		{Context: &sous.SourceContext{PrimaryRemoteURL: "github.com/user/project"}},
-	},
-	{Source: sous.SourceLocation{Repo: "github.com/user/project", Dir: "some/path"}}: {
-		{Flags: &config.DeployFilterFlags{Repo: "github.com/user/project", Offset: "some/path"}},
-		{Context: &sous.SourceContext{
-			PrimaryRemoteURL: "github.com/user/project",
-			OffsetDir:        "some/path",
-		}},
-	},
-	{Source: sous.SourceLocation{Repo: "github.com/from/flags"}}: {
-		{
-			Context: &sous.SourceContext{
-				PrimaryRemoteURL: "github.com/original/context",
-				OffsetDir:        "the/detected/offset",
-			},
-			Flags: &config.DeployFilterFlags{
-				Repo: "github.com/from/flags",
-			},
-		},
-	},
+func assertSourceContextError(t *testing.T, flags *config.DeployFilterFlags, ctx *SourceContextDiscovery, msgPattern string) {
+	_, actualErr := newTargetManifestID(flags, ctx)
+	assert.NotNil(t, actualErr)
+	assert.Regexp(t, msgPattern, actualErr.Error())
+}
+
+func assertSourceContextSuccess(t *testing.T, expected sous.ManifestID, flags *config.DeployFilterFlags, ctx *sous.SourceContext) {
+	disco := &SourceContextDiscovery{SourceContext: ctx}
+	actual, err := newTargetManifestID(flags, disco)
+	require.NoError(t, err)
+	assert.Equal(t, actual.Source.Repo, expected.Source.Repo, "repos differ")
+	assert.Equal(t, actual.Source.Dir, expected.Source.Dir, "offsets differ")
+	assert.Equal(t, actual.Flavor, expected.Flavor, "flavors differ")
 }
 
 func TestResolveSourceLocation_success(t *testing.T) {
-	for expected, inGroup := range goodResolveSourceLocationCalls {
-		for _, in := range inGroup {
-			actual, err := newTargetManifestID(in.Flags, in.Context)
-			if err != nil {
-				t.Error(err)
-				continue
-			}
-			if actual.Source.Repo != expected.Source.Repo {
-				t.Errorf("got repo %q; want %q", actual.Source.Repo, expected.Source.Repo)
-			}
-			if actual.Source.Dir != expected.Source.Dir {
-				t.Errorf("got offset %q; want %q", actual.Source.Dir, expected.Source.Dir)
-			}
-			if actual.Flavor != expected.Flavor {
-				t.Errorf("got flavor %q; want %q", actual.Flavor, expected.Flavor)
-			}
-		}
-	}
+	assertSourceContextSuccess(t,
+		sous.ManifestID{Source: sous.SourceLocation{Repo: "github.com/user/project"}},
+		&config.DeployFilterFlags{Repo: "github.com/user/project"},
+		&sous.SourceContext{PrimaryRemoteURL: "github.com/user/project"},
+	)
+	assertSourceContextSuccess(t,
+		sous.ManifestID{Source: sous.SourceLocation{Repo: "github.com/user/project", Dir: "some/path"}},
+		&config.DeployFilterFlags{Repo: "github.com/user/project", Offset: "some/path"},
+		&sous.SourceContext{
+			PrimaryRemoteURL: "github.com/user/project",
+			OffsetDir:        "some/path",
+		},
+	)
+	assertSourceContextSuccess(t,
+		sous.ManifestID{Source: sous.SourceLocation{Repo: "github.com/from/flags"}},
+		&config.DeployFilterFlags{
+			Repo: "github.com/from/flags",
+		},
+		&sous.SourceContext{
+			PrimaryRemoteURL: "github.com/original/context",
+			OffsetDir:        "the/detected/offset",
+		},
+	)
 }

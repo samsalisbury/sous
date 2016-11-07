@@ -58,8 +58,6 @@ type (
 	LocalGitClient struct{ *git.Client }
 	// LocalGitRepo is the git repository containing WorkDir.
 	LocalGitRepo struct{ *git.Repo }
-	// GitSourceContext is the source context according to the local git repo.
-	GitSourceContext struct{ *sous.SourceContext }
 	// ScratchDirShell is a shell for working in the scratch area where things
 	// like artefacts, and build metadata are stored. It is a new, empty
 	// directory, and should be cleaned up eventually.
@@ -91,6 +89,12 @@ type (
 	TargetManifestID sous.ManifestID
 	// Dryrun option
 	DryrunOption string
+	// SourceContextDiscovery captures the possiblity of not finding a SourceContext
+	SourceContextDiscovery struct {
+		Error error
+		*sous.ManifestID
+		*sous.SourceContext
+	}
 )
 
 const (
@@ -200,9 +204,9 @@ func AddInternals(graph adder) {
 		newBuildConfig,
 		newBuildContext,
 		newSourceContext,
+		newSourceContextDiscovery,
 		newLocalGitClient,
 		newLocalGitRepo,
-		newGitSourceContext,
 		newSourceHostChooser,
 		newCurrentState,
 		newCurrentGDM,
@@ -265,23 +269,37 @@ func newLogSet(v *config.Verbosity, err ErrWriter) *sous.LogSet { // XXX tempora
 	return &sous.Log
 }
 
-func newGitSourceContext(g LocalGitRepo) (GitSourceContext, error) {
+func newSourceContextDiscovery(g LocalGitRepo) *SourceContextDiscovery {
 	c, err := g.SourceContext()
-	return GitSourceContext{c}, initErr(err, "getting local git context")
+	return &SourceContextDiscovery{
+		Error:         err,
+		SourceContext: c,
+	}
 }
 
-func newSourceContext(f *config.DeployFilterFlags, g LocalGitRepo, mid TargetManifestID) (*sous.SourceContext, error) {
-	c, err := g.SourceContext()
-	if err != nil {
-		c = &sous.SourceContext{}
+func newSourceContext(mid TargetManifestID, discovered *SourceContextDiscovery) (*sous.SourceContext, error) {
+	if err := discovered.GetError(mid); err != nil {
+		return nil, err
+	}
+	return discovered.SourceContext, nil
+}
+
+func (scd *SourceContextDiscovery) GetError(mid TargetManifestID) error {
+	if scd.Error != nil {
+		return scd.Error
 	}
 	sl := sous.ManifestID(mid)
-	if sl.Source.Repo != c.SourceLocation().Repo {
-		// TODO: Clone the repository, and use the cloned dir as source context.
-		return nil, errors.Errorf("source location %q is not the same as the remote %q",
-			sl.Source.Repo, c.SourceLocation().Repo)
+	if sl.Source.Repo != scd.SourceLocation().Repo {
+		return errors.Errorf("source location %q is not the same as the remote %q", sl.Source.Repo, scd.SourceLocation().Repo)
 	}
-	return c, nil
+	return nil
+}
+
+func (scd *SourceContextDiscovery) GetContext() *sous.SourceContext {
+	if scd.Error != nil || scd.SourceContext == nil {
+		return &sous.SourceContext{}
+	}
+	return scd.SourceContext
 }
 
 func newBuildContext(wd LocalWorkDirShell, c *sous.SourceContext) *sous.BuildContext {

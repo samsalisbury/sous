@@ -6,12 +6,9 @@ import (
 	"github.com/pkg/errors"
 )
 
-func newTargetManifestID(f *config.DeployFilterFlags, g LocalGitRepo) (TargetManifestID, error) {
-	c, err := g.SourceContext()
-	if err != nil {
-		c = &sous.SourceContext{}
-	}
-	if f == nil {
+func newTargetManifestID(f *config.DeployFilterFlags, discovered *SourceContextDiscovery) (TargetManifestID, error) {
+	c := discovered.GetContext()
+	if f == nil { // XXX I think this needs to be supplied anyway by consumers...
 		f = &config.DeployFilterFlags{}
 	}
 	var repo, offset = c.PrimaryRemoteURL, c.OffsetDir
@@ -21,7 +18,7 @@ func newTargetManifestID(f *config.DeployFilterFlags, g LocalGitRepo) (TargetMan
 	}
 	if f.Offset != "" {
 		if f.Repo == "" {
-			return TargetManifestID{}, errors.Errorf("you specified -offset but not -repo")
+			return TargetManifestID{}, errors.Errorf("-offset doesn't make sense without a -repo or workspace remote")
 		}
 		offset = f.Offset
 	}
