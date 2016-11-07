@@ -2,6 +2,7 @@ package cli
 
 import (
 	"flag"
+	"log"
 
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
@@ -37,6 +38,7 @@ func (smg *SousManifestGet) RegisterOn(psy Addable) {
 func (smg *SousManifestGet) Execute(args []string) cmdr.Result {
 	mid := sous.ManifestID(smg.TargetManifestID)
 
+	log.Printf("%#v", mid)
 	mani, present := smg.State.Manifests.Get(mid)
 	if !present {
 		return EnsureErrorResult(errors.Errorf("No manifest for %v yet. See `sous init`", smg.DeployFilterFlags))

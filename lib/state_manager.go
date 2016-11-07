@@ -19,16 +19,19 @@ type (
 	// DummyStateManager is used for testing
 	DummyStateManager struct {
 		*State
+		ReadCount, WriteCount int
 	}
 )
 
 // ReadState implements StateManager
-func (sm DummyStateManager) ReadState() (*State, error) {
+func (sm *DummyStateManager) ReadState() (*State, error) {
+	sm.ReadCount++
 	return sm.State, nil
 }
 
 // WriteState implements StateManager
-func (sm DummyStateManager) WriteState(s *State) error {
+func (sm *DummyStateManager) WriteState(s *State) error {
+	sm.WriteCount++
 	*sm.State = *s
 	return nil
 }

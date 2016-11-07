@@ -72,8 +72,8 @@ func TestWriteState(t *testing.T) {
 		di.Add(sous.NewLogSet(os.Stderr, os.Stderr, ioutil.Discard))
 		graph.AddInternals(di)
 		di.Add(
-			func() graph.LocalStateReader { return graph.LocalStateReader{StateReader: sm} },
-			func() graph.LocalStateWriter { return graph.LocalStateWriter{StateWriter: sm} },
+			func() graph.LocalStateReader { return graph.LocalStateReader{StateReader: &sm} },
+			func() graph.LocalStateWriter { return graph.LocalStateWriter{StateWriter: &sm} },
 		)
 		di.Add(&config.Verbosity{})
 		return di
