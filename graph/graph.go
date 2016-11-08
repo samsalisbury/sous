@@ -278,21 +278,18 @@ func newSourceContextDiscovery(g LocalGitRepo) *SourceContextDiscovery {
 }
 
 func newSourceContext(mid TargetManifestID, discovered *SourceContextDiscovery) (*sous.SourceContext, error) {
-	if err := discovered.GetError(mid); err != nil {
-		return nil, err
-	}
-	return discovered.SourceContext, nil
+	return discovered.Unwrap(mid)
 }
 
-func (scd *SourceContextDiscovery) GetError(mid TargetManifestID) error {
+func (scd *SourceContextDiscovery) Unwrap(mid TargetManifestID) (*sous.SourceContext, error) {
 	if scd.Error != nil {
-		return scd.Error
+		return nil, scd.Error
 	}
 	sl := sous.ManifestID(mid)
 	if sl.Source.Repo != scd.SourceLocation().Repo {
-		return errors.Errorf("source location %q is not the same as the remote %q", sl.Source.Repo, scd.SourceLocation().Repo)
+		return nil, errors.Errorf("source location %q is not the same as the remote %q", sl.Source.Repo, scd.SourceLocation().Repo)
 	}
-	return nil
+	return scd.SourceContext, nil
 }
 
 func (scd *SourceContextDiscovery) GetContext() *sous.SourceContext {
