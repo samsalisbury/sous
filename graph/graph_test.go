@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"bytes"
 	"io/ioutil"
 	"log"
 	"testing"
@@ -15,7 +16,7 @@ import (
 
 func TestBuildGraph(t *testing.T) {
 	log.SetFlags(log.Flags() | log.Lshortfile)
-	g := BuildGraph(ioutil.Discard, ioutil.Discard)
+	g := BuildGraph(&bytes.Buffer{}, ioutil.Discard, ioutil.Discard)
 	g.Add(DryrunBoth)
 	g.Add(&config.Verbosity{})
 	g.Add(&config.DeployFilterFlags{})

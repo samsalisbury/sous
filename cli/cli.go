@@ -72,8 +72,8 @@ func (cli *CLI) Plumbing(cmd cmdr.Executor, args []string) cmdr.Result {
 }
 
 // BuildCLIGraph builds the CLI DI graph.
-func BuildCLIGraph(cli *CLI, root *Sous, out, err io.Writer) *graph.SousGraph {
-	g := graph.BuildGraph(out, err)
+func BuildCLIGraph(cli *CLI, root *Sous, in io.Reader, out, err io.Writer) *graph.SousGraph {
+	g := graph.BuildGraph(in, out, err)
 	g.Add(cli)
 	g.Add(root)
 	g.Add(func(c *CLI) graph.Out {
@@ -88,7 +88,7 @@ func BuildCLIGraph(cli *CLI, root *Sous, out, err io.Writer) *graph.SousGraph {
 }
 
 // NewSousCLI creates a new Sous cli app.
-func NewSousCLI(s *Sous, out, errout io.Writer) (*CLI, error) {
+func NewSousCLI(s *Sous, in io.Reader, out, errout io.Writer) (*CLI, error) {
 
 	stdout := cmdr.NewOutput(out)
 	stderr := cmdr.NewOutput(errout)
@@ -110,7 +110,7 @@ func NewSousCLI(s *Sous, out, errout io.Writer) (*CLI, error) {
 	var chain []cmdr.Command
 
 	cli.Hooks.Startup = func(*cmdr.CLI) error {
-		g = BuildCLIGraph(cli, s, out, errout)
+		g = BuildCLIGraph(cli, s, in, out, errout)
 		chain = make([]cmdr.Command, 0)
 		return nil
 	}

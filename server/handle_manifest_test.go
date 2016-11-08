@@ -122,7 +122,7 @@ func TestHandlesManifestPut(t *testing.T) {
 		Source: sous.SourceLocation{Repo: "gh"},
 		Kind:   sous.ManifestKindService,
 	})
-	writer := graph.LocalStateWriter{StateWriter: sous.DummyStateManager{State: state}}
+	writer := graph.LocalStateWriter{StateWriter: &sous.DummyStateManager{State: state}}
 
 	manifest := &sous.Manifest{
 		Source: sous.SourceLocation{Repo: "gh"},

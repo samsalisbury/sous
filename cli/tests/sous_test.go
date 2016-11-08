@@ -13,10 +13,10 @@ func TestSous(t *testing.T) {
 
 	log.Print(term.Stderr)
 	term.Stdout.ShouldHaveNumLines(0)
-	term.Stderr.ShouldHaveNumLines(24)
+	term.Stderr.ShouldHaveNumLines(26)
 
 	term.Stderr.ShouldHaveExactLine("usage: sous <command>")
-	term.Stderr.ShouldHaveLineContaining("help     get help with sous")
+	term.Stderr.ShouldHaveLineContaining("help      get help with sous")
 }
 
 func TestSousVersion(t *testing.T) {

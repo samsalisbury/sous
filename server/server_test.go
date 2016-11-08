@@ -86,7 +86,7 @@ func TestOverallRouter(t *testing.T) {
 	assert := assert.New(t)
 
 	gf := func() Injector {
-		g := graph.BuildGraph(os.Stdout, os.Stdout)
+		g := graph.BuildGraph(&bytes.Buffer{}, os.Stdout, os.Stdout)
 		g.Add(&config.Verbosity{})
 		return g
 	}

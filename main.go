@@ -23,7 +23,7 @@ func main() {
 	//sous.Log.Debug.SetOutput(os.Stderr)
 	log.SetFlags(log.Flags() | log.Lshortfile)
 
-	c, err := cli.NewSousCLI(Sous, os.Stdout, os.Stderr)
+	c, err := cli.NewSousCLI(Sous, os.Stdin, os.Stdout, os.Stderr)
 	if err != nil {
 		die(err)
 	}

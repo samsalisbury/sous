@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -14,7 +15,7 @@ import (
 
 func testInject(thing interface{}) error {
 	gf := func() Injector {
-		g := graph.BuildGraph(os.Stdout, os.Stdout)
+		g := graph.BuildGraph(&bytes.Buffer{}, os.Stdout, os.Stdout)
 		g.Add(&config.Verbosity{})
 		return g
 	}

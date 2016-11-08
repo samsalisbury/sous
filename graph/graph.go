@@ -41,6 +41,8 @@ type (
 	OutWriter io.Writer
 	// ErrWriter is typically set to os.Stderr.
 	ErrWriter io.Writer
+	// InReader is typicially set to os.Stdin
+	InReader io.Reader
 	// Version represents a version of Sous.
 	Version struct{ semv.Version }
 	// LocalUser is the currently logged in user.
@@ -56,8 +58,6 @@ type (
 	LocalGitClient struct{ *git.Client }
 	// LocalGitRepo is the git repository containing WorkDir.
 	LocalGitRepo struct{ *git.Repo }
-	// GitSourceContext is the source context according to the local git repo.
-	GitSourceContext struct{ *sous.SourceContext }
 	// ScratchDirShell is a shell for working in the scratch area where things
 	// like artefacts, and build metadata are stored. It is a new, empty
 	// directory, and should be cleaned up eventually.
@@ -89,6 +89,12 @@ type (
 	TargetManifestID sous.ManifestID
 	// Dryrun option
 	DryrunOption string
+	// SourceContextDiscovery captures the possiblity of not finding a SourceContext
+	SourceContextDiscovery struct {
+		Error error
+		*sous.ManifestID
+		*sous.SourceContext
+	}
 )
 
 const (
@@ -100,10 +106,11 @@ const (
 
 // BuildGraph builds the dependency injection graph, used to populate commands
 // invoked by the user.
-func BuildGraph(out, err io.Writer) *SousGraph {
+func BuildGraph(in io.Reader, out, err io.Writer) *SousGraph {
 	graph := &SousGraph{psyringe.New()}
 	// stdout, stderr
 	graph.Add(
+		func() InReader { return in },
 		func() OutWriter { return out },
 		func() ErrWriter { return err },
 	)
@@ -197,9 +204,9 @@ func AddInternals(graph adder) {
 		newBuildConfig,
 		newBuildContext,
 		newSourceContext,
+		newSourceContextDiscovery,
 		newLocalGitClient,
 		newLocalGitRepo,
-		newGitSourceContext,
 		newSourceHostChooser,
 		newCurrentState,
 		newCurrentGDM,
@@ -262,27 +269,34 @@ func newLogSet(v *config.Verbosity, err ErrWriter) *sous.LogSet { // XXX tempora
 	return &sous.Log
 }
 
-func newGitSourceContext(g LocalGitRepo) (GitSourceContext, error) {
+func newSourceContextDiscovery(g LocalGitRepo) *SourceContextDiscovery {
 	c, err := g.SourceContext()
-	return GitSourceContext{c}, initErr(err, "getting local git context")
+	return &SourceContextDiscovery{
+		Error:         err,
+		SourceContext: c,
+	}
 }
 
-func newSourceContext(f *config.DeployFilterFlags, g GitSourceContext) (*sous.SourceContext, error) {
-	c := g.SourceContext
-	if c == nil {
-		c = &sous.SourceContext{}
-	}
-	mid, err := newTargetManifestID(f, c)
-	if err != nil {
-		return nil, errors.Wrapf(err, "getting source location")
+func newSourceContext(mid TargetManifestID, discovered *SourceContextDiscovery) (*sous.SourceContext, error) {
+	return discovered.Unwrap(mid)
+}
+
+func (scd *SourceContextDiscovery) Unwrap(mid TargetManifestID) (*sous.SourceContext, error) {
+	if scd.Error != nil {
+		return nil, scd.Error
 	}
 	sl := sous.ManifestID(mid)
-	if sl.Source.Repo != c.SourceLocation().Repo {
-		// TODO: Clone the repository, and use the cloned dir as source context.
-		return nil, errors.Errorf("source location %q is not the same as the remote %q",
-			sl.Source.Repo, c.SourceLocation().Repo)
+	if sl.Source.Repo != scd.SourceLocation().Repo {
+		return nil, errors.Errorf("source location %q is not the same as the remote %q", sl.Source.Repo, scd.SourceLocation().Repo)
 	}
-	return c, nil
+	return scd.SourceContext, nil
+}
+
+func (scd *SourceContextDiscovery) GetContext() *sous.SourceContext {
+	if scd.Error != nil || scd.SourceContext == nil {
+		return &sous.SourceContext{}
+	}
+	return scd.SourceContext
 }
 
 func newBuildContext(wd LocalWorkDirShell, c *sous.SourceContext) *sous.BuildContext {

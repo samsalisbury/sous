@@ -83,6 +83,16 @@ func (rf *ResolveFilter) FilterDeployment(d *Deployment) bool {
 	return true
 }
 
+func (rf *ResolveFilter) FilterManifest(m *Manifest) bool {
+	if rf.Repo != "" && m.Source.Repo != rf.Repo {
+		return false
+	}
+	if rf.Offset != "" && m.Source.Dir != rf.Offset {
+		return false
+	}
+	return true
+}
+
 // NewResolver creates a new Resolver.
 func NewResolver(d Deployer, r Registry, rf *ResolveFilter) *Resolver {
 	return &Resolver{

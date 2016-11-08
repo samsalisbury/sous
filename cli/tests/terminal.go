@@ -37,11 +37,12 @@ func NewTerminal(t *testing.T, vstr string) *Terminal {
 	baseerr := TestOutput{"stderr", &bytes.Buffer{}, t}
 	combined := TestOutput{"combined output", &bytes.Buffer{}, t}
 
+	in := &bytes.Buffer{}
 	out := io.MultiWriter(baseout.Buffer, combined.Buffer)
 	err := io.MultiWriter(baseerr.Buffer, combined.Buffer)
 
 	s := &cli.Sous{Version: v}
-	c, er := cli.NewSousCLI(s, out, err)
+	c, er := cli.NewSousCLI(s, in, out, err)
 	if er != nil {
 		panic(er)
 	}
