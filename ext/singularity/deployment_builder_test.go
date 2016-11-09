@@ -6,6 +6,7 @@ package singularity
 import (
 	"testing"
 
+	"github.com/nyarly/testify/assert"
 	"github.com/opentable/go-singularity/dtos"
 	"github.com/opentable/sous/lib"
 )
@@ -29,19 +30,25 @@ func TestBuildingRequestIDTwoClusters(t *testing.T) {
 	cn := "test-cluster"
 	cn2 := "test-other"
 	url := "https://a.singularity.somewhere"
+	clusters := make(sous.Clusters)
+	clusters[cn] = &sous.Cluster{BaseURL: url}
+	clusters[cn2] = &sous.Cluster{BaseURL: url}
+
 	db := &deploymentBuilder{
-		clusters: make(sous.Clusters),
-		request:  &dtos.SingularityRequest{Id: "::test-other"},
+		clusters: clusters,
+		request:  &dtos.SingularityRequest{Id: "::" + cn},
 		req:      SingReq{SourceURL: url},
 	}
-	db.clusters[cn] = &sous.Cluster{BaseURL: url}
-	db.clusters[cn2] = &sous.Cluster{BaseURL: url}
-	if err := db.assignClusterName(); err != nil {
-		t.Errorf("unexpect error: %v", err)
+	assert.NoError(t, db.assignClusterName())
+	assert.Equal(t, db.Target.ClusterName, cn)
+
+	db2 := &deploymentBuilder{
+		clusters: clusters,
+		request:  &dtos.SingularityRequest{Id: "::" + cn2},
+		req:      SingReq{SourceURL: url},
 	}
-	if db.Target.ClusterName != cn2 {
-		t.Errorf("db.Target.ClusterName was %v expected %v", db.Target.ClusterName, cn2)
-	}
+	assert.NoError(t, db2.assignClusterName())
+	assert.Equal(t, db2.Target.ClusterName, cn2)
 }
 
 /*
