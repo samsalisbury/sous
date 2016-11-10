@@ -3,6 +3,7 @@ package cmdr
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"sort"
 
@@ -119,6 +120,7 @@ func (c *CLI) InvokeWithoutPrinting(args []string) Result {
 	if err != nil {
 		return EnsureErrorResult(err)
 	}
+	log.Printf("%#v", prepped.Cmd)
 	return prepped.Cmd.Execute(prepped.Args)
 }
 
