@@ -296,6 +296,27 @@ func TestInvokeWithUnknownFlags(t *testing.T) {
 	assert.Regexp(`flag provided but not defined`, stderr.String())
 }
 
+func TestInvokeRectifyWithoutFilterFlags(t *testing.T) {
+	assert := assert.New(t)
+	require := require.New(t)
+
+	_, exe, _, _ := prepareCommand(t, []string{`sous`, `rectify`})
+	assert.Len(exe.Args, 0)
+	require.IsType(&SousRectify{}, exe.Cmd)
+
+	rect := exe.Cmd.(*SousRectify)
+
+	assert.NotNil(rect.Config)
+	assert.NotNil(rect.DockerClient)
+	assert.NotNil(rect.Deployer)
+	assert.NotNil(rect.Registry)
+	assert.NotNil(rect.GDM)
+	require.NotNil(rect.SourceFlags)
+	assert.Equal(rect.SourceFlags.All, false)
+	require.NotNil(rect.ResolveFilter)
+	assert.Equal(rect.ResolveFilter.All(), true)
+}
+
 func TestInvokeRectifyWithDebugFlags(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)

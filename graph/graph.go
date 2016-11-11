@@ -222,10 +222,12 @@ func AddInternals(graph adder) {
 }
 
 func newResolveFilter(sf *config.DeployFilterFlags, shc sous.SourceHostChooser) (*sous.ResolveFilter, error) {
+	log.Printf("%#v", sf)
 	return sf.BuildFilter(shc.ParseSourceLocation)
 }
 
 func newResolver(filter *sous.ResolveFilter, d sous.Deployer, r sous.Registry) *sous.Resolver {
+	log.Printf("%#v", filter)
 	return sous.NewResolver(d, r, filter)
 }
 

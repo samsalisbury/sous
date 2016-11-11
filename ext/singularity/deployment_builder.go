@@ -193,6 +193,7 @@ func (db *deploymentBuilder) assignClusterName() error {
 	}
 	if db.Target.ClusterName == "" {
 		if matchCount == 1 {
+			sous.Log.Debug.Printf("No request ID matched, using first plausible cluster: %s", posNick)
 			db.Target.ClusterName = posNick
 			return nil
 		}
