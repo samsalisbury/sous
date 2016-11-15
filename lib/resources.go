@@ -54,18 +54,25 @@ func (f *MissingResourceFlaw) Repair() error {
 	return nil
 }
 
-// Validate checks that each required resource value is set.
-func (r Resources) Validate() []Flaw {
+// Validate checks that each required resource value is set in this Resources,
+// or in the inherited Resources.
+func (r Resources) Validate(inherit Resources) []Flaw {
 	var flaws []Flaw
 
 	if f := r.validateField("cpus", "0.1"); f != nil {
-		flaws = append(flaws, f)
+		if inherit.validateField("cpus", "0.1") != nil {
+			flaws = append(flaws, f)
+		}
 	}
 	if f := r.validateField("memory", "100"); f != nil {
-		flaws = append(flaws, f)
+		if inherit.validateField("memory", "100") != nil {
+			flaws = append(flaws, f)
+		}
 	}
 	if f := r.validateField("ports", "1"); f != nil {
-		flaws = append(flaws, f)
+		if inherit.validateField("ports", "1") != nil {
+			flaws = append(flaws, f)
+		}
 	}
 
 	return flaws

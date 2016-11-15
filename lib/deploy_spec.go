@@ -36,10 +36,8 @@ type (
 )
 
 // Validate implements Flawed for State
-func (spec DeploySpec) Validate() []Flaw {
-	var flaws []Flaw
-
-	return append(flaws, spec.DeployConfig.Validate()...)
+func (spec DeploySpec) Validate(inherit DeploySpec) []Flaw {
+	return spec.DeployConfig.Validate(inherit.DeployConfig)
 }
 
 // Repair implements Flawed for State

@@ -41,7 +41,7 @@ type (
 	Env map[string]string
 
 	// Metadata represents an opaque map of metadata - Sous is agnostic about
-	// its contents, except to validate it against the top level schema
+	// its contents, except to validate it against the top level schema.
 	Metadata map[string]string
 
 	// NilVolumeFlaw is used when DeployConfig.Volumes contains a nil.
@@ -50,8 +50,10 @@ type (
 	}
 )
 
-// Validate implements Flawed for State
-func (dc *DeployConfig) Validate() []Flaw {
+// Validate returns a slice of Flaws. It uses inherit to selectively ignore any
+// missing values from dc that are present in inherit, mimicking the way
+// DeployConfigs are used to generate Deployments.
+func (dc *DeployConfig) Validate(inherit DeployConfig) []Flaw {
 	var flaws []Flaw
 
 	for _, v := range dc.Volumes {
@@ -60,6 +62,7 @@ func (dc *DeployConfig) Validate() []Flaw {
 			break
 		}
 	}
+
 	rezs := dc.Resources
 	if dc.Resources == nil {
 		flaws = append(flaws, NewFlaw("No Resources set for DeployConfig",
@@ -67,7 +70,7 @@ func (dc *DeployConfig) Validate() []Flaw {
 		rezs = make(Resources)
 	}
 
-	flaws = append(flaws, rezs.Validate()...)
+	flaws = append(flaws, rezs.Validate(inherit.Resources)...)
 
 	for _, f := range flaws {
 		f.AddContext("deploy config", dc)
@@ -76,7 +79,7 @@ func (dc *DeployConfig) Validate() []Flaw {
 	return flaws
 }
 
-// AddContext simply discards all context - NilVolumeFlaw doesn't need it
+// AddContext simply discards all context - NilVolumeFlaw doesn't need it.
 func (nvf *NilVolumeFlaw) AddContext(string, interface{}) {
 }
 

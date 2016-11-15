@@ -12,7 +12,7 @@ import (
 
 type (
 	// An HTTPStateManager gets state from a Sous server and transmits updates
-	// back to that server
+	// back to that server.
 	HTTPStateManager struct {
 		serverURL *url.URL
 		cached    *State
@@ -37,7 +37,7 @@ func (g *gdmWrapper) fromJSON(reader io.Reader) {
 	dec.Decode(g)
 }
 
-// NewHTTPStateManager creates a new HTTPStateManager
+// NewHTTPStateManager creates a new HTTPStateManager.
 func NewHTTPStateManager(us string) (*HTTPStateManager, error) {
 	u, err := url.Parse(us)
 	return &HTTPStateManager{
@@ -76,7 +76,7 @@ func (hsm *HTTPStateManager) getManifests(defs Defs) (Manifests, error) {
 	return gdm.manifests(defs)
 }
 
-// ReadState implements StateReader for HTTPStateManager
+// ReadState implements StateReader for HTTPStateManager.
 func (hsm *HTTPStateManager) ReadState() (*State, error) {
 	defs, err := hsm.getDefs()
 	if err != nil {
@@ -94,9 +94,9 @@ func (hsm *HTTPStateManager) ReadState() (*State, error) {
 	return hsm.cached.Clone(), nil
 }
 
-// WriteState implements StateWriter for HTTPStateManager
-func (hsm *HTTPStateManager) WriteState(ws *State) error {
-	flaws := ws.Validate()
+// WriteState implements StateWriter for HTTPStateManager.
+func (hsm *HTTPStateManager) WriteState(s *State) error {
+	flaws := s.Validate()
 	if len(flaws) > 0 {
 		return errors.Errorf("Invalid update to state: %v", flaws)
 	}
@@ -106,7 +106,7 @@ func (hsm *HTTPStateManager) WriteState(ws *State) error {
 			return err
 		}
 	}
-	wds, err := ws.Deployments()
+	wds, err := s.Deployments()
 	if err != nil {
 		return err
 	}
@@ -115,7 +115,7 @@ func (hsm *HTTPStateManager) WriteState(ws *State) error {
 		return err
 	}
 	diff := cds.Diff(wds)
-	cchs := diff.Concentrate(ws.Defs)
+	cchs := diff.Concentrate(s.Defs)
 	return hsm.process(cchs)
 }
 
