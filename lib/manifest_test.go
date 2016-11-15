@@ -87,15 +87,18 @@ var manifestTests = []struct {
 }
 
 func TestManifest_Validate(t *testing.T) {
-	for _, test := range manifestTests {
+	for i, test := range manifestTests {
 		m := test.OriginalManifest
 		flaws := m.Validate()
 		expectedNumFlaws := 1
+		if test.FlawDesc == "" {
+			expectedNumFlaws = 0
+		}
 		if len(flaws) != expectedNumFlaws {
 			for _, f := range flaws {
 				t.Error(f)
 			}
-			t.Fatalf("got %d flaws; want %d", len(flaws), expectedNumFlaws)
+			t.Fatalf("%d: got %d flaws; want %d", i, len(flaws), expectedNumFlaws)
 		}
 		if test.FlawDesc != "" {
 			expectedFlawDesc := test.FlawDesc
@@ -103,6 +106,9 @@ func TestManifest_Validate(t *testing.T) {
 			if actualFlawDesc != expectedFlawDesc {
 				t.Errorf("got flaw desc %q; want %q", actualFlawDesc, expectedFlawDesc)
 			}
+		}
+		if expectedNumFlaws == 0 {
+			return
 		}
 		err := flaws[0].Repair()
 		expected := test.RepairError

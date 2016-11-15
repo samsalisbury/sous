@@ -112,7 +112,7 @@ func (m *Manifest) Validate() []Flaw {
 	var flaws []Flaw
 
 	for _, depSpec := range m.Deployments {
-		flaws = append(flaws, depSpec.Validate()...)
+		flaws = append(flaws, depSpec.Validate(m.Deployments["Global"])...)
 	}
 
 	if m.Kind == "" {
