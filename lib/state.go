@@ -39,7 +39,7 @@ type (
 	// FieldDefinitions is just a type alias for a slice of FieldDefinition-s
 	FieldDefinitions []FieldDefinition
 
-	// An MDDefinition describes the requirements for a Metadata field.
+	// A FieldDefinition describes the requirements for a Metadata field.
 	FieldDefinition struct {
 		Name string
 		// Type is the type of value used to represent quantities or instances
