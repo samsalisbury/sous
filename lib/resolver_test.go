@@ -17,8 +17,9 @@ func TestGuardImages(t *testing.T) {
 	svTwo := MustParseSourceID(`github.com/ot/two,2.3.5`)
 	dr := NewDummyRegistry()
 	config := DeployConfig{NumInstances: 1}
-	missing := Deployment{ClusterName: `x`, SourceID: svOne, DeployConfig: config}
-	rejected := Deployment{ClusterName: `x`, SourceID: svTwo, DeployConfig: config}
+	clusterX := &Cluster{Name: "x"}
+	missing := Deployment{ClusterName: `x`, SourceID: svOne, DeployConfig: config, Cluster: clusterX}
+	rejected := Deployment{ClusterName: `x`, SourceID: svTwo, DeployConfig: config, Cluster: clusterX}
 	gdm := MakeDeployments(2)
 	gdm.Add(&missing)
 	gdm.Add(&rejected)
@@ -26,10 +27,17 @@ func TestGuardImages(t *testing.T) {
 	dr.FeedArtifact(nil, fmt.Errorf("dummy error"))
 	dr.FeedArtifact(&BuildArtifact{"ot-docker/one", "docker", []Quality{{"ephemeral_tag", "advisory"}}}, nil)
 
-	err, ok := errors.Cause(GuardImages(dr, gdm)).(*ResolveErrors)
-	require.True(ok)
-	assert.Error(err)
-	require.Len(err.Causes, 2)
+	err := GuardImages(dr, gdm)
+	if err == nil {
+		t.Fatalf("got nil; want an error")
+	}
+
+	resolveErrors, ok := errors.Cause(err).(*ResolveErrors)
+	if !ok {
+		t.Fatalf("got error type %T (%q); want a *ResolveErrors", err, err)
+	}
+	assert.Error(resolveErrors)
+	require.Len(resolveErrors.Causes, 2)
 }
 
 func TestAllowUndeployedUglies(t *testing.T) {

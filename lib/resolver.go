@@ -83,6 +83,8 @@ func (rf *ResolveFilter) FilterDeployment(d *Deployment) bool {
 	return true
 }
 
+// FilterManifest returns true if ???
+// TODO: @nyarly can you provide a description of what this function does
 func (rf *ResolveFilter) FilterManifest(m *Manifest) bool {
 	if rf.Repo != "" && m.Source.Repo != rf.Repo {
 		return false
