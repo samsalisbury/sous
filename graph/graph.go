@@ -87,7 +87,7 @@ type (
 	// TargetManifestID is the manifest ID being targeted, after resolving all
 	// context and flags.
 	TargetManifestID sous.ManifestID
-	// Dryrun option
+	// DryrunOption specifies components that should be faked in an execution.
 	DryrunOption string
 	// SourceContextDiscovery captures the possiblity of not finding a SourceContext
 	SourceContextDiscovery struct {
@@ -98,10 +98,14 @@ type (
 )
 
 const (
-	DryrunBoth      = DryrunOption("both")
-	DryrunRegistry  = DryrunOption("registry")
+	// DryrunBoth specifies that both the registry and scheduler should be fake.
+	DryrunBoth = DryrunOption("both")
+	// DryrunRegistry means the registry should be faked for this execution.
+	DryrunRegistry = DryrunOption("registry")
+	// DryrunScheduler means the scheduler should be faked for this execution.
 	DryrunScheduler = DryrunOption("scheduler")
-	DryrunNeither   = DryrunOption("none")
+	// DryrunNeither means neither the registry or scheduler should be faked.
+	DryrunNeither = DryrunOption("none")
 )
 
 // BuildGraph builds the dependency injection graph, used to populate commands
@@ -283,6 +287,7 @@ func newSourceContext(mid TargetManifestID, discovered *SourceContextDiscovery) 
 	return discovered.Unwrap(mid)
 }
 
+// Unwrap returns the SourceContext and the returned error in trying to create it.
 func (scd *SourceContextDiscovery) Unwrap(mid TargetManifestID) (*sous.SourceContext, error) {
 	if scd.Error != nil {
 		return nil, scd.Error
@@ -294,6 +299,8 @@ func (scd *SourceContextDiscovery) Unwrap(mid TargetManifestID) (*sous.SourceCon
 	return scd.SourceContext, nil
 }
 
+// GetContext returns the SourceContext discovered if there were no errors in
+// getting it. Otherwise returns a pointer to a zero SourceContext.
 func (scd *SourceContextDiscovery) GetContext() *sous.SourceContext {
 	if scd.Error != nil || scd.SourceContext == nil {
 		return &sous.SourceContext{}

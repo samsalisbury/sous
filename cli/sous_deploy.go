@@ -4,6 +4,7 @@ import (
 	"flag"
 
 	"github.com/opentable/sous/config"
+	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/util/cmdr"
 )
 
@@ -48,6 +49,7 @@ func (sd *SousDeploy) AddFlags(fs *flag.FlagSet) {
 func (sd *SousDeploy) RegisterOn(psy Addable) {
 	psy.Add(&sd.DeployFilterFlags)
 	psy.Add(&sd.OTPLFlags)
+	psy.Add(graph.DryrunOption(sd.rectifyFlags.dryrun))
 }
 
 // Execute fulfills the cmdr.Executor interface.
