@@ -119,7 +119,7 @@ func (cs Clusters) Clone() Clusters {
 // Clone returns a deep copy of this Cluster.
 func (c Cluster) Clone() *Cluster {
 	allowedAdvisories := make([]string, len(c.AllowedAdvisories))
-	copy(c.AllowedAdvisories, allowedAdvisories)
+	copy(allowedAdvisories, c.AllowedAdvisories)
 	c.AllowedAdvisories = allowedAdvisories
 	return &c
 }

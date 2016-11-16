@@ -168,18 +168,19 @@ func GuardImages(r Registry, gdm Deployments) error {
 				if q.Name == "" {
 					continue
 				}
-				found := false
-				var advs []string
-				if d.Cluster != nil {
-					advs = d.Cluster.AllowedAdvisories
+				advisoryIsValid := false
+				var allowedAdvisories []string
+				if d.Cluster == nil {
+					return fmt.Errorf("nil cluster on deployment %q", d)
 				}
-				for _, aa := range advs {
+				allowedAdvisories = d.Cluster.AllowedAdvisories
+				for _, aa := range allowedAdvisories {
 					if aa == q.Name {
-						found = true
+						advisoryIsValid = true
 						break
 					}
 				}
-				if !found {
+				if !advisoryIsValid {
 					es = append(es, &UnacceptableAdvisory{q, &d.SourceID})
 				}
 			}
