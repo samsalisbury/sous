@@ -313,9 +313,13 @@ func newBuildContext(wd LocalWorkDirShell, c *sous.SourceContext) *sous.BuildCon
 }
 
 func newBuildConfig(f *config.DeployFilterFlags, p *config.PolicyFlags, bc *sous.BuildContext) *sous.BuildConfig {
+	offset := f.Offset
+	if offset == "" {
+		offset = bc.Source.OffsetDir
+	}
 	cfg := sous.BuildConfig{
 		Repo:       f.Repo,
-		Offset:     f.Offset,
+		Offset:     offset,
 		Tag:        f.Tag,
 		Revision:   f.Revision,
 		Strict:     p.Strict,
@@ -328,13 +332,12 @@ func newBuildConfig(f *config.DeployFilterFlags, p *config.PolicyFlags, bc *sous
 }
 
 func newBuildManager(bc *sous.BuildConfig, sl sous.Selector, lb sous.Labeller, rg sous.Registrar) *sous.BuildManager {
-	mgr := &sous.BuildManager{
+	return &sous.BuildManager{
 		BuildConfig: bc,
 		Selector:    sl,
 		Labeller:    lb,
 		Registrar:   rg,
 	}
-	return mgr
 }
 
 func newLocalUser() (v LocalUser, err error) {
