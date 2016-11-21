@@ -28,7 +28,7 @@ Client configuration is documented [here](./doc/client-config.md).
 
 ## Hello sous
 
-A configured sous client can interact with an existing sous server using the [the getting started](./doc/getting_started.md) file.
+A configured sous client can interact with an existing sous server using the [getting started](./doc/getting_started.md) file.
 
 ## Server Configuration
 
