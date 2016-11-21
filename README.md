@@ -14,6 +14,7 @@ typing
 
     $ go get -u -v github.com/opentable/sous
 
+## Client Configuration
 
 To view (or create) your sous config, run:
 
@@ -25,7 +26,11 @@ Client configuration is documented [here](./doc/client-config.md').
 
 ## Hello sous
 
-Once sous is installed and configured, see [the getting started](./doc/getting_started.md) file.
+A configured sous client can interact with an existing sous server using the [the getting started](./doc/getting_started.md) file.
+
+## Server Configuration
+
+Placeholder for a link to server configuration documentation.
 
 ## Requirements
 
