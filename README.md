@@ -16,6 +16,12 @@ typing
 
 (for development guides, see [here](docs/spinning_up.md)
 
+To view (or create) your sous config, run:
+
+    $ sous config
+
+If a configuration file is not found, one will be created in ~/.config/sous/config.yaml
+
 ## Requirements
 
 Sous shells out to your system to interact with Git and Docker. This is
