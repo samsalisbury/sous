@@ -8,7 +8,7 @@ Specifically, see [the getting started](./doc/getting_started.md) file.
 
 ## Installation
 
-Sous is written in Go. If you already have Go 1.6 set up on your
+Sous is written in Go. If you already have Go set up on your
 machine, and have your GOPATH set up correctly, you can install it by
 typing
 
@@ -32,6 +32,7 @@ the power to re-play what happened, and figure out the issue.
 You will need:
 
 - Git >=2.2
+- Go >= 1.6
 - Docker >=1.10
 
 On Mac, we recommend installing Docker by installing docker-machine
