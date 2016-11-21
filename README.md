@@ -12,7 +12,7 @@ For contribution guidelines, see [here](./doc/spinning_up.md).
 
 Sous is written in Go. If you already have Go set up on your
 machine, and have your GOPATH set up correctly, you can install it by
-typing
+typing:
 
     $ go get -u -v github.com/opentable/sous
 
