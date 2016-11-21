@@ -18,8 +18,6 @@ options when configured by environment variable.
     $ go doc github.com/opentable/sous/config Config
 
 One of the elements in the Config struct is the docker.Config struct. 
-It is definied in its own package,which can be read with
+It is definied in its own package, which can be read with
 
     $ go doc github.com/opentable/sous/ext/docker Config
-
-
