@@ -3,8 +3,8 @@
 Sous is a tool for building, testing, and deploying applications, using
 Docker, Mesos, and Singularity.
 
+For contribution guidelines, see [here](./doc/spinning_up.md).
 [View documentation in the doc/ directory.](https://github.com/opentable/sous/tree/master/doc)
-Specifically, see [the getting started](./doc/getting_started.md) file.
 
 ## Installation
 
@@ -14,13 +14,18 @@ typing
 
     $ go get -u -v github.com/opentable/sous
 
-(for development guides, see [here](docs/spinning_up.md)
 
 To view (or create) your sous config, run:
 
     $ sous config
 
 If a configuration file is not found, one will be created in ~/.config/sous/config.yaml
+
+Client configuration is documented [here](./doc/client-config.md').
+
+## Hello sous
+
+Once sous is installed and configured, see [the getting started](./doc/getting_started.md) file.
 
 ## Requirements
 
