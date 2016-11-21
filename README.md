@@ -24,7 +24,7 @@ To view (or create) your sous config, run:
 
 If a configuration file is not found, one will be created in ~/.config/sous/config.yaml
 
-Client configuration is documented [here](./doc/client-config.md').
+Client configuration is documented [here](./doc/client-config.md).
 
 ## Hello sous
 
