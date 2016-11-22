@@ -59,3 +59,23 @@ func TestLoad_Env(t *testing.T) {
 		t.Errorf("got SomeVar=%q; want %q", c.SomeVar, expected)
 	}
 }
+
+func TestLoad_EmptyEnv(t *testing.T) {
+	cl := New()
+	c := TestConfig{}
+
+	expected := ""
+	os.Setenv("TEST_SOME_VAR", expected)
+
+	if e := os.Getenv("TEST_SOME_VAR"); e != expected {
+		t.Fatalf("setenv failed")
+	}
+
+	if err := cl.Load(&c, "test_config.yaml"); err != nil {
+		t.Fatal(err)
+	}
+
+	if c.SomeVar != expected {
+		t.Errorf("got SomeVar=%q; want %q", c.SomeVar, expected)
+	}
+}
