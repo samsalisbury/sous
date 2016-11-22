@@ -33,7 +33,7 @@ A configured sous client can interact with an existing sous server by following 
  - The first time you use sous with your project, you will need to `sous init`
  - For each release that is deployed with sous, tag your project with a semver-compliant version number, such as 1.2.3. `git tag -a 1.2.3 && git push --tags`
  - To build your Docker container, issue the command `sous build`
- - `sous deploy` ?:wq
+ - `sous deploy` ?
 
 
 ## Server Configuration
