@@ -42,7 +42,7 @@ func newTargetManifest(auto UserSelectedOTPLDeploySpecs, tmid TargetManifestID, 
 	}
 	deploySpecs := auto.DeploySpecs
 	if len(deploySpecs) == 0 {
-		deploySpecs = defaultDeploySpecs()
+		deploySpecs = defaultDeploySpecs(s.Defs.Clusters)
 	}
 
 	m = &sous.Manifest{
@@ -52,14 +52,16 @@ func newTargetManifest(auto UserSelectedOTPLDeploySpecs, tmid TargetManifestID, 
 	return TargetManifest{m}
 }
 
-func defaultDeploySpecs() sous.DeploySpecs {
-	return sous.DeploySpecs{
-		"Global": {
+func defaultDeploySpecs(clusters sous.Clusters) sous.DeploySpecs {
+	defaults := sous.DeploySpecs{}
+	for _, c := range clusters {
+		defaults[c.Name] = sous.DeploySpec{
 			DeployConfig: sous.DeployConfig{
 				Resources:    sous.Resources{},
 				Env:          map[string]string{},
 				NumInstances: 3,
 			},
-		},
+		}
 	}
+	return defaults
 }
