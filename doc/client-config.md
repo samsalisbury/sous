@@ -9,7 +9,8 @@ does not exist, a single run of
 is enough to create it.
 
 The configuration options are defined (relative to this file) in ../config/config.go.
-At minimum, the server value must be populated with a server defined as a URL.
+At minimum, the server value must be populated with an available sous server 
+defined as a URL.
 
 To understand the configuration format, use godoc. The element names of the 
 struct are the names of the options used by the local configuration file 
