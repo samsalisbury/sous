@@ -1,5 +1,5 @@
-// The config package provides JSON-based configuration files, with automatic
-// environment variable overriding.
+// The configloader package provides YAML-based configuration files, with
+// automatic environment variable overriding.
 package configloader
 
 import (
