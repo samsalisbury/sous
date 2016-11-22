@@ -28,7 +28,13 @@ Client configuration is documented [here](./doc/client-config.md).
 
 ## Hello sous
 
-A configured sous client can interact with an existing sous server using the [getting started](./doc/getting_started.md) file.
+A configured sous client can interact with an existing sous server by following these steps.
+ - Enter the directory of your project.
+ - The first time you use sous with your project, you will need to `sous init`
+ - For each release that is deployed with sous, tag your project with a semver-compliant version number, such as 1.2.3. `git tag -a 1.2.3 && git push --tags`
+ - To build your Docker container, issue the command `sous build`
+ - `sous deploy` ?:wq
+
 
 ## Server Configuration
 
