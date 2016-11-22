@@ -75,8 +75,7 @@ func (dsm *DiskStateManager) ReadState() (*sous.State, error) {
 	for _, k := range s.Manifests.Keys() {
 		m, _ := s.Manifests.Get(k)
 		for clusterName := range m.Deployments {
-			_, ok := s.Defs.Clusters[clusterName]
-			if clusterName != "Global" && !ok {
+			if _, ok := s.Defs.Clusters[clusterName]; !ok {
 				return s, errors.Errorf("cluster %q not defined (from manifest %q)",
 					clusterName, k)
 			}

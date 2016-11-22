@@ -4,14 +4,6 @@ Owners:
 - Sam
 Kind: http-service
 Deployments:
-  Global:
-    Resources:
-      cpus: "0.1"
-      memory: 2GB
-      ports: "1"
-    NumInstances: 3
-    Volumes: []
-    Version: 1.0.0
   cluster-1:
     Resources:
       cpus: "0.1"
