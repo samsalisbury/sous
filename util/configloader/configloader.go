@@ -1,5 +1,5 @@
-// The config package provides JSON-based configuration files, with automatic
-// environment variable overriding.
+// The configloader package provides YAML-based configuration files, with
+// automatic environment variable overriding.
 package configloader
 
 import (
@@ -51,13 +51,13 @@ func (cl ConfigLoader) Load(target interface{}, filePath string) error {
 			return err
 		}
 	}
-	if err := cl.overrideWithEnv(target); err != nil {
-		return err
-	}
 	if fd, ok := target.(DefaultFiller); ok {
 		if err := fd.FillDefaults(); err != nil {
 			return err
 		}
+	}
+	if err := cl.overrideWithEnv(target); err != nil {
+		return err
 	}
 	return nil
 }
@@ -129,8 +129,8 @@ func (cl ConfigLoader) overrideField(sf reflect.StructField, originalVal reflect
 	if envName == "" {
 		return nil
 	}
-	envVal := os.Getenv(envName)
-	if envVal == "" {
+	envVal, present := os.LookupEnv(envName)
+	if !present {
 		return nil
 	}
 	var finalVal reflect.Value
