@@ -50,7 +50,10 @@ func (smg *SousMetadataGet) Execute(args []string) cmdr.Result {
 		if dep == nil {
 			return EnsureErrorResult(errors.Errorf("No manifest deploy for %v", smg.DeployFilterFlags))
 		}
-		return outputMetadata(dep.Metadata, smg.ResolveFilter.Cluster, args, smg.OutWriter)
+		if err := outputMetadata(dep.Metadata, smg.ResolveFilter.Cluster, args, smg.OutWriter); err != nil {
+			return EnsureErrorResult(err)
+		}
+		return Success()
 	}
 
 	manis, err := filtered.Manifests(smg.State.Defs)
@@ -65,30 +68,31 @@ func (smg *SousMetadataGet) Execute(args []string) cmdr.Result {
 		return EnsureErrorResult(errors.Errorf("No manifest for %v", smg.DeployFilterFlags))
 	}
 
-	var metadata sous.Metadata
-	global, hasGlobal := mani.Deployments["Global"]
-	if hasGlobal {
-		metadata = global.Metadata
+	for clusterName, deploySpec := range mani.Deployments {
+		smg.OutWriter.Write([]byte(fmt.Sprintf("Metadata for deployment in %s\n", clusterName)))
+		if err := outputMetadata(deploySpec.Metadata, clusterName, args, smg.OutWriter); err != nil {
+			return EnsureErrorResult(err)
+		}
 	}
 
-	return outputMetadata(metadata, "Global", args, smg.OutWriter)
+	return Success()
 }
 
-func outputMetadata(metadata sous.Metadata, clusterName string, args []string, out io.Writer) cmdr.Result {
+func outputMetadata(metadata sous.Metadata, clusterName string, args []string, out io.Writer) error {
 	if len(args) == 0 {
 		yml, err := yaml.Marshal(metadata)
 		if err != nil {
 			return EnsureErrorResult(err)
 		}
 		out.Write(yml)
-		return Success()
+		return nil
 	}
 
 	value, present := metadata[args[0]]
 	if !present {
-		return EnsureErrorResult(errors.Errorf("No value for %q in cluster %s", args[0], clusterName))
+		return errors.Errorf("No value for %q in cluster %s", args[0], clusterName)
 	}
 	fmt.Fprint(out, value)
 
-	return Success()
+	return nil
 }
