@@ -110,11 +110,6 @@ func (m *Manifest) Equal(o *Manifest) bool {
 // Validate implements Flawed for State
 func (m *Manifest) Validate() []Flaw {
 	var flaws []Flaw
-
-	for _, depSpec := range m.Deployments {
-		flaws = append(flaws, depSpec.Validate(m.Deployments["Global"])...)
-	}
-
 	if m.Kind == "" {
 		flaws = append(flaws, NewFlaw(
 			fmt.Sprintf("manifest %q missing Kind", m.ID()),
@@ -126,6 +121,10 @@ func (m *Manifest) Validate() []Flaw {
 
 	for _, f := range flaws {
 		f.AddContext("manifest", m)
+	}
+
+	for _, d := range m.Deployments {
+		flaws = append(flaws, d.Validate(DeploySpec{})...)
 	}
 
 	return flaws

@@ -62,20 +62,12 @@ var manifestTests = []struct {
 		OriginalManifest: &Manifest{
 			Kind: ManifestKindService,
 			Deployments: DeploySpecs{
-				"Global": DeploySpec{
+				"some-cluster": DeploySpec{
 					DeployConfig: DeployConfig{
-						// NOTE: These resources are inherited.
 						Resources: Resources{
 							"cpus":   "1",
 							"memory": "256",
 							"ports":  "1",
-						},
-					},
-				},
-				"some-cluster": DeploySpec{
-					DeployConfig: DeployConfig{
-						Resources: Resources{
-						// NOTE: Empty; inherited from Global.
 						},
 						NumInstances: 3,
 					},

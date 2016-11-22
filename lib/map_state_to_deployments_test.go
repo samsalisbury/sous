@@ -52,17 +52,6 @@ func makeTestState() *State {
 				Owners: []string{"owner1"},
 				Kind:   ManifestKindService,
 				Deployments: DeploySpecs{
-					"Global": {
-						DeployConfig: DeployConfig{
-							Env: Env{
-								"ALL": "IS ONE",
-							},
-							Metadata: Metadata{
-								"everybody": "wants to be a cat",
-							},
-						},
-					},
-
 					"cluster-1": {
 						Version: semv.MustParse("1.0.0"),
 						DeployConfig: DeployConfig{
@@ -71,10 +60,12 @@ func makeTestState() *State {
 								"mem":  "1024",
 							},
 							Env: Env{
+								"ALL":   "IS ONE",
 								"ENV_1": "ENV ONE",
 							},
 							Metadata: Metadata{
-								"name": "O'Malley",
+								"everybody": "wants to be a cat",
+								"name":      "O'Malley",
 							},
 							NumInstances: 2,
 						},
@@ -87,10 +78,12 @@ func makeTestState() *State {
 								"mem":  "2048",
 							},
 							Env: Env{
+								"ALL":   "IS ONE",
 								"ENV_2": "ENV TWO",
 							},
 							Metadata: Metadata{
-								"name": "Duchess",
+								"everybody": "wants to be a cat",
+								"name":      "Duchess",
 							},
 							NumInstances: 3,
 						},

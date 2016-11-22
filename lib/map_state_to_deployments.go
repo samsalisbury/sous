@@ -91,7 +91,6 @@ func (ds Deployments) Manifests(defs Defs) (Manifests, error) {
 		if !there {
 			continue
 		}
-		m.Deployments = gatherDeploySpecs(m.Deployments)
 		ms.Set(k, m)
 	}
 
@@ -104,10 +103,6 @@ func (ds Deployments) Manifests(defs Defs) (Manifests, error) {
 func (s *State) DeploymentsFromManifest(m *Manifest) (Deployments, error) {
 	ds := NewDeployments()
 	var inherit []DeploySpec
-	if global, ok := m.Deployments["Global"]; ok {
-		inherit = append(inherit, global)
-		delete(m.Deployments, "Global")
-	}
 
 	for clusterName, spec := range m.Deployments {
 		cluster, ok := s.Defs.Clusters[clusterName]
@@ -140,57 +135,6 @@ func BuildDeployment(s *State, m *Manifest, nick string, spec DeploySpec, inheri
 		Kind:         m.Kind,
 		SourceID:     m.Source.SourceID(ds.Version),
 	}, nil
-}
-
-func gatherDeploySpecs(dss DeploySpecs) (pruned DeploySpecs) {
-	if len(dss) < 2 {
-		return dss
-	}
-	dcs := DeployConfigs{}
-	for cn, s := range dss {
-		dcs[cn] = s.DeployConfig
-	}
-	pcs := gatherDeployConfigs(dcs)
-	gatherVersion := true
-
-	var global DeploySpec
-
-	for fname := range dss {
-		global = dss[fname].Clone()
-
-		for name := range dss {
-			if name == fname {
-				continue
-			}
-
-			if global.Version != dss[name].Version {
-				gatherVersion = false
-			}
-		}
-
-		var zeroVersion semv.Version
-		if !gatherVersion {
-			global.Version = zeroVersion
-		}
-
-		pruned = DeploySpecs{}
-		for name := range dss {
-			ds := DeploySpec{
-				DeployConfig: pcs[name],
-				clusterName:  dss[name].clusterName,
-			}
-			if !gatherVersion {
-				ds.Version = dss[name].Version
-			}
-			pruned[name] = ds
-		}
-		global.DeployConfig = pcs["Global"]
-		if !global.isZero() {
-			pruned["Global"] = global
-		}
-		return //after first loop
-	}
-	return //useless but requires
 }
 
 func flattenDeploySpecs(dss []DeploySpec) DeploySpec {
