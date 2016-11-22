@@ -48,9 +48,9 @@ var successfulBuildRE = regexp.MustCompile(`Successfully built (\w+)`)
 // Build implements Buildpack.Build
 func (d *DockerfileBuildpack) Build(c *sous.BuildContext, dr *sous.DetectResult) (*sous.BuildResult, error) {
 	start := time.Now()
-	offset := "."
-	if c.Source.OffsetDir != "" {
-		offset = c.Source.OffsetDir
+	offset := c.Source.OffsetDir
+	if offset == "" {
+		offset = "."
 	}
 
 	cmd := []interface{}{"build"}
@@ -85,10 +85,11 @@ func (d *DockerfileBuildpack) Build(c *sous.BuildContext, dr *sous.DetectResult)
 
 // Detect detects if c has a Dockerfile or not.
 func (d *DockerfileBuildpack) Detect(c *sous.BuildContext) (*sous.DetectResult, error) {
-	if !c.Sh.Exists(filepath.Join(c.Source.OffsetDir, "Dockerfile")) {
-		return nil, fmt.Errorf("Dockerfile does not exist")
+	dfPath := filepath.Join(c.Source.OffsetDir, "Dockerfile")
+	if !c.Sh.Exists(dfPath) {
+		return nil, fmt.Errorf("%s does not exist", dfPath)
 	}
-	df, err := c.Sh.Stdout("cat", "Dockerfile")
+	df, err := c.Sh.Stdout("cat", dfPath)
 	if err != nil {
 		return nil, err
 	}
