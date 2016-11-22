@@ -49,9 +49,9 @@ func TestMetadataGetAll(t *testing.T) {
 
 	assert.Regexp(t, "BuildBranch", output)
 	assert.Regexp(t, "master", output)
-	assert.NotRegexp(t, "DeployOn", output)
-	assert.NotRegexp(t, "version advance", output)
-	assert.NotRegexp(t, "build success", output)
+	assert.Regexp(t, "DeployOn", output)
+	assert.Regexp(t, "version advance", output)
+	assert.Regexp(t, "build success", output)
 }
 
 func runCommand(t *testing.T, args []string, dff config.DeployFilterFlags) string {
@@ -66,7 +66,7 @@ func runCommand(t *testing.T, args []string, dff config.DeployFilterFlags) strin
 		DeployFilterFlags: dff,
 		ResolveFilter:     rf,
 		State:             state,
-		CurrentGDM:        graph.CurrentGDM{deps},
+		CurrentGDM:        graph.CurrentGDM{Deployments: deps},
 		OutWriter:         graph.OutWriter(out),
 	}
 
@@ -109,19 +109,12 @@ func makeTestState() *sous.State {
 				Owners: []string{"owner1"},
 				Kind:   sous.ManifestKindService,
 				Deployments: sous.DeploySpecs{
-					"Global": {
-						DeployConfig: sous.DeployConfig{
-							Metadata: sous.Metadata{
-								"BuildBranch": "master",
-							},
-						},
-					},
-
 					"cluster-1": {
 						Version: semv.MustParse("1.0.0"),
 						DeployConfig: sous.DeployConfig{
 							Metadata: sous.Metadata{
-								"DeployOn": "build success",
+								"BuildBranch": "master",
+								"DeployOn":    "build success",
 							},
 							NumInstances: 2,
 						},
@@ -130,7 +123,8 @@ func makeTestState() *sous.State {
 						Version: semv.MustParse("2.0.0"),
 						DeployConfig: sous.DeployConfig{
 							Metadata: sous.Metadata{
-								"DeployOn": "version advance",
+								"BuildBranch": "master",
+								"DeployOn":    "version advance",
 							},
 							NumInstances: 3,
 						},

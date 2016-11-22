@@ -2,7 +2,6 @@ package sous
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/pkg/errors"
 )
@@ -203,126 +202,6 @@ func (e Metadata) Equal(o Metadata) bool {
 	}
 	Log.Vomit.Printf("Metadatas: %+ v == %+ v !", e, o)
 	return true
-}
-
-func gatherDeployConfigs(dcs DeployConfigs) (pruned DeployConfigs) {
-	for globalName, first := range dcs {
-		global := first.Clone()
-		var niVary, volsVary, argsVary bool
-		rezVary := map[string]bool{}
-		envVary := map[string]bool{}
-		mdVary := map[string]bool{}
-
-		for n := range global.Resources {
-			rezVary[n] = false
-		}
-
-		for n := range global.Env {
-			envVary[n] = false
-		}
-
-		for n := range global.Metadata {
-			mdVary[n] = false
-		}
-
-		for name, c := range dcs {
-			if name == globalName {
-				continue
-			}
-			if c.NumInstances != global.NumInstances {
-				niVary = true
-			}
-			if !c.Volumes.Equal(global.Volumes) {
-				volsVary = true
-			}
-			if !stringSlicesEqual(c.Args, global.Args) {
-				argsVary = true
-			}
-
-			for n, v := range global.Resources {
-				if cv, set := c.Resources[n]; !set || v != cv {
-					rezVary[n] = true
-				}
-			}
-
-			for n, v := range global.Env {
-				if cv, set := c.Env[n]; !set || v != cv {
-					envVary[n] = true
-				}
-			}
-
-			for n, v := range global.Metadata {
-				if cv, set := c.Metadata[n]; !set || v != cv {
-					mdVary[n] = true
-				}
-			}
-		}
-
-		if niVary {
-			global.NumInstances = 0
-		}
-		if volsVary {
-			global.Volumes = Volumes{}
-		}
-		if argsVary {
-			global.Args = []string{}
-		}
-		for name, vary := range rezVary {
-			if vary {
-				delete(global.Resources, name)
-			}
-		}
-		for name, vary := range envVary {
-			if vary {
-				delete(global.Env, name)
-			}
-		}
-		for name, vary := range mdVary {
-			if vary {
-				delete(global.Metadata, name)
-			}
-		}
-
-		log.Printf("%#v", mdVary)
-
-		pruned = DeployConfigs{}
-		for name := range dcs {
-			c := dcs[name].Clone()
-			log.Printf("%s: %#v", name, c)
-			if !niVary {
-				c.NumInstances = 0
-			}
-			if !volsVary {
-				c.Volumes = Volumes{}
-			}
-			if !argsVary {
-				c.Args = []string{}
-			}
-			for rname := range c.Resources {
-				vary, known := rezVary[rname]
-				if !vary && known {
-					delete(c.Resources, rname)
-				}
-			}
-			for ename := range c.Env {
-				vary, known := envVary[ename]
-				if !vary && known {
-					delete(c.Env, ename)
-				}
-			}
-
-			for mname := range c.Metadata {
-				vary, known := mdVary[mname]
-				if !vary && known {
-					delete(c.Metadata, mname)
-				}
-			}
-			pruned[name] = c
-		}
-		pruned["Global"] = global
-		return //after the first loop
-	}
-	return
 }
 
 func stringSlicesEqual(left, right []string) bool {

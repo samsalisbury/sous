@@ -93,18 +93,6 @@ func exampleState() *sous.State {
 				Owners: []string{"Judson", "Sam"},
 				Kind:   "http-service",
 				Deployments: map[string]sous.DeploySpec{
-					"Global": sous.DeploySpec{
-						DeployConfig: sous.DeployConfig{
-							Resources: sous.Resources{
-								"cpus":   "0.1",
-								"memory": "2GB",
-								"ports":  "1",
-							},
-							NumInstances: 3,
-							Volumes:      sous.Volumes{},
-						},
-						Version: semv.MustParse("1.0.0"),
-					},
 					"cluster-1": sous.DeploySpec{
 						DeployConfig: sous.DeployConfig{
 							Env: sous.Env{
