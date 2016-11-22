@@ -19,7 +19,7 @@ type (
 		StateLocation string `env:"SOUS_STATE_LOCATION"`
 		// Server is the location of a Sous Server which this sous instance
 		// considers the master. If this is not set, this node is considered
-		// to be a master.
+		// to be a master. This value must be in URL format.
 		Server string `env:"SOUS_SERVER"`
 		// BuildStateDir is a directory where information about builds
 		// performed by this user on this machine are stored.
