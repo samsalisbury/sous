@@ -13,12 +13,20 @@ import (
 	"github.com/opentable/sous/util/yaml"
 )
 
-func newConfig(path string, defaultConfig config.Config) (*config.Config, error) {
+// PossiblyInvalidConfig is a config that has not been validated.
+// This is necessary for the 'sous config' command that should still work with
+// invalid configs.
+type PossiblyInvalidConfig struct{ *config.Config }
+
+// DefaultConfig is the default config.
+type DefaultConfig struct{ *config.Config }
+
+func newPossiblyInvalidConfig(path string, defaultConfig DefaultConfig) (PossiblyInvalidConfig, error) {
 	config := defaultConfig
 
 	configDir := filepath.Dir(path)
 	if err := os.MkdirAll(configDir, os.ModeDir|0755); err != nil {
-		return nil, err
+		return PossiblyInvalidConfig{}, err
 	}
 
 	cl := configloader.New()
@@ -28,7 +36,7 @@ func newConfig(path string, defaultConfig config.Config) (*config.Config, error)
 		if !writeDefault {
 			return
 		}
-		lsc := &LocalSousConfig{&config}
+		lsc := &LocalSousConfig{config.Config}
 		lsc.Save(path)
 		sous.Log.Info.Println("initialised config file: " + path)
 	}()
@@ -38,10 +46,10 @@ func newConfig(path string, defaultConfig config.Config) (*config.Config, error)
 		writeDefault = true
 	}
 	if err != nil {
-		return nil, err
+		return PossiblyInvalidConfig{}, err
 	}
 
-	return &config, cl.Load(&config, path)
+	return PossiblyInvalidConfig{Config: config.Config}, cl.Load(config.Config, path)
 }
 
 // Save the configuration to the configuration path (by default:

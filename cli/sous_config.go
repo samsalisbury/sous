@@ -8,7 +8,7 @@ import (
 // SousConfig is the sous config command.
 type SousConfig struct {
 	User   graph.LocalUser
-	Config graph.LocalSousConfig
+	Config graph.PossiblyInvalidConfig
 }
 
 func init() { TopLevelCommands["config"] = &SousConfig{} }
@@ -28,21 +28,22 @@ func (sc *SousConfig) Help() string { return sousConfigHelp }
 
 // Execute displays or sets config properties.
 func (sc *SousConfig) Execute(args []string) cmdr.Result {
+	c := graph.LocalSousConfig{Config: sc.Config.Config}
 	switch len(args) {
 	default:
 		return UsageErrorf("expected 0-2 arguments, received %d", len(args))
 	case 0:
-		return Successf(sc.Config.String())
+		return Successf(c.String())
 	case 1:
 		name := args[0]
-		v, err := sc.Config.GetValue(name)
+		v, err := c.GetValue(name)
 		if err != nil {
 			return UsageErrorf("%s", err)
 		}
 		return Successf(v)
 	case 2:
 		name, value := args[0], args[1]
-		if err := sc.Config.SetValue(sc.User.ConfigFile(), name, value); err != nil {
+		if err := c.SetValue(sc.User.ConfigFile(), name, value); err != nil {
 			return EnsureErrorResult(err)
 		}
 		return Successf("set %s to %q", name, value)
