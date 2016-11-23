@@ -1,6 +1,8 @@
 package graph
 
 import (
+	"log"
+
 	"github.com/opentable/sous/config"
 	sous "github.com/opentable/sous/lib"
 	"github.com/pkg/errors"
@@ -41,6 +43,7 @@ func newTargetManifest(auto UserSelectedOTPLDeploySpecs, tmid TargetManifestID, 
 		return TargetManifest{m}
 	}
 	deploySpecs := auto.DeploySpecs
+	log.Printf("%#v", len(deploySpecs))
 	if len(deploySpecs) == 0 {
 		deploySpecs = defaultDeploySpecs(s.Defs.Clusters)
 	}
@@ -49,17 +52,21 @@ func newTargetManifest(auto UserSelectedOTPLDeploySpecs, tmid TargetManifestID, 
 		Deployments: deploySpecs,
 	}
 	m.SetID(mid)
+
+	fls := m.Validate()
+	sous.RepairAll(fls)
 	return TargetManifest{m}
 }
 
 func defaultDeploySpecs(clusters sous.Clusters) sous.DeploySpecs {
 	defaults := sous.DeploySpecs{}
 	for name := range clusters {
+		log.Printf("%#v", name)
 		defaults[name] = sous.DeploySpec{
 			DeployConfig: sous.DeployConfig{
 				Resources:    sous.Resources{},
 				Env:          map[string]string{},
-				NumInstances: 3,
+				NumInstances: 1,
 			},
 		}
 	}
