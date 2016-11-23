@@ -26,7 +26,7 @@ func TestNewConfig(t *testing.T) {
 		}
 	}()
 
-	written, err := newConfig(path, config.Config{})
+	written, err := newPossiblyInvalidConfig(path, DefaultConfig{&config.Config{}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -34,12 +34,12 @@ func TestNewConfig(t *testing.T) {
 		t.Fatal("Config file not created:", path, ":", err)
 	}
 
-	read, err := newConfig(path, config.Config{})
+	read, err := newPossiblyInvalidConfig(path, DefaultConfig{&config.Config{}})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if *read != *written {
+	if *read.Config != *written.Config {
 		t.Log("READ:\n\n", read)
 		t.Log("WRITTEN:\n\n", written)
 		t.Error("Read and written configs were different.")
