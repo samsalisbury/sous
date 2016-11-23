@@ -2,7 +2,6 @@ package cmdr
 
 import (
 	"fmt"
-	"log"
 	"os"
 )
 
@@ -50,7 +49,6 @@ type (
 // intelligently, and eventially falls back to UnknownErr if no sensible
 // ErrorResult exists for that error.
 func EnsureErrorResult(err error) ErrorResult {
-	log.Print(err)
 	if result, ok := err.(ErrorResult); ok {
 		return result
 	}
