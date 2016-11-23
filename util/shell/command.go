@@ -3,6 +3,7 @@
 package shell
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -38,6 +39,10 @@ type (
 		// Debug indicates if this command is in debug mode. If true, every
 		// command and its combined output will be printed to screen.
 		Debug bool
+		// LongRunning indicates that this command is expected to take a while.
+		// This is handled by attaching the stdout/stderr directly to the system
+		// defaults. This also means the command's TTY is set to the user's.
+		LongRunning bool
 	}
 	// Result is the result of running a command to completion.
 	Result struct {
@@ -170,6 +175,16 @@ func (c *Command) Result() (*Result, error) {
 	command.Stdout = io.MultiWriter(outWriters...)
 	command.Stderr = io.MultiWriter(errWriters...)
 	command.Stdin = c.Stdin
+
+	if c.LongRunning {
+		c.ConsoleEcho("running " + line)
+		scanner := bufio.NewScanner(combinedbuf)
+		go func() {
+			for scanner.Scan() {
+				fmt.Println(scanner.Text())
+			}
+		}()
+	}
 
 	if err := command.Start(); err != nil {
 		return nil, errors.Wrapf(err, c.String())

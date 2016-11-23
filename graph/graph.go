@@ -403,6 +403,8 @@ func newDockerBuilder(cfg LocalSousConfig, cl LocalDockerClient, ctx *sous.Sourc
 		return nil, err
 	}
 	drh := cfg.Docker.RegistryHost
+	source.Sh = source.Sh.Clone().(*shell.Sh)
+	source.Sh.LongRunning = true
 	return docker.NewBuilder(nc, drh, source.Sh, scratch.Sh)
 }
 
