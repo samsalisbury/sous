@@ -54,8 +54,8 @@ func newTargetManifest(auto UserSelectedOTPLDeploySpecs, tmid TargetManifestID, 
 
 func defaultDeploySpecs(clusters sous.Clusters) sous.DeploySpecs {
 	defaults := sous.DeploySpecs{}
-	for _, c := range clusters {
-		defaults[c.Name] = sous.DeploySpec{
+	for name := range clusters {
+		defaults[name] = sous.DeploySpec{
 			DeployConfig: sous.DeployConfig{
 				Resources:    sous.Resources{},
 				Env:          map[string]string{},

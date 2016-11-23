@@ -11,13 +11,13 @@ import (
 
 // SousInit is the command description for `sous init`
 type SousInit struct {
-	config.DeployFilterFlags
-	Flags       config.OTPLFlags
-	Target      graph.TargetManifest
-	WD          graph.LocalWorkDirShell
-	GDM         graph.CurrentGDM
-	State       *sous.State
-	StateWriter graph.LocalStateWriter
+	DeployFilterFlags config.DeployFilterFlags
+	Flags             config.OTPLFlags
+	Target            graph.TargetManifest
+	WD                graph.LocalWorkDirShell
+	GDM               graph.CurrentGDM
+	State             *sous.State
+	StateWriter       graph.LocalStateWriter
 }
 
 func init() { TopLevelCommands["init"] = &SousInit{} }
@@ -46,11 +46,24 @@ func (si *SousInit) RegisterOn(psy Addable) {
 func (si *SousInit) AddFlags(fs *flag.FlagSet) {
 	MustAddFlags(fs, &si.Flags, OtplFlagsHelp)
 	fs.StringVar(&si.DeployFilterFlags.Flavor, "flavor", "", flavorFlagHelp)
+	fs.StringVar(&si.DeployFilterFlags.Cluster, "cluster", "", clusterFlagHelp)
 }
 
 // Execute fulfills the cmdr.Executor interface
 func (si *SousInit) Execute(args []string) cmdr.Result {
+
+	cluster := si.DeployFilterFlags.Cluster
+
+	if _, ok := si.State.Defs.Clusters[cluster]; !ok && cluster != "" {
+		return UsageErrorf("cluster %q not defined, pick one of: %s", cluster, si.State.Defs.Clusters)
+	}
+
 	m := si.Target.Manifest
+
+	if cluster != "" {
+		m.Deployments = sous.DeploySpecs{cluster: m.Deployments[cluster]}
+	}
+
 	if ok := si.State.Manifests.Add(m); !ok {
 		return UsageErrorf("manifest %q already exists", m.ID())
 	}
