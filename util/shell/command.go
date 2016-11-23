@@ -35,6 +35,9 @@ type (
 		// TeeErr will be connected to stderr via a multireader, unless it is
 		// nil.
 		TeeErr io.Writer
+		// Debug indicates if this command is in debug mode. If true, every
+		// command and its combined output will be printed to screen.
+		Debug bool
 	}
 	// Result is the result of running a command to completion.
 	Result struct {
@@ -150,7 +153,6 @@ func (c *Command) ExitCode() (int, error) {
 // non-zero exit codes, use SucceedResult instead.
 func (c *Command) Result() (*Result, error) {
 	line := strings.Join([]string{c.Name, strings.Join(c.Args, " ")}, " ")
-	c.ConsoleEcho(line)
 	command := exec.Command(c.Name, c.Args...)
 	command.Dir = c.Dir
 	outbuf := &bytes.Buffer{}
@@ -181,6 +183,10 @@ func (c *Command) Result() (*Result, error) {
 				code = status.ExitStatus()
 			}
 		}
+		message := fmt.Sprintf("%s FAILED (exit code %d)", line, code)
+		c.ConsoleEcho(message)
+	} else if c.Debug {
+		c.ConsoleEcho(line + "\n> " + combinedbuf.String())
 	}
 	return &Result{
 		Command:  c,

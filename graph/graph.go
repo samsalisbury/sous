@@ -370,9 +370,10 @@ func newLocalWorkDir() (LocalWorkDir, error) {
 	return LocalWorkDir(s), initErr(err, "determining working directory")
 }
 
-func newLocalWorkDirShell(l LocalWorkDir) (v LocalWorkDirShell, err error) {
+func newLocalWorkDirShell(verbosity *config.Verbosity, l LocalWorkDir) (v LocalWorkDirShell, err error) {
 	v.Sh, err = shell.DefaultInDir(string(l))
 	v.TeeEcho = os.Stdout //XXX should use a writer
+	v.Sh.Debug = verbosity.Debug
 	//v.TeeOut = os.Stdout
 	//v.TeeErr = os.Stderr
 	return v, initErr(err, "getting current working directory")

@@ -26,6 +26,9 @@ type (
 		// TeeErr is similar to TeeOut, except that it has stderr written to it
 		// instead of stdout.
 		TeeErr io.Writer
+		// Debug sets each command issued by this shell into debug mode, or not
+		// depending on this value.
+		Debug bool
 	}
 )
 
@@ -105,6 +108,7 @@ func (s *Sh) Cmd(name string, args ...interface{}) Cmd {
 		ConsoleEcho: s.ConsoleEcho,
 		TeeOut:      s.TeeOut,
 		TeeErr:      s.TeeErr,
+		Debug:       s.Debug,
 	}
 }
 
