@@ -119,12 +119,16 @@ func (m *Manifest) Validate() []Flaw {
 		flaws = append(flaws, m.Kind.Validate()...)
 	}
 
-	for _, f := range flaws {
-		f.AddContext("manifest", m)
+	for cluster, d := range m.Deployments {
+		df := d.Validate()
+		for _, f := range df {
+			f.AddContext("cluster", cluster)
+		}
+		flaws = append(flaws, df...)
 	}
 
-	for _, d := range m.Deployments {
-		flaws = append(flaws, d.Validate(DeploySpec{})...)
+	for _, f := range flaws {
+		f.AddContext("manifest", m)
 	}
 
 	return flaws

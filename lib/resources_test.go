@@ -9,7 +9,7 @@ import (
 func TestValidateRepairResources(t *testing.T) {
 	empty := make(Resources)
 
-	flaws := empty.Validate(Resources{})
+	flaws := empty.Validate()
 	assert.Len(t, flaws, 3)
 
 	flaws, es := RepairAll(flaws)

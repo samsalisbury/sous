@@ -17,6 +17,7 @@ type (
 	// and tries to repair it from the state defaults
 	MissingResourceFlaw struct {
 		Resources
+		ClusterName    string
 		Field, Default string
 	}
 )
@@ -32,6 +33,11 @@ func (r Resources) Clone() Resources {
 
 // AddContext implements Flaw.AddContext.
 func (f *MissingResourceFlaw) AddContext(name string, i interface{}) {
+	if name == "cluster" {
+		if name, is := i.(string); is {
+			f.ClusterName = name
+		}
+	}
 	/*
 		// I'd misremembered that the State.Defs held the GDM-wide defaults
 		// which isn't true. Leaving this here to sort of demostrate the idea
@@ -45,7 +51,11 @@ func (f *MissingResourceFlaw) AddContext(name string, i interface{}) {
 }
 
 func (f *MissingResourceFlaw) String() string {
-	return fmt.Sprintf("Missing resource field: %s", f.Field)
+	name := f.ClusterName
+	if name == "" {
+		name = "??"
+	}
+	return fmt.Sprintf("Missing resource field %q for cluster %s", f.Field, name)
 }
 
 // Repair adds all missing fields set to default values.
@@ -56,23 +66,17 @@ func (f *MissingResourceFlaw) Repair() error {
 
 // Validate checks that each required resource value is set in this Resources,
 // or in the inherited Resources.
-func (r Resources) Validate(inherit Resources) []Flaw {
+func (r Resources) Validate() []Flaw {
 	var flaws []Flaw
 
 	if f := r.validateField("cpus", "0.1"); f != nil {
-		if inherit.validateField("cpus", "0.1") != nil {
-			flaws = append(flaws, f)
-		}
+		flaws = append(flaws, f)
 	}
 	if f := r.validateField("memory", "100"); f != nil {
-		if inherit.validateField("memory", "100") != nil {
-			flaws = append(flaws, f)
-		}
+		flaws = append(flaws, f)
 	}
 	if f := r.validateField("ports", "1"); f != nil {
-		if inherit.validateField("ports", "1") != nil {
-			flaws = append(flaws, f)
-		}
+		flaws = append(flaws, f)
 	}
 
 	return flaws
