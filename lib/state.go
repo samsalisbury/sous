@@ -1,6 +1,10 @@
 package sous
 
-import "github.com/pkg/errors"
+import (
+	"strings"
+
+	"github.com/pkg/errors"
+)
 
 type (
 	// State contains the mutable state of an organisation's deployments.
@@ -127,14 +131,14 @@ func (c Cluster) Clone() *Cluster {
 // Clone returns a deep copy of this EnvDefs.
 func (evs EnvDefs) Clone() EnvDefs {
 	e := make(EnvDefs, len(evs))
-	copy(evs, e)
+	copy(e, evs)
 	return e
 }
 
 // Clone returns a deep copy of this ResDefs.
 func (rdf FieldDefinitions) Clone() FieldDefinitions {
 	r := make(FieldDefinitions, len(rdf))
-	copy(rdf, r)
+	copy(r, rdf)
 	return r
 }
 
@@ -195,4 +199,12 @@ func (s *State) UpdateDeployments(ds ...*Deployment) error {
 
 	s.Manifests = newManifests
 	return nil
+}
+
+func (cs Clusters) String() string {
+	var clusterNames []string
+	for clusterName := range cs {
+		clusterNames = append(clusterNames, clusterName)
+	}
+	return strings.Join(clusterNames, ", ")
 }
