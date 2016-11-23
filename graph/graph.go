@@ -159,7 +159,10 @@ func AddShells(graph adder) {
 
 // AddFilesystem adds filesystem to the graph
 func AddFilesystem(graph adder) {
+	c := config.DefaultConfig()
 	graph.Add(
+		newPossiblyInvalidLocalSousConfig,
+		DefaultConfig{&c},
 		newLocalSousConfig,
 		newLocalWorkDir,
 	)
@@ -346,9 +349,17 @@ func newLocalUser() (v LocalUser, err error) {
 	return v, initErr(err, "getting current user")
 }
 
-func newLocalSousConfig(u LocalUser) (v LocalSousConfig, err error) {
-	v.Config, err = newConfig(u.User.ConfigFile(), u.DefaultConfig())
+func newPossiblyInvalidLocalSousConfig(u LocalUser, defaultConfig DefaultConfig) (PossiblyInvalidConfig, error) {
+	v, err := newPossiblyInvalidConfig(u.ConfigFile(), defaultConfig)
 	return v, initErr(err, "getting configuration")
+}
+
+func newLocalSousConfig(pic PossiblyInvalidConfig) (v LocalSousConfig, err error) {
+	v.Config, err = pic.Config, pic.Validate()
+	if err != nil {
+		err = fmt.Errorf("%s\ntip: run 'sous config' to see and manipulate your configuration", err.Error())
+	}
+	return v, initErr(err, "validating configuration")
 }
 
 // TODO: This should register a cleanup task with the cli, to delete the temp

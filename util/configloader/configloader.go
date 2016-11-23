@@ -26,6 +26,9 @@ type (
 	DefaultFiller interface {
 		FillDefaults() error
 	}
+	Validator interface {
+		Validate() error
+	}
 )
 
 func (cl *ConfigLoader) SetLogFunc(f func(...interface{})) {
@@ -58,6 +61,13 @@ func (cl ConfigLoader) Load(target interface{}, filePath string) error {
 	}
 	if err := cl.overrideWithEnv(target); err != nil {
 		return err
+	}
+	return nil
+}
+
+func (cl *ConfigLoader) Validate(target interface{}) error {
+	if validator, ok := target.(Validator); ok {
+		return validator.Validate()
 	}
 	return nil
 }

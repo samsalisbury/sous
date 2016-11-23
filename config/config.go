@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"os/user"
 	"path"
@@ -28,6 +29,20 @@ type (
 		Docker docker.Config
 	}
 )
+
+// Validate returns an error if this config is invalid.
+func (c Config) Validate() error {
+	if c.Server != "" {
+		u, err := url.Parse(c.Server)
+		if err != nil {
+			return fmt.Errorf("Config.Server %q is not a valid URL: %s", c.Server, err)
+		}
+		if u.Scheme != "http" && u.Scheme != "https" {
+			return fmt.Errorf("Config.Server %q must begin with http:// or https://", c.Server)
+		}
+	}
+	return nil
+}
 
 // DefaultConfig returns the default configuration.
 func DefaultConfig() Config {
