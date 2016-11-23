@@ -23,7 +23,10 @@ var (
 	OSErrorf          = cmdr.OSErrorf
 	IOErrorf          = cmdr.IOErrorf
 	InternalErrorf    = cmdr.InternalErrorf
-	EnsureErrorResult = cmdr.EnsureErrorResult
+	EnsureErrorResult = func(err error) cmdr.ErrorResult {
+		sous.Log.Debug.Println(err)
+		return cmdr.EnsureErrorResult(err)
+	}
 )
 
 // ProduceResult converts errors into Results
