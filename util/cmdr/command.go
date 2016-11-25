@@ -23,11 +23,11 @@ type (
 		// of how the command works, including usage examples.
 		Help() string
 	}
-	// CanExecute means the command can itself be executed to do something.
+	// Executor is a command can itself be executed to do something.
 	Executor interface {
 		Execute(args []string) Result
 	}
-	// HasSubcommands means this command has subcommands.
+	// Subcommander means this command has subcommands.
 	Subcommander interface {
 		// Subcommands returns a map of command names to Commands.
 		Subcommands() Commands
@@ -44,6 +44,7 @@ type (
 	}
 )
 
+// SortedKeys returns the names of the commands in alphabetical order.
 func (cs Commands) SortedKeys() []string {
 	keys := make([]string, len(cs))
 	i := 0
