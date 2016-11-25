@@ -10,12 +10,10 @@ import (
 
 // SousDeploy is the command description for `sous deploy`.
 type SousDeploy struct {
-	*CLI
-	config.DeployFilterFlags
-	config.OTPLFlags
-	Update       SousUpdate
-	Rectify      SousRectify
-	rectifyFlags struct {
+	CLI               *CLI
+	DeployFilterFlags config.DeployFilterFlags
+	OTPLFlags         config.OTPLFlags
+	rectifyFlags      struct {
 		dryrun string
 	}
 }
