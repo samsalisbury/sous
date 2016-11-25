@@ -9,7 +9,7 @@ import (
 	"github.com/opentable/sous/util/cmdr"
 )
 
-// SousRectify is the injectable command object used for `sous rectify`
+// SousRectify is the injectable command object used for `sous rectify`.
 type SousRectify struct {
 	Config      graph.LocalSousConfig
 	State       *sous.State
@@ -46,10 +46,10 @@ Note: by default this command will query a live docker registry and make
 changes to live Singularity clusters.
 `
 
-// Help returns the help string
+// Help returns the help string.
 func (*SousRectify) Help() string { return sousRectifyHelp }
 
-// AddFlags adds flags for sous rectify
+// AddFlags adds flags for sous rectify.
 func (sr *SousRectify) AddFlags(fs *flag.FlagSet) {
 	MustAddFlags(fs, &sr.SourceFlags, RectifyFilterFlagsHelp)
 
@@ -65,7 +65,7 @@ func (sr *SousRectify) RegisterOn(psy Addable) {
 	psy.Add(&sr.SourceFlags)
 }
 
-// Execute fulfils the cmdr.Executor interface
+// Execute fulfils the cmdr.Executor interface.
 func (sr *SousRectify) Execute(args []string) cmdr.Result {
 	if !sr.SourceFlags.All && sr.Resolver.ResolveFilter.All() {
 		return UsageErrorf("Please specify what to rectify using the -repo tag.\n" +
