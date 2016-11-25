@@ -51,6 +51,9 @@ func (hsm *HTTPStateManager) getDefs() (Defs, error) {
 	if err != nil {
 		return ds, errors.Wrapf(err, "getting defs")
 	}
+
+	Log.Warn.Printf("Reading definitions from %s", url)
+
 	rq, err := hsm.Client.Get(url.String())
 	if err != nil {
 		return ds, errors.Wrapf(err, "getting defs")
@@ -66,6 +69,9 @@ func (hsm *HTTPStateManager) getManifests(defs Defs) (Manifests, error) {
 	if err != nil {
 		return Manifests{}, errors.Wrapf(err, "getting manifests")
 	}
+
+	Log.Warn.Printf("Reading manifests from %s", url)
+
 	gdmRq, err := hsm.Client.Get(url.String())
 	if err != nil {
 		return Manifests{}, errors.Wrapf(err, "getting manifests")
@@ -285,12 +291,14 @@ func (hsm *HTTPStateManager) create(m *Manifest) error {
 }
 
 func (hsm *HTTPStateManager) del(m *Manifest) error {
-	murl, err := hsm.manifestURL(m)
+	u, err := hsm.manifestURL(m)
 	if err != nil {
 		return err
 	}
 
-	grq, err := http.NewRequest("GET", murl, nil)
+	Log.Warn.Printf("Getting manifest from %s", u)
+
+	grq, err := http.NewRequest("GET", u, nil)
 	if err != nil {
 		return errors.Wrapf(err, "delete manifest request")
 	}
@@ -300,7 +308,7 @@ func (hsm *HTTPStateManager) del(m *Manifest) error {
 	}
 	defer grz.Body.Close()
 	if !(grz.StatusCode >= 200 && grz.StatusCode < 300) {
-		return errors.Errorf("GET %s to delete, %s: %#v", murl, grz.Status, m)
+		return errors.Errorf("GET %s to delete, %s: %#v", u, grz.Status, m)
 	}
 	rm := hsm.jsonManifest(grz.Body)
 	different, differences := rm.Diff(m)
@@ -308,7 +316,10 @@ func (hsm *HTTPStateManager) del(m *Manifest) error {
 		return errors.Errorf("Remote and deleted manifests don't match: %#v", differences)
 	}
 	etag := grz.Header.Get("Etag")
-	drq, err := http.NewRequest("DELETE", murl, nil)
+
+	Log.Warn.Printf("Deleting manifest at %s", u)
+
+	drq, err := http.NewRequest("DELETE", u, nil)
 	if err != nil {
 		return errors.Wrapf(err, "delete manifest request")
 	}
@@ -318,7 +329,7 @@ func (hsm *HTTPStateManager) del(m *Manifest) error {
 		return errors.Wrapf(err, "delete manifest request")
 	}
 	if !(drz.StatusCode >= 200 && drz.StatusCode < 300) {
-		return errors.Errorf("Delete %s failed: %s", murl, drz.Status)
+		return errors.Errorf("Delete %s failed: %s", u, drz.Status)
 	}
 	return nil
 }
@@ -326,12 +337,14 @@ func (hsm *HTTPStateManager) del(m *Manifest) error {
 func (hsm *HTTPStateManager) modify(mp *ManifestPair) error {
 	bf := mp.Post
 	af := mp.Prior
-	murl, err := hsm.manifestURL(bf)
+	u, err := hsm.manifestURL(bf)
 	if err != nil {
 		return err
 	}
 
-	grq, err := http.NewRequest("GET", murl, nil)
+	Log.Warn.Printf("Getting manifest from %s", u)
+
+	grq, err := http.NewRequest("GET", u, nil)
 	if err != nil {
 		return errors.Wrapf(err, "modify request")
 	}
@@ -350,12 +363,14 @@ func (hsm *HTTPStateManager) modify(mp *ManifestPair) error {
 	}
 	etag := grz.Header.Get("Etag")
 
-	murl, err = hsm.manifestURL(af)
+	u, err = hsm.manifestURL(af)
 	if err != nil {
 		return err
 	}
 
-	prq, err := http.NewRequest("PUT", murl, hsm.manifestJSON(af))
+	Log.Warn.Printf("Updating manifest at %s", u)
+
+	prq, err := http.NewRequest("PUT", u, hsm.manifestJSON(af))
 	if err != nil {
 		return errors.Wrapf(err, "modify request")
 	}
