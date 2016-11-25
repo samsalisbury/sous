@@ -307,9 +307,6 @@ func TestInvokeRectifyWithoutFilterFlags(t *testing.T) {
 	rect := exe.Cmd.(*SousRectify)
 
 	assert.NotNil(rect.Config)
-	assert.NotNil(rect.DockerClient)
-	assert.NotNil(rect.Deployer)
-	assert.NotNil(rect.Registry)
 	assert.NotNil(rect.GDM)
 	require.NotNil(rect.SourceFlags)
 	assert.Equal(rect.SourceFlags.All, false)
@@ -328,9 +325,6 @@ func TestInvokeRectifyWithDebugFlags(t *testing.T) {
 	rect := exe.Cmd.(*SousRectify)
 
 	assert.NotNil(rect.Config)
-	assert.NotNil(rect.DockerClient)
-	assert.NotNil(rect.Deployer)
-	assert.NotNil(rect.Registry)
 	assert.NotNil(rect.GDM)
 	require.NotNil(rect.SourceFlags)
 	assert.Equal(rect.SourceFlags.All, true)

@@ -12,16 +12,12 @@ import (
 
 // SousRectify is the injectable command object used for `sous rectify`
 type SousRectify struct {
-	Config       graph.LocalSousConfig
-	DockerClient graph.LocalDockerClient
-	Deployer     sous.Deployer
-	Registry     sous.Registry
-	State        *sous.State
-	GDM          graph.CurrentGDM
-	SourceFlags  config.DeployFilterFlags
-	Engine       sous.SourceHostChooser
-	*sous.Resolver
-	flags struct {
+	Config      graph.LocalSousConfig
+	State       *sous.State
+	GDM         graph.CurrentGDM
+	SourceFlags config.DeployFilterFlags
+	Resolver    *sous.Resolver
+	flags       struct {
 		dryrun                string
 		repo, offset, cluster string
 		all                   bool
@@ -72,11 +68,11 @@ func (sr *SousRectify) RegisterOn(psy Addable) {
 
 // Execute fulfils the cmdr.Executor interface
 func (sr *SousRectify) Execute(args []string) cmdr.Result {
-	if !sr.SourceFlags.All && sr.ResolveFilter.All() {
+	if !sr.SourceFlags.All && sr.Resolver.ResolveFilter.All() {
 		return EnsureErrorResult(fmt.Errorf("Cowardly refusing rectify with neither contraint nor `-all`! (see `sous help rectify`)"))
 	}
 
-	if err := sr.Resolve(sr.GDM.Clone(), sr.State.Defs.Clusters); err != nil {
+	if err := sr.Resolver.Resolve(sr.GDM.Clone(), sr.State.Defs.Clusters); err != nil {
 		return EnsureErrorResult(err)
 	}
 
