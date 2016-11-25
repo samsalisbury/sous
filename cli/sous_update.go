@@ -14,14 +14,13 @@ import (
 
 // SousUpdate is the command description for `sous update`
 type SousUpdate struct {
-	config.DeployFilterFlags
-	config.OTPLFlags
-	Manifest    graph.TargetManifest
-	WD          graph.LocalWorkDirShell
-	GDM         graph.CurrentGDM
-	State       *sous.State
-	StateWriter graph.LocalStateWriter
-	StateReader graph.LocalStateReader
+	DeployFilterFlags config.DeployFilterFlags
+	OTPLFlags         config.OTPLFlags
+	Manifest          graph.TargetManifest
+	GDM               graph.CurrentGDM
+	State             *sous.State
+	StateWriter       graph.LocalStateWriter
+	StateReader       graph.LocalStateReader
 }
 
 func init() { TopLevelCommands["update"] = &SousUpdate{} }
