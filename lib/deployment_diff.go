@@ -130,7 +130,7 @@ func (d *differ) diff(existing Deployments) {
 		delete(d.from, id)
 		different, differences := existingDeployment.Diff(intendedDeployment)
 		if different {
-			Log.Warn.Printf("differences detected for %q: %#v", id, differences)
+			Log.Debug.Printf("differences detected for %q: %#v", id, differences)
 			d.Modified <- &DeploymentPair{id, intendedDeployment, existingDeployment}
 			continue
 		}
