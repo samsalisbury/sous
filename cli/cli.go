@@ -16,13 +16,16 @@ import (
 
 // Func aliases, for convenience returning from commands.
 var (
-	SuccessData       = cmdr.SuccessData
-	Successf          = cmdr.Successf
-	Success           = cmdr.Success
-	UsageErrorf       = cmdr.UsageErrorf
-	OSErrorf          = cmdr.OSErrorf
-	IOErrorf          = cmdr.IOErrorf
-	InternalErrorf    = cmdr.InternalErrorf
+	SuccessData    = cmdr.SuccessData
+	Successf       = cmdr.Successf
+	Success        = cmdr.Success
+	UsageErrorf    = cmdr.UsageErrorf
+	OSErrorf       = cmdr.OSErrorf
+	IOErrorf       = cmdr.IOErrorf
+	InternalErrorf = cmdr.InternalErrorf
+	GeneralErrorf  = func(format string, a ...interface{}) cmdr.ErrorResult {
+		return EnsureErrorResult(fmt.Errorf(format, a...))
+	}
 	EnsureErrorResult = func(err error) cmdr.ErrorResult {
 		sous.Log.Debug.Println(err)
 		return cmdr.EnsureErrorResult(err)

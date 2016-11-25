@@ -2,8 +2,6 @@ package cli
 
 import (
 	"flag"
-	"fmt"
-	"log"
 
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
@@ -60,7 +58,7 @@ func (su *SousUpdate) Execute(args []string) cmdr.Result {
 
 	_, ok := su.State.Manifests.Get(sl)
 	if !ok {
-		log.Printf("adding new  manifest %q", did)
+		sous.Log.Info.Printf("adding new  manifest %q", did)
 		su.State.Manifests.Add(su.Manifest.Manifest)
 		if err := su.StateWriter.WriteState(su.State); err != nil {
 			return EnsureErrorResult(err)
@@ -77,7 +75,7 @@ func (su *SousUpdate) Execute(args []string) cmdr.Result {
 		su.GDM = graph.CurrentGDM{Deployments: newGDM}
 		_, ok := su.State.Manifests.Get(sl)
 		if !ok {
-			return EnsureErrorResult(fmt.Errorf("failed to add manifest"))
+			return GeneralErrorf("failed to add manifest %q", did)
 		}
 	}
 	if err := updateState(su.State, su.GDM, sid, did); err != nil {
