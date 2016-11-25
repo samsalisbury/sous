@@ -449,15 +449,19 @@ func newDockerClient() LocalDockerClient {
 }
 
 func newStateManager(c LocalSousConfig) (*StateManager, error) {
-	if c.Server != "" {
-		hsm, err := sous.NewHTTPStateManager(c.Server)
-		if err != nil {
-			return nil, err
-		}
-		return &StateManager{StateManager: hsm}, nil
+	if c.Server == "" {
+		sous.Log.Warn.Println("No server set, Sous is running in local mode.")
+		sous.Log.Warn.Println("Configure a server like this: sous config server http://some.sous.server")
+		sous.Log.Warn.Printf("Using local state stored at %s", c.StateLocation)
+		dm := storage.NewDiskStateManager(c.StateLocation)
+		return &StateManager{StateManager: storage.NewGitStateManager(dm)}, nil
 	}
-	dm := storage.NewDiskStateManager(c.StateLocation)
-	return &StateManager{StateManager: storage.NewGitStateManager(dm)}, nil
+	sous.Log.Info.Printf("Using server at %s", c.Server)
+	hsm, err := sous.NewHTTPStateManager(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	return &StateManager{StateManager: hsm}, nil
 }
 
 func newLocalStateReader(sm *StateManager) LocalStateReader {
