@@ -2,7 +2,6 @@ package cli
 
 import (
 	"flag"
-	"fmt"
 
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
@@ -69,7 +68,8 @@ func (sr *SousRectify) RegisterOn(psy Addable) {
 // Execute fulfils the cmdr.Executor interface
 func (sr *SousRectify) Execute(args []string) cmdr.Result {
 	if !sr.SourceFlags.All && sr.Resolver.ResolveFilter.All() {
-		return EnsureErrorResult(fmt.Errorf("Cowardly refusing rectify with neither contraint nor `-all`! (see `sous help rectify`)"))
+		return UsageErrorf("Please specify what to rectify using the -repo tag.\n" +
+			"(Or -all if you really mean to rectify the whole world; see 'sous help rectify'.)")
 	}
 
 	if err := sr.Resolver.Resolve(sr.GDM.Clone(), sr.State.Defs.Clusters); err != nil {
