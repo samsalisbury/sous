@@ -1,7 +1,6 @@
 package sous
 
 import (
-	"log"
 	"sort"
 
 	"github.com/pkg/errors"
@@ -166,13 +165,13 @@ func (db *deploymentBundle) clusters() []string {
 
 func (db *deploymentBundle) manifestPair(defs Defs) (*ManifestPair, error) {
 	db.consumed = true
-	log.Print(db)
+	//log.Print(db)
 	res := new(ManifestPair)
 	ms, err := db.before.Manifests(defs)
 	if err != nil {
 		return nil, err
 	}
-	log.Print(ms)
+	//log.Print(ms)
 	p, err := ms.Only()
 	if err != nil {
 		return nil, err
@@ -193,9 +192,9 @@ func (db *deploymentBundle) manifestPair(defs Defs) (*ManifestPair, error) {
 		res.Post = p
 	}
 
-	log.Print(res)
-	log.Print(res.Prior)
-	log.Print(res.Post)
+	//log.Print(res)
+	//log.Print(res.Prior)
+	//log.Print(res.Post)
 
 	if res.Post == nil {
 		res.name = res.Prior.ID()
