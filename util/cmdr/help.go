@@ -6,12 +6,7 @@ import (
 	"strings"
 )
 
-// Usage prints the usage message.
-//func (h *Help) Usage(name string) string {
-//	return fmt.Sprintf("usage: %s %s", name, h.Args)
-//}
-
-// Help is similar to PrintHelp, except it returns the result as a string
+// Help is similar to printHelp, except it returns the result as a string
 // instead of writing to the CLI's default Output.
 func (cli *CLI) Help(base Command, name string, args []string) (string, error) {
 	b := &bytes.Buffer{}
