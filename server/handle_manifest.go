@@ -24,14 +24,14 @@ type (
 		*sous.State
 		*http.Request
 		*QueryValues
-		StateWriter graph.LocalStateWriter
+		StateWriter graph.StateWriter
 	}
 
 	// DELETEManifestHandler handles DELETE exchanges for manifests
 	DELETEManifestHandler struct {
 		*sous.State
 		*QueryValues
-		StateWriter graph.LocalStateWriter
+		StateWriter graph.StateWriter
 	}
 )
 

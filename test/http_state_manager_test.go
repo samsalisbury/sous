@@ -73,7 +73,7 @@ func TestWriteState(t *testing.T) {
 		graph.AddInternals(di)
 		di.Add(
 			func() graph.StateReader { return graph.StateReader{StateReader: &sm} },
-			func() graph.LocalStateWriter { return graph.LocalStateWriter{StateWriter: &sm} },
+			func() graph.StateWriter { return graph.StateWriter{StateWriter: &sm} },
 		)
 		di.Add(&config.Verbosity{})
 		return di

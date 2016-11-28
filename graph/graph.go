@@ -68,9 +68,9 @@ type (
 	StateManager struct{ sous.StateManager }
 	// StateReader wraps a storage.StateReader.
 	StateReader struct{ sous.StateReader }
-	// LocalStateWriter wraps a storage.StateWriter, and should be configured to
+	// StateWriter wraps a storage.StateWriter, and should be configured to
 	// use the current user's local storage.
-	LocalStateWriter struct{ sous.StateWriter }
+	StateWriter struct{ sous.StateWriter }
 	// CurrentGDM is a snapshot of the GDM at application start. In a CLI
 	// context, which this is, that is all we need to simply read the GDM.
 	CurrentGDM struct{ sous.Deployments }
@@ -467,8 +467,8 @@ func newLocalStateReader(sm *StateManager) StateReader {
 	return StateReader{sm}
 }
 
-func newLocalStateWriter(sm *StateManager) LocalStateWriter {
-	return LocalStateWriter{sm}
+func newLocalStateWriter(sm *StateManager) StateWriter {
+	return StateWriter{sm}
 }
 
 func newCurrentState(sr StateReader) (*sous.State, error) {

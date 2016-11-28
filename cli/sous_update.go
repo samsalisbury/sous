@@ -18,7 +18,7 @@ type SousUpdate struct {
 	Manifest          graph.TargetManifest
 	GDM               graph.CurrentGDM
 	State             *sous.State
-	StateWriter       graph.LocalStateWriter
+	StateWriter       graph.StateWriter
 	StateReader       graph.StateReader
 }
 

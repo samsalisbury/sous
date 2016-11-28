@@ -45,7 +45,7 @@ func TestManifestSet(t *testing.T) {
 	state := makeTestState()
 
 	dummyWriter := sous.DummyStateManager{State: state}
-	writer := graph.LocalStateWriter{StateWriter: &dummyWriter}
+	writer := graph.StateWriter{StateWriter: &dummyWriter}
 	sms := &SousManifestSet{
 		TargetManifestID: graph.TargetManifestID(mid),
 		State:            state,
