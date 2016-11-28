@@ -17,6 +17,7 @@ import (
 
 func buildManifest(cluster, repo, version string) *sous.Manifest {
 	return &sous.Manifest{
+		Owners: []string{"tom", "dick", "harry"},
 		Source: sous.SourceLocation{Repo: repo},
 		Kind:   sous.ManifestKindService,
 		Deployments: sous.DeploySpecs{

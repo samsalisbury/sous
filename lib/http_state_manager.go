@@ -364,7 +364,7 @@ func (hsm *HTTPStateManager) modify(mp *ManifestPair) error {
 	rm := hsm.jsonManifest(grz.Body)
 	different, differences := rm.Diff(bf)
 	if different {
-		return errors.Errorf("Remote and prior manifests don't match: %#v", differences)
+		return errors.Errorf("%q: Remote and prior manifests don't match: %#v", mp.name, differences)
 	}
 	etag := grz.Header.Get("Etag")
 
