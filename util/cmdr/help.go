@@ -3,16 +3,12 @@ package cmdr
 import (
 	"bytes"
 	"flag"
-	"fmt"
 )
 
-// Help contains help strings describing a command.
-type Help struct{ Short, Desc, Args, Long string }
-
 // Usage prints the usage message.
-func (h *Help) Usage(name string) string {
-	return fmt.Sprintf("usage: %s %s", name, h.Args)
-}
+//func (h *Help) Usage(name string) string {
+//	return fmt.Sprintf("usage: %s %s", name, h.Args)
+//}
 
 // Help is similar to PrintHelp, except it returns the result as a string
 // instead of writing to the CLI's default Output.
