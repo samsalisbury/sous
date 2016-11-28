@@ -259,6 +259,7 @@ func concentrate(dc DiffChans, con DiffConcentrator) {
 			return
 		}
 
+		Log.Debug.Printf("For %v, have %d clusters, waiting for %d", mid, len(collect[mid].clusters()), len(con.Defs.Clusters))
 		if len(collect[mid].clusters()) == len(con.Defs.Clusters) { //eh?
 			mp, err := collect[mid].manifestPair(con.Defs)
 			if err != nil {
