@@ -310,8 +310,8 @@ func TestInvokeRectifyWithoutFilterFlags(t *testing.T) {
 	assert.NotNil(rect.GDM)
 	require.NotNil(rect.SourceFlags)
 	assert.Equal(rect.SourceFlags.All, false)
-	require.NotNil(rect.ResolveFilter)
-	assert.Equal(rect.ResolveFilter.All(), true)
+	require.NotNil(rect.Resolver.ResolveFilter)
+	assert.Equal(rect.Resolver.ResolveFilter.All(), true)
 }
 
 func TestInvokeRectifyWithDebugFlags(t *testing.T) {
@@ -342,7 +342,7 @@ func TestInvokeRectifyDryruns(t *testing.T) {
 		require.IsType(&SousRectify{}, exe.Cmd)
 		rect := exe.Cmd.(*SousRectify)
 		// currently no easy way to tell if the deploy client is live or dummy
-		return nil, rect.Registry
+		return nil, rect.Resolver.Registry
 	}
 
 	_, r := testDryRun("both")
