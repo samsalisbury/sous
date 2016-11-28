@@ -5,40 +5,85 @@ Docker, Mesos, and Singularity.
 
 For contribution guidelines, see [here](./doc/contributions.md).
 
-
 [View documentation in the doc/ directory.](https://github.com/opentable/sous/tree/master/doc)
+
+# Using Sous
+
+If you're looking to get started using Sous
+to manage your service within a larger organization, read on.
 
 ## Installation
 
-Sous is written in Go. If you already have Go set up on your
-machine, and have your GOPATH set up correctly, you can install it by
-typing:
+Sous is written in Go.
+Once you have [Go set up on your machine,](./doc/setting-up-go.md)
+you can install it by typing:
 
     $ go get -u -v github.com/opentable/sous
 
 ## Client Configuration
 
-To view (or create) your sous config, run:
+To use Sous effectively,
+you'll need to know the URL of at least one running Sous server.
+(If you're looking to set up a new Sous deployment,
+see [this guide.](./doc/first-deployment-of-sous.md))
+That URL will be particular to your organization,
+but someone should be able to provide it to you.
 
-    $ sous config
+Once you have it, run:
 
-If a configuration file is not found, one will be created in ~/.config/sous/config.yaml
+```
+$ sous config server <URL>
+```
 
-Client configuration is documented [here](./doc/client-config.md).
+(...replacing `<URL>` with the URL you were given.)
+
+You should be good to go, but if you're curious,
+client configuration is documented [here](./doc/client-config.md).
+
+The **Installation** and **Client Configuration** steps
+should only need to be done once on any given workstation.
 
 ## Hello sous
 
-A configured sous client can interact with an existing sous server by following these steps.
- - Enter the directory of your project.
- - The first time you use sous with your project, you will need to `sous init`
- - For each release that is deployed with sous, tag your project with a semver-compliant version number, such as 1.2.3. `git tag -a 1.2.3 && git push --tags`
- - To build your Docker container, issue the command `sous build`
- - `sous deploy` ?
+Now that you have a Sous client set up,
+let's add a project to Sous management.
 
+```bash
+# Enter the directory of your project.
+cd <my-project>
 
-## Server Configuration
+# Add a git tag with a semantic version:
+git tag -a 1.2.3 && git push --tags
 
-Placeholder for a link to server configuration documentation.
+# Build the Sous-ready container:
+sous build
+
+# Let Sous know that the project exists:
+sous init
+```
+
+At this point, Sous will
+deploy 1 instance of your project everywhere it knows about.
+You can limit this to a single Mesos cluster by
+replacing the last command with `sous init -cluster <name>` -
+Sous will provide a list of known clusters if you give it bad input.
+
+## Day to day
+
+From then on, the process is similar,
+but you don't need to do the `sous init`
+since Sous already knows about the project.
+
+Instead, you'll want to use `sous deploy`, like this:
+
+```bash
+git tag -a 1.2.4 && git push --tags
+sous build
+sous deploy -tag 1.2.4 -cluster <name>
+```
+
+Note that these steps can be easily adapted to work
+on continuous integrations servers, as well.
 
 ## Requirements
 
@@ -50,7 +95,7 @@ the power to re-play what happened, and figure out the issue.
 You will need:
 
 - Git >=2.2
-- Go >= 1.6
+- Go >= 1.7
 - Docker >=1.10
 
 On Mac, we recommend installing Docker by installing docker-machine
