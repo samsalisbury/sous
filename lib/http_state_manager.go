@@ -276,7 +276,10 @@ func (hsm *HTTPStateManager) create(m *Manifest) error {
 	if err != nil {
 		return err
 	}
-	rq, err := http.NewRequest("PUT", murl, hsm.manifestJSON(m))
+	json := hsm.manifestJSON(m)
+	Log.Debug.Printf("Creating manifest: PUT %q", murl)
+	Log.Debug.Printf("Creating manifest: %s", json)
+	rq, err := http.NewRequest("PUT", murl, json)
 	if err != nil {
 		return errors.Wrapf(err, "create manifest request")
 	}
@@ -370,9 +373,11 @@ func (hsm *HTTPStateManager) modify(mp *ManifestPair) error {
 		return err
 	}
 
-	Log.Debug.Printf("Updating manifest at %s", u)
+	json := hsm.manifestJSON(af)
+	Log.Debug.Printf("Updating manifest at %q", u)
+	Log.Debug.Printf("Updating manifest to %s", json)
 
-	prq, err := http.NewRequest("PUT", u, hsm.manifestJSON(af))
+	prq, err := http.NewRequest("PUT", u, json)
 	if err != nil {
 		return errors.Wrapf(err, "modify request")
 	}
