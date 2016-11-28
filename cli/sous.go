@@ -39,8 +39,6 @@ type Sous struct {
 var TopLevelCommands = cmdr.Commands{}
 
 const sousHelp = `
-invoke sous
-
 sous is a tool to help speed up the build/test/deploy cycle at your organisation
 
 args: <command>
