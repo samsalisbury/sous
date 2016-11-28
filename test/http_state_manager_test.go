@@ -35,7 +35,6 @@ func buildManifest(cluster, repo, version string) *sous.Manifest {
 }
 
 func TestWriteState(t *testing.T) {
-	log.SetFlags(log.Flags() | log.Lshortfile)
 	steadyManifest := buildManifest("test-cluster", "github.com/opentable/steady", "1.2.3")
 	diesManifest := buildManifest("test-cluster", "github.com/opentable/dies", "133.56.987431")
 	changesManifest := buildManifest("test-cluster", "github.com/opentable/changes", "0.17.19")
@@ -44,6 +43,10 @@ func TestWriteState(t *testing.T) {
 	state := &sous.State{}
 	state.Defs.Clusters = make(sous.Clusters)
 	state.Defs.Clusters["test-cluster"] = &sous.Cluster{Name: "test-cluster"}
+
+	// Current issue: "incomplete" manifests never complete to get updates
+	// There aren't any deploy specs for extra, which mimics this bug
+	state.Defs.Clusters["extra-cluster"] = &sous.Cluster{Name: "cluster-cluster"}
 
 	state.Manifests = sous.NewManifests()
 	state.Manifests.Add(steadyManifest)
@@ -61,7 +64,8 @@ func TestWriteState(t *testing.T) {
 
 	gf := func() server.Injector {
 		di := psyringe.New()
-		di.Add(sous.NewLogSet(os.Stderr, os.Stderr, ioutil.Discard))
+		//di.Add(sous.NewLogSet(os.Stderr, os.Stderr, ioutil.Discard))
+		di.Add(sous.NewLogSet(os.Stderr, ioutil.Discard, ioutil.Discard))
 		graph.AddInternals(di)
 		di.Add(
 			func() graph.StateReader { return graph.StateReader{StateReader: &sm} },

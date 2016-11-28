@@ -245,6 +245,17 @@ func (dc *DiffConcentrator) dispatch(mp *ManifestPair) error {
 	return nil
 }
 
+func (dc *DiffConcentrator) resolve(mid ManifestID, bundle *deploymentBundle) {
+	mp, err := bundle.manifestPair(dc.Defs)
+	if err != nil {
+		dc.Errors <- err
+		return
+	}
+	if err := dc.dispatch(mp); err != nil {
+		dc.Errors <- err
+	}
+}
+
 func concentrate(dc DiffChans, con DiffConcentrator) {
 	collect := make(map[ManifestID]*deploymentBundle)
 	addPair := func(mid ManifestID, prior, post *Deployment) {
@@ -261,39 +272,35 @@ func concentrate(dc DiffChans, con DiffConcentrator) {
 
 		Log.Debug.Printf("For %v, have %d clusters, waiting for %d", mid, len(collect[mid].clusters()), len(con.Defs.Clusters))
 		if len(collect[mid].clusters()) == len(con.Defs.Clusters) { //eh?
-			mp, err := collect[mid].manifestPair(con.Defs)
-			if err != nil {
-				con.Errors <- err
-				return
-			}
-			if err := con.dispatch(mp); err != nil {
-				con.Errors <- err
-			}
+			con.resolve(mid, collect[mid])
 		}
 	}
 
 	created, deleted, retained, modified :=
 		dc.Created, dc.Deleted, dc.Retained, dc.Modified
 
+	defer func() {
+		close(con.Retained)
+		close(con.Modified)
+		close(con.Errors)
+		close(con.Created)
+		close(con.Deleted)
+	}()
+
 	for {
 		if created == nil && deleted == nil && retained == nil && modified == nil {
-			close(con.Retained)
-			close(con.Modified)
-			close(con.Errors)
 			break
 		}
 
 		select {
 		case c, open := <-created:
 			if !open {
-				close(con.Created)
 				created = nil
 				continue
 			}
 			addPair(c.ManifestID(), nil, c)
 		case d, open := <-deleted:
 			if !open {
-				close(con.Deleted)
 				deleted = nil
 				continue
 			}
@@ -313,6 +320,12 @@ func concentrate(dc DiffChans, con DiffConcentrator) {
 			Log.Debug.Printf("Concentrating modification of %q", m.ID())
 
 			addPair(m.Prior.ManifestID(), m.Post, m.Prior)
+		}
+	}
+
+	for mid, bundle := range collect {
+		if !bundle.consumed {
+			con.resolve(mid, collect[mid])
 		}
 	}
 }
