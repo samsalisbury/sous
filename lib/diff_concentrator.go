@@ -100,6 +100,12 @@ func (dc *DiffConcentrator) collect() (concentratedDiffSet, error) {
 }
 
 func (db *deploymentBundle) add(prior, post *Deployment) error {
+
+	if different, diffs := post.Diff(prior); different {
+		Log.Warn.Printf("Adding modification to deployment bundle (%q)", prior.ID())
+		Log.Warn.Printf("Diffs for %q: % #v", prior.ID(), diffs)
+	}
+
 	if db.consumed {
 		return errors.Errorf("Attempted to add a new pair to a consumed bundle: %v %v", prior, post)
 	}
@@ -296,6 +302,9 @@ func concentrate(dc DiffChans, con DiffConcentrator) {
 				modified = nil
 				continue
 			}
+
+			Log.Warn.Printf("Concentrating modification of %q", m.ID())
+
 			addPair(m.Prior.ManifestID(), m.Post, m.Prior)
 		}
 	}
