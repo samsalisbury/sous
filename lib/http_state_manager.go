@@ -263,6 +263,7 @@ func (hsm *HTTPStateManager) modifies(mc chan *ManifestPair, ec chan error, done
 			if !open {
 				return
 			}
+			Log.Warn.Printf("Modifying %q", m.name)
 			if err := hsm.modify(m); err != nil {
 				ec <- err
 			}
