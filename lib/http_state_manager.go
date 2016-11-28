@@ -52,7 +52,7 @@ func (hsm *HTTPStateManager) getDefs() (Defs, error) {
 		return ds, errors.Wrapf(err, "getting defs")
 	}
 
-	Log.Warn.Printf("Reading definitions from %s", url)
+	Log.Debug.Printf("Reading definitions from %s", url)
 
 	rq, err := hsm.Client.Get(url.String())
 	if err != nil {
@@ -70,7 +70,7 @@ func (hsm *HTTPStateManager) getManifests(defs Defs) (Manifests, error) {
 		return Manifests{}, errors.Wrapf(err, "getting manifests")
 	}
 
-	Log.Warn.Printf("Reading manifests from %s", url)
+	Log.Debug.Printf("Reading manifests from %s", url)
 
 	gdmRq, err := hsm.Client.Get(url.String())
 	if err != nil {
@@ -106,7 +106,7 @@ func (hsm *HTTPStateManager) WriteState(s *State) error {
 	if len(flaws) > 0 {
 		return errors.Errorf("Invalid update to state: %v", flaws)
 	}
-	Log.Warn.Printf("Writing state via HTTP.")
+	Log.Debug.Printf("Writing state via HTTP.")
 	if hsm.cached == nil {
 		_, err := hsm.ReadState()
 		if err != nil {
@@ -123,7 +123,7 @@ func (hsm *HTTPStateManager) WriteState(s *State) error {
 	}
 	diff := cds.Diff(wds)
 	cchs := diff.Concentrate(s.Defs)
-	Log.Warn.Printf("Processing diffs...")
+	Log.Debug.Printf("Processing diffs...")
 	return hsm.process(cchs)
 }
 
@@ -263,7 +263,7 @@ func (hsm *HTTPStateManager) modifies(mc chan *ManifestPair, ec chan error, done
 			if !open {
 				return
 			}
-			Log.Warn.Printf("Modifying %q", m.name)
+			Log.Debug.Printf("Modifying %q", m.name)
 			if err := hsm.modify(m); err != nil {
 				ec <- err
 			}
@@ -298,7 +298,7 @@ func (hsm *HTTPStateManager) del(m *Manifest) error {
 		return err
 	}
 
-	Log.Warn.Printf("Getting manifest from %s", u)
+	Log.Debug.Printf("Getting manifest from %s", u)
 
 	grq, err := http.NewRequest("GET", u, nil)
 	if err != nil {
@@ -319,7 +319,7 @@ func (hsm *HTTPStateManager) del(m *Manifest) error {
 	}
 	etag := grz.Header.Get("Etag")
 
-	Log.Warn.Printf("Deleting manifest at %s", u)
+	Log.Debug.Printf("Deleting manifest at %s", u)
 
 	drq, err := http.NewRequest("DELETE", u, nil)
 	if err != nil {
@@ -344,7 +344,7 @@ func (hsm *HTTPStateManager) modify(mp *ManifestPair) error {
 		return err
 	}
 
-	Log.Warn.Printf("Getting manifest from %s", u)
+	Log.Debug.Printf("Getting manifest from %s", u)
 
 	grq, err := http.NewRequest("GET", u, nil)
 	if err != nil {
@@ -370,7 +370,7 @@ func (hsm *HTTPStateManager) modify(mp *ManifestPair) error {
 		return err
 	}
 
-	Log.Warn.Printf("Updating manifest at %s", u)
+	Log.Debug.Printf("Updating manifest at %s", u)
 
 	prq, err := http.NewRequest("PUT", u, hsm.manifestJSON(af))
 	if err != nil {
