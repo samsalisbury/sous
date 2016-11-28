@@ -14,13 +14,6 @@ func (h *Help) Usage(name string) string {
 	return fmt.Sprintf("usage: %s %s", name, h.Args)
 }
 
-// PrintHelp recursively descends down the commands and subcommands named in its
-// arguments, and prints the help for the deepest member it meets, or returns an
-// error if no such command exists.
-func (cli *CLI) PrintHelp(base Command, name string, args []string) error {
-	return cli.printHelp(cli.Out, base, name, args)
-}
-
 // Help is similar to PrintHelp, except it returns the result as a string
 // instead of writing to the CLI's default Output.
 func (cli *CLI) Help(base Command, name string, args []string) (string, error) {
