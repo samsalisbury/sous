@@ -106,6 +106,7 @@ func (hsm *HTTPStateManager) WriteState(s *State) error {
 	if len(flaws) > 0 {
 		return errors.Errorf("Invalid update to state: %v", flaws)
 	}
+	Log.Warn.Printf("Writing state via HTTP.")
 	if hsm.cached == nil {
 		_, err := hsm.ReadState()
 		if err != nil {
@@ -122,6 +123,7 @@ func (hsm *HTTPStateManager) WriteState(s *State) error {
 	}
 	diff := cds.Diff(wds)
 	cchs := diff.Concentrate(s.Defs)
+	Log.Warn.Printf("Processing diffs...")
 	return hsm.process(cchs)
 }
 
@@ -129,50 +131,49 @@ func (hsm *HTTPStateManager) process(dc DiffConcentrator) error {
 	done := make(chan struct{})
 	defer close(done)
 
-	ce := make(chan error)
-	go hsm.creates(dc.Created, ce, done)
+	createErrs := make(chan error)
+	go hsm.creates(dc.Created, createErrs, done)
 
-	de := make(chan error)
-	go hsm.deletes(dc.Deleted, de, done)
+	deleteErrs := make(chan error)
+	go hsm.deletes(dc.Deleted, deleteErrs, done)
 
-	me := make(chan error)
-	go hsm.modifies(dc.Modified, me, done)
+	modifyErrs := make(chan error)
+	go hsm.modifies(dc.Modified, modifyErrs, done)
 
-	re := make(chan error)
-	go hsm.retains(dc.Retained, re, done)
+	retainErrs := make(chan error)
+	go hsm.retains(dc.Retained, retainErrs, done)
 
-	dce := dc.Errors
 	for {
-		if ce == nil && de == nil && me == nil && re == nil {
+		if createErrs == nil && deleteErrs == nil && modifyErrs == nil && retainErrs == nil {
 			return nil
 		}
 
 		select {
-		case e, open := <-dce:
+		case e, open := <-dc.Errors:
 			if open {
 				return e
 			}
-			dce = nil
-		case e, open := <-ce:
+			dc.Errors = nil
+		case e, open := <-createErrs:
 			if open {
 				return e
 			}
-			ce = nil
-		case e, open := <-de:
+			createErrs = nil
+		case e, open := <-deleteErrs:
 			if open {
 				return e
 			}
-			de = nil
-		case e, open := <-re:
+			deleteErrs = nil
+		case e, open := <-retainErrs:
 			if open {
 				return e
 			}
-			re = nil
-		case e, open := <-me:
+			retainErrs = nil
+		case e, open := <-modifyErrs:
 			if open {
 				return e
 			}
-			me = nil
+			modifyErrs = nil
 		}
 	}
 }
