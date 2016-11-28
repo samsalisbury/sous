@@ -4,44 +4,10 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"strings"
-
-	"github.com/opentable/sous/util/whitespace"
 )
 
 // Help contains help strings describing a command.
 type Help struct{ Short, Desc, Args, Long string }
-
-// ParseHelp parses a command's help string into its component parts.
-func ParseHelp(s string) *Help {
-	chunks := strings.SplitN(s, "\n\n", 4)
-	pieces := []string{}
-	for _, c := range chunks {
-		c = whitespace.Trim(c)
-		if len(s) != 0 {
-			pieces = append(pieces, c)
-		}
-	}
-	h := &Help{
-		"error: no short description defined",
-		"error: no description defined",
-		"",
-		"error: no help text defined",
-	}
-	if len(pieces) > 0 {
-		h.Short = pieces[0]
-	}
-	if len(pieces) > 1 {
-		h.Desc = pieces[1]
-	}
-	if len(pieces) > 2 {
-		h.Args = whitespace.Trim(strings.TrimPrefix(pieces[2], "args:"))
-	}
-	if len(pieces) == 3 {
-		h.Long = pieces[2]
-	}
-	return h
-}
 
 // Usage prints the usage message.
 func (h *Help) Usage(name string) string {
@@ -65,10 +31,8 @@ func (cli *CLI) Help(base Command, name string, args []string) (string, error) {
 
 func (cli *CLI) printHelp(out *Output, base Command, name string, args []string) error {
 	if len(args) == 0 {
-		help := ParseHelp(base.Help())
-		out.Println(help.Usage(name))
-		out.Println()
-		out.Println(help.Desc)
+		help := base.Help()
+		out.Println(help)
 		cli.printSubcommands(out, base, name)
 		cli.printOptions(out, base, name)
 		return nil
@@ -117,7 +81,6 @@ func commandTable(cs Commands) [][]string {
 	for i, name := range cs.SortedKeys() {
 		t[i] = make([]string, 2)
 		t[i][0] = name
-		t[i][1] = ParseHelp(cs[name].Help()).Short
 	}
 	return t
 }

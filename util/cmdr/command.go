@@ -12,15 +12,6 @@ type (
 	Command interface {
 		// Help is the help message for a command. To be a command, all you need
 		// is a help message.
-		//
-		// Help messages must follow some conventions:
-		// The first line must be 50 characters or fewer, and describe
-		// succinctly what the command does.
-		// The second line must be blank.
-		// The third line should begin with "args: " followed by a list of named
-		// arguments (not flags or options)
-		// The remaining non-blank lines should contain a detailed description
-		// of how the command works, including usage examples.
 		Help() string
 	}
 	// CanExecute means the command can itself be executed to do something.
