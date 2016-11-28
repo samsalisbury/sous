@@ -2,7 +2,6 @@ package cli
 
 import (
 	"flag"
-	"log"
 
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
@@ -82,7 +81,6 @@ func (su *SousUpdate) Execute(args []string) cmdr.Result {
 	if err := updateState(su.State, su.GDM, sid, did); err != nil {
 		return EnsureErrorResult(err)
 	}
-	log.Panicf("StateWriter is %T", su.StateWriter)
 	if err := su.StateWriter.WriteState(su.State); err != nil {
 		return EnsureErrorResult(err)
 	}
