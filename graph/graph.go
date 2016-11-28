@@ -66,9 +66,8 @@ type (
 	LocalDockerClient struct{ docker_registry.Client }
 	// StateManager simply wraps the sous.StateManager interface
 	StateManager struct{ sous.StateManager }
-	// LocalStateReader wraps a storage.StateReader, and should be configured
-	// to use the current user's local storage.
-	LocalStateReader struct{ sous.StateReader }
+	// StateReader wraps a storage.StateReader.
+	StateReader struct{ sous.StateReader }
 	// LocalStateWriter wraps a storage.StateWriter, and should be configured to
 	// use the current user's local storage.
 	LocalStateWriter struct{ sous.StateWriter }
@@ -238,7 +237,7 @@ func newResolver(filter *sous.ResolveFilter, d sous.Deployer, r sous.Registry) *
 	return sous.NewResolver(d, r, filter)
 }
 
-func newAutoResolver(rez *sous.Resolver, sr LocalStateReader, ls *sous.LogSet) *sous.AutoResolver {
+func newAutoResolver(rez *sous.Resolver, sr StateReader, ls *sous.LogSet) *sous.AutoResolver {
 	return sous.NewAutoResolver(rez, sr, ls)
 }
 
@@ -464,15 +463,15 @@ func newStateManager(c LocalSousConfig) (*StateManager, error) {
 	return &StateManager{StateManager: hsm}, nil
 }
 
-func newLocalStateReader(sm *StateManager) LocalStateReader {
-	return LocalStateReader{sm}
+func newLocalStateReader(sm *StateManager) StateReader {
+	return StateReader{sm}
 }
 
 func newLocalStateWriter(sm *StateManager) LocalStateWriter {
 	return LocalStateWriter{sm}
 }
 
-func newCurrentState(sr LocalStateReader) (*sous.State, error) {
+func newCurrentState(sr StateReader) (*sous.State, error) {
 	state, err := sr.ReadState()
 	if os.IsNotExist(err) {
 		log.Println("error reading state:", err)
