@@ -101,7 +101,13 @@ func (dc *DiffConcentrator) collect() (concentratedDiffSet, error) {
 
 func (db *deploymentBundle) add(prior, post *Deployment) error {
 
-	if different, diffs := post.Diff(prior); different {
+	if prior == nil || post == nil {
+		if prior == nil {
+			Log.Debug.Printf("Added deployment: %#v", post)
+		} else {
+			Log.Debug.Printf("Depleted deployment: %#v", prior)
+		}
+	} else if different, diffs := post.Diff(prior); different {
 		Log.Warn.Printf("Adding modification to deployment bundle (%q)", prior.ID())
 		Log.Warn.Printf("Diffs for %q: % #v", prior.ID(), diffs)
 	}

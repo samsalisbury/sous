@@ -50,10 +50,6 @@ func TestWriteState(t *testing.T) {
 	state.Manifests.Add(diesManifest)
 	state.Manifests.Add(changesManifest)
 
-	for id, m := range state.Manifests.Snapshot() {
-		t.Logf("base state: Manifest %q; Kind = %q", id, m.Kind)
-	}
-
 	sm := sous.DummyStateManager{State: state}
 	smm, err := sm.ReadState()
 	if err != nil {
@@ -61,10 +57,6 @@ func TestWriteState(t *testing.T) {
 	}
 	if smm.Manifests.Len() <= 0 {
 		t.Fatal("State manager double is empty")
-	}
-
-	for id, m := range smm.Manifests.Snapshot() {
-		t.Logf("dummy state: Manifest %q; Kind = %q", id, m.Kind)
 	}
 
 	gf := func() server.Injector {
@@ -93,7 +85,7 @@ func TestWriteState(t *testing.T) {
 	}
 
 	for id, m := range originalState.Manifests.Snapshot() {
-		t.Logf("hsm read state: Manifest %q; Kind = %q", id, m.Kind)
+		t.Logf("hsm INITIAL state: Manifest %q; Kind = %q\n  %#v\n", id, m.Kind, m)
 	}
 
 	log.Printf("original state: %#v", originalState)
@@ -121,6 +113,10 @@ func TestWriteState(t *testing.T) {
 	state, err = hsm.ReadState()
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	for id, m := range state.Manifests.Snapshot() {
+		t.Logf("hsm UPDATED state: Manifest %q; Kind = %q\n  %#v\n", id, m.Kind, m)
 	}
 
 	if originalState.Manifests.Len() != state.Manifests.Len() {
