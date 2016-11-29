@@ -40,9 +40,19 @@ func (g *gdmWrapper) fromJSON(reader io.Reader) {
 // NewHTTPStateManager creates a new HTTPStateManager.
 func NewHTTPStateManager(us string) (*HTTPStateManager, error) {
 	u, err := url.Parse(us)
-	return &HTTPStateManager{
+
+	hsm := &HTTPStateManager{
 		serverURL: u,
-	}, errors.Wrapf(err, "new state manager")
+	}
+
+	// XXX: This is in response to a mysterios issue surrounding automatic gzip and
+	// Etagging The client receives a gzipped response with "--gzip" appended to
+	// the original Etag The --gzip isn't stripped by whatever does it, although
+	// the body is decompressed on the server side.
+	// This is a hack to address that issue, which should be resolved properly
+	hsm.Client.Transport = &http.Transport{Proxy: http.ProxyFromEnvironment, DisableCompression: true}
+
+	return hsm, errors.Wrapf(err, "new state manager")
 }
 
 func (hsm *HTTPStateManager) getDefs() (Defs, error) {
@@ -51,6 +61,9 @@ func (hsm *HTTPStateManager) getDefs() (Defs, error) {
 	if err != nil {
 		return ds, errors.Wrapf(err, "getting defs")
 	}
+
+	Log.Debug.Printf("Reading definitions from %s", url)
+
 	rq, err := hsm.Client.Get(url.String())
 	if err != nil {
 		return ds, errors.Wrapf(err, "getting defs")
@@ -66,6 +79,9 @@ func (hsm *HTTPStateManager) getManifests(defs Defs) (Manifests, error) {
 	if err != nil {
 		return Manifests{}, errors.Wrapf(err, "getting manifests")
 	}
+
+	Log.Debug.Printf("Reading manifests from %s", url)
+
 	gdmRq, err := hsm.Client.Get(url.String())
 	if err != nil {
 		return Manifests{}, errors.Wrapf(err, "getting manifests")
@@ -100,6 +116,7 @@ func (hsm *HTTPStateManager) WriteState(s *State) error {
 	if len(flaws) > 0 {
 		return errors.Errorf("Invalid update to state: %v", flaws)
 	}
+	Log.Debug.Printf("Writing state via HTTP.")
 	if hsm.cached == nil {
 		_, err := hsm.ReadState()
 		if err != nil {
@@ -116,6 +133,7 @@ func (hsm *HTTPStateManager) WriteState(s *State) error {
 	}
 	diff := cds.Diff(wds)
 	cchs := diff.Concentrate(s.Defs)
+	Log.Debug.Printf("Processing diffs...")
 	return hsm.process(cchs)
 }
 
@@ -123,50 +141,49 @@ func (hsm *HTTPStateManager) process(dc DiffConcentrator) error {
 	done := make(chan struct{})
 	defer close(done)
 
-	ce := make(chan error)
-	go hsm.creates(dc.Created, ce, done)
+	createErrs := make(chan error)
+	go hsm.creates(dc.Created, createErrs, done)
 
-	de := make(chan error)
-	go hsm.deletes(dc.Deleted, de, done)
+	deleteErrs := make(chan error)
+	go hsm.deletes(dc.Deleted, deleteErrs, done)
 
-	me := make(chan error)
-	go hsm.modifies(dc.Modified, me, done)
+	modifyErrs := make(chan error)
+	go hsm.modifies(dc.Modified, modifyErrs, done)
 
-	re := make(chan error)
-	go hsm.retains(dc.Retained, re, done)
+	retainErrs := make(chan error)
+	go hsm.retains(dc.Retained, retainErrs, done)
 
-	dce := dc.Errors
 	for {
-		if ce == nil && de == nil && me == nil && re == nil {
+		if createErrs == nil && deleteErrs == nil && modifyErrs == nil && retainErrs == nil {
 			return nil
 		}
 
 		select {
-		case e, open := <-dce:
+		case e, open := <-dc.Errors:
 			if open {
 				return e
 			}
-			dce = nil
-		case e, open := <-ce:
+			dc.Errors = nil
+		case e, open := <-createErrs:
 			if open {
 				return e
 			}
-			ce = nil
-		case e, open := <-de:
+			createErrs = nil
+		case e, open := <-deleteErrs:
 			if open {
 				return e
 			}
-			de = nil
-		case e, open := <-re:
+			deleteErrs = nil
+		case e, open := <-retainErrs:
 			if open {
 				return e
 			}
-			re = nil
-		case e, open := <-me:
+			retainErrs = nil
+		case e, open := <-modifyErrs:
 			if open {
 				return e
 			}
-			me = nil
+			modifyErrs = nil
 		}
 	}
 }
@@ -256,6 +273,7 @@ func (hsm *HTTPStateManager) modifies(mc chan *ManifestPair, ec chan error, done
 			if !open {
 				return
 			}
+			Log.Debug.Printf("Modifying %q", m.name)
 			if err := hsm.modify(m); err != nil {
 				ec <- err
 			}
@@ -268,7 +286,10 @@ func (hsm *HTTPStateManager) create(m *Manifest) error {
 	if err != nil {
 		return err
 	}
-	rq, err := http.NewRequest("PUT", murl, hsm.manifestJSON(m))
+	json := hsm.manifestJSON(m)
+	Log.Debug.Printf("Creating manifest: PUT %q", murl)
+	Log.Debug.Printf("Creating manifest: %s", json)
+	rq, err := http.NewRequest("PUT", murl, json)
 	if err != nil {
 		return errors.Wrapf(err, "create manifest request")
 	}
@@ -285,12 +306,14 @@ func (hsm *HTTPStateManager) create(m *Manifest) error {
 }
 
 func (hsm *HTTPStateManager) del(m *Manifest) error {
-	murl, err := hsm.manifestURL(m)
+	u, err := hsm.manifestURL(m)
 	if err != nil {
 		return err
 	}
 
-	grq, err := http.NewRequest("GET", murl, nil)
+	Log.Debug.Printf("Getting manifest from %s", u)
+
+	grq, err := http.NewRequest("GET", u, nil)
 	if err != nil {
 		return errors.Wrapf(err, "delete manifest request")
 	}
@@ -300,7 +323,7 @@ func (hsm *HTTPStateManager) del(m *Manifest) error {
 	}
 	defer grz.Body.Close()
 	if !(grz.StatusCode >= 200 && grz.StatusCode < 300) {
-		return errors.Errorf("GET %s to delete, %s: %#v", murl, grz.Status, m)
+		return errors.Errorf("GET %s to delete, %s: %#v", u, grz.Status, m)
 	}
 	rm := hsm.jsonManifest(grz.Body)
 	different, differences := rm.Diff(m)
@@ -308,7 +331,10 @@ func (hsm *HTTPStateManager) del(m *Manifest) error {
 		return errors.Errorf("Remote and deleted manifests don't match: %#v", differences)
 	}
 	etag := grz.Header.Get("Etag")
-	drq, err := http.NewRequest("DELETE", murl, nil)
+
+	Log.Debug.Printf("Deleting manifest at %s", u)
+
+	drq, err := http.NewRequest("DELETE", u, nil)
 	if err != nil {
 		return errors.Wrapf(err, "delete manifest request")
 	}
@@ -318,7 +344,7 @@ func (hsm *HTTPStateManager) del(m *Manifest) error {
 		return errors.Wrapf(err, "delete manifest request")
 	}
 	if !(drz.StatusCode >= 200 && drz.StatusCode < 300) {
-		return errors.Errorf("Delete %s failed: %s", murl, drz.Status)
+		return errors.Errorf("Delete %s failed: %s", u, drz.Status)
 	}
 	return nil
 }
@@ -326,12 +352,14 @@ func (hsm *HTTPStateManager) del(m *Manifest) error {
 func (hsm *HTTPStateManager) modify(mp *ManifestPair) error {
 	bf := mp.Post
 	af := mp.Prior
-	murl, err := hsm.manifestURL(bf)
+	u, err := hsm.manifestURL(bf)
 	if err != nil {
 		return err
 	}
 
-	grq, err := http.NewRequest("GET", murl, nil)
+	Log.Debug.Printf("Getting manifest from %s", u)
+
+	grq, err := http.NewRequest("GET", u, nil)
 	if err != nil {
 		return errors.Wrapf(err, "modify request")
 	}
@@ -346,16 +374,20 @@ func (hsm *HTTPStateManager) modify(mp *ManifestPair) error {
 	rm := hsm.jsonManifest(grz.Body)
 	different, differences := rm.Diff(bf)
 	if different {
-		return errors.Errorf("Remote and prior manifests don't match: %#v", differences)
+		return errors.Errorf("%q: Remote and prior manifests don't match: %#v", mp.name, differences)
 	}
 	etag := grz.Header.Get("Etag")
 
-	murl, err = hsm.manifestURL(af)
+	u, err = hsm.manifestURL(af)
 	if err != nil {
 		return err
 	}
 
-	prq, err := http.NewRequest("PUT", murl, hsm.manifestJSON(af))
+	json := hsm.manifestJSON(af)
+	Log.Debug.Printf("Updating manifest at %q", u)
+	Log.Debug.Printf("Updating manifest to %s", json)
+
+	prq, err := http.NewRequest("PUT", u, json)
 	if err != nil {
 		return errors.Wrapf(err, "modify request")
 	}

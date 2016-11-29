@@ -66,12 +66,11 @@ type (
 	LocalDockerClient struct{ docker_registry.Client }
 	// StateManager simply wraps the sous.StateManager interface
 	StateManager struct{ sous.StateManager }
-	// LocalStateReader wraps a storage.StateReader, and should be configured
-	// to use the current user's local storage.
-	LocalStateReader struct{ sous.StateReader }
-	// LocalStateWriter wraps a storage.StateWriter, and should be configured to
+	// StateReader wraps a storage.StateReader.
+	StateReader struct{ sous.StateReader }
+	// StateWriter wraps a storage.StateWriter, and should be configured to
 	// use the current user's local storage.
-	LocalStateWriter struct{ sous.StateWriter }
+	StateWriter struct{ sous.StateWriter }
 	// CurrentGDM is a snapshot of the GDM at application start. In a CLI
 	// context, which this is, that is all we need to simply read the GDM.
 	CurrentGDM struct{ sous.Deployments }
@@ -238,7 +237,7 @@ func newResolver(filter *sous.ResolveFilter, d sous.Deployer, r sous.Registry) *
 	return sous.NewResolver(d, r, filter)
 }
 
-func newAutoResolver(rez *sous.Resolver, sr LocalStateReader, ls *sous.LogSet) *sous.AutoResolver {
+func newAutoResolver(rez *sous.Resolver, sr StateReader, ls *sous.LogSet) *sous.AutoResolver {
 	return sous.NewAutoResolver(rez, sr, ls)
 }
 
@@ -449,26 +448,30 @@ func newDockerClient() LocalDockerClient {
 }
 
 func newStateManager(c LocalSousConfig) (*StateManager, error) {
-	if c.Server != "" {
-		hsm, err := sous.NewHTTPStateManager(c.Server)
-		if err != nil {
-			return nil, err
-		}
-		return &StateManager{StateManager: hsm}, nil
+	if c.Server == "" {
+		sous.Log.Warn.Println("No server set, Sous is running in local mode.")
+		sous.Log.Warn.Println("Configure a server like this: sous config server http://some.sous.server")
+		sous.Log.Warn.Printf("Using local state stored at %s", c.StateLocation)
+		dm := storage.NewDiskStateManager(c.StateLocation)
+		return &StateManager{StateManager: storage.NewGitStateManager(dm)}, nil
 	}
-	dm := storage.NewDiskStateManager(c.StateLocation)
-	return &StateManager{StateManager: storage.NewGitStateManager(dm)}, nil
+	sous.Log.Debug.Printf("Using server at %s", c.Server)
+	hsm, err := sous.NewHTTPStateManager(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	return &StateManager{StateManager: hsm}, nil
 }
 
-func newLocalStateReader(sm *StateManager) LocalStateReader {
-	return LocalStateReader{sm}
+func newLocalStateReader(sm *StateManager) StateReader {
+	return StateReader{sm}
 }
 
-func newLocalStateWriter(sm *StateManager) LocalStateWriter {
-	return LocalStateWriter{sm}
+func newLocalStateWriter(sm *StateManager) StateWriter {
+	return StateWriter{sm}
 }
 
-func newCurrentState(sr LocalStateReader) (*sous.State, error) {
+func newCurrentState(sr StateReader) (*sous.State, error) {
 	state, err := sr.ReadState()
 	if os.IsNotExist(err) {
 		log.Println("error reading state:", err)

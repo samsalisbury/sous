@@ -2,7 +2,6 @@ package cli
 
 import (
 	"flag"
-	"fmt"
 
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
@@ -10,18 +9,14 @@ import (
 	"github.com/opentable/sous/util/cmdr"
 )
 
-// SousRectify is the injectable command object used for `sous rectify`
+// SousRectify is the injectable command object used for `sous rectify`.
 type SousRectify struct {
-	Config       graph.LocalSousConfig
-	DockerClient graph.LocalDockerClient
-	Deployer     sous.Deployer
-	Registry     sous.Registry
-	State        *sous.State
-	GDM          graph.CurrentGDM
-	SourceFlags  config.DeployFilterFlags
-	Engine       sous.SourceHostChooser
-	*sous.Resolver
-	flags struct {
+	Config      graph.LocalSousConfig
+	State       *sous.State
+	GDM         graph.CurrentGDM
+	SourceFlags config.DeployFilterFlags
+	Resolver    *sous.Resolver
+	flags       struct {
 		dryrun                string
 		repo, offset, cluster string
 		all                   bool
@@ -51,10 +46,10 @@ Note: by default this command will query a live docker registry and make
 changes to live Singularity clusters.
 `
 
-// Help returns the help string
+// Help returns the help string.
 func (*SousRectify) Help() string { return sousRectifyHelp }
 
-// AddFlags adds flags for sous rectify
+// AddFlags adds flags for sous rectify.
 func (sr *SousRectify) AddFlags(fs *flag.FlagSet) {
 	MustAddFlags(fs, &sr.SourceFlags, RectifyFilterFlagsHelp)
 
@@ -70,13 +65,18 @@ func (sr *SousRectify) RegisterOn(psy Addable) {
 	psy.Add(&sr.SourceFlags)
 }
 
-// Execute fulfils the cmdr.Executor interface
+// Execute fulfils the cmdr.Executor interface.
 func (sr *SousRectify) Execute(args []string) cmdr.Result {
-	if !sr.SourceFlags.All && sr.ResolveFilter.All() {
-		return EnsureErrorResult(fmt.Errorf("Cowardly refusing rectify with neither contraint nor `-all`! (see `sous help rectify`)"))
+	if sr.Config.Server != "" {
+		return UsageErrorf("rectify is deprecated; the server at %s handles rectification.\n"+
+			`If you really want to run rectification locally, unset config.server: 'sous config server ""'`, sr.Config.Server)
+	}
+	if !sr.SourceFlags.All && sr.Resolver.ResolveFilter.All() {
+		return UsageErrorf("Please specify what to rectify using the -repo tag.\n" +
+			"(Or -all if you really mean to rectify the whole world; see 'sous help rectify'.)")
 	}
 
-	if err := sr.Resolve(sr.GDM.Clone(), sr.State.Defs.Clusters); err != nil {
+	if err := sr.Resolver.Resolve(sr.GDM.Clone(), sr.State.Defs.Clusters); err != nil {
 		return EnsureErrorResult(err)
 	}
 

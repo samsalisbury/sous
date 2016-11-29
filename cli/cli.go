@@ -16,13 +16,16 @@ import (
 
 // Func aliases, for convenience returning from commands.
 var (
-	SuccessData       = cmdr.SuccessData
-	Successf          = cmdr.Successf
-	Success           = cmdr.Success
-	UsageErrorf       = cmdr.UsageErrorf
-	OSErrorf          = cmdr.OSErrorf
-	IOErrorf          = cmdr.IOErrorf
-	InternalErrorf    = cmdr.InternalErrorf
+	SuccessData    = cmdr.SuccessData
+	Successf       = cmdr.Successf
+	Success        = cmdr.Success
+	UsageErrorf    = cmdr.UsageErrorf
+	OSErrorf       = cmdr.OSErrorf
+	IOErrorf       = cmdr.IOErrorf
+	InternalErrorf = cmdr.InternalErrorf
+	GeneralErrorf  = func(format string, a ...interface{}) cmdr.ErrorResult {
+		return EnsureErrorResult(fmt.Errorf(format, a...))
+	}
 	EnsureErrorResult = func(err error) cmdr.ErrorResult {
 		sous.Log.Debug.Println(err)
 		return cmdr.EnsureErrorResult(err)
@@ -66,7 +69,7 @@ func SuccessYAML(v interface{}) cmdr.Result {
 }
 
 // Plumbing injects a command with the current psyringe,
-// then it Executes it, returning the result
+// then it Executes it, returning the result.
 func (cli *CLI) Plumbing(cmd cmdr.Executor, args []string) cmdr.Result {
 	if err := cli.SousGraph.Inject(cmd); err != nil {
 		return cmdr.EnsureErrorResult(err)

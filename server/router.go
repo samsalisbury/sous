@@ -73,7 +73,7 @@ func (mh *MetaHandler) HeadHandling(factory ExchangeFactory) httprouter.Handle {
 func (mh *MetaHandler) PutHandling(factory ExchangeFactory) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		if r.Header.Get("If-Match") == "" && r.Header.Get("If-None-Match") == "" {
-			w.WriteHeader(http.StatusPreconditionRequired)
+			mh.writeHeaders(http.StatusPreconditionRequired, w, r, "")
 			return
 		}
 
@@ -82,12 +82,17 @@ func (mh *MetaHandler) PutHandling(factory ExchangeFactory) httprouter.Handle {
 		grez := mh.synthResponse(gr)
 
 		if r.Header.Get("If-None-Match") == "*" && grez.StatusCode != 404 {
-			w.WriteHeader(http.StatusPreconditionFailed)
+			mh.writeHeaders(http.StatusPreconditionFailed, w, r, "resource present for If-None-Match=*!")
 			return
 		}
 		if etag := r.Header.Get("If-Match"); etag != "" {
-			if grez.Header.Get("Etag") != etag {
-				w.WriteHeader(http.StatusPreconditionFailed)
+			grezEtag := grez.Header.Get("Etag")
+			if grezEtag != etag {
+				reqBody, _ := ioutil.ReadAll(r.Body)
+				rezBody, _ := ioutil.ReadAll(grez.Body)
+				mh.writeHeaders(http.StatusPreconditionFailed, w, r,
+					fmt.Sprintf("Etag mismatch: provided %q != existing %q\n%s\n\n%s",
+						etag, grezEtag, string(reqBody), string(rezBody)))
 				return
 			}
 		}

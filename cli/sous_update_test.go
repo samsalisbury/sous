@@ -143,8 +143,8 @@ func (dsm *DummyStateManager) ReadState() (*sous.State, error) { return nil, nil
 func TestSousUpdate_Execute(t *testing.T) {
 	dsm := &DummyStateManager{}
 	su := SousUpdate{
-		StateReader: graph.LocalStateReader{StateReader: dsm},
-		StateWriter: graph.LocalStateWriter{StateWriter: dsm},
+		StateReader: graph.StateReader{StateReader: dsm},
+		StateWriter: graph.StateWriter{StateWriter: dsm},
 		GDM:         graph.CurrentGDM{Deployments: sous.MakeDeployments(0)},
 		Manifest:    graph.TargetManifest{Manifest: &sous.Manifest{}},
 	}

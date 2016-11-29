@@ -61,10 +61,7 @@ func (ds Deployments) Manifests(defs Defs) (Manifests, error) {
 		m, ok := ms.Get(mid)
 		if !ok {
 			m = &Manifest{Deployments: DeploySpecs{}}
-			for o := range d.Owners {
-				// TODO: de-dupe or use a set on manifests.
-				m.Owners = append(m.Owners, o)
-			}
+			m.Owners = d.Owners.Slice()
 			m.SetID(mid)
 		}
 		spec := DeploySpec{
@@ -121,10 +118,7 @@ func (s *State) DeploymentsFromManifest(m *Manifest) (Deployments, error) {
 
 // BuildDeployment constructs a deployment out of a Manifest.
 func BuildDeployment(s *State, m *Manifest, nick string, spec DeploySpec, inherit []DeploySpec) (*Deployment, error) {
-	ownMap := OwnerSet{}
-	for i := range m.Owners {
-		ownMap.Add(m.Owners[i])
-	}
+	ownMap := NewOwnerSet(m.Owners...)
 	ds := flattenDeploySpecs(append([]DeploySpec{spec}, inherit...))
 	return &Deployment{
 		ClusterName:  nick,
