@@ -40,9 +40,19 @@ func (g *gdmWrapper) fromJSON(reader io.Reader) {
 // NewHTTPStateManager creates a new HTTPStateManager.
 func NewHTTPStateManager(us string) (*HTTPStateManager, error) {
 	u, err := url.Parse(us)
-	return &HTTPStateManager{
+
+	hsm := &HTTPStateManager{
 		serverURL: u,
-	}, errors.Wrapf(err, "new state manager")
+	}
+
+	// XXX: This is in response to a mysterios issue surrounding automatic gzip and
+	// Etagging The client receives a gzipped response with "--gzip" appended to
+	// the original Etag The --gzip isn't stripped by whatever does it, although
+	// the body is decompressed on the server side.
+	// This is a hack to address that issue, which should be resolved properly
+	hsm.Client.Transport.DisableCompression = true
+
+	return hsm, errors.Wrapf(err, "new state manager")
 }
 
 func (hsm *HTTPStateManager) getDefs() (Defs, error) {
