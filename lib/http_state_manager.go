@@ -50,7 +50,7 @@ func NewHTTPStateManager(us string) (*HTTPStateManager, error) {
 	// the original Etag The --gzip isn't stripped by whatever does it, although
 	// the body is decompressed on the server side.
 	// This is a hack to address that issue, which should be resolved properly
-	hsm.Client.Transport.DisableCompression = true
+	hsm.Client.Transport = &http.Transport{Proxy: http.ProxyFromEnvironment, DisableCompression: true}
 
 	return hsm, errors.Wrapf(err, "new state manager")
 }
