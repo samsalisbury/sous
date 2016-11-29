@@ -3,59 +3,10 @@ package cmdr
 import (
 	"bytes"
 	"flag"
-	"fmt"
 	"strings"
-
-	"github.com/opentable/sous/util/whitespace"
 )
 
-// Help contains help strings describing a command.
-type Help struct{ Short, Desc, Args, Long string }
-
-// ParseHelp parses a command's help string into its component parts.
-func ParseHelp(s string) *Help {
-	chunks := strings.SplitN(s, "\n\n", 4)
-	pieces := []string{}
-	for _, c := range chunks {
-		c = whitespace.Trim(c)
-		if len(s) != 0 {
-			pieces = append(pieces, c)
-		}
-	}
-	h := &Help{
-		"error: no short description defined",
-		"error: no description defined",
-		"",
-		"error: no help text defined",
-	}
-	if len(pieces) > 0 {
-		h.Short = pieces[0]
-	}
-	if len(pieces) > 1 {
-		h.Desc = pieces[1]
-	}
-	if len(pieces) > 2 {
-		h.Args = whitespace.Trim(strings.TrimPrefix(pieces[2], "args:"))
-	}
-	if len(pieces) == 3 {
-		h.Long = pieces[2]
-	}
-	return h
-}
-
-// Usage prints the usage message.
-func (h *Help) Usage(name string) string {
-	return fmt.Sprintf("usage: %s %s", name, h.Args)
-}
-
-// PrintHelp recursively descends down the commands and subcommands named in its
-// arguments, and prints the help for the deepest member it meets, or returns an
-// error if no such command exists.
-func (cli *CLI) PrintHelp(base Command, name string, args []string) error {
-	return cli.printHelp(cli.Out, base, name, args)
-}
-
-// Help is similar to PrintHelp, except it returns the result as a string
+// Help is similar to printHelp, except it returns the result as a string
 // instead of writing to the CLI's default Output.
 func (cli *CLI) Help(base Command, name string, args []string) (string, error) {
 	b := &bytes.Buffer{}
@@ -65,10 +16,8 @@ func (cli *CLI) Help(base Command, name string, args []string) (string, error) {
 
 func (cli *CLI) printHelp(out *Output, base Command, name string, args []string) error {
 	if len(args) == 0 {
-		help := ParseHelp(base.Help())
-		out.Println(help.Usage(name))
-		out.Println()
-		out.Println(help.Desc)
+		help := base.Help()
+		out.Println(help)
 		cli.printSubcommands(out, base, name)
 		cli.printOptions(out, base, name)
 		return nil
@@ -115,9 +64,10 @@ func (cli *CLI) printOptions(out *Output, command Command, name string) {
 func commandTable(cs Commands) [][]string {
 	t := make([][]string, len(cs))
 	for i, name := range cs.SortedKeys() {
+		shortHelp := strings.Split(cs[name].Help(), "\n")[1]
 		t[i] = make([]string, 2)
 		t[i][0] = name
-		t[i][1] = ParseHelp(cs[name].Help()).Short
+		t[i][1] = shortHelp
 	}
 	return t
 }
