@@ -49,7 +49,7 @@ func (m *Manifest) SetID(mid ManifestID) {
 // Clone returns a deep copy of this Manifest.
 func (m Manifest) Clone() (c *Manifest) {
 	owners := make([]string, len(m.Owners))
-	copy(m.Owners, owners)
+	copy(owners, m.Owners)
 	deployments := make(DeploySpecs, len(m.Deployments))
 	for k, v := range m.Deployments {
 		deployments[k] = v.Clone()
@@ -82,11 +82,10 @@ func (m *Manifest) Diff(o *Manifest) (bool, []string) {
 	if len(m.Owners) != len(o.Owners) {
 		diff("number of owners; this: %d; other: %d", len(m.Owners), len(o.Owners))
 	} else {
-		for i, owner := range m.Owners {
-			if o.Owners[i] != owner {
-				diff("owner in position %d; this: %d; other: %d", i, owner, o.Owners[i])
-			}
-		}
+		here := NewOwnerSet(m.Owners...)
+		there := NewOwnerSet(o.Owners...)
+		_, ods := here.Diff(there)
+		diffs = append(diffs, ods...)
 	}
 	if len(m.Deployments) != len(o.Deployments) {
 		diff("number of deployments; this: %d; other: %d", len(m.Deployments), len(o.Deployments))
@@ -119,12 +118,16 @@ func (m *Manifest) Validate() []Flaw {
 		flaws = append(flaws, m.Kind.Validate()...)
 	}
 
-	for _, f := range flaws {
-		f.AddContext("manifest", m)
+	for cluster, d := range m.Deployments {
+		df := d.Validate()
+		for _, f := range df {
+			f.AddContext("cluster", cluster)
+		}
+		flaws = append(flaws, df...)
 	}
 
-	for _, d := range m.Deployments {
-		flaws = append(flaws, d.Validate(DeploySpec{})...)
+	for _, f := range flaws {
+		f.AddContext("manifest", m)
 	}
 
 	return flaws

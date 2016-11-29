@@ -17,7 +17,7 @@ type SousInit struct {
 	WD                graph.LocalWorkDirShell
 	GDM               graph.CurrentGDM
 	State             *sous.State
-	StateWriter       graph.LocalStateWriter
+	StateWriter       graph.StateWriter
 }
 
 func init() { TopLevelCommands["init"] = &SousInit{} }

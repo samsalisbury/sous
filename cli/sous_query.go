@@ -33,6 +33,6 @@ func (SousQuery) Subcommands() cmdr.Commands {
 
 func (sb *SousQuery) Execute(args []string) cmdr.Result {
 	err := UsageErrorf("usage: sous query [options] command")
-	err.Tip = "try `sous query help` for a list of commands"
+	err.Tip = "try `sous help query` for a list of commands"
 	return err
 }

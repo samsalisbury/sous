@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestCreate(t *testing.T) {
+func TestHTTPStateManager_Create(t *testing.T) {
 	reqd := false
 	h := func(rw http.ResponseWriter, r *http.Request) {
 		if meth := r.Method; strings.ToUpper(meth) != "PUT" {
@@ -40,7 +40,7 @@ func TestCreate(t *testing.T) {
 	}
 }
 
-func TestDelete(t *testing.T) {
+func TestHTTPStateManager_Delete(t *testing.T) {
 	reqd := false
 	etag := "w/sauce"
 	h := func(rw http.ResponseWriter, r *http.Request) {
@@ -87,7 +87,7 @@ func TestDelete(t *testing.T) {
 	}
 }
 
-func TestModify(t *testing.T) {
+func TestHTTPStateManager_Modify(t *testing.T) {
 	reqd := false
 	etag := "w/sauce"
 	h := func(rw http.ResponseWriter, r *http.Request) {

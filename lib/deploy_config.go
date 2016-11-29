@@ -49,10 +49,8 @@ type (
 	}
 )
 
-// Validate returns a slice of Flaws. It uses inherit to selectively ignore any
-// missing values from dc that are present in inherit, mimicking the way
-// DeployConfigs are used to generate Deployments.
-func (dc *DeployConfig) Validate(inherit DeployConfig) []Flaw {
+// Validate returns a slice of Flaws.
+func (dc *DeployConfig) Validate() []Flaw {
 	var flaws []Flaw
 
 	for _, v := range dc.Volumes {
@@ -69,7 +67,7 @@ func (dc *DeployConfig) Validate(inherit DeployConfig) []Flaw {
 		rezs = make(Resources)
 	}
 
-	flaws = append(flaws, rezs.Validate(inherit.Resources)...)
+	flaws = append(flaws, rezs.Validate()...)
 
 	for _, f := range flaws {
 		f.AddContext("deploy config", dc)

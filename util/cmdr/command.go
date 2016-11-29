@@ -12,22 +12,18 @@ type (
 	Command interface {
 		// Help is the help message for a command. To be a command, all you need
 		// is a help message.
-		//
-		// Help messages must follow some conventions:
+		// Help messages must follow this convention:
 		// The first line must be 50 characters or fewer, and describe
 		// succinctly what the command does.
 		// The second line must be blank.
-		// The third line should begin with "args: " followed by a list of named
-		// arguments (not flags or options)
-		// The remaining non-blank lines should contain a detailed description
-		// of how the command works, including usage examples.
+		// The remainder of the string is free-form text.
 		Help() string
 	}
-	// CanExecute means the command can itself be executed to do something.
+	// Executor is a command can itself be executed to do something.
 	Executor interface {
 		Execute(args []string) Result
 	}
-	// HasSubcommands means this command has subcommands.
+	// Subcommander means this command has subcommands.
 	Subcommander interface {
 		// Subcommands returns a map of command names to Commands.
 		Subcommands() Commands
@@ -44,6 +40,7 @@ type (
 	}
 )
 
+// SortedKeys returns the names of the commands in alphabetical order.
 func (cs Commands) SortedKeys() []string {
 	keys := make([]string, len(cs))
 	i := 0

@@ -55,7 +55,7 @@ var manifestTests = []struct {
 				},
 			},
 		},
-		FlawDesc: "Missing resource field: memory",
+		FlawDesc: "Missing resource field \"memory\" for cluster some-cluster",
 	},
 	{
 		// NOTE: This one is valid, hence no FlawDesc.

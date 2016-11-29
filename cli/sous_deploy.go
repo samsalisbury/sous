@@ -10,12 +10,11 @@ import (
 
 // SousDeploy is the command description for `sous deploy`.
 type SousDeploy struct {
-	*CLI
-	config.DeployFilterFlags
-	config.OTPLFlags
-	Update       SousUpdate
-	Rectify      SousRectify
-	rectifyFlags struct {
+	Config            graph.LocalSousConfig
+	CLI               *CLI
+	DeployFilterFlags config.DeployFilterFlags
+	OTPLFlags         config.OTPLFlags
+	rectifyFlags      struct {
 		dryrun string
 	}
 }
@@ -58,13 +57,18 @@ func (sd *SousDeploy) Execute(args []string) cmdr.Result {
 		DeployFilterFlags: sd.DeployFilterFlags,
 		OTPLFlags:         sd.OTPLFlags,
 	}, []string{})
+
+	sd.CLI.OutputResult(res)
 	if !sd.CLI.IsSuccess(res) {
 		return res
 	}
-	sd.CLI.OutputResult(res)
 
+	if sd.Config.Server != "" {
+		return Successf("Deployment instigated; handed off to server.")
+	}
+
+	// Running serverless, so run rectify.
 	rect := &SousRectify{SourceFlags: sd.DeployFilterFlags}
 	rect.flags.dryrun = sd.rectifyFlags.dryrun
-
 	return sd.CLI.Plumbing(rect, []string{})
 }

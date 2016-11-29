@@ -124,20 +124,32 @@ func (d *differ) diff(existing Deployments) {
 	for id, existingDeployment := range e {
 		intendedDeployment, exists := d.from[id]
 		if !exists {
+
+			Log.Debug.Printf("New deployment: %q", id)
+
 			d.Created <- existingDeployment
 			continue
 		}
 		delete(d.from, id)
 		different, differences := existingDeployment.Diff(intendedDeployment)
 		if different {
-			Log.Warn.Printf("differences detected for %q: %#v", id, differences)
-			d.Modified <- &DeploymentPair{id, intendedDeployment, existingDeployment}
+
+			Log.Debug.Printf("Modified deployment: %q (% #v)", id, differences)
+
+			d.Modified <- &DeploymentPair{
+				name:  id,
+				Prior: intendedDeployment,
+				Post:  existingDeployment,
+			}
 			continue
 		}
 		d.Retained <- existingDeployment
 	}
 
 	for _, deletedDeployment := range d.from {
+
+		Log.Debug.Printf("Deleted deployment: %q", deletedDeployment.ID())
+
 		d.Deleted <- deletedDeployment
 	}
 }

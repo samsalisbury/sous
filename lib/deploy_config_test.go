@@ -16,7 +16,7 @@ func TestValidateRepair(t *testing.T) {
 	dc.Resources["ports"] = "2"
 
 	assert.Len(t, dc.Volumes, 2)
-	flaws := dc.Validate(DeployConfig{})
+	flaws := dc.Validate()
 	assert.Len(t, flaws, 1)
 	fs, es := RepairAll(flaws)
 	assert.Len(t, fs, 0)

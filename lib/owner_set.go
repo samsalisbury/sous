@@ -1,5 +1,10 @@
 package sous
 
+import (
+	"fmt"
+	"sort"
+)
+
 // OwnerSet collects the names of the owners of a deployment.
 type OwnerSet map[string]struct{}
 
@@ -24,16 +29,24 @@ func (os OwnerSet) Remove(owner string) {
 
 // Equal returns true if two ownersets contain the same owner names.
 func (os OwnerSet) Equal(o OwnerSet) bool {
+	diff, _ := os.Diff(o)
+	return !diff
+}
+
+func (os OwnerSet) Diff(o OwnerSet) (bool, []string) {
+	var diffs []string
+	diff := func(format string, a ...interface{}) { diffs = append(diffs, fmt.Sprintf(format, a...)) }
+
 	if len(os) != len(o) {
-		return false
+		diff("different lengths: %d vs %d", len(os), len(o))
 	}
 	for ownr := range os {
 		if _, has := o[ownr]; !has {
-			return false
+			diff("Owner %q missing from other", ownr)
 		}
 	}
 
-	return true
+	return len(diffs) != 0, diffs
 }
 
 func (os OwnerSet) Slice() []string {
@@ -41,5 +54,6 @@ func (os OwnerSet) Slice() []string {
 	for owner, _ := range os {
 		slice = append(slice, owner)
 	}
+	sort.Strings(slice)
 	return slice
 }

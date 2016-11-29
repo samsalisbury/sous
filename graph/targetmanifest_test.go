@@ -95,17 +95,43 @@ func TestNewUserSelectedOTPLDeploySpecs(t *testing.T) {
 	}
 }
 
-func TestNewTargetManifest(t *testing.T) {
+func TestNewTargetManifest_Existing(t *testing.T) {
 	detected := UserSelectedOTPLDeploySpecs{}
 	sl := sous.MustParseSourceLocation("github.com/user/project")
 	flavor := "some-flavor"
 	mid := sous.ManifestID{Source: sl, Flavor: flavor}
 	tmid := TargetManifestID(mid)
-	m := &sous.Manifest{Source: sl, Flavor: flavor}
+	m := &sous.Manifest{Source: sl, Flavor: flavor, Kind: sous.ManifestKindService}
 	s := sous.NewState()
 	s.Manifests.Add(m)
 	tm := newTargetManifest(detected, tmid, s)
 	if tm.Source != sl {
 		t.Errorf("unexpected manifest %q", m)
 	}
+	flaws := tm.Manifest.Validate()
+	if len(flaws) > 0 {
+		t.Errorf("Invalid existing manifest: %#v, flaws were %v", tm.Manifest, flaws)
+	}
+}
+
+func TestNewTargetManifest(t *testing.T) {
+	detected := UserSelectedOTPLDeploySpecs{}
+	sl := sous.MustParseSourceLocation("github.com/user/project")
+	flavor := "some-flavor"
+	mid := sous.ManifestID{Source: sl, Flavor: flavor}
+	tmid := TargetManifestID(mid)
+	s := sous.NewState()
+	cls := sous.Clusters{}
+	cls["test"] = &sous.Cluster{
+		Name:    "test",
+		Kind:    "singularity",
+		BaseURL: "http://singularity.example.com/",
+	}
+	s.Defs.Clusters = cls
+	tm := newTargetManifest(detected, tmid, s)
+	flaws := tm.Manifest.Validate()
+	if len(flaws) > 0 {
+		t.Errorf("Invalid new manifest: %#v, flaws were %v", tm.Manifest, flaws)
+	}
+
 }

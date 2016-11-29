@@ -49,6 +49,9 @@ func newTargetManifest(auto UserSelectedOTPLDeploySpecs, tmid TargetManifestID, 
 		Deployments: deploySpecs,
 	}
 	m.SetID(mid)
+
+	fls := m.Validate()
+	sous.RepairAll(fls)
 	return TargetManifest{m}
 }
 
@@ -59,7 +62,7 @@ func defaultDeploySpecs(clusters sous.Clusters) sous.DeploySpecs {
 			DeployConfig: sous.DeployConfig{
 				Resources:    sous.Resources{},
 				Env:          map[string]string{},
-				NumInstances: 3,
+				NumInstances: 1,
 			},
 		}
 	}
