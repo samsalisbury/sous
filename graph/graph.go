@@ -499,7 +499,8 @@ func makeDockerRegistry(cfg LocalSousConfig, cl LocalDockerClient) (*docker.Name
 	if err != nil {
 		return nil, errors.Wrap(err, "building name cache DB")
 	}
-	return docker.NewNameCache(cl.Client, db), nil
+	drh := cfg.Docker.RegistryHost
+	return docker.NewNameCache(drh, cl.Client, db), nil
 }
 
 func newInserter(cfg LocalSousConfig, cl LocalDockerClient) (sous.Inserter, error) {

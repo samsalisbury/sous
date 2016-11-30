@@ -56,12 +56,12 @@ func Labels(sid sous.SourceID) map[string]string {
 	return labels
 }
 
-func imageNameBase(sid sous.SourceID) string {
-	name := sid.Location.Repo
+func imageRepoName(sl sous.SourceLocation) string {
+	name := sl.Repo
 
 	name = stripRE.ReplaceAllString(name, "")
-	if sid.Location.Dir != "" {
-		name = strings.Join([]string{name, sid.Location.Dir}, "/")
+	if sl.Dir != "" {
+		name = strings.Join([]string{name, sl.Dir}, "/")
 	}
 	return name
 }
@@ -71,9 +71,9 @@ func tagName(v semv.Version) string {
 }
 
 func versionName(sid sous.SourceID) string {
-	return strings.Join([]string{imageNameBase(sid), tagName(sid.Version)}, ":")
+	return strings.Join([]string{imageRepoName(sid.Location), tagName(sid.Version)}, ":")
 }
 
 func revisionName(sid sous.SourceID) string {
-	return strings.Join([]string{imageNameBase(sid), sid.RevID()}, ":")
+	return strings.Join([]string{imageRepoName(sid.Location), sid.RevID()}, ":")
 }

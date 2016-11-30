@@ -48,7 +48,7 @@ func TestBuildDeployments(t *testing.T) {
 	clusterNick := "tcluster"
 	reqID := appLocation + clusterNick
 
-	nc := docker.NewNameCache(drc, db)
+	nc := docker.NewNameCache("", drc, db)
 
 	singCl := sing.NewClient(SingularityURL)
 	//singCl.Debug = true
