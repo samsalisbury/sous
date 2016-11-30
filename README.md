@@ -18,7 +18,9 @@ Sous is written in Go.
 Once you have [Go set up on your machine,](./doc/setting-up-go.md)
 you can install it by typing:
 
-    $ go get -u -v github.com/opentable/sous
+```bash
+$ go get -u -v github.com/opentable/sous
+```
 
 ## Client Configuration
 
@@ -30,8 +32,7 @@ That URL will be particular to your organization,
 but someone should be able to provide it to you.
 
 Once you have it, run:
-
-```
+```bash
 $ sous config server <URL>
 ```
 
@@ -50,23 +51,21 @@ let's add a project to Sous management.
 
 ```bash
 # Enter the directory of your project.
-cd <my-project>
-
-# Add a git tag with a semantic version:
-git tag -a 1.2.3 && git push --tags
-
-# Build the Sous-ready container:
-sous build
+$ cd <my-project>
 
 # Let Sous know that the project exists:
-sous init
+$ sous init
 ```
 
-At this point, Sous will
+At this point, Sous will record the intention to
 deploy 1 instance of your project everywhere it knows about.
 You can limit this to a single Mesos cluster by
 replacing the last command with `sous init -cluster <name>` -
 Sous will provide a list of known clusters if you give it bad input.
+
+Since there's no Docker image that corresponds
+to this project yet, Sous won't actually try to deploy
+your project yet.
 
 ## Day to day
 
@@ -77,10 +76,21 @@ since Sous already knows about the project.
 Instead, you'll want to use `sous deploy`, like this:
 
 ```bash
-git tag -a 1.2.4 && git push --tags
-sous build
-sous deploy -tag 1.2.4 -cluster <name>
+# Sous requires that projects be tagged with a
+# semantic version.
+$ git tag -a 1.2.4 && git push --tags
+
+# Actually do the docker build, push and registration steps
+$ sous build
+
+# Update Sous' view of the world so that it knows you want to
+# deploy the version you built.
+$ sous deploy -tag 1.2.4 -cluster <name>
 ```
+
+As soon as you've completed the `deploy` step,
+Sous will be ready to deploy your service.
+You should see it deployed and running in a few seconds.
 
 Note that these steps can be easily adapted to work
 on continuous integrations servers, as well.
