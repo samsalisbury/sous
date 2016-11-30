@@ -29,7 +29,7 @@ func TestNameCache(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	nc := docker.NewNameCache(drc, db)
+	nc := docker.NewNameCache("", drc, db)
 
 	repoOne := "https://github.com/opentable/one.git"
 	manifest(nc, "opentable/one", "test-one", repoOne, "1.1.1")

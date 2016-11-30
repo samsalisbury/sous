@@ -57,7 +57,7 @@ func TestGetRunningDeploymentSet(t *testing.T) {
 	registerLabelledContainers()
 	drc := docker_registry.NewClient()
 	drc.BecomeFoolishlyTrusting()
-	nc := docker.NewNameCache(drc, newInMemoryDB("grds"))
+	nc := docker.NewNameCache("", drc, newInMemoryDB("grds"))
 	client := singularity.NewRectiAgent(nc)
 	d := singularity.NewDeployer(nc, client)
 
@@ -93,7 +93,7 @@ func TestMissingImage(t *testing.T) {
 	drc := docker_registry.NewClient()
 	drc.BecomeFoolishlyTrusting()
 	// easiest way to make sure that the manifest doesn't actually get registered
-	dummyNc := docker.NewNameCache(drc, newInMemoryDB("bitbucket"))
+	dummyNc := docker.NewNameCache("", drc, newInMemoryDB("bitbucket"))
 
 	stateOne := sous.State{
 		Defs: clusterDefs,
@@ -103,7 +103,7 @@ func TestMissingImage(t *testing.T) {
 	}
 
 	// ****
-	nc := docker.NewNameCache(drc, newInMemoryDB("missingimage"))
+	nc := docker.NewNameCache("", drc, newInMemoryDB("missingimage"))
 
 	client := singularity.NewRectiAgent(nc)
 	deployer := singularity.NewDeployer(nc, client)
@@ -151,7 +151,7 @@ func TestResolve(t *testing.T) {
 
 	db := newInMemoryDB("testresolve")
 
-	nc := docker.NewNameCache(drc, db)
+	nc := docker.NewNameCache("", drc, db)
 
 	stateOneTwo := sous.State{
 		Defs: clusterDefs,

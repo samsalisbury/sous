@@ -26,8 +26,9 @@ type (
 	// NameCache is a database for looking up SourceIDs based on
 	// Docker image names and vice versa.
 	NameCache struct {
-		RegistryClient docker_registry.Client
-		DB             *sql.DB
+		RegistryClient     docker_registry.Client
+		DB                 *sql.DB
+		DockerRegistryHost string
 	}
 
 	imageName string
@@ -84,8 +85,12 @@ func (e NotModifiedErr) Error() string {
 }
 
 // NewNameCache builds a new name cache
-func NewNameCache(cl docker_registry.Client, db *sql.DB) *NameCache {
-	nc := &NameCache{cl, db}
+func NewNameCache(drh string, cl docker_registry.Client, db *sql.DB) *NameCache {
+	nc := &NameCache{
+		RegistryClient:     cl,
+		DB:                 db,
+		DockerRegistryHost: drh,
+	}
 	nc.GroomDatabase()
 	return nc
 }
@@ -249,16 +254,27 @@ func (nc *NameCache) harvest(sl sous.SourceLocation) error {
 	Log.Vomit.Printf("Harvesting source location %#v", sl)
 	repos, err := nc.dbQueryOnSL(sl)
 	if err != nil {
-		Log.Vomit.Printf("Err harvesting %v", err)
-		return err
+		Log.Vomit.Printf("Err looking up repos for location %#v: %v - proceeding with guessed repo", sl, err)
+		repos = []string{}
 	}
+	guessed := nc.DockerRegistryHost + imageRepoName(sl)
+	knowGuess := false
+
 	Log.Vomit.Printf("Attempting to harvest %d repos", len(repos))
 	for _, r := range repos {
+		if r == guessed {
+			knowGuess = true
+		}
 		err := nc.Warmup(r)
 		if err != nil {
 			return err
 		}
-
+	}
+	if !knowGuess {
+		err := nc.Warmup(guessed)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
