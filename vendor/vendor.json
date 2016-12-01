@@ -238,6 +238,12 @@
 			"revisionTime": "2016-03-24T11:22:44Z"
 		},
 		{
+			"checksumSHA1": "5Yq+bWhHXCaqGDuGp8RBj47OhME=",
+			"path": "github.com/stretchr/testify",
+			"revision": "0744955171b0b6e1871ff9d7366abc2b7a7fcec0",
+			"revisionTime": "2016-04-07T13:01:23Z"
+		},
+		{
 			"checksumSHA1": "Bn333k9lTndxU3D6n/G5c+GMcYY=",
 			"path": "github.com/stretchr/testify/assert",
 			"revision": "0744955171b0b6e1871ff9d7366abc2b7a7fcec0",
@@ -246,6 +252,12 @@
 		{
 			"checksumSHA1": "P9FJpir2c4G5PA46qEkaWy3l60U=",
 			"path": "github.com/stretchr/testify/require",
+			"revision": "0744955171b0b6e1871ff9d7366abc2b7a7fcec0",
+			"revisionTime": "2016-04-07T13:01:23Z"
+		},
+		{
+			"checksumSHA1": "gPvketsZyZOfoepmy6YAU5hyDWs=",
+			"path": "github.com/stretchr/testify/suite",
 			"revision": "0744955171b0b6e1871ff9d7366abc2b7a7fcec0",
 			"revisionTime": "2016-04-07T13:01:23Z"
 		},

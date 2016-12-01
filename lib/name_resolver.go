@@ -79,78 +79,65 @@ func (dc *DeployableChans) ResolveNames(r Registry, diff *DiffChans, errs chan e
 
 func unresolvedSingles(r Registry, from chan *Deployment, to chan *Deployable, errs chan error) {
 	for dep := range from {
-		unresolvedSingle(r, dep, to, errs)
+		Log.Vomit.Printf("Deployment processed w/o needing artifact: %#v", dep)
+		da, err := resolveName(r, dep)
+		if err != nil {
+			Log.Debug.Printf("Error resolving stopped or stable deployment (proceeding anyway): %#v: %#v", dep, err)
+		}
+		to <- da
 	}
 	close(to)
-}
-
-func unresolvedSingle(r Registry, dep *Deployment, to chan *Deployable, errs chan error) {
-	art, err := GuardImage(r, dep)
-	if err != nil {
-		art = nil // we can live without build artifacts for stops and stables
-	}
-	d := &Deployable{
-		Deployment:    dep,
-		BuildArtifact: art,
-	}
-	to <- d
 }
 
 func resolveSingles(r Registry, from chan *Deployment, to chan *Deployable, errs chan error) {
 	for dep := range from {
-		resolveSingle(r, dep, to, errs)
+		Log.Vomit.Printf("Deployment processed, needs artifact: %#v", dep)
+
+		da, err := resolveName(r, dep)
+		if err != nil {
+			Log.Debug.Printf("Error resolving deployment (won't deploy): %#v: %#v", dep, err)
+			errs <- err
+			continue
+		}
+		if da.BuildArtifact == nil {
+			Log.Debug.Printf("No artifact known for created deployment (won't deploy): %#v", dep)
+			continue
+		}
+		to <- da
 	}
 	close(to)
-}
-
-func resolveSingle(r Registry, dep *Deployment, to chan *Deployable, errs chan error) {
-	art, err := GuardImage(r, dep)
-	if err != nil {
-		errs <- err
-		return
-	}
-	if art == nil {
-		return // nil error and artifact == not deploying
-	}
-	d := &Deployable{
-		Deployment:    dep,
-		BuildArtifact: art,
-	}
-	to <- d
 }
 
 func resolvePairs(r Registry, from chan *DeploymentPair, to chan *DeployablePair, errs chan error) {
 	for depPair := range from {
-		resolvePair(r, depPair, to, errs)
+		Log.Vomit.Printf("Pair of deployments processed, needs artifact: %#v", depPair)
+		d, err := resolvePair(r, depPair)
+		if err != nil {
+			Log.Debug.Printf("Error resolving post deployment of change pair (won't deploy): %#v: %#v", depPair.Post, err)
+			errs <- err
+			continue
+		}
+		if d.Post.BuildArtifact == nil {
+			Log.Debug.Printf("No artifact known for post deployment in change pair (won't deploy): %#v", depPair.Post)
+			continue
+		}
+		to <- d
 	}
 	close(to)
 }
 
-func resolvePair(r Registry, depPair *DeploymentPair, to chan *DeployablePair, errs chan error) {
-	priorArt, err := GuardImage(r, depPair.Prior)
-	if err != nil {
-		priorArt = nil // usually not a blocker
+func resolveName(r Registry, dep *Deployment) (d *Deployable, err error) {
+	d = &Deployable{Deployment: dep}
+	art, err := GuardImage(r, dep)
+	if err == nil {
+		d.BuildArtifact = art
 	}
+	return
+}
 
-	art, err := GuardImage(r, depPair.Post)
-	if err != nil {
-		errs <- err
-		return
-	}
-	if art == nil {
-		return // nil error and artifact == not deploying
-	}
+func resolvePair(r Registry, depPair *DeploymentPair) (*DeployablePair, error) {
+	prior, _ := resolveName(r, depPair.Prior)
+	post, err := resolveName(r, depPair.Post)
 
-	d := &DeployablePair{
-		name: depPair.name,
-		Prior: &Deployable{
-			Deployment:    depPair.Prior,
-			BuildArtifact: priorArt,
-		},
-		Post: &Deployable{
-			Deployment:    depPair.Post,
-			BuildArtifact: art,
-		},
-	}
-	to <- d
+	return &DeployablePair{name: depPair.name, Prior: prior, Post: post}, err
 }
