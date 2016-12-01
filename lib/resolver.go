@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"github.com/opentable/sous/util/firsterr"
-	"github.com/pkg/errors"
 )
 
 type (
@@ -129,7 +128,6 @@ func (r *Resolver) Resolve(intended Deployments, clusters Clusters) error {
 		func() (e error) { ads, e = r.Deployer.RunningDeployments(r.Registry, clusters); return },
 		func() (e error) { intended = intended.Filter(r.FilterDeployment); return },
 		func() (e error) { ads = ads.Filter(r.FilterDeployment); return },
-		func() (e error) { return GuardImages(r.Registry, intended) },
 		func() (e error) { diffs = ads.Diff(intended); return },
 		func() (e error) { namer = NewDeployableChans(10); return },
 		func() (e error) { namer.ResolveNames(r.Registry, &diffs, errs); return },
@@ -148,57 +146,5 @@ func foldErrors(errs chan error) error {
 	if len(re.Causes) > 0 {
 		return re
 	}
-	return nil
-}
-
-// GuardImage checks that a deployment is valid before deploying it
-func GuardImage(r Registry, d *Deployment) error {
-	if d.NumInstances == 0 { // we're not deploying any of these, so it can be wrong for the moment
-		return nil
-	}
-	art, err := r.GetArtifact(d.SourceID)
-	if err != nil {
-		return &MissingImageNameError{err}
-	}
-	for _, q := range art.Qualities {
-		if q.Kind == `advisory` {
-			if q.Name == "" {
-				return nil
-			}
-			advisoryIsValid := false
-			var allowedAdvisories []string
-			if d.Cluster == nil {
-				return fmt.Errorf("nil cluster on deployment %q", d)
-			}
-			allowedAdvisories = d.Cluster.AllowedAdvisories
-			for _, aa := range allowedAdvisories {
-				if aa == q.Name {
-					advisoryIsValid = true
-					break
-				}
-			}
-			if !advisoryIsValid {
-				return &UnacceptableAdvisory{q, &d.SourceID}
-			}
-		}
-	}
-	return nil
-}
-
-// GuardImages checks that all deployments have valid artifacts ready to deploy.
-func GuardImages(r Registry, gdm Deployments) error {
-	Log.Debug.Print("Collected. Checking readiness to deploy...")
-	g := gdm.Snapshot()
-	es := make([]error, 0, len(g))
-	for _, d := range g {
-		err := GuardImage(r, d)
-		if err != nil {
-			es = append(es, err)
-		}
-	}
-	if len(es) > 0 {
-		return errors.Wrap(&ResolveErrors{es}, "guard")
-	}
-	Log.Debug.Print("Looks good. Proceeding...")
 	return nil
 }
