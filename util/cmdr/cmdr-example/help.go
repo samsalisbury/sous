@@ -6,10 +6,13 @@ import (
 	"github.com/opentable/sous/util/cmdr"
 )
 
-type helpCommand struct{}
+type helpCommand struct {
+	CLI *cmdr.CLI
+}
 
 func (c helpCommand) Execute(args []string) cmdr.Result {
 	b := bytes.Buffer{}
+	b.WriteString("\n")
 	b.WriteString("cmdr-example hello world\n\n")
 	if len(args) > 0 {
 		// the subcommand is the first string in args
@@ -34,5 +37,5 @@ func (c helpCommand) Execute(args []string) cmdr.Result {
 }
 
 func (c helpCommand) Help() string {
-	return "help provides help."
+	return "\n" + "help provides help." + "\n" + "\n"
 }

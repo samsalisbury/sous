@@ -19,7 +19,9 @@ func main() {
 		HelpCommand: os.Args[0] + " help",
 	}
 
-	cmds["help"] = &helpCommand{}
+	cmds["help"] = &helpCommand{
+		CLI: &c,
+	}
 	cmds["other"] = &otherCommand{}
 	cmds["complicated"] = &complicatedCommand{}
 	c.Invoke(os.Args)
