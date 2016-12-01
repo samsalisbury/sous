@@ -105,17 +105,14 @@ func NewResolver(d Deployer, r Registry, rf *ResolveFilter) *Resolver {
 }
 
 // Rectify takes a DiffChans and issues the commands to the infrastructure to reconcile the differences
-func (r *Resolver) rectify(dcs DiffChans) chan RectificationError {
+func (r *Resolver) rectify(dcs *DeployableChans, errs chan error) {
 	d := r.Deployer
-	errs := make(chan RectificationError)
 	wg := &sync.WaitGroup{}
 	wg.Add(3)
-	go func() { d.RectifyCreates(dcs.Created, errs); wg.Done() }()
-	go func() { d.RectifyDeletes(dcs.Deleted, errs); wg.Done() }()
-	go func() { d.RectifyModifies(dcs.Modified, errs); wg.Done() }()
+	go func() { d.RectifyCreates(dcs.Start, errs); wg.Done() }()
+	go func() { d.RectifyDeletes(dcs.Stop, errs); wg.Done() }()
+	go func() { d.RectifyModifies(dcs.Update, errs); wg.Done() }()
 	go func() { wg.Wait(); close(errs) }()
-
-	return errs
 }
 
 // Resolve drives the Sous deployment resolution process. It calls out to the
@@ -125,20 +122,23 @@ func (r *Resolver) rectify(dcs DiffChans) chan RectificationError {
 func (r *Resolver) Resolve(intended Deployments, clusters Clusters) error {
 	var ads Deployments
 	var diffs DiffChans
-	var errs chan RectificationError
+	var namer *DeployableChans
+	errs := make(chan error)
 	return firsterr.Returned(
 		func() (e error) { clusters = r.FilteredClusters(clusters); return },
-		func() (e error) { ads, e = r.Deployer.RunningDeployments(clusters); return },
+		func() (e error) { ads, e = r.Deployer.RunningDeployments(r.Registry, clusters); return },
 		func() (e error) { intended = intended.Filter(r.FilterDeployment); return },
 		func() (e error) { ads = ads.Filter(r.FilterDeployment); return },
 		func() (e error) { return GuardImages(r.Registry, intended) },
 		func() (e error) { diffs = ads.Diff(intended); return },
-		func() (e error) { errs = r.rectify(diffs); return },
+		func() (e error) { namer = NewDeployableChans(10); return },
+		func() (e error) { namer.ResolveNames(r.Registry, &diffs, errs); return },
+		func() (e error) { r.rectify(namer, errs); return },
 		func() (e error) { return foldErrors(errs) },
 	)
 }
 
-func foldErrors(errs chan RectificationError) error {
+func foldErrors(errs chan error) error {
 	re := &ResolveErrors{Causes: []error{}}
 	for err := range errs {
 		re.Causes = append(re.Causes, err)
@@ -151,41 +151,49 @@ func foldErrors(errs chan RectificationError) error {
 	return nil
 }
 
+// GuardImage checks that a deployment is valid before deploying it
+func GuardImage(r Registry, d *Deployment) error {
+	if d.NumInstances == 0 { // we're not deploying any of these, so it can be wrong for the moment
+		return nil
+	}
+	art, err := r.GetArtifact(d.SourceID)
+	if err != nil {
+		return &MissingImageNameError{err}
+	}
+	for _, q := range art.Qualities {
+		if q.Kind == `advisory` {
+			if q.Name == "" {
+				return nil
+			}
+			advisoryIsValid := false
+			var allowedAdvisories []string
+			if d.Cluster == nil {
+				return fmt.Errorf("nil cluster on deployment %q", d)
+			}
+			allowedAdvisories = d.Cluster.AllowedAdvisories
+			for _, aa := range allowedAdvisories {
+				if aa == q.Name {
+					advisoryIsValid = true
+					break
+				}
+			}
+			if !advisoryIsValid {
+				return &UnacceptableAdvisory{q, &d.SourceID}
+			}
+		}
+	}
+	return nil
+}
+
 // GuardImages checks that all deployments have valid artifacts ready to deploy.
 func GuardImages(r Registry, gdm Deployments) error {
 	Log.Debug.Print("Collected. Checking readiness to deploy...")
 	g := gdm.Snapshot()
 	es := make([]error, 0, len(g))
 	for _, d := range g {
-		if d.NumInstances == 0 { // we're not deploying any of these, so it can be wrong for the moment
-			continue
-		}
-		art, err := r.GetArtifact(d.SourceID)
+		err := GuardImage(r, d)
 		if err != nil {
-			es = append(es, &MissingImageNameError{err})
-			continue
-		}
-		for _, q := range art.Qualities {
-			if q.Kind == `advisory` {
-				if q.Name == "" {
-					continue
-				}
-				advisoryIsValid := false
-				var allowedAdvisories []string
-				if d.Cluster == nil {
-					return fmt.Errorf("nil cluster on deployment %q", d)
-				}
-				allowedAdvisories = d.Cluster.AllowedAdvisories
-				for _, aa := range allowedAdvisories {
-					if aa == q.Name {
-						advisoryIsValid = true
-						break
-					}
-				}
-				if !advisoryIsValid {
-					es = append(es, &UnacceptableAdvisory{q, &d.SourceID})
-				}
-			}
+			es = append(es, err)
 		}
 	}
 	if len(es) > 0 {

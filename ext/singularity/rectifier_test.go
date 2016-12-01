@@ -9,6 +9,7 @@ import (
 	"github.com/nyarly/testify/assert"
 	"github.com/nyarly/testify/require"
 	"github.com/opentable/sous/lib"
+	"github.com/samsalisbury/semv"
 )
 
 /* TESTS BEGIN */
@@ -29,47 +30,67 @@ func TestBuildDeployRequest(t *testing.T) {
 	assert.Equal(dr.Deploy.RequestId, rID)
 }
 
-func TestModifyScale(t *testing.T) {
-	log.SetFlags(log.Flags() | log.Lshortfile)
-	assert := assert.New(t)
-	pair := &sous.DeploymentPair{
-		Prior: &sous.Deployment{
-			SourceID: sous.SourceID{
-				Location: sous.SourceLocation{
-					Repo: "reqid",
+func baseDeployablePair() *sous.DeployablePair {
+	return &sous.DeployablePair{
+		Prior: &sous.Deployable{
+			BuildArtifact: &sous.BuildArtifact{
+				Name: "the-prior-image",
+				Type: "docker",
+			},
+			Deployment: &sous.Deployment{
+				SourceID: sous.SourceID{
+					Location: sous.SourceLocation{
+						Repo: "reqid",
+					},
 				},
-			},
-			DeployConfig: sous.DeployConfig{
-				NumInstances: 12,
-			},
-			ClusterName: "cluster",
-			Cluster: &sous.Cluster{
-				BaseURL: "cluster",
+				DeployConfig: sous.DeployConfig{
+					NumInstances: 1,
+					Resources:    sous.Resources{},
+				},
+				ClusterName: "cluster",
+				Cluster: &sous.Cluster{
+					BaseURL: "cluster",
+				},
 			},
 		},
-		Post: &sous.Deployment{
-			SourceID: sous.SourceID{
-				Location: sous.SourceLocation{
-					Repo: "reqid",
+		Post: &sous.Deployable{
+			BuildArtifact: &sous.BuildArtifact{
+				Name: "the-post-image",
+				Type: "docker",
+			},
+			Deployment: &sous.Deployment{
+				SourceID: sous.SourceID{
+					Location: sous.SourceLocation{
+						Repo: "reqid",
+					},
 				},
-			},
-			DeployConfig: sous.DeployConfig{
-				NumInstances: 24,
-			},
-			ClusterName: "cluster",
-			Cluster: &sous.Cluster{
-				BaseURL: "cluster",
+				DeployConfig: sous.DeployConfig{
+					NumInstances: 1,
+					Resources:    sous.Resources{},
+				},
+				ClusterName: "cluster",
+				Cluster: &sous.Cluster{
+					BaseURL: "cluster",
+				},
 			},
 		},
 	}
 
-	mods := make(chan *sous.DeploymentPair, 1)
-	errs := make(chan sous.RectificationError)
+}
 
-	nc := sous.NewDummyRegistry()
-	client := sous.NewDummyRectificationClient(nc)
+func TestModifyScale(t *testing.T) {
+	log.SetFlags(log.Flags() | log.Lshortfile)
+	assert := assert.New(t)
+	mods := make(chan *sous.DeployablePair, 1)
+	errs := make(chan error, 10)
 
-	deployer := NewDeployer(nc, client)
+	pair := baseDeployablePair()
+	pair.Prior.Deployment.DeployConfig.NumInstances = 12
+	pair.Post.Deployment.DeployConfig.NumInstances = 24
+
+	client := sous.NewDummyRectificationClient()
+
+	deployer := NewDeployer(client)
 
 	mods <- pair
 	close(mods)
@@ -88,37 +109,21 @@ func TestModifyScale(t *testing.T) {
 
 func TestModifyImage(t *testing.T) {
 	assert := assert.New(t)
+	sous.Log.Warn.SetOutput(os.Stderr)
+	Log.Debug.SetOutput(os.Stderr)
+
 	before := "1.2.3-test"
 	after := "2.3.4-new"
-	pair := &sous.DeploymentPair{
-		Prior: &sous.Deployment{
-			SourceID: sous.MustNewSourceID("reqid", "", before),
-			DeployConfig: sous.DeployConfig{
-				NumInstances: 1,
-			},
-			ClusterName: "cluster",
-			Cluster: &sous.Cluster{
-				BaseURL: "cluster",
-			},
-		},
-		Post: &sous.Deployment{
-			SourceID: sous.MustNewSourceID("reqid", "", after),
-			DeployConfig: sous.DeployConfig{
-				NumInstances: 1,
-			},
-			ClusterName: "cluster",
-			Cluster: &sous.Cluster{
-				BaseURL: "cluster",
-			},
-		},
-	}
+	pair := baseDeployablePair()
+	pair.Prior.Deployment.SourceID.Version = semv.MustParse(before)
+	pair.Post.Deployment.SourceID.Version = semv.MustParse(after)
+	pair.Post.BuildArtifact.Name = "2.3.4"
 
-	mods := make(chan *sous.DeploymentPair, 1)
-	errs := make(chan sous.RectificationError)
+	mods := make(chan *sous.DeployablePair, 1)
+	errs := make(chan error, 10)
 
-	nc := sous.NewDummyRegistry()
-	client := sous.NewDummyRectificationClient(nc)
-	deployer := NewDeployer(nc, client)
+	client := sous.NewDummyRectificationClient()
+	deployer := NewDeployer(client)
 
 	mods <- pair
 	close(mods)
@@ -139,41 +144,21 @@ func TestModifyImage(t *testing.T) {
 func TestModifyResources(t *testing.T) {
 	assert := assert.New(t)
 	version := "1.2.3-test"
-	pair := &sous.DeploymentPair{
-		Prior: &sous.Deployment{
-			SourceID: sous.MustNewSourceID("reqid", "", version),
-			DeployConfig: sous.DeployConfig{
-				NumInstances: 1,
-				Resources: sous.Resources{
-					"memory": "100",
-				},
-			},
-			ClusterName: "cluster",
-			Cluster: &sous.Cluster{
-				BaseURL: "cluster",
-			},
-		},
-		Post: &sous.Deployment{
-			SourceID: sous.MustNewSourceID("reqid", "", version),
-			DeployConfig: sous.DeployConfig{
-				NumInstances: 1,
-				Resources: sous.Resources{
-					"memory": "500",
-				},
-			},
-			ClusterName: "cluster",
-			Cluster: &sous.Cluster{
-				BaseURL: "cluster",
-			},
-		},
-	}
 
-	mods := make(chan *sous.DeploymentPair, 1)
-	errs := make(chan sous.RectificationError)
+	pair := baseDeployablePair()
 
-	nc := sous.NewDummyRegistry()
-	client := sous.NewDummyRectificationClient(nc)
-	deployer := NewDeployer(nc, client)
+	pair.Prior.Deployment.SourceID.Version = semv.MustParse(version)
+	pair.Prior.Deployment.Resources["memory"] = "100"
+
+	pair.Post.Deployment.SourceID.Version = semv.MustParse(version)
+	pair.Post.Deployment.Resources["memory"] = "500"
+	pair.Post.BuildArtifact.Name = "1.2.3"
+
+	mods := make(chan *sous.DeployablePair, 1)
+	errs := make(chan error, 10)
+
+	client := sous.NewDummyRectificationClient()
+	deployer := NewDeployer(client)
 
 	mods <- pair
 	close(mods)
@@ -198,41 +183,23 @@ func TestModify(t *testing.T) {
 	assert := assert.New(t)
 	before := "1.2.3-test"
 	after := "2.3.4-new"
-	pair := &sous.DeploymentPair{
-		Prior: &sous.Deployment{
-			SourceID: sous.MustNewSourceID("reqid", "", before),
-			DeployConfig: sous.DeployConfig{
-				NumInstances: 1,
-				Volumes: sous.Volumes{
-					{"host", "container", "RO"},
-				},
-			},
-			ClusterName: "cluster",
-			Cluster: &sous.Cluster{
-				BaseURL: "cluster",
-			},
-		},
-		Post: &sous.Deployment{
-			SourceID: sous.MustNewSourceID("reqid", "", after),
-			DeployConfig: sous.DeployConfig{
-				NumInstances: 24,
-				Volumes: sous.Volumes{
-					{"host", "container", "RW"},
-				},
-			},
-			ClusterName: "cluster",
-			Cluster: &sous.Cluster{
-				BaseURL: "cluster",
-			},
-		},
-	}
 
-	mods := make(chan *sous.DeploymentPair, 1)
-	errs := make(chan sous.RectificationError)
+	pair := baseDeployablePair()
 
-	nc := sous.NewDummyRegistry()
-	client := sous.NewDummyRectificationClient(nc)
-	deployer := NewDeployer(nc, client)
+	pair.Prior.Deployment.SourceID.Version = semv.MustParse(before)
+	pair.Prior.Deployment.DeployConfig.NumInstances = 1
+	pair.Prior.Deployment.DeployConfig.Volumes = sous.Volumes{{"host", "container", "RO"}}
+
+	pair.Post.Deployment.SourceID.Version = semv.MustParse(after)
+	pair.Post.Deployment.DeployConfig.NumInstances = 24
+	pair.Post.Deployment.DeployConfig.Volumes = sous.Volumes{{"host", "container", "RW"}}
+	pair.Post.BuildArtifact.Name = "2.3.4"
+
+	mods := make(chan *sous.DeployablePair, 1)
+	errs := make(chan error, 10)
+
+	client := sous.NewDummyRectificationClient()
+	deployer := NewDeployer(client)
 
 	mods <- pair
 	close(mods)
@@ -258,27 +225,28 @@ func TestModify(t *testing.T) {
 func TestDeletes(t *testing.T) {
 	assert := assert.New(t)
 
-	deleted := &sous.Deployment{
-		SourceID: sous.SourceID{
-			Location: sous.SourceLocation{
-				Repo: "reqid",
+	deleted := &sous.Deployable{
+		Deployment: &sous.Deployment{
+			SourceID: sous.SourceID{
+				Location: sous.SourceLocation{
+					Repo: "reqid",
+				},
 			},
-		},
-		DeployConfig: sous.DeployConfig{
-			NumInstances: 12,
-		},
-		ClusterName: "",
-		Cluster: &sous.Cluster{
-			BaseURL: "cluster",
+			DeployConfig: sous.DeployConfig{
+				NumInstances: 12,
+			},
+			ClusterName: "",
+			Cluster: &sous.Cluster{
+				BaseURL: "cluster",
+			},
 		},
 	}
 
-	dels := make(chan *sous.Deployment, 1)
-	errs := make(chan sous.RectificationError)
+	dels := make(chan *sous.Deployable, 1)
+	errs := make(chan error, 10)
 
-	nc := sous.NewDummyRegistry()
-	client := sous.NewDummyRectificationClient(nc)
-	deployer := NewDeployer(nc, client)
+	client := sous.NewDummyRectificationClient()
+	deployer := NewDeployer(client)
 
 	dels <- deleted
 	close(dels)
@@ -307,25 +275,30 @@ func TestDeletes(t *testing.T) {
 func TestCreates(t *testing.T) {
 	assert := assert.New(t)
 
-	created := &sous.Deployment{
-		SourceID: sous.SourceID{
-			Location: sous.SourceLocation{
-				Repo: "reqid",
+	created := &sous.Deployable{
+		BuildArtifact: &sous.BuildArtifact{
+			Type: "docker",
+			Name: "reqid,0.0.0",
+		},
+		Deployment: &sous.Deployment{
+			SourceID: sous.SourceID{
+				Location: sous.SourceLocation{
+					Repo: "reqid",
+				},
 			},
+			DeployConfig: sous.DeployConfig{
+				NumInstances: 12,
+			},
+			Cluster:     &sous.Cluster{BaseURL: "cluster"},
+			ClusterName: "nick",
 		},
-		DeployConfig: sous.DeployConfig{
-			NumInstances: 12,
-		},
-		Cluster:     &sous.Cluster{BaseURL: "cluster"},
-		ClusterName: "nick",
 	}
 
-	crts := make(chan *sous.Deployment, 1)
-	errs := make(chan sous.RectificationError)
+	crts := make(chan *sous.Deployable, 1)
+	errs := make(chan error, 10)
 
-	nc := sous.NewDummyRegistry()
-	client := sous.NewDummyRectificationClient(nc)
-	deployer := NewDeployer(nc, client)
+	client := sous.NewDummyRectificationClient()
+	deployer := NewDeployer(client)
 
 	crts <- created
 	close(crts)

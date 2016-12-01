@@ -4,10 +4,10 @@ type (
 	// Deployer describes a complete deployment system, which is able to create,
 	// read, update, and delete deployments.
 	Deployer interface {
-		RunningDeployments(from Clusters) (Deployments, error)
-		RectifyCreates(<-chan *Deployment, chan<- RectificationError)
-		RectifyDeletes(<-chan *Deployment, chan<- RectificationError)
-		RectifyModifies(<-chan *DeploymentPair, chan<- RectificationError)
+		RunningDeployments(reg Registry, from Clusters) (Deployments, error)
+		RectifyCreates(<-chan *Deployable, chan<- error)
+		RectifyDeletes(<-chan *Deployable, chan<- error)
+		RectifyModifies(<-chan *DeployablePair, chan<- error)
 	}
 
 	// DummyDeployer is a noop deployer.
@@ -22,15 +22,15 @@ func NewDummyDeployer() *DummyDeployer {
 }
 
 // RunningDeployments implements Deployer
-func (dd *DummyDeployer) RunningDeployments(from Clusters) (Deployments, error) {
+func (dd *DummyDeployer) RunningDeployments(reg Registry, from Clusters) (Deployments, error) {
 	return dd.deps, nil
 }
 
 // RectifyCreates implements Deployer
-func (dd *DummyDeployer) RectifyCreates(<-chan *Deployment, chan<- RectificationError) {}
+func (dd *DummyDeployer) RectifyCreates(<-chan *Deployable, chan<- error) {}
 
 // RectifyDeletes implements Deployer
-func (dd *DummyDeployer) RectifyDeletes(<-chan *Deployment, chan<- RectificationError) {}
+func (dd *DummyDeployer) RectifyDeletes(<-chan *Deployable, chan<- error) {}
 
 // RectifyModifies implements Deployer
-func (dd *DummyDeployer) RectifyModifies(<-chan *DeploymentPair, chan<- RectificationError) {}
+func (dd *DummyDeployer) RectifyModifies(<-chan *DeployablePair, chan<- error) {}
