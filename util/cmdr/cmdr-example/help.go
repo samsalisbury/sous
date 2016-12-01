@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/opentable/sous/util/cmdr"
 )
@@ -8,10 +9,12 @@ import (
 type helpCommand struct{}
 
 func (c helpCommand) Execute(args []string) cmdr.Result {
-	helpMessage := "cmdr-example hello world\n\n"
+	b := bytes.Buffer{}
+	b.WriteString("cmdr-example hello world\n\n")
 	if len(args) > 0 {
 		// the subcommand is the first string in args
 		cName := args[0]
+		b.WriteString(cName + "\n\n")
 		// check that the Command struct exists within the map of
 		// Command structs.
 		cmd, ok := cmds[cName]
@@ -19,15 +22,15 @@ func (c helpCommand) Execute(args []string) cmdr.Result {
 			// There wasn't a Command struct representing the requested
 			// command stored in the map of Command structs, so we're
 			// letting the user know that there isn't any help available.
-			helpMessage = helpMessage + fmt.Sprintf("No help for command %s.", cName)
+			b.WriteString(fmt.Sprintf("No help for command %s.", cName))
 		} else {
-			helpMessage = helpMessage + cmd.Help()
+			b.WriteString(cmd.Help())
 		}
 	} else {
-		helpMessage = helpMessage + "subcommands:\n\n"
-		helpMessage = helpMessage + subTable(root.Subcommands())
+		b.WriteString("subcommands:\n\n")
+		b.WriteString(subTable(root.Subcommands()))
 	}
-	return cmdr.Successf(helpMessage)
+	return cmdr.Successf(b.String())
 }
 
 func (c helpCommand) Help() string {

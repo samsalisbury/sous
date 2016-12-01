@@ -21,5 +21,6 @@ func main() {
 
 	cmds["help"] = &helpCommand{}
 	cmds["other"] = &otherCommand{}
+	cmds["complicated"] = &complicatedCommand{}
 	c.Invoke(os.Args)
 }
