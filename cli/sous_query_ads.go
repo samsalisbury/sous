@@ -13,9 +13,10 @@ type SousQueryAds struct {
 	Deployer     sous.Deployer
 	Config       graph.LocalSousConfig
 	DockerClient graph.LocalDockerClient
-	GDM          graph.CurrentGDM
-	State        *sous.State
-	flags        struct {
+	sous.Registry
+	GDM   graph.CurrentGDM
+	State *sous.State
+	flags struct {
 		singularity string
 		registry    string
 	}
@@ -38,7 +39,7 @@ func (*SousQueryAds) RegisterOn(psy Addable) {
 
 // Execute defines the behavior of `sous query ads`
 func (sb *SousQueryAds) Execute(args []string) cmdr.Result {
-	ads, err := sb.Deployer.RunningDeployments(sb.State.Defs.Clusters)
+	ads, err := sb.Deployer.RunningDeployments(sb.Registry, sb.State.Defs.Clusters)
 	if err != nil {
 		return EnsureErrorResult(err)
 	}

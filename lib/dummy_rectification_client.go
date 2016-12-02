@@ -6,11 +6,10 @@ type (
 	// DummyRectificationClient implements RectificationClient but doesn't act on the Mesos scheduler;
 	// instead it collects the changes that would be performed and options
 	DummyRectificationClient struct {
-		logger    *log.Logger
-		nameCache Registry
-		Created   []dummyRequest
-		Deployed  []dummyDeploy
-		Deleted   []dummyDelete
+		logger   *log.Logger
+		Created  []dummyRequest
+		Deployed []dummyDeploy
+		Deleted  []dummyDelete
 	}
 
 	dummyDeploy struct {
@@ -37,8 +36,8 @@ type (
 )
 
 // NewDummyRectificationClient builds a new DummyRectificationClient
-func NewDummyRectificationClient(nc Registry) *DummyRectificationClient {
-	return &DummyRectificationClient{nameCache: nc}
+func NewDummyRectificationClient() *DummyRectificationClient {
+	return &DummyRectificationClient{}
 }
 
 // SetLogger sets the logger for the client

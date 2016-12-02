@@ -38,7 +38,7 @@ type (
 
 // RunningDeployments collects data from the Singularity clusters and
 // returns a list of actual deployments
-func (sc *deployer) RunningDeployments(clusters sous.Clusters) (deps sous.Deployments, err error) {
+func (sc *deployer) RunningDeployments(reg sous.Registry, clusters sous.Clusters) (deps sous.Deployments, err error) {
 	retries := make(retryCounter)
 	errCh := make(chan error)
 	deps = sous.NewDeployments()
@@ -67,7 +67,7 @@ func (sc *deployer) RunningDeployments(clusters sous.Clusters) (deps sous.Deploy
 		go singPipeline(url, client, &depWait, &singWait, reqCh, errCh)
 	}
 
-	go depPipeline(sc.Client, sc.Registry, clusters, MaxAssemblers, reqCh, depCh, errCh)
+	go depPipeline(sc.Client, reg, clusters, MaxAssemblers, reqCh, depCh, errCh)
 
 	go func() {
 		catchAndSend("closing up", errCh)

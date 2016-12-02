@@ -19,8 +19,8 @@ func TestGetDepSetWorks(t *testing.T) {
 	whip := make(map[string]swaggering.DummyControl)
 
 	reg := sous.NewDummyRegistry()
-	client := sous.NewDummyRectificationClient(reg)
-	dep := deployer{client, reg,
+	client := sous.NewDummyRectificationClient()
+	dep := deployer{client,
 		func(url string) *singularity.Client {
 			cl, co := singularity.NewDummyClient(url)
 
@@ -64,7 +64,7 @@ func TestGetDepSetWorks(t *testing.T) {
 	}
 
 	clusters := sous.Clusters{"test": {BaseURL: "http://test-singularity.org/"}}
-	res, err := dep.RunningDeployments(clusters)
+	res, err := dep.RunningDeployments(reg, clusters)
 	assert.NoError(err)
 	assert.NotNil(res)
 }

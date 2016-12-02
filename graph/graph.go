@@ -433,14 +433,14 @@ func newRegistry(dryrun DryrunOption, cfg LocalSousConfig, cl LocalDockerClient)
 	return makeDockerRegistry(cfg, cl)
 }
 
-func newDeployer(dryrun DryrunOption, r sous.Registry) sous.Deployer {
+func newDeployer(dryrun DryrunOption) sous.Deployer {
 	// Eventually, based on configuration, we may make different decisions here.
 	if dryrun == DryrunBoth || dryrun == DryrunScheduler {
-		drc := sous.NewDummyRectificationClient(r)
+		drc := sous.NewDummyRectificationClient()
 		drc.SetLogger(log.New(os.Stdout, "rectify: ", 0))
-		return singularity.NewDeployer(r, drc)
+		return singularity.NewDeployer(drc)
 	}
-	return singularity.NewDeployer(r, singularity.NewRectiAgent(r))
+	return singularity.NewDeployer(singularity.NewRectiAgent())
 }
 
 func newDockerClient() LocalDockerClient {

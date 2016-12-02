@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
 
-if govendor list | egrep '^.{0,4}(u|m|e)' ; then
+if govendor list | egrep '^.{0,4}(m|e)' ; then
   exit 1
 fi

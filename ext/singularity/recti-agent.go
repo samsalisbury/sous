@@ -23,14 +23,12 @@ func MakeDeployID(in string) string {
 type RectiAgent struct {
 	singClients map[string]*singularity.Client
 	sync.RWMutex
-	nameCache sous.Registry
 }
 
 // NewRectiAgent returns a set-up RectiAgent
-func NewRectiAgent(b sous.Registry) *RectiAgent {
+func NewRectiAgent() *RectiAgent {
 	return &RectiAgent{
 		singClients: make(map[string]*singularity.Client),
-		nameCache:   b,
 	}
 }
 

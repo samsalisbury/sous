@@ -58,10 +58,10 @@ func TestGetRunningDeploymentSet(t *testing.T) {
 	drc := docker_registry.NewClient()
 	drc.BecomeFoolishlyTrusting()
 	nc := docker.NewNameCache("", drc, newInMemoryDB("grds"))
-	client := singularity.NewRectiAgent(nc)
-	d := singularity.NewDeployer(nc, client)
+	client := singularity.NewRectiAgent()
+	d := singularity.NewDeployer(client)
 
-	ds, which := deploymentWithRepo(assert, d, "https://github.com/opentable/docker-grafana.git")
+	ds, which := deploymentWithRepo(nc, assert, d, "https://github.com/opentable/docker-grafana.git")
 	deps := ds.Snapshot()
 	if assert.Equal(3, len(deps)) {
 		grafana := deps[which]
@@ -105,8 +105,8 @@ func TestMissingImage(t *testing.T) {
 	// ****
 	nc := docker.NewNameCache("", drc, newInMemoryDB("missingimage"))
 
-	client := singularity.NewRectiAgent(nc)
-	deployer := singularity.NewDeployer(nc, client)
+	client := singularity.NewRectiAgent()
+	deployer := singularity.NewDeployer(client)
 
 	r := sous.NewResolver(deployer, nc, &sous.ResolveFilter{})
 
@@ -121,7 +121,7 @@ func TestMissingImage(t *testing.T) {
 	// ****
 	time.Sleep(1 * time.Second)
 
-	_, which := deploymentWithRepo(assert, deployer, repoOne)
+	_, which := deploymentWithRepo(nc, assert, deployer, repoOne)
 	assert.Equal(which, none, "opentable/one was deployed")
 
 	ResetSingularity()
@@ -178,8 +178,8 @@ func TestResolve(t *testing.T) {
 
 	// ****
 	log.Print("Resolving from nothing to one+two")
-	client := singularity.NewRectiAgent(nc)
-	deployer := singularity.NewDeployer(nc, client)
+	client := singularity.NewRectiAgent()
+	deployer := singularity.NewDeployer(client)
 
 	r := sous.NewResolver(deployer, nc, &sous.ResolveFilter{})
 
@@ -190,7 +190,7 @@ func TestResolve(t *testing.T) {
 	// ****
 	time.Sleep(3 * time.Second)
 
-	ds, which := deploymentWithRepo(assert, deployer, repoOne)
+	ds, which := deploymentWithRepo(nc, assert, deployer, repoOne)
 	deps := ds.Snapshot()
 	if assert.NotEqual(which, none, "opentable/one not successfully deployed") {
 		one := deps[which]
@@ -210,8 +210,8 @@ func TestResolve(t *testing.T) {
 	// XXX Let's hope this is a temporary solution to a testing issue
 	// The problem is laid out in DCOPS-7625
 	for tries := 0; tries < 3; tries++ {
-		client := singularity.NewRectiAgent(nc)
-		deployer := singularity.NewDeployer(nc, client)
+		client := singularity.NewRectiAgent()
+		deployer := singularity.NewDeployer(client)
 
 		r := sous.NewResolver(deployer, nc, &sous.ResolveFilter{})
 
@@ -230,7 +230,7 @@ func TestResolve(t *testing.T) {
 	}
 	// ****
 
-	ds, which = deploymentWithRepo(assert, deployer, repoTwo)
+	ds, which = deploymentWithRepo(nc, assert, deployer, repoTwo)
 	deps = ds.Snapshot()
 	if assert.NotEqual(none, which, "opentable/two no longer deployed after resolve") {
 		assert.Equal(1, deps[which].NumInstances)
@@ -257,9 +257,9 @@ func TestResolve(t *testing.T) {
 
 var none = sous.DeployID{}
 
-func deploymentWithRepo(assert *assert.Assertions, sc sous.Deployer, repo string) (sous.Deployments, sous.DeployID) {
+func deploymentWithRepo(reg sous.Registry, assert *assert.Assertions, sc sous.Deployer, repo string) (sous.Deployments, sous.DeployID) {
 	clusters := sous.Clusters{"test-cluster": {BaseURL: SingularityURL}}
-	deps, err := sc.RunningDeployments(clusters)
+	deps, err := sc.RunningDeployments(reg, clusters)
 	if assert.Nil(err) {
 		return deps, findRepo(deps, repo)
 	}

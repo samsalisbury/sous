@@ -2,6 +2,7 @@ package singularity
 
 import (
 	"fmt"
+	"log"
 	"runtime/debug"
 	"strings"
 
@@ -22,9 +23,8 @@ dChans := intendedSet.Diff(existingSet)
 
 type (
 	deployer struct {
-		Client   rectificationClient
-		Registry sous.Registry
-		singFac  func(string) *singularity.Client
+		Client  rectificationClient
+		singFac func(string) *singularity.Client
 	}
 
 	// rectificationClient abstracts the raw interactions with Singularity.
@@ -44,14 +44,14 @@ type (
 )
 
 // NewDeployer creates a new Singularity-based sous.Deployer.
-func NewDeployer(r sous.Registry, c rectificationClient) sous.Deployer {
-	return &deployer{Client: c, Registry: r}
+func NewDeployer(c rectificationClient) sous.Deployer {
+	return &deployer{Client: c}
 }
 
-func (r *deployer) RectifyCreates(cc <-chan *sous.Deployment, errs chan<- sous.RectificationError) {
+func (r *deployer) RectifyCreates(cc <-chan *sous.Deployable, errs chan<- error) {
 	for d := range cc {
 		if err := r.RectifySingleCreate(d); err != nil {
-			errs <- &sous.CreateError{Deployment: d, Err: err}
+			errs <- &sous.CreateError{Deployment: d.Deployment, Err: err}
 		}
 	}
 }
@@ -67,12 +67,12 @@ func (r *deployer) buildSingClient(url string) *singularity.Client {
 	return r.singFac(url)
 }
 
-func (r *deployer) ImageName(d *sous.Deployment) (string, error) {
-	a, err := r.Registry.GetArtifact(d.SourceID)
-	if err != nil {
-		return "", err
+func (r *deployer) ImageName(d *sous.Deployable) (string, error) {
+	a := d.BuildArtifact
+	if a == nil {
+		return "", &sous.MissingImageNameError{Cause: fmt.Errorf("Missing BuildArtifact on Deployable")}
 	}
-	return a.Name, err
+	return a.Name, nil
 }
 
 func rectifyRecover(d interface{}, f string, err *error) {
@@ -84,8 +84,8 @@ func rectifyRecover(d interface{}, f string, err *error) {
 	}
 }
 
-func (r *deployer) RectifySingleCreate(d *sous.Deployment) (err error) {
-	Log.Debug.Printf("Rectifing creation %q:  \n %# v", d.ID(), d)
+func (r *deployer) RectifySingleCreate(d *sous.Deployable) (err error) {
+	Log.Debug.Printf("Rectifing creation %q:  \n %# v", d.ID(), d.Deployment)
 	defer rectifyRecover(d, "RectifySingleCreate", &err)
 	name, err := r.ImageName(d)
 	if err != nil {
@@ -100,15 +100,15 @@ func (r *deployer) RectifySingleCreate(d *sous.Deployment) (err error) {
 		d.Env, d.DeployConfig.Volumes)
 }
 
-func (r *deployer) RectifyDeletes(dc <-chan *sous.Deployment, errs chan<- sous.RectificationError) {
+func (r *deployer) RectifyDeletes(dc <-chan *sous.Deployable, errs chan<- error) {
 	for d := range dc {
 		if err := r.RectifySingleDelete(d); err != nil {
-			errs <- &sous.DeleteError{Deployment: d, Err: err}
+			errs <- &sous.DeleteError{Deployment: d.Deployment, Err: err}
 		}
 	}
 }
 
-func (r *deployer) RectifySingleDelete(d *sous.Deployment) (err error) {
+func (r *deployer) RectifySingleDelete(d *sous.Deployable) (err error) {
 	defer rectifyRecover(d, "RectifySingleDelete", &err)
 	requestID := computeRequestID(d)
 	// TODO: Alert the owner of this request that there is no manifest for it;
@@ -120,16 +120,21 @@ func (r *deployer) RectifySingleDelete(d *sous.Deployment) (err error) {
 }
 
 func (r *deployer) RectifyModifies(
-	mc <-chan *sous.DeploymentPair, errs chan<- sous.RectificationError) {
+	mc <-chan *sous.DeployablePair, errs chan<- error) {
 	for pair := range mc {
 		if err := r.RectifySingleModification(pair); err != nil {
-			errs <- &sous.ChangeError{Deployments: pair, Err: err}
+			dp := &sous.DeploymentPair{
+				Prior: pair.Prior.Deployment,
+				Post:  pair.Post.Deployment,
+			}
+			log.Printf("%#v", err)
+			errs <- &sous.ChangeError{Deployments: dp, Err: err}
 		}
 	}
 }
 
-func (r *deployer) RectifySingleModification(pair *sous.DeploymentPair) (err error) {
-	Log.Debug.Printf("Rectifying modified %q: \n  %# v \n    =>  \n  %# v", pair.ID(), pair.Prior, pair.Post)
+func (r *deployer) RectifySingleModification(pair *sous.DeployablePair) (err error) {
+	Log.Debug.Printf("Rectifying modified %q: \n  %# v \n    =>  \n  %# v", pair.ID(), pair.Prior.Deployment, pair.Post.Deployment)
 	defer rectifyRecover(pair, "RectifySingleModification", &err)
 	if r.changesReq(pair) {
 		Log.Debug.Printf("Updating Request...")
@@ -166,18 +171,18 @@ func (r *deployer) RectifySingleModification(pair *sous.DeploymentPair) (err err
 	return nil
 }
 
-func (r deployer) changesReq(pair *sous.DeploymentPair) bool {
+func (r deployer) changesReq(pair *sous.DeployablePair) bool {
 	return pair.Prior.NumInstances != pair.Post.NumInstances
 }
 
-func changesDep(pair *sous.DeploymentPair) bool {
+func changesDep(pair *sous.DeployablePair) bool {
 	return !(pair.Prior.SourceID.Equal(pair.Post.SourceID) &&
 		pair.Prior.Resources.Equal(pair.Post.Resources) &&
 		pair.Prior.Env.Equal(pair.Post.Env) &&
 		pair.Prior.DeployConfig.Volumes.Equal(pair.Post.DeployConfig.Volumes))
 }
 
-func computeRequestID(d *sous.Deployment) string {
+func computeRequestID(d *sous.Deployable) string {
 	if len(d.RequestID) > 0 {
 		return d.RequestID
 	}
