@@ -62,7 +62,7 @@ func main() {
 			r.Body.Close()
 
 			// Block until server dies
-			sousProc.Wait()
+			sous.Process.Wait()
 			return
 		}
 		time.Sleep(1 * time.Second)
