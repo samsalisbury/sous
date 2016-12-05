@@ -67,7 +67,7 @@ func commandTable(cs Commands) [][]string {
 		var shortHelp string
 		splitHelp := strings.Split(cs[name].Help(), "\n")
 		if len(splitHelp) > 0 {
-			shortHelp = strings.Split(cs[name].Help(), "\n")[0]
+			shortHelp = splitHelp[0]
 		}
 		t[i] = make([]string, 2)
 		t[i][0] = name
