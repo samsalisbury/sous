@@ -4,7 +4,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strings"
 	"testing"
 )
@@ -89,7 +88,7 @@ func TestHTTPStateManager_Delete(t *testing.T) {
 }
 
 func TestHTTPStateManager_Modify(t *testing.T) {
-	Log.Vomit.SetOutput(os.Stderr)
+	//Log.Vomit.SetOutput(os.Stderr)
 	reqd := false
 	etag := "w/sauce"
 	h := func(rw http.ResponseWriter, r *http.Request) {
