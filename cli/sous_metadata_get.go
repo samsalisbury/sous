@@ -23,9 +23,7 @@ type SousMetadataGet struct {
 
 func init() { MetadataSubcommands["get"] = &SousMetadataGet{} }
 
-const sousMetadataGetHelp = `
-query deployment metadata
-`
+const sousMetadataGetHelp = `query deployment metadata`
 
 func (*SousMetadataGet) Help() string { return sousMetadataHelp }
 

@@ -19,8 +19,7 @@ type SousQueryGDM struct {
 
 func init() { QuerySubcommands["gdm"] = &SousQueryGDM{} }
 
-const sousQueryGDMHelp = `
-Loads the current deployment configuration and prints it out
+const sousQueryGDMHelp = `Loads the current deployment configuration and prints it out
 
 This should resemble the manifest that was used to establish the intended state of deployment.
 `

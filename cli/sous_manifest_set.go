@@ -22,8 +22,8 @@ type SousManifestSet struct {
 
 func init() { ManifestSubcommands["set"] = &SousManifestSet{} }
 
-const sousManifestSetHelp = `
-replace a deployment manifest
+const sousManifestSetHelp = `replace a deployment manifest
+
 do note: this does *replace* the manifest;
 there's some validation, but you can make drastic changes easily
 `

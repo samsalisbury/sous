@@ -22,8 +22,7 @@ type SousInit struct {
 
 func init() { TopLevelCommands["init"] = &SousInit{} }
 
-const sousInitHelp = `
-initialise a new sous project
+const sousInitHelp = `initialise a new sous project
 
 usage: sous init
 

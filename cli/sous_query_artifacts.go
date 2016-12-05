@@ -14,8 +14,7 @@ type SousQueryArtifacts struct {
 
 func init() { QuerySubcommands["artifacts"] = &SousQueryArtifacts{} }
 
-const sousQueryArtifactsHelp = `
-Lists the images that Sous is currently aware of.
+const sousQueryArtifactsHelp = `Lists the images that Sous is currently aware of.
 
 Note that Sous may discover more images after attempting a rectify
 

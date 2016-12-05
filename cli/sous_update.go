@@ -23,8 +23,7 @@ type SousUpdate struct {
 
 func init() { TopLevelCommands["update"] = &SousUpdate{} }
 
-const sousUpdateHelp = `
-update the version to be deployed in a cluster
+const sousUpdateHelp = `update the version to be deployed in a cluster
 
 usage: sous update -cluster <name> -tag <semver> [-use-otpl-deploy|-ignore-otpl-deploy]
 

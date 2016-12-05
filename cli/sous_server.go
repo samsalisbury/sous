@@ -35,8 +35,7 @@ type SousServer struct {
 
 func init() { TopLevelCommands["server"] = &SousServer{} }
 
-const sousServerHelp = `
-Runs the API server for Sous
+const sousServerHelp = `Runs the API server for Sous
 
 usage: sous server
 `

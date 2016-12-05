@@ -38,8 +38,7 @@ type Sous struct {
 // directory.
 var TopLevelCommands = cmdr.Commands{}
 
-const sousHelp = `
-sous is a tool to help speed up the build/test/deploy cycle at your organisation
+const sousHelp = `sous is a tool to help speed up the build/test/deploy cycle at your organisation
 
 usage: sous <command>
 
