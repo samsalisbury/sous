@@ -8,10 +8,21 @@ import (
 
 type TestCommand struct{}
 
-func (tc *TestCommand) Help() string { return "" }
+func (tc *TestCommand) Help() string { return "Test Command." }
 
 func (tc *TestCommand) Execute(args []string) Result {
 	return Success("Congratulations, caller:", args)
+}
+
+type TestCommandWithSubcommands struct{}
+
+func (tc *TestCommandWithSubcommands) Help() string { return "Test command with subcommands." }
+
+func (tc *TestCommandWithSubcommands) Subcommands() Commands {
+	cmds := make(Commands)
+	cmds["test"] = &TestCommand{}
+	cmds["anothertest"] = &TestCommand{}
+	return cmds
 }
 
 func TestCli(t *testing.T) {
@@ -96,5 +107,24 @@ func TestPrintTip(t *testing.T) {
 		} else {
 			t.Logf(logTemplate, out, v)
 		}
+	}
+}
+
+func TestListSubcommands(t *testing.T) {
+	logTemplate := "CLI with subcommands has ListSubcommands length of %d"
+	outBuf := &bytes.Buffer{}
+	errBuf := &bytes.Buffer{}
+
+	c := &CLI{
+		Root: &TestCommandWithSubcommands{},
+		Out:  NewOutput(outBuf),
+		Err:  NewOutput(errBuf),
+	}
+
+	subcommandLength := len(c.ListSubcommands(c.Root))
+	if subcommandLength == 0 {
+		t.Fatalf(logTemplate, subcommandLength)
+	} else {
+		t.Logf(logTemplate, subcommandLength)
 	}
 }
