@@ -11,15 +11,11 @@ type helpCommand struct {
 }
 
 func (c helpCommand) Execute(subcommands []string) cmdr.Result {
-	// The cmdr Help() implementation requires ...
-	if len(subcommands) > 0 {
-		help, err := c.CLI.Help(c, subcommands[len(subcommands)-1], subcommands)
-		if err != nil {
-			return cmdr.EnsureErrorResult(err)
-		}
-		return cmdr.Successf(help)
+	help, err := c.CLI.Help(root, "sous", subcommands)
+	if err != nil {
+		return cmdr.EnsureErrorResult(err)
 	}
-	return cmdr.Successf("zero-length")
+	return cmdr.Successf(help)
 }
 
 func (c helpCommand) AlternateExecute(args []string) cmdr.Result {
