@@ -10,7 +10,19 @@ type helpCommand struct {
 	CLI *cmdr.CLI
 }
 
-func (c helpCommand) Execute(args []string) cmdr.Result {
+func (c helpCommand) Execute(subcommands []string) cmdr.Result {
+	// The cmdr Help() implementation requires ...
+	if len(subcommands) > 0 {
+		help, err := c.CLI.Help(c, subcommands[len(subcommands)-1], subcommands)
+		if err != nil {
+			return cmdr.EnsureErrorResult(err)
+		}
+		return cmdr.Successf(help)
+	}
+	return cmdr.Successf("zero-length")
+}
+
+func (c helpCommand) AlternateExecute(args []string) cmdr.Result {
 	b := bytes.Buffer{}
 	b.WriteString("\n")
 	b.WriteString("cmdr-example hello world\n\n")
