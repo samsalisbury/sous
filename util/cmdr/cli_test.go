@@ -73,3 +73,28 @@ func TestCli(t *testing.T) {
 func makeArgs(s string) []string {
 	return strings.Split(s, " ")
 }
+
+func TestPrintTip(t *testing.T) {
+	logTemplate := "got %q, want %q"
+	testTable := make(map[string]string)
+	testTable[""] = ""
+	testTable["test"] = "Tip: test\n"
+	for k, v := range testTable {
+		outBuf := &bytes.Buffer{}
+		errBuf := &bytes.Buffer{}
+
+		c := &CLI{
+			Root: &TestCommand{},
+			Out:  NewOutput(outBuf),
+			Err:  NewOutput(errBuf),
+		}
+
+		c.printTip(k)
+		out := errBuf.String()
+		if out != v {
+			t.Errorf(logTemplate, out, v)
+		} else {
+			t.Logf(logTemplate, out, v)
+		}
+	}
+}
