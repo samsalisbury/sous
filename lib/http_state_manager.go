@@ -22,7 +22,47 @@ type (
 	gdmWrapper struct {
 		Deployments []*Deployment
 	}
+
+	// ReadDebugger wraps a ReadCloser and logs the data as it buffers past.
+	ReadDebugger struct {
+		wrapped io.ReadCloser
+		logged  bool
+		count   int
+		read    []byte
+		log     func([]byte, int, error)
+	}
 )
+
+// NewReadDebugger creates a new ReadDebugger that wraps a ReadCloser
+func NewReadDebugger(rc io.ReadCloser, log func([]byte, int, error)) *ReadDebugger {
+	return &ReadDebugger{
+		wrapped: rc,
+		read:    []byte{},
+		log:     log,
+	}
+}
+
+// Read implements Reader on ReadDebugger
+func (rd *ReadDebugger) Read(p []byte) (int, error) {
+	n, err := rd.wrapped.Read(p)
+	rd.read = append(rd.read, p...)
+	rd.count += n
+	if err != nil {
+		rd.log(rd.read, rd.count, err)
+		rd.logged = true
+	}
+	return n, err
+}
+
+// Close implements Closer on ReadDebugger
+func (rd *ReadDebugger) Close() error {
+	err := rd.wrapped.Close()
+	if !rd.logged {
+		rd.log(rd.read, rd.count, err)
+		rd.logged = true
+	}
+	return err
+}
 
 func (g *gdmWrapper) manifests(defs Defs) (Manifests, error) {
 	ds := NewDeployments()
@@ -53,43 +93,6 @@ func NewHTTPStateManager(us string) (*HTTPStateManager, error) {
 	hsm.Client.Transport = &http.Transport{Proxy: http.ProxyFromEnvironment, DisableCompression: true}
 
 	return hsm, errors.Wrapf(err, "new state manager")
-}
-
-func (hsm *HTTPStateManager) getDefs() (Defs, error) {
-	ds := Defs{}
-	url, err := hsm.serverURL.Parse("./defs")
-	if err != nil {
-		return ds, errors.Wrapf(err, "getting defs")
-	}
-
-	Log.Debug.Printf("Reading definitions from %s", url)
-
-	rq, err := hsm.Client.Get(url.String())
-	if err != nil {
-		return ds, errors.Wrapf(err, "getting defs")
-	}
-
-	dec := json.NewDecoder(rq.Body)
-
-	return ds, errors.Wrapf(dec.Decode(&ds), "getting defs")
-}
-
-func (hsm *HTTPStateManager) getManifests(defs Defs) (Manifests, error) {
-	url, err := hsm.serverURL.Parse("./gdm")
-	if err != nil {
-		return Manifests{}, errors.Wrapf(err, "getting manifests")
-	}
-
-	Log.Debug.Printf("Reading manifests from %s", url)
-
-	gdmRq, err := hsm.Client.Get(url.String())
-	if err != nil {
-		return Manifests{}, errors.Wrapf(err, "getting manifests")
-	}
-	gdm := &gdmWrapper{}
-	gdm.fromJSON(gdmRq.Body)
-	gdmRq.Body.Close()
-	return gdm.manifests(defs)
 }
 
 // ReadState implements StateReader for HTTPStateManager.
@@ -281,6 +284,71 @@ func (hsm *HTTPStateManager) modifies(mc chan *ManifestPair, ec chan error, done
 	}
 }
 
+func (hsm *HTTPStateManager) getDefs() (Defs, error) {
+	ds := Defs{}
+	url, err := hsm.serverURL.Parse("./defs")
+	if err != nil {
+		return ds, errors.Wrapf(err, "getting defs")
+	}
+
+	Log.Debug.Printf("Reading definitions from %s", url)
+
+	req, err := http.NewRequest("GET", url.String(), nil)
+	if err != nil {
+		return ds, errors.Wrapf(err, "getting defs")
+	}
+	rz, err := hsm.httpRequest(req)
+	if err != nil {
+		return ds, errors.Wrapf(err, "getting defs")
+	}
+	defer rz.Body.Close()
+
+	dec := json.NewDecoder(rz.Body)
+
+	return ds, errors.Wrapf(dec.Decode(&ds), "getting defs")
+}
+
+func (hsm *HTTPStateManager) getManifests(defs Defs) (Manifests, error) {
+	url, err := hsm.serverURL.Parse("./gdm")
+	if err != nil {
+		return Manifests{}, errors.Wrapf(err, "getting manifests")
+	}
+
+	Log.Debug.Printf("Reading manifests from %s", url)
+
+	rq, err := http.NewRequest("GET", url.String(), nil)
+	if err != nil {
+		return Manifests{}, errors.Wrapf(err, "getting manifests")
+	}
+	gdmRz, err := hsm.httpRequest(rq)
+	if err != nil {
+		return Manifests{}, errors.Wrapf(err, "getting manifests")
+	}
+	defer gdmRz.Body.Close()
+	gdm := &gdmWrapper{}
+	gdm.fromJSON(gdmRz.Body)
+	return gdm.manifests(defs)
+}
+
+func (hsm *HTTPStateManager) httpRequest(req *http.Request) (*http.Response, error) {
+	if req.Body == nil {
+		Log.Vomit.Printf("-> %s %q", req.Method, req.URL)
+	} else {
+		req.Body = NewReadDebugger(req.Body, func(b []byte, n int, err error) {
+			Log.Vomit.Printf("-> %s %q:\n%sSent %d bytes, result: %v", req.Method, req.URL, string(b), n, err)
+		})
+	}
+	rz, err := hsm.Client.Do(req)
+	if rz.Body == nil {
+		Log.Vomit.Printf("<- %s %q %d", req.Method, req.URL, rz.StatusCode)
+	} else {
+		rz.Body = NewReadDebugger(rz.Body, func(b []byte, n int, err error) {
+			Log.Vomit.Printf("<- %s %q %d:\n%sRead %d bytes, result: %v", req.Method, req.URL, rz.StatusCode, string(b), n, err)
+		})
+	}
+	return rz, err
+}
+
 func (hsm *HTTPStateManager) create(m *Manifest) error {
 	murl, err := hsm.manifestURL(m)
 	if err != nil {
@@ -294,7 +362,7 @@ func (hsm *HTTPStateManager) create(m *Manifest) error {
 		return errors.Wrapf(err, "create manifest request")
 	}
 	rq.Header.Add("If-None-Match", "*")
-	rz, err := hsm.Client.Do(rq)
+	rz, err := hsm.httpRequest(rq)
 	if err != nil {
 		return err //XXX network problems? retry?
 	}
@@ -306,43 +374,21 @@ func (hsm *HTTPStateManager) create(m *Manifest) error {
 }
 
 func (hsm *HTTPStateManager) del(m *Manifest) error {
-	u, err := hsm.manifestURL(m)
-	if err != nil {
-		return err
-	}
-
-	Log.Debug.Printf("Getting manifest from %s", u)
-
-	grq, err := http.NewRequest("GET", u, nil)
+	u, etag, err := hsm.getManifestEtag(m)
 	if err != nil {
 		return errors.Wrapf(err, "delete manifest request")
 	}
-	grz, err := hsm.Client.Do(grq)
-	if err != nil {
-		return errors.Wrapf(err, "delete manifest request")
-	}
-	defer grz.Body.Close()
-	if !(grz.StatusCode >= 200 && grz.StatusCode < 300) {
-		return errors.Errorf("GET %s to delete, %s: %#v", u, grz.Status, m)
-	}
-	rm := hsm.jsonManifest(grz.Body)
-	different, differences := rm.Diff(m)
-	if different {
-		return errors.Errorf("Remote and deleted manifests don't match: %#v", differences)
-	}
-	etag := grz.Header.Get("Etag")
-
-	Log.Debug.Printf("Deleting manifest at %s", u)
 
 	drq, err := http.NewRequest("DELETE", u, nil)
 	if err != nil {
 		return errors.Wrapf(err, "delete manifest request")
 	}
 	drq.Header.Add("If-Match", etag)
-	drz, err := hsm.Client.Do(drq)
+	drz, err := hsm.httpRequest(drq)
 	if err != nil {
 		return errors.Wrapf(err, "delete manifest request")
 	}
+	defer drz.Body.Close()
 	if !(drz.StatusCode >= 200 && drz.StatusCode < 300) {
 		return errors.Errorf("Delete %s failed: %s", u, drz.Status)
 	}
@@ -352,32 +398,12 @@ func (hsm *HTTPStateManager) del(m *Manifest) error {
 func (hsm *HTTPStateManager) modify(mp *ManifestPair) error {
 	bf := mp.Post
 	af := mp.Prior
-	u, err := hsm.manifestURL(bf)
-	if err != nil {
-		return err
-	}
-
-	Log.Debug.Printf("Getting manifest from %s", u)
-
-	grq, err := http.NewRequest("GET", u, nil)
+	u, etag, err := hsm.getManifestEtag(bf)
 	if err != nil {
 		return errors.Wrapf(err, "modify request")
 	}
-	grz, err := hsm.Client.Do(grq)
-	if err != nil {
-		return errors.Wrapf(err, "modify request")
-	}
-	defer grz.Body.Close()
-	if !(grz.StatusCode >= 200 && grz.StatusCode < 300) {
-		return errors.Errorf("%s: %#v", grz.Status, bf)
-	}
-	rm := hsm.jsonManifest(grz.Body)
-	different, differences := rm.Diff(bf)
-	if different {
-		return errors.Errorf("%q: Remote and prior manifests don't match: %#v", mp.name, differences)
-	}
-	etag := grz.Header.Get("Etag")
 
+	// XXX I don't think the URL should be *able* to be different here.
 	u, err = hsm.manifestURL(af)
 	if err != nil {
 		return err
@@ -392,12 +418,41 @@ func (hsm *HTTPStateManager) modify(mp *ManifestPair) error {
 		return errors.Wrapf(err, "modify request")
 	}
 	prq.Header.Add("If-Match", etag)
-	prz, err := hsm.Client.Do(prq)
+	prz, err := hsm.httpRequest(prq)
 	if err != nil {
 		return errors.Wrapf(err, "modify request")
 	}
+	defer prz.Body.Close()
 	if !(prz.StatusCode >= 200 && prz.StatusCode < 300) {
 		return errors.Errorf("Update failed: %s / %#v", prz.Status, af)
 	}
 	return nil
+}
+
+func (hsm *HTTPStateManager) getManifestEtag(m *Manifest) (string, string, error) {
+	u, err := hsm.manifestURL(m)
+	if err != nil {
+		return "", "", err
+	}
+
+	Log.Debug.Printf("Getting manifest from %s", u)
+
+	grq, err := http.NewRequest("GET", u, nil)
+	if err != nil {
+		return "", "", err
+	}
+	grz, err := hsm.httpRequest(grq)
+	if err != nil {
+		return "", "", err
+	}
+	defer grz.Body.Close()
+	if !(grz.StatusCode >= 200 && grz.StatusCode < 300) {
+		return "", "", errors.Errorf("GET %s, %s: %#v", u, grz.Status, m)
+	}
+	rm := hsm.jsonManifest(grz.Body)
+	different, differences := rm.Diff(m)
+	if different {
+		return "", "", errors.Errorf("Remote and deleted manifests don't match: %#v", differences)
+	}
+	return u, grz.Header.Get("Etag"), nil
 }
