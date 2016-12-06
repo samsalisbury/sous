@@ -319,7 +319,7 @@ func concentrate(dc DiffChans, con DiffConcentrator) {
 
 			Log.Debug.Printf("Concentrating modification of %q", m.ID())
 
-			addPair(m.Prior.ManifestID(), m.Post, m.Prior)
+			addPair(m.Prior.ManifestID(), m.Prior, m.Post)
 		}
 	}
 

@@ -1,17 +1,17 @@
 package graph
 
 import (
-	"github.com/opentable/sous/config"
 	sous "github.com/opentable/sous/lib"
 	"github.com/pkg/errors"
 )
 
-func newTargetManifestID(f *config.DeployFilterFlags, discovered *SourceContextDiscovery) (TargetManifestID, error) {
+func newTargetManifestID(f *sous.ResolveFilter, discovered *SourceContextDiscovery) (TargetManifestID, error) {
 	c := discovered.GetContext()
 	if f == nil { // XXX I think this needs to be supplied anyway by consumers...
-		f = &config.DeployFilterFlags{}
+		f = &sous.ResolveFilter{}
 	}
 	var repo, offset = c.PrimaryRemoteURL, c.OffsetDir
+
 	if f.Repo != "" {
 		repo = f.Repo
 		offset = ""

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 
@@ -396,8 +397,10 @@ func (hsm *HTTPStateManager) del(m *Manifest) error {
 }
 
 func (hsm *HTTPStateManager) modify(mp *ManifestPair) error {
-	bf := mp.Post
-	af := mp.Prior
+	bf := mp.Prior
+	af := mp.Post
+	log.Printf("BEFORE %#v", bf)
+	log.Printf("AFTER %#v", af)
 	u, etag, err := hsm.getManifestEtag(bf)
 	if err != nil {
 		return errors.Wrapf(err, "modify request")
@@ -452,7 +455,7 @@ func (hsm *HTTPStateManager) getManifestEtag(m *Manifest) (string, string, error
 	rm := hsm.jsonManifest(grz.Body)
 	different, differences := rm.Diff(m)
 	if different {
-		return "", "", errors.Errorf("Remote and deleted manifests don't match: %#v", differences)
+		return "", "", errors.Errorf("Remote and local versions of manifest don't match: %#v", differences)
 	}
 	return u, grz.Header.Get("Etag"), nil
 }
