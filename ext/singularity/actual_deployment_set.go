@@ -64,7 +64,7 @@ func (sc *deployer) RunningDeployments(reg sous.Registry, clusters sous.Clusters
 		//sing.Debug = true
 		sings[url] = struct{}{}
 		client := sc.buildSingClient(url)
-		go singPipeline(url, client, &depWait, &singWait, reqCh, errCh)
+		go singPipeline(url, client, &depWait, &singWait, reqCh, errCh, clusters.Names())
 	}
 
 	go depPipeline(sc.Client, reg, clusters, MaxAssemblers, reqCh, depCh, errCh)
@@ -187,12 +187,13 @@ func singPipeline(
 	dw, wg *sync.WaitGroup,
 	reqs chan SingReq,
 	errs chan error,
+	clusters []string,
 ) {
 	Log.Vomit.Printf("Starting cluster at %s", url)
 	defer func() { Log.Vomit.Printf("Completed cluster at %s", url) }()
 	defer wg.Done()
 	defer catchAndSend(fmt.Sprintf("get requests: %s", url), errs)
-	rs, err := getRequestsFromSingularity(url, client)
+	rs, err := getRequestsFromSingularity(url, client, clusters)
 	if err != nil {
 		Log.Vomit.Print(err) //XXX connection reset by peer should be retried
 		errs <- errors.Wrap(err, "getting request list")
@@ -205,7 +206,7 @@ func singPipeline(
 	}
 }
 
-func getRequestsFromSingularity(url string, client *singularity.Client) ([]SingReq, error) {
+func getRequestsFromSingularity(url string, client *singularity.Client, clusters []string) ([]SingReq, error) {
 	logFDs("before getRequestsFromSingularity")
 	defer logFDs("after getRequestsFromSingularity")
 	singRequests, err := client.GetRequests()
@@ -214,8 +215,22 @@ func getRequestsFromSingularity(url string, client *singularity.Client) ([]SingR
 	}
 
 	reqs := make([]SingReq, 0, len(singRequests))
+eachrequest:
 	for _, sr := range singRequests {
-		reqs = append(reqs, SingReq{url, client, sr})
+		// Parse requests, filter out malformed ones and those that do not
+		// belong to one of the specified clusters.
+		deployID, err := ParseRequestID(sr.Request.Id)
+		if err != nil {
+			Log.Debug.Printf("Ignoring Singularity Request %q: %s", sr.Request.Id, err)
+			continue
+		}
+		for _, c := range clusters {
+			if deployID.Cluster == c {
+				reqs = append(reqs, SingReq{url, client, sr})
+				continue eachrequest
+			}
+		}
+		Log.Debug.Printf("ignoring request %q as it's not one of my clusters (%# v)", sr.Request.Id, clusters)
 	}
 
 	return reqs, nil
