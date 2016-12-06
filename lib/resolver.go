@@ -43,8 +43,27 @@ func (rf *ResolveFilter) All() bool {
 }
 
 func (rf *ResolveFilter) String() string {
-	return fmt.Sprintf("cluster: %q flavor: %q repo: %q offset: %q tag: %q revision %q",
-		rf.Cluster, rf.Flavor, rf.Repo, rf.Offset, rf.Tag, rf.Revision)
+	cl, fl, rp, of, tg, rv := rf.Cluster, rf.Flavor, rf.Repo, rf.Offset, rf.Tag, rf.Revision
+	if cl == "" {
+		cl = `*`
+	}
+	if fl == "" {
+		fl = `*`
+	}
+	if rp == "" {
+		rp = `*`
+	}
+	if of == "" {
+		of = `*`
+	}
+	if tg == "" {
+		tg = `*`
+	}
+	if rv == "" {
+		rv = `*`
+	}
+	return fmt.Sprintf("<cluster:%s repo:%s offset:%s flavor:%s tag:%s revision:%s>",
+		cl, rp, of, fl, tg, rv)
 }
 
 // FilteredClusters returns a new Clusters relevant to the Deployments that this ResolveFilter would permit

@@ -3,7 +3,6 @@ package cli
 import (
 	"flag"
 	"io/ioutil"
-	"log"
 
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
@@ -19,6 +18,7 @@ type SousManifestSet struct {
 	*sous.State
 	graph.StateWriter
 	graph.InReader
+	*sous.ResolveFilter
 }
 
 func init() { ManifestSubcommands["set"] = &SousManifestSet{} }
@@ -44,7 +44,7 @@ func (smg *SousManifestSet) Execute(args []string) cmdr.Result {
 
 	_, present := smg.State.Manifests.Get(mid)
 	if !present {
-		return EnsureErrorResult(errors.Errorf("No manifest for %v yet. See `sous init`", smg.DeployFilterFlags))
+		return EnsureErrorResult(errors.Errorf("No manifest matched by %v yet. See `sous init`", smg.ResolveFilter))
 	}
 
 	yml := sous.Manifest{}

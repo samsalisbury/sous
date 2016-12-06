@@ -16,6 +16,7 @@ type SousManifestGet struct {
 	graph.TargetManifestID
 	*sous.State
 	graph.OutWriter
+	*sous.ResolveFilter
 }
 
 func init() { ManifestSubcommands["get"] = &SousManifestGet{} }
@@ -37,7 +38,7 @@ func (smg *SousManifestGet) Execute(args []string) cmdr.Result {
 
 	mani, present := smg.State.Manifests.Get(mid)
 	if !present {
-		return EnsureErrorResult(errors.Errorf("No manifest for %v yet. See `sous init`", smg.DeployFilterFlags))
+		return EnsureErrorResult(errors.Errorf("No manifest matched by %v yet. See `sous init`", smg.ResolveFilter))
 	}
 
 	yml, err := yaml.Marshal(mani)
