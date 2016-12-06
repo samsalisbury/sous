@@ -1,0 +1,26 @@
+Source: github.com/example/sous-server
+Owners:
+- ssalisbury@opentable.com
+- jlester@opentable.com
+Kind: http-service
+Deployments:
+  qa:
+    Resources:
+      cpus: "0.1"
+      memory: "100"
+      ports: "1"
+    Env:
+      GDM_REPO: git@github.com:example/sous-gdm.git
+    NumInstances: 1
+    Volumes: []
+    Version: 0.1.36
+  prod:
+    Resources:
+      cpus: "0.1"
+      memory: "100"
+      ports: "1"
+    Env:
+      GDM_REPO: git@github.com:example/sous-gdm.git
+    NumInstances: 1
+    Volumes: []
+    Version: 0.1.36
