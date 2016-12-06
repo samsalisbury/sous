@@ -155,26 +155,43 @@ func TestInvokeQuery(t *testing.T) {
 
 func TestInvokeMetadataGet(t *testing.T) {
 	assert := assert.New(t)
+	require := require.New(t)
+
 	exe := justCommand(t, []string{`sous`, `metadata`, `get`, `-repo`, `github.com/opentable/sous`})
 	assert.NotNil(exe)
+	metaGet, good := exe.Cmd.(*SousMetadataGet)
+	require.True(good)
+	assert.NotNil(metaGet.State)
 }
 
 func TestInvokeMetadataSet(t *testing.T) {
 	assert := assert.New(t)
+	require := require.New(t)
 	exe := justCommand(t, []string{`sous`, `metadata`, `set`, `-repo`, `github.com/opentable/sous`, `BuildBranch`, `master`})
 	assert.NotNil(exe)
+	metaSet, good := exe.Cmd.(*SousMetadataSet)
+	require.True(good)
+	assert.NotNil(metaSet.State)
 }
 
 func TestInvokeManifestGet(t *testing.T) {
 	assert := assert.New(t)
+	require := require.New(t)
 	exe := justCommand(t, []string{`sous`, `manifest`, `get`, `-repo`, `github.com/opentable/sous`})
 	assert.NotNil(exe)
+	maniGet, good := exe.Cmd.(*SousManifestGet)
+	require.True(good)
+	assert.NotNil(maniGet.State)
 }
 
 func TestInvokeManifestSet(t *testing.T) {
 	assert := assert.New(t)
+	require := require.New(t)
 	exe := justCommand(t, []string{`sous`, `manifest`, `set`, `-repo`, `github.com/opentable/sous`})
 	assert.NotNil(exe)
+	maniSet, good := exe.Cmd.(*SousManifestSet)
+	require.True(good)
+	assert.NotNil(maniSet.StateWriter)
 }
 
 func TestInvokeServer(t *testing.T) {

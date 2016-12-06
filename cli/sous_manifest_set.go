@@ -3,6 +3,7 @@ package cli
 import (
 	"flag"
 	"io/ioutil"
+	"log"
 
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
@@ -16,7 +17,7 @@ type SousManifestSet struct {
 	config.DeployFilterFlags
 	graph.TargetManifestID
 	*sous.State
-	sous.StateWriter
+	graph.StateWriter
 	graph.InReader
 }
 
