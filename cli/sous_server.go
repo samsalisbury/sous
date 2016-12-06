@@ -16,14 +16,13 @@ import (
 
 // A SousServer represents the `sous server` command.
 type SousServer struct {
-	Sous *Sous
-	*config.Verbosity
-	config.DeployFilterFlags
-	*sous.AutoResolver
-
-	Config graph.LocalSousConfig
-	Log    *sous.LogSet
-	flags  struct {
+	Sous              *Sous
+	Verbosity         *config.Verbosity
+	DeployFilterFlags config.DeployFilterFlags
+	AutoResolver      *sous.AutoResolver
+	Config            graph.LocalSousConfig
+	Log               *sous.LogSet
+	flags             struct {
 		dryrun,
 		// laddr is the listen address in the form [host]:port
 		laddr,
