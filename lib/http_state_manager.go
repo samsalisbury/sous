@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 
@@ -399,8 +398,6 @@ func (hsm *HTTPStateManager) del(m *Manifest) error {
 func (hsm *HTTPStateManager) modify(mp *ManifestPair) error {
 	bf := mp.Prior
 	af := mp.Post
-	log.Printf("BEFORE %#v", bf)
-	log.Printf("AFTER %#v", af)
 	u, etag, err := hsm.getManifestEtag(bf)
 	if err != nil {
 		return errors.Wrapf(err, "modify request")
