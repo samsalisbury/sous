@@ -46,7 +46,7 @@ func (smg *SousMetadataGet) Execute(args []string) cmdr.Result {
 			return EnsureErrorResult(err)
 		}
 		if dep == nil {
-			return EnsureErrorResult(errors.Errorf("No manifest deploy for %v", smg.DeployFilterFlags))
+			return EnsureErrorResult(errors.Errorf("No manifest matched by %v", smg.ResolveFilter))
 		}
 		if err := outputMetadata(dep.Metadata, smg.ResolveFilter.Cluster, args, smg.OutWriter); err != nil {
 			return EnsureErrorResult(err)
@@ -63,7 +63,7 @@ func (smg *SousMetadataGet) Execute(args []string) cmdr.Result {
 		return EnsureErrorResult(err)
 	}
 	if mani == nil {
-		return EnsureErrorResult(errors.Errorf("No manifest for %v", smg.DeployFilterFlags))
+		return EnsureErrorResult(errors.Errorf("No manifest matched by %v", smg.ResolveFilter))
 	}
 
 	for clusterName, deploySpec := range mani.Deployments {
