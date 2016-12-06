@@ -22,8 +22,7 @@ type (
 
 func init() { TopLevelCommands["build"] = &SousBuild{} }
 
-const sousBuildHelp = `
-build your project
+const sousBuildHelp = `build your project
 
 build builds the project in your current directory by default. If you pass it a
 path, it will instead build the project at that path.

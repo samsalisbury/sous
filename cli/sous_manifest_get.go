@@ -20,9 +20,7 @@ type SousManifestGet struct {
 
 func init() { ManifestSubcommands["get"] = &SousManifestGet{} }
 
-const sousManifestGetHelp = `
-query deployment manifest
-`
+const sousManifestGetHelp = `query deployment manifest`
 
 func (*SousManifestGet) Help() string { return sousManifestHelp }
 

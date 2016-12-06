@@ -8,9 +8,7 @@ var ManifestSubcommands = cmdr.Commands{}
 
 func init() { TopLevelCommands["manifest"] = &SousManifest{} }
 
-const sousManifestHelp = `
-query and manipulate deployment manifests
-`
+const sousManifestHelp = `query and manipulate deployment manifests`
 
 func (SousManifest) Subcommands() cmdr.Commands {
 	return ManifestSubcommands

@@ -16,8 +16,7 @@ type SousContext struct {
 
 func init() { TopLevelCommands["context"] = &SousContext{} }
 
-const sousContextHelp = `
-show the current build context
+const sousContextHelp = `show the current build context
 
 context prints out sous's view of your current context
 

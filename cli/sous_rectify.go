@@ -25,8 +25,7 @@ type SousRectify struct {
 
 func init() { TopLevelCommands["rectify"] = &SousRectify{} }
 
-const sousRectifyHelp = `
-force Sous to make the deployment match the contents of the local state directory
+const sousRectifyHelp = `force Sous to make the deployment match the contents of the local state directory
 
 usage: sous rectify
 

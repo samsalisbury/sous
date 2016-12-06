@@ -24,8 +24,7 @@ type SousQueryAds struct {
 
 func init() { QuerySubcommands["ads"] = &SousQueryAds{} }
 
-const sousQueryAdsHelp = `
-Queries the Singularity server and container registry to determine a synthetic global manifest.
+const sousQueryAdsHelp = `Queries the Singularity server and container registry to determine a synthetic global manifest.
 
 This should resemble the manifest that was used to establish the current state of deployment.
 `

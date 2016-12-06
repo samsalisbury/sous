@@ -9,8 +9,7 @@ type SousVersion struct {
 
 func init() { TopLevelCommands["version"] = &SousVersion{} }
 
-const sousVersionHelp = `
-print the version of sous
+const sousVersionHelp = `print the version of sous
 
 prints the current version of sous. Please include the output from this
 command with any bug reports sent to https://github.com/opentable/sous/issues

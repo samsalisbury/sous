@@ -17,8 +17,7 @@ type SousHarvest struct {
 
 func init() { TopLevelCommands["harvest"] = &SousHarvest{} }
 
-const sousHarvestHelp = `
-Retrieve data from images in an artifact repostiory
+const sousHarvestHelp = `Retrieve data from images in an artifact repostiory
 
 usage: sous harvest <repo>...
 `

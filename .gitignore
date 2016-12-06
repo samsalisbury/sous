@@ -5,3 +5,4 @@ sous
 .agignore
 check-compile.results
 testdata/
+util/cmdr/cmdr-example/cmdr-example

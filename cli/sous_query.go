@@ -18,9 +18,7 @@ var QuerySubcommands = cmdr.Commands{}
 
 func init() { TopLevelCommands["query"] = &SousQuery{} }
 
-const sousQueryHelp = `
-inquire about sous details
-`
+const sousQueryHelp = `inquire about sous details`
 
 func (*SousQuery) Help() string { return sousQueryHelp }
 

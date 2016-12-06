@@ -13,8 +13,7 @@ type SousHelp struct {
 
 func init() { TopLevelCommands["help"] = &SousHelp{} }
 
-const sousHelpHelp = `
-get help with sous
+const sousHelpHelp = `get help with sous
 
 help shows help information for sous itself, as well as all its subcommands
 for detailed help with any command, use 'sous help <command>'.

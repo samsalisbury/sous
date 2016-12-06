@@ -21,8 +21,7 @@ type SousDeploy struct {
 
 func init() { TopLevelCommands["deploy"] = &SousDeploy{} }
 
-const sousDeployHelp = `
-deploys a new version into a particular cluster
+const sousDeployHelp = `deploys a new version into a particular cluster
 
 usage: sous deploy -cluster <name> -tag <semver> [-use-otpl-deploy|-ignore-otpl-deploy]
 
