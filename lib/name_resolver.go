@@ -19,6 +19,8 @@ type (
 	}
 )
 
+// NewDeployableChans returns a new DeployableChans with channels buffered to
+// size.
 func NewDeployableChans(size ...int) *DeployableChans {
 	var s int
 	if len(size) > 0 {
@@ -66,10 +68,12 @@ func GuardImage(r Registry, d *Deployment) (art *BuildArtifact, err error) {
 	return
 }
 
+// ID returns the ID of this DeployablePair.
 func (dp *DeployablePair) ID() DeployID {
 	return dp.name
 }
 
+// ResolveNames resolves diffs.
 func (dc *DeployableChans) ResolveNames(r Registry, diff *DiffChans, errs chan error) {
 	go resolveSingles(r, diff.Created, dc.Start, errs)
 	go unresolvedSingles(r, diff.Deleted, dc.Stop, errs)
