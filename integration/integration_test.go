@@ -61,7 +61,7 @@ func TestGetRunningDeploymentSet(t *testing.T) {
 	client := singularity.NewRectiAgent()
 	d := singularity.NewDeployer(client)
 
-	ds, which := deploymentWithRepo(nc, assert, d, "https://github.com/opentable/docker-grafana.git")
+	ds, which := deploymentWithRepo(nc, assert, d, "github.com/opentable/docker-grafana")
 	deps := ds.Snapshot()
 	if assert.Equal(3, len(deps)) {
 		grafana := deps[which]
@@ -88,7 +88,7 @@ func TestMissingImage(t *testing.T) {
 			},
 		},
 	}
-	repoOne := "https://github.com/opentable/one.git"
+	repoOne := "github.com/opentable/one"
 
 	drc := docker_registry.NewClient()
 	drc.BecomeFoolishlyTrusting()
@@ -142,9 +142,9 @@ func TestResolve(t *testing.T) {
 			},
 		},
 	}
-	repoOne := "https://github.com/opentable/one.git"
-	repoTwo := "https://github.com/opentable/two.git"
-	repoThree := "https://github.com/opentable/three.git"
+	repoOne := "github.com/opentable/one"
+	repoTwo := "github.com/opentable/two"
+	repoThree := "github.com/opentable/three"
 
 	drc := docker_registry.NewClient()
 	drc.BecomeFoolishlyTrusting()

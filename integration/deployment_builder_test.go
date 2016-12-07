@@ -100,7 +100,7 @@ func TestBuildDeployments(t *testing.T) {
 			if assert.Len(dep.DeployConfig.Volumes, 1) {
 				assert.Equal(dep.DeployConfig.Volumes[0].Host, "/tmp")
 			}
-			assert.Equal("https://github.com/docker/dockercloud-hello-world.git", dep.SourceID.Location.Repo)
+			assert.Equal("github.com/docker/dockercloud-hello-world", dep.SourceID.Location.Repo)
 		}
 	}
 }
