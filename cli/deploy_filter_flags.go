@@ -112,9 +112,9 @@ var (
 	// ClusterFilterFlagsHelp just exposes the -cluster flag (for server)
 	ClusterFilterFlagsHelp = clusterFlagHelp
 	// ManifestFilterFlagsHelp the text/config for selecting manifests
-	ManifestFilterFlagsHelp = repoFlagHelp + offsetFlagHelp
+	ManifestFilterFlagsHelp = sourceFlagHelp + repoFlagHelp + offsetFlagHelp
 	// MetadataFilterFlagsHelp the the text/config for metadata commands
-	MetadataFilterFlagsHelp = repoFlagHelp + offsetFlagHelp + flavorFlagHelp + clusterFlagHelp
+	MetadataFilterFlagsHelp = sourceFlagHelp + repoFlagHelp + offsetFlagHelp + flavorFlagHelp + clusterFlagHelp
 	// SourceFlagsHelp is the text (and config) for source flags
 	SourceFlagsHelp = repoFlagHelp + offsetFlagHelp + flavorFlagHelp + tagFlagHelp + revisionFlagHelp
 	// RectifyFilterFlagsHelp is the text (and config) for rectification flags

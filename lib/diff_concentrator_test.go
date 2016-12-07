@@ -73,20 +73,22 @@ func TestRealDiffConcentration(t *testing.T) {
 	repoFour := "github.com/opentable/four"
 	repoFive := "github.com/opentable/five"
 
-	intended.MustAdd(makeDepl(repoOne, "111.1.1", 1)) //remove
+	existing.MustAdd(makeDepl(repoOne, "111.1.1", 1)) //remove
+	//intended: gone
 
 	existing.MustAdd(makeDepl(repoTwo, "1.0.0", 1)) //same
 	intended.MustAdd(makeDepl(repoTwo, "1.0.0", 1)) //same
 
+	// existing: doesn't yet
+	intended.MustAdd(makeDepl(repoFour, "1.0.0", 1)) //create
+
 	existing.MustAdd(makeDepl(repoThree, "1.0.0", 1)) //changed
 	intended.MustAdd(makeDepl(repoThree, "1.0.0", 2)) //changed
-
-	existing.MustAdd(makeDepl(repoFour, "1.0.0", 1)) //create
 
 	existing.MustAdd(makeDepl(repoFive, "1.0.0", 1)) //changed
 	intended.MustAdd(makeDepl(repoFive, "2.0.0", 1)) //changed
 
-	dc := intended.Diff(existing).Concentrate(defs)
+	dc := existing.Diff(intended).Concentrate(defs)
 	ds, err := dc.collect()
 	require.NoError(err)
 
