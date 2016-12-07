@@ -120,6 +120,17 @@ func (cs Clusters) Clone() Clusters {
 	return c
 }
 
+// Names returns a slice of names of these clusters.
+func (cs Clusters) Names() []string {
+	names := make([]string, len(cs))
+	i := 0
+	for name := range cs {
+		names[i] = name
+		i++
+	}
+	return names
+}
+
 // Clone returns a deep copy of this Cluster.
 func (c Cluster) Clone() *Cluster {
 	allowedAdvisories := make([]string, len(c.AllowedAdvisories))

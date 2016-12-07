@@ -20,6 +20,7 @@ import (
 	sing "github.com/opentable/go-singularity"
 	"github.com/opentable/go-singularity/dtos"
 	"github.com/opentable/sous/ext/singularity"
+	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/test_with_docker"
 	"github.com/opentable/swaggering"
 	"github.com/satori/go.uuid"
@@ -234,7 +235,7 @@ func registerAndDeploy(ip net.IP, reponame, dir string, ports []int32) (err erro
 		panic(fmt.Errorf("building test container failed: %s", err))
 	}
 
-	err = startInstance(SingularityURL, imageName, ports)
+	err = startInstance(SingularityURL, imageName, reponame, ports)
 	if err != nil {
 		panic(fmt.Errorf("starting a singularity instance failed: %s", err))
 	}
@@ -293,8 +294,16 @@ func loadMap(fielder swaggering.Fielder, m dtoMap) swaggering.Fielder {
 
 var notInIDre = regexp.MustCompile(`[-/]`)
 
-func startInstance(url, imageName string, ports []int32) error {
-	reqID := singularity.MakeDeployID(imageName + "test-cluster") //XXX This become increasingly brittle
+func startInstance(url, imageName, repoName string, ports []int32) error {
+	did := sous.DeployID{
+		ManifestID: sous.ManifestID{
+			Source: sous.SourceLocation{
+				Repo: repoName,
+			},
+		},
+		Cluster: "test-cluster",
+	}
+	reqID := singularity.MakeRequestID(did)
 
 	sing := sing.NewClient(url)
 

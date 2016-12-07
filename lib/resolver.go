@@ -142,16 +142,16 @@ func (r *Resolver) Resolve(intended Deployments, clusters Clusters) error {
 	var diffs DiffChans
 	var namer *DeployableChans
 	errs := make(chan error)
-	return firsterr.Returned(
-		func() (e error) { clusters = r.FilteredClusters(clusters); return },
-		func() (e error) { ads, e = r.Deployer.RunningDeployments(r.Registry, clusters); return },
-		func() (e error) { intended = intended.Filter(r.FilterDeployment); return },
-		func() (e error) { ads = ads.Filter(r.FilterDeployment); return },
-		func() (e error) { diffs = ads.Diff(intended); return },
-		func() (e error) { namer = NewDeployableChans(10); return },
-		func() (e error) { namer.ResolveNames(r.Registry, &diffs, errs); return },
-		func() (e error) { r.rectify(namer, errs); return },
-		func() (e error) { return foldErrors(errs) },
+	return firsterr.Set(
+		func(*error) { clusters = r.FilteredClusters(clusters) },
+		func(e *error) { ads, *e = r.Deployer.RunningDeployments(r.Registry, clusters) },
+		func(*error) { intended = intended.Filter(r.FilterDeployment) },
+		func(*error) { ads = ads.Filter(r.FilterDeployment) },
+		func(*error) { diffs = ads.Diff(intended) },
+		func(*error) { namer = NewDeployableChans(10) },
+		func(*error) { namer.ResolveNames(r.Registry, &diffs, errs) },
+		func(*error) { r.rectify(namer, errs) },
+		func(e *error) { *e = foldErrors(errs) },
 	)
 }
 
