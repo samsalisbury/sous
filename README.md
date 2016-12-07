@@ -49,19 +49,22 @@ should only need to be done once on any given workstation.
 Now that you have a Sous client set up,
 let's add a project to Sous management.
 
+The following commands will contact the Sous server and create your project in every known Mesos cluster:
+
 ```bash
 # Enter the directory of your project.
 $ cd <my-project>
 
-# Let Sous know that the project exists:
+# Connect to the Sous server and register the project's existence.  
 $ sous init
 ```
 
-At this point, Sous will record the intention to
-deploy 1 instance of your project everywhere it knows about.
 You can limit this to a single Mesos cluster by
-replacing the last command with `sous init -cluster <name>` -
+replacing the last command with `sous init -cluster <name>`
+ 
 Sous will provide a list of known clusters if you give it bad input.
+
+To add or remove your project from available Mesos clusters, use `sous manifest get > manifest.yaml` to download the current state of deployments. After editing the returned yaml file, use `sous manifest set < manifest.yaml` to send the changes to your Sous server.
 
 Since there's no Docker image that corresponds
 to this project yet, Sous won't actually try to deploy
