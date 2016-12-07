@@ -2,7 +2,6 @@ package cli
 
 import (
 	"flag"
-	"log"
 
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
