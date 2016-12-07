@@ -37,9 +37,6 @@ func (smg *SousManifestGet) RegisterOn(psy Addable) {
 func (smg *SousManifestGet) Execute(args []string) cmdr.Result {
 	mid := sous.ManifestID(smg.TargetManifestID)
 
-	log.Print(smg.ResolveFilter)
-	log.Printf("%#v", smg.ResolveFilter)
-	log.Print(smg.TargetManifestID, mid)
 	mani, present := smg.State.Manifests.Get(mid)
 	if !present {
 		return EnsureErrorResult(errors.Errorf("No manifest matched by %v yet. See `sous init`", smg.ResolveFilter))
