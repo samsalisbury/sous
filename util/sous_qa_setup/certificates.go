@@ -1,6 +1,19 @@
 package main
 
-import ()
+import (
+	"bytes"
+	"crypto/x509"
+	"encoding/pem"
+	"fmt"
+	"log"
+	"net"
+	"os"
+	"os/exec"
+	"path/filepath"
+
+	"github.com/nyarly/inlinefiles/templatestore"
+	"github.com/opentable/sous/util/test_with_docker"
+)
 
 //go:generate inlinefiles --vfs=Templates --package main templates vfs_template.go
 
