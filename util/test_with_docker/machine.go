@@ -184,6 +184,11 @@ func (m *Machine) Shutdown(c *command) {
 	}
 }
 
+// ShutdownNow implements Agent for Machine
+func (m *Machine) ShutdownNow() {
+	dockerComposeDown(nil)
+}
+
 func dockerMachine(args ...string) (stdout, stderr string, err error) {
 	c := runCommand("docker-machine", args...)
 	log.Printf("%+v %+v %#v\n\n", c.itself, c.err, c)

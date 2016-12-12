@@ -17,10 +17,10 @@ import (
 
 //go:generate inlinefiles --vfs=Templates --package main templates vfs_template.go
 
-func registryCerts(testAgent test_with_docker.Agent, composeDir string) error {
+func registryCerts(testAgent test_with_docker.Agent, composeDir string, desc EnvDesc) error {
 	registryCertName := "testing.crt"
 	certPath := filepath.Join(composeDir, registryCertName)
-	caPath := fmt.Sprintf("/etc/docker/certs.d/%s/ca.crt", registryName)
+	caPath := fmt.Sprintf("/etc/docker/certs.d/%s/ca.crt", desc.RegistryName)
 
 	certIPs, err := getCertIPSans(filepath.Join(composeDir, registryCertName))
 	if err != nil {
@@ -30,15 +30,15 @@ func registryCerts(testAgent test_with_docker.Agent, composeDir string) error {
 	haveIP := false
 
 	for _, certIP := range certIPs {
-		if certIP.Equal(ip) {
+		if certIP.Equal(desc.AgentIP) {
 			haveIP = true
 			break
 		}
 	}
 
 	if !haveIP {
-		log.Printf("Rebuilding the registry certificate to add %v", ip)
-		certIPs = append(certIPs, ip)
+		log.Printf("Rebuilding the registry certificate to add %v", desc.AgentIP)
+		certIPs = append(certIPs, desc.AgentIP)
 		err = buildTestingKeypair(composeDir, certIPs)
 		if err != nil {
 			return fmt.Errorf("While building testing keypair: %s", err)

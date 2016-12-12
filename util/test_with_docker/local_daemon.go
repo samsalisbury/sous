@@ -118,6 +118,11 @@ func (ld *LocalDaemon) Shutdown(c *command) {
 	}
 }
 
+// ShutdownNow implements Agent for LocalDaemon
+func (ld *LocalDaemon) ShutdownNow() {
+	dockerComposeDown(nil)
+}
+
 // RestartDaemon reboots the docker daemon
 func (ld *LocalDaemon) RestartDaemon() error {
 	rss := [][]string{
