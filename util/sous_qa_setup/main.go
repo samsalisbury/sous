@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"net"
 	"os"
 	"path"
 	"time"
 
 	"github.com/SeeSpotRun/coerce"
 	"github.com/docopt/docopt-go"
+	"github.com/opentable/sous/util/sous_qa_setup/desc"
 	"github.com/opentable/sous/util/test_with_docker"
 )
 
@@ -27,13 +27,6 @@ type (
 		parameters
 		out          io.Writer
 		timeDuration time.Duration
-	}
-
-	// EnvDesc captures the details of the established environment
-	EnvDesc struct {
-		RegistryName   string
-		SingularityURL string
-		AgentIP        net.IP
 	}
 )
 
@@ -127,8 +120,8 @@ func teardownServices(testAgent test_with_docker.Agent, opts *options) {
 	testAgent.ShutdownNow()
 }
 
-func setupServices(testAgent test_with_docker.Agent, opts *options) *EnvDesc {
-	desc := EnvDesc{}
+func setupServices(testAgent test_with_docker.Agent, opts *options) *desc.EnvDesc {
+	desc := desc.EnvDesc{}
 	var err error
 
 	desc.AgentIP, err = testAgent.IP()
@@ -155,7 +148,7 @@ func setupServices(testAgent test_with_docker.Agent, opts *options) *EnvDesc {
 	return &desc
 }
 
-func writeOut(opts *options, desc *EnvDesc) {
+func writeOut(opts *options, desc *desc.EnvDesc) {
 	enc := json.NewEncoder(opts.out)
 	enc.Encode(desc)
 }
