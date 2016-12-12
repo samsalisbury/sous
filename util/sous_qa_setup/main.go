@@ -3,8 +3,11 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
+	"net"
 	"os"
+	"path"
 	"time"
 
 	"github.com/SeeSpotRun/coerce"
@@ -12,109 +15,147 @@ import (
 	"github.com/opentable/sous/util/test_with_docker"
 )
 
-const (
-	docstring = `Set up a docker-based Sous QA environment
-Usage: sous_qa_setup [options]
-
-Options:
-  -K --shutdown  Rather than set up the QA environment, shut it down
-  --timeout=<timeout>  Time allowed before a non-response by services is considered failure [default: 5m]
-	--compose-dir=<directory>  The directory containing a 'compose.yaml' file
-	--out-path=<path>  The path to write the description of the environment to, or - for stdout [default: -]
-`
-)
-
 type (
+	parameters struct {
+		timeout    string
+		shutdown   bool
+		outPath    string
+		composeDir string
+	}
+
 	options struct {
-		timeout      string
+		parameters
+		out          io.Writer
 		timeDuration time.Duration
-		composeDir   string
-		outPath      string
-		shutdown     bool
 	}
 
 	// EnvDesc captures the details of the established environment
 	EnvDesc struct {
 		RegistryName   string
 		SingularityURL string
-		AgentIP        string
+		AgentIP        net.IP
 	}
 )
 
-func main() {
-	log.SetFlags(log.Flags() | log.Lshortfile)
-	opts := parseOpts()
-	if opts.shutdown {
-		teardownServices(opts)
+const (
+	docstring = `Set up a docker-based Sous QA environment
+Usage: sous_qa_setup [options]
+
+Options:
+   --compose-dir=<directory>    The directory containing a 'docker-compose.yaml' file
+   --timeout=<timeout>          Time allowed before a non-response by services is considered failure [default: 5m]
+   --out-path=<path>            The path to write the description of the environment to, or - for stdout [default: -]
+   -K --shutdown                Rather than set up the QA environment, shut it down
+`
+)
+
+func parseOpts() (*options, error) {
+	parsed, err := docopt.Parse(docstring, nil, true, "", false)
+	if err != nil {
+		return nil, err
 	}
-	desc := setupServices(opts)
+
+	parms := parameters{}
+	err = coerce.Struct(&parms, parsed, "-%s", "--%s", "<%s>")
+	if err != nil {
+		return nil, err
+	}
+
+	if parms.composeDir == "" {
+		return nil, fmt.Errorf("--compose-dir is required")
+	}
+
+	opts := options{parameters: parms}
+	opts.timeDuration, err = time.ParseDuration(opts.timeout)
+	if err != nil {
+		return nil, err
+	}
+
+	opts.out = os.Stdout
+	if opts.outPath != "-" {
+		opts.out, err = os.Create(opts.outPath)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	err = checkCompDir(&opts)
+	if err != nil {
+		return nil, err
+	}
+
+	return &opts, nil
+}
+
+func checkCompDir(opts *options) error {
+	for _, composeName := range []string{"docker-compose.yaml", "docker-compose.yml"} {
+		info, err := os.Stat(path.Join(opts.composeDir, composeName))
+		if err == nil && !info.IsDir() {
+			return nil
+		}
+	}
+
+	return fmt.Errorf("No docker-compose.yaml in %q", opts.composeDir)
+}
+
+func main() {
+	log.SetFlags(0)
+	opts, err := parseOpts()
+	if err != nil {
+		log.Fatal(err)
+	}
+	testAgent := buildAgent(opts)
+	defer func() { testAgent.Cleanup() }()
+
+	if opts.shutdown {
+		teardownServices(testAgent, opts)
+		return
+	}
+	desc := setupServices(testAgent, opts)
 	writeOut(opts, desc)
 }
 
-func teardownServices(opts *options) {
+func buildAgent(opts *options) test_with_docker.Agent {
 	testAgent, err := test_with_docker.NewAgentWithTimeout(opts.timeDuration)
 	if err != nil {
 		log.Fatal(err)
 	}
-	testAgent.Shutdown(started)
+	return testAgent
 }
 
-func setupServices(opts *options) *EnvDesc {
-	testAgent, err := test_with_docker.NewAgentWithTimeout(opts.timeDuration)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer func() {
-		testAgent.Cleanup()
-	}()
+func teardownServices(testAgent test_with_docker.Agent, opts *options) {
+	testAgent.ShutdownNow()
+}
 
+func setupServices(testAgent test_with_docker.Agent, opts *options) *EnvDesc {
 	desc := EnvDesc{}
+	var err error
 
-	desc.Ip, err = testAgent.IP()
+	desc.AgentIP, err = testAgent.IP()
 	if err != nil {
 		log.Fatal(err)
 	}
-	if ip == nil {
+	if desc.AgentIP == nil {
 		log.Fatal(fmt.Errorf("Test agent returned nil IP"))
 	}
 
-	desc.RegistryName = fmt.Sprintf("%s:%d", ip, 5000)
-	desc.SingularityURL = fmt.Sprintf("http://%s:%d/singularity", ip, 7099)
+	desc.RegistryName = fmt.Sprintf("%s:%d", desc.AgentIP, 5000)
+	desc.SingularityURL = fmt.Sprintf("http://%s:%d/singularity", desc.AgentIP, 7099)
 
-	err = registryCerts(testAgent, opts.composeDir)
+	err = registryCerts(testAgent, opts.composeDir, desc)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	started, err := testAgent.ComposeServices(opts.composeDir, map[string]uint{"Singularity": 7099, "Registry": 5000})
+	_, err = testAgent.ComposeServices(opts.composeDir, map[string]uint{"Singularity": 7099, "Registry": 5000})
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	return &desc
 }
 
 func writeOut(opts *options, desc *EnvDesc) {
-	out := os.Stdout
-	if out != "-" {
-		out = os.Create(opts.outPath)
-	}
-	enc := json.NewEncoder(out)
+	enc := json.NewEncoder(opts.out)
 	enc.Encode(desc)
-}
-
-func parseOpts() *options {
-	parsed, err := docopt.Parse(docstring, nil, true, "", false)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	opts := options{}
-	err = coerce.Struct(&opts, parsed, "-%s", "--%s", "<%s>")
-	if err != nil {
-		log.Fatal(err)
-	}
-	opts.timeDuration, err = time.ParseDuration(opts.timeout)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return &opts
 }
