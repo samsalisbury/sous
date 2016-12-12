@@ -7,10 +7,10 @@ go:
 before_install:
 - bin/ci-setup
 install:
-- echo "Default install step disabled by .travis.yml"
-script:
+# If these are wrong, bail out immediately
 - "./bin/vendor-check"
 - "./bin/check-gofmt"
+script:
 - "./bin/test-until-success 3"
 - "./bin/cover"
 - '[ $TRAVIS_SECURE_ENV_VARS == false ] || ./bin/publish "$TRAVIS_TAG"'
