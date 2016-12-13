@@ -348,8 +348,8 @@ func manifest(nc sous.Registry, drepo, containerDir, sourceURL, version string) 
 }
 
 func registerLabelledContainers() {
-	registerAndDeploy(ip, "hello-labels", "hello-labels", []int32{})
-	registerAndDeploy(ip, "hello-server-labels", "hello-server-labels", []int32{80})
-	registerAndDeploy(ip, "grafana-repo", "grafana-labels", []int32{})
+	registerAndDeploy(ip, "test-cluster", "hello-labels", "hello-labels", []int32{})
+	registerAndDeploy(ip, "test-cluster", "hello-server-labels", "hello-server-labels", []int32{80})
+	registerAndDeploy(ip, "test-cluster", "grafana-repo", "grafana-labels", []int32{})
 	imageName = fmt.Sprintf("%s/%s:%s", registryName, "grafana-repo", "latest")
 }
