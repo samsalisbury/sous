@@ -603,7 +603,7 @@ func (nc *NameCache) dbInsert(sid sous.SourceID, in, etag string, quals []sous.Q
 		return errors.Wrapf(err, "inserting (%d, %d) into repo_through_location", nid, id)
 	}
 
-	versionString := sid.Version.Format(semv.MMPPre)
+	versionString := sid.Version.Format(semv.Complete)
 	Log.Vomit.Printf("Inserting metadata id:%v etag:%v name:%v version:%v", id, etag, in, versionString)
 
 	id, err = nc.ensureInDB(
