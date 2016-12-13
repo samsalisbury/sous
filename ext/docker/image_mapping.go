@@ -16,7 +16,7 @@ import (
 	"github.com/docker/distribution/reference"
 	"github.com/pkg/errors"
 	// triggers the loading of sqlite3 as a database driver
-	_ "github.com/mattn/go-sqlite3"
+	sqlite "github.com/mattn/go-sqlite3"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/docker_registry"
 	"github.com/samsalisbury/semv"
@@ -377,8 +377,32 @@ func GetDatabase(cfg *DBConfig) (*sql.DB, error) {
 		}
 	}
 
+	sql.Register(driver, &sqlite.SQLiteDriver{
+		ConnectHook: func(conn *sqlite.SQLiteConn) error {
+			if err := conn.RegisterFunc("semverEqual", semverEqual, true); err != nil {
+				return err
+			}
+			return nil
+		},
+	})
+
 	db, err := sql.Open(driver, conn) //only call once
 	return db, errors.Wrapf(err, "get DB/open: %v", cfg)
+}
+
+func semverEqual(a, b string) (bool, error) {
+	if a == b {
+		return true, nil
+	}
+	aVer, err := semv.Parse(a)
+	if err != nil {
+		return false, err
+	}
+	bVer, err := semv.Parse(b)
+	if err != nil {
+		return false, err
+	}
+	return aVer.Equals(bVer), nil
 }
 
 // GroomDatabase ensures that the database to back the cache is the correct schema
