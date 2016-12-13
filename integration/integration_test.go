@@ -78,6 +78,7 @@ func TestGetRunningDeploymentSet_all(t *testing.T) {
 	ResetSingularity()
 }
 
+// TODO: do the double-run in a single test rather than rely on deficiencies in our testing infra
 func TestGetRunningDeploymentSet_all2(t *testing.T) {
 	//sous.Log.Vomit.SetFlags(sous.Log.Vomit.Flags() | log.Ltime)
 	//sous.Log.Vomit.SetOutput(os.Stderr)
