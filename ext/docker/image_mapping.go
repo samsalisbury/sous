@@ -9,6 +9,7 @@ import (
 	"io"
 	"regexp"
 	"strings"
+	"sync"
 	"text/tabwriter"
 	"time"
 
@@ -364,9 +365,11 @@ var schema = []string{
 
 var schemaFingerprint = fingerPrintSchema(schema)
 
+var registerSQLOnce = &sync.Once{}
+
 // GetDatabase initialises a new database for a NameCache.
 func GetDatabase(cfg *DBConfig) (*sql.DB, error) {
-	driver := "sqlite3"
+	driver := "sqlite3_sous"
 	conn := InMemory
 	if cfg != nil {
 		if cfg.Driver != "" {
@@ -377,13 +380,19 @@ func GetDatabase(cfg *DBConfig) (*sql.DB, error) {
 		}
 	}
 
-	sql.Register(driver, &sqlite.SQLiteDriver{
-		ConnectHook: func(conn *sqlite.SQLiteConn) error {
-			if err := conn.RegisterFunc("semverEqual", semverEqual, true); err != nil {
-				return err
-			}
-			return nil
-		},
+	if driver == "sqlite3" {
+		driver = "sqlite3_sous"
+	}
+
+	registerSQLOnce.Do(func() {
+		sql.Register(driver, &sqlite.SQLiteDriver{
+			ConnectHook: func(conn *sqlite.SQLiteConn) error {
+				if err := conn.RegisterFunc("semverEqual", semverEqual, true); err != nil {
+					return err
+				}
+				return nil
+			},
+		})
 	})
 
 	db, err := sql.Open(driver, conn) //only call once
@@ -733,7 +742,7 @@ func (nc *NameCache) dbQueryOnSourceID(sid sous.SourceID) (cn string, ins []stri
 		"where "+
 		"docker_search_location.repo = $1 and "+
 		"docker_search_location.offset = $2 and "+
-		"docker_search_metadata.version = $3",
+		"semverEqual(docker_search_metadata.version, $3)",
 		sid.Location.Repo, sid.Location.Dir, sid.Version.String())
 
 	Log.Vomit.Printf("Selecting on %q %q %q", sid.Location.Repo, sid.Location.Dir, sid.Version.String())

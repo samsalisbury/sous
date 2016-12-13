@@ -15,7 +15,7 @@ type Config struct {
 func DefaultConfig() Config {
 	return Config{
 		RegistryHost:       "docker.otenv.com",
-		DatabaseDriver:     "sqlite3",
+		DatabaseDriver:     "sqlite3_sous",
 		DatabaseConnection: InMemory,
 	}
 }

@@ -36,7 +36,7 @@ func TestGetLabels(t *testing.T) {
 
 func newInMemoryDB(name string) *sql.DB {
 	db, err := docker.GetDatabase(&docker.DBConfig{
-		Driver:     "sqlite3",
+		Driver:     "sqlite3_sous",
 		Connection: docker.InMemoryConnection(name),
 	})
 	if err != nil {
