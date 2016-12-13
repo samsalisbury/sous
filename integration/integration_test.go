@@ -351,5 +351,6 @@ func registerLabelledContainers() {
 	registerAndDeploy(ip, "test-cluster", "hello-labels", "hello-labels", []int32{})
 	registerAndDeploy(ip, "test-cluster", "hello-server-labels", "hello-server-labels", []int32{80})
 	registerAndDeploy(ip, "test-cluster", "grafana-repo", "grafana-labels", []int32{})
+	registerAndDeploy(ip, "other-cluster", "grafana-repo", "grafana-labels", []int32{})
 	imageName = fmt.Sprintf("%s/%s:%s", registryName, "grafana-repo", "latest")
 }
