@@ -67,7 +67,7 @@ func testBuildInserter(t *testing.T, serverStr string) sous.Inserter {
 	ins, err := newInserter(LocalSousConfig{Config: &config.Config{
 		Server: serverStr,
 		Docker: docker.Config{
-			DatabaseDriver:     "sqlite3",
+			DatabaseDriver:     "sqlite3_sous",
 			DatabaseConnection: docker.InMemory,
 		},
 	}}, LocalDockerClient{})

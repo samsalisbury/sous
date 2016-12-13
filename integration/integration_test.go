@@ -36,7 +36,7 @@ func TestGetLabels(t *testing.T) {
 
 func newInMemoryDB(name string) *sql.DB {
 	db, err := docker.GetDatabase(&docker.DBConfig{
-		Driver:     "sqlite3",
+		Driver:     "sqlite3_sous",
 		Connection: docker.InMemoryConnection(name),
 	})
 	if err != nil {
@@ -45,7 +45,41 @@ func newInMemoryDB(name string) *sql.DB {
 	return db
 }
 
-func TestGetRunningDeploymentSet(t *testing.T) {
+func TestGetRunningDeploymentSet_all(t *testing.T) {
+	//sous.Log.Vomit.SetFlags(sous.Log.Vomit.Flags() | log.Ltime)
+	//sous.Log.Vomit.SetOutput(os.Stderr)
+	//sous.Log.Vomit.Print("Starting stderr output")
+	sous.Log.Debug.SetFlags(sous.Log.Debug.Flags() | log.Ltime)
+	sous.Log.Debug.SetOutput(os.Stderr)
+	sous.Log.Debug.Print("Starting stderr output")
+	assert := assert.New(t)
+
+	registerLabelledContainers()
+	drc := docker_registry.NewClient()
+	drc.BecomeFoolishlyTrusting()
+	nc := docker.NewNameCache("", drc, newInMemoryDB("grds"))
+	client := singularity.NewRectiAgent()
+	d := singularity.NewDeployer(client)
+
+	ds, which := deploymentWithRepo(nc, assert, d, "github.com/opentable/docker-grafana")
+	deps := ds.Snapshot()
+	if assert.Equal(3, len(deps)) {
+		grafana := deps[which]
+		assert.Equal(SingularityURL, grafana.Cluster.BaseURL)
+		assert.Regexp("^0\\.1", grafana.Resources["cpus"])    // XXX strings and floats...
+		assert.Regexp("^100\\.", grafana.Resources["memory"]) // XXX strings and floats...
+		assert.Equal("1", grafana.Resources["ports"])         // XXX strings and floats...
+		assert.Equal(17, grafana.SourceID.Version.Patch)
+		assert.Equal("91495f1b1630084e301241100ecf2e775f6b672c", grafana.SourceID.Version.Meta)
+		assert.Equal(1, grafana.NumInstances)
+		assert.Equal(sous.ManifestKindService, grafana.Kind)
+	}
+
+	ResetSingularity()
+}
+
+// TODO: do the double-run in a single test rather than rely on deficiencies in our testing infra
+func TestGetRunningDeploymentSet_all2(t *testing.T) {
 	//sous.Log.Vomit.SetFlags(sous.Log.Vomit.Flags() | log.Ltime)
 	//sous.Log.Vomit.SetOutput(os.Stderr)
 	//sous.Log.Vomit.Print("Starting stderr output")

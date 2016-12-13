@@ -9,6 +9,7 @@ import (
 	"io"
 	"regexp"
 	"strings"
+	"sync"
 	"text/tabwriter"
 	"time"
 
@@ -16,7 +17,7 @@ import (
 	"github.com/docker/distribution/reference"
 	"github.com/pkg/errors"
 	// triggers the loading of sqlite3 as a database driver
-	_ "github.com/mattn/go-sqlite3"
+	sqlite "github.com/mattn/go-sqlite3"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/docker_registry"
 	"github.com/samsalisbury/semv"
@@ -364,9 +365,11 @@ var schema = []string{
 
 var schemaFingerprint = fingerPrintSchema(schema)
 
+var registerSQLOnce = &sync.Once{}
+
 // GetDatabase initialises a new database for a NameCache.
 func GetDatabase(cfg *DBConfig) (*sql.DB, error) {
-	driver := "sqlite3"
+	driver := "sqlite3_sous"
 	conn := InMemory
 	if cfg != nil {
 		if cfg.Driver != "" {
@@ -377,8 +380,38 @@ func GetDatabase(cfg *DBConfig) (*sql.DB, error) {
 		}
 	}
 
+	if driver == "sqlite3" {
+		driver = "sqlite3_sous"
+	}
+
+	registerSQLOnce.Do(func() {
+		sql.Register(driver, &sqlite.SQLiteDriver{
+			ConnectHook: func(conn *sqlite.SQLiteConn) error {
+				if err := conn.RegisterFunc("semverEqual", semverEqual, true); err != nil {
+					return err
+				}
+				return nil
+			},
+		})
+	})
+
 	db, err := sql.Open(driver, conn) //only call once
 	return db, errors.Wrapf(err, "get DB/open: %v", cfg)
+}
+
+func semverEqual(a, b string) (bool, error) {
+	if a == b {
+		return true, nil
+	}
+	aVer, err := semv.Parse(a)
+	if err != nil {
+		return false, err
+	}
+	bVer, err := semv.Parse(b)
+	if err != nil {
+		return false, err
+	}
+	return aVer.Equals(bVer), nil
 }
 
 // GroomDatabase ensures that the database to back the cache is the correct schema
@@ -570,7 +603,7 @@ func (nc *NameCache) dbInsert(sid sous.SourceID, in, etag string, quals []sous.Q
 		return errors.Wrapf(err, "inserting (%d, %d) into repo_through_location", nid, id)
 	}
 
-	versionString := sid.Version.Format(semv.MMPPre)
+	versionString := sid.Version.Format(semv.Complete)
 	Log.Vomit.Printf("Inserting metadata id:%v etag:%v name:%v version:%v", id, etag, in, versionString)
 
 	id, err = nc.ensureInDB(
@@ -709,7 +742,7 @@ func (nc *NameCache) dbQueryOnSourceID(sid sous.SourceID) (cn string, ins []stri
 		"where "+
 		"docker_search_location.repo = $1 and "+
 		"docker_search_location.offset = $2 and "+
-		"docker_search_metadata.version = $3",
+		"semverEqual(docker_search_metadata.version, $3)",
 		sid.Location.Repo, sid.Location.Dir, sid.Version.String())
 
 	Log.Vomit.Printf("Selecting on %q %q %q", sid.Location.Repo, sid.Location.Dir, sid.Version.String())
