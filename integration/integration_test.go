@@ -45,7 +45,7 @@ func newInMemoryDB(name string) *sql.DB {
 	return db
 }
 
-func TestGetRunningDeploymentSet(t *testing.T) {
+func TestGetRunningDeploymentSet_all(t *testing.T) {
 	//sous.Log.Vomit.SetFlags(sous.Log.Vomit.Flags() | log.Ltime)
 	//sous.Log.Vomit.SetOutput(os.Stderr)
 	//sous.Log.Vomit.Print("Starting stderr output")
