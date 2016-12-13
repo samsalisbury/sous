@@ -115,6 +115,41 @@ func TestGetRunningDeploymentSet_testCluster2(t *testing.T) {
 	ResetSingularity()
 }
 
+func TestGetRunningDeploymentSet_otherCluster(t *testing.T) {
+	//sous.Log.Vomit.SetFlags(sous.Log.Vomit.Flags() | log.Ltime)
+	//sous.Log.Vomit.SetOutput(os.Stderr)
+	//sous.Log.Vomit.Print("Starting stderr output")
+	sous.Log.Debug.SetFlags(sous.Log.Debug.Flags() | log.Ltime)
+	sous.Log.Debug.SetOutput(os.Stderr)
+	sous.Log.Debug.Print("Starting stderr output")
+	assert := assert.New(t)
+
+	registerLabelledContainers()
+	drc := docker_registry.NewClient()
+	drc.BecomeFoolishlyTrusting()
+	nc := docker.NewNameCache("", drc, newInMemoryDB("grds"))
+	client := singularity.NewRectiAgent()
+	d := singularity.NewDeployer(client)
+
+	clusters := []string{"other-cluster"}
+
+	ds, which := deploymentWithRepo(clusters, nc, assert, d, "github.com/opentable/docker-grafana")
+	deps := ds.Snapshot()
+	if assert.Equal(1, len(deps)) {
+		grafana := deps[which]
+		assert.Equal(SingularityURL, grafana.Cluster.BaseURL)
+		assert.Regexp("^0\\.1", grafana.Resources["cpus"])    // XXX strings and floats...
+		assert.Regexp("^100\\.", grafana.Resources["memory"]) // XXX strings and floats...
+		assert.Equal("1", grafana.Resources["ports"])         // XXX strings and floats...
+		assert.Equal(17, grafana.SourceID.Version.Patch)
+		assert.Equal("91495f1b1630084e301241100ecf2e775f6b672c", grafana.SourceID.Version.Meta)
+		assert.Equal(1, grafana.NumInstances)
+		assert.Equal(sous.ManifestKindService, grafana.Kind)
+	}
+
+	ResetSingularity()
+}
+
 func TestMissingImage(t *testing.T) {
 	assert := assert.New(t)
 
