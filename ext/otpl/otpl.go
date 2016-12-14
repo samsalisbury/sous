@@ -12,17 +12,26 @@ import (
 )
 
 type (
+	// DeploySpecParser parses sous.DeploySpecs from otpl-deploy config files.
+	// NOTE: otpl-deploy config is an internal tool at OpenTable, one day this
+	// code will be removed.
 	DeploySpecParser struct {
 		debugf func(string, ...interface{})
 		debug  func(...interface{})
 		WD     shell.Shell
 	}
+	// SingularityJSON represents the JSON in an otpl-deploy singularity.json
+	// file.
 	SingularityJSON struct {
 		Resources SingularityResources
 		Env       sous.Env
 	}
-	SingularityResources   map[string]float64
+	// SingularityResources represents the resources section in SingularityJSON.
+	SingularityResources map[string]float64
+	// SingularityRequestJSON represents JSON in an otpl-deploy
+	// singularity-request.json file.
 	SingularityRequestJSON struct {
+		// Instances is the number of instances in this deployment.
 		Instances int
 		// NOTE: Owners are not supported at DeploySpec level, only at Manifest
 		// level... Maybe that needs to change.
@@ -32,6 +41,7 @@ type (
 	}
 )
 
+// SousResources returns the equivalent sous.Resources.
 func (sr SingularityResources) SousResources() sous.Resources {
 	r := make(sous.Resources, len(sr))
 	for k, v := range sr {
@@ -40,6 +50,7 @@ func (sr SingularityResources) SousResources() sous.Resources {
 	return r
 }
 
+// NewDeploySpecParser generates a new DeploySpecParser with default logging.
 func NewDeploySpecParser() *DeploySpecParser {
 	return &DeploySpecParser{debugf: sous.Log.Debug.Printf, debug: sous.Log.Debug.Println}
 }
@@ -49,6 +60,9 @@ type namedDeploySpec struct {
 	Spec *sous.DeploySpec
 }
 
+// GetDeploySpecs searches the working directory of wd to find otpl-deploy
+// config files in their standard locations (config/{cluster-name}), and
+// converts them to sous.DeploySpecs.
 func (dsp *DeploySpecParser) GetDeploySpecs(wd shell.Shell) sous.DeploySpecs {
 	wd = wd.Clone()
 	if err := wd.CD("config"); err != nil {
@@ -88,6 +102,10 @@ func (dsp *DeploySpecParser) GetDeploySpecs(wd shell.Shell) sous.DeploySpecs {
 	return deployConfigs
 }
 
+// GetSingleDeploySpec returns a single sous.DeploySpec from the working
+// directory of wd. It assumes that this directory contains at least a file
+// called singularity.json, and optionally an additional file called
+// singularity-requst.json.
 func (dsp *DeploySpecParser) GetSingleDeploySpec(wd shell.Shell) *sous.DeploySpec {
 	v := SingularityJSON{}
 	if !wd.Exists("singularity.json") {
