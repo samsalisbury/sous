@@ -72,14 +72,15 @@ func TestGetRunningDeploymentSet_testCluster(t *testing.T) {
 		deps := ds.Snapshot()
 		if assert.Equal(3, len(deps)) {
 			grafana := deps[which]
-			assert.Equal(SingularityURL, grafana.Cluster.BaseURL)
-			assert.Regexp("^0\\.1", grafana.Resources["cpus"])    // XXX strings and floats...
-			assert.Regexp("^100\\.", grafana.Resources["memory"]) // XXX strings and floats...
-			assert.Equal("1", grafana.Resources["ports"])         // XXX strings and floats...
-			assert.Equal(17, grafana.SourceID.Version.Patch)
-			assert.Equal("91495f1b1630084e301241100ecf2e775f6b672c", grafana.SourceID.Version.Meta)
-			assert.Equal(1, grafana.NumInstances)
-			assert.Equal(sous.ManifestKindService, grafana.Kind)
+			cacheHitText := fmt.Sprintf("on cache hit %d", i+1)
+			assert.Equal(SingularityURL, grafana.Cluster.BaseURL, cacheHitText)
+			assert.Regexp("^0\\.1", grafana.Resources["cpus"], cacheHitText)    // XXX strings and floats...
+			assert.Regexp("^100\\.", grafana.Resources["memory"], cacheHitText) // XXX strings and floats...
+			assert.Equal("1", grafana.Resources["ports"], cacheHitText)         // XXX strings and floats...
+			assert.Equal(17, grafana.SourceID.Version.Patch, cacheHitText)
+			assert.Equal("91495f1b1630084e301241100ecf2e775f6b672c", grafana.SourceID.Version.Meta, cacheHitText)
+			assert.Equal(1, grafana.NumInstances, cacheHitText)
+			assert.Equal(sous.ManifestKindService, grafana.Kind, cacheHitText)
 		}
 	}
 
