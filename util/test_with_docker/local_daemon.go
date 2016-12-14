@@ -37,6 +37,25 @@ func (ld *LocalDaemon) ComposeServices(dir string, svcs serviceMap) (*command, e
 	return composeService(dir, ip, []string{}, svcs, ld.serviceTimeout)
 }
 
+// RebuildService forces the rebuild of a docker-compose service.
+func (ld *LocalDaemon) RebuildService(dir, name string) error {
+	return rebuildService(dir, name, []string{})
+}
+
+// Shutdown terminates the set of services started by ComposeServices
+// If passed a nil (as ComposeServices returns in the event that all services
+// were available, Shutdown is a no-op
+func (ld *LocalDaemon) Shutdown(c *command) {
+	if c != nil {
+		dockerComposeDown(c)
+	}
+}
+
+// ShutdownNow implements Agent for LocalDaemon
+func (ld *LocalDaemon) ShutdownNow() {
+	dockerComposeDown(nil)
+}
+
 func (ld *LocalDaemon) Cleanup() error {
 	log.Println("Cleaning up...")
 	o, _ := exec.Command("sudo", "ls", "-l", "/var/run/docker.sock").CombinedOutput()
@@ -102,25 +121,6 @@ func (ld *LocalDaemon) MD5s(paths ...string) (map[string]string, error) {
 		md5[p] = tmd5s[t]
 	}
 	return md5, nil
-}
-
-// RebuildService forces the rebuild of a docker-compose service.
-func (ld *LocalDaemon) RebuildService(dir, name string) error {
-	return rebuildService(dir, name, []string{})
-}
-
-// Shutdown terminates the set of services started by ComposeServices
-// If passed a nil (as ComposeServices returns in the event that all services
-// were available, Shutdown is a no-op
-func (ld *LocalDaemon) Shutdown(c *command) {
-	if c != nil {
-		dockerComposeDown(c)
-	}
-}
-
-// ShutdownNow implements Agent for LocalDaemon
-func (ld *LocalDaemon) ShutdownNow() {
-	dockerComposeDown(nil)
 }
 
 // RestartDaemon reboots the docker daemon

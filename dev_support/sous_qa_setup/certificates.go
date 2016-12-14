@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 
 	"github.com/nyarly/inlinefiles/templatestore"
-	"github.com/opentable/sous/util/sous_qa_setup/desc"
+	"github.com/opentable/sous/dev_support/sous_qa_setup/desc"
 	"github.com/opentable/sous/util/test_with_docker"
 )
 

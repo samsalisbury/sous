@@ -14,9 +14,9 @@ import (
 
 	sing "github.com/opentable/go-singularity"
 	"github.com/opentable/go-singularity/dtos"
+	"github.com/opentable/sous/dev_support/sous_qa_setup/desc"
 	"github.com/opentable/sous/ext/singularity"
 	sous "github.com/opentable/sous/lib"
-	"github.com/opentable/sous/util/sous_qa_setup/desc"
 	"github.com/opentable/swaggering"
 	"github.com/satori/go.uuid"
 )

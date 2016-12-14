@@ -1,3 +1,6 @@
+// This tool sets up a Sous-specific QA environment. I think, actually, it
+// could be made more generic by pushing configuration files into the
+// test_registry directory, which might be worthwhile in idle moments
 package main
 
 import (
@@ -11,7 +14,7 @@ import (
 
 	"github.com/SeeSpotRun/coerce"
 	"github.com/docopt/docopt-go"
-	"github.com/opentable/sous/util/sous_qa_setup/desc"
+	"github.com/opentable/sous/dev_support/sous_qa_setup/desc"
 	"github.com/opentable/sous/util/test_with_docker"
 )
 
