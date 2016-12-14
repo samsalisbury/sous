@@ -45,6 +45,12 @@ type (
 func (sr SingularityResources) SousResources() sous.Resources {
 	r := make(sous.Resources, len(sr))
 	for k, v := range sr {
+		if k == "numPorts" {
+			k = "ports"
+		}
+		if k == "memoryMb" {
+			k = "memory"
+		}
 		r[k] = strconv.FormatFloat(v, 'g', -1, 64)
 	}
 	return r
