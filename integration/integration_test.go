@@ -80,6 +80,7 @@ func TestGetRunningDeploymentSet_testCluster(t *testing.T) {
 	ResetSingularity()
 }
 
+// TODO: do the double-run in a single test rather than rely on deficiencies in our testing infra
 func TestGetRunningDeploymentSet_testCluster2(t *testing.T) {
 	//sous.Log.Vomit.SetFlags(sous.Log.Vomit.Flags() | log.Ltime)
 	//sous.Log.Vomit.SetOutput(os.Stderr)
