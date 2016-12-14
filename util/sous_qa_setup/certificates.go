@@ -12,12 +12,13 @@ import (
 	"path/filepath"
 
 	"github.com/nyarly/inlinefiles/templatestore"
+	"github.com/opentable/sous/util/sous_qa_setup/desc"
 	"github.com/opentable/sous/util/test_with_docker"
 )
 
 //go:generate inlinefiles --vfs=Templates --package main templates vfs_template.go
 
-func registryCerts(testAgent test_with_docker.Agent, composeDir string, desc EnvDesc) error {
+func registryCerts(testAgent test_with_docker.Agent, composeDir string, desc desc.EnvDesc) error {
 	registryCertName := "testing.crt"
 	certPath := filepath.Join(composeDir, registryCertName)
 	caPath := fmt.Sprintf("/etc/docker/certs.d/%s/ca.crt", desc.RegistryName)
