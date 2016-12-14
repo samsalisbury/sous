@@ -7,20 +7,41 @@ import (
 
 func TestShAssumptions(t *testing.T) {
 	log.SetFlags(log.Lshortfile)
-	cmd, pwd, env := ShellScript(`
+	shell, err := NewShell()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	res, err := shell.Run(`
 	cd /tmp
 	X=7
 	export CYGNUS=blackhole
 	echo $X
+	pwd
 	`)
 
-	log.Print(cmd.Stdout)
-	log.Print(cmd.Stderr)
-	log.Print(pwd)
-	log.Print(env)
-	log.Printf("%#v", cmd)
-	log.Printf("%#v", cmd.Env)
-	log.Printf("%#v", cmd.Dir)
-	log.Printf("%#v", cmd.Process)
-	log.Printf("%#v", cmd.ProcessState)
+	if err != nil {
+		t.Fatalf("error: %v", err)
+	}
+	if !res.OutputMatches(`7`) {
+		t.Errorf("No 7")
+	}
+	if !res.OutputMatches(`/tmp`) {
+		t.Errorf("Not in /tmp")
+	}
+
+	res, err = shell.Run(`
+	echo $X
+	pwd
+	env
+	`)
+	if err != nil {
+		t.Fatalf("error: %v", err)
+	}
+	if !res.OutputMatches(`7`) {
+		t.Errorf("No 7")
+	}
+	if !res.OutputMatches(`/tmp`) {
+		t.Errorf("Not in /tmp")
+	}
 }

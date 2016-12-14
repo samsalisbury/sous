@@ -1,60 +1,179 @@
 package clintegration
 
 import (
+	"bufio"
 	"bytes"
-	"io/ioutil"
-	"log"
+	"fmt"
+	"io"
 	"os"
 	"os/exec"
-	"testing"
+	"regexp"
+	"strconv"
+	"strings"
+	"sync"
 )
 
-const stateCapture = `
+const (
+	stateCapture = `
 pwd
 env | grep X=
 pwd >3
 env >4
 `
+	exitCapture = `
+status=$?
+echo $status >&3
+`
+)
 
-type CaptiveShell struct {
+type (
+	CaptiveShell struct {
+		*exec.Cmd
+		Stdin          io.WriteCloser
+		stdout, stderr *liveStream
+		doneRead       *bufio.Scanner
+		events         chan int
+	}
+
+	liveStream struct {
+		pipe io.Reader
+		buf  []byte
+		sync.Mutex
+	}
+
+	Result struct {
+		Script         string
+		Exit           int
+		Stdout, Stderr string
+	}
+)
+
+func newLiveStream(from io.Reader, events <-chan int) *liveStream {
+	ls := &liveStream{
+		pipe: from,
+		buf:  []byte{},
+	}
+
+	go ls.reader(events)
+	return ls
 }
 
-func (sh *CaptiveShell) Run(script string) error {
+func NewShell() (sh *CaptiveShell, err error) {
+	sh = &CaptiveShell{}
+	sh.Cmd = exec.Command("/bin/sh")
+
+	sh.events = make(chan int)
+	sh.Stdin, err = sh.Cmd.StdinPipe()
+	if err != nil {
+		return nil, err
+	}
+
+	stdo, err := sh.Cmd.StdoutPipe()
+	if err != nil {
+		return nil, err
+	}
+	sh.stdout = newLiveStream(stdo, sh.events)
+
+	stde, err := sh.Cmd.StderrPipe()
+	if err != nil {
+		return nil, err
+	}
+	sh.stderr = newLiveStream(stde, sh.events)
+
+	dr, doneWrite, err := os.Pipe()
+	if err != nil {
+		return nil, err
+	}
+	sh.doneRead = bufio.NewScanner(dr)
+	sh.Cmd.ExtraFiles = []*os.File{doneWrite}
+
+	sh.Cmd.Start()
+	doneWrite.Close()
+
+	return
 }
 
-func ShellScript(script string) (shCmd *exec.Cmd, pwd, env string) {
-	pwdRead, pwdWrite, err := os.Pipe()
+func (sh *CaptiveShell) Run(script string) (Result, error) {
+	st := script + exitCapture
+	sh.Stdin.Write([]byte(st))
+	exit, err := sh.readExitStatus()
 	if err != nil {
-		panic(err)
+		return Result{}, err
 	}
-	envRead, envWrite, err := os.Pipe()
-	if err != nil {
-		panic(err)
-	}
-	shCmd = exec.Command("/bin/sh")
+	stdout := sh.stdout.consume()
 
-	shCmd.Stdin = bytes.NewBufferString(script + stateCapture)
-	shCmd.Stdout = &bytes.Buffer{}
-	shCmd.Stderr = &bytes.Buffer{}
-	shCmd.ExtraFiles = []*os.File{pwdWrite, envWrite}
-	shCmd.Run()
-	log.Printf("%#v", shCmd)
-	log.Printf("%#v", shCmd.ProcessState)
-	envWrite.Close()
-	pwdWrite.Close()
+	stderr := sh.stderr.consume()
 
-	pwdB, err := ioutil.ReadAll(pwdRead)
-	if err != nil {
-		panic(err)
-	}
-	envB, err := ioutil.ReadAll(envRead)
-	if err != nil {
-		panic(err)
-	}
-
-	return shCmd, string(pwdB), string(envB)
+	return Result{
+		Script: script,
+		Exit:   exit,
+		Stdout: stdout,
+		Stderr: stderr,
+	}, nil
 }
 
-func SousCLIIntegrationTest(t *testing.T) {
+func (res Result) StdoutMatches(pattern string) bool {
+	re := regexp.MustCompile(pattern)
+	return re.MatchString(res.Stdout)
+}
 
+func (res Result) StderrMatches(pattern string) bool {
+	re := regexp.MustCompile(pattern)
+	return re.MatchString(res.Stderr)
+}
+
+func (res Result) OutputMatches(pattern string) bool {
+	re := regexp.MustCompile(pattern)
+	return re.MatchString(res.Stderr) || re.MatchString(res.Stdout)
+}
+
+func (ls *liveStream) reader(events <-chan int) {
+	buf := make([]byte, 1024)
+	for {
+		select {
+		default:
+			count, err := ls.pipe.Read(buf)
+			if err != nil {
+				return
+			}
+			ls.Lock()
+			ls.buf = append(ls.buf, buf[0:count]...)
+			ls.Unlock()
+		case <-events:
+			return
+		}
+	}
+}
+
+func (ls *liveStream) consume() string {
+	ls.Lock()
+	str := string(ls.buf)
+	ls.buf = ls.buf[0:0]
+	ls.Unlock()
+	return str
+}
+
+func consumeStream(stream io.Reader) ([]byte, error) {
+	got := []byte{}
+	buf := make([]byte, 1024)
+	for {
+		count, err := stream.Read(buf)
+		if err != nil {
+			return []byte{}, err
+		}
+		if count == 0 {
+			return got, nil
+		}
+		got = append(got, buf[0:count]...)
+	}
+}
+
+func (sh *CaptiveShell) readExitStatus() (int, error) {
+	if !sh.doneRead.Scan() {
+		return -1, fmt.Errorf("Exit stream closed prematurely!")
+	}
+
+	return strconv.Atoi(string(bytes.TrimFunc(sh.doneRead.Bytes(), func(r rune) bool {
+		return strings.Index(`0123456789`, string(r)) == -1
+	})))
 }
