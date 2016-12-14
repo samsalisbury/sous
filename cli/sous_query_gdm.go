@@ -19,9 +19,10 @@ type SousQueryGDM struct {
 
 func init() { QuerySubcommands["gdm"] = &SousQueryGDM{} }
 
-const sousQueryGDMHelp = `Loads the current deployment configuration and prints it out
+const sousQueryGDMHelp = `The attempted state of deployment for every project and every cluster known to Sous.
 
-This should resemble the manifest that was used to establish the intended state of deployment.
+The results of 'sous query gdm' and 'sous query ads' will not be identical if
+a problem is preventing sous from modifying the current state of Singularity.
 `
 
 // Help prints the help
