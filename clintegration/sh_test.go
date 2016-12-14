@@ -45,3 +45,30 @@ func TestShAssumptions(t *testing.T) {
 		t.Errorf("Not in /tmp")
 	}
 }
+
+func SomethingSomething(t *testing.T) {
+	shell := ShellTest(t)
+
+	shell.First("setup", `
+	git clone our.git.server/sous-server
+	cd sous-server
+	sous build
+	SOUS_SERVER= sous deploy -cluster one-left,one-right,two`,
+		func(res Result, t thing) {
+			t.CrashIf(res.Exit != 0)
+			t.ErrorIf(!res.OutputMatches(`Deployed`), "No report of deployment")
+		})
+
+	shell.After("setup", "configuration", `
+	sous config
+	`)
+
+	shell.After("configuration", "deploy project", `
+	git clone our.git.server/test-project
+	cd test-project
+	sous init
+	sous build
+	sous deploy
+	`)
+
+}
