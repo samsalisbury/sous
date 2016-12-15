@@ -152,12 +152,9 @@ func TestGetRunningDeploymentSet_otherCluster(t *testing.T) {
 }
 
 func TestGetRunningDeploymentSet_all(t *testing.T) {
-
-	t.Skipf("A genuine issue in a code path we are not currently using causes this test to fail. TODO: Fixit")
-
-	//sous.Log.Vomit.SetFlags(sous.Log.Vomit.Flags() | log.Ltime)
-	//sous.Log.Vomit.SetOutput(os.Stderr)
-	//sous.Log.Vomit.Print("Starting stderr output")
+	sous.Log.Vomit.SetFlags(sous.Log.Vomit.Flags() | log.Ltime)
+	sous.Log.Vomit.SetOutput(os.Stderr)
+	sous.Log.Vomit.Print("Starting stderr output")
 	sous.Log.Debug.SetFlags(sous.Log.Debug.Flags() | log.Ltime)
 	sous.Log.Debug.SetOutput(os.Stderr)
 	sous.Log.Debug.Print("Starting stderr output")
@@ -422,9 +419,9 @@ func manifest(nc sous.Registry, drepo, containerDir, sourceURL, version string) 
 }
 
 func registerLabelledContainers() {
-	registerAndDeploy(ip, "test-cluster", "hello-labels", "hello-labels", []int32{})
-	registerAndDeploy(ip, "test-cluster", "hello-server-labels", "hello-server-labels", []int32{80})
-	registerAndDeploy(ip, "test-cluster", "grafana-repo", "grafana-labels", []int32{})
-	registerAndDeploy(ip, "other-cluster", "grafana-repo", "grafana-labels", []int32{})
+	registerAndDeploy(ip, "test-cluster", "hello-labels", "github.com/docker-library/hello-world", "hello-labels", []int32{})
+	registerAndDeploy(ip, "test-cluster", "hello-server-labels", "github.com/docker/dockercloud-hello-world", "hello-server-labels", []int32{80})
+	registerAndDeploy(ip, "test-cluster", "grafana-repo", "github.com/opentable/docker-grafana", "grafana-labels", []int32{})
+	registerAndDeploy(ip, "other-cluster", "grafana-repo", "github.com/opentable/docker-grafana", "grafana-labels", []int32{})
 	imageName = fmt.Sprintf("%s/%s:%s", registryName, "grafana-repo", "latest")
 }

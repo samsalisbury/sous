@@ -228,14 +228,14 @@ func BuildImageName(reponame, tag string) string {
 	return fmt.Sprintf("%s/%s:%s", registryName, reponame, tag)
 }
 
-func registerAndDeploy(ip net.IP, clusterName, reponame, dir string, ports []int32) (err error) {
+func registerAndDeploy(ip net.IP, clusterName, reponame, sourceRepo, dir string, ports []int32) (err error) {
 	imageName := BuildImageName(reponame, "latest")
 	err = BuildAndPushContainer(dir, imageName)
 	if err != nil {
 		panic(fmt.Errorf("building test container failed: %s", err))
 	}
 
-	err = startInstance(SingularityURL, clusterName, imageName, reponame, ports)
+	err = startInstance(SingularityURL, clusterName, imageName, sourceRepo, ports)
 	if err != nil {
 		panic(fmt.Errorf("starting a singularity instance failed: %s", err))
 	}
@@ -303,6 +303,7 @@ func startInstance(url, clusterName, imageName, repoName string, ports []int32) 
 		},
 		Cluster: clusterName,
 	}
+	log.Printf("%#v", did)
 	reqID := singularity.MakeRequestID(did)
 
 	sing := sing.NewClient(url)
