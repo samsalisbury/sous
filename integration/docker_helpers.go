@@ -14,9 +14,9 @@ import (
 
 	sing "github.com/opentable/go-singularity"
 	"github.com/opentable/go-singularity/dtos"
+	"github.com/opentable/sous/dev_support/sous_qa_setup/desc"
 	"github.com/opentable/sous/ext/singularity"
 	sous "github.com/opentable/sous/lib"
-	"github.com/opentable/sous/util/sous_qa_setup/desc"
 	"github.com/opentable/swaggering"
 	"github.com/satori/go.uuid"
 )
@@ -96,14 +96,14 @@ func BuildImageName(reponame, tag string) string {
 	return fmt.Sprintf("%s/%s:%s", registryName, reponame, tag)
 }
 
-func registerAndDeploy(ip net.IP, reponame, dir string, ports []int32) (err error) {
+func registerAndDeploy(ip net.IP, clusterName, reponame, sourceRepo, dir string, ports []int32) (err error) {
 	imageName := BuildImageName(reponame, "latest")
 	err = BuildAndPushContainer(dir, imageName)
 	if err != nil {
 		panic(fmt.Errorf("building test container failed: %s", err))
 	}
 
-	err = startInstance(SingularityURL, imageName, reponame, ports)
+	err = startInstance(SingularityURL, clusterName, imageName, sourceRepo, ports)
 	if err != nil {
 		panic(fmt.Errorf("starting a singularity instance failed: %s", err))
 	}
@@ -162,15 +162,16 @@ func loadMap(fielder swaggering.Fielder, m dtoMap) swaggering.Fielder {
 
 var notInIDre = regexp.MustCompile(`[-/]`)
 
-func startInstance(url, imageName, repoName string, ports []int32) error {
+func startInstance(url, clusterName, imageName, repoName string, ports []int32) error {
 	did := sous.DeployID{
 		ManifestID: sous.ManifestID{
 			Source: sous.SourceLocation{
 				Repo: repoName,
 			},
 		},
-		Cluster: "test-cluster",
+		Cluster: clusterName,
 	}
+	log.Printf("%#v", did)
 	reqID := singularity.MakeRequestID(did)
 
 	sing := sing.NewClient(url)

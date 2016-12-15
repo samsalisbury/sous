@@ -127,7 +127,7 @@ func (c *BuildConfig) Resolve() {
 // Validate checks that the Config is well formed
 func (c *BuildConfig) Validate() error {
 	if _, ve := semv.Parse(c.Tag); ve != nil {
-		return fmt.Errorf("build config: tag format %q invalid: %s", c.Tag, ve)
+		return fmt.Errorf("semver git tag required.  invalid tag: %q", c.Tag)
 	}
 	return nil
 }

@@ -10,6 +10,7 @@ install:
 # If these are wrong, bail out immediately
 - "./bin/vendor-check"
 - "./bin/check-gofmt"
+- "export SOUS_QA_DESC=${TRAVIS_BUILD_DIR}/${SOUS_QA_DESC}"
 - "sous_qa_setup --compose-dir ./integration/test-registry/ --out-path=$SOUS_QA_DESC"
 script:
 - "./bin/test-until-success 3"
@@ -19,7 +20,7 @@ after_success:
 - bin/codecov -f /tmp/sous-cover/count_merged.txt
 env:
   global:
-  - SOUS_QA_DESC=sous_qa_desc.json
+  - SOUS_QA_DESC=qa_desc.json
   - GIT_AUTHOR_NAME=SousCI
   - GIT_COMMITTER_NAME=SousCI
   - GIT_AUTHOR_EMAIL=sous@nowhere.in.particular.com

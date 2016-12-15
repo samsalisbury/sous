@@ -17,7 +17,7 @@ import (
 )
 
 func inMemoryDB(name string) *sql.DB {
-	db, err := GetDatabase(&DBConfig{"sqlite3", InMemoryConnection(name)})
+	db, err := GetDatabase(&DBConfig{"sqlite3_sous", InMemoryConnection(name)})
 	if err != nil {
 		panic(err)
 	}
@@ -40,7 +40,7 @@ func BenchmarkRecreateDB(b *testing.B) {
 	}()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, err := GetDatabase(&DBConfig{"sqlite3", "testdata/test.db"})
+		_, err := GetDatabase(&DBConfig{"sqlite3_sous", "testdata/test.db"})
 		if err != nil {
 			b.Log(err)
 		}
@@ -57,7 +57,7 @@ func BenchmarkCreateDB(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		dbName := fmt.Sprintf("testdata/test%d.db", i)
-		_, err := GetDatabase(&DBConfig{"sqlite3", dbName})
+		_, err := GetDatabase(&DBConfig{"sqlite3_sous", dbName})
 		if err != nil {
 			b.Log(err)
 		}
@@ -68,7 +68,7 @@ func BenchmarkCreateInMemoryDB(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		dbName := fmt.Sprintf("inmemory%d.db", i)
-		_, err := GetDatabase(&DBConfig{"sqlite3", InMemoryConnection(dbName)})
+		_, err := GetDatabase(&DBConfig{"sqlite3_sous", InMemoryConnection(dbName)})
 		if err != nil {
 			b.Log(err)
 		}

@@ -37,7 +37,7 @@ func TestBuildDeployments(t *testing.T) {
 	drc.BecomeFoolishlyTrusting()
 
 	db, err := docker.GetDatabase(&docker.DBConfig{
-		Driver:     "sqlite3",
+		Driver:     "sqlite3_sous",
 		Connection: docker.InMemoryConnection("testresolve"),
 	})
 	if err != nil {

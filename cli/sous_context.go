@@ -18,7 +18,8 @@ func init() { TopLevelCommands["context"] = &SousContext{} }
 
 const sousContextHelp = `show the current build context
 
-context prints out sous's view of your current context
+sous context describes Sous's understanding of the state of your
+Git respository.
 
 args:
 `
