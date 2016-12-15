@@ -183,6 +183,7 @@ func (db *deploymentBuilder) assignClusterName() error {
 
 		id := db.Target.ID()
 		id.Cluster = nn
+
 		checkID := MakeRequestID(id)
 		sous.Log.Vomit.Printf("Trying hypothetical request ID: %s", checkID)
 		if checkID == db.request.Id {

@@ -45,7 +45,7 @@ func newInMemoryDB(name string) *sql.DB {
 	return db
 }
 
-func TestGetRunningDeploymentSet_all(t *testing.T) {
+func TestGetRunningDeploymentSet_testCluster(t *testing.T) {
 	//sous.Log.Vomit.SetFlags(sous.Log.Vomit.Flags() | log.Ltime)
 	//sous.Log.Vomit.SetOutput(os.Stderr)
 	//sous.Log.Vomit.Print("Starting stderr output")
@@ -61,7 +61,9 @@ func TestGetRunningDeploymentSet_all(t *testing.T) {
 	client := singularity.NewRectiAgent()
 	d := singularity.NewDeployer(client)
 
-	ds, which := deploymentWithRepo(nc, assert, d, "github.com/opentable/docker-grafana")
+	clusters := []string{"test-cluster"}
+
+	ds, which := deploymentWithRepo(clusters, nc, assert, d, "github.com/opentable/docker-grafana")
 	deps := ds.Snapshot()
 	if assert.Equal(3, len(deps)) {
 		grafana := deps[which]
@@ -79,7 +81,7 @@ func TestGetRunningDeploymentSet_all(t *testing.T) {
 }
 
 // TODO: do the double-run in a single test rather than rely on deficiencies in our testing infra
-func TestGetRunningDeploymentSet_all2(t *testing.T) {
+func TestGetRunningDeploymentSet_testCluster2(t *testing.T) {
 	//sous.Log.Vomit.SetFlags(sous.Log.Vomit.Flags() | log.Ltime)
 	//sous.Log.Vomit.SetOutput(os.Stderr)
 	//sous.Log.Vomit.Print("Starting stderr output")
@@ -95,9 +97,81 @@ func TestGetRunningDeploymentSet_all2(t *testing.T) {
 	client := singularity.NewRectiAgent()
 	d := singularity.NewDeployer(client)
 
-	ds, which := deploymentWithRepo(nc, assert, d, "github.com/opentable/docker-grafana")
+	clusters := []string{"test-cluster"}
+
+	ds, which := deploymentWithRepo(clusters, nc, assert, d, "github.com/opentable/docker-grafana")
 	deps := ds.Snapshot()
 	if assert.Equal(3, len(deps)) {
+		grafana := deps[which]
+		assert.Equal(SingularityURL, grafana.Cluster.BaseURL)
+		assert.Regexp("^0\\.1", grafana.Resources["cpus"])    // XXX strings and floats...
+		assert.Regexp("^100\\.", grafana.Resources["memory"]) // XXX strings and floats...
+		assert.Equal("1", grafana.Resources["ports"])         // XXX strings and floats...
+		assert.Equal(17, grafana.SourceID.Version.Patch)
+		assert.Equal("91495f1b1630084e301241100ecf2e775f6b672c", grafana.SourceID.Version.Meta)
+		assert.Equal(1, grafana.NumInstances)
+		assert.Equal(sous.ManifestKindService, grafana.Kind)
+	}
+
+	ResetSingularity()
+}
+
+func TestGetRunningDeploymentSet_otherCluster(t *testing.T) {
+	//sous.Log.Vomit.SetFlags(sous.Log.Vomit.Flags() | log.Ltime)
+	//sous.Log.Vomit.SetOutput(os.Stderr)
+	//sous.Log.Vomit.Print("Starting stderr output")
+	sous.Log.Debug.SetFlags(sous.Log.Debug.Flags() | log.Ltime)
+	sous.Log.Debug.SetOutput(os.Stderr)
+	sous.Log.Debug.Print("Starting stderr output")
+	assert := assert.New(t)
+
+	registerLabelledContainers()
+	drc := docker_registry.NewClient()
+	drc.BecomeFoolishlyTrusting()
+	nc := docker.NewNameCache("", drc, newInMemoryDB("grds"))
+	client := singularity.NewRectiAgent()
+	d := singularity.NewDeployer(client)
+
+	clusters := []string{"other-cluster"}
+
+	ds, which := deploymentWithRepo(clusters, nc, assert, d, "github.com/opentable/docker-grafana")
+	deps := ds.Snapshot()
+	if assert.Equal(1, len(deps)) {
+		grafana := deps[which]
+		assert.Equal(SingularityURL, grafana.Cluster.BaseURL)
+		assert.Regexp("^0\\.1", grafana.Resources["cpus"])    // XXX strings and floats...
+		assert.Regexp("^100\\.", grafana.Resources["memory"]) // XXX strings and floats...
+		assert.Equal("1", grafana.Resources["ports"])         // XXX strings and floats...
+		assert.Equal(17, grafana.SourceID.Version.Patch)
+		assert.Equal("91495f1b1630084e301241100ecf2e775f6b672c", grafana.SourceID.Version.Meta)
+		assert.Equal(1, grafana.NumInstances)
+		assert.Equal(sous.ManifestKindService, grafana.Kind)
+	}
+
+	ResetSingularity()
+}
+
+func TestGetRunningDeploymentSet_all(t *testing.T) {
+	sous.Log.Vomit.SetFlags(sous.Log.Vomit.Flags() | log.Ltime)
+	sous.Log.Vomit.SetOutput(os.Stderr)
+	sous.Log.Vomit.Print("Starting stderr output")
+	sous.Log.Debug.SetFlags(sous.Log.Debug.Flags() | log.Ltime)
+	sous.Log.Debug.SetOutput(os.Stderr)
+	sous.Log.Debug.Print("Starting stderr output")
+	assert := assert.New(t)
+
+	registerLabelledContainers()
+	drc := docker_registry.NewClient()
+	drc.BecomeFoolishlyTrusting()
+	nc := docker.NewNameCache("", drc, newInMemoryDB("grds"))
+	client := singularity.NewRectiAgent()
+	d := singularity.NewDeployer(client)
+
+	clusters := []string{"test-cluster", "other-cluster"}
+
+	ds, which := deploymentWithRepo(clusters, nc, assert, d, "github.com/opentable/docker-grafana")
+	deps := ds.Snapshot()
+	if assert.Equal(4, len(deps)) {
 		grafana := deps[which]
 		assert.Equal(SingularityURL, grafana.Cluster.BaseURL)
 		assert.Regexp("^0\\.1", grafana.Resources["cpus"])    // XXX strings and floats...
@@ -155,7 +229,9 @@ func TestMissingImage(t *testing.T) {
 	// ****
 	time.Sleep(1 * time.Second)
 
-	_, which := deploymentWithRepo(nc, assert, deployer, repoOne)
+	clusters := []string{"test-cluster"}
+
+	_, which := deploymentWithRepo(clusters, nc, assert, deployer, repoOne)
 	assert.Equal(which, none, "opentable/one was deployed")
 
 	ResetSingularity()
@@ -224,7 +300,8 @@ func TestResolve(t *testing.T) {
 	// ****
 	time.Sleep(3 * time.Second)
 
-	ds, which := deploymentWithRepo(nc, assert, deployer, repoOne)
+	clusters := []string{"test-cluster"}
+	ds, which := deploymentWithRepo(clusters, nc, assert, deployer, repoOne)
 	deps := ds.Snapshot()
 	if assert.NotEqual(which, none, "opentable/one not successfully deployed") {
 		one := deps[which]
@@ -264,7 +341,7 @@ func TestResolve(t *testing.T) {
 	}
 	// ****
 
-	ds, which = deploymentWithRepo(nc, assert, deployer, repoTwo)
+	ds, which = deploymentWithRepo(clusters, nc, assert, deployer, repoTwo)
 	deps = ds.Snapshot()
 	if assert.NotEqual(none, which, "opentable/two no longer deployed after resolve") {
 		assert.Equal(1, deps[which].NumInstances)
@@ -291,8 +368,11 @@ func TestResolve(t *testing.T) {
 
 var none = sous.DeployID{}
 
-func deploymentWithRepo(reg sous.Registry, assert *assert.Assertions, sc sous.Deployer, repo string) (sous.Deployments, sous.DeployID) {
-	clusters := sous.Clusters{"test-cluster": {BaseURL: SingularityURL}}
+func deploymentWithRepo(clusterNames []string, reg sous.Registry, assert *assert.Assertions, sc sous.Deployer, repo string) (sous.Deployments, sous.DeployID) {
+	clusters := make(sous.Clusters, len(clusterNames))
+	for _, name := range clusterNames {
+		clusters[name] = &sous.Cluster{BaseURL: SingularityURL}
+	}
 	deps, err := sc.RunningDeployments(reg, clusters)
 	if assert.Nil(err) {
 		return deps, findRepo(deps, repo)
@@ -339,8 +419,9 @@ func manifest(nc sous.Registry, drepo, containerDir, sourceURL, version string) 
 }
 
 func registerLabelledContainers() {
-	registerAndDeploy(ip, "hello-labels", "hello-labels", []int32{})
-	registerAndDeploy(ip, "hello-server-labels", "hello-server-labels", []int32{80})
-	registerAndDeploy(ip, "grafana-repo", "grafana-labels", []int32{})
+	registerAndDeploy(ip, "test-cluster", "hello-labels", "github.com/docker-library/hello-world", "hello-labels", []int32{})
+	registerAndDeploy(ip, "test-cluster", "hello-server-labels", "github.com/docker/dockercloud-hello-world", "hello-server-labels", []int32{80})
+	registerAndDeploy(ip, "test-cluster", "grafana-repo", "github.com/opentable/docker-grafana", "grafana-labels", []int32{})
+	registerAndDeploy(ip, "other-cluster", "grafana-repo", "github.com/opentable/docker-grafana", "grafana-labels", []int32{})
 	imageName = fmt.Sprintf("%s/%s:%s", registryName, "grafana-repo", "latest")
 }
