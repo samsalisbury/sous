@@ -23,6 +23,7 @@ sudo mv docker-compose /usr/local/bin
 
 echo Installing local tools
 go get github.com/kardianos/govendor github.com/nyarly/engulf github.com/nyarly/legendary
+go install ./dev_support/sous_qa_setup
 (cd integration/test-registry && docker-compose pull)
 
 echo Results:

@@ -3,6 +3,12 @@
 	"ignore": "test",
 	"package": [
 		{
+			"checksumSHA1": "FW4FhNGYsGMG3aGAMlpjvtoy5vk=",
+			"path": "github.com/SeeSpotRun/coerce",
+			"revision": "254d9a2987155861565f76fe962b61429284c197",
+			"revisionTime": "2016-08-18T22:37:30Z"
+		},
+		{
 			"checksumSHA1": "htjvdG/znrHmFYRQBqA2vHrJsF4=",
 			"comment": "v0.10.0-16-gcd7d1bb",
 			"path": "github.com/Sirupsen/logrus",
@@ -151,6 +157,12 @@
 			"path": "github.com/mattn/go-sqlite3",
 			"revision": "38ee283dabf11c9cbdb968eebd79b1fa7acbabe6",
 			"revisionTime": "2016-05-14T12:23:48Z"
+		},
+		{
+			"checksumSHA1": "8qtroQuabLt2WML4Oh/Qzgp9mW8=",
+			"path": "github.com/nyarly/inlinefiles/templatestore",
+			"revision": "8a95d21096c6f05a39cfc2533426da3d193c08bc",
+			"revisionTime": "2016-12-10T01:35:37Z"
 		},
 		{
 			"checksumSHA1": "xe9ZSO5u8uyDZiCe7lq5wkKfNt0=",

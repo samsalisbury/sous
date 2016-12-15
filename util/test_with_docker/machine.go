@@ -101,6 +101,23 @@ func (m *Machine) RebuildService(dir, name string) error {
 	return rebuildService(dir, name, env)
 }
 
+// Shutdown receives a command as produced by ComposeServices is shuts down
+// services launched for testing.
+// If passed a nil command, it functions as a no-op. This means that you can
+// do things like:
+//   ip, cmd, err := ComposeServices(...)
+//   defer Shutdown(cmd)
+func (m *Machine) Shutdown(c *command) {
+	if c != nil {
+		dockerComposeDown(c)
+	}
+}
+
+// ShutdownNow implements Agent for Machine
+func (m *Machine) ShutdownNow() {
+	dockerComposeDown(nil)
+}
+
 func (m *Machine) MD5s(paths ...string) (md5s map[string]string, err error) {
 	stdout, stderr, err := dockerMachine(append([]string{"ssh", m.name, "sudo", "md5sum"}, paths...)...)
 	md5s = make(map[string]string)
@@ -170,18 +187,6 @@ func (m *Machine) RestartDaemon() error {
 func (m *Machine) Exec(args ...string) error {
 	_, _, err := dockerMachine(append([]string{"ssh", m.name, "sudo"}, args...)...)
 	return err
-}
-
-// Shutdown receives a command as produced by ComposeServices is shuts down
-// services launched for testing.
-// If passed a nil command, it functions as a no-op. This means that you can
-// do things like:
-//   ip, cmd, err := ComposeServices(...)
-//   defer Shutdown(cmd)
-func (m *Machine) Shutdown(c *command) {
-	if c != nil {
-		dockerComposeDown(c)
-	}
 }
 
 func dockerMachine(args ...string) (stdout, stderr string, err error) {
