@@ -1,11 +1,11 @@
 # sous [![Build Status](https://secure.travis-ci.org/opentable/sous.png?branch=master)](http://travis-ci.org/opentable/sous) [![Report card](https://goreportcard.com/badge/github.com/opentable/sous)](https://goreportcard.com/report/github.com/opentable/sous)
-
 Sous is a tool for building, testing, and deploying applications, using
 Docker, Mesos, and Singularity.
 
 For contribution guidelines, see [here](./doc/contributions.md).
 
 [View documentation in the doc/ directory.](https://github.com/opentable/sous/tree/master/doc)
+
 
 # Using Sous
 
@@ -55,13 +55,13 @@ The following commands will contact the Sous server and create your project in e
 # Enter the directory of your project.
 $ cd <my-project>
 
-# Connect to the Sous server and register the project's existence.  
+# Connect to the Sous server and register the project's existence.
 $ sous init
 ```
 
 You can limit this to a single Mesos cluster by
 replacing the last command with `sous init -cluster <name>`
- 
+
 Sous will provide a list of known clusters if you give it bad input.
 
 To add or remove your project from available Mesos clusters, use `sous manifest get > manifest.yaml` to download the current state of deployments. After editing the returned yaml file, use `sous manifest set < manifest.yaml` to send the changes to your Sous server.
