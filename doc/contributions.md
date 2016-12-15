@@ -35,6 +35,12 @@ This will not only install the `sous` executable in `$GOPATH/bin` (and therefore
 but it will also fetch the source code into `$GOPATH/src/github.com/opentable/sous`.
 You're already ready to branch, hack, and pull-request.
 
+## Running tests
+
+Use `./bin/test` to run quick tests.
+
+Use `./bin/integration` to run full integration tests as well as all other tests.
+
 ## Workflow
 
 We've adopted a pull-request, git-flow-y model of development for Sous.
