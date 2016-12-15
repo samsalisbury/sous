@@ -95,6 +95,7 @@ func setupManagers(t *testing.T) (*GitStateManager, *DiskStateManager) {
 	git config --local receive.denyCurrentBranch ignore
 	git config user.email sous@opentable.com
 	git config user.name Sous
+	git config user.signingkey ""
 	git commit -m ""`, `testdata/origin`)
 	runScript(t, `git clone origin target`, `testdata`)
 	runScript(t, `git config user.email sous@opentable.com

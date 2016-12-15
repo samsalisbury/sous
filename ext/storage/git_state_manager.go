@@ -36,7 +36,14 @@ func (gsm *GitStateManager) git(cmd ...string) error {
 	}
 	git := exec.Command(`git`, cmd...)
 	git.Dir = gsm.DiskStateManager.BaseDir
-	//git.Env = []string{"GIT_CONFIG_NOSYSTEM=true", "HOME=none", "XDG_CONFIG_HOME=none"}
+
+	// This had been commented out, with a comment to the effect that it was fixing a bug.
+	// However, it could lead to come confusion because the behavior of Sous
+	// server would change based on the configuration of git outside of the GDM
+	// repo.
+	// It's also definitely causing problems in testing for me (JL) because my
+	// local git configuration effects testing behaviors.
+	git.Env = []string{"GIT_CONFIG_NOSYSTEM=true", "HOME=none", "XDG_CONFIG_HOME=none"}
 	out, err := git.CombinedOutput()
 	if err == nil {
 		sous.Log.Debug.Printf("%+v: success", git.Args)
