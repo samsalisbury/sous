@@ -14,8 +14,8 @@ type resolveSourceLocationInput struct {
 }
 
 func TestResolveSourceLocation_failure(t *testing.T) {
-	assertSourceContextError(t, &sous.ResolveFilter{}, &SourceContextDiscovery{}, "no repo specified, please use -repo or run sous inside a git repo")
-	assertSourceContextError(t, nil, &SourceContextDiscovery{}, "no repo specified, please use -repo or run sous inside a git repo")
+	assertSourceContextError(t, &sous.ResolveFilter{}, &SourceContextDiscovery{}, "no repo specified, please use -repo or run sous inside a git repo with a configured remote")
+	assertSourceContextError(t, nil, &SourceContextDiscovery{}, "no repo specified, please use -repo or run sous inside a git repo with a configured remote")
 	assertSourceContextError(t,
 		&sous.ResolveFilter{Offset: "some/offset"},
 		&SourceContextDiscovery{},
