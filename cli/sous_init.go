@@ -29,7 +29,10 @@ usage: sous init
 Sous init uses contextual information from your current source code tree and
 repository to generate a basic configuration for that project. You will need to
 flesh out some additional details.
-`
+
+init must be invoked in the root of a git repository with configured remotes.
+
+init will register the project on every known server.`
 
 // Help returns the help string for this command
 func (si *SousInit) Help() string { return sousInitHelp }
