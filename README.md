@@ -6,6 +6,7 @@ For contribution guidelines, see [here](./doc/contributions.md).
 
 [View documentation in the doc/ directory.](https://github.com/opentable/sous/tree/master/doc)
 
+
 # Using Sous
 
 If you're looking to get started using Sous
