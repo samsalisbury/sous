@@ -125,10 +125,9 @@ func teardownServices(testAgent test_with_docker.Agent, opts *options) {
 
 func setupServices(testAgent test_with_docker.Agent, opts *options) *desc.EnvDesc {
 	desc := desc.EnvDesc{}
-	var err error
 
-	desc.AgentIP, err = testAgent.IP()
-	if err != nil {
+	var err error
+	if desc.AgentIP, err = testAgent.IP(); err != nil {
 		log.Fatal(err)
 	}
 	if desc.AgentIP == nil {
@@ -138,13 +137,11 @@ func setupServices(testAgent test_with_docker.Agent, opts *options) *desc.EnvDes
 	desc.RegistryName = fmt.Sprintf("%s:%d", desc.AgentIP, 5000)
 	desc.SingularityURL = fmt.Sprintf("http://%s:%d/singularity", desc.AgentIP, 7099)
 
-	err = registryCerts(testAgent, opts.composeDir, desc)
-	if err != nil {
+	if err := registryCerts(testAgent, opts.composeDir, desc); err != nil {
 		log.Fatal(err)
 	}
 
-	_, err = testAgent.ComposeServices(opts.composeDir, map[string]uint{"Singularity": 7099, "Registry": 5000})
-	if err != nil {
+	if _, err := testAgent.ComposeServices(opts.composeDir, map[string]uint{"Singularity": 7099, "Registry": 5000}); err != nil {
 		log.Fatal(err)
 	}
 
