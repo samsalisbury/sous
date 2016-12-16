@@ -23,7 +23,7 @@ func newTargetManifestID(f *sous.ResolveFilter, discovered *SourceContextDiscove
 		offset = f.Offset
 	}
 	if repo == "" {
-		return TargetManifestID{}, errors.Errorf("no repo specified, please use -repo or run sous inside a git repo")
+		return TargetManifestID{}, errors.Errorf("no repo specified, please use -repo or run sous inside a git repo with a configured remote")
 	}
 	return TargetManifestID{
 		Source: sous.SourceLocation{
