@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -17,35 +19,25 @@ type Machine struct {
 }
 
 func dmTrial() agentBuilderF {
-	dm := dockerMachineName()
-	if dm != "" {
-		return func(c agentCfg) Agent {
-			log.Println("Using docker-machine", dm)
-			return &Machine{name: dm, serviceTimeout: c.timeout}
-		}
+	// If docker-machine is not installed, give up now.
+	if _, err := exec.LookPath("docker-machine"); err != nil {
+		return nil
 	}
-	return nil
+	dm := dockerMachineName()
+	if dm == "" {
+		log.Printf("If you want to use docker-machine, make sure you load its environment using 'docker-machine env <docker machine name>.")
+		return nil
+	}
+	return func(c agentCfg) Agent {
+		log.Println("Using docker-machine", dm)
+		return &Machine{name: dm, serviceTimeout: c.timeout}
+	}
 }
 
-// dockerMachineName returns the name of an existing docker machine by invoking
-// `docker-machine ls -q`
-//
-// If any  docker machines are called "default", it returns "default". If there
-// are no docker machines, or the command fails, it returns  an empty string. In
-// all other cases, it returns the first machine name output by the command.
+// dockerMachineName returns the name of the currently loaded docker machine
+// by sniffing the DOCKER_MACHINE_NAME environment variable.
 func dockerMachineName() string {
-	ls := runCommand("docker-machine", "ls", "-q")
-	if ls.err != nil {
-		log.Printf("docker-machine ls failed:\n  Stdout:\n%s\n  Stderr:\n%s", ls.stdout, ls.stderr)
-		return ""
-	}
-	machines := strings.Split(ls.stdout, "\n")
-	for _, m := range machines {
-		if m == "default" {
-			return m
-		}
-	}
-	return machines[0]
+	return os.Getenv("DOCKER_MACHINE_NAME")
 }
 
 func (m *Machine) ComposeServices(dir string, servicePorts serviceMap) (shutdown *command, err error) {
