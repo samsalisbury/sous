@@ -24,14 +24,14 @@ func dmTrial() agentBuilderF {
 		return nil
 	}
 	dm := dockerMachineName()
-	if dm != "" {
-		return func(c agentCfg) Agent {
-			log.Println("Using docker-machine", dm)
-			return &Machine{name: dm, serviceTimeout: c.timeout}
-		}
+	if dm == "" {
+		log.Printf("If you want to use docker-machine, make sure you load its environment using 'docker-machine env <docker machine name>.")
+		return nil
 	}
-	log.Printf("If you want to use docker-machine, make sure you load its environment using 'docker-machine env <docker machine name>.")
-	return nil
+	return func(c agentCfg) Agent {
+		log.Println("Using docker-machine", dm)
+		return &Machine{name: dm, serviceTimeout: c.timeout}
+	}
 }
 
 // dockerMachineName returns the name of the currently loaded docker machine
