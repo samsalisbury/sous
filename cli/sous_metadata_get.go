@@ -25,7 +25,7 @@ func init() { MetadataSubcommands["get"] = &SousMetadataGet{} }
 
 const sousMetadataGetHelp = `query deployment metadata`
 
-func (*SousMetadataGet) Help() string { return sousMetadataHelp }
+func (*SousMetadataGet) Help() string { return sousMetadataGetHelp }
 
 func (smg *SousMetadataGet) AddFlags(fs *flag.FlagSet) {
 	MustAddFlags(fs, &smg.DeployFilterFlags, MetadataFilterFlagsHelp)
