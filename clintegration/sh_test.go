@@ -71,4 +71,13 @@ func SomethingSomething(t *testing.T) {
 	sous deploy
 	`)
 
+	// When do these get run?
+	// I like: as soon as possible,
+	// (i.e. After:
+	//     when the "before" step has been run => immediately
+	//     otherwise => as soon as the before step is run
+	// )
+	// BUT how do we catch a mispelled "before"?
+	//  One option: use return values for "before"s, not strings.
+
 }
