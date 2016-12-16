@@ -7,6 +7,4 @@ check-compile.results
 testdata/
 util/cmdr/cmdr-example/cmdr-example
 qa_desc.json
-dev_support/sous_qa_setup/sous_qa_setup
-docker-compose
-
+sous_qa_setup

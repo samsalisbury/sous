@@ -37,9 +37,12 @@ You're already ready to branch, hack, and pull-request.
 
 ## Running tests
 
-Use `./bin/test` to run quick tests.
+Use `./bin/test` to run normal unit tests.
 
-Use `./bin/integration` to run full integration tests as well as all other tests.
+Use `./bin/dev-integration` to run full integration tests.
+
+In general, run `bin/test` in the course of normal development,
+reserving `bin/dev-integration` for just before pushing a pull request.
 
 ## Workflow
 
