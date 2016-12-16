@@ -47,9 +47,9 @@ func TestShAssumptions(t *testing.T) {
 }
 
 func SomethingSomething(t *testing.T) {
-	shell := ShellTest(t)
+	shell := shelltest.New(t)
 
-	shell.First("setup", `
+	setup := shell.Block("setup", `
 	git clone our.git.server/sous-server
 	cd sous-server
 	sous build
@@ -59,25 +59,16 @@ func SomethingSomething(t *testing.T) {
 			t.ErrorIf(!res.OutputMatches(`Deployed`), "No report of deployment")
 		})
 
-	shell.After("setup", "configuration", `
+	config := setup.Block("configuration", `
 	sous config
 	`)
 
-	shell.After("configuration", "deploy project", `
+	deploy := config.Block("deploy project", `
 	git clone our.git.server/test-project
 	cd test-project
 	sous init
 	sous build
 	sous deploy
 	`)
-
-	// When do these get run?
-	// I like: as soon as possible,
-	// (i.e. After:
-	//     when the "before" step has been run => immediately
-	//     otherwise => as soon as the before step is run
-	// )
-	// BUT how do we catch a mispelled "before"?
-	//  One option: use return values for "before"s, not strings.
 
 }

@@ -1,4 +1,4 @@
-package clintegration
+package shelltest
 
 import (
 	"bufio"
@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -39,12 +38,6 @@ type (
 		pipe io.Reader
 		buf  []byte
 		sync.Mutex
-	}
-
-	Result struct {
-		Script         string
-		Exit           int
-		Stdout, Stderr string
 	}
 )
 
@@ -110,21 +103,6 @@ func (sh *CaptiveShell) Run(script string) (Result, error) {
 		Stdout: stdout,
 		Stderr: stderr,
 	}, nil
-}
-
-func (res Result) StdoutMatches(pattern string) bool {
-	re := regexp.MustCompile(pattern)
-	return re.MatchString(res.Stdout)
-}
-
-func (res Result) StderrMatches(pattern string) bool {
-	re := regexp.MustCompile(pattern)
-	return re.MatchString(res.Stderr)
-}
-
-func (res Result) OutputMatches(pattern string) bool {
-	re := regexp.MustCompile(pattern)
-	return re.MatchString(res.Stderr) || re.MatchString(res.Stdout)
 }
 
 func (ls *liveStream) reader(events <-chan int) {
