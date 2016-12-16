@@ -153,6 +153,13 @@ func TestInvokeQuery(t *testing.T) {
 	assert.NotNil(exe)
 }
 
+func TestInvokeQueryArtifacts(t *testing.T) {
+	assert := assert.New(t)
+
+	exe := justCommand(t, []string{`sous`, `query`, `artifacts`})
+	assert.NotNil(exe)
+}
+
 func TestInvokeMetadataGet(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
@@ -281,21 +288,8 @@ options:
     	source code relative repository offset
   -repo string
     	source code repository location
-
-func TestInvokeQueryArtifacts(t *testing.T) {
-	assert := assert.New(t)
-
-	stdout := &bytes.Buffer{}
-	stderr := &bytes.Buffer{}
-
-	c, err := NewSousCLI(semv.MustParse(`1.2.3`), stdout, stderr)
-	assert.NoError(err)
-
-	exe, err := c.Prepare([]string{`sous`, `query`, `artifacts`})
-	assert.NoError(err)
-	assert.NotNil(exe)
-}
 */
+
 func TestInvokeWithUnknownFlags(t *testing.T) {
 	log.SetFlags(log.Flags() | log.Lshortfile)
 	assert := assert.New(t)

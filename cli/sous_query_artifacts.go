@@ -20,6 +20,10 @@ Note that Sous may discover more images after attempting a rectify
 
 `
 
+func (*SousQueryArtifacts) RegisterOn(psy Addable) {
+	psy.Add(graph.DryrunNeither)
+}
+
 // Help prints the help
 func (*SousQueryArtifacts) Help() string { return sousQueryArtifactsHelp }
 
