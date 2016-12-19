@@ -11,8 +11,8 @@ type (
 	TriggerChannel  chan TriggerType
 	announceChannel chan error
 
-	// AutoResolveListener listens to trigger channels and writes to announceChannel.
-	AutoResolveListener func(tc, done TriggerChannel, ac announceChannel)
+	// autoResolveListener listens to trigger channels and writes to announceChannel.
+	autoResolveListener func(tc, done TriggerChannel, ac announceChannel)
 
 	// An AutoResolver sets up the interactions to automatically run an infinite
 	// loop of resolution cycles.
@@ -21,7 +21,7 @@ type (
 		StateReader
 		*Resolver
 		*LogSet
-		listeners []AutoResolveListener
+		listeners []autoResolveListener
 	}
 )
 
@@ -36,7 +36,7 @@ func NewAutoResolver(rez *Resolver, sr StateReader, ls *LogSet) *AutoResolver {
 		Resolver:    rez,
 		StateReader: sr,
 		LogSet:      ls,
-		listeners:   make([]AutoResolveListener, 0),
+		listeners:   make([]autoResolveListener, 0),
 	}
 	ar.StandardListeners()
 	return ar
@@ -52,7 +52,7 @@ func (ar *AutoResolver) StandardListeners() {
 	})
 }
 
-func (ar *AutoResolver) addListener(f AutoResolveListener) {
+func (ar *AutoResolver) addListener(f autoResolveListener) {
 	ar.listeners = append(ar.listeners, f)
 }
 
@@ -71,7 +71,7 @@ func (ar *AutoResolver) Kickoff() TriggerChannel {
 	for _, tf := range ar.listeners {
 		ch := make(announceChannel)
 		fanout = append(fanout, ch)
-		go func(f AutoResolveListener, ch announceChannel) {
+		go func(f autoResolveListener, ch announceChannel) {
 			loopTilDone(func() {
 				f(trigger, done, ch)
 			}, done)
