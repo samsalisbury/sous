@@ -13,6 +13,7 @@ import (
 	"time"
 )
 
+// Machine represents a Docker machine-based agent.
 type Machine struct {
 	name           string
 	serviceTimeout time.Duration
@@ -28,6 +29,10 @@ func dmTrial() agentBuilderF {
 		log.Printf("If you want to use docker-machine, make sure you load its environment using 'docker-machine env <docker machine name>.")
 		return nil
 	}
+	if !dockerMachineKnown(dm) {
+		log.Printf("DOCKER_MACHINE_NAME=%q but that name is not included in `docker-machine ls`", dm)
+		return nil
+	}
 	return func(c agentCfg) Agent {
 		log.Println("Using docker-machine", dm)
 		return &Machine{name: dm, serviceTimeout: c.timeout}
@@ -40,6 +45,24 @@ func dockerMachineName() string {
 	return os.Getenv("DOCKER_MACHINE_NAME")
 }
 
+// dockerMachineKnown returns true if `docker-machine ls -q` returns a Docker
+// machine named name.
+func dockerMachineKnown(name string) bool {
+	ls := runCommand("docker-machine", "ls", "-q")
+	if ls.err != nil {
+		log.Printf("docker-machine ls failed:\n  Stdout:\n%s\n  Stderr:\n%s", ls.stdout, ls.stderr)
+		return false
+	}
+	machines := strings.Split(ls.stdout, "\n")
+	for _, m := range machines {
+		if m == name {
+			return true
+		}
+	}
+	return false
+}
+
+// ComposeServices uses Docker compose to start services.
 func (m *Machine) ComposeServices(dir string, servicePorts serviceMap) (shutdown *command, err error) {
 	ip, err := m.IP()
 	if err != nil {
@@ -50,10 +73,14 @@ func (m *Machine) ComposeServices(dir string, servicePorts serviceMap) (shutdown
 	return composeService(dir, ip, env, servicePorts, m.serviceTimeout)
 }
 
+// Cleanup does nothing and always returns nil.
 func (m *Machine) Cleanup() error {
 	return nil
 }
 
+// DifferingFiles returns a slice of string slices representing files that
+// differ in the Docker machine, compared with the provided list of paths on the
+// host machine.
 func (m *Machine) DifferingFiles(pathPairs ...[]string) (differentPairs [][]string, err error) {
 	localPaths, remotePaths := make([]string, 0, len(pathPairs)), make([]string, 0, len(pathPairs))
 
@@ -71,6 +98,7 @@ func (m *Machine) DifferingFiles(pathPairs ...[]string) (differentPairs [][]stri
 	return fileDiffs(pathPairs, localMD5s, remoteMD5s), nil
 }
 
+// IP returns the IP address of the Docker machine this Machine relates to.
 func (m *Machine) IP() (ip net.IP, err error) {
 	alreadyStarted := regexp.MustCompile("is already running")
 	_, stderr, err := dockerMachine("start", m.name)
@@ -88,6 +116,8 @@ func (m *Machine) IP() (ip net.IP, err error) {
 	return
 }
 
+// RebuildService builds a Docker image called name based on the Dockerfile in
+// dir.
 func (m *Machine) RebuildService(dir, name string) error {
 	env := m.env()
 	return rebuildService(dir, name, env)
@@ -110,6 +140,8 @@ func (m *Machine) ShutdownNow() {
 	dockerComposeDown(nil)
 }
 
+// MD5s returns a map of paths to their MD5 hashes, according to the contents of
+// files at paths inside the Docker machine.
 func (m *Machine) MD5s(paths ...string) (md5s map[string]string, err error) {
 	stdout, stderr, err := dockerMachine(append([]string{"ssh", m.name, "sudo", "md5sum"}, paths...)...)
 	md5s = make(map[string]string)
