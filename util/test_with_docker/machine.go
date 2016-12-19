@@ -44,12 +44,8 @@ func dockerMachineName() string {
 	return os.Getenv("DOCKER_MACHINE_NAME")
 }
 
-// dockerMachineName returns the name of an existing docker machine by invoking
-// `docker-machine ls -q`
-//
-// If any  docker machines are called "default", it returns "default". If there
-// are no docker machines, or the command fails, it returns  an empty string. In
-// all other cases, it returns the first machine name output by the command.
+// dockerMachineKnown returns true if `docker-machine ls -q` returns a Docker
+// machine named name.
 func dockerMachineKnown(name string) bool {
 	ls := runCommand("docker-machine", "ls", "-q")
 	if ls.err != nil {
