@@ -16,7 +16,8 @@ type (
 		*ResolveFilter
 	}
 
-	// A ResolveFilter filters Deployments and Clusters for the purpose of Resolve.resolve()
+	// A ResolveFilter filters Deployments and Clusters for the purpose of
+	// Resolve.resolve().
 	ResolveFilter struct {
 		Repo     string
 		Offset   string
@@ -32,7 +33,7 @@ type (
 	DeploymentPredicate func(*Deployment) bool
 )
 
-// All returns true if the ResolveFilter would allow all deployments
+// All returns true if the ResolveFilter would allow all deployments.
 func (rf *ResolveFilter) All() bool {
 	return rf.Repo == "" &&
 		rf.Offset == "" &&
@@ -66,7 +67,8 @@ func (rf *ResolveFilter) String() string {
 		cl, rp, of, fl, tg, rv)
 }
 
-// FilteredClusters returns a new Clusters relevant to the Deployments that this ResolveFilter would permit
+// FilteredClusters returns a new Clusters relevant to the Deployments that this
+// ResolveFilter would permit.
 func (rf *ResolveFilter) FilteredClusters(c Clusters) Clusters {
 	newC := make(Clusters)
 	for n, c := range c {
@@ -78,7 +80,8 @@ func (rf *ResolveFilter) FilteredClusters(c Clusters) Clusters {
 	return newC
 }
 
-// FilterDeployment behaves as a DeploymentPredicate, filtering Deployments if they match its criteria
+// FilterDeployment behaves as a DeploymentPredicate, filtering Deployments if
+// they match its criteria.
 func (rf *ResolveFilter) FilterDeployment(d *Deployment) bool {
 	if rf.Repo != "" && d.SourceID.Location.Repo != rf.Repo {
 		return false
@@ -102,7 +105,7 @@ func (rf *ResolveFilter) FilterDeployment(d *Deployment) bool {
 }
 
 // FilterManifest returns true if ???
-// TODO: @nyarly can you provide a description of what this function does
+// TODO: @nyarly can you provide a description of what this function does?
 func (rf *ResolveFilter) FilterManifest(m *Manifest) bool {
 	if rf.Repo != "" && m.Source.Repo != rf.Repo {
 		return false
@@ -122,7 +125,8 @@ func NewResolver(d Deployer, r Registry, rf *ResolveFilter) *Resolver {
 	}
 }
 
-// Rectify takes a DiffChans and issues the commands to the infrastructure to reconcile the differences
+// Rectify takes a DiffChans and issues the commands to the infrastructure to
+// reconcile the differences.
 func (r *Resolver) rectify(dcs *DeployableChans, errs chan error) {
 	d := r.Deployer
 	wg := &sync.WaitGroup{}
