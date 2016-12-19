@@ -7,5 +7,6 @@ var (
 		{"defs", "/defs", &StateDefResource{}},
 		{"manifest", "/manifest", &ManifestResource{}},
 		{"artifact", "/artifact", &ArtifactResource{}},
+		{"status", "/status", &StatusResource{}},
 	}
 )
