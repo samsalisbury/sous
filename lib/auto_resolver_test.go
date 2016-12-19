@@ -25,7 +25,7 @@ func TestDone(t *testing.T) {
 	received := false
 	var result error
 
-	ar.addListener(func(tc, done triggerChannel, ec announceChannel) {
+	ar.addListener(func(tc, done TriggerChannel, ec announceChannel) {
 		select {
 		case err := <-ec:
 			received = true
@@ -43,9 +43,9 @@ func TestAfterDone(t *testing.T) {
 	ar := setupAR()
 	ar.UpdateTime = time.Duration(1)
 
-	tc := make(triggerChannel, 1)
+	tc := make(TriggerChannel, 1)
 	ac := make(announceChannel, 1)
-	done := make(triggerChannel, 1)
+	done := make(TriggerChannel, 1)
 
 	ac <- nil
 	ar.afterDone(tc, done, ac)
@@ -62,9 +62,9 @@ func TestResolveLoop(t *testing.T) {
 	ar := setupAR()
 	ar.LogSet.Debug.SetOutput(os.Stderr)
 
-	tc := make(triggerChannel, 10)
+	tc := make(TriggerChannel, 10)
 	ac := make(announceChannel, 1)
-	done := make(triggerChannel)
+	done := make(TriggerChannel)
 
 	for i := 0; i < 10; i++ {
 		tc.trigger()
