@@ -9,14 +9,14 @@ import (
 
 type (
 
-	// A StatusHandler processes panics into 500s and other status codes
+	// A StatusHandler processes panics into 500s and other status codes.
 	StatusHandler struct {
 		*sous.LogSet
 	}
 )
 
-// HandleResponse returns a 500 and logs the error
-// It uses the LogSet provided by the graph
+// HandleResponse returns a 500 and logs the error.
+// It uses the LogSet provided by the graph.
 func (ph *StatusHandler) HandleResponse(status int, r *http.Request, w http.ResponseWriter, data interface{}) {
 	w.WriteHeader(status)
 
@@ -31,8 +31,8 @@ func (ph *StatusHandler) HandleResponse(status int, r *http.Request, w http.Resp
 	// (normal ops it might leak secure data)
 }
 
-// HandlePanic returns a 500 and logs the error
-// It uses the LogSet provided by the graph
+// HandlePanic returns a 500 and logs the error.
+// It uses the LogSet provided by the graph.
 func (ph *StatusHandler) HandlePanic(w http.ResponseWriter, r *http.Request, recovered interface{}) {
 	w.WriteHeader(http.StatusInternalServerError)
 	ph.LogSet.Warn.Printf("%+v", recovered)
