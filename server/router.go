@@ -20,7 +20,7 @@ type (
 	MetaHandler struct {
 		router        *httprouter.Router
 		graphFac      GraphFactory //XXX This is a workaround for a bug in psyringe.Clone()
-		statusHandler *StatusHandler
+		statusHandler *StatusMiddleware
 	}
 
 	// ResponseWriter wraps the the http.ResponseWriter interface
