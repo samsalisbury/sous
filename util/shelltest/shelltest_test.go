@@ -1,3 +1,5 @@
+// +build shelltesttest
+
 package shelltest
 
 import "testing"
