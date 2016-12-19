@@ -1,9 +1,3 @@
-*
-!.gitignore
-!Dockerfile
-!docker-compose.yml
-!README.md
-!docker-registry/
 self-signed.conf
 testing.crt
 testing.key
