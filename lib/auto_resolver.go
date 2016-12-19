@@ -5,7 +5,9 @@ import (
 )
 
 type (
-	TriggerType     struct{}
+	// TriggerType is an empty struct, representing some kind of trigger.
+	TriggerType struct{}
+	// TriggerChannel is a channel of TriggerType.
 	TriggerChannel  chan TriggerType
 	announceChannel chan error
 
