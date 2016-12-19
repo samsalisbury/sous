@@ -1,5 +1,5 @@
 registry:
-  build: .
+  build: docker-registry
   restart: always
   ports:
     - 5000:5000
