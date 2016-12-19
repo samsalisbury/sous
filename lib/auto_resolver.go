@@ -12,8 +12,8 @@ type (
 	// AutoResolveListener listens to trigger channels and writes to announceChannel.
 	AutoResolveListener func(tc, done triggerChannel, ac announceChannel)
 
-	// An AutoResolver sets up the interactions to automatically run an infinite loop
-	// of resolution cycles
+	// An AutoResolver sets up the interactions to automatically run an infinite
+	// loop of resolution cycles.
 	AutoResolver struct {
 		UpdateTime time.Duration
 		StateReader
@@ -27,7 +27,7 @@ func (tc triggerChannel) trigger() {
 	tc <- triggerType{}
 }
 
-// NewAutoResolver creates a new AutoResolver
+// NewAutoResolver creates a new AutoResolver.
 func NewAutoResolver(rez *Resolver, sr StateReader, ls *LogSet) *AutoResolver {
 	ar := &AutoResolver{
 		UpdateTime:  60 * time.Second,
@@ -40,7 +40,7 @@ func NewAutoResolver(rez *Resolver, sr StateReader, ls *LogSet) *AutoResolver {
 	return ar
 }
 
-// StandardListeners adds the usual listeners into the auto-resolve cycle
+// StandardListeners adds the usual listeners into the auto-resolve cycle.
 func (ar *AutoResolver) StandardListeners() {
 	ar.addListener(func(trigger, done triggerChannel, ch announceChannel) {
 		ar.afterDone(trigger, done, ch)
@@ -54,7 +54,7 @@ func (ar *AutoResolver) addListener(f AutoResolveListener) {
 	ar.listeners = append(ar.listeners, f)
 }
 
-// Kickoff starts the auto-resolve cycle
+// Kickoff starts the auto-resolve cycle.
 func (ar *AutoResolver) Kickoff() triggerChannel {
 	trigger := make(triggerChannel)
 	announce := make(announceChannel)
