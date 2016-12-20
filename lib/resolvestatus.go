@@ -28,13 +28,12 @@ type DiffResolution struct {
 // argument. It then returns that ResolveStatus immediately.
 func NewResolveStatus(f func(*ResolveStatus)) *ResolveStatus {
 	rs := &ResolveStatus{
-		Log:      make(chan DiffResolution, 10e6),
-		Errors:   make(chan error, 10e6),
+		Log:      make(chan DiffResolution, 1e6),
+		Errors:   make(chan error, 1e6),
 		finished: make(chan struct{}),
 	}
 	go func() {
 		f(rs)
-		close(rs.Errors)
 		close(rs.Log)
 		rs.write(func() {
 			select {

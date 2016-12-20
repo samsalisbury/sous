@@ -80,6 +80,9 @@ func TestResolveStatus(t *testing.T) {
 					t.Fatalf("phase must be either func() or func() error")
 				}
 			}
+
+			close(rs.Errors) // This is usually done by the rectify function.
+
 			<-block // Wait for signal from the test that this func may finish.
 		})
 
