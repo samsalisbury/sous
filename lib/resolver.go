@@ -159,6 +159,52 @@ func (r *Resolver) Resolve(intended Deployments, clusters Clusters) error {
 	)
 }
 
+// Begin is similar to Resolve, except that it returns a ResolveStatus almost
+// immediately, which can be queried for information about the ongoing
+// resolution. You can check if resolution is finished by calling Done() on the
+// returned ResolveStatus.
+func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveStatus {
+	return NewResolveStatus(func(status *ResolveStatus) {
+		status.performGuaranteedPhase("filtering clusters", func() {
+			clusters = r.FilteredClusters(clusters)
+		})
+
+		status.performGuaranteedPhase("filtering intended deployments", func() {
+			intended = intended.Filter(r.FilterDeployment)
+		})
+
+		var actual Deployments
+
+		status.performPhase("getting running deployments", func() error {
+			var err error
+			actual, err = r.Deployer.RunningDeployments(r.Registry, clusters)
+			return err
+		})
+
+		status.performGuaranteedPhase("filtering running deployments", func() {
+			actual = actual.Filter(r.FilterDeployment)
+		})
+
+		var diffs DiffChans
+		status.performGuaranteedPhase("generating diff", func() {
+			diffs = actual.Diff(intended)
+		})
+
+		namer := NewDeployableChans(10)
+		status.performGuaranteedPhase("resolving deployment artifacts", func() {
+			namer.ResolveNames(r.Registry, &diffs, status.Errors)
+		})
+
+		status.performGuaranteedPhase("rectification", func() {
+			r.rectify(namer, status.Errors)
+		})
+
+		status.performPhase("condensing errors", func() error {
+			return foldErrors(status.Errors)
+		})
+	})
+}
+
 func foldErrors(errs chan error) error {
 	re := &ResolveErrors{Causes: []error{}}
 	for err := range errs {
