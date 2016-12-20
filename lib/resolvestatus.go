@@ -1,9 +1,6 @@
 package sous
 
-import (
-	"fmt"
-	"sync"
-)
+import "sync"
 
 // ResolveStatus represents the status of a resolve run.
 type ResolveStatus struct {
@@ -11,7 +8,8 @@ type ResolveStatus struct {
 	Errors chan error
 	// phase is used to tell the user which phase the resolution is in.
 	phase string
-	Log   chan string
+	// Log is a channel of statuses of individual diff resolutions.
+	Log chan DiffResolution
 	// finished may be closed with no error, or closed after a single
 	// error is emitted to the channel.
 	finished chan error
@@ -20,11 +18,17 @@ type ResolveStatus struct {
 	sync.RWMutex
 }
 
+// DiffResolution is the result of applying a single diff.
+type DiffResolution struct {
+	DeployID DeployID
+	Error    error
+}
+
 // NewResolveStatus creates a new ResolveStatus and calls f with it as its
 // argument. It then returns that ResolveStatus immediately.
 func NewResolveStatus(f func(*ResolveStatus)) *ResolveStatus {
 	rs := &ResolveStatus{
-		Log:      make(chan string, 10e6),
+		Log:      make(chan DiffResolution, 10e6),
 		Errors:   make(chan error, 10e6),
 		finished: make(chan error),
 	}
@@ -45,10 +49,6 @@ func NewResolveStatus(f func(*ResolveStatus)) *ResolveStatus {
 		})
 	}()
 	return rs
-}
-
-func (rs *ResolveStatus) log(format string, a ...interface{}) {
-	rs.Log <- fmt.Sprintf(format, a...)
 }
 
 // Done returns true if the resolution has finished. Otherwise it returns false.
@@ -89,7 +89,6 @@ func (rs *ResolveStatus) performGuaranteedPhase(name string, f func()) {
 
 // setPhase sets the phase of this resolve status.
 func (rs *ResolveStatus) setPhase(phase string) {
-	rs.log("Entering %s phase.", phase)
 	rs.write(func() {
 		rs.phase = phase
 	})
