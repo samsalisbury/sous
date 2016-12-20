@@ -82,7 +82,7 @@ func TestModifyScale(t *testing.T) {
 	log.SetFlags(log.Flags() | log.Lshortfile)
 	assert := assert.New(t)
 	mods := make(chan *sous.DeployablePair, 1)
-	errs := make(chan error, 10)
+	errs := make(chan sous.DiffResolution, 10)
 
 	pair := baseDeployablePair()
 	pair.Prior.Deployment.DeployConfig.NumInstances = 12
@@ -98,7 +98,9 @@ func TestModifyScale(t *testing.T) {
 	close(errs)
 
 	for e := range errs {
-		t.Error(e)
+		if e.Error != nil {
+			t.Error(e)
+		}
 	}
 
 	assert.Len(client.Deployed, 0)
@@ -120,18 +122,20 @@ func TestModifyImage(t *testing.T) {
 	pair.Post.BuildArtifact.Name = "2.3.4"
 
 	mods := make(chan *sous.DeployablePair, 1)
-	errs := make(chan error, 10)
+	log := make(chan sous.DiffResolution, 10)
 
 	client := sous.NewDummyRectificationClient()
 	deployer := NewDeployer(client)
 
 	mods <- pair
 	close(mods)
-	deployer.RectifyModifies(mods, errs)
-	close(errs)
+	deployer.RectifyModifies(mods, log)
+	close(log)
 
-	for e := range errs {
-		t.Error(e)
+	for e := range log {
+		if e.Error != nil {
+			t.Error(e.Error)
+		}
 	}
 
 	assert.Len(client.Created, 0)
@@ -155,18 +159,20 @@ func TestModifyResources(t *testing.T) {
 	pair.Post.BuildArtifact.Name = "1.2.3"
 
 	mods := make(chan *sous.DeployablePair, 1)
-	errs := make(chan error, 10)
+	log := make(chan sous.DiffResolution, 10)
 
 	client := sous.NewDummyRectificationClient()
 	deployer := NewDeployer(client)
 
 	mods <- pair
 	close(mods)
-	deployer.RectifyModifies(mods, errs)
-	close(errs)
+	deployer.RectifyModifies(mods, log)
+	close(log)
 
-	for e := range errs {
-		t.Error(e)
+	for e := range log {
+		if e.Error != nil {
+			t.Error(e)
+		}
 	}
 
 	assert.Len(client.Created, 0)
@@ -196,18 +202,20 @@ func TestModify(t *testing.T) {
 	pair.Post.BuildArtifact.Name = "2.3.4"
 
 	mods := make(chan *sous.DeployablePair, 1)
-	errs := make(chan error, 10)
+	results := make(chan sous.DiffResolution, 10)
 
 	client := sous.NewDummyRectificationClient()
 	deployer := NewDeployer(client)
 
 	mods <- pair
 	close(mods)
-	deployer.RectifyModifies(mods, errs)
-	close(errs)
+	deployer.RectifyModifies(mods, results)
+	close(results)
 
-	for e := range errs {
-		t.Error(e)
+	for e := range results {
+		if e.Error != nil {
+			t.Error(e)
+		}
 	}
 
 	if assert.Len(client.Created, 1) {
@@ -216,7 +224,7 @@ func TestModify(t *testing.T) {
 
 	if assert.Len(client.Deployed, 1) {
 		assert.Regexp("2.3.4", client.Deployed[0].ImageName)
-		log.Print(client.Deployed[0].Vols)
+		t.Log(client.Deployed[0].Vols)
 		assert.Equal("RW", string(client.Deployed[0].Vols[0].Mode))
 	}
 
@@ -243,7 +251,7 @@ func TestDeletes(t *testing.T) {
 	}
 
 	dels := make(chan *sous.Deployable, 1)
-	errs := make(chan error, 10)
+	errs := make(chan sous.DiffResolution, 10)
 
 	client := sous.NewDummyRectificationClient()
 	deployer := NewDeployer(client)
@@ -295,18 +303,20 @@ func TestCreates(t *testing.T) {
 	}
 
 	crts := make(chan *sous.Deployable, 1)
-	errs := make(chan error, 10)
+	log := make(chan sous.DiffResolution, 10)
 
 	client := sous.NewDummyRectificationClient()
 	deployer := NewDeployer(client)
 
 	crts <- created
 	close(crts)
-	deployer.RectifyCreates(crts, errs)
-	close(errs)
+	deployer.RectifyCreates(crts, log)
+	close(log)
 
-	for e := range errs {
-		t.Error(e)
+	for e := range log {
+		if e.Error != nil {
+			t.Error(e)
+		}
 	}
 
 	if assert.Len(client.Deployed, 1) {

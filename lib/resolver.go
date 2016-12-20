@@ -132,7 +132,7 @@ func (r *Resolver) rectify(dcs *DeployableChans, results chan DiffResolution) {
 	go func() { d.RectifyCreates(dcs.Start, results); wg.Done() }()
 	go func() { d.RectifyDeletes(dcs.Stop, results); wg.Done() }()
 	go func() { d.RectifyModifies(dcs.Update, results); wg.Done() }()
-	go func() { wg.Wait(); close(results) }()
+	wg.Wait()
 }
 
 // Begin is similar to Resolve, except that it returns a ResolveStatus almost
@@ -173,30 +173,19 @@ func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveStatus
 
 		namer := NewDeployableChans(10)
 		status.performGuaranteedPhase("resolving deployment artifacts", func() {
-			namer.ResolveNames(r.Registry, &diffs, status.Errors)
+			errs := make(chan error)
+			go func() {
+				for err := range errs {
+					status.Log <- DiffResolution{Error: err}
+				}
+			}()
+			// TODO: ResolveNames should take rs.Log instead of errs.
+			namer.ResolveNames(r.Registry, &diffs, errs)
+			close(errs)
 		})
 
 		status.performGuaranteedPhase("rectification", func() {
 			r.rectify(namer, status.Log)
 		})
-
-		status.performPhase("condensing errors", func() error {
-			return foldErrors(status.Log)
-		})
 	})
-}
-
-func foldErrors(log chan DiffResolution) error {
-	re := &ResolveErrors{Causes: []error{}}
-	for err := range log {
-		if err.Error != nil {
-			re.Causes = append(re.Causes, err.Error)
-			Log.Debug.Printf("resolve error = %+v\n", err)
-		}
-	}
-
-	if len(re.Causes) > 0 {
-		return re
-	}
-	return nil
 }

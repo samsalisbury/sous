@@ -81,8 +81,6 @@ func TestResolveStatus(t *testing.T) {
 				}
 			}
 
-			close(rs.Errors) // This is usually done by the rectify function.
-
 			<-block // Wait for signal from the test that this func may finish.
 		})
 
@@ -119,14 +117,6 @@ func TestResolveStatus(t *testing.T) {
 			if !strings.HasSuffix(actual, expected) {
 				t.Errorf("final phase == %q; want suffix %q", actual, expected)
 			}
-		}
-
-		if _, errorsOpen := <-rs.Errors; errorsOpen {
-			t.Errorf("Errors channel not closed")
-		}
-
-		if _, logOpen := <-rs.Log; logOpen {
-			t.Errorf("Log channel not closed")
 		}
 	}
 }

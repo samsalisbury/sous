@@ -4,8 +4,6 @@ import "sync"
 
 // ResolveStatus represents the status of a resolve run.
 type ResolveStatus struct {
-	// Errors is a channel of resolve errors.
-	Errors chan error
 	// phase is used to tell the user which phase the resolution is in.
 	phase string
 	// Log is a channel of statuses of individual diff resolutions.
@@ -52,6 +50,21 @@ func NewResolveStatus(f func(*ResolveStatus)) *ResolveStatus {
 	return rs
 }
 
+func (rs *ResolveStatus) foldErrors(log chan DiffResolution) error {
+	re := &ResolveErrors{Causes: []error{}}
+	for err := range log {
+		if err.Error != nil {
+			re.Causes = append(re.Causes, err.Error)
+			Log.Debug.Printf("resolve error = %+v\n", err)
+		}
+	}
+
+	if len(re.Causes) > 0 {
+		return re
+	}
+	return nil
+}
+
 // Done returns true if the resolution has finished. Otherwise it returns false.
 func (rs *ResolveStatus) Done() bool {
 	select {
@@ -67,7 +80,10 @@ func (rs *ResolveStatus) Wait() error {
 	<-rs.finished
 	var err error
 	rs.read(func() { err = rs.err })
-	return err
+	if err != nil {
+		return err
+	}
+	return rs.foldErrors(rs.Log)
 }
 
 // performPhase performs the requested phase, only if nothing has cancelled the
