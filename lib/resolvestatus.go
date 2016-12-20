@@ -12,7 +12,7 @@ type ResolveStatus struct {
 	Log chan DiffResolution
 	// finished may be closed with no error, or closed after a single
 	// error is emitted to the channel.
-	finished chan error
+	finished chan struct{}
 	// err is the final error returned from a phase that ends the resolution.
 	err error
 	sync.RWMutex
@@ -30,7 +30,7 @@ func NewResolveStatus(f func(*ResolveStatus)) *ResolveStatus {
 	rs := &ResolveStatus{
 		Log:      make(chan DiffResolution, 10e6),
 		Errors:   make(chan error, 10e6),
-		finished: make(chan error),
+		finished: make(chan struct{}),
 	}
 	go func() {
 		f(rs)
@@ -40,11 +40,13 @@ func NewResolveStatus(f func(*ResolveStatus)) *ResolveStatus {
 			select {
 			default:
 				close(rs.finished)
-			case err, open := <-rs.finished:
+			case _, open := <-rs.finished:
 				if open {
 					close(rs.finished)
 				}
-				rs.err = err
+			}
+			if rs.err == nil {
+				rs.phase = "finished"
 			}
 		})
 	}()
@@ -54,12 +56,7 @@ func NewResolveStatus(f func(*ResolveStatus)) *ResolveStatus {
 // Done returns true if the resolution has finished. Otherwise it returns false.
 func (rs *ResolveStatus) Done() bool {
 	select {
-	case err := <-rs.finished:
-		if err != nil {
-			rs.write(func() {
-				rs.err = err
-			})
-		}
+	case <-rs.finished:
 		return true
 	default:
 		return false
@@ -68,7 +65,10 @@ func (rs *ResolveStatus) Done() bool {
 
 // Wait blocks until the resolution is finished.
 func (rs *ResolveStatus) Wait() error {
-	return <-rs.finished
+	<-rs.finished
+	var err error
+	rs.read(func() { err = rs.err })
+	return err
 }
 
 // performPhase performs the requested phase, only if nothing has cancelled the
@@ -94,6 +94,13 @@ func (rs *ResolveStatus) setPhase(phase string) {
 	})
 }
 
+// Phase returns the name of the current phase.
+func (rs *ResolveStatus) Phase() string {
+	var phase string
+	rs.read(func() { phase = rs.phase })
+	return phase
+}
+
 // write encapsulates locking this ResolveStatus for writing using f.
 func (rs *ResolveStatus) write(f func()) {
 	rs.Lock()
@@ -111,7 +118,7 @@ func (rs *ResolveStatus) read(f func()) {
 // doneWithError marks the resolution as finished with an error.
 func (rs *ResolveStatus) doneWithError(err error) {
 	rs.write(func() {
-		rs.finished <- err
+		rs.err = err
 		close(rs.finished)
 	})
 }
