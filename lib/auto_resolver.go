@@ -121,7 +121,7 @@ func (ar *AutoResolver) resolveLoop(tc, done TriggerChannel, ac announceChannel)
 				break
 			}
 
-			ac <- ar.Resolver.Resolve(gdm, state.Defs.Clusters)
+			ac <- ar.Resolver.Begin(gdm, state.Defs.Clusters).Wait()
 			ar.LogSet.Debug.Print("Completed resolve")
 		case <-done:
 			return

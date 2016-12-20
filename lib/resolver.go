@@ -3,8 +3,6 @@ package sous
 import (
 	"fmt"
 	"sync"
-
-	"github.com/opentable/sous/util/firsterr"
 )
 
 type (
@@ -137,32 +135,15 @@ func (r *Resolver) rectify(dcs *DeployableChans, errs chan error) {
 	go func() { wg.Wait(); close(errs) }()
 }
 
-// Resolve drives the Sous deployment resolution process. It calls out to the
-// appropriate components to compute the intended deployment set, collect the
-// actual set, compute the diffs and then issue the commands to rectify those
-// differences.
-func (r *Resolver) Resolve(intended Deployments, clusters Clusters) error {
-	var ads Deployments
-	var diffs DiffChans
-	var namer *DeployableChans
-	errs := make(chan error)
-	return firsterr.Set(
-		func(*error) { clusters = r.FilteredClusters(clusters) },
-		func(e *error) { ads, *e = r.Deployer.RunningDeployments(r.Registry, clusters) },
-		func(*error) { intended = intended.Filter(r.FilterDeployment) },
-		func(*error) { ads = ads.Filter(r.FilterDeployment) },
-		func(*error) { diffs = ads.Diff(intended) },
-		func(*error) { namer = NewDeployableChans(10) },
-		func(*error) { namer.ResolveNames(r.Registry, &diffs, errs) },
-		func(*error) { r.rectify(namer, errs) },
-		func(e *error) { *e = foldErrors(errs) },
-	)
-}
-
 // Begin is similar to Resolve, except that it returns a ResolveStatus almost
 // immediately, which can be queried for information about the ongoing
 // resolution. You can check if resolution is finished by calling Done() on the
 // returned ResolveStatus.
+//
+// This process drives the Sous deployment resolution process. It calls out to
+// the appropriate components to compute the intended deployment set, collect
+// the actual set, compute the diffs and then issue the commands to rectify
+// those differences.
 func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveStatus {
 	return NewResolveStatus(func(status *ResolveStatus) {
 		status.performGuaranteedPhase("filtering clusters", func() {
