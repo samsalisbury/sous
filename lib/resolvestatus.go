@@ -21,6 +21,7 @@ type ResolveStatus struct {
 // DiffResolution is the result of applying a single diff.
 type DiffResolution struct {
 	DeployID DeployID
+	Desc     string
 	Error    error
 }
 
@@ -29,7 +30,6 @@ type DiffResolution struct {
 func NewResolveStatus(f func(*ResolveStatus)) *ResolveStatus {
 	rs := &ResolveStatus{
 		Log:      make(chan DiffResolution, 1e6),
-		Errors:   make(chan error, 1e6),
 		finished: make(chan struct{}),
 	}
 	go func() {

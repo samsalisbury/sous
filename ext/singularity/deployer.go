@@ -48,11 +48,16 @@ func NewDeployer(c rectificationClient) sous.Deployer {
 	return &deployer{Client: c}
 }
 
-func (r *deployer) RectifyCreates(cc <-chan *sous.Deployable, errs chan<- error) {
+func (r *deployer) RectifyCreates(cc <-chan *sous.Deployable, errs chan<- sous.DiffResolution) {
 	for d := range cc {
+		result := sous.DiffResolution{DeployID: d.ID()}
 		if err := r.RectifySingleCreate(d); err != nil {
-			errs <- &sous.CreateError{Deployment: d.Deployment, Err: err}
+			result.Error = &sous.CreateError{Deployment: d.Deployment, Err: err}
+			result.Desc = "not created"
+		} else {
+			result.Desc = "created"
 		}
+		errs <- result
 	}
 }
 
@@ -100,11 +105,16 @@ func (r *deployer) RectifySingleCreate(d *sous.Deployable) (err error) {
 		d.Env, d.DeployConfig.Volumes)
 }
 
-func (r *deployer) RectifyDeletes(dc <-chan *sous.Deployable, errs chan<- error) {
+func (r *deployer) RectifyDeletes(dc <-chan *sous.Deployable, errs chan<- sous.DiffResolution) {
 	for d := range dc {
+		result := sous.DiffResolution{DeployID: d.ID()}
 		if err := r.RectifySingleDelete(d); err != nil {
-			errs <- &sous.DeleteError{Deployment: d.Deployment, Err: err}
+			result.Error = &sous.DeleteError{Deployment: d.Deployment, Err: err}
+			result.Desc = "not deleted"
+		} else {
+			result.Desc = "deleted"
 		}
+		errs <- result
 	}
 }
 
@@ -120,16 +130,21 @@ func (r *deployer) RectifySingleDelete(d *sous.Deployable) (err error) {
 }
 
 func (r *deployer) RectifyModifies(
-	mc <-chan *sous.DeployablePair, errs chan<- error) {
+	mc <-chan *sous.DeployablePair, errs chan<- sous.DiffResolution) {
 	for pair := range mc {
+		result := sous.DiffResolution{DeployID: pair.ID()}
 		if err := r.RectifySingleModification(pair); err != nil {
 			dp := &sous.DeploymentPair{
 				Prior: pair.Prior.Deployment,
 				Post:  pair.Post.Deployment,
 			}
 			log.Printf("%#v", err)
-			errs <- &sous.ChangeError{Deployments: dp, Err: err}
+			result.Error = &sous.ChangeError{Deployments: dp, Err: err}
+			result.Desc = "not updated"
+		} else {
+			result.Desc = "updated"
 		}
+		errs <- result
 	}
 }
 
