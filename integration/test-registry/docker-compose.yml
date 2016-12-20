@@ -9,6 +9,12 @@ registry:
   volumes:
     - /path/data:/var/lib/registry
 
+gitserver:
+  build: git-server
+  restart: always
+  ports:
+    - "2222:22"
+
 # FROM HERE DOWN: Singularity test setup
 zk:
   image: bobrik/zookeeper
