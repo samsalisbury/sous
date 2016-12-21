@@ -7,6 +7,7 @@ type (
 	EnvDesc struct {
 		RegistryName   string
 		SingularityURL string
+		GitOrigin      string
 		AgentIP        net.IP
 	}
 )

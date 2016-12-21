@@ -137,13 +137,14 @@ func setupServices(testAgent test_with_docker.Agent, opts *options) *desc.EnvDes
 
 	desc.RegistryName = fmt.Sprintf("%s:%d", desc.AgentIP, 5000)
 	desc.SingularityURL = fmt.Sprintf("http://%s:%d/singularity", desc.AgentIP, 7099)
+	desc.GitOrigin = fmt.Sprintf("%s:%d", desc.AgentIP, 2222)
 
 	err = registryCerts(testAgent, opts.composeDir, desc)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	_, err = testAgent.ComposeServices(opts.composeDir, map[string]uint{"Singularity": 7099, "Registry": 5000})
+	_, err = testAgent.ComposeServices(opts.composeDir, map[string]uint{"Singularity": 7099, "Registry": 5000, "Git": 2222})
 	if err != nil {
 		log.Fatal(err)
 	}
