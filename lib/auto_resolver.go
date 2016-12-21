@@ -1,6 +1,7 @@
 package sous
 
 import (
+	"sync"
 	"time"
 )
 
@@ -22,6 +23,8 @@ type (
 		*Resolver
 		*LogSet
 		listeners []autoResolveListener
+		sync.RWMutex
+		status *ResolveStatus
 	}
 )
 
@@ -86,6 +89,13 @@ func (ar *AutoResolver) Kickoff() TriggerChannel {
 	return done
 }
 
+// Status returns the current status of the resolution underway.
+func (ar *AutoResolver) Status() *ResolveStatus {
+	ar.RLock()
+	defer ar.RUnlock()
+	return ar.status
+}
+
 func loopTilDone(f func(), done TriggerChannel) {
 	for {
 		select {
@@ -95,6 +105,12 @@ func loopTilDone(f func(), done TriggerChannel) {
 			return
 		}
 	}
+}
+
+func (ar *AutoResolver) write(f func()) {
+	ar.Lock()
+	defer ar.Unlock()
+	f()
 }
 
 func (ar *AutoResolver) resolveLoop(tc, done TriggerChannel, ac announceChannel) {
@@ -121,7 +137,10 @@ func (ar *AutoResolver) resolveLoop(tc, done TriggerChannel, ac announceChannel)
 				break
 			}
 
-			ac <- ar.Resolver.Begin(gdm, state.Defs.Clusters).Wait()
+			ar.write(func() {
+				ar.status = ar.Resolver.Begin(gdm, state.Defs.Clusters)
+			})
+			ac <- ar.status.Wait()
 			ar.LogSet.Debug.Print("Completed resolve")
 		case <-done:
 			return
