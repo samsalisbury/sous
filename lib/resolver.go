@@ -125,14 +125,14 @@ func NewResolver(d Deployer, r Registry, rf *ResolveFilter) *Resolver {
 
 // Rectify takes a DiffChans and issues the commands to the infrastructure to
 // reconcile the differences.
-func (r *Resolver) rectify(dcs *DeployableChans, errs chan error) {
+func (r *Resolver) rectify(dcs *DeployableChans, results chan DiffResolution) {
 	d := r.Deployer
 	wg := &sync.WaitGroup{}
 	wg.Add(3)
-	go func() { d.RectifyCreates(dcs.Start, errs); wg.Done() }()
-	go func() { d.RectifyDeletes(dcs.Stop, errs); wg.Done() }()
-	go func() { d.RectifyModifies(dcs.Update, errs); wg.Done() }()
-	go func() { wg.Wait(); close(errs) }()
+	go func() { d.RectifyCreates(dcs.Start, results); wg.Done() }()
+	go func() { d.RectifyDeletes(dcs.Stop, results); wg.Done() }()
+	go func() { d.RectifyModifies(dcs.Update, results); wg.Done() }()
+	wg.Wait()
 }
 
 // Begin is similar to Resolve, except that it returns a ResolveStatus almost
@@ -172,29 +172,23 @@ func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveStatus
 		})
 
 		namer := NewDeployableChans(10)
+		var wg sync.WaitGroup
 		status.performGuaranteedPhase("resolving deployment artifacts", func() {
-			namer.ResolveNames(r.Registry, &diffs, status.Errors)
+			errs := make(chan error)
+			wg.Add(1)
+			go func() {
+				for err := range errs {
+					status.Log <- DiffResolution{Error: err}
+				}
+				wg.Done()
+			}()
+			// TODO: ResolveNames should take rs.Log instead of errs.
+			namer.ResolveNames(r.Registry, &diffs, errs)
 		})
 
 		status.performGuaranteedPhase("rectification", func() {
-			r.rectify(namer, status.Errors)
+			r.rectify(namer, status.Log)
 		})
-
-		status.performPhase("condensing errors", func() error {
-			return foldErrors(status.Errors)
-		})
+		wg.Wait()
 	})
-}
-
-func foldErrors(errs chan error) error {
-	re := &ResolveErrors{Causes: []error{}}
-	for err := range errs {
-		re.Causes = append(re.Causes, err)
-		Log.Debug.Printf("resolve error = %+v\n", err)
-	}
-
-	if len(re.Causes) > 0 {
-		return re
-	}
-	return nil
 }

@@ -1,6 +1,9 @@
 package sous
 
-import "fmt"
+import (
+	"fmt"
+	"sync"
+)
 
 type (
 	// A DeployableChans is a bundle of channels describing actions to take on a
@@ -8,6 +11,7 @@ type (
 	DeployableChans struct {
 		Start, Stop, Stable chan *Deployable
 		Update              chan *DeployablePair
+		sync.WaitGroup
 	}
 
 	// A DeployablePair is a pair of deployables, describing a "before and after"
@@ -75,10 +79,13 @@ func (dp *DeployablePair) ID() DeployID {
 
 // ResolveNames resolves diffs.
 func (dc *DeployableChans) ResolveNames(r Registry, diff *DiffChans, errs chan error) {
-	go resolveSingles(r, diff.Created, dc.Start, errs)
-	go unresolvedSingles(r, diff.Deleted, dc.Stop, errs)
-	go unresolvedSingles(r, diff.Retained, dc.Stable, errs)
-	go resolvePairs(r, diff.Modified, dc.Update, errs)
+	dc.WaitGroup = sync.WaitGroup{}
+	dc.Add(4)
+	go func() { resolveSingles(r, diff.Created, dc.Start, errs); dc.Done() }()
+	go func() { unresolvedSingles(r, diff.Deleted, dc.Stop, errs); dc.Done() }()
+	go func() { unresolvedSingles(r, diff.Retained, dc.Stable, errs); dc.Done() }()
+	go func() { resolvePairs(r, diff.Modified, dc.Update, errs); dc.Done() }()
+	go func() { dc.Wait(); close(errs) }()
 }
 
 func unresolvedSingles(r Registry, from chan *Deployment, to chan *Deployable, errs chan error) {
