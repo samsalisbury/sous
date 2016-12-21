@@ -30,5 +30,5 @@ func (sh *SousHelp) Execute(args []string) cmdr.Result {
 	if err != nil {
 		return EnsureErrorResult(err)
 	}
-	return Successf(help)
+	return cmdr.Successf(help)
 }

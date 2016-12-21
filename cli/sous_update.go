@@ -83,7 +83,7 @@ func (su *SousUpdate) Execute(args []string) cmdr.Result {
 	if err := su.StateWriter.WriteState(su.State); err != nil {
 		return EnsureErrorResult(err)
 	}
-	return Success()
+	return cmdr.Success()
 }
 
 func updateState(s *sous.State, gdm graph.CurrentGDM, sid sous.SourceID, did sous.DeployID) error {
@@ -110,14 +110,14 @@ func updateState(s *sous.State, gdm graph.CurrentGDM, sid sous.SourceID, did sou
 func getIDs(flags config.DeployFilterFlags, mid sous.ManifestID) (sous.SourceID, sous.DeployID, error) {
 	clusterName, tag, sid, did := flags.Cluster, flags.Tag, sous.SourceID{}, sous.DeployID{}
 	if clusterName == "" {
-		return sid, did, UsageErrorf("You must select a cluster using the -cluster flag.")
+		return sid, did, cmdr.UsageErrorf("You must select a cluster using the -cluster flag.")
 	}
 	if tag == "" {
-		return sid, did, UsageErrorf("You must provide the -tag flag.")
+		return sid, did, cmdr.UsageErrorf("You must provide the -tag flag.")
 	}
 	newVersion, err := semv.Parse(tag)
 	if err != nil {
-		return sid, did, UsageErrorf("Version %q not valid: %s", flags.Tag, err)
+		return sid, did, cmdr.UsageErrorf("Version %q not valid: %s", flags.Tag, err)
 	}
 	sid = mid.Source.SourceID(newVersion)
 	did = sous.DeployID{ManifestID: mid, Cluster: clusterName}

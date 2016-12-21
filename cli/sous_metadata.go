@@ -26,7 +26,7 @@ func (SousMetadata) Subcommands() cmdr.Commands {
 func (*SousMetadata) Help() string { return sousMetadataHelp }
 
 func (sm *SousMetadata) Execute(args []string) cmdr.Result {
-	err := UsageErrorf("usage: sous metadata [options] <command>")
+	err := cmdr.UsageErrorf("usage: sous metadata [options] <command>")
 	err.Tip = "try `sous help metadata` for a list of commands"
 	return err
 }

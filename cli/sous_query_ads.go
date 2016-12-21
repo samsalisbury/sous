@@ -40,5 +40,5 @@ func (sb *SousQueryAds) Execute(args []string) cmdr.Result {
 		return EnsureErrorResult(err)
 	}
 	sous.DumpDeployments(os.Stdout, ads)
-	return Success()
+	return cmdr.Success()
 }

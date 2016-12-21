@@ -46,5 +46,5 @@ func (smg *SousManifestGet) Execute(args []string) cmdr.Result {
 		return EnsureErrorResult(err)
 	}
 	smg.OutWriter.Write(yml)
-	return Success()
+	return cmdr.Success()
 }

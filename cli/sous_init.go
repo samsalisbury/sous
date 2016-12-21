@@ -58,7 +58,7 @@ func (si *SousInit) Execute(args []string) cmdr.Result {
 	cluster := si.DeployFilterFlags.Cluster
 
 	if _, ok := si.State.Defs.Clusters[cluster]; !ok && cluster != "" {
-		return UsageErrorf("cluster %q not defined, pick one of: %s", cluster, si.State.Defs.Clusters)
+		return cmdr.UsageErrorf("cluster %q not defined, pick one of: %s", cluster, si.State.Defs.Clusters)
 	}
 
 	m := si.Target.Manifest
@@ -68,7 +68,7 @@ func (si *SousInit) Execute(args []string) cmdr.Result {
 	}
 
 	if ok := si.State.Manifests.Add(m); !ok {
-		return UsageErrorf("manifest %q already exists", m.ID())
+		return cmdr.UsageErrorf("manifest %q already exists", m.ID())
 	}
 	if err := si.StateWriter.WriteState(si.State); err != nil {
 		return EnsureErrorResult(err)

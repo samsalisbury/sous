@@ -85,11 +85,11 @@ func (s *Sous) Execute(args []string) cmdr.Result {
 	if !ok {
 		return s.usage()
 	}
-	return UsageErrorf(whitespace.Trim(success.String()) + "\n")
+	return cmdr.UsageErrorf(whitespace.Trim(success.String()) + "\n")
 }
 
 func (s *Sous) usage() cmdr.ErrorResult {
-	err := UsageErrorf("usage: sous [options] command")
+	err := cmdr.UsageErrorf("usage: sous [options] command")
 	err.Tip = "try `sous help` for a list of commands"
 	return err
 }
