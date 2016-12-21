@@ -1,6 +1,9 @@
 package sous
 
-import "fmt"
+import (
+	"fmt"
+	"sync"
+)
 
 type (
 	// A DeployableChans is a bundle of channels describing actions to take on a
@@ -75,10 +78,14 @@ func (dp *DeployablePair) ID() DeployID {
 
 // ResolveNames resolves diffs.
 func (dc *DeployableChans) ResolveNames(r Registry, diff *DiffChans, errs chan error) {
+	wg := sync.WaitGroup{}
+	wg.Add(4)
 	go resolveSingles(r, diff.Created, dc.Start, errs)
 	go unresolvedSingles(r, diff.Deleted, dc.Stop, errs)
 	go unresolvedSingles(r, diff.Retained, dc.Stable, errs)
 	go resolvePairs(r, diff.Modified, dc.Update, errs)
+	wg.Wait()
+	close(errs)
 }
 
 func unresolvedSingles(r Registry, from chan *Deployment, to chan *Deployable, errs chan error) {
