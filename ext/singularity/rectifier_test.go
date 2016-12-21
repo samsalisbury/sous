@@ -251,18 +251,20 @@ func TestDeletes(t *testing.T) {
 	}
 
 	dels := make(chan *sous.Deployable, 1)
-	errs := make(chan sous.DiffResolution, 10)
+	log := make(chan sous.DiffResolution, 10)
 
 	client := sous.NewDummyRectificationClient()
 	deployer := NewDeployer(client)
 
 	dels <- deleted
 	close(dels)
-	deployer.RectifyDeletes(dels, errs)
-	close(errs)
+	deployer.RectifyDeletes(dels, log)
+	close(log)
 
-	for e := range errs {
-		t.Error(e)
+	for e := range log {
+		if e.Error != nil {
+			t.Error(e)
+		}
 	}
 
 	assert.Len(client.Deployed, 0)
