@@ -75,7 +75,7 @@ func (sr *SousRectify) Execute(args []string) cmdr.Result {
 			"(Or -all if you really mean to rectify the whole world; see 'sous help rectify'.)")
 	}
 
-	if err := sr.Resolver.Resolve(sr.GDM.Clone(), sr.State.Defs.Clusters); err != nil {
+	if err := sr.Resolver.Begin(sr.GDM.Clone(), sr.State.Defs.Clusters).Wait(); err != nil {
 		return EnsureErrorResult(err)
 	}
 

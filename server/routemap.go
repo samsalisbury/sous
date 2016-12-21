@@ -63,7 +63,7 @@ type (
 // BuildRouter builds a returns an http.Handler based on some constant configuration
 func (rm *RouteMap) BuildRouter(grf func() Injector) http.Handler {
 	r := httprouter.New()
-	ph := &StatusHandler{}
+	ph := &StatusMiddleware{}
 	mh := &MetaHandler{
 		graphFac:      grf,
 		router:        r,

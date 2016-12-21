@@ -30,4 +30,8 @@ func TestSousRoutes(t *testing.T) {
 		KV{"repo", "github.com/opentable/sous"},
 		KV{"offset", "alt"},
 	)
+	test(
+		"/status",
+		"status",
+	)
 }

@@ -9,15 +9,15 @@ import (
 
 type (
 
-	// A StatusHandler processes panics into 500s and other status codes
-	StatusHandler struct {
+	// A StatusMiddleware processes panics into 500s and other status codes.
+	StatusMiddleware struct {
 		*sous.LogSet
 	}
 )
 
-// HandleResponse returns a 500 and logs the error
-// It uses the LogSet provided by the graph
-func (ph *StatusHandler) HandleResponse(status int, r *http.Request, w http.ResponseWriter, data interface{}) {
+// HandleResponse returns a 500 and logs the error.
+// It uses the LogSet provided by the graph.
+func (ph *StatusMiddleware) HandleResponse(status int, r *http.Request, w http.ResponseWriter, data interface{}) {
 	w.WriteHeader(status)
 
 	ph.LogSet.Warn.Printf("Responding: %d %s: %s %s", status, http.StatusText(status), r.Method, r.URL)
@@ -31,9 +31,9 @@ func (ph *StatusHandler) HandleResponse(status int, r *http.Request, w http.Resp
 	// (normal ops it might leak secure data)
 }
 
-// HandlePanic returns a 500 and logs the error
-// It uses the LogSet provided by the graph
-func (ph *StatusHandler) HandlePanic(w http.ResponseWriter, r *http.Request, recovered interface{}) {
+// HandlePanic returns a 500 and logs the error.
+// It uses the LogSet provided by the graph.
+func (ph *StatusMiddleware) HandlePanic(w http.ResponseWriter, r *http.Request, recovered interface{}) {
 	w.WriteHeader(http.StatusInternalServerError)
 	ph.LogSet.Warn.Printf("%+v", recovered)
 	ph.LogSet.Warn.Print(string(debug.Stack()))

@@ -3,8 +3,6 @@ package sous
 import (
 	"fmt"
 	"sync"
-
-	"github.com/opentable/sous/util/firsterr"
 )
 
 type (
@@ -16,7 +14,8 @@ type (
 		*ResolveFilter
 	}
 
-	// A ResolveFilter filters Deployments and Clusters for the purpose of Resolve.resolve()
+	// A ResolveFilter filters Deployments and Clusters for the purpose of
+	// Resolve.resolve().
 	ResolveFilter struct {
 		Repo     string
 		Offset   string
@@ -32,7 +31,7 @@ type (
 	DeploymentPredicate func(*Deployment) bool
 )
 
-// All returns true if the ResolveFilter would allow all deployments
+// All returns true if the ResolveFilter would allow all deployments.
 func (rf *ResolveFilter) All() bool {
 	return rf.Repo == "" &&
 		rf.Offset == "" &&
@@ -66,7 +65,8 @@ func (rf *ResolveFilter) String() string {
 		cl, rp, of, fl, tg, rv)
 }
 
-// FilteredClusters returns a new Clusters relevant to the Deployments that this ResolveFilter would permit
+// FilteredClusters returns a new Clusters relevant to the Deployments that this
+// ResolveFilter would permit.
 func (rf *ResolveFilter) FilteredClusters(c Clusters) Clusters {
 	newC := make(Clusters)
 	for n, c := range c {
@@ -78,7 +78,8 @@ func (rf *ResolveFilter) FilteredClusters(c Clusters) Clusters {
 	return newC
 }
 
-// FilterDeployment behaves as a DeploymentPredicate, filtering Deployments if they match its criteria
+// FilterDeployment behaves as a DeploymentPredicate, filtering Deployments if
+// they match its criteria.
 func (rf *ResolveFilter) FilterDeployment(d *Deployment) bool {
 	if rf.Repo != "" && d.SourceID.Location.Repo != rf.Repo {
 		return false
@@ -102,7 +103,7 @@ func (rf *ResolveFilter) FilterDeployment(d *Deployment) bool {
 }
 
 // FilterManifest returns true if ???
-// TODO: @nyarly can you provide a description of what this function does
+// TODO: @nyarly can you provide a description of what this function does?
 func (rf *ResolveFilter) FilterManifest(m *Manifest) bool {
 	if rf.Repo != "" && m.Source.Repo != rf.Repo {
 		return false
@@ -122,7 +123,8 @@ func NewResolver(d Deployer, r Registry, rf *ResolveFilter) *Resolver {
 	}
 }
 
-// Rectify takes a DiffChans and issues the commands to the infrastructure to reconcile the differences
+// Rectify takes a DiffChans and issues the commands to the infrastructure to
+// reconcile the differences.
 func (r *Resolver) rectify(dcs *DeployableChans, errs chan error) {
 	d := r.Deployer
 	wg := &sync.WaitGroup{}
@@ -133,26 +135,55 @@ func (r *Resolver) rectify(dcs *DeployableChans, errs chan error) {
 	go func() { wg.Wait(); close(errs) }()
 }
 
-// Resolve drives the Sous deployment resolution process. It calls out to the
-// appropriate components to compute the intended deployment set, collect the
-// actual set, compute the diffs and then issue the commands to rectify those
-// differences.
-func (r *Resolver) Resolve(intended Deployments, clusters Clusters) error {
-	var ads Deployments
-	var diffs DiffChans
-	var namer *DeployableChans
-	errs := make(chan error)
-	return firsterr.Set(
-		func(*error) { clusters = r.FilteredClusters(clusters) },
-		func(e *error) { ads, *e = r.Deployer.RunningDeployments(r.Registry, clusters) },
-		func(*error) { intended = intended.Filter(r.FilterDeployment) },
-		func(*error) { ads = ads.Filter(r.FilterDeployment) },
-		func(*error) { diffs = ads.Diff(intended) },
-		func(*error) { namer = NewDeployableChans(10) },
-		func(*error) { namer.ResolveNames(r.Registry, &diffs, errs) },
-		func(*error) { r.rectify(namer, errs) },
-		func(e *error) { *e = foldErrors(errs) },
-	)
+// Begin is similar to Resolve, except that it returns a ResolveStatus almost
+// immediately, which can be queried for information about the ongoing
+// resolution. You can check if resolution is finished by calling Done() on the
+// returned ResolveStatus.
+//
+// This process drives the Sous deployment resolution process. It calls out to
+// the appropriate components to compute the intended deployment set, collect
+// the actual set, compute the diffs and then issue the commands to rectify
+// those differences.
+func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveStatus {
+	return NewResolveStatus(func(status *ResolveStatus) {
+		status.performGuaranteedPhase("filtering clusters", func() {
+			clusters = r.FilteredClusters(clusters)
+		})
+
+		status.performGuaranteedPhase("filtering intended deployments", func() {
+			intended = intended.Filter(r.FilterDeployment)
+		})
+
+		var actual Deployments
+
+		status.performPhase("getting running deployments", func() error {
+			var err error
+			actual, err = r.Deployer.RunningDeployments(r.Registry, clusters)
+			return err
+		})
+
+		status.performGuaranteedPhase("filtering running deployments", func() {
+			actual = actual.Filter(r.FilterDeployment)
+		})
+
+		var diffs DiffChans
+		status.performGuaranteedPhase("generating diff", func() {
+			diffs = actual.Diff(intended)
+		})
+
+		namer := NewDeployableChans(10)
+		status.performGuaranteedPhase("resolving deployment artifacts", func() {
+			namer.ResolveNames(r.Registry, &diffs, status.Errors)
+		})
+
+		status.performGuaranteedPhase("rectification", func() {
+			r.rectify(namer, status.Errors)
+		})
+
+		status.performPhase("condensing errors", func() error {
+			return foldErrors(status.Errors)
+		})
+	})
 }
 
 func foldErrors(errs chan error) error {

@@ -5,60 +5,62 @@ import (
 )
 
 type (
-	triggerType     struct{}
-	triggerChannel  chan triggerType
+	// TriggerType is an empty struct, representing some kind of trigger.
+	TriggerType struct{}
+	// TriggerChannel is a channel of TriggerType.
+	TriggerChannel  chan TriggerType
 	announceChannel chan error
 
-	// AutoResolveListener listens to trigger channels and writes to announceChannel.
-	AutoResolveListener func(tc, done triggerChannel, ac announceChannel)
+	// autoResolveListener listens to trigger channels and writes to announceChannel.
+	autoResolveListener func(tc, done TriggerChannel, ac announceChannel)
 
-	// An AutoResolver sets up the interactions to automatically run an infinite loop
-	// of resolution cycles
+	// An AutoResolver sets up the interactions to automatically run an infinite
+	// loop of resolution cycles.
 	AutoResolver struct {
 		UpdateTime time.Duration
 		StateReader
 		*Resolver
 		*LogSet
-		listeners []AutoResolveListener
+		listeners []autoResolveListener
 	}
 )
 
-func (tc triggerChannel) trigger() {
-	tc <- triggerType{}
+func (tc TriggerChannel) trigger() {
+	tc <- TriggerType{}
 }
 
-// NewAutoResolver creates a new AutoResolver
+// NewAutoResolver creates a new AutoResolver.
 func NewAutoResolver(rez *Resolver, sr StateReader, ls *LogSet) *AutoResolver {
 	ar := &AutoResolver{
 		UpdateTime:  60 * time.Second,
 		Resolver:    rez,
 		StateReader: sr,
 		LogSet:      ls,
-		listeners:   make([]AutoResolveListener, 0),
+		listeners:   make([]autoResolveListener, 0),
 	}
 	ar.StandardListeners()
 	return ar
 }
 
-// StandardListeners adds the usual listeners into the auto-resolve cycle
+// StandardListeners adds the usual listeners into the auto-resolve cycle.
 func (ar *AutoResolver) StandardListeners() {
-	ar.addListener(func(trigger, done triggerChannel, ch announceChannel) {
+	ar.addListener(func(trigger, done TriggerChannel, ch announceChannel) {
 		ar.afterDone(trigger, done, ch)
 	})
-	ar.addListener(func(trigger, done triggerChannel, ch announceChannel) {
+	ar.addListener(func(trigger, done TriggerChannel, ch announceChannel) {
 		ar.errorLogging(trigger, done, ch)
 	})
 }
 
-func (ar *AutoResolver) addListener(f AutoResolveListener) {
+func (ar *AutoResolver) addListener(f autoResolveListener) {
 	ar.listeners = append(ar.listeners, f)
 }
 
-// Kickoff starts the auto-resolve cycle
-func (ar *AutoResolver) Kickoff() triggerChannel {
-	trigger := make(triggerChannel)
+// Kickoff starts the auto-resolve cycle.
+func (ar *AutoResolver) Kickoff() TriggerChannel {
+	trigger := make(TriggerChannel)
 	announce := make(announceChannel)
-	done := make(triggerChannel)
+	done := make(TriggerChannel)
 
 	var fanout []announceChannel
 
@@ -69,7 +71,7 @@ func (ar *AutoResolver) Kickoff() triggerChannel {
 	for _, tf := range ar.listeners {
 		ch := make(announceChannel)
 		fanout = append(fanout, ch)
-		go func(f AutoResolveListener, ch announceChannel) {
+		go func(f autoResolveListener, ch announceChannel) {
 			loopTilDone(func() {
 				f(trigger, done, ch)
 			}, done)
@@ -84,7 +86,7 @@ func (ar *AutoResolver) Kickoff() triggerChannel {
 	return done
 }
 
-func loopTilDone(f func(), done triggerChannel) {
+func loopTilDone(f func(), done TriggerChannel) {
 	for {
 		select {
 		default:
@@ -95,7 +97,7 @@ func loopTilDone(f func(), done triggerChannel) {
 	}
 }
 
-func (ar *AutoResolver) resolveLoop(tc, done triggerChannel, ac announceChannel) {
+func (ar *AutoResolver) resolveLoop(tc, done TriggerChannel, ac announceChannel) {
 	select {
 	case <-done:
 		return
@@ -119,7 +121,7 @@ func (ar *AutoResolver) resolveLoop(tc, done triggerChannel, ac announceChannel)
 				break
 			}
 
-			ac <- ar.Resolver.Resolve(gdm, state.Defs.Clusters)
+			ac <- ar.Resolver.Begin(gdm, state.Defs.Clusters).Wait()
 			ar.LogSet.Debug.Print("Completed resolve")
 		case <-done:
 			return
@@ -132,7 +134,7 @@ func (ar *AutoResolver) resolveLoop(tc, done triggerChannel, ac announceChannel)
 	}
 }
 
-func (ar *AutoResolver) afterDone(tc, done triggerChannel, ac announceChannel) {
+func (ar *AutoResolver) afterDone(tc, done TriggerChannel, ac announceChannel) {
 	select {
 	case <-done:
 		return
@@ -146,7 +148,7 @@ func (ar *AutoResolver) afterDone(tc, done triggerChannel, ac announceChannel) {
 	tc.trigger()
 }
 
-func (ar *AutoResolver) errorLogging(tc, done triggerChannel, errs announceChannel) {
+func (ar *AutoResolver) errorLogging(tc, done TriggerChannel, errs announceChannel) {
 	select {
 	case <-done:
 		return
@@ -157,7 +159,7 @@ func (ar *AutoResolver) errorLogging(tc, done triggerChannel, errs announceChann
 	}
 }
 
-func (ar *AutoResolver) multicast(done triggerChannel, ac announceChannel, fo []announceChannel) {
+func (ar *AutoResolver) multicast(done TriggerChannel, ac announceChannel, fo []announceChannel) {
 	select {
 	case <-done:
 		return
