@@ -172,20 +172,23 @@ func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveStatus
 		})
 
 		namer := NewDeployableChans(10)
+		var wg sync.WaitGroup
 		status.performGuaranteedPhase("resolving deployment artifacts", func() {
 			errs := make(chan error)
+			wg.Add(1)
 			go func() {
 				for err := range errs {
 					status.Log <- DiffResolution{Error: err}
 				}
+				wg.Done()
 			}()
 			// TODO: ResolveNames should take rs.Log instead of errs.
 			namer.ResolveNames(r.Registry, &diffs, errs)
-			close(errs)
 		})
 
 		status.performGuaranteedPhase("rectification", func() {
 			r.rectify(namer, status.Log)
 		})
+		wg.Wait()
 	})
 }
