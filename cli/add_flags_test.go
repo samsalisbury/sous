@@ -11,16 +11,16 @@ import (
 
 func TestAddFlagsForRectify(t *testing.T) {
 	expectedHelpText := `
-	-all
-				all deployments should be considered
-	-cluster string
-				target deployment cluster
-	-flavor string
-				flavor is a short string used to differentiate alternative deployments
-	-offset string
-				source code relative repository offset
-	-repo string
-				source code repository location
+  -all
+        all deployments should be considered
+  -cluster string
+        the deployment environment to consider
+  -flavor string
+        flavor is a short string used to differentiate alternative deployments
+  -offset string
+        source code relative repository offset
+  -repo string
+        source code repository location
 `
 
 	fs := flag.NewFlagSet("rectify", flag.ContinueOnError)
@@ -91,7 +91,7 @@ func TestAddFlags(t *testing.T) {
   -repo string
         source code repository location
   -revision string
-        source code revision ID
+        the ID of a revision in the repository to act upon
   -tag string
         source code revision tag
 `
