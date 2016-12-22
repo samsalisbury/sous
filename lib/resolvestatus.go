@@ -95,6 +95,7 @@ func (rr *ResolveRecorder) foldErrors(log chan DiffResolution) error {
 	if len(re.Causes) > 0 {
 		return re
 	}
+
 	return nil
 }
 
