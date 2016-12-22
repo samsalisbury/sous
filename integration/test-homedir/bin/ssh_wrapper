@@ -1,0 +1,3 @@
+#! /bin/sh
+
+ssh -F "${HOME}/dot-ssh/config" "${@}"

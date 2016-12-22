@@ -40,11 +40,15 @@ func fileDiffs(pathPairs [][]string, localMD5, remoteMD5 map[string]string) [][]
 		localHash, localPresent := localMD5[localPath]
 		remoteHash, remotePresent := remoteMD5[remotePath]
 
-		log.Printf("%s(%t %s)/%s(%t %s)",
-			localPath, localPresent, localHash,
-			remotePath, remotePresent, remoteHash)
+		log.Printf("local  (present: %t %s) %s",
+			localPresent, localHash, localPath)
+		log.Printf("remote (present: %t %s) %s",
+			remotePresent, remoteHash, remotePath)
 		if localPresent != remotePresent || strings.Compare(remoteHash, localHash) != 0 {
 			differentPairs = append(differentPairs, []string{localPath, remotePath})
+			log.Printf(" - differ!\n")
+		} else {
+			log.Printf(" - same.\n")
 		}
 	}
 
@@ -52,7 +56,7 @@ func fileDiffs(pathPairs [][]string, localMD5, remoteMD5 map[string]string) [][]
 }
 
 func composeService(dir string, ip net.IP, env []string, servicePorts serviceMap, timeout time.Duration) (shutdown *command, err error) {
-	if !servicesRunning(3.0, ip, servicePorts) {
+	if !servicesRunning(time.Second/2, ip, servicePorts) {
 		log.Printf("Services need to be started - tip: running `docker-compose up` in %s will speed tests up.", dir)
 
 		shutdownCmd := dockerComposeUp(dir, ip, env, servicePorts, timeout)

@@ -191,7 +191,7 @@ func (m *Machine) Exec(args ...string) error {
 
 func dockerMachine(args ...string) (stdout, stderr string, err error) {
 	c := runCommand("docker-machine", args...)
-	log.Printf("%+v %+v %#v\n\n", c.itself, c.err, c)
+	log.Println(c.String())
 	return c.stdout, c.stderr, c.err
 }
 

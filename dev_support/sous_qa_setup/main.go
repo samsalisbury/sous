@@ -22,6 +22,7 @@ type (
 	parameters struct {
 		timeout    string
 		shutdown   bool
+		debug      bool
 		outPath    string
 		composeDir string
 	}
@@ -42,6 +43,7 @@ Options:
    --timeout=<timeout>          Time allowed before a non-response by services is considered failure [default: 5m]
    --out-path=<path>            The path to write the description of the environment to, or - for stdout [default: -]
    -K --shutdown                Rather than set up the QA environment, shut it down
+   --debug                      Some extra debugging info
 `
 )
 
@@ -99,6 +101,10 @@ func main() {
 	opts, err := parseOpts()
 	if err != nil {
 		log.Fatal(err)
+	}
+	if opts.debug {
+		log.SetFlags(log.Lshortfile | log.Ltime)
+		log.Print("Debug mode enabled")
 	}
 	testAgent := buildAgent(opts)
 	defer func() { testAgent.Cleanup() }()

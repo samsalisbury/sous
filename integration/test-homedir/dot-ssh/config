@@ -1,0 +1,3 @@
+UserKnownHostsFile /dev/null
+StrictHostKeyChecking no
+IdentityFile /Users/jlester/golang/src/github.com/opentable/sous/integration/test-registry/git-server/git_pubkey_rsa
