@@ -128,11 +128,21 @@ func NewResolver(d Deployer, r Registry, rf *ResolveFilter) *Resolver {
 func (r *Resolver) rectify(dcs *DeployableChans, results chan DiffResolution) {
 	d := r.Deployer
 	wg := &sync.WaitGroup{}
-	wg.Add(3)
+	wg.Add(4)
 	go func() { d.RectifyCreates(dcs.Start, results); wg.Done() }()
 	go func() { d.RectifyDeletes(dcs.Stop, results); wg.Done() }()
 	go func() { d.RectifyModifies(dcs.Update, results); wg.Done() }()
+	go func() { r.reportStable(dcs.Stable, results); wg.Done() }()
 	wg.Wait()
+}
+
+func (r *Resolver) reportStable(stable chan Deployable, results chan DiffResolution) {
+	for dep := range stable {
+		results <- DiffResolution{
+			DeployID: dep.ID(),
+			Desc:     "unchanged",
+		}
+	}
 }
 
 // Begin is similar to Resolve, except that it returns a ResolveStatus almost

@@ -90,10 +90,10 @@ func (ar *AutoResolver) Kickoff() TriggerChannel {
 }
 
 // Status returns the current status of the resolution underway.
-func (ar *AutoResolver) Status() *ResolveStatus {
+func (ar *AutoResolver) Status() ResolveStatus {
 	ar.RLock()
 	defer ar.RUnlock()
-	return ar.status
+	return *ar.status
 }
 
 func loopTilDone(f func(), done TriggerChannel) {
