@@ -17,7 +17,7 @@ func (SousManifest) Subcommands() cmdr.Commands {
 func (*SousManifest) Help() string { return sousManifestHelp }
 
 func (sm *SousManifest) Execute(args []string) cmdr.Result {
-	err := UsageErrorf("usage: sous manifest [options] <command>")
+	err := cmdr.UsageErrorf("usage: sous manifest [options] <command>")
 	err.Tip = "try `sous manifest help` for a list of commands"
 	return err
 }

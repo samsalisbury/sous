@@ -62,5 +62,5 @@ func (smg *SousManifestSet) Execute(args []string) cmdr.Result {
 		return EnsureErrorResult(err)
 	}
 
-	return Success()
+	return cmdr.Success()
 }

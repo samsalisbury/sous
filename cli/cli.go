@@ -16,14 +16,7 @@ import (
 
 // Func aliases, for convenience returning from commands.
 var (
-	SuccessData    = cmdr.SuccessData
-	Successf       = cmdr.Successf
-	Success        = cmdr.Success
-	UsageErrorf    = cmdr.UsageErrorf
-	OSErrorf       = cmdr.OSErrorf
-	IOErrorf       = cmdr.IOErrorf
-	InternalErrorf = cmdr.InternalErrorf
-	GeneralErrorf  = func(format string, a ...interface{}) cmdr.ErrorResult {
+	GeneralErrorf = func(format string, a ...interface{}) cmdr.ErrorResult {
 		return EnsureErrorResult(fmt.Errorf(format, a...))
 	}
 	EnsureErrorResult = func(err error) cmdr.ErrorResult {
@@ -38,7 +31,7 @@ func ProduceResult(err error) cmdr.Result {
 		return EnsureErrorResult(err)
 	}
 
-	return Success()
+	return cmdr.Success()
 }
 
 type (
@@ -63,9 +56,9 @@ type (
 func SuccessYAML(v interface{}) cmdr.Result {
 	b, err := yaml.Marshal(v)
 	if err != nil {
-		return InternalErrorf("unable to marshal YAML: %s", err)
+		return cmdr.InternalErrorf("unable to marshal YAML: %s", err)
 	}
-	return SuccessData(b)
+	return cmdr.SuccessData(b)
 }
 
 // Plumbing injects a command with the current psyringe,

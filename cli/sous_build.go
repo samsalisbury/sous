@@ -65,5 +65,5 @@ func (sb *SousBuild) Execute(args []string) cmdr.Result {
 	if err != nil {
 		return cmdr.EnsureErrorResult(err)
 	}
-	return Success(result)
+	return cmdr.Success(result)
 }

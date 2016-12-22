@@ -63,7 +63,7 @@ func (sd *SousDeploy) Execute(args []string) cmdr.Result {
 	}
 
 	if sd.Config.Server != "" {
-		return Successf("Deployment instigated; handed off to server.")
+		return cmdr.Successf("Deployment instigated; handed off to server.")
 	}
 
 	// Running serverless, so run rectify.
