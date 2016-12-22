@@ -136,7 +136,7 @@ func (r *Resolver) rectify(dcs *DeployableChans, results chan DiffResolution) {
 	wg.Wait()
 }
 
-func (r *Resolver) reportStable(stable chan Deployable, results chan DiffResolution) {
+func (r *Resolver) reportStable(stable chan *Deployable, results chan DiffResolution) {
 	for dep := range stable {
 		results <- DiffResolution{
 			DeployID: dep.ID(),
@@ -145,50 +145,50 @@ func (r *Resolver) reportStable(stable chan Deployable, results chan DiffResolut
 	}
 }
 
-// Begin is similar to Resolve, except that it returns a ResolveStatus almost
+// Begin is similar to Resolve, except that it returns a ResolveRecorder almost
 // immediately, which can be queried for information about the ongoing
 // resolution. You can check if resolution is finished by calling Done() on the
-// returned ResolveStatus.
+// returned ResolveRecorder.
 //
 // This process drives the Sous deployment resolution process. It calls out to
 // the appropriate components to compute the intended deployment set, collect
 // the actual set, compute the diffs and then issue the commands to rectify
 // those differences.
-func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveStatus {
-	return NewResolveStatus(func(status *ResolveStatus) {
-		status.performGuaranteedPhase("filtering clusters", func() {
+func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveRecorder {
+	return NewResolveRecorder(func(recorder *ResolveRecorder) {
+		recorder.performGuaranteedPhase("filtering clusters", func() {
 			clusters = r.FilteredClusters(clusters)
 		})
 
-		status.performGuaranteedPhase("filtering intended deployments", func() {
+		recorder.performGuaranteedPhase("filtering intended deployments", func() {
 			intended = intended.Filter(r.FilterDeployment)
 		})
 
 		var actual Deployments
 
-		status.performPhase("getting running deployments", func() error {
+		recorder.performPhase("getting running deployments", func() error {
 			var err error
 			actual, err = r.Deployer.RunningDeployments(r.Registry, clusters)
 			return err
 		})
 
-		status.performGuaranteedPhase("filtering running deployments", func() {
+		recorder.performGuaranteedPhase("filtering running deployments", func() {
 			actual = actual.Filter(r.FilterDeployment)
 		})
 
 		var diffs DiffChans
-		status.performGuaranteedPhase("generating diff", func() {
+		recorder.performGuaranteedPhase("generating diff", func() {
 			diffs = actual.Diff(intended)
 		})
 
 		namer := NewDeployableChans(10)
 		var wg sync.WaitGroup
-		status.performGuaranteedPhase("resolving deployment artifacts", func() {
+		recorder.performGuaranteedPhase("resolving deployment artifacts", func() {
 			errs := make(chan error)
 			wg.Add(1)
 			go func() {
 				for err := range errs {
-					status.Log <- DiffResolution{Error: err}
+					recorder.Log <- DiffResolution{Error: err}
 				}
 				wg.Done()
 			}()
@@ -196,8 +196,8 @@ func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveStatus
 			namer.ResolveNames(r.Registry, &diffs, errs)
 		})
 
-		status.performGuaranteedPhase("rectification", func() {
-			r.rectify(namer, status.Log)
+		recorder.performGuaranteedPhase("rectification", func() {
+			r.rectify(namer, recorder.Log)
 		})
 		wg.Wait()
 	})

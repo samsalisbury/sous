@@ -2,55 +2,88 @@ package sous
 
 import "sync"
 
-// ResolveStatus represents the status of a resolve run.
-type ResolveStatus struct {
-	// phase is used to tell the user which phase the resolution is in.
-	phase string
-	// Log is a channel of statuses of individual diff resolutions.
-	Log chan DiffResolution
-	// finished may be closed with no error, or closed after a single
-	// error is emitted to the channel.
-	finished chan struct{}
-	// err is the final error returned from a phase that ends the resolution.
-	err error
-	sync.RWMutex
-}
+type (
+	// ResolveStatus captures the status of a Resolve
+	ResolveStatus struct {
+		Phase string
+		Log   []DiffResolution
+		Errs  ResolveErrors
+	}
 
-// DiffResolution is the result of applying a single diff.
-type DiffResolution struct {
-	DeployID DeployID
-	Desc     string
-	Error    error
-}
+	// ResolveRecorder represents the status of a resolve run.
+	ResolveRecorder struct {
+		status *ResolveStatus
+		// Log is a channel of statuses of individual diff resolutions.
+		Log chan DiffResolution
+		// finished may be closed with no error, or closed after a single
+		// error is emitted to the channel.
+		finished chan struct{}
+		// err is the final error returned from a phase that ends the resolution.
+		err error
+		sync.RWMutex
+	}
 
-// NewResolveStatus creates a new ResolveStatus and calls f with it as its
-// argument. It then returns that ResolveStatus immediately.
-func NewResolveStatus(f func(*ResolveStatus)) *ResolveStatus {
-	rs := &ResolveStatus{
+	// DiffResolution is the result of applying a single diff.
+	DiffResolution struct {
+		DeployID DeployID
+		Desc     string
+		Error    error
+	}
+)
+
+// NewResolveRecorder creates a new ResolveRecorder and calls f with it as its
+// argument. It then returns that ResolveRecorder immediately.
+func NewResolveRecorder(f func(*ResolveRecorder)) *ResolveRecorder {
+	rr := &ResolveRecorder{
+		status: &ResolveStatus{
+			Log:  []DiffResolution{},
+			Errs: ResolveErrors{Causes: []error{}},
+		},
 		Log:      make(chan DiffResolution, 1e6),
 		finished: make(chan struct{}),
 	}
+
 	go func() {
-		f(rs)
-		close(rs.Log)
-		rs.write(func() {
+		for rez := range rr.Log {
+			rr.write(func() {
+				rr.status.Log = append(rr.status.Log, rez)
+				if rez.Error != nil {
+					rr.status.Errs.Causes = append(rr.status.Errs.Causes, rez.Error)
+					Log.Debug.Printf("resolve error = %+v\n", rez.Error)
+				}
+			})
+		}
+	}()
+
+	go func() {
+		f(rr)
+		close(rr.Log)
+		rr.write(func() {
 			select {
 			default:
-				close(rs.finished)
-			case _, open := <-rs.finished:
+				close(rr.finished)
+			case _, open := <-rr.finished:
 				if open {
-					close(rs.finished)
+					close(rr.finished)
 				}
 			}
-			if rs.err == nil {
-				rs.phase = "finished"
+			if rr.err == nil {
+				rr.status.Phase = "finished"
 			}
 		})
 	}()
-	return rs
+	return rr
 }
 
-func (rs *ResolveStatus) foldErrors(log chan DiffResolution) error {
+// Err returns any collected error from the course of resolution
+func (rs *ResolveStatus) Err() error {
+	if len(rs.Errs.Causes) > 0 {
+		return &rs.Errs
+	}
+	return nil
+}
+
+func (rr *ResolveRecorder) foldErrors(log chan DiffResolution) error {
 	re := &ResolveErrors{Causes: []error{}}
 	for err := range log {
 		if err.Error != nil {
@@ -66,9 +99,9 @@ func (rs *ResolveStatus) foldErrors(log chan DiffResolution) error {
 }
 
 // Done returns true if the resolution has finished. Otherwise it returns false.
-func (rs *ResolveStatus) Done() bool {
+func (rr *ResolveRecorder) Done() bool {
 	select {
-	case <-rs.finished:
+	case <-rr.finished:
 		return true
 	default:
 		return false
@@ -76,71 +109,71 @@ func (rs *ResolveStatus) Done() bool {
 }
 
 // Wait blocks until the resolution is finished.
-func (rs *ResolveStatus) Wait() error {
-	<-rs.finished
+func (rr *ResolveRecorder) Wait() error {
+	<-rr.finished
 	var err error
-	rs.read(func() { err = rs.err })
+	rr.read(func() { err = rr.err })
 	if err != nil {
 		return err
 	}
-	return rs.foldErrors(rs.Log)
+	return rr.status.Err()
 }
 
 // performPhase performs the requested phase, only if nothing has cancelled the
 // resolve.
-func (rs *ResolveStatus) performPhase(name string, f func() error) {
-	if rs.Done() {
+func (rr *ResolveRecorder) performPhase(name string, f func() error) {
+	if rr.Done() {
 		return
 	}
-	rs.setPhase(name)
+	rr.setPhase(name)
 	if err := f(); err != nil {
-		rs.doneWithError(err)
+		rr.doneWithError(err)
 	}
 }
 
-func (rs *ResolveStatus) performGuaranteedPhase(name string, f func()) {
-	rs.performPhase(name, func() error { f(); return nil })
+func (rr *ResolveRecorder) performGuaranteedPhase(name string, f func()) {
+	rr.performPhase(name, func() error { f(); return nil })
 }
 
 // setPhase sets the phase of this resolve status.
-func (rs *ResolveStatus) setPhase(phase string) {
-	rs.write(func() {
-		rs.phase = phase
+func (rr *ResolveRecorder) setPhase(phase string) {
+	rr.write(func() {
+		rr.status.Phase = phase
 	})
 }
 
 // Phase returns the name of the current phase.
-func (rs *ResolveStatus) Phase() string {
+func (rr *ResolveRecorder) Phase() string {
 	var phase string
-	rs.read(func() { phase = rs.phase })
+	rr.read(func() { phase = rr.status.Phase })
 	return phase
 }
 
-// write encapsulates locking this ResolveStatus for writing using f.
-func (rs *ResolveStatus) write(f func()) {
-	rs.Lock()
-	defer rs.Unlock()
+// write encapsulates locking this ResolveRecorder for writing using f.
+func (rr *ResolveRecorder) write(f func()) {
+	rr.Lock()
+	defer rr.Unlock()
 	f()
 }
 
-// read encapsulates locking this ResolveStatus for reading using f.
-func (rs *ResolveStatus) read(f func()) {
-	rs.RLock()
-	defer rs.RUnlock()
+// read encapsulates locking this ResolveRecorder for reading using f.
+func (rr *ResolveRecorder) read(f func()) {
+	rr.RLock()
+	defer rr.RUnlock()
 	f()
 }
 
 // doneWithError marks the resolution as finished with an error.
-func (rs *ResolveStatus) doneWithError(err error) {
-	rs.write(func() {
-		rs.err = err
-		close(rs.finished)
+func (rr *ResolveRecorder) doneWithError(err error) {
+	rr.write(func() {
+		rr.err = err
+		close(rr.finished)
 	})
 }
 
 // done marks the resolution as done.
-func (rs *ResolveStatus) done() {
-	rs.write(func() {
-		close(rs.finished)
+func (rr *ResolveRecorder) done() {
+	rr.write(func() {
+		close(rr.finished)
 	})
 }

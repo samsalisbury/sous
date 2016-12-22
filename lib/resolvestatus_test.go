@@ -58,17 +58,17 @@ var resolveStatusTests = []struct {
 	},
 }
 
-func TestResolveStatus(t *testing.T) {
+func TestResolveRecorder(t *testing.T) {
 
 	for testNum, test := range resolveStatusTests {
 
-		// block is used to block the func passed to NewResolveStatus from
+		// block is used to block the func passed to NewResolveRecorder from
 		// completing so we can run assertions that need to happen prior to
 		// completion.
 		block := make(chan struct{})
 
 		// Run all the phases in the test in order.
-		rs := NewResolveStatus(func(rs *ResolveStatus) {
+		rs := NewResolveRecorder(func(rs *ResolveRecorder) {
 			for phaseNum, phase := range test.Phases {
 				// Note 1: 1-indexed phase naming.
 				phaseName := fmt.Sprintf("test %d; phase %d", testNum+1, phaseNum+1)

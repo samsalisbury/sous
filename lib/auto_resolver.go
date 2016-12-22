@@ -24,7 +24,7 @@ type (
 		*LogSet
 		listeners []autoResolveListener
 		sync.RWMutex
-		status *ResolveStatus
+		status *ResolveRecorder
 	}
 )
 
@@ -90,7 +90,7 @@ func (ar *AutoResolver) Kickoff() TriggerChannel {
 }
 
 // Status returns the current status of the resolution underway.
-func (ar *AutoResolver) Status() ResolveStatus {
+func (ar *AutoResolver) Status() ResolveRecorder {
 	ar.RLock()
 	defer ar.RUnlock()
 	return *ar.status
