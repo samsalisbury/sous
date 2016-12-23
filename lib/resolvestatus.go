@@ -1,6 +1,8 @@
 package sous
 
-import "sync"
+import (
+	"sync"
+)
 
 type (
 	// ResolveStatus captures the status of a Resolve
@@ -53,20 +55,13 @@ func NewResolveRecorder(f func(*ResolveRecorder)) *ResolveRecorder {
 				}
 			})
 		}
+		close(rr.finished)
 	}()
 
 	go func() {
 		f(rr)
 		close(rr.Log)
 		rr.write(func() {
-			select {
-			default:
-				close(rr.finished)
-			case _, open := <-rr.finished:
-				if open {
-					close(rr.finished)
-				}
-			}
 			if rr.err == nil {
 				rr.status.Phase = "finished"
 			}
@@ -83,20 +78,16 @@ func (rs *ResolveStatus) Err() error {
 	return nil
 }
 
-func (rr *ResolveRecorder) foldErrors(log chan DiffResolution) error {
-	re := &ResolveErrors{Causes: []error{}}
-	for err := range log {
-		if err.Error != nil {
-			re.Causes = append(re.Causes, err.Error)
-			Log.Debug.Printf("resolve error = %+v\n", err)
-		}
-	}
-
-	if len(re.Causes) > 0 {
-		return re
-	}
-
-	return nil
+// CurrentStatus returns a copy of the current status of the resolve
+func (rr *ResolveRecorder) CurrentStatus() (rs ResolveStatus) {
+	rr.read(func() {
+		rs = *rr.status
+		rs.Log = make([]DiffResolution, len(rr.status.Log))
+		copy(rs.Log, rr.status.Log)
+		rs.Errs.Causes = make([]error, len(rr.status.Errs.Causes))
+		copy(rs.Errs.Causes, rr.status.Errs.Causes)
+	})
+	return
 }
 
 // Done returns true if the resolution has finished. Otherwise it returns false.
@@ -120,10 +111,17 @@ func (rr *ResolveRecorder) Wait() error {
 	return rr.status.Err()
 }
 
+func (rr *ResolveRecorder) earlyExit() (yes bool) {
+	rr.read(func() {
+		yes = (rr.err != nil)
+	})
+	return
+}
+
 // performPhase performs the requested phase, only if nothing has cancelled the
 // resolve.
 func (rr *ResolveRecorder) performPhase(name string, f func() error) {
-	if rr.Done() {
+	if rr.earlyExit() {
 		return
 	}
 	rr.setPhase(name)
@@ -168,13 +166,5 @@ func (rr *ResolveRecorder) read(f func()) {
 func (rr *ResolveRecorder) doneWithError(err error) {
 	rr.write(func() {
 		rr.err = err
-		close(rr.finished)
-	})
-}
-
-// done marks the resolution as done.
-func (rr *ResolveRecorder) done() {
-	rr.write(func() {
-		close(rr.finished)
 	})
 }
