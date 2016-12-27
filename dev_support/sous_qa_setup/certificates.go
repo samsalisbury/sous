@@ -20,7 +20,7 @@ import (
 
 func registryCerts(testAgent test_with_docker.Agent, composeDir string, desc desc.EnvDesc) error {
 	registryCertName := "testing.crt"
-	certPath := filepath.Join(composeDir, registryCertName)
+	certPath := filepath.Join(composeDir, "docker-registry", registryCertName)
 	caPath := fmt.Sprintf("/etc/docker/certs.d/%s/ca.crt", desc.RegistryName)
 
 	certIPs, err := getCertIPSans(filepath.Join(composeDir, registryCertName))
