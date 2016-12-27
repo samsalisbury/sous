@@ -8,13 +8,16 @@ import (
 	"github.com/opentable/sous/lib"
 )
 
-func TestHandlesGDMGet(t *testing.T) {
+func TestHandlesStatusGet(t *testing.T) {
 	assert := assert.New(t)
 
-	th := &GDMHandler{graph.CurrentGDM{
-		Deployments: sous.NewDeployments(),
-	}}
+	th := &StatusHandler{
+		GDM: graph.CurrentGDM{
+			Deployments: sous.NewDeployments(),
+		},
+		AutoResolver: &sous.AutoResolver{},
+	}
 	data, status := th.Exchange()
 	assert.Equal(status, 200)
-	assert.Len(data.(gdmWrapper).Deployments, 0)
+	assert.Len(data.(StatusResource).Deployments, 0)
 }
