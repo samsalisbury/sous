@@ -20,11 +20,9 @@ type SousMetadataSet struct {
 
 func init() { MetadataSubcommands["set"] = &SousMetadataSet{} }
 
-const sousMetadataSetHelp = `
-set deployment metadata
-`
+const sousMetadataSetHelp = `set deployment metadata`
 
-func (*SousMetadataSet) Help() string { return sousMetadataHelp }
+func (*SousMetadataSet) Help() string { return sousMetadataSetHelp }
 
 func (smg *SousMetadataSet) AddFlags(fs *flag.FlagSet) {
 	MustAddFlags(fs, &smg.DeployFilterFlags, MetadataFilterFlagsHelp)
@@ -61,5 +59,5 @@ func (smg *SousMetadataSet) Execute(args []string) cmdr.Result {
 		return EnsureErrorResult(err)
 	}
 
-	return Success()
+	return cmdr.Success()
 }

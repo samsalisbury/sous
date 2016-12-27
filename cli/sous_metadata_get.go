@@ -25,7 +25,7 @@ func init() { MetadataSubcommands["get"] = &SousMetadataGet{} }
 
 const sousMetadataGetHelp = `query deployment metadata`
 
-func (*SousMetadataGet) Help() string { return sousMetadataHelp }
+func (*SousMetadataGet) Help() string { return sousMetadataGetHelp }
 
 func (smg *SousMetadataGet) AddFlags(fs *flag.FlagSet) {
 	MustAddFlags(fs, &smg.DeployFilterFlags, MetadataFilterFlagsHelp)
@@ -51,7 +51,7 @@ func (smg *SousMetadataGet) Execute(args []string) cmdr.Result {
 		if err := outputMetadata(dep.Metadata, smg.ResolveFilter.Cluster, args, smg.OutWriter); err != nil {
 			return EnsureErrorResult(err)
 		}
-		return Success()
+		return cmdr.Success()
 	}
 
 	manis, err := filtered.Manifests(smg.State.Defs)
@@ -73,7 +73,7 @@ func (smg *SousMetadataGet) Execute(args []string) cmdr.Result {
 		}
 	}
 
-	return Success()
+	return cmdr.Success()
 }
 
 func outputMetadata(metadata sous.Metadata, clusterName string, args []string, out io.Writer) error {

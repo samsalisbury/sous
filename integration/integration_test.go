@@ -193,7 +193,7 @@ func TestMissingImage(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = r.Resolve(deploymentsOne, clusterDefs.Clusters)
+	err = r.Begin(deploymentsOne, clusterDefs.Clusters).Wait()
 
 	assert.Error(err)
 
@@ -264,7 +264,7 @@ func TestResolve(t *testing.T) {
 
 	r := sous.NewResolver(deployer, nc, &sous.ResolveFilter{})
 
-	err = r.Resolve(deploymentsOneTwo, clusterDefs.Clusters)
+	err = r.Begin(deploymentsOneTwo, clusterDefs.Clusters).Wait()
 	if err != nil {
 		assert.Fail(err.Error())
 	}
@@ -297,7 +297,7 @@ func TestResolve(t *testing.T) {
 
 		r := sous.NewResolver(deployer, nc, &sous.ResolveFilter{})
 
-		err := r.Resolve(deploymentsTwoThree, clusterDefs.Clusters)
+		err := r.Begin(deploymentsTwoThree, clusterDefs.Clusters).Wait()
 		if err != nil {
 			if !conflictRE.MatchString(err.Error()) {
 				assert.FailNow(err.Error())

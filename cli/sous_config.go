@@ -30,21 +30,21 @@ func (sc *SousConfig) Execute(args []string) cmdr.Result {
 	c := graph.LocalSousConfig{Config: sc.Config.Config}
 	switch len(args) {
 	default:
-		return UsageErrorf("expected 0-2 arguments, received %d", len(args))
+		return cmdr.UsageErrorf("expected 0-2 arguments, received %d", len(args))
 	case 0:
-		return Successf(c.String())
+		return cmdr.Successf(c.String())
 	case 1:
 		name := args[0]
 		v, err := c.GetValue(name)
 		if err != nil {
-			return UsageErrorf("%s", err)
+			return cmdr.UsageErrorf("%s", err)
 		}
-		return Successf(v)
+		return cmdr.Successf(v)
 	case 2:
 		name, value := args[0], args[1]
 		if err := c.SetValue(sc.User.ConfigFile(), name, value); err != nil {
 			return EnsureErrorResult(err)
 		}
-		return Successf("set %s to %q", name, value)
+		return cmdr.Successf("set %s to %q", name, value)
 	}
 }

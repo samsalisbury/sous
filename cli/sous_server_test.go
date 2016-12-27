@@ -43,25 +43,22 @@ func TestEnsureGDMExists(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Create the empty source repo.
-	c := exec.Command("git", "init")
-	c.Dir = gdmSourceRepo
-	if err := c.Run(); err != nil {
-		t.Fatal(err)
+	git := func(args ...string) {
+		c := exec.Command("git", args...)
+		c.Dir = gdmSourceRepo
+		if err := c.Run(); err != nil {
+			t.Fatal(err)
+		}
 	}
+
+	// Create the empty source repo.
+	git("init")
+	git("config", "commit.gpgSign", "false")
 	if err := ioutil.WriteFile(path.Join(gdmSourceRepo, "a-file"), []byte("hi"), 0777); err != nil {
 		t.Fatal(err)
 	}
-	c = exec.Command("git", "add", "-A")
-	c.Dir = gdmSourceRepo
-	if err := c.Run(); err != nil {
-		t.Fatal(err)
-	}
-	c = exec.Command("git", "commit", "-m", "a message")
-	c.Dir = gdmSourceRepo
-	if err := c.Run(); err != nil {
-		t.Fatal(err)
-	}
+	git("add", "-A")
+	git("commit", "-m", "a message")
 
 	// SourceLocation dir does not exist; repo does.
 	if err := ensureGDMExists(gdmSourceRepo, nonexistentSourceLocation, t.Logf); err != nil {

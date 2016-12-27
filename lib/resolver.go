@@ -3,8 +3,6 @@ package sous
 import (
 	"fmt"
 	"sync"
-
-	"github.com/opentable/sous/util/firsterr"
 )
 
 type (
@@ -16,7 +14,8 @@ type (
 		*ResolveFilter
 	}
 
-	// A ResolveFilter filters Deployments and Clusters for the purpose of Resolve.resolve()
+	// A ResolveFilter filters Deployments and Clusters for the purpose of
+	// Resolve.resolve().
 	ResolveFilter struct {
 		Repo     string
 		Offset   string
@@ -32,7 +31,7 @@ type (
 	DeploymentPredicate func(*Deployment) bool
 )
 
-// All returns true if the ResolveFilter would allow all deployments
+// All returns true if the ResolveFilter would allow all deployments.
 func (rf *ResolveFilter) All() bool {
 	return rf.Repo == "" &&
 		rf.Offset == "" &&
@@ -66,7 +65,8 @@ func (rf *ResolveFilter) String() string {
 		cl, rp, of, fl, tg, rv)
 }
 
-// FilteredClusters returns a new Clusters relevant to the Deployments that this ResolveFilter would permit
+// FilteredClusters returns a new Clusters relevant to the Deployments that this
+// ResolveFilter would permit.
 func (rf *ResolveFilter) FilteredClusters(c Clusters) Clusters {
 	newC := make(Clusters)
 	for n, c := range c {
@@ -78,7 +78,8 @@ func (rf *ResolveFilter) FilteredClusters(c Clusters) Clusters {
 	return newC
 }
 
-// FilterDeployment behaves as a DeploymentPredicate, filtering Deployments if they match its criteria
+// FilterDeployment behaves as a DeploymentPredicate, filtering Deployments if
+// they match its criteria.
 func (rf *ResolveFilter) FilterDeployment(d *Deployment) bool {
 	if rf.Repo != "" && d.SourceID.Location.Repo != rf.Repo {
 		return false
@@ -102,7 +103,7 @@ func (rf *ResolveFilter) FilterDeployment(d *Deployment) bool {
 }
 
 // FilterManifest returns true if ???
-// TODO: @nyarly can you provide a description of what this function does
+// TODO: @nyarly can you provide a description of what this function does?
 func (rf *ResolveFilter) FilterManifest(m *Manifest) bool {
 	if rf.Repo != "" && m.Source.Repo != rf.Repo {
 		return false
@@ -122,48 +123,72 @@ func NewResolver(d Deployer, r Registry, rf *ResolveFilter) *Resolver {
 	}
 }
 
-// Rectify takes a DiffChans and issues the commands to the infrastructure to reconcile the differences
-func (r *Resolver) rectify(dcs *DeployableChans, errs chan error) {
+// Rectify takes a DiffChans and issues the commands to the infrastructure to
+// reconcile the differences.
+func (r *Resolver) rectify(dcs *DeployableChans, results chan DiffResolution) {
 	d := r.Deployer
 	wg := &sync.WaitGroup{}
 	wg.Add(3)
-	go func() { d.RectifyCreates(dcs.Start, errs); wg.Done() }()
-	go func() { d.RectifyDeletes(dcs.Stop, errs); wg.Done() }()
-	go func() { d.RectifyModifies(dcs.Update, errs); wg.Done() }()
-	go func() { wg.Wait(); close(errs) }()
+	go func() { d.RectifyCreates(dcs.Start, results); wg.Done() }()
+	go func() { d.RectifyDeletes(dcs.Stop, results); wg.Done() }()
+	go func() { d.RectifyModifies(dcs.Update, results); wg.Done() }()
+	wg.Wait()
 }
 
-// Resolve drives the Sous deployment resolution process. It calls out to the
-// appropriate components to compute the intended deployment set, collect the
-// actual set, compute the diffs and then issue the commands to rectify those
-// differences.
-func (r *Resolver) Resolve(intended Deployments, clusters Clusters) error {
-	var ads Deployments
-	var diffs DiffChans
-	var namer *DeployableChans
-	errs := make(chan error)
-	return firsterr.Set(
-		func(*error) { clusters = r.FilteredClusters(clusters) },
-		func(e *error) { ads, *e = r.Deployer.RunningDeployments(r.Registry, clusters) },
-		func(*error) { intended = intended.Filter(r.FilterDeployment) },
-		func(*error) { ads = ads.Filter(r.FilterDeployment) },
-		func(*error) { diffs = ads.Diff(intended) },
-		func(*error) { namer = NewDeployableChans(10) },
-		func(*error) { namer.ResolveNames(r.Registry, &diffs, errs) },
-		func(*error) { r.rectify(namer, errs) },
-		func(e *error) { *e = foldErrors(errs) },
-	)
-}
+// Begin is similar to Resolve, except that it returns a ResolveStatus almost
+// immediately, which can be queried for information about the ongoing
+// resolution. You can check if resolution is finished by calling Done() on the
+// returned ResolveStatus.
+//
+// This process drives the Sous deployment resolution process. It calls out to
+// the appropriate components to compute the intended deployment set, collect
+// the actual set, compute the diffs and then issue the commands to rectify
+// those differences.
+func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveStatus {
+	return NewResolveStatus(func(status *ResolveStatus) {
+		status.performGuaranteedPhase("filtering clusters", func() {
+			clusters = r.FilteredClusters(clusters)
+		})
 
-func foldErrors(errs chan error) error {
-	re := &ResolveErrors{Causes: []error{}}
-	for err := range errs {
-		re.Causes = append(re.Causes, err)
-		Log.Debug.Printf("resolve error = %+v\n", err)
-	}
+		status.performGuaranteedPhase("filtering intended deployments", func() {
+			intended = intended.Filter(r.FilterDeployment)
+		})
 
-	if len(re.Causes) > 0 {
-		return re
-	}
-	return nil
+		var actual Deployments
+
+		status.performPhase("getting running deployments", func() error {
+			var err error
+			actual, err = r.Deployer.RunningDeployments(r.Registry, clusters)
+			return err
+		})
+
+		status.performGuaranteedPhase("filtering running deployments", func() {
+			actual = actual.Filter(r.FilterDeployment)
+		})
+
+		var diffs DiffChans
+		status.performGuaranteedPhase("generating diff", func() {
+			diffs = actual.Diff(intended)
+		})
+
+		namer := NewDeployableChans(10)
+		var wg sync.WaitGroup
+		status.performGuaranteedPhase("resolving deployment artifacts", func() {
+			errs := make(chan error)
+			wg.Add(1)
+			go func() {
+				for err := range errs {
+					status.Log <- DiffResolution{Error: err}
+				}
+				wg.Done()
+			}()
+			// TODO: ResolveNames should take rs.Log instead of errs.
+			namer.ResolveNames(r.Registry, &diffs, errs)
+		})
+
+		status.performGuaranteedPhase("rectification", func() {
+			r.rectify(namer, status.Log)
+		})
+		wg.Wait()
+	})
 }

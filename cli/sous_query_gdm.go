@@ -36,5 +36,5 @@ func (*SousQueryGDM) RegisterOn(psy Addable) {
 func (sb *SousQueryGDM) Execute(args []string) cmdr.Result {
 	sous.Log.Vomit.Printf("%v", sb.GDM.Snapshot())
 	sous.DumpDeployments(os.Stdout, sb.GDM.Deployments)
-	return Success()
+	return cmdr.Success()
 }

@@ -7,3 +7,4 @@ check-compile.results
 testdata/
 util/cmdr/cmdr-example/cmdr-example
 qa_desc.json
+sous_qa_setup

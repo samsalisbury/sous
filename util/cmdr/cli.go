@@ -78,12 +78,6 @@ func (c *CLI) init() {
 	c.Err.SetIndentStyle(indentString)
 }
 
-// AddGlobalFlagSetFunc adds a new function for adding flags to the global flag
-// set.
-func (c *CLI) AddGlobalFlagSetFunc(f func(*flag.FlagSet)) {
-	c.GlobalFlagSetFuncs = append(c.GlobalFlagSetFuncs, f)
-}
-
 // Invoke begins invoking the CLI starting with the base command, and handles
 // all command output. It then returns the result for further processing.
 func (c *CLI) Invoke(args []string) Result {

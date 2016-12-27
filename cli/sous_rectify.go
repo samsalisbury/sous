@@ -67,17 +67,17 @@ func (sr *SousRectify) RegisterOn(psy Addable) {
 // Execute fulfils the cmdr.Executor interface.
 func (sr *SousRectify) Execute(args []string) cmdr.Result {
 	if sr.Config.Server != "" {
-		return UsageErrorf("rectify is deprecated; the server at %s handles rectification.\n"+
+		return cmdr.UsageErrorf("rectify is deprecated; the server at %s handles rectification.\n"+
 			`If you really want to run rectification locally, unset config.server: 'sous config server ""'`, sr.Config.Server)
 	}
 	if !sr.SourceFlags.All && sr.Resolver.ResolveFilter.All() {
-		return UsageErrorf("Please specify what to rectify using the -repo tag.\n" +
+		return cmdr.UsageErrorf("Please specify what to rectify using the -repo tag.\n" +
 			"(Or -all if you really mean to rectify the whole world; see 'sous help rectify'.)")
 	}
 
-	if err := sr.Resolver.Resolve(sr.GDM.Clone(), sr.State.Defs.Clusters); err != nil {
+	if err := sr.Resolver.Begin(sr.GDM.Clone(), sr.State.Defs.Clusters).Wait(); err != nil {
 		return EnsureErrorResult(err)
 	}
 
-	return Success()
+	return cmdr.Success()
 }

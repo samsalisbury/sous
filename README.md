@@ -6,6 +6,7 @@ For contribution guidelines, see [here](./doc/contributions.md).
 
 [View documentation in the doc/ directory.](https://github.com/opentable/sous/tree/master/doc)
 
+
 # Using Sous
 
 If you're looking to get started using Sous
@@ -48,7 +49,7 @@ should only need to be done once on any given workstation.
 Now that you have a Sous client set up,
 let's add a project to Sous management.
 
-The following commands will contact the Sous server and create your project in every known Mesos cluster:
+The following commands will contact the Sous server and create your project in every known cluster:
 
 ```bash
 # Enter the directory of your project.
@@ -58,12 +59,12 @@ $ cd <my-project>
 $ sous init
 ```
 
-You can limit this to a single Mesos cluster by
+You can limit this to a single cluster by
 replacing the last command with `sous init -cluster <name>`
 
 Sous will provide a list of known clusters if you give it bad input.
 
-To add or remove your project from available Mesos clusters, use `sous manifest get > manifest.yaml` to download the current state of deployments. After editing the returned yaml file, use `sous manifest set < manifest.yaml` to send the changes to your Sous server.
+To add or remove your project from available clusters, use `sous manifest get > manifest.yaml` to download the current state of deployments. After editing the returned yaml file, use `sous manifest set < manifest.yaml` to send the changes to your Sous server.
 
 Since there's no Docker image that corresponds
 to this project yet, Sous won't actually try to deploy
