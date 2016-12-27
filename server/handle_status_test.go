@@ -19,5 +19,5 @@ func TestHandlesStatusGet(t *testing.T) {
 	}
 	data, status := th.Exchange()
 	assert.Equal(status, 200)
-	assert.Len(data.(StatusResource).Deployments, 0)
+	assert.Len(data.(statusData).Deployments, 0)
 }
