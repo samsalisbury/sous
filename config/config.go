@@ -56,6 +56,31 @@ func DefaultConfig() Config {
 	}
 }
 
+// Equal compares
+func (c *Config) Equal(other *Config) bool {
+	if c.StateLocation != other.StateLocation {
+		return false
+	}
+	if c.Server != other.Server {
+		return false
+	}
+	if c.BuildStateDir != other.BuildStateDir {
+		return false
+	}
+	if c.Docker != other.Docker {
+		return false
+	}
+	if len(c.SiblingURLs) != len(other.SiblingURLs) {
+		return false
+	}
+	for n, sib := range c.SiblingURLs {
+		if other.SiblingURLs[n] != sib {
+			return false
+		}
+	}
+	return true
+}
+
 // FillDefaults fills in default values in this Config where they are currently
 // zero values.
 func (c *Config) FillDefaults() error {

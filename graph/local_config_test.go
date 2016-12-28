@@ -39,7 +39,7 @@ func TestNewConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if *read.Config != *written.Config {
+	if !read.Config.Equal(written.Config) {
 		t.Log("READ:\n\n", read)
 		t.Log("WRITTEN:\n\n", written)
 		t.Error("Read and written configs were different.")
