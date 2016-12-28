@@ -9,6 +9,7 @@ import (
 	"github.com/nyarly/testify/assert"
 	"github.com/nyarly/testify/require"
 	"github.com/opentable/sous/ext/docker"
+	"github.com/opentable/sous/graph"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
 	"github.com/samsalisbury/semv"
@@ -24,6 +25,8 @@ func prepareCommand(t *testing.T, cl []string) (*CLI, *cmdr.PreparedExecution, f
 	s := &Sous{Version: semv.MustParse(`1.2.3`)}
 	c, err := NewSousCLI(s, stdin, stdout, stderr)
 	require.NoError(err)
+
+	c.baseGraph = graph.BuildTestGraph(stdin, stdout, stderr)
 
 	exe, err := c.Prepare(cl)
 	require.NoError(err)

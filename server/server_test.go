@@ -86,7 +86,7 @@ func TestOverallRouter(t *testing.T) {
 	assert := assert.New(t)
 
 	gf := func() Injector {
-		g := graph.BuildGraph(&bytes.Buffer{}, os.Stdout, os.Stdout)
+		g := graph.TestGraphWithConfig(&bytes.Buffer{}, os.Stdout, os.Stdout, "StateLocation: '../ext/storage/testdata/target'\n")
 		g.Add(&config.Verbosity{})
 		return g
 	}
@@ -99,6 +99,7 @@ func TestOverallRouter(t *testing.T) {
 	res.Body.Close()
 	assert.NoError(err)
 	assert.Regexp(`"Deployments"`, string(gdm))
+	assert.Regexp(`"Location"`, string(gdm))
 	assert.NotEqual(res.Header.Get("Etag"), "")
 }
 

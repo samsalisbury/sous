@@ -13,33 +13,41 @@ import (
 	"github.com/opentable/sous/util/yaml"
 )
 
-func New() ConfigLoader {
-	return ConfigLoader{}
+func New() *configLoader {
+	return &configLoader{}
 }
 
 type (
 	// ConfigLoader loads configuration.
-	ConfigLoader struct {
-		// Log is called with debug level logs about how values are resolved.
-		Debug, Info func(...interface{})
+	ConfigLoader interface {
+		//Loads a YAML formated configuration from path into data.
+		Load(data interface{}, path string) error
 	}
+
 	DefaultFiller interface {
 		FillDefaults() error
 	}
 	Validator interface {
 		Validate() error
 	}
+
+	configLoader struct {
+		// Log is called with debug level logs about how values are resolved.
+		Debug, Info func(...interface{})
+	}
 )
 
-func (cl *ConfigLoader) SetLogFunc(f func(...interface{})) {
+// SetLogFunc implements sous.ILogger on configLoader
+func (cl *configLoader) SetLogFunc(f func(...interface{})) {
 	cl.Info = f
 }
 
-func (cl *ConfigLoader) SetDebugFunc(f func(...interface{})) {
+// SetDebugFunc implements sous.ILogger on configLoader
+func (cl *configLoader) SetDebugFunc(f func(...interface{})) {
 	cl.Debug = f
 }
 
-func (cl ConfigLoader) Load(target interface{}, filePath string) error {
+func (cl *configLoader) Load(target interface{}, filePath string) error {
 	if target == nil {
 		return fmt.Errorf("target was nil, need a value")
 	}
@@ -65,18 +73,18 @@ func (cl ConfigLoader) Load(target interface{}, filePath string) error {
 	return nil
 }
 
-func (cl *ConfigLoader) Validate(target interface{}) error {
+func (cl *configLoader) Validate(target interface{}) error {
 	if validator, ok := target.(Validator); ok {
 		return validator.Validate()
 	}
 	return nil
 }
 
-func (cl ConfigLoader) overrideWithEnv(target interface{}) error {
+func (cl *configLoader) overrideWithEnv(target interface{}) error {
 	return cl.forEachField(target, cl.overrideField)
 }
 
-func (cl ConfigLoader) forEachField(target interface{}, f func(field reflect.StructField, val reflect.Value) error) error {
+func (cl *configLoader) forEachField(target interface{}, f func(field reflect.StructField, val reflect.Value) error) error {
 	v := reflect.ValueOf(target)
 	if v.Kind() != reflect.Ptr && v.Elem().Kind() != reflect.Struct {
 		return fmt.Errorf("target was %T; need a pointer to struct", target)
@@ -91,7 +99,7 @@ func (cl ConfigLoader) forEachField(target interface{}, f func(field reflect.Str
 	return nil
 }
 
-func (cl ConfigLoader) forFieldNamed(target interface{}, name string, f func(field reflect.StructField, val reflect.Value) error) error {
+func (cl *configLoader) forFieldNamed(target interface{}, name string, f func(field reflect.StructField, val reflect.Value) error) error {
 	found := false
 	err := cl.forEachField(target, func(field reflect.StructField, val reflect.Value) error {
 		if strings.ToLower(field.Name) == strings.ToLower(name) {
@@ -106,7 +114,7 @@ func (cl ConfigLoader) forFieldNamed(target interface{}, name string, f func(fie
 	return err
 }
 
-func (cl ConfigLoader) GetValue(from interface{}, name string) (interface{}, error) {
+func (cl *configLoader) GetValue(from interface{}, name string) (interface{}, error) {
 	var x interface{}
 	return x, cl.forFieldNamed(from, name, func(field reflect.StructField, val reflect.Value) error {
 		if field.Type.Kind() != reflect.Ptr || !val.IsNil() {
@@ -116,7 +124,7 @@ func (cl ConfigLoader) GetValue(from interface{}, name string) (interface{}, err
 	})
 }
 
-func (cl ConfigLoader) SetValue(target interface{}, name, value string) error {
+func (cl *configLoader) SetValue(target interface{}, name, value string) error {
 	return cl.forFieldNamed(target, name, func(field reflect.StructField, val reflect.Value) error {
 		switch k := field.Type.Kind(); k {
 		default:
@@ -134,7 +142,7 @@ func (cl ConfigLoader) SetValue(target interface{}, name, value string) error {
 	})
 }
 
-func (cl ConfigLoader) overrideField(sf reflect.StructField, originalVal reflect.Value) error {
+func (cl *configLoader) overrideField(sf reflect.StructField, originalVal reflect.Value) error {
 	envName := sf.Tag.Get("env")
 	if envName == "" {
 		return nil
@@ -160,7 +168,7 @@ func (cl ConfigLoader) overrideField(sf reflect.StructField, originalVal reflect
 	return nil
 }
 
-func (cl ConfigLoader) loadYAMLFile(target interface{}, filePath string) error {
+func (cl *configLoader) loadYAMLFile(target interface{}, filePath string) error {
 	if filePath == "" {
 		return fmt.Errorf("filepath was empty")
 	}

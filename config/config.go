@@ -9,6 +9,7 @@ import (
 
 	"github.com/opentable/sous/ext/docker"
 	"github.com/opentable/sous/util/firsterr"
+	"github.com/pkg/errors"
 )
 
 // Config contains the core Sous configuration, shared by both the client and
@@ -35,15 +36,28 @@ type (
 	}
 )
 
+func checkURL(URL, called string, args ...interface{}) error {
+	called = fmt.Sprintf(called, args...)
+	u, err := url.Parse(URL)
+	if err != nil {
+		return errors.Wrapf(err, "%s %q is not a valid URL", called, URL)
+	}
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return errors.Errorf("%s %q must begin with http:// or https://", called, URL)
+	}
+	return nil
+}
+
 // Validate returns an error if this config is invalid.
 func (c Config) Validate() error {
 	if c.Server != "" {
-		u, err := url.Parse(c.Server)
-		if err != nil {
-			return fmt.Errorf("Config.Server %q is not a valid URL: %s", c.Server, err)
+		if err := checkURL(c.Server, "Config.Server"); err != nil {
+			return err
 		}
-		if u.Scheme != "http" && u.Scheme != "https" {
-			return fmt.Errorf("Config.Server %q must begin with http:// or https://", c.Server)
+	}
+	for n, url := range c.SiblingURLs {
+		if err := checkURL(url, "Config.SiblingURLs[%d]", n); err != nil {
+			return err
 		}
 	}
 	return nil

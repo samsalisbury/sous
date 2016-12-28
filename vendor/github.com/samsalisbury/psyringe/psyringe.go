@@ -51,7 +51,6 @@ package psyringe
 
 import (
 	"fmt"
-	"log"
 	"reflect"
 	"sort"
 	"sync"
@@ -135,11 +134,15 @@ func (p *Psyringe) Clone() *Psyringe {
 	q := *p
 	q.ctors = map[reflect.Type]*ctor{}
 	q.values = map[reflect.Type]reflect.Value{}
+	q.injectionTypes = map[reflect.Type]struct{}{}
 	for t, c := range p.ctors {
 		q.ctors[t] = c.clone()
 	}
 	for t, v := range p.values {
 		q.values[t] = v
+	}
+	for t, s := range p.injectionTypes {
+		q.injectionTypes[t] = s
 	}
 	return &q
 }
@@ -192,11 +195,6 @@ func (p *Psyringe) Test() error {
 		i++
 	}
 	sort.Sort(byName(types))
-
-	for _, outType := range types {
-		log.Print(outType)
-	}
-
 	for _, outType := range types {
 		c := p.ctors[outType]
 		if err := c.testParametersAreRegisteredIn(p); err != nil {

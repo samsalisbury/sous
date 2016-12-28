@@ -26,7 +26,9 @@ func TestNewConfig(t *testing.T) {
 		}
 	}()
 
-	written, err := newPossiblyInvalidConfig(path, DefaultConfig{&config.Config{}})
+	gcl := newConfigLoader()
+
+	written, err := newPossiblyInvalidConfig(path, DefaultConfig{&config.Config{}}, gcl)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -34,7 +36,7 @@ func TestNewConfig(t *testing.T) {
 		t.Fatal("Config file not created:", path, ":", err)
 	}
 
-	read, err := newPossiblyInvalidConfig(path, DefaultConfig{&config.Config{}})
+	read, err := newPossiblyInvalidConfig(path, DefaultConfig{&config.Config{}}, gcl)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -15,7 +15,7 @@ import (
 
 func testInject(thing interface{}) error {
 	gf := func() Injector {
-		g := graph.BuildGraph(&bytes.Buffer{}, os.Stdout, os.Stdout)
+		g := graph.BuildTestGraph(&bytes.Buffer{}, os.Stdout, os.Stdout)
 		g.Add(&config.Verbosity{})
 		return g
 	}

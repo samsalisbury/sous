@@ -110,6 +110,12 @@ const (
 // BuildGraph builds the dependency injection graph, used to populate commands
 // invoked by the user.
 func BuildGraph(in io.Reader, out, err io.Writer) *SousGraph {
+	graph := buildBaseGraph(in, out, err)
+	AddFilesystem(graph)
+	return graph
+}
+
+func buildBaseGraph(in io.Reader, out, err io.Writer) *SousGraph {
 	graph := &SousGraph{psyringe.New()}
 	// stdout, stderr
 	graph.Add(
@@ -121,7 +127,7 @@ func BuildGraph(in io.Reader, out, err io.Writer) *SousGraph {
 	AddLogs(graph)
 	AddUser(graph)
 	AddShells(graph)
-	AddFilesystem(graph)
+	AddConfig(graph)
 	AddNetwork(graph)
 	AddDocker(graph)
 	AddSingularity(graph)
@@ -158,6 +164,13 @@ func AddShells(graph adder) {
 
 // AddFilesystem adds filesystem to the graph
 func AddFilesystem(graph adder) {
+	graph.Add(
+		newConfigLoader,
+	)
+}
+
+// AddConfig adds filesystem to the graph
+func AddConfig(graph adder) {
 	c := config.DefaultConfig()
 	graph.Add(
 		newPossiblyInvalidLocalSousConfig,
@@ -346,19 +359,6 @@ func newLocalUser() (v LocalUser, err error) {
 	return v, initErr(err, "getting current user")
 }
 
-func newPossiblyInvalidLocalSousConfig(u LocalUser, defaultConfig DefaultConfig) (PossiblyInvalidConfig, error) {
-	v, err := newPossiblyInvalidConfig(u.ConfigFile(), defaultConfig)
-	return v, initErr(err, "getting configuration")
-}
-
-func newLocalSousConfig(pic PossiblyInvalidConfig) (v LocalSousConfig, err error) {
-	v.Config, err = pic.Config, pic.Validate()
-	if err != nil {
-		err = fmt.Errorf("%s\ntip: run 'sous config' to see and manipulate your configuration", err.Error())
-	}
-	return v, initErr(err, "validating configuration")
-}
-
 // TODO: This should register a cleanup task with the cli, to delete the temp
 // dir.
 func newScratchDirShell() (v ScratchDirShell, err error) {
@@ -447,7 +447,7 @@ func newDockerClient() LocalDockerClient {
 
 func newStateManager(c LocalSousConfig) (*StateManager, error) {
 	if c.Server == "" {
-		sous.Log.Warn.Println("No server set, Sous is running in local mode.")
+		sous.Log.Warn.Println("No server set, Sous is running in server or workstation mode.")
 		sous.Log.Warn.Println("Configure a server like this: sous config server http://some.sous.server")
 		sous.Log.Warn.Printf("Using local state stored at %s", c.StateLocation)
 		dm := storage.NewDiskStateManager(c.StateLocation)
@@ -471,7 +471,7 @@ func newLocalStateWriter(sm *StateManager) StateWriter {
 
 func newCurrentState(sr StateReader) (*sous.State, error) {
 	state, err := sr.ReadState()
-	if os.IsNotExist(err) {
+	if os.IsNotExist(errors.Cause(err)) {
 		log.Println("error reading state:", err)
 		log.Println("defaulting to empty state")
 		return sous.NewState(), nil
