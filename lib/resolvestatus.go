@@ -7,9 +7,12 @@ import (
 type (
 	// ResolveStatus captures the status of a Resolve
 	ResolveStatus struct {
+		// Phase reports the current phase of resolution
 		Phase string
-		Log   []DiffResolution
-		Errs  ResolveErrors
+		// Log collects the resolution steps that have been performed
+		Log []DiffResolution
+		// Errs collects errors during resolution
+		Errs ResolveErrors
 	}
 
 	// ResolveRecorder represents the status of a resolve run.
@@ -27,9 +30,12 @@ type (
 
 	// DiffResolution is the result of applying a single diff.
 	DiffResolution struct {
-		DeployID DeployID
-		Desc     string
-		Error    error
+		// DeployID is the ID of the deployment being resolved
+		DeployID
+		// Desc describes the difference and its resolution
+		Desc string
+		// Error captures the error (if any) encountered during diff resolution
+		Error error
 	}
 )
 
