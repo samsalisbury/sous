@@ -3,38 +3,29 @@ package cmdr
 import (
 	"bytes"
 	"flag"
+	"fmt"
 	"strings"
 )
 
-// Help is similar to printHelp, except it returns the result as a string
-// instead of writing to the CLI's default Output.
-func (cli *CLI) Help(base Command, name string, args []string) (string, error) {
+// Help collects information about a subcommand and its arguments, descends
+// the path down the command tree provided by cmdArgs, finds the lowest
+// subcommand on that path, and returns the help text for that subcommand.
+func (cli *CLI) Help(cmd Command, name string, cmdArgs []string) (string, error) {
 	b := &bytes.Buffer{}
-	err := cli.printHelp(NewOutput(b), base, name, args)
+	bottomSubcmd := findBottomCommand(cmd, cmdArgs)
+	err := cli.printHelp(NewOutput(b), *bottomSubcmd, name)
 	return b.String(), err
 }
 
-func (cli *CLI) printHelp(out *Output, base Command, name string, args []string) error {
-	if len(args) == 0 {
-		help := base.Help()
-		out.Println(help)
-		cli.printSubcommands(out, base, name)
-		cli.printOptions(out, base, name)
-		return nil
+func (cli *CLI) printHelp(out *Output, cmd Command, name string) error {
+	help := cmd.Help()
+	if len(help) == 0 {
+		return fmt.Errorf("No help available for command")
 	}
-	hasSubCommands, ok := base.(Subcommander)
-	if !ok {
-		return UsageErrorf("%q does not have any subcommands", name)
-	}
-	scs := hasSubCommands.Subcommands()
-	subcommandName := args[0]
-	name = name + " " + subcommandName
-	sc, ok := scs[subcommandName]
-	if !ok {
-		return UsageErrorf("command %q does not exist", name)
-	}
-	args = args[1:]
-	return cli.printHelp(out, sc, name, args)
+	out.Println(cmd.Help())
+	cli.printSubcommands(out, cmd, name)
+	cli.printOptions(out, cmd, name)
+	return nil
 }
 
 func (cli *CLI) printSubcommands(out *Output, c Command, name string) {
@@ -74,4 +65,25 @@ func commandTable(cs Commands) [][]string {
 		t[i][1] = shortHelp
 	}
 	return t
+}
+
+// findBottomCommand exists to satisfy this rule: "The arguments to a command
+// can either be values or indicative of a subcommand." It traverses the list
+// of command arguments to find the subcommand furthest down the tree.
+func findBottomCommand(cmd Command, cmdArgs []string) *Command {
+	bottomSubCmd := &cmd
+	for _, a := range cmdArgs {
+		// check if the command has any subcommands
+		testCmd := *bottomSubCmd
+		hasSubCmd, ok := testCmd.(Subcommander)
+		if !ok {
+			return bottomSubCmd
+		}
+		childCmd, ok := hasSubCmd.Subcommands()[a]
+		if !ok {
+			return bottomSubCmd
+		}
+		bottomSubCmd = &childCmd
+	}
+	return bottomSubCmd
 }
