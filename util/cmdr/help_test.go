@@ -16,7 +16,7 @@ func TestHelp(t *testing.T) {
 		Err:  NewOutput(errBuf),
 	}
 
-	help, err := c.Help(c.Root, "arbitrary", []string{})
+	help, err := c.Help(c.Root, []string{})
 	if err != nil {
 		t.Fatal(err)
 	}

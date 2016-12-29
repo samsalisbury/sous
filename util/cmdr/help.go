@@ -10,25 +10,25 @@ import (
 // Help collects information about a subcommand and its arguments, descends
 // the path down the command tree provided by cmdArgs, finds the lowest
 // subcommand on that path, and returns the help text for that subcommand.
-func (cli *CLI) Help(cmd Command, name string, cmdArgs []string) (string, error) {
+func (cli *CLI) Help(cmd Command, cmdArgs []string) (string, error) {
 	b := &bytes.Buffer{}
 	bottomSubcmd := findBottomCommand(cmd, cmdArgs)
-	err := cli.printHelp(NewOutput(b), *bottomSubcmd, name)
+	err := cli.printFullHelp(NewOutput(b), *bottomSubcmd)
 	return b.String(), err
 }
 
-func (cli *CLI) printHelp(out *Output, cmd Command, name string) error {
+func (cli *CLI) printFullHelp(out *Output, cmd Command) error {
 	help := cmd.Help()
 	if len(help) == 0 {
 		return fmt.Errorf("No help available for command")
 	}
 	out.Println(cmd.Help())
-	cli.printSubcommands(out, cmd, name)
-	cli.printOptions(out, cmd, name)
+	cli.printSubcommands(out, cmd)
+	cli.printOptions(out, cmd)
 	return nil
 }
 
-func (cli *CLI) printSubcommands(out *Output, c Command, name string) {
+func (cli *CLI) printSubcommands(out *Output, c Command) {
 	subcommander, ok := c.(Subcommander)
 	if !ok {
 		return
@@ -40,13 +40,13 @@ func (cli *CLI) printSubcommands(out *Output, c Command, name string) {
 	out.Table(commandTable(cs))
 }
 
-func (cli *CLI) printOptions(out *Output, command Command, name string) {
+func (cli *CLI) printOptions(out *Output, command Command) {
 	addsFlags, ok := command.(AddsFlags)
 	if !ok {
 		return
 	}
 	out.Println("\noptions:")
-	fs := flag.NewFlagSet(name, flag.ContinueOnError)
+	fs := flag.NewFlagSet("help", flag.ContinueOnError)
 	addsFlags.AddFlags(fs)
 	fs.SetOutput(out)
 	fs.PrintDefaults()

@@ -22,7 +22,7 @@ args: [command]
 func (sh *SousHelp) Help() string { return sousHelpHelp }
 
 func (sh *SousHelp) Execute(subCmdArgs []string) cmdr.Result {
-	help, err := sh.CLI.Help(sh.Sous, "sous", subCmdArgs)
+	help, err := sh.CLI.Help(sh.Sous, subCmdArgs)
 	if err != nil {
 		return EnsureErrorResult(err)
 	}
