@@ -1,8 +1,6 @@
 package cli
 
 import (
-	"os"
-
 	"github.com/opentable/sous/util/cmdr"
 )
 
@@ -23,10 +21,8 @@ args: [command]
 
 func (sh *SousHelp) Help() string { return sousHelpHelp }
 
-func (sh *SousHelp) Execute(args []string) cmdr.Result {
-	// Get the name this instance was invoked with.
-	name := os.Args[0]
-	help, err := sh.CLI.Help(sh.Sous, name, args)
+func (sh *SousHelp) Execute(subCmdArgs []string) cmdr.Result {
+	help, err := sh.CLI.Help(sh.Sous, "sous", subCmdArgs)
 	if err != nil {
 		return EnsureErrorResult(err)
 	}
