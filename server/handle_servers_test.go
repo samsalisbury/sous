@@ -21,6 +21,6 @@ func TestHandleServerList_Get(t *testing.T) {
 
 	list, yup := rez.(serverListData)
 	assert.True(yup)
-	assert.Equal(list.Servers[0], "https://left.sous.com")
-	assert.Equal(list.Servers[1], "https://right.sous.com")
+	assert.Equal(list.Servers[0].URL, "https://left.sous.com")
+	assert.Equal(list.Servers[1].URL, "https://right.sous.com")
 }
