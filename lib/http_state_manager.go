@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 
@@ -339,6 +340,10 @@ func (hsm *HTTPStateManager) httpRequest(req *http.Request) (*http.Response, err
 		})
 	}
 	rz, err := hsm.Client.Do(req)
+	log.Print(err)
+	if rz == nil {
+		return rz, err
+	}
 	if rz.Body == nil {
 		Log.Vomit.Printf("<- %s %q %d", req.Method, req.URL, rz.StatusCode)
 	} else {

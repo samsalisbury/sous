@@ -8,6 +8,8 @@ import (
 	"path"
 	"strings"
 	"testing"
+
+	"github.com/opentable/sous/ext/docker"
 )
 
 func TestDefaultStateLocation(t *testing.T) {
@@ -40,6 +42,93 @@ func TestDefaultStateLocation(t *testing.T) {
 			t.Errorf("%d: %q got %q; want %q", i, tc.XDGDataHome, actual, expected)
 		}
 	}
+}
+
+func TestConfig_Validate(t *testing.T) {
+	cfg := &Config{
+		Server:      "not_a_url",
+		SiblingURLs: []string{"tcp://is.a.url"},
+	}
+
+	checkNotValid := func() {
+		if err := cfg.Validate(); err == nil {
+			t.Errorf("%v returns true from Validate()", cfg)
+		}
+	}
+
+	checkValid := func() {
+		if err := cfg.Validate(); err != nil {
+			t.Errorf("%v returns false from Validate()", cfg)
+		}
+	}
+
+	checkNotValid()
+
+	cfg.Server = "https://a.sous.server"
+	checkNotValid()
+
+	cfg.SiblingURLs[0] = "http://sibling.sous"
+	checkValid()
+
+	cfg.Server = "zxcv"
+	checkNotValid()
+
+	cfg.Server = ""
+	checkValid()
+}
+
+func TestConfig_Equals(t *testing.T) {
+	expected := &Config{
+		StateLocation: "statelocation",
+		Server:        "server",
+		SiblingURLs:   []string{"sibling", "urls"},
+		BuildStateDir: "buildstatedir",
+		Docker: docker.Config{
+			RegistryHost:       "registryhost",
+			DatabaseDriver:     "databasedriver",
+			DatabaseConnection: "databaseconnection",
+		},
+	}
+	var actual *Config
+
+	checkNotEqual := func() {
+		if expected.Equal(actual) {
+			t.Errorf("expected.Equal(actual) was true:\n%v\n%v", expected, actual)
+		}
+		if actual.Equal(expected) {
+			t.Errorf("actual.Equal(expected) was true:\n%v\n%v", actual, expected)
+		}
+	}
+
+	actual = &Config{}
+	checkNotEqual()
+
+	actual.StateLocation = "statelocation"
+	checkNotEqual()
+
+	actual.Server = "server"
+	checkNotEqual()
+
+	actual.BuildStateDir = "buildstatedir"
+	checkNotEqual()
+
+	actual.Docker = expected.Docker
+	checkNotEqual()
+
+	actual.SiblingURLs = []string{"urls", "sibling"}
+	checkNotEqual()
+
+	actual.SiblingURLs = []string{"sibling", "urls"}
+	if !expected.Equal(actual) {
+		t.Errorf("expected.Equal(actual) was false:\n%v\n%v", expected, actual)
+	}
+	if !actual.Equal(expected) {
+		t.Errorf("actual.Equal(expected) was false:\n%v\n%v", actual, expected)
+	}
+
+	// Confirming that the two Docker structs are separate memory
+	actual.Docker.DatabaseConnection = ""
+	checkNotEqual()
 }
 
 func TestEnsureDirExists(t *testing.T) {

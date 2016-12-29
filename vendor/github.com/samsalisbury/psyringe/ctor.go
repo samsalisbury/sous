@@ -40,8 +40,8 @@ func newCtor(t reflect.Type, v reflect.Value) *ctor {
 		for i, arg := range in {
 			if !arg.IsValid() {
 				return reflect.Value{},
-					fmt.Errorf("unable to create arg %d (%s) of %s constructor <%v>",
-						i, inTypes[i], outType, arg)
+					fmt.Errorf("unable to create arg %d (%s) of %s constructor",
+						i, inTypes[i], outType)
 			}
 		}
 		out := v.Call(in)

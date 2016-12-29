@@ -11,17 +11,44 @@ import (
 	"github.com/opentable/sous/util/configloader"
 	"github.com/opentable/sous/util/whitespace"
 	"github.com/opentable/sous/util/yaml"
+	"github.com/pkg/errors"
 )
 
-// PossiblyInvalidConfig is a config that has not been validated.
-// This is necessary for the 'sous config' command that should still work with
-// invalid configs.
-type PossiblyInvalidConfig struct{ *config.Config }
+type (
+	// PossiblyInvalidConfig is a config that has not been validated.
+	// This is necessary for the 'sous config' command that should still work with
+	// invalid configs.
+	PossiblyInvalidConfig struct{ *config.Config }
 
-// DefaultConfig is the default config.
-type DefaultConfig struct{ *config.Config }
+	// DefaultConfig is the default config.
+	DefaultConfig struct{ *config.Config }
 
-func newPossiblyInvalidConfig(path string, defaultConfig DefaultConfig) (PossiblyInvalidConfig, error) {
+	// ConfigLoader wraps the configloader.ConfigLoader interface
+	ConfigLoader struct{ configloader.ConfigLoader }
+)
+
+func newPossiblyInvalidLocalSousConfig(u LocalUser, defaultConfig DefaultConfig, gcl *ConfigLoader) (PossiblyInvalidConfig, error) {
+	v, err := newPossiblyInvalidConfig(u.ConfigFile(), defaultConfig, gcl)
+	return v, initErr(err, "getting configuration")
+}
+
+func newLocalSousConfig(pic PossiblyInvalidConfig) (v LocalSousConfig, err error) {
+	v.Config, err = pic.Config, pic.Validate()
+	if err != nil {
+		err = errors.Wrapf(err, "tip: run 'sous config' to see and manipulate your configuration")
+	}
+	return v, initErr(err, "validating configuration")
+}
+
+func newConfigLoader() *ConfigLoader {
+	cl := configloader.New()
+	sous.SetupLogging(cl)
+	return &ConfigLoader{ConfigLoader: cl}
+}
+
+func newPossiblyInvalidConfig(path string, defaultConfig DefaultConfig, gcl *ConfigLoader) (PossiblyInvalidConfig, error) {
+	cl := gcl.ConfigLoader
+
 	config := defaultConfig
 
 	configDir := filepath.Dir(path)
@@ -29,8 +56,6 @@ func newPossiblyInvalidConfig(path string, defaultConfig DefaultConfig) (Possibl
 		return PossiblyInvalidConfig{}, err
 	}
 
-	cl := configloader.New()
-	sous.SetupLogging(&cl)
 	var writeDefault bool
 	defer func() {
 		if !writeDefault {

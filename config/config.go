@@ -9,6 +9,7 @@ import (
 
 	"github.com/opentable/sous/ext/docker"
 	"github.com/opentable/sous/util/firsterr"
+	"github.com/pkg/errors"
 )
 
 // Config contains the core Sous configuration, shared by both the client and
@@ -22,6 +23,11 @@ type (
 		// considers the master. If this is not set, this node is considered
 		// to be a master. This value must be in URL format.
 		Server string `env:"SOUS_SERVER"`
+		// SiblingURLs is a temporary measure for setting up a distributed cluster
+		// of sous servers. Each server must be configured with accessible URLs for
+		// all the servers in production.
+		// (someday this should be replaced with a gossip protocol)
+		SiblingURLs []string
 		// BuildStateDir is a directory where information about builds
 		// performed by this user on this machine are stored.
 		BuildStateDir string `env:"SOUS_BUILD_STATE_DIR"`
@@ -30,15 +36,28 @@ type (
 	}
 )
 
+func checkURL(URL, called string, args ...interface{}) error {
+	called = fmt.Sprintf(called, args...)
+	u, err := url.Parse(URL)
+	if err != nil {
+		return errors.Wrapf(err, "%s %q is not a valid URL", called, URL)
+	}
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return errors.Errorf("%s %q must begin with http:// or https://", called, URL)
+	}
+	return nil
+}
+
 // Validate returns an error if this config is invalid.
 func (c Config) Validate() error {
 	if c.Server != "" {
-		u, err := url.Parse(c.Server)
-		if err != nil {
-			return fmt.Errorf("Config.Server %q is not a valid URL: %s", c.Server, err)
+		if err := checkURL(c.Server, "Config.Server"); err != nil {
+			return err
 		}
-		if u.Scheme != "http" && u.Scheme != "https" {
-			return fmt.Errorf("Config.Server %q must begin with http:// or https://", c.Server)
+	}
+	for n, url := range c.SiblingURLs {
+		if err := checkURL(url, "Config.SiblingURLs[%d]", n); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -49,6 +68,31 @@ func DefaultConfig() Config {
 	return Config{
 		Docker: docker.DefaultConfig(),
 	}
+}
+
+// Equal compares
+func (c *Config) Equal(other *Config) bool {
+	if c.StateLocation != other.StateLocation {
+		return false
+	}
+	if c.Server != other.Server {
+		return false
+	}
+	if c.BuildStateDir != other.BuildStateDir {
+		return false
+	}
+	if c.Docker != other.Docker {
+		return false
+	}
+	if len(c.SiblingURLs) != len(other.SiblingURLs) {
+		return false
+	}
+	for n, sib := range c.SiblingURLs {
+		if other.SiblingURLs[n] != sib {
+			return false
+		}
+	}
+	return true
 }
 
 // FillDefaults fills in default values in this Config where they are currently

@@ -8,5 +8,6 @@ var (
 		{"manifest", "/manifest", &ManifestResource{}},
 		{"artifact", "/artifact", &ArtifactResource{}},
 		{"status", "/status", &StatusResource{}},
+		{"servers", "/servers", &ServerListResource{}},
 	}
 )
