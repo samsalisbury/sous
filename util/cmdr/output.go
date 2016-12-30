@@ -86,28 +86,3 @@ func (o *Output) Printfln(format string, v ...interface{}) {
 func (o *Output) Printf(format string, v ...interface{}) {
 	fmt.Fprintf(o, format, v...)
 }
-
-func (o *Output) Table(rows [][]string) {
-	if len(rows) == 0 {
-		return
-	}
-	colWidths := make([]int, len(rows[0]))
-	for _, cells := range rows {
-		for col, cell := range cells {
-			if colWidths[col] < len(cell) {
-				colWidths[col] = len(cell)
-			}
-		}
-	}
-	colFormats := make([]string, len(colWidths))
-	for col, width := range colWidths {
-		colFormats[col] = fmt.Sprintf("%%-%ds", width+2)
-	}
-	for _, cells := range rows {
-		rowStr := ""
-		for col, cell := range cells {
-			rowStr += fmt.Sprintf(colFormats[col], cell)
-		}
-		o.Println(rowStr)
-	}
-}
