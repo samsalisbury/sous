@@ -454,10 +454,11 @@ func newStateManager(c LocalSousConfig) (*StateManager, error) {
 		return &StateManager{StateManager: storage.NewGitStateManager(dm)}, nil
 	}
 	sous.Log.Debug.Printf("Using server at %s", c.Server)
-	hsm, err := sous.NewHTTPStateManager(c.Server)
+	cl, err := sous.NewClient(c.Server)
 	if err != nil {
 		return nil, err
 	}
+	hsm := sous.NewHTTPStateManager(cl)
 	return &StateManager{StateManager: hsm}, nil
 }
 

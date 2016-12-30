@@ -30,10 +30,11 @@ func TestHTTPStateManager_Create(t *testing.T) {
 
 	srv := httptest.NewServer(http.HandlerFunc(h))
 
-	hsm, err := NewHTTPStateManager(srv.URL)
+	cl, err := NewClient(srv.URL)
 	if err != nil {
 		t.Error(err)
 	}
+	hsm := NewHTTPStateManager(cl)
 	hsm.create(&Manifest{})
 	if !reqd {
 		t.Errorf("No request issued")
@@ -77,10 +78,11 @@ func TestHTTPStateManager_Delete(t *testing.T) {
 
 	srv := httptest.NewServer(http.HandlerFunc(h))
 
-	hsm, err := NewHTTPStateManager(srv.URL)
+	cl, err := NewClient(srv.URL)
 	if err != nil {
 		t.Error(err)
 	}
+	hsm := NewHTTPStateManager(cl)
 	hsm.del(&Manifest{})
 	if !reqd {
 		t.Errorf("No request issued")
@@ -124,10 +126,11 @@ func TestHTTPStateManager_Modify(t *testing.T) {
 
 	srv := httptest.NewServer(http.HandlerFunc(h))
 
-	hsm, err := NewHTTPStateManager(srv.URL)
+	cl, err := NewClient(srv.URL)
 	if err != nil {
 		t.Error(err)
 	}
+	hsm := NewHTTPStateManager(cl)
 	hsm.modify(&ManifestPair{
 		Prior: &Manifest{},
 		Post:  &Manifest{},

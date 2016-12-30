@@ -79,10 +79,11 @@ func TestWriteState(t *testing.T) {
 	testServer := httptest.NewServer(server.SousRouteMap.BuildRouter(gf))
 	defer testServer.Close()
 
-	hsm, err := sous.NewHTTPStateManager(testServer.URL)
+	cl, err := sous.NewClient(testServer.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
+	hsm := sous.NewHTTPStateManager(cl)
 
 	originalState, err := hsm.ReadState()
 	if err != nil {
