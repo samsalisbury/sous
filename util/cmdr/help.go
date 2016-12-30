@@ -11,45 +11,50 @@ import (
 // the path down the command tree provided by cmdArgs, finds the lowest
 // subcommand on that path, and returns the help text for that subcommand.
 func (cli *CLI) Help(cmd Command, cmdArgs []string) (string, error) {
-	b := &bytes.Buffer{}
 	bottomSubcmd := findBottomCommand(cmd, cmdArgs)
-	err := cli.printFullHelp(NewOutput(b), *bottomSubcmd)
-	return b.String(), err
+	return cli.formatFullHelp(*bottomSubcmd)
 }
 
-func (cli *CLI) printFullHelp(out *Output, cmd Command) error {
+func (cli *CLI) formatFullHelp(cmd Command) (string, error) {
+	b := &bytes.Buffer{}
 	help := cmd.Help()
 	if len(help) == 0 {
-		return fmt.Errorf("No help available for command")
+		msg := "no help available for command"
+		return msg, fmt.Errorf(msg)
 	}
-	out.Println(cmd.Help())
-	cli.printSubcommands(out, cmd)
-	cli.printOptions(out, cmd)
-	return nil
+	b.WriteString(cmd.Help())
+	b.WriteString(formatSubcommands(cmd))
+	b.WriteString(cli.formatFlags(cmd))
+	return b.String(), nil
 }
 
-func (cli *CLI) printSubcommands(out *Output, c Command) {
+func formatSubcommands(c Command) string {
+	b := &bytes.Buffer{}
+	out := NewOutput(b)
 	subcommander, ok := c.(Subcommander)
 	if !ok {
-		return
+		return ""
 	}
 	cs := subcommander.Subcommands()
-	out.Println("\nsubcommands:")
+	out.Println("\n\nsubcommands:\n")
 	out.Indent()
 	defer out.Outdent()
 	out.Table(commandTable(cs))
+	return b.String()
 }
 
-func (cli *CLI) printOptions(out *Output, command Command) {
+func (cli *CLI) formatFlags(command Command) string {
 	addsFlags, ok := command.(AddsFlags)
 	if !ok {
-		return
+		return ""
 	}
-	out.Println("\noptions:")
+	b := &bytes.Buffer{}
+	b.WriteString("\n\noptions:\n")
 	fs := flag.NewFlagSet("help", flag.ContinueOnError)
 	addsFlags.AddFlags(fs)
-	fs.SetOutput(out)
+	fs.SetOutput(b)
 	fs.PrintDefaults()
+	return b.String()
 }
 
 func commandTable(cs Commands) [][]string {
