@@ -31,8 +31,6 @@ type (
 		// output when Output.Indent() is called inside a command. If left
 		// empty, defaults to DefaultIndentString.
 		IndentString string
-		// Flags stores the global and local Flagsets
-		Flags flag.FlagSet
 	}
 	// Hooks is a collection of command hooks. If a hook returns a non-nil error
 	// it cancels execution and the error is displayed to the user.
