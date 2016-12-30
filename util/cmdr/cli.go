@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"os"
 	"sort"
-
-	"github.com/opentable/sous/util/cmdr/style"
 )
 
 type (
@@ -70,12 +68,6 @@ func (c *CLI) init() {
 	if c.Err == nil {
 		c.Err = NewOutput(os.Stderr)
 	}
-	indentString := DefaultIndentString
-	if c.IndentString != "" {
-		indentString = c.IndentString
-	}
-	c.Out.SetIndentStyle(indentString)
-	c.Err.SetIndentStyle(indentString)
 }
 
 // Invoke begins invoking the CLI starting with the base command, and handles
@@ -167,9 +159,7 @@ func (c *CLI) printTip(tip string) {
 	if tip == "" {
 		return
 	}
-	c.Err.PushStyle(style.Style{style.Blue, style.Bold})
 	c.Err.Printf("Tip: ")
-	c.Err.PopStyle()
 	c.Err.Printfln(tip)
 }
 

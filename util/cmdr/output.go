@@ -5,9 +5,6 @@ import (
 	"io"
 	"os"
 	"strings"
-	"unicode/utf8"
-
-	"github.com/opentable/sous/util/cmdr/style"
 
 	"golang.org/x/crypto/ssh/terminal"
 )
@@ -23,10 +20,6 @@ type (
 		// Errors contains any errors this output has encountered whilst
 		// writing to Writer.
 		Errors []error
-		// Style is the default style for this output. Note that styles are only
-		// used when the output is connected to a terminal.
-		Style      style.Style
-		styleStack []style.Style
 		// Writer is the io.Writer that this output writes to.
 		writer io.Writer
 		// indentSize is the number of times to repeat IndentStyle in the
@@ -53,7 +46,6 @@ func isTerm(w io.Writer) bool {
 // You can use this to create and configure an output in a single statement.
 func NewOutput(w io.Writer, configFunc ...func(*Output)) *Output {
 	out := &Output{
-		Style:       style.DefaultStyle(),
 		indentStyle: DefaultIndentString,
 		writer:      w,
 		isTerm:      isTerm(w),
@@ -64,26 +56,7 @@ func NewOutput(w io.Writer, configFunc ...func(*Output)) *Output {
 	return out
 }
 
-func (o *Output) PushStyle(s style.Style) {
-	o.styleStack = append(o.styleStack, o.Style)
-	o.Style = s
-}
-
-func (o *Output) PopStyle() {
-	l := len(o.styleStack)
-	if l == 0 {
-		return
-	}
-	i := l - 1
-	o.Style = o.styleStack[i]
-	o.styleStack = o.styleStack[:i]
-}
-
 func (o *Output) Write(b []byte) (int, error) {
-	if o.isTerm && utf8.Valid(b) {
-		fmt.Fprintf(o.writer, "\033[%sm", o.Style)
-		defer fmt.Fprintf(o.writer, "\033[0m")
-	}
 	n, err := o.writer.Write(b)
 	if err != nil {
 		o.Errors = append(o.Errors, err)

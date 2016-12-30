@@ -37,8 +37,6 @@ func formatSubcommands(c Command) string {
 	}
 	cs := subcommander.Subcommands()
 	out.Println("\n\nsubcommands:\n")
-	out.Indent()
-	defer out.Outdent()
 	out.Table(commandTable(cs))
 	return b.String()
 }
@@ -66,7 +64,7 @@ func commandTable(cs Commands) [][]string {
 			shortHelp = splitHelp[0]
 		}
 		t[i] = make([]string, 2)
-		t[i][0] = name
+		t[i][0] = DefaultIndentString + name
 		t[i][1] = shortHelp
 	}
 	return t
