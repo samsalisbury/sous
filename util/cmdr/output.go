@@ -3,10 +3,7 @@ package cmdr
 import (
 	"fmt"
 	"io"
-	"os"
 	"strings"
-
-	"golang.org/x/crypto/ssh/terminal"
 )
 
 type (
@@ -30,16 +27,8 @@ type (
 		indentStyle string
 		// indent is the eagerly managed current indent string
 		indent string
-		// isTerm reflects whether or not this output is connected to a
-		// terminal.
-		isTerm bool
 	}
 )
-
-func isTerm(w io.Writer) bool {
-	file, isFile := w.(*os.File)
-	return isFile && terminal.IsTerminal(int(file.Fd()))
-}
 
 // NewOutput creates a new Output, you may optionally pass any number of
 // functions, each of which will be called on the Output before it is returned.
@@ -48,7 +37,6 @@ func NewOutput(w io.Writer, configFunc ...func(*Output)) *Output {
 	out := &Output{
 		indentStyle: DefaultIndentString,
 		writer:      w,
-		isTerm:      isTerm(w),
 	}
 	for _, f := range configFunc {
 		f(out)

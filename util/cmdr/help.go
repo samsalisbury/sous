@@ -30,14 +30,21 @@ func (cli *CLI) formatFullHelp(cmd Command) (string, error) {
 
 func formatSubcommands(c Command) string {
 	b := &bytes.Buffer{}
-	out := NewOutput(b)
 	subcommander, ok := c.(Subcommander)
 	if !ok {
 		return ""
 	}
-	cs := subcommander.Subcommands()
-	out.Println("\n\nsubcommands:\n")
-	out.Table(commandTable(cs))
+	subCmds := subcommander.Subcommands()
+	b.WriteString("\n\nsubcommands:\n")
+	for _, name := range subCmds.SortedKeys() {
+		var shortHelp string
+		splitHelp := strings.Split(subCmds[name].Help(), "\n")
+		if len(splitHelp) > 0 {
+			shortHelp = splitHelp[0]
+		}
+		b.WriteString(fmt.Sprintf("  %-10s%s\n", name, shortHelp))
+	}
+
 	return b.String()
 }
 
@@ -53,21 +60,6 @@ func (cli *CLI) formatFlags(command Command) string {
 	fs.SetOutput(b)
 	fs.PrintDefaults()
 	return b.String()
-}
-
-func commandTable(cs Commands) [][]string {
-	t := make([][]string, len(cs))
-	for i, name := range cs.SortedKeys() {
-		var shortHelp string
-		splitHelp := strings.Split(cs[name].Help(), "\n")
-		if len(splitHelp) > 0 {
-			shortHelp = splitHelp[0]
-		}
-		t[i] = make([]string, 2)
-		t[i][0] = DefaultIndentString + name
-		t[i][1] = shortHelp
-	}
-	return t
 }
 
 // findBottomCommand exists to satisfy this rule: "The arguments to a command

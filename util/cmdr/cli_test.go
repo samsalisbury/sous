@@ -21,7 +21,7 @@ func (tc *TestCommandWithSubcommands) Help() string { return "Test command with 
 func (tc *TestCommandWithSubcommands) Subcommands() Commands {
 	cmds := make(Commands)
 	cmds["test"] = &TestCommand{}
-	cmds["anothertest"] = &TestCommand{}
+	cmds["cmd"] = &TestCommand{}
 	return cmds
 }
 
