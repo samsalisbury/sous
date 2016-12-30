@@ -31,6 +31,8 @@ type (
 		// output when Output.Indent() is called inside a command. If left
 		// empty, defaults to DefaultIndentString.
 		IndentString string
+		// Flags stores the global and local Flagsets
+		Flags flag.FlagSet
 	}
 	// Hooks is a collection of command hooks. If a hook returns a non-nil error
 	// it cancels execution and the error is displayed to the user.
@@ -186,36 +188,36 @@ func (c *CLI) ListSubcommands(base Command) []string {
 	return list
 }
 
-func (c *CLI) prepare(base Command, args []string, ff []func(*flag.FlagSet)) (*PreparedExecution, error) {
-	if len(args) == 0 {
-		return nil, InternalErrorf("command %T received zero args", base)
+func (c *CLI) prepare(cmd Command, cmdArgs []string, flagAddFuncs []func(*flag.FlagSet)) (*PreparedExecution, error) {
+	if len(cmdArgs) == 0 {
+		return nil, InternalErrorf("command %T received zero args", cmd)
 	}
-	name := args[0]
-	args = args[1:]
+	cmdName := cmdArgs[0]
+	cmdArgs = cmdArgs[1:]
 	// Add and parse flags for this command.
-	if command, ok := base.(AddsFlags); ok {
-		if ff == nil {
-			ff = []func(*flag.FlagSet){}
+	if cmdHasFlags, ok := cmd.(AddsFlags); ok {
+		if flagAddFuncs == nil {
+			flagAddFuncs = []func(*flag.FlagSet){}
 		}
 		// add these flags to the agglomeration
-		ff = append(ff, command.AddFlags)
+		flagAddFuncs = append(flagAddFuncs, cmdHasFlags.AddFlags)
 	}
 	// If this command has subcommands, first try to descend into one of them.
-	if command, ok := base.(Subcommander); ok && len(args) != 0 {
-		subcommandName := args[0]
-		subcommands := command.Subcommands()
-		if subcommand, ok := subcommands[subcommandName]; ok {
-			if err := c.runHook(c.Hooks.Parsed, base); err != nil {
+	if cmdHasSubcmd, ok := cmd.(Subcommander); ok && len(cmdArgs) != 0 {
+		subcommandName := cmdArgs[0]
+		subcommands := cmdHasSubcmd.Subcommands()
+		if cmdHasSubCmd, ok := subcommands[subcommandName]; ok {
+			if err := c.runHook(c.Hooks.Parsed, cmd); err != nil {
 				return nil, EnsureErrorResult(err)
 			}
-			return c.prepare(subcommand, args, ff)
+			return c.prepare(cmdHasSubCmd, cmdArgs, flagAddFuncs)
 		}
 	}
 	// If the command can itself be executed, do that now.
-	if command, ok := base.(Executor); ok {
+	if cmdCanExec, ok := cmd.(Executor); ok {
 		c.init()
 		// make a flag.FlagSet named for this command.
-		fs := flag.NewFlagSet(name, flag.ContinueOnError)
+		fs := flag.NewFlagSet(cmdName, flag.ContinueOnError)
 		// try to pipe normal flag output to /dev/null, don't fail if not though
 		if devNull, err := os.Open(os.DevNull); err == nil {
 			fs.SetOutput(devNull)
@@ -226,11 +228,11 @@ func (c *CLI) prepare(base Command, args []string, ff []func(*flag.FlagSet)) (*P
 		}
 		// add own and forwarded flags to the flagset, note that it will panic
 		// if multiple flags with the same name are added.
-		for _, addFlags := range ff {
+		for _, addFlags := range flagAddFuncs {
 			addFlags(fs)
 		}
 		// parse the entire flagset for this command
-		if err := fs.Parse(args); err != nil {
+		if err := fs.Parse(cmdArgs); err != nil {
 			tip := fmt.Sprintf("for help, use `%s`", c.HelpCommand)
 			if err == flag.ErrHelp {
 				return nil, UsageErrorf(tip)
@@ -238,16 +240,16 @@ func (c *CLI) prepare(base Command, args []string, ff []func(*flag.FlagSet)) (*P
 			return nil, UsageErrorf(err.Error()).WithTip(tip)
 		}
 		// get the remaining args
-		args = fs.Args()
+		bottomCmdArgs := fs.Args()
 
-		if err := c.runHook(c.Hooks.Parsed, base); err != nil {
+		if err := c.runHook(c.Hooks.Parsed, cmd); err != nil {
 			return nil, err
 		}
-		if err := c.runHook(c.Hooks.PreExecute, base); err != nil {
+		if err := c.runHook(c.Hooks.PreExecute, cmd); err != nil {
 			return nil, err
 		}
-		return &PreparedExecution{Cmd: command, Args: args}, nil
+		return &PreparedExecution{Cmd: cmdCanExec, Args: bottomCmdArgs}, nil
 	}
 	// If we get here, this command is not configured correctly and cannot run.
-	return nil, InternalErrorf("%q is not runnable and has no subcommands", name)
+	return nil, InternalErrorf("%q is not runnable and has no subcommands", cmdName)
 }
