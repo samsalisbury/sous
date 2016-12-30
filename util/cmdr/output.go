@@ -114,23 +114,6 @@ func (o *Output) Printf(format string, v ...interface{}) {
 	fmt.Fprintf(o, format, v...)
 }
 
-func (o *Output) SetIndentStyle(s string) {
-	o.indentStyle = s
-	o.setIndent()
-}
-
-func (o *Output) Indent() {
-	o.indentSize++
-	o.setIndent()
-}
-
-func (o *Output) Outdent() {
-	if o.indentSize > 0 {
-		o.indentSize--
-		o.setIndent()
-	}
-}
-
 func (o *Output) Table(rows [][]string) {
 	if len(rows) == 0 {
 		return
@@ -154,8 +137,4 @@ func (o *Output) Table(rows [][]string) {
 		}
 		o.Println(rowStr)
 	}
-}
-
-func (o *Output) setIndent() {
-	o.indent = strings.Repeat(o.indentStyle, o.indentSize)
 }
