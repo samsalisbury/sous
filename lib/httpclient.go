@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 
@@ -152,7 +151,7 @@ func (client *HTTPClient) getBodyEtag(url string, body Comparable, ierr error) (
 		rq, err = client.buildRequest("GET", url, nil, nil, nil)
 		rz, err = client.sendRequest(rq, err)
 		return client.getBody(rz, rzBody, err)
-	}(), "Getting Etag for %s", url)
+	}(), "etag for %s", url)
 	if err != nil {
 		return
 	}
@@ -183,7 +182,6 @@ func (client *HTTPClient) buildRequest(method, url string, headers map[string]st
 	}
 
 	rq, err = http.NewRequest(method, url, JSON)
-	log.Printf("%#v", rq)
 
 	if headers != nil {
 		for k, v := range headers {
@@ -226,7 +224,7 @@ func (client *HTTPClient) getBody(rz *http.Response, rzBody interface{}, err err
 		}
 		return errors.Errorf("%s: %#v", rz.Status, string(b))
 	}
-	return err
+	return errors.Wrapf(err, "processing response body")
 }
 
 func (client *HTTPClient) httpRequest(req *http.Request) (*http.Response, error) {
@@ -240,7 +238,6 @@ func (client *HTTPClient) httpRequest(req *http.Request) (*http.Response, error)
 		})
 	}
 	rz, err := client.Client.Do(req)
-	log.Print(err)
 	if rz == nil {
 		return rz, err
 	}
