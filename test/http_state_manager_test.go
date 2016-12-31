@@ -1,7 +1,6 @@
 package test
 
 import (
-	"io/ioutil"
 	"log"
 	"net/http/httptest"
 	"os"
@@ -36,6 +35,8 @@ func buildManifest(cluster, repo, version string) *sous.Manifest {
 }
 
 func TestWriteState(t *testing.T) {
+	sous.Log.Debug.SetOutput(os.Stderr)
+	sous.Log.Vomit.SetOutput(os.Stderr)
 	steadyManifest := buildManifest("test-cluster", "github.com/opentable/steady", "1.2.3")
 	diesManifest := buildManifest("test-cluster", "github.com/opentable/dies", "133.56.987431")
 	changesManifest := buildManifest("test-cluster", "github.com/opentable/changes", "0.17.19")
@@ -63,17 +64,18 @@ func TestWriteState(t *testing.T) {
 		t.Fatal("State manager double is empty")
 	}
 
+	di := psyringe.New()
+	di.Add(sous.NewLogSet(os.Stderr, os.Stderr, os.Stderr))
+	//di.Add(sous.NewLogSet(os.Stderr, ioutil.Discard, ioutil.Discard))
+	graph.AddInternals(di)
+	di.Add(
+		func() graph.StateReader { return graph.StateReader{StateReader: &sm} },
+		func() graph.StateWriter { return graph.StateWriter{StateWriter: &sm} },
+	)
+	di.Add(&config.Verbosity{})
+
 	gf := func() server.Injector {
-		di := psyringe.New()
-		//di.Add(sous.NewLogSet(os.Stderr, os.Stderr, ioutil.Discard))
-		di.Add(sous.NewLogSet(os.Stderr, ioutil.Discard, ioutil.Discard))
-		graph.AddInternals(di)
-		di.Add(
-			func() graph.StateReader { return graph.StateReader{StateReader: &sm} },
-			func() graph.StateWriter { return graph.StateWriter{StateWriter: &sm} },
-		)
-		di.Add(&config.Verbosity{})
-		return di
+		return di.Clone()
 	}
 
 	testServer := httptest.NewServer(server.SousRouteMap.BuildRouter(gf))

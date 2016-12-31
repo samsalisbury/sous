@@ -239,16 +239,16 @@ func (m *Manifest) VariancesFrom(c Comparable) (vs Variances) {
 
 func (hsm *HTTPStateManager) create(m *Manifest) error {
 	r, o, f := manifestDebugs(m)
-	return errors.Wrapf(hsm.Create("./manifests", manifestParams(m), m), "creating manifest %s %s %s", r, o, f)
+	return errors.Wrapf(hsm.Create("./manifest", manifestParams(m), m), "creating manifest %s %s %s", r, o, f)
 }
 
 func (hsm *HTTPStateManager) del(m *Manifest) error {
 	r, o, f := manifestDebugs(m)
-	return errors.Wrapf(hsm.Delete("./manifests", manifestParams(m), m), "deleting manifest %s %s %s", r, o, f)
+	return errors.Wrapf(hsm.Delete("./manifest", manifestParams(m), m), "deleting manifest %s %s %s", r, o, f)
 }
 
 func (hsm *HTTPStateManager) modify(mp *ManifestPair) error {
 	bf, af := mp.Prior, mp.Post
 	r, o, f := manifestDebugs(bf)
-	return errors.Wrapf(hsm.Update("./manifests", manifestParams(bf), bf, af), "updating manifest %s %s %s", r, o, f)
+	return errors.Wrapf(hsm.Update("./manifest", manifestParams(bf), bf, af), "updating manifest %s %s %s", r, o, f)
 }

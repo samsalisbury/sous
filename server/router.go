@@ -13,6 +13,7 @@ import (
 	"net/url"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/opentable/sous/lib"
 )
 
 type (
@@ -29,6 +30,14 @@ type (
 		http.ResponseWriter
 	}
 
+	// ExchangeLogger and logs the exchange
+	ExchangeLogger struct {
+		Exchanger Exchanger
+		*sous.LogSet
+		*http.Request
+		httprouter.Params
+	}
+
 	// Injector is an interface for DI systems
 	Injector interface {
 		Inject(...interface{}) error
@@ -37,6 +46,14 @@ type (
 	// A GraphFactory builds a SousGraph
 	GraphFactory func() Injector
 )
+
+// Exchange implements Exchanger on ExchangeLogger
+func (xlog *ExchangeLogger) Exchange() (data interface{}, status int) {
+	xlog.Vomit.Printf("Server: <- %s %s params: %v", xlog.Method, xlog.URL.String(), xlog.Params)
+	data, status = xlog.Exchanger.Exchange()
+	xlog.Vomit.Printf("Server: -> %d: %#v", status, data)
+	return
+}
 
 // Seriously considering "BodyInBodyOut" "BodyInEmptyOut" "EmptyInBodyOut" "EmptyInEmptyOut"
 // because that covers pretty much every case for the requests themselves, and
@@ -122,9 +139,13 @@ func (mh *MetaHandler) ExchangeGraph(w http.ResponseWriter, r *http.Request, p h
 func (mh *MetaHandler) injectedHandler(factory ExchangeFactory, w http.ResponseWriter, r *http.Request, p httprouter.Params) Exchanger {
 	h := factory()
 
-	mh.ExchangeGraph(w, r, p).Inject(h)
+	exGraph := mh.ExchangeGraph(w, r, p)
+	exGraph.Inject(h)
+	logger := &ExchangeLogger{}
+	exGraph.Inject(logger)
+	logger.Exchanger = h
 
-	return h
+	return logger
 }
 
 func (mh *MetaHandler) writeHeaders(status int, w http.ResponseWriter, r *http.Request, data interface{}) {

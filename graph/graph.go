@@ -43,6 +43,9 @@ type (
 	ErrWriter io.Writer
 	// InReader is typicially set to os.Stdin
 	InReader io.Reader
+	// StatusWaitStable represents if `sous plumbing status` should continue to
+	// poll until the selected t
+	StatusWaitStable bool
 	// Version represents a version of Sous.
 	Version struct{ semv.Version }
 	// LocalUser is the currently logged in user.

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
@@ -145,9 +146,13 @@ func (client *HTTPClient) getBodyEtag(url string, body Comparable, ierr error) (
 
 	rzBody := body.EmptyReceiver()
 
-	rq, err := client.buildRequest("GET", url, nil, nil, nil)
-	rz, err := client.sendRequest(rq, err)
-	err = client.getBody(rz, rzBody, err)
+	var rq *http.Request
+	var rz *http.Response
+	err = errors.Wrapf(func() error {
+		rq, err = client.buildRequest("GET", url, nil, nil, nil)
+		rz, err = client.sendRequest(rq, err)
+		return client.getBody(rz, rzBody, err)
+	}(), "Getting Etag for %s", url)
 	if err != nil {
 		return
 	}
@@ -170,13 +175,15 @@ func (client *HTTPClient) buildRequest(method, url string, headers map[string]st
 	var JSON io.Reader
 
 	if rqBody != nil {
-		JSON := &bytes.Buffer{}
-		enc := json.NewEncoder(JSON)
+		buf := &bytes.Buffer{}
+		enc := json.NewEncoder(buf)
 		enc.Encode(rqBody)
-		Log.Debug.Printf("%s", JSON)
+		Log.Debug.Printf("  body: %s", buf.String())
+		JSON = buf
 	}
 
 	rq, err = http.NewRequest(method, url, JSON)
+	log.Printf("%#v", rq)
 
 	if headers != nil {
 		for k, v := range headers {
@@ -193,6 +200,10 @@ func (client *HTTPClient) sendRequest(rq *http.Request, ierr error) (rz *http.Re
 		return
 	}
 	rz, err = client.httpRequest(rq)
+	if err != nil {
+		Log.Debug.Printf("Received %v", err)
+		return
+	}
 	Log.Debug.Printf("Received \"%s %s\" -> %d", rq.Method, rq.URL, rz.StatusCode)
 	return
 }
@@ -208,18 +219,24 @@ func (client *HTTPClient) getBody(rz *http.Response, rzBody interface{}, err err
 		err = dec.Decode(rzBody)
 	}
 
-	if rz.StatusCode != 200 {
-		return errors.Errorf("%s: %#v", rz.Status, rzBody)
+	if rz.StatusCode < 200 || rz.StatusCode >= 300 {
+		b, e := ioutil.ReadAll(rz.Body)
+		if e != nil {
+			b = []byte{}
+		}
+		return errors.Errorf("%s: %#v", rz.Status, string(b))
 	}
 	return err
 }
 
 func (client *HTTPClient) httpRequest(req *http.Request) (*http.Response, error) {
 	if req.Body == nil {
-		Log.Vomit.Printf("-> %s %q", req.Method, req.URL)
+		Log.Vomit.Printf("Client -> %s %q <empty request body>", req.Method, req.URL)
 	} else {
 		req.Body = NewReadDebugger(req.Body, func(b []byte, n int, err error) {
-			Log.Vomit.Printf("-> %s %q:\n%sSent %d bytes, result: %v", req.Method, req.URL, string(b), n, err)
+			Log.Vomit.Printf("Client -> %s %q", req.Method, req.URL)
+			Log.Vomit.Print(string(b))
+			Log.Vomit.Printf("Sent %d bytes, result: %v", n, err)
 		})
 	}
 	rz, err := client.Client.Do(req)
@@ -228,10 +245,12 @@ func (client *HTTPClient) httpRequest(req *http.Request) (*http.Response, error)
 		return rz, err
 	}
 	if rz.Body == nil {
-		Log.Vomit.Printf("<- %s %q %d", req.Method, req.URL, rz.StatusCode)
+		Log.Vomit.Printf("Client <- %s %q %d <empty response body>", req.Method, req.URL, rz.StatusCode)
 	} else {
 		rz.Body = NewReadDebugger(rz.Body, func(b []byte, n int, err error) {
-			Log.Vomit.Printf("<- %s %q %d:\n%sRead %d bytes, result: %v", req.Method, req.URL, rz.StatusCode, string(b), n, err)
+			Log.Vomit.Printf("Client <- %s %q: %d", req.Method, req.URL, rz.StatusCode)
+			Log.Vomit.Print(string(b))
+			Log.Vomit.Printf("Read %d bytes, result: %v", n, err)
 		})
 	}
 	return rz, err
