@@ -11,6 +11,8 @@ type (
 
 	subPoller struct {
 		*HTTPClient
+		URL string
+		*Deployments
 		locationFilter, idFilter *ResolveFilter
 	}
 
@@ -36,14 +38,14 @@ type (
 
 	statPair struct {
 		url  string
-		stat resolveState
+		stat ResolveState
 	}
 )
 
 const (
 	// ResolveNotPolled is the entry state. It means we haven't received data
 	// from a server yet.
-	ResolveNotPolled resolveState = iota
+	ResolveNotPolled ResolveState = iota
 	// ResolveNotStarted conveys the condition that the server is not yet working
 	// to resolve the SourceLocation in question. Granted that a manifest update
 	// has succeeded, expect that once the current auto-resolve cycle concludes,
@@ -65,6 +67,25 @@ const (
 	ResolveComplete
 )
 
+func (rs ResolveState) String() string {
+	switch rs {
+	default:
+		return "unknown (oops)"
+	case ResolveNotPolled:
+		return "ResolveNotPolled"
+	case ResolveNotStarted:
+		return "ResolveNotStarted"
+	case ResolveNotVersion:
+		return "ResolveNotVersion"
+	case ResolveInProgress:
+		return "ResolveInProgress"
+	case ResolveErred:
+		return "ResolveErred"
+	case ResolveComplete:
+		return "ResolveComplete"
+	}
+}
+
 func newSubPoller(serverURL string, baseFilter *ResolveFilter) (*subPoller, error) {
 	cl, err := NewClient(serverURL)
 	if err != nil {
@@ -80,6 +101,7 @@ func newSubPoller(serverURL string, baseFilter *ResolveFilter) (*subPoller, erro
 	id.Cluster = ""
 
 	return &subPoller{
+		URL:            serverURL,
 		HTTPClient:     cl,
 		locationFilter: &loc,
 		idFilter:       &id,
@@ -87,23 +109,23 @@ func newSubPoller(serverURL string, baseFilter *ResolveFilter) (*subPoller, erro
 }
 
 // Start begins the process of polling for cluster statuses.
-func (sp *StatusPoller) Start() error {
+func (sp *StatusPoller) Start() (ResolveState, error) {
 	clusters := &serverListData{}
 	if err := sp.Retrieve("./servers", nil, clusters); err != nil {
-		return err
+		return ResolveNotPolled, err
 	}
 
 	subs := []*subPoller{}
 
-	for _, s := range cluster {
-		sub, err := newSubPoller(s.URL)
+	for _, s := range clusters.Servers {
+		sub, err := newSubPoller(s.URL, sp.ResolveFilter)
 		if err != nil {
-			return err
+			return ResolveNotPolled, err
 		}
 		subs = append(subs, sub)
 	}
 
-	return sp.poll(subs)
+	return sp.poll(subs), nil
 }
 
 func (sp *StatusPoller) poll(subs []*subPoller) ResolveState {
@@ -111,12 +133,13 @@ func (sp *StatusPoller) poll(subs []*subPoller) ResolveState {
 	done := make(chan struct{})
 	totalStatus := ResolveNotPolled
 	go func() {
-		pollChans := map[string]resolveState{}
+		pollChans := map[string]ResolveState{}
 		for {
 			update := <-collect
 			pollChans[update.url] = update.stat
 			max := ResolveComplete
 			for u, s := range pollChans {
+				Log.Vomit.Printf("Current state from %s: %s", u, s)
 				if s <= max {
 					max = s
 				}
@@ -130,7 +153,7 @@ func (sp *StatusPoller) poll(subs []*subPoller) ResolveState {
 	}()
 
 	for _, s := range subs {
-		go sub.start(collect, done)
+		go s.start(collect, done)
 	}
 
 	<-done
@@ -138,13 +161,17 @@ func (sp *StatusPoller) poll(subs []*subPoller) ResolveState {
 }
 
 func (sub *subPoller) start(rs chan statPair, done chan struct{}) {
-	rs <- statPair{url: sub.HTTPClient.serverURL, stat: ResolveNotPolled}
-	rs <- pollOnce()
+	rs <- statPair{url: sub.URL, stat: ResolveNotPolled}
+	stat := sub.pollOnce()
+	rs <- statPair{url: sub.URL, stat: stat}
+	if stat >= ResolveComplete {
+		return
+	}
 	for {
 		select {
 		case <-time.Tick(time.Second / 2):
-			stat := pollOnce()
-			rs <- statPair{url: sub.HTTPClient.serverURL, stat: stat}
+			stat := sub.pollOnce()
+			rs <- statPair{url: sub.URL, stat: stat}
 			if stat >= ResolveComplete {
 				return
 			}
@@ -154,12 +181,40 @@ func (sub *subPoller) start(rs chan statPair, done chan struct{}) {
 	}
 }
 
-func (sub *subPoller) pollOnce() resolveState {
+func (sub *subPoller) serverIntent() *Deployment {
+	oneDep := sub.Deployments.Filter(sub.locationFilter.FilterDeployment)
+	dep, err := (&oneDep).Only()
+	if err != nil { // XXX error means more than one matched...
+		return nil
+	}
+	return dep
+}
+
+func diffRezFor(rezs []DiffResolution, rf *ResolveFilter) *DiffResolution {
+	for _, rez := range rezs {
+		if rf.FilterManifestID(rez.ManifestID) {
+			return &rez
+		}
+	}
+	return nil
+}
+
+func (data *statusData) stableFor(rf *ResolveFilter) *DiffResolution {
+	return diffRezFor(data.Completed.Log, rf)
+}
+
+func (data *statusData) currentFor(rf *ResolveFilter) *DiffResolution {
+	return diffRezFor(data.InProgress.Log, rf)
+}
+
+func (sub *subPoller) pollOnce() ResolveState {
 	data := &statusData{}
 	sub.Retrieve("./status", nil, data)
+	deps := NewDeployments(data.Deployments...)
+	sub.Deployments = &deps
 
 	return sub.computeState(
-		data.intentionFor(sub.locationFilter),
+		sub.serverIntent(),
 		data.stableFor(sub.locationFilter),
 		data.currentFor(sub.locationFilter),
 	)

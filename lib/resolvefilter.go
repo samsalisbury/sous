@@ -86,13 +86,20 @@ func (rf *ResolveFilter) FilterDeployment(d *Deployment) bool {
 	return true
 }
 
-// FilterManifest returns true if ???
-// TODO: @nyarly can you provide a description of what this function does?
+// FilterManifest returns true if the Manifest is matched by this ResolveFilter.
 func (rf *ResolveFilter) FilterManifest(m *Manifest) bool {
+	return rf.FilterManifestID(m.ID())
+}
+
+// FilterManifestID returns true if the ManifestID is matched by this ResolveFilter.
+func (rf *ResolveFilter) FilterManifestID(m ManifestID) bool {
 	if rf.Repo != "" && m.Source.Repo != rf.Repo {
 		return false
 	}
 	if rf.Offset != "" && m.Source.Dir != rf.Offset {
+		return false
+	}
+	if rf.Flavor != "" && m.Flavor != rf.Flavor {
 		return false
 	}
 	return true
