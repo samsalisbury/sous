@@ -70,19 +70,25 @@ func (cli *CLI) formatFlags(command Command) string {
 func findBottomCommand(cmd Command, cmdArgs []string) (*Command, int) {
 	var pos int
 	bottomSubCmd := &cmd
-	for _, a := range cmdArgs {
+	for pos = 0; pos < len(cmdArgs); pos++ {
 		// check if the command has any subcommands
 		testCmd := *bottomSubCmd
 		hasSubCmd, ok := testCmd.(Subcommander)
 		if !ok {
+			// there are no more subcommands, this loop is done.
 			return bottomSubCmd, pos
 		}
-		childCmd, ok := hasSubCmd.Subcommands()[a]
+		if pos == len(cmdArgs) {
+			// there are no more arguments left to check, this loop is done.
+			return bottomSubCmd, pos
+		}
+		nextToken := cmdArgs[pos]
+		childCmd, ok := hasSubCmd.Subcommands()[nextToken]
 		if !ok {
+			// this command has subcommands, but this argument isn't one of them.
 			return bottomSubCmd, pos
 		}
 		bottomSubCmd = &childCmd
-		pos += 1
 	}
 	return bottomSubCmd, pos
 }
