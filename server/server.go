@@ -20,8 +20,9 @@ func New(laddr string, gf GraphFactory) *http.Server {
 
 // RunServer starts a server up.
 func RunServer(v *config.Verbosity, laddr string, ar *sous.AutoResolver) error {
+	mainGraph := graph.BuildGraph(&bytes.Buffer{}, os.Stdout, os.Stdout)
 	gf := func() Injector {
-		g := graph.BuildGraph(&bytes.Buffer{}, os.Stdout, os.Stdout)
+		g := mainGraph.Clone()
 		g.Add(v)
 		g.Add(ar)
 		return g
