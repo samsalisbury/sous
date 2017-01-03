@@ -12,15 +12,15 @@ import (
 )
 
 type (
-	// HTTPClient interacts with a Sous http server
-	//   It's designed to handle basic CRUD operations in a safe and restful way
+	// HTTPClient interacts with a Sous http server.
+	//   It's designed to handle basic CRUD operations in a safe and restful way.
 	HTTPClient struct {
 		serverURL *url.URL
 		http.Client
 	}
 
 	// Comparable is a required interface for Update and Delete, which provides
-	// the mechanism for comparing the remote resource to the local data
+	// the mechanism for comparing the remote resource to the local data.
 	Comparable interface {
 		// EmptyReceiver should return a pointer to an "zero value" for the recieving type.
 		// For example:
@@ -29,15 +29,15 @@ type (
 
 		// VariancesFrom returns a list of differences from another Comparable.
 		// If the two structs are equivalent, it should return an empty list.
-		// Usually, the first check will be for identical type, and return "types differ"
+		// Usually, the first check will be for identical type, and return "types differ."
 		VariancesFrom(Comparable) Variances
 	}
 
-	// Variances is a list of differences between two structs
+	// Variances is a list of differences between two structs.
 	Variances []string
 )
 
-// NewClient returns a new HTTPClient for a particular serverURL
+// NewClient returns a new HTTPClient for a particular serverURL.
 func NewClient(serverURL string) (*HTTPClient, error) {
 	u, err := url.Parse(serverURL)
 
@@ -49,7 +49,7 @@ func NewClient(serverURL string) (*HTTPClient, error) {
 	// and Etagging The client receives a gzipped response with "--gzip" appended
 	// to the original Etag The --gzip isn't stripped by whatever does it,
 	// although the body is decompressed on the server side.  This is a hack to
-	// address that issue, which should be resolved properly
+	// address that issue, which should be resolved properly.
 	client.Client.Transport = &http.Transport{Proxy: http.ProxyFromEnvironment, DisableCompression: true}
 
 	return client, errors.Wrapf(err, "new Sous REST client")
@@ -71,7 +71,7 @@ func (client *HTTPClient) Retrieve(urlPath string, qParms map[string]string, rzB
 }
 
 // Create uses the contents of qBody to create a new resource at the server at urlPath/qParms
-// It issues a PUT with "If-No-Match: *", so if a resource already exists, it'll return an error
+// It issues a PUT with "If-No-Match: *", so if a resource already exists, it'll return an error.
 func (client *HTTPClient) Create(urlPath string, qParms map[string]string, qBody interface{}) error {
 	return errors.Wrapf(func() error {
 		url, err := client.buildURL(urlPath, qParms)
@@ -97,7 +97,7 @@ func (client *HTTPClient) Update(urlPath string, qParms map[string]string, from,
 }
 
 // Delete removes a resource from the server, granted that we know the resource that we're removing.
-// It functions similarly to Update, but issues DELETE requests
+// It functions similarly to Update, but issues DELETE requests.
 func (client *HTTPClient) Delete(urlPath string, qParms map[string]string, from Comparable) error {
 	return errors.Wrapf(func() error {
 		url, err := client.buildURL(urlPath, qParms)
@@ -243,12 +243,13 @@ func (client *HTTPClient) httpRequest(req *http.Request) (*http.Response, error)
 	}
 	if rz.Body == nil {
 		Log.Vomit.Printf("Client <- %s %q %d <empty response body>", req.Method, req.URL, rz.StatusCode)
-	} else {
-		rz.Body = NewReadDebugger(rz.Body, func(b []byte, n int, err error) {
-			Log.Vomit.Printf("Client <- %s %q: %d", req.Method, req.URL, rz.StatusCode)
-			Log.Vomit.Print(string(b))
-			Log.Vomit.Printf("Read %d bytes, result: %v", n, err)
-		})
+		return rz, err
 	}
+
+	rz.Body = NewReadDebugger(rz.Body, func(b []byte, n int, err error) {
+		Log.Vomit.Printf("Client <- %s %q: %d", req.Method, req.URL, rz.StatusCode)
+		Log.Vomit.Print(string(b))
+		Log.Vomit.Printf("Read %d bytes, result: %v", n, err)
+	})
 	return rz, err
 }
