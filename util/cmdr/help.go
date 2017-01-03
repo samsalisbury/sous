@@ -11,7 +11,9 @@ import (
 // the path down the command tree provided by cmdArgs, finds the lowest
 // subcommand on that path, and returns the help text for that subcommand.
 func (cli *CLI) Help(cmd Command, cmdArgs []string) (string, error) {
-	bottomSubcmd := findBottomCommand(cmd, cmdArgs)
+	// discarding the index to the bottom command in the cmdArgs slice,
+	// not discarding an error.
+	bottomSubcmd, _ := findBottomCommand(cmd, cmdArgs)
 	return cli.formatFullHelp(*bottomSubcmd)
 }
 
@@ -65,20 +67,22 @@ func (cli *CLI) formatFlags(command Command) string {
 // findBottomCommand exists to satisfy this rule: "The arguments to a command
 // can either be values or indicative of a subcommand." It traverses the list
 // of command arguments to find the subcommand furthest down the tree.
-func findBottomCommand(cmd Command, cmdArgs []string) *Command {
+func findBottomCommand(cmd Command, cmdArgs []string) (*Command, int) {
+	var pos int
 	bottomSubCmd := &cmd
 	for _, a := range cmdArgs {
 		// check if the command has any subcommands
 		testCmd := *bottomSubCmd
 		hasSubCmd, ok := testCmd.(Subcommander)
 		if !ok {
-			return bottomSubCmd
+			return bottomSubCmd, pos
 		}
 		childCmd, ok := hasSubCmd.Subcommands()[a]
 		if !ok {
-			return bottomSubCmd
+			return bottomSubCmd, pos
 		}
 		bottomSubCmd = &childCmd
+		pos += 1
 	}
-	return bottomSubCmd
+	return bottomSubCmd, pos
 }
