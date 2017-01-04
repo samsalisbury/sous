@@ -8,7 +8,7 @@ import (
 	"github.com/opentable/sous/util/cmdr"
 )
 
-// SousPlumbingStatus is the `sous plumbing status` object
+// SousPlumbingStatus is the `sous plumbing status` object.
 type SousPlumbingStatus struct {
 	DeployFilterFlags config.DeployFilterFlags
 	StatusPoller      *sous.StatusPoller
@@ -16,22 +16,22 @@ type SousPlumbingStatus struct {
 
 func init() { PlumbingSubcommands["status"] = &SousPlumbingStatus{} }
 
-// Help implements Command on SousPlumbingStatus
+// Help implements Command on SousPlumbingStatus.
 func (*SousPlumbingStatus) Help() string {
 	return `reports the status of a given deployment`
 }
 
-// AddFlags implements cmdr.AddFlags on SousPlumbingStatus
+// AddFlags implements cmdr.AddFlags on SousPlumbingStatus.
 func (sps *SousPlumbingStatus) AddFlags(fs *flag.FlagSet) {
 	MustAddFlags(fs, &sps.DeployFilterFlags, ManifestFilterFlagsHelp)
 }
 
-// RegisterOn implements Registrant on SousPlumbingStatus
+// RegisterOn implements Registrant on SousPlumbingStatus.
 func (sps *SousPlumbingStatus) RegisterOn(psy Addable) {
 	psy.Add(&sps.DeployFilterFlags)
 }
 
-// Execute implements cmdr.Executor on SousPlumbingStatus
+// Execute implements cmdr.Executor on SousPlumbingStatus.
 func (sps *SousPlumbingStatus) Execute(args []string) cmdr.Result {
 	sps.StatusPoller.Start()
 
