@@ -10,8 +10,8 @@ import (
 
 // SousPlumbingStatus is the `sous plumbing status` object
 type SousPlumbingStatus struct {
-	config.DeployFilterFlags
-	*sous.StatusPoller
+	DeployFilterFlags config.DeployFilterFlags
+	StatusPoller      *sous.StatusPoller
 }
 
 func init() { PlumbingSubcommands["status"] = &SousPlumbingStatus{} }
