@@ -143,21 +143,21 @@ type adder interface {
 	Add(...interface{})
 }
 
-// AddLogs adds a logset to the graph
+// AddLogs adds a logset to the graph.
 func AddLogs(graph adder) {
 	graph.Add(
 		newLogSet,
 	)
 }
 
-// AddUser adds the OS user to the graph
+// AddUser adds the OS user to the graph.
 func AddUser(graph adder) {
 	graph.Add(
 		newLocalUser,
 	)
 }
 
-// AddShells adds working shells to the graph
+// AddShells adds working shells to the graph.
 func AddShells(graph adder) {
 	graph.Add(
 		newLocalWorkDirShell,
@@ -165,14 +165,14 @@ func AddShells(graph adder) {
 	)
 }
 
-// AddFilesystem adds filesystem to the graph
+// AddFilesystem adds filesystem to the graph.
 func AddFilesystem(graph adder) {
 	graph.Add(
 		newConfigLoader,
 	)
 }
 
-// AddConfig adds filesystem to the graph
+// AddConfig adds filesystem to the graph.
 func AddConfig(graph adder) {
 	c := config.DefaultConfig()
 	graph.Add(
@@ -183,7 +183,7 @@ func AddConfig(graph adder) {
 	)
 }
 
-// AddNetwork adds features that require the network
+// AddNetwork adds features that require the network.
 func AddNetwork(graph adder) {
 	graph.Add(
 		newDockerClient,
@@ -192,7 +192,7 @@ func AddNetwork(graph adder) {
 	)
 }
 
-// AddDocker adds Docker to the graph
+// AddDocker adds Docker to the graph.
 func AddDocker(graph adder) {
 	graph.Add(
 		newDockerBuilder,
@@ -200,14 +200,14 @@ func AddDocker(graph adder) {
 	)
 }
 
-// AddSingularity adds Singularity clients to the graph
+// AddSingularity adds Singularity clients to the graph.
 func AddSingularity(graph adder) {
 	graph.Add(
 		newDeployer,
 	)
 }
 
-// AddState adds state reader and writers to the graph
+// AddState adds state reader and writers to the graph.
 func AddState(graph adder) {
 	graph.Add(
 		newStateManager,
@@ -216,7 +216,7 @@ func AddState(graph adder) {
 	)
 }
 
-// AddInternals adds the dependency contructors that are internal to Sous
+// AddInternals adds the dependency contructors that are internal to Sous.
 func AddInternals(graph adder) {
 	// internal to Sous
 	graph.Add(
