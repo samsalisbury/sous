@@ -18,7 +18,8 @@ type (
 
 	// copied from server - avoiding coupling to server implemention
 	server struct {
-		URL string
+		ClusterName string
+		URL         string
 	}
 
 	// copied from server - avoiding coupling to server implemention
@@ -131,6 +132,9 @@ func (sp *StatusPoller) Start() (ResolveState, error) {
 	subs := []*subPoller{}
 
 	for _, s := range clusters.Servers {
+		if !sp.ResolveFilter.FilterClusterName(s.ClusterName) {
+			continue
+		}
 		sub, err := newSubPoller(s.URL, sp.ResolveFilter)
 		if err != nil {
 			return ResolveNotPolled, err
