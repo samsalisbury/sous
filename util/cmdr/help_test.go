@@ -22,7 +22,7 @@ func TestHelp(t *testing.T) {
 	}
 	expectedStrings := []string{
 		"subcommands:",
-		"anothertest  Test Command.",
+		"cmd       Test Command.",
 	}
 	for _, s := range expectedStrings {
 		if strings.Contains(help, s) {
