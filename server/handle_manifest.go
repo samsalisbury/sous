@@ -22,6 +22,7 @@ type (
 	// PUTManifestHandler handles PUT exchanges for manifests
 	PUTManifestHandler struct {
 		*sous.State
+		*sous.LogSet
 		*http.Request
 		*QueryValues
 		StateWriter graph.StateWriter
@@ -84,7 +85,8 @@ func (pmh *PUTManifestHandler) Exchange() (interface{}, int) {
 	dec.Decode(m)
 	flaws := m.Validate()
 	if len(flaws) > 0 {
-		return "", http.StatusBadRequest
+		pmh.Vomit.Printf("%#v", flaws)
+		return "Invalid manifest", http.StatusBadRequest
 	}
 	pmh.State.Manifests.Set(mid, m)
 	if err := pmh.StateWriter.WriteState(pmh.State); err != nil {

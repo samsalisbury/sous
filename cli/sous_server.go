@@ -69,7 +69,7 @@ func (ss *SousServer) Execute(args []string) cmdr.Result {
 	ss.Log.Info.Println("Starting scheduled GDM resolution.")
 	ss.AutoResolver.Kickoff()
 	ss.Log.Info.Printf("Sous Server v%s running at %s", ss.Sous.Version, ss.flags.laddr)
-	return EnsureErrorResult(server.RunServer(ss.Verbosity, ss.flags.laddr, ss.AutoResolver)) //always non-nil
+	return EnsureErrorResult(server.RunServer(ss.Verbosity, ss.flags.laddr)) //always non-nil
 }
 
 func ensureGDMExists(repo, localPath string, log func(string, ...interface{})) error {

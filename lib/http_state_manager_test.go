@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 )
@@ -30,10 +31,11 @@ func TestHTTPStateManager_Create(t *testing.T) {
 
 	srv := httptest.NewServer(http.HandlerFunc(h))
 
-	hsm, err := NewHTTPStateManager(srv.URL)
+	cl, err := NewClient(srv.URL)
 	if err != nil {
 		t.Error(err)
 	}
+	hsm := NewHTTPStateManager(cl)
 	hsm.create(&Manifest{})
 	if !reqd {
 		t.Errorf("No request issued")
@@ -77,10 +79,11 @@ func TestHTTPStateManager_Delete(t *testing.T) {
 
 	srv := httptest.NewServer(http.HandlerFunc(h))
 
-	hsm, err := NewHTTPStateManager(srv.URL)
+	cl, err := NewClient(srv.URL)
 	if err != nil {
 		t.Error(err)
 	}
+	hsm := NewHTTPStateManager(cl)
 	hsm.del(&Manifest{})
 	if !reqd {
 		t.Errorf("No request issued")
@@ -88,14 +91,14 @@ func TestHTTPStateManager_Delete(t *testing.T) {
 }
 
 func TestHTTPStateManager_Modify(t *testing.T) {
-	//Log.Vomit.SetOutput(os.Stderr)
+	Log.Vomit.SetOutput(os.Stderr)
 	reqd := false
 	etag := "w/sauce"
 	h := func(rw http.ResponseWriter, r *http.Request) {
 		method := strings.ToUpper(r.Method)
 		switch method {
 		default:
-			t.Errorf("Method should be GET or DELETE was: %s", method)
+			t.Errorf("Method should be GET or PUT was: %s", method)
 		case "PUT":
 			body, err := ioutil.ReadAll(r.Body)
 			if err != nil {
@@ -118,20 +121,25 @@ func TestHTTPStateManager_Modify(t *testing.T) {
 				t.Errorf("Non-empty body: %q", body)
 			}
 			rw.Header().Add("Etag", etag)
+			rw.Write([]byte("{}"))
 			rw.WriteHeader(200)
 		}
 	}
 
 	srv := httptest.NewServer(http.HandlerFunc(h))
 
-	hsm, err := NewHTTPStateManager(srv.URL)
+	cl, err := NewClient(srv.URL)
 	if err != nil {
 		t.Error(err)
 	}
-	hsm.modify(&ManifestPair{
+	hsm := NewHTTPStateManager(cl)
+	err = hsm.modify(&ManifestPair{
 		Prior: &Manifest{},
 		Post:  &Manifest{},
 	})
+	if err != nil {
+		t.Errorf("Received error: %+v", err)
+	}
 	if !reqd {
 		t.Errorf("No request issued")
 	}

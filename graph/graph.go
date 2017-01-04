@@ -43,6 +43,9 @@ type (
 	ErrWriter io.Writer
 	// InReader is typicially set to os.Stdin
 	InReader io.Reader
+	// StatusWaitStable represents if `sous plumbing status` should continue to
+	// poll until the selected t
+	StatusWaitStable bool
 	// Version represents a version of Sous.
 	Version struct{ semv.Version }
 	// LocalUser is the currently logged in user.
@@ -140,21 +143,21 @@ type adder interface {
 	Add(...interface{})
 }
 
-// AddLogs adds a logset to the graph
+// AddLogs adds a logset to the graph.
 func AddLogs(graph adder) {
 	graph.Add(
 		newLogSet,
 	)
 }
 
-// AddUser adds the OS user to the graph
+// AddUser adds the OS user to the graph.
 func AddUser(graph adder) {
 	graph.Add(
 		newLocalUser,
 	)
 }
 
-// AddShells adds working shells to the graph
+// AddShells adds working shells to the graph.
 func AddShells(graph adder) {
 	graph.Add(
 		newLocalWorkDirShell,
@@ -162,14 +165,14 @@ func AddShells(graph adder) {
 	)
 }
 
-// AddFilesystem adds filesystem to the graph
+// AddFilesystem adds filesystem to the graph.
 func AddFilesystem(graph adder) {
 	graph.Add(
 		newConfigLoader,
 	)
 }
 
-// AddConfig adds filesystem to the graph
+// AddConfig adds filesystem to the graph.
 func AddConfig(graph adder) {
 	c := config.DefaultConfig()
 	graph.Add(
@@ -180,14 +183,16 @@ func AddConfig(graph adder) {
 	)
 }
 
-// AddNetwork adds features that require the network
+// AddNetwork adds features that require the network.
 func AddNetwork(graph adder) {
 	graph.Add(
 		newDockerClient,
+		newHTTPClient,
+		newStatusPoller,
 	)
 }
 
-// AddDocker adds Docker to the graph
+// AddDocker adds Docker to the graph.
 func AddDocker(graph adder) {
 	graph.Add(
 		newDockerBuilder,
@@ -195,14 +200,14 @@ func AddDocker(graph adder) {
 	)
 }
 
-// AddSingularity adds Singularity clients to the graph
+// AddSingularity adds Singularity clients to the graph.
 func AddSingularity(graph adder) {
 	graph.Add(
 		newDeployer,
 	)
 }
 
-// AddState adds state reader and writers to the graph
+// AddState adds state reader and writers to the graph.
 func AddState(graph adder) {
 	graph.Add(
 		newStateManager,
@@ -211,7 +216,7 @@ func AddState(graph adder) {
 	)
 }
 
-// AddInternals adds the dependency contructors that are internal to Sous
+// AddInternals adds the dependency contructors that are internal to Sous.
 func AddInternals(graph adder) {
 	// internal to Sous
 	graph.Add(
@@ -445,20 +450,37 @@ func newDockerClient() LocalDockerClient {
 	return LocalDockerClient{docker_registry.NewClient()}
 }
 
-func newStateManager(c LocalSousConfig) (*StateManager, error) {
+// newHTTPClient returns an HTTP client if c.Server is not empty.
+// Otherwise it returns nil, and emits some warnings.
+func newHTTPClient(c LocalSousConfig) (*sous.HTTPClient, error) {
 	if c.Server == "" {
 		sous.Log.Warn.Println("No server set, Sous is running in server or workstation mode.")
 		sous.Log.Warn.Println("Configure a server like this: sous config server http://some.sous.server")
-		sous.Log.Warn.Printf("Using local state stored at %s", c.StateLocation)
-		dm := storage.NewDiskStateManager(c.StateLocation)
-		return &StateManager{StateManager: storage.NewGitStateManager(dm)}, nil
+		return nil, nil
 	}
 	sous.Log.Debug.Printf("Using server at %s", c.Server)
-	hsm, err := sous.NewHTTPStateManager(c.Server)
-	if err != nil {
-		return nil, err
+	return sous.NewClient(c.Server)
+}
+
+// newStateManager returns a wrapped sous.HTTPStateManager if cl is not nil.
+// Otherwise it returns a wrapped sous.GitStateManager, for local git based GDM.
+// If it returns a sous.GitStateManager, it emits a warning log.
+func newStateManager(cl *sous.HTTPClient, c LocalSousConfig) *StateManager {
+	if cl == nil {
+		sous.Log.Warn.Printf("Using local state stored at %s", c.StateLocation)
+		dm := storage.NewDiskStateManager(c.StateLocation)
+		return &StateManager{StateManager: storage.NewGitStateManager(dm)}
 	}
-	return &StateManager{StateManager: hsm}, nil
+	hsm := sous.NewHTTPStateManager(cl)
+	return &StateManager{StateManager: hsm}
+}
+
+func newStatusPoller(cl *sous.HTTPClient, rf *sous.ResolveFilter) *sous.StatusPoller {
+	if cl == nil {
+		sous.Log.Warn.Println("Unable to poll for status.")
+		return nil
+	}
+	return sous.NewStatusPoller(cl, rf)
 }
 
 func newLocalStateReader(sm *StateManager) StateReader {

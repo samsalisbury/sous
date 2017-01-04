@@ -404,3 +404,14 @@ func TestInvokeBuildWithRepoSelector(t *testing.T) {
 	assert.Equal(build.DeployFilterFlags.Repo, `github.com/opentable/sous`)
 
 }
+
+func TestInvokePlumbingStatus_noServer(t *testing.T) {
+	assert := assert.New(t)
+
+	_, exe, _, _ := prepareCommand(t, []string{`sous`, `plumbing`, `status`})
+	assert.Len(exe.Args, 0)
+
+	status := exe.Cmd.(*SousPlumbingStatus)
+
+	assert.Nil(status.StatusPoller)
+}
