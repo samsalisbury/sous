@@ -163,10 +163,9 @@ func (client *HTTPClient) getBodyEtag(url string, body Comparable, ierr error) (
 	return rz.Header.Get("Etag"), nil
 }
 
-func (client *HTTPClient) buildRequest(method, url string, headers map[string]string, rqBody interface{}, ierr error) (rq *http.Request, err error) {
+func (client *HTTPClient) buildRequest(method, url string, headers map[string]string, rqBody interface{}, ierr error) (*http.Request, error) {
 	if ierr != nil {
-		err = ierr
-		return
+		return nil, ierr
 	}
 
 	Log.Debug.Printf("Sending %s %q", method, url)
@@ -181,7 +180,7 @@ func (client *HTTPClient) buildRequest(method, url string, headers map[string]st
 		JSON = buf
 	}
 
-	rq, err = http.NewRequest(method, url, JSON)
+	rq, err := http.NewRequest(method, url, JSON)
 
 	if headers != nil {
 		for k, v := range headers {
@@ -192,18 +191,17 @@ func (client *HTTPClient) buildRequest(method, url string, headers map[string]st
 	return rq, err
 }
 
-func (client *HTTPClient) sendRequest(rq *http.Request, ierr error) (rz *http.Response, err error) {
+func (client *HTTPClient) sendRequest(rq *http.Request, ierr error) (*http.Response, error) {
 	if ierr != nil {
-		err = ierr
-		return
+		return nil, ierr
 	}
-	rz, err = client.httpRequest(rq)
+	rz, err := client.httpRequest(rq)
 	if err != nil {
 		Log.Debug.Printf("Received %v", err)
-		return
+		return rz, err
 	}
 	Log.Debug.Printf("Received \"%s %s\" -> %d", rq.Method, rq.URL, rz.StatusCode)
-	return
+	return rz, err
 }
 
 func (client *HTTPClient) getBody(rz *http.Response, rzBody interface{}, err error) error {

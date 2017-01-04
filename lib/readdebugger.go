@@ -13,7 +13,7 @@ type (
 	}
 )
 
-// NewReadDebugger creates a new ReadDebugger that wraps a ReadCloser
+// NewReadDebugger creates a new ReadDebugger that wraps a ReadCloser.
 func NewReadDebugger(rc io.ReadCloser, log func([]byte, int, error)) *ReadDebugger {
 	return &ReadDebugger{
 		wrapped: rc,
@@ -22,7 +22,7 @@ func NewReadDebugger(rc io.ReadCloser, log func([]byte, int, error)) *ReadDebugg
 	}
 }
 
-// Read implements Reader on ReadDebugger
+// Read implements Reader on ReadDebugger.
 func (rd *ReadDebugger) Read(p []byte) (int, error) {
 	n, err := rd.wrapped.Read(p)
 	rd.read = append(rd.read, p...)
@@ -34,7 +34,7 @@ func (rd *ReadDebugger) Read(p []byte) (int, error) {
 	return n, err
 }
 
-// Close implements Closer on ReadDebugger
+// Close implements Closer on ReadDebugger.
 func (rd *ReadDebugger) Close() error {
 	err := rd.wrapped.Close()
 	if !rd.logged {
