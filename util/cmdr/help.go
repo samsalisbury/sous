@@ -13,7 +13,7 @@ import (
 func (cli *CLI) Help(cmd Command, cmdArgs []string) (string, error) {
 	// discarding the index to the bottom command in the cmdArgs slice,
 	// not discarding an error.
-	bottomSubcmd, _ := findBottomCommand(cmd, cmdArgs)
+	bottomSubcmd := findBottomCommand(cmd, cmdArgs)
 	return cli.formatFullHelp(*bottomSubcmd)
 }
 
@@ -67,25 +67,24 @@ func (cli *CLI) formatFlags(command Command) string {
 // findBottomCommand exists to satisfy this rule: "The arguments to a command
 // can either be values or indicative of a subcommand." It traverses the list
 // of command arguments to find the subcommand furthest down the tree.
-func findBottomCommand(cmd Command, cmdArgs []string) (*Command, int) {
-	var pos int
+func findBottomCommand(cmd Command, cmdArgs []string) *Command {
 	bottomSubCmd := &cmd
-	for pos = 0; pos < len(cmdArgs); pos++ {
+	for i := 0; i < len(cmdArgs); i++ {
 		// check if the command has any subcommands
 		testCmd := *bottomSubCmd
 		withSubCmd, ok := testCmd.(Subcommander)
 		if !ok {
 			// there are no more subcommands, this loop is done.
-			return bottomSubCmd, pos
+			return bottomSubCmd
 		}
 
-		nextToken := cmdArgs[pos]
+		nextToken := cmdArgs[i]
 		childCmd, ok := withSubCmd.Subcommands()[nextToken]
 		if !ok {
 			// this command has subcommands, but this argument isn't one of them.
-			return bottomSubCmd, pos
+			return bottomSubCmd
 		}
 		bottomSubCmd = &childCmd
 	}
-	return bottomSubCmd, pos
+	return bottomSubCmd
 }
