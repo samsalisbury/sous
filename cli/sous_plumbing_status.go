@@ -13,7 +13,6 @@ import (
 type SousPlumbingStatus struct {
 	config.DeployFilterFlags
 	*sous.StatusPoller
-	waitForStable bool
 }
 
 func init() { PlumbingSubcommands["status"] = &SousPlumbingStatus{} }
@@ -26,13 +25,11 @@ func (*SousPlumbingStatus) Help() string {
 // AddFlags implements cmdr.AddFlags on SousPlumbingStatus
 func (sps *SousPlumbingStatus) AddFlags(fs *flag.FlagSet) {
 	MustAddFlags(fs, &sps.DeployFilterFlags, ManifestFilterFlagsHelp)
-	MustAddFlags(fs, &sps.waitForStable, `wait until deployment is stable`)
 }
 
 // RegisterOn implements Registrant on SousPlumbingStatus
 func (sps *SousPlumbingStatus) RegisterOn(psy Addable) {
 	psy.Add(&sps.DeployFilterFlags)
-	psy.Add(graph.StatusWaitStable(sps.waitForStable))
 }
 
 // Execute implements cmdr.Executor on SousPlumbingStatus

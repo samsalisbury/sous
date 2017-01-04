@@ -187,6 +187,8 @@ func AddConfig(graph adder) {
 func AddNetwork(graph adder) {
 	graph.Add(
 		newDockerClient,
+		newHTTPClient,
+		newStatusPoller,
 	)
 }
 
@@ -448,7 +450,7 @@ func newDockerClient() LocalDockerClient {
 	return LocalDockerClient{docker_registry.NewClient()}
 }
 
-func newStateManager(c LocalSousConfig) (*StateManager, error) {
+func newHTTPClient(c LocalSousConfig) (*sous.HTTPClient, err) {
 	if c.Server == "" {
 		sous.Log.Warn.Println("No server set, Sous is running in server or workstation mode.")
 		sous.Log.Warn.Println("Configure a server like this: sous config server http://some.sous.server")
@@ -457,12 +459,16 @@ func newStateManager(c LocalSousConfig) (*StateManager, error) {
 		return &StateManager{StateManager: storage.NewGitStateManager(dm)}, nil
 	}
 	sous.Log.Debug.Printf("Using server at %s", c.Server)
-	cl, err := sous.NewClient(c.Server)
-	if err != nil {
-		return nil, err
-	}
+	return sous.NewClient(c.Server)
+}
+
+func newStateManager(cl *sous.HTTPClient) *StateManager {
 	hsm := sous.NewHTTPStateManager(cl)
-	return &StateManager{StateManager: hsm}, nil
+	return &StateManager{StateManager: hsm}
+}
+
+func newStatusPoller(cl *sous.HTTPClient, rf *sous.ResolveFilter) *sous.StatusPoller {
+	return sous.NewStatusPoller(cl, rf)
 }
 
 func newLocalStateReader(sm *StateManager) StateReader {

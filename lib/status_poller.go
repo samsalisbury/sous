@@ -92,6 +92,13 @@ func (rs ResolveState) String() string {
 	}
 }
 
+func NewStatusPoller(cl *HTTPClient, rf *ResolveFilter) *StatusPoller {
+	return &StatusPoller{
+		HTTPClient:    cl,
+		ResolveFilter: rf,
+	}
+}
+
 func newSubPoller(serverURL string, baseFilter *ResolveFilter) (*subPoller, error) {
 	cl, err := NewClient(serverURL)
 	if err != nil {
