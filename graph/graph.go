@@ -13,7 +13,6 @@ import (
 	"github.com/opentable/sous/ext/git"
 	"github.com/opentable/sous/ext/github"
 	"github.com/opentable/sous/ext/singularity"
-	"github.com/opentable/sous/ext/storage"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
 	"github.com/opentable/sous/util/docker_registry"
@@ -450,13 +449,14 @@ func newDockerClient() LocalDockerClient {
 	return LocalDockerClient{docker_registry.NewClient()}
 }
 
-func newHTTPClient(c LocalSousConfig) (*sous.HTTPClient, err) {
+func newHTTPClient(c LocalSousConfig) (*sous.HTTPClient, error) {
 	if c.Server == "" {
-		sous.Log.Warn.Println("No server set, Sous is running in server or workstation mode.")
-		sous.Log.Warn.Println("Configure a server like this: sous config server http://some.sous.server")
-		sous.Log.Warn.Printf("Using local state stored at %s", c.StateLocation)
-		dm := storage.NewDiskStateManager(c.StateLocation)
-		return &StateManager{StateManager: storage.NewGitStateManager(dm)}, nil
+		return nil, fmt.Errorf("cannot create client; no Server set in config")
+		//sous.Log.Warn.Println("No server set, Sous is running in server or workstation mode.")
+		//sous.Log.Warn.Println("Configure a server like this: sous config server http://some.sous.server")
+		//sous.Log.Warn.Printf("Using local state stored at %s", c.StateLocation)
+		//dm := storage.NewDiskStateManager(c.StateLocation)
+		//return &StateManager{StateManager: storage.NewGitStateManager(dm)}, nil
 	}
 	sous.Log.Debug.Printf("Using server at %s", c.Server)
 	return sous.NewClient(c.Server)

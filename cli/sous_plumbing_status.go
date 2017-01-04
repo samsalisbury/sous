@@ -4,8 +4,7 @@ import (
 	"flag"
 
 	"github.com/opentable/sous/config"
-	"github.com/opentable/sous/graph"
-	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
 )
 
