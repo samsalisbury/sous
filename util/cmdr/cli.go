@@ -203,26 +203,26 @@ func (c *CLI) prepare(cmd Command, cmdArgs []string, flagAddFuncs []func(*flag.F
 	cmdName := cmdArgs[0]
 	cmdArgs = cmdArgs[1:]
 	// Add and parse flags for this command.
-	if cmdHasFlags, ok := cmd.(AddsFlags); ok {
+	if cmdWithFlags, ok := cmd.(AddsFlags); ok {
 		if flagAddFuncs == nil {
 			flagAddFuncs = []func(*flag.FlagSet){}
 		}
 		// add these flags to the agglomeration
-		flagAddFuncs = append(flagAddFuncs, cmdHasFlags.AddFlags)
+		flagAddFuncs = append(flagAddFuncs, cmdWithFlags.AddFlags)
 	}
 	// If this command has subcommands, first try to descend into one of them.
-	if cmdHasSubcmd, ok := cmd.(Subcommander); ok && len(cmdArgs) != 0 {
+	if cmdWithSubcmd, ok := cmd.(Subcommander); ok && len(cmdArgs) != 0 {
 		subcommandName := cmdArgs[0]
-		subcommands := cmdHasSubcmd.Subcommands()
-		if cmdHasSubCmd, ok := subcommands[subcommandName]; ok {
+		subcommands := cmdWithSubcmd.Subcommands()
+		if cmdWithSubCmd, ok := subcommands[subcommandName]; ok {
 			if err := c.runHook(c.Hooks.Parsed, cmd); err != nil {
 				return nil, EnsureErrorResult(err)
 			}
-			return c.prepare(cmdHasSubCmd, cmdArgs, flagAddFuncs)
+			return c.prepare(cmdWithSubCmd, cmdArgs, flagAddFuncs)
 		}
 	}
 	// If the command can itself be executed, do that now.
-	if cmdCanExec, ok := cmd.(Executor); ok {
+	if cmdWithExec, ok := cmd.(Executor); ok {
 		c.init()
 		// make a flag.FlagSet named for this command.
 		fs := flag.NewFlagSet(cmdName, flag.ContinueOnError)
@@ -256,7 +256,7 @@ func (c *CLI) prepare(cmd Command, cmdArgs []string, flagAddFuncs []func(*flag.F
 		if err := c.runHook(c.Hooks.PreExecute, cmd); err != nil {
 			return nil, err
 		}
-		return &PreparedExecution{Cmd: cmdCanExec, Args: bottomCmdArgs}, nil
+		return &PreparedExecution{Cmd: cmdWithExec, Args: bottomCmdArgs}, nil
 	}
 	// If we get here, this command is not configured correctly and cannot run.
 	return nil, InternalErrorf("%q is not runnable and has no subcommands", cmdName)
