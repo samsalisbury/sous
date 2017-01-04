@@ -13,6 +13,7 @@ import (
 	"github.com/opentable/sous/ext/git"
 	"github.com/opentable/sous/ext/github"
 	"github.com/opentable/sous/ext/singularity"
+	"github.com/opentable/sous/ext/storage"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
 	"github.com/opentable/sous/util/docker_registry"
@@ -449,20 +450,27 @@ func newDockerClient() LocalDockerClient {
 	return LocalDockerClient{docker_registry.NewClient()}
 }
 
+// newHTTPClient returns an HTTP client if c.Server is not empty.
+// Otherwise it returns nil, and emits some warnings.
 func newHTTPClient(c LocalSousConfig) (*sous.HTTPClient, error) {
 	if c.Server == "" {
-		return nil, fmt.Errorf("cannot create client; no Server set in config")
-		//sous.Log.Warn.Println("No server set, Sous is running in server or workstation mode.")
-		//sous.Log.Warn.Println("Configure a server like this: sous config server http://some.sous.server")
-		//sous.Log.Warn.Printf("Using local state stored at %s", c.StateLocation)
-		//dm := storage.NewDiskStateManager(c.StateLocation)
-		//return &StateManager{StateManager: storage.NewGitStateManager(dm)}, nil
+		sous.Log.Warn.Println("No server set, Sous is running in server or workstation mode.")
+		sous.Log.Warn.Println("Configure a server like this: sous config server http://some.sous.server")
+		return nil, nil
 	}
 	sous.Log.Debug.Printf("Using server at %s", c.Server)
 	return sous.NewClient(c.Server)
 }
 
-func newStateManager(cl *sous.HTTPClient) *StateManager {
+// newStateManager returns a wrapped sous.HTTPStateManager if cl is not nil.
+// Otherwise it returns a wrapped sous.GitStateManager, for local git based GDM.
+// If it returns a sous.GitStateManager, it emits a warning log.
+func newStateManager(cl *sous.HTTPClient, c LocalSousConfig) *StateManager {
+	if cl == nil {
+		sous.Log.Warn.Printf("Using local state stored at %s", c.StateLocation)
+		dm := storage.NewDiskStateManager(c.StateLocation)
+		return &StateManager{StateManager: storage.NewGitStateManager(dm)}
+	}
 	hsm := sous.NewHTTPStateManager(cl)
 	return &StateManager{StateManager: hsm}
 }

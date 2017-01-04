@@ -32,6 +32,7 @@ func injectedStateManager(t *testing.T, cfg *config.Config) *StateManager {
 	g := psyringe.New()
 	g.Add(newStateManager)
 	g.Add(LocalSousConfig{Config: cfg})
+	g.Add(newHTTPClient)
 
 	smRcvr := struct {
 		Sm *StateManager
