@@ -12,7 +12,8 @@ type (
 	}
 
 	server struct {
-		URL string
+		ClusterName string
+		URL         string
 	}
 
 	serverListData struct {
@@ -26,8 +27,8 @@ func (slr *ServerListResource) Get() Exchanger { return &ServerListHandler{} }
 // Exchange implements Exchanger on ServerListHandler
 func (slh *ServerListHandler) Exchange() (interface{}, int) {
 	data := serverListData{Servers: []server{}}
-	for _, url := range slh.Config.SiblingURLs {
-		data.Servers = append(data.Servers, server{URL: url})
+	for name, url := range slh.Config.SiblingURLs {
+		data.Servers = append(data.Servers, server{ClusterName: name, URL: url})
 	}
 	return data, 200
 }

@@ -12,7 +12,7 @@ func TestHandleServerList_Get(t *testing.T) {
 
 	h := &ServerListHandler{
 		Config: &config.Config{
-			SiblingURLs: []string{"https://left.sous.com", "https://right.sous.com"},
+			SiblingURLs: map[string]string{"left": "https://left.sous.com", "right": "https://right.sous.com"},
 		},
 	}
 
@@ -21,6 +21,12 @@ func TestHandleServerList_Get(t *testing.T) {
 
 	list, yup := rez.(serverListData)
 	assert.True(yup)
+
+	// test predates config []string -> map[string]string
 	assert.Equal(list.Servers[0].URL, "https://left.sous.com")
 	assert.Equal(list.Servers[1].URL, "https://right.sous.com")
+
+	// newer test
+	assert.Equal(list.Servers[0].ClusterName, "left")
+	assert.Equal(list.Servers[1].ClusterName, "right")
 }
