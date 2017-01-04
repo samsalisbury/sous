@@ -33,6 +33,11 @@ func (sps *SousPlumbingStatus) RegisterOn(psy Addable) {
 
 // Execute implements cmdr.Executor on SousPlumbingStatus.
 func (sps *SousPlumbingStatus) Execute(args []string) cmdr.Result {
+
+	if sps.StatusPoller == nil {
+		return cmdr.UsageErrorf("Please configure a server using 'sous config Server <url>'")
+	}
+
 	sps.StatusPoller.Start()
 
 	return cmdr.Success()

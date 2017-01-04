@@ -476,6 +476,10 @@ func newStateManager(cl *sous.HTTPClient, c LocalSousConfig) *StateManager {
 }
 
 func newStatusPoller(cl *sous.HTTPClient, rf *sous.ResolveFilter) *sous.StatusPoller {
+	if cl == nil {
+		sous.Log.Warn.Println("Unable to poll for status.")
+		return nil
+	}
 	return sous.NewStatusPoller(cl, rf)
 }
 
