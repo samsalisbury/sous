@@ -16,6 +16,7 @@ type (
 	StatusHandler struct {
 		GDM          graph.CurrentGDM
 		AutoResolver *sous.AutoResolver
+		*sous.ResolveFilter
 	}
 
 	statusData struct {
@@ -30,7 +31,7 @@ func (*StatusResource) Get() Exchanger { return &StatusHandler{} }
 // Exchange implements the Handler interface.
 func (h *StatusHandler) Exchange() (interface{}, int) {
 	status := statusData{Deployments: []*sous.Deployment{}}
-	for _, d := range h.GDM.Snapshot() {
+	for _, d := range h.GDM.Filter(h.ResolveFilter.FilterDeployment).Snapshot() {
 		status.Deployments = append(status.Deployments, d)
 	}
 	status.Completed, status.InProgress = h.AutoResolver.Statuses()

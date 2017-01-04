@@ -55,6 +55,10 @@ const (
 	// already, but is resolving a different version. Again, expect that on the
 	// next auto-resolve cycle we'll move past this state.
 	ResolveNotVersion
+	// ResolvePendingRequest conveys that, while the server has registered the
+	// intent for the current resolve cycle, no request has yet been made to
+	// Singularity.
+	ResolvePendingRequest
 	// ResolveInProgress conveys a resolve action has been taken by the server,
 	// which implies that the server's intended version (which we've confirmed is
 	// the same as our intended version) is different from the
@@ -75,6 +79,8 @@ func (rs ResolveState) String() string {
 		return "ResolveNotPolled"
 	case ResolveNotStarted:
 		return "ResolveNotStarted"
+	case ResolvePendingRequest:
+		return "ResolvePendingRequest"
 	case ResolveNotVersion:
 		return "ResolveNotVersion"
 	case ResolveInProgress:
@@ -221,9 +227,9 @@ func (sub *subPoller) pollOnce() ResolveState {
 }
 
 func (sub *subPoller) computeState(srvIntent *Deployment, stable, current *DiffResolution) ResolveState {
-	Log.Debug.Printf("%s reports intent to resolve %v", sub.HTTPClient.serverURL, srvIntent)
-	Log.Debug.Printf("%s reports stable rez: %v", sub.HTTPClient.serverURL, stable)
-	Log.Debug.Printf("%s reports in-progress rez: %v", sub.HTTPClient.serverURL, current)
+	Log.Debug.Printf("%s reports intent to resolve %v", sub.URL, srvIntent)
+	Log.Debug.Printf("%s reports stable rez: %v", sub.URL, stable)
+	Log.Debug.Printf("%s reports in-progress rez: %v", sub.URL, current)
 
 	if srvIntent == nil {
 		return ResolveNotStarted
@@ -235,6 +241,10 @@ func (sub *subPoller) computeState(srvIntent *Deployment, stable, current *DiffR
 
 	if current == nil {
 		current = stable
+	}
+
+	if current == nil {
+		return ResolvePendingRequest
 	}
 
 	if current.Error != nil {
