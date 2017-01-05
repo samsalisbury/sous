@@ -86,7 +86,7 @@ func TestOverallRouter(t *testing.T) {
 	assert := assert.New(t)
 
 	gf := func() Injector {
-		g := graph.TestGraphWithConfig(&bytes.Buffer{}, os.Stdout, os.Stdout, "StateLocation: '../ext/storage/testdata/target'\n")
+		g := graph.TestGraphWithConfig(&bytes.Buffer{}, os.Stdout, os.Stdout, "StateLocation: '../ext/storage/testdata/in'\n")
 		g.Add(&config.Verbosity{})
 		return g
 	}
