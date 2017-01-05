@@ -69,7 +69,7 @@ func (cli *CLI) formatFlags(command Command) string {
 // of command arguments to find the subcommand furthest down the tree.
 func findBottomCommand(cmd Command, cmdArgs []string) *Command {
 	bottomSubCmd := &cmd
-	for _, a := range cmdArgs {
+	for _, nextToken := range cmdArgs {
 		// check if the command has any subcommands
 		testCmd := *bottomSubCmd
 		withSubCmd, ok := testCmd.(Subcommander)
@@ -77,8 +77,6 @@ func findBottomCommand(cmd Command, cmdArgs []string) *Command {
 			// there are no more subcommands, this loop is done.
 			return bottomSubCmd
 		}
-
-		nextToken := a
 		childCmd, ok := withSubCmd.Subcommands()[nextToken]
 		if !ok {
 			// this command has subcommands, but this argument isn't one of them.
