@@ -11,8 +11,6 @@ import (
 // the path down the command tree provided by cmdArgs, finds the lowest
 // subcommand on that path, and returns the help text for that subcommand.
 func (cli *CLI) Help(cmd Command, cmdArgs []string) (string, error) {
-	// discarding the index to the bottom command in the cmdArgs slice,
-	// not discarding an error.
 	bottomSubcmd := findBottomCommand(cmd, cmdArgs)
 	return cli.formatFullHelp(*bottomSubcmd)
 }
