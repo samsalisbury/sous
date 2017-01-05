@@ -148,7 +148,7 @@ func TestStatusPoller(t *testing.T) {
 
 	timeout := 100 * time.Millisecond
 	select {
-	case <-time.Tick(timeout):
+	case <-time.After(timeout):
 		t.Errorf("Happy path polling took more than %s", timeout)
 	case rState := <-testCh:
 		if rState != ResolveComplete {
