@@ -60,14 +60,14 @@ func (sd *SousDeploy) Execute(args []string) cmdr.Result {
 		return res
 	}
 
-	if sd.Config.Server != "" {
-		if sd.waitStable {
-			return sd.CLI.Plumbing(&SousPlumbingStatus{}, []string{})
-		}
-		return cmdr.Successf("Updated the global deploy manifest. Deploy in process.")
+	// Running serverless, so run rectify.
+	if sd.Config.Server == "" {
+		return sd.CLI.Plumbing(&SousRectify{}, []string{})
 	}
 
-	// Running serverless, so run rectify.
-	rect := &SousRectify{}
-	return sd.CLI.Plumbing(rect, []string{})
+	if sd.waitStable {
+		return sd.CLI.Plumbing(&SousPlumbingStatus{}, []string{})
+	}
+	return cmdr.Successf("Updated the global deploy manifest. Deploy in process.")
+
 }
