@@ -110,9 +110,10 @@ func TestRealDiffConcentration(t *testing.T) {
 		assert.Equal(repoThree, string(chNum.name.Source.Repo))
 		assert.Equal(repoThree, string(chNum.Prior.Source.Repo))
 		assert.Equal(repoThree, string(chNum.Post.Source.Repo))
-		log.Printf("%+v", chNum)
+		/*log.Printf("%+v", chNum)
 		log.Printf("%+v", chNum.Prior)
 		log.Printf("%+v", chNum.Post)
+		*/
 		assert.Equal(chNum.Prior.Deployments["test"].NumInstances, 1)
 		assert.Equal(chNum.Post.Deployments["test"].NumInstances, 2)
 

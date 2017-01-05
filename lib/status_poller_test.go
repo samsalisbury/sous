@@ -2,7 +2,11 @@ package sous
 
 import (
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"regexp"
 	"testing"
+	"time"
 
 	"github.com/samsalisbury/semv"
 )
@@ -60,4 +64,53 @@ func TestSubPoller_ComputeState(t *testing.T) {
 	testCompute("1.0", versionDep("1.0"), diffRez("unchanged", nil), nil, ResolveComplete)
 	testCompute("1.0", versionDep("1.0"), nil, diffRez("unchanged", nil), ResolveComplete)
 	testCompute("1.0", versionDep("1.0"), diffRez("create", rezErr), diffRez("unchanged", nil), ResolveComplete)
+}
+
+func TestStatusPoller(t *testing.T) {
+	serversRE := regexp.MustCompile(`/servers$`)
+	statusRE := regexp.MustCompile(`/status$`)
+	var serversJSON, statusJSON []byte
+
+	h := func(rw http.ResponseWriter, r *http.Request) {
+		url := r.URL.String()
+		if serversRE.MatchString(url) {
+			rw.Write(serversJSON)
+			rw.WriteHeader(200)
+		} else if statusRE.MatchString(url) {
+			rw.Write(statusJSON)
+			rw.WriteHeader(200)
+		} else {
+			t.Errorf("Bad request: %#v", r)
+			rw.WriteHeader(500)
+		}
+	}
+
+	mainSrv := httptest.NewServer(http.HandlerFunc(h))
+	//otherSrv := httptest.NewServer(http.HandlerFunc(h))
+
+	rf := &ResolveFilter{}
+
+	cl, err := NewClient(mainSrv.URL)
+	if err != nil {
+		t.Fatalf("Error building HTTP client: %#v", err)
+	}
+	poller := NewStatusPoller(cl, rf)
+
+	var rState ResolveState
+	go func() {
+		var err error
+		rState, err = poller.Start()
+		if err != nil {
+			t.Fatalf("Error starting poller: %#v", err)
+		}
+	}()
+
+	select {
+	case <-time.Tick(100 * time.Millisecond):
+		t.Errorf("Happy path polling took more that 100ms")
+	default:
+		if rState != ResolveComplete {
+			t.Errorf("Resolve state was %s not %s", rState, ResolveComplete)
+		}
+	}
 }
