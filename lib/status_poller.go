@@ -131,14 +131,11 @@ func (sp *StatusPoller) Start() (ResolveState, error) {
 
 	subs := []*subPoller{}
 
-	Log.Vomit.Printf("Got: %#v", clusters)
-
-	Log.Vomit.Printf("Filtering clusters against %s", sp.ResolveFilter)
 	for _, s := range clusters.Servers {
 		if !sp.ResolveFilter.FilterClusterName(s.ClusterName) {
-			Log.Vomit.Printf("Filtered out %q", s.ClusterName)
 			continue
 		}
+		Log.Debug.Printf("Starting poller against %v", s)
 		sub, err := newSubPoller(s.URL, sp.ResolveFilter)
 		if err != nil {
 			return ResolveNotPolled, err
@@ -188,15 +185,17 @@ func (sub *subPoller) start(rs chan statPair, done chan struct{}) {
 	if stat >= ResolveComplete {
 		return
 	}
+	ticker := time.NewTicker(time.Second / 2)
 	for {
 		select {
-		case <-time.Tick(time.Second / 2):
+		case <-ticker.C:
 			stat := sub.pollOnce()
 			rs <- statPair{url: sub.URL, stat: stat}
 			if stat >= ResolveComplete {
 				return
 			}
 		case <-done:
+			ticker.Stop()
 			return
 		}
 	}
@@ -220,8 +219,6 @@ func diffRezFor(rstat *ResolveStatus, rf *ResolveFilter) *DiffResolution {
 	}
 	rezs := rstat.Log
 	for _, rez := range rezs {
-		Log.Vomit.Printf("DiffResolution: %#v", rez)
-
 		if rf.FilterManifestID(rez.ManifestID) {
 			Log.Vomit.Printf("Matching intent: %#v", rez)
 			return &rez

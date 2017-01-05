@@ -12,6 +12,30 @@ import (
 	"github.com/samsalisbury/semv"
 )
 
+func TestResolveState_String(t *testing.T) {
+	checkString := func(r ResolveState, expected string) {
+		actual := r.String()
+		if actual != expected {
+			t.Errorf("ResolveState %[1]d (%[1]s) String() => %q, should be %q", r, actual, expected)
+		}
+	}
+
+	checkString(ResolveNotPolled, "ResolveNotPolled")
+	checkString(ResolveNotStarted, "ResolveNotStarted")
+	checkString(ResolveNotVersion, "ResolveNotVersion")
+	checkString(ResolvePendingRequest, "ResolvePendingRequest")
+	checkString(ResolveInProgress, "ResolveInProgress")
+	checkString(ResolveErred, "ResolveErred")
+	checkString(ResolveComplete, "ResolveComplete")
+	checkString(ResolveState(1e6), "unknown (oops)")
+
+	for rs := ResolveNotStarted; rs <= ResolveComplete; rs++ {
+		if rs.String() == "unknown (oops)" {
+			t.Errorf("ResolveState %d doesn't have a string", rs)
+		}
+	}
+}
+
 func TestSubPoller_ComputeState(t *testing.T) {
 	testRepo := "github.com/opentable/example"
 	testDir := "test"
