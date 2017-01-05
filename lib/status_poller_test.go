@@ -93,17 +93,39 @@ func TestStatusPoller(t *testing.T) {
 	otherSrv := httptest.NewServer(http.HandlerFunc(h))
 
 	repoName := "github.com/opentable/example"
-	serversJSON = []byte(`{"servers":[{"clustername": "main", "url":"` + mainSrv.URL + `"},{"clustername": "other", "url":"` + otherSrv.URL + `"}]}`)
+	serversJSON = []byte(`{
+		"servers": [
+			{"clustername": "main", "url":"` + mainSrv.URL + `"},
+			{"clustername": "other", "url":"` + otherSrv.URL + `"}
+		]
+	}`)
 	statusJSON = []byte(`{
 		"deployments": [
-			{ "sourceid": {
-				"location": { "repo": "` + repoName + `" }, "version": "1.0"
-		} }
-		], "completed": {"log":[{
-			"deployid": { "manifestid": { "source": { "repo": "` + repoName + `" } },
-			"desc": "unchanged"
-		}}]}, "inprogress": {"log":[]}
-  }`)
+			{
+				"sourceid": {
+					"location": {
+						"repo": "` + repoName + `"
+					},
+					"version": "1.0"
+				}
+			}
+		],
+		"completed": {
+			"log":[
+				{
+					"deployid": {
+						"manifestid": {
+							"source": {
+								"repo": "` + repoName + `"
+							}
+						},
+						"desc": "unchanged"
+					}
+				}
+			]
+		},
+		"inprogress": {"log":[]}
+	}`)
 
 	rf := &ResolveFilter{
 		Repo: repoName,
