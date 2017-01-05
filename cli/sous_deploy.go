@@ -52,10 +52,7 @@ func (sd *SousDeploy) RegisterOn(psy Addable) {
 
 // Execute fulfills the cmdr.Executor interface.
 func (sd *SousDeploy) Execute(args []string) cmdr.Result {
-	res := sd.CLI.Plumbing(&SousUpdate{
-		DeployFilterFlags: sd.DeployFilterFlags,
-		OTPLFlags:         sd.OTPLFlags,
-	}, []string{})
+	res := sd.CLI.Plumbing(&SousUpdate{}, []string{})
 
 	sd.CLI.OutputResult(res)
 	if !sd.CLI.IsSuccess(res) {
@@ -63,11 +60,11 @@ func (sd *SousDeploy) Execute(args []string) cmdr.Result {
 	}
 
 	if sd.Config.Server != "" {
-		return cmdr.Successf("Deployment instigated; handed off to server.")
+		return sd.CLI.Plumbing(&SousPlumbingStatus{}, []string{})
 	}
 
 	// Running serverless, so run rectify.
-	rect := &SousRectify{SourceFlags: sd.DeployFilterFlags}
+	rect := &SousRectify{}
 	rect.flags.dryrun = sd.rectifyFlags.dryrun
 	return sd.CLI.Plumbing(rect, []string{})
 }
