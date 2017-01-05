@@ -9,6 +9,7 @@ import (
 	"github.com/nyarly/testify/assert"
 	"github.com/nyarly/testify/require"
 	"github.com/opentable/sous/ext/docker"
+	"github.com/opentable/sous/graph"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
 	"github.com/samsalisbury/semv"
@@ -24,6 +25,8 @@ func prepareCommand(t *testing.T, cl []string) (*CLI, *cmdr.PreparedExecution, f
 	s := &Sous{Version: semv.MustParse(`1.2.3`)}
 	c, err := NewSousCLI(s, stdin, stdout, stderr)
 	require.NoError(err)
+
+	c.baseGraph = graph.BuildTestGraph(stdin, stdout, stderr)
 
 	exe, err := c.Prepare(cl)
 	require.NoError(err)
@@ -400,4 +403,15 @@ func TestInvokeBuildWithRepoSelector(t *testing.T) {
 	assert.NotNil(build.Registrar)
 	assert.Equal(build.DeployFilterFlags.Repo, `github.com/opentable/sous`)
 
+}
+
+func TestInvokePlumbingStatus_noServer(t *testing.T) {
+	assert := assert.New(t)
+
+	_, exe, _, _ := prepareCommand(t, []string{`sous`, `plumbing`, `status`})
+	assert.Len(exe.Args, 0)
+
+	status := exe.Cmd.(*SousPlumbingStatus)
+
+	assert.Nil(status.StatusPoller)
 }

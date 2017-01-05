@@ -13,36 +13,49 @@ import (
 	"net/url"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/opentable/sous/lib"
 )
 
 type (
-	// The MetaHandler collects common behavior for route handlers
+	// The MetaHandler collects common behavior for route handlers.
 	MetaHandler struct {
 		router        *httprouter.Router
 		graphFac      GraphFactory //XXX This is a workaround for a bug in psyringe.Clone()
 		statusHandler *StatusMiddleware
 	}
 
-	// ResponseWriter wraps the the http.ResponseWriter interface
+	// ResponseWriter wraps the the http.ResponseWriter interface.
 	// XXX This is a workaround for Psyringe
 	ResponseWriter struct {
 		http.ResponseWriter
 	}
 
-	// Injector is an interface for DI systems
+	// ExchangeLogger wraps and logs the exchange.
+	ExchangeLogger struct {
+		Exchanger Exchanger
+		*sous.LogSet
+		*http.Request
+		httprouter.Params
+	}
+
+	// Injector is an interface for DI systems.
 	Injector interface {
 		Inject(...interface{}) error
 		Add(...interface{})
 	}
-	// A GraphFactory builds a SousGraph
+	// A GraphFactory builds a SousGraph.
 	GraphFactory func() Injector
 )
 
-// Seriously considering "BodyInBodyOut" "BodyInEmptyOut" "EmptyInBodyOut" "EmptyInEmptyOut"
-// because that covers pretty much every case for the requests themselves, and
-// the exchanger is really the crucial part of the transform
+// Exchange implements Exchanger on ExchangeLogger.
+func (xlog *ExchangeLogger) Exchange() (data interface{}, status int) {
+	xlog.Vomit.Printf("Server: <- %s %s params: %v", xlog.Method, xlog.URL.String(), xlog.Params)
+	data, status = xlog.Exchanger.Exchange()
+	xlog.Vomit.Printf("Server: -> %d: %#v", status, data)
+	return
+}
 
-// GetHandling handles Get requests
+// GetHandling handles Get requests.
 func (mh *MetaHandler) GetHandling(factory ExchangeFactory) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		h := mh.injectedHandler(factory, w, r, p)
@@ -51,7 +64,7 @@ func (mh *MetaHandler) GetHandling(factory ExchangeFactory) httprouter.Handle {
 	}
 }
 
-// DeleteHandling handles Delete requests
+// DeleteHandling handles Delete requests.
 func (mh *MetaHandler) DeleteHandling(factory ExchangeFactory) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		h := mh.injectedHandler(factory, w, r, p)
@@ -60,7 +73,7 @@ func (mh *MetaHandler) DeleteHandling(factory ExchangeFactory) httprouter.Handle
 	}
 }
 
-// HeadHandling handles Head requests
+// HeadHandling handles Head requests.
 func (mh *MetaHandler) HeadHandling(factory ExchangeFactory) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		h := mh.injectedHandler(factory, w, r, p)
@@ -69,7 +82,7 @@ func (mh *MetaHandler) HeadHandling(factory ExchangeFactory) httprouter.Handle {
 	}
 }
 
-// PutHandling handles PUT requests
+// PutHandling handles PUT requests.
 func (mh *MetaHandler) PutHandling(factory ExchangeFactory) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		if r.Header.Get("If-Match") == "" && r.Header.Get("If-None-Match") == "" {
@@ -102,7 +115,7 @@ func (mh *MetaHandler) PutHandling(factory ExchangeFactory) httprouter.Handle {
 	}
 }
 
-// InstallPanicHandler installs an panic handler into the router
+// InstallPanicHandler installs an panic handler into the router.
 func (mh *MetaHandler) InstallPanicHandler() {
 	g := mh.graphFac()
 	g.Inject(mh.statusHandler)
@@ -122,9 +135,13 @@ func (mh *MetaHandler) ExchangeGraph(w http.ResponseWriter, r *http.Request, p h
 func (mh *MetaHandler) injectedHandler(factory ExchangeFactory, w http.ResponseWriter, r *http.Request, p httprouter.Params) Exchanger {
 	h := factory()
 
-	mh.ExchangeGraph(w, r, p).Inject(h)
+	exGraph := mh.ExchangeGraph(w, r, p)
+	exGraph.Inject(h)
+	logger := &ExchangeLogger{}
+	exGraph.Inject(logger)
+	logger.Exchanger = h
 
-	return h
+	return logger
 }
 
 func (mh *MetaHandler) writeHeaders(status int, w http.ResponseWriter, r *http.Request, data interface{}) {

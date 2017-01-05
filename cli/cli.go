@@ -38,7 +38,7 @@ type (
 	// CLI describes the command line interface for Sous
 	CLI struct {
 		*cmdr.CLI
-		*graph.SousGraph
+		baseGraph, SousGraph *graph.SousGraph
 	}
 	// Addable objects are able to receive lists of interface{}, presumably to add
 	// them to a DI registry. Abstracts Psyringe's Add()
@@ -72,7 +72,7 @@ func (cli *CLI) Plumbing(cmd cmdr.Executor, args []string) cmdr.Result {
 
 // BuildCLIGraph builds the CLI DI graph.
 func BuildCLIGraph(cli *CLI, root *Sous, in io.Reader, out, err io.Writer) *graph.SousGraph {
-	g := graph.BuildGraph(in, out, err)
+	g := cli.baseGraph.Clone()
 	g.Add(cli)
 	g.Add(root)
 	g.Add(func(c *CLI) graph.Out {
@@ -81,9 +81,9 @@ func BuildCLIGraph(cli *CLI, root *Sous, in io.Reader, out, err io.Writer) *grap
 	g.Add(func(c *CLI) graph.ErrOut {
 		return graph.ErrOut{Output: c.Err}
 	})
-	cli.SousGraph = g //Ugh, weird state.
+	cli.SousGraph = &graph.SousGraph{Psyringe: g} //Ugh, weird state.
 
-	return g
+	return cli.SousGraph
 }
 
 // NewSousCLI creates a new Sous cli app.
@@ -103,6 +103,8 @@ func NewSousCLI(s *Sous, in io.Reader, out, errout io.Writer) (*CLI, error) {
 			// this.
 			HelpCommand: os.Args[0] + " help",
 		},
+
+		baseGraph: graph.BuildGraph(in, out, errout),
 	}
 
 	var g *graph.SousGraph

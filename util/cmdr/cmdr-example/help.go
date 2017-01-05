@@ -9,7 +9,7 @@ type helpCommand struct {
 }
 
 func (c helpCommand) Execute(subcommands []string) cmdr.Result {
-	help, err := c.CLI.Help(root, "sous", subcommands)
+	help, err := c.CLI.Help(root, subcommands)
 	if err != nil {
 		return cmdr.EnsureErrorResult(err)
 	}

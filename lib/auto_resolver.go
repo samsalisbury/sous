@@ -24,7 +24,8 @@ type (
 		*LogSet
 		listeners []autoResolveListener
 		sync.RWMutex
-		status *ResolveStatus
+		stableStatus, liveStatus *ResolveStatus
+		currentRecorder          *ResolveRecorder
 	}
 )
 
@@ -89,11 +90,24 @@ func (ar *AutoResolver) Kickoff() TriggerChannel {
 	return done
 }
 
-// Status returns the current status of the resolution underway.
-func (ar *AutoResolver) Status() *ResolveStatus {
+func (ar *AutoResolver) updateStatus() {
+	if ar.currentRecorder == nil {
+		return
+	}
+	ar.write(func() {
+		ls := ar.currentRecorder.CurrentStatus()
+		ar.liveStatus = &ls
+	})
+}
+
+// Statuses returns the current status of the resolution underway.
+// The returned statuses are "stable" - the unchanging, complete status of the previous resolve
+// and "live" - the current status of the running resolution
+func (ar *AutoResolver) Statuses() (stable, live *ResolveStatus) {
+	ar.updateStatus()
 	ar.RLock()
 	defer ar.RUnlock()
-	return ar.status
+	return ar.stableStatus, ar.liveStatus
 }
 
 func loopTilDone(f func(), done TriggerChannel) {
@@ -108,8 +122,12 @@ func loopTilDone(f func(), done TriggerChannel) {
 }
 
 func (ar *AutoResolver) write(f func()) {
+	Log.Vomit.Printf("Locking autoresolver for write...")
 	ar.Lock()
-	defer ar.Unlock()
+	defer func() {
+		ar.Unlock()
+		Log.Vomit.Printf("Unlocked autoresolver")
+	}()
 	f()
 }
 
@@ -138,9 +156,13 @@ func (ar *AutoResolver) resolveLoop(tc, done TriggerChannel, ac announceChannel)
 			}
 
 			ar.write(func() {
-				ar.status = ar.Resolver.Begin(gdm, state.Defs.Clusters)
+				ar.currentRecorder = ar.Resolver.Begin(gdm, state.Defs.Clusters)
 			})
-			ac <- ar.status.Wait()
+			ac <- ar.currentRecorder.Wait()
+			ar.write(func() {
+				ss := ar.currentRecorder.CurrentStatus()
+				ar.stableStatus = &ss
+			})
 			ar.LogSet.Debug.Print("Completed resolve")
 		case <-done:
 			return

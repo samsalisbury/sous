@@ -3,75 +3,82 @@ package cmdr
 import (
 	"bytes"
 	"flag"
+	"fmt"
 	"strings"
 )
 
-// Help is similar to printHelp, except it returns the result as a string
-// instead of writing to the CLI's default Output.
-func (cli *CLI) Help(base Command, name string, args []string) (string, error) {
+// Help collects information about a subcommand and its arguments, descends
+// the path down the command tree provided by cmdArgs, finds the lowest
+// subcommand on that path, and returns the help text for that subcommand.
+func (cli *CLI) Help(cmd Command, cmdArgs []string) (string, error) {
+	bottomSubcmd := findBottomCommand(cmd, cmdArgs)
+	return cli.formatFullHelp(*bottomSubcmd)
+}
+
+func (cli *CLI) formatFullHelp(cmd Command) (string, error) {
 	b := &bytes.Buffer{}
-	err := cli.printHelp(NewOutput(b), base, name, args)
-	return b.String(), err
+	help := cmd.Help()
+	if len(help) == 0 {
+		msg := "no help available for command"
+		return msg, fmt.Errorf(msg)
+	}
+	b.WriteString(cmd.Help())
+	b.WriteString(formatSubcommands(cmd))
+	b.WriteString(cli.formatFlags(cmd))
+	return b.String(), nil
 }
 
-func (cli *CLI) printHelp(out *Output, base Command, name string, args []string) error {
-	if len(args) == 0 {
-		help := base.Help()
-		out.Println(help)
-		cli.printSubcommands(out, base, name)
-		cli.printOptions(out, base, name)
-		return nil
-	}
-	hasSubCommands, ok := base.(Subcommander)
-	if !ok {
-		return UsageErrorf("%q does not have any subcommands", name)
-	}
-	scs := hasSubCommands.Subcommands()
-	subcommandName := args[0]
-	name = name + " " + subcommandName
-	sc, ok := scs[subcommandName]
-	if !ok {
-		return UsageErrorf("command %q does not exist", name)
-	}
-	args = args[1:]
-	return cli.printHelp(out, sc, name, args)
-}
-
-func (cli *CLI) printSubcommands(out *Output, c Command, name string) {
+func formatSubcommands(c Command) string {
+	b := &bytes.Buffer{}
 	subcommander, ok := c.(Subcommander)
 	if !ok {
-		return
+		return ""
 	}
-	cs := subcommander.Subcommands()
-	out.Println("\nsubcommands:")
-	out.Indent()
-	defer out.Outdent()
-	out.Table(commandTable(cs))
-}
-
-func (cli *CLI) printOptions(out *Output, command Command, name string) {
-	addsFlags, ok := command.(AddsFlags)
-	if !ok {
-		return
-	}
-	out.Println("\noptions:")
-	fs := flag.NewFlagSet(name, flag.ContinueOnError)
-	addsFlags.AddFlags(fs)
-	fs.SetOutput(out)
-	fs.PrintDefaults()
-}
-
-func commandTable(cs Commands) [][]string {
-	t := make([][]string, len(cs))
-	for i, name := range cs.SortedKeys() {
+	subCmds := subcommander.Subcommands()
+	b.WriteString("\n\nsubcommands:\n")
+	for _, name := range subCmds.SortedKeys() {
 		var shortHelp string
-		splitHelp := strings.Split(cs[name].Help(), "\n")
+		splitHelp := strings.Split(subCmds[name].Help(), "\n")
 		if len(splitHelp) > 0 {
 			shortHelp = splitHelp[0]
 		}
-		t[i] = make([]string, 2)
-		t[i][0] = name
-		t[i][1] = shortHelp
+		b.WriteString(fmt.Sprintf("  %-10s%s\n", name, shortHelp))
 	}
-	return t
+
+	return b.String()
+}
+
+func (cli *CLI) formatFlags(command Command) string {
+	addsFlags, ok := command.(AddsFlags)
+	if !ok {
+		return ""
+	}
+	b := &bytes.Buffer{}
+	b.WriteString("\n\noptions:\n")
+	fs := flag.NewFlagSet("help", flag.ContinueOnError)
+	addsFlags.AddFlags(fs)
+	fs.SetOutput(b)
+	fs.PrintDefaults()
+	return b.String()
+}
+
+// findBottomCommand exists to satisfy this rule: "The arguments to a command
+// can either be values or indicative of a subcommand." It traverses the list
+// of command arguments to find the subcommand furthest down the tree.
+func findBottomCommand(cmd Command, cmdArgs []string) *Command {
+	bottomSubCmd := &cmd
+	for _, a := range cmdArgs {
+		// check if the command has any subcommands
+		testCmd := *bottomSubCmd
+		hasSubCmd, ok := testCmd.(Subcommander)
+		if !ok {
+			return bottomSubCmd
+		}
+		childCmd, ok := hasSubCmd.Subcommands()[a]
+		if !ok {
+			return bottomSubCmd
+		}
+		bottomSubCmd = &childCmd
+	}
+	return bottomSubCmd
 }

@@ -16,13 +16,13 @@ func TestHelp(t *testing.T) {
 		Err:  NewOutput(errBuf),
 	}
 
-	help, err := c.Help(c.Root, "arbitrary", []string{})
+	help, err := c.Help(c.Root, []string{})
 	if err != nil {
 		t.Fatal(err)
 	}
 	expectedStrings := []string{
 		"subcommands:",
-		"anothertest  Test Command.",
+		"cmd       Test Command.",
 	}
 	for _, s := range expectedStrings {
 		if strings.Contains(help, s) {

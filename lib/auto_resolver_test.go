@@ -39,6 +39,25 @@ func TestDone(t *testing.T) {
 	assert.True(received, "Should have received announcement")
 }
 
+func TestAutoResolver_CurrentStatus(t *testing.T) {
+	assert := assert.New(t)
+	ar := setupAR()
+
+	tc := make(TriggerChannel, 10)
+	ac := make(announceChannel, 1)
+	done := make(TriggerChannel)
+	tc.trigger()
+
+	stable, live := ar.Statuses()
+	assert.Nil(stable)
+	assert.Nil(live)
+
+	ar.resolveLoop(tc, done, ac)
+	stable, live = ar.Statuses()
+	assert.NotNil(stable)
+	assert.NotNil(live)
+}
+
 func TestAfterDone(t *testing.T) {
 	ar := setupAR()
 	ar.UpdateTime = time.Duration(1)
@@ -51,7 +70,7 @@ func TestAfterDone(t *testing.T) {
 	ar.afterDone(tc, done, ac)
 	select {
 	case <-tc:
-	case <-time.After(time.Duration(8)):
+	case <-time.After(time.Duration(8 * time.Millisecond)):
 		t.Error("Trigger channel took too long")
 	default:
 		t.Error("Trigger channel not triggered")
