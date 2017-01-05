@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"regexp"
 	"testing"
 	"time"
@@ -69,8 +68,12 @@ func TestSubPoller_ComputeState(t *testing.T) {
 }
 
 func TestStatusPoller(t *testing.T) {
-	Log.Vomit.SetOutput(os.Stderr)
-	Log.Debug.SetOutput(os.Stderr)
+	/*
+		Log.Vomit.SetOutput(os.Stderr)
+		Log.Vomit.SetFlags(log.Llongfile)
+		Log.Debug.SetOutput(os.Stderr)
+		Log.Debug.SetFlags(log.Llongfile)
+	*/
 
 	serversRE := regexp.MustCompile(`/servers$`)
 	statusRE := regexp.MustCompile(`/status$`)
@@ -93,6 +96,7 @@ func TestStatusPoller(t *testing.T) {
 	otherSrv := httptest.NewServer(http.HandlerFunc(h))
 
 	repoName := "github.com/opentable/example"
+
 	serversJSON = []byte(`{
 		"servers": [
 			{"clustername": "main", "url":"` + mainSrv.URL + `"},
@@ -103,26 +107,16 @@ func TestStatusPoller(t *testing.T) {
 		"deployments": [
 			{
 				"sourceid": {
-					"location": {
-						"repo": "` + repoName + `"
-					},
-					"version": "1.0"
+					"location": "` + repoName + `",
+					"version": "1.0.1+1234"
 				}
 			}
 		],
 		"completed": {
-			"log":[
-				{
-					"deployid": {
-						"manifestid": {
-							"source": {
-								"repo": "` + repoName + `"
-							}
-						},
-						"desc": "unchanged"
-					}
-				}
-			]
+			"log":[ {
+					"manifestid": "` + repoName + `",
+					"desc": "unchanged"
+				} ]
 		},
 		"inprogress": {"log":[]}
 	}`)

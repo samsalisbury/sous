@@ -220,6 +220,8 @@ func diffRezFor(rstat *ResolveStatus, rf *ResolveFilter) *DiffResolution {
 	}
 	rezs := rstat.Log
 	for _, rez := range rezs {
+		Log.Vomit.Printf("DiffResolution: %#v", rez)
+
 		if rf.FilterManifestID(rez.ManifestID) {
 			Log.Vomit.Printf("Matching intent: %#v", rez)
 			return &rez
@@ -239,7 +241,6 @@ func (data *statusData) currentFor(rf *ResolveFilter) *DiffResolution {
 func (sub *subPoller) pollOnce() ResolveState {
 	data := &statusData{}
 	sub.Retrieve("./status", nil, data)
-	Log.Vomit.Printf("Parsed: %#v", data)
 	deps := NewDeployments(data.Deployments...)
 	sub.Deployments = &deps
 
