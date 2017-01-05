@@ -14,9 +14,8 @@ type SousDeploy struct {
 	CLI               *CLI
 	DeployFilterFlags config.DeployFilterFlags
 	OTPLFlags         config.OTPLFlags
-	rectifyFlags      struct {
-		dryrun string
-	}
+	dryrunOption      string
+	waitStable        bool
 }
 
 func init() { TopLevelCommands["deploy"] = &SousDeploy{} }
@@ -37,7 +36,9 @@ func (sd *SousDeploy) AddFlags(fs *flag.FlagSet) {
 	MustAddFlags(fs, &sd.DeployFilterFlags, DeployFilterFlagsHelp)
 	MustAddFlags(fs, &sd.OTPLFlags, OtplFlagsHelp)
 
-	fs.StringVar(&sd.rectifyFlags.dryrun, "dry-run", "none",
+	fs.BoolVar(&sd.waitStable, "wait-stable", true,
+		"wait for the deploy to complete before returning (otherwise, use --wait-stable=false)")
+	fs.StringVar(&sd.dryrunOption, "dry-run", "none",
 		"prevent rectify from actually changing things - "+
 			"values are none,scheduler,registry,both")
 }
@@ -47,7 +48,7 @@ func (sd *SousDeploy) AddFlags(fs *flag.FlagSet) {
 func (sd *SousDeploy) RegisterOn(psy Addable) {
 	psy.Add(&sd.DeployFilterFlags)
 	psy.Add(&sd.OTPLFlags)
-	psy.Add(graph.DryrunOption(sd.rectifyFlags.dryrun))
+	psy.Add(graph.DryrunOption(sd.dryrunOption))
 }
 
 // Execute fulfills the cmdr.Executor interface.
@@ -60,11 +61,13 @@ func (sd *SousDeploy) Execute(args []string) cmdr.Result {
 	}
 
 	if sd.Config.Server != "" {
-		return sd.CLI.Plumbing(&SousPlumbingStatus{}, []string{})
+		if sd.waitStable {
+			return sd.CLI.Plumbing(&SousPlumbingStatus{}, []string{})
+		}
+		return cmdr.Successf("Updated the global deploy manifest. Deploy in process.")
 	}
 
 	// Running serverless, so run rectify.
 	rect := &SousRectify{}
-	rect.flags.dryrun = sd.rectifyFlags.dryrun
 	return sd.CLI.Plumbing(rect, []string{})
 }
