@@ -131,8 +131,12 @@ func (sp *StatusPoller) Start() (ResolveState, error) {
 
 	subs := []*subPoller{}
 
+	Log.Vomit.Printf("Got: %#v", clusters)
+
+	Log.Vomit.Printf("Filtering clusters against %s", sp.ResolveFilter)
 	for _, s := range clusters.Servers {
 		if !sp.ResolveFilter.FilterClusterName(s.ClusterName) {
+			Log.Vomit.Printf("Filtered out %q", s.ClusterName)
 			continue
 		}
 		sub, err := newSubPoller(s.URL, sp.ResolveFilter)
@@ -199,17 +203,25 @@ func (sub *subPoller) start(rs chan statPair, done chan struct{}) {
 }
 
 func (sub *subPoller) serverIntent() *Deployment {
+	Log.Vomit.Printf("Filtering %#v with %s", sub.Deployments, sub.locationFilter)
 	oneDep := sub.Deployments.Filter(sub.locationFilter.FilterDeployment)
 	dep, err := (&oneDep).Only()
 	if err != nil { // XXX error means more than one matched...
+		Log.Debug.Printf("With %s we matched too many deployments! %#v", sub.locationFilter, oneDep)
 		return nil
 	}
+	Log.Vomit.Printf("Matching deployment: %#v", dep)
 	return dep
 }
 
-func diffRezFor(rezs []DiffResolution, rf *ResolveFilter) *DiffResolution {
+func diffRezFor(rstat *ResolveStatus, rf *ResolveFilter) *DiffResolution {
+	if rstat == nil {
+		return nil
+	}
+	rezs := rstat.Log
 	for _, rez := range rezs {
 		if rf.FilterManifestID(rez.ManifestID) {
+			Log.Vomit.Printf("Matching intent: %#v", rez)
 			return &rez
 		}
 	}
@@ -217,16 +229,17 @@ func diffRezFor(rezs []DiffResolution, rf *ResolveFilter) *DiffResolution {
 }
 
 func (data *statusData) stableFor(rf *ResolveFilter) *DiffResolution {
-	return diffRezFor(data.Completed.Log, rf)
+	return diffRezFor(data.Completed, rf)
 }
 
 func (data *statusData) currentFor(rf *ResolveFilter) *DiffResolution {
-	return diffRezFor(data.InProgress.Log, rf)
+	return diffRezFor(data.InProgress, rf)
 }
 
 func (sub *subPoller) pollOnce() ResolveState {
 	data := &statusData{}
 	sub.Retrieve("./status", nil, data)
+	Log.Vomit.Printf("Parsed: %#v", data)
 	deps := NewDeployments(data.Deployments...)
 	sub.Deployments = &deps
 

@@ -2,8 +2,10 @@ package sous
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"regexp"
 	"testing"
 	"time"
@@ -67,6 +69,9 @@ func TestSubPoller_ComputeState(t *testing.T) {
 }
 
 func TestStatusPoller(t *testing.T) {
+	Log.Vomit.SetOutput(os.Stderr)
+	Log.Debug.SetOutput(os.Stderr)
+
 	serversRE := regexp.MustCompile(`/servers$`)
 	statusRE := regexp.MustCompile(`/status$`)
 	var serversJSON, statusJSON []byte
@@ -75,20 +80,34 @@ func TestStatusPoller(t *testing.T) {
 		url := r.URL.String()
 		if serversRE.MatchString(url) {
 			rw.Write(serversJSON)
-			rw.WriteHeader(200)
 		} else if statusRE.MatchString(url) {
 			rw.Write(statusJSON)
-			rw.WriteHeader(200)
 		} else {
 			t.Errorf("Bad request: %#v", r)
 			rw.WriteHeader(500)
+			rw.Write([]byte{})
 		}
 	}
 
 	mainSrv := httptest.NewServer(http.HandlerFunc(h))
-	//otherSrv := httptest.NewServer(http.HandlerFunc(h))
+	otherSrv := httptest.NewServer(http.HandlerFunc(h))
 
-	rf := &ResolveFilter{}
+	repoName := "github.com/opentable/example"
+	serversJSON = []byte(`{"servers":[{"clustername": "main", "url":"` + mainSrv.URL + `"},{"clustername": "other", "url":"` + otherSrv.URL + `"}]}`)
+	statusJSON = []byte(`{
+		"deployments": [
+			{ "sourceid": {
+				"location": { "repo": "` + repoName + `" }, "version": "1.0"
+		} }
+		], "completed": {"log":[{
+			"deployid": { "manifestid": { "source": { "repo": "` + repoName + `" } },
+			"desc": "unchanged"
+		}}]}, "inprogress": {"log":[]}
+  }`)
+
+	rf := &ResolveFilter{
+		Repo: repoName,
+	}
 
 	cl, err := NewClient(mainSrv.URL)
 	if err != nil {
@@ -96,21 +115,24 @@ func TestStatusPoller(t *testing.T) {
 	}
 	poller := NewStatusPoller(cl, rf)
 
-	var rState ResolveState
+	testCh := make(chan ResolveState)
 	go func() {
-		var err error
-		rState, err = poller.Start()
+		rState, err := poller.Start()
 		if err != nil {
 			t.Fatalf("Error starting poller: %#v", err)
 		}
+		testCh <- rState
 	}()
 
 	select {
 	case <-time.Tick(100 * time.Millisecond):
 		t.Errorf("Happy path polling took more that 100ms")
-	default:
+	case rState := <-testCh:
 		if rState != ResolveComplete {
 			t.Errorf("Resolve state was %s not %s", rState, ResolveComplete)
 		}
 	}
+
+	Log.Vomit.SetOutput(ioutil.Discard)
+	Log.Debug.SetOutput(ioutil.Discard)
 }

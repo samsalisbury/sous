@@ -65,7 +65,7 @@ func (rf *ResolveFilter) FilteredClusters(c Clusters) Clusters {
 // FilterClusterName returns true if the given string would be matched by this
 // ResolveFilter as a ClusterName.
 func (rf *ResolveFilter) FilterClusterName(name string) bool {
-	return (rf.Cluster != "" && name != rf.Cluster)
+	return (rf.Cluster == "" || name == rf.Cluster)
 }
 
 // FilterDeployment behaves as a DeploymentPredicate, filtering Deployments if
