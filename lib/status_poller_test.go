@@ -177,3 +177,64 @@ func TestStatusPoller(t *testing.T) {
 	Log.Vomit.SetOutput(ioutil.Discard)
 	Log.Debug.SetOutput(ioutil.Discard)
 }
+
+func TestStatusPoller_OldServer(t *testing.T) {
+	/*
+		Log.Vomit.SetOutput(os.Stderr)
+		Log.Vomit.SetFlags(log.Llongfile)
+		Log.Debug.SetOutput(os.Stderr)
+		Log.Debug.SetFlags(log.Llongfile)
+	*/
+
+	serversRE := regexp.MustCompile(`/servers$`)
+	statusRE := regexp.MustCompile(`/status$`)
+
+	h := func(rw http.ResponseWriter, r *http.Request) {
+		url := r.URL.String()
+		if serversRE.MatchString(url) {
+			rw.WriteHeader(404)
+			rw.Write([]byte{})
+		} else if statusRE.MatchString(url) {
+			rw.WriteHeader(404)
+			rw.Write([]byte{})
+		} else {
+			t.Errorf("Bad request: %#v", r)
+			rw.WriteHeader(500)
+			rw.Write([]byte{})
+		}
+	}
+
+	mainSrv := httptest.NewServer(http.HandlerFunc(h))
+
+	rf := &ResolveFilter{
+		Repo: "github.com/something/summat",
+	}
+
+	cl, err := NewClient(mainSrv.URL)
+	if err != nil {
+		t.Fatalf("Error building HTTP client: %#v", err)
+	}
+	poller := NewStatusPoller(cl, rf)
+
+	testCh := make(chan ResolveState)
+	go func() {
+		rState, err := poller.Start()
+		if err == nil {
+			t.Errorf("No error starting poller: %#v", err)
+		}
+		testCh <- rState
+	}()
+
+	timeout := 100 * time.Millisecond
+	select {
+	case <-time.After(timeout):
+		t.Errorf("Sad path polling took more than %s", timeout)
+	case rState := <-testCh:
+		if rState != ResolveNotPolled {
+			t.Errorf("Resolve state was %s not %s", rState, ResolveNotPolled)
+		}
+	}
+
+	Log.Vomit.SetOutput(ioutil.Discard)
+	Log.Debug.SetOutput(ioutil.Discard)
+}
