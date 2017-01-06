@@ -15,8 +15,8 @@ type (
 )
 
 // New creates a new ShellTest
-func New(t *testing.T) *ShellTest {
-	sh, err := NewShell()
+func New(t *testing.T, env map[string]string) *ShellTest {
+	sh, err := NewShell(env)
 	if err != nil {
 		t.Fatal(err)
 		sh = nil
@@ -27,6 +27,9 @@ func New(t *testing.T) *ShellTest {
 	}
 }
 
+// Block runs a block of shell script, returning a new ShellTest. If the check
+// function includes a failing test, however, blocks run on the resulting
+// ShellTest will be skipped.
 func (st *ShellTest) Block(name, script string, check CheckFn) *ShellTest {
 	if st.shell == nil { // When a shell fails, follow-on blocks aren't run
 		return st

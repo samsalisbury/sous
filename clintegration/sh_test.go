@@ -2,12 +2,17 @@ package clintegration
 
 import (
 	"log"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"testing"
+
+	"github.com/opentable/sous/util/shelltest"
 )
 
 func TestShAssumptions(t *testing.T) {
 	log.SetFlags(log.Lshortfile)
-	shell, err := NewShell()
+	shell, err := NewShell(nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -47,9 +52,33 @@ func TestShAssumptions(t *testing.T) {
 }
 
 func SomethingSomething(t *testing.T) {
-	shell := shelltest.New(t)
+	pwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("Couldn't find PWD: %s", err)
+	}
 
-	setup := shell.Block("setup", `
+	goExe, err := exec.LookPath("go")
+	if err != nil {
+		t.Fatalf("Couldn't find go: %s (really? how are you running this test then?)", err)
+	}
+
+	goDir := filepath.Dir(goExe)
+
+	testHome := "integration/test-homedir"
+
+	shell := shelltest.New(t, map[string]string{
+		"HOME":    filepath.Join(pwd, testHome),
+		"GIT_SSH": "ssh_wrapper",
+		"GOPATH":  filepath.Join(pwd, testHome, "golang"),
+		"PATH":    strings.Join([]string{"~/bin", goDir, filepath.Join(pwd, testHome, "golang/bin")}, ':'),
+	})
+
+	prologue := shell.Block("Test environment setup", `
+	source ~/.bashrc
+	go get github.com/nyarly/cygnus
+	`)
+
+	setup := prologue.Block("sous setup", `
 	git clone our.git.server/sous-server
 	cd sous-server
 	sous build
@@ -71,4 +100,7 @@ func SomethingSomething(t *testing.T) {
 	sous deploy
 	`)
 
+	check := deploy.Block("confirm deployment", `
+	cygnus -x=1
+	`)
 }

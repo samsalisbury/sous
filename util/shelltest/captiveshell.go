@@ -51,9 +51,14 @@ func newLiveStream(from io.Reader, events <-chan int) *liveStream {
 	return ls
 }
 
-func NewShell() (sh *CaptiveShell, err error) {
+// NewShell creates a new CaptiveShell with an environment dictacted by env.
+func NewShell(env map[string]string) (sh *CaptiveShell, err error) {
 	sh = &CaptiveShell{}
 	sh.Cmd = exec.Command("/bin/sh")
+
+	for k, v := range env {
+		sh.Cmd.Env = append(sh.Cmd.Env, k+"="+v)
+	}
 
 	sh.events = make(chan int)
 	sh.Stdin, err = sh.Cmd.StdinPipe()
