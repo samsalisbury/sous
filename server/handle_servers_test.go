@@ -22,6 +22,10 @@ func TestHandleServerList_Get(t *testing.T) {
 	list, yup := rez.(serverListData)
 	assert.True(yup)
 
+	if list.Servers[0].ClusterName == "right" {
+		list.Servers = []server{list.Servers[1], list.Servers[0]}
+	}
+
 	// test predates config []string -> map[string]string
 	assert.Equal(list.Servers[0].URL, "https://left.sous.com")
 	assert.Equal(list.Servers[1].URL, "https://right.sous.com")
