@@ -18,7 +18,8 @@ type (
 
 	// copied from server - avoiding coupling to server implemention
 	server struct {
-		URL string
+		ClusterName string
+		URL         string
 	}
 
 	// copied from server - avoiding coupling to server implemention
@@ -131,6 +132,10 @@ func (sp *StatusPoller) Start() (ResolveState, error) {
 	subs := []*subPoller{}
 
 	for _, s := range clusters.Servers {
+		if !sp.ResolveFilter.FilterClusterName(s.ClusterName) {
+			continue
+		}
+		Log.Debug.Printf("Starting poller against %v", s)
 		sub, err := newSubPoller(s.URL, sp.ResolveFilter)
 		if err != nil {
 			return ResolveNotPolled, err
@@ -180,32 +185,42 @@ func (sub *subPoller) start(rs chan statPair, done chan struct{}) {
 	if stat >= ResolveComplete {
 		return
 	}
+	ticker := time.NewTicker(time.Second / 2)
 	for {
 		select {
-		case <-time.Tick(time.Second / 2):
+		case <-ticker.C:
 			stat := sub.pollOnce()
 			rs <- statPair{url: sub.URL, stat: stat}
 			if stat >= ResolveComplete {
 				return
 			}
 		case <-done:
+			ticker.Stop()
 			return
 		}
 	}
 }
 
 func (sub *subPoller) serverIntent() *Deployment {
+	Log.Vomit.Printf("Filtering %#v with %s", sub.Deployments, sub.locationFilter)
 	oneDep := sub.Deployments.Filter(sub.locationFilter.FilterDeployment)
 	dep, err := (&oneDep).Only()
 	if err != nil { // XXX error means more than one matched...
+		Log.Debug.Printf("With %s we matched too many deployments! %#v", sub.locationFilter, oneDep)
 		return nil
 	}
+	Log.Vomit.Printf("Matching deployment: %#v", dep)
 	return dep
 }
 
-func diffRezFor(rezs []DiffResolution, rf *ResolveFilter) *DiffResolution {
+func diffRezFor(rstat *ResolveStatus, rf *ResolveFilter) *DiffResolution {
+	if rstat == nil {
+		return nil
+	}
+	rezs := rstat.Log
 	for _, rez := range rezs {
 		if rf.FilterManifestID(rez.ManifestID) {
+			Log.Vomit.Printf("Matching intent: %#v", rez)
 			return &rez
 		}
 	}
@@ -213,11 +228,11 @@ func diffRezFor(rezs []DiffResolution, rf *ResolveFilter) *DiffResolution {
 }
 
 func (data *statusData) stableFor(rf *ResolveFilter) *DiffResolution {
-	return diffRezFor(data.Completed.Log, rf)
+	return diffRezFor(data.Completed, rf)
 }
 
 func (data *statusData) currentFor(rf *ResolveFilter) *DiffResolution {
-	return diffRezFor(data.InProgress.Log, rf)
+	return diffRezFor(data.InProgress, rf)
 }
 
 func (sub *subPoller) pollOnce() ResolveState {

@@ -29,7 +29,7 @@ a problem is preventing sous from modifying the current state of Singularity.
 func (*SousQueryGDM) Help() string { return sousQueryGDMHelp }
 
 func (*SousQueryGDM) RegisterOn(psy Addable) {
-	psy.Add(graph.DryrunOption("none"))
+	psy.Add(graph.DryrunNeither)
 }
 
 // Execute defines the behavior of `sous query gdm`

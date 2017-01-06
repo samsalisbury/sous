@@ -1,6 +1,7 @@
 package sous
 
 import (
+	"io/ioutil"
 	"testing"
 
 	"github.com/nyarly/testify/assert"
@@ -32,4 +33,6 @@ func TestVolumesEqual(t *testing.T) {
 			}
 		}
 	}
+	Log.Vomit.SetOutput(ioutil.Discard)
+	Log.Debug.SetOutput(ioutil.Discard)
 }

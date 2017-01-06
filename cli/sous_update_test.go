@@ -3,45 +3,21 @@ package cli
 import (
 	"testing"
 
-	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
 	sous "github.com/opentable/sous/lib"
 )
 
-var getIDsTests = []struct {
-	Flags       config.DeployFilterFlags
+type getIDsTestCase struct {
+	Flags       sous.ResolveFilter
 	SL          sous.ManifestID
 	ExpectedSID sous.SourceID
 	ExpectedDID sous.DeployID
 	ExpectedErr string
-}{
-	{
-		ExpectedErr: "You must select a cluster using the -cluster flag.",
-	},
-	{
-		Flags:       config.DeployFilterFlags{Cluster: "blah"},
-		ExpectedErr: "You must provide the -tag flag.",
-	},
-	{
-		Flags:       config.DeployFilterFlags{Cluster: "blah", Tag: "nope"},
-		ExpectedErr: `Version "nope" not valid: unexpected character 'n' at position 0`,
-	},
-	{
-		Flags:       config.DeployFilterFlags{Cluster: "blah", Tag: "nope"},
-		ExpectedErr: `Version "nope" not valid: unexpected character 'n' at position 0`,
-	},
-	{
-		Flags:       config.DeployFilterFlags{Cluster: "blah", Tag: "1.0.0"},
-		SL:          sous.MustParseManifestID("github.com/blah/blah"),
-		ExpectedSID: sous.MustParseSourceID("github.com/blah/blah,1.0.0"),
-		ExpectedDID: sous.DeployID{Cluster: "blah",
-			ManifestID: sous.ManifestID{Source: sous.SourceLocation{Repo: "github.com/blah/blah"}}},
-	},
 }
 
 func TestGetIDs(t *testing.T) {
-	for _, test := range getIDsTests {
-		sid, did, err := getIDs(test.Flags, test.SL)
+	test := func(test getIDsTestCase) {
+		sid, did, err := getIDs(&test.Flags, test.SL)
 		if err != nil {
 			if test.ExpectedErr == "" {
 				t.Error(err)
@@ -62,6 +38,29 @@ func TestGetIDs(t *testing.T) {
 			t.Errorf("got DeployID %q; want %q", did, test.ExpectedDID)
 		}
 	}
+
+	test(getIDsTestCase{
+		ExpectedErr: "update: You must select a cluster using the -cluster flag.",
+	})
+	test(getIDsTestCase{
+		Flags:       sous.ResolveFilter{Cluster: "blah"},
+		ExpectedErr: "update: You must provide the -tag flag.",
+	})
+	test(getIDsTestCase{
+		Flags:       sous.ResolveFilter{Cluster: "blah", Tag: "nope"},
+		ExpectedErr: `update: Version "nope" not valid: unexpected character 'n' at position 0`,
+	})
+	test(getIDsTestCase{
+		Flags:       sous.ResolveFilter{Cluster: "blah", Tag: "nope"},
+		ExpectedErr: `update: Version "nope" not valid: unexpected character 'n' at position 0`,
+	})
+	test(getIDsTestCase{
+		Flags:       sous.ResolveFilter{Cluster: "blah", Tag: "1.0.0"},
+		SL:          sous.MustParseManifestID("github.com/blah/blah"),
+		ExpectedSID: sous.MustParseSourceID("github.com/blah/blah,1.0.0"),
+		ExpectedDID: sous.DeployID{Cluster: "blah",
+			ManifestID: sous.ManifestID{Source: sous.SourceLocation{Repo: "github.com/blah/blah"}}},
+	})
 }
 
 var updateStateTests = []struct {
@@ -140,13 +139,15 @@ type DummyStateManager struct{}
 func (dsm *DummyStateManager) WriteState(s *sous.State) error  { return nil }
 func (dsm *DummyStateManager) ReadState() (*sous.State, error) { return nil, nil }
 
+//XXX should actually drive interesting behavior
 func TestSousUpdate_Execute(t *testing.T) {
 	dsm := &DummyStateManager{}
 	su := SousUpdate{
-		StateReader: graph.StateReader{StateReader: dsm},
-		StateWriter: graph.StateWriter{StateWriter: dsm},
-		GDM:         graph.CurrentGDM{Deployments: sous.MakeDeployments(0)},
-		Manifest:    graph.TargetManifest{Manifest: &sous.Manifest{}},
+		StateReader:   graph.StateReader{StateReader: dsm},
+		StateWriter:   graph.StateWriter{StateWriter: dsm},
+		GDM:           graph.CurrentGDM{Deployments: sous.MakeDeployments(0)},
+		Manifest:      graph.TargetManifest{Manifest: &sous.Manifest{}},
+		ResolveFilter: &sous.ResolveFilter{},
 	}
 	su.Execute(nil)
 }

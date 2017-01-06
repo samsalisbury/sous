@@ -10,6 +10,7 @@ type (
 	// SourceLocation identifies a directory inside a source code repository.
 	// Note that the directory is ambiguous without the addition of a revision
 	// ID.
+	// N.b. the {M,Unm}arshal* methods - SL doesn't serialize as you might expect
 	SourceLocation struct {
 		// Repo identifies a source code repository.
 		Repo,

@@ -25,9 +25,9 @@ type (
 		Server string `env:"SOUS_SERVER"`
 		// SiblingURLs is a temporary measure for setting up a distributed cluster
 		// of sous servers. Each server must be configured with accessible URLs for
-		// all the servers in production.
+		// all the servers in production, as named by cluster.
 		// (someday this should be replaced with a gossip protocol)
-		SiblingURLs []string
+		SiblingURLs map[string]string
 		// BuildStateDir is a directory where information about builds
 		// performed by this user on this machine are stored.
 		BuildStateDir string `env:"SOUS_BUILD_STATE_DIR"`

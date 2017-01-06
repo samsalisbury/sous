@@ -54,12 +54,18 @@ func (rf *ResolveFilter) String() string {
 func (rf *ResolveFilter) FilteredClusters(c Clusters) Clusters {
 	newC := make(Clusters)
 	for n, c := range c {
-		if rf.Cluster != "" && n != rf.Cluster {
+		if !rf.FilterClusterName(n) {
 			continue
 		}
 		newC[n] = c // c is a *Cluster, so be aware they need to not be changed
 	}
 	return newC
+}
+
+// FilterClusterName returns true if the given string would be matched by this
+// ResolveFilter as a ClusterName.
+func (rf *ResolveFilter) FilterClusterName(name string) bool {
+	return (rf.Cluster == "" || name == rf.Cluster)
 }
 
 // FilterDeployment behaves as a DeploymentPredicate, filtering Deployments if

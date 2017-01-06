@@ -231,7 +231,12 @@ func (client *HTTPClient) httpRequest(req *http.Request) (*http.Response, error)
 	} else {
 		req.Body = NewReadDebugger(req.Body, func(b []byte, n int, err error) {
 			Log.Vomit.Printf("Client -> %s %q", req.Method, req.URL)
-			Log.Vomit.Print(string(b))
+			comp := &bytes.Buffer{}
+			if err := json.Compact(comp, b); err != nil {
+				Log.Vomit.Print(string(b))
+			} else {
+				Log.Vomit.Print(comp.String())
+			}
 			Log.Vomit.Printf("Sent %d bytes, result: %v", n, err)
 		})
 	}
@@ -246,7 +251,13 @@ func (client *HTTPClient) httpRequest(req *http.Request) (*http.Response, error)
 
 	rz.Body = NewReadDebugger(rz.Body, func(b []byte, n int, err error) {
 		Log.Vomit.Printf("Client <- %s %q: %d", req.Method, req.URL, rz.StatusCode)
-		Log.Vomit.Print(string(b))
+		comp := &bytes.Buffer{}
+		if err := json.Compact(comp, b); err != nil {
+			Log.Vomit.Print(string(b))
+		} else {
+			Log.Vomit.Print(comp.String())
+		}
+
 		Log.Vomit.Printf("Read %d bytes, result: %v", n, err)
 	})
 	return rz, err
