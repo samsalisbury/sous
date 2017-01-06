@@ -47,7 +47,7 @@ func TestDefaultStateLocation(t *testing.T) {
 func TestConfig_Validate(t *testing.T) {
 	cfg := &Config{
 		Server:      "not_a_url",
-		SiblingURLs: []string{"tcp://is.a.url"},
+		SiblingURLs: map[string]string{"left": "tcp://is.a.url"},
 	}
 
 	checkNotValid := func() {
@@ -67,7 +67,7 @@ func TestConfig_Validate(t *testing.T) {
 	cfg.Server = "https://a.sous.server"
 	checkNotValid()
 
-	cfg.SiblingURLs[0] = "http://sibling.sous"
+	cfg.SiblingURLs["left"] = "http://sibling.sous"
 	checkValid()
 
 	cfg.Server = "zxcv"
@@ -81,7 +81,7 @@ func TestConfig_Equals(t *testing.T) {
 	expected := &Config{
 		StateLocation: "statelocation",
 		Server:        "server",
-		SiblingURLs:   []string{"sibling", "urls"},
+		SiblingURLs:   map[string]string{"x": "sibling", "y": "urls"},
 		BuildStateDir: "buildstatedir",
 		Docker: docker.Config{
 			RegistryHost:       "registryhost",
@@ -115,10 +115,7 @@ func TestConfig_Equals(t *testing.T) {
 	actual.Docker = expected.Docker
 	checkNotEqual()
 
-	actual.SiblingURLs = []string{"urls", "sibling"}
-	checkNotEqual()
-
-	actual.SiblingURLs = []string{"sibling", "urls"}
+	actual.SiblingURLs = map[string]string{"x": "sibling", "y": "urls"}
 	if !expected.Equal(actual) {
 		t.Errorf("expected.Equal(actual) was false:\n%v\n%v", expected, actual)
 	}

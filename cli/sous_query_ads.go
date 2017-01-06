@@ -30,7 +30,7 @@ const sousQueryAdsHelp = `The current state of deployment for every project and 
 func (*SousQueryAds) Help() string { return sousQueryAdsHelp }
 
 func (*SousQueryAds) RegisterOn(psy Addable) {
-	psy.Add(graph.DryrunOption("none"))
+	psy.Add(graph.DryrunNeither)
 }
 
 // Execute defines the behavior of `sous query ads`

@@ -117,8 +117,8 @@ func TestReharvest(t *testing.T) {
 		AllNames:      []string{cn, in},
 	})
 	nc.dump(os.Stderr)
-	Log.Debug.SetOutput(os.Stderr)
-	Log.Vomit.SetOutput(os.Stderr)
+	//Log.Debug.SetOutput(os.Stderr)
+	//Log.Vomit.SetOutput(os.Stderr)
 	err = nc.GroomDatabase()
 	assert.NoError(err)
 	nc.dump(os.Stderr)

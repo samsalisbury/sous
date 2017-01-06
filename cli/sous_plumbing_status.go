@@ -23,7 +23,7 @@ func (*SousPlumbingStatus) Help() string {
 
 // AddFlags implements cmdr.AddFlags on SousPlumbingStatus.
 func (sps *SousPlumbingStatus) AddFlags(fs *flag.FlagSet) {
-	MustAddFlags(fs, &sps.DeployFilterFlags, ManifestFilterFlagsHelp)
+	MustAddFlags(fs, &sps.DeployFilterFlags, DeployFilterFlagsHelp)
 }
 
 // RegisterOn implements Registrant on SousPlumbingStatus.

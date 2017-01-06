@@ -19,6 +19,7 @@ type SousUpdate struct {
 	State             *sous.State
 	StateWriter       graph.StateWriter
 	StateReader       graph.StateReader
+	*sous.ResolveFilter
 }
 
 func init() { TopLevelCommands["update"] = &SousUpdate{} }
@@ -50,7 +51,7 @@ func (su *SousUpdate) RegisterOn(psy Addable) {
 // Execute fulfills the cmdr.Executor interface.
 func (su *SousUpdate) Execute(args []string) cmdr.Result {
 	sl := su.Manifest.ID()
-	sid, did, err := getIDs(su.DeployFilterFlags, sl)
+	sid, did, err := getIDs(su.ResolveFilter, sl)
 	if err != nil {
 		return EnsureErrorResult(err)
 	}
@@ -107,17 +108,20 @@ func updateState(s *sous.State, gdm graph.CurrentGDM, sid sous.SourceID, did sou
 	return nil
 }
 
-func getIDs(flags config.DeployFilterFlags, mid sous.ManifestID) (sous.SourceID, sous.DeployID, error) {
-	clusterName, tag, sid, did := flags.Cluster, flags.Tag, sous.SourceID{}, sous.DeployID{}
+func getIDs(filter *sous.ResolveFilter, mid sous.ManifestID) (sous.SourceID, sous.DeployID, error) {
+	var sid sous.SourceID
+	var did sous.DeployID
+
+	clusterName, tag := filter.Cluster, filter.Tag
 	if clusterName == "" {
-		return sid, did, cmdr.UsageErrorf("You must select a cluster using the -cluster flag.")
+		return sid, did, cmdr.UsageErrorf("update: You must select a cluster using the -cluster flag.")
 	}
 	if tag == "" {
-		return sid, did, cmdr.UsageErrorf("You must provide the -tag flag.")
+		return sid, did, cmdr.UsageErrorf("update: You must provide the -tag flag.")
 	}
 	newVersion, err := semv.Parse(tag)
 	if err != nil {
-		return sid, did, cmdr.UsageErrorf("Version %q not valid: %s", flags.Tag, err)
+		return sid, did, cmdr.UsageErrorf("update: Version %q not valid: %s", tag, err)
 	}
 	sid = mid.Source.SourceID(newVersion)
 	did = sous.DeployID{ManifestID: mid, Cluster: clusterName}

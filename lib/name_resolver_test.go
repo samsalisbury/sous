@@ -3,7 +3,6 @@ package sous
 import (
 	"fmt"
 	"io/ioutil"
-	"os"
 	"testing"
 	"time"
 
@@ -48,9 +47,9 @@ func TestNameResolveSuite(t *testing.T) {
 }
 
 func (nrs *NameResolveTestSuite) SetupTest() {
-	Log.Debug.SetOutput(os.Stderr)
-	Log.Vomit.SetOutput(os.Stderr)
-	Log.Warn.SetOutput(os.Stderr)
+	//Log.Debug.SetOutput(os.Stderr)
+	////Log.Vomit.SetOutput(os.Stderr)
+	//Log.Warn.SetOutput(os.Stderr)
 
 	nrs.testCluster = &Cluster{Name: "test"}
 
