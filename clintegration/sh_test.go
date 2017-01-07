@@ -5,8 +5,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
+	"github.com/opentable/sous/dev_support/sous_qa_setup/desc"
 	"github.com/opentable/sous/util/shelltest"
 )
 
@@ -51,18 +53,40 @@ func TestShAssumptions(t *testing.T) {
 	}
 }
 
+func buildPath(exes ...string) (string, error) {
+	dirMap := map[string]struct{}{}
+
+	for _, name := range exes {
+		exePath, err := exec.LookPath(name)
+		if err != nil {
+			return "", err
+		}
+
+		dirMap[filepath.Dir(exePath)]
+	}
+
+	dirs := []string{}
+	for path := range dirMap {
+		dirs = append(dirs, path)
+	}
+
+	return strings.Join(dirs, ":")
+}
+
 func SomethingSomething(t *testing.T) {
-	pwd, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("Couldn't find PWD: %s", err)
+	descPath := os.Getenv("SOUS_QA_DESC")
+	if descPath == "" {
+		t.Fatalf("SOUS_QA_DESC is empty - you need to run sous_qa_setup and set that env var")
 	}
 
-	goExe, err := exec.LookPath("go")
+	envDesc, err := desc.LoadDesc(descPath)
 	if err != nil {
-		t.Fatalf("Couldn't find go: %s (really? how are you running this test then?)", err)
+		t.Fatalf("Couldn't load a QA env description from SOUS_QA_DESC(%q): %s", descPath, err)
 	}
 
-	goDir := filepath.Dir(goExe)
+	pwd := filepath.Dir(descPath)
+
+	exePATH, err := buildPath("go", "git", "ssh")
 
 	testHome := "integration/test-homedir"
 
@@ -70,16 +94,21 @@ func SomethingSomething(t *testing.T) {
 		"HOME":    filepath.Join(pwd, testHome),
 		"GIT_SSH": "ssh_wrapper",
 		"GOPATH":  filepath.Join(pwd, testHome, "golang"),
-		"PATH":    strings.Join([]string{"~/bin", goDir, filepath.Join(pwd, testHome, "golang/bin")}, ':'),
+		"PATH":    strings.Join([]string{"~/bin", exePATH, filepath.Join(pwd, testHome, "golang/bin")}, ':'),
 	})
 
 	prologue := shell.Block("Test environment setup", `
-	source ~/.bashrc
+	# source ~/.bashrc
 	go get github.com/nyarly/cygnus
+	go install `+pwd+` #install the current sous project
+	cp integration/test-registry/git-server/git_pubkey_rsa* ~/dot-ssh/
+	chmod go-rwx -R ~/dot-ssh
 	`)
 
+	// TEMPLATING CONFIG STUFF FROM envDesc GOES HERE
+
 	setup := prologue.Block("sous setup", `
-	git clone our.git.server/sous-server
+	git clone ssh://root@`+envDesc.GitOrigin+`/sous-server
 	cd sous-server
 	sous build
 	SOUS_SERVER= sous deploy -cluster one-left,one-right,two`,

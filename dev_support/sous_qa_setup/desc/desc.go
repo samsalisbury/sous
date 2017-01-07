@@ -11,3 +11,18 @@ type (
 		AgentIP        net.IP
 	}
 )
+
+// LoadDesc loads an EnvDesc from a path.
+func LoadDesc(descPath string) (EnvDesc, error) {
+	var desc EnvDesc
+
+	descReader, err := os.Open(descPath)
+	if err != nil {
+		return desc, err
+	}
+
+	dec := json.NewDecoder(descReader)
+	err = dec.Decode(&desc)
+
+	return desc, nil
+}

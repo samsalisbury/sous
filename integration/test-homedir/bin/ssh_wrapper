@@ -1,3 +1,4 @@
 #! /bin/sh
 
-ssh -F "${HOME}/dot-ssh/config" "${@}"
+echo ssh_wrapper &>2
+ssh -v -F "${HOME}/dot-ssh/config" "${@}"
