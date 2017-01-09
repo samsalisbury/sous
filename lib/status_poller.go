@@ -186,6 +186,7 @@ func (sub *subPoller) start(rs chan statPair, done chan struct{}) {
 		return
 	}
 	ticker := time.NewTicker(time.Second / 2)
+	defer ticker.Stop()
 	for {
 		select {
 		case <-ticker.C:
@@ -195,7 +196,6 @@ func (sub *subPoller) start(rs chan statPair, done chan struct{}) {
 				return
 			}
 		case <-done:
-			ticker.Stop()
 			return
 		}
 	}
