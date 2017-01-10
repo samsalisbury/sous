@@ -6,10 +6,9 @@ import (
 	"github.com/samsalisbury/semv"
 )
 
-// VersionString is the version of Sous.
-const VersionString = "0.0.0-devbuild"
-
 var (
+	// VersionString is the version of Sous.
+	VersionString = "0.0.0-devbuild"
 	// Version is the version of Sous.
 	Version = semv.MustParse(VersionString + "+" + Revision)
 	// OS is the OS this Sous is running on.
