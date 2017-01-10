@@ -2,10 +2,10 @@ SQLITE_URL := https://sqlite.org/2017/sqlite-autoconf-3160200.tar.gz
 GO_VERSION := 1.7.3
 
 TAG_TEST := git describe --exact-match --abbrev=0
-ifeq ($(shell $(TAG_TEST) ; echo $$?), 0)
-GIT_TAG := $(shell $(TAG_TEST))
-else
+ifeq ($(shell $(TAG_TEST) ; echo $$?), 128)
 GIT_TAG := v0.0.0
+else
+GIT_TAG := $(shell $(TAG_TEST))
 endif
 
 # Sous releases are tagged with format v0.0.0. semv library
