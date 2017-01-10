@@ -32,7 +32,7 @@ func (sv *SousVersion) Execute(args []string) cmdr.Result {
 		Patch: 1,
 	}
 	var warning string
-	if s.Version.Less(minVer) {
+	if s.Version.Less(minVer) || s.Version.Meta == "DIRTY" {
 		warning = "\n\nDevelopment version. Download supported releases from https://github.com/opentable/sous\n"
 	}
 	return cmdr.Successf(out, s.Version, s.GoVersion, s.OS, s.Arch, warning)
