@@ -4,13 +4,20 @@ OS := $(shell uname)
 SQLITE_URL := https://sqlite.org/2017/sqlite-autoconf-3160200.tar.gz
 GO_VERSION := 1.7.3
 SOUS_TAG := $(shell git describe --exact-match --abbrev=0)
+
+ifeq ($(shell git diff-index --quiet HEAD ; echo $$?),0)
 COMMIT := $(shell git rev-parse HEAD)
-FLAGS := "-X 'main.Revision=$(COMMIT)' -X 'main.VersionString=$(SOUS_VERSION)'"
+else
+COMMIT := DIRTY
+endif 
+
 ifdef $(SOUS_TAG)
 	SOUS_VERSION := $(SOUS_TAG)
 else
 	SOUS_VERSION := UNSUPPORTED
 endif
+
+FLAGS := "-X 'main.Revision=$(COMMIT)' -X 'main.VersionString=$(SOUS_VERSION)'"
 BIN_DIR := artifacts/sous-$(SOUS_VERSION)
 CONCAT_XGO_ARGS := -go $(GO_VERSION) -branch master -deps $(SQLITE_URL) --dest $(BIN_DIR) --ldflags $(FLAGS)
 
@@ -44,5 +51,6 @@ ifeq ($(OS),Linux)
 else
 	@echo "Releases must be built in a Linux environment." ; /bin/false
 endif
+
 
 .PHONY: clean ctags vet release testlinux
