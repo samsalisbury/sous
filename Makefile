@@ -1,6 +1,12 @@
 SQLITE_URL := https://sqlite.org/2017/sqlite-autoconf-3160200.tar.gz
 GO_VERSION := 1.7.3
-GIT_TAG := $(shell git describe --exact-match --abbrev=0)
+
+TAG_TEST := git describe --exact-match --abbrev=0
+ifeq ($(shell $(TAG_TEST) ; echo $$?), 128)
+GIT_TAG := UNSUPPORTED
+else
+GIT_TAG := $(shell $(TAG_TEST))
+endif
 
 ifeq ($(shell git diff-index --quiet HEAD ; echo $$?),0)
 COMMIT := $(shell git rev-parse HEAD)
@@ -8,21 +14,15 @@ else
 COMMIT := DIRTY
 endif 
 
-ifdef $(GIT_TAG)
-SOUS_VERSION := $(GIT_TAG)
-else
-SOUS_VERSION := UNSUPPORTED
-endif
-
-FLAGS := "-X 'main.Revision=$(COMMIT)' -X 'main.VersionString=$(SOUS_VERSION)'"
-BIN_DIR := artifacts/sous-$(SOUS_VERSION)
+FLAGS := "-X 'main.Revision=$(COMMIT)' -X 'main.VersionString=$(GIT_TAG)'"
+BIN_DIR := artifacts/sous-$(GIT_TAG)
 CONCAT_XGO_ARGS := -go $(GO_VERSION) -branch master -deps $(SQLITE_URL) --dest $(BIN_DIR) --ldflags $(FLAGS)
 
 clean:
 	rm -f sous
 	rm -rf artifacts
 
-release: artifacts/sous-$(SOUS_VERSION).tar.gz
+release: artifacts/sous-$(GIT_TAG).tar.gz
 
 $(BIN_DIR):
 	mkdir -p $@
@@ -30,7 +30,7 @@ $(BIN_DIR):
 	cp README.md $@
 	cp LICENSE $@
 
-artifacts/sous-$(SOUS_VERSION).tar.gz: binaries
+artifacts/sous-$(GIT_TAG).tar.gz: binaries
 	tar czv $(BIN_DIR) > $@
  
 binaries: $(BIN_DIR)
