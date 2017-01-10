@@ -8,21 +8,25 @@ else
 GIT_TAG := $(shell $(TAG_TEST))
 endif
 
+# Sous releases are tagged with format v0.0.0. semv library
+# does not understand the v prefix, so this lops it off.
+SOUS_VERSION := $(shell echo $(GIT_TAG) | sed 's/v//')
+
 ifeq ($(shell git diff-index --quiet HEAD ; echo $$?),0)
 COMMIT := $(shell git rev-parse HEAD)
 else
 COMMIT := DIRTY
 endif 
 
-FLAGS := "-X 'main.Revision=$(COMMIT)' -X 'main.VersionString=$(GIT_TAG)'"
-BIN_DIR := artifacts/sous-$(GIT_TAG)
+FLAGS := "-X 'main.Revision=$(COMMIT)' -X 'main.VersionString=$(SOUS_VERSION)'"
+BIN_DIR := artifacts/sous-$(SOUS_VERSION)
 CONCAT_XGO_ARGS := -go $(GO_VERSION) -branch master -deps $(SQLITE_URL) --dest $(BIN_DIR) --ldflags $(FLAGS)
 
 clean:
 	rm -f sous
 	rm -rf artifacts
 
-release: artifacts/sous-$(GIT_TAG).tar.gz
+release: artifacts/sous-$(SOUS_VERSION).tar.gz
 
 $(BIN_DIR):
 	mkdir -p $@
@@ -30,7 +34,7 @@ $(BIN_DIR):
 	cp README.md $@
 	cp LICENSE $@
 
-artifacts/sous-$(GIT_TAG).tar.gz: binaries
+artifacts/sous-$(SOUS_VERSION).tar.gz: binaries
 	tar czv $(BIN_DIR) > $@
  
 binaries: $(BIN_DIR)
