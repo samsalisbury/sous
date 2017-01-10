@@ -31,10 +31,10 @@ artifacts/sous-$(SOUS_VERSION):
 artifacts/sous-$(SOUS_VERSION).tar.gz: $(BIN_DIR)/sous-linux-amd64 $(BIN_DIR)/sous-darwin-10.6-amd64
 	tar czv $(BIN_DIR) > $@
  
-$(BIN_DIR)/sous-linux-amd64: testlinux artifacts/sous-$(SOUS_VERSION)
+$(BIN_DIR)/sous-linux-amd64: artifacts/sous-$(SOUS_VERSION)
 	xgo $(CONCAT_XGO_ARGS) --targets=linux/amd64  ./
 
-$(BIN_DIR)/sous-darwin-10.6-amd64: testlinux artifacts/sous-$(SOUS_VERSION)
+$(BIN_DIR)/sous-darwin-10.6-amd64: artifacts/sous-$(SOUS_VERSION)
 	xgo $(CONCAT_XGO_ARGS) --targets=darwin/amd64  ./
 
 release: artifacts/sous-$(SOUS_VERSION).tar.gz
