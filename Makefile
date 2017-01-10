@@ -22,21 +22,19 @@ clean:
 	rm -f sous
 	rm -rf artifacts
 
-artifacts/sous-$(SOUS_VERSION):
+release: artifacts/sous-$(SOUS_VERSION).tar.gz
+
+$(BIN_DIR):
 	mkdir -p $@
 	cp -R doc/ $@
 	cp README.md $@
 	cp LICENSE $@
 
-artifacts/sous-$(SOUS_VERSION).tar.gz: $(BIN_DIR)/sous-linux-amd64 $(BIN_DIR)/sous-darwin-10.6-amd64
+artifacts/sous-$(SOUS_VERSION).tar.gz: binaries
 	tar czv $(BIN_DIR) > $@
  
-$(BIN_DIR)/sous-linux-amd64: artifacts/sous-$(SOUS_VERSION)
-	xgo $(CONCAT_XGO_ARGS) --targets=linux/amd64  ./
+binaries: $(BIN_DIR)
+	xgo $(CONCAT_XGO_ARGS) --targets=linux/amd64,darwin/amd64  ./
 
-$(BIN_DIR)/sous-darwin-10.6-amd64: artifacts/sous-$(SOUS_VERSION)
-	xgo $(CONCAT_XGO_ARGS) --targets=darwin/amd64  ./
 
-release: artifacts/sous-$(SOUS_VERSION).tar.gz
-
-.PHONY: clean release
+.PHONY: binaries clean release
