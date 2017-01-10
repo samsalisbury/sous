@@ -1,6 +1,10 @@
 package desc
 
-import "net"
+import (
+	"encoding/json"
+	"net"
+	"os"
+)
 
 type (
 	// EnvDesc captures the details of the established environment

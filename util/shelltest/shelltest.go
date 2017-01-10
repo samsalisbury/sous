@@ -30,7 +30,7 @@ func New(t *testing.T, env map[string]string) *ShellTest {
 // Block runs a block of shell script, returning a new ShellTest. If the check
 // function includes a failing test, however, blocks run on the resulting
 // ShellTest will be skipped.
-func (st *ShellTest) Block(name, script string, check CheckFn) *ShellTest {
+func (st *ShellTest) Block(name, script string, check ...CheckFn) *ShellTest {
 	if st.shell == nil { // When a shell fails, follow-on blocks aren't run
 		return st
 	}
@@ -39,7 +39,9 @@ func (st *ShellTest) Block(name, script string, check CheckFn) *ShellTest {
 		if err != nil {
 			t.Fatal(err)
 		}
-		check(res, t)
+		if len(check) > 0 {
+			check[0](res, t)
+		}
 	})
 	shell := st.shell
 

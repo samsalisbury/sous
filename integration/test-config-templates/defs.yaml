@@ -1,0 +1,57 @@
+DockerRepo: {{.EnvDesc.RegistryName}}
+Clusters:
+  left:
+    Name: "left"
+    Kind: singularity
+    BaseURL: {{.EnvDesc.SingularityURL}}
+    Env:
+      OT_ENV: left
+    AllowedAdvisories:
+    - ephemeral tag
+    - source workspace lacked repo
+    - no repository
+    - requested revision not built
+    - no versioned tag
+    - tag mismatch
+    - tag not on built revision
+    - ephemeral tag
+    - unpushed revision
+    - bogus revision
+    - dirty workspace
+  right:
+    Name: "right"
+    Kind: singularity
+    BaseURL: {{.EnvDesc.SingularityURL}}
+    Env:
+      OT_ENV: right
+    AllowedAdvisories:
+    - ephemeral tag
+    - ephemeral tag
+    - source workspace lacked repo
+    - no repository
+    - requested revision not built
+    - no versioned tag
+    - tag mismatch
+    - tag not on built revision
+    - ephemeral tag
+    - unpushed revision
+    - bogus revision
+    - dirty workspace
+EnvVars:
+- Name: OT_DISCO_INIT_URL
+  Desc: The URL which discovery clients should use to initially connect to the discovery
+    system.
+  Scope: ""
+  Type: url
+- Name: PORT0
+  Desc: The primary TCP port your app should listen on.
+  Scope: ""
+  Type: int
+Resources:
+- Name: memory
+  Type: Float
+- Name: cpu
+  Type: Float
+- Name: ports
+  Type: Integer
+Metadata: []

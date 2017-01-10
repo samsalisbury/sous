@@ -1,4 +1,4 @@
 UserKnownHostsFile /dev/null
 StrictHostKeyChecking no
 # This setting presumes a GOPATH setting, which may not be correct
-IdentityFile /Users/jlester/golang/src/github.com/opentable/sous/integration/test-homedir/dot-ssh/git_pubkey_rsa
+IdentityFile {{.Workdir}}/home/dot-ssh/git_pubkey_rsa
