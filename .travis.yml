@@ -3,19 +3,17 @@ services:
 - docker
 language: go
 go:
-- 1.6
+- 1.7.3
 before_install:
 - bin/ci-setup
 install:
-# If these are wrong, bail out immediately
 - "./bin/vendor-check"
 - "./bin/check-gofmt"
-- "export SOUS_QA_DESC=${TRAVIS_BUILD_DIR}/${SOUS_QA_DESC}"
-- "sous_qa_setup --compose-dir ./integration/test-registry/ --out-path=$SOUS_QA_DESC"
+- export SOUS_QA_DESC=${TRAVIS_BUILD_DIR}/${SOUS_QA_DESC}
+- sous_qa_setup --compose-dir ./integration/test-registry/ --out-path=$SOUS_QA_DESC
 script:
 - "./bin/test-until-success 3"
 - "./bin/cover"
-- '[ $TRAVIS_SECURE_ENV_VARS == false ] || ./bin/publish "$TRAVIS_TAG"'
 after_success:
 - bin/codecov -f /tmp/sous-cover/count_merged.txt
 env:
@@ -41,3 +39,19 @@ notifications:
     format: html
     rooms:
       secure: MYcyZu5zXfvu72SKPt5vdF/LYtzKdybmL0RIIiiTJzGjb08Cz7LyvyfBBkFc9KWxHT3qK/swUUeCxLHYXHDFfzMDiWYPD+QB7Z2704f4/V8Vg3BjGz2CXlnNC3x1ehj3EbryMfg9C2K/dmYXI7YDjvZwT1iGM/63tMBZSUPE25mfnX6CoIpiIqznMB68JmJzTu9k8BxHKVOkwyvzmKKe7bcG+poiurXM60ly2qUqO11gmT019HOQMMUsxqVUXPoSALhZMArqXQzWG7t/408SGByI7CG1RwGuT8h+iGgsDMH4j30quormEG+y+7VzTjetRFae5BPZ0iCIu11p5atFc2ejNbDVGHdagK7H6hCuPzACWtRHDyVV1ZZ6Bv3pAtId1iCXeHebdagMe5BAsAv6G0Li+6WNQL3o7Tj6wSMPeJ/Zz9XwKHeoFocrERMhfCuhyx/M1mPZPYDVFZ/H4/GiNquDppRxUiCWK61XGmQI0fTY+R0mW6pX9l40oELV1kf6PoJCjYPRJI/kXqTi5x6dfLDctKhrUk662iXSailMtaJJKYREa30OvEaXjNrC0OSw+PTmK9zavVtsSkwkgRnBes1ZlYZnH3VKMGM0mV/L/aKzAAY9xsIuUOl8gvHK3NZ/yUWW58ncVqv+++cEM1ZxuFVuVFtIP/EpV5fc0h0/+Wc=
+
+before_deploy:
+  - make release
+
+deploy:
+  provider: releases
+  api_key:
+    secure: Nm4wGpltWerwmkUp2PrzDE6/EwRb4AZk4riuROmEVSujOnfPojbHikgaFZzOF1rryY22+RXg8HrnsldWLHmVwXOWPUTEXK8FCdaVplf+3zbV2CLQZMrrv2PQIMS7NfE6NdLLScCsyXIO13JyygLgXB7rHV3RBtXrZhjYbB2GHk6N8YMIpGfD8K1k/Rp7T/4kS2vG4U1LM86h5QFk9pkOThWroxxdKbNWOYiMCIbzMt5f8Rgn7uoyBrSr8SAc2Kutku0W2PUN4QxCAuqYPf+quaPhGDWJ3BEDCFTk2nXrZTIJr+2/KCpgrJZdG2EertzjrkwIs5gc1ltS7G8ubC5dqA+Nb5foDOt9zvPzvrwAkoGof/2pza3dpUIkTeri2kYY7hbPuWwNsGwc4tFj2LIg22vgfu5TUIZ3kaQ5fMjFAQQ3gOjsbZZRJyD66941sxhhwkSILcMIM0aKJBMnsDLwREwMz8v6lr6gXK8GnWcVRTcMdGo3et7XXyhMA4L3ZOIcnXPMGp5NurmIdQ9U5fw8twAz13Utv8Sr9hsaCjBUa6cgGIxGy66Ob38Sxs9/c5eXCeydjMG+2OouNit6UsM3pVbTDujVC/JVIYRYaRZ5mIDRRHEf1cHW2F98vhSYK7ZQdMqqqq2XzeyvAmwsjwlKhrPR0ZNQL7G1Yw9F6wyoA20=
+  file:
+  - archive/sous-$TRAVIS_TAG-darwin-10.6.tar.gz
+  - archive/sous-$TRAVIS_TAG-linux.tar.gz
+  on:
+    condition:
+    - '[ $TRAVIS_SECURE_ENV_VARS == true ] && [ "$TRAVIS_BRANCH" != "" ]'
+    repo: opentable/sous
+    tags: true
