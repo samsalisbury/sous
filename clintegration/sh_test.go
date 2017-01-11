@@ -216,7 +216,11 @@ func SomethingSomething(t *testing.T) {
 	cd `+workdir+`
 	cp templated-configs/ssh-config ~/dot-ssh/config
 	chmod go-rwx -R ~/dot-ssh
-	`)
+	`, func(res shelltest.Result, t *testing.T) {
+		if len(res.Errs) > 0 {
+			t.Errorf("Trouble setting up: \n\t%s", res.Errs)
+		}
+	})
 
 	createGDM := prologue.Block("create the GDM", `
 	git clone `+gitRemoteBase+`/gdm
@@ -225,7 +229,11 @@ func SomethingSomething(t *testing.T) {
 	git commit -am "Adding defs.yaml"
 	git push
 	popd
-	`)
+	` , func(res shelltest.Result, t *testing.T) {
+		if len(res.Errs) > 0 {
+			t.Errorf("Trouble building GDM: \n\t%s", res.Errs)
+		}
+	})
 
 	stateDir := filepath.Join(workdir, "gdm")
 	// XXX There should be a `-cluster left,right` syntax, instead of two deploy commands
@@ -238,8 +246,8 @@ func SomethingSomething(t *testing.T) {
 	popd
 	`,
 		func(res shelltest.Result, t *testing.T) {
-			if res.Exit != 0 {
-				t.Fatalf("exit code was %d", res.Exit)
+			if len(res.Errs) > 0 {
+				t.Errorf("Trouble building GDM: \n\t%s", res.Errs)
 			}
 
 			if !res.Matches(`Deployed`) {
@@ -256,6 +264,10 @@ func SomethingSomething(t *testing.T) {
 	sous config Server
 	`,
 		func(res shelltest.Result, t *testing.T) {
+			if len(res.Errs) > 0 {
+				t.Errorf("Trouble building GDM: \n\t%s", res.Errs)
+			}
+
 			if !res.Matches(`URL is: http`) {
 				t.Fatalf("Sous server not running!")
 			}
@@ -279,4 +291,4 @@ func SomethingSomething(t *testing.T) {
 			t.Errorf("No match for 'test-project' in names of running requests")
 		}
 	})
-}
+'}

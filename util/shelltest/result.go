@@ -5,9 +5,9 @@ import "regexp"
 type (
 	// A Result captures the output of a shell run
 	Result struct {
-		Script         string
-		Exit           int
-		Stdout, Stderr string
+		Script                    string
+		Exit                      int
+		Stdout, Stderr, Env, Errs string
 	}
 )
 

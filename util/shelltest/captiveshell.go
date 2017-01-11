@@ -14,13 +14,11 @@ import (
 
 const (
 	stateCapture = `
-pwd
-env | grep X=
-pwd >3
-env >4
+trap '(lasterr=$?; exec >&5; echo -n $lasterr; history 1)' ERR
 `
 	exitCapture = `
 status=$?
+env >4
 echo $status >&3
 `
 )
@@ -28,10 +26,10 @@ echo $status >&3
 type (
 	CaptiveShell struct {
 		*exec.Cmd
-		Stdin          io.WriteCloser
-		stdout, stderr *liveStream
-		doneRead       *bufio.Scanner
-		events         chan int
+		Stdin                                 io.WriteCloser
+		stdout, stderr, scriptEnv, scriptErrs *liveStream
+		doneRead                              *bufio.Scanner
+		events                                chan int
 	}
 
 	liveStream struct {
@@ -54,7 +52,7 @@ func newLiveStream(from io.Reader, events <-chan int) *liveStream {
 // NewShell creates a new CaptiveShell with an environment dictacted by env.
 func NewShell(env map[string]string) (sh *CaptiveShell, err error) {
 	sh = &CaptiveShell{}
-	sh.Cmd = exec.Command("/bin/sh")
+	sh.Cmd = exec.Command("/bin/bash")
 
 	for k, v := range env {
 		sh.Cmd.Env = append(sh.Cmd.Env, k+"="+v)
@@ -83,30 +81,49 @@ func NewShell(env map[string]string) (sh *CaptiveShell, err error) {
 		return nil, err
 	}
 	sh.doneRead = bufio.NewScanner(dr)
-	sh.Cmd.ExtraFiles = []*os.File{doneWrite}
+
+	envR, envW, err := os.Pipe()
+	if err != nil {
+		return nil, err
+	}
+	sh.scriptEnv := newLiveStream(envR, sh.events)
+
+	errR, errW, err := os.Pipe()
+	if err != nil {
+		return nil, err
+	}
+	sh.scriptErr := newLiveStream(errR, sh.events)
+
+	sh.Cmd.ExtraFiles = []*os.File{doneWrite, envW, errW}
 
 	sh.Cmd.Start()
 	doneWrite.Close()
+	envW.Close()
+	errW.Close()
 
 	return
 }
 
 func (sh *CaptiveShell) Run(script string) (Result, error) {
-	st := script + exitCapture
+	st := stateCapture + script + exitCapture
 	sh.Stdin.Write([]byte(st))
 	exit, err := sh.readExitStatus()
 	if err != nil {
 		return Result{}, err
 	}
-	stdout := sh.stdout.consume()
 
+	stdout := sh.stdout.consume()
 	stderr := sh.stderr.consume()
+	errExits := sh.scriptErrs.consume()
+	env := sh.scriptEnv.consume()
 
 	return Result{
 		Script: script,
 		Exit:   exit,
 		Stdout: stdout,
 		Stderr: stderr,
+		Errs: errExits,
+		Env: env,
 	}, nil
 }
 
