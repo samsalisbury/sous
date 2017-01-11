@@ -52,7 +52,7 @@ deploy:
   - archive/sous-$TRAVIS_TAG-linux.tar.gz
   on:
     condition:
-    - '[ $TRAVIS_SECURE_ENV_VARS == false ]'
+    - '[ $TRAVIS_SECURE_ENV_VARS == true ]'
     - '[ "$TRAVIS_BRANCH" != "" ]'
     repo: opentable/sous
     tags: true
