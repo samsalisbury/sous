@@ -61,4 +61,4 @@ $(LINUX_TARBALL): $(LINUX_RELEASE_DIR)/sous
 $(DARWIN_TARBALL): $(DARWIN_RELEASE_DIR)/sous
 	tar czv $(DARWIN_RELEASE_DIR) > $@
 
-.PHONY: binaries clean #release
+.PHONY: clean release
