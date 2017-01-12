@@ -73,11 +73,10 @@ func (r *deployer) buildSingClient(url string) *singularity.Client {
 }
 
 func (r *deployer) ImageName(d *sous.Deployable) (string, error) {
-	a := d.BuildArtifact
-	if a == nil {
+	if d.BuildArtifact == nil {
 		return "", &sous.MissingImageNameError{Cause: fmt.Errorf("Missing BuildArtifact on Deployable")}
 	}
-	return a.Name, nil
+	return d.BuildArtifact.Name, nil
 }
 
 func rectifyRecover(d interface{}, f string, err *error) {
