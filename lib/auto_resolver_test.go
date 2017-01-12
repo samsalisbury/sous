@@ -22,13 +22,11 @@ func TestDone(t *testing.T) {
 	ar := setupAR()
 
 	received := false
-	var result error
 
 	ar.addListener(func(tc, done TriggerChannel, ec announceChannel) {
 		select {
-		case err := <-ec:
+		case <-ec:
 			received = true
-			result = err
 			close(done)
 		}
 	})
