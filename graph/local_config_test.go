@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/opentable/sous/config"
+	"github.com/opentable/sous/util/configloader"
 )
 
 func remove(path string) error {
@@ -45,5 +46,21 @@ func TestNewConfig(t *testing.T) {
 		t.Log("READ:\n\n", read)
 		t.Log("WRITTEN:\n\n", written)
 		t.Error("Read and written configs were different.")
+	}
+}
+
+func TestLoadConfig(t *testing.T) {
+	path := "./testdata/config.yaml"
+
+	cl := configloader.New()
+	config := config.Config{}
+	err := cl.Load(&config, path)
+
+	if err != nil {
+		t.Fatalf("Err loading config: %s", err)
+	}
+
+	if len(config.SiblingURLs["ci-sf"]) == 0 {
+		t.Error("Empty URL for ci-sf")
 	}
 }
