@@ -60,9 +60,7 @@ type (
 	*/
 )
 
-// BuildRouter builds a returns an http.Handler based on some constant configuration
-func (rm *RouteMap) BuildRouter(grf func() Injector) http.Handler {
-	r := httprouter.New()
+func (rm *RouteMap) buildMetaHandler(r *httprouter.Router, grf func() Injector) *MetaHandler {
 	ph := &StatusMiddleware{}
 	mh := &MetaHandler{
 		graphFac:      grf,
@@ -70,6 +68,14 @@ func (rm *RouteMap) BuildRouter(grf func() Injector) http.Handler {
 		statusHandler: ph,
 	}
 	mh.InstallPanicHandler()
+
+	return mh
+}
+
+// BuildRouter builds a returns an http.Handler based on some constant configuration
+func (rm *RouteMap) BuildRouter(grf func() Injector) http.Handler {
+	r := httprouter.New()
+	mh := rm.buildMetaHandler(r, grf)
 
 	for _, e := range *rm {
 		get, canGet := e.Resource.(Getable)
