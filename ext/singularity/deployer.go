@@ -89,7 +89,7 @@ func rectifyRecover(d interface{}, f string, err *error) {
 }
 
 func (r *deployer) RectifySingleCreate(d *sous.Deployable) (err error) {
-	Log.Debug.Printf("Rectifing creation %q:  \n %# v", d.ID(), d.Deployment)
+	Log.Debug.Printf("Rectifying creation %q:  \n %# v", d.ID(), d.Deployment)
 	defer rectifyRecover(d, "RectifySingleCreate", &err)
 	name, err := r.ImageName(d)
 	if err != nil {
