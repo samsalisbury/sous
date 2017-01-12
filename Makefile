@@ -8,20 +8,16 @@ else
 GIT_TAG := $(shell $(TAG_TEST))
 endif
 
-# Sous releases are tagged with format v0.0.0. semv library
-# does not understand the v prefix, so this lops it off.
-SOUS_VERSION := $(shell echo $(GIT_TAG) | sed 's/^v//')
-
 ifeq ($(shell git diff-index --quiet HEAD ; echo $$?),0)
 COMMIT := $(shell git rev-parse HEAD)
 else
 COMMIT := DIRTY
 endif 
 
-FLAGS := "-X 'main.Revision=$(COMMIT)' -X 'main.VersionString=$(SOUS_VERSION)'"
+FLAGS := "-X 'main.Revision=$(COMMIT)' -X 'main.VersionString=$(GIT_TAG)'"
 BIN_DIR := artifacts/bin
-DARWIN_RELEASE_DIR := artifacts/sous-darwin-amd64_$(SOUS_VERSION)
-LINUX_RELEASE_DIR := artifacts/sous-linux-amd64_$(SOUS_VERSION)
+DARWIN_RELEASE_DIR := artifacts/sous-darwin-amd64_$(GIT_TAG)
+LINUX_RELEASE_DIR := artifacts/sous-linux-amd64_$(GIT_TAG)
 RELEASE_DIRS := $(DARWIN_RELEASE_DIR) $(LINUX_RELEASE_DIR)
 DARWIN_TARBALL := $(DARWIN_RELEASE_DIR).tar.gz
 LINUX_TARBALL := $(LINUX_RELEASE_DIR).tar.gz
