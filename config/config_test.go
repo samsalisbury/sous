@@ -128,10 +128,6 @@ func TestConfig_Equals(t *testing.T) {
 	checkNotEqual()
 }
 
-func TestConfigParses(t *testing.T) {
-
-}
-
 func TestEnsureDirExists(t *testing.T) {
 	testDataDir := "testdata/gen"
 	if err := os.RemoveAll(testDataDir); err != nil {
