@@ -26,25 +26,16 @@ clean:
 	rm -f sous
 	rm -rf artifacts
 
-release: artifacts/sous-$(SOUS_VERSION)-darwin-10.6-amd64.tar.gz artifacts/sous-$(SOUS_VERSION)-linux-amd64.tar.gz
+release: artifacts/sous-$(SOUS_VERSION).tar.gz
 
 $(BIN_DIR):
 	mkdir -p $@
-	cp -R doc/ $@/doc
+	cp -R doc/ $@
 	cp README.md $@
 	cp LICENSE $@
 
-artifacts/sous-$(SOUS_VERSION)-darwin-10.6-amd64.tar.gz: binaries
-	cd $(BIN_DIR) && tar czv \
-		--exclude 'sous-linux-amd64' \
-		--transform 's|sous-darwin-10.6-amd64|sous|' \
-		. > ../../$@
-
-artifacts/sous-$(SOUS_VERSION)-linux-amd64.tar.gz: binaries
-	cd $(BIN_DIR) && tar czv \
-		--exclude 'sous-darwin-10.6-amd64' \
-		--transform 's|sous-linux-amd64|sous|' \
-		. > ../../$@
+artifacts/sous-$(SOUS_VERSION).tar.gz: binaries
+	tar czv $(BIN_DIR) > $@
  
 binaries: $(BIN_DIR)
 	xgo $(CONCAT_XGO_ARGS) --targets=linux/amd64,darwin/amd64  ./
