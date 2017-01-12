@@ -5,19 +5,17 @@ language: go
 go:
 - 1.7.3
 before_install:
-  # - bin/ci-setup
+- bin/ci-setup
 install:
-  - echo Install step disabled.
-  # - "./bin/vendor-check"
-  # - "./bin/check-gofmt"
-  #- export SOUS_QA_DESC=${TRAVIS_BUILD_DIR}/${SOUS_QA_DESC}
-  #- sous_qa_setup --compose-dir ./integration/test-registry/ --out-path=$SOUS_QA_DESC
+- "./bin/vendor-check"
+- "./bin/check-gofmt"
+- export SOUS_QA_DESC=${TRAVIS_BUILD_DIR}/${SOUS_QA_DESC}
+- sous_qa_setup --compose-dir ./integration/test-registry/ --out-path=$SOUS_QA_DESC
 script:
-  - echo Tests temporarily disabled whilst I debug releases. - Sam
-  #- "./bin/test-until-success 3"
-  #- "./bin/cover"
+- "./bin/test-until-success 3"
+- "./bin/cover"
 after_success:
-  # - bin/codecov -f /tmp/sous-cover/count_merged.txt
+- bin/codecov -f /tmp/sous-cover/count_merged.txt
 env:
   global:
   - SOUS_QA_DESC=qa_desc.json
