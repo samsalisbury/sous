@@ -19,35 +19,46 @@ COMMIT := DIRTY
 endif 
 
 FLAGS := "-X 'main.Revision=$(COMMIT)' -X 'main.VersionString=$(SOUS_VERSION)'"
-BIN_DIR := artifacts/sous-$(SOUS_VERSION)
+BIN_DIR := artifacts/bin
+DARWIN_RELEASE_DIR := artifacts/sous-darwin-amd64_$(SOUS_VERSION)
+LINUX_RELEASE_DIR := artifacts/sous-linux-amd64_$(SOUS_VERSION)
+DARWIN_TARBALL := $(DARWIN_RELEASE_DIR).tar.gz
+LINUX_TARBALL := $(LINUX_RELEASE_DIR).tar.gz
 CONCAT_XGO_ARGS := -go $(GO_VERSION) -branch master -deps $(SQLITE_URL) --dest $(BIN_DIR) --ldflags $(FLAGS)
 
 clean:
 	rm -f sous
 	rm -rf artifacts
 
-release: artifacts/sous-v$(SOUS_VERSION)-darwin-10.6-amd64.tar.gz artifacts/sous-v$(SOUS_VERSION)-linux-amd64.tar.gz
+release: $(DARWIN_TARBALL) $(LINUX_TARBALL)
 
 $(BIN_DIR):
+	mkdir -p $(BIN_DIR)
+
+$(DARWIN_RELEASE_DIR):
 	mkdir -p $@
 	cp -R doc/ $@/doc
 	cp README.md $@
 	cp LICENSE $@
 
-artifacts/sous-v$(SOUS_VERSION)-darwin-10.6-amd64.tar.gz: binaries
-	cd $(BIN_DIR) && tar czv \
-		--exclude 'sous-linux-amd64' \
-		--transform 's|sous-darwin-10.6-amd64|sous|' \
-		. > ../../$@
+$(LINUX_RELEASE_DIR):
+	mkdir -p $@
+	cp -R doc/ $@/doc
+	cp README.md $@
+	cp LICENSE $@
 
-artifacts/sous-v$(SOUS_VERSION)-linux-amd64.tar.gz: binaries
-	cd $(BIN_DIR) && tar czv \
-		--exclude 'sous-darwin-10.6-amd64' \
-		--transform 's|sous-linux-amd64|sous|' \
-		. > ../../$@
- 
-binaries: $(BIN_DIR)
-	xgo $(CONCAT_XGO_ARGS) --targets=linux/amd64,darwin/amd64  ./
+$(DARWIN_RELEASE_DIR)/sous: $(DARWIN_RELEASE_DIR) $(BIN_DIR)
+	xgo $(CONCAT_XGO_ARGS) --targets=darwin/amd64  ./
+	mv $(BIN_DIR)/sous-darwin-10.6-amd64 $@
 
+$(LINUX_RELEASE_DIR)/sous: $(LINUX_RELEASE_DIR) $(BIN_DIR)
+	xgo $(CONCAT_XGO_ARGS) --targets=linux/amd64  ./
+	mv $(BIN_DIR)/sous-linux-amd64 $@
 
-.PHONY: binaries clean release
+$(LINUX_TARBALL): $(LINUX_RELEASE_DIR)/sous
+	tar czv $(LINUX_RELEASE_DIR) > $@
+
+$(DARWIN_TARBALL): $(DARWIN_RELEASE_DIR)/sous
+	tar czv $(DARWIN_RELEASE_DIR) > $@
+
+.PHONY: binaries clean #release

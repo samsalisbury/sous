@@ -33,8 +33,8 @@ deploy:
   api_key:
     secure: KoJl6jHnAG3TwDiUMo0dXcCHXid7NTkIVgwxMZECW5Jc3b45Hc7WZ+P9N7k7qjkogt3R2FTtdcjs5+I/nph2Xx3QB2PgpXHWGdj0LAQEh8g1cCbc/HV7Ydjex1l5qwrXKE9V+2pCdVEWMYLKC2gXpGtlgOZCZI++o44apukm0VyLueb73Qw9AoZcMF9oYBof7a3HsN82yzXDmF9k7cW3V10vNma/TLAo6o52olaz7KDKdppTfuCVQFmjAaNDEbUi1O2QG6tg+gSuKx4KYmhdt1IaFDBmgypmf7hvvdPXEqZluW8CNSmflb7OSRp7u6v1v0zKlG4HG3LeVq2UcScrGjkori16MpdPZIopkpTeCzKlTOnf7+dmPWcjs9NMpxKIXuAhG7fpLIFEupsDDwzTlwmBZG6vZkUHCfI4q20/+CG/Ck3jQGXUXVowJK8tSckST0ucWkuOg5TB239TLy6QeO3kwvsvNjT++/0poE59/GZsMULU/DzGzmHRfU5xxm0n9TJDhTD6GhtlfjS/NeKSRruVXPeuN+sr5XnUXLMtLnyMoRmC0Oh00G/Dpzq6pXSItZW2et1lXf7wXUEWmWmPX8pahfYVwH4cjfyEZ4ajdoO2IdDMYpgXjDc53JopeX4BkLpUSpRzRjMm3Yb4y6Az0iyv9Y+cXrIhWzFVCluGtOg=
   file:
-    - artifacts/sous-$TRAVIS_TAG-darwin-10.6-amd64.tar.gz
-    - artifacts/sous-$TRAVIS_TAG-linux-amd64.tar.gz
+    - artifacts/sous-darwin-amd64_$TRAVIS_TAG.tar.gz
+    - artifacts/sous-linux-amd64_$TRAVIS_TAG.tar.gz
   on:
     tags: true
   skip_cleanup: true
