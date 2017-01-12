@@ -26,7 +26,7 @@ clean:
 	rm -f sous
 	rm -rf artifacts
 
-release: artifacts/sous-$(SOUS_VERSION).tar.gz
+release: artifacts/sous-v$(SOUS_VERSION).tar.gz
 
 $(BIN_DIR):
 	mkdir -p $@
@@ -34,7 +34,7 @@ $(BIN_DIR):
 	cp README.md $@
 	cp LICENSE $@
 
-artifacts/sous-$(SOUS_VERSION).tar.gz: binaries
+artifacts/sous-v$(SOUS_VERSION).tar.gz: binaries
 	tar czv $(BIN_DIR) > $@
  
 binaries: $(BIN_DIR)
