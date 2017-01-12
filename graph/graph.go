@@ -179,6 +179,7 @@ func AddConfig(graph adder) {
 		newPossiblyInvalidLocalSousConfig,
 		DefaultConfig{&c},
 		newLocalSousConfig,
+		newSousConfig,
 		newLocalWorkDir,
 	)
 }

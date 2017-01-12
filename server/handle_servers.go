@@ -1,6 +1,10 @@
 package server
 
-import "github.com/opentable/sous/config"
+import (
+	"log"
+
+	"github.com/opentable/sous/config"
+)
 
 type (
 	// ServerListResource dispatches /servers
@@ -27,6 +31,8 @@ func (slr *ServerListResource) Get() Exchanger { return &ServerListHandler{} }
 // Exchange implements Exchanger on ServerListHandler
 func (slh *ServerListHandler) Exchange() (interface{}, int) {
 	data := serverListData{Servers: []server{}}
+	log.Printf("%#v", slh)
+	log.Printf("%#v", slh.Config)
 	for name, url := range slh.Config.SiblingURLs {
 		data.Servers = append(data.Servers, server{ClusterName: name, URL: url})
 	}
