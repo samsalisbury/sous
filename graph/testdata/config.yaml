@@ -1,0 +1,12 @@
+StateLocation: 
+Server: 
+SiblingURLs:
+  ci-sf: http://sous-ci-sf.otenv.com
+  pp-sf: http://sous-pp-sf.otenv.com
+  ci-uswest2: http://sous-ci-uswest2.otenv.com
+  pp-uswest2: http://sous-pp-uswest2.otenv.com
+BuildStateDir: 
+Docker:
+  RegistryHost: docker.otenv.com
+  DatabaseDriver:
+  DatabaseConnection: 
