@@ -137,13 +137,13 @@ func resolvePairs(r Registry, from chan *DeploymentPair, to chan *DeployablePair
 	close(to)
 }
 
-func resolveName(r Registry, dep *Deployment) (d *Deployable, err error) {
-	d = &Deployable{Deployment: dep}
+func resolveName(r Registry, dep *Deployment) (*Deployable, error) {
+	d := &Deployable{Deployment: dep}
 	art, err := GuardImage(r, dep)
 	if err == nil {
 		d.BuildArtifact = art
 	}
-	return
+	return d, err
 }
 
 func resolvePair(r Registry, depPair *DeploymentPair) (*DeployablePair, error) {
