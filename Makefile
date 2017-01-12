@@ -22,6 +22,7 @@ FLAGS := "-X 'main.Revision=$(COMMIT)' -X 'main.VersionString=$(SOUS_VERSION)'"
 BIN_DIR := artifacts/bin
 DARWIN_RELEASE_DIR := artifacts/sous-darwin-amd64_$(SOUS_VERSION)
 LINUX_RELEASE_DIR := artifacts/sous-linux-amd64_$(SOUS_VERSION)
+RELEASE_DIRS := $(DARWIN_RELEASE_DIR) $(LINUX_RELEASE_DIR)
 DARWIN_TARBALL := $(DARWIN_RELEASE_DIR).tar.gz
 LINUX_TARBALL := $(LINUX_RELEASE_DIR).tar.gz
 CONCAT_XGO_ARGS := -go $(GO_VERSION) -branch master -deps $(SQLITE_URL) --dest $(BIN_DIR) --ldflags $(FLAGS)
@@ -35,13 +36,7 @@ release: $(DARWIN_TARBALL) $(LINUX_TARBALL)
 $(BIN_DIR):
 	mkdir -p $(BIN_DIR)
 
-$(DARWIN_RELEASE_DIR):
-	mkdir -p $@
-	cp -R doc/ $@/doc
-	cp README.md $@
-	cp LICENSE $@
-
-$(LINUX_RELEASE_DIR):
+$(RELEASE_DIRS):
 	mkdir -p $@
 	cp -R doc/ $@/doc
 	cp README.md $@
