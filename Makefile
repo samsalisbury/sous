@@ -16,8 +16,8 @@ endif
 
 FLAGS := "-X 'main.Revision=$(COMMIT)' -X 'main.VersionString=$(GIT_TAG)'"
 BIN_DIR := artifacts/bin
-DARWIN_RELEASE_DIR := artifacts/sous-darwin-amd64_$(GIT_TAG)
-LINUX_RELEASE_DIR := artifacts/sous-linux-amd64_$(GIT_TAG)
+DARWIN_RELEASE_DIR := sous-darwin-amd64_$(GIT_TAG)
+LINUX_RELEASE_DIR := sous-linux-amd64_$(GIT_TAG)
 RELEASE_DIRS := $(DARWIN_RELEASE_DIR) $(LINUX_RELEASE_DIR)
 DARWIN_TARBALL := $(DARWIN_RELEASE_DIR).tar.gz
 LINUX_TARBALL := $(LINUX_RELEASE_DIR).tar.gz
@@ -27,29 +27,29 @@ clean:
 	rm -f sous
 	rm -rf artifacts
 
-release: $(DARWIN_TARBALL) $(LINUX_TARBALL)
+release: artifacts/$(DARWIN_TARBALL) artifacts/$(LINUX_TARBALL)
 
 $(BIN_DIR):
 	mkdir -p $(BIN_DIR)
 
 $(RELEASE_DIRS):
-	mkdir -p $@
-	cp -R doc/ $@/doc
-	cp README.md $@
-	cp LICENSE $@
+	mkdir -p artifacts/$@
+	cp -R doc/ artifacts/$@/doc
+	cp README.md artifacts/$@
+	cp LICENSE artifacts/$@
 
-$(DARWIN_RELEASE_DIR)/sous: $(DARWIN_RELEASE_DIR) $(BIN_DIR)
+artifacts/$(DARWIN_RELEASE_DIR)/sous: $(DARWIN_RELEASE_DIR) $(BIN_DIR)
 	xgo $(CONCAT_XGO_ARGS) --targets=darwin/amd64  ./
 	mv $(BIN_DIR)/sous-darwin-10.6-amd64 $@
 
-$(LINUX_RELEASE_DIR)/sous: $(LINUX_RELEASE_DIR) $(BIN_DIR)
+artifacts/$(LINUX_RELEASE_DIR)/sous: $(LINUX_RELEASE_DIR) $(BIN_DIR)
 	xgo $(CONCAT_XGO_ARGS) --targets=linux/amd64  ./
 	mv $(BIN_DIR)/sous-linux-amd64 $@
 
-$(LINUX_TARBALL): $(LINUX_RELEASE_DIR)/sous
-	tar czv $(LINUX_RELEASE_DIR) > $@
+artifacts/$(LINUX_TARBALL): artifacts/$(LINUX_RELEASE_DIR)/sous
+	cd artifacts && tar czv $(LINUX_RELEASE_DIR) > $(LINUX_TARBALL)
 
-$(DARWIN_TARBALL): $(DARWIN_RELEASE_DIR)/sous
-	tar czv $(DARWIN_RELEASE_DIR) > $@
+artifacts/$(DARWIN_TARBALL): artifacts/$(DARWIN_RELEASE_DIR)/sous
+	cd artifacts && tar czv $(DARWIN_RELEASE_DIR) > $(DARWIN_TARBALL)
 
 .PHONY: clean release
