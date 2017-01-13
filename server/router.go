@@ -41,6 +41,7 @@ type (
 	// Injector is an interface for DI systems.
 	Injector interface {
 		Inject(...interface{}) error
+		MustInject(...interface{})
 		Add(...interface{})
 	}
 	// A GraphFactory builds a SousGraph.
@@ -136,9 +137,9 @@ func (mh *MetaHandler) injectedHandler(factory ExchangeFactory, w http.ResponseW
 	h := factory()
 
 	exGraph := mh.ExchangeGraph(w, r, p)
-	exGraph.Inject(h)
+	exGraph.MustInject(h)
 	logger := &ExchangeLogger{}
-	exGraph.Inject(logger)
+	exGraph.MustInject(logger)
 	logger.Exchanger = h
 
 	return logger

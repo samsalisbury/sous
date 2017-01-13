@@ -11,6 +11,7 @@ import (
 	"github.com/nyarly/testify/require"
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
+	sous "github.com/opentable/sous/lib"
 )
 
 func basicInjectedHandler(factory ExchangeFactory, t *testing.T) Exchanger {
@@ -19,6 +20,8 @@ func basicInjectedHandler(factory ExchangeFactory, t *testing.T) Exchanger {
 	gf := func() Injector {
 		g := graph.TestGraphWithConfig(&bytes.Buffer{}, os.Stdout, os.Stdout, "StateLocation: '../ext/storage/testdata/in'\n")
 		g.Add(&config.Verbosity{})
+		g.Add(&config.DeployFilterFlags{Cluster: "test"})
+		g.Add(graph.DryrunBoth)
 		return g
 	}
 
@@ -47,4 +50,20 @@ func TestServerListHandlerInjection(t *testing.T) {
 	require.True(ok)
 
 	assert.NotNil(serverListGet.Config)
+}
+
+func TestStatusHandlerInjection(t *testing.T) {
+	assert := assert.New(t)
+	require := require.New(t)
+
+	sr := &StatusResource{}
+	sh := basicInjectedHandler(sr.Get, t)
+
+	statusGet, ok := sh.(*StatusHandler)
+	require.True(ok)
+
+	sous.Log.Debug.Printf("%#v", statusGet)
+	assert.NotPanics(func() {
+		statusGet.GDM.Snapshot()
+	})
 }

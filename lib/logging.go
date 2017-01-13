@@ -55,6 +55,21 @@ func NewLogSet(warn, debug, vomit io.Writer) *LogSet {
 	}
 }
 
+// BeChatty gets the LogSet to print all its output - useful for temporary debugging
+func (ls LogSet) BeChatty() {
+	ls.Vomit.SetOutput(os.Stderr)
+	ls.Vomit.SetFlags(log.Llongfile | log.Ltime)
+	ls.Debug.SetOutput(os.Stderr)
+	ls.Debug.SetFlags(log.Llongfile | log.Ltime)
+}
+
+// BeQuiet gets the LogSet to discard all its output
+func (ls LogSet) BeQuiet() {
+	ls.Vomit.SetOutput(ioutil.Discard)
+	ls.Debug.SetOutput(ioutil.Discard)
+	ls.Warn.SetOutput(ioutil.Discard)
+}
+
 // SetupLogging sets up an ILogger to log into the Sous logging regime
 func SetupLogging(il ILogger) {
 	il.SetLogFunc(func(args ...interface{}) {
