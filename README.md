@@ -13,6 +13,17 @@ to manage your service within a larger organization, read on.
 
 ## Installation
 
+The primary way to install Go is from
+[our releases list.](https://github.com/opentable/sous/releases/latest)
+Download the appropriate tarball,
+unpack it,
+and copy the `sous` executable into your `$PATH`
+(e.g. `cp sous /usr/local/bin`).
+You'll also find a copy of the complete
+Sous documentation in that archive.
+
+### Bleeding edge development
+
 Sous is written in Go.
 Once you have [Go set up on your machine,](./doc/setting-up-go.md)
 you can install it by typing:
@@ -20,6 +31,13 @@ you can install it by typing:
 ```bash
 $ go get -u -v github.com/opentable/sous
 ```
+
+However, for normal use,
+we recommend that you use a release,
+rather than fritter away development time
+on our QA.
+Also, while we'll do our best,
+we'll be most able to help with bugs on released versions.
 
 ## Client Configuration
 
