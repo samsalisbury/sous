@@ -53,9 +53,6 @@ func TestServerListHandlerInjection(t *testing.T) {
 }
 
 func TestStatusHandlerInjection(t *testing.T) {
-	sous.Log.BeChatty()
-	defer sous.Log.BeQuiet()
-
 	assert := assert.New(t)
 	require := require.New(t)
 
