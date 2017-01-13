@@ -3,7 +3,7 @@ GO_VERSION := 1.7.3
 
 TAG_TEST := git describe --exact-match --abbrev=0
 ifeq ($(shell $(TAG_TEST) ; echo $$?), 128)
-GIT_TAG := v0.0.0
+GIT_TAG := 0.0.0
 else
 GIT_TAG := $(shell $(TAG_TEST))
 endif
