@@ -4,14 +4,13 @@ import (
 	"testing"
 
 	"github.com/nyarly/testify/assert"
-	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
 )
 
 func TestHandlesGDMGet(t *testing.T) {
 	assert := assert.New(t)
 
-	th := &GDMHandler{graph.CurrentGDM{
+	th := &GDMHandler{&LiveGDM{
 		Deployments: sous.NewDeployments(),
 	}}
 	data, status := th.Exchange()

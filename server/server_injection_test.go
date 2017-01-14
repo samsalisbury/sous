@@ -17,12 +17,13 @@ import (
 func basicInjectedHandler(factory ExchangeFactory, t *testing.T) Exchanger {
 	require := require.New(t)
 
+	g := graph.TestGraphWithConfig(&bytes.Buffer{}, os.Stdout, os.Stdout, "StateLocation: '../ext/storage/testdata/in'\n")
+	g.Add(&config.Verbosity{})
+	g.Add(&config.DeployFilterFlags{Cluster: "test"})
+	g.Add(graph.DryrunBoth)
+
 	gf := func() Injector {
-		g := graph.TestGraphWithConfig(&bytes.Buffer{}, os.Stdout, os.Stdout, "StateLocation: '../ext/storage/testdata/in'\n")
-		g.Add(&config.Verbosity{})
-		g.Add(&config.DeployFilterFlags{Cluster: "test"})
-		g.Add(graph.DryrunBoth)
-		return g
+		return g.Clone()
 	}
 
 	r := httprouter.New()

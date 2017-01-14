@@ -3,6 +3,7 @@ package cli
 import (
 	"flag"
 	"io/ioutil"
+	"log"
 	"os"
 
 	"github.com/opentable/sous/config"
@@ -17,12 +18,13 @@ import (
 // A SousServer represents the `sous server` command.
 type SousServer struct {
 	Sous              *Sous
-	Verbosity         *config.Verbosity
 	DeployFilterFlags config.DeployFilterFlags
-	AutoResolver      *sous.AutoResolver
-	Config            graph.LocalSousConfig
 	Log               *sous.LogSet
-	flags             struct {
+
+	*config.Config
+	*graph.SousGraph
+
+	flags struct {
 		dryrun,
 		// laddr is the listen address in the form [host]:port
 		laddr,
@@ -67,9 +69,19 @@ func (ss *SousServer) Execute(args []string) cmdr.Result {
 		return EnsureErrorResult(err)
 	}
 	ss.Log.Info.Println("Starting scheduled GDM resolution.")
-	ss.AutoResolver.Kickoff()
+
+	var arWrapper, second struct {
+		*sous.AutoResolver
+	}
+	ss.SousGraph.MustInject(&arWrapper)
+	ss.SousGraph.MustInject(&second)
+	log.Printf("%#v", arWrapper)
+	log.Printf("%#v", second)
+	arWrapper.AutoResolver.Kickoff()
+
 	ss.Log.Info.Printf("Sous Server v%s running at %s", ss.Sous.Version, ss.flags.laddr)
-	return EnsureErrorResult(server.RunServer(ss.Verbosity, &ss.DeployFilterFlags, ss.flags.laddr)) //always non-nil
+
+	return EnsureErrorResult(server.RunServer(ss.SousGraph, ss.flags.laddr)) //always non-nil
 }
 
 func ensureGDMExists(repo, localPath string, log func(string, ...interface{})) error {

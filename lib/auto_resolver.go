@@ -96,6 +96,7 @@ func (ar *AutoResolver) updateStatus() {
 	}
 	ar.write(func() {
 		ls := ar.currentRecorder.CurrentStatus()
+		Log.Debug.Printf("Recording live status from %p: %v", ar, ls)
 		ar.liveStatus = &ls
 	})
 }
@@ -107,6 +108,7 @@ func (ar *AutoResolver) Statuses() (stable, live *ResolveStatus) {
 	ar.updateStatus()
 	ar.RLock()
 	defer ar.RUnlock()
+	Log.Debug.Printf("Reporting statuses from %p: %v %v", ar, ar.stableStatus, ar.liveStatus)
 	return ar.stableStatus, ar.liveStatus
 }
 
@@ -140,30 +142,7 @@ func (ar *AutoResolver) resolveLoop(tc, done TriggerChannel, ac announceChannel)
 	for {
 		select {
 		default:
-			ar.LogSet.Debug.Print("Beginning Resolve")
-			state, err := ar.StateReader.ReadState()
-			ar.LogSet.Debug.Printf("Reading current state: err: %v", err)
-			if err != nil {
-				ac <- err
-				break
-			}
-			gdm, err := state.Deployments()
-			ar.LogSet.Debug.Printf("Reading GDM from state: err: %v", err)
-
-			if err != nil {
-				ac <- err
-				break
-			}
-
-			ar.write(func() {
-				ar.currentRecorder = ar.Resolver.Begin(gdm, state.Defs.Clusters)
-			})
-			ac <- ar.currentRecorder.Wait()
-			ar.write(func() {
-				ss := ar.currentRecorder.CurrentStatus()
-				ar.stableStatus = &ss
-			})
-			ar.LogSet.Debug.Print("Completed resolve")
+			ar.resolveOnce(ac)
 		case <-done:
 			return
 		case t := <-tc:
@@ -173,6 +152,38 @@ func (ar *AutoResolver) resolveLoop(tc, done TriggerChannel, ac announceChannel)
 
 		break
 	}
+}
+
+func (ar *AutoResolver) resolveOnce(ac announceChannel) {
+	ar.LogSet.Debug.Print("Beginning Resolve")
+	state, err := ar.StateReader.ReadState()
+	ar.LogSet.Debug.Printf("Reading current state: err: %v", err)
+	if err != nil {
+		ac <- err
+		return
+	}
+	gdm, err := state.Deployments()
+	ar.LogSet.Debug.Printf("Reading GDM from state: err: %v", err)
+
+	if err != nil {
+		ac <- err
+		return
+	}
+
+	ar.write(func() {
+		ar.currentRecorder = ar.Resolver.Begin(gdm, state.Defs.Clusters)
+	})
+	defer ar.write(func() {
+		ar.currentRecorder = nil
+	})
+	ac <- ar.currentRecorder.Wait()
+	ar.write(func() {
+		ss := ar.currentRecorder.CurrentStatus()
+		Log.Debug.Printf("Recording stable status from %p: %v", ar, ss)
+		ar.stableStatus = &ss
+	})
+	ar.Statuses() // XXX this is debugging
+	ar.LogSet.Debug.Print("Completed resolve")
 }
 
 func (ar *AutoResolver) afterDone(tc, done TriggerChannel, ac announceChannel) {
