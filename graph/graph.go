@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
+	"log" //ok
 	"os"
 	"os/user"
 
@@ -179,6 +179,7 @@ func AddConfig(graph adder) {
 		newPossiblyInvalidLocalSousConfig,
 		DefaultConfig{&c},
 		newLocalSousConfig,
+		newSousConfig,
 		newLocalWorkDir,
 	)
 }
@@ -232,8 +233,8 @@ func AddInternals(graph adder) {
 		newLocalGitClient,
 		newLocalGitRepo,
 		newSourceHostChooser,
-		newCurrentState,
-		newCurrentGDM,
+		NewCurrentState,
+		NewCurrentGDM,
 		newTargetManifest,
 		newDetectedOTPLConfig,
 		newUserSelectedOTPLDeploySpecs,
@@ -491,7 +492,7 @@ func newLocalStateWriter(sm *StateManager) StateWriter {
 	return StateWriter{sm}
 }
 
-func newCurrentState(sr StateReader) (*sous.State, error) {
+func NewCurrentState(sr StateReader) (*sous.State, error) {
 	state, err := sr.ReadState()
 	if os.IsNotExist(errors.Cause(err)) {
 		log.Println("error reading state:", err)
@@ -501,7 +502,7 @@ func newCurrentState(sr StateReader) (*sous.State, error) {
 	return state, initErr(err, "reading sous state")
 }
 
-func newCurrentGDM(state *sous.State) (CurrentGDM, error) {
+func NewCurrentGDM(state *sous.State) (CurrentGDM, error) {
 	deployments, err := state.Deployments()
 	if err != nil {
 		return CurrentGDM{}, initErr(err, "expanding state")

@@ -1,9 +1,6 @@
 package server
 
-import (
-	"github.com/opentable/sous/graph"
-	"github.com/opentable/sous/lib"
-)
+import "github.com/opentable/sous/lib"
 
 type (
 	// GDMResource is the resource for the GDM
@@ -11,7 +8,7 @@ type (
 
 	// GDMHandler is an injectable request handler
 	GDMHandler struct {
-		GDM graph.CurrentGDM
+		GDM *LiveGDM
 	}
 
 	gdmWrapper struct {

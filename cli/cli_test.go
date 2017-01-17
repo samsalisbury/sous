@@ -210,6 +210,9 @@ func TestInvokeServer(t *testing.T) {
 
 	exe = justCommand(t, []string{`sous`, `server`, `-cluster`, `test`})
 	assert.NotNil(t, exe)
+	server, good := exe.Cmd.(*SousServer)
+	require.True(t, good)
+	assert.NotNil(t, server.SousGraph)
 }
 
 /*

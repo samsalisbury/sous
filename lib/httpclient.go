@@ -225,19 +225,24 @@ func (client *HTTPClient) getBody(rz *http.Response, rzBody interface{}, err err
 	return errors.Wrapf(err, "processing response body")
 }
 
+func logBody(dir, chName string, req *http.Request, b []byte, n int, err error) {
+	Log.Vomit.Printf("%s %s %q", chName, req.Method, req.URL)
+	comp := &bytes.Buffer{}
+	if err := json.Compact(comp, b); err != nil {
+		Log.Vomit.Print(string(b))
+		Log.Vomit.Printf("(problem compacting JSON for logging: %s)", err)
+	} else {
+		Log.Vomit.Print(comp.String())
+	}
+	Log.Vomit.Printf("%s %d bytes, result: %v", dir, n, err)
+}
+
 func (client *HTTPClient) httpRequest(req *http.Request) (*http.Response, error) {
 	if req.Body == nil {
 		Log.Vomit.Printf("Client -> %s %q <empty request body>", req.Method, req.URL)
 	} else {
 		req.Body = NewReadDebugger(req.Body, func(b []byte, n int, err error) {
-			Log.Vomit.Printf("Client -> %s %q", req.Method, req.URL)
-			comp := &bytes.Buffer{}
-			if err := json.Compact(comp, b); err != nil {
-				Log.Vomit.Print(string(b))
-			} else {
-				Log.Vomit.Print(comp.String())
-			}
-			Log.Vomit.Printf("Sent %d bytes, result: %v", n, err)
+			logBody("Sent", "Client ->", req, b, n, err)
 		})
 	}
 	rz, err := client.Client.Do(req)
@@ -250,15 +255,7 @@ func (client *HTTPClient) httpRequest(req *http.Request) (*http.Response, error)
 	}
 
 	rz.Body = NewReadDebugger(rz.Body, func(b []byte, n int, err error) {
-		Log.Vomit.Printf("Client <- %s %q: %d", req.Method, req.URL, rz.StatusCode)
-		comp := &bytes.Buffer{}
-		if err := json.Compact(comp, b); err != nil {
-			Log.Vomit.Print(string(b))
-		} else {
-			Log.Vomit.Print(comp.String())
-		}
-
-		Log.Vomit.Printf("Read %d bytes, result: %v", n, err)
+		logBody("Read", "Client <-", req, b, n, err)
 	})
 	return rz, err
 }

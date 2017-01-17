@@ -75,7 +75,9 @@ func TestWriteState(t *testing.T) {
 	di.Add(&config.Verbosity{})
 
 	gf := func() server.Injector {
-		return di.Clone()
+		cdi := di.Clone()
+		server.AddsPerRequest(cdi)
+		return cdi
 	}
 
 	testServer := httptest.NewServer(server.SousRouteMap.BuildRouter(gf))
