@@ -97,8 +97,10 @@ your Docker "CMD."
 Second, you can maintain a current build process,
 possibly changing whatever steps build an actual container
 with `sous build`.
+Since Sous is designed as the driver of the build process,
+the latter approach is refered to as the "inverted" workflow.
 
-The advantage of using a "pure" approach is that
+The advantage of using the "proper" Sous approach is that
 you'll start constructing the "buildpack" Dockerfile
 that your service will need when we convert
 to buildpacks.
@@ -118,7 +120,7 @@ The disadvantages are as discussed above:
 a bigger container size,
 and a larger attack surface.
 
-The advantage of the "advisory" approach is that
+The advantage of the "inverted" approach is that
 you may well already be doing it,
 so you may be able to use Sous with very little change
 to your existing workflow.
