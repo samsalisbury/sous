@@ -161,7 +161,7 @@ func TestTemplating(t *testing.T) {
 	log.Printf(tmpDir)
 }
 
-func SomethingSomething(t *testing.T) {
+func TestShellLevelIntegration(t *testing.T) {
 	t.SkipNow()
 	descPath := os.Getenv("SOUS_QA_DESC")
 	if descPath == "" {
@@ -178,6 +178,8 @@ func SomethingSomething(t *testing.T) {
 		t.Fatalf("Couldn't create temporary working directory: %s", err)
 	}
 	defer os.RemoveAll(workdir)
+
+	stateDir := filepath.Join(workdir, "gdm")
 
 	pwd := filepath.Dir(descPath)
 
@@ -197,12 +199,20 @@ func SomethingSomething(t *testing.T) {
 		t.Fatalf("Teplating configuration files: %s", err)
 	}
 
-	shell := shelltest.New(t, map[string]string{
+	shell := shelltest.New(t, "happypath", map[string]string{
 		"HOME":    filepath.Join(pwd, testHome),
 		"GIT_SSH": "ssh_wrapper",
 		"GOPATH":  filepath.Join(pwd, testHome, "golang"),
 		"PATH":    strings.Join([]string{"~/bin", exePATH, filepath.Join(pwd, testHome, "golang/bin")}, ":"),
 	})
+
+	shell.WriteTo("doc/shellexamples")
+
+	defaultCheck := func(name string, res shelltest.Result, t *testing.T) {
+		if len(res.Errs) > 0 {
+			t.Errorf("Error in %s: \n\t%s", name, res.Errs)
+		}
+	}
 
 	prologue := shell.Block("Test environment setup", `
 	# These steps are required by the Sous integration tests
@@ -216,11 +226,8 @@ func SomethingSomething(t *testing.T) {
 	cd `+workdir+`
 	cp templated-configs/ssh-config ~/dot-ssh/config
 	chmod go-rwx -R ~/dot-ssh
-	`, func(res shelltest.Result, t *testing.T) {
-		if len(res.Errs) > 0 {
-			t.Errorf("Trouble setting up: \n\t%s", res.Errs)
-		}
-	})
+	`,
+		defaultCheck)
 
 	createGDM := prologue.Block("create the GDM", `
 	git clone `+gitRemoteBase+`/gdm
@@ -229,13 +236,8 @@ func SomethingSomething(t *testing.T) {
 	git commit -am "Adding defs.yaml"
 	git push
 	popd
-	` , func(res shelltest.Result, t *testing.T) {
-		if len(res.Errs) > 0 {
-			t.Errorf("Trouble building GDM: \n\t%s", res.Errs)
-		}
-	})
+	`, defaultCheck)
 
-	stateDir := filepath.Join(workdir, "gdm")
 	// XXX There should be a `-cluster left,right` syntax, instead of two deploy commands
 	setup := createGDM.Block("sous setup", `
 	git clone `+gitRemoteBase+`/sous-server
@@ -245,7 +247,7 @@ func SomethingSomething(t *testing.T) {
 	SOUS_SERVER= SOUS_STATE_LOCATION=`+stateDir+` sous deploy -cluster right
 	popd
 	`,
-		func(res shelltest.Result, t *testing.T) {
+		func(name string, res shelltest.Result, t *testing.T) {
 			if len(res.Errs) > 0 {
 				t.Errorf("Trouble building GDM: \n\t%s", res.Errs)
 			}
@@ -263,7 +265,7 @@ func SomethingSomething(t *testing.T) {
 	echo -n "Server URL is: "
 	sous config Server
 	`,
-		func(res shelltest.Result, t *testing.T) {
+		func(name string, res shelltest.Result, t *testing.T) {
 			if len(res.Errs) > 0 {
 				t.Errorf("Trouble building GDM: \n\t%s", res.Errs)
 			}
@@ -273,22 +275,22 @@ func SomethingSomething(t *testing.T) {
 			}
 		})
 
-	// XXX <<< line of vagueness - rough sketches follow >>>
-
 	deploy := config.Block("deploy project", `
-	git clone `+gitRemoteBase+`/test-project
-	cd test-project
+	git clone `+gitRemoteBase+`/sous-demo
+	cd sous-demo
+	git tag -a 0.0.23
+	git push --tags
 	sous init
 	sous build
-	sous deploy
-	`)
+	sous deploy -tag 0.0.23
+	`, defaultCheck)
 
 	//check :=
 	deploy.Block("confirm deployment", `
-	cygnus -x 1 | grep test-project
-	`, func(res shelltest.Result, t *testing.T) {
-		if res.Exit() != 0 {
-			t.Errorf("No match for 'test-project' in names of running requests")
+	cygnus -x 1 | grep sous-demo
+	`, func(name string, res shelltest.Result, t *testing.T) {
+		if res.Exit != 0 {
+			t.Errorf("No match for 'sous-demo' in names of running requests")
 		}
 	})
-'}
+}

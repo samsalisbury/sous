@@ -86,13 +86,13 @@ func NewShell(env map[string]string) (sh *CaptiveShell, err error) {
 	if err != nil {
 		return nil, err
 	}
-	sh.scriptEnv := newLiveStream(envR, sh.events)
+	sh.scriptEnv = newLiveStream(envR, sh.events)
 
 	errR, errW, err := os.Pipe()
 	if err != nil {
 		return nil, err
 	}
-	sh.scriptErr := newLiveStream(errR, sh.events)
+	sh.scriptErrs = newLiveStream(errR, sh.events)
 
 	sh.Cmd.ExtraFiles = []*os.File{doneWrite, envW, errW}
 
@@ -122,8 +122,8 @@ func (sh *CaptiveShell) Run(script string) (Result, error) {
 		Exit:   exit,
 		Stdout: stdout,
 		Stderr: stderr,
-		Errs: errExits,
-		Env: env,
+		Errs:   errExits,
+		Env:    env,
 	}, nil
 }
 
