@@ -30,6 +30,10 @@ CONCAT_XGO_ARGS := -go $(GO_VERSION) -branch master -deps $(SQLITE_URL) --dest $
 clean:
 	rm -f sous
 	rm -rf artifacts
+	rm -rf /tmp/sous-cover
+
+legendary:
+	legendary --hitlist .cadre/coverage.vim /tmp/sous-cover/*_merged.txt
 
 release: artifacts/$(DARWIN_TARBALL) artifacts/$(LINUX_TARBALL)
 
