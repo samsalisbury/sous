@@ -14,14 +14,15 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/opentable/sous/lib"
+	"github.com/samsalisbury/psyringe"
 )
 
 type (
 	// The MetaHandler collects common behavior for route handlers.
 	MetaHandler struct {
-		router        *httprouter.Router
-		graphFac      GraphFactory //XXX This is a workaround for a bug in psyringe.Clone()
-		statusHandler *StatusMiddleware
+		router                     *httprouter.Router
+		processGraph, requestGraph Injector
+		statusHandler              *StatusMiddleware
 	}
 
 	// ResponseWriter wraps the the http.ResponseWriter interface.
@@ -118,27 +119,33 @@ func (mh *MetaHandler) PutHandling(factory ExchangeFactory) httprouter.Handle {
 
 // InstallPanicHandler installs an panic handler into the router.
 func (mh *MetaHandler) InstallPanicHandler() {
-	g := mh.graphFac()
-	g.Inject(mh.statusHandler)
+	mh.processGraph.Inject(mh.statusHandler)
 	mh.router.PanicHandler = func(w http.ResponseWriter, r *http.Request, recovered interface{}) {
 		mh.statusHandler.HandlePanic(w, r, recovered)
 	}
 
 }
 
+// ExchangeGraph returns a per-request Injector.
 func (mh *MetaHandler) ExchangeGraph(w http.ResponseWriter, r *http.Request, p httprouter.Params) Injector {
-	g := mh.graphFac()
-	g.Add(&ResponseWriter{ResponseWriter: w}, r, p)
-	g.Add(parseQueryValues)
-	return g
+	// This Clone is very important so we get a fresh injector for each request.
+	// This type assertion is nasty, going away soon. - Sam
+	requestGraph := mh.requestGraph.(*psyringe.Psyringe).Clone()
+	requestGraph.Add(&ResponseWriter{ResponseWriter: w}, r, p, parseQueryValues)
+	return requestGraph
 }
 
 func (mh *MetaHandler) injectedHandler(factory ExchangeFactory, w http.ResponseWriter, r *http.Request, p httprouter.Params) Exchanger {
 	h := factory()
 
 	exGraph := mh.ExchangeGraph(w, r, p)
+	// Inject process-scoped stuff.
+	mh.processGraph.MustInject(h)
+	// Inject request-scoped stuff.
 	exGraph.MustInject(h)
+
 	logger := &ExchangeLogger{}
+	mh.processGraph.MustInject(logger)
 	exGraph.MustInject(logger)
 	logger.Exchanger = h
 

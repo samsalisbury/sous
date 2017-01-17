@@ -85,13 +85,13 @@ func justBytes(b []byte, e error) io.ReadCloser {
 func TestOverallRouter(t *testing.T) {
 	assert := assert.New(t)
 
-	gf := func() Injector {
-		g := graph.TestGraphWithConfig(&bytes.Buffer{}, os.Stdout, os.Stdout, "StateLocation: '../ext/storage/testdata/in'\n")
-		g.Add(&config.Verbosity{})
-		AddsPerRequest(g)
-		return g
-	}
-	ts := httptest.NewServer(SousRouteMap.BuildRouter(gf))
+	processGraph := graph.TestGraphWithConfig(&bytes.Buffer{}, os.Stdout, os.Stdout, "StateLocation: '../ext/storage/testdata/in'\n")
+	processGraph.Add(&config.Verbosity{})
+
+	requestGraph := BuildRequestGraph(processGraph)
+
+	router := SousRouteMap.BuildRouter(processGraph, requestGraph)
+	ts := httptest.NewServer(router)
 	defer ts.Close()
 
 	res, err := http.Get(ts.URL + "/gdm")
@@ -111,8 +111,10 @@ type PutConditionalsSuite struct {
 }
 
 func (t *PutConditionalsSuite) SetupTest() {
-	dif := func() Injector { return psyringe.New(sous.SilentLogSet) }
-	t.server = httptest.NewServer(testRouteMap().BuildRouter(dif))
+	processGraph := psyringe.New(sous.SilentLogSet)
+	requestGraph := BuildRequestGraph(processGraph)
+	router := testRouteMap().BuildRouter(processGraph, requestGraph)
+	t.server = httptest.NewServer(router)
 
 	t.client = &http.Client{}
 }

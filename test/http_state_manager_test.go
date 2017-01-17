@@ -55,7 +55,7 @@ func TestWriteState(t *testing.T) {
 	state.Manifests.Add(diesManifest)
 	state.Manifests.Add(changesManifest)
 
-	sm := sous.DummyStateManager{State: state}
+	sm := &sous.DummyStateManager{State: state}
 	smm, err := sm.ReadState()
 	if err != nil {
 		t.Fatal("State manager double is broken", err)
@@ -64,23 +64,20 @@ func TestWriteState(t *testing.T) {
 		t.Fatal("State manager double is empty")
 	}
 
-	di := psyringe.New()
-	di.Add(sous.NewLogSet(os.Stderr, os.Stderr, os.Stderr))
-	//di.Add(sous.NewLogSet(os.Stderr, ioutil.Discard, ioutil.Discard))
-	graph.AddInternals(di)
-	di.Add(
-		func() graph.StateReader { return graph.StateReader{StateReader: &sm} },
-		func() graph.StateWriter { return graph.StateWriter{StateWriter: &sm} },
+	processGraph := psyringe.New()
+	processGraph.Add(sous.NewLogSet(os.Stderr, os.Stderr, os.Stderr))
+	//processGraph.Add(sous.NewLogSet(os.Stderr, ioutil.Discard, ioutil.Discard))
+	graph.AddInternals(processGraph)
+	processGraph.Add(
+		func() graph.StateReader { return graph.StateReader{StateReader: sm} },
+		func() graph.StateWriter { return graph.StateWriter{StateWriter: sm} },
 	)
-	di.Add(&config.Verbosity{})
+	processGraph.Add(&config.Verbosity{})
 
-	gf := func() server.Injector {
-		cdi := di.Clone()
-		server.AddsPerRequest(cdi)
-		return cdi
-	}
+	requestGraph := server.BuildRequestGraph(processGraph)
 
-	testServer := httptest.NewServer(server.SousRouteMap.BuildRouter(gf))
+	router := server.SousRouteMap.BuildRouter(processGraph, requestGraph)
+	testServer := httptest.NewServer(router)
 	defer testServer.Close()
 
 	cl, err := sous.NewClient(testServer.URL)

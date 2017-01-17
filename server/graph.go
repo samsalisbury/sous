@@ -13,8 +13,8 @@ type (
 )
 
 // AddsPerRequest registers items into a SousGraph that need to be fresh per request
-func AddsPerRequest(g Injector) {
-	g.Add(liveGDM)
+func AddsPerRequest(g Injector, sr sous.StateReader) {
+	g.Add(liveGDM, sr)
 }
 
 func liveGDM(sr graph.StateReader) (*LiveGDM, error) {

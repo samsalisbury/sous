@@ -12,22 +12,23 @@ import (
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
 	sous "github.com/opentable/sous/lib"
+	"github.com/samsalisbury/psyringe"
 )
 
 func basicInjectedHandler(factory ExchangeFactory, t *testing.T) Exchanger {
 	require := require.New(t)
 
-	g := graph.TestGraphWithConfig(&bytes.Buffer{}, os.Stdout, os.Stdout, "StateLocation: '../ext/storage/testdata/in'\n")
-	g.Add(&config.Verbosity{})
-	g.Add(&config.DeployFilterFlags{Cluster: "test"})
-	g.Add(graph.DryrunBoth)
+	processGraph := graph.TestGraphWithConfig(&bytes.Buffer{}, os.Stdout, os.Stdout, "StateLocation: '../ext/storage/testdata/in'\n")
+	processGraph.Add(&config.Verbosity{})
+	processGraph.Add(&config.DeployFilterFlags{Cluster: "test"})
+	processGraph.Add(graph.DryrunBoth)
 
-	gf := func() Injector {
-		return g.Clone()
-	}
+	requestGraph := psyringe.New(liveGDM, func() sous.StateReader {
+		return &sous.DummyStateManager{}
+	})
 
 	r := httprouter.New()
-	mh := SousRouteMap.buildMetaHandler(r, gf)
+	mh := SousRouteMap.buildMetaHandler(r, processGraph, requestGraph)
 
 	w := httptest.NewRecorder()
 	rq := httptest.NewRequest("GET", "/", nil)

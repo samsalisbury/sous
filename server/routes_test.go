@@ -14,18 +14,20 @@ import (
 )
 
 func testInject(thing interface{}) error {
-	gf := func() Injector {
-		g := graph.BuildTestGraph(&bytes.Buffer{}, os.Stdout, os.Stdout)
-		g.Add(&config.Verbosity{})
-		return g
-	}
-	mh := &MetaHandler{graphFac: gf}
+	processGraph := graph.BuildTestGraph(&bytes.Buffer{}, os.Stdout, os.Stdout)
+	processGraph.Add(&config.Verbosity{})
+
+	requestGraph := BuildRequestGraph(processGraph)
+
+	mh := &MetaHandler{processGraph: processGraph, requestGraph: requestGraph}
 	w := httptest.NewRecorder()
 	r, err := http.NewRequest("GET", "/test", nil)
 	if err != nil {
 		panic(err)
 	}
 	p := httprouter.Params{}
+
+	processGraph.MustInject(thing)
 
 	return mh.ExchangeGraph(w, r, p).Inject(thing)
 }

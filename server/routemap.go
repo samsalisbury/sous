@@ -60,10 +60,11 @@ type (
 	*/
 )
 
-func (rm *RouteMap) buildMetaHandler(r *httprouter.Router, grf func() Injector) *MetaHandler {
+func (rm *RouteMap) buildMetaHandler(r *httprouter.Router, processGraph, requestGraph Injector) *MetaHandler {
 	ph := &StatusMiddleware{}
 	mh := &MetaHandler{
-		graphFac:      grf,
+		processGraph:  processGraph,
+		requestGraph:  requestGraph,
 		router:        r,
 		statusHandler: ph,
 	}
@@ -72,10 +73,11 @@ func (rm *RouteMap) buildMetaHandler(r *httprouter.Router, grf func() Injector) 
 	return mh
 }
 
-// BuildRouter builds a returns an http.Handler based on some constant configuration
-func (rm *RouteMap) BuildRouter(grf func() Injector) http.Handler {
+// BuildRouter builds a returns an http.Handler based on some constant
+// configuration.
+func (rm *RouteMap) BuildRouter(processGraph, requestGraph Injector) http.Handler {
 	r := httprouter.New()
-	mh := rm.buildMetaHandler(r, grf)
+	mh := rm.buildMetaHandler(r, processGraph, requestGraph)
 
 	for _, e := range *rm {
 		get, canGet := e.Resource.(Getable)
