@@ -13,7 +13,7 @@ install:
 - sous_qa_setup --compose-dir ./integration/test-registry/ --out-path=$SOUS_QA_DESC
 script:
 - "./bin/test-until-success 3"
-- "./bin/cover"
+- "make cover"
 after_success:
 - bin/codecov -f /tmp/sous-cover/count_merged.txt
 env:
