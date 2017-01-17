@@ -46,6 +46,9 @@ cover: $(COVER_DIR)
 		--exclude-files='raw_client.go$$, _generated.go$$'\
 		--merge-base=_merged.txt ./...
 
+gitlog:
+	git log `git describe --abbrev=0`..HEAD
+
 install-ggen:
 	cd bin/ggen && go install ./
 
