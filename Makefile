@@ -33,6 +33,9 @@ clean:
 
 release: artifacts/$(DARWIN_TARBALL) artifacts/$(LINUX_TARBALL)
 
+semvertagchk:
+	@echo "$(SOUS_VERSION)" | egrep ^[0-9]+\.[0-9]+\.[0-9]+	
+
 $(BIN_DIR):
 	mkdir -p $(BIN_DIR)
 
