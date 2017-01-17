@@ -60,6 +60,11 @@ release: artifacts/$(DARWIN_TARBALL) artifacts/$(LINUX_TARBALL)
 semvertagchk:
 	@echo "$(SOUS_VERSION)" | egrep ^[0-9]+\.[0-9]+\.[0-9]+	
 
+test-three-tries:
+	./bin/test-until-success 3
+
+travis: cover test-three-tries
+
 $(BIN_DIR):
 	mkdir -p $@
 
@@ -86,4 +91,4 @@ artifacts/$(LINUX_TARBALL): artifacts/$(LINUX_RELEASE_DIR)/sous
 artifacts/$(DARWIN_TARBALL): artifacts/$(DARWIN_RELEASE_DIR)/sous
 	cd artifacts && tar czv $(DARWIN_RELEASE_DIR) > $(DARWIN_TARBALL)
 
-.PHONY: clean install-ggen legendary release semvertagchk
+.PHONY: clean cover install-ggen legendary release semvertagchk test-three-tries travis
