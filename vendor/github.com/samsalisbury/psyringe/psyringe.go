@@ -136,7 +136,15 @@ func (p *Psyringe) Clone() *Psyringe {
 	q.values = map[reflect.Type]reflect.Value{}
 	q.injectionTypes = map[reflect.Type]struct{}{}
 	for t, c := range p.ctors {
-		q.ctors[t] = c
+		if c.value != nil {
+			// This constructor has been called,
+			// so just add its value to the clone.
+			q.values[t] = *c.value
+		} else {
+			// This constructor has not been called,
+			// so clone it.
+			q.ctors[t] = c.clone()
+		}
 	}
 	for t, v := range p.values {
 		q.values[t] = v
@@ -202,6 +210,21 @@ func (p *Psyringe) Test() error {
 		}
 		if err := p.detectCycle(outType, c); err != nil {
 			return errors.Wrapf(err, "dependency cycle: %s depends on", c.outType)
+		}
+	}
+	return nil
+}
+
+// Realise calls all constructors in the psyringe, thus freezing their values.
+// This can be helpful if you want to clone a psyringe at a particular scope,
+// and guarantee none of its constructors are called again.
+//
+// Realise is an experimental method, and may be removed in future versions.
+func (p *Psyringe) Realise() error {
+	var err error
+	for t := range p.injectionTypes {
+		if _, _, err = p.getValueForStructField(t, "<no field>"); err != nil {
+			return err
 		}
 	}
 	return nil
