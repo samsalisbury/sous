@@ -32,6 +32,7 @@ clean:
 	rm -f sous
 	rm -rf artifacts
 	rm -rf $(COVER_DIR)
+	rm -f bin/ggen/ggen
 
 cover: $(COVER_DIR)
 	engulf -s --coverdir=$(COVER_DIR) \
@@ -44,6 +45,9 @@ cover: $(COVER_DIR)
 			/util/cmdr/cmdr-example/?'\
 		--exclude-files='raw_client.go$$, _generated.go$$'\
 		--merge-base=_merged.txt ./...
+
+install-ggen:
+	cd bin/ggen && go install ./
 
 legendary: cover
 	legendary --hitlist .cadre/coverage.vim /tmp/sous-cover/*_merged.txt
