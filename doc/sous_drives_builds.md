@@ -55,7 +55,7 @@ The advantages of these builds
 will be several.
 Teams and projects would
 be able to share whole toolchains very easily.
-Cross-platform builds will be supported as standard,=
+Cross-platform builds will be supported as standard,
 by ensuring a consistent Dockerised build environment.
 Certain paper processes
 surrounding the deploy process
