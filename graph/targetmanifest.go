@@ -34,7 +34,7 @@ func newTargetManifestID(f *sous.ResolveFilter, discovered *SourceContextDiscove
 	}, nil
 }
 
-func newTargetManifest(auto UserSelectedOTPLDeploySpecs, tmid TargetManifestID, s *sous.State) TargetManifest {
+func newTargetManifest(auto userSelectedOTPLDeployManifest, tmid TargetManifestID, s *sous.State) TargetManifest {
 	mid := sous.ManifestID(tmid)
 	m, ok := s.Manifests.Get(mid)
 	if ok {

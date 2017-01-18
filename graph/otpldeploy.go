@@ -7,17 +7,17 @@ import (
 	"github.com/pkg/errors"
 )
 
-func newDetectedOTPLConfig(wd LocalWorkDirShell, otplFlags *config.OTPLFlags) (DetectedOTPLDeploySpecs, error) {
+func newDetectedOTPLConfig(wd LocalWorkDirShell, otplFlags *config.OTPLFlags) (detectedOTPLDeployManifest, error) {
 	if otplFlags.IgnoreOTPLDeploy {
-		return DetectedOTPLDeploySpecs{}, nil
+		return detectedOTPLDeployManifest{}, nil
 	}
 	otplParser := otpl.NewDeploySpecParser()
 	otplDeploySpecs := otplParser.GetDeploySpecs(wd.Sh)
-	return DetectedOTPLDeploySpecs{otplDeploySpecs}, nil
+	return detectedOTPLDeployManifest{otplDeploySpecs}, nil
 }
 
-func newUserSelectedOTPLDeploySpecs(detected DetectedOTPLDeploySpecs, tmid TargetManifestID, flags *config.OTPLFlags, state *sous.State) (UserSelectedOTPLDeploySpecs, error) {
-	var nowt UserSelectedOTPLDeploySpecs
+func newUserSelectedOTPLDeploySpecs(detected detectedOTPLDeployManifest, tmid TargetManifestID, flags *config.OTPLFlags, state *sous.State) (userSelectedOTPLDeployManifest, error) {
+	var nowt userSelectedOTPLDeployManifest
 	mid := sous.ManifestID(tmid)
 	// we don't care about these flags when a manifest already exists
 	if _, ok := state.Manifests.Get(mid); ok {
@@ -40,5 +40,5 @@ func newUserSelectedOTPLDeploySpecs(detected DetectedOTPLDeploySpecs, tmid Targe
 		}
 		deploySpecs[clusterName] = spec
 	}
-	return UserSelectedOTPLDeploySpecs{deploySpecs}, nil
+	return userSelectedOTPLDeployManifest{deploySpecs}, nil
 }

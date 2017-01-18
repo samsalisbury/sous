@@ -80,12 +80,12 @@ type (
 	// TargetManifest is a specific manifest for the current ManifestID.
 	// If the named manifest does not exist, it is created.
 	TargetManifest struct{ *sous.Manifest }
-	// DetectedOTPLDeploySpecs is a set of otpl-deploy configured deployments
+	// detectedOTPLDeployManifest is a set of otpl-deploy configured deployments
 	// that have been detected.
-	DetectedOTPLDeploySpecs struct{ sous.DeploySpecs }
-	// UserSelectedOTPLDeploySpecs is a set of otpl-deploy configured deploy
+	detectedOTPLDeployManifest struct{ sous.DeploySpecs }
+	// userSelectedOTPLDeployManifest is a set of otpl-deploy configured deploy
 	// specs that the user has explicitly selected. (May be empty.)
-	UserSelectedOTPLDeploySpecs struct{ sous.DeploySpecs }
+	userSelectedOTPLDeployManifest struct{ sous.DeploySpecs }
 	// TargetManifestID is the manifest ID being targeted, after resolving all
 	// context and flags.
 	TargetManifestID sous.ManifestID

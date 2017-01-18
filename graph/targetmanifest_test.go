@@ -67,7 +67,7 @@ func TestNewUserSelectedOTPLDeploySpecs(t *testing.T) {
 		}
 		state.Defs.Clusters = test.Clusters
 		ds, err := newUserSelectedOTPLDeploySpecs(
-			DetectedOTPLDeploySpecs{test.Detected},
+			detectedOTPLDeployManifest{test.Detected},
 			test.TSL,
 			&test.Flags,
 			state,
@@ -96,7 +96,7 @@ func TestNewUserSelectedOTPLDeploySpecs(t *testing.T) {
 }
 
 func TestNewTargetManifest_Existing(t *testing.T) {
-	detected := UserSelectedOTPLDeploySpecs{}
+	detected := userSelectedOTPLDeployManifest{}
 	sl := sous.MustParseSourceLocation("github.com/user/project")
 	flavor := "some-flavor"
 	mid := sous.ManifestID{Source: sl, Flavor: flavor}
@@ -115,7 +115,7 @@ func TestNewTargetManifest_Existing(t *testing.T) {
 }
 
 func TestNewTargetManifest(t *testing.T) {
-	detected := UserSelectedOTPLDeploySpecs{}
+	detected := userSelectedOTPLDeployManifest{}
 	sl := sous.MustParseSourceLocation("github.com/user/project")
 	flavor := "some-flavor"
 	mid := sous.ManifestID{Source: sl, Flavor: flavor}
