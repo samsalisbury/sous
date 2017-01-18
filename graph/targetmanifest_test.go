@@ -18,7 +18,12 @@ type newUserSelectedOTPLDeploySpecTest struct {
 }
 
 var nusodsTests = []newUserSelectedOTPLDeploySpecTest{
+	// 0. No flags set and not OTPL config detected, so no errors and no
+	//    manifest expected.
 	{},
+
+	// 1. Manifest detected, but no flags set to either use or ignore them,
+	//    therefore an error and a nil manifest.
 	{
 		DetectedManifest: &sous.Manifest{
 			Deployments: sous.DeploySpecs{
@@ -27,6 +32,9 @@ var nusodsTests = []newUserSelectedOTPLDeploySpecTest{
 		},
 		ExpectedErr: "otpl-deploy detected in config/, please specify either -use-otpl-deploy, or -ignore-otpl-deploy to proceed",
 	},
+
+	// 2. Manifest detected and flags set to ignore it. Therefore no error and
+	//    a nil Manifest.
 	{
 		DetectedManifest: &sous.Manifest{
 			Deployments: sous.DeploySpecs{
@@ -35,6 +43,9 @@ var nusodsTests = []newUserSelectedOTPLDeploySpecTest{
 		},
 		Flags: config.OTPLFlags{IgnoreOTPLDeploy: true},
 	},
+
+	// 3. Manifest detected, and flags set to use it. Therefore no error
+	//    and we expect that manifest to be returned.
 	{
 		Clusters: sous.Clusters{
 			"some-cluster": nil,
@@ -51,6 +62,8 @@ var nusodsTests = []newUserSelectedOTPLDeploySpecTest{
 			},
 		},
 	},
+
+	// 4. Manifest detected, but ignored so no error or manifest.
 	{
 		Clusters: sous.Clusters{
 			"some-cluster": nil,
@@ -62,6 +75,8 @@ var nusodsTests = []newUserSelectedOTPLDeploySpecTest{
 		},
 		Flags: config.OTPLFlags{IgnoreOTPLDeploy: true},
 	},
+
+	// 5. No manifest detected but flags expect one, so an error about that.
 	{
 		Flags:       config.OTPLFlags{UseOTPLDeploy: true},
 		ExpectedErr: "use of otpl configuration was specified, but no valid deployments were found in config/",
