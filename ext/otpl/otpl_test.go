@@ -47,5 +47,4 @@ func TestSingularityResources_SousResources(t *testing.T) {
 				actual, expected, i, input)
 		}
 	}
-
 }

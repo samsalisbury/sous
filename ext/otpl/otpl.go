@@ -12,10 +12,10 @@ import (
 )
 
 type (
-	// DeploySpecParser parses sous.DeploySpecs from otpl-deploy config files.
+	// ManifestParser parses sous.DeploySpecs from otpl-deploy config files.
 	// NOTE: otpl-deploy config is an internal tool at OpenTable, one day this
 	// code will be removed.
-	DeploySpecParser struct {
+	ManifestParser struct {
 		debugf func(string, ...interface{})
 		debug  func(...interface{})
 		WD     shell.Shell
@@ -56,9 +56,9 @@ func (sr SingularityResources) SousResources() sous.Resources {
 	return r
 }
 
-// NewDeploySpecParser generates a new DeploySpecParser with default logging.
-func NewDeploySpecParser() *DeploySpecParser {
-	return &DeploySpecParser{debugf: sous.Log.Debug.Printf, debug: sous.Log.Debug.Println}
+// NewManifestParser generates a new ManifestParser with default logging.
+func NewManifestParser() *ManifestParser {
+	return &ManifestParser{debugf: sous.Log.Debug.Printf, debug: sous.Log.Debug.Println}
 }
 
 type namedDeploySpec struct {
@@ -66,10 +66,10 @@ type namedDeploySpec struct {
 	Spec *sous.DeploySpec
 }
 
-// GetDeploySpecs searches the working directory of wd to find otpl-deploy
+// ParseManifest searches the working directory of wd to find otpl-deploy
 // config files in their standard locations (config/{cluster-name}), and
 // converts them to sous.DeploySpecs.
-func (dsp *DeploySpecParser) GetDeploySpecs(wd shell.Shell) *sous.Manifest {
+func (dsp *ManifestParser) ParseManifest(wd shell.Shell) *sous.Manifest {
 	wd = wd.Clone()
 	if err := wd.CD("config"); err != nil {
 		return nil
@@ -112,7 +112,7 @@ func (dsp *DeploySpecParser) GetDeploySpecs(wd shell.Shell) *sous.Manifest {
 // directory of wd. It assumes that this directory contains at least a file
 // called singularity.json, and optionally an additional file called
 // singularity-requst.json.
-func (dsp *DeploySpecParser) GetSingleDeploySpec(wd shell.Shell) *sous.DeploySpec {
+func (dsp *ManifestParser) GetSingleDeploySpec(wd shell.Shell) *sous.DeploySpec {
 	v := SingularityJSON{}
 	if !wd.Exists("singularity.json") {
 		dsp.debugf("no singularity.json in %s", wd.Dir())
