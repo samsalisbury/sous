@@ -1,6 +1,7 @@
 package shelltest
 
 import (
+	"github.com/opentable/sous/util/whitespace"
 	"os"
 	"testing"
 )
@@ -51,7 +52,7 @@ func (st *ShellTest) Block(name, script string, check ...CheckFn) *ShellTest {
 		return st
 	}
 	ran := st.t.Run(name, func(t *testing.T) {
-		res, err := st.shell.Run(script)
+		res, err := st.shell.Run(whitespace.CleanWS(script))
 		if err != nil {
 			t.Fatal(err)
 		}

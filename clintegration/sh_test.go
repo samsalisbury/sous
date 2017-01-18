@@ -162,7 +162,6 @@ func TestTemplating(t *testing.T) {
 }
 
 func TestShellLevelIntegration(t *testing.T) {
-	t.SkipNow()
 	descPath := os.Getenv("SOUS_QA_DESC")
 	if descPath == "" {
 		t.Fatalf("SOUS_QA_DESC is empty - you need to run sous_qa_setup and set that env var")
@@ -183,7 +182,7 @@ func TestShellLevelIntegration(t *testing.T) {
 
 	pwd := filepath.Dir(descPath)
 
-	exePATH, err := buildPath("go", "git", "ssh")
+	exePATH, err := buildPath("go", "git", "ssh", "cp")
 
 	testHome := filepath.Join(workdir, "home")
 
@@ -199,10 +198,16 @@ func TestShellLevelIntegration(t *testing.T) {
 		t.Fatalf("Teplating configuration files: %s", err)
 	}
 
+	firstGoPath := filepath.Join(pwd, testHome, "go")
+	goPath := firstGoPath
+	if userGopath := os.Getenv("GOPATH"); userGopath != "" {
+		goPath = goPath + ":" + userGopath
+	}
+
 	shell := shelltest.New(t, "happypath", map[string]string{
 		"HOME":    filepath.Join(pwd, testHome),
 		"GIT_SSH": "ssh_wrapper",
-		"GOPATH":  filepath.Join(pwd, testHome, "golang"),
+		"GOPATH":  goPath,
 		"PATH":    strings.Join([]string{"~/bin", exePATH, filepath.Join(pwd, testHome, "golang/bin")}, ":"),
 	})
 
@@ -218,10 +223,11 @@ func TestShellLevelIntegration(t *testing.T) {
 	# These steps are required by the Sous integration tests
 	# They're analogous to run-of-the-mill workstation maintenance.
 
-	go get github.com/nyarly/cygnus # cygnus let's us inspect Singularity for ports
-	go install `+pwd+` #install the current sous project
+	mkdir -p `+firstGoPath+`/{src,bin}
+	go get github.com/nyarly/cygnus # cygnus lets us inspect Singularity for ports
 	cd `+pwd+`
-	cp -a integration/test-homedir "$HOME"
+	go install . #install the current sous project
+	cp -a integration/test-homedir/* "$HOME"
 	cp integration/test-registry/git-server/git_pubkey_rsa* ~/dot-ssh/
 	cd `+workdir+`
 	cp templated-configs/ssh-config ~/dot-ssh/config

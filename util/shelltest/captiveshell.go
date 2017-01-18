@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"os/exec"
 	"strconv"
@@ -52,11 +53,12 @@ func newLiveStream(from io.Reader, events <-chan int) *liveStream {
 // NewShell creates a new CaptiveShell with an environment dictacted by env.
 func NewShell(env map[string]string) (sh *CaptiveShell, err error) {
 	sh = &CaptiveShell{}
-	sh.Cmd = exec.Command("/bin/bash")
+	sh.Cmd = exec.Command("/bin/bash", "--norc", "-i")
 
 	for k, v := range env {
 		sh.Cmd.Env = append(sh.Cmd.Env, k+"="+v)
 	}
+	log.Printf("%v", sh.Cmd.Env)
 
 	sh.events = make(chan int)
 	sh.Stdin, err = sh.Cmd.StdinPipe()
@@ -97,6 +99,7 @@ func NewShell(env map[string]string) (sh *CaptiveShell, err error) {
 	sh.Cmd.ExtraFiles = []*os.File{doneWrite, envW, errW}
 
 	sh.Cmd.Start()
+
 	doneWrite.Close()
 	envW.Close()
 	errW.Close()
@@ -170,7 +173,7 @@ func consumeStream(stream io.Reader) ([]byte, error) {
 
 func (sh *CaptiveShell) readExitStatus() (int, error) {
 	if !sh.doneRead.Scan() {
-		return -1, fmt.Errorf("Exit stream closed prematurely!")
+		return -1, fmt.Errorf("Exit stream closed prematurely!\n%#v\n%s\n****\n%s************", sh, sh.stdout.consume(), sh.stderr.consume())
 	}
 
 	return strconv.Atoi(string(bytes.TrimFunc(sh.doneRead.Bytes(), func(r rune) bool {
