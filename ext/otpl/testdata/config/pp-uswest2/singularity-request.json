@@ -1,0 +1,8 @@
+{
+  "id": "pp-project-api",
+  "owners": ["project-team@example.com"],
+  "daemon": true,
+  "rackSensitive": false,
+  "loadBalanced": false,
+  "instances": 2
+}

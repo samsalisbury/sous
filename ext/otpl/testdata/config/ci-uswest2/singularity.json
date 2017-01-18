@@ -1,0 +1,11 @@
+{
+  "requestId": "ci-project-api",
+  "resources": {
+    "cpus": 0.002,
+    "memoryMb": 96,
+    "numPorts": 1
+  },
+  "env": {
+    "NODE_ENV": "ci-uswest2"
+  }
+}
