@@ -82,10 +82,10 @@ type (
 	TargetManifest struct{ *sous.Manifest }
 	// detectedOTPLDeployManifest is a set of otpl-deploy configured deployments
 	// that have been detected.
-	detectedOTPLDeployManifest struct{ sous.DeploySpecs }
+	detectedOTPLDeployManifest struct{ *sous.Manifest }
 	// userSelectedOTPLDeployManifest is a set of otpl-deploy configured deploy
 	// specs that the user has explicitly selected. (May be empty.)
-	userSelectedOTPLDeployManifest struct{ sous.DeploySpecs }
+	userSelectedOTPLDeployManifest struct{ *sous.Manifest }
 	// TargetManifestID is the manifest ID being targeted, after resolving all
 	// context and flags.
 	TargetManifestID sous.ManifestID

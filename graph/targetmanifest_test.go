@@ -8,27 +8,30 @@ import (
 )
 
 type newUserSelectedOTPLDeploySpecTest struct {
-	Detected sous.DeploySpecs
+	DetectedManifest *sous.Manifest
 	//XXX
-	TSL                 TargetManifestID
-	Flags               config.OTPLFlags
-	Clusters            sous.Clusters
-	Manifest            *sous.Manifest
-	ExpectedDeploySpecs sous.DeploySpecs
-	ExpectedErr         string
+	TSL              TargetManifestID
+	Flags            config.OTPLFlags
+	Clusters         sous.Clusters
+	ExpectedManifest *sous.Manifest
+	ExpectedErr      string
 }
 
 var nusodsTests = []newUserSelectedOTPLDeploySpecTest{
 	{},
 	{
-		Detected: sous.DeploySpecs{
-			"some-cluster": {},
+		DetectedManifest: &sous.Manifest{
+			Deployments: sous.DeploySpecs{
+				"some-cluster": {},
+			},
 		},
 		ExpectedErr: "otpl-deploy detected in config/, please specify either -use-otpl-deploy, or -ignore-otpl-deploy to proceed",
 	},
 	{
-		Detected: sous.DeploySpecs{
-			"some-cluster": {},
+		DetectedManifest: &sous.Manifest{
+			Deployments: sous.DeploySpecs{
+				"some-cluster": {},
+			},
 		},
 		Flags: config.OTPLFlags{IgnoreOTPLDeploy: true},
 	},
@@ -36,20 +39,26 @@ var nusodsTests = []newUserSelectedOTPLDeploySpecTest{
 		Clusters: sous.Clusters{
 			"some-cluster": nil,
 		},
-		Detected: sous.DeploySpecs{
-			"some-cluster": {},
+		DetectedManifest: &sous.Manifest{
+			Deployments: sous.DeploySpecs{
+				"some-cluster": {},
+			},
 		},
 		Flags: config.OTPLFlags{UseOTPLDeploy: true},
-		ExpectedDeploySpecs: sous.DeploySpecs{
-			"some-cluster": {},
+		ExpectedManifest: &sous.Manifest{
+			Deployments: sous.DeploySpecs{
+				"some-cluster": {},
+			},
 		},
 	},
 	{
 		Clusters: sous.Clusters{
 			"some-cluster": nil,
 		},
-		Detected: sous.DeploySpecs{
-			"some-cluster": {},
+		DetectedManifest: &sous.Manifest{
+			Deployments: sous.DeploySpecs{
+				"some-cluster": {},
+			},
 		},
 		Flags: config.OTPLFlags{IgnoreOTPLDeploy: true},
 	},
@@ -60,14 +69,18 @@ var nusodsTests = []newUserSelectedOTPLDeploySpecTest{
 }
 
 func TestNewUserSelectedOTPLDeploySpecs(t *testing.T) {
-	for _, test := range nusodsTests {
-		state := sous.NewState()
-		if test.Manifest != nil {
-			state.Manifests.MustAdd(test.Manifest)
+	for i, test := range nusodsTests {
+
+		//DEBUG
+		if i != 3 {
+			continue
 		}
+
+		state := sous.NewState()
+
 		state.Defs.Clusters = test.Clusters
 		ds, err := newUserSelectedOTPLDeploySpecs(
-			detectedOTPLDeployManifest{test.Detected},
+			detectedOTPLDeployManifest{Manifest: test.DetectedManifest},
 			test.TSL,
 			&test.Flags,
 			state,
@@ -87,8 +100,17 @@ func TestNewUserSelectedOTPLDeploySpecs(t *testing.T) {
 			t.Errorf("got nil; want error %q", test.ExpectedErr)
 			continue
 		}
-		actualLen := len(ds.DeploySpecs)
-		expectedLen := len(test.ExpectedDeploySpecs)
+		if test.ExpectedManifest == nil && ds.Manifest == nil {
+			continue
+		}
+		if test.ExpectedManifest == nil && ds.Manifest != nil {
+			t.Fatalf("%d got a manifest; want nil", i)
+		}
+		if test.ExpectedManifest != nil && ds.Manifest == nil {
+			t.Fatalf("%d got nil; want a manifest", i)
+		}
+		actualLen := len(ds.Manifest.Deployments)
+		expectedLen := len(test.ExpectedManifest.Deployments)
 		if actualLen != expectedLen {
 			t.Errorf("got %d deploy specs; want %d", actualLen, expectedLen)
 		}
@@ -129,6 +151,9 @@ func TestNewTargetManifest(t *testing.T) {
 	}
 	s.Defs.Clusters = cls
 	tm := newTargetManifest(detected, tmid, s)
+	if tm.Manifest == nil {
+		return
+	}
 	flaws := tm.Manifest.Validate()
 	if len(flaws) > 0 {
 		t.Errorf("Invalid new manifest: %#v, flaws were %v", tm.Manifest, flaws)

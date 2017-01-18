@@ -69,7 +69,7 @@ type namedDeploySpec struct {
 // GetDeploySpecs searches the working directory of wd to find otpl-deploy
 // config files in their standard locations (config/{cluster-name}), and
 // converts them to sous.DeploySpecs.
-func (dsp *DeploySpecParser) GetDeploySpecs(wd shell.Shell) sous.DeploySpecs {
+func (dsp *DeploySpecParser) GetDeploySpecs(wd shell.Shell) *sous.Manifest {
 	wd = wd.Clone()
 	if err := wd.CD("config"); err != nil {
 		return nil
@@ -105,7 +105,7 @@ func (dsp *DeploySpecParser) GetDeploySpecs(wd shell.Shell) sous.DeploySpecs {
 	for s := range c {
 		deployConfigs[s.Name] = *s.Spec
 	}
-	return deployConfigs
+	return &sous.Manifest{Deployments: deployConfigs}
 }
 
 // GetSingleDeploySpec returns a single sous.DeploySpec from the working
