@@ -492,6 +492,7 @@ func newLocalStateWriter(sm *StateManager) StateWriter {
 	return StateWriter{sm}
 }
 
+// NewCurrentState returns the current *sous.State.
 func NewCurrentState(sr StateReader) (*sous.State, error) {
 	state, err := sr.ReadState()
 	if os.IsNotExist(errors.Cause(err)) {
@@ -502,6 +503,7 @@ func NewCurrentState(sr StateReader) (*sous.State, error) {
 	return state, initErr(err, "reading sous state")
 }
 
+// NewCurrentGDM returns the current GDM.
 func NewCurrentGDM(state *sous.State) (CurrentGDM, error) {
 	deployments, err := state.Deployments()
 	if err != nil {
