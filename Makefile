@@ -46,6 +46,9 @@ cover: $(COVER_DIR)
 		--exclude-files='raw_client.go$$, _generated.go$$'\
 		--merge-base=_merged.txt ./...
 
+fail:
+	/bin/false
+
 gitlog:
 	git log `git describe --abbrev=0`..HEAD
 
@@ -63,7 +66,7 @@ semvertagchk:
 test-three-tries:
 	./bin/test-until-success 3
 
-travis: cover test-three-tries
+travis: fail cover # test-three-tries
 
 $(BIN_DIR):
 	mkdir -p $@
