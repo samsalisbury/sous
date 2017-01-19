@@ -57,7 +57,7 @@ const (
 	// has succeeded, expect that once the current auto-resolve cycle concludes,
 	// the resolve-subject GDM will be updated, and we'll move past this state.
 	ResolveNotStarted
-	// ResolvedNotVersion conveys that the server knows the SourceLocation
+	// ResolveNotVersion conveys that the server knows the SourceLocation
 	// already, but is resolving a different version. Again, expect that on the
 	// next auto-resolve cycle we'll move past this state.
 	ResolveNotVersion
@@ -118,7 +118,7 @@ func (rs ResolveState) String() string {
 	}
 }
 
-// NewStatusPoller constructs a StatusPoller
+// NewStatusPoller returns a new *StatusPoller.
 func NewStatusPoller(cl *HTTPClient, rf *ResolveFilter) *StatusPoller {
 	return &StatusPoller{
 		HTTPClient:    cl,
