@@ -38,17 +38,18 @@ func NewDeployableChans(size ...int) *DeployableChans {
 	}
 }
 
-// GuardImage checks that a deployment is valid before deploying it
-func GuardImage(r Registry, d *Deployment) (art *BuildArtifact, err error) {
-	if d.NumInstances == 0 { // we're not deploying any of these, so it can be wrong for the moment
-		return
+// GuardImage checks that a deployment is valid before deploying it.
+func GuardImage(r Registry, d *Deployment) (*BuildArtifact, error) {
+	if d.NumInstances == 0 {
+		// We're not deploying any of these, so skip checks.
+		return nil, nil
 	}
-	art, err = r.GetArtifact(d.SourceID)
+	art, err := r.GetArtifact(d.SourceID)
 	if err != nil {
 		return nil, &MissingImageNameError{err}
 	}
 	for _, q := range art.Qualities {
-		if q.Kind == `advisory` {
+		if q.Kind == "advisory" {
 			if q.Name == "" {
 				continue
 			}
@@ -69,7 +70,7 @@ func GuardImage(r Registry, d *Deployment) (art *BuildArtifact, err error) {
 			}
 		}
 	}
-	return
+	return art, err
 }
 
 // ID returns the ID of this DeployablePair.
@@ -112,7 +113,7 @@ func resolveSingles(r Registry, from chan *Deployment, to chan *Deployable, errs
 			continue
 		}
 		if da.BuildArtifact == nil {
-			Log.Info.Printf("Unable to create new deployment %q: no artifact", dep.ID())
+			Log.Info.Printf("Unable to create new deployment %q: no artifact for SourceID %q", dep.ID(), dep.SourceID)
 			Log.Debug.Printf("Failed create deployment %q: % #v", dep.ID(), dep)
 			continue
 		}
@@ -132,7 +133,7 @@ func resolvePairs(r Registry, from chan *DeploymentPair, to chan *DeployablePair
 			continue
 		}
 		if d.Post.BuildArtifact == nil {
-			Log.Info.Printf("Unable to modify deployment %q: no artifact", depPair.ID())
+			Log.Info.Printf("Unable to modify deployment %q: no artifact for SourceID %q", depPair.ID(), depPair.Post.SourceID)
 			Log.Debug.Printf("Failed modify deployment %q: % #v", depPair.ID(), depPair.Post)
 			continue
 		}
