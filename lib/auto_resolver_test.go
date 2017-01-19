@@ -76,7 +76,6 @@ func TestAfterDone(t *testing.T) {
 
 func TestResolveLoop(t *testing.T) {
 	ar := setupAR()
-	//ar.LogSet.Debug.SetOutput(os.Stderr)
 
 	tc := make(TriggerChannel, 10)
 	ac := make(announceChannel, 1)

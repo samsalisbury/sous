@@ -22,6 +22,11 @@ type (
 		URL         string
 	}
 
+	// copied from server
+	gdmData struct {
+		Deployments []*Deployment
+	}
+
 	// copied from server - avoiding coupling to server implemention
 	serverListData struct {
 		Servers []server
@@ -67,9 +72,21 @@ const (
 	ResolveInProgress
 	// ResolveErred conveys that the resolution returned an error. This might be transient.
 	ResolveErred
+	// ResolveTERMINALS is not a state itself: it demarks resolution states that
+	// might proceed from states that are complete
+	ResolveTERMINALS
+	// ResolveNotIntended indicates that a particular cluster does not intend to
+	// deploy the given deployment(s)
+	ResolveNotIntended
+	// ResolveFailed indicates that a particular cluster is in a failed state
+	// regarding resolving the deployments, and that resolution cannot proceed.
+	ResolveFailed
 	// ResolveComplete is the success state: the server knows about our intended
 	// deployment, and that deployment has returned as having been stable.
 	ResolveComplete
+	// ResolveMAX is not a state itself: it marks the top end of resolutions. All
+	// other states belong before it.
+	ResolveMAX
 )
 
 func (rs ResolveState) String() string {
@@ -88,11 +105,20 @@ func (rs ResolveState) String() string {
 		return "ResolveInProgress"
 	case ResolveErred:
 		return "ResolveErred"
+	case ResolveTERMINALS:
+		return "resolve terminal marker - not a real state, received in error?"
+	case ResolveNotIntended:
+		return "ResolveNotIntended"
+	case ResolveFailed:
+		return "ResolveFailed"
 	case ResolveComplete:
 		return "ResolveComplete"
+	case ResolveMAX:
+		return "resolve maximum marker - not a real state, received in error?"
 	}
 }
 
+// NewStatusPoller constructs a StatusPoller
 func NewStatusPoller(cl *HTTPClient, rf *ResolveFilter) *StatusPoller {
 	return &StatusPoller{
 		HTTPClient:    cl,
@@ -126,13 +152,29 @@ func newSubPoller(serverURL string, baseFilter *ResolveFilter) (*subPoller, erro
 func (sp *StatusPoller) Start() (ResolveState, error) {
 	clusters := &serverListData{}
 	if err := sp.Retrieve("./servers", nil, clusters); err != nil {
-		return ResolveNotPolled, err
+		return ResolveFailed, err
+	}
+	gdm := &gdmData{}
+	if err := sp.Retrieve("./gdm", nil, gdm); err != nil {
+		return ResolveFailed, err
+	}
+	deps := NewDeployments(gdm.Deployments...)
+	deps = deps.Filter(sp.ResolveFilter.FilterDeployment)
+	if deps.Len() == 0 {
+		return ResolveNotIntended, nil
 	}
 
 	subs := []*subPoller{}
 
 	for _, s := range clusters.Servers {
 		if !sp.ResolveFilter.FilterClusterName(s.ClusterName) {
+			Log.Vomit.Printf("%s not requested for polling", s.ClusterName)
+			continue
+		}
+		if _, intended := deps.Single(func(d *Deployment) bool {
+			return d.ClusterName == s.ClusterName
+		}); !intended {
+			Log.Debug.Printf("No intention in GDM for %s to deploy %s", s.ClusterName, sp.ResolveFilter)
 			continue
 		}
 		Log.Debug.Printf("Starting poller against %v", s)
@@ -155,6 +197,7 @@ func (sp *StatusPoller) poll(subs []*subPoller) ResolveState {
 		for {
 			update := <-collect
 			pollChans[update.url] = update.stat
+			Log.Debug.Printf("%s reports state: %s", update.url, update.stat)
 			max := ResolveComplete
 			for u, s := range pollChans {
 				Log.Vomit.Printf("Current state from %s: %s", u, s)
@@ -182,19 +225,16 @@ func (sub *subPoller) start(rs chan statPair, done chan struct{}) {
 	rs <- statPair{url: sub.URL, stat: ResolveNotPolled}
 	stat := sub.pollOnce()
 	rs <- statPair{url: sub.URL, stat: stat}
-	if stat >= ResolveComplete {
-		return
-	}
 	ticker := time.NewTicker(time.Second / 2)
 	defer ticker.Stop()
 	for {
+		if stat > ResolveTERMINALS {
+			return
+		}
 		select {
 		case <-ticker.C:
-			stat := sub.pollOnce()
+			stat = sub.pollOnce()
 			rs <- statPair{url: sub.URL, stat: stat}
-			if stat >= ResolveComplete {
-				return
-			}
 		case <-done:
 			return
 		}
@@ -203,10 +243,9 @@ func (sub *subPoller) start(rs chan statPair, done chan struct{}) {
 
 func (sub *subPoller) serverIntent() *Deployment {
 	Log.Vomit.Printf("Filtering %#v with %s", sub.Deployments, sub.locationFilter)
-	oneDep := sub.Deployments.Filter(sub.locationFilter.FilterDeployment)
-	dep, err := (&oneDep).Only()
-	if err != nil { // XXX error means more than one matched...
-		Log.Debug.Printf("With %s we matched too many deployments! %#v", sub.locationFilter, oneDep)
+	dep, exactlyOne := sub.Deployments.Single(sub.locationFilter.FilterDeployment)
+	if !exactlyOne {
+		Log.Debug.Printf("With %s we didn't match exactly one deployment! %#v", sub.locationFilter)
 		return nil
 	}
 	Log.Vomit.Printf("Matching deployment: %#v", dep)
@@ -237,7 +276,9 @@ func (data *statusData) currentFor(rf *ResolveFilter) *DiffResolution {
 
 func (sub *subPoller) pollOnce() ResolveState {
 	data := &statusData{}
-	sub.Retrieve("./status", nil, data)
+	if err := sub.Retrieve("./status", nil, data); err != nil {
+		return ResolveErred
+	}
 	deps := NewDeployments(data.Deployments...)
 	sub.Deployments = &deps
 
@@ -270,7 +311,10 @@ func (sub *subPoller) computeState(srvIntent *Deployment, stable, current *DiffR
 	}
 
 	if current.Error != nil {
-		return ResolveErred
+		if IsTransientResolveError(current.Error) {
+			return ResolveErred
+		}
+		return ResolveFailed
 	}
 
 	if current.Desc == "unchanged" {

@@ -2,7 +2,6 @@ package sous
 
 import (
 	"fmt"
-	"io/ioutil"
 	"testing"
 	"time"
 
@@ -47,10 +46,6 @@ func TestNameResolveSuite(t *testing.T) {
 }
 
 func (nrs *NameResolveTestSuite) SetupTest() {
-	//Log.Debug.SetOutput(os.Stderr)
-	////Log.Vomit.SetOutput(os.Stderr)
-	//Log.Warn.SetOutput(os.Stderr)
-
 	nrs.testCluster = &Cluster{Name: "test"}
 
 	nrs.reg = NewDummyRegistry()
@@ -62,10 +57,7 @@ func (nrs *NameResolveTestSuite) SetupTest() {
 }
 
 func (nrs *NameResolveTestSuite) TearDownTest() {
-	Log.Debug.SetOutput(ioutil.Discard)
-	Log.Vomit.SetOutput(ioutil.Discard)
-	Log.Warn.SetOutput(ioutil.Discard)
-
+	Log.BeQuiet()
 }
 
 func (nrs *NameResolveTestSuite) TestResolveNameGood() {
