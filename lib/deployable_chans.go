@@ -41,7 +41,7 @@ func NewDeployableChans(size ...int) *DeployableChans {
 // GuardImage checks that a deployment is valid before deploying it.
 func GuardImage(r Registry, d *Deployment) (*BuildArtifact, error) {
 	if d.NumInstances == 0 {
-		// We're not deploying any of these, so skip checks.
+		Log.Info.Printf("Deployment %q has 0 instances, skipping artifact check.", d.ID())
 		return nil, nil
 	}
 	art, err := r.GetArtifact(d.SourceID)
