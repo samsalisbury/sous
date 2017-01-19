@@ -2,7 +2,6 @@ package sous
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
@@ -29,7 +28,7 @@ func TestResolveState_String(t *testing.T) {
 	checkString(ResolveComplete, "ResolveComplete")
 	checkString(ResolveState(1e6), "unknown (oops)")
 
-	for rs := ResolveNotStarted; rs <= ResolveComplete; rs++ {
+	for rs := ResolveNotStarted; rs <= ResolveMAX; rs++ {
 		if rs.String() == "unknown (oops)" {
 			t.Errorf("ResolveState %d doesn't have a string", rs)
 		}
@@ -39,7 +38,9 @@ func TestResolveState_String(t *testing.T) {
 func TestSubPoller_ComputeState(t *testing.T) {
 	testRepo := "github.com/opentable/example"
 	testDir := "test"
-	rezErr := fmt.Errorf("something bad")
+
+	rezErr := &ChangeError{}
+	permErr := fmt.Errorf("something bad")
 
 	versionDep := func(version string) *Deployment {
 		return &Deployment{
@@ -80,28 +81,26 @@ func TestSubPoller_ComputeState(t *testing.T) {
 	testCompute("1.0", versionDep("1.0"), nil, diffRez("update", nil), ResolveInProgress) //new update   , now in progress
 	testCompute("1.0", versionDep("1.0"), diffRez("unchanged", nil), diffRez("update", nil), ResolveInProgress)
 	testCompute("1.0", versionDep("1.0"), diffRez("create", rezErr), diffRez("update", nil), ResolveInProgress)
+	testCompute("1.0", versionDep("1.0"), diffRez("create", permErr), diffRez("update", nil), ResolveInProgress)
 
 	testCompute("1.0", versionDep("1.0"), diffRez("unchanged", rezErr), nil, ResolveErred)
 	testCompute("1.0", versionDep("1.0"), nil, diffRez("unchanged", rezErr), ResolveErred)
 	testCompute("1.0", versionDep("1.0"), diffRez("unchanged", nil), diffRez("unchanged", rezErr), ResolveErred)
 	testCompute("1.0", versionDep("1.0"), diffRez("create", rezErr), diffRez("unchanged", rezErr), ResolveErred)
+	testCompute("1.0", versionDep("1.0"), diffRez("unchanged", nil), diffRez("unchanged", permErr), ResolveFailed)
+	testCompute("1.0", versionDep("1.0"), diffRez("create", rezErr), diffRez("unchanged", permErr), ResolveFailed)
 
 	testCompute("1.0", versionDep("1.0"), diffRez("unchanged", nil), nil, ResolveComplete)
 	testCompute("1.0", versionDep("1.0"), nil, diffRez("unchanged", nil), ResolveComplete)
 	testCompute("1.0", versionDep("1.0"), diffRez("create", rezErr), diffRez("unchanged", nil), ResolveComplete)
+	testCompute("1.0", versionDep("1.0"), diffRez("create", permErr), diffRez("unchanged", nil), ResolveComplete)
 }
 
 func TestStatusPoller(t *testing.T) {
-	/*
-		Log.Vomit.SetOutput(os.Stderr)
-		Log.Vomit.SetFlags(log.Llongfile)
-		Log.Debug.SetOutput(os.Stderr)
-		Log.Debug.SetFlags(log.Llongfile)
-	*/
-
 	serversRE := regexp.MustCompile(`/servers$`)
 	statusRE := regexp.MustCompile(`/status$`)
-	var serversJSON, statusJSON []byte
+	gdmRE := regexp.MustCompile(`/gdm$`)
+	var gdmJSON, serversJSON, statusJSON []byte
 
 	h := func(rw http.ResponseWriter, r *http.Request) {
 		url := r.URL.String()
@@ -109,6 +108,8 @@ func TestStatusPoller(t *testing.T) {
 			rw.Write(serversJSON)
 		} else if statusRE.MatchString(url) {
 			rw.Write(statusJSON)
+		} else if gdmRE.MatchString(url) {
+			rw.Write(gdmJSON)
 		} else {
 			t.Errorf("Bad request: %#v", r)
 			rw.WriteHeader(500)
@@ -125,6 +126,24 @@ func TestStatusPoller(t *testing.T) {
 		"servers": [
 			{"clustername": "main", "url":"` + mainSrv.URL + `"},
 			{"clustername": "other", "url":"` + otherSrv.URL + `"}
+		]
+	}`)
+	gdmJSON = []byte(`{
+		"deployments": [
+			{
+				"clustername": "other",
+				"sourceid": {
+					"location": "` + repoName + `",
+					"version": "1.0.1+1234"
+				}
+			},
+			{
+				"clustername": "main",
+				"sourceid": {
+					"location": "` + repoName + `",
+					"version": "1.0.1+1234"
+				}
+			}
 		]
 	}`)
 	statusJSON = []byte(`{
@@ -173,19 +192,92 @@ func TestStatusPoller(t *testing.T) {
 			t.Errorf("Resolve state was %s not %s", rState, ResolveComplete)
 		}
 	}
+}
 
-	Log.Vomit.SetOutput(ioutil.Discard)
-	Log.Debug.SetOutput(ioutil.Discard)
+func TestStatusPoller_NotIntended(t *testing.T) {
+	serversRE := regexp.MustCompile(`/servers$`)
+	statusRE := regexp.MustCompile(`/status$`)
+	gdmRE := regexp.MustCompile(`/gdm$`)
+	var gdmJSON, serversJSON, statusJSON []byte
+
+	h := func(rw http.ResponseWriter, r *http.Request) {
+		url := r.URL.String()
+		if serversRE.MatchString(url) {
+			rw.Write(serversJSON)
+		} else if statusRE.MatchString(url) {
+			rw.Write(statusJSON)
+		} else if gdmRE.MatchString(url) {
+			rw.Write(gdmJSON)
+		} else {
+			t.Errorf("Bad request: %#v", r)
+			rw.WriteHeader(500)
+			rw.Write([]byte{})
+		}
+	}
+
+	mainSrv := httptest.NewServer(http.HandlerFunc(h))
+	otherSrv := httptest.NewServer(http.HandlerFunc(h))
+
+	repoName := "github.com/opentable/example"
+
+	serversJSON = []byte(`{
+		"servers": [
+			{"clustername": "main", "url":"` + mainSrv.URL + `"},
+			{"clustername": "other", "url":"` + otherSrv.URL + `"}
+		]
+	}`)
+	gdmJSON = []byte(`{
+		"deployments": [ ]
+	}`)
+	statusJSON = []byte(`{
+		"deployments": [
+			{
+				"sourceid": {
+					"location": "` + repoName + `",
+					"version": "1.0.1+1234"
+				}
+			}
+		],
+		"completed": {
+			"log":[ {
+					"manifestid": "` + repoName + `",
+					"desc": "unchanged"
+				} ]
+		},
+		"inprogress": {"log":[]}
+	}`)
+
+	rf := &ResolveFilter{
+		Repo: repoName,
+	}
+
+	cl, err := NewClient(mainSrv.URL)
+	if err != nil {
+		t.Fatalf("Error building HTTP client: %#v", err)
+	}
+	poller := NewStatusPoller(cl, rf)
+
+	testCh := make(chan ResolveState)
+	go func() {
+		rState, err := poller.Start()
+		if err != nil {
+			t.Fatalf("Error starting poller: %#v", err)
+		}
+		testCh <- rState
+	}()
+
+	timeout := 100 * time.Millisecond
+	select {
+	case <-time.After(timeout):
+		t.Errorf("Empty subpoller polling took more than %s", timeout)
+	case rState := <-testCh:
+		if rState != ResolveNotIntended {
+			t.Errorf("Resolve state was %s not %s", rState, ResolveNotIntended)
+		}
+	}
 }
 
 func TestStatusPoller_OldServer(t *testing.T) {
-	/*
-		Log.Vomit.SetOutput(os.Stderr)
-		Log.Vomit.SetFlags(log.Llongfile)
-		Log.Debug.SetOutput(os.Stderr)
-		Log.Debug.SetFlags(log.Llongfile)
-	*/
-
 	serversRE := regexp.MustCompile(`/servers$`)
 	statusRE := regexp.MustCompile(`/status$`)
 
@@ -230,11 +322,8 @@ func TestStatusPoller_OldServer(t *testing.T) {
 	case <-time.After(timeout):
 		t.Errorf("Sad path polling took more than %s", timeout)
 	case rState := <-testCh:
-		if rState != ResolveNotPolled {
-			t.Errorf("Resolve state was %s not %s", rState, ResolveNotPolled)
+		if rState != ResolveFailed {
+			t.Errorf("Resolve state was %s not %s", rState, ResolveFailed)
 		}
 	}
-
-	Log.Vomit.SetOutput(ioutil.Discard)
-	Log.Debug.SetOutput(ioutil.Discard)
 }

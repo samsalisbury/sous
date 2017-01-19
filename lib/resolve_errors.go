@@ -3,6 +3,8 @@ package sous
 import (
 	"fmt"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 type (
@@ -58,6 +60,41 @@ func (re *ResolveErrors) Error() string {
 		s = append(s, e.Error())
 	}
 	return strings.Join(s, "\n  ")
+}
+
+// IsTransientResolveError returns true for resolve errors which might resolve on
+// their own. All other errors, it returns false
+func IsTransientResolveError(err error) bool {
+	switch errors.Cause(err).(type) {
+	default:
+		// unnamed errors are by definition not resolve errors
+		return false
+	case *UnacceptableAdvisory:
+		// UnacceptableAdvisory is excluded, since this requires operator
+		// intervention: either the image needs to be rebuilt clean, or the cluster
+		// reconfigured to accept the advisory.
+		return false
+	case *MissingImageNameError:
+		// MissingImageNameError isn't transient: it requires that an appropriate
+		// image be built with the desired name and the server needs to be able to
+		// at least guess the image's name.
+		return false
+	case *ChangeError:
+		// ChangeError is typically returned when Singularity returns an error (which we don't yet
+		// distinguish - empirically, this most often means that a particular Request
+		// is in the midst of deploying and not accepting new Deploys yet.)
+		return true
+	case *CreateError:
+		// CreateErrors are returned when Singularity returns errors when we try to
+		// create a request or deploy. This might be the result of a conflicting
+		// Request name, in which case it's likely that the next attempt to resolve
+		// will be a Modify instead.
+		return true
+	case *DeleteError:
+		// XXX While "deletes" are no-ops, there's no chance that a DeleteError is going to "self correct"
+		//		return true
+		return false // XXX
+	}
 }
 
 func (e *MissingImageNameError) Error() string {

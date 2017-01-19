@@ -35,8 +35,8 @@ func buildManifest(cluster, repo, version string) *sous.Manifest {
 }
 
 func TestWriteState(t *testing.T) {
-	sous.Log.Debug.SetOutput(os.Stderr)
-	sous.Log.Vomit.SetOutput(os.Stderr)
+	sous.Log.BeChatty()
+	defer sous.Log.BeQuiet()
 	steadyManifest := buildManifest("test-cluster", "github.com/opentable/steady", "1.2.3")
 	diesManifest := buildManifest("test-cluster", "github.com/opentable/dies", "133.56.987431")
 	changesManifest := buildManifest("test-cluster", "github.com/opentable/changes", "0.17.19")
