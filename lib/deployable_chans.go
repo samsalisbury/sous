@@ -106,12 +106,14 @@ func resolveSingles(r Registry, from chan *Deployment, to chan *Deployable, errs
 
 		da, err := resolveName(r, dep)
 		if err != nil {
-			Log.Debug.Printf("Error resolving deployment (won't deploy): %#v: %#v", dep, err)
+			Log.Info.Printf("Unable to create new deployment %q: %s", dep.ID(), err)
+			Log.Debug.Printf("Failed create deployment %q: % #v", dep.ID(), dep)
 			errs <- err
 			continue
 		}
 		if da.BuildArtifact == nil {
-			Log.Debug.Printf("No artifact known for created deployment (won't deploy): %#v", dep)
+			Log.Info.Printf("Unable to create new deployment %q: no artifact", dep.ID())
+			Log.Debug.Printf("Failed create deployment %q: % #v", dep.ID(), dep)
 			continue
 		}
 		to <- da
@@ -124,12 +126,14 @@ func resolvePairs(r Registry, from chan *DeploymentPair, to chan *DeployablePair
 		Log.Vomit.Printf("Pair of deployments processed, needs artifact: %#v", depPair)
 		d, err := resolvePair(r, depPair)
 		if err != nil {
-			Log.Debug.Printf("Error resolving post deployment of change pair (won't deploy): %#v: %#v", depPair.Post, err)
+			Log.Info.Printf("Unable to modify deployment %q: %s", depPair.Post, err)
+			Log.Debug.Printf("Failed modify deployment %q: % #v", depPair.ID(), depPair.Post)
 			errs <- err
 			continue
 		}
 		if d.Post.BuildArtifact == nil {
-			Log.Debug.Printf("No artifact known for post deployment in change pair (won't deploy): %#v", depPair.Post)
+			Log.Info.Printf("Unable to modify deployment %q: no artifact", depPair.ID())
+			Log.Debug.Printf("Failed modify deployment %q: % #v", depPair.ID(), depPair.Post)
 			continue
 		}
 		to <- d
