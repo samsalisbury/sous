@@ -1,6 +1,10 @@
 package sous
 
-import "time"
+import (
+	"time"
+
+	"github.com/pkg/errors"
+)
 
 type (
 	// StatusPoller polls servers for status.
@@ -70,8 +74,10 @@ const (
 	// the same as our intended version) is different from the
 	// Mesos/Singularity's version.
 	ResolveInProgress
-	// ResolveErred conveys that the resolution returned an error. This might be transient.
-	ResolveErred
+	// ResolveErredHTTP  conveys that the HTTP request to the server returned an error
+	ResolveErredHTTP
+	// ResolveErredRez conveys that the resolving server reported a transient error
+	ResolveErredRez
 	// ResolveTERMINALS is not a state itself: it demarks resolution states that
 	// might proceed from states that are complete
 	ResolveTERMINALS
@@ -103,8 +109,10 @@ func (rs ResolveState) String() string {
 		return "ResolveNotVersion"
 	case ResolveInProgress:
 		return "ResolveInProgress"
-	case ResolveErred:
-		return "ResolveErred"
+	case ResolveErredHTTP:
+		return "ResolveErredHTTP"
+	case ResolveErredRez:
+		return "ResolveErredRez"
 	case ResolveTERMINALS:
 		return "resolve terminal marker - not a real state, received in error?"
 	case ResolveNotIntended:
@@ -259,7 +267,9 @@ func (sub *subPoller) start(rs chan statPair, done chan struct{}) {
 func (sub *subPoller) pollOnce() ResolveState {
 	data := &statusData{}
 	if err := sub.Retrieve("./status", nil, data); err != nil {
-		return ResolveErred
+		Log.Debug.Printf("%s: error on GET /status: %s", sub.ClusterName, errors.Cause(err))
+		Log.Vomit.Printf("%s: %T %+v", sub.ClusterName, errors.Cause(err), err)
+		return ResolveErredHTTP
 	}
 	deps := NewDeployments(data.Deployments...)
 	sub.Deployments = &deps
@@ -327,7 +337,8 @@ func (sub *subPoller) computeState(srvIntent *Deployment, stable, current *DiffR
 		// resolution cycle, Singularity will e.g. have finished a pending->running
 		// transition and be ready to receive a new Deploy)
 		if IsTransientResolveError(current.Error) {
-			return ResolveErred
+			Log.Debug.Printf("%s: received resolver error %s, retrying", sub.ClusterName, current.Error)
+			return ResolveErredRez
 		}
 		// Other errors are unlikely to clear by themselves. In this case, log the
 		// error for operator action, and consider this subpoller done as failed.
@@ -360,15 +371,17 @@ func (sub *subPoller) serverIntent() *Deployment {
 
 func diffRezFor(rstat *ResolveStatus, rf *ResolveFilter) *DiffResolution {
 	if rstat == nil {
+		Log.Vomit.Printf("Status was nil - no match for %s", rf)
 		return nil
 	}
 	rezs := rstat.Log
 	for _, rez := range rezs {
 		if rf.FilterManifestID(rez.ManifestID) {
-			Log.Vomit.Printf("Matching intent: %#v", rez)
+			Log.Vomit.Printf("Matching intent for %s: %#v", rf, rez)
 			return &rez
 		}
 	}
+	Log.Vomit.Printf("No match for %s in %d entries", rf, len(rezs))
 	return nil
 }
 

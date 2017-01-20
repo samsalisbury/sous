@@ -1,6 +1,7 @@
 package sous
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -11,9 +12,21 @@ type (
 	// ResolveErrors collect all the errors for a resolve action into a single
 	// error to be handled elsewhere
 	ResolveErrors struct {
-		Causes []error
+		Causes []ErrorWrapper
 	}
 
+	// ErrorWrapper wraps an error so that it can be marshalled and unmarshalled
+	// to JSON
+	ErrorWrapper struct {
+		MarshallableError
+		error
+	}
+
+	// MarshallableError captures parts of an error that can be serialized
+	// successfully
+	MarshallableError struct {
+		Type, String string
+	}
 	// MissingImageNameError reports that we couldn't get names for one or
 	// more source IDs.
 	MissingImageNameError struct {
@@ -54,6 +67,23 @@ type (
 	}
 )
 
+func WrapResolveError(err error) *ErrorWrapper {
+	return &ErrorWrapper{error: err}
+}
+
+// MarshallJSON implements json.Marshaller on ErrorWrapper. It makes sure that the embedded MarshallableError is populated and then marshals that. The upshot is that errors can be successfully marshalled into JSON for review by the client.
+func (ew ErrorWrapper) MarshalJSON() ([]byte, error) {
+	ew.MarshallableError = buildMarshableError(ew.error)
+	return json.Marshal(ew.MarshallableError)
+}
+
+func buildMarshableError(err error) MarshallableError {
+	ew := MarshallableError{}
+	ew.Type = fmt.Sprintf("%T", err)
+	ew.String = fmt.Sprintf("%s", err)
+	return ew
+}
+
 func (re *ResolveErrors) Error() string {
 	s := []string{"Errors during resolve:"}
 	for _, e := range re.Causes {
@@ -65,10 +95,23 @@ func (re *ResolveErrors) Error() string {
 // IsTransientResolveError returns true for resolve errors which might resolve on
 // their own. All other errors, it returns false
 func IsTransientResolveError(err error) bool {
-	switch errors.Cause(err).(type) {
+	switch terr := errors.Cause(err).(type) {
 	default:
 		// unnamed errors are by definition not resolve errors
 		return false
+	case *ErrorWrapper:
+		// ErrorWrappers carry string data about an error across an HTTP
+		// transaction.  We basically need to check it's Type field.
+		Log.Vomit.Printf("Checking err string type: %s", terr.Type)
+		switch terr.Type {
+		default:
+			return false
+		case "*sous.ChangeError":
+			return true
+		case "*sous.CreateError":
+			return true
+		}
+
 	case *UnacceptableAdvisory:
 		// UnacceptableAdvisory is excluded, since this requires operator
 		// intervention: either the image needs to be rebuilt clean, or the cluster

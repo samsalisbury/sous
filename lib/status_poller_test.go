@@ -24,7 +24,8 @@ func TestResolveState_String(t *testing.T) {
 	checkString(ResolveNotVersion, "ResolveNotVersion")
 	checkString(ResolvePendingRequest, "ResolvePendingRequest")
 	checkString(ResolveInProgress, "ResolveInProgress")
-	checkString(ResolveErred, "ResolveErred")
+	checkString(ResolveErredHTTP, "ResolveErredHTTP")
+	checkString(ResolveErredRez, "ResolveErredRez")
 	checkString(ResolveComplete, "ResolveComplete")
 	checkString(ResolveState(1e6), "unknown (oops)")
 
@@ -36,6 +37,8 @@ func TestResolveState_String(t *testing.T) {
 }
 
 func TestSubPoller_ComputeState(t *testing.T) {
+	Log.BeChatty()
+	defer Log.BeQuiet()
 	testRepo := "github.com/opentable/example"
 	testDir := "test"
 
@@ -56,9 +59,14 @@ func TestSubPoller_ComputeState(t *testing.T) {
 	}
 
 	diffRez := func(desc string, err error) *DiffResolution {
+		if err == nil {
+			return &DiffResolution{
+				Desc: desc,
+			}
+		}
 		return &DiffResolution{
 			Desc:  desc,
-			Error: err,
+			Error: &ErrorWrapper{MarshallableError: buildMarshableError(err)},
 		}
 	}
 
@@ -83,10 +91,10 @@ func TestSubPoller_ComputeState(t *testing.T) {
 	testCompute("1.0", versionDep("1.0"), diffRez("create", rezErr), diffRez("update", nil), ResolveInProgress)
 	testCompute("1.0", versionDep("1.0"), diffRez("create", permErr), diffRez("update", nil), ResolveInProgress)
 
-	testCompute("1.0", versionDep("1.0"), diffRez("unchanged", rezErr), nil, ResolveErred)
-	testCompute("1.0", versionDep("1.0"), nil, diffRez("unchanged", rezErr), ResolveErred)
-	testCompute("1.0", versionDep("1.0"), diffRez("unchanged", nil), diffRez("unchanged", rezErr), ResolveErred)
-	testCompute("1.0", versionDep("1.0"), diffRez("create", rezErr), diffRez("unchanged", rezErr), ResolveErred)
+	testCompute("1.0", versionDep("1.0"), diffRez("unchanged", rezErr), nil, ResolveErredRez)
+	testCompute("1.0", versionDep("1.0"), nil, diffRez("unchanged", rezErr), ResolveErredRez)
+	testCompute("1.0", versionDep("1.0"), diffRez("unchanged", nil), diffRez("unchanged", rezErr), ResolveErredRez)
+	testCompute("1.0", versionDep("1.0"), diffRez("create", rezErr), diffRez("unchanged", rezErr), ResolveErredRez)
 	testCompute("1.0", versionDep("1.0"), diffRez("unchanged", nil), diffRez("unchanged", permErr), ResolveFailed)
 	testCompute("1.0", versionDep("1.0"), diffRez("create", rezErr), diffRez("unchanged", permErr), ResolveFailed)
 
