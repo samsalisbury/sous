@@ -13,6 +13,8 @@
 package storage
 
 import (
+	"fmt"
+
 	"github.com/opentable/hy"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/yaml"
@@ -74,6 +76,9 @@ func (dsm *DiskStateManager) ReadState() (*sous.State, error) {
 	// XXX Move to validation
 	for _, k := range s.Manifests.Keys() {
 		m, _ := s.Manifests.Get(k)
+		if m == nil {
+			return nil, fmt.Errorf("manifest %q is nil", k)
+		}
 		for clusterName := range m.Deployments {
 			if _, ok := s.Defs.Clusters[clusterName]; !ok {
 				return s, errors.Errorf("cluster %q not defined (from manifest %q)",
