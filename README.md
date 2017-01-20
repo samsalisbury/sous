@@ -22,6 +22,10 @@ and copy the `sous` executable into your `$PATH`
 You'll also find a copy of the complete
 Sous documentation in that archive.
 
+For convenience, we provide an install script, you can run it with:
+
+    sudo ./install-latest.sh
+
 ### Bleeding edge development
 
 Sous is written in Go.
