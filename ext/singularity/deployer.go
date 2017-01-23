@@ -108,7 +108,7 @@ func (r *deployer) RectifyDeletes(dc <-chan *sous.Deployable, errs chan<- sous.D
 	for d := range dc {
 		result := sous.DiffResolution{DeployID: d.ID()}
 		if err := r.RectifySingleDelete(d); err != nil {
-			result.Error = sous.WrapResolveErroErrorWrapper(&sous.DeleteError{Deployment: d.Deployment, Err: err})
+			result.Error = sous.WrapResolveError(&sous.DeleteError{Deployment: d.Deployment, Err: err})
 			result.Desc = "not deleted"
 		} else {
 			result.Desc = "deleted"
