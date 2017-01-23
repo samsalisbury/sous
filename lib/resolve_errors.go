@@ -67,11 +67,15 @@ type (
 	}
 )
 
+// WrapResolveError wraps an error inside an *ErrorWrapper for marshaling.
 func WrapResolveError(err error) *ErrorWrapper {
 	return &ErrorWrapper{error: err}
 }
 
-// MarshallJSON implements json.Marshaller on ErrorWrapper. It makes sure that the embedded MarshallableError is populated and then marshals that. The upshot is that errors can be successfully marshalled into JSON for review by the client.
+// MarshalJSON implements json.Marshaller on ErrorWrapper.
+// It makes sure that the embedded MarshallableError is populated and then
+// marshals that. The upshot is that errors can be successfully marshalled into
+// JSON for review by the client.
 func (ew ErrorWrapper) MarshalJSON() ([]byte, error) {
 	ew.MarshallableError = buildMarshableError(ew.error)
 	return json.Marshal(ew.MarshallableError)
