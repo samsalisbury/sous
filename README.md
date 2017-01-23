@@ -2,6 +2,8 @@
 Sous is a tool for building, testing, and deploying applications, using
 Docker, Mesos, and Singularity.
 
+If you just want to use Sous to build and deploy your code, follow the [installation instructions](./doc/install.md).
+
 For contribution guidelines, see [here](./doc/contributions.md).
 
 [View documentation in the doc/ directory.](https://github.com/opentable/sous/tree/master/doc)
@@ -10,17 +12,6 @@ For contribution guidelines, see [here](./doc/contributions.md).
 
 If you're looking to get started using Sous
 to manage your service within a larger organization, read on.
-
-## Installation
-
-The primary way to install Go is from
-[our releases list.](https://github.com/opentable/sous/releases/latest)
-Download the appropriate tarball,
-unpack it,
-and copy the `sous` executable into your `$PATH`
-(e.g. `cp sous /usr/local/bin`).
-You'll also find a copy of the complete
-Sous documentation in that archive.
 
 ### Bleeding edge development
 
