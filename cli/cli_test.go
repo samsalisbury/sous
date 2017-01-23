@@ -85,6 +85,28 @@ func TestInvokeDeploy(t *testing.T) {
 	assert.Equal(deploy.DeployFilterFlags.Tag, `1.2.3`)
 }
 
+func TestInvokeDeploy_RepoFlag(t *testing.T) {
+	assert := assert.New(t)
+	require := require.New(t)
+
+	exe := justCommand(t, []string{`sous`, `deploy`, `-cluster`, `ci-sf`, `-tag`, `1.2.3`})
+	sd, ok := exe.Cmd.(*SousDeploy)
+	require.True(ok)
+	su := &SousUpdate{}
+	sd.CLI.Plumb(su)
+	assert.Equal(su.ResolveFilter.Repo, "")
+	assert.NotEqual(su.Manifest.ID().Source.Repo, "")
+	assert.NotEqual(su.Manifest.ID().Source.Repo, "github.com/example/project")
+
+	exe = justCommand(t, []string{`sous`, `deploy`, `-cluster`, `ci-sf`, `-repo`, `github.com/example/project`, `-tag`, `1.2.3`})
+	sd, ok = exe.Cmd.(*SousDeploy)
+	require.True(ok)
+	su = &SousUpdate{}
+	sd.CLI.Plumb(su)
+	assert.Equal(su.ResolveFilter.Repo, "github.com/example/project")
+	assert.Equal(su.Manifest.ID().Source.Repo, "github.com/example/project")
+}
+
 /*
 usage: sous context
 
