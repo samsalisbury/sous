@@ -59,12 +59,12 @@ func TestManifestParser_ParseManifest(t *testing.T) {
 
 	// Setup: write some files to disk.
 	files := fileMap{
-		"config/cluster1/singularity.json": `{
+		"config/cluster1/singularity-request.json": `{
 	        "owners": ["owner1@example.com"],
 	        "instances": 2,
 	        "other fields": "are ignored"
 	    }`,
-		"config/cluster1/singularity-request.json": `{
+		"config/cluster1/singularity.json": `{
 	      "resources": {
 	          "cpus": 0.002,
 	          "memoryMb": 96,
@@ -90,10 +90,33 @@ func TestManifestParser_ParseManifest(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	parser := NewManifestParser()
+	actual := NewManifestParser().ParseManifest(wd)
 
-	expected := expectedManifest()
-	actual := parser.ParseManifest(wd)
+	expected := &sous.Manifest{
+		//Source: sous.MustParseSourceLocation("github.com/test/project"),
+		Flavor: "",
+		Owners: nil,
+		Kind:   "",
+		Deployments: sous.DeploySpecs{
+			"cluster1": sous.DeploySpec{
+				DeployConfig: sous.DeployConfig{
+					Resources: sous.Resources{
+						"cpus":   "0.002",
+						"memory": "96",
+						"ports":  "1",
+					},
+					Metadata: sous.Metadata(nil),
+					Args:     []string(nil),
+					Env: sous.Env{
+						"SOME_VAR": "22",
+					},
+					NumInstances: 2,
+					Volumes:      sous.Volumes(nil),
+				},
+				Version: semv.MustParse("0.0.0"),
+			},
+		},
+	}
 
 	if different, diffs := actual.Diff(expected); different {
 		t.Errorf("parsed manifest not as expected")
@@ -123,86 +146,4 @@ func (f fileMap) Write(dir string) error {
 		}
 	}
 	return nil
-}
-
-func expectedManifest() *sous.Manifest {
-	return &sous.Manifest{
-		Source: sous.SourceLocation{
-			Repo: "",
-			Dir:  "",
-		},
-		Flavor: "",
-		Owners: nil,
-		Kind:   "",
-		Deployments: sous.DeploySpecs{
-			"pp-uswest2": sous.DeploySpec{
-				DeployConfig: sous.DeployConfig{
-					Resources: sous.Resources{
-						"cpus":   "0.002",
-						"memory": "96",
-						"ports":  "1",
-					},
-					Metadata: sous.Metadata(nil),
-					Args:     []string(nil),
-					Env: sous.Env{
-						"NODE_ENV": "pp-uswest2",
-					},
-					NumInstances: 2,
-					Volumes:      sous.Volumes(nil),
-				},
-				Version: semv.MustParse("0.0.0"),
-			},
-			"ci-sf": sous.DeploySpec{
-				DeployConfig: sous.DeployConfig{
-					Resources: sous.Resources{
-						"cpus":   "0.002",
-						"memory": "96",
-						"ports":  "1",
-					},
-					Metadata: sous.Metadata(nil),
-					Args:     []string(nil),
-					Env: sous.Env{
-						"NODE_ENV": "ci-sf",
-					},
-					NumInstances: 2,
-					Volumes:      sous.Volumes(nil),
-				},
-				Version: semv.MustParse("0.0.0"),
-			},
-			"pp-sf": sous.DeploySpec{
-				DeployConfig: sous.DeployConfig{
-					Resources: sous.Resources{
-						"cpus":   "0.002",
-						"memory": "96",
-						"ports":  "1",
-					},
-					Metadata: sous.Metadata(nil),
-					Args:     []string(nil),
-					Env: sous.Env{
-						"NODE_ENV": "pp-sf",
-					},
-					NumInstances: 2,
-					Volumes:      sous.Volumes(nil),
-				},
-				Version: semv.MustParse("0.0.0"),
-			},
-			"ci-uswest2": sous.DeploySpec{
-				DeployConfig: sous.DeployConfig{
-					Resources: sous.Resources{
-						"cpus":   "0.002",
-						"memory": "96",
-						"ports":  "1",
-					},
-					Metadata: sous.Metadata(nil),
-					Args:     []string(nil),
-					Env: sous.Env{
-						"NODE_ENV": "ci-uswest2",
-					},
-					NumInstances: 2,
-					Volumes:      sous.Volumes(nil),
-				},
-				Version: semv.MustParse("0.0.0"),
-			},
-		},
-	}
 }
