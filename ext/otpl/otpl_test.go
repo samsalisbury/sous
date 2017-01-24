@@ -95,7 +95,7 @@ func TestManifestParser_ParseManifest(t *testing.T) {
 	expected := &sous.Manifest{
 		//Source: sous.MustParseSourceLocation("github.com/test/project"),
 		Flavor: "",
-		Owners: nil,
+		Owners: []string{"owner1@example.com"},
 		Kind:   "",
 		Deployments: sous.DeploySpecs{
 			"cluster1": sous.DeploySpec{
