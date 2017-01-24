@@ -100,7 +100,7 @@ func (r *deployer) RectifySingleCreate(d *sous.Deployable) (err error) {
 		return err
 	}
 	return r.Client.Deploy(
-		d.Cluster.BaseURL, newDepID(), reqID, name, d.Resources,
+		d.Cluster.BaseURL, computeDeployID(d), reqID, name, d.Resources,
 		d.Env, d.DeployConfig.Volumes)
 }
 
@@ -172,7 +172,7 @@ func (r *deployer) RectifySingleModification(pair *sous.DeployablePair) (err err
 
 		if err := r.Client.Deploy(
 			pair.Post.Cluster.BaseURL,
-			newDepID(),
+			computeDeployID(pair.Post),
 			computeRequestID(pair.Prior),
 			name,
 			pair.Post.Resources,
@@ -250,8 +250,4 @@ func ParseRequestID(id string) (sous.DeployID, error) {
 		},
 		Cluster: parts[2],
 	}, nil
-}
-
-func newDepID() string {
-	return MakeDeployID(uuid.NewV4().String())
 }
