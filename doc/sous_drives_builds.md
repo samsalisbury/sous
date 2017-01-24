@@ -33,11 +33,11 @@ the present implementation of Sous takes
 the resulting Docker container
 and deploys that.
 One consequence is that
-the deployment toolchain for each service
+the build toolchain for each service
 is deployed with the executable.
 This is undesirable for a number of reasons:
 the resulting container is larger than necessary,
-and there's a larger attack surface for the service.
+and provides a larger attack surface for the container.
 
 A significant planned feature of Sous
 (currently called "buildpacks,"
@@ -55,6 +55,8 @@ The advantages of these builds
 will be several.
 Teams and projects would
 be able to share whole toolchains very easily.
+Cross-platform builds will be supported as standard,
+by ensuring a consistent Dockerised build environment.
 Certain paper processes
 surrounding the deploy process
 could be replaced outright

@@ -100,7 +100,7 @@ func newDiffer(intended Deployments) *differ {
 	for _, e := range i {
 		ds = append(ds, e.String())
 	}
-	Log.Debug.Print(strings.Join(ds, "\n    "))
+	Log.Vomit.Print(strings.Join(ds, "\n    "))
 
 	startMap := make(map[DeployID]*Deployment)
 	for _, dep := range i {
@@ -119,7 +119,7 @@ func (d *differ) diff(existing Deployments) {
 	for _, e := range e {
 		ds = append(ds, e.String())
 	}
-	Log.Debug.Print(strings.Join(ds, "\n    "))
+	Log.Vomit.Print(strings.Join(ds, "\n    "))
 
 	for id, existingDeployment := range e {
 		intendedDeployment, exists := d.from[id]

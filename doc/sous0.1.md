@@ -1,5 +1,20 @@
 # Sous 0.1 release notes
 
+## Patches
+
+### 0.1.7
+
+- Tweaks to Makefile and build process in general.
+- We are now able to easily release pre-built Mac binaries.
+- Documentation about Sous' intended use for driving builds.
+- Change in 'sous plumbing status' to support manifests that deploy to a subset of clusters.
+- 'sous deploy' now waits by default until a deploy is complete.
+  This makes it much more useful in unattended CI contexts.
+
+### 0.1.1-0.1.6
+
+Not documented.
+
 ## Sous 0.1
 
 Sous 0.1 adds:

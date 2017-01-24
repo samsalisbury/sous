@@ -94,7 +94,7 @@ func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveRecord
 			wg.Add(1)
 			go func() {
 				for err := range errs {
-					recorder.Log <- DiffResolution{Error: err}
+					recorder.Log <- DiffResolution{Error: &ErrorWrapper{error: err}}
 				}
 				wg.Done()
 			}()

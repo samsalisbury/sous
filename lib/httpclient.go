@@ -200,7 +200,9 @@ func (client *HTTPClient) sendRequest(rq *http.Request, ierr error) (*http.Respo
 		Log.Debug.Printf("Received %v", err)
 		return rz, err
 	}
-	Log.Debug.Printf("Received \"%s %s\" -> %d", rq.Method, rq.URL, rz.StatusCode)
+	if rz != nil {
+		Log.Debug.Printf("Received \"%s %s\" -> %d", rq.Method, rq.URL, rz.StatusCode)
+	}
 	return rz, err
 }
 

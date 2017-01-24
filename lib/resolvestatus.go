@@ -35,7 +35,7 @@ type (
 		// Desc describes the difference and its resolution
 		Desc string
 		// Error captures the error (if any) encountered during diff resolution
-		Error error
+		Error *ErrorWrapper
 	}
 )
 
@@ -45,7 +45,7 @@ func NewResolveRecorder(f func(*ResolveRecorder)) *ResolveRecorder {
 	rr := &ResolveRecorder{
 		status: &ResolveStatus{
 			Log:  []DiffResolution{},
-			Errs: ResolveErrors{Causes: []error{}},
+			Errs: ResolveErrors{Causes: []ErrorWrapper{}},
 		},
 		Log:      make(chan DiffResolution, 1e6),
 		finished: make(chan struct{}),
@@ -56,7 +56,7 @@ func NewResolveRecorder(f func(*ResolveRecorder)) *ResolveRecorder {
 			rr.write(func() {
 				rr.status.Log = append(rr.status.Log, rez)
 				if rez.Error != nil {
-					rr.status.Errs.Causes = append(rr.status.Errs.Causes, rez.Error)
+					rr.status.Errs.Causes = append(rr.status.Errs.Causes, ErrorWrapper{error: rez.Error})
 					Log.Debug.Printf("resolve error = %+v\n", rez.Error)
 				}
 			})
@@ -90,7 +90,7 @@ func (rr *ResolveRecorder) CurrentStatus() (rs ResolveStatus) {
 		rs = *rr.status
 		rs.Log = make([]DiffResolution, len(rr.status.Log))
 		copy(rs.Log, rr.status.Log)
-		rs.Errs.Causes = make([]error, len(rr.status.Errs.Causes))
+		rs.Errs.Causes = make([]ErrorWrapper, len(rr.status.Errs.Causes))
 		copy(rs.Errs.Causes, rr.status.Errs.Causes)
 	})
 	return

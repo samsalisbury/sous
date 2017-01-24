@@ -28,12 +28,12 @@ func (sv *SousVersion) Execute(args []string) cmdr.Result {
 	s := sv.Sous
 	minVer := semv.Version{
 		Major: 0,
-		Minor: 0,
-		Patch: 1,
+		Minor: 1,
+		Patch: 7,
 	}
 	var warning string
 	if s.Version.Less(minVer) || s.Version.Meta == "DIRTY" {
-		warning = "\n\nDevelopment version. Download supported releases from https://github.com/opentable/sous\n"
+		warning = "\nThis is an unsupported development build.\nGet supported releases from https://github.com/opentable/sous/releases"
 	}
 	return cmdr.Successf(out, s.Version, s.GoVersion, s.OS, s.Arch, warning)
 }

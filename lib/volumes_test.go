@@ -1,7 +1,6 @@
 package sous
 
 import (
-	"io/ioutil"
 	"testing"
 
 	"github.com/nyarly/testify/assert"
@@ -13,8 +12,6 @@ type vpair struct {
 }
 
 func TestVolumesEqual(t *testing.T) {
-	//Log.Vomit.SetOutput(os.Stderr)
-	//Log.Debug.SetOutput(os.Stderr)
 	assert := assert.New(t)
 	vs := []vpair{
 		vpair{Volumes{&Volume{"a", "a", "RO"}, &Volume{"a", "a", "RO"}}, 1},
@@ -33,6 +30,4 @@ func TestVolumesEqual(t *testing.T) {
 			}
 		}
 	}
-	Log.Vomit.SetOutput(ioutil.Discard)
-	Log.Debug.SetOutput(ioutil.Discard)
 }
