@@ -203,6 +203,18 @@ func computeRequestID(d *sous.Deployable) string {
 	return MakeRequestID(d.ID())
 }
 
+func computeDeployID(d *sous.Deployable) string {
+	flavor := illegalDeployIDChars.ReplaceAllString(d.Deployment.Flavor, "")
+	if len(flavor) == 0 {
+		flavor = "SINSABOR"
+	}
+	return strings.Join([]string{
+		illegalDeployIDChars.ReplaceAllString(d.Deployment.SourceID.Version.String(), ""),
+		flavor,
+		illegalDeployIDChars.ReplaceAllString(uuid.NewV4().String(), ""),
+	}, "-")
+}
+
 // MakeRequestID creats a Singularity request ID from a sous.DeployID.
 func MakeRequestID(mid sous.DeployID) string {
 	sl := strings.Replace(mid.ManifestID.Source.String(), "/", ">", -1)
