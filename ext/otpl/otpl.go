@@ -33,9 +33,8 @@ type (
 	SingularityRequestJSON struct {
 		// Instances is the number of instances in this deployment.
 		Instances int
-		// NOTE: Owners are not supported at DeploySpec level, only at Manifest
-		// level... Maybe that needs to change.
-		//Owners                              []string
+		// Owners is a comma-separated list of email addresses.
+		Owners []string
 		// NOTE: We do not currently support Daemon, RackSensitive or LoadBalanced
 		//Daemon, RackSensitive, LoadBalanced bool
 	}
@@ -80,6 +79,7 @@ func (dsp *ManifestParser) ParseManifest(wd shell.Shell) *sous.Manifest {
 		return nil
 	}
 	c := make(chan namedDeploySpec)
+	manifestOwners := sous.NewOwnerSet()
 	wg := sync.WaitGroup{}
 	wg.Add(len(l))
 	go func() { wg.Wait(); close(c) }()
@@ -95,9 +95,12 @@ func (dsp *ManifestParser) ParseManifest(wd shell.Shell) *sous.Manifest {
 				dsp.debug(err)
 				return
 			}
-			if otplConfig := dsp.GetSingleDeploySpec(wd); otplConfig != nil {
+			if otplConfig, owners := dsp.GetSingleDeploySpec(wd); otplConfig != nil {
 				name := path.Base(wd.Dir())
 				c <- namedDeploySpec{name, otplConfig}
+				for o := range owners {
+					manifestOwners.Add(o)
+				}
 			}
 		}()
 	}
@@ -105,23 +108,26 @@ func (dsp *ManifestParser) ParseManifest(wd shell.Shell) *sous.Manifest {
 	for s := range c {
 		deployConfigs[s.Name] = *s.Spec
 	}
-	return &sous.Manifest{Deployments: deployConfigs}
+	return &sous.Manifest{
+		Deployments: deployConfigs,
+		Owners:      manifestOwners.Slice(),
+	}
 }
 
 // GetSingleDeploySpec returns a single sous.DeploySpec from the working
 // directory of wd. It assumes that this directory contains at least a file
 // called singularity.json, and optionally an additional file called
 // singularity-requst.json.
-func (dsp *ManifestParser) GetSingleDeploySpec(wd shell.Shell) *sous.DeploySpec {
+func (dsp *ManifestParser) GetSingleDeploySpec(wd shell.Shell) (*sous.DeploySpec, sous.OwnerSet) {
 	v := SingularityJSON{}
 	if !wd.Exists("singularity.json") {
 		dsp.debugf("no singularity.json in %s", wd.Dir())
-		return nil
+		return nil, nil
 	}
 	if err := wd.JSON(&v, "cat", "singularity.json"); err != nil {
 		dsp.debugf("error reading %s: %s", path.Join(wd.Dir(),
 			"singularity.json"), err)
-		return nil
+		return nil, nil
 	}
 	deploySpec := sous.DeploySpec{
 		DeployConfig: sous.DeployConfig{
@@ -132,13 +138,13 @@ func (dsp *ManifestParser) GetSingleDeploySpec(wd shell.Shell) *sous.DeploySpec 
 	request := SingularityRequestJSON{}
 	if !wd.Exists("singularity-request.json") {
 		dsp.debugf("no singularity-request.json in %s", wd.Dir())
-		return &deploySpec
+		return &deploySpec, nil
 	}
 	dsp.debugf("%s/singularity-request.json exists, parsing it", wd.Dir())
 	if err := wd.JSON(&request, "cat", "singularity-request.json"); err != nil {
 		dsp.debugf("error reading singularity-request.json: %s", err)
-		return &deploySpec
+		return &deploySpec, nil
 	}
 	deploySpec.NumInstances = request.Instances
-	return &deploySpec
+	return &deploySpec, sous.NewOwnerSet(request.Owners...)
 }
