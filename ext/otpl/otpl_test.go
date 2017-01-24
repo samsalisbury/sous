@@ -1,9 +1,15 @@
 package otpl
 
 import (
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"testing"
 
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/shell"
+	"github.com/pkg/errors"
+	"github.com/samsalisbury/semv"
 )
 
 func TestSingularityResources_SousResources(t *testing.T) {
@@ -46,5 +52,157 @@ func TestSingularityResources_SousResources(t *testing.T) {
 			t.Errorf("got resources %# v; want %# v; for input %d %# v",
 				actual, expected, i, input)
 		}
+	}
+}
+
+func TestManifestParser_ParseManifest(t *testing.T) {
+
+	// Setup: write some files to disk.
+	files := fileMap{
+		"config/cluster1/singularity.json": `{
+	        "owners": ["owner1@example.com"],
+	        "instances": 2,
+	        "other fields": "are ignored"
+	    }`,
+		"config/cluster1/singularity-request.json": `{
+	      "resources": {
+	          "cpus": 0.002,
+	          "memoryMb": 96,
+	          "numPorts": 1
+	      },
+	      "env": {
+	          "SOME_VAR": "22"
+	      },
+	      "other fields": "are ignored"
+	    }`,
+	}
+	if err := files.Write("testdata/gen"); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := files.Delete("testdata/gen"); err != nil {
+			t.Fatalf("cleanup failed: %s", err)
+		}
+	}()
+
+	wd, err := shell.DefaultInDir("testdata/gen")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	parser := NewManifestParser()
+
+	expected := expectedManifest()
+	actual := parser.ParseManifest(wd)
+
+	if different, diffs := actual.Diff(expected); different {
+		t.Errorf("parsed manifest not as expected")
+		for _, diff := range diffs {
+			t.Error(diff)
+		}
+	}
+}
+
+type fileMap map[string]string
+
+func (f fileMap) Delete(dir string) error {
+	return os.RemoveAll(dir)
+}
+
+func (f fileMap) Write(dir string) error {
+	for name, contents := range f {
+		name := filepath.Join(dir, name)
+		if err := os.MkdirAll(filepath.Dir(name), 0777); err != nil {
+			return err
+		}
+		if err := ioutil.WriteFile(name, []byte(contents), 0777); err != nil {
+			if deleteErr := f.Delete(dir); err != nil {
+				return errors.Wrapf(err, "error cleaning up: %s", deleteErr)
+			}
+			return errors.Wrapf(err, "error writing files, cleanup successful")
+		}
+	}
+	return nil
+}
+
+func expectedManifest() *sous.Manifest {
+	return &sous.Manifest{
+		Source: sous.SourceLocation{
+			Repo: "",
+			Dir:  "",
+		},
+		Flavor: "",
+		Owners: nil,
+		Kind:   "",
+		Deployments: sous.DeploySpecs{
+			"pp-uswest2": sous.DeploySpec{
+				DeployConfig: sous.DeployConfig{
+					Resources: sous.Resources{
+						"cpus":   "0.002",
+						"memory": "96",
+						"ports":  "1",
+					},
+					Metadata: sous.Metadata(nil),
+					Args:     []string(nil),
+					Env: sous.Env{
+						"NODE_ENV": "pp-uswest2",
+					},
+					NumInstances: 2,
+					Volumes:      sous.Volumes(nil),
+				},
+				Version: semv.MustParse("0.0.0"),
+			},
+			"ci-sf": sous.DeploySpec{
+				DeployConfig: sous.DeployConfig{
+					Resources: sous.Resources{
+						"cpus":   "0.002",
+						"memory": "96",
+						"ports":  "1",
+					},
+					Metadata: sous.Metadata(nil),
+					Args:     []string(nil),
+					Env: sous.Env{
+						"NODE_ENV": "ci-sf",
+					},
+					NumInstances: 2,
+					Volumes:      sous.Volumes(nil),
+				},
+				Version: semv.MustParse("0.0.0"),
+			},
+			"pp-sf": sous.DeploySpec{
+				DeployConfig: sous.DeployConfig{
+					Resources: sous.Resources{
+						"cpus":   "0.002",
+						"memory": "96",
+						"ports":  "1",
+					},
+					Metadata: sous.Metadata(nil),
+					Args:     []string(nil),
+					Env: sous.Env{
+						"NODE_ENV": "pp-sf",
+					},
+					NumInstances: 2,
+					Volumes:      sous.Volumes(nil),
+				},
+				Version: semv.MustParse("0.0.0"),
+			},
+			"ci-uswest2": sous.DeploySpec{
+				DeployConfig: sous.DeployConfig{
+					Resources: sous.Resources{
+						"cpus":   "0.002",
+						"memory": "96",
+						"ports":  "1",
+					},
+					Metadata: sous.Metadata(nil),
+					Args:     []string(nil),
+					Env: sous.Env{
+						"NODE_ENV": "ci-uswest2",
+					},
+					NumInstances: 2,
+					Volumes:      sous.Volumes(nil),
+				},
+				Version: semv.MustParse("0.0.0"),
+			},
+		},
 	}
 }
