@@ -86,6 +86,9 @@ func TestInvokeDeploy(t *testing.T) {
 }
 
 func TestInvokeDeploy_RepoFlag(t *testing.T) {
+	sous.Log.BeChatty()
+	defer sous.Log.BeQuiet()
+
 	assert := assert.New(t)
 	require := require.New(t)
 
@@ -93,18 +96,27 @@ func TestInvokeDeploy_RepoFlag(t *testing.T) {
 	sd, ok := exe.Cmd.(*SousDeploy)
 	require.True(ok)
 	su := &SousUpdate{}
-	sd.CLI.Plumb(su)
+	sps := &SousPlumbingStatus{}
+	sd.CLI.Plumb(su, sps)
+
 	assert.Equal(su.ResolveFilter.Repo, "")
 	assert.NotEqual(su.Manifest.ID().Source.Repo, "")
 	assert.NotEqual(su.Manifest.ID().Source.Repo, "github.com/example/project")
+
+	//	if assert.NotNil(sps.StatusPoller) {
+	//		assert.NotEqual(sps.StatusPoller.Repo, "")
+	//	}
 
 	exe = justCommand(t, []string{`sous`, `deploy`, `-cluster`, `ci-sf`, `-repo`, `github.com/example/project`, `-tag`, `1.2.3`})
 	sd, ok = exe.Cmd.(*SousDeploy)
 	require.True(ok)
 	su = &SousUpdate{}
-	sd.CLI.Plumb(su)
+	sd.CLI.Plumb(su, sps)
 	assert.Equal(su.ResolveFilter.Repo, "github.com/example/project")
 	assert.Equal(su.Manifest.ID().Source.Repo, "github.com/example/project")
+
+	//	assert.Equal(sps.StatusPoller.Repo, "github.com/example/project")
+
 }
 
 /*

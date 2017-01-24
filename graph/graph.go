@@ -477,10 +477,12 @@ func newStateManager(cl *sous.HTTPClient, c LocalSousConfig) *StateManager {
 }
 
 func newStatusPoller(cl *sous.HTTPClient, rf *sous.ResolveFilter) *sous.StatusPoller {
+	sous.Log.Debug.Printf("Building StatusPoller...")
 	if cl == nil {
-		sous.Log.Warn.Println("Unable to poll for status.")
+		sous.Log.Warn.Printf("Unable to poll for status.")
 		return nil
 	}
+	sous.Log.Debug.Printf("...looks good...")
 	return sous.NewStatusPoller(cl, rf)
 }
 
