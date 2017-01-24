@@ -206,7 +206,7 @@ func computeRequestID(d *sous.Deployable) string {
 func computeDeployID(d *sous.Deployable) string {
 	flavor := illegalDeployIDChars.ReplaceAllString(d.Deployment.Flavor, "")
 	if len(flavor) == 0 {
-		flavor = "SINSABOR"
+		flavor = "NOFLAVOR"
 	}
 	return strings.Join([]string{
 		illegalDeployIDChars.ReplaceAllString(d.Deployment.SourceID.Version.String(), ""),
