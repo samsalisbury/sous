@@ -64,10 +64,20 @@ func SuccessYAML(v interface{}) cmdr.Result {
 // Plumbing injects a command with the current psyringe,
 // then it Executes it, returning the result.
 func (cli *CLI) Plumbing(cmd cmdr.Executor, args []string) cmdr.Result {
-	if err := cli.SousGraph.Inject(cmd); err != nil {
+	if err := cli.Plumb(cmd); err != nil {
 		return cmdr.EnsureErrorResult(err)
 	}
 	return cmd.Execute(args)
+}
+
+// Plumb injects a lists of commands with the currect psyringe, returning early in the event of an error
+func (cli *CLI) Plumb(cmds ...cmdr.Executor) error {
+	for _, cmd := range cmds {
+		if err := cli.SousGraph.Inject(cmd); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // BuildCLIGraph builds the CLI DI graph.

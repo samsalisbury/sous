@@ -221,7 +221,7 @@ eachrequest:
 		// belong to one of the specified clusters.
 		deployID, err := ParseRequestID(sr.Request.Id)
 		if err != nil {
-			Log.Debug.Printf("Ignoring Singularity Request %q: %s", sr.Request.Id, err)
+			Log.Vomit.Printf("Ignoring Singularity Request %q: %s", sr.Request.Id, err)
 			continue
 		}
 		for _, c := range clusters {

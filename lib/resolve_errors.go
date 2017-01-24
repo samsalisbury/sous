@@ -1,17 +1,32 @@
 package sous
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 type (
 	// ResolveErrors collect all the errors for a resolve action into a single
 	// error to be handled elsewhere
 	ResolveErrors struct {
-		Causes []error
+		Causes []ErrorWrapper
 	}
 
+	// ErrorWrapper wraps an error so that it can be marshalled and unmarshalled
+	// to JSON
+	ErrorWrapper struct {
+		MarshallableError
+		error
+	}
+
+	// MarshallableError captures parts of an error that can be serialized
+	// successfully
+	MarshallableError struct {
+		Type, String string
+	}
 	// MissingImageNameError reports that we couldn't get names for one or
 	// more source IDs.
 	MissingImageNameError struct {
@@ -52,12 +67,81 @@ type (
 	}
 )
 
+// WrapResolveError wraps an error inside an *ErrorWrapper for marshaling.
+func WrapResolveError(err error) *ErrorWrapper {
+	return &ErrorWrapper{error: err}
+}
+
+// MarshalJSON implements json.Marshaller on ErrorWrapper.
+// It makes sure that the embedded MarshallableError is populated and then
+// marshals that. The upshot is that errors can be successfully marshalled into
+// JSON for review by the client.
+func (ew ErrorWrapper) MarshalJSON() ([]byte, error) {
+	ew.MarshallableError = buildMarshableError(ew.error)
+	return json.Marshal(ew.MarshallableError)
+}
+
+func buildMarshableError(err error) MarshallableError {
+	ew := MarshallableError{}
+	ew.Type = fmt.Sprintf("%T", err)
+	ew.String = fmt.Sprintf("%s", err)
+	return ew
+}
+
 func (re *ResolveErrors) Error() string {
 	s := []string{"Errors during resolve:"}
 	for _, e := range re.Causes {
 		s = append(s, e.Error())
 	}
 	return strings.Join(s, "\n  ")
+}
+
+// IsTransientResolveError returns true for resolve errors which might resolve on
+// their own. All other errors, it returns false
+func IsTransientResolveError(err error) bool {
+	switch terr := errors.Cause(err).(type) {
+	default:
+		// unnamed errors are by definition not resolve errors
+		return false
+	case *ErrorWrapper:
+		// ErrorWrappers carry string data about an error across an HTTP
+		// transaction.  We basically need to check it's Type field.
+		Log.Vomit.Printf("Checking err string type: %s", terr.Type)
+		switch terr.Type {
+		default:
+			return false
+		case "*sous.ChangeError":
+			return true
+		case "*sous.CreateError":
+			return true
+		}
+
+	case *UnacceptableAdvisory:
+		// UnacceptableAdvisory is excluded, since this requires operator
+		// intervention: either the image needs to be rebuilt clean, or the cluster
+		// reconfigured to accept the advisory.
+		return false
+	case *MissingImageNameError:
+		// MissingImageNameError isn't transient: it requires that an appropriate
+		// image be built with the desired name and the server needs to be able to
+		// at least guess the image's name.
+		return false
+	case *ChangeError:
+		// ChangeError is typically returned when Singularity returns an error (which we don't yet
+		// distinguish - empirically, this most often means that a particular Request
+		// is in the midst of deploying and not accepting new Deploys yet.)
+		return true
+	case *CreateError:
+		// CreateErrors are returned when Singularity returns errors when we try to
+		// create a request or deploy. This might be the result of a conflicting
+		// Request name, in which case it's likely that the next attempt to resolve
+		// will be a Modify instead.
+		return true
+	case *DeleteError:
+		// XXX While "deletes" are no-ops, there's no chance that a DeleteError is going to "self correct"
+		//		return true
+		return false // XXX
+	}
 }
 
 func (e *MissingImageNameError) Error() string {

@@ -57,6 +57,8 @@ func NewLogSet(warn, debug, vomit io.Writer) *LogSet {
 
 // BeChatty gets the LogSet to print all its output - useful for temporary debugging
 func (ls LogSet) BeChatty() {
+	ls.Warn.SetOutput(os.Stderr)
+	ls.Warn.SetFlags(log.Llongfile | log.Ltime)
 	ls.Vomit.SetOutput(os.Stderr)
 	ls.Vomit.SetFlags(log.Llongfile | log.Ltime)
 	ls.Debug.SetOutput(os.Stderr)

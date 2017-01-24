@@ -85,7 +85,7 @@ func (e NotModifiedErr) Error() string {
 	return "Not modified"
 }
 
-// NewNameCache builds a new name cache
+// NewNameCache builds a new name cache.
 func NewNameCache(drh string, cl docker_registry.Client, db *sql.DB) *NameCache {
 	nc := &NameCache{
 		RegistryClient:     cl,
@@ -96,12 +96,12 @@ func NewNameCache(drh string, cl docker_registry.Client, db *sql.DB) *NameCache 
 	return nc
 }
 
-// ListSourceIDs implements Registry
+// ListSourceIDs lists all the known SourceIDs.
 func (nc *NameCache) ListSourceIDs() ([]sous.SourceID, error) {
 	return nc.dbQueryAllSourceIds()
 }
 
-// Warmup implements Registry
+// Warmup warms up the cache.
 func (nc *NameCache) Warmup(r string) error {
 	ref, err := reference.ParseNamed(r)
 	if err != nil {
@@ -134,7 +134,7 @@ func (nc *NameCache) ImageLabels(in string) (map[string]string, error) {
 	return Labels(sv), nil
 }
 
-// GetArtifact implements sous.Registry.GetArtifact
+// GetArtifact implements sous.Registry.GetArtifact.
 func (nc *NameCache) GetArtifact(sid sous.SourceID) (*sous.BuildArtifact, error) {
 	name, qls, err := nc.getImageName(sid)
 	if err != nil {
@@ -143,7 +143,7 @@ func (nc *NameCache) GetArtifact(sid sous.SourceID) (*sous.BuildArtifact, error)
 	return NewBuildArtifact(name, qls), nil
 }
 
-// GetSourceID looks up the source ID for a given image name
+// GetSourceID looks up the source ID for a given image name.
 func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
 	in := a.Name
 	var sid sous.SourceID
@@ -205,25 +205,36 @@ func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
 // GetImageName returns the docker image name for a given source ID
 func (nc *NameCache) getImageName(sid sous.SourceID) (string, strpairs, error) {
 	Log.Vomit.Printf("Getting image name for %+v", sid)
-	cn, _, qls, err := nc.dbQueryOnSourceID(sid)
-	if _, ok := errors.Cause(err).(NoImageNameFound); ok {
-		Log.Vomit.Print(err)
-		err = nc.harvest(sid.Location)
-		if err != nil {
-			Log.Vomit.Printf("Err: %v", err)
-			return "", nil, err
-		}
+	name, qualities, err := nc.getImageNameFromCache(sid)
+	defer func() { Log.Debug.Printf("SourceID: %q -> image name %s", sid, name) }()
+	if err == nil {
+		// We got it from the cache first time.
+		return name, qualities, nil
+	}
+	if _, ok := errors.Cause(err).(NoImageNameFound); !ok {
+		// We got a probable database error, give up.
+		Log.Info.Printf("Cache error: %s", err)
+		return "", nil, errors.Wrap(err, "getting name from cache")
+	}
+	// The error was a NoImageNameFound.
+	if name, qualities, err = nc.getImageNameAfterHarvest(sid); err != nil {
+		// Failed even after a harvest, give up.
+		return "", nil, errors.Wrapf(err, "getting image from cache after harvest")
+	}
+	return name, qualities, nil
+}
 
-		cn, _, qls, err = nc.dbQueryOnSourceID(sid)
-		if err != nil {
-			Log.Vomit.Printf("Err: %v", err)
-			return "", nil, err
-		}
-	} else if err != nil {
+func (nc *NameCache) getImageNameFromCache(sid sous.SourceID) (string, strpairs, error) {
+	cn, _, qls, err := nc.dbQueryOnSourceID(sid)
+	return cn, qls, err
+}
+
+func (nc *NameCache) getImageNameAfterHarvest(sid sous.SourceID) (string, strpairs, error) {
+	if err := nc.harvest(sid.Location); err != nil {
+		Log.Debug.Printf("getImageName: harvest error: %v", err)
 		return "", nil, err
 	}
-	Log.Debug.Printf("Source ID: %v -> image name %s", sid, cn)
-	return cn, qls, nil
+	return nc.getImageNameFromCache(sid)
 }
 
 func qualitiesFromLabels(lm map[string]string) []sous.Quality {

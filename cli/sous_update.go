@@ -58,25 +58,7 @@ func (su *SousUpdate) Execute(args []string) cmdr.Result {
 
 	_, ok := su.State.Manifests.Get(sl)
 	if !ok {
-		sous.Log.Info.Printf("adding new manifest %q", did)
-		su.State.Manifests.Add(su.Manifest.Manifest)
-		if err := su.StateWriter.WriteState(su.State); err != nil {
-			return EnsureErrorResult(err)
-		}
-		newState, err := su.StateReader.ReadState()
-		if err != nil {
-			return EnsureErrorResult(err)
-		}
-		su.State = newState
-		newGDM, err := su.State.Deployments()
-		if err != nil {
-			return EnsureErrorResult(err)
-		}
-		su.GDM = graph.CurrentGDM{Deployments: newGDM}
-		_, ok := su.State.Manifests.Get(sl)
-		if !ok {
-			return GeneralErrorf("failed to add manifest %q", did)
-		}
+		return cmdr.UsageErrorf("No manifest found for %q - try 'sous init' first.", did)
 	}
 	if err := updateState(su.State, su.GDM, sid, did); err != nil {
 		return EnsureErrorResult(err)

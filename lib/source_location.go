@@ -3,6 +3,7 @@ package sous
 import (
 	"fmt"
 
+	"github.com/pkg/errors"
 	"github.com/samsalisbury/semv"
 )
 
@@ -46,7 +47,7 @@ func sourceLocationFromChunks(source string, chunks []string) (SourceLocation, e
 		return SourceLocation{}, &IncludesVersion{source}
 	}
 	if len(chunks) == 0 || len(chunks[0]) == 0 {
-		return SourceLocation{}, &MissingRepo{source}
+		return SourceLocation{}, errors.Wrap(&MissingRepo{source}, "location")
 	}
 	repoURL := chunks[0]
 	repoOffset := ""
@@ -67,10 +68,19 @@ func (sl SourceLocation) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements encoding.TextMarshaler.
+// n.b.: UnmarshalText is used to deserialize server responses, so it needs to
+// be fairly liberal in how it parses things. If you need specific parse
+// errors, use ParseSourceLocation
 func (sl *SourceLocation) UnmarshalText(b []byte) error {
 	var err error
 	*sl, err = ParseSourceLocation(string(b))
-	return err
+	if err != nil {
+		sl.Repo = ""
+		sl.Dir = ""
+		return nil
+	}
+
+	return nil
 }
 
 // UnmarshalYAML deserializes a YAML document into this SourceLocation

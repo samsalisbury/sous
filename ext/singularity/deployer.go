@@ -52,7 +52,7 @@ func (r *deployer) RectifyCreates(cc <-chan *sous.Deployable, errs chan<- sous.D
 	for d := range cc {
 		result := sous.DiffResolution{DeployID: d.ID()}
 		if err := r.RectifySingleCreate(d); err != nil {
-			result.Error = &sous.CreateError{Deployment: d.Deployment, Err: err}
+			result.Error = sous.WrapResolveError(&sous.CreateError{Deployment: d.Deployment, Err: err})
 			result.Desc = "not created"
 		} else {
 			result.Desc = "created"
@@ -108,7 +108,7 @@ func (r *deployer) RectifyDeletes(dc <-chan *sous.Deployable, errs chan<- sous.D
 	for d := range dc {
 		result := sous.DiffResolution{DeployID: d.ID()}
 		if err := r.RectifySingleDelete(d); err != nil {
-			result.Error = &sous.DeleteError{Deployment: d.Deployment, Err: err}
+			result.Error = sous.WrapResolveError(&sous.DeleteError{Deployment: d.Deployment, Err: err})
 			result.Desc = "not deleted"
 		} else {
 			result.Desc = "deleted"
@@ -138,7 +138,7 @@ func (r *deployer) RectifyModifies(
 				Post:  pair.Post.Deployment,
 			}
 			log.Printf("%#v", err)
-			result.Error = &sous.ChangeError{Deployments: dp, Err: err}
+			result.Error = sous.WrapResolveError(&sous.ChangeError{Deployments: dp, Err: err})
 			result.Desc = "not updated"
 		} else {
 			result.Desc = "updated"

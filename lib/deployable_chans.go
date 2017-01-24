@@ -38,17 +38,18 @@ func NewDeployableChans(size ...int) *DeployableChans {
 	}
 }
 
-// GuardImage checks that a deployment is valid before deploying it
-func GuardImage(r Registry, d *Deployment) (art *BuildArtifact, err error) {
-	if d.NumInstances == 0 { // we're not deploying any of these, so it can be wrong for the moment
-		return
+// GuardImage checks that a deployment is valid before deploying it.
+func GuardImage(r Registry, d *Deployment) (*BuildArtifact, error) {
+	if d.NumInstances == 0 {
+		Log.Info.Printf("Deployment %q has 0 instances, skipping artifact check.", d.ID())
+		return nil, nil
 	}
-	art, err = r.GetArtifact(d.SourceID)
+	art, err := r.GetArtifact(d.SourceID)
 	if err != nil {
 		return nil, &MissingImageNameError{err}
 	}
 	for _, q := range art.Qualities {
-		if q.Kind == `advisory` {
+		if q.Kind == "advisory" {
 			if q.Name == "" {
 				continue
 			}
@@ -69,7 +70,7 @@ func GuardImage(r Registry, d *Deployment) (art *BuildArtifact, err error) {
 			}
 		}
 	}
-	return
+	return art, err
 }
 
 // ID returns the ID of this DeployablePair.
@@ -106,12 +107,14 @@ func resolveSingles(r Registry, from chan *Deployment, to chan *Deployable, errs
 
 		da, err := resolveName(r, dep)
 		if err != nil {
-			Log.Debug.Printf("Error resolving deployment (won't deploy): %#v: %#v", dep, err)
+			Log.Info.Printf("Unable to create new deployment %q: %s", dep.ID(), err)
+			Log.Debug.Printf("Failed create deployment %q: % #v", dep.ID(), dep)
 			errs <- err
 			continue
 		}
 		if da.BuildArtifact == nil {
-			Log.Debug.Printf("No artifact known for created deployment (won't deploy): %#v", dep)
+			Log.Info.Printf("Unable to create new deployment %q: no artifact for SourceID %q", dep.ID(), dep.SourceID)
+			Log.Debug.Printf("Failed create deployment %q: % #v", dep.ID(), dep)
 			continue
 		}
 		to <- da
@@ -124,12 +127,14 @@ func resolvePairs(r Registry, from chan *DeploymentPair, to chan *DeployablePair
 		Log.Vomit.Printf("Pair of deployments processed, needs artifact: %#v", depPair)
 		d, err := resolvePair(r, depPair)
 		if err != nil {
-			Log.Debug.Printf("Error resolving post deployment of change pair (won't deploy): %#v: %#v", depPair.Post, err)
+			Log.Info.Printf("Unable to modify deployment %q: %s", depPair.Post, err)
+			Log.Debug.Printf("Failed modify deployment %q: % #v", depPair.ID(), depPair.Post)
 			errs <- err
 			continue
 		}
 		if d.Post.BuildArtifact == nil {
-			Log.Debug.Printf("No artifact known for post deployment in change pair (won't deploy): %#v", depPair.Post)
+			Log.Info.Printf("Unable to modify deployment %q: no artifact for SourceID %q", depPair.ID(), depPair.Post.SourceID)
+			Log.Debug.Printf("Failed modify deployment %q: % #v", depPair.ID(), depPair.Post)
 			continue
 		}
 		to <- d

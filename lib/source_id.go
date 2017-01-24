@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/samsalisbury/semv"
 	"golang.org/x/text/unicode/norm"
 )
@@ -117,7 +118,7 @@ func parseChunks(sourceStr string) []string {
 
 func sourceIDFromChunks(source string, chunks []string) (SourceID, error) {
 	if len(chunks[0]) == 0 {
-		return SourceID{}, &MissingRepo{source}
+		return SourceID{}, errors.Wrap(&MissingRepo{source}, "parsing")
 	}
 	repoURL := chunks[0]
 	version, err := semv.Parse(string(chunks[1]))
