@@ -9,9 +9,9 @@ import (
 type (
 	// A Result captures the output of a shell run
 	Result struct {
-		Script                    string
-		Exit                      int
-		Stdout, Stderr, Env, Errs string
+		Script                             string
+		Exit                               int
+		Stdout, Stderr, Blended, Env, Errs string
 	}
 )
 
@@ -27,6 +27,10 @@ func (res Result) WriteTo(dir, base string) error {
 	}
 
 	if err := writePart(dir, base, "stderr", res.Stderr); err != nil {
+		allErr = err
+	}
+
+	if err := writePart(dir, base, "blended", res.Blended); err != nil {
 		allErr = err
 	}
 

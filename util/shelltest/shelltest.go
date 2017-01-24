@@ -1,9 +1,11 @@
 package shelltest
 
 import (
-	"github.com/opentable/sous/util/whitespace"
 	"os"
+	"path/filepath"
 	"testing"
+
+	"github.com/opentable/sous/util/whitespace"
 )
 
 type (
@@ -35,7 +37,12 @@ func New(t *testing.T, name string, env map[string]string) *ShellTest {
 // WriteTo directs the ShellTest to write details of its execution into the
 // passed directory.
 func (st *ShellTest) WriteTo(dir string) error {
-	err := os.MkdirAll(dir, os.ModeDir|os.ModePerm)
+	dir, err := filepath.Abs(dir)
+	if err != nil {
+		return err
+	}
+
+	err = os.MkdirAll(dir, os.ModeDir|os.ModePerm)
 	if err != nil {
 		return err
 	}
@@ -53,14 +60,26 @@ func (st *ShellTest) Block(name, script string, check ...CheckFn) *ShellTest {
 	}
 	ran := st.t.Run(name, func(t *testing.T) {
 		res, err := st.shell.Run(whitespace.CleanWS(script))
-		if err != nil {
-			t.Fatal(err)
-		}
 		if st.writeDir != "" {
 			res.WriteTo(st.writeDir, name)
 		}
+		if err != nil {
+			if st.writeDir != "" {
+				t.Logf("Shell script, output and errors written to %q.", st.writeDir)
+			} else {
+				t.Logf("No output directory set. No shell artifacts recorded.")
+			}
+			t.Fatal("Error: ", err)
+		}
 		if len(check) > 0 {
 			check[0](name, res, t)
+		}
+		if t.Failed() {
+			if st.writeDir != "" {
+				t.Logf("Shell script, output and errors written to %q.", st.writeDir)
+			} else {
+				t.Logf("No output directory set. No shell artifacts recorded.")
+			}
 		}
 	})
 	shell := st.shell
@@ -70,7 +89,8 @@ func (st *ShellTest) Block(name, script string, check ...CheckFn) *ShellTest {
 	}
 
 	return &ShellTest{
-		t:     st.t,
-		shell: shell,
+		t:        st.t,
+		shell:    shell,
+		writeDir: st.writeDir,
 	}
 }

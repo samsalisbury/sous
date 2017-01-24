@@ -19,7 +19,7 @@ trap '(lasterr=$?; exec >&5; echo -n $lasterr; history 1)' ERR
 `
 	exitCapture = `
 status=$?
-env >4
+env >&4
 echo $status >&3
 `
 )
@@ -35,7 +35,7 @@ type (
 
 	liveStream struct {
 		pipe io.Reader
-		buf  []byte
+		bufs []*bytes.Buffer
 		sync.Mutex
 	}
 )
@@ -43,7 +43,7 @@ type (
 func newLiveStream(from io.Reader, events <-chan int) *liveStream {
 	ls := &liveStream{
 		pipe: from,
-		buf:  []byte{},
+		bufs: []*bytes.Buffer{&bytes.Buffer{}},
 	}
 
 	go ls.reader(events)
@@ -66,17 +66,21 @@ func NewShell(env map[string]string) (sh *CaptiveShell, err error) {
 		return nil, err
 	}
 
+	blended := &bytes.Buffer{}
+
 	stdo, err := sh.Cmd.StdoutPipe()
 	if err != nil {
 		return nil, err
 	}
 	sh.stdout = newLiveStream(stdo, sh.events)
+	sh.stdout.addBuf(blended)
 
 	stde, err := sh.Cmd.StderrPipe()
 	if err != nil {
 		return nil, err
 	}
 	sh.stderr = newLiveStream(stde, sh.events)
+	sh.stderr.addBuf(blended)
 
 	dr, doneWrite, err := os.Pipe()
 	if err != nil {
@@ -115,18 +119,21 @@ func (sh *CaptiveShell) Run(script string) (Result, error) {
 		return Result{}, err
 	}
 
-	stdout := sh.stdout.consume()
-	stderr := sh.stderr.consume()
-	errExits := sh.scriptErrs.consume()
-	env := sh.scriptEnv.consume()
+	stdout := sh.stdout.consume(0)
+	stderr := sh.stderr.consume(0)
+	blended := sh.stdout.consume(1)
+
+	errExits := sh.scriptErrs.consume(0)
+	env := sh.scriptEnv.consume(0)
 
 	return Result{
-		Script: script,
-		Exit:   exit,
-		Stdout: stdout,
-		Stderr: stderr,
-		Errs:   errExits,
-		Env:    env,
+		Script:  script,
+		Exit:    exit,
+		Stdout:  stdout,
+		Stderr:  stderr,
+		Blended: blended,
+		Errs:    errExits,
+		Env:     env,
 	}, nil
 }
 
@@ -139,41 +146,36 @@ func (ls *liveStream) reader(events <-chan int) {
 			if err != nil {
 				return
 			}
-			ls.Lock()
-			ls.buf = append(ls.buf, buf[0:count]...)
-			ls.Unlock()
+			ls.saveBytes(buf[0:count])
 		case <-events:
 			return
 		}
 	}
 }
 
-func (ls *liveStream) consume() string {
+func (ls *liveStream) saveBytes(buf []byte) {
 	ls.Lock()
-	str := string(ls.buf)
-	ls.buf = ls.buf[0:0]
-	ls.Unlock()
-	return str
+	defer ls.Unlock()
+	for _, b := range ls.bufs {
+		b.Write(buf)
+	}
 }
 
-func consumeStream(stream io.Reader) ([]byte, error) {
-	got := []byte{}
-	buf := make([]byte, 1024)
-	for {
-		count, err := stream.Read(buf)
-		if err != nil {
-			return []byte{}, err
-		}
-		if count == 0 {
-			return got, nil
-		}
-		got = append(got, buf[0:count]...)
-	}
+func (ls *liveStream) addBuf(buf *bytes.Buffer) {
+	ls.bufs = append(ls.bufs, buf)
+}
+
+func (ls *liveStream) consume(n int) string {
+	ls.Lock()
+	defer ls.Unlock()
+	str := ls.bufs[n].String()
+	ls.bufs[n].Reset()
+	return str
 }
 
 func (sh *CaptiveShell) readExitStatus() (int, error) {
 	if !sh.doneRead.Scan() {
-		return -1, fmt.Errorf("Exit stream closed prematurely!\n%#v\n%s\n****\n%s************", sh, sh.stdout.consume(), sh.stderr.consume())
+		return -1, fmt.Errorf("Exit stream closed prematurely!\n%#v\n%s\n****\n%s************", sh, sh.stdout.consume(0), sh.stderr.consume(0))
 	}
 
 	return strconv.Atoi(string(bytes.TrimFunc(sh.doneRead.Bytes(), func(r rune) bool {

@@ -1,0 +1,11 @@
+GIT_SSH=ssh_wrapper
+PATH=~/bin:/usr/local/bin:/usr/bin:/usr/local/opt/coreutils/libexec/gnubin:/Users/jlester/golang/src/github.com/opentable/sous/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing197654614/home/golang/bin
+PWD=/Users/jlester/golang/src/github.com/opentable/sous/clintegration
+SHLVL=1
+HOME=/Users/jlester/golang/src/github.com/opentable/sous/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing197654614/home
+GOPATH=/Users/jlester/golang/src/github.com/opentable/sous/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing197654614/home/go:/Users/jlester/golang
+_=/usr/bin/env
+.:
+total 8
+-rw-r--r-- 1 jlester 513 1270 Jan 24 14:25 defs.yaml
+-rw-r--r-- 1 jlester 513  237 Jan 24 14:25 ssh-config

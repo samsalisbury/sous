@@ -146,7 +146,7 @@ func TestTemplating(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Couldn't create temporary working directory: %s", err)
 	}
-	//defer os.RemoveAll(workdir)
+	defer os.RemoveAll(tmpDir)
 
 	cfg := templatedConfigs{
 		EnvDesc: envDesc,
@@ -157,8 +157,6 @@ func TestTemplating(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-
-	log.Printf(tmpDir)
 }
 
 func TestShellLevelIntegration(t *testing.T) {
@@ -176,7 +174,7 @@ func TestShellLevelIntegration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Couldn't create temporary working directory: %s", err)
 	}
-	defer os.RemoveAll(workdir)
+	//defer os.RemoveAll(workdir)
 
 	stateDir := filepath.Join(workdir, "gdm")
 
@@ -211,7 +209,7 @@ func TestShellLevelIntegration(t *testing.T) {
 		"PATH":    strings.Join([]string{"~/bin", exePATH, filepath.Join(pwd, testHome, "golang/bin")}, ":"),
 	})
 
-	shell.WriteTo("doc/shellexamples")
+	shell.WriteTo("../doc/shellexamples")
 
 	defaultCheck := func(name string, res shelltest.Result, t *testing.T) {
 		if len(res.Errs) > 0 {
@@ -223,6 +221,7 @@ func TestShellLevelIntegration(t *testing.T) {
 	# These steps are required by the Sous integration tests
 	# They're analogous to run-of-the-mill workstation maintenance.
 
+	env
 	mkdir -p `+firstGoPath+`/{src,bin}
 	go get github.com/nyarly/cygnus # cygnus lets us inspect Singularity for ports
 	cd `+pwd+`
@@ -230,7 +229,8 @@ func TestShellLevelIntegration(t *testing.T) {
 	cp -a integration/test-homedir/* "$HOME"
 	cp integration/test-registry/git-server/git_pubkey_rsa* ~/dot-ssh/
 	cd `+workdir+`
-	cp templated-configs/ssh-config ~/dot-ssh/config
+	ls -lR
+	cp ssh-config ~/dot-ssh/config
 	chmod go-rwx -R ~/dot-ssh
 	`,
 		defaultCheck)

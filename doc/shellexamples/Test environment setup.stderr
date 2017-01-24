@@ -1,0 +1,21 @@
+bash: no job control in this shell
+bash-3.2$ 
+bash-3.2$ trap '(lasterr=$?; exec >&5; echo -n $lasterr; history 1)' ERR
+bash-3.2$ # These steps are required by the Sous integration tests
+bash-3.2$ # They're analogous to run-of-the-mill workstation maintenance.
+bash-3.2$ 
+bash-3.2$ env
+bash-3.2$ mkdir -p /Users/jlester/golang/src/github.com/opentable/sous/var/fo<lester/golang/src/github.com/opentable/sous/var/fol                         ders/sp/wllf_wh92p725fl4v<om/opentable/sous/var/folders/sp/wllf_wh92p725fl4vz                         92mrn16vkfds/T/sous-cli-t<ers/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-te                         sting197654614/home/go/{s<2mrn16vkfds/T/sous-cli-testing197654614/home/go/{sr                         c,bin}
+bash-3.2$ go get github.com/nyarly/cygnus # cygnus lets us inspect Singularit</nyarly/cygnus # cygnus lets us inspect Singularity                          for ports
+bash-3.2$ cd /Users/jlester/golang/src/github.com/opentable/sous
+bash-3.2$ go install . #install the current sous project
+bash-3.2$ cp -a integration/test-homedir/* "$HOME"
+bash-3.2$ cp integration/test-registry/git-server/git_pubkey_rsa* ~/dot-ssh/
+bash-3.2$ cd /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testin<p/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing                         197654614
+bash-3.2$ ls -lR
+bash-3.2$ cp ssh-config ~/dot-ssh/config
+bash-3.2$ chmod go-rwx -R ~/dot-ssh
+bash-3.2$ 
+bash-3.2$ status=$?
+bash-3.2$ env >&4
+bash-3.2$ echo $status >&3
