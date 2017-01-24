@@ -14,9 +14,24 @@ type LocalDaemon struct {
 	serviceTimeout time.Duration
 }
 
+// Nix requires sudo in places that other Linux distros do not.
+var isNix bool
+
+func init() {
+	_, err := exec.Command("which", "nix-env").CombinedOutput()
+	if err == nil {
+		isNix = true
+	}
+}
+
 func ldTrial() agentBuilderF {
 	log.Println("Checking docker socket:")
-	o, _ := exec.Command("sudo", "ls", "-l", "/var/run/docker.sock").CombinedOutput()
+	var o []byte
+	if isNix {
+		o, _ = exec.Command("sudo", "ls", "-l", "/var/run/docker.sock").CombinedOutput()
+	} else {
+		o, _ = exec.Command("ls", "-l", "/var/run/docker.sock").CombinedOutput()
+	}
 	log.Print(string(o))
 	ps := runCommand("docker", "ps")
 	if ps.err != nil {
@@ -58,7 +73,12 @@ func (ld *LocalDaemon) ShutdownNow() {
 
 func (ld *LocalDaemon) Cleanup() error {
 	log.Println("Cleaning up...")
-	o, _ := exec.Command("sudo", "ls", "-l", "/var/run/docker.sock").CombinedOutput()
+	var o []byte
+	if isNix {
+		o, _ = exec.Command("sudo", "ls", "-l", "/var/run/docker.sock").CombinedOutput()
+	} else {
+		o, _ = exec.Command("ls", "-l", "/var/run/docker.sock").CombinedOutput()
+	}
 	log.Print(string(o))
 	return nil
 }
@@ -142,7 +162,11 @@ func (ld *LocalDaemon) RestartDaemon() error {
 	UntilReady(time.Second/5, 30*time.Second, func() (string, func() bool, func()) {
 		return "Docker socket recreated",
 			func() bool {
-				err := exec.Command("sudo", "ls", "-l", "/var/run/docker.sock").Run()
+				if isNix {
+					err = exec.Command("sudo", "ls", "-l", "/var/run/docker.sock").Run()
+				} else {
+					err = exec.Command("ls", "-l", "/var/run/docker.sock").Run()
+				}
 				return err == nil
 			},
 			func() {}
