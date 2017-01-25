@@ -86,9 +86,6 @@ func TestInvokeDeploy(t *testing.T) {
 }
 
 func TestInvokeDeploy_RepoFlag(t *testing.T) {
-	sous.Log.BeChatty()
-	defer sous.Log.BeQuiet()
-
 	assert := assert.New(t)
 	require := require.New(t)
 

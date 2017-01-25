@@ -133,8 +133,6 @@ func TestNewUserSelectedOTPLDeploySpecs(t *testing.T) {
 }
 
 func TestNewTargetManifest_Existing(t *testing.T) {
-	sous.Log.BeChatty()
-	defer sous.Log.BeQuiet()
 	detected := userSelectedOTPLDeployManifest{}
 	sl := sous.MustParseSourceLocation("github.com/user/project")
 	flavor := "some-flavor"
