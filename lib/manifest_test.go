@@ -124,3 +124,33 @@ func TestManifest_Validate(t *testing.T) {
 		}
 	}
 }
+
+func TestManifest_Diff(t *testing.T) {
+	a := &Manifest{
+		Deployments: DeploySpecs{
+			"cluster-a": DeploySpec{},
+		},
+	}
+	b := &Manifest{
+		Deployments: DeploySpecs{
+			"cluster-b": DeploySpec{},
+		},
+	}
+	different, diffs := a.Diff(b)
+	if !different {
+		t.Errorf("%# v.Diff(%# v) == %v, %v", a, b, different, diffs)
+	}
+	if len(diffs) != 2 {
+		t.Fatalf("got %d diffs; want %d", len(diffs), 2)
+	}
+	actual := diffs[0]
+	expected := `missing deployment "cluster-a"`
+	if actual != expected {
+		t.Errorf("diffs[0] == %q; want %q", actual, expected)
+	}
+	actual = diffs[1]
+	expected = `extra deployment "cluster-b"`
+	if actual != expected {
+		t.Errorf("diffs[1] == %q; want %q", actual, expected)
+	}
+}

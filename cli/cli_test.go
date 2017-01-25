@@ -86,9 +86,6 @@ func TestInvokeDeploy(t *testing.T) {
 }
 
 func TestInvokeDeploy_RepoFlag(t *testing.T) {
-	sous.Log.BeChatty()
-	defer sous.Log.BeQuiet()
-
 	assert := assert.New(t)
 	require := require.New(t)
 
@@ -97,7 +94,8 @@ func TestInvokeDeploy_RepoFlag(t *testing.T) {
 	require.True(ok)
 	su := &SousUpdate{}
 	sps := &SousPlumbingStatus{}
-	sd.CLI.Plumb(su, sps)
+	sous.Log.Debug.Printf("Plumbing Update...")
+	require.NoError(sd.CLI.Plumb(su, sps))
 
 	assert.Equal(su.ResolveFilter.Repo, "")
 	assert.NotEqual(su.Manifest.ID().Source.Repo, "")
