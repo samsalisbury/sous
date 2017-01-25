@@ -92,3 +92,27 @@ func TestFlavoredComputeDeployFlavor(t *testing.T) {
 		t.Logf(flavorTemplate, id, splitID[1], expectedFlavor)
 	}
 }
+
+func TestComputeDeployID_emptyFlavor(t *testing.T) {
+	input := &sous.Deployable{
+		Deployment: &sous.Deployment{
+			Flavor: "",
+			SourceID: sous.SourceID{
+				Version: semv.MustParse("1.2.3"),
+			},
+		},
+	}
+
+	actual := computeDeployID(input)
+
+	actualParts := strings.Split(actual, "-")
+	if len(actualParts) != 2 {
+		t.Fatalf("got %q; want a string with exactly one hyphen", actual)
+	}
+	if actualParts[0] != "1.2.3" {
+		t.Fatalf("got %q; want a string beginning with 1.2.3", actual)
+	}
+	if len(actualParts[1]) != 32 {
+		t.Fatalf("got %q want a string that ends with 32 hex digits", actual)
+	}
+}
