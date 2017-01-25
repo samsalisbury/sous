@@ -100,6 +100,8 @@ func TestInvokeDeploy_RepoFlag(t *testing.T) {
 	sd.CLI.Plumb(su, sps)
 
 	assert.Equal(su.ResolveFilter.Repo, "")
+	sous.Log.Debug.Printf("%#v", su.Manifest)
+	sous.Log.Debug.Printf("%#v", su.Manifest.ID())
 	assert.NotEqual(su.Manifest.ID().Source.Repo, "")
 	assert.NotEqual(su.Manifest.ID().Source.Repo, "github.com/example/project")
 

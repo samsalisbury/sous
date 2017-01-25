@@ -40,15 +40,19 @@ func newTargetManifest(auto userSelectedOTPLDeployManifest, tmid TargetManifestI
 	if ok {
 		return TargetManifest{m}
 	}
-	if auto.Manifest == nil {
-		return TargetManifest{}
+
+	var deploySpecs sous.DeploySpecs
+	if auto.Manifest != nil {
+		deploySpecs = auto.Manifest.Deployments
+		m = auto.Clone()
 	}
-	deploySpecs := auto.Manifest.Deployments
+	if m == nil {
+		m = &sous.Manifest{}
+	}
 	if len(deploySpecs) == 0 {
 		deploySpecs = defaultDeploySpecs(s.Defs.Clusters)
 	}
 
-	m = auto.Clone()
 	m.Deployments = deploySpecs
 	m.SetID(mid)
 

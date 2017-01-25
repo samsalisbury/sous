@@ -34,7 +34,7 @@ func (sd *SousDeploy) Help() string { return sousDeployHelp }
 // AddFlags adds the flags for sous init.
 func (sd *SousDeploy) AddFlags(fs *flag.FlagSet) {
 	MustAddFlags(fs, &sd.DeployFilterFlags, DeployFilterFlagsHelp)
-	MustAddFlags(fs, &sd.OTPLFlags, OtplFlagsHelp)
+	//MustAddFlags(fs, &sd.OTPLFlags, OtplFlagsHelp)
 
 	fs.BoolVar(&sd.waitStable, "wait-stable", true,
 		"wait for the deploy to complete before returning (otherwise, use --wait-stable=false)")
@@ -47,7 +47,7 @@ func (sd *SousDeploy) AddFlags(fs *flag.FlagSet) {
 // labeller and registrar.
 func (sd *SousDeploy) RegisterOn(psy Addable) {
 	psy.Add(&sd.DeployFilterFlags)
-	psy.Add(&sd.OTPLFlags)
+	//psy.Add(&sd.OTPLFlags)
 	psy.Add(graph.DryrunOption(sd.dryrunOption))
 }
 
