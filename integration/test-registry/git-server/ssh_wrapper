@@ -1,4 +1,6 @@
 #! /bin/sh
 
-echo ssh_wrapper ${@} >&2
-ssh -v -i "${PWD}/integration/test-registry/git-server/git_pubkey_rsa" -o PasswordAuthentication=no -F "integration/test-registry/git-server/ssh-config" "${@}"
+cd "$(dirname "$0")" || exit 1
+echo ssh_wrapper "${@}" >&2
+chmod go-rwx ./git_pubkey_rsa*
+ssh -v -i "./git_pubkey_rsa" -o PasswordAuthentication=no -F "./ssh-config" "${@}"

@@ -1,0 +1,5 @@
+#!/bin/sh
+grep docker < /proc/1/cgroup || exit 1
+cd / || exit 2
+rm -rf repos
+tar xvzf repos.tgz
