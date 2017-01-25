@@ -94,11 +94,10 @@ func TestInvokeDeploy_RepoFlag(t *testing.T) {
 	require.True(ok)
 	su := &SousUpdate{}
 	sps := &SousPlumbingStatus{}
-	sd.CLI.Plumb(su, sps)
+	sous.Log.Debug.Printf("Plumbing Update...")
+	require.NoError(sd.CLI.Plumb(su, sps))
 
 	assert.Equal(su.ResolveFilter.Repo, "")
-	sous.Log.Debug.Printf("%#v", su.Manifest)
-	sous.Log.Debug.Printf("%#v", su.Manifest.ID())
 	assert.NotEqual(su.Manifest.ID().Source.Repo, "")
 	assert.NotEqual(su.Manifest.ID().Source.Repo, "github.com/example/project")
 

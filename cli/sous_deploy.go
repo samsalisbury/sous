@@ -47,7 +47,7 @@ func (sd *SousDeploy) AddFlags(fs *flag.FlagSet) {
 // labeller and registrar.
 func (sd *SousDeploy) RegisterOn(psy Addable) {
 	psy.Add(&sd.DeployFilterFlags)
-	//psy.Add(&sd.OTPLFlags)
+	psy.Add(&sd.OTPLFlags)
 	psy.Add(graph.DryrunOption(sd.dryrunOption))
 }
 
