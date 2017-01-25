@@ -256,7 +256,9 @@ func TestShellLevelIntegration(t *testing.T) {
 	setup := createGDM.Block("sous setup", `
 	git clone `+gitRemoteBase+`/sous-server
 	pushd sous-server
+	sous init
 	sous build
+	# We expect to see 'Sous is running ... in workstation mode' here:
 	SOUS_SERVER= SOUS_STATE_LOCATION=`+stateDir+` sous deploy -cluster left
 	SOUS_SERVER= SOUS_STATE_LOCATION=`+stateDir+` sous deploy -cluster right
 	popd
