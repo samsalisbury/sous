@@ -33,6 +33,8 @@ func (os OwnerSet) Equal(o OwnerSet) bool {
 	return !diff
 }
 
+// Diff returns (false, nil) if os == o. Otherwise it returns false and a list
+// of short descriptions of each difference.
 func (os OwnerSet) Diff(o OwnerSet) (bool, []string) {
 	var diffs []string
 	diff := func(format string, a ...interface{}) { diffs = append(diffs, fmt.Sprintf(format, a...)) }
@@ -49,9 +51,10 @@ func (os OwnerSet) Diff(o OwnerSet) (bool, []string) {
 	return len(diffs) != 0, diffs
 }
 
+// Slice returns this set as a slice of unique strings, in alphabetical order.
 func (os OwnerSet) Slice() []string {
 	slice := make([]string, 0, len(os))
-	for owner, _ := range os {
+	for owner := range os {
 		slice = append(slice, owner)
 	}
 	sort.Strings(slice)

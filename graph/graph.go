@@ -80,12 +80,12 @@ type (
 	// TargetManifest is a specific manifest for the current ManifestID.
 	// If the named manifest does not exist, it is created.
 	TargetManifest struct{ *sous.Manifest }
-	// DetectedOTPLDeploySpecs is a set of otpl-deploy configured deployments
+	// detectedOTPLDeployManifest is a set of otpl-deploy configured deployments
 	// that have been detected.
-	DetectedOTPLDeploySpecs struct{ sous.DeploySpecs }
-	// UserSelectedOTPLDeploySpecs is a set of otpl-deploy configured deploy
+	detectedOTPLDeployManifest struct{ *sous.Manifest }
+	// userSelectedOTPLDeployManifest is a set of otpl-deploy configured deploy
 	// specs that the user has explicitly selected. (May be empty.)
-	UserSelectedOTPLDeploySpecs struct{ sous.DeploySpecs }
+	userSelectedOTPLDeployManifest struct{ *sous.Manifest }
 	// TargetManifestID is the manifest ID being targeted, after resolving all
 	// context and flags.
 	TargetManifestID sous.ManifestID
@@ -494,6 +494,7 @@ func newLocalStateWriter(sm *StateManager) StateWriter {
 	return StateWriter{sm}
 }
 
+// NewCurrentState returns the current *sous.State.
 func NewCurrentState(sr StateReader) (*sous.State, error) {
 	state, err := sr.ReadState()
 	if os.IsNotExist(errors.Cause(err)) {
@@ -504,6 +505,7 @@ func NewCurrentState(sr StateReader) (*sous.State, error) {
 	return state, initErr(err, "reading sous state")
 }
 
+// NewCurrentGDM returns the current GDM.
 func NewCurrentGDM(state *sous.State) (CurrentGDM, error) {
 	deployments, err := state.Deployments()
 	if err != nil {
