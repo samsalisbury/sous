@@ -3,6 +3,7 @@
 !Dockerfile
 !docker-compose.yml
 !README.md
+!ssl.conf
 self-signed.conf
 testing.crt
 testing.key

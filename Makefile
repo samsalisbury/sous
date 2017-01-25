@@ -28,13 +28,44 @@ LINUX_TARBALL := $(LINUX_RELEASE_DIR).tar.gz
 CONCAT_XGO_ARGS := -go $(GO_VERSION) -branch master -deps $(SQLITE_URL) --dest $(BIN_DIR) --ldflags $(FLAGS)
 COVER_DIR := /tmp/sous-cover
 
+help:
+	@echo --- options:
+	@echo clean
+	@echo coverage 
+	@echo legendary
+	@echo release
+	@echo test \(local\)
+	@echo release
+	
 clean:
+	rm -f sous_qa_setup
+	rm -f qa_desc.json
 	rm -f sous
 	rm -rf artifacts
 	rm -rf $(COVER_DIR)
 	rm -f bin/ggen/ggen
+	rm -f integration/test-registry/testing.*
 
-cover: $(COVER_DIR)
+gitlog:
+	git log `git describe --abbrev=0`..HEAD
+
+install-ggen:
+	cd bin/ggen && go install ./
+
+legendary: coverage
+	legendary --hitlist .cadre/coverage.vim /tmp/sous-cover/*_merged.txt
+
+release: artifacts/$(DARWIN_TARBALL) artifacts/$(LINUX_TARBALL)
+
+semvertagchk:
+	@echo "$(SOUS_VERSION)" | egrep ^[0-9]+\.[0-9]+\.[0-9]+	
+
+sous_qa_setup:
+	go build ./dev_support/sous_qa_setup
+
+test: test-unit test-integration
+
+coverage: $(COVER_DIR)
 	engulf -s --coverdir=$(COVER_DIR) \
 		--exclude '/vendor,\
 			integration/?,\
@@ -46,24 +77,15 @@ cover: $(COVER_DIR)
 		--exclude-files='raw_client.go$$, _generated.go$$'\
 		--merge-base=_merged.txt ./...
 
-gitlog:
-	git log `git describe --abbrev=0`..HEAD
+test-unit:
+	go test -v ./...
 
-install-ggen:
-	cd bin/ggen && go install ./
+test-integration: test-setup
+	go test -v ./integration --tags=integration
 
-legendary: cover
-	legendary --hitlist .cadre/coverage.vim /tmp/sous-cover/*_merged.txt
-
-release: artifacts/$(DARWIN_TARBALL) artifacts/$(LINUX_TARBALL)
-
-semvertagchk:
-	@echo "$(SOUS_VERSION)" | egrep ^[0-9]+\.[0-9]+\.[0-9]+	
-
-test-three-tries:
-	./bin/test-until-success 3
-
-travis: cover test-three-tries
+test-setup: ./integration/test-registry/testing.crt sous_qa_setup
+	cd integration/test-registry && docker-compose pull
+	./sous_qa_setup --compose-dir ./integration/test-registry/ --out-path=`pwd`/qa_desc.json
 
 $(BIN_DIR):
 	mkdir -p $@
@@ -91,4 +113,7 @@ artifacts/$(LINUX_TARBALL): artifacts/$(LINUX_RELEASE_DIR)/sous
 artifacts/$(DARWIN_TARBALL): artifacts/$(DARWIN_RELEASE_DIR)/sous
 	cd artifacts && tar czv $(DARWIN_RELEASE_DIR) > $(DARWIN_TARBALL)
 
-.PHONY: clean cover install-ggen legendary release semvertagchk test-three-tries travis
+./integration/test-registry/testing.crt:
+	cd integration/test-registry && openssl req -newkey rsa:512 -x509 -days 365 -out testing.crt -config ssl.conf -batch
+
+.PHONY: clean coverage install-ggen legendary release semvertagchk test-integration test-setup test-unit travis travis-setup travis-integration

@@ -19,6 +19,15 @@ import (
 //go:generate inlinefiles --vfs=Templates --package main templates vfs_template.go
 
 func registryCerts(testAgent test_with_docker.Agent, composeDir string, desc desc.EnvDesc) error {
+	// Setting up registryCerts has been shown not to matter when running against a Docker
+	// daemon on a local Linux box, so in the interest of not needlessly hacking up configuration
+	// files and requiring sudo access for test runs, this function does nothing when supplied with
+	// a LocalDaemon.
+	_, isLocal := testAgent.(*test_with_docker.LocalDaemon)
+	if isLocal {
+		fmt.Println("Skipping installing registry key in local Docker config.")
+		return nil
+	}
 	registryCertName := "testing.crt"
 	certPath := filepath.Join(composeDir, registryCertName)
 	caPath := fmt.Sprintf("/etc/docker/certs.d/%s/ca.crt", desc.RegistryName)

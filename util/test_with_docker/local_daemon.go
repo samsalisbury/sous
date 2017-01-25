@@ -151,11 +151,12 @@ func (ld *LocalDaemon) RestartDaemon() error {
 	return err
 }
 
-// Exec existed to execute commands as root,
-// instead it is a noop that logs what was attempted.
+// Exec executes commands as root on the daemon host
+// It uses sudo. This is dangerous.
 func (ld *LocalDaemon) Exec(args ...string) error {
-	log.Printf("NOOP: Exec attempt to sudo: %#+v", args)
-	return nil
+	cmd := runCommand("sudo", args...)
+	log.Println(cmd.String())
+	return cmd.err
 }
 
 /*
