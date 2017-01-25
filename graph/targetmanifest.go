@@ -37,18 +37,23 @@ func newTargetManifestID(f *sous.ResolveFilter, discovered *SourceContextDiscove
 func newTargetManifest(auto userSelectedOTPLDeployManifest, tmid TargetManifestID, s *sous.State) TargetManifest {
 	mid := sous.ManifestID(tmid)
 	m, ok := s.Manifests.Get(mid)
+
 	if ok {
 		return TargetManifest{m}
 	}
-	if auto.Manifest == nil {
-		return TargetManifest{}
+
+	var deploySpecs sous.DeploySpecs
+	if auto.Manifest != nil {
+		deploySpecs = auto.Manifest.Deployments
+		m = auto.Clone()
 	}
-	deploySpecs := auto.Manifest.Deployments
+	if m == nil {
+		m = &sous.Manifest{}
+	}
 	if len(deploySpecs) == 0 {
 		deploySpecs = defaultDeploySpecs(s.Defs.Clusters)
 	}
 
-	m = auto.Clone()
 	m.Deployments = deploySpecs
 	m.SetID(mid)
 
