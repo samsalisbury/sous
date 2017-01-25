@@ -3,4 +3,4 @@
 go build ./dev_support/sous_qa_setup
 export SOUS_QA_DESC=$(pwd)/qa_desc.json
 ./sous_qa_setup --compose-dir ./integration/test-registry/ --out-path=$SOUS_QA_DESC
-go test ./integration -tags=integration
+go test -v ./integration -tags=integration

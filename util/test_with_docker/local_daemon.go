@@ -16,7 +16,7 @@ type LocalDaemon struct {
 
 func ldTrial() agentBuilderF {
 	log.Println("Checking docker socket:")
-	o, _ := exec.Command("sudo", "ls", "-l", "/var/run/docker.sock").CombinedOutput()
+	o, _ := exec.Command("ls", "-l", "/var/run/docker.sock").CombinedOutput()
 	log.Print(string(o))
 	ps := runCommand("docker", "ps")
 	if ps.err != nil {
@@ -58,7 +58,7 @@ func (ld *LocalDaemon) ShutdownNow() {
 
 func (ld *LocalDaemon) Cleanup() error {
 	log.Println("Cleaning up...")
-	o, _ := exec.Command("sudo", "ls", "-l", "/var/run/docker.sock").CombinedOutput()
+	o, _ := exec.Command("ls", "-l", "/var/run/docker.sock").CombinedOutput()
 	log.Print(string(o))
 	return nil
 }
@@ -142,7 +142,7 @@ func (ld *LocalDaemon) RestartDaemon() error {
 	UntilReady(time.Second/5, 30*time.Second, func() (string, func() bool, func()) {
 		return "Docker socket recreated",
 			func() bool {
-				err := exec.Command("sudo", "ls", "-l", "/var/run/docker.sock").Run()
+				err := exec.Command("ls", "-l", "/var/run/docker.sock").Run()
 				return err == nil
 			},
 			func() {}
@@ -151,12 +151,11 @@ func (ld *LocalDaemon) RestartDaemon() error {
 	return err
 }
 
-// Exec executes commands as root on the daemon host
-// It uses sudo
+// Exec existed to execute commands as root,
+// instead it is a noop that logs what was attempted.
 func (ld *LocalDaemon) Exec(args ...string) error {
-	cmd := runCommand("sudo", args...)
-	log.Println(cmd.String())
-	return cmd.err
+	log.Printf("NOOP: Exec attempt to sudo: %#+v", args)
+	return nil
 }
 
 /*
