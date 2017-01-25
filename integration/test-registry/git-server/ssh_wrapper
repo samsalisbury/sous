@@ -1,0 +1,4 @@
+#! /bin/sh
+
+echo ssh_wrapper ${@} >&2
+ssh -v -i "${PWD}/integration/test-registry/git-server/git_pubkey_rsa" -o PasswordAuthentication=no -F "integration/test-registry/git-server/ssh-config" "${@}"

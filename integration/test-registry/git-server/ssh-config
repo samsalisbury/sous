@@ -3,4 +3,3 @@ PasswordAuthentication no
 UserKnownHostsFile /dev/null
 StrictHostKeyChecking no
 # This setting presumes a GOPATH setting, which may not be correct
-IdentityFile {{.Workdir}}/home/dot-ssh/git_pubkey_rsa

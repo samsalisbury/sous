@@ -1,6 +1,0 @@
-128   19  git clone ssh://root@192.168.99.100:2222/gdm
-1   20  cat templated-configs/defs.yaml | tee gdm/defs.yaml
-1   21  pushd gdm
-128   22  git commit -am "Adding defs.yaml"
-128   23  git push
-1   24  popd

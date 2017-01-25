@@ -8,16 +8,20 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
 )
 
 const (
+	headerMarker = `# END SCRIPT HEADER`
+	footerMarker = `# BEGIN SCRIPT FOOTER`
+
 	stateCapture = `
 trap '(lasterr=$?; exec >&5; echo -n $lasterr; history 1)' ERR
-`
-	exitCapture = `
+` + headerMarker
+	exitCapture = footerMarker + `
 status=$?
 env >&4
 echo $status >&3
@@ -125,6 +129,13 @@ func (sh *CaptiveShell) Run(script string) (Result, error) {
 
 	errExits := sh.scriptErrs.consume(0)
 	env := sh.scriptEnv.consume(0)
+
+	hre := regexp.MustCompile(`(?ms).*` + headerMarker)
+	fre := regexp.MustCompile(`(?ms)` + footerMarker + `.*`)
+
+	stdout = hre.ReplaceAllString(fre.ReplaceAllString(stdout, ""), "")
+	blended = hre.ReplaceAllString(fre.ReplaceAllString(blended, ""), "")
+	stderr = hre.ReplaceAllString(fre.ReplaceAllString(stderr, ""), "")
 
 	return Result{
 		Script:  script,

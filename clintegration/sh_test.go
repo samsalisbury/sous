@@ -174,6 +174,7 @@ func TestShellLevelIntegration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Couldn't create temporary working directory: %s", err)
 	}
+	log.Printf("WORKDIR: %q", workdir)
 	//defer os.RemoveAll(workdir)
 
 	stateDir := filepath.Join(workdir, "gdm")
@@ -184,29 +185,31 @@ func TestShellLevelIntegration(t *testing.T) {
 
 	testHome := filepath.Join(workdir, "home")
 
-	gitRemoteBase := `ssh://root@` + envDesc.GitOrigin
+	gitRemoteBase := `ssh://root@` + envDesc.GitOrigin + "/repos"
 
 	cfg := templatedConfigs{
 		EnvDesc: envDesc,
 		Workdir: workdir,
 	}
 
-	err = templateConfigs(filepath.Join(pwd, "integration/test-config-templates"), workdir, cfg)
+	tmplTgt := filepath.Join(workdir, "templated-configs")
+	os.MkdirAll(tmplTgt, os.ModePerm)
+	err = templateConfigs(filepath.Join(pwd, "integration/test-config-templates"), tmplTgt, cfg)
 	if err != nil {
-		t.Fatalf("Teplating configuration files: %s", err)
+		t.Fatalf("Templating configuration files: %s", err)
 	}
 
-	firstGoPath := filepath.Join(pwd, testHome, "go")
+	firstGoPath := filepath.Join(testHome, "go")
 	goPath := firstGoPath
 	if userGopath := os.Getenv("GOPATH"); userGopath != "" {
 		goPath = goPath + ":" + userGopath
 	}
 
 	shell := shelltest.New(t, "happypath", map[string]string{
-		"HOME":    filepath.Join(pwd, testHome),
-		"GIT_SSH": "ssh_wrapper",
+		"HOME":    testHome,
+		"GIT_SSH": filepath.Join(testHome, "bin/ssh_wrapper"),
 		"GOPATH":  goPath,
-		"PATH":    strings.Join([]string{"~/bin", exePATH, filepath.Join(pwd, testHome, "golang/bin")}, ":"),
+		"PATH":    strings.Join([]string{"~/bin", exePATH, filepath.Join(firstGoPath, "bin")}, ":"),
 	})
 
 	shell.WriteTo("../doc/shellexamples")
@@ -229,16 +232,21 @@ func TestShellLevelIntegration(t *testing.T) {
 	cp -a integration/test-homedir/* "$HOME"
 	cp integration/test-registry/git-server/git_pubkey_rsa* ~/dot-ssh/
 	cd `+workdir+`
-	ls -lR
-	cp ssh-config ~/dot-ssh/config
+	cp templated-configs/ssh-config ~/dot-ssh/config
 	chmod go-rwx -R ~/dot-ssh
+	git config --global --add user.name "Integration Tester"
+	git config --global --add user.email "itester@example.com"
+	hash -r
 	`,
 		defaultCheck)
 
 	createGDM := prologue.Block("create the GDM", `
+	ls -l
 	git clone `+gitRemoteBase+`/gdm
+	ls -l
 	cat templated-configs/defs.yaml | tee gdm/defs.yaml
 	pushd gdm
+	git add defs.yaml
 	git commit -am "Adding defs.yaml"
 	git push
 	popd

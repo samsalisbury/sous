@@ -1,21 +1,18 @@
-bash-3.2$ 
-bash-3.2$ trap '(lasterr=$?; exec >&5; echo -n $lasterr; history 1)' ERR
-bash-3.2$ git clone ssh://root@192.168.99.100:2222/gdm
+ls -l
+bash-3.2$ git clone ssh://root@192.168.99.100:2222/repos/gdm
 Cloning into 'gdm'...
-error: cannot run ssh_wrapper: No such file or directory
-fatal: unable to fork
+ssh_wrapper
+Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
+warning: You appear to have cloned an empty repository.
+bash-3.2$ ls -l
 bash-3.2$ cat templated-configs/defs.yaml | tee gdm/defs.yaml
-tee: gdm/defs.yaml: No such file or directory
-cat: templated-configs/defs.yaml: No such file or directory
 bash-3.2$ pushd gdm
-bash: pushd: gdm: No such file or directory
+bash-3.2$ git add defs.yaml
 bash-3.2$ git commit -am "Adding defs.yaml"
-fatal: Not a git repository (or any of the parent directories): .git
 bash-3.2$ git push
-fatal: Not a git repository (or any of the parent directories): .git
+ssh_wrapper
+Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
+To ssh://192.168.99.100:2222/repos/gdm
+ * [new branch]      master -> master
 bash-3.2$ popd
-bash: popd: directory stack empty
 bash-3.2$ 
-bash-3.2$ status=$?
-bash-3.2$ env >&4
-bash-3.2$ echo $status >&3
