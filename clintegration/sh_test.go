@@ -237,7 +237,8 @@ func TestShellLevelIntegration(t *testing.T) {
 	chmod go-rwx -R ~/dot-ssh
 	git config --global --add user.name "Integration Tester"
 	git config --global --add user.email "itester@example.com"
-	echo ~/bin/ssh_wrapper root@`+gitSSH+` -p 2222 /reset-repos
+	ssh -o PasswordAuthentication=no -F "${HOME}/dot-ssh/config" root@`+gitSSH+` -p 2222 /reset-repos < /dev/null
+	echo SOME STUFF HERE GOT ET BY SSH
 	`,
 		defaultCheck)
 

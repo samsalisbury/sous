@@ -1,0 +1,66 @@
+total 0
+drwxr-xr-x 3 jlester 513 102 Jan 25 17:22 gdm
+drwxr-xr-x 6 jlester 513 204 Jan 25 17:22 home
+drwxr-xr-x 4 jlester 513 136 Jan 25 17:22 templated-configs
+DockerRepo: 192.168.99.100:5000
+Clusters:
+  left:
+    Name: "left"
+    Kind: singularity
+    BaseURL: http://192.168.99.100:7099/singularity
+    Env:
+      OT_ENV: left
+    AllowedAdvisories:
+    - ephemeral tag
+    - source workspace lacked repo
+    - no repository
+    - requested revision not built
+    - no versioned tag
+    - tag mismatch
+    - tag not on built revision
+    - ephemeral tag
+    - unpushed revision
+    - bogus revision
+    - dirty workspace
+  right:
+    Name: "right"
+    Kind: singularity
+    BaseURL: http://192.168.99.100:7099/singularity
+    Env:
+      OT_ENV: right
+    AllowedAdvisories:
+    - ephemeral tag
+    - ephemeral tag
+    - source workspace lacked repo
+    - no repository
+    - requested revision not built
+    - no versioned tag
+    - tag mismatch
+    - tag not on built revision
+    - ephemeral tag
+    - unpushed revision
+    - bogus revision
+    - dirty workspace
+EnvVars:
+- Name: OT_DISCO_INIT_URL
+  Desc: The URL which discovery clients should use to initially connect to the discovery
+    system.
+  Scope: ""
+  Type: url
+- Name: PORT0
+  Desc: The primary TCP port your app should listen on.
+  Scope: ""
+  Type: int
+Resources:
+- Name: memory
+  Type: Float
+- Name: cpu
+  Type: Float
+- Name: ports
+  Type: Integer
+Metadata: []
+/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing349761596/gdm /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing349761596
+[master (root-commit) 3610ada] Adding defs.yaml
+ 1 file changed, 57 insertions(+)
+ create mode 100644 defs.yaml
+/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing349761596

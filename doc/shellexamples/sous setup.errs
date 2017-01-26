@@ -1,0 +1,6 @@
+1   39  pushd sous-server
+255   40  sous init
+255   41  sous build
+255   43  SOUS_SERVER= SOUS_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing349761596/gdm sous deploy -cluster left
+255   44  SOUS_SERVER= SOUS_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing349761596/gdm sous deploy -cluster right
+1   45  popd
