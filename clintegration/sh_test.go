@@ -186,6 +186,7 @@ func TestShellLevelIntegration(t *testing.T) {
 	testHome := filepath.Join(workdir, "home")
 
 	gitRemoteBase := `ssh://root@` + envDesc.GitOrigin + "/repos"
+	gitSSH := strings.Split(envDesc.GitOrigin, ":")[0]
 
 	cfg := templatedConfigs{
 		EnvDesc: envDesc,
@@ -236,7 +237,7 @@ func TestShellLevelIntegration(t *testing.T) {
 	chmod go-rwx -R ~/dot-ssh
 	git config --global --add user.name "Integration Tester"
 	git config --global --add user.email "itester@example.com"
-	hash -r
+	echo ~/bin/ssh_wrapper root@`+gitSSH+` -p 2222 /reset-repos
 	`,
 		defaultCheck)
 
@@ -255,6 +256,7 @@ func TestShellLevelIntegration(t *testing.T) {
 	// XXX There should be a `-cluster left,right` syntax, instead of two deploy commands
 	setup := createGDM.Block("sous setup", `
 	git clone `+gitRemoteBase+`/sous-server
+	ls -l
 	pushd sous-server
 	sous init
 	sous build
