@@ -1,4 +1,5 @@
-ls -l
+
+bash-3.2$ ls -l
 bash-3.2$ git clone ssh://root@192.168.99.100:2222/repos/gdm
 Cloning into 'gdm'...
 ssh_wrapper
@@ -15,4 +16,5 @@ Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known 
 To ssh://192.168.99.100:2222/repos/gdm
  * [new branch]      master -> master
 bash-3.2$ popd
+bash-3.2$ 
 bash-3.2$ 

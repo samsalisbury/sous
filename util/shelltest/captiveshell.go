@@ -116,7 +116,7 @@ func NewShell(env map[string]string) (sh *CaptiveShell, err error) {
 }
 
 func (sh *CaptiveShell) Run(script string) (Result, error) {
-	st := stateCapture + script + exitCapture
+	st := stateCapture + "\n" + script + "\n" + exitCapture
 	sh.Stdin.Write([]byte(st))
 	exit, err := sh.readExitStatus()
 	if err != nil {

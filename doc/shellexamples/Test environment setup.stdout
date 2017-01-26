@@ -1,9 +1,9 @@
-GIT_SSH=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing349761596/home/bin/ssh_wrapper
-PATH=~/bin:/usr/local/bin:/usr/bin:/usr/local/opt/coreutils/libexec/gnubin:/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing349761596/home/go/bin
+GIT_SSH=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing631144040/home/bin/ssh_wrapper
+PATH=~/bin:/usr/local/bin:/usr/bin:/usr/local/opt/coreutils/libexec/gnubin:/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing631144040/home/go/bin
 PWD=/Users/jlester/golang/src/github.com/opentable/sous/clintegration
 SHLVL=1
-HOME=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing349761596/home
-GOPATH=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing349761596/home/go:/Users/jlester/golang
+HOME=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing631144040/home
+GOPATH=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing631144040/home/go:/Users/jlester/golang
 _=/usr/bin/env
 12:pids:/docker/ef3acfa513a2e82cd222fce75636df1b525f2d1febb86c4ff2dba99ad60a3d7e
 11:hugetlb:/docker/ef3acfa513a2e82cd222fce75636df1b525f2d1febb86c4ff2dba99ad60a3d7e

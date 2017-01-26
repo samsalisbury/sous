@@ -1,21 +1,22 @@
-# These steps are required by the Sous integrati<ER# These steps are required by the Sous integratio                         n tests
+
+bash-3.2$ # These steps are required by the Sous integration tests
 bash-3.2$ # They're analogous to run-of-the-mill workstation maintenance.
 bash-3.2$ 
 bash-3.2$ env
-GIT_SSH=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing349761596/home/bin/ssh_wrapper
-PATH=~/bin:/usr/local/bin:/usr/bin:/usr/local/opt/coreutils/libexec/gnubin:/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing349761596/home/go/bin
+GIT_SSH=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing631144040/home/bin/ssh_wrapper
+PATH=~/bin:/usr/local/bin:/usr/bin:/usr/local/opt/coreutils/libexec/gnubin:/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing631144040/home/go/bin
 PWD=/Users/jlester/golang/src/github.com/opentable/sous/clintegration
 SHLVL=1
-HOME=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing349761596/home
-GOPATH=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing349761596/home/go:/Users/jlester/golang
+HOME=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing631144040/home
+GOPATH=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing631144040/home/go:/Users/jlester/golang
 _=/usr/bin/env
-bash-3.2$ mkdir -p /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-<ders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-t                         esting349761596/home/go/{<92mrn16vkfds/T/sous-cli-testing349761596/home/go/{s                         rc,bin}
+bash-3.2$ mkdir -p /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-<ders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-t                         esting631144040/home/go/{<92mrn16vkfds/T/sous-cli-testing631144040/home/go/{s                         rc,bin}
 bash-3.2$ go get github.com/nyarly/cygnus # cygnus lets us inspect Singularit</nyarly/cygnus # cygnus lets us inspect Singularity                          for ports
 bash-3.2$ cd /Users/jlester/golang/src/github.com/opentable/sous
 bash-3.2$ go install . #install the current sous project
 bash-3.2$ cp -a integration/test-homedir/* "$HOME"
 bash-3.2$ cp integration/test-registry/git-server/git_pubkey_rsa* ~/dot-ssh/
-bash-3.2$ cd /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testin<p/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing                         349761596
+bash-3.2$ cd /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testin<p/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing                         631144040
 bash-3.2$ cp templated-configs/ssh-config ~/dot-ssh/config
 bash-3.2$ chmod go-rwx -R ~/dot-ssh
 bash-3.2$ git config --global --add user.name "Integration Tester"
@@ -276,4 +277,5 @@ repos/sous-demo/objects/bc/ab45af15a0f1b0166daf8cbf18b17cd8649277
 repos/sous-demo/branches/
 bash-3.2$ echo SOME STUFF HERE GOT ET BY SSH
 SOME STUFF HERE GOT ET BY SSH
+bash-3.2$ 
 bash-3.2$ 

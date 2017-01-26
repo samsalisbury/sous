@@ -1,8 +1,7 @@
 total 0
-drwxr-xr-x 4 jlester 513 136 Jan 25 17:22 gdm
-drwxr-xr-x 6 jlester 513 204 Jan 25 17:22 home
-drwxr-xr-x 4 jlester 513 136 Jan 25 17:22 templated-configs
-  (Sous)> git rev-parse --show-toplevel FAILED (exit code 128)
-  (Sous)> git rev-parse --show-toplevel FAILED (exit code 128)
-  (Sous)> git rev-parse --show-toplevel FAILED (exit code 128)
-  (Sous)> git rev-parse --show-toplevel FAILED (exit code 128)
+drwxr-xr-x 4 jlester 513 136 Jan 25 17:26 gdm
+drwxr-xr-x 6 jlester 513 204 Jan 25 17:26 home
+drwxr-xr-x 6 jlester 513 204 Jan 25 17:26 sous-server
+drwxr-xr-x 4 jlester 513 136 Jan 25 17:26 templated-configs
+/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing631144040/sous-server /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing631144040
+/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing631144040
