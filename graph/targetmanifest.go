@@ -5,7 +5,9 @@ import (
 	"github.com/pkg/errors"
 )
 
-func newTargetManifestID(f *sous.ResolveFilter, discovered *SourceContextDiscovery) (TargetManifestID, error) {
+type RefinedResolveFilter sous.ResolveFilter
+
+func newRefinedResolveFilter(f *sous.ResolveFilter, discovered *SourceContextDiscovery) (*RefinedResolveFilter, error) {
 	c := discovered.GetContext()
 	if f == nil { // XXX I think this needs to be supplied anyway by consumers...
 		f = &sous.ResolveFilter{}
@@ -18,20 +20,36 @@ func newTargetManifestID(f *sous.ResolveFilter, discovered *SourceContextDiscove
 	}
 	if f.Offset != "" {
 		if f.Repo == "" {
-			return TargetManifestID{}, errors.Errorf("-offset doesn't make sense without a -repo or workspace remote")
+			return nil, errors.Errorf("-offset doesn't make sense without a -repo or workspace remote")
 		}
 		offset = f.Offset
 	}
 	if repo == "" {
-		return TargetManifestID{}, errors.Errorf("no repo specified, please use -repo or run sous inside a git repo with a configured remote")
+		return nil, errors.Errorf("no repo specified, please use -repo or run sous inside a git repo with a configured remote")
 	}
-	return TargetManifestID{
-		Source: sous.SourceLocation{
-			Repo: repo,
-			Dir:  offset,
-		},
-		Flavor: f.Flavor,
-	}, nil
+	rrf := RefinedResolveFilter(*f)
+	rrf.Repo = repo
+	rrf.Offset = offset
+	if f.Tag == "" {
+		rrf.Tag = discovered.TagVersion()
+	}
+	return &rrf, nil
+}
+
+func newTargetManifestID(rrf *RefinedResolveFilter) (tmid TargetManifestID, err error) {
+	if rrf == nil {
+		err = errors.Errorf("nil ResolveFilter")
+		return
+	}
+	if rrf.Repo == "" {
+		err = errors.Errorf("empty Repo")
+		return
+	}
+	tmid.Source.Repo = rrf.Repo
+	tmid.Source.Dir = rrf.Offset
+	tmid.Flavor = rrf.Flavor
+
+	return
 }
 
 func newTargetManifest(auto userSelectedOTPLDeployManifest, tmid TargetManifestID, s *sous.State) TargetManifest {

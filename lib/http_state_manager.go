@@ -11,7 +11,7 @@ type (
 	// back to that server.
 	HTTPStateManager struct {
 		cached *State
-		*HTTPClient
+		HTTPClient
 	}
 
 	gdmWrapper struct {
@@ -28,7 +28,7 @@ func (g *gdmWrapper) manifests(defs Defs) (Manifests, error) {
 }
 
 // NewHTTPStateManager creates a new HTTPStateManager.
-func NewHTTPStateManager(client *HTTPClient) *HTTPStateManager {
+func NewHTTPStateManager(client HTTPClient) *HTTPStateManager {
 	return &HTTPStateManager{HTTPClient: client}
 }
 

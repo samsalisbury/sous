@@ -97,13 +97,16 @@ func TestInvokeDeploy_RepoFlag(t *testing.T) {
 	sous.Log.Debug.Printf("Plumbing Update...")
 	require.NoError(sd.CLI.Plumb(su, sps))
 
-	assert.Equal(su.ResolveFilter.Repo, "")
+	assert.NotEqual(su.ResolveFilter.Repo, "")
+	assert.NotEqual(su.ResolveFilter.Repo, "github.com/example/project")
 	assert.NotEqual(su.Manifest.ID().Source.Repo, "")
 	assert.NotEqual(su.Manifest.ID().Source.Repo, "github.com/example/project")
 
-	//	if assert.NotNil(sps.StatusPoller) {
-	//		assert.NotEqual(sps.StatusPoller.Repo, "")
-	//	}
+	sous.Log.Debug.Printf("%#v", sps)
+	if assert.NotNil(sps.StatusPoller) {
+		assert.NotEqual(sps.StatusPoller.Repo, "")
+		assert.Equal(sps.StatusPoller.Repo, su.Manifest.ID().Source.Repo)
+	}
 
 	exe = justCommand(t, []string{`sous`, `deploy`, `-cluster`, `ci-sf`, `-repo`, `github.com/example/project`, `-tag`, `1.2.3`})
 	sd, ok = exe.Cmd.(*SousDeploy)
@@ -111,9 +114,9 @@ func TestInvokeDeploy_RepoFlag(t *testing.T) {
 	su = &SousUpdate{}
 	sd.CLI.Plumb(su, sps)
 	assert.Equal(su.ResolveFilter.Repo, "github.com/example/project")
-	assert.Equal(su.Manifest.ID().Source.Repo, "github.com/example/project")
 
-	//	assert.Equal(sps.StatusPoller.Repo, "github.com/example/project")
+	assert.Equal(su.Manifest.ID().Source.Repo, sps.StatusPoller.Repo)
+	assert.Equal(su.Manifest.ID().Source.Repo, "github.com/example/project")
 
 }
 
@@ -437,16 +440,4 @@ func TestInvokeBuildWithRepoSelector(t *testing.T) {
 	assert.NotNil(build.Labeller)
 	assert.NotNil(build.Registrar)
 	assert.Equal(build.DeployFilterFlags.Repo, `github.com/opentable/sous`)
-
-}
-
-func TestInvokePlumbingStatus_noServer(t *testing.T) {
-	assert := assert.New(t)
-
-	_, exe, _, _ := prepareCommand(t, []string{`sous`, `plumbing`, `status`})
-	assert.Len(exe.Args, 0)
-
-	status := exe.Cmd.(*SousPlumbingStatus)
-
-	assert.Nil(status.StatusPoller)
 }

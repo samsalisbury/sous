@@ -58,6 +58,16 @@ func (sc *SourceContext) AbsDir() string {
 	return filepath.Join(sc.RootDir, sc.OffsetDir)
 }
 
+// TagVersion returns a semver string if the most recent tag conforms to a
+// semver format. Otherwise it returns an empty string
+func (sc *SourceContext) TagVersion() string {
+	v, err := semv.Parse(sc.NearestTagName)
+	if err != nil {
+		return ""
+	}
+	return v.Format("M.m.p")
+}
+
 func nearestVersion(tags []Tag) semv.Version {
 	for _, t := range tags {
 		v, err := semv.Parse(t.Name)
