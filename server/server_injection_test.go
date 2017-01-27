@@ -65,6 +65,6 @@ func TestStatusHandlerInjection(t *testing.T) {
 
 	sous.Log.Debug.Printf("%#v", statusGet)
 	assert.NotPanics(func() {
-		statusGet.GDM.Snapshot()
+		statusGet.AutoResolver.String()
 	})
 }

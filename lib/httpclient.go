@@ -261,7 +261,7 @@ func (client *LiveHTTPClient) getBody(rz *http.Response, rzBody interface{}, err
 func logBody(dir, chName string, req *http.Request, b []byte, n int, err error) {
 	Log.Vomit.Printf("%s %s %q", chName, req.Method, req.URL)
 	comp := &bytes.Buffer{}
-	if err := json.Compact(comp, b); err != nil {
+	if err := json.Compact(comp, b[0:n]); err != nil {
 		Log.Vomit.Print(string(b))
 		Log.Vomit.Printf("(problem compacting JSON for logging: %s)", err)
 	} else {

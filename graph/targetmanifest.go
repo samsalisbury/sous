@@ -30,6 +30,9 @@ func newRefinedResolveFilter(f *sous.ResolveFilter, discovered *SourceContextDis
 	rrf := RefinedResolveFilter(*f)
 	rrf.Repo = repo
 	rrf.Offset = offset
+	if f.Tag == "" {
+		rrf.Tag = discovered.TagVersion()
+	}
 	return &rrf, nil
 }
 

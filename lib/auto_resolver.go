@@ -20,6 +20,7 @@ type (
 	AutoResolver struct {
 		UpdateTime time.Duration
 		StateReader
+		GDM Deployments
 		*Resolver
 		*LogSet
 		listeners []autoResolveListener
@@ -162,7 +163,7 @@ func (ar *AutoResolver) resolveOnce(ac announceChannel) {
 		ac <- err
 		return
 	}
-	gdm, err := state.Deployments()
+	ar.GDM, err = state.Deployments()
 	ar.LogSet.Debug.Printf("Reading GDM from state: err: %v", err)
 
 	if err != nil {
@@ -171,7 +172,7 @@ func (ar *AutoResolver) resolveOnce(ac announceChannel) {
 	}
 
 	ar.write(func() {
-		ar.currentRecorder = ar.Resolver.Begin(gdm, state.Defs.Clusters)
+		ar.currentRecorder = ar.Resolver.Begin(ar.GDM, state.Defs.Clusters)
 	})
 	defer ar.write(func() {
 		ar.currentRecorder = nil
