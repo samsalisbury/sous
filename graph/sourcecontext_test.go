@@ -23,15 +23,17 @@ func TestResolveSourceLocation_failure(t *testing.T) {
 }
 
 func assertSourceContextError(t *testing.T, flags *sous.ResolveFilter, ctx *SourceContextDiscovery, msgPattern string) {
-	_, actualErr := newTargetManifestID(flags, ctx)
+	_, actualErr := newRefinedResolveFilter(flags, ctx)
 	assert.NotNil(t, actualErr)
 	assert.Regexp(t, msgPattern, actualErr.Error())
 }
 
 func assertSourceContextSuccess(t *testing.T, expected sous.ManifestID, flags *sous.ResolveFilter, ctx *sous.SourceContext) {
 	disco := &SourceContextDiscovery{SourceContext: ctx}
-	actual, err := newTargetManifestID(flags, disco)
+	rrf, err := newRefinedResolveFilter(flags, disco)
 	require.NoError(t, err)
+
+	actual, err := newTargetManifestID(rrf)
 	assert.Equal(t, actual.Source.Repo, expected.Source.Repo, "repos differ")
 	assert.Equal(t, actual.Source.Dir, expected.Source.Dir, "offsets differ")
 	assert.Equal(t, actual.Flavor, expected.Flavor, "flavors differ")

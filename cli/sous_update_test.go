@@ -147,7 +147,7 @@ func TestSousUpdate_Execute(t *testing.T) {
 		StateWriter:   graph.StateWriter{StateWriter: dsm},
 		GDM:           graph.CurrentGDM{Deployments: sous.MakeDeployments(0)},
 		Manifest:      graph.TargetManifest{Manifest: &sous.Manifest{}},
-		ResolveFilter: &sous.ResolveFilter{},
+		ResolveFilter: &graph.RefinedResolveFilter{},
 	}
 	su.Execute(nil)
 }

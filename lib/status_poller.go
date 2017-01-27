@@ -9,12 +9,12 @@ import (
 type (
 	// StatusPoller polls servers for status.
 	StatusPoller struct {
-		*HTTPClient
+		HTTPClient
 		*ResolveFilter
 	}
 
 	subPoller struct {
-		*HTTPClient
+		HTTPClient
 		ClusterName, URL string
 		*Deployments
 		locationFilter, idFilter *ResolveFilter
@@ -127,7 +127,7 @@ func (rs ResolveState) String() string {
 }
 
 // NewStatusPoller returns a new *StatusPoller.
-func NewStatusPoller(cl *HTTPClient, rf *ResolveFilter) *StatusPoller {
+func NewStatusPoller(cl HTTPClient, rf *ResolveFilter) *StatusPoller {
 	return &StatusPoller{
 		HTTPClient:    cl,
 		ResolveFilter: rf,
@@ -294,7 +294,7 @@ func (sub *subPoller) pollOnce() ResolveState {
 // current DiffResolutions and computes the state of resolution for the
 // deployment based on that data.
 func (sub *subPoller) computeState(srvIntent *Deployment, stable, current *DiffResolution) ResolveState {
-	Log.Debug.Printf("%s reports intent to resolve %v", sub.URL, srvIntent)
+	Log.Debug.Printf("%s reports intent to resolve [%v]", sub.URL, srvIntent)
 	Log.Debug.Printf("%s reports stable rez: %v", sub.URL, stable)
 	Log.Debug.Printf("%s reports in-progress rez: %v", sub.URL, current)
 
@@ -359,7 +359,8 @@ func (sub *subPoller) computeState(srvIntent *Deployment, stable, current *DiffR
 }
 
 func (sub *subPoller) serverIntent() *Deployment {
-	Log.Vomit.Printf("Filtering %#v with %s", sub.Deployments, sub.locationFilter)
+	Log.Vomit.Printf("Filtering %#v", sub.Deployments)
+	Log.Debug.Printf("Filtering with %q", sub.locationFilter)
 	dep, exactlyOne := sub.Deployments.Single(sub.locationFilter.FilterDeployment)
 	if !exactlyOne {
 		Log.Debug.Printf("With %s we didn't match exactly one deployment! %#v", sub.locationFilter)

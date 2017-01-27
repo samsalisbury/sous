@@ -19,14 +19,14 @@ type SousUpdate struct {
 	State             *sous.State
 	StateWriter       graph.StateWriter
 	StateReader       graph.StateReader
-	*sous.ResolveFilter
+	ResolveFilter     *graph.RefinedResolveFilter
 }
 
 func init() { TopLevelCommands["update"] = &SousUpdate{} }
 
 const sousUpdateHelp = `update the version to be deployed in a cluster
 
-usage: sous update -cluster <name> -tag <semver> [-use-otpl-deploy|-ignore-otpl-deploy]
+usage: sous update -cluster <name> [-tag <semver>] [-use-otpl-deploy|-ignore-otpl-deploy]
 
 sous update will update the version tag for this application in the named
 cluster. You can then use 'sous rectify' to have that version deployed.
@@ -50,7 +50,7 @@ func (su *SousUpdate) RegisterOn(psy Addable) {
 // Execute fulfills the cmdr.Executor interface.
 func (su *SousUpdate) Execute(args []string) cmdr.Result {
 	sl := su.Manifest.ID()
-	sid, did, err := getIDs(su.ResolveFilter, sl)
+	sid, did, err := getIDs((*sous.ResolveFilter)(su.ResolveFilter), sl)
 	if err != nil {
 		return EnsureErrorResult(err)
 	}
