@@ -2,6 +2,19 @@
 
 ## Patches
 
+### 0.1.8
+
+- Feature: 'sous init' -use-otpl-config now imports owners from singularity-request.json
+- Feature: 'sous update' no longer requires -tag or -repo flags if they can be sniffed from the git repo context.
+- Bugfix: Internal error caused by reading malformed YAML manifests resolved.
+- Logging, Server: Warn when artifacts are not resolvable.
+- Sous Version outputs lines less than 80 characters long.
+- Logging: suppress full deployment diffs in debug (-d) mode, only print them in verbose -v mode.
+- Bugfix: SourceLocations now return more sensible parse errors when unmarshaling from JSON.
+- Bugfix: Resolve errors now marshalled correctly by server.
+- Docs: Installation document added at doc/instal.md
+- Bugfix: Server /status endpoint now returns latest status from AutoResolver rather than status at boot.
+
 ### 0.1.7
 
 - Tweaks to Makefile and build process in general.
