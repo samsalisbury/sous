@@ -3,6 +3,8 @@ package graph
 import (
 	"io"
 
+	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/docker_registry"
 	"github.com/opentable/sous/util/yaml"
 )
 
@@ -25,12 +27,26 @@ func BuildTestGraph(in io.Reader, out, err io.Writer) *SousGraph {
 func TestGraphWithConfig(in io.Reader, out, err io.Writer, cfg string) *SousGraph {
 	graph := buildBaseGraph(in, out, err)
 	addTestFilesystem(graph)
+	addTestNetwork(graph)
 	graph.Add(configYAML(cfg))
 	return graph
 }
 
 func addTestFilesystem(graph adder) {
 	graph.Add(newTestConfigLoader)
+}
+
+func addTestNetwork(graph adder) {
+	graph.Add(newDummyHTTPClient)
+	graph.Add(newDummyDockerClient)
+}
+
+func newDummyHTTPClient() HTTPClient {
+	return HTTPClient{HTTPClient: &sous.DummyHTTPClient{}}
+}
+
+func newDummyDockerClient() LocalDockerClient {
+	return LocalDockerClient{Client: docker_registry.NewDummyClient()}
 }
 
 func newTestConfigLoader(configYAML configYAML) *ConfigLoader {

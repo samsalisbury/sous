@@ -67,6 +67,8 @@ type (
 	ScratchDirShell struct{ *shell.Sh }
 	// LocalDockerClient is a docker client object
 	LocalDockerClient struct{ docker_registry.Client }
+	// HTTPClient wraps the sous.HTTPClient interface
+	HTTPClient struct{ sous.HTTPClient }
 	// StateManager simply wraps the sous.StateManager interface
 	StateManager struct{ sous.StateManager }
 	// StateReader wraps a storage.StateReader.
@@ -115,6 +117,7 @@ const (
 func BuildGraph(in io.Reader, out, err io.Writer) *SousGraph {
 	graph := buildBaseGraph(in, out, err)
 	AddFilesystem(graph)
+	AddNetwork(graph)
 	return graph
 }
 
@@ -131,7 +134,6 @@ func buildBaseGraph(in io.Reader, out, err io.Writer) *SousGraph {
 	AddUser(graph)
 	AddShells(graph)
 	AddConfig(graph)
-	AddNetwork(graph)
 	AddDocker(graph)
 	AddSingularity(graph)
 	AddState(graph)
@@ -189,7 +191,6 @@ func AddNetwork(graph adder) {
 	graph.Add(
 		newDockerClient,
 		newHTTPClient,
-		newStatusPoller,
 	)
 }
 
@@ -238,11 +239,13 @@ func AddInternals(graph adder) {
 		newTargetManifest,
 		newDetectedOTPLConfig,
 		newUserSelectedOTPLDeploySpecs,
+		newRefinedResolveFilter,
 		newTargetManifestID,
 		newResolveFilter,
 		newResolver,
 		newAutoResolver,
 		newInserter,
+		newStatusPoller,
 	)
 }
 
@@ -453,21 +456,22 @@ func newDockerClient() LocalDockerClient {
 
 // newHTTPClient returns an HTTP client if c.Server is not empty.
 // Otherwise it returns nil, and emits some warnings.
-func newHTTPClient(c LocalSousConfig) (*sous.HTTPClient, error) {
+func newHTTPClient(c LocalSousConfig) (HTTPClient, error) {
 	if c.Server == "" {
 		sous.Log.Warn.Println("No server set, Sous is running in server or workstation mode.")
 		sous.Log.Warn.Println("Configure a server like this: sous config server http://some.sous.server")
-		return nil, nil
+		return HTTPClient{}, nil
 	}
 	sous.Log.Debug.Printf("Using server at %s", c.Server)
-	return sous.NewClient(c.Server)
+	cl, err := sous.NewClient(c.Server)
+	return HTTPClient{HTTPClient: cl}, err
 }
 
 // newStateManager returns a wrapped sous.HTTPStateManager if cl is not nil.
 // Otherwise it returns a wrapped sous.GitStateManager, for local git based GDM.
 // If it returns a sous.GitStateManager, it emits a warning log.
-func newStateManager(cl *sous.HTTPClient, c LocalSousConfig) *StateManager {
-	if cl == nil {
+func newStateManager(cl HTTPClient, c LocalSousConfig) *StateManager {
+	if c.Server == "" {
 		sous.Log.Warn.Printf("Using local state stored at %s", c.StateLocation)
 		dm := storage.NewDiskStateManager(c.StateLocation)
 		return &StateManager{StateManager: storage.NewGitStateManager(dm)}
@@ -476,14 +480,15 @@ func newStateManager(cl *sous.HTTPClient, c LocalSousConfig) *StateManager {
 	return &StateManager{StateManager: hsm}
 }
 
-func newStatusPoller(cl *sous.HTTPClient, rf *sous.ResolveFilter) *sous.StatusPoller {
+func newStatusPoller(cl HTTPClient, rf *RefinedResolveFilter) *sous.StatusPoller {
 	sous.Log.Debug.Printf("Building StatusPoller...")
-	if cl == nil {
+	if cl.HTTPClient == nil {
+		sous.Log.Debug.Print(sous.Log.Warn)
 		sous.Log.Warn.Printf("Unable to poll for status.")
 		return nil
 	}
 	sous.Log.Debug.Printf("...looks good...")
-	return sous.NewStatusPoller(cl, rf)
+	return sous.NewStatusPoller(cl, (*sous.ResolveFilter)(rf))
 }
 
 func newLocalStateReader(sm *StateManager) StateReader {

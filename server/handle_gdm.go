@@ -21,6 +21,7 @@ func (gr *GDMResource) Get() Exchanger { return &GDMHandler{} }
 
 // Exchange implements the Handler interface
 func (h *GDMHandler) Exchange() (interface{}, int) {
+	sous.Log.Debug.Print(h.GDM)
 	data := gdmWrapper{Deployments: make([]*sous.Deployment, 0)}
 	for _, d := range h.GDM.Snapshot() {
 		data.Deployments = append(data.Deployments, d)

@@ -9,12 +9,12 @@ import (
 type (
 	// StatusPoller polls servers for status.
 	StatusPoller struct {
-		*HTTPClient
+		HTTPClient
 		*ResolveFilter
 	}
 
 	subPoller struct {
-		*HTTPClient
+		HTTPClient
 		ClusterName, URL string
 		*Deployments
 		locationFilter, idFilter *ResolveFilter
@@ -127,7 +127,7 @@ func (rs ResolveState) String() string {
 }
 
 // NewStatusPoller returns a new *StatusPoller.
-func NewStatusPoller(cl *HTTPClient, rf *ResolveFilter) *StatusPoller {
+func NewStatusPoller(cl HTTPClient, rf *ResolveFilter) *StatusPoller {
 	return &StatusPoller{
 		HTTPClient:    cl,
 		ResolveFilter: rf,

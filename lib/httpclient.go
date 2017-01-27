@@ -12,12 +12,23 @@ import (
 )
 
 type (
-	// HTTPClient interacts with a Sous http server.
+	// LiveHTTPClient interacts with a Sous http server.
 	//   It's designed to handle basic CRUD operations in a safe and restful way.
-	HTTPClient struct {
+	LiveHTTPClient struct {
 		serverURL *url.URL
 		http.Client
 	}
+
+	// HTTPClient interacts with a HTTPServer
+	//   It's designed to handle basic CRUD operations in a safe and restful way.
+	HTTPClient interface {
+		Create(urlPath string, qParms map[string]string, rqBody interface{}) error
+		Retrieve(urlPath string, qParms map[string]string, rzBody interface{}) error
+		Update(urlPath string, qParms map[string]string, from, qBody Comparable) error
+		Delete(urlPath string, qParms map[string]string, from Comparable) error
+	}
+
+	DummyHTTPClient struct{}
 
 	// Comparable is a required interface for Update and Delete, which provides
 	// the mechanism for comparing the remote resource to the local data.
@@ -37,11 +48,11 @@ type (
 	Variances []string
 )
 
-// NewClient returns a new HTTPClient for a particular serverURL.
-func NewClient(serverURL string) (*HTTPClient, error) {
+// NewClient returns a new LiveHTTPClient for a particular serverURL.
+func NewClient(serverURL string) (*LiveHTTPClient, error) {
 	u, err := url.Parse(serverURL)
 
-	client := &HTTPClient{
+	client := &LiveHTTPClient{
 		serverURL: u,
 	}
 
@@ -61,7 +72,7 @@ func NewClient(serverURL string) (*HTTPClient, error) {
 // style query params. It deserializes the returned JSON into rzBody. Errors
 // are returned if anything goes wrong, including a non-Success HTTP result
 // (but note that there may be a response anyway.
-func (client *HTTPClient) Retrieve(urlPath string, qParms map[string]string, rzBody interface{}) error {
+func (client *LiveHTTPClient) Retrieve(urlPath string, qParms map[string]string, rzBody interface{}) error {
 	return errors.Wrapf(func() error {
 		url, err := client.buildURL(urlPath, qParms)
 		rq, err := client.buildRequest("GET", url, nil, nil, err)
@@ -72,7 +83,7 @@ func (client *HTTPClient) Retrieve(urlPath string, qParms map[string]string, rzB
 
 // Create uses the contents of qBody to create a new resource at the server at urlPath/qParms
 // It issues a PUT with "If-No-Match: *", so if a resource already exists, it'll return an error.
-func (client *HTTPClient) Create(urlPath string, qParms map[string]string, qBody interface{}) error {
+func (client *LiveHTTPClient) Create(urlPath string, qParms map[string]string, qBody interface{}) error {
 	return errors.Wrapf(func() error {
 		url, err := client.buildURL(urlPath, qParms)
 		rq, err := client.buildRequest("PUT", url, noMatchStar(), qBody, err)
@@ -86,7 +97,7 @@ func (client *HTTPClient) Create(urlPath string, qParms map[string]string, qBody
 // the grounds that the client is going to clobber a value it doesn't know
 // about.) Then it issues a PUT with "If-Match: <etag of from>" so that the
 // server can check that we're changing from a known value.
-func (client *HTTPClient) Update(urlPath string, qParms map[string]string, from, qBody Comparable) error {
+func (client *LiveHTTPClient) Update(urlPath string, qParms map[string]string, from, qBody Comparable) error {
 	return errors.Wrapf(func() error {
 		url, err := client.buildURL(urlPath, qParms)
 		etag, err := client.getBodyEtag(url, from, err)
@@ -98,7 +109,7 @@ func (client *HTTPClient) Update(urlPath string, qParms map[string]string, from,
 
 // Delete removes a resource from the server, granted that we know the resource that we're removing.
 // It functions similarly to Update, but issues DELETE requests.
-func (client *HTTPClient) Delete(urlPath string, qParms map[string]string, from Comparable) error {
+func (client *LiveHTTPClient) Delete(urlPath string, qParms map[string]string, from Comparable) error {
 	return errors.Wrapf(func() error {
 		url, err := client.buildURL(urlPath, qParms)
 		etag, err := client.getBodyEtag(url, from, err)
@@ -106,6 +117,26 @@ func (client *HTTPClient) Delete(urlPath string, qParms map[string]string, from 
 		rz, err := client.sendRequest(rq, err)
 		return client.getBody(rz, nil, err)
 	}(), "Delete %s", urlPath)
+}
+
+// Create implements HTTPClient on DummyHTTPClient - it does nothing and returns nil
+func (*DummyHTTPClient) Create(urlPath string, qParms map[string]string, rqBody interface{}) error {
+	return nil
+}
+
+// Retrieve implements HTTPClient on DummyHTTPClient - it does nothing and returns nil
+func (*DummyHTTPClient) Retrieve(urlPath string, qParms map[string]string, rzBody interface{}) error {
+	return nil
+}
+
+// Update implements HTTPClient on DummyHTTPClient - it does nothing and returns nil
+func (*DummyHTTPClient) Update(urlPath string, qParms map[string]string, from, qBody Comparable) error {
+	return nil
+}
+
+// Delete implements HTTPClient on DummyHTTPClient - it does nothing and returns nil
+func (*DummyHTTPClient) Delete(urlPath string, qParms map[string]string, from Comparable) error {
+	return nil
 }
 
 // ***
@@ -120,7 +151,7 @@ func ifMatch(etag string) map[string]string {
 
 // ****
 
-func (client *HTTPClient) buildURL(urlPath string, qParms map[string]string) (urlS string, err error) {
+func (client *LiveHTTPClient) buildURL(urlPath string, qParms map[string]string) (urlS string, err error) {
 	URL, err := client.serverURL.Parse(urlPath)
 	if err != nil {
 		return
@@ -136,7 +167,7 @@ func (client *HTTPClient) buildURL(urlPath string, qParms map[string]string) (ur
 	return client.serverURL.ResolveReference(URL).String(), nil
 }
 
-func (client *HTTPClient) getBodyEtag(url string, body Comparable, ierr error) (etag string, err error) {
+func (client *LiveHTTPClient) getBodyEtag(url string, body Comparable, ierr error) (etag string, err error) {
 	if ierr != nil {
 		err = ierr
 		return
@@ -163,7 +194,7 @@ func (client *HTTPClient) getBodyEtag(url string, body Comparable, ierr error) (
 	return rz.Header.Get("Etag"), nil
 }
 
-func (client *HTTPClient) buildRequest(method, url string, headers map[string]string, rqBody interface{}, ierr error) (*http.Request, error) {
+func (client *LiveHTTPClient) buildRequest(method, url string, headers map[string]string, rqBody interface{}, ierr error) (*http.Request, error) {
 	if ierr != nil {
 		return nil, ierr
 	}
@@ -191,7 +222,7 @@ func (client *HTTPClient) buildRequest(method, url string, headers map[string]st
 	return rq, err
 }
 
-func (client *HTTPClient) sendRequest(rq *http.Request, ierr error) (*http.Response, error) {
+func (client *LiveHTTPClient) sendRequest(rq *http.Request, ierr error) (*http.Response, error) {
 	if ierr != nil {
 		return nil, ierr
 	}
@@ -206,7 +237,7 @@ func (client *HTTPClient) sendRequest(rq *http.Request, ierr error) (*http.Respo
 	return rz, err
 }
 
-func (client *HTTPClient) getBody(rz *http.Response, rzBody interface{}, err error) error {
+func (client *LiveHTTPClient) getBody(rz *http.Response, rzBody interface{}, err error) error {
 	if err != nil {
 		return err
 	}
@@ -239,7 +270,7 @@ func logBody(dir, chName string, req *http.Request, b []byte, n int, err error) 
 	Log.Vomit.Printf("%s %d bytes, result: %v", dir, n, err)
 }
 
-func (client *HTTPClient) httpRequest(req *http.Request) (*http.Response, error) {
+func (client *LiveHTTPClient) httpRequest(req *http.Request) (*http.Response, error) {
 	if req.Body == nil {
 		Log.Vomit.Printf("Client -> %s %q <empty request body>", req.Method, req.URL)
 	} else {
