@@ -61,8 +61,11 @@ func NewManifestParser() *ManifestParser {
 }
 
 type otplDeployConfig struct {
-	Name string
-	Spec *sous.DeploySpec
+	// Name is either "<cluster>" or "<cluster>.<flavor>".
+	// It is unique for all OTPL configs in a single project.
+	Name   string
+	Owners []string
+	Spec   *sous.DeploySpec
 }
 
 // ParseManifests searches the working directory of wd to find otpl-deploy
@@ -78,8 +81,7 @@ func (mp *ManifestParser) ParseManifests(wd shell.Shell) *sous.Manifest {
 		mp.debug(err)
 		return nil
 	}
-	c := make(chan otplDeployConfig)
-	manifestOwners := sous.NewOwnerSet()
+	c := make(chan *otplDeployConfig)
 	wg := sync.WaitGroup{}
 	wg.Add(len(l))
 	go func() { wg.Wait(); close(c) }()
@@ -95,56 +97,60 @@ func (mp *ManifestParser) ParseManifests(wd shell.Shell) *sous.Manifest {
 				mp.debug(err)
 				return
 			}
-			if otplConfig, owners := mp.GetSingleDeploySpec(wd); otplConfig != nil {
-				name := path.Base(wd.Dir())
-				c <- otplDeployConfig{name, otplConfig}
-				for o := range owners {
-					manifestOwners.Add(o)
-				}
+			if otplConfig := mp.parseSingleOTPLConfig(wd); otplConfig != nil {
+				c <- otplConfig
 			}
 		}()
 	}
 	deployConfigs := sous.DeploySpecs{}
+	owners := sous.NewOwnerSet()
 	for s := range c {
 		deployConfigs[s.Name] = *s.Spec
+		for _, o := range s.Owners {
+			owners.Add(o)
+		}
 	}
 	return &sous.Manifest{
 		Deployments: deployConfigs,
-		Owners:      manifestOwners.Slice(),
+		Owners:      owners.Slice(),
 	}
 }
 
-// GetSingleDeploySpec returns a single sous.DeploySpec from the working
+// ParseSingleOTPLConfig returns a single sous.DeploySpec from the working
 // directory of wd. It assumes that this directory contains at least a file
 // called singularity.json, and optionally an additional file called
 // singularity-requst.json.
-func (mp *ManifestParser) GetSingleDeploySpec(wd shell.Shell) (*sous.DeploySpec, sous.OwnerSet) {
+func (mp *ManifestParser) parseSingleOTPLConfig(wd shell.Shell) *otplDeployConfig {
 	v := SingularityJSON{}
 	if !wd.Exists("singularity.json") {
 		mp.debugf("no singularity.json in %s", wd.Dir())
-		return nil, nil
+		return nil
 	}
 	if err := wd.JSON(&v, "cat", "singularity.json"); err != nil {
 		mp.debugf("error reading %s: %s", path.Join(wd.Dir(),
 			"singularity.json"), err)
-		return nil, nil
+		return nil
 	}
-	deploySpec := sous.DeploySpec{
-		DeployConfig: sous.DeployConfig{
-			Resources: v.Resources.SousResources(),
-			Env:       v.Env,
+	deploySpec := &otplDeployConfig{
+		Name: path.Base(wd.Dir()),
+		Spec: &sous.DeploySpec{
+			DeployConfig: sous.DeployConfig{
+				Resources: v.Resources.SousResources(),
+				Env:       v.Env,
+			},
 		},
 	}
 	request := SingularityRequestJSON{}
 	if !wd.Exists("singularity-request.json") {
 		mp.debugf("no singularity-request.json in %s", wd.Dir())
-		return &deploySpec, nil
+		return deploySpec
 	}
 	mp.debugf("%s/singularity-request.json exists, parsing it", wd.Dir())
 	if err := wd.JSON(&request, "cat", "singularity-request.json"); err != nil {
 		mp.debugf("error reading singularity-request.json: %s", err)
-		return &deploySpec, nil
+		return deploySpec
 	}
-	deploySpec.NumInstances = request.Instances
-	return &deploySpec, sous.NewOwnerSet(request.Owners...)
+	deploySpec.Spec.NumInstances = request.Instances
+	deploySpec.Owners = request.Owners
+	return deploySpec
 }
