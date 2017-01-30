@@ -65,17 +65,17 @@ type namedDeploySpec struct {
 	Spec *sous.DeploySpec
 }
 
-// ParseManifest searches the working directory of wd to find otpl-deploy
+// ParseManifests searches the working directory of wd to find otpl-deploy
 // config files in their standard locations (config/{cluster-name}), and
 // converts them to sous.DeploySpecs.
-func (dsp *ManifestParser) ParseManifest(wd shell.Shell) *sous.Manifest {
+func (mp *ManifestParser) ParseManifests(wd shell.Shell) *sous.Manifest {
 	wd = wd.Clone()
 	if err := wd.CD("config"); err != nil {
 		return nil
 	}
 	l, err := wd.List()
 	if err != nil {
-		dsp.debug(err)
+		mp.debug(err)
 		return nil
 	}
 	c := make(chan namedDeploySpec)
@@ -92,10 +92,10 @@ func (dsp *ManifestParser) ParseManifest(wd shell.Shell) *sous.Manifest {
 			}
 			wd := wd.Clone()
 			if err := wd.CD(f.Name()); err != nil {
-				dsp.debug(err)
+				mp.debug(err)
 				return
 			}
-			if otplConfig, owners := dsp.GetSingleDeploySpec(wd); otplConfig != nil {
+			if otplConfig, owners := mp.GetSingleDeploySpec(wd); otplConfig != nil {
 				name := path.Base(wd.Dir())
 				c <- namedDeploySpec{name, otplConfig}
 				for o := range owners {
@@ -118,14 +118,14 @@ func (dsp *ManifestParser) ParseManifest(wd shell.Shell) *sous.Manifest {
 // directory of wd. It assumes that this directory contains at least a file
 // called singularity.json, and optionally an additional file called
 // singularity-requst.json.
-func (dsp *ManifestParser) GetSingleDeploySpec(wd shell.Shell) (*sous.DeploySpec, sous.OwnerSet) {
+func (mp *ManifestParser) GetSingleDeploySpec(wd shell.Shell) (*sous.DeploySpec, sous.OwnerSet) {
 	v := SingularityJSON{}
 	if !wd.Exists("singularity.json") {
-		dsp.debugf("no singularity.json in %s", wd.Dir())
+		mp.debugf("no singularity.json in %s", wd.Dir())
 		return nil, nil
 	}
 	if err := wd.JSON(&v, "cat", "singularity.json"); err != nil {
-		dsp.debugf("error reading %s: %s", path.Join(wd.Dir(),
+		mp.debugf("error reading %s: %s", path.Join(wd.Dir(),
 			"singularity.json"), err)
 		return nil, nil
 	}
@@ -137,12 +137,12 @@ func (dsp *ManifestParser) GetSingleDeploySpec(wd shell.Shell) (*sous.DeploySpec
 	}
 	request := SingularityRequestJSON{}
 	if !wd.Exists("singularity-request.json") {
-		dsp.debugf("no singularity-request.json in %s", wd.Dir())
+		mp.debugf("no singularity-request.json in %s", wd.Dir())
 		return &deploySpec, nil
 	}
-	dsp.debugf("%s/singularity-request.json exists, parsing it", wd.Dir())
+	mp.debugf("%s/singularity-request.json exists, parsing it", wd.Dir())
 	if err := wd.JSON(&request, "cat", "singularity-request.json"); err != nil {
-		dsp.debugf("error reading singularity-request.json: %s", err)
+		mp.debugf("error reading singularity-request.json: %s", err)
 		return &deploySpec, nil
 	}
 	deploySpec.NumInstances = request.Instances

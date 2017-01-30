@@ -12,7 +12,7 @@ func newDetectedOTPLConfig(wd LocalWorkDirShell, otplFlags *config.OTPLFlags) (d
 		return detectedOTPLDeployManifest{}, nil
 	}
 	otplParser := otpl.NewManifestParser()
-	otplDeploySpecs := otplParser.ParseManifest(wd.Sh)
+	otplDeploySpecs := otplParser.ParseManifests(wd.Sh)
 	return detectedOTPLDeployManifest{otplDeploySpecs}, nil
 }
 

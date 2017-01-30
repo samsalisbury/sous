@@ -90,7 +90,7 @@ func TestManifestParser_ParseManifest(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	actual := NewManifestParser().ParseManifest(wd)
+	actual := NewManifestParser().ParseManifests(wd)
 
 	expected := &sous.Manifest{
 		//Source: sous.MustParseSourceLocation("github.com/test/project"),
