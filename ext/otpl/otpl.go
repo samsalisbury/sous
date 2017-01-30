@@ -60,7 +60,7 @@ func NewManifestParser() *ManifestParser {
 	return &ManifestParser{debugf: sous.Log.Debug.Printf, debug: sous.Log.Debug.Println}
 }
 
-type namedDeploySpec struct {
+type otplDeployConfig struct {
 	Name string
 	Spec *sous.DeploySpec
 }
@@ -78,7 +78,7 @@ func (mp *ManifestParser) ParseManifests(wd shell.Shell) *sous.Manifest {
 		mp.debug(err)
 		return nil
 	}
-	c := make(chan namedDeploySpec)
+	c := make(chan otplDeployConfig)
 	manifestOwners := sous.NewOwnerSet()
 	wg := sync.WaitGroup{}
 	wg.Add(len(l))
@@ -97,7 +97,7 @@ func (mp *ManifestParser) ParseManifests(wd shell.Shell) *sous.Manifest {
 			}
 			if otplConfig, owners := mp.GetSingleDeploySpec(wd); otplConfig != nil {
 				name := path.Base(wd.Dir())
-				c <- namedDeploySpec{name, otplConfig}
+				c <- otplDeployConfig{name, otplConfig}
 				for o := range owners {
 					manifestOwners.Add(o)
 				}
