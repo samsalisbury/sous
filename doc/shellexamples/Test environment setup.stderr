@@ -3,18 +3,18 @@ bash-3.2$ # These steps are required by the Sous integration tests
 bash-3.2$ # They're analogous to run-of-the-mill workstation maintenance.
 bash-3.2$ 
 bash-3.2$ env
-bash-3.2$ mkdir -p /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-<ders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-t                         esting631144040/home/go/{<92mrn16vkfds/T/sous-cli-testing631144040/home/go/{s                         rc,bin}
+bash-3.2$ mkdir -p /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-<ders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-t                         esting260474545/home/go/{<92mrn16vkfds/T/sous-cli-testing260474545/home/go/{s                         rc,bin}
 bash-3.2$ go get github.com/nyarly/cygnus # cygnus lets us inspect Singularit</nyarly/cygnus # cygnus lets us inspect Singularity                          for ports
 bash-3.2$ cd /Users/jlester/golang/src/github.com/opentable/sous
 bash-3.2$ go install . #install the current sous project
 bash-3.2$ cp -a integration/test-homedir/* "$HOME"
 bash-3.2$ cp integration/test-registry/git-server/git_pubkey_rsa* ~/dot-ssh/
-bash-3.2$ cd /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testin<p/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing                         631144040
+bash-3.2$ cd /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testin<p/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing                         260474545
 bash-3.2$ cp templated-configs/ssh-config ~/dot-ssh/config
 bash-3.2$ chmod go-rwx -R ~/dot-ssh
 bash-3.2$ git config --global --add user.name "Integration Tester"
 bash-3.2$ git config --global --add user.email "itester@example.com"
-bash-3.2$ ssh -o PasswordAuthentication=no -F "${HOME}/dot-ssh/config" root@1<thentication=no -F "${HOME}/dot-ssh/config" root@19                         2.168.99.100 -p 2222 /res<}/dot-ssh/config" root@192.168.99.100 -p 2222 /rese                         t-repos < /dev/null
+bash-3.2$ ssh -o ConnectTimeout=1 -o PasswordAuthentication=no -F "${HOME}/do<eout=1 -o PasswordAuthentication=no -F "${HOME}/dot                         -ssh/config" root@192.168<cation=no -F "${HOME}/dot-ssh/config" root@192.168.                         99.100 -p 2222 /reset-rep<ssh/config" root@192.168.99.100 -p 2222 /reset-repo                         s < /dev/null
 Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
 bash-3.2$ echo SOME STUFF HERE GOT ET BY SSH
 bash-3.2$ 

@@ -159,6 +159,17 @@ func TestTemplating(t *testing.T) {
 	}
 }
 
+func withHostEnv(hostEnvs []string, env map[string]string) map[string]string {
+	newEnv := make(map[string]string)
+	for _, k := range hostEnvs {
+		newEnv[k] = os.Getenv(k)
+	}
+	for k, v := range env {
+		newEnv[k] = v
+	}
+	return newEnv
+}
+
 func TestShellLevelIntegration(t *testing.T) {
 	descPath := os.Getenv("SOUS_QA_DESC")
 	if descPath == "" {
@@ -174,7 +185,6 @@ func TestShellLevelIntegration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Couldn't create temporary working directory: %s", err)
 	}
-	log.Printf("WORKDIR: %q", workdir)
 	//defer os.RemoveAll(workdir)
 
 	stateDir := filepath.Join(workdir, "gdm")
@@ -206,14 +216,17 @@ func TestShellLevelIntegration(t *testing.T) {
 		goPath = goPath + ":" + userGopath
 	}
 
-	shell := shelltest.New(t, "happypath", map[string]string{
-		"HOME":    testHome,
-		"GIT_SSH": filepath.Join(testHome, "bin/ssh_wrapper"),
-		"GOPATH":  goPath,
-		"PATH":    strings.Join([]string{"~/bin", exePATH, filepath.Join(firstGoPath, "bin")}, ":"),
-	})
+	shell := shelltest.New(t, "happypath",
+		withHostEnv([]string{"DOCKER_HOST", "DOCKER_TLS_VERIFY", "DOCKER_CERT_PATH"},
+			map[string]string{
+				"HOME":    testHome,
+				"GIT_SSH": filepath.Join(testHome, "bin/ssh_wrapper"),
+				"GOPATH":  goPath,
+				"PATH":    strings.Join([]string{"~/bin", exePATH, filepath.Join(firstGoPath, "bin")}, ":"),
+			}))
 
 	shell.WriteTo("../doc/shellexamples")
+	shell.DebugPrefix("shell")
 
 	defaultCheck := func(name string, res shelltest.Result, t *testing.T) {
 		if len(res.Errs) > 0 {
@@ -237,15 +250,13 @@ func TestShellLevelIntegration(t *testing.T) {
 	chmod go-rwx -R ~/dot-ssh
 	git config --global --add user.name "Integration Tester"
 	git config --global --add user.email "itester@example.com"
-	ssh -o PasswordAuthentication=no -F "${HOME}/dot-ssh/config" root@`+gitSSH+` -p 2222 /reset-repos < /dev/null
+	ssh -o ConnectTimeout=1 -o PasswordAuthentication=no -F "${HOME}/dot-ssh/config" root@`+gitSSH+` -p 2222 /reset-repos < /dev/null
 	echo SOME STUFF HERE GOT ET BY SSH
 	`,
 		defaultCheck)
 
 	createGDM := prologue.Block("create the GDM", `
-	ls -l
 	git clone `+gitRemoteBase+`/gdm
-	ls -l
 	cat templated-configs/defs.yaml | tee gdm/defs.yaml
 	pushd gdm
 	git add defs.yaml
@@ -255,11 +266,23 @@ func TestShellLevelIntegration(t *testing.T) {
 	`, defaultCheck)
 
 	// XXX There should be a `-cluster left,right` syntax, instead of two deploy commands
-	setup := createGDM.Block("sous setup", `
+	setup := createGDM.Block("deploy sous server", `
 	git clone `+gitRemoteBase+`/sous-server
-	ls -l
 	pushd sous-server
 	sous init
+
+	# Last minute config
+	cat Dockerfile
+	cp ~/dot-ssh/git_pubkey_rsa key_sous@example.com
+	cp $(which sous) .
+	ls -la
+	ssh-keyscan `+gitSSH+` > known_hosts
+
+	git add key_sous@example.com known_hosts sous
+	git commit -am "Adding ephemeral files"
+	git tag -am "0.0.2" 0.0.2
+	git push
+	git push --tags
 	sous build
 	# We expect to see 'Sous is running ... in workstation mode' here:
 	SOUS_SERVER= SOUS_STATE_LOCATION=`+stateDir+` sous deploy -cluster left
@@ -301,7 +324,7 @@ func TestShellLevelIntegration(t *testing.T) {
 	git push --tags
 	sous init
 	sous build
-	sous deploy -tag 0.0.23
+	sous deploy -cluster left
 	`, defaultCheck)
 
 	//check :=

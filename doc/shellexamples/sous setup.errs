@@ -1,4 +1,0 @@
-255   43  sous init
-255   44  sous build
-64   46  SOUS_SERVER= SOUS_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing631144040/gdm sous deploy -cluster left
-64   47  SOUS_SERVER= SOUS_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing631144040/gdm sous deploy -cluster right

@@ -51,6 +51,15 @@ func (st *ShellTest) WriteTo(dir string) error {
 	return nil
 }
 
+// DebugPrefix directs the ShellTest to write all received bytes to debug files
+// in TempDir/Prefix
+func (st *ShellTest) DebugPrefix(prefix string) {
+	st.shell.stdout.debugTo(prefix)
+	st.shell.stderr.debugTo(prefix)
+	st.shell.scriptEnv.debugTo(prefix)
+	st.shell.scriptErrs.debugTo(prefix)
+}
+
 // Block runs a block of shell script, returning a new ShellTest. If the check
 // function includes a failing test, however, blocks run on the resulting
 // ShellTest will be skipped.

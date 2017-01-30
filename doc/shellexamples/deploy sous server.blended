@@ -1,0 +1,155 @@
+
+bash-3.2$ git clone ssh://root@192.168.99.100:2222/repos/sous-server
+Cloning into 'sous-server'...
+ssh_wrapper
+Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
+bash-3.2$ pushd sous-server
+/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing260474545/sous-server /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing260474545
+bash-3.2$ sous init
+Source: 192.168.99.100/2222/repos/sous-server,../../../../../../../../var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing260474545/sous-server
+Owners: []
+Kind: http-service
+Deployments:
+  ci-sf:
+    Resources:
+      cpus: "0.1"
+      memory: "100"
+      ports: "1"
+    NumInstances: 1
+    Volumes: []
+    Version: 0.0.0
+  ci-uswest2:
+    Resources:
+      cpus: "0.1"
+      memory: "100"
+      ports: "1"
+    NumInstances: 1
+    Volumes: []
+    Version: 0.0.0
+  pp-sf:
+    Resources:
+      cpus: "0.1"
+      memory: "100"
+      ports: "1"
+    NumInstances: 1
+    Volumes: []
+    Version: 0.0.0
+  pp-uswest2:
+    Resources:
+      cpus: "0.1"
+      memory: "100"
+      ports: "1"
+    NumInstances: 1
+    Volumes: []
+    Version: 0.0.0
+  prod-euwest1:
+    Resources:
+      cpus: "0.1"
+      memory: "100"
+      ports: "1"
+    NumInstances: 1
+    Volumes: []
+    Version: 0.0.0
+  prod-ln:
+    Resources:
+      cpus: "0.1"
+      memory: "100"
+      ports: "1"
+    NumInstances: 1
+    Volumes: []
+    Version: 0.0.0
+  prod-sc:
+    Resources:
+      cpus: "0.1"
+      memory: "100"
+      ports: "1"
+    NumInstances: 1
+    Volumes: []
+    Version: 0.0.0
+  prod-uswest2:
+    Resources:
+      cpus: "0.1"
+      memory: "100"
+      ports: "1"
+    NumInstances: 1
+    Volumes: []
+    Version: 0.0.0
+bash-3.2$ 
+bash-3.2$ # Last minute config
+bash-3.2$ cat Dockerfile
+FROM golang:1.7
+
+# Add deploy key.
+COPY ./key_sous@example.com /root/.ssh/id_rsa
+COPY ./known_hosts /root/.ssh/known_hosts
+
+RUN chmod -R og-rwx /root/.ssh
+
+COPY ./sous /go/bin/sous
+
+COPY main.go /go/src/github.com/opentable/sous-server/
+WORKDIR /go/src/github.com/opentable/sous-server
+RUN go install -v
+
+# Run sous server.
+# NOTE: You must have set PORT0, GDM_REPO
+CMD /go/bin/sous-server
+bash-3.2$ cp ~/dot-ssh/git_pubkey_rsa key_sous@example.com
+bash-3.2$ cp $(which sous) .
+bash-3.2$ ls -la
+total 15336
+drwxr-xr-x  8 jlester 513      272 Jan 30 13:10 .
+drwx------  6 jlester 513      204 Jan 30 13:10 ..
+drwxr-xr-x 12 jlester 513      408 Jan 30 13:10 .git
+-rw-r--r--  1 jlester 513      390 Jan 30 13:10 Dockerfile
+-rw-------  1 jlester 513     1679 Jan 30 13:10 key_sous@example.com
+-rw-r--r--  1 jlester 513     1550 Jan 30 13:10 main.go
+-r-xr-xr-x  1 jlester 513 15686000 Jan 30 13:10 sous
+-rw-r--r--  1 jlester 513      518 Jan 30 13:10 sous-server.yaml
+bash-3.2$ ssh-keyscan 192.168.99.100 > known_hosts
+# 192.168.99.100:22 SSH-2.0-OpenSSH_7.2
+# 192.168.99.100:22 SSH-2.0-OpenSSH_7.2
+# 192.168.99.100:22 SSH-2.0-OpenSSH_7.2
+bash-3.2$ 
+bash-3.2$ git add key_sous@example.com known_hosts sous
+bash-3.2$ git commit -am "Adding ephemeral files"
+[master 84cf047] Adding ephemeral files
+ 3 files changed, 29 insertions(+)
+ create mode 100644 key_sous@example.com
+ create mode 100644 known_hosts
+ create mode 100755 sous
+bash-3.2$ git tag -am "0.0.2" 0.0.2
+bash-3.2$ git push
+ssh_wrapper
+Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
+To ssh://192.168.99.100:2222/repos/sous-server
+   23ea27c..84cf047  master -> master
+bash-3.2$ git push --tags
+ssh_wrapper
+Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
+To ssh://192.168.99.100:2222/repos/sous-server
+ * [new tag]         0.0.2 -> 0.0.2
+bash-3.2$ sous build
+  (Sous)> running docker build -t ../../../var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing260474545/sous-server:0.0.2 -t ../../../var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing260474545/sous-server:84cf047f632db319791de0ee5d3a4d9b6244d7a8 -
+  (Sous)> docker build -t ../../../var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing260474545/sous-server:0.0.2 -t ../../../var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing260474545/sous-server:84cf047f632db319791de0ee5d3a4d9b6244d7a8 - FAILED (exit code 125)
+shell> docker build -t ../../../var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing260474545/sous-server:0.0.2 -t ../../../var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing260474545/sous-server:84cf047f632db319791de0ee5d3a4d9b6244d7a8 -
+invalid argument "../../../var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing260474545/sous-server:0.0.2" for t: Error parsing reference: "../../../var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing260474545/sous-server:0.0.2" is not a valid repository/tag: invalid reference format
+See 'docker build --help'.
+command failed: docker build -t ../../../var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing260474545/sous-server:0.0.2 -t ../../../var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing260474545/sous-server:84cf047f632db319791de0ee5d3a4d9b6244d7a8 -: exit status 125
+bash-3.2$ # We expect to see 'Sous is running ... in workstation mode' here:
+bash-3.2$ SOUS_SERVER= SOUS_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz<_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz9                         2mrn16vkfds/T/sous-cli-te<rs/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-tes                         ting260474545/gdm sous de<mrn16vkfds/T/sous-cli-testing260474545/gdm sous dep                         loy -cluster left
+warn: No server set, Sous is running in server or workstation mode.
+warn: Configure a server like this: sous config server http://some.sous.server
+warn: Using local state stored at /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing260474545/gdm
+update: You must provide the -tag flag.
+update: You must provide the -tag flag.
+bash-3.2$ SOUS_SERVER= SOUS_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz<_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz9                         2mrn16vkfds/T/sous-cli-te<rs/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-tes                         ting260474545/gdm sous de<mrn16vkfds/T/sous-cli-testing260474545/gdm sous dep                         loy -cluster right
+warn: No server set, Sous is running in server or workstation mode.
+warn: Configure a server like this: sous config server http://some.sous.server
+warn: Using local state stored at /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing260474545/gdm
+update: You must provide the -tag flag.
+update: You must provide the -tag flag.
+bash-3.2$ popd
+/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing260474545
+bash-3.2$ 
+bash-3.2$ 

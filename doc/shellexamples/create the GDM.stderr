@@ -1,11 +1,9 @@
 
-bash-3.2$ ls -l
 bash-3.2$ git clone ssh://root@192.168.99.100:2222/repos/gdm
 Cloning into 'gdm'...
 ssh_wrapper
 Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
 warning: You appear to have cloned an empty repository.
-bash-3.2$ ls -l
 bash-3.2$ cat templated-configs/defs.yaml | tee gdm/defs.yaml
 bash-3.2$ pushd gdm
 bash-3.2$ git add defs.yaml

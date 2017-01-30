@@ -5,9 +5,11 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -38,8 +40,10 @@ type (
 	}
 
 	liveStream struct {
-		pipe io.Reader
-		bufs []*bytes.Buffer
+		debugDir string
+		pipe     io.Reader
+		bufs     []*bytes.Buffer
+		debugs   []io.Writer
 		sync.Mutex
 	}
 )
@@ -62,7 +66,6 @@ func NewShell(env map[string]string) (sh *CaptiveShell, err error) {
 	for k, v := range env {
 		sh.Cmd.Env = append(sh.Cmd.Env, k+"="+v)
 	}
-	log.Printf("%v", sh.Cmd.Env)
 
 	sh.events = make(chan int)
 	sh.Stdin, err = sh.Cmd.StdinPipe()
@@ -115,6 +118,8 @@ func NewShell(env map[string]string) (sh *CaptiveShell, err error) {
 	return
 }
 
+// Run runs a script in the context of the shell, waits for it to complete and
+// returns the Result of running it.
 func (sh *CaptiveShell) Run(script string) (Result, error) {
 	st := stateCapture + "\n" + script + "\n" + exitCapture
 	sh.Stdin.Write([]byte(st))
@@ -164,11 +169,31 @@ func (ls *liveStream) reader(events <-chan int) {
 	}
 }
 
+func (ls *liveStream) debugTo(prefix string) {
+	dir, _ := ioutil.TempDir("", prefix)
+	ls.debugDir = dir
+	os.MkdirAll(ls.debugDir, os.ModePerm)
+	ls.debugs = make([]io.Writer, len(ls.bufs))
+	for n := range ls.bufs {
+		path := filepath.Join(ls.debugDir, fmt.Sprint(n))
+		log.Printf("Writing buffer bytes to %q.", path)
+		ls.debugs[n], _ = os.Create(path)
+	}
+}
+
 func (ls *liveStream) saveBytes(buf []byte) {
 	ls.Lock()
 	defer ls.Unlock()
-	for _, b := range ls.bufs {
+	for n, b := range ls.bufs {
 		b.Write(buf)
+
+		if ls.debugDir != "" {
+			_, err := ls.debugs[n].Write(buf)
+			if err != nil {
+				log.Printf("Error while writing bytes: %v", err)
+				log.Printf("Was trying to write: %s", string(buf))
+			}
+		}
 	}
 }
 
@@ -192,4 +217,5 @@ func (sh *CaptiveShell) readExitStatus() (int, error) {
 	return strconv.Atoi(string(bytes.TrimFunc(sh.doneRead.Bytes(), func(r rune) bool {
 		return strings.Index(`0123456789`, string(r)) == -1
 	})))
+
 }

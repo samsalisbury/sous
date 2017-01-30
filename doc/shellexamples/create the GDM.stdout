@@ -1,10 +1,3 @@
-total 0
-drwxr-xr-x 6 jlester 513 204 Jan 25 17:26 home
-drwxr-xr-x 4 jlester 513 136 Jan 25 17:26 templated-configs
-total 0
-drwxr-xr-x 3 jlester 513 102 Jan 25 17:26 gdm
-drwxr-xr-x 6 jlester 513 204 Jan 25 17:26 home
-drwxr-xr-x 4 jlester 513 136 Jan 25 17:26 templated-configs
 DockerRepo: 192.168.99.100:5000
 Clusters:
   left:
@@ -62,8 +55,8 @@ Resources:
 - Name: ports
   Type: Integer
 Metadata: []
-/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing631144040/gdm /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing631144040
-[master (root-commit) 4e2ff10] Adding defs.yaml
+/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing260474545/gdm /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing260474545
+[master (root-commit) d300344] Adding defs.yaml
  1 file changed, 57 insertions(+)
  create mode 100644 defs.yaml
-/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing631144040
+/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing260474545
