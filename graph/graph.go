@@ -84,7 +84,7 @@ type (
 	TargetManifest struct{ *sous.Manifest }
 	// detectedOTPLDeployManifest is a set of otpl-deploy configured deployments
 	// that have been detected.
-	detectedOTPLDeployManifest struct{ *sous.Manifest }
+	detectedOTPLDeployManifest struct{ sous.Manifests }
 	// userSelectedOTPLDeployManifest is a set of otpl-deploy configured deploy
 	// specs that the user has explicitly selected. (May be empty.)
 	userSelectedOTPLDeployManifest struct{ *sous.Manifest }
