@@ -49,9 +49,6 @@ clean:
 gitlog:
 	git log `git describe --abbrev=0`..HEAD
 
-gofmt:
-	bin/check-gofmt
-
 install-ggen:
 	cd bin/ggen && go install ./
 
@@ -66,7 +63,7 @@ semvertagchk:
 sous_qa_setup:
 	go build ./dev_support/sous_qa_setup
 
-test: gofmt test-unit test-integration
+test: test-gofmt test-unit test-integration
 
 coverage: $(COVER_DIR)
 	engulf -s --coverdir=$(COVER_DIR) \
@@ -80,13 +77,16 @@ coverage: $(COVER_DIR)
 		--exclude-files='raw_client.go$$, _generated.go$$'\
 		--merge-base=_merged.txt ./...
 
+test-gofmt:
+	bin/check-gofmt
+
 test-unit:
 	go test -v ./...
 
 test-integration: test-setup
 	SOUS_QA_DESC=$(QA_DESC) go test -v ./integration --tags=integration
 
-test-setup: ./integration/test-registry/testing.crt sous_qa_setup
+test-setup: sous_qa_setup
 	cd integration/test-registry && docker-compose pull
 	./sous_qa_setup --compose-dir ./integration/test-registry/ --out-path=`pwd`/qa_desc.json
 
@@ -116,7 +116,4 @@ artifacts/$(LINUX_TARBALL): artifacts/$(LINUX_RELEASE_DIR)/sous
 artifacts/$(DARWIN_TARBALL): artifacts/$(DARWIN_RELEASE_DIR)/sous
 	cd artifacts && tar czv $(DARWIN_RELEASE_DIR) > $(DARWIN_TARBALL)
 
-./integration/test-registry/testing.crt:
-	cd integration/test-registry && openssl req -newkey rsa:512 -x509 -days 365 -out testing.crt -config local-daemon-ssl.conf -batch
-
-.PHONY: clean coverage install-ggen legendary release semvertagchk test test-integration test-setup test-unit 
+.PHONY: clean coverage install-ggen legendary release semvertagchk test test-gofmt test-integration test-setup test-unit 
