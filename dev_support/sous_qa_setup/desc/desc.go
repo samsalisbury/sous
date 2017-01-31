@@ -30,3 +30,13 @@ func LoadDesc(descPath string) (EnvDesc, error) {
 
 	return desc, nil
 }
+
+// Complete returns false if any filed of the EnvDesc has been left empty.
+// This is useful because e.g. as fields are added across branches, it's easy
+// for tests to rely on data that was left unset by older code.
+func (ed EnvDesc) Complete() bool {
+	return ed.RegistryName != "" &&
+		ed.SingularityURL != "" &&
+		ed.GitOrigin != "" &&
+		len(ed.AgentIP) > 0
+}

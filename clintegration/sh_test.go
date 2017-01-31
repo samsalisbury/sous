@@ -12,6 +12,7 @@ import (
 
 	"github.com/opentable/sous/dev_support/sous_qa_setup/desc"
 	"github.com/opentable/sous/util/shelltest"
+	"github.com/pkg/errors"
 )
 
 // XXX move to shelltest
@@ -92,40 +93,63 @@ func templateConfigs(sourceDir, targetDir string, configData templatedConfigs) e
 
 		f, err := os.Open(path)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "open")
+		}
+
+		if 0 != (info.Mode() & os.ModeSymlink) {
+			linkT, err := os.Readlink(path)
+			if err != nil {
+				return errors.Wrap(err, "readlink")
+			}
+			if filepath.IsAbs(linkT) {
+				linkT, err = filepath.Rel(sourceDir, linkT)
+				if err != nil {
+					return errors.Wrap(err, "Rel link")
+				}
+			}
+			linkName := filepath.Join(targetDir, info.Name())
+			log.Printf("Linking %q -> %q.", linkName, linkT)
+			return errors.Wrap(os.Symlink(linkT, linkName), "create link")
 		}
 
 		sourcePath, err := filepath.Rel(sourceDir, path)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "Rel file")
 		}
 
 		bytes, err := ioutil.ReadAll(f)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "read")
 		}
 
 		targetPath := filepath.Join(targetDir, sourcePath)
+		err = os.MkdirAll(filepath.Dir(targetPath), os.ModePerm)
+		if err != nil {
+			return errors.Wrap(err, "create dir")
+		}
 
 		target, err := os.Create(targetPath)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "create target")
 		}
 		defer target.Close()
 
 		tmpl, err := template.New(f.Name()).Parse(string(bytes))
 		if err != nil {
-			return err
+			return errors.Wrap(err, "parse")
 		}
 
-		return tmpl.Execute(target, configData)
+		log.Printf("Templating %q -> %q.", path, targetPath)
+		return errors.Wrap(tmpl.Execute(target, configData), "execute")
 	})
 	return err
 }
 
 type templatedConfigs struct {
 	desc.EnvDesc
-	Workdir string
+	Workdir, Homedir, SSHWrapper string
+	GitSSH, GitRemoteBase        string
+	GoPath, ShellPath            []string
 }
 
 // XXX Do we need a separate test for the test infra?
@@ -180,6 +204,9 @@ func TestShellLevelIntegration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Couldn't load a QA env description from SOUS_QA_DESC(%q): %s", descPath, err)
 	}
+	if !envDesc.Complete() {
+		t.Fatal("Incomplete QA env description. Re-run sous_qa_setup?")
+	}
 
 	workdir, err := ioutil.TempDir("", "sous-cli-testing")
 	if err != nil {
@@ -192,6 +219,7 @@ func TestShellLevelIntegration(t *testing.T) {
 		t.Fatal(err, string(out))
 	}
 
+	log.Printf("WORKDIR: %q", workdir)
 	//defer os.RemoveAll(workdir)
 
 	stateDir := filepath.Join(workdir, "gdm")
@@ -205,31 +233,37 @@ func TestShellLevelIntegration(t *testing.T) {
 	gitRemoteBase := `ssh://root@` + envDesc.GitOrigin + "/repos"
 	gitSSH := strings.Split(envDesc.GitOrigin, ":")[0]
 
-	cfg := templatedConfigs{
-		EnvDesc: envDesc,
-		Workdir: workdir,
-	}
-
-	tmplTgt := filepath.Join(workdir, "templated-configs")
-	os.MkdirAll(tmplTgt, os.ModePerm)
-	err = templateConfigs(filepath.Join(pwd, "integration/test-config-templates"), tmplTgt, cfg)
-	if err != nil {
-		t.Fatalf("Templating configuration files: %s", err)
-	}
-
+	sshWrapper := filepath.Join(testHome, "bin/ssh_wrapper")
 	firstGoPath := filepath.Join(testHome, "go")
-	goPath := firstGoPath
+	goPath := []string{firstGoPath}
 	if userGopath := os.Getenv("GOPATH"); userGopath != "" {
-		goPath = goPath + ":" + userGopath
+		goPath = append(goPath, strings.Split(userGopath, ":")...)
+	}
+
+	cfg := templatedConfigs{
+		EnvDesc:       envDesc,
+		Workdir:       workdir,
+		Homedir:       testHome,
+		SSHWrapper:    sshWrapper,
+		GoPath:        goPath,
+		GitSSH:        gitSSH,
+		GitRemoteBase: gitRemoteBase,
+		ShellPath:     []string{sousExeDir, "~/bin", exePATH, filepath.Join(firstGoPath, "bin")},
+	}
+
+	os.MkdirAll(testHome, os.ModePerm)
+	err = templateConfigs(filepath.Join(pwd, "integration/test-homedir"), testHome, cfg)
+	if err != nil {
+		t.Fatalf("Templating configuration files: %+v", err)
 	}
 
 	shell := shelltest.New(t, "happypath",
 		withHostEnv([]string{"DOCKER_HOST", "DOCKER_TLS_VERIFY", "DOCKER_CERT_PATH"},
 			map[string]string{
-				"HOME":    testHome,
-				"GIT_SSH": filepath.Join(testHome, "bin/ssh_wrapper"),
-				"GOPATH":  goPath,
-				"PATH":    strings.Join([]string{sousExeDir, "~/bin", exePATH, filepath.Join(firstGoPath, "bin")}, ":"),
+				"HOME":    cfg.Homedir,
+				"GIT_SSH": cfg.SSHWrapper,
+				"GOPATH":  strings.Join(cfg.GoPath, ":"),
+				"PATH":    strings.Join(cfg.ShellPath, ":"),
 			}))
 
 	shell.WriteTo("../doc/shellexamples")
@@ -246,21 +280,15 @@ func TestShellLevelIntegration(t *testing.T) {
 	# They're analogous to run-of-the-mill workstation maintenance.
 
 	env
-	# set -P
 	mkdir -p `+firstGoPath+`/{src,bin}
 	go get github.com/nyarly/cygnus # cygnus lets us inspect Singularity for ports
 	cd `+pwd+`
 	go install . #install the current sous project
-	cp -a integration/test-homedir/* "$HOME"
 	cp integration/test-registry/git-server/git_pubkey_rsa* ~/dot-ssh/
 	cd `+workdir+`
-	cp templated-configs/ssh-config ~/dot-ssh/config
 	chmod go-rwx -R ~/dot-ssh
-	git config --global --add user.name "Integration Tester"
-	git config --global --add user.email "itester@example.com"
-	git config --global --add core.sshcommand "$GIT_SSH"
+	chmod +x -R ~/bin/*
 	ssh -o ConnectTimeout=1 -o PasswordAuthentication=no -F "${HOME}/dot-ssh/config" root@`+gitSSH+` -p 2222 /reset-repos < /dev/null
-	echo SOME STUFF HERE GOT ET BY SSH
 	`,
 		defaultCheck)
 

@@ -4,21 +4,21 @@ Cloning into 'sous-server'...
 ssh_wrapper
 Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
 bash-3.2$ pushd sous-server
-/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing238723182/sous-server /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing238723182
-bash-3.2$ SOUS_SERVER= SOUS_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz<_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz9                         2mrn16vkfds/T/sous-cli-te<rs/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-tes                         ting238723182/gdm sous in<mrn16vkfds/T/sous-cli-testing238723182/gdm sous ini                         t -v -d
-vomit: 2017/01/30 17:03:47 graph.go:295: Verbose debugging enabled
-debug: 2017/01/30 17:03:47 graph.go:296: Regular debugging enabled
+/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing994390328/sous-server /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing994390328
+bash-3.2$ SOUS_SERVER= SOUS_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz<_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz9                         2mrn16vkfds/T/sous-cli-te<rs/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-tes                         ting994390328/gdm sous in<mrn16vkfds/T/sous-cli-testing994390328/gdm sous ini                         t -v -d
+vomit: 2017/01/31 14:09:33 graph.go:295: Verbose debugging enabled
+debug: 2017/01/31 14:09:33 graph.go:296: Regular debugging enabled
 warn: No server set, Sous is running in server or workstation mode.
 warn: Configure a server like this: sous config server http://some.sous.server
-warn: Using local state stored at /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing238723182/gdm
+warn: Using local state stored at /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing994390328/gdm
   (Sous)> git version
 > git version 2.10.0
 
   (Sous)> git config -l
 > credential.helper=osxkeychain
+core.sshcommand=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing994390328/home/bin/ssh_wrapper
 user.name=Integration Tester
-user.email=itester@example.com
-core.sshcommand=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing238723182/home/bin/ssh_wrapper
+user.email=itester@opentable.com
 core.repositoryformatversion=0
 core.filemode=true
 core.bare=false
@@ -31,38 +31,28 @@ branch.master.remote=origin
 branch.master.merge=refs/heads/master
 
   (Sous)> git rev-parse --show-toplevel
-> /private/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing238723182/sous-server
+> /private/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing994390328/sous-server
 
+  (Sous)> git remote -v
+> origin	ssh://root@192.168.99.100:2222/repos/sous-server (fetch)
+origin	ssh://root@192.168.99.100:2222/repos/sous-server (push)
+
+  (Sous)> git ls-files --modified
+> 
+  (Sous)> git ls-files --others --exclude-standard
+> 
   (Sous)> git rev-parse --abbrev-ref HEAD
 > master
 
-  (Sous)> git rev-list -n 1 HEAD
-> 23ea27cb2f2b200e5bf9cbcb8c01dcf596e7b456
-
-debug: 2017/01/30 17:03:47 git_state_manager.go:55: [git pull]: error: exit status 1
-vomit: 2017/01/30 17:03:47 git_state_manager.go:57: git: ssh_wrapper
-Can't open user config file none/dot-ssh/config: No such file or directory
-fatal: Could not read from remote repository.
-
-Please make sure you have the correct access rights
-and the repository exists.
-vomit: 2017/01/30 17:03:47 disk_state_manager.go:65: Reading state from disk
   (Sous)> git log --date-order --tags --simplify-by-decoration --pretty=format:%H %aI %D
 > 1a27267954ca4f05bde5dec1443cf6dbcd520139 2017-01-25T15:39:07-08:00 tag: 0.0.1
-  (Sous)> git ls-files --others --exclude-standard
-> 
-  (Sous)> git ls-files --modified
-> 
   (Sous)> git ls-files
 > Dockerfile
 main.go
 sous-server.yaml
 
-vomit: 2017/01/30 17:03:47 disk_state_manager.go:45: Validating State
-vomit: 2017/01/30 17:03:47 disk_state_manager.go:48: Repairing State
-  (Sous)> git remote -v
-> origin	ssh://root@192.168.99.100:2222/repos/sous-server (fetch)
-origin	ssh://root@192.168.99.100:2222/repos/sous-server (push)
+  (Sous)> git rev-list -n 1 HEAD
+> 23ea27cb2f2b200e5bf9cbcb8c01dcf596e7b456
 
   (Sous)> git describe --tags --abbrev=0 --always
 > 0.0.1
@@ -70,18 +60,22 @@ origin	ssh://root@192.168.99.100:2222/repos/sous-server (push)
   (Sous)> git rev-list -n 1 0.0.1
 > 1a27267954ca4f05bde5dec1443cf6dbcd520139
 
-debug: 2017/01/30 17:03:47 git_state_manager.go:53: [git tag sous-fallback-e9dfb3ba-a188-4ce4-8e84-da4abe249e07]: success
-vomit: 2017/01/30 17:03:47 git_state_manager.go:57: git: 
-vomit: 2017/01/30 17:03:47 disk_state_manager.go:45: Validating State
-vomit: 2017/01/30 17:03:47 disk_state_manager.go:48: Repairing State
-vomit: 2017/01/30 17:03:47 disk_state_manager.go:100: Writing state to disk
-debug: 2017/01/30 17:03:47 git_state_manager.go:53: [git add .]: success
-vomit: 2017/01/30 17:03:47 git_state_manager.go:57: git: 
-debug: 2017/01/30 17:03:47 git_state_manager.go:55: [git diff-index --exit-code HEAD]: error: exit status 1
-vomit: 2017/01/30 17:03:47 git_state_manager.go:57: git: :100644 100644 0cff63bd3996d393983dcebf2ccb26cc570e8d78 143bfab2a6b3b90f34389146e1575e4b61e4b37c M	defs.yaml
-:000000 100644 0000000000000000000000000000000000000000 f524621b01746387e3168c8883627d69f2e9c196 A	manifests/192.168.99.100/2222/repos/sous-server.yaml
-debug: 2017/01/30 17:03:47 git_state_manager.go:53: [git commit -m sous commit: Update State]: success
-vomit: 2017/01/30 17:03:47 git_state_manager.go:57: git: [master f1fc00d] sous commit: Update State
+debug: 2017/01/31 14:09:33 git_state_manager.go:53: [git pull]: success
+vomit: 2017/01/31 14:09:33 git_state_manager.go:57: git: ssh_wrapper
+Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
+Already up-to-date.
+vomit: 2017/01/31 14:09:33 disk_state_manager.go:65: Reading state from disk
+debug: 2017/01/31 14:09:33 git_state_manager.go:53: [git tag sous-fallback-a07e22ce-890b-4225-b857-44b77a541324]: success
+vomit: 2017/01/31 14:09:33 git_state_manager.go:57: git: 
+vomit: 2017/01/31 14:09:33 disk_state_manager.go:45: Validating State
+vomit: 2017/01/31 14:09:33 disk_state_manager.go:48: Repairing State
+vomit: 2017/01/31 14:09:33 disk_state_manager.go:100: Writing state to disk
+debug: 2017/01/31 14:09:33 git_state_manager.go:53: [git add .]: success
+vomit: 2017/01/31 14:09:33 git_state_manager.go:57: git: 
+debug: 2017/01/31 14:09:33 git_state_manager.go:55: [git diff-index --exit-code HEAD]: error: exit status 1
+vomit: 2017/01/31 14:09:33 git_state_manager.go:57: git: :000000 100644 0000000000000000000000000000000000000000 1d91bcc0f2de9886bb688cf94e37343314f77065 A	manifests/192.168.99.100/2222/repos/sous-server.yaml
+debug: 2017/01/31 14:09:33 git_state_manager.go:53: [git commit -m sous commit: Update State]: success
+vomit: 2017/01/31 14:09:33 git_state_manager.go:57: git: [master 1ba3138] sous commit: Update State
  Committer: Judson Lester <jlester@MBP15JLESTER-3.local>
 Your name and email address were configured automatically based
 on your username and hostname. Please check that they are accurate.
@@ -95,37 +89,20 @@ After doing this, you may fix the identity used for this commit with:
 
     git commit --amend --reset-author
 
- 2 files changed, 22 insertions(+), 2 deletions(-)
+ 1 file changed, 4 insertions(+)
  create mode 100644 manifests/192.168.99.100/2222/repos/sous-server.yaml
-debug: 2017/01/30 17:03:47 git_state_manager.go:55: [git push -u origin master]: error: exit status 128
-vomit: 2017/01/30 17:03:47 git_state_manager.go:57: git: ssh_wrapper
-Can't open user config file none/dot-ssh/config: No such file or directory
-fatal: Could not read from remote repository.
-
-Please make sure you have the correct access rights
-and the repository exists.
-debug: 2017/01/30 17:03:47 git_state_manager.go:53: [git reset --hard sous-fallback-e9dfb3ba-a188-4ce4-8e84-da4abe249e07]: success
-vomit: 2017/01/30 17:03:47 git_state_manager.go:57: git: HEAD is now at 5a452a4 Adding defs.yaml
-debug: 2017/01/30 17:03:47 git_state_manager.go:53: [git clean -f]: success
-vomit: 2017/01/30 17:03:47 git_state_manager.go:57: git: 
-debug: 2017/01/30 17:03:47 git_state_manager.go:53: [git tag -d sous-fallback-e9dfb3ba-a188-4ce4-8e84-da4abe249e07]: success
-vomit: 2017/01/30 17:03:47 git_state_manager.go:57: git: Deleted tag 'sous-fallback-e9dfb3ba-a188-4ce4-8e84-da4abe249e07' (was 5a452a4)
-debug: 2017/01/30 17:03:47 cli.go:23: git push -u origin master: ssh_wrapper
-Can't open user config file none/dot-ssh/config: No such file or directory
-fatal: Could not read from remote repository.
-
-Please make sure you have the correct access rights
-and the repository exists.
-: exit status 128
-debug: 2017/01/30 17:03:47 cli.go:164: git push -u origin master: ssh_wrapper
-Can't open user config file none/dot-ssh/config: No such file or directory
-fatal: Could not read from remote repository.
-
-Please make sure you have the correct access rights
-and the repository exists.
-: exit status 128
-debug: 2017/01/30 17:03:47 cli.go:23: exit status 128
-exit status 128
+debug: 2017/01/31 14:09:34 git_state_manager.go:53: [git push -u origin master]: success
+vomit: 2017/01/31 14:09:34 git_state_manager.go:57: git: ssh_wrapper
+Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
+To ssh://192.168.99.100:2222/repos/gdm
+   00aa5a4..1ba3138  master -> master
+Branch master set up to track remote branch master from origin.
+debug: 2017/01/31 14:09:34 git_state_manager.go:53: [git tag -d sous-fallback-a07e22ce-890b-4225-b857-44b77a541324]: success
+vomit: 2017/01/31 14:09:34 git_state_manager.go:57: git: Deleted tag 'sous-fallback-a07e22ce-890b-4225-b857-44b77a541324' (was 00aa5a4)
+Source: 192.168.99.100/2222/repos/sous-server
+Owners: []
+Kind: http-service
+Deployments: {}
 bash-3.2$ 
 bash-3.2$ # Last minute config
 bash-3.2$ cat Dockerfile
@@ -150,26 +127,26 @@ bash-3.2$ cp ~/dot-ssh/git_pubkey_rsa key_sous@example.com
 bash-3.2$ cp $(which sous) .
 bash-3.2$ ls -la
 total 21476
-drwxr-xr-x  8 jlester 513      272 Jan 30 17:03 .
-drwx------  7 jlester 513      238 Jan 30 17:03 ..
-drwxr-xr-x 12 jlester 513      408 Jan 30 17:03 .git
--rw-r--r--  1 jlester 513      390 Jan 30 17:03 Dockerfile
--rw-------  1 jlester 513     1679 Jan 30 17:03 key_sous@example.com
--rw-r--r--  1 jlester 513     1550 Jan 30 17:03 main.go
--rwxr-xr-x  1 jlester 513 21974232 Jan 30 17:03 sous
--rw-r--r--  1 jlester 513      518 Jan 30 17:03 sous-server.yaml
+drwxr-xr-x  8 jlester 513      272 Jan 31 14:09 .
+drwx------  6 jlester 513      204 Jan 31 14:09 ..
+drwxr-xr-x 12 jlester 513      408 Jan 31 14:09 .git
+-rw-r--r--  1 jlester 513      390 Jan 31 14:09 Dockerfile
+-rw-------  1 jlester 513     1679 Jan 31 14:09 key_sous@example.com
+-rw-r--r--  1 jlester 513     1550 Jan 31 14:09 main.go
+-rwxr-xr-x  1 jlester 513 21974232 Jan 31 14:09 sous
+-rw-r--r--  1 jlester 513      518 Jan 31 14:09 sous-server.yaml
 bash-3.2$ ssh-keyscan -p 2222 192.168.99.100 > known_hosts
 # 192.168.99.100:2222 SSH-2.0-OpenSSH_7.2p2-hpn14v4
 # 192.168.99.100:2222 SSH-2.0-OpenSSH_7.2p2-hpn14v4
 # 192.168.99.100:2222 SSH-2.0-OpenSSH_7.2p2-hpn14v4
 bash-3.2$ cat known_hosts
-[192.168.99.100]:2222 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIO8BOx2vaerlE9Lu6ji2HcoYdTOGbZkujHyjueI3DZ9o
-[192.168.99.100]:2222 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCsAuDHxG64mMcfxXx9gGlQF0hN0AhQyGvVsM+QjxQW4Iv8d4wYOIYIXt92XLsE8m/nkPZQIQq62PzeYsjm2hNGkRqQNfW7fI9xzf8D0UF8DeJzrWOM62LMgCAOjTUIVPAtUXWYzGN1nyC06UHdqVnhXVqq+5XoL2PzZrkiMizRts+P+5B+dhVLkhIPFZcuYYKEW2aKSpomJYIXtBV141ZPpMsdLTEGK7EhhPSf0mJMPLXCvew5wgcA9beOyV5DeE6Pf9gLDYUxuQAI82tFeeKCcJr0qk917DB9LzmKxFqda2ONeSfXR+418g3l72FOQ18ryeCPcWmffjyZa8riZk2N
-[192.168.99.100]:2222 ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEMrg8xU9rHEUFGEVM/cUhgPoRcAwC85iMjNeR10v+BxF+40PYxeSydWO9+IVG/UhKbRNEMoPxTySTKYyk4w3YA=
+[192.168.99.100]:2222 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBFot83rjtUefATSkeZm/PovF7izPko8xaswz2V3xsYl
+[192.168.99.100]:2222 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCvBYnXgm1W+VoeYwHUo8/lzWkbVb6RMelWDcVPnd06L5bTAFX7CHtwP164bu7k1XLImy2sbSatz9W9ZetypVb8ahzlEUVul+Pe+fOjUfTeox+RiNizj2oFGzRzEIVhenlxalJ0d0dJYKyQbfsqI1L8bBkiTT9IrI2lhAVJFHCrsQrO486tP5xMTK85Aefh8WTPaTrhNdkFzH9OwZ5oF283NQI4RPBCDmZ7IT9LIbG32mW1QZXk2GhTbHU797Sv3n4CoggD2EIfcG0g3sFxbA0zX1QR4/1ssnopw9M1CdGLQKKQi93SEul0+yhZ721G/c2GYmTzCk5l/DWlrmdGppGF
+[192.168.99.100]:2222 ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBMPmZdmSltiBjr+aYBvmSFRsytCHKYdID0YpgPsup09FNPmYSPyyazs65/55eZiaPHmvo7PZ7IZA22S+Ggm2grs=
 bash-3.2$ 
 bash-3.2$ git add key_sous@example.com known_hosts sous
 bash-3.2$ git commit -am "Adding ephemeral files"
-[master bd95e77] Adding ephemeral files
+[master 38ab09d] Adding ephemeral files
  3 files changed, 30 insertions(+)
  create mode 100644 key_sous@example.com
  create mode 100644 known_hosts
@@ -179,17 +156,17 @@ bash-3.2$ git push
 ssh_wrapper
 Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
 To ssh://192.168.99.100:2222/repos/sous-server
-   23ea27c..bd95e77  master -> master
+   23ea27c..38ab09d  master -> master
 bash-3.2$ git push --tags
 ssh_wrapper
 Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
 To ssh://192.168.99.100:2222/repos/sous-server
  * [new tag]         0.0.2 -> 0.0.2
 bash-3.2$ sous context
-RootDir: /private/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing238723182/sous-server
+RootDir: /private/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing994390328/sous-server
 OffsetDir: ""
 Branch: master
-Revision: bd95e773e487550a2fb1d31ae45a704cb66746a8
+Revision: 38ab09d3501f50e13d5ee644e258d1d6869ea525
 Files:
 - Dockerfile
 - key_sous@example.com
@@ -201,11 +178,11 @@ ModifiedFiles: []
 NewFiles: []
 Tags:
 - Name: 0.0.2
-  Revision: bd95e773e487550a2fb1d31ae45a704cb66746a8
+  Revision: 38ab09d3501f50e13d5ee644e258d1d6869ea525
 - Name: 0.0.1
   Revision: 1a27267954ca4f05bde5dec1443cf6dbcd520139
 NearestTagName: 0.0.2
-NearestTagRevision: bd95e773e487550a2fb1d31ae45a704cb66746a8
+NearestTagRevision: 38ab09d3501f50e13d5ee644e258d1d6869ea525
 PrimaryRemoteURL: 192.168.99.100/2222/repos/sous-server
 RemoteURL: ""
 RemoteURLs:
@@ -213,28 +190,27 @@ RemoteURLs:
 DirtyWorkingTree: false
 RevisionUnpushed: false
 bash-3.2$ pwd
-/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing238723182/sous-server
 bash-3.2$ sous build
-  (Sous)> running docker build -t docker.otenv.com/192.168.99.100/2222/repos/sous-server:0.0.2 -t docker.otenv.com/192.168.99.100/2222/repos/sous-server:bd95e773e487550a2fb1d31ae45a704cb66746a8 -
+  (Sous)> running docker build -t docker.otenv.com/192.168.99.100/2222/repos/sous-server:0.0.2 -t docker.otenv.com/192.168.99.100/2222/repos/sous-server:38ab09d3501f50e13d5ee644e258d1d6869ea525 -
   (Sous)> running docker push docker.otenv.com/192.168.99.100/2222/repos/sous-server:0.0.2
-  (Sous)> running docker push docker.otenv.com/192.168.99.100/2222/repos/sous-server:bd95e773e487550a2fb1d31ae45a704cb66746a8
-  (Sous)> [recording "docker.otenv.com/192.168.99.100/2222/repos/sous-server:0.0.2" as the docker name for "192.168.99.100/2222/repos/sous-server,0.0.2+bd95e773e487550a2fb1d31ae45a704cb66746a8"]
+  (Sous)> running docker push docker.otenv.com/192.168.99.100/2222/repos/sous-server:38ab09d3501f50e13d5ee644e258d1d6869ea525
+  (Sous)> [recording "docker.otenv.com/192.168.99.100/2222/repos/sous-server:0.0.2" as the docker name for "192.168.99.100/2222/repos/sous-server,0.0.2+38ab09d3501f50e13d5ee644e258d1d6869ea525"]
 Built: "docker.otenv.com/192.168.99.100/2222/repos/sous-server:0.0.2"
-Elapsed: 2.003925561s
+Elapsed: 1m55.136778429s
 bash-3.2$ # We expect to see 'Sous is running ... in workstation mode' here:
-bash-3.2$ SOUS_SERVER= SOUS_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz<_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz9                         2mrn16vkfds/T/sous-cli-te<rs/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-tes                         ting238723182/gdm sous de<mrn16vkfds/T/sous-cli-testing238723182/gdm sous dep                         loy -cluster left
+bash-3.2$ SOUS_SERVER= SOUS_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz<_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz9                         2mrn16vkfds/T/sous-cli-te<rs/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-tes                         ting994390328/gdm sous de<mrn16vkfds/T/sous-cli-testing994390328/gdm sous dep                         loy -cluster left
 warn: No server set, Sous is running in server or workstation mode.
 warn: Configure a server like this: sous config server http://some.sous.server
-warn: Using local state stored at /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing238723182/gdm
-No manifest found for {"192.168.99.100/2222/repos/sous-server" "left"} - try 'sous init' first.
-No manifest found for {"192.168.99.100/2222/repos/sous-server" "left"} - try 'sous init' first.
-bash-3.2$ SOUS_SERVER= SOUS_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz<_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz9                         2mrn16vkfds/T/sous-cli-te<rs/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-tes                         ting238723182/gdm sous de<mrn16vkfds/T/sous-cli-testing238723182/gdm sous dep                         loy -cluster right
+warn: Using local state stored at /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing994390328/gdm
+error reading sous state: reading root: reading node: reading child Manifests: reading node: reading child 192.168.99.100/2222/repos/sous-server: reading node: reading struct fields: reading "manifests/192.168.99.100/2222/repos/sous-server": unmarshaling "/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing994390328/gdm/manifests/192.168.99.100/2222/repos/sous-server": Three parts found (includes a version?) in a canonical name: "192.168.99.100/2222/repos/sous-server"
+error reading sous state: reading root: reading node: reading child Manifests: reading node: reading child 192.168.99.100/2222/repos/sous-server: reading node: reading struct fields: reading "manifests/192.168.99.100/2222/repos/sous-server": unmarshaling "/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing994390328/gdm/manifests/192.168.99.100/2222/repos/sous-server": Three parts found (includes a version?) in a canonical name: "192.168.99.100/2222/repos/sous-server"
+bash-3.2$ SOUS_SERVER= SOUS_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz<_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz9                         2mrn16vkfds/T/sous-cli-te<rs/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-tes                         ting994390328/gdm sous de<mrn16vkfds/T/sous-cli-testing994390328/gdm sous dep                         loy -cluster right
 warn: No server set, Sous is running in server or workstation mode.
 warn: Configure a server like this: sous config server http://some.sous.server
-warn: Using local state stored at /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing238723182/gdm
-No manifest found for {"192.168.99.100/2222/repos/sous-server" "right"} - try 'sous init' first.
-No manifest found for {"192.168.99.100/2222/repos/sous-server" "right"} - try 'sous init' first.
+warn: Using local state stored at /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing994390328/gdm
+error reading sous state: reading root: reading node: reading child Manifests: reading node: reading child 192.168.99.100/2222/repos/sous-server: reading node: reading struct fields: reading "manifests/192.168.99.100/2222/repos/sous-server": unmarshaling "/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing994390328/gdm/manifests/192.168.99.100/2222/repos/sous-server": Three parts found (includes a version?) in a canonical name: "192.168.99.100/2222/repos/sous-server"
+error reading sous state: reading root: reading node: reading child Manifests: reading node: reading child 192.168.99.100/2222/repos/sous-server: reading node: reading struct fields: reading "manifests/192.168.99.100/2222/repos/sous-server": unmarshaling "/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing994390328/gdm/manifests/192.168.99.100/2222/repos/sous-server": Three parts found (includes a version?) in a canonical name: "192.168.99.100/2222/repos/sous-server"
 bash-3.2$ popd
-/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing238723182
+/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing994390328
 bash-3.2$ 
 bash-3.2$ 

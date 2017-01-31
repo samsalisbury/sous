@@ -5,6 +5,7 @@ ssh_wrapper
 Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
 warning: You appear to have cloned an empty repository.
 bash-3.2$ cat templated-configs/defs.yaml | tee gdm/defs.yaml
+cat: templated-configs/defs.yaml: No such file or directory
 bash-3.2$ pushd gdm
 bash-3.2$ git add defs.yaml
 bash-3.2$ git commit -am "Adding defs.yaml"
