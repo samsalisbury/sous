@@ -2,6 +2,14 @@
 
 ## Patches
 
+### 0.1.9 DRAFT
+
+- 'sous init -use-otpl-deploy' now supports flavors
+  defined by otpl config directories in the `<cluster>.<flavor>` format.
+  If there is a single flavor defined, behaviour is like before.
+  Otherwise you may supply a -flavor flag to import configurations of a particular flavor.
+
+
 ### 0.1.8
 
 - Feature: 'sous init' -use-otpl-config now imports owners from singularity-request.json
