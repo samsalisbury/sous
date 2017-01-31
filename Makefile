@@ -43,13 +43,8 @@ help:
 	@echo test (unit and integration)
 	
 clean:
-	rm -f sous_qa_setup
-	rm -f qa_desc.json
-	rm -f sous
-	rm -rf artifacts
 	rm -rf $(COVER_DIR)
-	rm -f bin/ggen/ggen
-	rm -f integration/test-registry/testing.*
+	git ls-files -o | xargs rm -rf
 
 gitlog:
 	git log `git describe --abbrev=0`..HEAD
