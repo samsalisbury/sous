@@ -57,3 +57,16 @@ func (ms Manifests) String() string {
 	}
 	return fmt.Sprintf("Manifests(%s)", strings.Join(mids, ", "))
 }
+
+// Flavors returns all the flavors of manifests in this set of manifests.
+func (ms Manifests) Flavors() []string {
+	flavors := map[string]struct{}{}
+	for _, mid := range ms.Keys() {
+		flavors[mid.Flavor] = struct{}{}
+	}
+	var fs []string
+	for f := range flavors {
+		fs = append(fs, f)
+	}
+	return fs
+}

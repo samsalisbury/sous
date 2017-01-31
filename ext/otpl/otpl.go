@@ -71,15 +71,16 @@ type otplDeployConfig struct {
 // ParseManifests searches the working directory of wd to find otpl-deploy
 // config files in their standard locations (config/{cluster-name}), and
 // converts them to sous.DeploySpecs.
-func (mp *ManifestParser) ParseManifests(wd shell.Shell) *sous.Manifest {
+func (mp *ManifestParser) ParseManifests(wd shell.Shell) sous.Manifests {
 	wd = wd.Clone()
+	manifests := sous.NewManifests()
 	if err := wd.CD("config"); err != nil {
-		return nil
+		return manifests
 	}
 	l, err := wd.List()
 	if err != nil {
 		mp.debug(err)
-		return nil
+		return manifests
 	}
 	c := make(chan *otplDeployConfig)
 	wg := sync.WaitGroup{}
@@ -110,10 +111,12 @@ func (mp *ManifestParser) ParseManifests(wd shell.Shell) *sous.Manifest {
 			owners.Add(o)
 		}
 	}
-	return &sous.Manifest{
-		Deployments: deployConfigs,
-		Owners:      owners.Slice(),
-	}
+	return sous.NewManifests(
+		&sous.Manifest{
+			Deployments: deployConfigs,
+			Owners:      owners.Slice(),
+		},
+	)
 }
 
 // ParseSingleOTPLConfig returns a single sous.DeploySpec from the working

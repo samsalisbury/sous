@@ -92,31 +92,33 @@ func TestManifestParser_ParseManifest(t *testing.T) {
 
 	actual := NewManifestParser().ParseManifests(wd)
 
-	expected := &sous.Manifest{
-		//Source: sous.MustParseSourceLocation("github.com/test/project"),
-		Flavor: "",
-		Owners: []string{"owner1@example.com"},
-		Kind:   "",
-		Deployments: sous.DeploySpecs{
-			"cluster1": sous.DeploySpec{
-				DeployConfig: sous.DeployConfig{
-					Resources: sous.Resources{
-						"cpus":   "0.002",
-						"memory": "96",
-						"ports":  "1",
+	expected := sous.NewManifests(
+		&sous.Manifest{
+			//Source: sous.MustParseSourceLocation("github.com/test/project"),
+			Flavor: "",
+			Owners: []string{"owner1@example.com"},
+			Kind:   "",
+			Deployments: sous.DeploySpecs{
+				"cluster1": sous.DeploySpec{
+					DeployConfig: sous.DeployConfig{
+						Resources: sous.Resources{
+							"cpus":   "0.002",
+							"memory": "96",
+							"ports":  "1",
+						},
+						Metadata: sous.Metadata(nil),
+						Args:     []string(nil),
+						Env: sous.Env{
+							"SOME_VAR": "22",
+						},
+						NumInstances: 2,
+						Volumes:      sous.Volumes(nil),
 					},
-					Metadata: sous.Metadata(nil),
-					Args:     []string(nil),
-					Env: sous.Env{
-						"SOME_VAR": "22",
-					},
-					NumInstances: 2,
-					Volumes:      sous.Volumes(nil),
+					Version: semv.MustParse("0.0.0"),
 				},
-				Version: semv.MustParse("0.0.0"),
 			},
 		},
-	}
+	)
 
 	if different, diffs := actual.Diff(expected); different {
 		t.Errorf("parsed manifest not as expected")
