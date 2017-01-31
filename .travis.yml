@@ -8,7 +8,6 @@ before_install:
 - bin/ci-setup
 install:
 - "./bin/vendor-check"
-- "./bin/check-gofmt"
 script:
 - make -j2 test && make coverage
 after_success:
