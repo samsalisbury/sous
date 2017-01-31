@@ -185,6 +185,13 @@ func TestShellLevelIntegration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Couldn't create temporary working directory: %s", err)
 	}
+
+	sousExeDir := filepath.Join(workdir, "sous", "bin")
+	sousExe := filepath.Join(sousExeDir, "sous")
+	if out, err := exec.Command("go", "build", "-o", sousExe, "..").CombinedOutput(); err != nil {
+		t.Fatal(err, string(out))
+	}
+
 	//defer os.RemoveAll(workdir)
 
 	stateDir := filepath.Join(workdir, "gdm")
@@ -222,7 +229,7 @@ func TestShellLevelIntegration(t *testing.T) {
 				"HOME":    testHome,
 				"GIT_SSH": filepath.Join(testHome, "bin/ssh_wrapper"),
 				"GOPATH":  goPath,
-				"PATH":    strings.Join([]string{"~/bin", exePATH, filepath.Join(firstGoPath, "bin")}, ":"),
+				"PATH":    strings.Join([]string{sousExeDir, "~/bin", exePATH, filepath.Join(firstGoPath, "bin")}, ":"),
 			}))
 
 	shell.WriteTo("../doc/shellexamples")
@@ -239,6 +246,7 @@ func TestShellLevelIntegration(t *testing.T) {
 	# They're analogous to run-of-the-mill workstation maintenance.
 
 	env
+	# set -P
 	mkdir -p `+firstGoPath+`/{src,bin}
 	go get github.com/nyarly/cygnus # cygnus lets us inspect Singularity for ports
 	cd `+pwd+`
@@ -267,22 +275,27 @@ func TestShellLevelIntegration(t *testing.T) {
 
 	// XXX There should be a `-cluster left,right` syntax, instead of two deploy commands
 	setup := createGDM.Block("deploy sous server", `
+	sous version
+	which sous
 	git clone `+gitRemoteBase+`/sous-server
 	pushd sous-server
-	sous init
+	SOUS_SERVER= SOUS_STATE_LOCATION=`+stateDir+` sous init
 
 	# Last minute config
 	cat Dockerfile
 	cp ~/dot-ssh/git_pubkey_rsa key_sous@example.com
 	cp $(which sous) .
 	ls -la
-	ssh-keyscan `+gitSSH+` > known_hosts
+	ssh-keyscan -p 2222 `+gitSSH+` > known_hosts
+	cat known_hosts
 
 	git add key_sous@example.com known_hosts sous
 	git commit -am "Adding ephemeral files"
 	git tag -am "0.0.2" 0.0.2
 	git push
 	git push --tags
+	sous context
+	pwd
 	sous build
 	# We expect to see 'Sous is running ... in workstation mode' here:
 	SOUS_SERVER= SOUS_STATE_LOCATION=`+stateDir+` sous deploy -cluster left

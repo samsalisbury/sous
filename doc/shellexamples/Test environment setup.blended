@@ -4,22 +4,23 @@ bash-3.2$ # They're analogous to run-of-the-mill workstation maintenance.
 bash-3.2$ 
 bash-3.2$ env
 DOCKER_HOST=tcp://192.168.99.100:2376
-GIT_SSH=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing260474545/home/bin/ssh_wrapper
+GIT_SSH=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing375798555/home/bin/ssh_wrapper
 DOCKER_TLS_VERIFY=1
-PATH=~/bin:/usr/local/bin:/usr/bin:/usr/local/opt/coreutils/libexec/gnubin:/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing260474545/home/go/bin
+PATH=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing375798555/sous/bin:~/bin:/usr/local/bin:/usr/bin:/usr/local/opt/coreutils/libexec/gnubin:/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing375798555/home/go/bin
 PWD=/Users/jlester/golang/src/github.com/opentable/sous/clintegration
 SHLVL=1
-HOME=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing260474545/home
+HOME=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing375798555/home
 DOCKER_CERT_PATH=/Users/jlester/.docker/machine/machines/default
-GOPATH=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing260474545/home/go:/Users/jlester/golang
+GOPATH=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing375798555/home/go:/Users/jlester/golang
 _=/usr/bin/env
-bash-3.2$ mkdir -p /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-<ders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-t                         esting260474545/home/go/{<92mrn16vkfds/T/sous-cli-testing260474545/home/go/{s                         rc,bin}
+bash-3.2$ # set -P
+bash-3.2$ mkdir -p /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-<ders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-t                         esting375798555/home/go/{<92mrn16vkfds/T/sous-cli-testing375798555/home/go/{s                         rc,bin}
 bash-3.2$ go get github.com/nyarly/cygnus # cygnus lets us inspect Singularit</nyarly/cygnus # cygnus lets us inspect Singularity                          for ports
 bash-3.2$ cd /Users/jlester/golang/src/github.com/opentable/sous
 bash-3.2$ go install . #install the current sous project
 bash-3.2$ cp -a integration/test-homedir/* "$HOME"
 bash-3.2$ cp integration/test-registry/git-server/git_pubkey_rsa* ~/dot-ssh/
-bash-3.2$ cd /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testin<p/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing                         260474545
+bash-3.2$ cd /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testin<p/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing                         375798555
 bash-3.2$ cp templated-configs/ssh-config ~/dot-ssh/config
 bash-3.2$ chmod go-rwx -R ~/dot-ssh
 bash-3.2$ git config --global --add user.name "Integration Tester"

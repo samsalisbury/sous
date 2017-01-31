@@ -1,13 +1,18 @@
 package sous
 
-import "testing"
+import (
+	"io/ioutil"
+	"path/filepath"
+	"testing"
+)
 
-func rootedBuildManager(root string) *BuildManager {
+func rootedBuildManager(root, offset string) *BuildManager {
 	return &BuildManager{
 		BuildConfig: &BuildConfig{
 			Context: &BuildContext{
 				Source: SourceContext{
-					RootDir: root,
+					RootDir:   root,
+					OffsetDir: offset,
 				},
 			},
 		},
@@ -16,12 +21,43 @@ func rootedBuildManager(root string) *BuildManager {
 
 func TestOffsetFromWorkdir(t *testing.T) {
 	root := "/somewhere/project"
-	relWork := "/working"
+	relWork := "working"
 	cliArg := "offset"
 	off := "working/offset"
-	bm := rootedBuildManager(root)
+	bm := rootedBuildManager(root, relWork)
 
-	err := bm.OffsetFromWorkdir(root+"/"+relWork, cliArg)
+	err := bm.OffsetFromWorkdir(cliArg)
+	if err != nil {
+		t.Errorf("error not nil: %v", err)
+	}
+	if bm.BuildConfig.Offset != off {
+		t.Errorf("%q != %q", bm.BuildConfig.Offset, off)
+	}
+}
+
+func TestOffsetFromWorkdir_OSXTmpDir(t *testing.T) {
+	pwd, err := ioutil.TempDir("", "osxtmpdir")
+	if err != nil {
+		t.Fatal(err)
+	}
+	root, err := filepath.EvalSymlinks(pwd)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if pwd == root {
+		t.Fatal("The test assumption that these would be different directories was flawed")
+	}
+
+	off := ""
+
+	offset, err := NormalizedOffset(root, pwd)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bm := rootedBuildManager(root, offset)
+	err = bm.OffsetFromWorkdir(".")
+
 	if err != nil {
 		t.Errorf("error not nil: %v", err)
 	}
@@ -33,9 +69,9 @@ func TestOffsetFromWorkdir(t *testing.T) {
 func TestOffsetFromWorkdirOffsetOutsideOfRoot(t *testing.T) {
 	root := "/somewhere/project"
 	cliArg := ".."
-	bm := rootedBuildManager(root)
+	bm := rootedBuildManager(root, "")
 
-	err := bm.OffsetFromWorkdir(root, cliArg)
+	err := bm.OffsetFromWorkdir(cliArg)
 	if err == nil {
 		t.Errorf("error nil when offset outside of project root")
 	}
@@ -44,30 +80,16 @@ func TestOffsetFromWorkdirOffsetOutsideOfRoot(t *testing.T) {
 	}
 }
 
-func TestOffsetFromWorkdirOffsetWhenWorkDirIsBad(t *testing.T) {
-	root := "/somewhere/project"
-	workdir := "you/know/around"
-	cliArg := ".."
-	bm := rootedBuildManager(root)
-
-	err := bm.OffsetFromWorkdir(workdir, cliArg)
-	if err == nil {
-		t.Errorf("error nil when workdir isn't absolute")
-	}
-	if bm.BuildConfig.Offset != "" {
-		t.Errorf("Offset = %q", bm.BuildConfig.Offset)
-	}
-}
-
 func TestOffsetFromWorkdirWhenOffsetAlreadyConfigd(t *testing.T) {
 	root := "/somewhere/project"
-	relWork := "/working"
+	relWork := "working"
 	cliArg := "offset"
 	off := "working/offset"
 	flagOffset := "working/elsewhere"
-	bm := rootedBuildManager(root)
+
+	bm := rootedBuildManager(root, relWork)
 	bm.BuildConfig.Offset = flagOffset
-	err := bm.OffsetFromWorkdir(root+"/"+relWork, cliArg)
+	err := bm.OffsetFromWorkdir(cliArg)
 
 	if err == nil {
 		t.Errorf("error nil when offset already set")

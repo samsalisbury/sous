@@ -1,7 +1,10 @@
 package sous
 
 import (
+	"log"
+	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/samsalisbury/semv"
 )
@@ -25,6 +28,41 @@ type (
 		Name, Revision string
 	}
 )
+
+// NormalizedOffset returns a relative path from root that is based on workdir.
+// Notably, it handles the case where the workdir is in the same physical path
+// as root, but via symlinks
+func NormalizedOffset(root, workdir string) (string, error) {
+	parts := strings.Split(workdir, string(os.PathSeparator))
+	for n := range parts {
+		prefix := "/" + filepath.Join(parts[0:n+1]...)
+		prefix, err := filepath.EvalSymlinks(prefix)
+		if err != nil {
+			log.Print(err)
+			break // this isn't working
+		}
+		if strings.HasPrefix(prefix, root) {
+			mid := prefix[len(root):len(prefix)]
+			rest := parts[n+1 : len(parts)]
+			workdir = filepath.Join(append([]string{root, mid}, rest...)...)
+			break
+		}
+	}
+
+	relDir, err := filepath.Rel(root, workdir)
+	if err != nil {
+		return "", err
+	}
+	workdir = filepath.Join(root, relDir)
+	relDir, err = filepath.Rel(root, workdir)
+	if err != nil {
+		return "", err
+	}
+	if relDir == "." {
+		relDir = ""
+	}
+	return relDir, nil
+}
 
 // Version returns the SourceID.
 func (sc *SourceContext) Version() SourceID {

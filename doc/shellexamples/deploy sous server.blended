@@ -1,79 +1,21 @@
 
+bash-3.2$ sous version
+sous version 0.0.0-devbuild (go1.7.4 darwin/amd64)
+This is an unsupported development build.
+Get supported releases from https://github.com/opentable/sous/releases
+bash-3.2$ which sous
+/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing375798555/sous/bin/sous
 bash-3.2$ git clone ssh://root@192.168.99.100:2222/repos/sous-server
 Cloning into 'sous-server'...
 ssh_wrapper
 Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
 bash-3.2$ pushd sous-server
-/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing260474545/sous-server /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing260474545
-bash-3.2$ sous init
-Source: 192.168.99.100/2222/repos/sous-server,../../../../../../../../var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing260474545/sous-server
-Owners: []
-Kind: http-service
-Deployments:
-  ci-sf:
-    Resources:
-      cpus: "0.1"
-      memory: "100"
-      ports: "1"
-    NumInstances: 1
-    Volumes: []
-    Version: 0.0.0
-  ci-uswest2:
-    Resources:
-      cpus: "0.1"
-      memory: "100"
-      ports: "1"
-    NumInstances: 1
-    Volumes: []
-    Version: 0.0.0
-  pp-sf:
-    Resources:
-      cpus: "0.1"
-      memory: "100"
-      ports: "1"
-    NumInstances: 1
-    Volumes: []
-    Version: 0.0.0
-  pp-uswest2:
-    Resources:
-      cpus: "0.1"
-      memory: "100"
-      ports: "1"
-    NumInstances: 1
-    Volumes: []
-    Version: 0.0.0
-  prod-euwest1:
-    Resources:
-      cpus: "0.1"
-      memory: "100"
-      ports: "1"
-    NumInstances: 1
-    Volumes: []
-    Version: 0.0.0
-  prod-ln:
-    Resources:
-      cpus: "0.1"
-      memory: "100"
-      ports: "1"
-    NumInstances: 1
-    Volumes: []
-    Version: 0.0.0
-  prod-sc:
-    Resources:
-      cpus: "0.1"
-      memory: "100"
-      ports: "1"
-    NumInstances: 1
-    Volumes: []
-    Version: 0.0.0
-  prod-uswest2:
-    Resources:
-      cpus: "0.1"
-      memory: "100"
-      ports: "1"
-    NumInstances: 1
-    Volumes: []
-    Version: 0.0.0
+/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing375798555/sous-server /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing375798555
+bash-3.2$ SOUS_SERVER= SOUS_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz<_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz9                         2mrn16vkfds/T/sous-cli-te<rs/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-tes                         ting375798555/gdm sous in<mrn16vkfds/T/sous-cli-testing375798555/gdm sous ini                         t
+warn: No server set, Sous is running in server or workstation mode.
+warn: Configure a server like this: sous config server http://some.sous.server
+warn: Using local state stored at /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing375798555/gdm
+exit status 128
 bash-3.2$ 
 bash-3.2$ # Last minute config
 bash-3.2$ cat Dockerfile
@@ -97,24 +39,28 @@ CMD /go/bin/sous-server
 bash-3.2$ cp ~/dot-ssh/git_pubkey_rsa key_sous@example.com
 bash-3.2$ cp $(which sous) .
 bash-3.2$ ls -la
-total 15336
-drwxr-xr-x  8 jlester 513      272 Jan 30 13:10 .
-drwx------  6 jlester 513      204 Jan 30 13:10 ..
-drwxr-xr-x 12 jlester 513      408 Jan 30 13:10 .git
--rw-r--r--  1 jlester 513      390 Jan 30 13:10 Dockerfile
--rw-------  1 jlester 513     1679 Jan 30 13:10 key_sous@example.com
--rw-r--r--  1 jlester 513     1550 Jan 30 13:10 main.go
--r-xr-xr-x  1 jlester 513 15686000 Jan 30 13:10 sous
--rw-r--r--  1 jlester 513      518 Jan 30 13:10 sous-server.yaml
-bash-3.2$ ssh-keyscan 192.168.99.100 > known_hosts
-# 192.168.99.100:22 SSH-2.0-OpenSSH_7.2
-# 192.168.99.100:22 SSH-2.0-OpenSSH_7.2
-# 192.168.99.100:22 SSH-2.0-OpenSSH_7.2
+total 21476
+drwxr-xr-x  8 jlester 513      272 Jan 30 16:13 .
+drwx------  7 jlester 513      238 Jan 30 16:13 ..
+drwxr-xr-x 12 jlester 513      408 Jan 30 16:13 .git
+-rw-r--r--  1 jlester 513      390 Jan 30 16:13 Dockerfile
+-rw-------  1 jlester 513     1679 Jan 30 16:13 key_sous@example.com
+-rw-r--r--  1 jlester 513     1550 Jan 30 16:13 main.go
+-rwxr-xr-x  1 jlester 513 21974232 Jan 30 16:13 sous
+-rw-r--r--  1 jlester 513      518 Jan 30 16:13 sous-server.yaml
+bash-3.2$ ssh-keyscan -p 2222 192.168.99.100 > known_hosts
+# 192.168.99.100:2222 SSH-2.0-OpenSSH_7.2p2-hpn14v4
+# 192.168.99.100:2222 SSH-2.0-OpenSSH_7.2p2-hpn14v4
+# 192.168.99.100:2222 SSH-2.0-OpenSSH_7.2p2-hpn14v4
+bash-3.2$ cat known_hosts
+[192.168.99.100]:2222 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIO8BOx2vaerlE9Lu6ji2HcoYdTOGbZkujHyjueI3DZ9o
+[192.168.99.100]:2222 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCsAuDHxG64mMcfxXx9gGlQF0hN0AhQyGvVsM+QjxQW4Iv8d4wYOIYIXt92XLsE8m/nkPZQIQq62PzeYsjm2hNGkRqQNfW7fI9xzf8D0UF8DeJzrWOM62LMgCAOjTUIVPAtUXWYzGN1nyC06UHdqVnhXVqq+5XoL2PzZrkiMizRts+P+5B+dhVLkhIPFZcuYYKEW2aKSpomJYIXtBV141ZPpMsdLTEGK7EhhPSf0mJMPLXCvew5wgcA9beOyV5DeE6Pf9gLDYUxuQAI82tFeeKCcJr0qk917DB9LzmKxFqda2ONeSfXR+418g3l72FOQ18ryeCPcWmffjyZa8riZk2N
+[192.168.99.100]:2222 ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEMrg8xU9rHEUFGEVM/cUhgPoRcAwC85iMjNeR10v+BxF+40PYxeSydWO9+IVG/UhKbRNEMoPxTySTKYyk4w3YA=
 bash-3.2$ 
 bash-3.2$ git add key_sous@example.com known_hosts sous
 bash-3.2$ git commit -am "Adding ephemeral files"
-[master 84cf047] Adding ephemeral files
- 3 files changed, 29 insertions(+)
+[master 1497e42] Adding ephemeral files
+ 3 files changed, 30 insertions(+)
  create mode 100644 key_sous@example.com
  create mode 100644 known_hosts
  create mode 100755 sous
@@ -123,33 +69,62 @@ bash-3.2$ git push
 ssh_wrapper
 Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
 To ssh://192.168.99.100:2222/repos/sous-server
-   23ea27c..84cf047  master -> master
+   23ea27c..1497e42  master -> master
 bash-3.2$ git push --tags
 ssh_wrapper
 Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
 To ssh://192.168.99.100:2222/repos/sous-server
  * [new tag]         0.0.2 -> 0.0.2
+bash-3.2$ sous context
+RootDir: /private/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing375798555/sous-server
+OffsetDir: ""
+Branch: master
+Revision: 1497e42d7917bcf28932cfeb95faed59fa1d0a14
+Files:
+- Dockerfile
+- key_sous@example.com
+- known_hosts
+- main.go
+- sous
+- sous-server.yaml
+ModifiedFiles: []
+NewFiles: []
+Tags:
+- Name: 0.0.2
+  Revision: 1497e42d7917bcf28932cfeb95faed59fa1d0a14
+- Name: 0.0.1
+  Revision: 1a27267954ca4f05bde5dec1443cf6dbcd520139
+NearestTagName: 0.0.2
+NearestTagRevision: 1497e42d7917bcf28932cfeb95faed59fa1d0a14
+PrimaryRemoteURL: 192.168.99.100/2222/repos/sous-server
+RemoteURL: ""
+RemoteURLs:
+- 192.168.99.100/2222/repos/sous-server
+DirtyWorkingTree: false
+RevisionUnpushed: false
+bash-3.2$ pwd
+/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing375798555/sous-server
 bash-3.2$ sous build
-  (Sous)> running docker build -t ../../../var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing260474545/sous-server:0.0.2 -t ../../../var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing260474545/sous-server:84cf047f632db319791de0ee5d3a4d9b6244d7a8 -
-  (Sous)> docker build -t ../../../var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing260474545/sous-server:0.0.2 -t ../../../var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing260474545/sous-server:84cf047f632db319791de0ee5d3a4d9b6244d7a8 - FAILED (exit code 125)
-shell> docker build -t ../../../var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing260474545/sous-server:0.0.2 -t ../../../var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing260474545/sous-server:84cf047f632db319791de0ee5d3a4d9b6244d7a8 -
-invalid argument "../../../var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing260474545/sous-server:0.0.2" for t: Error parsing reference: "../../../var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing260474545/sous-server:0.0.2" is not a valid repository/tag: invalid reference format
-See 'docker build --help'.
-command failed: docker build -t ../../../var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing260474545/sous-server:0.0.2 -t ../../../var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing260474545/sous-server:84cf047f632db319791de0ee5d3a4d9b6244d7a8 -: exit status 125
+  (Sous)> running docker build -t docker.otenv.com/192.168.99.100/2222/repos/sous-server:0.0.2 -t docker.otenv.com/192.168.99.100/2222/repos/sous-server:1497e42d7917bcf28932cfeb95faed59fa1d0a14 -
+  (Sous)> running docker push docker.otenv.com/192.168.99.100/2222/repos/sous-server:0.0.2
+  (Sous)> running docker push docker.otenv.com/192.168.99.100/2222/repos/sous-server:1497e42d7917bcf28932cfeb95faed59fa1d0a14
+  (Sous)> [recording "docker.otenv.com/192.168.99.100/2222/repos/sous-server:0.0.2" as the docker name for "192.168.99.100/2222/repos/sous-server,0.0.2+1497e42d7917bcf28932cfeb95faed59fa1d0a14"]
+Built: "docker.otenv.com/192.168.99.100/2222/repos/sous-server:0.0.2"
+Elapsed: 2.064153557s
 bash-3.2$ # We expect to see 'Sous is running ... in workstation mode' here:
-bash-3.2$ SOUS_SERVER= SOUS_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz<_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz9                         2mrn16vkfds/T/sous-cli-te<rs/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-tes                         ting260474545/gdm sous de<mrn16vkfds/T/sous-cli-testing260474545/gdm sous dep                         loy -cluster left
+bash-3.2$ SOUS_SERVER= SOUS_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz<_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz9                         2mrn16vkfds/T/sous-cli-te<rs/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-tes                         ting375798555/gdm sous de<mrn16vkfds/T/sous-cli-testing375798555/gdm sous dep                         loy -cluster left
 warn: No server set, Sous is running in server or workstation mode.
 warn: Configure a server like this: sous config server http://some.sous.server
-warn: Using local state stored at /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing260474545/gdm
-update: You must provide the -tag flag.
-update: You must provide the -tag flag.
-bash-3.2$ SOUS_SERVER= SOUS_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz<_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz9                         2mrn16vkfds/T/sous-cli-te<rs/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-tes                         ting260474545/gdm sous de<mrn16vkfds/T/sous-cli-testing260474545/gdm sous dep                         loy -cluster right
+warn: Using local state stored at /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing375798555/gdm
+No manifest found for {"192.168.99.100/2222/repos/sous-server" "left"} - try 'sous init' first.
+No manifest found for {"192.168.99.100/2222/repos/sous-server" "left"} - try 'sous init' first.
+bash-3.2$ SOUS_SERVER= SOUS_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz<_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz9                         2mrn16vkfds/T/sous-cli-te<rs/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-tes                         ting375798555/gdm sous de<mrn16vkfds/T/sous-cli-testing375798555/gdm sous dep                         loy -cluster right
 warn: No server set, Sous is running in server or workstation mode.
 warn: Configure a server like this: sous config server http://some.sous.server
-warn: Using local state stored at /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing260474545/gdm
-update: You must provide the -tag flag.
-update: You must provide the -tag flag.
+warn: Using local state stored at /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing375798555/gdm
+No manifest found for {"192.168.99.100/2222/repos/sous-server" "right"} - try 'sous init' first.
+No manifest found for {"192.168.99.100/2222/repos/sous-server" "right"} - try 'sous init' first.
 bash-3.2$ popd
-/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing260474545
 bash-3.2$ 
+/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing375798555
 bash-3.2$ 

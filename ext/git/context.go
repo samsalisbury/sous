@@ -1,8 +1,6 @@
 package git
 
 import (
-	"path/filepath"
-
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/firsterr"
 )
@@ -24,12 +22,7 @@ func (r *Repo) SourceContext() (*sous.SourceContext, error) {
 	if err := firsterr.Parallel().Set(
 		func(err *error) { branch, *err = c.CurrentBranch() },
 		func(err *error) { revision, *err = c.Revision() },
-		func(err *error) {
-			repoRelativeDir, *err = filepath.Rel(r.Root, c.Sh.Dir())
-			if repoRelativeDir == "." {
-				repoRelativeDir = ""
-			}
-		},
+		func(err *error) { repoRelativeDir, *err = sous.NormalizedOffset(r.Root, c.Sh.Dir()) },
 		func(err *error) {
 			allTags, *err = r.Client.ListTags()
 			if *err != nil || len(allTags) == 0 {
