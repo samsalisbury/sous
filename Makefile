@@ -116,4 +116,4 @@ artifacts/$(DARWIN_TARBALL): artifacts/$(DARWIN_RELEASE_DIR)/sous
 ./integration/test-registry/testing.crt:
 	cd integration/test-registry && openssl req -newkey rsa:512 -x509 -days 365 -out testing.crt -config ssl.conf -batch
 
-.PHONY: clean coverage install-ggen legendary release semvertagchk test-integration test-setup test-unit travis travis-setup travis-integration
+.PHONY: clean coverage install-ggen legendary release semvertagchk test test-integration test-setup test-unit 
