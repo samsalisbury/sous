@@ -258,6 +258,7 @@ func TestShellLevelIntegration(t *testing.T) {
 	chmod go-rwx -R ~/dot-ssh
 	git config --global --add user.name "Integration Tester"
 	git config --global --add user.email "itester@example.com"
+	git config --global --add core.sshcommand "$GIT_SSH"
 	ssh -o ConnectTimeout=1 -o PasswordAuthentication=no -F "${HOME}/dot-ssh/config" root@`+gitSSH+` -p 2222 /reset-repos < /dev/null
 	echo SOME STUFF HERE GOT ET BY SSH
 	`,
@@ -275,11 +276,9 @@ func TestShellLevelIntegration(t *testing.T) {
 
 	// XXX There should be a `-cluster left,right` syntax, instead of two deploy commands
 	setup := createGDM.Block("deploy sous server", `
-	sous version
-	which sous
 	git clone `+gitRemoteBase+`/sous-server
 	pushd sous-server
-	SOUS_SERVER= SOUS_STATE_LOCATION=`+stateDir+` sous init
+	SOUS_SERVER= SOUS_STATE_LOCATION=`+stateDir+` sous init -v -d
 
 	# Last minute config
 	cat Dockerfile

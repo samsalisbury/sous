@@ -44,6 +44,10 @@ func (gsm *GitStateManager) git(cmd ...string) error {
 	// It's also definitely causing problems in testing for me (JL) because my
 	// local git configuration effects testing behaviors.
 	git.Env = []string{"GIT_CONFIG_NOSYSTEM=true", "GIT_CONFIG_NOGLOBAL=true", "HOME=none", "XDG_CONFIG_HOME=none"}
+	gitssh := os.Getenv("GIT_SSH")
+	if gitssh != "" {
+		git.Env = append(git.Env, "GIT_SSH="+gitssh)
+	}
 	out, err := git.CombinedOutput()
 	if err == nil {
 		sous.Log.Debug.Printf("%+v: success", git.Args)

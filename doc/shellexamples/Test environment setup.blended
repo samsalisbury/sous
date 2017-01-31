@@ -4,27 +4,28 @@ bash-3.2$ # They're analogous to run-of-the-mill workstation maintenance.
 bash-3.2$ 
 bash-3.2$ env
 DOCKER_HOST=tcp://192.168.99.100:2376
-GIT_SSH=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing375798555/home/bin/ssh_wrapper
+GIT_SSH=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing238723182/home/bin/ssh_wrapper
 DOCKER_TLS_VERIFY=1
-PATH=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing375798555/sous/bin:~/bin:/usr/local/bin:/usr/bin:/usr/local/opt/coreutils/libexec/gnubin:/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing375798555/home/go/bin
+PATH=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing238723182/sous/bin:~/bin:/usr/local/bin:/usr/bin:/usr/local/opt/coreutils/libexec/gnubin:/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing238723182/home/go/bin
 PWD=/Users/jlester/golang/src/github.com/opentable/sous/clintegration
 SHLVL=1
-HOME=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing375798555/home
+HOME=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing238723182/home
 DOCKER_CERT_PATH=/Users/jlester/.docker/machine/machines/default
-GOPATH=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing375798555/home/go:/Users/jlester/golang
+GOPATH=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing238723182/home/go:/Users/jlester/golang
 _=/usr/bin/env
 bash-3.2$ # set -P
-bash-3.2$ mkdir -p /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-<ders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-t                         esting375798555/home/go/{<92mrn16vkfds/T/sous-cli-testing375798555/home/go/{s                         rc,bin}
+bash-3.2$ mkdir -p /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-<ders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-t                         esting238723182/home/go/{<92mrn16vkfds/T/sous-cli-testing238723182/home/go/{s                         rc,bin}
 bash-3.2$ go get github.com/nyarly/cygnus # cygnus lets us inspect Singularit</nyarly/cygnus # cygnus lets us inspect Singularity                          for ports
 bash-3.2$ cd /Users/jlester/golang/src/github.com/opentable/sous
 bash-3.2$ go install . #install the current sous project
 bash-3.2$ cp -a integration/test-homedir/* "$HOME"
 bash-3.2$ cp integration/test-registry/git-server/git_pubkey_rsa* ~/dot-ssh/
-bash-3.2$ cd /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testin<p/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing                         375798555
+bash-3.2$ cd /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testin<p/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing                         238723182
 bash-3.2$ cp templated-configs/ssh-config ~/dot-ssh/config
 bash-3.2$ chmod go-rwx -R ~/dot-ssh
 bash-3.2$ git config --global --add user.name "Integration Tester"
 bash-3.2$ git config --global --add user.email "itester@example.com"
+bash-3.2$ git config --global --add core.sshcommand "$GIT_SSH"
 bash-3.2$ ssh -o ConnectTimeout=1 -o PasswordAuthentication=no -F "${HOME}/do<eout=1 -o PasswordAuthentication=no -F "${HOME}/dot                         -ssh/config" root@192.168<cation=no -F "${HOME}/dot-ssh/config" root@192.168.                         99.100 -p 2222 /reset-rep<ssh/config" root@192.168.99.100 -p 2222 /reset-repo                         s < /dev/null
 Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
 12:pids:/docker/d94b2417b5d4ed0a2998251a1b6af14cea50525345cc036896770d91897c8e2d

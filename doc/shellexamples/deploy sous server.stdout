@@ -1,8 +1,53 @@
-sous version 0.0.0-devbuild (go1.7.4 darwin/amd64)
-This is an unsupported development build.
-Get supported releases from https://github.com/opentable/sous/releases
-/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing375798555/sous/bin/sous
-/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing375798555/sous-server /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing375798555
+/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing238723182/sous-server /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing238723182
+  (Sous)> git version
+> git version 2.10.0
+
+  (Sous)> git config -l
+> credential.helper=osxkeychain
+user.name=Integration Tester
+user.email=itester@example.com
+core.sshcommand=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing238723182/home/bin/ssh_wrapper
+core.repositoryformatversion=0
+core.filemode=true
+core.bare=false
+core.logallrefupdates=true
+core.ignorecase=true
+core.precomposeunicode=true
+remote.origin.url=ssh://root@192.168.99.100:2222/repos/sous-server
+remote.origin.fetch=+refs/heads/*:refs/remotes/origin/*
+branch.master.remote=origin
+branch.master.merge=refs/heads/master
+
+  (Sous)> git rev-parse --show-toplevel
+> /private/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing238723182/sous-server
+
+  (Sous)> git rev-parse --abbrev-ref HEAD
+> master
+
+  (Sous)> git rev-list -n 1 HEAD
+> 23ea27cb2f2b200e5bf9cbcb8c01dcf596e7b456
+
+  (Sous)> git log --date-order --tags --simplify-by-decoration --pretty=format:%H %aI %D
+> 1a27267954ca4f05bde5dec1443cf6dbcd520139 2017-01-25T15:39:07-08:00 tag: 0.0.1
+  (Sous)> git ls-files --others --exclude-standard
+> 
+  (Sous)> git ls-files --modified
+> 
+  (Sous)> git ls-files
+> Dockerfile
+main.go
+sous-server.yaml
+
+  (Sous)> git remote -v
+> origin	ssh://root@192.168.99.100:2222/repos/sous-server (fetch)
+origin	ssh://root@192.168.99.100:2222/repos/sous-server (push)
+
+  (Sous)> git describe --tags --abbrev=0 --always
+> 0.0.1
+
+  (Sous)> git rev-list -n 1 0.0.1
+> 1a27267954ca4f05bde5dec1443cf6dbcd520139
+
 FROM golang:1.7
 
 # Add deploy key.
@@ -21,26 +66,26 @@ RUN go install -v
 # NOTE: You must have set PORT0, GDM_REPO
 CMD /go/bin/sous-server
 total 21476
-drwxr-xr-x  8 jlester 513      272 Jan 30 16:13 .
-drwx------  7 jlester 513      238 Jan 30 16:13 ..
-drwxr-xr-x 12 jlester 513      408 Jan 30 16:13 .git
--rw-r--r--  1 jlester 513      390 Jan 30 16:13 Dockerfile
--rw-------  1 jlester 513     1679 Jan 30 16:13 key_sous@example.com
--rw-r--r--  1 jlester 513     1550 Jan 30 16:13 main.go
--rwxr-xr-x  1 jlester 513 21974232 Jan 30 16:13 sous
--rw-r--r--  1 jlester 513      518 Jan 30 16:13 sous-server.yaml
+drwxr-xr-x  8 jlester 513      272 Jan 30 17:03 .
+drwx------  7 jlester 513      238 Jan 30 17:03 ..
+drwxr-xr-x 12 jlester 513      408 Jan 30 17:03 .git
+-rw-r--r--  1 jlester 513      390 Jan 30 17:03 Dockerfile
+-rw-------  1 jlester 513     1679 Jan 30 17:03 key_sous@example.com
+-rw-r--r--  1 jlester 513     1550 Jan 30 17:03 main.go
+-rwxr-xr-x  1 jlester 513 21974232 Jan 30 17:03 sous
+-rw-r--r--  1 jlester 513      518 Jan 30 17:03 sous-server.yaml
 [192.168.99.100]:2222 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIO8BOx2vaerlE9Lu6ji2HcoYdTOGbZkujHyjueI3DZ9o
 [192.168.99.100]:2222 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCsAuDHxG64mMcfxXx9gGlQF0hN0AhQyGvVsM+QjxQW4Iv8d4wYOIYIXt92XLsE8m/nkPZQIQq62PzeYsjm2hNGkRqQNfW7fI9xzf8D0UF8DeJzrWOM62LMgCAOjTUIVPAtUXWYzGN1nyC06UHdqVnhXVqq+5XoL2PzZrkiMizRts+P+5B+dhVLkhIPFZcuYYKEW2aKSpomJYIXtBV141ZPpMsdLTEGK7EhhPSf0mJMPLXCvew5wgcA9beOyV5DeE6Pf9gLDYUxuQAI82tFeeKCcJr0qk917DB9LzmKxFqda2ONeSfXR+418g3l72FOQ18ryeCPcWmffjyZa8riZk2N
 [192.168.99.100]:2222 ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEMrg8xU9rHEUFGEVM/cUhgPoRcAwC85iMjNeR10v+BxF+40PYxeSydWO9+IVG/UhKbRNEMoPxTySTKYyk4w3YA=
-[master 1497e42] Adding ephemeral files
+[master bd95e77] Adding ephemeral files
  3 files changed, 30 insertions(+)
  create mode 100644 key_sous@example.com
  create mode 100644 known_hosts
  create mode 100755 sous
-RootDir: /private/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing375798555/sous-server
+RootDir: /private/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing238723182/sous-server
 OffsetDir: ""
 Branch: master
-Revision: 1497e42d7917bcf28932cfeb95faed59fa1d0a14
+Revision: bd95e773e487550a2fb1d31ae45a704cb66746a8
 Files:
 - Dockerfile
 - key_sous@example.com
@@ -52,22 +97,22 @@ ModifiedFiles: []
 NewFiles: []
 Tags:
 - Name: 0.0.2
-  Revision: 1497e42d7917bcf28932cfeb95faed59fa1d0a14
+  Revision: bd95e773e487550a2fb1d31ae45a704cb66746a8
 - Name: 0.0.1
   Revision: 1a27267954ca4f05bde5dec1443cf6dbcd520139
 NearestTagName: 0.0.2
-NearestTagRevision: 1497e42d7917bcf28932cfeb95faed59fa1d0a14
+NearestTagRevision: bd95e773e487550a2fb1d31ae45a704cb66746a8
 PrimaryRemoteURL: 192.168.99.100/2222/repos/sous-server
 RemoteURL: ""
 RemoteURLs:
 - 192.168.99.100/2222/repos/sous-server
 DirtyWorkingTree: false
 RevisionUnpushed: false
-/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing375798555/sous-server
-  (Sous)> running docker build -t docker.otenv.com/192.168.99.100/2222/repos/sous-server:0.0.2 -t docker.otenv.com/192.168.99.100/2222/repos/sous-server:1497e42d7917bcf28932cfeb95faed59fa1d0a14 -
+/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing238723182/sous-server
+  (Sous)> running docker build -t docker.otenv.com/192.168.99.100/2222/repos/sous-server:0.0.2 -t docker.otenv.com/192.168.99.100/2222/repos/sous-server:bd95e773e487550a2fb1d31ae45a704cb66746a8 -
   (Sous)> running docker push docker.otenv.com/192.168.99.100/2222/repos/sous-server:0.0.2
-  (Sous)> running docker push docker.otenv.com/192.168.99.100/2222/repos/sous-server:1497e42d7917bcf28932cfeb95faed59fa1d0a14
-  (Sous)> [recording "docker.otenv.com/192.168.99.100/2222/repos/sous-server:0.0.2" as the docker name for "192.168.99.100/2222/repos/sous-server,0.0.2+1497e42d7917bcf28932cfeb95faed59fa1d0a14"]
+  (Sous)> running docker push docker.otenv.com/192.168.99.100/2222/repos/sous-server:bd95e773e487550a2fb1d31ae45a704cb66746a8
+  (Sous)> [recording "docker.otenv.com/192.168.99.100/2222/repos/sous-server:0.0.2" as the docker name for "192.168.99.100/2222/repos/sous-server,0.0.2+bd95e773e487550a2fb1d31ae45a704cb66746a8"]
 Built: "docker.otenv.com/192.168.99.100/2222/repos/sous-server:0.0.2"
-Elapsed: 2.064153557s
-/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing375798555
+Elapsed: 2.003925561s
+/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing238723182

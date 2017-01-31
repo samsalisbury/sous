@@ -63,10 +63,10 @@ Resources:
   Type: Integer
 Metadata: []
 bash-3.2$ pushd gdm
-/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing375798555/gdm /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing375798555
+/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing238723182/gdm /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing238723182
 bash-3.2$ git add defs.yaml
 bash-3.2$ git commit -am "Adding defs.yaml"
-[master (root-commit) 783bc02] Adding defs.yaml
+[master (root-commit) 5a452a4] Adding defs.yaml
  1 file changed, 57 insertions(+)
  create mode 100644 defs.yaml
 bash-3.2$ git push
@@ -75,6 +75,6 @@ Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known 
 To ssh://192.168.99.100:2222/repos/gdm
  * [new branch]      master -> master
 bash-3.2$ popd
-/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing375798555
+/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing238723182
 bash-3.2$ 
 bash-3.2$ 
