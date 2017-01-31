@@ -2,6 +2,7 @@ package sous
 
 import (
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 )
@@ -36,11 +37,27 @@ func TestOffsetFromWorkdir(t *testing.T) {
 }
 
 func TestOffsetFromWorkdir_OSXTmpDir(t *testing.T) {
-	pwd, err := ioutil.TempDir("", "osxtmpdir")
+	base, err := ioutil.TempDir("", "osxtmpdir")
 	if err != nil {
 		t.Fatal(err)
 	}
-	root, err := filepath.EvalSymlinks(pwd)
+
+	err = os.MkdirAll(base, os.ModePerm)
+	if err != nil {
+		t.Fatal(err)
+	}
+	base, err = filepath.EvalSymlinks(base)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	root := filepath.Join(base, "root/dir/here")
+	err = os.MkdirAll(root, os.ModePerm)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pwd := filepath.Join(base, "working")
+	err = os.Symlink(root, pwd)
 	if err != nil {
 		t.Fatal(err)
 	}
