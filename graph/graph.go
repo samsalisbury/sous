@@ -154,6 +154,9 @@ func AddLogs(graph adder) {
 func AddUser(graph adder) {
 	graph.Add(
 		newLocalUser,
+		func(c LocalSousConfig) sous.User {
+			return c.User
+		},
 	)
 }
 

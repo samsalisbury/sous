@@ -18,6 +18,7 @@ type SousInit struct {
 	GDM               graph.CurrentGDM
 	State             *sous.State
 	StateWriter       graph.StateWriter
+	User              sous.User
 }
 
 func init() { TopLevelCommands["init"] = &SousInit{} }
@@ -70,7 +71,7 @@ func (si *SousInit) Execute(args []string) cmdr.Result {
 	if ok := si.State.Manifests.Add(m); !ok {
 		return cmdr.UsageErrorf("manifest %q already exists", m.ID())
 	}
-	if err := si.StateWriter.WriteState(si.State); err != nil {
+	if err := si.StateWriter.WriteState(si.State, si.User); err != nil {
 		return EnsureErrorResult(err)
 	}
 	return SuccessYAML(m)

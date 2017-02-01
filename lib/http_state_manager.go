@@ -51,7 +51,7 @@ func (hsm *HTTPStateManager) ReadState() (*State, error) {
 }
 
 // WriteState implements StateWriter for HTTPStateManager.
-func (hsm *HTTPStateManager) WriteState(s *State) error {
+func (hsm *HTTPStateManager) WriteState(s *State, u User) error {
 	flaws := s.Validate()
 	if len(flaws) > 0 {
 		return errors.Errorf("Invalid update to state: %v", flaws)

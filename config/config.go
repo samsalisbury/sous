@@ -8,6 +8,7 @@ import (
 	"path"
 
 	"github.com/opentable/sous/ext/docker"
+	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/firsterr"
 	"github.com/pkg/errors"
 )
@@ -34,14 +35,7 @@ type (
 		// Docker is the Docker configuration.
 		Docker docker.Config
 		// User identifies the user of this client.
-		User User
-	}
-	// User represents a user of the Sous client.
-	User struct {
-		// Name is the full name of this user.
-		Name,
-		// Email is the email address of this user.
-		Email string
+		User sous.User
 	}
 )
 

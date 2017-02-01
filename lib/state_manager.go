@@ -7,7 +7,7 @@ type (
 	}
 	// StateWriter knows how to write state.
 	StateWriter interface {
-		WriteState(*State) error
+		WriteState(*State, User) error
 	}
 
 	// A StateManager can read and write state
@@ -20,6 +20,13 @@ type (
 	DummyStateManager struct {
 		*State
 		ReadCount, WriteCount int
+	}
+	// User represents a user of the Sous client.
+	User struct {
+		// Name is the full name of this user.
+		Name,
+		// Email is the email address of this user.
+		Email string
 	}
 )
 

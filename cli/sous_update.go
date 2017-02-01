@@ -20,6 +20,7 @@ type SousUpdate struct {
 	StateWriter       graph.StateWriter
 	StateReader       graph.StateReader
 	ResolveFilter     *graph.RefinedResolveFilter
+	User              sous.User
 }
 
 func init() { TopLevelCommands["update"] = &SousUpdate{} }
@@ -62,7 +63,7 @@ func (su *SousUpdate) Execute(args []string) cmdr.Result {
 	if err := updateState(su.State, su.GDM, sid, did); err != nil {
 		return EnsureErrorResult(err)
 	}
-	if err := su.StateWriter.WriteState(su.State); err != nil {
+	if err := su.StateWriter.WriteState(su.State, su.User); err != nil {
 		return EnsureErrorResult(err)
 	}
 	return cmdr.Success()
