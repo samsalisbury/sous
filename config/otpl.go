@@ -5,4 +5,7 @@ package config
 type OTPLFlags struct {
 	UseOTPLDeploy    bool `flag:"use-otpl-deploy"`
 	IgnoreOTPLDeploy bool `flag:"ignore-otpl-deploy"`
+	// Flavor is required when multiple flavors are present in otpl-deploy
+	// config.
+	Flavor string `flag:"flavor"`
 }

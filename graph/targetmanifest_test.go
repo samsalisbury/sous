@@ -95,7 +95,7 @@ func TestNewUserSelectedOTPLDeploySpecs(t *testing.T) {
 
 		state.Defs.Clusters = test.Clusters
 		ds, err := newUserSelectedOTPLDeploySpecs(
-			detectedOTPLDeployManifest{Manifest: test.DetectedManifest},
+			detectedOTPLDeployManifest{Manifests: sous.NewManifests(test.DetectedManifest)},
 			test.TSL,
 			&test.Flags,
 			state,

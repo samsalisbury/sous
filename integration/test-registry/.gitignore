@@ -1,3 +1,10 @@
+*
+!.gitignore
+!Dockerfile
+!docker-compose.yml
+!README.md
+!ssl.conf
+!local-daemon-ssl.conf
 self-signed.conf
 testing.crt
 testing.key
