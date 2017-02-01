@@ -21,13 +21,6 @@ type (
 		*State
 		ReadCount, WriteCount int
 	}
-	// User represents a user of the Sous client.
-	User struct {
-		// Name is the full name of this user.
-		Name,
-		// Email is the email address of this user.
-		Email string
-	}
 )
 
 // ReadState implements StateManager
@@ -37,7 +30,7 @@ func (sm *DummyStateManager) ReadState() (*State, error) {
 }
 
 // WriteState implements StateManager
-func (sm *DummyStateManager) WriteState(s *State) error {
+func (sm *DummyStateManager) WriteState(s *State, u User) error {
 	sm.WriteCount++
 	*sm.State = *s
 	return nil

@@ -12,6 +12,7 @@ type (
 	HTTPStateManager struct {
 		cached *State
 		HTTPClient
+		User User
 	}
 
 	gdmWrapper struct {
@@ -52,6 +53,7 @@ func (hsm *HTTPStateManager) ReadState() (*State, error) {
 
 // WriteState implements StateWriter for HTTPStateManager.
 func (hsm *HTTPStateManager) WriteState(s *State, u User) error {
+	hsm.User = u
 	flaws := s.Validate()
 	if len(flaws) > 0 {
 		return errors.Errorf("Invalid update to state: %v", flaws)
@@ -198,12 +200,12 @@ func (hsm *HTTPStateManager) modifies(mc chan *ManifestPair, ec chan error, done
 
 func (hsm *HTTPStateManager) getDefs() (Defs, error) {
 	ds := Defs{}
-	return ds, errors.Wrapf(hsm.Retrieve("./defs", nil, &ds), "getting defs")
+	return ds, errors.Wrapf(hsm.Retrieve("./defs", nil, &ds, hsm.User), "getting defs")
 }
 
 func (hsm *HTTPStateManager) getManifests(defs Defs) (Manifests, error) {
 	gdm := gdmWrapper{}
-	if err := hsm.Retrieve("./gdm", nil, &gdm); err != nil {
+	if err := hsm.Retrieve("./gdm", nil, &gdm, hsm.User); err != nil {
 		return Manifests{}, errors.Wrapf(err, "getting manifests")
 	}
 	return gdm.manifests(defs)
@@ -239,16 +241,16 @@ func (m *Manifest) VariancesFrom(c Comparable) (vs Variances) {
 
 func (hsm *HTTPStateManager) create(m *Manifest) error {
 	r, o, f := manifestDebugs(m)
-	return errors.Wrapf(hsm.Create("./manifest", manifestParams(m), m), "creating manifest %s %s %s", r, o, f)
+	return errors.Wrapf(hsm.Create("./manifest", manifestParams(m), m, hsm.User), "creating manifest %s %s %s", r, o, f)
 }
 
 func (hsm *HTTPStateManager) del(m *Manifest) error {
 	r, o, f := manifestDebugs(m)
-	return errors.Wrapf(hsm.Delete("./manifest", manifestParams(m), m), "deleting manifest %s %s %s", r, o, f)
+	return errors.Wrapf(hsm.Delete("./manifest", manifestParams(m), m, hsm.User), "deleting manifest %s %s %s", r, o, f)
 }
 
 func (hsm *HTTPStateManager) modify(mp *ManifestPair) error {
 	bf, af := mp.Prior, mp.Post
 	r, o, f := manifestDebugs(bf)
-	return errors.Wrapf(hsm.Update("./manifest", manifestParams(bf), bf, af), "updating manifest %s %s %s", r, o, f)
+	return errors.Wrapf(hsm.Update("./manifest", manifestParams(bf), bf, af, hsm.User), "updating manifest %s %s %s", r, o, f)
 }

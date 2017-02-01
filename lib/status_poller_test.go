@@ -178,7 +178,7 @@ func TestStatusPoller(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error building HTTP client: %#v", err)
 	}
-	poller := NewStatusPoller(cl, rf)
+	poller := NewStatusPoller(cl, rf, User{Name: "Test User"})
 
 	testCh := make(chan ResolveState)
 	go func() {
@@ -261,7 +261,7 @@ func TestStatusPoller_NotIntended(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error building HTTP client: %#v", err)
 	}
-	poller := NewStatusPoller(cl, rf)
+	poller := NewStatusPoller(cl, rf, User{Name: "Test User"})
 
 	testCh := make(chan ResolveState)
 	go func() {
@@ -312,7 +312,7 @@ func TestStatusPoller_OldServer(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error building HTTP client: %#v", err)
 	}
-	poller := NewStatusPoller(cl, rf)
+	poller := NewStatusPoller(cl, rf, User{Name: "Test User"})
 
 	testCh := make(chan ResolveState)
 	go func() {

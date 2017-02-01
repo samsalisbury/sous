@@ -11,6 +11,7 @@ type (
 	StatusPoller struct {
 		HTTPClient
 		*ResolveFilter
+		User User
 	}
 
 	subPoller struct {
@@ -18,6 +19,7 @@ type (
 		ClusterName, URL string
 		*Deployments
 		locationFilter, idFilter *ResolveFilter
+		User                     User
 	}
 
 	// copied from server - avoiding coupling to server implemention
@@ -127,14 +129,15 @@ func (rs ResolveState) String() string {
 }
 
 // NewStatusPoller returns a new *StatusPoller.
-func NewStatusPoller(cl HTTPClient, rf *ResolveFilter) *StatusPoller {
+func NewStatusPoller(cl HTTPClient, rf *ResolveFilter, user User) *StatusPoller {
 	return &StatusPoller{
 		HTTPClient:    cl,
 		ResolveFilter: rf,
+		User:          user,
 	}
 }
 
-func newSubPoller(clusterName, serverURL string, baseFilter *ResolveFilter) (*subPoller, error) {
+func newSubPoller(clusterName, serverURL string, baseFilter *ResolveFilter, user User) (*subPoller, error) {
 	cl, err := NewClient(serverURL)
 	if err != nil {
 		return nil, err
@@ -154,6 +157,7 @@ func newSubPoller(clusterName, serverURL string, baseFilter *ResolveFilter) (*su
 		HTTPClient:     cl,
 		locationFilter: &loc,
 		idFilter:       &id,
+		User:           user,
 	}, nil
 }
 
@@ -161,12 +165,12 @@ func newSubPoller(clusterName, serverURL string, baseFilter *ResolveFilter) (*su
 func (sp *StatusPoller) Start() (ResolveState, error) {
 	clusters := &serverListData{}
 	// retrieve the list of servers known to our main server
-	if err := sp.Retrieve("./servers", nil, clusters); err != nil {
+	if err := sp.Retrieve("./servers", nil, clusters, sp.User); err != nil {
 		return ResolveFailed, err
 	}
 	gdm := &gdmData{}
 	// next, get the up-to-the-moment version of the GDM
-	if err := sp.Retrieve("./gdm", nil, gdm); err != nil {
+	if err := sp.Retrieve("./gdm", nil, gdm, sp.User); err != nil {
 		return ResolveFailed, err
 	}
 	deps := NewDeployments(gdm.Deployments...)
@@ -194,7 +198,7 @@ func (sp *StatusPoller) Start() (ResolveState, error) {
 		Log.Debug.Printf("Starting poller against %v", s)
 
 		// kick of a separate process to issue HTTP requests against this cluster
-		sub, err := newSubPoller(s.ClusterName, s.URL, sp.ResolveFilter)
+		sub, err := newSubPoller(s.ClusterName, s.URL, sp.ResolveFilter, sp.User)
 		if err != nil {
 			return ResolveNotPolled, err
 		}
@@ -266,7 +270,7 @@ func (sub *subPoller) start(rs chan statPair, done chan struct{}) {
 
 func (sub *subPoller) pollOnce() ResolveState {
 	data := &statusData{}
-	if err := sub.Retrieve("./status", nil, data); err != nil {
+	if err := sub.Retrieve("./status", nil, data, sub.User); err != nil {
 		Log.Debug.Printf("%s: error on GET /status: %s", sub.ClusterName, errors.Cause(err))
 		Log.Vomit.Printf("%s: %T %+v", sub.ClusterName, errors.Cause(err), err)
 		return ResolveErredHTTP
@@ -363,7 +367,7 @@ func (sub *subPoller) serverIntent() *Deployment {
 	Log.Debug.Printf("Filtering with %q", sub.locationFilter)
 	dep, exactlyOne := sub.Deployments.Single(sub.locationFilter.FilterDeployment)
 	if !exactlyOne {
-		Log.Debug.Printf("With %s we didn't match exactly one deployment! %#v", sub.locationFilter)
+		Log.Debug.Printf("With %s we didn't match exactly one deployment.", sub.locationFilter)
 		return nil
 	}
 	Log.Vomit.Printf("Matching deployment: %#v", dep)
