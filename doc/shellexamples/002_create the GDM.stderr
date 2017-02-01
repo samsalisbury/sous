@@ -4,21 +4,16 @@ Cloning into 'gdm'...
 ssh_wrapper
 Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
 warning: You appear to have cloned an empty repository.
-bash-3.2$ cat templated-configs/defs.yaml | tee gdm/defs.yaml
-cat: templated-configs/defs.yaml: No such file or directory
+bash-3.2$ cp ~/templated-configs/defs.yaml gdm/defs.yaml
+bash-3.2$ cat gdm/defs.yaml
 bash-3.2$ pushd gdm
-/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing994390328/gdm /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing994390328
 bash-3.2$ git add defs.yaml
 bash-3.2$ git commit -am "Adding defs.yaml"
-[master (root-commit) 00aa5a4] Adding defs.yaml
- 1 file changed, 0 insertions(+), 0 deletions(-)
- create mode 100644 defs.yaml
 bash-3.2$ git push
 ssh_wrapper
 Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
 To ssh://192.168.99.100:2222/repos/gdm
  * [new branch]      master -> master
 bash-3.2$ popd
-/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing994390328
 bash-3.2$ 
 bash-3.2$ 

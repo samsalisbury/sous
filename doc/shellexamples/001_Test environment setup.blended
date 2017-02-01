@@ -1,25 +1,41 @@
+
+bash-3.2$ # These steps are required by the Sous integration tests
+bash-3.2$ # They're analogous to run-of-the-mill workstation maintenance.
+bash-3.2$ 
+bash-3.2$ env
 DOCKER_HOST=tcp://192.168.99.100:2376
-GIT_SSH=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing994390328/home/bin/ssh_wrapper
+GIT_SSH=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing861904482/home/bin/ssh_wrapper
 DOCKER_TLS_VERIFY=1
-PATH=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing994390328/sous/bin:~/bin:/usr/local/bin:/usr/bin:/usr/local/opt/coreutils/libexec/gnubin:/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing994390328/home/go/bin
+PATH=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing861904482/sous/bin:~/bin:/usr/local/bin:/usr/bin:/usr/local/opt/coreutils/libexec/gnubin:/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing861904482/home/go/bin
 PWD=/Users/jlester/golang/src/github.com/opentable/sous/clintegration
 SHLVL=1
-HOME=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing994390328/home
 DOCKER_CERT_PATH=/Users/jlester/.docker/machine/machines/default
-GOPATH=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing994390328/home/go:/Users/jlester/golang
+HOME=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing861904482/home
+XDG_CONFIG=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing861904482/home/dot-config
+GOPATH=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing861904482/home/go:/Users/jlester/golang
 _=/usr/bin/env
-12:pids:/docker/ed93eda91ed35b10df86e8dd172cab6ccc2f0dde6c1cb211c754e43f05c67e74
-11:hugetlb:/docker/ed93eda91ed35b10df86e8dd172cab6ccc2f0dde6c1cb211c754e43f05c67e74
-10:net_prio:/docker/ed93eda91ed35b10df86e8dd172cab6ccc2f0dde6c1cb211c754e43f05c67e74
-9:perf_event:/docker/ed93eda91ed35b10df86e8dd172cab6ccc2f0dde6c1cb211c754e43f05c67e74
-8:net_cls:/docker/ed93eda91ed35b10df86e8dd172cab6ccc2f0dde6c1cb211c754e43f05c67e74
-7:freezer:/docker/ed93eda91ed35b10df86e8dd172cab6ccc2f0dde6c1cb211c754e43f05c67e74
-6:devices:/docker/ed93eda91ed35b10df86e8dd172cab6ccc2f0dde6c1cb211c754e43f05c67e74
-5:memory:/docker/ed93eda91ed35b10df86e8dd172cab6ccc2f0dde6c1cb211c754e43f05c67e74
-4:blkio:/docker/ed93eda91ed35b10df86e8dd172cab6ccc2f0dde6c1cb211c754e43f05c67e74
-3:cpuacct:/docker/ed93eda91ed35b10df86e8dd172cab6ccc2f0dde6c1cb211c754e43f05c67e74
-2:cpu:/docker/ed93eda91ed35b10df86e8dd172cab6ccc2f0dde6c1cb211c754e43f05c67e74
-1:cpuset:/docker/ed93eda91ed35b10df86e8dd172cab6ccc2f0dde6c1cb211c754e43f05c67e74
+bash-3.2$ mkdir -p /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-<ders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-t                         esting861904482/home/go/{<92mrn16vkfds/T/sous-cli-testing861904482/home/go/{s                         rc,bin}
+bash-3.2$ go get github.com/nyarly/cygnus # cygnus lets us inspect Singularit</nyarly/cygnus # cygnus lets us inspect Singularity                          for ports
+bash-3.2$ cd /Users/jlester/golang/src/github.com/opentable/sous
+bash-3.2$ go install . #install the current sous project
+bash-3.2$ cp integration/test-registry/git-server/git_pubkey_rsa* ~/dot-ssh/
+bash-3.2$ cd /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testin<p/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing                         861904482
+bash-3.2$ chmod go-rwx -R ~/dot-ssh
+bash-3.2$ chmod +x -R ~/bin/*
+bash-3.2$ ssh -o ConnectTimeout=1 -o PasswordAuthentication=no -F "${HOME}/do<eout=1 -o PasswordAuthentication=no -F "${HOME}/dot                         -ssh/config" root@192.168<cation=no -F "${HOME}/dot-ssh/config" root@192.168.                         99.100 -p 2222 /reset-rep<ssh/config" root@192.168.99.100 -p 2222 /reset-repo                         s < /dev/null
+Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
+12:pids:/docker/181d186a4a4aad3eaac4aa66c266a816c682fc960ebe0c4fb6bc1e81b3d23601
+11:hugetlb:/docker/181d186a4a4aad3eaac4aa66c266a816c682fc960ebe0c4fb6bc1e81b3d23601
+10:net_prio:/docker/181d186a4a4aad3eaac4aa66c266a816c682fc960ebe0c4fb6bc1e81b3d23601
+9:perf_event:/docker/181d186a4a4aad3eaac4aa66c266a816c682fc960ebe0c4fb6bc1e81b3d23601
+8:net_cls:/docker/181d186a4a4aad3eaac4aa66c266a816c682fc960ebe0c4fb6bc1e81b3d23601
+7:freezer:/docker/181d186a4a4aad3eaac4aa66c266a816c682fc960ebe0c4fb6bc1e81b3d23601
+6:devices:/docker/181d186a4a4aad3eaac4aa66c266a816c682fc960ebe0c4fb6bc1e81b3d23601
+5:memory:/docker/181d186a4a4aad3eaac4aa66c266a816c682fc960ebe0c4fb6bc1e81b3d23601
+4:blkio:/docker/181d186a4a4aad3eaac4aa66c266a816c682fc960ebe0c4fb6bc1e81b3d23601
+3:cpuacct:/docker/181d186a4a4aad3eaac4aa66c266a816c682fc960ebe0c4fb6bc1e81b3d23601
+2:cpu:/docker/181d186a4a4aad3eaac4aa66c266a816c682fc960ebe0c4fb6bc1e81b3d23601
+1:cpuset:/docker/181d186a4a4aad3eaac4aa66c266a816c682fc960ebe0c4fb6bc1e81b3d23601
 repos/
 repos/sous-server/
 repos/sous-server/branches/
@@ -269,3 +285,5 @@ repos/gdm/refs/
 repos/gdm/refs/tags/
 repos/gdm/refs/heads/
 repos/gdm/config
+bash-3.2$ 
+bash-3.2$ 

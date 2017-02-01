@@ -1,6 +1,7 @@
 package shelltest
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -11,6 +12,7 @@ import (
 type (
 	// A ShellTest is a context for executing CLI commands and testing the results
 	ShellTest struct {
+		seq            *int
 		t              *testing.T
 		name, writeDir string
 		shell          *CaptiveShell
@@ -28,7 +30,9 @@ func New(t *testing.T, name string, env map[string]string) *ShellTest {
 		t.Fatal(err)
 		sh = nil
 	}
+	seq := 0
 	return &ShellTest{
+		seq:   &seq,
 		t:     t,
 		shell: sh,
 	}
@@ -68,9 +72,10 @@ func (st *ShellTest) Block(name, script string, check ...CheckFn) *ShellTest {
 		return st
 	}
 	ran := st.t.Run(name, func(t *testing.T) {
+		(*st.seq)++
 		res, err := st.shell.Run(whitespace.CleanWS(script))
 		if st.writeDir != "" {
-			res.WriteTo(st.writeDir, name)
+			res.WriteTo(st.writeDir, fmt.Sprintf("%03d_%s", *st.seq, name))
 		}
 		if err != nil {
 			if st.writeDir != "" {
@@ -98,6 +103,7 @@ func (st *ShellTest) Block(name, script string, check ...CheckFn) *ShellTest {
 	}
 
 	return &ShellTest{
+		seq:      st.seq,
 		t:        st.t,
 		shell:    shell,
 		writeDir: st.writeDir,

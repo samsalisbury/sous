@@ -145,13 +145,6 @@ func templateConfigs(sourceDir, targetDir string, configData templatedConfigs) e
 	return err
 }
 
-type templatedConfigs struct {
-	desc.EnvDesc
-	Workdir, Homedir, SSHWrapper string
-	GitSSH, GitRemoteBase        string
-	GoPath, ShellPath            []string
-}
-
 // XXX Do we need a separate test for the test infra?
 func TestTemplating(t *testing.T) {
 	descPath := os.Getenv("SOUS_QA_DESC")
@@ -194,6 +187,13 @@ func withHostEnv(hostEnvs []string, env map[string]string) map[string]string {
 	return newEnv
 }
 
+type templatedConfigs struct {
+	desc.EnvDesc
+	Workdir, Homedir, XDGConfig, SSHWrapper string
+	GitSSH, GitRemoteBase                   string
+	GoPath, ShellPath                       []string
+}
+
 func TestShellLevelIntegration(t *testing.T) {
 	descPath := os.Getenv("SOUS_QA_DESC")
 	if descPath == "" {
@@ -231,7 +231,7 @@ func TestShellLevelIntegration(t *testing.T) {
 	testHome := filepath.Join(workdir, "home")
 
 	gitRemoteBase := `ssh://root@` + envDesc.GitOrigin + "/repos"
-	gitSSH := strings.Split(envDesc.GitOrigin, ":")[0]
+	gitSSH := envDesc.AgentIP.String()
 
 	sshWrapper := filepath.Join(testHome, "bin/ssh_wrapper")
 	firstGoPath := filepath.Join(testHome, "go")
@@ -244,6 +244,7 @@ func TestShellLevelIntegration(t *testing.T) {
 		EnvDesc:       envDesc,
 		Workdir:       workdir,
 		Homedir:       testHome,
+		XDGConfig:     filepath.Join(testHome, "dot-config"),
 		SSHWrapper:    sshWrapper,
 		GoPath:        goPath,
 		GitSSH:        gitSSH,
@@ -260,10 +261,11 @@ func TestShellLevelIntegration(t *testing.T) {
 	shell := shelltest.New(t, "happypath",
 		withHostEnv([]string{"DOCKER_HOST", "DOCKER_TLS_VERIFY", "DOCKER_CERT_PATH"},
 			map[string]string{
-				"HOME":    cfg.Homedir,
-				"GIT_SSH": cfg.SSHWrapper,
-				"GOPATH":  strings.Join(cfg.GoPath, ":"),
-				"PATH":    strings.Join(cfg.ShellPath, ":"),
+				"HOME":       cfg.Homedir,
+				"XDG_CONFIG": cfg.XDGConfig,
+				"GIT_SSH":    cfg.SSHWrapper,
+				"GOPATH":     strings.Join(cfg.GoPath, ":"),
+				"PATH":       strings.Join(cfg.ShellPath, ":"),
 			}))
 
 	shell.WriteTo("../doc/shellexamples")
@@ -294,7 +296,8 @@ func TestShellLevelIntegration(t *testing.T) {
 
 	createGDM := prologue.Block("create the GDM", `
 	git clone `+gitRemoteBase+`/gdm
-	cat templated-configs/defs.yaml | tee gdm/defs.yaml
+	cp ~/templated-configs/defs.yaml gdm/defs.yaml
+	cat gdm/defs.yaml
 	pushd gdm
 	git add defs.yaml
 	git commit -am "Adding defs.yaml"
@@ -304,6 +307,8 @@ func TestShellLevelIntegration(t *testing.T) {
 
 	// XXX There should be a `-cluster left,right` syntax, instead of two deploy commands
 	setup := createGDM.Block("deploy sous server", `
+	sous config
+	cat ~/.config/sous/config.yaml
 	git clone `+gitRemoteBase+`/sous-server
 	pushd sous-server
 	SOUS_SERVER= SOUS_STATE_LOCATION=`+stateDir+` sous init -v -d

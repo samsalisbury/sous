@@ -55,6 +55,7 @@ func newPossiblyInvalidConfig(path string, defaultConfig DefaultConfig, gcl *Con
 
 	config := defaultConfig
 
+	sous.Log.Warn.Print("CONFIG FROM ", path)
 	configDir := filepath.Dir(path)
 	if err := os.MkdirAll(configDir, os.ModeDir|0755); err != nil {
 		return PossiblyInvalidConfig{}, err
