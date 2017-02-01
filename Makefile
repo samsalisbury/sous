@@ -47,6 +47,11 @@ clean:
 	rm -rf $(COVER_DIR)
 	git ls-files -o | xargs rm -rf
 
+clean-containers:
+	docker ps -q | xargs -r docker kill
+	docker ps -aq | xargs -r docker rm
+	if docker images | egrep ^testregistry_registry; then docker rmi testregistry_registry; fi
+
 gitlog:
 	git log `git describe --abbrev=0`..HEAD
 
