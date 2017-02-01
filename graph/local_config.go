@@ -1,10 +1,14 @@
 package graph
 
 import (
+	"bufio"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
+
+	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/lib"
@@ -53,7 +57,7 @@ func newConfigLoader() *ConfigLoader {
 func newPossiblyInvalidConfig(path string, defaultConfig DefaultConfig, gcl *ConfigLoader) (PossiblyInvalidConfig, error) {
 	cl := gcl.ConfigLoader
 
-	config := defaultConfig
+	pic := defaultConfig
 
 	configDir := filepath.Dir(path)
 	if err := os.MkdirAll(configDir, os.ModeDir|0755); err != nil {
@@ -65,7 +69,15 @@ func newPossiblyInvalidConfig(path string, defaultConfig DefaultConfig, gcl *Con
 		if !writeDefault {
 			return
 		}
-		lsc := &LocalSousConfig{config.Config}
+		// Since this is initialisation, let's get the user to confirm some stuff...
+		userInitConfig(pic.Config)
+		if err := pic.Validate(); err != nil {
+			// If the config is invalid, warn but write it anyway and allow the
+			// user to correct it themselves.
+			sous.Log.Warn.Printf("Newly initialised config file is invalid: %s", err)
+			sous.Log.Warn.Printf("Please correct the issue by editing %s", path)
+		}
+		lsc := &LocalSousConfig{pic.Config}
 		lsc.Save(path)
 		sous.Log.Info.Println("initialised config file: " + path)
 	}()
@@ -78,7 +90,44 @@ func newPossiblyInvalidConfig(path string, defaultConfig DefaultConfig, gcl *Con
 		return PossiblyInvalidConfig{}, err
 	}
 
-	return PossiblyInvalidConfig{Config: config.Config}, cl.Load(config.Config, path)
+	return PossiblyInvalidConfig{Config: pic.Config}, cl.Load(pic.Config, path)
+}
+
+func userInput(prompt, vDefault, eg string, v *string) {
+	if vDefault == "" {
+		fmt.Printf("%s (e.g. %q): ", prompt, eg)
+	} else {
+		fmt.Printf("%s (e.g. %q): (enter for %q)", prompt, eg, vDefault)
+	}
+	reader := bufio.NewReader(os.Stdin)
+	in, err := reader.ReadString('\n')
+	if err != nil {
+		sous.Log.Warn.Printf("Failed to read input: %s", err)
+		return
+	}
+	// Strip the newline and any other whitespace.
+	in = strings.TrimSpace(in)
+	if in == "" {
+		in = vDefault
+	}
+	*v = in
+}
+
+func userInitConfig(c *config.Config) {
+	if !terminal.IsTerminal(int(os.Stdout.Fd())) {
+		sous.Log.Warn.Println("Unable to run config wizard; no terminal attached.")
+	}
+	fmt.Println(`
+	It looks like you haven't used Sous before (there's no config file).
+	Please provide the following details to configure Sous...
+	If you don't know some of the answers don't worry, you can use 'sous config'
+	on the command line to change them later.
+	`)
+	userInput("Your email address", c.User.Email, "name@mycompany.com", &c.User.Email)
+	userInput("Your full name", c.User.Name, "Alfie Noakes", &c.User.Name)
+	userInput("Your company's primary sous server URL", c.Server, "http://sous.mycompany.com", &c.Server)
+
+	fmt.Println("All done, thanks!")
 }
 
 // Save the configuration to the configuration path (by default:
