@@ -48,8 +48,6 @@ type (
 	StatusWaitStable bool
 	// Version represents a version of Sous.
 	Version struct{ semv.Version }
-	// LocalUser is the currently logged in user.
-	LocalUser struct{ *config.User }
 	// LocalSousConfig is the configuration for Sous.
 	LocalSousConfig struct{ *config.Config }
 	// LocalWorkDir is the user's current working directory when they invoke Sous.
@@ -362,10 +360,9 @@ func newBuildManager(bc *sous.BuildConfig, sl sous.Selector, lb sous.Labeller, r
 	}
 }
 
-func newLocalUser() (v LocalUser, err error) {
+func newLocalUser() (v config.LocalUser, err error) {
 	u, err := user.Current()
-	v.User = &config.User{User: u}
-	return v, initErr(err, "getting current user")
+	return config.LocalUser{User: u}, initErr(err, "getting current user")
 }
 
 // TODO: This should register a cleanup task with the cli, to delete the temp

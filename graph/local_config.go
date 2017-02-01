@@ -31,7 +31,7 @@ func newSousConfig(lsc LocalSousConfig) *config.Config {
 	return lsc.Config
 }
 
-func newPossiblyInvalidLocalSousConfig(u LocalUser, defaultConfig DefaultConfig, gcl *ConfigLoader) (PossiblyInvalidConfig, error) {
+func newPossiblyInvalidLocalSousConfig(u config.LocalUser, defaultConfig DefaultConfig, gcl *ConfigLoader) (PossiblyInvalidConfig, error) {
 	v, err := newPossiblyInvalidConfig(u.ConfigFile(), defaultConfig, gcl)
 	return v, initErr(err, "getting configuration")
 }
