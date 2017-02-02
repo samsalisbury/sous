@@ -26,6 +26,9 @@ type (
 		//	Shutdown to shut down the docker-compose after tests have run.
 		ComposeServices(string, serviceMap) (*command, error)
 
+		// InstallRegistryCertificate installs the signing cert for a docker registry, if needed.
+		InstallRegistryCertificate(caPath, composeDir, registryCertName string) error
+
 		// InstallFile puts a path found on the local machine to a path on the docker host.
 		InstallFile(string, string) error
 

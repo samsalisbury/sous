@@ -66,7 +66,7 @@ release: artifacts/$(DARWIN_TARBALL) artifacts/$(LINUX_TARBALL)
 semvertagchk:
 	@echo "$(SOUS_VERSION)" | egrep ^[0-9]+\.[0-9]+\.[0-9]+
 
-sous_qa_setup:
+sous_qa_setup: ./dev_support/sous_qa_setup/*.go ./util/test_with_docker/*.go
 	go build ./dev_support/sous_qa_setup
 
 test: test-gofmt test-unit test-integration
@@ -92,8 +92,7 @@ test-unit:
 test-integration: test-setup
 	SOUS_QA_DESC=$(QA_DESC) go test $(TEST_VERBOSE) ./integration --tags=integration
 
-test-setup:./integration/test-registry/testing.crt sous_qa_setup
-	cd integration/test-registry && docker-compose pull
+test-setup:  sous_qa_setup
 	./sous_qa_setup --compose-dir ./integration/test-registry/ --out-path=`pwd`/qa_desc.json
 
 $(BIN_DIR):
@@ -121,9 +120,6 @@ artifacts/$(LINUX_TARBALL): artifacts/$(LINUX_RELEASE_DIR)/sous
 
 artifacts/$(DARWIN_TARBALL): artifacts/$(DARWIN_RELEASE_DIR)/sous
 	cd artifacts && tar czv $(DARWIN_RELEASE_DIR) > $(DARWIN_TARBALL)
-
-./integration/test-registry/testing.crt:
-	cd integration/test-registry && openssl req -newkey rsa:512 -x509 -days 365 -out testing.crt -config local-daemon-ssl.conf -batch
 
 
 .PHONY: clean coverage install-ggen legendary release semvertagchk test test-gofmt test-integration test-setup test-unit
