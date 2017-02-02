@@ -1,64 +1,66 @@
-bash-4.3$ bash-4.3$ bash-4.3$ warn: CONFIG FROM /tmp/sous-cli-testing875566405/home/dot-config/sous/config.yaml
+bash-4.3$ bash-4.3$ bash-4.3$ warn: CONFIG FROM /tmp/sous-cli-testing428272991/home/dot-config/sous/config.yaml
 bash-4.3$ bash-4.3$ Cloning into 'sous-server'...
 ssh_wrapper
 Warning: Permanently added '[127.0.0.1]:2222' (ECDSA) to the list of known hosts.
-bash-4.3$ bash-4.3$ vomit: 2017/02/01 17:17:01 graph.go:295: Verbose debugging enabled
-debug: 2017/02/01 17:17:01 graph.go:296: Regular debugging enabled
-warn: CONFIG FROM /tmp/sous-cli-testing875566405/home/dot-config/sous/config.yaml
+bash-4.3$ bash-4.3$ vomit: 2017/02/01 17:31:28 graph.go:295: Verbose debugging enabled
+debug: 2017/02/01 17:31:28 graph.go:296: Regular debugging enabled
+warn: CONFIG FROM /tmp/sous-cli-testing428272991/home/dot-config/sous/config.yaml
 warn: No server set, Sous is running in server or workstation mode.
 warn: Configure a server like this: sous config server http://some.sous.server
-warn: Using local state stored at /tmp/sous-cli-testing875566405/gdm
-debug: 2017/02/01 17:17:01 git_state_manager.go:53: [git pull]: success
-vomit: 2017/02/01 17:17:01 git_state_manager.go:57: git: ssh_wrapper
+warn: Using local state stored at /tmp/sous-cli-testing428272991/gdm
+debug: 2017/02/01 17:31:28 git_state_manager.go:53: [git pull]: success
+vomit: 2017/02/01 17:31:28 git_state_manager.go:57: git: ssh_wrapper
 Warning: Permanently added '[127.0.0.1]:2222' (ECDSA) to the list of known hosts.
 Already up-to-date.
-vomit: 2017/02/01 17:17:01 disk_state_manager.go:65: Reading state from disk
-vomit: 2017/02/01 17:17:01 disk_state_manager.go:45: Validating State
-vomit: 2017/02/01 17:17:01 disk_state_manager.go:48: Repairing State
-debug: 2017/02/01 17:17:01 git_state_manager.go:53: [git tag sous-fallback-c9e0a83a-abb3-4fdb-b8e5-13dbb53d10f2]: success
-vomit: 2017/02/01 17:17:01 git_state_manager.go:57: git: 
-vomit: 2017/02/01 17:17:01 disk_state_manager.go:45: Validating State
-vomit: 2017/02/01 17:17:01 disk_state_manager.go:48: Repairing State
-vomit: 2017/02/01 17:17:01 disk_state_manager.go:100: Writing state to disk
-debug: 2017/02/01 17:17:01 git_state_manager.go:53: [git add .]: success
-vomit: 2017/02/01 17:17:01 git_state_manager.go:57: git: 
-debug: 2017/02/01 17:17:01 git_state_manager.go:55: [git diff-index --exit-code HEAD]: error: exit status 1
-vomit: 2017/02/01 17:17:01 git_state_manager.go:57: git: :100644 100644 85ae4af9b33fc82ec68f2b588437d6f59d599129 c98171e01c534910c01e9abfdc49b2d765700a96 M	defs.yaml
+vomit: 2017/02/01 17:31:28 disk_state_manager.go:65: Reading state from disk
+vomit: 2017/02/01 17:31:28 disk_state_manager.go:45: Validating State
+vomit: 2017/02/01 17:31:28 disk_state_manager.go:48: Repairing State
+debug: 2017/02/01 17:31:28 git_state_manager.go:53: [git tag sous-fallback-5840e622-e845-4074-b894-cfe1d59dd0cb]: success
+vomit: 2017/02/01 17:31:28 git_state_manager.go:57: git: 
+vomit: 2017/02/01 17:31:28 disk_state_manager.go:45: Validating State
+vomit: 2017/02/01 17:31:28 disk_state_manager.go:48: Repairing State
+vomit: 2017/02/01 17:31:28 disk_state_manager.go:100: Writing state to disk
+debug: 2017/02/01 17:31:28 git_state_manager.go:53: [git add .]: success
+vomit: 2017/02/01 17:31:28 git_state_manager.go:57: git: 
+debug: 2017/02/01 17:31:28 git_state_manager.go:55: [git diff-index --exit-code HEAD]: error: exit status 1
+vomit: 2017/02/01 17:31:28 git_state_manager.go:57: git: :100644 100644 85ae4af9b33fc82ec68f2b588437d6f59d599129 c98171e01c534910c01e9abfdc49b2d765700a96 M	defs.yaml
 :000000 100644 0000000000000000000000000000000000000000 10037e47d232b77c33580f8998c5e02f9b206f37 A	manifests/127.0.0.1/2222/repos/sous-server.yaml
-debug: 2017/02/01 17:17:01 git_state_manager.go:53: [git commit -m sous commit: Update State]: success
-vomit: 2017/02/01 17:17:01 git_state_manager.go:57: git: [master 35988c1] sous commit: Update State
+debug: 2017/02/01 17:31:28 git_state_manager.go:53: [git commit -m sous commit: Update State]: success
+vomit: 2017/02/01 17:31:28 git_state_manager.go:57: git: [master 7e6391c] sous commit: Update State
  2 files changed, 22 insertions(+), 2 deletions(-)
  create mode 100644 manifests/127.0.0.1/2222/repos/sous-server.yaml
-debug: 2017/02/01 17:17:01 git_state_manager.go:53: [git push -u origin master]: success
-vomit: 2017/02/01 17:17:01 git_state_manager.go:57: git: ssh_wrapper
+debug: 2017/02/01 17:31:28 git_state_manager.go:53: [git push -u origin master]: success
+vomit: 2017/02/01 17:31:28 git_state_manager.go:57: git: ssh_wrapper
 Warning: Permanently added '[127.0.0.1]:2222' (ECDSA) to the list of known hosts.
 To ssh://root@127.0.0.1:2222/repos/gdm
-   2d64296..35988c1  master -> master
+   d9fab85..7e6391c  master -> master
 Branch master set up to track remote branch master from origin.
-debug: 2017/02/01 17:17:01 git_state_manager.go:53: [git tag -d sous-fallback-c9e0a83a-abb3-4fdb-b8e5-13dbb53d10f2]: success
-vomit: 2017/02/01 17:17:01 git_state_manager.go:57: git: Deleted tag 'sous-fallback-c9e0a83a-abb3-4fdb-b8e5-13dbb53d10f2' (was 2d64296)
+debug: 2017/02/01 17:31:28 git_state_manager.go:53: [git tag -d sous-fallback-5840e622-e845-4074-b894-cfe1d59dd0cb]: success
+vomit: 2017/02/01 17:31:28 git_state_manager.go:57: git: Deleted tag 'sous-fallback-5840e622-e845-4074-b894-cfe1d59dd0cb' (was d9fab85)
 bash-4.3$ bash-4.3$ bash-4.3$ bash-4.3$ bash-4.3$ bash-4.3$ bash-4.3$ # 127.0.0.1:2222 SSH-2.0-OpenSSH_7.2p2-hpn14v4
 # 127.0.0.1:2222 SSH-2.0-OpenSSH_7.2p2-hpn14v4
 # 127.0.0.1:2222 SSH-2.0-OpenSSH_7.2p2-hpn14v4
 bash-4.3$ bash-4.3$ bash-4.3$ bash-4.3$ bash-4.3$ bash-4.3$ ssh_wrapper
 Warning: Permanently added '[127.0.0.1]:2222' (ECDSA) to the list of known hosts.
 To ssh://root@127.0.0.1:2222/repos/sous-server
-   23ea27c..37989bd  master -> master
+   23ea27c..30b870f  master -> master
 bash-4.3$ ssh_wrapper
 Warning: Permanently added '[127.0.0.1]:2222' (ECDSA) to the list of known hosts.
 To ssh://root@127.0.0.1:2222/repos/sous-server
  * [new tag]         0.0.2 -> 0.0.2
-bash-4.3$ bash-4.3$ bash-4.3$ warn: CONFIG FROM /tmp/sous-cli-testing875566405/home/dot-config/sous/config.yaml
-bash-4.3$ bash-4.3$ warn: CONFIG FROM /tmp/sous-cli-testing875566405/home/dot-config/sous/config.yaml
+bash-4.3$ bash-4.3$ bash-4.3$ warn: CONFIG FROM /tmp/sous-cli-testing428272991/home/dot-config/sous/config.yaml
+bash-4.3$ bash-4.3$ warn: CONFIG FROM /tmp/sous-cli-testing428272991/home/dot-config/sous/config.yaml
 warn: No server set, Sous is running in server or workstation mode.
 warn: Configure a server like this: sous config server http://some.sous.server
-warn: Using local state stored at /tmp/sous-cli-testing875566405/gdm
-warn: Cannot retry: getting request list: getting request: Get http://127.0.0.1:7099/singularity/api/requests: dial tcp 127.0.0.1:7099: getsockopt: connection refused. Exiting
-Get http://127.0.0.1:7099/singularity/api/requests: dial tcp 127.0.0.1:7099: getsockopt: connection refused
-bash-4.3$ warn: CONFIG FROM /tmp/sous-cli-testing875566405/home/dot-config/sous/config.yaml
+warn: Using local state stored at /tmp/sous-cli-testing428272991/gdm
+warn: Unable to create new deployment {"127.0.0.1/2222/repos/sous-server" "left"}: Image name unknown to Sous for source IDs: getting image from cache after harvest: warming up: Get https://127.0.0.1:5000/v2/127.0.0.1/2222/repos/sous-server/tags/list: x509: cannot validate certificate for 127.0.0.1 because it doesn't contain any IP SANs
+Errors during resolve:
+  Image name unknown to Sous for source IDs: getting image from cache after harvest: warming up: Get https://127.0.0.1:5000/v2/127.0.0.1/2222/repos/sous-server/tags/list: x509: cannot validate certificate for 127.0.0.1 because it doesn't contain any IP SANs
+bash-4.3$ warn: CONFIG FROM /tmp/sous-cli-testing428272991/home/dot-config/sous/config.yaml
 warn: No server set, Sous is running in server or workstation mode.
 warn: Configure a server like this: sous config server http://some.sous.server
-warn: Using local state stored at /tmp/sous-cli-testing875566405/gdm
-warn: Cannot retry: getting request list: getting request: Get http://127.0.0.1:7099/singularity/api/requests: dial tcp 127.0.0.1:7099: getsockopt: connection refused. Exiting
-Get http://127.0.0.1:7099/singularity/api/requests: dial tcp 127.0.0.1:7099: getsockopt: connection refused
+warn: Using local state stored at /tmp/sous-cli-testing428272991/gdm
+warn: Unable to create new deployment {"127.0.0.1/2222/repos/sous-server" "right"}: Image name unknown to Sous for source IDs: getting image from cache after harvest: warming up: Get https://127.0.0.1:5000/v2/127.0.0.1/2222/repos/sous-server/tags/list: x509: cannot validate certificate for 127.0.0.1 because it doesn't contain any IP SANs
+Errors during resolve:
+  Image name unknown to Sous for source IDs: getting image from cache after harvest: warming up: Get https://127.0.0.1:5000/v2/127.0.0.1/2222/repos/sous-server/tags/list: x509: cannot validate certificate for 127.0.0.1 because it doesn't contain any IP SANs
 bash-4.3$ bash-4.3$ bash-4.3$ bash-4.3$ bash-4.3$ bash-4.3$ bash-4.3$ 

@@ -92,7 +92,7 @@ test-unit:
 test-integration: test-setup
 	SOUS_QA_DESC=$(QA_DESC) go test $(TEST_VERBOSE) ./integration --tags=integration
 
-test-setup:./integration/test-registry/testing.crt sous_qa_setup
+test-setup:./integration/test-registry/docker-registry/testing.crt sous_qa_setup
 	cd integration/test-registry && docker-compose pull
 	./sous_qa_setup --compose-dir ./integration/test-registry/ --out-path=`pwd`/qa_desc.json
 
@@ -122,8 +122,8 @@ artifacts/$(LINUX_TARBALL): artifacts/$(LINUX_RELEASE_DIR)/sous
 artifacts/$(DARWIN_TARBALL): artifacts/$(DARWIN_RELEASE_DIR)/sous
 	cd artifacts && tar czv $(DARWIN_RELEASE_DIR) > $(DARWIN_TARBALL)
 
-./integration/test-registry/testing.crt:
-	cd integration/test-registry && openssl req -newkey rsa:512 -x509 -days 365 -out testing.crt -config local-daemon-ssl.conf -batch
+./integration/test-registry/docker-registry/testing.crt: # dep on? local-daemon-ssl.conf
+	cd $(dir $@) && openssl req -newkey rsa:512 -x509 -days 365 -out $(notdir $@) -config local-daemon-ssl.conf -batch
 
 
 .PHONY: clean coverage install-ggen legendary release semvertagchk test test-gofmt test-integration test-setup test-unit

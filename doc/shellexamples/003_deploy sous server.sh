@@ -2,7 +2,7 @@ sous config
 cat ~/.config/sous/config.yaml
 git clone ssh://root@127.0.0.1:2222/repos/sous-server
 pushd sous-server
-SOUS_SERVER= SOUS_STATE_LOCATION=/tmp/sous-cli-testing875566405/gdm sous init -v -d
+SOUS_SERVER= SOUS_STATE_LOCATION=/tmp/sous-cli-testing428272991/gdm sous init -v -d
 
 # Last minute config
 cat Dockerfile
@@ -21,6 +21,6 @@ sous context
 pwd
 sous build
 # We expect to see 'Sous is running ... in workstation mode' here:
-SOUS_SERVER= SOUS_STATE_LOCATION=/tmp/sous-cli-testing875566405/gdm sous deploy -cluster left
-SOUS_SERVER= SOUS_STATE_LOCATION=/tmp/sous-cli-testing875566405/gdm sous deploy -cluster right
+SOUS_SERVER= SOUS_STATE_LOCATION=/tmp/sous-cli-testing428272991/gdm sous deploy -cluster left
+SOUS_SERVER= SOUS_STATE_LOCATION=/tmp/sous-cli-testing428272991/gdm sous deploy -cluster right
 popd

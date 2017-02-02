@@ -55,8 +55,8 @@ Resources:
 - Name: ports
   Type: Integer
 Metadata: []
-/tmp/sous-cli-testing875566405/gdm /tmp/sous-cli-testing875566405
-[master (root-commit) 2d64296] Adding defs.yaml
+/tmp/sous-cli-testing428272991/gdm /tmp/sous-cli-testing428272991
+[master (root-commit) d9fab85] Adding defs.yaml
  1 file changed, 57 insertions(+)
  create mode 100644 defs.yaml
-/tmp/sous-cli-testing875566405
+/tmp/sous-cli-testing428272991
