@@ -66,7 +66,7 @@ func (ld *LocalDaemon) Cleanup() error {
 // InstallRegistryCertificate for a local daemon simply logs it's unwillingness to comply.
 func (ld *LocalDaemon) InstallRegistryCertificate(caPath, composeDir, registryCertName string) error {
 	log.Print("Local daemon agent doesn't need registry certs installed, and would require sudo to do it. No-op.")
-	log.Print("If you have trouble with registry push in your tests, consider copying %q to %q", registryCertName, caPath)
+	log.Printf("If you have trouble with registry push in your tests, consider copying %q to %q", registryCertName, caPath)
 	return nil
 }
 
