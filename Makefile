@@ -21,7 +21,7 @@ endif
 ifndef SOUS_QA_DESC
 QA_DESC := `pwd`/qa_desc.json
 else
-QA_DESC := $$SOUS_QA_DESC
+QA_DESC := $(SOUS_QA_DESC)
 endif
 
 FLAGS := "-X 'main.Revision=$(COMMIT)' -X 'main.VersionString=$(SOUS_VERSION)'"
@@ -96,7 +96,7 @@ test-integration: test-setup
 	SOUS_QA_DESC=$(QA_DESC) go test $(TEST_VERBOSE) ./integration --tags=integration
 
 test-setup:  sous_qa_setup
-	./sous_qa_setup --compose-dir ./integration/test-registry/ --out-path=`pwd`/qa_desc.json
+	./sous_qa_setup --compose-dir ./integration/test-registry/ --out-path=$(QA_DESC)
 
 $(BIN_DIR):
 	mkdir -p $@
