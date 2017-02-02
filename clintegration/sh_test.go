@@ -78,6 +78,8 @@ func buildPath(exes ...string) (string, error) {
 }
 
 func templateConfigs(sourceDir, targetDir string, configData templatedConfigs) error {
+	log.Printf("Templating %q -> %q.", sourceDir, targetDir)
+	var linkCount, templCount int
 	err := filepath.Walk(sourceDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -108,7 +110,7 @@ func templateConfigs(sourceDir, targetDir string, configData templatedConfigs) e
 				}
 			}
 			linkName := filepath.Join(targetDir, info.Name())
-			log.Printf("Linking %q -> %q.", linkName, linkT)
+			linkCount++
 			return errors.Wrap(os.Symlink(linkT, linkName), "create link")
 		}
 
@@ -139,9 +141,10 @@ func templateConfigs(sourceDir, targetDir string, configData templatedConfigs) e
 			return errors.Wrap(err, "parse")
 		}
 
-		log.Printf("Templating %q -> %q.", path, targetPath)
+		templCount++
 		return errors.Wrap(tmpl.Execute(target, configData), "execute")
 	})
+	log.Printf("Linked %d files, Templated %d files.", linkCount, templCount)
 	return err
 }
 
@@ -191,6 +194,7 @@ type templatedConfigs struct {
 	desc.EnvDesc
 	Workdir, Homedir, XDGConfig, SSHWrapper string
 	GitSSH, GitRemoteBase                   string
+	SSHExec                                 string
 	GoPath, ShellPath                       []string
 }
 
@@ -219,7 +223,6 @@ func TestShellLevelIntegration(t *testing.T) {
 		t.Fatal(err, string(out))
 	}
 
-	log.Printf("WORKDIR: %q", workdir)
 	//defer os.RemoveAll(workdir)
 
 	stateDir := filepath.Join(workdir, "gdm")
@@ -227,6 +230,14 @@ func TestShellLevelIntegration(t *testing.T) {
 	pwd := filepath.Dir(descPath)
 
 	exePATH, err := buildPath("go", "git", "ssh", "cp")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	sshExecPath, err := exec.LookPath("ssh")
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	testHome := filepath.Join(workdir, "home")
 
@@ -248,6 +259,7 @@ func TestShellLevelIntegration(t *testing.T) {
 		SSHWrapper:    sshWrapper,
 		GoPath:        goPath,
 		GitSSH:        gitSSH,
+		SSHExec:       sshExecPath,
 		GitRemoteBase: gitRemoteBase,
 		ShellPath:     []string{sousExeDir, "~/bin", exePATH, filepath.Join(firstGoPath, "bin")},
 	}
@@ -299,6 +311,7 @@ func TestShellLevelIntegration(t *testing.T) {
 	cp ~/templated-configs/defs.yaml gdm/defs.yaml
 	cat gdm/defs.yaml
 	pushd gdm
+	cat ~/.config/git/config >> .git/config # Eh?
 	git add defs.yaml
 	git commit -am "Adding defs.yaml"
 	git push

@@ -61,7 +61,7 @@ func newLiveStream(from io.Reader, events <-chan int) *liveStream {
 // NewShell creates a new CaptiveShell with an environment dictacted by env.
 func NewShell(env map[string]string) (sh *CaptiveShell, err error) {
 	sh = &CaptiveShell{}
-	sh.Cmd = exec.Command("/bin/bash", "--norc", "-i")
+	sh.Cmd = exec.Command("bash", "--norc", "-i")
 
 	for k, v := range env {
 		sh.Cmd.Env = append(sh.Cmd.Env, k+"="+v)
@@ -169,14 +169,14 @@ func (ls *liveStream) reader(events <-chan int) {
 	}
 }
 
-func (ls *liveStream) debugTo(prefix string) {
+func (ls *liveStream) debugTo(name, prefix string) {
 	dir, _ := ioutil.TempDir("", prefix)
 	ls.debugDir = dir
 	os.MkdirAll(ls.debugDir, os.ModePerm)
 	ls.debugs = make([]io.Writer, len(ls.bufs))
+	log.Printf("Writing low-level debug output for %s's buffers into %q.", name, ls.debugDir)
 	for n := range ls.bufs {
 		path := filepath.Join(ls.debugDir, fmt.Sprint(n))
-		log.Printf("Writing buffer bytes to %q.", path)
 		ls.debugs[n], _ = os.Create(path)
 	}
 }
@@ -211,7 +211,7 @@ func (ls *liveStream) consume(n int) string {
 
 func (sh *CaptiveShell) readExitStatus() (int, error) {
 	if !sh.doneRead.Scan() {
-		return -1, fmt.Errorf("Exit stream closed prematurely!\n%#v\n%s\n****\n%s************", sh, sh.stdout.consume(0), sh.stderr.consume(0))
+		return -1, fmt.Errorf("Exit stream closed prematurely!\n%#v\n%#v\n%s\n****\n%s************", sh, sh.Cmd, sh.stdout.consume(0), sh.stderr.consume(0))
 	}
 
 	return strconv.Atoi(string(bytes.TrimFunc(sh.doneRead.Bytes(), func(r rune) bool {

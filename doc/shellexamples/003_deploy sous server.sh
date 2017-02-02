@@ -1,15 +1,15 @@
 sous config
 cat ~/.config/sous/config.yaml
-git clone ssh://root@192.168.99.100:2222/repos/sous-server
+git clone ssh://root@127.0.0.1:2222/repos/sous-server
 pushd sous-server
-SOUS_SERVER= SOUS_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing861904482/gdm sous init -v -d
+SOUS_SERVER= SOUS_STATE_LOCATION=/tmp/sous-cli-testing875566405/gdm sous init -v -d
 
 # Last minute config
 cat Dockerfile
 cp ~/dot-ssh/git_pubkey_rsa key_sous@example.com
 cp $(which sous) .
 ls -la
-ssh-keyscan -p 2222 192.168.99.100 > known_hosts
+ssh-keyscan -p 2222 127.0.0.1 > known_hosts
 cat known_hosts
 
 git add key_sous@example.com known_hosts sous
@@ -21,6 +21,6 @@ sous context
 pwd
 sous build
 # We expect to see 'Sous is running ... in workstation mode' here:
-SOUS_SERVER= SOUS_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing861904482/gdm sous deploy -cluster left
-SOUS_SERVER= SOUS_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing861904482/gdm sous deploy -cluster right
+SOUS_SERVER= SOUS_STATE_LOCATION=/tmp/sous-cli-testing875566405/gdm sous deploy -cluster left
+SOUS_SERVER= SOUS_STATE_LOCATION=/tmp/sous-cli-testing875566405/gdm sous deploy -cluster right
 popd

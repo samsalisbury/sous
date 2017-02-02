@@ -2,6 +2,7 @@
 artifacts/
 samples/
 sous
+!sous/
 .agignore
 check-compile.results
 testdata/
