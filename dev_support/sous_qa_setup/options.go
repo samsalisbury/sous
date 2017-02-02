@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/SeeSpotRun/coerce"
 	docopt "github.com/docopt/docopt-go"
-	"github.com/nyarly/coerce"
 )
 
 type (
