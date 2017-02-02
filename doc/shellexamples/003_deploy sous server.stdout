@@ -8,12 +8,12 @@ Docker:
   DatabaseConnection: file:dummy.db?mode=memory&cache=shared
 Docker:
   RegistryHost: 127.0.0.1:5000
-/tmp/sous-cli-testing428272991/sous-server /tmp/sous-cli-testing428272991
+/tmp/sous-cli-testing426964092/sous-server /tmp/sous-cli-testing426964092
   (Sous)> git version
 > git version 2.7.4
 
   (Sous)> git config -l
-> core.sshcommand=/tmp/sous-cli-testing428272991/home/bin/ssh_wrapper
+> core.sshcommand=/tmp/sous-cli-testing426964092/home/bin/ssh_wrapper
 user.name=Integration Tester
 user.email=itester@opentable.com
 push.default=simple
@@ -27,19 +27,13 @@ branch.master.remote=origin
 branch.master.merge=refs/heads/master
 
   (Sous)> git rev-parse --show-toplevel
-> /tmp/sous-cli-testing428272991/sous-server
-
-  (Sous)> git ls-files
-> Dockerfile
-main.go
-sous-server.yaml
+> /tmp/sous-cli-testing426964092/sous-server
 
   (Sous)> git rev-parse --abbrev-ref HEAD
 > master
 
-  (Sous)> git rev-list -n 1 HEAD
-> 23ea27cb2f2b200e5bf9cbcb8c01dcf596e7b456
-
+  (Sous)> git log --date-order --tags --simplify-by-decoration --pretty=format:%H %aI %D
+> 1a27267954ca4f05bde5dec1443cf6dbcd520139 2017-01-25T15:39:07-08:00 tag: 0.0.1
   (Sous)> git remote -v
 > origin	ssh://root@127.0.0.1:2222/repos/sous-server (fetch)
 origin	ssh://root@127.0.0.1:2222/repos/sous-server (push)
@@ -48,10 +42,16 @@ origin	ssh://root@127.0.0.1:2222/repos/sous-server (push)
 > 
   (Sous)> git ls-files --modified
 > 
-  (Sous)> git log --date-order --tags --simplify-by-decoration --pretty=format:%H %aI %D
-> 1a27267954ca4f05bde5dec1443cf6dbcd520139 2017-01-25T15:39:07-08:00 tag: 0.0.1
+  (Sous)> git rev-list -n 1 HEAD
+> 23ea27cb2f2b200e5bf9cbcb8c01dcf596e7b456
+
   (Sous)> git describe --tags --abbrev=0 --always
 > 0.0.1
+
+  (Sous)> git ls-files
+> Dockerfile
+main.go
+sous-server.yaml
 
   (Sous)> git rev-list -n 1 0.0.1
 > 1a27267954ca4f05bde5dec1443cf6dbcd520139
@@ -94,26 +94,26 @@ RUN go install -v
 # NOTE: You must have set PORT0, GDM_REPO
 CMD /go/bin/sous-server
 total 22746
-drwxr-xr-x 3 judson users      224 Feb  1 17:31 .
-drwx------ 6 judson users      152 Feb  1 17:31 ..
-drwxr-xr-x 8 judson users      328 Feb  1 17:31 .git
--rw-r--r-- 1 judson users      390 Feb  1 17:31 Dockerfile
--rw------- 1 judson users     1679 Feb  1 17:31 key_sous@example.com
--rw-r--r-- 1 judson users     1550 Feb  1 17:31 main.go
--rwxr-xr-x 1 judson users 23249376 Feb  1 17:31 sous
--rw-r--r-- 1 judson users      518 Feb  1 17:31 sous-server.yaml
-[127.0.0.1]:2222 ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBHmUx+UjU3+d+yMRGz44OvCbzqmHkxOJwrQyDHVMhlyKkorhkKH/E/x83yh/0Vzo7k2N5NILdxXg7F1iz+TWn2A=
+drwxr-xr-x 3 judson users      224 Feb  1 17:52 .
+drwx------ 6 judson users      152 Feb  1 17:52 ..
+drwxr-xr-x 8 judson users      328 Feb  1 17:52 .git
+-rw-r--r-- 1 judson users      390 Feb  1 17:52 Dockerfile
+-rw------- 1 judson users     1679 Feb  1 17:52 key_sous@example.com
+-rw-r--r-- 1 judson users     1550 Feb  1 17:52 main.go
+-rwxr-xr-x 1 judson users 23249376 Feb  1 17:52 sous
+-rw-r--r-- 1 judson users      518 Feb  1 17:52 sous-server.yaml
 [127.0.0.1]:2222 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC/NMXnsHZ0eM4tJUSCvp+MC6ZGagLG6U7oTgPNqnHlWccNneDaADaFwojrCSYnDppqhdSmTQ5SfnugNPU+4hNNkq0Lu5JVJQCDhJl+XxNn7hUtSXeQJVcGPBt6CE3h0cY76DQz06OWR6tP9LktPcntI8jnavtl6EFfkFseehvPZ9kdU+Q1jXk5AdUYqDqZryEsWDaYqR0SteFcMhh0vYr+bFSmpWcmQ/0NFSRbc89NtrRVlq6QtWU1Pf/HM6hcSDFTMTWfH0YKYAhqIgMELHR9pT6ABSOsvLOcjBBfDXgwdNAID8exprlp3IOKWhugK+7o08SevefSiRRYXE00VHC3
+[127.0.0.1]:2222 ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBHmUx+UjU3+d+yMRGz44OvCbzqmHkxOJwrQyDHVMhlyKkorhkKH/E/x83yh/0Vzo7k2N5NILdxXg7F1iz+TWn2A=
 [127.0.0.1]:2222 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ5dXmFpX+A/laGvlnIUIEJaM4OzOZCtcSlxBygaUg1F
-[master 30b870f] Adding ephemeral files
+[master 11dbb56] Adding ephemeral files
  3 files changed, 30 insertions(+)
  create mode 100644 key_sous@example.com
  create mode 100644 known_hosts
  create mode 100755 sous
-RootDir: /tmp/sous-cli-testing428272991/sous-server
+RootDir: /tmp/sous-cli-testing426964092/sous-server
 OffsetDir: ""
 Branch: master
-Revision: 30b870f162777288ec2cb321e4f3c26aa7e1719c
+Revision: 11dbb5686ee443f77b70bd1c13cc6e5695674e85
 Files:
 - Dockerfile
 - key_sous@example.com
@@ -125,24 +125,24 @@ ModifiedFiles: []
 NewFiles: []
 Tags:
 - Name: 0.0.2
-  Revision: 30b870f162777288ec2cb321e4f3c26aa7e1719c
+  Revision: 11dbb5686ee443f77b70bd1c13cc6e5695674e85
 - Name: 0.0.1
   Revision: 1a27267954ca4f05bde5dec1443cf6dbcd520139
 NearestTagName: 0.0.2
-NearestTagRevision: 30b870f162777288ec2cb321e4f3c26aa7e1719c
+NearestTagRevision: 11dbb5686ee443f77b70bd1c13cc6e5695674e85
 PrimaryRemoteURL: 127.0.0.1/2222/repos/sous-server
 RemoteURL: ""
 RemoteURLs:
 - 127.0.0.1/2222/repos/sous-server
 DirtyWorkingTree: false
 RevisionUnpushed: false
-/tmp/sous-cli-testing428272991/sous-server
-  (Sous)> running docker build -t 127.0.0.1:5000/127.0.0.1/2222/repos/sous-server:0.0.2 -t 127.0.0.1:5000/127.0.0.1/2222/repos/sous-server:30b870f162777288ec2cb321e4f3c26aa7e1719c -
+/tmp/sous-cli-testing426964092/sous-server
+  (Sous)> running docker build -t 127.0.0.1:5000/127.0.0.1/2222/repos/sous-server:0.0.2 -t 127.0.0.1:5000/127.0.0.1/2222/repos/sous-server:11dbb5686ee443f77b70bd1c13cc6e5695674e85 -
   (Sous)> running docker push 127.0.0.1:5000/127.0.0.1/2222/repos/sous-server:0.0.2
-  (Sous)> running docker push 127.0.0.1:5000/127.0.0.1/2222/repos/sous-server:30b870f162777288ec2cb321e4f3c26aa7e1719c
-  (Sous)> [recording "127.0.0.1:5000/127.0.0.1/2222/repos/sous-server:0.0.2" as the docker name for "127.0.0.1/2222/repos/sous-server,0.0.2+30b870f162777288ec2cb321e4f3c26aa7e1719c"]
+  (Sous)> running docker push 127.0.0.1:5000/127.0.0.1/2222/repos/sous-server:11dbb5686ee443f77b70bd1c13cc6e5695674e85
+  (Sous)> [recording "127.0.0.1:5000/127.0.0.1/2222/repos/sous-server:0.0.2" as the docker name for "127.0.0.1/2222/repos/sous-server,0.0.2+11dbb5686ee443f77b70bd1c13cc6e5695674e85"]
 Built: "127.0.0.1:5000/127.0.0.1/2222/repos/sous-server:0.0.2"
-Elapsed: 31.689696683s
+Elapsed: 855.795657ms
 
 
-/tmp/sous-cli-testing428272991
+/tmp/sous-cli-testing426964092

@@ -50,6 +50,7 @@ clean:
 clean-containers:
 	docker ps -q | xargs -r docker kill
 	docker ps -aq | xargs -r docker rm
+	rm ./integration/test-registry/docker-registry/testing.crt
 	if docker images | egrep ^testregistry_registry; then docker rmi testregistry_registry; fi
 
 gitlog:

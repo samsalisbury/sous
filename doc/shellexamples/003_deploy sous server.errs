@@ -1,2 +1,2 @@
-255   57  SOUS_SERVER= SOUS_STATE_LOCATION=/tmp/sous-cli-testing428272991/gdm sous deploy -cluster left
-255   58  SOUS_SERVER= SOUS_STATE_LOCATION=/tmp/sous-cli-testing428272991/gdm sous deploy -cluster right
+255   57  SOUS_SERVER= SOUS_STATE_LOCATION=/tmp/sous-cli-testing426964092/gdm sous deploy -cluster left
+255   58  SOUS_SERVER= SOUS_STATE_LOCATION=/tmp/sous-cli-testing426964092/gdm sous deploy -cluster right

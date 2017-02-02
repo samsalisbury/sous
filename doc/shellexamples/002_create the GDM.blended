@@ -1,4 +1,4 @@
-bash-4.3$ bash-4.3$ bash-4.3$ Cloning into 'gdm'...
+bash-4.3$ bash-4.3$ bash-4.3$ bash-4.3$ Cloning into 'gdm'...
 ssh_wrapper
 Warning: Permanently added '[127.0.0.1]:2222' (ECDSA) to the list of known hosts.
 warning: You appear to have cloned an empty repository.
@@ -59,13 +59,13 @@ Resources:
 - Name: ports
   Type: Integer
 Metadata: []
-bash-4.3$ /tmp/sous-cli-testing428272991/gdm /tmp/sous-cli-testing428272991
-bash-4.3$ bash-4.3$ bash-4.3$ [master (root-commit) d9fab85] Adding defs.yaml
+bash-4.3$ /tmp/sous-cli-testing426964092/gdm /tmp/sous-cli-testing426964092
+bash-4.3$ bash-4.3$ bash-4.3$ [master (root-commit) 43ae683] Adding defs.yaml
  1 file changed, 57 insertions(+)
  create mode 100644 defs.yaml
 bash-4.3$ ssh_wrapper
 Warning: Permanently added '[127.0.0.1]:2222' (ECDSA) to the list of known hosts.
 To ssh://root@127.0.0.1:2222/repos/gdm
  * [new branch]      master -> master
-bash-4.3$ /tmp/sous-cli-testing428272991
+bash-4.3$ /tmp/sous-cli-testing426964092
 bash-4.3$ bash-4.3$ bash-4.3$ bash-4.3$ bash-4.3$ bash-4.3$ 
