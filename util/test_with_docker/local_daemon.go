@@ -63,6 +63,13 @@ func (ld *LocalDaemon) Cleanup() error {
 	return nil
 }
 
+// InstallRegistryCertificate for a local daemon simply logs it's unwillingness to comply.
+func (ld *LocalDaemon) InstallRegistryCertificate(registryName, composeDir, registryCertPath string) error {
+	log.Print("Local daemon agent doesn't need registry certs installed, and would require sudo to do it. No-op.")
+	log.Printf("If you have trouble with registry push in your tests,\n consider copying %s to /etc/docker/certs.d/%s/ca.crt", registryCertPath, registryName)
+	return nil
+}
+
 // InstallFile puts a path found on the local machine to a path on the docker host.
 func (ld *LocalDaemon) InstallFile(src string, dest string) error {
 	destDir := filepath.Dir(dest)
