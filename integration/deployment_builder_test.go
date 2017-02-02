@@ -65,7 +65,7 @@ func TestBuildDeployments(t *testing.T) {
 		whitespace.CleanWS(`
 		{
 			"deploy": {
-				"id": "`+singularity.MakeDeployID(uuid.NewV4().String())+`",
+				"id": "`+singularity.SanitizeDeployID(uuid.NewV4().String())+`",
 				"requestId": "`+reqID+`",
 				"resources": {
 					"cpus": 0.1,

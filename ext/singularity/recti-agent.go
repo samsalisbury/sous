@@ -14,8 +14,8 @@ import (
 
 var illegalDeployIDChars = regexp.MustCompile(`[-/:]`)
 
-// MakeDeployID cleans a string to be used as a Singularity deploy ID.
-func MakeDeployID(in string) string {
+// SanitizeDeployID cleans a string to be used as a Singularity deploy ID.
+func SanitizeDeployID(in string) string {
 	return illegalDeployIDChars.ReplaceAllString(in, "")
 }
 
@@ -46,7 +46,7 @@ func mapResources(r sous.Resources) dtoMap {
 func (ra *RectiAgent) Deploy(cluster, depID, reqID, dockerImage string,
 	r sous.Resources, e sous.Env, vols sous.Volumes) error {
 	Log.Debug.Printf("Deploying instance %s %s %s %s %v %v", cluster, depID, reqID, dockerImage, r, e)
-	depReq, err := buildDeployRequest(dockerImage, e, r, reqID, vols)
+	depReq, err := buildDeployRequest(dockerImage, e, r, reqID, depID, vols)
 	if err != nil {
 		return err
 	}
@@ -56,7 +56,7 @@ func (ra *RectiAgent) Deploy(cluster, depID, reqID, dockerImage string,
 	return err
 }
 
-func buildDeployRequest(dockerImage string, e sous.Env, r sous.Resources, reqID string, vols sous.Volumes) (*dtos.SingularityDeployRequest, error) {
+func buildDeployRequest(dockerImage string, e sous.Env, r sous.Resources, reqID string, depID string, vols sous.Volumes) (*dtos.SingularityDeployRequest, error) {
 	var depReq swaggering.Fielder
 	dockerInfo, err := swaggering.LoadMap(&dtos.SingularityDockerInfo{}, dtoMap{
 		"Image":   dockerImage,
@@ -98,7 +98,8 @@ func buildDeployRequest(dockerImage string, e sous.Env, r sous.Resources, reqID 
 	}
 
 	dep, err := swaggering.LoadMap(&dtos.SingularityDeploy{}, dtoMap{
-		"Id":            MakeDeployID(uuid.NewV4().String()),
+		"Id":            "JUSTID" + SanitizeDeployID(uuid.NewV4().String()),
+		"DeployId":      "DEPLOYID" + SanitizeDeployID(uuid.NewV4().String()),
 		"RequestId":     reqID,
 		"Resources":     res,
 		"ContainerInfo": ci,
@@ -173,7 +174,8 @@ func (ra *RectiAgent) DeleteRequest(cluster, reqID, message string) error {
 func (ra *RectiAgent) Scale(cluster, reqID string, instanceCount int, message string) error {
 	Log.Debug.Printf("Scaling %s %s %d %s", cluster, reqID, instanceCount, message)
 	sr, err := swaggering.LoadMap(&dtos.SingularityScaleRequest{}, dtoMap{
-		"ActionId": MakeDeployID(uuid.NewV4().String()), // not positive this is appropriate
+		// "ActionId": SanitizeDeployID(uuid.NewV4().String()), // not positive this is appropriate
+		"ActionId": "ACTIONID" + SanitizeDeployID(uuid.NewV4().String()), // not positive this is appropriate
 		// omitting DurationMillis - bears discussion
 		"Instances":        int32(instanceCount),
 		"Message":          "Sous" + message,

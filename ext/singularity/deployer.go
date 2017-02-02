@@ -204,15 +204,36 @@ func computeRequestID(d *sous.Deployable) string {
 }
 
 func computeDeployID(d *sous.Deployable) string {
-	flavor := illegalDeployIDChars.ReplaceAllString(d.Deployment.Flavor, "")
-	if len(flavor) == 0 {
-		flavor = "NOFLAVOR"
+	var uuidTrunc, versionTrunc string
+	// Singularity DeployID must be <50
+	maxDeployIDLen := 49
+	// maxVersionLen needs to account for the separator character
+	// between the version string and the UUID string.
+	maxVersionLen := 31
+	uuidEntire := SanitizeDeployID(uuid.NewV4().String())
+	versionEntire := SanitizeDeployID(d.Deployment.SourceID.Version.String())
+
+	if len(versionEntire) > maxVersionLen {
+		versionTrunc = versionEntire[0:maxVersionLen]
+	} else {
+		versionTrunc = versionEntire
 	}
+
+	// naiveLen is the length of the truncated Version plus
+	// the length of an entire UUID plus the length of a separator
+	// character.
+	naiveLen := len(versionTrunc) + len(uuidEntire) + 1
+
+	if naiveLen > maxDeployIDLen {
+		uuidTrunc = uuidEntire[0:(maxDeployIDLen - naiveLen - 1)]
+	} else {
+		uuidTrunc = uuidEntire
+	}
+
 	return strings.Join([]string{
-		illegalDeployIDChars.ReplaceAllString(d.Deployment.SourceID.Version.String(), ""),
-		flavor,
-		illegalDeployIDChars.ReplaceAllString(uuid.NewV4().String(), ""),
-	}, "-")
+		versionTrunc,
+		uuidTrunc,
+	}, "_")
 }
 
 // MakeRequestID creats a Singularity request ID from a sous.DeployID.

@@ -19,12 +19,13 @@ func TestBuildDeployRequest(t *testing.T) {
 	require := require.New(t)
 
 	di := "dockerImage"
+	dID := "depID"
 	rID := "reqID"
 	env := sous.Env{"test": "yes"}
 	rez := sous.Resources{"cpus": "0.1"}
 	vols := sous.Volumes{&sous.Volume{}}
 
-	dr, err := buildDeployRequest(di, env, rez, rID, vols)
+	dr, err := buildDeployRequest(di, env, rez, rID, dID, vols)
 	require.NoError(err)
 	assert.NotNil(dr)
 	assert.Equal(dr.Deploy.RequestId, rID)
