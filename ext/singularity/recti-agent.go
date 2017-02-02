@@ -99,7 +99,6 @@ func buildDeployRequest(dockerImage string, e sous.Env, r sous.Resources, reqID 
 
 	dep, err := swaggering.LoadMap(&dtos.SingularityDeploy{}, dtoMap{
 		"Id":            "JUSTID" + SanitizeDeployID(uuid.NewV4().String()),
-		"DeployId":      "DEPLOYID" + SanitizeDeployID(uuid.NewV4().String()),
 		"RequestId":     reqID,
 		"Resources":     res,
 		"ContainerInfo": ci,
