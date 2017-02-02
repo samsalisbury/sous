@@ -37,11 +37,14 @@ TEST_VERBOSE := $(if $(VERBOSE),-v,)
 
 help:
 	@echo --- options:
-	@echo clean
-	@echo coverage
-	@echo legendary
-	@echo release (linux and darwin)
-	@echo test (unit and integration)
+	@echo make clean
+	@echo make coverage
+	@echo make legendary
+	@echo "make release:  Both linux and darwin"
+	@echo "make test: unit and integration"
+	@echo "make test-unit"
+	@echo
+	@echo "Add VERBOSE=1 for tons of extra output."
 
 clean:
 	rm -rf $(COVER_DIR)
