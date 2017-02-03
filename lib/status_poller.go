@@ -17,7 +17,7 @@ type (
 	subPoller struct {
 		HTTPClient
 		ClusterName, URL string
-		*DeployStates
+		*Deployments
 		locationFilter, idFilter *ResolveFilter
 		User                     User
 	}
@@ -40,7 +40,7 @@ type (
 
 	// copied from server - avoiding coupling to server implemention
 	statusData struct {
-		Deployments           []*DeployState
+		Deployments           []*Deployment
 		Completed, InProgress *ResolveStatus
 	}
 
@@ -100,6 +100,7 @@ const (
 	ResolveMAX
 )
 
+// XXX we might consider using go generate with `stringer` (c.f.)
 func (rs ResolveState) String() string {
 	switch rs {
 	default:
@@ -280,8 +281,8 @@ func (sub *subPoller) pollOnce() ResolveState {
 		Log.Vomit.Printf("%s: %T %+v", sub.ClusterName, errors.Cause(err), err)
 		return ResolveErredHTTP
 	}
-	deps := NewDeployStates(data.Deployments...)
-	sub.DeployStates = &deps
+	deps := NewDeployments(data.Deployments...)
+	sub.Deployments = &deps
 
 	return sub.computeState(
 		// The serverIntent is the deployment in the GDM when the server started
@@ -302,7 +303,7 @@ func (sub *subPoller) pollOnce() ResolveState {
 // computeState takes the servers intended deployment, and the stable and
 // current DiffResolutions and computes the state of resolution for the
 // deployment based on that data.
-func (sub *subPoller) computeState(srvIntent *DeployState, stable, current *DiffResolution) ResolveState {
+func (sub *subPoller) computeState(srvIntent *Deployment, stable, current *DiffResolution) ResolveState {
 	Log.Debug.Printf("%s reports intent to resolve [%v]", sub.URL, srvIntent)
 	Log.Debug.Printf("%s reports stable rez: %v", sub.URL, stable)
 	Log.Debug.Printf("%s reports in-progress rez: %v", sub.URL, current)
@@ -320,7 +321,7 @@ func (sub *subPoller) computeState(srvIntent *DeployState, stable, current *Diff
 	// Again, if it weren't in the freshest GDM, we wouldn't have gotten here.
 	// Next cycle! (note that in both cases, we're likely to poll again several
 	// times before that cycle starts.)
-	if !sub.idFilter.FilterDeployment(&srvIntent.Deployment) {
+	if !sub.idFilter.FilterDeployment(srvIntent) {
 		return ResolveNotVersion
 	}
 
@@ -360,27 +361,21 @@ func (sub *subPoller) computeState(srvIntent *DeployState, stable, current *Diff
 	// will be described as "unchanged." The upshot is that the most current
 	// intend to deploy matches this cluster's current resolver's intend to
 	// deploy, and that that matches the deploy that's running. Success!
-	if current.Desc == "unchanged" {
-		if srvIntent.Status == DeployStatusActive {
-			return ResolveComplete
-		}
-		if srvIntent.Status == DeployStatusPending {
-			return ResolveTasksStarting
-		}
-		// TODO: In this state, tasks have failed to start, so we need a
-		// state like "ResolveNeedsRollback" to get the GDM back to a stable
-		// state.
-		Log.Warn.Printf("Sous finished updating the GDM, but the tasks may have failed to start.")
+	if current.Desc == StableDiff {
 		return ResolveComplete
+	}
+
+	if current.Desc == ComingDiff {
+		return ResolveTasksStarting
 	}
 
 	return ResolveInProgress
 }
 
-func (sub *subPoller) serverIntent() *DeployState {
-	Log.Vomit.Printf("Filtering %#v", sub.DeployStates)
+func (sub *subPoller) serverIntent() *Deployment {
+	Log.Vomit.Printf("Filtering %#v", sub.Deployments)
 	Log.Debug.Printf("Filtering with %q", sub.locationFilter)
-	dep, exactlyOne := sub.DeployStates.Single(sub.locationFilter.FilterDeployStates)
+	dep, exactlyOne := sub.Deployments.Single(sub.locationFilter.FilterDeployment)
 	if !exactlyOne {
 		Log.Debug.Printf("With %s we didn't match exactly one deployment.", sub.locationFilter)
 		return nil

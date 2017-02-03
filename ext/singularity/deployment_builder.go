@@ -114,6 +114,16 @@ func (db *deploymentBuilder) retrieveDeploy() error {
 		return malformedResponse{"Singularity response didn't include a deploy state. ReqId: " + reqID(rp)}
 	}
 
+	// If there is a Pending deploy, as far as Sous is concerned, that's "to
+	// come" - we optimistically assume it will become Active, and that's the
+	// Deployment we should consider live.
+	//
+	// (At some point in the future we may want to be able to report the "live"
+	// deployment - at best based on this we could infer that a previous GDM
+	// entry was running. (consider several quick updates, though...(but
+	// Singularity semantics mean that each of them that was actually resolved
+	// would have been Active however briefly (but Sous would accept GDM updates
+	// arbitrarily quickly as compared to resolve completions...))))
 	if rds.PendingDeploy != nil {
 		db.Target.Status = sous.DeployStatusPending
 		db.depMarker = rds.PendingDeploy

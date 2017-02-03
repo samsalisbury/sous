@@ -43,10 +43,7 @@ func (r *Resolver) reportStable(stable chan *Deployable, results chan DiffResolu
 	for dep := range stable {
 		results <- DiffResolution{
 			DeployID: dep.ID(),
-			// XXX This value is 'magic' - the `sous status` command uses it to
-			// recognize a complete resolution. Don't change it here without changing
-			// it everywhere.
-			Desc: "unchanged",
+			Desc:     StableDiff,
 		}
 	}
 }

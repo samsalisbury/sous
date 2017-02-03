@@ -33,10 +33,26 @@ type (
 		// DeployID is the ID of the deployment being resolved
 		DeployID
 		// Desc describes the difference and its resolution
-		Desc string
+		Desc ResolutionType
 		// Error captures the error (if any) encountered during diff resolution
 		Error *ErrorWrapper
 	}
+
+	// ResolutionType marks the kind of a DiffResolution
+	ResolutionType string
+)
+
+const (
+	// StableDiff - the active deployment is the intended deployment
+	StableDiff = ResolutionType("unchanged")
+	// ComingDiff - the intended deployment is pending, assumed will be come active
+	ComingDiff = ResolutionType("coming")
+	// CreateDiff - the intended deployment was missing and had to be created.
+	CreateDiff = ResolutionType("created")
+	// ModifyDiff - there was a deployment that differed from the intended was changed.
+	ModifyDiff = ResolutionType("updated")
+	// DeleteDiff - a deployment was active that wasn't intended at all, and was deleted.
+	DeleteDiff = ResolutionType("deleted")
 )
 
 // NewResolveRecorder creates a new ResolveRecorder and calls f with it as its
