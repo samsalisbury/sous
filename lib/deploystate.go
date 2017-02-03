@@ -5,7 +5,7 @@ package sous
 // A DeployState represents the state of a deployment in an external cluster.
 // It wraps Deployment and adds Status.
 type DeployState struct {
-	*Deployment
+	Deployment
 	Status DeployStatus
 }
 
@@ -26,7 +26,7 @@ const (
 
 // Clone returns an independent clone of this DeployState.
 func (ds DeployState) Clone() *DeployState {
-	ds.Deployment = ds.Deployment.Clone()
+	ds.Deployment = *ds.Deployment.Clone()
 	return &ds
 }
 
@@ -35,7 +35,7 @@ func (ds DeployState) Clone() *DeployState {
 func (ds DeployStates) IgnoringStatus() Deployments {
 	deployments := NewDeployments()
 	for key, value := range ds.Snapshot() {
-		deployments.Set(key, value.Deployment)
+		deployments.Set(key, &value.Deployment)
 	}
 	return deployments
 }
