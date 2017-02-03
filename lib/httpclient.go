@@ -28,6 +28,7 @@ type (
 		Delete(urlPath string, qParms map[string]string, from Comparable, user User) error
 	}
 
+	// DummyHTTPClient doesn't really make HTTP requests.
 	DummyHTTPClient struct{}
 
 	// Comparable is a required interface for Update and Delete, which provides
