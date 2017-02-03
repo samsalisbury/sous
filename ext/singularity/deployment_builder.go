@@ -67,7 +67,7 @@ func (db *deploymentBuilder) isRetryable(err error) bool {
 }
 
 // BuildDeployment does all the work to collect the data for a Deployment
-// from Singularity based on the initial SingularityRequest
+// from Singularity based on the initial SingularityRequest.
 func BuildDeployment(reg sous.Registry, clusters sous.Clusters, req SingReq) (sous.Deployment, error) {
 	Log.Vomit.Printf("%#v", req.ReqParent)
 	db := deploymentBuilder{registry: reg, clusters: clusters, req: req}
