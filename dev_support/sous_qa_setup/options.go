@@ -19,6 +19,7 @@ type (
 		composeDir    string
 		composeFile   string
 		serviceConfig string
+		debug         bool
 	}
 
 	options struct {
@@ -38,6 +39,7 @@ Options:
 	 --compose-file=<path>        Passed to docker-compose [default: docker-compose.yml]
    --timeout=<timeout>          Time allowed before a non-response by services is considered failure [default: 5m]
    --out-path=<path>            The path to write the description of the environment to, or - for stdout [default: -]
+	 --debug                      Enable debug mode.
    -K --shutdown                Rather than set up the QA environment, shut it down
 
 File paths (the compose, service-config paths) will be considered relative to

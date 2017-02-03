@@ -47,7 +47,7 @@ func generateRegistryCert(composeDir string, agentIP net.IP, registryCertPath st
 	if !haveIP {
 		log.Printf("Rebuilding the registry certificate to add %v", agentIP)
 		certIPs = append(certIPs, agentIP)
-		err = buildTestingKeypair(composeDir, certIPs)
+		err = buildTestingKeypair(filepath.Dir(registryCertPath), certIPs)
 		if err != nil {
 			return fmt.Errorf("While building testing keypair: %s", err)
 		}
