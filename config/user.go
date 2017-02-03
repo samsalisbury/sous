@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 )
 
-// User represents the user environment of the account running Sous
-type User struct {
+// LocalUser represents the OS user running Sous.
+type LocalUser struct {
 	*user.User
 }
 
@@ -18,14 +18,14 @@ const (
 )
 
 // DefaultConfig builds a default configuration for this user
-func (u *User) DefaultConfig() Config {
+func (u *LocalUser) DefaultConfig() Config {
 	c := DefaultConfig()
 	c.Docker.DatabaseConnection = filepath.Join(u.ConfigDir(), "data.db")
 	return c
 }
 
 // ConfigDir returns the directory we should use to store Sous configuration data
-func (u *User) ConfigDir() string {
+func (u *LocalUser) ConfigDir() string {
 	if sd := os.Getenv("SOUS_CONFIG_DIR"); sd != "" {
 		return sd
 	}
@@ -37,6 +37,6 @@ func (u *User) ConfigDir() string {
 }
 
 // ConfigFile returns the path to the local Sous config file
-func (u *User) ConfigFile() string {
+func (u *LocalUser) ConfigFile() string {
 	return filepath.Join(u.ConfigDir(), configFileBase)
 }

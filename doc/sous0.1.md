@@ -8,6 +8,12 @@
   defined by otpl config directories in the `<cluster>.<flavor>` format.
   If there is a single flavor defined, behaviour is like before.
   Otherwise you may supply a -flavor flag to import configurations of a particular flavor.
+- Feature: config.yaml now supports a new `User` field containing `Name` and `Email`. If set
+  this info is sent to the server alongside all requests, and is used when committing state
+  changes (as the --author flag).
+- Feature: On first run (when there is no config file), and when a terminal is attached (meaning
+  it's likely that a user is present), the user is prompted to provide their name and email
+  address, and the URL of their local Sous server.
 
 
 ### 0.1.8

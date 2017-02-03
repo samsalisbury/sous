@@ -8,13 +8,14 @@ import (
 	"path"
 
 	"github.com/opentable/sous/ext/docker"
+	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/firsterr"
 	"github.com/pkg/errors"
 )
 
-// Config contains the core Sous configuration, shared by both the client and
-// server. The client and server may additionally have their own configuration.
 type (
+	// Config contains the core Sous configuration, shared by both the client and
+	// server. The client and server may additionally have their own configuration.
 	Config struct {
 		// StateLocation is either a file containing a pre-compiled state, or
 		// a directory containing the state as a tree.
@@ -33,6 +34,8 @@ type (
 		BuildStateDir string `env:"SOUS_BUILD_STATE_DIR"`
 		// Docker is the Docker configuration.
 		Docker docker.Config
+		// User identifies the user of this client.
+		User sous.User
 	}
 )
 
