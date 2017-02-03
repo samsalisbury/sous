@@ -363,7 +363,7 @@ func (sub *subPoller) serverIntent() *Deployment {
 	Log.Debug.Printf("Filtering with %q", sub.locationFilter)
 	dep, exactlyOne := sub.Deployments.Single(sub.locationFilter.FilterDeployment)
 	if !exactlyOne {
-		Log.Debug.Printf("With %s we didn't match exactly one deployment! %#v", sub.locationFilter)
+		Log.Debug.Printf("With %s we didn't match exactly one deployment.", sub.locationFilter)
 		return nil
 	}
 	Log.Vomit.Printf("Matching deployment: %#v", dep)
