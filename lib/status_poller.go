@@ -359,15 +359,15 @@ func (sub *subPoller) computeState(srvIntent *DeployState, stable, current *Diff
 	if current.Desc == "unchanged" {
 		if srvIntent.Status == DeployStatusActive {
 			return ResolveComplete
-		} else if srvIntent.Status == DeployStatusPending {
-			return ResolveTasksStarting
-		} else {
-			// TODO: In this state, tasks have failed to start, so we need a
-			// state like "ResolveNeedsRollback" to get the GDM back to a stable
-			// state.
-			Log.Warn.Printf("Sous finished updating the GDM, but the tasks may have failed to start.")
-			return ResolveComplete
 		}
+		if srvIntent.Status == DeployStatusPending {
+			return ResolveTasksStarting
+		}
+		// TODO: In this state, tasks have failed to start, so we need a
+		// state like "ResolveNeedsRollback" to get the GDM back to a stable
+		// state.
+		Log.Warn.Printf("Sous finished updating the GDM, but the tasks may have failed to start.")
+		return ResolveComplete
 	}
 
 	return ResolveInProgress
