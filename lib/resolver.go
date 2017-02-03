@@ -70,7 +70,7 @@ func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveRecord
 			intended = intended.Filter(r.FilterDeployment)
 		})
 
-		var actual Deployments
+		var actual DeployStates
 
 		recorder.performPhase("getting running deployments", func() error {
 			var err error
@@ -79,12 +79,12 @@ func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveRecord
 		})
 
 		recorder.performGuaranteedPhase("filtering running deployments", func() {
-			actual = actual.Filter(r.FilterDeployment)
+			actual = actual.Filter(r.FilterDeployStates)
 		})
 
 		var diffs DiffChans
 		recorder.performGuaranteedPhase("generating diff", func() {
-			diffs = actual.Diff(intended)
+			diffs = actual.IgnoringStatus().Diff(intended)
 		})
 
 		namer := NewDeployableChans(10)

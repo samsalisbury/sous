@@ -13,7 +13,7 @@ import (
 type (
 	deploymentBuilder struct {
 		clusters  sous.Clusters
-		Target    sous.Deployment
+		Target    sous.DeployState
 		imageName string
 		depMarker sDepMarker
 		deploy    sDeploy
@@ -68,7 +68,7 @@ func (db *deploymentBuilder) isRetryable(err error) bool {
 
 // BuildDeployment does all the work to collect the data for a Deployment
 // from Singularity based on the initial SingularityRequest.
-func BuildDeployment(reg sous.Registry, clusters sous.Clusters, req SingReq) (sous.Deployment, error) {
+func BuildDeployment(reg sous.Registry, clusters sous.Clusters, req SingReq) (sous.DeployState, error) {
 	Log.Vomit.Printf("%#v", req.ReqParent)
 	db := deploymentBuilder{registry: reg, clusters: clusters, req: req}
 
@@ -113,11 +113,14 @@ func (db *deploymentBuilder) retrieveDeploy() error {
 	if rds == nil {
 		return malformedResponse{"Singularity response didn't include a deploy state. ReqId: " + reqID(rp)}
 	}
-	db.depMarker = rds.PendingDeploy
-	if db.depMarker == nil {
+
+	if rds.PendingDeploy != nil {
+		db.Target.Status = sous.DeployStatusPending
+		db.depMarker = rds.PendingDeploy
+	} else if rds.ActiveDeploy != nil {
+		db.Target.Status = sous.DeployStatusActive
 		db.depMarker = rds.ActiveDeploy
-	}
-	if db.depMarker == nil {
+	} else {
 		return malformedResponse{"Singularity deploy state included no dep markers. ReqID: " + reqID(rp)}
 	}
 
