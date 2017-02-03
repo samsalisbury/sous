@@ -76,7 +76,7 @@ func NewClient(serverURL string) (*LiveHTTPClient, error) {
 func (client *LiveHTTPClient) Retrieve(urlPath string, qParms map[string]string, rzBody interface{}, user User) error {
 	return errors.Wrapf(func() error {
 		url, err := client.buildURL(urlPath, qParms)
-		rq, err := client.buildRequest("GET", url, map[string]string{"Sous-User": user.String()}, nil, err)
+		rq, err := client.buildRequest("GET", url, user, nil, nil, err)
 		rz, err := client.sendRequest(rq, err)
 		return client.getBody(rz, rzBody, err)
 	}(), "Retrieve %s", urlPath)
@@ -87,7 +87,7 @@ func (client *LiveHTTPClient) Retrieve(urlPath string, qParms map[string]string,
 func (client *LiveHTTPClient) Create(urlPath string, qParms map[string]string, qBody interface{}, user User) error {
 	return errors.Wrapf(func() error {
 		url, err := client.buildURL(urlPath, qParms)
-		rq, err := client.buildRequest("PUT", url, noMatchStar(), qBody, err)
+		rq, err := client.buildRequest("PUT", url, user, noMatchStar(), qBody, err)
 		rz, err := client.sendRequest(rq, err)
 		return client.getBody(rz, nil, err)
 	}(), "Create %s", urlPath)
@@ -101,8 +101,8 @@ func (client *LiveHTTPClient) Create(urlPath string, qParms map[string]string, q
 func (client *LiveHTTPClient) Update(urlPath string, qParms map[string]string, from, qBody Comparable, user User) error {
 	return errors.Wrapf(func() error {
 		url, err := client.buildURL(urlPath, qParms)
-		etag, err := client.getBodyEtag(url, from, err)
-		rq, err := client.buildRequest("PUT", url, ifMatch(etag), qBody, err)
+		etag, err := client.getBodyEtag(url, user, from, err)
+		rq, err := client.buildRequest("PUT", url, user, ifMatch(etag), qBody, err)
 		rz, err := client.sendRequest(rq, err)
 		return client.getBody(rz, nil, err)
 	}(), "Update %s", urlPath)
@@ -113,8 +113,8 @@ func (client *LiveHTTPClient) Update(urlPath string, qParms map[string]string, f
 func (client *LiveHTTPClient) Delete(urlPath string, qParms map[string]string, from Comparable, user User) error {
 	return errors.Wrapf(func() error {
 		url, err := client.buildURL(urlPath, qParms)
-		etag, err := client.getBodyEtag(url, from, err)
-		rq, err := client.buildRequest("DELETE", url, ifMatch(etag), nil, err)
+		etag, err := client.getBodyEtag(url, user, from, err)
+		rq, err := client.buildRequest("DELETE", url, user, ifMatch(etag), nil, err)
 		rz, err := client.sendRequest(rq, err)
 		return client.getBody(rz, nil, err)
 	}(), "Delete %s", urlPath)
@@ -168,7 +168,7 @@ func (client *LiveHTTPClient) buildURL(urlPath string, qParms map[string]string)
 	return client.serverURL.ResolveReference(URL).String(), nil
 }
 
-func (client *LiveHTTPClient) getBodyEtag(url string, body Comparable, ierr error) (etag string, err error) {
+func (client *LiveHTTPClient) getBodyEtag(url string, user User, body Comparable, ierr error) (etag string, err error) {
 	if ierr != nil {
 		err = ierr
 		return
@@ -180,7 +180,7 @@ func (client *LiveHTTPClient) getBodyEtag(url string, body Comparable, ierr erro
 	var rq *http.Request
 	var rz *http.Response
 	err = errors.Wrapf(func() error {
-		rq, err = client.buildRequest("GET", url, nil, nil, nil)
+		rq, err = client.buildRequest("GET", url, user, nil, nil, nil)
 		rz, err = client.sendRequest(rq, err)
 		return client.getBody(rz, rzBody, err)
 	}(), "etag for %s", url)
@@ -195,7 +195,7 @@ func (client *LiveHTTPClient) getBodyEtag(url string, body Comparable, ierr erro
 	return rz.Header.Get("Etag"), nil
 }
 
-func (client *LiveHTTPClient) buildRequest(method, url string, headers map[string]string, rqBody interface{}, ierr error) (*http.Request, error) {
+func (client *LiveHTTPClient) buildRequest(method, url string, user User, headers map[string]string, rqBody interface{}, ierr error) (*http.Request, error) {
 	if ierr != nil {
 		return nil, ierr
 	}
@@ -213,6 +213,9 @@ func (client *LiveHTTPClient) buildRequest(method, url string, headers map[strin
 	}
 
 	rq, err := http.NewRequest(method, url, JSON)
+
+	rq.Header.Add("Sous-User-Name", user.Name)
+	rq.Header.Add("Sous-User-Email", user.Email)
 
 	if headers != nil {
 		for k, v := range headers {
