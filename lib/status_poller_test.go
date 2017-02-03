@@ -26,6 +26,7 @@ func TestResolveState_String(t *testing.T) {
 	checkString(ResolveInProgress, "ResolveInProgress")
 	checkString(ResolveErredHTTP, "ResolveErredHTTP")
 	checkString(ResolveErredRez, "ResolveErredRez")
+	checkString(ResolveTasksStarting, "ResolveTasksStarting")
 	checkString(ResolveComplete, "ResolveComplete")
 	checkString(ResolveState(1e6), "unknown (oops)")
 
@@ -43,15 +44,17 @@ func TestSubPoller_ComputeState(t *testing.T) {
 	rezErr := &ChangeError{}
 	permErr := fmt.Errorf("something bad")
 
-	versionDep := func(version string) *Deployment {
-		return &Deployment{
-			Cluster: &Cluster{},
-			SourceID: SourceID{
-				Location: SourceLocation{
-					Repo: testRepo,
-					Dir:  testDir,
+	versionDep := func(version string) *DeployState {
+		return &DeployState{
+			Deployment: Deployment{
+				Cluster: &Cluster{},
+				SourceID: SourceID{
+					Location: SourceLocation{
+						Repo: testRepo,
+						Dir:  testDir,
+					},
+					Version: semv.MustParse(version),
 				},
-				Version: semv.MustParse(version),
 			},
 		}
 	}
@@ -68,7 +71,7 @@ func TestSubPoller_ComputeState(t *testing.T) {
 		}
 	}
 
-	testCompute := func(version string, intent *Deployment, stable, current *DiffResolution, expected ResolveState) {
+	testCompute := func(version string, intent *DeployState, stable, current *DiffResolution, expected ResolveState) {
 		sub := subPoller{
 			idFilter: &ResolveFilter{
 				Tag: version,

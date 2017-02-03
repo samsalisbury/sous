@@ -10,18 +10,18 @@ type DeployState struct {
 }
 
 // DeployStatus represents the status of a deployment in an external cluster.
-type DeployStatus string
+type DeployStatus int
 
 const (
 	// DeployStatusAny represents any deployment status.
-	DeployStatusAny DeployStatus = "*"
+	DeployStatusAny DeployStatus = 0
 	// DeployStatusPending means the deployment has been requested in the
 	// cluster, but is not yet running.
-	DeployStatusPending = "pending"
+	DeployStatusPending
 	// DeployStatusActive means the deployment is up and running.
-	DeployStatusActive = "active"
+	DeployStatusActive
 	// DeployStatusFailed means the deployment has failed.
-	DeployStatusFailed = "failed"
+	DeployStatusFailed
 )
 
 // Clone returns an independent clone of this DeployState.

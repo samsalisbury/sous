@@ -16,7 +16,7 @@ type (
 	subPoller struct {
 		HTTPClient
 		ClusterName, URL string
-		*Deployments
+		*DeployStates
 		locationFilter, idFilter *ResolveFilter
 	}
 
@@ -38,7 +38,7 @@ type (
 
 	// copied from server - avoiding coupling to server implemention
 	statusData struct {
-		Deployments           []*Deployment
+		Deployments           []*DeployState
 		Completed, InProgress *ResolveStatus
 	}
 
@@ -87,6 +87,9 @@ const (
 	// ResolveFailed indicates that a particular cluster is in a failed state
 	// regarding resolving the deployments, and that resolution cannot proceed.
 	ResolveFailed
+	// ResolveTasksStarting is the state when the resolution is complete from
+	// Sous' point of view, but awaiting tasks starting in the cluster.
+	ResolveTasksStarting
 	// ResolveComplete is the success state: the server knows about our intended
 	// deployment, and that deployment has returned as having been stable.
 	ResolveComplete
@@ -119,6 +122,8 @@ func (rs ResolveState) String() string {
 		return "ResolveNotIntended"
 	case ResolveFailed:
 		return "ResolveFailed"
+	case ResolveTasksStarting:
+		return "ResolveTasksStarting"
 	case ResolveComplete:
 		return "ResolveComplete"
 	case ResolveMAX:
@@ -271,8 +276,8 @@ func (sub *subPoller) pollOnce() ResolveState {
 		Log.Vomit.Printf("%s: %T %+v", sub.ClusterName, errors.Cause(err), err)
 		return ResolveErredHTTP
 	}
-	deps := NewDeployments(data.Deployments...)
-	sub.Deployments = &deps
+	deps := NewDeployStates(data.Deployments...)
+	sub.DeployStates = &deps
 
 	return sub.computeState(
 		// The serverIntent is the deployment in the GDM when the server started
@@ -293,7 +298,7 @@ func (sub *subPoller) pollOnce() ResolveState {
 // computeState takes the servers intended deployment, and the stable and
 // current DiffResolutions and computes the state of resolution for the
 // deployment based on that data.
-func (sub *subPoller) computeState(srvIntent *Deployment, stable, current *DiffResolution) ResolveState {
+func (sub *subPoller) computeState(srvIntent *DeployState, stable, current *DiffResolution) ResolveState {
 	Log.Debug.Printf("%s reports intent to resolve [%v]", sub.URL, srvIntent)
 	Log.Debug.Printf("%s reports stable rez: %v", sub.URL, stable)
 	Log.Debug.Printf("%s reports in-progress rez: %v", sub.URL, current)
@@ -311,7 +316,7 @@ func (sub *subPoller) computeState(srvIntent *Deployment, stable, current *DiffR
 	// Again, if it weren't in the freshest GDM, we wouldn't have gotten here.
 	// Next cycle! (note that in both cases, we're likely to poll again several
 	// times before that cycle starts.)
-	if !sub.idFilter.FilterDeployment(srvIntent) {
+	if !sub.idFilter.FilterDeployment(&srvIntent.Deployment) {
 		return ResolveNotVersion
 	}
 
@@ -352,16 +357,26 @@ func (sub *subPoller) computeState(srvIntent *Deployment, stable, current *DiffR
 	// intend to deploy matches this cluster's current resolver's intend to
 	// deploy, and that that matches the deploy that's running. Success!
 	if current.Desc == "unchanged" {
-		return ResolveComplete
+		if srvIntent.Status == DeployStatusActive {
+			return ResolveComplete
+		} else if srvIntent.Status == DeployStatusPending {
+			return ResolveTasksStarting
+		} else {
+			// TODO: In this state, tasks have failed to start, so we need a
+			// state like "ResolveNeedsRollback" to get the GDM back to a stable
+			// state.
+			Log.Warn.Printf("Sous finished updating the GDM, but the tasks may have failed to start.")
+			return ResolveComplete
+		}
 	}
 
 	return ResolveInProgress
 }
 
-func (sub *subPoller) serverIntent() *Deployment {
-	Log.Vomit.Printf("Filtering %#v", sub.Deployments)
+func (sub *subPoller) serverIntent() *DeployState {
+	Log.Vomit.Printf("Filtering %#v", sub.DeployStates)
 	Log.Debug.Printf("Filtering with %q", sub.locationFilter)
-	dep, exactlyOne := sub.Deployments.Single(sub.locationFilter.FilterDeployment)
+	dep, exactlyOne := sub.DeployStates.Single(sub.locationFilter.FilterDeployStates)
 	if !exactlyOne {
 		Log.Debug.Printf("With %s we didn't match exactly one deployment.", sub.locationFilter)
 		return nil
