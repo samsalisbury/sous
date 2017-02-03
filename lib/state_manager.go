@@ -7,7 +7,7 @@ type (
 	}
 	// StateWriter knows how to write state.
 	StateWriter interface {
-		WriteState(*State) error
+		WriteState(*State, User) error
 	}
 
 	// A StateManager can read and write state
@@ -30,7 +30,7 @@ func (sm *DummyStateManager) ReadState() (*State, error) {
 }
 
 // WriteState implements StateManager
-func (sm *DummyStateManager) WriteState(s *State) error {
+func (sm *DummyStateManager) WriteState(s *State, u User) error {
 	sm.WriteCount++
 	*sm.State = *s
 	return nil

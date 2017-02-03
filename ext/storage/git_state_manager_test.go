@@ -13,6 +13,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+var testUser = sous.User{Name: "Test User"}
+
 func TestGitWriteState(t *testing.T) {
 	require := require.New(t)
 
@@ -24,7 +26,7 @@ func TestGitWriteState(t *testing.T) {
 
 	gsm := NewGitStateManager(NewDiskStateManager("testdata/out"))
 
-	require.NoError(gsm.WriteState(s))
+	require.NoError(gsm.WriteState(s, testUser))
 
 	d := exec.Command("diff", "-r", "testdata/in", "testdata/out")
 	out, err := d.CombinedOutput()
@@ -137,7 +139,7 @@ func TestGitPushes(t *testing.T) {
 	require.NoError(err)
 
 	expected.Manifests.Add(&sous.Manifest{Source: sous.SourceLocation{Repo: "github.com/opentable/brandnew"}})
-	require.NoError(gsm.WriteState(expected))
+	require.NoError(gsm.WriteState(expected, testUser))
 	expected, err = gsm.ReadState()
 	require.NoError(err)
 
@@ -165,7 +167,7 @@ func TestGitConflicts(t *testing.T) {
 	git commit -m ""`, `testdata/origin`)
 
 	actual.Manifests.Add(&sous.Manifest{Source: sous.SourceLocation{Repo: "github.com/opentable/newhotness"}})
-	assert.Error(gsm.WriteState(actual))
+	assert.Error(gsm.WriteState(actual, testUser))
 	actual, err = gsm.ReadState()
 	require.NoError(err)
 	sameYAML(t, actual, expected)

@@ -1,13 +1,14 @@
 package cli
 
 import (
+	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/util/cmdr"
 )
 
 // SousConfig is the sous config command.
 type SousConfig struct {
-	User   graph.LocalUser
+	User   config.LocalUser
 	Config graph.PossiblyInvalidConfig
 }
 

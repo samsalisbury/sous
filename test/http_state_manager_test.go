@@ -114,7 +114,8 @@ func TestWriteState(t *testing.T) {
 
 	log.Printf("state after update: %#v", originalState)
 
-	if err := hsm.WriteState(originalState); err != nil {
+	var testUser = sous.User{Name: "Test User"}
+	if err := hsm.WriteState(originalState, testUser); err != nil {
 		t.Fatalf("Failed to write state: %+v", err)
 	}
 
