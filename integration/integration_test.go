@@ -346,7 +346,7 @@ func deploymentWithRepo(clusterNames []string, reg sous.Registry, assert *assert
 	}
 	deps, err := sc.RunningDeployments(reg, clusters)
 	if assert.Nil(err) {
-		return deps, findRepo(deps, repo)
+		return deps.IgnoringStatus(), findRepo(deps.IgnoringStatus(), repo)
 	}
 	return sous.Deployments{}, none
 }
