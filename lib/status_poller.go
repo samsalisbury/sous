@@ -281,7 +281,7 @@ func (sub *subPoller) pollOnce() ResolveState {
 		// started before the most recent update to the GDM.
 		sub.serverIntent(),
 
-		// The stable/current statuses are the the complete status log collected in
+		// The stable/current statuses are the complete status log collected in
 		// the most recent completed resolution, and the live status log being
 		// collected by a still-running resolution, if any. We filter the
 		// deployment we care about out of those logs.
@@ -370,7 +370,7 @@ func (sub *subPoller) serverIntent() *Deployment {
 	return dep
 }
 
-func diffRezFor(rstat *ResolveStatus, rf *ResolveFilter) *DiffResolution {
+func diffResolutionFor(rstat *ResolveStatus, rf *ResolveFilter) *DiffResolution {
 	if rstat == nil {
 		Log.Vomit.Printf("Status was nil - no match for %s", rf)
 		return nil
@@ -387,9 +387,9 @@ func diffRezFor(rstat *ResolveStatus, rf *ResolveFilter) *DiffResolution {
 }
 
 func (data *statusData) stableFor(rf *ResolveFilter) *DiffResolution {
-	return diffRezFor(data.Completed, rf)
+	return diffResolutionFor(data.Completed, rf)
 }
 
 func (data *statusData) currentFor(rf *ResolveFilter) *DiffResolution {
-	return diffRezFor(data.InProgress, rf)
+	return diffResolutionFor(data.InProgress, rf)
 }
