@@ -12,6 +12,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"text/tabwriter"
 	"time"
 )
 
@@ -34,16 +35,17 @@ const (
 
 func fileDiffs(pathPairs [][]string, localMD5, remoteMD5 map[string]string) [][]string {
 	differentPairs := make([][]string, 0, len(pathPairs))
+	tw := tabwriter.NewWriter(os.Stdout, 0, 0, 1, ' ', 0)
+
 	for _, pair := range pathPairs {
 		localPath, remotePath := pair[0], pair[1]
 
 		localHash, localPresent := localMD5[localPath]
 		remoteHash, remotePresent := remoteMD5[remotePath]
 
-		log.Printf("local  (present: %t %s) %s",
-			localPresent, localHash, localPath)
-		log.Printf("remote (present: %t %s) %s",
-			remotePresent, remoteHash, remotePath)
+		tw.Write([]byte(fmt.Sprintf("%s\t%t\t%s\n", localPath, localPresent, localHash)))
+		tw.Write([]byte(fmt.Sprintf("%s\t%t\t%s\n", remotePath, remotePresent, remoteHash)))
+
 		if localPresent != remotePresent || strings.Compare(remoteHash, localHash) != 0 {
 			differentPairs = append(differentPairs, []string{localPath, remotePath})
 			log.Printf(" - differ!\n")
@@ -51,12 +53,13 @@ func fileDiffs(pathPairs [][]string, localMD5, remoteMD5 map[string]string) [][]
 			log.Printf(" - same.\n")
 		}
 	}
+	tw.Flush()
 
 	return differentPairs
 }
 
 func composeService(dir string, ip net.IP, env []string, servicePorts serviceMap, timeout time.Duration) (shutdown *command, err error) {
-	if !servicesRunning(time.Second/2, ip, servicePorts) {
+	if !servicesRunning(3.0*time.Millisecond, ip, servicePorts) {
 		log.Printf("Services need to be started - tip: running `docker-compose up` in %s will speed tests up.", dir)
 
 		shutdownCmd := dockerComposeUp(dir, ip, env, servicePorts, timeout)

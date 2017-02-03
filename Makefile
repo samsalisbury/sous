@@ -21,7 +21,7 @@ endif
 ifndef SOUS_QA_DESC
 QA_DESC := `pwd`/qa_desc.json
 else
-QA_DESC := $$SOUS_QA_DESC
+QA_DESC := $(SOUS_QA_DESC)
 endif
 
 FLAGS := "-X 'main.Revision=$(COMMIT)' -X 'main.VersionString=$(SOUS_VERSION)'"
@@ -37,11 +37,14 @@ TEST_VERBOSE := $(if $(VERBOSE),-v,)
 
 help:
 	@echo --- options:
-	@echo clean
-	@echo coverage
-	@echo legendary
-	@echo release (linux and darwin)
-	@echo test (unit and integration)
+	@echo make clean
+	@echo make coverage
+	@echo make legendary
+	@echo "make release:  Both linux and darwin"
+	@echo "make test: unit and integration"
+	@echo "make test-unit"
+	@echo
+	@echo "Add VERBOSE=1 for tons of extra output."
 
 clean:
 	rm -rf $(COVER_DIR)
@@ -67,7 +70,7 @@ release: artifacts/$(DARWIN_TARBALL) artifacts/$(LINUX_TARBALL)
 semvertagchk:
 	@echo "$(SOUS_VERSION)" | egrep ^[0-9]+\.[0-9]+\.[0-9]+
 
-sous_qa_setup:
+sous_qa_setup: ./dev_support/sous_qa_setup/*.go ./util/test_with_docker/*.go
 	go build ./dev_support/sous_qa_setup
 
 test: test-gofmt test-unit test-integration
@@ -93,9 +96,8 @@ test-unit:
 test-integration: test-setup
 	SOUS_QA_DESC=$(QA_DESC) go test $(TEST_VERBOSE) ./integration --tags=integration
 
-test-setup:./integration/test-registry/docker-registry/testing.crt sous_qa_setup
-	cd integration/test-registry && docker-compose pull
-	./sous_qa_setup --compose-dir ./integration/test-registry/ --out-path=`pwd`/qa_desc.json
+test-setup:  sous_qa_setup
+	./sous_qa_setup --compose-dir ./integration/test-registry/ --out-path=$(QA_DESC)
 
 $(BIN_DIR):
 	mkdir -p $@
@@ -122,9 +124,6 @@ artifacts/$(LINUX_TARBALL): artifacts/$(LINUX_RELEASE_DIR)/sous
 
 artifacts/$(DARWIN_TARBALL): artifacts/$(DARWIN_RELEASE_DIR)/sous
 	cd artifacts && tar czv $(DARWIN_RELEASE_DIR) > $(DARWIN_TARBALL)
-
-./integration/test-registry/docker-registry/testing.crt: # dep on? local-daemon-ssl.conf
-	cd $(dir $@) && openssl req -newkey rsa:512 -x509 -days 365 -out $(notdir $@) -config local-daemon-ssl.conf -batch
 
 
 .PHONY: clean coverage install-ggen legendary release semvertagchk test test-gofmt test-integration test-setup test-unit

@@ -9,6 +9,7 @@ testdata/
 util/cmdr/cmdr-example/cmdr-example
 qa_desc.json
 sous_qa_setup
+!sous_qa_setup/
 tags
 .cadre/
 var/

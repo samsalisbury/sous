@@ -78,6 +78,36 @@ func (m *Machine) Cleanup() error {
 	return nil
 }
 
+// InstallRegistryCertificate operates on docker-machine agents. This is
+// because host-based docker tests need to push to a registry on the docker
+// machine VM - which has a non-localhost IP. Docker therefore insists on
+// checking the TLS correctness of the connection to the registry.
+func (m *Machine) InstallRegistryCertificate(registryName, composeDir, dockerCertPath string) error {
+	caPath := fmt.Sprintf("/etc/docker/certs.d/%s/ca.crt", registryName)
+	differs, err := m.DifferingFiles([]string{dockerCertPath, caPath})
+	if err != nil {
+		return fmt.Errorf("While checking for differing certs: %s", err)
+	}
+
+	for _, diff := range differs {
+		local, remote := diff[0], diff[1]
+		log.Printf("Copying %q to %q\n", local, remote)
+		err = m.InstallFile(local, remote)
+
+		if err != nil {
+			return fmt.Errorf("installFile failed: %s", err)
+		}
+	}
+
+	if len(differs) > 0 {
+		err = m.RestartDaemon()
+		if err != nil {
+			return fmt.Errorf("restarting docker machine's daemon failed: %s", err)
+		}
+	}
+	return nil
+}
+
 // DifferingFiles returns a slice of string slices representing files that
 // differ in the Docker machine, compared with the provided list of paths on the
 // host machine.
@@ -215,7 +245,11 @@ func (m *Machine) Exec(args ...string) error {
 
 func dockerMachine(args ...string) (stdout, stderr string, err error) {
 	c := runCommand("docker-machine", args...)
-	log.Println(c.String())
+	if c.err == nil {
+		log.Printf("Ran: %s\n  Stdout: %#v\n\n", c.itself.Args, c.stdout)
+	} else {
+		log.Printf("Ran: %s\n  Error: %+v\n  Stdout: %#v\n  Stderr: %#v\n\n", c.itself.Args, c.err, c.stdout, c.stderr)
+	}
 	return c.stdout, c.stderr, c.err
 }
 
