@@ -7,6 +7,7 @@ type (
 	DeploymentPair struct {
 		name        DeployID
 		Prior, Post *Deployment
+		Status      DeployStatus
 	}
 	// DeploymentPairs is a list of DeploymentPair
 	DeploymentPairs []*DeploymentPair
@@ -16,7 +17,7 @@ type (
 	}
 
 	differ struct {
-		from map[DeployID]*Deployment
+		from map[DeployID]*DeployState
 		DiffChans
 	}
 
@@ -83,6 +84,16 @@ func (d *DiffChans) Close() {
 }
 
 // Diff computes the differences between two sets of Deployments
+func (d DeployStates) Diff(other Deployments) DiffChans {
+	difr := newStateDiffer(d)
+	go func(d *differ, o Deployments) {
+		d.diff(o)
+	}(difr, other)
+
+	return difr.DiffChans
+}
+
+// Diff computes the differences between two sets of Deployments
 func (d Deployments) Diff(other Deployments) DiffChans {
 	difr := newDiffer(d)
 	go func(d *differ, o Deployments) {
@@ -90,6 +101,24 @@ func (d Deployments) Diff(other Deployments) DiffChans {
 	}(difr, other)
 
 	return difr.DiffChans
+}
+
+func newStateDiffer(intended DeployStates) *differ {
+	i := intended.Snapshot()
+	ds := []string{"Computing diff from:"}
+	for _, e := range i {
+		ds = append(ds, e.String())
+	}
+	Log.Vomit.Print(strings.Join(ds, "\n    "))
+
+	startMap := make(map[DeployID]*DeployState)
+	for _, dep := range i {
+		startMap[dep.Name()] = dep
+	}
+	return &differ{
+		from:      startMap,
+		DiffChans: NewDiffChans(len(i)),
+	}
 }
 
 func newDiffer(intended Deployments) *differ {
@@ -100,9 +129,9 @@ func newDiffer(intended Deployments) *differ {
 	}
 	Log.Vomit.Print(strings.Join(ds, "\n    "))
 
-	startMap := make(map[DeployID]*Deployment)
+	startMap := make(map[DeployID]*DeployState)
 	for _, dep := range i {
-		startMap[dep.Name()] = dep
+		startMap[dep.Name()] = &DeployState{Deployment: *dep}
 	}
 	return &differ{
 		from:      startMap,
@@ -125,30 +154,33 @@ func (d *differ) diff(existing Deployments) {
 
 			Log.Debug.Printf("New deployment: %q", id)
 
-			d.Created <- &DeploymentPair{
-				name:  id,
-				Prior: nil,
-				Post:  existingDeployment,
+			d.Created <- &DeploymentPair{ // XXX s/Created/Create
+				name:   id,
+				Prior:  nil,
+				Post:   existingDeployment,
+				Status: DeployStatusAny,
 			}
 			continue
 		}
 		delete(d.from, id)
-		different, differences := existingDeployment.Diff(intendedDeployment)
+		different, differences := existingDeployment.Diff(&intendedDeployment.Deployment)
 		if different {
 
 			Log.Debug.Printf("Modified deployment: %q (% #v)", id, differences)
 
 			d.Modified <- &DeploymentPair{
-				name:  id,
-				Prior: intendedDeployment,
-				Post:  existingDeployment,
+				name:   id,
+				Prior:  &intendedDeployment.Deployment,
+				Post:   existingDeployment,
+				Status: intendedDeployment.Status,
 			}
 			continue
 		}
 		d.Retained <- &DeploymentPair{
-			name:  id,
-			Prior: existingDeployment,
-			Post:  existingDeployment,
+			name:   id,
+			Prior:  existingDeployment,
+			Post:   existingDeployment,
+			Status: intendedDeployment.Status,
 		}
 	}
 
@@ -157,9 +189,10 @@ func (d *differ) diff(existing Deployments) {
 		Log.Debug.Printf("Deleted deployment: %q", deletedDeployment.ID())
 
 		d.Deleted <- &DeploymentPair{
-			name:  deletedDeployment.ID(),
-			Prior: deletedDeployment,
-			Post:  nil,
+			name:   deletedDeployment.ID(),
+			Prior:  &deletedDeployment.Deployment,
+			Post:   nil,
+			Status: deletedDeployment.Status,
 		}
 	}
 }
