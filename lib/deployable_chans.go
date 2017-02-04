@@ -82,27 +82,16 @@ func (dp *DeployablePair) ID() DeployID {
 func (dc *DeployableChans) ResolveNames(r Registry, diff *DiffChans, errs chan error) {
 	dc.WaitGroup = sync.WaitGroup{}
 	dc.Add(4)
-	go func() { resolveSingles(r, diff.Created, dc.Start, errs); dc.Done() }()
-	go func() { unresolvedSingles(r, diff.Deleted, dc.Stop, errs); dc.Done() }()
-	go func() { unresolvedSingles(r, diff.Retained, dc.Stable, errs); dc.Done() }()
+	go func() { resolveCreates(r, diff.Created, dc.Start, errs); dc.Done() }()
+	go func() { maybeResolveDeletes(r, diff.Deleted, dc.Stop, errs); dc.Done() }()
+	go func() { maybeResolveRetains(r, diff.Retained, dc.Stable, errs); dc.Done() }()
 	go func() { resolvePairs(r, diff.Modified, dc.Update, errs); dc.Done() }()
 	go func() { dc.Wait(); close(errs) }()
 }
 
-func unresolvedSingles(r Registry, from chan *Deployment, to chan *Deployable, errs chan error) {
-	for dep := range from {
-		Log.Vomit.Printf("Deployment processed w/o needing artifact: %#v", dep)
-		da, err := resolveName(r, dep)
-		if err != nil {
-			Log.Debug.Printf("Error resolving stopped or stable deployment (proceeding anyway): %#v: %#v", dep, err)
-		}
-		to <- da
-	}
-	close(to)
-}
-
-func resolveSingles(r Registry, from chan *Deployment, to chan *Deployable, errs chan error) {
-	for dep := range from {
+func resolveCreates(r Registry, from chan *DeploymentPair, to chan *Deployable, errs chan error) {
+	for dp := range from {
+		dep := dp.Post
 		Log.Vomit.Printf("Deployment processed, needs artifact: %#v", dep)
 
 		da, err := resolveName(r, dep)
@@ -112,6 +101,7 @@ func resolveSingles(r Registry, from chan *Deployment, to chan *Deployable, errs
 			errs <- err
 			continue
 		}
+
 		if da.BuildArtifact == nil {
 			Log.Info.Printf("Unable to create new deployment %q: no artifact for SourceID %q", dep.ID(), dep.SourceID)
 			Log.Debug.Printf("Failed create deployment %q: % #v", dep.ID(), dep)
@@ -120,6 +110,31 @@ func resolveSingles(r Registry, from chan *Deployment, to chan *Deployable, errs
 		to <- da
 	}
 	close(to)
+}
+
+func maybeResolveRetains(r Registry, from chan *DeploymentPair, to chan *Deployable, errs chan error) {
+	for dp := range from {
+		da := maybeResolveSingle(r, dp.Post)
+		to <- da
+	}
+	close(to)
+}
+
+func maybeResolveDeletes(r Registry, from chan *DeploymentPair, to chan *Deployable, errs chan error) {
+	for dp := range from {
+		da := maybeResolveSingle(r, dp.Prior)
+		to <- da
+	}
+	close(to)
+}
+
+func maybeResolveSingle(r Registry, dep *Deployment) *Deployable {
+	Log.Vomit.Printf("Deployment processed w/o needing artifact: %#v", dep)
+	da, err := resolveName(r, dep)
+	if err != nil {
+		Log.Debug.Printf("Error resolving stopped or stable deployment (proceeding anyway): %#v: %#v", dep, err)
+	}
+	return da
 }
 
 func resolvePairs(r Registry, from chan *DeploymentPair, to chan *DeployablePair, errs chan error) {

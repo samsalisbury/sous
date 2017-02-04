@@ -258,13 +258,13 @@ func (dc *DiffConcentrator) resolve(mid ManifestID, bundle *deploymentBundle) {
 
 func concentrate(dc DiffChans, con DiffConcentrator) {
 	collect := make(map[ManifestID]*deploymentBundle)
-	addPair := func(mid ManifestID, prior, post *Deployment) {
+	addPair := func(mid ManifestID, dp *DeploymentPair) {
 		_, present := collect[mid]
 		if !present {
 			collect[mid] = newDepBundle()
 		}
 
-		err := collect[mid].add(prior, post)
+		err := collect[mid].add(dp.Prior, dp.Post)
 		if err != nil {
 			con.Errors <- err
 			return
@@ -298,19 +298,19 @@ func concentrate(dc DiffChans, con DiffConcentrator) {
 				created = nil
 				continue
 			}
-			addPair(c.ManifestID(), nil, c)
+			addPair(c.Post.ManifestID(), c)
 		case d, open := <-deleted:
 			if !open {
 				deleted = nil
 				continue
 			}
-			addPair(d.ManifestID(), d, nil)
+			addPair(d.Prior.ManifestID(), d)
 		case r, open := <-retained:
 			if !open {
 				retained = nil
 				continue
 			}
-			addPair(r.ManifestID(), r, r)
+			addPair(r.Post.ManifestID(), r)
 		case m, open := <-modified:
 			if !open {
 				modified = nil
@@ -319,7 +319,7 @@ func concentrate(dc DiffChans, con DiffConcentrator) {
 
 			Log.Debug.Printf("Concentrating modification of %q", m.ID())
 
-			addPair(m.Prior.ManifestID(), m.Prior, m.Post)
+			addPair(m.Prior.ManifestID(), m)
 		}
 	}
 

@@ -12,8 +12,7 @@ type (
 	DeploymentPairs []*DeploymentPair
 
 	diffSet struct {
-		New, Gone, Same Deployments
-		Changed         DeploymentPairs
+		New, Gone, Same, Changed DeploymentPairs
 	}
 
 	differ struct {
@@ -24,17 +23,16 @@ type (
 	// DiffChans is a set of channels that represent differences between two sets
 	// of Deployments as they're discovered
 	DiffChans struct {
-		Created, Deleted, Retained chan *Deployment
-		Modified                   chan *DeploymentPair
+		Created, Deleted, Retained, Modified chan *DeploymentPair
 	}
 )
 
 func newDiffSet() diffSet {
 	return diffSet{
-		New:     NewDeployments(),
-		Gone:    NewDeployments(),
-		Same:    NewDeployments(),
-		Changed: make(DeploymentPairs, 0),
+		New:     DeploymentPairs{},
+		Gone:    DeploymentPairs{},
+		Same:    DeploymentPairs{},
+		Changed: DeploymentPairs{},
 	}
 }
 
@@ -47,16 +45,16 @@ func (d *DiffChans) collect() diffSet {
 	ds := newDiffSet()
 
 	for g := range d.Deleted {
-		ds.Gone.Add(g)
+		ds.Gone = append(ds.Gone, g)
 	}
 	for n := range d.Created {
-		ds.New.Add(n)
+		ds.New = append(ds.New, n)
 	}
 	for m := range d.Modified {
 		ds.Changed = append(ds.Changed, m)
 	}
 	for s := range d.Retained {
-		ds.Same.Add(s)
+		ds.Same = append(ds.Same, s)
 	}
 	return ds
 }
@@ -69,9 +67,9 @@ func NewDiffChans(sizes ...int) DiffChans {
 	}
 
 	return DiffChans{
-		Created:  make(chan *Deployment, size),
-		Deleted:  make(chan *Deployment, size),
-		Retained: make(chan *Deployment, size),
+		Created:  make(chan *DeploymentPair, size),
+		Deleted:  make(chan *DeploymentPair, size),
+		Retained: make(chan *DeploymentPair, size),
 		Modified: make(chan *DeploymentPair, size),
 	}
 }
@@ -127,7 +125,11 @@ func (d *differ) diff(existing Deployments) {
 
 			Log.Debug.Printf("New deployment: %q", id)
 
-			d.Created <- existingDeployment
+			d.Created <- &DeploymentPair{
+				name:  id,
+				Prior: nil,
+				Post:  existingDeployment,
+			}
 			continue
 		}
 		delete(d.from, id)
@@ -143,13 +145,21 @@ func (d *differ) diff(existing Deployments) {
 			}
 			continue
 		}
-		d.Retained <- existingDeployment
+		d.Retained <- &DeploymentPair{
+			name:  id,
+			Prior: existingDeployment,
+			Post:  existingDeployment,
+		}
 	}
 
 	for _, deletedDeployment := range d.from {
 
 		Log.Debug.Printf("Deleted deployment: %q", deletedDeployment.ID())
 
-		d.Deleted <- deletedDeployment
+		d.Deleted <- &DeploymentPair{
+			name:  deletedDeployment.ID(),
+			Prior: deletedDeployment,
+			Post:  nil,
+		}
 	}
 }

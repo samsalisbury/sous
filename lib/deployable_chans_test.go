@@ -33,6 +33,22 @@ func (nrs *NameResolveTestSuite) makeTestDep() *Deployment {
 	}
 }
 
+func (nrs *NameResolveTestSuite) makeTestDepPair(prior, post *Deployment) *DeploymentPair {
+	var id DeployID
+	if prior != nil {
+		id = prior.ID()
+	}
+	if post != nil {
+		id = post.ID()
+	}
+
+	return &DeploymentPair{
+		name:  id,
+		Prior: prior,
+		Post:  post,
+	}
+}
+
 func (nrs *NameResolveTestSuite) makeBuildArtifact() *BuildArtifact {
 	return &BuildArtifact{
 		Type:      "docker",
@@ -85,7 +101,7 @@ func (nrs *NameResolveTestSuite) TestResolveNameSkipped() {
 
 func (nrs *NameResolveTestSuite) TestResolveNameStartChannel() {
 	nrs.depChans.ResolveNames(nrs.reg, nrs.diffChans, nrs.errChan)
-	nrs.diffChans.Created <- nrs.makeTestDep()
+	nrs.diffChans.Created <- nrs.makeTestDepPair(nil, nrs.makeTestDep())
 
 	select {
 	case started := <-nrs.depChans.Start:
@@ -120,7 +136,7 @@ func (nrs *NameResolveTestSuite) TestResolveNameUpdateChannel() {
 func (nrs *NameResolveTestSuite) TestResolveNameStartChannelUnresolved() {
 	nrs.reg.FeedArtifact(nil, fmt.Errorf("not found"))
 	nrs.depChans.ResolveNames(nrs.reg, nrs.diffChans, nrs.errChan)
-	nrs.diffChans.Created <- nrs.makeTestDep()
+	nrs.diffChans.Created <- nrs.makeTestDepPair(nil, nrs.makeTestDep())
 
 	select {
 	case <-nrs.depChans.Start:
@@ -135,7 +151,7 @@ func (nrs *NameResolveTestSuite) TestResolveNameStartChannelUnresolved() {
 func (nrs *NameResolveTestSuite) TestResolveNameStopChannelUnresolved() {
 	nrs.reg.FeedArtifact(nil, fmt.Errorf("not found"))
 	nrs.depChans.ResolveNames(nrs.reg, nrs.diffChans, nrs.errChan)
-	nrs.diffChans.Deleted <- nrs.makeTestDep()
+	nrs.diffChans.Deleted <- nrs.makeTestDepPair(nrs.makeTestDep(), nil)
 
 	select {
 	case stopped := <-nrs.depChans.Stop:
