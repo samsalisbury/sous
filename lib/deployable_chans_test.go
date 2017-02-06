@@ -77,7 +77,7 @@ func (nrs *NameResolveTestSuite) TearDownTest() {
 }
 
 func (nrs *NameResolveTestSuite) TestResolveNameGood() {
-	da, err := resolveName(nrs.reg, nrs.makeTestDep())
+	da, err := resolveName(nrs.reg, nrs.makeTestDep(), DeployStatusAny)
 	nrs.NotNil(da)
 	nrs.NoError(err)
 }
@@ -85,7 +85,7 @@ func (nrs *NameResolveTestSuite) TestResolveNameGood() {
 func (nrs *NameResolveTestSuite) TestResolveNameBad() {
 	nrs.reg.FeedArtifact(nil, fmt.Errorf("badness"))
 
-	da, err := resolveName(nrs.reg, nrs.makeTestDep())
+	da, err := resolveName(nrs.reg, nrs.makeTestDep(), DeployStatusAny)
 	nrs.Nil(da.BuildArtifact)
 	nrs.Error(err)
 }
@@ -94,7 +94,7 @@ func (nrs *NameResolveTestSuite) TestResolveNameSkipped() {
 	noInstances := nrs.makeTestDep()
 	noInstances.DeployConfig.NumInstances = 0
 
-	da, err := resolveName(nrs.reg, noInstances)
+	da, err := resolveName(nrs.reg, noInstances, DeployStatusAny)
 	nrs.Nil(da.BuildArtifact)
 	nrs.NoError(err)
 }

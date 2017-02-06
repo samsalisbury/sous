@@ -94,7 +94,7 @@ func resolveCreates(r Registry, from chan *DeploymentPair, to chan *Deployable, 
 		dep := dp.Post
 		Log.Vomit.Printf("Deployment processed, needs artifact: %#v", dep)
 
-		da, err := resolveName(r, dep)
+		da, err := resolveName(r, dep, dp.Status)
 		if err != nil {
 			Log.Info.Printf("Unable to create new deployment %q: %s", dep.ID(), err)
 			Log.Debug.Printf("Failed create deployment %q: % #v", dep.ID(), dep)
@@ -114,7 +114,7 @@ func resolveCreates(r Registry, from chan *DeploymentPair, to chan *Deployable, 
 
 func maybeResolveRetains(r Registry, from chan *DeploymentPair, to chan *Deployable, errs chan error) {
 	for dp := range from {
-		da := maybeResolveSingle(r, dp.Post)
+		da := maybeResolveSingle(r, dp.Post, dp.Status)
 		to <- da
 	}
 	close(to)
@@ -122,15 +122,15 @@ func maybeResolveRetains(r Registry, from chan *DeploymentPair, to chan *Deploya
 
 func maybeResolveDeletes(r Registry, from chan *DeploymentPair, to chan *Deployable, errs chan error) {
 	for dp := range from {
-		da := maybeResolveSingle(r, dp.Prior)
+		da := maybeResolveSingle(r, dp.Prior, dp.Status)
 		to <- da
 	}
 	close(to)
 }
 
-func maybeResolveSingle(r Registry, dep *Deployment) *Deployable {
+func maybeResolveSingle(r Registry, dep *Deployment, stat DeployStatus) *Deployable {
 	Log.Vomit.Printf("Deployment processed w/o needing artifact: %#v", dep)
-	da, err := resolveName(r, dep)
+	da, err := resolveName(r, dep, stat)
 	if err != nil {
 		Log.Debug.Printf("Error resolving stopped or stable deployment (proceeding anyway): %#v: %#v", dep, err)
 	}
@@ -157,8 +157,8 @@ func resolvePairs(r Registry, from chan *DeploymentPair, to chan *DeployablePair
 	close(to)
 }
 
-func resolveName(r Registry, dep *Deployment) (*Deployable, error) {
-	d := &Deployable{DeployState: &DeployState{Deployment: *dep, Status: DeployStatusAny}}
+func resolveName(r Registry, dep *Deployment, stat DeployStatus) (*Deployable, error) {
+	d := &Deployable{Deployment: dep, Status: stat}
 	art, err := GuardImage(r, dep)
 	if err == nil {
 		d.BuildArtifact = art
@@ -167,8 +167,8 @@ func resolveName(r Registry, dep *Deployment) (*Deployable, error) {
 }
 
 func resolvePair(r Registry, depPair *DeploymentPair) (*DeployablePair, error) {
-	prior, _ := resolveName(r, depPair.Prior)
-	post, err := resolveName(r, depPair.Post)
+	prior, _ := resolveName(r, depPair.Prior, depPair.Status)
+	post, err := resolveName(r, depPair.Post, depPair.Status)
 
 	return &DeployablePair{name: depPair.name, Prior: prior, Post: post}, err
 }
