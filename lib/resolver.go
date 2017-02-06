@@ -26,7 +26,7 @@ func NewResolver(d Deployer, r Registry, rf *ResolveFilter) *Resolver {
 	}
 }
 
-// Rectify takes a DiffChans and issues the commands to the infrastructure to
+// rectify takes a DiffChans and issues the commands to the infrastructure to
 // reconcile the differences.
 func (r *Resolver) rectify(dcs *DeployableChans, results chan DiffResolution) {
 	d := r.Deployer
@@ -39,11 +39,18 @@ func (r *Resolver) rectify(dcs *DeployableChans, results chan DiffResolution) {
 	wg.Wait()
 }
 
-func (r *Resolver) reportStable(stable chan *Deployable, results chan DiffResolution) {
+func (r *Resolver) reportStable(stable <-chan *Deployable, results chan<- DiffResolution) {
 	for dep := range stable {
+		var desc ResolutionType
+		switch dep.Status {
+		default:
+			desc = StableDiff
+		case DeployStatusPending:
+			desc = ComingDiff
+		}
 		results <- DiffResolution{
 			DeployID: dep.ID(),
-			Desc:     StableDiff,
+			Desc:     desc,
 		}
 	}
 }
@@ -83,6 +90,10 @@ func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveRecord
 		recorder.performGuaranteedPhase("generating diff", func() {
 			diffs = actual.IgnoringStatus().Diff(intended)
 		})
+
+		//recorder.TasksStarting = actual.Filter(func(ds *DeployState) bool {
+		//	ds.Status = DeployStatusPending
+		//})
 
 		namer := NewDeployableChans(10)
 		var wg sync.WaitGroup
