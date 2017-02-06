@@ -51,8 +51,8 @@ clean:
 	git ls-files -o | xargs rm -rf
 
 clean-containers:
-	docker ps -q | xargs -r docker kill
-	docker ps -aq | xargs -r docker rm
+	-docker ps -q | xargs docker kill
+	-docker ps -aq | xargs docker rm
 	if docker images | egrep ^testregistry_registry; then docker rmi testregistry_registry; fi
 
 gitlog:
