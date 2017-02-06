@@ -102,9 +102,8 @@ func TestSubPoller_ComputeState(t *testing.T) {
 	testCompute("1.0", deployment("1.0", DeployStatusAny), diffRez("create", rezErr), diffRez("unchanged", nil), ResolveComplete)
 	testCompute("1.0", deployment("1.0", DeployStatusAny), diffRez("create", permErr), diffRez("unchanged", nil), ResolveComplete)
 
-	/*
-		testCompute("1.0", deployment("1.0", DeployStatusPending), diffRez("create", nil), diffRez("unchanged", nil), ResolveTasksStarting)
-	*/
+	testCompute("1.0", deployment("1.0", DeployStatusPending), diffRez("unchanged", nil), diffRez("coming", nil), ResolveTasksStarting)
+	testCompute("1.0", deployment("1.0", DeployStatusPending), diffRez("coming", nil), nil, ResolveTasksStarting)
 }
 
 func TestStatusPoller(t *testing.T) {

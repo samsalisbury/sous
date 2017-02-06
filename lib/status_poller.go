@@ -119,14 +119,14 @@ func (rs ResolveState) String() string {
 		return "ResolveErredHTTP"
 	case ResolveErredRez:
 		return "ResolveErredRez"
+	case ResolveTasksStarting:
+		return "ResolveTasksStarting"
 	case ResolveTERMINALS:
 		return "resolve terminal marker - not a real state, received in error?"
 	case ResolveNotIntended:
 		return "ResolveNotIntended"
 	case ResolveFailed:
 		return "ResolveFailed"
-	case ResolveTasksStarting:
-		return "ResolveTasksStarting"
 	case ResolveComplete:
 		return "ResolveComplete"
 	case ResolveMAX:
