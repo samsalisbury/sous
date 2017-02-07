@@ -48,8 +48,6 @@ type (
 	StatusWaitStable bool
 	// Version represents a version of Sous.
 	Version struct{ semv.Version }
-	// LocalUser is the currently logged in user.
-	LocalUser struct{ *config.User }
 	// LocalSousConfig is the configuration for Sous.
 	LocalSousConfig struct{ *config.Config }
 	// LocalWorkDir is the user's current working directory when they invoke Sous.
@@ -118,7 +116,12 @@ func BuildGraph(in io.Reader, out, err io.Writer) *SousGraph {
 	graph := buildBaseGraph(in, out, err)
 	AddFilesystem(graph)
 	AddNetwork(graph)
+	graph.Add(newUser)
 	return graph
+}
+
+func newUser(c LocalSousConfig) sous.User {
+	return c.User
 }
 
 func buildBaseGraph(in io.Reader, out, err io.Writer) *SousGraph {
@@ -362,10 +365,9 @@ func newBuildManager(bc *sous.BuildConfig, sl sous.Selector, lb sous.Labeller, r
 	}
 }
 
-func newLocalUser() (v LocalUser, err error) {
+func newLocalUser() (v config.LocalUser, err error) {
 	u, err := user.Current()
-	v.User = &config.User{User: u}
-	return v, initErr(err, "getting current user")
+	return config.LocalUser{User: u}, initErr(err, "getting current user")
 }
 
 // TODO: This should register a cleanup task with the cli, to delete the temp
@@ -456,7 +458,7 @@ func newDockerClient() LocalDockerClient {
 
 // newHTTPClient returns an HTTP client if c.Server is not empty.
 // Otherwise it returns nil, and emits some warnings.
-func newHTTPClient(c LocalSousConfig) (HTTPClient, error) {
+func newHTTPClient(c LocalSousConfig, user sous.User) (HTTPClient, error) {
 	if c.Server == "" {
 		sous.Log.Warn.Println("No server set, Sous is running in server or workstation mode.")
 		sous.Log.Warn.Println("Configure a server like this: sous config server http://some.sous.server")
@@ -480,7 +482,7 @@ func newStateManager(cl HTTPClient, c LocalSousConfig) *StateManager {
 	return &StateManager{StateManager: hsm}
 }
 
-func newStatusPoller(cl HTTPClient, rf *RefinedResolveFilter) *sous.StatusPoller {
+func newStatusPoller(cl HTTPClient, rf *RefinedResolveFilter, user sous.User) *sous.StatusPoller {
 	sous.Log.Debug.Printf("Building StatusPoller...")
 	if cl.HTTPClient == nil {
 		sous.Log.Debug.Print(sous.Log.Warn)
@@ -488,7 +490,7 @@ func newStatusPoller(cl HTTPClient, rf *RefinedResolveFilter) *sous.StatusPoller
 		return nil
 	}
 	sous.Log.Debug.Printf("...looks good...")
-	return sous.NewStatusPoller(cl, (*sous.ResolveFilter)(rf))
+	return sous.NewStatusPoller(cl, (*sous.ResolveFilter)(rf), user)
 }
 
 func newLocalStateReader(sm *StateManager) StateReader {

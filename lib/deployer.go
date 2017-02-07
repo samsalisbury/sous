@@ -4,7 +4,7 @@ type (
 	// Deployer describes a complete deployment system, which is able to create,
 	// read, update, and delete deployments.
 	Deployer interface {
-		RunningDeployments(reg Registry, from Clusters) (Deployments, error)
+		RunningDeployments(reg Registry, from Clusters) (DeployStates, error)
 		RectifyCreates(<-chan *Deployable, chan<- DiffResolution)
 		RectifyDeletes(<-chan *Deployable, chan<- DiffResolution)
 		RectifyModifies(<-chan *DeployablePair, chan<- DiffResolution)
@@ -12,17 +12,17 @@ type (
 
 	// DummyDeployer is a noop deployer.
 	DummyDeployer struct {
-		deps Deployments
+		deps DeployStates
 	}
 )
 
 // NewDummyDeployer creates a DummyDeployer
 func NewDummyDeployer() *DummyDeployer {
-	return &DummyDeployer{deps: NewDeployments()}
+	return &DummyDeployer{deps: NewDeployStates()}
 }
 
 // RunningDeployments implements Deployer
-func (dd *DummyDeployer) RunningDeployments(reg Registry, from Clusters) (Deployments, error) {
+func (dd *DummyDeployer) RunningDeployments(reg Registry, from Clusters) (DeployStates, error) {
 	return dd.deps, nil
 }
 

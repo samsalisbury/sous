@@ -29,6 +29,7 @@ func TestGraphWithConfig(in io.Reader, out, err io.Writer, cfg string) *SousGrap
 	addTestFilesystem(graph)
 	addTestNetwork(graph)
 	graph.Add(configYAML(cfg))
+	graph.Add(sous.User{Name: "Test User", Email: "testuser@example.com"})
 	return graph
 }
 

@@ -19,6 +19,7 @@ type SousManifestSet struct {
 	graph.StateWriter
 	graph.InReader
 	*sous.ResolveFilter
+	User sous.User
 }
 
 func init() { ManifestSubcommands["set"] = &SousManifestSet{} }
@@ -57,7 +58,7 @@ func (smg *SousManifestSet) Execute(args []string) cmdr.Result {
 		return EnsureErrorResult(err)
 	}
 	smg.State.Manifests.Set(mid, &yml)
-	err = smg.StateWriter.WriteState(smg.State)
+	err = smg.StateWriter.WriteState(smg.State, smg.User)
 	if err != nil {
 		return EnsureErrorResult(err)
 	}

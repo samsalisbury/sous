@@ -1,7 +1,6 @@
 package sous
 
 import (
-	"log"
 	"testing"
 
 	"github.com/nyarly/testify/assert"
@@ -16,17 +15,24 @@ func TestEmptyDiff(t *testing.T) {
 	dc := intended.Diff(existing)
 	ds := dc.collect()
 
-	if ds.New.Len() != 0 {
-		t.Errorf("got %d new; want 0", ds.New.Len())
+	if len(ds.New) != 0 {
+		t.Errorf("got %d new; want 0", len(ds.New))
 	}
-	if ds.Gone.Len() != 0 {
-		t.Errorf("got %d gone; want 0", ds.Gone.Len())
+	if len(ds.Gone) != 0 {
+		t.Errorf("got %d gone; want 0", len(ds.Gone))
 	}
-	if ds.Same.Len() != 0 {
-		t.Errorf("got %d same; want 0", ds.Same.Len())
+	if len(ds.Same) != 0 {
+		t.Errorf("got %d same; want 0", len(ds.Same))
 	}
 	if len(ds.Changed) != 0 {
 		t.Errorf("got %d changed; want 0", len(ds.Changed))
+	}
+}
+
+func makeDeplState(repo string, num int) *DeployState {
+	return &DeployState{
+		Deployment: *makeDepl(repo, num),
+		Status:     DeployStatusAny,
 	}
 }
 
@@ -55,7 +61,6 @@ func makeDepl(repo string, num int) *Deployment {
 }
 
 func TestRealDiff(t *testing.T) {
-	log.SetFlags(log.Flags() | log.Lshortfile)
 	assert := assert.New(t)
 
 	intended := NewDeployments()
@@ -79,14 +84,14 @@ func TestRealDiff(t *testing.T) {
 	dc := intended.Diff(existing)
 	ds := dc.collect()
 
-	if assert.Len(ds.Gone.Snapshot(), 1, "Should have one deleted item.") {
-		it, _ := ds.Gone.Any(func(*Deployment) bool { return true })
-		assert.Equal(string(it.SourceID.Location.Repo), repoOne)
+	if assert.Len(ds.Gone, 1, "Should have one deleted item.") {
+		it := ds.Gone[0]
+		assert.Equal(string(it.Prior.SourceID.Location.Repo), repoOne)
 	}
 
-	if assert.Len(ds.Same.Snapshot(), 1, "Should have one unchanged item.") {
-		it, _ := ds.Same.Any(func(*Deployment) bool { return true })
-		assert.Equal(string(it.SourceID.Location.Repo), repoTwo)
+	if assert.Len(ds.Same, 1, "Should have one unchanged item.") {
+		it := ds.Same[0]
+		assert.Equal(string(it.Post.SourceID.Location.Repo), repoTwo)
 	}
 
 	if assert.Len(ds.Changed, 1, "Should have one modified item.") {
@@ -97,8 +102,56 @@ func TestRealDiff(t *testing.T) {
 		assert.Equal(ds.Changed[0].Prior.NumInstances, 2)
 	}
 
-	if assert.Equal(ds.New.Len(), 1, "Should have one added item.") {
-		it, _ := ds.New.Any(func(*Deployment) bool { return true })
-		assert.Equal(string(it.SourceID.Location.Repo), repoFour)
+	if assert.Len(ds.New, 1, "Should have one added item.") {
+		it := ds.New[0]
+		assert.Equal(string(it.Post.SourceID.Location.Repo), repoFour)
+	}
+}
+
+func TestRealStateDiff(t *testing.T) {
+	assert := assert.New(t)
+
+	intended := NewDeployStates()
+	existing := NewDeployments()
+
+	repoOne := "https://github.com/opentable/one"
+	repoTwo := "https://github.com/opentable/two"
+	repoThree := "https://github.com/opentable/three"
+	repoFour := "https://github.com/opentable/four"
+
+	intended.MustAdd(makeDeplState(repoOne, 1)) //remove
+
+	existing.MustAdd(makeDepl(repoTwo, 1))      //same
+	intended.MustAdd(makeDeplState(repoTwo, 1)) //same
+
+	existing.MustAdd(makeDepl(repoThree, 1))      //changed
+	intended.MustAdd(makeDeplState(repoThree, 2)) //changed
+
+	existing.MustAdd(makeDepl(repoFour, 1)) //create
+
+	dc := intended.Diff(existing)
+	ds := dc.collect()
+
+	if assert.Len(ds.Gone, 1, "Should have one deleted item.") {
+		it := ds.Gone[0]
+		assert.Equal(string(it.Prior.SourceID.Location.Repo), repoOne)
+	}
+
+	if assert.Len(ds.Same, 1, "Should have one unchanged item.") {
+		it := ds.Same[0]
+		assert.Equal(string(it.Post.SourceID.Location.Repo), repoTwo)
+	}
+
+	if assert.Len(ds.Changed, 1, "Should have one modified item.") {
+		assert.Equal(repoThree, string(ds.Changed[0].name.ManifestID.Source.Repo))
+		assert.Equal(repoThree, string(ds.Changed[0].Prior.SourceID.Location.Repo))
+		assert.Equal(repoThree, string(ds.Changed[0].Post.SourceID.Location.Repo))
+		assert.Equal(ds.Changed[0].Post.NumInstances, 1)
+		assert.Equal(ds.Changed[0].Prior.NumInstances, 2)
+	}
+
+	if assert.Len(ds.New, 1, "Should have one added item.") {
+		it := ds.New[0]
+		assert.Equal(string(it.Post.SourceID.Location.Repo), repoFour)
 	}
 }

@@ -51,8 +51,8 @@ clean:
 	git ls-files -o | xargs rm -rf
 
 clean-containers:
-	docker ps -q | xargs docker kill || true
-	docker ps -aq | xargs docker rm || true
+	-docker ps -q | xargs docker kill
+	-docker ps -aq | xargs docker rm
 	rm ./integration/test-registry/docker-registry/testing.crt
 	if docker images | egrep ^testregistry_registry; then docker rmi testregistry_registry; fi
 

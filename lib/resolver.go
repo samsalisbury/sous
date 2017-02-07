@@ -26,7 +26,7 @@ func NewResolver(d Deployer, r Registry, rf *ResolveFilter) *Resolver {
 	}
 }
 
-// Rectify takes a DiffChans and issues the commands to the infrastructure to
+// rectify takes a DiffChans and issues the commands to the infrastructure to
 // reconcile the differences.
 func (r *Resolver) rectify(dcs *DeployableChans, results chan DiffResolution) {
 	d := r.Deployer
@@ -39,14 +39,18 @@ func (r *Resolver) rectify(dcs *DeployableChans, results chan DiffResolution) {
 	wg.Wait()
 }
 
-func (r *Resolver) reportStable(stable chan *Deployable, results chan DiffResolution) {
+func (r *Resolver) reportStable(stable <-chan *Deployable, results chan<- DiffResolution) {
 	for dep := range stable {
+		var desc ResolutionType
+		switch dep.Status {
+		default:
+			desc = StableDiff
+		case DeployStatusPending:
+			desc = ComingDiff
+		}
 		results <- DiffResolution{
 			DeployID: dep.ID(),
-			// XXX This value is 'magic' - the `sous status` command uses it to
-			// recognize a complete resolution. Don't change it here without changing
-			// it everywhere.
-			Desc: "unchanged",
+			Desc:     desc,
 		}
 	}
 }
@@ -70,7 +74,7 @@ func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveRecord
 			intended = intended.Filter(r.FilterDeployment)
 		})
 
-		var actual Deployments
+		var actual DeployStates
 
 		recorder.performPhase("getting running deployments", func() error {
 			var err error
@@ -79,13 +83,17 @@ func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveRecord
 		})
 
 		recorder.performGuaranteedPhase("filtering running deployments", func() {
-			actual = actual.Filter(r.FilterDeployment)
+			actual = actual.Filter(r.FilterDeployStates)
 		})
 
 		var diffs DiffChans
 		recorder.performGuaranteedPhase("generating diff", func() {
-			diffs = actual.Diff(intended)
+			diffs = actual.IgnoringStatus().Diff(intended)
 		})
+
+		//recorder.TasksStarting = actual.Filter(func(ds *DeployState) bool {
+		//	ds.Status = DeployStatusPending
+		//})
 
 		namer := NewDeployableChans(10)
 		var wg sync.WaitGroup

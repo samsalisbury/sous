@@ -3,8 +3,8 @@ package sous
 import "fmt"
 
 type (
-	// A ResolveFilter filters Deployments and Clusters for the purpose of
-	// Resolve.resolve().
+	// A ResolveFilter filters Deployments, DeployStates and Clusters for the
+	// purpose of Resolve.resolve().
 	ResolveFilter struct {
 		Repo     string
 		Offset   string
@@ -12,6 +12,7 @@ type (
 		Revision string
 		Flavor   string
 		Cluster  string
+		Status   DeployStatus
 	}
 )
 
@@ -90,6 +91,14 @@ func (rf *ResolveFilter) FilterDeployment(d *Deployment) bool {
 		return false
 	}
 	return true
+}
+
+// FilterDeployStates is similar to FilterDeployment, but also filters by
+// DeployStatus.
+func (rf *ResolveFilter) FilterDeployStates(d *DeployState) bool {
+	return rf.FilterDeployment(&d.Deployment) &&
+		(rf.Status == DeployStatusAny || d.Status == rf.Status)
+
 }
 
 // FilterManifest returns true if the Manifest is matched by this ResolveFilter.

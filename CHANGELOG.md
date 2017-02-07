@@ -1,38 +1,68 @@
-# Sous 0.1 release notes
+# Sous Changelog
 
-## Patches
+All notable changes to this project will be documented in this file.
 
-### 0.1.9 DRAFT
+The format is based on [Keep a Changelog](http://keepachangelog.com/)
+and this project adheres to [Semantic Versioning](http://semver.org/)
+with respect to its command line interface and HTTP interface.
+
+## [Unreleased]
+
+### Added
 
 - 'sous init -use-otpl-deploy' now supports flavors
   defined by otpl config directories in the `<cluster>.<flavor>` format.
   If there is a single flavor defined, behaviour is like before.
   Otherwise you may supply a -flavor flag to import configurations of a particular flavor.
+- config.yaml now supports a new `User` field containing `Name` and `Email`.
+  If set this info is sent to the server alongside all requests,
+  and is used when committing state changes (as the --author flag).
+- On first run (when there is no config file),
+  and when a terminal is attached
+  (meaning it's likely that a user is present),
+  the user is prompted to provide their name and email address,
+  and the URL of their local Sous server.
+- `sous deploy`
+  (and `sous plumbing status`)
+  now await Singularity marking the indended deployment as active before returning.
 
+## [0.1.8] - 2017-01-17
 
-### 0.1.8
+### Added
+- 'sous init' -use-otpl-config now imports owners from singularity-request.json
+- 'sous update' no longer requires -tag or -repo flags
+  if they can be sniffed from the git repo context.
+- Docs: Installation document added at doc/install.md
 
-- Feature: 'sous init' -use-otpl-config now imports owners from singularity-request.json
-- Feature: 'sous update' no longer requires -tag or -repo flags if they can be sniffed from the git repo context.
-- Bugfix: Internal error caused by reading malformed YAML manifests resolved.
+### Changed
+
 - Logging, Server: Warn when artifacts are not resolvable.
+- Logging: suppress full deployment diffs in debug (-d) mode,
+  only print them in verbose -v mode.
 - Sous Version outputs lines less than 80 characters long.
-- Logging: suppress full deployment diffs in debug (-d) mode, only print them in verbose -v mode.
-- Bugfix: SourceLocations now return more sensible parse errors when unmarshaling from JSON.
-- Bugfix: Resolve errors now marshalled correctly by server.
-- Docs: Installation document added at doc/instal.md
-- Bugfix: Server /status endpoint now returns latest status from AutoResolver rather than status at boot.
 
-### 0.1.7
+### Fixed
 
-- Tweaks to Makefile and build process in general.
+- Internal error caused by reading malformed YAML manifests resolved.
+- SourceLocations now return more sensible parse errors when unmarshaling from JSON.
+- Resolve errors now marshalled correctly by server.
+- Server /status endpoint now returns latest status from AutoResolver rather than status at boot.
+
+## [0.1.7] 2017-01-19
+
+### Added
+
 - We are now able to easily release pre-built Mac binaries.
 - Documentation about Sous' intended use for driving builds.
 - Change in 'sous plumbing status' to support manifests that deploy to a subset of clusters.
 - 'sous deploy' now waits by default until a deploy is complete.
   This makes it much more useful in unattended CI contexts.
 
-### 0.1.1-0.1.6
+### Changed
+
+- Tweaks to Makefile and build process in general.
+
+## 0.1.1-0.1.6
 
 Not documented.
 
@@ -48,13 +78,13 @@ Sous 0.1 adds:
 - Updates to various pieces of documentation.
 - Nicer Singularity request names.
 
-### Consistency
+## Consistency
 
 - Changes to the schema of the local Docker image name cache database no longer require user
   intervention and re-building the entire cache from source. Now, we track the schema, and
   migrate your cache as necessary.
 - SourceIDs and SourceLocations now correctly round-trip from parse to string and back again.
-- SourceLocations now have a single parse method, so we always get the same results and/or errors. 
+- SourceLocations now have a single parse method, so we always get the same results and/or errors.
 - We somehow abbreviated "Actual Deployment Set" "ADC" ?! That's fixed, we're now using "ADS".
 
 ### CLI
@@ -165,5 +195,3 @@ cycle hit 54%, we expect to see that rise quickly now that we fail CI when it fa
 can track test coverage at https://codecov.io/gh/opentable/sous.
 
 For more gory detail, check out the [full list of commits between 0.0.1 and 0.1](https://github.com/opentable/sous/compare/v0.0.1...v0.1).
-
-

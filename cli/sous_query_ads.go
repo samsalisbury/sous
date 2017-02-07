@@ -29,6 +29,7 @@ const sousQueryAdsHelp = `The current state of deployment for every project and 
 // Help prints the help
 func (*SousQueryAds) Help() string { return sousQueryAdsHelp }
 
+// RegisterOn adds stuff to the graph.
 func (*SousQueryAds) RegisterOn(psy Addable) {
 	psy.Add(graph.DryrunNeither)
 }
@@ -39,6 +40,6 @@ func (sb *SousQueryAds) Execute(args []string) cmdr.Result {
 	if err != nil {
 		return EnsureErrorResult(err)
 	}
-	sous.DumpDeployments(os.Stdout, ads)
+	sous.DumpDeployStatuses(os.Stdout, ads)
 	return cmdr.Success()
 }

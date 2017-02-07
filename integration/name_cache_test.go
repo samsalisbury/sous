@@ -3,18 +3,15 @@
 package integration
 
 import (
-	"os"
 	"testing"
 
 	"github.com/nyarly/testify/assert"
 	"github.com/opentable/sous/ext/docker"
-	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/docker_registry"
 )
 
 func TestNameCache(t *testing.T) {
 	assert := assert.New(t)
-	sous.Log.Debug.SetOutput(os.Stdout)
 
 	ResetSingularity()
 	defer ResetSingularity()

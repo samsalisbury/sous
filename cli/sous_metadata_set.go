@@ -16,6 +16,7 @@ type SousMetadataSet struct {
 	*sous.State
 	graph.CurrentGDM
 	sous.StateWriter
+	User sous.User
 }
 
 func init() { MetadataSubcommands["set"] = &SousMetadataSet{} }
@@ -49,13 +50,12 @@ func (smg *SousMetadataSet) Execute(args []string) cmdr.Result {
 		dep.Metadata[key] = value
 		insertion = append(insertion, dep)
 	}
-	err := smg.State.UpdateDeployments(insertion...)
-	if err != nil {
+
+	if err := smg.State.UpdateDeployments(insertion...); err != nil {
 		return EnsureErrorResult(err)
 	}
 
-	err = smg.StateWriter.WriteState(smg.State)
-	if err != nil {
+	if err := smg.StateWriter.WriteState(smg.State, smg.User); err != nil {
 		return EnsureErrorResult(err)
 	}
 

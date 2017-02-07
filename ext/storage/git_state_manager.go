@@ -86,30 +86,31 @@ func (gsm *GitStateManager) needCommit() bool {
 
 // WriteState writes sous state to disk, then attempts to push it to Remote.
 // If the push fails, the state is reset and an error is returned.
-func (gsm *GitStateManager) WriteState(s *sous.State) (err error) {
-	// git pull
+func (gsm *GitStateManager) WriteState(s *sous.State, u sous.User) error {
 	tn := "sous-fallback-" + uuid.New()
-	if err = gsm.git("tag", tn); err != nil {
-		return
+	if err := gsm.git("tag", tn); err != nil {
+		return err
 	}
 	defer gsm.git("tag", "-d", tn)
 
-	if err = gsm.DiskStateManager.WriteState(s); err != nil {
-		return
+	if err := gsm.DiskStateManager.WriteState(s); err != nil {
+		return err
 	}
-	if err = gsm.git(`add`, `.`); err != nil {
+	if err := gsm.git(`add`, `.`); err != nil {
 		gsm.revert(tn)
-		return
+		return err
 	}
-	if gsm.needCommit() {
-		if err = gsm.git("commit", "-m", "sous commit: Update State"); err != nil {
-			gsm.revert(tn)
-			return
-		}
-		err = gsm.git("push", "-u", "origin", "master")
-		if err != nil {
-			gsm.revert(tn)
-		}
+	if !gsm.needCommit() {
+		return nil
 	}
-	return
+	author := u.String()
+	if err := gsm.git("commit", "-m", "sous commit: Update State", "--author", author); err != nil {
+		gsm.revert(tn)
+		return err
+	}
+	if err := gsm.git("push", "-u", "origin", "master"); err != nil {
+		gsm.revert(tn)
+		return err
+	}
+	return nil
 }

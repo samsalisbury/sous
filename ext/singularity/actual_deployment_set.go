@@ -37,14 +37,14 @@ type (
 )
 
 // RunningDeployments collects data from the Singularity clusters and
-// returns a list of actual deployments
-func (sc *deployer) RunningDeployments(reg sous.Registry, clusters sous.Clusters) (deps sous.Deployments, err error) {
+// returns a list of actual deployments.
+func (sc *deployer) RunningDeployments(reg sous.Registry, clusters sous.Clusters) (deps sous.DeployStates, err error) {
 	retries := make(retryCounter)
 	errCh := make(chan error)
-	deps = sous.NewDeployments()
+	deps = sous.NewDeployStates()
 	sings := make(map[string]struct{})
 	reqCh := make(chan SingReq, len(clusters)*ReqsPerServer)
-	depCh := make(chan *sous.Deployment, ReqsPerServer)
+	depCh := make(chan *sous.DeployState, ReqsPerServer)
 
 	defer close(depCh)
 	// XXX The intention here was to use something like the gotools context to
@@ -242,7 +242,7 @@ func depPipeline(
 	clusters sous.Clusters,
 	poolCount int,
 	reqCh chan SingReq,
-	depCh chan *sous.Deployment,
+	depCh chan *sous.DeployState,
 	errCh chan error,
 ) {
 	defer catchAndSend("dependency building", errCh)
@@ -269,7 +269,7 @@ func depPipeline(
 	}
 }
 
-func assembleDeployment(cl rectificationClient, reg sous.Registry, clusters sous.Clusters, req SingReq) (*sous.Deployment, error) {
+func assembleDeployment(cl rectificationClient, reg sous.Registry, clusters sous.Clusters, req SingReq) (*sous.DeployState, error) {
 	Log.Vomit.Printf("Assembling from: %s %s", req.SourceURL, reqID(req.ReqParent))
 	tgt, err := BuildDeployment(reg, clusters, req)
 

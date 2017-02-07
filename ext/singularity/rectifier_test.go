@@ -1,9 +1,7 @@
 package singularity
 
 import (
-	"io/ioutil"
 	"log"
-	"os"
 	"testing"
 
 	"github.com/nyarly/testify/assert"
@@ -111,8 +109,6 @@ func TestModifyScale(t *testing.T) {
 
 func TestModifyImage(t *testing.T) {
 	assert := assert.New(t)
-	sous.Log.Warn.SetOutput(os.Stderr)
-	Log.Debug.SetOutput(os.Stderr)
 
 	before := "1.2.3-test"
 	after := "2.3.4-new"
@@ -184,8 +180,6 @@ func TestModifyResources(t *testing.T) {
 }
 
 func TestModify(t *testing.T) {
-	Log.Debug.SetOutput(os.Stderr)
-	defer Log.Debug.SetOutput(ioutil.Discard)
 	assert := assert.New(t)
 	before := "1.2.3-test"
 	after := "2.3.4-new"
