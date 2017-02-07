@@ -26,6 +26,102 @@ func TestBuildingRequestID(t *testing.T) {
 	}
 }
 
+func TestBuildDeployment_determineDeployStatus_missingstate(t *testing.T) {
+	db := &deploymentBuilder{
+		req: SingReq{},
+	}
+
+	if db.determineDeployStatus() == nil {
+		t.Error("expected an error when deploy state missing")
+	}
+
+	db.req.ReqParent = &dtos.SingularityRequestParent{}
+
+	if db.determineDeployStatus() == nil {
+		t.Error("expected an error when request parent missing")
+	}
+
+}
+
+func TestBuildDeployment_determineDeployStatus_pendingonly(t *testing.T) {
+	depMarker := dtos.SingularityDeployMarker{}
+
+	db := &deploymentBuilder{
+		req: SingReq{
+			ReqParent: &dtos.SingularityRequestParent{
+				RequestDeployState: &dtos.SingularityRequestDeployState{
+					PendingDeploy: &depMarker,
+				},
+			},
+		},
+	}
+
+	if err := db.determineDeployStatus(); err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	} else {
+		if db.Target.Status != sous.DeployStatusPending {
+			t.Errorf("Expected Status pending (%d), got %d", sous.DeployStatusPending, db.Target.Status)
+		}
+		if db.depMarker != &depMarker {
+			t.Errorf("Expected depMarker to be %v, got %v", depMarker, db.depMarker)
+		}
+	}
+
+}
+
+func TestBuildDeployment_determineDeployStatus_activeonly(t *testing.T) {
+	depMarker := dtos.SingularityDeployMarker{}
+
+	db := &deploymentBuilder{
+		req: SingReq{
+			ReqParent: &dtos.SingularityRequestParent{
+				RequestDeployState: &dtos.SingularityRequestDeployState{
+					ActiveDeploy: &depMarker,
+				},
+			},
+		},
+	}
+
+	if err := db.determineDeployStatus(); err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	} else {
+		if db.Target.Status != sous.DeployStatusActive {
+			t.Errorf("Expected Status pending (%d), got %d", sous.DeployStatusActive, db.Target.Status)
+		}
+		if db.depMarker != &depMarker {
+			t.Errorf("Expected depMarker to be %v, got %v", depMarker, db.depMarker)
+		}
+	}
+
+}
+
+func TestBuildDeployment_determineDeployStatus_activeAndPending(t *testing.T) {
+	depMarker := dtos.SingularityDeployMarker{}
+	otherDepMarker := dtos.SingularityDeployMarker{}
+
+	db := &deploymentBuilder{
+		req: SingReq{
+			ReqParent: &dtos.SingularityRequestParent{
+				RequestDeployState: &dtos.SingularityRequestDeployState{
+					PendingDeploy: &depMarker,
+					ActiveDeploy:  &otherDepMarker,
+				},
+			},
+		},
+	}
+
+	if err := db.determineDeployStatus(); err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	} else {
+		if db.Target.Status != sous.DeployStatusPending {
+			t.Errorf("Expected Status pending (%d), got %d", sous.DeployStatusPending, db.Target.Status)
+		}
+		if db.depMarker != &depMarker {
+			t.Errorf("Expected depMarker to be %v, got %v", depMarker, db.depMarker)
+		}
+	}
+
+}
 func TestBuildingRequestIDTwoClusters(t *testing.T) {
 	cn := "test-cluster"
 	cn2 := "test-other"

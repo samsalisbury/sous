@@ -80,7 +80,9 @@ func BuildDeployment(reg sous.Registry, clusters sous.Clusters, req SingReq) (so
 
 func (db *deploymentBuilder) completeConstruction() error {
 	return firsterr.Returned(
+		db.determineDeployStatus,
 		db.retrieveDeploy,
+		db.extractArtifactName,
 		db.retrieveImageLabels,
 		db.assignClusterName,
 		db.unpackDeployConfig,
@@ -102,28 +104,31 @@ func reqID(rp *dtos.SingularityRequestParent) (ID string) {
 	return
 }
 
-func (db *deploymentBuilder) retrieveDeploy() error {
+// If there is a Pending deploy, as far as Sous is concerned, that's "to
+// come" - we optimistically assume it will become Active, and that's the
+// Deployment we should consider live.
+//
+// (At some point in the future we may want to be able to report the "live"
+// deployment - at best based on this we could infer that a previous GDM
+// entry was running. (consider several quick updates, though...(but
+// Singularity semantics mean that each of them that was actually resolved
+// would have been Active however briefly (but Sous would accept GDM updates
+// arbitrarily quickly as compared to resolve completions...))))
+func (db *deploymentBuilder) determineDeployStatus() error {
 	logFDs("before retrieveDeploy")
 	defer logFDs("after retrieveDeploy")
 
 	rp := db.req.ReqParent
+	if rp == nil {
+		return malformedResponse{fmt.Sprintf("Singularity response didn't include a request parent. %v", db.req)}
+	}
+
 	rds := rp.RequestDeployState
-	sing := db.req.Sing
 
 	if rds == nil {
 		return malformedResponse{"Singularity response didn't include a deploy state. ReqId: " + reqID(rp)}
 	}
 
-	// If there is a Pending deploy, as far as Sous is concerned, that's "to
-	// come" - we optimistically assume it will become Active, and that's the
-	// Deployment we should consider live.
-	//
-	// (At some point in the future we may want to be able to report the "live"
-	// deployment - at best based on this we could infer that a previous GDM
-	// entry was running. (consider several quick updates, though...(but
-	// Singularity semantics mean that each of them that was actually resolved
-	// would have been Active however briefly (but Sous would accept GDM updates
-	// arbitrarily quickly as compared to resolve completions...))))
 	if rds.PendingDeploy != nil {
 		db.Target.Status = sous.DeployStatusPending
 		db.depMarker = rds.PendingDeploy
@@ -133,8 +138,12 @@ func (db *deploymentBuilder) retrieveDeploy() error {
 	} else {
 		return malformedResponse{"Singularity deploy state included no dep markers. ReqID: " + reqID(rp)}
 	}
+	return nil
+}
 
+func (db *deploymentBuilder) retrieveDeploy() error {
 	// !!! makes HTTP req
+	sing := db.req.Sing
 	dh, err := sing.GetDeploy(db.depMarker.RequestId, db.depMarker.DeployId)
 	if err != nil {
 		return err
@@ -149,7 +158,7 @@ func (db *deploymentBuilder) retrieveDeploy() error {
 	return nil
 }
 
-func (db *deploymentBuilder) retrieveImageLabels() error {
+func (db *deploymentBuilder) extractArtifactName() error {
 	logFDs("before retrieveImageLabels")
 	defer logFDs("after retrieveImageLabels")
 	ci := db.deploy.ContainerInfo
@@ -166,7 +175,10 @@ func (db *deploymentBuilder) retrieveImageLabels() error {
 	}
 
 	db.imageName = dkr.Image
+	return nil
+}
 
+func (db *deploymentBuilder) retrieveImageLabels() error {
 	// XXX coupled to Docker registry as ImageMapper
 	// !!! HTTP request
 	labels, err := db.registry.ImageLabels(db.imageName)

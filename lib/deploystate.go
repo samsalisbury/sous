@@ -14,7 +14,7 @@ type DeployStatus int
 
 const (
 	// DeployStatusAny represents any deployment status.
-	DeployStatusAny DeployStatus = 0
+	DeployStatusAny DeployStatus = iota
 	// DeployStatusPending means the deployment has been requested in the
 	// cluster, but is not yet running.
 	DeployStatusPending
