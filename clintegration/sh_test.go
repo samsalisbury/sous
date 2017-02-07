@@ -294,7 +294,6 @@ func TestShellLevelIntegration(t *testing.T) {
 	cat gdm/defs.yaml
 	pushd gdm
 	cat ~/.config/git/config >> .git/config # Eh?
-	git config -l
 	git add defs.yaml
 	git commit -am "Adding defs.yaml"
 	git push
@@ -307,6 +306,7 @@ func TestShellLevelIntegration(t *testing.T) {
 	cat ~/.config/sous/config.yaml
 	git clone {{.GitRemoteBase}}/sous-server
 	pushd sous-server
+	export SOUS_USER_NAME=test SOUS_USER_EMAIL=test@test.com
 	SOUS_SERVER= SOUS_STATE_LOCATION={{.Statedir}} sous init -v -d
 
 	# Last minute config

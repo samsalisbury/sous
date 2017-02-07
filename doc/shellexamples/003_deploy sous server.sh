@@ -2,7 +2,8 @@ sous config
 cat ~/.config/sous/config.yaml
 git clone ssh://root@192.168.99.100:2222/repos/sous-server
 pushd sous-server
-SOUS_SERVER= SOUS_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing973755612/gdm sous init -v -d
+export SOUS_USER_NAME=test SOUS_USER_EMAIL=test@test.com
+SOUS_SERVER= SOUS_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing643872761/gdm sous init -v -d
 
 # Last minute config
 cat Dockerfile
@@ -21,6 +22,6 @@ sous context
 pwd
 sous build
 # We expect to see 'Sous is running ... in workstation mode' here:
-SOUS_SERVER= SOUS_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing973755612/gdm sous deploy -cluster left
-SOUS_SERVER= SOUS_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing973755612/gdm sous deploy -cluster right
+SOUS_SERVER= SOUS_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing643872761/gdm sous deploy -cluster left
+SOUS_SERVER= SOUS_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing643872761/gdm sous deploy -cluster right
 popd

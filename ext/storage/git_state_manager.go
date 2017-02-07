@@ -103,8 +103,13 @@ func (gsm *GitStateManager) WriteState(s *sous.State, u sous.User) error {
 	if !gsm.needCommit() {
 		return nil
 	}
-	author := u.String()
-	if err := gsm.git("commit", "-m", "sous commit: Update State", "--author", author); err != nil {
+	commitCommand := []string{"commit", "-m", "sous commit: Update State"}
+	if u.Complete() {
+		author := u.String()
+		commitCommand = append(commitCommand, "--author", author)
+	}
+
+	if err := gsm.git(commitCommand...); err != nil {
 		gsm.revert(tn)
 		return err
 	}

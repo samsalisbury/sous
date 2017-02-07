@@ -13,7 +13,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-var testUser = sous.User{Name: "Test User"}
+var testUser = sous.User{Name: "Test User", Email: "test@user.com"}
 
 func TestGitWriteState(t *testing.T) {
 	require := require.New(t)
