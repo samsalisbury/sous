@@ -15,7 +15,7 @@ import (
 )
 
 // ReqsPerServer limits the number of simultaneous number of requests made
-// against a single Singularity server
+// against a single Singularity server.
 const (
 	ReqsPerServer = 10
 	MaxAssemblers = 100
@@ -26,11 +26,12 @@ type (
 	sRequest   *dtos.SingularityRequest
 	sDepMarker *dtos.SingularityDeployMarker
 
-	// SingReq captures a request made to singularity with its initial response
+	// SingReq captures a request made to singularity with its initial response.
 	SingReq struct {
-		SourceURL string
-		Sing      *singularity.Client
-		ReqParent *dtos.SingularityRequestParent
+		SourceURL    string
+		Sing         *singularity.Client
+		ReqParent    *dtos.SingularityRequestParent
+		FailedDeploy *dtos.SingularityDeployResult
 	}
 
 	retryCounter map[string]uint
@@ -226,7 +227,12 @@ eachrequest:
 		}
 		for _, c := range clusters {
 			if deployID.Cluster == c {
-				reqs = append(reqs, SingReq{url, client, sr})
+				reqs = append(reqs, SingReq{
+					SourceURL:    url,
+					Sing:         client,
+					ReqParent:    sr,
+					FailedDeploy: nil,
+				})
 				continue eachrequest
 			}
 		}
