@@ -35,7 +35,7 @@ func TestBuildDeployment_determineDeployStatus_missingstate(t *testing.T) {
 		t.Error("expected an error when deploy state missing")
 	}
 
-	db.req.ReqParent = &dtos.SingularityRequestParent{}
+	db.req.RequestParent = &dtos.SingularityRequestParent{}
 
 	if db.determineDeployStatus() == nil {
 		t.Error("expected an error when request parent missing")
@@ -48,7 +48,7 @@ func TestBuildDeployment_determineDeployStatus_pendingonly(t *testing.T) {
 
 	db := &deploymentBuilder{
 		req: Request{
-			ReqParent: &dtos.SingularityRequestParent{
+			RequestParent: &dtos.SingularityRequestParent{
 				RequestDeployState: &dtos.SingularityRequestDeployState{
 					PendingDeploy: &depMarker,
 				},
@@ -74,7 +74,7 @@ func TestBuildDeployment_determineDeployStatus_activeonly(t *testing.T) {
 
 	db := &deploymentBuilder{
 		req: Request{
-			ReqParent: &dtos.SingularityRequestParent{
+			RequestParent: &dtos.SingularityRequestParent{
 				RequestDeployState: &dtos.SingularityRequestDeployState{
 					ActiveDeploy: &depMarker,
 				},
@@ -101,7 +101,7 @@ func TestBuildDeployment_determineDeployStatus_activeAndPending(t *testing.T) {
 
 	db := &deploymentBuilder{
 		req: Request{
-			ReqParent: &dtos.SingularityRequestParent{
+			RequestParent: &dtos.SingularityRequestParent{
 				RequestDeployState: &dtos.SingularityRequestDeployState{
 					PendingDeploy: &depMarker,
 					ActiveDeploy:  &otherDepMarker,
@@ -133,7 +133,7 @@ func TestBuildingRequestIDTwoClusters(t *testing.T) {
 	db := &deploymentBuilder{
 		clusters: clusters,
 		request:  &dtos.SingularityRequest{Id: "::" + cn},
-		req:      Request{SourceURL: url},
+		req:      Request{URL: url},
 	}
 	assert.NoError(t, db.assignClusterName())
 	assert.Equal(t, db.Target.ClusterName, cn)
@@ -141,7 +141,7 @@ func TestBuildingRequestIDTwoClusters(t *testing.T) {
 	db2 := &deploymentBuilder{
 		clusters: clusters,
 		request:  &dtos.SingularityRequest{Id: "::" + cn2},
-		req:      Request{SourceURL: url},
+		req:      Request{URL: url},
 	}
 	assert.NoError(t, db2.assignClusterName())
 	assert.Equal(t, db2.Target.ClusterName, cn2)

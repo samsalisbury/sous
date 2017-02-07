@@ -28,10 +28,10 @@ type (
 
 	// Request captures a request made to singularity with its initial response.
 	Request struct {
-		SourceURL    string
-		Sing         *singularity.Client
-		ReqParent    *dtos.SingularityRequestParent
-		FailedDeploy *dtos.SingularityDeployResult
+		URL           string
+		Client        *singularity.Client
+		RequestParent *dtos.SingularityRequestParent
+		FailedDeploy  *dtos.SingularityDeployResult
 	}
 
 	retryCounter map[string]uint
@@ -126,7 +126,7 @@ func (rc retryCounter) maybe(err error, reqCh chan Request) bool {
 
 	rc[rt.name()] = count + 1
 	go func() {
-		defer catchAll("retrying: " + rt.req.SourceURL)
+		defer catchAll("retrying: " + rt.req.URL)
 		time.Sleep(time.Millisecond * 50)
 		reqCh <- rt.req
 	}()
@@ -201,7 +201,7 @@ func singPipeline(
 		return
 	}
 	for _, r := range rs {
-		Log.Vomit.Printf("Req: %s %s %d", r.SourceURL, reqID(r.ReqParent), r.ReqParent.Request.Instances)
+		Log.Vomit.Printf("Req: %s %s %d", r.URL, reqID(r.RequestParent), r.RequestParent.Request.Instances)
 		dw.Add(1)
 		reqs <- r
 	}
@@ -228,10 +228,10 @@ eachrequest:
 		for _, c := range clusters {
 			if deployID.Cluster == c {
 				reqs = append(reqs, Request{
-					SourceURL:    url,
-					Sing:         client,
-					ReqParent:    sr,
-					FailedDeploy: nil,
+					URL:           url,
+					Client:        client,
+					RequestParent: sr,
+					FailedDeploy:  nil,
 				})
 				continue eachrequest
 			}
@@ -254,13 +254,13 @@ func depPipeline(
 	defer catchAndSend("dependency building", errCh)
 	poolLimit := make(chan struct{}, poolCount)
 	for req := range reqCh {
-		Log.Vomit.Printf("starting assembling for %q", reqID(req.ReqParent))
+		Log.Vomit.Printf("starting assembling for %q", reqID(req.RequestParent))
 		go func(req Request) {
-			defer catchAndSend(fmt.Sprintf("dep from req %s", req.SourceURL), errCh)
+			defer catchAndSend(fmt.Sprintf("dep from req %s", req.URL), errCh)
 
 			poolLimit <- struct{}{}
 			defer func() {
-				Log.Vomit.Printf("finished assembling for %q", reqID(req.ReqParent))
+				Log.Vomit.Printf("finished assembling for %q", reqID(req.RequestParent))
 				<-poolLimit
 			}()
 
@@ -276,7 +276,7 @@ func depPipeline(
 }
 
 func assembleDeployment(cl rectificationClient, reg sous.Registry, clusters sous.Clusters, req Request) (*sous.DeployState, error) {
-	Log.Vomit.Printf("Assembling from: %s %s", req.SourceURL, reqID(req.ReqParent))
+	Log.Vomit.Printf("Assembling from: %s %s", req.URL, reqID(req.RequestParent))
 	tgt, err := BuildDeployment(reg, clusters, req)
 
 	if err != nil {

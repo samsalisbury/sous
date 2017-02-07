@@ -48,7 +48,7 @@ func (cr *canRetryRequest) Error() string {
 }
 
 func (cr *canRetryRequest) name() string {
-	return fmt.Sprintf("%s:%s", cr.req.SourceURL, cr.req.ReqParent.Request.Id)
+	return fmt.Sprintf("%s:%s", cr.req.URL, cr.req.RequestParent.Request.Id)
 }
 
 func (db *deploymentBuilder) canRetry(err error) error {
@@ -60,20 +60,20 @@ func (db *deploymentBuilder) canRetry(err error) error {
 
 func (db *deploymentBuilder) isRetryable(err error) bool {
 	return !isMalformed(err) &&
-		db.req.SourceURL != "" &&
-		db.req.ReqParent != nil &&
-		db.req.ReqParent.Request != nil &&
-		db.req.ReqParent.Request.Id != ""
+		db.req.URL != "" &&
+		db.req.RequestParent != nil &&
+		db.req.RequestParent.Request != nil &&
+		db.req.RequestParent.Request.Id != ""
 }
 
 // BuildDeployment does all the work to collect the data for a Deployment
 // from Singularity based on the initial SingularityRequest.
 func BuildDeployment(reg sous.Registry, clusters sous.Clusters, req Request) (sous.DeployState, error) {
-	Log.Vomit.Printf("%#v", req.ReqParent)
+	Log.Vomit.Printf("%#v", req.RequestParent)
 	db := deploymentBuilder{registry: reg, clusters: clusters, req: req}
 
-	db.Target.Cluster = &sous.Cluster{BaseURL: req.SourceURL}
-	db.request = req.ReqParent.Request
+	db.Target.Cluster = &sous.Cluster{BaseURL: req.URL}
+	db.request = req.RequestParent.Request
 
 	return db.Target, db.canRetry(db.completeConstruction())
 }
@@ -118,7 +118,7 @@ func (db *deploymentBuilder) determineDeployStatus() error {
 	logFDs("before retrieveDeploy")
 	defer logFDs("after retrieveDeploy")
 
-	rp := db.req.ReqParent
+	rp := db.req.RequestParent
 	if rp == nil {
 		return malformedResponse{fmt.Sprintf("Singularity response didn't include a request parent. %v", db.req)}
 	}
@@ -143,7 +143,7 @@ func (db *deploymentBuilder) determineDeployStatus() error {
 
 func (db *deploymentBuilder) retrieveDeploy() error {
 	// !!! makes HTTP req
-	sing := db.req.Sing
+	sing := db.req.Client
 	dh, err := sing.GetDeploy(db.depMarker.RequestId, db.depMarker.DeployId)
 	if err != nil {
 		return err
@@ -189,7 +189,7 @@ func (db *deploymentBuilder) retrieveImageLabels() error {
 
 	db.Target.SourceID, err = docker.SourceIDFromLabels(labels)
 	if err != nil {
-		return errors.Wrapf(malformedResponse{err.Error()}, "For reqID: %s", reqID(db.req.ReqParent))
+		return errors.Wrapf(malformedResponse{err.Error()}, "For reqID: %s", reqID(db.req.RequestParent))
 	}
 
 	return nil
@@ -200,7 +200,7 @@ func (db *deploymentBuilder) assignClusterName() error {
 	matchCount := 0
 	for nn, url := range db.clusters {
 		url := url.BaseURL
-		if url != db.req.SourceURL {
+		if url != db.req.URL {
 			continue
 		}
 		posNick = nn
