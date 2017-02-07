@@ -2,12 +2,12 @@
 # They're analogous to run-of-the-mill workstation maintenance.
 
 env
-mkdir -p /tmp/sous-cli-testing426964092/home/go/{src,bin}
+mkdir -p /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing973755612/home/go/{src,bin}
 go get github.com/nyarly/cygnus # cygnus lets us inspect Singularity for ports
-cd /home/judson/golang/src/github.com/opentable/sous
+cd /Users/jlester/golang/src/github.com/opentable/sous
 go install . #install the current sous project
 cp integration/test-registry/git-server/git_pubkey_rsa* ~/dot-ssh/
-cd /tmp/sous-cli-testing426964092
+cd /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing973755612
 chmod go-rwx -R ~/dot-ssh
 chmod +x -R ~/bin/*
-ssh -o ConnectTimeout=1 -o PasswordAuthentication=no -F "${HOME}/dot-ssh/config" root@127.0.0.1 -p 2222 /reset-repos < /dev/null
+ssh -o ConnectTimeout=1 -o PasswordAuthentication=no -F "${HOME}/dot-ssh/config" root@192.168.99.100 -p 2222 /reset-repos < /dev/null

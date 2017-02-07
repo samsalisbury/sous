@@ -1,10 +1,12 @@
 package shelltest
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
+	"text/template"
 
 	"github.com/opentable/sous/util/whitespace"
 )
@@ -16,6 +18,7 @@ type (
 		t              *testing.T
 		name, writeDir string
 		shell          *CaptiveShell
+		tmplContext    interface{}
 	}
 
 	// A CheckFn receives the Result of running a script, and should inspect it,
@@ -24,7 +27,7 @@ type (
 )
 
 // New creates a new ShellTest
-func New(t *testing.T, name string, env map[string]string) *ShellTest {
+func New(t *testing.T, name string, ctx interface{}, env map[string]string) *ShellTest {
 	sh, err := NewShell(env)
 	if err != nil {
 		t.Fatal(err)
@@ -32,9 +35,10 @@ func New(t *testing.T, name string, env map[string]string) *ShellTest {
 	}
 	seq := 0
 	return &ShellTest{
-		seq:   &seq,
-		t:     t,
-		shell: sh,
+		seq:         &seq,
+		t:           t,
+		shell:       sh,
+		tmplContext: ctx,
 	}
 }
 
@@ -64,6 +68,18 @@ func (st *ShellTest) DebugPrefix(prefix string) {
 	st.shell.scriptErrs.debugTo("scriptErrs", prefix)
 }
 
+func (st *ShellTest) buildScript(name, tmplSrc string) (string, error) {
+	tmpl, err := template.New(name).Parse(whitespace.CleanWS(tmplSrc))
+	if err != nil {
+		return "", err
+	}
+	buf := &bytes.Buffer{}
+	if err = tmpl.Execute(buf, st.tmplContext); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}
+
 // Block runs a block of shell script, returning a new ShellTest. If the check
 // function includes a failing test, however, blocks run on the resulting
 // ShellTest will be skipped.
@@ -71,9 +87,14 @@ func (st *ShellTest) Block(name, script string, check ...CheckFn) *ShellTest {
 	if st.shell == nil { // When a shell fails, follow-on blocks aren't run
 		return st
 	}
+
 	ran := st.t.Run(name, func(t *testing.T) {
 		(*st.seq)++
-		res, err := st.shell.Run(whitespace.CleanWS(script))
+		script, err := st.buildScript(name, script)
+		if err != nil {
+			t.Fatalf("Script loading err: %v", err)
+		}
+		res, err := st.shell.Run(script)
 		if st.writeDir != "" {
 			res.WriteTo(st.writeDir, fmt.Sprintf("%03d_%s", *st.seq, name))
 		}
@@ -103,9 +124,10 @@ func (st *ShellTest) Block(name, script string, check ...CheckFn) *ShellTest {
 	}
 
 	return &ShellTest{
-		seq:      st.seq,
-		t:        st.t,
-		shell:    shell,
-		writeDir: st.writeDir,
+		seq:         st.seq,
+		t:           st.t,
+		shell:       shell,
+		writeDir:    st.writeDir,
+		tmplContext: st.tmplContext,
 	}
 }

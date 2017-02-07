@@ -1,2 +1,17 @@
-bash-4.3$ bash-4.3$ bash-4.3$ bash-4.3$ bash-4.3$ bash-4.3$ bash-4.3$ bash-4.3$ bash-4.3$ bash-4.3$ bash-4.3$ bash-4.3$ bash-4.3$ bash-4.3$ bash-4.3$ bash-4.3$ Warning: Permanently added '[127.0.0.1]:2222' (ECDSA) to the list of known hosts.
-bash-4.3$ bash-4.3$ bash-4.3$ bash-4.3$ bash-4.3$ 
+
+bash-3.2$ # These steps are required by the Sous integration tests
+bash-3.2$ # They're analogous to run-of-the-mill workstation maintenance.
+bash-3.2$ 
+bash-3.2$ env
+bash-3.2$ mkdir -p /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-<ders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-t                         esting973755612/home/go/{<92mrn16vkfds/T/sous-cli-testing973755612/home/go/{s                         rc,bin}
+bash-3.2$ go get github.com/nyarly/cygnus # cygnus lets us inspect Singularit</nyarly/cygnus # cygnus lets us inspect Singularity                          for ports
+bash-3.2$ cd /Users/jlester/golang/src/github.com/opentable/sous
+bash-3.2$ go install . #install the current sous project
+bash-3.2$ cp integration/test-registry/git-server/git_pubkey_rsa* ~/dot-ssh/
+bash-3.2$ cd /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testin<p/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing                         973755612
+bash-3.2$ chmod go-rwx -R ~/dot-ssh
+bash-3.2$ chmod +x -R ~/bin/*
+bash-3.2$ ssh -o ConnectTimeout=1 -o PasswordAuthentication=no -F "${HOME}/do<eout=1 -o PasswordAuthentication=no -F "${HOME}/dot                         -ssh/config" root@192.168<cation=no -F "${HOME}/dot-ssh/config" root@192.168.                         99.100 -p 2222 /reset-rep<ssh/config" root@192.168.99.100 -p 2222 /reset-repo                         s < /dev/null
+Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
+bash-3.2$ 
+bash-3.2$ 

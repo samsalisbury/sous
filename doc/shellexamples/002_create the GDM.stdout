@@ -1,9 +1,9 @@
-DockerRepo: 127.0.0.1:5000
+DockerRepo: 192.168.99.100:5000
 Clusters:
   left:
     Name: "left"
     Kind: singularity
-    BaseURL: http://127.0.0.1:7099/singularity
+    BaseURL: http://192.168.99.100:7099/singularity
     Env:
       OT_ENV: left
     AllowedAdvisories:
@@ -21,7 +21,7 @@ Clusters:
   right:
     Name: "right"
     Kind: singularity
-    BaseURL: http://127.0.0.1:7099/singularity
+    BaseURL: http://192.168.99.100:7099/singularity
     Env:
       OT_ENV: right
     AllowedAdvisories:
@@ -55,8 +55,27 @@ Resources:
 - Name: ports
   Type: Integer
 Metadata: []
-/tmp/sous-cli-testing426964092/gdm /tmp/sous-cli-testing426964092
-[master (root-commit) 43ae683] Adding defs.yaml
+/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing973755612/gdm /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing973755612
+credential.helper=osxkeychain
+core.sshcommand=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing973755612/home/bin/ssh_wrapper
+user.name=Integration Tester
+user.email=itester@opentable.com
+push.default=simple
+core.repositoryformatversion=0
+core.filemode=true
+core.bare=false
+core.logallrefupdates=true
+core.ignorecase=true
+core.precomposeunicode=true
+remote.origin.url=ssh://root@192.168.99.100:2222/repos/gdm
+remote.origin.fetch=+refs/heads/*:refs/remotes/origin/*
+branch.master.remote=origin
+branch.master.merge=refs/heads/master
+core.sshcommand=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing973755612/home/bin/ssh_wrapper
+user.name=Integration Tester
+user.email=itester@opentable.com
+push.default=simple
+[master (root-commit) 4f386c4] Adding defs.yaml
  1 file changed, 57 insertions(+)
  create mode 100644 defs.yaml
-/tmp/sous-cli-testing426964092
+/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing973755612

@@ -38,6 +38,26 @@ type (
 		doneRead                              *bufio.Scanner
 		events                                chan int
 	}
+	// XXX: there's room here for a "stateful stdin" - using DEBUG traps and PS1
+	// hacks to keep track of the shell's state, and streaming the stdin in more
+	// like a human would - e.g. normal characters very quickly, but with delays
+	// after "Enter" (and complete pauses if the "enter" triggers a DEBUG trap).
+	// The purpose would be to avoid weird test-level hacks like </dev/null for
+	// SSH.
+	//
+	// One practical upshot is that it wouldn't be 100% either, since it'd have
+	// to rely on both timing (i.e. that the shell is likely to trigger the DEBUG
+	// trap quickly, but it might not) and fragile environment variables
+	// (effectively, we'd need to echo $PS1 every DEBUG and bail out if it'd been
+	// changed.)
+	//
+	// (Or... echo $PS1 and then watch for some version of that on stderr instead
+	// of waiting for a PS1 eval hack to write to a stream. Of course, if PS1
+	// isn't a simple string (because there's an eval hack...) we can't just
+	// match it... so we'd wind up spinning off a shell to evaluate PS1 to find
+	// out what it prints... granted that it doesn't screw anything up...
+	//
+	// ...which is why, for the moment, I'm sticking with </dev/null on SSH.
 
 	liveStream struct {
 		debugDir string

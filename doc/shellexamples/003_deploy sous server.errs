@@ -1,2 +1,3 @@
-255   57  SOUS_SERVER= SOUS_STATE_LOCATION=/tmp/sous-cli-testing426964092/gdm sous deploy -cluster left
-255   58  SOUS_SERVER= SOUS_STATE_LOCATION=/tmp/sous-cli-testing426964092/gdm sous deploy -cluster right
+255   41  SOUS_SERVER= SOUS_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing973755612/gdm sous init -v -d
+64   58  SOUS_SERVER= SOUS_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing973755612/gdm sous deploy -cluster left
+64   59  SOUS_SERVER= SOUS_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing973755612/gdm sous deploy -cluster right
