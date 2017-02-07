@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"os"
 	"regexp"
 	"testing"
 	"time"

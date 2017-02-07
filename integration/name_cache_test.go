@@ -3,12 +3,10 @@
 package integration
 
 import (
-	"os"
 	"testing"
 
 	"github.com/nyarly/testify/assert"
 	"github.com/opentable/sous/ext/docker"
-	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/docker_registry"
 )
 
