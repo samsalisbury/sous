@@ -89,6 +89,9 @@ const (
 	// ResolveFailed indicates that a particular cluster is in a failed state
 	// regarding resolving the deployments, and that resolution cannot proceed.
 	ResolveFailed
+	// ResolveTasksStarting is the state when the resolution is complete from
+	// Sous' point of view, but awaiting tasks starting in the cluster.
+	ResolveTasksStarting
 	// ResolveComplete is the success state: the server knows about our intended
 	// deployment, and that deployment has returned as having been stable.
 	ResolveComplete
@@ -97,6 +100,7 @@ const (
 	ResolveMAX
 )
 
+// XXX we might consider using go generate with `stringer` (c.f.)
 func (rs ResolveState) String() string {
 	switch rs {
 	default:
@@ -115,6 +119,8 @@ func (rs ResolveState) String() string {
 		return "ResolveErredHTTP"
 	case ResolveErredRez:
 		return "ResolveErredRez"
+	case ResolveTasksStarting:
+		return "ResolveTasksStarting"
 	case ResolveTERMINALS:
 		return "resolve terminal marker - not a real state, received in error?"
 	case ResolveNotIntended:
@@ -285,7 +291,7 @@ func (sub *subPoller) pollOnce() ResolveState {
 		// started before the most recent update to the GDM.
 		sub.serverIntent(),
 
-		// The stable/current statuses are the the complete status log collected in
+		// The stable/current statuses are the complete status log collected in
 		// the most recent completed resolution, and the live status log being
 		// collected by a still-running resolution, if any. We filter the
 		// deployment we care about out of those logs.
@@ -355,8 +361,12 @@ func (sub *subPoller) computeState(srvIntent *Deployment, stable, current *DiffR
 	// will be described as "unchanged." The upshot is that the most current
 	// intend to deploy matches this cluster's current resolver's intend to
 	// deploy, and that that matches the deploy that's running. Success!
-	if current.Desc == "unchanged" {
+	if current.Desc == StableDiff {
 		return ResolveComplete
+	}
+
+	if current.Desc == ComingDiff {
+		return ResolveTasksStarting
 	}
 
 	return ResolveInProgress
@@ -374,7 +384,7 @@ func (sub *subPoller) serverIntent() *Deployment {
 	return dep
 }
 
-func diffRezFor(rstat *ResolveStatus, rf *ResolveFilter) *DiffResolution {
+func diffResolutionFor(rstat *ResolveStatus, rf *ResolveFilter) *DiffResolution {
 	if rstat == nil {
 		Log.Vomit.Printf("Status was nil - no match for %s", rf)
 		return nil
@@ -391,9 +401,9 @@ func diffRezFor(rstat *ResolveStatus, rf *ResolveFilter) *DiffResolution {
 }
 
 func (data *statusData) stableFor(rf *ResolveFilter) *DiffResolution {
-	return diffRezFor(data.Completed, rf)
+	return diffResolutionFor(data.Completed, rf)
 }
 
 func (data *statusData) currentFor(rf *ResolveFilter) *DiffResolution {
-	return diffRezFor(data.InProgress, rf)
+	return diffResolutionFor(data.InProgress, rf)
 }

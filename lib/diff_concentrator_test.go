@@ -17,14 +17,14 @@ func TestEmptyDiffConcentration(t *testing.T) {
 	dc := intended.Diff(existing)
 	ds := dc.collect()
 
-	if ds.New.Len() != 0 {
-		t.Errorf("got %d new; want 0", ds.New.Len())
+	if len(ds.New) != 0 {
+		t.Errorf("got %d new; want 0", len(ds.New))
 	}
-	if ds.Gone.Len() != 0 {
-		t.Errorf("got %d gone; want 0", ds.Gone.Len())
+	if len(ds.Gone) != 0 {
+		t.Errorf("got %d gone; want 0", len(ds.Gone))
 	}
-	if ds.Same.Len() != 0 {
-		t.Errorf("got %d same; want 0", ds.Same.Len())
+	if len(ds.Same) != 0 {
+		t.Errorf("got %d same; want 0", len(ds.Same))
 	}
 	if len(ds.Changed) != 0 {
 		t.Errorf("got %d changed; want 0", len(ds.Changed))

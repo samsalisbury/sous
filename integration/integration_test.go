@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"os"
 	"regexp"
 	"testing"
 	"time"
@@ -46,12 +45,6 @@ func newInMemoryDB(name string) *sql.DB {
 }
 
 func TestGetRunningDeploymentSet_testCluster(t *testing.T) {
-	//sous.Log.Vomit.SetFlags(sous.Log.Vomit.Flags() | log.Ltime)
-	//sous.Log.Vomit.SetOutput(os.Stderr)
-	//sous.Log.Vomit.Print("Starting stderr output")
-	sous.Log.Debug.SetFlags(sous.Log.Debug.Flags() | log.Ltime)
-	sous.Log.Debug.SetOutput(os.Stderr)
-	sous.Log.Debug.Print("Starting stderr output")
 	assert := assert.New(t)
 
 	registerLabelledContainers()
@@ -88,12 +81,6 @@ func TestGetRunningDeploymentSet_testCluster(t *testing.T) {
 }
 
 func TestGetRunningDeploymentSet_otherCluster(t *testing.T) {
-	//sous.Log.Vomit.SetFlags(sous.Log.Vomit.Flags() | log.Ltime)
-	//sous.Log.Vomit.SetOutput(os.Stderr)
-	//sous.Log.Vomit.Print("Starting stderr output")
-	sous.Log.Debug.SetFlags(sous.Log.Debug.Flags() | log.Ltime)
-	sous.Log.Debug.SetOutput(os.Stderr)
-	sous.Log.Debug.Print("Starting stderr output")
 	assert := assert.New(t)
 
 	registerLabelledContainers()
@@ -123,12 +110,6 @@ func TestGetRunningDeploymentSet_otherCluster(t *testing.T) {
 }
 
 func TestGetRunningDeploymentSet_all(t *testing.T) {
-	sous.Log.Vomit.SetFlags(sous.Log.Vomit.Flags() | log.Ltime)
-	sous.Log.Vomit.SetOutput(os.Stderr)
-	sous.Log.Vomit.Print("Starting stderr output")
-	sous.Log.Debug.SetFlags(sous.Log.Debug.Flags() | log.Ltime)
-	sous.Log.Debug.SetOutput(os.Stderr)
-	sous.Log.Debug.Print("Starting stderr output")
 	assert := assert.New(t)
 
 	registerLabelledContainers()
@@ -210,8 +191,6 @@ func TestMissingImage(t *testing.T) {
 
 func TestResolve(t *testing.T) {
 	assert := assert.New(t)
-	//sous.Log.Vomit.SetOutput(os.Stderr)
-	sous.Log.Debug.SetOutput(os.Stderr)
 
 	ResetSingularity()
 	defer ResetSingularity()
@@ -346,7 +325,7 @@ func deploymentWithRepo(clusterNames []string, reg sous.Registry, assert *assert
 	}
 	deps, err := sc.RunningDeployments(reg, clusters)
 	if assert.Nil(err) {
-		return deps, findRepo(deps, repo)
+		return deps.IgnoringStatus(), findRepo(deps.IgnoringStatus(), repo)
 	}
 	return sous.Deployments{}, none
 }

@@ -1,7 +1,6 @@
 package singularity
 
 import (
-	"os"
 	"testing"
 
 	"github.com/nyarly/testify/assert"
@@ -13,8 +12,6 @@ import (
 
 func TestGetDepSetWorks(t *testing.T) {
 	assert := assert.New(t)
-
-	Log.Debug.SetOutput(os.Stderr)
 
 	whip := make(map[string]swaggering.DummyControl)
 
