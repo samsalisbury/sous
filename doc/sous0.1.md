@@ -14,6 +14,9 @@
 - Feature: On first run (when there is no config file), and when a terminal is attached (meaning
   it's likely that a user is present), the user is prompted to provide their name and email
   address, and the URL of their local Sous server.
+- Feature: `sous deploy`
+  (and `sous plumbing status`)
+  now await Singularity marking the indended deployment as active before returning.
 
 
 ### 0.1.8
@@ -60,7 +63,7 @@ Sous 0.1 adds:
   intervention and re-building the entire cache from source. Now, we track the schema, and
   migrate your cache as necessary.
 - SourceIDs and SourceLocations now correctly round-trip from parse to string and back again.
-- SourceLocations now have a single parse method, so we always get the same results and/or errors. 
+- SourceLocations now have a single parse method, so we always get the same results and/or errors.
 - We somehow abbreviated "Actual Deployment Set" "ADC" ?! That's fixed, we're now using "ADS".
 
 ### CLI
@@ -171,5 +174,3 @@ cycle hit 54%, we expect to see that rise quickly now that we fail CI when it fa
 can track test coverage at https://codecov.io/gh/opentable/sous.
 
 For more gory detail, check out the [full list of commits between 0.0.1 and 0.1](https://github.com/opentable/sous/compare/v0.0.1...v0.1).
-
-
