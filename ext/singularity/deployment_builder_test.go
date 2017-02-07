@@ -28,7 +28,7 @@ func TestBuildingRequestID(t *testing.T) {
 
 func TestBuildDeployment_determineDeployStatus_missingstate(t *testing.T) {
 	db := &deploymentBuilder{
-		req: SingReq{},
+		req: Request{},
 	}
 
 	if db.determineDeployStatus() == nil {
@@ -47,7 +47,7 @@ func TestBuildDeployment_determineDeployStatus_pendingonly(t *testing.T) {
 	depMarker := dtos.SingularityDeployMarker{}
 
 	db := &deploymentBuilder{
-		req: SingReq{
+		req: Request{
 			ReqParent: &dtos.SingularityRequestParent{
 				RequestDeployState: &dtos.SingularityRequestDeployState{
 					PendingDeploy: &depMarker,
@@ -73,7 +73,7 @@ func TestBuildDeployment_determineDeployStatus_activeonly(t *testing.T) {
 	depMarker := dtos.SingularityDeployMarker{}
 
 	db := &deploymentBuilder{
-		req: SingReq{
+		req: Request{
 			ReqParent: &dtos.SingularityRequestParent{
 				RequestDeployState: &dtos.SingularityRequestDeployState{
 					ActiveDeploy: &depMarker,
@@ -100,7 +100,7 @@ func TestBuildDeployment_determineDeployStatus_activeAndPending(t *testing.T) {
 	otherDepMarker := dtos.SingularityDeployMarker{}
 
 	db := &deploymentBuilder{
-		req: SingReq{
+		req: Request{
 			ReqParent: &dtos.SingularityRequestParent{
 				RequestDeployState: &dtos.SingularityRequestDeployState{
 					PendingDeploy: &depMarker,
@@ -133,7 +133,7 @@ func TestBuildingRequestIDTwoClusters(t *testing.T) {
 	db := &deploymentBuilder{
 		clusters: clusters,
 		request:  &dtos.SingularityRequest{Id: "::" + cn},
-		req:      SingReq{SourceURL: url},
+		req:      Request{SourceURL: url},
 	}
 	assert.NoError(t, db.assignClusterName())
 	assert.Equal(t, db.Target.ClusterName, cn)
@@ -141,7 +141,7 @@ func TestBuildingRequestIDTwoClusters(t *testing.T) {
 	db2 := &deploymentBuilder{
 		clusters: clusters,
 		request:  &dtos.SingularityRequest{Id: "::" + cn2},
-		req:      SingReq{SourceURL: url},
+		req:      Request{SourceURL: url},
 	}
 	assert.NoError(t, db2.assignClusterName())
 	assert.Equal(t, db2.Target.ClusterName, cn2)

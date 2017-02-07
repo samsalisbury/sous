@@ -18,13 +18,13 @@ type (
 		depMarker sDepMarker
 		deploy    sDeploy
 		request   sRequest
-		req       SingReq
+		req       Request
 		registry  sous.Registry
 	}
 
 	canRetryRequest struct {
 		cause error
-		req   SingReq
+		req   Request
 	}
 
 	malformedResponse struct {
@@ -68,7 +68,7 @@ func (db *deploymentBuilder) isRetryable(err error) bool {
 
 // BuildDeployment does all the work to collect the data for a Deployment
 // from Singularity based on the initial SingularityRequest.
-func BuildDeployment(reg sous.Registry, clusters sous.Clusters, req SingReq) (sous.DeployState, error) {
+func BuildDeployment(reg sous.Registry, clusters sous.Clusters, req Request) (sous.DeployState, error) {
 	Log.Vomit.Printf("%#v", req.ReqParent)
 	db := deploymentBuilder{registry: reg, clusters: clusters, req: req}
 

@@ -26,8 +26,8 @@ type (
 	sRequest   *dtos.SingularityRequest
 	sDepMarker *dtos.SingularityDeployMarker
 
-	// SingReq captures a request made to singularity with its initial response.
-	SingReq struct {
+	// Request captures a request made to singularity with its initial response.
+	Request struct {
 		SourceURL    string
 		Sing         *singularity.Client
 		ReqParent    *dtos.SingularityRequestParent
@@ -44,7 +44,7 @@ func (sc *deployer) RunningDeployments(reg sous.Registry, clusters sous.Clusters
 	errCh := make(chan error)
 	deps = sous.NewDeployStates()
 	sings := make(map[string]struct{})
-	reqCh := make(chan SingReq, len(clusters)*ReqsPerServer)
+	reqCh := make(chan Request, len(clusters)*ReqsPerServer)
 	depCh := make(chan *sous.DeployState, ReqsPerServer)
 
 	defer close(depCh)
@@ -109,7 +109,7 @@ func (sc *deployer) RunningDeployments(reg sous.Registry, clusters sous.Clusters
 
 const retryLimit = 3
 
-func (rc retryCounter) maybe(err error, reqCh chan SingReq) bool {
+func (rc retryCounter) maybe(err error, reqCh chan Request) bool {
 	rt, ok := err.(*canRetryRequest)
 	if !ok {
 		return false
@@ -186,7 +186,7 @@ func singPipeline(
 	url string,
 	client *singularity.Client,
 	dw, wg *sync.WaitGroup,
-	reqs chan SingReq,
+	reqs chan Request,
 	errs chan error,
 	clusters []string,
 ) {
@@ -207,7 +207,7 @@ func singPipeline(
 	}
 }
 
-func getRequestsFromSingularity(url string, client *singularity.Client, clusters []string) ([]SingReq, error) {
+func getRequestsFromSingularity(url string, client *singularity.Client, clusters []string) ([]Request, error) {
 	logFDs("before getRequestsFromSingularity")
 	defer logFDs("after getRequestsFromSingularity")
 	singRequests, err := client.GetRequests()
@@ -215,7 +215,7 @@ func getRequestsFromSingularity(url string, client *singularity.Client, clusters
 		return nil, errors.Wrap(err, "getting request")
 	}
 
-	reqs := make([]SingReq, 0, len(singRequests))
+	reqs := make([]Request, 0, len(singRequests))
 eachrequest:
 	for _, sr := range singRequests {
 		// Parse requests, filter out malformed ones and those that do not
@@ -227,7 +227,7 @@ eachrequest:
 		}
 		for _, c := range clusters {
 			if deployID.Cluster == c {
-				reqs = append(reqs, SingReq{
+				reqs = append(reqs, Request{
 					SourceURL:    url,
 					Sing:         client,
 					ReqParent:    sr,
@@ -247,7 +247,7 @@ func depPipeline(
 	reg sous.Registry,
 	clusters sous.Clusters,
 	poolCount int,
-	reqCh chan SingReq,
+	reqCh chan Request,
 	depCh chan *sous.DeployState,
 	errCh chan error,
 ) {
@@ -255,7 +255,7 @@ func depPipeline(
 	poolLimit := make(chan struct{}, poolCount)
 	for req := range reqCh {
 		Log.Vomit.Printf("starting assembling for %q", reqID(req.ReqParent))
-		go func(req SingReq) {
+		go func(req Request) {
 			defer catchAndSend(fmt.Sprintf("dep from req %s", req.SourceURL), errCh)
 
 			poolLimit <- struct{}{}
@@ -275,7 +275,7 @@ func depPipeline(
 	}
 }
 
-func assembleDeployment(cl rectificationClient, reg sous.Registry, clusters sous.Clusters, req SingReq) (*sous.DeployState, error) {
+func assembleDeployment(cl rectificationClient, reg sous.Registry, clusters sous.Clusters, req Request) (*sous.DeployState, error) {
 	Log.Vomit.Printf("Assembling from: %s %s", req.SourceURL, reqID(req.ReqParent))
 	tgt, err := BuildDeployment(reg, clusters, req)
 
