@@ -67,6 +67,15 @@ legendary: coverage
 
 release: artifacts/$(DARWIN_TARBALL) artifacts/$(LINUX_TARBALL)
 
+install_build_tools:
+	go get github.com/karalabe/xgo
+	go get github.com/kardianos/govendor
+	go get github.com/nyarly/engulf
+
+
+linux_build: artifacts/$(LINUX_RELEASE_DIR)/sous install_build_tools
+	ln -srf $< dev_support/sous_linux
+
 semvertagchk:
 	@echo "$(SOUS_VERSION)" | egrep ^[0-9]+\.[0-9]+\.[0-9]+
 

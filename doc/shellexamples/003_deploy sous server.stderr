@@ -1,90 +1,0 @@
-
-bash-3.2$ sous config
-warn: CONFIG FROM /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing793784865/home/dot-config/sous/config.yaml
-bash-3.2$ cat ~/.config/sous/config.yaml
-bash-3.2$ git clone ssh://root@192.168.99.100:2222/repos/sous-server
-Cloning into 'sous-server'...
-ssh_wrapper
-Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
-bash-3.2$ pushd sous-server
-bash-3.2$ export SOUS_USER_NAME=test SOUS_USER_EMAIL=test@test.com
-bash-3.2$ SOUS_SERVER= SOUS_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz<_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz9                         2mrn16vkfds/T/sous-cli-te<rs/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-tes                         ting793784865/gdm sous in<mrn16vkfds/T/sous-cli-testing793784865/gdm sous ini                         t -v -d
-vomit: 2017/02/08 13:16:09 graph.go:298: Verbose debugging enabled
-debug: 2017/02/08 13:16:09 graph.go:299: Regular debugging enabled
-warn: CONFIG FROM /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing793784865/home/dot-config/sous/config.yaml
-warn: No server set, Sous is running in server or workstation mode.
-warn: Configure a server like this: sous config server http://some.sous.server
-warn: Using local state stored at /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing793784865/gdm
-debug: 2017/02/08 13:16:10 git_state_manager.go:53: [git pull]: success
-vomit: 2017/02/08 13:16:10 git_state_manager.go:57: git: ssh_wrapper
-Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
-Already up-to-date.
-vomit: 2017/02/08 13:16:10 disk_state_manager.go:65: Reading state from disk
-vomit: 2017/02/08 13:16:10 disk_state_manager.go:45: Validating State
-vomit: 2017/02/08 13:16:10 disk_state_manager.go:48: Repairing State
-debug: 2017/02/08 13:16:10 git_state_manager.go:53: [git tag sous-fallback-b6851cca-ce23-4ec3-b850-de9296792c41]: success
-vomit: 2017/02/08 13:16:10 git_state_manager.go:57: git: 
-vomit: 2017/02/08 13:16:10 disk_state_manager.go:45: Validating State
-vomit: 2017/02/08 13:16:10 disk_state_manager.go:48: Repairing State
-vomit: 2017/02/08 13:16:10 disk_state_manager.go:100: Writing state to disk
-debug: 2017/02/08 13:16:10 git_state_manager.go:53: [git add .]: success
-vomit: 2017/02/08 13:16:10 git_state_manager.go:57: git: 
-debug: 2017/02/08 13:16:10 git_state_manager.go:55: [git diff-index --exit-code HEAD]: error: exit status 1
-vomit: 2017/02/08 13:16:10 git_state_manager.go:57: git: :100644 100644 0cff63bd3996d393983dcebf2ccb26cc570e8d78 143bfab2a6b3b90f34389146e1575e4b61e4b37c M	defs.yaml
-:000000 100644 0000000000000000000000000000000000000000 f524621b01746387e3168c8883627d69f2e9c196 A	manifests/192.168.99.100/2222/repos/sous-server.yaml
-debug: 2017/02/08 13:16:10 git_state_manager.go:53: [git commit -m sous commit: Update State --author test <test@test.com>]: success
-vomit: 2017/02/08 13:16:10 git_state_manager.go:57: git: [master a01e62f] sous commit: Update State
- Author: test <test@test.com>
- 2 files changed, 22 insertions(+), 2 deletions(-)
- create mode 100644 manifests/192.168.99.100/2222/repos/sous-server.yaml
-debug: 2017/02/08 13:16:10 git_state_manager.go:53: [git push -u origin master]: success
-vomit: 2017/02/08 13:16:10 git_state_manager.go:57: git: ssh_wrapper
-Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
-To ssh://192.168.99.100:2222/repos/gdm
-   510be14..a01e62f  master -> master
-Branch master set up to track remote branch master from origin.
-debug: 2017/02/08 13:16:10 git_state_manager.go:53: [git tag -d sous-fallback-b6851cca-ce23-4ec3-b850-de9296792c41]: success
-vomit: 2017/02/08 13:16:10 git_state_manager.go:57: git: Deleted tag 'sous-fallback-b6851cca-ce23-4ec3-b850-de9296792c41' (was 510be14)
-bash-3.2$ 
-bash-3.2$ # Last minute config
-bash-3.2$ cat Dockerfile
-bash-3.2$ cp ~/dot-ssh/git_pubkey_rsa key_sous@example.com
-bash-3.2$ cp $(which sous) .
-bash-3.2$ ls -la
-bash-3.2$ ssh-keyscan -p 2222 192.168.99.100 > known_hosts
-# 192.168.99.100:2222 SSH-2.0-OpenSSH_7.2p2-hpn14v4
-# 192.168.99.100:2222 SSH-2.0-OpenSSH_7.2p2-hpn14v4
-# 192.168.99.100:2222 SSH-2.0-OpenSSH_7.2p2-hpn14v4
-bash-3.2$ cat known_hosts
-bash-3.2$ 
-bash-3.2$ git add key_sous@example.com known_hosts sous
-bash-3.2$ git commit -am "Adding ephemeral files"
-bash-3.2$ git tag -am "0.0.2" 0.0.2
-bash-3.2$ git push
-ssh_wrapper
-Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
-To ssh://192.168.99.100:2222/repos/sous-server
-   23ea27c..b4405cf  master -> master
-bash-3.2$ git push --tags
-ssh_wrapper
-Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
-To ssh://192.168.99.100:2222/repos/sous-server
- * [new tag]         0.0.2 -> 0.0.2
-bash-3.2$ sous context
-bash-3.2$ pwd
-bash-3.2$ sous build
-warn: CONFIG FROM /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing793784865/home/dot-config/sous/config.yaml
-bash-3.2$ # We expect to see 'Sous is running ... in workstation mode' here:
-bash-3.2$ SOUS_SERVER= SOUS_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz<_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz9                         2mrn16vkfds/T/sous-cli-te<rs/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-tes                         ting793784865/gdm sous de<mrn16vkfds/T/sous-cli-testing793784865/gdm sous dep                         loy -cluster left
-warn: CONFIG FROM /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing793784865/home/dot-config/sous/config.yaml
-warn: No server set, Sous is running in server or workstation mode.
-warn: Configure a server like this: sous config server http://some.sous.server
-warn: Using local state stored at /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing793784865/gdm
-bash-3.2$ SOUS_SERVER= SOUS_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz<_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz9                         2mrn16vkfds/T/sous-cli-te<rs/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-tes                         ting793784865/gdm sous de<mrn16vkfds/T/sous-cli-testing793784865/gdm sous dep                         loy -cluster right
-warn: CONFIG FROM /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing793784865/home/dot-config/sous/config.yaml
-warn: No server set, Sous is running in server or workstation mode.
-warn: Configure a server like this: sous config server http://some.sous.server
-warn: Using local state stored at /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing793784865/gdm
-bash-3.2$ popd
-bash-3.2$ 
-bash-3.2$ 
