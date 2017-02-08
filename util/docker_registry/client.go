@@ -2,11 +2,13 @@ package docker_registry
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 
@@ -98,9 +100,25 @@ func (rs *Registries) DeleteRegistry(n string) error {
 
 // NewClient builds a new client
 func NewClient() Client {
+	xport := &http.Transport{}
+	if extraCA := os.Getenv("SOUS_EXTRA_DOCKER_CA"); extraCA != "" {
+		pemBytes, err := ioutil.ReadFile(extraCA)
+		if err != nil {
+			panic(err)
+		}
+
+		roots := x509.NewCertPool()
+		tlsc := &tls.Config{
+			RootCAs: roots,
+		}
+
+		roots.AppendCertsFromPEM(pemBytes)
+
+		xport.TLSClientConfig = tlsc
+	}
 	return &liveClient{
 		ctx:        context.Background(),
-		xport:      &http.Transport{},
+		xport:      xport,
 		Registries: NewRegistries(),
 	}
 }
@@ -108,9 +126,10 @@ func NewClient() Client {
 // BecomeFoolishlyTrusting instructs the client to cease verifying the certificates of registry hosts.
 // This is a terrible idea and this method is slated for removal without notice - do not depend on it.
 func (c *liveClient) BecomeFoolishlyTrusting() {
-	c.xport.TLSClientConfig = &tls.Config{
-		InsecureSkipVerify: true,
+	if c.xport.TLSClientConfig == nil {
+		c.xport.TLSClientConfig = &tls.Config{}
 	}
+	c.xport.TLSClientConfig.InsecureSkipVerify = true
 }
 
 func (c *liveClient) Cancel() {

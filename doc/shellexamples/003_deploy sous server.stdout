@@ -11,13 +11,13 @@ User:
   Email: ""
 Docker:
   RegistryHost: 192.168.99.100:5000
-/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing643872761/sous-server /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing643872761
+/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing793784865/sous-server /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing793784865
   (Sous)> git version
 > git version 2.10.0
 
   (Sous)> git config -l
 > credential.helper=osxkeychain
-core.sshcommand=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing643872761/home/bin/ssh_wrapper
+core.sshcommand=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing793784865/home/bin/ssh_wrapper
 user.name=Integration Tester
 user.email=itester@opentable.com
 push.default=simple
@@ -33,18 +33,12 @@ branch.master.remote=origin
 branch.master.merge=refs/heads/master
 
   (Sous)> git rev-parse --show-toplevel
-> /private/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing643872761/sous-server
+> /private/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing793784865/sous-server
 
-  (Sous)> git remote -v
-> origin	ssh://root@192.168.99.100:2222/repos/sous-server (fetch)
-origin	ssh://root@192.168.99.100:2222/repos/sous-server (push)
-
-  (Sous)> git ls-files --others --exclude-standard
-> 
   (Sous)> git ls-files --modified
 > 
-  (Sous)> git rev-parse --abbrev-ref HEAD
-> master
+  (Sous)> git rev-list -n 1 HEAD
+> 23ea27cb2f2b200e5bf9cbcb8c01dcf596e7b456
 
   (Sous)> git log --date-order --tags --simplify-by-decoration --pretty=format:%H %aI %D
 > 1a27267954ca4f05bde5dec1443cf6dbcd520139 2017-01-25T15:39:07-08:00 tag: 0.0.1
@@ -53,9 +47,15 @@ origin	ssh://root@192.168.99.100:2222/repos/sous-server (push)
 main.go
 sous-server.yaml
 
-  (Sous)> git rev-list -n 1 HEAD
-> 23ea27cb2f2b200e5bf9cbcb8c01dcf596e7b456
+  (Sous)> git remote -v
+> origin	ssh://root@192.168.99.100:2222/repos/sous-server (fetch)
+origin	ssh://root@192.168.99.100:2222/repos/sous-server (push)
 
+  (Sous)> git rev-parse --abbrev-ref HEAD
+> master
+
+  (Sous)> git ls-files --others --exclude-standard
+> 
   (Sous)> git describe --tags --abbrev=0 --always
 > 0.0.1
 
@@ -100,26 +100,26 @@ RUN go install -v
 # NOTE: You must have set PORT0, GDM_REPO
 CMD /go/bin/sous-server
 total 21624
-drwxr-xr-x  8 jlester 513      272 Feb  7 15:16 .
-drwx------  6 jlester 513      204 Feb  7 15:16 ..
-drwxr-xr-x 12 jlester 513      408 Feb  7 15:16 .git
--rw-r--r--  1 jlester 513      390 Feb  7 15:16 Dockerfile
--rw-------  1 jlester 513     1679 Feb  7 15:16 key_sous@example.com
--rw-r--r--  1 jlester 513     1550 Feb  7 15:16 main.go
--rwxr-xr-x  1 jlester 513 22124856 Feb  7 15:16 sous
--rw-r--r--  1 jlester 513      518 Feb  7 15:16 sous-server.yaml
-[192.168.99.100]:2222 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM5JjKJLW0yn7+F6O1nXhSpMgAKQaFrlz2fA64kUF8Tp
-[192.168.99.100]:2222 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC/lubCAel1uw29KTdh06RR/raTDBbjR8HpDX83i3xpnrZtz1xXzmy2yso/NSfFbTckA98wkUx0RtD2yz0AVupR+qAPZs7rkmdGbIBjl0t12f0VGCKvkNaOhuLVi5ojIuQuLSwZuYOFOtUaCJaAN4IpTihHpU5E4j82qJIi4Lb10oYp8+tLV4LL9H8HjQfhOF1kglJVMXGKmqeLwjCfsCW6hxUKTBUOa/O5CA4LaMhyhGUUT9t040PjJG4wfFCiXSJgCDJVtD6zldjrOQffyh1PmZN5ODl9zfGNbp+Z8WTSYwBPnnaXMgoR3BzXqVAwg8kz009z9aBMBzZNGauBBJu7
+drwxr-xr-x  8 jlester 513      272 Feb  8 13:16 .
+drwx------  6 jlester 513      204 Feb  8 13:16 ..
+drwxr-xr-x 12 jlester 513      408 Feb  8 13:16 .git
+-rw-r--r--  1 jlester 513      390 Feb  8 13:16 Dockerfile
+-rw-------  1 jlester 513     1679 Feb  8 13:16 key_sous@example.com
+-rw-r--r--  1 jlester 513     1550 Feb  8 13:16 main.go
+-rwxr-xr-x  1 jlester 513 22125000 Feb  8 13:16 sous
+-rw-r--r--  1 jlester 513      518 Feb  8 13:16 sous-server.yaml
 [192.168.99.100]:2222 ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBOZERV32kcDerlqKZf/OIGW/prs1r8p0wQwKZ41Gptq90htVQkftWeXAuEQdR46Gk9cma+0l5Rlv+3fIDp1P/lI=
-[master b99a1b2] Adding ephemeral files
+[192.168.99.100]:2222 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC/lubCAel1uw29KTdh06RR/raTDBbjR8HpDX83i3xpnrZtz1xXzmy2yso/NSfFbTckA98wkUx0RtD2yz0AVupR+qAPZs7rkmdGbIBjl0t12f0VGCKvkNaOhuLVi5ojIuQuLSwZuYOFOtUaCJaAN4IpTihHpU5E4j82qJIi4Lb10oYp8+tLV4LL9H8HjQfhOF1kglJVMXGKmqeLwjCfsCW6hxUKTBUOa/O5CA4LaMhyhGUUT9t040PjJG4wfFCiXSJgCDJVtD6zldjrOQffyh1PmZN5ODl9zfGNbp+Z8WTSYwBPnnaXMgoR3BzXqVAwg8kz009z9aBMBzZNGauBBJu7
+[192.168.99.100]:2222 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM5JjKJLW0yn7+F6O1nXhSpMgAKQaFrlz2fA64kUF8Tp
+[master b4405cf] Adding ephemeral files
  3 files changed, 30 insertions(+)
  create mode 100644 key_sous@example.com
  create mode 100644 known_hosts
  create mode 100755 sous
-RootDir: /private/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing643872761/sous-server
+RootDir: /private/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing793784865/sous-server
 OffsetDir: ""
 Branch: master
-Revision: b99a1b2dc1e3a908e51bcb00a1a30975f2125e9c
+Revision: b4405cf9a4f026303c5588b85bc6f95cf2fca121
 Files:
 - Dockerfile
 - key_sous@example.com
@@ -131,24 +131,26 @@ ModifiedFiles: []
 NewFiles: []
 Tags:
 - Name: 0.0.2
-  Revision: b99a1b2dc1e3a908e51bcb00a1a30975f2125e9c
+  Revision: b4405cf9a4f026303c5588b85bc6f95cf2fca121
 - Name: 0.0.1
   Revision: 1a27267954ca4f05bde5dec1443cf6dbcd520139
 NearestTagName: 0.0.2
-NearestTagRevision: b99a1b2dc1e3a908e51bcb00a1a30975f2125e9c
+NearestTagRevision: b4405cf9a4f026303c5588b85bc6f95cf2fca121
 PrimaryRemoteURL: 192.168.99.100/2222/repos/sous-server
 RemoteURL: ""
 RemoteURLs:
 - 192.168.99.100/2222/repos/sous-server
 DirtyWorkingTree: false
 RevisionUnpushed: false
-/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing643872761/sous-server
-  (Sous)> running docker build -t 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2 -t 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:b99a1b2dc1e3a908e51bcb00a1a30975f2125e9c -
+/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing793784865/sous-server
+  (Sous)> running docker build -t 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2 -t 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:b4405cf9a4f026303c5588b85bc6f95cf2fca121 -
   (Sous)> running docker push 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2
-  (Sous)> running docker push 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:b99a1b2dc1e3a908e51bcb00a1a30975f2125e9c
-  (Sous)> [recording "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2" as the docker name for "192.168.99.100/2222/repos/sous-server,0.0.2+b99a1b2dc1e3a908e51bcb00a1a30975f2125e9c"]
+  (Sous)> running docker push 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:b4405cf9a4f026303c5588b85bc6f95cf2fca121
+  (Sous)> [recording "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2" as the docker name for "192.168.99.100/2222/repos/sous-server,0.0.2+b4405cf9a4f026303c5588b85bc6f95cf2fca121"]
 Built: "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2"
-Elapsed: 2.076256527s
+Elapsed: 2.57942807s
 
 
-/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing643872761
+
+
+/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing793784865

@@ -1,2 +1,0 @@
-255   58  SOUS_SERVER= SOUS_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing643872761/gdm sous deploy -cluster left
-255   59  SOUS_SERVER= SOUS_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing643872761/gdm sous deploy -cluster right

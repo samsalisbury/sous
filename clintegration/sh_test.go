@@ -276,8 +276,9 @@ func TestShellLevelIntegration(t *testing.T) {
 	# They're analogous to run-of-the-mill workstation maintenance.
 
 	env
+	export SOUS_EXTRA_DOCKER_CA={{.TestDir}}/integration/test-registry/docker-registry/testing.crt
 	mkdir -p {{index .GoPath 0}}/{src,bin}
-	go get github.com/nyarly/cygnus # cygnus lets us inspect Singularity for ports
+	GOPATH={{index .GoPath 0}} go get github.com/nyarly/cygnus # cygnus lets us inspect Singularity for ports
 	cd {{.TestDir}}
 	go install . #install the current sous project
 	cp integration/test-registry/git-server/git_pubkey_rsa* ~/dot-ssh/
@@ -335,14 +336,13 @@ func TestShellLevelIntegration(t *testing.T) {
 				t.Errorf("Trouble building GDM: \n\t%s", res.Errs)
 			}
 
-			if !res.Matches(`Deployed`) {
-				t.Errorf("No report of deployment")
+			if !res.Matches(`--author test <test@`) {
+				t.Errorf("SOUS_USER_NAME not used for local state updates")
 			}
 		})
 
-	// XXX Event driven wait for the server to be ready?
-
 	config := setup.Block("configuration", `
+	cygnus --env TASK_HOST --env PORT0 {{.EnvDesc.SingularityURL}}
 	serverURL=$(cygnus --env TASK_HOST --env PORT0 {{.EnvDesc.SingularityURL}} | grep 'sous-server.*left' | awk '{ print "http://" $3 ":" $4 }')
 	sous config Server "$serverURL"
 	echo -n "Server URL is: "
