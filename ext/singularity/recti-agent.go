@@ -12,10 +12,9 @@ import (
 	"github.com/satori/go.uuid"
 )
 
-//var illegalDeployIDChars = regexp.MustCompile(`[-/:]`)
 var illegalDeployIDChars = regexp.MustCompile(`[^a-z|^A-Z|^0-9|^_]`)
 
-// SanitizeDeployID recplaces characters forbidden in a Singularity deploy ID
+// SanitizeDeployID replaces characters forbidden in a Singularity deploy ID
 // with underscores.
 func SanitizeDeployID(in string) string {
 	return illegalDeployIDChars.ReplaceAllString(in, "_")
