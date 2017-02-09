@@ -12,10 +12,17 @@ import (
 	"github.com/satori/go.uuid"
 )
 
-var illegalDeployIDChars = regexp.MustCompile(`[-/:]`)
+//var illegalDeployIDChars = regexp.MustCompile(`[-/:]`)
+var illegalDeployIDChars = regexp.MustCompile(`[^a-z|^A-Z|^0-9|^_]`)
 
-// SanitizeDeployID cleans a string to be used as a Singularity deploy ID.
+// SanitizeDeployID recplaces characters forbidden in a Singularity deploy ID
+// with underscores.
 func SanitizeDeployID(in string) string {
+	return illegalDeployIDChars.ReplaceAllString(in, "_")
+}
+
+// StripDeployID removes all characters forbidden in a Singularity deployID.
+func StripDeployID(in string) string {
 	return illegalDeployIDChars.ReplaceAllString(in, "")
 }
 
@@ -173,7 +180,7 @@ func (ra *RectiAgent) DeleteRequest(cluster, reqID, message string) error {
 func (ra *RectiAgent) Scale(cluster, reqID string, instanceCount int, message string) error {
 	Log.Debug.Printf("Scaling %s %s %d %s", cluster, reqID, instanceCount, message)
 	sr, err := swaggering.LoadMap(&dtos.SingularityScaleRequest{}, dtoMap{
-		"ActionId": "SOUS_RECTIFY_" + SanitizeDeployID(uuid.NewV4().String()), // not positive this is appropriate
+		"ActionId": "SOUS_RECTIFY_" + StripDeployID(uuid.NewV4().String()), // not positive this is appropriate
 		// omitting DurationMillis - bears discussion
 		"Instances":        int32(instanceCount),
 		"Message":          "Sous" + message,

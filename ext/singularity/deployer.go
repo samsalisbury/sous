@@ -210,7 +210,7 @@ func computeDeployID(d *sous.Deployable) string {
 	// maxVersionLen needs to account for the separator character
 	// between the version string and the UUID string.
 	maxVersionLen := 31
-	uuidEntire := SanitizeDeployID(uuid.NewV4().String())
+	uuidEntire := StripDeployID(uuid.NewV4().String())
 	versionEntire := SanitizeDeployID(d.Deployment.SourceID.Version.String())
 
 	if len(versionEntire) > maxVersionLen {
