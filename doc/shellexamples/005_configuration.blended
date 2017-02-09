@@ -1,0 +1,14 @@
+
+bash-3.2$ cygnus --env TASK_HOST --env PORT0 http://192.168.99.100:7099/singu<_HOST --env PORT0 http://192.168.99.100:7099/singul                         arity
+Request ID                                  Deploy ID                        TASK_HOST PORT0
+192.168.99.100>2222>repos>sous-server::left 086e2a4603d54ee0ab5f8d5513df2b0e localhost 31798
+bash-3.2$ serverURL=$(cygnus --env TASK_HOST --env PORT0 http://192.168.99.10<s --env TASK_HOST --env PORT0 http://192.168.99.100                         :7099/singularity | grep <RT0 http://192.168.99.100:7099/singularity | grep '                         sous-server.*left' | awk <7099/singularity | grep 'sous-server.*left' | awk '                         { print "http://" $3 ":" <ous-server.*left' | awk '{ print "http://" $3 ":" $                         4 }')
+bash-3.2$ sous config Server "$serverURL"
+warn: CONFIG FROM /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing514461492/home/dot-config/sous/config.yaml
+set Server to "http://localhost:31798"
+bash-3.2$ echo -n "Server URL is: "
+Server URL is: bash-3.2$ sous config Server
+warn: CONFIG FROM /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing514461492/home/dot-config/sous/config.yaml
+http://localhost:31798
+bash-3.2$ 
+bash-3.2$ 

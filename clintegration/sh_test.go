@@ -216,9 +216,16 @@ func setupConfig(t *testing.T) templatedConfigs {
 
 	sshWrapper := filepath.Join(testHome, "bin/ssh_wrapper")
 	firstGoPath := filepath.Join(testHome, "go")
+
+	shellPath := []string{sousExeDir, "~/bin", exePATH, filepath.Join(firstGoPath, "bin")}
+
 	goPath := []string{firstGoPath}
+
 	if userGopath := os.Getenv("GOPATH"); userGopath != "" {
-		goPath = append(goPath, strings.Split(userGopath, ":")...)
+		for _, userGo := range strings.Split(userGopath, ":") {
+			goPath = append(goPath, userGo)
+			shellPath = append(shellPath, filepath.Join(userGo, "bin"))
+		}
 	}
 
 	return templatedConfigs{
@@ -233,7 +240,7 @@ func setupConfig(t *testing.T) templatedConfigs {
 		GitSSH:        gitSSH,
 		SSHExec:       sshExecPath,
 		GitRemoteBase: gitRemoteBase,
-		ShellPath:     []string{sousExeDir, "~/bin", exePATH, filepath.Join(firstGoPath, "bin")},
+		ShellPath:     shellPath,
 	}
 }
 
@@ -271,7 +278,27 @@ func TestShellLevelIntegration(t *testing.T) {
 		}
 	}
 
-	prologue := shell.Block("Test environment setup", `
+	preconditions := shell.Block("Preconditions for CLI integration tests", `
+	go get github.com/nyarly/cygnus # cygnus lets us inspect Singularity for ports
+	cygnus -H {{.EnvDesc.SingularityURL}}
+	ls {{.TestDir}}/dev_support
+	`, func(name string, res shelltest.Result, t *testing.T) {
+		if len(res.Errs) > 0 {
+			t.Errorf("Error in %s: \n\t%s", name, res.Errs)
+		}
+		if res.Matches("sous-server") {
+			msg, err := shell.Template("clean-sing", "Running sous-server already - try `./integration/test-registry/clean-singularity.sh {{.EnvDesc.SingularityURL}}`")
+			if err != nil {
+				t.Error("Running sous-server already - try `./integration/test-registry/clean-singularity.sh <singularity-url>`")
+			}
+			t.Error(msg)
+		}
+		if !res.Matches("sous_linux") {
+			t.Error("No sous_linux available - run `make linux_build`")
+		}
+	})
+
+	prologue := preconditions.Block("Test environment setup", `
 	# These steps are required by the Sous integration tests
 	# They're analogous to run-of-the-mill workstation maintenance.
 
@@ -279,7 +306,6 @@ func TestShellLevelIntegration(t *testing.T) {
 	env
 	export SOUS_EXTRA_DOCKER_CA={{.TestDir}}/integration/test-registry/docker-registry/testing.crt
 	mkdir -p {{index .GoPath 0}}/{src,bin}
-	GOPATH={{index .GoPath 0}} go get github.com/nyarly/cygnus # cygnus lets us inspect Singularity for ports
 
 	### This build gives me trouble in tests...
 	### xgo does something weird and different with it's dep-cache dir

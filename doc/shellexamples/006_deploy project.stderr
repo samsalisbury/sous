@@ -1,0 +1,25 @@
+
+bash-3.2$ git clone ssh://root@192.168.99.100:2222/repos/sous-demo
+Cloning into 'sous-demo'...
+ssh_wrapper
+Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
+bash-3.2$ cd sous-demo
+bash-3.2$ git tag -a 0.0.23
+error: Terminal is dumb, but EDITOR unset
+Please supply the message using either -m or -F option.
+bash-3.2$ git push --tags
+ssh_wrapper
+Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
+Everything up-to-date
+bash-3.2$ sous init
+warn: CONFIG FROM /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing514461492/home/dot-config/sous/config.yaml
+error reading sous state: getting defs: Retrieve ./defs: Get http://localhost:31798/defs: dial tcp [::1]:31798: getsockopt: connection refused
+bash-3.2$ sous build
+warn: CONFIG FROM /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing514461492/home/dot-config/sous/config.yaml
+semver git tag required.  invalid tag: ""
+bash-3.2$ sous deploy -cluster left
+warn: CONFIG FROM /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing514461492/home/dot-config/sous/config.yaml
+error reading sous state: getting defs: Retrieve ./defs: Get http://localhost:31798/defs: dial tcp [::1]:31798: getsockopt: connection refused
+error reading sous state: getting defs: Retrieve ./defs: Get http://localhost:31798/defs: dial tcp [::1]:31798: getsockopt: connection refused
+bash-3.2$ 
+bash-3.2$ 

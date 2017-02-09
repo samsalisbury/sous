@@ -1,0 +1,8 @@
+
+bash-3.2$ go get github.com/nyarly/cygnus # cygnus lets us inspect Singularit</nyarly/cygnus # cygnus lets us inspect Singularity                          for ports
+bash-3.2$ cygnus -H http://192.168.99.100:7099/singularity
+bash-3.2$ ls /Users/jlester/golang/src/github.com/opentable/sous/dev_support
+sous_linux
+sous_qa_setup
+bash-3.2$ 
+bash-3.2$ 

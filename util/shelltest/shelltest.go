@@ -68,7 +68,7 @@ func (st *ShellTest) DebugPrefix(prefix string) {
 	st.shell.scriptErrs.debugTo("scriptErrs", prefix)
 }
 
-func (st *ShellTest) buildScript(name, tmplSrc string) (string, error) {
+func (st *ShellTest) Template(name, tmplSrc string) (string, error) {
 	tmpl, err := template.New(name).Parse(whitespace.CleanWS(tmplSrc))
 	if err != nil {
 		return "", err
@@ -90,7 +90,7 @@ func (st *ShellTest) Block(name, script string, check ...CheckFn) *ShellTest {
 
 	ran := st.t.Run(name, func(t *testing.T) {
 		(*st.seq)++
-		script, err := st.buildScript(name, script)
+		script, err := st.Template(name, script)
 		if err != nil {
 			t.Fatalf("Script loading err: %v", err)
 		}

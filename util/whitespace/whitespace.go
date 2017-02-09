@@ -52,16 +52,18 @@ func CleanWS(doc string) string {
 	if len(lines) < 2 {
 		return doc
 	}
-	for len(lines[0]) == 0 {
-		lines = lines[1:]
-	}
-
 	for {
+		for len(lines[0]) == 0 {
+			lines = lines[1:]
+		}
+
 		tryLines := make([]string, 0, len(lines))
+
 		first := lines[0]
 
 		indent := first[0]
 
+		indentCount := 1
 		for idx := range lines {
 			if len(lines[idx]) == 0 {
 				tryLines = append(tryLines, lines[idx])
@@ -71,6 +73,9 @@ func CleanWS(doc string) string {
 				return strings.Join(lines, "\n")
 			}
 			tryLines = append(tryLines, lines[idx][1:])
+		}
+		if indentCount < 2 {
+			return strings.Join(lines, "\n")
 		}
 		lines = tryLines
 	}
