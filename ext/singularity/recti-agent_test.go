@@ -12,6 +12,7 @@ func TestSanitizeDeployID(t *testing.T) {
 	tbl := make(map[string]string)
 	tbl["this-has-dashes.and.dots"] = "this_has_dashes_and_dots"
 	tbl["forward/slashes"] = "forward_slashes"
+	tbl["proper_underscore"] = "proper_underscore"
 
 	for in, out := range tbl {
 		t.Logf("Sanitizing: %s", in)
@@ -29,6 +30,7 @@ func TestStripDeployID(t *testing.T) {
 	tbl := make(map[string]string)
 	tbl["this-has-dashes.and.dots"] = "thishasdashesanddots"
 	tbl["forward/slashes"] = "forwardslashes"
+	tbl["proper_underscore"] = "proper_underscore"
 
 	for in, out := range tbl {
 		t.Logf("Stripping: %s", in)
