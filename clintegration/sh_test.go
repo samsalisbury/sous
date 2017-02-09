@@ -313,7 +313,15 @@ func TestShellLevelIntegration(t *testing.T) {
 	git clone {{.GitRemoteBase}}/sous-server
 	pushd sous-server
 	export SOUS_USER_NAME=test SOUS_USER_EMAIL=test@test.com
-	SOUS_SERVER= SOUS_STATE_LOCATION={{.Statedir}} sous init -v -d
+	export SOUS_SERVER= SOUS_STATE_LOCATION={{.Statedir}}
+	sous init -v -d
+	sous manifest get | sed '/version/a\
+	\    env:
+	/version/a\
+	\      GDM_REPO: "{{.GitRemoteBase}}/gdm"
+	' > ~/sous-server.yaml
+	cat ~/sous-server.yaml
+	sous manifest set < ~/sous-server.yaml
 
 	# Last minute config
 	cat Dockerfile
@@ -332,8 +340,10 @@ func TestShellLevelIntegration(t *testing.T) {
 	pwd
 	sous build
 	# We expect to see 'Sous is running ... in workstation mode' here:
-	SOUS_SERVER= SOUS_STATE_LOCATION={{.Statedir}} sous deploy -cluster left
-	SOUS_SERVER= SOUS_STATE_LOCATION={{.Statedir}} sous deploy -cluster right
+	sous deploy -cluster left
+	sous deploy -cluster right
+	unset SOUS_SERVER
+	unset SOUS_STATE_LOCATION
 	popd
 	`,
 		func(name string, res shelltest.Result, t *testing.T) {

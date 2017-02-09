@@ -117,6 +117,10 @@ func userInput(prompt, vDefault, eg string, v *string) {
 func userInitConfig(c *config.Config) {
 	if !terminal.IsTerminal(int(os.Stdout.Fd())) {
 		sous.Log.Warn.Println("Unable to run config wizard; no terminal attached.")
+		return
+	}
+	if os.Getenv("TASK_HOST") != "" { // XXX This is terrible, but the terminal check fails (which breaks the Mesos servers)
+		return
 	}
 	fmt.Println(`
 	It looks like you haven't used Sous before (there's no config file).
