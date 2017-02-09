@@ -19,6 +19,8 @@ type DeployState struct {
 	// FailedReason is a human-readable string explaining why
 	// FailedDeployment failed. It is empty when Failed is nil.
 	FailedReason string
+	// FailedStatus is the status of Failed.
+	FailedStatus DeployStatus
 }
 
 // DeployStatus represents the status of a deployment in an external cluster.

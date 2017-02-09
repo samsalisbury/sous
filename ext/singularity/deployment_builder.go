@@ -3,6 +3,7 @@ package singularity
 import (
 	"fmt"
 
+	singularity "github.com/opentable/go-singularity"
 	"github.com/opentable/go-singularity/dtos"
 	"github.com/opentable/sous/ext/docker"
 	"github.com/opentable/sous/lib"
@@ -12,15 +13,16 @@ import (
 
 type (
 	deploymentBuilder struct {
-		clusters     sous.Clusters
-		Deployment   sous.DeployState
-		imageName    string
-		depMarker    sDepMarker
-		deploy       sDeploy
-		failedDeploy failedDeploy
-		request      sRequest
-		req          Request
-		registry     sous.Registry
+		//clusters     sous.Clusters
+		//Deployment   sous.DeployState
+		//imageName    string
+		//depMarker    sDepMarker
+		//deploy       sDeploy
+		//failedDeploy failedDeploy
+		//request      sRequest
+		//req          Request
+		//registry     sous.Registry
+		Client *singularity.Client
 	}
 
 	failedDeploy struct {
@@ -197,16 +199,14 @@ func (db *deploymentBuilder) determineFailedDeploy() error {
 
 	deploy := singleDeployHistory.Deploy
 
-	db.failedDeploy = failedDeploy{
-		Reason: failureReason,
-		Deploy: deploy,
-		// TODO: Map deploy statuses.
-		Status: sous.DeployStatusFailed,
+	failedDeployment, err := sousDeployment(deploy, db.request)
+	if err != nil {
+		return errors.Wrapf(err, "getting failed deployment (id: %q, request: %q)", deployID, requestID)
 	}
-
-	// TODO: Map deployment to sous.deployment.
-	db.Deployment.Failed = &sous.Deployment{}
+	db.Deployment.Failed = failedDeployment
 	db.Deployment.FailedReason = failureReason
+	// TODO: Map deployment to sous.deployment.
+	db.Deployment.FailedStatus = sous.DeployStatusFailed
 
 	return nil
 }
@@ -220,20 +220,28 @@ func (db *deploymentBuilder) determineFailedDeploy() error {
 //}
 
 func (db *deploymentBuilder) retrieveDeploy() error {
-	// !!! makes HTTP req
-	sing := db.req.Client
-	dh, err := sing.GetDeploy(db.depMarker.RequestId, db.depMarker.DeployId)
+	dh, err := db.retrieveDeployHistory(db.depMarker.RequestId, db.depMarker.DeployId)
 	if err != nil {
 		return err
 	}
-	Log.Vomit.Printf("%#v", dh)
-
 	db.deploy = dh.Deploy
 	if db.deploy == nil {
 		return malformedResponse{"Singularity deploy history included no deploy"}
 	}
-
 	return nil
+}
+
+// retrieveDeployHistory gets a single deploy history object, which contains
+// the full singularity deploy object for a single deploy.
+func (db *deploymentBuilder) retrieveDeployHistory(requestID, deployID string) (*dtos.SingularityDeployHistory, error) {
+	sing := db.req.Client
+	dh, err := sing.GetDeploy(requestID, deployID)
+	if err != nil {
+		Log.Debug.Printf("Failed to retrieve singularity deploy%q: %s", deployID, err)
+		return nil, err
+	}
+	Log.Vomit.Printf("Retrived singularity deploy %q: %#v", deployID, dh)
+	return dh, nil
 }
 
 func (db *deploymentBuilder) extractArtifactName() error {
@@ -349,20 +357,73 @@ func (db *deploymentBuilder) unpackDeployConfig() error {
 }
 
 func (db *deploymentBuilder) determineManifestKind() error {
-	d := &db.Deployment.Active
-	switch db.request.RequestType {
-	default:
-		return fmt.Errorf("Unrecognized response type returned by Singularity: %v", db.request.RequestType)
-	case dtos.SingularityRequestRequestTypeSERVICE:
-		d.Kind = sous.ManifestKindService
-	case dtos.SingularityRequestRequestTypeWORKER:
-		d.Kind = sous.ManifestKindWorker
-	case dtos.SingularityRequestRequestTypeON_DEMAND:
-		d.Kind = sous.ManifestKindOnDemand
-	case dtos.SingularityRequestRequestTypeSCHEDULED:
-		d.Kind = sous.ManifestKindScheduled
-	case dtos.SingularityRequestRequestTypeRUN_ONCE:
-		d.Kind = sous.ManifestKindOnce
+	mk, err := sousManifestKind(db.request.RequestType)
+	if err != nil {
+		return errors.Wrapf(err, "getting request type for %q", db.req.URL)
 	}
+	db.Deployment.Active.Kind = mk
 	return nil
+}
+
+// mark: builder funcs
+
+func sousManifestKind(t dtos.SingularityRequestRequestType) (sous.ManifestKind, error) {
+	switch t {
+	default:
+		return "", fmt.Errorf("unknown request type %s", t)
+	case dtos.SingularityRequestRequestTypeSERVICE:
+		return sous.ManifestKindService, nil
+	case dtos.SingularityRequestRequestTypeWORKER:
+		return sous.ManifestKindWorker, nil
+	case dtos.SingularityRequestRequestTypeON_DEMAND:
+		return sous.ManifestKindOnDemand, nil
+	case dtos.SingularityRequestRequestTypeSCHEDULED:
+		return sous.ManifestKindScheduled, nil
+	case dtos.SingularityRequestRequestTypeRUN_ONCE:
+		return sous.ManifestKindOnce, nil
+	}
+}
+
+func sousDeployConfig(sd *dtos.SingularityDeploy, sr *dtos.SingularityRequest) (*sous.DeployConfig, error) {
+	d := &sous.DeployConfig{}
+	d.Env = sd.Env
+	Log.Vomit.Printf("Env: %+v", sd.Env)
+	if d.Env == nil {
+		d.Env = make(map[string]string)
+	}
+
+	singRez := sd.Resources
+	if singRez == nil {
+		return nil, malformedResponse{"Deploy object lacks resources field"}
+	}
+	d.Resources = make(sous.Resources)
+	d.Resources["cpus"] = fmt.Sprintf("%f", singRez.Cpus)
+	d.Resources["memory"] = fmt.Sprintf("%f", singRez.MemoryMb)
+	d.Resources["ports"] = fmt.Sprintf("%d", singRez.NumPorts)
+
+	d.NumInstances = int(sr.Instances)
+
+	for _, v := range sd.ContainerInfo.Volumes {
+		d.Volumes = append(d.Volumes,
+			&sous.Volume{
+				Host:      v.HostPath,
+				Container: v.ContainerPath,
+				Mode:      sous.VolumeMode(v.Mode),
+			})
+	}
+	Log.Vomit.Printf("Volumes %+v", d.Volumes)
+	if len(d.Volumes) > 0 {
+		Log.Debug.Printf("%+v", d.Volumes[0])
+	}
+
+	return d, nil
+}
+
+func sousDeployment(sd *dtos.SingularityDeploy, sr *dtos.SingularityRequest) (*sous.Deployment, error) {
+	d := &sous.Deployment{}
+	d.Owners = make(sous.OwnerSet)
+	for _, o := range sr.Owners {
+		d.Owners.Add(o)
+	}
+	return d, nil
 }
