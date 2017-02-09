@@ -79,7 +79,7 @@ func BuildDeployment(reg sous.Registry, clusters sous.Clusters, req Request) (so
 	Log.Vomit.Printf("%#v", req.RequestParent)
 	db := deploymentBuilder{registry: reg, clusters: clusters, req: req}
 
-	db.Target.Cluster = &sous.Cluster{BaseURL: req.URL}
+	db.Target.Deployment.Cluster = &sous.Cluster{BaseURL: req.URL}
 	db.request = req.RequestParent.Request
 
 	return db.Target, db.canRetry(db.completeConstruction())
@@ -88,13 +88,13 @@ func BuildDeployment(reg sous.Registry, clusters sous.Clusters, req Request) (so
 func (db *deploymentBuilder) completeConstruction() error {
 	return firsterr.Returned(
 		db.determineDeployStatus,
-		db.determineFailedDeploy,
 		db.retrieveDeploy,
 		db.extractArtifactName,
 		db.retrieveImageLabels,
 		db.assignClusterName,
 		db.unpackDeployConfig,
 		db.determineManifestKind,
+		db.determineFailedDeploy,
 	)
 }
 
@@ -189,8 +189,6 @@ func (db *deploymentBuilder) determineFailedDeploy() error {
 		return nil
 	}
 	deployID := latestDeployResult.DeployFailures[0].TaskId.DeployId
-	// TODO: Would be nice to surface latestDeployResult.Message to the user in
-	//       a relevant context.
 	failureReason := latestDeployResult.Message
 	singleDeployHistory, err := client.GetDeploy(requestID, deployID)
 	if err != nil {
@@ -205,6 +203,10 @@ func (db *deploymentBuilder) determineFailedDeploy() error {
 		// TODO: Map deploy statuses.
 		Status: sous.DeployStatusFailed,
 	}
+
+	// TODO: Map deployment to sous.deployment.
+	db.Target.FailedDeployment = &sous.Deployment{}
+	db.Target.FailedDeploymentReason = failureReason
 
 	return nil
 }
@@ -263,7 +265,7 @@ func (db *deploymentBuilder) retrieveImageLabels() error {
 	}
 	Log.Vomit.Print("Labels: ", labels)
 
-	db.Target.SourceID, err = docker.SourceIDFromLabels(labels)
+	db.Target.Deployment.SourceID, err = docker.SourceIDFromLabels(labels)
 	if err != nil {
 		return errors.Wrapf(malformedResponse{err.Error()}, "For reqID: %s", reqID(db.req.RequestParent))
 	}
@@ -288,15 +290,15 @@ func (db *deploymentBuilder) assignClusterName() error {
 		checkID := MakeRequestID(id)
 		sous.Log.Vomit.Printf("Trying hypothetical request ID: %s", checkID)
 		if checkID == db.request.Id {
-			db.Target.ClusterName = nn
+			db.Target.Deployment.ClusterName = nn
 			sous.Log.Debug.Printf("Found cluster: %s", nn)
 			break
 		}
 	}
-	if db.Target.ClusterName == "" {
+	if db.Target.Deployment.ClusterName == "" {
 		if matchCount == 1 {
 			sous.Log.Debug.Printf("No request ID matched, using first plausible cluster: %s", posNick)
-			db.Target.ClusterName = posNick
+			db.Target.Deployment.ClusterName = posNick
 			return nil
 		}
 		sous.Log.Debug.Printf("No cluster nickname (%#v) matched request id %s for %s", db.clusters, db.request.Id, db.imageName)
@@ -306,58 +308,61 @@ func (db *deploymentBuilder) assignClusterName() error {
 	return nil
 }
 
+// unpackDeployConfig maps the singularity data to a sous.Deployment (db.Target).
 func (db *deploymentBuilder) unpackDeployConfig() error {
-	db.Target.Env = db.deploy.Env
+	d := &db.Target.Deployment
+	d.Env = db.deploy.Env
 	Log.Vomit.Printf("Env: %+v", db.deploy.Env)
-	if db.Target.Env == nil {
-		db.Target.Env = make(map[string]string)
+	if d.Env == nil {
+		d.Env = make(map[string]string)
 	}
 
 	singRez := db.deploy.Resources
 	if singRez == nil {
 		return malformedResponse{"Deploy object lacks resources field"}
 	}
-	db.Target.Resources = make(sous.Resources)
-	db.Target.Resources["cpus"] = fmt.Sprintf("%f", singRez.Cpus)
-	db.Target.Resources["memory"] = fmt.Sprintf("%f", singRez.MemoryMb)
-	db.Target.Resources["ports"] = fmt.Sprintf("%d", singRez.NumPorts)
+	d.Resources = make(sous.Resources)
+	d.Resources["cpus"] = fmt.Sprintf("%f", singRez.Cpus)
+	d.Resources["memory"] = fmt.Sprintf("%f", singRez.MemoryMb)
+	d.Resources["ports"] = fmt.Sprintf("%d", singRez.NumPorts)
 
-	db.Target.NumInstances = int(db.request.Instances)
-	db.Target.Owners = make(sous.OwnerSet)
+	d.NumInstances = int(db.request.Instances)
+	d.Owners = make(sous.OwnerSet)
 	for _, o := range db.request.Owners {
-		db.Target.Owners.Add(o)
+		d.Owners.Add(o)
 	}
 
 	for _, v := range db.deploy.ContainerInfo.Volumes {
-		db.Target.DeployConfig.Volumes = append(db.Target.DeployConfig.Volumes,
+		d.DeployConfig.Volumes = append(d.DeployConfig.Volumes,
 			&sous.Volume{
 				Host:      v.HostPath,
 				Container: v.ContainerPath,
 				Mode:      sous.VolumeMode(v.Mode),
 			})
 	}
-	Log.Vomit.Printf("Volumes %+v", db.Target.DeployConfig.Volumes)
-	if len(db.Target.DeployConfig.Volumes) > 0 {
-		Log.Debug.Printf("%+v", db.Target.DeployConfig.Volumes[0])
+	Log.Vomit.Printf("Volumes %+v", d.DeployConfig.Volumes)
+	if len(d.DeployConfig.Volumes) > 0 {
+		Log.Debug.Printf("%+v", d.DeployConfig.Volumes[0])
 	}
 
 	return nil
 }
 
 func (db *deploymentBuilder) determineManifestKind() error {
+	d := &db.Target.Deployment
 	switch db.request.RequestType {
 	default:
 		return fmt.Errorf("Unrecognized response type returned by Singularity: %v", db.request.RequestType)
 	case dtos.SingularityRequestRequestTypeSERVICE:
-		db.Target.Kind = sous.ManifestKindService
+		d.Kind = sous.ManifestKindService
 	case dtos.SingularityRequestRequestTypeWORKER:
-		db.Target.Kind = sous.ManifestKindWorker
+		d.Kind = sous.ManifestKindWorker
 	case dtos.SingularityRequestRequestTypeON_DEMAND:
-		db.Target.Kind = sous.ManifestKindOnDemand
+		d.Kind = sous.ManifestKindOnDemand
 	case dtos.SingularityRequestRequestTypeSCHEDULED:
-		db.Target.Kind = sous.ManifestKindScheduled
+		d.Kind = sous.ManifestKindScheduled
 	case dtos.SingularityRequestRequestTypeRUN_ONCE:
-		db.Target.Kind = sous.ManifestKindOnce
+		d.Kind = sous.ManifestKindOnce
 	}
 	return nil
 }

@@ -107,13 +107,13 @@ func newStateDiffer(intended DeployStates) *differ {
 	i := intended.Snapshot()
 	ds := []string{"Computing diff from:"}
 	for _, e := range i {
-		ds = append(ds, e.String())
+		ds = append(ds, e.Deployment.String())
 	}
 	Log.Vomit.Print(strings.Join(ds, "\n    "))
 
 	startMap := make(map[DeployID]*DeployState)
 	for _, dep := range i {
-		startMap[dep.Name()] = dep
+		startMap[dep.ID()] = dep
 	}
 	return &differ{
 		from:      startMap,
@@ -131,7 +131,7 @@ func newDiffer(intended Deployments) *differ {
 
 	startMap := make(map[DeployID]*DeployState)
 	for _, dep := range i {
-		startMap[dep.Name()] = &DeployState{Deployment: *dep}
+		startMap[dep.ID()] = &DeployState{Deployment: *dep}
 	}
 	return &differ{
 		from:      startMap,
@@ -186,10 +186,10 @@ func (d *differ) diff(existing Deployments) {
 
 	for _, deletedDeployment := range d.from {
 
-		Log.Debug.Printf("Deleted deployment: %q", deletedDeployment.ID())
+		Log.Debug.Printf("Deleted deployment: %q", deletedDeployment.Deployment.ID())
 
 		d.Deleted <- &DeploymentPair{
-			name:   deletedDeployment.ID(),
+			name:   deletedDeployment.Deployment.ID(),
 			Prior:  &deletedDeployment.Deployment,
 			Post:   nil,
 			Status: deletedDeployment.Status,

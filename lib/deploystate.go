@@ -5,11 +5,14 @@ package sous
 // A DeployState represents the state of a deployment in an external cluster.
 // It wraps Deployment and adds Status.
 type DeployState struct {
-	Deployment
-	Status DeployStatus
+	Deployment Deployment
+	Status     DeployStatus
 	// FailedDeployment is populated with the latest attempted deployment, if it
 	// failed.
 	FailedDeployment *Deployment
+	// FailedDeploymentReason is a human-readable string explaining why
+	// FailedDeployment failed.
+	FailedDeploymentReason string
 }
 
 // DeployStatus represents the status of a deployment in an external cluster.
@@ -37,12 +40,20 @@ const (
 	// DeployStatusCancelled means a user cancelled the deployment.
 	DeployStatusCancelled
 	// DeployStatusPendingDeployRemoved
-	DeployStatusPendingDeployRemoved
+	//DeployStatusPendingDeployRemoved
 	// DeployStatusLoadBalancerUpdateFailed
-	DeployStatusLoadBalancerUpdateFailed
+	//DeployStatusLoadBalancerUpdateFailed
 	// DeployStatusTaskNeverEnteredRunning
-	DeployStatusTaskNeverEnteredRunning
+	//DeployStatusTaskNeverEnteredRunning
 )
+
+func (ds DeployState) String() string {
+	return ds.Deployment.String()
+}
+
+func (ds DeployState) ID() DeployID {
+	return ds.Deployment.ID()
+}
 
 // Clone returns an independent clone of this DeployState.
 func (ds DeployState) Clone() *DeployState {
