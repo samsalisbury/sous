@@ -12,6 +12,13 @@ import (
 	"github.com/satori/go.uuid"
 )
 
+// Singularity DeployID must be <50
+const maxDeployIDLen = 49
+
+// maxVersionLen needs to account for the separator character
+// between the version string and the UUID string.
+const maxVersionLen = 31
+
 /*
 The imagined use case here is like this:
 
@@ -205,11 +212,6 @@ func computeRequestID(d *sous.Deployable) string {
 
 func computeDeployID(d *sous.Deployable) string {
 	var uuidTrunc, versionTrunc string
-	// Singularity DeployID must be <50
-	maxDeployIDLen := 49
-	// maxVersionLen needs to account for the separator character
-	// between the version string and the UUID string.
-	maxVersionLen := 31
 	uuidEntire := StripDeployID(uuid.NewV4().String())
 	versionEntire := SanitizeDeployID(d.Deployment.SourceID.Version.String())
 
