@@ -51,6 +51,7 @@ func (ds DeployState) String() string {
 	return ds.Deployment.String()
 }
 
+// ID returns the DeployID of this DeployState.
 func (ds DeployState) ID() DeployID {
 	return ds.Deployment.ID()
 }
