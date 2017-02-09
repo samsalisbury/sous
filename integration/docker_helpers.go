@@ -202,7 +202,7 @@ func startInstance(url, clusterName, imageName, repoName string, ports []int32) 
 
 	depReq := loadMap(&dtos.SingularityDeployRequest{}, dtoMap{
 		"Deploy": loadMap(&dtos.SingularityDeploy{}, dtoMap{
-			"Id":        "TESTGENERATED_" + singularity.SanitizeDeployID(uuid.NewV4().String()),
+			"Id":        "TESTGENERATED_" + singularity.StripDeployID(uuid.NewV4().String()),
 			"RequestId": reqID,
 			"Resources": loadMap(&dtos.Resources{}, dtoMap{
 				"Cpus":     0.1,
