@@ -73,7 +73,7 @@ install_build_tools:
 	go get github.com/nyarly/engulf
 
 
-linux_build: artifacts/$(LINUX_RELEASE_DIR)/sous install_build_tools
+linux_build: artifacts/$(LINUX_RELEASE_DIR)/sous
 	ln -srf $< dev_support/sous_linux
 
 semvertagchk:
@@ -120,11 +120,11 @@ $(RELEASE_DIRS):
 	cp README.md artifacts/$@
 	cp LICENSE artifacts/$@
 
-artifacts/$(DARWIN_RELEASE_DIR)/sous: $(DARWIN_RELEASE_DIR) $(BIN_DIR)
+artifacts/$(DARWIN_RELEASE_DIR)/sous: $(DARWIN_RELEASE_DIR) $(BIN_DIR) install_build_tools
 	xgo $(CONCAT_XGO_ARGS) --targets=darwin/amd64  ./
 	mv $(BIN_DIR)/sous-darwin-10.6-amd64 $@
 
-artifacts/$(LINUX_RELEASE_DIR)/sous: $(LINUX_RELEASE_DIR) $(BIN_DIR)
+artifacts/$(LINUX_RELEASE_DIR)/sous: $(LINUX_RELEASE_DIR) $(BIN_DIR) install_build_tools
 	xgo $(CONCAT_XGO_ARGS) --targets=linux/amd64  ./
 	mv $(BIN_DIR)/sous-linux-amd64 $@
 

@@ -275,13 +275,18 @@ func TestShellLevelIntegration(t *testing.T) {
 	# These steps are required by the Sous integration tests
 	# They're analogous to run-of-the-mill workstation maintenance.
 
+	cd {{.TestDir}}
 	env
 	export SOUS_EXTRA_DOCKER_CA={{.TestDir}}/integration/test-registry/docker-registry/testing.crt
 	mkdir -p {{index .GoPath 0}}/{src,bin}
 	GOPATH={{index .GoPath 0}} go get github.com/nyarly/cygnus # cygnus lets us inspect Singularity for ports
-	cd {{.TestDir}}
+
+	### This build gives me trouble in tests...
+	### xgo does something weird and different with it's dep-cache dir
+	# GOPATH={{index .GoPath 0}} make linux_build # we need Sous built for linux for the server
 	go install . #install the current sous project
 	cp integration/test-registry/git-server/git_pubkey_rsa* ~/dot-ssh/
+
 	cd {{.Workdir}}
 	chmod go-rwx -R ~/dot-ssh
 	chmod +x -R ~/bin/*
@@ -313,7 +318,7 @@ func TestShellLevelIntegration(t *testing.T) {
 	# Last minute config
 	cat Dockerfile
 	cp ~/dot-ssh/git_pubkey_rsa key_sous@example.com
-	cp $(which sous) .
+	cp {{.TestDir}}/dev_support/$(readlink {{.TestDir}}/dev_support/sous_linux) .
 	ls -la
 	ssh-keyscan -p 2222 {{.GitSSH}} > known_hosts
 	cat known_hosts
