@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/opentable/go-singularity"
+	//"github.com/opentable/singularity/dtos"
 	"github.com/opentable/sous/lib"
 	"github.com/pkg/errors"
 	"github.com/satori/go.uuid"
@@ -150,6 +151,8 @@ func (r *deployer) RectifyModifies(
 func (r *deployer) RectifySingleModification(pair *sous.DeployablePair) (err error) {
 	Log.Debug.Printf("Rectifying modified %q: \n  %# v \n    =>  \n  %# v", pair.ID(), pair.Prior.Deployment, pair.Post.Deployment)
 	defer rectifyRecover(pair, "RectifySingleModification", &err)
+
+	// Modify the Singularity request if necessary.
 	if r.changesReq(pair) {
 		Log.Debug.Printf("Updating Request...")
 		if err := r.Client.PostRequest(
@@ -163,6 +166,7 @@ func (r *deployer) RectifySingleModification(pair *sous.DeployablePair) (err err
 		}
 	}
 
+	// Create a new Singularity deployment if necessary.
 	if changesDep(pair) {
 		Log.Debug.Printf("Deploying...")
 		name, err := r.ImageName(pair.Post)
@@ -187,13 +191,16 @@ func (r *deployer) RectifySingleModification(pair *sous.DeployablePair) (err err
 
 func (r deployer) changesReq(pair *sous.DeployablePair) bool {
 	return pair.Prior.NumInstances != pair.Post.NumInstances
+	// TODO: || !pair.Prior.Owners.Equal(pair.Post.Owners) [maybe other?]
 }
 
 func changesDep(pair *sous.DeployablePair) bool {
-	return !(pair.Prior.SourceID.Equal(pair.Post.SourceID) &&
-		pair.Prior.Resources.Equal(pair.Post.Resources) &&
-		pair.Prior.Env.Equal(pair.Post.Env) &&
-		pair.Prior.DeployConfig.Volumes.Equal(pair.Post.DeployConfig.Volumes))
+	// b = before, a == after
+	b, a := pair.Prior, pair.Post
+	return !(b.SourceID.Equal(a.SourceID) &&
+		b.Resources.Equal(a.Resources) &&
+		b.Env.Equal(a.Env) &&
+		b.DeployConfig.Volumes.Equal(a.DeployConfig.Volumes))
 }
 
 func computeRequestID(d *sous.Deployable) string {

@@ -86,10 +86,10 @@ func TestBuildDeployments(t *testing.T) {
 		}`),
 	)
 
-	req := singularity.SingReq{
-		SourceURL: SingularityURL,
-		Sing:      singCl,
-		ReqParent: sr,
+	req := singularity.Request{
+		URL:           SingularityURL,
+		Client:        singCl,
+		RequestParent: sr,
 	}
 
 	if assert.NoError(err) {

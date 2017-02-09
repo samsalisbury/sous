@@ -12,14 +12,21 @@ import (
 
 type (
 	deploymentBuilder struct {
-		clusters  sous.Clusters
-		Target    sous.DeployState
-		imageName string
-		depMarker sDepMarker
-		deploy    sDeploy
-		request   sRequest
-		req       Request
-		registry  sous.Registry
+		clusters     sous.Clusters
+		Target       sous.DeployState
+		imageName    string
+		depMarker    sDepMarker
+		deploy       sDeploy
+		failedDeploy failedDeploy
+		request      sRequest
+		req          Request
+		registry     sous.Registry
+	}
+
+	failedDeploy struct {
+		Reason string
+		Deploy sDeploy
+		Status sous.DeployStatus
 	}
 
 	canRetryRequest struct {
@@ -81,6 +88,7 @@ func BuildDeployment(reg sous.Registry, clusters sous.Clusters, req Request) (so
 func (db *deploymentBuilder) completeConstruction() error {
 	return firsterr.Returned(
 		db.determineDeployStatus,
+		db.determineFailedDeploy,
 		db.retrieveDeploy,
 		db.extractArtifactName,
 		db.retrieveImageLabels,
@@ -114,6 +122,9 @@ func reqID(rp *dtos.SingularityRequestParent) (ID string) {
 // Singularity semantics mean that each of them that was actually resolved
 // would have been Active however briefly (but Sous would accept GDM updates
 // arbitrarily quickly as compared to resolve completions...))))
+//
+// determineDeployStatus sets .Target.Status and .depMarker by calling
+// determineDeployStatus.
 func (db *deploymentBuilder) determineDeployStatus() error {
 	logFDs("before retrieveDeploy")
 	defer logFDs("after retrieveDeploy")
@@ -123,23 +134,88 @@ func (db *deploymentBuilder) determineDeployStatus() error {
 		return malformedResponse{fmt.Sprintf("Singularity response didn't include a request parent. %v", db.req)}
 	}
 
-	rds := rp.RequestDeployState
-
-	if rds == nil {
+	if rp.RequestDeployState == nil {
 		return malformedResponse{"Singularity response didn't include a deploy state. ReqId: " + reqID(rp)}
 	}
 
-	if rds.PendingDeploy != nil {
-		db.Target.Status = sous.DeployStatusPending
-		db.depMarker = rds.PendingDeploy
-	} else if rds.ActiveDeploy != nil {
-		db.Target.Status = sous.DeployStatusActive
-		db.depMarker = rds.ActiveDeploy
-	} else {
-		return malformedResponse{"Singularity deploy state included no dep markers. ReqID: " + reqID(rp)}
+	status, depMarker, err := determineDeployStatus(rp)
+	if err != nil {
+		return err
 	}
+	db.Target.Status = status
+	db.depMarker = depMarker
 	return nil
 }
+
+// determineDeployStatus tries to determine a sous.DeployStatus from the
+// provided SingularityRequestParent, and also returns the related deploy
+// marker. It does not take into account failed deploys.
+func determineDeployStatus(rp *dtos.SingularityRequestParent) (sous.DeployStatus, *dtos.SingularityDeployMarker, error) {
+	logFDs("before retrieveDeploy")
+	defer logFDs("after retrieveDeploy")
+
+	rds := rp.RequestDeployState
+	if rds.PendingDeploy != nil {
+		return sous.DeployStatusPending, rds.PendingDeploy, nil
+	}
+	if rds.ActiveDeploy != nil {
+		return sous.DeployStatusActive, rds.ActiveDeploy, nil
+	}
+	return sous.DeployStatusUnknown, nil,
+		malformedResponse{"Singularity deploy state included no dep markers. ReqID: " + reqID(rp)}
+}
+
+func (db *deploymentBuilder) determineFailedDeploy() error {
+
+	// First, check if this deployment has already been attempted.
+	//latestDeployResult = r.latestAttemptedDeploy(pair.ID(), computeRequestID(pair.Post))
+
+	client := db.req.Client
+	requestID := db.request.Id
+	// Get latest deploy result.
+	history, err := client.GetDeploys(requestID, 1, 1)
+	if err != nil {
+		return errors.Wrapf(err, "getting deploy history for request %q", requestID)
+	}
+	if len(history) == 0 {
+		return nil // No history, thus no error.
+	}
+	latestDeployResult := history[0].DeployResult
+	if latestDeployResult == nil {
+		return nil // No details, thus no error.
+	}
+	if len(latestDeployResult.DeployFailures) == 0 {
+		// Assuming that DeployFailures is always nonempty for failure states.
+		return nil
+	}
+	deployID := latestDeployResult.DeployFailures[0].TaskId.DeployId
+	// TODO: Would be nice to surface latestDeployResult.Message to the user in
+	//       a relevant context.
+	failureReason := latestDeployResult.Message
+	singleDeployHistory, err := client.GetDeploy(requestID, deployID)
+	if err != nil {
+		return errors.Wrapf(err, "getting deployment %q from request %q", deployID, requestID)
+	}
+
+	deploy := singleDeployHistory.Deploy
+
+	db.failedDeploy = failedDeploy{
+		Reason: failureReason,
+		Deploy: deploy,
+		// TODO: Map deploy statuses.
+		Status: sous.DeployStatusFailed,
+	}
+
+	return nil
+}
+
+//func sousDeployStatusFrom(s dtos.SingularityDeployResultDeployState) sous.DeployStatus {
+//	switch s {
+//	default:
+//		return sous.DeployStatusUnknown
+//		case dtos.SingularityDeployResultDeployStat
+//	}
+//}
 
 func (db *deploymentBuilder) retrieveDeploy() error {
 	// !!! makes HTTP req

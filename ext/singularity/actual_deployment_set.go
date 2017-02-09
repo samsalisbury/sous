@@ -31,7 +31,6 @@ type (
 		URL           string
 		Client        *singularity.Client
 		RequestParent *dtos.SingularityRequestParent
-		FailedDeploy  *dtos.SingularityDeployResult
 	}
 
 	retryCounter map[string]uint
@@ -225,14 +224,11 @@ eachrequest:
 			Log.Vomit.Printf("Ignoring Singularity Request %q: %s", sr.Request.Id, err)
 			continue
 		}
+		// Pick out the request which matches this cluster.
 		for _, c := range clusters {
 			if deployID.Cluster == c {
-				reqs = append(reqs, Request{
-					URL:           url,
-					Client:        client,
-					RequestParent: sr,
-					FailedDeploy:  nil,
-				})
+				request := buildRequest(url, client, sr)
+				reqs = append(reqs, request)
 				continue eachrequest
 			}
 		}
@@ -240,6 +236,14 @@ eachrequest:
 	}
 
 	return reqs, nil
+}
+
+func buildRequest(url string, client *singularity.Client, rp *dtos.SingularityRequestParent) Request {
+	return Request{
+		URL:           url,
+		Client:        client,
+		RequestParent: rp,
+	}
 }
 
 func depPipeline(

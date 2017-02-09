@@ -7,21 +7,41 @@ package sous
 type DeployState struct {
 	Deployment
 	Status DeployStatus
+	// FailedDeployment is populated with the latest attempted deployment, if it
+	// failed.
+	FailedDeployment *Deployment
 }
 
 // DeployStatus represents the status of a deployment in an external cluster.
 type DeployStatus int
 
 const (
+	// DeployStatusUnknown represents any deployment status that is
+	// unrecognised.
+	DeployStatusUnknown DeployStatus = iota
 	// DeployStatusAny represents any deployment status.
-	DeployStatusAny DeployStatus = iota
+	DeployStatusAny
 	// DeployStatusPending means the deployment has been requested in the
 	// cluster, but is not yet running.
 	DeployStatusPending
 	// DeployStatusActive means the deployment is up and running.
 	DeployStatusActive
-	// DeployStatusFailed means the deployment has failed.
+	// DeployStatusFailed means the deployment is broken due to either broken
+	// code or configuration. This needs to be fixed by the deployment's owner
+	// e.g. by fixing the code, or by changing the configuration. It will not
+	// be re-tried.
 	DeployStatusFailed
+	// DeployStatusNotEnoughResources means the deployment has failed because
+	// the cluster does not have enough resources to schedule all the tasks.
+	DeployStatusNotEnoughResources
+	// DeployStatusCancelled means a user cancelled the deployment.
+	DeployStatusCancelled
+	// DeployStatusPendingDeployRemoved
+	DeployStatusPendingDeployRemoved
+	// DeployStatusLoadBalancerUpdateFailed
+	DeployStatusLoadBalancerUpdateFailed
+	// DeployStatusTaskNeverEnteredRunning
+	DeployStatusTaskNeverEnteredRunning
 )
 
 // Clone returns an independent clone of this DeployState.
