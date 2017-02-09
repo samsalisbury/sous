@@ -13,7 +13,7 @@ import (
 type (
 	deploymentBuilder struct {
 		clusters     sous.Clusters
-		Target       sous.DeployState
+		Deployment   sous.DeployState
 		imageName    string
 		depMarker    sDepMarker
 		deploy       sDeploy
@@ -79,10 +79,10 @@ func BuildDeployment(reg sous.Registry, clusters sous.Clusters, req Request) (so
 	Log.Vomit.Printf("%#v", req.RequestParent)
 	db := deploymentBuilder{registry: reg, clusters: clusters, req: req}
 
-	db.Target.Deployment.Cluster = &sous.Cluster{BaseURL: req.URL}
+	db.Deployment.Active.Cluster = &sous.Cluster{BaseURL: req.URL}
 	db.request = req.RequestParent.Request
 
-	return db.Target, db.canRetry(db.completeConstruction())
+	return db.Deployment, db.canRetry(db.completeConstruction())
 }
 
 func (db *deploymentBuilder) completeConstruction() error {
@@ -142,7 +142,7 @@ func (db *deploymentBuilder) determineDeployStatus() error {
 	if err != nil {
 		return err
 	}
-	db.Target.Status = status
+	db.Deployment.ActiveStatus = status
 	db.depMarker = depMarker
 	return nil
 }
@@ -205,8 +205,8 @@ func (db *deploymentBuilder) determineFailedDeploy() error {
 	}
 
 	// TODO: Map deployment to sous.deployment.
-	db.Target.FailedDeployment = &sous.Deployment{}
-	db.Target.FailedDeploymentReason = failureReason
+	db.Deployment.Failed = &sous.Deployment{}
+	db.Deployment.FailedReason = failureReason
 
 	return nil
 }
@@ -265,7 +265,7 @@ func (db *deploymentBuilder) retrieveImageLabels() error {
 	}
 	Log.Vomit.Print("Labels: ", labels)
 
-	db.Target.Deployment.SourceID, err = docker.SourceIDFromLabels(labels)
+	db.Deployment.Active.SourceID, err = docker.SourceIDFromLabels(labels)
 	if err != nil {
 		return errors.Wrapf(malformedResponse{err.Error()}, "For reqID: %s", reqID(db.req.RequestParent))
 	}
@@ -284,21 +284,21 @@ func (db *deploymentBuilder) assignClusterName() error {
 		posNick = nn
 		matchCount++
 
-		id := db.Target.ID()
+		id := db.Deployment.ID()
 		id.Cluster = nn
 
 		checkID := MakeRequestID(id)
 		sous.Log.Vomit.Printf("Trying hypothetical request ID: %s", checkID)
 		if checkID == db.request.Id {
-			db.Target.Deployment.ClusterName = nn
+			db.Deployment.Active.ClusterName = nn
 			sous.Log.Debug.Printf("Found cluster: %s", nn)
 			break
 		}
 	}
-	if db.Target.Deployment.ClusterName == "" {
+	if db.Deployment.Active.ClusterName == "" {
 		if matchCount == 1 {
 			sous.Log.Debug.Printf("No request ID matched, using first plausible cluster: %s", posNick)
-			db.Target.Deployment.ClusterName = posNick
+			db.Deployment.Active.ClusterName = posNick
 			return nil
 		}
 		sous.Log.Debug.Printf("No cluster nickname (%#v) matched request id %s for %s", db.clusters, db.request.Id, db.imageName)
@@ -310,7 +310,7 @@ func (db *deploymentBuilder) assignClusterName() error {
 
 // unpackDeployConfig maps the singularity data to a sous.Deployment (db.Target).
 func (db *deploymentBuilder) unpackDeployConfig() error {
-	d := &db.Target.Deployment
+	d := &db.Deployment.Active
 	d.Env = db.deploy.Env
 	Log.Vomit.Printf("Env: %+v", db.deploy.Env)
 	if d.Env == nil {
@@ -349,7 +349,7 @@ func (db *deploymentBuilder) unpackDeployConfig() error {
 }
 
 func (db *deploymentBuilder) determineManifestKind() error {
-	d := &db.Target.Deployment
+	d := &db.Deployment.Active
 	switch db.request.RequestType {
 	default:
 		return fmt.Errorf("Unrecognized response type returned by Singularity: %v", db.request.RequestType)

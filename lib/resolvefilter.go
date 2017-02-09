@@ -96,8 +96,8 @@ func (rf *ResolveFilter) FilterDeployment(d *Deployment) bool {
 // FilterDeployStates is similar to FilterDeployment, but also filters by
 // DeployStatus.
 func (rf *ResolveFilter) FilterDeployStates(d *DeployState) bool {
-	return rf.FilterDeployment(&d.Deployment) &&
-		(rf.Status == DeployStatusAny || d.Status == rf.Status)
+	return rf.FilterDeployment(&d.Active) &&
+		(rf.Status == DeployStatusAny || d.ActiveStatus == rf.Status)
 
 }
 

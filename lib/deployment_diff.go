@@ -107,7 +107,7 @@ func newStateDiffer(intended DeployStates) *differ {
 	i := intended.Snapshot()
 	ds := []string{"Computing diff from:"}
 	for _, e := range i {
-		ds = append(ds, e.Deployment.String())
+		ds = append(ds, e.Active.String())
 	}
 	Log.Vomit.Print(strings.Join(ds, "\n    "))
 
@@ -131,7 +131,7 @@ func newDiffer(intended Deployments) *differ {
 
 	startMap := make(map[DeployID]*DeployState)
 	for _, dep := range i {
-		startMap[dep.ID()] = &DeployState{Deployment: *dep}
+		startMap[dep.ID()] = &DeployState{Active: *dep}
 	}
 	return &differ{
 		from:      startMap,
@@ -163,16 +163,16 @@ func (d *differ) diff(existing Deployments) {
 			continue
 		}
 		delete(d.from, id)
-		different, differences := existingDeployment.Diff(&intendedDeployment.Deployment)
+		different, differences := existingDeployment.Diff(&intendedDeployment.Active)
 		if different {
 
 			Log.Debug.Printf("Modified deployment: %q (% #v)", id, differences)
 
 			d.Modified <- &DeploymentPair{
 				name:   id,
-				Prior:  &intendedDeployment.Deployment,
+				Prior:  &intendedDeployment.Active,
 				Post:   existingDeployment,
-				Status: intendedDeployment.Status,
+				Status: intendedDeployment.ActiveStatus,
 			}
 			continue
 		}
@@ -180,19 +180,19 @@ func (d *differ) diff(existing Deployments) {
 			name:   id,
 			Prior:  existingDeployment,
 			Post:   existingDeployment,
-			Status: intendedDeployment.Status,
+			Status: intendedDeployment.ActiveStatus,
 		}
 	}
 
 	for _, deletedDeployment := range d.from {
 
-		Log.Debug.Printf("Deleted deployment: %q", deletedDeployment.Deployment.ID())
+		Log.Debug.Printf("Deleted deployment: %q", deletedDeployment.Active.ID())
 
 		d.Deleted <- &DeploymentPair{
-			name:   deletedDeployment.Deployment.ID(),
-			Prior:  &deletedDeployment.Deployment,
+			name:   deletedDeployment.Active.ID(),
+			Prior:  &deletedDeployment.Active,
 			Post:   nil,
-			Status: deletedDeployment.Status,
+			Status: deletedDeployment.ActiveStatus,
 		}
 	}
 }

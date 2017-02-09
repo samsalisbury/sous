@@ -27,7 +27,7 @@ func DumpDeployStatuses(writer io.Writer, ds DeployStates) {
 	fmt.Fprintln(w, TabbedDeploymentHeaders())
 
 	for _, d := range ds.Snapshot() {
-		fmt.Fprintln(w, d.Deployment.Tabbed())
+		fmt.Fprintln(w, d.Active.Tabbed())
 	}
 	w.Flush()
 }

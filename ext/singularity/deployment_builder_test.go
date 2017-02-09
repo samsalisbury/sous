@@ -21,8 +21,8 @@ func TestBuildingRequestID(t *testing.T) {
 	if err := db.assignClusterName(); err != nil {
 		t.Errorf("unexpect error: %v", err)
 	}
-	if db.Target.ClusterName != cn {
-		t.Errorf("db.Target.ClusterName was %v expected %v", db.Target.ClusterName, cn)
+	if db.Deployment.Active.ClusterName != cn {
+		t.Errorf("db.Target.ClusterName was %v expected %v", db.Deployment.Active.ClusterName, cn)
 	}
 }
 
@@ -59,8 +59,8 @@ func TestBuildDeployment_determineDeployStatus_pendingonly(t *testing.T) {
 	if err := db.determineDeployStatus(); err != nil {
 		t.Errorf("Expected no error, got %v", err)
 	} else {
-		if db.Target.Status != sous.DeployStatusPending {
-			t.Errorf("Expected Status pending (%d), got %d", sous.DeployStatusPending, db.Target.Status)
+		if db.Deployment.ActiveStatus != sous.DeployStatusPending {
+			t.Errorf("Expected Status pending (%d), got %d", sous.DeployStatusPending, db.Deployment.ActiveStatus)
 		}
 		if db.depMarker != &depMarker {
 			t.Errorf("Expected depMarker to be %v, got %v", depMarker, db.depMarker)
@@ -85,8 +85,8 @@ func TestBuildDeployment_determineDeployStatus_activeonly(t *testing.T) {
 	if err := db.determineDeployStatus(); err != nil {
 		t.Errorf("Expected no error, got %v", err)
 	} else {
-		if db.Target.Status != sous.DeployStatusActive {
-			t.Errorf("Expected Status pending (%d), got %d", sous.DeployStatusActive, db.Target.Status)
+		if db.Deployment.ActiveStatus != sous.DeployStatusActive {
+			t.Errorf("Expected Status pending (%d), got %d", sous.DeployStatusActive, db.Deployment.ActiveStatus)
 		}
 		if db.depMarker != &depMarker {
 			t.Errorf("Expected depMarker to be %v, got %v", depMarker, db.depMarker)
@@ -113,8 +113,8 @@ func TestBuildDeployment_determineDeployStatus_activeAndPending(t *testing.T) {
 	if err := db.determineDeployStatus(); err != nil {
 		t.Errorf("Expected no error, got %v", err)
 	} else {
-		if db.Target.Status != sous.DeployStatusPending {
-			t.Errorf("Expected Status pending (%d), got %d", sous.DeployStatusPending, db.Target.Status)
+		if db.Deployment.ActiveStatus != sous.DeployStatusPending {
+			t.Errorf("Expected Status pending (%d), got %d", sous.DeployStatusPending, db.Deployment.ActiveStatus)
 		}
 		if db.depMarker != &depMarker {
 			t.Errorf("Expected depMarker to be %v, got %v", depMarker, db.depMarker)
@@ -136,7 +136,7 @@ func TestBuildingRequestIDTwoClusters(t *testing.T) {
 		req:      Request{URL: url},
 	}
 	assert.NoError(t, db.assignClusterName())
-	assert.Equal(t, db.Target.ClusterName, cn)
+	assert.Equal(t, db.Deployment.Active.ClusterName, cn)
 
 	db2 := &deploymentBuilder{
 		clusters: clusters,
@@ -144,7 +144,7 @@ func TestBuildingRequestIDTwoClusters(t *testing.T) {
 		req:      Request{URL: url},
 	}
 	assert.NoError(t, db2.assignClusterName())
-	assert.Equal(t, db2.Target.ClusterName, cn2)
+	assert.Equal(t, db2.Deployment.Active.ClusterName, cn2)
 }
 
 /*

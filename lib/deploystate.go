@@ -5,14 +5,20 @@ package sous
 // A DeployState represents the state of a deployment in an external cluster.
 // It wraps Deployment and adds Status.
 type DeployState struct {
-	Deployment Deployment
-	Status     DeployStatus
-	// FailedDeployment is populated with the latest attempted deployment, if it
+	// Active is the currently active, or pending deployment.
+	// We include pending with active, since Sous should wait for
+	// a pending deployment to either fail or succeed before considering
+	// it for rectification of changes.
+	Active Deployment
+	// Status is the deploy status of the active deployment, either
+	// DeployStatusPending or DeployStatusActive.
+	ActiveStatus DeployStatus
+	// Failed is populated with the latest attempted deployment, if it
 	// failed.
-	FailedDeployment *Deployment
-	// FailedDeploymentReason is a human-readable string explaining why
-	// FailedDeployment failed.
-	FailedDeploymentReason string
+	Failed *Deployment
+	// FailedReason is a human-readable string explaining why
+	// FailedDeployment failed. It is empty when Failed is nil.
+	FailedReason string
 }
 
 // DeployStatus represents the status of a deployment in an external cluster.
@@ -48,17 +54,17 @@ const (
 )
 
 func (ds DeployState) String() string {
-	return ds.Deployment.String()
+	return ds.Active.String()
 }
 
 // ID returns the DeployID of this DeployState.
 func (ds DeployState) ID() DeployID {
-	return ds.Deployment.ID()
+	return ds.Active.ID()
 }
 
 // Clone returns an independent clone of this DeployState.
 func (ds DeployState) Clone() *DeployState {
-	ds.Deployment = *ds.Deployment.Clone()
+	ds.Active = *ds.Active.Clone()
 	return &ds
 }
 
@@ -67,7 +73,7 @@ func (ds DeployState) Clone() *DeployState {
 func (ds DeployStates) IgnoringStatus() Deployments {
 	deployments := NewDeployments()
 	for key, value := range ds.Snapshot() {
-		deployments.Set(key, &value.Deployment)
+		deployments.Set(key, &value.Active)
 	}
 	return deployments
 }
