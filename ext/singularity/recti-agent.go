@@ -98,7 +98,7 @@ func buildDeployRequest(dockerImage string, e sous.Env, r sous.Resources, reqID 
 	}
 
 	dep, err := swaggering.LoadMap(&dtos.SingularityDeploy{}, dtoMap{
-		"Id":            "JUSTID" + SanitizeDeployID(uuid.NewV4().String()),
+		"Id":            depID,
 		"RequestId":     reqID,
 		"Resources":     res,
 		"ContainerInfo": ci,
@@ -173,8 +173,7 @@ func (ra *RectiAgent) DeleteRequest(cluster, reqID, message string) error {
 func (ra *RectiAgent) Scale(cluster, reqID string, instanceCount int, message string) error {
 	Log.Debug.Printf("Scaling %s %s %d %s", cluster, reqID, instanceCount, message)
 	sr, err := swaggering.LoadMap(&dtos.SingularityScaleRequest{}, dtoMap{
-		// "ActionId": SanitizeDeployID(uuid.NewV4().String()), // not positive this is appropriate
-		"ActionId": "ACTIONID" + SanitizeDeployID(uuid.NewV4().String()), // not positive this is appropriate
+		"ActionId": "SOUS_RECTIFY_" + SanitizeDeployID(uuid.NewV4().String()), // not positive this is appropriate
 		// omitting DurationMillis - bears discussion
 		"Instances":        int32(instanceCount),
 		"Message":          "Sous" + message,
