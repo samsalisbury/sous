@@ -7,6 +7,23 @@ import (
 	sous "github.com/opentable/sous/lib"
 )
 
+func TestSanitizeDeployID(t *testing.T) {
+	logTempl := "Got:%s Expected:%s"
+	tbl := make(map[string]string)
+	tbl["this-has-dashes.and.dots"] = "thishasdashes.and.dots"
+	tbl["forward/slashes"] = "forwardslashes"
+
+	for in, out := range tbl {
+		t.Logf("Sanitizing: %s", in)
+		s := SanitizeDeployID(in)
+		if s != out {
+			t.Fatalf(logTempl, s, out)
+		} else {
+			t.Logf(logTempl, s, out)
+		}
+	}
+}
+
 func TestDetermineRequestType(t *testing.T) {
 	pairs := []struct {
 		sous.ManifestKind
