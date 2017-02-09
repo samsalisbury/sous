@@ -7,6 +7,23 @@ import (
 	sous "github.com/opentable/sous/lib"
 )
 
+func TestStripMetadata(t *testing.T) {
+	logTempl := "Got:%s Expected:%s"
+	tbl := make(map[string]string)
+	tbl["1.2.3-rc5"] = "1.2.3-rc5"
+	tbl["1.0.1"] = "1.0.1"
+	tbl["7.8.3-prerelease+METADATA"] = "7.8.3-prerelease"
+	for in, out := range tbl {
+		t.Logf("Stripping Metadata: %s", in)
+		s := stripMetadata(in)
+		if s != out {
+			t.Fatalf(logTempl, s, out)
+		} else {
+			t.Logf(logTempl, s, out)
+		}
+	}
+}
+
 func TestSanitizeDeployID(t *testing.T) {
 	logTempl := "Got:%s Expected:%s"
 	tbl := make(map[string]string)
@@ -33,7 +50,7 @@ func TestStripDeployID(t *testing.T) {
 	tbl["proper_underscore"] = "proper_underscore"
 
 	for in, out := range tbl {
-		t.Logf("Stripping: %s", in)
+		t.Logf("Stripping Illegal Characters: %s", in)
 		s := StripDeployID(in)
 		if s != out {
 			t.Fatalf(logTempl, s, out)

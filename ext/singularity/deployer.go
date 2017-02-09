@@ -213,7 +213,8 @@ func computeRequestID(d *sous.Deployable) string {
 func computeDeployID(d *sous.Deployable) string {
 	var uuidTrunc, versionTrunc string
 	uuidEntire := StripDeployID(uuid.NewV4().String())
-	versionEntire := SanitizeDeployID(d.Deployment.SourceID.Version.String())
+	versionSansMeta := stripMetadata(d.Deployment.SourceID.Version.String())
+	versionEntire := SanitizeDeployID(versionSansMeta)
 
 	if len(versionEntire) > maxVersionLen {
 		versionTrunc = versionEntire[0:maxVersionLen]

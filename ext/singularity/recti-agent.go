@@ -3,6 +3,7 @@ package singularity
 import (
 	"fmt"
 	"regexp"
+	"strings"
 	"sync"
 
 	"github.com/opentable/go-singularity"
@@ -23,6 +24,10 @@ func SanitizeDeployID(in string) string {
 // StripDeployID removes all characters forbidden in a Singularity deployID.
 func StripDeployID(in string) string {
 	return illegalDeployIDChars.ReplaceAllString(in, "")
+}
+
+func stripMetadata(in string) string {
+	return strings.Split(in, "+")[0]
 }
 
 // RectiAgent is an implementation of the RectificationClient interface
