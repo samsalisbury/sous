@@ -228,7 +228,7 @@ func computeDeployID(d *sous.Deployable) string {
 	naiveLen := len(versionTrunc) + len(uuidEntire) + 1
 
 	if naiveLen > maxDeployIDLen {
-		uuidTrunc = uuidEntire[0:(maxDeployIDLen - naiveLen - 1)]
+		uuidTrunc = uuidEntire[:maxDeployIDLen-len(versionTrunc)-1]
 	} else {
 		uuidTrunc = uuidEntire
 	}

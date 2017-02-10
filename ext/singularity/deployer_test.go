@@ -1,9 +1,12 @@
 package singularity
 
 import (
+	"reflect"
+	"strings"
 	"testing"
 
 	sous "github.com/opentable/sous/lib"
+	"github.com/samsalisbury/semv"
 )
 
 var requestIDTests = []struct {
@@ -140,5 +143,84 @@ func TestRectifyRecover(t *testing.T) {
 	actual := err.Error()
 	if actual != expected {
 		t.Errorf("got error %q; want %q", actual, expected)
+	}
+}
+
+func TestShortComputeDeployID(t *testing.T) {
+	verStr := "0.0.1"
+	logTmpl := "Provided version string:%s DeployID:%#v"
+	d := &sous.Deployable{
+		BuildArtifact: &sous.BuildArtifact{
+			Name: "build-artifact",
+			Type: "docker",
+		},
+		Deployment: &sous.Deployment{
+			SourceID: sous.SourceID{
+				Location: sous.SourceLocation{
+					Repo: "reqid",
+				},
+				Version: semv.MustParse(verStr),
+			},
+			DeployConfig: sous.DeployConfig{
+				NumInstances: 1,
+				Resources:    sous.Resources{},
+			},
+			ClusterName: "cluster",
+			Cluster: &sous.Cluster{
+				BaseURL: "cluster",
+			},
+		},
+	}
+
+	deployID := computeDeployID(d)
+	parsedDeployID := strings.Split(deployID, "_")[0:3]
+	if reflect.DeepEqual(parsedDeployID, strings.Split(verStr, ".")) {
+		t.Logf(logTmpl, verStr, deployID)
+	} else {
+		t.Fatalf(logTmpl, verStr, deployID)
+	}
+	t.Logf("LENGTH: %d", len(deployID))
+}
+
+func TestLongComputeDeployID(t *testing.T) {
+	verStr := "0.0.2-thisversionissolongthatonewouldexpectittobetruncated"
+	logTmpl := "Provided version string:%s DeployID:%#v"
+	d := &sous.Deployable{
+		BuildArtifact: &sous.BuildArtifact{
+			Name: "build-artifact",
+			Type: "docker",
+		},
+		Deployment: &sous.Deployment{
+			SourceID: sous.SourceID{
+				Location: sous.SourceLocation{
+					Repo: "reqid",
+				},
+				Version: semv.MustParse(verStr),
+			},
+			DeployConfig: sous.DeployConfig{
+				NumInstances: 1,
+				Resources:    sous.Resources{},
+			},
+			ClusterName: "cluster",
+			Cluster: &sous.Cluster{
+				BaseURL: "cluster",
+			},
+		},
+	}
+
+	deployID := computeDeployID(d)
+	parsedDeployID := strings.Split(deployID, "_")[0:3]
+	if reflect.DeepEqual(parsedDeployID, strings.Split("0.0.2", ".")) {
+		t.Logf(logTmpl, verStr, deployID)
+	} else {
+		t.Fatalf(logTmpl, verStr, deployID)
+	}
+
+	idLen := len(deployID)
+	logLenTmpl := "Got length:%d Max length:%d"
+	if len(deployID) > maxDeployIDLen {
+		t.Fatalf(logLenTmpl, idLen, maxDeployIDLen)
+	} else {
+		t.Logf(logLenTmpl, idLen, maxDeployIDLen)
 	}
 }
