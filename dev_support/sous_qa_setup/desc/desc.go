@@ -2,19 +2,44 @@ package desc
 
 import (
 	"encoding/json"
+	"fmt"
 	"net"
 	"os"
 )
 
 type (
+	service struct {
+		Host net.IP
+		Port uint
+	}
+
 	// EnvDesc captures the details of the established environment
 	EnvDesc struct {
-		RegistryName   string
-		SingularityURL string
-		GitOrigin      string
-		AgentIP        net.IP
+		DockerRegistry, Git, Singularity service
+		AgentIP                          net.IP
 	}
 )
+
+func (ed EnvDesc) SingularityURL() string {
+	return fmt.Sprintf("http://%s/singularity", ed.Singularity.hostPort())
+}
+
+func (ed EnvDesc) GitOrigin() string {
+	return ed.Git.hostPort()
+}
+
+func (ed EnvDesc) RegistryName() string {
+	return ed.DockerRegistry.hostPort()
+}
+
+func (serv service) hostPort() string {
+	return fmt.Sprintf("%s:%d", serv.Host, serv.Port)
+}
+
+func (serv service) complete() bool {
+	return len(serv.Host) > 0 &&
+		serv.Port != 0
+}
 
 // LoadDesc loads an EnvDesc from a path.
 func LoadDesc(descPath string) (EnvDesc, error) {
@@ -35,8 +60,8 @@ func LoadDesc(descPath string) (EnvDesc, error) {
 // This is useful because e.g. as fields are added across branches, it's easy
 // for tests to rely on data that was left unset by older code.
 func (ed EnvDesc) Complete() bool {
-	return ed.RegistryName != "" &&
-		ed.SingularityURL != "" &&
-		ed.GitOrigin != "" &&
+	return ed.DockerRegistry.complete() &&
+		ed.Singularity.complete() &&
+		ed.Git.complete() &&
 		len(ed.AgentIP) > 0
 }

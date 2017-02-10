@@ -11,57 +11,7 @@ User:
   Email: ""
 Docker:
   RegistryHost: 192.168.99.100:5000
-/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing218693209/sous-server /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing218693209
-  (Sous)> git version
-> git version 2.10.0
-
-  (Sous)> git config -l
-> credential.helper=osxkeychain
-core.sshcommand=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing218693209/home/bin/ssh_wrapper
-user.name=Integration Tester
-user.email=itester@opentable.com
-push.default=simple
-core.repositoryformatversion=0
-core.filemode=true
-core.bare=false
-core.logallrefupdates=true
-core.ignorecase=true
-core.precomposeunicode=true
-remote.origin.url=ssh://root@192.168.99.100:2222/repos/sous-server
-remote.origin.fetch=+refs/heads/*:refs/remotes/origin/*
-branch.master.remote=origin
-branch.master.merge=refs/heads/master
-
-  (Sous)> git rev-parse --show-toplevel
-> /private/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing218693209/sous-server
-
-  (Sous)> git remote -v
-> origin	ssh://root@192.168.99.100:2222/repos/sous-server (fetch)
-origin	ssh://root@192.168.99.100:2222/repos/sous-server (push)
-
-  (Sous)> git rev-parse --abbrev-ref HEAD
-> master
-
-  (Sous)> git log --date-order --tags --simplify-by-decoration --pretty=format:%H %aI %D
-> 1a27267954ca4f05bde5dec1443cf6dbcd520139 2017-01-25T15:39:07-08:00 tag: 0.0.1
-  (Sous)> git rev-list -n 1 HEAD
-> 23ea27cb2f2b200e5bf9cbcb8c01dcf596e7b456
-
-  (Sous)> git ls-files
-> Dockerfile
-main.go
-sous-server.yaml
-
-  (Sous)> git ls-files --others --exclude-standard
-> 
-  (Sous)> git ls-files --modified
-> 
-  (Sous)> git describe --tags --abbrev=0 --always
-> 0.0.1
-
-  (Sous)> git rev-list -n 1 0.0.1
-> 1a27267954ca4f05bde5dec1443cf6dbcd520139
-
+/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing787817653/sous-server /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing787817653
 Source: 192.168.99.100/2222/repos/sous-server
 Owners: []
 Kind: http-service
@@ -87,9 +37,6 @@ owners: []
 kind: http-service
 deployments:
   left:
-    env:
-      GDM_REPO: "ssh://root@192.168.99.100:2222/repos/gdm"
-      CLUSTER_NAME: left
     resources:
       cpus: "0.1"
       memory: "100"
@@ -98,9 +45,6 @@ deployments:
     volumes: []
     version: 0.0.0
   right:
-    env:
-      GDM_REPO: "ssh://root@192.168.99.100:2222/repos/gdm"
-      CLUSTER_NAME: right
     resources:
       cpus: "0.1"
       memory: "100"
@@ -109,6 +53,34 @@ deployments:
     volumes: []
     version: 0.0.0
 
+
+source: 192.168.99.100/2222/repos/sous-server
+owners:
+- test@test.com
+kind: http-service
+deployments:
+  left:
+    resources:
+      cpus: "0.1"
+      memory: "100"
+      ports: "1"
+    env:
+      GDM_REPO: ssh://root@192.168.99.100:2222/repos/gdm
+      SOUS_DOCKER_REGISTRY_HOST: 192.168.99.100:5000
+    numinstances: 1
+    volumes: []
+    version: 0.0.0
+  right:
+    resources:
+      cpus: "0.1"
+      memory: "100"
+      ports: "1"
+    env:
+      GDM_REPO: ssh://root@192.168.99.100:2222/repos/gdm
+      SOUS_DOCKER_REGISTRY_HOST: 192.168.99.100:5000
+    numinstances: 1
+    volumes: []
+    version: 0.0.0
 
 FROM golang:1.7
 
@@ -127,62 +99,35 @@ RUN go install -v
 # Run sous server.
 # NOTE: You must have set PORT0, GDM_REPO
 CMD /go/bin/sous-server
-total 22916
-drwxr-xr-x  8 jlester 513      272 Feb  9 17:20 .
-drwx------  6 jlester 513      204 Feb  9 17:20 ..
-drwxr-xr-x 12 jlester 513      408 Feb  9 17:20 .git
--rw-r--r--  1 jlester 513      390 Feb  9 17:20 Dockerfile
--rw-------  1 jlester 513     1679 Feb  9 17:20 key_sous@example.com
--rw-r--r--  1 jlester 513     1550 Feb  9 17:20 main.go
--rwxr-xr-x  1 jlester 513 23446936 Feb  9 17:20 sous
--rw-r--r--  1 jlester 513      518 Feb  9 17:20 sous-server.yaml
-[192.168.99.100]:2222 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM5JjKJLW0yn7+F6O1nXhSpMgAKQaFrlz2fA64kUF8Tp
-[192.168.99.100]:2222 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC/lubCAel1uw29KTdh06RR/raTDBbjR8HpDX83i3xpnrZtz1xXzmy2yso/NSfFbTckA98wkUx0RtD2yz0AVupR+qAPZs7rkmdGbIBjl0t12f0VGCKvkNaOhuLVi5ojIuQuLSwZuYOFOtUaCJaAN4IpTihHpU5E4j82qJIi4Lb10oYp8+tLV4LL9H8HjQfhOF1kglJVMXGKmqeLwjCfsCW6hxUKTBUOa/O5CA4LaMhyhGUUT9t040PjJG4wfFCiXSJgCDJVtD6zldjrOQffyh1PmZN5ODl9zfGNbp+Z8WTSYwBPnnaXMgoR3BzXqVAwg8kz009z9aBMBzZNGauBBJu7
+total 22920
+drwxr-xr-x  8 jlester 513      272 Feb 10 11:36 .
+drwx------  6 jlester 513      204 Feb 10 11:36 ..
+drwxr-xr-x 12 jlester 513      408 Feb 10 11:36 .git
+-rw-r--r--  1 jlester 513      390 Feb 10 11:36 Dockerfile
+-rw-------  1 jlester 513     1679 Feb 10 11:36 key_sous@example.com
+-rw-r--r--  1 jlester 513     1550 Feb 10 11:36 main.go
+-rwxr-xr-x  1 jlester 513 23451792 Feb 10 11:36 sous
+-rw-r--r--  1 jlester 513      518 Feb 10 11:36 sous-server.yaml
 [192.168.99.100]:2222 ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBOZERV32kcDerlqKZf/OIGW/prs1r8p0wQwKZ41Gptq90htVQkftWeXAuEQdR46Gk9cma+0l5Rlv+3fIDp1P/lI=
-[master eb39781] Adding ephemeral files
+[192.168.99.100]:2222 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC/lubCAel1uw29KTdh06RR/raTDBbjR8HpDX83i3xpnrZtz1xXzmy2yso/NSfFbTckA98wkUx0RtD2yz0AVupR+qAPZs7rkmdGbIBjl0t12f0VGCKvkNaOhuLVi5ojIuQuLSwZuYOFOtUaCJaAN4IpTihHpU5E4j82qJIi4Lb10oYp8+tLV4LL9H8HjQfhOF1kglJVMXGKmqeLwjCfsCW6hxUKTBUOa/O5CA4LaMhyhGUUT9t040PjJG4wfFCiXSJgCDJVtD6zldjrOQffyh1PmZN5ODl9zfGNbp+Z8WTSYwBPnnaXMgoR3BzXqVAwg8kz009z9aBMBzZNGauBBJu7
+[192.168.99.100]:2222 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM5JjKJLW0yn7+F6O1nXhSpMgAKQaFrlz2fA64kUF8Tp
+[master 27cfffd] Adding ephemeral files
  3 files changed, 30 insertions(+)
  create mode 100644 key_sous@example.com
  create mode 100644 known_hosts
  create mode 100755 sous
-RootDir: /private/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing218693209/sous-server
-OffsetDir: ""
-Branch: master
-Revision: eb397812a6de3dfbcfc14e1abebabe226717c533
-Files:
-- Dockerfile
-- key_sous@example.com
-- known_hosts
-- main.go
-- sous
-- sous-server.yaml
-ModifiedFiles: []
-NewFiles: []
-Tags:
-- Name: 0.0.2
-  Revision: eb397812a6de3dfbcfc14e1abebabe226717c533
-- Name: 0.0.1
-  Revision: 1a27267954ca4f05bde5dec1443cf6dbcd520139
-NearestTagName: 0.0.2
-NearestTagRevision: eb397812a6de3dfbcfc14e1abebabe226717c533
-PrimaryRemoteURL: 192.168.99.100/2222/repos/sous-server
-RemoteURL: ""
-RemoteURLs:
-- 192.168.99.100/2222/repos/sous-server
-DirtyWorkingTree: false
-RevisionUnpushed: false
-/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing218693209/sous-server
-  (Sous)> running docker build -t 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2 -t 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:eb397812a6de3dfbcfc14e1abebabe226717c533 -
+  (Sous)> running docker build -t 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2 -t 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:27cfffd119b174a4fb9814552e269e0100986d5c -
   (Sous)> running docker push 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2
-  (Sous)> running docker push 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:eb397812a6de3dfbcfc14e1abebabe226717c533
-  (Sous)> [recording "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2" as the docker name for "192.168.99.100/2222/repos/sous-server,0.0.2+eb397812a6de3dfbcfc14e1abebabe226717c533"]
+  (Sous)> running docker push 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:27cfffd119b174a4fb9814552e269e0100986d5c
+  (Sous)> [recording "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2" as the docker name for "192.168.99.100/2222/repos/sous-server,0.0.2+27cfffd119b174a4fb9814552e269e0100986d5c"]
 Built: "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2"
-Elapsed: 870.486393ms
+Elapsed: 2.854573815s
   (Sous)> git version
 > git version 2.10.0
 
   (Sous)> git config -l
 > credential.helper=osxkeychain
-core.sshcommand=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing218693209/home/bin/ssh_wrapper
+core.sshcommand=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing787817653/home/bin/ssh_wrapper
 user.name=Integration Tester
 user.email=itester@opentable.com
 push.default=simple
@@ -198,14 +143,24 @@ branch.master.remote=origin
 branch.master.merge=refs/heads/master
 
   (Sous)> git rev-parse --show-toplevel
-> /private/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing218693209/sous-server
+> /private/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing787817653/sous-server
 
   (Sous)> git remote -v
 > origin	ssh://root@192.168.99.100:2222/repos/sous-server (fetch)
 origin	ssh://root@192.168.99.100:2222/repos/sous-server (push)
 
+  (Sous)> git ls-files --modified
+> 
+  (Sous)> git ls-files --others --exclude-standard
+> 
   (Sous)> git rev-parse --abbrev-ref HEAD
 > master
+
+  (Sous)> git log --date-order --tags --simplify-by-decoration --pretty=format:%H %aI %D
+> 27cfffd119b174a4fb9814552e269e0100986d5c 2017-02-10T11:36:52-08:00 HEAD -> master, tag: 0.0.2, origin/master, origin/HEAD
+1a27267954ca4f05bde5dec1443cf6dbcd520139 2017-01-25T15:39:07-08:00 tag: 0.0.1
+  (Sous)> git rev-list -n 1 HEAD
+> 27cfffd119b174a4fb9814552e269e0100986d5c
 
   (Sous)> git ls-files
 > Dockerfile
@@ -215,24 +170,14 @@ main.go
 sous
 sous-server.yaml
 
-  (Sous)> git ls-files --modified
-> 
-  (Sous)> git rev-list -n 1 HEAD
-> eb397812a6de3dfbcfc14e1abebabe226717c533
-
-  (Sous)> git ls-files --others --exclude-standard
-> 
-  (Sous)> git log --date-order --tags --simplify-by-decoration --pretty=format:%H %aI %D
-> eb397812a6de3dfbcfc14e1abebabe226717c533 2017-02-09T17:20:42-08:00 HEAD -> master, tag: 0.0.2, origin/master, origin/HEAD
-1a27267954ca4f05bde5dec1443cf6dbcd520139 2017-01-25T15:39:07-08:00 tag: 0.0.1
   (Sous)> git describe --tags --abbrev=0 --always
 > 0.0.2
 
   (Sous)> git rev-list -n 1 0.0.2
-> eb397812a6de3dfbcfc14e1abebabe226717c533
+> 27cfffd119b174a4fb9814552e269e0100986d5c
 
 
 
 
 
-/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing218693209
+/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing787817653

@@ -1,5 +1,5 @@
 StateLocation: /Users/jlester/.local/share/sous/state
-Server: http://192.168.99.100:31019
+Server: http://192.168.99.100:31223
 SiblingURLs: {}
 BuildStateDir: ""
 Docker:
@@ -10,7 +10,7 @@ User:
   Name: test
   Email: test@test.com
 StateLocation: /Users/jlester/.local/share/sous/state
-Server: http://192.168.99.100:31019
+Server: http://192.168.99.100:31223
 SiblingURLs: {}
 BuildStateDir: ""
 Docker:
@@ -25,4 +25,4 @@ User:
   (Sous)> running docker push 192.168.99.100:5000/192.168.99.100/2222/repos/sous-demo:b27658803a61a9fe538ef6ac063e9eddc454277f
   (Sous)> [recording "192.168.99.100:5000/192.168.99.100/2222/repos/sous-demo:0.0.23" as the docker name for "192.168.99.100/2222/repos/sous-demo,0.0.23+b27658803a61a9fe538ef6ac063e9eddc454277f"]
 Built: "192.168.99.100:5000/192.168.99.100/2222/repos/sous-demo:0.0.23"
-Elapsed: 3.106859784s
+Elapsed: 1.996453665s

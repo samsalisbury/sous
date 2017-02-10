@@ -58,9 +58,12 @@ func setupServices(testAgent test_with_docker.Agent, opts *options) *desc.EnvDes
 		log.Fatal(fmt.Errorf("Test agent returned nil IP"))
 	}
 
-	desc.RegistryName = fmt.Sprintf("%s:%d", desc.AgentIP, 5000)
-	desc.SingularityURL = fmt.Sprintf("http://%s:%d/singularity", desc.AgentIP, 7099)
-	desc.GitOrigin = fmt.Sprintf("%s:%d", desc.AgentIP, 2222)
+	desc.DockerRegistry.Host = desc.AgentIP
+	desc.DockerRegistry.Port = 5000
+	desc.Singularity.Host = desc.AgentIP
+	desc.Singularity.Port = 7099
+	desc.Git.Host = desc.AgentIP
+	desc.Git.Port = 2222
 
 	if err := registryCerts(testAgent, opts.composeDir, desc); err != nil {
 		log.Fatal(err)

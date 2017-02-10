@@ -5,7 +5,7 @@ Clusters:
     Kind: singularity
     BaseURL: {{.EnvDesc.SingularityURL}}
     Env:
-      OT_ENV: left
+      CLUSTER_NAME: left
     AllowedAdvisories:
     - ephemeral tag
     - source workspace lacked repo
@@ -23,7 +23,7 @@ Clusters:
     Kind: singularity
     BaseURL: {{.EnvDesc.SingularityURL}}
     Env:
-      OT_ENV: right
+      CLUSTER_NAME: right
     AllowedAdvisories:
     - ephemeral tag
     - ephemeral tag
@@ -38,11 +38,6 @@ Clusters:
     - bogus revision
     - dirty workspace
 EnvVars:
-- Name: OT_DISCO_INIT_URL
-  Desc: The URL which discovery clients should use to initially connect to the discovery
-    system.
-  Scope: ""
-  Type: url
 - Name: PORT0
   Desc: The primary TCP port your app should listen on.
   Scope: ""

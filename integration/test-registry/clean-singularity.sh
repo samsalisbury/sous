@@ -12,3 +12,8 @@ for req in $(cygnus -H "$sing" | awk '{ gsub(/>/, "%3E"); print $1 }'); do
   curl -X DELETE "$sing/api/requests/request/$req"
   echo
 done
+
+while [ "$(cygnus -H "$sing" | wc -l)" -gt 0 ]; do
+  echo "Not clean yet, waiting."
+  sleep 0.1
+done

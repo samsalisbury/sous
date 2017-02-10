@@ -17,6 +17,7 @@ func main() {
 	// Getting config from Mesos ENV
 	port0 := os.Getenv("PORT0")
 	gdmRepo := os.Getenv("GDM_REPO")
+	clusterName := os.Getenv("CLUSTER_NAME")
 
 	// Building HTTP config
 	if port0 == "" {
@@ -47,9 +48,13 @@ func main() {
 
 	// Running the `sous server` command proper
 	args := []string{"server", "-d", "-v", "-listen", listen}
+	if clusterName != "" {
+		args = append(args, "-cluster", clusterName)
+	}
 	sous := exec.Command("/go/bin/sous", args...)
 	sous.Stdout = os.Stdout
 	sous.Stderr = os.Stderr
+	log.Printf("Starting Sous: %#v", sous)
 	err = sous.Start()
 	if err != nil {
 		log.Panic(err)

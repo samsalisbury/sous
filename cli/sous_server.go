@@ -79,7 +79,7 @@ func (ss *SousServer) Execute(args []string) cmdr.Result {
 	log.Printf("%#v", second)
 	arWrapper.AutoResolver.Kickoff()
 
-	ss.Log.Info.Printf("Sous Server v%s running at %s", ss.Sous.Version, ss.flags.laddr)
+	ss.Log.Info.Printf("Sous Server v%s running at %s for %s", ss.Sous.Version, ss.flags.laddr, ss.DeployFilterFlags.Cluster)
 
 	return EnsureErrorResult(server.RunServer(ss.SousGraph, ss.flags.laddr)) //always non-nil
 }

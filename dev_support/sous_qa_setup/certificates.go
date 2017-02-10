@@ -26,7 +26,7 @@ func registryCerts(testAgent test_with_docker.Agent, composeDir string, desc des
 		return err
 	}
 
-	return testAgent.InstallRegistryCertificate(desc.RegistryName, composeDir, registryCertPath)
+	return testAgent.InstallRegistryCertificate(desc.RegistryName(), composeDir, registryCertPath)
 }
 
 func generateRegistryCert(composeDir string, agentIP net.IP, registryCertPath string, testAgent test_with_docker.Agent) error {

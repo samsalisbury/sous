@@ -1,6 +1,7 @@
 package clintegration
 
 import (
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -163,7 +164,7 @@ type templatedConfigs struct {
 	desc.EnvDesc
 	TestDir, Workdir, Homedir, Statedir string
 	XDGConfig, SSHWrapper               string
-	GitSSH, GitRemoteBase               string
+	GitSSH, GitLocation, GitRemoteBase  string
 	SSHExec                             string
 	GoPath, ShellPath                   []string
 }
@@ -211,7 +212,8 @@ func setupConfig(t *testing.T) templatedConfigs {
 
 	testHome := filepath.Join(workdir, "home")
 
-	gitRemoteBase := `ssh://root@` + envDesc.GitOrigin + "/repos"
+	gitLocation := fmt.Sprintf("%s/%d/repos", envDesc.Git.Host, envDesc.Git.Port)
+	gitRemoteBase := fmt.Sprintf("ssh://root@%s/repos", envDesc.GitOrigin())
 	gitSSH := envDesc.AgentIP.String()
 
 	sshWrapper := filepath.Join(testHome, "bin/ssh_wrapper")
@@ -228,6 +230,7 @@ func setupConfig(t *testing.T) templatedConfigs {
 		}
 	}
 
+	// Speculation: the size of this struct is a metric we should consider.
 	return templatedConfigs{
 		TestDir:       pwd,
 		EnvDesc:       envDesc,
@@ -239,6 +242,7 @@ func setupConfig(t *testing.T) templatedConfigs {
 		GoPath:        goPath,
 		GitSSH:        gitSSH,
 		SSHExec:       sshExecPath,
+		GitLocation:   gitLocation,
 		GitRemoteBase: gitRemoteBase,
 		ShellPath:     shellPath,
 	}
@@ -340,7 +344,9 @@ func TestShellLevelIntegration(t *testing.T) {
 	pushd sous-server
 	export SOUS_USER_NAME=test SOUS_USER_EMAIL=test@test.com
 	export SOUS_SERVER= SOUS_STATE_LOCATION={{.Statedir}}
-	sous init -v -d
+
+	sous init
+	sous manifest get
 	sous manifest set < ~/templated-configs/sous-server.yaml
 	sous manifest get # demonstrating this got to GDM
 

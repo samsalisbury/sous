@@ -5,15 +5,15 @@ bash-3.2$
 bash-3.2$ cd /Users/jlester/golang/src/github.com/opentable/sous
 bash-3.2$ env
 bash-3.2$ export SOUS_EXTRA_DOCKER_CA=/Users/jlester/golang/src/github.com/op<_DOCKER_CA=/Users/jlester/golang/src/github.com/ope                         ntable/sous/integration/t<golang/src/github.com/opentable/sous/integration/te                         st-registry/docker-regist<table/sous/integration/test-registry/docker-registr                         y/testing.crt
-bash-3.2$ mkdir -p /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-<ders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-t                         esting218693209/home/go/{<92mrn16vkfds/T/sous-cli-testing218693209/home/go/{s                         rc,bin}
+bash-3.2$ mkdir -p /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-<ders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-t                         esting787817653/home/go/{<92mrn16vkfds/T/sous-cli-testing787817653/home/go/{s                         rc,bin}
 bash-3.2$ 
 bash-3.2$ ### This build gives me trouble in tests...
 bash-3.2$ ### xgo does something weird and different with it's dep-cache dir
-bash-3.2$ # GOPATH=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-<ders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-t                         esting218693209/home/go m<92mrn16vkfds/T/sous-cli-testing218693209/home/go ma                         ke linux_build # we need <sting218693209/home/go make linux_build # we need S                         ous built for linux for t<e linux_build # we need Sous built for linux for th                         e server
+bash-3.2$ # GOPATH=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-<ders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-t                         esting787817653/home/go m<92mrn16vkfds/T/sous-cli-testing787817653/home/go ma                         ke linux_build # we need <sting787817653/home/go make linux_build # we need S                         ous built for linux for t<e linux_build # we need Sous built for linux for th                         e server
 bash-3.2$ go install . #install the current sous project
 bash-3.2$ cp integration/test-registry/git-server/git_pubkey_rsa* ~/dot-ssh/
 bash-3.2$ 
-bash-3.2$ cd /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testin<p/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing                         218693209
+bash-3.2$ cd /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testin<p/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing                         787817653
 bash-3.2$ chmod go-rwx -R ~/dot-ssh
 bash-3.2$ chmod +x -R ~/bin/*
 bash-3.2$ ssh -o ConnectTimeout=1 -o PasswordAuthentication=no -F "${HOME}/do<eout=1 -o PasswordAuthentication=no -F "${HOME}/dot                         -ssh/config" root@192.168<cation=no -F "${HOME}/dot-ssh/config" root@192.168.                         99.100 -p 2222 /reset-rep<ssh/config" root@192.168.99.100 -p 2222 /reset-repo                         s < /dev/null
