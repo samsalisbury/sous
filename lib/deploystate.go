@@ -13,6 +13,8 @@ type DeployState struct {
 	// Status is the deploy status of the active deployment, either
 	// DeployStatusPending or DeployStatusActive.
 	ActiveStatus DeployStatus
+	// ActiveArtifact is the artifact currently running.
+	ActiveArtifact BuildArtifact
 	// Failed is populated with the latest attempted deployment, if it
 	// failed.
 	Failed *Deployment
@@ -21,6 +23,8 @@ type DeployState struct {
 	FailedReason string
 	// FailedStatus is the status of Failed.
 	FailedStatus DeployStatus
+	// FailedArtifact is the artifact deployed in the failed deployment.
+	FailedArtifact BuildArtifact
 }
 
 // DeployStatus represents the status of a deployment in an external cluster.

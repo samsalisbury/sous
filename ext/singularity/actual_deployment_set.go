@@ -92,7 +92,7 @@ func (sc *deployer) RunningDeployments(reg sous.Registry, clusters sous.Clusters
 				Log.Debug.Printf("Errors channel closed. Finishing up.")
 				return
 			}
-			if isMalformed(err) {
+			if !isRetryable(err) {
 				Log.Debug.Print(err)
 				depWait.Done()
 			} else {
@@ -288,5 +288,5 @@ func assembleDeployment(cl rectificationClient, reg sous.Registry, clusters sous
 	}
 
 	Log.Vomit.Printf("Collected deployment: %v", tgt)
-	return &tgt, nil
+	return tgt, nil
 }
