@@ -13,6 +13,13 @@ type DeployState struct {
 type DeployStatus int
 
 const (
+	// InvalidDeployStatus is an invalid value in all contexts, it is the
+	// zero DeployStatus.
+	InvalidDeployStatus DeployStatus = iota
+	// DeployStatusUnknown means no deployment status has been determined.
+	DeployStatusUnknown
+	// DeployStatusNotRunning means there is no running deployment.
+	DeployStatusNotRunning
 	// DeployStatusAny represents any deployment status.
 	DeployStatusAny DeployStatus = iota
 	// DeployStatusPending means the deployment has been requested in the
