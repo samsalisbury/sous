@@ -4,15 +4,15 @@
 	cd /Users/jlester/golang/src/github.com/opentable/sous
 	env
 	export SOUS_EXTRA_DOCKER_CA=/Users/jlester/golang/src/github.com/opentable/sous/integration/test-registry/docker-registry/testing.crt
-	mkdir -p /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing415154522/home/go/{src,bin}
+	mkdir -p /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing218693209/home/go/{src,bin}
 
 	### This build gives me trouble in tests...
 	### xgo does something weird and different with it's dep-cache dir
-	# GOPATH=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing415154522/home/go make linux_build # we need Sous built for linux for the server
+	# GOPATH=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing218693209/home/go make linux_build # we need Sous built for linux for the server
 	go install . #install the current sous project
 	cp integration/test-registry/git-server/git_pubkey_rsa* ~/dot-ssh/
 
-	cd /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing415154522
+	cd /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing218693209
 	chmod go-rwx -R ~/dot-ssh
 	chmod +x -R ~/bin/*
 	ssh -o ConnectTimeout=1 -o PasswordAuthentication=no -F "${HOME}/dot-ssh/config" root@192.168.99.100 -p 2222 /reset-repos < /dev/null

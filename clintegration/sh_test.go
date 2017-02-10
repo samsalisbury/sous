@@ -341,25 +341,8 @@ func TestShellLevelIntegration(t *testing.T) {
 	export SOUS_USER_NAME=test SOUS_USER_EMAIL=test@test.com
 	export SOUS_SERVER= SOUS_STATE_LOCATION={{.Statedir}}
 	sous init -v -d
-	sous manifest get | sed '/left:/{
-		a\
-	\    env:
-	  a\
-	\      GDM_REPO: "{{.GitRemoteBase}}/gdm"
-	  a\
-	\      CLUSTER_NAME: left
-  }
-	/right:/{
-		a\
-	\    env:
-	  a\
-	\      GDM_REPO: "{{.GitRemoteBase}}/gdm"
-	  a\
-	\      CLUSTER_NAME: right
-	}
-	' > ~/sous-server.yaml
-	cat ~/sous-server.yaml
-	sous manifest set < ~/sous-server.yaml
+	sous manifest set < ~/templated-configs/sous-server.yaml
+	sous manifest get # demonstrating this got to GDM
 
 	# Last minute config
 	cat Dockerfile
@@ -374,11 +357,9 @@ func TestShellLevelIntegration(t *testing.T) {
 	git tag -am "0.0.2" 0.0.2
 	git push
 	git push --tags
-	sous context
-	pwd
+
 	sous build
-	# We expect to see 'Sous is running ... in workstation mode' here:
-	sous deploy -d -v -cluster left
+	sous deploy -d -v -cluster left # We expect to see 'Sous is running ... in workstation mode' here:
 	sous deploy -cluster right
 	unset SOUS_SERVER
 	unset SOUS_STATE_LOCATION
