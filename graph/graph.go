@@ -514,6 +514,9 @@ func NewCurrentState(sr StateReader) (*sous.State, error) {
 
 // NewCurrentGDM returns the current GDM.
 func NewCurrentGDM(state *sous.State) (CurrentGDM, error) {
+	log.Printf("STATE: %#v", state)
+	log.Printf("DEFS: %#v", state.Defs)
+	log.Printf("MANIFESTS: %#v", state.Manifests)
 	deployments, err := state.Deployments()
 	if err != nil {
 		return CurrentGDM{}, initErr(err, "expanding state")

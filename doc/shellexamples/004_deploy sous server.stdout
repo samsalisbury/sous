@@ -11,7 +11,7 @@ User:
   Email: ""
 Docker:
   RegistryHost: 192.168.99.100:5000
-/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing911923194/sous-server /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing911923194
+/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing117475627/sous-server /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing117475627
 Source: 192.168.99.100/2222/repos/sous-server
 Owners: []
 Kind: http-service
@@ -101,37 +101,37 @@ RUN go install -v
 # NOTE: You must have set PORT0, GDM_REPO
 CMD /go/bin/sous-server
 total 22924
-drwxr-xr-x  9 jlester 513      306 Feb 10 13:33 .
-drwx------  6 jlester 513      204 Feb 10 13:33 ..
-drwxr-xr-x 12 jlester 513      408 Feb 10 13:33 .git
--rw-r--r--  1 jlester 513      420 Feb 10 13:33 Dockerfile
--rw-r--r--  1 jlester 513      514 Feb 10 13:33 docker.crt
--rw-------  1 jlester 513     1679 Feb 10 13:33 key_sous@example.com
--rw-r--r--  1 jlester 513     1771 Feb 10 13:33 main.go
--rwxr-xr-x  1 jlester 513 23451792 Feb 10 13:33 sous
--rw-r--r--  1 jlester 513      518 Feb 10 13:33 sous-server.yaml
-[192.168.99.100]:2222 ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBKcYPJjuvg7E/ThAk7E7FqdL6rvXAuIYlhbpX3fjT+ynMaSKlETfMn2tyAw84pxJuZzdkW0AwzpZrQ4feBQ05jA=
-[192.168.99.100]:2222 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCqjt5G4lM6H1c9vU1e74KMY4hDDpUKJ0jXCjbRfwOGt2TZoJPw26oQyl5oPEaguYODUx8ThzqCT0DcjIkqjJQoWBtvgIz8MP+nQwFc/LbCaYfjwjyw737mv5zRY3OCVkLm9AGhqkdC0u0UYEt+CzH/QOwaDPzsS7UtymalvpPRhBACHynDkxfF9yJ+EGUsZwXq6ouH838rdmFXUQx1SOxHFAwKrGfN+wB23eEmNmUbdXMixwfnphBwGAO8RaHi7hNdozDlOHMTk7qPzb7mntATNEcY5hyADvD8odT7agNqOpHQBOAVdosOxFZcnADRZqC/iXk4TNzFzaKHhXcmwKYh
+drwxr-xr-x  9 jlester 513      306 Feb 10 14:19 .
+drwx------  6 jlester 513      204 Feb 10 14:19 ..
+drwxr-xr-x 12 jlester 513      408 Feb 10 14:19 .git
+-rw-r--r--  1 jlester 513      420 Feb 10 14:19 Dockerfile
+-rw-r--r--  1 jlester 513      514 Feb 10 14:19 docker.crt
+-rw-------  1 jlester 513     1679 Feb 10 14:19 key_sous@example.com
+-rw-r--r--  1 jlester 513     1771 Feb 10 14:19 main.go
+-rwxr-xr-x  1 jlester 513 23451792 Feb 10 14:19 sous
+-rw-r--r--  1 jlester 513      518 Feb 10 14:19 sous-server.yaml
 [192.168.99.100]:2222 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILkNZfvGRNwVyOLG+obo/44zsdLoQReKOFNcP9BGcd3h
-[master 1ab1ad0] Adding ephemeral files
+[192.168.99.100]:2222 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCqjt5G4lM6H1c9vU1e74KMY4hDDpUKJ0jXCjbRfwOGt2TZoJPw26oQyl5oPEaguYODUx8ThzqCT0DcjIkqjJQoWBtvgIz8MP+nQwFc/LbCaYfjwjyw737mv5zRY3OCVkLm9AGhqkdC0u0UYEt+CzH/QOwaDPzsS7UtymalvpPRhBACHynDkxfF9yJ+EGUsZwXq6ouH838rdmFXUQx1SOxHFAwKrGfN+wB23eEmNmUbdXMixwfnphBwGAO8RaHi7hNdozDlOHMTk7qPzb7mntATNEcY5hyADvD8odT7agNqOpHQBOAVdosOxFZcnADRZqC/iXk4TNzFzaKHhXcmwKYh
+[192.168.99.100]:2222 ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBKcYPJjuvg7E/ThAk7E7FqdL6rvXAuIYlhbpX3fjT+ynMaSKlETfMn2tyAw84pxJuZzdkW0AwzpZrQ4feBQ05jA=
+[master 20b6763] Adding ephemeral files
  3 files changed, 30 insertions(+)
  create mode 100644 key_sous@example.com
  create mode 100644 known_hosts
  create mode 100755 sous
-  (Sous)> running docker build -t 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2 -t 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:1ab1ad02306ca6b03c870d13427852fa63a37789 -
+  (Sous)> running docker build -t 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2 -t 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:20b6763576f8fbbb8fb8fadff2a0c0ef39d1deef -
   (Sous)> running docker push 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2
-  (Sous)> running docker push 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:1ab1ad02306ca6b03c870d13427852fa63a37789
-  (Sous)> [recording "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2" as the docker name for "192.168.99.100/2222/repos/sous-server,0.0.2+1ab1ad02306ca6b03c870d13427852fa63a37789"]
+  (Sous)> running docker push 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:20b6763576f8fbbb8fb8fadff2a0c0ef39d1deef
+  (Sous)> [recording "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2" as the docker name for "192.168.99.100/2222/repos/sous-server,0.0.2+20b6763576f8fbbb8fb8fadff2a0c0ef39d1deef"]
 Built: "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2"
 Advisories:
   dirty workspace
-Elapsed: 2.74273052s
+Elapsed: 886.934703ms
   (Sous)> git version
 > git version 2.10.0
 
   (Sous)> git config -l
 > credential.helper=osxkeychain
-core.sshcommand=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing911923194/home/bin/ssh_wrapper
+core.sshcommand=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing117475627/home/bin/ssh_wrapper
 user.name=Integration Tester
 user.email=itester@opentable.com
 push.default=simple
@@ -147,12 +147,23 @@ branch.master.remote=origin
 branch.master.merge=refs/heads/master
 
   (Sous)> git rev-parse --show-toplevel
-> /private/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing911923194/sous-server
+> /private/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing117475627/sous-server
 
   (Sous)> git remote -v
 > origin	ssh://root@192.168.99.100:2222/repos/sous-server (fetch)
 origin	ssh://root@192.168.99.100:2222/repos/sous-server (push)
 
+  (Sous)> git ls-files --others --exclude-standard
+> docker.crt
+
+  (Sous)> git ls-files --modified
+> 
+  (Sous)> git rev-parse --abbrev-ref HEAD
+> master
+
+  (Sous)> git log --date-order --tags --simplify-by-decoration --pretty=format:%H %aI %D
+> 20b6763576f8fbbb8fb8fadff2a0c0ef39d1deef 2017-02-10T14:19:03-08:00 HEAD -> master, tag: 0.0.2, origin/master, origin/HEAD
+1a27267954ca4f05bde5dec1443cf6dbcd520139 2017-01-25T15:39:07-08:00 tag: 0.0.1
   (Sous)> git ls-files
 > Dockerfile
 key_sous@example.com
@@ -162,27 +173,16 @@ sous
 sous-server.yaml
 
   (Sous)> git rev-list -n 1 HEAD
-> 1ab1ad02306ca6b03c870d13427852fa63a37789
+> 20b6763576f8fbbb8fb8fadff2a0c0ef39d1deef
 
-  (Sous)> git ls-files --modified
-> 
-  (Sous)> git rev-parse --abbrev-ref HEAD
-> master
-
-  (Sous)> git ls-files --others --exclude-standard
-> docker.crt
-
-  (Sous)> git log --date-order --tags --simplify-by-decoration --pretty=format:%H %aI %D
-> 1ab1ad02306ca6b03c870d13427852fa63a37789 2017-02-10T13:33:32-08:00 HEAD -> master, tag: 0.0.2, origin/master, origin/HEAD
-1a27267954ca4f05bde5dec1443cf6dbcd520139 2017-01-25T15:39:07-08:00 tag: 0.0.1
   (Sous)> git describe --tags --abbrev=0 --always
 > 0.0.2
 
   (Sous)> git rev-list -n 1 0.0.2
-> 1ab1ad02306ca6b03c870d13427852fa63a37789
+> 20b6763576f8fbbb8fb8fadff2a0c0ef39d1deef
 
 
 
 
 
-/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing911923194
+/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing117475627
