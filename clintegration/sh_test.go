@@ -382,12 +382,12 @@ func TestShellLevelIntegration(t *testing.T) {
 			}
 		})
 
+	// This is where regular use starts
 	config := setup.Block("configuration", `
 	cygnus --env TASK_HOST --env PORT0 {{.EnvDesc.SingularityURL}}
-	serverURL=$(cygnus --env TASK_HOST --env PORT0 {{.EnvDesc.SingularityURL}} | grep 'sous-server.*left' | awk '{ print "http://" $3 ":" $4 }')
+	serverURL=http://{{.EnvDesc.AgentIP}}:$(cygnus--env PORT0 {{.EnvDesc.SingularityURL}} | grep 'sous-server.*left' | awk '{ print $3 }')
 	sous config Server "$serverURL"
-	echo -n "Server URL is: "
-	sous config Server
+	echo "Server URL is:" $(sous config Server)
 	`,
 		func(name string, res shelltest.Result, t *testing.T) {
 			if len(res.Errs) > 0 {
@@ -400,9 +400,11 @@ func TestShellLevelIntegration(t *testing.T) {
 		})
 
 	deploy := config.Block("deploy project", `
+	cat $XDG_CONFIG/sous/config.yaml
+	sous config
 	git clone {{.GitRemoteBase}}/sous-demo
 	cd sous-demo
-	git tag -a 0.0.23
+	git tag -am 'Release!' 0.0.23
 	git push --tags
 	sous init
 	sous build

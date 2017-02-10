@@ -1,4 +1,3 @@
 #! /bin/sh
 
-echo ssh_wrapper >&2
 {{.SSHExec}} -o PasswordAuthentication=no -F "{{.Homedir}}/dot-ssh/config" "${@}"

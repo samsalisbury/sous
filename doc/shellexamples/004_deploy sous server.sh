@@ -3,7 +3,7 @@
 	git clone ssh://root@192.168.99.100:2222/repos/sous-server
 	pushd sous-server
 	export SOUS_USER_NAME=test SOUS_USER_EMAIL=test@test.com
-	export SOUS_SERVER= SOUS_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing514461492/gdm
+	export SOUS_SERVER= SOUS_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing529529757/gdm
 	sous init -v -d
 	sous manifest get | sed '/version/a\
 	\    env:

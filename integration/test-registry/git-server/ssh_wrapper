@@ -1,6 +1,5 @@
 #! /bin/sh
 
 cd "$(dirname "$0")" || exit 1
-echo ssh_wrapper "${@}" >&2
 chmod go-rwx ./git_pubkey_rsa*
-ssh -v -i "./git_pubkey_rsa" -o PasswordAuthentication=no -F "./ssh-config" "${@}"
+ssh -i "./git_pubkey_rsa" -o PasswordAuthentication=no -F "./ssh-config" "${@}"
