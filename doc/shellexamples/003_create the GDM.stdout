@@ -50,8 +50,8 @@ Resources:
 - Name: ports
   Type: Integer
 Metadata: []
-/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing787817653/gdm /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing787817653
-[master (root-commit) ef51054] Adding defs.yaml
+/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing036777528/gdm /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing036777528
+[master (root-commit) e904ff5] Adding defs.yaml
  1 file changed, 52 insertions(+)
  create mode 100644 defs.yaml
-/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing787817653
+/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing036777528

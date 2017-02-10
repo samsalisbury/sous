@@ -7,12 +7,12 @@ bash-3.2$ while [ $(cygnus -H http://192.168.99.100:7099/singularity | grep s<
 > done
 bash-3.2$ cygnus --env TASK_HOST --env PORT0 http://192.168.99.100:7099/singu<_HOST --env PORT0 http://192.168.99.100:7099/singul                         arity
 Request ID                                   Deploy ID                              TASK_HOST PORT0
-192.168.99.100>2222>repos>sous-server::left  0_0_2_02eb082fe329444c93cc8a955cb77bd3 localhost 31223
-192.168.99.100>2222>repos>sous-server::right 0_0_2_c6c2d83ec7c1476f8ee5fb7daa0ced7c localhost 31772
+192.168.99.100>2222>repos>sous-server::left  0_0_2_a933340427424b929923b9e66f34395e localhost 31685
+192.168.99.100>2222>repos>sous-server::right 0_0_2_1cbeda63778a41aea9c1bcd18da6b841 localhost 31662
 bash-3.2$ serverURL=http://192.168.99.100:$(cygnus --env PORT0 http://192.168<192.168.99.100:$(cygnus --env PORT0 http://192.168.                         99.100:7099/singularity |<env PORT0 http://192.168.99.100:7099/singularity |                          grep 'sous-server.*left' <9.100:7099/singularity | grep 'sous-server.*left' |                          awk '{ print $3 }')
 bash-3.2$ sous config Server "$serverURL"
-set Server to "http://192.168.99.100:31223"
+set Server to "http://192.168.99.100:31685"
 bash-3.2$ echo "Server URL is:" $(sous config Server)
-Server URL is: http://192.168.99.100:31223
+Server URL is: http://192.168.99.100:31685
 bash-3.2$ 
 bash-3.2$ 

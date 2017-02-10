@@ -53,8 +53,10 @@ clean:
 clean-containers:
 	-docker ps -q | xargs docker kill
 	-docker ps -aq | xargs docker rm
-	rm ./integration/test-registry/docker-registry/testing.crt
-	if docker images | egrep ^testregistry_registry; then docker rmi testregistry_registry; fi
+	-rm ./integration/test-registry/docker-registry/testing.crt
+	-docker rmi testregistry_registry
+	-docker rmi testregistry_gitserver
+	-docker rmi $$(docker images | egrep 'sous-(server|demo)' | awk '{ print $$3 }')
 
 gitlog:
 	git log `git describe --abbrev=0`..HEAD
