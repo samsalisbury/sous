@@ -1,14 +1,11 @@
 package otpl
 
 import (
-	"io/ioutil"
-	"os"
-	"path/filepath"
 	"testing"
 
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/filemap"
 	"github.com/opentable/sous/util/shell"
-	"github.com/pkg/errors"
 	"github.com/samsalisbury/semv"
 )
 
@@ -58,7 +55,7 @@ func TestSingularityResources_SousResources(t *testing.T) {
 func TestManifestParser_ParseManifest(t *testing.T) {
 
 	// Setup: write some files to disk.
-	files := fileMap{
+	files := filemap.FileMap{
 		"config/cluster1/singularity-request.json": `{
 	        "owners": ["owner1@example.com"],
 	        "instances": 2,
@@ -76,21 +73,21 @@ func TestManifestParser_ParseManifest(t *testing.T) {
 	      "other fields": "are ignored"
 	    }`,
 	}
-	if err := files.Write("testdata/gen"); err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := files.Delete("testdata/gen"); err != nil {
-			t.Fatalf("cleanup failed: %s", err)
+
+	const testDataDir = "testdata/gen"
+
+	var actual sous.Manifests
+
+	if fileMapErr := files.Session(testDataDir, func() {
+		wd, err := shell.DefaultInDir(testDataDir)
+		if err != nil {
+			t.Fatal(err)
 		}
-	}()
-
-	wd, err := shell.DefaultInDir("testdata/gen")
-	if err != nil {
-		t.Fatal(err)
+		// Shebang...
+		actual = NewManifestParser().ParseManifests(wd)
+	}); fileMapErr != nil {
+		t.Fatal(fileMapErr)
 	}
-
-	actual := NewManifestParser().ParseManifests(wd)
 
 	expected := sous.NewManifests(
 		&sous.Manifest{
@@ -126,26 +123,4 @@ func TestManifestParser_ParseManifest(t *testing.T) {
 			t.Error(diff)
 		}
 	}
-}
-
-type fileMap map[string]string
-
-func (f fileMap) Delete(dir string) error {
-	return os.RemoveAll(dir)
-}
-
-func (f fileMap) Write(dir string) error {
-	for name, contents := range f {
-		name := filepath.Join(dir, name)
-		if err := os.MkdirAll(filepath.Dir(name), 0777); err != nil {
-			return err
-		}
-		if err := ioutil.WriteFile(name, []byte(contents), 0777); err != nil {
-			if deleteErr := f.Delete(dir); err != nil {
-				return errors.Wrapf(err, "error cleaning up: %s", deleteErr)
-			}
-			return errors.Wrapf(err, "error writing files, cleanup successful")
-		}
-	}
-	return nil
 }
