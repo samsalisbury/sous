@@ -12,6 +12,13 @@ import (
 	"github.com/satori/go.uuid"
 )
 
+// Singularity DeployID must be <50
+const maxDeployIDLen = 49
+
+// maxVersionLen needs to account for the separator character
+// between the version string and the UUID string.
+const maxVersionLen = 31
+
 /*
 The imagined use case here is like this:
 
@@ -100,7 +107,7 @@ func (r *deployer) RectifySingleCreate(d *sous.Deployable) (err error) {
 		return err
 	}
 	return r.Client.Deploy(
-		d.Cluster.BaseURL, newDepID(), reqID, name, d.Resources,
+		d.Cluster.BaseURL, computeDeployID(d), reqID, name, d.Resources,
 		d.Env, d.DeployConfig.Volumes)
 }
 
@@ -172,7 +179,7 @@ func (r *deployer) RectifySingleModification(pair *sous.DeployablePair) (err err
 
 		if err := r.Client.Deploy(
 			pair.Post.Cluster.BaseURL,
-			newDepID(),
+			computeDeployID(pair.Post),
 			computeRequestID(pair.Prior),
 			name,
 			pair.Post.Resources,
@@ -201,6 +208,35 @@ func computeRequestID(d *sous.Deployable) string {
 		return d.RequestID
 	}
 	return MakeRequestID(d.ID())
+}
+
+func computeDeployID(d *sous.Deployable) string {
+	var uuidTrunc, versionTrunc string
+	uuidEntire := StripDeployID(uuid.NewV4().String())
+	versionSansMeta := stripMetadata(d.Deployment.SourceID.Version.String())
+	versionEntire := SanitizeDeployID(versionSansMeta)
+
+	if len(versionEntire) > maxVersionLen {
+		versionTrunc = versionEntire[0:maxVersionLen]
+	} else {
+		versionTrunc = versionEntire
+	}
+
+	// naiveLen is the length of the truncated Version plus
+	// the length of an entire UUID plus the length of a separator
+	// character.
+	naiveLen := len(versionTrunc) + len(uuidEntire) + 1
+
+	if naiveLen > maxDeployIDLen {
+		uuidTrunc = uuidEntire[:maxDeployIDLen-len(versionTrunc)-1]
+	} else {
+		uuidTrunc = uuidEntire
+	}
+
+	return strings.Join([]string{
+		versionTrunc,
+		uuidTrunc,
+	}, "_")
 }
 
 // MakeRequestID creats a Singularity request ID from a sous.DeployID.
@@ -238,8 +274,4 @@ func ParseRequestID(id string) (sous.DeployID, error) {
 		},
 		Cluster: parts[2],
 	}, nil
-}
-
-func newDepID() string {
-	return MakeDeployID(uuid.NewV4().String())
 }
