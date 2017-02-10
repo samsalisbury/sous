@@ -3,6 +3,7 @@ package singularity
 import (
 	"fmt"
 	"regexp"
+	"strings"
 	"sync"
 
 	"github.com/opentable/go-singularity"
@@ -12,11 +13,21 @@ import (
 	"github.com/satori/go.uuid"
 )
 
-var illegalDeployIDChars = regexp.MustCompile(`[-/:]`)
+var illegalDeployIDChars = regexp.MustCompile(`[^a-z|^A-Z|^0-9|^_]`)
 
-// MakeDeployID cleans a string to be used as a Singularity deploy ID.
-func MakeDeployID(in string) string {
+// SanitizeDeployID replaces characters forbidden in a Singularity deploy ID
+// with underscores.
+func SanitizeDeployID(in string) string {
+	return illegalDeployIDChars.ReplaceAllString(in, "_")
+}
+
+// StripDeployID removes all characters forbidden in a Singularity deployID.
+func StripDeployID(in string) string {
 	return illegalDeployIDChars.ReplaceAllString(in, "")
+}
+
+func stripMetadata(in string) string {
+	return strings.Split(in, "+")[0]
 }
 
 // RectiAgent is an implementation of the RectificationClient interface
@@ -46,7 +57,7 @@ func mapResources(r sous.Resources) dtoMap {
 func (ra *RectiAgent) Deploy(cluster, depID, reqID, dockerImage string,
 	r sous.Resources, e sous.Env, vols sous.Volumes) error {
 	Log.Debug.Printf("Deploying instance %s %s %s %s %v %v", cluster, depID, reqID, dockerImage, r, e)
-	depReq, err := buildDeployRequest(dockerImage, e, r, reqID, vols)
+	depReq, err := buildDeployRequest(dockerImage, e, r, reqID, depID, vols)
 	if err != nil {
 		return err
 	}
@@ -56,7 +67,7 @@ func (ra *RectiAgent) Deploy(cluster, depID, reqID, dockerImage string,
 	return err
 }
 
-func buildDeployRequest(dockerImage string, e sous.Env, r sous.Resources, reqID string, vols sous.Volumes) (*dtos.SingularityDeployRequest, error) {
+func buildDeployRequest(dockerImage string, e sous.Env, r sous.Resources, reqID string, depID string, vols sous.Volumes) (*dtos.SingularityDeployRequest, error) {
 	var depReq swaggering.Fielder
 	dockerInfo, err := swaggering.LoadMap(&dtos.SingularityDockerInfo{}, dtoMap{
 		"Image":   dockerImage,
@@ -98,7 +109,7 @@ func buildDeployRequest(dockerImage string, e sous.Env, r sous.Resources, reqID 
 	}
 
 	dep, err := swaggering.LoadMap(&dtos.SingularityDeploy{}, dtoMap{
-		"Id":            MakeDeployID(uuid.NewV4().String()),
+		"Id":            depID,
 		"RequestId":     reqID,
 		"Resources":     res,
 		"ContainerInfo": ci,
@@ -173,7 +184,7 @@ func (ra *RectiAgent) DeleteRequest(cluster, reqID, message string) error {
 func (ra *RectiAgent) Scale(cluster, reqID string, instanceCount int, message string) error {
 	Log.Debug.Printf("Scaling %s %s %d %s", cluster, reqID, instanceCount, message)
 	sr, err := swaggering.LoadMap(&dtos.SingularityScaleRequest{}, dtoMap{
-		"ActionId": MakeDeployID(uuid.NewV4().String()), // not positive this is appropriate
+		"ActionId": "SOUS_RECTIFY_" + StripDeployID(uuid.NewV4().String()), // not positive this is appropriate
 		// omitting DurationMillis - bears discussion
 		"Instances":        int32(instanceCount),
 		"Message":          "Sous" + message,
