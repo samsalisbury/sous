@@ -341,10 +341,22 @@ func TestShellLevelIntegration(t *testing.T) {
 	export SOUS_USER_NAME=test SOUS_USER_EMAIL=test@test.com
 	export SOUS_SERVER= SOUS_STATE_LOCATION={{.Statedir}}
 	sous init -v -d
-	sous manifest get | sed '/version/a\
+	sous manifest get | sed '/left:/{
+		a\
 	\    env:
-	/version/a\
+	  a\
 	\      GDM_REPO: "{{.GitRemoteBase}}/gdm"
+	  a\
+	\      CLUSTER_NAME: left
+  }
+	/right:/{
+		a\
+	\    env:
+	  a\
+	\      GDM_REPO: "{{.GitRemoteBase}}/gdm"
+	  a\
+	\      CLUSTER_NAME: right
+	}
 	' > ~/sous-server.yaml
 	cat ~/sous-server.yaml
 	sous manifest set < ~/sous-server.yaml
@@ -366,7 +378,7 @@ func TestShellLevelIntegration(t *testing.T) {
 	pwd
 	sous build
 	# We expect to see 'Sous is running ... in workstation mode' here:
-	sous deploy -cluster left
+	sous deploy -d -v -cluster left
 	sous deploy -cluster right
 	unset SOUS_SERVER
 	unset SOUS_STATE_LOCATION
@@ -384,8 +396,14 @@ func TestShellLevelIntegration(t *testing.T) {
 
 	// This is where regular use starts
 	config := setup.Block("configuration", `
+	# This is kind of a hack - in normal operation, Sous would block until its
+	# services had been accepted, but when bootstrapping, we need to wait for them
+	# to come up.
+	while [ $(cygnus -H {{.EnvDesc.SingularityURL}} | grep sous-server | wc -l) -lt 2 ]; do
+	  sleep 0.1
+	done
 	cygnus --env TASK_HOST --env PORT0 {{.EnvDesc.SingularityURL}}
-	serverURL=http://{{.EnvDesc.AgentIP}}:$(cygnus--env PORT0 {{.EnvDesc.SingularityURL}} | grep 'sous-server.*left' | awk '{ print $3 }')
+	serverURL=http://{{.EnvDesc.AgentIP}}:$(cygnus --env PORT0 {{.EnvDesc.SingularityURL}} | grep 'sous-server.*left' | awk '{ print $3 }')
 	sous config Server "$serverURL"
 	echo "Server URL is:" $(sous config Server)
 	`,

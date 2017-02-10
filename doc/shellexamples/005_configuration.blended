@@ -1,11 +1,18 @@
 
+bash-3.2$ # This is kind of a hack - in normal operation, Sous would block un< a hack - in normal operation, Sous would block unt                         il its
+bash-3.2$ # services had been accepted, but when bootstrapping, we need to wa<en accepted, but when bootstrapping, we need to wai                         t for them
+bash-3.2$ # to come up.
+bash-3.2$ while [ $(cygnus -H http://192.168.99.100:7099/singularity | grep s<-H http://192.168.99.100:7099/singularity | grep so                         us-server | wc -l) -lt 2 <099/singularity | grep sous-server | wc -l) -lt 2 ]                         ; do
+>   sleep 0.1
+> done
 bash-3.2$ cygnus --env TASK_HOST --env PORT0 http://192.168.99.100:7099/singu<_HOST --env PORT0 http://192.168.99.100:7099/singul                         arity
-Request ID Deploy ID TASK_HOST PORT0
-bash-3.2$ serverURL=http://192.168.99.100:$(cygnus--env PORT0 http://192.168.<192.168.99.100:$(cygnus--env PORT0 http://192.168.9                         9.100:7099/singularity | <nv PORT0 http://192.168.99.100:7099/singularity | g                         rep 'sous-server.*left' |<.100:7099/singularity | grep 'sous-server.*left' |                          awk '{ print $3 }')
-bash: cygnus--env: command not found
+Request ID                                   Deploy ID                        TASK_HOST PORT0
+192.168.99.100>2222>repos>sous-server::left  cdbb9b1b064c449e9bef7bc3cbc0efd4 localhost 31516
+192.168.99.100>2222>repos>sous-server::right 61317d535e1c4b4baf3988ff8aa3296e localhost 31710
+bash-3.2$ serverURL=http://192.168.99.100:$(cygnus --env PORT0 http://192.168<192.168.99.100:$(cygnus --env PORT0 http://192.168.                         99.100:7099/singularity |<env PORT0 http://192.168.99.100:7099/singularity |                          grep 'sous-server.*left' <9.100:7099/singularity | grep 'sous-server.*left' |                          awk '{ print $3 }')
 bash-3.2$ sous config Server "$serverURL"
-set Server to "http://192.168.99.100:"
+set Server to "http://192.168.99.100:31516"
 bash-3.2$ echo "Server URL is:" $(sous config Server)
-Server URL is: http://192.168.99.100:
+Server URL is: http://192.168.99.100:31516
 bash-3.2$ 
 bash-3.2$ 

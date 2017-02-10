@@ -18,21 +18,21 @@ bash-3.2$ git clone ssh://root@192.168.99.100:2222/repos/sous-server
 Cloning into 'sous-server'...
 Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
 bash-3.2$ pushd sous-server
-/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing529529757/sous-server /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing529529757
+/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing415154522/sous-server /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing415154522
 bash-3.2$ export SOUS_USER_NAME=test SOUS_USER_EMAIL=test@test.com
-bash-3.2$ export SOUS_SERVER= SOUS_STATE_LOCATION=/var/folders/sp/wllf_wh92p7<R= SOUS_STATE_LOCATION=/var/folders/sp/wllf_wh92p72                         5fl4vz92mrn16vkfds/T/sous<r/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-                         cli-testing529529757/gdm
+bash-3.2$ export SOUS_SERVER= SOUS_STATE_LOCATION=/var/folders/sp/wllf_wh92p7<R= SOUS_STATE_LOCATION=/var/folders/sp/wllf_wh92p72                         5fl4vz92mrn16vkfds/T/sous<r/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-                         cli-testing415154522/gdm
 bash-3.2$ sous init -v -d
-vomit: 2017/02/09 16:29:38 graph.go:298: Verbose debugging enabled
-debug: 2017/02/09 16:29:38 graph.go:299: Regular debugging enabled
+vomit: 2017/02/09 17:10:09 graph.go:298: Verbose debugging enabled
+debug: 2017/02/09 17:10:09 graph.go:299: Regular debugging enabled
 warn: No server set, Sous is running in server or workstation mode.
 warn: Configure a server like this: sous config server http://some.sous.server
-warn: Using local state stored at /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing529529757/gdm
+warn: Using local state stored at /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing415154522/gdm
   (Sous)> git version
-> git version 2.10.1 (Apple Git-78)
+> git version 2.10.0
 
   (Sous)> git config -l
 > credential.helper=osxkeychain
-core.sshcommand=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing529529757/home/bin/ssh_wrapper
+core.sshcommand=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing415154522/home/bin/ssh_wrapper
 user.name=Integration Tester
 user.email=itester@opentable.com
 push.default=simple
@@ -48,63 +48,63 @@ branch.master.remote=origin
 branch.master.merge=refs/heads/master
 
   (Sous)> git rev-parse --show-toplevel
-> /private/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing529529757/sous-server
+> /private/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing415154522/sous-server
 
+  (Sous)> git remote -v
+> origin	ssh://root@192.168.99.100:2222/repos/sous-server (fetch)
+origin	ssh://root@192.168.99.100:2222/repos/sous-server (push)
+
+  (Sous)> git ls-files --modified
+> 
   (Sous)> git ls-files
 > Dockerfile
 main.go
 sous-server.yaml
 
-  (Sous)> git ls-files --others --exclude-standard
-> 
-  (Sous)> git remote -v
-> origin	ssh://root@192.168.99.100:2222/repos/sous-server (fetch)
-origin	ssh://root@192.168.99.100:2222/repos/sous-server (push)
-
-  (Sous)> git log --date-order --tags --simplify-by-decoration --pretty=format:%H %aI %D
-> 1a27267954ca4f05bde5dec1443cf6dbcd520139 2017-01-25T15:39:07-08:00 tag: 0.0.1
-  (Sous)> git ls-files --modified
-> 
-  (Sous)> git rev-parse --abbrev-ref HEAD
-> master
-
   (Sous)> git rev-list -n 1 HEAD
 > 91f407d7f4f2cd3bdbf78f82e2810278276fa58b
 
+  (Sous)> git log --date-order --tags --simplify-by-decoration --pretty=format:%H %aI %D
+> 1a27267954ca4f05bde5dec1443cf6dbcd520139 2017-01-25T15:39:07-08:00 tag: 0.0.1
+  (Sous)> git rev-parse --abbrev-ref HEAD
+> master
+
+  (Sous)> git ls-files --others --exclude-standard
+> 
   (Sous)> git describe --tags --abbrev=0 --always
 > 0.0.1
 
   (Sous)> git rev-list -n 1 0.0.1
 > 1a27267954ca4f05bde5dec1443cf6dbcd520139
 
-debug: 2017/02/09 16:29:38 git_state_manager.go:53: [git pull]: success
-vomit: 2017/02/09 16:29:38 git_state_manager.go:57: git: Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
+debug: 2017/02/09 17:10:10 git_state_manager.go:53: [git pull]: success
+vomit: 2017/02/09 17:10:10 git_state_manager.go:57: git: Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
 Already up-to-date.
-vomit: 2017/02/09 16:29:38 disk_state_manager.go:65: Reading state from disk
-vomit: 2017/02/09 16:29:38 disk_state_manager.go:45: Validating State
-vomit: 2017/02/09 16:29:38 disk_state_manager.go:48: Repairing State
-debug: 2017/02/09 16:29:38 git_state_manager.go:53: [git tag sous-fallback-87b4f77b-8ae0-4b11-823d-e7f85e346c52]: success
-vomit: 2017/02/09 16:29:38 git_state_manager.go:57: git: 
-vomit: 2017/02/09 16:29:38 disk_state_manager.go:45: Validating State
-vomit: 2017/02/09 16:29:38 disk_state_manager.go:48: Repairing State
-vomit: 2017/02/09 16:29:38 disk_state_manager.go:100: Writing state to disk
-debug: 2017/02/09 16:29:38 git_state_manager.go:53: [git add .]: success
-vomit: 2017/02/09 16:29:38 git_state_manager.go:57: git: 
-debug: 2017/02/09 16:29:38 git_state_manager.go:55: [git diff-index --exit-code HEAD]: error: exit status 1
-vomit: 2017/02/09 16:29:38 git_state_manager.go:57: git: :100644 100644 0cff63bd3996d393983dcebf2ccb26cc570e8d78 143bfab2a6b3b90f34389146e1575e4b61e4b37c M	defs.yaml
+vomit: 2017/02/09 17:10:10 disk_state_manager.go:65: Reading state from disk
+vomit: 2017/02/09 17:10:10 disk_state_manager.go:45: Validating State
+vomit: 2017/02/09 17:10:10 disk_state_manager.go:48: Repairing State
+debug: 2017/02/09 17:10:10 git_state_manager.go:53: [git tag sous-fallback-bab23cb2-42a8-4a24-82dd-86194a4239f8]: success
+vomit: 2017/02/09 17:10:10 git_state_manager.go:57: git: 
+vomit: 2017/02/09 17:10:10 disk_state_manager.go:45: Validating State
+vomit: 2017/02/09 17:10:10 disk_state_manager.go:48: Repairing State
+vomit: 2017/02/09 17:10:10 disk_state_manager.go:100: Writing state to disk
+debug: 2017/02/09 17:10:10 git_state_manager.go:53: [git add .]: success
+vomit: 2017/02/09 17:10:10 git_state_manager.go:57: git: 
+debug: 2017/02/09 17:10:10 git_state_manager.go:55: [git diff-index --exit-code HEAD]: error: exit status 1
+vomit: 2017/02/09 17:10:10 git_state_manager.go:57: git: :100644 100644 0cff63bd3996d393983dcebf2ccb26cc570e8d78 143bfab2a6b3b90f34389146e1575e4b61e4b37c M	defs.yaml
 :000000 100644 0000000000000000000000000000000000000000 f524621b01746387e3168c8883627d69f2e9c196 A	manifests/192.168.99.100/2222/repos/sous-server.yaml
-debug: 2017/02/09 16:29:38 git_state_manager.go:53: [git commit -m sous commit: Update State --author test <test@test.com>]: success
-vomit: 2017/02/09 16:29:38 git_state_manager.go:57: git: [master 3717a42] sous commit: Update State
+debug: 2017/02/09 17:10:10 git_state_manager.go:53: [git commit -m sous commit: Update State --author test <test@test.com>]: success
+vomit: 2017/02/09 17:10:10 git_state_manager.go:57: git: [master fba7460] sous commit: Update State
  Author: test <test@test.com>
  2 files changed, 22 insertions(+), 2 deletions(-)
  create mode 100644 manifests/192.168.99.100/2222/repos/sous-server.yaml
-debug: 2017/02/09 16:29:38 git_state_manager.go:53: [git push -u origin master]: success
-vomit: 2017/02/09 16:29:38 git_state_manager.go:57: git: Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
+debug: 2017/02/09 17:10:10 git_state_manager.go:53: [git push -u origin master]: success
+vomit: 2017/02/09 17:10:10 git_state_manager.go:57: git: Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
 To ssh://192.168.99.100:2222/repos/gdm
-   a960b3a..3717a42  master -> master
+   2cbb410..fba7460  master -> master
 Branch master set up to track remote branch master from origin.
-debug: 2017/02/09 16:29:38 git_state_manager.go:53: [git tag -d sous-fallback-87b4f77b-8ae0-4b11-823d-e7f85e346c52]: success
-vomit: 2017/02/09 16:29:38 git_state_manager.go:57: git: Deleted tag 'sous-fallback-87b4f77b-8ae0-4b11-823d-e7f85e346c52' (was a960b3a)
+debug: 2017/02/09 17:10:10 git_state_manager.go:53: [git tag -d sous-fallback-bab23cb2-42a8-4a24-82dd-86194a4239f8]: success
+vomit: 2017/02/09 17:10:10 git_state_manager.go:57: git: Deleted tag 'sous-fallback-bab23cb2-42a8-4a24-82dd-86194a4239f8' (was 2cbb410)
 Source: 192.168.99.100/2222/repos/sous-server
 Owners: []
 Kind: http-service
@@ -125,20 +125,39 @@ Deployments:
     NumInstances: 1
     Volumes: []
     Version: 0.0.0
-bash-3.2$ sous manifest get | sed '/version/a\
+bash-3.2$ sous manifest get | sed '/left:/{
+> 
+.git/             Dockerfile        main.go           sous-server.yaml
+> a\
 > \    env:
-> /version/a\
+>   a\
 > \      GDM_REPO: "ssh://root@192.168.99.100:2222/repos/gdm"
+>   a\
+> \      CLUSTER_NAME: left
+>   }
+> /right:/{
+> 
+.git/             Dockerfile        main.go           sous-server.yaml
+> a\
+> \    env:
+>   a\
+> \      GDM_REPO: "ssh://root@192.168.99.100:2222/repos/gdm"
+>   a\
+> \      CLUSTER_NAME: right
+> }
 > ' > ~/sous-server.yaml
 warn: No server set, Sous is running in server or workstation mode.
 warn: Configure a server like this: sous config server http://some.sous.server
-warn: Using local state stored at /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing529529757/gdm
+warn: Using local state stored at /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing415154522/gdm
 bash-3.2$ cat ~/sous-server.yaml
 source: 192.168.99.100/2222/repos/sous-server
 owners: []
 kind: http-service
 deployments:
   left:
+    env:
+      GDM_REPO: "ssh://root@192.168.99.100:2222/repos/gdm"
+      CLUSTER_NAME: left
     resources:
       cpus: "0.1"
       memory: "100"
@@ -146,9 +165,10 @@ deployments:
     numinstances: 1
     volumes: []
     version: 0.0.0
-    env:
-      GDM_REPO: "ssh://root@192.168.99.100:2222/repos/gdm"
   right:
+    env:
+      GDM_REPO: "ssh://root@192.168.99.100:2222/repos/gdm"
+      CLUSTER_NAME: right
     resources:
       cpus: "0.1"
       memory: "100"
@@ -156,13 +176,11 @@ deployments:
     numinstances: 1
     volumes: []
     version: 0.0.0
-    env:
-      GDM_REPO: "ssh://root@192.168.99.100:2222/repos/gdm"
 
 bash-3.2$ sous manifest set < ~/sous-server.yaml
 warn: No server set, Sous is running in server or workstation mode.
 warn: Configure a server like this: sous config server http://some.sous.server
-warn: Using local state stored at /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing529529757/gdm
+warn: Using local state stored at /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing415154522/gdm
 
 bash-3.2$ 
 bash-3.2$ # Last minute config
@@ -188,14 +206,14 @@ bash-3.2$ cp ~/dot-ssh/git_pubkey_rsa key_sous@example.com
 bash-3.2$ cp /Users/jlester/golang/src/github.com/opentable/sous/dev_support/</golang/src/github.com/opentable/sous/dev_support/$                         (readlink /Users/jlester/<ntable/sous/dev_support/$(readlink /Users/jlester/g                         olang/src/github.com/open<readlink /Users/jlester/golang/src/github.com/opent                         able/sous/dev_support/sou<lang/src/github.com/opentable/sous/dev_support/sous                         _linux) .
 bash-3.2$ ls -la
 total 22916
-drwxr-xr-x  8 jlester 513      272 Feb  9 16:29 .
-drwx------  6 jlester 513      204 Feb  9 16:29 ..
-drwxr-xr-x 13 jlester 513      442 Feb  9 16:29 .git
--rw-r--r--  1 jlester 513      390 Feb  9 16:29 Dockerfile
--rw-------  1 jlester 513     1679 Feb  9 16:29 key_sous@example.com
--rw-r--r--  1 jlester 513     1654 Feb  9 16:29 main.go
--rwxr-xr-x  1 jlester 513 23446936 Feb  9 16:29 sous
--rw-r--r--  1 jlester 513      518 Feb  9 16:29 sous-server.yaml
+drwxr-xr-x  8 jlester 513      272 Feb  9 17:10 .
+drwx------  6 jlester 513      204 Feb  9 17:10 ..
+drwxr-xr-x 12 jlester 513      408 Feb  9 17:10 .git
+-rw-r--r--  1 jlester 513      390 Feb  9 17:10 Dockerfile
+-rw-------  1 jlester 513     1679 Feb  9 17:10 key_sous@example.com
+-rw-r--r--  1 jlester 513     1654 Feb  9 17:10 main.go
+-rwxr-xr-x  1 jlester 513 23446936 Feb  9 17:10 sous
+-rw-r--r--  1 jlester 513      518 Feb  9 17:10 sous-server.yaml
 bash-3.2$ ssh-keyscan -p 2222 192.168.99.100 > known_hosts
 # 192.168.99.100:2222 SSH-2.0-OpenSSH_7.2p2-hpn14v4
 # 192.168.99.100:2222 SSH-2.0-OpenSSH_7.2p2-hpn14v4
@@ -207,7 +225,7 @@ bash-3.2$ cat known_hosts
 bash-3.2$ 
 bash-3.2$ git add key_sous@example.com known_hosts sous
 bash-3.2$ git commit -am "Adding ephemeral files"
-[master 56f6d14] Adding ephemeral files
+[master 2099343] Adding ephemeral files
  3 files changed, 30 insertions(+)
  create mode 100644 key_sous@example.com
  create mode 100644 known_hosts
@@ -216,16 +234,16 @@ bash-3.2$ git tag -am "0.0.2" 0.0.2
 bash-3.2$ git push
 Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
 To ssh://192.168.99.100:2222/repos/sous-server
-   91f407d..56f6d14  master -> master
+   91f407d..2099343  master -> master
 bash-3.2$ git push --tags
 Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
 To ssh://192.168.99.100:2222/repos/sous-server
  * [new tag]         0.0.2 -> 0.0.2
 bash-3.2$ sous context
-RootDir: /private/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing529529757/sous-server
+RootDir: /private/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing415154522/sous-server
 OffsetDir: ""
 Branch: master
-Revision: 56f6d14d4cdd79637ecb842220c962189153cc59
+Revision: 2099343012203e1331a269aad8451b3c3d85d4e9
 Files:
 - Dockerfile
 - key_sous@example.com
@@ -237,11 +255,11 @@ ModifiedFiles: []
 NewFiles: []
 Tags:
 - Name: 0.0.2
-  Revision: 56f6d14d4cdd79637ecb842220c962189153cc59
+  Revision: 2099343012203e1331a269aad8451b3c3d85d4e9
 - Name: 0.0.1
   Revision: 1a27267954ca4f05bde5dec1443cf6dbcd520139
 NearestTagName: 0.0.2
-NearestTagRevision: 56f6d14d4cdd79637ecb842220c962189153cc59
+NearestTagRevision: 2099343012203e1331a269aad8451b3c3d85d4e9
 PrimaryRemoteURL: 192.168.99.100/2222/repos/sous-server
 RemoteURL: ""
 RemoteURLs:
@@ -249,30 +267,637 @@ RemoteURLs:
 DirtyWorkingTree: false
 RevisionUnpushed: false
 bash-3.2$ pwd
-bash-3.2$ /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing529529757/sous-server
-sous build
-  (Sous)> running docker build -t 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2 -t 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:56f6d14d4cdd79637ecb842220c962189153cc59 -
+/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing415154522/sous-server
+bash-3.2$ sous build
+  (Sous)> running docker build -t 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2 -t 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:2099343012203e1331a269aad8451b3c3d85d4e9 -
   (Sous)> running docker push 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2
-  (Sous)> running docker push 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:56f6d14d4cdd79637ecb842220c962189153cc59
-  (Sous)> [recording "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2" as the docker name for "192.168.99.100/2222/repos/sous-server,0.0.2+56f6d14d4cdd79637ecb842220c962189153cc59"]
+  (Sous)> running docker push 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:2099343012203e1331a269aad8451b3c3d85d4e9
+  (Sous)> [recording "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2" as the docker name for "192.168.99.100/2222/repos/sous-server,0.0.2+2099343012203e1331a269aad8451b3c3d85d4e9"]
 Built: "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2"
-Elapsed: 1.045513188s
+Elapsed: 892.399266ms
 bash-3.2$ # We expect to see 'Sous is running ... in workstation mode' here:
-bash-3.2$ sous deploy -cluster left
+bash-3.2$ sous deploy -d -v -cluster left
+vomit: 2017/02/09 17:10:16 graph.go:298: Verbose debugging enabled
+debug: 2017/02/09 17:10:16 graph.go:299: Regular debugging enabled
 warn: No server set, Sous is running in server or workstation mode.
 warn: Configure a server like this: sous config server http://some.sous.server
-warn: Using local state stored at /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing529529757/gdm
+warn: Using local state stored at /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing415154522/gdm
+  (Sous)> git version
+> git version 2.10.0
 
+  (Sous)> git config -l
+> credential.helper=osxkeychain
+core.sshcommand=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing415154522/home/bin/ssh_wrapper
+user.name=Integration Tester
+user.email=itester@opentable.com
+push.default=simple
+core.repositoryformatversion=0
+core.filemode=true
+core.bare=false
+core.logallrefupdates=true
+core.ignorecase=true
+core.precomposeunicode=true
+remote.origin.url=ssh://root@192.168.99.100:2222/repos/sous-server
+remote.origin.fetch=+refs/heads/*:refs/remotes/origin/*
+branch.master.remote=origin
+branch.master.merge=refs/heads/master
+
+  (Sous)> git rev-parse --show-toplevel
+> /private/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing415154522/sous-server
+
+  (Sous)> git remote -v
+> origin	ssh://root@192.168.99.100:2222/repos/sous-server (fetch)
+origin	ssh://root@192.168.99.100:2222/repos/sous-server (push)
+
+  (Sous)> git ls-files
+> Dockerfile
+key_sous@example.com
+known_hosts
+main.go
+sous
+sous-server.yaml
+
+  (Sous)> git log --date-order --tags --simplify-by-decoration --pretty=format:%H %aI %D
+> 2099343012203e1331a269aad8451b3c3d85d4e9 2017-02-09T17:10:11-08:00 HEAD -> master, tag: 0.0.2, origin/master, origin/HEAD
+1a27267954ca4f05bde5dec1443cf6dbcd520139 2017-01-25T15:39:07-08:00 tag: 0.0.1
+  (Sous)> git rev-list -n 1 HEAD
+> 2099343012203e1331a269aad8451b3c3d85d4e9
+
+  (Sous)> git rev-parse --abbrev-ref HEAD
+> master
+
+  (Sous)> git ls-files --others --exclude-standard
+> 
+  (Sous)> git describe --tags --abbrev=0 --always
+> 0.0.2
+
+  (Sous)> git rev-list -n 1 0.0.2
+> 2099343012203e1331a269aad8451b3c3d85d4e9
+
+  (Sous)> git ls-files --modified
+> 
+debug: 2017/02/09 17:10:16 git_state_manager.go:53: [git pull]: success
+vomit: 2017/02/09 17:10:16 git_state_manager.go:57: git: Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
+Already up-to-date.
+vomit: 2017/02/09 17:10:16 disk_state_manager.go:65: Reading state from disk
+vomit: 2017/02/09 17:10:16 disk_state_manager.go:45: Validating State
+vomit: 2017/02/09 17:10:16 disk_state_manager.go:48: Repairing State
+debug: 2017/02/09 17:10:16 git_state_manager.go:53: [git tag sous-fallback-5058a988-ebac-4e57-81d9-86a444c64156]: success
+vomit: 2017/02/09 17:10:16 git_state_manager.go:57: git: 
+vomit: 2017/02/09 17:10:16 disk_state_manager.go:45: Validating State
+vomit: 2017/02/09 17:10:16 disk_state_manager.go:48: Repairing State
+vomit: 2017/02/09 17:10:16 disk_state_manager.go:100: Writing state to disk
+debug: 2017/02/09 17:10:16 git_state_manager.go:53: [git add .]: success
+vomit: 2017/02/09 17:10:16 git_state_manager.go:57: git: 
+debug: 2017/02/09 17:10:16 git_state_manager.go:55: [git diff-index --exit-code HEAD]: error: exit status 1
+vomit: 2017/02/09 17:10:16 git_state_manager.go:57: git: :100644 100644 2c0d71d93145aeb160e2e352ce974dda2a866eb5 7ce5975fbf6a4a4b8b3e2f75e923f245de126534 M	manifests/192.168.99.100/2222/repos/sous-server.yaml
+debug: 2017/02/09 17:10:16 git_state_manager.go:53: [git commit -m sous commit: Update State --author test <test@test.com>]: success
+vomit: 2017/02/09 17:10:16 git_state_manager.go:57: git: [master e5dd714] sous commit: Update State
+ Author: test <test@test.com>
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+debug: 2017/02/09 17:10:16 git_state_manager.go:53: [git push -u origin master]: success
+vomit: 2017/02/09 17:10:16 git_state_manager.go:57: git: Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
+To ssh://192.168.99.100:2222/repos/gdm
+   93355ea..e5dd714  master -> master
+Branch master set up to track remote branch master from origin.
+debug: 2017/02/09 17:10:16 git_state_manager.go:53: [git tag -d sous-fallback-5058a988-ebac-4e57-81d9-86a444c64156]: success
+vomit: 2017/02/09 17:10:16 git_state_manager.go:57: git: Deleted tag 'sous-fallback-5058a988-ebac-4e57-81d9-86a444c64156' (was 93355ea)
+
+debug: 2017/02/09 17:10:16 image_mapping.go:472: no such table: docker_repo_name
+debug: 2017/02/09 17:10:16 image_mapping.go:462: DB Clobbering time!
+vomit: 2017/02/09 17:10:16 actual_deployment_set.go:56: Setting up to wait for 1 clusters
+vomit: 2017/02/09 17:10:16 actual_deployment_set.go:192: Starting cluster at http://192.168.99.100:7099/singularity
+vomit: 2017/02/09 17:10:16 actual_deployment_set.go:167: open /proc/46253/fd: no such file or directory
+vomit: 2017/02/09 17:10:16 actual_deployment_set.go:167: open /proc/46253/fd: no such file or directory
+vomit: 2017/02/09 17:10:16 actual_deployment_set.go:193: Completed cluster at http://192.168.99.100:7099/singularity
+debug: 2017/02/09 17:10:16 actual_deployment_set.go:75: All singularities polled for requests
+debug: 2017/02/09 17:10:16 actual_deployment_set.go:77: All deploys processed
+debug: 2017/02/09 17:10:16 actual_deployment_set.go:92: Errors channel closed. Finishing up.
+vomit: 2017/02/09 17:10:16 deployment_diff.go:130: Computing diff from:
+vomit: 2017/02/09 17:10:16 deployment_diff.go:149: Computing diff to:
+    192.168.99.100/2222/repos/sous-server,0.0.2 @ &{left singularity http://192.168.99.100:7099/singularity map[OT_ENV:left] [ephemeral tag source workspace lacked repo no repository requested revision not built no versioned tag tag mismatch tag not on built revision ephemeral tag unpushed revision bogus revision dirty workspace]} #1 map[cpus:0.1 memory:100 ports:1] : map[GDM_REPO:ssh://root@192.168.99.100:2222/repos/gdm OT_ENV:left CLUSTER_NAME:left] []
+debug: 2017/02/09 17:10:16 deployment_diff.go:155: New deployment: {"192.168.99.100/2222/repos/sous-server" "left"}
+vomit: 2017/02/09 17:10:16 deployable_chans.go:95: Deployment processed, needs artifact: &sous.Deployment{DeployConfig:sous.DeployConfig{Resources:sous.Resources{"cpus":"0.1", "memory":"100", "ports":"1"}, Metadata:sous.Metadata{}, Args:[]string{}, Env:sous.Env{"CLUSTER_NAME":"left", "GDM_REPO":"ssh://root@192.168.99.100:2222/repos/gdm", "OT_ENV":"left"}, NumInstances:1, Volumes:sous.Volumes{}}, ClusterName:"left", Cluster:(*sous.Cluster)(0xc42005ce60), SourceID:sous.SourceID{Location:sous.SourceLocation{Repo:"192.168.99.100/2222/repos/sous-server", Dir:""}, Version:semv.Version{Major:0, Minor:0, Patch:2, Pre:"", Meta:"", DefaultFormat:"M.m.p"}}, Flavor:"", Owners:sous.OwnerSet{}, Kind:"http-service", Volumes:sous.Volumes{}, Annotation:sous.Annotation{RequestID:""}}
+vomit: 2017/02/09 17:10:16 image_mapping.go:207: Getting image name for 192.168.99.100/2222/repos/sous-server,0.0.2
+vomit: 2017/02/09 17:10:16 image_mapping.go:759: Selecting on "192.168.99.100/2222/repos/sous-server" "" "0.0.2"
+vomit: 2017/02/09 17:10:16 image_mapping.go:266: Harvesting source location sous.SourceLocation{Repo:"192.168.99.100/2222/repos/sous-server", Dir:""}
+vomit: 2017/02/09 17:10:16 image_mapping.go:269: Err looking up repos for location sous.SourceLocation{Repo:"192.168.99.100/2222/repos/sous-server", Dir:""}: no repos found for 192.168.99.100/2222/repos/sous-server - proceeding with guessed repo
+debug: 2017/02/09 17:10:16 names.go:84: Repo name: sous.SourceLocation{Repo:"192.168.99.100/2222/repos/sous-server", Dir:""} => "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server"
+vomit: 2017/02/09 17:10:16 image_mapping.go:275: Attempting to harvest 0 repos
+debug: 2017/02/09 17:10:16 image_mapping.go:115: Harvested tag: 2099343012203e1331a269aad8451b3c3d85d4e9 for repo: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server
+vomit: 2017/02/09 17:10:16 image_mapping.go:117: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:2099343012203e1331a269aad8451b3c3d85d4e9 <nil>
+vomit: 2017/02/09 17:10:16 image_mapping.go:151: Getting source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:2099343012203e1331a269aad8451b3c3d85d4e9
+vomit: 2017/02/09 17:10:16 image_mapping.go:155: No source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:2099343012203e1331a269aad8451b3c3d85d4e9
+vomit: 2017/02/09 17:10:16 image_mapping.go:169: {Registry:192.168.99.100:5000 Labels:map[com.opentable.sous.repo_url:192.168.99.100/2222/repos/sous-server com.opentable.sous.revision:2099343012203e1331a269aad8451b3c3d85d4e9 com.opentable.sous.version:0.0.2 com.opentable.sous.repo_offset:] Etag:"sha256:086097879cddaa3db8cac0d575b466e06dc50f6498b04dedc799f6fca75dc45e" CanonicalName:192.168.99.100/2222/repos/sous-server@sha256:086097879cddaa3db8cac0d575b466e06dc50f6498b04dedc799f6fca75dc45e AllNames:[192.168.99.100/2222/repos/sous-server:2099343012203e1331a269aad8451b3c3d85d4e9 192.168.99.100/2222/repos/sous-server@sha256:086097879cddaa3db8cac0d575b466e06dc50f6498b04dedc799f6fca75dc45e]} <nil> <nil> <nil>
+debug: 2017/02/09 17:10:16 image_mapping.go:581: Parsed image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:086097879cddaa3db8cac0d575b466e06dc50f6498b04dedc799f6fca75dc45e from "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:086097879cddaa3db8cac0d575b466e06dc50f6498b04dedc799f6fca75dc45e"
+vomit: 2017/02/09 17:10:16 image_mapping.go:586: Inserting name 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server for sous.SourceID{Location:sous.SourceLocation{Repo:"192.168.99.100/2222/repos/sous-server", Dir:""}, Version:semv.Version{Major:0, Minor:0, Patch:2, Pre:"", Meta:"2099343012203e1331a269aad8451b3c3d85d4e9", DefaultFormat:"M.m.p"}}
+vomit: 2017/02/09 17:10:16 image_mapping.go:575: Made (?err: <nil>) id: 1 with "insert into docker_repo_name (name) values ($1);"
+vomit: 2017/02/09 17:10:16 image_mapping.go:598: name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:16 image_mapping.go:575: Made (?err: <nil>) id: 1 with "insert into docker_search_location (repo, offset) values ($1, $2);"
+vomit: 2017/02/09 17:10:16 image_mapping.go:609: Source Loc: 192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:16 image_mapping.go:618: Inserting metadata id:1 etag:"sha256:086097879cddaa3db8cac0d575b466e06dc50f6498b04dedc799f6fca75dc45e" name:192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:086097879cddaa3db8cac0d575b466e06dc50f6498b04dedc799f6fca75dc45e version:0.0.2+2099343012203e1331a269aad8451b3c3d85d4e9
+vomit: 2017/02/09 17:10:16 image_mapping.go:575: Made (?err: <nil>) id: 1 with "insert or replace into docker_search_metadata (canonicalName, location_id, etag, version) values ($1, $2, $3, $4);"
+vomit: 2017/02/09 17:10:16 image_mapping.go:640: Inserting search name 1 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:086097879cddaa3db8cac0d575b466e06dc50f6498b04dedc799f6fca75dc45e
+vomit: 2017/02/09 17:10:16 image_mapping.go:194: cn: 192.168.99.100/2222/repos/sous-server@sha256:086097879cddaa3db8cac0d575b466e06dc50f6498b04dedc799f6fca75dc45e all: [192.168.99.100/2222/repos/sous-server:2099343012203e1331a269aad8451b3c3d85d4e9 192.168.99.100/2222/repos/sous-server@sha256:086097879cddaa3db8cac0d575b466e06dc50f6498b04dedc799f6fca75dc45e]
+debug: 2017/02/09 17:10:16 image_mapping.go:664: Adding names for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:086097879cddaa3db8cac0d575b466e06dc50f6498b04dedc799f6fca75dc45e: [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:2099343012203e1331a269aad8451b3c3d85d4e9 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:086097879cddaa3db8cac0d575b466e06dc50f6498b04dedc799f6fca75dc45e]
+debug: 2017/02/09 17:10:16 image_mapping.go:201: Image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:2099343012203e1331a269aad8451b3c3d85d4e9 -> (updated) Source ID: 192.168.99.100/2222/repos/sous-server,0.0.2
+debug: 2017/02/09 17:10:16 image_mapping.go:115: Harvested tag: f0a4ca0a2129de6f7926c2baa3a4f9e576754333 for repo: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server
+vomit: 2017/02/09 17:10:16 image_mapping.go:117: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:f0a4ca0a2129de6f7926c2baa3a4f9e576754333 <nil>
+vomit: 2017/02/09 17:10:16 image_mapping.go:151: Getting source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:f0a4ca0a2129de6f7926c2baa3a4f9e576754333
+vomit: 2017/02/09 17:10:16 image_mapping.go:155: No source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:f0a4ca0a2129de6f7926c2baa3a4f9e576754333
+vomit: 2017/02/09 17:10:16 image_mapping.go:169: {Registry:192.168.99.100:5000 Labels:map[com.opentable.sous.revision:f0a4ca0a2129de6f7926c2baa3a4f9e576754333 com.opentable.sous.version:0.0.2 com.opentable.sous.repo_offset: com.opentable.sous.repo_url:192.168.99.100/2222/repos/sous-server] Etag:"sha256:3e8ba3c8c2ae649fd8d212e8f3cc03d1e482194df676d5b1b6b08b6d0e99970c" CanonicalName:192.168.99.100/2222/repos/sous-server@sha256:3e8ba3c8c2ae649fd8d212e8f3cc03d1e482194df676d5b1b6b08b6d0e99970c AllNames:[192.168.99.100/2222/repos/sous-server:f0a4ca0a2129de6f7926c2baa3a4f9e576754333 192.168.99.100/2222/repos/sous-server@sha256:3e8ba3c8c2ae649fd8d212e8f3cc03d1e482194df676d5b1b6b08b6d0e99970c]} <nil> <nil> <nil>
+debug: 2017/02/09 17:10:16 image_mapping.go:581: Parsed image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:3e8ba3c8c2ae649fd8d212e8f3cc03d1e482194df676d5b1b6b08b6d0e99970c from "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:3e8ba3c8c2ae649fd8d212e8f3cc03d1e482194df676d5b1b6b08b6d0e99970c"
+vomit: 2017/02/09 17:10:16 image_mapping.go:586: Inserting name 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server for sous.SourceID{Location:sous.SourceLocation{Repo:"192.168.99.100/2222/repos/sous-server", Dir:""}, Version:semv.Version{Major:0, Minor:0, Patch:2, Pre:"", Meta:"f0a4ca0a2129de6f7926c2baa3a4f9e576754333", DefaultFormat:"M.m.p"}}
+vomit: 2017/02/09 17:10:16 image_mapping.go:562: Found id: 1 with "select repo_name_id from docker_repo_name where name = $1" [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server]
+vomit: 2017/02/09 17:10:16 image_mapping.go:598: name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:16 image_mapping.go:562: Found id: 1 with "select location_id from docker_search_location where repo = $1 and offset = $2" [192.168.99.100/2222/repos/sous-server ]
+vomit: 2017/02/09 17:10:16 image_mapping.go:609: Source Loc: 192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:16 image_mapping.go:618: Inserting metadata id:1 etag:"sha256:3e8ba3c8c2ae649fd8d212e8f3cc03d1e482194df676d5b1b6b08b6d0e99970c" name:192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:3e8ba3c8c2ae649fd8d212e8f3cc03d1e482194df676d5b1b6b08b6d0e99970c version:0.0.2+f0a4ca0a2129de6f7926c2baa3a4f9e576754333
+vomit: 2017/02/09 17:10:16 image_mapping.go:575: Made (?err: <nil>) id: 2 with "insert or replace into docker_search_metadata (canonicalName, location_id, etag, version) values ($1, $2, $3, $4);"
+vomit: 2017/02/09 17:10:16 image_mapping.go:640: Inserting search name 2 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:3e8ba3c8c2ae649fd8d212e8f3cc03d1e482194df676d5b1b6b08b6d0e99970c
+vomit: 2017/02/09 17:10:16 image_mapping.go:194: cn: 192.168.99.100/2222/repos/sous-server@sha256:3e8ba3c8c2ae649fd8d212e8f3cc03d1e482194df676d5b1b6b08b6d0e99970c all: [192.168.99.100/2222/repos/sous-server:f0a4ca0a2129de6f7926c2baa3a4f9e576754333 192.168.99.100/2222/repos/sous-server@sha256:3e8ba3c8c2ae649fd8d212e8f3cc03d1e482194df676d5b1b6b08b6d0e99970c]
+debug: 2017/02/09 17:10:16 image_mapping.go:664: Adding names for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:3e8ba3c8c2ae649fd8d212e8f3cc03d1e482194df676d5b1b6b08b6d0e99970c: [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:f0a4ca0a2129de6f7926c2baa3a4f9e576754333 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:3e8ba3c8c2ae649fd8d212e8f3cc03d1e482194df676d5b1b6b08b6d0e99970c]
+debug: 2017/02/09 17:10:16 image_mapping.go:201: Image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:f0a4ca0a2129de6f7926c2baa3a4f9e576754333 -> (updated) Source ID: 192.168.99.100/2222/repos/sous-server,0.0.2
+debug: 2017/02/09 17:10:16 image_mapping.go:115: Harvested tag: c8040778e2a4fef336cbce126e6b49199c69fdba for repo: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server
+vomit: 2017/02/09 17:10:16 image_mapping.go:117: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:c8040778e2a4fef336cbce126e6b49199c69fdba <nil>
+vomit: 2017/02/09 17:10:16 image_mapping.go:151: Getting source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:c8040778e2a4fef336cbce126e6b49199c69fdba
+vomit: 2017/02/09 17:10:16 image_mapping.go:155: No source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:c8040778e2a4fef336cbce126e6b49199c69fdba
+vomit: 2017/02/09 17:10:16 image_mapping.go:169: {Registry:192.168.99.100:5000 Labels:map[com.opentable.sous.repo_offset: com.opentable.sous.repo_url:192.168.99.100/2222/repos/sous-server com.opentable.sous.revision:c8040778e2a4fef336cbce126e6b49199c69fdba com.opentable.sous.version:0.0.2] Etag:"sha256:f95b7078801f62dcb1bec557a0dd875da0615e4a3cf29389947f200a057d1e19" CanonicalName:192.168.99.100/2222/repos/sous-server@sha256:f95b7078801f62dcb1bec557a0dd875da0615e4a3cf29389947f200a057d1e19 AllNames:[192.168.99.100/2222/repos/sous-server:c8040778e2a4fef336cbce126e6b49199c69fdba 192.168.99.100/2222/repos/sous-server@sha256:f95b7078801f62dcb1bec557a0dd875da0615e4a3cf29389947f200a057d1e19]} <nil> <nil> <nil>
+debug: 2017/02/09 17:10:16 image_mapping.go:581: Parsed image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:f95b7078801f62dcb1bec557a0dd875da0615e4a3cf29389947f200a057d1e19 from "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:f95b7078801f62dcb1bec557a0dd875da0615e4a3cf29389947f200a057d1e19"
+vomit: 2017/02/09 17:10:16 image_mapping.go:586: Inserting name 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server for sous.SourceID{Location:sous.SourceLocation{Repo:"192.168.99.100/2222/repos/sous-server", Dir:""}, Version:semv.Version{Major:0, Minor:0, Patch:2, Pre:"", Meta:"c8040778e2a4fef336cbce126e6b49199c69fdba", DefaultFormat:"M.m.p"}}
+vomit: 2017/02/09 17:10:16 image_mapping.go:562: Found id: 1 with "select repo_name_id from docker_repo_name where name = $1" [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server]
+vomit: 2017/02/09 17:10:16 image_mapping.go:598: name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:16 image_mapping.go:562: Found id: 1 with "select location_id from docker_search_location where repo = $1 and offset = $2" [192.168.99.100/2222/repos/sous-server ]
+vomit: 2017/02/09 17:10:16 image_mapping.go:609: Source Loc: 192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:16 image_mapping.go:618: Inserting metadata id:1 etag:"sha256:f95b7078801f62dcb1bec557a0dd875da0615e4a3cf29389947f200a057d1e19" name:192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:f95b7078801f62dcb1bec557a0dd875da0615e4a3cf29389947f200a057d1e19 version:0.0.2+c8040778e2a4fef336cbce126e6b49199c69fdba
+vomit: 2017/02/09 17:10:16 image_mapping.go:575: Made (?err: <nil>) id: 3 with "insert or replace into docker_search_metadata (canonicalName, location_id, etag, version) values ($1, $2, $3, $4);"
+vomit: 2017/02/09 17:10:16 image_mapping.go:640: Inserting search name 3 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:f95b7078801f62dcb1bec557a0dd875da0615e4a3cf29389947f200a057d1e19
+vomit: 2017/02/09 17:10:16 image_mapping.go:194: cn: 192.168.99.100/2222/repos/sous-server@sha256:f95b7078801f62dcb1bec557a0dd875da0615e4a3cf29389947f200a057d1e19 all: [192.168.99.100/2222/repos/sous-server:c8040778e2a4fef336cbce126e6b49199c69fdba 192.168.99.100/2222/repos/sous-server@sha256:f95b7078801f62dcb1bec557a0dd875da0615e4a3cf29389947f200a057d1e19]
+debug: 2017/02/09 17:10:16 image_mapping.go:664: Adding names for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:f95b7078801f62dcb1bec557a0dd875da0615e4a3cf29389947f200a057d1e19: [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:c8040778e2a4fef336cbce126e6b49199c69fdba 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:f95b7078801f62dcb1bec557a0dd875da0615e4a3cf29389947f200a057d1e19]
+debug: 2017/02/09 17:10:16 image_mapping.go:201: Image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:c8040778e2a4fef336cbce126e6b49199c69fdba -> (updated) Source ID: 192.168.99.100/2222/repos/sous-server,0.0.2
+debug: 2017/02/09 17:10:16 image_mapping.go:115: Harvested tag: 042e3ea5b5fcd45092ec9c61d435a58919bf82a6 for repo: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server
+vomit: 2017/02/09 17:10:16 image_mapping.go:117: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:042e3ea5b5fcd45092ec9c61d435a58919bf82a6 <nil>
+vomit: 2017/02/09 17:10:16 image_mapping.go:151: Getting source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:042e3ea5b5fcd45092ec9c61d435a58919bf82a6
+vomit: 2017/02/09 17:10:16 image_mapping.go:155: No source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:042e3ea5b5fcd45092ec9c61d435a58919bf82a6
+vomit: 2017/02/09 17:10:16 image_mapping.go:169: {Registry:192.168.99.100:5000 Labels:map[com.opentable.sous.repo_offset: com.opentable.sous.repo_url:192.168.99.100/2222/repos/sous-server com.opentable.sous.revision:042e3ea5b5fcd45092ec9c61d435a58919bf82a6 com.opentable.sous.version:0.0.2] Etag:"sha256:b2bd36b790490190b5cde38b9ec421da77aa7acbe0c7c6d6045d8654d2304765" CanonicalName:192.168.99.100/2222/repos/sous-server@sha256:b2bd36b790490190b5cde38b9ec421da77aa7acbe0c7c6d6045d8654d2304765 AllNames:[192.168.99.100/2222/repos/sous-server:042e3ea5b5fcd45092ec9c61d435a58919bf82a6 192.168.99.100/2222/repos/sous-server@sha256:b2bd36b790490190b5cde38b9ec421da77aa7acbe0c7c6d6045d8654d2304765]} <nil> <nil> <nil>
+debug: 2017/02/09 17:10:16 image_mapping.go:581: Parsed image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:b2bd36b790490190b5cde38b9ec421da77aa7acbe0c7c6d6045d8654d2304765 from "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:b2bd36b790490190b5cde38b9ec421da77aa7acbe0c7c6d6045d8654d2304765"
+vomit: 2017/02/09 17:10:16 image_mapping.go:586: Inserting name 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server for sous.SourceID{Location:sous.SourceLocation{Repo:"192.168.99.100/2222/repos/sous-server", Dir:""}, Version:semv.Version{Major:0, Minor:0, Patch:2, Pre:"", Meta:"042e3ea5b5fcd45092ec9c61d435a58919bf82a6", DefaultFormat:"M.m.p"}}
+vomit: 2017/02/09 17:10:16 image_mapping.go:562: Found id: 1 with "select repo_name_id from docker_repo_name where name = $1" [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server]
+vomit: 2017/02/09 17:10:16 image_mapping.go:598: name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:16 image_mapping.go:562: Found id: 1 with "select location_id from docker_search_location where repo = $1 and offset = $2" [192.168.99.100/2222/repos/sous-server ]
+vomit: 2017/02/09 17:10:16 image_mapping.go:609: Source Loc: 192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:16 image_mapping.go:618: Inserting metadata id:1 etag:"sha256:b2bd36b790490190b5cde38b9ec421da77aa7acbe0c7c6d6045d8654d2304765" name:192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:b2bd36b790490190b5cde38b9ec421da77aa7acbe0c7c6d6045d8654d2304765 version:0.0.2+042e3ea5b5fcd45092ec9c61d435a58919bf82a6
+vomit: 2017/02/09 17:10:16 image_mapping.go:575: Made (?err: <nil>) id: 4 with "insert or replace into docker_search_metadata (canonicalName, location_id, etag, version) values ($1, $2, $3, $4);"
+vomit: 2017/02/09 17:10:16 image_mapping.go:640: Inserting search name 4 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:b2bd36b790490190b5cde38b9ec421da77aa7acbe0c7c6d6045d8654d2304765
+vomit: 2017/02/09 17:10:16 image_mapping.go:194: cn: 192.168.99.100/2222/repos/sous-server@sha256:b2bd36b790490190b5cde38b9ec421da77aa7acbe0c7c6d6045d8654d2304765 all: [192.168.99.100/2222/repos/sous-server:042e3ea5b5fcd45092ec9c61d435a58919bf82a6 192.168.99.100/2222/repos/sous-server@sha256:b2bd36b790490190b5cde38b9ec421da77aa7acbe0c7c6d6045d8654d2304765]
+debug: 2017/02/09 17:10:16 image_mapping.go:664: Adding names for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:b2bd36b790490190b5cde38b9ec421da77aa7acbe0c7c6d6045d8654d2304765: [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:042e3ea5b5fcd45092ec9c61d435a58919bf82a6 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:b2bd36b790490190b5cde38b9ec421da77aa7acbe0c7c6d6045d8654d2304765]
+debug: 2017/02/09 17:10:16 image_mapping.go:201: Image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:042e3ea5b5fcd45092ec9c61d435a58919bf82a6 -> (updated) Source ID: 192.168.99.100/2222/repos/sous-server,0.0.2
+debug: 2017/02/09 17:10:16 image_mapping.go:115: Harvested tag: 45b1fb5c5b682a24bbc51814fa3e86062d86fcdc for repo: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server
+vomit: 2017/02/09 17:10:16 image_mapping.go:117: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:45b1fb5c5b682a24bbc51814fa3e86062d86fcdc <nil>
+vomit: 2017/02/09 17:10:16 image_mapping.go:151: Getting source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:45b1fb5c5b682a24bbc51814fa3e86062d86fcdc
+vomit: 2017/02/09 17:10:16 image_mapping.go:155: No source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:45b1fb5c5b682a24bbc51814fa3e86062d86fcdc
+vomit: 2017/02/09 17:10:16 image_mapping.go:169: {Registry:192.168.99.100:5000 Labels:map[com.opentable.sous.repo_url:192.168.99.100/2222/repos/sous-server com.opentable.sous.revision:45b1fb5c5b682a24bbc51814fa3e86062d86fcdc com.opentable.sous.version:0.0.2 com.opentable.sous.repo_offset:] Etag:"sha256:6b58b0ee15e8d2d77c408a9245ea6d52c48ac1859ffcb8e5c70907d1ca259336" CanonicalName:192.168.99.100/2222/repos/sous-server@sha256:6b58b0ee15e8d2d77c408a9245ea6d52c48ac1859ffcb8e5c70907d1ca259336 AllNames:[192.168.99.100/2222/repos/sous-server:45b1fb5c5b682a24bbc51814fa3e86062d86fcdc 192.168.99.100/2222/repos/sous-server@sha256:6b58b0ee15e8d2d77c408a9245ea6d52c48ac1859ffcb8e5c70907d1ca259336]} <nil> <nil> <nil>
+debug: 2017/02/09 17:10:16 image_mapping.go:581: Parsed image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:6b58b0ee15e8d2d77c408a9245ea6d52c48ac1859ffcb8e5c70907d1ca259336 from "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:6b58b0ee15e8d2d77c408a9245ea6d52c48ac1859ffcb8e5c70907d1ca259336"
+vomit: 2017/02/09 17:10:16 image_mapping.go:586: Inserting name 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server for sous.SourceID{Location:sous.SourceLocation{Repo:"192.168.99.100/2222/repos/sous-server", Dir:""}, Version:semv.Version{Major:0, Minor:0, Patch:2, Pre:"", Meta:"45b1fb5c5b682a24bbc51814fa3e86062d86fcdc", DefaultFormat:"M.m.p"}}
+vomit: 2017/02/09 17:10:16 image_mapping.go:562: Found id: 1 with "select repo_name_id from docker_repo_name where name = $1" [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server]
+vomit: 2017/02/09 17:10:16 image_mapping.go:598: name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:16 image_mapping.go:562: Found id: 1 with "select location_id from docker_search_location where repo = $1 and offset = $2" [192.168.99.100/2222/repos/sous-server ]
+vomit: 2017/02/09 17:10:16 image_mapping.go:609: Source Loc: 192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:16 image_mapping.go:618: Inserting metadata id:1 etag:"sha256:6b58b0ee15e8d2d77c408a9245ea6d52c48ac1859ffcb8e5c70907d1ca259336" name:192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:6b58b0ee15e8d2d77c408a9245ea6d52c48ac1859ffcb8e5c70907d1ca259336 version:0.0.2+45b1fb5c5b682a24bbc51814fa3e86062d86fcdc
+vomit: 2017/02/09 17:10:16 image_mapping.go:575: Made (?err: <nil>) id: 5 with "insert or replace into docker_search_metadata (canonicalName, location_id, etag, version) values ($1, $2, $3, $4);"
+vomit: 2017/02/09 17:10:16 image_mapping.go:640: Inserting search name 5 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:6b58b0ee15e8d2d77c408a9245ea6d52c48ac1859ffcb8e5c70907d1ca259336
+vomit: 2017/02/09 17:10:16 image_mapping.go:194: cn: 192.168.99.100/2222/repos/sous-server@sha256:6b58b0ee15e8d2d77c408a9245ea6d52c48ac1859ffcb8e5c70907d1ca259336 all: [192.168.99.100/2222/repos/sous-server:45b1fb5c5b682a24bbc51814fa3e86062d86fcdc 192.168.99.100/2222/repos/sous-server@sha256:6b58b0ee15e8d2d77c408a9245ea6d52c48ac1859ffcb8e5c70907d1ca259336]
+debug: 2017/02/09 17:10:16 image_mapping.go:664: Adding names for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:6b58b0ee15e8d2d77c408a9245ea6d52c48ac1859ffcb8e5c70907d1ca259336: [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:45b1fb5c5b682a24bbc51814fa3e86062d86fcdc 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:6b58b0ee15e8d2d77c408a9245ea6d52c48ac1859ffcb8e5c70907d1ca259336]
+debug: 2017/02/09 17:10:16 image_mapping.go:201: Image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:45b1fb5c5b682a24bbc51814fa3e86062d86fcdc -> (updated) Source ID: 192.168.99.100/2222/repos/sous-server,0.0.2
+debug: 2017/02/09 17:10:16 image_mapping.go:115: Harvested tag: d928582afee6a441445a35967320800b829fe378 for repo: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server
+vomit: 2017/02/09 17:10:16 image_mapping.go:117: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:d928582afee6a441445a35967320800b829fe378 <nil>
+vomit: 2017/02/09 17:10:16 image_mapping.go:151: Getting source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:d928582afee6a441445a35967320800b829fe378
+vomit: 2017/02/09 17:10:16 image_mapping.go:155: No source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:d928582afee6a441445a35967320800b829fe378
+vomit: 2017/02/09 17:10:16 image_mapping.go:169: {Registry:192.168.99.100:5000 Labels:map[com.opentable.sous.repo_url:192.168.99.100/2222/repos/sous-server com.opentable.sous.revision:d928582afee6a441445a35967320800b829fe378 com.opentable.sous.version:0.0.2 com.opentable.sous.repo_offset:] Etag:"sha256:25ec5a3e5dc9e9e079b3a705088815a3669e921914217f8702e9ac702b15e2f1" CanonicalName:192.168.99.100/2222/repos/sous-server@sha256:25ec5a3e5dc9e9e079b3a705088815a3669e921914217f8702e9ac702b15e2f1 AllNames:[192.168.99.100/2222/repos/sous-server:d928582afee6a441445a35967320800b829fe378 192.168.99.100/2222/repos/sous-server@sha256:25ec5a3e5dc9e9e079b3a705088815a3669e921914217f8702e9ac702b15e2f1]} <nil> <nil> <nil>
+debug: 2017/02/09 17:10:16 image_mapping.go:581: Parsed image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:25ec5a3e5dc9e9e079b3a705088815a3669e921914217f8702e9ac702b15e2f1 from "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:25ec5a3e5dc9e9e079b3a705088815a3669e921914217f8702e9ac702b15e2f1"
+vomit: 2017/02/09 17:10:16 image_mapping.go:586: Inserting name 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server for sous.SourceID{Location:sous.SourceLocation{Repo:"192.168.99.100/2222/repos/sous-server", Dir:""}, Version:semv.Version{Major:0, Minor:0, Patch:2, Pre:"", Meta:"d928582afee6a441445a35967320800b829fe378", DefaultFormat:"M.m.p"}}
+vomit: 2017/02/09 17:10:16 image_mapping.go:562: Found id: 1 with "select repo_name_id from docker_repo_name where name = $1" [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server]
+vomit: 2017/02/09 17:10:16 image_mapping.go:598: name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:16 image_mapping.go:562: Found id: 1 with "select location_id from docker_search_location where repo = $1 and offset = $2" [192.168.99.100/2222/repos/sous-server ]
+vomit: 2017/02/09 17:10:16 image_mapping.go:609: Source Loc: 192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:16 image_mapping.go:618: Inserting metadata id:1 etag:"sha256:25ec5a3e5dc9e9e079b3a705088815a3669e921914217f8702e9ac702b15e2f1" name:192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:25ec5a3e5dc9e9e079b3a705088815a3669e921914217f8702e9ac702b15e2f1 version:0.0.2+d928582afee6a441445a35967320800b829fe378
+vomit: 2017/02/09 17:10:16 image_mapping.go:575: Made (?err: <nil>) id: 6 with "insert or replace into docker_search_metadata (canonicalName, location_id, etag, version) values ($1, $2, $3, $4);"
+vomit: 2017/02/09 17:10:16 image_mapping.go:640: Inserting search name 6 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:25ec5a3e5dc9e9e079b3a705088815a3669e921914217f8702e9ac702b15e2f1
+vomit: 2017/02/09 17:10:16 image_mapping.go:194: cn: 192.168.99.100/2222/repos/sous-server@sha256:25ec5a3e5dc9e9e079b3a705088815a3669e921914217f8702e9ac702b15e2f1 all: [192.168.99.100/2222/repos/sous-server:d928582afee6a441445a35967320800b829fe378 192.168.99.100/2222/repos/sous-server@sha256:25ec5a3e5dc9e9e079b3a705088815a3669e921914217f8702e9ac702b15e2f1]
+debug: 2017/02/09 17:10:16 image_mapping.go:664: Adding names for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:25ec5a3e5dc9e9e079b3a705088815a3669e921914217f8702e9ac702b15e2f1: [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:d928582afee6a441445a35967320800b829fe378 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:25ec5a3e5dc9e9e079b3a705088815a3669e921914217f8702e9ac702b15e2f1]
+debug: 2017/02/09 17:10:16 image_mapping.go:201: Image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:d928582afee6a441445a35967320800b829fe378 -> (updated) Source ID: 192.168.99.100/2222/repos/sous-server,0.0.2
+debug: 2017/02/09 17:10:16 image_mapping.go:115: Harvested tag: dd9733632c3be72feca37709b5c2a7540f0d4d47 for repo: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server
+vomit: 2017/02/09 17:10:16 image_mapping.go:117: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:dd9733632c3be72feca37709b5c2a7540f0d4d47 <nil>
+vomit: 2017/02/09 17:10:16 image_mapping.go:151: Getting source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:dd9733632c3be72feca37709b5c2a7540f0d4d47
+vomit: 2017/02/09 17:10:16 image_mapping.go:155: No source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:dd9733632c3be72feca37709b5c2a7540f0d4d47
+vomit: 2017/02/09 17:10:17 image_mapping.go:169: {Registry:192.168.99.100:5000 Labels:map[com.opentable.sous.repo_offset: com.opentable.sous.repo_url:192.168.99.100/2222/repos/sous-server com.opentable.sous.revision:dd9733632c3be72feca37709b5c2a7540f0d4d47 com.opentable.sous.version:0.0.2] Etag:"sha256:c67fb82814539ffb46f5be87002d94575ef799bda1d58bcb29f704caed4ab1d3" CanonicalName:192.168.99.100/2222/repos/sous-server@sha256:c67fb82814539ffb46f5be87002d94575ef799bda1d58bcb29f704caed4ab1d3 AllNames:[192.168.99.100/2222/repos/sous-server:dd9733632c3be72feca37709b5c2a7540f0d4d47 192.168.99.100/2222/repos/sous-server@sha256:c67fb82814539ffb46f5be87002d94575ef799bda1d58bcb29f704caed4ab1d3]} <nil> <nil> <nil>
+debug: 2017/02/09 17:10:17 image_mapping.go:581: Parsed image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:c67fb82814539ffb46f5be87002d94575ef799bda1d58bcb29f704caed4ab1d3 from "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:c67fb82814539ffb46f5be87002d94575ef799bda1d58bcb29f704caed4ab1d3"
+vomit: 2017/02/09 17:10:17 image_mapping.go:586: Inserting name 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server for sous.SourceID{Location:sous.SourceLocation{Repo:"192.168.99.100/2222/repos/sous-server", Dir:""}, Version:semv.Version{Major:0, Minor:0, Patch:2, Pre:"", Meta:"dd9733632c3be72feca37709b5c2a7540f0d4d47", DefaultFormat:"M.m.p"}}
+vomit: 2017/02/09 17:10:17 image_mapping.go:562: Found id: 1 with "select repo_name_id from docker_repo_name where name = $1" [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server]
+vomit: 2017/02/09 17:10:17 image_mapping.go:598: name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:17 image_mapping.go:562: Found id: 1 with "select location_id from docker_search_location where repo = $1 and offset = $2" [192.168.99.100/2222/repos/sous-server ]
+vomit: 2017/02/09 17:10:17 image_mapping.go:609: Source Loc: 192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:17 image_mapping.go:618: Inserting metadata id:1 etag:"sha256:c67fb82814539ffb46f5be87002d94575ef799bda1d58bcb29f704caed4ab1d3" name:192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:c67fb82814539ffb46f5be87002d94575ef799bda1d58bcb29f704caed4ab1d3 version:0.0.2+dd9733632c3be72feca37709b5c2a7540f0d4d47
+vomit: 2017/02/09 17:10:17 image_mapping.go:575: Made (?err: <nil>) id: 7 with "insert or replace into docker_search_metadata (canonicalName, location_id, etag, version) values ($1, $2, $3, $4);"
+vomit: 2017/02/09 17:10:17 image_mapping.go:640: Inserting search name 7 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:c67fb82814539ffb46f5be87002d94575ef799bda1d58bcb29f704caed4ab1d3
+vomit: 2017/02/09 17:10:17 image_mapping.go:194: cn: 192.168.99.100/2222/repos/sous-server@sha256:c67fb82814539ffb46f5be87002d94575ef799bda1d58bcb29f704caed4ab1d3 all: [192.168.99.100/2222/repos/sous-server:dd9733632c3be72feca37709b5c2a7540f0d4d47 192.168.99.100/2222/repos/sous-server@sha256:c67fb82814539ffb46f5be87002d94575ef799bda1d58bcb29f704caed4ab1d3]
+debug: 2017/02/09 17:10:17 image_mapping.go:664: Adding names for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:c67fb82814539ffb46f5be87002d94575ef799bda1d58bcb29f704caed4ab1d3: [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:dd9733632c3be72feca37709b5c2a7540f0d4d47 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:c67fb82814539ffb46f5be87002d94575ef799bda1d58bcb29f704caed4ab1d3]
+debug: 2017/02/09 17:10:17 image_mapping.go:201: Image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:dd9733632c3be72feca37709b5c2a7540f0d4d47 -> (updated) Source ID: 192.168.99.100/2222/repos/sous-server,0.0.2
+debug: 2017/02/09 17:10:17 image_mapping.go:115: Harvested tag: 56f6d14d4cdd79637ecb842220c962189153cc59 for repo: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server
+vomit: 2017/02/09 17:10:17 image_mapping.go:117: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:56f6d14d4cdd79637ecb842220c962189153cc59 <nil>
+vomit: 2017/02/09 17:10:17 image_mapping.go:151: Getting source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:56f6d14d4cdd79637ecb842220c962189153cc59
+vomit: 2017/02/09 17:10:17 image_mapping.go:155: No source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:56f6d14d4cdd79637ecb842220c962189153cc59
+vomit: 2017/02/09 17:10:17 image_mapping.go:169: {Registry:192.168.99.100:5000 Labels:map[com.opentable.sous.repo_offset: com.opentable.sous.repo_url:192.168.99.100/2222/repos/sous-server com.opentable.sous.revision:56f6d14d4cdd79637ecb842220c962189153cc59 com.opentable.sous.version:0.0.2] Etag:"sha256:db4dfacc70f81b719d899384a218d90f0882d99bd19cf7f7fdf6e6f52de3f7f8" CanonicalName:192.168.99.100/2222/repos/sous-server@sha256:db4dfacc70f81b719d899384a218d90f0882d99bd19cf7f7fdf6e6f52de3f7f8 AllNames:[192.168.99.100/2222/repos/sous-server:56f6d14d4cdd79637ecb842220c962189153cc59 192.168.99.100/2222/repos/sous-server@sha256:db4dfacc70f81b719d899384a218d90f0882d99bd19cf7f7fdf6e6f52de3f7f8]} <nil> <nil> <nil>
+debug: 2017/02/09 17:10:17 image_mapping.go:581: Parsed image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:db4dfacc70f81b719d899384a218d90f0882d99bd19cf7f7fdf6e6f52de3f7f8 from "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:db4dfacc70f81b719d899384a218d90f0882d99bd19cf7f7fdf6e6f52de3f7f8"
+vomit: 2017/02/09 17:10:17 image_mapping.go:586: Inserting name 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server for sous.SourceID{Location:sous.SourceLocation{Repo:"192.168.99.100/2222/repos/sous-server", Dir:""}, Version:semv.Version{Major:0, Minor:0, Patch:2, Pre:"", Meta:"56f6d14d4cdd79637ecb842220c962189153cc59", DefaultFormat:"M.m.p"}}
+vomit: 2017/02/09 17:10:17 image_mapping.go:562: Found id: 1 with "select repo_name_id from docker_repo_name where name = $1" [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server]
+vomit: 2017/02/09 17:10:17 image_mapping.go:598: name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:17 image_mapping.go:562: Found id: 1 with "select location_id from docker_search_location where repo = $1 and offset = $2" [192.168.99.100/2222/repos/sous-server ]
+vomit: 2017/02/09 17:10:17 image_mapping.go:609: Source Loc: 192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:17 image_mapping.go:618: Inserting metadata id:1 etag:"sha256:db4dfacc70f81b719d899384a218d90f0882d99bd19cf7f7fdf6e6f52de3f7f8" name:192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:db4dfacc70f81b719d899384a218d90f0882d99bd19cf7f7fdf6e6f52de3f7f8 version:0.0.2+56f6d14d4cdd79637ecb842220c962189153cc59
+vomit: 2017/02/09 17:10:17 image_mapping.go:575: Made (?err: <nil>) id: 8 with "insert or replace into docker_search_metadata (canonicalName, location_id, etag, version) values ($1, $2, $3, $4);"
+vomit: 2017/02/09 17:10:17 image_mapping.go:640: Inserting search name 8 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:db4dfacc70f81b719d899384a218d90f0882d99bd19cf7f7fdf6e6f52de3f7f8
+vomit: 2017/02/09 17:10:17 image_mapping.go:194: cn: 192.168.99.100/2222/repos/sous-server@sha256:db4dfacc70f81b719d899384a218d90f0882d99bd19cf7f7fdf6e6f52de3f7f8 all: [192.168.99.100/2222/repos/sous-server:56f6d14d4cdd79637ecb842220c962189153cc59 192.168.99.100/2222/repos/sous-server@sha256:db4dfacc70f81b719d899384a218d90f0882d99bd19cf7f7fdf6e6f52de3f7f8]
+debug: 2017/02/09 17:10:17 image_mapping.go:664: Adding names for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:db4dfacc70f81b719d899384a218d90f0882d99bd19cf7f7fdf6e6f52de3f7f8: [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:56f6d14d4cdd79637ecb842220c962189153cc59 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:db4dfacc70f81b719d899384a218d90f0882d99bd19cf7f7fdf6e6f52de3f7f8]
+debug: 2017/02/09 17:10:17 image_mapping.go:201: Image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:56f6d14d4cdd79637ecb842220c962189153cc59 -> (updated) Source ID: 192.168.99.100/2222/repos/sous-server,0.0.2
+debug: 2017/02/09 17:10:17 image_mapping.go:115: Harvested tag: 046e9f47a08b949974f7a44330ae1df9517822e9 for repo: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server
+vomit: 2017/02/09 17:10:17 image_mapping.go:117: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:046e9f47a08b949974f7a44330ae1df9517822e9 <nil>
+vomit: 2017/02/09 17:10:17 image_mapping.go:151: Getting source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:046e9f47a08b949974f7a44330ae1df9517822e9
+vomit: 2017/02/09 17:10:17 image_mapping.go:155: No source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:046e9f47a08b949974f7a44330ae1df9517822e9
+vomit: 2017/02/09 17:10:17 image_mapping.go:169: {Registry:192.168.99.100:5000 Labels:map[com.opentable.sous.repo_offset: com.opentable.sous.repo_url:192.168.99.100/2222/repos/sous-server com.opentable.sous.revision:046e9f47a08b949974f7a44330ae1df9517822e9 com.opentable.sous.version:0.0.2] Etag:"sha256:221573a8f3fd1ce97ca6f863767152b8ee06a5310d84211adff70d621cf83331" CanonicalName:192.168.99.100/2222/repos/sous-server@sha256:221573a8f3fd1ce97ca6f863767152b8ee06a5310d84211adff70d621cf83331 AllNames:[192.168.99.100/2222/repos/sous-server:046e9f47a08b949974f7a44330ae1df9517822e9 192.168.99.100/2222/repos/sous-server@sha256:221573a8f3fd1ce97ca6f863767152b8ee06a5310d84211adff70d621cf83331]} <nil> <nil> <nil>
+debug: 2017/02/09 17:10:17 image_mapping.go:581: Parsed image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:221573a8f3fd1ce97ca6f863767152b8ee06a5310d84211adff70d621cf83331 from "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:221573a8f3fd1ce97ca6f863767152b8ee06a5310d84211adff70d621cf83331"
+vomit: 2017/02/09 17:10:17 image_mapping.go:586: Inserting name 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server for sous.SourceID{Location:sous.SourceLocation{Repo:"192.168.99.100/2222/repos/sous-server", Dir:""}, Version:semv.Version{Major:0, Minor:0, Patch:2, Pre:"", Meta:"046e9f47a08b949974f7a44330ae1df9517822e9", DefaultFormat:"M.m.p"}}
+vomit: 2017/02/09 17:10:17 image_mapping.go:562: Found id: 1 with "select repo_name_id from docker_repo_name where name = $1" [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server]
+vomit: 2017/02/09 17:10:17 image_mapping.go:598: name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:17 image_mapping.go:562: Found id: 1 with "select location_id from docker_search_location where repo = $1 and offset = $2" [192.168.99.100/2222/repos/sous-server ]
+vomit: 2017/02/09 17:10:17 image_mapping.go:609: Source Loc: 192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:17 image_mapping.go:618: Inserting metadata id:1 etag:"sha256:221573a8f3fd1ce97ca6f863767152b8ee06a5310d84211adff70d621cf83331" name:192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:221573a8f3fd1ce97ca6f863767152b8ee06a5310d84211adff70d621cf83331 version:0.0.2+046e9f47a08b949974f7a44330ae1df9517822e9
+vomit: 2017/02/09 17:10:17 image_mapping.go:575: Made (?err: <nil>) id: 9 with "insert or replace into docker_search_metadata (canonicalName, location_id, etag, version) values ($1, $2, $3, $4);"
+vomit: 2017/02/09 17:10:17 image_mapping.go:640: Inserting search name 9 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:221573a8f3fd1ce97ca6f863767152b8ee06a5310d84211adff70d621cf83331
+vomit: 2017/02/09 17:10:17 image_mapping.go:194: cn: 192.168.99.100/2222/repos/sous-server@sha256:221573a8f3fd1ce97ca6f863767152b8ee06a5310d84211adff70d621cf83331 all: [192.168.99.100/2222/repos/sous-server:046e9f47a08b949974f7a44330ae1df9517822e9 192.168.99.100/2222/repos/sous-server@sha256:221573a8f3fd1ce97ca6f863767152b8ee06a5310d84211adff70d621cf83331]
+debug: 2017/02/09 17:10:17 image_mapping.go:664: Adding names for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:221573a8f3fd1ce97ca6f863767152b8ee06a5310d84211adff70d621cf83331: [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:046e9f47a08b949974f7a44330ae1df9517822e9 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:221573a8f3fd1ce97ca6f863767152b8ee06a5310d84211adff70d621cf83331]
+debug: 2017/02/09 17:10:17 image_mapping.go:201: Image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:046e9f47a08b949974f7a44330ae1df9517822e9 -> (updated) Source ID: 192.168.99.100/2222/repos/sous-server,0.0.2
+debug: 2017/02/09 17:10:17 image_mapping.go:115: Harvested tag: b7d1ad8885717af64a5368bf91f96ddf9484cb15 for repo: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server
+vomit: 2017/02/09 17:10:17 image_mapping.go:117: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:b7d1ad8885717af64a5368bf91f96ddf9484cb15 <nil>
+vomit: 2017/02/09 17:10:17 image_mapping.go:151: Getting source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:b7d1ad8885717af64a5368bf91f96ddf9484cb15
+vomit: 2017/02/09 17:10:17 image_mapping.go:155: No source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:b7d1ad8885717af64a5368bf91f96ddf9484cb15
+vomit: 2017/02/09 17:10:17 image_mapping.go:169: {Registry:192.168.99.100:5000 Labels:map[com.opentable.sous.repo_offset: com.opentable.sous.repo_url:192.168.99.100/2222/repos/sous-server com.opentable.sous.revision:b7d1ad8885717af64a5368bf91f96ddf9484cb15 com.opentable.sous.version:0.0.2] Etag:"sha256:7e9e407ea8442cae0723798b17e129dfe875184ede848e2232fb9b03c63d35a3" CanonicalName:192.168.99.100/2222/repos/sous-server@sha256:7e9e407ea8442cae0723798b17e129dfe875184ede848e2232fb9b03c63d35a3 AllNames:[192.168.99.100/2222/repos/sous-server:b7d1ad8885717af64a5368bf91f96ddf9484cb15 192.168.99.100/2222/repos/sous-server@sha256:7e9e407ea8442cae0723798b17e129dfe875184ede848e2232fb9b03c63d35a3]} <nil> <nil> <nil>
+debug: 2017/02/09 17:10:17 image_mapping.go:581: Parsed image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:7e9e407ea8442cae0723798b17e129dfe875184ede848e2232fb9b03c63d35a3 from "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:7e9e407ea8442cae0723798b17e129dfe875184ede848e2232fb9b03c63d35a3"
+vomit: 2017/02/09 17:10:17 image_mapping.go:586: Inserting name 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server for sous.SourceID{Location:sous.SourceLocation{Repo:"192.168.99.100/2222/repos/sous-server", Dir:""}, Version:semv.Version{Major:0, Minor:0, Patch:2, Pre:"", Meta:"b7d1ad8885717af64a5368bf91f96ddf9484cb15", DefaultFormat:"M.m.p"}}
+vomit: 2017/02/09 17:10:17 image_mapping.go:562: Found id: 1 with "select repo_name_id from docker_repo_name where name = $1" [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server]
+vomit: 2017/02/09 17:10:17 image_mapping.go:598: name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:17 image_mapping.go:562: Found id: 1 with "select location_id from docker_search_location where repo = $1 and offset = $2" [192.168.99.100/2222/repos/sous-server ]
+vomit: 2017/02/09 17:10:17 image_mapping.go:609: Source Loc: 192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:17 image_mapping.go:618: Inserting metadata id:1 etag:"sha256:7e9e407ea8442cae0723798b17e129dfe875184ede848e2232fb9b03c63d35a3" name:192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:7e9e407ea8442cae0723798b17e129dfe875184ede848e2232fb9b03c63d35a3 version:0.0.2+b7d1ad8885717af64a5368bf91f96ddf9484cb15
+vomit: 2017/02/09 17:10:17 image_mapping.go:575: Made (?err: <nil>) id: 10 with "insert or replace into docker_search_metadata (canonicalName, location_id, etag, version) values ($1, $2, $3, $4);"
+vomit: 2017/02/09 17:10:17 image_mapping.go:640: Inserting search name 10 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:7e9e407ea8442cae0723798b17e129dfe875184ede848e2232fb9b03c63d35a3
+vomit: 2017/02/09 17:10:17 image_mapping.go:194: cn: 192.168.99.100/2222/repos/sous-server@sha256:7e9e407ea8442cae0723798b17e129dfe875184ede848e2232fb9b03c63d35a3 all: [192.168.99.100/2222/repos/sous-server:b7d1ad8885717af64a5368bf91f96ddf9484cb15 192.168.99.100/2222/repos/sous-server@sha256:7e9e407ea8442cae0723798b17e129dfe875184ede848e2232fb9b03c63d35a3]
+debug: 2017/02/09 17:10:17 image_mapping.go:664: Adding names for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:7e9e407ea8442cae0723798b17e129dfe875184ede848e2232fb9b03c63d35a3: [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:b7d1ad8885717af64a5368bf91f96ddf9484cb15 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:7e9e407ea8442cae0723798b17e129dfe875184ede848e2232fb9b03c63d35a3]
+debug: 2017/02/09 17:10:17 image_mapping.go:201: Image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:b7d1ad8885717af64a5368bf91f96ddf9484cb15 -> (updated) Source ID: 192.168.99.100/2222/repos/sous-server,0.0.2
+debug: 2017/02/09 17:10:17 image_mapping.go:115: Harvested tag: a2145e27ff3500723201f3f58c2bf767ea257582 for repo: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server
+vomit: 2017/02/09 17:10:17 image_mapping.go:117: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:a2145e27ff3500723201f3f58c2bf767ea257582 <nil>
+vomit: 2017/02/09 17:10:17 image_mapping.go:151: Getting source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:a2145e27ff3500723201f3f58c2bf767ea257582
+vomit: 2017/02/09 17:10:17 image_mapping.go:155: No source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:a2145e27ff3500723201f3f58c2bf767ea257582
+vomit: 2017/02/09 17:10:17 image_mapping.go:169: {Registry:192.168.99.100:5000 Labels:map[com.opentable.sous.repo_offset: com.opentable.sous.repo_url:192.168.99.100/2222/repos/sous-server com.opentable.sous.revision:a2145e27ff3500723201f3f58c2bf767ea257582 com.opentable.sous.version:0.0.2] Etag:"sha256:a96e737b89d1d5296f4b5a0043d691bfa0713929a73ec9ad628e544872a4461e" CanonicalName:192.168.99.100/2222/repos/sous-server@sha256:a96e737b89d1d5296f4b5a0043d691bfa0713929a73ec9ad628e544872a4461e AllNames:[192.168.99.100/2222/repos/sous-server:a2145e27ff3500723201f3f58c2bf767ea257582 192.168.99.100/2222/repos/sous-server@sha256:a96e737b89d1d5296f4b5a0043d691bfa0713929a73ec9ad628e544872a4461e]} <nil> <nil> <nil>
+debug: 2017/02/09 17:10:17 image_mapping.go:581: Parsed image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:a96e737b89d1d5296f4b5a0043d691bfa0713929a73ec9ad628e544872a4461e from "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:a96e737b89d1d5296f4b5a0043d691bfa0713929a73ec9ad628e544872a4461e"
+vomit: 2017/02/09 17:10:17 image_mapping.go:586: Inserting name 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server for sous.SourceID{Location:sous.SourceLocation{Repo:"192.168.99.100/2222/repos/sous-server", Dir:""}, Version:semv.Version{Major:0, Minor:0, Patch:2, Pre:"", Meta:"a2145e27ff3500723201f3f58c2bf767ea257582", DefaultFormat:"M.m.p"}}
+vomit: 2017/02/09 17:10:17 image_mapping.go:562: Found id: 1 with "select repo_name_id from docker_repo_name where name = $1" [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server]
+vomit: 2017/02/09 17:10:17 image_mapping.go:598: name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:17 image_mapping.go:562: Found id: 1 with "select location_id from docker_search_location where repo = $1 and offset = $2" [192.168.99.100/2222/repos/sous-server ]
+vomit: 2017/02/09 17:10:17 image_mapping.go:609: Source Loc: 192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:17 image_mapping.go:618: Inserting metadata id:1 etag:"sha256:a96e737b89d1d5296f4b5a0043d691bfa0713929a73ec9ad628e544872a4461e" name:192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:a96e737b89d1d5296f4b5a0043d691bfa0713929a73ec9ad628e544872a4461e version:0.0.2+a2145e27ff3500723201f3f58c2bf767ea257582
+vomit: 2017/02/09 17:10:17 image_mapping.go:575: Made (?err: <nil>) id: 11 with "insert or replace into docker_search_metadata (canonicalName, location_id, etag, version) values ($1, $2, $3, $4);"
+vomit: 2017/02/09 17:10:17 image_mapping.go:640: Inserting search name 11 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:a96e737b89d1d5296f4b5a0043d691bfa0713929a73ec9ad628e544872a4461e
+vomit: 2017/02/09 17:10:17 image_mapping.go:194: cn: 192.168.99.100/2222/repos/sous-server@sha256:a96e737b89d1d5296f4b5a0043d691bfa0713929a73ec9ad628e544872a4461e all: [192.168.99.100/2222/repos/sous-server:a2145e27ff3500723201f3f58c2bf767ea257582 192.168.99.100/2222/repos/sous-server@sha256:a96e737b89d1d5296f4b5a0043d691bfa0713929a73ec9ad628e544872a4461e]
+debug: 2017/02/09 17:10:17 image_mapping.go:664: Adding names for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:a96e737b89d1d5296f4b5a0043d691bfa0713929a73ec9ad628e544872a4461e: [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:a2145e27ff3500723201f3f58c2bf767ea257582 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:a96e737b89d1d5296f4b5a0043d691bfa0713929a73ec9ad628e544872a4461e]
+debug: 2017/02/09 17:10:17 image_mapping.go:201: Image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:a2145e27ff3500723201f3f58c2bf767ea257582 -> (updated) Source ID: 192.168.99.100/2222/repos/sous-server,0.0.2
+debug: 2017/02/09 17:10:17 image_mapping.go:115: Harvested tag: 3e16f9483aa53833fb47dc41530885b929f45f59 for repo: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server
+vomit: 2017/02/09 17:10:17 image_mapping.go:117: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:3e16f9483aa53833fb47dc41530885b929f45f59 <nil>
+vomit: 2017/02/09 17:10:17 image_mapping.go:151: Getting source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:3e16f9483aa53833fb47dc41530885b929f45f59
+vomit: 2017/02/09 17:10:17 image_mapping.go:155: No source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:3e16f9483aa53833fb47dc41530885b929f45f59
+vomit: 2017/02/09 17:10:17 image_mapping.go:169: {Registry:192.168.99.100:5000 Labels:map[com.opentable.sous.repo_offset: com.opentable.sous.repo_url:192.168.99.100/2222/repos/sous-server com.opentable.sous.revision:3e16f9483aa53833fb47dc41530885b929f45f59 com.opentable.sous.version:0.0.2] Etag:"sha256:18be734fd63f897e4c85e88bdcc6c4e4d9b8a549a3de37796a9da2b5256ca540" CanonicalName:192.168.99.100/2222/repos/sous-server@sha256:18be734fd63f897e4c85e88bdcc6c4e4d9b8a549a3de37796a9da2b5256ca540 AllNames:[192.168.99.100/2222/repos/sous-server:3e16f9483aa53833fb47dc41530885b929f45f59 192.168.99.100/2222/repos/sous-server@sha256:18be734fd63f897e4c85e88bdcc6c4e4d9b8a549a3de37796a9da2b5256ca540]} <nil> <nil> <nil>
+debug: 2017/02/09 17:10:17 image_mapping.go:581: Parsed image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:18be734fd63f897e4c85e88bdcc6c4e4d9b8a549a3de37796a9da2b5256ca540 from "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:18be734fd63f897e4c85e88bdcc6c4e4d9b8a549a3de37796a9da2b5256ca540"
+vomit: 2017/02/09 17:10:17 image_mapping.go:586: Inserting name 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server for sous.SourceID{Location:sous.SourceLocation{Repo:"192.168.99.100/2222/repos/sous-server", Dir:""}, Version:semv.Version{Major:0, Minor:0, Patch:2, Pre:"", Meta:"3e16f9483aa53833fb47dc41530885b929f45f59", DefaultFormat:"M.m.p"}}
+vomit: 2017/02/09 17:10:17 image_mapping.go:562: Found id: 1 with "select repo_name_id from docker_repo_name where name = $1" [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server]
+vomit: 2017/02/09 17:10:17 image_mapping.go:598: name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:17 image_mapping.go:562: Found id: 1 with "select location_id from docker_search_location where repo = $1 and offset = $2" [192.168.99.100/2222/repos/sous-server ]
+vomit: 2017/02/09 17:10:17 image_mapping.go:609: Source Loc: 192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:17 image_mapping.go:618: Inserting metadata id:1 etag:"sha256:18be734fd63f897e4c85e88bdcc6c4e4d9b8a549a3de37796a9da2b5256ca540" name:192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:18be734fd63f897e4c85e88bdcc6c4e4d9b8a549a3de37796a9da2b5256ca540 version:0.0.2+3e16f9483aa53833fb47dc41530885b929f45f59
+vomit: 2017/02/09 17:10:17 image_mapping.go:575: Made (?err: <nil>) id: 12 with "insert or replace into docker_search_metadata (canonicalName, location_id, etag, version) values ($1, $2, $3, $4);"
+vomit: 2017/02/09 17:10:17 image_mapping.go:640: Inserting search name 12 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:18be734fd63f897e4c85e88bdcc6c4e4d9b8a549a3de37796a9da2b5256ca540
+vomit: 2017/02/09 17:10:17 image_mapping.go:194: cn: 192.168.99.100/2222/repos/sous-server@sha256:18be734fd63f897e4c85e88bdcc6c4e4d9b8a549a3de37796a9da2b5256ca540 all: [192.168.99.100/2222/repos/sous-server:3e16f9483aa53833fb47dc41530885b929f45f59 192.168.99.100/2222/repos/sous-server@sha256:18be734fd63f897e4c85e88bdcc6c4e4d9b8a549a3de37796a9da2b5256ca540]
+debug: 2017/02/09 17:10:17 image_mapping.go:664: Adding names for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:18be734fd63f897e4c85e88bdcc6c4e4d9b8a549a3de37796a9da2b5256ca540: [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:3e16f9483aa53833fb47dc41530885b929f45f59 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:18be734fd63f897e4c85e88bdcc6c4e4d9b8a549a3de37796a9da2b5256ca540]
+debug: 2017/02/09 17:10:17 image_mapping.go:201: Image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:3e16f9483aa53833fb47dc41530885b929f45f59 -> (updated) Source ID: 192.168.99.100/2222/repos/sous-server,0.0.2
+debug: 2017/02/09 17:10:17 image_mapping.go:115: Harvested tag: 9cecbe139826a4b58d3eaa7018a8e9be9a4dcf4c for repo: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server
+vomit: 2017/02/09 17:10:17 image_mapping.go:117: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:9cecbe139826a4b58d3eaa7018a8e9be9a4dcf4c <nil>
+vomit: 2017/02/09 17:10:17 image_mapping.go:151: Getting source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:9cecbe139826a4b58d3eaa7018a8e9be9a4dcf4c
+vomit: 2017/02/09 17:10:17 image_mapping.go:155: No source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:9cecbe139826a4b58d3eaa7018a8e9be9a4dcf4c
+vomit: 2017/02/09 17:10:17 image_mapping.go:169: {Registry:192.168.99.100:5000 Labels:map[com.opentable.sous.repo_offset: com.opentable.sous.repo_url:192.168.99.100/2222/repos/sous-server com.opentable.sous.revision:9cecbe139826a4b58d3eaa7018a8e9be9a4dcf4c com.opentable.sous.version:0.0.2] Etag:"sha256:536682b2b94bd377ce21341790aa8280237c8ed8d86c1e1bcf5bd5d3698aaead" CanonicalName:192.168.99.100/2222/repos/sous-server@sha256:536682b2b94bd377ce21341790aa8280237c8ed8d86c1e1bcf5bd5d3698aaead AllNames:[192.168.99.100/2222/repos/sous-server:9cecbe139826a4b58d3eaa7018a8e9be9a4dcf4c 192.168.99.100/2222/repos/sous-server@sha256:536682b2b94bd377ce21341790aa8280237c8ed8d86c1e1bcf5bd5d3698aaead]} <nil> <nil> <nil>
+debug: 2017/02/09 17:10:17 image_mapping.go:581: Parsed image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:536682b2b94bd377ce21341790aa8280237c8ed8d86c1e1bcf5bd5d3698aaead from "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:536682b2b94bd377ce21341790aa8280237c8ed8d86c1e1bcf5bd5d3698aaead"
+vomit: 2017/02/09 17:10:17 image_mapping.go:586: Inserting name 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server for sous.SourceID{Location:sous.SourceLocation{Repo:"192.168.99.100/2222/repos/sous-server", Dir:""}, Version:semv.Version{Major:0, Minor:0, Patch:2, Pre:"", Meta:"9cecbe139826a4b58d3eaa7018a8e9be9a4dcf4c", DefaultFormat:"M.m.p"}}
+vomit: 2017/02/09 17:10:17 image_mapping.go:562: Found id: 1 with "select repo_name_id from docker_repo_name where name = $1" [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server]
+vomit: 2017/02/09 17:10:17 image_mapping.go:598: name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:17 image_mapping.go:562: Found id: 1 with "select location_id from docker_search_location where repo = $1 and offset = $2" [192.168.99.100/2222/repos/sous-server ]
+vomit: 2017/02/09 17:10:17 image_mapping.go:609: Source Loc: 192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:17 image_mapping.go:618: Inserting metadata id:1 etag:"sha256:536682b2b94bd377ce21341790aa8280237c8ed8d86c1e1bcf5bd5d3698aaead" name:192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:536682b2b94bd377ce21341790aa8280237c8ed8d86c1e1bcf5bd5d3698aaead version:0.0.2+9cecbe139826a4b58d3eaa7018a8e9be9a4dcf4c
+vomit: 2017/02/09 17:10:17 image_mapping.go:575: Made (?err: <nil>) id: 13 with "insert or replace into docker_search_metadata (canonicalName, location_id, etag, version) values ($1, $2, $3, $4);"
+vomit: 2017/02/09 17:10:17 image_mapping.go:640: Inserting search name 13 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:536682b2b94bd377ce21341790aa8280237c8ed8d86c1e1bcf5bd5d3698aaead
+vomit: 2017/02/09 17:10:17 image_mapping.go:194: cn: 192.168.99.100/2222/repos/sous-server@sha256:536682b2b94bd377ce21341790aa8280237c8ed8d86c1e1bcf5bd5d3698aaead all: [192.168.99.100/2222/repos/sous-server:9cecbe139826a4b58d3eaa7018a8e9be9a4dcf4c 192.168.99.100/2222/repos/sous-server@sha256:536682b2b94bd377ce21341790aa8280237c8ed8d86c1e1bcf5bd5d3698aaead]
+debug: 2017/02/09 17:10:17 image_mapping.go:664: Adding names for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:536682b2b94bd377ce21341790aa8280237c8ed8d86c1e1bcf5bd5d3698aaead: [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:9cecbe139826a4b58d3eaa7018a8e9be9a4dcf4c 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:536682b2b94bd377ce21341790aa8280237c8ed8d86c1e1bcf5bd5d3698aaead]
+debug: 2017/02/09 17:10:17 image_mapping.go:201: Image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:9cecbe139826a4b58d3eaa7018a8e9be9a4dcf4c -> (updated) Source ID: 192.168.99.100/2222/repos/sous-server,0.0.2
+debug: 2017/02/09 17:10:17 image_mapping.go:115: Harvested tag: af81228647c546b416be4d9582f72ad42c202504 for repo: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server
+vomit: 2017/02/09 17:10:17 image_mapping.go:117: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:af81228647c546b416be4d9582f72ad42c202504 <nil>
+vomit: 2017/02/09 17:10:17 image_mapping.go:151: Getting source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:af81228647c546b416be4d9582f72ad42c202504
+vomit: 2017/02/09 17:10:17 image_mapping.go:155: No source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:af81228647c546b416be4d9582f72ad42c202504
+vomit: 2017/02/09 17:10:17 image_mapping.go:169: {Registry:192.168.99.100:5000 Labels:map[com.opentable.sous.version:0.0.2 com.opentable.sous.repo_offset: com.opentable.sous.repo_url:192.168.99.100/2222/repos/sous-server com.opentable.sous.revision:af81228647c546b416be4d9582f72ad42c202504] Etag:"sha256:908e83fe60ff386f921ee48a0c6465c9a62d559bfc920fa270707a6bb3640ad9" CanonicalName:192.168.99.100/2222/repos/sous-server@sha256:908e83fe60ff386f921ee48a0c6465c9a62d559bfc920fa270707a6bb3640ad9 AllNames:[192.168.99.100/2222/repos/sous-server:af81228647c546b416be4d9582f72ad42c202504 192.168.99.100/2222/repos/sous-server@sha256:908e83fe60ff386f921ee48a0c6465c9a62d559bfc920fa270707a6bb3640ad9]} <nil> <nil> <nil>
+debug: 2017/02/09 17:10:17 image_mapping.go:581: Parsed image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:908e83fe60ff386f921ee48a0c6465c9a62d559bfc920fa270707a6bb3640ad9 from "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:908e83fe60ff386f921ee48a0c6465c9a62d559bfc920fa270707a6bb3640ad9"
+vomit: 2017/02/09 17:10:17 image_mapping.go:586: Inserting name 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server for sous.SourceID{Location:sous.SourceLocation{Repo:"192.168.99.100/2222/repos/sous-server", Dir:""}, Version:semv.Version{Major:0, Minor:0, Patch:2, Pre:"", Meta:"af81228647c546b416be4d9582f72ad42c202504", DefaultFormat:"M.m.p"}}
+vomit: 2017/02/09 17:10:17 image_mapping.go:562: Found id: 1 with "select repo_name_id from docker_repo_name where name = $1" [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server]
+vomit: 2017/02/09 17:10:17 image_mapping.go:598: name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:17 image_mapping.go:562: Found id: 1 with "select location_id from docker_search_location where repo = $1 and offset = $2" [192.168.99.100/2222/repos/sous-server ]
+vomit: 2017/02/09 17:10:17 image_mapping.go:609: Source Loc: 192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:17 image_mapping.go:618: Inserting metadata id:1 etag:"sha256:908e83fe60ff386f921ee48a0c6465c9a62d559bfc920fa270707a6bb3640ad9" name:192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:908e83fe60ff386f921ee48a0c6465c9a62d559bfc920fa270707a6bb3640ad9 version:0.0.2+af81228647c546b416be4d9582f72ad42c202504
+vomit: 2017/02/09 17:10:17 image_mapping.go:575: Made (?err: <nil>) id: 14 with "insert or replace into docker_search_metadata (canonicalName, location_id, etag, version) values ($1, $2, $3, $4);"
+vomit: 2017/02/09 17:10:17 image_mapping.go:640: Inserting search name 14 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:908e83fe60ff386f921ee48a0c6465c9a62d559bfc920fa270707a6bb3640ad9
+vomit: 2017/02/09 17:10:17 image_mapping.go:194: cn: 192.168.99.100/2222/repos/sous-server@sha256:908e83fe60ff386f921ee48a0c6465c9a62d559bfc920fa270707a6bb3640ad9 all: [192.168.99.100/2222/repos/sous-server:af81228647c546b416be4d9582f72ad42c202504 192.168.99.100/2222/repos/sous-server@sha256:908e83fe60ff386f921ee48a0c6465c9a62d559bfc920fa270707a6bb3640ad9]
+debug: 2017/02/09 17:10:17 image_mapping.go:664: Adding names for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:908e83fe60ff386f921ee48a0c6465c9a62d559bfc920fa270707a6bb3640ad9: [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:af81228647c546b416be4d9582f72ad42c202504 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:908e83fe60ff386f921ee48a0c6465c9a62d559bfc920fa270707a6bb3640ad9]
+debug: 2017/02/09 17:10:17 image_mapping.go:201: Image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:af81228647c546b416be4d9582f72ad42c202504 -> (updated) Source ID: 192.168.99.100/2222/repos/sous-server,0.0.2
+debug: 2017/02/09 17:10:17 image_mapping.go:115: Harvested tag: b433c87e9ad83ce25777eb0b5a245c7d1ed9eca4 for repo: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server
+vomit: 2017/02/09 17:10:17 image_mapping.go:117: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:b433c87e9ad83ce25777eb0b5a245c7d1ed9eca4 <nil>
+vomit: 2017/02/09 17:10:17 image_mapping.go:151: Getting source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:b433c87e9ad83ce25777eb0b5a245c7d1ed9eca4
+vomit: 2017/02/09 17:10:17 image_mapping.go:155: No source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:b433c87e9ad83ce25777eb0b5a245c7d1ed9eca4
+vomit: 2017/02/09 17:10:17 image_mapping.go:169: {Registry:192.168.99.100:5000 Labels:map[com.opentable.sous.repo_offset: com.opentable.sous.repo_url:192.168.99.100/2222/repos/sous-server com.opentable.sous.revision:b433c87e9ad83ce25777eb0b5a245c7d1ed9eca4 com.opentable.sous.version:0.0.2] Etag:"sha256:fa08a227abbeea3c868e172da65db3b40c6546dfe662beec2dc431f193658cbf" CanonicalName:192.168.99.100/2222/repos/sous-server@sha256:fa08a227abbeea3c868e172da65db3b40c6546dfe662beec2dc431f193658cbf AllNames:[192.168.99.100/2222/repos/sous-server:b433c87e9ad83ce25777eb0b5a245c7d1ed9eca4 192.168.99.100/2222/repos/sous-server@sha256:fa08a227abbeea3c868e172da65db3b40c6546dfe662beec2dc431f193658cbf]} <nil> <nil> <nil>
+debug: 2017/02/09 17:10:17 image_mapping.go:581: Parsed image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:fa08a227abbeea3c868e172da65db3b40c6546dfe662beec2dc431f193658cbf from "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:fa08a227abbeea3c868e172da65db3b40c6546dfe662beec2dc431f193658cbf"
+vomit: 2017/02/09 17:10:17 image_mapping.go:586: Inserting name 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server for sous.SourceID{Location:sous.SourceLocation{Repo:"192.168.99.100/2222/repos/sous-server", Dir:""}, Version:semv.Version{Major:0, Minor:0, Patch:2, Pre:"", Meta:"b433c87e9ad83ce25777eb0b5a245c7d1ed9eca4", DefaultFormat:"M.m.p"}}
+vomit: 2017/02/09 17:10:17 image_mapping.go:562: Found id: 1 with "select repo_name_id from docker_repo_name where name = $1" [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server]
+vomit: 2017/02/09 17:10:17 image_mapping.go:598: name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:17 image_mapping.go:562: Found id: 1 with "select location_id from docker_search_location where repo = $1 and offset = $2" [192.168.99.100/2222/repos/sous-server ]
+vomit: 2017/02/09 17:10:17 image_mapping.go:609: Source Loc: 192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:17 image_mapping.go:618: Inserting metadata id:1 etag:"sha256:fa08a227abbeea3c868e172da65db3b40c6546dfe662beec2dc431f193658cbf" name:192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:fa08a227abbeea3c868e172da65db3b40c6546dfe662beec2dc431f193658cbf version:0.0.2+b433c87e9ad83ce25777eb0b5a245c7d1ed9eca4
+vomit: 2017/02/09 17:10:17 image_mapping.go:575: Made (?err: <nil>) id: 15 with "insert or replace into docker_search_metadata (canonicalName, location_id, etag, version) values ($1, $2, $3, $4);"
+vomit: 2017/02/09 17:10:17 image_mapping.go:640: Inserting search name 15 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:fa08a227abbeea3c868e172da65db3b40c6546dfe662beec2dc431f193658cbf
+vomit: 2017/02/09 17:10:17 image_mapping.go:194: cn: 192.168.99.100/2222/repos/sous-server@sha256:fa08a227abbeea3c868e172da65db3b40c6546dfe662beec2dc431f193658cbf all: [192.168.99.100/2222/repos/sous-server:b433c87e9ad83ce25777eb0b5a245c7d1ed9eca4 192.168.99.100/2222/repos/sous-server@sha256:fa08a227abbeea3c868e172da65db3b40c6546dfe662beec2dc431f193658cbf]
+debug: 2017/02/09 17:10:17 image_mapping.go:664: Adding names for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:fa08a227abbeea3c868e172da65db3b40c6546dfe662beec2dc431f193658cbf: [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:b433c87e9ad83ce25777eb0b5a245c7d1ed9eca4 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:fa08a227abbeea3c868e172da65db3b40c6546dfe662beec2dc431f193658cbf]
+debug: 2017/02/09 17:10:17 image_mapping.go:201: Image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:b433c87e9ad83ce25777eb0b5a245c7d1ed9eca4 -> (updated) Source ID: 192.168.99.100/2222/repos/sous-server,0.0.2
+debug: 2017/02/09 17:10:17 image_mapping.go:115: Harvested tag: 251a8f418dae3a262d2267394264d4669aae0f74 for repo: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server
+vomit: 2017/02/09 17:10:17 image_mapping.go:117: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:251a8f418dae3a262d2267394264d4669aae0f74 <nil>
+vomit: 2017/02/09 17:10:17 image_mapping.go:151: Getting source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:251a8f418dae3a262d2267394264d4669aae0f74
+vomit: 2017/02/09 17:10:17 image_mapping.go:155: No source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:251a8f418dae3a262d2267394264d4669aae0f74
+vomit: 2017/02/09 17:10:17 image_mapping.go:169: {Registry:192.168.99.100:5000 Labels:map[com.opentable.sous.repo_offset: com.opentable.sous.repo_url:192.168.99.100/2222/repos/sous-server com.opentable.sous.revision:251a8f418dae3a262d2267394264d4669aae0f74 com.opentable.sous.version:0.0.2] Etag:"sha256:448d915fd9ace55c58a72cbc73c1066f759243a1b3c977af49b0b9b3eb3ea354" CanonicalName:192.168.99.100/2222/repos/sous-server@sha256:448d915fd9ace55c58a72cbc73c1066f759243a1b3c977af49b0b9b3eb3ea354 AllNames:[192.168.99.100/2222/repos/sous-server:251a8f418dae3a262d2267394264d4669aae0f74 192.168.99.100/2222/repos/sous-server@sha256:448d915fd9ace55c58a72cbc73c1066f759243a1b3c977af49b0b9b3eb3ea354]} <nil> <nil> <nil>
+debug: 2017/02/09 17:10:17 image_mapping.go:581: Parsed image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:448d915fd9ace55c58a72cbc73c1066f759243a1b3c977af49b0b9b3eb3ea354 from "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:448d915fd9ace55c58a72cbc73c1066f759243a1b3c977af49b0b9b3eb3ea354"
+vomit: 2017/02/09 17:10:17 image_mapping.go:586: Inserting name 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server for sous.SourceID{Location:sous.SourceLocation{Repo:"192.168.99.100/2222/repos/sous-server", Dir:""}, Version:semv.Version{Major:0, Minor:0, Patch:2, Pre:"", Meta:"251a8f418dae3a262d2267394264d4669aae0f74", DefaultFormat:"M.m.p"}}
+vomit: 2017/02/09 17:10:17 image_mapping.go:562: Found id: 1 with "select repo_name_id from docker_repo_name where name = $1" [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server]
+vomit: 2017/02/09 17:10:17 image_mapping.go:598: name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:17 image_mapping.go:562: Found id: 1 with "select location_id from docker_search_location where repo = $1 and offset = $2" [192.168.99.100/2222/repos/sous-server ]
+vomit: 2017/02/09 17:10:17 image_mapping.go:609: Source Loc: 192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:17 image_mapping.go:618: Inserting metadata id:1 etag:"sha256:448d915fd9ace55c58a72cbc73c1066f759243a1b3c977af49b0b9b3eb3ea354" name:192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:448d915fd9ace55c58a72cbc73c1066f759243a1b3c977af49b0b9b3eb3ea354 version:0.0.2+251a8f418dae3a262d2267394264d4669aae0f74
+vomit: 2017/02/09 17:10:17 image_mapping.go:575: Made (?err: <nil>) id: 16 with "insert or replace into docker_search_metadata (canonicalName, location_id, etag, version) values ($1, $2, $3, $4);"
+vomit: 2017/02/09 17:10:17 image_mapping.go:640: Inserting search name 16 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:448d915fd9ace55c58a72cbc73c1066f759243a1b3c977af49b0b9b3eb3ea354
+vomit: 2017/02/09 17:10:17 image_mapping.go:194: cn: 192.168.99.100/2222/repos/sous-server@sha256:448d915fd9ace55c58a72cbc73c1066f759243a1b3c977af49b0b9b3eb3ea354 all: [192.168.99.100/2222/repos/sous-server:251a8f418dae3a262d2267394264d4669aae0f74 192.168.99.100/2222/repos/sous-server@sha256:448d915fd9ace55c58a72cbc73c1066f759243a1b3c977af49b0b9b3eb3ea354]
+debug: 2017/02/09 17:10:17 image_mapping.go:664: Adding names for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:448d915fd9ace55c58a72cbc73c1066f759243a1b3c977af49b0b9b3eb3ea354: [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:251a8f418dae3a262d2267394264d4669aae0f74 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:448d915fd9ace55c58a72cbc73c1066f759243a1b3c977af49b0b9b3eb3ea354]
+debug: 2017/02/09 17:10:17 image_mapping.go:201: Image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:251a8f418dae3a262d2267394264d4669aae0f74 -> (updated) Source ID: 192.168.99.100/2222/repos/sous-server,0.0.2
+debug: 2017/02/09 17:10:17 image_mapping.go:115: Harvested tag: bd0b69870ff316d1154ff0def25c2d7365fa4e97 for repo: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server
+vomit: 2017/02/09 17:10:17 image_mapping.go:117: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:bd0b69870ff316d1154ff0def25c2d7365fa4e97 <nil>
+vomit: 2017/02/09 17:10:17 image_mapping.go:151: Getting source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:bd0b69870ff316d1154ff0def25c2d7365fa4e97
+vomit: 2017/02/09 17:10:17 image_mapping.go:155: No source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:bd0b69870ff316d1154ff0def25c2d7365fa4e97
+vomit: 2017/02/09 17:10:17 image_mapping.go:169: {Registry:192.168.99.100:5000 Labels:map[com.opentable.sous.repo_url:192.168.99.100/2222/repos/sous-server com.opentable.sous.revision:bd0b69870ff316d1154ff0def25c2d7365fa4e97 com.opentable.sous.version:0.0.2 com.opentable.sous.repo_offset:] Etag:"sha256:62fa2edd1d8f1a128e2169c9b687c7ab96cd8f12d89dead11fc3ed960ec3877c" CanonicalName:192.168.99.100/2222/repos/sous-server@sha256:62fa2edd1d8f1a128e2169c9b687c7ab96cd8f12d89dead11fc3ed960ec3877c AllNames:[192.168.99.100/2222/repos/sous-server:bd0b69870ff316d1154ff0def25c2d7365fa4e97 192.168.99.100/2222/repos/sous-server@sha256:62fa2edd1d8f1a128e2169c9b687c7ab96cd8f12d89dead11fc3ed960ec3877c]} <nil> <nil> <nil>
+debug: 2017/02/09 17:10:17 image_mapping.go:581: Parsed image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:62fa2edd1d8f1a128e2169c9b687c7ab96cd8f12d89dead11fc3ed960ec3877c from "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:62fa2edd1d8f1a128e2169c9b687c7ab96cd8f12d89dead11fc3ed960ec3877c"
+vomit: 2017/02/09 17:10:17 image_mapping.go:586: Inserting name 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server for sous.SourceID{Location:sous.SourceLocation{Repo:"192.168.99.100/2222/repos/sous-server", Dir:""}, Version:semv.Version{Major:0, Minor:0, Patch:2, Pre:"", Meta:"bd0b69870ff316d1154ff0def25c2d7365fa4e97", DefaultFormat:"M.m.p"}}
+vomit: 2017/02/09 17:10:17 image_mapping.go:562: Found id: 1 with "select repo_name_id from docker_repo_name where name = $1" [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server]
+vomit: 2017/02/09 17:10:17 image_mapping.go:598: name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:17 image_mapping.go:562: Found id: 1 with "select location_id from docker_search_location where repo = $1 and offset = $2" [192.168.99.100/2222/repos/sous-server ]
+vomit: 2017/02/09 17:10:17 image_mapping.go:609: Source Loc: 192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:17 image_mapping.go:618: Inserting metadata id:1 etag:"sha256:62fa2edd1d8f1a128e2169c9b687c7ab96cd8f12d89dead11fc3ed960ec3877c" name:192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:62fa2edd1d8f1a128e2169c9b687c7ab96cd8f12d89dead11fc3ed960ec3877c version:0.0.2+bd0b69870ff316d1154ff0def25c2d7365fa4e97
+vomit: 2017/02/09 17:10:17 image_mapping.go:575: Made (?err: <nil>) id: 17 with "insert or replace into docker_search_metadata (canonicalName, location_id, etag, version) values ($1, $2, $3, $4);"
+vomit: 2017/02/09 17:10:17 image_mapping.go:640: Inserting search name 17 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:62fa2edd1d8f1a128e2169c9b687c7ab96cd8f12d89dead11fc3ed960ec3877c
+vomit: 2017/02/09 17:10:17 image_mapping.go:194: cn: 192.168.99.100/2222/repos/sous-server@sha256:62fa2edd1d8f1a128e2169c9b687c7ab96cd8f12d89dead11fc3ed960ec3877c all: [192.168.99.100/2222/repos/sous-server:bd0b69870ff316d1154ff0def25c2d7365fa4e97 192.168.99.100/2222/repos/sous-server@sha256:62fa2edd1d8f1a128e2169c9b687c7ab96cd8f12d89dead11fc3ed960ec3877c]
+debug: 2017/02/09 17:10:17 image_mapping.go:664: Adding names for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:62fa2edd1d8f1a128e2169c9b687c7ab96cd8f12d89dead11fc3ed960ec3877c: [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:bd0b69870ff316d1154ff0def25c2d7365fa4e97 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:62fa2edd1d8f1a128e2169c9b687c7ab96cd8f12d89dead11fc3ed960ec3877c]
+debug: 2017/02/09 17:10:17 image_mapping.go:201: Image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:bd0b69870ff316d1154ff0def25c2d7365fa4e97 -> (updated) Source ID: 192.168.99.100/2222/repos/sous-server,0.0.2
+debug: 2017/02/09 17:10:17 image_mapping.go:115: Harvested tag: 51893dcad258995942047799c72d2ee6b6ba366a for repo: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server
+vomit: 2017/02/09 17:10:17 image_mapping.go:117: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:51893dcad258995942047799c72d2ee6b6ba366a <nil>
+vomit: 2017/02/09 17:10:17 image_mapping.go:151: Getting source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:51893dcad258995942047799c72d2ee6b6ba366a
+vomit: 2017/02/09 17:10:17 image_mapping.go:155: No source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:51893dcad258995942047799c72d2ee6b6ba366a
+vomit: 2017/02/09 17:10:17 image_mapping.go:169: {Registry:192.168.99.100:5000 Labels:map[com.opentable.sous.repo_url:192.168.99.100/2222/repos/sous-server com.opentable.sous.revision:51893dcad258995942047799c72d2ee6b6ba366a com.opentable.sous.version:0.0.2 com.opentable.sous.repo_offset:] Etag:"sha256:8bb79f58d2474208c3513ed37bff810cd788e16b040e079098d6ac6f1e85de5b" CanonicalName:192.168.99.100/2222/repos/sous-server@sha256:8bb79f58d2474208c3513ed37bff810cd788e16b040e079098d6ac6f1e85de5b AllNames:[192.168.99.100/2222/repos/sous-server:51893dcad258995942047799c72d2ee6b6ba366a 192.168.99.100/2222/repos/sous-server@sha256:8bb79f58d2474208c3513ed37bff810cd788e16b040e079098d6ac6f1e85de5b]} <nil> <nil> <nil>
+debug: 2017/02/09 17:10:17 image_mapping.go:581: Parsed image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:8bb79f58d2474208c3513ed37bff810cd788e16b040e079098d6ac6f1e85de5b from "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:8bb79f58d2474208c3513ed37bff810cd788e16b040e079098d6ac6f1e85de5b"
+vomit: 2017/02/09 17:10:17 image_mapping.go:586: Inserting name 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server for sous.SourceID{Location:sous.SourceLocation{Repo:"192.168.99.100/2222/repos/sous-server", Dir:""}, Version:semv.Version{Major:0, Minor:0, Patch:2, Pre:"", Meta:"51893dcad258995942047799c72d2ee6b6ba366a", DefaultFormat:"M.m.p"}}
+vomit: 2017/02/09 17:10:17 image_mapping.go:562: Found id: 1 with "select repo_name_id from docker_repo_name where name = $1" [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server]
+vomit: 2017/02/09 17:10:17 image_mapping.go:598: name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:17 image_mapping.go:562: Found id: 1 with "select location_id from docker_search_location where repo = $1 and offset = $2" [192.168.99.100/2222/repos/sous-server ]
+vomit: 2017/02/09 17:10:17 image_mapping.go:609: Source Loc: 192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:17 image_mapping.go:618: Inserting metadata id:1 etag:"sha256:8bb79f58d2474208c3513ed37bff810cd788e16b040e079098d6ac6f1e85de5b" name:192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:8bb79f58d2474208c3513ed37bff810cd788e16b040e079098d6ac6f1e85de5b version:0.0.2+51893dcad258995942047799c72d2ee6b6ba366a
+vomit: 2017/02/09 17:10:17 image_mapping.go:575: Made (?err: <nil>) id: 18 with "insert or replace into docker_search_metadata (canonicalName, location_id, etag, version) values ($1, $2, $3, $4);"
+vomit: 2017/02/09 17:10:17 image_mapping.go:640: Inserting search name 18 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:8bb79f58d2474208c3513ed37bff810cd788e16b040e079098d6ac6f1e85de5b
+vomit: 2017/02/09 17:10:17 image_mapping.go:194: cn: 192.168.99.100/2222/repos/sous-server@sha256:8bb79f58d2474208c3513ed37bff810cd788e16b040e079098d6ac6f1e85de5b all: [192.168.99.100/2222/repos/sous-server:51893dcad258995942047799c72d2ee6b6ba366a 192.168.99.100/2222/repos/sous-server@sha256:8bb79f58d2474208c3513ed37bff810cd788e16b040e079098d6ac6f1e85de5b]
+debug: 2017/02/09 17:10:17 image_mapping.go:664: Adding names for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:8bb79f58d2474208c3513ed37bff810cd788e16b040e079098d6ac6f1e85de5b: [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:51893dcad258995942047799c72d2ee6b6ba366a 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:8bb79f58d2474208c3513ed37bff810cd788e16b040e079098d6ac6f1e85de5b]
+debug: 2017/02/09 17:10:17 image_mapping.go:201: Image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:51893dcad258995942047799c72d2ee6b6ba366a -> (updated) Source ID: 192.168.99.100/2222/repos/sous-server,0.0.2
+debug: 2017/02/09 17:10:17 image_mapping.go:115: Harvested tag: 6c874b261ed2430222b7c0f14fc92ce53c09730d for repo: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server
+vomit: 2017/02/09 17:10:17 image_mapping.go:117: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:6c874b261ed2430222b7c0f14fc92ce53c09730d <nil>
+vomit: 2017/02/09 17:10:17 image_mapping.go:151: Getting source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:6c874b261ed2430222b7c0f14fc92ce53c09730d
+vomit: 2017/02/09 17:10:17 image_mapping.go:155: No source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:6c874b261ed2430222b7c0f14fc92ce53c09730d
+vomit: 2017/02/09 17:10:17 image_mapping.go:169: {Registry:192.168.99.100:5000 Labels:map[com.opentable.sous.repo_offset: com.opentable.sous.repo_url:192.168.99.100/2222/repos/sous-server com.opentable.sous.revision:6c874b261ed2430222b7c0f14fc92ce53c09730d com.opentable.sous.version:0.0.2] Etag:"sha256:b022d4077811a77f28df4787a19d6e1117b2e809596980ee5e83c31bba6b5bce" CanonicalName:192.168.99.100/2222/repos/sous-server@sha256:b022d4077811a77f28df4787a19d6e1117b2e809596980ee5e83c31bba6b5bce AllNames:[192.168.99.100/2222/repos/sous-server:6c874b261ed2430222b7c0f14fc92ce53c09730d 192.168.99.100/2222/repos/sous-server@sha256:b022d4077811a77f28df4787a19d6e1117b2e809596980ee5e83c31bba6b5bce]} <nil> <nil> <nil>
+debug: 2017/02/09 17:10:17 image_mapping.go:581: Parsed image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:b022d4077811a77f28df4787a19d6e1117b2e809596980ee5e83c31bba6b5bce from "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:b022d4077811a77f28df4787a19d6e1117b2e809596980ee5e83c31bba6b5bce"
+vomit: 2017/02/09 17:10:17 image_mapping.go:586: Inserting name 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server for sous.SourceID{Location:sous.SourceLocation{Repo:"192.168.99.100/2222/repos/sous-server", Dir:""}, Version:semv.Version{Major:0, Minor:0, Patch:2, Pre:"", Meta:"6c874b261ed2430222b7c0f14fc92ce53c09730d", DefaultFormat:"M.m.p"}}
+vomit: 2017/02/09 17:10:17 image_mapping.go:562: Found id: 1 with "select repo_name_id from docker_repo_name where name = $1" [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server]
+vomit: 2017/02/09 17:10:17 image_mapping.go:598: name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:17 image_mapping.go:562: Found id: 1 with "select location_id from docker_search_location where repo = $1 and offset = $2" [192.168.99.100/2222/repos/sous-server ]
+vomit: 2017/02/09 17:10:17 image_mapping.go:609: Source Loc: 192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:17 image_mapping.go:618: Inserting metadata id:1 etag:"sha256:b022d4077811a77f28df4787a19d6e1117b2e809596980ee5e83c31bba6b5bce" name:192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:b022d4077811a77f28df4787a19d6e1117b2e809596980ee5e83c31bba6b5bce version:0.0.2+6c874b261ed2430222b7c0f14fc92ce53c09730d
+vomit: 2017/02/09 17:10:17 image_mapping.go:575: Made (?err: <nil>) id: 19 with "insert or replace into docker_search_metadata (canonicalName, location_id, etag, version) values ($1, $2, $3, $4);"
+vomit: 2017/02/09 17:10:17 image_mapping.go:640: Inserting search name 19 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:b022d4077811a77f28df4787a19d6e1117b2e809596980ee5e83c31bba6b5bce
+vomit: 2017/02/09 17:10:17 image_mapping.go:194: cn: 192.168.99.100/2222/repos/sous-server@sha256:b022d4077811a77f28df4787a19d6e1117b2e809596980ee5e83c31bba6b5bce all: [192.168.99.100/2222/repos/sous-server:6c874b261ed2430222b7c0f14fc92ce53c09730d 192.168.99.100/2222/repos/sous-server@sha256:b022d4077811a77f28df4787a19d6e1117b2e809596980ee5e83c31bba6b5bce]
+debug: 2017/02/09 17:10:17 image_mapping.go:664: Adding names for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:b022d4077811a77f28df4787a19d6e1117b2e809596980ee5e83c31bba6b5bce: [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:6c874b261ed2430222b7c0f14fc92ce53c09730d 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:b022d4077811a77f28df4787a19d6e1117b2e809596980ee5e83c31bba6b5bce]
+debug: 2017/02/09 17:10:17 image_mapping.go:201: Image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:6c874b261ed2430222b7c0f14fc92ce53c09730d -> (updated) Source ID: 192.168.99.100/2222/repos/sous-server,0.0.2
+debug: 2017/02/09 17:10:17 image_mapping.go:115: Harvested tag: fb40afe2988815d117e11b9639b5fe34c63177ff for repo: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server
+vomit: 2017/02/09 17:10:17 image_mapping.go:117: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:fb40afe2988815d117e11b9639b5fe34c63177ff <nil>
+vomit: 2017/02/09 17:10:17 image_mapping.go:151: Getting source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:fb40afe2988815d117e11b9639b5fe34c63177ff
+vomit: 2017/02/09 17:10:17 image_mapping.go:155: No source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:fb40afe2988815d117e11b9639b5fe34c63177ff
+vomit: 2017/02/09 17:10:17 image_mapping.go:169: {Registry:192.168.99.100:5000 Labels:map[com.opentable.sous.repo_offset: com.opentable.sous.repo_url:192.168.99.100/2222/repos/sous-server com.opentable.sous.revision:fb40afe2988815d117e11b9639b5fe34c63177ff com.opentable.sous.version:0.0.2] Etag:"sha256:a528b15525ca6914f7e84373424ccaa580aacc2617d625467f55690d9ad7b760" CanonicalName:192.168.99.100/2222/repos/sous-server@sha256:a528b15525ca6914f7e84373424ccaa580aacc2617d625467f55690d9ad7b760 AllNames:[192.168.99.100/2222/repos/sous-server:fb40afe2988815d117e11b9639b5fe34c63177ff 192.168.99.100/2222/repos/sous-server@sha256:a528b15525ca6914f7e84373424ccaa580aacc2617d625467f55690d9ad7b760]} <nil> <nil> <nil>
+debug: 2017/02/09 17:10:17 image_mapping.go:581: Parsed image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:a528b15525ca6914f7e84373424ccaa580aacc2617d625467f55690d9ad7b760 from "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:a528b15525ca6914f7e84373424ccaa580aacc2617d625467f55690d9ad7b760"
+vomit: 2017/02/09 17:10:17 image_mapping.go:586: Inserting name 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server for sous.SourceID{Location:sous.SourceLocation{Repo:"192.168.99.100/2222/repos/sous-server", Dir:""}, Version:semv.Version{Major:0, Minor:0, Patch:2, Pre:"", Meta:"fb40afe2988815d117e11b9639b5fe34c63177ff", DefaultFormat:"M.m.p"}}
+vomit: 2017/02/09 17:10:17 image_mapping.go:562: Found id: 1 with "select repo_name_id from docker_repo_name where name = $1" [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server]
+vomit: 2017/02/09 17:10:17 image_mapping.go:598: name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:17 image_mapping.go:562: Found id: 1 with "select location_id from docker_search_location where repo = $1 and offset = $2" [192.168.99.100/2222/repos/sous-server ]
+vomit: 2017/02/09 17:10:17 image_mapping.go:609: Source Loc: 192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:17 image_mapping.go:618: Inserting metadata id:1 etag:"sha256:a528b15525ca6914f7e84373424ccaa580aacc2617d625467f55690d9ad7b760" name:192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:a528b15525ca6914f7e84373424ccaa580aacc2617d625467f55690d9ad7b760 version:0.0.2+fb40afe2988815d117e11b9639b5fe34c63177ff
+vomit: 2017/02/09 17:10:17 image_mapping.go:575: Made (?err: <nil>) id: 20 with "insert or replace into docker_search_metadata (canonicalName, location_id, etag, version) values ($1, $2, $3, $4);"
+vomit: 2017/02/09 17:10:17 image_mapping.go:640: Inserting search name 20 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:a528b15525ca6914f7e84373424ccaa580aacc2617d625467f55690d9ad7b760
+vomit: 2017/02/09 17:10:17 image_mapping.go:194: cn: 192.168.99.100/2222/repos/sous-server@sha256:a528b15525ca6914f7e84373424ccaa580aacc2617d625467f55690d9ad7b760 all: [192.168.99.100/2222/repos/sous-server:fb40afe2988815d117e11b9639b5fe34c63177ff 192.168.99.100/2222/repos/sous-server@sha256:a528b15525ca6914f7e84373424ccaa580aacc2617d625467f55690d9ad7b760]
+debug: 2017/02/09 17:10:17 image_mapping.go:664: Adding names for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:a528b15525ca6914f7e84373424ccaa580aacc2617d625467f55690d9ad7b760: [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:fb40afe2988815d117e11b9639b5fe34c63177ff 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:a528b15525ca6914f7e84373424ccaa580aacc2617d625467f55690d9ad7b760]
+debug: 2017/02/09 17:10:17 image_mapping.go:201: Image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:fb40afe2988815d117e11b9639b5fe34c63177ff -> (updated) Source ID: 192.168.99.100/2222/repos/sous-server,0.0.2
+debug: 2017/02/09 17:10:17 image_mapping.go:115: Harvested tag: 790c023c9b1ebed0a314560f104b5b8aa4212a47 for repo: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server
+vomit: 2017/02/09 17:10:17 image_mapping.go:117: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:790c023c9b1ebed0a314560f104b5b8aa4212a47 <nil>
+vomit: 2017/02/09 17:10:17 image_mapping.go:151: Getting source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:790c023c9b1ebed0a314560f104b5b8aa4212a47
+vomit: 2017/02/09 17:10:17 image_mapping.go:155: No source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:790c023c9b1ebed0a314560f104b5b8aa4212a47
+vomit: 2017/02/09 17:10:17 image_mapping.go:169: {Registry:192.168.99.100:5000 Labels:map[com.opentable.sous.revision:790c023c9b1ebed0a314560f104b5b8aa4212a47 com.opentable.sous.version:0.0.2 com.opentable.sous.repo_offset: com.opentable.sous.repo_url:192.168.99.100/2222/repos/sous-server] Etag:"sha256:5ae814f1922a9117968815f427862e8cc3e4deda363142fb2a8dd7092fe4cec7" CanonicalName:192.168.99.100/2222/repos/sous-server@sha256:5ae814f1922a9117968815f427862e8cc3e4deda363142fb2a8dd7092fe4cec7 AllNames:[192.168.99.100/2222/repos/sous-server:790c023c9b1ebed0a314560f104b5b8aa4212a47 192.168.99.100/2222/repos/sous-server@sha256:5ae814f1922a9117968815f427862e8cc3e4deda363142fb2a8dd7092fe4cec7]} <nil> <nil> <nil>
+debug: 2017/02/09 17:10:17 image_mapping.go:581: Parsed image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:5ae814f1922a9117968815f427862e8cc3e4deda363142fb2a8dd7092fe4cec7 from "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:5ae814f1922a9117968815f427862e8cc3e4deda363142fb2a8dd7092fe4cec7"
+vomit: 2017/02/09 17:10:17 image_mapping.go:586: Inserting name 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server for sous.SourceID{Location:sous.SourceLocation{Repo:"192.168.99.100/2222/repos/sous-server", Dir:""}, Version:semv.Version{Major:0, Minor:0, Patch:2, Pre:"", Meta:"790c023c9b1ebed0a314560f104b5b8aa4212a47", DefaultFormat:"M.m.p"}}
+vomit: 2017/02/09 17:10:17 image_mapping.go:562: Found id: 1 with "select repo_name_id from docker_repo_name where name = $1" [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server]
+vomit: 2017/02/09 17:10:17 image_mapping.go:598: name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:17 image_mapping.go:562: Found id: 1 with "select location_id from docker_search_location where repo = $1 and offset = $2" [192.168.99.100/2222/repos/sous-server ]
+vomit: 2017/02/09 17:10:17 image_mapping.go:609: Source Loc: 192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:17 image_mapping.go:618: Inserting metadata id:1 etag:"sha256:5ae814f1922a9117968815f427862e8cc3e4deda363142fb2a8dd7092fe4cec7" name:192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:5ae814f1922a9117968815f427862e8cc3e4deda363142fb2a8dd7092fe4cec7 version:0.0.2+790c023c9b1ebed0a314560f104b5b8aa4212a47
+vomit: 2017/02/09 17:10:17 image_mapping.go:575: Made (?err: <nil>) id: 21 with "insert or replace into docker_search_metadata (canonicalName, location_id, etag, version) values ($1, $2, $3, $4);"
+vomit: 2017/02/09 17:10:17 image_mapping.go:640: Inserting search name 21 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:5ae814f1922a9117968815f427862e8cc3e4deda363142fb2a8dd7092fe4cec7
+vomit: 2017/02/09 17:10:17 image_mapping.go:194: cn: 192.168.99.100/2222/repos/sous-server@sha256:5ae814f1922a9117968815f427862e8cc3e4deda363142fb2a8dd7092fe4cec7 all: [192.168.99.100/2222/repos/sous-server:790c023c9b1ebed0a314560f104b5b8aa4212a47 192.168.99.100/2222/repos/sous-server@sha256:5ae814f1922a9117968815f427862e8cc3e4deda363142fb2a8dd7092fe4cec7]
+debug: 2017/02/09 17:10:17 image_mapping.go:664: Adding names for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:5ae814f1922a9117968815f427862e8cc3e4deda363142fb2a8dd7092fe4cec7: [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:790c023c9b1ebed0a314560f104b5b8aa4212a47 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:5ae814f1922a9117968815f427862e8cc3e4deda363142fb2a8dd7092fe4cec7]
+debug: 2017/02/09 17:10:17 image_mapping.go:201: Image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:790c023c9b1ebed0a314560f104b5b8aa4212a47 -> (updated) Source ID: 192.168.99.100/2222/repos/sous-server,0.0.2
+debug: 2017/02/09 17:10:17 image_mapping.go:115: Harvested tag: 6a5eeb94b340a8db1a7f344d5e31f2a0022c7f26 for repo: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server
+vomit: 2017/02/09 17:10:17 image_mapping.go:117: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:6a5eeb94b340a8db1a7f344d5e31f2a0022c7f26 <nil>
+vomit: 2017/02/09 17:10:17 image_mapping.go:151: Getting source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:6a5eeb94b340a8db1a7f344d5e31f2a0022c7f26
+vomit: 2017/02/09 17:10:17 image_mapping.go:155: No source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:6a5eeb94b340a8db1a7f344d5e31f2a0022c7f26
+vomit: 2017/02/09 17:10:17 image_mapping.go:169: {Registry:192.168.99.100:5000 Labels:map[com.opentable.sous.repo_offset: com.opentable.sous.repo_url:192.168.99.100/2222/repos/sous-server com.opentable.sous.revision:6a5eeb94b340a8db1a7f344d5e31f2a0022c7f26 com.opentable.sous.version:0.0.2] Etag:"sha256:1279910c37cbbc310b174cd81804acee781d673c1958d29a2ea4ce10f3a3034f" CanonicalName:192.168.99.100/2222/repos/sous-server@sha256:1279910c37cbbc310b174cd81804acee781d673c1958d29a2ea4ce10f3a3034f AllNames:[192.168.99.100/2222/repos/sous-server:6a5eeb94b340a8db1a7f344d5e31f2a0022c7f26 192.168.99.100/2222/repos/sous-server@sha256:1279910c37cbbc310b174cd81804acee781d673c1958d29a2ea4ce10f3a3034f]} <nil> <nil> <nil>
+debug: 2017/02/09 17:10:17 image_mapping.go:581: Parsed image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:1279910c37cbbc310b174cd81804acee781d673c1958d29a2ea4ce10f3a3034f from "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:1279910c37cbbc310b174cd81804acee781d673c1958d29a2ea4ce10f3a3034f"
+vomit: 2017/02/09 17:10:17 image_mapping.go:586: Inserting name 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server for sous.SourceID{Location:sous.SourceLocation{Repo:"192.168.99.100/2222/repos/sous-server", Dir:""}, Version:semv.Version{Major:0, Minor:0, Patch:2, Pre:"", Meta:"6a5eeb94b340a8db1a7f344d5e31f2a0022c7f26", DefaultFormat:"M.m.p"}}
+vomit: 2017/02/09 17:10:17 image_mapping.go:562: Found id: 1 with "select repo_name_id from docker_repo_name where name = $1" [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server]
+vomit: 2017/02/09 17:10:17 image_mapping.go:598: name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:17 image_mapping.go:562: Found id: 1 with "select location_id from docker_search_location where repo = $1 and offset = $2" [192.168.99.100/2222/repos/sous-server ]
+vomit: 2017/02/09 17:10:17 image_mapping.go:609: Source Loc: 192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:17 image_mapping.go:618: Inserting metadata id:1 etag:"sha256:1279910c37cbbc310b174cd81804acee781d673c1958d29a2ea4ce10f3a3034f" name:192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:1279910c37cbbc310b174cd81804acee781d673c1958d29a2ea4ce10f3a3034f version:0.0.2+6a5eeb94b340a8db1a7f344d5e31f2a0022c7f26
+vomit: 2017/02/09 17:10:17 image_mapping.go:575: Made (?err: <nil>) id: 22 with "insert or replace into docker_search_metadata (canonicalName, location_id, etag, version) values ($1, $2, $3, $4);"
+vomit: 2017/02/09 17:10:17 image_mapping.go:640: Inserting search name 22 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:1279910c37cbbc310b174cd81804acee781d673c1958d29a2ea4ce10f3a3034f
+vomit: 2017/02/09 17:10:17 image_mapping.go:194: cn: 192.168.99.100/2222/repos/sous-server@sha256:1279910c37cbbc310b174cd81804acee781d673c1958d29a2ea4ce10f3a3034f all: [192.168.99.100/2222/repos/sous-server:6a5eeb94b340a8db1a7f344d5e31f2a0022c7f26 192.168.99.100/2222/repos/sous-server@sha256:1279910c37cbbc310b174cd81804acee781d673c1958d29a2ea4ce10f3a3034f]
+debug: 2017/02/09 17:10:17 image_mapping.go:664: Adding names for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:1279910c37cbbc310b174cd81804acee781d673c1958d29a2ea4ce10f3a3034f: [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:6a5eeb94b340a8db1a7f344d5e31f2a0022c7f26 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:1279910c37cbbc310b174cd81804acee781d673c1958d29a2ea4ce10f3a3034f]
+debug: 2017/02/09 17:10:17 image_mapping.go:201: Image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:6a5eeb94b340a8db1a7f344d5e31f2a0022c7f26 -> (updated) Source ID: 192.168.99.100/2222/repos/sous-server,0.0.2
+debug: 2017/02/09 17:10:17 image_mapping.go:115: Harvested tag: 47b76631cb30730708631a0fb0e4c29207e91edd for repo: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server
+vomit: 2017/02/09 17:10:17 image_mapping.go:117: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:47b76631cb30730708631a0fb0e4c29207e91edd <nil>
+vomit: 2017/02/09 17:10:17 image_mapping.go:151: Getting source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:47b76631cb30730708631a0fb0e4c29207e91edd
+vomit: 2017/02/09 17:10:17 image_mapping.go:155: No source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:47b76631cb30730708631a0fb0e4c29207e91edd
+vomit: 2017/02/09 17:10:17 image_mapping.go:169: {Registry:192.168.99.100:5000 Labels:map[com.opentable.sous.repo_offset: com.opentable.sous.repo_url:192.168.99.100/2222/repos/sous-server com.opentable.sous.revision:47b76631cb30730708631a0fb0e4c29207e91edd com.opentable.sous.version:0.0.2] Etag:"sha256:a3eb4829f771d5a707e42afe69143c6b670c8cf804191919a3d4e0ca2f2e8a3a" CanonicalName:192.168.99.100/2222/repos/sous-server@sha256:a3eb4829f771d5a707e42afe69143c6b670c8cf804191919a3d4e0ca2f2e8a3a AllNames:[192.168.99.100/2222/repos/sous-server:47b76631cb30730708631a0fb0e4c29207e91edd 192.168.99.100/2222/repos/sous-server@sha256:a3eb4829f771d5a707e42afe69143c6b670c8cf804191919a3d4e0ca2f2e8a3a]} <nil> <nil> <nil>
+debug: 2017/02/09 17:10:17 image_mapping.go:581: Parsed image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:a3eb4829f771d5a707e42afe69143c6b670c8cf804191919a3d4e0ca2f2e8a3a from "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:a3eb4829f771d5a707e42afe69143c6b670c8cf804191919a3d4e0ca2f2e8a3a"
+vomit: 2017/02/09 17:10:17 image_mapping.go:586: Inserting name 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server for sous.SourceID{Location:sous.SourceLocation{Repo:"192.168.99.100/2222/repos/sous-server", Dir:""}, Version:semv.Version{Major:0, Minor:0, Patch:2, Pre:"", Meta:"47b76631cb30730708631a0fb0e4c29207e91edd", DefaultFormat:"M.m.p"}}
+vomit: 2017/02/09 17:10:17 image_mapping.go:562: Found id: 1 with "select repo_name_id from docker_repo_name where name = $1" [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server]
+vomit: 2017/02/09 17:10:17 image_mapping.go:598: name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:17 image_mapping.go:562: Found id: 1 with "select location_id from docker_search_location where repo = $1 and offset = $2" [192.168.99.100/2222/repos/sous-server ]
+vomit: 2017/02/09 17:10:17 image_mapping.go:609: Source Loc: 192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:17 image_mapping.go:618: Inserting metadata id:1 etag:"sha256:a3eb4829f771d5a707e42afe69143c6b670c8cf804191919a3d4e0ca2f2e8a3a" name:192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:a3eb4829f771d5a707e42afe69143c6b670c8cf804191919a3d4e0ca2f2e8a3a version:0.0.2+47b76631cb30730708631a0fb0e4c29207e91edd
+vomit: 2017/02/09 17:10:17 image_mapping.go:575: Made (?err: <nil>) id: 23 with "insert or replace into docker_search_metadata (canonicalName, location_id, etag, version) values ($1, $2, $3, $4);"
+vomit: 2017/02/09 17:10:17 image_mapping.go:640: Inserting search name 23 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:a3eb4829f771d5a707e42afe69143c6b670c8cf804191919a3d4e0ca2f2e8a3a
+vomit: 2017/02/09 17:10:17 image_mapping.go:194: cn: 192.168.99.100/2222/repos/sous-server@sha256:a3eb4829f771d5a707e42afe69143c6b670c8cf804191919a3d4e0ca2f2e8a3a all: [192.168.99.100/2222/repos/sous-server:47b76631cb30730708631a0fb0e4c29207e91edd 192.168.99.100/2222/repos/sous-server@sha256:a3eb4829f771d5a707e42afe69143c6b670c8cf804191919a3d4e0ca2f2e8a3a]
+debug: 2017/02/09 17:10:17 image_mapping.go:664: Adding names for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:a3eb4829f771d5a707e42afe69143c6b670c8cf804191919a3d4e0ca2f2e8a3a: [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:47b76631cb30730708631a0fb0e4c29207e91edd 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:a3eb4829f771d5a707e42afe69143c6b670c8cf804191919a3d4e0ca2f2e8a3a]
+debug: 2017/02/09 17:10:17 image_mapping.go:201: Image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:47b76631cb30730708631a0fb0e4c29207e91edd -> (updated) Source ID: 192.168.99.100/2222/repos/sous-server,0.0.2
+debug: 2017/02/09 17:10:17 image_mapping.go:115: Harvested tag: 88f0ece169f8ba5160c742db0728515bf5a7efae for repo: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server
+vomit: 2017/02/09 17:10:17 image_mapping.go:117: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:88f0ece169f8ba5160c742db0728515bf5a7efae <nil>
+vomit: 2017/02/09 17:10:17 image_mapping.go:151: Getting source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:88f0ece169f8ba5160c742db0728515bf5a7efae
+vomit: 2017/02/09 17:10:17 image_mapping.go:155: No source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:88f0ece169f8ba5160c742db0728515bf5a7efae
+vomit: 2017/02/09 17:10:17 image_mapping.go:169: {Registry:192.168.99.100:5000 Labels:map[com.opentable.sous.version:0.0.2 com.opentable.sous.repo_offset: com.opentable.sous.repo_url:192.168.99.100/2222/repos/sous-server com.opentable.sous.revision:88f0ece169f8ba5160c742db0728515bf5a7efae] Etag:"sha256:d31086fbba3a5e34520baf410c9270a51705bf9da4426cb4b904ab811bb21f5a" CanonicalName:192.168.99.100/2222/repos/sous-server@sha256:d31086fbba3a5e34520baf410c9270a51705bf9da4426cb4b904ab811bb21f5a AllNames:[192.168.99.100/2222/repos/sous-server:88f0ece169f8ba5160c742db0728515bf5a7efae 192.168.99.100/2222/repos/sous-server@sha256:d31086fbba3a5e34520baf410c9270a51705bf9da4426cb4b904ab811bb21f5a]} <nil> <nil> <nil>
+debug: 2017/02/09 17:10:17 image_mapping.go:581: Parsed image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:d31086fbba3a5e34520baf410c9270a51705bf9da4426cb4b904ab811bb21f5a from "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:d31086fbba3a5e34520baf410c9270a51705bf9da4426cb4b904ab811bb21f5a"
+vomit: 2017/02/09 17:10:17 image_mapping.go:586: Inserting name 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server for sous.SourceID{Location:sous.SourceLocation{Repo:"192.168.99.100/2222/repos/sous-server", Dir:""}, Version:semv.Version{Major:0, Minor:0, Patch:2, Pre:"", Meta:"88f0ece169f8ba5160c742db0728515bf5a7efae", DefaultFormat:"M.m.p"}}
+vomit: 2017/02/09 17:10:17 image_mapping.go:562: Found id: 1 with "select repo_name_id from docker_repo_name where name = $1" [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server]
+vomit: 2017/02/09 17:10:17 image_mapping.go:598: name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:17 image_mapping.go:562: Found id: 1 with "select location_id from docker_search_location where repo = $1 and offset = $2" [192.168.99.100/2222/repos/sous-server ]
+vomit: 2017/02/09 17:10:17 image_mapping.go:609: Source Loc: 192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:17 image_mapping.go:618: Inserting metadata id:1 etag:"sha256:d31086fbba3a5e34520baf410c9270a51705bf9da4426cb4b904ab811bb21f5a" name:192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:d31086fbba3a5e34520baf410c9270a51705bf9da4426cb4b904ab811bb21f5a version:0.0.2+88f0ece169f8ba5160c742db0728515bf5a7efae
+vomit: 2017/02/09 17:10:17 image_mapping.go:575: Made (?err: <nil>) id: 24 with "insert or replace into docker_search_metadata (canonicalName, location_id, etag, version) values ($1, $2, $3, $4);"
+vomit: 2017/02/09 17:10:17 image_mapping.go:640: Inserting search name 24 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:d31086fbba3a5e34520baf410c9270a51705bf9da4426cb4b904ab811bb21f5a
+vomit: 2017/02/09 17:10:17 image_mapping.go:194: cn: 192.168.99.100/2222/repos/sous-server@sha256:d31086fbba3a5e34520baf410c9270a51705bf9da4426cb4b904ab811bb21f5a all: [192.168.99.100/2222/repos/sous-server:88f0ece169f8ba5160c742db0728515bf5a7efae 192.168.99.100/2222/repos/sous-server@sha256:d31086fbba3a5e34520baf410c9270a51705bf9da4426cb4b904ab811bb21f5a]
+debug: 2017/02/09 17:10:17 image_mapping.go:664: Adding names for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:d31086fbba3a5e34520baf410c9270a51705bf9da4426cb4b904ab811bb21f5a: [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:88f0ece169f8ba5160c742db0728515bf5a7efae 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:d31086fbba3a5e34520baf410c9270a51705bf9da4426cb4b904ab811bb21f5a]
+debug: 2017/02/09 17:10:17 image_mapping.go:201: Image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:88f0ece169f8ba5160c742db0728515bf5a7efae -> (updated) Source ID: 192.168.99.100/2222/repos/sous-server,0.0.2
+debug: 2017/02/09 17:10:17 image_mapping.go:115: Harvested tag: 93ff7a98671faa15e7685089012076694cd80955 for repo: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server
+vomit: 2017/02/09 17:10:17 image_mapping.go:117: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:93ff7a98671faa15e7685089012076694cd80955 <nil>
+vomit: 2017/02/09 17:10:17 image_mapping.go:151: Getting source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:93ff7a98671faa15e7685089012076694cd80955
+vomit: 2017/02/09 17:10:17 image_mapping.go:155: No source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:93ff7a98671faa15e7685089012076694cd80955
+vomit: 2017/02/09 17:10:17 image_mapping.go:169: {Registry:192.168.99.100:5000 Labels:map[com.opentable.sous.repo_offset: com.opentable.sous.repo_url:192.168.99.100/2222/repos/sous-server com.opentable.sous.revision:93ff7a98671faa15e7685089012076694cd80955 com.opentable.sous.version:0.0.2] Etag:"sha256:d6bf9d5cbbab5bde10f8ad618dcec71364582a277c6af28cf1f3beb3a7be960e" CanonicalName:192.168.99.100/2222/repos/sous-server@sha256:d6bf9d5cbbab5bde10f8ad618dcec71364582a277c6af28cf1f3beb3a7be960e AllNames:[192.168.99.100/2222/repos/sous-server:93ff7a98671faa15e7685089012076694cd80955 192.168.99.100/2222/repos/sous-server@sha256:d6bf9d5cbbab5bde10f8ad618dcec71364582a277c6af28cf1f3beb3a7be960e]} <nil> <nil> <nil>
+debug: 2017/02/09 17:10:17 image_mapping.go:581: Parsed image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:d6bf9d5cbbab5bde10f8ad618dcec71364582a277c6af28cf1f3beb3a7be960e from "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:d6bf9d5cbbab5bde10f8ad618dcec71364582a277c6af28cf1f3beb3a7be960e"
+vomit: 2017/02/09 17:10:17 image_mapping.go:586: Inserting name 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server for sous.SourceID{Location:sous.SourceLocation{Repo:"192.168.99.100/2222/repos/sous-server", Dir:""}, Version:semv.Version{Major:0, Minor:0, Patch:2, Pre:"", Meta:"93ff7a98671faa15e7685089012076694cd80955", DefaultFormat:"M.m.p"}}
+vomit: 2017/02/09 17:10:17 image_mapping.go:562: Found id: 1 with "select repo_name_id from docker_repo_name where name = $1" [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server]
+vomit: 2017/02/09 17:10:17 image_mapping.go:598: name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:17 image_mapping.go:562: Found id: 1 with "select location_id from docker_search_location where repo = $1 and offset = $2" [192.168.99.100/2222/repos/sous-server ]
+vomit: 2017/02/09 17:10:17 image_mapping.go:609: Source Loc: 192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:17 image_mapping.go:618: Inserting metadata id:1 etag:"sha256:d6bf9d5cbbab5bde10f8ad618dcec71364582a277c6af28cf1f3beb3a7be960e" name:192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:d6bf9d5cbbab5bde10f8ad618dcec71364582a277c6af28cf1f3beb3a7be960e version:0.0.2+93ff7a98671faa15e7685089012076694cd80955
+vomit: 2017/02/09 17:10:17 image_mapping.go:575: Made (?err: <nil>) id: 25 with "insert or replace into docker_search_metadata (canonicalName, location_id, etag, version) values ($1, $2, $3, $4);"
+vomit: 2017/02/09 17:10:17 image_mapping.go:640: Inserting search name 25 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:d6bf9d5cbbab5bde10f8ad618dcec71364582a277c6af28cf1f3beb3a7be960e
+vomit: 2017/02/09 17:10:17 image_mapping.go:194: cn: 192.168.99.100/2222/repos/sous-server@sha256:d6bf9d5cbbab5bde10f8ad618dcec71364582a277c6af28cf1f3beb3a7be960e all: [192.168.99.100/2222/repos/sous-server:93ff7a98671faa15e7685089012076694cd80955 192.168.99.100/2222/repos/sous-server@sha256:d6bf9d5cbbab5bde10f8ad618dcec71364582a277c6af28cf1f3beb3a7be960e]
+debug: 2017/02/09 17:10:17 image_mapping.go:664: Adding names for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:d6bf9d5cbbab5bde10f8ad618dcec71364582a277c6af28cf1f3beb3a7be960e: [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:93ff7a98671faa15e7685089012076694cd80955 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:d6bf9d5cbbab5bde10f8ad618dcec71364582a277c6af28cf1f3beb3a7be960e]
+debug: 2017/02/09 17:10:17 image_mapping.go:201: Image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:93ff7a98671faa15e7685089012076694cd80955 -> (updated) Source ID: 192.168.99.100/2222/repos/sous-server,0.0.2
+debug: 2017/02/09 17:10:17 image_mapping.go:115: Harvested tag: d74fbd6cc69cad0d8df7afef14d737df2faea16a for repo: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server
+vomit: 2017/02/09 17:10:17 image_mapping.go:117: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:d74fbd6cc69cad0d8df7afef14d737df2faea16a <nil>
+vomit: 2017/02/09 17:10:17 image_mapping.go:151: Getting source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:d74fbd6cc69cad0d8df7afef14d737df2faea16a
+vomit: 2017/02/09 17:10:17 image_mapping.go:155: No source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:d74fbd6cc69cad0d8df7afef14d737df2faea16a
+vomit: 2017/02/09 17:10:17 image_mapping.go:169: {Registry:192.168.99.100:5000 Labels:map[com.opentable.sous.version:0.0.2 com.opentable.sous.repo_offset: com.opentable.sous.repo_url:192.168.99.100/2222/repos/sous-server com.opentable.sous.revision:d74fbd6cc69cad0d8df7afef14d737df2faea16a] Etag:"sha256:055df3b1f6d6777c76723a4ef36b84cd8089879922d82ad4553bb8534f2de8cf" CanonicalName:192.168.99.100/2222/repos/sous-server@sha256:055df3b1f6d6777c76723a4ef36b84cd8089879922d82ad4553bb8534f2de8cf AllNames:[192.168.99.100/2222/repos/sous-server:d74fbd6cc69cad0d8df7afef14d737df2faea16a 192.168.99.100/2222/repos/sous-server@sha256:055df3b1f6d6777c76723a4ef36b84cd8089879922d82ad4553bb8534f2de8cf]} <nil> <nil> <nil>
+debug: 2017/02/09 17:10:17 image_mapping.go:581: Parsed image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:055df3b1f6d6777c76723a4ef36b84cd8089879922d82ad4553bb8534f2de8cf from "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:055df3b1f6d6777c76723a4ef36b84cd8089879922d82ad4553bb8534f2de8cf"
+vomit: 2017/02/09 17:10:17 image_mapping.go:586: Inserting name 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server for sous.SourceID{Location:sous.SourceLocation{Repo:"192.168.99.100/2222/repos/sous-server", Dir:""}, Version:semv.Version{Major:0, Minor:0, Patch:2, Pre:"", Meta:"d74fbd6cc69cad0d8df7afef14d737df2faea16a", DefaultFormat:"M.m.p"}}
+vomit: 2017/02/09 17:10:17 image_mapping.go:562: Found id: 1 with "select repo_name_id from docker_repo_name where name = $1" [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server]
+vomit: 2017/02/09 17:10:17 image_mapping.go:598: name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:17 image_mapping.go:562: Found id: 1 with "select location_id from docker_search_location where repo = $1 and offset = $2" [192.168.99.100/2222/repos/sous-server ]
+vomit: 2017/02/09 17:10:17 image_mapping.go:609: Source Loc: 192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:17 image_mapping.go:618: Inserting metadata id:1 etag:"sha256:055df3b1f6d6777c76723a4ef36b84cd8089879922d82ad4553bb8534f2de8cf" name:192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:055df3b1f6d6777c76723a4ef36b84cd8089879922d82ad4553bb8534f2de8cf version:0.0.2+d74fbd6cc69cad0d8df7afef14d737df2faea16a
+vomit: 2017/02/09 17:10:17 image_mapping.go:575: Made (?err: <nil>) id: 26 with "insert or replace into docker_search_metadata (canonicalName, location_id, etag, version) values ($1, $2, $3, $4);"
+vomit: 2017/02/09 17:10:17 image_mapping.go:640: Inserting search name 26 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:055df3b1f6d6777c76723a4ef36b84cd8089879922d82ad4553bb8534f2de8cf
+vomit: 2017/02/09 17:10:17 image_mapping.go:194: cn: 192.168.99.100/2222/repos/sous-server@sha256:055df3b1f6d6777c76723a4ef36b84cd8089879922d82ad4553bb8534f2de8cf all: [192.168.99.100/2222/repos/sous-server:d74fbd6cc69cad0d8df7afef14d737df2faea16a 192.168.99.100/2222/repos/sous-server@sha256:055df3b1f6d6777c76723a4ef36b84cd8089879922d82ad4553bb8534f2de8cf]
+debug: 2017/02/09 17:10:17 image_mapping.go:664: Adding names for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:055df3b1f6d6777c76723a4ef36b84cd8089879922d82ad4553bb8534f2de8cf: [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:d74fbd6cc69cad0d8df7afef14d737df2faea16a 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:055df3b1f6d6777c76723a4ef36b84cd8089879922d82ad4553bb8534f2de8cf]
+debug: 2017/02/09 17:10:17 image_mapping.go:201: Image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:d74fbd6cc69cad0d8df7afef14d737df2faea16a -> (updated) Source ID: 192.168.99.100/2222/repos/sous-server,0.0.2
+debug: 2017/02/09 17:10:17 image_mapping.go:115: Harvested tag: 8348b4e3860165602071696a90b73ddbad2600c3 for repo: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server
+vomit: 2017/02/09 17:10:17 image_mapping.go:117: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:8348b4e3860165602071696a90b73ddbad2600c3 <nil>
+vomit: 2017/02/09 17:10:17 image_mapping.go:151: Getting source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:8348b4e3860165602071696a90b73ddbad2600c3
+vomit: 2017/02/09 17:10:17 image_mapping.go:155: No source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:8348b4e3860165602071696a90b73ddbad2600c3
+vomit: 2017/02/09 17:10:17 image_mapping.go:169: {Registry:192.168.99.100:5000 Labels:map[com.opentable.sous.repo_offset: com.opentable.sous.repo_url:192.168.99.100/2222/repos/sous-server com.opentable.sous.revision:8348b4e3860165602071696a90b73ddbad2600c3 com.opentable.sous.version:0.0.2] Etag:"sha256:e58d59e00e3e4ca56e13fdef6ef0c8f57f72810d3a0d38506478065f3fbd02a8" CanonicalName:192.168.99.100/2222/repos/sous-server@sha256:e58d59e00e3e4ca56e13fdef6ef0c8f57f72810d3a0d38506478065f3fbd02a8 AllNames:[192.168.99.100/2222/repos/sous-server:8348b4e3860165602071696a90b73ddbad2600c3 192.168.99.100/2222/repos/sous-server@sha256:e58d59e00e3e4ca56e13fdef6ef0c8f57f72810d3a0d38506478065f3fbd02a8]} <nil> <nil> <nil>
+debug: 2017/02/09 17:10:17 image_mapping.go:581: Parsed image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:e58d59e00e3e4ca56e13fdef6ef0c8f57f72810d3a0d38506478065f3fbd02a8 from "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:e58d59e00e3e4ca56e13fdef6ef0c8f57f72810d3a0d38506478065f3fbd02a8"
+vomit: 2017/02/09 17:10:17 image_mapping.go:586: Inserting name 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server for sous.SourceID{Location:sous.SourceLocation{Repo:"192.168.99.100/2222/repos/sous-server", Dir:""}, Version:semv.Version{Major:0, Minor:0, Patch:2, Pre:"", Meta:"8348b4e3860165602071696a90b73ddbad2600c3", DefaultFormat:"M.m.p"}}
+vomit: 2017/02/09 17:10:17 image_mapping.go:562: Found id: 1 with "select repo_name_id from docker_repo_name where name = $1" [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server]
+vomit: 2017/02/09 17:10:17 image_mapping.go:598: name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:17 image_mapping.go:562: Found id: 1 with "select location_id from docker_search_location where repo = $1 and offset = $2" [192.168.99.100/2222/repos/sous-server ]
+vomit: 2017/02/09 17:10:17 image_mapping.go:609: Source Loc: 192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:17 image_mapping.go:618: Inserting metadata id:1 etag:"sha256:e58d59e00e3e4ca56e13fdef6ef0c8f57f72810d3a0d38506478065f3fbd02a8" name:192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:e58d59e00e3e4ca56e13fdef6ef0c8f57f72810d3a0d38506478065f3fbd02a8 version:0.0.2+8348b4e3860165602071696a90b73ddbad2600c3
+vomit: 2017/02/09 17:10:17 image_mapping.go:575: Made (?err: <nil>) id: 27 with "insert or replace into docker_search_metadata (canonicalName, location_id, etag, version) values ($1, $2, $3, $4);"
+vomit: 2017/02/09 17:10:17 image_mapping.go:640: Inserting search name 27 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:e58d59e00e3e4ca56e13fdef6ef0c8f57f72810d3a0d38506478065f3fbd02a8
+vomit: 2017/02/09 17:10:17 image_mapping.go:194: cn: 192.168.99.100/2222/repos/sous-server@sha256:e58d59e00e3e4ca56e13fdef6ef0c8f57f72810d3a0d38506478065f3fbd02a8 all: [192.168.99.100/2222/repos/sous-server:8348b4e3860165602071696a90b73ddbad2600c3 192.168.99.100/2222/repos/sous-server@sha256:e58d59e00e3e4ca56e13fdef6ef0c8f57f72810d3a0d38506478065f3fbd02a8]
+debug: 2017/02/09 17:10:17 image_mapping.go:664: Adding names for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:e58d59e00e3e4ca56e13fdef6ef0c8f57f72810d3a0d38506478065f3fbd02a8: [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:8348b4e3860165602071696a90b73ddbad2600c3 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:e58d59e00e3e4ca56e13fdef6ef0c8f57f72810d3a0d38506478065f3fbd02a8]
+debug: 2017/02/09 17:10:17 image_mapping.go:201: Image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:8348b4e3860165602071696a90b73ddbad2600c3 -> (updated) Source ID: 192.168.99.100/2222/repos/sous-server,0.0.2
+debug: 2017/02/09 17:10:17 image_mapping.go:115: Harvested tag: a53ac19b491d54f17c4cb47a2c13d230fa72c7b4 for repo: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server
+vomit: 2017/02/09 17:10:17 image_mapping.go:117: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:a53ac19b491d54f17c4cb47a2c13d230fa72c7b4 <nil>
+vomit: 2017/02/09 17:10:17 image_mapping.go:151: Getting source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:a53ac19b491d54f17c4cb47a2c13d230fa72c7b4
+vomit: 2017/02/09 17:10:17 image_mapping.go:155: No source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:a53ac19b491d54f17c4cb47a2c13d230fa72c7b4
+vomit: 2017/02/09 17:10:17 image_mapping.go:169: {Registry:192.168.99.100:5000 Labels:map[com.opentable.sous.version:0.0.2 com.opentable.sous.repo_offset: com.opentable.sous.repo_url:192.168.99.100/2222/repos/sous-server com.opentable.sous.revision:a53ac19b491d54f17c4cb47a2c13d230fa72c7b4] Etag:"sha256:e8a58ac819c3c5b5150799400b72777719e37d7cd275bd5b9e30e7353a72952a" CanonicalName:192.168.99.100/2222/repos/sous-server@sha256:e8a58ac819c3c5b5150799400b72777719e37d7cd275bd5b9e30e7353a72952a AllNames:[192.168.99.100/2222/repos/sous-server:a53ac19b491d54f17c4cb47a2c13d230fa72c7b4 192.168.99.100/2222/repos/sous-server@sha256:e8a58ac819c3c5b5150799400b72777719e37d7cd275bd5b9e30e7353a72952a]} <nil> <nil> <nil>
+debug: 2017/02/09 17:10:17 image_mapping.go:581: Parsed image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:e8a58ac819c3c5b5150799400b72777719e37d7cd275bd5b9e30e7353a72952a from "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:e8a58ac819c3c5b5150799400b72777719e37d7cd275bd5b9e30e7353a72952a"
+vomit: 2017/02/09 17:10:17 image_mapping.go:586: Inserting name 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server for sous.SourceID{Location:sous.SourceLocation{Repo:"192.168.99.100/2222/repos/sous-server", Dir:""}, Version:semv.Version{Major:0, Minor:0, Patch:2, Pre:"", Meta:"a53ac19b491d54f17c4cb47a2c13d230fa72c7b4", DefaultFormat:"M.m.p"}}
+vomit: 2017/02/09 17:10:17 image_mapping.go:562: Found id: 1 with "select repo_name_id from docker_repo_name where name = $1" [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server]
+vomit: 2017/02/09 17:10:17 image_mapping.go:598: name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:17 image_mapping.go:562: Found id: 1 with "select location_id from docker_search_location where repo = $1 and offset = $2" [192.168.99.100/2222/repos/sous-server ]
+vomit: 2017/02/09 17:10:17 image_mapping.go:609: Source Loc: 192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:17 image_mapping.go:618: Inserting metadata id:1 etag:"sha256:e8a58ac819c3c5b5150799400b72777719e37d7cd275bd5b9e30e7353a72952a" name:192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:e8a58ac819c3c5b5150799400b72777719e37d7cd275bd5b9e30e7353a72952a version:0.0.2+a53ac19b491d54f17c4cb47a2c13d230fa72c7b4
+vomit: 2017/02/09 17:10:17 image_mapping.go:575: Made (?err: <nil>) id: 28 with "insert or replace into docker_search_metadata (canonicalName, location_id, etag, version) values ($1, $2, $3, $4);"
+vomit: 2017/02/09 17:10:17 image_mapping.go:640: Inserting search name 28 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:e8a58ac819c3c5b5150799400b72777719e37d7cd275bd5b9e30e7353a72952a
+vomit: 2017/02/09 17:10:17 image_mapping.go:194: cn: 192.168.99.100/2222/repos/sous-server@sha256:e8a58ac819c3c5b5150799400b72777719e37d7cd275bd5b9e30e7353a72952a all: [192.168.99.100/2222/repos/sous-server:a53ac19b491d54f17c4cb47a2c13d230fa72c7b4 192.168.99.100/2222/repos/sous-server@sha256:e8a58ac819c3c5b5150799400b72777719e37d7cd275bd5b9e30e7353a72952a]
+debug: 2017/02/09 17:10:17 image_mapping.go:664: Adding names for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:e8a58ac819c3c5b5150799400b72777719e37d7cd275bd5b9e30e7353a72952a: [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:a53ac19b491d54f17c4cb47a2c13d230fa72c7b4 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:e8a58ac819c3c5b5150799400b72777719e37d7cd275bd5b9e30e7353a72952a]
+debug: 2017/02/09 17:10:17 image_mapping.go:201: Image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:a53ac19b491d54f17c4cb47a2c13d230fa72c7b4 -> (updated) Source ID: 192.168.99.100/2222/repos/sous-server,0.0.2
+debug: 2017/02/09 17:10:17 image_mapping.go:115: Harvested tag: 0.0.2 for repo: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server
+vomit: 2017/02/09 17:10:17 image_mapping.go:117: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2 <nil>
+vomit: 2017/02/09 17:10:17 image_mapping.go:151: Getting source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2
+vomit: 2017/02/09 17:10:17 image_mapping.go:155: No source ID for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2
+vomit: 2017/02/09 17:10:17 image_mapping.go:169: {Registry:192.168.99.100:5000 Labels:map[com.opentable.sous.revision:2099343012203e1331a269aad8451b3c3d85d4e9 com.opentable.sous.version:0.0.2 com.opentable.sous.repo_offset: com.opentable.sous.repo_url:192.168.99.100/2222/repos/sous-server] Etag:"sha256:086097879cddaa3db8cac0d575b466e06dc50f6498b04dedc799f6fca75dc45e" CanonicalName:192.168.99.100/2222/repos/sous-server@sha256:086097879cddaa3db8cac0d575b466e06dc50f6498b04dedc799f6fca75dc45e AllNames:[192.168.99.100/2222/repos/sous-server:0.0.2 192.168.99.100/2222/repos/sous-server@sha256:086097879cddaa3db8cac0d575b466e06dc50f6498b04dedc799f6fca75dc45e]} <nil> <nil> <nil>
+debug: 2017/02/09 17:10:17 image_mapping.go:581: Parsed image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:086097879cddaa3db8cac0d575b466e06dc50f6498b04dedc799f6fca75dc45e from "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:086097879cddaa3db8cac0d575b466e06dc50f6498b04dedc799f6fca75dc45e"
+vomit: 2017/02/09 17:10:17 image_mapping.go:586: Inserting name 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server for sous.SourceID{Location:sous.SourceLocation{Repo:"192.168.99.100/2222/repos/sous-server", Dir:""}, Version:semv.Version{Major:0, Minor:0, Patch:2, Pre:"", Meta:"2099343012203e1331a269aad8451b3c3d85d4e9", DefaultFormat:"M.m.p"}}
+vomit: 2017/02/09 17:10:17 image_mapping.go:562: Found id: 1 with "select repo_name_id from docker_repo_name where name = $1" [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server]
+vomit: 2017/02/09 17:10:17 image_mapping.go:598: name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:17 image_mapping.go:562: Found id: 1 with "select location_id from docker_search_location where repo = $1 and offset = $2" [192.168.99.100/2222/repos/sous-server ]
+vomit: 2017/02/09 17:10:17 image_mapping.go:609: Source Loc: 192.168.99.100/2222/repos/sous-server -> id: 1
+vomit: 2017/02/09 17:10:17 image_mapping.go:618: Inserting metadata id:1 etag:"sha256:086097879cddaa3db8cac0d575b466e06dc50f6498b04dedc799f6fca75dc45e" name:192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:086097879cddaa3db8cac0d575b466e06dc50f6498b04dedc799f6fca75dc45e version:0.0.2+2099343012203e1331a269aad8451b3c3d85d4e9
+vomit: 2017/02/09 17:10:17 image_mapping.go:562: Found id: 1 with "select metadata_id from docker_search_metadata  where canonicalName = $1" [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:086097879cddaa3db8cac0d575b466e06dc50f6498b04dedc799f6fca75dc45e 1 "sha256:086097879cddaa3db8cac0d575b466e06dc50f6498b04dedc799f6fca75dc45e" 0.0.2+2099343012203e1331a269aad8451b3c3d85d4e9]
+vomit: 2017/02/09 17:10:17 image_mapping.go:640: Inserting search name 1 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:086097879cddaa3db8cac0d575b466e06dc50f6498b04dedc799f6fca75dc45e
+vomit: 2017/02/09 17:10:17 image_mapping.go:194: cn: 192.168.99.100/2222/repos/sous-server@sha256:086097879cddaa3db8cac0d575b466e06dc50f6498b04dedc799f6fca75dc45e all: [192.168.99.100/2222/repos/sous-server:0.0.2 192.168.99.100/2222/repos/sous-server@sha256:086097879cddaa3db8cac0d575b466e06dc50f6498b04dedc799f6fca75dc45e]
+debug: 2017/02/09 17:10:17 image_mapping.go:664: Adding names for 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:086097879cddaa3db8cac0d575b466e06dc50f6498b04dedc799f6fca75dc45e: [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:086097879cddaa3db8cac0d575b466e06dc50f6498b04dedc799f6fca75dc45e]
+debug: 2017/02/09 17:10:17 image_mapping.go:201: Image name: 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2 -> (updated) Source ID: 192.168.99.100/2222/repos/sous-server,0.0.2
+vomit: 2017/02/09 17:10:17 image_mapping.go:759: Selecting on "192.168.99.100/2222/repos/sous-server" "" "0.0.2"
+debug: 2017/02/09 17:10:17 image_mapping.go:209: SourceID: "192.168.99.100/2222/repos/sous-server,0.0.2" -> image name 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:086097879cddaa3db8cac0d575b466e06dc50f6498b04dedc799f6fca75dc45e
+debug: 2017/02/09 17:10:17 deployer.go:92: Rectifying creation {"192.168.99.100/2222/repos/sous-server" "left"}:  
+ &sous.Deployment{DeployConfig:sous.DeployConfig{Resources:sous.Resources{"ports":"1", "cpus":"0.1", "memory":"100"}, Metadata:sous.Metadata{}, Args:[]string{}, Env:sous.Env{"CLUSTER_NAME":"left", "GDM_REPO":"ssh://root@192.168.99.100:2222/repos/gdm", "OT_ENV":"left"}, NumInstances: 1, Volumes:sous.Volumes{}}, ClusterName:"left", Cluster:(*sous.Cluster)( 0xc42005ce60), SourceID:sous.SourceID{Location:sous.SourceLocation{Repo:"192.168.99.100/2222/repos/sous-server", Dir:""}, Version:semv.Version{Major: 0, Minor: 0, Patch: 2, Pre:"", Meta:"", DefaultFormat:"M.m.p"}}, Flavor:"", Owners:sous.OwnerSet{}, Kind:"http-service", Volumes:sous.Volumes{}, Annotation:sous.Annotation{RequestID:""}}
+debug: 2017/02/09 17:10:17 recti-agent.go:120: Creating application http://192.168.99.100:7099/singularity 192.168.99.100>2222>repos>sous-server::left 1
+debug: 2017/02/09 17:10:17 recti-agent.go:136: Create Request: &{present:map[owners:true id:true requestType:true instances:true] AllowedSlaveAttributes:map[] BounceAfterScale:false Group: HideEvenNumberAcrossRacksHint:false Id:192.168.99.100>2222>repos>sous-server::left Instances: 1 KillOldNonLongRunningTasksAfterMillis: 0 LoadBalanced:false NumRetriesOnFailure: 0 Owners:[] QuartzSchedule: RackAffinity:[] RackSensitive:false ReadOnlyGroups:[] RequestType:SERVICE RequiredSlaveAttributes:map[] Schedule: ScheduleTimeZone: ScheduledExpectedRuntimeMillis: 0 SkipHealthchecks:false TaskLogErrorRegex: TaskLogErrorRegexCaseSensitive:false WaitAtLeastMillisAfterTaskFinishesForReschedule: 0}
+debug: 2017/02/09 17:10:17 recti-agent.go:48: Deploying instance http://192.168.99.100:7099/singularity 72d86457496745f18e4518e5c9d62617 192.168.99.100>2222>repos>sous-server::left 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:086097879cddaa3db8cac0d575b466e06dc50f6498b04dedc799f6fca75dc45e map[memory:100 ports:1 cpus:0.1] map[OT_ENV:left CLUSTER_NAME:left GDM_REPO:ssh://root@192.168.99.100:2222/repos/gdm]
+debug: 2017/02/09 17:10:17 recti-agent.go:107: Deploy: &{present:map[containerInfo:true env:true id:true requestId:true resources:true] Arguments:[] AutoAdvanceDeploySteps:false Command: ConsiderHealthyAfterRunningForSeconds: 0 ContainerInfo: 0xc4259c3f80 CustomExecutorCmd: CustomExecutorId: CustomExecutorResources:<nil> CustomExecutorSource: CustomExecutorUser: DeployHealthTimeoutSeconds: 0 DeployInstanceCountPerStep: 0 DeployStepWaitTimeMs: 0 Env:map[GDM_REPO:ssh://root@192.168.99.100:2222/repos/gdm OT_ENV:left CLUSTER_NAME:left] ExecutorData:<nil> HealthcheckIntervalSeconds: 0 HealthcheckMaxRetries: 0 HealthcheckMaxTotalTimeoutSeconds: 0 HealthcheckPortIndex: 0 HealthcheckTimeoutSeconds: 0 HealthcheckUri: Id:cdbb9b1b064c449e9bef7bc3cbc0efd4 Labels:map[] LoadBalancerAdditionalRoutes:[] LoadBalancerDomains:[] LoadBalancerGroups:[] LoadBalancerPortIndex: 0 LoadBalancerTemplate: MaxTaskRetries: 0 Metadata:map[] RequestId:192.168.99.100>2222>repos>sous-server::left Resources: 0xc425a02a80 ServiceBasePath: Shell:false SkipHealthchecksOnDeploy:false Timestamp: 0 Uris:[] Version:}
+debug: 2017/02/09 17:10:17 recti-agent.go:108:   Container: &{present:map[type:true docker:true volumes:true] Docker: 0xc4259e13e0 Type:DOCKER Volumes:[]}
+debug: 2017/02/09 17:10:17 recti-agent.go:109:   Docker: &{present:map[image:true network:true] ForcePullImage:false Image:192.168.99.100:5000/192.168.99.100/2222/repos/sous-server@sha256:086097879cddaa3db8cac0d575b466e06dc50f6498b04dedc799f6fca75dc45e Network:BRIDGE Parameters:map[] PortMappings:[] Privileged:false}
+debug: 2017/02/09 17:10:17 recti-agent.go:54: Deploy req: &{present:map[deploy:true] Deploy: 0xc4203063c0 Message: UnpauseOnSuccessfulDeploy:false UpdatedRequest:<nil>}
 
 bash-3.2$ sous deploy -cluster right
 warn: No server set, Sous is running in server or workstation mode.
 warn: Configure a server like this: sous config server http://some.sous.server
-warn: Using local state stored at /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing529529757/gdm
+warn: Using local state stored at /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing415154522/gdm
 
 
 bash-3.2$ unset SOUS_SERVER
 bash-3.2$ unset SOUS_STATE_LOCATION
 bash-3.2$ popd
-/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing529529757
+/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing415154522
 bash-3.2$ 
 bash-3.2$ 
