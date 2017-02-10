@@ -354,6 +354,8 @@ func TestShellLevelIntegration(t *testing.T) {
 	cat Dockerfile
 	cp ~/dot-ssh/git_pubkey_rsa key_sous@example.com
 	cp {{.TestDir}}/dev_support/$(readlink {{.TestDir}}/dev_support/sous_linux) .
+	cp {{.TestDir}}/integration/test-registry/docker-registry/testing.crt docker.crt
+
 	ls -la
 	ssh-keyscan -p 2222 {{.GitSSH}} > known_hosts
 	cat known_hosts

@@ -1,5 +1,5 @@
 Request ID                                   Deploy ID                              TASK_HOST PORT0
-192.168.99.100>2222>repos>sous-server::left  0_0_2_a933340427424b929923b9e66f34395e localhost 31685
-192.168.99.100>2222>repos>sous-server::right 0_0_2_1cbeda63778a41aea9c1bcd18da6b841 localhost 31662
-set Server to "http://192.168.99.100:31685"
-Server URL is: http://192.168.99.100:31685
+192.168.99.100>2222>repos>sous-server::right 0_0_2_e7676fc6031e4e86821b7d3176b1ec92 localhost 31730
+192.168.99.100>2222>repos>sous-server::left  0_0_2_86d52cdaebc94cc88a348070471a99a9 localhost 31245
+set Server to "http://192.168.99.100:31245"
+Server URL is: http://192.168.99.100:31245
