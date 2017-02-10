@@ -48,7 +48,7 @@ help:
 
 clean:
 	rm -rf $(COVER_DIR)
-	git ls-files -o | xargs rm -rf
+	git ls-files -o --exclude=.cleanprotect --exclude-per-directory=.cleanprotect | xargs rm -rf
 
 clean-containers:
 	-docker ps -q | xargs docker kill
