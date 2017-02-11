@@ -7,12 +7,39 @@ bash-3.2$ while [ $(cygnus -H http://192.168.99.100:7099/singularity | grep s<
 > done
 bash-3.2$ cygnus --env TASK_HOST --env PORT0 http://192.168.99.100:7099/singu<_HOST --env PORT0 http://192.168.99.100:7099/singul                         arity
 Request ID                                   Deploy ID                              TASK_HOST PORT0
-192.168.99.100>2222>repos>sous-server::left  0_0_2_9bdfc710bf324ae0be0f3e973e5afd8d localhost 31633
-192.168.99.100>2222>repos>sous-server::right 0_0_2_0afb8324c13c47068c2eb358eeaf88ff localhost 31456
-bash-3.2$ serverURL=http://192.168.99.100:$(cygnus --env PORT0 http://192.168<192.168.99.100:$(cygnus --env PORT0 http://192.168.                         99.100:7099/singularity |<env PORT0 http://192.168.99.100:7099/singularity |                          grep 'sous-server.*left' <9.100:7099/singularity | grep 'sous-server.*left' |                          awk '{ print $3 }')
+192.168.99.100>2222>repos>sous-server::right 0_0_2_02a8d2893fc34ae89584e5b85a74b12f localhost 31353
+192.168.99.100>2222>repos>sous-server::left  0_0_2_3873760e3cf24c16b8ae2ed1ec81f167 localhost 31059
+bash-3.2$ 
+bash-3.2$ leftport=$(cygnus --env PORT0 http://192.168.99.100:7099/singularit< --env PORT0 http://192.168.99.100:7099/singularity                          | grep 'sous-server.*lef<8.99.100:7099/singularity | grep 'sous-server.*left                         ' | awk '{ print $3 }')
+bash-3.2$ rightport=$(cygnus --env PORT0 http://192.168.99.100:7099/singulari<s --env PORT0 http://192.168.99.100:7099/singularit                         y | grep 'sous-server.*ri<68.99.100:7099/singularity | grep 'sous-server.*rig                         ht' | awk '{ print $3 }')
+bash-3.2$ serverURL=http://192.168.99.100:$leftport
+bash-3.2$ 
+bash-3.2$ until curl -I $serverURL; do
+>   sleep 0.1
+> done
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0    19    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+HTTP/1.1 404 Not Found
+Content-Type: text/plain; charset=utf-8
+X-Content-Type-Options: nosniff
+Date: Sat, 11 Feb 2017 00:55:29 GMT
+Content-Length: 19
+
 bash-3.2$ sous config Server "$serverURL"
-set Server to "http://192.168.99.100:31633"
+set Server to "http://192.168.99.100:31059"
 bash-3.2$ echo "Server URL is:" $(sous config Server)
-Server URL is: http://192.168.99.100:31633
+Server URL is: http://192.168.99.100:31059
+bash-3.2$ 
+bash-3.2$ sed "s/LEFTPORT/$leftport/; s/RIGHTPORT/$rightport/" < ~/templated-<leftport/; s/RIGHTPORT/$rightport/" < ~/templated-c                         onfigs/servers.json > ~/s<ghtport/" < ~/templated-configs/servers.json > ~/se                         rvers.json
+bash-3.2$ curl -X PUT "${serverURL}/servers" --data *~/servers.json
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100    15    0     0  100    15      0   4818 --:--:-- --:--:-- --:--:--  7500
+bash-3.2$ curl "${serverURL}/servers"
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100    15  100    15    0     0   6465      0 --:--:-- --:--:-- --:--:--  7500
+{"Servers":[]}
 bash-3.2$ 
 bash-3.2$ 

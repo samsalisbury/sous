@@ -392,9 +392,20 @@ func TestShellLevelIntegration(t *testing.T) {
 	  sleep 0.1
 	done
 	cygnus --env TASK_HOST --env PORT0 {{.EnvDesc.SingularityURL}}
-	serverURL=http://{{.EnvDesc.AgentIP}}:$(cygnus --env PORT0 {{.EnvDesc.SingularityURL}} | grep 'sous-server.*left' | awk '{ print $3 }')
+
+	leftport=$(cygnus --env PORT0 {{.EnvDesc.SingularityURL}} | grep 'sous-server.*left' | awk '{ print $3 }')
+	rightport=$(cygnus --env PORT0 {{.EnvDesc.SingularityURL}} | grep 'sous-server.*right' | awk '{ print $3 }')
+	serverURL=http://{{.EnvDesc.AgentIP}}:$leftport
+
+	until curl -I $serverURL; do
+	  sleep 0.1
+	done
 	sous config Server "$serverURL"
 	echo "Server URL is:" $(sous config Server)
+
+	sed "s/LEFTPORT/$leftport/; s/RIGHTPORT/$rightport/" < ~/templated-configs/servers.json > ~/servers.json
+	curl -X PUT "${serverURL}/servers" --data *~/servers.json
+	curl "${serverURL}/servers"
 	`,
 		func(name string, res shelltest.Result, t *testing.T) {
 			if len(res.Errs) > 0 {
@@ -415,15 +426,16 @@ func TestShellLevelIntegration(t *testing.T) {
 	git push --tags
 	sous init
 	sous build
-	sous deploy -cluster left
+	sous deploy -cluster left -d -v
 	`, defaultCheck)
 
 	//check :=
 	deploy.Block("confirm deployment", `
-	cygnus -x 1 | grep sous-demo
+	cygnus -x 1 {{.EnvDesc.SingularityURL}}
 	`, func(name string, res shelltest.Result, t *testing.T) {
-		if res.Exit != 0 {
-			t.Errorf("No match for 'sous-demo' in names of running requests")
+		defaultCheck(name, res, t)
+		if !res.Matches("sous-demo") {
+			t.Error("No sous-demo request running!")
 		}
 	})
 }

@@ -34,6 +34,7 @@ type (
 
 // Get implements Getable on ServerListResource
 func (slr *ServerListResource) Get() Exchanger { return &ServerListHandler{} }
+func (slr *ServerListResource) Put() Exchanger { return &ServerListUpdater{} }
 
 // Exchange implements Exchanger on ServerListHandler
 func (slh *ServerListHandler) Exchange() (interface{}, int) {

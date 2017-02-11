@@ -11,32 +11,116 @@ Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known 
 To ssh://192.168.99.100:2222/repos/sous-demo
  * [new tag]         0.0.23 -> 0.0.23
 bash-3.2$ sous init
-2017/02/10 14:19:13 graph.go:517: STATE: (*sous.State)(nil)
-panic: runtime error: invalid memory address or nil pointer dereference
-[signal SIGSEGV: segmentation violation code=0x1 addr=0x0 pc=0x40fb506]
-
-goroutine 130 [running]:
-panic(0x47fe0a0, 0xc420018050)
-	/usr/local/Cellar/go/1.7.4_2/libexec/src/runtime/panic.go:500 +0x1a1
-github.com/opentable/sous/graph.NewCurrentGDM(0x0, 0x0, 0x0, 0x0, 0x0)
-	/Users/jlester/golang/src/github.com/opentable/sous/graph/graph.go:518 +0xa6
-reflect.Value.call(0x47e7500, 0x4943440, 0x13, 0x48a7460, 0x4, 0xc420476020, 0x1, 0x1, 0xc41ffd94fe, 0x0, ...)
-	/usr/local/Cellar/go/1.7.4_2/libexec/src/reflect/value.go:434 +0x5c8
-reflect.Value.Call(0x47e7500, 0x4943440, 0x13, 0xc420476020, 0x1, 0x1, 0x1000000002d00, 0x10, 0x18)
-	/usr/local/Cellar/go/1.7.4_2/libexec/src/reflect/value.go:302 +0xa4
-github.com/opentable/sous/vendor/github.com/samsalisbury/psyringe.newCtor.func1(0xc420476020, 0x1, 0x1, 0xc42024b320, 0xc420404480, 0x0, 0x4c73560, 0x484c580)
-	/Users/jlester/golang/src/github.com/opentable/sous/vendor/github.com/samsalisbury/psyringe/ctor.go:47 +0xc7
-github.com/opentable/sous/vendor/github.com/samsalisbury/psyringe.(*ctor).manifest(0xc420404480, 0xc42024b320)
-	/Users/jlester/golang/src/github.com/opentable/sous/vendor/github.com/samsalisbury/psyringe/ctor.go:102 +0x21e
-github.com/opentable/sous/vendor/github.com/samsalisbury/psyringe.(*ctor).getValue.func1()
-	/Users/jlester/golang/src/github.com/opentable/sous/vendor/github.com/samsalisbury/psyringe/ctor.go:74 +0x33
-sync.(*Once).Do(0xc4202670b0, 0xc420476000)
-	/usr/local/Cellar/go/1.7.4_2/libexec/src/sync/once.go:44 +0xdb
-created by github.com/opentable/sous/vendor/github.com/samsalisbury/psyringe.(*ctor).getValue
-	/Users/jlester/golang/src/github.com/opentable/sous/vendor/github.com/samsalisbury/psyringe/ctor.go:74 +0xb5
 bash-3.2$ sous build
-bash-3.2$ sous deploy -cluster left
-error reading sous state: getting defs: Retrieve ./defs: Get http://192.168.99.100:31633/defs: dial tcp 192.168.99.100:31633: getsockopt: connection refused
-error reading sous state: getting defs: Retrieve ./defs: Get http://192.168.99.100:31633/defs: dial tcp 192.168.99.100:31633: getsockopt: connection refused
+bash-3.2$ sous deploy -cluster left -d -v
+vomit: 2017/02/10 16:55:33 graph.go:298: Verbose debugging enabled
+debug: 2017/02/10 16:55:33 graph.go:299: Regular debugging enabled
+debug: 2017/02/10 16:55:33 graph.go:467: Using server at http://192.168.99.100:31059
+debug: 2017/02/10 16:55:33 httpclient.go:203: Sending GET "http://192.168.99.100:31059/defs"
+vomit: 2017/02/10 16:55:33 httpclient.go:279: Client -> GET "http://192.168.99.100:31059/defs" <empty request body>
+debug: 2017/02/10 16:55:33 httpclient.go:239: Received "GET http://192.168.99.100:31059/defs" -> 200
+vomit: 2017/02/10 16:55:33 httpclient.go:266: Client <- GET "http://192.168.99.100:31059/defs"
+vomit: 2017/02/10 16:55:33 httpclient.go:272: {"DockerRepo":"192.168.99.100:5000","Clusters":{"left":{"Name":"left","Kind":"singularity","BaseURL":"http://192.168.99.100:7099/singularity","Env":{"CLUSTER_NAME":"left"},"AllowedAdvisories":["ephemeral tag","source workspace lacked repo","no repository","requested revision not built","no versioned tag","tag mismatch","tag not on built revision","ephemeral tag","unpushed revision","bogus revision","dirty workspace"]},"right":{"Name":"right","Kind":"singularity","BaseURL":"http://192.168.99.100:7099/singularity","Env":{"CLUSTER_NAME":"right"},"AllowedAdvisories":["ephemeral tag","ephemeral tag","source workspace lacked repo","no repository","requested revision not built","no versioned tag","tag mismatch","tag not on built revision","ephemeral tag","unpushed revision","bogus revision","dirty workspace"]}},"EnvVars":[{"Name":"PORT0","Desc":"The primary TCP port your app should listen on.","Scope":"","Type":"int"}],"Resources":[{"Name":"memory","Type":"Float","Default":"","Optional":false},{"Name":"cpu","Type":"Float","Default":"","Optional":false},{"Name":"ports","Type":"Integer","Default":"","Optional":false}],"Metadata":[]}
+vomit: 2017/02/10 16:55:33 httpclient.go:274: Read 1142 bytes, result: EOF
+debug: 2017/02/10 16:55:33 httpclient.go:203: Sending GET "http://192.168.99.100:31059/gdm"
+vomit: 2017/02/10 16:55:33 httpclient.go:279: Client -> GET "http://192.168.99.100:31059/gdm" <empty request body>
+debug: 2017/02/10 16:55:33 httpclient.go:239: Received "GET http://192.168.99.100:31059/gdm" -> 200
+vomit: 2017/02/10 16:55:33 httpclient.go:266: Client <- GET "http://192.168.99.100:31059/gdm"
+vomit: 2017/02/10 16:55:33 httpclient.go:272: {"Deployments":[{"Resources":{"cpus":"0.1","memory":"100","ports":"1"},"Metadata":{},"Args":null,"Env":{"CLUSTER_NAME":"left"},"NumInstances":1,"ClusterName":"left","Cluster":{"Name":"left","Kind":"singularity","BaseURL":"http://192.168.99.100:7099/singularity","Env":{"CLUSTER_NAME":"left"},"AllowedAdvisories":["ephemeral tag","source workspace lacked repo","no repository","requested revision not built","no versioned tag","tag mismatch","tag not on built revision","ephemeral tag","unpushed revision","bogus revision","dirty workspace"]},"SourceID":{"Location":"192.168.99.100/2222/repos/sous-demo","Version":"0.0.0"},"Flavor":"","Owners":{},"Kind":"http-service","Volumes":null,"RequestID":""},{"Resources":{"cpus":"0.1","memory":"100","ports":"1"},"Metadata":{},"Args":null,"Env":{"CLUSTER_NAME":"right"},"NumInstances":1,"ClusterName":"right","Cluster":{"Name":"right","Kind":"singularity","BaseURL":"http://192.168.99.100:7099/singularity","Env":{"CLUSTER_NAME":"right"},"AllowedAdvisories":["ephemeral tag","ephemeral tag","source workspace lacked repo","no repository","requested revision not built","no versioned tag","tag mismatch","tag not on built revision","ephemeral tag","unpushed revision","bogus revision","dirty workspace"]},"SourceID":{"Location":"192.168.99.100/2222/repos/sous-demo","Version":"0.0.0"},"Flavor":"","Owners":{},"Kind":"http-service","Volumes":null,"RequestID":""},{"Resources":{"cpus":"0.1","memory":"100","ports":"1"},"Metadata":{},"Args":null,"Env":{"CLUSTER_NAME":"left","GDM_REPO":"ssh://root@192.168.99.100:2222/repos/gdm","SOUS_DOCKER_REGISTRY_HOST":"192.168.99.100:5000"},"NumInstances":1,"ClusterName":"left","Cluster":{"Name":"left","Kind":"singularity","BaseURL":"http://192.168.99.100:7099/singularity","Env":{"CLUSTER_NAME":"left"},"AllowedAdvisories":["ephemeral tag","source workspace lacked repo","no repository","requested revision not built","no versioned tag","tag mismatch","tag not on built revision","ephemeral tag","unpushed revision","bogus revision","dirty workspace"]},"SourceID":{"Location":"192.168.99.100/2222/repos/sous-server","Version":"0.0.2"},"Flavor":"","Owners":{"test@test.com":{}},"Kind":"http-service","Volumes":null,"RequestID":""},{"Resources":{"cpus":"0.1","memory":"100","ports":"1"},"Metadata":{},"Args":null,"Env":{"CLUSTER_NAME":"right","GDM_REPO":"ssh://root@192.168.99.100:2222/repos/gdm","SOUS_DOCKER_REGISTRY_HOST":"192.168.99.100:5000"},"NumInstances":1,"ClusterName":"right","Cluster":{"Name":"right","Kind":"singularity","BaseURL":"http://192.168.99.100:7099/singularity","Env":{"CLUSTER_NAME":"right"},"AllowedAdvisories":["ephemeral tag","ephemeral tag","source workspace lacked repo","no repository","requested revision not built","no versioned tag","tag mismatch","tag not on built revision","ephemeral tag","unpushed revision","bogus revision","dirty workspace"]},"SourceID":{"Location":"192.168.99.100/2222/repos/sous-server","Version":"0.0.2"},"Flavor":"","Owners":{"test@test.com":{}},"Kind":"http-service","Volumes":null,"RequestID":""}]}
+vomit: 2017/02/10 16:55:33 httpclient.go:274: Read 3038 bytes, result: EOF
+debug: 2017/02/10 16:55:33 http_state_manager.go:61: Writing state via HTTP.
+vomit: 2017/02/10 16:55:33 deployment_diff.go:130: Computing diff from:
+    192.168.99.100/2222/repos/sous-demo,0.0.0 @ &{left singularity http://192.168.99.100:7099/singularity map[CLUSTER_NAME:left] [ephemeral tag source workspace lacked repo no repository requested revision not built no versioned tag tag mismatch tag not on built revision ephemeral tag unpushed revision bogus revision dirty workspace]} #1 map[cpus:0.1 memory:100 ports:1] : map[CLUSTER_NAME:left] []
+    192.168.99.100/2222/repos/sous-demo,0.0.0 @ &{right singularity http://192.168.99.100:7099/singularity map[CLUSTER_NAME:right] [ephemeral tag ephemeral tag source workspace lacked repo no repository requested revision not built no versioned tag tag mismatch tag not on built revision ephemeral tag unpushed revision bogus revision dirty workspace]} #1 map[memory:100 ports:1 cpus:0.1] : map[CLUSTER_NAME:right] []
+    192.168.99.100/2222/repos/sous-server,0.0.2 @ &{left singularity http://192.168.99.100:7099/singularity map[CLUSTER_NAME:left] [ephemeral tag source workspace lacked repo no repository requested revision not built no versioned tag tag mismatch tag not on built revision ephemeral tag unpushed revision bogus revision dirty workspace]} #1 map[cpus:0.1 memory:100 ports:1] : map[SOUS_DOCKER_REGISTRY_HOST:192.168.99.100:5000 CLUSTER_NAME:left GDM_REPO:ssh://root@192.168.99.100:2222/repos/gdm] []
+    192.168.99.100/2222/repos/sous-server,0.0.2 @ &{right singularity http://192.168.99.100:7099/singularity map[CLUSTER_NAME:right] [ephemeral tag ephemeral tag source workspace lacked repo no repository requested revision not built no versioned tag tag mismatch tag not on built revision ephemeral tag unpushed revision bogus revision dirty workspace]} #1 map[memory:100 ports:1 cpus:0.1] : map[SOUS_DOCKER_REGISTRY_HOST:192.168.99.100:5000 GDM_REPO:ssh://root@192.168.99.100:2222/repos/gdm CLUSTER_NAME:right] []
+debug: 2017/02/10 16:55:33 http_state_manager.go:78: Processing diffs...
+vomit: 2017/02/10 16:55:33 deployment_diff.go:149: Computing diff to:
+    192.168.99.100/2222/repos/sous-demo,0.0.23 @ &{left singularity http://192.168.99.100:7099/singularity map[CLUSTER_NAME:left] [ephemeral tag source workspace lacked repo no repository requested revision not built no versioned tag tag mismatch tag not on built revision ephemeral tag unpushed revision bogus revision dirty workspace]} #1 map[cpus:0.1 memory:100 ports:1] : map[CLUSTER_NAME:left] []
+    192.168.99.100/2222/repos/sous-demo,0.0.0 @ &{right singularity http://192.168.99.100:7099/singularity map[CLUSTER_NAME:right] [ephemeral tag ephemeral tag source workspace lacked repo no repository requested revision not built no versioned tag tag mismatch tag not on built revision ephemeral tag unpushed revision bogus revision dirty workspace]} #1 map[ports:1 cpus:0.1 memory:100] : map[CLUSTER_NAME:right] []
+    192.168.99.100/2222/repos/sous-server,0.0.2 @ &{left singularity http://192.168.99.100:7099/singularity map[CLUSTER_NAME:left] [ephemeral tag source workspace lacked repo no repository requested revision not built no versioned tag tag mismatch tag not on built revision ephemeral tag unpushed revision bogus revision dirty workspace]} #1 map[ports:1 cpus:0.1 memory:100] : map[SOUS_DOCKER_REGISTRY_HOST:192.168.99.100:5000 GDM_REPO:ssh://root@192.168.99.100:2222/repos/gdm CLUSTER_NAME:left] []
+    192.168.99.100/2222/repos/sous-server,0.0.2 @ &{right singularity http://192.168.99.100:7099/singularity map[CLUSTER_NAME:right] [ephemeral tag ephemeral tag source workspace lacked repo no repository requested revision not built no versioned tag tag mismatch tag not on built revision ephemeral tag unpushed revision bogus revision dirty workspace]} #1 map[memory:100 ports:1 cpus:0.1] : map[SOUS_DOCKER_REGISTRY_HOST:192.168.99.100:5000 GDM_REPO:ssh://root@192.168.99.100:2222/repos/gdm CLUSTER_NAME:right] []
+debug: 2017/02/10 16:55:33 deployment.go:175: Comparing two versions of deployment {"192.168.99.100/2222/repos/sous-server" "left"}
+vomit: 2017/02/10 16:55:33 deploy_config.go:171: Envs: map[SOUS_DOCKER_REGISTRY_HOST:192.168.99.100:5000 GDM_REPO:ssh://root@192.168.99.100:2222/repos/gdm CLUSTER_NAME:left] ?= map[GDM_REPO:ssh://root@192.168.99.100:2222/repos/gdm SOUS_DOCKER_REGISTRY_HOST:192.168.99.100:5000 CLUSTER_NAME:left]
+vomit: 2017/02/10 16:55:33 deploy_config.go:183: Envs: map[SOUS_DOCKER_REGISTRY_HOST:192.168.99.100:5000 GDM_REPO:ssh://root@192.168.99.100:2222/repos/gdm CLUSTER_NAME:left] == map[SOUS_DOCKER_REGISTRY_HOST:192.168.99.100:5000 CLUSTER_NAME:left GDM_REPO:ssh://root@192.168.99.100:2222/repos/gdm] !
+vomit: 2017/02/10 16:55:33 resources.go:139: Comparing resources: map[cpus:0.1 memory:100 ports:1] ?= map[memory:100 ports:1 cpus:0.1]
+debug: 2017/02/10 16:55:33 deployment.go:175: Comparing two versions of deployment {"192.168.99.100/2222/repos/sous-server" "right"}
+vomit: 2017/02/10 16:55:33 deploy_config.go:171: Envs: map[CLUSTER_NAME:right SOUS_DOCKER_REGISTRY_HOST:192.168.99.100:5000 GDM_REPO:ssh://root@192.168.99.100:2222/repos/gdm] ?= map[SOUS_DOCKER_REGISTRY_HOST:192.168.99.100:5000 GDM_REPO:ssh://root@192.168.99.100:2222/repos/gdm CLUSTER_NAME:right]
+vomit: 2017/02/10 16:55:33 deploy_config.go:183: Envs: map[SOUS_DOCKER_REGISTRY_HOST:192.168.99.100:5000 GDM_REPO:ssh://root@192.168.99.100:2222/repos/gdm CLUSTER_NAME:right] == map[SOUS_DOCKER_REGISTRY_HOST:192.168.99.100:5000 GDM_REPO:ssh://root@192.168.99.100:2222/repos/gdm CLUSTER_NAME:right] !
+vomit: 2017/02/10 16:55:33 resources.go:139: Comparing resources: map[memory:100 ports:1 cpus:0.1] ?= map[memory:100 ports:1 cpus:0.1]
+debug: 2017/02/10 16:55:33 deployment.go:175: Comparing two versions of deployment {"192.168.99.100/2222/repos/sous-demo" "left"}
+vomit: 2017/02/10 16:55:33 deploy_config.go:171: Envs: map[CLUSTER_NAME:left] ?= map[CLUSTER_NAME:left]
+vomit: 2017/02/10 16:55:33 deploy_config.go:183: Envs: map[CLUSTER_NAME:left] == map[CLUSTER_NAME:left] !
+vomit: 2017/02/10 16:55:33 resources.go:139: Comparing resources: map[cpus:0.1 memory:100 ports:1] ?= map[cpus:0.1 memory:100 ports:1]
+debug: 2017/02/10 16:55:33 deployment_diff.go:169: Modified deployment: {"192.168.99.100/2222/repos/sous-demo" "left"} ([]string{"source id; this: \"192.168.99.100/2222/repos/sous-demo,0.0.23\"; other: \"192.168.99.100/2222/repos/sous-demo,0.0.0\""})
+debug: 2017/02/10 16:55:33 deployment.go:175: Comparing two versions of deployment {"192.168.99.100/2222/repos/sous-server" "left"}
+vomit: 2017/02/10 16:55:33 deploy_config.go:171: Envs: map[SOUS_DOCKER_REGISTRY_HOST:192.168.99.100:5000 GDM_REPO:ssh://root@192.168.99.100:2222/repos/gdm CLUSTER_NAME:left] ?= map[SOUS_DOCKER_REGISTRY_HOST:192.168.99.100:5000 GDM_REPO:ssh://root@192.168.99.100:2222/repos/gdm CLUSTER_NAME:left]
+debug: 2017/02/10 16:55:33 deployment.go:175: Comparing two versions of deployment {"192.168.99.100/2222/repos/sous-demo" "right"}
+vomit: 2017/02/10 16:55:33 deploy_config.go:183: Envs: map[CLUSTER_NAME:left SOUS_DOCKER_REGISTRY_HOST:192.168.99.100:5000 GDM_REPO:ssh://root@192.168.99.100:2222/repos/gdm] == map[SOUS_DOCKER_REGISTRY_HOST:192.168.99.100:5000 GDM_REPO:ssh://root@192.168.99.100:2222/repos/gdm CLUSTER_NAME:left] !
+vomit: 2017/02/10 16:55:33 resources.go:139: Comparing resources: map[cpus:0.1 memory:100 ports:1] ?= map[cpus:0.1 memory:100 ports:1]
+vomit: 2017/02/10 16:55:33 deploy_config.go:171: Envs: map[CLUSTER_NAME:right] ?= map[CLUSTER_NAME:right]
+vomit: 2017/02/10 16:55:33 deploy_config.go:183: Envs: map[CLUSTER_NAME:right] == map[CLUSTER_NAME:right] !
+debug: 2017/02/10 16:55:33 diff_concentrator.go:273: For 192.168.99.100/2222/repos/sous-server, have 1 clusters, waiting for 2
+vomit: 2017/02/10 16:55:33 resources.go:139: Comparing resources: map[cpus:0.1 memory:100 ports:1] ?= map[ports:1 cpus:0.1 memory:100]
+debug: 2017/02/10 16:55:33 deployment.go:175: Comparing two versions of deployment {"192.168.99.100/2222/repos/sous-server" "right"}
+vomit: 2017/02/10 16:55:33 deploy_config.go:171: Envs: map[SOUS_DOCKER_REGISTRY_HOST:192.168.99.100:5000 GDM_REPO:ssh://root@192.168.99.100:2222/repos/gdm CLUSTER_NAME:right] ?= map[GDM_REPO:ssh://root@192.168.99.100:2222/repos/gdm CLUSTER_NAME:right SOUS_DOCKER_REGISTRY_HOST:192.168.99.100:5000]
+vomit: 2017/02/10 16:55:33 deploy_config.go:183: Envs: map[SOUS_DOCKER_REGISTRY_HOST:192.168.99.100:5000 GDM_REPO:ssh://root@192.168.99.100:2222/repos/gdm CLUSTER_NAME:right] == map[GDM_REPO:ssh://root@192.168.99.100:2222/repos/gdm CLUSTER_NAME:right SOUS_DOCKER_REGISTRY_HOST:192.168.99.100:5000] !
+vomit: 2017/02/10 16:55:33 resources.go:139: Comparing resources: map[memory:100 ports:1 cpus:0.1] ?= map[ports:1 cpus:0.1 memory:100]
+debug: 2017/02/10 16:55:33 diff_concentrator.go:273: For 192.168.99.100/2222/repos/sous-server, have 2 clusters, waiting for 2
+vomit: 2017/02/10 16:55:33 deploy_config.go:171: Envs: map[SOUS_DOCKER_REGISTRY_HOST:192.168.99.100:5000 GDM_REPO:ssh://root@192.168.99.100:2222/repos/gdm] ?= map[SOUS_DOCKER_REGISTRY_HOST:192.168.99.100:5000 GDM_REPO:ssh://root@192.168.99.100:2222/repos/gdm]
+vomit: 2017/02/10 16:55:33 deploy_config.go:183: Envs: map[SOUS_DOCKER_REGISTRY_HOST:192.168.99.100:5000 GDM_REPO:ssh://root@192.168.99.100:2222/repos/gdm] == map[SOUS_DOCKER_REGISTRY_HOST:192.168.99.100:5000 GDM_REPO:ssh://root@192.168.99.100:2222/repos/gdm] !
+vomit: 2017/02/10 16:55:33 resources.go:139: Comparing resources: map[cpus:0.1 memory:100 ports:1] ?= map[cpus:0.1 memory:100 ports:1]
+vomit: 2017/02/10 16:55:33 deploy_config.go:171: Envs: map[SOUS_DOCKER_REGISTRY_HOST:192.168.99.100:5000 GDM_REPO:ssh://root@192.168.99.100:2222/repos/gdm] ?= map[SOUS_DOCKER_REGISTRY_HOST:192.168.99.100:5000 GDM_REPO:ssh://root@192.168.99.100:2222/repos/gdm]
+vomit: 2017/02/10 16:55:33 deploy_config.go:183: Envs: map[GDM_REPO:ssh://root@192.168.99.100:2222/repos/gdm SOUS_DOCKER_REGISTRY_HOST:192.168.99.100:5000] == map[SOUS_DOCKER_REGISTRY_HOST:192.168.99.100:5000 GDM_REPO:ssh://root@192.168.99.100:2222/repos/gdm] !
+vomit: 2017/02/10 16:55:33 resources.go:139: Comparing resources: map[cpus:0.1 memory:100 ports:1] ?= map[memory:100 ports:1 cpus:0.1]
+debug: 2017/02/10 16:55:33 diff_concentrator.go:320: Concentrating modification of {"192.168.99.100/2222/repos/sous-demo" "left"}
+debug: 2017/02/10 16:55:33 deployment.go:175: Comparing two versions of deployment {"192.168.99.100/2222/repos/sous-demo" "left"}
+vomit: 2017/02/10 16:55:33 deploy_config.go:171: Envs: map[CLUSTER_NAME:left] ?= map[CLUSTER_NAME:left]
+vomit: 2017/02/10 16:55:33 deploy_config.go:183: Envs: map[CLUSTER_NAME:left] == map[CLUSTER_NAME:left] !
+vomit: 2017/02/10 16:55:33 resources.go:139: Comparing resources: map[memory:100 ports:1 cpus:0.1] ?= map[memory:100 ports:1 cpus:0.1]
+debug: 2017/02/10 16:55:33 diff_concentrator.go:111: Adding modification to deployment bundle ({"192.168.99.100/2222/repos/sous-demo" "left"})
+debug: 2017/02/10 16:55:33 diff_concentrator.go:112: Diffs for {"192.168.99.100/2222/repos/sous-demo" "left"}: []string{"source id; this: \"192.168.99.100/2222/repos/sous-demo,0.0.23\"; other: \"192.168.99.100/2222/repos/sous-demo,0.0.0\""}
+debug: 2017/02/10 16:55:33 diff_concentrator.go:273: For 192.168.99.100/2222/repos/sous-demo, have 1 clusters, waiting for 2
+debug: 2017/02/10 16:55:33 deployment.go:175: Comparing two versions of deployment {"192.168.99.100/2222/repos/sous-demo" "right"}
+vomit: 2017/02/10 16:55:33 deploy_config.go:171: Envs: map[CLUSTER_NAME:right] ?= map[CLUSTER_NAME:right]
+vomit: 2017/02/10 16:55:33 deploy_config.go:183: Envs: map[CLUSTER_NAME:right] == map[CLUSTER_NAME:right] !
+vomit: 2017/02/10 16:55:33 resources.go:139: Comparing resources: map[cpus:0.1 memory:100 ports:1] ?= map[ports:1 cpus:0.1 memory:100]
+debug: 2017/02/10 16:55:33 diff_concentrator.go:273: For 192.168.99.100/2222/repos/sous-demo, have 2 clusters, waiting for 2
+vomit: 2017/02/10 16:55:33 resources.go:139: Comparing resources: map[memory:100 ports:1 cpus:0.1] ?= map[cpus:0.1 memory:100 ports:1]
+vomit: 2017/02/10 16:55:33 resources.go:139: Comparing resources: map[cpus:0.1 memory:100 ports:1] ?= map[cpus:0.1 memory:100 ports:1]
+debug: 2017/02/10 16:55:33 http_state_manager.go:191: Modifying "192.168.99.100/2222/repos/sous-demo"
+debug: 2017/02/10 16:55:33 httpclient.go:176: Getting existing resource from http://192.168.99.100:31059/manifest?flavor=&offset=&repo=192.168.99.100%2F2222%2Frepos%2Fsous-demo
+debug: 2017/02/10 16:55:33 httpclient.go:203: Sending GET "http://192.168.99.100:31059/manifest?flavor=&offset=&repo=192.168.99.100%2F2222%2Frepos%2Fsous-demo"
+vomit: 2017/02/10 16:55:33 httpclient.go:279: Client -> GET "http://192.168.99.100:31059/manifest?flavor=&offset=&repo=192.168.99.100%2F2222%2Frepos%2Fsous-demo" <empty request body>
+debug: 2017/02/10 16:55:33 httpclient.go:239: Received "GET http://192.168.99.100:31059/manifest?flavor=&offset=&repo=192.168.99.100%2F2222%2Frepos%2Fsous-demo" -> 200
+vomit: 2017/02/10 16:55:33 httpclient.go:266: Client <- GET "http://192.168.99.100:31059/manifest?flavor=&offset=&repo=192.168.99.100%2F2222%2Frepos%2Fsous-demo"
+vomit: 2017/02/10 16:55:33 httpclient.go:272: {"Source":"192.168.99.100/2222/repos/sous-demo","Flavor":"","Owners":[],"Kind":"http-service","Deployments":{"left":{"Resources":{"cpus":"0.1","memory":"100","ports":"1"},"Metadata":{},"Args":[],"Env":{},"NumInstances":1,"Volumes":[],"Version":"0.0.0"},"right":{"Resources":{"cpus":"0.1","memory":"100","ports":"1"},"Metadata":{},"Args":[],"Env":{},"NumInstances":1,"Volumes":[],"Version":"0.0.0"}}}
+vomit: 2017/02/10 16:55:33 httpclient.go:274: Read 400 bytes, result: EOF
+vomit: 2017/02/10 16:55:33 resources.go:139: Comparing resources: map[ports:1 cpus:0.1 memory:100] ?= map[ports:1 cpus:0.1 memory:100]
+vomit: 2017/02/10 16:55:33 resources.go:139: Comparing resources: map[ports:1 cpus:0.1 memory:100] ?= map[memory:100 ports:1 cpus:0.1]
+debug: 2017/02/10 16:55:33 httpclient.go:203: Sending PUT "http://192.168.99.100:31059/manifest?flavor=&offset=&repo=192.168.99.100%2F2222%2Frepos%2Fsous-demo"
+debug: 2017/02/10 16:55:33 httpclient.go:211:   body: {"Source":"192.168.99.100/2222/repos/sous-demo","Flavor":"","Owners":[],"Kind":"http-service","Deployments":{"left":{"Resources":{"cpus":"0.1","memory":"100","ports":"1"},"Metadata":{},"Args":[],"Env":{},"NumInstances":1,"Volumes":[],"Version":"0.0.23"},"right":{"Resources":{"cpus":"0.1","memory":"100","ports":"1"},"Metadata":{},"Args":[],"Env":{},"NumInstances":1,"Volumes":[],"Version":"0.0.0"}}}
+vomit: 2017/02/10 16:55:33 httpclient.go:266: Client -> PUT "http://192.168.99.100:31059/manifest?flavor=&offset=&repo=192.168.99.100%2F2222%2Frepos%2Fsous-demo"
+vomit: 2017/02/10 16:55:33 httpclient.go:272: {"Source":"192.168.99.100/2222/repos/sous-demo","Flavor":"","Owners":[],"Kind":"http-service","Deployments":{"left":{"Resources":{"cpus":"0.1","memory":"100","ports":"1"},"Metadata":{},"Args":[],"Env":{},"NumInstances":1,"Volumes":[],"Version":"0.0.23"},"right":{"Resources":{"cpus":"0.1","memory":"100","ports":"1"},"Metadata":{},"Args":[],"Env":{},"NumInstances":1,"Volumes":[],"Version":"0.0.0"}}}
+vomit: 2017/02/10 16:55:33 httpclient.go:274: Sent 401 bytes, result: EOF
+debug: 2017/02/10 16:55:33 httpclient.go:239: Received "PUT http://192.168.99.100:31059/manifest?flavor=&offset=&repo=192.168.99.100%2F2222%2Frepos%2Fsous-demo" -> 200
+vomit: 2017/02/10 16:55:33 httpclient.go:266: Client <- PUT "http://192.168.99.100:31059/manifest?flavor=&offset=&repo=192.168.99.100%2F2222%2Frepos%2Fsous-demo"
+vomit: 2017/02/10 16:55:33 httpclient.go:269: 
+vomit: 2017/02/10 16:55:33 httpclient.go:270: (problem compacting JSON for logging: unexpected end of JSON input)
+vomit: 2017/02/10 16:55:33 httpclient.go:274: Read 0 bytes, result: <nil>
+debug: 2017/02/10 16:55:33 graph.go:486: Building StatusPoller...
+debug: 2017/02/10 16:55:33 graph.go:492: ...looks good...
+debug: 2017/02/10 16:55:33 httpclient.go:203: Sending GET "http://192.168.99.100:31059/servers"
+vomit: 2017/02/10 16:55:33 httpclient.go:279: Client -> GET "http://192.168.99.100:31059/servers" <empty request body>
+debug: 2017/02/10 16:55:33 httpclient.go:239: Received "GET http://192.168.99.100:31059/servers" -> 200
+vomit: 2017/02/10 16:55:33 httpclient.go:266: Client <- GET "http://192.168.99.100:31059/servers"
+vomit: 2017/02/10 16:55:33 httpclient.go:272: {"Servers":[]}
+vomit: 2017/02/10 16:55:33 httpclient.go:274: Read 15 bytes, result: EOF
+debug: 2017/02/10 16:55:33 httpclient.go:203: Sending GET "http://192.168.99.100:31059/gdm"
+vomit: 2017/02/10 16:55:33 httpclient.go:279: Client -> GET "http://192.168.99.100:31059/gdm" <empty request body>
+debug: 2017/02/10 16:55:33 httpclient.go:239: Received "GET http://192.168.99.100:31059/gdm" -> 200
+vomit: 2017/02/10 16:55:33 httpclient.go:266: Client <- GET "http://192.168.99.100:31059/gdm"
+vomit: 2017/02/10 16:55:33 httpclient.go:272: {"Deployments":[{"Resources":{"cpus":"0.1","memory":"100","ports":"1"},"Metadata":{},"Args":null,"Env":{"CLUSTER_NAME":"left"},"NumInstances":1,"ClusterName":"left","Cluster":{"Name":"left","Kind":"singularity","BaseURL":"http://192.168.99.100:7099/singularity","Env":{"CLUSTER_NAME":"left"},"AllowedAdvisories":["ephemeral tag","source workspace lacked repo","no repository","requested revision not built","no versioned tag","tag mismatch","tag not on built revision","ephemeral tag","unpushed revision","bogus revision","dirty workspace"]},"SourceID":{"Location":"192.168.99.100/2222/repos/sous-demo","Version":"0.0.23"},"Flavor":"","Owners":{},"Kind":"http-service","Volumes":null,"RequestID":""},{"Resources":{"cpus":"0.1","memory":"100","ports":"1"},"Metadata":{},"Args":null,"Env":{"CLUSTER_NAME":"left","GDM_REPO":"ssh://root@192.168.99.100:2222/repos/gdm","SOUS_DOCKER_REGISTRY_HOST":"192.168.99.100:5000"},"NumInstances":1,"ClusterName":"left","Cluster":{"Name":"left","Kind":"singularity","BaseURL":"http://192.168.99.100:7099/singularity","Env":{"CLUSTER_NAME":"left"},"AllowedAdvisories":["ephemeral tag","source workspace lacked repo","no repository","requested revision not built","no versioned tag","tag mismatch","tag not on built revision","ephemeral tag","unpushed revision","bogus revision","dirty workspace"]},"SourceID":{"Location":"192.168.99.100/2222/repos/sous-server","Version":"0.0.2"},"Flavor":"","Owners":{"test@test.com":{}},"Kind":"http-service","Volumes":null,"RequestID":""},{"Resources":{"cpus":"0.1","memory":"100","ports":"1"},"Metadata":{},"Args":null,"Env":{"CLUSTER_NAME":"right","GDM_REPO":"ssh://root@192.168.99.100:2222/repos/gdm","SOUS_DOCKER_REGISTRY_HOST":"192.168.99.100:5000"},"NumInstances":1,"ClusterName":"right","Cluster":{"Name":"right","Kind":"singularity","BaseURL":"http://192.168.99.100:7099/singularity","Env":{"CLUSTER_NAME":"right"},"AllowedAdvisories":["ephemeral tag","ephemeral tag","source workspace lacked repo","no repository","requested revision not built","no versioned tag","tag mismatch","tag not on built revision","ephemeral tag","unpushed revision","bogus revision","dirty workspace"]},"SourceID":{"Location":"192.168.99.100/2222/repos/sous-server","Version":"0.0.2"},"Flavor":"","Owners":{"test@test.com":{}},"Kind":"http-service","Volumes":null,"RequestID":""},{"Resources":{"cpus":"0.1","memory":"100","ports":"1"},"Metadata":{},"Args":null,"Env":{"CLUSTER_NAME":"right"},"NumInstances":1,"ClusterName":"right","Cluster":{"Name":"right","Kind":"singularity","BaseURL":"http://192.168.99.100:7099/singularity","Env":{"CLUSTER_NAME":"right"},"AllowedAdvisories":["ephemeral tag","ephemeral tag","source workspace lacked repo","no repository","requested revision not built","no versioned tag","tag mismatch","tag not on built revision","ephemeral tag","unpushed revision","bogus revision","dirty workspace"]},"SourceID":{"Location":"192.168.99.100/2222/repos/sous-demo","Version":"0.0.0"},"Flavor":"","Owners":{},"Kind":"http-service","Volumes":null,"RequestID":""}]}
+vomit: 2017/02/10 16:55:33 httpclient.go:274: Read 3039 bytes, result: EOF
 bash-3.2$ 
 bash-3.2$ 

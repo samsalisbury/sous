@@ -5,43 +5,43 @@ bash-3.2$
 bash-3.2$ cd /Users/jlester/golang/src/github.com/opentable/sous
 bash-3.2$ env
 DOCKER_HOST=tcp://192.168.99.100:2376
-GIT_SSH=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing117475627/home/bin/ssh_wrapper
+GIT_SSH=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing017109657/home/bin/ssh_wrapper
 DOCKER_TLS_VERIFY=1
-PATH=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing117475627/sous/bin:~/bin:/usr/local/opt/coreutils/libexec/gnubin:/usr/local/bin:/usr/bin:/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing117475627/home/go/bin:/Users/jlester/golang/bin
+PATH=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing017109657/sous/bin:~/bin:/usr/local/bin:/usr/bin:/usr/local/opt/coreutils/libexec/gnubin:/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing017109657/home/go/bin:/Users/jlester/golang/bin
 PWD=/Users/jlester/golang/src/github.com/opentable/sous
 SHLVL=1
-HOME=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing117475627/home
+HOME=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing017109657/home
 DOCKER_CERT_PATH=/Users/jlester/.docker/machine/machines/default
-XDG_CONFIG=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing117475627/home/dot-config
-GOPATH=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing117475627/home/go:/Users/jlester/golang
-_=/usr/local/opt/coreutils/libexec/gnubin/env
+XDG_CONFIG=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing017109657/home/dot-config
+GOPATH=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing017109657/home/go:/Users/jlester/golang
+_=/usr/bin/env
 OLDPWD=/Users/jlester/golang/src/github.com/opentable/sous/clintegration
 bash-3.2$ export SOUS_EXTRA_DOCKER_CA=/Users/jlester/golang/src/github.com/op<_DOCKER_CA=/Users/jlester/golang/src/github.com/ope                         ntable/sous/integration/t<golang/src/github.com/opentable/sous/integration/te                         st-registry/docker-regist<table/sous/integration/test-registry/docker-registr                         y/testing.crt
-bash-3.2$ mkdir -p /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-<ders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-t                         esting117475627/home/go/{<92mrn16vkfds/T/sous-cli-testing117475627/home/go/{s                         rc,bin}
+bash-3.2$ mkdir -p /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-<ders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-t                         esting017109657/home/go/{<92mrn16vkfds/T/sous-cli-testing017109657/home/go/{s                         rc,bin}
 bash-3.2$ 
 bash-3.2$ ### This build gives me trouble in tests...
 bash-3.2$ ### xgo does something weird and different with it's dep-cache dir
-bash-3.2$ # GOPATH=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-<ders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-t                         esting117475627/home/go m<92mrn16vkfds/T/sous-cli-testing117475627/home/go ma                         ke linux_build # we need <sting117475627/home/go make linux_build # we need S                         ous built for linux for t<e linux_build # we need Sous built for linux for th                         e server
+bash-3.2$ # GOPATH=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-<ders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-t                         esting017109657/home/go m<92mrn16vkfds/T/sous-cli-testing017109657/home/go ma                         ke linux_build # we need <sting017109657/home/go make linux_build # we need S                         ous built for linux for t<e linux_build # we need Sous built for linux for th                         e server
 bash-3.2$ go install . #install the current sous project
 bash-3.2$ cp integration/test-registry/git-server/git_pubkey_rsa* ~/dot-ssh/
 bash-3.2$ 
-bash-3.2$ cd /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testin<p/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing                         117475627
+bash-3.2$ cd /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testin<p/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing                         017109657
 bash-3.2$ chmod go-rwx -R ~/dot-ssh
 bash-3.2$ chmod +x -R ~/bin/*
 bash-3.2$ ssh -o ConnectTimeout=1 -o PasswordAuthentication=no -F "${HOME}/do<eout=1 -o PasswordAuthentication=no -F "${HOME}/dot                         -ssh/config" root@192.168<cation=no -F "${HOME}/dot-ssh/config" root@192.168.                         99.100 -p 2222 /reset-rep<ssh/config" root@192.168.99.100 -p 2222 /reset-repo                         s < /dev/null
 Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
-12:pids:/docker/b4d1f1af2b4b362d49a82dc795095a2ebc1d295eb2ca4c01835994ff2850bc2f
-11:hugetlb:/docker/b4d1f1af2b4b362d49a82dc795095a2ebc1d295eb2ca4c01835994ff2850bc2f
-10:net_prio:/docker/b4d1f1af2b4b362d49a82dc795095a2ebc1d295eb2ca4c01835994ff2850bc2f
-9:perf_event:/docker/b4d1f1af2b4b362d49a82dc795095a2ebc1d295eb2ca4c01835994ff2850bc2f
-8:net_cls:/docker/b4d1f1af2b4b362d49a82dc795095a2ebc1d295eb2ca4c01835994ff2850bc2f
-7:freezer:/docker/b4d1f1af2b4b362d49a82dc795095a2ebc1d295eb2ca4c01835994ff2850bc2f
-6:devices:/docker/b4d1f1af2b4b362d49a82dc795095a2ebc1d295eb2ca4c01835994ff2850bc2f
-5:memory:/docker/b4d1f1af2b4b362d49a82dc795095a2ebc1d295eb2ca4c01835994ff2850bc2f
-4:blkio:/docker/b4d1f1af2b4b362d49a82dc795095a2ebc1d295eb2ca4c01835994ff2850bc2f
-3:cpuacct:/docker/b4d1f1af2b4b362d49a82dc795095a2ebc1d295eb2ca4c01835994ff2850bc2f
-2:cpu:/docker/b4d1f1af2b4b362d49a82dc795095a2ebc1d295eb2ca4c01835994ff2850bc2f
-1:cpuset:/docker/b4d1f1af2b4b362d49a82dc795095a2ebc1d295eb2ca4c01835994ff2850bc2f
+12:pids:/docker/dc9623ded87806289ba8df43a6c0a06843ab3ab3dadecc4e3cc1fa31a96d3d2e
+11:hugetlb:/docker/dc9623ded87806289ba8df43a6c0a06843ab3ab3dadecc4e3cc1fa31a96d3d2e
+10:net_prio:/docker/dc9623ded87806289ba8df43a6c0a06843ab3ab3dadecc4e3cc1fa31a96d3d2e
+9:perf_event:/docker/dc9623ded87806289ba8df43a6c0a06843ab3ab3dadecc4e3cc1fa31a96d3d2e
+8:net_cls:/docker/dc9623ded87806289ba8df43a6c0a06843ab3ab3dadecc4e3cc1fa31a96d3d2e
+7:freezer:/docker/dc9623ded87806289ba8df43a6c0a06843ab3ab3dadecc4e3cc1fa31a96d3d2e
+6:devices:/docker/dc9623ded87806289ba8df43a6c0a06843ab3ab3dadecc4e3cc1fa31a96d3d2e
+5:memory:/docker/dc9623ded87806289ba8df43a6c0a06843ab3ab3dadecc4e3cc1fa31a96d3d2e
+4:blkio:/docker/dc9623ded87806289ba8df43a6c0a06843ab3ab3dadecc4e3cc1fa31a96d3d2e
+3:cpuacct:/docker/dc9623ded87806289ba8df43a6c0a06843ab3ab3dadecc4e3cc1fa31a96d3d2e
+2:cpu:/docker/dc9623ded87806289ba8df43a6c0a06843ab3ab3dadecc4e3cc1fa31a96d3d2e
+1:cpuset:/docker/dc9623ded87806289ba8df43a6c0a06843ab3ab3dadecc4e3cc1fa31a96d3d2e
 repos/
 repos/gdm/
 repos/gdm/description
@@ -261,6 +261,8 @@ repos/sous-server/objects/74/
 repos/sous-server/objects/74/8edd214bbf1f6c47a376f362d0aa5fdd91427b
 repos/sous-server/objects/22/
 repos/sous-server/objects/22/b1c6a49a2561d9656175db4d7202491047766b
+repos/sous-server/objects/7c/
+repos/sous-server/objects/7c/dc79f9932abcb316f2121b6d2fd6279086950f
 repos/sous-server/objects/91/
 repos/sous-server/objects/91/eb37afcadd9360edc22c7008626aff455bde05
 repos/sous-server/objects/07/
@@ -271,6 +273,8 @@ repos/sous-server/objects/53/
 repos/sous-server/objects/53/6c17c07aacc4903c99144dd3c7cd1814bc2ece
 repos/sous-server/objects/32/
 repos/sous-server/objects/32/d08f65edb7e7363b9bb1dfdb577dbd131a68e6
+repos/sous-server/objects/bd/
+repos/sous-server/objects/bd/fdd3fcf49ae6467a3251502e87d3e803169e16
 repos/sous-server/objects/09/
 repos/sous-server/objects/09/a8e9b81bd94f8596181a072b39a4dc08736485
 repos/sous-server/objects/76/
@@ -284,6 +288,8 @@ repos/sous-server/objects/info/
 repos/sous-server/objects/78/
 repos/sous-server/objects/78/64bae7aefec8ed100d71fddfb880c3a5558b7d
 repos/sous-server/objects/78/913ba4e17971a9d96e1ee81546fed0789709b9
+repos/sous-server/objects/52/
+repos/sous-server/objects/52/6675594fb8bb098c80ca0577dc13af0a264e2d
 repos/sous-server/hooks/
 repos/sous-server/hooks/commit-msg.sample
 repos/sous-server/hooks/pre-applypatch.sample

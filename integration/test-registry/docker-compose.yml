@@ -24,7 +24,7 @@ zk:
     ZK_ID: 1
 
 master:
-  image: mesosphere/mesos-master:0.23.0-1.0.ubuntu1404
+  image: mesosphere/mesos-master:0.28.1-2.0.20.ubuntu1404
   net: host
   environment:
     MESOS_ZK: zk://localhost:2181/mesos
@@ -35,7 +35,7 @@ master:
     MESOS_WORK_DIR: /var/lib/mesos
 
 slave:
-  image: hubspot/singularityexecutorslave:0.4.11
+  image: hubspot/singularityexecutorslave:0.13.0
   command: mesos-slave
   net: host
   environment:
@@ -49,14 +49,15 @@ slave:
     - /sys:/sys
 
 scheduler:
-  image: hubspot/singularityservice:0.4.11
+  #image: hubspot/singularityservice:0.13.0
+  build: singularityservice
   net: host
   environment:
     - DOCKER_HOST
     - LOAD_BALANCER_URI=http://localhost:8080/baragon/v2/request
 
 baragonservice:
-  image: hubspot/baragonservice:0.1.11
+  image: hubspot/baragonservice:0.4.0
   net: host
   environment:
     - DOCKER_HOST
@@ -64,7 +65,7 @@ baragonservice:
     - BARAGON_UI_BASE=/baragon/v2
 
 baragonagent:
-  image: hubspot/baragonagent:0.1.11
+  image: hubspot/baragonagent:0.4.0
   net: host
   environment:
     NGINX_PORT: 80

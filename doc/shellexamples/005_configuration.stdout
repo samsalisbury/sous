@@ -1,5 +1,12 @@
 Request ID                                   Deploy ID                              TASK_HOST PORT0
-192.168.99.100>2222>repos>sous-server::left  0_0_2_9bdfc710bf324ae0be0f3e973e5afd8d localhost 31633
-192.168.99.100>2222>repos>sous-server::right 0_0_2_0afb8324c13c47068c2eb358eeaf88ff localhost 31456
-set Server to "http://192.168.99.100:31633"
-Server URL is: http://192.168.99.100:31633
+192.168.99.100>2222>repos>sous-server::right 0_0_2_02a8d2893fc34ae89584e5b85a74b12f localhost 31353
+192.168.99.100>2222>repos>sous-server::left  0_0_2_3873760e3cf24c16b8ae2ed1ec81f167 localhost 31059
+HTTP/1.1 404 Not Found
+Content-Type: text/plain; charset=utf-8
+X-Content-Type-Options: nosniff
+Date: Sat, 11 Feb 2017 00:55:29 GMT
+Content-Length: 19
+
+set Server to "http://192.168.99.100:31059"
+Server URL is: http://192.168.99.100:31059
+{"Servers":[]}
