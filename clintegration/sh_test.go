@@ -367,7 +367,7 @@ func TestShellLevelIntegration(t *testing.T) {
 	git push --tags
 
 	sous build
-	sous deploy -d -v -cluster left # We expect to see 'Sous is running ... in workstation mode' here:
+	sous deploy -cluster left # We expect to see 'Sous is running ... in workstation mode' here:
 	sous deploy -cluster right
 	unset SOUS_SERVER
 	unset SOUS_STATE_LOCATION
@@ -403,8 +403,11 @@ func TestShellLevelIntegration(t *testing.T) {
 	sous config Server "$serverURL"
 	echo "Server URL is:" $(sous config Server)
 
+	ETAG=$(curl -v http://192.168.99.100:$leftport/servers 2>&1 | sed -n '/Etag:/{s/.*: //; P; }')
+	echo $ETAG
 	sed "s/LEFTPORT/$leftport/; s/RIGHTPORT/$rightport/" < ~/templated-configs/servers.json > ~/servers.json
-	curl -X PUT "${serverURL}/servers" --data *~/servers.json
+	cat ~/servers.json
+	curl -v -X PUT -H "If-Match: ${ETAG//[$'\t\r\n ']}" -H "Content-Type: application/json" "${serverURL}/servers" --data "$(< ~/servers.json)"
 	curl "${serverURL}/servers"
 	`,
 		func(name string, res shelltest.Result, t *testing.T) {
@@ -426,7 +429,7 @@ func TestShellLevelIntegration(t *testing.T) {
 	git push --tags
 	sous init
 	sous build
-	sous deploy -cluster left -d -v
+	sous deploy -cluster left
 	`, defaultCheck)
 
 	//check :=

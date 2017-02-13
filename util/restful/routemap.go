@@ -1,7 +1,8 @@
-package server
+package restful
 
 import (
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 
 	"github.com/julienschmidt/httprouter"
@@ -95,6 +96,18 @@ func (rm *RouteMap) BuildRouter(grf func() Injector) http.Handler {
 	}
 
 	return r
+}
+
+// SingleExchanger returns a single exchanger for the given exchange factory
+// and injector factory. Can be useful in testing or trickier integrations.
+func (rm *RouteMap) SingleExchanger(factory ExchangeFactory, gf func() Injector) Exchanger {
+	r := httprouter.New()
+	w := httptest.NewRecorder()
+	rq := httptest.NewRequest("GET", "/", nil)
+
+	mh := rm.buildMetaHandler(r, gf)
+
+	return mh.injectedHandler(factory, w, rq, httprouter.Params{})
 }
 
 // KV (Key/Value) is a convenience type for PathFor

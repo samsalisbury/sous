@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/restful"
 )
 
 type (
@@ -24,7 +25,7 @@ type (
 )
 
 // Get implements Getable on StatusResource.
-func (*StatusResource) Get() Exchanger { return &StatusHandler{} }
+func (*StatusResource) Get() restful.Exchanger { return &StatusHandler{} }
 
 // Exchange implements the Handler interface.
 func (h *StatusHandler) Exchange() (interface{}, int) {

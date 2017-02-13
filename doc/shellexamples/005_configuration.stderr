@@ -16,18 +16,52 @@ bash-3.2$ until curl -I $serverURL; do
 > done
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0curl: (7) Failed to connect to 192.168.99.100 port 31734: Connection refused
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0curl: (7) Failed to connect to 192.168.99.100 port 31734: Connection refused
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0curl: (7) Failed to connect to 192.168.99.100 port 31734: Connection refused
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
   0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0    19    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
 bash-3.2$ sous config Server "$serverURL"
 bash-3.2$ echo "Server URL is:" $(sous config Server)
 bash-3.2$ 
+bash-3.2$ ETAG=$(curl -v http://192.168.99.100:$leftport/servers 2>&1 | sed -<tp://192.168.99.100:$leftport/servers 2>&1 | sed -n                          '/Etag:/{s/.*: //; P; }'<ort/servers 2>&1 | sed -n '/Etag:/{s/.*: //; P; }')                         
+bash-3.2$ echo $ETAG
 bash-3.2$ sed "s/LEFTPORT/$leftport/; s/RIGHTPORT/$rightport/" < ~/templated-<leftport/; s/RIGHTPORT/$rightport/" < ~/templated-c                         onfigs/servers.json > ~/s<ghtport/" < ~/templated-configs/servers.json > ~/se                         rvers.json
-bash-3.2$ curl -X PUT "${serverURL}/servers" --data *~/servers.json
+bash-3.2$ cat ~/servers.json
+bash-3.2$ curl -v -X PUT -H "If-Match: ${ETAG//[$'\t\r\n ']}" -H "Content-Typ< "If-Match: ${ETAG//[$'\t\r\n ']}" -H "Content-Type                         : application/json" "${se<r\n ']}" -H "Content-Type: application/json" "${ser                         verURL}/servers" --data "< application/json" "${serverURL}/servers" --data "$                         (< ~/servers.json)"
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100    15    0     0  100    15      0   4818 --:--:-- --:--:-- --:--:--  7500
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying 192.168.99.100...
+* TCP_NODELAY set
+* Connected to 192.168.99.100 (192.168.99.100) port 31734 (#0)
+> PUT /servers HTTP/1.1
+> Host: 192.168.99.100:31734
+> User-Agent: curl/7.51.0
+> Accept: */*
+> If-Match: g5VMZUpJRha40Z6CUDIfPQ==
+> Content-Type: application/json
+> Content-Length: 192
+> 
+} [192 bytes data]
+* upload completely sent off: 192 out of 192 bytes
+< HTTP/1.1 200 OK
+< Content-Length: 133
+< Content-Type: application/json
+< Etag: OCxsNLkIz2OI4NXjeggIMA==
+< Date: Mon, 13 Feb 2017 22:16:10 GMT
+< 
+{ [133 bytes data]
+* Curl_http_done: called premature == 0
+100   325  100   133  100   192   3667   5294 --:--:-- --:--:-- --:--:--  5333
+* Connection #0 to host 192.168.99.100 left intact
 bash-3.2$ curl "${serverURL}/servers"
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100    15  100    15    0     0   6465      0 --:--:-- --:--:-- --:--:--  7500
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100   133  100   133    0     0  95408      0 --:--:-- --:--:-- --:--:--  129k
 bash-3.2$ 
 bash-3.2$ 

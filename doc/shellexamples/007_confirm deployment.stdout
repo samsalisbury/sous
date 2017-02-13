@@ -1,4 +1,5 @@
 Using TASK_HOST and PORT0
-Request ID                                   Deploy ID                              TASK_HOST PORT0
-192.168.99.100>2222>repos>sous-server::left  0_0_2_3873760e3cf24c16b8ae2ed1ec81f167 localhost 31059
-192.168.99.100>2222>repos>sous-server::right 0_0_2_02a8d2893fc34ae89584e5b85a74b12f localhost 31353
+Request ID                                   Deploy ID                               TASK_HOST PORT0
+192.168.99.100>2222>repos>sous-demo::left    0_0_23_96bc0f59e60e4f28a2ab4ee4849d2224 localhost 31056
+192.168.99.100>2222>repos>sous-server::left  0_0_2_edb0cc53566f4e6a8ac47b8c1eeb92d1  localhost 31734
+192.168.99.100>2222>repos>sous-server::right 0_0_2_dd33824db63f4069914eaa214405a7e8  localhost 31936
