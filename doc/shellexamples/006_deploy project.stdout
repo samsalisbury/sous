@@ -1,5 +1,5 @@
 StateLocation: /Users/jlester/.local/share/sous/state
-Server: http://192.168.99.100:31734
+Server: http://192.168.99.100:31189
 SiblingURLs: {}
 BuildStateDir: ""
 Docker:
@@ -10,7 +10,7 @@ User:
   Name: test
   Email: test@test.com
 StateLocation: /Users/jlester/.local/share/sous/state
-Server: http://192.168.99.100:31734
+Server: http://192.168.99.100:31189
 SiblingURLs: {}
 BuildStateDir: ""
 Docker:
@@ -45,69 +45,6 @@ Deployments:
   (Sous)> running docker push 192.168.99.100:5000/192.168.99.100/2222/repos/sous-demo:b27658803a61a9fe538ef6ac063e9eddc454277f
   (Sous)> [recording "192.168.99.100:5000/192.168.99.100/2222/repos/sous-demo:0.0.23" as the docker name for "192.168.99.100/2222/repos/sous-demo,0.0.23+b27658803a61a9fe538ef6ac063e9eddc454277f"]
 Built: "192.168.99.100:5000/192.168.99.100/2222/repos/sous-demo:0.0.23"
-Elapsed: 1.961709316s
-  (Sous)> git version
-> git version 2.10.0
-
-  (Sous)> git config -l
-> credential.helper=osxkeychain
-core.sshcommand=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing749963590/home/bin/ssh_wrapper
-user.name=Integration Tester
-user.email=itester@opentable.com
-push.default=simple
-core.repositoryformatversion=0
-core.filemode=true
-core.bare=false
-core.logallrefupdates=true
-core.ignorecase=true
-core.precomposeunicode=true
-remote.origin.url=ssh://root@192.168.99.100:2222/repos/sous-demo
-remote.origin.fetch=+refs/heads/*:refs/remotes/origin/*
-branch.master.remote=origin
-branch.master.merge=refs/heads/master
-
-  (Sous)> git rev-parse --show-toplevel
-> /private/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing749963590/sous-demo
-
-  (Sous)> git ls-files --modified
-> 
-  (Sous)> git remote -v
-> origin	ssh://root@192.168.99.100:2222/repos/sous-demo (fetch)
-origin	ssh://root@192.168.99.100:2222/repos/sous-demo (push)
-
-  (Sous)> git ls-files --others --exclude-standard
-> 
-  (Sous)> git rev-list -n 1 HEAD
-> b27658803a61a9fe538ef6ac063e9eddc454277f
-
-  (Sous)> git log --date-order --tags --simplify-by-decoration --pretty=format:%H %aI %D
-> b27658803a61a9fe538ef6ac063e9eddc454277f 2017-01-25T14:40:24-08:00 HEAD -> master, tag: 0.0.23, origin/master, origin/HEAD
-f921f218e62722aed85e47696010660dbfa10ab0 2017-01-11T10:57:00-08:00 
-  (Sous)> git rev-parse --abbrev-ref HEAD
-> master
-
-  (Sous)> git ls-files
-> Dockerfile
-README.md
-customstring
-main.go
-set-version.sh
-templates/index.html.tmpl
-vendor/golang.org/x/tools/LICENSE
-vendor/golang.org/x/tools/PATENTS
-vendor/golang.org/x/tools/godoc/vfs/emptyvfs.go
-vendor/golang.org/x/tools/godoc/vfs/mapfs/mapfs.go
-vendor/golang.org/x/tools/godoc/vfs/namespace.go
-vendor/golang.org/x/tools/godoc/vfs/os.go
-vendor/golang.org/x/tools/godoc/vfs/vfs.go
-vendor/vendor.json
-vfs_templates.go
-
-  (Sous)> git describe --tags --abbrev=0 --always
-> 0.0.23
-
-  (Sous)> git rev-list -n 1 0.0.23
-> b27658803a61a9fe538ef6ac063e9eddc454277f
-
+Elapsed: 1.796678148s
 
 

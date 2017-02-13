@@ -6,5 +6,5 @@
 	git push --tags
 	sous init
 	sous build
-	sous deploy -cluster left -d -v
+	sous deploy -cluster left
 	

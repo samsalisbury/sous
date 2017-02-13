@@ -377,10 +377,6 @@ func TestShellLevelIntegration(t *testing.T) {
 			if len(res.Errs) > 0 {
 				t.Errorf("Trouble building GDM: \n\t%s", res.Errs)
 			}
-
-			if !res.Matches(`--author test <test@`) {
-				t.Errorf("SOUS_USER_NAME not used for local state updates")
-			}
 		})
 
 	// This is where regular use starts

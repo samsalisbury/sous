@@ -2,8 +2,8 @@
 bash-3.2$ cygnus -x 1 http://192.168.99.100:7099/singularity
 Using TASK_HOST and PORT0
 Request ID                                   Deploy ID                               TASK_HOST PORT0
-192.168.99.100>2222>repos>sous-demo::left    0_0_23_96bc0f59e60e4f28a2ab4ee4849d2224 localhost 31056
-192.168.99.100>2222>repos>sous-server::left  0_0_2_edb0cc53566f4e6a8ac47b8c1eeb92d1  localhost 31734
-192.168.99.100>2222>repos>sous-server::right 0_0_2_dd33824db63f4069914eaa214405a7e8  localhost 31936
+192.168.99.100>2222>repos>sous-server::left  0_0_2_6957bf659c05425bb0d15f278a37f747  localhost 31189
+192.168.99.100>2222>repos>sous-demo::left    0_0_23_cb9d365f2a974e0089fcdfa380e8d057 localhost 31165
+192.168.99.100>2222>repos>sous-server::right 0_0_2_2cb4aad96a3741a7970882f1174dc9b0  localhost 31149
 bash-3.2$ 
 bash-3.2$ 

@@ -3,7 +3,7 @@
 	git clone ssh://root@192.168.99.100:2222/repos/sous-server
 	pushd sous-server
 	export SOUS_USER_NAME=test SOUS_USER_EMAIL=test@test.com
-	export SOUS_SERVER= SOUS_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing749963590/gdm
+	export SOUS_SERVER= SOUS_STATE_LOCATION=/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing785712611/gdm
 
 	sous init
 	sous manifest get
@@ -27,7 +27,7 @@
 	git push --tags
 
 	sous build
-	sous deploy -d -v -cluster left # We expect to see 'Sous is running ... in workstation mode' here:
+	sous deploy -cluster left # We expect to see 'Sous is running ... in workstation mode' here:
 	sous deploy -cluster right
 	unset SOUS_SERVER
 	unset SOUS_STATE_LOCATION
