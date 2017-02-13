@@ -268,7 +268,7 @@ func buildShell(name string, t *testing.T) *shelltest.ShellTest {
 			}))
 
 	shell.WriteTo("../doc/shellexamples")
-	shell.DebugPrefix("shell")
+	//shell.DebugPrefix("shell") //useful especially if test timeout interrupts
 
 	return shell
 }
@@ -284,6 +284,9 @@ func TestShellLevelIntegration(t *testing.T) {
 
 	preconditions := shell.Block("Preconditions for CLI integration tests", `
 	go get github.com/nyarly/cygnus # cygnus lets us inspect Singularity for ports
+	if echo "{{.EnvDesc.SingularityURL}}" | egrep -q '192.168|127.0.0'; then
+		{{.TestDir}}/integration/test-registry/clean-singularity.sh {{.EnvDesc.SingularityURL}}
+	fi
 	cygnus -H {{.EnvDesc.SingularityURL}}
 	ls {{.TestDir}}/dev_support
 	`, func(name string, res shelltest.Result, t *testing.T) {
@@ -300,6 +303,7 @@ func TestShellLevelIntegration(t *testing.T) {
 		if !res.Matches("sous_linux") {
 			t.Error("No sous_linux available - run `make linux_build`")
 		}
+		t.Error("Early exit")
 	})
 
 	prologue := preconditions.Block("Test environment setup", `
