@@ -1,5 +1,18 @@
 
 bash-3.2$ go get github.com/nyarly/cygnus # cygnus lets us inspect Singularit</nyarly/cygnus # cygnus lets us inspect Singularity                          for ports
+bash-3.2$ if echo "http://192.168.99.100:7099/singularity" | egrep -q '192.16<92.168.99.100:7099/singularity" | egrep -q '192.168                         |127.0.0'; then
+> 
+deployment_builder_test.go  name_cache_test.go
+doc.go                      sh_test.go
+docker_helpers.go           test-config-templates/
+fixups.sh                   test-homedir/
+grafana-labels/             test-one/
+hello-labels/               test-registry/
+hello-server-labels/        test-three/
+integration_test.go         test-two/
+main_test.go                
+> /Users/jlester/golang/src/github.com/opentable/sous/integration/test-regist</github.com/opentable/sous/integration/test-registr                         y/clean-singularity.sh ht</integration/test-registry/clean-singularity.sh htt                         p://192.168.99.100:7099/s</clean-singularity.sh http://192.168.99.100:7099/si                         ngularity
+> fi
 bash-3.2$ cygnus -H http://192.168.99.100:7099/singularity
 bash-3.2$ ls /Users/jlester/golang/src/github.com/opentable/sous/dev_support
 sous_linux

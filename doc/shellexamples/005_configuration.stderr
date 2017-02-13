@@ -16,18 +16,6 @@ bash-3.2$ until curl -I $serverURL; do
 > done
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0curl: (7) Failed to connect to 192.168.99.100 port 31189: Connection refused
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0curl: (7) Failed to connect to 192.168.99.100 port 31189: Connection refused
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0curl: (7) Failed to connect to 192.168.99.100 port 31189: Connection refused
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0curl: (7) Failed to connect to 192.168.99.100 port 31189: Connection refused
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
   0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0    19    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
 bash-3.2$ sous config Server "$serverURL"
 bash-3.2$ echo "Server URL is:" $(sous config Server)
@@ -41,9 +29,9 @@ bash-3.2$ curl -v -X PUT -H "If-Match: ${ETAG//[$'\t\r\n ']}" -H "Content-Typ<
                                  Dload  Upload   Total   Spent    Left  Speed
   0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying 192.168.99.100...
 * TCP_NODELAY set
-* Connected to 192.168.99.100 (192.168.99.100) port 31189 (#0)
+* Connected to 192.168.99.100 (192.168.99.100) port 31150 (#0)
 > PUT /servers HTTP/1.1
-> Host: 192.168.99.100:31189
+> Host: 192.168.99.100:31150
 > User-Agent: curl/7.51.0
 > Accept: */*
 > If-Match: g5VMZUpJRha40Z6CUDIfPQ==
@@ -55,16 +43,16 @@ bash-3.2$ curl -v -X PUT -H "If-Match: ${ETAG//[$'\t\r\n ']}" -H "Content-Typ<
 < HTTP/1.1 200 OK
 < Content-Length: 133
 < Content-Type: application/json
-< Etag: AocjEEp0CT_mDyB4OMkhNg==
-< Date: Mon, 13 Feb 2017 22:51:50 GMT
+< Etag: ivi1RKTzngDfc5JmWouICQ==
+< Date: Mon, 13 Feb 2017 23:32:11 GMT
 < 
 { [133 bytes data]
 * Curl_http_done: called premature == 0
-100   325  100   133  100   192  12555  18125 --:--:-- --:--:-- --:--:-- 19200
+100   325  100   133  100   192   3703   5345 --:--:-- --:--:-- --:--:--  5485
 * Connection #0 to host 192.168.99.100 left intact
 bash-3.2$ curl "${serverURL}/servers"
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100   133  100   133    0     0  17014      0 --:--:-- --:--:-- --:--:-- 19000
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100   133  100   133    0     0   9251      0 --:--:-- --:--:-- --:--:--  9500
 bash-3.2$ 
 bash-3.2$ 

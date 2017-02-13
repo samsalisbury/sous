@@ -1,164 +1,19 @@
-package clintegration
+// +build integration
+
+package integration
 
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
-	"text/template"
 
 	"github.com/opentable/sous/dev_support/sous_qa_setup/desc"
 	"github.com/opentable/sous/util/shelltest"
-	"github.com/pkg/errors"
 )
-
-// XXX move to shelltest
-func TestShAssumptions(t *testing.T) {
-	log.SetFlags(log.Lshortfile)
-	shell, err := shelltest.NewShell(nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	res, err := shell.Run(`
-	cd /tmp
-	X=7
-	export CYGNUS=blackhole
-	echo $X
-	pwd
-	`)
-
-	if err != nil {
-		t.Fatalf("error: %v", err)
-	}
-	if !res.Matches(`7`) {
-		t.Errorf("No 7")
-	}
-	if !res.Matches(`/tmp`) {
-		t.Errorf("Not in /tmp")
-	}
-
-	res, err = shell.Run(`
-	echo $X
-	pwd
-	env
-	`)
-	if err != nil {
-		t.Fatalf("error: %v", err)
-	}
-	if !res.Matches(`7`) {
-		t.Errorf("No 7")
-	}
-	if !res.Matches(`/tmp`) {
-		t.Errorf("Not in /tmp")
-	}
-}
-
-func buildPath(exes ...string) (string, error) {
-	dirMap := map[string]struct{}{}
-
-	for _, name := range exes {
-		exePath, err := exec.LookPath(name)
-		if err != nil {
-			return "", err
-		}
-
-		dirMap[filepath.Dir(exePath)] = struct{}{}
-	}
-
-	dirs := []string{}
-	for path := range dirMap {
-		dirs = append(dirs, path)
-	}
-
-	return strings.Join(dirs, ":"), nil
-}
-
-func templateConfigs(sourceDir, targetDir string, configData templatedConfigs) error {
-	log.Printf("Templating %q -> %q.", sourceDir, targetDir)
-	var linkCount, templCount int
-	err := filepath.Walk(sourceDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-
-		if err != nil {
-			return err
-		}
-
-		if info.IsDir() {
-			return nil
-		}
-
-		f, err := os.Open(path)
-		if err != nil {
-			return errors.Wrap(err, "open")
-		}
-
-		if 0 != (info.Mode() & os.ModeSymlink) {
-			linkT, err := os.Readlink(path)
-			if err != nil {
-				return errors.Wrap(err, "readlink")
-			}
-			if filepath.IsAbs(linkT) {
-				linkT, err = filepath.Rel(sourceDir, linkT)
-				if err != nil {
-					return errors.Wrap(err, "Rel link")
-				}
-			}
-			linkName := filepath.Join(targetDir, info.Name())
-			linkCount++
-			return errors.Wrap(os.Symlink(linkT, linkName), "create link")
-		}
-
-		sourcePath, err := filepath.Rel(sourceDir, path)
-		if err != nil {
-			return errors.Wrap(err, "Rel file")
-		}
-
-		bytes, err := ioutil.ReadAll(f)
-		if err != nil {
-			return errors.Wrap(err, "read")
-		}
-
-		targetPath := filepath.Join(targetDir, sourcePath)
-		err = os.MkdirAll(filepath.Dir(targetPath), os.ModePerm)
-		if err != nil {
-			return errors.Wrap(err, "create dir")
-		}
-
-		target, err := os.Create(targetPath)
-		if err != nil {
-			return errors.Wrap(err, "create target")
-		}
-		defer target.Close()
-
-		tmpl, err := template.New(f.Name()).Parse(string(bytes))
-		if err != nil {
-			return errors.Wrap(err, "parse")
-		}
-
-		templCount++
-		return errors.Wrap(tmpl.Execute(target, configData), "execute")
-	})
-	log.Printf("Linked %d files, Templated %d files.", linkCount, templCount)
-	return err
-}
-
-func withHostEnv(hostEnvs []string, env map[string]string) map[string]string {
-	newEnv := make(map[string]string)
-	for _, k := range hostEnvs {
-		newEnv[k] = os.Getenv(k)
-	}
-	for k, v := range env {
-		newEnv[k] = v
-	}
-	return newEnv
-}
 
 type templatedConfigs struct {
 	desc.EnvDesc
@@ -200,7 +55,7 @@ func setupConfig(t *testing.T) templatedConfigs {
 
 	stateDir := filepath.Join(workdir, "gdm")
 
-	exePATH, err := buildPath("go", "git", "ssh", "cp")
+	exePATH, err := shelltest.BuildPath("go", "git", "ssh", "cp", "egrep", "bash")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -252,13 +107,13 @@ func buildShell(name string, t *testing.T) *shelltest.ShellTest {
 	cfg := setupConfig(t)
 
 	os.MkdirAll(cfg.Homedir, os.ModePerm)
-	err := templateConfigs(filepath.Join(cfg.TestDir, "integration/test-homedir"), cfg.Homedir, cfg)
+	err := shelltest.TemplateConfigs(filepath.Join(cfg.TestDir, "integration/test-homedir"), cfg.Homedir, cfg)
 	if err != nil {
 		t.Fatalf("Templating configuration files: %+v", err)
 	}
 
 	shell := shelltest.New(t, name, cfg,
-		withHostEnv([]string{"DOCKER_HOST", "DOCKER_TLS_VERIFY", "DOCKER_CERT_PATH"},
+		shelltest.WithHostEnv([]string{"DOCKER_HOST", "DOCKER_TLS_VERIFY", "DOCKER_CERT_PATH"},
 			map[string]string{
 				"HOME":       cfg.Homedir,
 				"XDG_CONFIG": cfg.XDGConfig,
@@ -303,7 +158,6 @@ func TestShellLevelIntegration(t *testing.T) {
 		if !res.Matches("sous_linux") {
 			t.Error("No sous_linux available - run `make linux_build`")
 		}
-		t.Error("Early exit")
 	})
 
 	prologue := preconditions.Block("Test environment setup", `

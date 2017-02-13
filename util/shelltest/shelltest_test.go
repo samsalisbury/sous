@@ -1,41 +1,47 @@
-// +build shelltesttest
-
 package shelltest
 
-import "testing"
+import (
+	"log"
+	"testing"
+)
 
-func TestShellTest(t *testing.T) {
-	sh := New(t)
+func TestShAssumptions(t *testing.T) {
+	log.SetFlags(log.Lshortfile)
+	shell, err := NewShell(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	simple := sh.Block("simple",
-		`echo testing`,
-		func(res Result, t *testing.T) {
-			if !res.Matches(`testing`) {
-				t.Error("no testing!")
-			}
-		})
+	res, err := shell.Run(`
+	cd /tmp
+	X=7
+	export CYGNUS=blackhole
+	echo $X
+	pwd
+	`)
 
-	fails := simple.Block("fails on purpose",
-		`false`,
-		func(res Result, t *testing.T) {
-			if res.Exit != 0 {
-				t.Error("I expected that")
-			}
-		})
-	fails.Block("shouldn't run",
-		`echo AMAZING`,
-		func(res Result, t *testing.T) {
-			panic("never happen")
-		})
+	if err != nil {
+		t.Fatalf("error: %v", err)
+	}
+	if !res.Matches(`7`) {
+		t.Errorf("No 7")
+	}
+	if !res.Matches(`/tmp`) {
+		t.Errorf("Not in /tmp")
+	}
 
-	simple.Block("failnow but keep going",
-		`echo whatever`,
-		func(res Result, t *testing.T) {
-			t.Fatal("can't be bothered")
-			panic("already failed")
-		})
-
-	simple.Block("safe home",
-		`echo $HOME`,
-		func(res Result, t *testing.T) {})
+	res, err = shell.Run(`
+	echo $X
+	pwd
+	env
+	`)
+	if err != nil {
+		t.Fatalf("error: %v", err)
+	}
+	if !res.Matches(`7`) {
+		t.Errorf("No 7")
+	}
+	if !res.Matches(`/tmp`) {
+		t.Errorf("Not in /tmp")
+	}
 }

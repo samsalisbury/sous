@@ -7,8 +7,8 @@ bash-3.2$ while [ $(cygnus -H http://192.168.99.100:7099/singularity | grep s<
 > done
 bash-3.2$ cygnus --env TASK_HOST --env PORT0 http://192.168.99.100:7099/singu<_HOST --env PORT0 http://192.168.99.100:7099/singul                         arity
 Request ID                                   Deploy ID                              TASK_HOST PORT0
-192.168.99.100>2222>repos>sous-server::left  0_0_2_6957bf659c05425bb0d15f278a37f747 localhost 31189
-192.168.99.100>2222>repos>sous-server::right 0_0_2_2cb4aad96a3741a7970882f1174dc9b0 localhost 31149
+192.168.99.100>2222>repos>sous-server::left  0_0_2_80f1c09f313d4d01bf8394dab3d22bac localhost 31150
+192.168.99.100>2222>repos>sous-server::right 0_0_2_ad83d36811684a919bfd46940f6cf0c8 localhost 31318
 bash-3.2$ 
 bash-3.2$ leftport=$(cygnus --env PORT0 http://192.168.99.100:7099/singularit< --env PORT0 http://192.168.99.100:7099/singularity                          | grep 'sous-server.*lef<8.99.100:7099/singularity | grep 'sous-server.*left                         ' | awk '{ print $3 }')
 bash-3.2$ rightport=$(cygnus --env PORT0 http://192.168.99.100:7099/singulari<s --env PORT0 http://192.168.99.100:7099/singularit                         y | grep 'sous-server.*ri<68.99.100:7099/singularity | grep 'sous-server.*rig                         ht' | awk '{ print $3 }')
@@ -19,29 +19,17 @@ bash-3.2$ until curl -I $serverURL; do
 > done
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0curl: (7) Failed to connect to 192.168.99.100 port 31189: Connection refused
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0curl: (7) Failed to connect to 192.168.99.100 port 31189: Connection refused
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0curl: (7) Failed to connect to 192.168.99.100 port 31189: Connection refused
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0curl: (7) Failed to connect to 192.168.99.100 port 31189: Connection refused
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
   0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0    19    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
 HTTP/1.1 404 Not Found
 Content-Type: text/plain; charset=utf-8
 X-Content-Type-Options: nosniff
-Date: Mon, 13 Feb 2017 22:51:50 GMT
+Date: Mon, 13 Feb 2017 23:32:11 GMT
 Content-Length: 19
 
 bash-3.2$ sous config Server "$serverURL"
-set Server to "http://192.168.99.100:31189"
+set Server to "http://192.168.99.100:31150"
 bash-3.2$ echo "Server URL is:" $(sous config Server)
-Server URL is: http://192.168.99.100:31189
+Server URL is: http://192.168.99.100:31150
 bash-3.2$ 
 bash-3.2$ ETAG=$(curl -v http://192.168.99.100:$leftport/servers 2>&1 | sed -<tp://192.168.99.100:$leftport/servers 2>&1 | sed -n                          '/Etag:/{s/.*: //; P; }'<ort/servers 2>&1 | sed -n '/Etag:/{s/.*: //; P; }')                         
 bash-3.2$ echo $ETAG
@@ -52,11 +40,11 @@ bash-3.2$ cat ~/servers.json
   "Servers": [
     {
       "ClusterName": "left",
-      "URL": "http://192.168.99.100:31189"
+      "URL": "http://192.168.99.100:31150"
     },
     {
       "ClusterName": "right",
-      "URL": "http://192.168.99.100:31149"
+      "URL": "http://192.168.99.100:31318"
     }
   ]
 }
@@ -65,9 +53,9 @@ bash-3.2$ curl -v -X PUT -H "If-Match: ${ETAG//[$'\t\r\n ']}" -H "Content-Typ<
                                  Dload  Upload   Total   Spent    Left  Speed
   0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying 192.168.99.100...
 * TCP_NODELAY set
-* Connected to 192.168.99.100 (192.168.99.100) port 31189 (#0)
+* Connected to 192.168.99.100 (192.168.99.100) port 31150 (#0)
 > PUT /servers HTTP/1.1
-> Host: 192.168.99.100:31189
+> Host: 192.168.99.100:31150
 > User-Agent: curl/7.51.0
 > Accept: */*
 > If-Match: g5VMZUpJRha40Z6CUDIfPQ==
@@ -79,18 +67,18 @@ bash-3.2$ curl -v -X PUT -H "If-Match: ${ETAG//[$'\t\r\n ']}" -H "Content-Typ<
 < HTTP/1.1 200 OK
 < Content-Length: 133
 < Content-Type: application/json
-< Etag: AocjEEp0CT_mDyB4OMkhNg==
-< Date: Mon, 13 Feb 2017 22:51:50 GMT
+< Etag: ivi1RKTzngDfc5JmWouICQ==
+< Date: Mon, 13 Feb 2017 23:32:11 GMT
 < 
 { [133 bytes data]
 * Curl_http_done: called premature == 0
-100   325  100   133  100   192  12555  18125 --:--:-- --:--:-- --:--:-- 19200
+100   325  100   133  100   192   3703   5345 --:--:-- --:--:-- --:--:--  5485
 * Connection #0 to host 192.168.99.100 left intact
-{"Servers":[{"ClusterName":"left","URL":"http://192.168.99.100:31189"},{"ClusterName":"right","URL":"http://192.168.99.100:31149"}]}
+{"Servers":[{"ClusterName":"left","URL":"http://192.168.99.100:31150"},{"ClusterName":"right","URL":"http://192.168.99.100:31318"}]}
 bash-3.2$ curl "${serverURL}/servers"
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100   133  100   133    0     0  17014      0 --:--:-- --:--:-- --:--:-- 19000
-{"Servers":[{"ClusterName":"left","URL":"http://192.168.99.100:31189"},{"ClusterName":"right","URL":"http://192.168.99.100:31149"}]}
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100   133  100   133    0     0   9251      0 --:--:-- --:--:-- --:--:--  9500
+{"Servers":[{"ClusterName":"left","URL":"http://192.168.99.100:31150"},{"ClusterName":"right","URL":"http://192.168.99.100:31318"}]}
 bash-3.2$ 
 bash-3.2$ 
