@@ -40,18 +40,24 @@ func setupConfig(t *testing.T) templatedConfigs {
 		t.Fatal("Incomplete QA env description. Re-run sous_qa_setup?")
 	}
 
-	workdir, err := ioutil.TempDir("", "sous-cli-testing")
+	realworkdir, err := ioutil.TempDir("", "sous-cli-testing")
 	if err != nil {
 		t.Fatalf("Couldn't create temporary working directory: %s", err)
 	}
+
+	workdir := "/tmp/sous-work"
+
+	_, err = os.Stat(workdir)
+	if !os.IsExist(err) {
+		os.Remove(workdir)
+	}
+	os.Symlink(realworkdir, workdir)
 
 	sousExeDir := filepath.Join(workdir, "sous", "bin")
 	sousExe := filepath.Join(sousExeDir, "sous")
 	if out, err := exec.Command("go", "build", "-o", sousExe, "..").CombinedOutput(); err != nil {
 		t.Fatal(err, string(out))
 	}
-
-	//defer os.RemoveAll(workdir)
 
 	stateDir := filepath.Join(workdir, "gdm")
 
@@ -214,9 +220,8 @@ func TestShellLevelIntegration(t *testing.T) {
 	cp {{.TestDir}}/dev_support/$(readlink {{.TestDir}}/dev_support/sous_linux) .
 	cp {{.TestDir}}/integration/test-registry/docker-registry/testing.crt docker.crt
 
-	ls -la
+	ls -a
 	ssh-keyscan -p 2222 {{.GitSSH}} > known_hosts
-	cat known_hosts
 
 	git add key_sous@example.com known_hosts sous
 	git commit -am "Adding ephemeral files"

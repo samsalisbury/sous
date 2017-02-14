@@ -1,37 +1,52 @@
 
-bash-3.2$ # This is kind of a hack - in normal operation, Sous would block un< a hack - in normal operation, Sous would block unt                         il its
-bash-3.2$ # services had been accepted, but when bootstrapping, we need to wa<en accepted, but when bootstrapping, we need to wai                         t for them
-bash-3.2$ # to come up.
-bash-3.2$ while [ $(cygnus -H http://192.168.99.100:7099/singularity | grep s<-H http://192.168.99.100:7099/singularity | grep so                         us-server | wc -l) -lt 2 <099/singularity | grep sous-server | wc -l) -lt 2 ]                         ; do
->   sleep 0.1
-> done
-bash-3.2$ cygnus --env TASK_HOST --env PORT0 http://192.168.99.100:7099/singu<_HOST --env PORT0 http://192.168.99.100:7099/singul                         arity
+bash-3.2$ # This is kind of a hack - in normal operation, Sous would block un< a hack - in normal operation, Sous would block unt                         il its
+bash-3.2$ # services had been accepted, but when bootstrapping, we need to wa<en accepted, but when bootstrapping, we need to wai                         t for them
+bash-3.2$ # to come up.
+bash-3.2$ while [ $(cygnus -H http://192.168.99.100:7099/singularity | grep s<-H http://192.168.99.100:7099/singularity | grep so                         us-server | wc -l) -lt 2 <099/singularity | grep sous-server | wc -l) -lt 2 ]                         ; do
+>   sleep 0.1
+> done
+bash-3.2$ cygnus --env TASK_HOST --env PORT0 http://192.168.99.100:7099/singu<_HOST --env PORT0 http://192.168.99.100:7099/singul                         arity
 bash-3.2$ 
-bash-3.2$ leftport=$(cygnus --env PORT0 http://192.168.99.100:7099/singularit< --env PORT0 http://192.168.99.100:7099/singularity                          | grep 'sous-server.*lef<8.99.100:7099/singularity | grep 'sous-server.*left                         ' | awk '{ print $3 }')
-bash-3.2$ rightport=$(cygnus --env PORT0 http://192.168.99.100:7099/singulari<s --env PORT0 http://192.168.99.100:7099/singularit                         y | grep 'sous-server.*ri<68.99.100:7099/singularity | grep 'sous-server.*rig                         ht' | awk '{ print $3 }')
-bash-3.2$ serverURL=http://192.168.99.100:$leftport
+bash-3.2$ leftport=$(cygnus --env PORT0 http://192.168.99.100:7099/singularit< --env PORT0 http://192.168.99.100:7099/singularity                          | grep 'sous-server.*lef<8.99.100:7099/singularity | grep 'sous-server.*left                         ' | awk '{ print $3 }')
+bash-3.2$ rightport=$(cygnus --env PORT0 http://192.168.99.100:7099/singulari<s --env PORT0 http://192.168.99.100:7099/singularit                         y | grep 'sous-server.*ri<68.99.100:7099/singularity | grep 'sous-server.*rig                         ht' | awk '{ print $3 }')
+bash-3.2$ serverURL=http://192.168.99.100:$leftport
 bash-3.2$ 
-bash-3.2$ until curl -I $serverURL; do
->   sleep 0.1
-> done
+bash-3.2$ until curl -I $serverURL; do
+>   sleep 0.1
+> done
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0curl: (7) Failed to connect to 192.168.99.100 port 31225: Connection refused
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0curl: (7) Failed to connect to 192.168.99.100 port 31225: Connection refused
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0curl: (7) Failed to connect to 192.168.99.100 port 31225: Connection refused
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0curl: (7) Failed to connect to 192.168.99.100 port 31225: Connection refused
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0curl: (7) Failed to connect to 192.168.99.100 port 31225: Connection refused
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
   0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0    19    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
-bash-3.2$ sous config Server "$serverURL"
-bash-3.2$ echo "Server URL is:" $(sous config Server)
+bash-3.2$ sous config Server "$serverURL"
+bash-3.2$ echo "Server URL is:" $(sous config Server)
 bash-3.2$ 
-bash-3.2$ ETAG=$(curl -v http://192.168.99.100:$leftport/servers 2>&1 | sed -<tp://192.168.99.100:$leftport/servers 2>&1 | sed -n                          '/Etag:/{s/.*: //; P; }'<ort/servers 2>&1 | sed -n '/Etag:/{s/.*: //; P; }')                         
-bash-3.2$ echo $ETAG
-bash-3.2$ sed "s/LEFTPORT/$leftport/; s/RIGHTPORT/$rightport/" < ~/templated-<leftport/; s/RIGHTPORT/$rightport/" < ~/templated-c                         onfigs/servers.json > ~/s<ghtport/" < ~/templated-configs/servers.json > ~/se                         rvers.json
-bash-3.2$ cat ~/servers.json
-bash-3.2$ curl -v -X PUT -H "If-Match: ${ETAG//[$'\t\r\n ']}" -H "Content-Typ< "If-Match: ${ETAG//[$'\t\r\n ']}" -H "Content-Type                         : application/json" "${se<r\n ']}" -H "Content-Type: application/json" "${ser                         verURL}/servers" --data "< application/json" "${serverURL}/servers" --data "$                         (< ~/servers.json)"
+bash-3.2$ ETAG=$(curl -v http://192.168.99.100:$leftport/servers 2>&1 | sed -<tp://192.168.99.100:$leftport/servers 2>&1 | sed -n                          '/Etag:/{s/.*: //; P; }'<ort/servers 2>&1 | sed -n '/Etag:/{s/.*: //; P; }')                         
+bash-3.2$ echo $ETAG
+bash-3.2$ sed "s/LEFTPORT/$leftport/; s/RIGHTPORT/$rightport/" < ~/templated-<leftport/; s/RIGHTPORT/$rightport/" < ~/templated-c                         onfigs/servers.json > ~/s<ghtport/" < ~/templated-configs/servers.json > ~/se                         rvers.json
+bash-3.2$ cat ~/servers.json
+bash-3.2$ curl -v -X PUT -H "If-Match: ${ETAG//[$'\t\r\n ']}" -H "Content-Typ< "If-Match: ${ETAG//[$'\t\r\n ']}" -H "Content-Type                         : application/json" "${se<r\n ']}" -H "Content-Type: application/json" "${ser                         verURL}/servers" --data "< application/json" "${serverURL}/servers" --data "$                         (< ~/servers.json)"
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
   0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying 192.168.99.100...
 * TCP_NODELAY set
-* Connected to 192.168.99.100 (192.168.99.100) port 31150 (#0)
+* Connected to 192.168.99.100 (192.168.99.100) port 31225 (#0)
 > PUT /servers HTTP/1.1
-> Host: 192.168.99.100:31150
+> Host: 192.168.99.100:31225
 > User-Agent: curl/7.51.0
 > Accept: */*
 > If-Match: g5VMZUpJRha40Z6CUDIfPQ==
@@ -43,16 +58,16 @@ bash-3.2$ curl -v -X PUT -H "If-Match: ${ETAG//[$'\t\r\n ']}" -H "Content-Typ<
 < HTTP/1.1 200 OK
 < Content-Length: 133
 < Content-Type: application/json
-< Etag: ivi1RKTzngDfc5JmWouICQ==
-< Date: Mon, 13 Feb 2017 23:32:11 GMT
+< Etag: TBKoNBD8LP7psRkF4aAZwg==
+< Date: Tue, 14 Feb 2017 00:13:46 GMT
 < 
 { [133 bytes data]
 * Curl_http_done: called premature == 0
-100   325  100   133  100   192   3703   5345 --:--:-- --:--:-- --:--:--  5485
+100   325  100   133  100   192   4600   6641 --:--:-- --:--:-- --:--:--  6857
 * Connection #0 to host 192.168.99.100 left intact
-bash-3.2$ curl "${serverURL}/servers"
+bash-3.2$ curl "${serverURL}/servers"
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100   133  100   133    0     0   9251      0 --:--:-- --:--:-- --:--:--  9500
-bash-3.2$ 
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100   133  100   133    0     0  55648      0 --:--:-- --:--:-- --:--:-- 66500
+bash-3.2$ 
 bash-3.2$ 

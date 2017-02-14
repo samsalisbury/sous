@@ -1,68 +1,67 @@
 
-bash-3.2$ sous config
-bash-3.2$ cat ~/.config/sous/config.yaml
-bash-3.2$ git clone ssh://root@192.168.99.100:2222/repos/sous-server
+bash-3.2$ sous config
+bash-3.2$ cat ~/.config/sous/config.yaml
+bash-3.2$ git clone ssh://root@192.168.99.100:2222/repos/sous-server
 Cloning into 'sous-server'...
 Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
-bash-3.2$ pushd sous-server
-bash-3.2$ export SOUS_USER_NAME=test SOUS_USER_EMAIL=test@test.com
-bash-3.2$ export SOUS_SERVER= SOUS_STATE_LOCATION=/var/folders/sp/wllf_wh92p7<R= SOUS_STATE_LOCATION=/var/folders/sp/wllf_wh92p72                         5fl4vz92mrn16vkfds/T/sous<r/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-                         cli-testing893243054/gdm
+bash-3.2$ pushd sous-server
+bash-3.2$ export SOUS_USER_NAME=test SOUS_USER_EMAIL=test@test.com
+bash-3.2$ export SOUS_SERVER= SOUS_STATE_LOCATION=/tmp/sous-work/gdm
 bash-3.2$ 
-bash-3.2$ sous init
+bash-3.2$ sous init
 warn: No server set, Sous is running in server or workstation mode.
 warn: Configure a server like this: sous config server http://some.sous.server
-warn: Using local state stored at /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing893243054/gdm
-bash-3.2$ sous manifest get
+warn: Using local state stored at /tmp/sous-work/gdm
+bash-3.2$ sous manifest get
 warn: No server set, Sous is running in server or workstation mode.
 warn: Configure a server like this: sous config server http://some.sous.server
-warn: Using local state stored at /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing893243054/gdm
-bash-3.2$ sous manifest set < ~/templated-configs/sous-server.yaml
+warn: Using local state stored at /tmp/sous-work/gdm
+bash-3.2$ sous manifest set < ~/templated-configs/sous-server.yaml
 warn: No server set, Sous is running in server or workstation mode.
 warn: Configure a server like this: sous config server http://some.sous.server
-warn: Using local state stored at /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing893243054/gdm
-bash-3.2$ sous manifest get # demonstrating this got to GDM
+warn: Using local state stored at /tmp/sous-work/gdm
+bash-3.2$ sous manifest get # demonstrating this got to GDM
 warn: No server set, Sous is running in server or workstation mode.
 warn: Configure a server like this: sous config server http://some.sous.server
-warn: Using local state stored at /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing893243054/gdm
+warn: Using local state stored at /tmp/sous-work/gdm
 bash-3.2$ 
-bash-3.2$ # Last minute config
-bash-3.2$ cat Dockerfile
-bash-3.2$ cp ~/dot-ssh/git_pubkey_rsa key_sous@example.com
-bash-3.2$ cp /Users/jlester/golang/src/github.com/opentable/sous/dev_support/</golang/src/github.com/opentable/sous/dev_support/$                         (readlink /Users/jlester/<ntable/sous/dev_support/$(readlink /Users/jlester/g                         olang/src/github.com/open<readlink /Users/jlester/golang/src/github.com/opent                         able/sous/dev_support/sou<lang/src/github.com/opentable/sous/dev_support/sous                         _linux) .
-bash-3.2$ cp /Users/jlester/golang/src/github.com/opentable/sous/integration/</golang/src/github.com/opentable/sous/integration/t                         est-registry/docker-regis<ntable/sous/integration/test-registry/docker-regist                         ry/testing.crt docker.crt
+bash-3.2$ # Last minute config
+bash-3.2$ cat Dockerfile
+bash-3.2$ cp ~/dot-ssh/git_pubkey_rsa key_sous@example.com
+bash-3.2$ cp /Users/jlester/golang/src/github.com/opentable/sous/dev_support/</golang/src/github.com/opentable/sous/dev_support/$                         (readlink /Users/jlester/<ntable/sous/dev_support/$(readlink /Users/jlester/g                         olang/src/github.com/open<readlink /Users/jlester/golang/src/github.com/opent                         able/sous/dev_support/sou<lang/src/github.com/opentable/sous/dev_support/sous                         _linux) .
+bash-3.2$ cp /Users/jlester/golang/src/github.com/opentable/sous/integration/</golang/src/github.com/opentable/sous/integration/t                         est-registry/docker-regis<ntable/sous/integration/test-registry/docker-regist                         ry/testing.crt docker.crt
 bash-3.2$ 
-bash-3.2$ ls -la
-bash-3.2$ ssh-keyscan -p 2222 192.168.99.100 > known_hosts
+bash-3.2$ ls -a
+bash-3.2$ ssh-keyscan -p 2222 192.168.99.100 > known_hosts
 # 192.168.99.100:2222 SSH-2.0-OpenSSH_7.2p2-hpn14v4
 # 192.168.99.100:2222 SSH-2.0-OpenSSH_7.2p2-hpn14v4
 # 192.168.99.100:2222 SSH-2.0-OpenSSH_7.2p2-hpn14v4
-bash-3.2$ cat known_hosts
 bash-3.2$ 
-bash-3.2$ git add key_sous@example.com known_hosts sous
-bash-3.2$ git commit -am "Adding ephemeral files"
-bash-3.2$ git tag -am "0.0.2" 0.0.2
-bash-3.2$ git push
+bash-3.2$ git add key_sous@example.com known_hosts sous
+bash-3.2$ git commit -am "Adding ephemeral files"
+bash-3.2$ git tag -am "0.0.2" 0.0.2
+bash-3.2$ git push
 Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
 To ssh://192.168.99.100:2222/repos/sous-server
-   bdfdd3f..865d723  master -> master
-bash-3.2$ git push --tags
+   bdfdd3f..06cb25c  master -> master
+bash-3.2$ git push --tags
 Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
 To ssh://192.168.99.100:2222/repos/sous-server
  * [new tag]         0.0.2 -> 0.0.2
 bash-3.2$ 
-bash-3.2$ sous build
+bash-3.2$ sous build
 warn: build may not be deployable in all clusters due to advisories:
   dirty workspace
-bash-3.2$ sous deploy -cluster left # We expect to see 'Sous is running ... i<ter left # We expect to see 'Sous is running ... in                          workstation mode' here:
+bash-3.2$ sous deploy -cluster left # We expect to see 'Sous is running ... i<ter left # We expect to see 'Sous is running ... in                          workstation mode' here:
 warn: No server set, Sous is running in server or workstation mode.
 warn: Configure a server like this: sous config server http://some.sous.server
-warn: Using local state stored at /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing893243054/gdm
-bash-3.2$ sous deploy -cluster right
+warn: Using local state stored at /tmp/sous-work/gdm
+bash-3.2$ sous deploy -cluster right
 warn: No server set, Sous is running in server or workstation mode.
 warn: Configure a server like this: sous config server http://some.sous.server
-warn: Using local state stored at /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing893243054/gdm
-bash-3.2$ unset SOUS_SERVER
-bash-3.2$ unset SOUS_STATE_LOCATION
-bash-3.2$ popd
-bash-3.2$ 
+warn: Using local state stored at /tmp/sous-work/gdm
+bash-3.2$ unset SOUS_SERVER
+bash-3.2$ unset SOUS_STATE_LOCATION
+bash-3.2$ popd
+bash-3.2$ 
 bash-3.2$ 

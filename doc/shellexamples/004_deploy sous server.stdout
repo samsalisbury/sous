@@ -11,7 +11,7 @@ User:
   Email: ""
 Docker:
   RegistryHost: 192.168.99.100:5000
-/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing893243054/sous-server /var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing893243054
+/tmp/sous-work/sous-server /tmp/sous-work
 Source: 192.168.99.100/2222/repos/sous-server
 Owners: []
 Kind: http-service
@@ -100,34 +100,30 @@ RUN go install -v
 # Run sous server.
 # NOTE: You must have set PORT0, GDM_REPO
 CMD /go/bin/sous-server
-total 22944
-drwxr-xr-x  9 jlester 513      306 Feb 13 15:31 .
-drwx------  6 jlester 513      204 Feb 13 15:31 ..
-drwxr-xr-x 12 jlester 513      408 Feb 13 15:31 .git
--rw-r--r--  1 jlester 513      420 Feb 13 15:31 Dockerfile
--rw-r--r--  1 jlester 513      514 Feb 13 15:31 docker.crt
--rw-------  1 jlester 513     1679 Feb 13 15:31 key_sous@example.com
--rw-r--r--  1 jlester 513     1780 Feb 13 15:31 main.go
--rwxr-xr-x  1 jlester 513 23473856 Feb 13 15:31 sous
--rw-r--r--  1 jlester 513      518 Feb 13 15:31 sous-server.yaml
-[192.168.99.100]:2222 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIErSFFqLuDLJ+PtdMJn/20B6e8mMnG/80B2Ch/SXGOPY
-[192.168.99.100]:2222 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDGLdmsfaacGOlTODNkKwNI4ymH/bg0PUoC7qGNI9zE3/ul2bh9dmnFw+FME9tpPVra7sVLoslBy84uKHquA6EE7WzsPgUoifqgK4ph8z5NdnXS3Q3TL1KibnIBjuwFW6pzf3gvxd/uo1HXe9U+vXelaAjdeo2zItB4MsI65GH6PeyQQ/qkDIFDP/h2tR6JlPUrxascHgnAavnpSFMonaayayHVXrcDAjsYx5uiMukDCbPvUDwLeNiiPVXXUzxLlKt4JC1BCIn2VpdAH9SYf29moaweqqPmOPJNBZNTb8O1DzcbO5PU5/6IFjkXumDPg/XBinCapq0LKTnmAblclOa3
-[192.168.99.100]:2222 ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGaEJ1MUZDakT0fjtNIrHqNH/oKQwQ9hQn3qKu9Ge6kDxnrJNTLrs+zSSN80joiQPW3YqLgf8xANdcA8Gbve1vA=
-[master 865d723] Adding ephemeral files
+.
+..
+.git
+Dockerfile
+docker.crt
+key_sous@example.com
+main.go
+sous
+sous-server.yaml
+[master 06cb25c] Adding ephemeral files
  3 files changed, 30 insertions(+)
  create mode 100644 key_sous@example.com
  create mode 100644 known_hosts
  create mode 100755 sous
-  (Sous)> running docker build -t 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2 -t 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:865d723f52ce711c1db939f12fe4a3d451398b18 -
+  (Sous)> running docker build -t 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2 -t 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:06cb25c0ad10b4ead8d7da256465fee28f4fc3c1 -
   (Sous)> running docker push 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2
-  (Sous)> running docker push 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:865d723f52ce711c1db939f12fe4a3d451398b18
-  (Sous)> [recording "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2" as the docker name for "192.168.99.100/2222/repos/sous-server,0.0.2+865d723f52ce711c1db939f12fe4a3d451398b18"]
+  (Sous)> running docker push 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:06cb25c0ad10b4ead8d7da256465fee28f4fc3c1
+  (Sous)> [recording "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2" as the docker name for "192.168.99.100/2222/repos/sous-server,0.0.2+06cb25c0ad10b4ead8d7da256465fee28f4fc3c1"]
 Built: "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2"
 Advisories:
   dirty workspace
-Elapsed: 715.020637ms
+Elapsed: 787.832301ms
 
 
 
 
-/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing893243054
+/tmp/sous-work

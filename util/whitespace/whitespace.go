@@ -3,6 +3,7 @@
 package whitespace
 
 import (
+	"bytes"
 	"fmt"
 	"regexp"
 	"strings"
@@ -49,11 +50,14 @@ func SplitN(s string, n int) []string {
 // the code.
 func CleanWS(doc string) string {
 	lines := strings.Split(doc, "\n")
-	if len(lines) < 2 {
+	if len(lines) < 1 {
 		return doc
 	}
+	if len(lines) == 1 {
+		return strings.TrimSpace(lines[0])
+	}
 	for {
-		for len(lines[0]) == 0 {
+		for len(lines) > 0 && len(lines[0]) == 0 {
 			lines = lines[1:]
 		}
 
@@ -62,6 +66,10 @@ func CleanWS(doc string) string {
 		first := lines[0]
 
 		indent := first[0]
+
+		if bytes.IndexByte([]byte(" \t\v\n\r"), indent) == -1 {
+			return strings.Join(lines, "\n")
+		}
 
 		indentCount := 1
 		for idx := range lines {
@@ -72,6 +80,7 @@ func CleanWS(doc string) string {
 			if indent != lines[idx][0] {
 				return strings.Join(lines, "\n")
 			}
+			indentCount++
 			tryLines = append(tryLines, lines[idx][1:])
 		}
 		if indentCount < 2 {

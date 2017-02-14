@@ -1,18 +1,18 @@
 
-bash-3.2$ git clone ssh://root@192.168.99.100:2222/repos/gdm
+bash-3.2$ git clone ssh://root@192.168.99.100:2222/repos/gdm
 Cloning into 'gdm'...
 Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
 warning: You appear to have cloned an empty repository.
-bash-3.2$ cp ~/templated-configs/defs.yaml gdm/defs.yaml
-bash-3.2$ cat gdm/defs.yaml
-bash-3.2$ pushd gdm
-bash-3.2$ cat ~/.config/git/config >> .git/config # Eh?
-bash-3.2$ git add defs.yaml
-bash-3.2$ git commit -am "Adding defs.yaml"
-bash-3.2$ git push
+bash-3.2$ cp ~/templated-configs/defs.yaml gdm/defs.yaml
+bash-3.2$ cat gdm/defs.yaml
+bash-3.2$ pushd gdm
+bash-3.2$ cat ~/.config/git/config >> .git/config # Eh?
+bash-3.2$ git add defs.yaml
+bash-3.2$ git commit -am "Adding defs.yaml"
+bash-3.2$ git push
 Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
 To ssh://192.168.99.100:2222/repos/gdm
  * [new branch]      master -> master
-bash-3.2$ popd
-bash-3.2$ 
+bash-3.2$ popd
+bash-3.2$ 
 bash-3.2$ 
