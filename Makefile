@@ -75,7 +75,7 @@ install_build_tools:
 	go get github.com/nyarly/engulf
 
 
-linux_build: artifacts/$(LINUX_RELEASE_DIR)/sous
+linux-build: artifacts/$(LINUX_RELEASE_DIR)/sous
 	ln -srf $< dev_support/sous_linux
 
 semvertagchk:
@@ -104,7 +104,7 @@ test-gofmt:
 test-unit:
 	go test $(TEST_VERBOSE) ./...
 
-test-integration: test-setup
+test-integration: test-setup linux-build
 	SOUS_QA_DESC=$(QA_DESC) go test $(TEST_VERBOSE) ./integration --tags=integration
 
 test-setup:  sous_qa_setup
