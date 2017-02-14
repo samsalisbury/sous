@@ -119,12 +119,11 @@ func buildShell(name string, t *testing.T) *shelltest.ShellTest {
 	}
 
 	shell := shelltest.New(t, name, cfg,
-		shelltest.WithHostEnv([]string{"DOCKER_HOST", "DOCKER_TLS_VERIFY", "DOCKER_CERT_PATH"},
+		shelltest.WithHostEnv([]string{"DOCKER_HOST", "DOCKER_TLS_VERIFY", "DOCKER_CERT_PATH", "GOROOT"},
 			map[string]string{
 				"HOME":       cfg.Homedir,
 				"XDG_CONFIG": cfg.XDGConfig,
 				"GIT_SSH":    cfg.SSHWrapper,
-				"GOROOT":     cfg.GoPath[0],
 				"GOPATH":     strings.Join(cfg.GoPath, ":"),
 				"PATH":       strings.Join(cfg.ShellPath, ":"),
 			}))
