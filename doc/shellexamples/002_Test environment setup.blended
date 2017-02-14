@@ -12,6 +12,7 @@ PWD=/Users/jlester/golang/src/github.com/opentable/sous
 SHLVL=1
 HOME=/tmp/sous-work/home
 DOCKER_CERT_PATH=/Users/jlester/.docker/machine/machines/default
+GOROOT=
 XDG_CONFIG=/tmp/sous-work/home/dot-config
 GOPATH=/tmp/sous-work/home/go:/Users/jlester/golang
 _=/usr/bin/env

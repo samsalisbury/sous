@@ -144,7 +144,9 @@ func TestShellLevelIntegration(t *testing.T) {
 	}
 
 	preconditions := shell.Block("Preconditions for CLI integration tests", `
-	mkdir -p $GOROOT
+	if [ -n "$GOROOT" ]; then
+		mkdir -p $GOROOT
+	fi
 	go get github.com/nyarly/cygnus # cygnus lets us inspect Singularity for ports
 	if echo "{{.EnvDesc.SingularityURL}}" | egrep -q '192.168|127.0.0'; then
 		{{.TestDir}}/integration/test-registry/clean-singularity.sh {{.EnvDesc.SingularityURL}}

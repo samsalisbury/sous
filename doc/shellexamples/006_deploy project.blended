@@ -1,7 +1,7 @@
 
 bash-3.2$ cat $XDG_CONFIG/sous/config.yaml
 StateLocation: /Users/jlester/.local/share/sous/state
-Server: http://192.168.99.100:31354
+Server: http://192.168.99.100:31386
 SiblingURLs: {}
 BuildStateDir: ""
 Docker:
@@ -13,7 +13,7 @@ User:
   Email: test@test.com
 bash-3.2$ sous config
 StateLocation: /Users/jlester/.local/share/sous/state
-Server: http://192.168.99.100:31354
+Server: http://192.168.99.100:31386
 SiblingURLs: {}
 BuildStateDir: ""
 Docker:
@@ -59,7 +59,7 @@ bash-3.2$ sous build
   (Sous)> running docker push 192.168.99.100:5000/192.168.99.100/2222/repos/sous-demo:b27658803a61a9fe538ef6ac063e9eddc454277f
   (Sous)> [recording "192.168.99.100:5000/192.168.99.100/2222/repos/sous-demo:0.0.23" as the docker name for "192.168.99.100/2222/repos/sous-demo,0.0.23+b27658803a61a9fe538ef6ac063e9eddc454277f"]
 Built: "192.168.99.100:5000/192.168.99.100/2222/repos/sous-demo:0.0.23"
-Elapsed: 1.928713107s
+Elapsed: 2.020921358s
 bash-3.2$ sous deploy -cluster left
 
 
