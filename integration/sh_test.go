@@ -154,7 +154,7 @@ func TestShellLevelIntegration(t *testing.T) {
 		if len(res.Errs) > 0 {
 			t.Errorf("Error in %s: \n\t%s", name, res.Errs)
 		}
-		if res.Matches("sous-server") {
+		if res.Matches("repos>sous-server") {
 			msg, err := shell.Template("clean-sing", "Running sous-server already - try `./integration/test-registry/clean-singularity.sh {{.EnvDesc.SingularityURL}}`")
 			if err != nil {
 				t.Error("Running sous-server already - try `./integration/test-registry/clean-singularity.sh <singularity-url>`")
@@ -256,18 +256,18 @@ func TestShellLevelIntegration(t *testing.T) {
 	rightport=$(cygnus --env PORT0 {{.EnvDesc.SingularityURL}} | grep 'sous-server.*right' | awk '{ print $3 }')
 	serverURL=http://{{.EnvDesc.AgentIP}}:$leftport
 
-	until curl -I $serverURL; do
+	until curl -s -I $serverURL; do
 	  sleep 0.1
 	done
 	sous config Server "$serverURL"
 	echo "Server URL is:" $(sous config Server)
 
-	ETAG=$(curl -v http://192.168.99.100:$leftport/servers 2>&1 | sed -n '/Etag:/{s/.*: //; P; }')
+	ETAG=$(curl -s -v http://192.168.99.100:$leftport/servers 2>&1 | sed -n '/Etag:/{s/.*: //; P; }')
 	echo $ETAG
 	sed "s/LEFTPORT/$leftport/; s/RIGHTPORT/$rightport/" < ~/templated-configs/servers.json > ~/servers.json
 	cat ~/servers.json
 	curl -v -X PUT -H "If-Match: ${ETAG//[$'\t\r\n ']}" -H "Content-Type: application/json" "${serverURL}/servers" --data "$(< ~/servers.json)"
-	curl "${serverURL}/servers"
+	curl -s "${serverURL}/servers"
 	`,
 		func(name string, res shelltest.Result, t *testing.T) {
 			if len(res.Errs) > 0 {

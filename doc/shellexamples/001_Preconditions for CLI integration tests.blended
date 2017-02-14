@@ -3,6 +3,7 @@ bash-3.2$ go get github.com/nyarly/cygnus # cygnus lets us inspect Singularit</
 bash-3.2$ if echo "http://192.168.99.100:7099/singularity" | egrep -q '192.16<92.168.99.100:7099/singularity" | egrep -q '192.168                         |127.0.0'; then
 > /Users/jlester/golang/src/github.com/opentable/sous/integration/test-regist</github.com/opentable/sous/integration/test-registr                         y/clean-singularity.sh ht</integration/test-registry/clean-singularity.sh htt                         p://192.168.99.100:7099/s</clean-singularity.sh http://192.168.99.100:7099/si                         ngularity
 > fi
+All requests cleaned
 bash-3.2$ cygnus -H http://192.168.99.100:7099/singularity
 bash-3.2$ ls /Users/jlester/golang/src/github.com/opentable/sous/dev_support
 sous_linux

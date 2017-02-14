@@ -15,6 +15,7 @@ import (
 // BuildPath constructs a PATH that includes the directories with given exectuables in them.
 func BuildPath(exes ...string) (string, error) {
 	dirMap := map[string]struct{}{}
+	dirList := []string{}
 
 	for _, name := range exes {
 		exePath, err := exec.LookPath(name)
@@ -22,15 +23,15 @@ func BuildPath(exes ...string) (string, error) {
 			return "", err
 		}
 
-		dirMap[filepath.Dir(exePath)] = struct{}{}
+		dir := filepath.Dir(exePath)
+
+		if _, already := dirMap[dir]; !already {
+			dirList = append(dirList, dir)
+		}
+		dirMap[dir] = struct{}{}
 	}
 
-	dirs := []string{}
-	for path := range dirMap {
-		dirs = append(dirs, path)
-	}
-
-	return strings.Join(dirs, ":"), nil
+	return strings.Join(dirList, ":"), nil
 }
 
 // TemplateConfigs walks the sourceDir, templating into targetDir based on configData

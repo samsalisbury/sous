@@ -109,19 +109,19 @@ key_sous@example.com
 main.go
 sous
 sous-server.yaml
-[master 06cb25c] Adding ephemeral files
+[master 20650cb] Adding ephemeral files
  3 files changed, 30 insertions(+)
  create mode 100644 key_sous@example.com
  create mode 100644 known_hosts
  create mode 100755 sous
-  (Sous)> running docker build -t 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2 -t 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:06cb25c0ad10b4ead8d7da256465fee28f4fc3c1 -
+  (Sous)> running docker build -t 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2 -t 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:20650cbcb3095dfd084db52c1bf7067cdfb19c04 -
   (Sous)> running docker push 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2
-  (Sous)> running docker push 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:06cb25c0ad10b4ead8d7da256465fee28f4fc3c1
-  (Sous)> [recording "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2" as the docker name for "192.168.99.100/2222/repos/sous-server,0.0.2+06cb25c0ad10b4ead8d7da256465fee28f4fc3c1"]
+  (Sous)> running docker push 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:20650cbcb3095dfd084db52c1bf7067cdfb19c04
+  (Sous)> [recording "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2" as the docker name for "192.168.99.100/2222/repos/sous-server,0.0.2+20650cbcb3095dfd084db52c1bf7067cdfb19c04"]
 Built: "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2"
 Advisories:
   dirty workspace
-Elapsed: 787.832301ms
+Elapsed: 809.54146ms
 
 
 

@@ -10,15 +10,15 @@ leftport=$(cygnus --env PORT0 http://192.168.99.100:7099/singularity | grep 'sou
 rightport=$(cygnus --env PORT0 http://192.168.99.100:7099/singularity | grep 'sous-server.*right' | awk '{ print $3 }')
 serverURL=http://192.168.99.100:$leftport
 
-until curl -I $serverURL; do
+until curl -s -I $serverURL; do
   sleep 0.1
 done
 sous config Server "$serverURL"
 echo "Server URL is:" $(sous config Server)
 
-ETAG=$(curl -v http://192.168.99.100:$leftport/servers 2>&1 | sed -n '/Etag:/{s/.*: //; P; }')
+ETAG=$(curl -s -v http://192.168.99.100:$leftport/servers 2>&1 | sed -n '/Etag:/{s/.*: //; P; }')
 echo $ETAG
 sed "s/LEFTPORT/$leftport/; s/RIGHTPORT/$rightport/" < ~/templated-configs/servers.json > ~/servers.json
 cat ~/servers.json
 curl -v -X PUT -H "If-Match: ${ETAG//[$'\t\r\n ']}" -H "Content-Type: application/json" "${serverURL}/servers" --data "$(< ~/servers.json)"
-curl "${serverURL}/servers"
+curl -s "${serverURL}/servers"

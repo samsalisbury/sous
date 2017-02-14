@@ -16,3 +16,5 @@ done
 while [ "$(cygnus -H "$sing" | wc -l)" -gt 0 ]; do
   sleep 0.2
 done
+
+echo All requests cleaned

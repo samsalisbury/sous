@@ -25,7 +25,7 @@ trap '(lasterr=$?; exec >&5; echo -n $lasterr; history 1)' ERR
 ` + headerMarker
 	exitCapture = footerMarker + `
 status=$?
-env >&4
+env | sort >&4
 echo $status >&3
 `
 )
