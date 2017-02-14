@@ -253,17 +253,19 @@ func TestShellLevelIntegration(t *testing.T) {
 	while [ $(cygnus -H {{.EnvDesc.SingularityURL}} | grep sous-server | wc -l) -lt 2 ]; do
 	  sleep 0.1
 	done
-	cygnus --env TASK_HOST --env PORT0 {{.EnvDesc.SingularityURL}}
 
+	cygnus --env TASK_HOST --env PORT0 {{.EnvDesc.SingularityURL}}
 	leftport=$(cygnus --env PORT0 {{.EnvDesc.SingularityURL}} | grep 'sous-server.*left' | awk '{ print $3 }')
 	rightport=$(cygnus --env PORT0 {{.EnvDesc.SingularityURL}} | grep 'sous-server.*right' | awk '{ print $3 }')
+	cygnus --env TASK_HOST --env PORT0 {{.EnvDesc.SingularityURL}}
+
 	serverURL=http://{{.EnvDesc.AgentIP}}:$leftport
+	echo "Server URL is:" $(sous config Server)
 
 	until curl -s -I $serverURL; do
 	  sleep 0.1
 	done
 	sous config Server "$serverURL"
-	echo "Server URL is:" $(sous config Server)
 
 	ETAG=$(curl -s -v http://192.168.99.100:$leftport/servers 2>&1 | sed -n '/Etag:/{s/.*: //; P; }')
 	echo $ETAG
