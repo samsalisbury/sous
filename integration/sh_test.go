@@ -260,12 +260,13 @@ func TestShellLevelIntegration(t *testing.T) {
 	cygnus --env TASK_HOST --env PORT0 {{.EnvDesc.SingularityURL}}
 
 	serverURL=http://{{.EnvDesc.AgentIP}}:$leftport
-	echo "Server URL is:" $(sous config Server)
+	echo "Determined server url as $serverURL"
 
 	until curl -s -I $serverURL; do
 	  sleep 0.1
 	done
 	sous config Server "$serverURL"
+	echo "Set server URL to: $(sous config Server)"
 
 	ETAG=$(curl -s -v http://192.168.99.100:$leftport/servers 2>&1 | sed -n '/Etag:/{s/.*: //; P; }')
 	echo $ETAG
