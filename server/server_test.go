@@ -27,7 +27,7 @@ func (suite *serverSuite) SetupTest() {
 	g := graph.TestGraphWithConfig(&bytes.Buffer{}, os.Stdout, os.Stdout,
 		"StateLocation: '../ext/storage/testdata/in'\n")
 	g.Add(&config.Verbosity{})
-	suite.server = httptest.NewServer(ServerHandler(g))
+	suite.server = httptest.NewServer(Handler(g))
 	suite.url = suite.server.URL
 }
 

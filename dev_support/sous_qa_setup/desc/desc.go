@@ -20,14 +20,17 @@ type (
 	}
 )
 
+// SingularityURL returns a URL for the test Singularity service.
 func (ed EnvDesc) SingularityURL() string {
 	return fmt.Sprintf("http://%s/singularity", ed.Singularity.hostPort())
 }
 
+// GitOrigin returns the ip:port for the test Git instance.
 func (ed EnvDesc) GitOrigin() string {
 	return ed.Git.hostPort()
 }
 
+// RegistryName returns the ip:port for the test Docker registry.
 func (ed EnvDesc) RegistryName() string {
 	return ed.DockerRegistry.hostPort()
 }

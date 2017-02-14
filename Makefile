@@ -76,7 +76,7 @@ install_build_tools:
 
 
 linux-build: artifacts/$(LINUX_RELEASE_DIR)/sous
-	ln -srf $< dev_support/sous_linux
+	ln -sf ../$< dev_support/sous_linux
 
 semvertagchk:
 	@echo "$(SOUS_VERSION)" | egrep ^[0-9]+\.[0-9]+\.[0-9]+
@@ -105,7 +105,9 @@ test-unit:
 	go test $(TEST_VERBOSE) ./...
 
 test-integration: test-setup linux-build
+	rm -rf doc/shellexamples/*
 	SOUS_QA_DESC=$(QA_DESC) go test $(TEST_VERBOSE) ./integration --tags=integration
+	cat doc/shellexamples/*.blended
 
 test-setup:  sous_qa_setup
 	./sous_qa_setup --compose-dir ./integration/test-registry/ --out-path=$(QA_DESC)

@@ -17,7 +17,7 @@ type (
 		seq            *int
 		t              *testing.T
 		name, writeDir string
-		shell          *CaptiveShell
+		shell          *captiveShell
 		tmplContext    interface{}
 	}
 
@@ -68,6 +68,8 @@ func (st *ShellTest) DebugPrefix(prefix string) {
 	st.shell.scriptErrs.debugTo("scriptErrs", prefix)
 }
 
+// Template processes a tmplSrc as a text/template with the ShellTest's
+// template context. Useful for user advice, for instance.
 func (st *ShellTest) Template(name, tmplSrc string) (string, error) {
 	tmpl, err := template.New(name).Parse(whitespace.CleanWS(tmplSrc))
 	if err != nil {

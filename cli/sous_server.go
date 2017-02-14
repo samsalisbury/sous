@@ -77,7 +77,7 @@ func (ss *SousServer) Execute(args []string) cmdr.Result {
 
 	ss.Log.Info.Printf("Sous Server v%s running at %s for %s", ss.Sous.Version, ss.flags.laddr, ss.DeployFilterFlags.Cluster)
 
-	return EnsureErrorResult(server.RunServer(ss.SousGraph, ss.flags.laddr)) //always non-nil
+	return EnsureErrorResult(server.Run(ss.SousGraph, ss.flags.laddr)) //always non-nil
 }
 
 func ensureGDMExists(repo, localPath string, log func(string, ...interface{})) error {

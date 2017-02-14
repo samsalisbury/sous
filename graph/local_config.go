@@ -118,7 +118,11 @@ func userInput(prompt, vDefault, eg string, v *string) {
 
 func userInitConfig(c *config.Config) {
 	if !terminal.IsTerminal(int(os.Stdout.Fd())) {
-		sous.Log.Warn.Println("Unable to run interactive configuration; no terminal attached.")
+		sous.Log.Warn.Println("Unable to run interactive configuration; stdout isn't attached to a terminal.")
+		return
+	}
+	if !terminal.IsTerminal(int(os.Stdin.Fd())) {
+		sous.Log.Warn.Println("Unable to run interactive configuration; stdin isn't attached to a terminall.")
 		return
 	}
 	if os.Getenv("TASK_HOST") != "" { // XXX This is terrible, but the terminal check fails (which breaks the Mesos servers)

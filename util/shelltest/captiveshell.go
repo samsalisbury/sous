@@ -31,7 +31,7 @@ echo $status >&3
 )
 
 type (
-	CaptiveShell struct {
+	captiveShell struct {
 		*exec.Cmd
 		Stdin                                 io.WriteCloser
 		stdout, stderr, scriptEnv, scriptErrs *liveStream
@@ -79,8 +79,8 @@ func newLiveStream(from io.Reader, events <-chan int) *liveStream {
 }
 
 // NewShell creates a new CaptiveShell with an environment dictacted by env.
-func NewShell(env map[string]string) (sh *CaptiveShell, err error) {
-	sh = &CaptiveShell{}
+func NewShell(env map[string]string) (sh *captiveShell, err error) {
+	sh = &captiveShell{}
 	sh.Cmd = exec.Command("bash", "--norc", "-i")
 
 	for k, v := range env {
@@ -140,7 +140,7 @@ func NewShell(env map[string]string) (sh *CaptiveShell, err error) {
 
 // Run runs a script in the context of the shell, waits for it to complete and
 // returns the Result of running it.
-func (sh *CaptiveShell) Run(script string) (Result, error) {
+func (sh *captiveShell) Run(script string) (Result, error) {
 	st := stateCapture + "\n" + script + "\n" + exitCapture
 	sh.Stdin.Write([]byte(st))
 	exit, err := sh.readExitStatus()
@@ -229,7 +229,7 @@ func (ls *liveStream) consume(n int) string {
 	return str
 }
 
-func (sh *CaptiveShell) readExitStatus() (int, error) {
+func (sh *captiveShell) readExitStatus() (int, error) {
 	if !sh.doneRead.Scan() {
 		return -1, fmt.Errorf("Exit stream closed prematurely!\n%#v\n%#v\n%s\n****\n%s************", sh, sh.Cmd, sh.stdout.consume(0), sh.stderr.consume(0))
 	}
