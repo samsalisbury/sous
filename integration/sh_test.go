@@ -154,7 +154,7 @@ func TestShellLevelIntegration(t *testing.T) {
 		if len(res.Errs) > 0 {
 			t.Errorf("Error in %s: \n\t%s", name, res.Errs)
 		}
-		if res.Matches("repos>sous-server") {
+		if res.Matches("repos>sous-server.*0_0_2") {
 			msg, err := shell.Template("clean-sing", "Running sous-server already - try `./integration/test-registry/clean-singularity.sh {{.EnvDesc.SingularityURL}}`")
 			if err != nil {
 				t.Error("Running sous-server already - try `./integration/test-registry/clean-singularity.sh <singularity-url>`")

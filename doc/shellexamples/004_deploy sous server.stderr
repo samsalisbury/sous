@@ -43,7 +43,7 @@ bash-3.2$ git tag -am "0.0.2" 0.0.2
 bash-3.2$ git push
 Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
 To ssh://192.168.99.100:2222/repos/sous-server
-   bdfdd3f..20650cb  master -> master
+   bdfdd3f..5a8ad3b  master -> master
 bash-3.2$ git push --tags
 Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
 To ssh://192.168.99.100:2222/repos/sous-server

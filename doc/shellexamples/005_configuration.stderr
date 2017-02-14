@@ -26,9 +26,9 @@ bash-3.2$ curl -v -X PUT -H "If-Match: ${ETAG//[$'\t\r\n ']}" -H "Content-Typ< 
                                  Dload  Upload   Total   Spent    Left  Speed
   0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying 192.168.99.100...
 * TCP_NODELAY set
-* Connected to 192.168.99.100 (192.168.99.100) port 31739 (#0)
+* Connected to 192.168.99.100 (192.168.99.100) port 31354 (#0)
 > PUT /servers HTTP/1.1
-> Host: 192.168.99.100:31739
+> Host: 192.168.99.100:31354
 > User-Agent: curl/7.51.0
 > Accept: */*
 > If-Match: g5VMZUpJRha40Z6CUDIfPQ==
@@ -40,12 +40,12 @@ bash-3.2$ curl -v -X PUT -H "If-Match: ${ETAG//[$'\t\r\n ']}" -H "Content-Typ< 
 < HTTP/1.1 200 OK
 < Content-Length: 133
 < Content-Type: application/json
-< Etag: 6JsrhhfaDIW_Ag5XpOoSHg==
-< Date: Tue, 14 Feb 2017 00:29:07 GMT
+< Etag: WWb0wBQWVLI-nKdAmIKV1Q==
+< Date: Tue, 14 Feb 2017 00:33:26 GMT
 < 
 { [133 bytes data]
 * Curl_http_done: called premature == 0
-100   325  100   133  100   192  11526  16639 --:--:-- --:--:-- --:--:-- 17454
+100   325  100   133  100   192   6471   9342 --:--:-- --:--:-- --:--:--  9600
 * Connection #0 to host 192.168.99.100 left intact
 bash-3.2$ curl -s "${serverURL}/servers"
 bash-3.2$ 

@@ -1,26 +1,26 @@
 Request ID                                   Deploy ID                              TASK_HOST PORT0
-192.168.99.100>2222>repos>sous-server::right 0_0_2_ed9f1e44a13b435aa6fc1c6f730aca25 localhost 31402
-192.168.99.100>2222>repos>sous-server::left  0_0_2_95a53e614c184e8aa9308a27c30f9edd localhost 31739
+192.168.99.100>2222>repos>sous-server::right 0_0_2_d9ea950924324289b53ae04939392bd7 localhost 31796
+192.168.99.100>2222>repos>sous-server::left  0_0_2_98ee2a18c615402daac6af14a298b948 localhost 31354
 HTTP/1.1 404 Not Found
 Content-Type: text/plain; charset=utf-8
 X-Content-Type-Options: nosniff
-Date: Tue, 14 Feb 2017 00:29:06 GMT
+Date: Tue, 14 Feb 2017 00:33:26 GMT
 Content-Length: 19
 
-set Server to "http://192.168.99.100:31739"
-Server URL is: http://192.168.99.100:31739
+set Server to "http://192.168.99.100:31354"
+Server URL is: http://192.168.99.100:31354
 g5VMZUpJRha40Z6CUDIfPQ==
 {
   "Servers": [
     {
       "ClusterName": "left",
-      "URL": "http://192.168.99.100:31739"
+      "URL": "http://192.168.99.100:31354"
     },
     {
       "ClusterName": "right",
-      "URL": "http://192.168.99.100:31402"
+      "URL": "http://192.168.99.100:31796"
     }
   ]
 }
-{"Servers":[{"ClusterName":"left","URL":"http://192.168.99.100:31739"},{"ClusterName":"right","URL":"http://192.168.99.100:31402"}]}
-{"Servers":[{"ClusterName":"left","URL":"http://192.168.99.100:31739"},{"ClusterName":"right","URL":"http://192.168.99.100:31402"}]}
+{"Servers":[{"ClusterName":"left","URL":"http://192.168.99.100:31354"},{"ClusterName":"right","URL":"http://192.168.99.100:31796"}]}
+{"Servers":[{"ClusterName":"left","URL":"http://192.168.99.100:31354"},{"ClusterName":"right","URL":"http://192.168.99.100:31796"}]}

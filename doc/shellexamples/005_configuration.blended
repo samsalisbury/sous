@@ -7,8 +7,8 @@ bash-3.2$ while [ $(cygnus -H http://192.168.99.100:7099/singularity | grep s<-
 > done
 bash-3.2$ cygnus --env TASK_HOST --env PORT0 http://192.168.99.100:7099/singu<_HOST --env PORT0 http://192.168.99.100:7099/singul                         arity
 Request ID                                   Deploy ID                              TASK_HOST PORT0
-192.168.99.100>2222>repos>sous-server::right 0_0_2_ed9f1e44a13b435aa6fc1c6f730aca25 localhost 31402
-192.168.99.100>2222>repos>sous-server::left  0_0_2_95a53e614c184e8aa9308a27c30f9edd localhost 31739
+192.168.99.100>2222>repos>sous-server::right 0_0_2_d9ea950924324289b53ae04939392bd7 localhost 31796
+192.168.99.100>2222>repos>sous-server::left  0_0_2_98ee2a18c615402daac6af14a298b948 localhost 31354
 bash-3.2$ 
 bash-3.2$ leftport=$(cygnus --env PORT0 http://192.168.99.100:7099/singularit< --env PORT0 http://192.168.99.100:7099/singularity                          | grep 'sous-server.*lef<8.99.100:7099/singularity | grep 'sous-server.*left                         ' | awk '{ print $3 }')
 bash-3.2$ rightport=$(cygnus --env PORT0 http://192.168.99.100:7099/singulari<s --env PORT0 http://192.168.99.100:7099/singularit                         y | grep 'sous-server.*ri<68.99.100:7099/singularity | grep 'sous-server.*rig                         ht' | awk '{ print $3 }')
@@ -20,13 +20,13 @@ bash-3.2$ until curl -s -I $serverURL; do
 HTTP/1.1 404 Not Found
 Content-Type: text/plain; charset=utf-8
 X-Content-Type-Options: nosniff
-Date: Tue, 14 Feb 2017 00:29:06 GMT
+Date: Tue, 14 Feb 2017 00:33:26 GMT
 Content-Length: 19
 
 bash-3.2$ sous config Server "$serverURL"
-set Server to "http://192.168.99.100:31739"
+set Server to "http://192.168.99.100:31354"
 bash-3.2$ echo "Server URL is:" $(sous config Server)
-Server URL is: http://192.168.99.100:31739
+Server URL is: http://192.168.99.100:31354
 bash-3.2$ 
 bash-3.2$ ETAG=$(curl -s -v http://192.168.99.100:$leftport/servers 2>&1 | se< http://192.168.99.100:$leftport/servers 2>&1 | sed                          -n '/Etag:/{s/.*: //; P;<ftport/servers 2>&1 | sed -n '/Etag:/{s/.*: //; P;                          }')
 bash-3.2$ echo $ETAG
@@ -37,11 +37,11 @@ bash-3.2$ cat ~/servers.json
   "Servers": [
     {
       "ClusterName": "left",
-      "URL": "http://192.168.99.100:31739"
+      "URL": "http://192.168.99.100:31354"
     },
     {
       "ClusterName": "right",
-      "URL": "http://192.168.99.100:31402"
+      "URL": "http://192.168.99.100:31796"
     }
   ]
 }
@@ -50,9 +50,9 @@ bash-3.2$ curl -v -X PUT -H "If-Match: ${ETAG//[$'\t\r\n ']}" -H "Content-Typ< 
                                  Dload  Upload   Total   Spent    Left  Speed
   0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying 192.168.99.100...
 * TCP_NODELAY set
-* Connected to 192.168.99.100 (192.168.99.100) port 31739 (#0)
+* Connected to 192.168.99.100 (192.168.99.100) port 31354 (#0)
 > PUT /servers HTTP/1.1
-> Host: 192.168.99.100:31739
+> Host: 192.168.99.100:31354
 > User-Agent: curl/7.51.0
 > Accept: */*
 > If-Match: g5VMZUpJRha40Z6CUDIfPQ==
@@ -64,15 +64,15 @@ bash-3.2$ curl -v -X PUT -H "If-Match: ${ETAG//[$'\t\r\n ']}" -H "Content-Typ< 
 < HTTP/1.1 200 OK
 < Content-Length: 133
 < Content-Type: application/json
-< Etag: 6JsrhhfaDIW_Ag5XpOoSHg==
-< Date: Tue, 14 Feb 2017 00:29:07 GMT
+< Etag: WWb0wBQWVLI-nKdAmIKV1Q==
+< Date: Tue, 14 Feb 2017 00:33:26 GMT
 < 
 { [133 bytes data]
 * Curl_http_done: called premature == 0
-100   325  100   133  100   192  11526  16639 --:--:-- --:--:-- --:--:-- 17454
+100   325  100   133  100   192   6471   9342 --:--:-- --:--:-- --:--:--  9600
 * Connection #0 to host 192.168.99.100 left intact
-{"Servers":[{"ClusterName":"left","URL":"http://192.168.99.100:31739"},{"ClusterName":"right","URL":"http://192.168.99.100:31402"}]}
+{"Servers":[{"ClusterName":"left","URL":"http://192.168.99.100:31354"},{"ClusterName":"right","URL":"http://192.168.99.100:31796"}]}
 bash-3.2$ curl -s "${serverURL}/servers"
-{"Servers":[{"ClusterName":"left","URL":"http://192.168.99.100:31739"},{"ClusterName":"right","URL":"http://192.168.99.100:31402"}]}
+{"Servers":[{"ClusterName":"left","URL":"http://192.168.99.100:31354"},{"ClusterName":"right","URL":"http://192.168.99.100:31796"}]}
 bash-3.2$ 
 bash-3.2$ 
