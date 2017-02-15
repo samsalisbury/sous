@@ -1,27 +1,31 @@
-Determined server url as http://192.168.99.100:31642
+Determined server url as http://192.168.99.100:31041
 HTTP/1.1 404 Not Found
 Content-Type: text/plain; charset=utf-8
 X-Content-Type-Options: nosniff
-Date: Wed, 15 Feb 2017 18:16:02 GMT
+Date: Wed, 15 Feb 2017 19:14:18 GMT
 Content-Length: 19
 
-set Server to "http://192.168.99.100:31642"
-Set server URL to: http://192.168.99.100:31642
+set Server to "http://192.168.99.100:31041"
+Set server URL to: http://192.168.99.100:31041
 g5VMZUpJRha40Z6CUDIfPQ==
 {
   "Servers": [
     {
       "ClusterName": "left",
-      "URL": "http://192.168.99.100:31642"
+      "URL": "http://192.168.99.100:31041"
     },
     {
       "ClusterName": "right",
-      "URL": "http://192.168.99.100:31158"
+      "URL": "http://192.168.99.100:31156"
     }
   ]
 }
-{"Servers":[{"ClusterName":"left","URL":"http://192.168.99.100:31642"},{"ClusterName":"right","URL":"http://192.168.99.100:31158"}]}
-{"Servers":[{"ClusterName":"left","URL":"http://192.168.99.100:31642"},{"ClusterName":"right","URL":"http://192.168.99.100:31158"}]}
+{"Servers":[{"ClusterName":"left","URL":"http://192.168.99.100:31041"},{"ClusterName":"right","URL":"http://192.168.99.100:31156"}]}
+{"Servers":[{"ClusterName":"right","URL":"http://192.168.99.100:31156"},{"ClusterName":"left","URL":"http://192.168.99.100:31041"}]}
 Request ID                                   Deploy ID                              State     TASK_HOST PORT0 Task Status
-192.168.99.100>2222>repos>sous-server::right 0_0_2_b7e293b849874744bfb7346f684d15af localhost 31158     TASK_RUNNING
-192.168.99.100>2222>repos>sous-server::left  0_0_2_1aa53b02449e496583604d08a8c24ef4 localhost 31642     TASK_RUNNING
+192.168.99.100>2222>repos>sous-server::right 0_0_2_b7e293b849874744bfb7346f684d15af localhost 31158     TASK_KILLED
+192.168.99.100>2222>repos>sous-server::right 0_0_2_05324cd1d196475d8bb44e86495af5fe localhost 31393     TASK_KILLED
+192.168.99.100>2222>repos>sous-server::right 0_0_2_d80bf5cda5554adbb583508ef1f604e3 localhost 31156     TASK_RUNNING
+192.168.99.100>2222>repos>sous-server::left  0_0_2_1aa53b02449e496583604d08a8c24ef4 localhost 31642     TASK_KILLED
+192.168.99.100>2222>repos>sous-server::left  0_0_2_5d30af2f588645a8b549ab6e5cc04ecf localhost 31842     TASK_KILLED
+192.168.99.100>2222>repos>sous-server::left  0_0_2_bb1859ead2d145099c7c2296f746a6b3 localhost 31041     TASK_RUNNING
