@@ -25,11 +25,12 @@ func (f *DeployFilterFlags) BuildFilter(parseSL func(string) (sous.SourceLocatio
 	rf := &sous.ResolveFilter{}
 
 	rf.Repo = f.Repo
-	rf.Offset = f.Offset
-	rf.Flavor = f.Flavor
 	rf.Cluster = f.Cluster
 	rf.Tag = f.Tag
 	rf.Revision = f.Revision
+
+	rf.Offset = f.Offset
+	rf.Flavor = f.Flavor
 
 	if f.Source != "" {
 		if f.Repo != "" {
