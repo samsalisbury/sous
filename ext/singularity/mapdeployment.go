@@ -16,7 +16,7 @@ func mapDeployHistoryToDeployment(sid sous.SourceID,
 	}
 
 	// DeployConfig
-	deployConfig, err := mapDeployHistoryToDeployConfig(dh.Deploy)
+	deployConfig, err := mapDeployHistoryToDeployConfig(sr, dh.Deploy)
 	if err != nil {
 		return nil, err
 	}
@@ -27,9 +27,6 @@ func mapDeployHistoryToDeployment(sid sous.SourceID,
 		owners.Add(o)
 	}
 
-	// NumInstances
-	numInstances := sr.Instances
-
 	return &sous.Deployment{
 		DeployConfig: *deployConfig,
 		Owners:       owners,
@@ -37,9 +34,7 @@ func mapDeployHistoryToDeployment(sid sous.SourceID,
 	}, nil
 }
 
-func mapDeployHistoryToDeployConfig(deploy *dtos.SingularityDeploy) (*sous.DeployConfig, error) {
-
-	dc := sous.DeployConfig{}
+func mapDeployHistoryToDeployConfig(req *dtos.SingularityRequest, deploy *dtos.SingularityDeploy) (*sous.DeployConfig, error) {
 
 	// Env
 	env := deploy.Env
@@ -71,8 +66,9 @@ func mapDeployHistoryToDeployConfig(deploy *dtos.SingularityDeploy) (*sous.Deplo
 	}
 
 	return &sous.DeployConfig{
-		Env:       env,
-		Resources: resources,
-		Volumes:   volumes,
+		NumInstances: int(req.Instances),
+		Env:          env,
+		Resources:    resources,
+		Volumes:      volumes,
 	}, nil
 }

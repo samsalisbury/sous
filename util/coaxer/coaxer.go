@@ -11,7 +11,7 @@ type (
 	Coaxer struct {
 		// Attempts is the maximum number of times to try calling the manifest func
 		// before giving up.
-		Attempts,
+		Attempts int
 		// Backoff is the current backoff duration (time between attempts).
 		Backoff time.Duration
 		// BackoffScale is the scaling factor used on Backoff on each attempt.
@@ -20,6 +20,8 @@ type (
 		Timeout time.Duration
 		// TimeoutScale is the scaling factor for the Timeout on each attempt.
 		TimeoutScale int
+		// DebugFunc is called synchronously before and after manifest is called.
+		DebugFunc func(desc string)
 	}
 
 	// Result is the result of coaxing.
@@ -62,6 +64,7 @@ func NewCoaxer(configure ...func(*Coaxer)) *Coaxer {
 		BackoffScale: DefaultBackoffScale,
 		Timeout:      DefaultTimeout,
 		TimeoutScale: DefaultTimeoutScale,
+		DebugFunc:    func(desc string) {},
 	}
 	for _, f := range configure {
 		if f != nil {
@@ -85,6 +88,7 @@ func (c *Coaxer) Coax(ctx context.Context, manifest ManifestFunc, descf string, 
 		manifest:    manifest,
 		result:      make(chan Result),
 		finalResult: make(chan Result),
+		debugFunc:   c.DebugFunc,
 	}
 	return run.future()
 }

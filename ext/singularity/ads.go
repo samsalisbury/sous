@@ -15,6 +15,18 @@ import (
 	"github.com/pkg/errors"
 )
 
+var c = coaxer.NewCoaxer(func(c *coaxer.Coaxer) {
+	messages := make(chan string)
+	go func() {
+		for m := range messages {
+			log.Println(m)
+		}
+	}()
+	c.DebugFunc = func(desc string) {
+		messages <- desc
+	}
+})
+
 // Deployer implements sous.Deployer for a single sous Cluster running on
 // Singularity.
 type Deployer struct {
@@ -45,6 +57,7 @@ type requestContext struct {
 	// This field is populated by NewDeployStateBuilder, and you can always
 	// assume that it is populated with a meaningful value.
 	RequestID string
+	promise   coaxer.Promise
 }
 
 func (ab *adsBuild) newRequestContext(requestID string) requestContext {
@@ -53,15 +66,18 @@ func (ab *adsBuild) newRequestContext(requestID string) requestContext {
 		Client:    ab.Client,
 		Cluster:   &ab.Cluster,
 		RequestID: requestID,
+		promise: c.Coax(ab.Context, func() (interface{}, error) {
+			return ab.Client.GetRequest(requestID)
+		}, "get singularity request %q", requestID),
 	}
 	return rc
 }
 
-func (rc *requestContext) RequestParent(ctx context.Context) coaxer.Promise {
-	c := coaxer.NewCoaxer()
-	return c.Coax(rc.adsBuild.Context, func() (interface{}, error) {
-		return rc.Client.GetRequest(rc.RequestID)
-	}, "getting request %q", rc.RequestID)
+func (rc *requestContext) RequestParent() (*dtos.SingularityRequestParent, error) {
+	if err := rc.promise.Err(); err != nil {
+		return nil, err
+	}
+	return rc.promise.Value().(*dtos.SingularityRequestParent), nil
 }
 
 // DeployStateBuilder visits each phase in the life-cycle of building a
@@ -208,7 +224,15 @@ func (db *DeploymentBuilder) Deployment() (*sous.Deployment, error) {
 		return nil, errors.Wrapf(err, "getting source ID")
 	}
 
-	return mapDeployHistoryToDeployment(sourceID, deployHistoryItem)
+	requestParent, err := db.RequestParent()
+	if err != nil {
+		return nil, err
+	}
+	if requestParent.Request == nil {
+		return nil, db.Errorf("requestParent contains no request")
+	}
+
+	return mapDeployHistoryToDeployment(sourceID, requestParent.Request, deployHistoryItem)
 }
 
 // DeployState returns the Sous deploy state.
@@ -239,7 +263,6 @@ func (ds *DeployStateBuilder) DeployState() (*sous.DeployState, error) {
 
 func (ds *DeployStateBuilder) newDeploymentBuilder(deployID string) *DeploymentBuilder {
 
-	c := coaxer.NewCoaxer()
 	promise := c.Coax(ds.adsBuild.Context, func() (interface{}, error) {
 		return ds.Client.GetDeploy(ds.RequestID, deployID)
 	}, "getting deployment %q", deployID)
