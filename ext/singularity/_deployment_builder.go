@@ -230,43 +230,43 @@ func (db *deploymentBuilder) assignClusterName() error {
 	return nil
 }
 
-func (db *deploymentBuilder) unpackDeployConfig() error {
-	db.Target.Env = db.deploy.Env
-	Log.Vomit.Printf("Env: %+v", db.deploy.Env)
-	if db.Target.Env == nil {
-		db.Target.Env = make(map[string]string)
-	}
-
-	singRez := db.deploy.Resources
-	if singRez == nil {
-		return malformedResponse{"Deploy object lacks resources field"}
-	}
-	db.Target.Resources = make(sous.Resources)
-	db.Target.Resources["cpus"] = fmt.Sprintf("%f", singRez.Cpus)
-	db.Target.Resources["memory"] = fmt.Sprintf("%f", singRez.MemoryMb)
-	db.Target.Resources["ports"] = fmt.Sprintf("%d", singRez.NumPorts)
-
-	db.Target.NumInstances = int(db.request.Instances)
-	db.Target.Owners = make(sous.OwnerSet)
-	for _, o := range db.request.Owners {
-		db.Target.Owners.Add(o)
-	}
-
-	for _, v := range db.deploy.ContainerInfo.Volumes {
-		db.Target.DeployConfig.Volumes = append(db.Target.DeployConfig.Volumes,
-			&sous.Volume{
-				Host:      v.HostPath,
-				Container: v.ContainerPath,
-				Mode:      sous.VolumeMode(v.Mode),
-			})
-	}
-	Log.Vomit.Printf("Volumes %+v", db.Target.DeployConfig.Volumes)
-	if len(db.Target.DeployConfig.Volumes) > 0 {
-		Log.Debug.Printf("%+v", db.Target.DeployConfig.Volumes[0])
-	}
-
-	return nil
-}
+//func (db *deploymentBuilder) unpackDeployConfig() error {
+//	db.Target.Env = db.deploy.Env
+//	Log.Vomit.Printf("Env: %+v", db.deploy.Env)
+//	if db.Target.Env == nil {
+//		db.Target.Env = make(map[string]string)
+//	}
+//
+//	singRez := db.deploy.Resources
+//	if singRez == nil {
+//		return malformedResponse{"Deploy object lacks resources field"}
+//	}
+//	db.Target.Resources = make(sous.Resources)
+//	db.Target.Resources["cpus"] = fmt.Sprintf("%f", singRez.Cpus)
+//	db.Target.Resources["memory"] = fmt.Sprintf("%f", singRez.MemoryMb)
+//	db.Target.Resources["ports"] = fmt.Sprintf("%d", singRez.NumPorts)
+//
+//	db.Target.NumInstances = int(db.request.Instances)
+//	db.Target.Owners = make(sous.OwnerSet)
+//	for _, o := range db.request.Owners {
+//		db.Target.Owners.Add(o)
+//	}
+//
+//	for _, v := range db.deploy.ContainerInfo.Volumes {
+//		db.Target.DeployConfig.Volumes = append(db.Target.DeployConfig.Volumes,
+//			&sous.Volume{
+//				Host:      v.HostPath,
+//				Container: v.ContainerPath,
+//				Mode:      sous.VolumeMode(v.Mode),
+//			})
+//	}
+//	Log.Vomit.Printf("Volumes %+v", db.Target.DeployConfig.Volumes)
+//	if len(db.Target.DeployConfig.Volumes) > 0 {
+//		Log.Debug.Printf("%+v", db.Target.DeployConfig.Volumes[0])
+//	}
+//
+//	return nil
+//}
 
 func (db *deploymentBuilder) determineManifestKind() error {
 	switch db.request.RequestType {

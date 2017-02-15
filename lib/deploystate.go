@@ -5,8 +5,22 @@ package sous
 // A DeployState represents the state of a deployment in an external cluster.
 // It wraps Deployment and adds Status.
 type DeployState struct {
-	Deployment
-	Status DeployStatus
+	Deployment Deployment
+	Status     DeployStatus
+}
+
+func (ds *DeployState) String() string {
+	return ds.Deployment.String()
+}
+
+// ID returns the DeployID.
+func (ds *DeployState) ID() DeployID {
+	return ds.Deployment.ID()
+}
+
+// Tabbed returns the active deployment in human-readable form.
+func (ds *DeployState) Tabbed() string {
+	return ds.Deployment.Tabbed()
 }
 
 // DeployStatus represents the status of a deployment in an external cluster.

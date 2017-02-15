@@ -1,31 +1,41 @@
 package singularity
 
 import (
+	"context"
 	"fmt"
+	"log"
 	"sync"
 
 	"github.com/opentable/go-singularity"
 	"github.com/opentable/go-singularity/dtos"
+	"github.com/opentable/sous/ext/docker"
 	"github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/coaxer"
+	"github.com/opentable/sous/util/firsterr"
+	"github.com/pkg/errors"
 )
 
 // Deployer implements sous.Deployer for a single sous Cluster running on
 // Singularity.
 type Deployer struct {
-	Client  *singularity.Client
-	Cluster sous.Cluster
+	Registry sous.Registry
+	Client   *singularity.Client
+	Cluster  sous.Cluster
 }
 
 // adsBuild represents the building of a single sous.DeployStates from a
 // single Singularity-hosted cluster.
 type adsBuild struct {
-	Client  *singularity.Client
-	Cluster sous.Cluster
-	Errors  chan error
+	Context  context.Context
+	Client   *singularity.Client
+	Cluster  sous.Cluster
+	Registry sous.Registry
+	Errors   chan error
 }
 
 // requestContext is a mixin used for DeploymentBuilder and DeployStateBuilder.
 type requestContext struct {
+	adsBuild adsBuild
 	// Client to be used for all requests to Singularity.
 	Client *singularity.Client
 	// The Cluster this DeployStateBuilder is working on.
@@ -35,6 +45,23 @@ type requestContext struct {
 	// This field is populated by NewDeployStateBuilder, and you can always
 	// assume that it is populated with a meaningful value.
 	RequestID string
+}
+
+func (ab *adsBuild) newRequestContext(requestID string) requestContext {
+	rc := requestContext{
+		adsBuild:  *ab,
+		Client:    ab.Client,
+		Cluster:   &ab.Cluster,
+		RequestID: requestID,
+	}
+	return rc
+}
+
+func (rc *requestContext) RequestParent(ctx context.Context) coaxer.Promise {
+	c := coaxer.NewCoaxer()
+	return c.Coax(rc.adsBuild.Context, func() (interface{}, error) {
+		return rc.Client.GetRequest(rc.RequestID)
+	}, "getting request %q", rc.RequestID)
 }
 
 // DeployStateBuilder visits each phase in the life-cycle of building a
@@ -53,29 +80,32 @@ type DeployStateBuilder struct {
 // DeploymentBuilder is responsible for constructing a sous.Deployment from a
 // Singularity deployment.
 type DeploymentBuilder struct {
-	sync.WaitGroup
 	requestContext
+	promise coaxer.Promise
 	// DeployID is the singularity deploy ID
 	// (not to be confused with sous.DeployID).
 	// You can always expect DeployID to have a meaningful value.
 	DeployID string
 }
 
-func newADSBuild(client *singularity.Client, cluster sous.Cluster) *adsBuild {
+func newADSBuild(ctx context.Context, client *singularity.Client, cluster sous.Cluster) *adsBuild {
 	return &adsBuild{
 		Client:  client,
 		Cluster: cluster,
 		Errors:  make(chan error),
+		Context: ctx,
 	}
 }
 
 // RunningDeployments uses a new adsBuild to construct sous deploy states.
-func (d *Deployer) RunningDeployments(reg sous.Registry, _ sous.Clusters) (*sous.DeployStates, error) {
-	return newADSBuild(d.Client, d.Cluster).DeployStates()
+func (d *Deployer) RunningDeployments() (*sous.DeployStates, error) {
+	return newADSBuild(context.TODO(), d.Client, d.Cluster).DeployStates()
 }
 
 // DeployStates returns all deploy states.
 func (ab *adsBuild) DeployStates() (*sous.DeployStates, error) {
+
+	log.Printf("Getting all requests...")
 
 	// Grab the list of all requests from Singularity.
 	requests, err := ab.Client.GetRequests()
@@ -83,13 +113,25 @@ func (ab *adsBuild) DeployStates() (*sous.DeployStates, error) {
 		return nil, err
 	}
 
+	log.Printf("Got: %d requests", len(requests))
+
 	deployStates := sous.NewDeployStates()
 	var wg sync.WaitGroup
 
-	// Start gathering all request concurrently.
+	// Start gathering all requests concurrently.
+gather:
 	for _, r := range requests {
-		wg.Add(1)
+		select {
+		case <-ab.Context.Done():
+			log.Printf("Context ended before all deployments gathered.")
+			break gather
+		default:
+		}
+
 		request := r
+		log.Printf("Gathering data for request %q in background.", request.Request.Id)
+
+		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			dsb := ab.newDeployStateBuilder(request)
@@ -113,14 +155,18 @@ func (ab *adsBuild) Errorf(format string, a ...interface{}) error {
 	return fmt.Errorf("%s: %s", prefix, message)
 }
 
+// Errorf returns a formatted error with contextual info about which Singularity
+// deploy the error relates to.
+func (db *DeploymentBuilder) Errorf(format string, a ...interface{}) error {
+	prefix := fmt.Sprintf("singularity deployment %q (request %q)", db.DeployID, db.RequestID)
+	message := fmt.Sprintf(format, a...)
+	return fmt.Errorf("%s: %s", prefix, message)
+}
+
 func (ab *adsBuild) newDeployStateBuilder(rp *dtos.SingularityRequestParent) *DeployStateBuilder {
 	deployID, status := getCurrentDeployIDAndStatus(rp.RequestDeployState)
 	return &DeployStateBuilder{
-		requestContext: requestContext{
-			Client:    ab.Client,
-			Cluster:   &ab.Cluster,
-			RequestID: rp.Request.Id,
-		},
+		requestContext:      ab.newRequestContext(rp.Request.Id),
 		CurrentDeployID:     deployID,
 		CurrentDeployStatus: status,
 	}
@@ -139,37 +185,68 @@ func getCurrentDeployIDAndStatus(rds *dtos.SingularityRequestDeployState) (strin
 	return "", sous.DeployStatusNotRunning
 }
 
+// Deployment returns the Deployment.
+func (db *DeploymentBuilder) Deployment() (*sous.Deployment, error) {
+	if err := db.promise.Err(); err != nil {
+		return nil, err
+	}
+	deployHistoryItem := db.promise.Value().(*dtos.SingularityDeployHistory)
+
+	deploy := deployHistoryItem.Deploy
+
+	if deploy.ContainerInfo == nil ||
+		deploy.ContainerInfo.Docker == nil ||
+		deploy.ContainerInfo.Docker.Image == "" {
+		return nil, db.Errorf("no docker image specified at deploy.ContainerInfo.Docker.Image")
+	}
+	dockerImage := deploy.ContainerInfo.Docker.Image
+
+	// This is our only dependency on the registry.
+	labels, err := db.adsBuild.Registry.ImageLabels(dockerImage)
+	sourceID, err := docker.SourceIDFromLabels(labels)
+	if err != nil {
+		return nil, errors.Wrapf(err, "getting source ID")
+	}
+
+	return mapDeployHistoryToDeployment(sourceID, deployHistoryItem)
+}
+
 // DeployState returns the Sous deploy state.
 func (ds *DeployStateBuilder) DeployState() (*sous.DeployState, error) {
 
-	var current, previous sous.Deployment
-	var currentStatus, previousStatus sous.DeployStatus
+	var previousDeployID = "TODO: Get previous deployID"
+
+	log.Printf("Gathering deploy state for current deploy %q; request %q", ds.CurrentDeployID, ds.RequestID)
+	log.Printf("Gathering deploy state for previous deploy %q; request %q", previousDeployID, ds.RequestID)
 
 	currentDeployBuilder := ds.newDeploymentBuilder(ds.CurrentDeployID)
-	previousDeployBuilder := ds.newDeploymentBuilder("TODO GET LAST DEPLOY ID")
+	previousDeployBuilder := ds.newDeploymentBuilder(previousDeployID)
 
-	currentDeployBuilder.Fetch(&current, &currentStatus)
-	previousDeployBuilder.Fetch(&previous, &previousStatus)
+	var current, previous *sous.Deployment
 
-	currentDeployBuilder.Wait()
-	previousDeployBuilder.Wait()
+	if err := firsterr.Set(
+		func(err *error) { current, *err = currentDeployBuilder.Deployment() },
+		func(err *error) { previous, *err = previousDeployBuilder.Deployment() },
+	); err != nil {
+		return nil, errors.Wrapf(err, "building deploy state")
+	}
 
 	return &sous.DeployState{
-		Deployment: current,
-		Status:     currentStatus,
+		Deployment: *current,
+		//Status:     currentStatus,
 	}, nil
 }
 
 func (ds *DeployStateBuilder) newDeploymentBuilder(deployID string) *DeploymentBuilder {
+
+	c := coaxer.NewCoaxer()
+	promise := c.Coax(ds.adsBuild.Context, func() (interface{}, error) {
+		return ds.Client.GetDeploy(ds.RequestID, deployID)
+	}, "getting deployment %q", deployID)
+
 	return &DeploymentBuilder{
 		requestContext: ds.requestContext,
 		DeployID:       deployID,
+		promise:        promise,
 	}
-}
-
-// Fetch populates d and s by making HTTP requests to Singularity.
-func (db *DeploymentBuilder) Fetch(d *sous.Deployment, s *sous.DeployStatus) error {
-	db.Add(1)
-	defer db.Done()
-	return nil
 }

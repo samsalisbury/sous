@@ -55,6 +55,32 @@ func NewDeployer(c rectificationClient) sous.Deployer {
 	return &deployer{Client: c}
 }
 
+func (d *deployer) RunningDeployments(reg sous.Registry, clusters sous.Clusters) (sous.DeployStates, error) {
+	if len(clusters) != 1 {
+		return sous.NewDeployStates(), fmt.Errorf("RunningDeployments needs exactly one cluster")
+	}
+	var cluster sous.Cluster
+	for _, c := range clusters {
+		if c == nil {
+			return sous.NewDeployStates(), fmt.Errorf("nil cluster")
+		}
+		cluster = *c
+	}
+
+	client := d.singFac(cluster.BaseURL)
+
+	newDeployer := &Deployer{
+		Registry: reg,
+		Client:   client,
+		Cluster:  cluster,
+	}
+	ds, err := newDeployer.RunningDeployments()
+	if err != nil {
+		return sous.NewDeployStates(), err
+	}
+	return *ds, nil
+}
+
 func (r *deployer) RectifyCreates(cc <-chan *sous.Deployable, errs chan<- sous.DiffResolution) {
 	for d := range cc {
 		result := sous.DiffResolution{DeployID: d.ID()}

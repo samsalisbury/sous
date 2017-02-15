@@ -113,7 +113,7 @@ func newStateDiffer(intended DeployStates) *differ {
 
 	startMap := make(map[DeployID]*DeployState)
 	for _, dep := range i {
-		startMap[dep.Name()] = dep
+		startMap[dep.ID()] = dep
 	}
 	return &differ{
 		from:      startMap,
