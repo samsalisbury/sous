@@ -514,6 +514,12 @@ func NewCurrentState(sr StateReader) (*sous.State, error) {
 
 // NewCurrentGDM returns the current GDM.
 func NewCurrentGDM(state *sous.State) (CurrentGDM, error) {
+	if state == nil {
+		// XXX Sometimes, regardless of an error returned by NewCurrentState, this
+		// function is still called with a nil State, resulting in a panic. Race
+		// condition in psyringe?
+		return CurrentGDM{}, errors.New("Nil state! (often this means there was a problem connecting to the Sous server.")
+	}
 	deployments, err := state.Deployments()
 	if err != nil {
 		return CurrentGDM{}, initErr(err, "expanding state")

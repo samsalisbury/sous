@@ -1,0 +1,52 @@
+DockerRepo: {{.EnvDesc.RegistryName}}
+Clusters:
+  left:
+    Name: "left"
+    Kind: singularity
+    BaseURL: {{.EnvDesc.SingularityURL}}
+    Env:
+      CLUSTER_NAME: left
+    AllowedAdvisories:
+    - ephemeral tag
+    - source workspace lacked repo
+    - no repository
+    - requested revision not built
+    - no versioned tag
+    - tag mismatch
+    - tag not on built revision
+    - ephemeral tag
+    - unpushed revision
+    - bogus revision
+    - dirty workspace
+  right:
+    Name: "right"
+    Kind: singularity
+    BaseURL: {{.EnvDesc.SingularityURL}}
+    Env:
+      CLUSTER_NAME: right
+    AllowedAdvisories:
+    - ephemeral tag
+    - ephemeral tag
+    - source workspace lacked repo
+    - no repository
+    - requested revision not built
+    - no versioned tag
+    - tag mismatch
+    - tag not on built revision
+    - ephemeral tag
+    - unpushed revision
+    - bogus revision
+    - dirty workspace
+EnvVars:
+- Name: PORT0
+  Desc: The primary TCP port your app should listen on.
+  Scope: ""
+  Type: int
+Resources:
+- Name: memory
+  Type: Float
+- Name: cpu
+  Type: Float
+- Name: ports
+  Type: Integer
+Metadata: []

@@ -1,0 +1,30 @@
+
+bash-3.2$ if [ -n "$GOROOT" ]; then
+> mkdir -p $GOROOT
+> fi
+bash-3.2$ go get github.com/nyarly/cygnus # cygnus lets us inspect Singularit</nyarly/cygnus # cygnus lets us inspect Singularity                          for ports
+bash-3.2$ if echo "http://192.168.99.100:7099/singularity" | egrep -q '192.16<92.168.99.100:7099/singularity" | egrep -q '192.168                         |127.0.0'; then
+> /Users/jlester/golang/src/github.com/opentable/sous/integration/test-regist</github.com/opentable/sous/integration/test-registr                         y/clean-singularity.sh ht</integration/test-registry/clean-singularity.sh htt                         p://192.168.99.100:7099/s</clean-singularity.sh http://192.168.99.100:7099/si                         ngularity
+> fi
+Cleaning 192.168.99.100%3E2222%3Erepos%3Esous-demo::left
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100   100    0   100    0     0   1266      0 --:--:-- --:--:-- --:--:--  1282
+{"id":"192.168.99.100>2222>repos>sous-demo::left","requestType":"SERVICE","owners":[],"instances":1}
+Cleaning 192.168.99.100%3E2222%3Erepos%3Esous-server::right
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100   118    0   118    0     0   4372      0 --:--:-- --:--:-- --:--:--  4538
+{"id":"192.168.99.100>2222>repos>sous-server::right","requestType":"SERVICE","owners":["test@test.com"],"instances":1}
+Cleaning 192.168.99.100%3E2222%3Erepos%3Esous-server::left
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100   117    0   117    0     0   6358      0 --:--:-- --:--:-- --:--:--  6500
+{"id":"192.168.99.100>2222>repos>sous-server::left","requestType":"SERVICE","owners":["test@test.com"],"instances":1}
+All requests cleaned
+bash-3.2$ cygnus -H http://192.168.99.100:7099/singularity
+bash-3.2$ ls /Users/jlester/golang/src/github.com/opentable/sous/dev_support
+sous_linux
+sous_qa_setup
+bash-3.2$ 
+bash-3.2$ 

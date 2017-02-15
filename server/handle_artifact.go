@@ -6,6 +6,7 @@ import (
 
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/firsterr"
+	"github.com/opentable/sous/util/restful"
 	"github.com/samsalisbury/semv"
 )
 
@@ -14,7 +15,7 @@ type (
 
 	PUTArtifactHandler struct {
 		*http.Request
-		*QueryValues
+		*restful.QueryValues
 		sous.Inserter
 	}
 )
@@ -42,7 +43,7 @@ func (pah *PUTArtifactHandler) Exchange() (interface{}, int) {
 	return "", http.StatusOK
 }
 
-func sourceIDFromValues(qv *QueryValues) (sous.SourceID, error) {
+func sourceIDFromValues(qv *restful.QueryValues) (sous.SourceID, error) {
 	var r, o, vs string
 	var v semv.Version
 	var err error

@@ -20,13 +20,13 @@ import (
 
 func registryCerts(testAgent test_with_docker.Agent, composeDir string, desc desc.EnvDesc) error {
 	registryCertName := "testing.crt"
-	registryCertPath := filepath.Join(composeDir, registryCertName)
+	registryCertPath := filepath.Join(composeDir, "docker-registry", registryCertName)
 
 	if err := generateRegistryCert(composeDir, desc.AgentIP, registryCertPath, testAgent); err != nil {
 		return err
 	}
 
-	return testAgent.InstallRegistryCertificate(desc.RegistryName, composeDir, registryCertPath)
+	return testAgent.InstallRegistryCertificate(desc.RegistryName(), composeDir, registryCertPath)
 }
 
 func generateRegistryCert(composeDir string, agentIP net.IP, registryCertPath string, testAgent test_with_docker.Agent) error {
@@ -47,7 +47,7 @@ func generateRegistryCert(composeDir string, agentIP net.IP, registryCertPath st
 	if !haveIP {
 		log.Printf("Rebuilding the registry certificate to add %v", agentIP)
 		certIPs = append(certIPs, agentIP)
-		err = buildTestingKeypair(composeDir, certIPs)
+		err = buildTestingKeypair(filepath.Dir(registryCertPath), certIPs)
 		if err != nil {
 			return fmt.Errorf("While building testing keypair: %s", err)
 		}

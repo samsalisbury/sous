@@ -1,0 +1,12 @@
+{
+  "Servers": [
+    {
+      "ClusterName": "left",
+      "URL": "http://{{.EnvDesc.AgentIP}}:LEFTPORT"
+    },
+    {
+      "ClusterName": "right",
+      "URL": "http://{{.EnvDesc.AgentIP}}:RIGHTPORT"
+    }
+  ]
+}

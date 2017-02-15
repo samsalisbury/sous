@@ -1,0 +1,7 @@
+[core]
+  sshCommand = {{.SSHWrapper}}
+[user]
+  name = Integration Tester
+  email = itester@opentable.com
+[push]
+  default = simple

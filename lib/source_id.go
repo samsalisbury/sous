@@ -108,7 +108,10 @@ func parseChunks(sourceStr string) []string {
 	source := norm.NFC.String(sourceStr)
 
 	delim := DefaultDelim
-	if !('A' <= source[0] && source[0] <= 'Z') && !('a' <= source[0] && source[0] <= 'z') {
+	if !('A' <= source[0] && source[0] <= 'Z') &&
+		!('a' <= source[0] && source[0] <= 'z') &&
+		!('0' <= source[0] && source[0] <= '9') &&
+		!(source[0] == '.' || source[0] == '/') {
 		delim = source[0:1]
 		source = source[1:]
 	}

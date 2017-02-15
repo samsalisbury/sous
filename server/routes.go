@@ -1,8 +1,10 @@
 package server
 
+import "github.com/opentable/sous/util/restful"
+
 var (
 	// SousRouteMap is the configuration of route for the application.
-	SousRouteMap = RouteMap{
+	SousRouteMap = restful.RouteMap{
 		{"gdm", "/gdm", &GDMResource{}},
 		{"defs", "/defs", &StateDefResource{}},
 		{"manifest", "/manifest", &ManifestResource{}},

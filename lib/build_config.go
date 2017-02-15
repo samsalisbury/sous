@@ -210,24 +210,5 @@ func (c *BuildConfig) Advisories(ctx *BuildContext) []string {
 		advs = append(advs, string(UnpushedRev))
 	}
 
-	/*
-		BuildContext struct {
-			Sh      shell.Shell
-			Source  SourceContext
-			Scratch ScratchContext
-			Machine Machine
-			User    user.User
-			Changes Changes
-		}
-
-		SourceContext struct {
-			RootDir, OffsetDir, Branch, Revision string
-			Files, ModifiedFiles, NewFiles       []string
-			Tags                                 []Tag
-			NearestTagName, NearestTagRevision   string
-			PossiblePrimaryRemoteURL             string
-			DirtyWorkingTree                     bool
-		}
-	*/
 	return advs
 }

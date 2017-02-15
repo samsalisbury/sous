@@ -1,0 +1,5 @@
+# passwords in tests suck.
+PasswordAuthentication no
+UserKnownHostsFile /dev/null
+StrictHostKeyChecking no
+# This setting presumes a GOPATH setting, which may not be correct

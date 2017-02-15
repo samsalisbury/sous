@@ -3,7 +3,6 @@ package cli
 import (
 	"flag"
 	"io/ioutil"
-	"log"
 	"os"
 
 	"github.com/opentable/sous/config"
@@ -70,18 +69,15 @@ func (ss *SousServer) Execute(args []string) cmdr.Result {
 	}
 	ss.Log.Info.Println("Starting scheduled GDM resolution.")
 
-	var arWrapper, second struct {
+	var arWrapper struct {
 		*sous.AutoResolver
 	}
 	ss.SousGraph.MustInject(&arWrapper)
-	ss.SousGraph.MustInject(&second)
-	log.Printf("%#v", arWrapper)
-	log.Printf("%#v", second)
 	arWrapper.AutoResolver.Kickoff()
 
-	ss.Log.Info.Printf("Sous Server v%s running at %s", ss.Sous.Version, ss.flags.laddr)
+	ss.Log.Info.Printf("Sous Server v%s running at %s for %s", ss.Sous.Version, ss.flags.laddr, ss.DeployFilterFlags.Cluster)
 
-	return EnsureErrorResult(server.RunServer(ss.SousGraph, ss.flags.laddr)) //always non-nil
+	return EnsureErrorResult(server.Run(ss.SousGraph, ss.flags.laddr)) //always non-nil
 }
 
 func ensureGDMExists(repo, localPath string, log func(string, ...interface{})) error {

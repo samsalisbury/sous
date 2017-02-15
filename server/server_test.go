@@ -10,186 +10,88 @@ import (
 	"os"
 	"testing"
 
-	"github.com/julienschmidt/httprouter"
-	"github.com/nyarly/testify/assert"
 	"github.com/nyarly/testify/suite"
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
-	"github.com/opentable/sous/lib"
-	"github.com/samsalisbury/psyringe"
+	sous "github.com/opentable/sous/lib"
 )
 
-type (
-	TestResource struct {
-		Data string
-	}
-
-	TestGetExchanger struct {
-		*TestResource
-
-		httprouter.Params
-		*QueryValues
-	}
-	TestPutExchanger struct {
-		*TestResource
-
-		*http.Request
-		httprouter.Params
-		*QueryValues
-	}
-
-	TestData struct {
-		Data, Name, Extra string
-	}
-)
-
-func (tr *TestResource) Get() Exchanger { return &TestGetExchanger{TestResource: tr} }
-func (tr *TestResource) Put() Exchanger { return &TestPutExchanger{TestResource: tr} }
-
-func (ge *TestGetExchanger) Exchange() (interface{}, int) {
-	p := ge.Params.ByName("param")
-	if p == "missing" {
-		return TestData{}, 404
-	}
-	return TestData{ge.TestResource.Data, p, ge.QueryValues.Get("extra")}, 200
-}
-
-func (ge *TestPutExchanger) Exchange() (interface{}, int) {
-	var data TestData
-	dec := json.NewDecoder(ge.Request.Body)
-	if err := dec.Decode(&data); err != nil {
-		return err, http.StatusBadRequest
-	}
-	ge.TestResource.Data = data.Data
-
-	return struct{ Data, Name, Extra string }{
-		ge.TestResource.Data,
-		ge.Params.ByName("param"),
-		ge.QueryValues.Get("extra"),
-	}, 200
-}
-
-func testRouteMap() *RouteMap {
-	return &RouteMap{
-		{"test", "/test/:param", &TestResource{"base"}},
-	}
-}
-
-func justBytes(b []byte, e error) io.ReadCloser {
-	if e != nil {
-		return nil
-	}
-	return ioutil.NopCloser(bytes.NewBuffer(b))
-}
-
-func TestOverallRouter(t *testing.T) {
-	assert := assert.New(t)
-
-	gf := func() Injector {
-		g := graph.TestGraphWithConfig(&bytes.Buffer{}, os.Stdout, os.Stdout,
-			"StateLocation: '../ext/storage/testdata/in'\n")
-		g.Add(&config.Verbosity{})
-		AddsPerRequest(g)
-		return g
-	}
-	ts := httptest.NewServer(SousRouteMap.BuildRouter(gf))
-	defer ts.Close()
-
-	res, err := http.Get(ts.URL + "/gdm")
-	assert.NoError(err)
-	gdm, err := ioutil.ReadAll(res.Body)
-	res.Body.Close()
-	assert.NoError(err)
-	assert.Regexp(`"Deployments"`, string(gdm))
-	assert.Regexp(`"Location"`, string(gdm))
-	assert.NotEqual(res.Header.Get("Etag"), "")
-}
-
-type PutConditionalsSuite struct {
+type serverSuite struct {
 	suite.Suite
 	server *httptest.Server
-	client *http.Client
+	url    string
 }
 
-func (t *PutConditionalsSuite) SetupTest() {
-	dif := func() Injector { return psyringe.New(sous.SilentLogSet) }
-	t.server = httptest.NewServer(testRouteMap().BuildRouter(dif))
-
-	t.client = &http.Client{}
+func (suite *serverSuite) SetupTest() {
+	sous.Log.BeChatty()
+	g := graph.TestGraphWithConfig(&bytes.Buffer{}, os.Stdout, os.Stdout,
+		"StateLocation: '../ext/storage/testdata/in'\n")
+	g.Add(&config.Verbosity{})
+	suite.server = httptest.NewServer(Handler(g))
+	suite.url = suite.server.URL
 }
 
-func (t *PutConditionalsSuite) TeardownTest() {
-	t.server.Close()
+func (suite *serverSuite) TearDownTest() {
+	sous.Log.BeQuiet()
+	suite.server.Close()
+	suite.server = nil
+	suite.url = ""
 }
 
-func (t *PutConditionalsSuite) testReq(method, path string, data interface{}) *http.Request {
-	body := justBytes(json.Marshal(data))
-	t.Require().NotNil(body)
-	req, err := http.NewRequest("PUT", t.server.URL+path, body)
-	t.NoError(err)
-	return req
-}
-
-func (t *PutConditionalsSuite) TestPutConditionalsNoneMatch() {
-	req := t.testReq("PUT", "/test/missing?extra=two", TestData{"new", "zebra", "two"})
-	req.Header.Add("If-None-Match", "*")
-	res, err := t.client.Do(req)
-	t.NoError(err)
-	t.Equal(res.Status, "200 OK")
-}
-
-func (t *PutConditionalsSuite) TestPutConditionalsNoneMatchRejected() {
-	req := t.testReq("PUT", "/test/one?extra=two", TestData{"new", "zebra", "two"})
-	req.Header.Add("If-None-Match", "*")
-	res, err := t.client.Do(req)
-	t.NoError(err)
-	t.Equal(res.Status, "412 Precondition Failed")
-}
-
-func (t *PutConditionalsSuite) TestPutConditionals() {
-	var td TestData
-
-	res, err := http.Get(t.server.URL + "/test/one?extra=two")
-	t.NoError(err)
-	dec := json.NewDecoder(res.Body)
-	t.NoError(dec.Decode(&td))
+func (suite *serverSuite) TestOverallRouter() {
+	res, err := http.Get(suite.url + "/gdm")
+	suite.NoError(err)
+	gdm, err := ioutil.ReadAll(res.Body)
 	res.Body.Close()
-
-	t.Equal(TestData{"base", "one", "two"}, td)
-	etag := res.Header.Get("Etag")
-	t.NotEqual(etag, "")
-
-	req := t.testReq("PUT", "/test/one?extra=two", TestData{"changed", "one", "two"})
-	res, err = t.client.Do(req)
-	t.NoError(err)
-	t.Equal(res.Status, "428 Precondition Required")
+	suite.NoError(err)
+	suite.Regexp(`"Deployments"`, string(gdm))
+	suite.Regexp(`"Location"`, string(gdm))
+	suite.NotEqual(res.Header.Get("Etag"), "")
 }
 
-func (t *PutConditionalsSuite) TestPutConditionalsMatched() {
-	res, err := http.Get(t.server.URL + "/test/one?extra=two")
-	t.NoError(err)
-	var td TestData
+func (suite *serverSuite) decodeJSON(res *http.Response, data interface{}) {
 	dec := json.NewDecoder(res.Body)
-	t.NoError(dec.Decode(&td))
+	err := dec.Decode(data)
 	res.Body.Close()
-	t.Equal(TestData{"base", "one", "two"}, td)
+	suite.NoError(err)
+}
+
+func (suite *serverSuite) encodeJSON(data interface{}) io.Reader {
+	buf := &bytes.Buffer{}
+	enc := json.NewEncoder(buf)
+	suite.NoError(enc.Encode(data))
+	return buf
+}
+
+func (suite *serverSuite) TestUpdateServers() {
+	res, err := http.Get(suite.url + "/servers")
+	suite.NoError(err)
+
 	etag := res.Header.Get("Etag")
+	data := &serverListData{}
+	suite.decodeJSON(res, data)
+	suite.Len(data.Servers, 0)
 
-	req := t.testReq("PUT", "/test/one?extra=two", TestData{"changed", "one", "two"})
-	req.Header.Add("If-Match", etag)
-	res, err = t.client.Do(req)
-	t.NoError(err)
-	t.Equal(res.Status, "200 OK")
+	client := &http.Client{}
+
+	newServers := &serverListData{
+		Servers: []server{server{ClusterName: "name", URL: "url"}},
+	}
+
+	req, err := http.NewRequest("PUT", suite.url+"/servers", suite.encodeJSON(newServers))
+	req.Header.Set("If-Match", etag)
+	suite.NoError(err)
+	res, err = client.Do(req)
+	suite.NoError(err)
+
+	res, err = http.Get(suite.url + "/servers")
+	suite.NoError(err)
+
+	data = &serverListData{}
+	suite.decodeJSON(res, data)
+	suite.Len(data.Servers, 1)
 }
 
-func (t *PutConditionalsSuite) TestPutConditionalsMatchedRejected() {
-	req := t.testReq("PUT", "/test/one?extra=two", TestData{"changed", "one", "two"})
-	req.Header.Add("If-Match", "blarglearglebarg")
-	res, err := t.client.Do(req)
-	t.NoError(err)
-	t.Equal(res.Status, "412 Precondition Failed")
-}
-
-func TestPutConditionals(t *testing.T) {
-	suite.Run(t, new(PutConditionalsSuite))
+func TestServerSuite(t *testing.T) {
+	suite.Run(t, new(serverSuite))
 }

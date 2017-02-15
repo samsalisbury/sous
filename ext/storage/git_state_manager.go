@@ -44,6 +44,10 @@ func (gsm *GitStateManager) git(cmd ...string) error {
 	// It's also definitely causing problems in testing for me (JL) because my
 	// local git configuration effects testing behaviors.
 	git.Env = []string{"GIT_CONFIG_NOSYSTEM=true", "GIT_CONFIG_NOGLOBAL=true", "HOME=none", "XDG_CONFIG_HOME=none"}
+	gitssh := os.Getenv("GIT_SSH")
+	if gitssh != "" {
+		git.Env = append(git.Env, "GIT_SSH="+gitssh)
+	}
 	out, err := git.CombinedOutput()
 	if err == nil {
 		sous.Log.Debug.Printf("%+v: success", git.Args)
@@ -99,8 +103,13 @@ func (gsm *GitStateManager) WriteState(s *sous.State, u sous.User) error {
 	if !gsm.needCommit() {
 		return nil
 	}
-	author := u.String()
-	if err := gsm.git("commit", "-m", "sous commit: Update State", "--author", author); err != nil {
+	commitCommand := []string{"commit", "-m", "sous commit: Update State"}
+	if u.Complete() {
+		author := u.String()
+		commitCommand = append(commitCommand, "--author", author)
+	}
+
+	if err := gsm.git(commitCommand...); err != nil {
 		gsm.revert(tn)
 		return err
 	}

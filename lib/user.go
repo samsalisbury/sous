@@ -1,6 +1,6 @@
 package sous
 
-import "fmt"
+import "strings"
 
 // User represents a user of the Sous client.
 type User struct {
@@ -16,5 +16,18 @@ type User struct {
 //
 // This is used directly by git commit --author, and is reasonable in logs etc.
 func (u User) String() string {
-	return fmt.Sprintf("%s <%s>", u.Name, u.Email)
+	parts := []string{}
+	if u.Name != "" {
+		parts = append(parts, u.Name)
+	}
+	if u.Email != "" {
+		parts = append(parts, "<"+u.Email+">")
+	}
+
+	return strings.Join(parts, " ")
+}
+
+// Complete returns true only if both Name and Email have a non-empty value
+func (u User) Complete() bool {
+	return u.Name != "" && u.Email != ""
 }

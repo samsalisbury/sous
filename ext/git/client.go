@@ -34,6 +34,9 @@ func NewClient(sh *shell.Sh) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	sh.Cmd(bin, "config", "-l").Stdout()
+
 	v, err := semv.ParseAny(s)
 	if err != nil {
 		return nil, err

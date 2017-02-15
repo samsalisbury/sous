@@ -1,4 +1,4 @@
-package server
+package restful
 
 import (
 	"bytes"
@@ -20,7 +20,7 @@ type (
 	// The MetaHandler collects common behavior for route handlers.
 	MetaHandler struct {
 		router        *httprouter.Router
-		graphFac      GraphFactory //XXX This is a workaround for a bug in psyringe.Clone()
+		graphFac      func() Injector //XXX This is a workaround for a bug in psyringe.Clone()
 		statusHandler *StatusMiddleware
 	}
 
@@ -44,8 +44,6 @@ type (
 		MustInject(...interface{})
 		Add(...interface{})
 	}
-	// A GraphFactory builds a SousGraph.
-	GraphFactory func() Injector
 )
 
 // Exchange implements Exchanger on ExchangeLogger.
@@ -87,7 +85,7 @@ func (mh *MetaHandler) HeadHandling(factory ExchangeFactory) httprouter.Handle {
 func (mh *MetaHandler) PutHandling(factory ExchangeFactory) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		if r.Header.Get("If-Match") == "" && r.Header.Get("If-None-Match") == "" {
-			mh.writeHeaders(http.StatusPreconditionRequired, w, r, "")
+			mh.writeHeaders(http.StatusPreconditionRequired, w, r, "PUT requires If-Match or If-None-Match")
 			return
 		}
 
@@ -130,7 +128,6 @@ func (mh *MetaHandler) ExchangeGraph(w http.ResponseWriter, r *http.Request, p h
 	g := mh.graphFac()
 	g.Add(&ResponseWriter{ResponseWriter: w}, r, p)
 	g.Add(parseQueryValues)
-	g.Add(getUser)
 	return g
 }
 

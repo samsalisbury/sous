@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"path/filepath"
 	"text/template"
 
 	"github.com/opentable/sous/lib"
@@ -124,12 +123,10 @@ func (b *Builder) recordName(br *sous.BuildResult, bc *sous.BuildContext) error 
 
 // VersionTag computes an image tag from a SourceVersion's version
 func (b *Builder) VersionTag(v sous.SourceID) string {
-	Log.Debug.Printf("Version tag: % #v => %s", v, versionName(v))
-	return filepath.Join(b.DockerRegistryHost, versionName(v))
+	return versionTag(b.DockerRegistryHost, v)
 }
 
 // RevisionTag computes an image tag from a SourceVersion's revision id
 func (b *Builder) RevisionTag(v sous.SourceID) string {
-	Log.Debug.Printf("RevisionTag: % #v => %s", v, revisionName(v))
-	return filepath.Join(b.DockerRegistryHost, revisionName(v))
+	return revisionTag(b.DockerRegistryHost, v)
 }

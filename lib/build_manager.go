@@ -55,18 +55,30 @@ func (m *BuildManager) RegisterAndWarnAdvisories(br *BuildResult, bc *BuildConte
 
 // OffsetFromWorkdir sets the offset for the BuildManager to be the indicated directory.
 // It's a convenience for command line users who can `sous build <dir>` (and therefore get tab-completion etc)
-func (m *BuildManager) OffsetFromWorkdir(workdir, offset string) error {
+func (m *BuildManager) OffsetFromWorkdir(offset string) error {
 	cfg := m.BuildConfig
 	if cfg.Offset != "" { // because --offset
 		return errors.New("Cannot use both --offset and path argument")
 	}
 	sc := cfg.Context.Source
-	offset, err := filepath.Rel(sc.RootDir, filepath.Join(workdir, offset))
+	workdir := sc.OffsetDir
+
+	workAbs := filepath.Join(sc.RootDir, workdir)
+
+	if !filepath.IsAbs(offset) {
+		offset = filepath.Join(workAbs, offset)
+	}
+
+	offset, err := filepath.Rel(sc.RootDir, offset)
+
 	if err != nil {
-		return err
+		return errors.Wrap(err, "offset")
 	}
 	if strings.HasPrefix(offset, "..") {
 		return errors.Errorf("Offset %q outside of project root %q", offset, sc.RootDir)
+	}
+	if offset == "." {
+		offset = ""
 	}
 
 	cfg.Offset = offset

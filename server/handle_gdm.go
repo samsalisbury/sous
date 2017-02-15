@@ -1,6 +1,9 @@
 package server
 
-import "github.com/opentable/sous/lib"
+import (
+	"github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/restful"
+)
 
 type (
 	// GDMResource is the resource for the GDM
@@ -17,7 +20,7 @@ type (
 )
 
 // Get implements Getable on GDMResource
-func (gr *GDMResource) Get() Exchanger { return &GDMHandler{} }
+func (gr *GDMResource) Get() restful.Exchanger { return &GDMHandler{} }
 
 // Exchange implements the Handler interface
 func (h *GDMHandler) Exchange() (interface{}, int) {

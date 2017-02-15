@@ -3,6 +3,7 @@ package server
 import (
 	"github.com/opentable/sous/graph"
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/restful"
 )
 
 type (
@@ -13,8 +14,9 @@ type (
 )
 
 // AddsPerRequest registers items into a SousGraph that need to be fresh per request
-func AddsPerRequest(g Injector) {
+func AddsPerRequest(g restful.Injector) {
 	g.Add(liveGDM)
+	g.Add(getUser)
 }
 
 func liveGDM(sr graph.StateReader) (*LiveGDM, error) {

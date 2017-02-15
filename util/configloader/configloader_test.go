@@ -7,6 +7,11 @@ import (
 
 type TestConfig struct {
 	SomeVar string `env:"TEST_SOME_VAR"`
+	TestedNested
+}
+
+type TestedNested struct {
+	NestedVar string `env:"TEST_NESTED_VAR"`
 }
 
 func (tc *TestConfig) FillDefaults() error {
@@ -46,6 +51,7 @@ func TestLoad_Env(t *testing.T) {
 
 	expected := "other value"
 	os.Setenv("TEST_SOME_VAR", expected)
+	os.Setenv("TEST_NESTED_VAR", expected)
 
 	if e := os.Getenv("TEST_SOME_VAR"); e != expected {
 		t.Fatalf("setenv failed")
@@ -57,6 +63,10 @@ func TestLoad_Env(t *testing.T) {
 
 	if c.SomeVar != expected {
 		t.Errorf("got SomeVar=%q; want %q", c.SomeVar, expected)
+	}
+
+	if c.TestedNested.NestedVar != expected {
+		t.Errorf("got NestedVar=%q; want %q", c.TestedNested.NestedVar, expected)
 	}
 }
 

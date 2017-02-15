@@ -48,6 +48,9 @@ func fileDiffs(pathPairs [][]string, localMD5, remoteMD5 map[string]string) [][]
 
 		if localPresent != remotePresent || strings.Compare(remoteHash, localHash) != 0 {
 			differentPairs = append(differentPairs, []string{localPath, remotePath})
+			log.Printf(" - differ!\n")
+		} else {
+			log.Printf(" - same.\n")
 		}
 	}
 	tw.Flush()

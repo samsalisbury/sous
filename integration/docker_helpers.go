@@ -67,8 +67,8 @@ func WrapCompose(m *testing.M, composeDir string) (resultCode int) {
 	}
 
 	ip = envDesc.AgentIP
-	registryName = envDesc.RegistryName
-	SingularityURL = envDesc.SingularityURL
+	registryName = envDesc.RegistryName()
+	SingularityURL = envDesc.SingularityURL()
 
 	log.Print("   *** Beginning tests... ***\n\n")
 	resultCode = m.Run()
