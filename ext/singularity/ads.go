@@ -15,6 +15,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// c is a temporary global, it will be moved somewhere more sensible soon.
 var c = coaxer.NewCoaxer(func(c *coaxer.Coaxer) {
 	messages := make(chan string)
 	go func() {
@@ -60,6 +61,9 @@ type requestContext struct {
 	promise   coaxer.Promise
 }
 
+// newRequestContext initialises a requestContext and begins making HTTP
+// requests to get the request (via coaxer). We can access the results of
+// this via the returned requestContext's promise field.
 func (ab *adsBuild) newRequestContext(requestID string) requestContext {
 	rc := requestContext{
 		adsBuild:  *ab,
@@ -73,6 +77,8 @@ func (ab *adsBuild) newRequestContext(requestID string) requestContext {
 	return rc
 }
 
+// RequestParent returns the request parent if it was eventually retrieved, or
+// an error if the retrieve failed.
 func (rc *requestContext) RequestParent() (*dtos.SingularityRequestParent, error) {
 	if err := rc.promise.Err(); err != nil {
 		return nil, err
@@ -80,8 +86,7 @@ func (rc *requestContext) RequestParent() (*dtos.SingularityRequestParent, error
 	return rc.promise.Value().(*dtos.SingularityRequestParent), nil
 }
 
-// DeployStateBuilder visits each phase in the life-cycle of building a
-// deployment and gathers the data needed to populate its Result field.
+// DeployStateBuilder gathers information about the state of deployments.
 type DeployStateBuilder struct {
 	requestContext
 	// CurrentDeployID is the singularity deploy ID of the currently active or
@@ -91,6 +96,11 @@ type DeployStateBuilder struct {
 	// CurrentDeployStatus is the status of the current singularity deployment,
 	// either sous.DeployStatusActive or sous.DeployStatusComing.
 	CurrentDeployStatus sous.DeployStatus
+	// PreviousDeployID is the ID of the previous deploy for request
+	// requestContext.RequestID.
+	PreviousDeployID string
+	// PreviousDeployStatus is the status of the previous deployment.
+	PreviousDeployStatus sous.DeployStatus
 }
 
 // DeploymentBuilder is responsible for constructing a sous.Deployment from a
@@ -265,7 +275,7 @@ func (ds *DeployStateBuilder) newDeploymentBuilder(deployID string) *DeploymentB
 
 	promise := c.Coax(ds.adsBuild.Context, func() (interface{}, error) {
 		return ds.Client.GetDeploy(ds.RequestID, deployID)
-	}, "getting deployment %q", deployID)
+	}, "get deployment %q", deployID)
 
 	return &DeploymentBuilder{
 		requestContext: ds.requestContext,

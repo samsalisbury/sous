@@ -14,11 +14,12 @@ func TestGetDepSetWorks(t *testing.T) {
 	assert := assert.New(t)
 
 	baseURL := "http://test-singularity.org"
-	whip := make(map[string]swaggering.DummyControl)
 
 	reg := sous.NewDummyRegistry()
-	client, co := singularity.NewDummyClient(baseURL)
-	co.FeedDTO(&dtos.SingularityRequestParentList{
+
+	client, controller := singularity.NewDummyClient(baseURL)
+
+	controller.FeedDTO(&dtos.SingularityRequestParentList{
 		&dtos.SingularityRequestParent{
 			RequestDeployState: &dtos.SingularityRequestDeployState{
 				ActiveDeploy: &dtos.SingularityDeployMarker{
@@ -34,7 +35,7 @@ func TestGetDepSetWorks(t *testing.T) {
 		},
 	}, nil)
 
-	co.FeedDTO(&dtos.SingularityDeployHistory{
+	controller.FeedDTO(&dtos.SingularityDeployHistory{
 		Deploy: &dtos.SingularityDeploy{
 			Id: "testdep",
 			ContainerInfo: &dtos.SingularityContainerInfo{
@@ -51,7 +52,6 @@ func TestGetDepSetWorks(t *testing.T) {
 			Resources: &dtos.Resources{},
 		},
 	}, nil)
-	whip[baseURL] = co
 
 	dep := Deployer{
 		Registry: reg,
