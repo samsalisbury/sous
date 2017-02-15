@@ -257,7 +257,7 @@ func TestShellLevelIntegration(t *testing.T) {
 	cygnus --env TASK_HOST --env PORT0 {{.EnvDesc.SingularityURL}}
 	leftport=$(cygnus --env PORT0 {{.EnvDesc.SingularityURL}} | grep 'sous-server.*left' | awk '{ print $3 }')
 	rightport=$(cygnus --env PORT0 {{.EnvDesc.SingularityURL}} | grep 'sous-server.*right' | awk '{ print $3 }')
-	cygnus --env TASK_HOST --env PORT0 {{.EnvDesc.SingularityURL}}
+	cygnus --env TASK_HOST --env PORT0 -K -s {{.EnvDesc.SingularityURL}}
 
 	serverURL=http://{{.EnvDesc.AgentIP}}:$leftport
 	echo "Determined server url as $serverURL"
