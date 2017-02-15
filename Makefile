@@ -104,13 +104,15 @@ test-gofmt:
 test-unit:
 	go test $(TEST_VERBOSE) ./...
 
-test-integration: test-setup linux-build
-	rm -rf doc/shellexamples/*
+test-integration: test-setup
 	SOUS_QA_DESC=$(QA_DESC) go test $(TEST_VERBOSE) ./integration --tags=integration
-	cat doc/shellexamples/*.blended
 
 test-setup:  sous_qa_setup
 	./sous_qa_setup --compose-dir ./integration/test-registry/ --out-path=$(QA_DESC)
+
+test-cli: test-setup linux-build
+	rm -rf doc/shellexamples/*
+	SOUS_QA_DESC=$(QA_DESC) go test $(TEST_VERBOSE) ./integration --tags=commandline
 
 $(BIN_DIR):
 	mkdir -p $@

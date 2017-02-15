@@ -28,7 +28,7 @@ type (
 
 // New creates a new ShellTest
 func New(t *testing.T, name string, ctx interface{}, env map[string]string) *ShellTest {
-	sh, err := NewShell(env)
+	sh, err := newShell(env)
 	if err != nil {
 		t.Fatal(err)
 		sh = nil

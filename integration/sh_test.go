@@ -1,4 +1,4 @@
-// +build integration
+// +build commandline
 
 package integration
 
@@ -185,8 +185,8 @@ func TestShellLevelIntegration(t *testing.T) {
 	cp integration/test-registry/git-server/git_pubkey_rsa* ~/dot-ssh/
 
 	cd {{.Workdir}}
-	chmod go-rwx -R ~/dot-ssh
-	chmod +x -R ~/bin/*
+	chmod -R go-rwx ~/dot-ssh
+	chmod -R +x ~/bin/*
 	ssh -o ConnectTimeout=1 -o PasswordAuthentication=no -F "${HOME}/dot-ssh/config" root@{{.GitSSH}} -p 2222 /reset-repos < /dev/null
 	`,
 		defaultCheck)
@@ -250,14 +250,15 @@ func TestShellLevelIntegration(t *testing.T) {
 	# This is kind of a hack - in normal operation, Sous would block until its
 	# services had been accepted, but when bootstrapping, we need to wait for them
 	# to come up.
-	while [ $(cygnus -H {{.EnvDesc.SingularityURL}} | grep sous-server | wc -l) -lt 2 ]; do
+	for n in {1..30}; do
+	  if [ $(cygnus -H {{.EnvDesc.SingularityURL}} | grep sous-server | wc -l) -ge 2 ]; then
+		  break
+		fi
 	  sleep 0.1
 	done
 
-	cygnus --env TASK_HOST --env PORT0 {{.EnvDesc.SingularityURL}}
 	leftport=$(cygnus --env PORT0 {{.EnvDesc.SingularityURL}} | grep 'sous-server.*left' | awk '{ print $3 }')
 	rightport=$(cygnus --env PORT0 {{.EnvDesc.SingularityURL}} | grep 'sous-server.*right' | awk '{ print $3 }')
-	cygnus --env TASK_HOST --env PORT0 -K -s {{.EnvDesc.SingularityURL}}
 
 	serverURL=http://{{.EnvDesc.AgentIP}}:$leftport
 	echo "Determined server url as $serverURL"
@@ -274,6 +275,7 @@ func TestShellLevelIntegration(t *testing.T) {
 	cat ~/servers.json
 	curl -v -X PUT -H "If-Match: ${ETAG//[$'\t\r\n ']}" -H "Content-Type: application/json" "${serverURL}/servers" --data "$(< ~/servers.json)"
 	curl -s "${serverURL}/servers"
+	cygnus --env TASK_HOST --env PORT0 -K -s {{.EnvDesc.SingularityURL}}
 	`,
 		func(name string, res shelltest.Result, t *testing.T) {
 			if len(res.Errs) > 0 {

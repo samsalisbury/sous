@@ -150,7 +150,7 @@ bash-3.2$ ssh-keyscan -p 2222 192.168.99.100 > known_hosts
 bash-3.2$ 
 bash-3.2$ git add key_sous@example.com known_hosts sous
 bash-3.2$ git commit -am "Adding ephemeral files"
-[master 6f674c7] Adding ephemeral files
+[master d3f5f40] Adding ephemeral files
  3 files changed, 30 insertions(+)
  create mode 100644 key_sous@example.com
  create mode 100644 known_hosts
@@ -159,23 +159,23 @@ bash-3.2$ git tag -am "0.0.2" 0.0.2
 bash-3.2$ git push
 Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
 To ssh://192.168.99.100:2222/repos/sous-server
-   bdfdd3f..6f674c7  master -> master
+   bdfdd3f..d3f5f40  master -> master
 bash-3.2$ git push --tags
 Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
 To ssh://192.168.99.100:2222/repos/sous-server
  * [new tag]         0.0.2 -> 0.0.2
 bash-3.2$ 
 bash-3.2$ sous build
-  (Sous)> running docker build -t 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2 -t 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:6f674c7694f2fb4e66fa2bc8c91df3eefbed4234 -
+  (Sous)> running docker build -t 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2 -t 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:d3f5f40556eb9a6b4b14a5843feefb714d33fce3 -
 warn: build may not be deployable in all clusters due to advisories:
   dirty workspace
   (Sous)> running docker push 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2
-  (Sous)> running docker push 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:6f674c7694f2fb4e66fa2bc8c91df3eefbed4234
-  (Sous)> [recording "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2" as the docker name for "192.168.99.100/2222/repos/sous-server,0.0.2+6f674c7694f2fb4e66fa2bc8c91df3eefbed4234"]
+  (Sous)> running docker push 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:d3f5f40556eb9a6b4b14a5843feefb714d33fce3
+  (Sous)> [recording "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2" as the docker name for "192.168.99.100/2222/repos/sous-server,0.0.2+d3f5f40556eb9a6b4b14a5843feefb714d33fce3"]
 Built: "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2"
 Advisories:
   dirty workspace
-Elapsed: 3.918213419s
+Elapsed: 2.77516526s
 bash-3.2$ sous deploy -cluster left # We expect to see 'Sous is running ... i<ter left # We expect to see 'Sous is running ... in                          workstation mode' here:
 warn: No server set, Sous is running in server or workstation mode.
 warn: Configure a server like this: sous config server http://some.sous.server

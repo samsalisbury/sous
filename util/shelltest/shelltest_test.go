@@ -7,7 +7,7 @@ import (
 
 func TestShAssumptions(t *testing.T) {
 	log.SetFlags(log.Lshortfile)
-	shell, err := NewShell(nil)
+	shell, err := newShell(nil)
 	if err != nil {
 		t.Fatal(err)
 	}

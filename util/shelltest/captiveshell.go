@@ -78,8 +78,7 @@ func newLiveStream(from io.Reader, events <-chan int) *liveStream {
 	return ls
 }
 
-// NewShell creates a new CaptiveShell with an environment dictacted by env.
-func NewShell(env map[string]string) (sh *captiveShell, err error) {
+func newShell(env map[string]string) (sh *captiveShell, err error) {
 	sh = &captiveShell{}
 	sh.Cmd = exec.Command("bash", "--norc", "-i")
 
