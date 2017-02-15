@@ -1,0 +1,27 @@
+Determined server url as http://192.168.99.100:31642
+HTTP/1.1 404 Not Found
+Content-Type: text/plain; charset=utf-8
+X-Content-Type-Options: nosniff
+Date: Wed, 15 Feb 2017 18:16:02 GMT
+Content-Length: 19
+
+set Server to "http://192.168.99.100:31642"
+Set server URL to: http://192.168.99.100:31642
+g5VMZUpJRha40Z6CUDIfPQ==
+{
+  "Servers": [
+    {
+      "ClusterName": "left",
+      "URL": "http://192.168.99.100:31642"
+    },
+    {
+      "ClusterName": "right",
+      "URL": "http://192.168.99.100:31158"
+    }
+  ]
+}
+{"Servers":[{"ClusterName":"left","URL":"http://192.168.99.100:31642"},{"ClusterName":"right","URL":"http://192.168.99.100:31158"}]}
+{"Servers":[{"ClusterName":"left","URL":"http://192.168.99.100:31642"},{"ClusterName":"right","URL":"http://192.168.99.100:31158"}]}
+Request ID                                   Deploy ID                              State     TASK_HOST PORT0 Task Status
+192.168.99.100>2222>repos>sous-server::right 0_0_2_b7e293b849874744bfb7346f684d15af localhost 31158     TASK_RUNNING
+192.168.99.100>2222>repos>sous-server::left  0_0_2_1aa53b02449e496583604d08a8c24ef4 localhost 31642     TASK_RUNNING

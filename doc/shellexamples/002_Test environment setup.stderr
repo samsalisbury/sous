@@ -14,8 +14,8 @@ bash-3.2$ go install . #install the current sous project
 bash-3.2$ cp integration/test-registry/git-server/git_pubkey_rsa* ~/dot-ssh/
 bash-3.2$ 
 bash-3.2$ cd /tmp/sous-work
-bash-3.2$ chmod go-rwx -R ~/dot-ssh
-bash-3.2$ chmod +x -R ~/bin/*
+bash-3.2$ chmod -R go-rwx ~/dot-ssh
+bash-3.2$ chmod -R +x ~/bin/*
 bash-3.2$ ssh -o ConnectTimeout=1 -o PasswordAuthentication=no -F "${HOME}/do<eout=1 -o PasswordAuthentication=no -F "${HOME}/dot                         -ssh/config" root@192.168<cation=no -F "${HOME}/dot-ssh/config" root@192.168.                         99.100 -p 2222 /reset-rep<ssh/config" root@192.168.99.100 -p 2222 /reset-repo                         s < /dev/null
 Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
 bash-3.2$ 

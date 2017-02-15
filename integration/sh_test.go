@@ -282,7 +282,7 @@ func TestShellLevelIntegration(t *testing.T) {
 				t.Errorf("Trouble building GDM: \n\t%s", res.Errs)
 			}
 
-			if !res.Matches(`URL is: http`) {
+			if !res.Matches(`Set server URL to: http`) {
 				t.Fatalf("Sous server not running!")
 			}
 		})

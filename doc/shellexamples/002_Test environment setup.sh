@@ -13,6 +13,6 @@ go install . #install the current sous project
 cp integration/test-registry/git-server/git_pubkey_rsa* ~/dot-ssh/
 
 cd /tmp/sous-work
-chmod go-rwx -R ~/dot-ssh
-chmod +x -R ~/bin/*
+chmod -R go-rwx ~/dot-ssh
+chmod -R +x ~/bin/*
 ssh -o ConnectTimeout=1 -o PasswordAuthentication=no -F "${HOME}/dot-ssh/config" root@192.168.99.100 -p 2222 /reset-repos < /dev/null
