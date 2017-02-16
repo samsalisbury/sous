@@ -1,0 +1,27 @@
+source: {{.GitLocation}}/sous-server
+owners:
+  - test@test.com
+kind: http-service
+deployments:
+  left:
+    env:
+      GDM_REPO: "{{.GitRemoteBase}}/gdm"
+      SOUS_DOCKER_REGISTRY_HOST: {{.EnvDesc.RegistryName}}
+    resources:
+      cpus: "0.1"
+      memory: "100"
+      ports: "1"
+    numinstances: 1
+    volumes: []
+    version: 0.0.0
+  right:
+    env:
+      GDM_REPO: "{{.GitRemoteBase}}/gdm"
+      SOUS_DOCKER_REGISTRY_HOST: {{.EnvDesc.RegistryName}}
+    resources:
+      cpus: "0.1"
+      memory: "100"
+      ports: "1"
+    numinstances: 1
+    volumes: []
+    version: 0.0.0

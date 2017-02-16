@@ -1,0 +1,5 @@
+#! /bin/sh
+
+cd "$(dirname "$0")" || exit 1
+chmod go-rwx ./git_pubkey_rsa*
+ssh -i "./git_pubkey_rsa" -o PasswordAuthentication=no -F "./ssh-config" "${@}"

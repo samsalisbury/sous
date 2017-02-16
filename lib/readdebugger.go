@@ -25,7 +25,7 @@ func NewReadDebugger(rc io.ReadCloser, log func([]byte, int, error)) *ReadDebugg
 // Read implements Reader on ReadDebugger.
 func (rd *ReadDebugger) Read(p []byte) (int, error) {
 	n, err := rd.wrapped.Read(p)
-	rd.read = append(rd.read, p...)
+	rd.read = append(rd.read, p[:n]...)
 	rd.count += n
 	if err != nil {
 		rd.log(rd.read, rd.count, err)

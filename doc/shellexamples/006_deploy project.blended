@@ -1,0 +1,67 @@
+
+bash-3.2$ cat $XDG_CONFIG/sous/config.yaml
+StateLocation: /Users/jlester/.local/share/sous/state
+Server: http://192.168.99.100:31041
+SiblingURLs: {}
+BuildStateDir: ""
+Docker:
+  RegistryHost: 192.168.99.100:5000
+  DatabaseDriver: sqlite3_sous
+  DatabaseConnection: file:dummy.db?mode=memory&cache=shared
+User:
+  Name: test
+  Email: test@test.com
+bash-3.2$ sous config
+StateLocation: /Users/jlester/.local/share/sous/state
+Server: http://192.168.99.100:31041
+SiblingURLs: {}
+BuildStateDir: ""
+Docker:
+  RegistryHost: 192.168.99.100:5000
+  DatabaseDriver: sqlite3_sous
+  DatabaseConnection: file:dummy.db?mode=memory&cache=shared
+User:
+  Name: test
+  Email: test@test.com
+bash-3.2$ git clone ssh://root@192.168.99.100:2222/repos/sous-demo
+Cloning into 'sous-demo'...
+Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
+bash-3.2$ cd sous-demo
+bash-3.2$ git tag -am 'Release!' 0.0.23
+bash-3.2$ git push --tags
+Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
+To ssh://192.168.99.100:2222/repos/sous-demo
+ * [new tag]         0.0.23 -> 0.0.23
+bash-3.2$ sous init
+Source: 192.168.99.100/2222/repos/sous-demo
+Owners: []
+Kind: http-service
+Deployments:
+  left:
+    Resources:
+      cpus: "0.1"
+      memory: "100"
+      ports: "1"
+    NumInstances: 1
+    Volumes: []
+    Version: 0.0.0
+  right:
+    Resources:
+      cpus: "0.1"
+      memory: "100"
+      ports: "1"
+    NumInstances: 1
+    Volumes: []
+    Version: 0.0.0
+bash-3.2$ sous build
+  (Sous)> running docker build -t 192.168.99.100:5000/192.168.99.100/2222/repos/sous-demo:0.0.23 -t 192.168.99.100:5000/192.168.99.100/2222/repos/sous-demo:b27658803a61a9fe538ef6ac063e9eddc454277f -
+  (Sous)> running docker push 192.168.99.100:5000/192.168.99.100/2222/repos/sous-demo:0.0.23
+  (Sous)> running docker push 192.168.99.100:5000/192.168.99.100/2222/repos/sous-demo:b27658803a61a9fe538ef6ac063e9eddc454277f
+  (Sous)> [recording "192.168.99.100:5000/192.168.99.100/2222/repos/sous-demo:0.0.23" as the docker name for "192.168.99.100/2222/repos/sous-demo,0.0.23+b27658803a61a9fe538ef6ac063e9eddc454277f"]
+Built: "192.168.99.100:5000/192.168.99.100/2222/repos/sous-demo:0.0.23"
+Elapsed: 3.09882943s
+bash-3.2$ sous deploy -cluster left
+
+
+bash-3.2$ 
+bash-3.2$ 

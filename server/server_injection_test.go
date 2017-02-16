@@ -2,19 +2,18 @@ package server
 
 import (
 	"bytes"
-	"net/http/httptest"
 	"os"
 	"testing"
 
-	"github.com/julienschmidt/httprouter"
 	"github.com/nyarly/testify/assert"
 	"github.com/nyarly/testify/require"
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/restful"
 )
 
-func basicInjectedHandler(factory ExchangeFactory, t *testing.T) Exchanger {
+func basicInjectedHandler(factory restful.ExchangeFactory, t *testing.T) restful.Exchanger {
 	require := require.New(t)
 
 	g := graph.TestGraphWithConfig(&bytes.Buffer{}, os.Stdout, os.Stdout, "StateLocation: '../ext/storage/testdata/in'\n")
@@ -22,19 +21,13 @@ func basicInjectedHandler(factory ExchangeFactory, t *testing.T) Exchanger {
 	g.Add(&config.DeployFilterFlags{Cluster: "test"})
 	g.Add(graph.DryrunBoth)
 
-	gf := func() Injector {
+	gf := func() restful.Injector {
 		return g.Clone()
 	}
 
-	r := httprouter.New()
-	mh := SousRouteMap.buildMetaHandler(r, gf)
+	exchLogger := SousRouteMap.SingleExchanger(factory, gf)
 
-	w := httptest.NewRecorder()
-	rq := httptest.NewRequest("GET", "/", nil)
-
-	serverListGetLogger := mh.injectedHandler(factory, w, rq, httprouter.Params{})
-
-	logger, ok := serverListGetLogger.(*ExchangeLogger)
+	logger, ok := exchLogger.(*restful.ExchangeLogger)
 	require.True(ok)
 
 	return logger.Exchanger

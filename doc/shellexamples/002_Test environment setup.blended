@@ -1,0 +1,35 @@
+
+bash-3.2$ # These steps are required by the Sous integration tests
+bash-3.2$ # They're analogous to run-of-the-mill workstation maintenance.
+bash-3.2$ 
+bash-3.2$ cd /Users/jlester/golang/src/github.com/opentable/sous
+bash-3.2$ env
+DOCKER_HOST=tcp://192.168.99.100:2376
+GIT_SSH=/tmp/sous-work/home/bin/ssh_wrapper
+DOCKER_TLS_VERIFY=1
+PATH=/tmp/sous-work/sous/bin:~/bin:/usr/local/bin:/usr/bin:/bin:/tmp/sous-work/home/go/bin:/Users/jlester/golang/bin
+PWD=/Users/jlester/golang/src/github.com/opentable/sous
+SHLVL=1
+HOME=/tmp/sous-work/home
+DOCKER_CERT_PATH=/Users/jlester/.docker/machine/machines/default
+GOROOT=
+XDG_CONFIG=/tmp/sous-work/home/dot-config
+GOPATH=/tmp/sous-work/home/go:/Users/jlester/golang
+_=/usr/bin/env
+OLDPWD=/Users/jlester/golang/src/github.com/opentable/sous/integration
+bash-3.2$ export SOUS_EXTRA_DOCKER_CA=/Users/jlester/golang/src/github.com/op<_DOCKER_CA=/Users/jlester/golang/src/github.com/ope                         ntable/sous/integration/t<golang/src/github.com/opentable/sous/integration/te                         st-registry/docker-regist<table/sous/integration/test-registry/docker-registr                         y/testing.crt
+bash-3.2$ mkdir -p /tmp/sous-work/home/go/{src,bin}
+bash-3.2$ 
+bash-3.2$ ### This build gives me trouble in tests...
+bash-3.2$ ### xgo does something weird and different with it's dep-cache dir
+bash-3.2$ # GOPATH=/tmp/sous-work/home/go make linux_build # we need Sous bui<s-work/home/go make linux_build # we need Sous buil                         t for linux for the serve<build # we need Sous built for linux for the server                         
+bash-3.2$ go install . #install the current sous project
+bash-3.2$ cp integration/test-registry/git-server/git_pubkey_rsa* ~/dot-ssh/
+bash-3.2$ 
+bash-3.2$ cd /tmp/sous-work
+bash-3.2$ chmod -R go-rwx ~/dot-ssh
+bash-3.2$ chmod -R +x ~/bin/*
+bash-3.2$ ssh -o ConnectTimeout=1 -o PasswordAuthentication=no -F "${HOME}/do<eout=1 -o PasswordAuthentication=no -F "${HOME}/dot                         -ssh/config" root@192.168<cation=no -F "${HOME}/dot-ssh/config" root@192.168.                         99.100 -p 2222 /reset-rep<ssh/config" root@192.168.99.100 -p 2222 /reset-repo                         s < /dev/null
+Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
+bash-3.2$ 
+bash-3.2$ 

@@ -1,6 +1,7 @@
 package docker
 
 import (
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -43,8 +44,6 @@ func SourceIDFromLabels(labels map[string]string) (sous.SourceID, error) {
 	return id, err
 }
 
-var stripRE = regexp.MustCompile("^([[:alpha:]]+://)?(github.com(/opentable)?)?")
-
 // Labels computes a map of labels that should be applied to a container
 // image that is built based on this SourceID.
 func Labels(sid sous.SourceID) map[string]string {
@@ -55,6 +54,8 @@ func Labels(sid sous.SourceID) map[string]string {
 	labels[DockerRepoLabel] = sid.Location.Repo
 	return labels
 }
+
+var stripRE = regexp.MustCompile("^([[:alpha:]]+://)?(github.com(/opentable)?)?")
 
 func imageRepoName(sl sous.SourceLocation) string {
 	name := sl.Repo
@@ -76,4 +77,22 @@ func versionName(sid sous.SourceID) string {
 
 func revisionName(sid sous.SourceID) string {
 	return strings.Join([]string{imageRepoName(sid.Location), sid.RevID()}, ":")
+}
+
+func fullRepoName(registryHost string, sl sous.SourceLocation) string {
+	frn := filepath.Join(registryHost, imageRepoName(sl))
+	Log.Debug.Printf("Repo name: % #v => %q", sl, frn)
+	return frn
+}
+
+func versionTag(registryHost string, v sous.SourceID) string {
+	verTag := filepath.Join(registryHost, versionName(v))
+	Log.Debug.Printf("Version tag: % #v => %s", v, verTag)
+	return verTag
+}
+
+func revisionTag(registryHost string, v sous.SourceID) string {
+	revTag := filepath.Join(registryHost, revisionName(v))
+	Log.Debug.Printf("RevisionTag: % #v => %s", v, revTag)
+	return revTag
 }

@@ -1,0 +1,3 @@
+#! /bin/sh
+
+{{.SSHExec}} -o PasswordAuthentication=no -F "{{.Homedir}}/dot-ssh/config" "${@}"

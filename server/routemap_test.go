@@ -1,11 +1,15 @@
 package server
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/opentable/sous/util/restful"
+)
 
 type pm map[string]string
 
 func TestSousRoutes(t *testing.T) {
-	test := func(er string, name string, kvs ...KV) {
+	test := func(er string, name string, kvs ...restful.KV) {
 		ar, err := SousRouteMap.PathFor(name, kvs...)
 		if err != nil {
 			t.Fatalf("Error getting a path: %#v", err)
@@ -19,16 +23,16 @@ func TestSousRoutes(t *testing.T) {
 		"/manifest?flavor=sweet&offset=alt&repo=github.com%2Fopentable%2Fsous",
 
 		"manifest",
-		KV{"repo", "github.com/opentable/sous"},
-		KV{"offset", "alt"},
-		KV{"flavor", "sweet"},
+		restful.KV{"repo", "github.com/opentable/sous"},
+		restful.KV{"offset", "alt"},
+		restful.KV{"flavor", "sweet"},
 	)
 	test(
 		"/manifest?offset=alt&repo=github.com%2Fopentable%2Fsous",
 
 		"manifest",
-		KV{"repo", "github.com/opentable/sous"},
-		KV{"offset", "alt"},
+		restful.KV{"repo", "github.com/opentable/sous"},
+		restful.KV{"offset", "alt"},
 	)
 	test(
 		"/status",

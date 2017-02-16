@@ -11,14 +11,15 @@ import (
 	"github.com/nyarly/testify/require"
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/restful"
 )
 
 func TestQueryValuesToManifestIDHappyPath(t *testing.T) {
 	assert := assert.New(t)
 
-	pq := func(s string) *QueryValues {
+	pq := func(s string) *restful.QueryValues {
 		v, _ := url.ParseQuery(s)
-		return &QueryValues{v}
+		return &restful.QueryValues{v}
 	}
 	ev := func(x interface{}, e error) error {
 		return e
@@ -46,9 +47,9 @@ func TestQueryValuesToManifestIDHappyPath(t *testing.T) {
 func TestQueryValuesToManifestIDSadPath(t *testing.T) {
 	assert := assert.New(t)
 
-	pq := func(s string) *QueryValues {
+	pq := func(s string) *restful.QueryValues {
 		v, _ := url.ParseQuery(s)
-		return &QueryValues{v}
+		return &restful.QueryValues{v}
 	}
 	ev := func(x interface{}, e error) error {
 		return e
@@ -69,7 +70,7 @@ func TestHandlesManifestGetNotKnown(t *testing.T) {
 
 	th := &GETManifestHandler{
 		State:       sous.NewState(),
-		QueryValues: &QueryValues{q},
+		QueryValues: &restful.QueryValues{q},
 	}
 	_, status := th.Exchange()
 	assert.Equal(404, status)
@@ -86,7 +87,7 @@ func TestHandlesManifestGetBadURL(t *testing.T) {
 
 	th := &GETManifestHandler{
 		State:       state,
-		QueryValues: &QueryValues{q},
+		QueryValues: &restful.QueryValues{q},
 	}
 	_, status := th.Exchange()
 	assert.Equal(404, status)
@@ -104,7 +105,7 @@ func TestHandlesManifestGet(t *testing.T) {
 
 	th := &GETManifestHandler{
 		State:       state,
-		QueryValues: &QueryValues{q},
+		QueryValues: &restful.QueryValues{q},
 	}
 	_, status := th.Exchange()
 	assert.Equal(status, 200)
@@ -139,8 +140,9 @@ func TestHandlesManifestPut(t *testing.T) {
 		Request:     req,
 		StateWriter: writer,
 		State:       state,
-		QueryValues: &QueryValues{q},
+		QueryValues: &restful.QueryValues{q},
 	}
+
 	data, status := th.Exchange()
 	assert.Equal(status, 200)
 	require.IsType(&sous.Manifest{}, data)

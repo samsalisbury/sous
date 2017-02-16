@@ -86,14 +86,34 @@ func (cl *configLoader) overrideWithEnv(target interface{}) error {
 
 func (cl *configLoader) forEachField(target interface{}, f func(field reflect.StructField, val reflect.Value) error) error {
 	v := reflect.ValueOf(target)
-	if v.Kind() != reflect.Ptr && v.Elem().Kind() != reflect.Struct {
+	if v.Kind() != reflect.Ptr || v.Elem().Kind() != reflect.Struct {
 		return fmt.Errorf("target was %T; need a pointer to struct", target)
 	}
 	v = v.Elem()
 	t := v.Type()
 	for i := 0; i < v.NumField(); i++ {
-		if err := f(t.Field(i), v.Field(i)); err != nil {
-			return err
+		field := t.Field(i)
+		value := v.Field(i)
+		switch field.Type.Kind() {
+		default:
+			if err := f(field, value); err != nil {
+				return err
+			}
+		case reflect.Struct:
+			if err := cl.forEachField(value.Addr().Interface(), f); err != nil {
+				return err
+			}
+		case reflect.Ptr:
+			if field.Type.Elem().Kind() == reflect.Struct {
+				if err := cl.forEachField(value.Interface(), f); err != nil {
+					return err
+				}
+				continue
+			}
+
+			if err := f(field, value); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -32,6 +33,8 @@ type (
 )
 
 func newSousConfig(lsc LocalSousConfig) *config.Config {
+	log.Printf("%#v", lsc)
+	log.Printf("%#v %[1]p", lsc.Config)
 	return lsc.Config
 }
 
@@ -115,7 +118,16 @@ func userInput(prompt, vDefault, eg string, v *string) {
 
 func userInitConfig(c *config.Config) {
 	if !terminal.IsTerminal(int(os.Stdout.Fd())) {
-		sous.Log.Warn.Println("Unable to run config wizard; no terminal attached.")
+		sous.Log.Warn.Println("Unable to run interactive configuration; stdout isn't attached to a terminal.")
+		return
+	}
+	if !terminal.IsTerminal(int(os.Stdin.Fd())) {
+		sous.Log.Warn.Println("Unable to run interactive configuration; stdin isn't attached to a terminall.")
+		return
+	}
+	if os.Getenv("TASK_HOST") != "" { // XXX This is terrible, but the terminal check fails (which breaks the Mesos servers)
+		sous.Log.Warn.Println("Refusing to run interactive configuration; TASK_HOST is set.")
+		return
 	}
 	fmt.Println(`
 	It looks like you haven't used Sous before (there's no config file).

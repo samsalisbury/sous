@@ -48,12 +48,15 @@ help:
 
 clean:
 	rm -rf $(COVER_DIR)
-	git ls-files -o | xargs rm -rf
+	git ls-files -o --exclude=.cleanprotect --exclude-per-directory=.cleanprotect | xargs rm -rf
 
 clean-containers:
 	-docker ps -q | xargs docker kill
 	-docker ps -aq | xargs docker rm
-	if docker images | egrep ^testregistry_registry; then docker rmi testregistry_registry; fi
+	-rm ./integration/test-registry/docker-registry/testing.crt
+	-docker rmi testregistry_registry
+	-docker rmi testregistry_gitserver
+	-docker rmi $$(docker images | egrep 'sous-(server|demo)' | awk '{ print $$3 }')
 
 gitlog:
 	git log `git describe --abbrev=0`..HEAD
@@ -65,6 +68,15 @@ legendary: coverage
 	legendary --hitlist .cadre/coverage.vim /tmp/sous-cover/*_merged.txt
 
 release: artifacts/$(DARWIN_TARBALL) artifacts/$(LINUX_TARBALL)
+
+install_build_tools:
+	go get github.com/karalabe/xgo
+	go get github.com/kardianos/govendor
+	go get github.com/nyarly/engulf
+
+
+linux-build: artifacts/$(LINUX_RELEASE_DIR)/sous
+	ln -sf ../$< dev_support/sous_linux
 
 semvertagchk:
 	@echo "$(SOUS_VERSION)" | egrep ^[0-9]+\.[0-9]+\.[0-9]+
@@ -98,6 +110,10 @@ test-integration: test-setup
 test-setup:  sous_qa_setup
 	./sous_qa_setup --compose-dir ./integration/test-registry/ --out-path=$(QA_DESC)
 
+test-cli: test-setup linux-build
+	rm -rf doc/shellexamples/*
+	SOUS_QA_DESC=$(QA_DESC) go test $(TEST_VERBOSE) ./integration --tags=commandline
+
 $(BIN_DIR):
 	mkdir -p $@
 
@@ -110,11 +126,11 @@ $(RELEASE_DIRS):
 	cp README.md artifacts/$@
 	cp LICENSE artifacts/$@
 
-artifacts/$(DARWIN_RELEASE_DIR)/sous: $(DARWIN_RELEASE_DIR) $(BIN_DIR)
+artifacts/$(DARWIN_RELEASE_DIR)/sous: $(DARWIN_RELEASE_DIR) $(BIN_DIR) install_build_tools
 	xgo $(CONCAT_XGO_ARGS) --targets=darwin/amd64  ./
 	mv $(BIN_DIR)/sous-darwin-10.6-amd64 $@
 
-artifacts/$(LINUX_RELEASE_DIR)/sous: $(LINUX_RELEASE_DIR) $(BIN_DIR)
+artifacts/$(LINUX_RELEASE_DIR)/sous: $(LINUX_RELEASE_DIR) $(BIN_DIR) install_build_tools
 	xgo $(CONCAT_XGO_ARGS) --targets=linux/amd64  ./
 	mv $(BIN_DIR)/sous-linux-amd64 $@
 

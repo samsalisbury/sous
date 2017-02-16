@@ -10,6 +10,7 @@ import (
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/server"
+	"github.com/opentable/sous/util/restful"
 	"github.com/samsalisbury/psyringe"
 	"github.com/samsalisbury/semv"
 )
@@ -72,7 +73,7 @@ func TestWriteState(t *testing.T) {
 	)
 	di.Add(&config.Verbosity{})
 
-	gf := func() server.Injector {
+	gf := func() restful.Injector {
 		cdi := di.Clone()
 		server.AddsPerRequest(cdi)
 		return cdi

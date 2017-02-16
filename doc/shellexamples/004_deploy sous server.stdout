@@ -1,0 +1,129 @@
+StateLocation: /Users/jlester/.local/share/sous/state
+Server: ""
+SiblingURLs: {}
+BuildStateDir: ""
+Docker:
+  RegistryHost: 192.168.99.100:5000
+  DatabaseDriver: sqlite3_sous
+  DatabaseConnection: file:dummy.db?mode=memory&cache=shared
+User:
+  Name: ""
+  Email: ""
+Docker:
+  RegistryHost: 192.168.99.100:5000
+/tmp/sous-work/sous-server /tmp/sous-work
+Source: 192.168.99.100/2222/repos/sous-server
+Owners: []
+Kind: http-service
+Deployments:
+  left:
+    Resources:
+      cpus: "0.1"
+      memory: "100"
+      ports: "1"
+    NumInstances: 1
+    Volumes: []
+    Version: 0.0.0
+  right:
+    Resources:
+      cpus: "0.1"
+      memory: "100"
+      ports: "1"
+    NumInstances: 1
+    Volumes: []
+    Version: 0.0.0
+source: 192.168.99.100/2222/repos/sous-server
+owners: []
+kind: http-service
+deployments:
+  left:
+    resources:
+      cpus: "0.1"
+      memory: "100"
+      ports: "1"
+    numinstances: 1
+    volumes: []
+    version: 0.0.0
+  right:
+    resources:
+      cpus: "0.1"
+      memory: "100"
+      ports: "1"
+    numinstances: 1
+    volumes: []
+    version: 0.0.0
+
+
+source: 192.168.99.100/2222/repos/sous-server
+owners:
+- test@test.com
+kind: http-service
+deployments:
+  left:
+    resources:
+      cpus: "0.1"
+      memory: "100"
+      ports: "1"
+    env:
+      GDM_REPO: ssh://root@192.168.99.100:2222/repos/gdm
+      SOUS_DOCKER_REGISTRY_HOST: 192.168.99.100:5000
+    numinstances: 1
+    volumes: []
+    version: 0.0.0
+  right:
+    resources:
+      cpus: "0.1"
+      memory: "100"
+      ports: "1"
+    env:
+      GDM_REPO: ssh://root@192.168.99.100:2222/repos/gdm
+      SOUS_DOCKER_REGISTRY_HOST: 192.168.99.100:5000
+    numinstances: 1
+    volumes: []
+    version: 0.0.0
+
+FROM golang:1.7
+
+# Add deploy key.
+COPY ./key_sous@example.com /root/.ssh/id_rsa
+COPY ./known_hosts /root/.ssh/known_hosts
+COPY ./docker.crt /docker.crt
+
+RUN chmod -R og-rwx /root/.ssh
+
+COPY ./sous /go/bin/sous
+
+COPY main.go /go/src/github.com/opentable/sous-server/
+WORKDIR /go/src/github.com/opentable/sous-server
+RUN go install -v
+
+# Run sous server.
+# NOTE: You must have set PORT0, GDM_REPO
+CMD /go/bin/sous-server
+.
+..
+.git
+Dockerfile
+docker.crt
+key_sous@example.com
+main.go
+sous
+sous-server.yaml
+[master b33f35e] Adding ephemeral files
+ 3 files changed, 30 insertions(+)
+ create mode 100644 key_sous@example.com
+ create mode 100644 known_hosts
+ create mode 100755 sous
+  (Sous)> running docker build -t 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2 -t 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:b33f35e28765a75b117b483e21aafa9941004fd7 -
+  (Sous)> running docker push 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2
+  (Sous)> running docker push 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:b33f35e28765a75b117b483e21aafa9941004fd7
+  (Sous)> [recording "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2" as the docker name for "192.168.99.100/2222/repos/sous-server,0.0.2+b33f35e28765a75b117b483e21aafa9941004fd7"]
+Built: "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2"
+Advisories:
+  dirty workspace
+Elapsed: 5.784082561s
+
+
+
+
+/tmp/sous-work

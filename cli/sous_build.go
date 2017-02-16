@@ -2,7 +2,6 @@ package cli
 
 import (
 	"flag"
-	"os"
 
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/lib"
@@ -51,11 +50,7 @@ func (sb *SousBuild) RegisterOn(psy Addable) {
 // Execute fulfills the cmdr.Executor interface
 func (sb *SousBuild) Execute(args []string) cmdr.Result {
 	if len(args) != 0 {
-		pwd, err := os.Getwd()
-		if err != nil {
-			return cmdr.EnsureErrorResult(err)
-		}
-		if err := sb.BuildManager.OffsetFromWorkdir(pwd, args[0]); err != nil {
+		if err := sb.BuildManager.OffsetFromWorkdir(args[0]); err != nil {
 			return cmdr.EnsureErrorResult(err)
 		}
 	}

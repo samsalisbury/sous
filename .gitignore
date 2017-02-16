@@ -2,6 +2,7 @@
 artifacts/
 samples/
 sous
+!sous/
 .agignore
 check-compile.results
 testdata/
@@ -11,3 +12,5 @@ sous_qa_setup
 !sous_qa_setup/
 tags
 .cadre/
+var/
+.cleanprotect

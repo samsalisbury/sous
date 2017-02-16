@@ -7,6 +7,7 @@ import (
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/firsterr"
+	"github.com/opentable/sous/util/restful"
 )
 
 type (
@@ -16,7 +17,7 @@ type (
 	// GETManifestHandler handles GET exchanges for manifests
 	GETManifestHandler struct {
 		*sous.State
-		*QueryValues
+		*restful.QueryValues
 	}
 
 	// PUTManifestHandler handles PUT exchanges for manifests
@@ -24,7 +25,7 @@ type (
 		*sous.State
 		*sous.LogSet
 		*http.Request
-		*QueryValues
+		*restful.QueryValues
 		User        ClientUser
 		StateWriter graph.StateWriter
 	}
@@ -32,21 +33,21 @@ type (
 	// DELETEManifestHandler handles DELETE exchanges for manifests
 	DELETEManifestHandler struct {
 		*sous.State
-		*QueryValues
+		*restful.QueryValues
 		StateWriter graph.StateWriter
 	}
 )
 
 // Get implements Getable for ManifestResource
-func (mr *ManifestResource) Get() Exchanger { return &GETManifestHandler{} }
+func (mr *ManifestResource) Get() restful.Exchanger { return &GETManifestHandler{} }
 
 // Put implements Putable for ManifestResource
-func (mr *ManifestResource) Put() Exchanger { return &PUTManifestHandler{} }
+func (mr *ManifestResource) Put() restful.Exchanger { return &PUTManifestHandler{} }
 
 // Delete implements Deleteable for ManifestResource
-func (mr *ManifestResource) Delete() Exchanger { return &DELETEManifestHandler{} }
+func (mr *ManifestResource) Delete() restful.Exchanger { return &DELETEManifestHandler{} }
 
-// Exchange implements Exchanger
+// Exchange implements restful.Exchanger
 func (gmh *GETManifestHandler) Exchange() (interface{}, int) {
 	mid, err := manifestIDFromValues(gmh.QueryValues)
 	if err != nil {
@@ -59,7 +60,7 @@ func (gmh *GETManifestHandler) Exchange() (interface{}, int) {
 	return m, http.StatusOK
 }
 
-// Exchange implements Exchanger
+// Exchange implements restful.Exchanger
 func (dmh *DELETEManifestHandler) Exchange() (interface{}, int) {
 	mid, err := manifestIDFromValues(dmh.QueryValues)
 	if err != nil {
@@ -74,7 +75,7 @@ func (dmh *DELETEManifestHandler) Exchange() (interface{}, int) {
 	return nil, http.StatusNoContent
 }
 
-// Exchange implements Exchanger
+// Exchange implements restful.Exchanger
 func (pmh *PUTManifestHandler) Exchange() (interface{}, int) {
 	mid, err := manifestIDFromValues(pmh.QueryValues)
 	if err != nil {
@@ -109,7 +110,7 @@ ManifestID{
 }
 */
 
-func manifestIDFromValues(qv *QueryValues) (sous.ManifestID, error) {
+func manifestIDFromValues(qv *restful.QueryValues) (sous.ManifestID, error) {
 	var r, o, f string
 	var err error
 	err = firsterr.Returned(
