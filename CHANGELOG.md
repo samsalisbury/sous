@@ -8,6 +8,7 @@ with respect to its command line interface and HTTP interface.
 
 ## [Unreleased]
 
+
 ### Added
 
 - 'sous init -use-otpl-deploy' now supports flavors
@@ -25,6 +26,9 @@ with respect to its command line interface and HTTP interface.
 - `sous deploy`
   (and `sous plumbing status`)
   now await Singularity marking the indended deployment as active before returning.
+### Fixed
+- Deployment filters (which are used extensively) now treat "" dirs and flavors
+  as real values, rather than wildcards.
 
 ## [0.1.8] - 2017-01-17
 

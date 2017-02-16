@@ -9,15 +9,20 @@ import (
 )
 
 // MustAddFlags wraps AddFlags and panics if AddFlags returns an error.
-func MustAddFlags(fs *flag.FlagSet, target interface{}, help string) {
-	if err := AddFlags(fs, target, help); err != nil {
+func MustAddFlags(fs *flag.FlagSet, target interface{}, help string, optDefaults ...map[string]interface{}) {
+	if err := AddFlags(fs, target, help, optDefaults...); err != nil {
 		panic(err)
 	}
 }
 
 // AddFlags sniffs out struct fields from target and adds them as var flags to
 // the flag set.
-func AddFlags(fs *flag.FlagSet, target interface{}, help string) error {
+func AddFlags(fs *flag.FlagSet, target interface{}, help string, optDefaults ...map[string]interface{}) error {
+	defaults := map[string]interface{}{}
+	if len(optDefaults) > 0 {
+		defaults = optDefaults[0]
+	}
+
 	if fs == nil {
 		return errors.Errorf("cannot add flags to nil *flag.FlagSet")
 	}
@@ -52,15 +57,22 @@ func AddFlags(fs *flag.FlagSet, target interface{}, help string) error {
 			return errors.Errorf("target field %s.%s is %s; want string, int, or bool",
 				t, f.Name, ft)
 		case *string:
-			fs.StringVar(field, name, "", u)
+			fs.StringVar(field, name, getDefault(name, "", defaults).(string), u)
 		case *bool:
-			fs.BoolVar(field, name, false, u)
+			fs.BoolVar(field, name, getDefault(name, false, defaults).(bool), u)
 		case *int:
-			fs.IntVar(field, name, 0, u)
+			fs.IntVar(field, name, getDefault(name, 0, defaults).(int), u)
 		}
 	}
 
 	return nil
+}
+
+func getDefault(name string, ifMissing interface{}, defs map[string]interface{}) interface{} {
+	if val, ok := defs[name]; ok {
+		return val
+	}
+	return ifMissing
 }
 
 func parseUsage(s string) (map[string]string, error) {

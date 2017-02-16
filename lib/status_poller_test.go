@@ -39,7 +39,7 @@ func TestResolveState_String(t *testing.T) {
 
 func TestSubPoller_ComputeState(t *testing.T) {
 	testRepo := "github.com/opentable/example"
-	testDir := "test"
+	testDir := ""
 
 	rezErr := &ChangeError{}
 	permErr := fmt.Errorf("something bad")
