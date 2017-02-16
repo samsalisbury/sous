@@ -106,4 +106,5 @@ func TestGetDepSetWorks(t *testing.T) {
 	res, err := dep.RunningDeployments()
 	assert.NoError(err)
 	assert.NotNil(res)
+	// TODO: Assert on the final DeploymentStates created.
 }
