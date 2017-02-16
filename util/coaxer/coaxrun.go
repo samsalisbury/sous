@@ -82,7 +82,7 @@ func (run *coaxRun) future() Promise {
 // generateResult is responsible for generating the final Result.
 func (run *coaxRun) generateResult() {
 	for remaining := run.Attempts; remaining > 0; remaining-- {
-		if run.attemptOnce(run.Attempts - remaining) {
+		if run.attemptOnce((run.Attempts - remaining + 1)) {
 			return
 		}
 		time.Sleep(run.Backoff)
@@ -127,17 +127,17 @@ func (run *coaxRun) attemptOnce(attempt int) bool {
 	case intermediate = <-promise:
 	}
 	if intermediate.Error == nil {
-		run.debugFunc(fmt.Sprintf("Success: %s (attempt %d)", run.desc, attempt))
+		run.debugFunc(fmt.Sprintf("Success: %s at attempt %d", run.desc, attempt))
 		return run.finalise(intermediate)
 	}
 	if temp, ok := intermediate.Error.(interface {
 		Temporary() bool
 	}); !ok || !temp.Temporary() {
 		// Not temporary, return original error, suffixed "(unrecoverable)".
-		run.debugFunc(fmt.Sprintf("Fatal Error: %s (%s attempt %d)", intermediate.Error, run.desc, attempt))
+		run.debugFunc(fmt.Sprintf("Fatal: %s failed at attempt %d with error: %s", run.desc, attempt, intermediate.Error))
 		return run.finalise(Result{Error: fmt.Errorf("%s (unrecoverable)", intermediate.Error)})
 	}
-	run.debugFunc(fmt.Sprintf("Temporary Error: %s (%s attempt %d)", intermediate.Error, run.desc, attempt))
+	run.debugFunc(fmt.Sprintf("Temporary: %s failed at attempt %d with error: %s", run.desc, attempt, intermediate.Error))
 	run.errors = append(run.errors, intermediate.Error)
 	return false
 }
