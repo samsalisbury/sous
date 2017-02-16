@@ -7,7 +7,6 @@ import (
 	"io"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/nyarly/testify/assert"
 	"github.com/opentable/go-singularity"
@@ -45,16 +44,11 @@ func (tgr TestGETRequester) DTORequest(dto swaggering.DTO, method, path string, 
 	t.Execute(pathWriter, pathParams)
 	path = pathWriter.String()
 
-	dto, ok := tgr[path]
+	d, ok := tgr[path]
 	if !ok {
 		return fmt.Errorf("no DTO at path %q", path)
 	}
-
-	if len(body) != 0 {
-		return body[0].Absorb(dto)
-	}
-
-	return nil
+	return dto.Absorb(d)
 }
 
 func TestGetDepSetWorks(t *testing.T) {
@@ -97,9 +91,9 @@ func TestGetDepSetWorks(t *testing.T) {
 	}
 
 	requester := TestGETRequester{
-		"/api/requests":                 &dtos.SingularityRequestParentList{testReq},
-		"/api/requests/request/testreq": testReq,
-		"/api/???":                      testDep,
+		"/api/requests":                               &dtos.SingularityRequestParentList{testReq},
+		"/api/requests/request/testreq":               testReq,
+		"/api/history/request/testreq/deploy/testdep": testDep,
 	}
 	client := &singularity.Client{Requester: requester}
 
@@ -109,23 +103,7 @@ func TestGetDepSetWorks(t *testing.T) {
 		Cluster:  sous.Cluster{BaseURL: baseURL},
 	}
 
-	var res *sous.DeployStates
-	var err error
-	done := func() <-chan struct{} {
-		c := make(chan struct{})
-		go func() {
-			defer close(c)
-			res, err = dep.RunningDeployments()
-		}()
-		return c
-	}()
-
-	timeout := 2 * time.Second
-	select {
-	case <-time.After(timeout):
-		t.Fatalf("Gave up on test after %s", timeout)
-	case <-done:
-	}
+	res, err := dep.RunningDeployments()
 	assert.NoError(err)
 	assert.NotNil(res)
 }
