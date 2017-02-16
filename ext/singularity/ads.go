@@ -248,19 +248,19 @@ func (db *DeploymentBuilder) Deployment() (*sous.Deployment, error) {
 // DeployState returns the Sous deploy state.
 func (ds *DeployStateBuilder) DeployState() (*sous.DeployState, error) {
 
-	var previousDeployID = "TODO: Get previous deployID"
+	//var previousDeployID = "TODO: Get previous deployID"
 
 	log.Printf("Gathering deploy state for current deploy %q; request %q", ds.CurrentDeployID, ds.RequestID)
-	log.Printf("Gathering deploy state for previous deploy %q; request %q", previousDeployID, ds.RequestID)
+	//log.Printf("Gathering deploy state for previous deploy %q; request %q", previousDeployID, ds.RequestID)
 
 	currentDeployBuilder := ds.newDeploymentBuilder(ds.CurrentDeployID)
-	previousDeployBuilder := ds.newDeploymentBuilder(previousDeployID)
+	//previousDeployBuilder := ds.newDeploymentBuilder(previousDeployID)
 
-	var current, previous *sous.Deployment
+	var current *sous.Deployment
 
 	if err := firsterr.Set(
 		func(err *error) { current, *err = currentDeployBuilder.Deployment() },
-		func(err *error) { previous, *err = previousDeployBuilder.Deployment() },
+		//func(err *error) { previous, *err = previousDeployBuilder.Deployment() },
 	); err != nil {
 		return nil, errors.Wrapf(err, "building deploy state")
 	}

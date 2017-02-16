@@ -1,7 +1,13 @@
 package singularity
 
 import (
+	"bytes"
+	"fmt"
+	"html/template"
+	"io"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/nyarly/testify/assert"
 	"github.com/opentable/go-singularity"
@@ -10,32 +16,69 @@ import (
 	"github.com/opentable/swaggering"
 )
 
+// Requester copied from swaggering for reference.
+
+// Requester defines the interface that Swaggering uses to
+// make actual HTTP requests of the API server
+type Requester interface {
+	// DTORequest performs an HTTP request and populates a DTO based on the response
+	DTORequest(dto swaggering.DTO, method, path string, pathParams, queryParams swaggering.URLParams, body ...swaggering.DTO) error
+
+	// Request performs an HTTP request and returns the body of the response
+	Request(method, path string, pathParams, queryParams swaggering.URLParams, body ...swaggering.DTO) (io.ReadCloser, error)
+}
+
+type TestGETRequester map[string]swaggering.DTO
+
+func (tgr TestGETRequester) Request(method, path string, pathParams, queryParams swaggering.URLParams, body ...swaggering.DTO) (io.ReadCloser, error) {
+	panic("Not implemented.")
+}
+
+func (tgr TestGETRequester) DTORequest(dto swaggering.DTO, method, path string, pathParams, queryParams swaggering.URLParams, body ...swaggering.DTO) error {
+
+	// Turn path into a text/template string.
+	path = strings.Replace(path, "{", "{{.", -1)
+	path = strings.Replace(path, "}", "}}", -1)
+	// Populate it with pathParams.
+	var t = template.Must(template.New("url").Parse(path))
+	pathWriter := &bytes.Buffer{}
+	t.Execute(pathWriter, pathParams)
+	path = pathWriter.String()
+
+	dto, ok := tgr[path]
+	if !ok {
+		return fmt.Errorf("no DTO at path %q", path)
+	}
+
+	if len(body) != 0 {
+		return body[0].Absorb(dto)
+	}
+
+	return nil
+}
+
 func TestGetDepSetWorks(t *testing.T) {
 	assert := assert.New(t)
 
-	baseURL := "http://test-singularity.org"
+	baseURL := "http://test-singularity.org/"
 
 	reg := sous.NewDummyRegistry()
 
-	client, controller := singularity.NewDummyClient(baseURL)
-
-	controller.FeedDTO(&dtos.SingularityRequestParentList{
-		&dtos.SingularityRequestParent{
-			RequestDeployState: &dtos.SingularityRequestDeployState{
-				ActiveDeploy: &dtos.SingularityDeployMarker{
-					DeployId:  "testdep",
-					RequestId: "testreq",
-				},
-			},
-			Request: &dtos.SingularityRequest{
-				Id:          "testreq",
-				RequestType: dtos.SingularityRequestRequestTypeSERVICE,
-				Owners:      swaggering.StringList{"jlester@opentable.com"},
+	testReq := &dtos.SingularityRequestParent{
+		RequestDeployState: &dtos.SingularityRequestDeployState{
+			ActiveDeploy: &dtos.SingularityDeployMarker{
+				DeployId:  "testdep",
+				RequestId: "testreq",
 			},
 		},
-	}, nil)
+		Request: &dtos.SingularityRequest{
+			Id:          "testreq",
+			RequestType: dtos.SingularityRequestRequestTypeSERVICE,
+			Owners:      swaggering.StringList{"jlester@opentable.com"},
+		},
+	}
 
-	controller.FeedDTO(&dtos.SingularityDeployHistory{
+	testDep := &dtos.SingularityDeployHistory{
 		Deploy: &dtos.SingularityDeploy{
 			Id: "testdep",
 			ContainerInfo: &dtos.SingularityContainerInfo{
@@ -51,7 +94,14 @@ func TestGetDepSetWorks(t *testing.T) {
 			},
 			Resources: &dtos.Resources{},
 		},
-	}, nil)
+	}
+
+	requester := TestGETRequester{
+		"/api/requests":                 &dtos.SingularityRequestParentList{testReq},
+		"/api/requests/request/testreq": testReq,
+		"/api/???":                      testDep,
+	}
+	client := &singularity.Client{Requester: requester}
 
 	dep := Deployer{
 		Registry: reg,
@@ -59,7 +109,23 @@ func TestGetDepSetWorks(t *testing.T) {
 		Cluster:  sous.Cluster{BaseURL: baseURL},
 	}
 
-	res, err := dep.RunningDeployments()
+	var res *sous.DeployStates
+	var err error
+	done := func() <-chan struct{} {
+		c := make(chan struct{})
+		go func() {
+			defer close(c)
+			res, err = dep.RunningDeployments()
+		}()
+		return c
+	}()
+
+	timeout := 2 * time.Second
+	select {
+	case <-time.After(timeout):
+		t.Fatalf("Gave up on test after %s", timeout)
+	case <-done:
+	}
 	assert.NoError(err)
 	assert.NotNil(res)
 }
