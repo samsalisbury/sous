@@ -12,20 +12,18 @@ func newRefinedResolveFilter(f *sous.ResolveFilter, discovered *SourceContextDis
 	if f == nil { // XXX I think this needs to be supplied anyway by consumers...
 		f = &sous.ResolveFilter{}
 	}
-	var repo, offset = c.PrimaryRemoteURL, c.OffsetDir
+	repo := c.PrimaryRemoteURL
+	offset := sous.ResolveFieldMatcher{Match: c.OffsetDir}
 
 	if f.Repo != "" {
 		repo = f.Repo
-		offset = ""
-	}
-	if f.Offset != "" {
-		if f.Repo == "" {
-			return nil, errors.Errorf("-offset doesn't make sense without a -repo or workspace remote")
-		}
-		offset = f.Offset
+		offset = sous.ResolveFieldMatcher{All: true}
 	}
 	if repo == "" {
 		return nil, errors.Errorf("no repo specified, please use -repo or run sous inside a git repo with a configured remote")
+	}
+	if !f.Offset.All {
+		offset = f.Offset
 	}
 	rrf := RefinedResolveFilter(*f)
 	rrf.Repo = repo
@@ -46,8 +44,8 @@ func newTargetManifestID(rrf *RefinedResolveFilter) (tmid TargetManifestID, err 
 		return
 	}
 	tmid.Source.Repo = rrf.Repo
-	tmid.Source.Dir = rrf.Offset
-	tmid.Flavor = rrf.Flavor
+	tmid.Source.Dir = rrf.Offset.Match
+	tmid.Flavor = rrf.Flavor.Match
 
 	return
 }
