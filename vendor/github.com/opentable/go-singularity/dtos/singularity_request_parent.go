@@ -51,7 +51,7 @@ func (self *SingularityRequestParent) Absorb(other swaggering.DTO) error {
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A SingularityRequestParent cannot absorb the values from %v", other)
+	return fmt.Errorf("A SingularityRequestParent cannot absorb the values from a %T %v", other)
 }
 
 func (self *SingularityRequestParent) MarshalJSON() ([]byte, error) {
