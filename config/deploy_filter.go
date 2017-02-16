@@ -29,8 +29,16 @@ func (f *DeployFilterFlags) BuildFilter(parseSL func(string) (sous.SourceLocatio
 	rf.Tag = f.Tag
 	rf.Revision = f.Revision
 
-	rf.Offset = f.Offset
-	rf.Flavor = f.Flavor
+	if f.Offset == "*" || (f.Offset == "" && f.All) {
+		rf.Offset = sous.ResolveFieldMatcher{All: true}
+	} else {
+		rf.Offset = sous.ResolveFieldMatcher{Match: f.Offset}
+	}
+	if f.Flavor == "*" || (f.Flavor == "" && f.All) {
+		rf.Flavor = sous.ResolveFieldMatcher{All: true}
+	} else {
+		rf.Flavor = sous.ResolveFieldMatcher{Match: f.Flavor}
+	}
 
 	if f.Source != "" {
 		if f.Repo != "" {
@@ -44,7 +52,7 @@ func (f *DeployFilterFlags) BuildFilter(parseSL func(string) (sous.SourceLocatio
 			return nil, errors.Wrap(err, "error parsing -source flag")
 		}
 		rf.Repo = sl.Repo
-		rf.Offset = sl.Dir
+		rf.Offset.Match = sl.Dir
 	}
 
 	if f.All && !rf.All() {

@@ -7,21 +7,31 @@ type (
 	// purpose of Resolve.resolve().
 	ResolveFilter struct {
 		Repo     string
-		Offset   string
+		Offset   ResolveFieldMatcher
 		Tag      string
 		Revision string
-		Flavor   string
+		Flavor   ResolveFieldMatcher
 		Cluster  string
 		Status   DeployStatus
 	}
+
+	// A ResolveFieldMatcher matches against any particular string, or all strings.
+	ResolveFieldMatcher struct {
+		All   bool
+		Match string
+	}
 )
+
+func (matcher ResolveFieldMatcher) match(against string) bool {
+	return matcher.All || against == matcher.Match
+}
 
 func (rf *ResolveFilter) matchRepo(repo string) bool {
 	return rf.Repo == "" || repo == rf.Repo
 }
 
 func (rf *ResolveFilter) matchOffset(offset string) bool {
-	return rf.Offset == "" || offset == rf.Offset
+	return rf.Offset.match(offset)
 }
 
 func (rf *ResolveFilter) matchTag(tag string) bool {
@@ -33,7 +43,7 @@ func (rf *ResolveFilter) matchRevision(rev string) bool {
 }
 
 func (rf *ResolveFilter) matchFlavor(flavor string) bool {
-	return rf.Flavor == "" || flavor == rf.Flavor
+	return rf.Flavor.match(flavor)
 }
 
 func (rf *ResolveFilter) matchCluster(cluster string) bool {
@@ -47,25 +57,25 @@ func (rf *ResolveFilter) matchDeployStatus(status DeployStatus) bool {
 // All returns true if the ResolveFilter would allow all deployments.
 func (rf *ResolveFilter) All() bool {
 	return rf.Repo == "" &&
-		rf.Offset == "" &&
+		rf.Offset.All &&
 		rf.Tag == "" &&
 		rf.Revision == "" &&
-		rf.Flavor == "" &&
+		rf.Flavor.All &&
 		rf.Cluster == ""
 }
 
 func (rf *ResolveFilter) String() string {
-	cl, fl, rp, of, tg, rv := rf.Cluster, rf.Flavor, rf.Repo, rf.Offset, rf.Tag, rf.Revision
+	cl, fl, rp, of, tg, rv := rf.Cluster, rf.Flavor.Match, rf.Repo, rf.Offset.Match, rf.Tag, rf.Revision
 	if cl == "" {
 		cl = `*`
 	}
-	if fl == "" {
+	if rf.Flavor.All {
 		fl = `*`
 	}
 	if rp == "" {
 		rp = `*`
 	}
-	if of == "" {
+	if rf.Offset.All {
 		of = `*`
 	}
 	if tg == "" {
