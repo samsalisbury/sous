@@ -236,9 +236,6 @@ func (db *DeploymentBuilder) Deployment() (*sous.Deployment, error) {
 	dockerImage := deploy.ContainerInfo.Docker.Image
 
 	// This is our only dependency on the registry.
-	if db.adsBuild.Registry == nil {
-		panic("\n\n\n\n\n\nREG\n\n\n\n\n\n\n")
-	}
 	labels, err := db.adsBuild.Registry.ImageLabels(dockerImage)
 	sourceID, err := docker.SourceIDFromLabels(labels)
 	if err != nil {
