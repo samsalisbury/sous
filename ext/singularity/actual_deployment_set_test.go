@@ -117,7 +117,6 @@ func TestGetDepSetWorks(t *testing.T) {
 	if !assert.NotNil(res) {
 		t.FailNow()
 	}
-	// TODO: Assert on the final DeploymentStates created.
 
 	actual := res.Snapshot()
 
@@ -125,5 +124,34 @@ func TestGetDepSetWorks(t *testing.T) {
 
 	t.Logf("% #v", res.Snapshot())
 
-	//expectedDeployment := sous.Deployment{}
+	expectedDID := sous.DeployID{
+		ManifestID: sous.ManifestID{
+			Source: sous.SourceLocation{
+				Repo: "github.com/user/project",
+				Dir:  "",
+			},
+			Flavor: "",
+		},
+		Cluster: "test-custer",
+	}
+
+	actualDS, ok := actual[expectedDID]
+	if !ok {
+		var actualDID sous.DeployID
+		for actualDID = range actual {
+			break
+		}
+		t.Fatalf("Got DeployID %q; want DeployID %q", actualDID, expectedDID)
+	}
+
+	expectedDS := sous.DeployState{
+		Deployment: sous.Deployment{},
+		Status:     sous.DeployStatusActive,
+	}
+
+	different, diffs := actualDS.Diff(&expectedDS)
+	if different {
+		t.Fatalf("deploy state not as expected: % #v", diffs)
+	}
+
 }

@@ -1,5 +1,7 @@
 package sous
 
+import "fmt"
+
 //go:generate ggen cmap.CMap(cmap.go) sous.DeployStates(deploystates.go) CMKey:DeployID Value:*DeployState
 
 // A DeployState represents the state of a deployment in an external cluster.
@@ -21,6 +23,17 @@ func (ds *DeployState) ID() DeployID {
 // Tabbed returns the active deployment in human-readable form.
 func (ds *DeployState) Tabbed() string {
 	return ds.Deployment.Tabbed()
+}
+
+// Diff returns true, list of diffs if o != ds. Otherwise returns false, nil.
+func (ds *DeployState) Diff(o *DeployState) (bool, []string) {
+	_, diffs := ds.Deployment.Diff(&o.Deployment)
+	if o.Status != ds.Status {
+		// TODO: Add String method to sous.DeployStatus.
+		diffs = append(diffs, fmt.Sprintf("DeployState; this: %d, other: %d",
+			ds.Status, o.Status))
+	}
+	return len(diffs) != 0, diffs
 }
 
 // DeployStatus represents the status of a deployment in an external cluster.
