@@ -329,7 +329,7 @@ var none = sous.DeployID{}
 func deploymentWithRepo(clusterNames []string, reg sous.Registry, assert *assert.Assertions, sc sous.Deployer, repo string) (sous.Deployments, sous.DeployID) {
 	clusters := make(sous.Clusters, len(clusterNames))
 	for _, name := range clusterNames {
-		clusters[name] = &sous.Cluster{BaseURL: SingularityURL}
+		clusters[name] = &sous.Cluster{Name: name, BaseURL: SingularityURL}
 	}
 	deps, err := sc.RunningDeployments(reg, clusters)
 	if assert.Nil(err) {
