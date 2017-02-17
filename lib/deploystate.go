@@ -30,7 +30,7 @@ func (ds *DeployState) Diff(o *DeployState) (bool, []string) {
 	_, diffs := ds.Deployment.Diff(&o.Deployment)
 	if o.Status != ds.Status {
 		// TODO: Add String method to sous.DeployStatus.
-		diffs = append(diffs, fmt.Sprintf("DeployState; this: %d, other: %d",
+		diffs = append(diffs, fmt.Sprintf("DeployStatus; this: %d, other: %d",
 			ds.Status, o.Status))
 	}
 	return len(diffs) != 0, diffs
@@ -48,7 +48,7 @@ const (
 	// DeployStatusNotRunning means there is no running deployment.
 	DeployStatusNotRunning
 	// DeployStatusAny represents any deployment status.
-	DeployStatusAny DeployStatus = iota
+	DeployStatusAny
 	// DeployStatusPending means the deployment has been requested in the
 	// cluster, but is not yet running.
 	DeployStatusPending

@@ -13,6 +13,7 @@ import (
 	"github.com/opentable/go-singularity/dtos"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/swaggering"
+	"github.com/samsalisbury/semv"
 )
 
 // Requester copied from swaggering for reference.
@@ -145,8 +146,33 @@ func TestGetDepSetWorks(t *testing.T) {
 	}
 
 	expectedDS := sous.DeployState{
-		Deployment: sous.Deployment{},
-		Status:     sous.DeployStatusActive,
+		Deployment: sous.Deployment{
+			SourceID: sous.SourceID{
+				Location: sous.SourceLocation{
+					Repo: "github.com/user/project",
+					Dir:  "",
+				},
+				Version: semv.MustParse("1"),
+			},
+			Flavor:      "",
+			ClusterName: "cluster1",
+			//Cluster:     cluster,
+			DeployConfig: sous.DeployConfig{
+				Resources: sous.Resources{
+					"cpus":   "0",
+					"memory": "0",
+					"ports":  "0",
+				},
+				Volumes: sous.Volumes{
+					&sous.Volume{
+						Host:      "/onhost",
+						Container: "/indocker",
+						Mode:      sous.ReadWrite,
+					},
+				},
+			},
+		},
+		Status: sous.DeployStatusActive,
 	}
 
 	different, diffs := actualDS.Diff(&expectedDS)

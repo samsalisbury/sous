@@ -108,6 +108,7 @@ type DeploymentBuilder struct {
 	// (not to be confused with sous.DeployID).
 	// You can always expect DeployID to have a meaningful value.
 	DeployID string
+	Status   sous.DeployStatus
 }
 
 func newADSBuild(ctx context.Context, client *singularity.Client, reg sous.Registry, cluster sous.Cluster) *adsBuild {
@@ -263,10 +264,13 @@ func (ds *DeployStateBuilder) DeployState() (*sous.DeployState, error) {
 	log.Printf("Gathering deploy state for current deploy %q; request %q", ds.CurrentDeployID, ds.RequestID)
 	//log.Printf("Gathering deploy state for previous deploy %q; request %q", previousDeployID, ds.RequestID)
 
-	currentDeployBuilder := ds.newDeploymentBuilder(ds.CurrentDeployID)
+	currentDeployBuilder := ds.newDeploymentBuilder(ds.CurrentDeployID, ds.CurrentDeployStatus)
 	//previousDeployBuilder := ds.newDeploymentBuilder(previousDeployID)
 
 	var current *sous.Deployment
+
+	overallStatus := ds.CurrentDeployStatus
+	// TODO: If last deploy failed, overall status should reflect that.
 
 	if err := firsterr.Set(
 		func(err *error) { current, *err = currentDeployBuilder.Deployment() },
@@ -277,11 +281,11 @@ func (ds *DeployStateBuilder) DeployState() (*sous.DeployState, error) {
 
 	return &sous.DeployState{
 		Deployment: *current,
-		//Status:     currentStatus,
+		Status:     overallStatus,
 	}, nil
 }
 
-func (ds *DeployStateBuilder) newDeploymentBuilder(deployID string) *DeploymentBuilder {
+func (ds *DeployStateBuilder) newDeploymentBuilder(deployID string, status sous.DeployStatus) *DeploymentBuilder {
 
 	promise := c.Coax(ds.adsBuild.Context, func() (interface{}, error) {
 		return ds.Client.GetDeploy(ds.RequestID, deployID)
@@ -290,6 +294,7 @@ func (ds *DeployStateBuilder) newDeploymentBuilder(deployID string) *DeploymentB
 	return &DeploymentBuilder{
 		requestContext: ds.requestContext,
 		DeployID:       deployID,
+		Status:         status,
 		promise:        promise,
 	}
 }
