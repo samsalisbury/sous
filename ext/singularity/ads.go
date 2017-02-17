@@ -114,9 +114,10 @@ type DeploymentBuilder struct {
 	DeployID string
 }
 
-func newADSBuild(ctx context.Context, client *singularity.Client, cluster sous.Cluster) *adsBuild {
+func newADSBuild(ctx context.Context, client *singularity.Client, reg sous.Registry, cluster sous.Cluster) *adsBuild {
 	return &adsBuild{
 		Client:        client,
+		Registry:      reg,
 		Cluster:       cluster,
 		ErrorCallback: func(err error) { log.Println(err) },
 		Context:       ctx,
@@ -125,7 +126,7 @@ func newADSBuild(ctx context.Context, client *singularity.Client, cluster sous.C
 
 // RunningDeployments uses a new adsBuild to construct sous deploy states.
 func (d *Deployer) RunningDeployments() (*sous.DeployStates, error) {
-	return newADSBuild(context.TODO(), d.Client, d.Cluster).DeployStates()
+	return newADSBuild(context.TODO(), d.Client, d.Registry, d.Cluster).DeployStates()
 }
 
 // DeployStates returns all deploy states.
@@ -143,6 +144,7 @@ func (ab *adsBuild) DeployStates() (*sous.DeployStates, error) {
 
 	deployStates := sous.NewDeployStates()
 	var wg sync.WaitGroup
+	errChan := make(chan error)
 
 	// Start gathering all requests concurrently.
 gather:
@@ -164,13 +166,22 @@ gather:
 			ds, err := dsb.DeployState()
 			if err != nil {
 				ab.ErrorCallback(err)
+				errChan <- err
 				return
 			}
 			deployStates.Add(ds)
 		}()
 	}
 
-	wg.Wait()
+	go func() {
+		wg.Wait()
+		close(errChan)
+	}()
+
+	// Wait for either error or channel close.
+	if err := <-errChan; err != nil {
+		return nil, err
+	}
 
 	return &deployStates, nil
 }
@@ -228,6 +239,9 @@ func (db *DeploymentBuilder) Deployment() (*sous.Deployment, error) {
 	dockerImage := deploy.ContainerInfo.Docker.Image
 
 	// This is our only dependency on the registry.
+	if db.adsBuild.Registry == nil {
+		panic("\n\n\n\n\n\nREG\n\n\n\n\n\n\n")
+	}
 	labels, err := db.adsBuild.Registry.ImageLabels(dockerImage)
 	sourceID, err := docker.SourceIDFromLabels(labels)
 	if err != nil {

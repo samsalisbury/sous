@@ -58,6 +58,13 @@ func TestGetDepSetWorks(t *testing.T) {
 
 	reg := sous.NewDummyRegistry()
 
+	reg.FeedImageLabels(map[string]string{
+		"com.opentable.sous.repo_url":    "github.com/some/user",
+		"com.opentable.sous.version":     "1.0.0",
+		"com.opentable.sous.revision":    "abc123",
+		"com.opentable.sous.repo_offset": "",
+	}, nil)
+
 	testReq := &dtos.SingularityRequestParent{
 		RequestDeployState: &dtos.SingularityRequestDeployState{
 			ActiveDeploy: &dtos.SingularityDeployMarker{
@@ -76,8 +83,10 @@ func TestGetDepSetWorks(t *testing.T) {
 		Deploy: &dtos.SingularityDeploy{
 			Id: "testdep",
 			ContainerInfo: &dtos.SingularityContainerInfo{
-				Type:   dtos.SingularityContainerInfoSingularityContainerTypeDOCKER,
-				Docker: &dtos.SingularityDockerInfo{},
+				Type: dtos.SingularityContainerInfoSingularityContainerTypeDOCKER,
+				Docker: &dtos.SingularityDockerInfo{
+					Image: "some-docker-image",
+				},
 				Volumes: dtos.SingularityVolumeList{
 					&dtos.SingularityVolume{
 						HostPath:      "/onhost",
@@ -105,6 +114,16 @@ func TestGetDepSetWorks(t *testing.T) {
 
 	res, err := dep.RunningDeployments()
 	assert.NoError(err)
-	assert.NotNil(res)
+	if !assert.NotNil(res) {
+		t.FailNow()
+	}
 	// TODO: Assert on the final DeploymentStates created.
+
+	actual := res.Snapshot()
+
+	assert.Len(actual, 1)
+
+	t.Logf("% #v", res.Snapshot())
+
+	//expectedDeployment := sous.Deployment{}
 }

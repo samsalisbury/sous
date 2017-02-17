@@ -4,9 +4,10 @@ type (
 	// DummyRegistry implements the Builder interface by returning a
 	// computed image name for a given source ID.
 	DummyRegistry struct {
-		ars  chan artifactReturn
-		sids chan sourceIDReturn
-		ls   chan sourceIDListReturn
+		ars    chan artifactReturn
+		sids   chan sourceIDReturn
+		ls     chan sourceIDListReturn
+		labels chan labelsReturn
 	}
 
 	artifactReturn struct {
@@ -21,14 +22,19 @@ type (
 		ids []SourceID
 		error
 	}
+	labelsReturn struct {
+		labels map[string]string
+		error
+	}
 )
 
 // NewDummyRegistry builds a new DummyNameCache.
 func NewDummyRegistry() *DummyRegistry {
 	return &DummyRegistry{
-		ars:  make(chan artifactReturn, 20),
-		sids: make(chan sourceIDReturn, 20),
-		ls:   make(chan sourceIDListReturn, 20),
+		ars:    make(chan artifactReturn, 20),
+		sids:   make(chan sourceIDReturn, 20),
+		ls:     make(chan sourceIDListReturn, 20),
+		labels: make(chan labelsReturn, 20),
 	}
 }
 
@@ -45,6 +51,11 @@ func (dc *DummyRegistry) GetArtifact(sid SourceID) (*BuildArtifact, error) {
 	default:
 		return &BuildArtifact{Name: sid.String(), Type: "dummy"}, nil
 	}
+}
+
+// FeedImageLabels adds return values for ImageLabels.
+func (dc *DummyRegistry) FeedImageLabels(labels map[string]string, err error) {
+	dc.labels <- labelsReturn{labels, err}
 }
 
 // FeedSourceID accepts a SourceID and associated error.
@@ -84,5 +95,10 @@ func (dc *DummyRegistry) Warmup(string) error {
 
 // ImageLabels gets the labels for an image name
 func (dc *DummyRegistry) ImageLabels(in string) (map[string]string, error) {
-	return map[string]string{}, nil
+	select {
+	case r := <-dc.labels:
+		return r.labels, r.error
+	default:
+		return map[string]string{}, nil
+	}
 }
