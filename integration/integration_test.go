@@ -109,6 +109,10 @@ func TestGetRunningDeploymentSet_otherCluster(t *testing.T) {
 		assert.Equal("91495f1b1630084e301241100ecf2e775f6b672c", grafana.SourceID.Version.Meta)
 		assert.Equal(1, grafana.NumInstances)
 		assert.Equal(sous.ManifestKindService, grafana.Kind)
+	} else {
+		for did, d := range deps {
+			t.Logf("Got unexpected deployment: %q ...\n% #v", did, d)
+		}
 	}
 
 	ResetSingularity()
@@ -332,10 +336,10 @@ func deploymentWithRepo(clusterNames []string, reg sous.Registry, assert *assert
 		clusters[name] = &sous.Cluster{Name: name, BaseURL: SingularityURL}
 	}
 	deps, err := sc.RunningDeployments(reg, clusters)
-	if assert.Nil(err) {
-		return deps.IgnoringStatus(), findRepo(deps.IgnoringStatus(), repo)
+	if !assert.Nil(err) {
+		assert.FailNow(err.Error())
 	}
-	return sous.Deployments{}, none
+	return deps.IgnoringStatus(), findRepo(deps.IgnoringStatus(), repo)
 }
 
 func findRepo(deps sous.Deployments, repo string) sous.DeployID {
