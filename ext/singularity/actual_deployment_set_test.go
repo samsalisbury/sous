@@ -114,7 +114,9 @@ func TestGetDepSetWorks(t *testing.T) {
 	}
 
 	res, err := dep.RunningDeployments()
-	assert.NoError(err)
+	if !assert.NoError(err) {
+		t.FailNow()
+	}
 	if !assert.NotNil(res) {
 		t.FailNow()
 	}
@@ -147,6 +149,7 @@ func TestGetDepSetWorks(t *testing.T) {
 
 	expectedDS := sous.DeployState{
 		Deployment: sous.Deployment{
+			Kind: sous.ManifestKindService,
 			SourceID: sous.SourceID{
 				Location: sous.SourceLocation{
 					Repo: "github.com/user/project",
