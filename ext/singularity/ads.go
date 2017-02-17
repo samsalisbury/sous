@@ -39,11 +39,11 @@ type Deployer struct {
 // adsBuild represents the building of a single sous.DeployStates from a
 // single Singularity-hosted cluster.
 type adsBuild struct {
-	Context  context.Context
-	Client   *singularity.Client
-	Cluster  sous.Cluster
-	Registry sous.Registry
-	Errors   chan error
+	Context       context.Context
+	Client        *singularity.Client
+	Cluster       sous.Cluster
+	Registry      sous.Registry
+	ErrorCallback func(error)
 }
 
 // requestContext is a mixin used for DeploymentBuilder and DeployStateBuilder.
@@ -116,10 +116,10 @@ type DeploymentBuilder struct {
 
 func newADSBuild(ctx context.Context, client *singularity.Client, cluster sous.Cluster) *adsBuild {
 	return &adsBuild{
-		Client:  client,
-		Cluster: cluster,
-		Errors:  make(chan error),
-		Context: ctx,
+		Client:        client,
+		Cluster:       cluster,
+		ErrorCallback: func(err error) { log.Println(err) },
+		Context:       ctx,
 	}
 }
 
@@ -163,7 +163,7 @@ gather:
 			dsb := ab.newDeployStateBuilder(request)
 			ds, err := dsb.DeployState()
 			if err != nil {
-				ab.Errors <- err
+				ab.ErrorCallback(err)
 				return
 			}
 			deployStates.Add(ds)
