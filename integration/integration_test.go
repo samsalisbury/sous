@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/nyarly/testify/assert"
+	sing "github.com/opentable/go-singularity"
 	"github.com/opentable/sous/ext/docker"
 	"github.com/opentable/sous/ext/singularity"
 	"github.com/opentable/sous/lib"
@@ -19,6 +20,10 @@ import (
 )
 
 var imageName string
+
+func singularityClientFactory(c *sous.Cluster) *sing.Client {
+	return sing.NewClient(c.BaseURL)
+}
 
 func TestGetLabels(t *testing.T) {
 	registerLabelledContainers()
@@ -52,7 +57,7 @@ func TestGetRunningDeploymentSet_testCluster(t *testing.T) {
 	drc.BecomeFoolishlyTrusting()
 	nc := docker.NewNameCache("", drc, newInMemoryDB("grds"))
 	client := singularity.NewRectiAgent()
-	d := singularity.NewDeployer(client)
+	d := singularity.NewDeployer(client, singularityClientFactory)
 
 	clusters := []string{"test-cluster"}
 
@@ -88,7 +93,7 @@ func TestGetRunningDeploymentSet_otherCluster(t *testing.T) {
 	drc.BecomeFoolishlyTrusting()
 	nc := docker.NewNameCache("", drc, newInMemoryDB("grds"))
 	client := singularity.NewRectiAgent()
-	d := singularity.NewDeployer(client)
+	d := singularity.NewDeployer(client, singularityClientFactory)
 
 	clusters := []string{"other-cluster"}
 
@@ -110,6 +115,9 @@ func TestGetRunningDeploymentSet_otherCluster(t *testing.T) {
 }
 
 func TestGetRunningDeploymentSet_all(t *testing.T) {
+
+	t.Skip("Deployer no longer supports talking to multiple clusters.")
+
 	assert := assert.New(t)
 
 	registerLabelledContainers()
@@ -117,7 +125,7 @@ func TestGetRunningDeploymentSet_all(t *testing.T) {
 	drc.BecomeFoolishlyTrusting()
 	nc := docker.NewNameCache("", drc, newInMemoryDB("grds"))
 	client := singularity.NewRectiAgent()
-	d := singularity.NewDeployer(client)
+	d := singularity.NewDeployer(client, singularityClientFactory)
 
 	clusters := []string{"test-cluster", "other-cluster"}
 
@@ -166,7 +174,7 @@ func TestMissingImage(t *testing.T) {
 	nc := docker.NewNameCache("", drc, newInMemoryDB("missingimage"))
 
 	client := singularity.NewRectiAgent()
-	deployer := singularity.NewDeployer(client)
+	deployer := singularity.NewDeployer(client, singularityClientFactory)
 
 	r := sous.NewResolver(deployer, nc, &sous.ResolveFilter{})
 
@@ -239,7 +247,7 @@ func TestResolve(t *testing.T) {
 	// ****
 	log.Print("Resolving from nothing to one+two")
 	client := singularity.NewRectiAgent()
-	deployer := singularity.NewDeployer(client)
+	deployer := singularity.NewDeployer(client, singularityClientFactory)
 
 	r := sous.NewResolver(deployer, nc, &sous.ResolveFilter{})
 
@@ -272,7 +280,7 @@ func TestResolve(t *testing.T) {
 	// The problem is laid out in DCOPS-7625
 	for tries := 0; tries < 3; tries++ {
 		client := singularity.NewRectiAgent()
-		deployer := singularity.NewDeployer(client)
+		deployer := singularity.NewDeployer(client, singularityClientFactory)
 
 		r := sous.NewResolver(deployer, nc, &sous.ResolveFilter{})
 

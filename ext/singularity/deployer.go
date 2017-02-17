@@ -76,7 +76,7 @@ func (r *deployer) RunningDeployments(reg sous.Registry, clusters sous.Clusters)
 	if err != nil {
 		return sous.NewDeployStates(), err
 	}
-	return *ds, nil
+	return ds, nil
 }
 
 // RectifyCreates rectifies newly created Singularity requests.

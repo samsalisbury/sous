@@ -122,19 +122,19 @@ func newADSBuild(ctx context.Context, client *singularity.Client, reg sous.Regis
 }
 
 // RunningDeployments uses a new adsBuild to construct sous deploy states.
-func (d *Deployer) RunningDeployments() (*sous.DeployStates, error) {
+func (d *Deployer) RunningDeployments() (sous.DeployStates, error) {
 	return newADSBuild(context.TODO(), d.Client, d.Registry, d.Cluster).DeployStates()
 }
 
 // DeployStates returns all deploy states.
-func (ab *adsBuild) DeployStates() (*sous.DeployStates, error) {
+func (ab *adsBuild) DeployStates() (sous.DeployStates, error) {
 
 	log.Printf("Getting all requests...")
 
 	// Grab the list of all requests from Singularity.
 	requests, err := ab.Client.GetRequests()
 	if err != nil {
-		return nil, err
+		return sous.NewDeployStates(), err
 	}
 
 	log.Printf("Got: %d requests", len(requests))
@@ -177,10 +177,10 @@ gather:
 
 	// Wait for either error or channel close.
 	if err := <-errChan; err != nil {
-		return nil, err
+		return sous.NewDeployStates(), err
 	}
 
-	return &deployStates, nil
+	return deployStates, nil
 }
 
 func (ab *adsBuild) Errorf(format string, a ...interface{}) error {
