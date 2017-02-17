@@ -42,6 +42,8 @@ type (
 		Exists(path string) bool
 		// ConsoleEcho outputs the line as if it were typed at the console
 		ConsoleEcho(line string)
+		// LongRunning marks a Shell as dealing with long running commands
+		LongRunning(bool)
 		// Cmd creates a new Command based on this shell.
 		Cmd(name string, args ...interface{}) Cmd
 		// CD changes the directory of this shell to the path specified. If the path is

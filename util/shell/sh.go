@@ -28,10 +28,8 @@ type (
 		TeeErr io.Writer
 		// Debug sets each command issued by this shell into debug mode, or not
 		// depending on this value.
-		Debug bool
-		// LongRunning sets each command issued by this shell to be a
-		// long-running command. See Command.LongRunning for details.
-		LongRunning bool
+		Debug       bool
+		longRunning bool
 	}
 )
 
@@ -112,8 +110,13 @@ func (s *Sh) Cmd(name string, args ...interface{}) Cmd {
 		TeeOut:      s.TeeOut,
 		TeeErr:      s.TeeErr,
 		Debug:       s.Debug,
-		LongRunning: s.LongRunning,
+		LongRunning: s.longRunning,
 	}
+}
+
+// LongRunning sets the longRunning flag
+func (s *Sh) LongRunning(yes bool) {
+	s.longRunning = yes
 }
 
 // ConsoleEcho prints the command that sous is executing out
