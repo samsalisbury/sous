@@ -14,12 +14,10 @@ type resolveSourceLocationInput struct {
 }
 
 func TestResolveSourceLocation_failure(t *testing.T) {
-	assertSourceContextError(t, &sous.ResolveFilter{}, &SourceContextDiscovery{}, "no repo specified, please use -repo or run sous inside a git repo with a configured remote")
-	assertSourceContextError(t, nil, &SourceContextDiscovery{}, "no repo specified, please use -repo or run sous inside a git repo with a configured remote")
-	assertSourceContextError(t,
-		&sous.ResolveFilter{Offset: "some/offset"},
-		&SourceContextDiscovery{},
-		"-offset.*without.*-repo")
+	assertSourceContextError(t, &sous.ResolveFilter{}, &SourceContextDiscovery{},
+		"no repo specified, please use -repo or run sous inside a git repo with a configured remote")
+	assertSourceContextError(t, nil, &SourceContextDiscovery{},
+		"no repo specified, please use -repo or run sous inside a git repo with a configured remote")
 }
 
 func assertSourceContextError(t *testing.T, flags *sous.ResolveFilter, ctx *SourceContextDiscovery, msgPattern string) {
@@ -47,7 +45,7 @@ func TestResolveSourceLocation_success(t *testing.T) {
 	)
 	assertSourceContextSuccess(t,
 		sous.ManifestID{Source: sous.SourceLocation{Repo: "github.com/user/project", Dir: "some/path"}},
-		&sous.ResolveFilter{Repo: "github.com/user/project", Offset: "some/path"},
+		&sous.ResolveFilter{Repo: "github.com/user/project", Offset: sous.ResolveFieldMatcher{Match: "some/path"}},
 		&sous.SourceContext{
 			PrimaryRemoteURL: "github.com/user/project",
 			OffsetDir:        "some/path",

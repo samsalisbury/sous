@@ -2,6 +2,7 @@ package cli
 
 import (
 	"flag"
+	"fmt"
 
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
@@ -66,6 +67,7 @@ func (sd *SousDeploy) Execute(args []string) cmdr.Result {
 	}
 
 	if sd.waitStable {
+		fmt.Fprintf(sd.CLI.Out, "Waiting for server to report that deploy has stabilized...")
 		return sd.CLI.Plumbing(&SousPlumbingStatus{}, []string{})
 	}
 	return cmdr.Successf("Updated the global deploy manifest. Deploy in process.")

@@ -3,7 +3,6 @@ package cli
 import (
 	"bytes"
 	"fmt"
-	"log"
 	"testing"
 
 	"github.com/nyarly/testify/assert"
@@ -298,7 +297,6 @@ func TestInvokeBareSous(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	log.SetFlags(log.Flags() | log.Lshortfile)
 	c, exe, _, _ := prepareCommand(t, []string{`sous`})
 	assert.Len(exe.Args, 0)
 
@@ -332,7 +330,6 @@ options:
 */
 
 func TestInvokeWithUnknownFlags(t *testing.T) {
-	log.SetFlags(log.Flags() | log.Lshortfile)
 	assert := assert.New(t)
 	require := require.New(t)
 
@@ -349,6 +346,9 @@ func TestInvokeWithUnknownFlags(t *testing.T) {
 }
 
 func TestInvokeRectifyWithoutFilterFlags(t *testing.T) {
+	sous.Log.BeChatty()
+	defer sous.Log.BeQuiet()
+
 	assert := assert.New(t)
 	require := require.New(t)
 
@@ -363,6 +363,8 @@ func TestInvokeRectifyWithoutFilterFlags(t *testing.T) {
 	require.NotNil(rect.SourceFlags)
 	assert.Equal(rect.SourceFlags.All, false)
 	require.NotNil(rect.Resolver.ResolveFilter)
+
+	sous.Log.Vomit.Printf("%#v", rect.Resolver.ResolveFilter)
 	assert.Equal(rect.Resolver.ResolveFilter.All(), true)
 }
 

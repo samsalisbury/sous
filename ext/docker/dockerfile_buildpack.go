@@ -89,7 +89,9 @@ func (d *DockerfileBuildpack) Detect(c *sous.BuildContext) (*sous.DetectResult, 
 	if !c.Sh.Exists(dfPath) {
 		return nil, fmt.Errorf("%s does not exist", dfPath)
 	}
-	df, err := c.Sh.Stdout("cat", dfPath)
+	sh := c.Sh.Clone()
+	sh.LongRunning(false)
+	df, err := sh.Stdout("cat", dfPath)
 	if err != nil {
 		return nil, err
 	}
