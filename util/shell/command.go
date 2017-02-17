@@ -172,19 +172,22 @@ func (c *Command) Result() (*Result, error) {
 		errWriters = append(errWriters, c.TeeErr)
 	}
 
-	command.Stdout = io.MultiWriter(outWriters...)
-	command.Stderr = io.MultiWriter(errWriters...)
-	command.Stdin = c.Stdin
-
 	if c.LongRunning {
+		lrPipeR, lrPipeW := io.Pipe()
+		outWriters = append(outWriters, lrPipeW)
+		errWriters = append(errWriters, lrPipeW)
 		c.ConsoleEcho("running " + line)
-		scanner := bufio.NewScanner(combinedbuf)
+		scanner := bufio.NewScanner(lrPipeR)
 		go func() {
 			for scanner.Scan() {
-				fmt.Println(scanner.Text())
+				c.ConsoleEcho("  " + scanner.Text())
 			}
 		}()
 	}
+
+	command.Stdout = io.MultiWriter(outWriters...)
+	command.Stderr = io.MultiWriter(errWriters...)
+	command.Stdin = c.Stdin
 
 	if err := command.Start(); err != nil {
 		return nil, errors.Wrapf(err, c.String())

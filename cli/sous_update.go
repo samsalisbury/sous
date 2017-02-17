@@ -66,7 +66,7 @@ func (su *SousUpdate) Execute(args []string) cmdr.Result {
 	if err := su.StateWriter.WriteState(su.State, su.User); err != nil {
 		return EnsureErrorResult(err)
 	}
-	return cmdr.Success()
+	return cmdr.Success("Updated global manifest.")
 }
 
 func updateState(s *sous.State, gdm graph.CurrentGDM, sid sous.SourceID, did sous.DeployID) error {

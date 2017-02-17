@@ -334,7 +334,9 @@ func (scd *SourceContextDiscovery) GetContext() *sous.SourceContext {
 }
 
 func newBuildContext(wd LocalWorkDirShell, c *sous.SourceContext) *sous.BuildContext {
-	return &sous.BuildContext{Sh: wd.Sh, Source: *c}
+	sh := wd.Sh.Clone()
+	sh.LongRunning(true)
+	return &sous.BuildContext{Sh: sh, Source: *c}
 }
 
 func newBuildConfig(f *config.DeployFilterFlags, p *config.PolicyFlags, bc *sous.BuildContext) *sous.BuildConfig {
@@ -423,7 +425,7 @@ func newDockerBuilder(cfg LocalSousConfig, cl LocalDockerClient, ctx *sous.Sourc
 	}
 	drh := cfg.Docker.RegistryHost
 	source.Sh = source.Sh.Clone().(*shell.Sh)
-	source.Sh.LongRunning = true
+	source.Sh.LongRunning(true)
 	return docker.NewBuilder(nc, drh, source.Sh, scratch.Sh)
 }
 
