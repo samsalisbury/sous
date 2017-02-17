@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/user"
 
+	sing "github.com/opentable/go-singularity"
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/ext/docker"
 	"github.com/opentable/sous/ext/git"
@@ -445,13 +446,16 @@ func newRegistry(dryrun DryrunOption, cfg LocalSousConfig, cl LocalDockerClient)
 }
 
 func newDeployer(dryrun DryrunOption) sous.Deployer {
+	singularityClientFactory := func(c *sous.Cluster) *sing.Client {
+		return sing.NewClient(c.BaseURL)
+	}
 	// Eventually, based on configuration, we may make different decisions here.
 	if dryrun == DryrunBoth || dryrun == DryrunScheduler {
 		drc := sous.NewDummyRectificationClient()
 		drc.SetLogger(log.New(os.Stdout, "rectify: ", 0))
-		return singularity.NewDeployer(drc)
+		return singularity.NewDeployer(drc, singularityClientFactory)
 	}
-	return singularity.NewDeployer(singularity.NewRectiAgent())
+	return singularity.NewDeployer(singularity.NewRectiAgent(), singularityClientFactory)
 }
 
 func newDockerClient() LocalDockerClient {

@@ -6,6 +6,7 @@ import (
 
 	"github.com/nyarly/testify/assert"
 	"github.com/nyarly/testify/require"
+	singularity "github.com/opentable/go-singularity"
 	"github.com/opentable/sous/lib"
 	"github.com/samsalisbury/semv"
 )
@@ -27,6 +28,10 @@ func TestBuildDeployRequest(t *testing.T) {
 	require.NoError(err)
 	assert.NotNil(dr)
 	assert.Equal(dr.Deploy.RequestId, rID)
+}
+
+func fakeClientFactory(*sous.Cluster) *singularity.Client {
+	return &singularity.Client{}
 }
 
 func baseDeployablePair() *sous.DeployablePair {
@@ -89,7 +94,7 @@ func TestModifyScale(t *testing.T) {
 
 	client := sous.NewDummyRectificationClient()
 
-	deployer := NewDeployer(client)
+	deployer := NewDeployer(client, fakeClientFactory)
 
 	mods <- pair
 	close(mods)
@@ -122,7 +127,8 @@ func TestModifyImage(t *testing.T) {
 	log := make(chan sous.DiffResolution, 10)
 
 	client := sous.NewDummyRectificationClient()
-	deployer := NewDeployer(client)
+
+	deployer := NewDeployer(client, fakeClientFactory)
 
 	mods <- pair
 	close(mods)
@@ -159,7 +165,7 @@ func TestModifyResources(t *testing.T) {
 	log := make(chan sous.DiffResolution, 10)
 
 	client := sous.NewDummyRectificationClient()
-	deployer := NewDeployer(client)
+	deployer := NewDeployer(client, fakeClientFactory)
 
 	mods <- pair
 	close(mods)
@@ -200,7 +206,7 @@ func TestModify(t *testing.T) {
 	results := make(chan sous.DiffResolution, 10)
 
 	client := sous.NewDummyRectificationClient()
-	deployer := NewDeployer(client)
+	deployer := NewDeployer(client, fakeClientFactory)
 
 	mods <- pair
 	close(mods)
@@ -249,7 +255,7 @@ func TestDeletes(t *testing.T) {
 	log := make(chan sous.DiffResolution, 10)
 
 	client := sous.NewDummyRectificationClient()
-	deployer := NewDeployer(client)
+	deployer := NewDeployer(client, fakeClientFactory)
 
 	dels <- deleted
 	close(dels)
@@ -303,7 +309,7 @@ func TestCreates(t *testing.T) {
 	log := make(chan sous.DiffResolution, 10)
 
 	client := sous.NewDummyRectificationClient()
-	deployer := NewDeployer(client)
+	deployer := NewDeployer(client, fakeClientFactory)
 
 	crts <- created
 	close(crts)

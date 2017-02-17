@@ -30,8 +30,8 @@ dChans := intendedSet.Diff(existingSet)
 
 type (
 	deployer struct {
-		Client  rectificationClient
-		singFac func(string) *singularity.Client
+		Client                   rectificationClient
+		SingularityClientFactory func(*sous.Cluster) *singularity.Client
 	}
 
 	// rectificationClient abstracts the raw interactions with Singularity.
@@ -51,11 +51,11 @@ type (
 )
 
 // NewDeployer creates a new Singularity-based sous.Deployer.
-func NewDeployer(c rectificationClient) sous.Deployer {
-	return &deployer{Client: c}
+func NewDeployer(c rectificationClient, singularityClientFactory func(*sous.Cluster) *singularity.Client) sous.Deployer {
+	return &deployer{Client: c, SingularityClientFactory: singularityClientFactory}
 }
 
-func (d *deployer) RunningDeployments(reg sous.Registry, clusters sous.Clusters) (sous.DeployStates, error) {
+func (r *deployer) RunningDeployments(reg sous.Registry, clusters sous.Clusters) (sous.DeployStates, error) {
 	if len(clusters) != 1 {
 		return sous.NewDeployStates(), fmt.Errorf("RunningDeployments needs exactly one cluster")
 	}
@@ -67,11 +67,9 @@ func (d *deployer) RunningDeployments(reg sous.Registry, clusters sous.Clusters)
 		cluster = *c
 	}
 
-	client := d.singFac(cluster.BaseURL)
-
 	newDeployer := &Deployer{
 		Registry: reg,
-		Client:   client,
+		Client:   r.SingularityClientFactory(&cluster),
 		Cluster:  cluster,
 	}
 	ds, err := newDeployer.RunningDeployments()
@@ -81,6 +79,7 @@ func (d *deployer) RunningDeployments(reg sous.Registry, clusters sous.Clusters)
 	return *ds, nil
 }
 
+// RectifyCreates rectifies newly created Singularity requests.
 func (r *deployer) RectifyCreates(cc <-chan *sous.Deployable, errs chan<- sous.DiffResolution) {
 	for d := range cc {
 		result := sous.DiffResolution{DeployID: d.ID()}
@@ -94,17 +93,7 @@ func (r *deployer) RectifyCreates(cc <-chan *sous.Deployable, errs chan<- sous.D
 	}
 }
 
-func (r *deployer) SetSingularityFactory(fn func(string) *singularity.Client) {
-	r.singFac = fn
-}
-
-func (r *deployer) buildSingClient(url string) *singularity.Client {
-	if r.singFac == nil {
-		return singularity.NewClient(url)
-	}
-	return r.singFac(url)
-}
-
+// ImageName returns the Docker image name for a Deployable.
 func (r *deployer) ImageName(d *sous.Deployable) (string, error) {
 	if d.BuildArtifact == nil {
 		return "", &sous.MissingImageNameError{Cause: fmt.Errorf("Missing BuildArtifact on Deployable")}
@@ -121,6 +110,7 @@ func rectifyRecover(d interface{}, f string, err *error) {
 	}
 }
 
+// RectifySingleCreate rectifies a single new Singularity Request creation.
 func (r *deployer) RectifySingleCreate(d *sous.Deployable) (err error) {
 	Log.Debug.Printf("Rectifying creation %q:  \n %# v", d.ID(), d.Deployment)
 	defer rectifyRecover(d, "RectifySingleCreate", &err)
@@ -137,6 +127,7 @@ func (r *deployer) RectifySingleCreate(d *sous.Deployable) (err error) {
 		d.Env, d.DeployConfig.Volumes)
 }
 
+// RectifyDeletes rectifies all Singularity Request deletions.
 func (r *deployer) RectifyDeletes(dc <-chan *sous.Deployable, errs chan<- sous.DiffResolution) {
 	for d := range dc {
 		result := sous.DiffResolution{DeployID: d.ID()}
@@ -150,6 +141,7 @@ func (r *deployer) RectifyDeletes(dc <-chan *sous.Deployable, errs chan<- sous.D
 	}
 }
 
+// RectifySingleDelete rectifies a single Singularity Request deletion.
 func (r *deployer) RectifySingleDelete(d *sous.Deployable) (err error) {
 	defer rectifyRecover(d, "RectifySingleDelete", &err)
 	requestID := computeRequestID(d)
@@ -161,6 +153,8 @@ func (r *deployer) RectifySingleDelete(d *sous.Deployable) (err error) {
 	//return r.Client.DeleteRequest(d.Cluster.BaseURL, requestID, "deleting request for removed manifest")
 }
 
+// RectifyModifies rectifies all modifications to existing deployments and new
+// deployments for a request.
 func (r *deployer) RectifyModifies(
 	mc <-chan *sous.DeployablePair, errs chan<- sous.DiffResolution) {
 	for pair := range mc {
@@ -180,6 +174,8 @@ func (r *deployer) RectifyModifies(
 	}
 }
 
+// RectifySingleModification rectifies a single request modification or creates
+// a new deployment.
 func (r *deployer) RectifySingleModification(pair *sous.DeployablePair) (err error) {
 	Log.Debug.Printf("Rectifying modified %q: \n  %# v \n    =>  \n  %# v", pair.ID(), pair.Prior.Deployment, pair.Post.Deployment)
 	defer rectifyRecover(pair, "RectifySingleModification", &err)
