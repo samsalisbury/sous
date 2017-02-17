@@ -30,7 +30,7 @@ func mapDeployHistoryToDeployment(
 	}
 
 	// Kind
-	kind, err := determineManifestKind(sr.RequestType)
+	kind, err := mapManifestKind(sr.RequestType)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +61,7 @@ func mapDeployHistoryToDeployConfig(req *dtos.SingularityRequest, deploy *dtos.S
 	resources := sous.Resources{
 		"cpus":   fmt.Sprintf("%f", deploy.Resources.Cpus),
 		"memory": fmt.Sprintf("%f", deploy.Resources.MemoryMb),
-		"ports":  fmt.Sprintf("%f", deploy.Resources.NumPorts),
+		"ports":  fmt.Sprintf("%d", deploy.Resources.NumPorts),
 	}
 
 	// Volumes
@@ -83,4 +83,21 @@ func mapDeployHistoryToDeployConfig(req *dtos.SingularityRequest, deploy *dtos.S
 		Resources:    resources,
 		Volumes:      volumes,
 	}, nil
+}
+
+func mapManifestKind(rt dtos.SingularityRequestRequestType) (sous.ManifestKind, error) {
+	switch rt {
+	default:
+		return sous.ManifestKind(""), fmt.Errorf("unrecognised request type: %s", rt)
+	case dtos.SingularityRequestRequestTypeSERVICE:
+		return sous.ManifestKindService, nil
+	case dtos.SingularityRequestRequestTypeWORKER:
+		return sous.ManifestKindWorker, nil
+	case dtos.SingularityRequestRequestTypeON_DEMAND:
+		return sous.ManifestKindOnDemand, nil
+	case dtos.SingularityRequestRequestTypeSCHEDULED:
+		return sous.ManifestKindScheduled, nil
+	case dtos.SingularityRequestRequestTypeRUN_ONCE:
+		return sous.ManifestKindOnce, nil
+	}
 }

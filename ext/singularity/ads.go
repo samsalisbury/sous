@@ -284,23 +284,6 @@ func (ds *DeployStateBuilder) DeployState() (*sous.DeployState, error) {
 	}, nil
 }
 
-func determineManifestKind(rt dtos.SingularityRequestRequestType) (sous.ManifestKind, error) {
-	switch rt {
-	default:
-		return sous.ManifestKind(""), fmt.Errorf("unrecognised request type: %s", rt)
-	case dtos.SingularityRequestRequestTypeSERVICE:
-		return sous.ManifestKindService, nil
-	case dtos.SingularityRequestRequestTypeWORKER:
-		return sous.ManifestKindWorker, nil
-	case dtos.SingularityRequestRequestTypeON_DEMAND:
-		return sous.ManifestKindOnDemand, nil
-	case dtos.SingularityRequestRequestTypeSCHEDULED:
-		return sous.ManifestKindScheduled, nil
-	case dtos.SingularityRequestRequestTypeRUN_ONCE:
-		return sous.ManifestKindOnce, nil
-	}
-}
-
 type temporary struct {
 	error
 }
