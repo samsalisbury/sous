@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"sync"
+	"time"
 
 	"github.com/opentable/go-singularity"
 	"github.com/opentable/go-singularity/dtos"
@@ -26,6 +27,7 @@ var c = coaxer.NewCoaxer(func(c *coaxer.Coaxer) {
 	c.DebugFunc = func(desc string) {
 		messages <- desc
 	}
+	c.Backoff = time.Second
 })
 
 // Deployer implements sous.Deployer for a single sous Cluster running on
@@ -67,7 +69,7 @@ func (ab *adsBuild) newRequestContext(requestID string) requestContext {
 		Client:    ab.Client,
 		RequestID: requestID,
 		promise: c.Coax(ab.Context, func() (interface{}, error) {
-			return ab.Client.GetRequest(requestID)
+			return maybeRetryable(ab.Client.GetRequest(requestID))
 		}, "get singularity request %q", requestID),
 	}
 	return rc
@@ -282,10 +284,43 @@ func (ds *DeployStateBuilder) DeployState() (*sous.DeployState, error) {
 	}, nil
 }
 
+func determineManifestKind(rt dtos.SingularityRequestRequestType) (sous.ManifestKind, error) {
+	switch rt {
+	default:
+		return sous.ManifestKind(""), fmt.Errorf("unrecognised request type: %s", rt)
+	case dtos.SingularityRequestRequestTypeSERVICE:
+		return sous.ManifestKindService, nil
+	case dtos.SingularityRequestRequestTypeWORKER:
+		return sous.ManifestKindWorker, nil
+	case dtos.SingularityRequestRequestTypeON_DEMAND:
+		return sous.ManifestKindOnDemand, nil
+	case dtos.SingularityRequestRequestTypeSCHEDULED:
+		return sous.ManifestKindScheduled, nil
+	case dtos.SingularityRequestRequestTypeRUN_ONCE:
+		return sous.ManifestKindOnce, nil
+	}
+}
+
+type temporary struct {
+	error
+}
+
+func (t temporary) Temporary() bool {
+	return true
+}
+
+func maybeRetryable(a interface{}, err error) (interface{}, error) {
+	if err == nil {
+		return a, nil
+	}
+	log.Printf("Maybe retryable %T? %q", err, err)
+	return a, temporary{err}
+}
+
 func (ds *DeployStateBuilder) newDeploymentBuilder(deployID string, status sous.DeployStatus) *DeploymentBuilder {
 
 	promise := c.Coax(ds.adsBuild.Context, func() (interface{}, error) {
-		return ds.Client.GetDeploy(ds.RequestID, deployID)
+		return maybeRetryable(ds.Client.GetDeploy(ds.RequestID, deployID))
 	}, "get deployment %q", deployID)
 
 	return &DeploymentBuilder{

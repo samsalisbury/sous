@@ -70,7 +70,7 @@ func (gc *GenericClient) Request(method, path string, pathParams, queryParams UR
 			Status:  res.StatusCode,
 			Message: res.Status,
 			Method:  method,
-			Path:    path,
+			Path:    req.URL.String(),
 			Body:    bytes.Buffer{},
 		}
 		rerr.Body.ReadFrom(res.Body)

@@ -29,6 +29,12 @@ func mapDeployHistoryToDeployment(
 		owners.Add(o)
 	}
 
+	// Kind
+	kind, err := determineManifestKind(sr.RequestType)
+	if err != nil {
+		return nil, err
+	}
+
 	return &sous.Deployment{
 		Cluster: &cluster,
 		// TODO: Remove ClusterName from sous.Deployment and use Cluster.Name.
@@ -36,6 +42,7 @@ func mapDeployHistoryToDeployment(
 		DeployConfig: *deployConfig,
 		Owners:       owners,
 		SourceID:     sid,
+		Kind:         kind,
 	}, nil
 }
 
@@ -52,9 +59,9 @@ func mapDeployHistoryToDeployConfig(req *dtos.SingularityRequest, deploy *dtos.S
 		return nil, fmt.Errorf("deploy object lacks resources field")
 	}
 	resources := sous.Resources{
-		"cpus":   fmt.Sprint(deploy.Resources.Cpus),
-		"memory": fmt.Sprint(deploy.Resources.MemoryMb),
-		"ports":  fmt.Sprint(deploy.Resources.NumPorts),
+		"cpus":   fmt.Sprintf("%f", deploy.Resources.Cpus),
+		"memory": fmt.Sprintf("%f", deploy.Resources.MemoryMb),
+		"ports":  fmt.Sprintf("%f", deploy.Resources.NumPorts),
 	}
 
 	// Volumes
