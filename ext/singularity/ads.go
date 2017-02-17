@@ -51,9 +51,6 @@ type requestContext struct {
 	adsBuild adsBuild
 	// Client to be used for all requests to Singularity.
 	Client *singularity.Client
-	// The Cluster this DeployStateBuilder is working on.
-	// Note that one Singularity cluster may host multiple Sous clusters.
-	Cluster *sous.Cluster
 	// RequestID is the singularity request ID this builder is working on.
 	// This field is populated by NewDeployStateBuilder, and you can always
 	// assume that it is populated with a meaningful value.
@@ -68,7 +65,6 @@ func (ab *adsBuild) newRequestContext(requestID string) requestContext {
 	rc := requestContext{
 		adsBuild:  *ab,
 		Client:    ab.Client,
-		Cluster:   &ab.Cluster,
 		RequestID: requestID,
 		promise: c.Coax(ab.Context, func() (interface{}, error) {
 			return ab.Client.GetRequest(requestID)
@@ -256,7 +252,7 @@ func (db *DeploymentBuilder) Deployment() (*sous.Deployment, error) {
 		return nil, db.Errorf("requestParent contains no request")
 	}
 
-	return mapDeployHistoryToDeployment(sourceID, requestParent.Request, deployHistoryItem)
+	return mapDeployHistoryToDeployment(db.adsBuild.Cluster, sourceID, requestParent.Request, deployHistoryItem)
 }
 
 // DeployState returns the Sous deploy state.

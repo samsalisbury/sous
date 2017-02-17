@@ -7,7 +7,9 @@ import (
 	"github.com/opentable/sous/lib"
 )
 
-func mapDeployHistoryToDeployment(sid sous.SourceID,
+func mapDeployHistoryToDeployment(
+	cluster sous.Cluster,
+	sid sous.SourceID,
 	sr *dtos.SingularityRequest,
 	dh *dtos.SingularityDeployHistory) (*sous.Deployment, error) {
 
@@ -28,6 +30,9 @@ func mapDeployHistoryToDeployment(sid sous.SourceID,
 	}
 
 	return &sous.Deployment{
+		Cluster: &cluster,
+		// TODO: Remove ClusterName from sous.Deployment and use Cluster.Name.
+		ClusterName:  cluster.Name,
 		DeployConfig: *deployConfig,
 		Owners:       owners,
 		SourceID:     sid,

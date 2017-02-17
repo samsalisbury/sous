@@ -59,7 +59,7 @@ func TestGetDepSetWorks(t *testing.T) {
 	reg := sous.NewDummyRegistry()
 
 	reg.FeedImageLabels(map[string]string{
-		"com.opentable.sous.repo_url":    "github.com/some/user",
+		"com.opentable.sous.repo_url":    "github.com/user/project",
 		"com.opentable.sous.version":     "1.0.0",
 		"com.opentable.sous.revision":    "abc123",
 		"com.opentable.sous.repo_offset": "",
@@ -109,7 +109,7 @@ func TestGetDepSetWorks(t *testing.T) {
 	dep := Deployer{
 		Registry: reg,
 		Client:   client,
-		Cluster:  sous.Cluster{BaseURL: baseURL},
+		Cluster:  sous.Cluster{Name: "cluster1", BaseURL: baseURL},
 	}
 
 	res, err := dep.RunningDeployments()
@@ -132,7 +132,7 @@ func TestGetDepSetWorks(t *testing.T) {
 			},
 			Flavor: "",
 		},
-		Cluster: "test-custer",
+		Cluster: "cluster1",
 	}
 
 	actualDS, ok := actual[expectedDID]
