@@ -78,6 +78,10 @@ func (tgr *TestGETRequester) RegisterDTO(dto swaggering.DTO, pathFormat string, 
 	log.Printf("Registered a %T at %s", dto, path)
 }
 
+func TestDeployer_RunningDeployments(t *testing.T) {
+
+}
+
 func TestGetDepSetWorks(t *testing.T) {
 	assert := assert.New(t)
 
@@ -211,8 +215,7 @@ func TestGetDepSetWorks(t *testing.T) {
 		Status: sous.DeployStatusActive,
 	}
 
-	different, diffs := actualDS.Diff(&expectedDS)
-	if different {
+	if different, diffs := actualDS.Diff(&expectedDS); different {
 		t.Fatalf("deploy state not as expected: % #v", diffs)
 	}
 
