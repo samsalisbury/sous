@@ -33,17 +33,17 @@ var c = coaxer.NewCoaxer(func(c *coaxer.Coaxer) {
 // Deployer implements sous.Deployer for a single sous Cluster running on
 // Singularity.
 type Deployer struct {
-	Registry sous.Registry
-	Client   *singularity.Client
-	Cluster  sous.Cluster
+	Registry      sous.Registry
+	ClientFactory func(*sous.Cluster) *singularity.Client
+	Clusters      sous.Clusters
 }
 
 // adsBuild represents the building of a single sous.DeployStates from a
 // single Singularity-hosted cluster.
 type adsBuild struct {
 	Context       context.Context
-	Client        *singularity.Client
-	Cluster       sous.Cluster
+	ClientFactory func(*sous.Cluster) *singularity.Client
+	Clusters      sous.Clusters
 	Registry      sous.Registry
 	ErrorCallback func(error)
 }
@@ -57,19 +57,22 @@ type requestContext struct {
 	// This field is populated by NewDeployStateBuilder, and you can always
 	// assume that it is populated with a meaningful value.
 	RequestID string
-	promise   coaxer.Promise
+	// The cluster which this request belongs to.
+	Cluster sous.Cluster
+	promise coaxer.Promise
 }
 
 // newRequestContext initialises a requestContext and begins making HTTP
 // requests to get the request (via coaxer). We can access the results of
 // this via the returned requestContext's promise field.
-func (ab *adsBuild) newRequestContext(requestID string) requestContext {
+func (ab *adsBuild) newRequestContext(requestID string, client *singularity.Client, cluster sous.Cluster) requestContext {
 	rc := requestContext{
 		adsBuild:  *ab,
-		Client:    ab.Client,
+		Client:    client,
+		Cluster:   cluster,
 		RequestID: requestID,
 		promise: c.Coax(ab.Context, func() (interface{}, error) {
-			return maybeRetryable(ab.Client.GetRequest(requestID))
+			return maybeRetryable(client.GetRequest(requestID))
 		}, "get singularity request %q", requestID),
 	}
 	return rc
@@ -113,11 +116,11 @@ type DeploymentBuilder struct {
 	Status   sous.DeployStatus
 }
 
-func newADSBuild(ctx context.Context, client *singularity.Client, reg sous.Registry, cluster sous.Cluster) *adsBuild {
+func newADSBuild(ctx context.Context, client func(*sous.Cluster) *singularity.Client, reg sous.Registry, clusters sous.Clusters) *adsBuild {
 	return &adsBuild{
-		Client:        client,
+		ClientFactory: client,
 		Registry:      reg,
-		Cluster:       cluster,
+		Clusters:      clusters,
 		ErrorCallback: func(err error) { log.Println(err) },
 		Context:       ctx,
 	}
@@ -125,7 +128,7 @@ func newADSBuild(ctx context.Context, client *singularity.Client, reg sous.Regis
 
 // RunningDeployments uses a new adsBuild to construct sous deploy states.
 func (d *Deployer) RunningDeployments() (sous.DeployStates, error) {
-	return newADSBuild(context.TODO(), d.Client, d.Registry, d.Cluster).DeployStates()
+	return newADSBuild(context.TODO(), d.ClientFactory, d.Registry, d.Clusters).DeployStates()
 }
 
 // DeployStates returns all deploy states.
@@ -133,10 +136,28 @@ func (ab *adsBuild) DeployStates() (sous.DeployStates, error) {
 
 	log.Printf("Getting all requests...")
 
-	// Grab the list of all requests from Singularity.
-	requests, err := ab.Client.GetRequests()
-	if err != nil {
-		return sous.NewDeployStates(), err
+	promises := make(map[string]coaxer.Promise, len(ab.Clusters))
+
+	var requests []*dtos.SingularityRequestParent
+
+	// Grab the list of all requests from all clusters.
+	for clusterName, cluster := range ab.Clusters {
+		cluster := cluster
+		// TODO: Make sous.Clusters a slice to avoid this double-entry record keeping.
+		cluster.Name = clusterName
+		promises[cluster.Name] = c.Coax(context.TODO(), func() (interface{}, error) {
+			client := ab.ClientFactory(ab.Clusters[cluster.Name])
+			return maybeRetryable(client.GetRequests())
+		}, "get requests from cluster %q", cluster.Name)
+	}
+
+	for cluster, promise := range promises {
+		if err := promise.Err(); err != nil {
+			log.Printf("Fatal: unable to get requests for cluster %q", cluster)
+			return sous.NewDeployStates(), err
+		}
+		log.Printf("Success: got all requests from cluster %q", cluster)
+		requests = append(requests, promise.Value().(dtos.SingularityRequestParentList)...)
 	}
 
 	log.Printf("Got: %d requests", len(requests))
@@ -147,7 +168,8 @@ func (ab *adsBuild) DeployStates() (sous.DeployStates, error) {
 
 	// Start gathering all requests concurrently.
 gather:
-	for _, r := range requests {
+	for _, request := range requests {
+		request := request
 		select {
 		case <-ab.Context.Done():
 			log.Printf("Context ended before all deployments gathered.")
@@ -155,13 +177,30 @@ gather:
 		default:
 		}
 
-		request := r
-		log.Printf("Gathering data for request %q in background.", request.Request.Id)
+		requestID := request.Request.Id
+
+		log.Printf("Gathering data for request %q in background.", requestID)
+		deployID, err := ParseRequestID(requestID)
+		if err != nil {
+			// TODO: Maybe log this?
+			continue
+		}
+		oneOfMyDeploys := false
+		for clusterName := range ab.Clusters {
+			if deployID.Cluster == clusterName {
+				oneOfMyDeploys = true
+				break
+			}
+		}
+		if !oneOfMyDeploys {
+			// TODO: Maybe log this?
+			continue
+		}
 
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			dsb := ab.newDeployStateBuilder(request)
+			dsb := ab.newDeployStateBuilder(deployID.Cluster, request)
 			ds, err := dsb.DeployState()
 			if err != nil {
 				ab.ErrorCallback(err)
@@ -186,7 +225,8 @@ gather:
 }
 
 func (ab *adsBuild) Errorf(format string, a ...interface{}) error {
-	prefix := fmt.Sprintf("reading from cluster %q", ab.Cluster.Name)
+	//prefix := fmt.Sprintf("reading from cluster %q", ab.Cluster.Name)
+	prefix := ""
 	message := fmt.Sprintf(format, a...)
 	return fmt.Errorf("%s: %s", prefix, message)
 }
@@ -199,10 +239,12 @@ func (db *DeploymentBuilder) Errorf(format string, a ...interface{}) error {
 	return fmt.Errorf("%s: %s", prefix, message)
 }
 
-func (ab *adsBuild) newDeployStateBuilder(rp *dtos.SingularityRequestParent) *DeployStateBuilder {
+func (ab *adsBuild) newDeployStateBuilder(clusterName string, rp *dtos.SingularityRequestParent) *DeployStateBuilder {
 	deployID, status := getCurrentDeployIDAndStatus(rp.RequestDeployState)
+	cluster := ab.Clusters[clusterName]
+	client := ab.ClientFactory(cluster)
 	return &DeployStateBuilder{
-		requestContext:      ab.newRequestContext(rp.Request.Id),
+		requestContext:      ab.newRequestContext(rp.Request.Id, client, *cluster),
 		CurrentDeployID:     deployID,
 		CurrentDeployStatus: status,
 	}
@@ -252,7 +294,7 @@ func (db *DeploymentBuilder) Deployment() (*sous.Deployment, error) {
 		return nil, db.Errorf("requestParent contains no request")
 	}
 
-	return mapDeployHistoryToDeployment(db.adsBuild.Cluster, sourceID, requestParent.Request, deployHistoryItem)
+	return mapDeployHistoryToDeployment(db.Cluster, sourceID, requestParent.Request, deployHistoryItem)
 }
 
 // DeployState returns the Sous deploy state.

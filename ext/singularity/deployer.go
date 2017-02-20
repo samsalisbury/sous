@@ -9,7 +9,7 @@ import (
 	"github.com/opentable/go-singularity"
 	"github.com/opentable/sous/lib"
 	"github.com/pkg/errors"
-	"github.com/satori/go.uuid"
+	uuid "github.com/satori/go.uuid"
 )
 
 // Singularity DeployID must be <50
@@ -56,21 +56,10 @@ func NewDeployer(c rectificationClient, singularityClientFactory func(*sous.Clus
 }
 
 func (r *deployer) RunningDeployments(reg sous.Registry, clusters sous.Clusters) (sous.DeployStates, error) {
-	if len(clusters) != 1 {
-		return sous.NewDeployStates(), fmt.Errorf("RunningDeployments needs exactly one cluster")
-	}
-	var cluster sous.Cluster
-	for _, c := range clusters {
-		if c == nil {
-			return sous.NewDeployStates(), fmt.Errorf("nil cluster")
-		}
-		cluster = *c
-	}
-
 	newDeployer := &Deployer{
-		Registry: reg,
-		Client:   r.SingularityClientFactory(&cluster),
-		Cluster:  cluster,
+		Registry:      reg,
+		ClientFactory: r.SingularityClientFactory,
+		Clusters:      clusters,
 	}
 	ds, err := newDeployer.RunningDeployments()
 	if err != nil {

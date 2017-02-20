@@ -108,9 +108,9 @@ func TestGetDepSetWorks(t *testing.T) {
 	client := &singularity.Client{Requester: requester}
 
 	dep := Deployer{
-		Registry: reg,
-		Client:   client,
-		Cluster:  sous.Cluster{Name: "cluster1", BaseURL: baseURL},
+		Registry:      reg,
+		ClientFactory: func(*sous.Cluster) *singularity.Client { return client },
+		Clusters:      sous.Clusters{"": &sous.Cluster{Name: "cluster1", BaseURL: baseURL}},
 	}
 
 	res, err := dep.RunningDeployments()
