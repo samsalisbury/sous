@@ -189,10 +189,10 @@
 			"revisionTime": "2017-01-18T00:41:27Z"
 		},
 		{
-			"checksumSHA1": "Ptj9spXDkx+5esPj9pLUFuYuEP8=",
+			"checksumSHA1": "2f6pzOkY2Km6oP/nJk5Q5zG4yGQ=",
 			"path": "github.com/opentable/go-singularity/dtos",
-			"revision": "e5ca85fa95ed760e06a88dee78abde4677a95dea",
-			"revisionTime": "2016-08-09T08:42:26Z"
+			"revision": "2e1a4065d38d72ed528d57b1055f5bc5f3e962be",
+			"revisionTime": "2017-01-18T00:41:27Z"
 		},
 		{
 			"checksumSHA1": "2YMuZjTUghsAUbpeDp813c8mhdA=",
@@ -201,10 +201,10 @@
 			"revisionTime": "2016-08-20T15:25:38Z"
 		},
 		{
-			"checksumSHA1": "pWy/a5syfz5YCARcvCcV5/ygzqQ=",
+			"checksumSHA1": "jI3C9ksnuXqDooLaEy/ABDPGhYg=",
 			"path": "github.com/opentable/swaggering",
-			"revision": "48c3213297e582f0e3c5aa1ca440ff27f5c4c311",
-			"revisionTime": "2016-07-18T22:12:07Z"
+			"revision": "8b04e1ef4c086a1449b7cbb0dcf63dd572a79c17",
+			"revisionTime": "2017-01-18T00:38:15Z"
 		},
 		{
 			"checksumSHA1": "xN14ZoFcgefABp24aowYtQVMDsc=",
