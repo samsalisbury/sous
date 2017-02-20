@@ -3,8 +3,11 @@ package singularity
 import (
 	"bytes"
 	"fmt"
+	"html"
 	"html/template"
 	"io"
+	"log"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -45,22 +48,48 @@ func (tgr TestGETRequester) DTORequest(dto swaggering.DTO, method, path string, 
 	t.Execute(pathWriter, pathParams)
 	path = pathWriter.String()
 
-	d, ok := tgr[path]
-	if !ok {
-		return fmt.Errorf("no DTO at path %q", path)
+	// Do matching against URL unescaped strings.
+	cleanPath, err := url.QueryUnescape(path)
+	if err != nil {
+		log.Fatal(err)
 	}
-	return dto.Absorb(d)
+	cleanPath = html.UnescapeString(cleanPath)
+	for p, d := range tgr {
+		cleanP, err := url.QueryUnescape(p)
+		if err != nil {
+			log.Fatal(err)
+		}
+		cleanP = html.UnescapeString(cleanP)
+		if cleanP == cleanPath {
+			return dto.Absorb(d)
+		}
+		log.Printf("No match: %q != %q", cleanP, cleanPath)
+	}
+	return fmt.Errorf("no DTO available at %s", path)
+}
+
+func (tgr *TestGETRequester) RegisterDTO(dto swaggering.DTO, pathFormat string, a ...interface{}) {
+	pathSegments := make([]interface{}, len(a))
+	for i, a := range a {
+		pathSegments[i] = url.QueryEscape(fmt.Sprint(a))
+	}
+	path := fmt.Sprintf(pathFormat, pathSegments...)
+	(*tgr)[path] = dto
+	log.Printf("Registered a %T at %s", dto, path)
 }
 
 func TestGetDepSetWorks(t *testing.T) {
 	assert := assert.New(t)
 
-	baseURL := "http://test-singularity.org/"
+	const baseURL = "http://test-singularity.org/"
+	const requestID = "github.com>user>project::cluster1"
+	const deployID = "deploy1"
+	const repo = "github.com/user/project"
 
 	reg := sous.NewDummyRegistry()
 
 	reg.FeedImageLabels(map[string]string{
-		"com.opentable.sous.repo_url":    "github.com/user/project",
+		"com.opentable.sous.repo_url":    repo,
 		"com.opentable.sous.version":     "1.0.0",
 		"com.opentable.sous.revision":    "abc123",
 		"com.opentable.sous.repo_offset": "",
@@ -69,12 +98,12 @@ func TestGetDepSetWorks(t *testing.T) {
 	testReq := &dtos.SingularityRequestParent{
 		RequestDeployState: &dtos.SingularityRequestDeployState{
 			ActiveDeploy: &dtos.SingularityDeployMarker{
-				DeployId:  "testdep",
-				RequestId: "testreq",
+				DeployId:  deployID,
+				RequestId: requestID,
 			},
 		},
 		Request: &dtos.SingularityRequest{
-			Id:          "testreq",
+			Id:          requestID,
 			RequestType: dtos.SingularityRequestRequestTypeSERVICE,
 			Owners:      swaggering.StringList{"jlester@opentable.com"},
 		},
@@ -82,7 +111,7 @@ func TestGetDepSetWorks(t *testing.T) {
 
 	testDep := &dtos.SingularityDeployHistory{
 		Deploy: &dtos.SingularityDeploy{
-			Id: "testdep",
+			Id: deployID,
 			ContainerInfo: &dtos.SingularityContainerInfo{
 				Type: dtos.SingularityContainerInfoSingularityContainerTypeDOCKER,
 				Docker: &dtos.SingularityDockerInfo{
@@ -100,37 +129,41 @@ func TestGetDepSetWorks(t *testing.T) {
 		},
 	}
 
-	requester := TestGETRequester{
-		"/api/requests":                               &dtos.SingularityRequestParentList{testReq},
-		"/api/requests/request/testreq":               testReq,
-		"/api/history/request/testreq/deploy/testdep": testDep,
-	}
+	requester := TestGETRequester{}
+	requester.RegisterDTO(&dtos.SingularityRequestParentList{testReq}, "/api/requests")
+	requester.RegisterDTO(testReq, "/api/requests/request/%s", requestID)
+	requester.RegisterDTO(testDep, "/api/history/request/%s/deploy/%s", requestID, deployID)
+
 	client := &singularity.Client{Requester: requester}
 
 	dep := Deployer{
 		Registry:      reg,
 		ClientFactory: func(*sous.Cluster) *singularity.Client { return client },
-		Clusters:      sous.Clusters{"": &sous.Cluster{Name: "cluster1", BaseURL: baseURL}},
+		Clusters:      sous.Clusters{"cluster1": &sous.Cluster{Name: "cluster1", BaseURL: baseURL}},
 	}
 
 	res, err := dep.RunningDeployments()
+
 	if !assert.NoError(err) {
 		t.FailNow()
 	}
+
 	if !assert.NotNil(res) {
 		t.FailNow()
 	}
 
 	actual := res.Snapshot()
 
-	assert.Len(actual, 1)
+	if !assert.Len(actual, 1) {
+		t.FailNow()
+	}
 
 	t.Logf("% #v", res.Snapshot())
 
 	expectedDID := sous.DeployID{
 		ManifestID: sous.ManifestID{
 			Source: sous.SourceLocation{
-				Repo: "github.com/user/project",
+				Repo: repo,
 				Dir:  "",
 			},
 			Flavor: "",
@@ -152,7 +185,7 @@ func TestGetDepSetWorks(t *testing.T) {
 			Kind: sous.ManifestKindService,
 			SourceID: sous.SourceID{
 				Location: sous.SourceLocation{
-					Repo: "github.com/user/project",
+					Repo: repo,
 					Dir:  "",
 				},
 				Version: semv.MustParse("1"),
