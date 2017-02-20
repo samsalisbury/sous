@@ -52,6 +52,29 @@ func defaultRequestParent(requestID string) *dtos.SingularityRequestParent {
 
 func TestDeployer_RunningDeployments(t *testing.T) {
 
+	fixture := &testFixture{}
+	cluster1 := fixture.AddCluster("cluster1", "http://cluster1.com")
+	requestID := "github.com>user>repo::cluster1"
+	request1 := cluster1.AddRequest(requestID, func(rp *dtos.SingularityRequestParent) {
+
+	})
+	deployID := "deploy1"
+	request1.AddDeploy(deployID, func(dh *dtos.SingularityDeployHistory) {
+
+	})
+
+	newDeployer := &Deployer{
+		Registry:      fixture.Registry,
+		ClientFactory: fixture.DeployReaderFactory,
+		Clusters:      fixture.Clusters,
+	}
+	ds, err := newDeployer.RunningDeployments()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ds.Len() == 0 {
+		t.Fatal("got no deployments")
+	}
 }
 
 func TestGetDepSetWorks(t *testing.T) {
@@ -114,7 +137,7 @@ func TestGetDepSetWorks(t *testing.T) {
 
 	dep := Deployer{
 		Registry:      reg,
-		ClientFactory: func(*sous.Cluster) *singularity.Client { return client },
+		ClientFactory: func(*sous.Cluster) DeployReader { return client },
 		Clusters:      sous.Clusters{"cluster1": &sous.Cluster{Name: "cluster1", BaseURL: baseURL}},
 	}
 

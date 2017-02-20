@@ -1,6 +1,8 @@
 package singularity
 
 import (
+	"crypto/sha1"
+	"fmt"
 	"log"
 
 	"github.com/opentable/go-singularity/dtos"
@@ -16,6 +18,73 @@ import (
 type testFixture struct {
 	Clusters      sous.Clusters
 	Singularities map[string]*testSingularity
+	Registry      *testRegistry
+}
+
+func (tf *testFixture) DeployReaderFactory(c *sous.Cluster) DeployReader {
+	return &testDeployReader{}
+}
+
+type testDeployReader struct{}
+
+func (tdr *testDeployReader) GetRequests() (dtos.SingularityRequestParentList, error) {
+	panic("nimp")
+}
+
+func (tdr *testDeployReader) GetRequest(requestID string) (*dtos.SingularityRequestParent, error) {
+	panic("nimp")
+}
+
+func (tdr *testDeployReader) GetDeploy(requestID, deployID string) (*dtos.SingularityDeployHistory, error) {
+	panic("nimp")
+}
+
+type testRegistry struct {
+	Images map[string]*testImage
+}
+
+func (tr *testRegistry) GetArtifact(sid sous.SourceID) (*sous.BuildArtifact, error) {
+	panic("implements sous.Registry")
+}
+
+func (tr *testRegistry) GetSourceID(ba *sous.BuildArtifact) (sous.SourceID, error) {
+	panic("implements sous.Registry")
+}
+
+func (tr *testRegistry) ImageLabels(imageName string) (map[string]string, error) {
+	panic("implements sous.Registry")
+}
+
+func (tr *testRegistry) ListSourceIDs() ([]sous.SourceID, error) {
+	panic("implements sous.Registry")
+}
+
+func (tr *testRegistry) Warmup(string) error {
+	panic("implements sous.Registry")
+}
+
+type testImage struct {
+	labels map[string]string
+}
+
+// AddImage adds an image with name derived from repo, offset and tag.
+// It also adds labels and returns the image name.
+func (tr *testRegistry) AddImage(repo, offset, tag string) string {
+	if offset != "" {
+		offset = "," + offset
+	}
+	imageName := fmt.Sprintf("docker.mycompany.com/%s%s:%s", repo, offset, tag)
+	revision := string(sha1.New().Sum([]byte(imageName)))
+	imageLabels := map[string]string{
+		"com.opentable.sous.repo_url":    repo,
+		"com.opentable.sous.version":     tag,
+		"com.opentable.sous.revision":    revision,
+		"com.opentable.sous.repo_offset": offset,
+	}
+	tr.Images[imageName] = &testImage{
+		labels: imageLabels,
+	}
+	return imageName
 }
 
 // A testSingularity represents a test singularity instance.
@@ -51,17 +120,24 @@ type testDeploy struct {
 
 // AddCluster adds a cluster and ensures a singularity exists for its baseURL.
 // It creates the necessary singularity if it doesn't exist.
-func (tf *testFixture) AddCluster(name, baseURL string) {
+//
+// It returns the singularity with the same base url.
+func (tf *testFixture) AddCluster(name, baseURL string) *testSingularity {
 	if tf.Clusters == nil {
 		tf.Clusters = sous.Clusters{}
 	}
 	tf.Clusters[name] = &sous.Cluster{Name: name, BaseURL: baseURL}
-	tf.AddSingularity(baseURL)
+	return tf.AddSingularity(baseURL)
 }
 
+// AddSingularity adds a singularity if none exist for baseURL. It returns
+// the one that already existed, or the new one created.
 func (tf *testFixture) AddSingularity(baseURL string) *testSingularity {
 	if tf.Singularities == nil {
 		tf.Singularities = map[string]*testSingularity{}
+	}
+	if s, ok := tf.Singularities[baseURL]; ok {
+		return s
 	}
 	singularity := &testSingularity{
 		Parent: tf,
@@ -119,6 +195,15 @@ func (tr *testRequest) AddDeploy(deployID string, configure func(*dtos.Singulari
 	}
 	requestID := tr.RequestParent.Request.Id
 	deployment := defaultDeployHistoryItem(requestID, deployID)
+
+	did, err := ParseRequestID(tr.RequestParent.Request.Id)
+	if err != nil {
+		log.Fatal(err)
+	}
+	repo := did.ManifestID.Source.Repo
+	tag := "1.0.0"
+	deployment.Deploy.ContainerInfo.Docker.Image = tr.Parent.Parent.Registry.AddImage(repo, "", tag)
+
 	if configure != nil {
 		configure(deployment)
 	}
