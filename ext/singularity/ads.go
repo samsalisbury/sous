@@ -7,7 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/opentable/go-singularity"
 	"github.com/opentable/go-singularity/dtos"
 	"github.com/opentable/sous/ext/docker"
 	"github.com/opentable/sous/lib"
@@ -30,11 +29,19 @@ var c = coaxer.NewCoaxer(func(c *coaxer.Coaxer) {
 	c.Backoff = time.Second
 })
 
+// DeployReader encapsulates the methods required to read Singularity
+// requests and deployments.
+type DeployReader interface {
+	GetRequests() (dtos.SingularityRequestParentList, error)
+	GetRequest(requestID string) (*dtos.SingularityRequestParent, error)
+	GetDeploy(requestID, deployID string) (*dtos.SingularityDeployHistory, error)
+}
+
 // Deployer implements sous.Deployer for a single sous Cluster running on
 // Singularity.
 type Deployer struct {
 	Registry      sous.Registry
-	ClientFactory func(*sous.Cluster) *singularity.Client
+	ClientFactory func(*sous.Cluster) DeployReader
 	Clusters      sous.Clusters
 }
 
@@ -42,7 +49,7 @@ type Deployer struct {
 // single Singularity-hosted cluster.
 type adsBuild struct {
 	Context       context.Context
-	ClientFactory func(*sous.Cluster) *singularity.Client
+	ClientFactory func(*sous.Cluster) DeployReader
 	Clusters      sous.Clusters
 	Registry      sous.Registry
 	ErrorCallback func(error)
@@ -52,7 +59,7 @@ type adsBuild struct {
 type requestContext struct {
 	adsBuild adsBuild
 	// Client to be used for all requests to Singularity.
-	Client *singularity.Client
+	Client DeployReader
 	// RequestID is the singularity request ID this builder is working on.
 	// This field is populated by NewDeployStateBuilder, and you can always
 	// assume that it is populated with a meaningful value.
@@ -65,7 +72,7 @@ type requestContext struct {
 // newRequestContext initialises a requestContext and begins making HTTP
 // requests to get the request (via coaxer). We can access the results of
 // this via the returned requestContext's promise field.
-func (ab *adsBuild) newRequestContext(requestID string, client *singularity.Client, cluster sous.Cluster) requestContext {
+func (ab *adsBuild) newRequestContext(requestID string, client DeployReader, cluster sous.Cluster) requestContext {
 	rc := requestContext{
 		adsBuild:  *ab,
 		Client:    client,
@@ -116,7 +123,7 @@ type DeploymentBuilder struct {
 	Status   sous.DeployStatus
 }
 
-func newADSBuild(ctx context.Context, client func(*sous.Cluster) *singularity.Client, reg sous.Registry, clusters sous.Clusters) *adsBuild {
+func newADSBuild(ctx context.Context, client func(*sous.Cluster) DeployReader, reg sous.Registry, clusters sous.Clusters) *adsBuild {
 	return &adsBuild{
 		ClientFactory: client,
 		Registry:      reg,
@@ -146,6 +153,15 @@ func (ab *adsBuild) DeployStates() (sous.DeployStates, error) {
 		// TODO: Make sous.Clusters a slice to avoid this double-entry record keeping.
 		cluster.Name = clusterName
 		promises[cluster.Name] = c.Coax(context.TODO(), func() (interface{}, error) {
+			if ab.ClientFactory == nil {
+				panic("CF")
+			}
+			if ab.Clusters == nil {
+				panic("CLUSTERS")
+			}
+			if cluster == nil {
+				panic("CLUSTER")
+			}
 			client := ab.ClientFactory(ab.Clusters[cluster.Name])
 			return maybeRetryable(client.GetRequests())
 		}, "get requests from cluster %q", cluster.Name)

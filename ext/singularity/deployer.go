@@ -32,6 +32,7 @@ type (
 	deployer struct {
 		Client                   rectificationClient
 		SingularityClientFactory func(*sous.Cluster) *singularity.Client
+		DeployReaderFactory      func(*sous.Cluster) DeployReader
 	}
 
 	// rectificationClient abstracts the raw interactions with Singularity.
@@ -52,13 +53,19 @@ type (
 
 // NewDeployer creates a new Singularity-based sous.Deployer.
 func NewDeployer(c rectificationClient, singularityClientFactory func(*sous.Cluster) *singularity.Client) sous.Deployer {
-	return &deployer{Client: c, SingularityClientFactory: singularityClientFactory}
+	return &deployer{
+		Client: c,
+		SingularityClientFactory: singularityClientFactory,
+		DeployReaderFactory: func(c *sous.Cluster) DeployReader {
+			return singularityClientFactory(c)
+		},
+	}
 }
 
 func (r *deployer) RunningDeployments(reg sous.Registry, clusters sous.Clusters) (sous.DeployStates, error) {
 	newDeployer := &Deployer{
 		Registry:      reg,
-		ClientFactory: r.SingularityClientFactory,
+		ClientFactory: r.DeployReaderFactory,
 		Clusters:      clusters,
 	}
 	ds, err := newDeployer.RunningDeployments()
