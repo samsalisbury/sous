@@ -1,6 +1,8 @@
 package singularity
 
 import (
+	"fmt"
+	"log"
 	"testing"
 
 	"github.com/nyarly/testify/assert"
@@ -10,6 +12,43 @@ import (
 	"github.com/opentable/swaggering"
 	"github.com/samsalisbury/semv"
 )
+
+func defaultDeployHistoryItem(requestID, deployID string) *dtos.SingularityDeployHistory {
+	did, err := ParseRequestID(requestID)
+	if err != nil {
+		log.Panic(err)
+	}
+	dockerImage := fmt.Sprintf("docker.mycompany.com/%s:1.0.0", did.ManifestID.Source)
+	return &dtos.SingularityDeployHistory{
+		Deploy: &dtos.SingularityDeploy{
+			Id: deployID,
+			ContainerInfo: &dtos.SingularityContainerInfo{
+				Type: dtos.SingularityContainerInfoSingularityContainerTypeDOCKER,
+				Docker: &dtos.SingularityDockerInfo{
+					Image: dockerImage,
+				},
+				Volumes: dtos.SingularityVolumeList{
+					&dtos.SingularityVolume{
+						HostPath:      "/onhost",
+						ContainerPath: "/indocker",
+						Mode:          dtos.SingularityVolumeSingularityDockerVolumeModeRW,
+					},
+				},
+			},
+			Resources: &dtos.Resources{},
+		},
+	}
+}
+
+func defaultRequestParent(requestID string) *dtos.SingularityRequestParent {
+	return &dtos.SingularityRequestParent{
+		RequestDeployState: &dtos.SingularityRequestDeployState{},
+		Request: &dtos.SingularityRequest{
+			Id:          requestID,
+			RequestType: dtos.SingularityRequestRequestTypeSERVICE,
+		},
+	}
+}
 
 func TestDeployer_RunningDeployments(t *testing.T) {
 
