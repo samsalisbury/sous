@@ -153,7 +153,8 @@ func (tf *testFixture) AddSingularity(baseURL string) *testSingularity {
 //
 // It barfs if the requestID is not parseable with ParseRequestID, or if
 // it ends up with an empty Cluster or SourceLocation, or if the requestID is
-// not unique within this testSingularity.
+// not unique within this testSingularity, or if the cluster implied by the
+// request ID is not already defined.
 func (ts *testSingularity) AddRequest(requestID string, configure func(*dtos.SingularityRequestParent)) *testRequest {
 	deployID, err := ParseRequestID(requestID)
 	if err != nil {
@@ -161,6 +162,9 @@ func (ts *testSingularity) AddRequest(requestID string, configure func(*dtos.Sin
 	}
 	if deployID.Cluster == "" {
 		log.Panicf("Request ID %q has an empty cluster component.", requestID)
+	}
+	if _, ok := ts.Parent.Clusters[deployID.Cluster]; !ok {
+		log.Panicf("Cluster %q not defined (from request id %q)", deployID.Cluster, requestID)
 	}
 	if deployID.ManifestID.Source.Repo == "" {
 		log.Panicf("Request ID %q has an empty source repo component.", requestID)
