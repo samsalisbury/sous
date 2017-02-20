@@ -120,8 +120,6 @@ func TestGetRunningDeploymentSet_otherCluster(t *testing.T) {
 
 func TestGetRunningDeploymentSet_all(t *testing.T) {
 
-	t.Skip("Deployer no longer supports talking to multiple clusters.")
-
 	assert := assert.New(t)
 
 	registerLabelledContainers()
@@ -211,6 +209,7 @@ func TestResolve(t *testing.T) {
 		Clusters: sous.Clusters{
 			"test-cluster": &sous.Cluster{
 				BaseURL: SingularityURL,
+				Name:    "test-cluster",
 			},
 		},
 	}
