@@ -10,7 +10,8 @@ install:
 - "./bin/vendor-check"
 script:
 - make -j2 test && make coverage
-- cat doc/shellexamples/*.blended
+- make reject_wip
+  #- cat doc/shellexamples/*.blended
 after_success:
 - bin/codecov -f /tmp/sous-cover/count_merged.txt
 env:
