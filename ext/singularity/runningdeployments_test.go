@@ -35,10 +35,14 @@ func defaultTestFixture() (*testFixture, *Deployer) {
 
 	// Add 1 requests to cluster 1.
 	cluster1Request1 := cluster1.AddRequest("github.com>user>repo1::cluster1", nil)
+	cluster1Request2 := cluster1.AddRequest("github.com>user>repo2::cluster1", nil)
 
 	// Add 2 successful deployments to cluster 1, request 1.
 	cluster1Request1.AddDeploy("deploy111", nil)
 	cluster1Request1.AddDeploy("deploy112", nil)
+
+	// Add 1 successful deployment to cluster 1, request 2.
+	cluster1Request2.AddDeploy("deploy121", nil)
 
 	//// Add 2 requests to cluster 2.
 	//cluster2Request1 := cluster2.AddRequest("github.com>user>repo1::cluster2", nil)
