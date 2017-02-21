@@ -272,6 +272,11 @@ func (ab *adsBuild) newDeployStateBuilder(clusterName string, rp *dtos.Singulari
 //     2. If there is no PENDING deploy, but there is an ACTIVE deploy, return that.
 //     3. If there is no PENDING or ACTIVE deploy, return an empty DeployID and
 //        DeployStatusNotRunning so we know there are no deployments here yet.
+//
+// DeployStatusNotRunning means either there are no deployments here yet, or the
+// request is paused, finished, deleted, or in system cooldown. The parent of
+// the request deploy state (the RequestParent) has a field "state" that has
+// this info if we need it at some point.
 func getCurrentDeployIDAndStatus(rds *dtos.SingularityRequestDeployState) (string, sous.DeployStatus) {
 	// If there is a pending request, that's the one we care about from Sous'
 	// point of view, so preferentially return that.

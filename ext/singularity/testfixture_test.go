@@ -158,7 +158,7 @@ func (tr *testRegistry) GetSourceID(ba *sous.BuildArtifact) (sous.SourceID, erro
 }
 
 func (tr *testRegistry) ImageLabels(imageName string) (map[string]string, error) {
-	panic("implements sous.Registry")
+	return tr.Images[imageName].labels, nil
 }
 
 func (tr *testRegistry) ListSourceIDs() ([]sous.SourceID, error) {
@@ -179,24 +179,26 @@ func newTestRegistry() *testRegistry {
 	}
 }
 
-// AddImage adds an image with name derived from repo, offset and tag.
-// It also adds labels and returns the image name.
-func (tr *testRegistry) AddImage(repo, offset, tag string) string {
+// AddImage adds an image with name provided and with labels corresponding to
+// repo, offset and tag.
+func (tr *testRegistry) AddImage(name, repo, offset, tag string) {
 	if offset != "" {
 		offset = "," + offset
 	}
-	imageName := fmt.Sprintf("docker.mycompany.com/%s%s:%s", repo, offset, tag)
-	revision := string(sha1.New().Sum([]byte(imageName)))
+	revision := string(sha1.New().Sum([]byte(name)))
 	imageLabels := map[string]string{
 		"com.opentable.sous.repo_url":    repo,
 		"com.opentable.sous.version":     tag,
 		"com.opentable.sous.revision":    revision,
 		"com.opentable.sous.repo_offset": offset,
 	}
-	tr.Images[imageName] = &testImage{
+	tr.Images[name] = &testImage{
 		labels: imageLabels,
 	}
-	return imageName
+}
+
+func testImageName(repo, offset, tag string) string {
+	return fmt.Sprintf("docker.mycompany.com/%s%s:%s", repo, offset, tag)
 }
 
 // AddCluster adds a cluster and ensures a singularity exists for its baseURL.
@@ -272,30 +274,62 @@ func (ts *testSingularity) AddRequest(requestID string, configure func(*dtos.Sin
 // func is called on it to manipulate it before it's added to the deploy history
 // and returned wrapped in a testDeploy.
 //
-// AddDeploy also adds a corresponding docker image to the test registry owned
-// by the ancestor testFixture (at Parent.Parent.Parent).
+// AddDeploy also adds:
+//   - A corresponding docker image to the test registry owned
+//     by the ancestor testFixture (at Parent.Parent.Parent)
+//   - A corresponding entry in SingularityRequestDeployState if the
+//     status is Pending or Active after configure is called.
 func (tr *testRequest) AddDeploy(deployID string, configure func(*dtos.SingularityDeployHistory)) *testDeploy {
 	if tr.Deploys == nil {
 		tr.Deploys = map[string]*testDeploy{}
 	}
 	requestID := tr.RequestParent.Request.Id
-	deployment := defaultDeployHistoryItem(requestID, deployID)
+	deployHistory := defaultDeployHistoryItem(requestID, deployID)
 
 	did, err := ParseRequestID(tr.RequestParent.Request.Id)
 	if err != nil {
 		log.Fatal(err)
 	}
 	repo := did.ManifestID.Source.Repo
+	offset := did.ManifestID.Source.Dir
 	tag := "1.0.0"
-	deployment.Deploy.ContainerInfo.Docker.Image = tr.Parent.Parent.Registry.AddImage(repo, "", tag)
 
+	imageName := testImageName(repo, offset, tag)
+	deployHistory.Deploy.ContainerInfo.Docker.Image = imageName
+
+	// Add docker image to the test registry.
+	tr.Parent.Parent.Registry.AddImage(imageName, repo, offset, tag)
+
+	// All defaults are set, now pass the deploy to provided configure func.
 	if configure != nil {
-		configure(deployment)
+		configure(deployHistory)
 	}
+	// After this we can respond to the final value.
+
+	deployMarker := &dtos.SingularityDeployMarker{
+		User:      "some user",
+		RequestId: tr.RequestParent.Request.Id,
+		Message:   "some message",
+		Timestamp: 0, // TODO: Maybe have a counter to increment these.
+		DeployId:  deployID,
+	}
+
+	tr.RequestParent.RequestDeployState = &dtos.SingularityRequestDeployState{}
+
+	// Add an entry to SingularityRequestDeployState if we have Pending or
+	// Active deploy.
+	if deployHistory.DeployResult.DeployState == dtos.SingularityDeployResultDeployStateWAITING {
+		tr.RequestParent.RequestDeployState.PendingDeploy = deployMarker
+	}
+	if deployHistory.DeployResult.DeployState == dtos.SingularityDeployResultDeployStateSUCCEEDED {
+		tr.RequestParent.RequestDeployState.ActiveDeploy = deployMarker
+	}
+
 	deploy := &testDeploy{
 		Parent:            tr,
-		DeployHistoryItem: deployment,
+		DeployHistoryItem: deployHistory,
 	}
-	tr.Deploys[deployment.Deploy.Id] = deploy
+	// Add the deploy to this testRequest.
+	tr.Deploys[deployHistory.Deploy.Id] = deploy
 	return deploy
 }
