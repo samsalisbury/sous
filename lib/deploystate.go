@@ -2,6 +2,7 @@ package sous
 
 import "fmt"
 
+//go:generate stringer -type=DeployStatus
 //go:generate ggen cmap.CMap(cmap.go) sous.DeployStates(deploystates.go) CMKey:DeployID Value:*DeployState
 
 // A DeployState represents the state of a deployment in an external cluster.
@@ -30,7 +31,7 @@ func (ds *DeployState) Diff(o *DeployState) (bool, []string) {
 	_, diffs := ds.Deployment.Diff(&o.Deployment)
 	if o.Status != ds.Status {
 		// TODO: Add String method to sous.DeployStatus.
-		diffs = append(diffs, fmt.Sprintf("DeployStatus; this: %d, other: %d",
+		diffs = append(diffs, fmt.Sprintf("DeployStatus; this: %s, other: %s",
 			ds.Status, o.Status))
 	}
 	return len(diffs) != 0, diffs
