@@ -6,6 +6,7 @@ import (
 	"log"
 	"path/filepath"
 	"runtime"
+	"sync/atomic"
 
 	"github.com/opentable/go-singularity/dtos"
 	sous "github.com/opentable/sous/lib"
@@ -270,9 +271,17 @@ func (ts *testSingularity) AddRequest(requestID string, configure func(*dtos.Sin
 	return request
 }
 
+var deployTimestampCounter int64 = 1
+
+func nextDeployTimestamp() int64 {
+	return atomic.AddInt64(&deployTimestampCounter, 1)
+}
+
 // AddDeploy adds a new DeployHistory linked with this request. The configure
 // func is called on it to manipulate it before it's added to the deploy history
 // and returned wrapped in a testDeploy.
+//
+// The added deployment will have a timestamp at least one more than the last.
 //
 // AddDeploy also adds:
 //   - A corresponding docker image to the test registry owned
@@ -283,53 +292,85 @@ func (tr *testRequest) AddDeploy(deployID string, configure func(*dtos.Singulari
 	if tr.Deploys == nil {
 		tr.Deploys = map[string]*testDeploy{}
 	}
-	requestID := tr.RequestParent.Request.Id
-	deployHistory := defaultDeployHistoryItem(requestID, deployID)
 
-	did, err := ParseRequestID(tr.RequestParent.Request.Id)
+	// Derive data needed to create the singularity deploy history item.
+	requestID := tr.RequestParent.Request.Id // this is used a few times.
+	did, err := ParseRequestID(requestID)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// Calculate test docker image name.
 	repo := did.ManifestID.Source.Repo
 	offset := did.ManifestID.Source.Dir
 	tag := "1.0.0"
-
-	imageName := testImageName(repo, offset, tag)
-	deployHistory.Deploy.ContainerInfo.Docker.Image = imageName
-
+	dockerImageName := testImageName(repo, offset, tag)
 	// Add docker image to the test registry.
-	tr.Parent.Parent.Registry.AddImage(imageName, repo, offset, tag)
+	tr.Parent.Parent.Registry.AddImage(dockerImageName, repo, offset, tag)
+
+	// Get some timestamps. The order here mimics observed Singularity behaviour
+	// where deploy markers always have timestamps earlier than deploy results.
+	deployMarkerTimestamp := nextDeployTimestamp()
+	deployResultTimestamp := nextDeployTimestamp()
+
+	// Create the default deploy history item.
+	deployHistory := &dtos.SingularityDeployHistory{
+		Deploy: &dtos.SingularityDeploy{
+			Id: deployID,
+			ContainerInfo: &dtos.SingularityContainerInfo{
+				Type: dtos.SingularityContainerInfoSingularityContainerTypeDOCKER,
+				Docker: &dtos.SingularityDockerInfo{
+					Image: dockerImageName,
+				},
+				Volumes: dtos.SingularityVolumeList{
+					&dtos.SingularityVolume{
+						HostPath:      "/onhost",
+						ContainerPath: "/indocker",
+						Mode:          dtos.SingularityVolumeSingularityDockerVolumeModeRW,
+					},
+				},
+			},
+			Resources: &dtos.Resources{},
+		},
+		DeployResult: &dtos.SingularityDeployResult{
+			// Successful deploy result by default.
+			DeployState: dtos.SingularityDeployResultDeployStateSUCCEEDED,
+			// DeployFailures is not nil in Singularity, it's an empty array.
+			DeployFailures: dtos.SingularityDeployFailureList{},
+			Timestamp:      deployResultTimestamp,
+		},
+		DeployMarker: &dtos.SingularityDeployMarker{
+			RequestId: requestID,
+			DeployId:  deployID,
+			Timestamp: deployMarkerTimestamp,
+			User:      "some user",
+		},
+	}
 
 	// All defaults are set, now pass the deploy to provided configure func.
 	if configure != nil {
 		configure(deployHistory)
 	}
-	// After this we can respond to the final value.
 
-	deployMarker := &dtos.SingularityDeployMarker{
-		User:      "some user",
-		RequestId: tr.RequestParent.Request.Id,
-		Message:   "some message",
-		Timestamp: 0, // TODO: Maybe have a counter to increment these.
-		DeployId:  deployID,
+	// Configure the request to reflect this latest deploy if it was successful
+	// or pending. Other statuses may be important but are not currently
+	// reflected.
+	deployMarkerCopy := *deployHistory.DeployMarker
+	switch deployHistory.DeployResult.DeployState {
+	case dtos.SingularityDeployResultDeployStateSUCCEEDED:
+		// SUCCEEDED, set Active deploy.
+		tr.RequestParent.RequestDeployState.ActiveDeploy = &deployMarkerCopy
+	case dtos.SingularityDeployResultDeployStateWAITING:
+		// WAITING, set Pending deploy.
+		tr.RequestParent.RequestDeployState.PendingDeploy = &deployMarkerCopy
 	}
 
-	tr.RequestParent.RequestDeployState = &dtos.SingularityRequestDeployState{}
-
-	// Add an entry to SingularityRequestDeployState if we have Pending or
-	// Active deploy.
-	if deployHistory.DeployResult.DeployState == dtos.SingularityDeployResultDeployStateWAITING {
-		tr.RequestParent.RequestDeployState.PendingDeploy = deployMarker
-	}
-	if deployHistory.DeployResult.DeployState == dtos.SingularityDeployResultDeployStateSUCCEEDED {
-		tr.RequestParent.RequestDeployState.ActiveDeploy = deployMarker
-	}
-
+	// Add the deploy history to this testRequest.
 	deploy := &testDeploy{
 		Parent:            tr,
 		DeployHistoryItem: deployHistory,
 	}
-	// Add the deploy to this testRequest.
 	tr.Deploys[deployHistory.Deploy.Id] = deploy
+
 	return deploy
 }

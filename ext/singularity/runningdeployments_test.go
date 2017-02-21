@@ -1,43 +1,12 @@
 package singularity
 
 import (
-	"fmt"
-	"log"
 	"testing"
 
 	"github.com/opentable/go-singularity/dtos"
 	sous "github.com/opentable/sous/lib"
 	"github.com/samsalisbury/semv"
 )
-
-func defaultDeployHistoryItem(requestID, deployID string) *dtos.SingularityDeployHistory {
-	did, err := ParseRequestID(requestID)
-	if err != nil {
-		log.Panic(err)
-	}
-	dockerImage := fmt.Sprintf("docker.mycompany.com/%s:1.0.0", did.ManifestID.Source)
-	return &dtos.SingularityDeployHistory{
-		Deploy: &dtos.SingularityDeploy{
-			Id: deployID,
-			ContainerInfo: &dtos.SingularityContainerInfo{
-				Type: dtos.SingularityContainerInfoSingularityContainerTypeDOCKER,
-				Docker: &dtos.SingularityDockerInfo{
-					Image: dockerImage,
-				},
-				Volumes: dtos.SingularityVolumeList{
-					&dtos.SingularityVolume{
-						HostPath:      "/onhost",
-						ContainerPath: "/indocker",
-						Mode:          dtos.SingularityVolumeSingularityDockerVolumeModeRW,
-					},
-				},
-			},
-			Resources: &dtos.Resources{},
-		},
-		// Empty deploy result by default.
-		DeployResult: &dtos.SingularityDeployResult{},
-	}
-}
 
 func defaultRequestParent(requestID string) *dtos.SingularityRequestParent {
 	return &dtos.SingularityRequestParent{
@@ -59,18 +28,36 @@ func defaultTestFixture() (*testFixture, *Deployer) {
 		Registry: newTestRegistry(),
 	}
 
-	cluster1 := fixture.AddCluster("cluster1", "http://cluster1.com")
+	//
+	// Create clusters and associated singularities.
+	//
 
-	requestID1 := "github.com>user>repo::cluster1"
+	// 2 Clusters on singularity1
+	cluster1 := fixture.AddCluster("cluster1", "http://singularity1.com")
+	//cluster2 := fixture.AddCluster("cluster2", "http://singularity1.com")
 
-	request1 := cluster1.AddRequest(requestID1, func(rp *dtos.SingularityRequestParent) {
+	// 1 cluster on singularity2.
+	//cluster3 := fixture.AddCluster("cluster3", "http://singularity2.com")
 
-	})
+	//
+	// Populate cluster 1, request 1
+	//
 
-	deployID := "deploy1"
-	request1.AddDeploy(deployID, func(dh *dtos.SingularityDeployHistory) {
-		dh.DeployResult.DeployState = dtos.SingularityDeployResultDeployStateWAITING
-	})
+	// Add 1 requests to cluster 1.
+	cluster1Request1 := cluster1.AddRequest("github.com>user>repo1::cluster1", nil)
+
+	// Add 2 successful deployments to cluster 1, request 1.
+	cluster1Request1.AddDeploy("deploy111", nil)
+	cluster1Request1.AddDeploy("deploy112", nil)
+
+	//// Add 2 requests to cluster 2.
+	//cluster2Request1 := cluster2.AddRequest("github.com>user>repo1::cluster2", nil)
+	//cluster2Request2 := cluster2.AddRequest("github.com>user>repo2::cluster2", nil)
+
+	//// Add 3 requests to cluster 3.
+	//cluster3Request1 := cluster3.AddRequest("github.com>user>repo1::cluster3", nil)
+	//cluster3Request2 := cluster3.AddRequest("github.com>user>repo2::cluster3", nil)
+	//cluster3Request3 := cluster3.AddRequest("github.com>user>repo3::cluster3", nil)
 
 	return fixture, &Deployer{
 		Registry:      fixture.Registry,
