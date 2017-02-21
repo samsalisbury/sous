@@ -4,6 +4,7 @@ import (
 	"log"
 	"testing"
 
+	"github.com/opentable/go-singularity/dtos"
 	"github.com/opentable/sous/lib"
 	"github.com/samsalisbury/semv"
 )
@@ -18,24 +19,15 @@ func defaultTestFixture() (*testFixture, *Deployer) {
 		Registry: newTestRegistry(),
 	}
 
-	//
-	// Create clusters and associated singularities.
-	//
-
-	// 2 Clusters on singularity1
-	cluster1 := fixture.AddCluster("cluster1", "http://singularity1.com")
-	//cluster2 := fixture.AddCluster("cluster2", "http://singularity1.com")
+	singularity1 := fixture.AddSingularity("http://singularity1.com")
+	singularity1.AddCluster("cluster1")
 
 	// 1 cluster on singularity2.
 	//cluster3 := fixture.AddCluster("cluster3", "http://singularity2.com")
 
-	//
-	// Populate cluster 1, request 1
-	//
-
 	// Add 1 requests to cluster 1.
-	cluster1Request1 := cluster1.AddRequest("github.com>user>repo1::cluster1", nil)
-	cluster1Request2 := cluster1.AddRequest("github.com>user>repo2::cluster1", nil)
+	cluster1Request1 := singularity1.AddRequest("github.com>user>repo1::cluster1", nil)
+	cluster1Request2 := singularity1.AddRequest("github.com>user>repo2::cluster1", nil)
 
 	// Add 2 successful deployments to cluster 1, request 1.
 	cluster1Request1.AddDeploy("deploy111", nil)
@@ -44,15 +36,6 @@ func defaultTestFixture() (*testFixture, *Deployer) {
 	// Add 1 successful deployment to cluster 1, request 2.
 	cluster1Request2.AddDeploy("deploy121", nil)
 
-	//// Add 2 requests to cluster 2.
-	//cluster2Request1 := cluster2.AddRequest("github.com>user>repo1::cluster2", nil)
-	//cluster2Request2 := cluster2.AddRequest("github.com>user>repo2::cluster2", nil)
-
-	//// Add 3 requests to cluster 3.
-	//cluster3Request1 := cluster3.AddRequest("github.com>user>repo1::cluster3", nil)
-	//cluster3Request2 := cluster3.AddRequest("github.com>user>repo2::cluster3", nil)
-	//cluster3Request3 := cluster3.AddRequest("github.com>user>repo3::cluster3", nil)
-
 	return fixture, &Deployer{
 		Registry:      fixture.Registry,
 		ClientFactory: fixture.DeployReaderFactory,
@@ -60,6 +43,16 @@ func defaultTestFixture() (*testFixture, *Deployer) {
 	}
 }
 
+// defaultSingularityRequestParent returns a standard singularity request with a
+// single successful deployment.
+func (ts *testSingularity) defaultSingularityRequestParent(requestID, deployID string) *dtos.SingularityRequestParent {
+	request := ts.AddRequest(requestID, nil)
+	request.AddDeploy(deployID, nil)
+	return request.RequestParent
+}
+
+// defaultExpectedDeployState returns a sous.DeployState that corresponds with
+// the singularity request produced by defaultSingularityRequest.
 func defaultExpectedDeployState(deployID string, configure func(*sous.DeployState)) *sous.DeployState {
 	did, err := sous.ParseDeployID(deployID)
 	if err != nil {
@@ -118,7 +111,7 @@ func TestDeployer_RunningDeployments_defaultTestFixture(t *testing.T) {
 	// Act.
 	actual, err := deployer.RunningDeployments()
 	if err != nil {
-		t.Fatal(err) // We are only testing happy paths in this file.
+		t.Fatal(err) // We are only testing happy paths in this go file.
 	}
 
 	// Assert.
@@ -133,111 +126,39 @@ func TestDeployer_RunningDeployments_defaultTestFixture(t *testing.T) {
 	}
 }
 
-//func TestGetDepSetWorks(t *testing.T) {
-//	assert := assert.New(t)
-//
-//	const baseURL = "http://test-singularity.org/"
-//	const requestID = "github.com>user>project::cluster1"
-//	const deployID = "deploy1"
-//	const repo = "github.com/user/project"
-//
-//	reg := sous.NewDummyRegistry()
-//
-//	reg.FeedImageLabels(map[string]string{
-//		"com.opentable.sous.repo_url":    repo,
-//		"com.opentable.sous.version":     "1.0.0",
-//		"com.opentable.sous.revision":    "abc123",
-//		"com.opentable.sous.repo_offset": "",
-//	}, nil)
-//
-//	testReq := &dtos.SingularityRequestParent{
-//		RequestDeployState: &dtos.SingularityRequestDeployState{
-//			ActiveDeploy: &dtos.SingularityDeployMarker{
-//				DeployId:  deployID,
-//				RequestId: requestID,
-//			},
-//		},
-//		Request: &dtos.SingularityRequest{
-//			Id:          requestID,
-//			RequestType: dtos.SingularityRequestRequestTypeSERVICE,
-//			Owners:      swaggering.StringList{"jlester@opentable.com"},
-//		},
-//	}
-//
-//	testDep := &dtos.SingularityDeployHistory{
-//		Deploy: &dtos.SingularityDeploy{
-//			Id: deployID,
-//			ContainerInfo: &dtos.SingularityContainerInfo{
-//				Type: dtos.SingularityContainerInfoSingularityContainerTypeDOCKER,
-//				Docker: &dtos.SingularityDockerInfo{
-//					Image: "some-docker-image",
-//				},
-//				Volumes: dtos.SingularityVolumeList{
-//					&dtos.SingularityVolume{
-//						HostPath:      "/onhost",
-//						ContainerPath: "/indocker",
-//						Mode:          dtos.SingularityVolumeSingularityDockerVolumeModeRW,
-//					},
-//				},
-//			},
-//			Resources: &dtos.Resources{},
-//		},
-//	}
-//
-//	requester := TestGETRequester{}
-//	requester.RegisterDTO(&dtos.SingularityRequestParentList{testReq}, "/api/requests")
-//	requester.RegisterDTO(testReq, "/api/requests/request/%s", requestID)
-//	requester.RegisterDTO(testDep, "/api/history/request/%s/deploy/%s", requestID, deployID)
-//
-//	client := &singularity.Client{Requester: requester}
-//
-//	dep := Deployer{
-//		Registry:      reg,
-//		ClientFactory: func(*sous.Cluster) DeployReader { return client },
-//		Clusters:      sous.Clusters{"cluster1": &sous.Cluster{Name: "cluster1", BaseURL: baseURL}},
-//	}
-//
-//	res, err := dep.RunningDeployments()
-//
-//	if !assert.NoError(err) {
-//		t.FailNow()
-//	}
-//
-//	if !assert.NotNil(res) {
-//		t.FailNow()
-//	}
-//
-//	actual := res.Snapshot()
-//
-//	if !assert.Len(actual, 1) {
-//		t.FailNow()
-//	}
-//
-//	t.Logf("% #v", res.Snapshot())
-//
-//	expectedDID := sous.DeployID{
-//		ManifestID: sous.ManifestID{
-//			Source: sous.SourceLocation{
-//				Repo: repo,
-//				Dir:  "",
-//			},
-//			Flavor: "",
-//		},
-//		Cluster: "cluster1",
-//	}
-//
-//	actualDS, ok := actual[expectedDID]
-//	if !ok {
-//		var actualDID sous.DeployID
-//		for actualDID = range actual {
-//			break
-//		}
-//		t.Fatalf("Got DeployID %q; want DeployID %q", actualDID, expectedDID)
-//	}
-//
-//	expectedDS := //
-//	if different, diffs := actualDS.Diff(&expectedDS); different {
-//		t.Fatalf("deploy state not as expected: % #v", diffs)
-//	}
-//
-//}
+func TestDeployer_RunningDeployments_pendingDeploy(t *testing.T) {
+
+	fixture, deployer := defaultTestFixture()
+	singularity := fixture.Singularities["http://singularity1.com"]
+	request := singularity.Requests["github.com>user>repo1::cluster1"]
+	request.AddDeploy("newDeployID", func(deployHistory *dtos.SingularityDeployHistory) {
+
+		// The next line is significant.
+		deployHistory.DeployResult.DeployState = dtos.SingularityDeployResultDeployStateWAITING
+
+	})
+
+	actual, err := deployer.RunningDeployments()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expected := defaultExpectedDeployStates()
+	deployID, err := sous.ParseDeployID("github.com/user/repo1:cluster1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	deploy, ok := expected.Get(deployID)
+	if !ok {
+		t.Fatalf("deploy %q not found", deployID)
+	}
+	deploy.Status = sous.DeployStatusPending
+
+	different, diffs := actual.Diff2(expected)
+	if !different {
+		return // Success!
+	}
+	for _, d := range diffs {
+		t.Error(d)
+	}
+}

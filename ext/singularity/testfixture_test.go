@@ -19,9 +19,9 @@ import (
 // with this is to construct a healthy and consistent world, and then
 // to introduce specific flaws against which tests can be written.
 type testFixture struct {
-	Clusters      sous.Clusters
 	Singularities map[string]*testSingularity
 	Registry      *testRegistry
+	Clusters      sous.Clusters
 }
 
 // A testSingularity represents a test singularity instance.
@@ -206,12 +206,21 @@ func testImageName(repo, offset, tag string) string {
 // It creates the necessary singularity if it doesn't exist.
 //
 // It returns the singularity with the same base url.
-func (tf *testFixture) AddCluster(name, baseURL string) *testSingularity {
-	if tf.Clusters == nil {
-		tf.Clusters = sous.Clusters{}
+func (ts *testSingularity) AddCluster(name string) *testCluster {
+	if ts.Parent.Clusters == nil {
+		ts.Parent.Clusters = sous.Clusters{}
 	}
-	tf.Clusters[name] = &sous.Cluster{Name: name, BaseURL: baseURL}
-	return tf.AddSingularity(baseURL)
+	cluster := &sous.Cluster{Name: name, BaseURL: ts.BaseURL}
+	ts.Parent.Clusters[name] = cluster
+	return &testCluster{
+		Parent:  ts,
+		Cluster: cluster,
+	}
+}
+
+type testCluster struct {
+	Parent  *testSingularity
+	Cluster *sous.Cluster
 }
 
 // AddSingularity adds a singularity if none exist for baseURL. It returns
@@ -224,7 +233,8 @@ func (tf *testFixture) AddSingularity(baseURL string) *testSingularity {
 		return s
 	}
 	singularity := &testSingularity{
-		Parent: tf,
+		Parent:  tf,
+		BaseURL: baseURL,
 	}
 	tf.Singularities[baseURL] = singularity
 	return singularity

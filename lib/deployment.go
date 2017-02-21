@@ -59,7 +59,7 @@ type (
 	}
 )
 
-// ParseDeployID parses a dpeloyID in the format: ManifestID:Cluster.
+// ParseDeployID parses a deployID in the format: ManifestID:Cluster.
 func ParseDeployID(s string) (DeployID, error) {
 	lastColonIndex := strings.LastIndex(s, ":")
 	mid := s[:lastColonIndex]
