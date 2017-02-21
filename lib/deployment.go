@@ -62,6 +62,9 @@ type (
 // ParseDeployID parses a deployID in the format: ManifestID:Cluster.
 func ParseDeployID(s string) (DeployID, error) {
 	lastColonIndex := strings.LastIndex(s, ":")
+	if lastColonIndex == -1 {
+		return DeployID{}, fmt.Errorf("invalid deployID string %q; should have a colon separating manifest ID from cluster", s)
+	}
 	mid := s[:lastColonIndex]
 	cluster := s[lastColonIndex+1:]
 	if len(mid) == 0 {
@@ -78,6 +81,16 @@ func ParseDeployID(s string) (DeployID, error) {
 		ManifestID: manifestID,
 		Cluster:    cluster,
 	}, nil
+}
+
+// MustParseDeployID wraps ParseDeployID and panics if it returns an error,
+// otherwise returns the DeployID returned.
+func MustParseDeployID(s string) DeployID {
+	did, err := ParseDeployID(s)
+	if err != nil {
+		panic(err)
+	}
+	return did
 }
 
 // Clone returns a deep copy of this deployment.

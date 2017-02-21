@@ -126,39 +126,116 @@ func TestDeployer_RunningDeployments_defaultTestFixture(t *testing.T) {
 	}
 }
 
-func TestDeployer_RunningDeployments_pendingDeploy(t *testing.T) {
-
-	fixture, deployer := defaultTestFixture()
-	singularity := fixture.Singularities["http://singularity1.com"]
-	request := singularity.Requests["github.com>user>repo1::cluster1"]
-	request.AddDeploy("newDeployID", func(deployHistory *dtos.SingularityDeployHistory) {
-
-		// The next line is significant.
-		deployHistory.DeployResult.DeployState = dtos.SingularityDeployResultDeployStateWAITING
-
-	})
-
-	actual, err := deployer.RunningDeployments()
-	if err != nil {
-		t.Fatal(err)
+func TestDeployer_RunningDeployments(t *testing.T) {
+	testCases := []struct {
+		InputModifier    InputModifier
+		ExpectedModifier ExpectedModifier
+	}{
+		{
+			modifyInputRequestParent("http://singularity1.com", "github.com>user>repo1::cluster1",
+				func(request *testRequest) {
+					// Add a new pending deployment.
+					request.AddDeploy("newDeploy", func(d *dtos.SingularityDeployHistory) {
+						d.DeployResult.DeployState = dtos.SingularityDeployResultDeployStateWAITING
+					})
+				}),
+			modifyExpectedDeployState(sous.MustParseDeployID("github.com/user/repo1:cluster1"),
+				func(ds *sous.DeployState) {
+					// Expect the deploy state to be pending.
+					ds.Status = sous.DeployStatusPending
+				}),
+		},
 	}
 
-	expected := defaultExpectedDeployStates()
-	deployID, err := sous.ParseDeployID("github.com/user/repo1:cluster1")
-	if err != nil {
-		t.Fatal(err)
-	}
-	deploy, ok := expected.Get(deployID)
-	if !ok {
-		t.Fatalf("deploy %q not found", deployID)
-	}
-	deploy.Status = sous.DeployStatusPending
+	for _, test := range testCases {
 
-	different, diffs := actual.Diff2(expected)
-	if !different {
-		return // Success!
-	}
-	for _, d := range diffs {
-		t.Error(d)
+		// Set up the input.
+		fixture, deployer := defaultTestFixture()
+		test.InputModifier(fixture)
+
+		// Set up expectations.
+		expected := defaultExpectedDeployStates()
+		test.ExpectedModifier(&expected)
+
+		// Get the actual output.
+		actual, err := deployer.RunningDeployments()
+		if err != nil {
+			// These tests are only concerned with non-error states.
+			t.Fatal(err)
+		}
+
+		// Assert actual == expected.
+		different, diffs := actual.Diff2(expected)
+		if !different {
+			return // Success!
+		}
+		for _, d := range diffs {
+			t.Error(d)
+		}
 	}
 }
+
+type InputModifier func(*testFixture)
+type ExpectedModifier func(*sous.DeployStates)
+
+func modifyInputRequestParent(singularityBaseURL, requestID string, modifyRequestParent func(*testRequest)) InputModifier {
+	return func(fixture *testFixture) {
+		singularity, ok := fixture.Singularities[singularityBaseURL]
+		if !ok {
+			log.Panicf("No singularity called %q", singularityBaseURL)
+		}
+		request, ok := singularity.Requests[requestID]
+		if !ok {
+			log.Panicf("Singularity %q contains no request %q", singularityBaseURL, requestID)
+		}
+		modifyRequestParent(request)
+	}
+}
+
+func modifyExpectedDeployState(did sous.DeployID, modifyDeployState func(*sous.DeployState)) ExpectedModifier {
+	return func(deployStates *sous.DeployStates) {
+		deployState, ok := deployStates.Get(did)
+		if !ok {
+			log.Panicf("No deploy ID called %q", did)
+		}
+		// Modify and re-set the deploy state as that doesn't rely on it being a
+		// pointer.
+		modifyDeployState(deployState)
+		deployStates.Set(deployState.ID(), deployState)
+	}
+}
+
+//func TestDeployer_RunningDeployments_pendingDeploy(t *testing.T) {
+//
+//	fixture, deployer := defaultTestFixture()
+//	request.AddDeploy("newDeployID", func(deployHistory *dtos.SingularityDeployHistory) {
+//
+//		// The next line is significant.
+//		deployHistory.DeployResult.DeployState = dtos.SingularityDeployResultDeployStateWAITING
+//
+//	})
+//
+//	actual, err := deployer.RunningDeployments()
+//	if err != nil {
+//		t.Fatal(err)
+//	}
+//
+//	expected := defaultExpectedDeployStates()
+//	deployID, err := sous.ParseDeployID("github.com/user/repo1:cluster1")
+//	if err != nil {
+//		t.Fatal(err)
+//	}
+//	deploy, ok := expected.Get(deployID)
+//	if !ok {
+//		t.Fatalf("deploy %q not found", deployID)
+//	}
+//	deploy.Status = sous.DeployStatusPending
+//
+//	different, diffs := actual.Diff2(expected)
+//	if !different {
+//		return // Success!
+//	}
+//	for _, d := range diffs {
+//		t.Error(d)
+//	}
+//}
