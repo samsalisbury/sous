@@ -59,6 +59,27 @@ type (
 	}
 )
 
+// ParseDeployID parses a dpeloyID in the format: ManifestID:Cluster.
+func ParseDeployID(s string) (DeployID, error) {
+	lastColonIndex := strings.LastIndex(s, ":")
+	mid := s[:lastColonIndex]
+	cluster := s[lastColonIndex+1:]
+	if len(mid) == 0 {
+		return DeployID{}, fmt.Errorf("invalid deployID string %q; should begin with source location", s)
+	}
+	if len(cluster) == 0 {
+		return DeployID{}, fmt.Errorf("invalid deployID string %q; empty cluster section", s)
+	}
+	manifestID, err := ParseManifestID(mid)
+	if err != nil {
+		return DeployID{}, err
+	}
+	return DeployID{
+		ManifestID: manifestID,
+		Cluster:    cluster,
+	}, nil
+}
+
 // Clone returns a deep copy of this deployment.
 func (d Deployment) Clone() *Deployment {
 	d.DeployConfig = d.DeployConfig.Clone()

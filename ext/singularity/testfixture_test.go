@@ -253,7 +253,16 @@ func (ts *testSingularity) AddRequest(requestID string, configure func(*dtos.Sin
 	if deployID.ManifestID.Source.Repo == "" {
 		log.Panicf("Request ID %q has an empty source repo component.", requestID)
 	}
-	parent := defaultRequestParent(requestID)
+
+	parent := &dtos.SingularityRequestParent{
+		RequestDeployState: &dtos.SingularityRequestDeployState{},
+		Request: &dtos.SingularityRequest{
+			Id:          requestID,
+			RequestType: dtos.SingularityRequestRequestTypeSERVICE,
+			Instances:   3,
+		},
+	}
+
 	if configure != nil {
 		configure(parent)
 	}
@@ -320,17 +329,25 @@ func (tr *testRequest) AddDeploy(deployID string, configure func(*dtos.Singulari
 			ContainerInfo: &dtos.SingularityContainerInfo{
 				Type: dtos.SingularityContainerInfoSingularityContainerTypeDOCKER,
 				Docker: &dtos.SingularityDockerInfo{
+					// TODO: Other docker config.
 					Image: dockerImageName,
 				},
 				Volumes: dtos.SingularityVolumeList{
 					&dtos.SingularityVolume{
-						HostPath:      "/onhost",
-						ContainerPath: "/indocker",
+						HostPath:      "/host/path",
+						ContainerPath: "/container/path",
 						Mode:          dtos.SingularityVolumeSingularityDockerVolumeModeRW,
 					},
 				},
 			},
-			Resources: &dtos.Resources{},
+			Resources: &dtos.Resources{
+				Cpus:     1.23,
+				MemoryMb: 123.45,
+				NumPorts: 1,
+			},
+			Env: map[string]string{
+				"TEST_ENV_VAR": "YES",
+			},
 		},
 		DeployResult: &dtos.SingularityDeployResult{
 			// Successful deploy result by default.
