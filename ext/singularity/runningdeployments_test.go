@@ -126,12 +126,44 @@ func TestDeployer_RunningDeployments_defaultTestFixture(t *testing.T) {
 	}
 }
 
+// TestDeployer_RunningDeployments tests entire groups of clusters, running on
+// multiple singularities using short test cases.
+//
+// In order to hide the complexity of such huge data structures (which otherwise
+// drown out the meaning of the test) we adopt the following strategy:
+//
+// 1. Start with a pre-configured "default" input test fixture.
+//    This input has already been configured to look like a somewhat realistic
+//    Singularity state.
+// 2. Start also with a pre-configured expected output sous.DeployStates.
+// 3. First, assert that the pre-configured input results in the pre-configured
+//    expected output.
+// 4. For each assertion, modify the provided input in some way, and also modify
+//    the expected output congruously. Thus we can assert that the difference in
+//    input resulted in the corresponding difference in output.
 func TestDeployer_RunningDeployments(t *testing.T) {
+
 	testCases := []struct {
-		InputModifier    InputModifier
+		// Desc describes the input and expected output.
+		Description string
+		// InputModifier is called on the result of defaultTestFixture before
+		// RunningDeployments is called on the group of clusters it describes.
+		InputModifier InputModifier
+		// ExpectedModifier is called on the result of
+		// defaultExpectedDeployStates before running assertions.
 		ExpectedModifier ExpectedModifier
 	}{
 		{
+			"Unmodified default input => unmodified default expected output",
+			func(*testFixture) {
+				// Do nothing.
+			},
+			func(*sous.DeployStates) {
+				// Do nothing.
+			},
+		},
+		{
+			"Latest deploy pending => DeployStatusPending",
 			modifyInputRequestParent("http://singularity1.com", "github.com>user>repo1::cluster1",
 				func(request *testRequest) {
 					// Add a new pending deployment.
@@ -139,7 +171,7 @@ func TestDeployer_RunningDeployments(t *testing.T) {
 						d.DeployResult.DeployState = dtos.SingularityDeployResultDeployStateWAITING
 					})
 				}),
-			modifyExpectedDeployState(sous.MustParseDeployID("github.com/user/repo1:cluster1"),
+			modifyExpectedDeployState("github.com/user/repo1:cluster1",
 				func(ds *sous.DeployState) {
 					// Expect the deploy state to be pending.
 					ds.Status = sous.DeployStatusPending
@@ -147,6 +179,7 @@ func TestDeployer_RunningDeployments(t *testing.T) {
 		},
 	}
 
+	// Run the test cases.
 	for _, test := range testCases {
 
 		// Set up the input.
@@ -192,7 +225,8 @@ func modifyInputRequestParent(singularityBaseURL, requestID string, modifyReques
 	}
 }
 
-func modifyExpectedDeployState(did sous.DeployID, modifyDeployState func(*sous.DeployState)) ExpectedModifier {
+func modifyExpectedDeployState(sousDeployID string, modifyDeployState func(*sous.DeployState)) ExpectedModifier {
+	did := sous.MustParseDeployID(sousDeployID)
 	return func(deployStates *sous.DeployStates) {
 		deployState, ok := deployStates.Get(did)
 		if !ok {
@@ -204,38 +238,3 @@ func modifyExpectedDeployState(did sous.DeployID, modifyDeployState func(*sous.D
 		deployStates.Set(deployState.ID(), deployState)
 	}
 }
-
-//func TestDeployer_RunningDeployments_pendingDeploy(t *testing.T) {
-//
-//	fixture, deployer := defaultTestFixture()
-//	request.AddDeploy("newDeployID", func(deployHistory *dtos.SingularityDeployHistory) {
-//
-//		// The next line is significant.
-//		deployHistory.DeployResult.DeployState = dtos.SingularityDeployResultDeployStateWAITING
-//
-//	})
-//
-//	actual, err := deployer.RunningDeployments()
-//	if err != nil {
-//		t.Fatal(err)
-//	}
-//
-//	expected := defaultExpectedDeployStates()
-//	deployID, err := sous.ParseDeployID("github.com/user/repo1:cluster1")
-//	if err != nil {
-//		t.Fatal(err)
-//	}
-//	deploy, ok := expected.Get(deployID)
-//	if !ok {
-//		t.Fatalf("deploy %q not found", deployID)
-//	}
-//	deploy.Status = sous.DeployStatusPending
-//
-//	different, diffs := actual.Diff2(expected)
-//	if !different {
-//		return // Success!
-//	}
-//	for _, d := range diffs {
-//		t.Error(d)
-//	}
-//}
