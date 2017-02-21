@@ -4,6 +4,8 @@ import (
 	"crypto/sha1"
 	"fmt"
 	"log"
+	"path/filepath"
+	"runtime"
 
 	"github.com/opentable/go-singularity/dtos"
 	sous "github.com/opentable/sous/lib"
@@ -21,22 +23,126 @@ type testFixture struct {
 	Registry      *testRegistry
 }
 
-func (tf *testFixture) DeployReaderFactory(c *sous.Cluster) DeployReader {
-	return &testDeployReader{}
+// A testSingularity represents a test singularity instance.
+//
+// It provides functions that make it easy to construct a consistent
+// milieu in which tests can be run. The strategy for writing tests
+// with this is to construct a healthy and consistent world, and then
+// to introduce specific flaws against which tests can be written.
+type testSingularity struct {
+	Parent   *testFixture
+	BaseURL  string
+	Requests map[string]*testRequest
 }
 
-type testDeployReader struct{}
+// A testRequest represents all the request-scoped data for a single
+// singularity request.
+//
+// It provides functions that make it easy to construct a consistent
+// milieu in which tests can be run. The strategy for writing tests
+// with this is to construct a healthy and consistent world, and then
+// to introduce specific flaws against which tests can be written.
+type testRequest struct {
+	Parent        *testSingularity
+	RequestParent *dtos.SingularityRequestParent
+	// Error to be returned instead of RequestParent.
+	Error   error
+	Deploys map[string]*testDeploy
+}
+
+// A testDeploy represents a single deployment.
+type testDeploy struct {
+	Parent            *testRequest
+	DeployHistoryItem *dtos.SingularityDeployHistory
+}
+
+func (tf *testFixture) DeployReaderFactory(c *sous.Cluster) DeployReader {
+	return &testDeployReader{Fixture: tf}
+}
+
+type testDeployReader struct {
+	Fixture *testFixture
+}
 
 func (tdr *testDeployReader) GetRequests() (dtos.SingularityRequestParentList, error) {
-	panic("nimp")
+	rpl := dtos.SingularityRequestParentList{}
+	for _, singularity := range tdr.Fixture.Singularities {
+		for _, request := range singularity.Requests {
+			if request.Error != nil {
+				return nil, request.Error
+			}
+			rpl = append(rpl, request.RequestParent)
+		}
+	}
+	return rpl, nil
 }
 
 func (tdr *testDeployReader) GetRequest(requestID string) (*dtos.SingularityRequestParent, error) {
-	panic("nimp")
+	request, err := tdr.GetTestRequest(requestID)
+	if err != nil {
+		return nil, httpErr(404, err.Error())
+	}
+	if request.RequestParent == nil {
+		log.Panicf("testRequest has no RequestParent")
+	}
+	return request.RequestParent, nil
+}
+
+func (tdr *testDeployReader) GetTestRequest(requestID string) (*testRequest, error) {
+	did, err := ParseRequestID(requestID)
+	if err != nil {
+		log.Panic(err)
+	}
+	// Let these panic if there is nothing there.
+	cluster, ok := tdr.Fixture.Clusters[did.Cluster]
+	if !ok {
+		log.Panicf("No cluster called %q", did.Cluster)
+	}
+	baseURL := cluster.BaseURL
+	singularity, ok := tdr.Fixture.Singularities[baseURL]
+	if !ok {
+		log.Panicf("No Singularity for base URL %q (of cluster %q)", baseURL, did.Cluster)
+	}
+	request, ok := singularity.Requests[requestID]
+	if !ok {
+		return nil, fmt.Errorf("no request named %q in the fixture", requestID)
+	}
+	return request, nil
+}
+
+type httpError struct {
+	Code int
+	Text string
+}
+
+func (h *httpError) Error() string   { return fmt.Sprintf("HTTP %d: %s", h.Code, h.Text) }
+func (h *httpError) Temporary() bool { return true }
+
+func httpErr(code int, format string, a ...interface{}) error {
+	err := &httpError{Code: 404, Text: fmt.Sprintf(format, a...)}
+	_, file, line, ok := runtime.Caller(1)
+	if !ok {
+		log.Panicf("httpErr unable to get its caller")
+	}
+	file = filepath.Base(file)
+	log.Printf("%s:%d: %s", file, line, err)
+	return err
 }
 
 func (tdr *testDeployReader) GetDeploy(requestID, deployID string) (*dtos.SingularityDeployHistory, error) {
-	panic("nimp")
+	if deployID == "" {
+		log.Panic("GetDeploy passed an empty deployID")
+	}
+	request, err := tdr.GetTestRequest(requestID)
+	if err != nil {
+		// TODO: Find out what Swaggering does and ensure we are emulating that.
+		return nil, httpErr(404, "no deploy %q; no request named %q in the fixture", deployID, requestID)
+	}
+	deploy, ok := request.Deploys[deployID]
+	if !ok {
+		return nil, httpErr(404, "no deploy %q in request %q", deployID, requestID)
+	}
+	return deploy.DeployHistoryItem, nil
 }
 
 type testRegistry struct {
@@ -67,6 +173,12 @@ type testImage struct {
 	labels map[string]string
 }
 
+func newTestRegistry() *testRegistry {
+	return &testRegistry{
+		Images: map[string]*testImage{},
+	}
+}
+
 // AddImage adds an image with name derived from repo, offset and tag.
 // It also adds labels and returns the image name.
 func (tr *testRegistry) AddImage(repo, offset, tag string) string {
@@ -85,37 +197,6 @@ func (tr *testRegistry) AddImage(repo, offset, tag string) string {
 		labels: imageLabels,
 	}
 	return imageName
-}
-
-// A testSingularity represents a test singularity instance.
-//
-// It provides functions that make it easy to construct a consistent
-// milieu in which tests can be run. The strategy for writing tests
-// with this is to construct a healthy and consistent world, and then
-// to introduce specific flaws against which tests can be written.
-type testSingularity struct {
-	Parent   *testFixture
-	BaseURL  string
-	Requests map[string]*testRequest
-}
-
-// A testRequest represents all the request-scoped data for a single
-// singularity request.
-//
-// It provides functions that make it easy to construct a consistent
-// milieu in which tests can be run. The strategy for writing tests
-// with this is to construct a healthy and consistent world, and then
-// to introduce specific flaws against which tests can be written.
-type testRequest struct {
-	Parent        *testSingularity
-	RequestParent *dtos.SingularityRequestParent
-	Deployments   map[string]*testDeploy
-}
-
-// A testDeploy represents a single deployment.
-type testDeploy struct {
-	Parent            *testRequest
-	DeployHistoryItem *dtos.SingularityDeployHistory
 }
 
 // AddCluster adds a cluster and ensures a singularity exists for its baseURL.
@@ -194,8 +275,8 @@ func (ts *testSingularity) AddRequest(requestID string, configure func(*dtos.Sin
 // AddDeploy also adds a corresponding docker image to the test registry owned
 // by the ancestor testFixture (at Parent.Parent.Parent).
 func (tr *testRequest) AddDeploy(deployID string, configure func(*dtos.SingularityDeployHistory)) *testDeploy {
-	if tr.Deployments == nil {
-		tr.Deployments = map[string]*testDeploy{}
+	if tr.Deploys == nil {
+		tr.Deploys = map[string]*testDeploy{}
 	}
 	requestID := tr.RequestParent.Request.Id
 	deployment := defaultDeployHistoryItem(requestID, deployID)
@@ -215,6 +296,6 @@ func (tr *testRequest) AddDeploy(deployID string, configure func(*dtos.Singulari
 		Parent:            tr,
 		DeployHistoryItem: deployment,
 	}
-	tr.Deployments[deployment.Deploy.Id] = deploy
+	tr.Deploys[deployment.Deploy.Id] = deploy
 	return deploy
 }

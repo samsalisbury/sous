@@ -266,6 +266,12 @@ func (ab *adsBuild) newDeployStateBuilder(clusterName string, rp *dtos.Singulari
 	}
 }
 
+// getCurrentDeployIDAndStatus returns, in order of preference:
+//
+//     1. Any deploy in PENDING state, as this should be the newest one.
+//     2. If there is no PENDING deploy, but there is an ACTIVE deploy, return that.
+//     3. If there is no PENDING or ACTIVE deploy, return an empty DeployID and
+//        DeployStatusNotRunning so we know there are no deployments here yet.
 func getCurrentDeployIDAndStatus(rds *dtos.SingularityRequestDeployState) (string, sous.DeployStatus) {
 	// If there is a pending request, that's the one we care about from Sous'
 	// point of view, so preferentially return that.
@@ -315,6 +321,16 @@ func (db *DeploymentBuilder) Deployment() (*sous.Deployment, error) {
 
 // DeployState returns the Sous deploy state.
 func (ds *DeployStateBuilder) DeployState() (*sous.DeployState, error) {
+
+	// DeployStatusNotRunning means that there is no active or pending deploy.
+	if ds.CurrentDeployStatus == sous.DeployStatusNotRunning {
+		// TODO: Check if this should be a retryable error or not?
+		//       Maybe there is a race condition where there will be
+		//       no active or pending deploy just after a rectify.
+		return &sous.DeployState{
+			Status: ds.CurrentDeployStatus,
+		}, nil
+	}
 
 	//var previousDeployID = "TODO: Get previous deployID"
 

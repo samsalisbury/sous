@@ -52,7 +52,9 @@ func defaultRequestParent(requestID string) *dtos.SingularityRequestParent {
 
 func TestDeployer_RunningDeployments(t *testing.T) {
 
-	fixture := &testFixture{}
+	fixture := &testFixture{
+		Registry: newTestRegistry(),
+	}
 	cluster1 := fixture.AddCluster("cluster1", "http://cluster1.com")
 	requestID := "github.com>user>repo::cluster1"
 	request1 := cluster1.AddRequest(requestID, func(rp *dtos.SingularityRequestParent) {
