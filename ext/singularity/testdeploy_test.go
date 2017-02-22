@@ -3,7 +3,7 @@ package singularity
 import "github.com/opentable/go-singularity/dtos"
 
 // A testDeploy represents a single deployment.
-type testDeploy struct {
+type testDeployHistory struct {
 	DeployHistoryItem *dtos.SingularityDeployHistory
 }
 
@@ -12,8 +12,8 @@ type newTestDeployHistoryParams struct {
 	deployMarkerTimestamp, deployResultTimestamp int64
 }
 
-func newTestDeployHistory(params newTestDeployHistoryParams) *testDeploy {
-	return &testDeploy{
+func newTestDeployHistory(params newTestDeployHistoryParams) *testDeployHistory {
+	return &testDeployHistory{
 		DeployHistoryItem: &dtos.SingularityDeployHistory{
 			Deploy: &dtos.SingularityDeploy{
 				Id: params.deployID,

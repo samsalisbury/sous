@@ -14,7 +14,7 @@ type testRequest struct {
 	RequestParent *dtos.SingularityRequestParent
 	// Error to be returned instead of RequestParent.
 	Error   error
-	Deploys map[string]*testDeploy
+	Deploys map[string]*testDeployHistory
 }
 
 // AddDeploy adds a new DeployHistory linked with this request. The configure
@@ -28,9 +28,9 @@ type testRequest struct {
 //     by the ancestor testFixture (at Parent.Parent.Parent)
 //   - A corresponding entry in SingularityRequestDeployState if the
 //     status is Pending or Active after configure is called.
-func (tr *testRequest) AddDeployHistory(deployID string, configure func(*dtos.SingularityDeployHistory)) *testDeploy {
+func (tr *testRequest) AddDeployHistory(deployID string, configure func(*dtos.SingularityDeployHistory)) *testDeployHistory {
 	if tr.Deploys == nil {
-		tr.Deploys = map[string]*testDeploy{}
+		tr.Deploys = map[string]*testDeployHistory{}
 	}
 
 	// Derive data needed to create the singularity deploy history item.
@@ -79,7 +79,7 @@ func (tr *testRequest) AddDeployHistory(deployID string, configure func(*dtos.Si
 	}
 
 	// Add the deploy history to this testRequest.
-	deploy := &testDeploy{
+	deploy := &testDeployHistory{
 		DeployHistoryItem: deployHistory,
 	}
 	tr.Deploys[deployHistory.Deploy.Id] = deploy
