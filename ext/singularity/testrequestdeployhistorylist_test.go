@@ -8,11 +8,11 @@ import (
 
 type testDeployHistoryList map[string]*testDeployHistory
 
-type byTimestamp dtos.SingularityDeployHistoryList
+type byDeployMarkerTimestamp dtos.SingularityDeployHistoryList
 
-func (b byTimestamp) Len() int      { return len(b) }
-func (b byTimestamp) Swap(i, j int) { b[i], b[j] = b[j], b[i] }
-func (b byTimestamp) Less(i, j int) bool {
+func (b byDeployMarkerTimestamp) Len() int      { return len(b) }
+func (b byDeployMarkerTimestamp) Swap(i, j int) { b[i], b[j] = b[j], b[i] }
+func (b byDeployMarkerTimestamp) Less(i, j int) bool {
 	return b[i].DeployMarker.Timestamp < b[j].DeployMarker.Timestamp
 }
 
@@ -23,6 +23,7 @@ func (hl testDeployHistoryList) SingularityDeployHistoryList() dtos.SingularityD
 		list[i] = testDeployHistory.DeployHistoryItem
 		i++
 	}
-	sort.Sort(byTimestamp(list))
+	// Singularity returns the history with newest deploys first.
+	sort.Sort(sort.Reverse(byDeployMarkerTimestamp(list)))
 	return list
 }

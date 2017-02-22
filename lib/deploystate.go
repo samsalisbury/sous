@@ -6,10 +6,25 @@ import "fmt"
 //go:generate ggen cmap.CMap(cmap.go) sous.DeployStates(deploystates.go) CMKey:DeployID Value:*DeployState
 
 // A DeployState represents the state of a deployment in an external cluster.
-// It wraps Deployment and adds Status.
 type DeployState struct {
+	// Status is the overall status of this DeployState.
+	// It is equal to LastAttemptedDeployStatus.
+	Status DeployStatus
+
 	Deployment Deployment
-	Status     DeployStatus
+
+	//// ActiveDeployment is the deployment that is currently running or pending.
+	//ActiveDeployment Deployment
+	//// ActiveDeployStatus is the status of ActiveDeployment. It is either
+	//// DeployStatusSucceeded or DeployStatusPending.
+	//ActiveDeployStatus DeployStatus
+	//// LastAttemptedDeployment is the last deployment that was attempted.
+	//// This may be the same as ActiveDeployment if ActiveDeployment was
+	//// successful.
+	//LastAttemptedDeployment *Deployment
+	//// LastAttemptedDeployStatus is the status of LastAttemptedDeployment.
+	//// It can have any DeployStatus value.
+	//LastAttemptedDeployStatus DeployStatus
 }
 
 func (ds *DeployState) String() string {
@@ -29,9 +44,16 @@ func (ds *DeployState) Tabbed() string {
 // Diff returns true, list of diffs if o != ds. Otherwise returns false, nil.
 func (ds *DeployState) Diff(o *DeployState) (bool, []string) {
 	_, diffs := ds.Deployment.Diff(&o.Deployment)
+	//	if o.ActiveDeployStatus != ds.ActiveDeployStatus {
+	//		diffs = append(diffs, fmt.Sprintf("ActiveDeployStatus; this: %s, other: %s",
+	//			ds.ActiveDeployStatus, o.ActiveDeployStatus))
+	//	}
+	//	if o.LastAttemptedDeployStatus != ds.LastAttemptedDeployStatus {
+	//		diffs = append(diffs, fmt.Sprintf("LastAttemptedDeployStatus; this: %s, other: %s",
+	//			ds.LastAttemptedDeployStatus, o.LastAttemptedDeployStatus))
+	//	}
 	if o.Status != ds.Status {
-		// TODO: Add String method to sous.DeployStatus.
-		diffs = append(diffs, fmt.Sprintf("DeployStatus; this: %s, other: %s",
+		diffs = append(diffs, fmt.Sprintf("Status; this: %s, other: %s",
 			ds.Status, o.Status))
 	}
 	return len(diffs) != 0, diffs

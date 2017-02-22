@@ -122,7 +122,6 @@ type DeploymentBuilder struct {
 	// (not to be confused with sous.DeployID).
 	// You can always expect DeployID to have a meaningful value.
 	DeployID string
-	Status   sous.DeployStatus
 }
 
 func newADSBuild(ctx context.Context, client func(*sous.Cluster) DeployReader, reg sous.Registry, clusters sous.Clusters) *adsBuild {
@@ -336,7 +335,7 @@ func (db *DeploymentBuilder) Deployment() (*sous.Deployment, sous.DeployStatus, 
 func (ds *DeployStateBuilder) DeployState() (*sous.DeployState, error) {
 
 	log.Printf("Gathering deploy state for current deploy %q; request %q", ds.CurrentDeployID, ds.RequestID)
-	currentDeployBuilder := ds.newDeploymentBuilder(ds.CurrentDeployID, ds.CurrentDeployStatus)
+	currentDeployBuilder := ds.newDeploymentBuilder(ds.CurrentDeployID)
 
 	// DeployStatusNotRunning means that there is no active or pending deploy.
 	if ds.CurrentDeployStatus == sous.DeployStatusNotRunning {
@@ -367,10 +366,8 @@ func (ds *DeployStateBuilder) DeployState() (*sous.DeployState, error) {
 	// one, in which case return the current deployment for the last deployment
 	// as well.
 	if lastDeployID != ds.CurrentDeployID {
-		// TODO: Fix this
-		lastDeployStatus := sous.DeployStatusUnknown
 		log.Printf("Gathering deploy state for last attempted deploy %q; request %q", lastDeployID, ds.RequestID)
-		lastDeployBuilder = ds.newDeploymentBuilder(lastDeployID, lastDeployStatus)
+		lastDeployBuilder = ds.newDeploymentBuilder(lastDeployID)
 	} else {
 		lastDeployBuilder = currentDeployBuilder
 	}
@@ -389,11 +386,9 @@ func (ds *DeployStateBuilder) DeployState() (*sous.DeployState, error) {
 		return nil, errors.Wrapf(err, "building deploy state")
 	}
 
-	overallStatus := lastAttemptedDeployStatus
-
 	return &sous.DeployState{
-		Deployment: *currentDeploy,
-		Status:     overallStatus,
+		Status:     lastAttemptedDeployStatus,
+		Deployment: *lastAttemptedDeploy,
 	}, nil
 }
 
@@ -422,7 +417,7 @@ func maybeRetryable(a interface{}, err error) (interface{}, error) {
 	return a, temporary{err}
 }
 
-func (ds *DeployStateBuilder) newDeploymentBuilder(deployID string, status sous.DeployStatus) *DeploymentBuilder {
+func (ds *DeployStateBuilder) newDeploymentBuilder(deployID string) *DeploymentBuilder {
 
 	promise := c.Coax(ds.adsBuild.Context, func() (interface{}, error) {
 		return maybeRetryable(ds.Client.GetDeploy(ds.RequestID, deployID))
@@ -431,7 +426,6 @@ func (ds *DeployStateBuilder) newDeploymentBuilder(deployID string, status sous.
 	return &DeploymentBuilder{
 		requestContext: ds.requestContext,
 		DeployID:       deployID,
-		Status:         status,
 		promise:        promise,
 	}
 }

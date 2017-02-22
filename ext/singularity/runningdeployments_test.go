@@ -120,7 +120,7 @@ func defaultExpectedDeployState(deployID string, configure func(*sous.DeployStat
 		log.Panic(err)
 	}
 	ds := &sous.DeployState{
-		Status: sous.DeployStatusActive,
+		Status: sous.DeployStatusSucceeded,
 		Deployment: sous.Deployment{
 			Kind: sous.ManifestKindService,
 			SourceID: sous.SourceID{
@@ -226,7 +226,7 @@ func TestDeployer_RunningDeployments(t *testing.T) {
 				}),
 			modifyExpectedDeployState("github.com/user/repo1:cluster1",
 				func(ds *sous.DeployState) {
-					// Expect the deploy state to be pending.
+					// Expect the deploy state to be failed.
 					ds.Status = sous.DeployStatusFailed
 				}),
 		},
