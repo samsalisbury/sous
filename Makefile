@@ -92,7 +92,7 @@ reject_wip:
 wip:
 	touch workinprogress
 	git add workinprogress
-	git commit -m "Making WIP" --no-gpg-sign --no-verify
+	git commit --squash=HEAD -m "Making WIP" --no-gpg-sign --no-verify
 
 coverage: $(COVER_DIR)
 	engulf -s --coverdir=$(COVER_DIR) \
