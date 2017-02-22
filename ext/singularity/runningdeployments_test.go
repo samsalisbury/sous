@@ -215,34 +215,51 @@ func TestDeployer_RunningDeployments(t *testing.T) {
 					ds.Status = sous.DeployStatusPending
 				}),
 		},
+		{
+			"Latest deploy failed => DeployStatusFailed",
+			modifyInputRequestParent("http://singularity1.com", "github.com>user>repo1::cluster1",
+				func(request *testRequestParent) {
+					// Add a new failed deployment.
+					request.AddStandardDeployHistory("newDeploy", func(d *dtos.SingularityDeployHistory) {
+						d.DeployResult.DeployState = dtos.SingularityDeployResultDeployStateFAILED
+					})
+				}),
+			modifyExpectedDeployState("github.com/user/repo1:cluster1",
+				func(ds *sous.DeployState) {
+					// Expect the deploy state to be pending.
+					ds.Status = sous.DeployStatusFailed
+				}),
+		},
 	}
 
 	// Run the test cases.
 	for _, test := range testCases {
+		test := test
+		t.Run(test.Description, func(t *testing.T) {
+			// Set up the input.
+			fixture, deployer := defaultTestFixture()
+			test.InputModifier(fixture)
 
-		// Set up the input.
-		fixture, deployer := defaultTestFixture()
-		test.InputModifier(fixture)
+			// Set up expectations.
+			expected := defaultExpectedDeployStates()
+			test.ExpectedModifier(&expected)
 
-		// Set up expectations.
-		expected := defaultExpectedDeployStates()
-		test.ExpectedModifier(&expected)
+			// Get the actual output.
+			actual, err := deployer.RunningDeployments()
+			if err != nil {
+				// These tests are only concerned with non-error states.
+				t.Fatal(err)
+			}
 
-		// Get the actual output.
-		actual, err := deployer.RunningDeployments()
-		if err != nil {
-			// These tests are only concerned with non-error states.
-			t.Fatal(err)
-		}
-
-		// Assert actual == expected.
-		different, diffs := actual.Diff2(expected)
-		if !different {
-			return // Success!
-		}
-		for _, d := range diffs {
-			t.Error(d)
-		}
+			// Assert actual == expected.
+			different, diffs := actual.Diff2(expected)
+			if !different {
+				return // Success!
+			}
+			for _, d := range diffs {
+				t.Error(d)
+			}
+		})
 	}
 }
 
