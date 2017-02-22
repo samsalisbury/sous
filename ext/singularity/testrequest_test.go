@@ -1,10 +1,6 @@
 package singularity
 
-import (
-	"log"
-
-	"github.com/opentable/go-singularity/dtos"
-)
+import "github.com/opentable/go-singularity/dtos"
 
 // A testRequest represents all the request-scoped data for a single
 // singularity request.
@@ -12,7 +8,7 @@ import (
 // It provides functions that make it easy to construct a consistent
 // milieu in which tests can be run. The strategy for writing tests
 // with this is to construct a healthy and consistent world, and then
-// to introduce specific flaws against which tests can be written.
+// to introduce specific changes against which tests can be written.
 type testRequest struct {
 	Parent        *testSingularity
 	RequestParent *dtos.SingularityRequestParent
@@ -32,25 +28,16 @@ type testRequest struct {
 //     by the ancestor testFixture (at Parent.Parent.Parent)
 //   - A corresponding entry in SingularityRequestDeployState if the
 //     status is Pending or Active after configure is called.
-func (tr *testRequest) AddDeploy(deployID string, configure func(*dtos.SingularityDeployHistory)) *testDeploy {
+func (tr *testRequest) AddDeployHistory(deployID string, configure func(*dtos.SingularityDeployHistory)) *testDeploy {
 	if tr.Deploys == nil {
 		tr.Deploys = map[string]*testDeploy{}
 	}
 
 	// Derive data needed to create the singularity deploy history item.
 	requestID := tr.RequestParent.Request.Id // this is used a few times.
-	did, err := ParseRequestID(requestID)
-	if err != nil {
-		log.Fatal(err)
-	}
 
-	// Calculate test docker image name.
-	repo := did.ManifestID.Source.Repo
-	offset := did.ManifestID.Source.Dir
-	tag := "1.0.0"
-	dockerImageName := testImageName(repo, offset, tag)
 	// Add docker image to the test registry.
-	tr.Parent.Parent.Registry.AddImage(dockerImageName, repo, offset, tag)
+	dockerImageName := tr.Parent.Parent.Registry.AddImage(requestID, "1.0.0")
 
 	// Get some timestamps. The order here mimics observed Singularity behaviour
 	// where deploy markers always have timestamps earlier than deploy results.
@@ -71,11 +58,18 @@ func (tr *testRequest) AddDeploy(deployID string, configure func(*dtos.Singulari
 		configure(deployHistory)
 	}
 
-	// Configure the request to reflect this latest deploy if it was successful
-	// or pending. Other statuses may be important but are not currently
-	// reflected.
+	// Configure the request to reflect this latest deploy.
 	deployMarkerCopy := *deployHistory.DeployMarker
 	switch deployHistory.DeployResult.DeployState {
+	default:
+		// The default case represents all failure modes. Singularity does not
+		// change the active deploy to a failed one (so leave the last one in
+		// place. However, if there was a pending deployment with the same
+		// deploy ID, it will be removed from PendingDeploy.
+		oldPending := tr.RequestParent.RequestDeployState.PendingDeploy
+		if oldPending != nil && oldPending.DeployId == deployID {
+			tr.RequestParent.RequestDeployState.PendingDeploy = nil
+		}
 	case dtos.SingularityDeployResultDeployStateSUCCEEDED:
 		// SUCCEEDED, set Active deploy.
 		tr.RequestParent.RequestDeployState.ActiveDeploy = &deployMarkerCopy

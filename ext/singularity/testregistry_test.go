@@ -2,6 +2,7 @@ package singularity
 
 import (
 	"crypto/sha1"
+	"log"
 
 	sous "github.com/opentable/sous/lib"
 )
@@ -10,22 +11,30 @@ type testRegistry struct {
 	Images map[string]*testImage
 }
 
-// AddImage adds an image with name provided and with labels corresponding to
-// repo, offset and tag.
-func (tr *testRegistry) AddImage(name, repo, offset, tag string) {
+// AddImage adds an image with name and labels derived from requestID and
+// version, and returns the derived image name.
+func (tr *testRegistry) AddImage(requestID, version string) string {
+	did, err := ParseRequestID(requestID)
+	repo := did.ManifestID.Source.Repo
+	offset := did.ManifestID.Source.Dir
+	name := testImageName(repo, offset, version)
+	if err != nil {
+		log.Fatal(err)
+	}
 	if offset != "" {
 		offset = "," + offset
 	}
 	revision := string(sha1.New().Sum([]byte(name)))
 	imageLabels := map[string]string{
 		"com.opentable.sous.repo_url":    repo,
-		"com.opentable.sous.version":     tag,
+		"com.opentable.sous.version":     version,
 		"com.opentable.sous.revision":    revision,
 		"com.opentable.sous.repo_offset": offset,
 	}
 	tr.Images[name] = &testImage{
 		labels: imageLabels,
 	}
+	return name
 }
 
 func (tr *testRegistry) GetArtifact(sid sous.SourceID) (*sous.BuildArtifact, error) {
