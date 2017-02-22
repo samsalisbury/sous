@@ -7,20 +7,22 @@ import (
 	"github.com/opentable/sous/lib"
 )
 
-func mapDeployHistoryToDeployment(
-	cluster sous.Cluster,
-	sid sous.SourceID,
-	sr *dtos.SingularityRequest,
-	dh *dtos.SingularityDeployHistory) (*sous.Deployment, error) {
+func mapDeployHistoryToDeployment(cluster sous.Cluster, sid sous.SourceID, sr *dtos.SingularityRequest, dh *dtos.SingularityDeployHistory) (*sous.Deployment, sous.DeployStatus, error) {
+
+	if dh.DeployResult == nil {
+		return nil, sous.DeployStatusUnknown, fmt.Errorf("deploy history contains no deploy result")
+	}
+
+	status := mapDeployResultDeployState(dh.DeployResult.DeployState)
 
 	if dh.Deploy == nil {
-		return nil, fmt.Errorf("deploy history contains no deployment")
+		return nil, status, fmt.Errorf("deploy history contains no deployment")
 	}
 
 	// DeployConfig
 	deployConfig, err := mapDeployHistoryToDeployConfig(sr, dh.Deploy)
 	if err != nil {
-		return nil, err
+		return nil, status, err
 	}
 
 	// Owners
@@ -32,7 +34,7 @@ func mapDeployHistoryToDeployment(
 	// Kind
 	kind, err := mapManifestKind(sr.RequestType)
 	if err != nil {
-		return nil, err
+		return nil, status, err
 	}
 
 	return &sous.Deployment{
@@ -43,7 +45,7 @@ func mapDeployHistoryToDeployment(
 		Owners:       owners,
 		SourceID:     sid,
 		Kind:         kind,
-	}, nil
+	}, status, nil
 }
 
 func mapDeployHistoryToDeployConfig(req *dtos.SingularityRequest, deploy *dtos.SingularityDeploy) (*sous.DeployConfig, error) {
@@ -83,6 +85,29 @@ func mapDeployHistoryToDeployConfig(req *dtos.SingularityRequest, deploy *dtos.S
 		Resources:    resources,
 		Volumes:      volumes,
 	}, nil
+}
+
+func mapDeployResultDeployState(state dtos.SingularityDeployResultDeployState) sous.DeployStatus {
+	switch state {
+	default:
+		// There are some documented deploy statuses from Singularity that we
+		// are ignoring here, and we may want to handle eventually, namely:
+		//
+		//     dtos.SingularityDeployResultDeployStateCANCELED
+		//     dtos.SingularityDeployResultDeployStateCANCELING
+		//
+		return sous.DeployStatusUnknown
+	case dtos.SingularityDeployResultDeployStateSUCCEEDED:
+		// TODO: See note on sous.DeployStatusSucceeded.
+		return sous.DeployStatusSucceeded
+	case dtos.SingularityDeployResultDeployStateWAITING:
+		return sous.DeployStatusPending
+	case dtos.SingularityDeployResultDeployStateFAILED,
+		dtos.SingularityDeployResultDeployStateOVERDUE,
+		dtos.SingularityDeployResultDeployStateFAILED_INTERNAL_STATE:
+		// Failed and overdue both get marked failed.
+		return sous.DeployStatusFailed
+	}
 }
 
 func mapManifestKind(rt dtos.SingularityRequestRequestType) (sous.ManifestKind, error) {

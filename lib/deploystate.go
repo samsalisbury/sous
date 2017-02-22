@@ -57,6 +57,12 @@ const (
 	DeployStatusActive
 	// DeployStatusFailed means the deployment has failed.
 	DeployStatusFailed
+	// DeployStatusSucceeded means the deployment succeeded at the time, but
+	// does not tell us about whether it is currently running or not.
+	// Note: This is different in nature than some of the other statuses
+	// here, because it only speaks about the immediate results of a deployment.
+	// We may need a new type for these kinds of values eventually.
+	DeployStatusSucceeded
 )
 
 // Clone returns an independent clone of this DeployState.

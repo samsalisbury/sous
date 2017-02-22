@@ -110,6 +110,7 @@ type DeployStateBuilder struct {
 	PreviousDeployID string
 	// PreviousDeployStatus is the status of the previous deployment.
 	PreviousDeployStatus sous.DeployStatus
+	DeployHistoryPromise coaxer.Promise
 }
 
 // DeploymentBuilder is responsible for constructing a sous.Deployment from a
@@ -257,13 +258,19 @@ func (db *DeploymentBuilder) Errorf(format string, a ...interface{}) error {
 }
 
 func (ab *adsBuild) newDeployStateBuilder(clusterName string, rp *dtos.SingularityRequestParent) *DeployStateBuilder {
-	deployID, status := getCurrentDeployIDAndStatus(rp.RequestDeployState)
 	cluster := ab.Clusters[clusterName]
 	client := ab.ClientFactory(cluster)
+	requestID := rp.Request.Id
+	currentDeployID, currentDeployStatus := mapCurrentDeployIDAndStatus(rp.RequestDeployState)
+	deployHistoryPromise := c.Coax(context.TODO(), func() (interface{}, error) {
+		// Get the last 2 deploys for this request.
+		return client.GetDeploys(requestID, 2, 1)
+	}, "get deploy history for %q", rp.Request.Id)
 	return &DeployStateBuilder{
-		requestContext:      ab.newRequestContext(rp.Request.Id, client, *cluster),
-		CurrentDeployID:     deployID,
-		CurrentDeployStatus: status,
+		requestContext:       ab.newRequestContext(requestID, client, *cluster),
+		CurrentDeployID:      currentDeployID,
+		CurrentDeployStatus:  currentDeployStatus,
+		DeployHistoryPromise: deployHistoryPromise,
 	}
 }
 
@@ -278,7 +285,7 @@ func (ab *adsBuild) newDeployStateBuilder(clusterName string, rp *dtos.Singulari
 // request is paused, finished, deleted, or in system cooldown. The parent of
 // the request deploy state (the RequestParent) has a field "state" that has
 // this info if we need it at some point.
-func getCurrentDeployIDAndStatus(rds *dtos.SingularityRequestDeployState) (string, sous.DeployStatus) {
+func mapCurrentDeployIDAndStatus(rds *dtos.SingularityRequestDeployState) (string, sous.DeployStatus) {
 	// If there is a pending request, that's the one we care about from Sous'
 	// point of view, so preferentially return that.
 	if pending := rds.PendingDeploy; pending != nil {
@@ -292,9 +299,9 @@ func getCurrentDeployIDAndStatus(rds *dtos.SingularityRequestDeployState) (strin
 }
 
 // Deployment returns the Deployment.
-func (db *DeploymentBuilder) Deployment() (*sous.Deployment, error) {
+func (db *DeploymentBuilder) Deployment() (*sous.Deployment, sous.DeployStatus, error) {
 	if err := db.promise.Err(); err != nil {
-		return nil, err
+		return nil, sous.DeployStatusUnknown, err
 	}
 	deployHistoryItem := db.promise.Value().(*dtos.SingularityDeployHistory)
 
@@ -303,7 +310,7 @@ func (db *DeploymentBuilder) Deployment() (*sous.Deployment, error) {
 	if deploy.ContainerInfo == nil ||
 		deploy.ContainerInfo.Docker == nil ||
 		deploy.ContainerInfo.Docker.Image == "" {
-		return nil, db.Errorf("no docker image specified at deploy.ContainerInfo.Docker.Image")
+		return nil, sous.DeployStatusUnknown, db.Errorf("no docker image specified at deploy.ContainerInfo.Docker.Image")
 	}
 	dockerImage := deploy.ContainerInfo.Docker.Image
 
@@ -311,15 +318,15 @@ func (db *DeploymentBuilder) Deployment() (*sous.Deployment, error) {
 	labels, err := db.adsBuild.Registry.ImageLabels(dockerImage)
 	sourceID, err := docker.SourceIDFromLabels(labels)
 	if err != nil {
-		return nil, errors.Wrapf(err, "getting source ID")
+		return nil, sous.DeployStatusUnknown, errors.Wrapf(err, "getting source ID")
 	}
 
 	requestParent, err := db.RequestParent()
 	if err != nil {
-		return nil, err
+		return nil, sous.DeployStatusUnknown, err
 	}
 	if requestParent.Request == nil {
-		return nil, db.Errorf("requestParent contains no request")
+		return nil, sous.DeployStatusUnknown, db.Errorf("requestParent contains no request")
 	}
 
 	return mapDeployHistoryToDeployment(db.Cluster, sourceID, requestParent.Request, deployHistoryItem)
@@ -328,40 +335,75 @@ func (db *DeploymentBuilder) Deployment() (*sous.Deployment, error) {
 // DeployState returns the Sous deploy state.
 func (ds *DeployStateBuilder) DeployState() (*sous.DeployState, error) {
 
+	log.Printf("Gathering deploy state for current deploy %q; request %q", ds.CurrentDeployID, ds.RequestID)
+	currentDeployBuilder := ds.newDeploymentBuilder(ds.CurrentDeployID, ds.CurrentDeployStatus)
+
 	// DeployStatusNotRunning means that there is no active or pending deploy.
 	if ds.CurrentDeployStatus == sous.DeployStatusNotRunning {
 		// TODO: Check if this should be a retryable error or not?
 		//       Maybe there is a race condition where there will be
 		//       no active or pending deploy just after a rectify.
 		return &sous.DeployState{
-			Status: ds.CurrentDeployStatus,
+			Status: sous.DeployStatusNotRunning,
 		}, nil
 	}
 
-	//var previousDeployID = "TODO: Get previous deployID"
+	// Examine the deploy history to see if the last deployment failed.
+	deployHistory, err := ds.DeployHistory()
+	if err != nil {
+		return nil, err
+	}
 
-	log.Printf("Gathering deploy state for current deploy %q; request %q", ds.CurrentDeployID, ds.RequestID)
-	//log.Printf("Gathering deploy state for previous deploy %q; request %q", previousDeployID, ds.RequestID)
+	if len(deployHistory) == 0 {
+		// There has never been a deployment.
+		return &sous.DeployState{
+			Status: sous.DeployStatusNotRunning,
+		}, nil
+	}
 
-	currentDeployBuilder := ds.newDeploymentBuilder(ds.CurrentDeployID, ds.CurrentDeployStatus)
-	//previousDeployBuilder := ds.newDeploymentBuilder(previousDeployID)
+	lastDeployID := deployHistory[0].Deploy.Id
+	var lastDeployBuilder *DeploymentBuilder
+	// Get the entire last deployment unless it has the same ID as the current
+	// one, in which case return the current deployment for the last deployment
+	// as well.
+	if lastDeployID != ds.CurrentDeployID {
+		// TODO: Fix this
+		lastDeployStatus := sous.DeployStatusUnknown
+		log.Printf("Gathering deploy state for last attempted deploy %q; request %q", lastDeployID, ds.RequestID)
+		lastDeployBuilder = ds.newDeploymentBuilder(lastDeployID, lastDeployStatus)
+	} else {
+		lastDeployBuilder = currentDeployBuilder
+	}
 
-	var current *sous.Deployment
-
-	overallStatus := ds.CurrentDeployStatus
-	// TODO: If last deploy failed, overall status should reflect that.
+	var currentDeploy, lastAttemptedDeploy *sous.Deployment
+	var currentDeployStatus, lastAttemptedDeployStatus sous.DeployStatus
 
 	if err := firsterr.Set(
-		func(err *error) { current, *err = currentDeployBuilder.Deployment() },
-		//func(err *error) { previous, *err = previousDeployBuilder.Deployment() },
+		func(err *error) {
+			currentDeploy, currentDeployStatus, *err = currentDeployBuilder.Deployment()
+		},
+		func(err *error) {
+			lastAttemptedDeploy, lastAttemptedDeployStatus, *err = lastDeployBuilder.Deployment()
+		},
 	); err != nil {
 		return nil, errors.Wrapf(err, "building deploy state")
 	}
 
+	overallStatus := lastAttemptedDeployStatus
+
 	return &sous.DeployState{
-		Deployment: *current,
+		Deployment: *currentDeploy,
 		Status:     overallStatus,
 	}, nil
+}
+
+// DeployHistory waits for the deploy history to be collected and then returns
+// the result.
+func (ds *DeployStateBuilder) DeployHistory() (dtos.SingularityDeployHistoryList, error) {
+	if err := ds.DeployHistoryPromise.Err(); err != nil {
+		return nil, err
+	}
+	return ds.DeployHistoryPromise.Value().(dtos.SingularityDeployHistoryList), nil
 }
 
 type temporary struct {
