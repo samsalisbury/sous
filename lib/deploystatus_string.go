@@ -4,9 +4,9 @@ package sous
 
 import "fmt"
 
-const _DeployStatus_name = "InvalidDeployStatusDeployStatusUnknownDeployStatusNotRunningDeployStatusAnyDeployStatusPendingDeployStatusActiveDeployStatusFailed"
+const _DeployStatus_name = "InvalidDeployStatusDeployStatusUnknownDeployStatusNotRunningDeployStatusAnyDeployStatusPendingDeployStatusActiveDeployStatusFailedDeployStatusSucceeded"
 
-var _DeployStatus_index = [...]uint8{0, 19, 38, 60, 75, 94, 112, 130}
+var _DeployStatus_index = [...]uint8{0, 19, 38, 60, 75, 94, 112, 130, 151}
 
 func (i DeployStatus) String() string {
 	if i < 0 || i >= DeployStatus(len(_DeployStatus_index)-1) {
