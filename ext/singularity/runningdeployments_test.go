@@ -30,11 +30,11 @@ func defaultTestFixture() (*testFixture, *Deployer) {
 	cluster1Request2 := singularity1.AddRequest("github.com>user>repo2::cluster1", nil)
 
 	// Add 2 successful deployments to cluster 1, request 1.
-	cluster1Request1.AddDeploy("deploy111", nil)
-	cluster1Request1.AddDeploy("deploy112", nil)
+	cluster1Request1.AddDeployHistory("deploy111", nil)
+	cluster1Request1.AddDeployHistory("deploy112", nil)
 
 	// Add 1 successful deployment to cluster 1, request 2.
-	cluster1Request2.AddDeploy("deploy121", nil)
+	cluster1Request2.AddDeployHistory("deploy121", nil)
 
 	return fixture, &Deployer{
 		Registry:      fixture.Registry,
@@ -47,7 +47,7 @@ func defaultTestFixture() (*testFixture, *Deployer) {
 // single successful deployment.
 func (ts *testSingularity) defaultSingularityRequestParent(requestID, deployID string) *dtos.SingularityRequestParent {
 	request := ts.AddRequest(requestID, nil)
-	request.AddDeploy(deployID, nil)
+	request.AddDeployHistory(deployID, nil)
 	return request.RequestParent
 }
 
@@ -167,7 +167,7 @@ func TestDeployer_RunningDeployments(t *testing.T) {
 			modifyInputRequestParent("http://singularity1.com", "github.com>user>repo1::cluster1",
 				func(request *testRequest) {
 					// Add a new pending deployment.
-					request.AddDeploy("newDeploy", func(d *dtos.SingularityDeployHistory) {
+					request.AddDeployHistory("newDeploy", func(d *dtos.SingularityDeployHistory) {
 						d.DeployResult.DeployState = dtos.SingularityDeployResultDeployStateWAITING
 					})
 				}),
