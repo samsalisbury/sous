@@ -35,6 +35,7 @@ type DeployReader interface {
 	GetRequests() (dtos.SingularityRequestParentList, error)
 	GetRequest(requestID string) (*dtos.SingularityRequestParent, error)
 	GetDeploy(requestID, deployID string) (*dtos.SingularityDeployHistory, error)
+	GetDeploys(requestID string, count, page int32) (dtos.SingularityDeployHistoryList, error)
 }
 
 // Deployer implements sous.Deployer for a single sous Cluster running on

@@ -12,9 +12,9 @@ import "github.com/opentable/go-singularity/dtos"
 type testRequestParent struct {
 	Parent        *testSingularity
 	RequestParent *dtos.SingularityRequestParent
+	Deploys       testDeployHistoryList
 	// Error to be returned instead of RequestParent.
-	Error   error
-	Deploys map[string]*testDeployHistory
+	Error error
 }
 
 // AddDeploy adds a new DeployHistory linked with this request. The configure
@@ -30,7 +30,7 @@ type testRequestParent struct {
 //     status is Pending or Active after configure is called.
 func (tr *testRequestParent) AddStandardDeployHistory(deployID string, configure func(*dtos.SingularityDeployHistory)) *testDeployHistory {
 	if tr.Deploys == nil {
-		tr.Deploys = map[string]*testDeployHistory{}
+		tr.Deploys = testDeployHistoryList{}
 	}
 
 	// Derive data needed to create the singularity deploy history item.

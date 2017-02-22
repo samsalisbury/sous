@@ -75,3 +75,12 @@ func (tdr *testDeployReader) GetDeploy(requestID, deployID string) (*dtos.Singul
 	}
 	return deploy.DeployHistoryItem, nil
 }
+
+func (tdr *testDeployReader) GetDeploys(requestID string, count, page int32) (dtos.SingularityDeployHistoryList, error) {
+	request, err := tdr.GetTestRequest(requestID)
+	if err != nil {
+		// TODO: Find out what Swaggering does and ensure we are emulating that.
+		return nil, httpErr(404, "no request named %q in the fixture", requestID)
+	}
+	return request.Deploys.SingularityDeployHistoryList(), nil
+}
