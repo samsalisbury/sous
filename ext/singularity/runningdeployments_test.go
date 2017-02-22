@@ -26,8 +26,8 @@ func defaultTestFixture() (*testFixture, *Deployer) {
 	//cluster3 := fixture.AddCluster("cluster3", "http://singularity2.com")
 
 	// Add 1 requests to cluster 1.
-	cluster1Request1 := singularity1.AddRequest("github.com>user>repo1::cluster1", nil)
-	cluster1Request2 := singularity1.AddRequest("github.com>user>repo2::cluster1", nil)
+	cluster1Request1 := singularity1.AddRequestParent("github.com>user>repo1::cluster1", nil)
+	cluster1Request2 := singularity1.AddRequestParent("github.com>user>repo2::cluster1", nil)
 
 	// Add 2 successful deployments to cluster 1, request 1.
 	cluster1Request1.AddStandardDeployHistory("deploy111", nil)
@@ -91,7 +91,7 @@ func newSingularityDeployHistory(params newTestDeployHistoryParams) *dtos.Singul
 // defaultSingularityRequestParent returns a standard singularity request with a
 // single successful deployment.
 func (ts *testSingularity) defaultSingularityRequestParent(requestID, deployID string) *dtos.SingularityRequestParent {
-	request := ts.AddRequest(requestID, nil)
+	request := ts.AddRequestParent(requestID, nil)
 	request.AddStandardDeployHistory(deployID, nil)
 	return request.RequestParent
 }
@@ -210,7 +210,7 @@ func TestDeployer_RunningDeployments(t *testing.T) {
 		{
 			"Latest deploy pending => DeployStatusPending",
 			modifyInputRequestParent("http://singularity1.com", "github.com>user>repo1::cluster1",
-				func(request *testRequest) {
+				func(request *testRequestParent) {
 					// Add a new pending deployment.
 					request.AddStandardDeployHistory("newDeploy", func(d *dtos.SingularityDeployHistory) {
 						d.DeployResult.DeployState = dtos.SingularityDeployResultDeployStateWAITING
@@ -256,7 +256,7 @@ func TestDeployer_RunningDeployments(t *testing.T) {
 type InputModifier func(*testFixture)
 type ExpectedModifier func(*sous.DeployStates)
 
-func modifyInputRequestParent(singularityBaseURL, requestID string, modifyRequestParent func(*testRequest)) InputModifier {
+func modifyInputRequestParent(singularityBaseURL, requestID string, modifyRequestParent func(*testRequestParent)) InputModifier {
 	return func(fixture *testFixture) {
 		singularity, ok := fixture.Singularities[singularityBaseURL]
 		if !ok {

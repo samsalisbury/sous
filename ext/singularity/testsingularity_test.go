@@ -16,7 +16,7 @@ import (
 type testSingularity struct {
 	Parent   *testFixture
 	BaseURL  string
-	Requests map[string]*testRequest
+	Requests map[string]*testRequestParent
 }
 
 // AddCluster adds a cluster and ensures a singularity exists for its baseURL.
@@ -40,7 +40,7 @@ func (ts *testSingularity) AddCluster(name string) {
 // it ends up with an empty Cluster or SourceLocation, or if the requestID is
 // not unique within this testSingularity, or if the cluster implied by the
 // request ID is not already defined.
-func (ts *testSingularity) AddRequest(requestID string, configure func(*dtos.SingularityRequestParent)) *testRequest {
+func (ts *testSingularity) AddRequestParent(requestID string, configure func(*dtos.SingularityRequestParent)) *testRequestParent {
 	deployID, err := ParseRequestID(requestID)
 	if err != nil {
 		log.Panicf("Error parsing requestID: %s", err)
@@ -68,9 +68,9 @@ func (ts *testSingularity) AddRequest(requestID string, configure func(*dtos.Sin
 		configure(parent)
 	}
 	if ts.Requests == nil {
-		ts.Requests = map[string]*testRequest{}
+		ts.Requests = map[string]*testRequestParent{}
 	}
-	request := &testRequest{
+	request := &testRequestParent{
 		Parent:        ts,
 		RequestParent: parent,
 	}

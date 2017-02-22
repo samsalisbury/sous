@@ -11,7 +11,7 @@ type testDeployReader struct {
 	Fixture *testFixture
 }
 
-func (tdr *testDeployReader) GetTestRequest(requestID string) (*testRequest, error) {
+func (tdr *testDeployReader) GetTestRequest(requestID string) (*testRequestParent, error) {
 	did, err := ParseRequestID(requestID)
 	if err != nil {
 		log.Panic(err)

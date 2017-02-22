@@ -9,7 +9,7 @@ import "github.com/opentable/go-singularity/dtos"
 // milieu in which tests can be run. The strategy for writing tests
 // with this is to construct a healthy and consistent world, and then
 // to introduce specific changes against which tests can be written.
-type testRequest struct {
+type testRequestParent struct {
 	Parent        *testSingularity
 	RequestParent *dtos.SingularityRequestParent
 	// Error to be returned instead of RequestParent.
@@ -28,7 +28,7 @@ type testRequest struct {
 //     by the ancestor testFixture (at Parent.Parent.Parent)
 //   - A corresponding entry in SingularityRequestDeployState if the
 //     status is Pending or Active after configure is called.
-func (tr *testRequest) AddStandardDeployHistory(deployID string, configure func(*dtos.SingularityDeployHistory)) *testDeployHistory {
+func (tr *testRequestParent) AddStandardDeployHistory(deployID string, configure func(*dtos.SingularityDeployHistory)) *testDeployHistory {
 	if tr.Deploys == nil {
 		tr.Deploys = map[string]*testDeployHistory{}
 	}
@@ -65,7 +65,7 @@ func (tr *testRequest) AddStandardDeployHistory(deployID string, configure func(
 
 // AddDeployHistory adds a deploy to the history and updates the request to
 // reflect this deployment.
-func (tr *testRequest) AddDeployHistory(testDeployHistory *testDeployHistory) {
+func (tr *testRequestParent) AddDeployHistory(testDeployHistory *testDeployHistory) {
 	deployHistory := testDeployHistory.DeployHistoryItem
 	// Configure the request to reflect this latest deploy.
 	deployMarkerCopy := *deployHistory.DeployMarker
