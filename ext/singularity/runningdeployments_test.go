@@ -43,6 +43,28 @@ func defaultTestFixture() (*testFixture, *Deployer) {
 	}
 }
 
+type newRequestParentParams struct {
+	requestID string
+}
+
+// newSingularityRequest is used as the base for all new singularity requests
+// created with AddStandardRequestParent.
+// It is in this file along with the tests for easy reference.
+func newSingularityRequestParent(params newRequestParentParams) *dtos.SingularityRequestParent {
+	return &dtos.SingularityRequestParent{
+		// RequestDeployState is nil, reflecting Singularity's behaviour.
+		RequestDeployState: nil,
+		Request: &dtos.SingularityRequest{
+			Id:          params.requestID,
+			RequestType: dtos.SingularityRequestRequestTypeSERVICE,
+			Instances:   3,
+		},
+		// Active is the default request state, it mostly means "not paused".
+		// This is not to be confused with the state of the current deployment!
+		State: dtos.SingularityRequestParentRequestStateACTIVE,
+	}
+}
+
 // newSingularityDeployHistory is used to create all new deploy history items.
 // It is in this file along with the tests for easy reference.
 func newSingularityDeployHistory(params newTestDeployHistoryParams) *dtos.SingularityDeployHistory {
@@ -86,14 +108,6 @@ func newSingularityDeployHistory(params newTestDeployHistoryParams) *dtos.Singul
 			User:      "some user",
 		},
 	}
-}
-
-// defaultSingularityRequestParent returns a standard singularity request with a
-// single successful deployment.
-func (ts *testSingularity) defaultSingularityRequestParent(requestID, deployID string) *dtos.SingularityRequestParent {
-	request := ts.AddRequestParent(requestID, nil)
-	request.AddStandardDeployHistory(deployID, nil)
-	return request.RequestParent
 }
 
 // defaultExpectedDeployState returns a sous.DeployState that corresponds with

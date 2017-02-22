@@ -55,14 +55,9 @@ func (ts *testSingularity) AddRequestParent(requestID string, configure func(*dt
 		log.Panicf("Request ID %q has an empty source repo component.", requestID)
 	}
 
-	parent := &dtos.SingularityRequestParent{
-		RequestDeployState: &dtos.SingularityRequestDeployState{},
-		Request: &dtos.SingularityRequest{
-			Id:          requestID,
-			RequestType: dtos.SingularityRequestRequestTypeSERVICE,
-			Instances:   3,
-		},
-	}
+	parent := newSingularityRequestParent(newRequestParentParams{
+		requestID: requestID,
+	})
 
 	if configure != nil {
 		configure(parent)
