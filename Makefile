@@ -43,6 +43,7 @@ help:
 	@echo "make release:  Both linux and darwin"
 	@echo "make test: unit and integration"
 	@echo "make test-unit"
+	@echo "make wip: puts a marker file into workspace to prevent Travis from passing the build."
 	@echo
 	@echo "Add VERBOSE=1 for tons of extra output."
 
@@ -74,7 +75,6 @@ install_build_tools:
 	go get github.com/kardianos/govendor
 	go get github.com/nyarly/engulf
 
-
 linux-build: artifacts/$(LINUX_RELEASE_DIR)/sous
 	ln -sf ../$< dev_support/sous_linux
 
@@ -85,6 +85,14 @@ sous_qa_setup: ./dev_support/sous_qa_setup/*.go ./util/test_with_docker/*.go
 	go build ./dev_support/sous_qa_setup
 
 test: test-gofmt test-unit test-integration
+
+reject_wip:
+	test ! -f workinprogress
+
+wip:
+	touch workinprogress
+	git add workinprogress
+	git commit -m "Making WIP" --no-gpg-sign --no-verify
 
 coverage: $(COVER_DIR)
 	engulf -s --coverdir=$(COVER_DIR) \
@@ -141,4 +149,4 @@ artifacts/$(DARWIN_TARBALL): artifacts/$(DARWIN_RELEASE_DIR)/sous
 	cd artifacts && tar czv $(DARWIN_RELEASE_DIR) > $(DARWIN_TARBALL)
 
 
-.PHONY: clean coverage install-ggen legendary release semvertagchk test test-gofmt test-integration test-setup test-unit
+.PHONY: clean coverage install-ggen legendary release semvertagchk test test-gofmt test-integration test-setup test-unit reject_wip wip
