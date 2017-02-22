@@ -28,7 +28,7 @@ type testRequest struct {
 //     by the ancestor testFixture (at Parent.Parent.Parent)
 //   - A corresponding entry in SingularityRequestDeployState if the
 //     status is Pending or Active after configure is called.
-func (tr *testRequest) AddDeployHistory(deployID string, configure func(*dtos.SingularityDeployHistory)) *testDeployHistory {
+func (tr *testRequest) AddStandardDeployHistory(deployID string, configure func(*dtos.SingularityDeployHistory)) *testDeployHistory {
 	if tr.Deploys == nil {
 		tr.Deploys = map[string]*testDeployHistory{}
 	}
@@ -51,13 +51,22 @@ func (tr *testRequest) AddDeployHistory(deployID string, configure func(*dtos.Si
 		dockerImageName:       dockerImageName,
 		deployMarkerTimestamp: deployMarkerTimestamp,
 		deployResultTimestamp: deployResultTimestamp,
-	}).DeployHistoryItem
+	})
 
 	// All defaults are set, now pass the deploy to provided configure func.
 	if configure != nil {
-		configure(deployHistory)
+		configure(deployHistory.DeployHistoryItem)
 	}
 
+	tr.AddDeployHistory(deployHistory)
+
+	return deployHistory
+}
+
+// AddDeployHistory adds a deploy to the history and updates the request to
+// reflect this deployment.
+func (tr *testRequest) AddDeployHistory(testDeployHistory *testDeployHistory) {
+	deployHistory := testDeployHistory.DeployHistoryItem
 	// Configure the request to reflect this latest deploy.
 	deployMarkerCopy := *deployHistory.DeployMarker
 	switch deployHistory.DeployResult.DeployState {
@@ -67,7 +76,7 @@ func (tr *testRequest) AddDeployHistory(deployID string, configure func(*dtos.Si
 		// place. However, if there was a pending deployment with the same
 		// deploy ID, it will be removed from PendingDeploy.
 		oldPending := tr.RequestParent.RequestDeployState.PendingDeploy
-		if oldPending != nil && oldPending.DeployId == deployID {
+		if oldPending != nil && oldPending.DeployId == deployHistory.Deploy.Id {
 			tr.RequestParent.RequestDeployState.PendingDeploy = nil
 		}
 	case dtos.SingularityDeployResultDeployStateSUCCEEDED:
@@ -78,11 +87,5 @@ func (tr *testRequest) AddDeployHistory(deployID string, configure func(*dtos.Si
 		tr.RequestParent.RequestDeployState.PendingDeploy = &deployMarkerCopy
 	}
 
-	// Add the deploy history to this testRequest.
-	deploy := &testDeployHistory{
-		DeployHistoryItem: deployHistory,
-	}
-	tr.Deploys[deployHistory.Deploy.Id] = deploy
-
-	return deploy
+	tr.Deploys[deployHistory.Deploy.Id] = testDeployHistory
 }

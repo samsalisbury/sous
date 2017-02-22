@@ -30,11 +30,11 @@ func defaultTestFixture() (*testFixture, *Deployer) {
 	cluster1Request2 := singularity1.AddRequest("github.com>user>repo2::cluster1", nil)
 
 	// Add 2 successful deployments to cluster 1, request 1.
-	cluster1Request1.AddDeployHistory("deploy111", nil)
-	cluster1Request1.AddDeployHistory("deploy112", nil)
+	cluster1Request1.AddStandardDeployHistory("deploy111", nil)
+	cluster1Request1.AddStandardDeployHistory("deploy112", nil)
 
 	// Add 1 successful deployment to cluster 1, request 2.
-	cluster1Request2.AddDeployHistory("deploy121", nil)
+	cluster1Request2.AddStandardDeployHistory("deploy121", nil)
 
 	return fixture, &Deployer{
 		Registry:      fixture.Registry,
@@ -43,11 +43,56 @@ func defaultTestFixture() (*testFixture, *Deployer) {
 	}
 }
 
+// newSingularityDeployHistory is used to create all new deploy history items.
+// It is in this file along with the tests for easy reference.
+func newSingularityDeployHistory(params newTestDeployHistoryParams) *dtos.SingularityDeployHistory {
+	return &dtos.SingularityDeployHistory{
+		Deploy: &dtos.SingularityDeploy{
+			Id: params.deployID,
+			ContainerInfo: &dtos.SingularityContainerInfo{
+				Type: dtos.SingularityContainerInfoSingularityContainerTypeDOCKER,
+				Docker: &dtos.SingularityDockerInfo{
+					// TODO: Other docker config.
+					Image: params.dockerImageName,
+				},
+				Volumes: dtos.SingularityVolumeList{
+					&dtos.SingularityVolume{
+						HostPath:      "/host/path",
+						ContainerPath: "/container/path",
+						Mode:          dtos.SingularityVolumeSingularityDockerVolumeModeRW,
+					},
+				},
+			},
+			Resources: &dtos.Resources{
+				Cpus:     1.23,
+				MemoryMb: 123.45,
+				NumPorts: 1,
+			},
+			Env: map[string]string{
+				"TEST_ENV_VAR": "YES",
+			},
+		},
+		DeployResult: &dtos.SingularityDeployResult{
+			// Successful deploy result by default.
+			DeployState: dtos.SingularityDeployResultDeployStateSUCCEEDED,
+			// DeployFailures is not nil in Singularity, it's an empty array.
+			DeployFailures: dtos.SingularityDeployFailureList{},
+			Timestamp:      params.deployResultTimestamp,
+		},
+		DeployMarker: &dtos.SingularityDeployMarker{
+			RequestId: params.requestID,
+			DeployId:  params.deployID,
+			Timestamp: params.deployMarkerTimestamp,
+			User:      "some user",
+		},
+	}
+}
+
 // defaultSingularityRequestParent returns a standard singularity request with a
 // single successful deployment.
 func (ts *testSingularity) defaultSingularityRequestParent(requestID, deployID string) *dtos.SingularityRequestParent {
 	request := ts.AddRequest(requestID, nil)
-	request.AddDeployHistory(deployID, nil)
+	request.AddStandardDeployHistory(deployID, nil)
 	return request.RequestParent
 }
 
@@ -167,7 +212,7 @@ func TestDeployer_RunningDeployments(t *testing.T) {
 			modifyInputRequestParent("http://singularity1.com", "github.com>user>repo1::cluster1",
 				func(request *testRequest) {
 					// Add a new pending deployment.
-					request.AddDeployHistory("newDeploy", func(d *dtos.SingularityDeployHistory) {
+					request.AddStandardDeployHistory("newDeploy", func(d *dtos.SingularityDeployHistory) {
 						d.DeployResult.DeployState = dtos.SingularityDeployResultDeployStateWAITING
 					})
 				}),
