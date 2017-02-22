@@ -112,6 +112,8 @@ func newSingularityDeployHistory(params newTestDeployHistoryParams) *dtos.Singul
 
 // defaultExpectedDeployState returns a sous.DeployState that corresponds
 // with a default singularity request with a single default deployment.
+// Note that the deployID parameter must parse to a sous.DeployID, which is
+// distinct from a singularity request id, and from a singularity deploy id.
 func defaultExpectedDeployState(deployID string, configure func(*sous.DeployState)) *sous.DeployState {
 	did, err := sous.ParseDeployID(deployID)
 	if err != nil {
@@ -160,29 +162,6 @@ func defaultExpectedDeployStates() sous.DeployStates {
 		defaultExpectedDeployState("github.com/user/repo1:cluster1", nil),
 		defaultExpectedDeployState("github.com/user/repo2:cluster1", nil),
 	)
-}
-
-func TestDeployer_RunningDeployments_defaultTestFixture(t *testing.T) {
-
-	// Setup.
-	_, deployer := defaultTestFixture()
-
-	// Act.
-	actual, err := deployer.RunningDeployments()
-	if err != nil {
-		t.Fatal(err) // We are only testing happy paths in this go file.
-	}
-
-	// Assert.
-	expected := defaultExpectedDeployStates()
-
-	different, diffs := actual.Diff2(expected)
-	if !different {
-		return // Success!
-	}
-	for _, d := range diffs {
-		t.Error(d)
-	}
 }
 
 // TestDeployer_RunningDeployments tests entire groups of clusters, running on
