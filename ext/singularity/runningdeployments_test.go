@@ -110,8 +110,8 @@ func newSingularityDeployHistory(params newTestDeployHistoryParams) *dtos.Singul
 	}
 }
 
-// defaultExpectedDeployState returns a sous.DeployState that corresponds with
-// the singularity request produced by defaultSingularityRequest.
+// defaultExpectedDeployState returns a sous.DeployState that corresponds
+// with a default singularity request with a single default deployment.
 func defaultExpectedDeployState(deployID string, configure func(*sous.DeployState)) *sous.DeployState {
 	did, err := sous.ParseDeployID(deployID)
 	if err != nil {

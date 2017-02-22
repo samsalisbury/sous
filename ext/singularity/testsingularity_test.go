@@ -55,23 +55,24 @@ func (ts *testSingularity) AddRequestParent(requestID string, configure func(*dt
 		log.Panicf("Request ID %q has an empty source repo component.", requestID)
 	}
 
-	parent := newSingularityRequestParent(newRequestParentParams{
+	requestParent := newSingularityRequestParent(newRequestParentParams{
 		requestID: requestID,
 	})
 
 	if configure != nil {
-		configure(parent)
+		configure(requestParent)
 	}
 	if ts.Requests == nil {
 		ts.Requests = map[string]*testRequestParent{}
 	}
-	request := &testRequestParent{
+	if _, exists := ts.Requests[requestParent.Request.Id]; exists {
+		log.Panicf("request with ID %q already added", requestParent.Request.Id)
+	}
+
+	testRequestParent := &testRequestParent{
 		Parent:        ts,
-		RequestParent: parent,
+		RequestParent: requestParent,
 	}
-	if _, exists := ts.Requests[parent.Request.Id]; exists {
-		log.Panicf("request with ID %q already added", parent.Request.Id)
-	}
-	ts.Requests[parent.Request.Id] = request
-	return request
+	ts.Requests[requestParent.Request.Id] = testRequestParent
+	return testRequestParent
 }

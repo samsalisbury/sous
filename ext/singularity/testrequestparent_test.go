@@ -66,6 +66,11 @@ func (tr *testRequestParent) AddStandardDeployHistory(deployID string, configure
 // AddDeployHistory adds a deploy to the history and updates the request to
 // reflect this deployment.
 func (tr *testRequestParent) AddDeployHistory(testDeployHistory *testDeployHistory) {
+	// After adding deploy history, the request will forever have a non-nil
+	// requestDeployState.
+	if tr.RequestParent.RequestDeployState == nil {
+		tr.RequestParent.RequestDeployState = &dtos.SingularityRequestDeployState{}
+	}
 	deployHistory := testDeployHistory.DeployHistoryItem
 	// Configure the request to reflect this latest deploy.
 	deployMarkerCopy := *deployHistory.DeployMarker
@@ -73,7 +78,7 @@ func (tr *testRequestParent) AddDeployHistory(testDeployHistory *testDeployHisto
 	default:
 		// The default case represents all failure modes. Singularity does not
 		// change the active deploy to a failed one (so leave the last one in
-		// place. However, if there was a pending deployment with the same
+		// place). However, if there was a pending deployment with the same
 		// deploy ID, it will be removed from PendingDeploy.
 		oldPending := tr.RequestParent.RequestDeployState.PendingDeploy
 		if oldPending != nil && oldPending.DeployId == deployHistory.Deploy.Id {
