@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/opentable/go-singularity/dtos"
+	"github.com/opentable/sous/ext/docker"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/coaxer"
 	"github.com/opentable/sous/util/firsterr"
@@ -27,6 +28,8 @@ type requestContext struct {
 	Cluster              sous.Cluster
 	promise              coaxer.Promise
 	DeployHistoryBuilder *DeployHistoryListBuilder
+	// DeployHistoryBuilders is a map of deploy ID to DeployHistoryBuilder.
+	DeployHistoryBuilders map[string]*DeployHistoryBuilder
 }
 
 // newRequestContext initialises a requestContext and begins making HTTP
@@ -42,6 +45,7 @@ func newRequestContext(ctx context.Context, requestID string, client DeployReade
 		promise: c.Coax(ctx, func() (interface{}, error) {
 			return maybeRetryable(client.GetRequest(requestID))
 		}, "get singularity request %q", requestID),
+		DeployHistoryBuilders: map[string]*DeployHistoryBuilder{},
 	}
 	dhb, err := rc.newDeployHistoryBuilder()
 	if err != nil {
@@ -86,7 +90,7 @@ func (rc *requestContext) DeployState() (*sous.DeployState, error) {
 	log.Printf("Gathering deploy state for current deploy %q; request %q", currentDeployID, rc.RequestID)
 
 	// TODO: make newDeploymentBuilder a method on requestContext.
-	currentDeployBuilder := rc.newDeploymentBuilder(currentDeployID)
+	//currentDeployBuilder := rc.newDeploymentBuilder(currentDeployID)
 
 	// DeployStatusNotRunning means that there is no active or pending deploy.
 	if currentDeployStatus == sous.DeployStatusNotRunning {
@@ -111,32 +115,17 @@ func (rc *requestContext) DeployState() (*sous.DeployState, error) {
 		}, nil
 	}
 
-	lastDeployHistory := deployHistory[0]
-	if lastDeployHistory.Deploy == nil {
-		return nil, fmt.Errorf("deploy history item has a nil deploy")
-	}
-
-	lastDeployID := deployHistory[0].Deploy.Id
-	var lastDeployBuilder *DeploymentBuilder
-	// Get the entire last deployment unless it has the same ID as the current
-	// one, in which case return the current deployment for the last deployment
-	// as well.
-	if lastDeployID != currentDeployID {
-		log.Printf("Gathering deploy state for last attempted deploy %q; request %q", lastDeployID, rc.RequestID)
-		lastDeployBuilder = rc.newDeploymentBuilder(lastDeployID)
-	} else {
-		lastDeployBuilder = currentDeployBuilder
-	}
+	lastAttemptedDeployID := deployHistory[0].DeployMarker.DeployId
 
 	var currentDeploy, lastAttemptedDeploy *sous.Deployment
 	var lastAttemptedDeployStatus sous.DeployStatus
 
 	if err := firsterr.Set(
 		func(err *error) {
-			currentDeploy, currentDeployStatus, *err = currentDeployBuilder.Deployment()
+			currentDeploy, currentDeployStatus, *err = rc.Deployment(currentDeployID)
 		},
 		func(err *error) {
-			lastAttemptedDeploy, lastAttemptedDeployStatus, *err = lastDeployBuilder.Deployment()
+			lastAttemptedDeploy, lastAttemptedDeployStatus, *err = rc.Deployment(lastAttemptedDeployID)
 		},
 	); err != nil {
 		return nil, errors.Wrapf(err, "building deploy state")
@@ -146,6 +135,46 @@ func (rc *requestContext) DeployState() (*sous.DeployState, error) {
 		Status:     lastAttemptedDeployStatus,
 		Deployment: *lastAttemptedDeploy,
 	}, nil
+}
+
+// Deployment returns the sous.Deployment constructed from the request and
+// deploy deployID.
+func (rc *requestContext) Deployment(deployID string) (*sous.Deployment, sous.DeployStatus, error) {
+	dhb, ok := rc.DeployHistoryBuilders[deployID]
+	if !ok {
+		dhb = newDeploymentHistoryBuilder(rc, deployID)
+	}
+
+	dh, err := dhb.DeployHistory()
+	if err != nil {
+		return nil, sous.DeployStatusUnknown, err
+	}
+
+	deploy := dh.Deploy
+
+	if deploy.ContainerInfo == nil ||
+		deploy.ContainerInfo.Docker == nil ||
+		deploy.ContainerInfo.Docker.Image == "" {
+		return nil, sous.DeployStatusUnknown, fmt.Errorf("no docker image specified at deploy.ContainerInfo.Docker.Image")
+	}
+	dockerImage := deploy.ContainerInfo.Docker.Image
+
+	// This is our only dependency on the registry.
+	labels, err := rc.Registry.ImageLabels(dockerImage)
+	sourceID, err := docker.SourceIDFromLabels(labels)
+	if err != nil {
+		return nil, sous.DeployStatusUnknown, errors.Wrapf(err, "getting source ID")
+	}
+
+	requestParent, err := rc.RequestParent()
+	if err != nil {
+		return nil, sous.DeployStatusUnknown, err
+	}
+	if requestParent.Request == nil {
+		return nil, sous.DeployStatusUnknown, fmt.Errorf("requestParent contains no request")
+	}
+
+	return mapDeployHistoryToDeployment(rc.Cluster, sourceID, requestParent.Request, dh)
 }
 
 // currentDeployIDAndStatus returns, in order of preference:
@@ -182,9 +211,9 @@ func (rc *requestContext) currentDeployIDAndStatus() (string, sous.DeployStatus,
 }
 
 func (rc *requestContext) newDeployHistoryBuilder() (*DeployHistoryListBuilder, error) {
-	return newDeployHistoryBuilder(rc)
+	return newDeployHistoryListBuilder(rc)
 }
 
-func (rc *requestContext) newDeploymentBuilder(deployID string) *DeploymentBuilder {
-	return newDeploymentBuilder(rc, deployID)
+func (rc *requestContext) newDeploymentBuilder(deployID string) *DeployHistoryBuilder {
+	return newDeploymentHistoryBuilder(rc, deployID)
 }

@@ -21,7 +21,7 @@ type DeployHistoryListBuilder struct {
 
 // newDeployHistoryListBuilder creates a new DeployHistoryListBuilder bound to a
 // particular singularity request.
-func newDeployHistoryBuilder(rc *requestContext) (*DeployHistoryListBuilder, error) {
+func newDeployHistoryListBuilder(rc *requestContext) (*DeployHistoryListBuilder, error) {
 	deployHistoryPromise := c.Coax(context.TODO(), func() (interface{}, error) {
 		// We cannot expect to get Deploy details here, for that need to make a
 		// separate request to GetDeploy.
