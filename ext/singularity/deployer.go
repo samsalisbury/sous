@@ -1,6 +1,7 @@
 package singularity
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"runtime/debug"
@@ -27,6 +28,19 @@ existingSet := getFromSingularity()
 
 dChans := intendedSet.Diff(existingSet)
 */
+
+// Deployer implements sous.Deployer for a single sous Cluster running on
+// Singularity.
+type Deployer struct {
+	Registry      sous.Registry
+	ClientFactory func(*sous.Cluster) DeployReader
+	Clusters      sous.Clusters
+}
+
+// RunningDeployments uses a new adsBuild to construct sous deploy states.
+func (d *Deployer) RunningDeployments() (sous.DeployStates, error) {
+	return newADSBuild(context.TODO(), d.ClientFactory, d.Registry, d.Clusters).DeployStates()
+}
 
 type (
 	deployer struct {

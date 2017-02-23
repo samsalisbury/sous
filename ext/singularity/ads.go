@@ -5,43 +5,11 @@ import (
 	"fmt"
 	"log"
 	"sync"
-	"time"
 
 	"github.com/opentable/go-singularity/dtos"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/coaxer"
 )
-
-// c is a temporary global, it will be moved somewhere more sensible soon.
-var c = coaxer.NewCoaxer(func(c *coaxer.Coaxer) {
-	messages := make(chan string)
-	go func() {
-		for m := range messages {
-			log.Println(m)
-		}
-	}()
-	c.DebugFunc = func(desc string) {
-		messages <- desc
-	}
-	c.Backoff = time.Second
-})
-
-// DeployReader encapsulates the methods required to read Singularity
-// requests and deployments.
-type DeployReader interface {
-	GetRequests() (dtos.SingularityRequestParentList, error)
-	GetRequest(requestID string) (*dtos.SingularityRequestParent, error)
-	GetDeploy(requestID, deployID string) (*dtos.SingularityDeployHistory, error)
-	GetDeploys(requestID string, count, page int32) (dtos.SingularityDeployHistoryList, error)
-}
-
-// Deployer implements sous.Deployer for a single sous Cluster running on
-// Singularity.
-type Deployer struct {
-	Registry      sous.Registry
-	ClientFactory func(*sous.Cluster) DeployReader
-	Clusters      sous.Clusters
-}
 
 // adsBuild represents the building of a single sous.DeployStates from a
 // single Singularity-hosted cluster.
@@ -70,11 +38,6 @@ func newADSBuild(ctx context.Context, client func(*sous.Cluster) DeployReader, r
 		ErrorCallback: func(err error) { log.Println(err) },
 		Context:       ctx,
 	}
-}
-
-// RunningDeployments uses a new adsBuild to construct sous deploy states.
-func (d *Deployer) RunningDeployments() (sous.DeployStates, error) {
-	return newADSBuild(context.TODO(), d.ClientFactory, d.Registry, d.Clusters).DeployStates()
 }
 
 // DeployStates returns all deploy states.
