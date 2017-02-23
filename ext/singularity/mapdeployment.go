@@ -9,11 +9,12 @@ import (
 
 func mapDeployHistoryToDeployment(cluster sous.Cluster, sid sous.SourceID, sr *dtos.SingularityRequest, dh *dtos.SingularityDeployHistory) (*sous.Deployment, sous.DeployStatus, error) {
 
-	if dh.DeployResult == nil {
-		return nil, sous.DeployStatusUnknown, fmt.Errorf("deploy history contains no deploy result")
-	}
+	status := sous.DeployStatusUnknown
 
-	status := mapDeployResultDeployState(dh.DeployResult.DeployState)
+	if dh.DeployResult != nil {
+		status = mapDeployResultDeployState(dh.DeployResult.DeployState)
+		//return nil, sous.DeployStatusUnknown, fmt.Errorf("deploy history contains no deploy result")
+	}
 
 	if dh.Deploy == nil {
 		return nil, status, fmt.Errorf("deploy history contains no deployment")

@@ -30,6 +30,7 @@ func newDeploymentHistoryBuilder(rc *requestContext, deployID string) *DeployHis
 	}
 }
 
+// DeployHistory returns a single singularity deploy history entry, or an error.
 func (db *DeployHistoryBuilder) DeployHistory() (*dtos.SingularityDeployHistory, error) {
 	if err := db.promise.Err(); err != nil {
 		return nil, err
