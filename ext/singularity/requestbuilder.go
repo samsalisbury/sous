@@ -26,7 +26,7 @@ type requestContext struct {
 	// The cluster which this request belongs to.
 	Cluster              sous.Cluster
 	promise              coaxer.Promise
-	DeployHistoryBuilder *DeployHistoryBuilder
+	DeployHistoryBuilder *DeployHistoryListBuilder
 }
 
 // newRequestContext initialises a requestContext and begins making HTTP
@@ -181,7 +181,7 @@ func (rc *requestContext) currentDeployIDAndStatus() (string, sous.DeployStatus,
 	return "", sous.DeployStatusNotRunning, nil
 }
 
-func (rc *requestContext) newDeployHistoryBuilder() (*DeployHistoryBuilder, error) {
+func (rc *requestContext) newDeployHistoryBuilder() (*DeployHistoryListBuilder, error) {
 	return newDeployHistoryBuilder(rc)
 }
 
