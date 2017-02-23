@@ -31,8 +31,8 @@ func TestEmptyDiff(t *testing.T) {
 
 func makeDeplState(repo string, num int) *DeployState {
 	return &DeployState{
-		ActiveDeployment:   *makeDepl(repo, num),
-		ActiveDeployStatus: DeployStatusAny,
+		Deployment: *makeDepl(repo, num),
+		Status:     DeployStatusAny,
 	}
 }
 
