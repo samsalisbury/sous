@@ -39,7 +39,7 @@ type Deployer struct {
 
 // RunningDeployments uses a new adsBuild to construct sous deploy states.
 func (d *Deployer) RunningDeployments() (sous.DeployStates, error) {
-	return newADSBuild(context.TODO(), d.ClientFactory, d.Registry, d.Clusters).DeployStates()
+	return newADSBuilder(context.TODO(), d.ClientFactory, d.Registry, d.Clusters).DeployStates()
 }
 
 type (

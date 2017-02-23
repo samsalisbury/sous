@@ -11,9 +11,9 @@ import (
 	"github.com/opentable/sous/util/coaxer"
 )
 
-// adsBuild represents the building of a single sous.DeployStates from a
+// adsBuilder represents the building of a single sous.DeployStates from a
 // single Singularity-hosted cluster.
-type adsBuild struct {
+type adsBuilder struct {
 	Context       context.Context
 	ClientFactory func(*sous.Cluster) DeployReader
 	Clusters      sous.Clusters
@@ -21,17 +21,8 @@ type adsBuild struct {
 	ErrorCallback func(error)
 }
 
-// newRequestContext initialises a requestContext and begins making HTTP
-// requests to get the request (via coaxer). We can access the results of
-// this via the returned requestContext's promise field.
-func (ab *adsBuild) newRequestContext(requestID string, cluster *sous.Cluster) *requestContext {
-	return newRequestContext(
-		ab.Context, requestID, ab.ClientFactory(cluster), *cluster, ab.Registry,
-	)
-}
-
-func newADSBuild(ctx context.Context, client func(*sous.Cluster) DeployReader, reg sous.Registry, clusters sous.Clusters) *adsBuild {
-	return &adsBuild{
+func newADSBuilder(ctx context.Context, client func(*sous.Cluster) DeployReader, reg sous.Registry, clusters sous.Clusters) *adsBuilder {
+	return &adsBuilder{
 		ClientFactory: client,
 		Registry:      reg,
 		Clusters:      clusters,
@@ -41,7 +32,7 @@ func newADSBuild(ctx context.Context, client func(*sous.Cluster) DeployReader, r
 }
 
 // DeployStates returns all deploy states.
-func (ab *adsBuild) DeployStates() (sous.DeployStates, error) {
+func (ab *adsBuilder) DeployStates() (sous.DeployStates, error) {
 
 	log.Printf("Getting all requests...")
 
@@ -96,6 +87,7 @@ gather:
 		}
 
 		requestID := request.Request.Id
+		var requestCluster *sous.Cluster
 
 		log.Printf("Gathering data for request %q in background.", requestID)
 		deployID, err := ParseRequestID(requestID)
@@ -104,8 +96,9 @@ gather:
 			continue
 		}
 		oneOfMyDeploys := false
-		for clusterName := range ab.Clusters {
+		for clusterName, cluster := range ab.Clusters {
 			if deployID.Cluster == clusterName {
+				requestCluster = cluster
 				oneOfMyDeploys = true
 				break
 			}
@@ -118,7 +111,8 @@ gather:
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			dsb, err := ab.newDeployStateBuilder(deployID.Cluster, request)
+			rc := ab.newRequestContext(requestID, requestCluster)
+			dsb, err := rc.newDeployStateBuilder()
 			if err != nil {
 				ab.ErrorCallback(err)
 				errChan <- err
@@ -147,18 +141,20 @@ gather:
 	return deployStates, nil
 }
 
-func (ab *adsBuild) Errorf(format string, a ...interface{}) error {
+// newRequestContext initialises a requestContext and begins making HTTP
+// requests to get the request (via coaxer). We can access the results of
+// this via the returned requestContext's promise field.
+func (ab *adsBuilder) newRequestContext(requestID string, cluster *sous.Cluster) *requestContext {
+	return newRequestContext(
+		ab.Context, requestID, ab.ClientFactory(cluster), *cluster, ab.Registry,
+	)
+}
+
+func (ab *adsBuilder) Errorf(format string, a ...interface{}) error {
 	//prefix := fmt.Sprintf("reading from cluster %q", ab.Cluster.Name)
 	prefix := ""
 	message := fmt.Sprintf(format, a...)
 	return fmt.Errorf("%s: %s", prefix, message)
-}
-
-func (ab *adsBuild) newDeployStateBuilder(clusterName string, rp *dtos.SingularityRequestParent) (*DeployStateBuilder, error) {
-	cluster := ab.Clusters[clusterName]
-	requestID := rp.Request.Id
-	rc := ab.newRequestContext(requestID, cluster)
-	return newDeployStateBuilder(rc)
 }
 
 type temporary struct {

@@ -98,3 +98,7 @@ func (rc *requestContext) currentDeployIDAndStatus() (string, sous.DeployStatus,
 	}
 	return "", sous.DeployStatusNotRunning, nil
 }
+
+func (rc *requestContext) newDeployStateBuilder() (*DeployStateBuilder, error) {
+	return newDeployStateBuilder(rc)
+}
