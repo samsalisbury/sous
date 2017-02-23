@@ -112,13 +112,7 @@ gather:
 		go func() {
 			defer wg.Done()
 			rc := ab.newRequestContext(requestID, requestCluster)
-			dsb, err := rc.newDeployStateBuilder()
-			if err != nil {
-				ab.ErrorCallback(err)
-				errChan <- err
-				return
-			}
-			ds, err := dsb.DeployState()
+			ds, err := rc.DeployState()
 			if err != nil {
 				ab.ErrorCallback(err)
 				errChan <- err

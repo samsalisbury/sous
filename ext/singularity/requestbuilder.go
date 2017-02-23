@@ -2,10 +2,14 @@ package singularity
 
 import (
 	"context"
+	"fmt"
+	"log"
 
 	"github.com/opentable/go-singularity/dtos"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/coaxer"
+	"github.com/opentable/sous/util/firsterr"
+	"github.com/pkg/errors"
 )
 
 // requestContext is a mixin used for DeploymentBuilder and DeployStateBuilder.
@@ -20,8 +24,9 @@ type requestContext struct {
 	// assume that it is populated with a meaningful value.
 	RequestID string
 	// The cluster which this request belongs to.
-	Cluster sous.Cluster
-	promise coaxer.Promise
+	Cluster              sous.Cluster
+	promise              coaxer.Promise
+	DeployHistoryBuilder *DeployHistoryBuilder
 }
 
 // newRequestContext initialises a requestContext and begins making HTTP
@@ -38,6 +43,12 @@ func newRequestContext(ctx context.Context, requestID string, client DeployReade
 			return maybeRetryable(client.GetRequest(requestID))
 		}, "get singularity request %q", requestID),
 	}
+	dhb, err := rc.newDeployHistoryBuilder()
+	if err != nil {
+		// TODO not panic
+		panic(err)
+	}
+	rc.DeployHistoryBuilder = dhb
 	return rc
 }
 
@@ -64,6 +75,77 @@ func (rc *requestContext) CurrentDeployStatus() (sous.DeployStatus, error) {
 		return sous.DeployStatusUnknown, err
 	}
 	return status, nil
+}
+
+// DeployState returns the Sous deploy state for this request.
+func (rc *requestContext) DeployState() (*sous.DeployState, error) {
+	currentDeployID, currentDeployStatus, err := rc.currentDeployIDAndStatus()
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("Gathering deploy state for current deploy %q; request %q", currentDeployID, rc.RequestID)
+
+	// TODO: make newDeploymentBuilder a method on requestContext.
+	currentDeployBuilder := rc.newDeploymentBuilder(currentDeployID)
+
+	// DeployStatusNotRunning means that there is no active or pending deploy.
+	if currentDeployStatus == sous.DeployStatusNotRunning {
+		// TODO: Check if this should be a retryable error or not?
+		//       Maybe there is a race condition where there will be
+		//       no active or pending deploy just after a rectify.
+		return &sous.DeployState{
+			Status: sous.DeployStatusNotRunning,
+		}, nil
+	}
+
+	// Examine the deploy history to see if the last deployment failed.
+	deployHistory, err := rc.DeployHistoryBuilder.DeployHistory()
+	if err != nil {
+		return nil, err
+	}
+
+	if len(deployHistory) == 0 {
+		// There has never been a deployment.
+		return &sous.DeployState{
+			Status: sous.DeployStatusNotRunning,
+		}, nil
+	}
+
+	lastDeployHistory := deployHistory[0]
+	if lastDeployHistory.Deploy == nil {
+		return nil, fmt.Errorf("deploy history item has a nil deploy")
+	}
+
+	lastDeployID := deployHistory[0].Deploy.Id
+	var lastDeployBuilder *DeploymentBuilder
+	// Get the entire last deployment unless it has the same ID as the current
+	// one, in which case return the current deployment for the last deployment
+	// as well.
+	if lastDeployID != currentDeployID {
+		log.Printf("Gathering deploy state for last attempted deploy %q; request %q", lastDeployID, rc.RequestID)
+		lastDeployBuilder = rc.newDeploymentBuilder(lastDeployID)
+	} else {
+		lastDeployBuilder = currentDeployBuilder
+	}
+
+	var currentDeploy, lastAttemptedDeploy *sous.Deployment
+	var lastAttemptedDeployStatus sous.DeployStatus
+
+	if err := firsterr.Set(
+		func(err *error) {
+			currentDeploy, currentDeployStatus, *err = currentDeployBuilder.Deployment()
+		},
+		func(err *error) {
+			lastAttemptedDeploy, lastAttemptedDeployStatus, *err = lastDeployBuilder.Deployment()
+		},
+	); err != nil {
+		return nil, errors.Wrapf(err, "building deploy state")
+	}
+
+	return &sous.DeployState{
+		Status:     lastAttemptedDeployStatus,
+		Deployment: *lastAttemptedDeploy,
+	}, nil
 }
 
 // currentDeployIDAndStatus returns, in order of preference:
@@ -99,6 +181,10 @@ func (rc *requestContext) currentDeployIDAndStatus() (string, sous.DeployStatus,
 	return "", sous.DeployStatusNotRunning, nil
 }
 
-func (rc *requestContext) newDeployStateBuilder() (*DeployStateBuilder, error) {
-	return newDeployStateBuilder(rc)
+func (rc *requestContext) newDeployHistoryBuilder() (*DeployHistoryBuilder, error) {
+	return newDeployHistoryBuilder(rc)
+}
+
+func (rc *requestContext) newDeploymentBuilder(deployID string) *DeploymentBuilder {
+	return newDeploymentBuilder(rc, deployID)
 }

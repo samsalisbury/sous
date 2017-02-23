@@ -3,18 +3,15 @@ package singularity
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/opentable/go-singularity/dtos"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/coaxer"
-	"github.com/opentable/sous/util/firsterr"
-	"github.com/pkg/errors"
 )
 
-// DeployStateBuilder gathers information about the state of deployments.
-type DeployStateBuilder struct {
-	*requestContext
+// DeployHistoryBuilder gathers information about the state of deployments.
+type DeployHistoryBuilder struct {
+	requestContext *requestContext
 	// PreviousDeployID is the ID of the previous deploy for request
 	// requestContext.RequestID.
 	PreviousDeployID string
@@ -24,7 +21,7 @@ type DeployStateBuilder struct {
 }
 
 // newDeploymentBuilder creates a new DeployStateBuilder bound to a particular sous deployment.
-func newDeployStateBuilder(rc *requestContext) (*DeployStateBuilder, error) {
+func newDeployHistoryBuilder(rc *requestContext) (*DeployHistoryBuilder, error) {
 	deployHistoryPromise := c.Coax(context.TODO(), func() (interface{}, error) {
 		//
 		// We cannot expect to get Deploy details here, for that need to make a
@@ -52,91 +49,15 @@ func newDeployStateBuilder(rc *requestContext) (*DeployStateBuilder, error) {
 		return deploys, nil
 
 	}, "get deploy history for %q", rc.RequestID)
-	return &DeployStateBuilder{
+	return &DeployHistoryBuilder{
 		requestContext:       rc,
 		DeployHistoryPromise: deployHistoryPromise,
 	}, nil
 }
 
-func (ds *DeployStateBuilder) newDeploymentBuilder(deployID string) *DeploymentBuilder {
-	return newDeploymentBuilder(ds.requestContext, deployID)
-}
-
-// DeployState returns the Sous deploy state.
-func (ds *DeployStateBuilder) DeployState() (*sous.DeployState, error) {
-
-	currentDeployID, currentDeployStatus, err := ds.currentDeployIDAndStatus()
-	if err != nil {
-		return nil, err
-	}
-
-	log.Printf("Gathering deploy state for current deploy %q; request %q", currentDeployID, ds.RequestID)
-
-	currentDeployBuilder := ds.newDeploymentBuilder(currentDeployID)
-
-	// DeployStatusNotRunning means that there is no active or pending deploy.
-	if currentDeployStatus == sous.DeployStatusNotRunning {
-		// TODO: Check if this should be a retryable error or not?
-		//       Maybe there is a race condition where there will be
-		//       no active or pending deploy just after a rectify.
-		return &sous.DeployState{
-			Status: sous.DeployStatusNotRunning,
-		}, nil
-	}
-
-	// Examine the deploy history to see if the last deployment failed.
-	deployHistory, err := ds.DeployHistory()
-	if err != nil {
-		return nil, err
-	}
-
-	if len(deployHistory) == 0 {
-		// There has never been a deployment.
-		return &sous.DeployState{
-			Status: sous.DeployStatusNotRunning,
-		}, nil
-	}
-
-	lastDeployHistory := deployHistory[0]
-	if lastDeployHistory.Deploy == nil {
-		return nil, fmt.Errorf("deploy history item has a nil deploy")
-	}
-
-	lastDeployID := deployHistory[0].Deploy.Id
-	var lastDeployBuilder *DeploymentBuilder
-	// Get the entire last deployment unless it has the same ID as the current
-	// one, in which case return the current deployment for the last deployment
-	// as well.
-	if lastDeployID != currentDeployID {
-		log.Printf("Gathering deploy state for last attempted deploy %q; request %q", lastDeployID, ds.RequestID)
-		lastDeployBuilder = ds.newDeploymentBuilder(lastDeployID)
-	} else {
-		lastDeployBuilder = currentDeployBuilder
-	}
-
-	var currentDeploy, lastAttemptedDeploy *sous.Deployment
-	var lastAttemptedDeployStatus sous.DeployStatus
-
-	if err := firsterr.Set(
-		func(err *error) {
-			currentDeploy, currentDeployStatus, *err = currentDeployBuilder.Deployment()
-		},
-		func(err *error) {
-			lastAttemptedDeploy, lastAttemptedDeployStatus, *err = lastDeployBuilder.Deployment()
-		},
-	); err != nil {
-		return nil, errors.Wrapf(err, "building deploy state")
-	}
-
-	return &sous.DeployState{
-		Status:     lastAttemptedDeployStatus,
-		Deployment: *lastAttemptedDeploy,
-	}, nil
-}
-
 // DeployHistory waits for the deploy history to be collected and then returns
 // the result.
-func (ds *DeployStateBuilder) DeployHistory() (dtos.SingularityDeployHistoryList, error) {
+func (ds *DeployHistoryBuilder) DeployHistory() (dtos.SingularityDeployHistoryList, error) {
 	if err := ds.DeployHistoryPromise.Err(); err != nil {
 		return nil, err
 	}
