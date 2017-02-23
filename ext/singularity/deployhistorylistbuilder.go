@@ -38,7 +38,7 @@ func newDeployHistoryListBuilder(rc *requestContext) (*DeployHistoryListBuilder,
 
 // DeployHistory waits for the deploy history to be collected and then returns
 // the result.
-func (ds *DeployHistoryListBuilder) DeployHistory() (dtos.SingularityDeployHistoryList, error) {
+func (ds *DeployHistoryListBuilder) DeployHistoryList() (dtos.SingularityDeployHistoryList, error) {
 	if err := ds.DeployHistoryPromise.Err(); err != nil {
 		return nil, err
 	}

@@ -25,9 +25,9 @@ type requestContext struct {
 	// assume that it is populated with a meaningful value.
 	RequestID string
 	// The cluster which this request belongs to.
-	Cluster              sous.Cluster
-	promise              coaxer.Promise
-	DeployHistoryBuilder *DeployHistoryListBuilder
+	Cluster                  sous.Cluster
+	promise                  coaxer.Promise
+	DeployHistoryListBuilder *DeployHistoryListBuilder
 	// DeployHistoryBuilders is a map of deploy ID to DeployHistoryBuilder.
 	DeployHistoryBuilders map[string]*DeployHistoryBuilder
 }
@@ -52,7 +52,7 @@ func newRequestContext(ctx context.Context, requestID string, client DeployReade
 		// TODO not panic
 		panic(err)
 	}
-	rc.DeployHistoryBuilder = dhb
+	rc.DeployHistoryListBuilder = dhb
 	return rc
 }
 
@@ -103,7 +103,7 @@ func (rc *requestContext) DeployState() (*sous.DeployState, error) {
 	}
 
 	// Examine the deploy history to see if the last deployment failed.
-	deployHistory, err := rc.DeployHistoryBuilder.DeployHistory()
+	deployHistory, err := rc.DeployHistoryListBuilder.DeployHistoryList()
 	if err != nil {
 		return nil, err
 	}
