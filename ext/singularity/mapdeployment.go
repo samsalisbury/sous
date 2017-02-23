@@ -9,10 +9,8 @@ import (
 
 func mapDeployHistoryToDeployment(cluster sous.Cluster, sid sous.SourceID, sr *dtos.SingularityRequest, dh *dtos.SingularityDeployHistory) (*sous.Deployment, sous.DeployStatus, error) {
 
-	status := sous.DeployStatusUnknown
+	status := sous.DeployStatusPending
 
-	// TODO: Unit test covering dh.DeployResult == nil which
-	// is possible if a deploy has been started but not completed.
 	if dh.DeployResult != nil {
 		status = mapDeployResultDeployState(dh.DeployResult.DeployState)
 	}

@@ -203,31 +203,47 @@ func TestDeployer_RunningDeployments(t *testing.T) {
 		{
 			"Latest deploy pending => DeployStatusPending",
 			modifyInputRequestParent("http://singularity1.com", "github.com>user>repo1::cluster1",
-				func(request *testRequestParent) {
+				func(input *testRequestParent) {
 					// Add a new pending deployment.
-					request.AddStandardDeployHistory("newDeploy", func(d *dtos.SingularityDeployHistory) {
+					input.AddStandardDeployHistory("newDeploy", func(d *dtos.SingularityDeployHistory) {
 						d.DeployResult.DeployState = dtos.SingularityDeployResultDeployStateWAITING
 					})
 				}),
 			modifyExpectedDeployState("github.com/user/repo1:cluster1",
-				func(ds *sous.DeployState) {
+				func(expected *sous.DeployState) {
 					// Expect the deploy state to be pending.
-					ds.Status = sous.DeployStatusPending
+					expected.Status = sous.DeployStatusPending
+				}),
+		},
+		{
+			"Latest deploy history has no deploy result => DeployStatusPending",
+			modifyInputRequestParent("http://singularity1.com", "github.com>user>repo1::cluster1",
+				func(input *testRequestParent) {
+					// Get the latest deploy ID.
+					latestDeploy := input.Deploys.SingularityDeployHistoryList()[0]
+					latestDeployID := latestDeploy.DeployMarker.DeployId
+					// Set the deploy result to nil.
+					input.Deploys[latestDeployID].DeployHistoryItem.DeployResult = nil
+				}),
+			modifyExpectedDeployState("github.com/user/repo1:cluster1",
+				func(expected *sous.DeployState) {
+					// Expect the deploy state to be pending.
+					expected.Status = sous.DeployStatusPending
 				}),
 		},
 		{
 			"Latest deploy failed => DeployStatusFailed",
 			modifyInputRequestParent("http://singularity1.com", "github.com>user>repo1::cluster1",
-				func(request *testRequestParent) {
+				func(input *testRequestParent) {
 					// Add a new failed deployment.
-					request.AddStandardDeployHistory("newDeploy", func(d *dtos.SingularityDeployHistory) {
+					input.AddStandardDeployHistory("newDeploy", func(d *dtos.SingularityDeployHistory) {
 						d.DeployResult.DeployState = dtos.SingularityDeployResultDeployStateFAILED
 					})
 				}),
 			modifyExpectedDeployState("github.com/user/repo1:cluster1",
-				func(ds *sous.DeployState) {
+				func(expected *sous.DeployState) {
 					// Expect the deploy state to be failed.
-					ds.Status = sous.DeployStatusFailed
+					expected.Status = sous.DeployStatusFailed
 				}),
 		},
 	}
@@ -277,6 +293,24 @@ func modifyInputRequestParent(singularityBaseURL, requestID string, modifyReques
 			log.Panicf("Singularity %q contains no request %q", singularityBaseURL, requestID)
 		}
 		modifyRequestParent(request)
+	}
+}
+
+func modifyInputDeployHistory(singularityBaseURL, requestID, deployID string, modifyDeployHistory func(*dtos.SingularityDeployHistory)) InputModifier {
+	return func(fixture *testFixture) {
+		singularity, ok := fixture.Singularities[singularityBaseURL]
+		if !ok {
+			log.Panicf("No singularity called %q", singularityBaseURL)
+		}
+		request, ok := singularity.Requests[requestID]
+		if !ok {
+			log.Panicf("Singularity %q contains no request %q", singularityBaseURL, requestID)
+		}
+		deployHistory, ok := request.Deploys[deployID]
+		if !ok {
+			log.Panicf("Singularity %q request %q contains no deploy %q", singularityBaseURL, requestID, deployID)
+		}
+		modifyDeployHistory(deployHistory.DeployHistoryItem)
 	}
 }
 
