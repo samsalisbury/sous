@@ -11,9 +11,10 @@ func mapDeployHistoryToDeployment(cluster sous.Cluster, sid sous.SourceID, sr *d
 
 	status := sous.DeployStatusUnknown
 
+	// TODO: Unit test covering dh.DeployResult == nil which
+	// is possible if a deploy has been started but not completed.
 	if dh.DeployResult != nil {
 		status = mapDeployResultDeployState(dh.DeployResult.DeployState)
-		//return nil, sous.DeployStatusUnknown, fmt.Errorf("deploy history contains no deploy result")
 	}
 
 	if dh.Deploy == nil {
