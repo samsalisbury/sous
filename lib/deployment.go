@@ -56,7 +56,9 @@ type (
 // Clone returns a deep copy of this deployment.
 func (d Deployment) Clone() *Deployment {
 	d.DeployConfig = d.DeployConfig.Clone()
-	d.Cluster = d.Cluster.Clone()
+	if d.Cluster != nil {
+		d.Cluster = d.Cluster.Clone()
+	}
 	d.Owners = d.Owners.Clone()
 	d.Volumes = d.Volumes.Clone()
 	return &d

@@ -1,6 +1,9 @@
 package sous
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 type (
 	// DeploymentPair is a pair of deployments that represent a "before and after" style relationship
@@ -98,39 +101,29 @@ func (d Deployments) Diff(other Deployments) DiffChans {
 }
 
 func newStateDiffer(intended DeployStates) *differ {
-	i := intended.Snapshot()
-	ds := []string{"Computing diff from:"}
-	for _, e := range i {
-		ds = append(ds, e.String())
-	}
-	Log.Vomit.Print(strings.Join(ds, "\n    "))
-
-	startMap := make(map[DeployID]*DeployState)
-	for _, dep := range i {
-		startMap[dep.ID()] = dep
-	}
+	intended = intended.Clone()
+	logDeployStates(intended, "intended deploy states")
 	return &differ{
-		from:      startMap,
-		DiffChans: NewDiffChans(len(i)),
+		from:      intended.Snapshot(),
+		DiffChans: NewDiffChans(intended.Len()),
 	}
 }
 
-func newDiffer(intended Deployments) *differ {
-	i := intended.Snapshot()
-	ds := []string{"Computing diff from:"}
-	for _, e := range i {
-		ds = append(ds, e.String())
-	}
-	Log.Vomit.Print(strings.Join(ds, "\n    "))
-
-	startMap := make(map[DeployID]*DeployState)
-	for _, dep := range i {
-		startMap[dep.Name()] = &DeployState{Deployment: *dep}
-	}
+func newDiffer(intendedDeployments Deployments) *differ {
+	intended := intendedDeployments.Clone().ToDeployStatesWithStatus(DeployStatusSucceeded)
+	logDeployStates(intended, "intended deploy states")
 	return &differ{
-		from:      startMap,
-		DiffChans: NewDiffChans(len(i)),
+		from:      intended.Snapshot(),
+		DiffChans: NewDiffChans(intended.Len()),
 	}
+}
+
+func logDeployStates(dss DeployStates, desc string) {
+	message := []string{fmt.Sprintf("Computing diff from %s:", desc)}
+	for _, ds := range dss.Snapshot() {
+		message = append(message, ds.String())
+	}
+	Log.Vomit.Print(strings.Join(message, "\n    "))
 }
 
 func (d *differ) diff(existing Deployments) {

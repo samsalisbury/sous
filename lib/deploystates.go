@@ -37,3 +37,13 @@ func (ds DeployStates) Diff2(other DeployStates) (bool, []string) {
 
 	return len(diffs) != 0, diffs
 }
+
+// ToDeployStatesWithStatus returns a DeployStates containing all these
+// Deployments wrapped in DeployStatuses with Status == status.
+func (ds Deployments) ToDeployStatesWithStatus(status DeployStatus) DeployStates {
+	deployStates := NewDeployStates()
+	for did, d := range ds.Snapshot() {
+		deployStates.Set(did, &DeployState{Deployment: *d, Status: status})
+	}
+	return deployStates
+}
