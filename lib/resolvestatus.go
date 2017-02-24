@@ -43,8 +43,8 @@ type (
 )
 
 const (
-	// StableDiff - the active deployment is the intended deployment
-	StableDiff = ResolutionType("unchanged")
+	// UnchangedDiff - the active deployment is the intended deployment
+	UnchangedDiff = ResolutionType("unchanged")
 	// ComingDiff - the intended deployment is pending, assumed will be come active
 	ComingDiff = ResolutionType("coming")
 	// CreatedDiff - the intended deployment was missing and had to be created.

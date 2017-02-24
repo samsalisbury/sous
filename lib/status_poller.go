@@ -361,7 +361,7 @@ func (sub *subPoller) computeState(srvIntent *Deployment, stable, current *DiffR
 	// will be described as "unchanged." The upshot is that the most current
 	// intend to deploy matches this cluster's current resolver's intend to
 	// deploy, and that that matches the deploy that's running. Success!
-	if current.Desc == StableDiff {
+	if current.Desc == UnchangedDiff {
 		return ResolveComplete
 	}
 

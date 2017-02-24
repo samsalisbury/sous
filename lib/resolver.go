@@ -44,7 +44,7 @@ func (r *Resolver) reportStable(stable <-chan *Deployable, results chan<- DiffRe
 		var desc ResolutionType
 		switch dep.Status {
 		default:
-			desc = StableDiff
+			desc = UnchangedDiff
 		case DeployStatusPending:
 			desc = ComingDiff
 		}
