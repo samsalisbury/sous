@@ -18,29 +18,33 @@ func defaultTestFixture() (*testFixture, *Deployer) {
 	fixture := &testFixture{
 		Registry: newTestRegistry(),
 	}
+	// Add singularity1 with cluster1.
+	configureTestCluster(fixture, "http://singularity1", "cluster1")
 
-	singularity1 := fixture.AddSingularity("http://singularity1.com")
-	singularity1.AddCluster("cluster1")
-
-	// 1 cluster on singularity2.
-	//cluster3 := fixture.AddCluster("cluster3", "http://singularity2.com")
-
-	// Add 1 requests to cluster 1.
-	cluster1Request1 := singularity1.AddRequestParent("github.com>user>repo1::cluster1", nil)
-	cluster1Request2 := singularity1.AddRequestParent("github.com>user>repo2::cluster1", nil)
-
-	// Add 2 successful deployments to cluster 1, request 1.
-	cluster1Request1.AddStandardDeployHistory("deploy111", nil)
-	cluster1Request1.AddStandardDeployHistory("deploy112", nil)
-
-	// Add 1 successful deployment to cluster 1, request 2.
-	cluster1Request2.AddStandardDeployHistory("deploy121", nil)
+	// Add singularity2 with clusters cluster2 and cluster3.
+	configureTestCluster(fixture, "http://singularity2", "cluster2")
+	configureTestCluster(fixture, "http://singularity2", "cluster3")
 
 	return fixture, &Deployer{
 		Registry:      fixture.Registry,
 		ClientFactory: fixture.DeployReaderFactory,
 		Clusters:      fixture.Clusters,
 	}
+}
+
+// configureTestCluster adds a cluster named clusterName with 2 requests, each
+// with 1 successful deploys to the singularity named by singularityBaseURL.
+func configureTestCluster(fixture *testFixture, singularityBaseURL, clusterName string) {
+	singularity := fixture.AddSingularity(singularityBaseURL)
+	singularity.AddCluster(clusterName)
+
+	// Add a request with 1 deploy.
+	request1 := singularity.AddRequestParent("github.com>user>repo1::"+clusterName, nil)
+	request1.AddStandardDeployHistory("deploy1", nil)
+
+	// Add another request with 1 deploy.
+	request2 := singularity.AddRequestParent("github.com>user>repo2::"+clusterName, nil)
+	request2.AddStandardDeployHistory("deploy1", nil)
 }
 
 type newRequestParentParams struct {
@@ -161,6 +165,10 @@ func defaultExpectedDeployStates() sous.DeployStates {
 	return sous.NewDeployStates(
 		defaultExpectedDeployState("github.com/user/repo1:cluster1", nil),
 		defaultExpectedDeployState("github.com/user/repo2:cluster1", nil),
+		defaultExpectedDeployState("github.com/user/repo1:cluster2", nil),
+		defaultExpectedDeployState("github.com/user/repo2:cluster2", nil),
+		defaultExpectedDeployState("github.com/user/repo1:cluster3", nil),
+		defaultExpectedDeployState("github.com/user/repo2:cluster3", nil),
 	)
 }
 
@@ -202,7 +210,7 @@ func TestDeployer_RunningDeployments(t *testing.T) {
 		},
 		{
 			"Latest deploy pending => DeployStatusPending",
-			modifyInputRequestParent("http://singularity1.com", "github.com>user>repo1::cluster1",
+			modifyInputRequestParent("http://singularity1", "github.com>user>repo1::cluster1",
 				func(input *testRequestParent) {
 					// Add a new pending deployment.
 					input.AddStandardDeployHistory("newDeploy", func(d *dtos.SingularityDeployHistory) {
@@ -217,7 +225,7 @@ func TestDeployer_RunningDeployments(t *testing.T) {
 		},
 		{
 			"Latest deploy history has no deploy result => DeployStatusPending",
-			modifyInputRequestParent("http://singularity1.com", "github.com>user>repo1::cluster1",
+			modifyInputRequestParent("http://singularity1", "github.com>user>repo1::cluster1",
 				func(input *testRequestParent) {
 					// Get the latest deploy ID.
 					latestDeploy := input.Deploys.SingularityDeployHistoryList()[0]
@@ -233,7 +241,7 @@ func TestDeployer_RunningDeployments(t *testing.T) {
 		},
 		{
 			"Latest deploy failed => DeployStatusFailed",
-			modifyInputRequestParent("http://singularity1.com", "github.com>user>repo1::cluster1",
+			modifyInputRequestParent("http://singularity1", "github.com>user>repo1::cluster1",
 				func(input *testRequestParent) {
 					// Add a new failed deployment.
 					input.AddStandardDeployHistory("newDeploy", func(d *dtos.SingularityDeployHistory) {
