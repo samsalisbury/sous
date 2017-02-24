@@ -47,12 +47,12 @@ const (
 	StableDiff = ResolutionType("unchanged")
 	// ComingDiff - the intended deployment is pending, assumed will be come active
 	ComingDiff = ResolutionType("coming")
-	// CreateDiff - the intended deployment was missing and had to be created.
-	CreateDiff = ResolutionType("created")
-	// ModifyDiff - there was a deployment that differed from the intended was changed.
-	ModifyDiff = ResolutionType("updated")
-	// DeleteDiff - a deployment was active that wasn't intended at all, and was deleted.
-	DeleteDiff = ResolutionType("deleted")
+	// CreatedDiff - the intended deployment was missing and had to be created.
+	CreatedDiff = ResolutionType("created")
+	// UpdatedDiff - there was a deployment that differed from the intended was changed.
+	UpdatedDiff = ResolutionType("updated")
+	// DeletedDiff - a deployment was active that wasn't intended at all, and was deleted.
+	DeletedDiff = ResolutionType("deleted")
 )
 
 // NewResolveRecorder creates a new ResolveRecorder and calls f with it as its
