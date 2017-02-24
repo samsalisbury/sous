@@ -133,7 +133,7 @@ func (rc *requestContext) DeployState() (*sous.DeployState, error) {
 
 	return &sous.DeployState{
 		Status:     lastAttemptedDeployStatus,
-		Deployment: *lastAttemptedDeploy,
+		Deployment: lastAttemptedDeploy,
 	}, nil
 }
 

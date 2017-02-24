@@ -125,7 +125,7 @@ func defaultExpectedDeployState(deployID string, configure func(*sous.DeployStat
 	}
 	ds := &sous.DeployState{
 		Status: sous.DeployStatusSucceeded,
-		Deployment: sous.Deployment{
+		Deployment: &sous.Deployment{
 			Kind: sous.ManifestKindService,
 			SourceID: sous.SourceID{
 				Location: did.ManifestID.Source,

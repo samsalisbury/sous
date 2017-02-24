@@ -11,7 +11,7 @@ type DeployState struct {
 	// It is equal to LastAttemptedDeployStatus.
 	Status DeployStatus
 
-	Deployment Deployment
+	Deployment *Deployment
 
 	//// ActiveDeployment is the deployment that is currently running or pending.
 	//ActiveDeployment Deployment
@@ -33,6 +33,11 @@ func (ds *DeployState) String() string {
 
 // ID returns the DeployID.
 func (ds *DeployState) ID() DeployID {
+	if ds.Deployment == nil {
+		// TODO: This is unsatisfactory, but preserves existing behaviour before
+		// DeployState.Deployment was made a pointer.
+		return DeployID{}
+	}
 	return ds.Deployment.ID()
 }
 
@@ -43,7 +48,7 @@ func (ds *DeployState) Tabbed() string {
 
 // Diff returns true, list of diffs if o != ds. Otherwise returns false, nil.
 func (ds *DeployState) Diff(o *DeployState) (bool, []string) {
-	_, diffs := ds.Deployment.Diff(&o.Deployment)
+	_, diffs := ds.Deployment.Diff(o.Deployment)
 	//	if o.ActiveDeployStatus != ds.ActiveDeployStatus {
 	//		diffs = append(diffs, fmt.Sprintf("ActiveDeployStatus; this: %s, other: %s",
 	//			ds.ActiveDeployStatus, o.ActiveDeployStatus))
@@ -89,7 +94,7 @@ const (
 
 // Clone returns an independent clone of this DeployState.
 func (ds DeployState) Clone() *DeployState {
-	ds.Deployment = *ds.Deployment.Clone()
+	ds.Deployment = ds.Deployment.Clone()
 	return &ds
 }
 
@@ -98,7 +103,7 @@ func (ds DeployState) Clone() *DeployState {
 func (ds DeployStates) IgnoringStatus() Deployments {
 	deployments := NewDeployments()
 	for key, value := range ds.Snapshot() {
-		deployments.Set(key, &value.Deployment)
+		deployments.Set(key, value.Deployment)
 	}
 	return deployments
 }
