@@ -1,4 +1,5 @@
 
+bash-3.2$ date
 bash-3.2$ if [ -n "$GOROOT" ]; then
 > mkdir -p $GOROOT
 > fi
@@ -8,13 +9,13 @@ bash-3.2$ if echo "http://192.168.99.100:7099/singularity" | egrep -q '192.16<9
 > fi
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100   100    0   100    0     0   1266      0 --:--:-- --:--:-- --:--:--  1282
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100   118    0   118    0     0  12559      0 --:--:-- --:--:-- --:--:-- 13111
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100   118    0   118    0     0   4372      0 --:--:-- --:--:-- --:--:--  4538
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100   100    0   100    0     0  17262      0 --:--:-- --:--:-- --:--:-- 20000
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100   117    0   117    0     0   6358      0 --:--:-- --:--:-- --:--:--  6500
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100   117    0   117    0     0  21284      0 --:--:-- --:--:-- --:--:-- 23400
 bash-3.2$ cygnus -H http://192.168.99.100:7099/singularity
 bash-3.2$ ls /Users/jlester/golang/src/github.com/opentable/sous/dev_support
 bash-3.2$ 

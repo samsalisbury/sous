@@ -43,7 +43,7 @@ bash-3.2$ git tag -am "0.0.2" 0.0.2
 bash-3.2$ git push
 Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
 To ssh://192.168.99.100:2222/repos/sous-server
-   bdfdd3f..b33f35e  master -> master
+   bdfdd3f..35a9a82  master -> master
 bash-3.2$ git push --tags
 Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
 To ssh://192.168.99.100:2222/repos/sous-server
@@ -56,10 +56,21 @@ bash-3.2$ sous deploy -cluster left # We expect to see 'Sous is running ... i<t
 warn: No server set, Sous is running in server or workstation mode.
 warn: Configure a server like this: sous config server http://some.sous.server
 warn: Using local state stored at /tmp/sous-work/gdm
+2017/02/24 12:56:01 ads.go:37: Getting all requests...
+2017/02/24 12:56:01 coaxerconfig.go:15: Running: get requests from cluster "left" (attempt 1)
+2017/02/24 12:56:01 coaxerconfig.go:15: Success: get requests from cluster "left" at attempt 1
+2017/02/24 12:56:01 ads.go:68: Success: got all requests from cluster "left"
+2017/02/24 12:56:01 ads.go:72: Got: 0 requests
 bash-3.2$ sous deploy -cluster right
 warn: No server set, Sous is running in server or workstation mode.
 warn: Configure a server like this: sous config server http://some.sous.server
 warn: Using local state stored at /tmp/sous-work/gdm
+2017/02/24 12:56:02 ads.go:37: Getting all requests...
+2017/02/24 12:56:02 coaxerconfig.go:15: Running: get requests from cluster "right" (attempt 1)
+2017/02/24 12:56:02 ads.go:68: Success: got all requests from cluster "right"
+2017/02/24 12:56:02 ads.go:72: Got: 1 requests
+2017/02/24 12:56:02 ads.go:92: Gathering data for request "192.168.99.100>2222>repos>sous-server::left" in background.
+2017/02/24 12:56:02 coaxerconfig.go:15: Success: get requests from cluster "right" at attempt 1
 bash-3.2$ unset SOUS_SERVER
 bash-3.2$ unset SOUS_STATE_LOCATION
 bash-3.2$ popd

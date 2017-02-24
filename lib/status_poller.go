@@ -377,7 +377,11 @@ func (sub *subPoller) serverIntent() *Deployment {
 	Log.Debug.Printf("Filtering with %q", sub.locationFilter)
 	dep, exactlyOne := sub.Deployments.Single(sub.locationFilter.FilterDeployment)
 	if !exactlyOne {
-		Log.Debug.Printf("With %s we didn't match exactly one deployment.", sub.locationFilter)
+		filtered := sub.Deployments.FilteredSnapshot(sub.locationFilter.FilterDeployment)
+		Log.Debug.Printf("With %s we matched %d deployments, need exactly one.", sub.locationFilter, len(filtered))
+		for n, errd := range filtered {
+			Log.Vomit.Printf("  Found: %s %#v", n, errd)
+		}
 		return nil
 	}
 	Log.Vomit.Printf("Matching deployment: %#v", dep)

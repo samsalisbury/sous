@@ -129,7 +129,7 @@ func buildShell(name string, t *testing.T) *shelltest.ShellTest {
 			}))
 
 	shell.WriteTo("../doc/shellexamples")
-	//shell.DebugPrefix("shell") //useful especially if test timeout interrupts
+	shell.DebugPrefix("shell") //useful especially if test timeout interrupts
 
 	return shell
 }
@@ -144,6 +144,7 @@ func TestShellLevelIntegration(t *testing.T) {
 	}
 
 	preconditions := shell.Block("Preconditions for CLI integration tests", `
+	date
 	if [ -n "$GOROOT" ]; then
 		mkdir -p $GOROOT
 	fi
@@ -296,7 +297,8 @@ func TestShellLevelIntegration(t *testing.T) {
 	git push --tags
 	sous init
 	sous build
-	sous deploy -cluster left
+	date
+	sous deploy -d -v -cluster left
 	`, defaultCheck)
 
 	//check :=

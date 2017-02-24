@@ -1,3 +1,4 @@
+date
 if [ -n "$GOROOT" ]; then
 	mkdir -p $GOROOT
 fi
