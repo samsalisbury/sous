@@ -298,6 +298,7 @@ func newLogSet(v *config.Verbosity, err ErrWriter) *sous.LogSet { // XXX tempora
 	//sous.Log.Warn.Println("Normal output enabled")
 	sous.Log.Vomit.Println("Verbose debugging enabled")
 	sous.Log.Debug.Println("Regular debugging enabled")
+	sous.Log.Vomit.Printf("Main logset: %#v", &sous.Log)
 	return &sous.Log
 }
 

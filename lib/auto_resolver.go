@@ -164,7 +164,7 @@ func (ar *AutoResolver) resolveOnce(ac announceChannel) {
 		return
 	}
 	ar.GDM, err = state.Deployments()
-	ar.LogSet.Debug.Printf("Reading GDM from state: err: %v", err)
+	ar.LogSet.Debug.Printf("Reading GDM from state: err: %v, deployment count: %d", err, ar.GDM.Len())
 
 	if err != nil {
 		ac <- err
