@@ -85,22 +85,16 @@ func (d *DiffChans) Close() {
 
 // Diff computes the differences between two sets of Deployments
 func (d DeployStates) Diff(other Deployments) DiffChans {
-	difr := newStateDiffer(d)
-	go func(d *differ, o Deployments) {
-		d.diff(o)
-	}(difr, other)
-
-	return difr.DiffChans
+	differ := newStateDiffer(d)
+	go differ.diff(other)
+	return differ.DiffChans
 }
 
 // Diff computes the differences between two sets of Deployments
 func (d Deployments) Diff(other Deployments) DiffChans {
-	difr := newDiffer(d)
-	go func(d *differ, o Deployments) {
-		d.diff(o)
-	}(difr, other)
-
-	return difr.DiffChans
+	differ := newDiffer(d)
+	go differ.diff(other)
+	return differ.DiffChans
 }
 
 func newStateDiffer(intended DeployStates) *differ {
