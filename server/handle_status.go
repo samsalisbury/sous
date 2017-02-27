@@ -20,8 +20,13 @@ type (
 	}
 
 	statusData struct {
+		// Deployments is a filtered GDM.
 		Deployments           []*sous.Deployment
 		Completed, InProgress *sous.ResolveStatus
+		// DeployStates is a filtered ADS.
+		// TODO: Change this struct to make the difference between Deployments
+		// and DeployStates more obvious. E.g. Deployments struct { Intended, Actual DeployStates }.
+		DeployStates map[string]*sous.DeployState
 	}
 )
 
@@ -40,5 +45,11 @@ func (h *StatusHandler) Exchange() (interface{}, int) {
 		status.Deployments = append(status.Deployments, d)
 	}
 	status.Completed, status.InProgress = h.AutoResolver.Statuses()
+	deployStates := h.AutoResolver.DeployStatesBeforeCurrentRectify().Snapshot()
+	status.DeployStates = make(map[string]*sous.DeployState, len(deployStates))
+	for did, deployState := range deployStates {
+		status.DeployStates[did.String()] = deployState
+	}
+
 	return status, http.StatusOK
 }

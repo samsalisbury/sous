@@ -44,3 +44,7 @@ func MustParseDeployID(s string) DeployID {
 	}
 	return did
 }
+
+func (did DeployID) String() string {
+	return fmt.Sprintf("%s:%s", did.ManifestID, did.Cluster)
+}
