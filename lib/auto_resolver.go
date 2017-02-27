@@ -25,8 +25,9 @@ type (
 		*LogSet
 		listeners []autoResolveListener
 		sync.RWMutex
-		completed, inProgress *ResolveStatus
-		currentRecorder       *ResolveRecorder
+		completed, inProgress            *ResolveStatus
+		currentRecorder                  *ResolveRecorder
+		deployStatesBeforeCurrentRectify DeployStates
 	}
 )
 
@@ -114,6 +115,13 @@ func (ar *AutoResolver) Statuses() (completed, inProgress *ResolveStatus) {
 	return ar.completed, ar.inProgress
 }
 
+// DeployStatesBeforeCurrentRectify returns the result of the current recorder's DeployStatesBeforeRectify().
+func (ar *AutoResolver) DeployStatesBeforeCurrentRectify() DeployStates {
+	ar.RLock()
+	defer ar.RUnlock()
+	return ar.deployStatesBeforeCurrentRectify
+}
+
 func loopTilDone(f func(), done TriggerChannel) {
 	for {
 		select {
@@ -177,6 +185,10 @@ func (ar *AutoResolver) resolveOnce(ac announceChannel) {
 	})
 	defer ar.write(func() {
 		ar.currentRecorder = nil
+	})
+	ar.write(func() {
+		// Note: this blocks until the ADS collection is complete.
+		ar.deployStatesBeforeCurrentRectify = ar.currentRecorder.DeployStatesBeforeRectify()
 	})
 	ac <- ar.currentRecorder.Wait()
 	ar.write(func() {
