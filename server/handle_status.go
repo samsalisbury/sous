@@ -31,9 +31,6 @@ func (*StatusResource) Get() restful.Exchanger { return &StatusHandler{} }
 // Exchange implements the Handler interface.
 func (h *StatusHandler) Exchange() (interface{}, int) {
 	status := statusData{}
-	if h.Log == nil {
-		panic("nil Log")
-	}
 	h.Log.Vomit.Printf("AutoResolver's GDM: length %d", h.AutoResolver.GDM.Len())
 	for _, d := range h.AutoResolver.GDM.Snapshot() {
 		h.Log.Vomit.Printf("  AutoResolver's GDM: %#v", d)

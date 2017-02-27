@@ -1,6 +1,8 @@
 package server
 
 import (
+	"log"
+	"os"
 	"testing"
 
 	"github.com/nyarly/testify/assert"
@@ -13,6 +15,9 @@ func TestHandlesStatusGet(t *testing.T) {
 	th := &StatusHandler{
 		AutoResolver: &sous.AutoResolver{
 			GDM: sous.NewDeployments(),
+		},
+		Log: &sous.LogSet{
+			Vomit: log.New(os.Stderr, "", log.LstdFlags),
 		},
 	}
 	data, status := th.Exchange()
