@@ -122,7 +122,7 @@ func (rr *ResolveRecorder) setDeployStatesBeforeRectify(ds DeployStates) {
 	})
 }
 
-// deployStatesBeforeRectify returns the deploy states seen before rectify was
+// DeployStatesBeforeRectify returns the deploy states seen before rectify was
 // run. The DeployStates returned is filtered according to specified clusters.
 // It is equivalent to a partial ADS.
 //
