@@ -21,7 +21,7 @@ type DeployHistoryBuilder struct {
 func newDeploymentHistoryBuilder(rc *requestContext, deployID string) *DeployHistoryBuilder {
 	promise := c.Coax(rc.Context, func() (interface{}, error) {
 		return maybeRetryable(rc.Client.GetDeploy(rc.RequestID, deployID))
-	}, "get deployment %q", deployID)
+	}, "get deployment %q from request %q", deployID, rc.RequestID)
 
 	return &DeployHistoryBuilder{
 		requestContext: rc,
