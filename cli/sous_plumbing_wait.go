@@ -14,6 +14,7 @@ import (
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
 	"github.com/samsalisbury/coaxer"
+	"github.com/samsalisbury/semv"
 )
 
 // SousPlumbingWait is a command that waits for a certain condition to be met
@@ -56,6 +57,10 @@ func (spw *SousPlumbingWait) Execute(args []string) cmdr.Result {
 	if spw.DeployFilterFlags.Tag == "" {
 		return cmdr.UsageErrorf("Please specify -tag flag.")
 	}
+	version, err := semv.Parse(spw.DeployFilterFlags.Tag)
+	if err != nil {
+		return cmdr.UsageErrorf("cannot parse tag %q as semver: %s", spw.DeployFilterFlags.Tag, err)
+	}
 
 	server := spw.Config.Server
 	if server == "" {
@@ -69,17 +74,15 @@ func (spw *SousPlumbingWait) Execute(args []string) cmdr.Result {
 		// It if it succeeded with the expected version, return exit code 0.
 		// If it is succeeded with not the expected version, keep trying until
 		// -timeout is reached.
-		err := spw.pollDeployState(timeout, deployID, spw.DeployFilterFlags.Tag)
+		err := spw.pollDeployState(timeout, deployID, version)
 		if err == nil {
-			break
+			return cmdr.Success()
 		}
 		log.Printf("Waiting, not done because: %s", err)
 	}
-
-	return cmdr.Success()
 }
 
-func (spw *SousPlumbingWait) pollDeployState(timeout time.Duration, deployID sous.DeployID, version string) error {
+func (spw *SousPlumbingWait) pollDeployState(timeout time.Duration, deployID sous.DeployID, version semv.Version) error {
 	c := coaxer.NewCoaxer()
 
 	result := c.Coax(context.TODO(), func() (interface{}, error) {
@@ -93,6 +96,11 @@ func (spw *SousPlumbingWait) pollDeployState(timeout time.Duration, deployID sou
 	ds, ok := result.Value().(sous.DeployState)
 	if !ok {
 		return fmt.Errorf("programmer error, got a %T, want a sous.DeployStates", result.Value())
+	}
+
+	deployedVersion := ds.Deployment.SourceID.Version
+	if !deployedVersion.Equals(version) {
+		return fmt.Errorf("version %q still deployed, awaiting %q", deployedVersion, version)
 	}
 
 	if ds.Status != sous.DeployStatusSucceeded {
