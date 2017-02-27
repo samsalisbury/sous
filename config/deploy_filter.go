@@ -21,6 +21,32 @@ type DeployFilterFlags struct {
 	All      bool
 }
 
+// SpecificDeployID returns a deploy ID and true if these deploy filter flags
+// single out a single deploy ID, else a zeor deploy ID and false.
+//
+// Specifically, if the flags include a specific Repo and Cluster, you'll get a
+// deploy id and true, otherwise false.
+func (f *DeployFilterFlags) SpecificDeployID() (sous.DeployID, bool) {
+	var did sous.DeployID
+	if f.Repo == "" || f.Repo == "*" {
+		return did, false
+	}
+	if f.Cluster == "" || f.Cluster == "*" {
+		return did, false
+	}
+
+	return sous.DeployID{
+		ManifestID: sous.ManifestID{
+			Source: sous.SourceLocation{
+				Repo: f.Repo,
+				Dir:  f.Offset,
+			},
+			Flavor: f.Flavor,
+		},
+		Cluster: f.Cluster,
+	}, true
+}
+
 func (f *DeployFilterFlags) BuildFilter(parseSL func(string) (sous.SourceLocation, error)) (*sous.ResolveFilter, error) {
 	rf := &sous.ResolveFilter{}
 
