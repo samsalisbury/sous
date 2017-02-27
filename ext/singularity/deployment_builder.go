@@ -19,7 +19,7 @@ type (
 		deploy    sDeploy
 		request   sRequest
 		req       SingReq
-		registry  sous.Registry
+		registry  sous.ImageLabeller
 	}
 
 	canRetryRequest struct {
@@ -68,7 +68,7 @@ func (db *deploymentBuilder) isRetryable(err error) bool {
 
 // BuildDeployment does all the work to collect the data for a Deployment
 // from Singularity based on the initial SingularityRequest.
-func BuildDeployment(reg sous.Registry, clusters sous.Clusters, req SingReq) (sous.DeployState, error) {
+func BuildDeployment(reg sous.ImageLabeller, clusters sous.Clusters, req SingReq) (sous.DeployState, error) {
 	Log.Vomit.Printf("%#v", req.ReqParent)
 	db := deploymentBuilder{registry: reg, clusters: clusters, req: req}
 
@@ -271,7 +271,7 @@ func (db *deploymentBuilder) unpackDeployConfig() error {
 func (db *deploymentBuilder) determineManifestKind() error {
 	switch db.request.RequestType {
 	default:
-		return fmt.Errorf("Unrecognized response type returned by Singularity: %v", db.request.RequestType)
+		return fmt.Errorf("Unrecognized request type returned by Singularity: %v", db.request.RequestType)
 	case dtos.SingularityRequestRequestTypeSERVICE:
 		db.Target.Kind = sous.ManifestKindService
 	case dtos.SingularityRequestRequestTypeWORKER:

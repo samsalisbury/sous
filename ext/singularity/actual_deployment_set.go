@@ -26,10 +26,14 @@ type (
 	sRequest   *dtos.SingularityRequest
 	sDepMarker *dtos.SingularityDeployMarker
 
+	SingClient interface {
+		GetDeploy(requestId string, deployId string) (*dtos.SingularityDeployHistory, error)
+	}
+
 	// SingReq captures a request made to singularity with its initial response
 	SingReq struct {
 		SourceURL string
-		Sing      *singularity.Client
+		Sing      SingClient
 		ReqParent *dtos.SingularityRequestParent
 	}
 
