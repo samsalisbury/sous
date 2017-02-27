@@ -17,7 +17,9 @@ type (
 
 	// ResolveRecorder represents the status of a resolve run.
 	ResolveRecorder struct {
-		status *ResolveStatus
+		status                       *ResolveStatus
+		deployStatesBeforeRectify    DeployStates
+		gotDeployStatesBeforeRectify chan struct{}
 		// Log is a channel of statuses of individual diff resolutions.
 		Log chan DiffResolution
 		// finished may be closed with no error, or closed after a single
@@ -63,6 +65,7 @@ func NewResolveRecorder(f func(*ResolveRecorder)) *ResolveRecorder {
 			Log:  []DiffResolution{},
 			Errs: ResolveErrors{Causes: []ErrorWrapper{}},
 		},
+		gotDeployStatesBeforeRectify: make(chan struct{}),
 		Log:      make(chan DiffResolution, 1e6),
 		finished: make(chan struct{}),
 	}
@@ -110,6 +113,23 @@ func (rr *ResolveRecorder) CurrentStatus() (rs ResolveStatus) {
 		copy(rs.Errs.Causes, rr.status.Errs.Causes)
 	})
 	return
+}
+
+func (rr *ResolveRecorder) setDeployStatesBeforeRectify(ds DeployStates) {
+	rr.write(func() {
+		rr.deployStatesBeforeRectify = ds
+		close(rr.gotDeployStatesBeforeRectify)
+	})
+}
+
+// deployStatesBeforeRectify returns the deploy states seen before rectify was
+// run. The DeployStates returned is filtered according to specified clusters.
+// It is equivalent to a partial ADS.
+//
+// Warning: This func will block until the deploy states have been set.
+func (rr *ResolveRecorder) DeployStatesBeforeRectify() DeployStates {
+	<-rr.gotDeployStatesBeforeRectify
+	return rr.deployStatesBeforeRectify
 }
 
 // Done returns true if the resolution has finished. Otherwise it returns false.

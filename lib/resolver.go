@@ -84,6 +84,7 @@ func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveRecord
 
 		recorder.performGuaranteedPhase("filtering running deployments", func() {
 			actual = actual.Filter(r.FilterDeployStates)
+			recorder.setDeployStatesBeforeRectify(actual)
 		})
 
 		var diffs DiffChans

@@ -25,8 +25,8 @@ type (
 		*LogSet
 		listeners []autoResolveListener
 		sync.RWMutex
-		stableStatus, liveStatus *ResolveStatus
-		currentRecorder          *ResolveRecorder
+		completed, inProgress *ResolveStatus
+		currentRecorder       *ResolveRecorder
 	}
 )
 
@@ -97,20 +97,21 @@ func (ar *AutoResolver) updateStatus() {
 	}
 	ar.write(func() {
 		ls := ar.currentRecorder.CurrentStatus()
-		Log.Debug.Printf("Recording live status from %p: %v", ar, ls)
-		ar.liveStatus = &ls
+		Log.Debug.Printf("Recording in-progress status from %p: %v", ar, ls)
+		ar.inProgress = &ls
 	})
 }
 
 // Statuses returns the current status of the resolution underway.
-// The returned statuses are "stable" - the unchanging, complete status of the previous resolve
-// and "live" - the current status of the running resolution
-func (ar *AutoResolver) Statuses() (stable, live *ResolveStatus) {
+// The returned statuses are "completed" - the unchanging, complete status of
+// the previous resolve and "inProgress" - the current status of the running
+// resolution.
+func (ar *AutoResolver) Statuses() (completed, inProgress *ResolveStatus) {
 	ar.updateStatus()
 	ar.RLock()
 	defer ar.RUnlock()
-	Log.Debug.Printf("Reporting statuses from %p: %v %v", ar, ar.stableStatus, ar.liveStatus)
-	return ar.stableStatus, ar.liveStatus
+	Log.Debug.Printf("Reporting statuses from %p: %v %v", ar, ar.completed, ar.inProgress)
+	return ar.completed, ar.inProgress
 }
 
 func loopTilDone(f func(), done TriggerChannel) {
@@ -180,8 +181,8 @@ func (ar *AutoResolver) resolveOnce(ac announceChannel) {
 	ac <- ar.currentRecorder.Wait()
 	ar.write(func() {
 		ss := ar.currentRecorder.CurrentStatus()
-		Log.Debug.Printf("Recording stable status from %p: %v", ar, ss)
-		ar.stableStatus = &ss
+		Log.Debug.Printf("Recording completed status from %p: %v", ar, ss)
+		ar.completed = &ss
 	})
 	ar.Statuses() // XXX this is debugging
 	ar.LogSet.Debug.Print("Completed resolve")
