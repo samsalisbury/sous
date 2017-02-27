@@ -14,9 +14,9 @@ type (
 
 	// StatusHandler handles requests for status.
 	StatusHandler struct {
-		AutoResolver *sous.AutoResolver
-		*sous.ResolveFilter
-		*sous.LogSet
+		AutoResolver  *sous.AutoResolver
+		ResolveFilter *sous.ResolveFilter
+		Log           *sous.LogSet
 	}
 
 	statusData struct {
@@ -31,12 +31,15 @@ func (*StatusResource) Get() restful.Exchanger { return &StatusHandler{} }
 // Exchange implements the Handler interface.
 func (h *StatusHandler) Exchange() (interface{}, int) {
 	status := statusData{}
-	h.Vomit.Printf("AutoResolver's GDM: length %d", h.AutoResolver.GDM.Len())
+	if h.Log == nil {
+		panic("nil Log")
+	}
+	h.Log.Vomit.Printf("AutoResolver's GDM: length %d", h.AutoResolver.GDM.Len())
 	for _, d := range h.AutoResolver.GDM.Snapshot() {
-		h.Vomit.Printf("  AutoResolver's GDM: %#v", d)
+		h.Log.Vomit.Printf("  AutoResolver's GDM: %#v", d)
 	}
 	for _, d := range h.AutoResolver.GDM.Filter(h.ResolveFilter.FilterDeployment).Snapshot() {
-		h.Vomit.Printf("Status filtered intended deployment: %#v", d)
+		h.Log.Vomit.Printf("Status filtered intended deployment: %#v", d)
 		status.Deployments = append(status.Deployments, d)
 	}
 	status.Completed, status.InProgress = h.AutoResolver.Statuses()
