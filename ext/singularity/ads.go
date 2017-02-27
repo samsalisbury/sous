@@ -46,15 +46,6 @@ func (ab *adsBuilder) DeployStates() (sous.DeployStates, error) {
 		// TODO: Make sous.Clusters a slice to avoid this double-entry record keeping.
 		cluster.Name = clusterName
 		promises[cluster.Name] = c.Coax(context.TODO(), func() (interface{}, error) {
-			if ab.ClientFactory == nil {
-				panic("CF")
-			}
-			if ab.Clusters == nil {
-				panic("CLUSTERS")
-			}
-			if cluster == nil {
-				panic("CLUSTER")
-			}
 			client := ab.ClientFactory(ab.Clusters[cluster.Name])
 			return maybeRetryable(client.GetRequests())
 		}, "get requests from cluster %q", cluster.Name)
