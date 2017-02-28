@@ -237,7 +237,7 @@ func (sp *StatusPoller) poll(subs []*subPoller) ResolveState {
 				}
 			}
 			totalStatus = max
-			if totalStatus >= ResolveComplete {
+			if totalStatus >= ResolveTERMINALS {
 				close(done)
 				return
 			}
@@ -352,8 +352,9 @@ func (sub *subPoller) computeState(srvIntent *Deployment, stable, current *DiffR
 		}
 		// Other errors are unlikely to clear by themselves. In this case, log the
 		// error for operator action, and consider this subpoller done as failed.
-		Log.Warn.Printf("Cluster %s: status polling terminated as failed because: %s ", sub.ClusterName, current.Error)
-		Log.Debug.Printf("%+v", current.Error) // error backtrace
+		Log.Vomit.Printf("%#v", current)
+		Log.Vomit.Printf("%#v", current.Error)
+		Log.Warn.Printf("Cluster %s: status polling terminated as failed because: %s ", sub.ClusterName, current.Error.String)
 		return ResolveFailed
 	}
 
