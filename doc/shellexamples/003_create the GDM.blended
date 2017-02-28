@@ -62,7 +62,7 @@ bash-3.2$ pushd gdm
 bash-3.2$ cat ~/.config/git/config >> .git/config # Eh?
 bash-3.2$ git add defs.yaml
 bash-3.2$ git commit -am "Adding defs.yaml"
-[master (root-commit) b625021] Adding defs.yaml
+[master (root-commit) cbaf783] Adding defs.yaml
  1 file changed, 52 insertions(+)
  create mode 100644 defs.yaml
 bash-3.2$ git push

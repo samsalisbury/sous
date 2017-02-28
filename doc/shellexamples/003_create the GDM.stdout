@@ -51,7 +51,7 @@ Resources:
   Type: Integer
 Metadata: []
 /tmp/sous-work/gdm /tmp/sous-work
-[master (root-commit) b625021] Adding defs.yaml
+[master (root-commit) cbaf783] Adding defs.yaml
  1 file changed, 52 insertions(+)
  create mode 100644 defs.yaml
 /tmp/sous-work

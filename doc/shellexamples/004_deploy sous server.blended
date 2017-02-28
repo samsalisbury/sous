@@ -150,7 +150,7 @@ bash-3.2$ ssh-keyscan -p 2222 192.168.99.100 > known_hosts
 bash-3.2$ 
 bash-3.2$ git add key_sous@example.com known_hosts sous
 bash-3.2$ git commit -am "Adding ephemeral files"
-[master b33f35e] Adding ephemeral files
+[master 50c34fc] Adding ephemeral files
  3 files changed, 30 insertions(+)
  create mode 100644 key_sous@example.com
  create mode 100644 known_hosts
@@ -159,34 +159,153 @@ bash-3.2$ git tag -am "0.0.2" 0.0.2
 bash-3.2$ git push
 Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
 To ssh://192.168.99.100:2222/repos/sous-server
-   bdfdd3f..b33f35e  master -> master
+   bdfdd3f..50c34fc  master -> master
 bash-3.2$ git push --tags
 Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
 To ssh://192.168.99.100:2222/repos/sous-server
  * [new tag]         0.0.2 -> 0.0.2
 bash-3.2$ 
 bash-3.2$ sous build
-  (Sous)> running docker build -t 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2 -t 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:b33f35e28765a75b117b483e21aafa9941004fd7 -
+  (Sous)> running docker build .
+  (Sous)>   Sending build context to Docker daemon 31.42 MB
+  (Sous)>   Step 1/10 : FROM golang:1.7
+  (Sous)>    ---> 7afbc2b03b9e
+  (Sous)>   Step 2/10 : COPY ./key_sous@example.com /root/.ssh/id_rsa
+  (Sous)>    ---> Using cache
+  (Sous)>    ---> e275d60882b0
+  (Sous)>   Step 3/10 : COPY ./known_hosts /root/.ssh/known_hosts
+  (Sous)>    ---> Using cache
+  (Sous)>    ---> 91344c9d7c3e
+  (Sous)>   Step 4/10 : COPY ./docker.crt /docker.crt
+  (Sous)>    ---> Using cache
+  (Sous)>    ---> 3ee36a214426
+  (Sous)>   Step 5/10 : RUN chmod -R og-rwx /root/.ssh
+  (Sous)>    ---> Using cache
+  (Sous)>    ---> 5b353a0a3205
+  (Sous)>   Step 6/10 : COPY ./sous /go/bin/sous
+  (Sous)>    ---> dbc0bc794c32
+  (Sous)>   Removing intermediate container 14649248e3c7
+  (Sous)>   Step 7/10 : COPY main.go /go/src/github.com/opentable/sous-server/
+  (Sous)>    ---> 969c9480930b
+  (Sous)>   Removing intermediate container 8a914d06ef90
+  (Sous)>   Step 8/10 : WORKDIR /go/src/github.com/opentable/sous-server
+  (Sous)>    ---> a53797276b42
+  (Sous)>   Removing intermediate container d4f648e8e0f4
+  (Sous)>   Step 9/10 : RUN go install -v
+  (Sous)>    ---> Running in dd0b2f58094c
+  (Sous)>   [91mgithub.com/opentable/sous-server
+  (Sous)>   [0m ---> bf67ddcdeb56
+  (Sous)>   Removing intermediate container dd0b2f58094c
+  (Sous)>   Step 10/10 : CMD /go/bin/sous-server
+  (Sous)>    ---> Running in 95f2bb4c4e8a
+  (Sous)>    ---> 9fe21760c85d
+  (Sous)>   Removing intermediate container 95f2bb4c4e8a
+  (Sous)>   Successfully built 9fe21760c85d
+  (Sous)> running docker build -t 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2 -t 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:50c34fc12b32dd81733ee1461e6a2401043ed12a -
+  (Sous)>   Sending build context to Docker daemon 2.048 kB
+  (Sous)>   Step 1/2 : FROM 9fe21760c85d
+  (Sous)>    ---> 9fe21760c85d
+  (Sous)>   Step 2/2 : LABEL com.opentable.sous.repo_offset "" com.opentable.sous.repo_url "192.168.99.100/2222/repos/sous-server" com.opentable.sous.revision "50c34fc12b32dd81733ee1461e6a2401043ed12a" com.opentable.sous.version "0.0.2" com.opentable.sous.advisories "dirty workspace"
+  (Sous)>    ---> Running in 4e39d3a59763
+  (Sous)>    ---> 3d71aa3df078
+  (Sous)>   Removing intermediate container 4e39d3a59763
+  (Sous)>   Successfully built 3d71aa3df078
 warn: build may not be deployable in all clusters due to advisories:
   dirty workspace
   (Sous)> running docker push 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2
-  (Sous)> running docker push 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:b33f35e28765a75b117b483e21aafa9941004fd7
-  (Sous)> [recording "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2" as the docker name for "192.168.99.100/2222/repos/sous-server,0.0.2+b33f35e28765a75b117b483e21aafa9941004fd7"]
+  (Sous)>   The push refers to a repository [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server]
+  (Sous)>   6f59306e8e73: Preparing
+  (Sous)>   5957e45a79af: Preparing
+  (Sous)>   957f8c2e7423: Preparing
+  (Sous)>   7f726c6a4417: Preparing
+  (Sous)>   db23507f875e: Preparing
+  (Sous)>   63db1b3190bd: Preparing
+  (Sous)>   269c96c6b1a0: Preparing
+  (Sous)>   8eb1c995f8b9: Preparing
+  (Sous)>   677062ced7d3: Preparing
+  (Sous)>   d23a95ba38e5: Preparing
+  (Sous)>   f4d2be23d596: Preparing
+  (Sous)>   30339f20ced0: Preparing
+  (Sous)>   0eb22bfb707d: Preparing
+  (Sous)>   a2ae92ffcd29: Preparing
+  (Sous)>   d23a95ba38e5: Waiting
+  (Sous)>   f4d2be23d596: Waiting
+  (Sous)>   30339f20ced0: Waiting
+  (Sous)>   0eb22bfb707d: Waiting
+  (Sous)>   63db1b3190bd: Waiting
+  (Sous)>   269c96c6b1a0: Waiting
+  (Sous)>   8eb1c995f8b9: Waiting
+  (Sous)>   677062ced7d3: Waiting
+  (Sous)>   a2ae92ffcd29: Waiting
+  (Sous)>   db23507f875e: Layer already exists
+  (Sous)>   7f726c6a4417: Layer already exists
+  (Sous)>   269c96c6b1a0: Layer already exists
+  (Sous)>   63db1b3190bd: Layer already exists
+  (Sous)>   8eb1c995f8b9: Layer already exists
+  (Sous)>   677062ced7d3: Layer already exists
+  (Sous)>   5957e45a79af: Pushed
+  (Sous)>   d23a95ba38e5: Layer already exists
+  (Sous)>   f4d2be23d596: Layer already exists
+  (Sous)>   30339f20ced0: Layer already exists
+  (Sous)>   0eb22bfb707d: Layer already exists
+  (Sous)>   a2ae92ffcd29: Layer already exists
+  (Sous)>   6f59306e8e73: Pushed
+  (Sous)>   957f8c2e7423: Pushed
+  (Sous)>   0.0.2: digest: sha256:e293d90481008a4b18bd720fbe6f2c808edd91832c4ce36178b652b27258ee83 size: 3252
+  (Sous)> running docker push 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:50c34fc12b32dd81733ee1461e6a2401043ed12a
+  (Sous)>   The push refers to a repository [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server]
+  (Sous)>   6f59306e8e73: Preparing
+  (Sous)>   5957e45a79af: Preparing
+  (Sous)>   957f8c2e7423: Preparing
+  (Sous)>   7f726c6a4417: Preparing
+  (Sous)>   db23507f875e: Preparing
+  (Sous)>   63db1b3190bd: Preparing
+  (Sous)>   269c96c6b1a0: Preparing
+  (Sous)>   8eb1c995f8b9: Preparing
+  (Sous)>   677062ced7d3: Preparing
+  (Sous)>   d23a95ba38e5: Preparing
+  (Sous)>   f4d2be23d596: Preparing
+  (Sous)>   30339f20ced0: Preparing
+  (Sous)>   0eb22bfb707d: Preparing
+  (Sous)>   a2ae92ffcd29: Preparing
+  (Sous)>   63db1b3190bd: Waiting
+  (Sous)>   269c96c6b1a0: Waiting
+  (Sous)>   8eb1c995f8b9: Waiting
+  (Sous)>   677062ced7d3: Waiting
+  (Sous)>   d23a95ba38e5: Waiting
+  (Sous)>   f4d2be23d596: Waiting
+  (Sous)>   30339f20ced0: Waiting
+  (Sous)>   7f726c6a4417: Layer already exists
+  (Sous)>   5957e45a79af: Layer already exists
+  (Sous)>   6f59306e8e73: Layer already exists
+  (Sous)>   957f8c2e7423: Layer already exists
+  (Sous)>   db23507f875e: Layer already exists
+  (Sous)>   63db1b3190bd: Layer already exists
+  (Sous)>   269c96c6b1a0: Layer already exists
+  (Sous)>   d23a95ba38e5: Layer already exists
+  (Sous)>   677062ced7d3: Layer already exists
+  (Sous)>   8eb1c995f8b9: Layer already exists
+  (Sous)>   f4d2be23d596: Layer already exists
+  (Sous)>   0eb22bfb707d: Layer already exists
+  (Sous)>   a2ae92ffcd29: Layer already exists
+  (Sous)>   30339f20ced0: Layer already exists
+  (Sous)>   50c34fc12b32dd81733ee1461e6a2401043ed12a: digest: sha256:e293d90481008a4b18bd720fbe6f2c808edd91832c4ce36178b652b27258ee83 size: 3252
+  (Sous)> [recording "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2" as the docker name for "192.168.99.100/2222/repos/sous-server,0.0.2+50c34fc12b32dd81733ee1461e6a2401043ed12a"]
 Built: "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2"
 Advisories:
   dirty workspace
-Elapsed: 5.784082561s
+Elapsed: 4.695758133s
 bash-3.2$ sous deploy -cluster left # We expect to see 'Sous is running ... i<ter left # We expect to see 'Sous is running ... in                          workstation mode' here:
 warn: No server set, Sous is running in server or workstation mode.
 warn: Configure a server like this: sous config server http://some.sous.server
 warn: Using local state stored at /tmp/sous-work/gdm
-
+Updated global manifest.
 
 bash-3.2$ sous deploy -cluster right
 warn: No server set, Sous is running in server or workstation mode.
 warn: Configure a server like this: sous config server http://some.sous.server
 warn: Using local state stored at /tmp/sous-work/gdm
-
+Updated global manifest.
 
 bash-3.2$ unset SOUS_SERVER
 bash-3.2$ unset SOUS_STATE_LOCATION
