@@ -33,6 +33,10 @@ type (
 		Cause error
 	}
 
+	// A FailedStatusError reports that the the deploy has reported as failed on
+	// singularity
+	FailedStatusError struct{} // XXX maybe handy to have the root Singularity non-SUCCEEDED status?
+
 	// An UnacceptableAdvisory reports that there is an advisory on an image
 	// which hasn't been whitelisted on the target cluster
 	UnacceptableAdvisory struct {
@@ -116,6 +120,11 @@ func IsTransientResolveError(err error) bool {
 			return true
 		}
 
+	case *FailedStatusError:
+		// Anything but SUCCEEDED on Singularity is a failure for this deploy.
+		// There's no expectation that it will self correct. In the future, we
+		// should do a automatic rollback.
+		return false
 	case *UnacceptableAdvisory:
 		// UnacceptableAdvisory is excluded, since this requires operator
 		// intervention: either the image needs to be rebuilt clean, or the cluster
@@ -150,6 +159,10 @@ func (e *MissingImageNameError) Error() string {
 
 func (e *UnacceptableAdvisory) Error() string {
 	return fmt.Sprintf("Advisory unacceptable on image: %s for %v", e.Quality.Name, e.SourceID)
+}
+
+func (e *FailedStatusError) Error() string {
+	return "Deploy failed on Singularity."
 }
 
 func (e *CreateError) Error() string {

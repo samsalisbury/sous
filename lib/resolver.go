@@ -41,17 +41,17 @@ func (r *Resolver) rectify(dcs *DeployableChans, results chan DiffResolution) {
 
 func (r *Resolver) reportStable(stable <-chan *Deployable, results chan<- DiffResolution) {
 	for dep := range stable {
-		var desc ResolutionType
-		switch dep.Status {
-		default:
-			desc = StableDiff
-		case DeployStatusPending:
-			desc = ComingDiff
-		}
-		results <- DiffResolution{
+		rez := DiffResolution{
 			DeployID: dep.ID(),
-			Desc:     desc,
+			Desc:     StableDiff,
 		}
+		if dep.Status == DeployStatusPending {
+			rez.Desc = ComingDiff
+		}
+		if dep.Status == DeployStatusFailed {
+			rez.Error = WrapResolveError(&FailedStatusError{})
+		}
+		results <- rez
 	}
 }
 

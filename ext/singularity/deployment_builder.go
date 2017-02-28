@@ -164,7 +164,8 @@ func (db *deploymentBuilder) retrieveDeploy() error {
 
 func (db *deploymentBuilder) determineStatus() error {
 	if db.history.DeployResult == nil {
-		return malformedResponse{"Singularity deploy history included no DeployResult"}
+		db.Target.Status = sous.DeployStatusPending
+		return nil
 	}
 	if db.history.DeployResult.DeployState != dtos.SingularityDeployResultDeployStateSUCCEEDED {
 		db.Target.Status = sous.DeployStatusFailed

@@ -23,7 +23,6 @@ type serverSuite struct {
 }
 
 func (suite *serverSuite) SetupTest() {
-	sous.Log.BeChatty()
 	g := graph.TestGraphWithConfig(&bytes.Buffer{}, os.Stdout, os.Stdout,
 		"StateLocation: '../ext/storage/testdata/in'\n")
 	g.Add(&config.Verbosity{})
@@ -32,7 +31,6 @@ func (suite *serverSuite) SetupTest() {
 }
 
 func (suite *serverSuite) TearDownTest() {
-	sous.Log.BeQuiet()
 	suite.server.Close()
 	suite.server = nil
 	suite.url = ""

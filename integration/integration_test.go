@@ -21,6 +21,8 @@ import (
 var imageName string
 
 func TestGetLabels(t *testing.T) {
+	ResetSingularity()
+	defer ResetSingularity()
 	registerLabelledContainers()
 	assert := assert.New(t)
 	cl := docker_registry.NewClient()
@@ -30,7 +32,6 @@ func TestGetLabels(t *testing.T) {
 
 	assert.Nil(err)
 	assert.Contains(labels, docker.DockerRepoLabel)
-	ResetSingularity()
 }
 
 func newInMemoryDB(name string) *sql.DB {
@@ -45,6 +46,8 @@ func newInMemoryDB(name string) *sql.DB {
 }
 
 func TestGetRunningDeploymentSet_testCluster(t *testing.T) {
+	ResetSingularity()
+	defer ResetSingularity()
 	assert := assert.New(t)
 
 	registerLabelledContainers()
@@ -77,10 +80,11 @@ func TestGetRunningDeploymentSet_testCluster(t *testing.T) {
 		}
 	}
 
-	ResetSingularity()
 }
 
 func TestGetRunningDeploymentSet_otherCluster(t *testing.T) {
+	ResetSingularity()
+	defer ResetSingularity()
 	assert := assert.New(t)
 
 	registerLabelledContainers()
@@ -106,10 +110,11 @@ func TestGetRunningDeploymentSet_otherCluster(t *testing.T) {
 		assert.Equal(sous.ManifestKindService, grafana.Kind)
 	}
 
-	ResetSingularity()
 }
 
 func TestGetRunningDeploymentSet_all(t *testing.T) {
+	ResetSingularity()
+	defer ResetSingularity()
 	assert := assert.New(t)
 
 	registerLabelledContainers()
@@ -135,10 +140,11 @@ func TestGetRunningDeploymentSet_all(t *testing.T) {
 		assert.Equal(sous.ManifestKindService, grafana.Kind)
 	}
 
-	ResetSingularity()
 }
 
 func TestMissingImage(t *testing.T) {
+	ResetSingularity()
+	defer ResetSingularity()
 	assert := assert.New(t)
 
 	clusterDefs := sous.Defs{
@@ -186,7 +192,6 @@ func TestMissingImage(t *testing.T) {
 	_, which := deploymentWithRepo(clusters, nc, assert, deployer, repoOne)
 	assert.Equal(which, none, "opentable/one was deployed")
 
-	ResetSingularity()
 }
 
 func TestResolve(t *testing.T) {

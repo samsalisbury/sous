@@ -346,9 +346,6 @@ func TestInvokeWithUnknownFlags(t *testing.T) {
 }
 
 func TestInvokeRectifyWithoutFilterFlags(t *testing.T) {
-	sous.Log.BeChatty()
-	defer sous.Log.BeQuiet()
-
 	assert := assert.New(t)
 	require := require.New(t)
 
