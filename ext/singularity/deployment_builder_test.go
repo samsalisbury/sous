@@ -102,12 +102,6 @@ func TestBuildDeployment_errors(t *testing.T) {
 
 	req.ReqParent.Request.RequestType = dtos.SingularityRequestRequestTypeSERVICE
 	_, err = BuildDeployment(fakeReg, testClusters, req)
-	assert.Error(t, err)
-
-	fakeSing.cannedAnswer.DeployResult = &dtos.SingularityDeployResult{
-		DeployState: dtos.SingularityDeployResultDeployStateSUCCEEDED,
-	}
-	_, err = BuildDeployment(fakeReg, testClusters, req)
 	assert.NoError(t, err)
 }
 

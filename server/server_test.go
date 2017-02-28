@@ -13,7 +13,6 @@ import (
 	"github.com/nyarly/testify/suite"
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
-	sous "github.com/opentable/sous/lib"
 )
 
 type serverSuite struct {
