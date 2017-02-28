@@ -22,6 +22,7 @@ const (
 )
 
 type (
+	sHistory   *dtos.SingularityDeployHistory
 	sDeploy    *dtos.SingularityDeploy
 	sRequest   *dtos.SingularityRequest
 	sDepMarker *dtos.SingularityDeployMarker

@@ -101,7 +101,12 @@ func TestBuildDeployment_errors(t *testing.T) {
 	assert.Error(t, err)
 
 	req.ReqParent.Request.RequestType = dtos.SingularityRequestRequestTypeSERVICE
+	_, err = BuildDeployment(fakeReg, testClusters, req)
+	assert.Error(t, err)
 
+	fakeSing.cannedAnswer.DeployResult = &dtos.SingularityDeployResult{
+		DeployState: dtos.SingularityDeployResultDeployStateSUCCEEDED,
+	}
 	_, err = BuildDeployment(fakeReg, testClusters, req)
 	assert.NoError(t, err)
 }
@@ -129,6 +134,9 @@ func TestBuildDeployment(t *testing.T) {
 
 	fakeSing := &fakeSingClient{
 		cannedAnswer: &dtos.SingularityDeployHistory{
+			DeployResult: &dtos.SingularityDeployResult{
+				DeployState: dtos.SingularityDeployResultDeployStateSUCCEEDED,
+			},
 			Deploy: &dtos.SingularityDeploy{
 				ContainerInfo: &dtos.SingularityContainerInfo{
 					Type:   "DOCKER",
@@ -162,6 +170,73 @@ func TestBuildDeployment(t *testing.T) {
 	assert.NoError(t, err)
 
 	expected := sous.DeployState{Status: sous.DeployStatusActive}
+	expected.ClusterName = "left"
+
+	assert.Equal(t, actual.ClusterName, expected.ClusterName)
+	assert.Equal(t, actual.Status, expected.Status)
+}
+
+func TestBuildDeployment_failed_deploy(t *testing.T) {
+	url := "http://example.com/singularity"
+	testClusters := sous.Clusters{
+		"left":  &sous.Cluster{Name: "left", BaseURL: url},
+		"right": &sous.Cluster{Name: "right", BaseURL: url},
+	}
+
+	req := SingReq{
+		SourceURL: url,
+		ReqParent: &dtos.SingularityRequestParent{
+			RequestDeployState: &dtos.SingularityRequestDeployState{
+				ActiveDeploy: &dtos.SingularityDeployMarker{},
+			},
+			Request: &dtos.SingularityRequest{
+				Id:          "repo_url,repo_offset::left",
+				RequestType: dtos.SingularityRequestRequestTypeSERVICE,
+				Owners:      swaggering.StringList{"jlester@opentable.com"},
+			},
+		},
+	}
+
+	fakeSing := &fakeSingClient{
+		cannedAnswer: &dtos.SingularityDeployHistory{
+			//DEPLOY_RESULT=$(jq -r .deployResult.deployState < $DEPLOY_STATE)
+			//$DEPLOY_RESULT = SUCCEEDED
+			DeployResult: &dtos.SingularityDeployResult{
+				DeployState: dtos.SingularityDeployResultDeployStateFAILED,
+			},
+			Deploy: &dtos.SingularityDeploy{
+				ContainerInfo: &dtos.SingularityContainerInfo{
+					Type:   "DOCKER",
+					Docker: &dtos.SingularityDockerInfo{Image: "image-name"},
+					Volumes: dtos.SingularityVolumeList{
+						&dtos.SingularityVolume{
+							HostPath:      "hostpath",
+							ContainerPath: "containerpath",
+							Mode:          dtos.SingularityVolumeSingularityDockerVolumeModeRW,
+						},
+					},
+				},
+				Resources: &dtos.Resources{},
+			},
+		},
+	}
+
+	req.Sing = fakeSing
+
+	fakeReg := &fakeImageLabeller{
+		cannedAnswer: map[string]string{
+			"com.opentable.sous.repo_url":    "repo_url",
+			"com.opentable.sous.revision":    "revision",
+			"com.opentable.sous.repo_offset": "repo_offset",
+			"com.opentable.sous.version":     "1.2.3",
+		},
+	}
+
+	actual, err := BuildDeployment(fakeReg, testClusters, req)
+
+	assert.NoError(t, err)
+
+	expected := sous.DeployState{Status: sous.DeployStatusFailed}
 	expected.ClusterName = "left"
 
 	assert.Equal(t, actual.ClusterName, expected.ClusterName)

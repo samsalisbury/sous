@@ -16,6 +16,7 @@ type (
 		Target    sous.DeployState
 		imageName string
 		depMarker sDepMarker
+		history   sHistory
 		deploy    sDeploy
 		request   sRequest
 		req       SingReq
@@ -82,6 +83,7 @@ func (db *deploymentBuilder) completeConstruction() error {
 	return firsterr.Returned(
 		db.determineDeployStatus,
 		db.retrieveDeploy,
+		db.determineStatus,
 		db.extractArtifactName,
 		db.retrieveImageLabels,
 		db.assignClusterName,
@@ -150,11 +152,23 @@ func (db *deploymentBuilder) retrieveDeploy() error {
 	}
 	Log.Vomit.Printf("%#v", dh)
 
+	db.history = dh
+
 	db.deploy = dh.Deploy
 	if db.deploy == nil {
 		return malformedResponse{"Singularity deploy history included no deploy"}
 	}
 
+	return nil
+}
+
+func (db *deploymentBuilder) determineStatus() error {
+	if db.history.DeployResult == nil {
+		return malformedResponse{"Singularity deploy history included no DeployResult"}
+	}
+	if db.history.DeployResult.DeployState != dtos.SingularityDeployResultDeployStateSUCCEEDED {
+		db.Target.Status = sous.DeployStatusFailed
+	}
 	return nil
 }
 
