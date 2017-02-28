@@ -27,8 +27,9 @@ type (
 	sRequest   *dtos.SingularityRequest
 	sDepMarker *dtos.SingularityDeployMarker
 
+	// A SingClient provides the interface needed to assemble a deployment.
 	SingClient interface {
-		GetDeploy(requestId string, deployId string) (*dtos.SingularityDeployHistory, error)
+		GetDeploy(requestID string, deployID string) (*dtos.SingularityDeployHistory, error)
 	}
 
 	// SingReq captures a request made to singularity with its initial response

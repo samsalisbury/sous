@@ -1,7 +1,7 @@
 package sous
 
 type (
-	// Labeller can get the image labels for a given imageName
+	// ImageLabeller can get the image labels for a given imageName
 	ImageLabeller interface {
 		//ImageLabels finds the sous (docker) labels for a given image name
 		ImageLabels(imageName string) (labels map[string]string, err error)

@@ -22,7 +22,7 @@ type (
 	}
 )
 
-func (fake *fakeSingClient) GetDeploy(requestId string, deployId string) (*dtos.SingularityDeployHistory, error) {
+func (fake *fakeSingClient) GetDeploy(requestID string, deployID string) (*dtos.SingularityDeployHistory, error) {
 	return fake.cannedAnswer, nil
 }
 
