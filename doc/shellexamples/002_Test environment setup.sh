@@ -1,9 +1,9 @@
 # These steps are required by the Sous integration tests
 # They're analogous to run-of-the-mill workstation maintenance.
 
-cd /Users/jlester/golang/src/github.com/opentable/sous
+cd /Users/ssalisbury/go/src/github.com/opentable/sous
 env
-export SOUS_EXTRA_DOCKER_CA=/Users/jlester/golang/src/github.com/opentable/sous/integration/test-registry/docker-registry/testing.crt
+export SOUS_EXTRA_DOCKER_CA=/Users/ssalisbury/go/src/github.com/opentable/sous/integration/test-registry/docker-registry/testing.crt
 mkdir -p /tmp/sous-work/home/go/{src,bin}
 
 ### This build gives me trouble in tests...

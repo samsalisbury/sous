@@ -1,10 +1,4 @@
-Fri Feb 24 12:55:43 PST 2017
-Cleaning 192.168.99.100%3E2222%3Erepos%3Esous-server::right
-{"id":"192.168.99.100>2222>repos>sous-server::right","requestType":"SERVICE","owners":["test@test.com"],"instances":1}
-Cleaning 192.168.99.100%3E2222%3Erepos%3Esous-demo::left
-{"id":"192.168.99.100>2222>repos>sous-demo::left","requestType":"SERVICE","owners":[],"instances":1}
-Cleaning 192.168.99.100%3E2222%3Erepos%3Esous-server::left
-{"id":"192.168.99.100>2222>repos>sous-server::left","requestType":"SERVICE","owners":["test@test.com"],"instances":1}
+Wed Mar  1 16:30:03 GMT 2017
 All requests cleaned
 sous_linux
 sous_qa_setup

@@ -14,7 +14,7 @@ bash-3.2$ rightport=$(cygnus --env PORT0 http://192.168.99.100:7099/singulari<s
 bash-3.2$ 
 bash-3.2$ serverURL=http://192.168.99.100:$leftport
 bash-3.2$ echo "Determined server url as $serverURL"
-Determined server url as http://192.168.99.100:31183
+Determined server url as http://192.168.99.100:31184
 bash-3.2$ 
 bash-3.2$ until curl -s -I $serverURL; do
 >   sleep 0.1
@@ -22,13 +22,12 @@ bash-3.2$ until curl -s -I $serverURL; do
 HTTP/1.1 404 Not Found
 Content-Type: text/plain; charset=utf-8
 X-Content-Type-Options: nosniff
-Date: Fri, 24 Feb 2017 20:56:07 GMT
+Date: Wed, 01 Mar 2017 16:30:21 GMT
 Content-Length: 19
 
 bash-3.2$ sous config Server "$serverURL"
-set Server to "http://192.168.99.100:31183"
+set Server to "http://192.168.99.100:31184"
 bash-3.2$ echo "Set server URL to: $(sous config Server)"
-Set server URL to: http://192.168.99.100:31183
 bash-3.2$ 
 bash-3.2$ ETAG=$(curl -s -v http://192.168.99.100:$leftport/servers 2>&1 | se< http://192.168.99.100:$leftport/servers 2>&1 | sed                          -n '/Etag:/{s/.*: //; P;<ftport/servers 2>&1 | sed -n '/Etag:/{s/.*: //; P;                          }')
 bash-3.2$ echo $ETAG
@@ -39,11 +38,11 @@ bash-3.2$ cat ~/servers.json
   "Servers": [
     {
       "ClusterName": "left",
-      "URL": "http://192.168.99.100:31183"
+      "URL": "http://192.168.99.100:31184"
     },
     {
       "ClusterName": "right",
-      "URL": "http://192.168.99.100:31099"
+      "URL": "http://192.168.99.100:31066"
     }
   ]
 }
@@ -52,9 +51,9 @@ bash-3.2$ curl -v -X PUT -H "If-Match: ${ETAG//[$'\t\r\n ']}" -H "Content-Typ< 
                                  Dload  Upload   Total   Spent    Left  Speed
   0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying 192.168.99.100...
 * TCP_NODELAY set
-* Connected to 192.168.99.100 (192.168.99.100) port 31183 (#0)
+* Connected to 192.168.99.100 (192.168.99.100) port 31184 (#0)
 > PUT /servers HTTP/1.1
-> Host: 192.168.99.100:31183
+> Host: 192.168.99.100:31184
 > User-Agent: curl/7.51.0
 > Accept: */*
 > If-Match: g5VMZUpJRha40Z6CUDIfPQ==
@@ -66,152 +65,19 @@ bash-3.2$ curl -v -X PUT -H "If-Match: ${ETAG//[$'\t\r\n ']}" -H "Content-Typ< 
 < HTTP/1.1 200 OK
 < Content-Length: 133
 < Content-Type: application/json
-< Etag: iKLP23fAE5dOa5YscjJZqg==
-< Date: Fri, 24 Feb 2017 20:56:07 GMT
+< Etag: YjJ54QJhEjS8C4VR4Pfbcg==
+< Date: Wed, 01 Mar 2017 16:30:21 GMT
 < 
 { [133 bytes data]
 * Curl_http_done: called premature == 0
-100   325  100   133  100   192  18679  26966 --:--:-- --:--:-- --:--:-- 27428
+100   325  100   133  100   192  57451  82937 --:--:-- --:--:-- --:--:-- 96000
 * Connection #0 to host 192.168.99.100 left intact
-{"Servers":[{"ClusterName":"left","URL":"http://192.168.99.100:31183"},{"ClusterName":"right","URL":"http://192.168.99.100:31099"}]}
+{"Servers":[{"ClusterName":"left","URL":"http://192.168.99.100:31184"},{"ClusterName":"right","URL":"http://192.168.99.100:31066"}]}
 bash-3.2$ curl -s "${serverURL}/servers"
-{"Servers":[{"ClusterName":"left","URL":"http://192.168.99.100:31183"},{"ClusterName":"right","URL":"http://192.168.99.100:31099"}]}
+{"Servers":[{"ClusterName":"left","URL":"http://192.168.99.100:31184"},{"ClusterName":"right","URL":"http://192.168.99.100:31066"}]}
 bash-3.2$ cygnus --env TASK_HOST --env PORT0 -K -s http://192.168.99.100:7099<_HOST --env PORT0 -K -s http://192.168.99.100:7099/                         singularity
 Request ID                                   Deploy ID                              State     TASK_HOST PORT0 Task Status
-192.168.99.100>2222>repos>sous-server::right 0_0_2_6c116ae9c83f4dfcbb253b4baccecda6 localhost 31563     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_bfe913af34cc4515aa202b8f6a929199 localhost 31246     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_f8f212e67f3148909c0005841b5bfc39 localhost 31045     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_b2c5c4db399e4fa0a88597b8f2ab8180 localhost 31664     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_b0bcd15d7c1d4bd08eedc2ab2af54cbf localhost 31963     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_ef5445189b32498aaba8db7d10f1ecaf localhost 31167     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_d84363b34f4a4ffcb01cedf90d35bdff localhost 31778     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_0a2f1a1ae735486a99cc35321a5655e6 localhost 31935     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_c599f7dceb4a43518c03898ef35502f7 localhost 31083     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_6bbb0647d6154a48993284d97e9c5628 localhost 32000     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_89736ddd53f84964832ae00c07efcf62 localhost 31994     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_a5f5a9a440b547eb829549b4da9f2fa7 localhost 31895     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_957ecb5411ea4bdeb72afd8580424d1b localhost 31975     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_007a3b68db104a818804b22c8ec518e2 localhost 31509     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_92e4243b38bc44c3a838231404707738 localhost 31765     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_0abcb3a2c3f1483284676d9373f1d999 localhost 31141     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_bd74b4f55a85407eaff14eeec9282048 localhost 31193     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_7c0f61d3617a4da1bf4ec3b3c528a66b localhost 31559     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_4e64405772024e82a4762f4f7f59f987 localhost 31447     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_f900fa1350d149c786817c7803acbabc localhost 31938     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_c1189e4ea83a4d20b54ec69321b29f9f localhost 31994     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_3c9a0c07158a45cf840ed2e04f7135e2 localhost 31980     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_685809dde79e40289ca0c1586b987a1c localhost 31982     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_c657c20e72214e339c7798aaf1b6e89c localhost 31147     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_2a6d26a68fb244d3a04bb191d24a739d localhost 31054     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_87fbd725e5cd4865a5bad662164774b8 localhost 31908     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_89b043154ac74e41931706bd11865b62 localhost 31970     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_67835a62adb24094910f614f0046afdf localhost 31988     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_93f024f13d40464a827d3077dc48f21b localhost 31988     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_48d90f8d45174193b09851b7aeae414b localhost 31985     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_ff6e2bda92004f129a053b76635f6af3 localhost 31976     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_6451d33f1c784b7784f34e057017da94 localhost 31326     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_b739e155f98b4e12ac14fc451b815021 localhost 31997     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_ecc5c51d26b848efa5e7efc938502b5a localhost 31298     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_503c52b06a6945dd84f589e7edb3bd2b localhost 31062     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_1500959891c3400eae3b68af1e35e52c localhost 31980     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_584cd04ea00e479db8b9539c78d56ab7 localhost 31743     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_265f200676154d7fa6ea4cc809560445 localhost 31025     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_0017f76737254a17953640889b6173c5 localhost 31007     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_70d802749d0c49ab96f249b6deb40044 localhost 31000     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_c5dc8d730b164814993b489c8f7d4f41 localhost 31945     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_c03f366d9f4c4fb3bdbd2abfb90e5cfb localhost 31031     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_d746eb2d595046a5822ea79a56daf84b localhost 31428     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_f7da140f226c4895acdeae6d8e54888e localhost 31978     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_1f2b2a34f5b841db920bb1d90ec2dac2 localhost 31963     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_dd395bcb64b94ef1836267ecb1d31eb8 localhost 31984     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_440ecb6fe5a04aa783c39829d5239780 localhost 31871     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_63c2c97dcd5248ee9aa51d3885525b09 localhost 31087     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_f12630493377449ebf29d0631b542af6 localhost 31451     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_f714453275104f4c880c6b3b259be623 localhost 31022     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_a4b94d5b39674f058fc17074173d9146 localhost 31183     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_8b818f54f7774b0fac235367ac1f3941 localhost 31968     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_7a3af4a207384d4fb42690acb1cc36fa localhost 31153     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_faa8f00f574a474280f214e3e8527f72 localhost 31049     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_ee09a655e8a4416095a121e59c8a2197 localhost 31099     TASK_RUNNING
-192.168.99.100>2222>repos>sous-server::right 0_0_2_3dcd8a3d6e094ddbaeaa2cbd92f66524 localhost 31992     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_ac124b8251754fcb8631754374808766 localhost 31600     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_57359108d0bd45e58e8677b9c54c0c6e localhost 31161     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_9c976a34c28446df82d9bd6bc2d5af39 localhost 31824     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_43e30b93bca04bc88fcb042aadf4e88c localhost 31028     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_84fb887b92d24aaea8f0b872cec0f1c4 localhost 31565     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_fd2254f5b7cd4e4aa712c9da70a89180 localhost 31010     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_41f547426d1242fd9747be49743a5d29 localhost 31984     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_2e9451650335419d9af98fd64d6fa948 localhost 31961     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_25ddb669213447b287e25a5311d09a63 localhost 31042     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_1fd0dec235974064994ab625e4fe0059 localhost 31303     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::right 0_0_2_83f1b88ba16e4f8a8cd3922b494040bc localhost 31106     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_f96122241c974b44a7ea2963b4d4bcc9 localhost 31891     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_c11297fb70564e3a945a3b4763f5ddbe localhost 31998     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_a869cd19f5ff4f34b756499f1d2316ac localhost 31298     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_79b1617f8d8a4f9da1ef987b84f39dde localhost 31950     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_66e92229bf9d46a8bdc0a5e0e075bd82 localhost 31670     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_98c63f0188e8448b8f1d4ac64bd7f723 localhost 31105     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_5ad80aca90fc4188bfbe1e5f68f367f2 localhost 31010     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_30e62e97b3ae49a58a081217c11a9d2e localhost 31979     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_1133d6743cfe4ed6a748ae43777d6675 localhost 31881     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_4ca6a2aa6ce0476f80229e0881f22e20 localhost 31996     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_d9ce17f6bf8d44d88f9bd1ea64d90e90 localhost 31558     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_90e63c95f36e46469b2c8a01bcf5e9a9 localhost 31893     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_921dc43baff443c9b3af935f9e90d905 localhost 31574     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_fcf3e0f792764d5fa7cefcf7fec9ad76 localhost 31981     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_9ef10fa7c0ed4b2b8032c653963e4cd0 localhost 31914     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_dd0dfd7084534ddda10147d50fa1487b localhost 31042     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_e20612b91ae442fb892bd917b777c8a2 localhost 31916     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_c59ef534e3a94c35ba52992abc52f499 localhost 31985     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_78d94acfbb424f65a5279fe2f2a9db1a localhost 31790     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_b89a4049831443c391d5aaaa8731cd28 localhost 31065     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_bcd6903b4c434a599d9e610fd8758ccb localhost 31663     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_0495a1f22af04b3c90a264f77acdc32c localhost 31798     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_5d8eb3074477451aa25e441aae7c187b localhost 31657     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_ddfab9c8ea1940ee908cbed49eff625c localhost 31810     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_e00a9a124bc241a1bc6b087fad621a85 localhost 31320     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_8ea8620092eb487eb839167b00a4f5c2 localhost 31999     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_ac6f86125c4f48f18ac2fcf44be72304 localhost 31736     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_233d81d45d3849339e5a29834fdb44fd localhost 31488     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_fb8c07990cda4c3e8061e93453dddbeb localhost 31995     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_24b6196a4296477f86cbd20c232bcf74 localhost 31981     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_9cf3d8bf3b874647b8cbd292e5545c66 localhost 31546     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_ea2cfdc1594042bf8b4046dd4761f674 localhost 31987     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_6d08070a4e7d4d1ab4f65b4986f7b133 localhost 31021     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_72d0a6f351114caca0138fd6346f7ce2 localhost 31977     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_9242320b982d4159b68b070fc7168094 localhost 31927     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_84cd2f0c3be54012822df4688dbc10d2 localhost 31009     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_43c15d69d3a6424d818066ace83c8c5c localhost 31074     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_769aa60c0e744b2791f05d9cdc42b87c localhost 31096     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_55c7f15149574da8aea4644f8b486511 localhost 31962     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_d138569457a44a6c96ac98e8439f5ff4 localhost 31985     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_d9de1da00234415da58051a18fba0700 localhost 31014     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_6941630fef8343d88c82e72059126a46 localhost 31988     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_4d53bab66a2a4fa79e55bb38098197af localhost 31300     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_0d55025cda434ca0af441d64cc4103b9 localhost 31990     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_cc4553bfd9aa48109a59c5ce89099704 localhost 31299     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_187a62622071469f9b78b250baa557f8 localhost 31711     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_4007558da20e44edad42770b207de2ee localhost 31054     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_06d36bc78cda41db9f0aab99eb46ce8e localhost 31704     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_0c4017379bb14a36a75c281ba4c6c507 localhost 31987     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_af3be8992d764311a2aa9305abb98438 localhost 31831     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_96679d4510074b5986a6b2a7c628c5bb localhost 31865     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_7662c8ef100c4dba955dad2a4ff64b85 localhost 31009     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_661c152677744fc2becd5f74310852fa localhost 31116     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_dd261ee2a36141809f3edae792ee9b24 localhost 31997     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_349fce07a17d4889ac174f1e57799bc3 localhost 31819     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_a2ed5047b43a4cc8abe2548f3fa24d50 localhost 31989     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_869b3524f2bd4f96a236526f810373cf localhost 31572     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_b8469bdcc44847febc8853af25b38ee4 localhost 31183     TASK_RUNNING
-192.168.99.100>2222>repos>sous-server::left  0_0_2_a7f2b696fa644c58b716b8a9f73b2cbb localhost 31019     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_301d768e07f54bc1bc8efb1024dd7d2d localhost 31804     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_541afef0472e446d92cbe3630755e318 localhost 31002     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_ab5f227ba94241ccad2f5c3a1869b8cb localhost 31019     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_dc45a316698f44dbbed7068cc6bc0303 localhost 31228     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_6df0d5c5999c41438417b5822dfa76c2 localhost 31492     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_e35561fee37a4e48b93f0d2dd2d6f9a2 localhost 31232     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_2ba2e010c61a4c448e8c322086b2e246 localhost 31015     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_9cc51acc7b8b46e3b5182860ce6dc4fd localhost 31052     TASK_KILLED
-192.168.99.100>2222>repos>sous-server::left  0_0_2_da6cbd17cf4d46cdaad649929cc40cb7 localhost 31489     TASK_KILLED
+192.168.99.100>2222>repos>sous-server::right 0_0_2_de49d479bdd843a5a8338156ee00a10a localhost 31066     TASK_RUNNING
+192.168.99.100>2222>repos>sous-server::left  0_0_2_20f3992bc3864bf4a67ce830d8a4f272 localhost 31184     TASK_RUNNING
 bash-3.2$ 
 bash-3.2$ 

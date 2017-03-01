@@ -2,22 +2,22 @@
 bash-3.2$ # These steps are required by the Sous integration tests
 bash-3.2$ # They're analogous to run-of-the-mill workstation maintenance.
 bash-3.2$ 
-bash-3.2$ cd /Users/jlester/golang/src/github.com/opentable/sous
+bash-3.2$ cd /Users/ssalisbury/go/src/github.com/opentable/sous
 bash-3.2$ env
 DOCKER_HOST=tcp://192.168.99.100:2376
 GIT_SSH=/tmp/sous-work/home/bin/ssh_wrapper
 DOCKER_TLS_VERIFY=1
-PATH=/tmp/sous-work/sous/bin:~/bin:/usr/local/bin:/usr/bin:/usr/local/opt/coreutils/libexec/gnubin:/bin:/tmp/sous-work/home/go/bin:/Users/jlester/golang/bin
-PWD=/Users/jlester/golang/src/github.com/opentable/sous
+PATH=/tmp/sous-work/sous/bin:~/bin:/usr/local/go/bin:/usr/local/bin:/usr/bin:/bin:/tmp/sous-work/home/go/bin:/Users/ssalisbury/go/bin
+PWD=/Users/ssalisbury/go/src/github.com/opentable/sous
 SHLVL=1
 HOME=/tmp/sous-work/home
-DOCKER_CERT_PATH=/Users/jlester/.docker/machine/machines/default
+DOCKER_CERT_PATH=/Users/ssalisbury/.docker/machine/machines/default
 GOROOT=
 XDG_CONFIG=/tmp/sous-work/home/dot-config
-GOPATH=/tmp/sous-work/home/go:/Users/jlester/golang
+GOPATH=/tmp/sous-work/home/go:/Users/ssalisbury/go
 _=/usr/bin/env
-OLDPWD=/Users/jlester/golang/src/github.com/opentable/sous/integration
-bash-3.2$ export SOUS_EXTRA_DOCKER_CA=/Users/jlester/golang/src/github.com/op<_DOCKER_CA=/Users/jlester/golang/src/github.com/ope                         ntable/sous/integration/t<golang/src/github.com/opentable/sous/integration/te                         st-registry/docker-regist<table/sous/integration/test-registry/docker-registr                         y/testing.crt
+OLDPWD=/Users/ssalisbury/go/src/github.com/opentable/sous/integration
+bash-3.2$ export SOUS_EXTRA_DOCKER_CA=/Users/ssalisbury/go/src/github.com/ope<_DOCKER_CA=/Users/ssalisbury/go/src/github.com/open                         table/sous/integration/te<ry/go/src/github.com/opentable/sous/integration/tes                         t-registry/docker-registr<able/sous/integration/test-registry/docker-registry                         /testing.crt
 bash-3.2$ mkdir -p /tmp/sous-work/home/go/{src,bin}
 bash-3.2$ 
 bash-3.2$ ### This build gives me trouble in tests...

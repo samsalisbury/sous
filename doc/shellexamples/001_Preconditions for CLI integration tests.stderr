@@ -5,18 +5,9 @@ bash-3.2$ if [ -n "$GOROOT" ]; then
 > fi
 bash-3.2$ go get github.com/nyarly/cygnus # cygnus lets us inspect Singularit</nyarly/cygnus # cygnus lets us inspect Singularity                          for ports
 bash-3.2$ if echo "http://192.168.99.100:7099/singularity" | egrep -q '192.16<92.168.99.100:7099/singularity" | egrep -q '192.168                         |127.0.0'; then
-> /Users/jlester/golang/src/github.com/opentable/sous/integration/test-regist</github.com/opentable/sous/integration/test-registr                         y/clean-singularity.sh ht</integration/test-registry/clean-singularity.sh htt                         p://192.168.99.100:7099/s</clean-singularity.sh http://192.168.99.100:7099/si                         ngularity
+> /Users/ssalisbury/go/src/github.com/opentable/sous/integration/test-registr<github.com/opentable/sous/integration/test-registry                         /clean-singularity.sh htt<integration/test-registry/clean-singularity.sh http                         ://192.168.99.100:7099/si<clean-singularity.sh http://192.168.99.100:7099/sin                         gularity
 > fi
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100   118    0   118    0     0  12559      0 --:--:-- --:--:-- --:--:-- 13111
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100   100    0   100    0     0  17262      0 --:--:-- --:--:-- --:--:-- 20000
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100   117    0   117    0     0  21284      0 --:--:-- --:--:-- --:--:-- 23400
 bash-3.2$ cygnus -H http://192.168.99.100:7099/singularity
-bash-3.2$ ls /Users/jlester/golang/src/github.com/opentable/sous/dev_support
+bash-3.2$ ls /Users/ssalisbury/go/src/github.com/opentable/sous/dev_support
 bash-3.2$ 
 bash-3.2$ 

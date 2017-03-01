@@ -13,8 +13,8 @@ sous manifest get # demonstrating this got to GDM
 # Last minute config
 cat Dockerfile
 cp ~/dot-ssh/git_pubkey_rsa key_sous@example.com
-cp /Users/jlester/golang/src/github.com/opentable/sous/dev_support/$(readlink /Users/jlester/golang/src/github.com/opentable/sous/dev_support/sous_linux) .
-cp /Users/jlester/golang/src/github.com/opentable/sous/integration/test-registry/docker-registry/testing.crt docker.crt
+cp /Users/ssalisbury/go/src/github.com/opentable/sous/dev_support/$(readlink /Users/ssalisbury/go/src/github.com/opentable/sous/dev_support/sous_linux) .
+cp /Users/ssalisbury/go/src/github.com/opentable/sous/integration/test-registry/docker-registry/testing.crt docker.crt
 
 ls -a
 ssh-keyscan -p 2222 192.168.99.100 > known_hosts

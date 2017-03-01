@@ -2,9 +2,9 @@
 bash-3.2$ # These steps are required by the Sous integration tests
 bash-3.2$ # They're analogous to run-of-the-mill workstation maintenance.
 bash-3.2$ 
-bash-3.2$ cd /Users/jlester/golang/src/github.com/opentable/sous
+bash-3.2$ cd /Users/ssalisbury/go/src/github.com/opentable/sous
 bash-3.2$ env
-bash-3.2$ export SOUS_EXTRA_DOCKER_CA=/Users/jlester/golang/src/github.com/op<_DOCKER_CA=/Users/jlester/golang/src/github.com/ope                         ntable/sous/integration/t<golang/src/github.com/opentable/sous/integration/te                         st-registry/docker-regist<table/sous/integration/test-registry/docker-registr                         y/testing.crt
+bash-3.2$ export SOUS_EXTRA_DOCKER_CA=/Users/ssalisbury/go/src/github.com/ope<_DOCKER_CA=/Users/ssalisbury/go/src/github.com/open                         table/sous/integration/te<ry/go/src/github.com/opentable/sous/integration/tes                         t-registry/docker-registr<able/sous/integration/test-registry/docker-registry                         /testing.crt
 bash-3.2$ mkdir -p /tmp/sous-work/home/go/{src,bin}
 bash-3.2$ 
 bash-3.2$ ### This build gives me trouble in tests...
