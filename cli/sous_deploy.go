@@ -68,7 +68,7 @@ func (sd *SousDeploy) Execute(args []string) cmdr.Result {
 
 	if sd.waitStable {
 		fmt.Fprintf(sd.CLI.Out, "Waiting for tasks to start...")
-		return sd.CLI.Plumbing(&SousPlumbingWait{}, []string{})
+		return sd.CLI.Plumbing(&SousPlumbingWait2{}, []string{})
 	}
 	return cmdr.Successf("Updated the global deploy manifest. Deploy in process.")
 
