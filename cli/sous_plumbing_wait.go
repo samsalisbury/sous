@@ -125,15 +125,17 @@ func (spw *SousPlumbingWait) pollDeployState(timeout time.Duration, deployID sou
 
 func (spw *SousPlumbingWait) fetchDeployState(deployID sous.DeployID) (*sous.DeployState, error) {
 	u := path.Join(spw.Config.Server, "status")
+	log.Printf("SPW: Getting: %s", u)
 	response, err := http.Get(u)
 	defer func() {
-		if response.Body != nil {
+		if response != nil && response.Body != nil {
 			if err := response.Body.Close(); err != nil {
 				log.Println(err)
 			}
 		}
 	}()
 	if err != nil {
+		log.Printf("SPW: HTTP Error getting %s: %s", u, err)
 		return nil, err
 	}
 	if response.StatusCode != 200 {
