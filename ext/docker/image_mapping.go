@@ -151,8 +151,8 @@ func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
 	Log.Vomit.Printf("Getting source ID for %s", in)
 
 	etag, repo, offset, version, _, err := nc.dbQueryOnName(in)
-	if nif, ok := err.(NoSourceIDFound); ok {
-		Log.Vomit.Print(nif)
+	if noSourceID, ok := err.(NoSourceIDFound); ok {
+		Log.Vomit.Print(noSourceID)
 	} else if err != nil {
 		Log.Vomit.Print("Err: ", err)
 		return sous.SourceID{}, err

@@ -111,7 +111,7 @@ func newStateDiffer(intended DeployStates) *differ {
 
 func newDiffer(intendedDeployments Deployments) *differ {
 	intended := intendedDeployments.Clone().ToDeployStatesWithStatus(DeployStatusSucceeded)
-	logDeployStates(intended, "intended deploy states")
+	logDeployStates(intended, "intended deployments")
 	return &differ{
 		from:      intended.Snapshot(),
 		DiffChans: NewDiffChans(intended.Len()),

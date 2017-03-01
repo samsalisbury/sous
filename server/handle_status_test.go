@@ -12,13 +12,15 @@ import (
 func TestHandlesStatusGet(t *testing.T) {
 	assert := assert.New(t)
 
+	logSet := &sous.LogSet{
+		Vomit: log.New(os.Stderr, "", log.LstdFlags),
+	}
+	autoResolver := sous.NewAutoResolver(nil, nil, nil)
+	autoResolver.GDM = sous.NewDeployments()
 	th := &StatusHandler{
-		AutoResolver: &sous.AutoResolver{
-			GDM: sous.NewDeployments(),
-		},
-		Log: &sous.LogSet{
-			Vomit: log.New(os.Stderr, "", log.LstdFlags),
-		},
+		AutoResolver:  autoResolver,
+		Log:           logSet,
+		ResolveFilter: &sous.ResolveFilter{},
 	}
 	data, status := th.Exchange()
 	assert.Equal(status, 200)

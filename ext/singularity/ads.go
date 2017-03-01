@@ -83,7 +83,7 @@ gather:
 		log.Printf("Gathering data for request %q in background.", requestID)
 		deployID, err := ParseRequestID(requestID)
 		if err != nil {
-			// TODO: Maybe log this?
+			Log.Debug.Printf("Skipping deploy %q: unable to parse: %s", deployID, err)
 			continue
 		}
 		oneOfMyDeploys := false
@@ -95,7 +95,7 @@ gather:
 			}
 		}
 		if !oneOfMyDeploys {
-			// TODO: Maybe log this?
+			Log.Debug.Printf("Skipping deploy %q: does not match my clusters % #v", deployID, ab.Clusters)
 			continue
 		}
 

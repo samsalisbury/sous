@@ -38,11 +38,13 @@ func (tc TriggerChannel) trigger() {
 // NewAutoResolver creates a new AutoResolver.
 func NewAutoResolver(rez *Resolver, sr StateReader, ls *LogSet) *AutoResolver {
 	ar := &AutoResolver{
-		UpdateTime:  60 * time.Second,
-		Resolver:    rez,
-		StateReader: sr,
-		LogSet:      ls,
-		listeners:   make([]autoResolveListener, 0),
+		UpdateTime:                       60 * time.Second,
+		Resolver:                         rez,
+		StateReader:                      sr,
+		LogSet:                           ls,
+		listeners:                        make([]autoResolveListener, 0),
+		deployStatesBeforeCurrentRectify: NewDeployStates(),
+		//GDM: NewDeployments(),
 	}
 	ar.StandardListeners()
 	return ar

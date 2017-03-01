@@ -45,6 +45,7 @@ func (h *StatusHandler) Exchange() (interface{}, int) {
 		status.Deployments = append(status.Deployments, d)
 	}
 	status.Completed, status.InProgress = h.AutoResolver.Statuses()
+
 	deployStates := h.AutoResolver.DeployStatesBeforeCurrentRectify().Snapshot()
 	status.DeployStates = make(map[string]*sous.DeployState, len(deployStates))
 	for did, deployState := range deployStates {
