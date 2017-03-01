@@ -78,6 +78,7 @@ func WrapCompose(m *testing.M, composeDir string) (resultCode int) {
 // ResetSingularity clears out the state from the integration singularity service
 // Call it (with and extra call deferred) anywhere integration tests use Singularity
 func ResetSingularity() {
+	log.Print("Resetting Singularity...")
 	singClient := sing.NewClient(SingularityURL)
 
 	reqList, err := singClient.GetRequests()
@@ -91,6 +92,7 @@ func ResetSingularity() {
 			panic(err)
 		}
 	}
+	log.Print("Singularity reset.")
 }
 
 // BuildImageName constructs a simple image name rooted at the SingularityURL

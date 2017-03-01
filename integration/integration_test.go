@@ -31,19 +31,19 @@ func TestIntegration(t *testing.T) {
 
 var none = sous.DeployID{}
 
-func (suite *integrationSuite) deploymentWithRepo(clusterNames []string, repo string) (sous.Deployments, sous.DeployID) {
+func (suite *integrationSuite) deploymentWithRepo(clusterNames []string, repo string) (sous.DeployStates, sous.DeployID) {
 	clusters := make(sous.Clusters, len(clusterNames))
 	for _, name := range clusterNames {
 		clusters[name] = &sous.Cluster{BaseURL: SingularityURL}
 	}
 	deps, err := suite.deployer.RunningDeployments(suite.nameCache, clusters)
 	if suite.Nil(err) {
-		return deps.IgnoringStatus(), suite.findRepo(deps.IgnoringStatus(), repo)
+		return deps, suite.findRepo(deps, repo)
 	}
-	return sous.Deployments{}, none
+	return sous.DeployStates{}, none
 }
 
-func (suite *integrationSuite) findRepo(deps sous.Deployments, repo string) sous.DeployID {
+func (suite *integrationSuite) findRepo(deps sous.DeployStates, repo string) sous.DeployID {
 	for i, d := range deps.Snapshot() {
 		if d != nil {
 			if i.ManifestID.Source.Repo == repo {
@@ -97,9 +97,18 @@ func (suite *integrationSuite) BeforeTest(suiteName, testName string) {
 	ResetSingularity()
 
 	registerAndDeploy(ip, "test-cluster", "hello-labels", "github.com/docker-library/hello-world", "hello-labels", []int32{})
-	registerAndDeploy(ip, "test-cluster", "hello-server-labels", "github.com/docker/dockercloud-hello-world", "hello-server-labels", []int32{80})
+	registerAndDeploy(ip, "test-cluster", "hello-server-labels", "github.com/docker/dockercloud-hello-world", "hello-server-labels", []int32{8123})
 	registerAndDeploy(ip, "test-cluster", "grafana-repo", "github.com/opentable/docker-grafana", "grafana-labels", []int32{})
 	registerAndDeploy(ip, "other-cluster", "grafana-repo", "github.com/opentable/docker-grafana", "grafana-labels", []int32{})
+
+	registerAndDeploy(ip, "test-cluster", "supposed-to-fail", "github.com/opentable/homer-says-doh", "fails-labels", []int32{})
+
+	/*
+		imageName := BuildImageName("github.com/opentable/homer-says-doh", "latest")
+		err = BuildAndPushContainer("failed-labels", imageName)
+		suite.Require().NoError(err)
+	*/
+
 	imageName = fmt.Sprintf("%s/%s:%s", registryName, "grafana-repo", "latest")
 
 	suite.registry = docker_registry.NewClient()
@@ -111,7 +120,7 @@ func (suite *integrationSuite) BeforeTest(suiteName, testName string) {
 }
 
 func (suite *integrationSuite) TeardownTest() {
-	ResetSingularity()
+	//ResetSingularity()
 }
 
 func (suite *integrationSuite) TestGetLabels() {
@@ -145,7 +154,7 @@ func (suite *integrationSuite) TestGetRunningDeploymentSet_testCluster() {
 	for i := 0; i < numberOfTestRuns; i++ {
 		ds, which := suite.deploymentWithRepo(clusters, "github.com/opentable/docker-grafana")
 		deps := ds.Snapshot()
-		if suite.Equal(3, len(deps)) {
+		if suite.Equal(4, len(deps)) {
 			grafana := deps[which]
 			cacheHitText := fmt.Sprintf("on cache hit %d", i+1)
 			suite.Equal(SingularityURL, grafana.Cluster.BaseURL, cacheHitText)
@@ -185,7 +194,7 @@ func (suite *integrationSuite) TestGetRunningDeploymentSet_all() {
 
 	ds, which := suite.deploymentWithRepo(clusters, "github.com/opentable/docker-grafana")
 	deps := ds.Snapshot()
-	if suite.Equal(4, len(deps)) {
+	if suite.Equal(5, len(deps)) {
 		grafana := deps[which]
 		suite.Equal(SingularityURL, grafana.Cluster.BaseURL)
 		suite.Regexp("^0\\.1", grafana.Resources["cpus"])    // XXX strings and floats...
@@ -197,6 +206,27 @@ func (suite *integrationSuite) TestGetRunningDeploymentSet_all() {
 		suite.Equal(sous.ManifestKindService, grafana.Kind)
 	}
 
+}
+
+func (suite *integrationSuite) TestFailedService() {
+	clusters := []string{"test-cluster"}
+
+	var fails *sous.DeployState
+	for {
+		ds, which := suite.deploymentWithRepo(clusters, "github.com/opentable/homer-says-doh")
+		deps := ds.Snapshot()
+		fails = deps[which]
+		if fails == nil {
+			suite.T().Log(which, len(deps), deps)
+		}
+		suite.Require().NotNil(fails)
+		if fails.Status != sous.DeployStatusPending {
+			break
+		}
+		suite.T().Log(which, fails, fails.Status)
+		time.Sleep(time.Millisecond * 500)
+	}
+	suite.Equal(fails.Status, sous.DeployStatusFailed, "status was %s not %s", fails.Status, sous.DeployStatusFailed)
 }
 
 func (suite *integrationSuite) TestMissingImage() {

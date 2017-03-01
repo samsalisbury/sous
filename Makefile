@@ -65,6 +65,9 @@ gitlog:
 install-ggen:
 	cd bin/ggen && go install ./
 
+install-stringer:
+	go get golang.org/x/tools/cmd/stringer
+
 legendary: coverage
 	legendary --hitlist .cadre/coverage.vim /tmp/sous-cover/*_merged.txt
 

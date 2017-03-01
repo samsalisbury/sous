@@ -1,4 +1,6 @@
 FROM dockercloud/hello-world:latest
+ADD nginx.conf /etc/nginx
+EXPOSE 8123
 LABEL \
   com.opentable.sous.repo_url=github.com/docker/dockercloud-hello-world \
   com.opentable.sous.repo_offset= \

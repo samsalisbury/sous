@@ -1,6 +1,7 @@
 package sous
 
 //go:generate ggen cmap.CMap(cmap.go) sous.DeployStates(deploystates.go) CMKey:DeployID Value:*DeployState
+//go:generate stringer -type=DeployStatus
 
 // A DeployState represents the state of a deployment in an external cluster.
 // It wraps Deployment and adds Status.
