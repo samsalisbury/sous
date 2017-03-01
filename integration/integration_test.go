@@ -96,12 +96,13 @@ func (suite *integrationSuite) BeforeTest(suiteName, testName string) {
 	suite.T().Logf("Before %q %q", suiteName, testName)
 	ResetSingularity()
 
-	registerAndDeploy(ip, "test-cluster", "hello-labels", "github.com/docker-library/hello-world", "hello-labels", []int32{})
-	registerAndDeploy(ip, "test-cluster", "hello-server-labels", "github.com/docker/dockercloud-hello-world", "hello-server-labels", []int32{8123})
-	registerAndDeploy(ip, "test-cluster", "grafana-repo", "github.com/opentable/docker-grafana", "grafana-labels", []int32{})
-	registerAndDeploy(ip, "other-cluster", "grafana-repo", "github.com/opentable/docker-grafana", "grafana-labels", []int32{})
+	registerAndDeploy(ip, "test-cluster", "hello-labels", "github.com/docker-library/hello-world", "hello-labels", "latest", []int32{})
+	registerAndDeploy(ip, "test-cluster", "hello-server-labels", "github.com/docker/dockercloud-hello-world", "hello-server-labels", "latest", []int32{8123})
+	registerAndDeploy(ip, "test-cluster", "grafana-repo", "github.com/opentable/docker-grafana", "grafana-labels", "latest", []int32{})
+	registerAndDeploy(ip, "other-cluster", "grafana-repo", "github.com/opentable/docker-grafana", "grafana-labels", "latest", []int32{})
 
-	registerAndDeploy(ip, "test-cluster", "supposed-to-fail", "github.com/opentable/homer-says-doh", "fails-labels", []int32{})
+	// This deployment fails immediately, and never results in a successful deployment at that singularity request.
+	registerAndDeploy(ip, "test-cluster", "supposed-to-fail", "github.com/opentable/homer-says-doh", "fails-labels", "1-fails", []int32{})
 
 	/*
 		imageName := BuildImageName("github.com/opentable/homer-says-doh", "latest")
@@ -167,7 +168,6 @@ func (suite *integrationSuite) TestGetRunningDeploymentSet_testCluster() {
 			suite.Equal(sous.ManifestKindService, grafana.Kind, cacheHitText)
 		}
 	}
-
 }
 
 func (suite *integrationSuite) TestGetRunningDeploymentSet_otherCluster() {
@@ -223,6 +223,25 @@ func (suite *integrationSuite) TestFailedService() {
 		time.Sleep(time.Millisecond * 500)
 	}
 	suite.Equal(fails.Status, sous.DeployStatusFailed, "status was %s not %s", fails.Status, sous.DeployStatusFailed)
+}
+
+func (suite *integrationSuite) TestSuccessfulService() {
+	clusters := []string{"test-cluster"}
+
+	var succeeds *sous.DeployState
+	for {
+		ds, which := suite.deploymentWithRepo(clusters, "github.com/opentable/docker-grafana")
+		deps := ds.Snapshot()
+		succeeds = deps[which]
+		suite.Require().NotNil(succeeds)
+		if succeeds.Status != sous.DeployStatusPending {
+			break
+		}
+		time.Sleep(time.Millisecond * 500)
+	}
+	actual := succeeds.Status
+	expected := sous.DeployStatusActive
+	suite.Equal(actual, expected, "got %q; want %q", actual, expected)
 }
 
 func (suite *integrationSuite) TestMissingImage() {

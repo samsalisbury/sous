@@ -14,3 +14,4 @@ tags
 .cadre/
 var/
 .cleanprotect
+integration/integration.test
