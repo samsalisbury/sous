@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"sync"
+	"sync/atomic"
 
 	"github.com/opentable/go-singularity/dtos"
 	"github.com/opentable/sous/lib"
@@ -66,6 +67,8 @@ func (ab *adsBuilder) DeployStates() (sous.DeployStates, error) {
 	var wg sync.WaitGroup
 	errChan := make(chan error)
 
+	var counter int64
+
 	// Start gathering all requests concurrently.
 gather:
 	for _, request := range requests {
@@ -80,7 +83,6 @@ gather:
 		requestID := request.Request.Id
 		var requestCluster *sous.Cluster
 
-		log.Printf("Gathering data for request %q in background.", requestID)
 		deployID, err := ParseRequestID(requestID)
 		if err != nil {
 			Log.Debug.Printf("Skipping deploy %q: unable to parse: %s", deployID, err)
@@ -99,6 +101,8 @@ gather:
 			continue
 		}
 
+		log.Printf("Gathering data for request %q in background.", requestID)
+
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -110,6 +114,9 @@ gather:
 				return
 			}
 			deployStates.Add(ds)
+			atomic.AddInt64(&counter, 1)
+			Log.Debug.Printf("Assembled complete DeployState for request %q", requestID)
+
 		}()
 	}
 
@@ -119,11 +126,9 @@ gather:
 	}()
 
 	// Wait for either error or channel close.
-	if err := <-errChan; err != nil {
-		return sous.NewDeployStates(), err
-	}
-
-	return deployStates, nil
+	err := <-errChan
+	Log.Debug.Printf("Gathered %d DeployStates; returning %d DeployStates.", counter, deployStates.Len())
+	return deployStates, err
 }
 
 // newRequestContext initialises a requestContext and begins making HTTP

@@ -1,9 +1,6 @@
 package sous
 
-import (
-	"fmt"
-	"strings"
-)
+import "strings"
 
 type (
 	// DeploymentPair is a pair of deployments that represent a "before and after" style relationship
@@ -101,7 +98,9 @@ func (d Deployments) Diff(other Deployments) DiffChans {
 }
 
 func newStateDiffer(intended DeployStates) *differ {
+	Log.Vomit.Printf("STATE DIFFER RECEIVED %d STATES", intended.Len())
 	intended = intended.Clone()
+	Log.Vomit.Printf("STATE DIFFER CLONED %d STATES", intended.Len())
 	logDeployStates(intended, "intended deploy states")
 	return &differ{
 		from:      intended.Snapshot(),
@@ -110,6 +109,9 @@ func newStateDiffer(intended DeployStates) *differ {
 }
 
 func newDiffer(intendedDeployments Deployments) *differ {
+	Log.Vomit.Printf("DEPLOYMENTS DIFFER RECEIVED %d STATES", intendedDeployments.Len())
+	intendedDeployments = intendedDeployments.Clone()
+	Log.Vomit.Printf("DEPLOYMENTS DIFFER CLONED %d STATES", intendedDeployments.Len())
 	intended := intendedDeployments.Clone().ToDeployStatesWithStatus(DeployStatusSucceeded)
 	logDeployStates(intended, "intended deployments")
 	return &differ{
@@ -119,11 +121,11 @@ func newDiffer(intendedDeployments Deployments) *differ {
 }
 
 func logDeployStates(dss DeployStates, desc string) {
-	message := []string{fmt.Sprintf("Computing diff from %s:", desc)}
+	var dsStrings []string
 	for _, ds := range dss.Snapshot() {
-		message = append(message, ds.String())
+		dsStrings = append(dsStrings, ds.String())
 	}
-	Log.Vomit.Print(strings.Join(message, "\n    "))
+	Log.Vomit.Printf("Computing diff from %s: % #v", desc, dsStrings)
 }
 
 func (d *differ) diff(existing Deployments) {

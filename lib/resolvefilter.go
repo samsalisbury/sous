@@ -118,11 +118,9 @@ func (rf *ResolveFilter) FilterDeployment(d *Deployment) bool {
 		rf.matchCluster(d.ClusterName)
 }
 
-// FilterDeployStates is similar to FilterDeployment, but also filters by
-// DeployStatus.
+// FilterDeployStates is similar to FilterDeployment.
 func (rf *ResolveFilter) FilterDeployStates(d *DeployState) bool {
-	return rf.FilterDeployment(&d.Deployment) &&
-		rf.matchDeployStatus(d.Status)
+	return rf.FilterDeployment(&d.Deployment)
 }
 
 // FilterManifest returns true if the Manifest is matched by this ResolveFilter.

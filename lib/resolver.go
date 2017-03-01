@@ -83,7 +83,9 @@ func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveRecord
 		})
 
 		recorder.performGuaranteedPhase("filtering running deployments", func() {
+			Log.Debug.Printf("BEFORE FILTER: %d DeployStates", actual.Len())
 			actual = actual.Filter(r.FilterDeployStates)
+			Log.Debug.Printf("AFTER FILTER: %d DeployStates", actual.Len())
 			recorder.setDeployStatesBeforeRectify(actual)
 		})
 
