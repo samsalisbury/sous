@@ -251,15 +251,17 @@ func TestShellLevelIntegration(t *testing.T) {
 	# This is kind of a hack - in normal operation, Sous would block until its
 	# services had been accepted, but when bootstrapping, we need to wait for them
 	# to come up.
-	for n in {1..30}; do
-	  if [ $(cygnus -H {{.EnvDesc.SingularityURL}} | grep sous-server | wc -l) -ge 2 ]; then
+	for n in {1..50}; do
+		cygnus -H --env PORT0 {{.EnvDesc.SingularityURL}} > ~/server-singularity.txt
+	  if [ $( grep sous-server ~/server-singularity.txt | wc -l) -ge 2 ]; then
 		  break
 		fi
 	  sleep 0.1
 	done
+	cat ~/server-singularity.txt >2
 
-	leftport=$(cygnus --env PORT0 {{.EnvDesc.SingularityURL}} | grep 'sous-server.*left' | awk '{ print $3 }')
-	rightport=$(cygnus --env PORT0 {{.EnvDesc.SingularityURL}} | grep 'sous-server.*right' | awk '{ print $3 }')
+	leftport=$(grep 'sous-server.*left' ~/server-singularity.txt | awk '{ print $3 }')
+	rightport=$(grep 'sous-server.*right' ~/server-singularity.txt | awk '{ print $3 }')
 
 	serverURL=http://{{.EnvDesc.AgentIP}}:$leftport
 	echo "Determined server url as $serverURL"
@@ -280,7 +282,7 @@ func TestShellLevelIntegration(t *testing.T) {
 	`,
 		func(name string, res shelltest.Result, t *testing.T) {
 			if len(res.Errs) > 0 {
-				t.Errorf("Trouble building GDM: \n\t%s", res.Errs)
+				t.Errorf("Trouble %s: \n\t%s", name, name, name, name, name, name, name, name, res.Errs)
 			}
 
 			if !res.Matches(`Set server URL to: http`) {
@@ -311,34 +313,43 @@ func TestShellLevelIntegration(t *testing.T) {
 		}
 	})
 
-	failedDeploy := config.Block("deploy failing project", `
+	//failedDeploy :=
+	config.Block("deploy over-resourced project", `
 	cat $XDG_CONFIG/sous/config.yaml
 	sous config
 	git clone {{.GitRemoteBase}}/sous-demo
 	cd sous-demo
-	git tag -am 'Release!' 0.0.23
+	git tag -am 'Release!' 0.0.24
 	git push --tags
-	sous init
+
+	# We will make this deploy fail by asking for too many resources.
+	sous manifest get > demo_manifest.yaml
+	cat demo_manifest.yaml
+	# Set CPUs to redonkulous.
+	sed 's/^      cpus.*$/      cpus: "30"/g' demo_manifest.yaml > demo_manifest_toobig.yaml
+	cat demo_manifest_toobig.yaml
+	sous manifest set < demo_manifest_toobig.yaml
+	sous build
+	sous deploy -d -v -cluster right
+	`, defaultCheck)
+
+	//failedDeploy :=
+	config.Block("deploy badly configured project", `
+	cat $XDG_CONFIG/sous/config.yaml
+	sous config
+	git clone {{.GitRemoteBase}}/sous-demo
+	cd sous-demo
+	git tag -am 'Release!' 0.0.25
+	git push --tags
 
 	# We will make this deploy fail by asking for too many resources.
 	sous manifest get > demo_manifest.yaml
 	cat demo_manifest.yaml
 	# Set CPUs to redonkulous.
 	sed 's/^      cpus.*$/      cpus: "9999999"/g' demo_manifest.yaml > demo_manifest_toobig.yaml
-	sous manifest set < demo_manifest_toobig.yaml
 	cat demo_manifest_toobig.yaml
+	sous manifest set < demo_manifest_toobig.yaml
 	sous build
-	date
 	sous deploy -d -v -cluster right
 	`, defaultCheck)
-
-	//check :=
-	failDeploy.Block("confirm deployment fails", `
-	cygnus -x 1 {{.EnvDesc.SingularityURL}}
-	`, func(name string, res shelltest.Result, t *testing.T) {
-		defaultCheck(name, res, t)
-		if !res.Matches("sous-demo") {
-			t.Error("No sous-demo request running!")
-		}
-	})
 }
