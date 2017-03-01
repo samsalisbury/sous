@@ -310,4 +310,35 @@ func TestShellLevelIntegration(t *testing.T) {
 			t.Error("No sous-demo request running!")
 		}
 	})
+
+	failedDeploy := config.Block("deploy failing project", `
+	cat $XDG_CONFIG/sous/config.yaml
+	sous config
+	git clone {{.GitRemoteBase}}/sous-demo
+	cd sous-demo
+	git tag -am 'Release!' 0.0.23
+	git push --tags
+	sous init
+
+	# We will make this deploy fail by asking for too many resources.
+	sous manifest get > demo_manifest.yaml
+	cat demo_manifest.yaml
+	# Set CPUs to redonkulous.
+	sed 's/^      cpus.*$/      cpus: "9999999"/g' demo_manifest.yaml > demo_manifest_toobig.yaml
+	sous manifest set < demo_manifest_toobig.yaml
+	cat demo_manifest_toobig.yaml
+	sous build
+	date
+	sous deploy -d -v -cluster right
+	`, defaultCheck)
+
+	//check :=
+	failDeploy.Block("confirm deployment fails", `
+	cygnus -x 1 {{.EnvDesc.SingularityURL}}
+	`, func(name string, res shelltest.Result, t *testing.T) {
+		defaultCheck(name, res, t)
+		if !res.Matches("sous-demo") {
+			t.Error("No sous-demo request running!")
+		}
+	})
 }
