@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/opentable/sous/config"
+	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
 	"github.com/samsalisbury/coaxer"
@@ -24,11 +25,14 @@ import (
 // or another unexpected status is met, it returns a nonzero exit code.
 type SousPlumbingWait struct {
 	DeployFilterFlags config.DeployFilterFlags
+	OTPLFlags         config.OTPLFlags
+	Manifest          graph.TargetManifest
+	ResolveFilter     *graph.RefinedResolveFilter
 	StatusPoller      *sous.StatusPoller
 	Config            *config.Config
 }
 
-func init() { PlumbingSubcommands["status"] = &SousPlumbingWait{} }
+func init() { PlumbingSubcommands["wait"] = &SousPlumbingWait{} }
 
 // Help implements Command on SousPlumbingWait.
 func (*SousPlumbingWait) Help() string {
@@ -43,24 +47,34 @@ func (spw *SousPlumbingWait) AddFlags(fs *flag.FlagSet) {
 // RegisterOn implements Registrant on SousPlumbingWait.
 func (spw *SousPlumbingWait) RegisterOn(psy Addable) {
 	psy.Add(&spw.DeployFilterFlags)
+	psy.Add(&spw.OTPLFlags)
 }
 
 // Execute implements cmdr.Executor on SousPlumbingWait.
 func (spw *SousPlumbingWait) Execute(args []string) cmdr.Result {
 
 	timeout := 5 * time.Minute
-	deployID, ok := spw.DeployFilterFlags.SpecificDeployID()
-	if !ok {
-		return cmdr.UsageErrorf("Please specify both -repo and -cluster flags.")
+	//deployID, ok := spw.DeployFilterFlags.SpecificDeployID()
+	//if !ok {
+	//	return cmdr.UsageErrorf("Please specify both -repo and -cluster flags.")
+	//}
+
+	sl := spw.Manifest.ID()
+	sid, did, err := getIDs((*sous.ResolveFilter)(spw.ResolveFilter), sl)
+	if err != nil {
+		return EnsureErrorResult(err)
 	}
 
-	if spw.DeployFilterFlags.Tag == "" {
-		return cmdr.UsageErrorf("Please specify -tag flag.")
-	}
-	version, err := semv.Parse(spw.DeployFilterFlags.Tag)
-	if err != nil {
-		return cmdr.UsageErrorf("cannot parse tag %q as semver: %s", spw.DeployFilterFlags.Tag, err)
-	}
+	//if spw.DeployFilterFlags.Tag == "" {
+	//	return cmdr.UsageErrorf("Please specify -tag flag.")
+	//}
+
+	//version, err := semv.Parse(spw.DeployFilterFlags.Tag)
+	//if err != nil {
+	//	return cmdr.UsageErrorf("cannot parse tag %q as semver: %s", spw.DeployFilterFlags.Tag, err)
+	//}
+
+	version := sid.Version
 
 	server := spw.Config.Server
 	if server == "" {
@@ -74,7 +88,7 @@ func (spw *SousPlumbingWait) Execute(args []string) cmdr.Result {
 		// It if it succeeded with the expected version, return exit code 0.
 		// If it is succeeded with not the expected version, keep trying until
 		// -timeout is reached.
-		err := spw.pollDeployState(timeout, deployID, version)
+		err := spw.pollDeployState(timeout, did, version)
 		if err == nil {
 			return cmdr.Success()
 		}
