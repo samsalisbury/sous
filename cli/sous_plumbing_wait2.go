@@ -113,9 +113,9 @@ func (spw *SousPlumbingWait2) pollDeployState(timeout time.Duration, deployID so
 		return result.Err()
 	}
 
-	ds, ok := result.Value().(sous.DeployState)
+	ds, ok := result.Value().(*sous.DeployState)
 	if !ok {
-		return fmt.Errorf("programmer error, got a %T, want a sous.DeployStates", result.Value())
+		return fmt.Errorf("programmer error, got a %T, want a *sous.DeployState", result.Value())
 	}
 
 	deployedVersion := ds.Deployment.SourceID.Version
