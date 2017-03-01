@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"path"
+	"strings"
 	"time"
 
 	"github.com/opentable/sous/config"
@@ -130,7 +130,10 @@ func (spw *SousPlumbingWait2) pollDeployState(timeout time.Duration, deployID so
 }
 
 func (spw *SousPlumbingWait2) fetchDeployState(deployID sous.DeployID) (*sous.DeployState, error) {
-	u := path.Join(spw.Config.Server, "status")
+	u := spw.Config.Server
+	u = strings.TrimSuffix(u, "/")
+	u = u + "/status"
+
 	log.Printf("SPW: Getting: %s", u)
 	response, err := http.Get(u)
 	defer func() {
