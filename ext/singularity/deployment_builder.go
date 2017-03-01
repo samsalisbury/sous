@@ -40,7 +40,7 @@ func (mr malformedResponse) Error() string {
 func isMalformed(err error) bool {
 	err = errors.Cause(err)
 	_, yes := err.(malformedResponse)
-	Log.Vomit.Printf("err: %#v %T %t", err, err, yes)
+	Log.Vomit.Printf("err: %+v %T %t", err, err, yes)
 	return yes
 }
 
@@ -83,6 +83,7 @@ func (db *deploymentBuilder) completeConstruction() error {
 	return firsterr.Returned(
 		db.determineDeployStatus,
 		db.retrieveDeploy,
+		db.extractDeployFromDeployHistory,
 		db.determineStatus,
 		db.extractArtifactName,
 		db.retrieveImageLabels,
@@ -137,13 +138,49 @@ func (db *deploymentBuilder) determineDeployStatus() error {
 	} else if rds.ActiveDeploy != nil {
 		db.Target.Status = sous.DeployStatusActive
 		db.depMarker = rds.ActiveDeploy
-	} else {
-		return malformedResponse{"Singularity deploy state included no dep markers. ReqID: " + reqID(rp)}
 	}
 	return nil
 }
 
 func (db *deploymentBuilder) retrieveDeploy() error {
+	if db.depMarker == nil {
+		return db.retrieveHistoricDeploy()
+	}
+	return db.retrieveLiveDeploy()
+}
+
+func (db *deploymentBuilder) retrieveHistoricDeploy() error {
+	// !!! makes HTTP req
+	if db.request == nil {
+		return malformedResponse{"Singularity request parent had no request."}
+	}
+	sing := db.req.Sing
+	depHistList, err := sing.GetDeploys(db.request.Id, 1, 1)
+	if err != nil {
+		return err
+	}
+
+	if len(depHistList) == 0 {
+		return malformedResponse{"Singularity deploy history list was empty."}
+	}
+
+	partialHistory := depHistList[0]
+
+	if partialHistory.DeployMarker == nil {
+		return malformedResponse{"Singularity deploy history had no deploy marker."}
+	}
+
+	sous.Log.Vomit.Printf("%#v", partialHistory.DeployMarker)
+	depHist, err := sing.GetDeploy(partialHistory.DeployMarker.RequestId, partialHistory.DeployMarker.DeployId)
+	if err != nil {
+		return errors.Wrapf(err, "%#v", partialHistory.DeployMarker)
+	}
+
+	db.history = depHist
+	return nil
+}
+
+func (db *deploymentBuilder) retrieveLiveDeploy() error {
 	// !!! makes HTTP req
 	sing := db.req.Sing
 	dh, err := sing.GetDeploy(db.depMarker.RequestId, db.depMarker.DeployId)
@@ -154,7 +191,11 @@ func (db *deploymentBuilder) retrieveDeploy() error {
 
 	db.history = dh
 
-	db.deploy = dh.Deploy
+	return nil
+}
+
+func (db *deploymentBuilder) extractDeployFromDeployHistory() error {
+	db.deploy = db.history.Deploy
 	if db.deploy == nil {
 		return malformedResponse{"Singularity deploy history included no deploy"}
 	}

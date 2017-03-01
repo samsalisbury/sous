@@ -26,6 +26,10 @@ func (fake *fakeSingClient) GetDeploy(requestID string, deployID string) (*dtos.
 	return fake.cannedAnswer, nil
 }
 
+func (fake *fakeSingClient) GetDeploys(requestID string, count, page int32) (dtos.SingularityDeployHistoryList, error) {
+	return dtos.SingularityDeployHistoryList{fake.cannedAnswer}, nil
+}
+
 func (fake *fakeImageLabeller) ImageLabels(imageName string) (labels map[string]string, err error) {
 	return fake.cannedAnswer, nil
 }

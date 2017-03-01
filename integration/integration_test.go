@@ -120,7 +120,7 @@ func (suite *integrationSuite) BeforeTest(suiteName, testName string) {
 }
 
 func (suite *integrationSuite) TeardownTest() {
-	//ResetSingularity()
+	ResetSingularity()
 }
 
 func (suite *integrationSuite) TestGetLabels() {
@@ -216,14 +216,10 @@ func (suite *integrationSuite) TestFailedService() {
 		ds, which := suite.deploymentWithRepo(clusters, "github.com/opentable/homer-says-doh")
 		deps := ds.Snapshot()
 		fails = deps[which]
-		if fails == nil {
-			suite.T().Log(which, len(deps), deps)
-		}
 		suite.Require().NotNil(fails)
 		if fails.Status != sous.DeployStatusPending {
 			break
 		}
-		suite.T().Log(which, fails, fails.Status)
 		time.Sleep(time.Millisecond * 500)
 	}
 	suite.Equal(fails.Status, sous.DeployStatusFailed, "status was %s not %s", fails.Status, sous.DeployStatusFailed)
