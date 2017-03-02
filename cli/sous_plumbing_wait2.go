@@ -110,7 +110,10 @@ func (spw *SousPlumbingWait2) pollDeployState(ctx context.Context, deployID sous
 	}, "get deploy states")
 
 	if err := result.Err(); err != nil {
-		return result.Err()
+		// Force these errors to be temporary.
+		// Maybe coaxer should pass errors back unmodified so their temporary or
+		// not nature is preserved.
+		return temporary.WrapError(err)
 	}
 
 	ds, ok := result.Value().(*sous.DeployState)
@@ -151,13 +154,13 @@ func (spw *SousPlumbingWait2) fetchDeployState(deployID sous.DeployID) (*sous.De
 	}()
 	if err != nil {
 		log.Printf("SPW: HTTP Error getting %s: %s", u, err)
-		return nil, err
+		return nil, temporary.WrapError(err)
 	}
 	if response.StatusCode != 200 {
-		return nil, tempError{fmt.Errorf("got status code %d", response.StatusCode)}
+		return nil, temporary.Errorf("got status code %d", response.StatusCode)
 	}
 	if response.Body == nil {
-		return nil, tempError{fmt.Errorf("got no body")}
+		return nil, temporary.Errorf("got no body")
 	}
 
 	responseBody := struct {
@@ -172,16 +175,8 @@ func (spw *SousPlumbingWait2) fetchDeployState(deployID sous.DeployID) (*sous.De
 	}
 	deployState, ok := ds.Get(deployID)
 	if !ok {
-		return nil, tempError{fmt.Errorf("no deployment with ID %q yet", deployID)}
+		return nil, temporary.Errorf("no deployment with ID %q yet", deployID)
 	}
 
 	return deployState, nil
-}
-
-type tempError struct {
-	error
-}
-
-func (te *tempError) Temporary() bool {
-	return true
 }
