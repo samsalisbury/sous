@@ -247,25 +247,6 @@ func (suite *integrationSuite) statusIs(ds *sous.DeployState, expected sous.Depl
 	suite.Equal(actual, expected, "deploy status is %q; want %q", actual, expected)
 }
 
-func (suite *integrationSuite) TestSuccessfulService() {
-	clusters := []string{"test-cluster"}
-
-	var succeeds *sous.DeployState
-	for {
-		ds, which := suite.deploymentWithRepo(clusters, "github.com/opentable/docker-grafana")
-		deps := ds.Snapshot()
-		succeeds = deps[which]
-		suite.Require().NotNil(succeeds)
-		if succeeds.Status != sous.DeployStatusPending {
-			break
-		}
-		time.Sleep(time.Millisecond * 500)
-	}
-	actual := succeeds.Status
-	expected := sous.DeployStatusActive
-	suite.Equal(actual, expected, "got %q; want %q", actual, expected)
-}
-
 func (suite *integrationSuite) TestMissingImage() {
 	clusterDefs := sous.Defs{
 		Clusters: sous.Clusters{
