@@ -1,0 +1,218 @@
+StateLocation: /Users/jlester/.local/share/sous/state
+Server: http://192.168.99.100:31509
+SiblingURLs: {}
+BuildStateDir: ""
+Docker:
+  RegistryHost: 192.168.99.100:5000
+  DatabaseDriver: sqlite3_sous
+  DatabaseConnection: file:dummy.db?mode=memory&cache=shared
+User:
+  Name: test
+  Email: test@test.com
+StateLocation: /Users/jlester/.local/share/sous/state
+Server: http://192.168.99.100:31509
+SiblingURLs: {}
+BuildStateDir: ""
+Docker:
+  RegistryHost: 192.168.99.100:5000
+  DatabaseDriver: sqlite3_sous
+  DatabaseConnection: file:dummy.db?mode=memory&cache=shared
+User:
+  Name: test
+  Email: test@test.com
+source: 192.168.99.100/2222/repos/sous-demo
+owners: []
+kind: http-service
+deployments:
+  left:
+    resources:
+      cpus: "30"
+      memory: "100"
+      ports: "1"
+    numinstances: 1
+    volumes: []
+    version: 0.0.23
+  right:
+    resources:
+      cpus: "30"
+      memory: "100"
+      ports: "1"
+    numinstances: 1
+    volumes: []
+    version: 0.0.24
+
+source: 192.168.99.100/2222/repos/sous-demo
+owners: []
+kind: http-service
+deployments:
+  left:
+    resources:
+      cpus: "9999999"
+      memory: "100"
+      ports: "1"
+    numinstances: 1
+    volumes: []
+    version: 0.0.23
+  right:
+    resources:
+      cpus: "9999999"
+      memory: "100"
+      ports: "1"
+    numinstances: 1
+    volumes: []
+    version: 0.0.24
+
+
+  (Sous)> running docker build --build-arg APP_VERSION=0.0.25 --build-arg APP_REVISION=b27658803a61a9fe538ef6ac063e9eddc454277f .
+  (Sous)>   Sending build context to Docker daemon 127.5 kB
+  (Sous)>   Step 1/6 : FROM golang:1.7
+  (Sous)>    ---> 7afbc2b03b9e
+  (Sous)>   Step 2/6 : ARG APP_VERSION=0.0.0
+  (Sous)>    ---> Using cache
+  (Sous)>    ---> 35e22020cb15
+  (Sous)>   Step 3/6 : ARG APP_REVISION=unknown
+  (Sous)>    ---> Using cache
+  (Sous)>    ---> ed01966d610b
+  (Sous)>   Step 4/6 : COPY . /go/src/github.com/opentable/sous-demo
+  (Sous)>    ---> 1954981c3da8
+  (Sous)>   Removing intermediate container 1eead20c5c9b
+  (Sous)>   Step 5/6 : RUN cd src/github.com/opentable/sous-demo;   go build -ldflags     "-X 'main.CustomString=$(cat customstring)' -X 'main.Version=${APP_VERSION}' -X 'main.Revision=${APP_REVISION}'" .
+  (Sous)>    ---> Running in eea8efaf5680
+  (Sous)>    ---> 487934334e19
+  (Sous)>   Removing intermediate container eea8efaf5680
+  (Sous)>   Step 6/6 : CMD sh -c /go/src/github.com/opentable/sous-demo/sous-demo
+  (Sous)>    ---> Running in 29a3b0de49b9
+  (Sous)>    ---> c5ab9bfbf5df
+  (Sous)>   Removing intermediate container 29a3b0de49b9
+  (Sous)>   Successfully built c5ab9bfbf5df
+  (Sous)> running docker build -t 192.168.99.100:5000/192.168.99.100/2222/repos/sous-demo:0.0.25 -t 192.168.99.100:5000/192.168.99.100/2222/repos/sous-demo:b27658803a61a9fe538ef6ac063e9eddc454277f -
+  (Sous)>   Sending build context to Docker daemon 2.048 kB
+  (Sous)>   Step 1/2 : FROM c5ab9bfbf5df
+  (Sous)>    ---> c5ab9bfbf5df
+  (Sous)>   Step 2/2 : LABEL com.opentable.sous.repo_offset "" com.opentable.sous.repo_url "192.168.99.100/2222/repos/sous-demo" com.opentable.sous.revision "b27658803a61a9fe538ef6ac063e9eddc454277f" com.opentable.sous.version "0.0.25" com.opentable.sous.advisories "dirty workspace"
+  (Sous)>    ---> Running in 13b53f9f0580
+  (Sous)>    ---> 3b856b240c2b
+  (Sous)>   Removing intermediate container 13b53f9f0580
+  (Sous)>   Successfully built 3b856b240c2b
+  (Sous)> running docker push 192.168.99.100:5000/192.168.99.100/2222/repos/sous-demo:0.0.25
+  (Sous)>   The push refers to a repository [192.168.99.100:5000/192.168.99.100/2222/repos/sous-demo]
+  (Sous)>   1d9665d5b9e0: Preparing
+  (Sous)>   fdc03c807b7f: Preparing
+  (Sous)>   8eb1c995f8b9: Preparing
+  (Sous)>   677062ced7d3: Preparing
+  (Sous)>   d23a95ba38e5: Preparing
+  (Sous)>   f4d2be23d596: Preparing
+  (Sous)>   30339f20ced0: Preparing
+  (Sous)>   0eb22bfb707d: Preparing
+  (Sous)>   a2ae92ffcd29: Preparing
+  (Sous)>   f4d2be23d596: Waiting
+  (Sous)>   30339f20ced0: Waiting
+  (Sous)>   0eb22bfb707d: Waiting
+  (Sous)>   a2ae92ffcd29: Waiting
+  (Sous)>   d23a95ba38e5: Layer already exists
+  (Sous)>   8eb1c995f8b9: Layer already exists
+  (Sous)>   677062ced7d3: Layer already exists
+  (Sous)>   f4d2be23d596: Layer already exists
+  (Sous)>   30339f20ced0: Layer already exists
+  (Sous)>   a2ae92ffcd29: Layer already exists
+  (Sous)>   0eb22bfb707d: Layer already exists
+  (Sous)>   fdc03c807b7f: Pushed
+  (Sous)>   1d9665d5b9e0: Pushed
+  (Sous)>   0.0.25: digest: sha256:39f6236ca8010ac7593e4e64ed31a634cf214c88b4e27778ca85968d5951bc0d size: 2212
+  (Sous)> running docker push 192.168.99.100:5000/192.168.99.100/2222/repos/sous-demo:b27658803a61a9fe538ef6ac063e9eddc454277f
+  (Sous)>   The push refers to a repository [192.168.99.100:5000/192.168.99.100/2222/repos/sous-demo]
+  (Sous)>   1d9665d5b9e0: Preparing
+  (Sous)>   fdc03c807b7f: Preparing
+  (Sous)>   8eb1c995f8b9: Preparing
+  (Sous)>   677062ced7d3: Preparing
+  (Sous)>   d23a95ba38e5: Preparing
+  (Sous)>   f4d2be23d596: Preparing
+  (Sous)>   30339f20ced0: Preparing
+  (Sous)>   0eb22bfb707d: Preparing
+  (Sous)>   a2ae92ffcd29: Preparing
+  (Sous)>   f4d2be23d596: Waiting
+  (Sous)>   30339f20ced0: Waiting
+  (Sous)>   0eb22bfb707d: Waiting
+  (Sous)>   a2ae92ffcd29: Waiting
+  (Sous)>   8eb1c995f8b9: Layer already exists
+  (Sous)>   677062ced7d3: Layer already exists
+  (Sous)>   1d9665d5b9e0: Layer already exists
+  (Sous)>   d23a95ba38e5: Layer already exists
+  (Sous)>   fdc03c807b7f: Layer already exists
+  (Sous)>   a2ae92ffcd29: Layer already exists
+  (Sous)>   30339f20ced0: Layer already exists
+  (Sous)>   f4d2be23d596: Layer already exists
+  (Sous)>   0eb22bfb707d: Layer already exists
+  (Sous)>   b27658803a61a9fe538ef6ac063e9eddc454277f: digest: sha256:39f6236ca8010ac7593e4e64ed31a634cf214c88b4e27778ca85968d5951bc0d size: 2212
+  (Sous)> [recording "192.168.99.100:5000/192.168.99.100/2222/repos/sous-demo:0.0.25" as the docker name for "192.168.99.100/2222/repos/sous-demo,0.0.25+b27658803a61a9fe538ef6ac063e9eddc454277f"]
+Built: "192.168.99.100:5000/192.168.99.100/2222/repos/sous-demo:0.0.25"
+Advisories:
+  dirty workspace
+Elapsed: 2.81589404s
+  (Sous)> git version
+> git version 2.10.0
+
+  (Sous)> git config -l
+> credential.helper=osxkeychain
+core.sshcommand=/tmp/sous-work/home/bin/ssh_wrapper
+user.name=Integration Tester
+user.email=itester@opentable.com
+push.default=simple
+core.repositoryformatversion=0
+core.filemode=true
+core.bare=false
+core.logallrefupdates=true
+core.ignorecase=true
+core.precomposeunicode=true
+remote.origin.url=ssh://root@192.168.99.100:2222/repos/sous-demo
+remote.origin.fetch=+refs/heads/*:refs/remotes/origin/*
+branch.master.remote=origin
+branch.master.merge=refs/heads/master
+
+  (Sous)> git rev-parse --show-toplevel
+> /private/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing781892837/sous-demo/sous-demo/sous-demo
+
+  (Sous)> git rev-list -n 1 HEAD
+> b27658803a61a9fe538ef6ac063e9eddc454277f
+
+  (Sous)> git ls-files --others --exclude-standard
+> demo_manifest.yaml
+demo_manifest_toobig.yaml
+
+  (Sous)> git ls-files --modified
+> 
+  (Sous)> git rev-parse --abbrev-ref HEAD
+> master
+
+  (Sous)> git remote -v
+> origin	ssh://root@192.168.99.100:2222/repos/sous-demo (fetch)
+origin	ssh://root@192.168.99.100:2222/repos/sous-demo (push)
+
+  (Sous)> git ls-files
+> Dockerfile
+README.md
+customstring
+main.go
+set-version.sh
+templates/index.html.tmpl
+vendor/golang.org/x/tools/LICENSE
+vendor/golang.org/x/tools/PATENTS
+vendor/golang.org/x/tools/godoc/vfs/emptyvfs.go
+vendor/golang.org/x/tools/godoc/vfs/mapfs/mapfs.go
+vendor/golang.org/x/tools/godoc/vfs/namespace.go
+vendor/golang.org/x/tools/godoc/vfs/os.go
+vendor/golang.org/x/tools/godoc/vfs/vfs.go
+vendor/vendor.json
+vfs_templates.go
+
+  (Sous)> git log --date-order --tags --simplify-by-decoration --pretty=format:%H %aI %D
+> b27658803a61a9fe538ef6ac063e9eddc454277f 2017-01-25T14:40:24-08:00 HEAD -> master, tag: 0.0.25, tag: 0.0.24, tag: 0.0.23, origin/master, origin/HEAD
+f921f218e62722aed85e47696010660dbfa10ab0 2017-01-11T10:57:00-08:00 
+  (Sous)> git describe --tags --abbrev=0 --always
+> 0.0.25
+
+  (Sous)> git rev-list -n 1 0.0.25
+> b27658803a61a9fe538ef6ac063e9eddc454277f
+
+Updated global manifest.
+Waiting for server to report that deploy has stabilized...

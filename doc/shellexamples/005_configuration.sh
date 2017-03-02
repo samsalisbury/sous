@@ -1,15 +1,17 @@
 # This is kind of a hack - in normal operation, Sous would block until its
 # services had been accepted, but when bootstrapping, we need to wait for them
 # to come up.
-for n in {1..30}; do
-  if [ $(cygnus -H http://192.168.99.100:7099/singularity | grep sous-server | wc -l) -ge 2 ]; then
+for n in {1..50}; do
+	cygnus -H --env PORT0 http://192.168.99.100:7099/singularity > ~/server-singularity.txt
+  if [ $( grep sous-server ~/server-singularity.txt | wc -l) -ge 2 ]; then
 	  break
 	fi
   sleep 0.1
 done
+cat ~/server-singularity.txt >2
 
-leftport=$(cygnus --env PORT0 http://192.168.99.100:7099/singularity | grep 'sous-server.*left' | awk '{ print $3 }')
-rightport=$(cygnus --env PORT0 http://192.168.99.100:7099/singularity | grep 'sous-server.*right' | awk '{ print $3 }')
+leftport=$(grep 'sous-server.*left' ~/server-singularity.txt | awk '{ print $3 }')
+rightport=$(grep 'sous-server.*right' ~/server-singularity.txt | awk '{ print $3 }')
 
 serverURL=http://192.168.99.100:$leftport
 echo "Determined server url as $serverURL"
