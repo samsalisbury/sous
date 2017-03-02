@@ -120,7 +120,7 @@ test-setup:  sous_qa_setup
 
 test-cli: test-setup linux-build
 	rm -rf doc/shellexamples/*
-	SOUS_QA_DESC=$(QA_DESC) go test $(TEST_VERBOSE) -timeout=5m ./integration --tags=commandline
+	SOUS_QA_DESC=$(QA_DESC) go test $(TEST_VERBOSE) -timeout=7m ./integration --tags=commandline
 
 $(BIN_DIR):
 	mkdir -p $@
