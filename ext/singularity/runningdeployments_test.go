@@ -254,6 +254,21 @@ func TestDeployer_RunningDeployments(t *testing.T) {
 					expected.Status = sous.DeployStatusFailed
 				}),
 		},
+		{
+			"Latest deploy overdue => DeployStatusFailed",
+			modifyInputRequestParent("http://singularity1", "github.com>user>repo1::cluster1",
+				func(input *testRequestParent) {
+					// Add a new failed deployment.
+					input.AddStandardDeployHistory("newDeploy", func(d *dtos.SingularityDeployHistory) {
+						d.DeployResult.DeployState = dtos.SingularityDeployResultDeployStateOVERDUE
+					})
+				}),
+			modifyExpectedDeployState("github.com/user/repo1:cluster1",
+				func(expected *sous.DeployState) {
+					// Expect the deploy state to be failed.
+					expected.Status = sous.DeployStatusFailed
+				}),
+		},
 	}
 
 	// Run the test cases.
