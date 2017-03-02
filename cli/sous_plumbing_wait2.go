@@ -99,6 +99,7 @@ func (spw *SousPlumbingWait2) Execute(args []string) cmdr.Result {
 			return cmdr.Success()
 		}
 		log.Printf("Waiting, not done because: %s", err)
+		time.Sleep(time.Second)
 	}
 }
 
