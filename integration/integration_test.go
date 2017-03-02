@@ -242,6 +242,40 @@ func (suite *integrationSuite) TestSuccessfulService() {
 	suite.statusIs(succeeds, sous.DeployStatusActive)
 }
 
+func (suite *integrationSuite) TestFailedDeployFollowingSuccessfulDeploy() {
+	clusters := []string{"test-cluster"}
+
+	registerAndDeploy(ip, "test-cluster", "supposed-to-fail", "github.com/user/succeedthenfail", "hello-labels", "1-succeeds", []int32{})
+
+	var succeeds *sous.DeployState
+	for {
+		ds, which := suite.deploymentWithRepo(clusters, "github.com/user/succeedthenfail")
+		deps := ds.Snapshot()
+		succeeds = deps[which]
+		suite.Require().NotNil(succeeds)
+		if succeeds.Status != sous.DeployStatusPending {
+			break
+		}
+		time.Sleep(time.Millisecond * 500)
+	}
+	suite.statusIs(succeeds, sous.DeployStatusActive)
+
+	registerAndDeploy(ip, "test-cluster", "supposed-to-fail", "github.com/user/succeedthenfail", "fails-labels", "2-fails", []int32{})
+
+	var fails *sous.DeployState
+	for {
+		ds, which := suite.deploymentWithRepo(clusters, "github.com/user/succeedthenfail")
+		deps := ds.Snapshot()
+		fails = deps[which]
+		suite.Require().NotNil(fails)
+		if fails.Status != sous.DeployStatusPending {
+			break
+		}
+		time.Sleep(time.Millisecond * 500)
+	}
+	suite.statusIs(fails, sous.DeployStatusFailed)
+}
+
 func (suite *integrationSuite) statusIs(ds *sous.DeployState, expected sous.DeployStatus) {
 	actual := ds.Status
 	suite.Equal(actual, expected, "deploy status is %q; want %q", actual, expected)
