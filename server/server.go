@@ -1,6 +1,8 @@
 package server
 
 import (
+	// Import expvar to register http handler at /debug/var.
+	_ "expvar"
 	"net/http"
 
 	"github.com/opentable/sous/config"
