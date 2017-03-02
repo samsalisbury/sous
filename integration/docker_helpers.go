@@ -100,19 +100,15 @@ func BuildImageName(reponame, tag string) string {
 	return fmt.Sprintf("%s/%s:%s", registryName, reponame, tag)
 }
 
-func registerAndDeploy(ip net.IP, clusterName, reponame, sourceRepo, dir string, ports []int32) (err error) {
-	imageName := BuildImageName(reponame, "latest")
-	err = BuildAndPushContainer(dir, imageName)
-	if err != nil {
+func registerAndDeploy(ip net.IP, clusterName, reponame, sourceRepo, dir, tag string, ports []int32) error {
+	imageName := BuildImageName(reponame, tag)
+	if err := BuildAndPushContainer(dir, imageName); err != nil {
 		panic(fmt.Errorf("building test container failed: %s", err))
 	}
-
-	err = startInstance(SingularityURL, clusterName, imageName, sourceRepo, ports)
-	if err != nil {
+	if err := startInstance(SingularityURL, clusterName, imageName, sourceRepo, ports); err != nil {
 		panic(fmt.Errorf("starting a singularity instance failed: %s", err))
 	}
-
-	return
+	return nil
 }
 
 // BuildAndPushContainer builds a container based on the source found in

@@ -106,6 +106,10 @@ func TestBuildDeployment_errors(t *testing.T) {
 
 	req.ReqParent.Request.RequestType = dtos.SingularityRequestRequestTypeSERVICE
 	_, err = BuildDeployment(fakeReg, testClusters, req)
+	assert.Error(t, err)
+
+	fakeSing.cannedAnswer.DeployMarker = &dtos.SingularityDeployMarker{}
+	_, err = BuildDeployment(fakeReg, testClusters, req)
 	assert.NoError(t, err)
 }
 
@@ -135,6 +139,7 @@ func TestBuildDeployment(t *testing.T) {
 			DeployResult: &dtos.SingularityDeployResult{
 				DeployState: dtos.SingularityDeployResultDeployStateSUCCEEDED,
 			},
+			DeployMarker: &dtos.SingularityDeployMarker{},
 			Deploy: &dtos.SingularityDeploy{
 				ContainerInfo: &dtos.SingularityContainerInfo{
 					Type:   "DOCKER",
@@ -202,6 +207,7 @@ func TestBuildDeployment_failed_deploy(t *testing.T) {
 			DeployResult: &dtos.SingularityDeployResult{
 				DeployState: dtos.SingularityDeployResultDeployStateFAILED,
 			},
+			DeployMarker: &dtos.SingularityDeployMarker{},
 			Deploy: &dtos.SingularityDeploy{
 				ContainerInfo: &dtos.SingularityContainerInfo{
 					Type:   "DOCKER",
@@ -291,32 +297,6 @@ func TestBuildDeployment_determineDeployStatus_pendingonly(t *testing.T) {
 	} else {
 		if db.Target.Status != sous.DeployStatusPending {
 			t.Errorf("Expected Status pending (%d), got %d", sous.DeployStatusPending, db.Target.Status)
-		}
-		if db.depMarker != &depMarker {
-			t.Errorf("Expected depMarker to be %v, got %v", depMarker, db.depMarker)
-		}
-	}
-
-}
-
-func TestBuildDeployment_determineDeployStatus_activeonly(t *testing.T) {
-	depMarker := dtos.SingularityDeployMarker{}
-
-	db := &deploymentBuilder{
-		req: SingReq{
-			ReqParent: &dtos.SingularityRequestParent{
-				RequestDeployState: &dtos.SingularityRequestDeployState{
-					ActiveDeploy: &depMarker,
-				},
-			},
-		},
-	}
-
-	if err := db.determineDeployStatus(); err != nil {
-		t.Errorf("Expected no error, got %v", err)
-	} else {
-		if db.Target.Status != sous.DeployStatusActive {
-			t.Errorf("Expected Status pending (%d), got %d", sous.DeployStatusActive, db.Target.Status)
 		}
 		if db.depMarker != &depMarker {
 			t.Errorf("Expected depMarker to be %v, got %v", depMarker, db.depMarker)
