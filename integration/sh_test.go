@@ -142,6 +142,17 @@ func TestShellLevelIntegration(t *testing.T) {
 			t.Errorf("Error in %s: \n\t%s", name, res.Errs)
 		}
 	}
+	expectError := func(errString string) func(string, shelltest.Result, *testing.T) {
+		return func(name string, res shelltest.Result, t *testing.T) {
+			if len(res.Errs) == 0 {
+				t.Errorf("Got no errors; want error %q", errString)
+			}
+			actual := string(res.Errs)
+			if actual != errString {
+				t.Errorf("got error %q; want %q", actual, errString)
+			}
+		}
+	}
 
 	preconditions := shell.Block("Preconditions for CLI integration tests", `
 	date
@@ -329,27 +340,27 @@ func TestShellLevelIntegration(t *testing.T) {
 	sed 's/^      cpus.*$/      cpus: "30"/g' demo_manifest.yaml > demo_manifest_toobig.yaml
 	cat demo_manifest_toobig.yaml
 	sous manifest set < demo_manifest_toobig.yaml
-	sous build
+	sous build -repo github.com/user/toobig
 	sous deploy -d -v -cluster right
-	`, defaultCheck)
+	`, expectError("some error"))
 
-	//failedDeploy :=
-	config.Block("deploy badly configured project", `
-	cat $XDG_CONFIG/sous/config.yaml
-	sous config
-	git clone {{.GitRemoteBase}}/sous-demo
-	cd sous-demo
-	git tag -am 'Release!' 0.0.25
-	git push --tags
+	////failedDeploy :=
+	//config.Block("deploy badly configured project", `
+	//cat $XDG_CONFIG/sous/config.yaml
+	//sous config
+	//git clone {{.GitRemoteBase}}/sous-demo
+	//cd sous-demo
+	//git tag -am 'Release!' 0.0.25
+	//git push --tags
 
-	# We will make this deploy fail by asking for too many resources.
-	sous manifest get > demo_manifest.yaml
-	cat demo_manifest.yaml
-	# Set CPUs to redonkulous.
-	sed 's/^      cpus.*$/      cpus: "9999999"/g' demo_manifest.yaml > demo_manifest_toobig.yaml
-	cat demo_manifest_toobig.yaml
-	sous manifest set < demo_manifest_toobig.yaml
-	sous build
-	sous deploy -d -v -cluster right
-	`, defaultCheck)
+	//# We will make this deploy fail by asking for too many resources.
+	//sous manifest get > demo_manifest.yaml
+	//cat demo_manifest.yaml
+	//# Set CPUs to redonkulous.
+	//sed 's/^      cpus.*$/      cpus: "9999999"/g' demo_manifest.yaml > demo_manifest_toobig.yaml
+	//cat demo_manifest_toobig.yaml
+	//sous manifest set < demo_manifest_toobig.yaml
+	//sous build
+	//sous deploy -d -v -cluster right
+	//`, expectError("some error"))
 }
