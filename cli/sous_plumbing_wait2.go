@@ -14,6 +14,7 @@ import (
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
+	"github.com/opentable/sous/util/temporary"
 	"github.com/samsalisbury/coaxer"
 	"github.com/samsalisbury/semv"
 )
@@ -65,20 +66,9 @@ func (spw *SousPlumbingWait2) Execute(args []string) cmdr.Result {
 		return EnsureErrorResult(err)
 	}
 
-	timeout := 5 * time.Minute
-	//deployID, ok := spw.DeployFilterFlags.SpecificDeployID()
-	//if !ok {
-	//	return cmdr.UsageErrorf("Please specify both -repo and -cluster flags.")
-	//}
-
-	//if spw.DeployFilterFlags.Tag == "" {
-	//	return cmdr.UsageErrorf("Please specify -tag flag.")
-	//}
-
-	//version, err := semv.Parse(spw.DeployFilterFlags.Tag)
-	//if err != nil {
-	//	return cmdr.UsageErrorf("cannot parse tag %q as semver: %s", spw.DeployFilterFlags.Tag, err)
-	//}
+	// Set 5m timeout for entire polling session.
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
 
 	version := sid.Version
 
@@ -94,19 +84,28 @@ func (spw *SousPlumbingWait2) Execute(args []string) cmdr.Result {
 		// It if it succeeded with the expected version, return exit code 0.
 		// If it is succeeded with not the expected version, keep trying until
 		// -timeout is reached.
-		err := spw.pollDeployState(timeout, did, version)
-		if err == nil {
-			return cmdr.Success()
+
+		// Set 30s timeout per poll.
+		ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+		defer cancel()
+		if err := spw.pollDeployState(ctx, did, version); err != nil {
+			if !temporary.IsTemporary(err) {
+				return cmdr.EnsureErrorResult(err)
+			}
+			log.Printf("Waiting, not done because: %s", err)
+			time.Sleep(time.Second)
+			continue
 		}
-		log.Printf("Waiting, not done because: %s", err)
-		time.Sleep(time.Second)
+		status := sous.InvalidDeployStatus
+		sous.Log.Debug.Printf("Got deploy state %s for %q", status, did)
+		return cmdr.Success()
 	}
 }
 
-func (spw *SousPlumbingWait2) pollDeployState(timeout time.Duration, deployID sous.DeployID, version semv.Version) error {
+func (spw *SousPlumbingWait2) pollDeployState(ctx context.Context, deployID sous.DeployID, version semv.Version) error {
 	c := coaxer.NewCoaxer()
 
-	result := c.Coax(context.TODO(), func() (interface{}, error) {
+	result := c.Coax(ctx, func() (interface{}, error) {
 		return spw.fetchDeployState(deployID)
 	}, "get deploy states")
 
@@ -121,13 +120,19 @@ func (spw *SousPlumbingWait2) pollDeployState(timeout time.Duration, deployID so
 
 	deployedVersion := ds.Deployment.SourceID.Version
 	if !deployedVersion.Equals(version) {
-		return fmt.Errorf("version %q still deployed, awaiting %q", deployedVersion, version)
+		return temporary.Errorf("old version %q still deployed, awaiting %q", deployedVersion, version)
 	}
 
-	if ds.Status != sous.DeployStatusSucceeded {
-		return fmt.Errorf("deploy status: %s", ds.Status)
+	switch ds.Status {
+	default:
+		return fmt.Errorf("deploy reported an unknown status: %s", ds.Status)
+	case sous.DeployStatusPending:
+		return temporary.Errorf("deploy pending")
+	case sous.DeployStatusFailed:
+		return fmt.Errorf("deploy failed")
+	case sous.DeployStatusSucceeded:
+		return nil
 	}
-	return nil
 }
 
 func (spw *SousPlumbingWait2) fetchDeployState(deployID sous.DeployID) (*sous.DeployState, error) {
