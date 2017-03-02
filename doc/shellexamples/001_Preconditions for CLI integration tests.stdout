@@ -1,3 +1,5 @@
+Cleaning github.com%3Edocker%3Edockercloud-hello-world::test-cluster
+{"id":"github.com>docker>dockercloud-hello-world::test-cluster","requestType":"SERVICE","instances":1}
 All requests cleaned
 sous_linux
 sous_qa_setup

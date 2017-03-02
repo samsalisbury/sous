@@ -222,7 +222,29 @@ func (suite *integrationSuite) TestFailedService() {
 		}
 		time.Sleep(time.Millisecond * 500)
 	}
-	suite.Equal(fails.Status, sous.DeployStatusFailed, "status was %s not %s", fails.Status, sous.DeployStatusFailed)
+	suite.statusIs(fails, sous.DeployStatusFailed)
+}
+
+func (suite *integrationSuite) TestSuccessfulService() {
+	clusters := []string{"test-cluster"}
+
+	var succeeds *sous.DeployState
+	for {
+		ds, which := suite.deploymentWithRepo(clusters, "github.com/docker/dockercloud-hello-world")
+		deps := ds.Snapshot()
+		succeeds = deps[which]
+		suite.Require().NotNil(succeeds)
+		if succeeds.Status != sous.DeployStatusPending {
+			break
+		}
+		time.Sleep(time.Millisecond * 500)
+	}
+	suite.statusIs(succeeds, sous.DeployStatusActive)
+}
+
+func (suite *integrationSuite) statusIs(ds *sous.DeployState, expected sous.DeployStatus) {
+	actual := ds.Status
+	suite.Equal(actual, expected, "deploy status is %q; want %q", actual, expected)
 }
 
 func (suite *integrationSuite) TestSuccessfulService() {

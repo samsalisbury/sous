@@ -135,10 +135,11 @@ func (db *deploymentBuilder) determineDeployStatus() error {
 	if rds.PendingDeploy != nil {
 		db.Target.Status = sous.DeployStatusPending
 		db.depMarker = rds.PendingDeploy
-	} else if rds.ActiveDeploy != nil {
-		db.Target.Status = sous.DeployStatusActive
-		db.depMarker = rds.ActiveDeploy
 	}
+	// if there's no Pending deploy, we'll use the top of history in preference to Active
+	// Consider: we might collect both and compare timestamps, but the active is
+	// going to be the top of the history anyway unless there's been a more
+	// recent failed deploy
 	return nil
 }
 
@@ -146,18 +147,21 @@ func (db *deploymentBuilder) retrieveDeploy() error {
 	if db.depMarker == nil {
 		return db.retrieveHistoricDeploy()
 	}
+	Log.Vomit.Printf("Getting deploy based on Pending marker.")
 	return db.retrieveLiveDeploy()
 }
 
 func (db *deploymentBuilder) retrieveHistoricDeploy() error {
+	Log.Vomit.Printf("Getting deploy from history")
 	// !!! makes HTTP req
 	if db.request == nil {
 		return malformedResponse{"Singularity request parent had no request."}
 	}
 	sing := db.req.Sing
 	depHistList, err := sing.GetDeploys(db.request.Id, 1, 1)
+	Log.Vomit.Printf("Got history from Singularity with %d items.", len(depHistList))
 	if err != nil {
-		return err
+		return errors.Wrap(err, "GetDeploys")
 	}
 
 	if len(depHistList) == 0 {
@@ -166,17 +170,14 @@ func (db *deploymentBuilder) retrieveHistoricDeploy() error {
 
 	partialHistory := depHistList[0]
 
+	Log.Vomit.Printf("%#v", partialHistory)
 	if partialHistory.DeployMarker == nil {
 		return malformedResponse{"Singularity deploy history had no deploy marker."}
 	}
 
-	sous.Log.Vomit.Printf("%#v", partialHistory.DeployMarker)
-	depHist, err := sing.GetDeploy(partialHistory.DeployMarker.RequestId, partialHistory.DeployMarker.DeployId)
-	if err != nil {
-		return errors.Wrapf(err, "%#v", partialHistory.DeployMarker)
-	}
-
-	db.history = depHist
+	Log.Vomit.Printf("%#v", partialHistory.DeployMarker)
+	db.depMarker = partialHistory.DeployMarker
+	db.retrieveLiveDeploy()
 	return nil
 }
 
@@ -185,9 +186,9 @@ func (db *deploymentBuilder) retrieveLiveDeploy() error {
 	sing := db.req.Sing
 	dh, err := sing.GetDeploy(db.depMarker.RequestId, db.depMarker.DeployId)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "%#v", db.depMarker)
 	}
-	Log.Vomit.Printf("%#v", dh)
+	Log.Vomit.Printf("Deploy history entry retrieved: %#v", dh)
 
 	db.history = dh
 
@@ -208,9 +209,12 @@ func (db *deploymentBuilder) determineStatus() error {
 		db.Target.Status = sous.DeployStatusPending
 		return nil
 	}
-	if db.history.DeployResult.DeployState != dtos.SingularityDeployResultDeployStateSUCCEEDED {
+	if db.history.DeployResult.DeployState == dtos.SingularityDeployResultDeployStateSUCCEEDED {
+		db.Target.Status = sous.DeployStatusActive
+	} else {
 		db.Target.Status = sous.DeployStatusFailed
 	}
+
 	return nil
 }
 
