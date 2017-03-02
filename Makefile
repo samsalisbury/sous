@@ -116,6 +116,7 @@ test-unit:
 	go test $(TEST_VERBOSE) ./...
 
 test-integration: test-setup
+	go test -c -tags integration ./integration
 	SOUS_QA_DESC=$(QA_DESC) go test $(TEST_VERBOSE) ./integration --tags=integration
 
 test-setup:  sous_qa_setup
