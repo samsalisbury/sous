@@ -119,7 +119,6 @@ func (suite *integrationSuite) newNameCache(name string) *docker.NameCache {
 }
 
 func (suite *integrationSuite) BeforeTest(suiteName, testName string) {
-	panic("BEFORE_TEST")
 	suite.T().Logf("Before %q %q", suiteName, testName)
 	ResetSingularity()
 
