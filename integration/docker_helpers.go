@@ -108,6 +108,7 @@ func registerAndDeploy(ip net.IP, clusterName, reponame, sourceRepo, dir, tag st
 	if err := startInstance(SingularityURL, clusterName, imageName, sourceRepo, ports); err != nil {
 		panic(fmt.Errorf("starting a singularity instance failed: %s", err))
 	}
+
 	return nil
 }
 
@@ -198,9 +199,10 @@ func startInstance(url, clusterName, imageName, repoName string, ports []int32) 
 		"Image": imageName,
 	}).(*dtos.SingularityDockerInfo)
 
+	deployID := "TESTGENERATED_" + singularity.StripDeployID(uuid.NewV4().String())
 	depReq := loadMap(&dtos.SingularityDeployRequest{}, dtoMap{
 		"Deploy": loadMap(&dtos.SingularityDeploy{}, dtoMap{
-			"Id":        "TESTGENERATED_" + singularity.StripDeployID(uuid.NewV4().String()),
+			"Id":        deployID,
 			"RequestId": reqID,
 			"Resources": loadMap(&dtos.Resources{}, dtoMap{
 				"Cpus":     0.1,
@@ -218,6 +220,7 @@ func startInstance(url, clusterName, imageName, repoName string, ports []int32) 
 	if err != nil {
 		return err
 	}
+	log.Printf("Started singularity deploy %q at request %q", deployID, reqID)
 
 	return nil
 }

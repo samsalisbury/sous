@@ -4,6 +4,7 @@ package integration
 
 import (
 	"fmt"
+	"log"
 	"testing"
 	"time"
 
@@ -245,35 +246,55 @@ func (suite *integrationSuite) TestSuccessfulService() {
 func (suite *integrationSuite) TestFailedDeployFollowingSuccessfulDeploy() {
 	clusters := []string{"test-cluster"}
 
-	registerAndDeploy(ip, "test-cluster", "supposed-to-fail", "github.com/user/succeedthenfail", "hello-labels", "1-succeeds", []int32{})
+	const sourceRepo = "github.com/user/succeedthenfail" // Part of request ID.
+	const clusterName = "test-cluster"                   // Part of request ID.
 
-	var succeeds *sous.DeployState
-	for {
-		ds, which := suite.deploymentWithRepo(clusters, "github.com/user/succeedthenfail")
-		deps := ds.Snapshot()
-		succeeds = deps[which]
-		suite.Require().NotNil(succeeds)
-		if succeeds.Status != sous.DeployStatusPending {
-			break
+	{
+		// Create an assert on a successful deployment.
+		var ports []int32
+		const repoName = "succeedthenfail"
+		const dir = "succeedthenfail-succeed"
+		const tag = "1.0.0-succeed"
+
+		registerAndDeploy(ip, clusterName, repoName, sourceRepo, dir, tag, ports)
+
+		var deployState *sous.DeployState
+		for {
+			ds, which := suite.deploymentWithRepo(clusters, sourceRepo)
+			log.Printf("GOT DEPLOY ID: %q", which)
+			deps := ds.Snapshot()
+			deployState = deps[which]
+			suite.Require().NotNil(deployState)
+			if deployState.Status != sous.DeployStatusPending {
+				break
+			}
+			time.Sleep(time.Millisecond * 500)
 		}
-		time.Sleep(time.Millisecond * 500)
+		suite.statusIs(deployState, sous.DeployStatusActive)
 	}
-	suite.statusIs(succeeds, sous.DeployStatusActive)
 
-	registerAndDeploy(ip, "test-cluster", "supposed-to-fail", "github.com/user/succeedthenfail", "fails-labels", "2-fails", []int32{})
+	{
+		// Create an assert on a failed deployment.
+		var ports []int32
+		const repoName = "succeedthenfail"
+		const dir = "succeedthenfail-fail"
+		const tag = "2.0.0-fail"
 
-	var fails *sous.DeployState
-	for {
-		ds, which := suite.deploymentWithRepo(clusters, "github.com/user/succeedthenfail")
-		deps := ds.Snapshot()
-		fails = deps[which]
-		suite.Require().NotNil(fails)
-		if fails.Status != sous.DeployStatusPending {
-			break
+		registerAndDeploy(ip, clusterName, repoName, sourceRepo, dir, tag, ports)
+
+		var deployState *sous.DeployState
+		for {
+			ds, which := suite.deploymentWithRepo(clusters, sourceRepo)
+			deps := ds.Snapshot()
+			deployState = deps[which]
+			suite.Require().NotNil(deployState)
+			if deployState.Status != sous.DeployStatusPending {
+				break
+			}
+			time.Sleep(time.Millisecond * 500)
 		}
-		time.Sleep(time.Millisecond * 500)
+		suite.statusIs(deployState, sous.DeployStatusFailed)
 	}
-	suite.statusIs(fails, sous.DeployStatusFailed)
 }
 
 func (suite *integrationSuite) statusIs(ds *sous.DeployState, expected sous.DeployStatus) {
