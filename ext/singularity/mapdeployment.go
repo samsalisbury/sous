@@ -70,6 +70,9 @@ func mapDeployHistoryToDeployConfig(req *dtos.SingularityRequest, deploy *dtos.S
 	var volumes sous.Volumes
 	if deploy.ContainerInfo != nil && deploy.ContainerInfo.Volumes != nil {
 		for _, v := range deploy.ContainerInfo.Volumes {
+			if v == nil {
+				continue
+			}
 			volumes = append(volumes,
 				&sous.Volume{
 					Host:      v.HostPath,

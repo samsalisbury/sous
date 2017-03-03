@@ -31,8 +31,15 @@ func (vs Volumes) Equal(o Volumes) bool {
 	}
 	c := append(Volumes{}, o...)
 	for _, v := range vs {
+		if v == nil {
+			continue
+		}
 		m := false
 		for i, ov := range c {
+			if ov == nil {
+				// TODO: Make Volumes.Diff to surface this data in a nicer way.
+				return false
+			}
 			if v.Equal(ov) {
 				m = true
 				if i < len(c) {

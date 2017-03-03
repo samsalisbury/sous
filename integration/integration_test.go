@@ -270,7 +270,7 @@ func (suite *integrationSuite) TestSuccessfulService() {
 		}
 		time.Sleep(time.Millisecond * 500)
 	}
-	suite.statusIs(succeeds, sous.DeployStatusActive)
+	suite.statusIs(succeeds, sous.DeployStatusSucceeded)
 }
 
 func (suite *integrationSuite) TestFailedDeployFollowingSuccessfulDeploy() {
