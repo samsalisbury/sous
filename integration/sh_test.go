@@ -281,7 +281,7 @@ func TestShellLevelIntegration(t *testing.T) {
 	`,
 		func(name string, res shelltest.Result, t *testing.T) {
 			if len(res.Errs) > 0 {
-				t.Errorf("Trouble %s: \n\t%s", name, name, name, name, name, name, name, name, res.Errs)
+				t.Errorf("Trouble %s: \n\t%s", name, res.Errs)
 			}
 
 			if !res.Matches(`Set server URL to: http`) {
