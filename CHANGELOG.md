@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
+## [0.2.0] - 2017-03-06
+
+### Added
+
+- 'sous deploy' now returns a nonzero exit code when tasks for a deploy fail to start
+  in Singularity. This makes it more suitable for unattended contexts like CD.
+
+### Fixed
+
+- Source locations with empty offsets and flavors no longer confuse 'sous plumbing status'.
+  Previously 'sous plumbing status' (and 'sous deploy' which depends on it) were
+  failing because they matched too many deployments when treating the empty
+  offset as a wildcard. They now correctly treat it as a specific value.
+- 'sous build' and 'sous deploy' previously appeared to hang when running long internal
+  operations, they now inform the user there will be a wait.
+
+
 ## [0.1.9] - 2017-02-16
 
 ### Added

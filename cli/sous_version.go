@@ -28,8 +28,8 @@ func (sv *SousVersion) Execute(args []string) cmdr.Result {
 	s := sv.Sous
 	minVer := semv.Version{
 		Major: 0,
-		Minor: 1,
-		Patch: 8,
+		Minor: 2,
+		Patch: 0,
 	}
 	var warning string
 	if s.Version.Less(minVer) || s.Version.Meta == "DIRTY" {
