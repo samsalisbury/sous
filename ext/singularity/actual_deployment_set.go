@@ -30,6 +30,7 @@ type (
 	// A SingClient provides the interface needed to assemble a deployment.
 	SingClient interface {
 		GetDeploy(requestID string, deployID string) (*dtos.SingularityDeployHistory, error)
+		GetDeploys(requestID string, count, page int32) (dtos.SingularityDeployHistoryList, error)
 	}
 
 	// SingReq captures a request made to singularity with its initial response

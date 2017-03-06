@@ -65,6 +65,9 @@ gitlog:
 install-ggen:
 	cd bin/ggen && go install ./
 
+install-stringer:
+	go get golang.org/x/tools/cmd/stringer
+
 legendary: coverage
 	legendary --hitlist .cadre/coverage.vim /tmp/sous-cover/*_merged.txt
 
@@ -113,6 +116,7 @@ test-unit:
 	go test $(TEST_VERBOSE) ./...
 
 test-integration: test-setup
+	go test -c -tags integration ./integration
 	SOUS_QA_DESC=$(QA_DESC) go test $(TEST_VERBOSE) ./integration --tags=integration
 
 test-setup:  sous_qa_setup

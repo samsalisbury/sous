@@ -109,7 +109,7 @@ key_sous@example.com
 main.go
 sous
 sous-server.yaml
-[master 50c34fc] Adding ephemeral files
+[master 47902ce] Adding ephemeral files
  3 files changed, 30 insertions(+)
  create mode 100644 key_sous@example.com
  create mode 100644 known_hosts
@@ -123,49 +123,49 @@ sous-server.yaml
   (Sous)>    ---> e275d60882b0
   (Sous)>   Step 3/10 : COPY ./known_hosts /root/.ssh/known_hosts
   (Sous)>    ---> Using cache
-  (Sous)>    ---> 91344c9d7c3e
+  (Sous)>    ---> f7d846aced33
   (Sous)>   Step 4/10 : COPY ./docker.crt /docker.crt
   (Sous)>    ---> Using cache
-  (Sous)>    ---> 3ee36a214426
+  (Sous)>    ---> ad92b5454787
   (Sous)>   Step 5/10 : RUN chmod -R og-rwx /root/.ssh
   (Sous)>    ---> Using cache
-  (Sous)>    ---> 5b353a0a3205
+  (Sous)>    ---> 9bf89627738d
   (Sous)>   Step 6/10 : COPY ./sous /go/bin/sous
-  (Sous)>    ---> dbc0bc794c32
-  (Sous)>   Removing intermediate container 14649248e3c7
+  (Sous)>    ---> b5fa6257e870
+  (Sous)>   Removing intermediate container c73bbd026276
   (Sous)>   Step 7/10 : COPY main.go /go/src/github.com/opentable/sous-server/
-  (Sous)>    ---> 969c9480930b
-  (Sous)>   Removing intermediate container 8a914d06ef90
+  (Sous)>    ---> 1dd7bc80590a
+  (Sous)>   Removing intermediate container 0fd58b03569e
   (Sous)>   Step 8/10 : WORKDIR /go/src/github.com/opentable/sous-server
-  (Sous)>    ---> a53797276b42
-  (Sous)>   Removing intermediate container d4f648e8e0f4
+  (Sous)>    ---> 6b720d898a15
+  (Sous)>   Removing intermediate container 88498fe291bf
   (Sous)>   Step 9/10 : RUN go install -v
-  (Sous)>    ---> Running in dd0b2f58094c
+  (Sous)>    ---> Running in 68a1bc28f832
   (Sous)>   [91mgithub.com/opentable/sous-server
-  (Sous)>   [0m ---> bf67ddcdeb56
-  (Sous)>   Removing intermediate container dd0b2f58094c
+  (Sous)>   [0m ---> b5aaefa75735
+  (Sous)>   Removing intermediate container 68a1bc28f832
   (Sous)>   Step 10/10 : CMD /go/bin/sous-server
-  (Sous)>    ---> Running in 95f2bb4c4e8a
-  (Sous)>    ---> 9fe21760c85d
-  (Sous)>   Removing intermediate container 95f2bb4c4e8a
-  (Sous)>   Successfully built 9fe21760c85d
-  (Sous)> running docker build -t 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2 -t 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:50c34fc12b32dd81733ee1461e6a2401043ed12a -
+  (Sous)>    ---> Running in ec3d6dc1c07e
+  (Sous)>    ---> e53d947a9a23
+  (Sous)>   Removing intermediate container ec3d6dc1c07e
+  (Sous)>   Successfully built e53d947a9a23
+  (Sous)> running docker build -t 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2 -t 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:47902cef4da030d1ee01830e3629d6056019cdd7 -
   (Sous)>   Sending build context to Docker daemon 2.048 kB
-  (Sous)>   Step 1/2 : FROM 9fe21760c85d
-  (Sous)>    ---> 9fe21760c85d
-  (Sous)>   Step 2/2 : LABEL com.opentable.sous.repo_offset "" com.opentable.sous.repo_url "192.168.99.100/2222/repos/sous-server" com.opentable.sous.revision "50c34fc12b32dd81733ee1461e6a2401043ed12a" com.opentable.sous.version "0.0.2" com.opentable.sous.advisories "dirty workspace"
-  (Sous)>    ---> Running in 4e39d3a59763
-  (Sous)>    ---> 3d71aa3df078
-  (Sous)>   Removing intermediate container 4e39d3a59763
-  (Sous)>   Successfully built 3d71aa3df078
+  (Sous)>   Step 1/2 : FROM e53d947a9a23
+  (Sous)>    ---> e53d947a9a23
+  (Sous)>   Step 2/2 : LABEL com.opentable.sous.repo_offset "" com.opentable.sous.repo_url "192.168.99.100/2222/repos/sous-server" com.opentable.sous.revision "47902cef4da030d1ee01830e3629d6056019cdd7" com.opentable.sous.version "0.0.2" com.opentable.sous.advisories "dirty workspace"
+  (Sous)>    ---> Running in 6ab4b946799a
+  (Sous)>    ---> 489558f1be2d
+  (Sous)>   Removing intermediate container 6ab4b946799a
+  (Sous)>   Successfully built 489558f1be2d
   (Sous)> running docker push 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2
   (Sous)>   The push refers to a repository [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server]
-  (Sous)>   6f59306e8e73: Preparing
-  (Sous)>   5957e45a79af: Preparing
-  (Sous)>   957f8c2e7423: Preparing
-  (Sous)>   7f726c6a4417: Preparing
-  (Sous)>   db23507f875e: Preparing
-  (Sous)>   63db1b3190bd: Preparing
+  (Sous)>   0cad4e6eb244: Preparing
+  (Sous)>   d952fd72d084: Preparing
+  (Sous)>   977ed203cd41: Preparing
+  (Sous)>   c8a057f0c582: Preparing
+  (Sous)>   657c362948e5: Preparing
+  (Sous)>   8e09fd4051c9: Preparing
   (Sous)>   269c96c6b1a0: Preparing
   (Sous)>   8eb1c995f8b9: Preparing
   (Sous)>   677062ced7d3: Preparing
@@ -174,38 +174,38 @@ sous-server.yaml
   (Sous)>   30339f20ced0: Preparing
   (Sous)>   0eb22bfb707d: Preparing
   (Sous)>   a2ae92ffcd29: Preparing
+  (Sous)>   8eb1c995f8b9: Waiting
+  (Sous)>   677062ced7d3: Waiting
   (Sous)>   d23a95ba38e5: Waiting
   (Sous)>   f4d2be23d596: Waiting
   (Sous)>   30339f20ced0: Waiting
   (Sous)>   0eb22bfb707d: Waiting
-  (Sous)>   63db1b3190bd: Waiting
-  (Sous)>   269c96c6b1a0: Waiting
-  (Sous)>   8eb1c995f8b9: Waiting
-  (Sous)>   677062ced7d3: Waiting
   (Sous)>   a2ae92ffcd29: Waiting
-  (Sous)>   db23507f875e: Layer already exists
-  (Sous)>   7f726c6a4417: Layer already exists
+  (Sous)>   269c96c6b1a0: Waiting
+  (Sous)>   8e09fd4051c9: Waiting
+  (Sous)>   657c362948e5: Layer already exists
+  (Sous)>   c8a057f0c582: Layer already exists
+  (Sous)>   8e09fd4051c9: Layer already exists
   (Sous)>   269c96c6b1a0: Layer already exists
-  (Sous)>   63db1b3190bd: Layer already exists
   (Sous)>   8eb1c995f8b9: Layer already exists
   (Sous)>   677062ced7d3: Layer already exists
-  (Sous)>   5957e45a79af: Pushed
   (Sous)>   d23a95ba38e5: Layer already exists
+  (Sous)>   d952fd72d084: Pushed
   (Sous)>   f4d2be23d596: Layer already exists
   (Sous)>   30339f20ced0: Layer already exists
-  (Sous)>   0eb22bfb707d: Layer already exists
   (Sous)>   a2ae92ffcd29: Layer already exists
-  (Sous)>   6f59306e8e73: Pushed
-  (Sous)>   957f8c2e7423: Pushed
-  (Sous)>   0.0.2: digest: sha256:e293d90481008a4b18bd720fbe6f2c808edd91832c4ce36178b652b27258ee83 size: 3252
-  (Sous)> running docker push 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:50c34fc12b32dd81733ee1461e6a2401043ed12a
+  (Sous)>   0eb22bfb707d: Layer already exists
+  (Sous)>   0cad4e6eb244: Pushed
+  (Sous)>   977ed203cd41: Pushed
+  (Sous)>   0.0.2: digest: sha256:2f0c0334d9f87d7bf615cbb7d7bb43b23647d7d86f8c4cc75ed9b94a0f5c2bfd size: 3252
+  (Sous)> running docker push 192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:47902cef4da030d1ee01830e3629d6056019cdd7
   (Sous)>   The push refers to a repository [192.168.99.100:5000/192.168.99.100/2222/repos/sous-server]
-  (Sous)>   6f59306e8e73: Preparing
-  (Sous)>   5957e45a79af: Preparing
-  (Sous)>   957f8c2e7423: Preparing
-  (Sous)>   7f726c6a4417: Preparing
-  (Sous)>   db23507f875e: Preparing
-  (Sous)>   63db1b3190bd: Preparing
+  (Sous)>   0cad4e6eb244: Preparing
+  (Sous)>   d952fd72d084: Preparing
+  (Sous)>   977ed203cd41: Preparing
+  (Sous)>   c8a057f0c582: Preparing
+  (Sous)>   657c362948e5: Preparing
+  (Sous)>   8e09fd4051c9: Preparing
   (Sous)>   269c96c6b1a0: Preparing
   (Sous)>   8eb1c995f8b9: Preparing
   (Sous)>   677062ced7d3: Preparing
@@ -214,33 +214,35 @@ sous-server.yaml
   (Sous)>   30339f20ced0: Preparing
   (Sous)>   0eb22bfb707d: Preparing
   (Sous)>   a2ae92ffcd29: Preparing
-  (Sous)>   63db1b3190bd: Waiting
+  (Sous)>   8e09fd4051c9: Waiting
   (Sous)>   269c96c6b1a0: Waiting
   (Sous)>   8eb1c995f8b9: Waiting
   (Sous)>   677062ced7d3: Waiting
   (Sous)>   d23a95ba38e5: Waiting
   (Sous)>   f4d2be23d596: Waiting
   (Sous)>   30339f20ced0: Waiting
-  (Sous)>   7f726c6a4417: Layer already exists
-  (Sous)>   5957e45a79af: Layer already exists
-  (Sous)>   6f59306e8e73: Layer already exists
-  (Sous)>   957f8c2e7423: Layer already exists
-  (Sous)>   db23507f875e: Layer already exists
-  (Sous)>   63db1b3190bd: Layer already exists
-  (Sous)>   269c96c6b1a0: Layer already exists
-  (Sous)>   d23a95ba38e5: Layer already exists
+  (Sous)>   0eb22bfb707d: Waiting
+  (Sous)>   a2ae92ffcd29: Waiting
+  (Sous)>   657c362948e5: Layer already exists
+  (Sous)>   d952fd72d084: Layer already exists
+  (Sous)>   c8a057f0c582: Layer already exists
+  (Sous)>   977ed203cd41: Layer already exists
+  (Sous)>   0cad4e6eb244: Layer already exists
   (Sous)>   677062ced7d3: Layer already exists
+  (Sous)>   269c96c6b1a0: Layer already exists
+  (Sous)>   8e09fd4051c9: Layer already exists
+  (Sous)>   d23a95ba38e5: Layer already exists
   (Sous)>   8eb1c995f8b9: Layer already exists
   (Sous)>   f4d2be23d596: Layer already exists
-  (Sous)>   0eb22bfb707d: Layer already exists
-  (Sous)>   a2ae92ffcd29: Layer already exists
   (Sous)>   30339f20ced0: Layer already exists
-  (Sous)>   50c34fc12b32dd81733ee1461e6a2401043ed12a: digest: sha256:e293d90481008a4b18bd720fbe6f2c808edd91832c4ce36178b652b27258ee83 size: 3252
-  (Sous)> [recording "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2" as the docker name for "192.168.99.100/2222/repos/sous-server,0.0.2+50c34fc12b32dd81733ee1461e6a2401043ed12a"]
+  (Sous)>   a2ae92ffcd29: Layer already exists
+  (Sous)>   0eb22bfb707d: Layer already exists
+  (Sous)>   47902cef4da030d1ee01830e3629d6056019cdd7: digest: sha256:2f0c0334d9f87d7bf615cbb7d7bb43b23647d7d86f8c4cc75ed9b94a0f5c2bfd size: 3252
+  (Sous)> [recording "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2" as the docker name for "192.168.99.100/2222/repos/sous-server,0.0.2+47902cef4da030d1ee01830e3629d6056019cdd7"]
 Built: "192.168.99.100:5000/192.168.99.100/2222/repos/sous-server:0.0.2"
 Advisories:
   dirty workspace
-Elapsed: 4.695758133s
+Elapsed: 4.52248996s
 Updated global manifest.
 
 Updated global manifest.

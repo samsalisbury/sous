@@ -78,6 +78,7 @@ func WrapCompose(m *testing.M, composeDir string) (resultCode int) {
 // ResetSingularity clears out the state from the integration singularity service
 // Call it (with and extra call deferred) anywhere integration tests use Singularity
 func ResetSingularity() {
+	log.Print("Resetting Singularity...")
 	singClient := sing.NewClient(SingularityURL)
 
 	reqList, err := singClient.GetRequests()
@@ -91,6 +92,7 @@ func ResetSingularity() {
 			panic(err)
 		}
 	}
+	log.Print("Singularity reset.")
 }
 
 // BuildImageName constructs a simple image name rooted at the SingularityURL
@@ -98,19 +100,16 @@ func BuildImageName(reponame, tag string) string {
 	return fmt.Sprintf("%s/%s:%s", registryName, reponame, tag)
 }
 
-func registerAndDeploy(ip net.IP, clusterName, reponame, sourceRepo, dir string, ports []int32) (err error) {
-	imageName := BuildImageName(reponame, "latest")
-	err = BuildAndPushContainer(dir, imageName)
-	if err != nil {
+func registerAndDeploy(ip net.IP, clusterName, reponame, sourceRepo, dir, tag string, ports []int32) error {
+	imageName := BuildImageName(reponame, tag)
+	if err := BuildAndPushContainer(dir, imageName); err != nil {
 		panic(fmt.Errorf("building test container failed: %s", err))
 	}
-
-	err = startInstance(SingularityURL, clusterName, imageName, sourceRepo, ports)
-	if err != nil {
+	if err := startInstance(SingularityURL, clusterName, imageName, sourceRepo, ports); err != nil {
 		panic(fmt.Errorf("starting a singularity instance failed: %s", err))
 	}
 
-	return
+	return nil
 }
 
 // BuildAndPushContainer builds a container based on the source found in
@@ -200,9 +199,10 @@ func startInstance(url, clusterName, imageName, repoName string, ports []int32) 
 		"Image": imageName,
 	}).(*dtos.SingularityDockerInfo)
 
+	deployID := "TESTGENERATED_" + singularity.StripDeployID(uuid.NewV4().String())
 	depReq := loadMap(&dtos.SingularityDeployRequest{}, dtoMap{
 		"Deploy": loadMap(&dtos.SingularityDeploy{}, dtoMap{
-			"Id":        "TESTGENERATED_" + singularity.StripDeployID(uuid.NewV4().String()),
+			"Id":        deployID,
 			"RequestId": reqID,
 			"Resources": loadMap(&dtos.Resources{}, dtoMap{
 				"Cpus":     0.1,
@@ -220,6 +220,7 @@ func startInstance(url, clusterName, imageName, repoName string, ports []int32) 
 	if err != nil {
 		return err
 	}
+	log.Printf("Started singularity deploy %q at request %q", deployID, reqID)
 
 	return nil
 }

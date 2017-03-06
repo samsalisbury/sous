@@ -287,10 +287,10 @@
 			"revisionTime": "2016-04-07T13:01:23Z"
 		},
 		{
-			"checksumSHA1": "gPvketsZyZOfoepmy6YAU5hyDWs=",
+			"checksumSHA1": "Dp8TnT65nINpRF/PrxrgmnYLsyA=",
 			"path": "github.com/stretchr/testify/suite",
-			"revision": "0744955171b0b6e1871ff9d7366abc2b7a7fcec0",
-			"revisionTime": "2016-04-07T13:01:23Z"
+			"revision": "4d4bfba8f1d1027c4fdbe371823030df51419987",
+			"revisionTime": "2017-01-30T11:31:45Z"
 		},
 		{
 			"checksumSHA1": "FvjFAsGryjeu76HSh28J2+CYGcs=",
