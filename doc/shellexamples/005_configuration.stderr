@@ -32,9 +32,9 @@ bash-3.2$ curl -v -X PUT -H "If-Match: ${ETAG//[$'\t\r\n ']}" -H "Content-Typ< 
                                  Dload  Upload   Total   Spent    Left  Speed
   0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying 192.168.99.100...
 * TCP_NODELAY set
-* Connected to 192.168.99.100 (192.168.99.100) port 31172 (#0)
+* Connected to 192.168.99.100 (192.168.99.100) port 31526 (#0)
 > PUT /servers HTTP/1.1
-> Host: 192.168.99.100:31172
+> Host: 192.168.99.100:31526
 > User-Agent: curl/7.51.0
 > Accept: */*
 > If-Match: g5VMZUpJRha40Z6CUDIfPQ==
@@ -46,12 +46,12 @@ bash-3.2$ curl -v -X PUT -H "If-Match: ${ETAG//[$'\t\r\n ']}" -H "Content-Typ< 
 < HTTP/1.1 200 OK
 < Content-Length: 133
 < Content-Type: application/json
-< Etag: Yj4cxIcQnYjcmYyiLOWa3g==
-< Date: Tue, 07 Mar 2017 19:38:16 GMT
+< Etag: XrefNkPKDlD25U0J6pMEFA==
+< Date: Tue, 07 Mar 2017 19:49:16 GMT
 < 
 { [133 bytes data]
 * Curl_http_done: called premature == 0
-100   325  100   133  100   192  12485  18024 --:--:-- --:--:-- --:--:-- 19200
+100   325  100   133  100   192  69487    97k --:--:-- --:--:-- --:--:--  187k
 * Connection #0 to host 192.168.99.100 left intact
 bash-3.2$ curl -s "${serverURL}/servers"
 bash-3.2$ cygnus --env TASK_HOST --env PORT0 -K -s http://192.168.99.100:7099<_HOST --env PORT0 -K -s http://192.168.99.100:7099/                         singularity

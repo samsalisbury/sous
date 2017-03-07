@@ -19,7 +19,7 @@ branch.master.remote=origin
 branch.master.merge=refs/heads/master
 
   (Sous)> git rev-parse --show-toplevel
-> /private/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing066681188/home/sous-demo
+> /private/var/folders/sp/wllf_wh92p725fl4vz92mrn16vkfds/T/sous-cli-testing405269700/home/sous-demo
 
   (Sous)> git rev-parse --abbrev-ref HEAD
 > master
@@ -45,22 +45,22 @@ vfs_templates.go
 > demo_manifest.yaml
 demo_manifest_toobig.yaml
 
-  (Sous)> git rev-list -n 1 HEAD
-> b27658803a61a9fe538ef6ac063e9eddc454277f
-
+  (Sous)> git log --date-order --tags --simplify-by-decoration --pretty=format:%H %aI %D
+> b27658803a61a9fe538ef6ac063e9eddc454277f 2017-01-25T14:40:24-08:00 HEAD -> master, tag: 0.0.25, tag: 0.0.24, tag: 0.0.23, origin/master, origin/HEAD
+f921f218e62722aed85e47696010660dbfa10ab0 2017-01-11T10:57:00-08:00 
   (Sous)> git remote -v
 > origin	ssh://root@192.168.99.100:2222/repos/sous-demo (fetch)
 origin	ssh://root@192.168.99.100:2222/repos/sous-demo (push)
 
   (Sous)> git ls-files --modified
 > 
-  (Sous)> git log --date-order --tags --simplify-by-decoration --pretty=format:%H %aI %D
-> b27658803a61a9fe538ef6ac063e9eddc454277f 2017-01-25T14:40:24-08:00 HEAD -> master, tag: 0.0.24, tag: 0.0.23, origin/master, origin/HEAD
-f921f218e62722aed85e47696010660dbfa10ab0 2017-01-11T10:57:00-08:00 
-  (Sous)> git describe --tags --abbrev=0 --always
-> 0.0.24
+  (Sous)> git rev-list -n 1 HEAD
+> b27658803a61a9fe538ef6ac063e9eddc454277f
 
-  (Sous)> git rev-list -n 1 0.0.24
+  (Sous)> git describe --tags --abbrev=0 --always
+> 0.0.25
+
+  (Sous)> git rev-list -n 1 0.0.25
 > b27658803a61a9fe538ef6ac063e9eddc454277f
 
 Updated global manifest.
