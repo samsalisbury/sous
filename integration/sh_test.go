@@ -290,8 +290,8 @@ func TestShellLevelIntegration(t *testing.T) {
 		})
 
 	deploy := config.Block("deploy project", `
-	cat $XDG_CONFIG/sous/config.yaml
-	sous config
+	cd
+	rm -rf sous-demo
 	git clone {{.GitRemoteBase}}/sous-demo
 	cd sous-demo
 	git tag -am 'Release!' 0.0.23
@@ -312,9 +312,9 @@ func TestShellLevelIntegration(t *testing.T) {
 	})
 
 	//failedDeploy :=
-	config.Block("deploy over-resourced project", `
-	cat $XDG_CONFIG/sous/config.yaml
-	sous config
+	setupOverResourced := config.Block("deploy over-resourced project", `
+	cd
+	rm -rf sous-demo
 	git clone {{.GitRemoteBase}}/sous-demo
 	cd sous-demo
 	git tag -am 'Release!' 0.0.24
@@ -328,13 +328,21 @@ func TestShellLevelIntegration(t *testing.T) {
 	cat demo_manifest_toobig.yaml
 	sous manifest set < demo_manifest_toobig.yaml
 	sous build
-	sous deploy -d -v -cluster right
 	`, defaultCheck)
 
+	setupOverResourced.Block("over-resourced deploy failing", `
+	sous deploy -d -v -cluster right
+	`, func(name string, res shelltest.Result, t *testing.T) {
+		if !res.ErrsMatches(`sous deploy.*right`) {
+			t.Log(res.Errs)
+			t.Error("sous deploy succeeded, when it should fail!")
+		}
+	})
+
 	//failedDeploy :=
-	config.Block("deploy badly configured project", `
-	cat $XDG_CONFIG/sous/config.yaml
-	sous config
+	setupBadlyConfigured := config.Block("deploy badly configured project", `
+	cd
+	rm -rf sous-demo
 	git clone {{.GitRemoteBase}}/sous-demo
 	cd sous-demo
 	git tag -am 'Release!' 0.0.25
@@ -348,6 +356,15 @@ func TestShellLevelIntegration(t *testing.T) {
 	cat demo_manifest_toobig.yaml
 	sous manifest set < demo_manifest_toobig.yaml
 	sous build
-	sous deploy -d -v -cluster right
 	`, defaultCheck)
+
+	setupBadlyConfigured.Block("badly configured deploy failing", `
+	sous deploy -d -v -cluster right
+	`, func(name string, res shelltest.Result, t *testing.T) {
+		if !res.ErrsMatches(`sous deploy.*right`) {
+			t.Log(res.Errs)
+			t.Error("sous deploy succeeded, when it should fail!")
+		}
+	})
+
 }

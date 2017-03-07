@@ -1,25 +1,3 @@
-StateLocation: /Users/jlester/.local/share/sous/state
-Server: http://192.168.99.100:31509
-SiblingURLs: {}
-BuildStateDir: ""
-Docker:
-  RegistryHost: 192.168.99.100:5000
-  DatabaseDriver: sqlite3_sous
-  DatabaseConnection: file:dummy.db?mode=memory&cache=shared
-User:
-  Name: test
-  Email: test@test.com
-StateLocation: /Users/jlester/.local/share/sous/state
-Server: http://192.168.99.100:31509
-SiblingURLs: {}
-BuildStateDir: ""
-Docker:
-  RegistryHost: 192.168.99.100:5000
-  DatabaseDriver: sqlite3_sous
-  DatabaseConnection: file:dummy.db?mode=memory&cache=shared
-User:
-  Name: test
-  Email: test@test.com
 Source: 192.168.99.100/2222/repos/sous-demo
 Owners: []
 Kind: http-service
@@ -51,30 +29,30 @@ Deployments:
   (Sous)>    ---> Using cache
   (Sous)>    ---> ed01966d610b
   (Sous)>   Step 4/6 : COPY . /go/src/github.com/opentable/sous-demo
-  (Sous)>    ---> 7d179485c78c
-  (Sous)>   Removing intermediate container 32f6cd1d7bb4
+  (Sous)>    ---> 28def3a472a5
+  (Sous)>   Removing intermediate container d0b73972a3f4
   (Sous)>   Step 5/6 : RUN cd src/github.com/opentable/sous-demo;   go build -ldflags     "-X 'main.CustomString=$(cat customstring)' -X 'main.Version=${APP_VERSION}' -X 'main.Revision=${APP_REVISION}'" .
-  (Sous)>    ---> Running in d34431edc327
-  (Sous)>    ---> 7d9b8b9043db
-  (Sous)>   Removing intermediate container d34431edc327
+  (Sous)>    ---> Running in f18da52fb7bf
+  (Sous)>    ---> 6b139dd4252c
+  (Sous)>   Removing intermediate container f18da52fb7bf
   (Sous)>   Step 6/6 : CMD sh -c /go/src/github.com/opentable/sous-demo/sous-demo
-  (Sous)>    ---> Running in 56e3ec910089
-  (Sous)>    ---> 738f5f3025ba
-  (Sous)>   Removing intermediate container 56e3ec910089
-  (Sous)>   Successfully built 738f5f3025ba
+  (Sous)>    ---> Running in 6ea8b6543996
+  (Sous)>    ---> 176c8f2fccbf
+  (Sous)>   Removing intermediate container 6ea8b6543996
+  (Sous)>   Successfully built 176c8f2fccbf
   (Sous)> running docker build -t 192.168.99.100:5000/192.168.99.100/2222/repos/sous-demo:0.0.23 -t 192.168.99.100:5000/192.168.99.100/2222/repos/sous-demo:b27658803a61a9fe538ef6ac063e9eddc454277f -
   (Sous)>   Sending build context to Docker daemon 2.048 kB
-  (Sous)>   Step 1/2 : FROM 738f5f3025ba
-  (Sous)>    ---> 738f5f3025ba
+  (Sous)>   Step 1/2 : FROM 176c8f2fccbf
+  (Sous)>    ---> 176c8f2fccbf
   (Sous)>   Step 2/2 : LABEL com.opentable.sous.repo_offset "" com.opentable.sous.repo_url "192.168.99.100/2222/repos/sous-demo" com.opentable.sous.revision "b27658803a61a9fe538ef6ac063e9eddc454277f" com.opentable.sous.version "0.0.23"
-  (Sous)>    ---> Running in 63b214e92edb
-  (Sous)>    ---> d3785184f5a1
-  (Sous)>   Removing intermediate container 63b214e92edb
-  (Sous)>   Successfully built d3785184f5a1
+  (Sous)>    ---> Running in 24457a1254f8
+  (Sous)>    ---> d238b0e8b9dd
+  (Sous)>   Removing intermediate container 24457a1254f8
+  (Sous)>   Successfully built d238b0e8b9dd
   (Sous)> running docker push 192.168.99.100:5000/192.168.99.100/2222/repos/sous-demo:0.0.23
   (Sous)>   The push refers to a repository [192.168.99.100:5000/192.168.99.100/2222/repos/sous-demo]
-  (Sous)>   5beea3e044e2: Preparing
-  (Sous)>   5127419477a2: Preparing
+  (Sous)>   076990e426d2: Preparing
+  (Sous)>   72f23c9057da: Preparing
   (Sous)>   8eb1c995f8b9: Preparing
   (Sous)>   677062ced7d3: Preparing
   (Sous)>   d23a95ba38e5: Preparing
@@ -82,23 +60,24 @@ Deployments:
   (Sous)>   30339f20ced0: Preparing
   (Sous)>   0eb22bfb707d: Preparing
   (Sous)>   a2ae92ffcd29: Preparing
+  (Sous)>   0eb22bfb707d: Waiting
   (Sous)>   f4d2be23d596: Waiting
   (Sous)>   30339f20ced0: Waiting
   (Sous)>   a2ae92ffcd29: Waiting
-  (Sous)>   677062ced7d3: Layer already exists
   (Sous)>   d23a95ba38e5: Layer already exists
+  (Sous)>   677062ced7d3: Layer already exists
   (Sous)>   8eb1c995f8b9: Layer already exists
-  (Sous)>   f4d2be23d596: Layer already exists
   (Sous)>   30339f20ced0: Layer already exists
   (Sous)>   0eb22bfb707d: Layer already exists
+  (Sous)>   f4d2be23d596: Layer already exists
   (Sous)>   a2ae92ffcd29: Layer already exists
-  (Sous)>   5127419477a2: Pushed
-  (Sous)>   5beea3e044e2: Pushed
-  (Sous)>   0.0.23: digest: sha256:276e46554659e5a5ed6131aea7912765230b1624e5666d3e6e64a846d22194ea size: 2212
+  (Sous)>   72f23c9057da: Pushed
+  (Sous)>   076990e426d2: Pushed
+  (Sous)>   0.0.23: digest: sha256:b7dd14f9ec4d05be56af936cc650afb3755b315af3ece4fc9d2079edfc9ca565 size: 2212
   (Sous)> running docker push 192.168.99.100:5000/192.168.99.100/2222/repos/sous-demo:b27658803a61a9fe538ef6ac063e9eddc454277f
   (Sous)>   The push refers to a repository [192.168.99.100:5000/192.168.99.100/2222/repos/sous-demo]
-  (Sous)>   5beea3e044e2: Preparing
-  (Sous)>   5127419477a2: Preparing
+  (Sous)>   076990e426d2: Preparing
+  (Sous)>   72f23c9057da: Preparing
   (Sous)>   8eb1c995f8b9: Preparing
   (Sous)>   677062ced7d3: Preparing
   (Sous)>   d23a95ba38e5: Preparing
@@ -107,21 +86,21 @@ Deployments:
   (Sous)>   0eb22bfb707d: Preparing
   (Sous)>   a2ae92ffcd29: Preparing
   (Sous)>   f4d2be23d596: Waiting
+  (Sous)>   30339f20ced0: Waiting
   (Sous)>   0eb22bfb707d: Waiting
   (Sous)>   a2ae92ffcd29: Waiting
-  (Sous)>   30339f20ced0: Waiting
-  (Sous)>   5127419477a2: Layer already exists
-  (Sous)>   8eb1c995f8b9: Layer already exists
+  (Sous)>   076990e426d2: Layer already exists
   (Sous)>   677062ced7d3: Layer already exists
+  (Sous)>   72f23c9057da: Layer already exists
+  (Sous)>   8eb1c995f8b9: Layer already exists
   (Sous)>   d23a95ba38e5: Layer already exists
-  (Sous)>   5beea3e044e2: Layer already exists
-  (Sous)>   f4d2be23d596: Layer already exists
   (Sous)>   30339f20ced0: Layer already exists
-  (Sous)>   0eb22bfb707d: Layer already exists
   (Sous)>   a2ae92ffcd29: Layer already exists
-  (Sous)>   b27658803a61a9fe538ef6ac063e9eddc454277f: digest: sha256:276e46554659e5a5ed6131aea7912765230b1624e5666d3e6e64a846d22194ea size: 2212
+  (Sous)>   0eb22bfb707d: Layer already exists
+  (Sous)>   f4d2be23d596: Layer already exists
+  (Sous)>   b27658803a61a9fe538ef6ac063e9eddc454277f: digest: sha256:b7dd14f9ec4d05be56af936cc650afb3755b315af3ece4fc9d2079edfc9ca565 size: 2212
   (Sous)> [recording "192.168.99.100:5000/192.168.99.100/2222/repos/sous-demo:0.0.23" as the docker name for "192.168.99.100/2222/repos/sous-demo,0.0.23+b27658803a61a9fe538ef6ac063e9eddc454277f"]
 Built: "192.168.99.100:5000/192.168.99.100/2222/repos/sous-demo:0.0.23"
-Elapsed: 2.647232002s
+Elapsed: 2.662984553s
 Updated global manifest.
 Waiting for server to report that deploy has stabilized...
