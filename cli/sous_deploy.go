@@ -67,7 +67,7 @@ func (sd *SousDeploy) Execute(args []string) cmdr.Result {
 	}
 
 	if sd.waitStable {
-		fmt.Fprintf(sd.CLI.Out, "Waiting for server to report that deploy has stabilized...")
+		fmt.Fprintf(sd.CLI.Out, "Waiting for server to report that deploy has stabilized...\n")
 		return sd.CLI.Plumbing(&SousPlumbingStatus{}, []string{})
 	}
 	return cmdr.Successf("Updated the global deploy manifest. Deploy in process.")

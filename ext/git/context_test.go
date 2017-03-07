@@ -6,7 +6,7 @@ import (
 	"github.com/nyarly/testify/assert"
 )
 
-func TestRemoteProcessing(t *testing.T) {
+func TestGuessPrimaryRemote(t *testing.T) {
 	assert := assert.New(t)
 
 	rs := Remotes{

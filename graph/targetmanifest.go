@@ -5,11 +5,12 @@ import (
 	"github.com/pkg/errors"
 )
 
+// RefinedResolveFilter is a sous.ResolveFilter refined by user-requested flags.
 type RefinedResolveFilter sous.ResolveFilter
 
 func newRefinedResolveFilter(f *sous.ResolveFilter, discovered *SourceContextDiscovery) (*RefinedResolveFilter, error) {
 	c := discovered.GetContext()
-	if f == nil { // XXX I think this needs to be supplied anyway by consumers...
+	if f == nil { // XXX I think this needs to be supplied anyway by consumers..
 		f = &sous.ResolveFilter{}
 	}
 	repo := c.PrimaryRemoteURL
@@ -22,7 +23,7 @@ func newRefinedResolveFilter(f *sous.ResolveFilter, discovered *SourceContextDis
 	if repo == "" {
 		return nil, errors.Errorf("no repo specified, please use -repo or run sous inside a git repo with a configured remote")
 	}
-	if !f.Offset.All {
+	if !f.Offset.All && offset.Match == "" {
 		offset = f.Offset
 	}
 	rrf := RefinedResolveFilter(*f)
@@ -34,20 +35,20 @@ func newRefinedResolveFilter(f *sous.ResolveFilter, discovered *SourceContextDis
 	return &rrf, nil
 }
 
-func newTargetManifestID(rrf *RefinedResolveFilter) (tmid TargetManifestID, err error) {
+func newTargetManifestID(rrf *RefinedResolveFilter) (TargetManifestID, error) {
 	if rrf == nil {
-		err = errors.Errorf("nil ResolveFilter")
-		return
+		return TargetManifestID{}, errors.Errorf("nil ResolveFilter")
 	}
 	if rrf.Repo == "" {
-		err = errors.Errorf("empty Repo")
-		return
+		return TargetManifestID{}, errors.Errorf("empty Repo")
 	}
-	tmid.Source.Repo = rrf.Repo
-	tmid.Source.Dir = rrf.Offset.Match
-	tmid.Flavor = rrf.Flavor.Match
-
-	return
+	return TargetManifestID{
+		Source: sous.SourceLocation{
+			Repo: rrf.Repo,
+			Dir:  rrf.Offset.Match,
+		},
+		Flavor: rrf.Flavor.Match,
+	}, nil
 }
 
 func newTargetManifest(auto userSelectedOTPLDeployManifest, tmid TargetManifestID, s *sous.State) TargetManifest {
