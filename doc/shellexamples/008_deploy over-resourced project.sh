@@ -1,5 +1,5 @@
-cat $XDG_CONFIG/sous/config.yaml
-sous config
+cd
+rm -rf sous-demo
 git clone ssh://root@192.168.99.100:2222/repos/sous-demo
 cd sous-demo
 git tag -am 'Release!' 0.0.24
@@ -13,4 +13,3 @@ sed 's/^      cpus.*$/      cpus: "30"/g' demo_manifest.yaml > demo_manifest_too
 cat demo_manifest_toobig.yaml
 sous manifest set < demo_manifest_toobig.yaml
 sous build
-sous deploy -d -v -cluster right

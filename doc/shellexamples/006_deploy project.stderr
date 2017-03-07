@@ -1,6 +1,6 @@
 
-bash-3.2$ cat $XDG_CONFIG/sous/config.yaml
-bash-3.2$ sous config
+bash-3.2$ cd
+bash-3.2$ rm -rf sous-demo
 bash-3.2$ git clone ssh://root@192.168.99.100:2222/repos/sous-demo
 Cloning into 'sous-demo'...
 Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.

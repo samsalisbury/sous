@@ -6,11 +6,21 @@ bash-3.2$ go get github.com/nyarly/cygnus # cygnus lets us inspect Singularit</
 bash-3.2$ if echo "http://192.168.99.100:7099/singularity" | egrep -q '192.16<92.168.99.100:7099/singularity" | egrep -q '192.168                         |127.0.0'; then
 > /Users/jlester/golang/src/github.com/opentable/sous/integration/test-regist</github.com/opentable/sous/integration/test-registr                         y/clean-singularity.sh ht</integration/test-registry/clean-singularity.sh htt                         p://192.168.99.100:7099/s</clean-singularity.sh http://192.168.99.100:7099/si                         ngularity
 > fi
-Cleaning github.com%3Edocker%3Edockercloud-hello-world::test-cluster
+Cleaning 192.168.99.100%3E2222%3Erepos%3Esous-server::right
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100   102    0   102    0     0  13282      0 --:--:-- --:--:-- --:--:-- 14571
-{"id":"github.com>docker>dockercloud-hello-world::test-cluster","requestType":"SERVICE","instances":1}
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100   118    0   118    0     0  17168      0 --:--:-- --:--:-- --:--:-- 19666
+{"id":"192.168.99.100>2222>repos>sous-server::right","requestType":"SERVICE","owners":["test@test.com"],"instances":1}
+Cleaning 192.168.99.100%3E2222%3Erepos%3Esous-demo::left
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100   100    0   100    0     0   9346      0 --:--:-- --:--:-- --:--:-- 10000
+{"id":"192.168.99.100>2222>repos>sous-demo::left","requestType":"SERVICE","owners":[],"instances":1}
+Cleaning 192.168.99.100%3E2222%3Erepos%3Esous-server::left
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100   117    0   117    0     0  14144      0 --:--:-- --:--:-- --:--:-- 14625
+{"id":"192.168.99.100>2222>repos>sous-server::left","requestType":"SERVICE","owners":["test@test.com"],"instances":1}
 All requests cleaned
 bash-3.2$ cygnus -H http://192.168.99.100:7099/singularity
 bash-3.2$ ls /Users/jlester/golang/src/github.com/opentable/sous/dev_support

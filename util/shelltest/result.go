@@ -73,3 +73,9 @@ func (res Result) Matches(pattern string) bool {
 	re := regexp.MustCompile(pattern)
 	return re.MatchString(res.Stderr) || re.MatchString(res.Stdout)
 }
+
+// ErrsMatches asserts that the Errs stream matches a regex pattern - for instance to check that a particular command fails.
+func (res Result) ErrsMatches(pattern string) bool {
+	re := regexp.MustCompile(pattern)
+	return re.MatchString(res.Errs)
+}

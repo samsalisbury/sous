@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
-## [0.2.0] - 2017-03-06
+## [0.2.0](//github.com/opentable/sous/compare/0.1.9...0.2.0) - 2017-03-06
 
 ### Added
 
@@ -23,7 +23,7 @@ with respect to its command line interface and HTTP interface.
   operations, they now inform the user there will be a wait.
 
 
-## [0.1.9] - 2017-02-16
+## [0.1.9](//github.com/opentable/sous/compare/0.1.8...0.1.9) - 2017-02-16
 
 ### Added
 
@@ -47,7 +47,7 @@ with respect to its command line interface and HTTP interface.
 - Deployment filters (which are used extensively) now treat "" dirs and flavors
   as real values, rather than wildcards.
 
-## [0.1.8] - 2017-01-17
+## [0.1.8](//github.com/opentable/sous/compare/v0.1.7...0.1.8) - 2017-01-17
 
 ### Added
 - 'sous init' -use-otpl-config now imports owners from singularity-request.json
@@ -69,7 +69,7 @@ with respect to its command line interface and HTTP interface.
 - Resolve errors now marshalled correctly by server.
 - Server /status endpoint now returns latest status from AutoResolver rather than status at boot.
 
-## [0.1.7] 2017-01-19
+## [0.1.7](//github.com/opentable/sous/compare/v0.1.6...v0.1.7) 2017-01-19
 
 ### Added
 
@@ -83,7 +83,15 @@ with respect to its command line interface and HTTP interface.
 
 - Tweaks to Makefile and build process in general.
 
-## 0.1.1-0.1.6
+## [0.1.6](//github.com/opentable/sous/compare/v0.1.5...v0.1.6) 2017-01-19
+
+Not documented.
+
+## [0.1.5](//github.com/opentable/sous/compare/v0.1.4...v0.1.5) 2017-01-19
+
+Not documented.
+
+## [0.1.4](//github.com/opentable/sous/compare/v0.1.3...v0.1.4) 2017-01-19
 
 Not documented.
 

@@ -5,17 +5,17 @@ bash-3.2$ git clone ssh://root@192.168.99.100:2222/repos/sous-demo
 Cloning into 'sous-demo'...
 Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
 bash-3.2$ cd sous-demo
-bash-3.2$ git tag -am 'Release!' 0.0.24
+bash-3.2$ git tag -am 'Release!' 0.0.25
 bash-3.2$ git push --tags
 Warning: Permanently added '[192.168.99.100]:2222' (ECDSA) to the list of known hosts.
 To ssh://192.168.99.100:2222/repos/sous-demo
- * [new tag]         0.0.24 -> 0.0.24
+ * [new tag]         0.0.25 -> 0.0.25
 bash-3.2$ 
 bash-3.2$ # We will make this deploy fail by asking for too many resources.
 bash-3.2$ sous manifest get > demo_manifest.yaml
 bash-3.2$ cat demo_manifest.yaml
 bash-3.2$ # Set CPUs to redonkulous.
-bash-3.2$ sed 's/^      cpus.*$/      cpus: "30"/g' demo_manifest.yaml > demo<s.*$/      cpus: "30"/g' demo_manifest.yaml > demo_                         manifest_toobig.yaml
+bash-3.2$ sed 's/^      cpus.*$/      cpus: "9999999"/g' demo_manifest.yaml ><s.*$/      cpus: "9999999"/g' demo_manifest.yaml >                          demo_manifest_toobig.yaml
 bash-3.2$ cat demo_manifest_toobig.yaml
 bash-3.2$ sous manifest set < demo_manifest_toobig.yaml
 bash-3.2$ sous build
