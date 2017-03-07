@@ -355,11 +355,15 @@ func (sub *subPoller) computeState(srvIntent *Deployment, stable, current *DiffR
 		Log.Vomit.Printf("%#v", current)
 		Log.Vomit.Printf("%#v", current.Error)
 		subject := ""
-		sourceLocation, ok := sub.locationFilter.SourceLocation()
-		if ok {
-			subject = sourceLocation.String()
+		if sub.locationFilter == nil {
+			subject = "<no filter defined>"
 		} else {
-			subject = sub.locationFilter.String()
+			sourceLocation, ok := sub.locationFilter.SourceLocation()
+			if ok {
+				subject = sourceLocation.String()
+			} else {
+				subject = sub.locationFilter.String()
+			}
 		}
 		Log.Warn.Printf("Deployment of %s to %s failed: %s", subject, sub.ClusterName, current.Error.String)
 		return ResolveFailed
