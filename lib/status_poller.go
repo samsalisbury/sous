@@ -16,8 +16,8 @@ type (
 
 	subPoller struct {
 		HTTPClient
-		ClusterName, URL string
-		*Deployments
+		ClusterName, URL         string
+		Deployments              *Deployments
 		locationFilter, idFilter *ResolveFilter
 		User                     User
 	}
@@ -354,7 +354,14 @@ func (sub *subPoller) computeState(srvIntent *Deployment, stable, current *DiffR
 		// error for operator action, and consider this subpoller done as failed.
 		Log.Vomit.Printf("%#v", current)
 		Log.Vomit.Printf("%#v", current.Error)
-		Log.Warn.Printf("Cluster %s: status polling terminated as failed because: %s ", sub.ClusterName, current.Error.String)
+		subject := ""
+		sourceLocation, ok := sub.locationFilter.SourceLocation()
+		if ok {
+			subject = sourceLocation.String()
+		} else {
+			subject = sub.locationFilter.String()
+		}
+		Log.Warn.Printf("Deployment of %s to %s failed: %s", subject, sub.ClusterName, current.Error.String)
 		return ResolveFailed
 	}
 
