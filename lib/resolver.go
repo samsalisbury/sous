@@ -88,7 +88,7 @@ func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveRecord
 
 		var diffs DiffChans
 		recorder.performGuaranteedPhase("generating diff", func() {
-			diffs = actual.IgnoringStatus().Diff(intended)
+			diffs = actual.Diff(intended)
 		})
 
 		//recorder.TasksStarting = actual.Filter(func(ds *DeployState) bool {

@@ -1,6 +1,8 @@
 package sous
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/nyarly/testify/assert"
@@ -18,4 +20,25 @@ func TestVersion(t *testing.T) {
 	assert.Equal("github.com/opentable/test", id.Location.Repo)
 	assert.Equal("sub", string(id.Location.Dir))
 	assert.Equal("1.2.3", id.Version.String())
+}
+
+func TestNormalisedOffset_nosymlinks(t *testing.T) {
+	rootDir := os.TempDir()
+	rootDir = filepath.Join("tempDir", "TestNormalisedOffset_nosymlinks")
+	if err := os.RemoveAll(rootDir); err != nil {
+		t.Fatal(err)
+	}
+	offsetDir := filepath.Join(rootDir, "some-offset")
+
+	os.MkdirAll(rootDir, 0777)
+	os.MkdirAll(offsetDir, 0777)
+
+	actual, err := NormalizedOffset(rootDir, offsetDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expected := "some-offset"
+	if actual != expected {
+		t.Errorf("got %q; want %q", actual, expected)
+	}
 }

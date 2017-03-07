@@ -2,6 +2,7 @@ package cli
 
 import (
 	"flag"
+	"fmt"
 
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/lib"
@@ -38,8 +39,12 @@ func (sps *SousPlumbingStatus) Execute(args []string) cmdr.Result {
 		return cmdr.UsageErrorf("Please configure a server using 'sous config Server <url>'")
 	}
 
-	if _, err := sps.StatusPoller.Start(); err != nil {
+	state, err := sps.StatusPoller.Start()
+	if err != nil {
 		return cmdr.EnsureErrorResult(err)
+	}
+	if state != sous.ResolveComplete {
+		return cmdr.EnsureErrorResult(fmt.Errorf("failed"))
 	}
 
 	return cmdr.Success()

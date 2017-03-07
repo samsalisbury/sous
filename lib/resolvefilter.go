@@ -64,6 +64,19 @@ func (rf *ResolveFilter) All() bool {
 		rf.Cluster == ""
 }
 
+// SourceLocation returns a SourceLocation and true if this ResolveFilter
+// describes a complete specific source location (i.e. it has exact Repo and
+// Offset matches set). Otherwise it returns a zero SourceLocation and false.
+func (rf *ResolveFilter) SourceLocation() (SourceLocation, bool) {
+	if rf.Repo == "*" || rf.Repo == "" || rf.Offset.All {
+		return SourceLocation{}, false
+	}
+	return SourceLocation{
+		Repo: rf.Repo,
+		Dir:  rf.Offset.Match,
+	}, true
+}
+
 func (rf *ResolveFilter) String() string {
 	cl, fl, rp, of, tg, rv := rf.Cluster, rf.Flavor.Match, rf.Repo, rf.Offset.Match, rf.Tag, rf.Revision
 	if cl == "" {
