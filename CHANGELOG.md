@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
-## [0.2.0](//opentable/sous/compare/0.1.9...0.2.0) - 2017-03-06
+## [0.2.0](//github.com/opentable/sous/compare/0.1.9...0.2.0) - 2017-03-06
 
 ### Added
 
