@@ -121,7 +121,6 @@ test-integration: test-setup
 
 test-setup:  sous_qa_setup
 	./sous_qa_setup --compose-dir ./integration/test-registry/ --out-path=$(QA_DESC)
-	docker-compose -f ./integration/test-registry/docker-compose.yml pull
 
 test-cli: test-setup linux-build
 	rm -rf doc/shellexamples/*
