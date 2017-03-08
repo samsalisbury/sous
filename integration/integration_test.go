@@ -230,7 +230,7 @@ func (suite *integrationSuite) TestFailedService() {
 func (suite *integrationSuite) TestSuccessfulService() {
 	if os.Getenv("TRAVIS") == "true" {
 		// Note: I would normally use t.Skipf() for this, but it isn't part of suite.
-		log.Println("SKIPPING TestSuccessfulService in Travis")
+		log.Println("SKIPPING TestSuccessfulService() in Travis")
 		return
 	}
 	clusters := []string{"test-cluster"}
@@ -252,7 +252,7 @@ func (suite *integrationSuite) TestSuccessfulService() {
 func (suite *integrationSuite) TestFailedDeployFollowingSuccessfulDeploy() {
 	if os.Getenv("TRAVIS") == "true" {
 		// Note: I would normally use t.Skipf() for this, but it isn't part of suite.
-		log.Println("SKIPPING TestSuccessfulService in Travis")
+		log.Println("SKIPPING TestFailedDeployFollowingSuccessfulDeploy() in Travis")
 		return
 	}
 	clusters := []string{"test-cluster"}
