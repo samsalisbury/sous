@@ -1,8 +1,10 @@
 package cli
 
 import (
+	"context"
 	"flag"
 	"fmt"
+	"time"
 
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/lib"
@@ -39,7 +41,9 @@ func (sps *SousPlumbingStatus) Execute(args []string) cmdr.Result {
 		return cmdr.UsageErrorf("Please configure a server using 'sous config Server <url>'")
 	}
 
-	state, err := sps.StatusPoller.Wait()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
+	defer cancel()
+	state, err := sps.StatusPoller.Wait(ctx)
 	if err != nil {
 		return cmdr.EnsureErrorResult(err)
 	}

@@ -1,6 +1,7 @@
 package sous
 
 import (
+	"context"
 	"time"
 
 	"github.com/pkg/errors"
@@ -170,8 +171,23 @@ func newSubPoller(clusterName, serverURL string, baseFilter *ResolveFilter, user
 // Wait begins the process of polling for cluster statuses, waits for it to
 // complete, and then returns the result, as long as the provided context is not
 // cancelled.
-func (sp *StatusPoller) Wait() (ResolveState, error) {
+func (sp *StatusPoller) Wait(ctx context.Context) (ResolveState, error) {
+	var resolveState ResolveState
+	var err error
+	done := make(chan struct{})
+	go func() {
+		resolveState, err = sp.waitForever()
+		close(done)
+	}()
+	select {
+	case <-done:
+		return resolveState, err
+	case <-ctx.Done():
+		return resolveState, ctx.Err()
+	}
+}
 
+func (sp *StatusPoller) waitForever() (ResolveState, error) {
 	// Retrieve the list of servers known to our main server.
 	clusters := &serverListData{}
 	if err := sp.Retrieve("./servers", nil, clusters, sp.User); err != nil {
