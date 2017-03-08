@@ -12,7 +12,7 @@ script:
 - make -j2 test
 - make reject_wip
   #- cat doc/shellexamples/*.blended
-after_script:
+after_success:
 - make coverage
 - bin/codecov -f /tmp/sous-cover/count_merged.txt
 env:
