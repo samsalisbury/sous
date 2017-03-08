@@ -167,27 +167,42 @@ func newSubPoller(clusterName, serverURL string, baseFilter *ResolveFilter, user
 	}, nil
 }
 
-// Start begins the process of polling for cluster statuses.
-func (sp *StatusPoller) Start() (ResolveState, error) {
+// Wait begins the process of polling for cluster statuses, waits for it to
+// complete, and then returns the result, as long as the provided context is not
+// cancelled.
+func (sp *StatusPoller) Wait() (ResolveState, error) {
+
+	// Retrieve the list of servers known to our main server.
 	clusters := &serverListData{}
-	// retrieve the list of servers known to our main server
 	if err := sp.Retrieve("./servers", nil, clusters, sp.User); err != nil {
 		return ResolveFailed, err
 	}
+
+	// Get the up-to-the-moment version of the GDM.
 	gdm := &gdmData{}
-	// next, get the up-to-the-moment version of the GDM
 	if err := sp.Retrieve("./gdm", nil, gdm, sp.User); err != nil {
 		return ResolveFailed, err
 	}
+
+	// Filter down to the deployments we are interested in.
 	deps := NewDeployments(gdm.Deployments...)
 	deps = deps.Filter(sp.ResolveFilter.FilterDeployment)
-	// if our filter doesn't match anything in the GDM, there's no point continuing polling
 	if deps.Len() == 0 {
+		// No deployments match the filter, bail out now.
 		return ResolveNotIntended, nil
 	}
 
-	subs := []*subPoller{}
+	// Create a sub-poller for each cluster we are interested in.
+	subs, err := sp.subPollers(clusters, deps)
+	if err != nil {
+		return ResolveNotPolled, err
+	}
 
+	return sp.poll(subs), nil
+}
+
+func (sp *StatusPoller) subPollers(clusters *serverListData, deps Deployments) ([]*subPoller, error) {
+	subs := []*subPoller{}
 	for _, s := range clusters.Servers {
 		// skip clusters the user isn't interested in
 		if !sp.ResolveFilter.FilterClusterName(s.ClusterName) {
@@ -203,15 +218,14 @@ func (sp *StatusPoller) Start() (ResolveState, error) {
 		}
 		Log.Debug.Printf("Starting poller against %v", s)
 
-		// kick of a separate process to issue HTTP requests against this cluster
+		// Kick off a separate process to issue HTTP requests against this cluster.
 		sub, err := newSubPoller(s.ClusterName, s.URL, sp.ResolveFilter, sp.User)
 		if err != nil {
-			return ResolveNotPolled, err
+			return nil, err
 		}
 		subs = append(subs, sub)
 	}
-
-	return sp.poll(subs), nil
+	return subs, nil
 }
 
 // poll collects updates from each "sub" poller; once they've all crossed the

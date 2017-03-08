@@ -39,7 +39,7 @@ func (sps *SousPlumbingStatus) Execute(args []string) cmdr.Result {
 		return cmdr.UsageErrorf("Please configure a server using 'sous config Server <url>'")
 	}
 
-	state, err := sps.StatusPoller.Start()
+	state, err := sps.StatusPoller.Wait()
 	if err != nil {
 		return cmdr.EnsureErrorResult(err)
 	}
