@@ -214,7 +214,9 @@ func (suite *integrationSuite) TestFailedService() {
 	clusters := []string{"test-cluster"}
 
 	var fails *sous.DeployState
-	for {
+	sleepMillis := 500
+	for counter := 1; ; counter++ {
+		log.Printf("deployment state snapshot attempt:%d", counter)
 		ds, which := suite.deploymentWithRepo(clusters, "github.com/opentable/homer-says-doh")
 		deps := ds.Snapshot()
 		fails = deps[which]
@@ -222,7 +224,8 @@ func (suite *integrationSuite) TestFailedService() {
 		if fails.Status != sous.DeployStatusPending {
 			break
 		}
-		time.Sleep(time.Millisecond * 500)
+		log.Printf("sleeping for %d millseconds", sleepMillis)
+		time.Sleep(time.Millisecond * time.Duration(sleepMillis))
 	}
 	suite.statusIs(fails, sous.DeployStatusFailed)
 }
@@ -236,7 +239,9 @@ func (suite *integrationSuite) TestSuccessfulService() {
 	clusters := []string{"test-cluster"}
 
 	var succeeds *sous.DeployState
-	for {
+	sleepMillis := 500
+	for counter := 1; ; counter++ {
+		log.Printf("deployment state snapshot attempt:%d", counter)
 		ds, which := suite.deploymentWithRepo(clusters, "github.com/docker/dockercloud-hello-world")
 		deps := ds.Snapshot()
 		succeeds = deps[which]
@@ -244,7 +249,8 @@ func (suite *integrationSuite) TestSuccessfulService() {
 		if succeeds.Status != sous.DeployStatusPending {
 			break
 		}
-		time.Sleep(time.Millisecond * 500)
+		log.Printf("sleeping for %d millseconds", sleepMillis)
+		time.Sleep(time.Millisecond * time.Duration(sleepMillis))
 	}
 	suite.statusIs(succeeds, sous.DeployStatusActive)
 }
@@ -270,8 +276,10 @@ func (suite *integrationSuite) TestFailedDeployFollowingSuccessfulDeploy() {
 		registerAndDeploy(ip, clusterName, repoName, sourceRepo, dir, tag, ports)
 
 		var deployState *sous.DeployState
-		for {
+		sleepMillis := 500
+		for counter := 1; ; counter++ {
 			ds, which := suite.deploymentWithRepo(clusters, sourceRepo)
+			log.Printf("deployment state snapshot attempt:%d", counter)
 			log.Printf("GOT DEPLOY ID: %q", which)
 			deps := ds.Snapshot()
 			deployState = deps[which]
@@ -279,7 +287,8 @@ func (suite *integrationSuite) TestFailedDeployFollowingSuccessfulDeploy() {
 			if deployState.Status != sous.DeployStatusPending {
 				break
 			}
-			time.Sleep(time.Millisecond * 500)
+			log.Printf("sleeping for %d millseconds", sleepMillis)
+			time.Sleep(time.Millisecond * time.Duration(sleepMillis))
 		}
 		suite.statusIs(deployState, sous.DeployStatusActive)
 	}
@@ -294,7 +303,9 @@ func (suite *integrationSuite) TestFailedDeployFollowingSuccessfulDeploy() {
 		registerAndDeploy(ip, clusterName, repoName, sourceRepo, dir, tag, ports)
 
 		var deployState *sous.DeployState
-		for {
+		sleepMillis := 500
+		for counter := 1; ; counter++ {
+			log.Printf("deployment state snapshot attempt:%d", counter)
 			ds, which := suite.deploymentWithRepo(clusters, sourceRepo)
 			deps := ds.Snapshot()
 			deployState = deps[which]
@@ -302,7 +313,8 @@ func (suite *integrationSuite) TestFailedDeployFollowingSuccessfulDeploy() {
 			if deployState.Status != sous.DeployStatusPending {
 				break
 			}
-			time.Sleep(time.Millisecond * 500)
+			log.Printf("sleeping for %d millseconds", sleepMillis)
+			time.Sleep(time.Millisecond * time.Duration(sleepMillis))
 		}
 		suite.statusIs(deployState, sous.DeployStatusFailed)
 	}
