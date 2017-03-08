@@ -117,7 +117,7 @@ test-unit:
 
 test-integration: test-setup
 	go test -c -tags integration ./integration
-	SOUS_QA_DESC=$(QA_DESC) go test -t 30m $(TEST_VERBOSE) ./integration --tags=integration
+	SOUS_QA_DESC=$(QA_DESC) go test -timeout 30m $(TEST_VERBOSE) ./integration --tags=integration
 
 test-setup:  sous_qa_setup
 	./sous_qa_setup --compose-dir ./integration/test-registry/ --out-path=$(QA_DESC)
