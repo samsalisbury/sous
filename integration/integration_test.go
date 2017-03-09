@@ -214,7 +214,9 @@ func (suite *integrationSuite) TestFailedService() {
 	clusters := []string{"test-cluster"}
 
 	var fails *sous.DeployState
-	for {
+	sleepTime := time.Duration(500) * time.Millisecond
+	for counter := 1; ; counter++ {
+		log.Printf("deployment state snapshot attempt:%d", counter)
 		ds, which := suite.deploymentWithRepo(clusters, "github.com/opentable/homer-says-doh")
 		deps := ds.Snapshot()
 		fails = deps[which]
@@ -222,7 +224,8 @@ func (suite *integrationSuite) TestFailedService() {
 		if fails.Status != sous.DeployStatusPending {
 			break
 		}
-		time.Sleep(time.Millisecond * 500)
+		log.Printf("sleeping for %s", sleepTime)
+		time.Sleep(sleepTime)
 	}
 	suite.statusIs(fails, sous.DeployStatusFailed)
 }
@@ -230,13 +233,15 @@ func (suite *integrationSuite) TestFailedService() {
 func (suite *integrationSuite) TestSuccessfulService() {
 	if os.Getenv("TRAVIS") == "true" {
 		// Note: I would normally use t.Skipf() for this, but it isn't part of suite.
-		log.Println("SKIPPING TestSuccessfulService in Travis")
+		log.Println("SKIPPING TestSuccessfulService() in Travis")
 		return
 	}
 	clusters := []string{"test-cluster"}
 
 	var succeeds *sous.DeployState
-	for {
+	sleepTime := time.Duration(500) * time.Millisecond
+	for counter := 1; ; counter++ {
+		log.Printf("deployment state snapshot attempt:%d", counter)
 		ds, which := suite.deploymentWithRepo(clusters, "github.com/docker/dockercloud-hello-world")
 		deps := ds.Snapshot()
 		succeeds = deps[which]
@@ -244,7 +249,8 @@ func (suite *integrationSuite) TestSuccessfulService() {
 		if succeeds.Status != sous.DeployStatusPending {
 			break
 		}
-		time.Sleep(time.Millisecond * 500)
+		log.Printf("sleeping for %s", sleepTime)
+		time.Sleep(sleepTime)
 	}
 	suite.statusIs(succeeds, sous.DeployStatusActive)
 }
@@ -252,7 +258,7 @@ func (suite *integrationSuite) TestSuccessfulService() {
 func (suite *integrationSuite) TestFailedDeployFollowingSuccessfulDeploy() {
 	if os.Getenv("TRAVIS") == "true" {
 		// Note: I would normally use t.Skipf() for this, but it isn't part of suite.
-		log.Println("SKIPPING TestSuccessfulService in Travis")
+		log.Println("SKIPPING TestFailedDeployFollowingSuccessfulDeploy() in Travis")
 		return
 	}
 	clusters := []string{"test-cluster"}
@@ -270,8 +276,10 @@ func (suite *integrationSuite) TestFailedDeployFollowingSuccessfulDeploy() {
 		registerAndDeploy(ip, clusterName, repoName, sourceRepo, dir, tag, ports)
 
 		var deployState *sous.DeployState
-		for {
+		sleepTime := time.Duration(500) * time.Millisecond
+		for counter := 1; ; counter++ {
 			ds, which := suite.deploymentWithRepo(clusters, sourceRepo)
+			log.Printf("deployment state snapshot attempt:%d", counter)
 			log.Printf("GOT DEPLOY ID: %q", which)
 			deps := ds.Snapshot()
 			deployState = deps[which]
@@ -279,7 +287,8 @@ func (suite *integrationSuite) TestFailedDeployFollowingSuccessfulDeploy() {
 			if deployState.Status != sous.DeployStatusPending {
 				break
 			}
-			time.Sleep(time.Millisecond * 500)
+			log.Printf("sleeping for %s", sleepTime)
+			time.Sleep(sleepTime)
 		}
 		suite.statusIs(deployState, sous.DeployStatusActive)
 	}
@@ -294,7 +303,9 @@ func (suite *integrationSuite) TestFailedDeployFollowingSuccessfulDeploy() {
 		registerAndDeploy(ip, clusterName, repoName, sourceRepo, dir, tag, ports)
 
 		var deployState *sous.DeployState
-		for {
+		sleepTime := time.Duration(500) * time.Millisecond
+		for counter := 1; ; counter++ {
+			log.Printf("deployment state snapshot attempt:%d", counter)
 			ds, which := suite.deploymentWithRepo(clusters, sourceRepo)
 			deps := ds.Snapshot()
 			deployState = deps[which]
@@ -302,7 +313,8 @@ func (suite *integrationSuite) TestFailedDeployFollowingSuccessfulDeploy() {
 			if deployState.Status != sous.DeployStatusPending {
 				break
 			}
-			time.Sleep(time.Millisecond * 500)
+			log.Printf("sleeping for %s", sleepTime)
+			time.Sleep(sleepTime)
 		}
 		suite.statusIs(deployState, sous.DeployStatusFailed)
 	}
