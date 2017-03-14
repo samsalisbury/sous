@@ -200,6 +200,7 @@ func AddNetwork(graph adder) {
 // AddDocker adds Docker to the graph.
 func AddDocker(graph adder) {
 	graph.Add(
+		newDockerRegistry,
 		newDockerBuilder,
 		newSelector,
 	)
@@ -418,11 +419,7 @@ func newSelector() sous.Selector {
 	}
 }
 
-func newDockerBuilder(cfg LocalSousConfig, cl LocalDockerClient, ctx *sous.SourceContext, source LocalWorkDirShell, scratch ScratchDirShell) (*docker.Builder, error) {
-	nc, err := makeDockerRegistry(cfg, cl)
-	if err != nil {
-		return nil, err
-	}
+func newDockerBuilder(cfg LocalSousConfig, nc *docker.NameCache, ctx *sous.SourceContext, source LocalWorkDirShell, scratch ScratchDirShell) (*docker.Builder, error) {
 	drh := cfg.Docker.RegistryHost
 	source.Sh = source.Sh.Clone().(*shell.Sh)
 	source.Sh.LongRunning(true)
@@ -441,17 +438,17 @@ func newRegistry(dryrun DryrunOption, cfg LocalSousConfig, cl LocalDockerClient)
 	if dryrun == DryrunBoth || dryrun == DryrunRegistry {
 		return sous.NewDummyRegistry(), nil
 	}
-	return makeDockerRegistry(cfg, cl)
+	return newDockerRegistry(cfg, cl)
 }
 
-func newDeployer(dryrun DryrunOption) sous.Deployer {
+func newDeployer(dryrun DryrunOption, nc *docker.NameCache) sous.Deployer {
 	// Eventually, based on configuration, we may make different decisions here.
 	if dryrun == DryrunBoth || dryrun == DryrunScheduler {
 		drc := sous.NewDummyRectificationClient()
 		drc.SetLogger(log.New(os.Stdout, "rectify: ", 0))
 		return singularity.NewDeployer(drc)
 	}
-	return singularity.NewDeployer(singularity.NewRectiAgent())
+	return singularity.NewDeployer(singularity.NewRectiAgent(nc))
 }
 
 func newDockerClient() LocalDockerClient {
@@ -532,8 +529,8 @@ func NewCurrentGDM(state *sous.State) (CurrentGDM, error) {
 // The funcs named makeXXX below are used to create specific implementations of
 // sous native types.
 
-// makeDockerRegistry creates a Docker version of sous.Registry
-func makeDockerRegistry(cfg LocalSousConfig, cl LocalDockerClient) (*docker.NameCache, error) {
+// newDockerRegistry creates a Docker version of sous.Registry
+func newDockerRegistry(cfg LocalSousConfig, cl LocalDockerClient) (*docker.NameCache, error) {
 	dbCfg := cfg.Docker.DBConfig()
 	db, err := docker.GetDatabase(&dbCfg)
 	if err != nil {
@@ -545,7 +542,7 @@ func makeDockerRegistry(cfg LocalSousConfig, cl LocalDockerClient) (*docker.Name
 
 func newInserter(cfg LocalSousConfig, cl LocalDockerClient) (sous.Inserter, error) {
 	if cfg.Server == "" {
-		return makeDockerRegistry(cfg, cl)
+		return newDockerRegistry(cfg, cl)
 	}
 	return sous.NewHTTPNameInserter(cfg.Server)
 }

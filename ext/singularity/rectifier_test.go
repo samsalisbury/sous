@@ -23,10 +23,44 @@ func TestBuildDeployRequest(t *testing.T) {
 	rez := sous.Resources{"cpus": "0.1"}
 	vols := sous.Volumes{&sous.Volume{}}
 
-	dr, err := buildDeployRequest(di, env, rez, rID, dID, vols)
+	testKey := "expectedKey"
+	testValue := "expectedValue"
+	md := map[string]string{
+		testKey: testValue,
+	}
+
+	dr, err := buildDeployRequest(di, env, rez, rID, dID, vols, md)
 	require.NoError(err)
 	assert.NotNil(dr)
 	assert.Equal(dr.Deploy.RequestId, rID)
+}
+
+func TestDockerMetadataSet(t *testing.T) {
+	logTempl := "expected:%s got:%s"
+
+	di := "dockerImage"
+	dID := "depID"
+	rID := "reqID"
+	env := sous.Env{"test": "yes"}
+	rez := sous.Resources{"cpus": "0.1"}
+	vols := sous.Volumes{&sous.Volume{}}
+
+	testKey := "expectedKey"
+	testValue := "expectedValue"
+	md := map[string]string{
+		testKey: testValue,
+	}
+
+	dr, err := buildDeployRequest(di, env, rez, rID, dID, vols, md)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if dr.Deploy.Metadata[testKey] == testValue {
+		t.Logf(logTempl, testValue, dr.Deploy.Metadata[testKey])
+	} else {
+		t.Fatalf(logTempl, testValue, dr.Deploy.Metadata[testKey])
+	}
 }
 
 func baseDeployablePair() *sous.DeployablePair {
