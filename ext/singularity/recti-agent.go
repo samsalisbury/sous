@@ -123,9 +123,9 @@ func buildDeployRequest(dockerImage string, e sous.Env, r sous.Resources, reqID 
 		"Env":           map[string]string(e),
 		"Metadata":      metadata,
 	})
-	fmt.Printf("Deploy: %+ v", dep)
-	fmt.Printf("  Container: %+ v", ci)
-	fmt.Printf("  Docker: %+ v", dockerInfo)
+	Log.Debug.Printf("Deploy: %+ v", dep)
+	Log.Debug.Printf("  Container: %+ v", ci)
+	Log.Debug.Printf("  Docker: %+ v", dockerInfo)
 
 	depReq, err = swaggering.LoadMap(&dtos.SingularityDeployRequest{}, dtoMap{"Deploy": dep})
 	if err != nil {
