@@ -118,6 +118,12 @@ func TestStatusPoller_updateState(t *testing.T) {
 		t.Errorf("StatusPoller reported finished: %s", sp.status)
 	}
 
+	sp.pollChans["one"] = ResolveTasksStarting
+
+	if sp.finished() {
+		t.Errorf("StatusPoller reported finished: %s", sp.status)
+	}
+
 	sp.pollChans["one"] = ResolveComplete
 
 	if !sp.finished() {
