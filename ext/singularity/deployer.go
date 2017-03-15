@@ -37,7 +37,8 @@ type (
 	// rectificationClient abstracts the raw interactions with Singularity.
 	rectificationClient interface {
 		// Deploy creates a new deploy on a particular requeust
-		Deploy(clusterURI, clusterName, depID, reqID, dockerImage string, r sous.Resources, e sous.Env, vols sous.Volumes, flavor string) error
+		//Deploy(clusterURI, clusterName, depID, reqID, dockerImage string, r sous.Resources, e sous.Env, vols sous.Volumes, flavor string) error
+		Deploy(d sous.Deployable, depID, reqID, dockerImage string, r sous.Resources, e sous.Env, vols sous.Volumes) error
 
 		// PostRequest sends a request to a Singularity cluster to initiate
 		PostRequest(cluster, reqID string, instanceCount int, kind sous.ManifestKind, owners sous.OwnerSet) error
@@ -107,8 +108,8 @@ func (r *deployer) RectifySingleCreate(d *sous.Deployable) (err error) {
 		return err
 	}
 	return r.Client.Deploy(
-		d.Cluster.BaseURL, d.ClusterName, computeDeployID(d), reqID, name, d.Resources,
-		d.Env, d.DeployConfig.Volumes, d.Flavor)
+		*d, computeDeployID(d), reqID, name, d.Resources,
+		d.Env, d.DeployConfig.Volumes)
 }
 
 func (r *deployer) RectifyDeletes(dc <-chan *sous.Deployable, errs chan<- sous.DiffResolution) {
@@ -178,15 +179,13 @@ func (r *deployer) RectifySingleModification(pair *sous.DeployablePair) (err err
 		}
 
 		if err := r.Client.Deploy(
-			pair.Post.Cluster.BaseURL,
-			pair.Post.ClusterName,
+			*pair.Post,
 			computeDeployID(pair.Post),
 			computeRequestID(pair.Prior),
 			name,
 			pair.Post.Resources,
 			pair.Post.Env,
 			pair.Post.DeployConfig.Volumes,
-			pair.Post.Flavor,
 		); err != nil {
 			return err
 		}
