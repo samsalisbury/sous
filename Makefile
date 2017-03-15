@@ -49,7 +49,7 @@ help:
 
 clean:
 	rm -rf $(COVER_DIR)
-	git ls-files -o --exclude=.cleanprotect --exclude-per-directory=.cleanprotect | xargs rm -rf
+	git ls-files -z -o --exclude=.cleanprotect --exclude-per-directory=.cleanprotect | xargs -0 rm -rf
 
 clean-containers:
 	-docker ps -q | xargs docker kill
@@ -117,7 +117,7 @@ test-unit:
 
 test-integration: test-setup
 	go test -c -tags integration ./integration
-	SOUS_QA_DESC=$(QA_DESC) go test $(TEST_VERBOSE) ./integration --tags=integration
+	SOUS_QA_DESC=$(QA_DESC) go test  $(TEST_VERBOSE) ./integration --tags=integration
 
 test-setup:  sous_qa_setup
 	./sous_qa_setup --compose-dir ./integration/test-registry/ --out-path=$(QA_DESC)

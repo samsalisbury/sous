@@ -1,6 +1,7 @@
 package sous
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -225,7 +226,7 @@ func TestStatusPoller(t *testing.T) {
 
 	testCh := make(chan ResolveState)
 	go func() {
-		rState, err := poller.Start()
+		rState, err := poller.Wait(context.Background())
 		if err != nil {
 			t.Fatalf("Error starting poller: %#v", err)
 		}
@@ -327,7 +328,7 @@ func TestStatusPoller_MesosFailed(t *testing.T) {
 
 	testCh := make(chan ResolveState)
 	go func() {
-		rState, err := poller.Start()
+		rState, err := poller.Wait(context.Background())
 		if err != nil {
 			t.Fatalf("Error starting poller: %#v", err)
 		}
@@ -411,7 +412,7 @@ func TestStatusPoller_NotIntended(t *testing.T) {
 
 	testCh := make(chan ResolveState)
 	go func() {
-		rState, err := poller.Start()
+		rState, err := poller.Wait(context.Background())
 		if err != nil {
 			t.Fatalf("Error starting poller: %#v", err)
 		}
@@ -462,7 +463,7 @@ func TestStatusPoller_OldServer(t *testing.T) {
 
 	testCh := make(chan ResolveState)
 	go func() {
-		rState, err := poller.Start()
+		rState, err := poller.Wait(context.Background())
 		if err == nil {
 			t.Errorf("No error starting poller: %#v", err)
 		}
