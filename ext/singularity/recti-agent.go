@@ -56,21 +56,25 @@ func mapResources(r sous.Resources) dtoMap {
 }
 
 // Deploy sends requests to Singularity to make a deployment happen
-func (ra *RectiAgent) Deploy(cluster, depID, reqID, dockerImage string,
+func (ra *RectiAgent) Deploy(clusterURI, clusterName, depID, reqID, dockerImage string,
 	r sous.Resources, e sous.Env, vols sous.Volumes) error {
 	labels, err := ra.labeller.ImageLabels(dockerImage)
 	if err != nil {
 		return err
 	}
 	Log.Debug.Printf("Collected docker image labels %#v", labels)
-	Log.Debug.Printf("Deploying instance %s %s %s %s %v %v", cluster, depID, reqID, dockerImage, r, e)
+
+	labels[sous.SingularityDeployMetadataClusterName] = clusterName
+	Log.Debug.Printf("Added %s field to labels with value %s")
+
+	Log.Debug.Printf("Deploying instance %s %s %s %s %s %v %v", clusterURI, clusterName, depID, reqID, dockerImage, r, e)
 	depReq, err := buildDeployRequest(dockerImage, e, r, reqID, depID, vols, labels)
 	if err != nil {
 		return err
 	}
 
 	Log.Debug.Printf("Deploy req: %+ v", depReq)
-	_, err = ra.singularityClient(cluster).Deploy(depReq)
+	_, err = ra.singularityClient(clusterURI).Deploy(depReq)
 	return err
 }
 
