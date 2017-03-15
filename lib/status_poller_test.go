@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/nyarly/testify/assert"
 	"github.com/samsalisbury/semv"
 )
 
@@ -107,29 +108,41 @@ func TestSubPoller_ComputeState(t *testing.T) {
 }
 
 func TestStatusPoller_updateState(t *testing.T) {
+	assert := assert.New(t)
+
 	sp := &StatusPoller{
 		pollChans: map[string]ResolveState{
 			"one": ResolveInProgress,
+			"two": ResolveErredHTTP,
 		},
 		status: ResolveNotStarted,
 	}
 
-	if sp.finished() {
-		t.Errorf("StatusPoller reported finished: %s", sp.status)
+	assertStatus := func(status ResolveState) {
+		assert.Equal(sp.status, status, "StatusPoller total state was %s, expected %s", sp.status, status)
 	}
+
+	/// TODO: tests for "competing states"
+
+	assert.False(sp.finished(), "StatusPoller reported finished: %s", sp.status)
+	assertStatus(ResolveInProgress)
 
 	sp.pollChans["one"] = ResolveTasksStarting
 
-	if sp.finished() {
-		t.Errorf("StatusPoller reported finished: %s", sp.status)
-	}
+	assert.False(sp.finished(), "StatusPoller reported finished: %s", sp.status)
+	assertStatus(ResolveTasksStarting)
 
 	sp.pollChans["one"] = ResolveComplete
+	sp.pollChans["two"] = ResolveComplete
 
-	if !sp.finished() {
-		t.Errorf("StatusPoller reported NOT finished: %s", sp.status)
-	}
+	assert.True(sp.finished(), "StatusPoller reported NOT finished: %s", sp.status)
+	assertStatus(ResolveComplete)
 
+	sp.pollChans["one"] = ResolveComplete
+	sp.pollChans["two"] = ResolveFailed
+
+	assert.True(sp.finished(), "StatusPoller reported NOT finished: %s", sp.status)
+	assertStatus(ResolveFailed)
 }
 
 func TestStatusPoller(t *testing.T) {
