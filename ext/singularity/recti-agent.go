@@ -34,12 +34,14 @@ func stripMetadata(in string) string {
 type RectiAgent struct {
 	singClients map[string]*singularity.Client
 	sync.RWMutex
+	labeller sous.ImageLabeller
 }
 
 // NewRectiAgent returns a set-up RectiAgent
-func NewRectiAgent() *RectiAgent {
+func NewRectiAgent(l sous.ImageLabeller) *RectiAgent {
 	return &RectiAgent{
 		singClients: make(map[string]*singularity.Client),
+		labeller:    l,
 	}
 }
 
@@ -56,8 +58,13 @@ func mapResources(r sous.Resources) dtoMap {
 // Deploy sends requests to Singularity to make a deployment happen
 func (ra *RectiAgent) Deploy(cluster, depID, reqID, dockerImage string,
 	r sous.Resources, e sous.Env, vols sous.Volumes) error {
+	labels, err := ra.labeller.ImageLabels(dockerImage)
+	if err != nil {
+		return err
+	}
+	Log.Debug.Printf("Collected docker image labels %#v", labels)
 	Log.Debug.Printf("Deploying instance %s %s %s %s %v %v", cluster, depID, reqID, dockerImage, r, e)
-	depReq, err := buildDeployRequest(dockerImage, e, r, reqID, depID, vols)
+	depReq, err := buildDeployRequest(dockerImage, e, r, reqID, depID, vols, labels)
 	if err != nil {
 		return err
 	}
@@ -67,7 +74,7 @@ func (ra *RectiAgent) Deploy(cluster, depID, reqID, dockerImage string,
 	return err
 }
 
-func buildDeployRequest(dockerImage string, e sous.Env, r sous.Resources, reqID string, depID string, vols sous.Volumes) (*dtos.SingularityDeployRequest, error) {
+func buildDeployRequest(dockerImage string, e sous.Env, r sous.Resources, reqID string, depID string, vols sous.Volumes, metadata map[string]string) (*dtos.SingularityDeployRequest, error) {
 	var depReq swaggering.Fielder
 	dockerInfo, err := swaggering.LoadMap(&dtos.SingularityDockerInfo{}, dtoMap{
 		"Image":   dockerImage,
@@ -114,6 +121,7 @@ func buildDeployRequest(dockerImage string, e sous.Env, r sous.Resources, reqID 
 		"Resources":     res,
 		"ContainerInfo": ci,
 		"Env":           map[string]string(e),
+		"Metadata":      metadata,
 	})
 	Log.Debug.Printf("Deploy: %+ v", dep)
 	Log.Debug.Printf("  Container: %+ v", ci)

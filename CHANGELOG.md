@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
+## [Unreleased](//github.com/opentable/sous/compare/0.2.0...HEAD)
+
+### Added
+
+- singularity.Deploy() adds Docker labels to the SingularityDeploy 'Metadata' field.
+- Added the 'labeller' element to the singularity.RectiAgent type.
+
 ## [0.2.0](//github.com/opentable/sous/compare/0.1.9...0.2.0) - 2017-03-06
 
 ### Added
