@@ -6,6 +6,7 @@ go:
 - 1.7.3
 before_install:
 - bin/ci-setup
+- ls /sys/fs/cgroup
 install:
 - "./bin/vendor-check"
 script:
