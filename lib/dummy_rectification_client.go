@@ -60,7 +60,7 @@ func (t *DummyRectificationClient) logf(f string, v ...interface{}) {
 
 // Deploy implements part of the RectificationClient interface
 func (t *DummyRectificationClient) Deploy(
-	clusterURI, clusterName, depID, reqID, imageName string, res Resources, e Env, vols Volumes) error {
+	clusterURI, clusterName, depID, reqID, imageName string, res Resources, e Env, vols Volumes, flavor string) error {
 	t.logf("Deploying instance %s %s %s %s %s %v %v %v", clusterURI, clusterName, depID, reqID, imageName, res, e, vols)
 	t.Deployed = append(t.Deployed, dummyDeploy{clusterURI, depID, reqID, imageName, res, e, vols})
 	return nil

@@ -10,6 +10,7 @@ with respect to its command line interface and HTTP interface.
 
 ### Added
 
+- com.opentable.sous.flavor in SingularityDeploy 'Metadata' field.
 - com.opentable.sous.clustername in SingularityDeploy 'Metadata' field.
 - singularity.Deploy() adds Docker labels to the SingularityDeploy 'Metadata' field.
 - Added the 'labeller' element to the singularity.RectiAgent type.
