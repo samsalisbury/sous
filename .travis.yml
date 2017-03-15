@@ -6,13 +6,15 @@ go:
 - 1.7.3
 before_install:
 - bin/ci-setup
-- ls /sys/fs/cgroup
 install:
 - "./bin/vendor-check"
 script:
 - make -j2 test
 - make reject_wip
   #- cat doc/shellexamples/*.blended
+- docker ps || true
+- docker logs testregistry_slave_1 || true
+
 after_success:
 - make coverage
 - bin/codecov -f /tmp/sous-cover/count_merged.txt
