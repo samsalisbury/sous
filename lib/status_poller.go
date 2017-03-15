@@ -76,6 +76,9 @@ const (
 	// the same as our intended version) is different from the
 	// Mesos/Singularity's version.
 	ResolveInProgress
+	// ResolveTasksStarting is the state when the resolution is complete from
+	// Sous' point of view, but awaiting tasks starting in the cluster.
+	ResolveTasksStarting
 	// ResolveErredHTTP  conveys that the HTTP request to the server returned an error
 	ResolveErredHTTP
 	// ResolveErredRez conveys that the resolving server reported a transient error
@@ -89,9 +92,6 @@ const (
 	// ResolveFailed indicates that a particular cluster is in a failed state
 	// regarding resolving the deployments, and that resolution cannot proceed.
 	ResolveFailed
-	// ResolveTasksStarting is the state when the resolution is complete from
-	// Sous' point of view, but awaiting tasks starting in the cluster.
-	ResolveTasksStarting
 	// ResolveComplete is the success state: the server knows about our intended
 	// deployment, and that deployment has returned as having been stable.
 	ResolveComplete
