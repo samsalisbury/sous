@@ -106,6 +106,26 @@ func TestSubPoller_ComputeState(t *testing.T) {
 	testCompute("1.0", deployment("1.0", DeployStatusPending), diffRez("coming", nil), nil, ResolveTasksStarting)
 }
 
+func TestStatusPoller_updateState(t *testing.T) {
+	sp := &StatusPoller{
+		pollChans: map[string]ResolveState{
+			"one": ResolveInProgress,
+		},
+		status: ResolveNotStarted,
+	}
+
+	if sp.finished() {
+		t.Errorf("StatusPoller reported finished: %s", sp.status)
+	}
+
+	sp.pollChans["one"] = ResolveComplete
+
+	if !sp.finished() {
+		t.Errorf("StatusPoller reported NOT finished: %s", sp.status)
+	}
+
+}
+
 func TestStatusPoller(t *testing.T) {
 	serversRE := regexp.MustCompile(`/servers$`)
 	statusRE := regexp.MustCompile(`/status$`)

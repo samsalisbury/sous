@@ -11,7 +11,9 @@ type (
 	StatusPoller struct {
 		HTTPClient
 		*ResolveFilter
-		User User
+		User      User
+		pollChans map[string]ResolveState
+		status    ResolveState
 	}
 
 	subPoller struct {
@@ -83,9 +85,6 @@ const (
 	ResolveErredHTTP
 	// ResolveErredRez conveys that the resolving server reported a transient error
 	ResolveErredRez
-	// ResolveTERMINALS is not a state itself: it demarks resolution states that
-	// might proceed from states that are complete
-	ResolveTERMINALS
 	// ResolveNotIntended indicates that a particular cluster does not intend to
 	// deploy the given deployment(s)
 	ResolveNotIntended
@@ -98,6 +97,10 @@ const (
 	// ResolveMAX is not a state itself: it marks the top end of resolutions. All
 	// other states belong before it.
 	ResolveMAX
+
+	// ResolveTERMINALS is not a state itself: it demarks resolution states that
+	// might proceed from states that are complete
+	ResolveTERMINALS = ResolveNotIntended
 )
 
 // XXX we might consider using go generate with `stringer` (c.f.)
@@ -121,8 +124,6 @@ func (rs ResolveState) String() string {
 		return "ResolveErredRez"
 	case ResolveTasksStarting:
 		return "ResolveTasksStarting"
-	case ResolveTERMINALS:
-		return "resolve terminal marker - not a real state, received in error?"
 	case ResolveNotIntended:
 		return "ResolveNotIntended"
 	case ResolveFailed:
@@ -222,22 +223,11 @@ func (sp *StatusPoller) poll(subs []*subPoller) ResolveState {
 	}
 	collect := make(chan statPair)
 	done := make(chan struct{})
-	totalStatus := ResolveNotPolled
 	go func() {
-		pollChans := map[string]ResolveState{}
+		sp.pollChans = map[string]ResolveState{}
 		for {
-			update := <-collect
-			pollChans[update.url] = update.stat
-			Log.Debug.Printf("%s reports state: %s", update.url, update.stat)
-			max := ResolveComplete
-			for u, s := range pollChans {
-				Log.Vomit.Printf("Current state from %s: %s", u, s)
-				if s <= max {
-					max = s
-				}
-			}
-			totalStatus = max
-			if totalStatus >= ResolveTERMINALS {
+			sp.nextSubStatus(collect)
+			if sp.finished() {
 				close(done)
 				return
 			}
@@ -249,7 +239,31 @@ func (sp *StatusPoller) poll(subs []*subPoller) ResolveState {
 	}
 
 	<-done
-	return totalStatus
+	return sp.status
+}
+
+func (sp *StatusPoller) nextSubStatus(collect chan statPair) {
+	update := <-collect
+	sp.pollChans[update.url] = update.stat
+	Log.Debug.Printf("%s reports state: %s", update.url, update.stat)
+}
+
+func (sp *StatusPoller) updateStatus() {
+	max := ResolveMAX
+	for u, s := range sp.pollChans {
+		Log.Vomit.Printf("Current state from %s: %s", u, s)
+
+		//if max is already > EJECT, we can quit without waiting for other subs
+		if s <= max {
+			max = s
+		}
+	}
+	sp.status = max
+}
+
+func (sp *StatusPoller) finished() bool {
+	sp.updateStatus()
+	return sp.status >= ResolveTERMINALS
 }
 
 // start issues a new /status request every half second, reporting the state as computed.
@@ -261,7 +275,7 @@ func (sub *subPoller) start(rs chan statPair, done chan struct{}) {
 	ticker := time.NewTicker(time.Second / 2)
 	defer ticker.Stop()
 	for {
-		if stat > ResolveTERMINALS {
+		if stat >= ResolveTERMINALS {
 			return
 		}
 		select {
