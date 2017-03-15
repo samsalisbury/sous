@@ -10,8 +10,11 @@ with respect to its command line interface and HTTP interface.
 
 ### Added
 
-- singularity.Deploy() adds Docker labels to the SingularityDeploy 'Metadata' field.
-- Added the 'labeller' element to the singularity.RectiAgent type.
+- Adds Sous related-metadata to Singularity deploys for tracking and visibility purposes.
+
+### Fixed
+
+- In certain conditions, Sous would report a deploy as failed before it had completed.
 
 ## [0.2.0](//github.com/opentable/sous/compare/0.1.9...0.2.0) - 2017-03-06
 
