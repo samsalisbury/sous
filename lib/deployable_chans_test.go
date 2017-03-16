@@ -28,7 +28,6 @@ func (nrs *NameResolveTestSuite) makeTestDep() *Deployment {
 		Flavor:      "",
 		Owners:      OwnerSet{},
 		Kind:        "service",
-		Volumes:     Volumes{},
 		Annotation:  Annotation{},
 	}
 }
