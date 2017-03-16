@@ -12,7 +12,7 @@ script:
 - make -j2 test
 - make reject_wip
   #- cat doc/shellexamples/*.blended
-after_success:
+after_script:
 - docker ps || true
 - docker logs testregistry_slave_1 || true
 - make coverage

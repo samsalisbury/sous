@@ -1,7 +1,6 @@
 package sous
 
 import (
-	//	"github.com/opentable/sous/ext/singularity"
 	"log"
 )
 
