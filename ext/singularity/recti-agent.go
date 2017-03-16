@@ -57,11 +57,18 @@ func mapResources(r sous.Resources) dtoMap {
 
 // Deploy sends requests to Singularity to make a deployment happen
 // func (ra *RectiAgent) Deploy(clusterURI, clusterName, depID, reqID, dockerImage string,
-func (ra *RectiAgent) Deploy(d sous.Deployable, depID, reqID, dockerImage string,
-	r sous.Resources, e sous.Env, vols sous.Volumes) error {
+//func (ra *RectiAgent) Deploy(d sous.Deployable, depID, reqID, dockerImage string,
+////	r sous.Resources, e sous.Env, vols sous.Volumes) error {
+func (ra *RectiAgent) Deploy(d sous.Deployable, reqID string) error {
+	depID := d.ComputeDeployID()
+	dockerImage := d.BuildArtifact.Name
+	r := d.Deployment.DeployConfig.Resources
+	e := d.Deployment.DeployConfig.Env
+	vols := d.Deployment.DeployConfig.Volumes
 	clusterURI := d.Deployment.Cluster.BaseURL
 	clusterName := d.Deployment.ClusterName
 	flavor := d.Deployment.Flavor
+
 	labels, err := ra.labeller.ImageLabels(dockerImage)
 	if err != nil {
 		return err

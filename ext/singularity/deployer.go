@@ -37,8 +37,8 @@ type (
 	// rectificationClient abstracts the raw interactions with Singularity.
 	rectificationClient interface {
 		// Deploy creates a new deploy on a particular requeust
-		//Deploy(clusterURI, clusterName, depID, reqID, dockerImage string, r sous.Resources, e sous.Env, vols sous.Volumes, flavor string) error
-		Deploy(d sous.Deployable, depID, reqID, dockerImage string, r sous.Resources, e sous.Env, vols sous.Volumes) error
+		// Deploy(d sous.Deployable, depID, reqID, dockerImage string, r sous.Resources, e sous.Env, vols sous.Volumes) error
+		Deploy(d sous.Deployable, reqID string) error
 
 		// PostRequest sends a request to a Singularity cluster to initiate
 		PostRequest(cluster, reqID string, instanceCount int, kind sous.ManifestKind, owners sous.OwnerSet) error
@@ -99,7 +99,7 @@ func rectifyRecover(d interface{}, f string, err *error) {
 func (r *deployer) RectifySingleCreate(d *sous.Deployable) (err error) {
 	Log.Debug.Printf("Rectifying creation %q:  \n %# v", d.ID(), d.Deployment)
 	defer rectifyRecover(d, "RectifySingleCreate", &err)
-	name, err := r.ImageName(d)
+	//name, err := r.ImageName(d)
 	if err != nil {
 		return err
 	}
@@ -107,9 +107,7 @@ func (r *deployer) RectifySingleCreate(d *sous.Deployable) (err error) {
 	if err = r.Client.PostRequest(d.Cluster.BaseURL, reqID, d.NumInstances, d.Kind, d.Owners); err != nil {
 		return err
 	}
-	return r.Client.Deploy(
-		*d, computeDeployID(d), reqID, name, d.Resources,
-		d.Env, d.DeployConfig.Volumes)
+	return r.Client.Deploy(*d, reqID)
 }
 
 func (r *deployer) RectifyDeletes(dc <-chan *sous.Deployable, errs chan<- sous.DiffResolution) {
@@ -173,22 +171,15 @@ func (r *deployer) RectifySingleModification(pair *sous.DeployablePair) (err err
 
 	if changesDep(pair) {
 		Log.Debug.Printf("Deploying...")
-		name, err := r.ImageName(pair.Post)
-		if err != nil {
+		//name, err := r.ImageName(pair.Post)
+		//if err != nil {
+		//		return err
+		//	}
+
+		if err := r.Client.Deploy(*pair.Post, computeRequestID(pair.Prior)); err != nil {
 			return err
 		}
 
-		if err := r.Client.Deploy(
-			*pair.Post,
-			computeDeployID(pair.Post),
-			computeRequestID(pair.Prior),
-			name,
-			pair.Post.Resources,
-			pair.Post.Env,
-			pair.Post.DeployConfig.Volumes,
-		); err != nil {
-			return err
-		}
 	}
 	return nil
 }

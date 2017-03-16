@@ -1,6 +1,9 @@
 package sous
 
-import "log"
+import (
+	//	"github.com/opentable/sous/ext/singularity"
+	"log"
+)
 
 type (
 	// DummyRectificationClient implements RectificationClient but doesn't act on the Mesos scheduler;
@@ -61,10 +64,17 @@ func (t *DummyRectificationClient) logf(f string, v ...interface{}) {
 // Deploy implements part of the RectificationClient interface
 func (t *DummyRectificationClient) Deploy(
 	//	clusterURI, clusterName, depID, reqID, imageName string, res Resources, e Env, vols Volumes, flavor string) error {
-	deployable Deployable, depID, reqID, imageName string, res Resources, e Env, vols Volumes) error {
+	//	deployable Deployable, depID, reqID, imageName string, res Resources, e Env, vols Volumes) error {
+	deployable Deployable, reqID string) error {
 	clusterURI := deployable.Deployment.Cluster.BaseURL
 	clusterName := deployable.Deployment.ClusterName
 	flavor := deployable.Deployment.Flavor
+	depID := deployable.ComputeDeployID()
+	imageName := deployable.BuildArtifact.Name
+	res := deployable.Deployment.DeployConfig.Resources
+	e := deployable.Deployment.DeployConfig.Env
+	vols := deployable.Deployment.DeployConfig.Volumes
+
 	t.logf("Deploying instance %s %s %s %s %s %s %v %v %v", clusterURI, clusterName, flavor, depID, reqID, imageName, res, e, vols)
 	t.Deployed = append(t.Deployed, dummyDeploy{clusterURI, depID, reqID, imageName, res, e, vols})
 	return nil

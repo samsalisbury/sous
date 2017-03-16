@@ -253,7 +253,7 @@ func TestModify(t *testing.T) {
 
 	if assert.Len(client.Deployed, 1) {
 		assert.Regexp("2.3.4", client.Deployed[0].ImageName)
-		t.Log(client.Deployed[0].Vols)
+		t.Logf("VOLUMES:%#v", client.Deployed[0].Vols)
 		assert.Equal("RW", string(client.Deployed[0].Vols[0].Mode))
 	}
 
