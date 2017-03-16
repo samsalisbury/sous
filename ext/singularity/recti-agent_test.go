@@ -86,3 +86,15 @@ func TestDetermineRequestType(t *testing.T) {
 
 	}
 }
+
+func TestFailOnNilBuildArtifact(t *testing.T) {
+	r := sous.NewDummyRegistry()
+	d := sous.Deployable{}
+	ra := NewRectiAgent(r)
+	err := ra.Deploy(d, "testReq")
+	if err != nil {
+		t.Logf("Correctly returned an error upon encountering: %#v", err)
+	} else {
+		t.Fatal("Deploy did not return an error when given a sous.Deployable with an empty BuildArtifact")
+	}
+}

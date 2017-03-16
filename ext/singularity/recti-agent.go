@@ -57,6 +57,9 @@ func mapResources(r sous.Resources) dtoMap {
 
 // Deploy sends requests to Singularity to make a deployment happen
 func (ra *RectiAgent) Deploy(d sous.Deployable, reqID string) error {
+	if d.BuildArtifact == nil {
+		return &sous.MissingImageNameError{Cause: fmt.Errorf("Missing BuildArtifact on Deployable")}
+	}
 	dockerImage := d.BuildArtifact.Name
 	clusterURI := d.Deployment.Cluster.BaseURL
 	clusterName := d.Deployment.ClusterName
