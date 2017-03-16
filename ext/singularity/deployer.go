@@ -9,7 +9,7 @@ import (
 	"github.com/opentable/go-singularity"
 	"github.com/opentable/sous/lib"
 	"github.com/pkg/errors"
-	//	"github.com/satori/go.uuid"
+	"github.com/satori/go.uuid"
 )
 
 // Singularity DeployID must be <50
@@ -50,6 +50,17 @@ type (
 	// DTOMap is shorthand for map[string]interface{}
 	dtoMap map[string]interface{}
 )
+
+// SanitizeDeployID replaces characters forbidden in a Singularity deploy ID
+// with underscores.
+func sanitizeDeployID(in string) string {
+	return illegalDeployIDChars.ReplaceAllString(in, "_")
+}
+
+// StripDeployID removes all characters forbidden in a Singularity deployID.
+func stripDeployID(in string) string {
+	return illegalDeployIDChars.ReplaceAllString(in, "")
+}
 
 // NewDeployer creates a new Singularity-based sous.Deployer.
 func NewDeployer(c rectificationClient) sous.Deployer {
@@ -224,4 +235,33 @@ func ParseRequestID(id string) (sous.DeployID, error) {
 		},
 		Cluster: parts[2],
 	}, nil
+}
+
+func computeDeployID(d *sous.Deployable) string {
+	var uuidTrunc, versionTrunc string
+	uuidEntire := stripDeployID(uuid.NewV4().String())
+	versionSansMeta := stripMetadata(d.Deployment.SourceID.Version.String())
+	versionEntire := sanitizeDeployID(versionSansMeta)
+
+	if len(versionEntire) > maxVersionLen {
+		versionTrunc = versionEntire[0:maxVersionLen]
+	} else {
+		versionTrunc = versionEntire
+	}
+
+	// naiveLen is the length of the truncated Version plus
+	// the length of an entire UUID plus the length of a separator
+	// character.
+	naiveLen := len(versionTrunc) + len(uuidEntire) + 1
+
+	if naiveLen > maxDeployIDLen {
+		uuidTrunc = uuidEntire[:maxDeployIDLen-len(versionTrunc)-1]
+	} else {
+		uuidTrunc = uuidEntire
+	}
+
+	return strings.Join([]string{
+		versionTrunc,
+		uuidTrunc,
+	}, "_")
 }

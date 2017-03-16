@@ -172,7 +172,7 @@ func TestModifyImage(t *testing.T) {
 	assert.Len(client.Created, 0)
 
 	if assert.Len(client.Deployed, 1) {
-		assert.Regexp("2.3.4", client.Deployed[0].ImageName)
+		assert.Regexp("2.3.4", client.Deployed[0].BuildArtifact.Name)
 	}
 }
 
@@ -209,8 +209,8 @@ func TestModifyResources(t *testing.T) {
 	assert.Len(client.Created, 0)
 
 	if assert.Len(client.Deployed, 1) {
-		assert.Regexp("1.2.3", client.Deployed[0].ImageName)
-		assert.Regexp("500", client.Deployed[0].Res["memory"])
+		assert.Regexp("1.2.3", client.Deployed[0].BuildArtifact.Name)
+		assert.Regexp("500", client.Deployed[0].Deployment.DeployConfig.Resources["memory"])
 	}
 }
 
@@ -252,9 +252,9 @@ func TestModify(t *testing.T) {
 	}
 
 	if assert.Len(client.Deployed, 1) {
-		assert.Regexp("2.3.4", client.Deployed[0].ImageName)
-		t.Logf("VOLUMES:%#v", client.Deployed[0].Vols)
-		assert.Equal("RW", string(client.Deployed[0].Vols[0].Mode))
+		assert.Regexp("2.3.4", client.Deployed[0].BuildArtifact.Name)
+		t.Logf("VOLUMES:%#v", client.Deployed[0].Deployment.DeployConfig.Volumes)
+		assert.Equal("RW", string(client.Deployed[0].Deployment.DeployConfig.Volumes[0].Mode))
 	}
 
 }
@@ -352,8 +352,8 @@ func TestCreates(t *testing.T) {
 
 	if assert.Len(client.Deployed, 1) {
 		dep := client.Deployed[0]
-		assert.Equal("cluster", dep.Cluster)
-		assert.Equal("reqid,0.0.0", dep.ImageName)
+		assert.Equal("cluster", dep.Deployment.Cluster.BaseURL)
+		assert.Equal("reqid,0.0.0", dep.BuildArtifact.Name)
 	}
 
 	if assert.Len(client.Created, 1) {

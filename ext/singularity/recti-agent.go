@@ -57,7 +57,7 @@ func mapResources(r sous.Resources) dtoMap {
 
 // Deploy sends requests to Singularity to make a deployment happen
 func (ra *RectiAgent) Deploy(d sous.Deployable, reqID string) error {
-	depID := d.ComputeDeployID()
+	depID := computeDeployID(&d)
 	dockerImage := d.BuildArtifact.Name
 	r := d.Deployment.DeployConfig.Resources
 	e := d.Deployment.DeployConfig.Env

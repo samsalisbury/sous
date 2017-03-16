@@ -11,18 +11,8 @@ type (
 	DummyRectificationClient struct {
 		logger   *log.Logger
 		Created  []dummyRequest
-		Deployed []dummyDeploy
+		Deployed []Deployable
 		Deleted  []dummyDelete
-	}
-
-	dummyDeploy struct {
-		Cluster   string
-		DepID     string
-		ReqID     string
-		ImageName string
-		Res       Resources
-		E         Env
-		Vols      Volumes
 	}
 
 	dummyRequest struct {
@@ -62,21 +52,10 @@ func (t *DummyRectificationClient) logf(f string, v ...interface{}) {
 }
 
 // Deploy implements part of the RectificationClient interface
-func (t *DummyRectificationClient) Deploy(
-	//	clusterURI, clusterName, depID, reqID, imageName string, res Resources, e Env, vols Volumes, flavor string) error {
-	//	deployable Deployable, depID, reqID, imageName string, res Resources, e Env, vols Volumes) error {
+func (drc *DummyRectificationClient) Deploy(
 	deployable Deployable, reqID string) error {
-	clusterURI := deployable.Deployment.Cluster.BaseURL
-	clusterName := deployable.Deployment.ClusterName
-	flavor := deployable.Deployment.Flavor
-	depID := deployable.ComputeDeployID()
-	imageName := deployable.BuildArtifact.Name
-	res := deployable.Deployment.DeployConfig.Resources
-	e := deployable.Deployment.DeployConfig.Env
-	vols := deployable.Deployment.DeployConfig.Volumes
-
-	t.logf("Deploying instance %s %s %s %s %s %s %v %v %v", clusterURI, clusterName, flavor, depID, reqID, imageName, res, e, vols)
-	t.Deployed = append(t.Deployed, dummyDeploy{clusterURI, depID, reqID, imageName, res, e, vols})
+	drc.logf("Deploying instance %#v", deployable)
+	drc.Deployed = append(drc.Deployed, deployable)
 	return nil
 }
 
