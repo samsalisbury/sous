@@ -62,16 +62,10 @@ func (ra *RectiAgent) Deploy(d sous.Deployable, reqID string) error {
 	}
 	dockerImage := d.BuildArtifact.Name
 	clusterURI := d.Deployment.Cluster.BaseURL
-	clusterName := d.Deployment.ClusterName
-	flavor := d.Deployment.Flavor
-
 	labels, err := ra.labeller.ImageLabels(dockerImage)
 	if err != nil {
 		return err
 	}
-
-	labels[sous.SingularityDeployMetadataClusterName] = clusterName
-	labels[sous.SingularityDeployMetadataFlavor] = flavor
 
 	Log.Debug.Printf("Deploying instance %#v to request %s", d, reqID)
 	depReq, err := buildDeployRequest(d, reqID, labels)
@@ -91,6 +85,11 @@ func buildDeployRequest(d sous.Deployable, reqID string, metadata map[string]str
 	r := d.Deployment.DeployConfig.Resources
 	e := d.Deployment.DeployConfig.Env
 	vols := d.Deployment.DeployConfig.Volumes
+	clusterName := d.Deployment.ClusterName
+	flavor := d.Deployment.Flavor
+
+	metadata[sous.SingularityDeployMetadataClusterName] = clusterName
+	metadata[sous.SingularityDeployMetadataFlavor] = flavor
 
 	dockerInfo, err := swaggering.LoadMap(&dtos.SingularityDockerInfo{}, dtoMap{
 		"Image":   dockerImage,
