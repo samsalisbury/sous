@@ -172,7 +172,7 @@ func TestShortComputeDeployID(t *testing.T) {
 		},
 	}
 
-	deployID := computeDeployID(d)
+	deployID := d.ComputeDeployID()
 	parsedDeployID := strings.Split(deployID, "_")[0:3]
 	if reflect.DeepEqual(parsedDeployID, strings.Split(verStr, ".")) {
 		t.Logf(logTmpl, verStr, deployID)
@@ -208,7 +208,7 @@ func TestLongComputeDeployID(t *testing.T) {
 		},
 	}
 
-	deployID := computeDeployID(d)
+	deployID := d.ComputeDeployID()
 	parsedDeployID := strings.Split(deployID, "_")[0:3]
 	if reflect.DeepEqual(parsedDeployID, strings.Split("0.0.2", ".")) {
 		t.Logf(logTmpl, verStr, deployID)
