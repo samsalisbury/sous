@@ -57,11 +57,7 @@ func mapResources(r sous.Resources) dtoMap {
 
 // Deploy sends requests to Singularity to make a deployment happen
 func (ra *RectiAgent) Deploy(d sous.Deployable, reqID string) error {
-	depID := computeDeployID(&d)
 	dockerImage := d.BuildArtifact.Name
-	r := d.Deployment.DeployConfig.Resources
-	e := d.Deployment.DeployConfig.Env
-	vols := d.Deployment.DeployConfig.Volumes
 	clusterURI := d.Deployment.Cluster.BaseURL
 	clusterName := d.Deployment.ClusterName
 	flavor := d.Deployment.Flavor
@@ -75,7 +71,7 @@ func (ra *RectiAgent) Deploy(d sous.Deployable, reqID string) error {
 	labels[sous.SingularityDeployMetadataFlavor] = flavor
 
 	Log.Debug.Printf("Deploying instance %#v to request %s", d, reqID)
-	depReq, err := buildDeployRequest(dockerImage, e, r, reqID, depID, vols, labels)
+	depReq, err := buildDeployRequest(d, reqID, labels)
 	if err != nil {
 		return err
 	}
@@ -85,8 +81,14 @@ func (ra *RectiAgent) Deploy(d sous.Deployable, reqID string) error {
 	return err
 }
 
-func buildDeployRequest(dockerImage string, e sous.Env, r sous.Resources, reqID string, depID string, vols sous.Volumes, metadata map[string]string) (*dtos.SingularityDeployRequest, error) {
+func buildDeployRequest(d sous.Deployable, reqID string, metadata map[string]string) (*dtos.SingularityDeployRequest, error) {
 	var depReq swaggering.Fielder
+	depID := computeDeployID(&d)
+	dockerImage := d.BuildArtifact.Name
+	r := d.Deployment.DeployConfig.Resources
+	e := d.Deployment.DeployConfig.Env
+	vols := d.Deployment.DeployConfig.Volumes
+
 	dockerInfo, err := swaggering.LoadMap(&dtos.SingularityDockerInfo{}, dtoMap{
 		"Image":   dockerImage,
 		"Network": dtos.SingularityDockerInfoSingularityDockerNetworkTypeBRIDGE, //defaulting to all bridge

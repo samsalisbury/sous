@@ -16,20 +16,28 @@ func TestBuildDeployRequest(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	di := "dockerImage"
-	dID := "depID"
-	rID := "reqID"
-	env := sous.Env{"test": "yes"}
-	rez := sous.Resources{"cpus": "0.1"}
-	vols := sous.Volumes{&sous.Volume{}}
-
-	testKey := "expectedKey"
-	testValue := "expectedValue"
-	md := map[string]string{
-		testKey: testValue,
-	}
-
-	dr, err := buildDeployRequest(di, env, rez, rID, dID, vols, md)
+	rID := "expectedRID"
+	dr, err := buildDeployRequest(sous.Deployable{
+		BuildArtifact: &sous.BuildArtifact{
+			Name: "an-image",
+			Type: "docker",
+		},
+		Deployment: &sous.Deployment{
+			SourceID: sous.SourceID{
+				Location: sous.SourceLocation{
+					Repo: "repo",
+				},
+			},
+			DeployConfig: sous.DeployConfig{
+				NumInstances: 1,
+				Resources:    sous.Resources{},
+			},
+			ClusterName: "cluster",
+			Cluster: &sous.Cluster{
+				BaseURL: "http://cluster",
+			},
+		},
+	}, rID, map[string]string{})
 	require.NoError(err)
 	assert.NotNil(dr)
 	assert.Equal(dr.Deploy.RequestId, rID)
@@ -37,25 +45,38 @@ func TestBuildDeployRequest(t *testing.T) {
 
 func TestDockerMetadataSet(t *testing.T) {
 	logTempl := "expected:%s got:%s"
-
-	di := "dockerImage"
-	dID := "depID"
-	rID := "reqID"
-	env := sous.Env{"test": "yes"}
-	rez := sous.Resources{"cpus": "0.1"}
-	vols := sous.Volumes{&sous.Volume{}}
-
 	testKey := "expectedKey"
 	testValue := "expectedValue"
 	md := map[string]string{
 		testKey: testValue,
 	}
 
-	dr, err := buildDeployRequest(di, env, rez, rID, dID, vols, md)
+	rID := "expectedRID"
+	dr, err := buildDeployRequest(sous.Deployable{
+		BuildArtifact: &sous.BuildArtifact{
+			Name: "an-image",
+			Type: "docker",
+		},
+		Deployment: &sous.Deployment{
+			SourceID: sous.SourceID{
+				Location: sous.SourceLocation{
+					Repo: "repo",
+				},
+			},
+			DeployConfig: sous.DeployConfig{
+				NumInstances: 1,
+				Resources:    sous.Resources{},
+			},
+			ClusterName: "cluster",
+			Cluster: &sous.Cluster{
+				BaseURL: "http://cluster",
+			},
+		},
+	}, rID, md)
+
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	if dr.Deploy.Metadata[testKey] == testValue {
 		t.Logf(logTempl, testValue, dr.Deploy.Metadata[testKey])
 	} else {
