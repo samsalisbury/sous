@@ -37,7 +37,6 @@ type (
 	// rectificationClient abstracts the raw interactions with Singularity.
 	rectificationClient interface {
 		// Deploy creates a new deploy on a particular requeust
-		// Deploy(d sous.Deployable, depID, reqID, dockerImage string, r sous.Resources, e sous.Env, vols sous.Volumes) error
 		Deploy(d sous.Deployable, reqID string) error
 
 		// PostRequest sends a request to a Singularity cluster to initiate
@@ -51,13 +50,10 @@ type (
 	dtoMap map[string]interface{}
 )
 
-// SanitizeDeployID replaces characters forbidden in a Singularity deploy ID
-// with underscores.
 func sanitizeDeployID(in string) string {
 	return illegalDeployIDChars.ReplaceAllString(in, "_")
 }
 
-// StripDeployID removes all characters forbidden in a Singularity deployID.
 func stripDeployID(in string) string {
 	return illegalDeployIDChars.ReplaceAllString(in, "")
 }
@@ -107,7 +103,6 @@ func (r *deployer) RectifySingleCreate(d *sous.Deployable) (err error) {
 		return err
 	}
 	reqID := computeRequestID(d)
-	//if err = r.Client.PostRequest(d.Cluster.BaseURL, reqID, d.NumInstances, d.Kind, d.Owners); err != nil {
 	if err = r.Client.PostRequest(*d, reqID); err != nil {
 		return err
 	}
