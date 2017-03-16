@@ -26,20 +26,20 @@ func NewDummyRectificationClient() *DummyRectificationClient {
 }
 
 // SetLogger sets the logger for the client
-func (t *DummyRectificationClient) SetLogger(l *log.Logger) {
+func (drc *DummyRectificationClient) SetLogger(l *log.Logger) {
 	l.Println("dummy begin")
-	t.logger = l
+	drc.logger = l
 }
 
-func (t *DummyRectificationClient) log(v ...interface{}) {
-	if t.logger != nil {
-		t.logger.Print(v...)
+func (drc *DummyRectificationClient) log(v ...interface{}) {
+	if drc.logger != nil {
+		drc.logger.Print(v...)
 	}
 }
 
-func (t *DummyRectificationClient) logf(f string, v ...interface{}) {
-	if t.logger != nil {
-		t.logger.Printf(f, v...)
+func (drc *DummyRectificationClient) logf(f string, v ...interface{}) {
+	if drc.logger != nil {
+		drc.logger.Printf(f, v...)
 	}
 }
 
@@ -58,9 +58,9 @@ func (drc *DummyRectificationClient) PostRequest(d Deployable, id string) error 
 }
 
 // DeleteRequest (cluster url, request id, instance count, message)
-func (t *DummyRectificationClient) DeleteRequest(
+func (drc *DummyRectificationClient) DeleteRequest(
 	cluster, reqid, message string) error {
-	t.logf("Deleting application %s %s %s", cluster, reqid, message)
-	t.Deleted = append(t.Deleted, dummyDelete{cluster, reqid, message})
+	drc.logf("Deleting application %s %s %s", cluster, reqid, message)
+	drc.Deleted = append(drc.Deleted, dummyDelete{cluster, reqid, message})
 	return nil
 }
