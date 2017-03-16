@@ -159,7 +159,7 @@ func TestModifyScale(t *testing.T) {
 
 	assert.Len(client.Deployed, 0)
 	if assert.Len(client.Created, 1) {
-		assert.Equal(24, client.Created[0].Count)
+		assert.Equal(24, client.Created[0].Deployment.DeployConfig.NumInstances)
 	}
 }
 
@@ -269,7 +269,7 @@ func TestModify(t *testing.T) {
 	}
 
 	if assert.Len(client.Created, 1) {
-		assert.Equal(24, client.Created[0].Count)
+		assert.Equal(24, client.Created[0].Deployment.DeployConfig.NumInstances)
 	}
 
 	if assert.Len(client.Deployed, 1) {
@@ -379,8 +379,8 @@ func TestCreates(t *testing.T) {
 
 	if assert.Len(client.Created, 1) {
 		req := client.Created[0]
-		assert.Equal("cluster", req.Cluster)
-		assert.Equal("reqid::nick", req.ID)
-		assert.Equal(12, req.Count)
+		assert.Equal("cluster", req.Deployment.Cluster.BaseURL)
+		assert.Equal("reqid::nick", computeRequestID(&req))
+		assert.Equal(12, req.Deployment.DeployConfig.NumInstances)
 	}
 }

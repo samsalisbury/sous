@@ -41,7 +41,7 @@ type (
 		Deploy(d sous.Deployable, reqID string) error
 
 		// PostRequest sends a request to a Singularity cluster to initiate
-		PostRequest(cluster, reqID string, instanceCount int, kind sous.ManifestKind, owners sous.OwnerSet) error
+		PostRequest(d sous.Deployable, reqID string) error
 
 		// DeleteRequest instructs Singularity to delete a particular request
 		DeleteRequest(cluster, reqID, message string) error
@@ -107,7 +107,8 @@ func (r *deployer) RectifySingleCreate(d *sous.Deployable) (err error) {
 		return err
 	}
 	reqID := computeRequestID(d)
-	if err = r.Client.PostRequest(d.Cluster.BaseURL, reqID, d.NumInstances, d.Kind, d.Owners); err != nil {
+	//if err = r.Client.PostRequest(d.Cluster.BaseURL, reqID, d.NumInstances, d.Kind, d.Owners); err != nil {
+	if err = r.Client.PostRequest(*d, reqID); err != nil {
 		return err
 	}
 	return r.Client.Deploy(*d, reqID)
@@ -161,13 +162,7 @@ func (r *deployer) RectifySingleModification(pair *sous.DeployablePair) (err err
 	defer rectifyRecover(pair, "RectifySingleModification", &err)
 	if r.changesReq(pair) {
 		Log.Debug.Printf("Updating Request...")
-		if err := r.Client.PostRequest(
-			pair.Post.Cluster.BaseURL,
-			computeRequestID(pair.Post),
-			pair.Post.NumInstances,
-			pair.Post.Kind,
-			pair.Post.Owners,
-		); err != nil {
+		if err := r.Client.PostRequest(*pair.Post, computeRequestID(pair.Post)); err != nil {
 			return err
 		}
 	}

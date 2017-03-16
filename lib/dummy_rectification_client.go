@@ -10,17 +10,9 @@ type (
 	// instead it collects the changes that would be performed and options
 	DummyRectificationClient struct {
 		logger   *log.Logger
-		Created  []dummyRequest
+		Created  []Deployable
 		Deployed []Deployable
 		Deleted  []dummyDelete
-	}
-
-	dummyRequest struct {
-		Cluster string
-		ID      string
-		Count   int
-		Kind    ManifestKind
-		Owners  OwnerSet
 	}
 
 	dummyDelete struct {
@@ -52,21 +44,16 @@ func (t *DummyRectificationClient) logf(f string, v ...interface{}) {
 }
 
 // Deploy implements part of the RectificationClient interface
-func (drc *DummyRectificationClient) Deploy(
-	deployable Deployable, reqID string) error {
-	drc.logf("Deploying instance %#v", deployable)
-	drc.Deployed = append(drc.Deployed, deployable)
+func (drc *DummyRectificationClient) Deploy(d Deployable, reqID string) error {
+	drc.logf("Deploying instance %#v", d)
+	drc.Deployed = append(drc.Deployed, d)
 	return nil
 }
 
 // PostRequest (cluster, request id, instance count)
-func (t *DummyRectificationClient) PostRequest(
-	cluster, id string, count int,
-	kind ManifestKind,
-	owners OwnerSet,
-) error {
-	t.logf("Creating application %s %s %d %v %v", cluster, id, count, kind, owners)
-	t.Created = append(t.Created, dummyRequest{cluster, id, count, kind, owners})
+func (drc *DummyRectificationClient) PostRequest(d Deployable, id string) error {
+	drc.logf("Creating application %#v", d, id)
+	drc.Created = append(drc.Created, d)
 	return nil
 }
 

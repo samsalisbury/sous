@@ -147,7 +147,11 @@ func buildDeployRequest(d sous.Deployable, reqID string, metadata map[string]str
 }
 
 // PostRequest sends requests to Singularity to create a new Request
-func (ra *RectiAgent) PostRequest(cluster, reqID string, instanceCount int, kind sous.ManifestKind, owners sous.OwnerSet) error {
+func (ra *RectiAgent) PostRequest(d sous.Deployable, reqID string) error {
+	cluster := d.Deployment.Cluster.BaseURL
+	instanceCount := d.Deployment.DeployConfig.NumInstances
+	kind := d.Deployment.Kind
+	owners := d.Deployment.Owners
 	Log.Debug.Printf("Creating application %s %s %d", cluster, reqID, instanceCount)
 	reqType, err := determineRequestType(kind)
 	if err != nil {
