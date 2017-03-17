@@ -3,6 +3,7 @@ package sous
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -47,7 +48,20 @@ type (
 
 	// Variances is a list of differences between two structs.
 	Variances []string
+
+	retryableError string
 )
+
+func (re retryableError) Error() string {
+	return string(re)
+}
+
+// Retryable is a predicate on error that returns true if the error indicates
+// that a subsequent attempt at e.g. an Update might succeed.
+func Retryable(err error) bool {
+	_, is := errors.Cause(err).(retryableError)
+	return is
+}
 
 // NewClient returns a new LiveHTTPClient for a particular serverURL.
 func NewClient(serverURL string) (*LiveHTTPClient, error) {
@@ -190,7 +204,7 @@ func (client *LiveHTTPClient) getBodyEtag(url string, user User, body Comparable
 
 	differences := rzBody.VariancesFrom(body)
 	if len(differences) > 0 {
-		return "", errors.Errorf("Remote and local versions of %s resource don't match: %#v", url, differences)
+		return "", errors.Wrap(retryableError(fmt.Sprintf("Remote and local versions of %s resource don't match: %#v", url, differences)), "")
 	}
 	return rz.Header.Get("Etag"), nil
 }

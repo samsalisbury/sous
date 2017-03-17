@@ -7,6 +7,7 @@ import (
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
+	"github.com/pkg/errors"
 	"github.com/samsalisbury/semv"
 )
 
@@ -16,9 +17,7 @@ type SousUpdate struct {
 	OTPLFlags         config.OTPLFlags
 	Manifest          graph.TargetManifest
 	GDM               graph.CurrentGDM
-	State             *sous.State
-	StateWriter       graph.StateWriter
-	StateReader       graph.StateReader
+	StateManager      *graph.StateManager
 	ResolveFilter     *graph.RefinedResolveFilter
 	User              sous.User
 }
@@ -56,20 +55,61 @@ func (su *SousUpdate) Execute(args []string) cmdr.Result {
 		return EnsureErrorResult(err)
 	}
 
-	_, ok := su.State.Manifests.Get(sl)
-	if !ok {
-		return cmdr.UsageErrorf("No manifest found for %q - try 'sous init' first.", did)
-	}
-	if err := updateState(su.State, su.GDM, sid, did); err != nil {
+	gdm, err := updateRetryLoop(su.StateManager.StateManager, sl, sid, did, su.User)
+	if err != nil {
 		return EnsureErrorResult(err)
 	}
-	if err := su.StateWriter.WriteState(su.State, su.User); err != nil {
-		return EnsureErrorResult(err)
+
+	for k, d := range gdm.Snapshot() {
+		su.GDM.Set(k, d)
 	}
+
 	return cmdr.Success("Updated global manifest.")
 }
 
-func updateState(s *sous.State, gdm graph.CurrentGDM, sid sous.SourceID, did sous.DeployID) error {
+// If multiple updates are attempted at once for different clusters, there's
+// the possibility that they will collide in their updates, either interleaving
+// their GDM retreive/manifest update operations, or the git pull/push
+// server-side. In this case, the disappointed `sous update` should retry, up
+// to the number of times of manifests there are defined for this
+// SourceLocation
+func updateRetryLoop(sm sous.StateManager, sl sous.ManifestID, sid sous.SourceID, did sous.DeployID, user sous.User) (sous.Deployments, error) {
+	tryLimit := 2
+
+	for tries := 0; tries < tryLimit; tries++ {
+		state, err := sm.ReadState()
+		if err != nil {
+			return sous.NewDeployments(), err
+		}
+		manifest, ok := state.Manifests.Get(sl)
+		if !ok {
+			return sous.NewDeployments(), cmdr.UsageErrorf("No manifest found for %q - try 'sous init' first.", did)
+		}
+
+		tryLimit = len(manifest.Deployments)
+
+		gdm, err := state.Deployments()
+		if err != nil {
+			return sous.NewDeployments(), err
+		}
+
+		if err := updateState(state, gdm, sid, did); err != nil {
+			return sous.NewDeployments(), err
+		}
+		if err := sm.WriteState(state, user); err != nil {
+			if !sous.Retryable(err) {
+				return sous.NewDeployments(), err
+			}
+
+			continue
+		}
+
+		return gdm, nil
+	}
+	return sous.NewDeployments(), errors.Errorf("Tried %d to update %v - %v", tryLimit, sid, did)
+}
+
+func updateState(s *sous.State, gdm sous.Deployments, sid sous.SourceID, did sous.DeployID) error {
 	deployment, ok := gdm.Get(did)
 	if !ok {
 		sous.Log.Warn.Printf("Deployment %q does not exist, creating.\n", did)
@@ -79,15 +119,7 @@ func updateState(s *sous.State, gdm graph.CurrentGDM, sid sous.SourceID, did sou
 	deployment.SourceID = sid
 	deployment.ClusterName = did.Cluster
 
-	// XXX switch to .UpdateDeployments
-	gdm.Set(did, deployment)
-
-	manifests, err := gdm.Manifests(s.Defs)
-	if err != nil {
-		return EnsureErrorResult(err)
-	}
-	s.Manifests = manifests
-	return nil
+	return s.UpdateDeployments(deployment)
 }
 
 func getIDs(filter *sous.ResolveFilter, mid sous.ManifestID) (sous.SourceID, sous.DeployID, error) {

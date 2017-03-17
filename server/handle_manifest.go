@@ -8,6 +8,7 @@ import (
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/firsterr"
 	"github.com/opentable/sous/util/restful"
+	"github.com/pkg/errors"
 )
 
 type (
@@ -92,7 +93,7 @@ func (pmh *PUTManifestHandler) Exchange() (interface{}, int) {
 	}
 	pmh.State.Manifests.Set(mid, m)
 	if err := pmh.StateWriter.WriteState(pmh.State, sous.User(pmh.User)); err != nil {
-		return err, http.StatusConflict
+		return errors.Wrapf(err, "state recording collision - retry"), http.StatusConflict
 	}
 	return m, http.StatusOK
 }

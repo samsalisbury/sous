@@ -331,7 +331,7 @@ func TestShellLevelIntegration(t *testing.T) {
 	`, defaultCheck)
 
 	setupOverResourced.Block("over-resourced deploy failing", `
-	sous deploy -d -v -cluster right
+	sous deploy -cluster right
 	`, func(name string, res shelltest.Result, t *testing.T) {
 		if !res.ErrsMatches(`sous deploy.*right`) {
 			t.Log(res.Errs)

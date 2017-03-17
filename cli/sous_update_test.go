@@ -65,19 +65,19 @@ func TestGetIDs(t *testing.T) {
 
 var updateStateTests = []struct {
 	State                *sous.State
-	GDM                  graph.CurrentGDM
+	GDM                  sous.Deployments
 	DID                  sous.DeployID
 	ExpectedErr          string
 	ExpectedNumManifests int
 }{
 	{
 		State:       sous.NewState(),
-		GDM:         graph.CurrentGDM{Deployments: sous.NewDeployments()},
+		GDM:         sous.NewDeployments(),
 		ExpectedErr: "invalid deploy ID (no cluster name)",
 	},
 	{
 		State: sous.NewState(),
-		GDM:   graph.CurrentGDM{Deployments: sous.NewDeployments()},
+		GDM:   sous.NewDeployments(),
 		DID: sous.DeployID{
 			Cluster:    "blah",
 			ManifestID: sous.MustParseManifestID("github.com/user/project"),
@@ -89,8 +89,9 @@ var updateStateTests = []struct {
 			Defs: sous.Defs{Clusters: sous.Clusters{
 				"blah": &sous.Cluster{Name: "blah"},
 			}},
+			Manifests: sous.NewManifests(),
 		},
-		GDM: graph.CurrentGDM{Deployments: sous.NewDeployments()},
+		GDM: sous.NewDeployments(),
 		DID: sous.DeployID{
 			Cluster:    "blah",
 			ManifestID: sous.MustParseManifestID("github.com/user/project"),
@@ -143,9 +144,7 @@ func (dsm *DummyStateManager) ReadState() (*sous.State, error)             { ret
 func TestSousUpdate_Execute(t *testing.T) {
 	dsm := &DummyStateManager{}
 	su := SousUpdate{
-		StateReader:   graph.StateReader{StateReader: dsm},
-		StateWriter:   graph.StateWriter{StateWriter: dsm},
-		GDM:           graph.CurrentGDM{Deployments: sous.MakeDeployments(0)},
+		StateManager:  &graph.StateManager{dsm},
 		Manifest:      graph.TargetManifest{Manifest: &sous.Manifest{}},
 		ResolveFilter: &graph.RefinedResolveFilter{},
 	}
