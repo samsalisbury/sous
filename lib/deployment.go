@@ -34,10 +34,6 @@ type (
 		Owners OwnerSet
 		// Kind is the kind of software that SourceRepo represents.
 		Kind ManifestKind
-
-		// Volumes enumerates the volume mappings required.
-		Volumes Volumes
-
 		// Notes collected from the deployment's source.
 		Annotation
 	}

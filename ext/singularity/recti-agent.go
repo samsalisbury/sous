@@ -56,26 +56,41 @@ func mapResources(r sous.Resources) dtoMap {
 }
 
 // Deploy sends requests to Singularity to make a deployment happen
-func (ra *RectiAgent) Deploy(cluster, depID, reqID, dockerImage string,
-	r sous.Resources, e sous.Env, vols sous.Volumes) error {
+func (ra *RectiAgent) Deploy(d sous.Deployable, reqID string) error {
+	if d.BuildArtifact == nil {
+		return &sous.MissingImageNameError{Cause: fmt.Errorf("Missing BuildArtifact on Deployable")}
+	}
+	dockerImage := d.BuildArtifact.Name
+	clusterURI := d.Deployment.Cluster.BaseURL
 	labels, err := ra.labeller.ImageLabels(dockerImage)
 	if err != nil {
 		return err
 	}
-	Log.Debug.Printf("Collected docker image labels %#v", labels)
-	Log.Debug.Printf("Deploying instance %s %s %s %s %v %v", cluster, depID, reqID, dockerImage, r, e)
-	depReq, err := buildDeployRequest(dockerImage, e, r, reqID, depID, vols, labels)
+
+	Log.Debug.Printf("Deploying instance %#v to request %s", d, reqID)
+	depReq, err := buildDeployRequest(d, reqID, labels)
 	if err != nil {
 		return err
 	}
 
 	Log.Debug.Printf("Deploy req: %+ v", depReq)
-	_, err = ra.singularityClient(cluster).Deploy(depReq)
+	_, err = ra.singularityClient(clusterURI).Deploy(depReq)
 	return err
 }
 
-func buildDeployRequest(dockerImage string, e sous.Env, r sous.Resources, reqID string, depID string, vols sous.Volumes, metadata map[string]string) (*dtos.SingularityDeployRequest, error) {
+func buildDeployRequest(d sous.Deployable, reqID string, metadata map[string]string) (*dtos.SingularityDeployRequest, error) {
 	var depReq swaggering.Fielder
+	depID := computeDeployID(&d)
+	dockerImage := d.BuildArtifact.Name
+	r := d.Deployment.DeployConfig.Resources
+	e := d.Deployment.DeployConfig.Env
+	vols := d.Deployment.DeployConfig.Volumes
+	clusterName := d.Deployment.ClusterName
+	flavor := d.Deployment.Flavor
+
+	metadata[sous.SingularityDeployMetadataClusterName] = clusterName
+	metadata[sous.SingularityDeployMetadataFlavor] = flavor
+
 	dockerInfo, err := swaggering.LoadMap(&dtos.SingularityDockerInfo{}, dtoMap{
 		"Image":   dockerImage,
 		"Network": dtos.SingularityDockerInfoSingularityDockerNetworkTypeBRIDGE, //defaulting to all bridge
@@ -126,7 +141,6 @@ func buildDeployRequest(dockerImage string, e sous.Env, r sous.Resources, reqID 
 	Log.Debug.Printf("Deploy: %+ v", dep)
 	Log.Debug.Printf("  Container: %+ v", ci)
 	Log.Debug.Printf("  Docker: %+ v", dockerInfo)
-
 	depReq, err = swaggering.LoadMap(&dtos.SingularityDeployRequest{}, dtoMap{"Deploy": dep})
 	if err != nil {
 		return nil, err
@@ -135,7 +149,11 @@ func buildDeployRequest(dockerImage string, e sous.Env, r sous.Resources, reqID 
 }
 
 // PostRequest sends requests to Singularity to create a new Request
-func (ra *RectiAgent) PostRequest(cluster, reqID string, instanceCount int, kind sous.ManifestKind, owners sous.OwnerSet) error {
+func (ra *RectiAgent) PostRequest(d sous.Deployable, reqID string) error {
+	cluster := d.Deployment.Cluster.BaseURL
+	instanceCount := d.Deployment.DeployConfig.NumInstances
+	kind := d.Deployment.Kind
+	owners := d.Deployment.Owners
 	Log.Debug.Printf("Creating application %s %s %d", cluster, reqID, instanceCount)
 	reqType, err := determineRequestType(kind)
 	if err != nil {

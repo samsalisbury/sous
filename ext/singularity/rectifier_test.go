@@ -16,20 +16,28 @@ func TestBuildDeployRequest(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	di := "dockerImage"
-	dID := "depID"
-	rID := "reqID"
-	env := sous.Env{"test": "yes"}
-	rez := sous.Resources{"cpus": "0.1"}
-	vols := sous.Volumes{&sous.Volume{}}
-
-	testKey := "expectedKey"
-	testValue := "expectedValue"
-	md := map[string]string{
-		testKey: testValue,
-	}
-
-	dr, err := buildDeployRequest(di, env, rez, rID, dID, vols, md)
+	rID := "expectedRID"
+	dr, err := buildDeployRequest(sous.Deployable{
+		BuildArtifact: &sous.BuildArtifact{
+			Name: "an-image",
+			Type: "docker",
+		},
+		Deployment: &sous.Deployment{
+			SourceID: sous.SourceID{
+				Location: sous.SourceLocation{
+					Repo: "repo",
+				},
+			},
+			DeployConfig: sous.DeployConfig{
+				NumInstances: 1,
+				Resources:    sous.Resources{},
+			},
+			ClusterName: "cluster",
+			Cluster: &sous.Cluster{
+				BaseURL: "http://cluster",
+			},
+		},
+	}, rID, map[string]string{})
 	require.NoError(err)
 	assert.NotNil(dr)
 	assert.Equal(dr.Deploy.RequestId, rID)
@@ -37,25 +45,38 @@ func TestBuildDeployRequest(t *testing.T) {
 
 func TestDockerMetadataSet(t *testing.T) {
 	logTempl := "expected:%s got:%s"
-
-	di := "dockerImage"
-	dID := "depID"
-	rID := "reqID"
-	env := sous.Env{"test": "yes"}
-	rez := sous.Resources{"cpus": "0.1"}
-	vols := sous.Volumes{&sous.Volume{}}
-
 	testKey := "expectedKey"
 	testValue := "expectedValue"
 	md := map[string]string{
 		testKey: testValue,
 	}
 
-	dr, err := buildDeployRequest(di, env, rez, rID, dID, vols, md)
+	rID := "expectedRID"
+	dr, err := buildDeployRequest(sous.Deployable{
+		BuildArtifact: &sous.BuildArtifact{
+			Name: "an-image",
+			Type: "docker",
+		},
+		Deployment: &sous.Deployment{
+			SourceID: sous.SourceID{
+				Location: sous.SourceLocation{
+					Repo: "repo",
+				},
+			},
+			DeployConfig: sous.DeployConfig{
+				NumInstances: 1,
+				Resources:    sous.Resources{},
+			},
+			ClusterName: "cluster",
+			Cluster: &sous.Cluster{
+				BaseURL: "http://cluster",
+			},
+		},
+	}, rID, md)
+
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	if dr.Deploy.Metadata[testKey] == testValue {
 		t.Logf(logTempl, testValue, dr.Deploy.Metadata[testKey])
 	} else {
@@ -138,7 +159,7 @@ func TestModifyScale(t *testing.T) {
 
 	assert.Len(client.Deployed, 0)
 	if assert.Len(client.Created, 1) {
-		assert.Equal(24, client.Created[0].Count)
+		assert.Equal(24, client.Created[0].Deployment.DeployConfig.NumInstances)
 	}
 }
 
@@ -172,7 +193,7 @@ func TestModifyImage(t *testing.T) {
 	assert.Len(client.Created, 0)
 
 	if assert.Len(client.Deployed, 1) {
-		assert.Regexp("2.3.4", client.Deployed[0].ImageName)
+		assert.Regexp("2.3.4", client.Deployed[0].BuildArtifact.Name)
 	}
 }
 
@@ -209,8 +230,8 @@ func TestModifyResources(t *testing.T) {
 	assert.Len(client.Created, 0)
 
 	if assert.Len(client.Deployed, 1) {
-		assert.Regexp("1.2.3", client.Deployed[0].ImageName)
-		assert.Regexp("500", client.Deployed[0].Res["memory"])
+		assert.Regexp("1.2.3", client.Deployed[0].BuildArtifact.Name)
+		assert.Regexp("500", client.Deployed[0].Deployment.DeployConfig.Resources["memory"])
 	}
 }
 
@@ -248,13 +269,13 @@ func TestModify(t *testing.T) {
 	}
 
 	if assert.Len(client.Created, 1) {
-		assert.Equal(24, client.Created[0].Count)
+		assert.Equal(24, client.Created[0].Deployment.DeployConfig.NumInstances)
 	}
 
 	if assert.Len(client.Deployed, 1) {
-		assert.Regexp("2.3.4", client.Deployed[0].ImageName)
-		t.Log(client.Deployed[0].Vols)
-		assert.Equal("RW", string(client.Deployed[0].Vols[0].Mode))
+		assert.Regexp("2.3.4", client.Deployed[0].BuildArtifact.Name)
+		t.Logf("VOLUMES:%#v", client.Deployed[0].Deployment.DeployConfig.Volumes)
+		assert.Equal("RW", string(client.Deployed[0].Deployment.DeployConfig.Volumes[0].Mode))
 	}
 
 }
@@ -352,14 +373,14 @@ func TestCreates(t *testing.T) {
 
 	if assert.Len(client.Deployed, 1) {
 		dep := client.Deployed[0]
-		assert.Equal("cluster", dep.Cluster)
-		assert.Equal("reqid,0.0.0", dep.ImageName)
+		assert.Equal("cluster", dep.Deployment.Cluster.BaseURL)
+		assert.Equal("reqid,0.0.0", dep.BuildArtifact.Name)
 	}
 
 	if assert.Len(client.Created, 1) {
 		req := client.Created[0]
-		assert.Equal("cluster", req.Cluster)
-		assert.Equal("reqid::nick", req.ID)
-		assert.Equal(12, req.Count)
+		assert.Equal("cluster", req.Deployment.Cluster.BaseURL)
+		assert.Equal("reqid::nick", computeRequestID(&req))
+		assert.Equal(12, req.Deployment.DeployConfig.NumInstances)
 	}
 }
