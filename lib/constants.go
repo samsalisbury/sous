@@ -7,5 +7,5 @@ const SingularityDeployMetadataClusterName = "com.opentable.sous.clustername"
 const SingularityDeployMetadataFlavor = "com.opentable.sous.flavor"
 
 // SingularityDeployTimeout sets the number of seconds to wait for a SingularityDeploy before it is marked failed.
-// Increasing this number from the stock 120sec is helpful when dealing with a slock connection to a Docker registry.
+// Increasing this number from the stock 120sec is helpful when dealing with a slow connection to a Docker registry.
 const SingularityDeployTimeout = 10 * 60
