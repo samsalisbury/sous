@@ -171,6 +171,9 @@ func (cl *configLoader) overrideField(sf reflect.StructField, originalVal reflec
 	if !present {
 		return nil
 	}
+	// I'd rather be logging here, but I'm tied up in knots figuring this out. I see a cl.Info()
+	// commented-out in this file, so I suspect I'm in good company.
+	fmt.Printf("Environment configuration OVERRIDE: %s=%s\n", envName, envVal)
 	var finalVal reflect.Value
 	switch originalVal.Interface().(type) {
 	default:
