@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/yaml"
 )
 
@@ -56,7 +57,7 @@ func (cl *configLoader) Load(target interface{}, filePath string) error {
 		if !os.IsNotExist(err) {
 			return err
 		}
-		//cl.Info("Missing config file, using defaults", map[string]interface{}{"path": filePath})
+		sous.Log.Info.Printf("Missing config file, using defaults", map[string]interface{}{"path": filePath})
 	} else {
 		if err := cl.loadYAMLFile(target, filePath); err != nil {
 			return err
@@ -171,9 +172,7 @@ func (cl *configLoader) overrideField(sf reflect.StructField, originalVal reflec
 	if !present {
 		return nil
 	}
-	// I'd rather be logging here, but I'm tied up in knots figuring this out. I see a cl.Info()
-	// commented-out in this file, so I suspect I'm in good company.
-	fmt.Printf("Environment configuration OVERRIDE: %s=%s\n", envName, envVal)
+	sous.Log.Debug.Printf("Environment configuration OVERRIDE: %s=%s\n", envName, envVal)
 	var finalVal reflect.Value
 	switch originalVal.Interface().(type) {
 	default:
