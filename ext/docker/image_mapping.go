@@ -186,7 +186,7 @@ func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
 
 	qualities := qualitiesFromLabels(md.Labels)
 
-	err = nc.dbInsert(newSID, md.Registry+"/"+md.CanonicalName, md.Etag, qualities)
+	err = nc.dbInsert(newSID, nc.DockerRegistryHost+"/"+md.CanonicalName, md.Etag, qualities)
 	if err != nil {
 		return sid, err
 	}
@@ -194,9 +194,12 @@ func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
 	Log.Vomit.Printf("cn: %v all: %v", md.CanonicalName, md.AllNames)
 	names := []string{}
 	for _, n := range md.AllNames {
-		names = append(names, md.Registry+"/"+n)
+		names = append(names, nc.DockerRegistryHost+"/"+n)
 	}
-	err = nc.dbAddNames(md.Registry+"/"+md.CanonicalName, names)
+	err = nc.dbAddNames(nc.DockerRegistryHost+"/"+md.CanonicalName, names)
+	if err != nil && md.Registry != nc.DockerRegistryHost {
+		err = nc.dbAddNames(md.Registry+"/"+md.CanonicalName, names)
+	}
 
 	Log.Debug.Printf("Image name: %s -> (updated) Source ID: %v", in, newSID)
 	return newSID, err
