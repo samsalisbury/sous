@@ -266,14 +266,20 @@ func (client *LiveHTTPClient) getBody(rz *http.Response, rzBody interface{}, err
 		err = dec.Decode(rzBody)
 	}
 
-	if rz.StatusCode < 200 || rz.StatusCode >= 300 {
-		b, e := ioutil.ReadAll(rz.Body)
-		if e != nil {
-			b = []byte{}
-		}
-		return errors.Errorf("%s: %#v", rz.Status, string(b))
+	b, e := ioutil.ReadAll(rz.Body)
+	if e != nil {
+		b = []byte{}
 	}
-	return errors.Wrapf(err, "processing response body")
+
+	switch {
+	default:
+		return errors.Wrapf(err, "processing response body")
+	case rz.StatusCode < 200 || rz.StatusCode >= 300:
+		return errors.Errorf("%s: %#v", rz.Status, string(b))
+	case rz.StatusCode == http.StatusConflict:
+		return errors.Errorf(retryableError(fmt.Sprintf("%s: %#v", rz.Status, string(b))))
+	}
+
 }
 
 func logBody(dir, chName string, req *http.Request, b []byte, n int, err error) {
