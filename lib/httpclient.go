@@ -277,7 +277,7 @@ func (client *LiveHTTPClient) getBody(rz *http.Response, rzBody interface{}, err
 	case rz.StatusCode < 200 || rz.StatusCode >= 300:
 		return errors.Errorf("%s: %#v", rz.Status, string(b))
 	case rz.StatusCode == http.StatusConflict:
-		return errors.Errorf(retryableError(fmt.Sprintf("%s: %#v", rz.Status, string(b))))
+		return errors.Wrap(retryableError(fmt.Sprintf("%s: %#v", rz.Status, string(b))), "getBody")
 	}
 
 }
