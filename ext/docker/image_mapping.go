@@ -186,17 +186,23 @@ func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
 
 	qualities := qualitiesFromLabels(md.Labels)
 
-	err = nc.dbInsert(newSID, md.Registry+"/"+md.CanonicalName, md.Etag, qualities)
+	fullCanon := nc.DockerRegistryHost + "/" + md.CanonicalName
+	Log.Vomit.Printf("Recording %q (with etag: %s) as canonical for %v", fullCanon, md.Etag, newSID)
+	err = nc.dbInsert(newSID, fullCanon, md.Etag, qualities)
 	if err != nil {
 		return sid, err
 	}
 
-	Log.Vomit.Printf("cn: %v all: %v", md.CanonicalName, md.AllNames)
 	names := []string{}
 	for _, n := range md.AllNames {
-		names = append(names, md.Registry+"/"+n)
+		names = append(names, nc.DockerRegistryHost+"/"+n)
 	}
-	err = nc.dbAddNames(md.Registry+"/"+md.CanonicalName, names)
+	err = nc.dbAddNames(nc.DockerRegistryHost+"/"+md.CanonicalName, names)
+	Log.Vomit.Printf("Recorded additional names: %v for %q at registry %s (err: %v)", md.AllNames, fullCanon, nc.DockerRegistryHost, err)
+	if err != nil && md.Registry != nc.DockerRegistryHost {
+		err = nc.dbAddNames(md.Registry+"/"+md.CanonicalName, names)
+		Log.Vomit.Printf("Recorded additional names: %v for %q at registry %s (err: %v)", md.AllNames, md.Registry+"/"+md.CanonicalName, md.Registry, err)
+	}
 
 	Log.Debug.Printf("Image name: %s -> (updated) Source ID: %v", in, newSID)
 	return newSID, err

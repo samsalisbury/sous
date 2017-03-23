@@ -91,7 +91,7 @@ func (suite *integrationSuite) newNameCache(name string) *docker.NameCache {
 
 	suite.Require().NoError(err)
 
-	return docker.NewNameCache("", suite.registry, db)
+	return docker.NewNameCache(registryName, suite.registry, db)
 }
 
 func (suite *integrationSuite) BeforeTest(suiteName, testName string) {
