@@ -134,6 +134,7 @@ func (drc *DummyRegistryClient) LabelsForImageName(in string) (labels map[string
 	return
 }
 
+// CallsTo returns a filtered list of the calls to this spy: those that were made to the named method
 func (drc *DummyRegistryClient) CallsTo(name string) []call {
 	calls := []call{}
 	for _, c := range drc.calls {

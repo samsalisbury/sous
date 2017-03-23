@@ -143,6 +143,11 @@ func (nc *NameCache) GetArtifact(sid sous.SourceID) (*sous.BuildArtifact, error)
 	return NewBuildArtifact(name, qls), nil
 }
 
+func meansBodyUnchanged(err error) bool {
+	_, ok := err.(NotModifiedErr)
+	return ok || err == distribution.ErrManifestNotModified
+}
+
 // GetSourceID looks up the source ID for a given image name.
 func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
 	in := a.Name
@@ -167,11 +172,7 @@ func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
 
 	md, err := nc.RegistryClient.GetImageMetadata(in, etag)
 	Log.Vomit.Printf("%+ v %v %T %#v", md, err, err, err)
-	if _, ok := err.(NotModifiedErr); ok {
-		Log.Debug.Printf("Image name: %s -> Source ID: %v", in, sid)
-		return sid, nil
-	}
-	if err == distribution.ErrManifestNotModified {
+	if meansBodyUnchanged(err) {
 		Log.Debug.Printf("Image name: %s -> Source ID: %v", in, sid)
 		return sid, nil
 	}
@@ -191,10 +192,9 @@ func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
 	if md.Registry != nc.DockerRegistryHost {
 		mirrored = true
 		_, err := nc.RegistryClient.GetImageMetadata(fullCanon, md.Etag)
-		if _, unchanged := err.(NotModifiedErr); err != nil &&
-			err != distribution.ErrManifestNotModified &&
-			!unchanged {
+		if err != nil && !meansBodyUnchanged(err) {
 			fullCanon = md.Registry + "/" + md.CanonicalName
+			Log.Debug.Printf("Docker image name %q not found in %q, leaving as %q", md.CanonicalName, nc.DockerRegistryHost, fullCanon)
 		}
 	}
 
