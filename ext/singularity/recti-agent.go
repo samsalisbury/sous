@@ -137,8 +137,11 @@ func buildDeployRequest(d sous.Deployable, reqID string, metadata map[string]str
 		"ContainerInfo":              ci,
 		"Env":                        map[string]string(e),
 		"Metadata":                   metadata,
-		"DeployHealthTimeoutSeconds": sous.SingularityDeployTimeout,
+		"DeployHealthTimeoutSeconds": int64(sous.SingularityDeployTimeout),
 	})
+	if err != nil {
+		return nil, err
+	}
 	Log.Debug.Printf("Deploy: %+ v", dep)
 	Log.Debug.Printf("  Container: %+ v", ci)
 	Log.Debug.Printf("  Docker: %+ v", dockerInfo)
