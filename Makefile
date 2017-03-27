@@ -164,6 +164,6 @@ artifacts/$(DARWIN_TARBALL): artifacts/$(DARWIN_RELEASE_DIR)/sous
 	cd artifacts && tar czv $(DARWIN_RELEASE_DIR) > $(DARWIN_TARBALL)
 
 staticcheck:
-	$(foreach package,$(SOUS_PACKAGES),staticcheck -ignore $$(< staticcheck.ignore) $(package);)
+	$(foreach package,$(SOUS_PACKAGES),staticcheck -ignore $$(cat staticcheck.ignore) $(package);)
 
 .PHONY: clean coverage install-ggen legendary release semvertagchk test test-gofmt test-integration test-setup test-unit reject_wip wip staticcheck
