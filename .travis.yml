@@ -10,7 +10,7 @@ install:
 - "./bin/vendor-check"
 script:
 - make -j2 test
-- make reject_wip
+- make reject-wip
   #- cat doc/shellexamples/*.blended
 after_script:
 - docker ps || true
