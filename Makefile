@@ -68,15 +68,21 @@ install-ggen:
 install-stringer:
 	go get golang.org/x/tools/cmd/stringer
 
-legendary: coverage
-	legendary --hitlist .cadre/coverage.vim /tmp/sous-cover/*_merged.txt
+install-xgo:
+	go get github.com/karalabe/xgo
+
+install-govendor:
+	go get github.com/kardianos/govendor
+
+install-engulf:
+	go get github.com/nyarly/engulf
+
+install-staticcheck:
+	go get honnef.co/go/tools/cmd/staticcheck
+
+install_build_tools: install-xgo install-govendor install-engulf install-staticcheck
 
 release: artifacts/$(DARWIN_TARBALL) artifacts/$(LINUX_TARBALL)
-
-install_build_tools:
-	go get github.com/karalabe/xgo
-	go get github.com/kardianos/govendor
-	go get github.com/nyarly/engulf
 
 linux-build: artifacts/$(LINUX_RELEASE_DIR)/sous
 	ln -sf ../$< dev_support/sous_linux
@@ -108,6 +114,9 @@ coverage: $(COVER_DIR)
 			/util/cmdr/cmdr-example/?'\
 		--exclude-files='raw_client.go$$, _generated.go$$'\
 		--merge-base=_merged.txt ./...
+
+legendary: coverage
+	legendary --hitlist .cadre/coverage.vim /tmp/sous-cover/*_merged.txt
 
 test-gofmt:
 	bin/check-gofmt
@@ -152,5 +161,9 @@ artifacts/$(LINUX_TARBALL): artifacts/$(LINUX_RELEASE_DIR)/sous
 artifacts/$(DARWIN_TARBALL): artifacts/$(DARWIN_RELEASE_DIR)/sous
 	cd artifacts && tar czv $(DARWIN_RELEASE_DIR) > $(DARWIN_TARBALL)
 
+SOUS_PACKAGES:= $(shell go list -f '{{ range .Deps }}{{.}}{{printf "\n"}}{{end}}' | grep '^github.com/opentable' | grep -v 'vendor')
 
-.PHONY: clean coverage install-ggen legendary release semvertagchk test test-gofmt test-integration test-setup test-unit reject_wip wip
+staticcheck:
+	$(foreach package,$(SOUS_PACKAGES),staticcheck -ignore $$(< staticcheck.ignore) $(package);)
+
+.PHONY: clean coverage install-ggen legendary release semvertagchk test test-gofmt test-integration test-setup test-unit reject_wip wip staticcheck
