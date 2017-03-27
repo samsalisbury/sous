@@ -46,7 +46,7 @@ help:
 	@echo "make test-unit"
 	@echo "make wip: puts a marker file into workspace to prevent Travis from passing the build."
 	@echo "make staticcheck: runs static code analysis against project packages."
-	@echok
+	@echo
 	@echo "Add VERBOSE=1 for tons of extra output."
 
 clean:
@@ -164,6 +164,6 @@ artifacts/$(DARWIN_TARBALL): artifacts/$(DARWIN_RELEASE_DIR)/sous
 	cd artifacts && tar czv $(DARWIN_RELEASE_DIR) > $(DARWIN_TARBALL)
 
 staticcheck:
-	$(foreach package,$(SOUS_PACKAGES),staticcheck -ignore $$(cat staticcheck.ignore) $(package);)
+	staticcheck -ignore "$$(cat staticcheck.ignore)" $(SOUS_PACKAGES)
 
 .PHONY: clean coverage install-ggen legendary release semvertagchk test test-gofmt test-integration test-setup test-unit reject_wip wip staticcheck

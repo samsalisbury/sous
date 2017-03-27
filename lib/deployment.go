@@ -58,7 +58,9 @@ type (
 // Clone returns a deep copy of this deployment.
 func (d Deployment) Clone() *Deployment {
 	d.DeployConfig = d.DeployConfig.Clone()
-	d.Cluster = d.Cluster.Clone()
+	if d.Cluster != nil {
+		d.Cluster = d.Cluster.Clone()
+	}
 	d.Owners = d.Owners.Clone()
 	d.Volumes = d.Volumes.Clone()
 	return &d
@@ -183,17 +185,19 @@ func (d *Deployment) Diff(o *Deployment) (bool, []string) {
 	if d.Kind != o.Kind {
 		diff("kind; this: %q; other: %q", d.Kind, o.Kind)
 	}
-	if len(d.Owners) != len(o.Owners) {
-		// TODO: Make sure owners get written to Singularity, then uncomment next line.
-		//diff("number of owners; this: %+v; other: %+v", len(d.Owners), len(o.Owners))
-	}
 
-	for owner := range d.Owners {
-		if _, has := o.Owners[owner]; !has {
-			// TODO: Make sure owners get written to Singularity, then uncomment next line.
-			//diff("owner %s", owner)
+	// TODO: Make sure owners get written to Singularity, then uncomment next line.
+	/*
+		if len(d.Owners) != len(o.Owners) {
+			//diff("number of owners; this: %+v; other: %+v", len(d.Owners), len(o.Owners))
 		}
-	}
+
+		for owner := range d.Owners {
+			if _, has := o.Owners[owner]; !has {
+				//diff("owner %s", owner)
+			}
+		}
+	*/
 	_, configDiffs := d.DeployConfig.Diff(o.DeployConfig)
 	diffs = append(diffs, configDiffs...)
 	return len(diffs) != 0, diffs

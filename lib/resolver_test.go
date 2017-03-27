@@ -20,6 +20,7 @@ func TestGuardImageMissing(t *testing.T) {
 	_, err := GuardImage(dr, &missing)
 	assert.Error(err)
 }
+
 func TestGuardImageRejected(t *testing.T) {
 	assert := assert.New(t)
 

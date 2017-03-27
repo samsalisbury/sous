@@ -286,8 +286,8 @@ func newLogSet(v *config.Verbosity, err ErrWriter) *sous.LogSet { // XXX tempora
 		}
 		sous.Log.Debug.SetOutput(err)
 	}
-	if v.Loud {
-	}
+	//if v.Loud {
+	//}
 	if v.Quiet {
 		sous.Log.Info.SetOutput(ioutil.Discard)
 	}

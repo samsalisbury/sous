@@ -21,6 +21,11 @@ type (
 		DiffChans
 	}
 
+	stateDiffer struct {
+		from map[DeployID]*DeployState
+		DiffChans
+	}
+
 	// DiffChans is a set of channels that represent differences between two sets
 	// of Deployments as they're discovered
 	DiffChans struct {
@@ -83,11 +88,12 @@ func (d *DiffChans) Close() {
 	close(d.Deleted)
 }
 
-// Diff computes the differences between two sets of Deployments
+// Diff computes the differences between two sets of DeployStates
 func (d DeployStates) Diff(other Deployments) DiffChans {
 	difr := newStateDiffer(d)
-	go func(d *differ, o Deployments) {
-		d.diff(o)
+	go func(d *stateDiffer, o Deployments) {
+		e := o.promote(DeployStatusActive)
+		d.diff(e)
 	}(difr, other)
 
 	return difr.DiffChans
@@ -103,7 +109,7 @@ func (d Deployments) Diff(other Deployments) DiffChans {
 	return difr.DiffChans
 }
 
-func newStateDiffer(intended DeployStates) *differ {
+func newStateDiffer(intended DeployStates) *stateDiffer {
 	i := intended.Snapshot()
 	ds := []string{"Computing diff from:"}
 	for _, e := range i {
@@ -115,7 +121,7 @@ func newStateDiffer(intended DeployStates) *differ {
 	for _, dep := range i {
 		startMap[dep.Name()] = dep
 	}
-	return &differ{
+	return &stateDiffer{
 		from:      startMap,
 		DiffChans: NewDiffChans(len(i)),
 	}
@@ -136,6 +142,93 @@ func newDiffer(intended Deployments) *differ {
 	return &differ{
 		from:      startMap,
 		DiffChans: NewDiffChans(len(i)),
+	}
+}
+
+func (deps Deployments) promote(all DeployStatus) DeployStates {
+	rds := NewDeployStates()
+	for _, d := range deps.Snapshot() {
+		ds := &DeployState{Deployment: *d, Status: all}
+		rds.Add(ds)
+	}
+	return rds
+}
+
+func (d *stateDiffer) diff(existing DeployStates) {
+	defer d.DiffChans.Close()
+	eds := existing.Snapshot()
+	ds := []string{"Computing diff to:"}
+	for _, e := range eds {
+		ds = append(ds, e.String())
+	}
+	Log.Vomit.Print(strings.Join(ds, "\n    "))
+
+	for id, existingDS := range existing.Snapshot() {
+		intendDS, exists := d.from[id]
+		if !exists {
+
+			Log.Debug.Printf("New deployment: %q", id)
+
+			d.Created <- &DeploymentPair{ // XXX s/Created/Create
+				name:   id,
+				Prior:  nil,
+				Post:   &existingDS.Deployment,
+				Status: existingDS.Status,
+			}
+			continue
+		}
+		delete(d.from, id)
+		different, differences := existingDS.Diff(intendDS)
+
+		// This is a bit hacky: if the DSes are different, check to see if they'd
+		// be the same if we changed a Pending to Active
+		// The purpose here is that for rectification purposes, we should consider
+		// "pending" deployments as good as "active" intentions, but we want to
+		// report that they're pending in the status
+		//
+		// The right approach really is to set up a "DeployStatePair", so that both
+		// statuses are available and let the rectifier make the determination
+		// about what to do.
+		if different && intendDS.Status == DeployStatusPending {
+			actEx := intendDS.Clone()
+			actEx.Status = DeployStatusActive
+			different, _ = existingDS.Diff(actEx)
+		}
+
+		if different {
+			Log.Debug.Printf("Modified deployment: %q (% #v)", id, differences)
+
+			d.Modified <- &DeploymentPair{
+				name:  id,
+				Prior: &intendDS.Deployment,
+				Post:  &existingDS.Deployment,
+
+				// The question of which status to use here implies that this should be
+				// a "DeployStatePair", but I'm in a rush
+				Status: intendDS.Status,
+			}
+			continue
+		}
+
+		Log.Debug.Printf("Retained deployment: %q (% #v)", id, differences)
+		d.Retained <- &DeploymentPair{
+			name:   id,
+			Prior:  &intendDS.Deployment,
+			Post:   &existingDS.Deployment,
+			Status: intendDS.Status,
+		}
+	}
+
+	for _, deletedDS := range d.from {
+
+		Log.Debug.Printf("Deleted deployment: %q", deletedDS.ID())
+
+		d.Deleted <- &DeploymentPair{
+			name:   deletedDS.ID(),
+			Prior:  &deletedDS.Deployment,
+			Post:   nil,
+			Status: deletedDS.Status,
+		}
 	}
 }
 

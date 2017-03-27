@@ -78,7 +78,7 @@ func (suite *serverSuite) TestUpdateServers() {
 	req, err := http.NewRequest("PUT", suite.url+"/servers", suite.encodeJSON(newServers))
 	req.Header.Set("If-Match", etag)
 	suite.NoError(err)
-	res, err = client.Do(req)
+	_, err = client.Do(req)
 	suite.NoError(err)
 
 	res, err = http.Get(suite.url + "/servers")

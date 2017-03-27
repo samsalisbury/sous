@@ -255,6 +255,9 @@ func TestState_IndependentDeploySpecs(t *testing.T) {
 	// We don't care about this result, but write it to global state to avoid
 	// any compiler optimisation from eliding the call.
 	TestStateIndependentDeploySpecsState, err = originalDeployments.Manifests(makeTestState().Defs)
+	if err != nil {
+		t.Error(err)
+	}
 	newDeployment, ok := originalDeployments.Get(did)
 	if !ok {
 		t.Fatalf("deployment %v went missing", did)

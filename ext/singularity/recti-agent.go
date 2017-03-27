@@ -202,6 +202,9 @@ func (ra *RectiAgent) DeleteRequest(cluster, reqID, message string) error {
 	req, err := swaggering.LoadMap(&dtos.SingularityDeleteRequestRequest{}, dtoMap{
 		"Message": "Sous: " + message,
 	})
+	if err != nil {
+		return err
+	}
 
 	Log.Debug.Printf("Delete req: %+ v", req)
 	_, err = ra.singularityClient(cluster).DeleteRequest(reqID,
@@ -220,6 +223,10 @@ func (ra *RectiAgent) Scale(cluster, reqID string, instanceCount int, message st
 		"Message":          "Sous" + message,
 		"SkipHealthchecks": false,
 	})
+
+	if err != nil {
+		return err
+	}
 
 	Log.Debug.Printf("Scale req: %+ v", sr)
 	_, err = ra.singularityClient(cluster).Scale(reqID, sr.(*dtos.SingularityScaleRequest))

@@ -29,13 +29,6 @@ func TestEmptyDiff(t *testing.T) {
 	}
 }
 
-func makeDeplState(repo string, num int) *DeployState {
-	return &DeployState{
-		Deployment: *makeDepl(repo, num),
-		Status:     DeployStatusAny,
-	}
-}
-
 func makeDepl(repo string, num int) *Deployment {
 	version, _ := semv.Parse("1.1.1-latest")
 	owners := OwnerSet{}
@@ -108,6 +101,13 @@ func TestRealDiff(t *testing.T) {
 	}
 }
 
+func makeDeplState(repo string, num int, st DeployStatus) *DeployState {
+	return &DeployState{
+		Deployment: *makeDepl(repo, num),
+		Status:     st,
+	}
+}
+
 func TestRealStateDiff(t *testing.T) {
 	assert := assert.New(t)
 
@@ -116,16 +116,24 @@ func TestRealStateDiff(t *testing.T) {
 
 	repoOne := "https://github.com/opentable/one"
 	repoTwo := "https://github.com/opentable/two"
+	repoTwoA := "https://github.com/opentable/two-a"
 	repoThree := "https://github.com/opentable/three"
 	repoFour := "https://github.com/opentable/four"
+	repoFive := "https://github.com/opentable/five"
 
-	intended.MustAdd(makeDeplState(repoOne, 1)) //remove
+	intended.MustAdd(makeDeplState(repoOne, 1, DeployStatusActive)) //remove
 
-	existing.MustAdd(makeDepl(repoTwo, 1))      //same
-	intended.MustAdd(makeDeplState(repoTwo, 1)) //same
+	existing.MustAdd(makeDepl(repoTwo, 1))                          //same
+	intended.MustAdd(makeDeplState(repoTwo, 1, DeployStatusActive)) //same
 
-	existing.MustAdd(makeDepl(repoThree, 1))      //changed
-	intended.MustAdd(makeDeplState(repoThree, 2)) //changed
+	existing.MustAdd(makeDepl(repoTwoA, 1))                           //same
+	intended.MustAdd(makeDeplState(repoTwoA, 1, DeployStatusPending)) //same
+
+	existing.MustAdd(makeDepl(repoFive, 1))                          //changed
+	intended.MustAdd(makeDeplState(repoFive, 1, DeployStatusFailed)) //changed
+
+	existing.MustAdd(makeDepl(repoThree, 1))                          //changed
+	intended.MustAdd(makeDeplState(repoThree, 2, DeployStatusActive)) //changed
 
 	existing.MustAdd(makeDepl(repoFour, 1)) //create
 
@@ -137,17 +145,38 @@ func TestRealStateDiff(t *testing.T) {
 		assert.Equal(string(it.Prior.SourceID.Location.Repo), repoOne)
 	}
 
-	if assert.Len(ds.Same, 1, "Should have one unchanged item.") {
+	if assert.Len(ds.Same, 2, "Should have two unchanged items.") {
 		it := ds.Same[0]
+		pedActive := ds.Same[1]
+		if it.Status == DeployStatusPending {
+			it = ds.Same[1]
+			pedActive = ds.Same[0]
+		}
 		assert.Equal(string(it.Post.SourceID.Location.Repo), repoTwo)
+		assert.Equal(string(pedActive.Post.SourceID.Location.Repo), repoTwoA)
+		assert.Equal(pedActive.Status, DeployStatusPending)
 	}
 
-	if assert.Len(ds.Changed, 1, "Should have one modified item.") {
-		assert.Equal(repoThree, string(ds.Changed[0].name.ManifestID.Source.Repo))
-		assert.Equal(repoThree, string(ds.Changed[0].Prior.SourceID.Location.Repo))
-		assert.Equal(repoThree, string(ds.Changed[0].Post.SourceID.Location.Repo))
-		assert.Equal(ds.Changed[0].Post.NumInstances, 1)
-		assert.Equal(ds.Changed[0].Prior.NumInstances, 2)
+	if assert.Len(ds.Changed, 2, "Should have two modified items.") {
+		three := ds.Changed[0]
+		five := ds.Changed[1]
+		if ds.Changed[0].Prior.SourceID.Location.Repo == repoFive {
+			three = ds.Changed[1]
+			five = ds.Changed[0]
+		}
+
+		assert.Equal(repoThree, string(three.name.ManifestID.Source.Repo))
+		assert.Equal(repoThree, string(three.Prior.SourceID.Location.Repo))
+		assert.Equal(repoThree, string(three.Post.SourceID.Location.Repo))
+		assert.Equal(three.Post.NumInstances, 1)
+		assert.Equal(three.Prior.NumInstances, 2)
+
+		assert.Equal(repoFive, string(five.name.ManifestID.Source.Repo))
+		assert.Equal(repoFive, string(five.Prior.SourceID.Location.Repo))
+		assert.Equal(repoFive, string(five.Post.SourceID.Location.Repo))
+		assert.Equal(five.Post.NumInstances, 1)
+		assert.Equal(five.Prior.NumInstances, 1)
+		assert.Equal(five.Status, DeployStatusFailed)
 	}
 
 	if assert.Len(ds.New, 1, "Should have one added item.") {

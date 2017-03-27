@@ -51,7 +51,7 @@ func findMatch(str string, list []matcher) *matcher {
 	return nil
 }
 
-func (c call) results(res ...interface{}) []interface{} {
+func (c *call) results(res ...interface{}) []interface{} {
 	c.res = res
 	return res
 }

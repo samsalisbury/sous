@@ -324,12 +324,13 @@ func TestDeletes(t *testing.T) {
 	//expectedDeletions := 1
 	expectedDeletions := 0
 
-	if assert.Len(client.Deleted, expectedDeletions) {
-		// We no longer expect any deletions; See deployer.RectifySingleDelete.
-		//req := client.Deleted[0]
-		//assert.Equal("cluster", req.Cluster)
-		//assert.Equal("reqid::", req.Reqid)
-	}
+	assert.Len(client.Deleted, expectedDeletions)
+	//if assert.Len(client.Deleted, expectedDeletions) {
+	// We no longer expect any deletions; See deployer.RectifySingleDelete.
+	//req := client.Deleted[0]
+	//assert.Equal("cluster", req.Cluster)
+	//assert.Equal("reqid::", req.Reqid)
+	//}
 }
 
 func TestCreates(t *testing.T) {

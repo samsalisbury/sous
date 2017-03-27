@@ -306,6 +306,9 @@ func (c *liveClient) metadataForImage(regHost string, ref reference.Named, etag 
 	case *schema2.DeserializedManifest:
 		var cj []byte
 		cj, err = rep.getBlob(c.ctx, ref, mani.Config.Digest)
+		if err != nil {
+			return
+		}
 
 		var c stubConfig
 		err = json.Unmarshal(cj, &c)
