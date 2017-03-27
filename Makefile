@@ -34,6 +34,7 @@ LINUX_TARBALL := $(LINUX_RELEASE_DIR).tar.gz
 CONCAT_XGO_ARGS := -go $(GO_VERSION) -branch master -deps $(SQLITE_URL) --dest $(BIN_DIR) --ldflags $(FLAGS)
 COVER_DIR := /tmp/sous-cover
 TEST_VERBOSE := $(if $(VERBOSE),-v,)
+SOUS_PACKAGES:= $(shell go list -f '{{ range .Deps }}{{.}}{{printf "\n"}}{{end}}' | grep '^github.com/opentable' | grep -v 'vendor')
 
 help:
 	@echo --- options:
@@ -44,7 +45,8 @@ help:
 	@echo "make test: unit and integration"
 	@echo "make test-unit"
 	@echo "make wip: puts a marker file into workspace to prevent Travis from passing the build."
-	@echo
+	@echo "make staticcheck: runs static code analysis against project packages."
+	@echok
 	@echo "Add VERBOSE=1 for tons of extra output."
 
 clean:
@@ -80,7 +82,7 @@ install-engulf:
 install-staticcheck:
 	go get honnef.co/go/tools/cmd/staticcheck
 
-install_build_tools: install-xgo install-govendor install-engulf install-staticcheck
+install-build-tools: install-xgo install-govendor install-engulf install-staticcheck
 
 release: artifacts/$(DARWIN_TARBALL) artifacts/$(LINUX_TARBALL)
 
@@ -90,12 +92,12 @@ linux-build: artifacts/$(LINUX_RELEASE_DIR)/sous
 semvertagchk:
 	@echo "$(SOUS_VERSION)" | egrep ^[0-9]+\.[0-9]+\.[0-9]+
 
-sous_qa_setup: ./dev_support/sous_qa_setup/*.go ./util/test_with_docker/*.go
+sous-qa-setup: ./dev_support/sous_qa_setup/*.go ./util/test_with_docker/*.go
 	go build ./dev_support/sous_qa_setup
 
 test: test-gofmt test-unit test-integration
 
-reject_wip:
+reject-wip:
 	test ! -f workinprogress
 
 wip:
@@ -160,8 +162,6 @@ artifacts/$(LINUX_TARBALL): artifacts/$(LINUX_RELEASE_DIR)/sous
 
 artifacts/$(DARWIN_TARBALL): artifacts/$(DARWIN_RELEASE_DIR)/sous
 	cd artifacts && tar czv $(DARWIN_RELEASE_DIR) > $(DARWIN_TARBALL)
-
-SOUS_PACKAGES:= $(shell go list -f '{{ range .Deps }}{{.}}{{printf "\n"}}{{end}}' | grep '^github.com/opentable' | grep -v 'vendor')
 
 staticcheck:
 	$(foreach package,$(SOUS_PACKAGES),staticcheck -ignore $$(< staticcheck.ignore) $(package);)
