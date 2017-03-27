@@ -168,6 +168,13 @@ func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
 		if err != nil {
 			return sid, err
 		}
+
+		dockerRef, err := reference.Parse(in)
+
+		if r, isRef := dockerRef.(reference.Digested); err == nil && isRef {
+			Log.Debug.Printf("Image name %v has digest: using known source ID: %v", r, sid)
+			return sid, nil
+		}
 	}
 
 	md, err := nc.RegistryClient.GetImageMetadata(in, etag)
@@ -201,6 +208,7 @@ func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
 	Log.Vomit.Printf("Recording %q (with etag: %s) as canonical for %v", fullCanon, md.Etag, newSID)
 	err = nc.dbInsert(newSID, fullCanon, md.Etag, qualities)
 	if err != nil {
+		Log.Debug.Printf("Err recording %q: %v", fullCanon, err)
 		return sid, err
 	}
 
@@ -212,7 +220,7 @@ func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
 	Log.Vomit.Printf("Recorded additional names: %v for %q at registry %s (err: %v)", md.AllNames, fullCanon, nc.DockerRegistryHost, err)
 	if err != nil && mirrored {
 		err = nc.dbAddNames(md.Registry+"/"+md.CanonicalName, names)
-		Log.Vomit.Printf("Recorded additional names: %v for %q at registry %s (err: %v)", md.AllNames, md.Registry+"/"+md.CanonicalName, md.Registry, err)
+		Log.Vomit.Printf("Recorded mirrored names: %v for %q at registry %s (err: %v)", md.AllNames, md.Registry+"/"+md.CanonicalName, md.Registry, err)
 	}
 
 	Log.Debug.Printf("Image name: %s -> (updated) Source ID: %v", in, newSID)
