@@ -255,6 +255,7 @@ func TestPendingModification(t *testing.T) {
 				Type: "docker",
 			},
 			Deployment: dpl.Clone(),
+			Status:     sous.DeployStatusPending,
 		},
 		Prior: &sous.Deployable{
 			BuildArtifact: &sous.BuildArtifact{
@@ -262,6 +263,7 @@ func TestPendingModification(t *testing.T) {
 				Type: "docker",
 			},
 			Deployment: dpl.Clone(),
+			Status:     sous.DeployStatusActive,
 		},
 	}
 
@@ -275,6 +277,65 @@ func TestPendingModification(t *testing.T) {
 	rez := <-rezCh
 
 	assert.Equal(t, rez.Desc, sous.ModifyDiff)
+	assert.Zero(t, rez.Error)
+	assert.Len(t, drc.Deployed, 0)
+	assert.Len(t, drc.Created, 0)
+	assert.Len(t, drc.Deleted, 0)
+
+}
+func TestModificationOfFailed(t *testing.T) {
+	drc := sous.NewDummyRectificationClient()
+	deployer := NewDeployer(drc)
+
+	verStr := "0.0.1"
+	dpl := &sous.Deployment{
+		SourceID: sous.SourceID{
+			Location: sous.SourceLocation{
+				Repo: "reqid",
+			},
+			Version: semv.MustParse(verStr),
+		},
+		DeployConfig: sous.DeployConfig{
+			NumInstances: 1,
+			Resources:    sous.Resources{},
+		},
+		ClusterName: "cluster",
+		Cluster: &sous.Cluster{
+			BaseURL: "cluster",
+		},
+	}
+
+	dp := &sous.DeployablePair{
+		Post: &sous.Deployable{
+			BuildArtifact: &sous.BuildArtifact{
+				Name: "build-artifact",
+				Type: "docker",
+			},
+			Deployment: dpl.Clone(),
+			Status:     sous.DeployStatusFailed,
+		},
+		Prior: &sous.Deployable{
+			BuildArtifact: &sous.BuildArtifact{
+				Name: "build-artifact",
+				Type: "docker",
+			},
+			Deployment: dpl.Clone(),
+			Status:     sous.DeployStatusActive,
+		},
+	}
+
+	dpCh := make(chan *sous.DeployablePair)
+	rezCh := make(chan sous.DiffResolution)
+
+	go deployer.RectifyModifies(dpCh, rezCh)
+	dpCh <- dp
+	close(dpCh)
+
+	rez := <-rezCh
+
+	assert.Equal(t, rez.Desc, sous.ModifyDiff)
+	assert.Error(t, rez.Error)
+	assert.False(t, sous.IsTransientResolveError(rez.Error))
 	assert.Len(t, drc.Deployed, 0)
 	assert.Len(t, drc.Created, 0)
 	assert.Len(t, drc.Deleted, 0)

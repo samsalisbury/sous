@@ -135,7 +135,8 @@ test-setup:  sous-qa-setup
 
 test-cli: test-setup linux-build
 	rm -rf integration/raw_shell_output/0*
-	SOUS_QA_DESC=$(QA_DESC) go test $(TEST_VERBOSE) -timeout 8m ./integration --tags=commandline
+	@date
+	SOUS_QA_DESC=$(QA_DESC) go test $(TEST_VERBOSE) -timeout 20m ./integration --tags=commandline
 
 $(BIN_DIR):
 	mkdir -p $@
