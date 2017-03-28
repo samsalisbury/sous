@@ -148,13 +148,13 @@ func TestRealStateDiff(t *testing.T) {
 	if assert.Len(ds.Same, 2, "Should have two unchanged items.") {
 		it := ds.Same[0]
 		pedActive := ds.Same[1]
-		if it.Status == DeployStatusPending {
+		if it.Prior.Status == DeployStatusPending {
 			it = ds.Same[1]
 			pedActive = ds.Same[0]
 		}
 		assert.Equal(string(it.Post.SourceID.Location.Repo), repoTwo)
 		assert.Equal(string(pedActive.Post.SourceID.Location.Repo), repoTwoA)
-		assert.Equal(pedActive.Status, DeployStatusPending)
+		assert.Equal(pedActive.Prior.Status, DeployStatusPending)
 	}
 
 	if assert.Len(ds.Changed, 2, "Should have two modified items.") {
@@ -176,7 +176,7 @@ func TestRealStateDiff(t *testing.T) {
 		assert.Equal(repoFive, string(five.Post.SourceID.Location.Repo))
 		assert.Equal(five.Post.NumInstances, 1)
 		assert.Equal(five.Prior.NumInstances, 1)
-		assert.Equal(five.Status, DeployStatusFailed)
+		assert.Equal(five.Prior.Status, DeployStatusFailed)
 	}
 
 	if assert.Len(ds.New, 1, "Should have one added item.") {

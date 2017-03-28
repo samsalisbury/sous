@@ -283,24 +283,26 @@ func TestModify(t *testing.T) {
 func TestDeletes(t *testing.T) {
 	assert := assert.New(t)
 
-	deleted := &sous.Deployable{
-		Deployment: &sous.Deployment{
-			SourceID: sous.SourceID{
-				Location: sous.SourceLocation{
-					Repo: "reqid",
+	deleted := &sous.DeployablePair{
+		Prior: &sous.Deployable{
+			Deployment: &sous.Deployment{
+				SourceID: sous.SourceID{
+					Location: sous.SourceLocation{
+						Repo: "reqid",
+					},
 				},
-			},
-			DeployConfig: sous.DeployConfig{
-				NumInstances: 12,
-			},
-			ClusterName: "",
-			Cluster: &sous.Cluster{
-				BaseURL: "cluster",
+				DeployConfig: sous.DeployConfig{
+					NumInstances: 12,
+				},
+				ClusterName: "",
+				Cluster: &sous.Cluster{
+					BaseURL: "cluster",
+				},
 			},
 		},
 	}
 
-	dels := make(chan *sous.Deployable, 1)
+	dels := make(chan *sous.DeployablePair, 1)
 	log := make(chan sous.DiffResolution, 10)
 
 	client := sous.NewDummyRectificationClient()
@@ -336,26 +338,28 @@ func TestDeletes(t *testing.T) {
 func TestCreates(t *testing.T) {
 	assert := assert.New(t)
 
-	created := &sous.Deployable{
-		BuildArtifact: &sous.BuildArtifact{
-			Type: "docker",
-			Name: "reqid,0.0.0",
-		},
-		Deployment: &sous.Deployment{
-			SourceID: sous.SourceID{
-				Location: sous.SourceLocation{
-					Repo: "reqid",
+	created := &sous.DeployablePair{
+		Post: &sous.Deployable{
+			BuildArtifact: &sous.BuildArtifact{
+				Type: "docker",
+				Name: "reqid,0.0.0",
+			},
+			Deployment: &sous.Deployment{
+				SourceID: sous.SourceID{
+					Location: sous.SourceLocation{
+						Repo: "reqid",
+					},
 				},
+				DeployConfig: sous.DeployConfig{
+					NumInstances: 12,
+				},
+				Cluster:     &sous.Cluster{BaseURL: "cluster"},
+				ClusterName: "nick",
 			},
-			DeployConfig: sous.DeployConfig{
-				NumInstances: 12,
-			},
-			Cluster:     &sous.Cluster{BaseURL: "cluster"},
-			ClusterName: "nick",
 		},
 	}
 
-	crts := make(chan *sous.Deployable, 1)
+	crts := make(chan *sous.DeployablePair, 1)
 	log := make(chan sous.DiffResolution, 10)
 
 	client := sous.NewDummyRectificationClient()

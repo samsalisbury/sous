@@ -39,8 +39,9 @@ func (r *Resolver) rectify(dcs *DeployableChans, results chan DiffResolution) {
 	wg.Wait()
 }
 
-func (r *Resolver) reportStable(stable <-chan *Deployable, results chan<- DiffResolution) {
-	for dep := range stable {
+func (r *Resolver) reportStable(stable <-chan *DeployablePair, results chan<- DiffResolution) {
+	for dp := range stable {
+		dep := dp.Prior
 		rez := DiffResolution{
 			DeployID: dep.ID(),
 			Desc:     StableDiff,
@@ -86,7 +87,7 @@ func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveRecord
 			actual = actual.Filter(r.FilterDeployStates)
 		})
 
-		var diffs DiffChans
+		var diffs *DeployableChans
 		recorder.performGuaranteedPhase("generating diff", func() {
 			diffs = actual.Diff(intended)
 		})
@@ -107,7 +108,7 @@ func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveRecord
 				wg.Done()
 			}()
 			// TODO: ResolveNames should take rs.Log instead of errs.
-			namer.ResolveNames(r.Registry, &diffs, errs)
+			namer.ResolveNames(r.Registry, diffs, errs)
 		})
 
 		recorder.performGuaranteedPhase("rectification", func() {

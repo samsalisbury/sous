@@ -134,7 +134,7 @@ test-setup:  sous-qa-setup
 	./sous_qa_setup --compose-dir ./integration/test-registry/ --out-path=$(QA_DESC)
 
 test-cli: test-setup linux-build
-	rm -rf doc/shellexamples/*
+	rm -rf integration/raw_shell_output/0*
 	SOUS_QA_DESC=$(QA_DESC) go test $(TEST_VERBOSE) -timeout 5m ./integration --tags=commandline
 
 $(BIN_DIR):

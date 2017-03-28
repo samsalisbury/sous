@@ -5,8 +5,8 @@ type (
 	// read, update, and delete deployments.
 	Deployer interface {
 		RunningDeployments(reg Registry, from Clusters) (DeployStates, error)
-		RectifyCreates(<-chan *Deployable, chan<- DiffResolution)
-		RectifyDeletes(<-chan *Deployable, chan<- DiffResolution)
+		RectifyCreates(<-chan *DeployablePair, chan<- DiffResolution)
+		RectifyDeletes(<-chan *DeployablePair, chan<- DiffResolution)
 		RectifyModifies(<-chan *DeployablePair, chan<- DiffResolution)
 	}
 
@@ -27,10 +27,10 @@ func (dd *DummyDeployer) RunningDeployments(reg Registry, from Clusters) (Deploy
 }
 
 // RectifyCreates implements Deployer
-func (dd *DummyDeployer) RectifyCreates(<-chan *Deployable, chan<- DiffResolution) {}
+func (dd *DummyDeployer) RectifyCreates(<-chan *DeployablePair, chan<- DiffResolution) {}
 
 // RectifyDeletes implements Deployer
-func (dd *DummyDeployer) RectifyDeletes(<-chan *Deployable, chan<- DiffResolution) {}
+func (dd *DummyDeployer) RectifyDeletes(<-chan *DeployablePair, chan<- DiffResolution) {}
 
 // RectifyModifies implements Deployer
 func (dd *DummyDeployer) RectifyModifies(<-chan *DeployablePair, chan<- DiffResolution) {}
