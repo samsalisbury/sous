@@ -130,7 +130,7 @@ test-integration: test-setup
 	go test -c -tags integration ./integration
 	SOUS_QA_DESC=$(QA_DESC) go test  $(TEST_VERBOSE) ./integration --tags=integration
 
-test-setup:  sous_qa_setup
+test-setup:  sous-qa-setup
 	./sous_qa_setup --compose-dir ./integration/test-registry/ --out-path=$(QA_DESC)
 
 test-cli: test-setup linux-build
@@ -149,11 +149,11 @@ $(RELEASE_DIRS):
 	cp README.md artifacts/$@
 	cp LICENSE artifacts/$@
 
-artifacts/$(DARWIN_RELEASE_DIR)/sous: $(DARWIN_RELEASE_DIR) $(BIN_DIR) install_build_tools
+artifacts/$(DARWIN_RELEASE_DIR)/sous: $(DARWIN_RELEASE_DIR) $(BIN_DIR) install-build-tools
 	xgo $(CONCAT_XGO_ARGS) --targets=darwin/amd64  ./
 	mv $(BIN_DIR)/sous-darwin-10.6-amd64 $@
 
-artifacts/$(LINUX_RELEASE_DIR)/sous: $(LINUX_RELEASE_DIR) $(BIN_DIR) install_build_tools
+artifacts/$(LINUX_RELEASE_DIR)/sous: $(LINUX_RELEASE_DIR) $(BIN_DIR) install-build-tools
 	xgo $(CONCAT_XGO_ARGS) --targets=linux/amd64  ./
 	mv $(BIN_DIR)/sous-linux-amd64 $@
 
@@ -166,4 +166,4 @@ artifacts/$(DARWIN_TARBALL): artifacts/$(DARWIN_RELEASE_DIR)/sous
 staticcheck:
 	staticcheck -ignore "$$(cat staticcheck.ignore)" $(SOUS_PACKAGES)
 
-.PHONY: clean coverage install-ggen legendary release semvertagchk test test-gofmt test-integration test-setup test-unit reject_wip wip staticcheck
+.PHONY: clean coverage install-ggen legendary release semvertagchk test test-gofmt test-integration test-setup test-unit reject-wip wip staticcheck

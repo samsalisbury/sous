@@ -90,6 +90,7 @@ func (d *DiffChans) Close() {
 
 // Diff computes the differences between two sets of DeployStates
 func (d DeployStates) Diff(other Deployments) DiffChans {
+	Log.BeChatty()
 	difr := newStateDiffer(d)
 	go func(d *stateDiffer, o Deployments) {
 		e := o.promote(DeployStatusActive)

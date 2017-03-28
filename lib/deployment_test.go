@@ -1,11 +1,45 @@
 package sous
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/nyarly/testify/assert"
 	"github.com/samsalisbury/semv"
 )
+
+func TestDeploymentClone(t *testing.T) {
+	vers := semv.MustParse("1.2.3-test+thing")
+	vols := Volumes{
+		{"h", "c", "RO"},
+		{"h2", "c2", "RW"},
+	}
+	original := &Deployment{
+		DeployConfig: DeployConfig{
+			Resources:    Resources{},
+			Args:         []string{},
+			Env:          Env{},
+			NumInstances: 3,
+			Volumes:      vols,
+		},
+		SourceID: SourceID{
+			Location: SourceLocation{
+				Repo: "one",
+				Dir:  "two",
+			},
+			Version: vers,
+		},
+	}
+
+	cloned := original.Clone()
+	assert.Len(t, cloned.Volumes, 2)
+	assert.Equal(t, cloned.Volumes[0].Container, "c")
+	assert.True(t, reflect.DeepEqual(original, cloned))
+
+	original.Volumes = Volumes{}
+
+	assert.Len(t, cloned.Volumes, 2)
+}
 
 func TestDeploymentEqual(t *testing.T) {
 	assert := assert.New(t)

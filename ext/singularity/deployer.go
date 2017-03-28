@@ -63,6 +63,7 @@ func NewDeployer(c rectificationClient) sous.Deployer {
 	return &deployer{Client: c}
 }
 
+// RectifyCreates implements sous.Deployer on deployer
 func (r *deployer) RectifyCreates(cc <-chan *sous.Deployable, errs chan<- sous.DiffResolution) {
 	for d := range cc {
 		result := sous.DiffResolution{DeployID: d.ID()}

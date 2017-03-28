@@ -61,8 +61,9 @@ func (d Deployment) Clone() *Deployment {
 	if d.Cluster != nil {
 		d.Cluster = d.Cluster.Clone()
 	}
-	d.Owners = d.Owners.Clone()
-	d.Volumes = d.Volumes.Clone()
+	if d.Owners != nil {
+		d.Owners = d.Owners.Clone()
+	}
 	return &d
 }
 
@@ -78,9 +79,7 @@ func (os OwnerSet) Clone() OwnerSet {
 // Clone returns a deep copy of this Volumes.
 func (vs Volumes) Clone() Volumes {
 	vols := make(Volumes, len(vs))
-	for k, v := range vs {
-		vols[k] = v
-	}
+	copy(vols, vs)
 	return vols
 }
 
