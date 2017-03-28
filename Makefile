@@ -124,7 +124,7 @@ test-gofmt:
 	bin/check-gofmt
 
 test-unit:
-	go test $(TEST_VERBOSE) ./...
+	go test $(TEST_VERBOSE) -timeout 30s ./...
 
 test-integration: test-setup
 	go test -c -tags integration ./integration
@@ -135,7 +135,7 @@ test-setup:  sous-qa-setup
 
 test-cli: test-setup linux-build
 	rm -rf integration/raw_shell_output/0*
-	SOUS_QA_DESC=$(QA_DESC) go test $(TEST_VERBOSE) -timeout 5m ./integration --tags=commandline
+	SOUS_QA_DESC=$(QA_DESC) go test $(TEST_VERBOSE) -timeout 8m ./integration --tags=commandline
 
 $(BIN_DIR):
 	mkdir -p $@

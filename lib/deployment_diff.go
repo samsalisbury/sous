@@ -133,21 +133,6 @@ func (d *stateDiffer) diff(existing DeployStates) {
 		delete(d.from, id)
 		different, differences := existingDS.Diff(intendDS)
 
-		// This is a bit hacky: if the DSes are different, check to see if they'd
-		// be the same if we changed a Pending to Active
-		// The purpose here is that for rectification purposes, we should consider
-		// "pending" deployments as good as "active" intentions, but we want to
-		// report that they're pending in the status
-		//
-		// The right approach really is to set up a "DeployStatePair", so that both
-		// statuses are available and let the rectifier make the determination
-		// about what to do.
-		if different && intendDS.Status == DeployStatusPending {
-			actEx := intendDS.Clone()
-			actEx.Status = DeployStatusActive
-			different, _ = existingDS.Diff(actEx)
-		}
-
 		if different {
 			Log.Debug.Printf("Modified deployment: %q (% #v)", id, differences)
 
