@@ -118,8 +118,8 @@ func reqID(rp *dtos.SingularityRequestParent) (ID string) {
 // would have been Active however briefly (but Sous would accept GDM updates
 // arbitrarily quickly as compared to resolve completions...))))
 func (db *deploymentBuilder) determineDeployStatus() error {
-	logFDs("before retrieveDeploy")
-	defer logFDs("after retrieveDeploy")
+	logFDs("before determineDeployStatus()")
+	defer logFDs("after determineDeployStatus()")
 
 	rp := db.req.ReqParent
 	if rp == nil {
@@ -219,8 +219,8 @@ func (db *deploymentBuilder) determineStatus() error {
 }
 
 func (db *deploymentBuilder) extractArtifactName() error {
-	logFDs("before retrieveImageLabels")
-	defer logFDs("after retrieveImageLabels")
+	logFDs("before extractArtifactName()")
+	defer logFDs("after extractArtifactName()")
 	ci := db.deploy.ContainerInfo
 	if ci == nil {
 		return malformedResponse{"Blank container info"}
