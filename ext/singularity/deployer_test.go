@@ -7,6 +7,7 @@ import (
 
 	sous "github.com/opentable/sous/lib"
 	"github.com/samsalisbury/semv"
+	"github.com/stretchr/testify/assert"
 )
 
 var requestIDTests = []struct {
@@ -223,4 +224,59 @@ func TestLongComputeDeployID(t *testing.T) {
 	} else {
 		t.Logf(logLenTmpl, idLen, maxDeployIDLen)
 	}
+}
+
+func TestPendingModification(t *testing.T) {
+	drc := sous.NewDummyRectificationClient()
+	deployer := NewDeployer(drc)
+
+	verStr := "0.0.1"
+	dpl := &sous.Deployment{
+		SourceID: sous.SourceID{
+			Location: sous.SourceLocation{
+				Repo: "reqid",
+			},
+			Version: semv.MustParse(verStr),
+		},
+		DeployConfig: sous.DeployConfig{
+			NumInstances: 1,
+			Resources:    sous.Resources{},
+		},
+		ClusterName: "cluster",
+		Cluster: &sous.Cluster{
+			BaseURL: "cluster",
+		},
+	}
+
+	dp := &sous.DeployablePair{
+		Post: &sous.Deployable{
+			BuildArtifact: &sous.BuildArtifact{
+				Name: "build-artifact",
+				Type: "docker",
+			},
+			Deployment: dpl.Clone(),
+		},
+		Prior: &sous.Deployable{
+			BuildArtifact: &sous.BuildArtifact{
+				Name: "build-artifact",
+				Type: "docker",
+			},
+			Deployment: dpl.Clone(),
+		},
+	}
+
+	dpCh := make(chan *sous.DeployablePair)
+	rezCh := make(chan sous.DiffResolution)
+
+	go deployer.RectifyModifies(dpCh, rezCh)
+	dpCh <- dp
+	close(dpCh)
+
+	rez := <-rezCh
+
+	assert.Equal(t, rez.Desc, sous.ModifyDiff)
+	assert.Len(t, drc.Deployed, 0)
+	assert.Len(t, drc.Created, 0)
+	assert.Len(t, drc.Deleted, 0)
+
 }
