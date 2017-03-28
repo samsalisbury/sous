@@ -128,7 +128,7 @@ func buildShell(name string, t *testing.T) *shelltest.ShellTest {
 				"PATH":       strings.Join(cfg.ShellPath, ":"),
 			}))
 
-	shell.WriteTo("../doc/shellexamples")
+	shell.WriteTo("raw_shell_output")
 	//shell.DebugPrefix("shell") //useful especially if test timeout interrupts
 
 	return shell
