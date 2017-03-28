@@ -56,6 +56,7 @@ func (st *ShellTest) WriteTo(dir string) error {
 	}
 
 	st.writeDir = dir
+	st.shell.WriteTo(dir)
 	return nil
 }
 
@@ -92,14 +93,12 @@ func (st *ShellTest) Block(name, script string, check ...CheckFn) *ShellTest {
 
 	ran := st.t.Run(name, func(t *testing.T) {
 		(*st.seq)++
+		st.shell.BlockName(fmt.Sprintf("%03d_%s", (*st.seq), name))
 		script, err := st.Template(name, script)
 		if err != nil {
 			t.Fatalf("Script loading err: %v", err)
 		}
 		res, err := st.shell.Run(script)
-		if st.writeDir != "" {
-			res.WriteTo(st.writeDir, fmt.Sprintf("%03d_%s", *st.seq, name))
-		}
 		if err != nil {
 			if st.writeDir != "" {
 				t.Logf("Shell script, output and errors written to %q.", st.writeDir)
