@@ -23,6 +23,7 @@ type (
 		Deployments              *Deployments
 		locationFilter, idFilter *ResolveFilter
 		User                     User
+		httpErrorCount           int
 	}
 
 	// copied from server - avoiding coupling to server implemention
@@ -323,8 +324,13 @@ func (sub *subPoller) pollOnce() ResolveState {
 	if err := sub.Retrieve("./status", nil, data, sub.User); err != nil {
 		Log.Debug.Printf("%s: error on GET /status: %s", sub.ClusterName, errors.Cause(err))
 		Log.Vomit.Printf("%s: %T %+v", sub.ClusterName, errors.Cause(err), err)
+		sub.httpErrorCount++
+		if sub.httpErrorCount > 10 {
+			return ResolveFailed
+		}
 		return ResolveErredHTTP
 	}
+	sub.httpErrorCount = 0
 	deps := NewDeployments(data.Deployments...)
 	sub.Deployments = &deps
 

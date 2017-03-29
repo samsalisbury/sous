@@ -179,6 +179,7 @@ func TestRoundTrip(t *testing.T) {
 		CanonicalName: cn,
 		AllNames:      []string{cn, in},
 	})
+
 	sv, err = nc.GetSourceID(NewBuildArtifact(in, nil))
 	if assert.Nil(err) {
 		assert.Equal(newSV, sv)
@@ -204,6 +205,7 @@ func TestCanonicalizesToConfiguredRegistry(t *testing.T) {
 	digest := "sha256:012345678901234567890123456789AB012345678901234567890123456789AB"
 
 	primaryTagName := dockerPrimary + "/" + in
+	primaryDigestName := dockerCache + "/" + base + "@" + digest
 	cacheDigestName := dockerCache + "/" + base + "@" + digest
 
 	newSV := sous.MustNewSourceID("https://github.com/opentable/wackadoo", "nested/there", "1.2.42")
@@ -234,6 +236,17 @@ func TestCanonicalizesToConfiguredRegistry(t *testing.T) {
 	if assert.NoError(err) {
 		assert.Equal(cacheDigestName, art.Name)
 	}
+
+	// once for primary, once to check mirror
+	assert.Len(dc.CallsTo("GetImageMetadata"), 2)
+
+	sv, err = nc.GetSourceID(NewBuildArtifact(primaryDigestName, nil))
+	if assert.Nil(err) {
+		assert.Equal(newSV, sv)
+	}
+
+	// because previous responses should be cached
+	assert.Len(dc.CallsTo("GetImageMetadata"), 2)
 }
 
 func TestLeavesRegistryUnchangedWhenUnknown(t *testing.T) {

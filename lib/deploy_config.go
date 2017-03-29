@@ -157,12 +157,13 @@ func (dc DeployConfig) Clone() (c DeployConfig) {
 	for k, v := range dc.Resources {
 		c.Resources[k] = v
 	}
-	c.Metadata = make(Metadata)
-	for k, v := range dc.Metadata {
-		c.Metadata[k] = v
+	if dc.Metadata != nil {
+		c.Metadata = make(Metadata)
+		for k, v := range dc.Metadata {
+			c.Metadata[k] = v
+		}
 	}
-	c.Volumes = make(Volumes, len(dc.Volumes))
-	copy(dc.Volumes, c.Volumes)
+	c.Volumes = dc.Volumes.Clone()
 	return
 }
 

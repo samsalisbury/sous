@@ -30,9 +30,13 @@ func (vs Volumes) Equal(o Volumes) bool {
 		return false
 	}
 	c := append(Volumes{}, o...)
+
+	Log.Vomit.Printf("comparing: %v =? %v", vs, c)
 	for _, v := range vs {
 		m := false
 		for i, ov := range c {
+			Log.Vomit.Printf("comparing: %v =? %v", v, ov)
+
 			if v.Equal(ov) {
 				m = true
 				if i < len(c) {

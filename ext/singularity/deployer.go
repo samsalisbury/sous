@@ -2,12 +2,12 @@ package singularity
 
 import (
 	"fmt"
-	"log"
 	"runtime/debug"
 	"strings"
 
 	"github.com/opentable/go-singularity"
 	"github.com/opentable/sous/lib"
+	"github.com/opentable/swaggering"
 	"github.com/pkg/errors"
 	"github.com/satori/go.uuid"
 )
@@ -63,15 +63,26 @@ func NewDeployer(c rectificationClient) sous.Deployer {
 	return &deployer{Client: c}
 }
 
-func (r *deployer) RectifyCreates(cc <-chan *sous.Deployable, errs chan<- sous.DiffResolution) {
+// RectifyCreates implements sous.Deployer on deployer
+func (r *deployer) RectifyCreates(cc <-chan *sous.DeployablePair, errs chan<- sous.DiffResolution) {
 	for d := range cc {
 		result := sous.DiffResolution{DeployID: d.ID()}
 		if err := r.RectifySingleCreate(d); err != nil {
-			result.Error = sous.WrapResolveError(&sous.CreateError{Deployment: d.Deployment, Err: err})
 			result.Desc = "not created"
+			switch t := err.(type) {
+			default:
+				result.Error = sous.WrapResolveError(&sous.CreateError{Deployment: d.Post.Deployment.Clone(), Err: err})
+			case *swaggering.ReqError:
+				if t.Status == 400 {
+					result.Error = sous.WrapResolveError(err)
+				} else {
+					result.Error = sous.WrapResolveError(&sous.CreateError{Deployment: d.Post.Deployment.Clone(), Err: err})
+				}
+			}
 		} else {
 			result.Desc = "created"
 		}
+		Log.Vomit.Printf("Reporting result of create: %#v", result)
 		errs <- result
 	}
 }
@@ -96,35 +107,36 @@ func rectifyRecover(d interface{}, f string, err *error) {
 	}
 }
 
-func (r *deployer) RectifySingleCreate(d *sous.Deployable) (err error) {
-	Log.Debug.Printf("Rectifying creation %q:  \n %# v", d.ID(), d.Deployment)
+func (r *deployer) RectifySingleCreate(d *sous.DeployablePair) (err error) {
+	Log.Debug.Printf("Rectifying creation %q:  \n %# v", d.ID(), d.Post)
 	defer rectifyRecover(d, "RectifySingleCreate", &err)
 	if err != nil {
 		return err
 	}
-	reqID := computeRequestID(d)
-	if err = r.Client.PostRequest(*d, reqID); err != nil {
+	reqID := computeRequestID(d.Post)
+	if err = r.Client.PostRequest(*d.Post, reqID); err != nil {
 		return err
 	}
-	return r.Client.Deploy(*d, reqID)
+	return r.Client.Deploy(*d.Post, reqID)
 }
 
-func (r *deployer) RectifyDeletes(dc <-chan *sous.Deployable, errs chan<- sous.DiffResolution) {
+func (r *deployer) RectifyDeletes(dc <-chan *sous.DeployablePair, errs chan<- sous.DiffResolution) {
 	for d := range dc {
 		result := sous.DiffResolution{DeployID: d.ID()}
 		if err := r.RectifySingleDelete(d); err != nil {
-			result.Error = sous.WrapResolveError(&sous.DeleteError{Deployment: d.Deployment, Err: err})
+			result.Error = sous.WrapResolveError(&sous.DeleteError{Deployment: d.Prior.Deployment.Clone(), Err: err})
 			result.Desc = "not deleted"
 		} else {
 			result.Desc = "deleted"
 		}
+		Log.Vomit.Printf("Reporting result of delete: %#v", result)
 		errs <- result
 	}
 }
 
-func (r *deployer) RectifySingleDelete(d *sous.Deployable) (err error) {
+func (r *deployer) RectifySingleDelete(d *sous.DeployablePair) (err error) {
 	defer rectifyRecover(d, "RectifySingleDelete", &err)
-	requestID := computeRequestID(d)
+	requestID := computeRequestID(d.Prior)
 	// TODO: Alert the owner of this request that there is no manifest for it;
 	// they should either delete the request manually, or else add the manifest back.
 	sous.Log.Warn.Printf("NOT DELETING REQUEST %q (FOR: %q)", requestID, d.ID())
@@ -139,15 +151,19 @@ func (r *deployer) RectifyModifies(
 		result := sous.DiffResolution{DeployID: pair.ID()}
 		if err := r.RectifySingleModification(pair); err != nil {
 			dp := &sous.DeploymentPair{
-				Prior: pair.Prior.Deployment,
-				Post:  pair.Post.Deployment,
+				Prior: pair.Prior.Deployment.Clone(),
+				Post:  pair.Post.Deployment.Clone(),
 			}
-			log.Printf("%#v", err)
+			Log.Debug.Printf("%#v", err)
 			result.Error = sous.WrapResolveError(&sous.ChangeError{Deployments: dp, Err: err})
 			result.Desc = "not updated"
+		} else if pair.Prior.Status == sous.DeployStatusFailed || pair.Post.Status == sous.DeployStatusFailed {
+			result.Desc = "updated"
+			result.Error = sous.WrapResolveError(&sous.FailedStatusError{})
 		} else {
 			result.Desc = "updated"
 		}
+		Log.Vomit.Printf("Reporting result of modify: %#v", result)
 		errs <- result
 	}
 }

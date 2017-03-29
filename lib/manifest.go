@@ -48,15 +48,18 @@ func (m *Manifest) SetID(mid ManifestID) {
 
 // Clone returns a deep copy of this Manifest.
 func (m Manifest) Clone() (c *Manifest) {
+	c = &m
+
 	owners := make([]string, len(m.Owners))
-	copy(owners, m.Owners)
-	deployments := make(DeploySpecs, len(m.Deployments))
-	for k, v := range m.Deployments {
+	copy(owners, c.Owners)
+
+	deployments := make(DeploySpecs, len(c.Deployments))
+	for k, v := range c.Deployments {
 		deployments[k] = v.Clone()
 	}
-	m.Owners = owners
-	m.Deployments = deployments
-	return &m
+	c.Owners = owners
+	c.Deployments = deployments
+	return
 }
 
 // FileLocation returns the path that the manifest should be saved to.

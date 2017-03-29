@@ -29,13 +29,6 @@ func TestEmptyDiff(t *testing.T) {
 	}
 }
 
-func makeDeplState(repo string, num int) *DeployState {
-	return &DeployState{
-		Deployment: *makeDepl(repo, num),
-		Status:     DeployStatusAny,
-	}
-}
-
 func makeDepl(repo string, num int) *Deployment {
 	version, _ := semv.Parse("1.1.1-latest")
 	owners := OwnerSet{}
@@ -108,50 +101,60 @@ func TestRealDiff(t *testing.T) {
 	}
 }
 
-func TestRealStateDiff(t *testing.T) {
-	assert := assert.New(t)
+func makeDeplState(repo string, num int, st DeployStatus) *DeployState {
+	return &DeployState{
+		Deployment: *makeDepl(repo, num),
+		Status:     st,
+	}
+}
 
+func testStateDiff(exists *Deployment, intend *DeployState) diffSet {
 	intended := NewDeployStates()
 	existing := NewDeployments()
 
-	repoOne := "https://github.com/opentable/one"
-	repoTwo := "https://github.com/opentable/two"
-	repoThree := "https://github.com/opentable/three"
-	repoFour := "https://github.com/opentable/four"
-
-	intended.MustAdd(makeDeplState(repoOne, 1)) //remove
-
-	existing.MustAdd(makeDepl(repoTwo, 1))      //same
-	intended.MustAdd(makeDeplState(repoTwo, 1)) //same
-
-	existing.MustAdd(makeDepl(repoThree, 1))      //changed
-	intended.MustAdd(makeDeplState(repoThree, 2)) //changed
-
-	existing.MustAdd(makeDepl(repoFour, 1)) //create
-
-	dc := intended.Diff(existing)
-	ds := dc.collect()
-
-	if assert.Len(ds.Gone, 1, "Should have one deleted item.") {
-		it := ds.Gone[0]
-		assert.Equal(string(it.Prior.SourceID.Location.Repo), repoOne)
+	if exists != nil {
+		existing.MustAdd(exists)
 	}
 
-	if assert.Len(ds.Same, 1, "Should have one unchanged item.") {
-		it := ds.Same[0]
-		assert.Equal(string(it.Post.SourceID.Location.Repo), repoTwo)
+	if intend != nil {
+		intended.MustAdd(intend)
 	}
 
-	if assert.Len(ds.Changed, 1, "Should have one modified item.") {
-		assert.Equal(repoThree, string(ds.Changed[0].name.ManifestID.Source.Repo))
-		assert.Equal(repoThree, string(ds.Changed[0].Prior.SourceID.Location.Repo))
-		assert.Equal(repoThree, string(ds.Changed[0].Post.SourceID.Location.Repo))
-		assert.Equal(ds.Changed[0].Post.NumInstances, 1)
-		assert.Equal(ds.Changed[0].Prior.NumInstances, 2)
+	return intended.Diff(existing).collect()
+}
+
+func TestRealStateDiff(t *testing.T) {
+	assert := assert.New(t)
+
+	assertLengths := func(msg string, set diffSet, goneLen, sameLen, changedLen, createLen int) {
+		assert.Len(set.Gone, goneLen, "Checking Gone for %s", msg)
+		assert.Len(set.Same, sameLen, "Checking Same for %s", msg)
+		assert.Len(set.Changed, changedLen, "Checking Changed for %s", msg)
+		assert.Len(set.New, createLen, "Checking New for %s", msg)
 	}
 
-	if assert.Len(ds.New, 1, "Should have one added item.") {
-		it := ds.New[0]
-		assert.Equal(string(it.Post.SourceID.Location.Repo), repoFour)
-	}
+	assertGone := func(set diffSet) { assertLengths("gone", set, 1, 0, 0, 0) }
+	assertSame := func(set diffSet) { assertLengths("same", set, 0, 1, 0, 0) }
+	assertChanged := func(set diffSet) { assertLengths("changed", set, 0, 0, 1, 0) }
+	assertCreated := func(set diffSet) { assertLengths("created", set, 0, 0, 0, 1) }
+
+	repo := "https://github.com/opentable/one"
+
+	set := testStateDiff(nil, makeDeplState(repo, 1, DeployStatusActive)) //remove
+	assertGone(set)
+
+	set = testStateDiff(makeDepl(repo, 1), makeDeplState(repo, 1, DeployStatusActive))
+	assertSame(set)
+
+	set = testStateDiff(makeDepl(repo, 1), makeDeplState(repo, 1, DeployStatusPending))
+	assertChanged(set)
+
+	set = testStateDiff(makeDepl(repo, 1), makeDeplState(repo, 1, DeployStatusFailed))
+	assertChanged(set)
+
+	set = testStateDiff(makeDepl(repo, 1), makeDeplState(repo, 2, DeployStatusActive))
+	assertChanged(set)
+
+	set = testStateDiff(makeDepl(repo, 1), nil)
+	assertCreated(set)
 }

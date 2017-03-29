@@ -9,6 +9,7 @@ before_install:
 install:
 - "./bin/vendor-check"
 script:
+- make staticcheck
 - make -j2 test
 - make reject-wip
   #- cat doc/shellexamples/*.blended
