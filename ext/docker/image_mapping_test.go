@@ -121,10 +121,8 @@ func TestReharvest(t *testing.T) {
 	assert.NoError(err)
 	nc.dump(os.Stderr)
 
-	_, err = dc.GetImageMetadata("", "")
-	assert.Error(err) //because channel starved
-	list, _ := dc.AllTags("")
-	assert.Len(list, 0) //because channel starved
+	assert.Len(dc.CallsTo("GetImageMetadata"), 3)
+	assert.Len(dc.CallsTo("AllTags"), 1)
 }
 
 func TestHarvestGuessedRepo(t *testing.T) {
@@ -143,9 +141,7 @@ func TestHarvestGuessedRepo(t *testing.T) {
 	dc.FeedTags([]string{"something", "the other"})
 	nc.harvest(sl)
 
-	remainingTags, err := dc.AllTags("")
-	assert.NoError(err)
-	assert.Len(remainingTags, 0) // because all consumed by harvest
+	assert.Len(dc.CallsTo("AllTags"), 1)
 }
 
 func TestRoundTrip(t *testing.T) {
@@ -183,6 +179,7 @@ func TestRoundTrip(t *testing.T) {
 		CanonicalName: cn,
 		AllNames:      []string{cn, in},
 	})
+
 	sv, err = nc.GetSourceID(NewBuildArtifact(in, nil))
 	if assert.Nil(err) {
 		assert.Equal(newSV, sv)
@@ -191,6 +188,107 @@ func TestRoundTrip(t *testing.T) {
 	ncn, err := nc.GetCanonicalName(host + "/" + in)
 	if assert.Nil(err) {
 		assert.Equal(host+"/"+cn, ncn)
+	}
+}
+
+func TestCanonicalizesToConfiguredRegistry(t *testing.T) {
+	assert := assert.New(t)
+	dc := docker_registry.NewDummyClient()
+
+	dockerPrimary := "docker.repo.io"
+	dockerCache := "nearby-docker-cache.repo.io"
+	base := "ot/wackadoo"
+
+	nc := NewNameCache(dockerCache, dc, inMemoryDB("canonsucceeds"))
+
+	in := base + ":version-1.2.3"
+	digest := "sha256:012345678901234567890123456789AB012345678901234567890123456789AB"
+
+	primaryTagName := dockerPrimary + "/" + in
+	primaryDigestName := dockerCache + "/" + base + "@" + digest
+	cacheDigestName := dockerCache + "/" + base + "@" + digest
+
+	newSV := sous.MustNewSourceID("https://github.com/opentable/wackadoo", "nested/there", "1.2.42")
+
+	cn := base + "@" + digest
+	dc.AddMetadata(dockerPrimary+`.*`, docker_registry.Metadata{
+		Registry:      dockerPrimary,
+		Labels:        Labels(newSV),
+		Etag:          digest,
+		CanonicalName: cn,
+		AllNames:      []string{cn, in},
+	})
+
+	dc.AddMetadata(dockerCache+`.*`, docker_registry.Metadata{
+		Registry:      dockerPrimary,
+		Labels:        Labels(newSV),
+		Etag:          digest,
+		CanonicalName: cn,
+		AllNames:      []string{cn, in},
+	})
+
+	sv, err := nc.GetSourceID(NewBuildArtifact(primaryTagName, nil))
+	if assert.Nil(err) {
+		assert.Equal(newSV, sv)
+	}
+
+	art, err := nc.GetArtifact(sv)
+	if assert.NoError(err) {
+		assert.Equal(cacheDigestName, art.Name)
+	}
+
+	// once for primary, once to check mirror
+	assert.Len(dc.CallsTo("GetImageMetadata"), 2)
+
+	sv, err = nc.GetSourceID(NewBuildArtifact(primaryDigestName, nil))
+	if assert.Nil(err) {
+		assert.Equal(newSV, sv)
+	}
+
+	// because previous responses should be cached
+	assert.Len(dc.CallsTo("GetImageMetadata"), 2)
+}
+
+func TestLeavesRegistryUnchangedWhenUnknown(t *testing.T) {
+	assert := assert.New(t)
+	dc := docker_registry.NewDummyClient()
+
+	dockerPrimary := "docker.repo.io"
+	dockerCache := "nearby-docker-cache.repo.io"
+	base := "ot/wackadoo"
+
+	nc := NewNameCache(dockerCache, dc, inMemoryDB("canonsucceeds"))
+
+	in := base + ":version-1.2.3"
+	digest := "sha256:012345678901234567890123456789AB012345678901234567890123456789AB"
+
+	primaryTagName := dockerPrimary + "/" + in
+	primaryDigestName := dockerPrimary + "/" + base + "@" + digest
+
+	newSV := sous.MustNewSourceID("https://github.com/opentable/wackadoo", "nested/there", "1.2.42")
+
+	cn := base + "@" + digest
+	dc.AddMetadata(dockerPrimary+`.*`, docker_registry.Metadata{
+		Registry:      dockerPrimary,
+		Labels:        Labels(newSV),
+		Etag:          digest,
+		CanonicalName: cn,
+		AllNames:      []string{cn, in},
+	})
+
+	/*
+		NOTE MISSING:
+		dc.AddMetadata(dockerCache+`.*`, docker_registry.Metadata{
+	*/
+
+	sv, err := nc.GetSourceID(NewBuildArtifact(primaryTagName, nil))
+	if assert.Nil(err) {
+		assert.Equal(newSV, sv)
+	}
+
+	art, err := nc.GetArtifact(sv)
+	if assert.NoError(err) {
+		assert.Equal(primaryDigestName, art.Name)
 	}
 }
 
@@ -312,7 +410,7 @@ func TestHarvesting(t *testing.T) {
 	cn := base + "@" + digest
 	in := base + ":" + tag
 
-	dc.FeedMetadata(docker_registry.Metadata{
+	dc.AddMetadata(`.*`+in+`.*`, docker_registry.Metadata{
 		Registry:      host,
 		Labels:        Labels(sv),
 		Etag:          digest,
@@ -332,7 +430,8 @@ func TestHarvesting(t *testing.T) {
 	digest = "sha256:abcdefabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeffffffff"
 	cn = base + "@" + digest
 	in = base + ":" + tag
-	dc.FeedMetadata(docker_registry.Metadata{
+
+	dc.AddMetadata(`.*`+in+`.*`, docker_registry.Metadata{
 		Registry:      host,
 		Labels:        Labels(sisterSV),
 		Etag:          digest,
@@ -343,6 +442,8 @@ func TestHarvesting(t *testing.T) {
 	nin, err := nc.GetArtifact(sisterSV)
 	if assert.NoError(err) {
 		assert.Equal(host+"/"+cn, nin.Name)
+	} else {
+		t.Log(dc)
 	}
 }
 

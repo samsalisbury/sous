@@ -128,7 +128,7 @@ func buildShell(name string, t *testing.T) *shelltest.ShellTest {
 				"PATH":       strings.Join(cfg.ShellPath, ":"),
 			}))
 
-	shell.WriteTo("../doc/shellexamples")
+	shell.WriteTo("raw_shell_output")
 	//shell.DebugPrefix("shell") //useful especially if test timeout interrupts
 
 	return shell
@@ -311,33 +311,43 @@ func TestShellLevelIntegration(t *testing.T) {
 		}
 	})
 
-	//failedDeploy :=
-	setupOverResourced := config.Block("deploy over-resourced project", `
-	cd
-	rm -rf sous-demo
-	git clone {{.GitRemoteBase}}/sous-demo
-	cd sous-demo
-	git tag -am 'Release!' 0.0.24
-	git push --tags
+	/*
+		XXX This test relies on triggering an "overdue" from Singularity.
+		At the moment, we hardcode a 10 minute timeout into our deploys, which is
+		good for getting deploys to succeed, but makes this test more than twice as
+		slow to return.
 
-	# We will make this deploy fail by asking for too many resources.
-	sous manifest get > demo_manifest.yaml
-	cat demo_manifest.yaml
-	# Set CPUs to redonkulous.
-	sed 's/^      cpus.*$/      cpus: "30"/g' demo_manifest.yaml > demo_manifest_toobig.yaml
-	cat demo_manifest_toobig.yaml
-	sous manifest set < demo_manifest_toobig.yaml
-	sous build
-	`, defaultCheck)
+		Ideally, we'd add a GDM level configuration for timeout so that we can speed this test up.
 
-	setupOverResourced.Block("over-resourced deploy failing", `
-	sous deploy -cluster right
-	`, func(name string, res shelltest.Result, t *testing.T) {
-		if !res.ErrsMatches(`sous deploy.*right`) {
-			t.Log(res.Errs)
-			t.Error("sous deploy succeeded, when it should fail!")
-		}
-	})
+
+			//failedDeploy :=
+			setupOverResourced := config.Block("deploy over-resourced project", `
+			cd
+			rm -rf sous-demo
+			git clone {{.GitRemoteBase}}/sous-demo
+			cd sous-demo
+			git tag -am 'Release!' 0.0.24
+			git push --tags
+
+			# We will make this deploy fail by asking for too many resources.
+			sous manifest get > demo_manifest.yaml
+			cat demo_manifest.yaml
+			# Set CPUs to redonkulous.
+			sed 's/^      cpus.*$/      cpus: "30"/g' demo_manifest.yaml > demo_manifest_toobig.yaml
+			cat demo_manifest_toobig.yaml
+			sous manifest set < demo_manifest_toobig.yaml
+			sous build
+			`, defaultCheck)
+
+			setupOverResourced.Block("over-resourced deploy failing", `
+			sous deploy -d -v -cluster right
+			`, func(name string, res shelltest.Result, t *testing.T) {
+				if !res.ErrsMatches(`sous deploy.*right`) {
+					t.Log(res.Errs)
+					t.Error("sous deploy succeeded, when it should fail!")
+				}
+			})
+	*/
 
 	//failedDeploy :=
 	setupBadlyConfigured := config.Block("deploy badly configured project", `

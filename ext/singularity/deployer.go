@@ -2,12 +2,12 @@ package singularity
 
 import (
 	"fmt"
-	"log"
 	"runtime/debug"
 	"strings"
 
 	"github.com/opentable/go-singularity"
 	"github.com/opentable/sous/lib"
+	"github.com/opentable/swaggering"
 	"github.com/pkg/errors"
 	"github.com/satori/go.uuid"
 )
@@ -37,10 +37,10 @@ type (
 	// rectificationClient abstracts the raw interactions with Singularity.
 	rectificationClient interface {
 		// Deploy creates a new deploy on a particular requeust
-		Deploy(cluster, depID, reqID, dockerImage string, r sous.Resources, e sous.Env, vols sous.Volumes) error
+		Deploy(d sous.Deployable, reqID string) error
 
 		// PostRequest sends a request to a Singularity cluster to initiate
-		PostRequest(cluster, reqID string, instanceCount int, kind sous.ManifestKind, owners sous.OwnerSet) error
+		PostRequest(d sous.Deployable, reqID string) error
 
 		// DeleteRequest instructs Singularity to delete a particular request
 		DeleteRequest(cluster, reqID, message string) error
@@ -50,20 +50,39 @@ type (
 	dtoMap map[string]interface{}
 )
 
+func sanitizeDeployID(in string) string {
+	return illegalDeployIDChars.ReplaceAllString(in, "_")
+}
+
+func stripDeployID(in string) string {
+	return illegalDeployIDChars.ReplaceAllString(in, "")
+}
+
 // NewDeployer creates a new Singularity-based sous.Deployer.
 func NewDeployer(c rectificationClient) sous.Deployer {
 	return &deployer{Client: c}
 }
 
-func (r *deployer) RectifyCreates(cc <-chan *sous.Deployable, errs chan<- sous.DiffResolution) {
+// RectifyCreates implements sous.Deployer on deployer
+func (r *deployer) RectifyCreates(cc <-chan *sous.DeployablePair, errs chan<- sous.DiffResolution) {
 	for d := range cc {
 		result := sous.DiffResolution{DeployID: d.ID()}
 		if err := r.RectifySingleCreate(d); err != nil {
-			result.Error = sous.WrapResolveError(&sous.CreateError{Deployment: d.Deployment, Err: err})
 			result.Desc = "not created"
+			switch t := err.(type) {
+			default:
+				result.Error = sous.WrapResolveError(&sous.CreateError{Deployment: d.Post.Deployment.Clone(), Err: err})
+			case *swaggering.ReqError:
+				if t.Status == 400 {
+					result.Error = sous.WrapResolveError(err)
+				} else {
+					result.Error = sous.WrapResolveError(&sous.CreateError{Deployment: d.Post.Deployment.Clone(), Err: err})
+				}
+			}
 		} else {
 			result.Desc = "created"
 		}
+		Log.Vomit.Printf("Reporting result of create: %#v", result)
 		errs <- result
 	}
 }
@@ -79,13 +98,6 @@ func (r *deployer) buildSingClient(url string) *singularity.Client {
 	return r.singFac(url)
 }
 
-func (r *deployer) ImageName(d *sous.Deployable) (string, error) {
-	if d.BuildArtifact == nil {
-		return "", &sous.MissingImageNameError{Cause: fmt.Errorf("Missing BuildArtifact on Deployable")}
-	}
-	return d.BuildArtifact.Name, nil
-}
-
 func rectifyRecover(d interface{}, f string, err *error) {
 	if r := recover(); r != nil {
 		sous.Log.Warn.Printf("Panic in %s with %# v", f, d)
@@ -95,38 +107,36 @@ func rectifyRecover(d interface{}, f string, err *error) {
 	}
 }
 
-func (r *deployer) RectifySingleCreate(d *sous.Deployable) (err error) {
-	Log.Debug.Printf("Rectifying creation %q:  \n %# v", d.ID(), d.Deployment)
+func (r *deployer) RectifySingleCreate(d *sous.DeployablePair) (err error) {
+	Log.Debug.Printf("Rectifying creation %q:  \n %# v", d.ID(), d.Post)
 	defer rectifyRecover(d, "RectifySingleCreate", &err)
-	name, err := r.ImageName(d)
 	if err != nil {
 		return err
 	}
-	reqID := computeRequestID(d)
-	if err = r.Client.PostRequest(d.Cluster.BaseURL, reqID, d.NumInstances, d.Kind, d.Owners); err != nil {
+	reqID := computeRequestID(d.Post)
+	if err = r.Client.PostRequest(*d.Post, reqID); err != nil {
 		return err
 	}
-	return r.Client.Deploy(
-		d.Cluster.BaseURL, computeDeployID(d), reqID, name, d.Resources,
-		d.Env, d.DeployConfig.Volumes)
+	return r.Client.Deploy(*d.Post, reqID)
 }
 
-func (r *deployer) RectifyDeletes(dc <-chan *sous.Deployable, errs chan<- sous.DiffResolution) {
+func (r *deployer) RectifyDeletes(dc <-chan *sous.DeployablePair, errs chan<- sous.DiffResolution) {
 	for d := range dc {
 		result := sous.DiffResolution{DeployID: d.ID()}
 		if err := r.RectifySingleDelete(d); err != nil {
-			result.Error = sous.WrapResolveError(&sous.DeleteError{Deployment: d.Deployment, Err: err})
+			result.Error = sous.WrapResolveError(&sous.DeleteError{Deployment: d.Prior.Deployment.Clone(), Err: err})
 			result.Desc = "not deleted"
 		} else {
 			result.Desc = "deleted"
 		}
+		Log.Vomit.Printf("Reporting result of delete: %#v", result)
 		errs <- result
 	}
 }
 
-func (r *deployer) RectifySingleDelete(d *sous.Deployable) (err error) {
+func (r *deployer) RectifySingleDelete(d *sous.DeployablePair) (err error) {
 	defer rectifyRecover(d, "RectifySingleDelete", &err)
-	requestID := computeRequestID(d)
+	requestID := computeRequestID(d.Prior)
 	// TODO: Alert the owner of this request that there is no manifest for it;
 	// they should either delete the request manually, or else add the manifest back.
 	sous.Log.Warn.Printf("NOT DELETING REQUEST %q (FOR: %q)", requestID, d.ID())
@@ -141,15 +151,19 @@ func (r *deployer) RectifyModifies(
 		result := sous.DiffResolution{DeployID: pair.ID()}
 		if err := r.RectifySingleModification(pair); err != nil {
 			dp := &sous.DeploymentPair{
-				Prior: pair.Prior.Deployment,
-				Post:  pair.Post.Deployment,
+				Prior: pair.Prior.Deployment.Clone(),
+				Post:  pair.Post.Deployment.Clone(),
 			}
-			log.Printf("%#v", err)
+			Log.Debug.Printf("%#v", err)
 			result.Error = sous.WrapResolveError(&sous.ChangeError{Deployments: dp, Err: err})
 			result.Desc = "not updated"
+		} else if pair.Prior.Status == sous.DeployStatusFailed || pair.Post.Status == sous.DeployStatusFailed {
+			result.Desc = "updated"
+			result.Error = sous.WrapResolveError(&sous.FailedStatusError{})
 		} else {
 			result.Desc = "updated"
 		}
+		Log.Vomit.Printf("Reporting result of modify: %#v", result)
 		errs <- result
 	}
 }
@@ -159,35 +173,17 @@ func (r *deployer) RectifySingleModification(pair *sous.DeployablePair) (err err
 	defer rectifyRecover(pair, "RectifySingleModification", &err)
 	if r.changesReq(pair) {
 		Log.Debug.Printf("Updating Request...")
-		if err := r.Client.PostRequest(
-			pair.Post.Cluster.BaseURL,
-			computeRequestID(pair.Post),
-			pair.Post.NumInstances,
-			pair.Post.Kind,
-			pair.Post.Owners,
-		); err != nil {
+		if err := r.Client.PostRequest(*pair.Post, computeRequestID(pair.Post)); err != nil {
 			return err
 		}
 	}
 
 	if changesDep(pair) {
 		Log.Debug.Printf("Deploying...")
-		name, err := r.ImageName(pair.Post)
-		if err != nil {
+		if err := r.Client.Deploy(*pair.Post, computeRequestID(pair.Prior)); err != nil {
 			return err
 		}
 
-		if err := r.Client.Deploy(
-			pair.Post.Cluster.BaseURL,
-			computeDeployID(pair.Post),
-			computeRequestID(pair.Prior),
-			name,
-			pair.Post.Resources,
-			pair.Post.Env,
-			pair.Post.DeployConfig.Volumes,
-		); err != nil {
-			return err
-		}
 	}
 	return nil
 }
@@ -210,36 +206,7 @@ func computeRequestID(d *sous.Deployable) string {
 	return MakeRequestID(d.ID())
 }
 
-func computeDeployID(d *sous.Deployable) string {
-	var uuidTrunc, versionTrunc string
-	uuidEntire := StripDeployID(uuid.NewV4().String())
-	versionSansMeta := stripMetadata(d.Deployment.SourceID.Version.String())
-	versionEntire := SanitizeDeployID(versionSansMeta)
-
-	if len(versionEntire) > maxVersionLen {
-		versionTrunc = versionEntire[0:maxVersionLen]
-	} else {
-		versionTrunc = versionEntire
-	}
-
-	// naiveLen is the length of the truncated Version plus
-	// the length of an entire UUID plus the length of a separator
-	// character.
-	naiveLen := len(versionTrunc) + len(uuidEntire) + 1
-
-	if naiveLen > maxDeployIDLen {
-		uuidTrunc = uuidEntire[:maxDeployIDLen-len(versionTrunc)-1]
-	} else {
-		uuidTrunc = uuidEntire
-	}
-
-	return strings.Join([]string{
-		versionTrunc,
-		uuidTrunc,
-	}, "_")
-}
-
-// MakeRequestID creats a Singularity request ID from a sous.DeployID.
+// MakeRequestID creates a Singularity request ID from a sous.DeployID.
 func MakeRequestID(mid sous.DeployID) string {
 	sl := strings.Replace(mid.ManifestID.Source.String(), "/", ">", -1)
 	return fmt.Sprintf("%s:%s:%s", sl, mid.ManifestID.Flavor, mid.Cluster)
@@ -274,4 +241,33 @@ func ParseRequestID(id string) (sous.DeployID, error) {
 		},
 		Cluster: parts[2],
 	}, nil
+}
+
+func computeDeployID(d *sous.Deployable) string {
+	var uuidTrunc, versionTrunc string
+	uuidEntire := stripDeployID(uuid.NewV4().String())
+	versionSansMeta := stripMetadata(d.Deployment.SourceID.Version.String())
+	versionEntire := sanitizeDeployID(versionSansMeta)
+
+	if len(versionEntire) > maxVersionLen {
+		versionTrunc = versionEntire[0:maxVersionLen]
+	} else {
+		versionTrunc = versionEntire
+	}
+
+	// naiveLen is the length of the truncated Version plus
+	// the length of an entire UUID plus the length of a separator
+	// character.
+	naiveLen := len(versionTrunc) + len(uuidEntire) + 1
+
+	if naiveLen > maxDeployIDLen {
+		uuidTrunc = uuidEntire[:maxDeployIDLen-len(versionTrunc)-1]
+	} else {
+		uuidTrunc = uuidEntire
+	}
+
+	return strings.Join([]string{
+		versionTrunc,
+		uuidTrunc,
+	}, "_")
 }

@@ -34,6 +34,7 @@ LINUX_TARBALL := $(LINUX_RELEASE_DIR).tar.gz
 CONCAT_XGO_ARGS := -go $(GO_VERSION) -branch master -deps $(SQLITE_URL) --dest $(BIN_DIR) --ldflags $(FLAGS)
 COVER_DIR := /tmp/sous-cover
 TEST_VERBOSE := $(if $(VERBOSE),-v,)
+SOUS_PACKAGES:= $(shell go list -f '{{ range .Deps }}{{.}}{{printf "\n"}}{{end}}' | grep '^github.com/opentable' | grep -v 'vendor')
 
 help:
 	@echo --- options:
@@ -44,6 +45,7 @@ help:
 	@echo "make test: unit and integration"
 	@echo "make test-unit"
 	@echo "make wip: puts a marker file into workspace to prevent Travis from passing the build."
+	@echo "make staticcheck: runs static code analysis against project packages."
 	@echo
 	@echo "Add VERBOSE=1 for tons of extra output."
 
@@ -68,15 +70,21 @@ install-ggen:
 install-stringer:
 	go get golang.org/x/tools/cmd/stringer
 
-legendary: coverage
-	legendary --hitlist .cadre/coverage.vim /tmp/sous-cover/*_merged.txt
+install-xgo:
+	go get github.com/karalabe/xgo
+
+install-govendor:
+	go get github.com/kardianos/govendor
+
+install-engulf:
+	go get github.com/nyarly/engulf
+
+install-staticcheck:
+	go get honnef.co/go/tools/cmd/staticcheck
+
+install-build-tools: install-xgo install-govendor install-engulf install-staticcheck
 
 release: artifacts/$(DARWIN_TARBALL) artifacts/$(LINUX_TARBALL)
-
-install_build_tools:
-	go get github.com/karalabe/xgo
-	go get github.com/kardianos/govendor
-	go get github.com/nyarly/engulf
 
 linux-build: artifacts/$(LINUX_RELEASE_DIR)/sous
 	ln -sf ../$< dev_support/sous_linux
@@ -84,12 +92,12 @@ linux-build: artifacts/$(LINUX_RELEASE_DIR)/sous
 semvertagchk:
 	@echo "$(SOUS_VERSION)" | egrep ^[0-9]+\.[0-9]+\.[0-9]+
 
-sous_qa_setup: ./dev_support/sous_qa_setup/*.go ./util/test_with_docker/*.go
+sous-qa-setup: ./dev_support/sous_qa_setup/*.go ./util/test_with_docker/*.go
 	go build ./dev_support/sous_qa_setup
 
 test: test-gofmt test-unit test-integration
 
-reject_wip:
+reject-wip:
 	test ! -f workinprogress
 
 wip:
@@ -109,22 +117,26 @@ coverage: $(COVER_DIR)
 		--exclude-files='raw_client.go$$, _generated.go$$'\
 		--merge-base=_merged.txt ./...
 
+legendary: coverage
+	legendary --hitlist .cadre/coverage.vim /tmp/sous-cover/*_merged.txt
+
 test-gofmt:
 	bin/check-gofmt
 
 test-unit:
-	go test $(TEST_VERBOSE) ./...
+	go test $(TEST_VERBOSE) -timeout 2m ./...
 
 test-integration: test-setup
 	go test -c -tags integration ./integration
 	SOUS_QA_DESC=$(QA_DESC) go test  $(TEST_VERBOSE) ./integration --tags=integration
 
-test-setup:  sous_qa_setup
+test-setup:  sous-qa-setup
 	./sous_qa_setup --compose-dir ./integration/test-registry/ --out-path=$(QA_DESC)
 
 test-cli: test-setup linux-build
-	rm -rf doc/shellexamples/*
-	SOUS_QA_DESC=$(QA_DESC) go test $(TEST_VERBOSE) ./integration --tags=commandline
+	rm -rf integration/raw_shell_output/0*
+	@date
+	SOUS_QA_DESC=$(QA_DESC) go test $(TEST_VERBOSE) -timeout 20m ./integration --tags=commandline
 
 $(BIN_DIR):
 	mkdir -p $@
@@ -138,11 +150,11 @@ $(RELEASE_DIRS):
 	cp README.md artifacts/$@
 	cp LICENSE artifacts/$@
 
-artifacts/$(DARWIN_RELEASE_DIR)/sous: $(DARWIN_RELEASE_DIR) $(BIN_DIR) install_build_tools
+artifacts/$(DARWIN_RELEASE_DIR)/sous: $(DARWIN_RELEASE_DIR) $(BIN_DIR) install-build-tools
 	xgo $(CONCAT_XGO_ARGS) --targets=darwin/amd64  ./
 	mv $(BIN_DIR)/sous-darwin-10.6-amd64 $@
 
-artifacts/$(LINUX_RELEASE_DIR)/sous: $(LINUX_RELEASE_DIR) $(BIN_DIR) install_build_tools
+artifacts/$(LINUX_RELEASE_DIR)/sous: $(LINUX_RELEASE_DIR) $(BIN_DIR) install-build-tools
 	xgo $(CONCAT_XGO_ARGS) --targets=linux/amd64  ./
 	mv $(BIN_DIR)/sous-linux-amd64 $@
 
@@ -152,5 +164,7 @@ artifacts/$(LINUX_TARBALL): artifacts/$(LINUX_RELEASE_DIR)/sous
 artifacts/$(DARWIN_TARBALL): artifacts/$(DARWIN_RELEASE_DIR)/sous
 	cd artifacts && tar czv $(DARWIN_RELEASE_DIR) > $(DARWIN_TARBALL)
 
+staticcheck: install-staticcheck
+	staticcheck -ignore "$$(cat staticcheck.ignore)" $(SOUS_PACKAGES)
 
-.PHONY: clean coverage install-ggen legendary release semvertagchk test test-gofmt test-integration test-setup test-unit reject_wip wip
+.PHONY: clean coverage install-ggen legendary release semvertagchk test test-gofmt test-integration test-setup test-unit reject-wip wip staticcheck

@@ -89,7 +89,7 @@ Instead, you'll want to use `sous deploy`, like this:
 ```bash
 # Sous requires that projects be tagged with a
 # semantic version.
-$ git tag -a 1.2.4 && git push --tags
+$ git tag -a 1.2.4 -m "sous build tag" && git push --tags
 
 # Actually do the docker build, push and registration steps
 $ sous build

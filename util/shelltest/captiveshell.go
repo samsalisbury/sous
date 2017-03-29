@@ -33,10 +33,12 @@ echo $status >&3
 type (
 	captiveShell struct {
 		*exec.Cmd
-		Stdin                                 io.WriteCloser
-		stdout, stderr, scriptEnv, scriptErrs *liveStream
-		doneRead                              *bufio.Scanner
-		events                                chan int
+		Stdin io.WriteCloser
+		stdout, stderr, blended,
+		scriptEnv, scriptErrs *liveStream
+		doneRead *bufio.Scanner
+		writeDir string
+		events   chan int
 	}
 	// XXX: there's room here for a "stateful stdin" - using DEBUG traps and PS1
 	// hacks to keep track of the shell's state, and streaming the stdin in more
@@ -60,21 +62,30 @@ type (
 	// ...which is why, for the moment, I'm sticking with </dev/null on SSH.
 
 	liveStream struct {
+		name     string
 		debugDir string
 		pipe     io.Reader
-		bufs     []*bytes.Buffer
+		bufs     []io.Writer
 		debugs   []io.Writer
+		saveTo   io.Writer
 		sync.Mutex
+	}
+
+	reseter interface {
+		Reset()
 	}
 )
 
-func newLiveStream(from io.Reader, events <-chan int) *liveStream {
+func newLiveStream(name string, from io.Reader, events <-chan int) *liveStream {
 	ls := &liveStream{
+		name: name,
 		pipe: from,
-		bufs: []*bytes.Buffer{&bytes.Buffer{}},
+		bufs: []io.Writer{&bytes.Buffer{}},
 	}
 
-	go ls.reader(events)
+	if from != nil {
+		go ls.reader(events)
+	}
 	return ls
 }
 
@@ -92,21 +103,21 @@ func newShell(env map[string]string) (sh *captiveShell, err error) {
 		return nil, err
 	}
 
-	blended := &bytes.Buffer{}
+	sh.blended = newLiveStream("blended", nil, sh.events)
 
 	stdo, err := sh.Cmd.StdoutPipe()
 	if err != nil {
 		return nil, err
 	}
-	sh.stdout = newLiveStream(stdo, sh.events)
-	sh.stdout.addBuf(blended)
+	sh.stdout = newLiveStream("stdout", stdo, sh.events)
+	sh.stdout.addBuf(sh.blended)
 
 	stde, err := sh.Cmd.StderrPipe()
 	if err != nil {
 		return nil, err
 	}
-	sh.stderr = newLiveStream(stde, sh.events)
-	sh.stderr.addBuf(blended)
+	sh.stderr = newLiveStream("stderr", stde, sh.events)
+	sh.stderr.addBuf(sh.blended)
 
 	dr, doneWrite, err := os.Pipe()
 	if err != nil {
@@ -118,13 +129,13 @@ func newShell(env map[string]string) (sh *captiveShell, err error) {
 	if err != nil {
 		return nil, err
 	}
-	sh.scriptEnv = newLiveStream(envR, sh.events)
+	sh.scriptEnv = newLiveStream("env", envR, sh.events)
 
 	errR, errW, err := os.Pipe()
 	if err != nil {
 		return nil, err
 	}
-	sh.scriptErrs = newLiveStream(errR, sh.events)
+	sh.scriptErrs = newLiveStream("errors", errR, sh.events)
 
 	sh.Cmd.ExtraFiles = []*os.File{doneWrite, envW, errW}
 
@@ -135,6 +146,38 @@ func newShell(env map[string]string) (sh *captiveShell, err error) {
 	errW.Close()
 
 	return
+}
+
+func (sh *captiveShell) WriteTo(dir string) {
+	sh.writeDir = dir
+}
+
+func (sh *captiveShell) BlockName(name string) {
+	if sh.writeDir == "" {
+		return
+	}
+
+	path := filepath.Join(sh.writeDir, name)
+	os.MkdirAll(path, os.ModePerm)
+
+	sh.stdout.updateSaveTo(path)
+	sh.stderr.updateSaveTo(path)
+	sh.blended.updateSaveTo(path)
+	sh.scriptEnv.updateSaveTo(path)
+	sh.scriptErrs.updateSaveTo(path)
+}
+
+func (ls *liveStream) updateSaveTo(dir string) {
+	ls.Lock()
+	defer ls.Unlock()
+
+	path := filepath.Join(dir, ls.name)
+
+	var err error
+	ls.saveTo, err = os.Create(path)
+	if err != nil {
+		panic(err)
+	}
 }
 
 // Run runs a script in the context of the shell, waits for it to complete and
@@ -181,7 +224,7 @@ func (ls *liveStream) reader(events <-chan int) {
 			if err != nil {
 				return
 			}
-			ls.saveBytes(buf[0:count])
+			ls.Write(buf[0:count])
 		case <-events:
 			return
 		}
@@ -200,11 +243,12 @@ func (ls *liveStream) debugTo(name, prefix string) {
 	}
 }
 
-func (ls *liveStream) saveBytes(buf []byte) {
+func (ls *liveStream) Write(buf []byte) (count int, err error) {
 	ls.Lock()
 	defer ls.Unlock()
+
 	for n, b := range ls.bufs {
-		b.Write(buf)
+		count, err = b.Write(buf)
 
 		if ls.debugDir != "" {
 			_, err := ls.debugs[n].Write(buf)
@@ -214,17 +258,31 @@ func (ls *liveStream) saveBytes(buf []byte) {
 			}
 		}
 	}
+
+	if ls.saveTo != nil {
+		ls.saveTo.Write(buf)
+	}
+
+	return
 }
 
-func (ls *liveStream) addBuf(buf *bytes.Buffer) {
+func (ls *liveStream) addBuf(buf io.Writer) {
 	ls.bufs = append(ls.bufs, buf)
 }
 
 func (ls *liveStream) consume(n int) string {
 	ls.Lock()
 	defer ls.Unlock()
-	str := ls.bufs[n].String()
-	ls.bufs[n].Reset()
+	buf, ok := ls.bufs[n].(fmt.Stringer)
+	var str string
+	if ok {
+		str = buf.String()
+	}
+
+	res, ok := ls.bufs[n].(reseter)
+	if ok {
+		res.Reset()
+	}
 	return str
 }
 

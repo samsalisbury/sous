@@ -9,8 +9,7 @@ type (
 	// A DeployableChans is a bundle of channels describing actions to take on a
 	// cluster
 	DeployableChans struct {
-		Start, Stop, Stable chan *Deployable
-		Update              chan *DeployablePair
+		Start, Stop, Stable, Update chan *DeployablePair
 		sync.WaitGroup
 	}
 
@@ -20,6 +19,10 @@ type (
 	DeployablePair struct {
 		Prior, Post *Deployable
 		name        DeployID
+	}
+
+	diffSet struct {
+		New, Gone, Same, Changed DeployablePairs
 	}
 )
 
@@ -31,11 +34,37 @@ func NewDeployableChans(size ...int) *DeployableChans {
 		s = size[0]
 	}
 	return &DeployableChans{
-		Start:  make(chan *Deployable, s),
-		Stop:   make(chan *Deployable, s),
-		Stable: make(chan *Deployable, s),
+		Start:  make(chan *DeployablePair, s),
+		Stop:   make(chan *DeployablePair, s),
+		Stable: make(chan *DeployablePair, s),
 		Update: make(chan *DeployablePair, s),
 	}
+}
+
+// Close closes all the channels in a DeployableChans in a single action
+func (d *DeployableChans) Close() {
+	close(d.Start)
+	close(d.Stop)
+	close(d.Stable)
+	close(d.Update)
+}
+
+func (d *DeployableChans) collect() diffSet {
+	ds := newDiffSet()
+
+	for n := range d.Start {
+		ds.New = append(ds.New, n)
+	}
+	for g := range d.Stop {
+		ds.Gone = append(ds.Gone, g)
+	}
+	for s := range d.Stable {
+		ds.Same = append(ds.Same, s)
+	}
+	for m := range d.Update {
+		ds.Changed = append(ds.Changed, m)
+	}
+	return ds
 }
 
 // GuardImage checks that a deployment is valid before deploying it.
@@ -79,22 +108,22 @@ func (dp *DeployablePair) ID() DeployID {
 }
 
 // ResolveNames resolves diffs.
-func (dc *DeployableChans) ResolveNames(r Registry, diff *DiffChans, errs chan error) {
-	dc.WaitGroup = sync.WaitGroup{}
-	dc.Add(4)
-	go func() { resolveCreates(r, diff.Created, dc.Start, errs); dc.Done() }()
-	go func() { maybeResolveDeletes(r, diff.Deleted, dc.Stop, errs); dc.Done() }()
-	go func() { maybeResolveRetains(r, diff.Retained, dc.Stable, errs); dc.Done() }()
-	go func() { resolvePairs(r, diff.Modified, dc.Update, errs); dc.Done() }()
-	go func() { dc.Wait(); close(errs) }()
+func (d *DeployableChans) ResolveNames(r Registry, diff *DeployableChans, errs chan error) {
+	d.WaitGroup = sync.WaitGroup{}
+	d.Add(4)
+	go func() { resolveCreates(r, diff.Start, d.Start, errs); d.Done() }()
+	go func() { maybeResolveDeletes(r, diff.Stop, d.Stop, errs); d.Done() }()
+	go func() { maybeResolveRetains(r, diff.Stable, d.Stable, errs); d.Done() }()
+	go func() { resolvePairs(r, diff.Update, d.Update, errs); d.Done() }()
+	go func() { d.Wait(); close(errs) }()
 }
 
-func resolveCreates(r Registry, from chan *DeploymentPair, to chan *Deployable, errs chan error) {
+func resolveCreates(r Registry, from chan *DeployablePair, to chan *DeployablePair, errs chan error) {
 	for dp := range from {
 		dep := dp.Post
 		Log.Vomit.Printf("Deployment processed, needs artifact: %#v", dep)
 
-		da, err := resolveName(r, dep, dp.Status)
+		da, err := resolveName(r, dep)
 		if err != nil {
 			Log.Info.Printf("Unable to create new deployment %q: %s", dep.ID(), err)
 			Log.Debug.Printf("Failed create deployment %q: % #v", dep.ID(), dep)
@@ -107,37 +136,39 @@ func resolveCreates(r Registry, from chan *DeploymentPair, to chan *Deployable, 
 			Log.Debug.Printf("Failed create deployment %q: % #v", dep.ID(), dep)
 			continue
 		}
-		to <- da
+		to <- &DeployablePair{name: dp.name, Prior: nil, Post: da}
 	}
 	close(to)
 }
 
-func maybeResolveRetains(r Registry, from chan *DeploymentPair, to chan *Deployable, errs chan error) {
+// XXX now that everything is DeployablePairs, this can probably be simplified
+
+func maybeResolveRetains(r Registry, from chan *DeployablePair, to chan *DeployablePair, errs chan error) {
 	for dp := range from {
-		da := maybeResolveSingle(r, dp.Post, dp.Status)
-		to <- da
+		da := maybeResolveSingle(r, dp.Post)
+		to <- &DeployablePair{name: dp.name, Prior: da, Post: da}
 	}
 	close(to)
 }
 
-func maybeResolveDeletes(r Registry, from chan *DeploymentPair, to chan *Deployable, errs chan error) {
+func maybeResolveDeletes(r Registry, from chan *DeployablePair, to chan *DeployablePair, errs chan error) {
 	for dp := range from {
-		da := maybeResolveSingle(r, dp.Prior, dp.Status)
-		to <- da
+		da := maybeResolveSingle(r, dp.Prior)
+		to <- &DeployablePair{name: dp.name, Prior: da, Post: nil}
 	}
 	close(to)
 }
 
-func maybeResolveSingle(r Registry, dep *Deployment, stat DeployStatus) *Deployable {
-	Log.Vomit.Printf("Deployment processed w/o needing artifact: %#v", dep)
-	da, err := resolveName(r, dep, stat)
+func maybeResolveSingle(r Registry, dep *Deployable) *Deployable {
+	Log.Vomit.Printf("Attempting to resolve optional artifact: %#v (stable or deletes don't need images)", dep)
+	da, err := resolveName(r, dep)
 	if err != nil {
 		Log.Debug.Printf("Error resolving stopped or stable deployment (proceeding anyway): %#v: %#v", dep, err)
 	}
 	return da
 }
 
-func resolvePairs(r Registry, from chan *DeploymentPair, to chan *DeployablePair, errs chan error) {
+func resolvePairs(r Registry, from chan *DeployablePair, to chan *DeployablePair, errs chan error) {
 	for depPair := range from {
 		Log.Vomit.Printf("Pair of deployments processed, needs artifact: %#v", depPair)
 		d, err := resolvePair(r, depPair)
@@ -157,18 +188,17 @@ func resolvePairs(r Registry, from chan *DeploymentPair, to chan *DeployablePair
 	close(to)
 }
 
-func resolveName(r Registry, dep *Deployment, stat DeployStatus) (*Deployable, error) {
-	d := &Deployable{Deployment: dep, Status: stat}
-	art, err := GuardImage(r, dep)
+func resolveName(r Registry, d *Deployable) (*Deployable, error) {
+	art, err := GuardImage(r, d.Deployment)
 	if err == nil {
 		d.BuildArtifact = art
 	}
 	return d, err
 }
 
-func resolvePair(r Registry, depPair *DeploymentPair) (*DeployablePair, error) {
-	prior, _ := resolveName(r, depPair.Prior, depPair.Status)
-	post, err := resolveName(r, depPair.Post, depPair.Status)
+func resolvePair(r Registry, depPair *DeployablePair) (*DeployablePair, error) {
+	prior, _ := resolveName(r, depPair.Prior)
+	post, err := resolveName(r, depPair.Post)
 
 	return &DeployablePair{name: depPair.name, Prior: prior, Post: post}, err
 }

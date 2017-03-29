@@ -91,7 +91,7 @@ func (suite *integrationSuite) newNameCache(name string) *docker.NameCache {
 
 	suite.Require().NoError(err)
 
-	return docker.NewNameCache("", suite.registry, db)
+	return docker.NewNameCache(registryName, suite.registry, db)
 }
 
 func (suite *integrationSuite) BeforeTest(suiteName, testName string) {
@@ -409,12 +409,14 @@ func (suite *integrationSuite) TestResolve() {
 	clusters := []string{"test-cluster"}
 	ds, which := suite.deploymentWithRepo(clusters, repoOne)
 	deps := ds.Snapshot()
+	suite.T().Logf("which: %s", which)
 	if suite.NotEqual(which, none, "opentable/one not successfully deployed") {
 		one := deps[which]
 		suite.Equal(1, one.NumInstances)
 	}
 
 	which = suite.findRepo(ds, repoTwo)
+	suite.T().Logf("which: %s", which)
 	if suite.NotEqual(none, which, "opentable/two not successfully deployed") {
 		two := deps[which]
 		suite.Equal(1, two.NumInstances)

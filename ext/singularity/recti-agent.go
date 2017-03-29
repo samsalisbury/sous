@@ -56,26 +56,41 @@ func mapResources(r sous.Resources) dtoMap {
 }
 
 // Deploy sends requests to Singularity to make a deployment happen
-func (ra *RectiAgent) Deploy(cluster, depID, reqID, dockerImage string,
-	r sous.Resources, e sous.Env, vols sous.Volumes) error {
+func (ra *RectiAgent) Deploy(d sous.Deployable, reqID string) error {
+	if d.BuildArtifact == nil {
+		return &sous.MissingImageNameError{Cause: fmt.Errorf("Missing BuildArtifact on Deployable")}
+	}
+	dockerImage := d.BuildArtifact.Name
+	clusterURI := d.Deployment.Cluster.BaseURL
 	labels, err := ra.labeller.ImageLabels(dockerImage)
 	if err != nil {
 		return err
 	}
-	Log.Debug.Printf("Collected docker image labels %#v", labels)
-	Log.Debug.Printf("Deploying instance %s %s %s %s %v %v", cluster, depID, reqID, dockerImage, r, e)
-	depReq, err := buildDeployRequest(dockerImage, e, r, reqID, depID, vols, labels)
+
+	Log.Debug.Printf("Deploying instance %#v to request %s", d, reqID)
+	depReq, err := buildDeployRequest(d, reqID, labels)
 	if err != nil {
 		return err
 	}
 
 	Log.Debug.Printf("Deploy req: %+ v", depReq)
-	_, err = ra.singularityClient(cluster).Deploy(depReq)
+	_, err = ra.singularityClient(clusterURI).Deploy(depReq)
 	return err
 }
 
-func buildDeployRequest(dockerImage string, e sous.Env, r sous.Resources, reqID string, depID string, vols sous.Volumes, metadata map[string]string) (*dtos.SingularityDeployRequest, error) {
+func buildDeployRequest(d sous.Deployable, reqID string, metadata map[string]string) (*dtos.SingularityDeployRequest, error) {
 	var depReq swaggering.Fielder
+	depID := computeDeployID(&d)
+	dockerImage := d.BuildArtifact.Name
+	r := d.Deployment.DeployConfig.Resources
+	e := d.Deployment.DeployConfig.Env
+	vols := d.Deployment.DeployConfig.Volumes
+	clusterName := d.Deployment.ClusterName
+	flavor := d.Deployment.Flavor
+
+	metadata[sous.SingularityDeployMetadataClusterName] = clusterName
+	metadata[sous.SingularityDeployMetadataFlavor] = flavor
+
 	dockerInfo, err := swaggering.LoadMap(&dtos.SingularityDockerInfo{}, dtoMap{
 		"Image":   dockerImage,
 		"Network": dtos.SingularityDockerInfoSingularityDockerNetworkTypeBRIDGE, //defaulting to all bridge
@@ -116,17 +131,20 @@ func buildDeployRequest(dockerImage string, e sous.Env, r sous.Resources, reqID 
 	}
 
 	dep, err := swaggering.LoadMap(&dtos.SingularityDeploy{}, dtoMap{
-		"Id":            depID,
-		"RequestId":     reqID,
-		"Resources":     res,
-		"ContainerInfo": ci,
-		"Env":           map[string]string(e),
-		"Metadata":      metadata,
+		"Id":                         depID,
+		"RequestId":                  reqID,
+		"Resources":                  res,
+		"ContainerInfo":              ci,
+		"Env":                        map[string]string(e),
+		"Metadata":                   metadata,
+		"DeployHealthTimeoutSeconds": int64(sous.SingularityDeployTimeout),
 	})
+	if err != nil {
+		return nil, err
+	}
 	Log.Debug.Printf("Deploy: %+ v", dep)
 	Log.Debug.Printf("  Container: %+ v", ci)
 	Log.Debug.Printf("  Docker: %+ v", dockerInfo)
-
 	depReq, err = swaggering.LoadMap(&dtos.SingularityDeployRequest{}, dtoMap{"Deploy": dep})
 	if err != nil {
 		return nil, err
@@ -135,7 +153,11 @@ func buildDeployRequest(dockerImage string, e sous.Env, r sous.Resources, reqID 
 }
 
 // PostRequest sends requests to Singularity to create a new Request
-func (ra *RectiAgent) PostRequest(cluster, reqID string, instanceCount int, kind sous.ManifestKind, owners sous.OwnerSet) error {
+func (ra *RectiAgent) PostRequest(d sous.Deployable, reqID string) error {
+	cluster := d.Deployment.Cluster.BaseURL
+	instanceCount := d.Deployment.DeployConfig.NumInstances
+	kind := d.Deployment.Kind
+	owners := d.Deployment.Owners
 	Log.Debug.Printf("Creating application %s %s %d", cluster, reqID, instanceCount)
 	reqType, err := determineRequestType(kind)
 	if err != nil {
@@ -180,6 +202,9 @@ func (ra *RectiAgent) DeleteRequest(cluster, reqID, message string) error {
 	req, err := swaggering.LoadMap(&dtos.SingularityDeleteRequestRequest{}, dtoMap{
 		"Message": "Sous: " + message,
 	})
+	if err != nil {
+		return err
+	}
 
 	Log.Debug.Printf("Delete req: %+ v", req)
 	_, err = ra.singularityClient(cluster).DeleteRequest(reqID,
@@ -198,6 +223,10 @@ func (ra *RectiAgent) Scale(cluster, reqID string, instanceCount int, message st
 		"Message":          "Sous" + message,
 		"SkipHealthchecks": false,
 	})
+
+	if err != nil {
+		return err
+	}
 
 	Log.Debug.Printf("Scale req: %+ v", sr)
 	_, err = ra.singularityClient(cluster).Scale(reqID, sr.(*dtos.SingularityScaleRequest))

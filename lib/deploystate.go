@@ -1,5 +1,7 @@
 package sous
 
+import "fmt"
+
 //go:generate ggen cmap.CMap(cmap.go) sous.DeployStates(deploystates.go) CMKey:DeployID Value:*DeployState
 //go:generate stringer -type=DeployStatus
 
@@ -39,4 +41,15 @@ func (ds DeployStates) IgnoringStatus() Deployments {
 		deployments.Set(key, &value.Deployment)
 	}
 	return deployments
+}
+
+// Diff computes the list of differences between two DeployStates and returns
+// "true" if they're different, along with a list of differences
+func (ds *DeployState) Diff(o *DeployState) (bool, []string) {
+	_, depS := ds.Deployment.Diff(&o.Deployment)
+
+	if ds.Status != o.Status {
+		depS = append(depS, fmt.Sprintf("status: this: %s other: %s", ds.Status, o.Status))
+	}
+	return len(depS) > 0, depS
 }

@@ -15,7 +15,7 @@ type (
 	// ManifestPairs is a slice of *ManifestPair.
 	ManifestPairs []*ManifestPair
 
-	// A DiffConcentrator wraps deployment DiffChans in order to produce
+	// A DiffConcentrator wraps deployment DeployableChans in order to produce
 	// differences in terms of *manifests*
 	DiffConcentrator struct {
 		Defs
@@ -37,15 +37,15 @@ type (
 )
 
 // Concentrate returns a DiffConcentrator set up to concentrate the deployment
-// changes in a DiffChans into manifest changes.
-func (d DiffChans) Concentrate(defs Defs) DiffConcentrator {
-	c := NewConcentrator(defs, d, cap(d.Created))
+// changes in a DeployableChans into manifest changes.
+func (d DeployableChans) Concentrate(defs Defs) DiffConcentrator {
+	c := NewConcentrator(defs, d, cap(d.Start))
 	go concentrate(d, c)
 	return c
 }
 
 // NewConcentrator constructs a DiffConcentrator.
-func NewConcentrator(defs Defs, s DiffChans, sizes ...int) DiffConcentrator {
+func NewConcentrator(defs Defs, s DeployableChans, sizes ...int) DiffConcentrator {
 	var size int
 	if len(sizes) > 0 {
 		size = sizes[0]
@@ -99,7 +99,16 @@ func (dc *DiffConcentrator) collect() (concentratedDiffSet, error) {
 	return ds, nil
 }
 
-func (db *deploymentBundle) add(prior, post *Deployment) error {
+func (db *deploymentBundle) add(pair *DeployablePair) error {
+	var prior, post *Deployment
+
+	if pair.Prior != nil {
+		prior = pair.Prior.Deployment
+	}
+
+	if pair.Post != nil {
+		post = pair.Post.Deployment
+	}
 
 	if prior == nil || post == nil {
 		if prior == nil {
@@ -256,15 +265,15 @@ func (dc *DiffConcentrator) resolve(mid ManifestID, bundle *deploymentBundle) {
 	}
 }
 
-func concentrate(dc DiffChans, con DiffConcentrator) {
+func concentrate(dc DeployableChans, con DiffConcentrator) {
 	collect := make(map[ManifestID]*deploymentBundle)
-	addPair := func(mid ManifestID, dp *DeploymentPair) {
+	addPair := func(mid ManifestID, dp *DeployablePair) {
 		_, present := collect[mid]
 		if !present {
 			collect[mid] = newDepBundle()
 		}
 
-		err := collect[mid].add(dp.Prior, dp.Post)
+		err := collect[mid].add(dp)
 		if err != nil {
 			con.Errors <- err
 			return
@@ -277,7 +286,7 @@ func concentrate(dc DiffChans, con DiffConcentrator) {
 	}
 
 	created, deleted, retained, modified :=
-		dc.Created, dc.Deleted, dc.Retained, dc.Modified
+		dc.Start, dc.Stop, dc.Stable, dc.Update
 
 	defer func() {
 		close(con.Retained)

@@ -11,6 +11,13 @@ with respect to its command line interface and HTTP interface.
 ### Added
 - Conflicting GDM updates now retry, up to the number of deployments in their manifest.
 
+### Changed
+
+- Digested Docker image names no longer query the registry, which should reduce
+  our requests count there.
+- Failed deploys to Singularity are now retried until they succeed or the GDM
+  changes.
+
 ## [0.2.1](//github.com/opentable/sous/compare/0.2.0...0.2.1)
 
 ### Added

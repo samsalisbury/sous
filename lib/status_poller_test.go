@@ -228,7 +228,7 @@ func TestStatusPoller(t *testing.T) {
 	go func() {
 		rState, err := poller.Wait(context.Background())
 		if err != nil {
-			t.Fatalf("Error starting poller: %#v", err)
+			t.Errorf("Error starting poller: %#v", err)
 		}
 		testCh <- rState
 	}()
@@ -330,7 +330,7 @@ func TestStatusPoller_MesosFailed(t *testing.T) {
 	go func() {
 		rState, err := poller.Wait(context.Background())
 		if err != nil {
-			t.Fatalf("Error starting poller: %#v", err)
+			t.Errorf("Error starting poller: %#v", err)
 		}
 		t.Logf("Returned state: %#v", rState)
 		testCh <- rState
@@ -414,7 +414,7 @@ func TestStatusPoller_NotIntended(t *testing.T) {
 	go func() {
 		rState, err := poller.Wait(context.Background())
 		if err != nil {
-			t.Fatalf("Error starting poller: %#v", err)
+			t.Errorf("Error starting poller: %#v", err)
 		}
 		testCh <- rState
 	}()

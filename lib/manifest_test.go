@@ -7,6 +7,62 @@ import (
 	"github.com/samsalisbury/semv"
 )
 
+func TestManifest_Clone(t *testing.T) {
+	orignalVersion := semv.MustParse("1")
+	original := &Manifest{
+		Kind:   ManifestKindService,
+		Owners: []string{"some", "owners"},
+		Deployments: DeploySpecs{
+			"some-cluster": DeploySpec{
+				DeployConfig: DeployConfig{
+					Resources: Resources{
+						"cpus":   "1",
+						"memory": "256",
+						"ports":  "1",
+					},
+					NumInstances: 3,
+				},
+				Version: orignalVersion,
+			},
+		},
+	}
+
+	clone := original.Clone()
+
+	if clone.Kind != ManifestKindService {
+		t.Errorf("Kind didn't match orignal")
+	}
+
+	if len(clone.Owners) != 2 &&
+		clone.Owners[0] != "some" &&
+		clone.Owners[1] != "owners" {
+		t.Errorf("Owners didn't match orignal")
+	}
+
+	if clone.Deployments["some-cluster"].Version != orignalVersion {
+		t.Errorf("Deployments didn't match orignal")
+	}
+
+	original.Owners = []string{"no", "body"}
+	original.Deployments = DeploySpecs{}
+	original.Kind = ManifestKindScheduled
+
+	if clone.Kind != ManifestKindService {
+		t.Errorf("Kind was changed by mutating original")
+	}
+
+	if len(clone.Owners) != 2 &&
+		clone.Owners[0] != "some" &&
+		clone.Owners[1] != "owners" {
+		t.Errorf("Owners was changed by mutating original")
+	}
+
+	if clone.Deployments["some-cluster"].Version != orignalVersion {
+		t.Errorf("Owners was changed by mutating original")
+	}
+
+}
+
 var manifestTests = []struct {
 	OriginalManifest, FixedManifest *Manifest
 	FlawDesc, RepairError           string

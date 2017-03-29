@@ -32,6 +32,7 @@ func assertSourceContextSuccess(t *testing.T, expected sous.ManifestID, flags *s
 	require.NoError(t, err)
 
 	actual, err := newTargetManifestID(rrf)
+	assert.NoError(t, err)
 	assert.Equal(t, actual.Source.Repo, expected.Source.Repo, "repos differ")
 	assert.Equal(t, actual.Source.Dir, expected.Source.Dir, "offsets differ")
 	assert.Equal(t, actual.Flavor, expected.Flavor, "flavors differ")
