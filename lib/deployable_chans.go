@@ -108,7 +108,7 @@ func (dp *DeployablePair) ID() DeployID {
 }
 
 // ResolveNames resolves diffs.
-func (dc *DeployableChans) ResolveNames(r Registry, diff *DeployableChans, errs chan error) {
+func (d *DeployableChans) ResolveNames(r Registry, diff *DeployableChans, errs chan error) {
 	dc.WaitGroup = sync.WaitGroup{}
 	dc.Add(4)
 	go func() { resolveCreates(r, diff.Start, dc.Start, errs); dc.Done() }()

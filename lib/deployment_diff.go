@@ -12,6 +12,7 @@ type (
 	// DeploymentPairs is a list of DeploymentPair
 	DeploymentPairs []*DeploymentPair
 
+	// DeployablePairs is a list of DeployablePair
 	DeployablePairs []*DeployablePair
 
 	differ struct {
@@ -96,10 +97,10 @@ func newDiffer(intended Deployments) *differ {
 	}
 }
 
-func (deps Deployments) promote(all DeployStatus) DeployStates {
+func (d Deployments) promote(all DeployStatus) DeployStates {
 	rds := NewDeployStates()
-	for _, d := range deps.Snapshot() {
-		ds := &DeployState{Deployment: *d, Status: all}
+	for _, ad := range d.Snapshot() {
+		ds := &DeployState{Deployment: *ad, Status: all}
 		rds.Add(ds)
 	}
 	return rds

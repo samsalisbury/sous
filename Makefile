@@ -124,7 +124,7 @@ test-gofmt:
 	bin/check-gofmt
 
 test-unit:
-	go test $(TEST_VERBOSE) -timeout 30s ./...
+	go test $(TEST_VERBOSE) -timeout 2m ./...
 
 test-integration: test-setup
 	go test -c -tags integration ./integration
@@ -164,7 +164,7 @@ artifacts/$(LINUX_TARBALL): artifacts/$(LINUX_RELEASE_DIR)/sous
 artifacts/$(DARWIN_TARBALL): artifacts/$(DARWIN_RELEASE_DIR)/sous
 	cd artifacts && tar czv $(DARWIN_RELEASE_DIR) > $(DARWIN_TARBALL)
 
-staticcheck:
+staticcheck: install-staticcheck
 	staticcheck -ignore "$$(cat staticcheck.ignore)" $(SOUS_PACKAGES)
 
 .PHONY: clean coverage install-ggen legendary release semvertagchk test test-gofmt test-integration test-setup test-unit reject-wip wip staticcheck
