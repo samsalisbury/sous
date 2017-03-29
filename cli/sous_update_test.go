@@ -3,8 +3,10 @@ package cli
 import (
 	"testing"
 
+	"github.com/nyarly/testify/assert"
 	"github.com/opentable/sous/graph"
 	sous "github.com/opentable/sous/lib"
+	"github.com/samsalisbury/semv"
 )
 
 type getIDsTestCase struct {
@@ -133,6 +135,37 @@ func TestUpdateState(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestUpdateRetryLoop(t *testing.T) {
+	dsm := &sous.DummyStateManager{State: sous.NewState()}
+	/*
+		Source SourceLocation `validate:"nonzero"`
+		Flavor string `yaml:",omitempty"`
+		Owners []string
+		Kind ManifestKind `validate:"nonzero"`
+		Deployments DeploySpecs `validate:"keys=nonempty,values=nonzero"`
+	*/
+	depID := sous.DeployID{Cluster: "blah", ManifestID: sous.MustParseManifestID("github.com/user/project")}
+	sourceID := sous.MustNewSourceID("github.com/user/project", "", "1.2.3")
+	mani := &sous.Manifest{
+		Source: sourceID.Location,
+		Deployments: sous.DeploySpecs{
+			"blah": {Version: semv.MustParse("0.0.0")},
+		},
+	}
+	t.Log(mani.ID())
+	dsm.State.Manifests.Add(mani)
+	dsm.State.Defs.Clusters = sous.Clusters{"blah": {}}
+	user := sous.User{Name: "Judson the Unlucky", Email: "unlucky@opentable.com"}
+	deps, err := updateRetryLoop(dsm, sourceID, depID, user)
+
+	assert.NoError(t, err)
+	assert.Equal(t, 1, deps.Len())
+	dep, present := deps.Get(depID)
+	assert.True(t, present)
+	assert.Equal(t, "1.2.3", dep.SourceID.Version.String())
+	assert.True(t, dsm.ReadCount > 0, "No requests made against state manager")
 }
 
 type DummyStateManager struct{}

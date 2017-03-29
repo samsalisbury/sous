@@ -55,7 +55,7 @@ func (su *SousUpdate) Execute(args []string) cmdr.Result {
 		return EnsureErrorResult(err)
 	}
 
-	gdm, err := updateRetryLoop(su.StateManager.StateManager, sl, sid, did, su.User)
+	gdm, err := updateRetryLoop(su.StateManager.StateManager, sid, did, su.User)
 	if err != nil {
 		return EnsureErrorResult(err)
 	}
@@ -73,8 +73,10 @@ func (su *SousUpdate) Execute(args []string) cmdr.Result {
 // server-side. In this case, the disappointed `sous update` should retry, up
 // to the number of times of manifests there are defined for this
 // SourceLocation
-func updateRetryLoop(sm sous.StateManager, sl sous.ManifestID, sid sous.SourceID, did sous.DeployID, user sous.User) (sous.Deployments, error) {
+func updateRetryLoop(sm sous.StateManager, sid sous.SourceID, did sous.DeployID, user sous.User) (sous.Deployments, error) {
 	tryLimit := 2
+
+	sl := did.ManifestID
 
 	for tries := 0; tries < tryLimit; tries++ {
 		state, err := sm.ReadState()
@@ -83,7 +85,7 @@ func updateRetryLoop(sm sous.StateManager, sl sous.ManifestID, sid sous.SourceID
 		}
 		manifest, ok := state.Manifests.Get(sl)
 		if !ok {
-			return sous.NewDeployments(), cmdr.UsageErrorf("No manifest found for %q - try 'sous init' first.", did)
+			return sous.NewDeployments(), cmdr.UsageErrorf("No manifest found for %q - try 'sous init' first.", sl)
 		}
 
 		tryLimit = len(manifest.Deployments)
