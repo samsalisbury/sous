@@ -109,13 +109,13 @@ func (dp *DeployablePair) ID() DeployID {
 
 // ResolveNames resolves diffs.
 func (d *DeployableChans) ResolveNames(r Registry, diff *DeployableChans, errs chan error) {
-	dc.WaitGroup = sync.WaitGroup{}
-	dc.Add(4)
-	go func() { resolveCreates(r, diff.Start, dc.Start, errs); dc.Done() }()
-	go func() { maybeResolveDeletes(r, diff.Stop, dc.Stop, errs); dc.Done() }()
-	go func() { maybeResolveRetains(r, diff.Stable, dc.Stable, errs); dc.Done() }()
-	go func() { resolvePairs(r, diff.Update, dc.Update, errs); dc.Done() }()
-	go func() { dc.Wait(); close(errs) }()
+	d.WaitGroup = sync.WaitGroup{}
+	d.Add(4)
+	go func() { resolveCreates(r, diff.Start, d.Start, errs); d.Done() }()
+	go func() { maybeResolveDeletes(r, diff.Stop, d.Stop, errs); d.Done() }()
+	go func() { maybeResolveRetains(r, diff.Stable, d.Stable, errs); d.Done() }()
+	go func() { resolvePairs(r, diff.Update, d.Update, errs); d.Done() }()
+	go func() { d.Wait(); close(errs) }()
 }
 
 func resolveCreates(r Registry, from chan *DeployablePair, to chan *DeployablePair, errs chan error) {
