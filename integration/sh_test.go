@@ -129,7 +129,6 @@ func buildShell(name string, t *testing.T) *shelltest.ShellTest {
 			}))
 
 	shell.WriteTo("raw_shell_output")
-	//shell.DebugPrefix("shell") //useful especially if test timeout interrupts
 
 	return shell
 }
@@ -308,6 +307,36 @@ func TestShellLevelIntegration(t *testing.T) {
 		defaultCheck(name, res, t)
 		if !res.Matches("sous-demo") {
 			t.Error("No sous-demo request running!")
+		}
+	})
+
+	update := config.Block("update project", `
+	cd
+	rm -rf sous-demo
+	git clone {{.GitRemoteBase}}/sous-demo
+	cd sous-demo
+	echo "0.0.24" > customstring
+	git commit -am "Updating version"
+	git tag -am 'Updated!' 0.0.24
+	git push --tags
+	sous build
+	sous deploy -cluster left
+	`, defaultCheck)
+
+	//check :=
+	update.Block("confirm update", `
+	cygnus -x 1 {{.EnvDesc.SingularityURL}} > {{.Workdir}}/updated_services.txt
+	cat {{.Workdir}}/updated_services.txt
+	URL=$(cat {{.Workdir}}/updated_services.txt| grep "sous-demo.*left" | awk '{ print $3 ":" $4 }' | tail -n 1)
+	echo $URL
+	curl "$URL"
+	`, func(name string, res shelltest.Result, t *testing.T) {
+		defaultCheck(name, res, t)
+		if !res.Matches("sous-demo") {
+			t.Error("No sous-demo request running!")
+		}
+		if !res.Matches("0.0.24") {
+			t.Error("Updates sous doesn't reflect intended version")
 		}
 	})
 
