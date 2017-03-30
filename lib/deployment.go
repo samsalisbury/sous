@@ -48,6 +48,7 @@ type (
 		RequestID string
 	}
 
+	// FIXME this should be a DeploymentID
 	// A DeployID identifies a deployment.
 	DeployID struct {
 		ManifestID ManifestID
