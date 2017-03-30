@@ -93,7 +93,7 @@ semvertagchk:
 	@echo "$(SOUS_VERSION)" | egrep ^[0-9]+\.[0-9]+\.[0-9]+
 
 sous-qa-setup: ./dev_support/sous_qa_setup/*.go ./util/test_with_docker/*.go
-	go build ./dev_support/sous_qa_setup
+	go build $(EXTRA_GO_FLAGS) ./dev_support/sous_qa_setup
 
 test: test-gofmt test-unit test-integration
 
@@ -124,11 +124,11 @@ test-gofmt:
 	bin/check-gofmt
 
 test-unit:
-	go test $(TEST_VERBOSE) -timeout 2m ./...
+	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -timeout 2m ./...
 
 test-integration: test-setup
-	go test -c -tags integration ./integration
-	SOUS_QA_DESC=$(QA_DESC) go test  $(TEST_VERBOSE) ./integration --tags=integration
+	go test $(EXTRA_GO_FLAGS) -c -tags integration ./integration
+	SOUS_QA_DESC=$(QA_DESC) go test $(EXTRA_GO_FLAGS)  $(TEST_VERBOSE) ./integration --tags=integration
 
 test-setup:  sous-qa-setup
 	./sous_qa_setup --compose-dir ./integration/test-registry/ --out-path=$(QA_DESC)
@@ -136,7 +136,7 @@ test-setup:  sous-qa-setup
 test-cli: test-setup linux-build
 	rm -rf integration/raw_shell_output/0*
 	@date
-	SOUS_QA_DESC=$(QA_DESC) go test $(TEST_VERBOSE) -timeout 20m ./integration --tags=commandline
+	SOUS_QA_DESC=$(QA_DESC) go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -timeout 20m ./integration --tags=commandline
 
 $(BIN_DIR):
 	mkdir -p $@
