@@ -3,6 +3,7 @@ package sous
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -47,7 +48,20 @@ type (
 
 	// Variances is a list of differences between two structs.
 	Variances []string
+
+	retryableError string
 )
+
+func (re retryableError) Error() string {
+	return string(re)
+}
+
+// Retryable is a predicate on error that returns true if the error indicates
+// that a subsequent attempt at e.g. an Update might succeed.
+func Retryable(err error) bool {
+	_, is := errors.Cause(err).(retryableError)
+	return is
+}
 
 // NewClient returns a new LiveHTTPClient for a particular serverURL.
 func NewClient(serverURL string) (*LiveHTTPClient, error) {
@@ -190,7 +204,7 @@ func (client *LiveHTTPClient) getBodyEtag(url string, user User, body Comparable
 
 	differences := rzBody.VariancesFrom(body)
 	if len(differences) > 0 {
-		return "", errors.Errorf("Remote and local versions of %s resource don't match: %#v", url, differences)
+		return "", errors.Wrap(retryableError(fmt.Sprintf("Remote and local versions of %s resource don't match: %#v", url, differences)), "")
 	}
 	return rz.Header.Get("Etag"), nil
 }
@@ -252,14 +266,20 @@ func (client *LiveHTTPClient) getBody(rz *http.Response, rzBody interface{}, err
 		err = dec.Decode(rzBody)
 	}
 
-	if rz.StatusCode < 200 || rz.StatusCode >= 300 {
-		b, e := ioutil.ReadAll(rz.Body)
-		if e != nil {
-			b = []byte{}
-		}
-		return errors.Errorf("%s: %#v", rz.Status, string(b))
+	b, e := ioutil.ReadAll(rz.Body)
+	if e != nil {
+		b = []byte{}
 	}
-	return errors.Wrapf(err, "processing response body")
+
+	switch {
+	default:
+		return errors.Wrapf(err, "processing response body")
+	case rz.StatusCode < 200 || rz.StatusCode >= 300:
+		return errors.Errorf("%s: %#v", rz.Status, string(b))
+	case rz.StatusCode == http.StatusConflict:
+		return errors.Wrap(retryableError(fmt.Sprintf("%s: %#v", rz.Status, string(b))), "getBody")
+	}
+
 }
 
 func logBody(dir, chName string, req *http.Request, b []byte, n int, err error) {

@@ -21,10 +21,12 @@ type (
 func (ph *StatusMiddleware) errorBody(status int, rq *http.Request, w io.Writer, data interface{}, err error, stack []byte) {
 	gatelatch := os.Getenv("GATELATCH")
 	if gatelatch == "" {
+		w.Write([]byte(fmt.Sprintf("%s\n", data)))
 		return
 	}
 
 	if header := rq.Header.Get("X-Gatelatch"); header != gatelatch {
+		w.Write([]byte(fmt.Sprintf("%s\n", data)))
 		ph.LogSet.Warn.Printf("Gatelatch header (%q) didn't match gatelatch env (%s)", gatelatch, header)
 		return
 	}

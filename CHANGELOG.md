@@ -8,6 +8,9 @@ with respect to its command line interface and HTTP interface.
 
 ## [Unreleased](//github.com/opentable/sous/compare/0.2.1...HEAD)
 
+### Added
+- Conflicting GDM updates now retry, up to the number of deployments in their manifest.
+
 ### Changed
 
 - Digested Docker image names no longer query the registry, which should reduce

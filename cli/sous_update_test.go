@@ -3,8 +3,10 @@ package cli
 import (
 	"testing"
 
+	"github.com/nyarly/testify/assert"
 	"github.com/opentable/sous/graph"
 	sous "github.com/opentable/sous/lib"
+	"github.com/samsalisbury/semv"
 )
 
 type getIDsTestCase struct {
@@ -65,19 +67,19 @@ func TestGetIDs(t *testing.T) {
 
 var updateStateTests = []struct {
 	State                *sous.State
-	GDM                  graph.CurrentGDM
+	GDM                  sous.Deployments
 	DID                  sous.DeployID
 	ExpectedErr          string
 	ExpectedNumManifests int
 }{
 	{
 		State:       sous.NewState(),
-		GDM:         graph.CurrentGDM{Deployments: sous.NewDeployments()},
+		GDM:         sous.NewDeployments(),
 		ExpectedErr: "invalid deploy ID (no cluster name)",
 	},
 	{
 		State: sous.NewState(),
-		GDM:   graph.CurrentGDM{Deployments: sous.NewDeployments()},
+		GDM:   sous.NewDeployments(),
 		DID: sous.DeployID{
 			Cluster:    "blah",
 			ManifestID: sous.MustParseManifestID("github.com/user/project"),
@@ -89,8 +91,9 @@ var updateStateTests = []struct {
 			Defs: sous.Defs{Clusters: sous.Clusters{
 				"blah": &sous.Cluster{Name: "blah"},
 			}},
+			Manifests: sous.NewManifests(),
 		},
-		GDM: graph.CurrentGDM{Deployments: sous.NewDeployments()},
+		GDM: sous.NewDeployments(),
 		DID: sous.DeployID{
 			Cluster:    "blah",
 			ManifestID: sous.MustParseManifestID("github.com/user/project"),
@@ -134,6 +137,37 @@ func TestUpdateState(t *testing.T) {
 	}
 }
 
+func TestUpdateRetryLoop(t *testing.T) {
+	dsm := &sous.DummyStateManager{State: sous.NewState()}
+	/*
+		Source SourceLocation `validate:"nonzero"`
+		Flavor string `yaml:",omitempty"`
+		Owners []string
+		Kind ManifestKind `validate:"nonzero"`
+		Deployments DeploySpecs `validate:"keys=nonempty,values=nonzero"`
+	*/
+	depID := sous.DeployID{Cluster: "blah", ManifestID: sous.MustParseManifestID("github.com/user/project")}
+	sourceID := sous.MustNewSourceID("github.com/user/project", "", "1.2.3")
+	mani := &sous.Manifest{
+		Source: sourceID.Location,
+		Deployments: sous.DeploySpecs{
+			"blah": {Version: semv.MustParse("0.0.0")},
+		},
+	}
+	t.Log(mani.ID())
+	dsm.State.Manifests.Add(mani)
+	dsm.State.Defs.Clusters = sous.Clusters{"blah": {}}
+	user := sous.User{Name: "Judson the Unlucky", Email: "unlucky@opentable.com"}
+	deps, err := updateRetryLoop(dsm, sourceID, depID, user)
+
+	assert.NoError(t, err)
+	assert.Equal(t, 1, deps.Len())
+	dep, present := deps.Get(depID)
+	assert.True(t, present)
+	assert.Equal(t, "1.2.3", dep.SourceID.Version.String())
+	assert.True(t, dsm.ReadCount > 0, "No requests made against state manager")
+}
+
 type DummyStateManager struct{}
 
 func (dsm *DummyStateManager) WriteState(s *sous.State, u sous.User) error { return nil }
@@ -143,9 +177,7 @@ func (dsm *DummyStateManager) ReadState() (*sous.State, error)             { ret
 func TestSousUpdate_Execute(t *testing.T) {
 	dsm := &DummyStateManager{}
 	su := SousUpdate{
-		StateReader:   graph.StateReader{StateReader: dsm},
-		StateWriter:   graph.StateWriter{StateWriter: dsm},
-		GDM:           graph.CurrentGDM{Deployments: sous.MakeDeployments(0)},
+		StateManager:  &graph.StateManager{dsm},
 		Manifest:      graph.TargetManifest{Manifest: &sous.Manifest{}},
 		ResolveFilter: &graph.RefinedResolveFilter{},
 	}

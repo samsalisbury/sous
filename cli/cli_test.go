@@ -65,10 +65,15 @@ func TestInvokeConfig(t *testing.T) {
 
 func TestInvokeUpdate(t *testing.T) {
 	assert := assert.New(t)
+	require := require.New(t)
 
 	exe := justCommand(t, []string{`sous`, `update`})
 	assert.NotNil(exe)
 	assert.Len(exe.Args, 0)
+	update, good := exe.Cmd.(*SousUpdate)
+	require.True(good)
+	assert.NotNil(update.StateManager)
+	assert.NotNil(update.StateManager.StateManager)
 }
 
 func TestInvokeDeploy(t *testing.T) {
