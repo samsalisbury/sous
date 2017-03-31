@@ -66,13 +66,11 @@ func (r *Resolver) reportStable(stable <-chan *DeployablePair, results chan<- Di
 // the actual set, compute the diffs and then issue the commands to rectify
 // those differences.
 func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveRecorder {
-	return NewResolveRecorder(func(recorder *ResolveRecorder) {
+	intended = intended.Filter(r.FilterDeployment)
+
+	return NewResolveRecorder(intended, func(recorder *ResolveRecorder) {
 		recorder.performGuaranteedPhase("filtering clusters", func() {
 			clusters = r.FilteredClusters(clusters)
-		})
-
-		recorder.performGuaranteedPhase("filtering intended deployments", func() {
-			intended = intended.Filter(r.FilterDeployment)
 		})
 
 		var actual DeployStates
@@ -99,11 +97,12 @@ func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveRecord
 		namer := NewDeployableChans(10)
 		var wg sync.WaitGroup
 		recorder.performGuaranteedPhase("resolving deployment artifacts", func() {
-			errs := make(chan error)
+			errs := make(chan *DiffResolution)
 			wg.Add(1)
 			go func() {
 				for err := range errs {
-					recorder.Log <- DiffResolution{Error: &ErrorWrapper{error: err}}
+					recorder.Log <- *err
+					//DiffResolution{Error: &ErrorWrapper{error: err}}
 				}
 				wg.Done()
 			}()

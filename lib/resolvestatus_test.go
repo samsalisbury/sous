@@ -71,7 +71,7 @@ func TestResolveRecorder(t *testing.T) {
 		block := make(chan struct{})
 
 		// Run all the phases in the test in order.
-		rs := NewResolveRecorder(func(rs *ResolveRecorder) {
+		rs := NewResolveRecorder(NewDeployments(), func(rs *ResolveRecorder) {
 			for phaseNum, phase := range test.Phases {
 				// Note 1: 1-indexed phase naming.
 				phaseName := fmt.Sprintf("test %d; phase %d", testNum+1, phaseNum+1)

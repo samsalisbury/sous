@@ -71,41 +71,29 @@ func TestSubPoller_ComputeState(t *testing.T) {
 		}
 	}
 
-	testCompute := func(version string, intent *Deployment, stable, current *DiffResolution, expected ResolveState) {
+	testCompute := func(version string, intent *Deployment, current *DiffResolution, expected ResolveState) {
 		sub := subPoller{
 			idFilter: &ResolveFilter{
 				Tag: version,
 			},
 		}
-		if actual := sub.computeState(intent, stable, current); expected != actual {
-			t.Errorf("sub.computeState(%v, %v, %v) -> %v != %v", intent, stable, current, actual, expected)
+		if actual := sub.computeState(intent, current); expected != actual {
+			t.Errorf("sub.computeState(%v, %v) -> %v != %v", intent, current, actual, expected)
 		}
 	}
 
-	testCompute("1.0", nil, nil, nil, ResolveNotStarted)
-	testCompute("1.0", deployment("0.9", DeployStatusAny), nil, nil, ResolveNotVersion)
-	testCompute("1.0", deployment("1.0", DeployStatusAny), nil, nil, ResolvePendingRequest)
+	testCompute("1.0", nil, nil, ResolveNotStarted)
+	testCompute("1.0", deployment("0.9", DeployStatusAny), nil, ResolveNotVersion)
+	testCompute("1.0", deployment("1.0", DeployStatusAny), nil, ResolvePendingRequest)
 
-	testCompute("1.0", deployment("1.0", DeployStatusAny), diffRez("update", nil), nil, ResolveInProgress) //known update , no outcome yet
-	testCompute("1.0", deployment("1.0", DeployStatusAny), nil, diffRez("update", nil), ResolveInProgress) //new update   , now in progress
-	testCompute("1.0", deployment("1.0", DeployStatusAny), diffRez("unchanged", nil), diffRez("update", nil), ResolveInProgress)
-	testCompute("1.0", deployment("1.0", DeployStatusAny), diffRez("create", rezErr), diffRez("update", nil), ResolveInProgress)
-	testCompute("1.0", deployment("1.0", DeployStatusAny), diffRez("create", permErr), diffRez("update", nil), ResolveInProgress)
+	testCompute("1.0", deployment("1.0", DeployStatusAny), diffRez("update", nil), ResolveInProgress) //known update , no outcome yet
 
-	testCompute("1.0", deployment("1.0", DeployStatusAny), diffRez("unchanged", rezErr), nil, ResolveErredRez)
-	testCompute("1.0", deployment("1.0", DeployStatusAny), nil, diffRez("unchanged", rezErr), ResolveErredRez)
-	testCompute("1.0", deployment("1.0", DeployStatusAny), diffRez("unchanged", nil), diffRez("unchanged", rezErr), ResolveErredRez)
-	testCompute("1.0", deployment("1.0", DeployStatusAny), diffRez("create", rezErr), diffRez("unchanged", rezErr), ResolveErredRez)
-	testCompute("1.0", deployment("1.0", DeployStatusAny), diffRez("unchanged", nil), diffRez("unchanged", permErr), ResolveFailed)
-	testCompute("1.0", deployment("1.0", DeployStatusAny), diffRez("create", rezErr), diffRez("unchanged", permErr), ResolveFailed)
+	testCompute("1.0", deployment("1.0", DeployStatusAny), diffRez("unchanged", rezErr), ResolveErredRez)
+	testCompute("1.0", deployment("1.0", DeployStatusAny), diffRez("unchanged", permErr), ResolveFailed)
 
-	testCompute("1.0", deployment("1.0", DeployStatusAny), diffRez("unchanged", nil), nil, ResolveComplete)
-	testCompute("1.0", deployment("1.0", DeployStatusAny), nil, diffRez("unchanged", nil), ResolveComplete)
-	testCompute("1.0", deployment("1.0", DeployStatusAny), diffRez("create", rezErr), diffRez("unchanged", nil), ResolveComplete)
-	testCompute("1.0", deployment("1.0", DeployStatusAny), diffRez("create", permErr), diffRez("unchanged", nil), ResolveComplete)
+	testCompute("1.0", deployment("1.0", DeployStatusAny), diffRez("unchanged", nil), ResolveComplete)
 
-	testCompute("1.0", deployment("1.0", DeployStatusPending), diffRez("unchanged", nil), diffRez("coming", nil), ResolveTasksStarting)
-	testCompute("1.0", deployment("1.0", DeployStatusPending), diffRez("coming", nil), nil, ResolveTasksStarting)
+	testCompute("1.0", deployment("1.0", DeployStatusPending), diffRez("coming", nil), ResolveTasksStarting)
 }
 
 func TestStatusPoller_updateState(t *testing.T) {

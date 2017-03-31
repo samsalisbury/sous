@@ -9,6 +9,8 @@ type (
 	ResolveStatus struct {
 		// Phase reports the current phase of resolution
 		Phase string
+		// Intended are the deployments that are the target of this resolution
+		Intended []*Deployment
 		// Log collects the resolution steps that have been performed
 		Log []DiffResolution
 		// Errs collects errors during resolution
@@ -57,14 +59,19 @@ const (
 
 // NewResolveRecorder creates a new ResolveRecorder and calls f with it as its
 // argument. It then returns that ResolveRecorder immediately.
-func NewResolveRecorder(f func(*ResolveRecorder)) *ResolveRecorder {
+func NewResolveRecorder(intended Deployments, f func(*ResolveRecorder)) *ResolveRecorder {
 	rr := &ResolveRecorder{
 		status: &ResolveStatus{
-			Log:  []DiffResolution{},
-			Errs: ResolveErrors{Causes: []ErrorWrapper{}},
+			Intended: []*Deployment{},
+			Log:      []DiffResolution{},
+			Errs:     ResolveErrors{Causes: []ErrorWrapper{}},
 		},
 		Log:      make(chan DiffResolution, 1e6),
 		finished: make(chan struct{}),
+	}
+
+	for _, dpl := range intended.Snapshot() {
+		rr.status.Intended = append(rr.status.Intended, dpl)
 	}
 
 	go func() {
