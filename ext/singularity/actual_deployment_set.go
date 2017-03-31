@@ -71,7 +71,8 @@ func (sc *deployer) RunningDeployments(reg sous.Registry, clusters sous.Clusters
 		//sing.Debug = true
 		sings[url] = struct{}{}
 		client := sc.buildSingClient(url)
-		go singPipeline(url, client, &depWait, &singWait, reqCh, errCh, clusters.Names())
+		// go singPipeline(reg, url, client, &depWait, &singWait, reqCh, errCh, clusters.Names())
+		go singPipeline(reg, url, client, &depWait, &singWait, reqCh, errCh, clusters)
 	}
 
 	go depPipeline(sc.Client, reg, clusters, MaxAssemblers, reqCh, depCh, errCh)
@@ -189,18 +190,20 @@ func logFDs(when string) {
 }
 
 func singPipeline(
+	reg sous.Registry,
 	url string,
 	client *singularity.Client,
 	dw, wg *sync.WaitGroup,
 	reqs chan SingReq,
 	errs chan error,
-	clusters []string,
+	//	clusters []string,
+	clusters sous.Clusters,
 ) {
 	Log.Vomit.Printf("Starting cluster at %s", url)
 	defer func() { Log.Vomit.Printf("Completed cluster at %s", url) }()
 	defer wg.Done()
 	defer catchAndSend(fmt.Sprintf("get requests: %s", url), errs)
-	rs, err := getRequestsFromSingularity(url, client, clusters)
+	rs, err := getRequestsFromSingularity(reg, url, client, clusters)
 	if err != nil {
 		Log.Vomit.Print(err) //XXX connection reset by peer should be retried
 		errs <- errors.Wrap(err, "getting request list")
@@ -213,7 +216,7 @@ func singPipeline(
 	}
 }
 
-func getRequestsFromSingularity(url string, client *singularity.Client, clusters []string) ([]SingReq, error) {
+func getRequestsFromSingularity(reg sous.Registry, url string, client *singularity.Client, clusters sous.Clusters) ([]SingReq, error) {
 	logFDs("before getRequestsFromSingularity")
 	defer logFDs("after getRequestsFromSingularity")
 	singRequests, err := client.GetRequests()
@@ -226,12 +229,23 @@ eachrequest:
 	for _, sr := range singRequests {
 		// Parse requests, filter out malformed ones and those that do not
 		// belong to one of the specified clusters.
-		deployID, err := ParseRequestID(sr.Request.Id)
+		// deployID, err := ParseRequestID(sr.Request.Id)
+		// if err != nil {
+		//	Log.Vomit.Printf("Ignoring Singularity Request %q: %s", sr.Request.Id, err)
+		//	continue
+		// }
+		deployment, err := BuildDeployment(reg, clusters, SingReq{url, client, sr})
 		if err != nil {
-			Log.Vomit.Printf("Ignoring Singularity Request %q: %s", sr.Request.Id, err)
-			continue
+			return []SingReq{}, err
 		}
-		for _, c := range clusters {
+
+		deployID := sous.DeployID{
+			ManifestID: deployment.ManifestID(),
+			Cluster:    deployment.ClusterName,
+		}
+		fmt.Printf("LARS DEPLOYID %#v\n", deployID)
+
+		for _, c := range clusters.Names() {
 			if deployID.Cluster == c {
 				reqs = append(reqs, SingReq{url, client, sr})
 				continue eachrequest
