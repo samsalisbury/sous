@@ -66,6 +66,7 @@ type (
 	Metadata struct {
 		Registry      string
 		Labels        map[string]string
+		Env           map[string]string
 		Etag          string
 		CanonicalName string
 		AllNames      []string
