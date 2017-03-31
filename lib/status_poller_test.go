@@ -71,41 +71,29 @@ func TestSubPoller_ComputeState(t *testing.T) {
 		}
 	}
 
-	testCompute := func(version string, intent *Deployment, stable, current *DiffResolution, expected ResolveState) {
+	testCompute := func(version string, intent *Deployment, current *DiffResolution, expected ResolveState) {
 		sub := subPoller{
 			idFilter: &ResolveFilter{
 				Tag: version,
 			},
 		}
-		if actual := sub.computeState(intent, stable, current); expected != actual {
-			t.Errorf("sub.computeState(%v, %v, %v) -> %v != %v", intent, stable, current, actual, expected)
+		if actual := sub.computeState(intent, current); expected != actual {
+			t.Errorf("sub.computeState(%v, %v) -> %v != %v", intent, current, actual, expected)
 		}
 	}
 
-	testCompute("1.0", nil, nil, nil, ResolveNotStarted)
-	testCompute("1.0", deployment("0.9", DeployStatusAny), nil, nil, ResolveNotVersion)
-	testCompute("1.0", deployment("1.0", DeployStatusAny), nil, nil, ResolvePendingRequest)
+	testCompute("1.0", nil, nil, ResolveNotStarted)
+	testCompute("1.0", deployment("0.9", DeployStatusAny), nil, ResolveNotVersion)
+	testCompute("1.0", deployment("1.0", DeployStatusAny), nil, ResolvePendingRequest)
 
-	testCompute("1.0", deployment("1.0", DeployStatusAny), diffRez("update", nil), nil, ResolveInProgress) //known update , no outcome yet
-	testCompute("1.0", deployment("1.0", DeployStatusAny), nil, diffRez("update", nil), ResolveInProgress) //new update   , now in progress
-	testCompute("1.0", deployment("1.0", DeployStatusAny), diffRez("unchanged", nil), diffRez("update", nil), ResolveInProgress)
-	testCompute("1.0", deployment("1.0", DeployStatusAny), diffRez("create", rezErr), diffRez("update", nil), ResolveInProgress)
-	testCompute("1.0", deployment("1.0", DeployStatusAny), diffRez("create", permErr), diffRez("update", nil), ResolveInProgress)
+	testCompute("1.0", deployment("1.0", DeployStatusAny), diffRez("update", nil), ResolveInProgress) //known update , no outcome yet
 
-	testCompute("1.0", deployment("1.0", DeployStatusAny), diffRez("unchanged", rezErr), nil, ResolveErredRez)
-	testCompute("1.0", deployment("1.0", DeployStatusAny), nil, diffRez("unchanged", rezErr), ResolveErredRez)
-	testCompute("1.0", deployment("1.0", DeployStatusAny), diffRez("unchanged", nil), diffRez("unchanged", rezErr), ResolveErredRez)
-	testCompute("1.0", deployment("1.0", DeployStatusAny), diffRez("create", rezErr), diffRez("unchanged", rezErr), ResolveErredRez)
-	testCompute("1.0", deployment("1.0", DeployStatusAny), diffRez("unchanged", nil), diffRez("unchanged", permErr), ResolveFailed)
-	testCompute("1.0", deployment("1.0", DeployStatusAny), diffRez("create", rezErr), diffRez("unchanged", permErr), ResolveFailed)
+	testCompute("1.0", deployment("1.0", DeployStatusAny), diffRez("unchanged", rezErr), ResolveErredRez)
+	testCompute("1.0", deployment("1.0", DeployStatusAny), diffRez("unchanged", permErr), ResolveFailed)
 
-	testCompute("1.0", deployment("1.0", DeployStatusAny), diffRez("unchanged", nil), nil, ResolveComplete)
-	testCompute("1.0", deployment("1.0", DeployStatusAny), nil, diffRez("unchanged", nil), ResolveComplete)
-	testCompute("1.0", deployment("1.0", DeployStatusAny), diffRez("create", rezErr), diffRez("unchanged", nil), ResolveComplete)
-	testCompute("1.0", deployment("1.0", DeployStatusAny), diffRez("create", permErr), diffRez("unchanged", nil), ResolveComplete)
+	testCompute("1.0", deployment("1.0", DeployStatusAny), diffRez("unchanged", nil), ResolveComplete)
 
-	testCompute("1.0", deployment("1.0", DeployStatusPending), diffRez("unchanged", nil), diffRez("coming", nil), ResolveTasksStarting)
-	testCompute("1.0", deployment("1.0", DeployStatusPending), diffRez("coming", nil), nil, ResolveTasksStarting)
+	testCompute("1.0", deployment("1.0", DeployStatusPending), diffRez("coming", nil), ResolveTasksStarting)
 }
 
 func TestStatusPoller_updateState(t *testing.T) {
@@ -147,6 +135,110 @@ func TestStatusPoller_updateState(t *testing.T) {
 }
 
 func TestStatusPoller(t *testing.T) {
+	serversRE := regexp.MustCompile(`/servers$`)
+	statusRE := regexp.MustCompile(`/status$`)
+	gdmRE := regexp.MustCompile(`/gdm$`)
+	var gdmJSON, serversJSON, statusJSON []byte
+
+	h := func(rw http.ResponseWriter, r *http.Request) {
+		url := r.URL.String()
+		if serversRE.MatchString(url) {
+			rw.Write(serversJSON)
+		} else if statusRE.MatchString(url) {
+			rw.Write(statusJSON)
+		} else if gdmRE.MatchString(url) {
+			rw.Write(gdmJSON)
+		} else {
+			t.Errorf("Bad request: %#v", r)
+			rw.WriteHeader(500)
+			rw.Write([]byte{})
+		}
+	}
+
+	mainSrv := httptest.NewServer(http.HandlerFunc(h))
+	otherSrv := httptest.NewServer(http.HandlerFunc(h))
+
+	repoName := "github.com/opentable/example"
+
+	serversJSON = []byte(`{
+		"servers": [
+			{"clustername": "main", "url":"` + mainSrv.URL + `"},
+			{"clustername": "other", "url":"` + otherSrv.URL + `"}
+		]
+	}`)
+	gdmJSON = []byte(`{
+		"deployments": [
+			{
+				"clustername": "other",
+				"sourceid": {
+					"location": "` + repoName + `",
+					"version": "1.0.1+1234"
+				}
+			},
+			{
+				"clustername": "main",
+				"sourceid": {
+					"location": "` + repoName + `",
+					"version": "1.0.1+1234"
+				}
+			}
+		]
+	}`)
+	statusJSON = []byte(`{
+		"deployments": [
+			{
+				"sourceid": {
+					"location": "` + repoName + `",
+					"version": "1.0.1+1234"
+				}
+			}
+		],
+		"completed": {
+			"intended": [ {
+				"sourceid": {
+					"location": "` + repoName + `",
+					"version": "1.0.1+1234"
+				}
+			} ],
+			"log":[ {
+					"manifestid": "` + repoName + `",
+					"desc": "unchanged"
+				} ]
+		},
+		"inprogress": {"log":[]}
+	}`)
+
+	rf := &ResolveFilter{
+		Repo: repoName,
+	}
+
+	cl, err := NewClient(mainSrv.URL)
+	if err != nil {
+		t.Fatalf("Error building HTTP client: %#v", err)
+	}
+	poller := NewStatusPoller(cl, rf, User{Name: "Test User"})
+
+	testCh := make(chan ResolveState)
+	go func() {
+		rState, err := poller.Wait(context.Background())
+		if err != nil {
+			t.Errorf("Error starting poller: %#v", err)
+		}
+		testCh <- rState
+	}()
+
+	timeout := 100 * time.Millisecond
+	select {
+	case <-time.After(timeout):
+		t.Errorf("Happy path polling took more than %s", timeout)
+	case rState := <-testCh:
+		if rState != ResolveComplete {
+			t.Errorf("Resolve state was %s not %s", rState, ResolveComplete)
+		}
+	}
+}
+
+func TestStatusPoller_OldServer2(t *testing.T) {
 	serversRE := regexp.MustCompile(`/servers$`)
 	statusRE := regexp.MustCompile(`/status$`)
 	gdmRE := regexp.MustCompile(`/gdm$`)
@@ -304,6 +396,12 @@ func TestStatusPoller_MesosFailed(t *testing.T) {
 			}
 		],
 		"completed": {
+			"intended": [ {
+					"sourceid": {
+						"location": "` + repoName + `",
+						"version": "1.0.1+1234"
+					}
+				} ],
 			"log":[ {
 					"manifestid": "` + repoName + `",
 					"desc": "unchanged",

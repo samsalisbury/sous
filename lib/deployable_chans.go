@@ -108,7 +108,7 @@ func (dp *DeployablePair) ID() DeployID {
 }
 
 // ResolveNames resolves diffs.
-func (d *DeployableChans) ResolveNames(r Registry, diff *DeployableChans, errs chan error) {
+func (d *DeployableChans) ResolveNames(r Registry, diff *DeployableChans, errs chan *DiffResolution) {
 	d.WaitGroup = sync.WaitGroup{}
 	d.Add(4)
 	go func() { resolveCreates(r, diff.Start, d.Start, errs); d.Done() }()
@@ -118,7 +118,7 @@ func (d *DeployableChans) ResolveNames(r Registry, diff *DeployableChans, errs c
 	go func() { d.Wait(); close(errs) }()
 }
 
-func resolveCreates(r Registry, from chan *DeployablePair, to chan *DeployablePair, errs chan error) {
+func resolveCreates(r Registry, from chan *DeployablePair, to chan *DeployablePair, errs chan *DiffResolution) {
 	for dp := range from {
 		dep := dp.Post
 		Log.Vomit.Printf("Deployment processed, needs artifact: %#v", dep)
@@ -143,7 +143,7 @@ func resolveCreates(r Registry, from chan *DeployablePair, to chan *DeployablePa
 
 // XXX now that everything is DeployablePairs, this can probably be simplified
 
-func maybeResolveRetains(r Registry, from chan *DeployablePair, to chan *DeployablePair, errs chan error) {
+func maybeResolveRetains(r Registry, from chan *DeployablePair, to chan *DeployablePair, errs chan *DiffResolution) {
 	for dp := range from {
 		da := maybeResolveSingle(r, dp.Post)
 		to <- &DeployablePair{name: dp.name, Prior: da, Post: da}
@@ -151,7 +151,7 @@ func maybeResolveRetains(r Registry, from chan *DeployablePair, to chan *Deploya
 	close(to)
 }
 
-func maybeResolveDeletes(r Registry, from chan *DeployablePair, to chan *DeployablePair, errs chan error) {
+func maybeResolveDeletes(r Registry, from chan *DeployablePair, to chan *DeployablePair, errs chan *DiffResolution) {
 	for dp := range from {
 		da := maybeResolveSingle(r, dp.Prior)
 		to <- &DeployablePair{name: dp.name, Prior: da, Post: nil}
@@ -168,7 +168,7 @@ func maybeResolveSingle(r Registry, dep *Deployable) *Deployable {
 	return da
 }
 
-func resolvePairs(r Registry, from chan *DeployablePair, to chan *DeployablePair, errs chan error) {
+func resolvePairs(r Registry, from chan *DeployablePair, to chan *DeployablePair, errs chan *DiffResolution) {
 	for depPair := range from {
 		Log.Vomit.Printf("Pair of deployments processed, needs artifact: %#v", depPair)
 		d, err := resolvePair(r, depPair)
@@ -188,15 +188,19 @@ func resolvePairs(r Registry, from chan *DeployablePair, to chan *DeployablePair
 	close(to)
 }
 
-func resolveName(r Registry, d *Deployable) (*Deployable, error) {
+func resolveName(r Registry, d *Deployable) (*Deployable, *DiffResolution) {
 	art, err := GuardImage(r, d.Deployment)
-	if err == nil {
-		d.BuildArtifact = art
+	if err != nil {
+		return d, &DiffResolution{
+			DeployID: d.ID(),
+			Error:    &ErrorWrapper{error: err},
+		}
 	}
-	return d, err
+	d.BuildArtifact = art
+	return d, nil
 }
 
-func resolvePair(r Registry, depPair *DeployablePair) (*DeployablePair, error) {
+func resolvePair(r Registry, depPair *DeployablePair) (*DeployablePair, *DiffResolution) {
 	prior, _ := resolveName(r, depPair.Prior)
 	post, err := resolveName(r, depPair.Post)
 

@@ -20,7 +20,6 @@ type (
 	subPoller struct {
 		HTTPClient
 		ClusterName, URL         string
-		Deployments              *Deployments
 		locationFilter, idFilter *ResolveFilter
 		User                     User
 		httpErrorCount           int
@@ -44,6 +43,10 @@ type (
 
 	// copied from server - avoiding coupling to server implemention
 	statusData struct {
+		// Deployments is deprecated - there's not a list of intended deployments
+		// on each resolve status
+		// We still parse it, in case we're talking to an old server.
+		// For 1.0 this field should go away.
 		Deployments           []*Deployment
 		Completed, InProgress *ResolveStatus
 	}
@@ -331,33 +334,40 @@ func (sub *subPoller) pollOnce() ResolveState {
 		return ResolveErredHTTP
 	}
 	sub.httpErrorCount = 0
-	deps := NewDeployments(data.Deployments...)
-	sub.Deployments = &deps
 
-	return sub.computeState(
-		// The serverIntent is the deployment in the GDM when the server started
-		// its current resolve sweep.  Note that this might be different from the
-		// /gdm query the parent poller collected if, for instance, the resolution
-		// started before the most recent update to the GDM.
-		sub.serverIntent(),
+	// This serves to maintain backwards compatibility.
+	// XXX One day, remove it.
+	if data.Completed != nil && len(data.Completed.Intended) == 0 {
+		data.Completed.Intended = data.Deployments
+	}
+	if data.InProgress != nil && len(data.InProgress.Intended) == 0 {
+		data.InProgress.Intended = data.Deployments
+	}
 
-		// The stable/current statuses are the complete status log collected in
-		// the most recent completed resolution, and the live status log being
-		// collected by a still-running resolution, if any. We filter the
-		// deployment we care about out of those logs.
-		data.stableFor(sub.locationFilter),
-		data.currentFor(sub.locationFilter),
-	)
+	currentState := sub.computeState(sub.stateFeatures("in-progress", data.InProgress))
+
+	if currentState == ResolveNotStarted ||
+		currentState == ResolveNotVersion ||
+		currentState == ResolvePendingRequest {
+		return sub.computeState(sub.stateFeatures("completed", data.Completed))
+	}
+
+	return currentState
+}
+
+func (sub *subPoller) stateFeatures(kind string, rezState *ResolveStatus) (*Deployment, *DiffResolution) {
+	current := diffResolutionFor(rezState, sub.locationFilter)
+	srvIntent := serverIntent(rezState, sub.locationFilter)
+	Log.Debug.Printf("%s reports %s intent to resolve [%v]", sub.URL, kind, srvIntent)
+	Log.Debug.Printf("%s reports %s rez: %v", sub.URL, kind, current)
+
+	return srvIntent, current
 }
 
 // computeState takes the servers intended deployment, and the stable and
 // current DiffResolutions and computes the state of resolution for the
 // deployment based on that data.
-func (sub *subPoller) computeState(srvIntent *Deployment, stable, current *DiffResolution) ResolveState {
-	Log.Debug.Printf("%s reports intent to resolve [%v]", sub.URL, srvIntent)
-	Log.Debug.Printf("%s reports stable rez: %v", sub.URL, stable)
-	Log.Debug.Printf("%s reports in-progress rez: %v", sub.URL, current)
-
+func (sub *subPoller) computeState(srvIntent *Deployment, current *DiffResolution) ResolveState {
 	// In there's no intent for the deployment in the current resolution, we
 	// haven't started on it yet. Remember that we've already determined that the
 	// most-recent GDM does have the deployment scheduled for this cluster, so it
@@ -373,13 +383,6 @@ func (sub *subPoller) computeState(srvIntent *Deployment, stable, current *DiffR
 	// times before that cycle starts.)
 	if !sub.idFilter.FilterDeployment(srvIntent) {
 		return ResolveNotVersion
-	}
-
-	// We prefer the "current" DiffResolution, but the cluster may not have
-	// gotten to it yet to put in its log. In that case, we'll consider the most
-	// recent stable log.
-	if current == nil {
-		current = stable
 	}
 
 	// If there's no DiffResolution yet for our Deployment, then we're still
@@ -434,15 +437,21 @@ func (sub *subPoller) computeState(srvIntent *Deployment, stable, current *DiffR
 	return ResolveInProgress
 }
 
-func (sub *subPoller) serverIntent() *Deployment {
-	Log.Vomit.Printf("Filtering %#v", sub.Deployments)
-	Log.Debug.Printf("Filtering with %q", sub.locationFilter)
-	dep, exactlyOne := sub.Deployments.Single(sub.locationFilter.FilterDeployment)
-	if !exactlyOne {
-		Log.Debug.Printf("With %s we didn't match exactly one deployment.", sub.locationFilter)
-		return nil
+func serverIntent(rstat *ResolveStatus, rf *ResolveFilter) *Deployment {
+	Log.Vomit.Printf("Filtering %#v", rstat.Intended)
+	Log.Debug.Printf("Filtering with %q", rf)
+	var dep *Deployment
+
+	for _, d := range rstat.Intended {
+		if rf.FilterDeployment(d) {
+			if dep != nil {
+				Log.Debug.Printf("With %s we didn't match exactly one deployment.", rf)
+				return nil
+			}
+			dep = d
+		}
 	}
-	Log.Vomit.Printf("Matching deployment: %#v", dep)
+
 	return dep
 }
 

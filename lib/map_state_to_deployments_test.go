@@ -347,7 +347,6 @@ func compareManifests(t *testing.T, expectedManifests, actualManifests Manifests
 		t.Fatalf("got %d manifests; want %d", actualLen, expectedLen)
 	}
 	for _, mid := range expectedManifests.Keys() {
-		t.Log(mid, "READING")
 		expected, ok := expectedManifests.Get(mid)
 		if !ok {
 			t.Errorf("missing expected manifest %q", mid)
@@ -369,8 +368,6 @@ func compareManifests(t *testing.T, expectedManifests, actualManifests Manifests
 			_, ok := actual.Deployments[clusterName]
 			if !ok {
 				t.Errorf("deployment %q missing", did)
-			} else {
-				t.Logf("GOT DEPLOYMENT %q", did)
 			}
 		}
 		// Check actual contains only the expected DeploySpecs.
@@ -381,7 +378,6 @@ func compareManifests(t *testing.T, expectedManifests, actualManifests Manifests
 				t.Errorf("extra deployment %q", did)
 			}
 		}
-		t.Log(mid, "OK")
 	}
 }
 

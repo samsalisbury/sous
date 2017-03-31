@@ -239,12 +239,12 @@ func (nc *NameCache) getImageName(sid sous.SourceID) (string, strpairs, error) {
 	if _, ok := errors.Cause(err).(NoImageNameFound); !ok {
 		// We got a probable database error, give up.
 		Log.Info.Printf("Cache error: %s", err)
-		return "", nil, errors.Wrap(err, "getting name from cache")
+		return "", nil, errors.Wrapf(err, "getting name from cache of %s", nc.DockerRegistryHost)
 	}
 	// The error was a NoImageNameFound.
 	if name, qualities, err = nc.getImageNameAfterHarvest(sid); err != nil {
 		// Failed even after a harvest, give up.
-		return "", nil, errors.Wrapf(err, "getting image from cache after harvest")
+		return "", nil, errors.Wrapf(err, "getting image from cache after harvest from %s", nc.DockerRegistryHost)
 	}
 	return name, qualities, nil
 }

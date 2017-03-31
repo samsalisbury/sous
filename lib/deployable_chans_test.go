@@ -14,7 +14,7 @@ type NameResolveTestSuite struct {
 	testCluster *Cluster
 	depChans    *DeployableChans
 	diffChans   *DeployableChans
-	errChan     chan error
+	errChan     chan *DiffResolution
 }
 
 func (nrs *NameResolveTestSuite) makeTestDep() *Deployable {
@@ -71,7 +71,7 @@ func (nrs *NameResolveTestSuite) SetupTest() {
 	nrs.depChans = NewDeployableChans(10)
 	dc := NewDeployableChans(10)
 	nrs.diffChans = dc
-	nrs.errChan = make(chan error, 10)
+	nrs.errChan = make(chan *DiffResolution, 10)
 }
 
 func (nrs *NameResolveTestSuite) TearDownTest() {
@@ -81,7 +81,7 @@ func (nrs *NameResolveTestSuite) TearDownTest() {
 func (nrs *NameResolveTestSuite) TestResolveNameGood() {
 	da, err := resolveName(nrs.reg, nrs.makeTestDep())
 	nrs.NotNil(da)
-	nrs.NoError(err)
+	nrs.Nil(err)
 }
 
 func (nrs *NameResolveTestSuite) TestResolveNameBad() {
@@ -89,7 +89,7 @@ func (nrs *NameResolveTestSuite) TestResolveNameBad() {
 
 	da, err := resolveName(nrs.reg, nrs.makeTestDep())
 	nrs.Nil(da.BuildArtifact)
-	nrs.Error(err)
+	nrs.Error(err.Error)
 }
 
 func (nrs *NameResolveTestSuite) TestResolveNameSkipped() {
@@ -98,7 +98,7 @@ func (nrs *NameResolveTestSuite) TestResolveNameSkipped() {
 
 	da, err := resolveName(nrs.reg, noInstances)
 	nrs.Nil(da.BuildArtifact)
-	nrs.NoError(err)
+	nrs.Nil(err)
 }
 
 func (nrs *NameResolveTestSuite) TestResolveNameStartChannel() {
@@ -144,7 +144,7 @@ func (nrs *NameResolveTestSuite) TestResolveNameStartChannelUnresolved() {
 	case <-nrs.depChans.Start:
 		nrs.Fail("Shouldn't process a starting deployment")
 	case err := <-nrs.errChan:
-		nrs.Error(err)
+		nrs.Error(err.Error)
 	case <-time.After(time.Second / 2):
 		nrs.Fail("Timeout waiting for depChans to resolve")
 	}

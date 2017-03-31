@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -33,8 +32,6 @@ type (
 )
 
 func newSousConfig(lsc LocalSousConfig) *config.Config {
-	log.Printf("%#v", lsc)
-	log.Printf("%#v %[1]p", lsc.Config)
 	return lsc.Config
 }
 
