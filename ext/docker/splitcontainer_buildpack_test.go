@@ -76,6 +76,10 @@ func TestSplitBuildpackDetect(t *testing.T) {
 	assertRejected(t, dr, err)
 
 	dr, err = testSBPDetect(t, "FROM docker.opentable.com/blub-builder:1.2.3",
+		map[string]docker_registry.Metadata{".*blub-builder.*": {}})
+	assertRejected(t, dr, err)
+
+	dr, err = testSBPDetect(t, "FROM docker.opentable.com/blub-builder:1.2.3",
 		map[string]docker_registry.Metadata{
 			".*blub-builder.*": {
 				Env: map[string]string{"SOUS_BUILD_MANIFEST": "/sous-manifest.json"}},
