@@ -6,20 +6,33 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
+## [0.4.1](//github.com/opentable/sous/compare/0.4.0...0.4.1)
+
+### Fixed
+- Status for updated deploys was being reported as if they were already stable.
+  The stable vs. live statuses reported by the server each now have their own
+  GDM snapshot so that this determination can be made properly.
+
 ## [0.4.0](//github.com/opentable/sous/compare/0.3.0...0.4.0)
-
-
-## [0.3.0](//github.com/opentable/sous/compare/0.2.1...0.3.0)
 
 ### Added
 - Conflicting GDM updates now retry, up to the number of deployments in their manifest.
 
 ### Changed
+- Failed deploys to Singularity are now retried until they succeed or the GDM
+  changes.
+
+## [0.3.0](//github.com/opentable/sous/compare/0.2.1...0.3.0)
+
+### Added
+- Extra metadata tagged onto the Singularity deploys.
+- `sous server` now treats its configured Docker registry as canonical, so
+  that, e.g. regional mirrors can be used to reduce deploy latency.
+
+### Changed
 
 - Digested Docker image names no longer query the registry, which should reduce
   our requests count there.
-- Failed deploys to Singularity are now retried until they succeed or the GDM
-  changes.
 
 ## [0.2.1](//github.com/opentable/sous/compare/0.2.0...0.2.1)
 
