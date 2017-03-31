@@ -45,7 +45,9 @@ type (
 	statusData struct {
 		// Deployments is deprecated - there's not a list of intended deployments
 		// on each resolve status
-		// Deployments           []*Deployment
+		// We still parse it, in case we're talking to an old server.
+		// For 1.0 this field should go away.
+		Deployments           []*Deployment
 		Completed, InProgress *ResolveStatus
 	}
 
@@ -332,6 +334,15 @@ func (sub *subPoller) pollOnce() ResolveState {
 		return ResolveErredHTTP
 	}
 	sub.httpErrorCount = 0
+
+	// This serves to maintain backwards compatibility.
+	// XXX One day, remove it.
+	if data.Completed != nil && len(data.Completed.Intended) == 0 {
+		data.Completed.Intended = data.Deployments
+	}
+	if data.InProgress != nil && len(data.InProgress.Intended) == 0 {
+		data.InProgress.Intended = data.Deployments
+	}
 
 	currentState := sub.computeState(sub.stateFeatures("in-progress", data.InProgress))
 

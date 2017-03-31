@@ -320,7 +320,7 @@ func TestShellLevelIntegration(t *testing.T) {
 	git tag -am 'Updated!' 0.0.24
 	git push --tags
 	sous build
-	sous deploy -cluster left
+	time sous deploy -d -v -cluster left
 	`, defaultCheck)
 
 	//check :=
@@ -329,13 +329,12 @@ func TestShellLevelIntegration(t *testing.T) {
 	cat {{.Workdir}}/updated_services.txt
 	URL=$(cat {{.Workdir}}/updated_services.txt| grep "sous-demo.*left" | awk '{ print $3 ":" $4 }' | tail -n 1)
 	echo $URL
-	curl "$URL"
 	`, func(name string, res shelltest.Result, t *testing.T) {
 		defaultCheck(name, res, t)
 		if !res.Matches("sous-demo") {
 			t.Error("No sous-demo request running!")
 		}
-		if !res.Matches("0.0.24") {
+		if !res.Matches("0_0_24") {
 			t.Error("Updates sous doesn't reflect intended version")
 		}
 	})

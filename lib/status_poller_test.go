@@ -194,6 +194,110 @@ func TestStatusPoller(t *testing.T) {
 			}
 		],
 		"completed": {
+			"intended": [ {
+				"sourceid": {
+					"location": "` + repoName + `",
+					"version": "1.0.1+1234"
+				}
+			} ],
+			"log":[ {
+					"manifestid": "` + repoName + `",
+					"desc": "unchanged"
+				} ]
+		},
+		"inprogress": {"log":[]}
+	}`)
+
+	rf := &ResolveFilter{
+		Repo: repoName,
+	}
+
+	cl, err := NewClient(mainSrv.URL)
+	if err != nil {
+		t.Fatalf("Error building HTTP client: %#v", err)
+	}
+	poller := NewStatusPoller(cl, rf, User{Name: "Test User"})
+
+	testCh := make(chan ResolveState)
+	go func() {
+		rState, err := poller.Wait(context.Background())
+		if err != nil {
+			t.Errorf("Error starting poller: %#v", err)
+		}
+		testCh <- rState
+	}()
+
+	timeout := 100 * time.Millisecond
+	select {
+	case <-time.After(timeout):
+		t.Errorf("Happy path polling took more than %s", timeout)
+	case rState := <-testCh:
+		if rState != ResolveComplete {
+			t.Errorf("Resolve state was %s not %s", rState, ResolveComplete)
+		}
+	}
+}
+
+func TestStatusPoller_OldServer2(t *testing.T) {
+	serversRE := regexp.MustCompile(`/servers$`)
+	statusRE := regexp.MustCompile(`/status$`)
+	gdmRE := regexp.MustCompile(`/gdm$`)
+	var gdmJSON, serversJSON, statusJSON []byte
+
+	h := func(rw http.ResponseWriter, r *http.Request) {
+		url := r.URL.String()
+		if serversRE.MatchString(url) {
+			rw.Write(serversJSON)
+		} else if statusRE.MatchString(url) {
+			rw.Write(statusJSON)
+		} else if gdmRE.MatchString(url) {
+			rw.Write(gdmJSON)
+		} else {
+			t.Errorf("Bad request: %#v", r)
+			rw.WriteHeader(500)
+			rw.Write([]byte{})
+		}
+	}
+
+	mainSrv := httptest.NewServer(http.HandlerFunc(h))
+	otherSrv := httptest.NewServer(http.HandlerFunc(h))
+
+	repoName := "github.com/opentable/example"
+
+	serversJSON = []byte(`{
+		"servers": [
+			{"clustername": "main", "url":"` + mainSrv.URL + `"},
+			{"clustername": "other", "url":"` + otherSrv.URL + `"}
+		]
+	}`)
+	gdmJSON = []byte(`{
+		"deployments": [
+			{
+				"clustername": "other",
+				"sourceid": {
+					"location": "` + repoName + `",
+					"version": "1.0.1+1234"
+				}
+			},
+			{
+				"clustername": "main",
+				"sourceid": {
+					"location": "` + repoName + `",
+					"version": "1.0.1+1234"
+				}
+			}
+		]
+	}`)
+	statusJSON = []byte(`{
+		"deployments": [
+			{
+				"sourceid": {
+					"location": "` + repoName + `",
+					"version": "1.0.1+1234"
+				}
+			}
+		],
+		"completed": {
 			"log":[ {
 					"manifestid": "` + repoName + `",
 					"desc": "unchanged"
@@ -292,6 +396,12 @@ func TestStatusPoller_MesosFailed(t *testing.T) {
 			}
 		],
 		"completed": {
+			"intended": [ {
+					"sourceid": {
+						"location": "` + repoName + `",
+						"version": "1.0.1+1234"
+					}
+				} ],
 			"log":[ {
 					"manifestid": "` + repoName + `",
 					"desc": "unchanged",
