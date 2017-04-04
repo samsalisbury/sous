@@ -413,7 +413,13 @@ func newLocalGitRepo(c LocalGitClient) (v LocalGitRepo, err error) {
 
 func newSelector() sous.Selector {
 	return &sous.EchoSelector{
-		Factory: func(*sous.BuildContext) (sous.Buildpack, error) {
+		Factory: func(ctx *sous.BuildContext) (sous.Buildpack, error) {
+			sbp := docker.NewSplitBuildpack(registry)
+			dr := sbp.Detect(ctx)
+			if dr.Compatible {
+				return sbp
+			}
+
 			return docker.NewDockerfileBuildpack(), nil
 		},
 	}
