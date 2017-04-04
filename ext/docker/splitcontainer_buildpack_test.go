@@ -65,12 +65,35 @@ func assertRejected(t *testing.T, drez *sous.DetectResult, err error) {
 	}
 }
 
+func assertArgs(t *testing.T, drez *sous.DetectResult, version, revision bool) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Error(r)
+		}
+	}()
+	if drez.Data.(detectData).HasAppRevisionArg != revision {
+		t.Errorf("Expected detected revision arg: %t, was: %t", revision, drez.Data.(detectData).HasAppRevisionArg)
+	}
+	if drez.Data.(detectData).HasAppVersionArg != version {
+		t.Errorf("Expected detected version arg: %t, was: %t", version, drez.Data.(detectData).HasAppVersionArg)
+	}
+}
+
 func TestSplitBuildpackDetect(t *testing.T) {
 	dr, err := testSBPDetect(t, "", nil)
 	assertRejected(t, dr, err)
 
 	dr, err = testSBPDetect(t, "ENV SOUS_BUILD_MANIFEST=/sous-manifest.json", nil)
 	assertAccepted(t, dr, err)
+	assertArgs(t, dr, false, false)
+
+	dr, err = testSBPDetect(t, `
+	ENV SOUS_BUILD_MANIFEST=/sous-manifest.json
+	ARG APP_VERSION
+	ARG APP_REVISION
+	`, nil)
+	assertAccepted(t, dr, err)
+	assertArgs(t, dr, true, true)
 
 	dr, err = testSBPDetect(t, "FROM docker.opentable.com/blub-builder:1.2.3", nil)
 	assertRejected(t, dr, err)
@@ -85,4 +108,21 @@ func TestSplitBuildpackDetect(t *testing.T) {
 				Env: map[string]string{"SOUS_BUILD_MANIFEST": "/sous-manifest.json"}},
 		})
 	assertAccepted(t, dr, err)
+	assertArgs(t, dr, false, false)
+
+	dr, err = testSBPDetect(t, `
+	FROM docker.opentable.com/blub-builder:1.2.3
+	ARG APP_VERSION
+	ARG APP_REVISION
+	`,
+		map[string]docker_registry.Metadata{
+			".*blub-builder.*": {
+				Env: map[string]string{"SOUS_BUILD_MANIFEST": "/sous-manifest.json"}},
+		})
+	assertAccepted(t, dr, err)
+	assertArgs(t, dr, true, true)
+
+	// n.b. Docker does not record ARG lines in containers, so there's no way for
+	// the build container to expose APP_VERSION or APP_REVISION
+	// Perhaps we should consider ENVs for those?
 }
