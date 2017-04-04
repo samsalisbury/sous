@@ -336,7 +336,7 @@ func TestModificationOfFailed(t *testing.T) {
 	assert.Equal(t, rez.Desc, sous.ModifyDiff)
 	assert.Error(t, rez.Error)
 	assert.False(t, sous.IsTransientResolveError(rez.Error))
-	assert.Len(t, drc.Deployed, 0)
+	assert.Len(t, drc.Deployed, 1)
 	assert.Len(t, drc.Created, 0)
 	assert.Len(t, drc.Deleted, 0)
 
