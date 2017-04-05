@@ -6,11 +6,6 @@ import (
 	"os"
 )
 
-var (
-	CustomString      = "the Sous Demo App"
-	Version, Revision string
-)
-
 func main() {
 	log.SetFlags(log.Flags() | log.Lshortfile | log.Ltime)
 	log.Print("Booting...")

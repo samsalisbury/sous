@@ -27,6 +27,7 @@ type (
 	}
 )
 
+// SOUS_BUILD_MANIFEST is the env name that build containers must declare with the path to their manifest file.
 const SOUS_BUILD_MANIFEST = "SOUS_BUILD_MANIFEST"
 
 // NewSplitBuildpack returns a new SplitBuildpack
