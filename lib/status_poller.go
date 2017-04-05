@@ -438,8 +438,11 @@ func (sub *subPoller) computeState(srvIntent *Deployment, current *DiffResolutio
 }
 
 func serverIntent(rstat *ResolveStatus, rf *ResolveFilter) *Deployment {
-	Log.Vomit.Printf("Filtering %#v", rstat.Intended)
 	Log.Debug.Printf("Filtering with %q", rf)
+	if rstat.Intended == nil {
+		return nil
+	}
+	Log.Vomit.Printf("Filtering %#v", rstat.Intended)
 	var dep *Deployment
 
 	for _, d := range rstat.Intended {
