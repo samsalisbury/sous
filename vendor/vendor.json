@@ -120,6 +120,18 @@
 			"revisionTime": "2016-05-11T23:30:28Z"
 		},
 		{
+			"checksumSHA1": "4/Zm2a00DOFQfN3JF2AvByopoxg=",
+			"path": "github.com/docker/docker/builder/dockerfile/command",
+			"revision": "9f9cc221bdb0a919d6ed28bdfaffa9ae2fe3a5fd",
+			"revisionTime": "2017-03-31T15:34:32Z"
+		},
+		{
+			"checksumSHA1": "CeUcb1Ya0Wgm1t3wST63Bi7a8pM=",
+			"path": "github.com/docker/docker/builder/dockerfile/parser",
+			"revision": "9f9cc221bdb0a919d6ed28bdfaffa9ae2fe3a5fd",
+			"revisionTime": "2017-03-31T15:34:32Z"
+		},
+		{
 			"checksumSHA1": "kwd8rShKDCxGTQA0qkxsE1NFJFo=",
 			"path": "github.com/docker/libtrust",
 			"revision": "c8d2b36d60a84f3fa7d5e5e355be64f0fbe0b481",
