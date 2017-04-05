@@ -1,0 +1,13 @@
+{
+  "container": {
+    "type": "Docker",
+    "from": "scratch"
+  },
+  "files": [
+    {
+      "source": { "dir": "/built"},
+      "dest":   { "dir": "/"}
+    }
+  ],
+  "exec": ["/sous-demo"]
+}
