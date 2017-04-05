@@ -100,6 +100,13 @@ func TestBuildDeployment_errors(t *testing.T) {
 	_, err = BuildDeployment(fakeReg, testClusters, req)
 	assert.Error(t, err)
 
+	fakeSing.cannedAnswer.Deploy.Metadata = map[string]string{
+		"com.opentable.sous.clustername": "left",
+	}
+
+	_, err = BuildDeployment(fakeReg, testClusters, req)
+	assert.Error(t, err)
+
 	fakeSing.cannedAnswer.Deploy.Resources = &dtos.Resources{}
 	_, err = BuildDeployment(fakeReg, testClusters, req)
 	assert.Error(t, err)
@@ -141,6 +148,9 @@ func TestBuildDeployment(t *testing.T) {
 			},
 			DeployMarker: &dtos.SingularityDeployMarker{},
 			Deploy: &dtos.SingularityDeploy{
+				Metadata: map[string]string{
+					"com.opentable.sous.clustername": "left",
+				},
 				ContainerInfo: &dtos.SingularityContainerInfo{
 					Type:   "DOCKER",
 					Docker: &dtos.SingularityDockerInfo{Image: "image-name"},
@@ -209,6 +219,9 @@ func TestBuildDeployment_failed_deploy(t *testing.T) {
 			},
 			DeployMarker: &dtos.SingularityDeployMarker{},
 			Deploy: &dtos.SingularityDeploy{
+				Metadata: map[string]string{
+					"com.opentable.sous.clustername": "left",
+				},
 				ContainerInfo: &dtos.SingularityContainerInfo{
 					Type:   "DOCKER",
 					Docker: &dtos.SingularityDockerInfo{Image: "image-name"},

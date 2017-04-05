@@ -31,7 +31,31 @@ type (
 	malformedResponse struct {
 		message string
 	}
+
+	nonSousError struct {
+		error string
+	}
+
+	notThisClusterError struct {
+		error string
+	}
 )
+
+func (ntc notThisClusterError) Error() string {
+	return ntc.error
+}
+
+func (nsd nonSousError) Error() string {
+	return nsd.error
+}
+
+func ignorableDeploy(err error) bool {
+	switch errors.Cause(err).(type) {
+	case nonSousError, notThisClusterError:
+		return true
+	}
+	return false
+}
 
 func (mr malformedResponse) Error() string {
 	return mr.message
@@ -84,6 +108,7 @@ func (db *deploymentBuilder) completeConstruction() error {
 		db.determineDeployStatus,
 		db.retrieveDeploy,
 		db.extractDeployFromDeployHistory,
+		db.sousDeployCheck,
 		db.determineStatus,
 		db.extractArtifactName,
 		db.retrieveImageLabels,
@@ -202,6 +227,18 @@ func (db *deploymentBuilder) extractDeployFromDeployHistory() error {
 	}
 
 	return nil
+}
+
+func (db *deploymentBuilder) sousDeployCheck() error {
+	if cnl, ok := db.deploy.Metadata[sous.ClusterNameLabel]; ok {
+		for _, cn := range db.clusters.Names() {
+			if cnl == cn {
+				return nil
+			}
+		}
+		return notThisClusterError{}
+	}
+	return nonSousError{}
 }
 
 func (db *deploymentBuilder) determineStatus() error {
