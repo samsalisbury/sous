@@ -1,9 +1,12 @@
 package docker
 
 import (
+	"bytes"
+	"encoding/json"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	sous "github.com/opentable/sous/lib"
@@ -125,4 +128,70 @@ func TestSplitBuildpackDetect(t *testing.T) {
 	// n.b. Docker does not record ARG lines in containers, so there's no way for
 	// the build container to expose APP_VERSION or APP_REVISION
 	// Perhaps we should consider ENVs for those?
+}
+
+func TestSplitBuildpackBuildTemplating(t *testing.T) {
+	sb := &splitBuilder{
+		Manifest: &SplitBuildManifest{
+			Container: sbmContainer{From: "scratch"},
+			Files: []sbmInstall{
+				{Source: sbmFile{Dir: "src"}, Destination: sbmFile{Dir: "dest"}},
+			},
+			Exec: []string{"cat", "/etc/shadow"},
+		},
+		VersionConfig:  "APP_VERSION=1.2.3",
+		RevisionConfig: "APP_REVISION=cabbagedeadbeef",
+	}
+	buf := &bytes.Buffer{}
+
+	err := sb.templateDockerfileBytes(buf)
+	if err != nil {
+		t.Error(err)
+	}
+	dockerfile := buf.String()
+	hasString := func(needle string) {
+		if strings.Index(dockerfile, needle) == -1 {
+			t.Errorf("No %q in dockerfile.", needle)
+		}
+	}
+	hasString("FROM")
+	hasString("APP_VERSION")
+	hasString("COPY dest dest")
+}
+
+func TestSplitBuildpackBuildLoadManifest(t *testing.T) {
+	sb := &splitBuilder{}
+
+	mBuf := bytes.NewBufferString(`{
+  "container": {
+    "type": "Docker",
+    "from": "scratch"
+  },
+  "files": [
+    {
+      "source": { "dir": "/built"},
+      "dest":   { "dir": "/"}
+    }
+  ],
+  "exec": ["/sous-demo"]
+}`)
+
+	sb.Manifest = &SplitBuildManifest{}
+	dec := json.NewDecoder(mBuf)
+	dec.Decode(sb.Manifest)
+
+	if sb.Manifest.Container.From != "scratch" {
+		t.Error("Manifest didn't load Container.From")
+	}
+
+	if len(sb.Manifest.Files) != 1 {
+		t.Error("No files loaded")
+	} else {
+		if sb.Manifest.Files[0].Source.Dir != "/built" {
+			t.Error("Manifest didn't load Container.Files[0].Source")
+		}
+		if sb.Manifest.Files[0].Destination.Dir != "/" {
+			t.Error("Manifest didn't load Container.Files[0].Destination")
+		}
+	}
 }

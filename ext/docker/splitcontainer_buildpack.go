@@ -204,24 +204,26 @@ type splitBuilder struct {
 	Manifest         *SplitBuildManifest
 }
 
+// A SplitBuildManifest is the JSON structure that build containers must emit
+// in order that their associated deploy container can be assembled.
 type SplitBuildManifest struct {
-	Container SBMContainer `json: container`
-	Files     []SBMInstall `json: files`
-	Exec      []string     `json: exec`
+	Container sbmContainer `json:"container"`
+	Files     []sbmInstall `json:"files"`
+	Exec      []string     `json:"exec"`
 }
 
-type SBMContainer struct {
-	Type string `json: type`
-	From string `json: from`
+type sbmContainer struct {
+	Type string `json:"type"`
+	From string `json:"from"`
 }
 
-type SBMInstall struct {
-	Source      SBMFile `json: source`
-	Destination SBMFile `json: dest`
+type sbmInstall struct {
+	Source      sbmFile `json:"source"`
+	Destination sbmFile `json:"dest"`
 }
 
-type SBMFile struct {
-	Dir string `json: dir`
+type sbmFile struct {
+	Dir string `json: "dir"`
 }
 
 func (sb *splitBuilder) buildBuild() error {
@@ -311,21 +313,16 @@ func (sb *splitBuilder) extractFiles() error {
 	return nil
 }
 
-func (sb *splitBuilder) templateDockerfile() error {
-	dockerfile, err := os.Create(filepath.Join(sb.buildDir, "Dockerfile"))
-	if err != nil {
-		return err
-	}
-
+func (sb *splitBuilder) templateDockerfileBytes(dockerfile io.Writer) error {
 	tmpl, err := template.New("Dockerfile").Parse(`
 	FROM {{.Manifest.Container.From}}
-	{{range .Files }}
-	COPY {{.Manifest.Destination.Dir}} {{.Manifest.Destination.Dir}}
+	{{range .Manifest.Files }}
+	COPY {{.Destination.Dir}} {{.Destination.Dir}}
 	{{end}}
 	ENV {{.VersionConfig}} {{.RevisionConfig}}
 	CMD [
-	{{- range $n $part := .Manifest.Exec -}}
-	  {{if $n}}, "{{.}}"
+	{{- range $n, $part := .Manifest.Exec -}}
+	  {{if $n}}, {{- end -}}"{{.}}"
 	{{- end -}}
 	]
 	`)
@@ -334,6 +331,16 @@ func (sb *splitBuilder) templateDockerfile() error {
 	}
 
 	return tmpl.Execute(dockerfile, sb)
+}
+
+func (sb *splitBuilder) templateDockerfile() error {
+	dockerfile, err := os.Create(filepath.Join(sb.buildDir, "Dockerfile"))
+	if err != nil {
+		return err
+	}
+	defer dockerfile.Close()
+
+	return sb.templateDockerfileBytes(dockerfile)
 }
 
 func (sb *splitBuilder) buildRunnable() error {
