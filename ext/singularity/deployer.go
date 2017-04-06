@@ -193,10 +193,12 @@ func (r deployer) changesReq(pair *sous.DeployablePair) bool {
 }
 
 func changesDep(pair *sous.DeployablePair) bool {
-	return !(pair.Prior.SourceID.Equal(pair.Post.SourceID) &&
-		pair.Prior.Resources.Equal(pair.Post.Resources) &&
-		pair.Prior.Env.Equal(pair.Post.Env) &&
-		pair.Prior.DeployConfig.Volumes.Equal(pair.Post.DeployConfig.Volumes))
+	return pair.Post.Status == sous.DeployStatusFailed ||
+		pair.Prior.Status == sous.DeployStatusFailed ||
+		!(pair.Prior.SourceID.Equal(pair.Post.SourceID) &&
+			pair.Prior.Resources.Equal(pair.Post.Resources) &&
+			pair.Prior.Env.Equal(pair.Post.Env) &&
+			pair.Prior.DeployConfig.Volumes.Equal(pair.Post.DeployConfig.Volumes))
 }
 
 func computeRequestID(d *sous.Deployable) string {
