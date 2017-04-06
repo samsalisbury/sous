@@ -439,7 +439,8 @@ func (sub *subPoller) computeState(srvIntent *Deployment, current *DiffResolutio
 
 func serverIntent(rstat *ResolveStatus, rf *ResolveFilter) *Deployment {
 	Log.Debug.Printf("Filtering with %q", rf)
-	if rstat.Intended == nil {
+	if rstat == nil {
+		Log.Debug.Printf("Nil resolve status!")
 		return nil
 	}
 	Log.Vomit.Printf("Filtering %#v", rstat.Intended)
