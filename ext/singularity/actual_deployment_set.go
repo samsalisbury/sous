@@ -271,11 +271,6 @@ func depPipeline(
 func assembleDeployment(cl rectificationClient, reg sous.Registry, clusters sous.Clusters, req SingReq) (*sous.DeployState, error) {
 	Log.Vomit.Printf("Assembling from: %s %s", req.SourceURL, reqID(req.ReqParent))
 	tgt, err := BuildDeployment(reg, clusters, req)
-
-	if err != nil {
-		return nil, errors.Wrap(err, "Building deployment")
-	}
-
-	Log.Vomit.Printf("Collected deployment: %v", tgt)
-	return &tgt, nil
+	Log.Vomit.Printf("Collected deployment: %#v", tgt)
+	return &tgt, errors.Wrap(err, "Building deployment")
 }
