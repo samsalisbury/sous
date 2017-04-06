@@ -42,7 +42,7 @@ func (suite *integrationSuite) deploymentWithRepo(clusterNames []string, repo st
 	if suite.Nil(err) {
 		return deps, suite.findRepo(deps, repo)
 	}
-	return sous.DeployStates{}, none
+	return sous.NewDeployStates(), none
 }
 
 func (suite *integrationSuite) findRepo(deps sous.DeployStates, repo string) sous.DeployID {
