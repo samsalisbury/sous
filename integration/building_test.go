@@ -1,6 +1,7 @@
+// +build integration
+
 package integration
 
-// +build integration
 import (
 	"os/exec"
 	"strings"
