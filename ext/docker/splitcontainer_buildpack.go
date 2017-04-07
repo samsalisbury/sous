@@ -7,7 +7,6 @@ import (
 	"html/template"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -66,14 +65,12 @@ type splitDetector struct {
 func (sd *splitDetector) absorbDocker(ast *parser.Node) error {
 	// Parse for ENV SOUS_RUN_IMAGE_SPEC
 	// Parse for FROM
-	for n, node := range ast.Children {
+	for _, node := range ast.Children {
 		switch node.Value {
 		case "env":
 			sd.envs = append(sd.envs, node.Next)
-			log.Printf("%d %#v", n, node.Next)
 		case "from":
 			sd.froms = append(sd.froms, node.Next)
-			log.Printf("%d %#v", n, node.Next)
 		case "arg":
 			pair := strings.SplitN(node.Next.Value, "=", 2)
 			switch pair[0] {
