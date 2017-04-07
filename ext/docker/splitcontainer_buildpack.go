@@ -174,10 +174,11 @@ func (sbp *SplitBuildpack) Build(ctx *sous.BuildContext, drez *sous.DetectResult
 	*/
 	err := firsterr.Returned(
 		script.buildBuild,
-		script.createBuildContainer,
 		script.setupTempdir,
+		script.createBuildContainer,
 		script.extractRunSpec,
 		script.extractFiles,
+		script.teardownBuildContainer,
 		script.templateDockerfile,
 		script.buildRunnable,
 	)
@@ -260,16 +261,6 @@ func (sb *splitBuilder) buildBuild() error {
 	return nil
 }
 
-func (sb *splitBuilder) createBuildContainer() error {
-	output, err := sb.context.Sh.Stdout("docker", "create", sb.buildImageID)
-	if err != nil {
-		return err
-	}
-	sb.buildContainerID = strings.TrimSpace(output)
-
-	return nil
-}
-
 func (sb *splitBuilder) setupTempdir() error {
 	dir, err := ioutil.TempDir("", "sous-split-build")
 	if err != nil {
@@ -278,6 +269,16 @@ func (sb *splitBuilder) setupTempdir() error {
 	sb.tempDir = dir
 	sb.buildDir = filepath.Join(sb.tempDir, "build")
 	return os.MkdirAll(sb.buildDir, os.ModePerm)
+}
+
+func (sb *splitBuilder) createBuildContainer() error {
+	output, err := sb.context.Sh.Stdout("docker", "create", sb.buildImageID)
+	if err != nil {
+		return err
+	}
+	sb.buildContainerID = strings.TrimSpace(output)
+
+	return nil
 }
 
 func (sb *splitBuilder) extractRunSpec() error {
@@ -308,6 +309,14 @@ func (sb *splitBuilder) extractFiles() error {
 		}
 	}
 
+	return nil
+}
+
+func (sb *splitBuilder) teardownBuildContainer() error {
+	_, err := sb.context.Sh.Stdout("docker", "rm", sb.buildContainerID)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

@@ -23,16 +23,18 @@ func TestBuilding(t *testing.T) {
 	suite.Run(t, new(buildingTestSuite))
 }
 
-func (suite *buildingTestSuite) SetupTest() {
-	imagesBytes, err := exec.Command("docker", "images").Output()
+func (suite *buildingTestSuite) getImages() []string {
+	imagesBytes, err := exec.Command("docker", "images", "-q").Output()
 	suite.Require().NoError(err)
-	suite.imagesBefore = strings.Split(string(imagesBytes), "\n")
+	return strings.Split(string(imagesBytes), "\n")
 }
 
-func (suite *buildingTestSuite) TeardownTest() {
-	imagesBytes, err := exec.Command("docker", "images").Output()
-	suite.Require().NoError(err)
-	images := strings.Split(string(imagesBytes), "\n")
+func (suite *buildingTestSuite) SetupTest() {
+	suite.imagesBefore = suite.getImages()
+}
+
+func (suite *buildingTestSuite) TearDownTest() {
+	images := suite.getImages()
 
 	for _, img := range images {
 		kept := false
@@ -44,6 +46,7 @@ func (suite *buildingTestSuite) TeardownTest() {
 		}
 
 		if !kept {
+			suite.T().Logf("Removing image: %q", img)
 			exec.Command("docker", "rmi", img)
 		}
 	}
