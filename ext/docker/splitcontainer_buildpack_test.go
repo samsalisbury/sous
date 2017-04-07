@@ -86,12 +86,12 @@ func TestSplitBuildpackDetect(t *testing.T) {
 	dr, err := testSBPDetect(t, "", nil)
 	assertRejected(t, dr, err)
 
-	dr, err = testSBPDetect(t, "ENV SOUS_BUILD_MANIFEST=/sous-manifest.json", nil)
+	dr, err = testSBPDetect(t, "ENV SOUS_RUN_IMAGE_SPEC=/sous-manifest.json", nil)
 	assertAccepted(t, dr, err)
 	assertArgs(t, dr, false, false)
 
 	dr, err = testSBPDetect(t, `
-	ENV SOUS_BUILD_MANIFEST=/sous-manifest.json
+	ENV SOUS_RUN_IMAGE_SPEC=/sous-manifest.json
 	ARG APP_VERSION
 	ARG APP_REVISION
 	`, nil)
@@ -108,7 +108,7 @@ func TestSplitBuildpackDetect(t *testing.T) {
 	dr, err = testSBPDetect(t, "FROM docker.opentable.com/blub-builder:1.2.3",
 		map[string]docker_registry.Metadata{
 			".*blub-builder.*": {
-				Env: map[string]string{"SOUS_BUILD_MANIFEST": "/sous-manifest.json"}},
+				Env: map[string]string{"SOUS_RUN_IMAGE_SPEC": "/sous-manifest.json"}},
 		})
 	assertAccepted(t, dr, err)
 	assertArgs(t, dr, false, false)
@@ -120,7 +120,7 @@ func TestSplitBuildpackDetect(t *testing.T) {
 	`,
 		map[string]docker_registry.Metadata{
 			".*blub-builder.*": {
-				Env: map[string]string{"SOUS_BUILD_MANIFEST": "/sous-manifest.json"}},
+				Env: map[string]string{"SOUS_RUN_IMAGE_SPEC": "/sous-manifest.json"}},
 		})
 	assertAccepted(t, dr, err)
 	assertArgs(t, dr, true, true)
@@ -132,15 +132,15 @@ func TestSplitBuildpackDetect(t *testing.T) {
 
 func TestSplitBuildpackBuildTemplating(t *testing.T) {
 	sb := &splitBuilder{
-		Manifest: &SplitBuildManifest{
-			Container: sbmContainer{From: "scratch"},
+		RunSpec: &SplitImageRunSpec{
+			Image: sbmImage{From: "scratch"},
 			Files: []sbmInstall{
 				{Source: sbmFile{Dir: "src"}, Destination: sbmFile{Dir: "dest"}},
 			},
 			Exec: []string{"cat", "/etc/shadow"},
 		},
 		VersionConfig:  "APP_VERSION=1.2.3",
-		RevisionConfig: "APP_REVISION=cabbagedeadbeef",
+		RevisionConfig: "APP_REVISION=cabba9edeadbeef",
 	}
 	buf := &bytes.Buffer{}
 
@@ -154,16 +154,19 @@ func TestSplitBuildpackBuildTemplating(t *testing.T) {
 			t.Errorf("No %q in dockerfile.", needle)
 		}
 	}
-	hasString("FROM")
-	hasString("APP_VERSION")
+	t.Log(dockerfile)
+	hasString("FROM scratch")
+	hasString("ENV APP_VERSION=1.2.3 APP_REVISION=cabba9edeadbeef")
 	hasString("COPY dest dest")
+	hasString(`CMD ["cat","/etc/shadow"]`)
+	//hasString("LABEL com.opentable.sous.build-image=") //once we push the build image...
 }
 
 func TestSplitBuildpackBuildLoadManifest(t *testing.T) {
 	sb := &splitBuilder{}
 
 	mBuf := bytes.NewBufferString(`{
-  "container": {
+  "image": {
     "type": "Docker",
     "from": "scratch"
   },
@@ -176,22 +179,21 @@ func TestSplitBuildpackBuildLoadManifest(t *testing.T) {
   "exec": ["/sous-demo"]
 }`)
 
-	sb.Manifest = &SplitBuildManifest{}
+	sb.RunSpec = &SplitImageRunSpec{}
 	dec := json.NewDecoder(mBuf)
-	dec.Decode(sb.Manifest)
+	dec.Decode(sb.RunSpec)
 
-	if sb.Manifest.Container.From != "scratch" {
-		t.Error("Manifest didn't load Container.From")
+	if sb.RunSpec.Image.From != "scratch" {
+		t.Error("RunSpec didn't load Image.From")
 	}
 
-	if len(sb.Manifest.Files) != 1 {
-		t.Error("No files loaded")
-	} else {
-		if sb.Manifest.Files[0].Source.Dir != "/built" {
-			t.Error("Manifest didn't load Container.Files[0].Source")
-		}
-		if sb.Manifest.Files[0].Destination.Dir != "/" {
-			t.Error("Manifest didn't load Container.Files[0].Destination")
-		}
+	if len(sb.RunSpec.Files) != 1 {
+		t.Fatal("No files loaded")
+	}
+	if sb.RunSpec.Files[0].Source.Dir != "/built" {
+		t.Error("RunSpec didn't load Files[0].Source")
+	}
+	if sb.RunSpec.Files[0].Destination.Dir != "/" {
+		t.Error("RunSpec didn't load Files[0].Destination")
 	}
 }

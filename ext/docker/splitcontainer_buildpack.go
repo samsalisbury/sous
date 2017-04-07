@@ -27,8 +27,8 @@ type (
 	}
 )
 
-// SOUS_BUILD_MANIFEST is the env name that build containers must declare with the path to their manifest file.
-const SOUS_BUILD_MANIFEST = "SOUS_BUILD_MANIFEST"
+// SOUS_RUN_IMAGE_SPEC is the env name that build containers must declare with the path to their runspec file.
+const SOUS_RUN_IMAGE_SPEC = "SOUS_RUN_IMAGE_SPEC"
 
 // NewSplitBuildpack returns a new SplitBuildpack
 func NewSplitBuildpack(r docker_registry.Client) *SplitBuildpack {
@@ -56,7 +56,7 @@ func parseDockerfile(path string) (*parser.Node, error) {
 
 type splitDetector struct {
 	versionArg, revisionArg bool
-	manifestPath            string
+	runspecPath             string
 	registry                docker_registry.Client
 	rootAst                 *parser.Node
 	froms                   []*parser.Node
@@ -64,7 +64,7 @@ type splitDetector struct {
 }
 
 func (sd *splitDetector) absorbDocker(ast *parser.Node) error {
-	// Parse for ENV SOUS_BUILD_MANIFEST
+	// Parse for ENV SOUS_RUN_IMAGE_SPEC
 	// Parse for FROM
 	for n, node := range ast.Children {
 		switch node.Value {
@@ -91,15 +91,15 @@ func (sd *splitDetector) absorbDockerfile() error {
 	return sd.absorbDocker(sd.rootAst)
 }
 
-func (sd *splitDetector) fetchFromManifest() error {
+func (sd *splitDetector) fetchFromRunSpec() error {
 	for _, f := range sd.froms {
 		md, err := sd.registry.GetImageMetadata(f.Value, "")
 		if err != nil {
 			continue
 		}
 
-		if path, ok := md.Env[SOUS_BUILD_MANIFEST]; ok {
-			sd.manifestPath = path
+		if path, ok := md.Env[SOUS_RUN_IMAGE_SPEC]; ok {
+			sd.runspecPath = path
 		}
 
 		buf := bytes.NewBufferString(strings.Join(md.OnBuild, "\n"))
@@ -114,17 +114,17 @@ func (sd *splitDetector) fetchFromManifest() error {
 
 func (sd *splitDetector) processEnv() error {
 	for _, e := range sd.envs {
-		if e.Value == SOUS_BUILD_MANIFEST {
-			sd.manifestPath = e.Next.Value
+		if e.Value == SOUS_RUN_IMAGE_SPEC {
+			sd.runspecPath = e.Next.Value
 		}
 	}
 	return nil
 }
 
 func (sd *splitDetector) result() *sous.DetectResult {
-	if sd.manifestPath != "" {
+	if sd.runspecPath != "" {
 		return &sous.DetectResult{Compatible: true, Data: detectData{
-			ManifestPath:      sd.manifestPath,
+			RunImageSpecPath:  sd.runspecPath,
 			HasAppVersionArg:  sd.versionArg,
 			HasAppRevisionArg: sd.revisionArg,
 		}}
@@ -153,7 +153,7 @@ func (sbp *SplitBuildpack) Detect(ctx *sous.BuildContext) (*sous.DetectResult, e
 
 	err = firsterr.Returned(
 		detector.absorbDockerfile,
-		detector.fetchFromManifest,
+		detector.fetchFromRunSpec,
 		detector.processEnv,
 	)
 
@@ -169,9 +169,9 @@ func (sbp *SplitBuildpack) Build(ctx *sous.BuildContext, drez *sous.DetectResult
 	/*
 			docker build <args> <offset> #-> Successfully build (image id)
 			docker create <image id> #-> container id
-			docker cp <container id>:<SOUS_BUILD_MANIFEST> $TMPDIR/manifest.json
-			[parse manifest]
-			manifest file <- files @
+			docker cp <container id>:<SOUS_RUN_IMAGE_SPEC> $TMPDIR/runspec.json
+			[parse runspec]
+			runspec file <- files @
 			  docker cp <container id>:<file.sourcedir> $TMPDIR/<file.destdir>
 		  in $TMPDIR docker build - < {templated Dockerfile} #-> Successfully built (image id)
 	*/
@@ -179,7 +179,7 @@ func (sbp *SplitBuildpack) Build(ctx *sous.BuildContext, drez *sous.DetectResult
 		script.buildBuild,
 		script.createBuildContainer,
 		script.setupTempdir,
-		script.extractManifest,
+		script.extractRunSpec,
 		script.extractFiles,
 		script.templateDockerfile,
 		script.buildRunnable,
@@ -202,18 +202,18 @@ type splitBuilder struct {
 	deployImageID    string
 	tempDir          string
 	buildDir         string
-	Manifest         *SplitBuildManifest
+	RunSpec          *SplitImageRunSpec
 }
 
-// A SplitBuildManifest is the JSON structure that build containers must emit
+// A SplitImageRunSpec is the JSON structure that build containers must emit
 // in order that their associated deploy container can be assembled.
-type SplitBuildManifest struct {
-	Container sbmContainer `json:"container"`
-	Files     []sbmInstall `json:"files"`
-	Exec      []string     `json:"exec"`
+type SplitImageRunSpec struct {
+	Image sbmImage     `json:"image"`
+	Files []sbmInstall `json:"files"`
+	Exec  []string     `json:"exec"`
 }
 
-type sbmContainer struct {
+type sbmImage struct {
 	Type string `json:"type"`
 	From string `json:"from"`
 }
@@ -283,28 +283,28 @@ func (sb *splitBuilder) setupTempdir() error {
 	return os.MkdirAll(sb.buildDir, os.ModePerm)
 }
 
-func (sb *splitBuilder) extractManifest() error {
-	manifestPath := sb.detected.Data.(detectData).ManifestPath
-	destPath := filepath.Join(sb.tempDir, "manifest.json")
-	_, err := sb.context.Sh.Stdout("docker", "cp", fmt.Sprintf("%s:%s", sb.buildContainerID, manifestPath), destPath)
+func (sb *splitBuilder) extractRunSpec() error {
+	runspecPath := sb.detected.Data.(detectData).RunImageSpecPath
+	destPath := filepath.Join(sb.tempDir, "runspec.json")
+	_, err := sb.context.Sh.Stdout("docker", "cp", fmt.Sprintf("%s:%s", sb.buildContainerID, runspecPath), destPath)
 	if err != nil {
 		return err
 	}
 
-	manifestF, err := os.Open(destPath)
+	specF, err := os.Open(destPath)
 	if err != nil {
 		return err
 	}
 
-	sb.Manifest = &SplitBuildManifest{}
-	dec := json.NewDecoder(manifestF)
-	dec.Decode(sb.Manifest)
+	sb.RunSpec = &SplitImageRunSpec{}
+	dec := json.NewDecoder(specF)
+	dec.Decode(sb.RunSpec)
 
 	return err
 }
 
 func (sb *splitBuilder) extractFiles() error {
-	for _, inst := range sb.Manifest.Files {
+	for _, inst := range sb.RunSpec.Files {
 		_, err := sb.context.Sh.Stdout("docker", "cp", fmt.Sprintf("%s:%s", sb.buildContainerID, inst.Source.Dir), filepath.Join(sb.buildDir, inst.Destination.Dir))
 		if err != nil {
 			return err
@@ -316,13 +316,13 @@ func (sb *splitBuilder) extractFiles() error {
 
 func (sb *splitBuilder) templateDockerfileBytes(dockerfile io.Writer) error {
 	tmpl, err := template.New("Dockerfile").Parse(`
-	FROM {{.Manifest.Container.From}}
-	{{range .Manifest.Files }}
+	FROM {{.RunSpec.Image.From}}
+	{{range .RunSpec.Files }}
 	COPY {{.Destination.Dir}} {{.Destination.Dir}}
 	{{end}}
 	ENV {{.VersionConfig}} {{.RevisionConfig}}
 	CMD [
-	{{- range $n, $part := .Manifest.Exec -}}
+	{{- range $n, $part := .RunSpec.Exec -}}
 	  {{if $n}}, {{- end -}}"{{.}}"
 	{{- end -}}
 	]

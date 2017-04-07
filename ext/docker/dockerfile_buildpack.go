@@ -37,8 +37,8 @@ type detectData struct {
 	// appRevisionPattern.
 	HasAppRevisionArg bool
 
-	// ManifestPath is used by the split container buildpack
-	ManifestPath string
+	// RunImageSpecPath is used by the split container buildpack
+	RunImageSpecPath string
 }
 
 // NewDockerfileBuildpack creates a Dockerfile buildpack
