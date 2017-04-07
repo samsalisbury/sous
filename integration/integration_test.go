@@ -39,7 +39,7 @@ func (suite *integrationSuite) deploymentWithRepo(clusterNames []string, repo st
 		clusters[name] = &sous.Cluster{BaseURL: SingularityURL}
 	}
 	deps, err := suite.deployer.RunningDeployments(suite.nameCache, clusters)
-	if suite.Nil(err) {
+	if suite.NoError(err) {
 		return deps, suite.findRepo(deps, repo)
 	}
 	return sous.NewDeployStates(), none
@@ -95,7 +95,6 @@ func (suite *integrationSuite) newNameCache(name string) *docker.NameCache {
 }
 
 func (suite *integrationSuite) BeforeTest(suiteName, testName string) {
-	suite.T().Logf("Before %q %q", suiteName, testName)
 	ResetSingularity()
 
 	registerAndDeploy(ip, "test-cluster", "hello-labels", "github.com/docker-library/hello-world", "hello-labels", "latest", []int32{})
