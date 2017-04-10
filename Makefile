@@ -42,6 +42,7 @@ SOUS_CONTAINER_IMAGES:= "docker images | egrep '127.0.0.1:5000|testregistry_'"
 help:
 	@echo --- options:
 	@echo make clean
+	@echo "make clean-containers: Destroy and delete local Sous containers."
 	@echo make coverage
 	@echo make legendary
 	@echo "make release:  Both linux and darwin"
@@ -71,8 +72,6 @@ clean-container-certs:
 clean-running-containers:
 	-if (( $$(docker ps -q | wc -l) > 0 )); then echo 'found running containers'; docker ps -q | xargs docker kill; fi
 	-if (( $$(docker ps -aq | wc -l) > 0 )); then echo 'found container instances'; docker ps -aq | xargs docker rm; fi
-#	-docker rmi -f $$(docker images | egrep '127.0.0.1:5000|testregistry_' | awk '{ print $$3 }')
-#	-docker rmi -f $$(docker images | egrep '127.0.0.1:5000|testregistry_' | awk '{ print $$3 }')
 
 gitlog:
 	git log `git describe --abbrev=0`..HEAD
