@@ -1,3 +1,5 @@
+SHELL := /bin/bash
+
 SQLITE_URL := https://sqlite.org/2017/sqlite-autoconf-3160200.tar.gz
 GO_VERSION := 1.7.3
 
@@ -35,6 +37,7 @@ CONCAT_XGO_ARGS := -go $(GO_VERSION) -branch master -deps $(SQLITE_URL) --dest $
 COVER_DIR := /tmp/sous-cover
 TEST_VERBOSE := $(if $(VERBOSE),-v,)
 SOUS_PACKAGES:= $(shell go list -f '{{ range .Deps }}{{.}}{{printf "\n"}}{{end}}' | grep '^github.com/opentable' | grep -v 'vendor')
+SOUS_CONTAINER_IMAGES:= "docker images | egrep '127.0.0.1:5000|testregistry_' | awk '{ print $$3 }')"
 
 help:
 	@echo --- options:
@@ -56,13 +59,18 @@ clean:
 	git ls-files -z -o --exclude=.cleanprotect --exclude-per-directory=.cleanprotect | xargs -0 rm -rf
 	rm -f $(QA_DESC)
 
-clean-containers:
-	-docker ps -q | xargs docker kill
-	-docker ps -aq | xargs docker rm
-	-rm ./integration/test-registry/docker-registry/testing.crt
-	-docker rmi testregistry_registry
-	-docker rmi testregistry_gitserver
-	-docker rmi $$(docker images | egrep 'sous-(server|demo)' | awk '{ print $$3 }')
+clean-containers: clean-container-certs clean-running-containers clean-container-images
+
+clean-container-images:
+
+clean-container-certs:
+	-rm -f ./integration/test-registry/docker-registry/testing.crt
+
+clean-running-containers:
+	-if (( $$(docker ps -q | wc -l) > 0 )); then echo 'found running containers'; docker ps -q | xargs docker kill; fi
+	-if (( $$(docker ps -aq | wc -l) > 0 )); then echo 'found container instances'; docker ps -aq | xargs docker rm; fi
+#	-docker rmi -f $$(docker images | egrep '127.0.0.1:5000|testregistry_' | awk '{ print $$3 }')
+#	-docker rmi -f $$(docker images | egrep '127.0.0.1:5000|testregistry_' | awk '{ print $$3 }')
 
 gitlog:
 	git log `git describe --abbrev=0`..HEAD
