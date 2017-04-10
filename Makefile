@@ -42,10 +42,11 @@ SOUS_CONTAINER_IMAGES:= "docker images | egrep '127.0.0.1:5000|testregistry_'"
 help:
 	@echo --- options:
 	@echo make clean
-	@echo "make clean-containers: Destroy and delete local Sous containers."
+	@echo "make clean-containers: Destroy and delete local testing containers."
 	@echo make coverage
 	@echo make legendary
 	@echo "make release:  Both linux and darwin"
+	@echo "make setup-containers: pull and start containers for integration testing."
 	@echo "make test: all tests"
 	@echo "make test-unit: unit tests"
 	@echo "make test-gofmt: gofmt tests"
@@ -63,15 +64,14 @@ clean:
 clean-containers: clean-container-certs clean-running-containers clean-container-images
 
 clean-container-images:
-	#if (( $$(docker images | egrep '127.0.0.1:5000|testregistry_' | wc -l) > 0 )); then echo 'found docker images'; fi
-	if (( $$("$(SOUS_CONTAINER_IMAGES)" | wc -l) > 0 )); then echo 'found docker images'; "$(SOUS_CONTAINER_IMAGES)" | awk '{ print $$3 }' | xargs docker rmi -f; fi
+	@if (( $$("$(SOUS_CONTAINER_IMAGES)" | wc -l) > 0 )); then echo 'found docker images, deleting:'; "$(SOUS_CONTAINER_IMAGES)" | awk '{ print $$3 }' | xargs docker rmi -f; fi
 
 clean-container-certs:
 	-rm -f ./integration/test-registry/docker-registry/testing.crt
 
 clean-running-containers:
-	-if (( $$(docker ps -q | wc -l) > 0 )); then echo 'found running containers'; docker ps -q | xargs docker kill; fi
-	-if (( $$(docker ps -aq | wc -l) > 0 )); then echo 'found container instances'; docker ps -aq | xargs docker rm; fi
+	@if (( $$(docker ps -q | wc -l) > 0 )); then echo 'found running containers, killing:'; docker ps -q | xargs docker kill; fi
+	@if (( $$(docker ps -aq | wc -l) > 0 )); then echo 'found container instances, deleting:'; docker ps -aq | xargs docker rm; fi
 
 gitlog:
 	git log `git describe --abbrev=0`..HEAD
@@ -107,7 +107,6 @@ semvertagchk:
 sous-qa-setup: ./dev_support/sous_qa_setup/*.go ./util/test_with_docker/*.go
 	go build $(EXTRA_GO_FLAGS) ./dev_support/sous_qa_setup
 
-test: test-gofmt test-unit test-integration test-staticcheck
 
 reject-wip:
 	test ! -f workinprogress
@@ -126,6 +125,8 @@ coverage: $(COVER_DIR)
 legendary: coverage
 	legendary --hitlist .cadre/coverage.vim /tmp/sous-cover/*_merged.txt
 
+test: test-gofmt test-staticcheck test-unit test-integration 
+
 test-staticcheck: install-staticcheck
 	staticcheck -ignore "$$(cat staticcheck.ignore)" $(SOUS_PACKAGES)
 
@@ -135,15 +136,15 @@ test-gofmt:
 test-unit:
 	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -timeout 2m ./...
 
-test-integration: test-setup
+test-integration: setup-containers
 	SOUS_QA_DESC=$(QA_DESC) go test $(EXTRA_GO_FLAGS)  $(TEST_VERBOSE) ./integration --tags=integration
 
 $(QA_DESC): sous-qa-setup
 	./sous_qa_setup --compose-dir ./integration/test-registry/ --out-path=$(QA_DESC)
 
-test-setup:  $(QA_DESC)
+setup-containers:  $(QA_DESC)
 
-test-cli: test-setup linux-build
+test-cli: setup-containers linux-build
 	rm -rf integration/raw_shell_output/0*
 	@date
 	SOUS_QA_DESC=$(QA_DESC) go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -timeout 20m ./integration --tags=commandline
@@ -174,4 +175,4 @@ artifacts/$(LINUX_TARBALL): artifacts/$(LINUX_RELEASE_DIR)/sous
 artifacts/$(DARWIN_TARBALL): artifacts/$(DARWIN_RELEASE_DIR)/sous
 	cd artifacts && tar czv $(DARWIN_RELEASE_DIR) > $(DARWIN_TARBALL)
 
-.PHONY: clean coverage install-ggen legendary release semvertagchk test test-gofmt test-integration test-setup test-unit reject-wip wip staticcheck
+.PHONY: clean clean-containers clean-container-certs clean-running-containers clean-container-images coverage install-ggen legendary release semvertagchk test test-gofmt test-integration setup-containers test-unit reject-wip wip staticcheck
