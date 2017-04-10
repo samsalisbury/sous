@@ -42,16 +42,19 @@ help:
 	@echo make coverage
 	@echo make legendary
 	@echo "make release:  Both linux and darwin"
-	@echo "make test: unit and integration"
-	@echo "make test-unit"
+	@echo "make test: all tests"
+	@echo "make test-unit: unit tests"
+	@echo "make test-gofmt: gofmt tests"
+	@echo "make test-integration: integration tests"
+	@echo "make test-staticcheck: runs static code analysis against project packages."
 	@echo "make wip: puts a marker file into workspace to prevent Travis from passing the build."
-	@echo "make staticcheck: runs static code analysis against project packages."
 	@echo
 	@echo "Add VERBOSE=1 for tons of extra output."
 
 clean:
 	rm -rf $(COVER_DIR)
 	git ls-files -z -o --exclude=.cleanprotect --exclude-per-directory=.cleanprotect | xargs -0 rm -rf
+	rm -f $(QA_DESC)
 
 clean-containers:
 	-docker ps -q | xargs docker kill
@@ -95,7 +98,7 @@ semvertagchk:
 sous-qa-setup: ./dev_support/sous_qa_setup/*.go ./util/test_with_docker/*.go
 	go build $(EXTRA_GO_FLAGS) ./dev_support/sous_qa_setup
 
-test: test-gofmt test-unit test-integration
+test: test-gofmt test-unit test-integration test-staticcheck
 
 reject-wip:
 	test ! -f workinprogress
@@ -114,6 +117,9 @@ coverage: $(COVER_DIR)
 legendary: coverage
 	legendary --hitlist .cadre/coverage.vim /tmp/sous-cover/*_merged.txt
 
+test-staticcheck: install-staticcheck
+	staticcheck -ignore "$$(cat staticcheck.ignore)" $(SOUS_PACKAGES)
+
 test-gofmt:
 	bin/check-gofmt
 
@@ -121,11 +127,12 @@ test-unit:
 	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -timeout 2m ./...
 
 test-integration: test-setup
-	go test $(EXTRA_GO_FLAGS) -c -tags integration ./integration
 	SOUS_QA_DESC=$(QA_DESC) go test $(EXTRA_GO_FLAGS)  $(TEST_VERBOSE) ./integration --tags=integration
 
-test-setup:  sous-qa-setup
+$(QA_DESC): sous-qa-setup
 	./sous_qa_setup --compose-dir ./integration/test-registry/ --out-path=$(QA_DESC)
+
+test-setup:  $(QA_DESC)
 
 test-cli: test-setup linux-build
 	rm -rf integration/raw_shell_output/0*
@@ -157,8 +164,5 @@ artifacts/$(LINUX_TARBALL): artifacts/$(LINUX_RELEASE_DIR)/sous
 
 artifacts/$(DARWIN_TARBALL): artifacts/$(DARWIN_RELEASE_DIR)/sous
 	cd artifacts && tar czv $(DARWIN_RELEASE_DIR) > $(DARWIN_TARBALL)
-
-staticcheck: install-staticcheck
-	staticcheck -ignore "$$(cat staticcheck.ignore)" $(SOUS_PACKAGES)
 
 .PHONY: clean coverage install-ggen legendary release semvertagchk test test-gofmt test-integration test-setup test-unit reject-wip wip staticcheck
