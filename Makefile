@@ -37,7 +37,7 @@ CONCAT_XGO_ARGS := -go $(GO_VERSION) -branch master -deps $(SQLITE_URL) --dest $
 COVER_DIR := /tmp/sous-cover
 TEST_VERBOSE := $(if $(VERBOSE),-v,)
 SOUS_PACKAGES:= $(shell go list -f '{{ range .Deps }}{{.}}{{printf "\n"}}{{end}}' | grep '^github.com/opentable' | grep -v 'vendor')
-SOUS_CONTAINER_IMAGES:= "docker images | egrep '127.0.0.1:5000|testregistry_' | awk '{ print $$3 }')"
+SOUS_CONTAINER_IMAGES:= "docker images | egrep '127.0.0.1:5000|testregistry_'"
 
 help:
 	@echo --- options:
@@ -62,6 +62,8 @@ clean:
 clean-containers: clean-container-certs clean-running-containers clean-container-images
 
 clean-container-images:
+	#if (( $$(docker images | egrep '127.0.0.1:5000|testregistry_' | wc -l) > 0 )); then echo 'found docker images'; fi
+	if (( $$("$(SOUS_CONTAINER_IMAGES)" | wc -l) > 0 )); then echo 'found docker images'; "$(SOUS_CONTAINER_IMAGES)" | awk '{ print $$3 }' | xargs docker rmi -f; fi
 
 clean-container-certs:
 	-rm -f ./integration/test-registry/docker-registry/testing.crt
