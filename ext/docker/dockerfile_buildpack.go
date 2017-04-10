@@ -36,6 +36,9 @@ type detectData struct {
 	// HasAppRevisionArg is true if the Dockerfile contains a line matching
 	// appRevisionPattern.
 	HasAppRevisionArg bool
+
+	// RunImageSpecPath is used by the split container buildpack
+	RunImageSpecPath string
 }
 
 // NewDockerfileBuildpack creates a Dockerfile buildpack

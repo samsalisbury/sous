@@ -107,14 +107,8 @@ wip:
 
 coverage: $(COVER_DIR)
 	engulf -s --coverdir=$(COVER_DIR) \
-		--exclude '/vendor,\
-			integration/?,\
-		 	/bin/?,\
-			/dev_support/?,\
-			/util/test_with_docker/?,\
-			/examples/?,\
-			/util/cmdr/cmdr-example/?'\
-		--exclude-files='raw_client.go$$, _generated.go$$'\
+		--exclude '/vendor,integration/?,/bin/?,/dev_support/?,/util/test_with_docker/?,/examples/?,/util/cmdr/cmdr-example/?'\
+		--exclude-files='raw_client.go$$,_generated.go$$'\
 		--merge-base=_merged.txt ./...
 
 legendary: coverage
