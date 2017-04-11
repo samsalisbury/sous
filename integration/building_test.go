@@ -46,8 +46,13 @@ func (suite *buildingTestSuite) TearDownTest() {
 		}
 
 		if !kept {
-			suite.T().Logf("Removing image: %q", img)
-			exec.Command("docker", "rmi", img)
+			rmi := exec.Command("docker", "rmi", "-f", img)
+			out, err := rmi.Output()
+			if err != nil {
+				suite.T().Fatalf("Could not remove image %q: %q", img, out)
+			} else {
+				suite.T().Logf("Removed image: %q", img)
+			}
 		}
 	}
 }
