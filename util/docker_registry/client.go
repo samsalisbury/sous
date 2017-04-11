@@ -33,8 +33,10 @@ type (
 
 	// ContainerConfig captures the configuration of a docker container
 	ContainerConfig struct {
-		Labels map[string]string
-		Cmd    []string
+		Labels  map[string]string
+		Env     []string
+		OnBuild []string
+		Cmd     []string
 	}
 
 	// Client for v2 of the docker registry. Maintains state and accumulates
@@ -66,9 +68,11 @@ type (
 	Metadata struct {
 		Registry      string
 		Labels        map[string]string
+		Env           map[string]string
 		Etag          string
 		CanonicalName string
 		AllNames      []string
+		OnBuild       []string
 	}
 )
 
@@ -241,7 +245,9 @@ type stubConfig struct {
 }
 
 type stubImage struct {
-	Labels map[string]string
+	Labels  map[string]string
+	Env     []string
+	OnBuild []string
 }
 
 // LabelsForTaggedImage makes a query to a docker registry an returns a map of the labels on that image.
@@ -279,6 +285,7 @@ func (c *liveClient) metadataForImage(regHost string, ref reference.Named, etag 
 		Registry: regHost,
 		AllNames: make([]string, 2),
 		Labels:   make(map[string]string),
+		Env:      make(map[string]string),
 		Etag:     headers.Get("Etag"),
 	}
 	md.AllNames[0] = ref.String()
@@ -289,20 +296,32 @@ func (c *liveClient) metadataForImage(regHost string, ref reference.Named, etag 
 	switch mani := mani.(type) {
 	case *schema1.SignedManifest:
 		history := mani.History
+
+		// XXX It's unclear from the docker spec which order the labels appear in.
+		// It may be that this is the wrong order to merge labels in -
+		// and I have the dim recollection that the order may change between schema 1 vs. 2
+		var historyEntry V1Schema
 		for _, v1 := range history {
-			var historyEntry V1Schema
 			json.Unmarshal([]byte(v1.V1Compatibility), &historyEntry)
 			//	log.Print(historyEntry.ContainerConfig.Cmd)
 
 			histLabels := historyEntry.CC.Labels
-			// XXX It's unclear from the docker spec which order the labels appear in.
-			// It may be that this is the wrong order to merge labels in -
-			// and I have the dim recollection that the order may change between schema 1 vs. 2
+			histEnv := historyEntry.CC.Env
 
 			for k, v := range histLabels {
 				md.Labels[k] = v
 			}
+
+			for _, line := range histEnv {
+				pair := strings.SplitN(line, "=", 2)
+				k := pair[0]
+				v := pair[1]
+				md.Env[k] = v
+			}
 		}
+		md.OnBuild = make([]string, len(historyEntry.CC.OnBuild))
+		copy(md.OnBuild, historyEntry.CC.OnBuild)
+
 	case *schema2.DeserializedManifest:
 		var cj []byte
 		cj, err = rep.getBlob(c.ctx, ref, mani.Config.Digest)
@@ -318,6 +337,17 @@ func (c *liveClient) metadataForImage(regHost string, ref reference.Named, etag 
 		}
 
 		md.Labels = c.Config.Labels
+		md.Env = map[string]string{}
+		for _, line := range c.Config.Env {
+			pair := strings.SplitN(line, "=", 2)
+			k := pair[0]
+			v := pair[1]
+			md.Env[k] = v
+		}
+
+		md.OnBuild = make([]string, len(c.Config.OnBuild))
+		copy(md.OnBuild, c.Config.OnBuild)
+
 	default:
 		// We shouldn't receive this, because we shouldn't include the Accept
 		// header that would trigger it. To begin work on this (because...?) start

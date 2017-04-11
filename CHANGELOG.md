@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
+## [Unreleased](//github.com/opentable/sous/compare/0.4.1...HEAD)
+
+### Added
+* Split image build strategy: support for using a build image to produce artifacts to be run
+  in a separate deploy image.
+
 ## [0.4.1](//github.com/opentable/sous/compare/0.4.0...0.4.1)
 
 ### Fixed
