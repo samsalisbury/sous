@@ -68,7 +68,8 @@ func (b *Builder) Register(br *sous.BuildResult, bc *sous.BuildContext) error {
 	return b.recordName(br, bc)
 }
 
-// ApplyMetadata applies container metadata etc. to a container
+// ApplyMetadata implements sous.Labeller on Builder.
+// It applies container metadata etc. to a container.
 func (b *Builder) ApplyMetadata(br *sous.BuildResult, bc *sous.BuildContext) error {
 	br.VersionName = b.VersionTag(bc.Version())
 	br.RevisionName = b.RevisionTag(bc.Version())
