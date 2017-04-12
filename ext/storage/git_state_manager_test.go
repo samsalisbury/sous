@@ -194,6 +194,55 @@ func TestGitConflicts(t *testing.T) {
 
 	sameYAML(t, actual, expected)
 }
+func TestGitRemoteDelete(t *testing.T) {
+	assert := assert.New(t)
+	require := require.New(t)
+	gsm, remote := setupManagers(t)
+
+	actual, err := gsm.ReadState()
+	require.NoError(err)
+
+	expected := exampleState()
+
+	expected.Manifests.Add(&sous.Manifest{Source: sous.SourceLocation{Repo: "github.com/opentable/brandnew"}})
+	remote.WriteState(expected)
+
+	expected, err = remote.ReadState()
+	require.NoError(err)
+	runScript(t, `git add .
+	git commit -m ""`, `testdata/origin`)
+
+	actual, err = gsm.ReadState()
+	require.NoError(err)
+
+	runScript(t, `rm -rf manifests/github.com/opentable/brandnew.yaml
+	git commit -am ""`, `testdata/origin`)
+	require.NoError(err)
+
+	actual.Manifests.Add(&sous.Manifest{Source: sous.SourceLocation{Repo: "github.com/opentable/newhotness"}})
+	actualErr := gsm.WriteState(actual, testUser)
+	assert.NoError(actualErr)
+
+	expected, err = remote.ReadState()
+	require.NoError(err)
+
+	actual, err = gsm.ReadState()
+	require.NoError(err)
+
+	// Add the thing we wrote to actual to expected as well, since actual now
+	// contains the two sets of changes merged.
+	expected.Manifests.Add(&sous.Manifest{
+		Source: sous.SourceLocation{Repo: "github.com/opentable/newhotness"},
+		// Kind, Owners, Deployments have to be set to non-nil because
+		// when they are read, the flaws library replaces nils with non-nils
+		// for these fields.
+		Kind:        sous.ManifestKindService,
+		Owners:      []string{},
+		Deployments: sous.DeploySpecs{},
+	})
+
+	sameYAML(t, actual, expected)
+}
 
 func TestGitReadState_empty(t *testing.T) {
 	gsm := NewGitStateManager(NewDiskStateManager("testdata/nonexistent"))
