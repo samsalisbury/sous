@@ -89,7 +89,11 @@ func runScript(t *testing.T, script string, dir ...string) {
 	}
 }
 
-func setupManagers(t *testing.T) (*GitStateManager, *DiskStateManager) {
+// setupManagers creates a local clone of a remote at testdata/remote.
+// It returns a GitStateManager rooted in the clone, and a DiskStateManager
+// rooted in the remote.
+func setupManagers(t *testing.T) (clone *GitStateManager, remote *DiskStateManager) {
+	// Setup testdata/origin as the remote.
 	runScript(t, `rm -rf testdata/origin testdata/target
 	cp -a testdata/in testdata/origin`)
 	runScript(t, `git init
@@ -111,7 +115,7 @@ func setupManagers(t *testing.T) (*GitStateManager, *DiskStateManager) {
 
 func TestGitPulls(t *testing.T) {
 	require := require.New(t)
-	gsm, dsm := setupManagers(t)
+	gsm, remote := setupManagers(t)
 
 	actual, err := gsm.ReadState()
 	require.NoError(err)
@@ -120,8 +124,8 @@ func TestGitPulls(t *testing.T) {
 	sameYAML(t, actual, expected)
 
 	expected.Manifests.Add(&sous.Manifest{Source: sous.SourceLocation{Repo: "github.com/opentable/brandnew"}})
-	dsm.WriteState(expected)
-	expected, err = dsm.ReadState()
+	remote.WriteState(expected)
+	expected, err = remote.ReadState()
 	require.NoError(err)
 	runScript(t, `git add .
 	git commit -m ""`, `testdata/origin`)
@@ -133,7 +137,7 @@ func TestGitPulls(t *testing.T) {
 
 func TestGitPushes(t *testing.T) {
 	require := require.New(t)
-	gsm, dsm := setupManagers(t)
+	gsm, remote := setupManagers(t)
 
 	expected, err := gsm.ReadState()
 	require.NoError(err)
@@ -144,7 +148,7 @@ func TestGitPushes(t *testing.T) {
 	require.NoError(err)
 
 	runScript(t, `git reset --hard`, `testdata/origin`) //in order to reflect the change
-	actual, err := dsm.ReadState()
+	actual, err := remote.ReadState()
 	require.NoError(err)
 	sameYAML(t, actual, expected)
 }
@@ -152,7 +156,7 @@ func TestGitPushes(t *testing.T) {
 func TestGitConflicts(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
-	gsm, dsm := setupManagers(t)
+	gsm, remote := setupManagers(t)
 
 	actual, err := gsm.ReadState()
 	require.NoError(err)
@@ -160,16 +164,22 @@ func TestGitConflicts(t *testing.T) {
 	expected := exampleState()
 
 	expected.Manifests.Add(&sous.Manifest{Source: sous.SourceLocation{Repo: "github.com/opentable/brandnew"}})
-	dsm.WriteState(expected)
-	expected, err = dsm.ReadState()
+	remote.WriteState(expected)
+
+	expected, err = remote.ReadState()
 	require.NoError(err)
 	runScript(t, `git add .
 	git commit -m ""`, `testdata/origin`)
 
 	actual.Manifests.Add(&sous.Manifest{Source: sous.SourceLocation{Repo: "github.com/opentable/newhotness"}})
-	assert.Error(gsm.WriteState(actual, testUser))
+
+	actualErr := gsm.WriteState(actual, testUser)
+	assert.NoError(actualErr)
+
 	actual, err = gsm.ReadState()
 	require.NoError(err)
+
+	// This line should fail because we have the merged changes.
 	sameYAML(t, actual, expected)
 }
 
