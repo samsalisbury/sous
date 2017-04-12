@@ -58,7 +58,7 @@ func (gsm *GitStateManager) git(cmd ...string) error {
 	return errors.Wrapf(err, strings.Join(git.Args, " ")+": "+string(out))
 }
 
-func (gsm *GitStateManager) revert(tn string) {
+func (gsm *GitStateManager) reset(tn string) {
 	gsm.git("reset", "--hard", tn)
 	gsm.git("clean", "-f")
 }
@@ -97,7 +97,7 @@ func (gsm *GitStateManager) WriteState(s *sous.State, u sous.User) error {
 		return err
 	}
 	if err := gsm.git(`add`, `.`); err != nil {
-		gsm.revert(tn)
+		gsm.reset(tn)
 		return err
 	}
 	if !gsm.needCommit() {
@@ -110,11 +110,11 @@ func (gsm *GitStateManager) WriteState(s *sous.State, u sous.User) error {
 	}
 
 	if err := gsm.git(commitCommand...); err != nil {
-		gsm.revert(tn)
+		gsm.reset(tn)
 		return err
 	}
 	if err := gsm.git("push", "-u", "origin", "master"); err != nil {
-		gsm.revert(tn)
+		gsm.reset(tn)
 		return err
 	}
 	return nil
