@@ -132,6 +132,7 @@ func TestGitPulls(t *testing.T) {
 
 	actual, err = gsm.ReadState()
 	require.NoError(err)
+
 	sameYAML(t, actual, expected)
 }
 
@@ -179,7 +180,18 @@ func TestGitConflicts(t *testing.T) {
 	actual, err = gsm.ReadState()
 	require.NoError(err)
 
-	// This line should fail because we have the merged changes.
+	// Add the thing we wrote to actual to expected as well, since actual now
+	// contains the two sets of changes merged.
+	expected.Manifests.Add(&sous.Manifest{
+		Source: sous.SourceLocation{Repo: "github.com/opentable/newhotness"},
+		// Kind, Owners, Deployments have to be set to non-nil because
+		// when they are read, the flaws library replaces nils with non-nils
+		// for these fields.
+		Kind:        sous.ManifestKindService,
+		Owners:      []string{},
+		Deployments: sous.DeploySpecs{},
+	})
+
 	sameYAML(t, actual, expected)
 }
 
