@@ -71,7 +71,6 @@ func (sc *deployer) RunningDeployments(reg sous.Registry, clusters sous.Clusters
 		//sing.Debug = true
 		sings[url] = struct{}{}
 		client := sc.buildSingClient(url)
-		// go singPipeline(reg, url, client, &depWait, &singWait, reqCh, errCh, clusters.Names())
 		go singPipeline(reg, url, client, &depWait, &singWait, reqCh, errCh, clusters)
 	}
 
@@ -257,7 +256,7 @@ func depPipeline(
 				<-poolLimit
 			}()
 
-			dep, err := assembleDeployment(cl, reg, clusters, req)
+			dep, err := assembleDeployState(cl, reg, clusters, req)
 
 			if err != nil {
 				errCh <- errors.Wrap(err, "assembly problem")
@@ -268,7 +267,7 @@ func depPipeline(
 	}
 }
 
-func assembleDeployment(cl rectificationClient, reg sous.Registry, clusters sous.Clusters, req SingReq) (*sous.DeployState, error) {
+func assembleDeployState(cl rectificationClient, reg sous.Registry, clusters sous.Clusters, req SingReq) (*sous.DeployState, error) {
 	Log.Vomit.Printf("Assembling from: %s %s", req.SourceURL, reqID(req.ReqParent))
 	tgt, err := BuildDeployment(reg, clusters, req)
 	Log.Vomit.Printf("Collected deployment: %#v", tgt)
