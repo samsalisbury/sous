@@ -177,6 +177,7 @@ func (sbp *SplitBuildpack) Build(ctx *sous.BuildContext, drez *sous.DetectResult
 		script.setupTempdir,
 		script.createBuildContainer,
 		script.extractRunSpec,
+		script.validateRunSpec,
 		script.extractFiles,
 		script.teardownBuildContainer,
 		script.templateDockerfile,
@@ -223,6 +224,25 @@ type sbmInstall struct {
 
 type sbmFile struct {
 	Dir string `json: "dir"`
+}
+
+// Validate implements Flawed on SplitImageRunSpec
+func (rs *SplitImageRunSpec) Validate() []sous.Flaw {
+	fs := []sous.Flaw{}
+	if strings.ToLower(rs.Image.Type) != "docker" {
+		fs = append(fs, sous.FatalFlaw("Only 'docker' is recognized currently as an image type, was %q", rs.Image.Type))
+	}
+	if rs.Image.From == "" {
+		fs = append(fs, sous.FatalFlaw("Required image.from was empty or missing."))
+	}
+	if len(rs.Files) == 0 {
+		fs = append(fs, sous.FatalFlaw("Deploy image doesn't make sense with empty list of files."))
+	}
+	if len(rs.Exec) == 0 {
+		fs = append(fs, sous.FatalFlaw("Need an exec list."))
+	}
+
+	return fs
 }
 
 func (sb *splitBuilder) buildBuild() error {
@@ -296,9 +316,19 @@ func (sb *splitBuilder) extractRunSpec() error {
 
 	sb.RunSpec = &SplitImageRunSpec{}
 	dec := json.NewDecoder(specF)
-	dec.Decode(sb.RunSpec)
+	return dec.Decode(sb.RunSpec)
+}
 
-	return err
+func (sb *splitBuilder) validateRunSpec() error {
+	flaws := sb.RunSpec.Validate()
+	if len(flaws) > 0 {
+		msg := "Deploy spec invalid:"
+		for _, f := range flaws {
+			msg += "\n\t" + f.Repair().Error()
+		}
+		return errors.New(msg)
+	}
+	return nil
 }
 
 func (sb *splitBuilder) extractFiles() error {
@@ -321,6 +351,8 @@ func (sb *splitBuilder) teardownBuildContainer() error {
 }
 
 func (sb *splitBuilder) templateDockerfileBytes(dockerfile io.Writer) error {
+	sous.Log.Debug.Printf("Templating Dockerfile from: %#v %#v", sb, sb.RunSpec)
+
 	tmpl, err := template.New("Dockerfile").Parse(`
 	FROM {{.RunSpec.Image.From}}
 	{{range .RunSpec.Files }}

@@ -196,4 +196,8 @@ func TestSplitBuildpackBuildLoadManifest(t *testing.T) {
 	if sb.RunSpec.Files[0].Destination.Dir != "/" {
 		t.Error("RunSpec didn't load Files[0].Destination")
 	}
+
+	if len(sb.RunSpec.Validate()) > 0 {
+		t.Error("Expected RunSpec to validate")
+	}
 }
