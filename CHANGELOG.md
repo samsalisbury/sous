@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
+## [0.4.3](//github.com/opentable/sous/compare/0.4.2...0.4.3)
+
+### Fixed
+- Server now attempts to auto merge disparate GDM changesets by attempting
+  to re-apply the latest diff over the updated master branch. The upshot is
+  that the intermittent errors caused by these conflicts  on GDM update (via 'sous deploy'
+  'sous update' and 'sous manifest set' should be reduced in frequency.
+  Note that there are probably still scenarios where the merge can fail, e.g.
+  in the case that two concurrent changesets attempt to modify the same manifest.
+  We will need to ensure that local access to the GDM git repo is serialised to reduce
+  the chances of this happening further.
+
+## [0.4.2](//github.com/opentable/sous/compare/0.4.1...0.4.2)
+
+No release notes yet.
+
 ## [0.4.1](//github.com/opentable/sous/compare/0.4.0...0.4.1)
 
 ### Fixed
