@@ -199,7 +199,7 @@ func TestGitRemoteDelete(t *testing.T) {
 	require := require.New(t)
 	gsm, remote := setupManagers(t)
 
-	actual, err := gsm.ReadState()
+	_, err := gsm.ReadState()
 	require.NoError(err)
 
 	expected := exampleState()
@@ -207,12 +207,12 @@ func TestGitRemoteDelete(t *testing.T) {
 	expected.Manifests.Add(&sous.Manifest{Source: sous.SourceLocation{Repo: "github.com/opentable/brandnew"}})
 	remote.WriteState(expected)
 
-	expected, err = remote.ReadState()
+	_, err = remote.ReadState()
 	require.NoError(err)
 	runScript(t, `git add .
 	git commit -m ""`, `testdata/origin`)
 
-	actual, err = gsm.ReadState()
+	actual, err := gsm.ReadState()
 	require.NoError(err)
 
 	runScript(t, `rm -rf manifests/github.com/opentable/brandnew.yaml
