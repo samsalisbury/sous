@@ -57,42 +57,47 @@ func Labels(sid sous.SourceID) map[string]string {
 
 var stripRE = regexp.MustCompile("^([[:alpha:]]+://)?(github.com(/opentable)?)?")
 
-func imageRepoName(sl sous.SourceLocation) string {
+func imageRepoName(sl sous.SourceLocation, kind string) string {
 	name := sl.Repo
 
 	name = stripRE.ReplaceAllString(name, "")
 	if sl.Dir != "" {
 		name = strings.Join([]string{name, sl.Dir}, "/")
 	}
-	return name
+
+	if kind == "" {
+		return name
+	}
+
+	return strings.Join([]string{name, kind}, "-")
 }
 
 func tagName(v semv.Version) string {
 	return v.Format("M.m.p-?")
 }
 
-func versionName(sid sous.SourceID) string {
-	return strings.Join([]string{imageRepoName(sid.Location), tagName(sid.Version)}, ":")
+func versionName(sid sous.SourceID, kind string) string {
+	return strings.Join([]string{imageRepoName(sid.Location, kind), tagName(sid.Version)}, ":")
 }
 
-func revisionName(sid sous.SourceID) string {
-	return strings.Join([]string{imageRepoName(sid.Location), sid.RevID()}, ":")
+func revisionName(sid sous.SourceID, kind string) string {
+	return strings.Join([]string{imageRepoName(sid.Location, kind), sid.RevID()}, ":")
 }
 
-func fullRepoName(registryHost string, sl sous.SourceLocation) string {
-	frn := filepath.Join(registryHost, imageRepoName(sl))
+func fullRepoName(registryHost string, sl sous.SourceLocation, kind string) string {
+	frn := filepath.Join(registryHost, imageRepoName(sl, kind))
 	Log.Debug.Printf("Repo name: % #v => %q", sl, frn)
 	return frn
 }
 
-func versionTag(registryHost string, v sous.SourceID) string {
-	verTag := filepath.Join(registryHost, versionName(v))
+func versionTag(registryHost string, v sous.SourceID, kind string) string {
+	verTag := filepath.Join(registryHost, versionName(v, kind))
 	Log.Debug.Printf("Version tag: % #v => %s", v, verTag)
 	return verTag
 }
 
-func revisionTag(registryHost string, v sous.SourceID) string {
-	revTag := filepath.Join(registryHost, revisionName(v))
+func revisionTag(registryHost string, v sous.SourceID, kind string) string {
+	revTag := filepath.Join(registryHost, revisionName(v, kind))
 	Log.Debug.Printf("RevisionTag: % #v => %s", v, revTag)
 	return revTag
 }

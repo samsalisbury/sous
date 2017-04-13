@@ -294,7 +294,7 @@ func (nc *NameCache) harvest(sl sous.SourceLocation) error {
 		Log.Vomit.Printf("Err looking up repos for location %#v: %v - proceeding with guessed repo", sl, err)
 		repos = []string{}
 	}
-	guessed := fullRepoName(nc.DockerRegistryHost, sl)
+	guessed := fullRepoName(nc.DockerRegistryHost, sl, "")
 	knowGuess := false
 
 	Log.Vomit.Printf("Attempting to harvest %d repos", len(repos))

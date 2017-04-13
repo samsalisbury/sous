@@ -46,7 +46,9 @@ func TestTagStrings(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assert.Equal("/sous/docker:1.2.3", versionName(sid))
-	assert.Equal("/sous/docker:deadbeef", revisionName(sid))
+	assert.Equal("/sous/docker:1.2.3", versionName(sid, ""))
+	assert.Equal("/sous/docker-builder:1.2.3", versionName(sid, "builder"))
+	assert.Equal("/sous/docker:deadbeef", revisionName(sid, ""))
+	assert.Equal("/sous/docker-builder:deadbeef", revisionName(sid, "builder"))
 
 }

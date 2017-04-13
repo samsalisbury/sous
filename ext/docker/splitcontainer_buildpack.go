@@ -188,6 +188,13 @@ func (sbp *SplitBuildpack) Build(ctx *sous.BuildContext, drez *sous.DetectResult
 		ImageID:    script.deployImageID,
 		Elapsed:    time.Since(start),
 		Advisories: ctx.Advisories,
+		ExtraResults: map[string]*sous.BuildResult{
+			"builder": {
+				ImageID:    script.buildImageID,
+				Elapsed:    time.Since(start),
+				Advisories: []string{string(sous.IsBuilder)},
+			},
+		},
 	}, err
 }
 

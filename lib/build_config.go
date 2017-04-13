@@ -23,6 +23,9 @@ type (
 )
 
 const (
+	// IsBuilder is an advisory that this container was used to build a finished
+	// image, and should not itself be deployed.
+	IsBuilder = AdvisoryName(`is a build image`)
 	// UnknownRepo is an advisory that the source workspace is not a repo.
 	// TODO: Disambiguate text from NoRepoAdv, they seem like the same thing.
 	UnknownRepo = AdvisoryName(`source workspace lacked repo`)
