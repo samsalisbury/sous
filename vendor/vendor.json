@@ -177,24 +177,6 @@
 			"revisionTime": "2016-12-10T01:35:37Z"
 		},
 		{
-			"checksumSHA1": "xe9ZSO5u8uyDZiCe7lq5wkKfNt0=",
-			"path": "github.com/nyarly/testify/assert",
-			"revision": "6f5bbd18d38b3a9cfdd46245d737bab4b73f2179",
-			"revisionTime": "2016-08-19T18:41:27Z"
-		},
-		{
-			"checksumSHA1": "GQIdpG8UqlnqKkKIuauVW0yLkfM=",
-			"path": "github.com/nyarly/testify/require",
-			"revision": "6f5bbd18d38b3a9cfdd46245d737bab4b73f2179",
-			"revisionTime": "2016-08-19T18:41:27Z"
-		},
-		{
-			"checksumSHA1": "opsN141iC0V63ABhlpFjvcWj4wE=",
-			"path": "github.com/nyarly/testify/suite",
-			"revision": "fc28fc9f86f7adfebca85dba0f25195597279afe",
-			"revisionTime": "2016-08-19T18:10:36Z"
-		},
-		{
 			"checksumSHA1": "kWGq4b6rFLLV5fD18ZlzF32wgSM=",
 			"path": "github.com/opentable/go-singularity",
 			"revision": "e5ca85fa95ed760e06a88dee78abde4677a95dea",

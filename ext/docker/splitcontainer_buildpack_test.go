@@ -201,3 +201,11 @@ func TestSplitBuildpackBuildLoadManifest(t *testing.T) {
 		t.Error("Expected RunSpec to validate")
 	}
 }
+
+func TestRunSpecValidate(t *testing.T) {
+	rs := &SplitImageRunSpec{}
+	flaws := rs.Validate()
+	if len(flaws) != 4 {
+		t.Errorf("Expected %d flaws, got %d", 4, len(flaws))
+	}
+}
