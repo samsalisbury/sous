@@ -113,8 +113,7 @@ func (db *deploymentBuilder) completeConstruction() error {
 	}
 	return firsterr.Returned(
 		wrapError(db.determineDeployStatus, "Failed to determine deploy status."),
-		//FIXME maybe db.retrieveDeploy should be retrieveDeployHistory?
-		wrapError(db.retrieveDeploy, "Failed to retrieve SingularityDeployHistory from SingularityRequestParent."),
+		wrapError(db.retrieveDeployHistory, "Failed to retrieve SingularityDeployHistory from SingularityRequestParent."),
 		wrapError(db.extractDeployFromDeployHistory, "Failed to extract SingularityDeploy from SingularityDeployHistory."),
 		wrapError(db.sousDeployCheck, "Could not determine if the SingularityDeploy is controlled by Sous"),
 		wrapError(db.determineStatus, "Could not determine current status of SingularityDeploy"),
@@ -176,7 +175,7 @@ func (db *deploymentBuilder) determineDeployStatus() error {
 	return nil
 }
 
-func (db *deploymentBuilder) retrieveDeploy() error {
+func (db *deploymentBuilder) retrieveDeployHistory() error {
 	if db.depMarker == nil {
 		return db.retrieveHistoricDeploy()
 	}
