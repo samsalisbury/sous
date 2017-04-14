@@ -31,9 +31,9 @@ func TestIntegration(t *testing.T) {
 	suite.Run(t, new(integrationSuite))
 }
 
-var none = sous.DeployID{}
+var none = sous.DeploymentID{}
 
-func (suite *integrationSuite) deploymentWithRepo(clusterNames []string, repo string) (sous.DeployStates, sous.DeployID) {
+func (suite *integrationSuite) deploymentWithRepo(clusterNames []string, repo string) (sous.DeployStates, sous.DeploymentID) {
 	clusters := make(sous.Clusters, len(clusterNames))
 	for _, name := range clusterNames {
 		clusters[name] = &sous.Cluster{BaseURL: SingularityURL}
@@ -45,7 +45,7 @@ func (suite *integrationSuite) deploymentWithRepo(clusterNames []string, repo st
 	return sous.NewDeployStates(), none
 }
 
-func (suite *integrationSuite) findRepo(deps sous.DeployStates, repo string) sous.DeployID {
+func (suite *integrationSuite) findRepo(deps sous.DeployStates, repo string) sous.DeploymentID {
 	for i, d := range deps.Snapshot() {
 		if d != nil {
 			if i.ManifestID.Source.Repo == repo {

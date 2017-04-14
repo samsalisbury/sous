@@ -164,7 +164,7 @@ func loadMap(fielder swaggering.Fielder, m dtoMap) swaggering.Fielder {
 var notInIDre = regexp.MustCompile(`[-/]`)
 
 func startInstance(url, clusterName, imageName, repoName string, ports []int32) error {
-	did := sous.DeployID{
+	did := sous.DeploymentID{
 		ManifestID: sous.ManifestID{
 			Source: sous.SourceLocation{
 				Repo: repoName,
