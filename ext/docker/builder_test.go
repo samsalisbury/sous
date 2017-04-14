@@ -4,7 +4,10 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/nyarly/testify/require"
 	"github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/shell"
+	"github.com/opentable/sous/util/spies"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -51,4 +54,32 @@ func TestTagStrings(t *testing.T) {
 	assert.Equal("/sous/docker:deadbeef", revisionName(sid, ""))
 	assert.Equal("/sous/docker-builder:deadbeef", revisionName(sid, "builder"))
 
+}
+
+func TestBuilderApplyMetadata(t *testing.T) {
+	srcSh, err := shell.NewTestShell("", map[string]string{})
+	require.NoError(t, err)
+
+	scratchSh, err := shell.NewTestShell("/tmp", map[string]string{"/tmp/__exists__": ""})
+	require.NoError(t, err)
+
+	nc := sous.NewInserterSpy()
+	nc.Match(spies.Always, nil)
+
+	b, err := NewBuilder(nc, "docker.example.com", srcSh, scratchSh)
+	require.NoError(t, err)
+
+	br := &sous.BuildResult{
+		ExtraResults: map[string]*sous.BuildResult{
+			"builder": {},
+		},
+	}
+
+	bc := &sous.BuildContext{}
+
+	err = b.ApplyMetadata(br, bc)
+	assert.NoError(t, err)
+
+	err = b.Register(br, bc)
+	assert.NoError(t, err)
 }

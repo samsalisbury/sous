@@ -47,7 +47,6 @@ func testSBPDetect(t *testing.T, dockerfile string,
 	rc.MatchMethod("GetImageMetadata", spies.AnyArgs, docker_registry.Metadata{}, errors.Errorf("no such MD"))
 	sbp := NewSplitBuildpack(rc)
 	dr, err := sbp.Detect(c)
-	t.Log(rc.Calls())
 
 	return dr, err
 }
