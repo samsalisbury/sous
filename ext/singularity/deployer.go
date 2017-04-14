@@ -66,7 +66,7 @@ func NewDeployer(c rectificationClient) sous.Deployer {
 // RectifyCreates implements sous.Deployer on deployer
 func (r *deployer) RectifyCreates(cc <-chan *sous.DeployablePair, errs chan<- sous.DiffResolution) {
 	for d := range cc {
-		result := sous.DiffResolution{DeployID: d.ID()}
+		result := sous.DiffResolution{DeploymentID: d.ID()}
 		if err := r.RectifySingleCreate(d); err != nil {
 			result.Desc = "not created"
 			switch t := err.(type) {
@@ -122,7 +122,7 @@ func (r *deployer) RectifySingleCreate(d *sous.DeployablePair) (err error) {
 
 func (r *deployer) RectifyDeletes(dc <-chan *sous.DeployablePair, errs chan<- sous.DiffResolution) {
 	for d := range dc {
-		result := sous.DiffResolution{DeployID: d.ID()}
+		result := sous.DiffResolution{DeploymentID: d.ID()}
 		if err := r.RectifySingleDelete(d); err != nil {
 			result.Error = sous.WrapResolveError(&sous.DeleteError{Deployment: d.Prior.Deployment.Clone(), Err: err})
 			result.Desc = "not deleted"
@@ -148,7 +148,7 @@ func (r *deployer) RectifySingleDelete(d *sous.DeployablePair) (err error) {
 func (r *deployer) RectifyModifies(
 	mc <-chan *sous.DeployablePair, errs chan<- sous.DiffResolution) {
 	for pair := range mc {
-		result := sous.DiffResolution{DeployID: pair.ID()}
+		result := sous.DiffResolution{DeploymentID: pair.ID()}
 		if err := r.RectifySingleModification(pair); err != nil {
 			dp := &sous.DeploymentPair{
 				Prior: pair.Prior.Deployment.Clone(),
@@ -209,7 +209,7 @@ func computeRequestID(d *sous.Deployable) string {
 }
 
 // MakeRequestID creates a Singularity request ID from a sous.DeployID.
-func MakeRequestID(mid sous.DeployID) string {
+func MakeRequestID(mid sous.DeploymentID) string {
 	sl := strings.Replace(mid.ManifestID.Source.String(), "/", ">", -1)
 	return fmt.Sprintf("%s:%s:%s", sl, mid.ManifestID.Flavor, mid.Cluster)
 }

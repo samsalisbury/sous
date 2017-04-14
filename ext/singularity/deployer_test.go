@@ -11,12 +11,12 @@ import (
 )
 
 var requestIDTests = []struct {
-	DeployID sous.DeployID
+	DeployID sous.DeploymentID
 	String   string
 }{
 	// repo, cluster
 	{
-		DeployID: sous.DeployID{
+		DeployID: sous.DeploymentID{
 			ManifestID: sous.ManifestID{
 				Source: sous.SourceLocation{
 					Repo: "github.com/user/repo",
@@ -28,7 +28,7 @@ var requestIDTests = []struct {
 	},
 	// repo, dir, cluster
 	{
-		DeployID: sous.DeployID{
+		DeployID: sous.DeploymentID{
 			ManifestID: sous.ManifestID{
 				Source: sous.SourceLocation{
 					Repo: "github.com/user/repo",
@@ -41,7 +41,7 @@ var requestIDTests = []struct {
 	},
 	// repo, flavor, cluster
 	{
-		DeployID: sous.DeployID{
+		DeployID: sous.DeploymentID{
 			ManifestID: sous.ManifestID{
 				Source: sous.SourceLocation{
 					Repo: "github.com/user/repo",
@@ -54,7 +54,7 @@ var requestIDTests = []struct {
 	},
 	// repo, dir, flavor, cluster
 	{
-		DeployID: sous.DeployID{
+		DeployID: sous.DeploymentID{
 			ManifestID: sous.ManifestID{
 				Source: sous.SourceLocation{
 					Repo: "github.com/user/repo",

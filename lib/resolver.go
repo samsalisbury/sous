@@ -43,8 +43,8 @@ func (r *Resolver) reportStable(stable <-chan *DeployablePair, results chan<- Di
 	for dp := range stable {
 		dep := dp.Prior
 		rez := DiffResolution{
-			DeployID: dep.ID(),
-			Desc:     StableDiff,
+			DeploymentID: dep.ID(),
+			Desc:         StableDiff,
 		}
 		if dep.Status == DeployStatusPending {
 			rez.Desc = ComingDiff

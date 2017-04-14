@@ -11,14 +11,14 @@ import (
 // which is safe for concurrent read and write.
 type Deployments struct {
 	mu *sync.RWMutex
-	m  map[DeployID](*Deployment)
+	m  map[DeploymentID](*Deployment)
 }
 
 // MakeDeployments creates a new Deployments with capacity set.
 func MakeDeployments(capacity int) Deployments {
 	return Deployments{
 		mu: &sync.RWMutex{},
-		m:  make(map[DeployID](*Deployment), capacity),
+		m:  make(map[DeploymentID](*Deployment), capacity),
 	}
 }
 
@@ -45,10 +45,10 @@ func (m Deployments) read(f func()) {
 // map[DeployID]*Deployments,
 // which will be merged key-wise into the new Deployments,
 // with keys from the right-most map taking precedence.
-func NewDeploymentsFromMap(from ...map[DeployID](*Deployment)) Deployments {
+func NewDeploymentsFromMap(from ...map[DeploymentID](*Deployment)) Deployments {
 	cm := Deployments{
 		mu: &sync.RWMutex{},
-		m:  map[DeployID](*Deployment){},
+		m:  map[DeploymentID](*Deployment){},
 	}
 	for _, m := range from {
 		for k, v := range m {
@@ -64,7 +64,7 @@ func NewDeploymentsFromMap(from ...map[DeployID](*Deployment)) Deployments {
 func NewDeployments(from ...(*Deployment)) Deployments {
 	m := Deployments{
 		mu: &sync.RWMutex{},
-		m:  map[DeployID](*Deployment){},
+		m:  map[DeploymentID](*Deployment){},
 	}
 	for _, v := range from {
 		if !m.Add(v) {
@@ -76,7 +76,7 @@ func NewDeployments(from ...(*Deployment)) Deployments {
 
 // Get returns (value, true) if k is in the map, or (zero value, false)
 // otherwise.
-func (m Deployments) Get(key DeployID) (v *Deployment, ok bool) {
+func (m Deployments) Get(key DeploymentID) (v *Deployment, ok bool) {
 	m.read(func() {
 		v, ok = m.m[key]
 	})
@@ -84,7 +84,7 @@ func (m Deployments) Get(key DeployID) (v *Deployment, ok bool) {
 }
 
 // Set sets the value of index k to v.
-func (m Deployments) Set(key DeployID, value *Deployment) {
+func (m Deployments) Set(key DeploymentID, value *Deployment) {
 	m.write(func() {
 		m.m[key] = value
 	})
@@ -97,7 +97,7 @@ func (m Deployments) Filter(predicate func(*Deployment) bool) Deployments {
 	if predicate == nil {
 		return m.Clone()
 	}
-	out := map[DeployID](*Deployment){}
+	out := map[DeploymentID](*Deployment){}
 	m.read(func() {
 		for k, v := range m.m {
 			if predicate(v) {
@@ -179,7 +179,7 @@ func (m Deployments) MustAdd(v *Deployment) {
 // Deployments have different keys and all are added to this Deployments.
 // If any of the keys conflict, nothing will be added to this
 // Deployments and AddAll will return the conflicting DeployID and false.
-func (m Deployments) AddAll(from Deployments) (conflicting DeployID, success bool) {
+func (m Deployments) AddAll(from Deployments) (conflicting DeploymentID, success bool) {
 	ss := from.Snapshot()
 	var exists bool
 	m.write(func() {
@@ -197,7 +197,7 @@ func (m Deployments) AddAll(from Deployments) (conflicting DeployID, success boo
 }
 
 // Remove value for a key k if present, a no-op otherwise.
-func (m Deployments) Remove(key DeployID) {
+func (m Deployments) Remove(key DeploymentID) {
 	m.write(func() {
 		delete(m.m, key)
 	})
@@ -213,10 +213,10 @@ func (m Deployments) Len() int {
 }
 
 // Keys returns a slice containing all the keys in the map.
-func (m Deployments) Keys() []DeployID {
-	var keys []DeployID
+func (m Deployments) Keys() []DeploymentID {
+	var keys []DeploymentID
 	m.read(func() {
-		keys = make([]DeployID, len(m.m))
+		keys = make([]DeploymentID, len(m.m))
 		i := 0
 		for k := range m.m {
 			keys[i] = k
@@ -228,10 +228,10 @@ func (m Deployments) Keys() []DeployID {
 
 // Snapshot returns a moment-in-time copy of the current underlying
 // map[DeployID]*Deployment.
-func (m Deployments) Snapshot() map[DeployID](*Deployment) {
-	var ss map[DeployID](*Deployment)
+func (m Deployments) Snapshot() map[DeploymentID](*Deployment) {
+	var ss map[DeploymentID](*Deployment)
 	m.read(func() {
-		ss = make(map[DeployID](*Deployment), len(m.m))
+		ss = make(map[DeploymentID](*Deployment), len(m.m))
 		for k, v := range m.m {
 			ss[k] = v
 		}
@@ -243,8 +243,8 @@ func (m Deployments) Snapshot() map[DeployID](*Deployment) {
 // underlying map[DeployID]*Deployment.
 // (DeployID, *Deployment) pairs are included
 // if they satisfy predicate.
-func (m Deployments) FilteredSnapshot(predicate func(*Deployment) bool) map[DeployID](*Deployment) {
-	clone := map[DeployID](*Deployment){}
+func (m Deployments) FilteredSnapshot(predicate func(*Deployment) bool) map[DeploymentID](*Deployment) {
+	clone := map[DeploymentID](*Deployment){}
 	m.read(func() {
 		for k, v := range m.m {
 			if predicate(v) {
@@ -256,13 +256,13 @@ func (m Deployments) FilteredSnapshot(predicate func(*Deployment) bool) map[Depl
 }
 
 // GetAll returns SnapShot (it allows hy to marshal Deployments).
-func (m Deployments) GetAll() map[DeployID](*Deployment) {
+func (m Deployments) GetAll() map[DeploymentID](*Deployment) {
 	return m.Snapshot()
 }
 
 // SetAll sets the internal map (it allows hy to unmarshal Deployments).
 // Note: SetAll is the only method that is not safe for concurrent access.
-func (m *Deployments) SetAll(v map[DeployID](*Deployment)) {
+func (m *Deployments) SetAll(v map[DeploymentID](*Deployment)) {
 	if m.mu == nil {
 		m.mu = &sync.RWMutex{}
 	}

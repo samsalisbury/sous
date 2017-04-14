@@ -246,7 +246,7 @@ func TestState_IndependentDeploySpecs(t *testing.T) {
 		t.Fatal(err)
 	}
 	mid := ManifestID{Source: SourceLocation{Repo: "github.com/user/project"}}
-	did := DeployID{ManifestID: mid, Cluster: "cluster-1"}
+	did := DeploymentID{ManifestID: mid, Cluster: "cluster-1"}
 	originalDeployment, ok := originalDeployments.Get(did)
 	if !ok {
 		t.Fatalf("deployment %v not found", did)
@@ -364,7 +364,7 @@ func compareManifests(t *testing.T, expectedManifests, actualManifests Manifests
 		}
 		// Check all expected DeploySpecs are in actual.
 		for clusterName := range expected.Deployments {
-			did := DeployID{Cluster: clusterName, ManifestID: expected.ID()}
+			did := DeploymentID{Cluster: clusterName, ManifestID: expected.ID()}
 			_, ok := actual.Deployments[clusterName]
 			if !ok {
 				t.Errorf("deployment %q missing", did)
@@ -372,7 +372,7 @@ func compareManifests(t *testing.T, expectedManifests, actualManifests Manifests
 		}
 		// Check actual contains only the expected DeploySpecs.
 		for clusterName := range actual.Deployments {
-			did := DeployID{Cluster: clusterName, ManifestID: actual.ID()}
+			did := DeploymentID{Cluster: clusterName, ManifestID: actual.ID()}
 			_, ok := expected.Deployments[clusterName]
 			if !ok {
 				t.Errorf("extra deployment %q", did)

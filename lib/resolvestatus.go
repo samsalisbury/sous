@@ -33,7 +33,7 @@ type (
 	// DiffResolution is the result of applying a single diff.
 	DiffResolution struct {
 		// DeployID is the ID of the deployment being resolved
-		DeployID
+		DeploymentID
 		// Desc describes the difference and its resolution
 		Desc ResolutionType
 		// Error captures the error (if any) encountered during diff resolution
