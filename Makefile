@@ -1,3 +1,5 @@
+SHELL := /usr/bin/env bash
+
 SQLITE_URL := https://sqlite.org/2017/sqlite-autoconf-3160200.tar.gz
 GO_VERSION := 1.7.3
 
@@ -35,31 +37,41 @@ CONCAT_XGO_ARGS := -go $(GO_VERSION) -branch master -deps $(SQLITE_URL) --dest $
 COVER_DIR := /tmp/sous-cover
 TEST_VERBOSE := $(if $(VERBOSE),-v,)
 SOUS_PACKAGES:= $(shell go list -f '{{ range .Deps }}{{.}}{{printf "\n"}}{{end}}' | grep '^github.com/opentable' | grep -v 'vendor')
+SOUS_CONTAINER_IMAGES:= "docker images | egrep '127.0.0.1:5000|testregistry_'"
 
 help:
 	@echo --- options:
 	@echo make clean
+	@echo "make clean-containers: Destroy and delete local testing containers."
 	@echo make coverage
 	@echo make legendary
 	@echo "make release:  Both linux and darwin"
-	@echo "make test: unit and integration"
-	@echo "make test-unit"
+	@echo "make setup-containers: pull and start containers for integration testing."
+	@echo "make test: all tests"
+	@echo "make test-unit: unit tests"
+	@echo "make test-gofmt: gofmt tests"
+	@echo "make test-integration: integration tests"
+	@echo "make test-staticcheck: runs static code analysis against project packages."
 	@echo "make wip: puts a marker file into workspace to prevent Travis from passing the build."
-	@echo "make staticcheck: runs static code analysis against project packages."
 	@echo
 	@echo "Add VERBOSE=1 for tons of extra output."
 
 clean:
 	rm -rf $(COVER_DIR)
 	git ls-files -z -o --exclude=.cleanprotect --exclude-per-directory=.cleanprotect | xargs -0 rm -rf
+	rm -f $(QA_DESC)
 
-clean-containers:
-	-docker ps -q | xargs docker kill
-	-docker ps -aq | xargs docker rm
-	-rm ./integration/test-registry/docker-registry/testing.crt
-	-docker rmi testregistry_registry
-	-docker rmi testregistry_gitserver
-	-docker rmi $$(docker images | egrep 'sous-(server|demo)' | awk '{ print $$3 }')
+clean-containers: clean-container-certs clean-running-containers clean-container-images
+
+clean-container-images:
+	@if (( $$("$(SOUS_CONTAINER_IMAGES)" | wc -l) > 0 )); then echo 'found docker images, deleting:'; "$(SOUS_CONTAINER_IMAGES)" | awk '{ print $$3 }' | xargs docker rmi -f; fi
+
+clean-container-certs:
+	rm -f ./integration/test-registry/docker-registry/testing.crt
+
+clean-running-containers:
+	@if (( $$(docker ps -q | wc -l) > 0 )); then echo 'found running containers, killing:'; docker ps -q | xargs docker kill; fi
+	@if (( $$(docker ps -aq | wc -l) > 0 )); then echo 'found container instances, deleting:'; docker ps -aq | xargs docker rm; fi
 
 gitlog:
 	git log `git describe --abbrev=0`..HEAD
@@ -95,7 +107,6 @@ semvertagchk:
 sous-qa-setup: ./dev_support/sous_qa_setup/*.go ./util/test_with_docker/*.go
 	go build $(EXTRA_GO_FLAGS) ./dev_support/sous_qa_setup
 
-test: test-gofmt test-unit test-integration
 
 reject-wip:
 	test ! -f workinprogress
@@ -114,20 +125,26 @@ coverage: $(COVER_DIR)
 legendary: coverage
 	legendary --hitlist .cadre/coverage.vim /tmp/sous-cover/*_merged.txt
 
+test: test-gofmt test-staticcheck test-unit test-integration 
+
+test-staticcheck: install-staticcheck
+	staticcheck -ignore "$$(cat staticcheck.ignore)" $(SOUS_PACKAGES)
+
 test-gofmt:
 	bin/check-gofmt
 
 test-unit:
 	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -timeout 2m ./...
 
-test-integration: test-setup
-	go test $(EXTRA_GO_FLAGS) -c -tags integration ./integration
+test-integration: setup-containers
 	SOUS_QA_DESC=$(QA_DESC) go test $(EXTRA_GO_FLAGS)  $(TEST_VERBOSE) ./integration --tags=integration
 
-test-setup:  sous-qa-setup
+$(QA_DESC): sous-qa-setup
 	./sous_qa_setup --compose-dir ./integration/test-registry/ --out-path=$(QA_DESC)
 
-test-cli: test-setup linux-build
+setup-containers:  $(QA_DESC)
+
+test-cli: setup-containers linux-build
 	rm -rf integration/raw_shell_output/0*
 	@date
 	SOUS_QA_DESC=$(QA_DESC) go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -timeout 20m ./integration --tags=commandline
@@ -158,7 +175,4 @@ artifacts/$(LINUX_TARBALL): artifacts/$(LINUX_RELEASE_DIR)/sous
 artifacts/$(DARWIN_TARBALL): artifacts/$(DARWIN_RELEASE_DIR)/sous
 	cd artifacts && tar czv $(DARWIN_RELEASE_DIR) > $(DARWIN_TARBALL)
 
-staticcheck: install-staticcheck
-	staticcheck -ignore "$$(cat staticcheck.ignore)" $(SOUS_PACKAGES)
-
-.PHONY: clean coverage install-ggen legendary release semvertagchk test test-gofmt test-integration test-setup test-unit reject-wip wip staticcheck
+.PHONY: clean clean-containers clean-container-certs clean-running-containers clean-container-images coverage install-ggen legendary release semvertagchk test test-gofmt test-integration setup-containers test-unit reject-wip wip staticcheck

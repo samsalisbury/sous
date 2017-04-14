@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -58,7 +59,7 @@ func (gsm *GitStateManager) git(cmd ...string) error {
 	return errors.Wrapf(err, strings.Join(git.Args, " ")+": "+string(out))
 }
 
-func (gsm *GitStateManager) revert(tn string) {
+func (gsm *GitStateManager) reset(tn string) {
 	gsm.git("reset", "--hard", tn)
 	gsm.git("clean", "-f")
 }
@@ -97,25 +98,58 @@ func (gsm *GitStateManager) WriteState(s *sous.State, u sous.User) error {
 		return err
 	}
 	if err := gsm.git(`add`, `.`); err != nil {
-		gsm.revert(tn)
+		gsm.reset(tn)
 		return err
 	}
 	if !gsm.needCommit() {
 		return nil
 	}
+
+	// Commit the changes.
 	commitCommand := []string{"commit", "-m", "sous commit: Update State"}
 	if u.Complete() {
 		author := u.String()
 		commitCommand = append(commitCommand, "--author", author)
 	}
-
 	if err := gsm.git(commitCommand...); err != nil {
-		gsm.revert(tn)
+		gsm.reset(tn)
 		return err
 	}
-	if err := gsm.git("push", "-u", "origin", "master"); err != nil {
-		gsm.revert(tn)
+
+	// Tag this commit.
+	newTag := "sous-new-" + uuid.New()
+	if err := gsm.git("tag", newTag); err != nil {
 		return err
 	}
-	return nil
+	defer gsm.git("tag", "-d", newTag)
+
+	// If push fails:
+	//   - Reset to HEAD^
+	//   - Git pull (if this fails, give up)
+	//   - Cherry-pick sous-new-{UUID}"
+	//   - Try again.
+
+	const gitRectifyAttempts = 5
+	for remainingAttempts := gitRectifyAttempts; remainingAttempts > 0; remainingAttempts-- {
+		err := gsm.git("push", "-u", "origin", "master")
+		if err == nil {
+			// Success.
+			return nil
+		}
+		sous.Log.Debug.Printf("git push failed; trying again (%d attempts left): %s", remainingAttempts, err)
+		gsm.reset(tn)
+		if err := gsm.git("pull"); err != nil {
+			return err
+		}
+		if err := gsm.git("cherry-pick", newTag); err != nil {
+			// If cherry-pick fails, then there's a real conflict.
+			sous.Log.Warn.Printf("attempt to rectify conflicts with git cherry-pick failed: %s", err)
+			if err := gsm.git("cherry-pick", "--abort"); err != nil {
+				sous.Log.Warn.Printf("cherry-pick --abort failed: %s", err)
+				return err
+			}
+			sous.Log.Debug.Printf("Successfully cherry-picked new changes, re-attempting push.")
+		}
+	}
+	return fmt.Errorf("unable to merge changes")
 }
