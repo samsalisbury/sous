@@ -39,6 +39,7 @@ type (
 )
 
 type (
+	// An InserterSpy is a spy implementation of the Inserter interface
 	InserterSpy struct {
 		*spies.Spy
 	}
@@ -49,6 +50,7 @@ func NewInserterSpy() InserterSpy {
 	return InserterSpy{spies.NewSpy()}
 }
 
+// Insert implements Inserter on InserterSpy
 func (is InserterSpy) Insert(sid SourceID, in, etag string, qs []Quality) error {
 	return is.Called(sid, in, etag, qs).Error(0)
 }

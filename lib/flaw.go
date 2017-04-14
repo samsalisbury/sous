@@ -50,6 +50,7 @@ func NewFlaw(desc string, repair func() error) GenericFlaw {
 	}
 }
 
+// FatalFlaw constructs a Flaw that cannot be fixed.
 func FatalFlaw(frmt string, vals ...interface{}) GenericFlaw {
 	desc := fmt.Sprintf(frmt, vals...)
 	return GenericFlaw{

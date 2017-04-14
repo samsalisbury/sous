@@ -1,3 +1,22 @@
+// Package spies provides test spies for go test, in the vien of testify's mocks.
+// Roughly speaking, define a spy like this:
+//  type MySpy {
+//  	*spies.Spy
+//  }
+//
+//  func NewMySpy() *MySpy {
+//    return &MySpy{ NewSpy() }
+//  }
+//
+//  func (my *MySpy) InterfaceMethod(with, some, args int) (ret string, err error) {
+//    res := my.Called(with, some, args)
+//    return res.String(0), res.Error(1)
+//  }
+// Use your spy in tests like:
+//   my.MatchMethod("InterfaceMethod", spies.AnyArgs, "called", nil)
+// ... which will return "called" with a nil error whenever InterfaceMethod is called.
+// Several calls to Match and MatchMethod can be made in a row - the first match wins.
+// Then you can check calls by calling my.Calls to my.CallsTo
 package spies
 
 import (
@@ -43,6 +62,7 @@ func Always(string, mock.Arguments) bool {
 	return true
 }
 
+// AnyArgs is an always-true predicate for MethodMatch
 func AnyArgs(mock.Arguments) bool {
 	return true
 }
@@ -97,6 +117,7 @@ func (s *Spy) findArgs(functionName string, args mock.Arguments) mock.Arguments 
 	return nil
 }
 
+// Called is used by embedders of Spy to indicate that the method is called.
 func (s *Spy) Called(argList ...interface{}) mock.Arguments {
 	pc, _, _, ok := runtime.Caller(1)
 	if !ok {
