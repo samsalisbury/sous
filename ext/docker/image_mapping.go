@@ -27,6 +27,7 @@ type (
 	// NameCache is a database for looking up SourceIDs based on
 	// Docker image names and vice versa.
 	NameCache struct {
+		sync.Mutex
 		RegistryClient     docker_registry.Client
 		DB                 *sql.DB
 		DockerRegistryHost string
@@ -581,6 +582,8 @@ func (nc *NameCache) ensureInDB(sel, ins string, args ...interface{}) (id int64,
 		return 0, errors.Errorf("only %d args when %d needed for %q", len(args), insN, ins)
 	}
 
+	nc.Lock()
+	defer nc.Unlock()
 	row := nc.DB.QueryRow(sel, args[0:selN]...)
 	err = row.Scan(&id)
 	if err == nil {

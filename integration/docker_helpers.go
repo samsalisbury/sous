@@ -202,6 +202,9 @@ func startInstance(url, clusterName, imageName, repoName string, ports []int32) 
 	deployID := "TESTGENERATED_" + singularity.StripDeployID(uuid.NewV4().String())
 	depReq := loadMap(&dtos.SingularityDeployRequest{}, dtoMap{
 		"Deploy": loadMap(&dtos.SingularityDeploy{}, dtoMap{
+			"Metadata": map[string]string{
+				"com.opentable.sous.clustername": clusterName,
+			},
 			"Id":        deployID,
 			"RequestId": reqID,
 			"Resources": loadMap(&dtos.Resources{}, dtoMap{
@@ -215,6 +218,7 @@ func startInstance(url, clusterName, imageName, repoName string, ports []int32) 
 			}),
 		}),
 	}).(*dtos.SingularityDeployRequest)
+	log.Printf("Constructed SingularityDeployRequest %#v containing SingularityDeploy %#v", depReq, *depReq.Deploy)
 
 	_, err := sing.Deploy(depReq)
 	if err != nil {

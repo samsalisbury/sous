@@ -256,9 +256,7 @@ func (suite *integrationSuite) TestSuccessfulService() {
 
 func (suite *integrationSuite) TestFailedDeployFollowingSuccessfulDeploy() {
 	if os.Getenv("TRAVIS") == "true" {
-		// Note: I would normally use t.Skipf() for this, but it isn't part of suite.
-		log.Println("SKIPPING TestFailedDeployFollowingSuccessfulDeploy() in Travis")
-		return
+		suite.T().Skipf("SKIPPING TestFailedDeployFollowingSuccessfulDeploy() in Travis")
 	}
 	clusters := []string{"test-cluster"}
 

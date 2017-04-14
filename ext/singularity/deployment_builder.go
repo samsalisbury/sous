@@ -33,20 +33,21 @@ type (
 	}
 
 	nonSousError struct {
-		error string
 	}
 
 	notThisClusterError struct {
-		error string
+		foundClusterName        string
+		responsibleClusterNames []string
 	}
 )
 
 func (ntc notThisClusterError) Error() string {
-	return ntc.error
+	return fmt.Sprintf("%s does not belong to this Sous server %#v.",
+		ntc.foundClusterName, ntc.responsibleClusterNames)
 }
 
 func (nsd nonSousError) Error() string {
-	return nsd.error
+	return "Not a Sous SingularityDeploy."
 }
 
 func ignorableDeploy(err error) bool {
@@ -85,6 +86,7 @@ func (db *deploymentBuilder) canRetry(err error) error {
 
 func (db *deploymentBuilder) isRetryable(err error) bool {
 	return !isMalformed(err) &&
+		!ignorableDeploy(err) &&
 		db.req.SourceURL != "" &&
 		db.req.ReqParent != nil &&
 		db.req.ReqParent.Request != nil &&
@@ -104,17 +106,23 @@ func BuildDeployment(reg sous.ImageLabeller, clusters sous.Clusters, req SingReq
 }
 
 func (db *deploymentBuilder) completeConstruction() error {
+	wrapError := func(fn func() error, msgStr string) func() error {
+		return func() error {
+			return errors.Wrap(fn(), msgStr)
+		}
+	}
 	return firsterr.Returned(
-		db.determineDeployStatus,
-		db.retrieveDeploy,
-		db.extractDeployFromDeployHistory,
-		db.sousDeployCheck,
-		db.determineStatus,
-		db.extractArtifactName,
-		db.retrieveImageLabels,
-		db.assignClusterName,
-		db.unpackDeployConfig,
-		db.determineManifestKind,
+		wrapError(db.determineDeployStatus, "Failed to determine deploy status."),
+		//FIXME maybe db.retrieveDeploy should be retrieveDeployHistory?
+		wrapError(db.retrieveDeploy, "Failed to retrieve SingularityDeployHistory from SingularityRequestParent."),
+		wrapError(db.extractDeployFromDeployHistory, "Failed to extract SingularityDeploy from SingularityDeployHistory."),
+		wrapError(db.sousDeployCheck, "Could not determine if the SingularityDeploy is controlled by Sous"),
+		wrapError(db.determineStatus, "Could not determine current status of SingularityDeploy"),
+		wrapError(db.extractArtifactName, "Could not extract ArtifactName (Docker image name) from SingularityDeploy."),
+		wrapError(db.retrieveImageLabels, "Could not retrieve ImageLabels (Docker image labels) from sous.Registry."),
+		wrapError(db.assignClusterName, "Could not determine cluster name based on SingularityDeploy Metadata."),
+		wrapError(db.unpackDeployConfig, "Could not convert data from a SingularityDeploy to a sous.Deployment."),
+		wrapError(db.determineManifestKind, "Could not determine SingularityRequestType."),
 	)
 }
 
@@ -236,7 +244,7 @@ func (db *deploymentBuilder) sousDeployCheck() error {
 				return nil
 			}
 		}
-		return notThisClusterError{}
+		return notThisClusterError{cnl, db.clusters.Names()}
 	}
 	return nonSousError{}
 }

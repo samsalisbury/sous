@@ -45,7 +45,8 @@ type (
 
 // RunningDeployments collects data from the Singularity clusters and
 // returns a list of actual deployments.
-func (sc *deployer) RunningDeployments(reg sous.Registry, clusters sous.Clusters) (deps sous.DeployStates, err error) {
+func (sc *deployer) RunningDeployments(reg sous.Registry, clusters sous.Clusters) (sous.DeployStates, error) {
+	var deps sous.DeployStates
 	retries := make(retryCounter)
 	errCh := make(chan error)
 	deps = sous.NewDeployStates()
@@ -74,7 +75,7 @@ func (sc *deployer) RunningDeployments(reg sous.Registry, clusters sous.Clusters
 		go singPipeline(reg, url, client, &depWait, &singWait, reqCh, errCh, clusters)
 	}
 
-	go depPipeline(sc.Client, reg, clusters, MaxAssemblers, reqCh, depCh, errCh)
+	go depPipeline(reg, clusters, MaxAssemblers, reqCh, depCh, errCh)
 
 	go func() {
 		catchAndSend("closing up", errCh)
@@ -88,25 +89,24 @@ func (sc *deployer) RunningDeployments(reg sous.Registry, clusters sous.Clusters
 	}()
 
 	for {
-		var cont bool
 		select {
 		case dep := <-depCh:
 			deps.Add(dep)
 			Log.Debug.Printf("Deployment #%d: %+v", deps.Len(), dep)
 			depWait.Done()
-		case err, cont = <-errCh:
+		case err, cont := <-errCh:
 			if !cont {
 				Log.Debug.Printf("Errors channel closed. Finishing up.")
-				return
+				return deps, nil
 			}
 			if isMalformed(err) || ignorableDeploy(err) {
 				Log.Debug.Print(err)
 				depWait.Done()
 			} else {
-				retried := retries.maybe(err, reqCh)
-				if !retried {
+				retryable := retries.maybe(err, reqCh)
+				if !retryable {
 					Log.Notice.Printf("Cannot retry: %v. Exiting", err)
-					return
+					return deps, err
 				}
 			}
 		}
@@ -116,12 +116,12 @@ func (sc *deployer) RunningDeployments(reg sous.Registry, clusters sous.Clusters
 const retryLimit = 3
 
 func (rc retryCounter) maybe(err error, reqCh chan SingReq) bool {
-	rt, ok := err.(*canRetryRequest)
+	rt, ok := errors.Cause(err).(*canRetryRequest)
 	if !ok {
 		return false
 	}
 
-	Log.Debug.Printf("%T err = %+v\n", err, err)
+	Log.Debug.Printf("%T err = %+v\n", errors.Cause(err), errors.Cause(err))
 	count, ok := rc[rt.name()]
 	if !ok {
 		count = 0
@@ -222,6 +222,7 @@ func getSingularityRequestParents(client *singularity.Client) ([]*dtos.Singulari
 	logFDs("before getRequestsFromSingularity")
 	defer logFDs("after getRequestsFromSingularity")
 	singRequests, err := client.GetRequests()
+
 	return singRequests, errors.Wrap(err, "getting request")
 }
 
@@ -235,7 +236,6 @@ func convertSingularityRequestParentsToSingReqs(url string, client *singularity.
 }
 
 func depPipeline(
-	cl rectificationClient,
 	reg sous.Registry,
 	clusters sous.Clusters,
 	poolCount int,
@@ -256,7 +256,7 @@ func depPipeline(
 				<-poolLimit
 			}()
 
-			dep, err := assembleDeployState(cl, reg, clusters, req)
+			dep, err := assembleDeployState(reg, clusters, req)
 
 			if err != nil {
 				errCh <- errors.Wrap(err, "assembly problem")
@@ -267,7 +267,7 @@ func depPipeline(
 	}
 }
 
-func assembleDeployState(cl rectificationClient, reg sous.Registry, clusters sous.Clusters, req SingReq) (*sous.DeployState, error) {
+func assembleDeployState(reg sous.Registry, clusters sous.Clusters, req SingReq) (*sous.DeployState, error) {
 	Log.Vomit.Printf("Assembling from: %s %s", req.SourceURL, reqID(req.ReqParent))
 	tgt, err := BuildDeployment(reg, clusters, req)
 	Log.Vomit.Printf("Collected deployment: %#v", tgt)
