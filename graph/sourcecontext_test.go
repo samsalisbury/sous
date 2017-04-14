@@ -3,9 +3,9 @@ package graph
 import (
 	"testing"
 
-	"github.com/nyarly/testify/assert"
-	"github.com/nyarly/testify/require"
 	"github.com/opentable/sous/lib"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type resolveSourceLocationInput struct {

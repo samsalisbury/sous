@@ -10,9 +10,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/nyarly/testify/suite"
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
+	"github.com/stretchr/testify/suite"
 )
 
 type serverSuite struct {

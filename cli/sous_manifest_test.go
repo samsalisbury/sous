@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/nyarly/testify/assert"
-	"github.com/nyarly/testify/require"
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
 	"github.com/samsalisbury/yaml"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestManifestGet(t *testing.T) {

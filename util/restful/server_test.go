@@ -10,9 +10,9 @@ import (
 	"testing"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/nyarly/testify/suite"
 	"github.com/opentable/sous/lib"
 	"github.com/samsalisbury/psyringe"
+	"github.com/stretchr/testify/suite"
 )
 
 type (

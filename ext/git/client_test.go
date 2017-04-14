@@ -1,9 +1,9 @@
 package git
 
 import (
-	"github.com/nyarly/testify/assert"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/shell"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 

@@ -3,7 +3,7 @@ package test_with_docker
 import (
 	"testing"
 
-	"github.com/nyarly/testify/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestCanMakeAnAgent(t *testing.T) {

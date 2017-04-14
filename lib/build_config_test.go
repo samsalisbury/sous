@@ -3,8 +3,8 @@ package sous
 import (
 	"testing"
 
-	"github.com/nyarly/testify/assert"
 	"github.com/opentable/sous/util/shell"
+	"github.com/stretchr/testify/assert"
 )
 
 // Things that we can't easily do yet:

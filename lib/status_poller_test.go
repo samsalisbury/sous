@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nyarly/testify/assert"
 	"github.com/samsalisbury/semv"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestResolveState_String(t *testing.T) {

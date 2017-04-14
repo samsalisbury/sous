@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/nyarly/testify/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestDeploymentDumper(t *testing.T) {

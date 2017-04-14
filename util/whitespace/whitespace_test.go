@@ -3,7 +3,7 @@ package whitespace
 import (
 	"testing"
 
-	"github.com/nyarly/testify/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestCleanWS(t *testing.T) {

@@ -3,9 +3,9 @@ package config
 import (
 	"testing"
 
-	"github.com/nyarly/testify/assert"
 	"github.com/opentable/sous/ext/github"
 	sous "github.com/opentable/sous/lib"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestDeployFilter(t *testing.T) {

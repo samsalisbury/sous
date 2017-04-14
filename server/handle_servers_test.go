@@ -3,8 +3,8 @@ package server
 import (
 	"testing"
 
-	"github.com/nyarly/testify/assert"
 	"github.com/opentable/sous/config"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestHandleServerList_Get(t *testing.T) {

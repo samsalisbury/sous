@@ -3,7 +3,7 @@ package sous
 import (
 	"testing"
 
-	"github.com/nyarly/testify/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 type vpair struct {
