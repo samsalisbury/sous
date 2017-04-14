@@ -12,6 +12,8 @@ import (
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/docker_registry"
 	"github.com/opentable/sous/util/shell"
+	"github.com/opentable/sous/util/spies"
+	"github.com/pkg/errors"
 )
 
 func testSBPDetect(t *testing.T, dockerfile string,
@@ -38,12 +40,16 @@ func testSBPDetect(t *testing.T, dockerfile string,
 	}
 
 	rc := docker_registry.NewDummyClient()
+
 	for k, v := range metadataMap {
 		rc.AddMetadata(k, v)
 	}
+	rc.MatchMethod("GetImageMetadata", spies.AnyArgs, docker_registry.Metadata{}, errors.Errorf("no such MD"))
 	sbp := NewSplitBuildpack(rc)
+	dr, err := sbp.Detect(c)
+	t.Log(rc.Calls())
 
-	return (sbp).Detect(c)
+	return dr, err
 }
 
 func assertAccepted(t *testing.T, drez *sous.DetectResult, err error) {

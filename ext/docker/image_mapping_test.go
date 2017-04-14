@@ -12,6 +12,8 @@ import (
 
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/docker_registry"
+	"github.com/opentable/sous/util/spies"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -79,8 +81,6 @@ func TestReharvest(t *testing.T) {
 	assert := assert.New(t)
 
 	dc := docker_registry.NewDummyClient()
-	_, err := dc.GetImageMetadata("", "")
-	assert.Error(err) //because channel starved
 
 	host := "docker.repo.io"
 	base := "ot/wackadoo"
@@ -121,7 +121,7 @@ func TestReharvest(t *testing.T) {
 	assert.NoError(err)
 	nc.dump(os.Stderr)
 
-	assert.Len(dc.CallsTo("GetImageMetadata"), 3)
+	assert.Len(dc.CallsTo("GetImageMetadata"), 2)
 	assert.Len(dc.CallsTo("AllTags"), 1)
 }
 
@@ -138,6 +138,7 @@ func TestHarvestGuessedRepo(t *testing.T) {
 		Dir:  "nested/there",
 	}
 
+	dc.MatchMethod("GetImageMetadata", spies.AnyArgs, docker_registry.Metadata{}, errors.Errorf("no such MD"))
 	dc.FeedTags([]string{"something", "the other"})
 	nc.harvest(sl)
 
@@ -281,6 +282,7 @@ func TestLeavesRegistryUnchangedWhenUnknown(t *testing.T) {
 		dc.AddMetadata(dockerCache+`.*`, docker_registry.Metadata{
 	*/
 
+	dc.MatchMethod("GetImageMetadata", spies.AnyArgs, docker_registry.Metadata{}, errors.Errorf("no such MD"))
 	sv, err := nc.GetSourceID(NewBuildArtifact(primaryTagName, nil))
 	if assert.Nil(err) {
 		assert.Equal(newSV, sv)
@@ -439,6 +441,7 @@ func TestHarvesting(t *testing.T) {
 		AllNames:      []string{cn, in},
 	})
 
+	dc.MatchMethod("GetImageMetadata", spies.AnyArgs, docker_registry.Metadata{}, errors.Errorf("no such MD"))
 	nin, err := nc.GetArtifact(sisterSV)
 	if assert.NoError(err) {
 		assert.Equal(host+"/"+cn, nin.Name)
