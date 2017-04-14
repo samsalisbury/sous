@@ -265,6 +265,11 @@ func TestBuildingRequestID(t *testing.T) {
 	db := &deploymentBuilder{
 		clusters: make(sous.Clusters),
 		request:  &dtos.SingularityRequest{},
+		deploy: &dtos.SingularityDeploy{
+			Metadata: map[string]string{
+				"com.opentable.sous.clustername": "test-cluster",
+			},
+		},
 	}
 	db.clusters[cn] = &sous.Cluster{}
 	if err := db.assignClusterName(); err != nil {
@@ -354,6 +359,11 @@ func TestBuildingRequestIDTwoClusters(t *testing.T) {
 	clusters[cn2] = &sous.Cluster{BaseURL: url}
 
 	db := &deploymentBuilder{
+		deploy: &dtos.SingularityDeploy{
+			Metadata: map[string]string{
+				"com.opentable.sous.clustername": cn,
+			},
+		},
 		clusters: clusters,
 		request:  &dtos.SingularityRequest{Id: "::" + cn},
 		req:      SingReq{SourceURL: url},
@@ -362,6 +372,12 @@ func TestBuildingRequestIDTwoClusters(t *testing.T) {
 	assert.Equal(t, db.Target.ClusterName, cn)
 
 	db2 := &deploymentBuilder{
+		deploy: &dtos.SingularityDeploy{
+			Metadata: map[string]string{
+				"com.opentable.sous.clustername": cn2,
+			},
+		},
+
 		clusters: clusters,
 		request:  &dtos.SingularityRequest{Id: "::" + cn2},
 		req:      SingReq{SourceURL: url},

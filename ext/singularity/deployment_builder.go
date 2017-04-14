@@ -301,37 +301,11 @@ func (db *deploymentBuilder) retrieveImageLabels() error {
 }
 
 func (db *deploymentBuilder) assignClusterName() error {
-	var posNick string
-	matchCount := 0
-	for nn, url := range db.clusters {
-		url := url.BaseURL
-		if url != db.req.SourceURL {
-			continue
-		}
-		posNick = nn
-		matchCount++
-
-		id := db.Target.ID()
-		id.Cluster = nn
-
-		checkID := MakeRequestID(id)
-		sous.Log.Vomit.Printf("Trying hypothetical request ID: %s", checkID)
-		if checkID == db.request.Id {
-			db.Target.ClusterName = nn
-			sous.Log.Debug.Printf("Found cluster: %s", nn)
-			break
-		}
+	var ok bool
+	db.Target.ClusterName, ok = db.deploy.Metadata[sous.ClusterNameLabel]
+	if !ok {
+		return malformedResponse{fmt.Sprintf("Deploy Metadata did not include a %s", sous.ClusterNameLabel)}
 	}
-	if db.Target.ClusterName == "" {
-		if matchCount == 1 {
-			sous.Log.Debug.Printf("No request ID matched, using first plausible cluster: %s", posNick)
-			db.Target.ClusterName = posNick
-			return nil
-		}
-		sous.Log.Debug.Printf("No cluster nickname (%#v) matched request id %s for %s", db.clusters, db.request.Id, db.imageName)
-		return malformedResponse{fmt.Sprintf("No cluster nickname (%#v) matched request id %s", db.clusters, db.request.Id)}
-	}
-
 	return nil
 }
 
