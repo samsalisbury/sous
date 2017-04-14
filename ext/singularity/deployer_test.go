@@ -79,58 +79,6 @@ func TestMakeRequestID(t *testing.T) {
 	}
 }
 
-func TestParseRequestID(t *testing.T) {
-	for _, test := range requestIDTests {
-		input := test.String
-		expected := test.DeployID
-		actual, err := ParseRequestID(input)
-		if err != nil {
-			t.Error(err)
-			continue
-		}
-		if actual != expected {
-			t.Errorf("%#v got %q; want %q", input, actual, expected)
-		}
-	}
-}
-
-var parseRequestIDErrors = []struct {
-	String string
-	Error  string
-}{
-	{
-		String: "Hi",
-		Error:  `request ID "Hi" should contain exactly 2 colons`,
-	},
-	{
-		String: ":yo:hoho",
-		Error:  `request ID ":yo:hoho" has an empty SourceLocation`,
-	},
-	{
-		String: "yo:hoho:",
-		Error:  `request ID "yo:hoho:" has an empty Cluster name`,
-	},
-}
-
-func TestParseRequestID_errors(t *testing.T) {
-	for _, test := range parseRequestIDErrors {
-		input := test.String
-		expected := test.Error
-		did, err := ParseRequestID(input)
-		if (did != sous.DeployID{}) {
-			t.Errorf("got %#v; want %#v", did, sous.DeployID{})
-		}
-		if err == nil {
-			t.Errorf("got nil; want error %q", expected)
-			continue
-		}
-		actual := err.Error()
-		if actual != expected {
-			t.Errorf("got error %q; want %q", actual, expected)
-		}
-	}
-}
-
 func TestRectifyRecover(t *testing.T) {
 	var err error
 	expected := "Panicked"

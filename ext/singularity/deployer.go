@@ -214,37 +214,6 @@ func MakeRequestID(mid sous.DeployID) string {
 	return fmt.Sprintf("%s:%s:%s", sl, mid.ManifestID.Flavor, mid.Cluster)
 }
 
-// ParseRequestID parses a DeployID from a Singularity request ID created by
-// Sous.
-func ParseRequestID(id string) (sous.DeployID, error) {
-	parts := strings.Split(id, ":")
-	if len(parts) != 3 {
-		return sous.DeployID{}, fmt.Errorf("request ID %q should contain exactly 2 colons", id)
-	}
-	if len(parts[0]) == 0 {
-		return sous.DeployID{}, fmt.Errorf("request ID %q has an empty SourceLocation", id)
-	}
-	if len(parts[2]) == 0 {
-		return sous.DeployID{}, fmt.Errorf("request ID %q has an empty Cluster name", id)
-	}
-	parts[0] = strings.Replace(parts[0], ">", "/", -1)
-	slParts := strings.Split(parts[0], ",")
-	if len(slParts) == 1 {
-		slParts = append(slParts, "")
-	}
-
-	return sous.DeployID{
-		ManifestID: sous.ManifestID{
-			Source: sous.SourceLocation{
-				Repo: slParts[0],
-				Dir:  slParts[1],
-			},
-			Flavor: parts[1],
-		},
-		Cluster: parts[2],
-	}, nil
-}
-
 func computeDeployID(d *sous.Deployable) string {
 	var uuidTrunc, versionTrunc string
 	uuidEntire := stripDeployID(uuid.NewV4().String())
