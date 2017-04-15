@@ -18,7 +18,7 @@ type (
 	// Deployable is the desired state.
 	DeployablePair struct {
 		Prior, Post *Deployable
-		name        DeployID
+		name        DeploymentID
 	}
 
 	diffSet struct {
@@ -103,7 +103,7 @@ func GuardImage(r Registry, d *Deployment) (*BuildArtifact, error) {
 }
 
 // ID returns the ID of this DeployablePair.
-func (dp *DeployablePair) ID() DeployID {
+func (dp *DeployablePair) ID() DeploymentID {
 	return dp.name
 }
 
@@ -192,8 +192,8 @@ func resolveName(r Registry, d *Deployable) (*Deployable, *DiffResolution) {
 	art, err := GuardImage(r, d.Deployment)
 	if err != nil {
 		return d, &DiffResolution{
-			DeployID: d.ID(),
-			Error:    &ErrorWrapper{error: err},
+			DeploymentID: d.ID(),
+			Error:        &ErrorWrapper{error: err},
 		}
 	}
 	d.BuildArtifact = art

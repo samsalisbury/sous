@@ -31,7 +31,32 @@ type (
 	malformedResponse struct {
 		message string
 	}
+
+	nonSousError struct {
+	}
+
+	notThisClusterError struct {
+		foundClusterName        string
+		responsibleClusterNames []string
+	}
 )
+
+func (ntc notThisClusterError) Error() string {
+	return fmt.Sprintf("%s does not belong to this Sous server %#v.",
+		ntc.foundClusterName, ntc.responsibleClusterNames)
+}
+
+func (nsd nonSousError) Error() string {
+	return "Not a Sous SingularityDeploy."
+}
+
+func ignorableDeploy(err error) bool {
+	switch errors.Cause(err).(type) {
+	case nonSousError, notThisClusterError:
+		return true
+	}
+	return false
+}
 
 func (mr malformedResponse) Error() string {
 	return mr.message
@@ -61,6 +86,7 @@ func (db *deploymentBuilder) canRetry(err error) error {
 
 func (db *deploymentBuilder) isRetryable(err error) bool {
 	return !isMalformed(err) &&
+		!ignorableDeploy(err) &&
 		db.req.SourceURL != "" &&
 		db.req.ReqParent != nil &&
 		db.req.ReqParent.Request != nil &&
@@ -80,16 +106,22 @@ func BuildDeployment(reg sous.ImageLabeller, clusters sous.Clusters, req SingReq
 }
 
 func (db *deploymentBuilder) completeConstruction() error {
+	wrapError := func(fn func() error, msgStr string) func() error {
+		return func() error {
+			return errors.Wrap(fn(), msgStr)
+		}
+	}
 	return firsterr.Returned(
-		db.determineDeployStatus,
-		db.retrieveDeploy,
-		db.extractDeployFromDeployHistory,
-		db.determineStatus,
-		db.extractArtifactName,
-		db.retrieveImageLabels,
-		db.assignClusterName,
-		db.unpackDeployConfig,
-		db.determineManifestKind,
+		wrapError(db.determineDeployStatus, "Failed to determine deploy status."),
+		wrapError(db.retrieveDeployHistory, "Failed to retrieve SingularityDeployHistory from SingularityRequestParent."),
+		wrapError(db.extractDeployFromDeployHistory, "Failed to extract SingularityDeploy from SingularityDeployHistory."),
+		wrapError(db.sousDeployCheck, "Could not determine if the SingularityDeploy is controlled by Sous"),
+		wrapError(db.determineStatus, "Could not determine current status of SingularityDeploy"),
+		wrapError(db.extractArtifactName, "Could not extract ArtifactName (Docker image name) from SingularityDeploy."),
+		wrapError(db.retrieveImageLabels, "Could not retrieve ImageLabels (Docker image labels) from sous.Registry."),
+		wrapError(db.assignClusterName, "Could not determine cluster name based on SingularityDeploy Metadata."),
+		wrapError(db.unpackDeployConfig, "Could not convert data from a SingularityDeploy to a sous.Deployment."),
+		wrapError(db.determineManifestKind, "Could not determine SingularityRequestType."),
 	)
 }
 
@@ -118,8 +150,8 @@ func reqID(rp *dtos.SingularityRequestParent) (ID string) {
 // would have been Active however briefly (but Sous would accept GDM updates
 // arbitrarily quickly as compared to resolve completions...))))
 func (db *deploymentBuilder) determineDeployStatus() error {
-	logFDs("before retrieveDeploy")
-	defer logFDs("after retrieveDeploy")
+	logFDs("before determineDeployStatus()")
+	defer logFDs("after determineDeployStatus()")
 
 	rp := db.req.ReqParent
 	if rp == nil {
@@ -143,7 +175,7 @@ func (db *deploymentBuilder) determineDeployStatus() error {
 	return nil
 }
 
-func (db *deploymentBuilder) retrieveDeploy() error {
+func (db *deploymentBuilder) retrieveDeployHistory() error {
 	if db.depMarker == nil {
 		return db.retrieveHistoricDeploy()
 	}
@@ -204,6 +236,18 @@ func (db *deploymentBuilder) extractDeployFromDeployHistory() error {
 	return nil
 }
 
+func (db *deploymentBuilder) sousDeployCheck() error {
+	if cnl, ok := db.deploy.Metadata[sous.ClusterNameLabel]; ok {
+		for _, cn := range db.clusters.Names() {
+			if cnl == cn {
+				return nil
+			}
+		}
+		return notThisClusterError{cnl, db.clusters.Names()}
+	}
+	return nonSousError{}
+}
+
 func (db *deploymentBuilder) determineStatus() error {
 	if db.history.DeployResult == nil {
 		db.Target.Status = sous.DeployStatusPending
@@ -219,8 +263,8 @@ func (db *deploymentBuilder) determineStatus() error {
 }
 
 func (db *deploymentBuilder) extractArtifactName() error {
-	logFDs("before retrieveImageLabels")
-	defer logFDs("after retrieveImageLabels")
+	logFDs("before extractArtifactName()")
+	defer logFDs("after extractArtifactName()")
 	ci := db.deploy.ContainerInfo
 	if ci == nil {
 		return malformedResponse{"Blank container info"}
@@ -256,37 +300,11 @@ func (db *deploymentBuilder) retrieveImageLabels() error {
 }
 
 func (db *deploymentBuilder) assignClusterName() error {
-	var posNick string
-	matchCount := 0
-	for nn, url := range db.clusters {
-		url := url.BaseURL
-		if url != db.req.SourceURL {
-			continue
-		}
-		posNick = nn
-		matchCount++
-
-		id := db.Target.ID()
-		id.Cluster = nn
-
-		checkID := MakeRequestID(id)
-		sous.Log.Vomit.Printf("Trying hypothetical request ID: %s", checkID)
-		if checkID == db.request.Id {
-			db.Target.ClusterName = nn
-			sous.Log.Debug.Printf("Found cluster: %s", nn)
-			break
-		}
+	var ok bool
+	db.Target.ClusterName, ok = db.deploy.Metadata[sous.ClusterNameLabel]
+	if !ok {
+		return malformedResponse{fmt.Sprintf("Deploy Metadata did not include a %s", sous.ClusterNameLabel)}
 	}
-	if db.Target.ClusterName == "" {
-		if matchCount == 1 {
-			sous.Log.Debug.Printf("No request ID matched, using first plausible cluster: %s", posNick)
-			db.Target.ClusterName = posNick
-			return nil
-		}
-		sous.Log.Debug.Printf("No cluster nickname (%#v) matched request id %s for %s", db.clusters, db.request.Id, db.imageName)
-		return malformedResponse{fmt.Sprintf("No cluster nickname (%#v) matched request id %s", db.clusters, db.request.Id)}
-	}
-
 	return nil
 }
 

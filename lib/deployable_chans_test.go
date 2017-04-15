@@ -36,7 +36,7 @@ func (nrs *NameResolveTestSuite) makeTestDep() *Deployable {
 }
 
 func (nrs *NameResolveTestSuite) makeTestDepPair(prior, post *Deployable) *DeployablePair {
-	var id DeployID
+	var id DeploymentID
 	if prior != nil {
 		id = prior.ID()
 	}

@@ -5,7 +5,7 @@ import "strings"
 type (
 	// DeploymentPair is a pair of deployments that represent a "before and after" style relationship
 	DeploymentPair struct {
-		name        DeployID
+		name        DeploymentID
 		Prior, Post *Deployment
 		Status      DeployStatus
 	}
@@ -16,12 +16,12 @@ type (
 	DeployablePairs []*DeployablePair
 
 	differ struct {
-		from map[DeployID]*DeployState
+		from map[DeploymentID]*DeployState
 		*DeployableChans
 	}
 
 	stateDiffer struct {
-		from map[DeployID]*DeployState
+		from map[DeploymentID]*DeployState
 		*DeployableChans
 	}
 )
@@ -36,7 +36,7 @@ func newDiffSet() diffSet {
 }
 
 // ID returns the DeployID of this deployment pair.
-func (dp *DeploymentPair) ID() DeployID {
+func (dp *DeploymentPair) ID() DeploymentID {
 	return dp.name
 }
 
@@ -69,7 +69,7 @@ func newStateDiffer(intended DeployStates) *stateDiffer {
 	}
 	Log.Vomit.Print(strings.Join(ds, "\n    "))
 
-	startMap := make(map[DeployID]*DeployState)
+	startMap := make(map[DeploymentID]*DeployState)
 	for _, dep := range i {
 		startMap[dep.Name()] = dep
 	}
@@ -87,7 +87,7 @@ func newDiffer(intended Deployments) *differ {
 	}
 	Log.Vomit.Print(strings.Join(ds, "\n    "))
 
-	startMap := make(map[DeployID]*DeployState)
+	startMap := make(map[DeploymentID]*DeployState)
 	for _, dep := range i {
 		startMap[dep.Name()] = &DeployState{Deployment: *dep}
 	}

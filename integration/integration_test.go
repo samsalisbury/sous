@@ -31,21 +31,21 @@ func TestIntegration(t *testing.T) {
 	suite.Run(t, new(integrationSuite))
 }
 
-var none = sous.DeployID{}
+var none = sous.DeploymentID{}
 
-func (suite *integrationSuite) deploymentWithRepo(clusterNames []string, repo string) (sous.DeployStates, sous.DeployID) {
+func (suite *integrationSuite) deploymentWithRepo(clusterNames []string, repo string) (sous.DeployStates, sous.DeploymentID) {
 	clusters := make(sous.Clusters, len(clusterNames))
 	for _, name := range clusterNames {
 		clusters[name] = &sous.Cluster{BaseURL: SingularityURL}
 	}
 	deps, err := suite.deployer.RunningDeployments(suite.nameCache, clusters)
-	if suite.Nil(err) {
+	if suite.NoError(err) {
 		return deps, suite.findRepo(deps, repo)
 	}
-	return sous.DeployStates{}, none
+	return sous.NewDeployStates(), none
 }
 
-func (suite *integrationSuite) findRepo(deps sous.DeployStates, repo string) sous.DeployID {
+func (suite *integrationSuite) findRepo(deps sous.DeployStates, repo string) sous.DeploymentID {
 	for i, d := range deps.Snapshot() {
 		if d != nil {
 			if i.ManifestID.Source.Repo == repo {
@@ -95,7 +95,6 @@ func (suite *integrationSuite) newNameCache(name string) *docker.NameCache {
 }
 
 func (suite *integrationSuite) BeforeTest(suiteName, testName string) {
-	suite.T().Logf("Before %q %q", suiteName, testName)
 	ResetSingularity()
 
 	registerAndDeploy(ip, "test-cluster", "hello-labels", "github.com/docker-library/hello-world", "hello-labels", "latest", []int32{})
@@ -257,9 +256,7 @@ func (suite *integrationSuite) TestSuccessfulService() {
 
 func (suite *integrationSuite) TestFailedDeployFollowingSuccessfulDeploy() {
 	if os.Getenv("TRAVIS") == "true" {
-		// Note: I would normally use t.Skipf() for this, but it isn't part of suite.
-		log.Println("SKIPPING TestFailedDeployFollowingSuccessfulDeploy() in Travis")
-		return
+		suite.T().Skipf("SKIPPING TestFailedDeployFollowingSuccessfulDeploy() in Travis")
 	}
 	clusters := []string{"test-cluster"}
 

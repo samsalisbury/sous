@@ -48,8 +48,8 @@ type (
 		RequestID string
 	}
 
-	// A DeployID identifies a deployment.
-	DeployID struct {
+	// A DeploymentID identifies a deployment.
+	DeploymentID struct {
 		ManifestID ManifestID
 		Cluster    string
 	}
@@ -88,8 +88,8 @@ func (d *Deployment) String() string {
 }
 
 // ID returns the DeployID of this deployment.
-func (d *Deployment) ID() DeployID {
-	return DeployID{
+func (d *Deployment) ID() DeploymentID {
+	return DeploymentID{
 		ManifestID: d.ManifestID(),
 		Cluster:    d.ClusterName,
 	}
@@ -154,7 +154,7 @@ func (d *Deployment) Tabbed() string {
 }
 
 // Name returns the DeployID.
-func (d *Deployment) Name() DeployID {
+func (d *Deployment) Name() DeploymentID {
 	return d.ID()
 }
 

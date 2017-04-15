@@ -73,7 +73,7 @@ func (su *SousUpdate) Execute(args []string) cmdr.Result {
 // server-side. In this case, the disappointed `sous update` should retry, up
 // to the number of times of manifests there are defined for this
 // SourceLocation
-func updateRetryLoop(sm sous.StateManager, sid sous.SourceID, did sous.DeployID, user sous.User) (sous.Deployments, error) {
+func updateRetryLoop(sm sous.StateManager, sid sous.SourceID, did sous.DeploymentID, user sous.User) (sous.Deployments, error) {
 	tryLimit := 2
 
 	sl := did.ManifestID
@@ -111,7 +111,7 @@ func updateRetryLoop(sm sous.StateManager, sid sous.SourceID, did sous.DeployID,
 	return sous.NewDeployments(), errors.Errorf("Tried %d to update %v - %v", tryLimit, sid, did)
 }
 
-func updateState(s *sous.State, gdm sous.Deployments, sid sous.SourceID, did sous.DeployID) error {
+func updateState(s *sous.State, gdm sous.Deployments, sid sous.SourceID, did sous.DeploymentID) error {
 	deployment, ok := gdm.Get(did)
 	if !ok {
 		sous.Log.Warn.Printf("Deployment %q does not exist, creating.\n", did)
@@ -124,9 +124,9 @@ func updateState(s *sous.State, gdm sous.Deployments, sid sous.SourceID, did sou
 	return s.UpdateDeployments(deployment)
 }
 
-func getIDs(filter *sous.ResolveFilter, mid sous.ManifestID) (sous.SourceID, sous.DeployID, error) {
+func getIDs(filter *sous.ResolveFilter, mid sous.ManifestID) (sous.SourceID, sous.DeploymentID, error) {
 	var sid sous.SourceID
-	var did sous.DeployID
+	var did sous.DeploymentID
 
 	clusterName, tag := filter.Cluster, filter.Tag
 	if clusterName == "" {
@@ -140,6 +140,6 @@ func getIDs(filter *sous.ResolveFilter, mid sous.ManifestID) (sous.SourceID, sou
 		return sid, did, cmdr.UsageErrorf("update: Version %q not valid: %s", tag, err)
 	}
 	sid = mid.Source.SourceID(newVersion)
-	did = sous.DeployID{ManifestID: mid, Cluster: clusterName}
+	did = sous.DeploymentID{ManifestID: mid, Cluster: clusterName}
 	return sid, did, nil
 }

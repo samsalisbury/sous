@@ -88,8 +88,8 @@ func buildDeployRequest(d sous.Deployable, reqID string, metadata map[string]str
 	clusterName := d.Deployment.ClusterName
 	flavor := d.Deployment.Flavor
 
-	metadata[sous.SingularityDeployMetadataClusterName] = clusterName
-	metadata[sous.SingularityDeployMetadataFlavor] = flavor
+	metadata[sous.ClusterNameLabel] = clusterName
+	metadata[sous.FlavorLabel] = flavor
 
 	dockerInfo, err := swaggering.LoadMap(&dtos.SingularityDockerInfo{}, dtoMap{
 		"Image":   dockerImage,

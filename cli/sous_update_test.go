@@ -13,7 +13,7 @@ type getIDsTestCase struct {
 	Flags       sous.ResolveFilter
 	SL          sous.ManifestID
 	ExpectedSID sous.SourceID
-	ExpectedDID sous.DeployID
+	ExpectedDID sous.DeploymentID
 	ExpectedErr string
 }
 
@@ -60,7 +60,7 @@ func TestGetIDs(t *testing.T) {
 		Flags:       sous.ResolveFilter{Cluster: "blah", Tag: "1.0.0"},
 		SL:          sous.MustParseManifestID("github.com/blah/blah"),
 		ExpectedSID: sous.MustParseSourceID("github.com/blah/blah,1.0.0"),
-		ExpectedDID: sous.DeployID{Cluster: "blah",
+		ExpectedDID: sous.DeploymentID{Cluster: "blah",
 			ManifestID: sous.ManifestID{Source: sous.SourceLocation{Repo: "github.com/blah/blah"}}},
 	})
 }
@@ -68,7 +68,7 @@ func TestGetIDs(t *testing.T) {
 var updateStateTests = []struct {
 	State                *sous.State
 	GDM                  sous.Deployments
-	DID                  sous.DeployID
+	DID                  sous.DeploymentID
 	ExpectedErr          string
 	ExpectedNumManifests int
 }{
@@ -80,7 +80,7 @@ var updateStateTests = []struct {
 	{
 		State: sous.NewState(),
 		GDM:   sous.NewDeployments(),
-		DID: sous.DeployID{
+		DID: sous.DeploymentID{
 			Cluster:    "blah",
 			ManifestID: sous.MustParseManifestID("github.com/user/project"),
 		},
@@ -94,7 +94,7 @@ var updateStateTests = []struct {
 			Manifests: sous.NewManifests(),
 		},
 		GDM: sous.NewDeployments(),
-		DID: sous.DeployID{
+		DID: sous.DeploymentID{
 			Cluster:    "blah",
 			ManifestID: sous.MustParseManifestID("github.com/user/project"),
 		},
@@ -124,7 +124,7 @@ func TestUpdateState(t *testing.T) {
 		if actualNumManifests != test.ExpectedNumManifests {
 			t.Errorf("got %d manifests; want %d", actualNumManifests, test.ExpectedNumManifests)
 		}
-		if (test.DID != sous.DeployID{}) {
+		if (test.DID != sous.DeploymentID{}) {
 			m, ok := test.State.Manifests.Get(test.DID.ManifestID)
 			if !ok {
 				t.Errorf("manifest %q not found", sid.Location)
@@ -146,7 +146,7 @@ func TestUpdateRetryLoop(t *testing.T) {
 		Kind ManifestKind `validate:"nonzero"`
 		Deployments DeploySpecs `validate:"keys=nonempty,values=nonzero"`
 	*/
-	depID := sous.DeployID{Cluster: "blah", ManifestID: sous.MustParseManifestID("github.com/user/project")}
+	depID := sous.DeploymentID{Cluster: "blah", ManifestID: sous.MustParseManifestID("github.com/user/project")}
 	sourceID := sous.MustNewSourceID("github.com/user/project", "", "1.2.3")
 	mani := &sous.Manifest{
 		Source: sourceID.Location,

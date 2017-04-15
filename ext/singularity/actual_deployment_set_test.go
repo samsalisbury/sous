@@ -37,23 +37,27 @@ func TestGetDepSetWorks(t *testing.T) {
 				},
 			}, nil)
 
-			co.FeedDTO(&dtos.SingularityDeployHistory{
-				Deploy: &dtos.SingularityDeploy{
-					Id: "testdep",
-					ContainerInfo: &dtos.SingularityContainerInfo{
-						Type:   dtos.SingularityContainerInfoSingularityContainerTypeDOCKER,
-						Docker: &dtos.SingularityDockerInfo{},
-						Volumes: dtos.SingularityVolumeList{
-							&dtos.SingularityVolume{
-								HostPath:      "/onhost",
-								ContainerPath: "/indocker",
-								Mode:          dtos.SingularityVolumeSingularityDockerVolumeModeRW,
+			co.FeedDTO(&dtos.SingularityDeployHistoryList{
+				{
+					Deploy: &dtos.SingularityDeploy{
+						Metadata: map[string]string{
+							"com.opentable.sous.clustername": "left",
+						},
+						Id: "testdep",
+						ContainerInfo: &dtos.SingularityContainerInfo{
+							Type:   dtos.SingularityContainerInfoSingularityContainerTypeDOCKER,
+							Docker: &dtos.SingularityDockerInfo{},
+							Volumes: dtos.SingularityVolumeList{
+								&dtos.SingularityVolume{
+									HostPath:      "/onhost",
+									ContainerPath: "/indocker",
+									Mode:          dtos.SingularityVolumeSingularityDockerVolumeModeRW,
+								},
 							},
 						},
+						Resources: &dtos.Resources{},
 					},
-					Resources: &dtos.Resources{},
-				},
-			}, nil)
+				}}, nil)
 
 			whip[url] = co
 			return cl
