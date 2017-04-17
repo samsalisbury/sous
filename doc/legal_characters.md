@@ -35,3 +35,10 @@ static bool isInvalid(int c)
   }
 ```
 which appears more liberal than both Singularity and Mesos.
+
+# Current Conclusion
+
+The current restriction seems to be that:
+
+`A-Za-z0-9_` is legal for DeployIDs, and
+`A-Za-z0-9_-` (note the `-`) is legal for RequestIDs.
