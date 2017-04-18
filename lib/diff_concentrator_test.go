@@ -4,9 +4,9 @@ import (
 	"log"
 	"testing"
 
-	"github.com/nyarly/testify/assert"
-	"github.com/nyarly/testify/require"
 	"github.com/samsalisbury/semv"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestEmptyDiffConcentration(t *testing.T) {

@@ -6,11 +6,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/nyarly/testify/assert"
-	"github.com/nyarly/testify/require"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/yaml"
 	"github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var testUser = sous.User{Name: "Test User", Email: "test@user.com"}

@@ -7,11 +7,11 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/nyarly/testify/assert"
-	"github.com/nyarly/testify/require"
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/restful"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestQueryValuesToManifestIDHappyPath(t *testing.T) {

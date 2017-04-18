@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/nyarly/testify/assert"
 	"github.com/samsalisbury/psyringe"
+	"github.com/stretchr/testify/assert"
 )
 
 type testInjectedHandler struct {

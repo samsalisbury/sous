@@ -71,6 +71,7 @@ type (
 		VersionName, RevisionName string
 		Advisories                []string
 		Elapsed                   time.Duration
+		ExtraResults              map[string]*BuildResult
 	}
 
 	// EchoSelector wraps a buildpack Factory. But why?

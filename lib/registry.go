@@ -1,5 +1,7 @@
 package sous
 
+import "github.com/opentable/sous/util/spies"
+
 type (
 	// ImageLabeller can get the image labels for a given imageName
 	ImageLabeller interface {
@@ -35,3 +37,20 @@ type (
 		Insert(sid SourceID, in, etag string, qs []Quality) error
 	}
 )
+
+type (
+	// An InserterSpy is a spy implementation of the Inserter interface
+	InserterSpy struct {
+		*spies.Spy
+	}
+)
+
+// NewInserterSpy returns a spy inserter for testing
+func NewInserterSpy() InserterSpy {
+	return InserterSpy{spies.NewSpy()}
+}
+
+// Insert implements Inserter on InserterSpy
+func (is InserterSpy) Insert(sid SourceID, in, etag string, qs []Quality) error {
+	return is.Called(sid, in, etag, qs).Error(0)
+}

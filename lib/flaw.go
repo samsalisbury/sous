@@ -1,6 +1,10 @@
 package sous
 
-import "github.com/pkg/errors"
+import (
+	"fmt"
+
+	"github.com/pkg/errors"
+)
 
 type (
 	// A Flaw captures the digression from a validation rule
@@ -46,17 +50,16 @@ func NewFlaw(desc string, repair func() error) GenericFlaw {
 	}
 }
 
-/*
-func FatalFlaw(fmt string, vals ...interface{}) GenericFlaw {
-	desc := fmt.Sprintf(fmt, vals...)
+// FatalFlaw constructs a Flaw that cannot be fixed.
+func FatalFlaw(frmt string, vals ...interface{}) GenericFlaw {
+	desc := fmt.Sprintf(frmt, vals...)
 	return GenericFlaw{
-		Desc: fmt.Sprintf(fmt, vals...),
-		Repair: func() error {
+		Desc: fmt.Sprintf(frmt, vals...),
+		RepairFunc: func() error {
 			return errors.Errorf("%s: cannot be repaired.", desc)
 		},
 	}
 }
-*/
 
 // Repair implements Flaw.Repair.
 func (gf GenericFlaw) Repair() error {

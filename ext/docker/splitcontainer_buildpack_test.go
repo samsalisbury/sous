@@ -12,6 +12,8 @@ import (
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/docker_registry"
 	"github.com/opentable/sous/util/shell"
+	"github.com/opentable/sous/util/spies"
+	"github.com/pkg/errors"
 )
 
 func testSBPDetect(t *testing.T, dockerfile string,
@@ -38,12 +40,15 @@ func testSBPDetect(t *testing.T, dockerfile string,
 	}
 
 	rc := docker_registry.NewDummyClient()
+
 	for k, v := range metadataMap {
 		rc.AddMetadata(k, v)
 	}
+	rc.MatchMethod("GetImageMetadata", spies.AnyArgs, docker_registry.Metadata{}, errors.Errorf("no such MD"))
 	sbp := NewSplitBuildpack(rc)
+	dr, err := sbp.Detect(c)
 
-	return (sbp).Detect(c)
+	return dr, err
 }
 
 func assertAccepted(t *testing.T, drez *sous.DetectResult, err error) {
@@ -195,5 +200,17 @@ func TestSplitBuildpackBuildLoadManifest(t *testing.T) {
 	}
 	if sb.RunSpec.Files[0].Destination.Dir != "/" {
 		t.Error("RunSpec didn't load Files[0].Destination")
+	}
+
+	if len(sb.RunSpec.Validate()) > 0 {
+		t.Error("Expected RunSpec to validate")
+	}
+}
+
+func TestRunSpecValidate(t *testing.T) {
+	rs := &SplitImageRunSpec{}
+	flaws := rs.Validate()
+	if len(flaws) != 4 {
+		t.Errorf("Expected %d flaws, got %d", 4, len(flaws))
 	}
 }

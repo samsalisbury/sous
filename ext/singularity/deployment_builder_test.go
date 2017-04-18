@@ -6,10 +6,10 @@ package singularity
 import (
 	"testing"
 
-	"github.com/nyarly/testify/assert"
 	"github.com/opentable/go-singularity/dtos"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/swaggering"
+	"github.com/stretchr/testify/assert"
 )
 
 type (

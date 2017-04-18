@@ -3,10 +3,10 @@ package cli
 import (
 	"testing"
 
-	"github.com/nyarly/testify/assert"
 	"github.com/opentable/sous/graph"
 	sous "github.com/opentable/sous/lib"
 	"github.com/samsalisbury/semv"
+	"github.com/stretchr/testify/assert"
 )
 
 type getIDsTestCase struct {

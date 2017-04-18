@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/nyarly/testify/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGuardImageMissing(t *testing.T) {

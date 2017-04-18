@@ -16,10 +16,10 @@
 			"revisionTime": "2016-04-25T09:32:37Z"
 		},
 		{
-			"checksumSHA1": "5rPfda8jFccr3A6heL+JAmi9K9g=",
+			"checksumSHA1": "dvabztWVQX8f6oMLRyv4dLH+TGY=",
 			"path": "github.com/davecgh/go-spew/spew",
-			"revision": "6cf5744a041a0022271cefed95ba843f6d87fd51",
-			"revisionTime": "2016-08-16T17:40:47Z"
+			"revision": "346938d642f2ec3594ed81d874461961cd0faa76",
+			"revisionTime": "2016-10-29T20:57:26Z"
 		},
 		{
 			"checksumSHA1": "/ZPjHuGHzMOd7RtfbPDbGOFLwb0=",
@@ -177,24 +177,6 @@
 			"revisionTime": "2016-12-10T01:35:37Z"
 		},
 		{
-			"checksumSHA1": "xe9ZSO5u8uyDZiCe7lq5wkKfNt0=",
-			"path": "github.com/nyarly/testify/assert",
-			"revision": "6f5bbd18d38b3a9cfdd46245d737bab4b73f2179",
-			"revisionTime": "2016-08-19T18:41:27Z"
-		},
-		{
-			"checksumSHA1": "GQIdpG8UqlnqKkKIuauVW0yLkfM=",
-			"path": "github.com/nyarly/testify/require",
-			"revision": "6f5bbd18d38b3a9cfdd46245d737bab4b73f2179",
-			"revisionTime": "2016-08-19T18:41:27Z"
-		},
-		{
-			"checksumSHA1": "opsN141iC0V63ABhlpFjvcWj4wE=",
-			"path": "github.com/nyarly/testify/suite",
-			"revision": "fc28fc9f86f7adfebca85dba0f25195597279afe",
-			"revisionTime": "2016-08-19T18:10:36Z"
-		},
-		{
 			"checksumSHA1": "kWGq4b6rFLLV5fD18ZlzF32wgSM=",
 			"path": "github.com/opentable/go-singularity",
 			"revision": "e5ca85fa95ed760e06a88dee78abde4677a95dea",
@@ -275,10 +257,10 @@
 			"revisionTime": "2016-04-07T13:01:23Z"
 		},
 		{
-			"checksumSHA1": "Bn333k9lTndxU3D6n/G5c+GMcYY=",
+			"checksumSHA1": "JXUVA1jky8ZX8w09p2t5KLs97Nc=",
 			"path": "github.com/stretchr/testify/assert",
-			"revision": "0744955171b0b6e1871ff9d7366abc2b7a7fcec0",
-			"revisionTime": "2016-04-07T13:01:23Z"
+			"revision": "4d4bfba8f1d1027c4fdbe371823030df51419987",
+			"revisionTime": "2017-01-30T11:31:45Z"
 		},
 		{
 			"checksumSHA1": "fg3TzS9/QK3wZbzei3Z6O8XPLHg=",

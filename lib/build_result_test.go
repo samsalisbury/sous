@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nyarly/testify/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestBuildResultString(t *testing.T) {
