@@ -385,7 +385,7 @@ func TestCreates(t *testing.T) {
 	if assert.Len(client.Created, 1) {
 		req := client.Created[0]
 		assert.Equal("cluster", req.Deployment.Cluster.BaseURL)
-		assert.Equal("reqid::nick", computeRequestID(&req))
+		assert.Regexp("^reqid--nick-[0-9a-f]*$", computeRequestID(&req))
 		assert.Equal(12, req.Deployment.DeployConfig.NumInstances)
 	}
 }

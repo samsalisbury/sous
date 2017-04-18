@@ -12,6 +12,16 @@ with respect to its command line interface and HTTP interface.
 * Split image build strategy: support for using a build image to produce artifacts to be run
   in a separate deploy image.
 
+### Changed
+* Sous detects the tasks in its purview based on metadata it sets when the task
+  is created, rather than inspecting request or deploy ids.
+
+### Fixed
+* Consequent to detecting tasks based on metadata,
+  Sous's requests are now compatible
+  with Singularity 0.14,
+  and the resulting Mesos Task IDs are suitable to use as Kafka client ids.
+
 ## [0.4.1](//github.com/opentable/sous/compare/0.4.0...0.4.1)
 
 ### Fixed

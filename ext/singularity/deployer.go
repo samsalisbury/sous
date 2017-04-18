@@ -12,8 +12,17 @@ import (
 	"github.com/satori/go.uuid"
 )
 
+// Both of these values are (for reasons only known to the spirits)
+// _configurable_ in singularity. If you've done something silly like configure
+// them differently than their defaults, at the moment we wish you the best of
+// luck, and vaya con Dios.
+// c.f. https://github.com/HubSpot/Singularity/blob/master/Docs/reference/configuration.md#limits
+
 // Singularity DeployID must be <50
-const maxDeployIDLen = 49
+const maxDeployIDLen = 50
+
+// Singularity RequestID must be <100
+const maxRequestIDLen = 100
 
 // maxVersionLen needs to account for the separator character
 // between the version string and the UUID string.
@@ -209,13 +218,23 @@ func computeRequestID(d *sous.Deployable) string {
 }
 
 // MakeRequestID creates a Singularity request ID from a sous.DeployID.
-func MakeRequestID(mid sous.DeploymentID) string {
-	sl := strings.Replace(mid.ManifestID.Source.String(), "/", ">", -1)
-	return fmt.Sprintf("%s:%s:%s", sl, mid.ManifestID.Flavor, mid.Cluster)
+func MakeRequestID(depID sous.DeploymentID) string {
+	sl := strings.Replace(depID.ManifestID.Source.String(), ",", "__", -1)
+	sl = illegalDeployIDChars.ReplaceAllString(sl, "_")
+	fl := illegalDeployIDChars.ReplaceAllString(depID.ManifestID.Flavor, "_")
+	cl := illegalDeployIDChars.ReplaceAllString(depID.Cluster, "_")
+
+	uuidEntire := stripDeployID(uuid.NewV4().String())
+
+	reqBase := fmt.Sprintf("%s-%s-%s-%s", sl, fl, cl, uuidEntire)
+	if len(reqBase) < maxRequestIDLen {
+		return reqBase
+	}
+	return reqBase[:maxRequestIDLen]
 }
 
 func computeDeployID(d *sous.Deployable) string {
-	var uuidTrunc, versionTrunc string
+	var versionTrunc string
 	uuidEntire := stripDeployID(uuid.NewV4().String())
 	versionSansMeta := stripMetadata(d.Deployment.SourceID.Version.String())
 	versionEntire := sanitizeDeployID(versionSansMeta)
@@ -226,19 +245,14 @@ func computeDeployID(d *sous.Deployable) string {
 		versionTrunc = versionEntire
 	}
 
-	// naiveLen is the length of the truncated Version plus
-	// the length of an entire UUID plus the length of a separator
-	// character.
-	naiveLen := len(versionTrunc) + len(uuidEntire) + 1
+	depBase := strings.Join([]string{
+		versionTrunc,
+		uuidEntire,
+	}, "_")
 
-	if naiveLen > maxDeployIDLen {
-		uuidTrunc = uuidEntire[:maxDeployIDLen-len(versionTrunc)-1]
-	} else {
-		uuidTrunc = uuidEntire
+	if len(depBase) < maxDeployIDLen {
+		return depBase
 	}
 
-	return strings.Join([]string{
-		versionTrunc,
-		uuidTrunc,
-	}, "_")
+	return depBase[:maxDeployIDLen]
 }

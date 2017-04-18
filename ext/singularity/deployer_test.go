@@ -5,78 +5,117 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/davecgh/go-spew/spew"
 	sous "github.com/opentable/sous/lib"
 	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/assert"
 )
 
-var requestIDTests = []struct {
-	DeployID sous.DeploymentID
-	String   string
-}{
-	// repo, cluster
+var requestIDTests = []struct{ Repo, Dir, Flavor, Cluster, String string }{
 	{
-		DeployID: sous.DeploymentID{
-			ManifestID: sous.ManifestID{
-				Source: sous.SourceLocation{
-					Repo: "github.com/user/repo",
-				},
-			},
-			Cluster: "some-cluster",
-		},
-		String: "github.com>user>repo::some-cluster",
+		"github.com/user/repo", "", "", "some-cluster",
+		"github_com_user_repo--some_cluster",
+		//"Sous_repo-some_cluster",
 	},
-	// repo, dir, cluster
 	{
-		DeployID: sous.DeploymentID{
-			ManifestID: sous.ManifestID{
-				Source: sous.SourceLocation{
-					Repo: "github.com/user/repo",
-					Dir:  "some/offset/dir",
-				},
-			},
-			Cluster: "some-cluster",
-		},
-		String: "github.com>user>repo,some>offset>dir::some-cluster",
+		"github.com/user/repo", "some/offset/dir", "", "some-cluster",
+		"github_com_user_repo__some_offset_dir--some_cluster",
+		//"Sous_repo_dir-some_cluster",
 	},
-	// repo, flavor, cluster
 	{
-		DeployID: sous.DeploymentID{
-			ManifestID: sous.ManifestID{
-				Source: sous.SourceLocation{
-					Repo: "github.com/user/repo",
-				},
-				Flavor: "tasty-flavor",
-			},
-			Cluster: "some-cluster",
-		},
-		String: "github.com>user>repo:tasty-flavor:some-cluster",
+		"github.com/user/repo", "", "tasty-flavor", "some-cluster",
+		"github_com_user_repo-tasty_flavor-some_cluster",
+		//"Sous_repo-tasty_flavor-some_cluster",
 	},
-	// repo, dir, flavor, cluster
 	{
-		DeployID: sous.DeploymentID{
-			ManifestID: sous.ManifestID{
-				Source: sous.SourceLocation{
-					Repo: "github.com/user/repo",
-					Dir:  "some/offset/dir",
-				},
-				Flavor: "tasty-flavor",
-			},
-			Cluster: "some-cluster",
-		},
-		String: "github.com>user>repo,some>offset>dir:tasty-flavor:some-cluster",
+		"github.com/user/repo", "some/offset/dir", "tasty-flavor", "some-cluster",
+		"github_com_user_repo__some_offset_dir-tasty_flavor-some_cluster",
+		//"Sous_repo_dir-tasty_flavor-some_cluster",
 	},
 }
 
 func TestMakeRequestID(t *testing.T) {
 	for _, test := range requestIDTests {
-		input := test.DeployID
-		expected := test.String
+		input := sous.DeploymentID{
+			ManifestID: sous.ManifestID{
+				Source: sous.SourceLocation{
+					Repo: test.Repo,
+					Dir:  test.Dir,
+				},
+				Flavor: test.Flavor,
+			},
+			Cluster: test.Cluster,
+		}
 		actual := MakeRequestID(input)
-		if actual != expected {
-			t.Errorf("%#v got %q; want %q", input, actual, expected)
+		expected := test.String
+
+		if strings.Index(actual, expected) != 0 {
+			t.Error(spew.Sprintf("%#v \n\tgot  %q; \n\twant %q", input, actual, expected))
 		}
 	}
+}
+
+func TestMakeRequestID_Collisions(t *testing.T) {
+	tests := []struct{ repo, dir, flavor, cluster string }{
+		{"github.com/user/repo", "", "", "some-cluster"},
+		{"github.com/user/repo", "", "", "some_cluster"},
+		{"github.com/user/re-po", "", "", "cluster"},
+		{"github.com/user/re_po", "", "", "cluster"},
+		{"github.com/user/re.po", "", "", "cluster"},
+		{"github.com/user/repo", "some/offset/dir", "tasty-flavor", "some-cluster"},
+		{"github.com/user/repo", "", "tasty_flavor", "some-cluster"},
+		{"github.com/user/repo", "", "tasty-flavor", "some-cluster"},
+		{"github.com/user/repo", "", "tasty.flavor", "some-cluster"},
+		{"github.com/user/repo__some", "offset/dir", "tasty-flavor", "some-cluster"},
+		{"github.com/user/repo", "some/offset/dir-tasty", "flavor", "some-cluster"},
+		{"github.com/user/repo", "some/offset/dir", "tasty-flavor-some", "cluster"},
+	}
+
+	/*
+			github_com_user_repo--some_cluster
+			github_com_user_repo__some_offset_dir-tasty_flavor-some_cluster
+		  github_com_user_repo__some__offset_dir-tasty_flavor-some_cluster
+		  github_com_user_repo__some_offset_dir_tasty-flavor-some_cluster
+		  github_com_user_repo__some_offset_dir-tasty_flavor_some-cluster
+	*/
+
+	for i, leftTest := range tests {
+		left := sous.DeploymentID{
+			ManifestID: sous.ManifestID{
+				Source: sous.SourceLocation{
+					Repo: leftTest.repo,
+					Dir:  leftTest.dir,
+				},
+				Flavor: leftTest.flavor,
+			},
+			Cluster: leftTest.cluster,
+		}
+
+		leftReqID := MakeRequestID(left)
+		t.Log(leftReqID)
+
+		for j, rightTest := range tests {
+			if i <= j {
+				continue
+			}
+
+			right := sous.DeploymentID{
+				ManifestID: sous.ManifestID{
+					Source: sous.SourceLocation{
+						Repo: rightTest.repo,
+						Dir:  rightTest.dir,
+					},
+					Flavor: rightTest.flavor,
+				},
+				Cluster: rightTest.cluster,
+			}
+
+			if leftReqID == MakeRequestID(right) {
+				t.Error(spew.Sprintf("Collision! %q produced by \n\tboth %v \n\t and %v", leftReqID, left, right))
+			}
+		}
+	}
+
 }
 
 func TestRectifyRecover(t *testing.T) {
