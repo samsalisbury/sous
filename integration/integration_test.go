@@ -141,7 +141,7 @@ func (suite *integrationSuite) BeforeTest(suiteName, testName string) {
 }
 
 func (suite *integrationSuite) TeardownTest() {
-	// XXX UNCOMMENT ME: ResetSingularity()
+	ResetSingularity()
 }
 
 func (suite *integrationSuite) TestGetLabels() {
