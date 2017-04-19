@@ -2,6 +2,7 @@ package singularity
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/opentable/go-singularity/dtos"
 	"github.com/opentable/sous/ext/docker"
@@ -258,6 +259,21 @@ func (db *deploymentBuilder) determineStatus() error {
 	if db.history.DeployResult.DeployState == dtos.SingularityDeployResultDeployStateSUCCEEDED {
 		db.Target.Status = sous.DeployStatusActive
 	} else {
+		msg := db.history.DeployResult.Message
+		if len(db.history.DeployResult.DeployFailures) > 0 {
+			msgs := []string{}
+			for _, df := range db.history.DeployResult.DeployFailures {
+				msgs = append(msgs, df.Message)
+			}
+			msg = strings.Join(msgs, ", ")
+		}
+
+		db.Target.ExecutorMessage = fmt.Sprintf("Deploy faulure: %q %s/request/%s/deploy/%s",
+			msg,
+			db.req.SourceURL,
+			db.history.Deploy.RequestId,
+			db.history.Deploy.Id,
+		)
 		db.Target.Status = sous.DeployStatusFailed
 	}
 

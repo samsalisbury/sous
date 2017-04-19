@@ -110,7 +110,7 @@ func (suite *integrationSuite) waitUntilNotPending(clusters []string, sourceRepo
 
 func (suite *integrationSuite) statusIs(ds *sous.DeployState, expected sous.DeployStatus) {
 	actual := ds.Status
-	suite.Equal(actual, expected, "deploy status is %q; want %q\nIn: %#v", actual, expected, ds)
+	suite.Equal(actual, expected, "deploy status is %q; want %q\n%s\nIn: %#v", actual, expected, ds.ExecutorMessage, ds)
 }
 
 func (suite *integrationSuite) BeforeTest(suiteName, testName string) {
@@ -141,7 +141,7 @@ func (suite *integrationSuite) BeforeTest(suiteName, testName string) {
 }
 
 func (suite *integrationSuite) TeardownTest() {
-	ResetSingularity()
+	// XXX UNCOMMENT ME: ResetSingularity()
 }
 
 func (suite *integrationSuite) TestGetLabels() {
@@ -236,6 +236,8 @@ func (suite *integrationSuite) TestFailedService() {
 }
 
 func (suite *integrationSuite) TestSuccessfulService() {
+	sous.Log.BeChatty()
+	defer sous.Log.BeQuiet()
 	if os.Getenv("TRAVIS") == "true" {
 		suite.T().Skip()
 	}
@@ -311,8 +313,6 @@ func (suite *integrationSuite) TestMissingImage() {
 }
 
 func (suite *integrationSuite) TestResolve() {
-	sous.Log.BeChatty()
-	defer sous.Log.BeQuiet()
 	clusterDefs := sous.Defs{
 		Clusters: sous.Clusters{
 			"test-cluster": &sous.Cluster{
@@ -375,7 +375,7 @@ func (suite *integrationSuite) TestResolve() {
 
 	// XXX Let's hope this is a temporary solution to a testing issue
 	// The problem is laid out in DCOPS-7625
-	for tries := 20; tries > 0; tries-- {
+	for tries := 50; tries > 0; tries-- {
 		client := singularity.NewRectiAgent(suite.nameCache)
 		deployer := singularity.NewDeployer(client)
 

@@ -86,6 +86,7 @@ func TestDockerMetadataSet(t *testing.T) {
 
 func baseDeployablePair() *sous.DeployablePair {
 	return &sous.DeployablePair{
+		ExecutorData: &singularityTaskData{requestID: "reqid"},
 		Prior: &sous.Deployable{
 			BuildArtifact: &sous.BuildArtifact{
 				Name: "the-prior-image",
@@ -284,6 +285,7 @@ func TestDeletes(t *testing.T) {
 	assert := assert.New(t)
 
 	deleted := &sous.DeployablePair{
+		ExecutorData: &singularityTaskData{requestID: "reqid"},
 		Prior: &sous.Deployable{
 			Deployment: &sous.Deployment{
 				SourceID: sous.SourceID{

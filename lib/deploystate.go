@@ -9,8 +9,9 @@ import "fmt"
 // It wraps Deployment and adds Status.
 type DeployState struct {
 	Deployment
-	Status       DeployStatus
-	ExecutorData interface{}
+	Status          DeployStatus
+	ExecutorMessage string
+	ExecutorData    interface{}
 }
 
 // DeployStatus represents the status of a deployment in an external cluster.
