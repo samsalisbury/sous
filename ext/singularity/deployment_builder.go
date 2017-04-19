@@ -100,6 +100,8 @@ func BuildDeployment(reg sous.ImageLabeller, clusters sous.Clusters, req SingReq
 	db := deploymentBuilder{registry: reg, clusters: clusters, req: req}
 
 	db.Target.Cluster = &sous.Cluster{BaseURL: req.SourceURL}
+	db.Target.ExecutorData = &singularityTaskData{requestID: reqID(req.ReqParent)}
+	Log.Vomit.Printf("Recording %v as requestID for instance.", db.Target.ExecutorData)
 	db.request = req.ReqParent.Request
 
 	return db.Target, db.canRetry(db.completeConstruction())

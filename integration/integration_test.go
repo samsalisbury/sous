@@ -375,7 +375,7 @@ func (suite *integrationSuite) TestResolve() {
 
 	// XXX Let's hope this is a temporary solution to a testing issue
 	// The problem is laid out in DCOPS-7625
-	for tries := 0; tries < 3; tries++ {
+	for tries := 20; tries > 0; tries-- {
 		client := singularity.NewRectiAgent(suite.nameCache)
 		deployer := singularity.NewDeployer(client)
 
@@ -383,10 +383,10 @@ func (suite *integrationSuite) TestResolve() {
 
 		err = r.Begin(deploymentsTwoThree, clusterDefs.Clusters).Wait()
 		if err != nil {
-			suite.Require().NotRegexp(`Pending deploy already in progress`, err.Error())
+			//suite.Require().NotRegexp(`Pending deploy already in progress`, err.Error())
 
-			suite.T().Logf("Singularity conflict - waiting for previous deploy to complete - try #%d", tries+1)
-			time.Sleep(1 * time.Second)
+			suite.T().Logf("Singularity conflict - waiting for previous deploy to complete - will try %d more times", tries)
+			time.Sleep(2 * time.Second)
 		}
 	}
 

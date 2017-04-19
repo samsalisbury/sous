@@ -31,12 +31,18 @@ func stripMetadata(in string) string {
 	return strings.Split(in, "+")[0]
 }
 
-// RectiAgent is an implementation of the RectificationClient interface
-type RectiAgent struct {
-	singClients map[string]*singularity.Client
-	sync.RWMutex
-	labeller sous.ImageLabeller
-}
+type (
+	// RectiAgent is an implementation of the RectificationClient interface
+	RectiAgent struct {
+		singClients map[string]*singularity.Client
+		sync.RWMutex
+		labeller sous.ImageLabeller
+	}
+
+	singularityTaskData struct {
+		requestID string
+	}
+)
 
 // NewRectiAgent returns a set-up RectiAgent
 func NewRectiAgent(l sous.ImageLabeller) *RectiAgent {

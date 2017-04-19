@@ -101,10 +101,11 @@ func TestRealDiff(t *testing.T) {
 	}
 }
 
-func makeDeplState(repo string, num int, st DeployStatus) *DeployState {
+func makeDeplState(repo string, num int, st DeployStatus, data interface{}) *DeployState {
 	return &DeployState{
-		Deployment: *makeDepl(repo, num),
-		Status:     st,
+		ExecutorData: data,
+		Deployment:   *makeDepl(repo, num),
+		Status:       st,
 	}
 }
 
@@ -140,21 +141,27 @@ func TestRealStateDiff(t *testing.T) {
 
 	repo := "https://github.com/opentable/one"
 
-	set := testStateDiff(nil, makeDeplState(repo, 1, DeployStatusActive)) //remove
+	set := testStateDiff(nil, makeDeplState(repo, 1, DeployStatusActive, `gone`)) //remove
 	assertGone(set)
+	assert.Equal(set.Gone[0].ExecutorData, `gone`)
 
-	set = testStateDiff(makeDepl(repo, 1), makeDeplState(repo, 1, DeployStatusActive))
+	set = testStateDiff(makeDepl(repo, 1), makeDeplState(repo, 1, DeployStatusActive, `same`))
 	assertSame(set)
+	assert.Equal(set.Same[0].ExecutorData, `same`)
 
-	set = testStateDiff(makeDepl(repo, 1), makeDeplState(repo, 1, DeployStatusPending))
+	set = testStateDiff(makeDepl(repo, 1), makeDeplState(repo, 1, DeployStatusPending, `changed-pending`))
 	assertChanged(set)
+	assert.Equal(set.Changed[0].ExecutorData, `changed-pending`)
 
-	set = testStateDiff(makeDepl(repo, 1), makeDeplState(repo, 1, DeployStatusFailed))
+	set = testStateDiff(makeDepl(repo, 1), makeDeplState(repo, 1, DeployStatusFailed, `changed-failed`))
 	assertChanged(set)
+	assert.Equal(set.Changed[0].ExecutorData, `changed-failed`)
 
-	set = testStateDiff(makeDepl(repo, 1), makeDeplState(repo, 2, DeployStatusActive))
+	set = testStateDiff(makeDepl(repo, 1), makeDeplState(repo, 2, DeployStatusActive, `changed-active`))
 	assertChanged(set)
+	assert.Equal(set.Changed[0].ExecutorData, `changed-active`)
 
 	set = testStateDiff(makeDepl(repo, 1), nil)
 	assertCreated(set)
+	assert.Zero(set.New[0].ExecutorData)
 }

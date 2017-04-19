@@ -9,7 +9,8 @@ import "fmt"
 // It wraps Deployment and adds Status.
 type DeployState struct {
 	Deployment
-	Status DeployStatus
+	Status       DeployStatus
+	ExecutorData interface{}
 }
 
 // DeployStatus represents the status of a deployment in an external cluster.
@@ -26,6 +27,10 @@ const (
 	// DeployStatusFailed means the deployment has failed.
 	DeployStatusFailed
 )
+
+func (ds DeployState) String() string {
+	return fmt.Sprintf("%s %s %v", ds.Deployment.String(), ds.Status, ds.ExecutorData)
+}
 
 // Clone returns an independent clone of this DeployState.
 func (ds DeployState) Clone() *DeployState {
