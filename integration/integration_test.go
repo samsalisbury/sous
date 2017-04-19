@@ -214,8 +214,8 @@ func (suite *integrationSuite) TestFailedService() {
 
 	var fails *sous.DeployState
 	sleepTime := time.Duration(500) * time.Millisecond
+	suite.T().Log("About to capture snapshot - this may take some time")
 	for counter := 1; ; counter++ {
-		log.Printf("deployment state snapshot attempt:%d", counter)
 		ds, which := suite.deploymentWithRepo(clusters, "github.com/opentable/homer-says-doh")
 		deps := ds.Snapshot()
 		fails = deps[which]
@@ -223,7 +223,6 @@ func (suite *integrationSuite) TestFailedService() {
 		if fails.Status != sous.DeployStatusPending {
 			break
 		}
-		log.Printf("sleeping for %s", sleepTime)
 		time.Sleep(sleepTime)
 	}
 	suite.statusIs(fails, sous.DeployStatusFailed)

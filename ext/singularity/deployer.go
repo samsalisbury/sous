@@ -180,16 +180,17 @@ func (r *deployer) RectifyModifies(
 func (r *deployer) RectifySingleModification(pair *sous.DeployablePair) (err error) {
 	Log.Debug.Printf("Rectifying modified %q: \n  %# v \n    =>  \n  %# v", pair.ID(), pair.Prior.Deployment, pair.Post.Deployment)
 	defer rectifyRecover(pair, "RectifySingleModification", &err)
+	reqID := computeRequestID(pair.Prior)
 	if r.changesReq(pair) {
 		Log.Debug.Printf("Updating Request...")
-		if err := r.Client.PostRequest(*pair.Post, computeRequestID(pair.Post)); err != nil {
+		if err := r.Client.PostRequest(*pair.Post, reqID); err != nil {
 			return err
 		}
 	}
 
 	if changesDep(pair) {
 		Log.Debug.Printf("Deploying...")
-		if err := r.Client.Deploy(*pair.Post, computeRequestID(pair.Prior)); err != nil {
+		if err := r.Client.Deploy(*pair.Post, reqID); err != nil {
 			return err
 		}
 
