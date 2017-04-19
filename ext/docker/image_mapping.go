@@ -110,7 +110,7 @@ func (nc *NameCache) Warmup(r string) error {
 	}
 	ts, err := nc.RegistryClient.AllTags(r)
 	if err != nil {
-		return errors.Wrap(err, "warming up")
+		return errors.Wrapf(err, "warming up %q", r)
 	}
 	for _, t := range ts {
 		Log.Debug.Printf("Harvested tag: %v for repo: %v", t, r)

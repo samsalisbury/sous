@@ -181,11 +181,14 @@ func (r *deployer) RectifySingleModification(pair *sous.DeployablePair) (err err
 	Log.Debug.Printf("Rectifying modified %q: \n  %# v \n    =>  \n  %# v", pair.ID(), pair.Prior.Deployment, pair.Post.Deployment)
 	defer rectifyRecover(pair, "RectifySingleModification", &err)
 	reqID := computeRequestID(pair.Prior)
+	Log.Vomit.Printf("Operating on request %q", reqID)
 	if r.changesReq(pair) {
 		Log.Debug.Printf("Updating Request...")
 		if err := r.Client.PostRequest(*pair.Post, reqID); err != nil {
 			return err
 		}
+	} else {
+		Log.Vomit.Printf("Request %q does not require changes", reqID)
 	}
 
 	if changesDep(pair) {
@@ -193,8 +196,10 @@ func (r *deployer) RectifySingleModification(pair *sous.DeployablePair) (err err
 		if err := r.Client.Deploy(*pair.Post, reqID); err != nil {
 			return err
 		}
-
+	} else {
+		Log.Vomit.Printf("Deploy on %q does not require change", reqID)
 	}
+
 	return nil
 }
 
