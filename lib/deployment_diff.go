@@ -138,7 +138,8 @@ func (d *stateDiffer) diff(existing DeployStates) {
 			Log.Debug.Printf("Modified deployment: %q (% #v)", id, differences)
 
 			d.Update <- &DeployablePair{
-				name: id,
+				name:         id,
+				ExecutorData: intendDS.ExecutorData,
 				Prior: &Deployable{
 					Deployment: &intendDS.Deployment,
 					Status:     intendDS.Status,
@@ -153,7 +154,8 @@ func (d *stateDiffer) diff(existing DeployStates) {
 
 		Log.Debug.Printf("Retained deployment: %q (% #v)", id, differences)
 		d.Stable <- &DeployablePair{
-			name: id,
+			name:         id,
+			ExecutorData: intendDS.ExecutorData,
 			Prior: &Deployable{
 				Deployment: &intendDS.Deployment,
 				Status:     intendDS.Status,
@@ -170,7 +172,8 @@ func (d *stateDiffer) diff(existing DeployStates) {
 		Log.Debug.Printf("Deleted deployment: %q", deletedDS.ID())
 
 		d.Stop <- &DeployablePair{
-			name: deletedDS.ID(),
+			name:         deletedDS.ID(),
+			ExecutorData: deletedDS.ExecutorData,
 			Prior: &Deployable{
 				Deployment: &deletedDS.Deployment,
 				Status:     deletedDS.Status,

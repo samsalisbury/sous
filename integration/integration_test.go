@@ -4,7 +4,6 @@ package integration
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"testing"
 	"time"
@@ -92,6 +91,26 @@ func (suite *integrationSuite) newNameCache(name string) *docker.NameCache {
 	suite.Require().NoError(err)
 
 	return docker.NewNameCache(registryName, suite.registry, db)
+}
+
+func (suite *integrationSuite) waitUntilNotPending(clusters []string, sourceRepo string) *sous.DeployState {
+	sleepTime := time.Duration(500) * time.Millisecond
+	suite.T().Log("About to snapshot the state - it may take some time.")
+	for counter := 1; ; counter++ {
+		ds, which := suite.deploymentWithRepo(clusters, sourceRepo)
+		deps := ds.Snapshot()
+		deployState := deps[which]
+		suite.Require().NotNil(deployState)
+		if deployState.Status != sous.DeployStatusPending {
+			return deployState
+		}
+		time.Sleep(sleepTime)
+	}
+}
+
+func (suite *integrationSuite) statusIs(ds *sous.DeployState, expected sous.DeployStatus) {
+	actual := ds.Status
+	suite.Equal(actual, expected, "deploy status is %q; want %q\n%s\nIn: %#v", actual, expected, ds.ExecutorMessage, ds)
 }
 
 func (suite *integrationSuite) BeforeTest(suiteName, testName string) {
@@ -212,114 +231,46 @@ func (suite *integrationSuite) TestGetRunningDeploymentSet_all() {
 func (suite *integrationSuite) TestFailedService() {
 	clusters := []string{"test-cluster"}
 
-	var fails *sous.DeployState
-	sleepTime := time.Duration(500) * time.Millisecond
-	for counter := 1; ; counter++ {
-		log.Printf("deployment state snapshot attempt:%d", counter)
-		ds, which := suite.deploymentWithRepo(clusters, "github.com/opentable/homer-says-doh")
-		deps := ds.Snapshot()
-		fails = deps[which]
-		suite.Require().NotNil(fails)
-		if fails.Status != sous.DeployStatusPending {
-			break
-		}
-		log.Printf("sleeping for %s", sleepTime)
-		time.Sleep(sleepTime)
-	}
+	fails := suite.waitUntilNotPending(clusters, "github.com/opentable/homer-says-doh")
 	suite.statusIs(fails, sous.DeployStatusFailed)
 }
 
 func (suite *integrationSuite) TestSuccessfulService() {
+	sous.Log.BeChatty()
+	defer sous.Log.BeQuiet()
 	if os.Getenv("TRAVIS") == "true" {
-		// Note: I would normally use t.Skipf() for this, but it isn't part of suite.
-		log.Println("SKIPPING TestSuccessfulService() in Travis")
-		return
+		suite.T().Skip()
 	}
 	clusters := []string{"test-cluster"}
 
-	var succeeds *sous.DeployState
-	sleepTime := time.Duration(500) * time.Millisecond
-	for counter := 1; ; counter++ {
-		log.Printf("deployment state snapshot attempt:%d", counter)
-		ds, which := suite.deploymentWithRepo(clusters, "github.com/docker/dockercloud-hello-world")
-		deps := ds.Snapshot()
-		succeeds = deps[which]
-		suite.Require().NotNil(succeeds)
-		if succeeds.Status != sous.DeployStatusPending {
-			break
-		}
-		log.Printf("sleeping for %s", sleepTime)
-		time.Sleep(sleepTime)
-	}
+	succeeds := suite.waitUntilNotPending(clusters, "github.com/docker/dockercloud-hello-world")
 	suite.statusIs(succeeds, sous.DeployStatusActive)
 }
 
 func (suite *integrationSuite) TestFailedDeployFollowingSuccessfulDeploy() {
 	if os.Getenv("TRAVIS") == "true" {
-		suite.T().Skipf("SKIPPING TestFailedDeployFollowingSuccessfulDeploy() in Travis")
+		suite.T().Skip("TestFailedDeployFollowingSuccessfulDeploy() in Travis")
 	}
 	clusters := []string{"test-cluster"}
 
 	const sourceRepo = "github.com/user/succeedthenfail" // Part of request ID.
 	const clusterName = "test-cluster"                   // Part of request ID.
 
-	{
-		// Create an assert on a successful deployment.
-		var ports []int32
-		const repoName = "succeedthenfail"
-		const dir = "succeedthenfail-succeed"
-		const tag = "1.0.0-succeed"
+	// Create an assert on a successful deployment.
+	var ports []int32
+	const repoName = "succeedthenfail"
 
-		registerAndDeploy(ip, clusterName, repoName, sourceRepo, dir, tag, ports)
+	registerAndDeploy(ip, clusterName, repoName, sourceRepo, "succeedthenfail-succeed", "1.0.0-succeed", ports)
 
-		var deployState *sous.DeployState
-		sleepTime := time.Duration(500) * time.Millisecond
-		for counter := 1; ; counter++ {
-			ds, which := suite.deploymentWithRepo(clusters, sourceRepo)
-			log.Printf("deployment state snapshot attempt:%d", counter)
-			log.Printf("GOT DEPLOY ID: %q", which)
-			deps := ds.Snapshot()
-			deployState = deps[which]
-			suite.Require().NotNil(deployState)
-			if deployState.Status != sous.DeployStatusPending {
-				break
-			}
-			log.Printf("sleeping for %s", sleepTime)
-			time.Sleep(sleepTime)
-		}
-		suite.statusIs(deployState, sous.DeployStatusActive)
-	}
+	deployState := suite.waitUntilNotPending(clusters, sourceRepo)
+	suite.statusIs(deployState, sous.DeployStatusActive)
 
-	{
-		// Create an assert on a failed deployment.
-		var ports []int32
-		const repoName = "succeedthenfail"
-		const dir = "succeedthenfail-fail"
-		const tag = "2.0.0-fail"
+	// Create an assert on a failed deployment.
 
-		registerAndDeploy(ip, clusterName, repoName, sourceRepo, dir, tag, ports)
+	registerAndDeploy(ip, clusterName, repoName, sourceRepo, "succeedthenfail-fail", "2.0.0-fail", ports)
 
-		var deployState *sous.DeployState
-		sleepTime := time.Duration(500) * time.Millisecond
-		for counter := 1; ; counter++ {
-			log.Printf("deployment state snapshot attempt:%d", counter)
-			ds, which := suite.deploymentWithRepo(clusters, sourceRepo)
-			deps := ds.Snapshot()
-			deployState = deps[which]
-			suite.Require().NotNil(deployState)
-			if deployState.Status != sous.DeployStatusPending {
-				break
-			}
-			log.Printf("sleeping for %s", sleepTime)
-			time.Sleep(sleepTime)
-		}
-		suite.statusIs(deployState, sous.DeployStatusFailed)
-	}
-}
-
-func (suite *integrationSuite) statusIs(ds *sous.DeployState, expected sous.DeployStatus) {
-	actual := ds.Status
-	suite.Equal(actual, expected, "deploy status is %q; want %q", actual, expected)
+	deployState = suite.waitUntilNotPending(clusters, sourceRepo)
+	suite.statusIs(deployState, sous.DeployStatusFailed)
 }
 
 func (suite *integrationSuite) TestMissingImage() {
@@ -386,7 +337,7 @@ func (suite *integrationSuite) TestResolve() {
 	stateTwoThree := sous.State{
 		Defs: clusterDefs,
 		Manifests: sous.NewManifests(
-			suite.manifest(suite.nameCache, "opentable/two", "test-two", repoTwo, "1.1.1"),
+			suite.manifest(suite.nameCache, "opentable/two", "test-two-updated", repoTwo, "1.1.2"),
 			suite.manifest(suite.nameCache, "opentable/three", "test-three", repoThree, "1.1.1"),
 		),
 	}
@@ -424,18 +375,18 @@ func (suite *integrationSuite) TestResolve() {
 
 	// XXX Let's hope this is a temporary solution to a testing issue
 	// The problem is laid out in DCOPS-7625
-	for tries := 0; tries < 3; tries++ {
+	for tries := 50; tries > 0; tries-- {
 		client := singularity.NewRectiAgent(suite.nameCache)
 		deployer := singularity.NewDeployer(client)
 
 		r := sous.NewResolver(deployer, suite.nameCache, &sous.ResolveFilter{})
 
-		err := r.Begin(deploymentsTwoThree, clusterDefs.Clusters).Wait()
+		err = r.Begin(deploymentsTwoThree, clusterDefs.Clusters).Wait()
 		if err != nil {
-			suite.Require().NotRegexp(`Pending deploy already in progress`, err.Error())
+			//suite.Require().NotRegexp(`Pending deploy already in progress`, err.Error())
 
-			suite.T().Logf("Singularity conflict - waiting for previous deploy to complete - try #%d", tries+1)
-			time.Sleep(1 * time.Second)
+			suite.T().Logf("Singularity conflict - waiting for previous deploy to complete - will try %d more times", tries)
+			time.Sleep(2 * time.Second)
 		}
 	}
 
@@ -445,7 +396,9 @@ func (suite *integrationSuite) TestResolve() {
 	ds, which = suite.deploymentWithRepo(clusters, repoTwo)
 	deps = ds.Snapshot()
 	if suite.NotEqual(none, which, "opentable/two no longer deployed after resolve") {
-		suite.Equal(1, deps[which].NumInstances)
+		dep := deps[which]
+		suite.Equal(1, dep.NumInstances)
+		suite.Equal("1.1.2", dep.Deployment.SourceID.Version.String())
 	}
 
 	which = suite.findRepo(ds, repoThree)

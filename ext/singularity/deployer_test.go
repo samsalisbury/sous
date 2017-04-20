@@ -236,6 +236,7 @@ func TestPendingModification(t *testing.T) {
 	}
 
 	dp := &sous.DeployablePair{
+		ExecutorData: &singularityTaskData{requestID: "reqid"},
 		Post: &sous.Deployable{
 			BuildArtifact: &sous.BuildArtifact{
 				Name: "build-artifact",
@@ -263,7 +264,7 @@ func TestPendingModification(t *testing.T) {
 
 	rez := <-rezCh
 
-	assert.Equal(t, rez.Desc, sous.ModifyDiff)
+	assert.Equal(t, sous.ModifyDiff, rez.Desc)
 	assert.Zero(t, rez.Error)
 	assert.Len(t, drc.Deployed, 0)
 	assert.Len(t, drc.Created, 0)
@@ -293,6 +294,7 @@ func TestModificationOfFailed(t *testing.T) {
 	}
 
 	dp := &sous.DeployablePair{
+		ExecutorData: &singularityTaskData{requestID: "reqid"},
 		Post: &sous.Deployable{
 			BuildArtifact: &sous.BuildArtifact{
 				Name: "build-artifact",

@@ -145,7 +145,12 @@ func (r *deployer) RectifyDeletes(dc <-chan *sous.DeployablePair, errs chan<- so
 
 func (r *deployer) RectifySingleDelete(d *sous.DeployablePair) (err error) {
 	defer rectifyRecover(d, "RectifySingleDelete", &err)
-	requestID := computeRequestID(d.Prior)
+	data, ok := d.ExecutorData.(*singularityTaskData)
+	if !ok {
+		return errors.Errorf("Delete record %#v doesn't contain Singularity compatible data: was %T\n\t%#v", d.ID(), data, d)
+	}
+	requestID := data.requestID
+
 	// TODO: Alert the owner of this request that there is no manifest for it;
 	// they should either delete the request manually, or else add the manifest back.
 	sous.Log.Warn.Printf("NOT DELETING REQUEST %q (FOR: %q)", requestID, d.ID())
@@ -180,20 +185,32 @@ func (r *deployer) RectifyModifies(
 func (r *deployer) RectifySingleModification(pair *sous.DeployablePair) (err error) {
 	Log.Debug.Printf("Rectifying modified %q: \n  %# v \n    =>  \n  %# v", pair.ID(), pair.Prior.Deployment, pair.Post.Deployment)
 	defer rectifyRecover(pair, "RectifySingleModification", &err)
+
+	data, ok := pair.ExecutorData.(*singularityTaskData)
+	if !ok {
+		return errors.Errorf("Modification record %#v doesn't contain Singularity compatible data: was %T\n\t%#v", pair.ID(), data, pair)
+	}
+	reqID := data.requestID
+
+	Log.Vomit.Printf("Operating on request %q", reqID)
 	if r.changesReq(pair) {
 		Log.Debug.Printf("Updating Request...")
-		if err := r.Client.PostRequest(*pair.Post, computeRequestID(pair.Post)); err != nil {
+		if err := r.Client.PostRequest(*pair.Post, reqID); err != nil {
 			return err
 		}
+	} else {
+		Log.Vomit.Printf("Request %q does not require changes", reqID)
 	}
 
 	if changesDep(pair) {
 		Log.Debug.Printf("Deploying...")
-		if err := r.Client.Deploy(*pair.Post, computeRequestID(pair.Prior)); err != nil {
+		if err := r.Client.Deploy(*pair.Post, reqID); err != nil {
 			return err
 		}
-
+	} else {
+		Log.Vomit.Printf("Deploy on %q does not require change", reqID)
 	}
+
 	return nil
 }
 

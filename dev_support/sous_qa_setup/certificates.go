@@ -76,6 +76,9 @@ func getCertIPSans(certPath string) ([]net.IP, error) {
 	}
 
 	block, _ := pem.Decode(certBuf.Bytes())
+	if block == nil {
+		return nil, fmt.Errorf("Error decoding PEM from %q", certPath)
+	}
 
 	cert, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
