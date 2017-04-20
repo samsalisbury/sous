@@ -12,3 +12,5 @@ warn("Big PR: #{git.lines_of_code} lines of code changed") if git.lines_of_code 
 if !git.modified_files.include?("CHANGELOG.md") && !declared_trivial
   fail("Please include a CHANGELOG entry.", sticky: false)
 end
+
+lgtm.check_lgtm
