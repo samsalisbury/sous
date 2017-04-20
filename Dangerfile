@@ -1,13 +1,14 @@
 # Sometimes it's a README fix, or something like that - which isn't relevant for
 # including in a project's CHANGELOG for example
-declared_trivial = github.pr_title.include? "#trivial"
+app_changes = !git.modified_files.grep(/.go$/).empty?
+declared_trivial = github.pr_title.include? "#trivial" || !app_changes
 
 # Make it more obvious that a PR is a work in progress and shouldn't be merged yet
 warn("PR is classed as Work in Progress") if github.pr_title.include? "[WIP]"
 
 # Warn when there is a big PR
-warn("Big PR") if git.lines_of_code > 500
+warn("Big PR: #{git.lines_of_code} lines of code changed") if git.lines_of_code > 500
 
-if not changelog_changes? && not declared_trivial
-  fail("Any changes to library code need a summary in the Changelog.")
+if !git.modified_files.include?("CHANGELOG.md") && !declared_trivial
+  fail("Please include a CHANGELOG entry.", sticky: false)
 end

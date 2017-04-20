@@ -12,6 +12,9 @@ with respect to its command line interface and HTTP interface.
 - Singularity RequestIDs retrieved from Singularity are reused when updating deploys,
   instead of recomputing fresh unique ones each time.
 
+### Minor
+- Added a tool called "danger" to do review of PRs.
+
 ## [0.5.0](//github.com/opentable/sous/compare/0.4.1...0.5.0)
 
 ### Added
