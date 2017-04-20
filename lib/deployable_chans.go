@@ -17,8 +17,9 @@ type (
 	// situation, where the Prior Deployable is the known state and the Post
 	// Deployable is the desired state.
 	DeployablePair struct {
-		Prior, Post *Deployable
-		name        DeploymentID
+		Prior, Post  *Deployable
+		name         DeploymentID
+		ExecutorData interface{}
 	}
 
 	diffSet struct {
@@ -136,7 +137,7 @@ func resolveCreates(r Registry, from chan *DeployablePair, to chan *DeployablePa
 			Log.Debug.Printf("Failed create deployment %q: % #v", dep.ID(), dep)
 			continue
 		}
-		to <- &DeployablePair{name: dp.name, Prior: nil, Post: da}
+		to <- &DeployablePair{ExecutorData: dp.ExecutorData, name: dp.name, Prior: nil, Post: da}
 	}
 	close(to)
 }
@@ -146,7 +147,7 @@ func resolveCreates(r Registry, from chan *DeployablePair, to chan *DeployablePa
 func maybeResolveRetains(r Registry, from chan *DeployablePair, to chan *DeployablePair, errs chan *DiffResolution) {
 	for dp := range from {
 		da := maybeResolveSingle(r, dp.Post)
-		to <- &DeployablePair{name: dp.name, Prior: da, Post: da}
+		to <- &DeployablePair{ExecutorData: dp.ExecutorData, name: dp.name, Prior: da, Post: da}
 	}
 	close(to)
 }
@@ -154,7 +155,7 @@ func maybeResolveRetains(r Registry, from chan *DeployablePair, to chan *Deploya
 func maybeResolveDeletes(r Registry, from chan *DeployablePair, to chan *DeployablePair, errs chan *DiffResolution) {
 	for dp := range from {
 		da := maybeResolveSingle(r, dp.Prior)
-		to <- &DeployablePair{name: dp.name, Prior: da, Post: nil}
+		to <- &DeployablePair{ExecutorData: dp.ExecutorData, name: dp.name, Prior: da, Post: nil}
 	}
 	close(to)
 }
@@ -204,5 +205,5 @@ func resolvePair(r Registry, depPair *DeployablePair) (*DeployablePair, *DiffRes
 	prior, _ := resolveName(r, depPair.Prior)
 	post, err := resolveName(r, depPair.Post)
 
-	return &DeployablePair{name: depPair.name, Prior: prior, Post: post}, err
+	return &DeployablePair{ExecutorData: depPair.ExecutorData, name: depPair.name, Prior: prior, Post: post}, err
 }

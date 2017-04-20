@@ -2,6 +2,7 @@ package singularity
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/opentable/go-singularity/dtos"
 	"github.com/opentable/sous/ext/docker"
@@ -100,6 +101,8 @@ func BuildDeployment(reg sous.ImageLabeller, clusters sous.Clusters, req SingReq
 	db := deploymentBuilder{registry: reg, clusters: clusters, req: req}
 
 	db.Target.Cluster = &sous.Cluster{BaseURL: req.SourceURL}
+	db.Target.ExecutorData = &singularityTaskData{requestID: reqID(req.ReqParent)}
+	Log.Vomit.Printf("Recording %v as requestID for instance.", db.Target.ExecutorData)
 	db.request = req.ReqParent.Request
 
 	return db.Target, db.canRetry(db.completeConstruction())
@@ -256,6 +259,21 @@ func (db *deploymentBuilder) determineStatus() error {
 	if db.history.DeployResult.DeployState == dtos.SingularityDeployResultDeployStateSUCCEEDED {
 		db.Target.Status = sous.DeployStatusActive
 	} else {
+		msg := db.history.DeployResult.Message
+		if len(db.history.DeployResult.DeployFailures) > 0 {
+			msgs := []string{}
+			for _, df := range db.history.DeployResult.DeployFailures {
+				msgs = append(msgs, df.Message)
+			}
+			msg = strings.Join(msgs, ", ")
+		}
+
+		db.Target.ExecutorMessage = fmt.Sprintf("Deploy faulure: %q %s/request/%s/deploy/%s",
+			msg,
+			db.req.SourceURL,
+			db.history.Deploy.RequestId,
+			db.history.Deploy.Id,
+		)
 		db.Target.Status = sous.DeployStatusFailed
 	}
 

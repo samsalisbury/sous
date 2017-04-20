@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
+## [Unreleased](//github.com/opentable/sous/compare/0.5.0...HEAD)
+
+### Fixed
+- Singularity RequestIDs retrieved from Singularity are reused when updating deploys,
+  instead of recomputing fresh unique ones each time.
+
 ## [0.5.0](//github.com/opentable/sous/compare/0.4.1...0.5.0)
 
 ### Added
