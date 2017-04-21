@@ -140,7 +140,7 @@ func (suite *integrationSuite) BeforeTest(suiteName, testName string) {
 	suite.deployer = singularity.NewDeployer(suite.client)
 }
 
-func (suite *integrationSuite) TeardownTest() {
+func (suite *integrationSuite) TearDownTest() {
 	ResetSingularity()
 }
 
