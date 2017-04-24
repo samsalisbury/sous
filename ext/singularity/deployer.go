@@ -1,9 +1,7 @@
 package singularity
 
 import (
-	"crypto/md5"
 	"fmt"
-	"io"
 	"runtime/debug"
 	"strings"
 
@@ -242,16 +240,9 @@ func MakeRequestID(depID sous.DeploymentID) string {
 	sl = illegalDeployIDChars.ReplaceAllString(sl, "_")
 	fl := illegalDeployIDChars.ReplaceAllString(depID.ManifestID.Flavor, "_")
 	cl := illegalDeployIDChars.ReplaceAllString(depID.Cluster, "_")
+	digest := depID.Digest()
 
-	h := md5.New()
-	sep := []byte{0}
-	io.WriteString(h, depID.ManifestID.Source.String())
-	h.Write(sep)
-	io.WriteString(h, depID.ManifestID.Flavor)
-	h.Write(sep)
-	io.WriteString(h, depID.Cluster)
-
-	reqBase := fmt.Sprintf("%s-%s-%s-%x", sl, fl, cl, h.Sum(nil))
+	reqBase := fmt.Sprintf("%s-%s-%s-%x", sl, fl, cl, digest)
 	if len(reqBase) < maxRequestIDLen {
 		return reqBase
 	}
