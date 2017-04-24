@@ -14,22 +14,22 @@ import (
 var requestIDTests = []struct{ Repo, Dir, Flavor, Cluster, String string }{
 	{
 		"github.com/user/repo", "", "", "some-cluster",
-		"github_com_user_repo--some_cluster",
+		"repo---some_cluster",
 		//"Sous_repo-some_cluster",
 	},
 	{
 		"github.com/user/repo", "some/offset/dir", "", "some-cluster",
-		"github_com_user_repo__some_offset_dir--some_cluster",
+		"repo-some_offset_dir--some_cluster",
 		//"Sous_repo_dir-some_cluster",
 	},
 	{
 		"github.com/user/repo", "", "tasty-flavor", "some-cluster",
-		"github_com_user_repo-tasty_flavor-some_cluster",
+		"repo--tasty_flavor-some_cluster",
 		//"Sous_repo-tasty_flavor-some_cluster",
 	},
 	{
 		"github.com/user/repo", "some/offset/dir", "tasty-flavor", "some-cluster",
-		"github_com_user_repo__some_offset_dir-tasty_flavor-some_cluster",
+		"repo-some_offset_dir-tasty_flavor-some_cluster",
 		//"Sous_repo_dir-tasty_flavor-some_cluster",
 	},
 }
@@ -145,7 +145,7 @@ func TestShortComputeDeployID(t *testing.T) {
 		Deployment: &sous.Deployment{
 			SourceID: sous.SourceID{
 				Location: sous.SourceLocation{
-					Repo: "reqid",
+					Repo: "fake.tld/org/project",
 				},
 				Version: semv.MustParse(verStr),
 			},
@@ -181,7 +181,7 @@ func TestLongComputeDeployID(t *testing.T) {
 		Deployment: &sous.Deployment{
 			SourceID: sous.SourceID{
 				Location: sous.SourceLocation{
-					Repo: "reqid",
+					Repo: "fake.tld/org/project",
 				},
 				Version: semv.MustParse(verStr),
 			},
@@ -221,7 +221,7 @@ func TestPendingModification(t *testing.T) {
 	dpl := &sous.Deployment{
 		SourceID: sous.SourceID{
 			Location: sous.SourceLocation{
-				Repo: "reqid",
+				Repo: "fake.tld/org/project",
 			},
 			Version: semv.MustParse(verStr),
 		},
@@ -279,7 +279,7 @@ func TestModificationOfFailed(t *testing.T) {
 	dpl := &sous.Deployment{
 		SourceID: sous.SourceID{
 			Location: sous.SourceLocation{
-				Repo: "reqid",
+				Repo: "fake.tld/org/project",
 			},
 			Version: semv.MustParse(verStr),
 		},

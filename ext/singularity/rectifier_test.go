@@ -95,7 +95,7 @@ func baseDeployablePair() *sous.DeployablePair {
 			Deployment: &sous.Deployment{
 				SourceID: sous.SourceID{
 					Location: sous.SourceLocation{
-						Repo: "reqid",
+						Repo: "fake.tld/org/project",
 					},
 				},
 				DeployConfig: sous.DeployConfig{
@@ -116,7 +116,7 @@ func baseDeployablePair() *sous.DeployablePair {
 			Deployment: &sous.Deployment{
 				SourceID: sous.SourceID{
 					Location: sous.SourceLocation{
-						Repo: "reqid",
+						Repo: "fake.tld/org/project",
 					},
 				},
 				DeployConfig: sous.DeployConfig{
@@ -290,7 +290,7 @@ func TestDeletes(t *testing.T) {
 			Deployment: &sous.Deployment{
 				SourceID: sous.SourceID{
 					Location: sous.SourceLocation{
-						Repo: "reqid",
+						Repo: "fake.tld/org/project",
 					},
 				},
 				DeployConfig: sous.DeployConfig{
@@ -349,7 +349,7 @@ func TestCreates(t *testing.T) {
 			Deployment: &sous.Deployment{
 				SourceID: sous.SourceID{
 					Location: sous.SourceLocation{
-						Repo: "reqid",
+						Repo: "fake.tld/org/project",
 					},
 				},
 				DeployConfig: sous.DeployConfig{
@@ -387,7 +387,7 @@ func TestCreates(t *testing.T) {
 	if assert.Len(client.Created, 1) {
 		req := client.Created[0]
 		assert.Equal("cluster", req.Deployment.Cluster.BaseURL)
-		assert.Regexp("^reqid--nick-[0-9a-f]*$", computeRequestID(&req))
+		assert.Regexp("^project---nick-[0-9a-f]*$", computeRequestID(&req))
 		assert.Equal(12, req.Deployment.DeployConfig.NumInstances)
 	}
 }

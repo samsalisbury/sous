@@ -57,3 +57,20 @@ func TestSourceLocation_UnmarshalText(t *testing.T) {
 		}
 	}
 }
+
+func TestSourceLocationShortName(t *testing.T) {
+	expected := "project"
+	sl := SourceLocation{
+		Repo: "fake.tld/org/" + "project",
+		Dir:  "down/here",
+	}
+	shortName, err := sl.ShortName()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if shortName != "project" {
+		t.Fatalf("Got:%s, expected:%s", shortName, expected)
+	} else {
+		t.Logf("Got %s, expected:%s", shortName, expected)
+	}
+}

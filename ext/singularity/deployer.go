@@ -236,13 +236,17 @@ func computeRequestID(d *sous.Deployable) string {
 
 // MakeRequestID creates a Singularity request ID from a sous.DeploymentID.
 func MakeRequestID(depID sous.DeploymentID) string {
-	sl := strings.Replace(depID.ManifestID.Source.String(), ",", "__", -1)
-	sl = illegalDeployIDChars.ReplaceAllString(sl, "_")
+	sn, err := depID.ManifestID.Source.ShortName()
+	if err != nil {
+		panic(err)
+	}
+	sn = illegalDeployIDChars.ReplaceAllString(sn, "_")
+	dd := illegalDeployIDChars.ReplaceAllString(depID.ManifestID.Source.Dir, "_")
 	fl := illegalDeployIDChars.ReplaceAllString(depID.ManifestID.Flavor, "_")
 	cl := illegalDeployIDChars.ReplaceAllString(depID.Cluster, "_")
 	digest := depID.Digest()
 
-	reqBase := fmt.Sprintf("%s-%s-%s-%x", sl, fl, cl, digest)
+	reqBase := fmt.Sprintf("%s-%s-%s-%s-%x", sn, dd, fl, cl, digest)
 	if len(reqBase) < maxRequestIDLen {
 		return reqBase
 	}

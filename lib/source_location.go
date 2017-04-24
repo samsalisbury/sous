@@ -2,6 +2,7 @@ package sous
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/samsalisbury/semv"
@@ -107,4 +108,13 @@ func (sl SourceLocation) SourceID(version semv.Version) SourceID {
 		Location: sl,
 		Version:  version,
 	}
+}
+
+// ShortName returns the name of the repo without the FQDN or the organization name.
+func (sl SourceLocation) ShortName() (string, error) {
+	splitRepo := strings.Split(sl.Repo, "/")
+	if len(splitRepo) < 2 {
+		return "", fmt.Errorf("String does not represent a repo.")
+	}
+	return splitRepo[len(splitRepo)-1:][0], nil
 }
