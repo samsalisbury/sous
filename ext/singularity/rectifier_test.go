@@ -387,7 +387,11 @@ func TestCreates(t *testing.T) {
 	if assert.Len(client.Created, 1) {
 		req := client.Created[0]
 		assert.Equal("cluster", req.Deployment.Cluster.BaseURL)
-		assert.Regexp("^project---nick-[0-9a-f]*$", computeRequestID(&req))
+		reqID, err := computeRequestID(&req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		assert.Regexp("^project---nick-[0-9a-f]*$", reqID)
 		assert.Equal(12, req.Deployment.DeployConfig.NumInstances)
 	}
 }

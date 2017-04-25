@@ -122,7 +122,10 @@ func (r *deployer) RectifySingleCreate(d *sous.DeployablePair) (err error) {
 	if err != nil {
 		return err
 	}
-	reqID := computeRequestID(d.Post)
+	reqID, err := computeRequestID(d.Post)
+	if err != nil {
+		return err
+	}
 	if err = r.Client.PostRequest(*d.Post, reqID); err != nil {
 		return err
 	}
@@ -227,15 +230,15 @@ func changesDep(pair *sous.DeployablePair) bool {
 			pair.Prior.DeployConfig.Volumes.Equal(pair.Post.DeployConfig.Volumes))
 }
 
-func computeRequestID(d *sous.Deployable) string {
+func computeRequestID(d *sous.Deployable) (string, error) {
 	return MakeRequestID(d.ID())
 }
 
 // MakeRequestID creates a Singularity request ID from a sous.DeploymentID.
-func MakeRequestID(depID sous.DeploymentID) string {
+func MakeRequestID(depID sous.DeploymentID) (string, error) {
 	sn, err := depID.ManifestID.Source.ShortName()
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 	sn = illegalDeployIDChars.ReplaceAllString(sn, "_")
 	dd := illegalDeployIDChars.ReplaceAllString(depID.ManifestID.Source.Dir, "_")
@@ -245,9 +248,9 @@ func MakeRequestID(depID sous.DeploymentID) string {
 
 	reqBase := fmt.Sprintf("%s-%s-%s-%s-%x", sn, dd, fl, cl, digest)
 	if len(reqBase) < maxRequestIDLen {
-		return reqBase
+		return reqBase, nil
 	}
-	return reqBase[:maxRequestIDLen]
+	return reqBase[:maxRequestIDLen], nil
 }
 
 func computeDeployID(d *sous.Deployable) string {

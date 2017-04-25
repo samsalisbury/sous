@@ -46,7 +46,10 @@ func TestMakeRequestID(t *testing.T) {
 			},
 			Cluster: test.Cluster,
 		}
-		actual := MakeRequestID(input)
+		actual, err := MakeRequestID(input)
+		if err != nil {
+			t.Fatal(err)
+		}
 		expected := test.String
 
 		if strings.Index(actual, expected) != 0 {
@@ -91,7 +94,10 @@ func TestMakeRequestID_Collisions(t *testing.T) {
 			Cluster: leftTest.cluster,
 		}
 
-		leftReqID := MakeRequestID(left)
+		leftReqID, err := MakeRequestID(left)
+		if err != nil {
+			t.Fatal(err)
+		}
 		t.Log(leftReqID)
 
 		for j, rightTest := range tests {
@@ -110,7 +116,11 @@ func TestMakeRequestID_Collisions(t *testing.T) {
 				Cluster: rightTest.cluster,
 			}
 
-			if leftReqID == MakeRequestID(right) {
+			rightReqID, err := MakeRequestID(right)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if leftReqID == rightReqID {
 				t.Error(spew.Sprintf("Collision! %q produced by \n\tboth %v \n\t and %v", leftReqID, left, right))
 			}
 		}
