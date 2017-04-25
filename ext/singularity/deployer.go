@@ -228,9 +228,6 @@ func changesDep(pair *sous.DeployablePair) bool {
 }
 
 func computeRequestID(d *sous.Deployable) string {
-	if len(d.RequestID) > 0 {
-		return d.RequestID
-	}
 	return MakeRequestID(d.ID())
 }
 

@@ -36,18 +36,6 @@ type (
 		Owners OwnerSet
 		// Kind is the kind of software that SourceRepo represents.
 		Kind ManifestKind
-		// Notes collected from the deployment's source.
-		Annotation
-	}
-
-	// An Annotation stores notes about data available from the source of of a
-	// Deployment. For instance, the Id field from the source SingularityRequest
-	// for a Deployment can be stored to refer to the source post-diff.  They
-	// don't participate in equality checks on the deployment.
-	Annotation struct {
-		// RequestID stores the Singularity Request ID that was used for this
-		// deployment.
-		RequestID string
 	}
 
 	// A DeploymentID identifies a deployment.

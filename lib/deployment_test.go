@@ -48,11 +48,7 @@ func TestDeploymentEqual(t *testing.T) {
 	dep := Deployment{}
 	assert.True(dep.Equal(&Deployment{}))
 
-	other := Deployment{
-		Annotation: Annotation{
-			RequestID: "somewhere around here",
-		},
-	}
+	other := Deployment{}
 	assert.True(dep.Equal(&other))
 }
 
