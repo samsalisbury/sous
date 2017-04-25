@@ -1,9 +1,7 @@
 package singularity
 
 import (
-	"crypto/md5"
 	"fmt"
-	"io"
 	"runtime/debug"
 	"strings"
 
@@ -124,7 +122,10 @@ func (r *deployer) RectifySingleCreate(d *sous.DeployablePair) (err error) {
 	if err != nil {
 		return err
 	}
-	reqID := computeRequestID(d.Post)
+	reqID, err := computeRequestID(d.Post)
+	if err != nil {
+		return err
+	}
 	if err = r.Client.PostRequest(*d.Post, reqID); err != nil {
 		return err
 	}
@@ -229,33 +230,27 @@ func changesDep(pair *sous.DeployablePair) bool {
 			pair.Prior.DeployConfig.Volumes.Equal(pair.Post.DeployConfig.Volumes))
 }
 
-func computeRequestID(d *sous.Deployable) string {
-	if len(d.RequestID) > 0 {
-		return d.RequestID
-	}
+func computeRequestID(d *sous.Deployable) (string, error) {
 	return MakeRequestID(d.ID())
 }
 
 // MakeRequestID creates a Singularity request ID from a sous.DeploymentID.
-func MakeRequestID(depID sous.DeploymentID) string {
-	sl := strings.Replace(depID.ManifestID.Source.String(), ",", "__", -1)
-	sl = illegalDeployIDChars.ReplaceAllString(sl, "_")
+func MakeRequestID(depID sous.DeploymentID) (string, error) {
+	sn, err := depID.ManifestID.Source.ShortName()
+	if err != nil {
+		return "", err
+	}
+	sn = illegalDeployIDChars.ReplaceAllString(sn, "_")
+	dd := illegalDeployIDChars.ReplaceAllString(depID.ManifestID.Source.Dir, "_")
 	fl := illegalDeployIDChars.ReplaceAllString(depID.ManifestID.Flavor, "_")
 	cl := illegalDeployIDChars.ReplaceAllString(depID.Cluster, "_")
+	digest := depID.Digest()
 
-	h := md5.New()
-	sep := []byte{0}
-	io.WriteString(h, depID.ManifestID.Source.String())
-	h.Write(sep)
-	io.WriteString(h, depID.ManifestID.Flavor)
-	h.Write(sep)
-	io.WriteString(h, depID.Cluster)
-
-	reqBase := fmt.Sprintf("%s-%s-%s-%x", sl, fl, cl, h.Sum(nil))
+	reqBase := fmt.Sprintf("%s-%s-%s-%s-%x", sn, dd, fl, cl, digest)
 	if len(reqBase) < maxRequestIDLen {
-		return reqBase
+		return reqBase, nil
 	}
-	return reqBase[:maxRequestIDLen]
+	return reqBase[:maxRequestIDLen], nil
 }
 
 func computeDeployID(d *sous.Deployable) string {

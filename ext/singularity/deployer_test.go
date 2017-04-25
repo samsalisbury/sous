@@ -14,22 +14,22 @@ import (
 var requestIDTests = []struct{ Repo, Dir, Flavor, Cluster, String string }{
 	{
 		"github.com/user/repo", "", "", "some-cluster",
-		"github_com_user_repo--some_cluster",
+		"repo---some_cluster",
 		//"Sous_repo-some_cluster",
 	},
 	{
 		"github.com/user/repo", "some/offset/dir", "", "some-cluster",
-		"github_com_user_repo__some_offset_dir--some_cluster",
+		"repo-some_offset_dir--some_cluster",
 		//"Sous_repo_dir-some_cluster",
 	},
 	{
 		"github.com/user/repo", "", "tasty-flavor", "some-cluster",
-		"github_com_user_repo-tasty_flavor-some_cluster",
+		"repo--tasty_flavor-some_cluster",
 		//"Sous_repo-tasty_flavor-some_cluster",
 	},
 	{
 		"github.com/user/repo", "some/offset/dir", "tasty-flavor", "some-cluster",
-		"github_com_user_repo__some_offset_dir-tasty_flavor-some_cluster",
+		"repo-some_offset_dir-tasty_flavor-some_cluster",
 		//"Sous_repo_dir-tasty_flavor-some_cluster",
 	},
 }
@@ -46,7 +46,10 @@ func TestMakeRequestID(t *testing.T) {
 			},
 			Cluster: test.Cluster,
 		}
-		actual := MakeRequestID(input)
+		actual, err := MakeRequestID(input)
+		if err != nil {
+			t.Fatal(err)
+		}
 		expected := test.String
 
 		if strings.Index(actual, expected) != 0 {
@@ -91,7 +94,10 @@ func TestMakeRequestID_Collisions(t *testing.T) {
 			Cluster: leftTest.cluster,
 		}
 
-		leftReqID := MakeRequestID(left)
+		leftReqID, err := MakeRequestID(left)
+		if err != nil {
+			t.Fatal(err)
+		}
 		t.Log(leftReqID)
 
 		for j, rightTest := range tests {
@@ -110,7 +116,11 @@ func TestMakeRequestID_Collisions(t *testing.T) {
 				Cluster: rightTest.cluster,
 			}
 
-			if leftReqID == MakeRequestID(right) {
+			rightReqID, err := MakeRequestID(right)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if leftReqID == rightReqID {
 				t.Error(spew.Sprintf("Collision! %q produced by \n\tboth %v \n\t and %v", leftReqID, left, right))
 			}
 		}
@@ -145,7 +155,7 @@ func TestShortComputeDeployID(t *testing.T) {
 		Deployment: &sous.Deployment{
 			SourceID: sous.SourceID{
 				Location: sous.SourceLocation{
-					Repo: "reqid",
+					Repo: "fake.tld/org/project",
 				},
 				Version: semv.MustParse(verStr),
 			},
@@ -181,7 +191,7 @@ func TestLongComputeDeployID(t *testing.T) {
 		Deployment: &sous.Deployment{
 			SourceID: sous.SourceID{
 				Location: sous.SourceLocation{
-					Repo: "reqid",
+					Repo: "fake.tld/org/project",
 				},
 				Version: semv.MustParse(verStr),
 			},
@@ -221,7 +231,7 @@ func TestPendingModification(t *testing.T) {
 	dpl := &sous.Deployment{
 		SourceID: sous.SourceID{
 			Location: sous.SourceLocation{
-				Repo: "reqid",
+				Repo: "fake.tld/org/project",
 			},
 			Version: semv.MustParse(verStr),
 		},
@@ -279,7 +289,7 @@ func TestModificationOfFailed(t *testing.T) {
 	dpl := &sous.Deployment{
 		SourceID: sous.SourceID{
 			Location: sous.SourceLocation{
-				Repo: "reqid",
+				Repo: "fake.tld/org/project",
 			},
 			Version: semv.MustParse(verStr),
 		},

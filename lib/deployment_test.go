@@ -1,6 +1,7 @@
 package sous
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -39,20 +40,6 @@ func TestDeploymentClone(t *testing.T) {
 	original.Volumes = Volumes{}
 
 	assert.Len(t, cloned.Volumes, 2)
-}
-
-func TestDeploymentEqual(t *testing.T) {
-	assert := assert.New(t)
-
-	dep := Deployment{}
-	assert.True(dep.Equal(&Deployment{}))
-
-	other := Deployment{
-		Annotation: Annotation{
-			RequestID: "somewhere around here",
-		},
-	}
-	assert.True(dep.Equal(&other))
 }
 
 func TestCanonName(t *testing.T) {
@@ -105,5 +92,25 @@ func TestBuildDeployment(t *testing.T) {
 			assert.Equal("c", d.DeployConfig.Volumes[0].Container)
 		}
 		assert.Equal(nick, d.ClusterName)
+	}
+}
+
+func TestDigest(t *testing.T) {
+	tmpl := "got:%s expected:%s"
+	expected := "3ea161adca77a01781628e8a7d24ad0e"
+	d := &DeploymentID{
+		ManifestID: ManifestID{
+			Source: SourceLocation{
+				Repo: "fake.tld/org/" + "project",
+				Dir:  "down/here",
+			},
+		},
+		Cluster: "test-cluster",
+	}
+	dStr := fmt.Sprintf("%x", d.Digest())
+	if dStr != expected {
+		t.Fatalf(tmpl, dStr, expected)
+	} else {
+		t.Logf(tmpl, dStr, expected)
 	}
 }
