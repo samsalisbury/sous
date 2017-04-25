@@ -113,7 +113,9 @@ func (sl SourceLocation) SourceID(version semv.Version) SourceID {
 // ShortName returns the name of the repo without the FQDN or the organization name.
 func (sl SourceLocation) ShortName() (string, error) {
 	splitRepo := strings.Split(sl.Repo, "/")
-	if len(splitRepo) < 2 {
+	// A repo string split into three pieces should be at least three elements long: FQDN, organization, project.
+	splitLength := 3
+	if len(splitRepo) < splitLength {
 		return "", fmt.Errorf("String does not represent a repo.")
 	}
 	return splitRepo[len(splitRepo)-1:][0], nil
