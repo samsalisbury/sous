@@ -42,16 +42,6 @@ func TestDeploymentClone(t *testing.T) {
 	assert.Len(t, cloned.Volumes, 2)
 }
 
-func TestDeploymentEqual(t *testing.T) {
-	assert := assert.New(t)
-
-	dep := Deployment{}
-	assert.True(dep.Equal(&Deployment{}))
-
-	other := Deployment{}
-	assert.True(dep.Equal(&other))
-}
-
 func TestCanonName(t *testing.T) {
 	assert := assert.New(t)
 

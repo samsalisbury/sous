@@ -64,6 +64,7 @@ func TestSourceLocationShortName(t *testing.T) {
 		Repo: "fake.tld/org/" + expected,
 		Dir:  "down/here",
 	}
+	t.Logf("Generating ShortName for %#v", sl)
 	shortName, err := sl.ShortName()
 	if err != nil {
 		t.Fatal(err)
@@ -72,5 +73,20 @@ func TestSourceLocationShortName(t *testing.T) {
 		t.Fatalf("Got:%s, expected:%s", shortName, expected)
 	} else {
 		t.Logf("Got %s, expected:%s", shortName, expected)
+	}
+}
+
+func TestSourceLocationShortNameWithBadRepo(t *testing.T) {
+	expected := "project"
+	sl := SourceLocation{
+		Repo: "NotaURL" + expected,
+		Dir:  "down/here",
+	}
+	t.Logf("Generating ShortName for %#v", sl)
+	_, err := sl.ShortName()
+	if err == nil {
+		t.Fatal("An error was expected, but got nil.")
+	} else {
+		t.Logf("An error was correctly anticipated: %s", err)
 	}
 }

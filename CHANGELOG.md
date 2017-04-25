@@ -7,11 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
 ## [Unreleased]
-### Fixed
+### Changed 
 - Singularity RequestIDs are generated with a suffix of the MD5 sum of
   pre-slug data instead of a random UUID.
-
-### Major
 - Singularity RequestIDs are shortened to no longer include FQDN or
   organization of Git repo URL.
 
