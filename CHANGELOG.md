@@ -12,12 +12,8 @@ with respect to its command line interface and HTTP interface.
   pre-slug data instead of a random UUID.
 
 ### Major
-- MakeRequestID() in the singularity package now returns errors.
-- Remove Annotation type from the sous package.
 - Singularity RequestIDs are shortened to no longer include FQDN or
   organization of Git repo URL.
-- DeploymentID receives the Digest() function.
-- SourceLocation receives the ShortName() function.
 
 ## [0.5.1](//github.com/opentable/sous/compare/0.5.0...0.5.1)
 
