@@ -4,6 +4,15 @@
 
 Sous is distributed as a single binary, in a tarball also containing documentation.
 
+# Homebrew
+[Install via Homebrew](https://github.com/opentable/homebrew-osx-tools)!
+
+```
+$ brew tap opentable/osx-tools
+$ brew install sous
+🍺  /usr/local/Cellar/sous/0.5.1: 5 files, 15.8MB, built in 5 seconds
+```
+
 # Linux and Mac tarballs
 
 [Download the archive] and extract it. For example on Darwin (OS X):
