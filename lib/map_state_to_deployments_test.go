@@ -60,8 +60,9 @@ func makeTestState() *State {
 								"mem":  "1024",
 							},
 							Env: Env{
-								"ALL":   "IS ONE",
-								"ENV_1": "ENV ONE",
+								"ALL":               "IS ONE",
+								"ENV_1":             "ENV ONE",
+								"CLUSTER_LONG_NAME": "Cluster One",
 							},
 							Metadata: Metadata{
 								"everybody": "wants to be a cat",
@@ -78,8 +79,9 @@ func makeTestState() *State {
 								"mem":  "2048",
 							},
 							Env: Env{
-								"ALL":   "IS ONE",
-								"ENV_2": "ENV TWO",
+								"ALL":               "IS ONE",
+								"ENV_2":             "ENV TWO",
+								"CLUSTER_LONG_NAME": "I Like To Call It 'Cluster One'",
 							},
 							Metadata: Metadata{
 								"everybody": "wants to be a cat",
