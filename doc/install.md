@@ -5,13 +5,21 @@
 Sous is distributed as a single binary, in a tarball also containing documentation.
 
 # Homebrew
-[Install via Homebrew](https://github.com/opentable/homebrew-osx-tools)!
+On macOS you can install via [homebrew](https://brew.sh):
 
 ```
-$ brew tap opentable/osx-tools
-$ brew install sous
+$ brew install opentable/public/sous
+==> Tapping opentable/public
 🍺  /usr/local/Cellar/sous/0.5.1: 5 files, 15.8MB, built in 5 seconds
 ```
+
+**NOTE: This formula has recently been migrated to a new tap at [opentable/public].**
+If you previously installed sous from the old `opentable/osx-tools` tap,
+please uninstall your current sous using `brew uninstall sous` and remove the old
+tap by running `brew untap opentable/osx-tools`. Then follow the instructions above
+to install sous properly, and have it upgraded by `brew upgrade` in future.
+
+[opentable/public]: https://github.com/opentable/homebrew-public 
 
 # Linux and Mac tarballs
 
