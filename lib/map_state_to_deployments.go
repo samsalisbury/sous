@@ -9,9 +9,14 @@ import (
 
 // Deployments returns all deployments described by the state.
 func (s *State) Deployments() (Deployments, error) {
+	return s.Manifests.Deployments(s.Defs)
+}
+
+// Deployments returns all deployments described by these Manifests.
+func (ms Manifests) Deployments(defs Defs) (Deployments, error) {
 	ds := NewDeployments()
-	for _, m := range s.Manifests.Snapshot() {
-		deployments, err := s.DeploymentsFromManifest(m)
+	for _, m := range ms.Snapshot() {
+		deployments, err := DeploymentsFromManifest(defs, m)
 		if err != nil {
 			return ds, err
 		}
@@ -28,7 +33,7 @@ func (s *State) Deployments() (Deployments, error) {
 			}
 			d.Env[name] = string(val)
 		}
-		cluster, ok := s.Defs.Clusters[d.ClusterName]
+		cluster, ok := defs.Clusters[d.ClusterName]
 		if !ok {
 			return ds, errors.Errorf("cluster %q is not described in defs.yaml (but specified in manifest %q)",
 				d.ClusterName, id.ManifestID)
@@ -97,17 +102,17 @@ func (ds Deployments) Manifests(defs Defs) (Manifests, error) {
 // DeploymentsFromManifest returns all deployments described by a single
 // manifest, in terms of the wider state (i.e. global and cluster definitions
 // and configuration).
-func (s *State) DeploymentsFromManifest(m *Manifest) (Deployments, error) {
+func DeploymentsFromManifest(defs Defs, m *Manifest) (Deployments, error) {
 	ds := NewDeployments()
 	var inherit []DeploySpec
 
 	for clusterName, spec := range m.Deployments {
-		cluster, ok := s.Defs.Clusters[clusterName]
+		cluster, ok := defs.Clusters[clusterName]
 		if !ok {
 			return ds, errors.Errorf("cluster %q not described in defs.yaml", clusterName)
 		}
 		spec.clusterName = cluster.BaseURL
-		d, err := BuildDeployment(s, m, clusterName, spec, inherit)
+		d, err := BuildDeployment(defs, m, clusterName, spec, inherit)
 		if err != nil {
 			return ds, err
 		}
@@ -117,12 +122,12 @@ func (s *State) DeploymentsFromManifest(m *Manifest) (Deployments, error) {
 }
 
 // BuildDeployment constructs a deployment out of a Manifest.
-func BuildDeployment(s *State, m *Manifest, nick string, spec DeploySpec, inherit []DeploySpec) (*Deployment, error) {
+func BuildDeployment(defs Defs, m *Manifest, nick string, spec DeploySpec, inherit []DeploySpec) (*Deployment, error) {
 	ownMap := NewOwnerSet(m.Owners...)
 	ds := flattenDeploySpecs(append([]DeploySpec{spec}, inherit...))
 	return &Deployment{
 		ClusterName:  nick,
-		Cluster:      s.Defs.Clusters[nick],
+		Cluster:      defs.Clusters[nick],
 		DeployConfig: ds.DeployConfig,
 		Flavor:       m.Flavor,
 		Owners:       ownMap,

@@ -25,109 +25,114 @@ var cluster2 = &Cluster{
 	},
 }
 
-func makeTestState() *State {
-	return &State{
-		Defs: Defs{
-			DockerRepo: "some.docker.repo",
-			Clusters: Clusters{
-				"cluster-1": cluster1,
-				"cluster-2": cluster2,
-			},
-			EnvVars: EnvDefs{
-				{
-					Name:  "CLUSTER_LONG_NAME",
-					Desc:  "The human-friendly name of this cluster.",
-					Scope: "cluster",
-					Type:  VarType("string"),
-				},
-			},
-			Resources: FieldDefinitions{
-				{Name: "cpus", Type: "float"},
-				{Name: "mem", Type: "memory_size"},
+func makeTestDefs() Defs {
+	return Defs{
+		DockerRepo: "some.docker.repo",
+		Clusters: Clusters{
+			"cluster-1": cluster1,
+			"cluster-2": cluster2,
+		},
+		EnvVars: EnvDefs{
+			{
+				Name:  "CLUSTER_LONG_NAME",
+				Desc:  "The human-friendly name of this cluster.",
+				Scope: "cluster",
+				Type:  VarType("string"),
 			},
 		},
-		Manifests: NewManifests(
-			&Manifest{
-				Source: project1,
-				Owners: []string{"owner1"},
-				Kind:   ManifestKindService,
-				Deployments: DeploySpecs{
-					"cluster-1": {
-						Version: semv.MustParse("1.0.0"),
-						DeployConfig: DeployConfig{
-							Resources: Resources{
-								"cpus": "1",
-								"mem":  "1024",
-							},
-							Env: Env{
-								"ALL":               "IS ONE",
-								"ENV_1":             "ENV ONE",
-								"CLUSTER_LONG_NAME": "Cluster One",
-							},
-							Metadata: Metadata{
-								"everybody": "wants to be a cat",
-								"name":      "O'Malley",
-							},
-							NumInstances: 2,
-						},
-					},
-					"cluster-2": {
-						Version: semv.MustParse("2.0.0"),
-						DeployConfig: DeployConfig{
-							Resources: Resources{
-								"cpus": "2",
-								"mem":  "2048",
-							},
-							Env: Env{
-								"ALL":               "IS ONE",
-								"ENV_2":             "ENV TWO",
-								"CLUSTER_LONG_NAME": "I Like To Call It 'Cluster Two'",
-							},
-							Metadata: Metadata{
-								"everybody": "wants to be a cat",
-								"name":      "Duchess",
-							},
-							NumInstances: 3,
-						},
-					},
-				},
-			},
-			&Manifest{
-				Source: project1,
-				Flavor: "some-flavor",
-				Owners: []string{"owner1flav"},
-				Kind:   ManifestKindService,
-				Deployments: DeploySpecs{
-					"cluster-1": {
-						Version: semv.MustParse("1.0.1"),
-						DeployConfig: DeployConfig{
-							Resources: Resources{
-								"cpus": "1.5",
-								"mem":  "1024",
-							},
-							Env: Env{
-								"ENV_1": "ENV ONE FLAVORED",
-							},
-							NumInstances: 4,
-						},
-					},
-					"cluster-2": {
-						Version: semv.MustParse("2.0.1"),
-						DeployConfig: DeployConfig{
-							Resources: Resources{
-								"cpus": "2.5",
-								"mem":  "2048",
-							},
-							Env: Env{
-								"ENV_2": "ENV TWO FLAVORED",
-							},
-							NumInstances: 5,
-						},
-					},
-				},
-			},
-		),
+		Resources: FieldDefinitions{
+			{Name: "cpus", Type: "float"},
+			{Name: "mem", Type: "memory_size"},
+		},
 	}
+}
+
+func makeTestManifests() Manifests {
+	return NewManifests(
+		&Manifest{
+			Source: project1,
+			Owners: []string{"owner1"},
+			Kind:   ManifestKindService,
+			Deployments: DeploySpecs{
+				"cluster-1": {
+					Version: semv.MustParse("1.0.0"),
+					DeployConfig: DeployConfig{
+						Resources: Resources{
+							"cpus": "1",
+							"mem":  "1024",
+						},
+						Env: Env{
+							"ALL":               "IS ONE",
+							"ENV_1":             "ENV ONE",
+							"CLUSTER_LONG_NAME": "Cluster One",
+						},
+						Metadata: Metadata{
+							"everybody": "wants to be a cat",
+							"name":      "O'Malley",
+						},
+						NumInstances: 2,
+					},
+				},
+				"cluster-2": {
+					Version: semv.MustParse("2.0.0"),
+					DeployConfig: DeployConfig{
+						Resources: Resources{
+							"cpus": "2",
+							"mem":  "2048",
+						},
+						Env: Env{
+							"ALL":               "IS ONE",
+							"ENV_2":             "ENV TWO",
+							"CLUSTER_LONG_NAME": "I Like To Call It 'Cluster Two'",
+						},
+						Metadata: Metadata{
+							"everybody": "wants to be a cat",
+							"name":      "Duchess",
+						},
+						NumInstances: 3,
+					},
+				},
+			},
+		},
+		&Manifest{
+			Source: project1,
+			Flavor: "some-flavor",
+			Owners: []string{"owner1flav"},
+			Kind:   ManifestKindService,
+			Deployments: DeploySpecs{
+				"cluster-1": {
+					Version: semv.MustParse("1.0.1"),
+					DeployConfig: DeployConfig{
+						Resources: Resources{
+							"cpus": "1.5",
+							"mem":  "1024",
+						},
+						Env: Env{
+							"ENV_1": "ENV ONE FLAVORED",
+						},
+						NumInstances: 4,
+					},
+				},
+				"cluster-2": {
+					Version: semv.MustParse("2.0.1"),
+					DeployConfig: DeployConfig{
+						Resources: Resources{
+							"cpus": "2.5",
+							"mem":  "2048",
+						},
+						Env: Env{
+							"ENV_2": "ENV TWO FLAVORED",
+						},
+						NumInstances: 5,
+					},
+				},
+			},
+		},
+	)
+}
+
+func makeTestDeployments() (Deployments, error) {
+	return makeTestManifests().Deployments(makeTestDefs())
 }
 
 var expectedDeployments = NewDeployments(
@@ -217,7 +222,7 @@ var expectedDeployments = NewDeployments(
 )
 
 func TestState_DeploymentsCloned(t *testing.T) {
-	actualDeployments, err := makeTestState().Deployments()
+	actualDeployments, err := makeTestDeployments()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -242,7 +247,7 @@ func TestState_DeploymentsCloned(t *testing.T) {
 var TestStateIndependentDeploySpecsState Manifests
 
 func TestState_IndependentDeploySpecs(t *testing.T) {
-	originalDeployments, err := makeTestState().Deployments()
+	originalDeployments, err := makeTestDeployments()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -255,7 +260,7 @@ func TestState_IndependentDeploySpecs(t *testing.T) {
 	originalJSON := jsonDump(originalDeployment)
 	// We don't care about this result, but write it to global state to avoid
 	// any compiler optimisation from eliding the call.
-	TestStateIndependentDeploySpecsState, err = originalDeployments.Manifests(makeTestState().Defs)
+	TestStateIndependentDeploySpecsState, err = originalDeployments.Manifests(makeTestDefs())
 	if err != nil {
 		t.Error(err)
 	}
@@ -271,7 +276,7 @@ func TestState_IndependentDeploySpecs(t *testing.T) {
 }
 
 func TestState_Deployments(t *testing.T) {
-	actualDeployments, err := makeTestState().Deployments()
+	actualDeployments, err := makeTestDeployments()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -279,7 +284,7 @@ func TestState_Deployments(t *testing.T) {
 }
 
 func TestState_DeploymentsBounce(t *testing.T) {
-	defs := makeTestState().Defs
+	defs := makeTestDefs()
 	bounceManifests, err := expectedDeployments.Clone().Manifests(defs)
 	if err != nil {
 		t.Fatal(err)
@@ -296,21 +301,21 @@ func TestState_DeploymentsBounce(t *testing.T) {
 }
 
 func TestDeployments_Manifests(t *testing.T) {
-	defs := makeTestState().Defs
+	defs := makeTestDefs()
 
 	actualManifests, err := expectedDeployments.Clone().Manifests(defs)
 	if err != nil {
 		t.Fatal(err)
 	}
-	expectedManifests := makeTestState().Manifests
+	expectedManifests := makeTestManifests()
 
 	compareManifests(t, expectedManifests, actualManifests)
 }
 
 func TestDeployments_ManifestsBounce(t *testing.T) {
-	defs := makeTestState().Defs
+	defs := makeTestDefs()
 
-	bounceDeployments, err := makeTestState().Deployments()
+	bounceDeployments, err := makeTestDeployments()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -319,7 +324,7 @@ func TestDeployments_ManifestsBounce(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expectedManifests := makeTestState().Manifests
+	expectedManifests := makeTestManifests()
 
 	compareManifests(t, expectedManifests, actualManifests)
 }
