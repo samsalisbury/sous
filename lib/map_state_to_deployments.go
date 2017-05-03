@@ -74,7 +74,7 @@ func (ds Deployments) Manifests(defs Defs) (Manifests, error) {
 				continue
 			}
 			if string(clusterVal) == v {
-				delete(spec.DeployConfig.Env, k)
+				Log.Debug.Printf("Redundant environment definition: %s=%s", k, v)
 			}
 		}
 		m.Deployments[d.ClusterName] = spec

@@ -81,7 +81,7 @@ func makeTestState() *State {
 							Env: Env{
 								"ALL":               "IS ONE",
 								"ENV_2":             "ENV TWO",
-								"CLUSTER_LONG_NAME": "I Like To Call It 'Cluster One'",
+								"CLUSTER_LONG_NAME": "I Like To Call It 'Cluster Two'",
 							},
 							Metadata: Metadata{
 								"everybody": "wants to be a cat",
@@ -166,9 +166,10 @@ var expectedDeployments = NewDeployments(
 				"mem":  "2048",
 			},
 			Env: Env{
-				"ALL":               "IS ONE",
-				"ENV_2":             "ENV TWO",
-				"CLUSTER_LONG_NAME": "Cluster Two",
+				"ALL":   "IS ONE",
+				"ENV_2": "ENV TWO",
+				//"CLUSTER_LONG_NAME": "Cluster Two",
+				"CLUSTER_LONG_NAME": "I Like To Call It 'Cluster Two'",
 			},
 			Metadata: Metadata{
 				"everybody": "wants to be a cat",
@@ -190,8 +191,7 @@ var expectedDeployments = NewDeployments(
 				"mem":  "1024",
 			},
 			Env: Env{
-				"ENV_1":             "ENV ONE FLAVORED",
-				"CLUSTER_LONG_NAME": "Cluster One",
+				"ENV_1": "ENV ONE FLAVORED",
 			},
 			NumInstances: 4,
 		},
@@ -209,8 +209,7 @@ var expectedDeployments = NewDeployments(
 				"mem":  "2048",
 			},
 			Env: Env{
-				"ENV_2":             "ENV TWO FLAVORED",
-				"CLUSTER_LONG_NAME": "Cluster Two",
+				"ENV_2": "ENV TWO FLAVORED",
 			},
 			NumInstances: 5,
 		},
@@ -361,7 +360,7 @@ func compareManifests(t *testing.T, expectedManifests, actualManifests Manifests
 		}
 		different, differences := actual.Diff(expected)
 		if different {
-			t.Errorf("manifest not as expected: %#v", differences)
+			t.Errorf("manifests not as expected: %#v", differences)
 			continue
 		}
 		// Check all expected DeploySpecs are in actual.
