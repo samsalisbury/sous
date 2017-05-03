@@ -263,7 +263,7 @@ func (sb *splitBuilder) buildBuild() error {
 	sb.VersionConfig = fmt.Sprintf("%s=%s", AppVersionBuildArg, v)
 	sb.RevisionConfig = fmt.Sprintf("%s=%s", AppRevisionBuildArg, sb.context.Version().RevID())
 
-	cmd := []interface{}{"build"}
+	cmd := []interface{}{"build", "--pull"}
 	r := sb.detected.Data.(detectData)
 	if r.HasAppVersionArg {
 		cmd = append(cmd, "--build-arg", sb.VersionConfig)
