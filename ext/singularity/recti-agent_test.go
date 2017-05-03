@@ -101,11 +101,10 @@ func TestFailOnNilBuildArtifact(t *testing.T) {
 
 func TestContainerStartupOptions(t *testing.T) {
 	checkReadyPath := "/use-this-route"
-	_ = sous.NewDummyRegistry()
-	dp := &sous.Deployment{}
+	mockStatus := sous.DeployStatus(sous.DeployStatusPending)
 	d := sous.Deployable{
-		1,
-		dp,
+		mockStatus,
+		&sous.Deployment{},
 		&sous.BuildArtifact{},
 	}
 	d.ClusterName = "TestContainerStartupOptionsCluster"
