@@ -98,3 +98,26 @@ func TestFailOnNilBuildArtifact(t *testing.T) {
 		t.Fatal("Deploy did not return an error when given a sous.Deployable with an empty BuildArtifact")
 	}
 }
+
+func TestContainerStartupOptions(t *testing.T) {
+	checkReadyPath := "/use-this-route"
+	_ = sous.NewDummyRegistry()
+	dp := &sous.Deployment{}
+	d := sous.Deployable{
+		1,
+		dp,
+		&sous.BuildArtifact{},
+	}
+	d.ClusterName = "TestContainerStartupOptionsCluster"
+	d.Startup.CheckReadyPath = &checkReadyPath
+	dr, err := buildDeployRequest(d, "fake-request-id", map[string]string{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	tmpl := "expected:%s got:%s"
+	if dr.Deploy.HealthcheckUri != checkReadyPath {
+		t.Fatalf(tmpl, checkReadyPath, dr.Deploy.HealthcheckUri)
+	} else {
+		t.Logf(tmpl, checkReadyPath, dr.Deploy.HealthcheckUri)
+	}
+}
