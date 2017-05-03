@@ -94,6 +94,7 @@ func buildDeployRequest(d sous.Deployable, reqID string, metadata map[string]str
 	vols := d.Deployment.DeployConfig.Volumes
 	clusterName := d.Deployment.ClusterName
 	flavor := d.Deployment.Flavor
+	checkReadyPath := d.Deployment.DeployConfig.Startup.CheckReadyPath
 
 	metadata[sous.ClusterNameLabel] = clusterName
 	metadata[sous.FlavorLabel] = flavor
@@ -149,6 +150,15 @@ func buildDeployRequest(d sous.Deployable, reqID string, metadata map[string]str
 	if err != nil {
 		return nil, err
 	}
+
+	if checkReadyPath != nil {
+		err = dep.SetField("HealthcheckUri", *checkReadyPath)
+		if err != nil {
+			return nil, err
+		}
+		Log.Debug.Printf("Override SingularityDeploy HealthcheckUri with %s", *checkReadyPath)
+	}
+
 	Log.Debug.Printf("Deploy: %+ v", dep)
 	Log.Debug.Printf("  Container: %+ v", ci)
 	Log.Debug.Printf("  Docker: %+ v", dockerInfo)
