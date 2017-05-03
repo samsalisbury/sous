@@ -2,6 +2,7 @@ package sous
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/samsalisbury/semv"
@@ -196,7 +197,8 @@ var expectedDeployments = NewDeployments(
 				"mem":  "1024",
 			},
 			Env: Env{
-				"ENV_1": "ENV ONE FLAVORED",
+				"ENV_1":             "ENV ONE FLAVORED",
+				"CLUSTER_LONG_NAME": "Cluster One",
 			},
 			NumInstances: 4,
 		},
@@ -214,7 +216,8 @@ var expectedDeployments = NewDeployments(
 				"mem":  "2048",
 			},
 			Env: Env{
-				"ENV_2": "ENV TWO FLAVORED",
+				"ENV_2":             "ENV TWO FLAVORED",
+				"CLUSTER_LONG_NAME": "Cluster Two",
 			},
 			NumInstances: 5,
 		},
@@ -239,7 +242,7 @@ func TestState_DeploymentsCloned(t *testing.T) {
 			continue
 		}
 		if !actual.Equal(expected) {
-			t.Errorf("\n\ngot:\n%v\n\nwant:\n%v\n", jsonDump(actual), jsonDump(expected))
+			t.Errorf("%q\n\ngot:\n%v\n\nwant:\n%v\n", id, jsonDump(actual), jsonDump(expected))
 		}
 	}
 }
@@ -247,7 +250,9 @@ func TestState_DeploymentsCloned(t *testing.T) {
 var TestStateIndependentDeploySpecsState Manifests
 
 func TestState_IndependentDeploySpecs(t *testing.T) {
-	originalDeployments, err := makeTestDeployments()
+	originalManifests := makeTestManifests()
+	defs := makeTestDefs()
+	originalDeployments, err := originalManifests.Deployments(defs)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -260,7 +265,7 @@ func TestState_IndependentDeploySpecs(t *testing.T) {
 	originalJSON := jsonDump(originalDeployment)
 	// We don't care about this result, but write it to global state to avoid
 	// any compiler optimisation from eliding the call.
-	TestStateIndependentDeploySpecsState, err = originalDeployments.Manifests(makeTestDefs())
+	TestStateIndependentDeploySpecsState, err = originalDeployments.PutbackManifests(defs, originalManifests)
 	if err != nil {
 		t.Error(err)
 	}
@@ -289,11 +294,7 @@ func TestState_DeploymentsBounce(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	bounceState := State{
-		Defs:      defs,
-		Manifests: bounceManifests,
-	}
-	actualDeployments, err := bounceState.Deployments()
+	actualDeployments, err := bounceManifests.Deployments(defs)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -303,7 +304,7 @@ func TestState_DeploymentsBounce(t *testing.T) {
 func TestDeployments_Manifests(t *testing.T) {
 	defs := makeTestDefs()
 
-	actualManifests, err := expectedDeployments.Clone().Manifests(defs)
+	actualManifests, err := expectedDeployments.Clone().PutbackManifests(defs, makeTestManifests())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -315,12 +316,14 @@ func TestDeployments_Manifests(t *testing.T) {
 func TestDeployments_ManifestsBounce(t *testing.T) {
 	defs := makeTestDefs()
 
-	bounceDeployments, err := makeTestDeployments()
+	bounced := makeTestManifests()
+
+	bounceDeployments, err := bounced.Deployments(makeTestDefs())
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	actualManifests, err := bounceDeployments.Manifests(defs)
+	actualManifests, err := bounceDeployments.PutbackManifests(defs, bounced)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -365,7 +368,7 @@ func compareManifests(t *testing.T, expectedManifests, actualManifests Manifests
 		}
 		different, differences := actual.Diff(expected)
 		if different {
-			t.Errorf("manifests not as expected: %#v", differences)
+			t.Errorf("manifests not as expected: \n  %s", strings.Join(differences, "\n  "))
 			continue
 		}
 		// Check all expected DeploySpecs are in actual.

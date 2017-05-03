@@ -46,6 +46,78 @@ func (ms Manifests) Deployments(defs Defs) (Deployments, error) {
 	return ds, nil
 }
 
+// PutbackManifests creates manifests from deployments.
+func (ds Deployments) PutbackManifests(defs Defs, olds Manifests) (Manifests, error) {
+	ms := NewManifests()
+	for _, k := range ds.Keys() {
+		d, _ := ds.Get(k)
+		if d.ClusterName == "" {
+			return ms, errors.Errorf("invalid deploy ID (no cluster name)")
+		}
+		if d.Cluster == nil {
+			cluster, ok := defs.Clusters[d.ClusterName]
+			if !ok {
+				return ms, errors.Errorf("cluster %q is not described in defs.yaml", d.ClusterName)
+			}
+			d.Cluster = cluster
+		}
+		// Lookup the current manifest for this deployment.
+		mid := d.ManifestID()
+
+		m, ok := ms.Get(mid)
+		old, was := olds.Get(mid)
+
+		if !ok {
+			m = &Manifest{Deployments: DeploySpecs{}}
+			m.Owners = d.Owners.Slice()
+			m.SetID(mid)
+		}
+		spec := DeploySpec{
+			Version:      d.SourceID.Version,
+			DeployConfig: d.DeployConfig.Clone(),
+		}
+		for k, v := range spec.DeployConfig.Env {
+			clusterVal, ok := d.Cluster.Env[k]
+			if !ok {
+				continue
+			}
+			if string(clusterVal) == v {
+				Log.Debug.Printf("Redundant environment definition: %s=%s", k, v)
+				if was {
+					if oldSpec, had := old.Deployments[d.ClusterName]; had {
+						if _, present := oldSpec.Env[k]; present {
+							Log.Debug.Printf("Env pair %s=%s present in existing manifest: retained.", k, v)
+						} else {
+							Log.Debug.Printf("Env pair %s=%s absent in existing manifest: elided.", k, v)
+							delete(spec.Env, k)
+						}
+					} else {
+						Log.Debug.Printf("Cluster %q absent in existing manifest: eliding %s=%s.", d.ClusterName, k, v)
+						delete(spec.Env, k)
+					}
+				} else {
+					Log.Debug.Printf("Manifest for %v absent in existing manifest list: eliding %s=%s.", mid, k, v)
+					delete(spec.Env, k)
+				}
+			}
+		}
+		m.Deployments[d.ClusterName] = spec
+		m.Kind = d.Kind
+
+		ms.Set(mid, m)
+	}
+
+	for _, k := range ms.Keys() {
+		m, there := ms.Get(k)
+		if !there {
+			continue
+		}
+		ms.Set(k, m)
+	}
+
+	return ms, nil
+}
+
 // Manifests creates manifests from deployments.
 func (ds Deployments) Manifests(defs Defs) (Manifests, error) {
 	ms := NewManifests()
