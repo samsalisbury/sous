@@ -19,6 +19,7 @@ type (
 	// differences in terms of *manifests*
 	DiffConcentrator struct {
 		Defs
+		baseManifests              Manifests
 		Errors                     chan error
 		Created, Deleted, Retained chan *Manifest
 		Modified                   chan *ManifestPair
@@ -38,26 +39,27 @@ type (
 
 // Concentrate returns a DiffConcentrator set up to concentrate the deployment
 // changes in a DeployableChans into manifest changes.
-func (d DeployableChans) Concentrate(defs Defs) DiffConcentrator {
-	c := NewConcentrator(defs, d, cap(d.Start))
+func (d DeployableChans) Concentrate(defs Defs, baseManifests Manifests) DiffConcentrator {
+	c := NewConcentrator(defs, baseManifests, d, cap(d.Start))
 	go concentrate(d, c)
 	return c
 }
 
 // NewConcentrator constructs a DiffConcentrator.
-func NewConcentrator(defs Defs, s DeployableChans, sizes ...int) DiffConcentrator {
+func NewConcentrator(defs Defs, base Manifests, s DeployableChans, sizes ...int) DiffConcentrator {
 	var size int
 	if len(sizes) > 0 {
 		size = sizes[0]
 	}
 
 	return DiffConcentrator{
-		Defs:     defs,
-		Errors:   make(chan error, size+10),
-		Created:  make(chan *Manifest, size),
-		Deleted:  make(chan *Manifest, size),
-		Retained: make(chan *Manifest, size),
-		Modified: make(chan *ManifestPair, size),
+		Defs:          defs,
+		baseManifests: base,
+		Errors:        make(chan error, size+10),
+		Created:       make(chan *Manifest, size),
+		Deleted:       make(chan *Manifest, size),
+		Retained:      make(chan *Manifest, size),
+		Modified:      make(chan *ManifestPair, size),
 	}
 }
 
@@ -184,11 +186,11 @@ func (db *deploymentBundle) clusters() []string {
 	return cs
 }
 
-func (db *deploymentBundle) manifestPair(defs Defs) (*ManifestPair, error) {
+func (db *deploymentBundle) manifestPair(defs Defs, baseManifests Manifests) (*ManifestPair, error) {
 	db.consumed = true
 	//log.Print(db)
 	res := new(ManifestPair)
-	ms, err := db.before.Manifests(defs)
+	ms, err := db.before.PutbackManifests(defs, baseManifests)
 	if err != nil {
 		return nil, err
 	}
@@ -201,7 +203,7 @@ func (db *deploymentBundle) manifestPair(defs Defs) (*ManifestPair, error) {
 		res.Prior = p
 	}
 
-	ms, err = db.after.Manifests(defs)
+	ms, err = db.after.PutbackManifests(defs, baseManifests)
 	if err != nil {
 		return nil, err
 	}
@@ -255,7 +257,7 @@ func (dc *DiffConcentrator) dispatch(mp *ManifestPair) error {
 }
 
 func (dc *DiffConcentrator) resolve(mid ManifestID, bundle *deploymentBundle) {
-	mp, err := bundle.manifestPair(dc.Defs)
+	mp, err := bundle.manifestPair(dc.Defs, dc.baseManifests)
 	if err != nil {
 		dc.Errors <- err
 		return

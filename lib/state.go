@@ -203,7 +203,7 @@ func (s *State) UpdateDeployments(ds ...*Deployment) error {
 		stateDeps.Set(d.ID(), d)
 	}
 
-	newManifests, err := stateDeps.Manifests(s.Defs)
+	newManifests, err := stateDeps.PutbackManifests(s.Defs, s.Manifests)
 	if err != nil {
 		return err
 	}
