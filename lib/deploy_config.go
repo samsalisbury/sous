@@ -43,7 +43,8 @@ type (
 	// Startup is a struct of options related to container startup.  Members are
 	// pointers so that they can be ignored if nil.
 	Startup struct {
-		CheckReadyPath *string
+		CheckReadyPath    *string
+		CheckReadyTimeout *int
 	}
 
 	// Metadata represents an opaque map of metadata - Sous is agnostic about
