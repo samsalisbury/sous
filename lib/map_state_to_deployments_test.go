@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/samsalisbury/semv"
+	"github.com/stretchr/testify/assert"
 )
 
 var project1 = SourceLocation{Repo: "github.com/user/project"}
@@ -330,6 +331,155 @@ func TestDeployments_ManifestsBounce(t *testing.T) {
 	expectedManifests := makeTestManifests()
 
 	compareManifests(t, expectedManifests, actualManifests)
+}
+
+func TestDeployments_PutbackManifestMissingManifestElides(t *testing.T) {
+	defs := makeTestDefs()
+	deps := NewDeployments(
+		&Deployment{
+			SourceID: project1.SourceID(semv.MustParse("2.0.0")),
+
+			Cluster:     cluster1,
+			ClusterName: cluster1.Name,
+			DeployConfig: DeployConfig{
+				Env: Env{
+					"CLUSTER_LONG_NAME": "Cluster One",
+					"PRESENT":           "here",
+				},
+			},
+		},
+	)
+
+	zeroMs := NewManifests()
+	ms, err := deps.PutbackManifests(defs, zeroMs)
+	assert.NoError(t, err)
+	m, yes := ms.Any(func(*Manifest) bool { return true })
+	assert.True(t, yes)
+	assert.NotContains(t, m.Deployments["cluster-1"].Env, "CLUSTER_LONG_NAME")
+	assert.Contains(t, m.Deployments["cluster-1"].Env, "PRESENT")
+}
+
+func TestDeployments_PutbackManifestOriginalLacksClusterElides(t *testing.T) {
+	defs := makeTestDefs()
+	deps := NewDeployments(
+		&Deployment{
+			SourceID: project1.SourceID(semv.MustParse("2.0.0")),
+
+			Cluster:     cluster1,
+			ClusterName: cluster1.Name,
+			DeployConfig: DeployConfig{
+				Env: Env{
+					"CLUSTER_LONG_NAME": "Cluster One",
+					"PRESENT":           "here",
+				},
+			},
+		},
+	)
+
+	skewMs := NewManifests(
+		&Manifest{
+			Source: project1,
+			Deployments: DeploySpecs{
+				"cluster-2": { // != cluster-1
+					Version: semv.MustParse("2.0.0"),
+					DeployConfig: DeployConfig{
+						Env: Env{
+							"CLUSTER_LONG_NAME": "Cluster One",
+							"PRESENT":           "here",
+						},
+					},
+				},
+			},
+		},
+	)
+	ms, err := deps.PutbackManifests(defs, skewMs)
+	assert.NoError(t, err)
+	m, yes := ms.Any(func(*Manifest) bool { return true })
+	assert.True(t, yes)
+	assert.NotContains(t, m.Deployments["cluster-1"].Env, "CLUSTER_LONG_NAME")
+	assert.Contains(t, m.Deployments["cluster-1"].Env, "PRESENT")
+}
+
+func TestDeployments_PutbackManifestOriginalLacksEnvElides(t *testing.T) {
+	defs := makeTestDefs()
+	deps := NewDeployments(
+		&Deployment{
+			SourceID: project1.SourceID(semv.MustParse("2.0.0")),
+
+			Cluster:     cluster1,
+			ClusterName: cluster1.Name,
+			DeployConfig: DeployConfig{
+				Env: Env{
+					"CLUSTER_LONG_NAME": "Cluster One",
+					"PRESENT":           "here",
+				},
+			},
+		},
+	)
+
+	skewMs := NewManifests(
+		&Manifest{
+			Source: project1,
+			Deployments: DeploySpecs{
+				"cluster-1": {
+					Version: semv.MustParse("2.0.0"),
+					DeployConfig: DeployConfig{
+						Env: Env{
+							//"CLUSTER_LONG_NAME": "Cluster One",
+							"PRESENT": "here",
+						},
+					},
+				},
+			},
+		},
+	)
+	ms, err := deps.PutbackManifests(defs, skewMs)
+	assert.NoError(t, err)
+	m, yes := ms.Any(func(*Manifest) bool { return true })
+	assert.True(t, yes)
+	assert.NotContains(t, m.Deployments["cluster-1"].Env, "CLUSTER_LONG_NAME")
+	assert.Contains(t, m.Deployments["cluster-1"].Env, "PRESENT")
+}
+
+func TestDeployments_PutbackManifestHasEnvRetains(t *testing.T) {
+	defs := makeTestDefs()
+	deps := NewDeployments(
+		&Deployment{
+			SourceID: project1.SourceID(semv.MustParse("2.0.0")),
+
+			Cluster:     cluster1,
+			ClusterName: cluster1.Name,
+			DeployConfig: DeployConfig{
+				Env: Env{
+					"CLUSTER_LONG_NAME": "Cluster One",
+					"PRESENT":           "here",
+				},
+			},
+		},
+	)
+
+	skewMs := NewManifests(
+		&Manifest{
+			Source: project1,
+			Deployments: DeploySpecs{
+				"cluster-1": {
+					Version: semv.MustParse("2.0.0"),
+					DeployConfig: DeployConfig{
+						Env: Env{
+							"CLUSTER_LONG_NAME": "Cluster One",
+							"PRESENT":           "here",
+						},
+					},
+				},
+			},
+		},
+	)
+	ms, err := deps.PutbackManifests(defs, skewMs)
+	assert.NoError(t, err)
+	m, yes := ms.Any(func(*Manifest) bool { return true })
+	assert.True(t, yes)
+	assert.Contains(t, m.Deployments["cluster-1"].Env, "CLUSTER_LONG_NAME")
+	assert.Contains(t, m.Deployments["cluster-1"].Env, "PRESENT")
 }
 
 func compareDeployments(t *testing.T, expectedDeployments, actualDeployments Deployments) {
