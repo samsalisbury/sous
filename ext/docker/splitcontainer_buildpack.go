@@ -90,18 +90,23 @@ func (sd *splitDetector) absorbDockerfile() error {
 
 func (sd *splitDetector) fetchFromRunSpec() error {
 	for _, f := range sd.froms {
+		sous.Log.Debug.Printf("Fetching FROM %q...", f.Value)
 		md, err := sd.registry.GetImageMetadata(f.Value, "")
 		if err != nil {
+			sous.Log.Debug.Printf("Error fetching %q: %v.", f.Value, err)
 			continue
 		}
 
 		if path, ok := md.Env[SOUS_RUN_IMAGE_SPEC]; ok {
+			sous.Log.Debug.Printf("RunSpec path %q found in %q", path, f.Value)
 			sd.runspecPath = path
 		}
 
 		buf := bytes.NewBufferString(strings.Join(md.OnBuild, "\n"))
 		ast, err := parseDocker(buf)
+		sous.Log.Debug.Printf("Parsing ONBUILD from %q.", f.Value)
 		if err != nil {
+			sous.Log.Debug.Printf("Error while parsing ONBUILD from %q: %#v.", f.Value, err)
 			return err
 		}
 		return sd.absorbDocker(ast)
@@ -112,6 +117,7 @@ func (sd *splitDetector) fetchFromRunSpec() error {
 func (sd *splitDetector) processEnv() error {
 	for _, e := range sd.envs {
 		if e.Value == SOUS_RUN_IMAGE_SPEC {
+			sous.Log.Debug.Printf("RunSpec path %q found Dockerfile ENV or ONBUILD ENV", e.Next.Value)
 			sd.runspecPath = e.Next.Value
 		}
 	}
@@ -135,6 +141,8 @@ func (sbp *SplitBuildpack) Detect(ctx *sous.BuildContext) (*sous.DetectResult, e
 	if !ctx.Sh.Exists(dfPath) {
 		return nil, errors.Errorf("%s does not exist", dfPath)
 	}
+
+	sous.Log.Debug.Printf("Inspecting Dockerfile at %q.", dfPath)
 
 	ast, err := parseDockerfile(ctx.Sh.Abs(dfPath))
 	if err != nil {
