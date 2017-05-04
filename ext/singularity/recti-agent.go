@@ -95,6 +95,7 @@ func buildDeployRequest(d sous.Deployable, reqID string, metadata map[string]str
 	clusterName := d.Deployment.ClusterName
 	flavor := d.Deployment.Flavor
 	checkReadyPath := d.Deployment.DeployConfig.Startup.CheckReadyPath
+	checkReadyTimeout := d.Deployment.DeployConfig.Startup.CheckReadyTimeout
 
 	metadata[sous.ClusterNameLabel] = clusterName
 	metadata[sous.FlavorLabel] = flavor
@@ -157,6 +158,14 @@ func buildDeployRequest(d sous.Deployable, reqID string, metadata map[string]str
 			return nil, err
 		}
 		Log.Debug.Printf("Override SingularityDeploy HealthcheckUri with %s", *checkReadyPath)
+	}
+
+	if checkReadyTimeout != nil {
+		err = dep.SetField("HealthcheckTimeoutSeconds", int64(*checkReadyTimeout))
+		if err != nil {
+			return nil, err
+		}
+		Log.Debug.Printf("Override SingularityDeploy HealthcheckTimeoutSeconds with %d", *checkReadyTimeout)
 	}
 
 	Log.Debug.Printf("Deploy: %+ v", dep)

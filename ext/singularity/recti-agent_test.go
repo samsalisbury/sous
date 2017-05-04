@@ -101,14 +101,19 @@ func TestFailOnNilBuildArtifact(t *testing.T) {
 
 func TestContainerStartupOptions(t *testing.T) {
 	checkReadyPath := "/use-this-route"
+	checkReadyTimeout := 45
+
 	mockStatus := sous.DeployStatus(sous.DeployStatusPending)
 	d := sous.Deployable{
 		mockStatus,
 		&sous.Deployment{},
 		&sous.BuildArtifact{},
 	}
+
 	d.ClusterName = "TestContainerStartupOptionsCluster"
 	d.Startup.CheckReadyPath = &checkReadyPath
+	d.Startup.CheckReadyTimeout = &checkReadyTimeout
+
 	dr, err := buildDeployRequest(d, "fake-request-id", map[string]string{})
 	if err != nil {
 		t.Fatal(err)
@@ -119,4 +124,12 @@ func TestContainerStartupOptions(t *testing.T) {
 	} else {
 		t.Logf(tmpl, checkReadyPath, dr.Deploy.HealthcheckUri)
 	}
+
+	tmpl = "expected:%d got:%d"
+	if dr.Deploy.HealthcheckTimeoutSeconds != int64(checkReadyTimeout) {
+		t.Fatalf(tmpl, checkReadyTimeout, dr.Deploy.HealthcheckTimeoutSeconds)
+	} else {
+		t.Logf(tmpl, checkReadyTimeout, dr.Deploy.HealthcheckTimeoutSeconds)
+	}
+
 }
