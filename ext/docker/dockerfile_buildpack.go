@@ -100,6 +100,7 @@ func (d *DockerfileBuildpack) Detect(c *sous.BuildContext) (*sous.DetectResult, 
 	}
 	hasAppVersion := appVersionPattern.MatchString(df)
 	hasAppRevision := appRevisionPattern.MatchString(df)
+	sous.Log.Debug.Printf("Detected a dockerfile at %q. Accepts version: %t, accepts revision: %t", dfPath, hasAppVersion, hasAppRevision)
 	result := &sous.DetectResult{Compatible: true, Data: detectData{
 		HasAppVersionArg:  hasAppVersion,
 		HasAppRevisionArg: hasAppRevision,
