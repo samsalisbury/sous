@@ -29,7 +29,7 @@ type (
 		NumInstances int
 		// Volumes lists the volume mappings for this deploy
 		Volumes Volumes
-		// Health containts healthcheck options for this deploy.
+		// Startup containts healthcheck options for this deploy.
 		Startup Startup `yaml:",omitempty"`
 	}
 
@@ -43,8 +43,8 @@ type (
 	// Startup is a struct of options related to container startup.  Members are
 	// pointers so that they can be ignored if nil.
 	Startup struct {
-		CheckReadyPath    *string
-		CheckReadyTimeout *int
+		CheckReadyRelativeURI *string `yaml:",omitempty"`
+		Timeout               *int    `yaml:",omitempty"`
 	}
 
 	// Metadata represents an opaque map of metadata - Sous is agnostic about

@@ -111,8 +111,8 @@ func TestContainerStartupOptions(t *testing.T) {
 	}
 
 	d.ClusterName = "TestContainerStartupOptionsCluster"
-	d.Startup.CheckReadyPath = &checkReadyPath
-	d.Startup.CheckReadyTimeout = &checkReadyTimeout
+	d.Startup.CheckReadyRelativeURI = &checkReadyPath
+	d.Startup.Timeout = &checkReadyTimeout
 
 	dr, err := buildDeployRequest(d, "fake-request-id", map[string]string{})
 	if err != nil {

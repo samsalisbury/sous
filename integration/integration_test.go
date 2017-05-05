@@ -73,8 +73,8 @@ func (suite *integrationSuite) manifest(nc *docker.NameCache, drepo, containerDi
 			"test-cluster": sous.DeploySpec{
 				DeployConfig: sous.DeployConfig{
 					Startup: sous.Startup{
-						CheckReadyPath:    &checkReadyPath,
-						CheckReadyTimeout: &checkReadyTimeout,
+						CheckReadyRelativeURI: &checkReadyPath,
+						Timeout:               &checkReadyTimeout,
 					},
 					Resources:    sous.Resources{"cpus": "0.1", "memory": "100", "ports": "1"},
 					Args:         []string{},
