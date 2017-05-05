@@ -43,8 +43,8 @@ type (
 	// Startup is a struct of options related to container startup.  Members are
 	// pointers so that they can be ignored if nil.
 	Startup struct {
-		CheckReadyRelativeURI *string `yaml:",omitempty"`
-		Timeout               *int    `yaml:",omitempty"`
+		CheckReadyURIPath *string `yaml:",omitempty"`
+		Timeout           *int    `yaml:",omitempty"`
 	}
 
 	// Metadata represents an opaque map of metadata - Sous is agnostic about

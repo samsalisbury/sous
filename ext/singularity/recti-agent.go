@@ -94,7 +94,7 @@ func buildDeployRequest(d sous.Deployable, reqID string, metadata map[string]str
 	vols := d.Deployment.DeployConfig.Volumes
 	clusterName := d.Deployment.ClusterName
 	flavor := d.Deployment.Flavor
-	checkReadyPath := d.Deployment.DeployConfig.Startup.CheckReadyRelativeURI
+	checkReadyPath := d.Deployment.DeployConfig.Startup.CheckReadyURIPath
 	checkReadyTimeout := d.Deployment.DeployConfig.Startup.Timeout
 
 	metadata[sous.ClusterNameLabel] = clusterName
