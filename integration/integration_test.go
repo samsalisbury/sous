@@ -61,6 +61,8 @@ func (suite *integrationSuite) manifest(nc *docker.NameCache, drepo, containerDi
 
 	nc.GetSourceID(docker.NewBuildArtifact(in, nil))
 
+	checkReadyPath := "/health"
+	checkReadyTimeout := 45
 	return &sous.Manifest{
 		Source: sous.SourceLocation{
 			Repo: sourceURL,
@@ -70,6 +72,10 @@ func (suite *integrationSuite) manifest(nc *docker.NameCache, drepo, containerDi
 		Deployments: sous.DeploySpecs{
 			"test-cluster": sous.DeploySpec{
 				DeployConfig: sous.DeployConfig{
+					Startup: sous.Startup{
+						CheckReadyPath:    &checkReadyPath,
+						CheckReadyTimeout: &checkReadyTimeout,
+					},
 					Resources:    sous.Resources{"cpus": "0.1", "memory": "100", "ports": "1"},
 					Args:         []string{},
 					Env:          sous.Env{"repo": drepo}, //map[s]s

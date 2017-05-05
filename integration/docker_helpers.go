@@ -204,6 +204,7 @@ func startInstance(url, clusterName, imageName, repoName string, ports []int32) 
 	deployID := "TESTGENERATED_" + singularity.StripDeployID(uuid.NewV4().String())
 	depReq := loadMap(&dtos.SingularityDeployRequest{}, dtoMap{
 		"Deploy": loadMap(&dtos.SingularityDeploy{}, dtoMap{
+			"HealthcheckTimeoutSeconds": int64(45),
 			"Metadata": map[string]string{
 				"com.opentable.sous.clustername": clusterName,
 			},
