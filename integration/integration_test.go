@@ -121,14 +121,23 @@ func (suite *integrationSuite) statusIs(ds *sous.DeployState, expected sous.Depl
 
 func (suite *integrationSuite) BeforeTest(suiteName, testName string) {
 	ResetSingularity()
+	nilStartup := sous.Startup{}
 
-	registerAndDeploy(ip, "test-cluster", "hello-labels", "github.com/docker-library/hello-world", "hello-labels", "latest", []int32{})
-	registerAndDeploy(ip, "test-cluster", "hello-server-labels", "github.com/docker/dockercloud-hello-world", "hello-server-labels", "latest", []int32{8123})
-	registerAndDeploy(ip, "test-cluster", "grafana-repo", "github.com/opentable/docker-grafana", "grafana-labels", "latest", []int32{})
-	registerAndDeploy(ip, "other-cluster", "grafana-repo", "github.com/opentable/docker-grafana", "grafana-labels", "latest", []int32{})
+	timeout := 45
+	uriPath := "config.js"
+	startup := sous.Startup{
+		Timeout:           &timeout,
+		CheckReadyURIPath: &uriPath,
+	}
+
+	registerAndDeploy(ip, "test-cluster", "hello-labels", "github.com/docker-library/hello-world", "hello-labels", "latest", []int32{}, nilStartup)
+	registerAndDeploy(ip, "test-cluster", "hello-server-labels", "github.com/docker/dockercloud-hello-world", "hello-server-labels", "latest", []int32{8123}, nilStartup)
+
+	registerAndDeploy(ip, "test-cluster", "grafana-repo", "github.com/opentable/docker-grafana", "grafana-labels", "latest", []int32{}, startup)
+	registerAndDeploy(ip, "other-cluster", "grafana-repo", "github.com/opentable/docker-grafana", "grafana-labels", "latest", []int32{}, startup)
 
 	// This deployment fails immediately, and never results in a successful deployment at that singularity request.
-	registerAndDeploy(ip, "test-cluster", "supposed-to-fail", "github.com/opentable/homer-says-doh", "fails-labels", "1-fails", []int32{})
+	registerAndDeploy(ip, "test-cluster", "supposed-to-fail", "github.com/opentable/homer-says-doh", "fails-labels", "1-fails", []int32{}, nilStartup)
 
 	/*
 		imageName := BuildImageName("github.com/opentable/homer-says-doh", "latest")
@@ -266,14 +275,14 @@ func (suite *integrationSuite) TestFailedDeployFollowingSuccessfulDeploy() {
 	var ports []int32
 	const repoName = "succeedthenfail"
 
-	registerAndDeploy(ip, clusterName, repoName, sourceRepo, "succeedthenfail-succeed", "1.0.0-succeed", ports)
+	registerAndDeploy(ip, clusterName, repoName, sourceRepo, "succeedthenfail-succeed", "1.0.0-succeed", ports, sous.Startup{})
 
 	deployState := suite.waitUntilNotPending(clusters, sourceRepo)
 	suite.statusIs(deployState, sous.DeployStatusActive)
 
 	// Create an assert on a failed deployment.
 
-	registerAndDeploy(ip, clusterName, repoName, sourceRepo, "succeedthenfail-fail", "2.0.0-fail", ports)
+	registerAndDeploy(ip, clusterName, repoName, sourceRepo, "succeedthenfail-fail", "2.0.0-fail", ports, sous.Startup{})
 
 	deployState = suite.waitUntilNotPending(clusters, sourceRepo)
 	suite.statusIs(deployState, sous.DeployStatusFailed)

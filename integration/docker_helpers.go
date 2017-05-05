@@ -100,12 +100,12 @@ func BuildImageName(reponame, tag string) string {
 	return fmt.Sprintf("%s/%s:%s", registryName, reponame, tag)
 }
 
-func registerAndDeploy(ip net.IP, clusterName, reponame, sourceRepo, dir, tag string, ports []int32) error {
+func registerAndDeploy(ip net.IP, clusterName, reponame, sourceRepo, dir, tag string, ports []int32, startup sous.Startup) error {
 	imageName := BuildImageName(reponame, tag)
 	if err := BuildAndPushContainer(dir, imageName); err != nil {
 		panic(fmt.Errorf("building test container failed: %s", err))
 	}
-	if err := startInstance(SingularityURL, clusterName, imageName, sourceRepo, ports); err != nil {
+	if err := startInstance(SingularityURL, clusterName, imageName, sourceRepo, ports, startup); err != nil {
 		panic(fmt.Errorf("starting a singularity instance failed: %s", err))
 	}
 
@@ -163,7 +163,7 @@ func loadMap(fielder swaggering.Fielder, m dtoMap) swaggering.Fielder {
 
 var notInIDre = regexp.MustCompile(`[-/]`)
 
-func startInstance(url, clusterName, imageName, repoName string, ports []int32) error {
+func startInstance(url, clusterName, imageName, repoName string, ports []int32, startup sous.Startup) error {
 	did := sous.DeploymentID{
 		ManifestID: sous.ManifestID{
 			Source: sous.SourceLocation{
@@ -202,25 +202,36 @@ func startInstance(url, clusterName, imageName, repoName string, ports []int32) 
 	}).(*dtos.SingularityDockerInfo)
 
 	deployID := "TESTGENERATED_" + singularity.StripDeployID(uuid.NewV4().String())
-	depReq := loadMap(&dtos.SingularityDeployRequest{}, dtoMap{
-		"Deploy": loadMap(&dtos.SingularityDeploy{}, dtoMap{
-			"HealthcheckTimeoutSeconds": int64(45),
-			"Metadata": map[string]string{
-				"com.opentable.sous.clustername": clusterName,
-			},
-			"Id":        deployID,
-			"RequestId": reqID,
-			"Resources": loadMap(&dtos.Resources{}, dtoMap{
-				"Cpus":     0.1,
-				"MemoryMb": 100.0,
-				"NumPorts": int32(1),
-			}),
-			"ContainerInfo": loadMap(&dtos.SingularityContainerInfo{}, dtoMap{
-				"Type":   dtos.SingularityContainerInfoSingularityContainerTypeDOCKER,
-				"Docker": dockerInfo,
-			}),
+	depMap := dtoMap{
+		"Metadata": map[string]string{
+			"com.opentable.sous.clustername": clusterName,
+		},
+		"Id":        deployID,
+		"RequestId": reqID,
+		"Resources": loadMap(&dtos.Resources{}, dtoMap{
+			"Cpus":     0.1,
+			"MemoryMb": 100.0,
+			"NumPorts": int32(1),
 		}),
-	}).(*dtos.SingularityDeployRequest)
+		"ContainerInfo": loadMap(&dtos.SingularityContainerInfo{}, dtoMap{
+			"Type":   dtos.SingularityContainerInfoSingularityContainerTypeDOCKER,
+			"Docker": dockerInfo,
+		}),
+	}
+
+	if startup.CheckReadyURIPath != nil {
+		depMap["HealthcheckUri"] = *startup.CheckReadyURIPath
+	}
+	if startup.Timeout != nil {
+		depMap["HealthcheckTimeoutSeconds"] = int64(*startup.Timeout)
+	}
+
+	depReqMap := dtoMap{
+		"Deploy": loadMap(&dtos.SingularityDeploy{}, depMap),
+	}
+
+	depReq := loadMap(&dtos.SingularityDeployRequest{}, depReqMap).(*dtos.SingularityDeployRequest)
+
 	log.Printf("Constructed SingularityDeployRequest %#v containing SingularityDeploy %#v", depReq, *depReq.Deploy)
 
 	_, err = sing.Deploy(depReq)
