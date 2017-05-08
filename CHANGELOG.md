@@ -8,6 +8,8 @@ with respect to its command line interface and HTTP interface.
 
 ## [Unreleased]
 ### Changed 
+- Added Startup options to manifest to set healthcheck timeout and relative
+  URI path of healthcheck endpoint.
 - Singularity RequestIDs are generated with a suffix of the MD5 sum of
   pre-slug data instead of a random UUID.
 - Singularity RequestIDs are shortened to no longer include FQDN or
