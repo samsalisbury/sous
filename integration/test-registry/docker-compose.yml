@@ -35,7 +35,7 @@ master:
     MESOS_WORK_DIR: /var/lib/mesos
 
 slave:
-  image: hubspot/singularityexecutorslave:0.14.0
+  image: hubspot/singularityexecutorslave:0.15.0
   command: mesos-slave
   net: host
   environment:
