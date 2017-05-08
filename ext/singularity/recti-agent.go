@@ -153,16 +153,14 @@ func buildDeployRequest(d sous.Deployable, reqID string, metadata map[string]str
 	}
 
 	if checkReadyPath != nil {
-		err = dep.SetField("HealthcheckUri", *checkReadyPath)
-		if err != nil {
+		if err := dep.SetField("HealthcheckUri", *checkReadyPath); err != nil {
 			return nil, err
 		}
 		Log.Debug.Printf("Override SingularityDeploy HealthcheckUri with %s", *checkReadyPath)
 	}
 
 	if checkReadyTimeout != nil {
-		err = dep.SetField("HealthcheckTimeoutSeconds", int64(*checkReadyTimeout))
-		if err != nil {
+		if err := dep.SetField("HealthcheckTimeoutSeconds", int64(*checkReadyTimeout)); err != nil {
 			return nil, err
 		}
 		Log.Debug.Printf("Override SingularityDeploy HealthcheckTimeoutSeconds with %d", *checkReadyTimeout)
