@@ -376,7 +376,7 @@ func (suite *integrationSuite) TestResolve() {
 
 	// XXX Let's hope this is a temporary solution to a testing issue
 	// The problem is laid out in DCOPS-7625
-	for tries := 50; tries > 0; tries-- {
+	for tries := 30; tries > 0; tries-- {
 		client := singularity.NewRectiAgent(suite.nameCache)
 		deployer := singularity.NewDeployer(client)
 
@@ -385,9 +385,11 @@ func (suite *integrationSuite) TestResolve() {
 		err = r.Begin(deploymentsTwoThree, clusterDefs.Clusters).Wait()
 		if err != nil {
 			//suite.Require().NotRegexp(`Pending deploy already in progress`, err.Error())
-
 			suite.T().Logf("Singularity error:%s - will try %d more times", spew.Sdump(err), tries)
 			time.Sleep(2 * time.Second)
+		} else {
+			// err was nil, so no need to keep retrying.
+			break
 		}
 	}
 
