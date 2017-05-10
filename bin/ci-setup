@@ -7,7 +7,7 @@ sudo hostname "$(hostname | cut -c1-63)"
 sudo sed -i -E -e "s/^(127\\.0\\.0\\.1.*|::1.*)/\\1 $(hostname | cut -c1-63)/" /etc/hosts
 
 echo Assuring docker version
-apt-get purge docker-engine docker-ce docker-io
+sudo apt-get purge docker-engine docker-ce docker-io
 apt-cache madison docker-engine
 sudo apt-get -o Dpkg::Options::="--force-confnew" install -y --force-yes "docker-engine=${DOCKER_VERSION}"
 sudo /etc/init.d/docker stop
