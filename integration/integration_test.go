@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/opentable/sous/ext/docker"
 	"github.com/opentable/sous/ext/singularity"
 	"github.com/opentable/sous/lib"
@@ -385,7 +386,7 @@ func (suite *integrationSuite) TestResolve() {
 		if err != nil {
 			//suite.Require().NotRegexp(`Pending deploy already in progress`, err.Error())
 
-			suite.T().Logf("Singularity conflict - waiting for previous deploy to complete - will try %d more times", tries)
+			suite.T().Logf("Singularity error:%s - will try %d more times", spew.Sdump(err), tries)
 			time.Sleep(2 * time.Second)
 		}
 	}
