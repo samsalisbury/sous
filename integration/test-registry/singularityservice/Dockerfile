@@ -1,2 +1,2 @@
-FROM hubspot/singularityservice:0.15.0
+FROM hubspot/singularityservice:0.14.0
 COPY singularity.yaml /etc/singularity/singularity.yaml
