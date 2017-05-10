@@ -142,7 +142,10 @@ func (suite *integrationSuite) BeforeTest(suiteName, testName string) {
 }
 
 func (suite *integrationSuite) TearDownTest() {
-	ResetSingularity()
+	// Previously, a ResetSingularity() was issued here. The ResetSingularity()
+	// in the BeforeTest() already makes sure that Singularity is reset before
+	// running a test case, so its presence here was redundant. With it gone, we
+	// can look at the state of Singularity after a failed test.
 }
 
 func (suite *integrationSuite) TestGetLabels() {
