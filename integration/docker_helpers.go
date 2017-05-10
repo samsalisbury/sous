@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"regexp"
 	"testing"
+	"time"
 
 	sing "github.com/opentable/go-singularity"
 	"github.com/opentable/go-singularity/dtos"
@@ -92,7 +93,18 @@ func ResetSingularity() {
 			panic(err)
 		}
 	}
-	log.Print("Singularity reset.")
+
+	for i := 100; i > 0; i-- {
+		verifyReqList, err := singClient.GetRequests()
+		if err != nil {
+			panic(err)
+		}
+		log.Printf("Singularity reset. Remaining requests:%d", len(verifyReqList))
+		if len(verifyReqList) == 0 {
+			break
+		}
+		time.Sleep(time.Second)
+	}
 }
 
 // BuildImageName constructs a simple image name rooted at the SingularityURL
