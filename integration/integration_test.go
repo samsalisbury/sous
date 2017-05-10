@@ -4,7 +4,6 @@ package integration
 
 import (
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
@@ -242,9 +241,7 @@ func (suite *integrationSuite) TestFailedService() {
 func (suite *integrationSuite) TestSuccessfulService() {
 	sous.Log.BeChatty()
 	defer sous.Log.BeQuiet()
-	if os.Getenv("TRAVIS") == "true" {
-		suite.T().Skip()
-	}
+
 	clusters := []string{"test-cluster"}
 
 	succeeds := suite.waitUntilNotPending(clusters, "github.com/docker/dockercloud-hello-world")
@@ -252,9 +249,6 @@ func (suite *integrationSuite) TestSuccessfulService() {
 }
 
 func (suite *integrationSuite) TestFailedDeployFollowingSuccessfulDeploy() {
-	if os.Getenv("TRAVIS") == "true" {
-		suite.T().Skip("TestFailedDeployFollowingSuccessfulDeploy() in Travis")
-	}
 	clusters := []string{"test-cluster"}
 
 	const sourceRepo = "github.com/user/succeedthenfail" // Part of request ID.
