@@ -20,12 +20,12 @@ type (
 	}
 )
 
-func (g *gdmWrapper) manifests(defs Defs, base Manifests) (Manifests, error) {
+func (g *gdmWrapper) manifests(defs Defs) (Manifests, error) {
 	ds := NewDeployments()
 	for _, d := range g.Deployments {
 		ds.Add(d)
 	}
-	return ds.PutbackManifests(defs, base)
+	return ds.Manifests(defs)
 }
 
 // NewHTTPStateManager creates a new HTTPStateManager.
@@ -74,7 +74,7 @@ func (hsm *HTTPStateManager) WriteState(s *State, u User) error {
 		return err
 	}
 	diff := cds.Diff(wds)
-	cchs := diff.Concentrate(s.Defs, hsm.cached.Manifests)
+	cchs := diff.Concentrate(s.Defs)
 	Log.Debug.Printf("Processing diffs...")
 	return hsm.process(cchs)
 }
@@ -208,7 +208,6 @@ func (hsm *HTTPStateManager) getManifests(defs Defs) (Manifests, error) {
 	if err := hsm.Retrieve("./gdm", nil, &gdm, hsm.User); err != nil {
 		return Manifests{}, errors.Wrapf(err, "getting manifests")
 	}
-
 	return gdm.manifests(defs)
 }
 
