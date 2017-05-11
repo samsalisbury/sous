@@ -1,6 +1,10 @@
 package server
 
 import (
+	"encoding/json"
+	"net/http"
+
+	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/restful"
 )
@@ -9,9 +13,17 @@ type (
 	// GDMResource is the resource for the GDM
 	GDMResource struct{}
 
-	// GDMHandler is an injectable request handler
-	GDMHandler struct {
+	// GETGDMHandler is an injectable request handler
+	GETGDMHandler struct {
 		GDM *LiveGDM
+	}
+
+	// PUTGDMHandler is an injectable request handler
+	PUTGDMHandler struct {
+		*http.Request
+		*sous.LogSet
+		GDM          *LiveGDM
+		StateManager graph.StateManager
 	}
 
 	gdmWrapper struct {
@@ -20,14 +32,52 @@ type (
 )
 
 // Get implements Getable on GDMResource
-func (gr *GDMResource) Get() restful.Exchanger { return &GDMHandler{} }
+func (gr *GDMResource) Get() restful.Exchanger { return &GETGDMHandler{} }
 
 // Exchange implements the Handler interface
-func (h *GDMHandler) Exchange() (interface{}, int) {
+func (h *GETGDMHandler) Exchange() (interface{}, int) {
 	sous.Log.Debug.Print(h.GDM)
 	data := gdmWrapper{Deployments: make([]*sous.Deployment, 0)}
 	for _, d := range h.GDM.Snapshot() {
 		data.Deployments = append(data.Deployments, d)
 	}
-	return data, 200
+	return data, http.StatusOK
+}
+
+// Put implements Putable on GDMResource
+func (gr *GDMResource) Put() restful.Exchanger { return &PUTGDMHandler{} }
+
+// Exchange implements the Handler interface
+func (h *PUTGDMHandler) Exchange() (interface{}, int) {
+	sous.Log.Debug.Print(h.GDM)
+
+	data := gdmWrapper{}
+	dec := json.NewDecoder(pmh.Request.Body)
+	dec.Decode(&data)
+	deps := data.Deployments
+
+	state, err := h.StateManager.ReadState()
+	if err != nil {
+		h.Warn.Printf("%#v", err)
+		return "Error loading state from storage", http.StatusInternalServerError
+	}
+
+	state.Manifests, err = deps.PutbackManifests(state.Defs, state.Manifests)
+	if err != nil {
+		h.Warn.Printf("%#v", err)
+		return "Error getting state", http.StatusConflict
+	}
+
+	flaws := state.Validate()
+	if len(flaws) > 0 {
+		h.Warn.Printf("%#v", flaws)
+		return "Invalid GDM", http.StatusBadRequest
+	}
+
+	if err := h.StateManager.WriteState(state); err != nil {
+		h.Warn.Printf("%#v", err)
+		return "Error committing state", http.StatusInternalServerError
+	}
+
+	return "", http.StatusNoContent
 }

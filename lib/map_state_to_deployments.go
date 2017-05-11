@@ -118,7 +118,6 @@ func (ds Deployments) PutbackManifests(defs Defs, olds Manifests) (Manifests, er
 	return ms, nil
 }
 
-/*
 // Manifests creates manifests from deployments.
 func (ds Deployments) Manifests(defs Defs) (Manifests, error) {
 	ms := NewManifests()
@@ -171,7 +170,6 @@ func (ds Deployments) Manifests(defs Defs) (Manifests, error) {
 
 	return ms, nil
 }
-*/
 
 // DeploymentsFromManifest returns all deployments described by a single
 // manifest, in terms of the wider state (i.e. global and cluster definitions
