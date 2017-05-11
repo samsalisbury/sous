@@ -194,13 +194,15 @@ func startInstance(url, clusterName, imageName, repoName string, ports []int32) 
 	req := loadMap(&dtos.SingularityRequest{}, map[string]interface{}{
 		"Id":          reqID,
 		"RequestType": dtos.SingularityRequestRequestTypeSERVICE,
-		"Instances":   int32(2),
+		"Instances":   int32(1),
 	}).(*dtos.SingularityRequest)
 
 	for {
 		_, err := sing.PostRequest(req)
 		if err != nil {
+			log.Printf("PostRequest error:%#v", err)
 			if rerr, ok := err.(*swaggering.ReqError); ok && rerr.Status == 409 { //not done deleting the request
+				time.Sleep(time.Second)
 				continue
 			}
 
