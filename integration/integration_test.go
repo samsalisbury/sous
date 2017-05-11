@@ -94,7 +94,7 @@ func (suite *integrationSuite) newNameCache(name string) *docker.NameCache {
 }
 
 func (suite *integrationSuite) waitUntilNotPending(clusters []string, sourceRepo string) *sous.DeployState {
-	sleepTime := time.Duration(500) * time.Millisecond
+	sleepTime := time.Duration(5) * time.Second
 	suite.T().Log("About to snapshot the state - it may take some time.")
 	for counter := 1; ; counter++ {
 		ds, which := suite.deploymentWithRepo(clusters, sourceRepo)
