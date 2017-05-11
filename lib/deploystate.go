@@ -30,7 +30,7 @@ const (
 )
 
 func (ds DeployState) String() string {
-	return fmt.Sprintf("%s %s %v", ds.Deployment.String(), ds.Status, ds.ExecutorData)
+	return fmt.Sprintf("DEPLOYMENT:%s STATUS:%s EXECUTORDATA:%v", ds.Deployment.String(), ds.Status, ds.ExecutorData)
 }
 
 // Clone returns an independent clone of this DeployState.

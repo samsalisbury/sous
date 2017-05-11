@@ -100,6 +100,7 @@ func (suite *integrationSuite) waitUntilNotPending(clusters []string, sourceRepo
 		ds, which := suite.deploymentWithRepo(clusters, sourceRepo)
 		deps := ds.Snapshot()
 		deployState := deps[which]
+		suite.T().Logf("deployState:%s", deployState.String())
 		suite.Require().NotNil(deployState)
 		if deployState.Status != sous.DeployStatusPending {
 			return deployState
