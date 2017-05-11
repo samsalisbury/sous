@@ -194,7 +194,7 @@ func startInstance(url, clusterName, imageName, repoName string, ports []int32) 
 	req := loadMap(&dtos.SingularityRequest{}, map[string]interface{}{
 		"Id":          reqID,
 		"RequestType": dtos.SingularityRequestRequestTypeSERVICE,
-		"Instances":   int32(1),
+		"Instances":   int32(2),
 	}).(*dtos.SingularityRequest)
 
 	for {
