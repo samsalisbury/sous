@@ -2,7 +2,7 @@ FROM alpine:latest
 
 RUN apk update && apk add python
 ADD succeed.py /usr/local/bin/succeed.py
-CMD /usr/local/bin/succeed.py
+CMD python /usr/local/bin/succeed.py
 
 LABEL \
   com.opentable.sous.repo_url=github.com/user/succeedthenfail \
