@@ -265,6 +265,10 @@ func (suite *integrationSuite) TestFailedDeployFollowingSuccessfulDeploy() {
 	deployState := suite.waitUntilSettledStatus(clusters, sourceRepo)
 	suite.statusIs(deployState, sous.DeployStatusActive)
 
+	if deployState.Status == sous.DeployStatusFailed {
+		suite.T().Fatal("Aborting test, deploy failed.")
+	}
+
 	// Create an assert on a failed deployment.
 
 	registerAndDeploy(ip, clusterName, repoName, sourceRepo, "succeedthenfail-fail", "2.0.0-fail", ports)
