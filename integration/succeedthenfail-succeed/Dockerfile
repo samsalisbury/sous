@@ -1,6 +1,6 @@
-FROM ubuntu:latest
+FROM alpine:latest
 
-RUN apt-get -y update && apt-get -y install python-minimal
+RUN apk update && apk add python
 ADD succeed.py /usr/local/bin/succeed.py
 CMD /usr/local/bin/succeed.py
 
