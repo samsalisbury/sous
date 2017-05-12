@@ -1,6 +1,8 @@
-FROM busybox
+FROM ubuntu:latest
 
-CMD sleep 9999
+RUN apt-get -y update && apt-get -y install python-minimal
+ADD succeed.py /usr/local/bin/succeed.py
+CMD /usr/local/bin/succeed.py
 
 LABEL \
   com.opentable.sous.repo_url=github.com/user/succeedthenfail \
