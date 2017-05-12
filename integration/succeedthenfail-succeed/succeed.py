@@ -8,8 +8,8 @@ def handler(signum, frame):
 
 def main():
     signal.signal(signal.SIGTERM, handler)
-    print("happily succeeding.")
     while True:
+        print("happily succeeding.")
         time.sleep(10)
 
 main()
