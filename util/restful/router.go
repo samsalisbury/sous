@@ -100,11 +100,11 @@ func (mh *MetaHandler) PutHandling(factory ExchangeFactory) httprouter.Handle {
 		if etag := r.Header.Get("If-Match"); etag != "" {
 			grezEtag := grez.Header.Get("Etag")
 			if grezEtag != etag {
-				reqBody, _ := ioutil.ReadAll(r.Body)
 				rezBody, _ := ioutil.ReadAll(grez.Body)
+				rezStr := string(rezBody)
 				mh.writeHeaders(http.StatusPreconditionFailed, w, r,
-					fmt.Sprintf("Etag mismatch: provided %q != existing %q\n%s\n\n%s",
-						etag, grezEtag, string(reqBody), string(rezBody)))
+					fmt.Sprintf("Etag mismatch: provided %q != existing %q\nExisting resource:\n%s",
+						etag, grezEtag, rezStr))
 				return
 			}
 		}

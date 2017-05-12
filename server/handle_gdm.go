@@ -3,7 +3,9 @@ package server
 import (
 	"encoding/json"
 	"net/http"
+	"sort"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/restful"
@@ -15,6 +17,7 @@ type (
 
 	// GETGDMHandler is an injectable request handler
 	GETGDMHandler struct {
+		*sous.LogSet
 		GDM *LiveGDM
 	}
 
@@ -39,9 +42,17 @@ func (gr *GDMResource) Get() restful.Exchanger { return &GETGDMHandler{} }
 func (h *GETGDMHandler) Exchange() (interface{}, int) {
 	sous.Log.Debug.Print(h.GDM)
 	data := gdmWrapper{Deployments: make([]*sous.Deployment, 0)}
-	for _, d := range h.GDM.Snapshot() {
+	keys := sous.DeploymentIDSlice(h.GDM.Keys())
+	sort.Sort(keys)
+
+	for _, k := range keys {
+		d, has := h.GDM.Get(k)
+		if !has {
+			return "Error serializing GDM", http.StatusInternalServerError
+		}
 		data.Deployments = append(data.Deployments, d)
 	}
+
 	return data, http.StatusOK
 }
 
@@ -57,6 +68,7 @@ func (h *PUTGDMHandler) Exchange() (interface{}, int) {
 	dec.Decode(&data)
 	deps := sous.NewDeployments(data.Deployments...)
 
+	sous.Log.Debug.Println(spew.Sprintf("%+v", h))
 	state, err := h.StateManager.ReadState()
 	if err != nil {
 		h.Warn.Printf("%#v", err)

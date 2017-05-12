@@ -1,8 +1,10 @@
 package sous
 
 import (
+	"bytes"
 	"fmt"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/pkg/errors"
 )
 
@@ -32,12 +34,15 @@ func (ds *Deployments) EmptyReceiver() Comparable {
 
 // VariancesFrom implements Comparable on Deployments
 func (ds *Deployments) VariancesFrom(other Comparable) Variances {
+	Log.Debug.Println("here", spew.Sdump(ds))
+	Log.Debug.Println("them", spew.Sdump(other))
+
 	switch ods := other.(type) {
 	default:
 		return Variances{"not a list of Deployments"}
 	case *Deployments:
 		vs := Variances{}
-		if ods.Len() != ds.Len() {
+		if ds.Len() != ods.Len() {
 			vs = append(vs, fmt.Sprintf("We have %d deployments, other has %d.", ds.Len(), ods.Len()))
 		}
 		for did, dep := range ds.Snapshot() {
@@ -50,4 +55,22 @@ func (ds *Deployments) VariancesFrom(other Comparable) Variances {
 		}
 		return vs
 	}
+}
+
+// DeploymentIDSlice is a slice of DeploymentID, named so that it can be sort-able
+type DeploymentIDSlice []DeploymentID
+
+// Len implements sort.Interface on []DeploymentID
+func (dids DeploymentIDSlice) Len() int {
+	return len(dids)
+}
+
+// Less implements sort.Interface on []DeploymentID
+func (dids DeploymentIDSlice) Less(i, j int) bool {
+	return bytes.Compare(dids[i].Digest(), dids[j].Digest()) < 0
+}
+
+// Swap implements sort.Interface on []DeploymentID
+func (dids DeploymentIDSlice) Swap(i, j int) {
+	dids[i], dids[j] = dids[j], dids[i]
 }

@@ -3,6 +3,7 @@ package sous
 import (
 	"fmt"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/pkg/errors"
 )
 
@@ -19,6 +20,34 @@ type (
 		Deployments []*Deployment
 	}
 )
+
+func wrapDeployments(source Deployments) gdmWrapper {
+	data := gdmWrapper{Deployments: make([]*Deployment, 0)}
+	for _, d := range source.Snapshot() {
+		data.Deployments = append(data.Deployments, d)
+	}
+	return data
+}
+
+// EmptyReceiver implements Comparable on gdmWrapper
+func (g *gdmWrapper) EmptyReceiver() Comparable {
+	return &gdmWrapper{Deployments: []*Deployment{}}
+}
+
+// VariancesFrom implements Comparable on gdmWrapper
+func (g *gdmWrapper) VariancesFrom(other Comparable) Variances {
+	switch og := other.(type) {
+	default:
+		return Variances{"Not a gdmWrapper"}
+	case *gdmWrapper:
+		return g.unwrap().VariancesFrom(og.unwrap())
+	}
+}
+
+func (g *gdmWrapper) unwrap() *Deployments {
+	ds := NewDeployments(g.Deployments...)
+	return &ds
+}
 
 func (g *gdmWrapper) manifests(defs Defs) (Manifests, error) {
 	ds := NewDeployments()
@@ -75,8 +104,10 @@ func (hsm *HTTPStateManager) WriteState(s *State, u User) error {
 	if err != nil {
 		return err
 	}
+	Log.Debug.Println("old", spew.Sdump(cds))
+	Log.Debug.Println("new", spew.Sdump(wds))
 
-	return hsm.putDeployments(&cds, &wds)
+	return hsm.putDeployments(cds, wds)
 }
 
 func (hsm *HTTPStateManager) process(dc DiffConcentrator) error {
@@ -211,8 +242,10 @@ func (hsm *HTTPStateManager) getManifests(defs Defs) (Manifests, error) {
 	return gdm.manifests(defs)
 }
 
-func (hsm *HTTPStateManager) putDeployments(orig, new *Deployments) error {
-	return errors.Wrapf(hsm.Update("./gdm", nil, orig, new, hsm.User), "putting GDM")
+func (hsm *HTTPStateManager) putDeployments(orig, new Deployments) error {
+	wOrig := wrapDeployments(orig)
+	wNew := wrapDeployments(new)
+	return errors.Wrapf(hsm.Update("./gdm", nil, &wOrig, &wNew, hsm.User), "putting GDM")
 }
 
 func manifestParams(m *Manifest) map[string]string {
