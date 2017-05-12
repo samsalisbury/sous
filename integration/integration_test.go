@@ -117,20 +117,6 @@ func (suite *integrationSuite) statusIs(ds *sous.DeployState, expected sous.Depl
 func (suite *integrationSuite) BeforeTest(suiteName, testName string) {
 	ResetSingularity()
 
-	registerAndDeploy(ip, "test-cluster", "hello-labels", "github.com/docker-library/hello-world", "hello-labels", "latest", []int32{})
-	registerAndDeploy(ip, "test-cluster", "hello-server-labels", "github.com/docker/dockercloud-hello-world", "hello-server-labels", "latest", []int32{})
-	registerAndDeploy(ip, "test-cluster", "grafana-repo", "github.com/opentable/docker-grafana", "grafana-labels", "latest", []int32{})
-	registerAndDeploy(ip, "other-cluster", "grafana-repo", "github.com/opentable/docker-grafana", "grafana-labels", "latest", []int32{})
-
-	// This deployment fails immediately, and never results in a successful deployment at that singularity request.
-	registerAndDeploy(ip, "test-cluster", "supposed-to-fail", "github.com/opentable/homer-says-doh", "fails-labels", "1-fails", []int32{})
-
-	/*
-		imageName := BuildImageName("github.com/opentable/homer-says-doh", "latest")
-		err = BuildAndPushContainer("failed-labels", imageName)
-		suite.Require().NoError(err)
-	*/
-
 	imageName = fmt.Sprintf("%s/%s:%s", registryName, "grafana-repo", "latest")
 
 	suite.registry = docker_registry.NewClient()
@@ -139,6 +125,16 @@ func (suite *integrationSuite) BeforeTest(suiteName, testName string) {
 	suite.nameCache = suite.newNameCache(testName)
 	suite.client = singularity.NewRectiAgent(suite.nameCache)
 	suite.deployer = singularity.NewDeployer(suite.client)
+}
+
+func (suite *integrationSuite) deployDefaultContainers() {
+	registerAndDeploy(ip, "test-cluster", "hello-labels", "github.com/docker-library/hello-world", "hello-labels", "latest", []int32{})
+	registerAndDeploy(ip, "test-cluster", "hello-server-labels", "github.com/docker/dockercloud-hello-world", "hello-server-labels", "latest", []int32{})
+	registerAndDeploy(ip, "test-cluster", "grafana-repo", "github.com/opentable/docker-grafana", "grafana-labels", "latest", []int32{})
+	registerAndDeploy(ip, "other-cluster", "grafana-repo", "github.com/opentable/docker-grafana", "grafana-labels", "latest", []int32{})
+
+	// This deployment fails immediately, and never results in a successful deployment at that singularity request.
+	registerAndDeploy(ip, "test-cluster", "supposed-to-fail", "github.com/opentable/homer-says-doh", "fails-labels", "1-fails", []int32{})
 }
 
 func (suite *integrationSuite) TearDownTest() {
@@ -170,6 +166,7 @@ func (suite *integrationSuite) TestNameCache() {
 }
 
 func (suite *integrationSuite) TestGetRunningDeploymentSet_testCluster() {
+	suite.deployDefaultContainers()
 	clusters := []string{"test-cluster"}
 
 	// We run this test more than once to check that cache behaviour is
@@ -195,6 +192,7 @@ func (suite *integrationSuite) TestGetRunningDeploymentSet_testCluster() {
 }
 
 func (suite *integrationSuite) TestGetRunningDeploymentSet_otherCluster() {
+	suite.deployDefaultContainers()
 	clusters := []string{"other-cluster"}
 
 	ds, which := suite.deploymentWithRepo(clusters, "github.com/opentable/docker-grafana")
@@ -214,6 +212,7 @@ func (suite *integrationSuite) TestGetRunningDeploymentSet_otherCluster() {
 }
 
 func (suite *integrationSuite) TestGetRunningDeploymentSet_all() {
+	suite.deployDefaultContainers()
 	clusters := []string{"test-cluster", "other-cluster"}
 
 	ds, which := suite.deploymentWithRepo(clusters, "github.com/opentable/docker-grafana")
@@ -233,6 +232,7 @@ func (suite *integrationSuite) TestGetRunningDeploymentSet_all() {
 }
 
 func (suite *integrationSuite) TestFailedService() {
+	suite.deployDefaultContainers()
 	clusters := []string{"test-cluster"}
 
 	fails := suite.waitUntilNotPending(clusters, "github.com/opentable/homer-says-doh")
@@ -240,6 +240,7 @@ func (suite *integrationSuite) TestFailedService() {
 }
 
 func (suite *integrationSuite) TestSuccessfulService() {
+	suite.deployDefaultContainers()
 	sous.Log.BeChatty()
 	defer sous.Log.BeQuiet()
 
@@ -273,6 +274,8 @@ func (suite *integrationSuite) TestFailedDeployFollowingSuccessfulDeploy() {
 }
 
 func (suite *integrationSuite) TestMissingImage() {
+	suite.deployDefaultContainers()
+
 	clusterDefs := sous.Defs{
 		Clusters: sous.Clusters{
 			"test-cluster": &sous.Cluster{
@@ -312,6 +315,7 @@ func (suite *integrationSuite) TestMissingImage() {
 }
 
 func (suite *integrationSuite) TestResolve() {
+	suite.deployDefaultContainers()
 	clusterDefs := sous.Defs{
 		Clusters: sous.Clusters{
 			"test-cluster": &sous.Cluster{
