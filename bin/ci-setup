@@ -7,6 +7,7 @@ sudo hostname "$(hostname | cut -c1-63)"
 sudo sed -i -E -e "s/^(127\\.0\\.0\\.1.*|::1.*)/\\1 $(hostname | cut -c1-63)/" /etc/hosts
 
 echo Assuring docker version
+sudo /etc/init.d/docker stop
 sudo apt-get purge docker-engine
 dpkg -l | grep docker
 which docker
