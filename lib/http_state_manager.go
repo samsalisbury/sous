@@ -25,7 +25,7 @@ func (g *gdmWrapper) manifests(defs Defs) (Manifests, error) {
 	for _, d := range g.Deployments {
 		ds.Add(d)
 	}
-	return ds.Manifests(defs)
+	return ds.RawManifests(defs)
 }
 
 // NewHTTPStateManager creates a new HTTPStateManager.
@@ -76,7 +76,7 @@ func (hsm *HTTPStateManager) WriteState(s *State, u User) error {
 		return err
 	}
 
-	return hsm.putDeployments(cds, wds)
+	return hsm.putDeployments(&cds, &wds)
 }
 
 func (hsm *HTTPStateManager) process(dc DiffConcentrator) error {
@@ -211,7 +211,7 @@ func (hsm *HTTPStateManager) getManifests(defs Defs) (Manifests, error) {
 	return gdm.manifests(defs)
 }
 
-func (hsm *HTTPStateManager) putDeployments(orig, new Deployments) error {
+func (hsm *HTTPStateManager) putDeployments(orig, new *Deployments) error {
 	return errors.Wrapf(hsm.Update("./gdm", nil, orig, new, hsm.User), "putting GDM")
 }
 

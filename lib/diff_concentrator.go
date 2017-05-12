@@ -37,32 +37,6 @@ type (
 	}
 )
 
-// Concentrate returns a DiffConcentrator set up to concentrate the deployment
-// changes in a DeployableChans into manifest changes.
-func (d DeployableChans) Concentrate(defs Defs, baseManifests Manifests) DiffConcentrator {
-	c := NewConcentrator(defs, baseManifests, d, cap(d.Start))
-	go concentrate(d, c)
-	return c
-}
-
-// NewConcentrator constructs a DiffConcentrator.
-func NewConcentrator(defs Defs, base Manifests, s DeployableChans, sizes ...int) DiffConcentrator {
-	var size int
-	if len(sizes) > 0 {
-		size = sizes[0]
-	}
-
-	return DiffConcentrator{
-		Defs:          defs,
-		baseManifests: base,
-		Errors:        make(chan error, size+10),
-		Created:       make(chan *Manifest, size),
-		Deleted:       make(chan *Manifest, size),
-		Retained:      make(chan *Manifest, size),
-		Modified:      make(chan *ManifestPair, size),
-	}
-}
-
 func newConcDiffSet() concentratedDiffSet {
 	return concentratedDiffSet{
 		New:     NewManifests(),

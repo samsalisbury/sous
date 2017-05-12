@@ -10,7 +10,7 @@ import (
 func TestHandlesGDMGet(t *testing.T) {
 	assert := assert.New(t)
 
-	th := &GDMHandler{&LiveGDM{
+	th := &GETGDMHandler{&LiveGDM{
 		Deployments: sous.NewDeployments(),
 	}}
 	data, status := th.Exchange()

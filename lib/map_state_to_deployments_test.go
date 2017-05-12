@@ -291,7 +291,7 @@ func TestState_Deployments(t *testing.T) {
 
 func TestState_DeploymentsBounce(t *testing.T) {
 	defs := makeTestDefs()
-	bounceManifests, err := expectedDeployments.Clone().Manifests(defs)
+	bounceManifests, err := expectedDeployments.Clone().PutbackManifests(defs, makeTestManifests())
 	if err != nil {
 		t.Fatal(err)
 	}

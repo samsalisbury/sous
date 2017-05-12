@@ -25,12 +25,13 @@ func (ds *Deployments) Only() (*Deployment, error) {
 }
 
 // EmptyReceiver implements Comparable on Deployments
-func (ds Deployments) EmptyReceiver() Comparable {
-	return NewDeployments()
+func (ds *Deployments) EmptyReceiver() Comparable {
+	nds := NewDeployments()
+	return &nds
 }
 
 // VariancesFrom implements Comparable on Deployments
-func (ds Deployments) VariancesFrom(other Comparable) Variances {
+func (ds *Deployments) VariancesFrom(other Comparable) Variances {
 	switch ods := other.(type) {
 	default:
 		return Variances{"not a list of Deployments"}

@@ -24,6 +24,7 @@ type (
 		*sous.LogSet
 		GDM          *LiveGDM
 		StateManager graph.StateManager
+		User         ClientUser
 	}
 
 	gdmWrapper struct {
@@ -52,9 +53,9 @@ func (h *PUTGDMHandler) Exchange() (interface{}, int) {
 	sous.Log.Debug.Print(h.GDM)
 
 	data := gdmWrapper{}
-	dec := json.NewDecoder(pmh.Request.Body)
+	dec := json.NewDecoder(h.Request.Body)
 	dec.Decode(&data)
-	deps := data.Deployments
+	deps := sous.NewDeployments(data.Deployments...)
 
 	state, err := h.StateManager.ReadState()
 	if err != nil {
@@ -74,7 +75,7 @@ func (h *PUTGDMHandler) Exchange() (interface{}, int) {
 		return "Invalid GDM", http.StatusBadRequest
 	}
 
-	if err := h.StateManager.WriteState(state); err != nil {
+	if err := h.StateManager.WriteState(state, sous.User(h.User)); err != nil {
 		h.Warn.Printf("%#v", err)
 		return "Error committing state", http.StatusInternalServerError
 	}

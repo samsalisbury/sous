@@ -118,8 +118,10 @@ func (ds Deployments) PutbackManifests(defs Defs, olds Manifests) (Manifests, er
 	return ms, nil
 }
 
-// Manifests creates manifests from deployments.
-func (ds Deployments) Manifests(defs Defs) (Manifests, error) {
+// RawManifests creates manifests from deployments.
+// "raw" because it's brand new - it doesn't maintain certain essential state over time.
+// For almost all uses, you want PutbackManifests
+func (ds Deployments) RawManifests(defs Defs) (Manifests, error) {
 	ms := NewManifests()
 	for _, k := range ds.Keys() {
 		d, _ := ds.Get(k)
