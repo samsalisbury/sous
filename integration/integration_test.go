@@ -93,7 +93,7 @@ func (suite *integrationSuite) newNameCache(name string) *docker.NameCache {
 	return docker.NewNameCache(registryName, suite.registry, db)
 }
 
-func (suite *integrationSuite) waitUntilNotPending(clusters []string, sourceRepo string) *sous.DeployState {
+func (suite *integrationSuite) waitUntilSettledStatus(clusters []string, sourceRepo string) *sous.DeployState {
 	sleepTime := time.Duration(5) * time.Second
 	suite.T().Log("About to snapshot the state - it may take some time.")
 	for counter := 1; ; counter++ {
@@ -102,7 +102,7 @@ func (suite *integrationSuite) waitUntilNotPending(clusters []string, sourceRepo
 		deployState := deps[which]
 		suite.T().Logf("deployState:%s", deployState.String())
 		suite.Require().NotNil(deployState)
-		if deployState.Status != sous.DeployStatusPending {
+		if deployState.Status == sous.DeployStatusActive || deployState.Status == sous.DeployStatusFailed {
 			return deployState
 		}
 		time.Sleep(sleepTime)
@@ -235,18 +235,18 @@ func (suite *integrationSuite) TestFailedService() {
 	suite.deployDefaultContainers()
 	clusters := []string{"test-cluster"}
 
-	fails := suite.waitUntilNotPending(clusters, "github.com/opentable/homer-says-doh")
+	fails := suite.waitUntilSettledStatus(clusters, "github.com/opentable/homer-says-doh")
 	suite.statusIs(fails, sous.DeployStatusFailed)
 }
 
 func (suite *integrationSuite) TestSuccessfulService() {
-	suite.deployDefaultContainers()
+	registerAndDeploy(ip, "test-cluster", "hello-server-labels", "github.com/docker/dockercloud-hello-world", "hello-server-labels", "latest", []int32{})
 	sous.Log.BeChatty()
 	defer sous.Log.BeQuiet()
 
 	clusters := []string{"test-cluster"}
 
-	succeeds := suite.waitUntilNotPending(clusters, "github.com/docker/dockercloud-hello-world")
+	succeeds := suite.waitUntilSettledStatus(clusters, "github.com/docker/dockercloud-hello-world")
 	suite.statusIs(succeeds, sous.DeployStatusActive)
 }
 
@@ -262,14 +262,14 @@ func (suite *integrationSuite) TestFailedDeployFollowingSuccessfulDeploy() {
 
 	registerAndDeploy(ip, clusterName, repoName, sourceRepo, "succeedthenfail-succeed", "1.0.0-succeed", ports)
 
-	deployState := suite.waitUntilNotPending(clusters, sourceRepo)
+	deployState := suite.waitUntilSettledStatus(clusters, sourceRepo)
 	suite.statusIs(deployState, sous.DeployStatusActive)
 
 	// Create an assert on a failed deployment.
 
 	registerAndDeploy(ip, clusterName, repoName, sourceRepo, "succeedthenfail-fail", "2.0.0-fail", ports)
 
-	deployState = suite.waitUntilNotPending(clusters, sourceRepo)
+	deployState = suite.waitUntilSettledStatus(clusters, sourceRepo)
 	suite.statusIs(deployState, sous.DeployStatusFailed)
 }
 
