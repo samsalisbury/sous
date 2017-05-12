@@ -110,123 +110,6 @@ func (hsm *HTTPStateManager) WriteState(s *State, u User) error {
 	return hsm.putDeployments(cds, wds)
 }
 
-func (hsm *HTTPStateManager) process(dc DiffConcentrator) error {
-	done := make(chan struct{})
-	defer close(done)
-
-	createErrs := make(chan error)
-	go hsm.creates(dc.Created, createErrs, done)
-
-	deleteErrs := make(chan error)
-	go hsm.deletes(dc.Deleted, deleteErrs, done)
-
-	modifyErrs := make(chan error)
-	go hsm.modifies(dc.Modified, modifyErrs, done)
-
-	retainErrs := make(chan error)
-	go hsm.retains(dc.Retained, retainErrs, done)
-
-	for {
-		if createErrs == nil && deleteErrs == nil && modifyErrs == nil && retainErrs == nil {
-			return nil
-		}
-
-		select {
-		case e, open := <-dc.Errors:
-			if open {
-				return e
-			}
-			dc.Errors = nil
-		case e, open := <-createErrs:
-			if open {
-				return e
-			}
-			createErrs = nil
-		case e, open := <-deleteErrs:
-			if open {
-				return e
-			}
-			deleteErrs = nil
-		case e, open := <-retainErrs:
-			if open {
-				return e
-			}
-			retainErrs = nil
-		case e, open := <-modifyErrs:
-			if open {
-				return e
-			}
-			modifyErrs = nil
-		}
-	}
-}
-
-func (hsm *HTTPStateManager) retains(mc chan *Manifest, ec chan error, done chan struct{}) {
-	defer close(ec)
-	for {
-		select {
-		case <-done:
-			return
-		case _, open := <-mc: //just drop 'em
-			if !open {
-				return
-			}
-		}
-	}
-}
-
-func (hsm *HTTPStateManager) creates(mc chan *Manifest, ec chan error, done chan struct{}) {
-	defer close(ec)
-	for {
-		select {
-		case <-done:
-			return
-		case m, open := <-mc:
-			if !open {
-				return
-			}
-			if err := hsm.create(m); err != nil {
-				ec <- err
-			}
-		}
-	}
-}
-
-func (hsm *HTTPStateManager) deletes(mc chan *Manifest, ec chan error, done chan struct{}) {
-	defer close(ec)
-	for {
-		select {
-		case <-done:
-			return
-		case m, open := <-mc:
-			if !open {
-				return
-			}
-			if err := hsm.del(m); err != nil {
-				ec <- err
-			}
-		}
-	}
-}
-
-func (hsm *HTTPStateManager) modifies(mc chan *ManifestPair, ec chan error, done chan struct{}) {
-	defer close(ec)
-	for {
-		select {
-		case <-done:
-			return
-		case m, open := <-mc:
-			if !open {
-				return
-			}
-			Log.Debug.Printf("Modifying %q", m.name)
-			if err := hsm.modify(m); err != nil {
-				ec <- err
-			}
-		}
-	}
-}
-
 ////
 
 func (hsm *HTTPStateManager) getDefs() (Defs, error) {
@@ -248,18 +131,6 @@ func (hsm *HTTPStateManager) putDeployments(orig, new Deployments) error {
 	return errors.Wrapf(hsm.Update("./gdm", nil, &wOrig, &wNew, hsm.User), "putting GDM")
 }
 
-func manifestParams(m *Manifest) map[string]string {
-	return map[string]string{
-		"repo":   m.Source.Repo,
-		"offset": m.Source.Dir,
-		"flavor": m.Flavor,
-	}
-}
-
-func manifestDebugs(m *Manifest) (r, o, f string) {
-	return m.Source.Repo, m.Source.Dir, m.Flavor
-}
-
 // EmptyReceiver implements Comparable on Manifest
 func (m *Manifest) EmptyReceiver() Comparable {
 	return &Manifest{}
@@ -274,20 +145,4 @@ func (m *Manifest) VariancesFrom(c Comparable) (vs Variances) {
 
 	_, diffs := m.Diff(o)
 	return Variances(diffs)
-}
-
-func (hsm *HTTPStateManager) create(m *Manifest) error {
-	r, o, f := manifestDebugs(m)
-	return errors.Wrapf(hsm.Create("./manifest", manifestParams(m), m, hsm.User), "creating manifest %s %s %s", r, o, f)
-}
-
-func (hsm *HTTPStateManager) del(m *Manifest) error {
-	r, o, f := manifestDebugs(m)
-	return errors.Wrapf(hsm.Delete("./manifest", manifestParams(m), m, hsm.User), "deleting manifest %s %s %s", r, o, f)
-}
-
-func (hsm *HTTPStateManager) modify(mp *ManifestPair) error {
-	bf, af := mp.Prior, mp.Post
-	r, o, f := manifestDebugs(bf)
-	return errors.Wrapf(hsm.Update("./manifest", manifestParams(bf), bf, af, hsm.User), "updating manifest %s %s %s", r, o, f)
 }
