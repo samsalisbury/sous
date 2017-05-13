@@ -57,7 +57,9 @@ func (cl *configLoader) Load(target interface{}, filePath string) error {
 		if !os.IsNotExist(err) {
 			return err
 		}
-		sous.Log.Info.Printf("Missing config file, using defaults", map[string]interface{}{"path": filePath})
+		// I'd like to say "override with e.g. SOUS_CONFIG_FILE", but the
+		// construction of the path happens elsewhere.
+		sous.Log.Info.Printf("No config file found at %q, using defaults.", filePath)
 	} else {
 		if err := cl.loadYAMLFile(target, filePath); err != nil {
 			return err

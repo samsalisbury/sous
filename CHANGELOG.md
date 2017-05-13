@@ -7,13 +7,20 @@ and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
 ## [Unreleased]
+
+### Added
+- Extra debug logging about how build strategies are selected.
+
 ### Changed
 - Singularity RequestIDs are generated with a suffix of the MD5 sum of
   pre-slug data instead of a random UUID.
 - Singularity RequestIDs are shortened to no longer include FQDN or
   organization of Git repo URL.
+- Integration test enhancements.
 
 ### Fixed
+- Calls to `docker build` now have a `--pull` flag so that stale cached FROM
+  images don't confuse builds.
 - Environment variable defaults from cluster definitions
   no longer elide identical variables on manifests,
   which means that common values can be added to the defaults
