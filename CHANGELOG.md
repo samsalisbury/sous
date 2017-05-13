@@ -7,11 +7,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
 ## [Unreleased]
-### Changed 
+### Changed
 - Singularity RequestIDs are generated with a suffix of the MD5 sum of
   pre-slug data instead of a random UUID.
 - Singularity RequestIDs are shortened to no longer include FQDN or
   organization of Git repo URL.
+
+### Fixed
+- Environment variable defaults from cluster definitions
+  no longer elide identical variables on manifests,
+  which means that common values can be added to the defaults
+  without undue concern for manifest environment variables.
 
 ## [0.5.1](//github.com/opentable/sous/compare/0.5.0...0.5.1)
 
