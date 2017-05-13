@@ -19,7 +19,8 @@ sudo apt-get install -y "docker-engine=${DOCKER_VERSION}"
 sudo /etc/init.d/docker stop
 #sudo rm -rf /var/lib/docker/network
 sudo /etc/init.d/docker start
-
+echo -n Docker version: 
+docker version 
 echo Assuring docker-compose version
 sudo rm -rf /usr/local/bin/docker-compose
 curl -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" > docker-compose
