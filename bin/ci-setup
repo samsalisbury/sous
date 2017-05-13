@@ -6,16 +6,19 @@ echo Cleaning up hostname
 sudo hostname "$(hostname | cut -c1-63)"
 sudo sed -i -E -e "s/^(127\\.0\\.0\\.1.*|::1.*)/\\1 $(hostname | cut -c1-63)/" /etc/hosts
 
-#echo Assuring docker version
-#sudo /etc/init.d/docker stop
-#sudo apt-get purge docker-engine
-#dpkg -l | grep docker
-#which docker
-#apt-cache madison docker-engine
+echo Assuring docker version
+sudo /etc/init.d/docker stop
+sudo apt-get -y purge docker-engine
+sudo rm -rf /var/lib/docker
+sudo rm -rf /etc/docker
+dpkg -l | grep docker
+which docker
+apt-cache madison docker-engine
 #sudo apt-get -o Dpkg::Options::="--force-confnew" install -y --force-yes "docker-engine=${DOCKER_VERSION}"
-#sudo /etc/init.d/docker stop
+sudo apt-get install -y "docker-engine=${DOCKER_VERSION}"
+sudo /etc/init.d/docker stop
 #sudo rm -rf /var/lib/docker/network
-#sudo /etc/init.d/docker start
+sudo /etc/init.d/docker start
 
 echo Assuring docker-compose version
 sudo rm -rf /usr/local/bin/docker-compose
