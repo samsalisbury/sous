@@ -10,6 +10,7 @@ with respect to its command line interface and HTTP interface.
 
 ### Added
 - Extra debug logging about how build strategies are selected.
+- Profiling endpoints, gated with a `server` flag, or the SOUS_PROFILING env variable.
 
 ### Changed
 - Singularity RequestIDs are generated with a suffix of the MD5 sum of
