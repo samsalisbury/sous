@@ -200,7 +200,9 @@ func startInstance(url, clusterName, imageName, repoName string, ports []int32) 
 	for {
 		_, err := sing.PostRequest(req)
 		if err != nil {
+			log.Printf("PostRequest error:%#v", err)
 			if rerr, ok := err.(*swaggering.ReqError); ok && rerr.Status == 409 { //not done deleting the request
+				time.Sleep(time.Second)
 				continue
 			}
 
@@ -216,6 +218,7 @@ func startInstance(url, clusterName, imageName, repoName string, ports []int32) 
 	deployID := "TESTGENERATED_" + singularity.StripDeployID(uuid.NewV4().String())
 	depReq := loadMap(&dtos.SingularityDeployRequest{}, dtoMap{
 		"Deploy": loadMap(&dtos.SingularityDeploy{}, dtoMap{
+			"DeployHealthTimeoutSeconds": int64(900),
 			"Metadata": map[string]string{
 				"com.opentable.sous.clustername": clusterName,
 			},

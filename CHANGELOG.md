@@ -16,7 +16,6 @@ with respect to its command line interface and HTTP interface.
   pre-slug data instead of a random UUID.
 - Singularity RequestIDs are shortened to no longer include FQDN or
   organization of Git repo URL.
-- Integration test enhancements.
 
 ### Fixed
 - Calls to `docker build` now have a `--pull` flag so that stale cached FROM

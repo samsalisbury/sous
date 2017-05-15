@@ -1,6 +1,8 @@
-FROM busybox
+FROM alpine:latest
 
-CMD sleep 9999
+RUN apk update && apk add python
+ADD succeed.py /usr/local/bin/succeed.py
+CMD python /usr/local/bin/succeed.py
 
 LABEL \
   com.opentable.sous.repo_url=github.com/user/succeedthenfail \
