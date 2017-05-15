@@ -22,6 +22,10 @@ with respect to its command line interface and HTTP interface.
 ### Fixed
 - Calls to `docker build` now have a `--pull` flag so that stale cached FROM
   images don't confuse builds.
+- Environment variable defaults from cluster definitions
+  no longer elide identical variables on manifests,
+  which means that common values can be added to the defaults
+  without undue concern for manifest environment variables.
 
 ## [0.5.1](//github.com/opentable/sous/compare/0.5.0...0.5.1)
 

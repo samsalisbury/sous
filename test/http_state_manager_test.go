@@ -6,6 +6,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
@@ -36,6 +37,8 @@ func buildManifest(cluster, repo, version string) *sous.Manifest {
 }
 
 func TestWriteState(t *testing.T) {
+	sous.Log.BeChatty()
+	defer sous.Log.BeQuiet()
 	steadyManifest := buildManifest("test-cluster", "github.com/opentable/steady", "1.2.3")
 	diesManifest := buildManifest("test-cluster", "github.com/opentable/dies", "133.56.987431")
 	changesManifest := buildManifest("test-cluster", "github.com/opentable/changes", "0.17.19")
@@ -70,6 +73,7 @@ func TestWriteState(t *testing.T) {
 	di.Add(
 		func() graph.StateReader { return graph.StateReader{StateReader: &sm} },
 		func() graph.StateWriter { return graph.StateWriter{StateWriter: &sm} },
+		func() graph.StateManager { return graph.StateManager{StateManager: &sm} },
 	)
 	di.Add(&config.Verbosity{})
 
@@ -97,7 +101,7 @@ func TestWriteState(t *testing.T) {
 		t.Logf("hsm INITIAL state: Manifest %q; Kind = %q\n  %#v\n", id, m.Kind, m)
 	}
 
-	log.Printf("original state: %#v", originalState)
+	log.Println(spew.Sprintf("original state: %#++v", originalState))
 	if originalState.Manifests.Len() != state.Manifests.Len() {
 		t.Errorf("Local state has %d manifests to remote's %d", originalState.Manifests.Len(), state.Manifests.Len())
 	}
@@ -113,7 +117,7 @@ func TestWriteState(t *testing.T) {
 	ch.Deployments["test-cluster"] = changedDeployment
 	originalState.Manifests.Set(ch.ID(), ch)
 
-	log.Printf("state after update: %#v", originalState)
+	t.Logf("state after update: %#v", originalState)
 
 	var testUser = sous.User{Name: "Test User"}
 	if err := hsm.WriteState(originalState, testUser); err != nil {

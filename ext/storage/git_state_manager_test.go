@@ -124,7 +124,7 @@ func TestGitPulls(t *testing.T) {
 	sameYAML(t, actual, expected)
 
 	expected.Manifests.Add(&sous.Manifest{Source: sous.SourceLocation{Repo: "github.com/opentable/brandnew"}})
-	remote.WriteState(expected)
+	remote.WriteState(expected, sous.User{})
 	expected, err = remote.ReadState()
 	require.NoError(err)
 	runScript(t, `git add .
@@ -165,7 +165,7 @@ func TestGitConflicts(t *testing.T) {
 	expected := exampleState()
 
 	expected.Manifests.Add(&sous.Manifest{Source: sous.SourceLocation{Repo: "github.com/opentable/brandnew"}})
-	remote.WriteState(expected)
+	remote.WriteState(expected, sous.User{})
 
 	expected, err = remote.ReadState()
 	require.NoError(err)
@@ -205,7 +205,7 @@ func TestGitRemoteDelete(t *testing.T) {
 	expected := exampleState()
 
 	expected.Manifests.Add(&sous.Manifest{Source: sous.SourceLocation{Repo: "github.com/opentable/brandnew"}})
-	remote.WriteState(expected)
+	remote.WriteState(expected, sous.User{})
 
 	_, err = remote.ReadState()
 	require.NoError(err)

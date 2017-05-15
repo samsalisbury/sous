@@ -4,10 +4,10 @@ package integration
 
 import (
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/opentable/sous/ext/docker"
 	"github.com/opentable/sous/ext/singularity"
 	"github.com/opentable/sous/lib"
@@ -99,15 +99,16 @@ func (suite *integrationSuite) newNameCache(name string) *docker.NameCache {
 	return docker.NewNameCache(registryName, suite.registry, db)
 }
 
-func (suite *integrationSuite) waitUntilNotPending(clusters []string, sourceRepo string) *sous.DeployState {
-	sleepTime := time.Duration(500) * time.Millisecond
+func (suite *integrationSuite) waitUntilSettledStatus(clusters []string, sourceRepo string) *sous.DeployState {
+	sleepTime := time.Duration(5) * time.Second
 	suite.T().Log("About to snapshot the state - it may take some time.")
 	for counter := 1; ; counter++ {
 		ds, which := suite.deploymentWithRepo(clusters, sourceRepo)
 		deps := ds.Snapshot()
 		deployState := deps[which]
+		suite.T().Logf("deployState:%s", deployState.String())
 		suite.Require().NotNil(deployState)
-		if deployState.Status != sous.DeployStatusPending {
+		if deployState.Status == sous.DeployStatusActive || deployState.Status == sous.DeployStatusFailed {
 			return deployState
 		}
 		time.Sleep(sleepTime)
@@ -116,35 +117,11 @@ func (suite *integrationSuite) waitUntilNotPending(clusters []string, sourceRepo
 
 func (suite *integrationSuite) statusIs(ds *sous.DeployState, expected sous.DeployStatus) {
 	actual := ds.Status
-	suite.Equal(actual, expected, "deploy status is %q; want %q\n%s\nIn: %#v", actual, expected, ds.ExecutorMessage, ds)
+	suite.Equal(actual, expected, "deploy status is %q; want %q\n%s\nIn: %s", actual, expected, ds.ExecutorMessage, spew.Sdump(ds))
 }
 
 func (suite *integrationSuite) BeforeTest(suiteName, testName string) {
 	ResetSingularity()
-	nilStartup := sous.Startup{}
-
-	timeout := 45
-	uriPath := "config.js"
-	startup := sous.Startup{
-		Timeout:           &timeout,
-		CheckReadyURIPath: &uriPath,
-	}
-
-	registerAndDeploy(ip, "test-cluster", "hello-labels", "github.com/docker-library/hello-world", "hello-labels", "latest", []int32{}, nilStartup)
-	registerAndDeploy(ip, "test-cluster", "hello-server-labels", "github.com/docker/dockercloud-hello-world", "hello-server-labels", "latest", []int32{8123}, nilStartup)
-
-	registerAndDeploy(ip, "test-cluster", "grafana-repo", "github.com/opentable/docker-grafana", "grafana-labels", "latest", []int32{}, startup)
-	registerAndDeploy(ip, "other-cluster", "grafana-repo", "github.com/opentable/docker-grafana", "grafana-labels", "latest", []int32{}, startup)
-
-	// This deployment fails immediately, and never results in a successful deployment at that singularity request.
-	registerAndDeploy(ip, "test-cluster", "supposed-to-fail", "github.com/opentable/homer-says-doh", "fails-labels", "1-fails", []int32{}, nilStartup)
-
-	/*
-		imageName := BuildImageName("github.com/opentable/homer-says-doh", "latest")
-		err = BuildAndPushContainer("failed-labels", imageName)
-		suite.Require().NoError(err)
-	*/
-
 	imageName = fmt.Sprintf("%s/%s:%s", registryName, "grafana-repo", "latest")
 
 	suite.registry = docker_registry.NewClient()
@@ -155,8 +132,29 @@ func (suite *integrationSuite) BeforeTest(suiteName, testName string) {
 	suite.deployer = singularity.NewDeployer(suite.client)
 }
 
+func (suite *integrationSuite) deployDefaultContainers() {
+	nilStartup := sous.Startup{}
+	timeout := 45
+	uriPath := "config.js"
+	startup := sous.Startup{
+		Timeout:           &timeout,
+		CheckReadyURIPath: &uriPath,
+	}
+
+	registerAndDeploy(ip, "test-cluster", "hello-labels", "github.com/docker-library/hello-world", "hello-labels", "latest", []int32{}, nilStartup)
+	registerAndDeploy(ip, "test-cluster", "hello-server-labels", "github.com/docker/dockercloud-hello-world", "hello-server-labels", "latest", []int32{}, nilStartup)
+	registerAndDeploy(ip, "test-cluster", "grafana-repo", "github.com/opentable/docker-grafana", "grafana-labels", "latest", []int32{}, startup)
+	registerAndDeploy(ip, "other-cluster", "grafana-repo", "github.com/opentable/docker-grafana", "grafana-labels", "latest", []int32{}, startup)
+
+	// This deployment fails immediately, and never results in a successful deployment at that singularity request.
+	registerAndDeploy(ip, "test-cluster", "supposed-to-fail", "github.com/opentable/homer-says-doh", "fails-labels", "1-fails", []int32{}, nilStartup)
+}
+
 func (suite *integrationSuite) TearDownTest() {
-	ResetSingularity()
+	// Previously, a ResetSingularity() was issued here. The ResetSingularity()
+	// in the BeforeTest() already makes sure that Singularity is reset before
+	// running a test case, so its presence here was redundant. With it gone, we
+	// can look at the state of Singularity after a failed test.
 }
 
 func (suite *integrationSuite) TestGetLabels() {
@@ -181,6 +179,7 @@ func (suite *integrationSuite) TestNameCache() {
 }
 
 func (suite *integrationSuite) TestGetRunningDeploymentSet_testCluster() {
+	suite.deployDefaultContainers()
 	clusters := []string{"test-cluster"}
 
 	// We run this test more than once to check that cache behaviour is
@@ -206,6 +205,7 @@ func (suite *integrationSuite) TestGetRunningDeploymentSet_testCluster() {
 }
 
 func (suite *integrationSuite) TestGetRunningDeploymentSet_otherCluster() {
+	suite.deployDefaultContainers()
 	clusters := []string{"other-cluster"}
 
 	ds, which := suite.deploymentWithRepo(clusters, "github.com/opentable/docker-grafana")
@@ -225,6 +225,7 @@ func (suite *integrationSuite) TestGetRunningDeploymentSet_otherCluster() {
 }
 
 func (suite *integrationSuite) TestGetRunningDeploymentSet_all() {
+	suite.deployDefaultContainers()
 	clusters := []string{"test-cluster", "other-cluster"}
 
 	ds, which := suite.deploymentWithRepo(clusters, "github.com/opentable/docker-grafana")
@@ -244,28 +245,25 @@ func (suite *integrationSuite) TestGetRunningDeploymentSet_all() {
 }
 
 func (suite *integrationSuite) TestFailedService() {
+	suite.deployDefaultContainers()
 	clusters := []string{"test-cluster"}
 
-	fails := suite.waitUntilNotPending(clusters, "github.com/opentable/homer-says-doh")
+	fails := suite.waitUntilSettledStatus(clusters, "github.com/opentable/homer-says-doh")
 	suite.statusIs(fails, sous.DeployStatusFailed)
 }
 
 func (suite *integrationSuite) TestSuccessfulService() {
+	registerAndDeploy(ip, "test-cluster", "hello-server-labels", "github.com/docker/dockercloud-hello-world", "hello-server-labels", "latest", []int32{})
 	sous.Log.BeChatty()
 	defer sous.Log.BeQuiet()
-	if os.Getenv("TRAVIS") == "true" {
-		suite.T().Skip()
-	}
+
 	clusters := []string{"test-cluster"}
 
-	succeeds := suite.waitUntilNotPending(clusters, "github.com/docker/dockercloud-hello-world")
+	succeeds := suite.waitUntilSettledStatus(clusters, "github.com/docker/dockercloud-hello-world")
 	suite.statusIs(succeeds, sous.DeployStatusActive)
 }
 
 func (suite *integrationSuite) TestFailedDeployFollowingSuccessfulDeploy() {
-	if os.Getenv("TRAVIS") == "true" {
-		suite.T().Skip("TestFailedDeployFollowingSuccessfulDeploy() in Travis")
-	}
 	clusters := []string{"test-cluster"}
 
 	const sourceRepo = "github.com/user/succeedthenfail" // Part of request ID.
@@ -277,18 +275,24 @@ func (suite *integrationSuite) TestFailedDeployFollowingSuccessfulDeploy() {
 
 	registerAndDeploy(ip, clusterName, repoName, sourceRepo, "succeedthenfail-succeed", "1.0.0-succeed", ports, sous.Startup{})
 
-	deployState := suite.waitUntilNotPending(clusters, sourceRepo)
+	deployState := suite.waitUntilSettledStatus(clusters, sourceRepo)
 	suite.statusIs(deployState, sous.DeployStatusActive)
+
+	if deployState.Status == sous.DeployStatusFailed {
+		suite.T().Fatal("Aborting test, deploy failed.")
+	}
 
 	// Create an assert on a failed deployment.
 
 	registerAndDeploy(ip, clusterName, repoName, sourceRepo, "succeedthenfail-fail", "2.0.0-fail", ports, sous.Startup{})
 
-	deployState = suite.waitUntilNotPending(clusters, sourceRepo)
+	deployState = suite.waitUntilSettledStatus(clusters, sourceRepo)
 	suite.statusIs(deployState, sous.DeployStatusFailed)
 }
 
 func (suite *integrationSuite) TestMissingImage() {
+	suite.deployDefaultContainers()
+
 	clusterDefs := sous.Defs{
 		Clusters: sous.Clusters{
 			"test-cluster": &sous.Cluster{
@@ -328,6 +332,7 @@ func (suite *integrationSuite) TestMissingImage() {
 }
 
 func (suite *integrationSuite) TestResolve() {
+	suite.deployDefaultContainers()
 	clusterDefs := sous.Defs{
 		Clusters: sous.Clusters{
 			"test-cluster": &sous.Cluster{
@@ -390,7 +395,7 @@ func (suite *integrationSuite) TestResolve() {
 
 	// XXX Let's hope this is a temporary solution to a testing issue
 	// The problem is laid out in DCOPS-7625
-	for tries := 50; tries > 0; tries-- {
+	for tries := 30; tries > 0; tries-- {
 		client := singularity.NewRectiAgent(suite.nameCache)
 		deployer := singularity.NewDeployer(client)
 
@@ -399,9 +404,11 @@ func (suite *integrationSuite) TestResolve() {
 		err = r.Begin(deploymentsTwoThree, clusterDefs.Clusters).Wait()
 		if err != nil {
 			//suite.Require().NotRegexp(`Pending deploy already in progress`, err.Error())
-
-			suite.T().Logf("Singularity conflict - waiting for previous deploy to complete - will try %d more times", tries)
+			suite.T().Logf("Singularity error:%s - will try %d more times", spew.Sdump(err), tries)
 			time.Sleep(2 * time.Second)
+		} else {
+			// err was nil, so no need to keep retrying.
+			break
 		}
 	}
 

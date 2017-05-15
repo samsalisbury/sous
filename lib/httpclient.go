@@ -197,16 +197,19 @@ func (client *LiveHTTPClient) getBodyEtag(url string, user User, body Comparable
 		rq, err = client.buildRequest("GET", url, user, nil, nil, nil)
 		rz, err = client.sendRequest(rq, err)
 		return client.getBody(rz, rzBody, err)
-	}(), "etag for %s", url)
+	}(), "while getting etag for %s", url)
 	if err != nil {
 		return
 	}
+
+	etag = rz.Header.Get("Etag")
+	Log.Debug.Printf("Etag: %q", etag)
 
 	differences := rzBody.VariancesFrom(body)
 	if len(differences) > 0 {
 		return "", errors.Wrap(retryableError(fmt.Sprintf("Remote and local versions of %s resource don't match: %#v", url, differences)), "")
 	}
-	return rz.Header.Get("Etag"), nil
+	return etag, nil
 }
 
 func (client *LiveHTTPClient) buildRequest(method, url string, user User, headers map[string]string, rqBody interface{}, ierr error) (*http.Request, error) {
@@ -268,6 +271,7 @@ func (client *LiveHTTPClient) getBody(rz *http.Response, rzBody interface{}, err
 
 	b, e := ioutil.ReadAll(rz.Body)
 	if e != nil {
+		Log.Debug.Printf("error reading from body: %v", e)
 		b = []byte{}
 	}
 

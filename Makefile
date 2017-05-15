@@ -137,7 +137,7 @@ test-unit:
 	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -timeout 2m ./...
 
 test-integration: setup-containers
-	SOUS_QA_DESC=$(QA_DESC) go test $(EXTRA_GO_FLAGS)  $(TEST_VERBOSE) ./integration --tags=integration
+	SOUS_QA_DESC=$(QA_DESC) go test -timeout 20m $(EXTRA_GO_FLAGS)  $(TEST_VERBOSE) ./integration --tags=integration
 
 $(QA_DESC): sous-qa-setup
 	./sous_qa_setup --compose-dir ./integration/test-registry/ --out-path=$(QA_DESC)

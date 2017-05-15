@@ -9,9 +9,14 @@ import (
 
 // Deployments returns all deployments described by the state.
 func (s *State) Deployments() (Deployments, error) {
+	return s.Manifests.Deployments(s.Defs)
+}
+
+// Deployments returns all deployments described by these Manifests.
+func (ms Manifests) Deployments(defs Defs) (Deployments, error) {
 	ds := NewDeployments()
-	for _, m := range s.Manifests.Snapshot() {
-		deployments, err := s.DeploymentsFromManifest(m)
+	for _, m := range ms.Snapshot() {
+		deployments, err := DeploymentsFromManifest(defs, m)
 		if err != nil {
 			return ds, err
 		}
@@ -28,7 +33,7 @@ func (s *State) Deployments() (Deployments, error) {
 			}
 			d.Env[name] = string(val)
 		}
-		cluster, ok := s.Defs.Clusters[d.ClusterName]
+		cluster, ok := defs.Clusters[d.ClusterName]
 		if !ok {
 			return ds, errors.Errorf("cluster %q is not described in defs.yaml (but specified in manifest %q)",
 				d.ClusterName, id.ManifestID)
@@ -41,8 +46,82 @@ func (s *State) Deployments() (Deployments, error) {
 	return ds, nil
 }
 
-// Manifests creates manifests from deployments.
-func (ds Deployments) Manifests(defs Defs) (Manifests, error) {
+// PutbackManifests creates manifests from deployments.
+func (ds Deployments) PutbackManifests(defs Defs, olds Manifests) (Manifests, error) {
+	ms := NewManifests()
+	for _, k := range ds.Keys() {
+		d, _ := ds.Get(k)
+		if d.ClusterName == "" {
+			return ms, errors.Errorf("invalid deploy ID (no cluster name)")
+		}
+		if d.Cluster == nil {
+			cluster, ok := defs.Clusters[d.ClusterName]
+			if !ok {
+				return ms, errors.Errorf("cluster %q is not described in defs.yaml", d.ClusterName)
+			}
+			d.Cluster = cluster
+		}
+		// Lookup the current manifest for this deployment.
+		mid := d.ManifestID()
+
+		m, ok := ms.Get(mid)
+		old, was := olds.Get(mid)
+
+		if !ok {
+			m = &Manifest{Deployments: DeploySpecs{}}
+			m.Owners = d.Owners.Slice()
+			m.SetID(mid)
+		}
+		spec := DeploySpec{
+			Version:      d.SourceID.Version,
+			DeployConfig: d.DeployConfig.Clone(),
+		}
+		for k, v := range spec.DeployConfig.Env {
+			clusterVal, ok := d.Cluster.Env[k]
+			if !ok {
+				continue
+			}
+			if string(clusterVal) == v {
+				Log.Debug.Printf("Redundant environment definition: %s=%s", k, v)
+				if was {
+					if oldSpec, had := old.Deployments[d.ClusterName]; had {
+						if _, present := oldSpec.Env[k]; present {
+							Log.Debug.Printf("Env pair %s=%s present in existing manifest: retained.", k, v)
+						} else {
+							Log.Debug.Printf("Env pair %s=%s absent in existing manifest: elided.", k, v)
+							delete(spec.Env, k)
+						}
+					} else {
+						Log.Debug.Printf("Cluster %q absent in existing manifest: eliding %s=%s.", d.ClusterName, k, v)
+						delete(spec.Env, k)
+					}
+				} else {
+					Log.Debug.Printf("Manifest for %v absent in existing manifest list: eliding %s=%s.", mid, k, v)
+					delete(spec.Env, k)
+				}
+			}
+		}
+		m.Deployments[d.ClusterName] = spec
+		m.Kind = d.Kind
+
+		ms.Set(mid, m)
+	}
+
+	for _, k := range ms.Keys() {
+		m, there := ms.Get(k)
+		if !there {
+			continue
+		}
+		ms.Set(k, m)
+	}
+
+	return ms, nil
+}
+
+// RawManifests creates manifests from deployments.
+// "raw" because it's brand new - it doesn't maintain certain essential state over time.
+// For almost all uses, you want PutbackManifests
+func (ds Deployments) RawManifests(defs Defs) (Manifests, error) {
 	ms := NewManifests()
 	for _, k := range ds.Keys() {
 		d, _ := ds.Get(k)
@@ -74,7 +153,7 @@ func (ds Deployments) Manifests(defs Defs) (Manifests, error) {
 				continue
 			}
 			if string(clusterVal) == v {
-				delete(spec.DeployConfig.Env, k)
+				Log.Debug.Printf("Redundant environment definition: %s=%s", k, v)
 			}
 		}
 		m.Deployments[d.ClusterName] = spec
@@ -97,17 +176,17 @@ func (ds Deployments) Manifests(defs Defs) (Manifests, error) {
 // DeploymentsFromManifest returns all deployments described by a single
 // manifest, in terms of the wider state (i.e. global and cluster definitions
 // and configuration).
-func (s *State) DeploymentsFromManifest(m *Manifest) (Deployments, error) {
+func DeploymentsFromManifest(defs Defs, m *Manifest) (Deployments, error) {
 	ds := NewDeployments()
 	var inherit []DeploySpec
 
 	for clusterName, spec := range m.Deployments {
-		cluster, ok := s.Defs.Clusters[clusterName]
+		cluster, ok := defs.Clusters[clusterName]
 		if !ok {
 			return ds, errors.Errorf("cluster %q not described in defs.yaml", clusterName)
 		}
 		spec.clusterName = cluster.BaseURL
-		d, err := BuildDeployment(s, m, clusterName, spec, inherit)
+		d, err := BuildDeployment(defs, m, clusterName, spec, inherit)
 		if err != nil {
 			return ds, err
 		}
@@ -117,12 +196,12 @@ func (s *State) DeploymentsFromManifest(m *Manifest) (Deployments, error) {
 }
 
 // BuildDeployment constructs a deployment out of a Manifest.
-func BuildDeployment(s *State, m *Manifest, nick string, spec DeploySpec, inherit []DeploySpec) (*Deployment, error) {
+func BuildDeployment(defs Defs, m *Manifest, nick string, spec DeploySpec, inherit []DeploySpec) (*Deployment, error) {
 	ownMap := NewOwnerSet(m.Owners...)
 	ds := flattenDeploySpecs(append([]DeploySpec{spec}, inherit...))
 	return &Deployment{
 		ClusterName:  nick,
-		Cluster:      s.Defs.Clusters[nick],
+		Cluster:      defs.Clusters[nick],
 		DeployConfig: ds.DeployConfig,
 		Flavor:       m.Flavor,
 		Owners:       ownMap,

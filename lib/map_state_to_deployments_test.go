@@ -2,9 +2,11 @@ package sous
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/samsalisbury/semv"
+	"github.com/stretchr/testify/assert"
 )
 
 var project1 = SourceLocation{Repo: "github.com/user/project"}
@@ -25,107 +27,114 @@ var cluster2 = &Cluster{
 	},
 }
 
-func makeTestState() *State {
-	return &State{
-		Defs: Defs{
-			DockerRepo: "some.docker.repo",
-			Clusters: Clusters{
-				"cluster-1": cluster1,
-				"cluster-2": cluster2,
-			},
-			EnvVars: EnvDefs{
-				{
-					Name:  "CLUSTER_LONG_NAME",
-					Desc:  "The human-friendly name of this cluster.",
-					Scope: "cluster",
-					Type:  VarType("string"),
-				},
-			},
-			Resources: FieldDefinitions{
-				{Name: "cpus", Type: "float"},
-				{Name: "mem", Type: "memory_size"},
+func makeTestDefs() Defs {
+	return Defs{
+		DockerRepo: "some.docker.repo",
+		Clusters: Clusters{
+			"cluster-1": cluster1,
+			"cluster-2": cluster2,
+		},
+		EnvVars: EnvDefs{
+			{
+				Name:  "CLUSTER_LONG_NAME",
+				Desc:  "The human-friendly name of this cluster.",
+				Scope: "cluster",
+				Type:  VarType("string"),
 			},
 		},
-		Manifests: NewManifests(
-			&Manifest{
-				Source: project1,
-				Owners: []string{"owner1"},
-				Kind:   ManifestKindService,
-				Deployments: DeploySpecs{
-					"cluster-1": {
-						Version: semv.MustParse("1.0.0"),
-						DeployConfig: DeployConfig{
-							Resources: Resources{
-								"cpus": "1",
-								"mem":  "1024",
-							},
-							Env: Env{
-								"ALL":   "IS ONE",
-								"ENV_1": "ENV ONE",
-							},
-							Metadata: Metadata{
-								"everybody": "wants to be a cat",
-								"name":      "O'Malley",
-							},
-							NumInstances: 2,
-						},
-					},
-					"cluster-2": {
-						Version: semv.MustParse("2.0.0"),
-						DeployConfig: DeployConfig{
-							Resources: Resources{
-								"cpus": "2",
-								"mem":  "2048",
-							},
-							Env: Env{
-								"ALL":   "IS ONE",
-								"ENV_2": "ENV TWO",
-							},
-							Metadata: Metadata{
-								"everybody": "wants to be a cat",
-								"name":      "Duchess",
-							},
-							NumInstances: 3,
-						},
-					},
-				},
-			},
-			&Manifest{
-				Source: project1,
-				Flavor: "some-flavor",
-				Owners: []string{"owner1flav"},
-				Kind:   ManifestKindService,
-				Deployments: DeploySpecs{
-					"cluster-1": {
-						Version: semv.MustParse("1.0.1"),
-						DeployConfig: DeployConfig{
-							Resources: Resources{
-								"cpus": "1.5",
-								"mem":  "1024",
-							},
-							Env: Env{
-								"ENV_1": "ENV ONE FLAVORED",
-							},
-							NumInstances: 4,
-						},
-					},
-					"cluster-2": {
-						Version: semv.MustParse("2.0.1"),
-						DeployConfig: DeployConfig{
-							Resources: Resources{
-								"cpus": "2.5",
-								"mem":  "2048",
-							},
-							Env: Env{
-								"ENV_2": "ENV TWO FLAVORED",
-							},
-							NumInstances: 5,
-						},
-					},
-				},
-			},
-		),
+		Resources: FieldDefinitions{
+			{Name: "cpus", Type: "float"},
+			{Name: "mem", Type: "memory_size"},
+		},
 	}
+}
+
+func makeTestManifests() Manifests {
+	return NewManifests(
+		&Manifest{
+			Source: project1,
+			Owners: []string{"owner1"},
+			Kind:   ManifestKindService,
+			Deployments: DeploySpecs{
+				"cluster-1": {
+					Version: semv.MustParse("1.0.0"),
+					DeployConfig: DeployConfig{
+						Resources: Resources{
+							"cpus": "1",
+							"mem":  "1024",
+						},
+						Env: Env{
+							"ALL":               "IS ONE",
+							"ENV_1":             "ENV ONE",
+							"CLUSTER_LONG_NAME": "Cluster One",
+						},
+						Metadata: Metadata{
+							"everybody": "wants to be a cat",
+							"name":      "O'Malley",
+						},
+						NumInstances: 2,
+					},
+				},
+				"cluster-2": {
+					Version: semv.MustParse("2.0.0"),
+					DeployConfig: DeployConfig{
+						Resources: Resources{
+							"cpus": "2",
+							"mem":  "2048",
+						},
+						Env: Env{
+							"ALL":               "IS ONE",
+							"ENV_2":             "ENV TWO",
+							"CLUSTER_LONG_NAME": "I Like To Call It 'Cluster Two'",
+						},
+						Metadata: Metadata{
+							"everybody": "wants to be a cat",
+							"name":      "Duchess",
+						},
+						NumInstances: 3,
+					},
+				},
+			},
+		},
+		&Manifest{
+			Source: project1,
+			Flavor: "some-flavor",
+			Owners: []string{"owner1flav"},
+			Kind:   ManifestKindService,
+			Deployments: DeploySpecs{
+				"cluster-1": {
+					Version: semv.MustParse("1.0.1"),
+					DeployConfig: DeployConfig{
+						Resources: Resources{
+							"cpus": "1.5",
+							"mem":  "1024",
+						},
+						Env: Env{
+							"ENV_1": "ENV ONE FLAVORED",
+						},
+						NumInstances: 4,
+					},
+				},
+				"cluster-2": {
+					Version: semv.MustParse("2.0.1"),
+					DeployConfig: DeployConfig{
+						Resources: Resources{
+							"cpus": "2.5",
+							"mem":  "2048",
+						},
+						Env: Env{
+							"ENV_2": "ENV TWO FLAVORED",
+						},
+						NumInstances: 5,
+					},
+				},
+			},
+		},
+	)
+}
+
+func makeTestDeployments() (Deployments, error) {
+	return makeTestManifests().Deployments(makeTestDefs())
 }
 
 var expectedDeployments = NewDeployments(
@@ -164,9 +173,10 @@ var expectedDeployments = NewDeployments(
 				"mem":  "2048",
 			},
 			Env: Env{
-				"ALL":               "IS ONE",
-				"ENV_2":             "ENV TWO",
-				"CLUSTER_LONG_NAME": "Cluster Two",
+				"ALL":   "IS ONE",
+				"ENV_2": "ENV TWO",
+				//"CLUSTER_LONG_NAME": "Cluster Two",
+				"CLUSTER_LONG_NAME": "I Like To Call It 'Cluster Two'",
 			},
 			Metadata: Metadata{
 				"everybody": "wants to be a cat",
@@ -216,7 +226,7 @@ var expectedDeployments = NewDeployments(
 )
 
 func TestState_DeploymentsCloned(t *testing.T) {
-	actualDeployments, err := makeTestState().Deployments()
+	actualDeployments, err := makeTestDeployments()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -233,7 +243,7 @@ func TestState_DeploymentsCloned(t *testing.T) {
 			continue
 		}
 		if !actual.Equal(expected) {
-			t.Errorf("\n\ngot:\n%v\n\nwant:\n%v\n", jsonDump(actual), jsonDump(expected))
+			t.Errorf("%q\n\ngot:\n%v\n\nwant:\n%v\n", id, jsonDump(actual), jsonDump(expected))
 		}
 	}
 }
@@ -241,7 +251,9 @@ func TestState_DeploymentsCloned(t *testing.T) {
 var TestStateIndependentDeploySpecsState Manifests
 
 func TestState_IndependentDeploySpecs(t *testing.T) {
-	originalDeployments, err := makeTestState().Deployments()
+	originalManifests := makeTestManifests()
+	defs := makeTestDefs()
+	originalDeployments, err := originalManifests.Deployments(defs)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -254,7 +266,7 @@ func TestState_IndependentDeploySpecs(t *testing.T) {
 	originalJSON := jsonDump(originalDeployment)
 	// We don't care about this result, but write it to global state to avoid
 	// any compiler optimisation from eliding the call.
-	TestStateIndependentDeploySpecsState, err = originalDeployments.Manifests(makeTestState().Defs)
+	TestStateIndependentDeploySpecsState, err = originalDeployments.PutbackManifests(defs, originalManifests)
 	if err != nil {
 		t.Error(err)
 	}
@@ -270,7 +282,7 @@ func TestState_IndependentDeploySpecs(t *testing.T) {
 }
 
 func TestState_Deployments(t *testing.T) {
-	actualDeployments, err := makeTestState().Deployments()
+	actualDeployments, err := makeTestDeployments()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -278,16 +290,12 @@ func TestState_Deployments(t *testing.T) {
 }
 
 func TestState_DeploymentsBounce(t *testing.T) {
-	defs := makeTestState().Defs
-	bounceManifests, err := expectedDeployments.Clone().Manifests(defs)
+	defs := makeTestDefs()
+	bounceManifests, err := expectedDeployments.Clone().PutbackManifests(defs, makeTestManifests())
 	if err != nil {
 		t.Fatal(err)
 	}
-	bounceState := State{
-		Defs:      defs,
-		Manifests: bounceManifests,
-	}
-	actualDeployments, err := bounceState.Deployments()
+	actualDeployments, err := bounceManifests.Deployments(defs)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -295,32 +303,183 @@ func TestState_DeploymentsBounce(t *testing.T) {
 }
 
 func TestDeployments_Manifests(t *testing.T) {
-	defs := makeTestState().Defs
+	defs := makeTestDefs()
 
-	actualManifests, err := expectedDeployments.Clone().Manifests(defs)
+	actualManifests, err := expectedDeployments.Clone().PutbackManifests(defs, makeTestManifests())
 	if err != nil {
 		t.Fatal(err)
 	}
-	expectedManifests := makeTestState().Manifests
+	expectedManifests := makeTestManifests()
 
 	compareManifests(t, expectedManifests, actualManifests)
 }
 
 func TestDeployments_ManifestsBounce(t *testing.T) {
-	defs := makeTestState().Defs
+	defs := makeTestDefs()
 
-	bounceDeployments, err := makeTestState().Deployments()
+	bounced := makeTestManifests()
+
+	bounceDeployments, err := bounced.Deployments(makeTestDefs())
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	actualManifests, err := bounceDeployments.Manifests(defs)
+	actualManifests, err := bounceDeployments.PutbackManifests(defs, bounced)
 	if err != nil {
 		t.Fatal(err)
 	}
-	expectedManifests := makeTestState().Manifests
+	expectedManifests := makeTestManifests()
 
 	compareManifests(t, expectedManifests, actualManifests)
+}
+
+func TestDeployments_PutbackManifestMissingManifestElides(t *testing.T) {
+	defs := makeTestDefs()
+	deps := NewDeployments(
+		&Deployment{
+			SourceID: project1.SourceID(semv.MustParse("2.0.0")),
+
+			Cluster:     cluster1,
+			ClusterName: cluster1.Name,
+			DeployConfig: DeployConfig{
+				Env: Env{
+					"CLUSTER_LONG_NAME": "Cluster One",
+					"PRESENT":           "here",
+				},
+			},
+		},
+	)
+
+	zeroMs := NewManifests()
+	ms, err := deps.PutbackManifests(defs, zeroMs)
+	assert.NoError(t, err)
+	m, yes := ms.Any(func(*Manifest) bool { return true })
+	assert.True(t, yes)
+	assert.NotContains(t, m.Deployments["cluster-1"].Env, "CLUSTER_LONG_NAME")
+	assert.Contains(t, m.Deployments["cluster-1"].Env, "PRESENT")
+}
+
+func TestDeployments_PutbackManifestOriginalLacksClusterElides(t *testing.T) {
+	defs := makeTestDefs()
+	deps := NewDeployments(
+		&Deployment{
+			SourceID: project1.SourceID(semv.MustParse("2.0.0")),
+
+			Cluster:     cluster1,
+			ClusterName: cluster1.Name,
+			DeployConfig: DeployConfig{
+				Env: Env{
+					"CLUSTER_LONG_NAME": "Cluster One",
+					"PRESENT":           "here",
+				},
+			},
+		},
+	)
+
+	skewMs := NewManifests(
+		&Manifest{
+			Source: project1,
+			Deployments: DeploySpecs{
+				"cluster-2": { // != cluster-1
+					Version: semv.MustParse("2.0.0"),
+					DeployConfig: DeployConfig{
+						Env: Env{
+							"CLUSTER_LONG_NAME": "Cluster One",
+							"PRESENT":           "here",
+						},
+					},
+				},
+			},
+		},
+	)
+	ms, err := deps.PutbackManifests(defs, skewMs)
+	assert.NoError(t, err)
+	m, yes := ms.Any(func(*Manifest) bool { return true })
+	assert.True(t, yes)
+	assert.NotContains(t, m.Deployments["cluster-1"].Env, "CLUSTER_LONG_NAME")
+	assert.Contains(t, m.Deployments["cluster-1"].Env, "PRESENT")
+}
+
+func TestDeployments_PutbackManifestOriginalLacksEnvElides(t *testing.T) {
+	defs := makeTestDefs()
+	deps := NewDeployments(
+		&Deployment{
+			SourceID: project1.SourceID(semv.MustParse("2.0.0")),
+
+			Cluster:     cluster1,
+			ClusterName: cluster1.Name,
+			DeployConfig: DeployConfig{
+				Env: Env{
+					"CLUSTER_LONG_NAME": "Cluster One",
+					"PRESENT":           "here",
+				},
+			},
+		},
+	)
+
+	skewMs := NewManifests(
+		&Manifest{
+			Source: project1,
+			Deployments: DeploySpecs{
+				"cluster-1": {
+					Version: semv.MustParse("2.0.0"),
+					DeployConfig: DeployConfig{
+						Env: Env{
+							//"CLUSTER_LONG_NAME": "Cluster One",
+							"PRESENT": "here",
+						},
+					},
+				},
+			},
+		},
+	)
+	ms, err := deps.PutbackManifests(defs, skewMs)
+	assert.NoError(t, err)
+	m, yes := ms.Any(func(*Manifest) bool { return true })
+	assert.True(t, yes)
+	assert.NotContains(t, m.Deployments["cluster-1"].Env, "CLUSTER_LONG_NAME")
+	assert.Contains(t, m.Deployments["cluster-1"].Env, "PRESENT")
+}
+
+func TestDeployments_PutbackManifestHasEnvRetains(t *testing.T) {
+	defs := makeTestDefs()
+	deps := NewDeployments(
+		&Deployment{
+			SourceID: project1.SourceID(semv.MustParse("2.0.0")),
+
+			Cluster:     cluster1,
+			ClusterName: cluster1.Name,
+			DeployConfig: DeployConfig{
+				Env: Env{
+					"CLUSTER_LONG_NAME": "Cluster One",
+					"PRESENT":           "here",
+				},
+			},
+		},
+	)
+
+	skewMs := NewManifests(
+		&Manifest{
+			Source: project1,
+			Deployments: DeploySpecs{
+				"cluster-1": {
+					Version: semv.MustParse("2.0.0"),
+					DeployConfig: DeployConfig{
+						Env: Env{
+							"CLUSTER_LONG_NAME": "Cluster One",
+							"PRESENT":           "here",
+						},
+					},
+				},
+			},
+		},
+	)
+	ms, err := deps.PutbackManifests(defs, skewMs)
+	assert.NoError(t, err)
+	m, yes := ms.Any(func(*Manifest) bool { return true })
+	assert.True(t, yes)
+	assert.Contains(t, m.Deployments["cluster-1"].Env, "CLUSTER_LONG_NAME")
+	assert.Contains(t, m.Deployments["cluster-1"].Env, "PRESENT")
 }
 
 func compareDeployments(t *testing.T, expectedDeployments, actualDeployments Deployments) {
@@ -359,7 +518,7 @@ func compareManifests(t *testing.T, expectedManifests, actualManifests Manifests
 		}
 		different, differences := actual.Diff(expected)
 		if different {
-			t.Errorf("manifest not as expected: %#v", differences)
+			t.Errorf("manifests not as expected: \n  %s", strings.Join(differences, "\n  "))
 			continue
 		}
 		// Check all expected DeploySpecs are in actual.
