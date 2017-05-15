@@ -83,9 +83,10 @@ func (pmh *PUTManifestHandler) Exchange() (interface{}, int) {
 		return err, http.StatusNotFound
 	}
 
-	dec := json.NewDecoder(pmh.Request.Body)
 	m := &sous.Manifest{}
+	dec := json.NewDecoder(pmh.Request.Body)
 	dec.Decode(m)
+
 	flaws := m.Validate()
 	if len(flaws) > 0 {
 		pmh.Vomit.Printf("%#v", flaws)

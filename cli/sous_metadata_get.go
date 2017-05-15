@@ -54,7 +54,7 @@ func (smg *SousMetadataGet) Execute(args []string) cmdr.Result {
 		return cmdr.Success()
 	}
 
-	manis, err := filtered.Manifests(smg.State.Defs)
+	manis, err := filtered.RawManifests(smg.State.Defs)
 	if err != nil {
 		return EnsureErrorResult(err)
 	}

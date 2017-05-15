@@ -94,7 +94,7 @@ func (gsm *GitStateManager) WriteState(s *sous.State, u sous.User) error {
 	}
 	defer gsm.git("tag", "-d", tn)
 
-	if err := gsm.DiskStateManager.WriteState(s); err != nil {
+	if err := gsm.DiskStateManager.WriteState(s, u); err != nil {
 		return err
 	}
 	if err := gsm.git(`add`, `.`); err != nil {
