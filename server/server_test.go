@@ -53,8 +53,6 @@ func (suite *profServerSuite) TestDebugPprof() {
 
 func (suite serverTests) TearDownTest() {
 	suite.server.Close()
-	suite.server = nil
-	suite.url = ""
 }
 
 func (suite serverTests) TestOverallRouter() {
