@@ -255,9 +255,26 @@ func (suite *integrationSuite) TestFailedService() {
 	suite.statusIs(fails, sous.DeployStatusFailed)
 }
 
-func (suite *integrationSuite) TestTimedOutService() {
+func (suite *integrationSuite) TestFailedTimedOutService() {
 	timeout := 50
 	uriPath := "slow-healthy"
+	startup := sous.Startup{
+		Timeout:              &timeout,
+		CheckReadyURIPath:    &uriPath,
+		CheckReadyURITimeout: &timeout,
+	}
+	registerAndDeploy(ip, "test-cluster", "webapp", "github.com/example/webapp", "webapp", "latest", []int32{}, startup)
+	sous.Log.BeChatty()
+	defer sous.Log.BeQuiet()
+
+	clusters := []string{"test-cluster"}
+	fails := suite.waitUntilSettledStatus(clusters, "github.com/example/webapp")
+	suite.statusIs(fails, sous.DeployStatusFailed)
+}
+
+func (suite *integrationSuite) TestFailedNotHealthyService() {
+	timeout := 60
+	uriPath := "sick"
 	startup := sous.Startup{
 		Timeout:              &timeout,
 		CheckReadyURIPath:    &uriPath,

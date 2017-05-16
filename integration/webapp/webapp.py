@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 
 import os
+import signal
 import time
 from bottle import Bottle, run, response
 
 BECOME_HEALTHY_SECONDS=60
 
 start_time = time.time()
-
 app = Bottle()
 
 @app.route('/healthy')
@@ -38,6 +38,11 @@ def slowhealthy():
     return("Became healthy at {}s, {}s ago.".format(
             BECOME_HEALTHY_SECONDS, (elapsed - BECOME_HEALTHY_SECONDS)))
 
+def handler(signum, frame):
+    print("exit on signal:{}".format(signum))
+    exit(0)
+
+signal.signal(signal.SIGTERM, handler)
 mesos_port = os.environ["PORT0"]
 mesos_host = os.environ["TASK_HOST"]
 run(app, host=mesos_host, port=mesos_port)
