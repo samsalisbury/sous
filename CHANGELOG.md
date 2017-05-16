@@ -6,11 +6,21 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
-## [Unreleased]
+## [0.5.3](//github.com/opentable/sous/compare/0.5.2...0.5.3)
+
+### Added
+- Profiling endpoints, gated with a `server` flag, or the SOUS_PROFILING env variable.
+
+### Fixed
+- Environment variable defaults from cluster definitions
+  no longer elide identical variables on manifests,
+  which means that common values can be added to the defaults
+  without undue concern for manifest environment variables.
+
+## [0.5.2](//github.com/opentable/sous/compare/0.5.1...0.5.2)
 
 ### Added
 - Extra debug logging about how build strategies are selected.
-- Profiling endpoints, gated with a `server` flag, or the SOUS_PROFILING env variable.
 
 ### Changed
 - Singularity RequestIDs are generated with a suffix of the MD5 sum of
@@ -21,10 +31,6 @@ with respect to its command line interface and HTTP interface.
 ### Fixed
 - Calls to `docker build` now have a `--pull` flag so that stale cached FROM
   images don't confuse builds.
-- Environment variable defaults from cluster definitions
-  no longer elide identical variables on manifests,
-  which means that common values can be added to the defaults
-  without undue concern for manifest environment variables.
 
 ## [0.5.1](//github.com/opentable/sous/compare/0.5.0...0.5.1)
 
