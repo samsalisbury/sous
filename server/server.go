@@ -2,6 +2,7 @@ package server
 
 import (
 	"net/http"
+	"net/http/pprof"
 
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
@@ -41,6 +42,28 @@ func Run(mainGraph *graph.SousGraph, laddr string) error {
 	s := &http.Server{
 		Addr:    laddr,
 		Handler: Handler(mainGraph),
+	}
+	return s.ListenAndServe()
+}
+
+func profilingHandler(mainGraph *graph.SousGraph) http.Handler {
+	handler := http.NewServeMux()
+	handler.Handle("/", Handler(mainGraph))
+
+	handler.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
+	handler.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
+	handler.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
+	handler.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
+	handler.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
+	return handler
+}
+
+// RunWithProfiling mixes in the pprof handlers so that we can return profiles
+func RunWithProfiling(mainGraph *graph.SousGraph, laddr string) error {
+	Handler(mainGraph)
+	s := &http.Server{
+		Addr:    laddr,
+		Handler: profilingHandler(mainGraph),
 	}
 	return s.ListenAndServe()
 }

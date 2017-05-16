@@ -15,27 +15,47 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type serverSuite struct {
+type serverTests struct {
 	suite.Suite
 	server *httptest.Server
 	url    string
+}
+
+type serverSuite struct {
+	serverTests
+}
+
+type profServerSuite struct {
+	serverTests
 }
 
 func (suite *serverSuite) SetupTest() {
 	g := graph.TestGraphWithConfig(&bytes.Buffer{}, os.Stdout, os.Stdout,
 		"StateLocation: '../ext/storage/testdata/in'\n")
 	g.Add(&config.Verbosity{})
-	suite.server = httptest.NewServer(Handler(g))
-	suite.url = suite.server.URL
+	suite.serverTests.server = httptest.NewServer(Handler(g))
+	suite.serverTests.url = suite.server.URL
 }
 
-func (suite *serverSuite) TearDownTest() {
+func (suite *profServerSuite) SetupTest() {
+	g := graph.TestGraphWithConfig(&bytes.Buffer{}, os.Stdout, os.Stdout,
+		"StateLocation: '../ext/storage/testdata/in'\n")
+	g.Add(&config.Verbosity{})
+	suite.serverTests.server = httptest.NewServer(profilingHandler(g)) // <--- profiling
+	suite.serverTests.url = suite.server.URL
+}
+
+func (suite *profServerSuite) TestDebugPprof() {
+	res, err := http.Get(suite.url + "/debug/pprof/")
+	suite.NoError(err)
+	res.Body.Close()
+}
+
+func (suite serverTests) TearDownTest() {
 	suite.server.Close()
-	suite.server = nil
-	suite.url = ""
 }
 
-func (suite *serverSuite) TestOverallRouter() {
+func (suite serverTests) TestOverallRouter() {
 	res, err := http.Get(suite.url + "/gdm")
 	suite.NoError(err)
 	gdm, err := ioutil.ReadAll(res.Body)
@@ -46,21 +66,21 @@ func (suite *serverSuite) TestOverallRouter() {
 	suite.NotEqual(res.Header.Get("Etag"), "")
 }
 
-func (suite *serverSuite) decodeJSON(res *http.Response, data interface{}) {
+func (suite serverTests) decodeJSON(res *http.Response, data interface{}) {
 	dec := json.NewDecoder(res.Body)
 	err := dec.Decode(data)
 	res.Body.Close()
 	suite.NoError(err)
 }
 
-func (suite *serverSuite) encodeJSON(data interface{}) io.Reader {
+func (suite serverTests) encodeJSON(data interface{}) io.Reader {
 	buf := &bytes.Buffer{}
 	enc := json.NewEncoder(buf)
 	suite.NoError(enc.Encode(data))
 	return buf
 }
 
-func (suite *serverSuite) TestUpdateServers() {
+func (suite serverTests) TestUpdateServers() {
 	res, err := http.Get(suite.url + "/servers")
 	suite.NoError(err)
 
@@ -91,4 +111,8 @@ func (suite *serverSuite) TestUpdateServers() {
 
 func TestServerSuite(t *testing.T) {
 	suite.Run(t, new(serverSuite))
+}
+
+func TestProfilingServerSuite(t *testing.T) {
+	suite.Run(t, new(profServerSuite))
 }

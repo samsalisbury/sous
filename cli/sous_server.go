@@ -30,6 +30,7 @@ type SousServer struct {
 		// gdmRepo is a repository to clone into config.SourceLocation
 		// in the case that config.SourceLocation is empty.
 		gdmRepo string
+		profiling bool
 	}
 }
 
@@ -53,6 +54,7 @@ func (ss *SousServer) AddFlags(fs *flag.FlagSet) {
 			"values are none,scheduler,registry,both")
 	fs.StringVar(&ss.flags.laddr, `listen`, `:80`, "The address to listen on, like '127.0.0.1:https'")
 	fs.StringVar(&ss.flags.gdmRepo, "gdm-repo", "", "Git repo containing the GDM (cloned into config.SourceLocation)")
+	fs.BoolVar(&ss.flags.profiling, "profiling", false, "Enable profiling in the server.")
 }
 
 // RegisterOn adds the DeploymentConfig to the psyringe to configure the
@@ -77,7 +79,15 @@ func (ss *SousServer) Execute(args []string) cmdr.Result {
 
 	ss.Log.Info.Printf("Sous Server v%s running at %s for %s", ss.Sous.Version, ss.flags.laddr, ss.DeployFilterFlags.Cluster)
 
-	return EnsureErrorResult(server.Run(ss.SousGraph, ss.flags.laddr)) //always non-nil
+	if os.Getenv("SOUS_PROFILING") == "enable" {
+		ss.flags.profiling = true
+	}
+
+	if ss.flags.profiling {
+		return EnsureErrorResult(server.RunWithProfiling(ss.SousGraph, ss.flags.laddr)) //always non-nil
+	} else {
+		return EnsureErrorResult(server.Run(ss.SousGraph, ss.flags.laddr)) //always non-nil
+	}
 }
 
 func ensureGDMExists(repo, localPath string, log func(string, ...interface{})) error {
