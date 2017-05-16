@@ -217,7 +217,6 @@ func startInstance(url, clusterName, imageName, repoName string, ports []int32, 
 
 	deployID := "TESTGENERATED_" + singularity.StripDeployID(uuid.NewV4().String())
 	depMap := dtoMap{
-		"DeployHealthTimeoutSeconds": int64(900),
 		"Metadata": map[string]string{
 			"com.opentable.sous.clustername": clusterName,
 		},
@@ -235,10 +234,12 @@ func startInstance(url, clusterName, imageName, repoName string, ports []int32, 
 	}
 
 	if startup.CheckReadyURIPath != nil {
+		log.Printf("HealthcheckURI: %s", *startup.CheckReadyURIPath)
 		depMap["HealthcheckUri"] = *startup.CheckReadyURIPath
 	}
 	if startup.Timeout != nil {
-		depMap["HealthcheckTimeoutSeconds"] = int64(*startup.Timeout)
+		log.Printf("DeployHealthTimeoutSeconds: %d", *startup.Timeout)
+		depMap["DeployHealthTimeoutSeconds"] = int64(*startup.Timeout)
 	}
 
 	depReqMap := dtoMap{

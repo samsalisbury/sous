@@ -62,7 +62,8 @@ func (suite *integrationSuite) manifest(nc *docker.NameCache, drepo, containerDi
 	nc.GetSourceID(docker.NewBuildArtifact(in, nil))
 
 	checkReadyPath := "/health"
-	checkReadyTimeout := 45
+	checkReadyTimeout := 500
+
 	return &sous.Manifest{
 		Source: sous.SourceLocation{
 			Repo: sourceURL,
@@ -73,8 +74,9 @@ func (suite *integrationSuite) manifest(nc *docker.NameCache, drepo, containerDi
 			"test-cluster": sous.DeploySpec{
 				DeployConfig: sous.DeployConfig{
 					Startup: sous.Startup{
-						CheckReadyURIPath: &checkReadyPath,
-						Timeout:           &checkReadyTimeout,
+						CheckReadyURIPath:    &checkReadyPath,
+						CheckReadyURITimeout: &checkReadyTimeout,
+						Timeout:              &checkReadyTimeout,
 					},
 					Resources:    sous.Resources{"cpus": "0.1", "memory": "100", "ports": "1"},
 					Args:         []string{},
@@ -134,11 +136,12 @@ func (suite *integrationSuite) BeforeTest(suiteName, testName string) {
 
 func (suite *integrationSuite) deployDefaultContainers() {
 	nilStartup := sous.Startup{}
-	timeout := 45
+	timeout := 500
 	uriPath := "config.js"
 	startup := sous.Startup{
-		Timeout:           &timeout,
-		CheckReadyURIPath: &uriPath,
+		Timeout:              &timeout,
+		CheckReadyURIPath:    &uriPath,
+		CheckReadyURITimeout: &timeout,
 	}
 
 	registerAndDeploy(ip, "test-cluster", "hello-labels", "github.com/docker-library/hello-world", "hello-labels", "latest", []int32{}, nilStartup)
@@ -253,13 +256,20 @@ func (suite *integrationSuite) TestFailedService() {
 }
 
 func (suite *integrationSuite) TestSuccessfulService() {
-	registerAndDeploy(ip, "test-cluster", "hello-server-labels", "github.com/docker/dockercloud-hello-world", "hello-server-labels", "latest", []int32{})
+	timeout := 300
+	uriPath := "healthy"
+	startup := sous.Startup{
+		Timeout:              &timeout,
+		CheckReadyURIPath:    &uriPath,
+		CheckReadyURITimeout: &timeout,
+	}
+	registerAndDeploy(ip, "test-cluster", "webapp", "github.com/example/webapp", "webapp", "latest", []int32{}, startup)
 	sous.Log.BeChatty()
 	defer sous.Log.BeQuiet()
 
 	clusters := []string{"test-cluster"}
 
-	succeeds := suite.waitUntilSettledStatus(clusters, "github.com/docker/dockercloud-hello-world")
+	succeeds := suite.waitUntilSettledStatus(clusters, "github.com/example/webapp")
 	suite.statusIs(succeeds, sous.DeployStatusActive)
 }
 
@@ -273,7 +283,10 @@ func (suite *integrationSuite) TestFailedDeployFollowingSuccessfulDeploy() {
 	var ports []int32
 	const repoName = "succeedthenfail"
 
-	registerAndDeploy(ip, clusterName, repoName, sourceRepo, "succeedthenfail-succeed", "1.0.0-succeed", ports, sous.Startup{})
+	timeout := 500
+	registerAndDeploy(ip, clusterName, repoName, sourceRepo, "succeedthenfail-succeed", "1.0.0-succeed", ports, sous.Startup{
+		Timeout: &timeout,
+	})
 
 	deployState := suite.waitUntilSettledStatus(clusters, sourceRepo)
 	suite.statusIs(deployState, sous.DeployStatusActive)

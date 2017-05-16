@@ -126,10 +126,10 @@ func TestContainerStartupOptions(t *testing.T) {
 	}
 
 	tmpl = "expected:%d got:%d"
-	if dr.Deploy.HealthcheckTimeoutSeconds != int64(checkReadyTimeout) {
-		t.Fatalf(tmpl, checkReadyTimeout, dr.Deploy.HealthcheckTimeoutSeconds)
+	if dr.Deploy.DeployHealthTimeoutSeconds != int64(checkReadyTimeout) {
+		t.Fatalf(tmpl, checkReadyTimeout, dr.Deploy.DeployHealthTimeoutSeconds)
 	} else {
-		t.Logf(tmpl, checkReadyTimeout, dr.Deploy.HealthcheckTimeoutSeconds)
+		t.Logf(tmpl, checkReadyTimeout, dr.Deploy.DeployHealthTimeoutSeconds)
 	}
 
 }
