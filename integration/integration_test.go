@@ -61,6 +61,9 @@ func (suite *integrationSuite) manifest(nc *docker.NameCache, drepo, containerDi
 
 	nc.GetSourceID(docker.NewBuildArtifact(in, nil))
 
+	checkReadyPath := "/health"
+	checkReadyTimeout := 500
+
 	return &sous.Manifest{
 		Source: sous.SourceLocation{
 			Repo: sourceURL,
@@ -70,6 +73,11 @@ func (suite *integrationSuite) manifest(nc *docker.NameCache, drepo, containerDi
 		Deployments: sous.DeploySpecs{
 			"test-cluster": sous.DeploySpec{
 				DeployConfig: sous.DeployConfig{
+					Startup: sous.Startup{
+						CheckReadyURIPath:    &checkReadyPath,
+						CheckReadyURITimeout: &checkReadyTimeout,
+						Timeout:              &checkReadyTimeout,
+					},
 					Resources:    sous.Resources{"cpus": "0.1", "memory": "100", "ports": "1"},
 					Args:         []string{},
 					Env:          sous.Env{"repo": drepo}, //map[s]s
@@ -116,8 +124,7 @@ func (suite *integrationSuite) statusIs(ds *sous.DeployState, expected sous.Depl
 
 func (suite *integrationSuite) BeforeTest(suiteName, testName string) {
 	ResetSingularity()
-
-	imageName = fmt.Sprintf("%s/%s:%s", registryName, "grafana-repo", "latest")
+	imageName = fmt.Sprintf("%s/%s:%s", registryName, "webapp", "latest")
 
 	suite.registry = docker_registry.NewClient()
 	suite.registry.BecomeFoolishlyTrusting()
@@ -128,13 +135,22 @@ func (suite *integrationSuite) BeforeTest(suiteName, testName string) {
 }
 
 func (suite *integrationSuite) deployDefaultContainers() {
-	registerAndDeploy(ip, "test-cluster", "hello-labels", "github.com/docker-library/hello-world", "hello-labels", "latest", []int32{})
-	registerAndDeploy(ip, "test-cluster", "hello-server-labels", "github.com/docker/dockercloud-hello-world", "hello-server-labels", "latest", []int32{})
-	registerAndDeploy(ip, "test-cluster", "grafana-repo", "github.com/opentable/docker-grafana", "grafana-labels", "latest", []int32{})
-	registerAndDeploy(ip, "other-cluster", "grafana-repo", "github.com/opentable/docker-grafana", "grafana-labels", "latest", []int32{})
+	nilStartup := sous.Startup{}
+	timeout := 500
+	uriPath := "config.js"
+	startup := sous.Startup{
+		Timeout:              &timeout,
+		CheckReadyURIPath:    &uriPath,
+		CheckReadyURITimeout: &timeout,
+	}
+
+	registerAndDeploy(ip, "test-cluster", "hello-labels", "github.com/docker-library/hello-world", "hello-labels", "latest", []int32{}, nilStartup)
+	registerAndDeploy(ip, "test-cluster", "hello-server-labels", "github.com/docker/dockercloud-hello-world", "hello-server-labels", "latest", []int32{}, nilStartup)
+	registerAndDeploy(ip, "test-cluster", "webapp", "github.com/example/webapp", "webapp", "latest", []int32{}, startup)
+	registerAndDeploy(ip, "other-cluster", "webapp", "github.com/example/webapp", "webapp", "latest", []int32{}, startup)
 
 	// This deployment fails immediately, and never results in a successful deployment at that singularity request.
-	registerAndDeploy(ip, "test-cluster", "supposed-to-fail", "github.com/opentable/homer-says-doh", "fails-labels", "1-fails", []int32{})
+	registerAndDeploy(ip, "test-cluster", "supposed-to-fail", "github.com/opentable/homer-says-doh", "fails-labels", "1-fails", []int32{}, nilStartup)
 }
 
 func (suite *integrationSuite) TearDownTest() {
@@ -174,19 +190,19 @@ func (suite *integrationSuite) TestGetRunningDeploymentSet_testCluster() {
 	const numberOfTestRuns = 2
 
 	for i := 0; i < numberOfTestRuns; i++ {
-		ds, which := suite.deploymentWithRepo(clusters, "github.com/opentable/docker-grafana")
+		ds, which := suite.deploymentWithRepo(clusters, "github.com/example/webapp")
 		deps := ds.Snapshot()
 		if suite.Equal(4, len(deps)) {
-			grafana := deps[which]
+			webapp := deps[which]
 			cacheHitText := fmt.Sprintf("on cache hit %d", i+1)
-			suite.Equal(SingularityURL, grafana.Cluster.BaseURL, cacheHitText)
-			suite.Regexp("^0\\.1", grafana.Resources["cpus"], cacheHitText)    // XXX strings and floats...
-			suite.Regexp("^100\\.", grafana.Resources["memory"], cacheHitText) // XXX strings and floats...
-			suite.Equal("1", grafana.Resources["ports"], cacheHitText)         // XXX strings and floats...
-			suite.Equal(17, grafana.SourceID.Version.Patch, cacheHitText)
-			suite.Equal("91495f1b1630084e301241100ecf2e775f6b672c", grafana.SourceID.Version.Meta, cacheHitText)
-			suite.Equal(1, grafana.NumInstances, cacheHitText)
-			suite.Equal(sous.ManifestKindService, grafana.Kind, cacheHitText)
+			suite.Equal(SingularityURL, webapp.Cluster.BaseURL, cacheHitText)
+			suite.Regexp("^0\\.1", webapp.Resources["cpus"], cacheHitText)    // XXX strings and floats...
+			suite.Regexp("^100\\.", webapp.Resources["memory"], cacheHitText) // XXX strings and floats...
+			suite.Equal("1", webapp.Resources["ports"], cacheHitText)         // XXX strings and floats...
+			suite.Equal(17, webapp.SourceID.Version.Patch, cacheHitText)
+			suite.Equal("91495f1b1630084e301241100ecf2e775f6b672c", webapp.SourceID.Version.Meta, cacheHitText)
+			suite.Equal(1, webapp.NumInstances, cacheHitText)
+			suite.Equal(sous.ManifestKindService, webapp.Kind, cacheHitText)
 		}
 	}
 }
@@ -195,18 +211,18 @@ func (suite *integrationSuite) TestGetRunningDeploymentSet_otherCluster() {
 	suite.deployDefaultContainers()
 	clusters := []string{"other-cluster"}
 
-	ds, which := suite.deploymentWithRepo(clusters, "github.com/opentable/docker-grafana")
+	ds, which := suite.deploymentWithRepo(clusters, "github.com/example/webapp")
 	deps := ds.Snapshot()
 	if suite.Equal(1, len(deps)) {
-		grafana := deps[which]
-		suite.Equal(SingularityURL, grafana.Cluster.BaseURL)
-		suite.Regexp("^0\\.1", grafana.Resources["cpus"])    // XXX strings and floats...
-		suite.Regexp("^100\\.", grafana.Resources["memory"]) // XXX strings and floats...
-		suite.Equal("1", grafana.Resources["ports"])         // XXX strings and floats...
-		suite.Equal(17, grafana.SourceID.Version.Patch)
-		suite.Equal("91495f1b1630084e301241100ecf2e775f6b672c", grafana.SourceID.Version.Meta)
-		suite.Equal(1, grafana.NumInstances)
-		suite.Equal(sous.ManifestKindService, grafana.Kind)
+		webapp := deps[which]
+		suite.Equal(SingularityURL, webapp.Cluster.BaseURL)
+		suite.Regexp("^0\\.1", webapp.Resources["cpus"])    // XXX strings and floats...
+		suite.Regexp("^100\\.", webapp.Resources["memory"]) // XXX strings and floats...
+		suite.Equal("1", webapp.Resources["ports"])         // XXX strings and floats...
+		suite.Equal(17, webapp.SourceID.Version.Patch)
+		suite.Equal("91495f1b1630084e301241100ecf2e775f6b672c", webapp.SourceID.Version.Meta)
+		suite.Equal(1, webapp.NumInstances)
+		suite.Equal(sous.ManifestKindService, webapp.Kind)
 	}
 
 }
@@ -215,18 +231,18 @@ func (suite *integrationSuite) TestGetRunningDeploymentSet_all() {
 	suite.deployDefaultContainers()
 	clusters := []string{"test-cluster", "other-cluster"}
 
-	ds, which := suite.deploymentWithRepo(clusters, "github.com/opentable/docker-grafana")
+	ds, which := suite.deploymentWithRepo(clusters, "github.com/example/webapp")
 	deps := ds.Snapshot()
 	if suite.Equal(5, len(deps)) {
-		grafana := deps[which]
-		suite.Equal(SingularityURL, grafana.Cluster.BaseURL)
-		suite.Regexp("^0\\.1", grafana.Resources["cpus"])    // XXX strings and floats...
-		suite.Regexp("^100\\.", grafana.Resources["memory"]) // XXX strings and floats...
-		suite.Equal("1", grafana.Resources["ports"])         // XXX strings and floats...
-		suite.Equal(17, grafana.SourceID.Version.Patch)
-		suite.Equal("91495f1b1630084e301241100ecf2e775f6b672c", grafana.SourceID.Version.Meta)
-		suite.Equal(1, grafana.NumInstances)
-		suite.Equal(sous.ManifestKindService, grafana.Kind)
+		webapp := deps[which]
+		suite.Equal(SingularityURL, webapp.Cluster.BaseURL)
+		suite.Regexp("^0\\.1", webapp.Resources["cpus"])    // XXX strings and floats...
+		suite.Regexp("^100\\.", webapp.Resources["memory"]) // XXX strings and floats...
+		suite.Equal("1", webapp.Resources["ports"])         // XXX strings and floats...
+		suite.Equal(17, webapp.SourceID.Version.Patch)
+		suite.Equal("91495f1b1630084e301241100ecf2e775f6b672c", webapp.SourceID.Version.Meta)
+		suite.Equal(1, webapp.NumInstances)
+		suite.Equal(sous.ManifestKindService, webapp.Kind)
 	}
 
 }
@@ -239,14 +255,55 @@ func (suite *integrationSuite) TestFailedService() {
 	suite.statusIs(fails, sous.DeployStatusFailed)
 }
 
+func (suite *integrationSuite) TestFailedTimedOutService() {
+	timeout := 50
+	uriPath := "slow-healthy"
+	startup := sous.Startup{
+		Timeout:              &timeout,
+		CheckReadyURIPath:    &uriPath,
+		CheckReadyURITimeout: &timeout,
+	}
+	registerAndDeploy(ip, "test-cluster", "webapp", "github.com/example/webapp", "webapp", "latest", []int32{}, startup)
+	sous.Log.BeChatty()
+	defer sous.Log.BeQuiet()
+
+	clusters := []string{"test-cluster"}
+	fails := suite.waitUntilSettledStatus(clusters, "github.com/example/webapp")
+	suite.statusIs(fails, sous.DeployStatusFailed)
+}
+
+func (suite *integrationSuite) TestFailedNotHealthyService() {
+	timeout := 60
+	uriPath := "sick"
+	startup := sous.Startup{
+		Timeout:              &timeout,
+		CheckReadyURIPath:    &uriPath,
+		CheckReadyURITimeout: &timeout,
+	}
+	registerAndDeploy(ip, "test-cluster", "webapp", "github.com/example/webapp", "webapp", "latest", []int32{}, startup)
+	sous.Log.BeChatty()
+	defer sous.Log.BeQuiet()
+
+	clusters := []string{"test-cluster"}
+	fails := suite.waitUntilSettledStatus(clusters, "github.com/example/webapp")
+	suite.statusIs(fails, sous.DeployStatusFailed)
+}
+
 func (suite *integrationSuite) TestSuccessfulService() {
-	registerAndDeploy(ip, "test-cluster", "hello-server-labels", "github.com/docker/dockercloud-hello-world", "hello-server-labels", "latest", []int32{})
+	timeout := 300
+	uriPath := "healthy"
+	startup := sous.Startup{
+		Timeout:              &timeout,
+		CheckReadyURIPath:    &uriPath,
+		CheckReadyURITimeout: &timeout,
+	}
+	registerAndDeploy(ip, "test-cluster", "webapp", "github.com/example/webapp", "webapp", "latest", []int32{}, startup)
 	sous.Log.BeChatty()
 	defer sous.Log.BeQuiet()
 
 	clusters := []string{"test-cluster"}
 
-	succeeds := suite.waitUntilSettledStatus(clusters, "github.com/docker/dockercloud-hello-world")
+	succeeds := suite.waitUntilSettledStatus(clusters, "github.com/example/webapp")
 	suite.statusIs(succeeds, sous.DeployStatusActive)
 }
 
@@ -260,7 +317,10 @@ func (suite *integrationSuite) TestFailedDeployFollowingSuccessfulDeploy() {
 	var ports []int32
 	const repoName = "succeedthenfail"
 
-	registerAndDeploy(ip, clusterName, repoName, sourceRepo, "succeedthenfail-succeed", "1.0.0-succeed", ports)
+	timeout := 500
+	registerAndDeploy(ip, clusterName, repoName, sourceRepo, "succeedthenfail-succeed", "1.0.0-succeed", ports, sous.Startup{
+		Timeout: &timeout,
+	})
 
 	deployState := suite.waitUntilSettledStatus(clusters, sourceRepo)
 	suite.statusIs(deployState, sous.DeployStatusActive)
@@ -271,7 +331,7 @@ func (suite *integrationSuite) TestFailedDeployFollowingSuccessfulDeploy() {
 
 	// Create an assert on a failed deployment.
 
-	registerAndDeploy(ip, clusterName, repoName, sourceRepo, "succeedthenfail-fail", "2.0.0-fail", ports)
+	registerAndDeploy(ip, clusterName, repoName, sourceRepo, "succeedthenfail-fail", "2.0.0-fail", ports, sous.Startup{})
 
 	deployState = suite.waitUntilSettledStatus(clusters, sourceRepo)
 	suite.statusIs(deployState, sous.DeployStatusFailed)

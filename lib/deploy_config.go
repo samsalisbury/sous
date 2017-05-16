@@ -27,9 +27,10 @@ type (
 		// to decisions made by Sous. If set to zero, Sous will decide how many
 		// instances to launch.
 		NumInstances int
-
 		// Volumes lists the volume mappings for this deploy
 		Volumes Volumes
+		// Startup containts healthcheck options for this deploy.
+		Startup Startup `yaml:",omitempty"`
 	}
 
 	// A DeployConfigs is a map from cluster name to DeployConfig
@@ -38,6 +39,14 @@ type (
 	// Env is a mapping of environment variable name to value, used to provision
 	// single instances of an application.
 	Env map[string]string
+
+	// Startup is a struct of options related to container startup.  Members are
+	// pointers so that they can be ignored if nil.
+	Startup struct {
+		CheckReadyURIPath    *string `yaml:",omitempty"`
+		CheckReadyURITimeout *int    `yaml:",omitempty"`
+		Timeout              *int    `yaml:",omitempty"`
+	}
 
 	// Metadata represents an opaque map of metadata - Sous is agnostic about
 	// its contents, except to validate it against the top level schema.

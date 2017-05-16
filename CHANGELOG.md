@@ -21,6 +21,8 @@ with respect to its command line interface and HTTP interface.
 
 ### Added
 - Extra debug logging about how build strategies are selected.
+- Startup options in manifest to set healthcheck timeout and relative
+  URI path of healthcheck endpoint.
 
 ### Changed
 - Singularity RequestIDs are generated with a suffix of the MD5 sum of

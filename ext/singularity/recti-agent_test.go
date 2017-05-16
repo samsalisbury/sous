@@ -98,3 +98,38 @@ func TestFailOnNilBuildArtifact(t *testing.T) {
 		t.Fatal("Deploy did not return an error when given a sous.Deployable with an empty BuildArtifact")
 	}
 }
+
+func TestContainerStartupOptions(t *testing.T) {
+	checkReadyPath := "/use-this-route"
+	checkReadyTimeout := 45
+
+	mockStatus := sous.DeployStatus(sous.DeployStatusPending)
+	d := sous.Deployable{
+		mockStatus,
+		&sous.Deployment{},
+		&sous.BuildArtifact{},
+	}
+
+	d.ClusterName = "TestContainerStartupOptionsCluster"
+	d.Startup.CheckReadyURIPath = &checkReadyPath
+	d.Startup.Timeout = &checkReadyTimeout
+
+	dr, err := buildDeployRequest(d, "fake-request-id", map[string]string{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	tmpl := "expected:%s got:%s"
+	if dr.Deploy.HealthcheckUri != checkReadyPath {
+		t.Fatalf(tmpl, checkReadyPath, dr.Deploy.HealthcheckUri)
+	} else {
+		t.Logf(tmpl, checkReadyPath, dr.Deploy.HealthcheckUri)
+	}
+
+	tmpl = "expected:%d got:%d"
+	if dr.Deploy.DeployHealthTimeoutSeconds != int64(checkReadyTimeout) {
+		t.Fatalf(tmpl, checkReadyTimeout, dr.Deploy.DeployHealthTimeoutSeconds)
+	} else {
+		t.Logf(tmpl, checkReadyTimeout, dr.Deploy.DeployHealthTimeoutSeconds)
+	}
+
+}
