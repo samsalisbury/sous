@@ -193,16 +193,16 @@ func (suite *integrationSuite) TestGetRunningDeploymentSet_testCluster() {
 		ds, which := suite.deploymentWithRepo(clusters, "github.com/example/webapp")
 		deps := ds.Snapshot()
 		if suite.Equal(4, len(deps)) {
-			grafana := deps[which]
+			webapp := deps[which]
 			cacheHitText := fmt.Sprintf("on cache hit %d", i+1)
-			suite.Equal(SingularityURL, grafana.Cluster.BaseURL, cacheHitText)
-			suite.Regexp("^0\\.1", grafana.Resources["cpus"], cacheHitText)    // XXX strings and floats...
-			suite.Regexp("^100\\.", grafana.Resources["memory"], cacheHitText) // XXX strings and floats...
-			suite.Equal("1", grafana.Resources["ports"], cacheHitText)         // XXX strings and floats...
-			suite.Equal(17, grafana.SourceID.Version.Patch, cacheHitText)
-			suite.Equal("91495f1b1630084e301241100ecf2e775f6b672c", grafana.SourceID.Version.Meta, cacheHitText)
-			suite.Equal(1, grafana.NumInstances, cacheHitText)
-			suite.Equal(sous.ManifestKindService, grafana.Kind, cacheHitText)
+			suite.Equal(SingularityURL, webapp.Cluster.BaseURL, cacheHitText)
+			suite.Regexp("^0\\.1", webapp.Resources["cpus"], cacheHitText)    // XXX strings and floats...
+			suite.Regexp("^100\\.", webapp.Resources["memory"], cacheHitText) // XXX strings and floats...
+			suite.Equal("1", webapp.Resources["ports"], cacheHitText)         // XXX strings and floats...
+			suite.Equal(17, webapp.SourceID.Version.Patch, cacheHitText)
+			suite.Equal("91495f1b1630084e301241100ecf2e775f6b672c", webapp.SourceID.Version.Meta, cacheHitText)
+			suite.Equal(1, webapp.NumInstances, cacheHitText)
+			suite.Equal(sous.ManifestKindService, webapp.Kind, cacheHitText)
 		}
 	}
 }
@@ -214,15 +214,15 @@ func (suite *integrationSuite) TestGetRunningDeploymentSet_otherCluster() {
 	ds, which := suite.deploymentWithRepo(clusters, "github.com/example/webapp")
 	deps := ds.Snapshot()
 	if suite.Equal(1, len(deps)) {
-		grafana := deps[which]
-		suite.Equal(SingularityURL, grafana.Cluster.BaseURL)
-		suite.Regexp("^0\\.1", grafana.Resources["cpus"])    // XXX strings and floats...
-		suite.Regexp("^100\\.", grafana.Resources["memory"]) // XXX strings and floats...
-		suite.Equal("1", grafana.Resources["ports"])         // XXX strings and floats...
-		suite.Equal(17, grafana.SourceID.Version.Patch)
-		suite.Equal("91495f1b1630084e301241100ecf2e775f6b672c", grafana.SourceID.Version.Meta)
-		suite.Equal(1, grafana.NumInstances)
-		suite.Equal(sous.ManifestKindService, grafana.Kind)
+		webapp := deps[which]
+		suite.Equal(SingularityURL, webapp.Cluster.BaseURL)
+		suite.Regexp("^0\\.1", webapp.Resources["cpus"])    // XXX strings and floats...
+		suite.Regexp("^100\\.", webapp.Resources["memory"]) // XXX strings and floats...
+		suite.Equal("1", webapp.Resources["ports"])         // XXX strings and floats...
+		suite.Equal(17, webapp.SourceID.Version.Patch)
+		suite.Equal("91495f1b1630084e301241100ecf2e775f6b672c", webapp.SourceID.Version.Meta)
+		suite.Equal(1, webapp.NumInstances)
+		suite.Equal(sous.ManifestKindService, webapp.Kind)
 	}
 
 }
@@ -234,15 +234,15 @@ func (suite *integrationSuite) TestGetRunningDeploymentSet_all() {
 	ds, which := suite.deploymentWithRepo(clusters, "github.com/example/webapp")
 	deps := ds.Snapshot()
 	if suite.Equal(5, len(deps)) {
-		grafana := deps[which]
-		suite.Equal(SingularityURL, grafana.Cluster.BaseURL)
-		suite.Regexp("^0\\.1", grafana.Resources["cpus"])    // XXX strings and floats...
-		suite.Regexp("^100\\.", grafana.Resources["memory"]) // XXX strings and floats...
-		suite.Equal("1", grafana.Resources["ports"])         // XXX strings and floats...
-		suite.Equal(17, grafana.SourceID.Version.Patch)
-		suite.Equal("91495f1b1630084e301241100ecf2e775f6b672c", grafana.SourceID.Version.Meta)
-		suite.Equal(1, grafana.NumInstances)
-		suite.Equal(sous.ManifestKindService, grafana.Kind)
+		webapp := deps[which]
+		suite.Equal(SingularityURL, webapp.Cluster.BaseURL)
+		suite.Regexp("^0\\.1", webapp.Resources["cpus"])    // XXX strings and floats...
+		suite.Regexp("^100\\.", webapp.Resources["memory"]) // XXX strings and floats...
+		suite.Equal("1", webapp.Resources["ports"])         // XXX strings and floats...
+		suite.Equal(17, webapp.SourceID.Version.Patch)
+		suite.Equal("91495f1b1630084e301241100ecf2e775f6b672c", webapp.SourceID.Version.Meta)
+		suite.Equal(1, webapp.NumInstances)
+		suite.Equal(sous.ManifestKindService, webapp.Kind)
 	}
 
 }
