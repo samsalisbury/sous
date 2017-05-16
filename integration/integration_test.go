@@ -124,7 +124,7 @@ func (suite *integrationSuite) statusIs(ds *sous.DeployState, expected sous.Depl
 
 func (suite *integrationSuite) BeforeTest(suiteName, testName string) {
 	ResetSingularity()
-	imageName = fmt.Sprintf("%s/%s:%s", registryName, "grafana-repo", "latest")
+	imageName = fmt.Sprintf("%s/%s:%s", registryName, "webapp", "latest")
 
 	suite.registry = docker_registry.NewClient()
 	suite.registry.BecomeFoolishlyTrusting()
@@ -146,8 +146,8 @@ func (suite *integrationSuite) deployDefaultContainers() {
 
 	registerAndDeploy(ip, "test-cluster", "hello-labels", "github.com/docker-library/hello-world", "hello-labels", "latest", []int32{}, nilStartup)
 	registerAndDeploy(ip, "test-cluster", "hello-server-labels", "github.com/docker/dockercloud-hello-world", "hello-server-labels", "latest", []int32{}, nilStartup)
-	registerAndDeploy(ip, "test-cluster", "grafana-repo", "github.com/opentable/docker-grafana", "grafana-labels", "latest", []int32{}, startup)
-	registerAndDeploy(ip, "other-cluster", "grafana-repo", "github.com/opentable/docker-grafana", "grafana-labels", "latest", []int32{}, startup)
+	registerAndDeploy(ip, "test-cluster", "webapp", "github.com/example/webapp", "webapp", "latest", []int32{}, startup)
+	registerAndDeploy(ip, "other-cluster", "webapp", "github.com/example/webapp", "webapp", "latest", []int32{}, startup)
 
 	// This deployment fails immediately, and never results in a successful deployment at that singularity request.
 	registerAndDeploy(ip, "test-cluster", "supposed-to-fail", "github.com/opentable/homer-says-doh", "fails-labels", "1-fails", []int32{}, nilStartup)
@@ -190,7 +190,7 @@ func (suite *integrationSuite) TestGetRunningDeploymentSet_testCluster() {
 	const numberOfTestRuns = 2
 
 	for i := 0; i < numberOfTestRuns; i++ {
-		ds, which := suite.deploymentWithRepo(clusters, "github.com/opentable/docker-grafana")
+		ds, which := suite.deploymentWithRepo(clusters, "github.com/example/webapp")
 		deps := ds.Snapshot()
 		if suite.Equal(4, len(deps)) {
 			grafana := deps[which]
@@ -211,7 +211,7 @@ func (suite *integrationSuite) TestGetRunningDeploymentSet_otherCluster() {
 	suite.deployDefaultContainers()
 	clusters := []string{"other-cluster"}
 
-	ds, which := suite.deploymentWithRepo(clusters, "github.com/opentable/docker-grafana")
+	ds, which := suite.deploymentWithRepo(clusters, "github.com/example/webapp")
 	deps := ds.Snapshot()
 	if suite.Equal(1, len(deps)) {
 		grafana := deps[which]
@@ -231,7 +231,7 @@ func (suite *integrationSuite) TestGetRunningDeploymentSet_all() {
 	suite.deployDefaultContainers()
 	clusters := []string{"test-cluster", "other-cluster"}
 
-	ds, which := suite.deploymentWithRepo(clusters, "github.com/opentable/docker-grafana")
+	ds, which := suite.deploymentWithRepo(clusters, "github.com/example/webapp")
 	deps := ds.Snapshot()
 	if suite.Equal(5, len(deps)) {
 		grafana := deps[which]
