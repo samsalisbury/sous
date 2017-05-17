@@ -11,7 +11,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/julienschmidt/httprouter"
 	"github.com/opentable/sous/lib"
 )
@@ -59,6 +61,7 @@ func (mh *MetaHandler) GetHandling(factory ExchangeFactory) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		h := mh.injectedHandler(factory, w, r, p)
 		data, status := h.Exchange()
+		w.Header().Add("Access-Control-Allow-Origin", "*") //XXX configurable by app
 		mh.renderData(status, w, r, data)
 	}
 }
@@ -77,6 +80,23 @@ func (mh *MetaHandler) HeadHandling(factory ExchangeFactory) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		h := mh.injectedHandler(factory, w, r, p)
 		_, status := h.Exchange()
+		mh.writeHeaders(status, w, r, nil)
+	}
+}
+
+// OptionsHandling handles Options requests.
+func (mh *MetaHandler) OptionsHandling(factory ExchangeFactory) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		h := mh.injectedHandler(factory, w, r, p)
+		data, status := h.Exchange()
+
+		w.Header().Add("Access-Control-Allow-Origin", r.Header.Get("Origin")) //XXX Yup: whoever was asking
+		w.Header().Add("Access-Control-Max-Age", "86400")
+		spew.Dump(data)
+		if methods, ok := data.([]string); ok {
+			spew.Dump(methods)
+			w.Header().Add("Access-Control-Allow-Methods", strings.Join(methods, ", "))
+		}
 		mh.writeHeaders(status, w, r, nil)
 	}
 }
@@ -119,6 +139,7 @@ func (mh *MetaHandler) InstallPanicHandler() {
 	g := mh.graphFac()
 	g.Inject(mh.statusHandler)
 	mh.router.PanicHandler = func(w http.ResponseWriter, r *http.Request, recovered interface{}) {
+		//log.Print(recovered)
 		mh.statusHandler.HandlePanic(w, r, recovered)
 	}
 

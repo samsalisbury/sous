@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/julienschmidt/httprouter"
 	"github.com/pkg/errors"
 )
@@ -46,6 +47,11 @@ type (
 	Deleteable interface {
 		Delete() Exchanger
 	}
+
+	// Optionsable tags ResourceFamilies that respond to OPTIONS
+	Optionsable interface {
+		Options() Exchanger
+	}
 	/*
 		Postable interface {
 			Post() Exchanger
@@ -59,6 +65,10 @@ type (
 		// Likewise, maybe there should be a way for a RF to override the
 		// PUT conditional behavior
 	*/
+
+	defaultOptionsExchanger struct {
+		methods []string
+	}
 )
 
 func (rm *RouteMap) buildMetaHandler(r *httprouter.Router, grf func() Injector) *MetaHandler {
@@ -82,6 +92,7 @@ func (rm *RouteMap) BuildRouter(grf func() Injector) http.Handler {
 		get, canGet := e.Resource.(Getable)
 		put, canPut := e.Resource.(Putable)
 		del, canDel := e.Resource.(Deleteable)
+		opt, canOpt := e.Resource.(Optionsable)
 
 		if canGet {
 			r.Handle("GET", e.Path, mh.GetHandling(get.Get))
@@ -93,9 +104,38 @@ func (rm *RouteMap) BuildRouter(grf func() Injector) http.Handler {
 		if canDel {
 			r.Handle("DELETE", e.Path, mh.DeleteHandling(del.Delete))
 		}
+		if canOpt {
+			r.Handle("OPTIONS", e.Path, mh.OptionsHandling(opt.Options))
+		} else {
+			r.Handle("OPTIONS", e.Path, mh.OptionsHandling(defaultOptions(e.Resource)))
+		}
 	}
 
 	return r
+}
+
+func defaultOptions(res Resource) func() Exchanger {
+	ex := &defaultOptionsExchanger{methods: []string{"OPTIONS"}}
+
+	if _, can := res.(Getable); can {
+		ex.methods = append(ex.methods, "GET", "HEAD")
+	}
+	if _, can := res.(Putable); can {
+		ex.methods = append(ex.methods, "PUT")
+	}
+	if _, can := res.(Deleteable); can {
+		ex.methods = append(ex.methods, "DELETE")
+	}
+
+	spew.Dump(ex)
+
+	return func() Exchanger {
+		return ex
+	}
+}
+
+func (doex *defaultOptionsExchanger) Exchange() (interface{}, int) {
+	return doex.methods, 200
 }
 
 // SingleExchanger returns a single exchanger for the given exchange factory
