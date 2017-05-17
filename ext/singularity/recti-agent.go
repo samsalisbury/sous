@@ -94,6 +94,9 @@ func buildDeployRequest(d sous.Deployable, reqID string, metadata map[string]str
 	vols := d.Deployment.DeployConfig.Volumes
 	clusterName := d.Deployment.ClusterName
 	flavor := d.Deployment.Flavor
+	checkReadyPath := d.Deployment.DeployConfig.Startup.CheckReadyURIPath
+	checkReadyPathTimeout := d.Deployment.DeployConfig.Startup.CheckReadyURITimeout
+	checkReadyTimeout := d.Deployment.DeployConfig.Startup.Timeout
 
 	metadata[sous.ClusterNameLabel] = clusterName
 	metadata[sous.FlavorLabel] = flavor
@@ -149,6 +152,28 @@ func buildDeployRequest(d sous.Deployable, reqID string, metadata map[string]str
 	if err != nil {
 		return nil, err
 	}
+
+	if checkReadyPath != nil {
+		if err := dep.SetField("HealthcheckUri", *checkReadyPath); err != nil {
+			return nil, err
+		}
+		Log.Debug.Printf("Override SingularityDeploy HealthcheckUri with %s", *checkReadyPath)
+	}
+
+	if checkReadyPathTimeout != nil {
+		if err := dep.SetField("HealthcheckTimeoutSeconds", int64(*checkReadyPathTimeout)); err != nil {
+			return nil, err
+		}
+		Log.Debug.Printf("Override SingularityDeploy HealthcheckTimeoutSeconds with %d", *checkReadyPathTimeout)
+	}
+
+	if checkReadyTimeout != nil {
+		if err := dep.SetField("DeployHealthTimeoutSeconds", int64(*checkReadyTimeout)); err != nil {
+			return nil, err
+		}
+		Log.Debug.Printf("Override SingularityDeploy DeployHealthTimeoutSeconds with %d", *checkReadyTimeout)
+	}
+
 	Log.Debug.Printf("Deploy: %+ v", dep)
 	Log.Debug.Printf("  Container: %+ v", ci)
 	Log.Debug.Printf("  Docker: %+ v", dockerInfo)
