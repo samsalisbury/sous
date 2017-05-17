@@ -98,9 +98,35 @@ func (t *PutConditionalsSuite) TeardownTest() {
 func (t *PutConditionalsSuite) testReq(method, path string, data interface{}) *http.Request {
 	body := justBytes(json.Marshal(data))
 	t.Require().NotNil(body)
-	req, err := http.NewRequest("PUT", t.server.URL+path, body)
+	req, err := http.NewRequest(method, t.server.URL+path, body)
 	t.NoError(err)
 	return req
+}
+
+func (t *PutConditionalsSuite) TestOptionsAllowCORS() {
+	sous.Log.BeChatty()
+	defer sous.Log.BeQuiet()
+	req := t.testReq("OPTIONS", "/test/one", nil)
+	req.Header.Add("Origin", "test-client.example.com")
+	res, err := t.client.Do(req)
+	t.NoError(err)
+	t.Equal(res.Status, "200 OK")
+	t.Equal(res.Header.Get("Access-Control-Allow-Origin"), "test-client.example.com")
+	t.T().Log(res.Header)
+	methods := res.Header.Get("Access-Control-Allow-Methods")
+	t.Regexp("GET", methods)
+	t.Regexp("HEAD", methods)
+	t.Regexp("PUT", methods)
+	t.Regexp("OPTIONS", methods)
+}
+
+func (t *PutConditionalsSuite) TestGetAllowCORS() {
+	req := t.testReq("GET", "/test/one", nil)
+	req.Header.Add("Origin", "test-client.example.com")
+	res, err := t.client.Do(req)
+	t.NoError(err)
+	t.Equal("200 OK", res.Status)
+	t.Equal("*", res.Header.Get("Access-Control-Allow-Origin"))
 }
 
 func (t *PutConditionalsSuite) TestPutConditionalsNoneMatch() {
