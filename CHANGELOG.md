@@ -6,11 +6,15 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
-## [Unreleased](//github.com/opentable/sous/compare/0.5.3...HEAD)
+## [0.5.4](//github.com/opentable/sous/compare/0.5.3...0.5.4)
 
 ### Added
 
 - Sous server now returns CORS headers so that the Sous SPA (forthcoming) can consume its data.
+
+### Fixed
+
+- Crashing bug on GDM updates.
 
 ## [0.5.3](//github.com/opentable/sous/compare/0.5.2...0.5.3)
 
