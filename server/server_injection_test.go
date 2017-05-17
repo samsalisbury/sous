@@ -61,3 +61,17 @@ func TestStatusHandlerInjection(t *testing.T) {
 		statusGet.AutoResolver.String()
 	})
 }
+
+func TestGDMHandlerInjection(t *testing.T) {
+	assert := assert.New(t)
+	require := require.New(t)
+
+	sr := &GDMResource{}
+	sh := basicInjectedHandler(sr.Put, t)
+
+	gdmPut, ok := sh.(*PUTGDMHandler)
+	require.True(ok)
+
+	sous.Log.Debug.Printf("%#v", gdmPut)
+	assert.NotNil(gdmPut.StateManager)
+}

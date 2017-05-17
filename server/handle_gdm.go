@@ -26,7 +26,7 @@ type (
 		*http.Request
 		*sous.LogSet
 		GDM          *LiveGDM
-		StateManager graph.StateManager
+		StateManager *graph.StateManager
 		User         ClientUser
 	}
 
