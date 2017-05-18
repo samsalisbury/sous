@@ -66,7 +66,7 @@ func NewResolveRecorder(intended Deployments, f func(*ResolveRecorder)) *Resolve
 			Log:      []DiffResolution{},
 			Errs:     ResolveErrors{Causes: []ErrorWrapper{}},
 		},
-		Log:      make(chan DiffResolution, 1e6),
+		Log:      make(chan DiffResolution, 10),
 		finished: make(chan struct{}),
 	}
 
