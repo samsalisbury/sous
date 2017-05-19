@@ -137,11 +137,8 @@ func (suite *integrationSuite) BeforeTest(suiteName, testName string) {
 func (suite *integrationSuite) deployDefaultContainers() {
 	nilStartup := sous.Startup{}
 	timeout := 500
-	uriPath := "config.js"
 	startup := sous.Startup{
-		Timeout:              &timeout,
-		CheckReadyURIPath:    &uriPath,
-		CheckReadyURITimeout: &timeout,
+		Timeout: &timeout,
 	}
 
 	registerAndDeploy(ip, "test-cluster", "hello-labels", "github.com/docker-library/hello-world", "hello-labels", "latest", []int32{}, nilStartup)
