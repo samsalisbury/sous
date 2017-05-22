@@ -13,7 +13,6 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/julienschmidt/httprouter"
 	"github.com/opentable/sous/lib"
 )
@@ -92,9 +91,7 @@ func (mh *MetaHandler) OptionsHandling(factory ExchangeFactory) httprouter.Handl
 
 		w.Header().Add("Access-Control-Allow-Origin", r.Header.Get("Origin")) //XXX Yup: whoever was asking
 		w.Header().Add("Access-Control-Max-Age", "86400")
-		spew.Dump(data)
 		if methods, ok := data.([]string); ok {
-			spew.Dump(methods)
 			w.Header().Add("Access-Control-Allow-Methods", strings.Join(methods, ", "))
 		}
 		mh.writeHeaders(status, w, r, nil)
