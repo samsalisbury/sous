@@ -3,7 +3,6 @@ package sous
 import (
 	"fmt"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/pkg/errors"
 )
 
@@ -104,8 +103,6 @@ func (hsm *HTTPStateManager) WriteState(s *State, u User) error {
 	if err != nil {
 		return err
 	}
-	Log.Debug.Println("old", spew.Sdump(cds))
-	Log.Debug.Println("new", spew.Sdump(wds))
 
 	return hsm.putDeployments(cds, wds)
 }

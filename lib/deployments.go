@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/pkg/errors"
 )
 
@@ -34,8 +33,6 @@ func (ds *Deployments) EmptyReceiver() Comparable {
 
 // VariancesFrom implements Comparable on Deployments
 func (ds *Deployments) VariancesFrom(other Comparable) Variances {
-	Log.Debug.Println("here", spew.Sdump(ds))
-	Log.Debug.Println("them", spew.Sdump(other))
 
 	switch ods := other.(type) {
 	default:

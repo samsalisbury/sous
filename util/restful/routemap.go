@@ -5,7 +5,6 @@ import (
 	"net/http/httptest"
 	"net/url"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/julienschmidt/httprouter"
 	"github.com/pkg/errors"
 )
@@ -126,8 +125,6 @@ func defaultOptions(res Resource) func() Exchanger {
 	if _, can := res.(Deleteable); can {
 		ex.methods = append(ex.methods, "DELETE")
 	}
-
-	spew.Dump(ex)
 
 	return func() Exchanger {
 		return ex

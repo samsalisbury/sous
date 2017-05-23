@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"sort"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/restful"
@@ -68,7 +67,6 @@ func (h *PUTGDMHandler) Exchange() (interface{}, int) {
 	dec.Decode(&data)
 	deps := sous.NewDeployments(data.Deployments...)
 
-	sous.Log.Debug.Println(spew.Sprintf("%+v", h))
 	state, err := h.StateManager.ReadState()
 	if err != nil {
 		h.Warn.Printf("%#v", err)
