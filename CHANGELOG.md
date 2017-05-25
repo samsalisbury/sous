@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
 
+## [Unreleased](//github.com/opentable/sous/compare/0.5.5...HEAD)
+### Fixed
+- Sous server was unintentionally filtering out manifests with non-empty offsets or flavors.
+
 ## [0.5.5](//github.com/opentable/sous/compare/0.5.4...0.5.5)
 
 ### Fixed

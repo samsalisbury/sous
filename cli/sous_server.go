@@ -22,6 +22,7 @@ type SousServer struct {
 
 	*config.Config
 	*graph.SousGraph
+	*sous.AutoResolver
 
 	flags struct {
 		dryrun,
@@ -61,6 +62,8 @@ func (ss *SousServer) AddFlags(fs *flag.FlagSet) {
 // labeller and registrar.
 func (ss *SousServer) RegisterOn(psy Addable) {
 	psy.Add(graph.DryrunOption(ss.flags.dryrun))
+	ss.DeployFilterFlags.Offset = "*"
+	ss.DeployFilterFlags.Flavor = "*"
 	psy.Add(&ss.DeployFilterFlags)
 }
 
@@ -70,12 +73,9 @@ func (ss *SousServer) Execute(args []string) cmdr.Result {
 		return EnsureErrorResult(err)
 	}
 	ss.Log.Info.Println("Starting scheduled GDM resolution.")
+	ss.Log.Debug.Print("Filtering the GDM to resolve on this server to: %v", ss.DeployFilterFlags)
 
-	var arWrapper struct {
-		*sous.AutoResolver
-	}
-	ss.SousGraph.MustInject(&arWrapper)
-	arWrapper.AutoResolver.Kickoff()
+	ss.AutoResolver.Kickoff()
 
 	ss.Log.Info.Printf("Sous Server v%s running at %s for %s", ss.Sous.Version, ss.flags.laddr, ss.DeployFilterFlags.Cluster)
 
