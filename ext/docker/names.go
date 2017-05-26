@@ -1,9 +1,11 @@
 package docker
 
 import (
+	"fmt"
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/opentable/sous/lib"
 	"github.com/pkg/errors"
@@ -80,8 +82,19 @@ func versionName(sid sous.SourceID, kind string) string {
 	return strings.Join([]string{imageRepoName(sid.Location, kind), tagName(sid.Version)}, ":")
 }
 
-func revisionName(sid sous.SourceID, kind string) string {
-	return strings.Join([]string{imageRepoName(sid.Location, kind), sid.RevID()}, ":")
+func revisionName(sid sous.SourceID, kind string, time time.Time) string {
+	//A tag name must be valid ASCII and may contain lowercase and uppercase
+	//letters, digits, underscores, periods and dashes. A tag name may not start
+	//with a period or a dash and may contain a maximum of 128 characters.
+	//
+	// revID = 40 bytes
+	// RFC3339(ish) timestamp = 26 bytes
+	// 40 + 26 + 2(separators) = 68 < 128
+
+	// z prefix sorts "pinning" labels to the bottom
+	// Format is the RFC3339 format, with . instead of : so that it's a legal docker tag
+	labelStr := fmt.Sprintf("z%v-%v", sid.RevID(), time.Format("2006-01-02T15.04.05Z07.00"))
+	return strings.Join([]string{imageRepoName(sid.Location, kind), labelStr}, ":")
 }
 
 func fullRepoName(registryHost string, sl sous.SourceLocation, kind string) string {
@@ -96,8 +109,8 @@ func versionTag(registryHost string, v sous.SourceID, kind string) string {
 	return verTag
 }
 
-func revisionTag(registryHost string, v sous.SourceID, kind string) string {
-	revTag := filepath.Join(registryHost, revisionName(v, kind))
+func revisionTag(registryHost string, v sous.SourceID, kind string, time time.Time) string {
+	revTag := filepath.Join(registryHost, revisionName(v, kind, time))
 	Log.Debug.Printf("RevisionTag: % #v => %s", v, revTag)
 	return revTag
 }

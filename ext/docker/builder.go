@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/nyarly/inlinefiles/templatestore"
 	"github.com/opentable/sous/lib"
@@ -76,7 +77,7 @@ func (b *Builder) ApplyMetadata(br *sous.BuildResult, bc *sous.BuildContext) err
 
 func (b *Builder) applyMetadata(br *sous.BuildResult, kind string, bc *sous.BuildContext) error {
 	br.VersionName = b.VersionTag(bc.Version(), kind)
-	br.RevisionName = b.RevisionTag(bc.Version(), kind)
+	br.RevisionName = b.RevisionTag(bc.Version(), kind, time.Now())
 
 	c := b.SourceShell.Cmd("docker", "build", "-t", br.VersionName, "-t", br.RevisionName, "-")
 	bf := b.metadataDockerfile(br, bc)
@@ -147,6 +148,6 @@ func (b *Builder) VersionTag(v sous.SourceID, kind string) string {
 }
 
 // RevisionTag computes an image tag from a SourceVersion's revision id
-func (b *Builder) RevisionTag(v sous.SourceID, kind string) string {
-	return revisionTag(b.DockerRegistryHost, v, kind)
+func (b *Builder) RevisionTag(v sous.SourceID, kind string, time time.Time) string {
+	return revisionTag(b.DockerRegistryHost, v, kind, time)
 }
