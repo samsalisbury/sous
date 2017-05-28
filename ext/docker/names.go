@@ -93,7 +93,7 @@ func revisionName(sid sous.SourceID, kind string, time time.Time) string {
 
 	// z prefix sorts "pinning" labels to the bottom
 	// Format is the RFC3339 format, with . instead of : so that it's a legal docker tag
-	labelStr := fmt.Sprintf("z%v-%v", sid.RevID(), time.Format("2006-01-02T15.04.05Z07.00"))
+	labelStr := fmt.Sprintf("z%v-%v", sid.RevID(), time.UTC().Format("2006-01-02T15.04.05"))
 	return strings.Join([]string{imageRepoName(sid.Location, kind), labelStr}, ":")
 }
 
