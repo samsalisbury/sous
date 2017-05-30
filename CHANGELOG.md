@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
-## [Unreleased](//github.com/opentable/sous/compare/0.5.6...HEAD)
+## [0.5.7](//github.com/opentable/sous/compare/0.5.6...0.5.7)
 ### Changed
 - Images built with Sous get a pinning tag that now includes the timestamp of
   the build, so that multiple builds on a single revision won't clobber labesls
