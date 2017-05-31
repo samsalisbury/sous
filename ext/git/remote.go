@@ -44,6 +44,9 @@ func (rs Remotes) ensureExists(name string) Remote {
 // credentials, and possibly ending with ".git", and returns a clean path of the
 // form: <hostname>/<repo-path>.
 func CanonicalRepoURL(repoURL string) (string, error) {
+	if strings.HasPrefix(repoURL, "git@") {
+		repoURL = "ssh://" + repoURL
+	}
 	u, err := url.Parse(repoURL)
 	if err != nil {
 		return "", fmt.Errorf("only valid URLs can be canonicalised: %s", err)
