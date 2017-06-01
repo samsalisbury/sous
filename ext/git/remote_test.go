@@ -41,6 +41,7 @@ func TestCanonicalRepoURL_BadInput(t *testing.T) {
 		"/github.com/user/project",
 		//"git@github.comuser/project.git",
 		"gitgithub.com:user/project",
+		"::::::::::::",
 	}
 	for _, input := range urls {
 		actual, err := CanonicalRepoURL(input)
@@ -51,5 +52,6 @@ func TestCanonicalRepoURL_BadInput(t *testing.T) {
 		if actual != "" {
 			t.Errorf("got %q for %q; want empty string", actual, input)
 		}
+		t.Log(err)
 	}
 }

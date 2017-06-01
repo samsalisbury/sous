@@ -44,6 +44,9 @@ func (rs Remotes) ensureExists(name string) Remote {
 // credentials, and possibly ending with ".git", and returns a clean path of the
 // form: <hostname>/<repo-path>.
 func CanonicalRepoURL(repoURL string) (string, error) {
+	if strings.HasPrefix(repoURL, "git@") {
+		repoURL = "ssh://" + repoURL
+	}
 	u, err := url.Parse(repoURL)
 	if err != nil {
 		return "", fmt.Errorf("only valid URLs can be canonicalised: %s", err)
@@ -59,22 +62,13 @@ func CanonicalRepoURL(repoURL string) (string, error) {
 			host = p[0]
 		}
 	}
-	if host == "" {
-		if !strings.ContainsRune(dir, ':') {
-			return "", fmt.Errorf("unable to parse %q", repoURL)
-		}
-		p := strings.SplitN(dir, ":", 2)
-		host = p[0]
-		dir = p[1]
+	if host == "" && !strings.ContainsRune(dir, ':') {
+		return "", fmt.Errorf("unable to parse %q", repoURL)
 	}
 	if strings.ContainsRune(host, ':') {
 		p := strings.SplitN(host, ":", 2)
 		host = p[0]
 		dir = p[1] + dir
-	}
-	if strings.ContainsRune(host, '@') {
-		p := strings.SplitN(host, "@", 2)
-		host = p[1]
 	}
 	c := path.Join(host, strings.TrimSuffix(dir, ".git"))
 	return c, nil
