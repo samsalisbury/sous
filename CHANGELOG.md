@@ -6,8 +6,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
-## Unreleased
-
+## [0.5.8](//github.com/opentable/sous/compare/0.5.7...0.5.8)
 ### Fixed
 - Now builds and runs on Go 1.8 (one small change to URL parsing broke Sous for go 1.8).
 - New Startup configuration section in manifests now correctly round-trips via 'sous
