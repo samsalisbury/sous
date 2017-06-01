@@ -58,6 +58,25 @@ func TestMakeRequestID(t *testing.T) {
 	}
 }
 
+func TestMakeRequestID_Long(t *testing.T) {
+	actual, err := MakeRequestID(sous.DeploymentID{
+		ManifestID: sous.ManifestID{
+			Source: sous.SourceLocation{
+				Repo: "github.com/ihaveanincrediblylongname/andilikemyprojectstohaveincrediblylongnamestoo",
+				Dir:  "and/also/i/bury/my/services/super/deep/in/the/build/tree/for/no/good/reason/blame/maven",
+			},
+			Flavor: "wellwehavetohaveaflavorforthisservicebecausethereseighteeninstancesofitwithweirdquirkstotheirconfig",
+		},
+		Cluster: "foo",
+	})
+	if err != nil {
+		t.Fatalf("Error: %v", err)
+	}
+	if len(actual) >= 100 {
+		t.Errorf("Length of %q was %d which is longer than Singularity accepts by default.", actual, len(actual))
+	}
+}
+
 func TestMakeRequestID_Collisions(t *testing.T) {
 	tests := []struct{ repo, dir, flavor, cluster string }{
 		{"github.com/user/repo", "", "", "some-cluster"},
@@ -216,7 +235,7 @@ func TestLongComputeDeployID(t *testing.T) {
 
 	idLen := len(deployID)
 	logLenTmpl := "Got length:%d Max length:%d"
-	if len(deployID) > maxDeployIDLen {
+	if len(deployID) >= 50 { // 50 is how our Singularity is configured
 		t.Fatalf(logLenTmpl, idLen, maxDeployIDLen)
 	} else {
 		t.Logf(logLenTmpl, idLen, maxDeployIDLen)

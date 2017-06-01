@@ -19,7 +19,7 @@ import (
 // c.f. https://github.com/HubSpot/Singularity/blob/master/Docs/reference/configuration.md#limits
 
 // Singularity DeployID must be <50
-const maxDeployIDLen = 49
+const maxDeployIDLen = 50
 
 // Singularity RequestID must be <100
 const maxRequestIDLen = 100
@@ -250,7 +250,7 @@ func MakeRequestID(depID sous.DeploymentID) (string, error) {
 	if len(reqBase) < maxRequestIDLen {
 		return reqBase, nil
 	}
-	return reqBase[:maxRequestIDLen], nil
+	return reqBase[:(maxRequestIDLen - 1)], nil
 }
 
 func computeDeployID(d *sous.Deployable) string {
@@ -274,5 +274,5 @@ func computeDeployID(d *sous.Deployable) string {
 		return depBase
 	}
 
-	return depBase[:maxDeployIDLen]
+	return depBase[:(maxDeployIDLen - 1)]
 }
