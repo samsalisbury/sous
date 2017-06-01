@@ -498,6 +498,7 @@ func captureRepos(db *sql.DB) (repos []string) {
 		Log.Debug.Print(err)
 		return
 	}
+	defer res.Close()
 	for res.Next() {
 		var repo string
 		res.Scan(&repo)
@@ -524,6 +525,7 @@ func (nc *NameCache) dumpRows(io io.Writer, sql string) {
 	if err != nil {
 		panic(err)
 	}
+	defer rows.Close()
 
 	w := &tabwriter.Writer{}
 	w.Init(io, 2, 4, 2, ' ', 0)
@@ -733,6 +735,7 @@ func (nc *NameCache) dbQueryOnSL(sl sous.SourceLocation) (rs []string, err error
 	if err != nil {
 		return []string{}, err
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		var r string
@@ -755,6 +758,8 @@ func (nc *NameCache) dbQueryAllSourceIds() (ids []sous.SourceID, err error) {
 	if err != nil {
 		return
 	}
+	defer rows.Close()
+
 	for rows.Next() {
 		var r, o, v string
 		rows.Scan(&r, &o, &v)
@@ -773,6 +778,15 @@ type strpairs []strpair
 type strpair [2]string
 
 func (nc *NameCache) dbQueryOnSourceID(sid sous.SourceID) (cn string, ins []string, quals strpairs, err error) {
+	cn, ins, err = nc.dbQueryCNameforSourceID(sid)
+	if err != nil {
+		return
+	}
+	quals, err = nc.dbQueryQualsForCName(cn)
+	return
+}
+
+func (nc *NameCache) dbQueryCNameforSourceID(sid sous.SourceID) (cn string, ins []string, err error) {
 	rows, err := nc.DB.Query("select docker_search_metadata.canonicalName, "+
 		"docker_search_name.name "+
 		"from "+
@@ -793,6 +807,7 @@ func (nc *NameCache) dbQueryOnSourceID(sid sous.SourceID) (cn string, ins []stri
 	if err != nil {
 		return
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		var in string
@@ -803,11 +818,12 @@ func (nc *NameCache) dbQueryOnSourceID(sid sous.SourceID) (cn string, ins []stri
 	if len(ins) == 0 {
 		err = errors.Wrap(NoImageNameFound{sid}, "")
 	}
-	if err != nil {
-		return
-	}
 
-	rows, err = nc.DB.Query("select"+
+	return
+}
+
+func (nc *NameCache) dbQueryQualsForCName(cn string) (quals strpairs, err error) {
+	rows, err := nc.DB.Query("select"+
 		" docker_image_qualities.quality,"+
 		" docker_image_qualities.kind"+
 		"   from"+
@@ -818,6 +834,7 @@ func (nc *NameCache) dbQueryOnSourceID(sid sous.SourceID) (cn string, ins []stri
 	if err != nil {
 		return
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		var pr strpair
