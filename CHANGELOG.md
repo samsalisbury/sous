@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
+## [0.5.9](//github.com/opentable/sous/compare/0.5.8...0.5.9)
+### Fixed
+- Long version strings resulted in Singularity deploy IDs longer than the max
+  allowed length of 49 characters. Now they are always limited to 49.
+
 ## [0.5.8](//github.com/opentable/sous/compare/0.5.7...0.5.8)
 ### Fixed
 - Now builds and runs on Go 1.8 (one small change to URL parsing broke Sous for go 1.8).
