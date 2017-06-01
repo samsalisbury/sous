@@ -62,22 +62,13 @@ func CanonicalRepoURL(repoURL string) (string, error) {
 			host = p[0]
 		}
 	}
-	if host == "" {
-		if !strings.ContainsRune(dir, ':') {
-			return "", fmt.Errorf("unable to parse %q", repoURL)
-		}
-		p := strings.SplitN(dir, ":", 2)
-		host = p[0]
-		dir = p[1]
+	if host == "" && !strings.ContainsRune(dir, ':') {
+		return "", fmt.Errorf("unable to parse %q", repoURL)
 	}
 	if strings.ContainsRune(host, ':') {
 		p := strings.SplitN(host, ":", 2)
 		host = p[0]
 		dir = p[1] + dir
-	}
-	if strings.ContainsRune(host, '@') {
-		p := strings.SplitN(host, "@", 2)
-		host = p[1]
 	}
 	c := path.Join(host, strings.TrimSuffix(dir, ".git"))
 	return c, nil
