@@ -361,6 +361,21 @@ func (db *deploymentBuilder) unpackDeployConfig() error {
 		Log.Debug.Printf("%+v", db.Target.DeployConfig.Volumes[0])
 	}
 
+	if db.deploy.HealthcheckUri != "" { // terrible hack
+		val := string(db.deploy.HealthcheckUri)
+		db.Target.Startup.CheckReadyURIPath = &val
+	}
+
+	if db.deploy.HealthcheckTimeoutSeconds != 0 {
+		val := int(db.deploy.HealthcheckTimeoutSeconds)
+		db.Target.Startup.CheckReadyURITimeout = &val
+	}
+
+	if db.deploy.DeployHealthTimeoutSeconds != 0 {
+		val := int(db.deploy.DeployHealthTimeoutSeconds)
+		db.Target.Startup.Timeout = &val
+	}
+
 	return nil
 }
 
