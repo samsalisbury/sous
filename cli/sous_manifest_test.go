@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"os"
 	"testing"
 
 	"github.com/opentable/sous/graph"
@@ -21,6 +22,7 @@ func TestManifestGet(t *testing.T) {
 		},
 		State:     makeTestState(),
 		OutWriter: graph.OutWriter(out),
+		LogSet:    sous.NewLogSet(os.Stderr, os.Stderr, os.Stderr),
 	}
 	res := smg.Execute([]string{})
 	assert.Equal(t, 0, res.ExitCode())
@@ -51,6 +53,7 @@ func TestManifestSet(t *testing.T) {
 		State:            state,
 		InReader:         graph.InReader(in),
 		StateWriter:      writer,
+		LogSet:           sous.NewLogSet(os.Stderr, os.Stderr, os.Stderr),
 	}
 
 	assert.Equal(t, 0, dummyWriter.WriteCount)
