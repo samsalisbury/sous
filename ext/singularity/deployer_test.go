@@ -167,24 +167,9 @@ func TestShortComputeDeployID(t *testing.T) {
 	verStr := "0.0.1"
 	logTmpl := "Provided version string:%s DeployID:%#v"
 	d := &sous.Deployable{
-		BuildArtifact: &sous.BuildArtifact{
-			Name: "build-artifact",
-			Type: "docker",
-		},
 		Deployment: &sous.Deployment{
 			SourceID: sous.SourceID{
-				Location: sous.SourceLocation{
-					Repo: "fake.tld/org/project",
-				},
 				Version: semv.MustParse(verStr),
-			},
-			DeployConfig: sous.DeployConfig{
-				NumInstances: 1,
-				Resources:    sous.Resources{},
-			},
-			ClusterName: "cluster",
-			Cluster: &sous.Cluster{
-				BaseURL: "cluster",
 			},
 		},
 	}
@@ -203,24 +188,9 @@ func TestLongComputeDeployID(t *testing.T) {
 	verStr := "0.0.2-thisversionissolongthatonewouldexpectittobetruncated"
 	logTmpl := "Provided version string:%s DeployID:%#v"
 	d := &sous.Deployable{
-		BuildArtifact: &sous.BuildArtifact{
-			Name: "build-artifact",
-			Type: "docker",
-		},
 		Deployment: &sous.Deployment{
 			SourceID: sous.SourceID{
-				Location: sous.SourceLocation{
-					Repo: "fake.tld/org/project",
-				},
 				Version: semv.MustParse(verStr),
-			},
-			DeployConfig: sous.DeployConfig{
-				NumInstances: 1,
-				Resources:    sous.Resources{},
-			},
-			ClusterName: "cluster",
-			Cluster: &sous.Cluster{
-				BaseURL: "cluster",
 			},
 		},
 	}
@@ -247,24 +217,9 @@ func TestComputeDeployID_exactly50(t *testing.T) {
 	verStr := "0.0.2-c-seventeen" // This version string is exactly 17 chars.
 	logTmpl := "Provided version string:%s DeployID:%#v"
 	d := &sous.Deployable{
-		BuildArtifact: &sous.BuildArtifact{
-			Name: "build-artifact",
-			Type: "docker",
-		},
 		Deployment: &sous.Deployment{
 			SourceID: sous.SourceID{
-				Location: sous.SourceLocation{
-					Repo: "fake.tld/org/project",
-				},
 				Version: semv.MustParse(verStr),
-			},
-			DeployConfig: sous.DeployConfig{
-				NumInstances: 1,
-				Resources:    sous.Resources{},
-			},
-			ClusterName: "cluster",
-			Cluster: &sous.Cluster{
-				BaseURL: "cluster",
 			},
 		},
 	}
