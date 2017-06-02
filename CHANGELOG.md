@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
+## Unreleased
+### Fixed
+- Off-by-one error with Singularity deploy IDs, fixed in 0.5.9, re-introduced in
+  0.5.10. 
+
 ## [0.5.10](//github.com/opentable/sous/compare/0.5.9...0.5.10)
 ### Fixed
 - Off-by-one error with long request IDs.
