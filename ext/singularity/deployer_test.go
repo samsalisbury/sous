@@ -241,6 +241,55 @@ func TestComputeDeployID_exactly50(t *testing.T) {
 	}
 }
 
+// TestComputeDeployID tests a
+func TestComputeDeployID(t *testing.T) {
+	tests := []struct {
+		VersionString, DeployIDPrefix string
+		DeployIDLen                   int
+	}{
+		// Short version strings (below 17 characters) expect less than max deployId length.
+		{"0.0.1", "0_0_1_", 38},
+		{"0.0.2", "0_0_2_", 38},
+		{"0.0.2-c", "0_0_2_", 40},
+
+		// Exactly 15 charactes.
+		{"0.0.2-789012345", "0_0_2_", 48},
+
+		// Exactly 16 characters long, expect no truncation.
+		{"0.0.2-7890123456", "0_0_2_", 49},
+		{"10.12.5-90123456", "10_12_5_", 49},
+
+		// Exactly 17 characters long, expect max deployId length.
+		{"0.0.2-78901234567", "0_0_2_", 49},
+		{"1.2.3-78901234567", "1_2_3_", 49},
+
+		// Greater than 17 characters long, expect max deployId length.
+		{"0.0.2-chr-eighteen", "0_0_2_", 49},
+		{"0.0.2-thisversionissolongthatonewouldexpectittobetruncated", "0_0_2_", 49},
+		{"10.12.5-thisversionissolongthatonewouldexpectittobetruncated", "10_12_5_", 49},
+	}
+	for _, test := range tests {
+		inputVersion := test.VersionString
+		expectedPrefix := test.DeployIDPrefix
+		expectedLen := test.DeployIDLen
+		input := &sous.Deployable{
+			Deployment: &sous.Deployment{
+				SourceID: sous.SourceID{
+					Version: semv.MustParse(inputVersion),
+				},
+			},
+		}
+		actual := computeDeployID(input)
+		if !strings.HasPrefix(actual, expectedPrefix) {
+			t.Errorf("%s: got %q; want string prefixed %q", inputVersion, actual, expectedPrefix)
+		}
+		actualLen := len(actual)
+		if actualLen != expectedLen {
+			t.Errorf("%s: got length %d; want %d", inputVersion, actualLen, expectedLen)
+		}
+	}
+}
+
 func TestPendingModification(t *testing.T) {
 	drc := sous.NewDummyRectificationClient()
 	deployer := NewDeployer(drc)
