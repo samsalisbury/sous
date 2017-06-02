@@ -244,7 +244,8 @@ func changesDep(pair *sous.DeployablePair) bool {
 		!(pair.Prior.SourceID.Equal(pair.Post.SourceID) &&
 			pair.Prior.Resources.Equal(pair.Post.Resources) &&
 			pair.Prior.Env.Equal(pair.Post.Env) &&
-			pair.Prior.DeployConfig.Volumes.Equal(pair.Post.DeployConfig.Volumes))
+			pair.Prior.DeployConfig.Volumes.Equal(pair.Post.DeployConfig.Volumes) &&
+			pair.Prior.Startup.Equal(pair.Post.Startup))
 }
 
 func computeRequestID(d *sous.Deployable) (string, error) {
