@@ -242,6 +242,49 @@ func TestLongComputeDeployID(t *testing.T) {
 	}
 }
 
+func TestComputeDeployID_exactly50(t *testing.T) {
+	verStr := "0.0.2-c-seventeen" // This version string is exactly 17 chars.
+	logTmpl := "Provided version string:%s DeployID:%#v"
+	d := &sous.Deployable{
+		BuildArtifact: &sous.BuildArtifact{
+			Name: "build-artifact",
+			Type: "docker",
+		},
+		Deployment: &sous.Deployment{
+			SourceID: sous.SourceID{
+				Location: sous.SourceLocation{
+					Repo: "fake.tld/org/project",
+				},
+				Version: semv.MustParse(verStr),
+			},
+			DeployConfig: sous.DeployConfig{
+				NumInstances: 1,
+				Resources:    sous.Resources{},
+			},
+			ClusterName: "cluster",
+			Cluster: &sous.Cluster{
+				BaseURL: "cluster",
+			},
+		},
+	}
+
+	deployID := computeDeployID(d)
+	parsedDeployID := strings.Split(deployID, "_")[0:3]
+	if reflect.DeepEqual(parsedDeployID, strings.Split("0.0.2", ".")) {
+		t.Logf(logTmpl, verStr, deployID)
+	} else {
+		t.Fatalf(logTmpl, verStr, deployID)
+	}
+
+	idLen := len(deployID)
+	logLenTmpl := "Got length:%d Max length:%d"
+	if len(deployID) >= 50 { // 50 is how our Singularity is configured
+		t.Fatalf(logLenTmpl, idLen, maxDeployIDLen)
+	} else {
+		t.Logf(logLenTmpl, idLen, maxDeployIDLen)
+	}
+}
+
 func TestPendingModification(t *testing.T) {
 	drc := sous.NewDummyRectificationClient()
 	deployer := NewDeployer(drc)
