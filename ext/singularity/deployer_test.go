@@ -168,6 +168,9 @@ func TestRectifyRecover(t *testing.T) {
 //
 // Notably, it tests for off-by-one edge cases, by testing 16 and 17 character
 // version strings which caused confusion in earlier implementations.
+//
+// It also tests for the 32/33 version string length boundary, at which we
+// expect to begin truncating the version string itself.
 func TestComputeDeployID(t *testing.T) {
 	tests := []struct {
 		VersionString, DeployIDPrefix string
@@ -192,7 +195,14 @@ func TestComputeDeployID(t *testing.T) {
 		// Greater than 17 characters long, expect max deployId length.
 		{"0.0.2-chr-eighteen", "0_0_2_", 49},
 		{"0.0.2-thisversionissolongthatonewouldexpectittobetruncated", "0_0_2_", 49},
-		{"10.12.5-thisversionissolongthatonewouldexpectittobetruncated", "10_12_5_", 49}}
+		{"10.12.5-thisversionissolongthatonewouldexpectittobetruncated", "10_12_5_", 49},
+
+		// Exactly 32 chars long, expect full sanitised version string as prefix.
+		{"10.12.5-32-chars-version-string", "10_12_5_32_chars_version_string_", 49},
+
+		// Exactly 33 chars long, expect truncated sanitised version string as prefix.
+		{"10.12.5-33-chars-version-stringX", "10_12_5_33_chars_version_string_", 49},
+	}
 	for _, test := range tests {
 		inputVersion := test.VersionString
 		expectedPrefix := test.DeployIDPrefix
