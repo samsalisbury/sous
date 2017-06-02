@@ -271,9 +271,8 @@ func computeDeployID(d *sous.Deployable) string {
 		uuidEntire,
 	}, "_")
 
-	if len(depBase) <= maxDeployIDLen {
-		return depBase
+	if len(depBase) > maxDeployIDLen {
+		return depBase[:(maxDeployIDLen)]
 	}
-
-	return depBase[:(maxDeployIDLen)]
+	return depBase
 }
