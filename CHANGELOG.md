@@ -9,7 +9,8 @@ with respect to its command line interface and HTTP interface.
 ## Unreleased
 ### Fixed
 - Singularity now accepts changes to Startup options in manifest.
-
+- Off-by-one error with Singularity deploy IDs, fixed in 0.5.9, re-introduced in
+  0.5.10. Now includes better tests surrounding edge cases.
 
 ## [0.5.10](//github.com/opentable/sous/compare/0.5.9...0.5.10)
 ### Fixed

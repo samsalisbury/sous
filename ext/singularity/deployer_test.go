@@ -1,7 +1,6 @@
 package singularity
 
 import (
-	"reflect"
 	"strings"
 	"testing"
 
@@ -72,7 +71,8 @@ func TestMakeRequestID_Long(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error: %v", err)
 	}
-	if len(actual) >= 100 {
+	// 99 is the maximum length of Singularity request IDs.
+	if len(actual) > 99 {
 		t.Errorf("Length of %q was %d which is longer than Singularity accepts by default.", actual, len(actual))
 	}
 }
@@ -163,82 +163,66 @@ func TestRectifyRecover(t *testing.T) {
 	}
 }
 
-func TestShortComputeDeployID(t *testing.T) {
-	verStr := "0.0.1"
-	logTmpl := "Provided version string:%s DeployID:%#v"
-	d := &sous.Deployable{
-		BuildArtifact: &sous.BuildArtifact{
-			Name: "build-artifact",
-			Type: "docker",
-		},
-		Deployment: &sous.Deployment{
-			SourceID: sous.SourceID{
-				Location: sous.SourceLocation{
-					Repo: "fake.tld/org/project",
+// TestComputeDeployID tests a range of inputs from those which we expect to
+// result in strings lower than the maximum length, up to strings that should
+// result in truncation logic being invoked.
+//
+// Notably, it tests for off-by-one edge cases, by testing 16 and 17 character
+// version strings which caused confusion in earlier implementations.
+//
+// It also tests for the 32/33 version string length boundary, at which we
+// expect to begin truncating the version string itself.
+func TestComputeDeployID(t *testing.T) {
+	tests := []struct {
+		VersionString, DeployIDPrefix string
+		DeployIDLen                   int
+	}{
+		// Short version strings (below 17 characters) expect less than max deployId length.
+		{"0.0.1", "0_0_1_", 38},
+		{"0.0.2", "0_0_2_", 38},
+		{"0.0.2-c", "0_0_2_", 40},
+
+		// Exactly 15 charactes.
+		{"0.0.2-789012345", "0_0_2_", 48},
+
+		// Exactly 16 characters long, expect no truncation.
+		{"0.0.2-7890123456", "0_0_2_", 49},
+		{"10.12.5-90123456", "10_12_5_", 49},
+
+		// Exactly 17 characters long, expect max deployId length.
+		{"0.0.2-78901234567", "0_0_2_", 49},
+		{"1.2.3-78901234567", "1_2_3_", 49},
+
+		// Greater than 17 characters long, expect max deployId length.
+		{"0.0.2-chr-eighteen", "0_0_2_", 49},
+		{"0.0.2-thisversionissolongthatonewouldexpectittobetruncated", "0_0_2_", 49},
+		{"10.12.5-thisversionissolongthatonewouldexpectittobetruncated", "10_12_5_", 49},
+
+		// Exactly 32 chars long, expect full sanitised version string as prefix.
+		{"10.12.5-32-chars-version-string", "10_12_5_32_chars_version_string_", 49},
+
+		// Exactly 33 chars long, expect truncated sanitised version string as prefix.
+		{"10.12.5-33-chars-version-stringX", "10_12_5_33_chars_version_string_", 49},
+	}
+	for _, test := range tests {
+		inputVersion := test.VersionString
+		expectedPrefix := test.DeployIDPrefix
+		expectedLen := test.DeployIDLen
+		input := &sous.Deployable{
+			Deployment: &sous.Deployment{
+				SourceID: sous.SourceID{
+					Version: semv.MustParse(inputVersion),
 				},
-				Version: semv.MustParse(verStr),
 			},
-			DeployConfig: sous.DeployConfig{
-				NumInstances: 1,
-				Resources:    sous.Resources{},
-			},
-			ClusterName: "cluster",
-			Cluster: &sous.Cluster{
-				BaseURL: "cluster",
-			},
-		},
-	}
-
-	deployID := computeDeployID(d)
-	parsedDeployID := strings.Split(deployID, "_")[0:3]
-	if reflect.DeepEqual(parsedDeployID, strings.Split(verStr, ".")) {
-		t.Logf(logTmpl, verStr, deployID)
-	} else {
-		t.Fatalf(logTmpl, verStr, deployID)
-	}
-	t.Logf("LENGTH: %d", len(deployID))
-}
-
-func TestLongComputeDeployID(t *testing.T) {
-	verStr := "0.0.2-thisversionissolongthatonewouldexpectittobetruncated"
-	logTmpl := "Provided version string:%s DeployID:%#v"
-	d := &sous.Deployable{
-		BuildArtifact: &sous.BuildArtifact{
-			Name: "build-artifact",
-			Type: "docker",
-		},
-		Deployment: &sous.Deployment{
-			SourceID: sous.SourceID{
-				Location: sous.SourceLocation{
-					Repo: "fake.tld/org/project",
-				},
-				Version: semv.MustParse(verStr),
-			},
-			DeployConfig: sous.DeployConfig{
-				NumInstances: 1,
-				Resources:    sous.Resources{},
-			},
-			ClusterName: "cluster",
-			Cluster: &sous.Cluster{
-				BaseURL: "cluster",
-			},
-		},
-	}
-
-	deployID := computeDeployID(d)
-	parsedDeployID := strings.Split(deployID, "_")[0:3]
-	if reflect.DeepEqual(parsedDeployID, strings.Split("0.0.2", ".")) {
-		t.Logf(logTmpl, verStr, deployID)
-	} else {
-		t.Fatalf(logTmpl, verStr, deployID)
-	}
-
-	idLen := len(deployID)
-	logLenTmpl := "Got length:%d Max length:%d"
-	if len(deployID) >= 50 { // 50 is how our Singularity is configured
-		t.Fatalf(logLenTmpl, idLen, maxDeployIDLen)
-	} else {
-		t.Logf(logLenTmpl, idLen, maxDeployIDLen)
+		}
+		actual := computeDeployID(input)
+		if !strings.HasPrefix(actual, expectedPrefix) {
+			t.Errorf("%s: got %q; want string prefixed %q", inputVersion, actual, expectedPrefix)
+		}
+		actualLen := len(actual)
+		if actualLen != expectedLen {
+			t.Errorf("%s: got length %d; want %d", inputVersion, actualLen, expectedLen)
+		}
 	}
 }
 
