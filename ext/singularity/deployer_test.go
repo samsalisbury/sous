@@ -1,7 +1,6 @@
 package singularity
 
 import (
-	"reflect"
 	"strings"
 	"testing"
 
@@ -163,85 +162,12 @@ func TestRectifyRecover(t *testing.T) {
 	}
 }
 
-func TestShortComputeDeployID(t *testing.T) {
-	verStr := "0.0.1"
-	logTmpl := "Provided version string:%s DeployID:%#v"
-	d := &sous.Deployable{
-		Deployment: &sous.Deployment{
-			SourceID: sous.SourceID{
-				Version: semv.MustParse(verStr),
-			},
-		},
-	}
-
-	deployID := computeDeployID(d)
-	parsedDeployID := strings.Split(deployID, "_")[0:3]
-	if reflect.DeepEqual(parsedDeployID, strings.Split(verStr, ".")) {
-		t.Logf(logTmpl, verStr, deployID)
-	} else {
-		t.Fatalf(logTmpl, verStr, deployID)
-	}
-	t.Logf("LENGTH: %d", len(deployID))
-}
-
-func TestLongComputeDeployID(t *testing.T) {
-	verStr := "0.0.2-thisversionissolongthatonewouldexpectittobetruncated"
-	logTmpl := "Provided version string:%s DeployID:%#v"
-	d := &sous.Deployable{
-		Deployment: &sous.Deployment{
-			SourceID: sous.SourceID{
-				Version: semv.MustParse(verStr),
-			},
-		},
-	}
-
-	deployID := computeDeployID(d)
-	parsedDeployID := strings.Split(deployID, "_")[0:3]
-	if reflect.DeepEqual(parsedDeployID, strings.Split("0.0.2", ".")) {
-		t.Logf(logTmpl, verStr, deployID)
-	} else {
-		t.Fatalf(logTmpl, verStr, deployID)
-	}
-
-	idLen := len(deployID)
-	logLenTmpl := "Got length:%d Max length:%d"
-	// Assert that we have been truncated to exactly the maximum length.
-	if len(deployID) != 49 { // 49 is the maximum deployID length.
-		t.Fatalf(logLenTmpl, idLen, maxDeployIDLen)
-	} else {
-		t.Logf(logLenTmpl, idLen, maxDeployIDLen)
-	}
-}
-
-func TestComputeDeployID_exactly50(t *testing.T) {
-	verStr := "0.0.2-c-seventeen" // This version string is exactly 17 chars.
-	logTmpl := "Provided version string:%s DeployID:%#v"
-	d := &sous.Deployable{
-		Deployment: &sous.Deployment{
-			SourceID: sous.SourceID{
-				Version: semv.MustParse(verStr),
-			},
-		},
-	}
-
-	deployID := computeDeployID(d)
-	parsedDeployID := strings.Split(deployID, "_")[0:3]
-	if reflect.DeepEqual(parsedDeployID, strings.Split("0.0.2", ".")) {
-		t.Logf(logTmpl, verStr, deployID)
-	} else {
-		t.Fatalf(logTmpl, verStr, deployID)
-	}
-
-	idLen := len(deployID)
-	logLenTmpl := "Got length:%d Max length:%d"
-	if len(deployID) != 49 { // 49 is the maximum deploy id length.
-		t.Fatalf(logLenTmpl, idLen, maxDeployIDLen)
-	} else {
-		t.Logf(logLenTmpl, idLen, maxDeployIDLen)
-	}
-}
-
-// TestComputeDeployID tests a
+// TestComputeDeployID tests a range of inputs from those which we expect to
+// result in strings lower than the maximum length, up to strings that should
+// result in truncation logic being invoked.
+//
+// Notably, it tests for off-by-one edge cases, by testing 16 and 17 character
+// version strings which caused confusion in earlier implementations.
 func TestComputeDeployID(t *testing.T) {
 	tests := []struct {
 		VersionString, DeployIDPrefix string
@@ -266,8 +192,7 @@ func TestComputeDeployID(t *testing.T) {
 		// Greater than 17 characters long, expect max deployId length.
 		{"0.0.2-chr-eighteen", "0_0_2_", 49},
 		{"0.0.2-thisversionissolongthatonewouldexpectittobetruncated", "0_0_2_", 49},
-		{"10.12.5-thisversionissolongthatonewouldexpectittobetruncated", "10_12_5_", 49},
-	}
+		{"10.12.5-thisversionissolongthatonewouldexpectittobetruncated", "10_12_5_", 49}}
 	for _, test := range tests {
 		inputVersion := test.VersionString
 		expectedPrefix := test.DeployIDPrefix
