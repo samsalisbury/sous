@@ -22,7 +22,7 @@ import (
 const maxDeployIDLen = 49
 
 // Singularity RequestID must be <100
-const maxRequestIDLen = 100
+const maxRequestIDLen = 99
 
 // maxVersionLen needs to account for the separator character
 // between the version string and the UUID string.
@@ -247,10 +247,11 @@ func MakeRequestID(depID sous.DeploymentID) (string, error) {
 	digest := depID.Digest()
 
 	reqBase := fmt.Sprintf("%s-%s-%s-%s-%x", sn, dd, fl, cl, digest)
-	if len(reqBase) < maxRequestIDLen {
-		return reqBase, nil
+
+	if len(reqBase) > maxRequestIDLen {
+		return reqBase[:(maxRequestIDLen)], nil
 	}
-	return reqBase[:(maxRequestIDLen - 1)], nil
+	return reqBase, nil
 }
 
 func computeDeployID(d *sous.Deployable) string {

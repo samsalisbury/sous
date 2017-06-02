@@ -71,7 +71,8 @@ func TestMakeRequestID_Long(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error: %v", err)
 	}
-	if len(actual) >= 100 {
+	// 99 is the maximum length of Singularity request IDs.
+	if len(actual) > 99 {
 		t.Errorf("Length of %q was %d which is longer than Singularity accepts by default.", actual, len(actual))
 	}
 }
