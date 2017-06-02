@@ -205,7 +205,7 @@ func (r *deployer) RectifySingleModification(pair *sous.DeployablePair) (err err
 
 	changesApplied := false
 	Log.Vomit.Printf("Operating on request %q", reqID)
-	if r.changesReq(pair) {
+	if changesReq(pair) {
 		Log.Debug.Printf("Updating Request...")
 		if err := r.Client.PostRequest(*pair.Post, reqID); err != nil {
 			Log.Warn.Println(err)
@@ -234,7 +234,7 @@ func (r *deployer) RectifySingleModification(pair *sous.DeployablePair) (err err
 	return nil
 }
 
-func (r deployer) changesReq(pair *sous.DeployablePair) bool {
+func changesReq(pair *sous.DeployablePair) bool {
 	return pair.Prior.NumInstances != pair.Post.NumInstances
 }
 

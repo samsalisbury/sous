@@ -242,6 +242,110 @@ func TestLongComputeDeployID(t *testing.T) {
 	}
 }
 
+func TestChangesReq(t *testing.T) {
+	baseDep := sous.Deployment{}
+
+	testPair := func(other *sous.Deployment) *sous.DeployablePair {
+		return &sous.DeployablePair{
+			Prior: &sous.Deployable{
+				Deployment: &baseDep,
+			},
+			Post: &sous.Deployable{
+				Deployment: other,
+			},
+		}
+	}
+
+	if changesReq(testPair(baseDep.Clone())) {
+		t.Error("Unchanged deployment mis-reported to change requirement")
+	}
+
+	changed := baseDep.Clone()
+	changed.DeployConfig.NumInstances = 100
+
+	if !changesReq(testPair(changed)) {
+		t.Error("Change in NumInstances ignored")
+	}
+
+	changed = baseDep.Clone()
+	changed.Env["VAR"] = "VALUE"
+
+	if changesReq(testPair(changed)) {
+		t.Error("Non-request change (env var) to deployment mis-reported to change requirement")
+	}
+}
+
+func TestChangesDep(t *testing.T) {
+	baseDep := sous.Deployment{}
+
+	testPair := func(other *sous.Deployment) *sous.DeployablePair {
+		return &sous.DeployablePair{
+			Prior: &sous.Deployable{
+				Deployment: &baseDep,
+			},
+			Post: &sous.Deployable{
+				Deployment: other,
+			},
+		}
+	}
+
+	if changesDep(testPair(baseDep.Clone())) {
+		t.Error("Unchanged deployment mis-reported to changed deploy")
+	}
+
+	changed := baseDep.Clone()
+	changed.DeployConfig.NumInstances = 100
+
+	if changesDep(testPair(changed)) {
+		t.Error("Change in NumInstances mis-reported as changed deploy")
+	}
+
+	pair := testPair(baseDep.Clone())
+	pair.Post.Status = sous.DeployStatusFailed
+	if !changesDep(pair) {
+		t.Error("Failed post deploy not reported a changed.")
+	}
+
+	pair = testPair(baseDep.Clone())
+	pair.Prior.Status = sous.DeployStatusFailed
+	if !changesDep(pair) {
+		t.Error("Failed prior deploy not reported a changed.")
+	}
+
+	changed = baseDep.Clone()
+	changed.SourceID.Version.Minor = 12
+	if !changesDep(testPair(changed)) {
+		t.Error("Change to version on deployment reported as no change")
+	}
+
+	changed = baseDep.Clone()
+	changed.Resources["cpus"] = "one million units!"
+	if !changesDep(testPair(changed)) {
+		t.Error("Change to cpus in resources on deployment reported as no change")
+	}
+
+	changed = baseDep.Clone()
+	changed.Env["VAR"] = "VALUE"
+
+	if !changesDep(testPair(changed)) {
+		t.Error("Change to env var on deployment reported as no change")
+	}
+
+	changed = baseDep.Clone()
+	changed.Volumes = append(changed.Volumes, &sous.Volume{})
+	if !changesDep(testPair(changed)) {
+		t.Error("Change to volumes on deployment reported as no change")
+	}
+
+	changed = baseDep.Clone()
+	hcpath := "/something/something/healthcheck"
+	changed.Startup.CheckReadyURIPath = &hcpath
+
+	if !changesDep(testPair(changed)) {
+		t.Error("Change to Startup on deployment reported as no change")
+	}
+}
+
 func TestPendingModification(t *testing.T) {
 	drc := sous.NewDummyRectificationClient()
 	deployer := NewDeployer(drc)
@@ -298,8 +402,8 @@ func TestPendingModification(t *testing.T) {
 	assert.Len(t, drc.Deployed, 0)
 	assert.Len(t, drc.Created, 0)
 	assert.Len(t, drc.Deleted, 0)
-
 }
+
 func TestModificationOfFailed(t *testing.T) {
 	drc := sous.NewDummyRectificationClient()
 	deployer := NewDeployer(drc)
