@@ -235,7 +235,8 @@ func TestLongComputeDeployID(t *testing.T) {
 
 	idLen := len(deployID)
 	logLenTmpl := "Got length:%d Max length:%d"
-	if len(deployID) >= 50 { // 50 is how our Singularity is configured
+	// Assert that we have been truncated to exactly the maximum length.
+	if len(deployID) != 49 { // 49 is the maximum deployID length.
 		t.Fatalf(logLenTmpl, idLen, maxDeployIDLen)
 	} else {
 		t.Logf(logLenTmpl, idLen, maxDeployIDLen)
@@ -278,7 +279,7 @@ func TestComputeDeployID_exactly50(t *testing.T) {
 
 	idLen := len(deployID)
 	logLenTmpl := "Got length:%d Max length:%d"
-	if len(deployID) >= 50 { // 50 is how our Singularity is configured
+	if len(deployID) != 49 { // 49 is the maximum deploy id length.
 		t.Fatalf(logLenTmpl, idLen, maxDeployIDLen)
 	} else {
 		t.Logf(logLenTmpl, idLen, maxDeployIDLen)
