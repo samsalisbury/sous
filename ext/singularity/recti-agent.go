@@ -140,13 +140,13 @@ func buildDeployRequest(d sous.Deployable, reqID string, metadata map[string]str
 	}
 
 	dep, err := swaggering.LoadMap(&dtos.SingularityDeploy{}, dtoMap{
-		"Id":                         depID,
-		"RequestId":                  reqID,
-		"Resources":                  res,
-		"ContainerInfo":              ci,
-		"Env":                        map[string]string(e),
-		"Metadata":                   metadata,
-		"DeployHealthTimeoutSeconds": int64(sous.SingularityDeployTimeout),
+		"Id":            depID,
+		"RequestId":     reqID,
+		"Resources":     res,
+		"ContainerInfo": ci,
+		"Env":           map[string]string(e),
+		"Metadata":      metadata,
+		//"DeployHealthTimeoutSeconds": int64(sous.SingularityDeployTimeout),
 	})
 	if err != nil {
 		return nil, err

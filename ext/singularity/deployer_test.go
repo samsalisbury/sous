@@ -11,6 +11,7 @@ import (
 	sous "github.com/opentable/sous/lib"
 	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var requestIDTests = []struct{ Repo, Dir, Flavor, Cluster, String string }{
@@ -251,6 +252,11 @@ func TestStableDeployment(t *testing.T) {
 		BaseURL: "http://dummy.cluster.example.com/",
 	}
 	startDep.Kind = sous.ManifestKindService
+	startDep.DeployConfig.Resources = sous.Resources{"cpus": "0.1", "memory": "100", "ports": "1"}
+
+	// This happens in DiskStateManager on Read.
+	flaws := startDep.Validate()
+	require.Empty(t, flaws)
 
 	deployable := sous.Deployable{
 		Deployment: &startDep,
@@ -292,7 +298,7 @@ func TestStableDeployment(t *testing.T) {
 		},
 	}
 
-	diff, diffs := pair.Post.Deployment.Diff(pair.Prior.Deployment)
+	diff, diffs := pair.Prior.Deployment.Diff(pair.Post.Deployment)
 	assert.False(t, diff)
 	assert.Empty(t, diffs)
 
