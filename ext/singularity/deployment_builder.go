@@ -99,12 +99,6 @@ func (db *deploymentBuilder) isRetryable(err error) bool {
 func BuildDeployment(reg sous.ImageLabeller, clusters sous.Clusters, req SingReq) (sous.DeployState, error) {
 	Log.Vomit.Printf("%#v", req.ReqParent)
 	db := deploymentBuilder{registry: reg, clusters: clusters, req: req}
-
-	db.Target.Cluster = &sous.Cluster{BaseURL: req.SourceURL}
-	db.Target.ExecutorData = &singularityTaskData{requestID: reqID(req.ReqParent)}
-	Log.Vomit.Printf("Recording %v as requestID for instance.", db.Target.ExecutorData)
-	db.request = req.ReqParent.Request
-
 	return db.Target, db.canRetry(db.completeConstruction())
 }
 
@@ -115,6 +109,7 @@ func (db *deploymentBuilder) completeConstruction() error {
 		}
 	}
 	return firsterr.Returned(
+		wrapError(db.basics, "Failed to extract basic information from original request."),
 		wrapError(db.determineDeployStatus, "Failed to determine deploy status."),
 		wrapError(db.retrieveDeployHistory, "Failed to retrieve SingularityDeployHistory from SingularityRequestParent."),
 		wrapError(db.extractDeployFromDeployHistory, "Failed to extract SingularityDeploy from SingularityDeployHistory."),
@@ -140,6 +135,14 @@ func reqID(rp *dtos.SingularityRequestParent) (ID string) {
 	}
 	ID = rp.Request.Id
 	return
+}
+
+func (db *deploymentBuilder) basics() error {
+	db.Target.Cluster = &sous.Cluster{BaseURL: db.req.SourceURL}
+	db.Target.ExecutorData = &singularityTaskData{requestID: reqID(db.req.ReqParent)}
+	Log.Vomit.Printf("Recording %v as requestID for instance.", db.Target.ExecutorData)
+	db.request = db.req.ReqParent.Request
+	return nil
 }
 
 // If there is a Pending deploy, as far as Sous is concerned, that's "to

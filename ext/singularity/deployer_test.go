@@ -226,6 +226,57 @@ func TestComputeDeployID(t *testing.T) {
 	}
 }
 
+// XXX Not sure this is the right place for this test...
+func TestStableDeployment(t *testing.T) {
+	startDep := sous.Deployment{} // trying with the zero...
+	reqID := "dummy-request"
+	dockerName := "dummy-docker-image"
+	startDep.Cluster = &sous.Cluster{
+		BaseURL: "http://dummy.cluster.example.com/",
+	}
+	startDep.Kind = sous.ManifestKindService
+
+	deployable := sous.Deployable{
+		Deployment: &startDep,
+		BuildArtifact: &sous.BuildArtifact{
+			Name: dockerName,
+		},
+	}
+
+	_, req, err := singRequestFromDeployment(&startDep, reqID)
+	assert.NoError(t, err)
+	assert.NotNil(t, req)
+
+	depReq, err := buildDeployRequest(deployable, reqID, map[string]string{})
+	assert.NoError(t, err)
+
+	db := &deploymentBuilder{
+		request: req,
+		deploy:  depReq.Deploy,
+	}
+
+	assert.NoError(t, db.extractArtifactName(), "Could not extract ArtifactName (Docker image name) from SingularityDeploy.")
+	assert.NoError(t, db.assignClusterName(), "Could not determine cluster name based on SingularityDeploy Metadata.")
+	assert.NoError(t, db.unpackDeployConfig(), "Could not convert data from a SingularityDeploy to a sous.Deployment.")
+	assert.NoError(t, db.determineManifestKind(), "Could not determine SingularityRequestType.")
+
+	pair := &sous.DeployablePair{
+		Prior: &sous.Deployable{
+			Deployment: &startDep,
+		},
+		Post: &sous.Deployable{
+			Deployment: &db.Target.Deployment,
+		},
+	}
+
+	diff, diffs := pair.Post.Deployment.Diff(pair.Prior.Deployment)
+	assert.False(t, diff)
+	assert.Empty(t, diffs)
+
+	assert.False(t, changesReq(pair), "Roundtrip of Deployment through Singularity DTOs reported as changing Request!")
+	assert.False(t, changesDep(pair), "Roundtrip of Deployment through Singularity DTOs reported as changing Deploy!")
+}
+
 func TestChangesReq(t *testing.T) {
 	baseDep := sous.Deployment{}
 
