@@ -155,6 +155,11 @@ func (dc *DeployConfig) Diff(o DeployConfig) (bool, []string) {
 	return len(diffs) == 0, diffs
 }
 
+// Equal returns true if s == o.
+func (s Startup) Equal(o Startup) bool {
+	return len(s.diff(o)) == 0
+}
+
 func (s Startup) diff(o Startup) []string {
 	diffs := []string{}
 	diff := func(format string, a ...interface{}) { diffs = append(diffs, fmt.Sprintf(format, a...)) }

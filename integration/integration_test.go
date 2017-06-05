@@ -439,7 +439,7 @@ func (suite *integrationSuite) TestResolve() {
 
 	// XXX Let's hope this is a temporary solution to a testing issue
 	// The problem is laid out in DCOPS-7625
-	for tries := 30; tries > 0; tries-- {
+	for tries := 100; tries > 0; tries-- {
 		client := singularity.NewRectiAgent(suite.nameCache)
 		deployer := singularity.NewDeployer(client)
 

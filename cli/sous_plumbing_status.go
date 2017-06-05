@@ -3,7 +3,6 @@ package cli
 import (
 	"context"
 	"flag"
-	"fmt"
 	"time"
 
 	"github.com/opentable/sous/config"
@@ -48,7 +47,7 @@ func (sps *SousPlumbingStatus) Execute(args []string) cmdr.Result {
 		return cmdr.EnsureErrorResult(err)
 	}
 	if state != sous.ResolveComplete {
-		return cmdr.EnsureErrorResult(fmt.Errorf("failed"))
+		return cmdr.UsageErrorf("failed (state is %s)", state)
 	}
 
 	return cmdr.Success()

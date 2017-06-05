@@ -186,38 +186,55 @@ func (r *deployer) RectifyModifies(
 }
 
 func (r *deployer) RectifySingleModification(pair *sous.DeployablePair) (err error) {
-	Log.Debug.Printf("Rectifying modified %q: \n  %# v \n    =>  \n  %# v", pair.ID(), pair.Prior.Deployment, pair.Post.Deployment)
+	different, diffs := pair.Post.Deployment.Diff(pair.Prior.Deployment)
+	if !different {
+		Log.Warn.Printf("Attempting to rectify empty diff for %q", pair.ID())
+	}
+
+	Log.Notice.Printf("Rectifying modified %q; Diffs: %s", pair.ID(), strings.Join(diffs, "\n"))
+	Log.Debug.Printf("Full prior and post deployments: %q: \n  %# v \n    =>  \n  %# v", pair.ID(), pair.Prior.Deployment, pair.Post.Deployment)
 	defer rectifyRecover(pair, "RectifySingleModification", &err)
 
 	data, ok := pair.ExecutorData.(*singularityTaskData)
 	if !ok {
-		return errors.Errorf("Modification record %#v doesn't contain Singularity compatible data: was %T\n\t%#v", pair.ID(), data, pair)
+		err := errors.Errorf("Modification record %#v doesn't contain Singularity compatible data: was %T\n\t%#v", pair.ID(), data, pair)
+		Log.Warn.Println(err)
+		return err
 	}
 	reqID := data.requestID
 
+	changesApplied := false
 	Log.Vomit.Printf("Operating on request %q", reqID)
-	if r.changesReq(pair) {
+	if changesReq(pair) {
 		Log.Debug.Printf("Updating Request...")
 		if err := r.Client.PostRequest(*pair.Post, reqID); err != nil {
+			Log.Warn.Println(err)
 			return err
 		}
+		changesApplied = true
 	} else {
-		Log.Vomit.Printf("Request %q does not require changes", reqID)
+		Log.Debug.Printf("Request %q does not require changes", reqID)
 	}
 
 	if changesDep(pair) {
 		Log.Debug.Printf("Deploying...")
 		if err := r.Client.Deploy(*pair.Post, reqID); err != nil {
+			Log.Warn.Println(err)
 			return err
 		}
+		changesApplied = true
 	} else {
-		Log.Vomit.Printf("Deploy on %q does not require change", reqID)
+		Log.Debug.Printf("Deploy at %q does not require changes", reqID)
+	}
+
+	if !changesApplied {
+		Log.Warn.Printf("No changes applied to Singularity for %q", pair.ID())
 	}
 
 	return nil
 }
 
-func (r deployer) changesReq(pair *sous.DeployablePair) bool {
+func changesReq(pair *sous.DeployablePair) bool {
 	return pair.Prior.NumInstances != pair.Post.NumInstances
 }
 
@@ -227,7 +244,8 @@ func changesDep(pair *sous.DeployablePair) bool {
 		!(pair.Prior.SourceID.Equal(pair.Post.SourceID) &&
 			pair.Prior.Resources.Equal(pair.Post.Resources) &&
 			pair.Prior.Env.Equal(pair.Post.Env) &&
-			pair.Prior.DeployConfig.Volumes.Equal(pair.Post.DeployConfig.Volumes))
+			pair.Prior.DeployConfig.Volumes.Equal(pair.Post.DeployConfig.Volumes) &&
+			pair.Prior.Startup.Equal(pair.Post.Startup))
 }
 
 func computeRequestID(d *sous.Deployable) (string, error) {
