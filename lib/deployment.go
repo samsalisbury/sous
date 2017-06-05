@@ -170,23 +170,32 @@ func (d *Deployment) Equal(o *Deployment) bool {
 
 // Diff returns the differences between this deployment and another.
 func (d *Deployment) Diff(o *Deployment) (bool, []string) {
+	return d.DiffWithNames("this", "other", o)
+}
+
+// DiffWithNames returns the difference between deployments
+// d and o, naming d nameThis and o nameOther.
+func (d *Deployment) DiffWithNames(nameThis, nameOther string, o *Deployment) (bool, []string) {
 	if d.ID() != o.ID() {
-		panic(fmt.Sprintf("attempt to compare deployment %q with %q", d.ID(), o.ID()))
+		panic(fmt.Sprintf("attempt to compare deployments with different IDs: %q and %q", d.ID(), o.ID()))
 	}
 	Log.Debug.Printf("Comparing two versions of deployment %q", d.ID())
 	var diffs []string
-	diff := func(format string, a ...interface{}) { diffs = append(diffs, fmt.Sprintf(format, a...)) }
+	diff := func(what string, this, other interface{}) {
+		diffs = append(diffs, fmt.Sprintf(
+			"%s; %s: %q; %s: %q", what, nameThis, d, nameOther, o))
+	}
 	if d.ClusterName != o.ClusterName {
-		diff("cluster name; this: %q; other: %q", d.ClusterName, o.ClusterName)
+		diff("cluster name", d.ClusterName, o.ClusterName)
 	}
 	if !d.SourceID.Equal(o.SourceID) {
-		diff("source id; this: %q; other: %q", d.SourceID, o.SourceID)
+		diff("source id", d.SourceID, o.SourceID)
 	}
 	if d.Flavor != o.Flavor {
-		diff("flavor; this: %q; other: %q", d.Flavor, o.Flavor)
+		diff("flavor", d.Flavor, o.Flavor)
 	}
 	if d.Kind != o.Kind {
-		diff("kind; this: %q; other: %q", d.Kind, o.Kind)
+		diff("kind", d.Kind, o.Kind)
 	}
 
 	// TODO: Make sure owners get written to Singularity, then uncomment next line.

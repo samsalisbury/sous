@@ -55,7 +55,10 @@ func TestGetDepSetWorks(t *testing.T) {
 								},
 							},
 						},
-						Resources: &dtos.Resources{},
+						Resources:                  &dtos.Resources{},
+						HealthcheckUri:             "/something/health",
+						HealthcheckTimeoutSeconds:  1,
+						DeployHealthTimeoutSeconds: 500,
 					},
 				}}, nil)
 
@@ -63,6 +66,13 @@ func TestGetDepSetWorks(t *testing.T) {
 			return cl
 		},
 	}
+	// Singularity deployment fields for reference.
+	//HealthcheckIntervalSeconds int64 `json:"healthcheckIntervalSeconds"`
+	//HealthcheckMaxRetries int32 `json:"healthcheckMaxRetries"`
+	//HealthcheckMaxTotalTimeoutSeconds int64 `json:"healthcheckMaxTotalTimeoutSeconds"`
+	//HealthcheckPortIndex int32 `json:"healthcheckPortIndex"`
+	//HealthcheckTimeoutSeconds int64 `json:"healthcheckTimeoutSeconds"`
+	//HealthcheckUri string `json:"healthcheckUri,omitempty"`
 
 	clusters := sous.Clusters{"test": {BaseURL: "http://test-singularity.org/"}}
 	res, err := dep.RunningDeployments(reg, clusters)

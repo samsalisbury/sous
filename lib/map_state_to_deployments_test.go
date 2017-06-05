@@ -27,6 +27,8 @@ var cluster2 = &Cluster{
 	},
 }
 
+var defaultTimeout = 600
+
 func makeTestDefs() Defs {
 	return Defs{
 		DockerRepo: "some.docker.repo",
@@ -77,6 +79,7 @@ func makeTestManifests() Manifests {
 						NumInstances: 2,
 						Startup: Startup{
 							CheckReadyURIPath: &omalleyReadyURI,
+							Timeout:           &defaultTimeout,
 						},
 					},
 				},
@@ -97,6 +100,9 @@ func makeTestManifests() Manifests {
 							"name":      "Duchess",
 						},
 						NumInstances: 3,
+						Startup: Startup{
+							Timeout: &defaultTimeout,
+						},
 					},
 				},
 			},
@@ -118,6 +124,9 @@ func makeTestManifests() Manifests {
 							"ENV_1": "ENV ONE FLAVORED",
 						},
 						NumInstances: 4,
+						Startup: Startup{
+							Timeout: &defaultTimeout,
+						},
 					},
 				},
 				"cluster-2": {
@@ -131,6 +140,9 @@ func makeTestManifests() Manifests {
 							"ENV_2": "ENV TWO FLAVORED",
 						},
 						NumInstances: 5,
+						Startup: Startup{
+							Timeout: &defaultTimeout,
+						},
 					},
 				},
 			},
@@ -166,6 +178,7 @@ var expectedDeployments = NewDeployments(
 			NumInstances: 2,
 			Startup: Startup{
 				CheckReadyURIPath: &omalleyReadyURI,
+				Timeout:           &defaultTimeout,
 			},
 		},
 	},
@@ -191,6 +204,9 @@ var expectedDeployments = NewDeployments(
 				"name":      "Duchess",
 			},
 			NumInstances: 3,
+			Startup: Startup{
+				Timeout: &defaultTimeout,
+			},
 		},
 	},
 	&Deployment{
@@ -210,6 +226,9 @@ var expectedDeployments = NewDeployments(
 				"CLUSTER_LONG_NAME": "Cluster One",
 			},
 			NumInstances: 4,
+			Startup: Startup{
+				Timeout: &defaultTimeout,
+			},
 		},
 	},
 	&Deployment{
@@ -229,6 +248,9 @@ var expectedDeployments = NewDeployments(
 				"CLUSTER_LONG_NAME": "Cluster Two",
 			},
 			NumInstances: 5,
+			Startup: Startup{
+				Timeout: &defaultTimeout,
+			},
 		},
 	},
 )

@@ -12,6 +12,10 @@ func (s *State) Deployments() (Deployments, error) {
 	return s.Manifests.Deployments(s.Defs)
 }
 
+// defaultTimeoutVal is the default Startup.Timeout for deployments that don't
+// set it. It should eventually be configurable in the GDM.
+const defaultTimeoutVal = 600
+
 // Deployments returns all deployments described by these Manifests.
 func (ms Manifests) Deployments(defs Defs) (Deployments, error) {
 	ds := NewDeployments()
@@ -186,9 +190,16 @@ func DeploymentsFromManifest(defs Defs, m *Manifest) (Deployments, error) {
 			return ds, errors.Errorf("cluster %q not described in defs.yaml", clusterName)
 		}
 		spec.clusterName = cluster.BaseURL
+
 		d, err := BuildDeployment(defs, m, clusterName, spec, inherit)
 		if err != nil {
 			return ds, err
+		}
+
+		if d.DeployConfig.Startup.Timeout == nil ||
+			*d.DeployConfig.Startup.Timeout == 0 {
+			defaultTimeout := defaultTimeoutVal
+			d.DeployConfig.Startup.Timeout = &defaultTimeout
 		}
 		ds.Add(d)
 	}
