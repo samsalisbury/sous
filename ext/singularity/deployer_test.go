@@ -1,10 +1,13 @@
 package singularity
 
 import (
+	"bytes"
+	"encoding/json"
 	"strings"
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/opentable/go-singularity/dtos"
 	sous "github.com/opentable/sous/lib"
 	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/assert"
@@ -226,6 +229,19 @@ func TestComputeDeployID(t *testing.T) {
 	}
 }
 
+func jsonRoundtrip(t *testing.T, start interface{}, end interface{}) {
+	buf := &bytes.Buffer{}
+	enc := json.NewEncoder(buf)
+	if err := enc.Encode(start); err != nil {
+		t.Fatalf("Couldn't serialize %v: %v", start, err)
+	}
+
+	dec := json.NewDecoder(buf)
+	if err := dec.Decode(end); err != nil {
+		t.Fatalf("Couldn't derialize %v: %v", buf.String(), err)
+	}
+}
+
 // XXX Not sure this is the right place for this test...
 func TestStableDeployment(t *testing.T) {
 	startDep := sous.Deployment{} // trying with the zero...
@@ -243,15 +259,22 @@ func TestStableDeployment(t *testing.T) {
 		},
 	}
 
-	_, req, err := singRequestFromDeployment(&startDep, reqID)
+	_, aReq, err := singRequestFromDeployment(&startDep, reqID)
 	assert.NoError(t, err)
-	assert.NotNil(t, req)
+	assert.NotNil(t, aReq)
 
-	depReq, err := buildDeployRequest(deployable, reqID, map[string]string{})
+	req := &dtos.SingularityRequest{}
+	jsonRoundtrip(t, aReq, req)
+
+	aDepReq, err := buildDeployRequest(deployable, reqID, map[string]string{})
 	assert.NoError(t, err)
+	assert.NotNil(t, aDepReq)
+
+	depReq := &dtos.SingularityDeployRequest{}
+	jsonRoundtrip(t, aDepReq, depReq)
 
 	db := &deploymentBuilder{
-		request: req,
+		request: sRequest(req),
 		deploy:  depReq.Deploy,
 	}
 
