@@ -8,6 +8,10 @@ with respect to its command line interface and HTTP interface.
 
 ## Unreleased
 
+## [0.5.12](//github.com/opentable/sous/compare/0.5.11...0.5.12)
+### Fixed
+- Issue where deployments constantly re-deployed due to spurious Startup.Timeout diff.
+
 ## [0.5.11](//github.com/opentable/sous/compare/0.5.10...0.5.11)
 ### Fixed
 - Singularity now accepts changes to Startup options in manifest.
