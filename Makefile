@@ -10,6 +10,11 @@ else
 GIT_TAG := $(shell $(TAG_TEST))
 endif
 
+# install-dev uses DESC and DATE to make a git described, timestamped dev build.
+DESC := $(shell git describe)
+DATE := $(shell date +%Y-%m-%dT%H-%M-%S)
+DEV_VERSION := "$(DESC)-devbuild-$(DATE)"
+
 # Sous releases are tagged with format v0.0.0. semv library
 # does not understand the v prefix, so this lops it off.
 SOUS_VERSION := $(shell echo $(GIT_TAG) | sed 's/^v//')
@@ -75,6 +80,18 @@ clean-running-containers:
 
 gitlog:
 	git log `git describe --abbrev=0`..HEAD
+
+install-dev:
+	brew uninstall opentable/public/sous || true
+	rm "$$(which sous)" || true
+	go install -ldflags "-X main.VersionString=$(DEV_VERSION)"
+	echo "Now run 'hash -r && sous version' to make sure you are using the dev version of sous."
+
+install-brew:
+	rm "$$(which sous)" || true
+	brew uninstall opentable/public/sous || true
+	brew install opentable/public/sous
+	echo "Now run 'hash -r && sous version' to make sure you are using the homebrew-installed sous."
 
 install-ggen:
 	cd bin/ggen && go install ./

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
 ## Unreleased
+### Added
+- For developers only, there are 2 new build targets: `install-dev` and
+  `install-brew`. These allow developers on a Mac to quickly switch between having
+  a personal dev build, or the latest release from homebrew installed locally.
 
 ## [0.5.12](//github.com/opentable/sous/compare/0.5.11...0.5.12)
 ### Fixed
