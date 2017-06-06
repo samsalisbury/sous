@@ -82,8 +82,16 @@ gitlog:
 	git log `git describe --abbrev=0`..HEAD
 
 install-dev:
+	brew uninstall opentable/public/sous || true
 	rm "$$(which sous)" || true
 	go install -ldflags "-X main.VersionString=$(DEV_VERSION)"
+	echo "Now run 'hash -r && sous version' to make sure you are using the dev version of sous."
+
+install-brew:
+	rm "$$(which sous)" || true
+	brew uninstall opentable/public/sous || true
+	brew install opentable/public/sous
+	echo "Now run 'hash -r && sous version' to make sure you are using the homebrew-installed sous."
 
 install-ggen:
 	cd bin/ggen && go install ./
