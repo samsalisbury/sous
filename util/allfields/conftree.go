@@ -6,6 +6,7 @@ type (
 		confirm()
 		selfConfirmed() bool
 		confirmed() bool
+		missed() []string
 	}
 
 	structNode struct {
@@ -42,6 +43,13 @@ func (c *confirmation) selfConfirmed() bool {
 	return c.isConfirmed
 }
 
+func (c *confirmation) missed() []string {
+	if c.selfConfirmed() {
+		return []string{}
+	}
+	return []string{""}
+}
+
 func newStructNode(name string) *structNode {
 	return &structNode{
 		kids: map[string]confNode{},
@@ -66,6 +74,19 @@ func (sn *structNode) child(named string) confNode {
 
 func (sn *structNode) selfConfirmed() bool {
 	return sn.confirmation.confirmed()
+}
+
+func (sn *structNode) missed() []string {
+	missed := []string{}
+	if !sn.selfConfirmed() {
+		missed = append(missed, "")
+	}
+	for n, c := range sn.kids {
+		for _, cm := range c.missed() {
+			missed = append(missed, "."+n+cm)
+		}
+	}
+	return missed
 }
 
 func (sn *structNode) confirmed() bool {

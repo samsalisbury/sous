@@ -10,5 +10,4 @@ func main() {
 	tree := allfields.ExtractTree(ast, "Deployment")
 	spew.Dump(tree)
 	spew.Dump(allfields.ConfirmTree(tree, ast, "Diff"))
-	spew.Dump(tree)
 }
