@@ -142,15 +142,20 @@ func (rep missedReport) Exempt(forgiven []string) []string {
 	realBad := []string{}
 	for _, miss := range rep {
 		keep := true
-		for _, forgive := range forgiven {
+		for n, forgive := range forgiven {
 			if miss == forgive {
 				keep = false
+				forgiven[n] = forgiven[len(forgiven)-1]
+				forgiven = forgiven[:len(forgiven)-1]
 				break
 			}
 		}
 		if keep {
 			realBad = append(realBad, miss)
 		}
+	}
+	if len(forgiven) > 0 {
+		panic(fmt.Errorf("extra strings passed to Exempt: %v", forgiven))
 	}
 	return realBad
 }

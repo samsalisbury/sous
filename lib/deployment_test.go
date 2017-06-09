@@ -25,7 +25,6 @@ func TestDeploymentDiffAnalysis(t *testing.T) {
 		// is is compared directly - Repo and Dir are compared implicitly thereby
 		"Deployment.SourceID.Location.Repo",
 		"Deployment.SourceID.Location.Dir",
-
 		/*
 			"Deployment.Owners",
 			"Deployment.DeployConfig.Args",
