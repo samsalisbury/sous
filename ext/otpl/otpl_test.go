@@ -104,7 +104,6 @@ func TestManifestParser_ParseManifest(t *testing.T) {
 							"ports":  "1",
 						},
 						Metadata: sous.Metadata(nil),
-						Args:     []string(nil),
 						Env: sous.Env{
 							"SOME_VAR": "22",
 						},

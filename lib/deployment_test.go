@@ -48,7 +48,6 @@ func TestDeploymentClone(t *testing.T) {
 	original := &Deployment{
 		DeployConfig: DeployConfig{
 			Resources:    Resources{},
-			Args:         []string{},
 			Env:          Env{},
 			NumInstances: 3,
 			Volumes:      vols,
@@ -100,7 +99,6 @@ func TestBuildDeployment(t *testing.T) {
 	sp := DeploySpec{
 		DeployConfig: DeployConfig{
 			Resources:    Resources{},
-			Args:         []string{},
 			Env:          Env{},
 			NumInstances: 3,
 			Volumes: Volumes{
