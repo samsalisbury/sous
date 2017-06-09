@@ -3,6 +3,7 @@ package allfields
 type (
 	confNode interface {
 		name() string
+		clone() confNode
 		confirm()
 		selfConfirmed() bool
 		confirmed() bool
@@ -11,8 +12,7 @@ type (
 
 	structNode struct {
 		*confirmation
-		kids  map[string]confNode
-		needs []fieldNeed
+		kids map[string]confNode
 	}
 
 	confirmation struct {
@@ -29,6 +29,10 @@ type (
 
 func (c *confirmation) name() string {
 	return c.typeName
+}
+
+func (c *confirmation) clone() confNode {
+	return &confirmation{typeName: c.typeName}
 }
 
 func (c *confirmation) confirm() {
@@ -50,14 +54,24 @@ func (c *confirmation) missed() []string {
 	return []string{""}
 }
 
+func newConfirmation(name string) *confirmation {
+	return &confirmation{typeName: name}
+}
+
 func newStructNode(name string) *structNode {
 	return &structNode{
-		kids: map[string]confNode{},
-		confirmation: &confirmation{
-			typeName: name,
-		},
-		needs: []fieldNeed{},
+		kids:         map[string]confNode{},
+		confirmation: newConfirmation(name),
 	}
+}
+
+func (sn *structNode) clone() confNode {
+	o := newStructNode(sn.name())
+	for n, v := range sn.kids {
+		o.kids[n] = v.clone()
+	}
+
+	return o
 }
 
 func (sn *structNode) children() []confNode {
