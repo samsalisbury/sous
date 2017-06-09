@@ -189,18 +189,15 @@ func (d *Deployment) Diff(o *Deployment) (bool, []string) {
 		diff("kind; this: %q; other: %q", d.Kind, o.Kind)
 	}
 
-	// TODO: Make sure owners get written to Singularity, then uncomment next line.
-	/*
-		if len(d.Owners) != len(o.Owners) {
-			//diff("number of owners; this: %+v; other: %+v", len(d.Owners), len(o.Owners))
-		}
+	if len(d.Owners) != len(o.Owners) {
+		diff("number of owners; this: %+v; other: %+v", len(d.Owners), len(o.Owners))
+	}
 
-		for owner := range d.Owners {
-			if _, has := o.Owners[owner]; !has {
-				//diff("owner %s", owner)
-			}
+	for owner := range d.Owners {
+		if _, has := o.Owners[owner]; !has {
+			diff("owner %s", owner)
 		}
-	*/
+	}
 	_, configDiffs := d.DeployConfig.Diff(o.DeployConfig)
 	diffs = append(diffs, configDiffs...)
 	return len(diffs) != 0, diffs
