@@ -110,9 +110,11 @@ type (
 		sel *selectorVisitor
 		fun *ast.FuncLit
 	}
+
+	missedReport []string
 )
 
-func ConfirmTree(cn confNode, pkgs packageMap, funcName string) []string {
+func ConfirmTree(cn confNode, pkgs packageMap, funcName string) missedReport {
 	for _, pkg := range pkgs {
 		ff := &functionFinder{
 			target:    funcName,
@@ -134,6 +136,23 @@ func ConfirmTree(cn confNode, pkgs packageMap, funcName string) []string {
 		missed = append(missed, tName+f)
 	}
 	return missed
+}
+
+func (rep missedReport) Exempt(forgiven []string) []string {
+	realBad := []string{}
+	for _, miss := range rep {
+		keep := true
+		for _, forgive := range forgiven {
+			if miss == forgive {
+				keep = false
+				break
+			}
+		}
+		if keep {
+			realBad = append(realBad, miss)
+		}
+	}
+	return realBad
 }
 
 func (pr *parentRef) tree() confNode    { return pr._tree }
