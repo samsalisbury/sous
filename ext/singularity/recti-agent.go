@@ -92,14 +92,13 @@ func buildDeployRequest(d sous.Deployable, reqID string, metadata map[string]str
 	r := d.Deployment.DeployConfig.Resources
 	e := d.Deployment.DeployConfig.Env
 	vols := d.Deployment.DeployConfig.Volumes
-	clusterName := d.Deployment.ClusterName
-	flavor := d.Deployment.Flavor
+
+	metadata[sous.ClusterNameLabel] = d.Deployment.ClusterName
+	metadata[sous.FlavorLabel] = d.Deployment.Flavor
+
 	checkReadyPath := d.Deployment.DeployConfig.Startup.CheckReadyURIPath
 	checkReadyPathTimeout := d.Deployment.DeployConfig.Startup.CheckReadyURITimeout
 	checkReadyTimeout := d.Deployment.DeployConfig.Startup.Timeout
-
-	metadata[sous.ClusterNameLabel] = clusterName
-	metadata[sous.FlavorLabel] = flavor
 
 	dockerInfo, err := swaggering.LoadMap(&dtos.SingularityDockerInfo{}, dtoMap{
 		"Image":   dockerImage,
@@ -141,13 +140,13 @@ func buildDeployRequest(d sous.Deployable, reqID string, metadata map[string]str
 	}
 
 	dep, err := swaggering.LoadMap(&dtos.SingularityDeploy{}, dtoMap{
-		"Id":                         depID,
-		"RequestId":                  reqID,
-		"Resources":                  res,
-		"ContainerInfo":              ci,
-		"Env":                        map[string]string(e),
-		"Metadata":                   metadata,
-		"DeployHealthTimeoutSeconds": int64(sous.SingularityDeployTimeout),
+		"Id":            depID,
+		"RequestId":     reqID,
+		"Resources":     res,
+		"ContainerInfo": ci,
+		"Env":           map[string]string(e),
+		"Metadata":      metadata,
+		//"DeployHealthTimeoutSeconds": int64(sous.SingularityDeployTimeout),
 	})
 	if err != nil {
 		return nil, err
@@ -177,6 +176,7 @@ func buildDeployRequest(d sous.Deployable, reqID string, metadata map[string]str
 	Log.Debug.Printf("Deploy: %+ v", dep)
 	Log.Debug.Printf("  Container: %+ v", ci)
 	Log.Debug.Printf("  Docker: %+ v", dockerInfo)
+
 	depReq, err = swaggering.LoadMap(&dtos.SingularityDeployRequest{}, dtoMap{"Deploy": dep})
 	if err != nil {
 		return nil, err
@@ -184,16 +184,15 @@ func buildDeployRequest(d sous.Deployable, reqID string, metadata map[string]str
 	return depReq.(*dtos.SingularityDeployRequest), nil
 }
 
-// PostRequest sends requests to Singularity to create a new Request
-func (ra *RectiAgent) PostRequest(d sous.Deployable, reqID string) error {
-	cluster := d.Deployment.Cluster.BaseURL
-	instanceCount := d.Deployment.DeployConfig.NumInstances
-	kind := d.Deployment.Kind
-	owners := d.Deployment.Owners
+func singRequestFromDeployment(dep *sous.Deployment, reqID string) (string, *dtos.SingularityRequest, error) {
+	cluster := dep.Cluster.BaseURL
+	instanceCount := dep.DeployConfig.NumInstances
+	kind := dep.Kind
+	owners := dep.Owners
 	Log.Debug.Printf("Creating application %s %s %d", cluster, reqID, instanceCount)
 	reqType, err := determineRequestType(kind)
 	if err != nil {
-		return err
+		return "", nil, err
 	}
 	req, err := swaggering.LoadMap(&dtos.SingularityRequest{}, dtoMap{
 		"Id":          reqID,
@@ -203,11 +202,21 @@ func (ra *RectiAgent) PostRequest(d sous.Deployable, reqID string) error {
 	})
 
 	if err != nil {
+		return "", nil, err
+	}
+
+	return cluster, req.(*dtos.SingularityRequest), nil
+}
+
+// PostRequest sends requests to Singularity to create a new Request
+func (ra *RectiAgent) PostRequest(d sous.Deployable, reqID string) error {
+	cluster, req, err := singRequestFromDeployment(d.Deployment, reqID)
+	if err != nil {
 		return err
 	}
 
 	Log.Debug.Printf("Create Request: %+ v", req)
-	_, err = ra.singularityClient(cluster).PostRequest(req.(*dtos.SingularityRequest))
+	_, err = ra.singularityClient(cluster).PostRequest(req)
 	return err
 }
 

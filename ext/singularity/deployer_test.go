@@ -1,13 +1,17 @@
 package singularity
 
 import (
+	"bytes"
+	"encoding/json"
 	"strings"
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/opentable/go-singularity/dtos"
 	sous "github.com/opentable/sous/lib"
 	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var requestIDTests = []struct{ Repo, Dir, Flavor, Cluster, String string }{
@@ -224,6 +228,82 @@ func TestComputeDeployID(t *testing.T) {
 			t.Errorf("%s: got length %d; want %d", inputVersion, actualLen, expectedLen)
 		}
 	}
+}
+
+func jsonRoundtrip(t *testing.T, start interface{}, end interface{}) {
+	buf := &bytes.Buffer{}
+	enc := json.NewEncoder(buf)
+	if err := enc.Encode(start); err != nil {
+		t.Fatalf("Couldn't serialize %v: %v", start, err)
+	}
+
+	dec := json.NewDecoder(buf)
+	if err := dec.Decode(end); err != nil {
+		t.Fatalf("Couldn't derialize %v: %v", buf.String(), err)
+	}
+}
+
+// XXX Not sure this is the right place for this test...
+func TestStableDeployment(t *testing.T) {
+	startDep := sous.Deployment{} // trying with the zero...
+	reqID := "dummy-request"
+	dockerName := "dummy-docker-image"
+	startDep.Cluster = &sous.Cluster{
+		BaseURL: "http://dummy.cluster.example.com/",
+	}
+	startDep.Kind = sous.ManifestKindService
+	startDep.DeployConfig.Resources = sous.Resources{"cpus": "0.1", "memory": "100", "ports": "1"}
+
+	// This happens in DiskStateManager on Read.
+	flaws := startDep.Validate()
+	require.Empty(t, flaws)
+
+	deployable := sous.Deployable{
+		Deployment: &startDep,
+		BuildArtifact: &sous.BuildArtifact{
+			Name: dockerName,
+		},
+	}
+
+	_, aReq, err := singRequestFromDeployment(&startDep, reqID)
+	assert.NoError(t, err)
+	assert.NotNil(t, aReq)
+
+	req := &dtos.SingularityRequest{}
+	jsonRoundtrip(t, aReq, req)
+
+	aDepReq, err := buildDeployRequest(deployable, reqID, map[string]string{})
+	assert.NoError(t, err)
+	assert.NotNil(t, aDepReq)
+
+	depReq := &dtos.SingularityDeployRequest{}
+	jsonRoundtrip(t, aDepReq, depReq)
+
+	db := &deploymentBuilder{
+		request: sRequest(req),
+		deploy:  depReq.Deploy,
+	}
+
+	assert.NoError(t, db.extractArtifactName(), "Could not extract ArtifactName (Docker image name) from SingularityDeploy.")
+	assert.NoError(t, db.assignClusterName(), "Could not determine cluster name based on SingularityDeploy Metadata.")
+	assert.NoError(t, db.unpackDeployConfig(), "Could not convert data from a SingularityDeploy to a sous.Deployment.")
+	assert.NoError(t, db.determineManifestKind(), "Could not determine SingularityRequestType.")
+
+	pair := &sous.DeployablePair{
+		Prior: &sous.Deployable{
+			Deployment: &startDep,
+		},
+		Post: &sous.Deployable{
+			Deployment: &db.Target.Deployment,
+		},
+	}
+
+	diff, diffs := pair.Prior.Deployment.Diff(pair.Post.Deployment)
+	assert.False(t, diff)
+	assert.Empty(t, diffs)
+
+	assert.False(t, changesReq(pair), "Roundtrip of Deployment through Singularity DTOs reported as changing Request!")
+	assert.False(t, changesDep(pair), "Roundtrip of Deployment through Singularity DTOs reported as changing Deploy!")
 }
 
 func TestChangesReq(t *testing.T) {

@@ -10,7 +10,13 @@ with respect to its command line interface and HTTP interface.
 
 ### Added
 - Static analysis of important core data model calculations to ensure that all the components of those structures are at least "touched" during diff calculation.
+- For developers only, there are 2 new build targets: `install-dev` and
+  `install-brew`. These allow developers on a Mac to quickly switch between having
+  a personal dev build, or the latest release from homebrew installed locally.
 
+## [0.5.12](//github.com/opentable/sous/compare/0.5.11...0.5.12)
+### Fixed
+- Issue where deployments constantly re-deployed due to spurious Startup.Timeout diff.
 
 ## [0.5.11](//github.com/opentable/sous/compare/0.5.10...0.5.11)
 ### Fixed
