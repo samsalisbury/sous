@@ -235,11 +235,13 @@ func (db *deploymentBuilder) retrieveLiveDeploy() error {
 
 func (db *deploymentBuilder) extractDeployFromDeployHistory() error {
 	if db.history == nil {
-		return malformedResponse{"Singularity request has no deploy history"}
+		return malformedResponse{fmt.Sprintf(
+			"Singularity request %q has no deploy history", db.req.SourceURL)}
 	}
 	db.deploy = db.history.Deploy
 	if db.deploy == nil {
-		return malformedResponse{"Singularity deploy history included no deploy"}
+		return malformedResponse{fmt.Sprintf(
+			"Singularity deploy history for %q included no deploy", db.req.SourceURL)}
 	}
 
 	return nil
