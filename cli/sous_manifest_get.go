@@ -13,12 +13,12 @@ import (
 )
 
 type SousManifestGet struct {
-	config.DeployFilterFlags
-	graph.TargetManifestID
-	*sous.State
-	*sous.LogSet
-	graph.OutWriter
-	*sous.ResolveFilter
+	DeployFilterFlags config.DeployFilterFlags
+	TargetManifestID  graph.TargetManifestID
+	State             *sous.State
+	LogSet            *sous.LogSet
+	OutWriter         graph.OutWriter
+	ResolveFilter     *sous.ResolveFilter
 }
 
 func init() { ManifestSubcommands["get"] = &SousManifestGet{} }
@@ -42,7 +42,7 @@ func (smg *SousManifestGet) Execute(args []string) cmdr.Result {
 	if !present {
 		return EnsureErrorResult(errors.Errorf("No manifest matched by %v yet. See `sous init`", smg.ResolveFilter))
 	}
-	smg.Vomit.Print(spew.Sdump(mani))
+	smg.LogSet.Vomit.Print(spew.Sdump(mani))
 
 	yml, err := yaml.Marshal(mani)
 	if err != nil {
