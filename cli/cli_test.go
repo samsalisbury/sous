@@ -447,3 +447,18 @@ func TestInvokeBuildWithRepoSelector(t *testing.T) {
 	assert.NotNil(build.Registrar)
 	assert.Equal(build.DeployFilterFlags.Repo, `github.com/opentable/sous`)
 }
+
+func TestSousDeployments(t *testing.T) {
+	assert := assert.New(t)
+
+	_, exe, _, _ := prepareCommand(t, []string{`sous`, `deployments`, `-repo`, `github.com/opentable/sous`})
+	assert.Len(exe.Args, 0)
+
+	c := exe.Cmd.(*SousDeployments)
+
+	assert.NotNil(c.State)
+	assert.NotNil(c.GDM)
+	assert.NotNil(c.Deployer)
+	assert.NotNil(c.Registry)
+	assert.Equal(c.TargetManifestID.Source.Repo, `github.com/opentable/sous`)
+}
