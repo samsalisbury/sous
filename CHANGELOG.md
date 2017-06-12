@@ -6,8 +6,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
-## Unreleased
+## [Unreleased](//github.com/opentable/sous/compare/0.5.11...HEAD)
+
 ### Added
+- Static analysis of important core data model calculations to ensure that all the components of those structures are at least "touched" during diff calculation.
 - For developers only, there are 2 new build targets: `install-dev` and
   `install-brew`. These allow developers on a Mac to quickly switch between having
   a personal dev build, or the latest release from homebrew installed locally.

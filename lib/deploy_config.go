@@ -21,8 +21,10 @@ type (
 		// of this deployment. It will be checked for conflict with the
 		// definitions found in State.Defs.EnvVars, and if not in conflict
 		// assumes the greatest priority.
-		Args []string `yaml:",omitempty" validate:"values=nonempty"`
-		Env  `yaml:",omitempty" validate:"keys=nonempty,values=nonempty"`
+		Env `yaml:",omitempty" validate:"keys=nonempty,values=nonempty"`
+
+		// No manifest uses this, it doesn't get sent to Singularity. If we want it we should bring it back.
+		//Args []string `yaml:",omitempty" validate:"values=nonempty"`
 		// NumInstances is a guide to the number of instances that should be
 		// deployed in this cluster, note that the actual number may differ due
 		// to decisions made by Sous. If set to zero, Sous will decide how many
@@ -206,8 +208,6 @@ func (s Startup) diff(o Startup) []string {
 // Clone returns a deep copy of this DeployConfig.
 func (dc DeployConfig) Clone() (c DeployConfig) {
 	c.NumInstances = dc.NumInstances
-	c.Args = make([]string, len(dc.Args))
-	copy(dc.Args, c.Args)
 	c.Env = make(Env)
 	for k, v := range dc.Env {
 		c.Env[k] = v
@@ -305,12 +305,6 @@ func flattenDeployConfigs(dcs []DeployConfig) DeployConfig {
 	for _, c := range dcs {
 		if len(c.Volumes) != 0 {
 			dc.Volumes = c.Volumes
-			break
-		}
-	}
-	for _, c := range dcs {
-		if len(c.Args) != 0 {
-			dc.Args = c.Args
 			break
 		}
 	}

@@ -5,9 +5,39 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/opentable/sous/util/allfields"
 	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestDeploymentDiffAnalysis(t *testing.T) {
+	exemptions := []string{
+		// we depend on ClusterName to uniquely identify clusters,
+		// so we don't compare the cluster itself
+		"Deployment.Cluster",
+		"Deployment.Cluster.Name",
+		"Deployment.Cluster.Kind",
+		"Deployment.Cluster.BaseURL",
+		"Deployment.Cluster.Env",
+		"Deployment.Cluster.AllowedAdvisories",
+
+		// SourceID.Location is incorporated into the value of ID(),
+		// is is compared directly - Repo and Dir are compared implicitly thereby
+		"Deployment.SourceID.Location.Repo",
+		"Deployment.SourceID.Location.Dir",
+		/*
+			"Deployment.Owners",
+			"Deployment.DeployConfig.Args",
+			"Deployment.Args",
+		*/
+	}
+
+	ast := allfields.ParseDir(".")
+	tree := allfields.ExtractTree(ast, "Deployment")
+	untouched := allfields.ConfirmTree(tree, ast, "Diff").Exempt(exemptions)
+
+	assert.Empty(t, untouched)
+}
 
 func TestDeploymentClone(t *testing.T) {
 	vers := semv.MustParse("1.2.3-test+thing")
@@ -18,7 +48,6 @@ func TestDeploymentClone(t *testing.T) {
 	original := &Deployment{
 		DeployConfig: DeployConfig{
 			Resources:    Resources{},
-			Args:         []string{},
 			Env:          Env{},
 			NumInstances: 3,
 			Volumes:      vols,
@@ -70,7 +99,6 @@ func TestBuildDeployment(t *testing.T) {
 	sp := DeploySpec{
 		DeployConfig: DeployConfig{
 			Resources:    Resources{},
-			Args:         []string{},
 			Env:          Env{},
 			NumInstances: 3,
 			Volumes: Volumes{

@@ -79,7 +79,6 @@ func (suite *integrationSuite) manifest(nc *docker.NameCache, drepo, containerDi
 						Timeout:              &checkReadyTimeout,
 					},
 					Resources:    sous.Resources{"cpus": "0.1", "memory": "100", "ports": "1"},
-					Args:         []string{},
 					Env:          sous.Env{"repo": drepo}, //map[s]s
 					NumInstances: 1,
 					Volumes:      sous.Volumes{{"/tmp", "/tmp", sous.VolumeMode("RO")}},
