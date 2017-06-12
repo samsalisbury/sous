@@ -86,8 +86,8 @@ func (sb *SousDeployments) Execute(args []string) cmdr.Result {
 		}
 		results = append(results, p)
 	}
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 1, ' ', tabwriter.Debug)
-	fmt.Fprintf(w, "%s:%s\t%s\t%s\n", "Cluster", "Flavor", "Version", "Problems?")
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 1, ' ', 0)
+	fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", "Cluster", "Flavor", "Version", "Problems?")
 	for _, p := range results {
 		fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", p.Cluster, p.Flavor, p.Version, p.Problems)
 	}
