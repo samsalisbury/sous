@@ -32,30 +32,30 @@ Deployments:
     # To deploy successfully, the version should be built and available in
     # a known-to-Sous docker repo
     Version: "1.2.3"
-		# Resources represents the resources each instance of this software
-		# will be given by the execution environment.
+    # Resources represents the resources each instance of this software
+    # will be given by the execution environment.
     # It is a map whose keys are determined by Sous's configuration,
     # but generally conform to this pattern:
-		Resources:
+    Resources:
       cpus: "0.1" #in units of 'a whole processor'
       memory: "100" #in MB - triggers an OS-level OOM if exceeded.
       ports: "1" #How many network ports to allocate.
-		# Metadata stores values about deployments for outside applications to use
+    # Metadata stores values about deployments for outside applications to use
     # Appropriate values are beyond the scope of this guide.
-		Metadata: {}
-		# Env is a list of environment variables to set for each instance of
-		# of this deployment.
+    Metadata: {}
+    # Env is a list of environment variables to set for each instance of
+    # of this deployment.
     Env:
       IS_CI: yes
-		# NumInstances is a guide to the number of instances that should be
-		# deployed in this cluster
-		NumInstances: 2
-		# Volumes lists the volume mappings for this deploy
+    # NumInstances is a guide to the number of instances that should be
+    # deployed in this cluster
+    NumInstances: 2
+    # Volumes lists the volume mappings for this deploy
     # Generally speaking, mapping volumes breaks the stateless principle of
     # containerized microservices and they are therefore discouraged.
-		Volumes: []
-		# Startup contains healthcheck options for this deploy.
-		Startup:
+    Volumes: []
+    # Startup contains healthcheck options for this deploy.
+    Startup:
       # The path to issue healthcheck polling against.
       CheckReadyURIPath: "/health"
       # The per-check timeout.
