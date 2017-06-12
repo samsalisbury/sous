@@ -249,6 +249,7 @@ func baseDeployment() *sous.Deployment {
 	startDep.Cluster = &sous.Cluster{
 		BaseURL: "http://dummy.cluster.example.com/",
 	}
+	startDep.Env = sous.Env{"A": "A"}
 	startDep.Kind = sous.ManifestKindService
 	startDep.DeployConfig.Resources = sous.Resources{"cpus": "0.1", "memory": "100", "ports": "1"}
 	return &startDep
@@ -315,6 +316,20 @@ func TestStableDeployment(t *testing.T) {
 
 	assert.False(t, changesReq(pair), "Roundtrip of Deployment through Singularity DTOs reported as changing Request!")
 	assert.False(t, changesDep(pair), "Roundtrip of Deployment through Singularity DTOs reported as changing Deploy!")
+}
+
+func TestEnvChangedDeployment(t *testing.T) {
+	startDep := baseDeployment()
+	startDep.Env["TEST"] = "starting"
+	pair := matchedPair(t, startDep)
+	pair.Post.Env["TEST"] = "ending"
+
+	diff, diffs := pair.Prior.Deployment.Diff(pair.Post.Deployment)
+	assert.True(t, diff)
+	assert.NotEmpty(t, diffs)
+
+	assert.False(t, changesReq(pair), "Roundtrip of Deployment through Singularity DTOs reported as changing Request!")
+	assert.True(t, changesDep(pair), "Deployment environment change reported as not changing Deploy!")
 }
 
 func TestChangesReq(t *testing.T) {
