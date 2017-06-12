@@ -15,6 +15,11 @@ with respect to its command line interface and HTTP interface.
   `install-brew`. These allow developers on a Mac to quickly switch between having
   a personal dev build, or the latest release from homebrew installed locally.
 
+### Fixed
+- 'sous manifest get' wrongly returned YAML with all lower-cased field names.
+  Now it correctly returns YAML with upper camel-cased field names.
+  Note that this does not apply to map keys, only struct fields.
+
 ## [0.5.12](//github.com/opentable/sous/compare/0.5.11...0.5.12)
 ### Fixed
 - Issue where deployments constantly re-deployed due to spurious Startup.Timeout diff.
