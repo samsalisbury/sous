@@ -8,6 +8,9 @@ with respect to its command line interface and HTTP interface.
 
 ## Unreleased
 ### Added
+- New command 'sous deployments' lists all deployments of a single
+  repo globally. It also reports if the intended deployed version
+  is not the same as the currently running version in each cluster.
 - For developers only, there are 2 new build targets: `install-dev` and
   `install-brew`. These allow developers on a Mac to quickly switch between having
   a personal dev build, or the latest release from homebrew installed locally.
