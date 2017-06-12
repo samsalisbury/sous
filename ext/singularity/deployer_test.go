@@ -243,29 +243,32 @@ func jsonRoundtrip(t *testing.T, start interface{}, end interface{}) {
 	}
 }
 
-// XXX Not sure this is the right place for this test...
-func TestStableDeployment(t *testing.T) {
+// a zero Deployment doesn't quite work for us.
+func baseDeployment() *sous.Deployment {
 	startDep := sous.Deployment{} // trying with the zero...
-	reqID := "dummy-request"
-	dockerName := "dummy-docker-image"
 	startDep.Cluster = &sous.Cluster{
 		BaseURL: "http://dummy.cluster.example.com/",
 	}
 	startDep.Kind = sous.ManifestKindService
 	startDep.DeployConfig.Resources = sous.Resources{"cpus": "0.1", "memory": "100", "ports": "1"}
+	return &startDep
+}
 
+func matchedPair(t *testing.T, startDep *sous.Deployment) *sous.DeployablePair {
+	reqID := "dummy-request"
+	dockerName := "dummy-docker-image"
 	// This happens in DiskStateManager on Read.
 	flaws := startDep.Validate()
 	require.Empty(t, flaws)
 
 	deployable := sous.Deployable{
-		Deployment: &startDep,
+		Deployment: startDep,
 		BuildArtifact: &sous.BuildArtifact{
 			Name: dockerName,
 		},
 	}
 
-	_, aReq, err := singRequestFromDeployment(&startDep, reqID)
+	_, aReq, err := singRequestFromDeployment(startDep, reqID)
 	assert.NoError(t, err)
 	assert.NotNil(t, aReq)
 
@@ -289,14 +292,22 @@ func TestStableDeployment(t *testing.T) {
 	assert.NoError(t, db.unpackDeployConfig(), "Could not convert data from a SingularityDeploy to a sous.Deployment.")
 	assert.NoError(t, db.determineManifestKind(), "Could not determine SingularityRequestType.")
 
-	pair := &sous.DeployablePair{
+	post := &db.Target.Deployment
+
+	return &sous.DeployablePair{
 		Prior: &sous.Deployable{
-			Deployment: &startDep,
+			Deployment: startDep,
 		},
 		Post: &sous.Deployable{
-			Deployment: &db.Target.Deployment,
+			Deployment: post,
 		},
 	}
+}
+
+// XXX Not sure this is the right place for this test...
+func TestStableDeployment(t *testing.T) {
+	startDep := baseDeployment()
+	pair := matchedPair(t, startDep)
 
 	diff, diffs := pair.Prior.Deployment.Diff(pair.Post.Deployment)
 	assert.False(t, diff)
