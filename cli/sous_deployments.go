@@ -19,6 +19,7 @@ type SousDeployments struct {
 	Registry          sous.Registry
 	State             *sous.State
 	DeployFilterFlags config.DeployFilterFlags
+	TargetManifestID  graph.TargetManifestID
 	flags             struct {
 		singularity string
 		registry    string
@@ -57,10 +58,10 @@ func (sb *SousDeployments) Execute(args []string) cmdr.Result {
 	}
 
 	intended = intended.Filter(func(d *sous.Deployment) bool {
-		return d.SourceID.Location.Repo == sb.DeployFilterFlags.Repo
+		return d.SourceID.Location.Repo == sb.TargetManifestID.Source.Repo
 	})
 	actual = actual.Filter(func(d *sous.DeployState) bool {
-		return d.SourceID.Location.Repo == sb.DeployFilterFlags.Repo
+		return d.SourceID.Location.Repo == sb.TargetManifestID.Source.Repo
 	})
 
 	type printable struct {
