@@ -94,7 +94,7 @@ func (pmh *PUTManifestHandler) Exchange() (interface{}, int) {
 		return "Invalid manifest", http.StatusBadRequest
 	}
 	pmh.State.Manifests.Set(mid, m)
-	if err := pmh.StateWriter.WriteState(pmh.State, sous.User(pmh.User)); err != nil {
+	if err := pmh.StateWriter.WriteState(pmh.State, sous.StateWriteContext(pmh.User)); err != nil {
 		return errors.Wrapf(err, "state recording collision - retry"), http.StatusConflict
 	}
 	return m, http.StatusOK

@@ -21,7 +21,7 @@ func TestWriteState(t *testing.T) {
 
 	dsm := NewDiskStateManager("testdata/out")
 
-	if err := dsm.WriteState(s, sous.User{}); err != nil {
+	if err := dsm.WriteState(s, sous.StateWriteContext{}); err != nil {
 		t.Fatal(err)
 	}
 

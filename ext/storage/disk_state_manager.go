@@ -93,7 +93,7 @@ func (dsm *DiskStateManager) ReadState() (*sous.State, error) {
 }
 
 // WriteState records the entire intended state of the world to a dir.
-func (dsm *DiskStateManager) WriteState(s *sous.State, u sous.User) error {
+func (dsm *DiskStateManager) WriteState(s *sous.State, c sous.StateWriteContext) error {
 	if e := repairState(s); e != nil {
 		return e
 	}

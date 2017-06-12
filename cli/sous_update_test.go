@@ -158,7 +158,8 @@ func TestUpdateRetryLoop(t *testing.T) {
 	dsm.State.Manifests.Add(mani)
 	dsm.State.Defs.Clusters = sous.Clusters{"blah": {}}
 	user := sous.User{Name: "Judson the Unlucky", Email: "unlucky@opentable.com"}
-	deps, err := updateRetryLoop(dsm, sourceID, depID, user)
+	ctx := sous.StateWriteContext{User: user}
+	deps, err := updateRetryLoop(dsm, sourceID, depID, ctx)
 
 	assert.NoError(t, err)
 	assert.Equal(t, 1, deps.Len())
@@ -170,14 +171,14 @@ func TestUpdateRetryLoop(t *testing.T) {
 
 type DummyStateManager struct{}
 
-func (dsm *DummyStateManager) WriteState(s *sous.State, u sous.User) error { return nil }
-func (dsm *DummyStateManager) ReadState() (*sous.State, error)             { return nil, nil }
+func (dsm *DummyStateManager) WriteState(*sous.State, sous.StateWriteContext) error { return nil }
+func (dsm *DummyStateManager) ReadState() (*sous.State, error)                      { return nil, nil }
 
 //XXX should actually drive interesting behavior
 func TestSousUpdate_Execute(t *testing.T) {
 	dsm := &DummyStateManager{}
 	su := SousUpdate{
-		StateManager:  &graph.StateManager{dsm},
+		StateManager:  &graph.StateManager{StateManager: dsm},
 		Manifest:      graph.TargetManifest{Manifest: &sous.Manifest{}},
 		ResolveFilter: &graph.RefinedResolveFilter{},
 	}

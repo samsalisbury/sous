@@ -12,7 +12,7 @@ type (
 	HTTPStateManager struct {
 		cached *State
 		HTTPClient
-		User User
+		Context StateWriteContext
 	}
 
 	gdmWrapper struct {
@@ -80,8 +80,8 @@ func (hsm *HTTPStateManager) ReadState() (*State, error) {
 }
 
 // WriteState implements StateWriter for HTTPStateManager.
-func (hsm *HTTPStateManager) WriteState(s *State, u User) error {
-	hsm.User = u
+func (hsm *HTTPStateManager) WriteState(s *State, c StateWriteContext) error {
+	hsm.Context = c
 	flaws := s.Validate()
 	if len(flaws) > 0 {
 		return errors.Errorf("Invalid update to state: %v", flaws)
@@ -111,12 +111,12 @@ func (hsm *HTTPStateManager) WriteState(s *State, u User) error {
 
 func (hsm *HTTPStateManager) getDefs() (Defs, error) {
 	ds := Defs{}
-	return ds, errors.Wrapf(hsm.Retrieve("./defs", nil, &ds, hsm.User), "getting defs")
+	return ds, errors.Wrapf(hsm.Retrieve("./defs", nil, &ds, hsm.Context), "getting defs")
 }
 
 func (hsm *HTTPStateManager) getManifests(defs Defs) (Manifests, error) {
 	gdm := gdmWrapper{}
-	if err := hsm.Retrieve("./gdm", nil, &gdm, hsm.User); err != nil {
+	if err := hsm.Retrieve("./gdm", nil, &gdm, hsm.Context); err != nil {
 		return Manifests{}, errors.Wrapf(err, "getting manifests")
 	}
 	return gdm.manifests(defs)
@@ -125,7 +125,7 @@ func (hsm *HTTPStateManager) getManifests(defs Defs) (Manifests, error) {
 func (hsm *HTTPStateManager) putDeployments(orig, new Deployments) error {
 	wOrig := wrapDeployments(orig)
 	wNew := wrapDeployments(new)
-	return errors.Wrapf(hsm.Update("./gdm", nil, &wOrig, &wNew, hsm.User), "putting GDM")
+	return errors.Wrapf(hsm.Update("./gdm", nil, &wOrig, &wNew, hsm.Context), "putting GDM")
 }
 
 // EmptyReceiver implements Comparable on Manifest

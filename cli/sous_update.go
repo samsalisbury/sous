@@ -19,7 +19,7 @@ type SousUpdate struct {
 	GDM               graph.CurrentGDM
 	StateManager      *graph.StateManager
 	ResolveFilter     *graph.RefinedResolveFilter
-	User              sous.User
+	WriteContext      graph.StateWriteContext
 }
 
 func init() { TopLevelCommands["update"] = &SousUpdate{} }
@@ -55,7 +55,8 @@ func (su *SousUpdate) Execute(args []string) cmdr.Result {
 		return EnsureErrorResult(err)
 	}
 
-	gdm, err := updateRetryLoop(su.StateManager.StateManager, sid, did, su.User)
+	ctx := sous.StateWriteContext(su.WriteContext)
+	gdm, err := updateRetryLoop(su.StateManager.StateManager, sid, did, ctx)
 	if err != nil {
 		return EnsureErrorResult(err)
 	}
@@ -73,7 +74,7 @@ func (su *SousUpdate) Execute(args []string) cmdr.Result {
 // server-side. In this case, the disappointed `sous update` should retry, up
 // to the number of times of manifests there are defined for this
 // SourceLocation
-func updateRetryLoop(sm sous.StateManager, sid sous.SourceID, did sous.DeploymentID, user sous.User) (sous.Deployments, error) {
+func updateRetryLoop(sm sous.StateManager, sid sous.SourceID, did sous.DeploymentID, user sous.StateWriteContext) (sous.Deployments, error) {
 	tryLimit := 2
 
 	sl := did.ManifestID

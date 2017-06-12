@@ -13,7 +13,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var testUser = sous.User{Name: "Test User", Email: "test@user.com"}
+var testUser = sous.StateWriteContext{
+	User: sous.User{Name: "Test User", Email: "test@user.com"},
+}
 
 func TestGitWriteState(t *testing.T) {
 	require := require.New(t)
@@ -124,7 +126,7 @@ func TestGitPulls(t *testing.T) {
 	sameYAML(t, actual, expected)
 
 	expected.Manifests.Add(&sous.Manifest{Source: sous.SourceLocation{Repo: "github.com/opentable/brandnew"}})
-	remote.WriteState(expected, sous.User{})
+	remote.WriteState(expected, sous.StateWriteContext{})
 	expected, err = remote.ReadState()
 	require.NoError(err)
 	runScript(t, `git add .
@@ -143,7 +145,9 @@ func TestGitPushes(t *testing.T) {
 	expected, err := gsm.ReadState()
 	require.NoError(err)
 
-	expected.Manifests.Add(&sous.Manifest{Source: sous.SourceLocation{Repo: "github.com/opentable/brandnew"}})
+	expected.Manifests.Add(&sous.Manifest{
+		Source: sous.SourceLocation{Repo: "github.com/opentable/brandnew"},
+	})
 	require.NoError(gsm.WriteState(expected, testUser))
 	expected, err = gsm.ReadState()
 	require.NoError(err)
@@ -164,8 +168,10 @@ func TestGitConflicts(t *testing.T) {
 
 	expected := exampleState()
 
-	expected.Manifests.Add(&sous.Manifest{Source: sous.SourceLocation{Repo: "github.com/opentable/brandnew"}})
-	remote.WriteState(expected, sous.User{})
+	expected.Manifests.Add(&sous.Manifest{
+		Source: sous.SourceLocation{Repo: "github.com/opentable/brandnew"},
+	})
+	remote.WriteState(expected, sous.StateWriteContext{})
 
 	expected, err = remote.ReadState()
 	require.NoError(err)
@@ -194,6 +200,7 @@ func TestGitConflicts(t *testing.T) {
 
 	sameYAML(t, actual, expected)
 }
+
 func TestGitRemoteDelete(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
@@ -205,7 +212,7 @@ func TestGitRemoteDelete(t *testing.T) {
 	expected := exampleState()
 
 	expected.Manifests.Add(&sous.Manifest{Source: sous.SourceLocation{Repo: "github.com/opentable/brandnew"}})
-	remote.WriteState(expected, sous.User{})
+	remote.WriteState(expected, sous.StateWriteContext{})
 
 	_, err = remote.ReadState()
 	require.NoError(err)

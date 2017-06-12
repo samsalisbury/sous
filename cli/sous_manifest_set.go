@@ -21,7 +21,7 @@ type SousManifestSet struct {
 	graph.InReader
 	*sous.ResolveFilter
 	*sous.LogSet
-	User sous.User
+	WriteContext graph.StateWriteContext
 }
 
 func init() { ManifestSubcommands["set"] = &SousManifestSet{} }
@@ -61,8 +61,8 @@ func (smg *SousManifestSet) Execute(args []string) cmdr.Result {
 	}
 	smg.Vomit.Print(spew.Sdump(yml))
 	smg.State.Manifests.Set(mid, &yml)
-	err = smg.StateWriter.WriteState(smg.State, smg.User)
-	if err != nil {
+	ctx := sous.StateWriteContext(smg.WriteContext)
+	if err := smg.StateWriter.WriteState(smg.State, ctx); err != nil {
 		return EnsureErrorResult(err)
 	}
 

@@ -12,16 +12,16 @@ type (
 	StatusPoller struct {
 		HTTPClient
 		*ResolveFilter
-		User      User
-		pollChans map[string]ResolveState
-		status    ResolveState
+		StateContext StateWriteContext
+		pollChans    map[string]ResolveState
+		status       ResolveState
 	}
 
 	subPoller struct {
 		HTTPClient
 		ClusterName, URL         string
 		locationFilter, idFilter *ResolveFilter
-		User                     User
+		StateContext             StateWriteContext
 		httpErrorCount           int
 	}
 
@@ -141,15 +141,15 @@ func (rs ResolveState) String() string {
 }
 
 // NewStatusPoller returns a new *StatusPoller.
-func NewStatusPoller(cl HTTPClient, rf *ResolveFilter, user User) *StatusPoller {
+func NewStatusPoller(cl HTTPClient, rf *ResolveFilter, c StateWriteContext) *StatusPoller {
 	return &StatusPoller{
 		HTTPClient:    cl,
 		ResolveFilter: rf,
-		User:          user,
+		StateContext:  c,
 	}
 }
 
-func newSubPoller(clusterName, serverURL string, baseFilter *ResolveFilter, user User) (*subPoller, error) {
+func newSubPoller(clusterName, serverURL string, baseFilter *ResolveFilter, c StateWriteContext) (*subPoller, error) {
 	cl, err := NewClient(serverURL)
 	if err != nil {
 		return nil, err
@@ -169,7 +169,7 @@ func newSubPoller(clusterName, serverURL string, baseFilter *ResolveFilter, user
 		HTTPClient:     cl,
 		locationFilter: &loc,
 		idFilter:       &id,
-		User:           user,
+		StateContext:   c,
 	}, nil
 }
 
@@ -195,13 +195,13 @@ func (sp *StatusPoller) Wait(ctx context.Context) (ResolveState, error) {
 func (sp *StatusPoller) waitForever() (ResolveState, error) {
 	// Retrieve the list of servers known to our main server.
 	clusters := &serverListData{}
-	if err := sp.Retrieve("./servers", nil, clusters, sp.User); err != nil {
+	if err := sp.Retrieve("./servers", nil, clusters, sp.StateContext); err != nil {
 		return ResolveFailed, err
 	}
 
 	// Get the up-to-the-moment version of the GDM.
 	gdm := &gdmData{}
-	if err := sp.Retrieve("./gdm", nil, gdm, sp.User); err != nil {
+	if err := sp.Retrieve("./gdm", nil, gdm, sp.StateContext); err != nil {
 		return ResolveFailed, err
 	}
 
@@ -240,7 +240,7 @@ func (sp *StatusPoller) subPollers(clusters *serverListData, deps Deployments) (
 		Log.Debug.Printf("Starting poller against %v", s)
 
 		// Kick off a separate process to issue HTTP requests against this cluster.
-		sub, err := newSubPoller(s.ClusterName, s.URL, sp.ResolveFilter, sp.User)
+		sub, err := newSubPoller(s.ClusterName, s.URL, sp.ResolveFilter, sp.StateContext)
 		if err != nil {
 			return nil, err
 		}
@@ -324,7 +324,7 @@ func (sub *subPoller) start(rs chan statPair, done chan struct{}) {
 
 func (sub *subPoller) pollOnce() ResolveState {
 	data := &statusData{}
-	if err := sub.Retrieve("./status", nil, data, sub.User); err != nil {
+	if err := sub.Retrieve("./status", nil, data, sub.StateContext); err != nil {
 		Log.Debug.Printf("%s: error on GET /status: %s", sub.ClusterName, errors.Cause(err))
 		Log.Vomit.Printf("%s: %T %+v", sub.ClusterName, errors.Cause(err), err)
 		sub.httpErrorCount++
