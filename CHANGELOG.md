@@ -9,6 +9,8 @@ with respect to its command line interface and HTTP interface.
 ## [Unreleased](//github.com/opentable/sous/compare/0.5.11...HEAD)
 
 ### Added
+- Git tags with a non-numeric prefix and a semver suffix (e.g. 'release-1.2.3' or 'v2.3.4')
+  are now considered a "semver" tag, and Sous will extract the version from them.
 - Static analysis of important core data model calculations to ensure that all the components of those structures are at least "touched" during diff calculation.
 - For developers only, there are 2 new build targets: `install-dev` and
   `install-brew`. These allow developers on a Mac to quickly switch between having
