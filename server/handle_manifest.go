@@ -28,7 +28,7 @@ type (
 		*sous.LogSet
 		*http.Request
 		*restful.QueryValues
-		User        StateContext
+		User        sous.StateContext
 		StateWriter graph.StateWriter
 	}
 

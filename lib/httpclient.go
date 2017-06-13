@@ -231,9 +231,7 @@ func (client *LiveHTTPClient) buildRequest(method, url string, ctx StateContext,
 
 	rq, err := http.NewRequest(method, url, JSON)
 
-	rq.Header.Add("Sous-User-Name", ctx.User.Name)
-	rq.Header.Add("Sous-User-Email", ctx.User.Email)
-	rq.Header.Add("Sous-Target-Manifest-ID", ctx.TargetManifestID.String())
+	ctx.WriteHeaders(rq.Header)
 
 	if headers != nil {
 		for k, v := range headers {
