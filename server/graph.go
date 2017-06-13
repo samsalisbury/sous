@@ -16,7 +16,7 @@ type (
 // AddsPerRequest registers items into a SousGraph that need to be fresh per request
 func AddsPerRequest(g restful.Injector) {
 	g.Add(liveGDM)
-	g.Add(getUser)
+	g.Add(getStateContext)
 }
 
 func liveGDM(sr graph.StateReader) (*LiveGDM, error) {

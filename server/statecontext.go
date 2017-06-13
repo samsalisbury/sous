@@ -9,8 +9,8 @@ import (
 // StateContext is the sous.StateContext provided by the calling client.
 type StateContext sous.StateContext
 
-// getUser parses a ClientUser from the headers of a HTTP request.
-func getUser(req *http.Request) (StateContext, error) {
+// getStateContext parses a ClientUser from the headers of a HTTP request.
+func getStateContext(req *http.Request) (StateContext, error) {
 
 	midString := req.Header.Get("Sous-Target-Manifest-ID")
 	mid, err := sous.ParseManifestID(midString)
