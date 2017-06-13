@@ -119,7 +119,7 @@ func TestWriteState(t *testing.T) {
 
 	t.Logf("state after update: %#v", originalState)
 
-	var testUser = sous.StateWriteContext{User: sous.User{Name: "Test User"}}
+	var testUser = sous.StateContext{User: sous.User{Name: "Test User"}}
 	if err := hsm.WriteState(originalState, testUser); err != nil {
 		t.Fatalf("Failed to write state: %+v", err)
 	}

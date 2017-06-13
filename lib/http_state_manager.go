@@ -12,7 +12,7 @@ type (
 	HTTPStateManager struct {
 		cached *State
 		HTTPClient
-		Context StateWriteContext
+		Context StateContext
 	}
 
 	gdmWrapper struct {
@@ -80,7 +80,7 @@ func (hsm *HTTPStateManager) ReadState() (*State, error) {
 }
 
 // WriteState implements StateWriter for HTTPStateManager.
-func (hsm *HTTPStateManager) WriteState(s *State, c StateWriteContext) error {
+func (hsm *HTTPStateManager) WriteState(s *State, c StateContext) error {
 	hsm.Context = c
 	flaws := s.Validate()
 	if len(flaws) > 0 {

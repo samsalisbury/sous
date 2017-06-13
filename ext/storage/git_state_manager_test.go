@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var testUser = sous.StateWriteContext{
+var testUser = sous.StateContext{
 	User: sous.User{Name: "Test User", Email: "test@user.com"},
 }
 
@@ -126,7 +126,7 @@ func TestGitPulls(t *testing.T) {
 	sameYAML(t, actual, expected)
 
 	expected.Manifests.Add(&sous.Manifest{Source: sous.SourceLocation{Repo: "github.com/opentable/brandnew"}})
-	remote.WriteState(expected, sous.StateWriteContext{})
+	remote.WriteState(expected, sous.StateContext{})
 	expected, err = remote.ReadState()
 	require.NoError(err)
 	runScript(t, `git add .
@@ -171,7 +171,7 @@ func TestGitConflicts(t *testing.T) {
 	expected.Manifests.Add(&sous.Manifest{
 		Source: sous.SourceLocation{Repo: "github.com/opentable/brandnew"},
 	})
-	remote.WriteState(expected, sous.StateWriteContext{})
+	remote.WriteState(expected, sous.StateContext{})
 
 	expected, err = remote.ReadState()
 	require.NoError(err)
@@ -212,7 +212,7 @@ func TestGitRemoteDelete(t *testing.T) {
 	expected := exampleState()
 
 	expected.Manifests.Add(&sous.Manifest{Source: sous.SourceLocation{Repo: "github.com/opentable/brandnew"}})
-	remote.WriteState(expected, sous.StateWriteContext{})
+	remote.WriteState(expected, sous.StateContext{})
 
 	_, err = remote.ReadState()
 	require.NoError(err)

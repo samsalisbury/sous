@@ -216,7 +216,7 @@ func TestStatusPoller(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error building HTTP client: %#v", err)
 	}
-	ctx := StateWriteContext{User: User{Name: "Test User"}}
+	ctx := StateContext{User: User{Name: "Test User"}}
 	poller := NewStatusPoller(cl, rf, ctx)
 
 	testCh := make(chan ResolveState)
@@ -315,7 +315,7 @@ func TestStatusPoller_OldServer2(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error building HTTP client: %#v", err)
 	}
-	ctx := StateWriteContext{User: User{Name: "Test User"}}
+	ctx := StateContext{User: User{Name: "Test User"}}
 	poller := NewStatusPoller(cl, rf, ctx)
 
 	testCh := make(chan ResolveState)
@@ -424,7 +424,7 @@ func TestStatusPoller_MesosFailed(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error building HTTP client: %#v", err)
 	}
-	ctx := StateWriteContext{User: User{Name: "Test User"}}
+	ctx := StateContext{User: User{Name: "Test User"}}
 	poller := NewStatusPoller(cl, rf, ctx)
 
 	testCh := make(chan ResolveState)
@@ -509,7 +509,7 @@ func TestStatusPoller_NotIntended(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error building HTTP client: %#v", err)
 	}
-	ctx := StateWriteContext{User: User{Name: "Test User"}}
+	ctx := StateContext{User: User{Name: "Test User"}}
 	poller := NewStatusPoller(cl, rf, ctx)
 
 	testCh := make(chan ResolveState)
@@ -561,7 +561,7 @@ func TestStatusPoller_OldServer(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error building HTTP client: %#v", err)
 	}
-	ctx := StateWriteContext{User: User{Name: "Test User"}}
+	ctx := StateContext{User: User{Name: "Test User"}}
 	poller := NewStatusPoller(cl, rf, ctx)
 
 	testCh := make(chan ResolveState)

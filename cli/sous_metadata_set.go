@@ -55,7 +55,7 @@ func (smg *SousMetadataSet) Execute(args []string) cmdr.Result {
 		return EnsureErrorResult(err)
 	}
 
-	ctx := sous.StateWriteContext(smg.WriteContext)
+	ctx := sous.StateContext(smg.WriteContext)
 	if err := smg.StateWriter.WriteState(smg.State, ctx); err != nil {
 		return EnsureErrorResult(err)
 	}

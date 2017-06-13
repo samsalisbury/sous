@@ -61,7 +61,7 @@ func (smg *SousManifestSet) Execute(args []string) cmdr.Result {
 	}
 	smg.Vomit.Print(spew.Sdump(yml))
 	smg.State.Manifests.Set(mid, &yml)
-	ctx := sous.StateWriteContext(smg.WriteContext)
+	ctx := sous.StateContext(smg.WriteContext)
 	if err := smg.StateWriter.WriteState(smg.State, ctx); err != nil {
 		return EnsureErrorResult(err)
 	}

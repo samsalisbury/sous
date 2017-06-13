@@ -12,7 +12,7 @@ type (
 	StatusPoller struct {
 		HTTPClient
 		*ResolveFilter
-		StateContext StateWriteContext
+		StateContext StateContext
 		pollChans    map[string]ResolveState
 		status       ResolveState
 	}
@@ -21,7 +21,7 @@ type (
 		HTTPClient
 		ClusterName, URL         string
 		locationFilter, idFilter *ResolveFilter
-		StateContext             StateWriteContext
+		StateContext             StateContext
 		httpErrorCount           int
 	}
 
@@ -141,7 +141,7 @@ func (rs ResolveState) String() string {
 }
 
 // NewStatusPoller returns a new *StatusPoller.
-func NewStatusPoller(cl HTTPClient, rf *ResolveFilter, c StateWriteContext) *StatusPoller {
+func NewStatusPoller(cl HTTPClient, rf *ResolveFilter, c StateContext) *StatusPoller {
 	return &StatusPoller{
 		HTTPClient:    cl,
 		ResolveFilter: rf,
@@ -149,7 +149,7 @@ func NewStatusPoller(cl HTTPClient, rf *ResolveFilter, c StateWriteContext) *Sta
 	}
 }
 
-func newSubPoller(clusterName, serverURL string, baseFilter *ResolveFilter, c StateWriteContext) (*subPoller, error) {
+func newSubPoller(clusterName, serverURL string, baseFilter *ResolveFilter, c StateContext) (*subPoller, error) {
 	cl, err := NewClient(serverURL)
 	if err != nil {
 		return nil, err

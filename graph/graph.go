@@ -502,7 +502,7 @@ func newStatusPoller(cl HTTPClient, rf *RefinedResolveFilter, user sous.User) *s
 		return nil
 	}
 	sous.Log.Debug.Printf("...looks good...")
-	ctx := sous.StateWriteContext{User: user}
+	ctx := sous.StateContext{User: user}
 	return sous.NewStatusPoller(cl, (*sous.ResolveFilter)(rf), ctx)
 }
 

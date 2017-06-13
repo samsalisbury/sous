@@ -85,7 +85,7 @@ func (h *PUTGDMHandler) Exchange() (interface{}, int) {
 		return "Invalid GDM", http.StatusBadRequest
 	}
 
-	if err := h.StateManager.WriteState(state, sous.StateWriteContext(h.User)); err != nil {
+	if err := h.StateManager.WriteState(state, sous.StateContext(h.User)); err != nil {
 		h.Warn.Printf("%#v", err)
 		return "Error committing state", http.StatusInternalServerError
 	}

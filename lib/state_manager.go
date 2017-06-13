@@ -7,7 +7,7 @@ type (
 	}
 	// StateWriter knows how to write state.
 	StateWriter interface {
-		WriteState(*State, StateWriteContext) error
+		WriteState(*State, StateContext) error
 	}
 
 	// A StateManager can read and write state
@@ -16,8 +16,9 @@ type (
 		StateWriter
 	}
 
-	// StateWriteContext contains additional data about what is being written.
-	StateWriteContext struct {
+	// StateContext contains additional data about what is being read or written
+	// by a StateManager.
+	StateContext struct {
 		// User is the user this write is attributed to.
 		User User
 		// TargetManifestID is the manifest this write is expected to affect.
@@ -40,7 +41,7 @@ func (sm *DummyStateManager) ReadState() (*State, error) {
 }
 
 // WriteState implements StateManager
-func (sm *DummyStateManager) WriteState(s *State, c StateWriteContext) error {
+func (sm *DummyStateManager) WriteState(s *State, c StateContext) error {
 	sm.WriteCount++
 	*sm.State = *s
 	return nil

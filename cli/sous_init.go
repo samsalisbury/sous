@@ -72,7 +72,7 @@ func (si *SousInit) Execute(args []string) cmdr.Result {
 		return cmdr.UsageErrorf("manifest %q already exists", m.ID())
 	}
 
-	ctx := sous.StateWriteContext(si.WriteContext)
+	ctx := sous.StateContext(si.WriteContext)
 	if err := si.StateWriter.WriteState(si.State, ctx); err != nil {
 		return EnsureErrorResult(err)
 	}

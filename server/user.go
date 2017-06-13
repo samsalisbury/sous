@@ -7,7 +7,7 @@ import (
 )
 
 // ClientUser is the sous.User configured in the calling client.
-type ClientUser sous.StateWriteContext
+type ClientUser sous.StateContext
 
 // getUser parses a ClientUser from the headers of a HTTP request.
 func getUser(req *http.Request) (ClientUser, error) {

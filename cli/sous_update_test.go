@@ -158,7 +158,7 @@ func TestUpdateRetryLoop(t *testing.T) {
 	dsm.State.Manifests.Add(mani)
 	dsm.State.Defs.Clusters = sous.Clusters{"blah": {}}
 	user := sous.User{Name: "Judson the Unlucky", Email: "unlucky@opentable.com"}
-	ctx := sous.StateWriteContext{User: user}
+	ctx := sous.StateContext{User: user}
 	deps, err := updateRetryLoop(dsm, sourceID, depID, ctx)
 
 	assert.NoError(t, err)
@@ -171,8 +171,8 @@ func TestUpdateRetryLoop(t *testing.T) {
 
 type DummyStateManager struct{}
 
-func (dsm *DummyStateManager) WriteState(*sous.State, sous.StateWriteContext) error { return nil }
-func (dsm *DummyStateManager) ReadState() (*sous.State, error)                      { return nil, nil }
+func (dsm *DummyStateManager) WriteState(*sous.State, sous.StateContext) error { return nil }
+func (dsm *DummyStateManager) ReadState() (*sous.State, error)                 { return nil, nil }
 
 //XXX should actually drive interesting behavior
 func TestSousUpdate_Execute(t *testing.T) {

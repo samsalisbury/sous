@@ -87,7 +87,7 @@ func (gsm *GitStateManager) needCommit() bool {
 
 // WriteState writes sous state to disk, then attempts to push it to Remote.
 // If the push fails, the state is reset and an error is returned.
-func (gsm *GitStateManager) WriteState(s *sous.State, c sous.StateWriteContext) error {
+func (gsm *GitStateManager) WriteState(s *sous.State, c sous.StateContext) error {
 	tn := "sous-fallback-" + uuid.New()
 	if err := gsm.git("tag", tn); err != nil {
 		return err

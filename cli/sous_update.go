@@ -55,7 +55,7 @@ func (su *SousUpdate) Execute(args []string) cmdr.Result {
 		return EnsureErrorResult(err)
 	}
 
-	ctx := sous.StateWriteContext(su.WriteContext)
+	ctx := sous.StateContext(su.WriteContext)
 	gdm, err := updateRetryLoop(su.StateManager.StateManager, sid, did, ctx)
 	if err != nil {
 		return EnsureErrorResult(err)
@@ -74,7 +74,7 @@ func (su *SousUpdate) Execute(args []string) cmdr.Result {
 // server-side. In this case, the disappointed `sous update` should retry, up
 // to the number of times of manifests there are defined for this
 // SourceLocation
-func updateRetryLoop(sm sous.StateManager, sid sous.SourceID, did sous.DeploymentID, user sous.StateWriteContext) (sous.Deployments, error) {
+func updateRetryLoop(sm sous.StateManager, sid sous.SourceID, did sous.DeploymentID, user sous.StateContext) (sous.Deployments, error) {
 	tryLimit := 2
 
 	sl := did.ManifestID
