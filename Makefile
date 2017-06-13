@@ -151,7 +151,7 @@ test-gofmt:
 	bin/check-gofmt
 
 test-unit:
-	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -timeout 2m ./...
+	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -timeout 2m ./... | grep -Ev '\[no test files\]'
 
 test-integration: setup-containers
 	SOUS_QA_DESC=$(QA_DESC) go test -timeout 20m $(EXTRA_GO_FLAGS)  $(TEST_VERBOSE) ./integration --tags=integration
