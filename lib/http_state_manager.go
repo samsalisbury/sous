@@ -12,7 +12,6 @@ type (
 	HTTPStateManager struct {
 		cached *State
 		HTTPClient
-		Context StateContext
 	}
 
 	gdmWrapper struct {
@@ -62,12 +61,12 @@ func NewHTTPStateManager(client HTTPClient) *HTTPStateManager {
 }
 
 // ReadState implements StateReader for HTTPStateManager.
-func (hsm *HTTPStateManager) ReadState() (*State, error) {
-	defs, err := hsm.getDefs()
+func (hsm *HTTPStateManager) ReadState(c StateContext) (*State, error) {
+	defs, err := hsm.getDefs(c)
 	if err != nil {
 		return nil, err
 	}
-	ms, err := hsm.getManifests(defs)
+	ms, err := hsm.getManifests(defs, c)
 	if err != nil {
 		return nil, err
 	}
@@ -81,14 +80,13 @@ func (hsm *HTTPStateManager) ReadState() (*State, error) {
 
 // WriteState implements StateWriter for HTTPStateManager.
 func (hsm *HTTPStateManager) WriteState(s *State, c StateContext) error {
-	hsm.Context = c
 	flaws := s.Validate()
 	if len(flaws) > 0 {
 		return errors.Errorf("Invalid update to state: %v", flaws)
 	}
 	Log.Debug.Printf("Writing state via HTTP.")
 	if hsm.cached == nil {
-		_, err := hsm.ReadState()
+		_, err := hsm.ReadState(c)
 		if err != nil {
 			return err
 		}
@@ -104,28 +102,28 @@ func (hsm *HTTPStateManager) WriteState(s *State, c StateContext) error {
 		return err
 	}
 
-	return hsm.putDeployments(cds, wds)
+	return hsm.putDeployments(cds, wds, c)
 }
 
 ////
 
-func (hsm *HTTPStateManager) getDefs() (Defs, error) {
+func (hsm *HTTPStateManager) getDefs(c StateContext) (Defs, error) {
 	ds := Defs{}
-	return ds, errors.Wrapf(hsm.Retrieve("./defs", nil, &ds, hsm.Context), "getting defs")
+	return ds, errors.Wrapf(hsm.Retrieve("./defs", nil, &ds, c), "getting defs")
 }
 
-func (hsm *HTTPStateManager) getManifests(defs Defs) (Manifests, error) {
+func (hsm *HTTPStateManager) getManifests(defs Defs, c StateContext) (Manifests, error) {
 	gdm := gdmWrapper{}
-	if err := hsm.Retrieve("./gdm", nil, &gdm, hsm.Context); err != nil {
+	if err := hsm.Retrieve("./gdm", nil, &gdm, c); err != nil {
 		return Manifests{}, errors.Wrapf(err, "getting manifests")
 	}
 	return gdm.manifests(defs)
 }
 
-func (hsm *HTTPStateManager) putDeployments(orig, new Deployments) error {
+func (hsm *HTTPStateManager) putDeployments(orig, new Deployments, c StateContext) error {
 	wOrig := wrapDeployments(orig)
 	wNew := wrapDeployments(new)
-	return errors.Wrapf(hsm.Update("./gdm", nil, &wOrig, &wNew, hsm.Context), "putting GDM")
+	return errors.Wrapf(hsm.Update("./gdm", nil, &wOrig, &wNew, c), "putting GDM")
 }
 
 // EmptyReceiver implements Comparable on Manifest
