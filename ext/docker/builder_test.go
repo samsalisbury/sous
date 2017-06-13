@@ -23,10 +23,10 @@ func TestMetadataDockerfile(t *testing.T) {
 	}
 	bc := sous.BuildContext{
 		Source: sous.SourceContext{
-			OffsetDir:      "sub",
-			RemoteURL:      "github.com/opentable/test",
-			Revision:       "abcd",
-			NearestTagName: "2.3.7",
+			OffsetDir:  "sub",
+			RemoteURL:  "github.com/opentable/test",
+			Revision:   "abcd",
+			NearestTag: sous.Tag{Name: "2.3.7", Revision: "abcd"},
 		},
 	}
 	mddf, err := ioutil.ReadAll(b.metadataDockerfile(&br, &bc))

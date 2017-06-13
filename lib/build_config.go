@@ -64,6 +64,7 @@ func (c *BuildConfig) NewContext() *BuildContext {
 	ctx := c.Context
 	sc := c.Context.Source
 	sh := ctx.Sh.Clone()
+	tag := c.chooseTag()
 	sh.CD(sc.RootDir)
 	bc := BuildContext{
 		Sh:      sh,
@@ -74,7 +75,7 @@ func (c *BuildConfig) NewContext() *BuildContext {
 		Source: SourceContext{
 			OffsetDir:      c.chooseOffset(),
 			RemoteURL:      c.chooseRemoteURL(),
-			NearestTagName: c.chooseTag(),
+			NearestTagName: tag,
 
 			RootDir:            sc.RootDir,
 			Branch:             sc.Branch,
@@ -84,6 +85,7 @@ func (c *BuildConfig) NewContext() *BuildContext {
 			NewFiles:           sc.NewFiles,
 			Tags:               sc.Tags,
 			NearestTagRevision: sc.NearestTagRevision,
+			NearestTag:         Tag{Name: tag, Revision: sc.NearestTagRevision},
 			PrimaryRemoteURL:   sc.PrimaryRemoteURL,
 			RemoteURLs:         sc.RemoteURLs,
 			DirtyWorkingTree:   sc.DirtyWorkingTree,

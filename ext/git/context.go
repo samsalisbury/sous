@@ -49,7 +49,7 @@ func (r *Repo) SourceContext() (*sous.SourceContext, error) {
 		ModifiedFiles:      modifiedFiles,
 		NewFiles:           newFiles,
 		Tags:               allTags,
-		NearestTag:         sous.Tag{Name: NearestTagName, Revision: NearestTagRevision},
+		NearestTag:         sous.Tag{Name: nearestTagName, Revision: nearestTagRevision},
 		NearestTagName:     nearestTagName,
 		NearestTagRevision: nearestTagRevision,
 		PrimaryRemoteURL:   primaryRemoteURL,

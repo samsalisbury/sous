@@ -3,6 +3,7 @@ package sous
 import (
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/samsalisbury/semv"
@@ -102,9 +103,12 @@ func (sc *SourceContext) TagVersion() string {
 	return v.Format("M.m.p")
 }
 
+var versionStrip = regexp.MustCompile(`^\D*`)
+
 func nearestVersion(tags []Tag) semv.Version {
 	for _, t := range tags {
-		v, err := semv.Parse(t.Name)
+
+		v, err := semv.Parse(versionStrip.ReplaceAllString(t.Name, ""))
 		if err == nil {
 			return v
 		}

@@ -69,8 +69,8 @@ func (suite *buildingTestSuite) TestSplitContainer() {
 	ctx := &sous.BuildContext{
 		Sh: sh,
 		Source: sous.SourceContext{
-			NearestTagName: "1.2.3",
-			Revision:       "cabbagedeadbeef",
+			NearestTag: sous.Tag{Name: "1.2.3", Revision: "cabbagedeadbeef"},
+			Revision:   "cabbagedeadbeef",
 		},
 	}
 
