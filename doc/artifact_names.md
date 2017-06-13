@@ -1,5 +1,11 @@
 # Artifact Naming
 
+**nB: as of June 13, 2017,
+this document should be considered
+a design proposal.
+It's mostly true,
+with the exception of the "rebuilt" advisory tag.**
+
 Sous takes the opinionated stance that deployed artifacts should be named
 based on the primary repository of their source code,
 and a semantic version.
