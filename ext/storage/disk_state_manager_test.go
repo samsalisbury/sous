@@ -38,7 +38,7 @@ func TestReadState(t *testing.T) {
 
 	dsm := NewDiskStateManager("testdata/in")
 
-	actual, err := dsm.ReadState()
+	actual, err := dsm.ReadState(sous.StateContext{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -66,7 +66,7 @@ func TestReadState(t *testing.T) {
 
 func TestReadState_empty(t *testing.T) {
 	dsm := NewDiskStateManager("testdata/nonexistent")
-	actual, err := dsm.ReadState()
+	actual, err := dsm.ReadState(sous.StateContext{})
 	if err != nil && !os.IsNotExist(errors.Cause(err)) {
 		t.Fatal(err)
 	}

@@ -516,7 +516,7 @@ func newLocalStateWriter(sm *StateManager) StateWriter {
 
 // NewCurrentState returns the current *sous.State.
 func NewCurrentState(sr StateReader) (*sous.State, error) {
-	state, err := sr.ReadState()
+	state, err := sr.ReadState(sous.StateContext{})
 	if os.IsNotExist(errors.Cause(err)) {
 		log.Println("error reading state:", err)
 		log.Println("defaulting to empty state")

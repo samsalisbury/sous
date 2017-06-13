@@ -171,8 +171,8 @@ func TestUpdateRetryLoop(t *testing.T) {
 
 type DummyStateManager struct{}
 
-func (dsm *DummyStateManager) WriteState(*sous.State, sous.StateContext) error { return nil }
-func (dsm *DummyStateManager) ReadState() (*sous.State, error)                 { return nil, nil }
+func (dsm *DummyStateManager) WriteState(*sous.State, sous.StateContext) error  { return nil }
+func (dsm *DummyStateManager) ReadState(sous.StateContext) (*sous.State, error) { return nil, nil }
 
 //XXX should actually drive interesting behavior
 func TestSousUpdate_Execute(t *testing.T) {

@@ -26,7 +26,7 @@ type (
 		*sous.LogSet
 		GDM          *LiveGDM
 		StateManager *graph.StateManager
-		User         ClientUser
+		StateContext ClientUser
 	}
 
 	gdmWrapper struct {
@@ -67,7 +67,7 @@ func (h *PUTGDMHandler) Exchange() (interface{}, int) {
 	dec.Decode(&data)
 	deps := sous.NewDeployments(data.Deployments...)
 
-	state, err := h.StateManager.ReadState()
+	state, err := h.StateManager.ReadState(sous.StateContext(h.StateContext))
 	if err != nil {
 		h.Warn.Printf("%#v", err)
 		return "Error loading state from storage", http.StatusInternalServerError
@@ -85,7 +85,8 @@ func (h *PUTGDMHandler) Exchange() (interface{}, int) {
 		return "Invalid GDM", http.StatusBadRequest
 	}
 
-	if err := h.StateManager.WriteState(state, sous.StateContext(h.User)); err != nil {
+	c := sous.StateContext(h.StateContext)
+	if err := h.StateManager.WriteState(state, c); err != nil {
 		h.Warn.Printf("%#v", err)
 		return "Error committing state", http.StatusInternalServerError
 	}

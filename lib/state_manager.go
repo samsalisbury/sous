@@ -3,7 +3,7 @@ package sous
 type (
 	// StateReader knows how to read state.
 	StateReader interface {
-		ReadState() (*State, error)
+		ReadState(StateContext) (*State, error)
 	}
 	// StateWriter knows how to write state.
 	StateWriter interface {
@@ -26,23 +26,4 @@ type (
 		// change being written corresponds with this manifest ID.
 		TargetManifestID ManifestID
 	}
-
-	// DummyStateManager is used for testing
-	DummyStateManager struct {
-		*State
-		ReadCount, WriteCount int
-	}
 )
-
-// ReadState implements StateManager
-func (sm *DummyStateManager) ReadState() (*State, error) {
-	sm.ReadCount++
-	return sm.State, nil
-}
-
-// WriteState implements StateManager
-func (sm *DummyStateManager) WriteState(s *State, c StateContext) error {
-	sm.WriteCount++
-	*sm.State = *s
-	return nil
-}

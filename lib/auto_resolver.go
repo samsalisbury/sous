@@ -157,7 +157,7 @@ func (ar *AutoResolver) resolveLoop(tc, done TriggerChannel, ac announceChannel)
 
 func (ar *AutoResolver) resolveOnce(ac announceChannel) {
 	ar.LogSet.Debug.Print("Beginning Resolve")
-	state, err := ar.StateReader.ReadState()
+	state, err := ar.StateReader.ReadState(StateContext{})
 	ar.LogSet.Debug.Printf("Reading current state: err: %v", err)
 	if err != nil {
 		ac <- err

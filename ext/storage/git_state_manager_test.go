@@ -44,7 +44,7 @@ func TestGitReadState(t *testing.T) {
 
 	gsm := NewGitStateManager(NewDiskStateManager("testdata/in"))
 
-	actual, err := gsm.ReadState()
+	actual, err := gsm.ReadState(sous.StateContext{})
 	require.NoError(err)
 
 	expected := exampleState()
@@ -118,8 +118,9 @@ func setupManagers(t *testing.T) (clone *GitStateManager, remote *DiskStateManag
 func TestGitPulls(t *testing.T) {
 	require := require.New(t)
 	gsm, remote := setupManagers(t)
+	c := sous.StateContext{}
 
-	actual, err := gsm.ReadState()
+	actual, err := gsm.ReadState(c)
 	require.NoError(err)
 
 	expected := exampleState()
@@ -127,12 +128,12 @@ func TestGitPulls(t *testing.T) {
 
 	expected.Manifests.Add(&sous.Manifest{Source: sous.SourceLocation{Repo: "github.com/opentable/brandnew"}})
 	remote.WriteState(expected, sous.StateContext{})
-	expected, err = remote.ReadState()
+	expected, err = remote.ReadState(c)
 	require.NoError(err)
 	runScript(t, `git add .
 	git commit -m ""`, `testdata/origin`)
 
-	actual, err = gsm.ReadState()
+	actual, err = gsm.ReadState(c)
 	require.NoError(err)
 
 	sameYAML(t, actual, expected)
@@ -142,18 +143,18 @@ func TestGitPushes(t *testing.T) {
 	require := require.New(t)
 	gsm, remote := setupManagers(t)
 
-	expected, err := gsm.ReadState()
+	expected, err := gsm.ReadState(sous.StateContext{})
 	require.NoError(err)
 
 	expected.Manifests.Add(&sous.Manifest{
 		Source: sous.SourceLocation{Repo: "github.com/opentable/brandnew"},
 	})
 	require.NoError(gsm.WriteState(expected, testUser))
-	expected, err = gsm.ReadState()
+	expected, err = gsm.ReadState(sous.StateContext{})
 	require.NoError(err)
 
 	runScript(t, `git reset --hard`, `testdata/origin`) //in order to reflect the change
-	actual, err := remote.ReadState()
+	actual, err := remote.ReadState(sous.StateContext{})
 	require.NoError(err)
 	sameYAML(t, actual, expected)
 }
@@ -163,7 +164,7 @@ func TestGitConflicts(t *testing.T) {
 	require := require.New(t)
 	gsm, remote := setupManagers(t)
 
-	actual, err := gsm.ReadState()
+	actual, err := gsm.ReadState(sous.StateContext{})
 	require.NoError(err)
 
 	expected := exampleState()
@@ -173,7 +174,7 @@ func TestGitConflicts(t *testing.T) {
 	})
 	remote.WriteState(expected, sous.StateContext{})
 
-	expected, err = remote.ReadState()
+	expected, err = remote.ReadState(sous.StateContext{})
 	require.NoError(err)
 	runScript(t, `git add .
 	git commit -m ""`, `testdata/origin`)
@@ -183,7 +184,7 @@ func TestGitConflicts(t *testing.T) {
 	actualErr := gsm.WriteState(actual, testUser)
 	assert.NoError(actualErr)
 
-	actual, err = gsm.ReadState()
+	actual, err = gsm.ReadState(sous.StateContext{})
 	require.NoError(err)
 
 	// Add the thing we wrote to actual to expected as well, since actual now
@@ -206,7 +207,7 @@ func TestGitRemoteDelete(t *testing.T) {
 	require := require.New(t)
 	gsm, remote := setupManagers(t)
 
-	_, err := gsm.ReadState()
+	_, err := gsm.ReadState(sous.StateContext{})
 	require.NoError(err)
 
 	expected := exampleState()
@@ -214,12 +215,12 @@ func TestGitRemoteDelete(t *testing.T) {
 	expected.Manifests.Add(&sous.Manifest{Source: sous.SourceLocation{Repo: "github.com/opentable/brandnew"}})
 	remote.WriteState(expected, sous.StateContext{})
 
-	_, err = remote.ReadState()
+	_, err = remote.ReadState(sous.StateContext{})
 	require.NoError(err)
 	runScript(t, `git add .
 	git commit -m ""`, `testdata/origin`)
 
-	actual, err := gsm.ReadState()
+	actual, err := gsm.ReadState(sous.StateContext{})
 	require.NoError(err)
 
 	runScript(t, `rm -rf manifests/github.com/opentable/brandnew.yaml
@@ -230,10 +231,10 @@ func TestGitRemoteDelete(t *testing.T) {
 	actualErr := gsm.WriteState(actual, testUser)
 	assert.NoError(actualErr)
 
-	expected, err = remote.ReadState()
+	expected, err = remote.ReadState(sous.StateContext{})
 	require.NoError(err)
 
-	actual, err = gsm.ReadState()
+	actual, err = gsm.ReadState(sous.StateContext{})
 	require.NoError(err)
 
 	// Add the thing we wrote to actual to expected as well, since actual now
@@ -253,7 +254,7 @@ func TestGitRemoteDelete(t *testing.T) {
 
 func TestGitReadState_empty(t *testing.T) {
 	gsm := NewGitStateManager(NewDiskStateManager("testdata/nonexistent"))
-	actual, err := gsm.ReadState()
+	actual, err := gsm.ReadState(sous.StateContext{})
 	if err != nil && !os.IsNotExist(errors.Cause(err)) {
 		t.Fatal(err)
 	}

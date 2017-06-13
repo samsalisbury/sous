@@ -59,7 +59,7 @@ func repairState(s *sous.State) error {
 }
 
 // ReadState loads the entire intended state of the world from a dir.
-func (dsm *DiskStateManager) ReadState() (*sous.State, error) {
+func (dsm *DiskStateManager) ReadState(c sous.StateContext) (*sous.State, error) {
 	// TODO: Allow state dir to be passed as flag in sous/cli.
 	// TODO: Consider returning a error to indicate if the state dir exists at all.
 	sous.Log.Vomit.Printf("Reading state from disk")

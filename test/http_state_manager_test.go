@@ -37,6 +37,9 @@ func buildManifest(cluster, repo, version string) *sous.Manifest {
 }
 
 func TestWriteState(t *testing.T) {
+
+	c := sous.StateContext{}
+
 	sous.Log.BeChatty()
 	defer sous.Log.BeQuiet()
 	steadyManifest := buildManifest("test-cluster", "github.com/opentable/steady", "1.2.3")
@@ -58,7 +61,7 @@ func TestWriteState(t *testing.T) {
 	state.Manifests.Add(changesManifest)
 
 	sm := sous.DummyStateManager{State: state}
-	smm, err := sm.ReadState()
+	smm, err := sm.ReadState(c)
 	if err != nil {
 		t.Fatal("State manager double is broken", err)
 	}
@@ -92,7 +95,7 @@ func TestWriteState(t *testing.T) {
 	}
 	hsm := sous.NewHTTPStateManager(cl)
 
-	originalState, err := hsm.ReadState()
+	originalState, err := hsm.ReadState(c)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -124,7 +127,7 @@ func TestWriteState(t *testing.T) {
 		t.Fatalf("Failed to write state: %+v", err)
 	}
 
-	state, err = hsm.ReadState()
+	state, err = hsm.ReadState(c)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -149,12 +152,12 @@ func TestWriteState(t *testing.T) {
 	if !there {
 		t.Errorf("Added manifest not in server's state")
 	}
-	c, there := state.Manifests.Get(changesManifest.ID())
+	changes, there := state.Manifests.Get(changesManifest.ID())
 	if !there {
 		t.Errorf("Changed manifest missing from server's state")
 	}
 	expectedVersion := "0.18.0"
-	actualVersion := c.Deployments["test-cluster"].Version.String()
+	actualVersion := changes.Deployments["test-cluster"].Version.String()
 	if actualVersion != expectedVersion {
 		t.Errorf("Server's version of changed state was %q; want %q", actualVersion, expectedVersion)
 	}

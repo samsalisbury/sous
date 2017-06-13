@@ -70,11 +70,11 @@ func (gsm *GitStateManager) isRepo() bool {
 }
 
 // ReadState reads sous state from the local disk.
-func (gsm *GitStateManager) ReadState() (*sous.State, error) {
+func (gsm *GitStateManager) ReadState(c sous.StateContext) (*sous.State, error) {
 	// git pull
 	gsm.git("pull")
 
-	return gsm.DiskStateManager.ReadState()
+	return gsm.DiskStateManager.ReadState(c)
 }
 
 func (gsm *GitStateManager) needCommit() bool {
