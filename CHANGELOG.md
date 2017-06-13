@@ -12,6 +12,16 @@ with respect to its command line interface and HTTP interface.
   `install-brew`. These allow developers on a Mac to quickly switch between having
   a personal dev build, or the latest release from homebrew installed locally.
 
+### Fixed
+- Occasionally, changes to one manifest ended up committing additional changes
+  to other manifests. The root cause of this is not yet fully understood, but
+  this version rejects these updates (causing failed deployments when it happens).
+  It also adds much better GDM logging (see 'Changed').
+
+### Changed
+- Commit messages in the GDM now include more information. This will help us track
+  down anomalous behaviour that diverges from the intention of the Sous client user.
+
 ## [0.5.12](//github.com/opentable/sous/compare/0.5.11...0.5.12)
 ### Fixed
 - Issue where deployments constantly re-deployed due to spurious Startup.Timeout diff.
