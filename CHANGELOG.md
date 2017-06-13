@@ -21,6 +21,8 @@ with respect to its command line interface and HTTP interface.
 ### Changed
 - Commit messages in the GDM now include more information. This will help us track
   down anomalous behaviour that diverges from the intention of the Sous client user.
+- For developers only: 'make test-unit' now elides [no test files] lines, which
+  were obscuring more interesting information about test passes and failures.
 
 ## [0.5.12](//github.com/opentable/sous/compare/0.5.11...0.5.12)
 ### Fixed
