@@ -6,20 +6,20 @@ import (
 	"github.com/opentable/sous/lib"
 )
 
-// ClientUser is the sous.User configured in the calling client.
-type ClientUser sous.StateContext
+// StateContext is the sous.StateContext provided by the calling client.
+type StateContext sous.StateContext
 
 // getUser parses a ClientUser from the headers of a HTTP request.
-func getUser(req *http.Request) (ClientUser, error) {
+func getUser(req *http.Request) (StateContext, error) {
 
 	midString := req.Header.Get("Sous-Target-Manifest-ID")
 	mid, err := sous.ParseManifestID(midString)
 	if err != nil {
-		return ClientUser{}, err
+		return StateContext{}, err
 	}
 
 	// Maybe we want to check this user isn't empty, eventually.
-	return ClientUser{
+	return StateContext{
 		User: sous.User{
 			Name:  req.Header.Get("Sous-User-Name"),
 			Email: req.Header.Get("Sous-User-Email"),

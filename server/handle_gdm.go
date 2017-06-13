@@ -26,7 +26,7 @@ type (
 		*sous.LogSet
 		GDM          *LiveGDM
 		StateManager *graph.StateManager
-		StateContext ClientUser
+		StateContext StateContext
 	}
 
 	gdmWrapper struct {
