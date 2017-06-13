@@ -54,12 +54,14 @@ Deployments:
     # Generally speaking, mapping volumes breaks the stateless principle of
     # containerized microservices and they are therefore discouraged.
     Volumes: []
-    # Startup contains healthcheck options for this deploy.
+    # Startup contains startup healthcheck options for this deploy.
+    # (note that ongoing service monitoring is outside of the scope of the manifest)
     Startup:
-      # The path to issue healthcheck polling against.
+      # The path to issue healthcheck polling against during startup.
       CheckReadyURIPath: "/health"
       # The per-check timeout.
       CheckReadyURITimeout: 5
-      # The overall timeout before the service should be considered unhealthy.
+      # The overall time in seconds to wait for this service to become healthy.
+      # (If this time expires, the service will be considered unhealthy and be killed.)
       Timeout: 60
 ```
