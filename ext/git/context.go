@@ -16,7 +16,7 @@ func (r *Repo) SourceContext() (*sous.SourceContext, error) {
 		files, modifiedFiles, newFiles []string
 		allTags                        []sous.Tag
 		remotes                        Remotes
-		//unpushedCommits                []string
+		unpushedCommits                []string
 	)
 	c := r.Client
 	if err := firsterr.Parallel().Set(
@@ -24,26 +24,17 @@ func (r *Repo) SourceContext() (*sous.SourceContext, error) {
 		func(err *error) { revision, *err = c.Revision() },
 		func(err *error) { repoRelativeDir, *err = sous.NormalizedOffset(r.Root, c.Sh.Dir()) },
 		func(err *error) {
-			allTags, *err = r.Client.ListTags()
-			if *err != nil || len(allTags) == 0 {
-				return
-			}
-			nearestTagName, *err = c.NearestTag()
-			if *err != nil {
-				return
-			}
-
-			ntr, terr := c.RevisionAt(nearestTagName)
-
-			if terr == nil {
-				nearestTagRevision = ntr
-			}
+			*err = firsterr.Set(
+				func(err *error) { allTags, *err = r.Client.ListTags() },
+				func(err *error) { nearestTagName, *err = c.NearestTag() },
+				func(err *error) { nearestTagRevision, *err = c.RevisionAt(nearestTagName) },
+			)
 		},
 		func(err *error) { files, *err = c.ListFiles() },
 		func(err *error) { modifiedFiles, *err = c.ModifiedFiles() },
 		func(err *error) { newFiles, *err = c.NewFiles() },
 		func(err *error) { remotes, *err = c.ListRemotes() },
-		//func(err *error) { unpushedCommits, *err = c.ListUnpushedCommits() },
+		func(err *error) { unpushedCommits, *err = c.ListUnpushedCommits() },
 	); err != nil {
 		return nil, err
 	}
@@ -58,10 +49,12 @@ func (r *Repo) SourceContext() (*sous.SourceContext, error) {
 		ModifiedFiles:      modifiedFiles,
 		NewFiles:           newFiles,
 		Tags:               allTags,
+		NearestTag:         sous.Tag{Name: nearestTagName, Revision: nearestTagRevision},
 		NearestTagName:     nearestTagName,
 		NearestTagRevision: nearestTagRevision,
 		PrimaryRemoteURL:   primaryRemoteURL,
 		RemoteURLs:         allFetchURLs(remotes),
+		RevisionUnpushed:   len(unpushedCommits) > 0,
 		DirtyWorkingTree:   len(modifiedFiles)+len(newFiles) != 0,
 	}, nil
 }

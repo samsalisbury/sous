@@ -3,6 +3,7 @@ package sous
 import (
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/samsalisbury/semv"
@@ -15,6 +16,7 @@ type (
 		RootDir, OffsetDir, Branch, Revision string
 		Files, ModifiedFiles, NewFiles       []string
 		Tags                                 []Tag
+		NearestTag                           Tag
 		NearestTagName, NearestTagRevision   string
 		PrimaryRemoteURL                     string
 		RemoteURL                            string
@@ -64,10 +66,7 @@ func NormalizedOffset(root, workdir string) (string, error) {
 
 // Version returns the SourceID.
 func (sc *SourceContext) Version() SourceID {
-	v, err := semv.Parse(sc.NearestTagName)
-	if err != nil {
-		v = nearestVersion(sc.Tags)
-	}
+	v := nearestVersion(append([]Tag{sc.NearestTag}, sc.Tags...))
 	// Append revision ID.
 	v = semv.MustParse(v.Format("M.m.p-?") + "+" + sc.Revision)
 	sv := SourceID{
@@ -104,9 +103,12 @@ func (sc *SourceContext) TagVersion() string {
 	return v.Format("M.m.p")
 }
 
+var versionStrip = regexp.MustCompile(`^\D*`)
+
 func nearestVersion(tags []Tag) semv.Version {
 	for _, t := range tags {
-		v, err := semv.Parse(t.Name)
+
+		v, err := semv.Parse(versionStrip.ReplaceAllString(t.Name, ""))
 		if err == nil {
 			return v
 		}
