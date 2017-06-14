@@ -16,14 +16,8 @@ import (
 
 func gitPrepare(t *testing.T, s *sous.State, remotepath, outpath string) {
 
-	for _, path := range []string{remotepath, outpath} {
-		if err := os.RemoveAll(path); err != nil {
-			t.Fatal(err)
-		}
-		if err := os.MkdirAll(path, os.ModePerm); err != nil {
-			t.Fatal(err)
-		}
-	}
+	clobberDir(t, remotepath)
+	clobberDir(t, outpath)
 
 	runCmd(t, remotepath, "git", "init", "--template=/dev/null", "--bare")
 
@@ -45,6 +39,15 @@ func gitPrepare(t *testing.T, s *sous.State, remotepath, outpath string) {
 	runCmd(t, outpath, "git", "push", "-u", "origin", "master")
 }
 
+func clobberDir(t *testing.T, path string) {
+	if err := os.RemoveAll(path); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(path, os.ModePerm); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func runCmd(t *testing.T, path string, cmd ...string) {
 	gitCmd := exec.Command(cmd[0], cmd[1:]...)
 	gitCmd.Dir = path
@@ -61,6 +64,7 @@ func TestGitStateManager_WriteState_success(t *testing.T) {
 
 	s := exampleState()
 
+	clobberDir(t, "testdata/result")
 	gitPrepare(t, s, "testdata/remote", "testdata/out")
 
 	gsm := NewGitStateManager(NewDiskStateManager("testdata/out"))
@@ -68,10 +72,16 @@ func TestGitStateManager_WriteState_success(t *testing.T) {
 	require.NoError(gsm.WriteState(s, testUser))
 
 	// eh? hacky, but we actually only care about Sous files
-	os.RemoveAll("testdata/out/.git")
-	os.Remove("testdata/out/.gitkeep")
 
-	d := exec.Command("diff", "-r", "testdata/in", "testdata/out")
+	remoteAbs, err := filepath.Abs("testdata/remote")
+	if err != nil {
+		t.Fatal(err)
+	}
+	runCmd(t, "testdata", "git", "clone", "file://"+remoteAbs, "result")
+
+	os.RemoveAll("testdata/result/.git")
+
+	d := exec.Command("diff", "-r", "testdata/in", "testdata/result")
 
 	if out, err := d.CombinedOutput(); err != nil {
 		t.Fatalf("Output not as expected: %s;\n%s", err, string(out))
