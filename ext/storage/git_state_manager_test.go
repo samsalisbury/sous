@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
@@ -15,7 +16,7 @@ import (
 
 var testUser = sous.User{Name: "Test User", Email: "test@user.com"}
 
-func TestGitWriteState(t *testing.T) {
+func TestGitStateManager_WriteState_success(t *testing.T) {
 	require := require.New(t)
 
 	s := exampleState()
@@ -29,11 +30,45 @@ func TestGitWriteState(t *testing.T) {
 	require.NoError(gsm.WriteState(s, testUser))
 
 	d := exec.Command("diff", "-r", "testdata/in", "testdata/out")
-	out, err := d.CombinedOutput()
-	if err != nil {
-		t.Log("Output not as expected:")
-		t.Log(string(out))
-		t.Fatal("")
+
+	if out, err := d.CombinedOutput(); err != nil {
+		t.Fatalf("Output not as expected: %s;\n%s", err, string(out))
+	}
+}
+
+func TestGitStateManager_WriteState_multiple_manifests(t *testing.T) {
+
+	s := exampleState()
+
+	if err := os.RemoveAll("testdata/out"); err != nil {
+		t.Fatal(err)
+	}
+
+	gsm := NewGitStateManager(NewDiskStateManager("testdata/out"))
+
+	// 1. Write state like normal.
+	if err := gsm.WriteState(s, testUser); err != nil {
+		t.Fatalf("test setup failed: %s", err)
+	}
+
+	// 2. Modify one of the tracked files that will not be changed by 3 (defs.yaml)
+	if err := ioutil.WriteFile("testdata/out/defs.yaml", []byte("hi"), 0777); err != nil {
+		t.Fatalf("test set up failed: %s", err)
+	}
+
+	// 3. Modify one of the manifests.
+	m, ok := s.Manifests.Any(func(*sous.Manifest) bool { return true })
+	if !ok {
+		t.Fatalf("no manifests found")
+	}
+	m.Deployments["cluster-1"].Env["NEWVAR"] = "YOLO"
+
+	s.Manifests.Set(m.ID(), m)
+
+	// 4. Attempt to write new manifest, expect error.
+	actualErr := gsm.WriteState(s, testUser)
+	if actualErr == nil {
+		t.Fatal("erroneously allowed writing state with modifications in multiple files")
 	}
 }
 
@@ -194,6 +229,7 @@ func TestGitConflicts(t *testing.T) {
 
 	sameYAML(t, actual, expected)
 }
+
 func TestGitRemoteDelete(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)

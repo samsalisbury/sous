@@ -32,8 +32,13 @@ func NewGitStateManager(dsm *DiskStateManager) *GitStateManager {
 }
 
 func (gsm *GitStateManager) git(cmd ...string) error {
+	_, err := gsm.gitOut(cmd...)
+	return err
+}
+
+func (gsm *GitStateManager) gitOut(cmd ...string) (string, error) {
 	if !gsm.isRepo() {
-		return nil
+		return "", fmt.Errorf("not in a git repo")
 	}
 	git := exec.Command(`git`, cmd...)
 	git.Dir = gsm.DiskStateManager.BaseDir
@@ -56,7 +61,7 @@ func (gsm *GitStateManager) git(cmd ...string) error {
 		sous.Log.Debug.Printf("%+v: error: %v", git.Args, err)
 	}
 	sous.Log.Vomit.Print("git: " + string(out))
-	return errors.Wrapf(err, strings.Join(git.Args, " ")+": "+string(out))
+	return string(out), errors.Wrapf(err, strings.Join(git.Args, " ")+": "+string(out))
 }
 
 func (gsm *GitStateManager) reset(tn string) {
