@@ -1,9 +1,9 @@
 package storage
 
 import (
-	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -14,6 +14,46 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func gitPrepare(t *testing.T, s *sous.State, remotepath, outpath string) {
+
+	for _, path := range []string{remotepath, outpath} {
+		if err := os.RemoveAll(path); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.MkdirAll(path, os.ModePerm); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	runCmd(t, remotepath, "git", "init", "--template=/dev/null", "--bare")
+
+	remoteAbs, err := filepath.Abs(remotepath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	runCmd(t, outpath, "git", "init", "--template=/dev/null")
+	runCmd(t, outpath, "git", "config", "user.email", "sous-test@testing.example.com")
+	runCmd(t, outpath, "git", "config", "user.name", "sous-test@testing.example.com")
+	runCmd(t, outpath, "git", "remote", "add", "origin", "file://"+remoteAbs)
+
+	dsm := NewDiskStateManager(outpath)
+	dsm.WriteState(s, testUser)
+
+	runCmd(t, outpath, "git", "add", ".")
+	runCmd(t, outpath, "git", "commit", "--no-gpg-sign", "-a", "-m", "birthday")
+	runCmd(t, outpath, "git", "push", "-u", "origin", "master")
+}
+
+func runCmd(t *testing.T, path string, cmd ...string) {
+	gitCmd := exec.Command(cmd[0], cmd[1:]...)
+	gitCmd.Dir = path
+	out, err := gitCmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("%q errored: %v\n %s", strings.Join(cmd, " "), err, out)
+	}
+}
+
 var testUser = sous.User{Name: "Test User", Email: "test@user.com"}
 
 func TestGitStateManager_WriteState_success(t *testing.T) {
@@ -21,13 +61,15 @@ func TestGitStateManager_WriteState_success(t *testing.T) {
 
 	s := exampleState()
 
-	if err := os.RemoveAll("testdata/out"); err != nil {
-		t.Fatal(err)
-	}
+	gitPrepare(t, s, "testdata/remote", "testdata/out")
 
 	gsm := NewGitStateManager(NewDiskStateManager("testdata/out"))
 
 	require.NoError(gsm.WriteState(s, testUser))
+
+	// eh? hacky, but we actually only care about Sous files
+	os.RemoveAll("testdata/out/.git")
+	os.Remove("testdata/out/.gitkeep")
 
 	d := exec.Command("diff", "-r", "testdata/in", "testdata/out")
 
@@ -40,28 +82,23 @@ func TestGitStateManager_WriteState_multiple_manifests(t *testing.T) {
 
 	s := exampleState()
 
-	if err := os.RemoveAll("testdata/out"); err != nil {
-		t.Fatal(err)
-	}
+	gitPrepare(t, s, "testdata/remote", "testdata/out")
 
 	gsm := NewGitStateManager(NewDiskStateManager("testdata/out"))
 
-	// 1. Write state like normal.
-	if err := gsm.WriteState(s, testUser); err != nil {
-		t.Fatalf("test setup failed: %s", err)
-	}
-
-	// 2. Modify one of the tracked files that will not be changed by 3 (defs.yaml)
-	if err := ioutil.WriteFile("testdata/out/defs.yaml", []byte("hi"), 0777); err != nil {
-		t.Fatalf("test set up failed: %s", err)
-	}
-
-	// 3. Modify one of the manifests.
-	m, ok := s.Manifests.Any(func(*sous.Manifest) bool { return true })
+	// Modify one of the manifests.
+	m, ok := s.Manifests.Any(func(m *sous.Manifest) bool { return m.Source.Repo == "github.com/opentable/sous" })
 	if !ok {
 		t.Fatalf("no manifests found")
 	}
 	m.Deployments["cluster-1"].Env["NEWVAR"] = "YOLO"
+
+	// Modify the other manifest.
+	m, ok = s.Manifests.Any(func(m *sous.Manifest) bool { return m.Source.Repo == "github.com/user/project" })
+	if !ok {
+		t.Fatalf("no manifests found")
+	}
+	m.Deployments["other-cluster"].Env["NEWVAR"] = "YOLO"
 
 	s.Manifests.Set(m.ID(), m)
 

@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/opentable/sous/lib"
 	"github.com/pborman/uuid"
 	"github.com/pkg/errors"
@@ -54,6 +55,7 @@ func (gsm *GitStateManager) gitOut(cmd ...string) (string, error) {
 	if gitssh != "" {
 		git.Env = append(git.Env, "GIT_SSH="+gitssh)
 	}
+	spew.Dump(git)
 	out, err := git.CombinedOutput()
 	if err == nil {
 		sous.Log.Debug.Printf("%+v: success", git.Args)
@@ -88,6 +90,28 @@ func (gsm *GitStateManager) needCommit() bool {
 		return !ee.Success()
 	}
 	return false
+}
+
+func (gsm *GitStateManager) assertOneChange() error {
+	diffIndex, err := gsm.gitOut("diff-index", "--cached", "master@{upstream}")
+	spew.Dump(diffIndex)
+	spew.Dump(err)
+	if err != nil {
+		return err
+	}
+
+	firstNL := strings.IndexByte(diffIndex, '\n')
+	if firstNL == -1 {
+		// empty diff-index?
+		return nil
+	}
+
+	secondNL := strings.IndexByte(diffIndex[firstNL+1:], '\n')
+	if secondNL != -1 {
+		return errors.Errorf("git update touches more than one file: %q", diffIndex)
+	}
+
+	return nil
 }
 
 // WriteState writes sous state to disk, then attempts to push it to Remote.
@@ -136,7 +160,13 @@ func (gsm *GitStateManager) WriteState(s *sous.State, u sous.User) error {
 
 	const gitRectifyAttempts = 5
 	for remainingAttempts := gitRectifyAttempts; remainingAttempts > 0; remainingAttempts-- {
-		err := gsm.git("push", "-u", "origin", "master")
+		err := gsm.assertOneChange()
+		if err != nil {
+			gsm.reset(tn)
+			return err
+		}
+
+		err = gsm.git("push", "-u", "origin", "master")
 		if err == nil {
 			// Success.
 			return nil
