@@ -16,6 +16,12 @@ with respect to its command line interface and HTTP interface.
   `install-brew`. These allow developers on a Mac to quickly switch between having
   a personal dev build, or the latest release from homebrew installed locally.
 
+### Changed
+- Operations that change more than one manifest will now be rejected with an
+  error. We do not believe there are any such legitimate operations, and
+  there's a storage anomoly that surfaces as multiple manifests changing at
+  once which we hope this will correct.
+
 ## [0.5.12](//github.com/opentable/sous/compare/0.5.11...0.5.12)
 ### Fixed
 - Issue where deployments constantly re-deployed due to spurious Startup.Timeout diff.
