@@ -16,7 +16,7 @@ with respect to its command line interface and HTTP interface.
   `install-brew`. These allow developers on a Mac to quickly switch between having
   a personal dev build, or the latest release from homebrew installed locally.
 
-### Changed
+### Fixed
 - Operations that change more than one manifest will now be rejected with an
   error. We do not believe there are any such legitimate operations, and
   there's a storage anomoly that surfaces as multiple manifests changing at
