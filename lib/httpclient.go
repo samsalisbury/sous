@@ -20,11 +20,18 @@ type (
 		http.Client
 	}
 
+	resourceState struct {
+		etag         string
+		body         io.Reader
+		resourceJSON io.Reader
+	}
+
 	// HTTPClient interacts with a HTTPServer
 	//   It's designed to handle basic CRUD operations in a safe and restful way.
 	HTTPClient interface {
 		Create(urlPath string, qParms map[string]string, rqBody interface{}, user User) error
 		Retrieve(urlPath string, qParms map[string]string, rzBody interface{}, user User) error
+		//RetrieveWithState(urlPath string, qParms map[string]string, rzBody interface{}, user User) (*resourceState, error)
 		Update(urlPath string, qParms map[string]string, from, qBody Comparable, user User) error
 		Delete(urlPath string, qParms map[string]string, from Comparable, user User) error
 	}
@@ -88,12 +95,21 @@ func NewClient(serverURL string) (*LiveHTTPClient, error) {
 // are returned if anything goes wrong, including a non-Success HTTP result
 // (but note that there may be a response anyway.
 func (client *LiveHTTPClient) Retrieve(urlPath string, qParms map[string]string, rzBody interface{}, user User) error {
-	return errors.Wrapf(func() error {
-		url, err := client.buildURL(urlPath, qParms)
-		rq, err := client.buildRequest("GET", url, user, nil, nil, err)
-		rz, err := client.sendRequest(rq, err)
-		return client.getBody(rz, rzBody, err)
-	}(), "Retrieve %s", urlPath)
+	_, err := client.RetrieveWithState(urlPath, qParms, rzBody, user)
+	return err
+}
+
+// RetrieveWithState makes a GET request on urlPath, after transforming qParms into ?&=
+// style query params. It deserializes the returned JSON into rzBody. Errors
+// are returned if anything goes wrong, including a non-Success HTTP result
+// (but note that there may be a response anyway.
+// It returns an opaque state object for use with Update
+func (client *LiveHTTPClient) RetrieveWithState(urlPath string, qParms map[string]string, rzBody interface{}, user User) (*resourceState, error) {
+	url, err := client.buildURL(urlPath, qParms)
+	rq, err := client.buildRequest("GET", url, user, nil, nil, err)
+	rz, err := client.sendRequest(rq, err)
+	state, err := client.getBody(rz, rzBody, err)
+	return state, errors.Wrapf(err, "Retrieve %s", urlPath)
 }
 
 // Create uses the contents of qBody to create a new resource at the server at urlPath/qParms
@@ -103,7 +119,8 @@ func (client *LiveHTTPClient) Create(urlPath string, qParms map[string]string, q
 		url, err := client.buildURL(urlPath, qParms)
 		rq, err := client.buildRequest("PUT", url, user, noMatchStar(), qBody, err)
 		rz, err := client.sendRequest(rq, err)
-		return client.getBody(rz, nil, err)
+		_, err = client.getBody(rz, nil, err)
+		return err
 	}(), "Create %s", urlPath)
 }
 
@@ -115,10 +132,12 @@ func (client *LiveHTTPClient) Create(urlPath string, qParms map[string]string, q
 func (client *LiveHTTPClient) Update(urlPath string, qParms map[string]string, from, qBody Comparable, user User) error {
 	return errors.Wrapf(func() error {
 		url, err := client.buildURL(urlPath, qParms)
-		etag, err := client.getBodyEtag(url, user, from, err)
+		//	etag := from.etag
+		etag := ""
 		rq, err := client.buildRequest("PUT", url, user, ifMatch(etag), qBody, err)
 		rz, err := client.sendRequest(rq, err)
-		return client.getBody(rz, nil, err)
+		_, err = client.getBody(rz, nil, err)
+		return err
 	}(), "Update %s", urlPath)
 }
 
@@ -130,7 +149,8 @@ func (client *LiveHTTPClient) Delete(urlPath string, qParms map[string]string, f
 		etag, err := client.getBodyEtag(url, user, from, err)
 		rq, err := client.buildRequest("DELETE", url, user, ifMatch(etag), nil, err)
 		rz, err := client.sendRequest(rq, err)
-		return client.getBody(rz, nil, err)
+		_, err = client.getBody(rz, nil, err)
+		return err
 	}(), "Delete %s", urlPath)
 }
 
@@ -196,7 +216,8 @@ func (client *LiveHTTPClient) getBodyEtag(url string, user User, body Comparable
 	err = errors.Wrapf(func() error {
 		rq, err = client.buildRequest("GET", url, user, nil, nil, nil)
 		rz, err = client.sendRequest(rq, err)
-		return client.getBody(rz, rzBody, err)
+		_, err = client.getBody(rz, rzBody, err)
+		return err
 	}(), "while getting etag for %s", url)
 	if err != nil {
 		return
@@ -212,21 +233,73 @@ func (client *LiveHTTPClient) getBodyEtag(url string, user User, body Comparable
 	return etag, nil
 }
 
+type jsonMap map[string]interface{}
+
+func putbackJSON(originalBuf, baseBuf, changedBuf io.Reader) *bytes.Buffer {
+	var original, base, changed jsonMap
+	mapDecode(originalBuf, &original)
+	mapDecode(changedBuf, &base)
+	mapDecode(changedBuf, &changed)
+	original = applyChanges(base, changed, original)
+	return encodeJSON(original)
+}
+
+// mutates base
+func applyChanges(base, changed, target map[string]interface{}) map[string]interface{} {
+	for k, v := range changed {
+		switch v := v.(type) {
+		default:
+			if b, old := base[k]; !old {
+				target[k] = v //created
+			} else {
+				delete(base, k)
+				if b != v { // changed
+					target[k] = v
+				}
+			}
+		case map[string]interface{}:
+			// Unchecked cast: if base[k] isn't also a map, we have bigger problems.
+			// If target[k] isn't a map, then the server has changed the type under us, and we should crash
+			target[k] = applyChanges(base[k].(map[string]interface{}), v, target[k].(map[string]interface{}))
+		}
+	}
+
+	// the remaining fields were deleted
+	for k := range base {
+		delete(target, k)
+	}
+
+	return target
+}
+
+func mapDecode(buf io.Reader, into *jsonMap) error {
+	dec := json.NewDecoder(buf)
+	return dec.Decode(into)
+}
+
+func encodeJSON(from interface{}) *bytes.Buffer {
+	buf := &bytes.Buffer{}
+	enc := json.NewEncoder(buf)
+	enc.Encode(from)
+	return buf
+}
+
 func (client *LiveHTTPClient) buildRequest(method, url string, user User, headers map[string]string, rqBody interface{}, ierr error) (*http.Request, error) {
+	resource := &resourceState{}
 	if ierr != nil {
 		return nil, ierr
 	}
 
 	Log.Debug.Printf("Sending %s %q", method, url)
 
-	var JSON io.Reader
+	var JSON *bytes.Buffer
 
 	if rqBody != nil {
-		buf := &bytes.Buffer{}
-		enc := json.NewEncoder(buf)
-		enc.Encode(rqBody)
-		Log.Debug.Printf("  body: %s", buf.String())
-		JSON = buf
+		JSON = encodeJSON(rqBody)
+		if resource != nil {
+			JSON = putbackJSON(resource.body, resource.resourceJSON, JSON)
+		}
+		Log.Debug.Printf("  body: %s", JSON.String())
 	}
 
 	rq, err := http.NewRequest(method, url, JSON)
@@ -258,9 +331,9 @@ func (client *LiveHTTPClient) sendRequest(rq *http.Request, ierr error) (*http.R
 	return rz, err
 }
 
-func (client *LiveHTTPClient) getBody(rz *http.Response, rzBody interface{}, err error) error {
+func (client *LiveHTTPClient) getBody(rz *http.Response, rzBody interface{}, err error) (*resourceState, error) {
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer rz.Body.Close()
 
@@ -277,11 +350,16 @@ func (client *LiveHTTPClient) getBody(rz *http.Response, rzBody interface{}, err
 
 	switch {
 	default:
-		return errors.Wrapf(err, "processing response body")
+		rzJSON, err := json.Marshal(rzBody)
+		return &resourceState{
+			etag:         rz.Header.Get("ETag"),
+			body:         bytes.NewBuffer(b),
+			resourceJSON: bytes.NewBuffer(rzJSON),
+		}, errors.Wrapf(err, "processing response body")
 	case rz.StatusCode < 200 || rz.StatusCode >= 300:
-		return errors.Errorf("%s: %#v", rz.Status, string(b))
+		return nil, errors.Errorf("%s: %#v", rz.Status, string(b))
 	case rz.StatusCode == http.StatusConflict:
-		return errors.Wrap(retryableError(fmt.Sprintf("%s: %#v", rz.Status, string(b))), "getBody")
+		return nil, errors.Wrap(retryableError(fmt.Sprintf("%s: %#v", rz.Status, string(b))), "getBody")
 	}
 
 }
