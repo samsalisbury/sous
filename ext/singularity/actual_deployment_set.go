@@ -78,15 +78,21 @@ func (sc *deployer) RunningDeployments(reg sous.Registry, clusters sous.Clusters
 	go depPipeline(reg, clusters, MaxAssemblers, &depAssWait, reqCh, depCh, errCh)
 
 	go func() {
-		depAssWait.Wait()
-		Log.Debug.Println("All deployments assembled")
-		catchAndSend("closing up", errCh)
+		catchAndSend("closing channels", errCh)
+
 		singWait.Wait()
 		Log.Debug.Println("All singularities polled for requests")
+
 		depWait.Wait()
 		Log.Debug.Println("All deploys processed")
+
+		depAssWait.Wait()
+		Log.Debug.Println("All deployments assembled")
+
 		close(reqCh)
+		Log.Debug.Println("Closed reqCh")
 		close(errCh)
+		Log.Debug.Println("Closed errCh")
 	}()
 
 	for {
