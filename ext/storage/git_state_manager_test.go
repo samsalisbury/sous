@@ -117,6 +117,10 @@ func TestGitStateManager_WriteState_multiple_manifests(t *testing.T) {
 	if actualErr == nil {
 		t.Fatal("erroneously allowed writing state with modifications in multiple files")
 	}
+	expectedSubstr := "git update touches more than one file"
+	if !strings.Contains(actualErr.Error(), expectedSubstr) {
+		t.Fatalf("got error %q; want error containing %q", actualErr, expectedSubstr)
+	}
 }
 
 func TestGitReadState(t *testing.T) {
