@@ -59,7 +59,7 @@ func (sc *deployer) RunningDeployments(reg sous.Registry, clusters sous.Clusters
 	// manage NW cancellation
 	//defer sc.rectClient.Cancel()
 
-	var singWait, depWait sync.WaitGroup
+	var depAssWait, singWait, depWait sync.WaitGroup
 
 	Log.Vomit.Printf("Setting up to wait for %d clusters", len(clusters))
 	singWait.Add(len(clusters))
@@ -75,15 +75,16 @@ func (sc *deployer) RunningDeployments(reg sous.Registry, clusters sous.Clusters
 		go singPipeline(reg, url, client, &depWait, &singWait, reqCh, errCh, clusters)
 	}
 
-	go depPipeline(reg, clusters, MaxAssemblers, reqCh, depCh, errCh)
+	go depPipeline(reg, clusters, MaxAssemblers, &depAssWait, reqCh, depCh, errCh)
 
 	go func() {
+		depAssWait.Wait()
+		Log.Debug.Println("All deployments assembled")
 		catchAndSend("closing up", errCh)
 		singWait.Wait()
 		Log.Debug.Println("All singularities polled for requests")
 		depWait.Wait()
 		Log.Debug.Println("All deploys processed")
-
 		close(reqCh)
 		close(errCh)
 	}()
@@ -239,6 +240,7 @@ func depPipeline(
 	reg sous.Registry,
 	clusters sous.Clusters,
 	poolCount int,
+	depAssWait *sync.WaitGroup,
 	reqCh chan SingReq,
 	depCh chan *sous.DeployState,
 	errCh chan error,
@@ -246,10 +248,11 @@ func depPipeline(
 	defer catchAndSend("dependency building", errCh)
 	poolLimit := make(chan struct{}, poolCount)
 	for req := range reqCh {
+		depAssWait.Add(1)
 		Log.Vomit.Printf("starting assembling for %q", reqID(req.ReqParent))
 		go func(req SingReq) {
+			defer depAssWait.Done()
 			defer catchAndSend(fmt.Sprintf("dep from req %s", req.SourceURL), errCh)
-
 			poolLimit <- struct{}{}
 			defer func() {
 				Log.Vomit.Printf("finished assembling for %q", reqID(req.ReqParent))
