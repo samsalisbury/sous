@@ -8,7 +8,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/opentable/sous/lib"
 	"github.com/pborman/uuid"
 	"github.com/pkg/errors"
@@ -55,7 +54,6 @@ func (gsm *GitStateManager) gitOut(cmd ...string) (string, error) {
 	if gitssh != "" {
 		git.Env = append(git.Env, "GIT_SSH="+gitssh)
 	}
-	spew.Dump(git)
 	out, err := git.CombinedOutput()
 	if err == nil {
 		sous.Log.Debug.Printf("%+v: success", git.Args)
@@ -94,8 +92,6 @@ func (gsm *GitStateManager) needCommit() bool {
 
 func (gsm *GitStateManager) assertOneChange() error {
 	diffIndex, err := gsm.gitOut("diff-index", "--cached", "master@{upstream}")
-	spew.Dump(diffIndex)
-	spew.Dump(err)
 	if err != nil {
 		return err
 	}
