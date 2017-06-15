@@ -78,7 +78,8 @@ func (sb *SousDeployments) Execute(args []string) cmdr.Result {
 		if !ok {
 			p.Problems = "<not deployed>"
 		} else if !deployState.SourceID.Version.Equals(d.SourceID.Version) {
-			p.Problems = fmt.Sprintf("actual version deployed: %s", d.SourceID.Version)
+			p.Problems = fmt.Sprintf("actual version deployed: %s",
+				deployState.SourceID.Version)
 		} else {
 			p.Problems = "OK"
 		}
