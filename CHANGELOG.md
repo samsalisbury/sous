@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
-## [0.5.12](//github.com/opentable/sous/compare/0.5.11...0.5.12)
+## [0.5.13](//github.com/opentable/sous/compare/0.5.12...0.5.13)
 
 ### Added
 - Git tags with a non-numeric prefix and a semver suffix (e.g. 'release-1.2.3' or 'v2.3.4')
