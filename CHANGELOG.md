@@ -21,6 +21,9 @@ with respect to its command line interface and HTTP interface.
   error. We do not believe there are any such legitimate operations, and
   there's a storage anomoly that surfaces as multiple manifests changing at
   once which we hope this will correct.
+- 'sous manifest get' wrongly returned YAML with all lower-cased field names.
+  Now it correctly returns YAML with upper camel-cased field names.
+  Note that this does not apply to map keys, only struct fields.
 
 ## [0.5.12](//github.com/opentable/sous/compare/0.5.11...0.5.12)
 ### Fixed
