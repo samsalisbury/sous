@@ -78,7 +78,7 @@ func (sc *deployer) RunningDeployments(reg sous.Registry, clusters sous.Clusters
 	go depPipeline(reg, clusters, MaxAssemblers, &depAssWait, reqCh, depCh, errCh)
 
 	go func() {
-		catchAndSend("closing channels", errCh)
+		defer catchAndSend("closing channels", errCh)
 
 		singWait.Wait()
 		Log.Debug.Println("All singularities polled for requests")
