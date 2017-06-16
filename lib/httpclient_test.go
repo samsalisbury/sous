@@ -36,18 +36,23 @@ func TestPutbackJSON(t *testing.T) {
 		"b": "y",
 		"c": [2,3,1],
 		"d": {
-			"y": [{"q":"w"}, {"zx", "w"}],
+			"y": [{"q":"w"}, {"zx": "w"}],
 			"x": "c"
 		}
 	}`)
 
+	spew.Dump(baseB.String())
+	spew.Dump(updatedB.String())
 	outB := putbackJSON(origB, baseB, updatedB)
+
+	// Comparing orginal to output
 	o := map[string]interface{}{}
 	spew.Dump(json.Unmarshal(origCopy.Bytes(), &o))
 	b, _ := json.Marshal(o)
 	spew.Dump(string(b))
 	spew.Dump(outB.String())
 	mapped := map[string]interface{}{}
+
 	b, err := ioutil.ReadAll(outB)
 	assert.NoError(t, err)
 	json.Unmarshal(b, &mapped)

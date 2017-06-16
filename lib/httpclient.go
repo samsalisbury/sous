@@ -233,57 +233,6 @@ func (client *LiveHTTPClient) getBodyEtag(url string, user User, body Comparable
 	return etag, nil
 }
 
-type jsonMap map[string]interface{}
-
-func putbackJSON(originalBuf, baseBuf, changedBuf io.Reader) *bytes.Buffer {
-	var original, base, changed jsonMap
-	mapDecode(originalBuf, &original)
-	mapDecode(changedBuf, &base)
-	mapDecode(changedBuf, &changed)
-	original = applyChanges(base, changed, original)
-	return encodeJSON(original)
-}
-
-// mutates base
-func applyChanges(base, changed, target map[string]interface{}) map[string]interface{} {
-	for k, v := range changed {
-		switch v := v.(type) {
-		default:
-			if b, old := base[k]; !old {
-				target[k] = v //created
-			} else {
-				delete(base, k)
-				if b != v { // changed
-					target[k] = v
-				}
-			}
-		case map[string]interface{}:
-			// Unchecked cast: if base[k] isn't also a map, we have bigger problems.
-			// If target[k] isn't a map, then the server has changed the type under us, and we should crash
-			target[k] = applyChanges(base[k].(map[string]interface{}), v, target[k].(map[string]interface{}))
-		}
-	}
-
-	// the remaining fields were deleted
-	for k := range base {
-		delete(target, k)
-	}
-
-	return target
-}
-
-func mapDecode(buf io.Reader, into *jsonMap) error {
-	dec := json.NewDecoder(buf)
-	return dec.Decode(into)
-}
-
-func encodeJSON(from interface{}) *bytes.Buffer {
-	buf := &bytes.Buffer{}
-	enc := json.NewEncoder(buf)
-	enc.Encode(from)
-	return buf
-}
-
 func (client *LiveHTTPClient) buildRequest(method, url string, user User, headers map[string]string, rqBody interface{}, ierr error) (*http.Request, error) {
 	resource := &resourceState{}
 	if ierr != nil {
