@@ -17,7 +17,7 @@ after_script:
 - docker ps || true
 - docker logs testregistry_slave_1 || true
 after_success:
-- make coverage
+- if [ x$TRAVIS_PULL_REQUEST != "xfalse" ]; then make coverage; fi
 - bin/codecov -f /tmp/sous-cover/count_merged.txt
 env:
   global:
