@@ -164,13 +164,18 @@ func (*DummyHTTPClient) Retrieve(urlPath string, qParms map[string]string, rzBod
 	return nil
 }
 
+// RetrieveWithState implements HTTPClient on DummyHTTPClient - it does nothing and returns nil
+func (*DummyHTTPClient) RetrieveWithState(urlPath string, qParms map[string]string, rzBody interface{}, user User) (*resourceState, error) {
+	return nil, nil
+}
+
 // Update implements HTTPClient on DummyHTTPClient - it does nothing and returns nil
-func (*DummyHTTPClient) Update(urlPath string, qParms map[string]string, from, qBody Comparable, user User) error {
+func (*DummyHTTPClient) Update(urlPath string, qParms map[string]string, from *resourceState, qBody Comparable, user User) error {
 	return nil
 }
 
 // Delete implements HTTPClient on DummyHTTPClient - it does nothing and returns nil
-func (*DummyHTTPClient) Delete(urlPath string, qParms map[string]string, from Comparable, user User) error {
+func (*DummyHTTPClient) Delete(urlPath string, qParms map[string]string, from *resourceState, user User) error {
 	return nil
 }
 
@@ -267,7 +272,10 @@ func (client *LiveHTTPClient) getBody(rz *http.Response, rzBody interface{}, err
 
 	switch {
 	default:
-		rzJSON, err := json.Marshal(rzBody)
+		rzJSON, merr := json.Marshal(rzBody)
+		if err == nil {
+			err = merr
+		}
 		return &resourceState{
 			etag:         rz.Header.Get("ETag"),
 			body:         bytes.NewBuffer(b),
