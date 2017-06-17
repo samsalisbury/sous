@@ -10,15 +10,28 @@ type jsonMap map[string]interface{}
 
 func putbackJSON(originalBuf, baseBuf, changedBuf io.Reader) *bytes.Buffer {
 	var original, base, changed jsonMap
-	mapDecode(originalBuf, &original)
-	mapDecode(baseBuf, &base)
-	mapDecode(changedBuf, &changed)
+	err := mapDecode(originalBuf, &original)
+	if err != nil {
+		panic(err)
+	}
+	err = mapDecode(baseBuf, &base)
+	if err != nil {
+		panic(err)
+	}
+
+	err = mapDecode(changedBuf, &changed)
+	if err != nil {
+		panic(err)
+	}
 	original = applyChanges(base, changed, original)
 	return encodeJSON(original)
 }
 
 // mutates base
 func applyChanges(base, changed, target map[string]interface{}) map[string]interface{} {
+	if target == nil {
+		panic("nil target for applyChanges")
+	}
 	for k, v := range changed {
 		switch v := v.(type) {
 		default:
@@ -37,7 +50,13 @@ func applyChanges(base, changed, target map[string]interface{}) map[string]inter
 				delete(base, k)
 				// Unchecked cast: if base[k] isn't also a map, we have bigger problems.
 				// If target[k] isn't a map, then the server has changed the type under us, and we should crash
-				newMap := applyChanges(b.(map[string]interface{}), v, target[k].(map[string]interface{}))
+
+				tsub := target[k]
+				if tsub == nil {
+					tsub = map[string]interface{}{}
+				}
+
+				newMap := applyChanges(b.(map[string]interface{}), v, tsub.(map[string]interface{}))
 
 				target[k] = newMap
 			}
@@ -56,6 +75,30 @@ func same(left, right interface{}) bool {
 	switch left := left.(type) {
 	default:
 		return left == right
+	case map[string]interface{}:
+		r, is := right.(map[string]interface{})
+		if !is {
+			return false
+		}
+		for lk := range left {
+			rv, has := r[lk]
+			if !has {
+				return false
+			}
+			if !same(left[lk], rv) {
+				return false
+			}
+		}
+		for rk := range r {
+			lv, has := left[rk]
+			if !has {
+				return false
+			}
+			if !same(lv, r[rk]) {
+				return false
+			}
+		}
+		return true
 	case []interface{}:
 		r, is := right.([]interface{})
 		if !is {
