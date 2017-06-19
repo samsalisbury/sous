@@ -9,8 +9,8 @@ import (
 	"github.com/opentable/sous/graph"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
+	"github.com/opentable/sous/util/yaml"
 	"github.com/pkg/errors"
-	"github.com/samsalisbury/yaml"
 )
 
 type SousManifestSet struct {

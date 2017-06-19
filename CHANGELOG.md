@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
-## [Unreleased](//github.com/opentable/sous/compare/0.5.11...HEAD)
+## [0.5.13](//github.com/opentable/sous/compare/0.5.12...0.5.13)
 
 ### Added
 - Git tags with a non-numeric prefix and a semver suffix (e.g. 'release-1.2.3' or 'v2.3.4')
@@ -24,6 +24,10 @@ with respect to its command line interface and HTTP interface.
   error. We do not believe there are any such legitimate operations, and
   there's a storage anomoly that surfaces as multiple manifests changing at
   once which we hope this will correct.
+- 'sous manifest get' wrongly returned YAML with all lower-cased field names.
+  Now it correctly returns YAML with upper camel-cased field names.
+  Note that this does not apply to map keys, only struct fields.
+- Deployment processing wasn't properly waited on, which could cause problems.
 
 ## [0.5.12](//github.com/opentable/sous/compare/0.5.11...0.5.12)
 ### Fixed
