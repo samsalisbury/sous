@@ -49,6 +49,17 @@ func (sb *SousDeployments) RegisterOn(psy Addable) {
 	psy.Add(graph.DryrunNeither)
 }
 
+func (sb *SousDeployments) targetManifest(d *sous.Deployment) bool {
+	targetManifestID := sous.ManifestID(sb.TargetManifestID)
+	// Filter ignoring flavor if flavor is blank.
+	if sb.TargetManifestID.Flavor == "" {
+		dummyManifestID := d.ManifestID()
+		dummyManifestID.Flavor = ""
+		return dummyManifestID == targetManifestID
+	}
+	return d.ManifestID() == targetManifestID
+}
+
 // Execute defines the behavior of `sous query gdm`
 func (sb *SousDeployments) Execute(args []string) cmdr.Result {
 
@@ -57,17 +68,13 @@ func (sb *SousDeployments) Execute(args []string) cmdr.Result {
 		sous.ManifestID(sb.TargetManifestID))
 
 	intended := sb.GDM.Deployments
-	actual, err := sb.Deployer.RunningDeployments(sb.Registry, sb.State.Defs.Clusters)
+	actualDeployStates, err := sb.Deployer.RunningDeployments(sb.Registry, sb.State.Defs.Clusters)
 	if err != nil {
 		return EnsureErrorResult(err)
 	}
 
-	intended = intended.Filter(func(d *sous.Deployment) bool {
-		return d.SourceID.Location.Repo == sb.TargetManifestID.Source.Repo
-	})
-	actual = actual.Filter(func(d *sous.DeployState) bool {
-		return d.SourceID.Location.Repo == sb.TargetManifestID.Source.Repo
-	})
+	intended = intended.Filter(sb.targetManifest)
+	actual := actualDeployStates.IgnoringStatus().Filter(sb.targetManifest)
 
 	type printable struct {
 		Cluster, Flavor, Version, Problems string
