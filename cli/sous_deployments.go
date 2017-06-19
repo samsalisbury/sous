@@ -83,9 +83,6 @@ func (sb *SousDeployments) Execute(args []string) cmdr.Result {
 		} else {
 			p.Problems = "OK"
 		}
-		if p.Flavor == "" {
-			p.Flavor = "<no flavor>"
-		}
 		results = append(results, p)
 	}
 	// Sort the results by flavor, cluster.
