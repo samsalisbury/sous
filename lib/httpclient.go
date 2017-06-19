@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/pkg/errors"
 )
 
@@ -259,15 +260,15 @@ func (client *LiveHTTPClient) getBody(rz *http.Response, rzBody interface{}, err
 	}
 	defer rz.Body.Close()
 
-	if rzBody != nil {
-		dec := json.NewDecoder(rz.Body)
-		err = dec.Decode(rzBody)
-	}
-
 	b, e := ioutil.ReadAll(rz.Body)
+	spew.Dump(b, e)
 	if e != nil {
 		Log.Debug.Printf("error reading from body: %v", e)
 		b = []byte{}
+	}
+
+	if rzBody != nil {
+		err = json.Unmarshal(b, rzBody)
 	}
 
 	switch {
