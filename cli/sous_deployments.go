@@ -51,6 +51,11 @@ func (sb *SousDeployments) RegisterOn(psy Addable) {
 
 // Execute defines the behavior of `sous query gdm`
 func (sb *SousDeployments) Execute(args []string) cmdr.Result {
+
+	fmt.Fprintf(os.Stdout, "Fetching deployments of %s\n\n",
+		// Conversion to sous.ManifestID means we get that type's String method.
+		sous.ManifestID(sb.TargetManifestID))
+
 	intended := sb.GDM.Deployments
 	actual, err := sb.Deployer.RunningDeployments(sb.Registry, sb.State.Defs.Clusters)
 	if err != nil {
