@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"sort"
 	"text/tabwriter"
 
 	"github.com/opentable/sous/config"
@@ -31,8 +32,7 @@ func init() { TopLevelCommands["deployments"] = &SousDeployments{} }
 const sousDeployments = `List each deployment of a project managed by sous.
 
 Shows the version that should be deployed according to the manifest,
-and if that version does not match reality, shows the actual version
-deployed in that clusters as well.`
+and any problems with that deployment.`
 
 // Help prints the help
 func (*SousDeployments) Help() string { return sousQueryGDMHelp }
@@ -88,6 +88,12 @@ func (sb *SousDeployments) Execute(args []string) cmdr.Result {
 		}
 		results = append(results, p)
 	}
+	// Sort the results by flavor, cluster.
+	sort.Slice(results, func(i, j int) bool {
+		fi, fj := results[i].Flavor, results[j].Flavor
+		ci, cj := results[i].Cluster, results[j].Cluster
+		return (fi < fj) || (!(fi > fj) && ci < cj)
+	})
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 1, ' ', 0)
 	fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", "Cluster", "Flavor", "Version", "Status")
 	for _, p := range results {
