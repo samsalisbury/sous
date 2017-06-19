@@ -109,10 +109,11 @@ func (r *deployer) buildSingClient(url string) *singularity.Client {
 
 func rectifyRecover(d interface{}, f string, err *error) {
 	if r := recover(); r != nil {
+		stack := string(debug.Stack())
 		sous.Log.Warn.Printf("Panic in %s with %# v", f, d)
 		sous.Log.Warn.Printf("  %v", r)
-		sous.Log.Warn.Print(string(debug.Stack()))
-		*err = errors.Errorf("Panicked")
+		sous.Log.Warn.Print(stack)
+		*err = errors.Errorf("Panicked: %s; stack trace:\n%s", r, stack)
 	}
 }
 

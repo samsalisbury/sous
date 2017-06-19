@@ -133,18 +133,14 @@ func (db *deploymentBuilder) completeConstruction() error {
 	)
 }
 
-func reqID(rp *dtos.SingularityRequestParent) (ID string) {
-	defer func() {
-		if e := recover(); e != nil {
-			return
-		}
-	}()
-	ID = "<null RP>"
-	if rp != nil {
-		ID = "<null Request>"
+func reqID(rp *dtos.SingularityRequestParent) string {
+	if rp == nil {
+		return "<null RequestParent>"
 	}
-	ID = rp.Request.Id
-	return
+	if rp.Request == nil {
+		return "<null Request>"
+	}
+	return rp.Request.Id
 }
 
 func (db *deploymentBuilder) basics() error {
