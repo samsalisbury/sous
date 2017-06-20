@@ -115,6 +115,10 @@ install-build-tools: install-xgo install-govendor install-engulf install-staticc
 
 release: artifacts/$(DARWIN_TARBALL) artifacts/$(LINUX_TARBALL)
 
+deb-build: artifacts/$(LINUX_RELEASE_DIR)/sous
+	fpm -s dir -t deb -n sous -v $(SOUS_VERSION) artifacts/$(LINUX_RELEASE_DIR)/sous=/usr/bin/sous
+	mv sous_$(SOUS_VERSION)_amd64.deb artifacts/
+
 linux-build: artifacts/$(LINUX_RELEASE_DIR)/sous
 	ln -sf ../$< dev_support/sous_linux
 
@@ -192,4 +196,4 @@ artifacts/$(LINUX_TARBALL): artifacts/$(LINUX_RELEASE_DIR)/sous
 artifacts/$(DARWIN_TARBALL): artifacts/$(DARWIN_RELEASE_DIR)/sous
 	cd artifacts && tar czv $(DARWIN_RELEASE_DIR) > $(DARWIN_TARBALL)
 
-.PHONY: clean clean-containers clean-container-certs clean-running-containers clean-container-images coverage install-ggen legendary release semvertagchk test test-gofmt test-integration setup-containers test-unit reject-wip wip staticcheck
+.PHONY: clean clean-containers clean-container-certs clean-running-containers clean-container-images coverage deb-build install-ggen legendary release semvertagchk test test-gofmt test-integration setup-containers test-unit reject-wip wip staticcheck
