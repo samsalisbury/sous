@@ -3,6 +3,7 @@ package storage
 import (
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -13,27 +14,112 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func gitPrepare(t *testing.T, s *sous.State, remotepath, outpath string) {
+
+	clobberDir(t, remotepath)
+	clobberDir(t, outpath)
+
+	runCmd(t, remotepath, "git", "init", "--template=/dev/null", "--bare")
+
+	remoteAbs, err := filepath.Abs(remotepath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	runCmd(t, outpath, "git", "init", "--template=/dev/null")
+	runCmd(t, outpath, "git", "config", "user.email", "sous-test@testing.example.com")
+	runCmd(t, outpath, "git", "config", "user.name", "sous-test@testing.example.com")
+	runCmd(t, outpath, "git", "remote", "add", "origin", "file://"+remoteAbs)
+
+	dsm := NewDiskStateManager(outpath)
+	dsm.WriteState(s, testUser)
+
+	runCmd(t, outpath, "git", "add", ".")
+	runCmd(t, outpath, "git", "commit", "--no-gpg-sign", "-a", "-m", "birthday")
+	runCmd(t, outpath, "git", "push", "-u", "origin", "master")
+}
+
+func clobberDir(t *testing.T, path string) {
+	if err := os.RemoveAll(path); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(path, os.ModePerm); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func runCmd(t *testing.T, path string, cmd ...string) {
+	gitCmd := exec.Command(cmd[0], cmd[1:]...)
+	gitCmd.Dir = path
+	out, err := gitCmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("%q errored: %v\n %s", strings.Join(cmd, " "), err, out)
+	}
+}
+
 var testUser = sous.User{Name: "Test User", Email: "test@user.com"}
 
-func TestGitWriteState(t *testing.T) {
+func TestGitStateManager_WriteState_success(t *testing.T) {
 	require := require.New(t)
 
 	s := exampleState()
 
-	if err := os.RemoveAll("testdata/out"); err != nil {
-		t.Fatal(err)
-	}
+	clobberDir(t, "testdata/result")
+	gitPrepare(t, s, "testdata/remote", "testdata/out")
 
 	gsm := NewGitStateManager(NewDiskStateManager("testdata/out"))
 
 	require.NoError(gsm.WriteState(s, testUser))
 
-	d := exec.Command("diff", "-r", "testdata/in", "testdata/out")
-	out, err := d.CombinedOutput()
+	// eh? hacky, but we actually only care about Sous files
+
+	remoteAbs, err := filepath.Abs("testdata/remote")
 	if err != nil {
-		t.Log("Output not as expected:")
-		t.Log(string(out))
-		t.Fatal("")
+		t.Fatal(err)
+	}
+	runCmd(t, "testdata", "git", "clone", "file://"+remoteAbs, "result")
+
+	os.RemoveAll("testdata/result/.git")
+
+	d := exec.Command("diff", "-r", "testdata/in", "testdata/result")
+
+	if out, err := d.CombinedOutput(); err != nil {
+		t.Fatalf("Output not as expected: %s;\n%s", err, string(out))
+	}
+}
+
+func TestGitStateManager_WriteState_multiple_manifests(t *testing.T) {
+
+	s := exampleState()
+
+	gitPrepare(t, s, "testdata/remote", "testdata/out")
+
+	gsm := NewGitStateManager(NewDiskStateManager("testdata/out"))
+
+	// Modify one of the manifests.
+	m, ok := s.Manifests.Any(func(m *sous.Manifest) bool { return m.Source.Repo == "github.com/opentable/sous" })
+	if !ok {
+		t.Fatalf("no manifests found")
+	}
+	m.Deployments["cluster-1"].Env["NEWVAR"] = "YOLO"
+
+	// Modify the other manifest.
+	m, ok = s.Manifests.Any(func(m *sous.Manifest) bool { return m.Source.Repo == "github.com/user/project" })
+	if !ok {
+		t.Fatalf("no manifests found")
+	}
+	m.Deployments["other-cluster"].Env["NEWVAR"] = "YOLO"
+
+	s.Manifests.Set(m.ID(), m)
+
+	// 4. Attempt to write new manifest, expect error.
+	actualErr := gsm.WriteState(s, testUser)
+	if actualErr == nil {
+		t.Fatal("erroneously allowed writing state with modifications in multiple files")
+	}
+	expectedSubstr := "git update touches more than one file"
+	if !strings.Contains(actualErr.Error(), expectedSubstr) {
+		t.Fatalf("got error %q; want error containing %q", actualErr, expectedSubstr)
 	}
 }
 
@@ -194,6 +280,7 @@ func TestGitConflicts(t *testing.T) {
 
 	sameYAML(t, actual, expected)
 }
+
 func TestGitRemoteDelete(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)

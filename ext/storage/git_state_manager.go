@@ -32,8 +32,13 @@ func NewGitStateManager(dsm *DiskStateManager) *GitStateManager {
 }
 
 func (gsm *GitStateManager) git(cmd ...string) error {
+	_, err := gsm.gitOut(cmd...)
+	return err
+}
+
+func (gsm *GitStateManager) gitOut(cmd ...string) (string, error) {
 	if !gsm.isRepo() {
-		return nil
+		return "", fmt.Errorf("not in a git repo")
 	}
 	git := exec.Command(`git`, cmd...)
 	git.Dir = gsm.DiskStateManager.BaseDir
@@ -56,7 +61,7 @@ func (gsm *GitStateManager) git(cmd ...string) error {
 		sous.Log.Debug.Printf("%+v: error: %v", git.Args, err)
 	}
 	sous.Log.Vomit.Print("git: " + string(out))
-	return errors.Wrapf(err, strings.Join(git.Args, " ")+": "+string(out))
+	return string(out), errors.Wrapf(err, strings.Join(git.Args, " ")+": "+string(out))
 }
 
 func (gsm *GitStateManager) reset(tn string) {
@@ -83,6 +88,26 @@ func (gsm *GitStateManager) needCommit() bool {
 		return !ee.Success()
 	}
 	return false
+}
+
+func (gsm *GitStateManager) assertOneChange() error {
+	diffIndex, err := gsm.gitOut("diff-index", "--cached", "master@{upstream}")
+	if err != nil {
+		return err
+	}
+
+	firstNL := strings.IndexByte(diffIndex, '\n')
+	if firstNL == -1 {
+		// empty diff-index?
+		return nil
+	}
+
+	secondNL := strings.IndexByte(diffIndex[firstNL+1:], '\n')
+	if secondNL != -1 {
+		return errors.Errorf("git update touches more than one file: %q", diffIndex)
+	}
+
+	return nil
 }
 
 // WriteState writes sous state to disk, then attempts to push it to Remote.
@@ -131,7 +156,13 @@ func (gsm *GitStateManager) WriteState(s *sous.State, u sous.User) error {
 
 	const gitRectifyAttempts = 5
 	for remainingAttempts := gitRectifyAttempts; remainingAttempts > 0; remainingAttempts-- {
-		err := gsm.git("push", "-u", "origin", "master")
+		err := gsm.assertOneChange()
+		if err != nil {
+			gsm.reset(tn)
+			return err
+		}
+
+		err = gsm.git("push", "-u", "origin", "master")
 		if err == nil {
 			// Success.
 			return nil

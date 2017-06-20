@@ -1,6 +1,7 @@
 package singularity
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -22,6 +23,7 @@ type (
 		request   sRequest
 		req       SingReq
 		registry  sous.ImageLabeller
+		reqID     string
 	}
 
 	canRetryRequest struct {
@@ -65,9 +67,17 @@ func (mr malformedResponse) Error() string {
 
 func isMalformed(err error) bool {
 	err = errors.Cause(err)
-	_, yes := err.(malformedResponse)
-	Log.Vomit.Printf("err: %+v %T %t", err, err, yes)
-	return yes
+	_, isMal := err.(malformedResponse)
+	Log.Vomit.Printf("is malformedResponse? err: %+v %T %t", err, err, isMal)
+	_, isUMT := err.(*json.UnmarshalTypeError)
+	Log.Vomit.Printf("is json unmarshal type error? err: %+v %T %t", err, err, isUMT)
+	_, isUMF := err.(*json.UnmarshalFieldError)
+	Log.Vomit.Printf("is json unmarshal value error? err: %+v %T %t", err, err, isUMF)
+	_, isUST := err.(*json.UnsupportedTypeError)
+	Log.Vomit.Printf("is json unsupported type error? err: %+v %T %t", err, err, isUST)
+	_, isUSV := err.(*json.UnsupportedValueError)
+	Log.Vomit.Printf("is json unsupported value error? err: %+v %T %t", err, err, isUSV)
+	return isMal || isUMT || isUMF || isUST || isUSV
 }
 
 func (cr *canRetryRequest) Error() string {
@@ -142,6 +152,7 @@ func (db *deploymentBuilder) basics() error {
 	db.Target.ExecutorData = &singularityTaskData{requestID: reqID(db.req.ReqParent)}
 	Log.Vomit.Printf("Recording %v as requestID for instance.", db.Target.ExecutorData)
 	db.request = db.req.ReqParent.Request
+	db.reqID = reqID(db.req.ReqParent)
 	return nil
 }
 
@@ -185,19 +196,19 @@ func (db *deploymentBuilder) retrieveDeployHistory() error {
 	if db.depMarker == nil {
 		return db.retrieveHistoricDeploy()
 	}
-	Log.Vomit.Printf("Getting deploy based on Pending marker.")
+	Log.Vomit.Printf("%q Getting deploy based on Pending marker.", db.reqID)
 	return db.retrieveLiveDeploy()
 }
 
 func (db *deploymentBuilder) retrieveHistoricDeploy() error {
-	Log.Vomit.Printf("Getting deploy from history")
+	Log.Vomit.Printf("%q Getting deploy from history", db.reqID)
 	// !!! makes HTTP req
 	if db.request == nil {
 		return malformedResponse{"Singularity request parent had no request."}
 	}
 	sing := db.req.Sing
 	depHistList, err := sing.GetDeploys(db.request.Id, 1, 1)
-	Log.Vomit.Printf("Got history from Singularity with %d items.", len(depHistList))
+	Log.Vomit.Printf("%q Got history from Singularity with %d items.", db.reqID, len(depHistList))
 	if err != nil {
 		return errors.Wrap(err, "GetDeploys")
 	}
@@ -208,15 +219,14 @@ func (db *deploymentBuilder) retrieveHistoricDeploy() error {
 
 	partialHistory := depHistList[0]
 
-	Log.Vomit.Printf("%#v", partialHistory)
+	Log.Vomit.Printf("%q %#v", db.reqID, partialHistory)
 	if partialHistory.DeployMarker == nil {
 		return malformedResponse{"Singularity deploy history had no deploy marker."}
 	}
 
-	Log.Vomit.Printf("%#v", partialHistory.DeployMarker)
+	Log.Vomit.Printf("%q %#v", db.reqID, partialHistory.DeployMarker)
 	db.depMarker = partialHistory.DeployMarker
-	db.retrieveLiveDeploy()
-	return nil
+	return db.retrieveLiveDeploy()
 }
 
 func (db *deploymentBuilder) retrieveLiveDeploy() error {
@@ -224,9 +234,10 @@ func (db *deploymentBuilder) retrieveLiveDeploy() error {
 	sing := db.req.Sing
 	dh, err := sing.GetDeploy(db.depMarker.RequestId, db.depMarker.DeployId)
 	if err != nil {
-		return errors.Wrapf(err, "%#v", db.depMarker)
+		Log.Vomit.Printf("%q received error retrieving history entry for deploy marker: %#v %#v", db.reqID, db.depMarker, err)
+		return errors.Wrapf(err, "%q %#v", db.reqID, db.depMarker)
 	}
-	Log.Vomit.Printf("Deploy history entry retrieved: %#v", dh)
+	Log.Vomit.Printf("%q Deploy history entry retrieved: %#v", db.reqID, dh)
 
 	db.history = dh
 
@@ -234,6 +245,7 @@ func (db *deploymentBuilder) retrieveLiveDeploy() error {
 }
 
 func (db *deploymentBuilder) extractDeployFromDeployHistory() error {
+	Log.Debug.Printf("%q Extracting deploy from history: %#v", db.reqID, db.history)
 	db.deploy = db.history.Deploy
 	if db.deploy == nil {
 		return malformedResponse{"Singularity deploy history included no deploy"}
@@ -310,7 +322,7 @@ func (db *deploymentBuilder) retrieveImageLabels() error {
 	if err != nil {
 		return malformedResponse{err.Error()}
 	}
-	Log.Vomit.Print("Labels: ", labels)
+	Log.Vomit.Print("%q Labels: ", db.reqID, labels)
 
 	db.Target.SourceID, err = docker.SourceIDFromLabels(labels)
 	if err != nil {
@@ -331,7 +343,7 @@ func (db *deploymentBuilder) assignClusterName() error {
 
 func (db *deploymentBuilder) unpackDeployConfig() error {
 	db.Target.Env = db.deploy.Env
-	Log.Vomit.Printf("Env: %+v", db.deploy.Env)
+	Log.Vomit.Printf("%q Env: %+v", db.reqID, db.deploy.Env)
 	if db.Target.Env == nil {
 		db.Target.Env = make(map[string]string)
 	}
@@ -359,9 +371,9 @@ func (db *deploymentBuilder) unpackDeployConfig() error {
 				Mode:      sous.VolumeMode(v.Mode),
 			})
 	}
-	Log.Vomit.Printf("Volumes %+v", db.Target.DeployConfig.Volumes)
+	Log.Vomit.Printf("%q Volumes %+v", db.reqID, db.Target.DeployConfig.Volumes)
 	if len(db.Target.DeployConfig.Volumes) > 0 {
-		Log.Debug.Printf("%+v", db.Target.DeployConfig.Volumes[0])
+		Log.Debug.Printf("%q %+v", db.reqID, db.Target.DeployConfig.Volumes[0])
 	}
 
 	if db.deploy.HealthcheckUri != "" { // terrible hack

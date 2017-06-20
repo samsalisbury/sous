@@ -7,7 +7,7 @@ import (
 
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
-	"github.com/samsalisbury/yaml"
+	"github.com/opentable/sous/util/yaml"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
