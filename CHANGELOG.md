@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
+## [Unreleased](//github.com/opentable/sous/compare/0.5.14...HEAD)
+
+### Fixed
+- Non-destructive updates: clients won't clobber fields in the API they don't recognize. Result should be more stable, less coupled client-server relationship.
+
 ## [0.5.14](//github.com/opentable/sous/compare/0.5.13...0.5.14)
 
 ### Fixed
