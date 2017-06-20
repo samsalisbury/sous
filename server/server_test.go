@@ -12,6 +12,7 @@ import (
 
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
+	"github.com/opentable/sous/util/restful"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -95,7 +96,7 @@ func (suite serverTests) TestUpdateServers() {
 		Servers: []server{server{ClusterName: "name", URL: "url"}},
 	}
 
-	req, err := http.NewRequest("PUT", suite.url+"/servers", suite.encodeJSON(newServers))
+	req, err := http.NewRequest("PUT", suite.url+"/servers", restful.InjectCanaryAttr(suite.encodeJSON(newServers), etag))
 	req.Header.Set("If-Match", etag)
 	suite.NoError(err)
 	_, err = client.Do(req)

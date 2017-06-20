@@ -124,6 +124,10 @@ func (mh *MetaHandler) PutHandling(factory ExchangeFactory) httprouter.Handle {
 						etag, grezEtag, rezStr))
 				return
 			}
+
+			if !mh.validCanaryAttr(w, r, etag) {
+				return
+			}
 		}
 		h := mh.injectedHandler(factory, w, r, p)
 		data, status := h.Exchange()
@@ -176,11 +180,12 @@ func (mh *MetaHandler) renderData(status int, w http.ResponseWriter, r *http.Req
 	// xxx conneg
 	e := json.NewEncoder(io.MultiWriter(buf, digest))
 	e.Encode(data)
+	etag := base64.URLEncoding.EncodeToString(digest.Sum(nil))
 	w.Header().Add("Content-Type", "application/json")
-	w.Header().Add("Content-Length", fmt.Sprintf("%d", buf.Len()))
-	w.Header().Add("Etag", base64.URLEncoding.EncodeToString(digest.Sum(nil)))
+	w.Header().Add("Content-Length", fmt.Sprintf("%d", calcContentLength(buf, etag)))
+	w.Header().Add("Etag", etag)
 	mh.writeHeaders(status, w, r, data)
-	buf.WriteTo(w)
+	io.Copy(w, InjectCanaryAttr(buf, etag))
 }
 
 func emptyBody() io.ReadCloser {

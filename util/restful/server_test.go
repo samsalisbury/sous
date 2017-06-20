@@ -9,9 +9,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/julienschmidt/httprouter"
 	"github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/readdebugger"
 	"github.com/samsalisbury/psyringe"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -76,6 +79,36 @@ func justBytes(b []byte, e error) io.ReadCloser {
 		return nil
 	}
 	return ioutil.NopCloser(bytes.NewBuffer(b))
+}
+
+func TestRenderDataCanaries(t *testing.T) {
+	rr := httptest.NewRecorder()
+	ph := &StatusMiddleware{
+		LogSet: sous.SilentLogSet(),
+	}
+	mh := &MetaHandler{
+		//graphFac:      grf,
+		//router:        r,
+		statusHandler: ph,
+	}
+	rq := httptest.NewRequest("GET", "/somewhere", nil)
+	data := map[string]string{"a": "b"}
+
+	mh.renderData(200, rr, rq, data)
+
+	rz := rr.Result()
+	bodyB, err := ioutil.ReadAll(rz.Body)
+	assert.NoError(t, err)
+
+	dump := map[string]interface{}{}
+	err = json.Unmarshal(bodyB, &dump)
+	assert.NoError(t, err)
+
+	etag := rz.Header.Get("Etag")
+	assert.NotZero(t, etag)
+
+	assert.Contains(t, dump, etag)
+	assert.Equal(t, dump[etag].(string), "canary")
 }
 
 type PutConditionalsSuite struct {
@@ -168,17 +201,47 @@ func (t *PutConditionalsSuite) TestPutConditionalsMatched() {
 	res, err := http.Get(t.server.URL + "/test/one?extra=two")
 	t.NoError(err)
 	var td TestData
-	dec := json.NewDecoder(res.Body)
+	dec := json.NewDecoder(readdebugger.New(res.Body, func(b []byte, n int, e error) {
+		spew.Dump(b, n, e)
+	}))
 	t.NoError(dec.Decode(&td))
 	res.Body.Close()
 	t.Equal(TestData{"base", "one", "two"}, td)
 	etag := res.Header.Get("Etag")
 
-	req := t.testReq("PUT", "/test/one?extra=two", TestData{"changed", "one", "two"})
+	req := t.testReq("PUT", "/test/one?extra=two", map[string]interface{}{
+		etag:    "canary",
+		"Data":  "changed",
+		"Name":  "one",
+		"Extra": "two",
+	})
 	req.Header.Add("If-Match", etag)
 	res, err = t.client.Do(req)
 	t.NoError(err)
 	t.Equal(res.Status, "200 OK")
+}
+
+func (t *PutConditionalsSuite) TestPutConditionalsWithoutCanaryIsRejected() {
+	res, err := http.Get(t.server.URL + "/test/one?extra=two")
+	t.NoError(err)
+	var td TestData
+	dec := json.NewDecoder(readdebugger.New(res.Body, func(b []byte, n int, e error) {
+		spew.Dump(b, n, e)
+	}))
+	t.NoError(dec.Decode(&td))
+	res.Body.Close()
+	t.Equal(TestData{"base", "one", "two"}, td)
+	etag := res.Header.Get("Etag")
+
+	req := t.testReq("PUT", "/test/one?extra=two", map[string]interface{}{
+		"Data":  "changed",
+		"Name":  "one",
+		"Extra": "two",
+	})
+	req.Header.Add("If-Match", etag)
+	res, err = t.client.Do(req)
+	t.NoError(err)
+	t.Equal(res.StatusCode, 400)
 }
 
 func (t *PutConditionalsSuite) TestPutConditionalsMatchedRejected() {
