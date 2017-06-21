@@ -46,10 +46,8 @@ func (mh *MetaHandler) validCanaryAttr(w http.ResponseWriter, r *http.Request, e
 
 	rbody := bytes.NewReader(rbytes)
 	dump := map[string]interface{}{}
-	dec := json.NewDecoder(rbody)
-	err = dec.Decode(&dump)
 
-	if err != nil {
+	if err := json.NewDecoder(rbody).Decode(&dump); err != nil {
 		mh.writeHeaders(http.StatusBadRequest, w, r, fmt.Sprintf("Error parsing JSON: %v", err))
 		return false
 	}

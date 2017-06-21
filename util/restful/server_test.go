@@ -99,8 +99,7 @@ func TestRenderDataCanaries(t *testing.T) {
 	assert.NoError(t, err)
 
 	dump := map[string]interface{}{}
-	err = json.Unmarshal(bodyB, &dump)
-	assert.NoError(t, err)
+	assert.NoError(t, json.Unmarshal(bodyB, &dump))
 
 	etag := rz.Header.Get("Etag")
 	assert.NotZero(t, etag)
