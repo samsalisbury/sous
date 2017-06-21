@@ -160,17 +160,15 @@ func dontrecover() error {
 func catchAndSend(from string, errs chan error) {
 	defer catchAll(from)
 	if err := recover(); err != nil {
-		stack := string(debug.Stack())
 		Log.Debug.Printf("from = %s err = %+v\n", from, err)
-		Log.Debug.Printf("debug.Stack() = %+v\n", stack)
+		Log.Debug.Printf("debug.Stack() = %+v\n", string(debug.Stack()))
 		switch err := err.(type) {
 		default:
 			if err != nil {
-				errs <- fmt.Errorf("%s: Panicked with not-error: %v\n%s",
-					from, err, stack)
+				errs <- fmt.Errorf("%s: Panicked with not-error: %v", from, err)
 			}
 		case error:
-			errs <- errors.Wrapf(err, from+" stack trace below:\n%s", stack)
+			errs <- errors.Wrapf(err, from)
 		}
 	}
 }
