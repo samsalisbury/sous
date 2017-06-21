@@ -48,12 +48,12 @@ func (mh *MetaHandler) validCanaryAttr(w http.ResponseWriter, r *http.Request, e
 	dump := map[string]interface{}{}
 
 	if err := json.NewDecoder(rbody).Decode(&dump); err != nil {
-		mh.writeHeaders(http.StatusBadRequest, w, r, fmt.Sprintf("Error parsing JSON: %v", err))
+		mh.writeHeaders(http.StatusBadRequest, w, r, fmt.Sprintf("Error parsing JSON: %v\n\nIt is possible that your client is out of date. Try updating.", err))
 		return false
 	}
 
 	if canary, has := dump[etag]; !has || canary != "canary" {
-		mh.writeHeaders(http.StatusBadRequest, w, r, fmt.Sprintf("Absent or malformed canary field: %q", canary))
+		mh.writeHeaders(http.StatusBadRequest, w, r, fmt.Sprintf("Absent or malformed canary field: %q\n\nIt is possible that your client is out of date. Try updating.", canary))
 		return false
 	}
 
