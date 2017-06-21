@@ -152,9 +152,6 @@ func TestHandlesManifestPut(t *testing.T) {
 	req, err := http.NewRequest("PUT", "", buf)
 	require.NoError(err)
 
-	sous.Log.BeChatty()
-	defer sous.Log.BeQuiet()
-
 	th := &PUTManifestHandler{
 		Request:     req,
 		StateWriter: writer,

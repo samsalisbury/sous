@@ -31,3 +31,11 @@ func (u User) String() string {
 func (u User) Complete() bool {
 	return u.Name != "" && u.Email != ""
 }
+
+// HTTPHeaders returns a map suitable to use as HTTP headers to be consumed by the server.
+func (u User) HTTPHeaders() map[string]string {
+	return map[string]string{
+		"Sous-User-Name":  u.Name,
+		"Sous-User-Email": u.Email,
+	}
+}

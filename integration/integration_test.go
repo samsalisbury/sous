@@ -260,8 +260,6 @@ func (suite *integrationSuite) TestFailedTimedOutService() {
 		CheckReadyURITimeout: &timeout,
 	}
 	registerAndDeploy(ip, "test-cluster", "webapp", "github.com/example/webapp", "webapp", "latest", []int32{}, startup)
-	sous.Log.BeChatty()
-	defer sous.Log.BeQuiet()
 
 	clusters := []string{"test-cluster"}
 	fails := suite.waitUntilSettledStatus(clusters, "github.com/example/webapp")
@@ -277,8 +275,6 @@ func (suite *integrationSuite) TestFailedNotHealthyService() {
 		CheckReadyURITimeout: &timeout,
 	}
 	registerAndDeploy(ip, "test-cluster", "webapp", "github.com/example/webapp", "webapp", "latest", []int32{}, startup)
-	sous.Log.BeChatty()
-	defer sous.Log.BeQuiet()
 
 	clusters := []string{"test-cluster"}
 	fails := suite.waitUntilSettledStatus(clusters, "github.com/example/webapp")
@@ -294,8 +290,6 @@ func (suite *integrationSuite) TestSuccessfulService() {
 		CheckReadyURITimeout: &timeout,
 	}
 	registerAndDeploy(ip, "test-cluster", "webapp", "github.com/example/webapp", "webapp", "latest", []int32{}, startup)
-	sous.Log.BeChatty()
-	defer sous.Log.BeQuiet()
 
 	clusters := []string{"test-cluster"}
 

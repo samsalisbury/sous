@@ -106,13 +106,6 @@ func (hsm *HTTPStateManager) WriteState(s *State, u User) error {
 
 ////
 
-func (user User) HTTPHeaders() map[string]string {
-	return map[string]string{
-		"Sous-User-Name":  user.Name,
-		"Sous-User-Email": user.Email,
-	}
-}
-
 func (hsm *HTTPStateManager) getDefs() (Defs, error) {
 	ds := Defs{}
 	_, err := hsm.Retrieve("./defs", nil, &ds, hsm.User.HTTPHeaders())
