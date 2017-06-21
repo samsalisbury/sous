@@ -133,7 +133,16 @@ func (db *deploymentBuilder) completeConstruction() error {
 	)
 }
 
-func reqID(rp *dtos.SingularityRequestParent) string {
+func reqID(rp *dtos.SingularityRequestParent) (id string) {
+	// defer func() { recover() }() because we explicitly do not care if this
+	// panics. It is only used in certain low-level logs, and we don't mind
+	// if we get some garbage data there. There is a fear that some race
+	// condition between asserting that rp and rp.Request are not nil and
+	// accessing their members may cause panics here. Please do not remove
+	// this line before asserting somehow that this race condition does not
+	// exist.
+	defer func() { recover() }()
+	id = "singularity.reqID() panicked"
 	if rp == nil {
 		return "<null RequestParent>"
 	}
