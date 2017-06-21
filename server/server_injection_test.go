@@ -25,7 +25,7 @@ func basicInjectedHandler(factory restful.ExchangeFactory, t *testing.T) restful
 		return g.Clone()
 	}
 
-	exchLogger := SousRouteMap.SingleExchanger(factory, gf)
+	exchLogger := SousRouteMap.SingleExchanger(factory, gf, restful.PlaceholderLogger())
 
 	logger, ok := exchLogger.(*restful.ExchangeLogger)
 	require.True(ok)

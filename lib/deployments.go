@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 
+	"github.com/opentable/sous/util/restful"
 	"github.com/pkg/errors"
 )
 
@@ -26,19 +27,19 @@ func (ds *Deployments) Only() (*Deployment, error) {
 }
 
 // EmptyReceiver implements Comparable on Deployments
-func (ds *Deployments) EmptyReceiver() Comparable {
+func (ds *Deployments) EmptyReceiver() restful.Comparable {
 	nds := NewDeployments()
 	return &nds
 }
 
 // VariancesFrom implements Comparable on Deployments
-func (ds *Deployments) VariancesFrom(other Comparable) Variances {
+func (ds *Deployments) VariancesFrom(other restful.Comparable) restful.Variances {
 
 	switch ods := other.(type) {
 	default:
-		return Variances{"not a list of Deployments"}
+		return restful.Variances{"not a list of Deployments"}
 	case *Deployments:
-		vs := Variances{}
+		vs := restful.Variances{}
 		if ds.Len() != ods.Len() {
 			vs = append(vs, fmt.Sprintf("We have %d deployments, other has %d.", ds.Len(), ods.Len()))
 		}

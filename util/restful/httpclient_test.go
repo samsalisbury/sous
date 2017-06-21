@@ -1,4 +1,4 @@
-package sous
+package restful
 
 import (
 	"bytes"
@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,7 +20,6 @@ func TestPutbackJSON(t *testing.T) {
 			"x": "x"
 		}
 	}`)
-	origCopy := *origB
 
 	baseB := bytes.NewBufferString(`{
 		"b": "b",
@@ -41,16 +39,9 @@ func TestPutbackJSON(t *testing.T) {
 		}
 	}`)
 
-	spew.Dump(baseB.String())
-	spew.Dump(updatedB.String())
 	outB := putbackJSON(origB, baseB, updatedB)
 
 	// Comparing orginal to output
-	o := map[string]interface{}{}
-	spew.Dump(json.Unmarshal(origCopy.Bytes(), &o))
-	b, _ := json.Marshal(o)
-	spew.Dump(string(b))
-	spew.Dump(outB.String())
 	mapped := map[string]interface{}{}
 
 	b, err := ioutil.ReadAll(outB)

@@ -9,9 +9,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/julienschmidt/httprouter"
-	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/readdebugger"
 	"github.com/samsalisbury/psyringe"
 	"github.com/stretchr/testify/assert"
@@ -84,7 +82,7 @@ func justBytes(b []byte, e error) io.ReadCloser {
 func TestRenderDataCanaries(t *testing.T) {
 	rr := httptest.NewRecorder()
 	ph := &StatusMiddleware{
-		LogSet: sous.SilentLogSet(),
+		logSet: &silentLogSet{},
 	}
 	mh := &MetaHandler{
 		//graphFac:      grf,
@@ -118,8 +116,8 @@ type PutConditionalsSuite struct {
 }
 
 func (t *PutConditionalsSuite) SetupTest() {
-	dif := func() Injector { return psyringe.New(sous.SilentLogSet) }
-	t.server = httptest.NewServer(testRouteMap().BuildRouter(dif))
+	dif := func() Injector { return psyringe.New() }
+	t.server = httptest.NewServer(testRouteMap().BuildRouter(dif, &fallbackLogger{}))
 
 	t.client = &http.Client{}
 }
@@ -137,8 +135,6 @@ func (t *PutConditionalsSuite) testReq(method, path string, data interface{}) *h
 }
 
 func (t *PutConditionalsSuite) TestOptionsAllowCORS() {
-	sous.Log.BeChatty()
-	defer sous.Log.BeQuiet()
 	req := t.testReq("OPTIONS", "/test/one", nil)
 	req.Header.Add("Origin", "test-client.example.com")
 	res, err := t.client.Do(req)
@@ -159,6 +155,8 @@ func (t *PutConditionalsSuite) TestGetAllowCORS() {
 	res, err := t.client.Do(req)
 	t.NoError(err)
 	t.Equal("200 OK", res.Status)
+	bb, _ := ioutil.ReadAll(res.Body)
+	t.T().Log("Response body: ", string(bb))
 	t.Equal("*", res.Header.Get("Access-Control-Allow-Origin"))
 }
 
@@ -202,7 +200,7 @@ func (t *PutConditionalsSuite) TestPutConditionalsMatched() {
 	t.NoError(err)
 	var td TestData
 	dec := json.NewDecoder(readdebugger.New(res.Body, func(b []byte, n int, e error) {
-		spew.Dump(b, n, e)
+		//spew.Dump(b, n, e)
 	}))
 	t.NoError(dec.Decode(&td))
 	res.Body.Close()
@@ -226,7 +224,7 @@ func (t *PutConditionalsSuite) TestPutConditionalsWithoutCanaryIsRejected() {
 	t.NoError(err)
 	var td TestData
 	dec := json.NewDecoder(readdebugger.New(res.Body, func(b []byte, n int, e error) {
-		spew.Dump(b, n, e)
+		//spew.Dump(b, n, e)
 	}))
 	t.NoError(dec.Decode(&td))
 	res.Body.Close()

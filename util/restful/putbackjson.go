@@ -1,4 +1,4 @@
-package sous
+package restful
 
 import (
 	"bytes"
@@ -10,17 +10,14 @@ type jsonMap map[string]interface{}
 
 func putbackJSON(originalBuf, baseBuf, changedBuf io.Reader) *bytes.Buffer {
 	var original, base, changed jsonMap
-	err := mapDecode(originalBuf, &original)
-	if err != nil {
+	if err := mapDecode(originalBuf, &original); err != nil {
 		panic(err)
 	}
-	err = mapDecode(baseBuf, &base)
-	if err != nil {
+	if err := mapDecode(baseBuf, &base); err != nil {
 		panic(err)
 	}
 
-	err = mapDecode(changedBuf, &changed)
-	if err != nil {
+	if err := mapDecode(changedBuf, &changed); err != nil {
 		panic(err)
 	}
 	original = applyChanges(base, changed, original)
@@ -71,6 +68,7 @@ func applyChanges(base, changed, target map[string]interface{}) map[string]inter
 	return target
 }
 
+// same does a kind of limited deep equality over loosly typed values (e.g. map[string]interface{})
 func same(left, right interface{}) bool {
 	switch left := left.(type) {
 	default:
@@ -118,13 +116,13 @@ func same(left, right interface{}) bool {
 }
 
 func mapDecode(buf io.Reader, into *jsonMap) error {
-	dec := json.NewDecoder(buf)
-	return dec.Decode(into)
+	return json.NewDecoder(buf).Decode(into)
 }
 
 func encodeJSON(from interface{}) *bytes.Buffer {
 	buf := &bytes.Buffer{}
-	enc := json.NewEncoder(buf)
-	enc.Encode(from)
+	if err := json.NewEncoder(buf).Encode(from); err != nil {
+		panic(err)
+	}
 	return buf
 }

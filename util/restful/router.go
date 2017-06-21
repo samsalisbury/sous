@@ -14,7 +14,6 @@ import (
 	"strings"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/opentable/sous/lib"
 )
 
 type (
@@ -23,6 +22,7 @@ type (
 		router        *httprouter.Router
 		graphFac      func() Injector //XXX This is a workaround for a bug in psyringe.Clone()
 		statusHandler *StatusMiddleware
+		logSet
 	}
 
 	// ResponseWriter wraps the the http.ResponseWriter interface.
@@ -34,7 +34,7 @@ type (
 	// ExchangeLogger wraps and logs the exchange.
 	ExchangeLogger struct {
 		Exchanger Exchanger
-		*sous.LogSet
+		*logSetWrapper
 		*http.Request
 		httprouter.Params
 	}
@@ -49,9 +49,9 @@ type (
 
 // Exchange implements Exchanger on ExchangeLogger.
 func (xlog *ExchangeLogger) Exchange() (data interface{}, status int) {
-	xlog.Vomit.Printf("Server: <- %s %s params: %v", xlog.Method, xlog.URL.String(), xlog.Params)
+	xlog.Vomitf("Server: <- %s %s params: %v", xlog.Method, xlog.URL.String(), xlog.Params)
 	data, status = xlog.Exchanger.Exchange()
-	xlog.Vomit.Printf("Server: -> %d: %#v", status, data)
+	xlog.Vomitf("Server: -> %d: %#v", status, data)
 	return
 }
 
@@ -150,6 +150,7 @@ func (mh *MetaHandler) ExchangeGraph(w http.ResponseWriter, r *http.Request, p h
 	g := mh.graphFac()
 	g.Add(&ResponseWriter{ResponseWriter: w}, r, p)
 	g.Add(parseQueryValues)
+	g.Add(&logSetWrapper{mh.logSet})
 	return g
 }
 
@@ -158,10 +159,10 @@ func (mh *MetaHandler) injectedHandler(factory ExchangeFactory, w http.ResponseW
 
 	exGraph := mh.ExchangeGraph(w, r, p)
 	exGraph.MustInject(h)
+
 	logger := &ExchangeLogger{}
 	exGraph.MustInject(logger)
 	logger.Exchanger = h
-
 	return logger
 }
 

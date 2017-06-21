@@ -34,7 +34,7 @@ func (suite *serverSuite) SetupTest() {
 	g := graph.TestGraphWithConfig(&bytes.Buffer{}, os.Stdout, os.Stdout,
 		"StateLocation: '../ext/storage/testdata/in'\n")
 	g.Add(&config.Verbosity{})
-	suite.serverTests.server = httptest.NewServer(Handler(g))
+	suite.serverTests.server = httptest.NewServer(Handler(g, restful.PlaceholderLogger()))
 	suite.serverTests.url = suite.server.URL
 }
 
@@ -42,7 +42,7 @@ func (suite *profServerSuite) SetupTest() {
 	g := graph.TestGraphWithConfig(&bytes.Buffer{}, os.Stdout, os.Stdout,
 		"StateLocation: '../ext/storage/testdata/in'\n")
 	g.Add(&config.Verbosity{})
-	suite.serverTests.server = httptest.NewServer(profilingHandler(g)) // <--- profiling
+	suite.serverTests.server = httptest.NewServer(profilingHandler(g, restful.PlaceholderLogger())) // <--- profiling
 	suite.serverTests.url = suite.server.URL
 }
 
