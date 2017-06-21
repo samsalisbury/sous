@@ -318,7 +318,7 @@ func (db *deploymentBuilder) retrieveImageLabels() error {
 	if err != nil {
 		return malformedResponse{err.Error()}
 	}
-	Log.Vomit.Print("%q Labels: ", db.reqID, labels)
+	Log.Vomit.Printf("%q Labels: %v", db.reqID, labels)
 
 	db.Target.SourceID, err = docker.SourceIDFromLabels(labels)
 	if err != nil {
