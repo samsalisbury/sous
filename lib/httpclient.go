@@ -27,12 +27,17 @@ type (
 		resourceJSON io.Reader
 	}
 
+	// An Updater represents a point in time from which an update can be attempted.
+	Updater interface {
+		Update(HTTPClient, string, map[string]string, Comparable, User) error
+	}
+
 	// HTTPClient interacts with a HTTPServer
 	//   It's designed to handle basic CRUD operations in a safe and restful way.
 	HTTPClient interface {
 		Create(urlPath string, qParms map[string]string, rqBody interface{}, user User) error
 		Retrieve(urlPath string, qParms map[string]string, rzBody interface{}, user User) error
-		RetrieveWithState(urlPath string, qParms map[string]string, rzBody interface{}, user User) (*resourceState, error)
+		RetrieveWithState(urlPath string, qParms map[string]string, rzBody interface{}, user User) (Updater, error)
 		Update(urlPath string, qParms map[string]string, from *resourceState, qBody Comparable, user User) error
 		Delete(urlPath string, qParms map[string]string, from *resourceState, user User) error
 	}
@@ -105,7 +110,7 @@ func (client *LiveHTTPClient) Retrieve(urlPath string, qParms map[string]string,
 // are returned if anything goes wrong, including a non-Success HTTP result
 // (but note that there may be a response anyway.
 // It returns an opaque state object for use with Update
-func (client *LiveHTTPClient) RetrieveWithState(urlPath string, qParms map[string]string, rzBody interface{}, user User) (*resourceState, error) {
+func (client *LiveHTTPClient) RetrieveWithState(urlPath string, qParms map[string]string, rzBody interface{}, user User) (Updater, error) {
 	url, err := client.buildURL(urlPath, qParms)
 	rq, err := client.buildRequest("GET", url, user, nil, nil, nil, err)
 	rz, err := client.sendRequest(rq, err)
@@ -142,6 +147,10 @@ func (client *LiveHTTPClient) Update(urlPath string, qParms map[string]string, f
 	}(), "Update %s", urlPath)
 }
 
+func (rs *resourceState) Update(cl HTTPClient, urlPath string, qParms map[string]string, qBody Comparable, user User) error {
+	return cl.Update(urlPath, qParms, rs, qBody, user)
+}
+
 // Delete removes a resource from the server, granted that we know the resource that we're removing.
 // It functions similarly to Update, but issues DELETE requests.
 func (client *LiveHTTPClient) Delete(urlPath string, qParms map[string]string, from *resourceState, user User) error {
@@ -166,7 +175,7 @@ func (*DummyHTTPClient) Retrieve(urlPath string, qParms map[string]string, rzBod
 }
 
 // RetrieveWithState implements HTTPClient on DummyHTTPClient - it does nothing and returns nil
-func (*DummyHTTPClient) RetrieveWithState(urlPath string, qParms map[string]string, rzBody interface{}, user User) (*resourceState, error) {
+func (*DummyHTTPClient) RetrieveWithState(urlPath string, qParms map[string]string, rzBody interface{}, user User) (Updater, error) {
 	return nil, nil
 }
 

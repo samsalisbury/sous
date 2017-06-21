@@ -11,7 +11,7 @@ type (
 	// back to that server.
 	HTTPStateManager struct {
 		cached   *State
-		gdmState *resourceState
+		gdmState Updater
 		HTTPClient
 		User User
 	}
@@ -122,7 +122,7 @@ func (hsm *HTTPStateManager) getManifests(defs Defs) (Manifests, error) {
 
 func (hsm *HTTPStateManager) putDeployments(new Deployments) error {
 	wNew := wrapDeployments(new)
-	return errors.Wrapf(hsm.Update("./gdm", nil, hsm.gdmState, &wNew, hsm.User), "putting GDM")
+	return errors.Wrapf(hsm.gdmState.Update(hsm.HTTPClient, "./gdm", nil, &wNew, hsm.User), "putting GDM")
 }
 
 // EmptyReceiver implements Comparable on Manifest
