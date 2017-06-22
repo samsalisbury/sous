@@ -84,9 +84,9 @@ func (ss *SousServer) Execute(args []string) cmdr.Result {
 	}
 
 	if ss.flags.profiling {
-		return EnsureErrorResult(server.RunWithProfiling(ss.SousGraph, ss.flags.laddr)) //always non-nil
+		return EnsureErrorResult(server.RunWithProfiling(ss.SousGraph, ss.flags.laddr, ss.Log)) //always non-nil
 	} else {
-		return EnsureErrorResult(server.Run(ss.SousGraph, ss.flags.laddr)) //always non-nil
+		return EnsureErrorResult(server.Run(ss.SousGraph, ss.flags.laddr, ss.Log)) //always non-nil
 	}
 }
 

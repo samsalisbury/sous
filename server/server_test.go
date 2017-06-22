@@ -12,6 +12,7 @@ import (
 
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
+	"github.com/opentable/sous/util/restful"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -33,7 +34,7 @@ func (suite *serverSuite) SetupTest() {
 	g := graph.TestGraphWithConfig(&bytes.Buffer{}, os.Stdout, os.Stdout,
 		"StateLocation: '../ext/storage/testdata/in'\n")
 	g.Add(&config.Verbosity{})
-	suite.serverTests.server = httptest.NewServer(Handler(g))
+	suite.serverTests.server = httptest.NewServer(Handler(g, restful.PlaceholderLogger()))
 	suite.serverTests.url = suite.server.URL
 }
 
@@ -41,7 +42,7 @@ func (suite *profServerSuite) SetupTest() {
 	g := graph.TestGraphWithConfig(&bytes.Buffer{}, os.Stdout, os.Stdout,
 		"StateLocation: '../ext/storage/testdata/in'\n")
 	g.Add(&config.Verbosity{})
-	suite.serverTests.server = httptest.NewServer(profilingHandler(g)) // <--- profiling
+	suite.serverTests.server = httptest.NewServer(profilingHandler(g, restful.PlaceholderLogger())) // <--- profiling
 	suite.serverTests.url = suite.server.URL
 }
 
@@ -95,7 +96,7 @@ func (suite serverTests) TestUpdateServers() {
 		Servers: []server{server{ClusterName: "name", URL: "url"}},
 	}
 
-	req, err := http.NewRequest("PUT", suite.url+"/servers", suite.encodeJSON(newServers))
+	req, err := http.NewRequest("PUT", suite.url+"/servers", restful.InjectCanaryAttr(suite.encodeJSON(newServers), etag))
 	req.Header.Set("If-Match", etag)
 	suite.NoError(err)
 	_, err = client.Do(req)

@@ -9,16 +9,6 @@ import (
 	"github.com/opentable/sous/util/restful"
 )
 
-/*
-// New creates a Sous HTTP server.
-func New(laddr string, gf func() restful.Injector) *http.Server {
-	return &http.Server{
-		Addr:    laddr,
-		Handler: SousRouteMap.BuildRouter(gf),
-	}
-}
-*/
-
 // this ensures that certain objects are injected early, so that they'll remain
 // the same across requests
 type fixedPoints struct {
@@ -26,8 +16,14 @@ type fixedPoints struct {
 	*graph.StateManager
 }
 
+type logSet interface {
+	Vomitf(format string, a ...interface{})
+	Debugf(format string, a ...interface{})
+	Warnf(format string, a ...interface{})
+}
+
 // Handler builds the http.Handler for the Sous server httprouter.
-func Handler(mainGraph *graph.SousGraph) http.Handler {
+func Handler(mainGraph *graph.SousGraph, ls logSet) http.Handler {
 	mainGraph.Inject(&fixedPoints{})
 	gf := func() restful.Injector {
 		g := mainGraph.Clone()
@@ -35,21 +31,21 @@ func Handler(mainGraph *graph.SousGraph) http.Handler {
 
 		return g
 	}
-	return SousRouteMap.BuildRouter(gf)
+	return SousRouteMap.BuildRouter(gf, ls)
 }
 
 // Run starts a server up.
-func Run(mainGraph *graph.SousGraph, laddr string) error {
+func Run(mainGraph *graph.SousGraph, laddr string, ls logSet) error {
 	s := &http.Server{
 		Addr:    laddr,
-		Handler: Handler(mainGraph),
+		Handler: Handler(mainGraph, ls),
 	}
 	return s.ListenAndServe()
 }
 
-func profilingHandler(mainGraph *graph.SousGraph) http.Handler {
+func profilingHandler(mainGraph *graph.SousGraph, ls logSet) http.Handler {
 	handler := http.NewServeMux()
-	handler.Handle("/", Handler(mainGraph))
+	handler.Handle("/", Handler(mainGraph, ls))
 
 	handler.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
 	handler.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
@@ -60,11 +56,10 @@ func profilingHandler(mainGraph *graph.SousGraph) http.Handler {
 }
 
 // RunWithProfiling mixes in the pprof handlers so that we can return profiles
-func RunWithProfiling(mainGraph *graph.SousGraph, laddr string) error {
-	Handler(mainGraph)
+func RunWithProfiling(mainGraph *graph.SousGraph, laddr string, ls logSet) error {
 	s := &http.Server{
 		Addr:    laddr,
-		Handler: profilingHandler(mainGraph),
+		Handler: profilingHandler(mainGraph, ls),
 	}
 	return s.ListenAndServe()
 }

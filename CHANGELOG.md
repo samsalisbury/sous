@@ -18,7 +18,8 @@ with respect to its command line interface and HTTP interface.
 ### Fixed
 - Client: 'sous build' was failing when using a semver tag with a non-numeric prefix.
   Validation logic is now shared, so 'sous build' succeeds with these tags.
- 
+- Non-destructive updates: clients won't clobber fields in the API they don't recognize. Result should be more stable, less coupled client-server relationship.
+
 ## [0.5.14](//github.com/opentable/sous/compare/0.5.13...0.5.14)
 
 ### Fixed

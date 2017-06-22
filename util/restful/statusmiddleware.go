@@ -6,15 +6,13 @@ import (
 	"net/http"
 	"os"
 	"runtime/debug"
-
-	"github.com/opentable/sous/lib"
 )
 
 type (
 
 	// A StatusMiddleware processes panics into 500s and other status codes.
 	StatusMiddleware struct {
-		*sous.LogSet
+		logSet
 	}
 )
 
@@ -27,7 +25,7 @@ func (ph *StatusMiddleware) errorBody(status int, rq *http.Request, w io.Writer,
 
 	if header := rq.Header.Get("X-Gatelatch"); header != gatelatch {
 		w.Write([]byte(fmt.Sprintf("%s\n", data)))
-		ph.LogSet.Warn.Printf("Gatelatch header (%q) didn't match gatelatch env (%s)", gatelatch, header)
+		ph.Warnf("Gatelatch header (%q) didn't match gatelatch env (%s)", gatelatch, header)
 		return
 	}
 
@@ -50,13 +48,13 @@ func (ph *StatusMiddleware) errorBody(status int, rq *http.Request, w io.Writer,
 func (ph *StatusMiddleware) HandleResponse(status int, r *http.Request, w http.ResponseWriter, data interface{}) {
 	w.WriteHeader(status)
 
-	ph.LogSet.Warn.Printf("Responding: %d %s: %s %s", status, http.StatusText(status), r.Method, r.URL)
+	ph.Warnf("Responding: %d %s: %s %s", status, http.StatusText(status), r.Method, r.URL)
 	if status >= 400 {
-		ph.LogSet.Warn.Printf("%+v", data)
+		ph.Warnf("%+v", data)
 		ph.errorBody(status, r, w, data, nil, nil)
 	}
 	if status >= 200 && status < 300 {
-		ph.LogSet.Debug.Printf("%+v", data)
+		ph.Debugf("%+v", data)
 	}
 	// XXX in a dev mode, print the panic in the response body
 	// (normal ops it might leak secure data)
@@ -67,12 +65,12 @@ func (ph *StatusMiddleware) HandleResponse(status int, r *http.Request, w http.R
 func (ph *StatusMiddleware) HandlePanic(w http.ResponseWriter, r *http.Request, recovered interface{}) {
 	w.WriteHeader(http.StatusInternalServerError)
 	stack := debug.Stack()
-	if ph.LogSet == nil {
-		ph.LogSet = &sous.Log
+	if ph.logSet == nil {
+		ph.logSet = &fallbackLogger{}
 	}
-	ph.LogSet.Warn.Printf("%+v", recovered)
-	ph.LogSet.Warn.Print(string(stack))
-	ph.LogSet.Warn.Print("Recovered, returned 500")
+	ph.Warnf("%+v", recovered)
+	ph.Warnf(string(stack))
+	ph.Warnf("Recovered, returned 500")
 	ph.errorBody(http.StatusInternalServerError, r, w, nil, recovered.(error), stack)
 	// XXX in a dev mode, print the panic in the response body
 	// (normal ops it might leak secure data)

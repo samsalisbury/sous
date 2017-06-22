@@ -7,6 +7,7 @@ import (
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
+	"github.com/opentable/sous/util/restful"
 	"github.com/pkg/errors"
 	"github.com/samsalisbury/semv"
 )
@@ -99,7 +100,7 @@ func updateRetryLoop(sm sous.StateManager, sid sous.SourceID, did sous.Deploymen
 			return sous.NewDeployments(), err
 		}
 		if err := sm.WriteState(state, user); err != nil {
-			if !sous.Retryable(err) {
+			if !restful.Retryable(err) {
 				return sous.NewDeployments(), err
 			}
 

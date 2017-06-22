@@ -31,6 +31,7 @@ func TestBuildGraph(t *testing.T) {
 func injectedStateManager(t *testing.T, cfg *config.Config) *StateManager {
 	g := psyringe.New()
 	g.Add(newUser)
+	g.Add(sous.SilentLogSet())
 	g.Add(newStateManager)
 	g.Add(LocalSousConfig{Config: cfg})
 	g.Add(newHTTPClient)
