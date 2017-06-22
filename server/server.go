@@ -23,6 +23,7 @@ func New(laddr string, gf func() restful.Injector) *http.Server {
 // the same across requests
 type fixedPoints struct {
 	*config.Config
+	*graph.StateManager
 }
 
 // Handler builds the http.Handler for the Sous server httprouter.
