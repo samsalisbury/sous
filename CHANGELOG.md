@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
+## [Unreleased](//github.com/opentable/sous/compare/0.5.14...HEAD)
+### Fixed
+- Client: 'sous build' was failing when using a semver tag with a non-numeric prefix.
+  Validation logic is now shared, so 'sous build' succeeds with these tags.
+ 
 ## [0.5.14](//github.com/opentable/sous/compare/0.5.13...0.5.14)
 
 ### Fixed
