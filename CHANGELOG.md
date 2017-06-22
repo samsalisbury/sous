@@ -8,6 +8,9 @@ with respect to its command line interface and HTTP interface.
 
 ## [Unreleased](//github.com/opentable/sous/compare/0.5.14...HEAD)
 ### Changed
+- Panics during rectify print the stack trace along with the error message in the logs.
+  Previously the stack trace was printed earlier in the log, making correlation
+  difficult.
 - Server: All read/write access to the GDM now serialised.
   This is to partially address and issue where concurrent calls to 'sous deploy'
   could result in one of them finishing in the ResolveNotIntended state.
