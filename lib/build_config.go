@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
-
-	"github.com/samsalisbury/semv"
 )
 
 type (
@@ -131,8 +129,8 @@ func (c *BuildConfig) Resolve() {
 
 // Validate checks that the Config is well formed
 func (c *BuildConfig) Validate() error {
-	if _, ve := semv.Parse(c.Tag); ve != nil {
-		return fmt.Errorf("semver git tag required.  invalid tag: %q", c.Tag)
+	if _, ve := parseSemverTagWithOptionalPrefix(c.Tag); ve != nil {
+		return fmt.Errorf("semver git tag required: invalid tag: %q", c.Tag)
 	}
 	return nil
 }
