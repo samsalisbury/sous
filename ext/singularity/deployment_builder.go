@@ -133,18 +133,23 @@ func (db *deploymentBuilder) completeConstruction() error {
 	)
 }
 
-func reqID(rp *dtos.SingularityRequestParent) (ID string) {
-	defer func() {
-		if e := recover(); e != nil {
-			return
-		}
-	}()
-	ID = "<null RP>"
-	if rp != nil {
-		ID = "<null Request>"
+func reqID(rp *dtos.SingularityRequestParent) (id string) {
+	// defer func() { recover() }() because we explicitly do not care if this
+	// panics. It is only used in certain low-level logs, and we don't mind
+	// if we get some garbage data there. There is a fear that some race
+	// condition between asserting that rp and rp.Request are not nil and
+	// accessing their members may cause panics here. Please do not remove
+	// this line before asserting somehow that this race condition does not
+	// exist.
+	defer func() { recover() }()
+	id = "singularity.reqID() panicked"
+	if rp == nil {
+		return "<null RequestParent>"
 	}
-	ID = rp.Request.Id
-	return
+	if rp.Request == nil {
+		return "<null Request>"
+	}
+	return rp.Request.Id
 }
 
 func (db *deploymentBuilder) basics() error {
@@ -322,7 +327,7 @@ func (db *deploymentBuilder) retrieveImageLabels() error {
 	if err != nil {
 		return malformedResponse{err.Error()}
 	}
-	Log.Vomit.Print("%q Labels: ", db.reqID, labels)
+	Log.Vomit.Printf("%q Labels: %v", db.reqID, labels)
 
 	db.Target.SourceID, err = docker.SourceIDFromLabels(labels)
 	if err != nil {

@@ -428,7 +428,7 @@ func newSelector(regClient LocalDockerClient, log *sous.LogSet) sous.Selector {
 				log.Info.Printf("Building with simple dockerfile buildpack")
 				return dfbp, nil
 			}
-			return nil, errors.New("No buildpack detected for project.")
+			return nil, errors.New("no buildpack detected for project")
 		},
 	}
 }
@@ -531,7 +531,7 @@ func NewCurrentGDM(state *sous.State) (CurrentGDM, error) {
 		// XXX Sometimes, regardless of an error returned by NewCurrentState, this
 		// function is still called with a nil State, resulting in a panic. Race
 		// condition in psyringe?
-		return CurrentGDM{}, errors.New("Nil state! (often this means there was a problem connecting to the Sous server.")
+		return CurrentGDM{}, errors.New("nil state! (often this means there was a problem connecting to the Sous server")
 	}
 	deployments, err := state.Deployments()
 	if err != nil {

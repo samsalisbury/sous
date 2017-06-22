@@ -7,8 +7,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
 ## [Unreleased](//github.com/opentable/sous/compare/0.5.14...HEAD)
+### Changed
+- Panics during rectify print the stack trace along with the error message in the logs.
+  Previously the stack trace was printed earlier in the log, making correlation
+  difficult.
+- Server: All read/write access to the GDM now serialised.
+  This is to partially address and issue where concurrent calls to 'sous deploy'
+  could result in one of them finishing in the ResolveNotIntended state.
 
 ### Fixed
+- Client: 'sous build' was failing when using a semver tag with a non-numeric prefix.
+  Validation logic is now shared, so 'sous build' succeeds with these tags.
 - Non-destructive updates: clients won't clobber fields in the API they don't recognize. Result should be more stable, less coupled client-server relationship.
 
 ## [0.5.14](//github.com/opentable/sous/compare/0.5.13...0.5.14)

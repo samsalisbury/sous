@@ -13,6 +13,7 @@ import (
 // the same across requests
 type fixedPoints struct {
 	*config.Config
+	*graph.StateManager
 }
 
 type logSet interface {

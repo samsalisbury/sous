@@ -60,6 +60,8 @@ import (
 
 // Psyringe is a dependency injection container.
 type Psyringe struct {
+	parent         *Psyringe
+	scope          string
 	values         map[reflect.Type]reflect.Value
 	ctors          map[reflect.Type]*ctor
 	injectionTypes map[reflect.Type]struct{}
@@ -80,6 +82,7 @@ func New(constructorsAndValues ...interface{}) *Psyringe {
 // useful if you are dynamically generating the arguments.
 func NewErr(constructorsAndValues ...interface{}) (*Psyringe, error) {
 	p := &Psyringe{
+		scope:          "<root>",
 		values:         map[reflect.Type]reflect.Value{},
 		ctors:          map[reflect.Type]*ctor{},
 		injectionTypes: map[reflect.Type]struct{}{},
@@ -88,8 +91,9 @@ func NewErr(constructorsAndValues ...interface{}) (*Psyringe, error) {
 }
 
 // Add adds constructors and values to the Psyringe. It panics if any
-// pair of constructors and values have the same injection type. See package
-// documentation for definition of "injection type".
+// constructor or value has the same injection type as any other already Added
+// to this Psyringe or its ancestors (see Scope). See package documentation for
+// definition of "injection type".
 //
 // Add uses reflection to determine whether each passed value is a constructor
 // or not. For each constructor, it then generates a generic function in terms
@@ -136,7 +140,15 @@ func (p *Psyringe) Clone() *Psyringe {
 	q.values = map[reflect.Type]reflect.Value{}
 	q.injectionTypes = map[reflect.Type]struct{}{}
 	for t, c := range p.ctors {
-		q.ctors[t] = c
+		if c.value != nil {
+			// This constructor has been called,
+			// so just add its value to the clone.
+			q.values[t] = *c.value
+		} else {
+			// This constructor has not been called,
+			// so clone it.
+			q.ctors[t] = c.clone()
+		}
 	}
 	for t, v := range p.values {
 		q.values[t] = v
@@ -207,21 +219,46 @@ func (p *Psyringe) Test() error {
 	return nil
 }
 
+// Scope creates a child psyringe with p as its parent. Calls to Clone on this
+// Psyringe will clone everything added directly to the child, but they will all
+// share a reference to p. The name parameter is used for error messages only,
+// to aid debugging.
+//
+// One use of Scope is to allow per-request constructors to be cloned on each
+// request cheaply, whilst allowing those constructors access to all the values
+// in the parent graph, p.
+//
+// Scope panics if the name is already used by this psyringe's parents, or any
+// of its parents, recursively.
+func (p *Psyringe) Scope(name string) (child *Psyringe) {
+	if p.scopeNameInUse(name) {
+		panic(fmt.Errorf("scope %q already defined", name))
+	}
+	q := New()
+	q.parent = p
+	q.scope = name
+	return q
+}
+
 type byName []reflect.Type
 
 func (ts byName) Len() int           { return len(ts) }
 func (ts byName) Less(i, j int) bool { return ts[i].Name() < ts[j].Name() }
 func (ts byName) Swap(i, j int)      { ts[i], ts[j] = ts[j], ts[i] }
 
+// detectCycle returns an error if constructing rootType depends on rootType
+// transitively.
 func (p *Psyringe) detectCycle(rootType reflect.Type, c *ctor) error {
 	for _, inType := range c.inTypes {
 		if inType == rootType {
 			return errors.Errorf("%s", rootType)
 		}
-		if inCtor, ok := p.ctors[inType]; ok {
-			if err := p.detectCycle(rootType, inCtor); err != nil {
-				return errors.Wrapf(err, "%s depends on", inType)
-			}
+		inCtor, ok := p.ctors[inType]
+		if !ok {
+			continue
+		}
+		if err := p.detectCycle(rootType, inCtor); err != nil {
+			return errors.Wrapf(err, "%s depends on", inType)
 		}
 	}
 	return nil
@@ -266,14 +303,20 @@ func (p *Psyringe) inject(target interface{}) error {
 
 func (p *Psyringe) getValueForStructField(t reflect.Type, name string) (reflect.Value, bool, error) {
 	if v, ok := p.values[t]; ok {
+		// We have a value, return it.
 		return v, true, nil
 	}
-	c, ok := p.ctors[t]
-	if !ok {
-		return reflect.Value{}, false, nil
+	if c, ok := p.ctors[t]; ok {
+		// We have a constructor, call it.
+		v, err := c.getValue(p)
+		return v, true, errors.Wrapf(err, "getting field %s (%s) failed", name, t)
 	}
-	v, err := c.getValue(p)
-	return v, true, errors.Wrapf(err, "getting field %s (%s) failed", name, t)
+	if p.parent != nil {
+		// We have a parent, so try to get the value from there.
+		return p.parent.getValueForStructField(t, name)
+	}
+	// We have no value, constructor, nor parent. Give up.
+	return reflect.Value{}, false, nil
 }
 
 func (p *Psyringe) getValueForConstructor(forCtor *ctor, paramIndex int, t reflect.Type) (reflect.Value, error) {
@@ -298,9 +341,38 @@ func (p *Psyringe) addValue(t reflect.Type, v reflect.Value) error {
 	return p.registerInjectionType(t)
 }
 
+func (p *Psyringe) injectionTypeIsRegisteredAtThisScope(t reflect.Type) bool {
+	_, registered := p.injectionTypes[t]
+	return registered
+}
+
+func (p *Psyringe) injectionTypeRegistrationScope(t reflect.Type) (string, bool) {
+	if p.injectionTypeIsRegisteredAtThisScope(t) {
+		return p.scope, true
+	}
+	if p.parent == nil {
+		return "", false
+	}
+	return p.parent.injectionTypeRegistrationScope(t)
+}
+
+func (p *Psyringe) scopeNameInUse(name string) bool {
+	if p.scope == name {
+		return true
+	}
+	if p.parent == nil {
+		return false
+	}
+	return p.parent.scopeNameInUse(name)
+}
+
 func (p *Psyringe) registerInjectionType(t reflect.Type) error {
-	if _, alreadyRegistered := p.injectionTypes[t]; alreadyRegistered {
-		return fmt.Errorf("injection type %s already registered", t)
+	if scope, registered := p.injectionTypeRegistrationScope(t); registered {
+		message := fmt.Sprintf("injection type %s already registered", t)
+		if scope == p.scope {
+			return errors.New(message)
+		}
+		return fmt.Errorf("%s (scope %s)", message, scope)
 	}
 	p.injectionTypes[t] = struct{}{}
 	return nil
