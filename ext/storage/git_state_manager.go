@@ -20,6 +20,8 @@ import (
 // access. No two GitStateManagers should have DiskStateManagers using the same
 // BaseDir.
 type GitStateManager struct {
+	// All reads and writes must use exclusive lock, because read affects state
+	// by doing a git pull.
 	sync.Mutex
 	*DiskStateManager //can't just be a StateReader/Writer: needs dir
 	remote            string
@@ -76,6 +78,8 @@ func (gsm *GitStateManager) isRepo() bool {
 
 // ReadState reads sous state from the local disk.
 func (gsm *GitStateManager) ReadState() (*sous.State, error) {
+	gsm.Lock()
+	defer gsm.Unlock()
 	// git pull
 	gsm.git("pull")
 
@@ -113,6 +117,8 @@ func (gsm *GitStateManager) assertOneChange() error {
 // WriteState writes sous state to disk, then attempts to push it to Remote.
 // If the push fails, the state is reset and an error is returned.
 func (gsm *GitStateManager) WriteState(s *sous.State, u sous.User) error {
+	gsm.Lock()
+	defer gsm.Unlock()
 	tn := "sous-fallback-" + uuid.New()
 	if err := gsm.git("tag", tn); err != nil {
 		return err
