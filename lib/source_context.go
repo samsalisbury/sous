@@ -105,10 +105,13 @@ func (sc *SourceContext) TagVersion() string {
 
 var versionStrip = regexp.MustCompile(`^\D*`)
 
+func parseSemverTagWithOptionalPrefix(tagName string) (semv.Version, error) {
+	return semv.Parse(versionStrip.ReplaceAllString(tagName, ""))
+}
+
 func nearestVersion(tags []Tag) semv.Version {
 	for _, t := range tags {
-
-		v, err := semv.Parse(versionStrip.ReplaceAllString(t.Name, ""))
+		v, err := parseSemverTagWithOptionalPrefix(t.Name)
 		if err == nil {
 			return v
 		}

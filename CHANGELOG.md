@@ -11,8 +11,11 @@ with respect to its command line interface and HTTP interface.
 - Server: All read/write access to the GDM now serialised.
   This is to partially address and issue where concurrent calls to 'sous deploy'
   could result in one of them finishing in the ResolveNotIntended state.
-  
 
+### Fixed
+- Client: 'sous build' was failing when using a semver tag with a non-numeric prefix.
+  Validation logic is now shared, so 'sous build' succeeds with these tags.
+ 
 ## [0.5.14](//github.com/opentable/sous/compare/0.5.13...0.5.14)
 
 ### Fixed
