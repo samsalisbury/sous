@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
+## [Unreleased](//github.com/opentable/sous/compare/0.5.14...HEAD)
+### Changed
+- Server: All read/write access to the GDM now serialised.
+  This is to partially address and issue where concurrent calls to 'sous deploy'
+  could result in one of them finishing in the ResolveNotIntended state.
+  
+
 ## [0.5.14](//github.com/opentable/sous/compare/0.5.13...0.5.14)
 
 ### Fixed
