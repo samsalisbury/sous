@@ -77,6 +77,28 @@ func (rf *ResolveFilter) SourceLocation() (SourceLocation, bool) {
 	}, true
 }
 
+// SourceID returns a SourceID based on the ResolveFilter and a ManifestID
+func (rf *ResolveFilter) SourceID(mid ManifestID) (SourceID, error) {
+	if rf.Tag == "" {
+		return SourceID{}, fmt.Errorf("you must provide the -tag flag")
+	}
+
+	newVersion, err := parseSemverTagWithOptionalPrefix(rf.Tag)
+	if err != nil {
+		return SourceID{}, fmt.Errorf("version %q not valid: expected something like [servicename-]1.2.3", rf.Tag)
+	}
+
+	return mid.Source.SourceID(newVersion), nil
+}
+
+// DeploymentID returns a DeploymentID based on the ResolveFilter and a ManifestID
+func (rf *ResolveFilter) DeploymentID(mid ManifestID) (DeploymentID, error) {
+	if rf.Cluster == "" {
+		return DeploymentID{}, fmt.Errorf("you must select a cluster using the -cluster flag")
+	}
+	return DeploymentID{ManifestID: mid, Cluster: rf.Cluster}, nil
+}
+
 func (rf *ResolveFilter) String() string {
 	cl, fl, rp, of, tg, rv := rf.Cluster, rf.Flavor.Match, rf.Repo, rf.Offset.Match, rf.Tag, rf.Revision
 	if cl == "" {

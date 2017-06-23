@@ -6,7 +6,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
-## [0.5.15](//github.com/opentable/sous/compare/0.5.15...HEAD)
+## [Unreleased](//github.com/opentable/sous/compare/0.5.15...HEAD)
+- Fixed prefixed versions for update and deploy. At this point, git "package" tags should work everywhere they're used.
+
+## [0.5.15](//github.com/opentable/sous/compare/0.5.14...0.5.15)
 ### Changed
 - Panics during rectify print the stack trace along with the error message in the logs.
   Previously the stack trace was printed earlier in the log, making correlation

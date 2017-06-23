@@ -9,62 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type getIDsTestCase struct {
-	Flags       sous.ResolveFilter
-	SL          sous.ManifestID
-	ExpectedSID sous.SourceID
-	ExpectedDID sous.DeploymentID
-	ExpectedErr string
-}
-
-func TestGetIDs(t *testing.T) {
-	test := func(test getIDsTestCase) {
-		sid, did, err := getIDs(&test.Flags, test.SL)
-		if err != nil {
-			if test.ExpectedErr == "" {
-				t.Error(err)
-			} else {
-				actualErr := err.Error()
-				if actualErr != test.ExpectedErr {
-					t.Errorf("got error %q; want %q", actualErr, test.ExpectedErr)
-				}
-			}
-		}
-		if err == nil && test.ExpectedErr != "" {
-			t.Errorf("got nil; want error %q", test.ExpectedErr)
-		}
-		if sid != test.ExpectedSID {
-			t.Errorf("got SourceID %q; want %q", sid, test.ExpectedSID)
-		}
-		if did != test.ExpectedDID {
-			t.Errorf("got DeployID %q; want %q", did, test.ExpectedDID)
-		}
-	}
-
-	test(getIDsTestCase{
-		ExpectedErr: "update: You must select a cluster using the -cluster flag.",
-	})
-	test(getIDsTestCase{
-		Flags:       sous.ResolveFilter{Cluster: "blah"},
-		ExpectedErr: "update: You must provide the -tag flag.",
-	})
-	test(getIDsTestCase{
-		Flags:       sous.ResolveFilter{Cluster: "blah", Tag: "nope"},
-		ExpectedErr: `update: Version "nope" not valid: unexpected character 'n' at position 0`,
-	})
-	test(getIDsTestCase{
-		Flags:       sous.ResolveFilter{Cluster: "blah", Tag: "nope"},
-		ExpectedErr: `update: Version "nope" not valid: unexpected character 'n' at position 0`,
-	})
-	test(getIDsTestCase{
-		Flags:       sous.ResolveFilter{Cluster: "blah", Tag: "1.0.0"},
-		SL:          sous.MustParseManifestID("github.com/blah/blah"),
-		ExpectedSID: sous.MustParseSourceID("github.com/blah/blah,1.0.0"),
-		ExpectedDID: sous.DeploymentID{Cluster: "blah",
-			ManifestID: sous.ManifestID{Source: sous.SourceLocation{Repo: "github.com/blah/blah"}}},
-	})
-}
-
 var updateStateTests = []struct {
 	State                *sous.State
 	GDM                  sous.Deployments
