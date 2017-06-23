@@ -30,6 +30,9 @@ type (
 	}
 )
 
+// ZeroVersion is a "zero" version.
+var ZeroVersion = semv.MustParse("0.0.0-unversioned")
+
 // NormalizedOffset returns a relative path from root that is based on workdir.
 // Notably, it handles the case where the workdir is in the same physical path
 // as root, but via symlinks
@@ -68,7 +71,8 @@ func NormalizedOffset(root, workdir string) (string, error) {
 func (sc *SourceContext) Version() SourceID {
 	v := nearestVersion(append([]Tag{sc.NearestTag}, sc.Tags...))
 	// Append revision ID.
-	v = semv.MustParse(v.Format("M.m.p-?") + "+" + sc.Revision)
+	// XXX why not: v.Meta = sc.Revision
+	v = semv.MustParse(v.Format(semv.MMPPre) + "+" + sc.Revision)
 	sv := SourceID{
 		Location: SourceLocation{
 			Repo: sc.RemoteURL,
@@ -96,11 +100,12 @@ func (sc *SourceContext) AbsDir() string {
 // TagVersion returns a semver string if the most recent tag conforms to a
 // semver format. Otherwise it returns an empty string
 func (sc *SourceContext) TagVersion() string {
-	v, err := semv.Parse(sc.NearestTagName)
-	if err != nil {
+	sid := sc.Version()
+	v := sid.Version
+	if v.Equals(ZeroVersion) { // works because the build-meta field isn't considered
 		return ""
 	}
-	return v.Format("M.m.p")
+	return v.Format(semv.MajorMinorPatch)
 }
 
 var versionStrip = regexp.MustCompile(`^\D*`)
@@ -116,5 +121,5 @@ func nearestVersion(tags []Tag) semv.Version {
 			return v
 		}
 	}
-	return semv.MustParse("0.0.0-unversioned")
+	return ZeroVersion
 }

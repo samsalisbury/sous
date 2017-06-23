@@ -9,7 +9,6 @@ import (
 	"github.com/opentable/sous/util/cmdr"
 	"github.com/opentable/sous/util/restful"
 	"github.com/pkg/errors"
-	"github.com/samsalisbury/semv"
 )
 
 // SousUpdate is the command description for `sous update`
@@ -50,8 +49,14 @@ func (su *SousUpdate) RegisterOn(psy Addable) {
 
 // Execute fulfills the cmdr.Executor interface.
 func (su *SousUpdate) Execute(args []string) cmdr.Result {
-	sl := su.Manifest.ID()
-	sid, did, err := getIDs((*sous.ResolveFilter)(su.ResolveFilter), sl)
+	mid := su.Manifest.ID()
+
+	rf := (*sous.ResolveFilter)(su.ResolveFilter)
+	sid, err := rf.SourceID(mid)
+	if err != nil {
+		return EnsureErrorResult(err)
+	}
+	did, err := rf.DeploymentID(mid)
 	if err != nil {
 		return EnsureErrorResult(err)
 	}
@@ -77,16 +82,16 @@ func (su *SousUpdate) Execute(args []string) cmdr.Result {
 func updateRetryLoop(sm sous.StateManager, sid sous.SourceID, did sous.DeploymentID, user sous.User) (sous.Deployments, error) {
 	tryLimit := 2
 
-	sl := did.ManifestID
+	mid := did.ManifestID
 
 	for tries := 0; tries < tryLimit; tries++ {
 		state, err := sm.ReadState()
 		if err != nil {
 			return sous.NewDeployments(), err
 		}
-		manifest, ok := state.Manifests.Get(sl)
+		manifest, ok := state.Manifests.Get(mid)
 		if !ok {
-			return sous.NewDeployments(), cmdr.UsageErrorf("No manifest found for %q - try 'sous init' first.", sl)
+			return sous.NewDeployments(), cmdr.UsageErrorf("No manifest found for %q - try 'sous init' first.", mid)
 		}
 
 		tryLimit = len(manifest.Deployments)
@@ -123,24 +128,4 @@ func updateState(s *sous.State, gdm sous.Deployments, sid sous.SourceID, did sou
 	deployment.ClusterName = did.Cluster
 
 	return s.UpdateDeployments(deployment)
-}
-
-func getIDs(filter *sous.ResolveFilter, mid sous.ManifestID) (sous.SourceID, sous.DeploymentID, error) {
-	var sid sous.SourceID
-	var did sous.DeploymentID
-
-	clusterName, tag := filter.Cluster, filter.Tag
-	if clusterName == "" {
-		return sid, did, cmdr.UsageErrorf("update: You must select a cluster using the -cluster flag.")
-	}
-	if tag == "" {
-		return sid, did, cmdr.UsageErrorf("update: You must provide the -tag flag.")
-	}
-	newVersion, err := semv.Parse(tag)
-	if err != nil {
-		return sid, did, cmdr.UsageErrorf("update: Version %q not valid: %s", tag, err)
-	}
-	sid = mid.Source.SourceID(newVersion)
-	did = sous.DeploymentID{ManifestID: mid, Cluster: clusterName}
-	return sid, did, nil
 }
