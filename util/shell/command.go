@@ -180,6 +180,12 @@ func (c *Command) Result() (*Result, error) {
 		scanner := bufio.NewScanner(lrPipeR)
 		go func() {
 			for scanner.Scan() {
+				err := scanner.Err()
+				if err != nil {
+					message := fmt.Sprintf("External command %s %s output mangled: %s", c.Name, c.Args, err)
+					c.ConsoleEcho(message)
+					return
+				}
 				c.ConsoleEcho("  " + scanner.Text())
 			}
 		}()
