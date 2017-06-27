@@ -177,16 +177,17 @@ func (c *Command) Result() (*Result, error) {
 		outWriters = append(outWriters, lrPipeW)
 		errWriters = append(errWriters, lrPipeW)
 		c.ConsoleEcho("running " + line)
+		scannerBuf := make([]byte, 64*1024)
 		scanner := bufio.NewScanner(lrPipeR)
+		scanner.Buffer(scannerBuf, 1024*1024)
 		go func() {
 			for scanner.Scan() {
-				err := scanner.Err()
-				if err != nil {
-					message := fmt.Sprintf("External command %s %s output mangled: %s", c.Name, c.Args, err)
-					c.ConsoleEcho(message)
-					return
-				}
 				c.ConsoleEcho("  " + scanner.Text())
+			}
+			err := scanner.Err()
+			if err != nil {
+				fmt.Printf("(outside) External command %s %s output MANGLED: %s\n", c.Name, c.Args, err)
+				return
 			}
 		}()
 	}
