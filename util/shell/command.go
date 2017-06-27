@@ -177,10 +177,18 @@ func (c *Command) Result() (*Result, error) {
 		outWriters = append(outWriters, lrPipeW)
 		errWriters = append(errWriters, lrPipeW)
 		c.ConsoleEcho("running " + line)
+		scannerBuf := make([]byte, 64*1024)
+		// FIXME Should we be buffering, or sending straight to stderr/stdout?
 		scanner := bufio.NewScanner(lrPipeR)
+		scanner.Buffer(scannerBuf, 1024*1024)
 		go func() {
 			for scanner.Scan() {
 				c.ConsoleEcho("  " + scanner.Text())
+			}
+			err := scanner.Err()
+			if err != nil {
+				fmt.Printf("(outside) External command %s %s output MANGLED: %s\n", c.Name, c.Args, err)
+				return
 			}
 		}()
 	}
