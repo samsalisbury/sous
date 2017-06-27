@@ -178,6 +178,7 @@ func (c *Command) Result() (*Result, error) {
 		errWriters = append(errWriters, lrPipeW)
 		c.ConsoleEcho("running " + line)
 		scannerBuf := make([]byte, 64*1024)
+		// FIXME Should we be buffering, or sending straight to stderr/stdout?
 		scanner := bufio.NewScanner(lrPipeR)
 		scanner.Buffer(scannerBuf, 1024*1024)
 		go func() {

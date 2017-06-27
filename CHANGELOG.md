@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
+## [Unreleased](//github.com/opentable/sous/compare/0.5.16...HEAD)
+- Increased buffer size in shell to handle super-long tokens.
+
 ## [0.5.16](//github.com/opentable/sous/compare/0.5.15...0.5.16)
 - Fixed prefixed versions for update and deploy. At this point, git "package" tags should work everywhere they're used.
 
