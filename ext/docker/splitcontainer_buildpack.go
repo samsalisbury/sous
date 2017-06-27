@@ -359,10 +359,7 @@ func (sb *splitBuilder) extractFiles() error {
 
 func (sb *splitBuilder) teardownBuildContainer() error {
 	_, err := sb.context.Sh.Stdout("docker", "rm", sb.buildContainerID)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 func (sb *splitBuilder) templateDockerfileBytes(dockerfile io.Writer) error {
