@@ -207,4 +207,4 @@ artifacts/$(LINUX_TARBALL): artifacts/$(LINUX_RELEASE_DIR)/sous
 artifacts/$(DARWIN_TARBALL): artifacts/$(DARWIN_RELEASE_DIR)/sous
 	cd artifacts && tar czv $(DARWIN_RELEASE_DIR) > $(DARWIN_TARBALL)
 
-.PHONY: clean clean-containers clean-container-certs clean-running-containers clean-container-images coverage deb-build install-ggen legendary release semvertagchk test test-gofmt test-integration setup-containers test-unit reject-wip wip staticcheck
+.PHONY: artifactory clean clean-containers clean-container-certs clean-running-containers clean-container-images coverage deb-build install-fpm install-jfrog install-ggen legendary release semvertagchk test test-gofmt test-integration setup-containers test-unit reject-wip wip staticcheck
