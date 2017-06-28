@@ -5,6 +5,7 @@ import (
 
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/docker_registry"
+	"github.com/opentable/sous/util/restful"
 	"github.com/opentable/sous/util/yaml"
 )
 
@@ -43,7 +44,7 @@ func addTestNetwork(graph adder) {
 }
 
 func newDummyHTTPClient() HTTPClient {
-	return HTTPClient{HTTPClient: &sous.DummyHTTPClient{}}
+	return HTTPClient{HTTPClient: &restful.DummyHTTPClient{}}
 }
 
 func newDummyDockerClient() LocalDockerClient {

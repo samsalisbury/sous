@@ -17,6 +17,7 @@ import (
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
 	"github.com/opentable/sous/util/docker_registry"
+	"github.com/opentable/sous/util/restful"
 	"github.com/opentable/sous/util/shell"
 	"github.com/pkg/errors"
 	"github.com/samsalisbury/psyringe"
@@ -66,7 +67,7 @@ type (
 	// LocalDockerClient is a docker client object
 	LocalDockerClient struct{ docker_registry.Client }
 	// HTTPClient wraps the sous.HTTPClient interface
-	HTTPClient struct{ sous.HTTPClient }
+	HTTPClient struct{ restful.HTTPClient }
 	// StateManager simply wraps the sous.StateManager interface
 	StateManager struct{ sous.StateManager }
 	// StateReader wraps a storage.StateReader.
@@ -427,7 +428,7 @@ func newSelector(regClient LocalDockerClient, log *sous.LogSet) sous.Selector {
 				log.Info.Printf("Building with simple dockerfile buildpack")
 				return dfbp, nil
 			}
-			return nil, errors.New("No buildpack detected for project.")
+			return nil, errors.New("no buildpack detected for project")
 		},
 	}
 }
@@ -470,14 +471,14 @@ func newDockerClient() LocalDockerClient {
 
 // newHTTPClient returns an HTTP client if c.Server is not empty.
 // Otherwise it returns nil, and emits some warnings.
-func newHTTPClient(c LocalSousConfig, user sous.User) (HTTPClient, error) {
+func newHTTPClient(c LocalSousConfig, user sous.User, log *sous.LogSet) (HTTPClient, error) {
 	if c.Server == "" {
 		sous.Log.Warn.Println("No server set, Sous is running in server or workstation mode.")
 		sous.Log.Warn.Println("Configure a server like this: sous config server http://some.sous.server")
 		return HTTPClient{}, nil
 	}
 	sous.Log.Debug.Printf("Using server at %s", c.Server)
-	cl, err := sous.NewClient(c.Server)
+	cl, err := restful.NewClient(c.Server, log)
 	return HTTPClient{HTTPClient: cl}, err
 }
 
@@ -530,7 +531,7 @@ func NewCurrentGDM(state *sous.State) (CurrentGDM, error) {
 		// XXX Sometimes, regardless of an error returned by NewCurrentState, this
 		// function is still called with a nil State, resulting in a panic. Race
 		// condition in psyringe?
-		return CurrentGDM{}, errors.New("Nil state! (often this means there was a problem connecting to the Sous server.")
+		return CurrentGDM{}, errors.New("nil state! (often this means there was a problem connecting to the Sous server")
 	}
 	deployments, err := state.Deployments()
 	if err != nil {

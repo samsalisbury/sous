@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/opentable/sous/util/restful"
 	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/assert"
 )
@@ -212,7 +213,7 @@ func TestStatusPoller(t *testing.T) {
 		Repo: repoName,
 	}
 
-	cl, err := NewClient(mainSrv.URL)
+	cl, err := restful.NewClient(mainSrv.URL, SilentLogSet())
 	if err != nil {
 		t.Fatalf("Error building HTTP client: %#v", err)
 	}
@@ -310,7 +311,7 @@ func TestStatusPoller_OldServer2(t *testing.T) {
 		Repo: repoName,
 	}
 
-	cl, err := NewClient(mainSrv.URL)
+	cl, err := restful.NewClient(mainSrv.URL, SilentLogSet())
 	if err != nil {
 		t.Fatalf("Error building HTTP client: %#v", err)
 	}
@@ -418,7 +419,7 @@ func TestStatusPoller_MesosFailed(t *testing.T) {
 		Repo: repoName,
 	}
 
-	cl, err := NewClient(mainSrv.URL)
+	cl, err := restful.NewClient(mainSrv.URL, SilentLogSet())
 	if err != nil {
 		t.Fatalf("Error building HTTP client: %#v", err)
 	}
@@ -502,7 +503,7 @@ func TestStatusPoller_NotIntended(t *testing.T) {
 		Repo: repoName,
 	}
 
-	cl, err := NewClient(mainSrv.URL)
+	cl, err := restful.NewClient(mainSrv.URL, SilentLogSet())
 	if err != nil {
 		t.Fatalf("Error building HTTP client: %#v", err)
 	}
@@ -553,7 +554,7 @@ func TestStatusPoller_OldServer(t *testing.T) {
 		Repo: "github.com/something/summat",
 	}
 
-	cl, err := NewClient(mainSrv.URL)
+	cl, err := restful.NewClient(mainSrv.URL, SilentLogSet())
 	if err != nil {
 		t.Fatalf("Error building HTTP client: %#v", err)
 	}

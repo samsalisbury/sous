@@ -70,12 +70,13 @@ type (
 	}
 )
 
-func (rm *RouteMap) buildMetaHandler(r *httprouter.Router, grf func() Injector) *MetaHandler {
-	ph := &StatusMiddleware{}
+func (rm *RouteMap) buildMetaHandler(r *httprouter.Router, grf func() Injector, ls logSet) *MetaHandler {
+	ph := &StatusMiddleware{logSet: ls}
 	mh := &MetaHandler{
 		graphFac:      grf,
 		router:        r,
 		statusHandler: ph,
+		logSet:        ls,
 	}
 	mh.InstallPanicHandler()
 
@@ -83,9 +84,9 @@ func (rm *RouteMap) buildMetaHandler(r *httprouter.Router, grf func() Injector) 
 }
 
 // BuildRouter builds a returns an http.Handler based on some constant configuration
-func (rm *RouteMap) BuildRouter(grf func() Injector) http.Handler {
+func (rm *RouteMap) BuildRouter(grf func() Injector, ls logSet) http.Handler {
 	r := httprouter.New()
-	mh := rm.buildMetaHandler(r, grf)
+	mh := rm.buildMetaHandler(r, grf, ls)
 
 	for _, e := range *rm {
 		get, canGet := e.Resource.(Getable)
@@ -137,12 +138,12 @@ func (doex *defaultOptionsExchanger) Exchange() (interface{}, int) {
 
 // SingleExchanger returns a single exchanger for the given exchange factory
 // and injector factory. Can be useful in testing or trickier integrations.
-func (rm *RouteMap) SingleExchanger(factory ExchangeFactory, gf func() Injector) Exchanger {
+func (rm *RouteMap) SingleExchanger(factory ExchangeFactory, gf func() Injector, ls logSet) Exchanger {
 	r := httprouter.New()
 	w := httptest.NewRecorder()
 	rq := httptest.NewRequest("GET", "/", nil)
 
-	mh := rm.buildMetaHandler(r, gf)
+	mh := rm.buildMetaHandler(r, gf, ls)
 
 	return mh.injectedHandler(factory, w, rq, httprouter.Params{})
 }

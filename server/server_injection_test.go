@@ -25,7 +25,7 @@ func basicInjectedHandler(factory restful.ExchangeFactory, t *testing.T) restful
 		return g.Clone()
 	}
 
-	exchLogger := SousRouteMap.SingleExchanger(factory, gf)
+	exchLogger := SousRouteMap.SingleExchanger(factory, gf, restful.PlaceholderLogger())
 
 	logger, ok := exchLogger.(*restful.ExchangeLogger)
 	require.True(ok)
@@ -58,7 +58,7 @@ func TestStatusHandlerInjection(t *testing.T) {
 
 	sous.Log.Debug.Printf("%#v", statusGet)
 	assert.NotPanics(func() {
-		statusGet.AutoResolver.String()
+		_ = statusGet.AutoResolver.String()
 	})
 }
 

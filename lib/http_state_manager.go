@@ -3,6 +3,7 @@ package sous
 import (
 	"fmt"
 
+	"github.com/opentable/sous/util/restful"
 	"github.com/pkg/errors"
 )
 
@@ -10,8 +11,9 @@ type (
 	// An HTTPStateManager gets state from a Sous server and transmits updates
 	// back to that server.
 	HTTPStateManager struct {
-		cached *State
-		HTTPClient
+		cached   *State
+		gdmState restful.Updater
+		restful.HTTPClient
 		User User
 	}
 
@@ -29,15 +31,15 @@ func wrapDeployments(source Deployments) gdmWrapper {
 }
 
 // EmptyReceiver implements Comparable on gdmWrapper
-func (g *gdmWrapper) EmptyReceiver() Comparable {
+func (g *gdmWrapper) EmptyReceiver() restful.Comparable {
 	return &gdmWrapper{Deployments: []*Deployment{}}
 }
 
 // VariancesFrom implements Comparable on gdmWrapper
-func (g *gdmWrapper) VariancesFrom(other Comparable) Variances {
+func (g *gdmWrapper) VariancesFrom(other restful.Comparable) restful.Variances {
 	switch og := other.(type) {
 	default:
-		return Variances{"Not a gdmWrapper"}
+		return restful.Variances{"Not a gdmWrapper"}
 	case *gdmWrapper:
 		return g.unwrap().VariancesFrom(og.unwrap())
 	}
@@ -57,7 +59,7 @@ func (g *gdmWrapper) manifests(defs Defs) (Manifests, error) {
 }
 
 // NewHTTPStateManager creates a new HTTPStateManager.
-func NewHTTPStateManager(client HTTPClient) *HTTPStateManager {
+func NewHTTPStateManager(client restful.HTTPClient) *HTTPStateManager {
 	return &HTTPStateManager{HTTPClient: client}
 }
 
@@ -87,16 +89,11 @@ func (hsm *HTTPStateManager) WriteState(s *State, u User) error {
 		return errors.Errorf("Invalid update to state: %v", flaws)
 	}
 	Log.Debug.Printf("Writing state via HTTP.")
-	if hsm.cached == nil {
+	if hsm.gdmState == nil {
 		_, err := hsm.ReadState()
 		if err != nil {
 			return err
 		}
-	}
-
-	cds, err := hsm.cached.Deployments()
-	if err != nil {
-		return err
 	}
 
 	wds, err := s.Deployments()
@@ -104,42 +101,44 @@ func (hsm *HTTPStateManager) WriteState(s *State, u User) error {
 		return err
 	}
 
-	return hsm.putDeployments(cds, wds)
+	return hsm.putDeployments(wds)
 }
 
 ////
 
 func (hsm *HTTPStateManager) getDefs() (Defs, error) {
 	ds := Defs{}
-	return ds, errors.Wrapf(hsm.Retrieve("./defs", nil, &ds, hsm.User), "getting defs")
+	_, err := hsm.Retrieve("./defs", nil, &ds, hsm.User.HTTPHeaders())
+	return ds, errors.Wrapf(err, "getting defs")
 }
 
 func (hsm *HTTPStateManager) getManifests(defs Defs) (Manifests, error) {
 	gdm := gdmWrapper{}
-	if err := hsm.Retrieve("./gdm", nil, &gdm, hsm.User); err != nil {
+	state, err := hsm.Retrieve("./gdm", nil, &gdm, hsm.User.HTTPHeaders())
+	if err != nil {
 		return Manifests{}, errors.Wrapf(err, "getting manifests")
 	}
+	hsm.gdmState = state
 	return gdm.manifests(defs)
 }
 
-func (hsm *HTTPStateManager) putDeployments(orig, new Deployments) error {
-	wOrig := wrapDeployments(orig)
+func (hsm *HTTPStateManager) putDeployments(new Deployments) error {
 	wNew := wrapDeployments(new)
-	return errors.Wrapf(hsm.Update("./gdm", nil, &wOrig, &wNew, hsm.User), "putting GDM")
+	return errors.Wrapf(hsm.gdmState.Update(nil, &wNew, hsm.User.HTTPHeaders()), "putting GDM")
 }
 
 // EmptyReceiver implements Comparable on Manifest
-func (m *Manifest) EmptyReceiver() Comparable {
+func (m *Manifest) EmptyReceiver() restful.Comparable {
 	return &Manifest{}
 }
 
 // VariancesFrom implements Comparable on Manifest
-func (m *Manifest) VariancesFrom(c Comparable) (vs Variances) {
+func (m *Manifest) VariancesFrom(c restful.Comparable) (vs restful.Variances) {
 	o, ok := c.(*Manifest)
 	if !ok {
-		return Variances{fmt.Sprintf("Not a *Manifest: %T", c)}
+		return restful.Variances{fmt.Sprintf("Not a *Manifest: %T", c)}
 	}
 
 	_, diffs := m.Diff(o)
-	return Variances(diffs)
+	return restful.Variances(diffs)
 }

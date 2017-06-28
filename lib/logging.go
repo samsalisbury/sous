@@ -55,6 +55,15 @@ func NewLogSet(warn, debug, vomit io.Writer) *LogSet {
 	}
 }
 
+// Vomitf is a simple wrapper on Vomit.Printf
+func (ls LogSet) Vomitf(f string, as ...interface{}) { ls.Vomit.Printf(f, as...) }
+
+// Debugf is a simple wrapper on Debug.Printf
+func (ls LogSet) Debugf(f string, as ...interface{}) { ls.Debug.Printf(f, as...) }
+
+// Warnf is a simple wrapper on Warn.Printf
+func (ls LogSet) Warnf(f string, as ...interface{}) { ls.Warn.Printf(f, as...) }
+
 // BeChatty gets the LogSet to print all its output - useful for temporary debugging
 func (ls LogSet) BeChatty() {
 	ls.Warn.SetOutput(os.Stderr)
