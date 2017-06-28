@@ -93,6 +93,12 @@ install-brew:
 	brew install opentable/public/sous
 	echo "Now run 'hash -r && sous version' to make sure you are using the homebrew-installed sous."
 
+install-fpm:
+	gem install --no-ri --no-rdoc fpm
+
+install-jfrog:
+	go get github.com/jfrogdev/jfrog-cli-go/jfrog
+
 install-ggen:
 	cd bin/ggen && go install ./
 
@@ -114,6 +120,9 @@ install-staticcheck:
 install-build-tools: install-xgo install-govendor install-engulf install-staticcheck
 
 release: artifacts/$(DARWIN_TARBALL) artifacts/$(LINUX_TARBALL)
+
+artifactory: deb-build
+	jfrog rt upload -deb trusty/main/amd64 artifacts/sous_$(SOUS_VERSION)_amd64.deb opentable-ppa/pool/sous_$(SOUS_VERSION)_amd64.deb
 
 deb-build: artifacts/$(LINUX_RELEASE_DIR)/sous
 	fpm -s dir -t deb -n sous -v $(SOUS_VERSION) artifacts/$(LINUX_RELEASE_DIR)/sous=/usr/bin/sous
