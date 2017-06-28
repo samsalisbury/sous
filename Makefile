@@ -2,6 +2,8 @@ SHELL := /usr/bin/env bash
 
 SQLITE_URL := https://sqlite.org/2017/sqlite-autoconf-3160200.tar.gz
 GO_VERSION := 1.7.3
+DESCRIPTION := "Sous is a tool for building, testing, and deploying applications, using Docker, Mesos, and Singularity."
+URL := https://github.com/opentable/sous
 
 TAG_TEST := git describe --exact-match --abbrev=0 2>/dev/null
 ifeq ($(shell $(TAG_TEST) ; echo $$?), 128)
@@ -125,7 +127,7 @@ artifactory: deb-build
 	jfrog rt upload -deb trusty/main/amd64 artifacts/sous_$(SOUS_VERSION)_amd64.deb opentable-ppa/pool/sous_$(SOUS_VERSION)_amd64.deb
 
 deb-build: artifacts/$(LINUX_RELEASE_DIR)/sous
-	fpm -s dir -t deb -n sous -v $(SOUS_VERSION) artifacts/$(LINUX_RELEASE_DIR)/sous=/usr/bin/sous
+	fpm -s dir -t deb -n sous -v $(SOUS_VERSION) --description $(DESCRIPTION) --url $(URL) artifacts/$(LINUX_RELEASE_DIR)/sous=/usr/bin/sous
 	mv sous_$(SOUS_VERSION)_amd64.deb artifacts/
 
 linux-build: artifacts/$(LINUX_RELEASE_DIR)/sous
