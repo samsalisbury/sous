@@ -121,14 +121,12 @@ install-staticcheck:
 
 install-build-tools: install-xgo install-govendor install-engulf install-staticcheck
 
-release: artifacts/$(DARWIN_TARBALL) artifacts/$(LINUX_TARBALL)
+release: artifacts/$(DARWIN_TARBALL) artifacts/$(LINUX_TARBALL) artifacts/sous_$(SOUS_VERSION)_amd64.deb
 
-artifactory: deb-build
+artifactory: artifacts/sous_$(SOUS_VERSION)_amd64.deb
 	jfrog rt upload -deb trusty/main/amd64 artifacts/sous_$(SOUS_VERSION)_amd64.deb opentable-ppa/pool/sous_$(SOUS_VERSION)_amd64.deb
 
-deb-build: artifacts/$(LINUX_RELEASE_DIR)/sous
-	fpm -s dir -t deb -n sous -v $(SOUS_VERSION) --description $(DESCRIPTION) --url $(URL) artifacts/$(LINUX_RELEASE_DIR)/sous=/usr/bin/sous
-	mv sous_$(SOUS_VERSION)_amd64.deb artifacts/
+deb-build: artifacts/sous_$(SOUS_VERSION)_amd64.deb
 
 linux-build: artifacts/$(LINUX_RELEASE_DIR)/sous
 	ln -sf ../$< dev_support/sous_linux
@@ -209,5 +207,8 @@ artifacts/$(LINUX_TARBALL): artifacts/$(LINUX_RELEASE_DIR)/sous
 artifacts/$(DARWIN_TARBALL): artifacts/$(DARWIN_RELEASE_DIR)/sous
 	cd artifacts && tar czv $(DARWIN_RELEASE_DIR) > $(DARWIN_TARBALL)
 
+artifacts/sous_$(SOUS_VERSION)_amd64.deb: artifacts/$(LINUX_RELEASE_DIR)/sous
+	fpm -s dir -t deb -n sous -v $(SOUS_VERSION) --description $(DESCRIPTION) --url $(URL) artifacts/$(LINUX_RELEASE_DIR)/sous=/usr/bin/sous
+	mv sous_$(SOUS_VERSION)_amd64.deb artifacts/
 
 .PHONY: artifactory clean clean-containers clean-container-certs clean-running-containers clean-container-images coverage deb-build install-fpm install-jfrog install-ggen install-build-tools legendary release semvertagchk test test-gofmt test-integration setup-containers test-unit reject-wip wip staticcheck

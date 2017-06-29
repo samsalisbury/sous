@@ -41,6 +41,7 @@ deploy:
   file:
   - artifacts/sous-darwin-amd64_*.tar.gz
   - artifacts/sous-linux-amd64_*.tar.gz
+  - artifacts/sous*.deb
   on:
     tags: true
   skip_cleanup: true
