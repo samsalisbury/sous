@@ -1,21 +1,30 @@
 package server
 
 import (
+	"net/http/httptest"
 	"testing"
 
 	"github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/restful"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestHandlesGDMGet(t *testing.T) {
 	assert := assert.New(t)
 
+	w := httptest.NewRecorder()
+	etag := "swordfish"
+
 	th := &GETGDMHandler{
-		LogSet: &sous.Log,
+		RzWriter: &restful.ResponseWriter{w},
+		LogSet:   &sous.Log,
 		GDM: &LiveGDM{
+			Etag:        etag,
 			Deployments: sous.NewDeployments(),
 		}}
+
 	data, status := th.Exchange()
+	assert.Equal(w.Header().Get("Etag"), etag)
 	assert.Equal(status, 200)
 	assert.Len(data.(gdmWrapper).Deployments, 0)
 }

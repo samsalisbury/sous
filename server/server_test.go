@@ -76,6 +76,8 @@ func (suite serverTests) TearDownTest() {
 }
 
 func (suite serverTests) TestOverallRouter() {
+	sous.Log.BeChatty()
+	defer sous.Log.BeQuiet()
 	res, err := http.Get(suite.url + "/gdm")
 	suite.NoError(err)
 	gdm, err := ioutil.ReadAll(res.Body)
