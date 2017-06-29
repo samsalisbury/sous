@@ -126,7 +126,9 @@ func TestGitStateManager_WriteState_multiple_manifests(t *testing.T) {
 func TestGitReadState(t *testing.T) {
 	require := require.New(t)
 
-	gsm := NewGitStateManager(NewDiskStateManager("testdata/in"))
+	s := exampleState()
+	gitPrepare(t, s, "testdata/remote", "testdata/out")
+	gsm := NewGitStateManager(NewDiskStateManager("testdata/out"))
 
 	actual, err := gsm.ReadState()
 	require.NoError(err)

@@ -15,6 +15,7 @@ type (
 		// Manifests contains a mapping of source code repositories to global
 		// deployment configurations for artifacts built using that source code.
 		Manifests Manifests `hy:"manifests/"`
+		etag      *string
 	}
 
 	// Defs holds definitions for organisation-level objects.
@@ -93,6 +94,24 @@ func NewState() *State {
 	return &State{
 		Manifests: NewManifests(),
 	}
+}
+
+// etag is a private field to ensure that we don't interfere with YAML storage,
+// hence the getter/setter
+
+// Etag returns an etag (if one is present) on the State.
+func (s State) CheckEtag(etag string) error {
+	if s.etag != nil {
+		if etag != *(s.etag) {
+			return errors.Errorf("etag doesn't match on state: checking %q against %q", etag, *s.etag)
+		}
+	}
+	return nil
+}
+
+// SetEtag sets an etag on the state.
+func (s State) SetEtag(etag string) {
+	s.etag = &etag
 }
 
 // Clone returns a deep copy of this State.
