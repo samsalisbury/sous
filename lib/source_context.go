@@ -45,8 +45,8 @@ func NormalizedOffset(root, workdir string) (string, error) {
 			break // this isn't working
 		}
 		if strings.HasPrefix(prefix, root) {
-			mid := prefix[len(root):len(prefix)]
-			rest := parts[n+1 : len(parts)]
+			mid := prefix[len(root):]
+			rest := parts[n+1:]
 			workdir = filepath.Join(append([]string{root, mid}, rest...)...)
 			break
 		}
