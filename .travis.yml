@@ -10,9 +10,9 @@ install:
 - bundle
 - "./bin/vendor-check"
 script:
+- bundle exec danger
 - make -j2 test
 - make reject-wip
-- bundle exec danger
 after_script:
 - docker ps || true
 - docker logs testregistry_slave_1 || true
