@@ -181,23 +181,25 @@ test-cli: setup-containers linux-build
 	@date
 	SOUS_QA_DESC=$(QA_DESC) go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -timeout 20m ./integration --tags=commandline
 
-$(BIN_DIR):
-	mkdir -p $@
 
 $(COVER_DIR):
 	mkdir -p $@
 
-$(RELEASE_DIRS):
-	mkdir -p artifacts/$@
-	cp -R doc/ artifacts/$@/doc
-	cp README.md artifacts/$@
-	cp LICENSE artifacts/$@
-
-artifacts/$(DARWIN_RELEASE_DIR)/sous: $(DARWIN_RELEASE_DIR) $(BIN_DIR) install-build-tools
+artifacts/$(DARWIN_RELEASE_DIR)/sous:
+	mkdir -p artifacts/$(DARWIN_RELEASE_DIR)
+	cp -R doc/ artifacts/$(DARWIN_RELEASE_DIR)/doc
+	cp README.md artifacts/$(DARWIN_RELEASE_DIR)
+	cp LICENSE artifacts/$(DARWIN_RELEASE_DIR)
+	mkdir -p $(BIN_DIR)
 	xgo $(CONCAT_XGO_ARGS) --targets=darwin/amd64  ./
 	mv $(BIN_DIR)/sous-darwin-10.6-amd64 $@
 
-artifacts/$(LINUX_RELEASE_DIR)/sous: $(LINUX_RELEASE_DIR) $(BIN_DIR) install-build-tools
+artifacts/$(LINUX_RELEASE_DIR)/sous:
+	mkdir -p artifacts/$(LINUX_RELEASE_DIR)
+	cp -R doc/ artifacts/$(LINUX_RELEASE_DIR)/doc
+	cp README.md artifacts/$(LINUX_RELEASE_DIR)
+	cp LICENSE artifacts/$(LINUX_RELEASE_DIR)
+	mkdir -p $(BIN_DIR)
 	xgo $(CONCAT_XGO_ARGS) --targets=linux/amd64  ./
 	mv $(BIN_DIR)/sous-linux-amd64 $@
 
@@ -207,4 +209,5 @@ artifacts/$(LINUX_TARBALL): artifacts/$(LINUX_RELEASE_DIR)/sous
 artifacts/$(DARWIN_TARBALL): artifacts/$(DARWIN_RELEASE_DIR)/sous
 	cd artifacts && tar czv $(DARWIN_RELEASE_DIR) > $(DARWIN_TARBALL)
 
-.PHONY: artifactory clean clean-containers clean-container-certs clean-running-containers clean-container-images coverage deb-build install-fpm install-jfrog install-ggen legendary release semvertagchk test test-gofmt test-integration setup-containers test-unit reject-wip wip staticcheck
+
+.PHONY: artifactory clean clean-containers clean-container-certs clean-running-containers clean-container-images coverage deb-build install-fpm install-jfrog install-ggen install-build-tools legendary release semvertagchk test test-gofmt test-integration setup-containers test-unit reject-wip wip staticcheck
