@@ -11,7 +11,9 @@ import (
 	"testing"
 
 	"github.com/opentable/sous/config"
+	"github.com/opentable/sous/ext/storage"
 	"github.com/opentable/sous/graph"
+	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/restful"
 	"github.com/stretchr/testify/suite"
 )
@@ -30,18 +32,35 @@ type profServerSuite struct {
 	serverTests
 }
 
-func (suite *serverSuite) SetupTest() {
+func (suite serverTests) prepare() *graph.SousGraph {
+	sourcepath, remotepath, outpath :=
+		"../ext/storage/testdata/in",
+		"../ext/storage/testdata/remote",
+		"../ext/storage/testdata/out"
+
+	dsm := storage.NewDiskStateManager(sourcepath)
+	s, err := dsm.ReadState()
+	suite.Require().NoError(err)
+
+	storage.PrepareTestGitRepo(suite.T(), s, remotepath, outpath)
+
 	g := graph.TestGraphWithConfig(&bytes.Buffer{}, os.Stdout, os.Stdout,
-		"StateLocation: '../ext/storage/testdata/in'\n")
+		"StateLocation: '"+outpath+"'\n")
 	g.Add(&config.Verbosity{})
-	suite.serverTests.server = httptest.NewServer(Handler(g, restful.PlaceholderLogger()))
+	return g
+}
+
+func (suite *serverSuite) SetupTest() {
+	g := suite.prepare()
+
+	logger := restful.PlaceholderLogger()
+	logger = sous.Log
+	suite.serverTests.server = httptest.NewServer(Handler(g, logger))
 	suite.serverTests.url = suite.server.URL
 }
 
 func (suite *profServerSuite) SetupTest() {
-	g := graph.TestGraphWithConfig(&bytes.Buffer{}, os.Stdout, os.Stdout,
-		"StateLocation: '../ext/storage/testdata/in'\n")
-	g.Add(&config.Verbosity{})
+	g := suite.prepare()
 	suite.serverTests.server = httptest.NewServer(profilingHandler(g, restful.PlaceholderLogger())) // <--- profiling
 	suite.serverTests.url = suite.server.URL
 }
