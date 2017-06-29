@@ -110,8 +110,16 @@ func (s State) CheckEtag(etag string) error {
 }
 
 // SetEtag sets an etag on the state.
-func (s State) SetEtag(etag string) {
+func (s *State) SetEtag(etag string) {
 	s.etag = &etag
+}
+
+// GetEtag gets the etag, or returns an error if no etag set.
+func (s State) GetEtag() (string, error) {
+	if s.etag != nil {
+		return *s.etag, nil
+	}
+	return "", errors.Errorf("no etag set on state")
 }
 
 // Clone returns a deep copy of this State.

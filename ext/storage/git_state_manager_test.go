@@ -154,6 +154,33 @@ func setupManagers(t *testing.T) (clone *GitStateManager, remote *DiskStateManag
 	return gsm, dsm
 }
 
+func TestStateEtags(t *testing.T) {
+	gsm, _ := setupManagers(t)
+
+	s, err := gsm.ReadState()
+
+	if err != nil {
+		t.Errorf("Unexpected error when reading state")
+	}
+	if s.CheckEtag("cannot match this") == nil {
+		t.Errorf("No error for busted etag")
+	}
+	if _, err := s.GetEtag(); err != nil {
+		t.Errorf("Got error instead of etag: %v", err)
+	}
+
+	s.Manifests.Add(&sous.Manifest{Source: sous.SourceLocation{Repo: "github.com/opentable/newhotness"}})
+	if err := gsm.WriteState(s, testUser); err != nil {
+		t.Errorf("Got unexpect error when writing state: %v", err)
+	}
+
+	s.Manifests.Add(&sous.Manifest{Source: sous.SourceLocation{Repo: "github.com/opentable/supernewextahotness"}})
+	if err := gsm.WriteState(s, testUser); err == nil {
+		t.Errorf("Got no error when re-writing state: %v (have to re-Read first)", err)
+	}
+
+}
+
 func TestGitPulls(t *testing.T) {
 	require := require.New(t)
 	gsm, remote := setupManagers(t)
