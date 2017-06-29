@@ -7,3 +7,12 @@ coverage:
 ignore:
 - bin/.*
 - *._generated.go
+- Makefile
+- .travis.yml
+- doc/*
+- Gemfile
+- Gemfile.lock
+- Dangerfile
+- LICENSE
+- README*
+- CHANGELOG*

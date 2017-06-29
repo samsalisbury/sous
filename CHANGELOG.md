@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
 ## [Unreleased](//github.com/opentable/sous/compare/0.5.16...HEAD)
+### Changed
+- Makefile directives to build a Sous .deb and upload it to an Artifactory server.
+
+### Fixed
 - Increased buffer size in shell to handle super-long tokens.
 
 ## [0.5.16](//github.com/opentable/sous/compare/0.5.15...0.5.16)

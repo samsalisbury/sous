@@ -2,6 +2,8 @@ SHELL := /usr/bin/env bash
 
 SQLITE_URL := https://sqlite.org/2017/sqlite-autoconf-3160200.tar.gz
 GO_VERSION := 1.7.3
+DESCRIPTION := "Sous is a tool for building, testing, and deploying applications, using Docker, Mesos, and Singularity."
+URL := https://github.com/opentable/sous
 
 TAG_TEST := git describe --exact-match --abbrev=0 2>/dev/null
 ifeq ($(shell $(TAG_TEST) ; echo $$?), 128)
@@ -93,6 +95,12 @@ install-brew:
 	brew install opentable/public/sous
 	echo "Now run 'hash -r && sous version' to make sure you are using the homebrew-installed sous."
 
+install-fpm:
+	gem install --no-ri --no-rdoc fpm
+
+install-jfrog:
+	go get github.com/jfrogdev/jfrog-cli-go/jfrog
+
 install-ggen:
 	cd bin/ggen && go install ./
 
@@ -113,7 +121,12 @@ install-staticcheck:
 
 install-build-tools: install-xgo install-govendor install-engulf install-staticcheck
 
-release: artifacts/$(DARWIN_TARBALL) artifacts/$(LINUX_TARBALL)
+release: artifacts/$(DARWIN_TARBALL) artifacts/$(LINUX_TARBALL) artifacts/sous_$(SOUS_VERSION)_amd64.deb
+
+artifactory: artifacts/sous_$(SOUS_VERSION)_amd64.deb
+	jfrog rt upload -deb trusty/main/amd64 artifacts/sous_$(SOUS_VERSION)_amd64.deb opentable-ppa/pool/sous_$(SOUS_VERSION)_amd64.deb
+
+deb-build: artifacts/sous_$(SOUS_VERSION)_amd64.deb
 
 linux-build: artifacts/$(LINUX_RELEASE_DIR)/sous
 	ln -sf ../$< dev_support/sous_linux
@@ -166,23 +179,25 @@ test-cli: setup-containers linux-build
 	@date
 	SOUS_QA_DESC=$(QA_DESC) go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -timeout 20m ./integration --tags=commandline
 
-$(BIN_DIR):
-	mkdir -p $@
 
 $(COVER_DIR):
 	mkdir -p $@
 
-$(RELEASE_DIRS):
-	mkdir -p artifacts/$@
-	cp -R doc/ artifacts/$@/doc
-	cp README.md artifacts/$@
-	cp LICENSE artifacts/$@
-
-artifacts/$(DARWIN_RELEASE_DIR)/sous: $(DARWIN_RELEASE_DIR) $(BIN_DIR) install-build-tools
+artifacts/$(DARWIN_RELEASE_DIR)/sous:
+	mkdir -p artifacts/$(DARWIN_RELEASE_DIR)
+	cp -R doc/ artifacts/$(DARWIN_RELEASE_DIR)/doc
+	cp README.md artifacts/$(DARWIN_RELEASE_DIR)
+	cp LICENSE artifacts/$(DARWIN_RELEASE_DIR)
+	mkdir -p $(BIN_DIR)
 	xgo $(CONCAT_XGO_ARGS) --targets=darwin/amd64  ./
 	mv $(BIN_DIR)/sous-darwin-10.6-amd64 $@
 
-artifacts/$(LINUX_RELEASE_DIR)/sous: $(LINUX_RELEASE_DIR) $(BIN_DIR) install-build-tools
+artifacts/$(LINUX_RELEASE_DIR)/sous:
+	mkdir -p artifacts/$(LINUX_RELEASE_DIR)
+	cp -R doc/ artifacts/$(LINUX_RELEASE_DIR)/doc
+	cp README.md artifacts/$(LINUX_RELEASE_DIR)
+	cp LICENSE artifacts/$(LINUX_RELEASE_DIR)
+	mkdir -p $(BIN_DIR)
 	xgo $(CONCAT_XGO_ARGS) --targets=linux/amd64  ./
 	mv $(BIN_DIR)/sous-linux-amd64 $@
 
@@ -192,4 +207,8 @@ artifacts/$(LINUX_TARBALL): artifacts/$(LINUX_RELEASE_DIR)/sous
 artifacts/$(DARWIN_TARBALL): artifacts/$(DARWIN_RELEASE_DIR)/sous
 	cd artifacts && tar czv $(DARWIN_RELEASE_DIR) > $(DARWIN_TARBALL)
 
-.PHONY: clean clean-containers clean-container-certs clean-running-containers clean-container-images coverage install-ggen legendary release semvertagchk test test-gofmt test-integration setup-containers test-unit reject-wip wip staticcheck
+artifacts/sous_$(SOUS_VERSION)_amd64.deb: artifacts/$(LINUX_RELEASE_DIR)/sous
+	fpm -s dir -t deb -n sous -v $(SOUS_VERSION) --description $(DESCRIPTION) --url $(URL) artifacts/$(LINUX_RELEASE_DIR)/sous=/usr/bin/sous
+	mv sous_$(SOUS_VERSION)_amd64.deb artifacts/
+
+.PHONY: artifactory clean clean-containers clean-container-certs clean-running-containers clean-container-images coverage deb-build install-fpm install-jfrog install-ggen install-build-tools legendary release semvertagchk test test-gofmt test-integration setup-containers test-unit reject-wip wip staticcheck
