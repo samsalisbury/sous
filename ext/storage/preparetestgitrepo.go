@@ -12,6 +12,7 @@ import (
 
 var testUser = sous.User{Name: "Test User", Email: "test@user.com"}
 
+// PrepareTestGitRepo prepares a git repo for test purposes.
 func PrepareTestGitRepo(t *testing.T, s *sous.State, remotepath, outpath string) {
 
 	clobberDir(t, remotepath)

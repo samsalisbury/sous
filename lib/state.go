@@ -99,7 +99,7 @@ func NewState() *State {
 // etag is a private field to ensure that we don't interfere with YAML storage,
 // hence the getter/setter
 
-// Etag returns an etag (if one is present) on the State.
+// CheckEtag checks that the etag matches the etag on the state (if present).
 func (s State) CheckEtag(etag string) error {
 	if s.etag != nil {
 		if etag != *(s.etag) {
