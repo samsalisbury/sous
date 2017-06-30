@@ -76,6 +76,16 @@ func (gsm *GitStateManager) isRepo() bool {
 	return err == nil && s.IsDir()
 }
 
+func (gsm *GitStateManager) headRev() (string, error) {
+	etag, err := gsm.gitOut("rev-parse", "HEAD")
+	if err != nil {
+		// XXX Is this the right thing to do?
+		return "", err
+	}
+
+	return strings.TrimSpace(etag), nil
+}
+
 // ReadState reads sous state from the local disk.
 func (gsm *GitStateManager) ReadState() (*sous.State, error) {
 	gsm.Lock()
@@ -83,7 +93,19 @@ func (gsm *GitStateManager) ReadState() (*sous.State, error) {
 	// git pull
 	gsm.git("pull")
 
-	return gsm.DiskStateManager.ReadState()
+	state, err := gsm.DiskStateManager.ReadState()
+	if err != nil {
+		return state, err
+	}
+
+	etag, err := gsm.headRev()
+	if err != nil {
+		// XXX Is this the right thing to do?
+		return state, err
+	}
+
+	state.SetEtag(etag)
+	return state, nil
 }
 
 func (gsm *GitStateManager) needCommit() bool {
@@ -119,6 +141,15 @@ func (gsm *GitStateManager) assertOneChange() error {
 func (gsm *GitStateManager) WriteState(s *sous.State, u sous.User) error {
 	gsm.Lock()
 	defer gsm.Unlock()
+
+	etag, err := gsm.headRev()
+	if err != nil {
+		return err
+	}
+	if err := s.CheckEtag(etag); err != nil {
+		return err
+	}
+
 	tn := "sous-fallback-" + uuid.New()
 	if err := gsm.git("tag", tn); err != nil {
 		return err

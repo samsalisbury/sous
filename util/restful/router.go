@@ -170,6 +170,10 @@ func (mh *MetaHandler) writeHeaders(status int, w http.ResponseWriter, r *http.R
 	mh.statusHandler.HandleResponse(status, r, w, data)
 }
 
+var etagHeader = http.CanonicalHeaderKey("Etag")
+var contentTypeHeader = http.CanonicalHeaderKey("Content-Type")
+var contentLengthHeader = http.CanonicalHeaderKey("Content-Length")
+
 func (mh *MetaHandler) renderData(status int, w http.ResponseWriter, r *http.Request, data interface{}) {
 	if data == nil || status >= 300 {
 		mh.writeHeaders(status, w, r, data)
@@ -177,16 +181,35 @@ func (mh *MetaHandler) renderData(status int, w http.ResponseWriter, r *http.Req
 	}
 
 	buf := &bytes.Buffer{}
-	digest := md5.New()
 	// xxx conneg
-	e := json.NewEncoder(io.MultiWriter(buf, digest))
-	e.Encode(data)
-	etag := base64.URLEncoding.EncodeToString(digest.Sum(nil))
-	w.Header().Add("Content-Type", "application/json")
-	w.Header().Add("Content-Length", fmt.Sprintf("%d", calcContentLength(buf, etag)))
-	w.Header().Add("Etag", etag)
+
+	var etag string
+	if _, got := w.Header()[etagHeader]; !got {
+		digest := md5.New()
+		e := json.NewEncoder(io.MultiWriter(buf, digest))
+		e.Encode(data)
+		etag = base64.URLEncoding.EncodeToString(digest.Sum(nil))
+		w.Header().Add(etagHeader, etag)
+	} else {
+		e := json.NewEncoder(buf)
+		e.Encode(data)
+		etag = w.Header().Get(etagHeader)
+	}
+
+	if _, got := w.Header()[contentTypeHeader]; !got {
+		w.Header().Add(contentTypeHeader, "application/json")
+	}
+
+	if _, got := w.Header()[contentLengthHeader]; !got {
+		w.Header().Add(contentLengthHeader, fmt.Sprintf("%d", calcContentLength(buf, etag)))
+	}
+
 	mh.writeHeaders(status, w, r, data)
-	io.Copy(w, InjectCanaryAttr(buf, etag))
+	if buf.Len() > 0 {
+		io.Copy(w, InjectCanaryAttr(buf, etag))
+	} else {
+		io.Copy(w, buf)
+	}
 }
 
 func emptyBody() io.ReadCloser {

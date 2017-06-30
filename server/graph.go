@@ -9,6 +9,7 @@ import (
 type (
 	// A LiveGDM wraps a sous.Deployments and gets refreshed per server request
 	LiveGDM struct {
+		Etag string
 		sous.Deployments
 	}
 )
@@ -28,5 +29,7 @@ func liveGDM(sr graph.StateReader) (*LiveGDM, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &LiveGDM{gdm.Deployments}, nil
+	// Ignore this error because an empty string etag is acceptable.
+	etag, _ := state.GetEtag()
+	return &LiveGDM{Etag: etag, Deployments: gdm.Deployments}, nil
 }
