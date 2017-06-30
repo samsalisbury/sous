@@ -15,7 +15,9 @@ type (
 		// Manifests contains a mapping of source code repositories to global
 		// deployment configurations for artifacts built using that source code.
 		Manifests Manifests `hy:"manifests/"`
-		etag      *string
+		// etag is not exported to ensure that we don't interfere with YAML
+		// storage, hence the getter/setter.
+		etag *string
 	}
 
 	// Defs holds definitions for organisation-level objects.
@@ -95,9 +97,6 @@ func NewState() *State {
 		Manifests: NewManifests(),
 	}
 }
-
-// etag is a private field to ensure that we don't interfere with YAML storage,
-// hence the getter/setter
 
 // CheckEtag checks that the etag matches the etag on the state (if present).
 func (s State) CheckEtag(etag string) error {
