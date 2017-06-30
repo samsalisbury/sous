@@ -37,6 +37,7 @@ const sousQueryClustersHelp = `The current set of available clusters for deploym
 // Help prints the help
 func (*SousQueryClusters) Help() string { return sousQueryClustersHelp }
 
+// RegisterOn registers items on the DI graph
 func (*SousQueryClusters) RegisterOn(psy Addable) {
 	psy.Add(graph.DryrunNeither)
 }
