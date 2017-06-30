@@ -160,7 +160,7 @@ func TestStateEtags(t *testing.T) {
 	s, err := gsm.ReadState()
 
 	if err != nil {
-		t.Errorf("Unexpected error when reading state")
+		t.Errorf("Unexpected error when reading state: %v", err)
 	}
 	if s.CheckEtag("cannot match this") == nil {
 		t.Errorf("No error for busted etag")
