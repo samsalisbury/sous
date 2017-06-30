@@ -424,10 +424,8 @@ func GetDatabase(cfg *DBConfig) (*sql.DB, error) {
 	registerSQLOnce.Do(func() {
 		sql.Register(driver, &sqlite.SQLiteDriver{
 			ConnectHook: func(conn *sqlite.SQLiteConn) error {
-				if err := conn.RegisterFunc("semverEqual", semverEqual, true); err != nil {
-					return err
-				}
-				return nil
+				err := conn.RegisterFunc("semverEqual", semverEqual, true)
+				return err
 			},
 		})
 	})

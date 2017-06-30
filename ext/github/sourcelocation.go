@@ -104,10 +104,7 @@ func (rp repoPath) Validate() error {
 		return err
 	}
 	err = validateChars("offset directory", rp.Dir, OffsetAllowedChars, OffsetAllowedChars)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 func validateChars(what, s, allowed, allowedMiddle string) error {
