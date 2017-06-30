@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
 ## [Unreleased](//github.com/opentable/sous/compare/0.5.16...HEAD)
+### Added
+- Client: `sous query clusters` will enumerate all the logical clusters sous currently handles, for ease of manifest editing and deployment.
 
 ### Changed
 - Developer: Makefile directives to build a Sous .deb and upload it to an Artifactory server.
