@@ -13,7 +13,6 @@ import (
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/ext/storage"
 	"github.com/opentable/sous/graph"
-	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/restful"
 	"github.com/stretchr/testify/suite"
 )
