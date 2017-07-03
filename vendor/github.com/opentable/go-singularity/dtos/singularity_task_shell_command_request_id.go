@@ -10,11 +10,9 @@ import (
 type SingularityTaskShellCommandRequestId struct {
 	present map[string]bool
 
-	Id string `json:"id,omitempty"`
+	TaskId *SingularityTaskId `json:"taskId"`
 
 	Name string `json:"name,omitempty"`
-
-	TaskId *SingularityTaskId `json:"taskId"`
 
 	Timestamp int64 `json:"timestamp"`
 }
@@ -28,7 +26,7 @@ func (self *SingularityTaskShellCommandRequestId) Absorb(other swaggering.DTO) e
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A SingularityTaskShellCommandRequestId cannot absorb the values from %v", other)
+	return fmt.Errorf("A SingularityTaskShellCommandRequestId cannot copy the values from %#v", other)
 }
 
 func (self *SingularityTaskShellCommandRequestId) MarshalJSON() ([]byte, error) {
@@ -55,14 +53,14 @@ func (self *SingularityTaskShellCommandRequestId) SetField(name string, value in
 	default:
 		return fmt.Errorf("No such field %s on SingularityTaskShellCommandRequestId", name)
 
-	case "id", "Id":
-		v, ok := value.(string)
+	case "taskId", "TaskId":
+		v, ok := value.(*SingularityTaskId)
 		if ok {
-			self.Id = v
-			self.present["id"] = true
+			self.TaskId = v
+			self.present["taskId"] = true
 			return nil
 		} else {
-			return fmt.Errorf("Field id/Id: value %v(%T) couldn't be cast to type string", value, value)
+			return fmt.Errorf("Field taskId/TaskId: value %v(%T) couldn't be cast to type *SingularityTaskId", value, value)
 		}
 
 	case "name", "Name":
@@ -73,16 +71,6 @@ func (self *SingularityTaskShellCommandRequestId) SetField(name string, value in
 			return nil
 		} else {
 			return fmt.Errorf("Field name/Name: value %v(%T) couldn't be cast to type string", value, value)
-		}
-
-	case "taskId", "TaskId":
-		v, ok := value.(*SingularityTaskId)
-		if ok {
-			self.TaskId = v
-			self.present["taskId"] = true
-			return nil
-		} else {
-			return fmt.Errorf("Field taskId/TaskId: value %v(%T) couldn't be cast to type *SingularityTaskId", value, value)
 		}
 
 	case "timestamp", "Timestamp":
@@ -103,13 +91,13 @@ func (self *SingularityTaskShellCommandRequestId) GetField(name string) (interfa
 	default:
 		return nil, fmt.Errorf("No such field %s on SingularityTaskShellCommandRequestId", name)
 
-	case "id", "Id":
+	case "taskId", "TaskId":
 		if self.present != nil {
-			if _, ok := self.present["id"]; ok {
-				return self.Id, nil
+			if _, ok := self.present["taskId"]; ok {
+				return self.TaskId, nil
 			}
 		}
-		return nil, fmt.Errorf("Field Id no set on Id %+v", self)
+		return nil, fmt.Errorf("Field TaskId no set on TaskId %+v", self)
 
 	case "name", "Name":
 		if self.present != nil {
@@ -118,14 +106,6 @@ func (self *SingularityTaskShellCommandRequestId) GetField(name string) (interfa
 			}
 		}
 		return nil, fmt.Errorf("Field Name no set on Name %+v", self)
-
-	case "taskId", "TaskId":
-		if self.present != nil {
-			if _, ok := self.present["taskId"]; ok {
-				return self.TaskId, nil
-			}
-		}
-		return nil, fmt.Errorf("Field TaskId no set on TaskId %+v", self)
 
 	case "timestamp", "Timestamp":
 		if self.present != nil {
@@ -146,14 +126,11 @@ func (self *SingularityTaskShellCommandRequestId) ClearField(name string) error 
 	default:
 		return fmt.Errorf("No such field %s on SingularityTaskShellCommandRequestId", name)
 
-	case "id", "Id":
-		self.present["id"] = false
+	case "taskId", "TaskId":
+		self.present["taskId"] = false
 
 	case "name", "Name":
 		self.present["name"] = false
-
-	case "taskId", "TaskId":
-		self.present["taskId"] = false
 
 	case "timestamp", "Timestamp":
 		self.present["timestamp"] = false
@@ -174,7 +151,7 @@ func (self *SingularityTaskShellCommandRequestIdList) Absorb(other swaggering.DT
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A SingularityTaskShellCommandRequestId cannot absorb the values from %v", other)
+	return fmt.Errorf("A SingularityTaskShellCommandRequestIdList cannot copy the values from %#v", other)
 }
 
 func (list *SingularityTaskShellCommandRequestIdList) Populate(jsonReader io.ReadCloser) (err error) {

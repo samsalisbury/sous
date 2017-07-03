@@ -22,13 +22,13 @@ const (
 type SingularityDeployResult struct {
 	present map[string]bool
 
-	DeployFailures SingularityDeployFailureList `json:"deployFailures"`
-
 	DeployState SingularityDeployResultDeployState `json:"deployState"`
 
 	LbUpdate *SingularityLoadBalancerUpdate `json:"lbUpdate"`
 
 	Message string `json:"message,omitempty"`
+
+	DeployFailures SingularityDeployFailureList `json:"deployFailures"`
 
 	Timestamp int64 `json:"timestamp"`
 }
@@ -42,7 +42,7 @@ func (self *SingularityDeployResult) Absorb(other swaggering.DTO) error {
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A SingularityDeployResult cannot absorb the values from %v", other)
+	return fmt.Errorf("A SingularityDeployResult cannot copy the values from %#v", other)
 }
 
 func (self *SingularityDeployResult) MarshalJSON() ([]byte, error) {
@@ -68,16 +68,6 @@ func (self *SingularityDeployResult) SetField(name string, value interface{}) er
 	switch name {
 	default:
 		return fmt.Errorf("No such field %s on SingularityDeployResult", name)
-
-	case "deployFailures", "DeployFailures":
-		v, ok := value.(SingularityDeployFailureList)
-		if ok {
-			self.DeployFailures = v
-			self.present["deployFailures"] = true
-			return nil
-		} else {
-			return fmt.Errorf("Field deployFailures/DeployFailures: value %v(%T) couldn't be cast to type SingularityDeployFailureList", value, value)
-		}
 
 	case "deployState", "DeployState":
 		v, ok := value.(SingularityDeployResultDeployState)
@@ -109,6 +99,16 @@ func (self *SingularityDeployResult) SetField(name string, value interface{}) er
 			return fmt.Errorf("Field message/Message: value %v(%T) couldn't be cast to type string", value, value)
 		}
 
+	case "deployFailures", "DeployFailures":
+		v, ok := value.(SingularityDeployFailureList)
+		if ok {
+			self.DeployFailures = v
+			self.present["deployFailures"] = true
+			return nil
+		} else {
+			return fmt.Errorf("Field deployFailures/DeployFailures: value %v(%T) couldn't be cast to type SingularityDeployFailureList", value, value)
+		}
+
 	case "timestamp", "Timestamp":
 		v, ok := value.(int64)
 		if ok {
@@ -126,14 +126,6 @@ func (self *SingularityDeployResult) GetField(name string) (interface{}, error) 
 	switch name {
 	default:
 		return nil, fmt.Errorf("No such field %s on SingularityDeployResult", name)
-
-	case "deployFailures", "DeployFailures":
-		if self.present != nil {
-			if _, ok := self.present["deployFailures"]; ok {
-				return self.DeployFailures, nil
-			}
-		}
-		return nil, fmt.Errorf("Field DeployFailures no set on DeployFailures %+v", self)
 
 	case "deployState", "DeployState":
 		if self.present != nil {
@@ -159,6 +151,14 @@ func (self *SingularityDeployResult) GetField(name string) (interface{}, error) 
 		}
 		return nil, fmt.Errorf("Field Message no set on Message %+v", self)
 
+	case "deployFailures", "DeployFailures":
+		if self.present != nil {
+			if _, ok := self.present["deployFailures"]; ok {
+				return self.DeployFailures, nil
+			}
+		}
+		return nil, fmt.Errorf("Field DeployFailures no set on DeployFailures %+v", self)
+
 	case "timestamp", "Timestamp":
 		if self.present != nil {
 			if _, ok := self.present["timestamp"]; ok {
@@ -178,9 +178,6 @@ func (self *SingularityDeployResult) ClearField(name string) error {
 	default:
 		return fmt.Errorf("No such field %s on SingularityDeployResult", name)
 
-	case "deployFailures", "DeployFailures":
-		self.present["deployFailures"] = false
-
 	case "deployState", "DeployState":
 		self.present["deployState"] = false
 
@@ -189,6 +186,9 @@ func (self *SingularityDeployResult) ClearField(name string) error {
 
 	case "message", "Message":
 		self.present["message"] = false
+
+	case "deployFailures", "DeployFailures":
+		self.present["deployFailures"] = false
 
 	case "timestamp", "Timestamp":
 		self.present["timestamp"] = false
@@ -209,7 +209,7 @@ func (self *SingularityDeployResultList) Absorb(other swaggering.DTO) error {
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A SingularityDeployResult cannot absorb the values from %v", other)
+	return fmt.Errorf("A SingularityDeployResultList cannot copy the values from %#v", other)
 }
 
 func (list *SingularityDeployResultList) Populate(jsonReader io.ReadCloser) (err error) {

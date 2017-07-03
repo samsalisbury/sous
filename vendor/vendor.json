@@ -177,16 +177,16 @@
 			"revisionTime": "2016-12-10T01:35:37Z"
 		},
 		{
-			"checksumSHA1": "kWGq4b6rFLLV5fD18ZlzF32wgSM=",
+			"checksumSHA1": "3fxAMDIT/IeTdXInoWxtikWOfK0=",
 			"path": "github.com/opentable/go-singularity",
-			"revision": "e5ca85fa95ed760e06a88dee78abde4677a95dea",
-			"revisionTime": "2016-08-09T08:42:26Z"
+			"revision": "2bc8f95c3bf23ee38aa298dc1d4b9b5b097dfd03",
+			"revisionTime": "2017-06-29T00:19:14Z"
 		},
 		{
-			"checksumSHA1": "Ptj9spXDkx+5esPj9pLUFuYuEP8=",
+			"checksumSHA1": "pomq++omiaoddeD+TAexdJ9F0IQ=",
 			"path": "github.com/opentable/go-singularity/dtos",
-			"revision": "e5ca85fa95ed760e06a88dee78abde4677a95dea",
-			"revisionTime": "2016-08-09T08:42:26Z"
+			"revision": "2bc8f95c3bf23ee38aa298dc1d4b9b5b097dfd03",
+			"revisionTime": "2017-06-29T00:19:14Z"
 		},
 		{
 			"checksumSHA1": "2YMuZjTUghsAUbpeDp813c8mhdA=",
