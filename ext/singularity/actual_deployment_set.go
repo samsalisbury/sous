@@ -228,7 +228,7 @@ func singPipeline(
 func getSingularityRequestParents(client *singularity.Client) ([]*dtos.SingularityRequestParent, error) {
 	logFDs("before getRequestsFromSingularity")
 	defer logFDs("after getRequestsFromSingularity")
-	singRequests, err := client.GetRequests()
+	singRequests, err := client.GetRequests(true) // = don't use the 30 second cache
 
 	return singRequests, errors.Wrap(err, "getting request")
 }
