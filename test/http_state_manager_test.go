@@ -43,6 +43,7 @@ func TestWriteState(t *testing.T) {
 	newManifest := buildManifest("test-cluster", "github.com/opentable/new", "0.0.1")
 
 	state := &sous.State{}
+	state.SetEtag("qwertybeatsdvorak")
 	state.Defs.Clusters = make(sous.Clusters)
 	state.Defs.Clusters["test-cluster"] = &sous.Cluster{Name: "test-cluster"}
 

@@ -7,7 +7,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
 ## [Unreleased](//github.com/opentable/sous/compare/0.5.16...HEAD)
-- Increased buffer size in shell to handle super-long tokens.
+### Added
+- Client: `sous query clusters` will enumerate all the logical clusters sous currently handles, for ease of manifest editing and deployment.
+
+### Changed
+- Developer: Makefile directives to build a Sous .deb and upload it to an Artifactory server.
+- Server: /gdm now sets Etag header based on current revision of the GDM. Clients attempting
+  to update with a stale Etag will have update rejected appropriately.
+
+### Fixed
+- Client: Increased buffer size in shell to handle super-long tokens.
+- Client: Conflicting updates to the same manifest now fail appropriately (e.g. during 'sous deploy').
+  This should mean better performance when running 'sous deploy' concurrently on the same manifest,
+  as conflicting updates won't require multiple passes to resolve.
 
 ## [0.5.16](//github.com/opentable/sous/compare/0.5.15...0.5.16)
 - Fixed prefixed versions for update and deploy. At this point, git "package" tags should work everywhere they're used.

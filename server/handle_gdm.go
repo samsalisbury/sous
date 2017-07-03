@@ -17,7 +17,8 @@ type (
 	// GETGDMHandler is an injectable request handler
 	GETGDMHandler struct {
 		*sous.LogSet
-		GDM *LiveGDM
+		GDM      *LiveGDM
+		RzWriter *restful.ResponseWriter
 	}
 
 	// PUTGDMHandler is an injectable request handler
@@ -51,6 +52,7 @@ func (h *GETGDMHandler) Exchange() (interface{}, int) {
 		}
 		data.Deployments = append(data.Deployments, d)
 	}
+	h.RzWriter.Header().Set("Etag", h.GDM.Etag)
 
 	return data, http.StatusOK
 }
@@ -83,6 +85,10 @@ func (h *PUTGDMHandler) Exchange() (interface{}, int) {
 	if len(flaws) > 0 {
 		h.Warn.Printf("%#v", flaws)
 		return "Invalid GDM", http.StatusBadRequest
+	}
+
+	if _, got := h.Header["Etag"]; got {
+		state.SetEtag(h.Header.Get("Etag"))
 	}
 
 	if err := h.StateManager.WriteState(state, sous.User(h.User)); err != nil {
