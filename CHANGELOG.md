@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
-## [Unreleased](//github.com/opentable/sous/compare/0.5.16...HEAD)
+## [0.5.18](//github.com/opentable/sous/compare/0.5.16...0.5.18)
 ### Added
 - Client: `sous query clusters` will enumerate all the logical clusters sous currently handles, for ease of manifest editing and deployment.
 
@@ -20,6 +20,10 @@ with respect to its command line interface and HTTP interface.
 - Client: Conflicting updates to the same manifest now fail appropriately (e.g. during 'sous deploy').
   This should mean better performance when running 'sous deploy' concurrently on the same manifest,
   as conflicting updates won't require multiple passes to resolve.
+
+
+## [0.5.17]
+__(extra release because of mechanical difficulties)__
 
 ## [0.5.16](//github.com/opentable/sous/compare/0.5.15...0.5.16)
 - Fixed prefixed versions for update and deploy. At this point, git "package" tags should work everywhere they're used.
