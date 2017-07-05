@@ -24,32 +24,33 @@ const (
 	SingularityPendingRequestPendingTypeCANCEL_BOUNCE               SingularityPendingRequestPendingType = "CANCEL_BOUNCE"
 	SingularityPendingRequestPendingTypeTASK_BOUNCE                 SingularityPendingRequestPendingType = "TASK_BOUNCE"
 	SingularityPendingRequestPendingTypeDEPLOY_CANCELLED            SingularityPendingRequestPendingType = "DEPLOY_CANCELLED"
+	SingularityPendingRequestPendingTypeDEPLOY_FAILED               SingularityPendingRequestPendingType = "DEPLOY_FAILED"
 )
 
 type SingularityPendingRequest struct {
 	present map[string]bool
 
-	ActionId string `json:"actionId,omitempty"`
-
-	CmdLineArgsList swaggering.StringList `json:"cmdLineArgsList"`
+	RequestId string `json:"requestId,omitempty"`
 
 	DeployId string `json:"deployId,omitempty"`
 
-	Message string `json:"message,omitempty"`
+	Timestamp int64 `json:"timestamp"`
 
 	PendingType SingularityPendingRequestPendingType `json:"pendingType"`
 
-	RequestId string `json:"requestId,omitempty"`
-
-	Resources *Resources `json:"resources"`
+	CmdLineArgsList swaggering.StringList `json:"cmdLineArgsList"`
 
 	RunId string `json:"runId,omitempty"`
 
 	SkipHealthchecks bool `json:"skipHealthchecks"`
 
-	Timestamp int64 `json:"timestamp"`
+	Message string `json:"message,omitempty"`
+
+	ActionId string `json:"actionId,omitempty"`
 
 	User string `json:"user,omitempty"`
+
+	Resources *Resources `json:"resources"`
 }
 
 func (self *SingularityPendingRequest) Populate(jsonReader io.ReadCloser) (err error) {
@@ -61,7 +62,7 @@ func (self *SingularityPendingRequest) Absorb(other swaggering.DTO) error {
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A SingularityPendingRequest cannot absorb the values from %v", other)
+	return fmt.Errorf("A SingularityPendingRequest cannot copy the values from %#v", other)
 }
 
 func (self *SingularityPendingRequest) MarshalJSON() ([]byte, error) {
@@ -88,24 +89,14 @@ func (self *SingularityPendingRequest) SetField(name string, value interface{}) 
 	default:
 		return fmt.Errorf("No such field %s on SingularityPendingRequest", name)
 
-	case "actionId", "ActionId":
+	case "requestId", "RequestId":
 		v, ok := value.(string)
 		if ok {
-			self.ActionId = v
-			self.present["actionId"] = true
+			self.RequestId = v
+			self.present["requestId"] = true
 			return nil
 		} else {
-			return fmt.Errorf("Field actionId/ActionId: value %v(%T) couldn't be cast to type string", value, value)
-		}
-
-	case "cmdLineArgsList", "CmdLineArgsList":
-		v, ok := value.(swaggering.StringList)
-		if ok {
-			self.CmdLineArgsList = v
-			self.present["cmdLineArgsList"] = true
-			return nil
-		} else {
-			return fmt.Errorf("Field cmdLineArgsList/CmdLineArgsList: value %v(%T) couldn't be cast to type StringList", value, value)
+			return fmt.Errorf("Field requestId/RequestId: value %v(%T) couldn't be cast to type string", value, value)
 		}
 
 	case "deployId", "DeployId":
@@ -118,14 +109,14 @@ func (self *SingularityPendingRequest) SetField(name string, value interface{}) 
 			return fmt.Errorf("Field deployId/DeployId: value %v(%T) couldn't be cast to type string", value, value)
 		}
 
-	case "message", "Message":
-		v, ok := value.(string)
+	case "timestamp", "Timestamp":
+		v, ok := value.(int64)
 		if ok {
-			self.Message = v
-			self.present["message"] = true
+			self.Timestamp = v
+			self.present["timestamp"] = true
 			return nil
 		} else {
-			return fmt.Errorf("Field message/Message: value %v(%T) couldn't be cast to type string", value, value)
+			return fmt.Errorf("Field timestamp/Timestamp: value %v(%T) couldn't be cast to type int64", value, value)
 		}
 
 	case "pendingType", "PendingType":
@@ -138,24 +129,14 @@ func (self *SingularityPendingRequest) SetField(name string, value interface{}) 
 			return fmt.Errorf("Field pendingType/PendingType: value %v(%T) couldn't be cast to type SingularityPendingRequestPendingType", value, value)
 		}
 
-	case "requestId", "RequestId":
-		v, ok := value.(string)
+	case "cmdLineArgsList", "CmdLineArgsList":
+		v, ok := value.(swaggering.StringList)
 		if ok {
-			self.RequestId = v
-			self.present["requestId"] = true
+			self.CmdLineArgsList = v
+			self.present["cmdLineArgsList"] = true
 			return nil
 		} else {
-			return fmt.Errorf("Field requestId/RequestId: value %v(%T) couldn't be cast to type string", value, value)
-		}
-
-	case "resources", "Resources":
-		v, ok := value.(*Resources)
-		if ok {
-			self.Resources = v
-			self.present["resources"] = true
-			return nil
-		} else {
-			return fmt.Errorf("Field resources/Resources: value %v(%T) couldn't be cast to type *Resources", value, value)
+			return fmt.Errorf("Field cmdLineArgsList/CmdLineArgsList: value %v(%T) couldn't be cast to type swaggering.StringList", value, value)
 		}
 
 	case "runId", "RunId":
@@ -178,14 +159,24 @@ func (self *SingularityPendingRequest) SetField(name string, value interface{}) 
 			return fmt.Errorf("Field skipHealthchecks/SkipHealthchecks: value %v(%T) couldn't be cast to type bool", value, value)
 		}
 
-	case "timestamp", "Timestamp":
-		v, ok := value.(int64)
+	case "message", "Message":
+		v, ok := value.(string)
 		if ok {
-			self.Timestamp = v
-			self.present["timestamp"] = true
+			self.Message = v
+			self.present["message"] = true
 			return nil
 		} else {
-			return fmt.Errorf("Field timestamp/Timestamp: value %v(%T) couldn't be cast to type int64", value, value)
+			return fmt.Errorf("Field message/Message: value %v(%T) couldn't be cast to type string", value, value)
+		}
+
+	case "actionId", "ActionId":
+		v, ok := value.(string)
+		if ok {
+			self.ActionId = v
+			self.present["actionId"] = true
+			return nil
+		} else {
+			return fmt.Errorf("Field actionId/ActionId: value %v(%T) couldn't be cast to type string", value, value)
 		}
 
 	case "user", "User":
@@ -198,6 +189,16 @@ func (self *SingularityPendingRequest) SetField(name string, value interface{}) 
 			return fmt.Errorf("Field user/User: value %v(%T) couldn't be cast to type string", value, value)
 		}
 
+	case "resources", "Resources":
+		v, ok := value.(*Resources)
+		if ok {
+			self.Resources = v
+			self.present["resources"] = true
+			return nil
+		} else {
+			return fmt.Errorf("Field resources/Resources: value %v(%T) couldn't be cast to type *Resources", value, value)
+		}
+
 	}
 }
 
@@ -205,46 +206,6 @@ func (self *SingularityPendingRequest) GetField(name string) (interface{}, error
 	switch name {
 	default:
 		return nil, fmt.Errorf("No such field %s on SingularityPendingRequest", name)
-
-	case "actionId", "ActionId":
-		if self.present != nil {
-			if _, ok := self.present["actionId"]; ok {
-				return self.ActionId, nil
-			}
-		}
-		return nil, fmt.Errorf("Field ActionId no set on ActionId %+v", self)
-
-	case "cmdLineArgsList", "CmdLineArgsList":
-		if self.present != nil {
-			if _, ok := self.present["cmdLineArgsList"]; ok {
-				return self.CmdLineArgsList, nil
-			}
-		}
-		return nil, fmt.Errorf("Field CmdLineArgsList no set on CmdLineArgsList %+v", self)
-
-	case "deployId", "DeployId":
-		if self.present != nil {
-			if _, ok := self.present["deployId"]; ok {
-				return self.DeployId, nil
-			}
-		}
-		return nil, fmt.Errorf("Field DeployId no set on DeployId %+v", self)
-
-	case "message", "Message":
-		if self.present != nil {
-			if _, ok := self.present["message"]; ok {
-				return self.Message, nil
-			}
-		}
-		return nil, fmt.Errorf("Field Message no set on Message %+v", self)
-
-	case "pendingType", "PendingType":
-		if self.present != nil {
-			if _, ok := self.present["pendingType"]; ok {
-				return self.PendingType, nil
-			}
-		}
-		return nil, fmt.Errorf("Field PendingType no set on PendingType %+v", self)
 
 	case "requestId", "RequestId":
 		if self.present != nil {
@@ -254,13 +215,37 @@ func (self *SingularityPendingRequest) GetField(name string) (interface{}, error
 		}
 		return nil, fmt.Errorf("Field RequestId no set on RequestId %+v", self)
 
-	case "resources", "Resources":
+	case "deployId", "DeployId":
 		if self.present != nil {
-			if _, ok := self.present["resources"]; ok {
-				return self.Resources, nil
+			if _, ok := self.present["deployId"]; ok {
+				return self.DeployId, nil
 			}
 		}
-		return nil, fmt.Errorf("Field Resources no set on Resources %+v", self)
+		return nil, fmt.Errorf("Field DeployId no set on DeployId %+v", self)
+
+	case "timestamp", "Timestamp":
+		if self.present != nil {
+			if _, ok := self.present["timestamp"]; ok {
+				return self.Timestamp, nil
+			}
+		}
+		return nil, fmt.Errorf("Field Timestamp no set on Timestamp %+v", self)
+
+	case "pendingType", "PendingType":
+		if self.present != nil {
+			if _, ok := self.present["pendingType"]; ok {
+				return self.PendingType, nil
+			}
+		}
+		return nil, fmt.Errorf("Field PendingType no set on PendingType %+v", self)
+
+	case "cmdLineArgsList", "CmdLineArgsList":
+		if self.present != nil {
+			if _, ok := self.present["cmdLineArgsList"]; ok {
+				return self.CmdLineArgsList, nil
+			}
+		}
+		return nil, fmt.Errorf("Field CmdLineArgsList no set on CmdLineArgsList %+v", self)
 
 	case "runId", "RunId":
 		if self.present != nil {
@@ -278,13 +263,21 @@ func (self *SingularityPendingRequest) GetField(name string) (interface{}, error
 		}
 		return nil, fmt.Errorf("Field SkipHealthchecks no set on SkipHealthchecks %+v", self)
 
-	case "timestamp", "Timestamp":
+	case "message", "Message":
 		if self.present != nil {
-			if _, ok := self.present["timestamp"]; ok {
-				return self.Timestamp, nil
+			if _, ok := self.present["message"]; ok {
+				return self.Message, nil
 			}
 		}
-		return nil, fmt.Errorf("Field Timestamp no set on Timestamp %+v", self)
+		return nil, fmt.Errorf("Field Message no set on Message %+v", self)
+
+	case "actionId", "ActionId":
+		if self.present != nil {
+			if _, ok := self.present["actionId"]; ok {
+				return self.ActionId, nil
+			}
+		}
+		return nil, fmt.Errorf("Field ActionId no set on ActionId %+v", self)
 
 	case "user", "User":
 		if self.present != nil {
@@ -293,6 +286,14 @@ func (self *SingularityPendingRequest) GetField(name string) (interface{}, error
 			}
 		}
 		return nil, fmt.Errorf("Field User no set on User %+v", self)
+
+	case "resources", "Resources":
+		if self.present != nil {
+			if _, ok := self.present["resources"]; ok {
+				return self.Resources, nil
+			}
+		}
+		return nil, fmt.Errorf("Field Resources no set on Resources %+v", self)
 
 	}
 }
@@ -305,26 +306,20 @@ func (self *SingularityPendingRequest) ClearField(name string) error {
 	default:
 		return fmt.Errorf("No such field %s on SingularityPendingRequest", name)
 
-	case "actionId", "ActionId":
-		self.present["actionId"] = false
-
-	case "cmdLineArgsList", "CmdLineArgsList":
-		self.present["cmdLineArgsList"] = false
+	case "requestId", "RequestId":
+		self.present["requestId"] = false
 
 	case "deployId", "DeployId":
 		self.present["deployId"] = false
 
-	case "message", "Message":
-		self.present["message"] = false
+	case "timestamp", "Timestamp":
+		self.present["timestamp"] = false
 
 	case "pendingType", "PendingType":
 		self.present["pendingType"] = false
 
-	case "requestId", "RequestId":
-		self.present["requestId"] = false
-
-	case "resources", "Resources":
-		self.present["resources"] = false
+	case "cmdLineArgsList", "CmdLineArgsList":
+		self.present["cmdLineArgsList"] = false
 
 	case "runId", "RunId":
 		self.present["runId"] = false
@@ -332,11 +327,17 @@ func (self *SingularityPendingRequest) ClearField(name string) error {
 	case "skipHealthchecks", "SkipHealthchecks":
 		self.present["skipHealthchecks"] = false
 
-	case "timestamp", "Timestamp":
-		self.present["timestamp"] = false
+	case "message", "Message":
+		self.present["message"] = false
+
+	case "actionId", "ActionId":
+		self.present["actionId"] = false
 
 	case "user", "User":
 		self.present["user"] = false
+
+	case "resources", "Resources":
+		self.present["resources"] = false
 
 	}
 
@@ -354,7 +355,7 @@ func (self *SingularityPendingRequestList) Absorb(other swaggering.DTO) error {
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A SingularityPendingRequest cannot absorb the values from %v", other)
+	return fmt.Errorf("A SingularityPendingRequestList cannot copy the values from %#v", other)
 }
 
 func (list *SingularityPendingRequestList) Populate(jsonReader io.ReadCloser) (err error) {

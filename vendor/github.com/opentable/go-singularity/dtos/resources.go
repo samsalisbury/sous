@@ -10,13 +10,13 @@ import (
 type Resources struct {
 	present map[string]bool
 
-	Cpus float64 `json:"cpus"`
+	NumPorts int32 `json:"numPorts"`
 
 	DiskMb float64 `json:"diskMb"`
 
-	MemoryMb float64 `json:"memoryMb"`
+	Cpus float64 `json:"cpus"`
 
-	NumPorts int32 `json:"numPorts"`
+	MemoryMb float64 `json:"memoryMb"`
 }
 
 func (self *Resources) Populate(jsonReader io.ReadCloser) (err error) {
@@ -28,7 +28,7 @@ func (self *Resources) Absorb(other swaggering.DTO) error {
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A Resources cannot absorb the values from %v", other)
+	return fmt.Errorf("A Resources cannot copy the values from %#v", other)
 }
 
 func (self *Resources) MarshalJSON() ([]byte, error) {
@@ -55,14 +55,14 @@ func (self *Resources) SetField(name string, value interface{}) error {
 	default:
 		return fmt.Errorf("No such field %s on Resources", name)
 
-	case "cpus", "Cpus":
-		v, ok := value.(float64)
+	case "numPorts", "NumPorts":
+		v, ok := value.(int32)
 		if ok {
-			self.Cpus = v
-			self.present["cpus"] = true
+			self.NumPorts = v
+			self.present["numPorts"] = true
 			return nil
 		} else {
-			return fmt.Errorf("Field cpus/Cpus: value %v(%T) couldn't be cast to type float64", value, value)
+			return fmt.Errorf("Field numPorts/NumPorts: value %v(%T) couldn't be cast to type int32", value, value)
 		}
 
 	case "diskMb", "DiskMb":
@@ -75,6 +75,16 @@ func (self *Resources) SetField(name string, value interface{}) error {
 			return fmt.Errorf("Field diskMb/DiskMb: value %v(%T) couldn't be cast to type float64", value, value)
 		}
 
+	case "cpus", "Cpus":
+		v, ok := value.(float64)
+		if ok {
+			self.Cpus = v
+			self.present["cpus"] = true
+			return nil
+		} else {
+			return fmt.Errorf("Field cpus/Cpus: value %v(%T) couldn't be cast to type float64", value, value)
+		}
+
 	case "memoryMb", "MemoryMb":
 		v, ok := value.(float64)
 		if ok {
@@ -85,16 +95,6 @@ func (self *Resources) SetField(name string, value interface{}) error {
 			return fmt.Errorf("Field memoryMb/MemoryMb: value %v(%T) couldn't be cast to type float64", value, value)
 		}
 
-	case "numPorts", "NumPorts":
-		v, ok := value.(int32)
-		if ok {
-			self.NumPorts = v
-			self.present["numPorts"] = true
-			return nil
-		} else {
-			return fmt.Errorf("Field numPorts/NumPorts: value %v(%T) couldn't be cast to type int32", value, value)
-		}
-
 	}
 }
 
@@ -103,13 +103,13 @@ func (self *Resources) GetField(name string) (interface{}, error) {
 	default:
 		return nil, fmt.Errorf("No such field %s on Resources", name)
 
-	case "cpus", "Cpus":
+	case "numPorts", "NumPorts":
 		if self.present != nil {
-			if _, ok := self.present["cpus"]; ok {
-				return self.Cpus, nil
+			if _, ok := self.present["numPorts"]; ok {
+				return self.NumPorts, nil
 			}
 		}
-		return nil, fmt.Errorf("Field Cpus no set on Cpus %+v", self)
+		return nil, fmt.Errorf("Field NumPorts no set on NumPorts %+v", self)
 
 	case "diskMb", "DiskMb":
 		if self.present != nil {
@@ -119,6 +119,14 @@ func (self *Resources) GetField(name string) (interface{}, error) {
 		}
 		return nil, fmt.Errorf("Field DiskMb no set on DiskMb %+v", self)
 
+	case "cpus", "Cpus":
+		if self.present != nil {
+			if _, ok := self.present["cpus"]; ok {
+				return self.Cpus, nil
+			}
+		}
+		return nil, fmt.Errorf("Field Cpus no set on Cpus %+v", self)
+
 	case "memoryMb", "MemoryMb":
 		if self.present != nil {
 			if _, ok := self.present["memoryMb"]; ok {
@@ -126,14 +134,6 @@ func (self *Resources) GetField(name string) (interface{}, error) {
 			}
 		}
 		return nil, fmt.Errorf("Field MemoryMb no set on MemoryMb %+v", self)
-
-	case "numPorts", "NumPorts":
-		if self.present != nil {
-			if _, ok := self.present["numPorts"]; ok {
-				return self.NumPorts, nil
-			}
-		}
-		return nil, fmt.Errorf("Field NumPorts no set on NumPorts %+v", self)
 
 	}
 }
@@ -146,17 +146,17 @@ func (self *Resources) ClearField(name string) error {
 	default:
 		return fmt.Errorf("No such field %s on Resources", name)
 
-	case "cpus", "Cpus":
-		self.present["cpus"] = false
+	case "numPorts", "NumPorts":
+		self.present["numPorts"] = false
 
 	case "diskMb", "DiskMb":
 		self.present["diskMb"] = false
 
+	case "cpus", "Cpus":
+		self.present["cpus"] = false
+
 	case "memoryMb", "MemoryMb":
 		self.present["memoryMb"] = false
-
-	case "numPorts", "NumPorts":
-		self.present["numPorts"] = false
 
 	}
 
@@ -174,7 +174,7 @@ func (self *ResourcesList) Absorb(other swaggering.DTO) error {
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A Resources cannot absorb the values from %v", other)
+	return fmt.Errorf("A ResourcesList cannot copy the values from %#v", other)
 }
 
 func (list *ResourcesList) Populate(jsonReader io.ReadCloser) (err error) {

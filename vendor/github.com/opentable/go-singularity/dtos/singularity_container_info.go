@@ -17,11 +17,11 @@ const (
 type SingularityContainerInfo struct {
 	present map[string]bool
 
+	Volumes SingularityVolumeList `json:"volumes"`
+
 	Docker *SingularityDockerInfo `json:"docker"`
 
 	Type SingularityContainerInfoSingularityContainerType `json:"type"`
-
-	Volumes SingularityVolumeList `json:"volumes"`
 }
 
 func (self *SingularityContainerInfo) Populate(jsonReader io.ReadCloser) (err error) {
@@ -33,7 +33,7 @@ func (self *SingularityContainerInfo) Absorb(other swaggering.DTO) error {
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A SingularityContainerInfo cannot absorb the values from %v", other)
+	return fmt.Errorf("A SingularityContainerInfo cannot copy the values from %#v", other)
 }
 
 func (self *SingularityContainerInfo) MarshalJSON() ([]byte, error) {
@@ -60,6 +60,16 @@ func (self *SingularityContainerInfo) SetField(name string, value interface{}) e
 	default:
 		return fmt.Errorf("No such field %s on SingularityContainerInfo", name)
 
+	case "volumes", "Volumes":
+		v, ok := value.(SingularityVolumeList)
+		if ok {
+			self.Volumes = v
+			self.present["volumes"] = true
+			return nil
+		} else {
+			return fmt.Errorf("Field volumes/Volumes: value %v(%T) couldn't be cast to type SingularityVolumeList", value, value)
+		}
+
 	case "docker", "Docker":
 		v, ok := value.(*SingularityDockerInfo)
 		if ok {
@@ -80,16 +90,6 @@ func (self *SingularityContainerInfo) SetField(name string, value interface{}) e
 			return fmt.Errorf("Field type/Type: value %v(%T) couldn't be cast to type SingularityContainerInfoSingularityContainerType", value, value)
 		}
 
-	case "volumes", "Volumes":
-		v, ok := value.(SingularityVolumeList)
-		if ok {
-			self.Volumes = v
-			self.present["volumes"] = true
-			return nil
-		} else {
-			return fmt.Errorf("Field volumes/Volumes: value %v(%T) couldn't be cast to type SingularityVolumeList", value, value)
-		}
-
 	}
 }
 
@@ -97,6 +97,14 @@ func (self *SingularityContainerInfo) GetField(name string) (interface{}, error)
 	switch name {
 	default:
 		return nil, fmt.Errorf("No such field %s on SingularityContainerInfo", name)
+
+	case "volumes", "Volumes":
+		if self.present != nil {
+			if _, ok := self.present["volumes"]; ok {
+				return self.Volumes, nil
+			}
+		}
+		return nil, fmt.Errorf("Field Volumes no set on Volumes %+v", self)
 
 	case "docker", "Docker":
 		if self.present != nil {
@@ -114,14 +122,6 @@ func (self *SingularityContainerInfo) GetField(name string) (interface{}, error)
 		}
 		return nil, fmt.Errorf("Field Type no set on Type %+v", self)
 
-	case "volumes", "Volumes":
-		if self.present != nil {
-			if _, ok := self.present["volumes"]; ok {
-				return self.Volumes, nil
-			}
-		}
-		return nil, fmt.Errorf("Field Volumes no set on Volumes %+v", self)
-
 	}
 }
 
@@ -133,14 +133,14 @@ func (self *SingularityContainerInfo) ClearField(name string) error {
 	default:
 		return fmt.Errorf("No such field %s on SingularityContainerInfo", name)
 
+	case "volumes", "Volumes":
+		self.present["volumes"] = false
+
 	case "docker", "Docker":
 		self.present["docker"] = false
 
 	case "type", "Type":
 		self.present["type"] = false
-
-	case "volumes", "Volumes":
-		self.present["volumes"] = false
 
 	}
 
@@ -158,7 +158,7 @@ func (self *SingularityContainerInfoList) Absorb(other swaggering.DTO) error {
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A SingularityContainerInfo cannot absorb the values from %v", other)
+	return fmt.Errorf("A SingularityContainerInfoList cannot copy the values from %#v", other)
 }
 
 func (list *SingularityContainerInfoList) Populate(jsonReader io.ReadCloser) (err error) {

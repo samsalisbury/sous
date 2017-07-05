@@ -7,16 +7,24 @@ import (
 	"github.com/opentable/swaggering"
 )
 
+type SingularityTaskMetadataRequestMetadataLevel string
+
+const (
+	SingularityTaskMetadataRequestMetadataLevelINFO  SingularityTaskMetadataRequestMetadataLevel = "INFO"
+	SingularityTaskMetadataRequestMetadataLevelWARN  SingularityTaskMetadataRequestMetadataLevel = "WARN"
+	SingularityTaskMetadataRequestMetadataLevelERROR SingularityTaskMetadataRequestMetadataLevel = "ERROR"
+)
+
 type SingularityTaskMetadataRequest struct {
 	present map[string]bool
 
-	// Level *MetadataLevel `json:"level"`
-
 	Message string `json:"message,omitempty"`
 
-	Title string `json:"title,omitempty"`
+	Level SingularityTaskMetadataRequestMetadataLevel `json:"level"`
 
 	Type string `json:"type,omitempty"`
+
+	Title string `json:"title,omitempty"`
 }
 
 func (self *SingularityTaskMetadataRequest) Populate(jsonReader io.ReadCloser) (err error) {
@@ -28,7 +36,7 @@ func (self *SingularityTaskMetadataRequest) Absorb(other swaggering.DTO) error {
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A SingularityTaskMetadataRequest cannot absorb the values from %v", other)
+	return fmt.Errorf("A SingularityTaskMetadataRequest cannot copy the values from %#v", other)
 }
 
 func (self *SingularityTaskMetadataRequest) MarshalJSON() ([]byte, error) {
@@ -65,14 +73,14 @@ func (self *SingularityTaskMetadataRequest) SetField(name string, value interfac
 			return fmt.Errorf("Field message/Message: value %v(%T) couldn't be cast to type string", value, value)
 		}
 
-	case "title", "Title":
-		v, ok := value.(string)
+	case "level", "Level":
+		v, ok := value.(SingularityTaskMetadataRequestMetadataLevel)
 		if ok {
-			self.Title = v
-			self.present["title"] = true
+			self.Level = v
+			self.present["level"] = true
 			return nil
 		} else {
-			return fmt.Errorf("Field title/Title: value %v(%T) couldn't be cast to type string", value, value)
+			return fmt.Errorf("Field level/Level: value %v(%T) couldn't be cast to type SingularityTaskMetadataRequestMetadataLevel", value, value)
 		}
 
 	case "type", "Type":
@@ -83,6 +91,16 @@ func (self *SingularityTaskMetadataRequest) SetField(name string, value interfac
 			return nil
 		} else {
 			return fmt.Errorf("Field type/Type: value %v(%T) couldn't be cast to type string", value, value)
+		}
+
+	case "title", "Title":
+		v, ok := value.(string)
+		if ok {
+			self.Title = v
+			self.present["title"] = true
+			return nil
+		} else {
+			return fmt.Errorf("Field title/Title: value %v(%T) couldn't be cast to type string", value, value)
 		}
 
 	}
@@ -101,13 +119,13 @@ func (self *SingularityTaskMetadataRequest) GetField(name string) (interface{}, 
 		}
 		return nil, fmt.Errorf("Field Message no set on Message %+v", self)
 
-	case "title", "Title":
+	case "level", "Level":
 		if self.present != nil {
-			if _, ok := self.present["title"]; ok {
-				return self.Title, nil
+			if _, ok := self.present["level"]; ok {
+				return self.Level, nil
 			}
 		}
-		return nil, fmt.Errorf("Field Title no set on Title %+v", self)
+		return nil, fmt.Errorf("Field Level no set on Level %+v", self)
 
 	case "type", "Type":
 		if self.present != nil {
@@ -116,6 +134,14 @@ func (self *SingularityTaskMetadataRequest) GetField(name string) (interface{}, 
 			}
 		}
 		return nil, fmt.Errorf("Field Type no set on Type %+v", self)
+
+	case "title", "Title":
+		if self.present != nil {
+			if _, ok := self.present["title"]; ok {
+				return self.Title, nil
+			}
+		}
+		return nil, fmt.Errorf("Field Title no set on Title %+v", self)
 
 	}
 }
@@ -131,11 +157,14 @@ func (self *SingularityTaskMetadataRequest) ClearField(name string) error {
 	case "message", "Message":
 		self.present["message"] = false
 
-	case "title", "Title":
-		self.present["title"] = false
+	case "level", "Level":
+		self.present["level"] = false
 
 	case "type", "Type":
 		self.present["type"] = false
+
+	case "title", "Title":
+		self.present["title"] = false
 
 	}
 
@@ -153,7 +182,7 @@ func (self *SingularityTaskMetadataRequestList) Absorb(other swaggering.DTO) err
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A SingularityTaskMetadataRequest cannot absorb the values from %v", other)
+	return fmt.Errorf("A SingularityTaskMetadataRequestList cannot copy the values from %#v", other)
 }
 
 func (list *SingularityTaskMetadataRequestList) Populate(jsonReader io.ReadCloser) (err error) {

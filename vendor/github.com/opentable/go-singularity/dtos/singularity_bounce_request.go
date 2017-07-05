@@ -10,15 +10,17 @@ import (
 type SingularityBounceRequest struct {
 	present map[string]bool
 
-	ActionId string `json:"actionId,omitempty"`
+	SkipHealthchecks bool `json:"skipHealthchecks"`
+
+	RunShellCommandBeforeKill *SingularityShellCommand `json:"runShellCommandBeforeKill"`
 
 	DurationMillis int64 `json:"durationMillis"`
 
-	Incremental bool `json:"incremental"`
+	ActionId string `json:"actionId,omitempty"`
 
 	Message string `json:"message,omitempty"`
 
-	SkipHealthchecks bool `json:"skipHealthchecks"`
+	Incremental bool `json:"incremental"`
 }
 
 func (self *SingularityBounceRequest) Populate(jsonReader io.ReadCloser) (err error) {
@@ -30,7 +32,7 @@ func (self *SingularityBounceRequest) Absorb(other swaggering.DTO) error {
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A SingularityBounceRequest cannot absorb the values from %v", other)
+	return fmt.Errorf("A SingularityBounceRequest cannot copy the values from %#v", other)
 }
 
 func (self *SingularityBounceRequest) MarshalJSON() ([]byte, error) {
@@ -57,14 +59,24 @@ func (self *SingularityBounceRequest) SetField(name string, value interface{}) e
 	default:
 		return fmt.Errorf("No such field %s on SingularityBounceRequest", name)
 
-	case "actionId", "ActionId":
-		v, ok := value.(string)
+	case "skipHealthchecks", "SkipHealthchecks":
+		v, ok := value.(bool)
 		if ok {
-			self.ActionId = v
-			self.present["actionId"] = true
+			self.SkipHealthchecks = v
+			self.present["skipHealthchecks"] = true
 			return nil
 		} else {
-			return fmt.Errorf("Field actionId/ActionId: value %v(%T) couldn't be cast to type string", value, value)
+			return fmt.Errorf("Field skipHealthchecks/SkipHealthchecks: value %v(%T) couldn't be cast to type bool", value, value)
+		}
+
+	case "runShellCommandBeforeKill", "RunShellCommandBeforeKill":
+		v, ok := value.(*SingularityShellCommand)
+		if ok {
+			self.RunShellCommandBeforeKill = v
+			self.present["runShellCommandBeforeKill"] = true
+			return nil
+		} else {
+			return fmt.Errorf("Field runShellCommandBeforeKill/RunShellCommandBeforeKill: value %v(%T) couldn't be cast to type *SingularityShellCommand", value, value)
 		}
 
 	case "durationMillis", "DurationMillis":
@@ -77,14 +89,14 @@ func (self *SingularityBounceRequest) SetField(name string, value interface{}) e
 			return fmt.Errorf("Field durationMillis/DurationMillis: value %v(%T) couldn't be cast to type int64", value, value)
 		}
 
-	case "incremental", "Incremental":
-		v, ok := value.(bool)
+	case "actionId", "ActionId":
+		v, ok := value.(string)
 		if ok {
-			self.Incremental = v
-			self.present["incremental"] = true
+			self.ActionId = v
+			self.present["actionId"] = true
 			return nil
 		} else {
-			return fmt.Errorf("Field incremental/Incremental: value %v(%T) couldn't be cast to type bool", value, value)
+			return fmt.Errorf("Field actionId/ActionId: value %v(%T) couldn't be cast to type string", value, value)
 		}
 
 	case "message", "Message":
@@ -97,14 +109,14 @@ func (self *SingularityBounceRequest) SetField(name string, value interface{}) e
 			return fmt.Errorf("Field message/Message: value %v(%T) couldn't be cast to type string", value, value)
 		}
 
-	case "skipHealthchecks", "SkipHealthchecks":
+	case "incremental", "Incremental":
 		v, ok := value.(bool)
 		if ok {
-			self.SkipHealthchecks = v
-			self.present["skipHealthchecks"] = true
+			self.Incremental = v
+			self.present["incremental"] = true
 			return nil
 		} else {
-			return fmt.Errorf("Field skipHealthchecks/SkipHealthchecks: value %v(%T) couldn't be cast to type bool", value, value)
+			return fmt.Errorf("Field incremental/Incremental: value %v(%T) couldn't be cast to type bool", value, value)
 		}
 
 	}
@@ -115,13 +127,21 @@ func (self *SingularityBounceRequest) GetField(name string) (interface{}, error)
 	default:
 		return nil, fmt.Errorf("No such field %s on SingularityBounceRequest", name)
 
-	case "actionId", "ActionId":
+	case "skipHealthchecks", "SkipHealthchecks":
 		if self.present != nil {
-			if _, ok := self.present["actionId"]; ok {
-				return self.ActionId, nil
+			if _, ok := self.present["skipHealthchecks"]; ok {
+				return self.SkipHealthchecks, nil
 			}
 		}
-		return nil, fmt.Errorf("Field ActionId no set on ActionId %+v", self)
+		return nil, fmt.Errorf("Field SkipHealthchecks no set on SkipHealthchecks %+v", self)
+
+	case "runShellCommandBeforeKill", "RunShellCommandBeforeKill":
+		if self.present != nil {
+			if _, ok := self.present["runShellCommandBeforeKill"]; ok {
+				return self.RunShellCommandBeforeKill, nil
+			}
+		}
+		return nil, fmt.Errorf("Field RunShellCommandBeforeKill no set on RunShellCommandBeforeKill %+v", self)
 
 	case "durationMillis", "DurationMillis":
 		if self.present != nil {
@@ -131,13 +151,13 @@ func (self *SingularityBounceRequest) GetField(name string) (interface{}, error)
 		}
 		return nil, fmt.Errorf("Field DurationMillis no set on DurationMillis %+v", self)
 
-	case "incremental", "Incremental":
+	case "actionId", "ActionId":
 		if self.present != nil {
-			if _, ok := self.present["incremental"]; ok {
-				return self.Incremental, nil
+			if _, ok := self.present["actionId"]; ok {
+				return self.ActionId, nil
 			}
 		}
-		return nil, fmt.Errorf("Field Incremental no set on Incremental %+v", self)
+		return nil, fmt.Errorf("Field ActionId no set on ActionId %+v", self)
 
 	case "message", "Message":
 		if self.present != nil {
@@ -147,13 +167,13 @@ func (self *SingularityBounceRequest) GetField(name string) (interface{}, error)
 		}
 		return nil, fmt.Errorf("Field Message no set on Message %+v", self)
 
-	case "skipHealthchecks", "SkipHealthchecks":
+	case "incremental", "Incremental":
 		if self.present != nil {
-			if _, ok := self.present["skipHealthchecks"]; ok {
-				return self.SkipHealthchecks, nil
+			if _, ok := self.present["incremental"]; ok {
+				return self.Incremental, nil
 			}
 		}
-		return nil, fmt.Errorf("Field SkipHealthchecks no set on SkipHealthchecks %+v", self)
+		return nil, fmt.Errorf("Field Incremental no set on Incremental %+v", self)
 
 	}
 }
@@ -166,20 +186,23 @@ func (self *SingularityBounceRequest) ClearField(name string) error {
 	default:
 		return fmt.Errorf("No such field %s on SingularityBounceRequest", name)
 
-	case "actionId", "ActionId":
-		self.present["actionId"] = false
+	case "skipHealthchecks", "SkipHealthchecks":
+		self.present["skipHealthchecks"] = false
+
+	case "runShellCommandBeforeKill", "RunShellCommandBeforeKill":
+		self.present["runShellCommandBeforeKill"] = false
 
 	case "durationMillis", "DurationMillis":
 		self.present["durationMillis"] = false
 
-	case "incremental", "Incremental":
-		self.present["incremental"] = false
+	case "actionId", "ActionId":
+		self.present["actionId"] = false
 
 	case "message", "Message":
 		self.present["message"] = false
 
-	case "skipHealthchecks", "SkipHealthchecks":
-		self.present["skipHealthchecks"] = false
+	case "incremental", "Incremental":
+		self.present["incremental"] = false
 
 	}
 
@@ -197,7 +220,7 @@ func (self *SingularityBounceRequestList) Absorb(other swaggering.DTO) error {
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A SingularityBounceRequest cannot absorb the values from %v", other)
+	return fmt.Errorf("A SingularityBounceRequestList cannot copy the values from %#v", other)
 }
 
 func (list *SingularityBounceRequestList) Populate(jsonReader io.ReadCloser) (err error) {

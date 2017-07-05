@@ -10,9 +10,9 @@ import (
 type SingularityUnpauseRequest struct {
 	present map[string]bool
 
-	ActionId string `json:"actionId,omitempty"`
-
 	Message string `json:"message,omitempty"`
+
+	ActionId string `json:"actionId,omitempty"`
 
 	SkipHealthchecks bool `json:"skipHealthchecks"`
 }
@@ -26,7 +26,7 @@ func (self *SingularityUnpauseRequest) Absorb(other swaggering.DTO) error {
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A SingularityUnpauseRequest cannot absorb the values from %v", other)
+	return fmt.Errorf("A SingularityUnpauseRequest cannot copy the values from %#v", other)
 }
 
 func (self *SingularityUnpauseRequest) MarshalJSON() ([]byte, error) {
@@ -53,16 +53,6 @@ func (self *SingularityUnpauseRequest) SetField(name string, value interface{}) 
 	default:
 		return fmt.Errorf("No such field %s on SingularityUnpauseRequest", name)
 
-	case "actionId", "ActionId":
-		v, ok := value.(string)
-		if ok {
-			self.ActionId = v
-			self.present["actionId"] = true
-			return nil
-		} else {
-			return fmt.Errorf("Field actionId/ActionId: value %v(%T) couldn't be cast to type string", value, value)
-		}
-
 	case "message", "Message":
 		v, ok := value.(string)
 		if ok {
@@ -71,6 +61,16 @@ func (self *SingularityUnpauseRequest) SetField(name string, value interface{}) 
 			return nil
 		} else {
 			return fmt.Errorf("Field message/Message: value %v(%T) couldn't be cast to type string", value, value)
+		}
+
+	case "actionId", "ActionId":
+		v, ok := value.(string)
+		if ok {
+			self.ActionId = v
+			self.present["actionId"] = true
+			return nil
+		} else {
+			return fmt.Errorf("Field actionId/ActionId: value %v(%T) couldn't be cast to type string", value, value)
 		}
 
 	case "skipHealthchecks", "SkipHealthchecks":
@@ -91,14 +91,6 @@ func (self *SingularityUnpauseRequest) GetField(name string) (interface{}, error
 	default:
 		return nil, fmt.Errorf("No such field %s on SingularityUnpauseRequest", name)
 
-	case "actionId", "ActionId":
-		if self.present != nil {
-			if _, ok := self.present["actionId"]; ok {
-				return self.ActionId, nil
-			}
-		}
-		return nil, fmt.Errorf("Field ActionId no set on ActionId %+v", self)
-
 	case "message", "Message":
 		if self.present != nil {
 			if _, ok := self.present["message"]; ok {
@@ -106,6 +98,14 @@ func (self *SingularityUnpauseRequest) GetField(name string) (interface{}, error
 			}
 		}
 		return nil, fmt.Errorf("Field Message no set on Message %+v", self)
+
+	case "actionId", "ActionId":
+		if self.present != nil {
+			if _, ok := self.present["actionId"]; ok {
+				return self.ActionId, nil
+			}
+		}
+		return nil, fmt.Errorf("Field ActionId no set on ActionId %+v", self)
 
 	case "skipHealthchecks", "SkipHealthchecks":
 		if self.present != nil {
@@ -126,11 +126,11 @@ func (self *SingularityUnpauseRequest) ClearField(name string) error {
 	default:
 		return fmt.Errorf("No such field %s on SingularityUnpauseRequest", name)
 
-	case "actionId", "ActionId":
-		self.present["actionId"] = false
-
 	case "message", "Message":
 		self.present["message"] = false
+
+	case "actionId", "ActionId":
+		self.present["actionId"] = false
 
 	case "skipHealthchecks", "SkipHealthchecks":
 		self.present["skipHealthchecks"] = false
@@ -151,7 +151,7 @@ func (self *SingularityUnpauseRequestList) Absorb(other swaggering.DTO) error {
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A SingularityUnpauseRequest cannot absorb the values from %v", other)
+	return fmt.Errorf("A SingularityUnpauseRequestList cannot copy the values from %#v", other)
 }
 
 func (list *SingularityUnpauseRequestList) Populate(jsonReader io.ReadCloser) (err error) {

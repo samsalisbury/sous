@@ -10,13 +10,13 @@ import (
 type SingularityRunNowRequest struct {
 	present map[string]bool
 
-	CommandLineArgs swaggering.StringList `json:"commandLineArgs"`
+	Resources *Resources `json:"resources"`
 
 	Message string `json:"message,omitempty"`
 
-	Resources *Resources `json:"resources"`
-
 	RunId string `json:"runId,omitempty"`
+
+	CommandLineArgs swaggering.StringList `json:"commandLineArgs"`
 
 	SkipHealthchecks bool `json:"skipHealthchecks"`
 }
@@ -30,7 +30,7 @@ func (self *SingularityRunNowRequest) Absorb(other swaggering.DTO) error {
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A SingularityRunNowRequest cannot absorb the values from %v", other)
+	return fmt.Errorf("A SingularityRunNowRequest cannot copy the values from %#v", other)
 }
 
 func (self *SingularityRunNowRequest) MarshalJSON() ([]byte, error) {
@@ -57,14 +57,14 @@ func (self *SingularityRunNowRequest) SetField(name string, value interface{}) e
 	default:
 		return fmt.Errorf("No such field %s on SingularityRunNowRequest", name)
 
-	case "commandLineArgs", "CommandLineArgs":
-		v, ok := value.(swaggering.StringList)
+	case "resources", "Resources":
+		v, ok := value.(*Resources)
 		if ok {
-			self.CommandLineArgs = v
-			self.present["commandLineArgs"] = true
+			self.Resources = v
+			self.present["resources"] = true
 			return nil
 		} else {
-			return fmt.Errorf("Field commandLineArgs/CommandLineArgs: value %v(%T) couldn't be cast to type StringList", value, value)
+			return fmt.Errorf("Field resources/Resources: value %v(%T) couldn't be cast to type *Resources", value, value)
 		}
 
 	case "message", "Message":
@@ -77,16 +77,6 @@ func (self *SingularityRunNowRequest) SetField(name string, value interface{}) e
 			return fmt.Errorf("Field message/Message: value %v(%T) couldn't be cast to type string", value, value)
 		}
 
-	case "resources", "Resources":
-		v, ok := value.(*Resources)
-		if ok {
-			self.Resources = v
-			self.present["resources"] = true
-			return nil
-		} else {
-			return fmt.Errorf("Field resources/Resources: value %v(%T) couldn't be cast to type *Resources", value, value)
-		}
-
 	case "runId", "RunId":
 		v, ok := value.(string)
 		if ok {
@@ -95,6 +85,16 @@ func (self *SingularityRunNowRequest) SetField(name string, value interface{}) e
 			return nil
 		} else {
 			return fmt.Errorf("Field runId/RunId: value %v(%T) couldn't be cast to type string", value, value)
+		}
+
+	case "commandLineArgs", "CommandLineArgs":
+		v, ok := value.(swaggering.StringList)
+		if ok {
+			self.CommandLineArgs = v
+			self.present["commandLineArgs"] = true
+			return nil
+		} else {
+			return fmt.Errorf("Field commandLineArgs/CommandLineArgs: value %v(%T) couldn't be cast to type swaggering.StringList", value, value)
 		}
 
 	case "skipHealthchecks", "SkipHealthchecks":
@@ -115,13 +115,13 @@ func (self *SingularityRunNowRequest) GetField(name string) (interface{}, error)
 	default:
 		return nil, fmt.Errorf("No such field %s on SingularityRunNowRequest", name)
 
-	case "commandLineArgs", "CommandLineArgs":
+	case "resources", "Resources":
 		if self.present != nil {
-			if _, ok := self.present["commandLineArgs"]; ok {
-				return self.CommandLineArgs, nil
+			if _, ok := self.present["resources"]; ok {
+				return self.Resources, nil
 			}
 		}
-		return nil, fmt.Errorf("Field CommandLineArgs no set on CommandLineArgs %+v", self)
+		return nil, fmt.Errorf("Field Resources no set on Resources %+v", self)
 
 	case "message", "Message":
 		if self.present != nil {
@@ -131,14 +131,6 @@ func (self *SingularityRunNowRequest) GetField(name string) (interface{}, error)
 		}
 		return nil, fmt.Errorf("Field Message no set on Message %+v", self)
 
-	case "resources", "Resources":
-		if self.present != nil {
-			if _, ok := self.present["resources"]; ok {
-				return self.Resources, nil
-			}
-		}
-		return nil, fmt.Errorf("Field Resources no set on Resources %+v", self)
-
 	case "runId", "RunId":
 		if self.present != nil {
 			if _, ok := self.present["runId"]; ok {
@@ -146,6 +138,14 @@ func (self *SingularityRunNowRequest) GetField(name string) (interface{}, error)
 			}
 		}
 		return nil, fmt.Errorf("Field RunId no set on RunId %+v", self)
+
+	case "commandLineArgs", "CommandLineArgs":
+		if self.present != nil {
+			if _, ok := self.present["commandLineArgs"]; ok {
+				return self.CommandLineArgs, nil
+			}
+		}
+		return nil, fmt.Errorf("Field CommandLineArgs no set on CommandLineArgs %+v", self)
 
 	case "skipHealthchecks", "SkipHealthchecks":
 		if self.present != nil {
@@ -166,17 +166,17 @@ func (self *SingularityRunNowRequest) ClearField(name string) error {
 	default:
 		return fmt.Errorf("No such field %s on SingularityRunNowRequest", name)
 
-	case "commandLineArgs", "CommandLineArgs":
-		self.present["commandLineArgs"] = false
+	case "resources", "Resources":
+		self.present["resources"] = false
 
 	case "message", "Message":
 		self.present["message"] = false
 
-	case "resources", "Resources":
-		self.present["resources"] = false
-
 	case "runId", "RunId":
 		self.present["runId"] = false
+
+	case "commandLineArgs", "CommandLineArgs":
+		self.present["commandLineArgs"] = false
 
 	case "skipHealthchecks", "SkipHealthchecks":
 		self.present["skipHealthchecks"] = false
@@ -197,7 +197,7 @@ func (self *SingularityRunNowRequestList) Absorb(other swaggering.DTO) error {
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A SingularityRunNowRequest cannot absorb the values from %v", other)
+	return fmt.Errorf("A SingularityRunNowRequestList cannot copy the values from %#v", other)
 }
 
 func (list *SingularityRunNowRequestList) Populate(jsonReader io.ReadCloser) (err error) {

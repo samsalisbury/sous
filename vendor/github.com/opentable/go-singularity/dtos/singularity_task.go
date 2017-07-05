@@ -10,15 +10,11 @@ import (
 type SingularityTask struct {
 	present map[string]bool
 
-	MesosTask *TaskInfo `json:"mesosTask"`
-
-	Offer *Offer `json:"offer"`
+	TaskRequest *SingularityTaskRequest `json:"taskRequest"`
 
 	RackId string `json:"rackId,omitempty"`
 
 	TaskId *SingularityTaskId `json:"taskId"`
-
-	TaskRequest *SingularityTaskRequest `json:"taskRequest"`
 }
 
 func (self *SingularityTask) Populate(jsonReader io.ReadCloser) (err error) {
@@ -30,7 +26,7 @@ func (self *SingularityTask) Absorb(other swaggering.DTO) error {
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A SingularityTask cannot absorb the values from %v", other)
+	return fmt.Errorf("A SingularityTask cannot copy the values from %#v", other)
 }
 
 func (self *SingularityTask) MarshalJSON() ([]byte, error) {
@@ -57,24 +53,14 @@ func (self *SingularityTask) SetField(name string, value interface{}) error {
 	default:
 		return fmt.Errorf("No such field %s on SingularityTask", name)
 
-	case "mesosTask", "MesosTask":
-		v, ok := value.(*TaskInfo)
+	case "taskRequest", "TaskRequest":
+		v, ok := value.(*SingularityTaskRequest)
 		if ok {
-			self.MesosTask = v
-			self.present["mesosTask"] = true
+			self.TaskRequest = v
+			self.present["taskRequest"] = true
 			return nil
 		} else {
-			return fmt.Errorf("Field mesosTask/MesosTask: value %v(%T) couldn't be cast to type *TaskInfo", value, value)
-		}
-
-	case "offer", "Offer":
-		v, ok := value.(*Offer)
-		if ok {
-			self.Offer = v
-			self.present["offer"] = true
-			return nil
-		} else {
-			return fmt.Errorf("Field offer/Offer: value %v(%T) couldn't be cast to type *Offer", value, value)
+			return fmt.Errorf("Field taskRequest/TaskRequest: value %v(%T) couldn't be cast to type *SingularityTaskRequest", value, value)
 		}
 
 	case "rackId", "RackId":
@@ -97,16 +83,6 @@ func (self *SingularityTask) SetField(name string, value interface{}) error {
 			return fmt.Errorf("Field taskId/TaskId: value %v(%T) couldn't be cast to type *SingularityTaskId", value, value)
 		}
 
-	case "taskRequest", "TaskRequest":
-		v, ok := value.(*SingularityTaskRequest)
-		if ok {
-			self.TaskRequest = v
-			self.present["taskRequest"] = true
-			return nil
-		} else {
-			return fmt.Errorf("Field taskRequest/TaskRequest: value %v(%T) couldn't be cast to type *SingularityTaskRequest", value, value)
-		}
-
 	}
 }
 
@@ -115,21 +91,13 @@ func (self *SingularityTask) GetField(name string) (interface{}, error) {
 	default:
 		return nil, fmt.Errorf("No such field %s on SingularityTask", name)
 
-	case "mesosTask", "MesosTask":
+	case "taskRequest", "TaskRequest":
 		if self.present != nil {
-			if _, ok := self.present["mesosTask"]; ok {
-				return self.MesosTask, nil
+			if _, ok := self.present["taskRequest"]; ok {
+				return self.TaskRequest, nil
 			}
 		}
-		return nil, fmt.Errorf("Field MesosTask no set on MesosTask %+v", self)
-
-	case "offer", "Offer":
-		if self.present != nil {
-			if _, ok := self.present["offer"]; ok {
-				return self.Offer, nil
-			}
-		}
-		return nil, fmt.Errorf("Field Offer no set on Offer %+v", self)
+		return nil, fmt.Errorf("Field TaskRequest no set on TaskRequest %+v", self)
 
 	case "rackId", "RackId":
 		if self.present != nil {
@@ -147,14 +115,6 @@ func (self *SingularityTask) GetField(name string) (interface{}, error) {
 		}
 		return nil, fmt.Errorf("Field TaskId no set on TaskId %+v", self)
 
-	case "taskRequest", "TaskRequest":
-		if self.present != nil {
-			if _, ok := self.present["taskRequest"]; ok {
-				return self.TaskRequest, nil
-			}
-		}
-		return nil, fmt.Errorf("Field TaskRequest no set on TaskRequest %+v", self)
-
 	}
 }
 
@@ -166,20 +126,14 @@ func (self *SingularityTask) ClearField(name string) error {
 	default:
 		return fmt.Errorf("No such field %s on SingularityTask", name)
 
-	case "mesosTask", "MesosTask":
-		self.present["mesosTask"] = false
-
-	case "offer", "Offer":
-		self.present["offer"] = false
+	case "taskRequest", "TaskRequest":
+		self.present["taskRequest"] = false
 
 	case "rackId", "RackId":
 		self.present["rackId"] = false
 
 	case "taskId", "TaskId":
 		self.present["taskId"] = false
-
-	case "taskRequest", "TaskRequest":
-		self.present["taskRequest"] = false
 
 	}
 
@@ -197,7 +151,7 @@ func (self *SingularityTaskList) Absorb(other swaggering.DTO) error {
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A SingularityTask cannot absorb the values from %v", other)
+	return fmt.Errorf("A SingularityTaskList cannot copy the values from %#v", other)
 }
 
 func (list *SingularityTaskList) Populate(jsonReader io.ReadCloser) (err error) {

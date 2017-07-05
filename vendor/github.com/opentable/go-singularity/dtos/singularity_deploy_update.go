@@ -19,11 +19,11 @@ type SingularityDeployUpdate struct {
 
 	Deploy *SingularityDeploy `json:"deploy"`
 
-	DeployMarker *SingularityDeployMarker `json:"deployMarker"`
+	EventType SingularityDeployUpdateDeployEventType `json:"eventType"`
 
 	DeployResult *SingularityDeployResult `json:"deployResult"`
 
-	EventType SingularityDeployUpdateDeployEventType `json:"eventType"`
+	DeployMarker *SingularityDeployMarker `json:"deployMarker"`
 }
 
 func (self *SingularityDeployUpdate) Populate(jsonReader io.ReadCloser) (err error) {
@@ -35,7 +35,7 @@ func (self *SingularityDeployUpdate) Absorb(other swaggering.DTO) error {
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A SingularityDeployUpdate cannot absorb the values from %v", other)
+	return fmt.Errorf("A SingularityDeployUpdate cannot copy the values from %#v", other)
 }
 
 func (self *SingularityDeployUpdate) MarshalJSON() ([]byte, error) {
@@ -72,14 +72,14 @@ func (self *SingularityDeployUpdate) SetField(name string, value interface{}) er
 			return fmt.Errorf("Field deploy/Deploy: value %v(%T) couldn't be cast to type *SingularityDeploy", value, value)
 		}
 
-	case "deployMarker", "DeployMarker":
-		v, ok := value.(*SingularityDeployMarker)
+	case "eventType", "EventType":
+		v, ok := value.(SingularityDeployUpdateDeployEventType)
 		if ok {
-			self.DeployMarker = v
-			self.present["deployMarker"] = true
+			self.EventType = v
+			self.present["eventType"] = true
 			return nil
 		} else {
-			return fmt.Errorf("Field deployMarker/DeployMarker: value %v(%T) couldn't be cast to type *SingularityDeployMarker", value, value)
+			return fmt.Errorf("Field eventType/EventType: value %v(%T) couldn't be cast to type SingularityDeployUpdateDeployEventType", value, value)
 		}
 
 	case "deployResult", "DeployResult":
@@ -92,14 +92,14 @@ func (self *SingularityDeployUpdate) SetField(name string, value interface{}) er
 			return fmt.Errorf("Field deployResult/DeployResult: value %v(%T) couldn't be cast to type *SingularityDeployResult", value, value)
 		}
 
-	case "eventType", "EventType":
-		v, ok := value.(SingularityDeployUpdateDeployEventType)
+	case "deployMarker", "DeployMarker":
+		v, ok := value.(*SingularityDeployMarker)
 		if ok {
-			self.EventType = v
-			self.present["eventType"] = true
+			self.DeployMarker = v
+			self.present["deployMarker"] = true
 			return nil
 		} else {
-			return fmt.Errorf("Field eventType/EventType: value %v(%T) couldn't be cast to type SingularityDeployUpdateDeployEventType", value, value)
+			return fmt.Errorf("Field deployMarker/DeployMarker: value %v(%T) couldn't be cast to type *SingularityDeployMarker", value, value)
 		}
 
 	}
@@ -118,13 +118,13 @@ func (self *SingularityDeployUpdate) GetField(name string) (interface{}, error) 
 		}
 		return nil, fmt.Errorf("Field Deploy no set on Deploy %+v", self)
 
-	case "deployMarker", "DeployMarker":
+	case "eventType", "EventType":
 		if self.present != nil {
-			if _, ok := self.present["deployMarker"]; ok {
-				return self.DeployMarker, nil
+			if _, ok := self.present["eventType"]; ok {
+				return self.EventType, nil
 			}
 		}
-		return nil, fmt.Errorf("Field DeployMarker no set on DeployMarker %+v", self)
+		return nil, fmt.Errorf("Field EventType no set on EventType %+v", self)
 
 	case "deployResult", "DeployResult":
 		if self.present != nil {
@@ -134,13 +134,13 @@ func (self *SingularityDeployUpdate) GetField(name string) (interface{}, error) 
 		}
 		return nil, fmt.Errorf("Field DeployResult no set on DeployResult %+v", self)
 
-	case "eventType", "EventType":
+	case "deployMarker", "DeployMarker":
 		if self.present != nil {
-			if _, ok := self.present["eventType"]; ok {
-				return self.EventType, nil
+			if _, ok := self.present["deployMarker"]; ok {
+				return self.DeployMarker, nil
 			}
 		}
-		return nil, fmt.Errorf("Field EventType no set on EventType %+v", self)
+		return nil, fmt.Errorf("Field DeployMarker no set on DeployMarker %+v", self)
 
 	}
 }
@@ -156,14 +156,14 @@ func (self *SingularityDeployUpdate) ClearField(name string) error {
 	case "deploy", "Deploy":
 		self.present["deploy"] = false
 
-	case "deployMarker", "DeployMarker":
-		self.present["deployMarker"] = false
+	case "eventType", "EventType":
+		self.present["eventType"] = false
 
 	case "deployResult", "DeployResult":
 		self.present["deployResult"] = false
 
-	case "eventType", "EventType":
-		self.present["eventType"] = false
+	case "deployMarker", "DeployMarker":
+		self.present["deployMarker"] = false
 
 	}
 
@@ -181,7 +181,7 @@ func (self *SingularityDeployUpdateList) Absorb(other swaggering.DTO) error {
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A SingularityDeployUpdate cannot absorb the values from %v", other)
+	return fmt.Errorf("A SingularityDeployUpdateList cannot copy the values from %#v", other)
 }
 
 func (list *SingularityDeployUpdateList) Populate(jsonReader io.ReadCloser) (err error) {

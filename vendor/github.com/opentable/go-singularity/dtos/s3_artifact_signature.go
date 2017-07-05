@@ -10,21 +10,23 @@ import (
 type S3ArtifactSignature struct {
 	present map[string]bool
 
-	ArtifactFilename string `json:"artifactFilename,omitempty"`
-
-	Filename string `json:"filename,omitempty"`
+	S3Bucket string `json:"s3Bucket,omitempty"`
 
 	Filesize int64 `json:"filesize"`
 
-	Md5sum string `json:"md5sum,omitempty"`
+	IsArtifactList bool `json:"isArtifactList"`
+
+	TargetFolderRelativeToTask string `json:"targetFolderRelativeToTask,omitempty"`
 
 	Name string `json:"name,omitempty"`
 
-	S3Bucket string `json:"s3Bucket,omitempty"`
+	ArtifactFilename string `json:"artifactFilename,omitempty"`
 
 	S3ObjectKey string `json:"s3ObjectKey,omitempty"`
 
-	TargetFolderRelativeToTask string `json:"targetFolderRelativeToTask,omitempty"`
+	Filename string `json:"filename,omitempty"`
+
+	Md5sum string `json:"md5sum,omitempty"`
 }
 
 func (self *S3ArtifactSignature) Populate(jsonReader io.ReadCloser) (err error) {
@@ -36,7 +38,7 @@ func (self *S3ArtifactSignature) Absorb(other swaggering.DTO) error {
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A S3ArtifactSignature cannot absorb the values from %v", other)
+	return fmt.Errorf("A S3ArtifactSignature cannot copy the values from %#v", other)
 }
 
 func (self *S3ArtifactSignature) MarshalJSON() ([]byte, error) {
@@ -63,24 +65,14 @@ func (self *S3ArtifactSignature) SetField(name string, value interface{}) error 
 	default:
 		return fmt.Errorf("No such field %s on S3ArtifactSignature", name)
 
-	case "artifactFilename", "ArtifactFilename":
+	case "s3Bucket", "S3Bucket":
 		v, ok := value.(string)
 		if ok {
-			self.ArtifactFilename = v
-			self.present["artifactFilename"] = true
+			self.S3Bucket = v
+			self.present["s3Bucket"] = true
 			return nil
 		} else {
-			return fmt.Errorf("Field artifactFilename/ArtifactFilename: value %v(%T) couldn't be cast to type string", value, value)
-		}
-
-	case "filename", "Filename":
-		v, ok := value.(string)
-		if ok {
-			self.Filename = v
-			self.present["filename"] = true
-			return nil
-		} else {
-			return fmt.Errorf("Field filename/Filename: value %v(%T) couldn't be cast to type string", value, value)
+			return fmt.Errorf("Field s3Bucket/S3Bucket: value %v(%T) couldn't be cast to type string", value, value)
 		}
 
 	case "filesize", "Filesize":
@@ -93,44 +85,14 @@ func (self *S3ArtifactSignature) SetField(name string, value interface{}) error 
 			return fmt.Errorf("Field filesize/Filesize: value %v(%T) couldn't be cast to type int64", value, value)
 		}
 
-	case "md5sum", "Md5sum":
-		v, ok := value.(string)
+	case "isArtifactList", "IsArtifactList":
+		v, ok := value.(bool)
 		if ok {
-			self.Md5sum = v
-			self.present["md5sum"] = true
+			self.IsArtifactList = v
+			self.present["isArtifactList"] = true
 			return nil
 		} else {
-			return fmt.Errorf("Field md5sum/Md5sum: value %v(%T) couldn't be cast to type string", value, value)
-		}
-
-	case "name", "Name":
-		v, ok := value.(string)
-		if ok {
-			self.Name = v
-			self.present["name"] = true
-			return nil
-		} else {
-			return fmt.Errorf("Field name/Name: value %v(%T) couldn't be cast to type string", value, value)
-		}
-
-	case "s3Bucket", "S3Bucket":
-		v, ok := value.(string)
-		if ok {
-			self.S3Bucket = v
-			self.present["s3Bucket"] = true
-			return nil
-		} else {
-			return fmt.Errorf("Field s3Bucket/S3Bucket: value %v(%T) couldn't be cast to type string", value, value)
-		}
-
-	case "s3ObjectKey", "S3ObjectKey":
-		v, ok := value.(string)
-		if ok {
-			self.S3ObjectKey = v
-			self.present["s3ObjectKey"] = true
-			return nil
-		} else {
-			return fmt.Errorf("Field s3ObjectKey/S3ObjectKey: value %v(%T) couldn't be cast to type string", value, value)
+			return fmt.Errorf("Field isArtifactList/IsArtifactList: value %v(%T) couldn't be cast to type bool", value, value)
 		}
 
 	case "targetFolderRelativeToTask", "TargetFolderRelativeToTask":
@@ -143,6 +105,56 @@ func (self *S3ArtifactSignature) SetField(name string, value interface{}) error 
 			return fmt.Errorf("Field targetFolderRelativeToTask/TargetFolderRelativeToTask: value %v(%T) couldn't be cast to type string", value, value)
 		}
 
+	case "name", "Name":
+		v, ok := value.(string)
+		if ok {
+			self.Name = v
+			self.present["name"] = true
+			return nil
+		} else {
+			return fmt.Errorf("Field name/Name: value %v(%T) couldn't be cast to type string", value, value)
+		}
+
+	case "artifactFilename", "ArtifactFilename":
+		v, ok := value.(string)
+		if ok {
+			self.ArtifactFilename = v
+			self.present["artifactFilename"] = true
+			return nil
+		} else {
+			return fmt.Errorf("Field artifactFilename/ArtifactFilename: value %v(%T) couldn't be cast to type string", value, value)
+		}
+
+	case "s3ObjectKey", "S3ObjectKey":
+		v, ok := value.(string)
+		if ok {
+			self.S3ObjectKey = v
+			self.present["s3ObjectKey"] = true
+			return nil
+		} else {
+			return fmt.Errorf("Field s3ObjectKey/S3ObjectKey: value %v(%T) couldn't be cast to type string", value, value)
+		}
+
+	case "filename", "Filename":
+		v, ok := value.(string)
+		if ok {
+			self.Filename = v
+			self.present["filename"] = true
+			return nil
+		} else {
+			return fmt.Errorf("Field filename/Filename: value %v(%T) couldn't be cast to type string", value, value)
+		}
+
+	case "md5sum", "Md5sum":
+		v, ok := value.(string)
+		if ok {
+			self.Md5sum = v
+			self.present["md5sum"] = true
+			return nil
+		} else {
+			return fmt.Errorf("Field md5sum/Md5sum: value %v(%T) couldn't be cast to type string", value, value)
+		}
+
 	}
 }
 
@@ -150,46 +162,6 @@ func (self *S3ArtifactSignature) GetField(name string) (interface{}, error) {
 	switch name {
 	default:
 		return nil, fmt.Errorf("No such field %s on S3ArtifactSignature", name)
-
-	case "artifactFilename", "ArtifactFilename":
-		if self.present != nil {
-			if _, ok := self.present["artifactFilename"]; ok {
-				return self.ArtifactFilename, nil
-			}
-		}
-		return nil, fmt.Errorf("Field ArtifactFilename no set on ArtifactFilename %+v", self)
-
-	case "filename", "Filename":
-		if self.present != nil {
-			if _, ok := self.present["filename"]; ok {
-				return self.Filename, nil
-			}
-		}
-		return nil, fmt.Errorf("Field Filename no set on Filename %+v", self)
-
-	case "filesize", "Filesize":
-		if self.present != nil {
-			if _, ok := self.present["filesize"]; ok {
-				return self.Filesize, nil
-			}
-		}
-		return nil, fmt.Errorf("Field Filesize no set on Filesize %+v", self)
-
-	case "md5sum", "Md5sum":
-		if self.present != nil {
-			if _, ok := self.present["md5sum"]; ok {
-				return self.Md5sum, nil
-			}
-		}
-		return nil, fmt.Errorf("Field Md5sum no set on Md5sum %+v", self)
-
-	case "name", "Name":
-		if self.present != nil {
-			if _, ok := self.present["name"]; ok {
-				return self.Name, nil
-			}
-		}
-		return nil, fmt.Errorf("Field Name no set on Name %+v", self)
 
 	case "s3Bucket", "S3Bucket":
 		if self.present != nil {
@@ -199,13 +171,21 @@ func (self *S3ArtifactSignature) GetField(name string) (interface{}, error) {
 		}
 		return nil, fmt.Errorf("Field S3Bucket no set on S3Bucket %+v", self)
 
-	case "s3ObjectKey", "S3ObjectKey":
+	case "filesize", "Filesize":
 		if self.present != nil {
-			if _, ok := self.present["s3ObjectKey"]; ok {
-				return self.S3ObjectKey, nil
+			if _, ok := self.present["filesize"]; ok {
+				return self.Filesize, nil
 			}
 		}
-		return nil, fmt.Errorf("Field S3ObjectKey no set on S3ObjectKey %+v", self)
+		return nil, fmt.Errorf("Field Filesize no set on Filesize %+v", self)
+
+	case "isArtifactList", "IsArtifactList":
+		if self.present != nil {
+			if _, ok := self.present["isArtifactList"]; ok {
+				return self.IsArtifactList, nil
+			}
+		}
+		return nil, fmt.Errorf("Field IsArtifactList no set on IsArtifactList %+v", self)
 
 	case "targetFolderRelativeToTask", "TargetFolderRelativeToTask":
 		if self.present != nil {
@@ -214,6 +194,46 @@ func (self *S3ArtifactSignature) GetField(name string) (interface{}, error) {
 			}
 		}
 		return nil, fmt.Errorf("Field TargetFolderRelativeToTask no set on TargetFolderRelativeToTask %+v", self)
+
+	case "name", "Name":
+		if self.present != nil {
+			if _, ok := self.present["name"]; ok {
+				return self.Name, nil
+			}
+		}
+		return nil, fmt.Errorf("Field Name no set on Name %+v", self)
+
+	case "artifactFilename", "ArtifactFilename":
+		if self.present != nil {
+			if _, ok := self.present["artifactFilename"]; ok {
+				return self.ArtifactFilename, nil
+			}
+		}
+		return nil, fmt.Errorf("Field ArtifactFilename no set on ArtifactFilename %+v", self)
+
+	case "s3ObjectKey", "S3ObjectKey":
+		if self.present != nil {
+			if _, ok := self.present["s3ObjectKey"]; ok {
+				return self.S3ObjectKey, nil
+			}
+		}
+		return nil, fmt.Errorf("Field S3ObjectKey no set on S3ObjectKey %+v", self)
+
+	case "filename", "Filename":
+		if self.present != nil {
+			if _, ok := self.present["filename"]; ok {
+				return self.Filename, nil
+			}
+		}
+		return nil, fmt.Errorf("Field Filename no set on Filename %+v", self)
+
+	case "md5sum", "Md5sum":
+		if self.present != nil {
+			if _, ok := self.present["md5sum"]; ok {
+				return self.Md5sum, nil
+			}
+		}
+		return nil, fmt.Errorf("Field Md5sum no set on Md5sum %+v", self)
 
 	}
 }
@@ -226,29 +246,32 @@ func (self *S3ArtifactSignature) ClearField(name string) error {
 	default:
 		return fmt.Errorf("No such field %s on S3ArtifactSignature", name)
 
-	case "artifactFilename", "ArtifactFilename":
-		self.present["artifactFilename"] = false
-
-	case "filename", "Filename":
-		self.present["filename"] = false
+	case "s3Bucket", "S3Bucket":
+		self.present["s3Bucket"] = false
 
 	case "filesize", "Filesize":
 		self.present["filesize"] = false
 
-	case "md5sum", "Md5sum":
-		self.present["md5sum"] = false
+	case "isArtifactList", "IsArtifactList":
+		self.present["isArtifactList"] = false
+
+	case "targetFolderRelativeToTask", "TargetFolderRelativeToTask":
+		self.present["targetFolderRelativeToTask"] = false
 
 	case "name", "Name":
 		self.present["name"] = false
 
-	case "s3Bucket", "S3Bucket":
-		self.present["s3Bucket"] = false
+	case "artifactFilename", "ArtifactFilename":
+		self.present["artifactFilename"] = false
 
 	case "s3ObjectKey", "S3ObjectKey":
 		self.present["s3ObjectKey"] = false
 
-	case "targetFolderRelativeToTask", "TargetFolderRelativeToTask":
-		self.present["targetFolderRelativeToTask"] = false
+	case "filename", "Filename":
+		self.present["filename"] = false
+
+	case "md5sum", "Md5sum":
+		self.present["md5sum"] = false
 
 	}
 
@@ -266,7 +289,7 @@ func (self *S3ArtifactSignatureList) Absorb(other swaggering.DTO) error {
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A S3ArtifactSignature cannot absorb the values from %v", other)
+	return fmt.Errorf("A S3ArtifactSignatureList cannot copy the values from %#v", other)
 }
 
 func (list *S3ArtifactSignatureList) Populate(jsonReader io.ReadCloser) (err error) {

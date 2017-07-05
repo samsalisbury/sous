@@ -82,7 +82,7 @@ func ResetSingularity() {
 	log.Print("Resetting Singularity...")
 	singClient := sing.NewClient(SingularityURL)
 
-	reqList, err := singClient.GetRequests()
+	reqList, err := singClient.GetRequests(false)
 	if err != nil {
 		panic(err)
 	}
@@ -95,7 +95,7 @@ func ResetSingularity() {
 	}
 
 	for i := 100; i > 0; i-- {
-		verifyReqList, err := singClient.GetRequests()
+		verifyReqList, err := singClient.GetRequests(false)
 		if err != nil {
 			panic(err)
 		}

@@ -12,17 +12,23 @@ type SingularityHostState struct {
 
 	DriverStatus string `json:"driverStatus,omitempty"`
 
+	MillisSinceLastOffer int64 `json:"millisSinceLastOffer"`
+
 	HostAddress string `json:"hostAddress,omitempty"`
 
 	Hostname string `json:"hostname,omitempty"`
 
-	Master bool `json:"master"`
-
-	MesosConnected bool `json:"mesosConnected"`
-
 	MesosMaster string `json:"mesosMaster,omitempty"`
 
-	MillisSinceLastOffer int64 `json:"millisSinceLastOffer"`
+	Master bool `json:"master"`
+
+	OfferCacheSize int32 `json:"offerCacheSize"`
+
+	AvailableCachedCpus float64 `json:"availableCachedCpus"`
+
+	AvailableCachedMemory float64 `json:"availableCachedMemory"`
+
+	MesosConnected bool `json:"mesosConnected"`
 
 	Uptime int64 `json:"uptime"`
 }
@@ -36,7 +42,7 @@ func (self *SingularityHostState) Absorb(other swaggering.DTO) error {
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A SingularityHostState cannot absorb the values from %v", other)
+	return fmt.Errorf("A SingularityHostState cannot copy the values from %#v", other)
 }
 
 func (self *SingularityHostState) MarshalJSON() ([]byte, error) {
@@ -73,6 +79,16 @@ func (self *SingularityHostState) SetField(name string, value interface{}) error
 			return fmt.Errorf("Field driverStatus/DriverStatus: value %v(%T) couldn't be cast to type string", value, value)
 		}
 
+	case "millisSinceLastOffer", "MillisSinceLastOffer":
+		v, ok := value.(int64)
+		if ok {
+			self.MillisSinceLastOffer = v
+			self.present["millisSinceLastOffer"] = true
+			return nil
+		} else {
+			return fmt.Errorf("Field millisSinceLastOffer/MillisSinceLastOffer: value %v(%T) couldn't be cast to type int64", value, value)
+		}
+
 	case "hostAddress", "HostAddress":
 		v, ok := value.(string)
 		if ok {
@@ -93,26 +109,6 @@ func (self *SingularityHostState) SetField(name string, value interface{}) error
 			return fmt.Errorf("Field hostname/Hostname: value %v(%T) couldn't be cast to type string", value, value)
 		}
 
-	case "master", "Master":
-		v, ok := value.(bool)
-		if ok {
-			self.Master = v
-			self.present["master"] = true
-			return nil
-		} else {
-			return fmt.Errorf("Field master/Master: value %v(%T) couldn't be cast to type bool", value, value)
-		}
-
-	case "mesosConnected", "MesosConnected":
-		v, ok := value.(bool)
-		if ok {
-			self.MesosConnected = v
-			self.present["mesosConnected"] = true
-			return nil
-		} else {
-			return fmt.Errorf("Field mesosConnected/MesosConnected: value %v(%T) couldn't be cast to type bool", value, value)
-		}
-
 	case "mesosMaster", "MesosMaster":
 		v, ok := value.(string)
 		if ok {
@@ -123,14 +119,54 @@ func (self *SingularityHostState) SetField(name string, value interface{}) error
 			return fmt.Errorf("Field mesosMaster/MesosMaster: value %v(%T) couldn't be cast to type string", value, value)
 		}
 
-	case "millisSinceLastOffer", "MillisSinceLastOffer":
-		v, ok := value.(int64)
+	case "master", "Master":
+		v, ok := value.(bool)
 		if ok {
-			self.MillisSinceLastOffer = v
-			self.present["millisSinceLastOffer"] = true
+			self.Master = v
+			self.present["master"] = true
 			return nil
 		} else {
-			return fmt.Errorf("Field millisSinceLastOffer/MillisSinceLastOffer: value %v(%T) couldn't be cast to type int64", value, value)
+			return fmt.Errorf("Field master/Master: value %v(%T) couldn't be cast to type bool", value, value)
+		}
+
+	case "offerCacheSize", "OfferCacheSize":
+		v, ok := value.(int32)
+		if ok {
+			self.OfferCacheSize = v
+			self.present["offerCacheSize"] = true
+			return nil
+		} else {
+			return fmt.Errorf("Field offerCacheSize/OfferCacheSize: value %v(%T) couldn't be cast to type int32", value, value)
+		}
+
+	case "availableCachedCpus", "AvailableCachedCpus":
+		v, ok := value.(float64)
+		if ok {
+			self.AvailableCachedCpus = v
+			self.present["availableCachedCpus"] = true
+			return nil
+		} else {
+			return fmt.Errorf("Field availableCachedCpus/AvailableCachedCpus: value %v(%T) couldn't be cast to type float64", value, value)
+		}
+
+	case "availableCachedMemory", "AvailableCachedMemory":
+		v, ok := value.(float64)
+		if ok {
+			self.AvailableCachedMemory = v
+			self.present["availableCachedMemory"] = true
+			return nil
+		} else {
+			return fmt.Errorf("Field availableCachedMemory/AvailableCachedMemory: value %v(%T) couldn't be cast to type float64", value, value)
+		}
+
+	case "mesosConnected", "MesosConnected":
+		v, ok := value.(bool)
+		if ok {
+			self.MesosConnected = v
+			self.present["mesosConnected"] = true
+			return nil
+		} else {
+			return fmt.Errorf("Field mesosConnected/MesosConnected: value %v(%T) couldn't be cast to type bool", value, value)
 		}
 
 	case "uptime", "Uptime":
@@ -159,6 +195,14 @@ func (self *SingularityHostState) GetField(name string) (interface{}, error) {
 		}
 		return nil, fmt.Errorf("Field DriverStatus no set on DriverStatus %+v", self)
 
+	case "millisSinceLastOffer", "MillisSinceLastOffer":
+		if self.present != nil {
+			if _, ok := self.present["millisSinceLastOffer"]; ok {
+				return self.MillisSinceLastOffer, nil
+			}
+		}
+		return nil, fmt.Errorf("Field MillisSinceLastOffer no set on MillisSinceLastOffer %+v", self)
+
 	case "hostAddress", "HostAddress":
 		if self.present != nil {
 			if _, ok := self.present["hostAddress"]; ok {
@@ -175,22 +219,6 @@ func (self *SingularityHostState) GetField(name string) (interface{}, error) {
 		}
 		return nil, fmt.Errorf("Field Hostname no set on Hostname %+v", self)
 
-	case "master", "Master":
-		if self.present != nil {
-			if _, ok := self.present["master"]; ok {
-				return self.Master, nil
-			}
-		}
-		return nil, fmt.Errorf("Field Master no set on Master %+v", self)
-
-	case "mesosConnected", "MesosConnected":
-		if self.present != nil {
-			if _, ok := self.present["mesosConnected"]; ok {
-				return self.MesosConnected, nil
-			}
-		}
-		return nil, fmt.Errorf("Field MesosConnected no set on MesosConnected %+v", self)
-
 	case "mesosMaster", "MesosMaster":
 		if self.present != nil {
 			if _, ok := self.present["mesosMaster"]; ok {
@@ -199,13 +227,45 @@ func (self *SingularityHostState) GetField(name string) (interface{}, error) {
 		}
 		return nil, fmt.Errorf("Field MesosMaster no set on MesosMaster %+v", self)
 
-	case "millisSinceLastOffer", "MillisSinceLastOffer":
+	case "master", "Master":
 		if self.present != nil {
-			if _, ok := self.present["millisSinceLastOffer"]; ok {
-				return self.MillisSinceLastOffer, nil
+			if _, ok := self.present["master"]; ok {
+				return self.Master, nil
 			}
 		}
-		return nil, fmt.Errorf("Field MillisSinceLastOffer no set on MillisSinceLastOffer %+v", self)
+		return nil, fmt.Errorf("Field Master no set on Master %+v", self)
+
+	case "offerCacheSize", "OfferCacheSize":
+		if self.present != nil {
+			if _, ok := self.present["offerCacheSize"]; ok {
+				return self.OfferCacheSize, nil
+			}
+		}
+		return nil, fmt.Errorf("Field OfferCacheSize no set on OfferCacheSize %+v", self)
+
+	case "availableCachedCpus", "AvailableCachedCpus":
+		if self.present != nil {
+			if _, ok := self.present["availableCachedCpus"]; ok {
+				return self.AvailableCachedCpus, nil
+			}
+		}
+		return nil, fmt.Errorf("Field AvailableCachedCpus no set on AvailableCachedCpus %+v", self)
+
+	case "availableCachedMemory", "AvailableCachedMemory":
+		if self.present != nil {
+			if _, ok := self.present["availableCachedMemory"]; ok {
+				return self.AvailableCachedMemory, nil
+			}
+		}
+		return nil, fmt.Errorf("Field AvailableCachedMemory no set on AvailableCachedMemory %+v", self)
+
+	case "mesosConnected", "MesosConnected":
+		if self.present != nil {
+			if _, ok := self.present["mesosConnected"]; ok {
+				return self.MesosConnected, nil
+			}
+		}
+		return nil, fmt.Errorf("Field MesosConnected no set on MesosConnected %+v", self)
 
 	case "uptime", "Uptime":
 		if self.present != nil {
@@ -229,23 +289,32 @@ func (self *SingularityHostState) ClearField(name string) error {
 	case "driverStatus", "DriverStatus":
 		self.present["driverStatus"] = false
 
+	case "millisSinceLastOffer", "MillisSinceLastOffer":
+		self.present["millisSinceLastOffer"] = false
+
 	case "hostAddress", "HostAddress":
 		self.present["hostAddress"] = false
 
 	case "hostname", "Hostname":
 		self.present["hostname"] = false
 
-	case "master", "Master":
-		self.present["master"] = false
-
-	case "mesosConnected", "MesosConnected":
-		self.present["mesosConnected"] = false
-
 	case "mesosMaster", "MesosMaster":
 		self.present["mesosMaster"] = false
 
-	case "millisSinceLastOffer", "MillisSinceLastOffer":
-		self.present["millisSinceLastOffer"] = false
+	case "master", "Master":
+		self.present["master"] = false
+
+	case "offerCacheSize", "OfferCacheSize":
+		self.present["offerCacheSize"] = false
+
+	case "availableCachedCpus", "AvailableCachedCpus":
+		self.present["availableCachedCpus"] = false
+
+	case "availableCachedMemory", "AvailableCachedMemory":
+		self.present["availableCachedMemory"] = false
+
+	case "mesosConnected", "MesosConnected":
+		self.present["mesosConnected"] = false
 
 	case "uptime", "Uptime":
 		self.present["uptime"] = false
@@ -266,7 +335,7 @@ func (self *SingularityHostStateList) Absorb(other swaggering.DTO) error {
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A SingularityHostState cannot absorb the values from %v", other)
+	return fmt.Errorf("A SingularityHostStateList cannot copy the values from %#v", other)
 }
 
 func (list *SingularityHostStateList) Populate(jsonReader io.ReadCloser) (err error) {

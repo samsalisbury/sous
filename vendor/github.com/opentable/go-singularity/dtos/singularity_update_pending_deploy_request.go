@@ -10,11 +10,11 @@ import (
 type SingularityUpdatePendingDeployRequest struct {
 	present map[string]bool
 
-	DeployId string `json:"deployId,omitempty"`
+	TargetActiveInstances int32 `json:"targetActiveInstances"`
 
 	RequestId string `json:"requestId,omitempty"`
 
-	TargetActiveInstances int32 `json:"targetActiveInstances"`
+	DeployId string `json:"deployId,omitempty"`
 }
 
 func (self *SingularityUpdatePendingDeployRequest) Populate(jsonReader io.ReadCloser) (err error) {
@@ -26,7 +26,7 @@ func (self *SingularityUpdatePendingDeployRequest) Absorb(other swaggering.DTO) 
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A SingularityUpdatePendingDeployRequest cannot absorb the values from %v", other)
+	return fmt.Errorf("A SingularityUpdatePendingDeployRequest cannot copy the values from %#v", other)
 }
 
 func (self *SingularityUpdatePendingDeployRequest) MarshalJSON() ([]byte, error) {
@@ -53,14 +53,14 @@ func (self *SingularityUpdatePendingDeployRequest) SetField(name string, value i
 	default:
 		return fmt.Errorf("No such field %s on SingularityUpdatePendingDeployRequest", name)
 
-	case "deployId", "DeployId":
-		v, ok := value.(string)
+	case "targetActiveInstances", "TargetActiveInstances":
+		v, ok := value.(int32)
 		if ok {
-			self.DeployId = v
-			self.present["deployId"] = true
+			self.TargetActiveInstances = v
+			self.present["targetActiveInstances"] = true
 			return nil
 		} else {
-			return fmt.Errorf("Field deployId/DeployId: value %v(%T) couldn't be cast to type string", value, value)
+			return fmt.Errorf("Field targetActiveInstances/TargetActiveInstances: value %v(%T) couldn't be cast to type int32", value, value)
 		}
 
 	case "requestId", "RequestId":
@@ -73,14 +73,14 @@ func (self *SingularityUpdatePendingDeployRequest) SetField(name string, value i
 			return fmt.Errorf("Field requestId/RequestId: value %v(%T) couldn't be cast to type string", value, value)
 		}
 
-	case "targetActiveInstances", "TargetActiveInstances":
-		v, ok := value.(int32)
+	case "deployId", "DeployId":
+		v, ok := value.(string)
 		if ok {
-			self.TargetActiveInstances = v
-			self.present["targetActiveInstances"] = true
+			self.DeployId = v
+			self.present["deployId"] = true
 			return nil
 		} else {
-			return fmt.Errorf("Field targetActiveInstances/TargetActiveInstances: value %v(%T) couldn't be cast to type int32", value, value)
+			return fmt.Errorf("Field deployId/DeployId: value %v(%T) couldn't be cast to type string", value, value)
 		}
 
 	}
@@ -91,13 +91,13 @@ func (self *SingularityUpdatePendingDeployRequest) GetField(name string) (interf
 	default:
 		return nil, fmt.Errorf("No such field %s on SingularityUpdatePendingDeployRequest", name)
 
-	case "deployId", "DeployId":
+	case "targetActiveInstances", "TargetActiveInstances":
 		if self.present != nil {
-			if _, ok := self.present["deployId"]; ok {
-				return self.DeployId, nil
+			if _, ok := self.present["targetActiveInstances"]; ok {
+				return self.TargetActiveInstances, nil
 			}
 		}
-		return nil, fmt.Errorf("Field DeployId no set on DeployId %+v", self)
+		return nil, fmt.Errorf("Field TargetActiveInstances no set on TargetActiveInstances %+v", self)
 
 	case "requestId", "RequestId":
 		if self.present != nil {
@@ -107,13 +107,13 @@ func (self *SingularityUpdatePendingDeployRequest) GetField(name string) (interf
 		}
 		return nil, fmt.Errorf("Field RequestId no set on RequestId %+v", self)
 
-	case "targetActiveInstances", "TargetActiveInstances":
+	case "deployId", "DeployId":
 		if self.present != nil {
-			if _, ok := self.present["targetActiveInstances"]; ok {
-				return self.TargetActiveInstances, nil
+			if _, ok := self.present["deployId"]; ok {
+				return self.DeployId, nil
 			}
 		}
-		return nil, fmt.Errorf("Field TargetActiveInstances no set on TargetActiveInstances %+v", self)
+		return nil, fmt.Errorf("Field DeployId no set on DeployId %+v", self)
 
 	}
 }
@@ -126,14 +126,14 @@ func (self *SingularityUpdatePendingDeployRequest) ClearField(name string) error
 	default:
 		return fmt.Errorf("No such field %s on SingularityUpdatePendingDeployRequest", name)
 
-	case "deployId", "DeployId":
-		self.present["deployId"] = false
+	case "targetActiveInstances", "TargetActiveInstances":
+		self.present["targetActiveInstances"] = false
 
 	case "requestId", "RequestId":
 		self.present["requestId"] = false
 
-	case "targetActiveInstances", "TargetActiveInstances":
-		self.present["targetActiveInstances"] = false
+	case "deployId", "DeployId":
+		self.present["deployId"] = false
 
 	}
 
@@ -151,7 +151,7 @@ func (self *SingularityUpdatePendingDeployRequestList) Absorb(other swaggering.D
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A SingularityUpdatePendingDeployRequest cannot absorb the values from %v", other)
+	return fmt.Errorf("A SingularityUpdatePendingDeployRequestList cannot copy the values from %#v", other)
 }
 
 func (list *SingularityUpdatePendingDeployRequestList) Populate(jsonReader io.ReadCloser) (err error) {

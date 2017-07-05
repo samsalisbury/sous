@@ -24,11 +24,11 @@ type SingularityTaskShellCommandUpdate struct {
 
 	OutputFilename string `json:"outputFilename,omitempty"`
 
+	UpdateType SingularityTaskShellCommandUpdateUpdateType `json:"updateType"`
+
 	ShellRequestId *SingularityTaskShellCommandRequestId `json:"shellRequestId"`
 
 	Timestamp int64 `json:"timestamp"`
-
-	UpdateType SingularityTaskShellCommandUpdateUpdateType `json:"updateType"`
 }
 
 func (self *SingularityTaskShellCommandUpdate) Populate(jsonReader io.ReadCloser) (err error) {
@@ -40,7 +40,7 @@ func (self *SingularityTaskShellCommandUpdate) Absorb(other swaggering.DTO) erro
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A SingularityTaskShellCommandUpdate cannot absorb the values from %v", other)
+	return fmt.Errorf("A SingularityTaskShellCommandUpdate cannot copy the values from %#v", other)
 }
 
 func (self *SingularityTaskShellCommandUpdate) MarshalJSON() ([]byte, error) {
@@ -87,6 +87,16 @@ func (self *SingularityTaskShellCommandUpdate) SetField(name string, value inter
 			return fmt.Errorf("Field outputFilename/OutputFilename: value %v(%T) couldn't be cast to type string", value, value)
 		}
 
+	case "updateType", "UpdateType":
+		v, ok := value.(SingularityTaskShellCommandUpdateUpdateType)
+		if ok {
+			self.UpdateType = v
+			self.present["updateType"] = true
+			return nil
+		} else {
+			return fmt.Errorf("Field updateType/UpdateType: value %v(%T) couldn't be cast to type SingularityTaskShellCommandUpdateUpdateType", value, value)
+		}
+
 	case "shellRequestId", "ShellRequestId":
 		v, ok := value.(*SingularityTaskShellCommandRequestId)
 		if ok {
@@ -105,16 +115,6 @@ func (self *SingularityTaskShellCommandUpdate) SetField(name string, value inter
 			return nil
 		} else {
 			return fmt.Errorf("Field timestamp/Timestamp: value %v(%T) couldn't be cast to type int64", value, value)
-		}
-
-	case "updateType", "UpdateType":
-		v, ok := value.(SingularityTaskShellCommandUpdateUpdateType)
-		if ok {
-			self.UpdateType = v
-			self.present["updateType"] = true
-			return nil
-		} else {
-			return fmt.Errorf("Field updateType/UpdateType: value %v(%T) couldn't be cast to type SingularityTaskShellCommandUpdateUpdateType", value, value)
 		}
 
 	}
@@ -141,6 +141,14 @@ func (self *SingularityTaskShellCommandUpdate) GetField(name string) (interface{
 		}
 		return nil, fmt.Errorf("Field OutputFilename no set on OutputFilename %+v", self)
 
+	case "updateType", "UpdateType":
+		if self.present != nil {
+			if _, ok := self.present["updateType"]; ok {
+				return self.UpdateType, nil
+			}
+		}
+		return nil, fmt.Errorf("Field UpdateType no set on UpdateType %+v", self)
+
 	case "shellRequestId", "ShellRequestId":
 		if self.present != nil {
 			if _, ok := self.present["shellRequestId"]; ok {
@@ -156,14 +164,6 @@ func (self *SingularityTaskShellCommandUpdate) GetField(name string) (interface{
 			}
 		}
 		return nil, fmt.Errorf("Field Timestamp no set on Timestamp %+v", self)
-
-	case "updateType", "UpdateType":
-		if self.present != nil {
-			if _, ok := self.present["updateType"]; ok {
-				return self.UpdateType, nil
-			}
-		}
-		return nil, fmt.Errorf("Field UpdateType no set on UpdateType %+v", self)
 
 	}
 }
@@ -182,14 +182,14 @@ func (self *SingularityTaskShellCommandUpdate) ClearField(name string) error {
 	case "outputFilename", "OutputFilename":
 		self.present["outputFilename"] = false
 
+	case "updateType", "UpdateType":
+		self.present["updateType"] = false
+
 	case "shellRequestId", "ShellRequestId":
 		self.present["shellRequestId"] = false
 
 	case "timestamp", "Timestamp":
 		self.present["timestamp"] = false
-
-	case "updateType", "UpdateType":
-		self.present["updateType"] = false
 
 	}
 
@@ -207,7 +207,7 @@ func (self *SingularityTaskShellCommandUpdateList) Absorb(other swaggering.DTO) 
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A SingularityTaskShellCommandUpdate cannot absorb the values from %v", other)
+	return fmt.Errorf("A SingularityTaskShellCommandUpdateList cannot copy the values from %#v", other)
 }
 
 func (list *SingularityTaskShellCommandUpdateList) Populate(jsonReader io.ReadCloser) (err error) {

@@ -7,44 +7,51 @@ import (
 	"github.com/opentable/swaggering"
 )
 
+type ExecutorDataSingularityExecutorLogrotateFrequency string
+
+const (
+	ExecutorDataSingularityExecutorLogrotateFrequencyHOURLY  ExecutorDataSingularityExecutorLogrotateFrequency = "HOURLY"
+	ExecutorDataSingularityExecutorLogrotateFrequencyDAILY   ExecutorDataSingularityExecutorLogrotateFrequency = "DAILY"
+	ExecutorDataSingularityExecutorLogrotateFrequencyWEEKLY  ExecutorDataSingularityExecutorLogrotateFrequency = "WEEKLY"
+	ExecutorDataSingularityExecutorLogrotateFrequencyMONTHLY ExecutorDataSingularityExecutorLogrotateFrequency = "MONTHLY"
+)
+
 type ExecutorData struct {
 	present map[string]bool
 
-	Cmd string `json:"cmd,omitempty"`
-
-	EmbeddedArtifacts EmbeddedArtifactList `json:"embeddedArtifacts"`
-
-	ExternalArtifacts ExternalArtifactList `json:"externalArtifacts"`
+	LogrotateFrequency ExecutorDataSingularityExecutorLogrotateFrequency `json:"logrotateFrequency"`
 
 	ExtraCmdLineArgs swaggering.StringList `json:"extraCmdLineArgs"`
 
-	LoggingExtraFields map[string]string `json:"loggingExtraFields"`
+	SuccessfulExitCodes []int32 `json:"successfulExitCodes"`
 
-	LoggingS3Bucket string `json:"loggingS3Bucket,omitempty"`
-
-	LoggingTag string `json:"loggingTag,omitempty"`
-
-	// LogrotateFrequency *SingularityExecutorLogrotateFrequency `json:"logrotateFrequency"`
+	SigKillProcessesAfterMillis int64 `json:"sigKillProcessesAfterMillis"`
 
 	MaxOpenFiles int32 `json:"maxOpenFiles"`
 
-	MaxTaskThreads int32 `json:"maxTaskThreads"`
-
-	PreserveTaskSandboxAfterFinish bool `json:"preserveTaskSandboxAfterFinish"`
+	Cmd string `json:"cmd,omitempty"`
 
 	RunningSentinel string `json:"runningSentinel,omitempty"`
+
+	SkipLogrotateAndCompress bool `json:"skipLogrotateAndCompress"`
 
 	S3ArtifactSignatures S3ArtifactSignatureList `json:"s3ArtifactSignatures"`
 
 	S3Artifacts S3ArtifactList `json:"s3Artifacts"`
 
-	SigKillProcessesAfterMillis int64 `json:"sigKillProcessesAfterMillis"`
-
-	SkipLogrotateAndCompress bool `json:"skipLogrotateAndCompress"`
-
-	SuccessfulExitCodes []int32 `json:"successfulExitCodes"`
+	ExternalArtifacts ExternalArtifactList `json:"externalArtifacts"`
 
 	User string `json:"user,omitempty"`
+
+	LoggingTag string `json:"loggingTag,omitempty"`
+
+	LoggingExtraFields map[string]string `json:"loggingExtraFields"`
+
+	MaxTaskThreads int32 `json:"maxTaskThreads"`
+
+	PreserveTaskSandboxAfterFinish bool `json:"preserveTaskSandboxAfterFinish"`
+
+	EmbeddedArtifacts EmbeddedArtifactList `json:"embeddedArtifacts"`
 }
 
 func (self *ExecutorData) Populate(jsonReader io.ReadCloser) (err error) {
@@ -56,7 +63,7 @@ func (self *ExecutorData) Absorb(other swaggering.DTO) error {
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A ExecutorData cannot absorb the values from %v", other)
+	return fmt.Errorf("A ExecutorData cannot copy the values from %#v", other)
 }
 
 func (self *ExecutorData) MarshalJSON() ([]byte, error) {
@@ -83,34 +90,14 @@ func (self *ExecutorData) SetField(name string, value interface{}) error {
 	default:
 		return fmt.Errorf("No such field %s on ExecutorData", name)
 
-	case "cmd", "Cmd":
-		v, ok := value.(string)
+	case "logrotateFrequency", "LogrotateFrequency":
+		v, ok := value.(ExecutorDataSingularityExecutorLogrotateFrequency)
 		if ok {
-			self.Cmd = v
-			self.present["cmd"] = true
+			self.LogrotateFrequency = v
+			self.present["logrotateFrequency"] = true
 			return nil
 		} else {
-			return fmt.Errorf("Field cmd/Cmd: value %v(%T) couldn't be cast to type string", value, value)
-		}
-
-	case "embeddedArtifacts", "EmbeddedArtifacts":
-		v, ok := value.(EmbeddedArtifactList)
-		if ok {
-			self.EmbeddedArtifacts = v
-			self.present["embeddedArtifacts"] = true
-			return nil
-		} else {
-			return fmt.Errorf("Field embeddedArtifacts/EmbeddedArtifacts: value %v(%T) couldn't be cast to type EmbeddedArtifactList", value, value)
-		}
-
-	case "externalArtifacts", "ExternalArtifacts":
-		v, ok := value.(ExternalArtifactList)
-		if ok {
-			self.ExternalArtifacts = v
-			self.present["externalArtifacts"] = true
-			return nil
-		} else {
-			return fmt.Errorf("Field externalArtifacts/ExternalArtifacts: value %v(%T) couldn't be cast to type ExternalArtifactList", value, value)
+			return fmt.Errorf("Field logrotateFrequency/LogrotateFrequency: value %v(%T) couldn't be cast to type ExecutorDataSingularityExecutorLogrotateFrequency", value, value)
 		}
 
 	case "extraCmdLineArgs", "ExtraCmdLineArgs":
@@ -120,37 +107,27 @@ func (self *ExecutorData) SetField(name string, value interface{}) error {
 			self.present["extraCmdLineArgs"] = true
 			return nil
 		} else {
-			return fmt.Errorf("Field extraCmdLineArgs/ExtraCmdLineArgs: value %v(%T) couldn't be cast to type StringList", value, value)
+			return fmt.Errorf("Field extraCmdLineArgs/ExtraCmdLineArgs: value %v(%T) couldn't be cast to type swaggering.StringList", value, value)
 		}
 
-	case "loggingExtraFields", "LoggingExtraFields":
-		v, ok := value.(map[string]string)
+	case "successfulExitCodes", "SuccessfulExitCodes":
+		v, ok := value.([]int32)
 		if ok {
-			self.LoggingExtraFields = v
-			self.present["loggingExtraFields"] = true
+			self.SuccessfulExitCodes = v
+			self.present["successfulExitCodes"] = true
 			return nil
 		} else {
-			return fmt.Errorf("Field loggingExtraFields/LoggingExtraFields: value %v(%T) couldn't be cast to type map[string]string", value, value)
+			return fmt.Errorf("Field successfulExitCodes/SuccessfulExitCodes: value %v(%T) couldn't be cast to type []int32", value, value)
 		}
 
-	case "loggingS3Bucket", "LoggingS3Bucket":
-		v, ok := value.(string)
+	case "sigKillProcessesAfterMillis", "SigKillProcessesAfterMillis":
+		v, ok := value.(int64)
 		if ok {
-			self.LoggingS3Bucket = v
-			self.present["loggingS3Bucket"] = true
+			self.SigKillProcessesAfterMillis = v
+			self.present["sigKillProcessesAfterMillis"] = true
 			return nil
 		} else {
-			return fmt.Errorf("Field loggingS3Bucket/LoggingS3Bucket: value %v(%T) couldn't be cast to type string", value, value)
-		}
-
-	case "loggingTag", "LoggingTag":
-		v, ok := value.(string)
-		if ok {
-			self.LoggingTag = v
-			self.present["loggingTag"] = true
-			return nil
-		} else {
-			return fmt.Errorf("Field loggingTag/LoggingTag: value %v(%T) couldn't be cast to type string", value, value)
+			return fmt.Errorf("Field sigKillProcessesAfterMillis/SigKillProcessesAfterMillis: value %v(%T) couldn't be cast to type int64", value, value)
 		}
 
 	case "maxOpenFiles", "MaxOpenFiles":
@@ -163,24 +140,14 @@ func (self *ExecutorData) SetField(name string, value interface{}) error {
 			return fmt.Errorf("Field maxOpenFiles/MaxOpenFiles: value %v(%T) couldn't be cast to type int32", value, value)
 		}
 
-	case "maxTaskThreads", "MaxTaskThreads":
-		v, ok := value.(int32)
+	case "cmd", "Cmd":
+		v, ok := value.(string)
 		if ok {
-			self.MaxTaskThreads = v
-			self.present["maxTaskThreads"] = true
+			self.Cmd = v
+			self.present["cmd"] = true
 			return nil
 		} else {
-			return fmt.Errorf("Field maxTaskThreads/MaxTaskThreads: value %v(%T) couldn't be cast to type int32", value, value)
-		}
-
-	case "preserveTaskSandboxAfterFinish", "PreserveTaskSandboxAfterFinish":
-		v, ok := value.(bool)
-		if ok {
-			self.PreserveTaskSandboxAfterFinish = v
-			self.present["preserveTaskSandboxAfterFinish"] = true
-			return nil
-		} else {
-			return fmt.Errorf("Field preserveTaskSandboxAfterFinish/PreserveTaskSandboxAfterFinish: value %v(%T) couldn't be cast to type bool", value, value)
+			return fmt.Errorf("Field cmd/Cmd: value %v(%T) couldn't be cast to type string", value, value)
 		}
 
 	case "runningSentinel", "RunningSentinel":
@@ -191,6 +158,16 @@ func (self *ExecutorData) SetField(name string, value interface{}) error {
 			return nil
 		} else {
 			return fmt.Errorf("Field runningSentinel/RunningSentinel: value %v(%T) couldn't be cast to type string", value, value)
+		}
+
+	case "skipLogrotateAndCompress", "SkipLogrotateAndCompress":
+		v, ok := value.(bool)
+		if ok {
+			self.SkipLogrotateAndCompress = v
+			self.present["skipLogrotateAndCompress"] = true
+			return nil
+		} else {
+			return fmt.Errorf("Field skipLogrotateAndCompress/SkipLogrotateAndCompress: value %v(%T) couldn't be cast to type bool", value, value)
 		}
 
 	case "s3ArtifactSignatures", "S3ArtifactSignatures":
@@ -213,34 +190,14 @@ func (self *ExecutorData) SetField(name string, value interface{}) error {
 			return fmt.Errorf("Field s3Artifacts/S3Artifacts: value %v(%T) couldn't be cast to type S3ArtifactList", value, value)
 		}
 
-	case "sigKillProcessesAfterMillis", "SigKillProcessesAfterMillis":
-		v, ok := value.(int64)
+	case "externalArtifacts", "ExternalArtifacts":
+		v, ok := value.(ExternalArtifactList)
 		if ok {
-			self.SigKillProcessesAfterMillis = v
-			self.present["sigKillProcessesAfterMillis"] = true
+			self.ExternalArtifacts = v
+			self.present["externalArtifacts"] = true
 			return nil
 		} else {
-			return fmt.Errorf("Field sigKillProcessesAfterMillis/SigKillProcessesAfterMillis: value %v(%T) couldn't be cast to type int64", value, value)
-		}
-
-	case "skipLogrotateAndCompress", "SkipLogrotateAndCompress":
-		v, ok := value.(bool)
-		if ok {
-			self.SkipLogrotateAndCompress = v
-			self.present["skipLogrotateAndCompress"] = true
-			return nil
-		} else {
-			return fmt.Errorf("Field skipLogrotateAndCompress/SkipLogrotateAndCompress: value %v(%T) couldn't be cast to type bool", value, value)
-		}
-
-	case "successfulExitCodes", "SuccessfulExitCodes":
-		v, ok := value.([]int32)
-		if ok {
-			self.SuccessfulExitCodes = v
-			self.present["successfulExitCodes"] = true
-			return nil
-		} else {
-			return fmt.Errorf("Field successfulExitCodes/SuccessfulExitCodes: value %v(%T) couldn't be cast to type []int32", value, value)
+			return fmt.Errorf("Field externalArtifacts/ExternalArtifacts: value %v(%T) couldn't be cast to type ExternalArtifactList", value, value)
 		}
 
 	case "user", "User":
@@ -253,6 +210,56 @@ func (self *ExecutorData) SetField(name string, value interface{}) error {
 			return fmt.Errorf("Field user/User: value %v(%T) couldn't be cast to type string", value, value)
 		}
 
+	case "loggingTag", "LoggingTag":
+		v, ok := value.(string)
+		if ok {
+			self.LoggingTag = v
+			self.present["loggingTag"] = true
+			return nil
+		} else {
+			return fmt.Errorf("Field loggingTag/LoggingTag: value %v(%T) couldn't be cast to type string", value, value)
+		}
+
+	case "loggingExtraFields", "LoggingExtraFields":
+		v, ok := value.(map[string]string)
+		if ok {
+			self.LoggingExtraFields = v
+			self.present["loggingExtraFields"] = true
+			return nil
+		} else {
+			return fmt.Errorf("Field loggingExtraFields/LoggingExtraFields: value %v(%T) couldn't be cast to type map[string]string", value, value)
+		}
+
+	case "maxTaskThreads", "MaxTaskThreads":
+		v, ok := value.(int32)
+		if ok {
+			self.MaxTaskThreads = v
+			self.present["maxTaskThreads"] = true
+			return nil
+		} else {
+			return fmt.Errorf("Field maxTaskThreads/MaxTaskThreads: value %v(%T) couldn't be cast to type int32", value, value)
+		}
+
+	case "preserveTaskSandboxAfterFinish", "PreserveTaskSandboxAfterFinish":
+		v, ok := value.(bool)
+		if ok {
+			self.PreserveTaskSandboxAfterFinish = v
+			self.present["preserveTaskSandboxAfterFinish"] = true
+			return nil
+		} else {
+			return fmt.Errorf("Field preserveTaskSandboxAfterFinish/PreserveTaskSandboxAfterFinish: value %v(%T) couldn't be cast to type bool", value, value)
+		}
+
+	case "embeddedArtifacts", "EmbeddedArtifacts":
+		v, ok := value.(EmbeddedArtifactList)
+		if ok {
+			self.EmbeddedArtifacts = v
+			self.present["embeddedArtifacts"] = true
+			return nil
+		} else {
+			return fmt.Errorf("Field embeddedArtifacts/EmbeddedArtifacts: value %v(%T) couldn't be cast to type EmbeddedArtifactList", value, value)
+		}
+
 	}
 }
 
@@ -261,29 +268,13 @@ func (self *ExecutorData) GetField(name string) (interface{}, error) {
 	default:
 		return nil, fmt.Errorf("No such field %s on ExecutorData", name)
 
-	case "cmd", "Cmd":
+	case "logrotateFrequency", "LogrotateFrequency":
 		if self.present != nil {
-			if _, ok := self.present["cmd"]; ok {
-				return self.Cmd, nil
+			if _, ok := self.present["logrotateFrequency"]; ok {
+				return self.LogrotateFrequency, nil
 			}
 		}
-		return nil, fmt.Errorf("Field Cmd no set on Cmd %+v", self)
-
-	case "embeddedArtifacts", "EmbeddedArtifacts":
-		if self.present != nil {
-			if _, ok := self.present["embeddedArtifacts"]; ok {
-				return self.EmbeddedArtifacts, nil
-			}
-		}
-		return nil, fmt.Errorf("Field EmbeddedArtifacts no set on EmbeddedArtifacts %+v", self)
-
-	case "externalArtifacts", "ExternalArtifacts":
-		if self.present != nil {
-			if _, ok := self.present["externalArtifacts"]; ok {
-				return self.ExternalArtifacts, nil
-			}
-		}
-		return nil, fmt.Errorf("Field ExternalArtifacts no set on ExternalArtifacts %+v", self)
+		return nil, fmt.Errorf("Field LogrotateFrequency no set on LogrotateFrequency %+v", self)
 
 	case "extraCmdLineArgs", "ExtraCmdLineArgs":
 		if self.present != nil {
@@ -293,29 +284,21 @@ func (self *ExecutorData) GetField(name string) (interface{}, error) {
 		}
 		return nil, fmt.Errorf("Field ExtraCmdLineArgs no set on ExtraCmdLineArgs %+v", self)
 
-	case "loggingExtraFields", "LoggingExtraFields":
+	case "successfulExitCodes", "SuccessfulExitCodes":
 		if self.present != nil {
-			if _, ok := self.present["loggingExtraFields"]; ok {
-				return self.LoggingExtraFields, nil
+			if _, ok := self.present["successfulExitCodes"]; ok {
+				return self.SuccessfulExitCodes, nil
 			}
 		}
-		return nil, fmt.Errorf("Field LoggingExtraFields no set on LoggingExtraFields %+v", self)
+		return nil, fmt.Errorf("Field SuccessfulExitCodes no set on SuccessfulExitCodes %+v", self)
 
-	case "loggingS3Bucket", "LoggingS3Bucket":
+	case "sigKillProcessesAfterMillis", "SigKillProcessesAfterMillis":
 		if self.present != nil {
-			if _, ok := self.present["loggingS3Bucket"]; ok {
-				return self.LoggingS3Bucket, nil
+			if _, ok := self.present["sigKillProcessesAfterMillis"]; ok {
+				return self.SigKillProcessesAfterMillis, nil
 			}
 		}
-		return nil, fmt.Errorf("Field LoggingS3Bucket no set on LoggingS3Bucket %+v", self)
-
-	case "loggingTag", "LoggingTag":
-		if self.present != nil {
-			if _, ok := self.present["loggingTag"]; ok {
-				return self.LoggingTag, nil
-			}
-		}
-		return nil, fmt.Errorf("Field LoggingTag no set on LoggingTag %+v", self)
+		return nil, fmt.Errorf("Field SigKillProcessesAfterMillis no set on SigKillProcessesAfterMillis %+v", self)
 
 	case "maxOpenFiles", "MaxOpenFiles":
 		if self.present != nil {
@@ -325,21 +308,13 @@ func (self *ExecutorData) GetField(name string) (interface{}, error) {
 		}
 		return nil, fmt.Errorf("Field MaxOpenFiles no set on MaxOpenFiles %+v", self)
 
-	case "maxTaskThreads", "MaxTaskThreads":
+	case "cmd", "Cmd":
 		if self.present != nil {
-			if _, ok := self.present["maxTaskThreads"]; ok {
-				return self.MaxTaskThreads, nil
+			if _, ok := self.present["cmd"]; ok {
+				return self.Cmd, nil
 			}
 		}
-		return nil, fmt.Errorf("Field MaxTaskThreads no set on MaxTaskThreads %+v", self)
-
-	case "preserveTaskSandboxAfterFinish", "PreserveTaskSandboxAfterFinish":
-		if self.present != nil {
-			if _, ok := self.present["preserveTaskSandboxAfterFinish"]; ok {
-				return self.PreserveTaskSandboxAfterFinish, nil
-			}
-		}
-		return nil, fmt.Errorf("Field PreserveTaskSandboxAfterFinish no set on PreserveTaskSandboxAfterFinish %+v", self)
+		return nil, fmt.Errorf("Field Cmd no set on Cmd %+v", self)
 
 	case "runningSentinel", "RunningSentinel":
 		if self.present != nil {
@@ -348,6 +323,14 @@ func (self *ExecutorData) GetField(name string) (interface{}, error) {
 			}
 		}
 		return nil, fmt.Errorf("Field RunningSentinel no set on RunningSentinel %+v", self)
+
+	case "skipLogrotateAndCompress", "SkipLogrotateAndCompress":
+		if self.present != nil {
+			if _, ok := self.present["skipLogrotateAndCompress"]; ok {
+				return self.SkipLogrotateAndCompress, nil
+			}
+		}
+		return nil, fmt.Errorf("Field SkipLogrotateAndCompress no set on SkipLogrotateAndCompress %+v", self)
 
 	case "s3ArtifactSignatures", "S3ArtifactSignatures":
 		if self.present != nil {
@@ -365,29 +348,13 @@ func (self *ExecutorData) GetField(name string) (interface{}, error) {
 		}
 		return nil, fmt.Errorf("Field S3Artifacts no set on S3Artifacts %+v", self)
 
-	case "sigKillProcessesAfterMillis", "SigKillProcessesAfterMillis":
+	case "externalArtifacts", "ExternalArtifacts":
 		if self.present != nil {
-			if _, ok := self.present["sigKillProcessesAfterMillis"]; ok {
-				return self.SigKillProcessesAfterMillis, nil
+			if _, ok := self.present["externalArtifacts"]; ok {
+				return self.ExternalArtifacts, nil
 			}
 		}
-		return nil, fmt.Errorf("Field SigKillProcessesAfterMillis no set on SigKillProcessesAfterMillis %+v", self)
-
-	case "skipLogrotateAndCompress", "SkipLogrotateAndCompress":
-		if self.present != nil {
-			if _, ok := self.present["skipLogrotateAndCompress"]; ok {
-				return self.SkipLogrotateAndCompress, nil
-			}
-		}
-		return nil, fmt.Errorf("Field SkipLogrotateAndCompress no set on SkipLogrotateAndCompress %+v", self)
-
-	case "successfulExitCodes", "SuccessfulExitCodes":
-		if self.present != nil {
-			if _, ok := self.present["successfulExitCodes"]; ok {
-				return self.SuccessfulExitCodes, nil
-			}
-		}
-		return nil, fmt.Errorf("Field SuccessfulExitCodes no set on SuccessfulExitCodes %+v", self)
+		return nil, fmt.Errorf("Field ExternalArtifacts no set on ExternalArtifacts %+v", self)
 
 	case "user", "User":
 		if self.present != nil {
@@ -396,6 +363,46 @@ func (self *ExecutorData) GetField(name string) (interface{}, error) {
 			}
 		}
 		return nil, fmt.Errorf("Field User no set on User %+v", self)
+
+	case "loggingTag", "LoggingTag":
+		if self.present != nil {
+			if _, ok := self.present["loggingTag"]; ok {
+				return self.LoggingTag, nil
+			}
+		}
+		return nil, fmt.Errorf("Field LoggingTag no set on LoggingTag %+v", self)
+
+	case "loggingExtraFields", "LoggingExtraFields":
+		if self.present != nil {
+			if _, ok := self.present["loggingExtraFields"]; ok {
+				return self.LoggingExtraFields, nil
+			}
+		}
+		return nil, fmt.Errorf("Field LoggingExtraFields no set on LoggingExtraFields %+v", self)
+
+	case "maxTaskThreads", "MaxTaskThreads":
+		if self.present != nil {
+			if _, ok := self.present["maxTaskThreads"]; ok {
+				return self.MaxTaskThreads, nil
+			}
+		}
+		return nil, fmt.Errorf("Field MaxTaskThreads no set on MaxTaskThreads %+v", self)
+
+	case "preserveTaskSandboxAfterFinish", "PreserveTaskSandboxAfterFinish":
+		if self.present != nil {
+			if _, ok := self.present["preserveTaskSandboxAfterFinish"]; ok {
+				return self.PreserveTaskSandboxAfterFinish, nil
+			}
+		}
+		return nil, fmt.Errorf("Field PreserveTaskSandboxAfterFinish no set on PreserveTaskSandboxAfterFinish %+v", self)
+
+	case "embeddedArtifacts", "EmbeddedArtifacts":
+		if self.present != nil {
+			if _, ok := self.present["embeddedArtifacts"]; ok {
+				return self.EmbeddedArtifacts, nil
+			}
+		}
+		return nil, fmt.Errorf("Field EmbeddedArtifacts no set on EmbeddedArtifacts %+v", self)
 
 	}
 }
@@ -408,38 +415,29 @@ func (self *ExecutorData) ClearField(name string) error {
 	default:
 		return fmt.Errorf("No such field %s on ExecutorData", name)
 
-	case "cmd", "Cmd":
-		self.present["cmd"] = false
-
-	case "embeddedArtifacts", "EmbeddedArtifacts":
-		self.present["embeddedArtifacts"] = false
-
-	case "externalArtifacts", "ExternalArtifacts":
-		self.present["externalArtifacts"] = false
+	case "logrotateFrequency", "LogrotateFrequency":
+		self.present["logrotateFrequency"] = false
 
 	case "extraCmdLineArgs", "ExtraCmdLineArgs":
 		self.present["extraCmdLineArgs"] = false
 
-	case "loggingExtraFields", "LoggingExtraFields":
-		self.present["loggingExtraFields"] = false
+	case "successfulExitCodes", "SuccessfulExitCodes":
+		self.present["successfulExitCodes"] = false
 
-	case "loggingS3Bucket", "LoggingS3Bucket":
-		self.present["loggingS3Bucket"] = false
-
-	case "loggingTag", "LoggingTag":
-		self.present["loggingTag"] = false
+	case "sigKillProcessesAfterMillis", "SigKillProcessesAfterMillis":
+		self.present["sigKillProcessesAfterMillis"] = false
 
 	case "maxOpenFiles", "MaxOpenFiles":
 		self.present["maxOpenFiles"] = false
 
-	case "maxTaskThreads", "MaxTaskThreads":
-		self.present["maxTaskThreads"] = false
-
-	case "preserveTaskSandboxAfterFinish", "PreserveTaskSandboxAfterFinish":
-		self.present["preserveTaskSandboxAfterFinish"] = false
+	case "cmd", "Cmd":
+		self.present["cmd"] = false
 
 	case "runningSentinel", "RunningSentinel":
 		self.present["runningSentinel"] = false
+
+	case "skipLogrotateAndCompress", "SkipLogrotateAndCompress":
+		self.present["skipLogrotateAndCompress"] = false
 
 	case "s3ArtifactSignatures", "S3ArtifactSignatures":
 		self.present["s3ArtifactSignatures"] = false
@@ -447,17 +445,26 @@ func (self *ExecutorData) ClearField(name string) error {
 	case "s3Artifacts", "S3Artifacts":
 		self.present["s3Artifacts"] = false
 
-	case "sigKillProcessesAfterMillis", "SigKillProcessesAfterMillis":
-		self.present["sigKillProcessesAfterMillis"] = false
-
-	case "skipLogrotateAndCompress", "SkipLogrotateAndCompress":
-		self.present["skipLogrotateAndCompress"] = false
-
-	case "successfulExitCodes", "SuccessfulExitCodes":
-		self.present["successfulExitCodes"] = false
+	case "externalArtifacts", "ExternalArtifacts":
+		self.present["externalArtifacts"] = false
 
 	case "user", "User":
 		self.present["user"] = false
+
+	case "loggingTag", "LoggingTag":
+		self.present["loggingTag"] = false
+
+	case "loggingExtraFields", "LoggingExtraFields":
+		self.present["loggingExtraFields"] = false
+
+	case "maxTaskThreads", "MaxTaskThreads":
+		self.present["maxTaskThreads"] = false
+
+	case "preserveTaskSandboxAfterFinish", "PreserveTaskSandboxAfterFinish":
+		self.present["preserveTaskSandboxAfterFinish"] = false
+
+	case "embeddedArtifacts", "EmbeddedArtifacts":
+		self.present["embeddedArtifacts"] = false
 
 	}
 
@@ -475,7 +482,7 @@ func (self *ExecutorDataList) Absorb(other swaggering.DTO) error {
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A ExecutorData cannot absorb the values from %v", other)
+	return fmt.Errorf("A ExecutorDataList cannot copy the values from %#v", other)
 }
 
 func (list *ExecutorDataList) Populate(jsonReader io.ReadCloser) (err error) {

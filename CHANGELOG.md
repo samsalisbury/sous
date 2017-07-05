@@ -14,6 +14,7 @@ with respect to its command line interface and HTTP interface.
 - Developer: Makefile directives to build a Sous .deb and upload it to an Artifactory server.
 - Server: /gdm now sets Etag header based on current revision of the GDM. Clients attempting
   to update with a stale Etag will have update rejected appropriately.
+- Server: Updated Singularity API consumer to work with Singularity v0.15.
 
 ### Fixed
 - Client: Increased buffer size in shell to handle super-long tokens.

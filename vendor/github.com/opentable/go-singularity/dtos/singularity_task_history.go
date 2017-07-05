@@ -12,13 +12,15 @@ type SingularityTaskHistory struct {
 
 	Directory string `json:"directory,omitempty"`
 
+	ContainerId string `json:"containerId,omitempty"`
+
+	Task *SingularityTask `json:"task"`
+
 	HealthcheckResults SingularityTaskHealthcheckResultList `json:"healthcheckResults"`
 
 	LoadBalancerUpdates SingularityLoadBalancerUpdateList `json:"loadBalancerUpdates"`
 
 	ShellCommandHistory SingularityTaskShellCommandHistoryList `json:"shellCommandHistory"`
-
-	Task *SingularityTask `json:"task"`
 
 	TaskMetadata SingularityTaskMetadataList `json:"taskMetadata"`
 
@@ -34,7 +36,7 @@ func (self *SingularityTaskHistory) Absorb(other swaggering.DTO) error {
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A SingularityTaskHistory cannot absorb the values from %v", other)
+	return fmt.Errorf("A SingularityTaskHistory cannot copy the values from %#v", other)
 }
 
 func (self *SingularityTaskHistory) MarshalJSON() ([]byte, error) {
@@ -71,6 +73,26 @@ func (self *SingularityTaskHistory) SetField(name string, value interface{}) err
 			return fmt.Errorf("Field directory/Directory: value %v(%T) couldn't be cast to type string", value, value)
 		}
 
+	case "containerId", "ContainerId":
+		v, ok := value.(string)
+		if ok {
+			self.ContainerId = v
+			self.present["containerId"] = true
+			return nil
+		} else {
+			return fmt.Errorf("Field containerId/ContainerId: value %v(%T) couldn't be cast to type string", value, value)
+		}
+
+	case "task", "Task":
+		v, ok := value.(*SingularityTask)
+		if ok {
+			self.Task = v
+			self.present["task"] = true
+			return nil
+		} else {
+			return fmt.Errorf("Field task/Task: value %v(%T) couldn't be cast to type *SingularityTask", value, value)
+		}
+
 	case "healthcheckResults", "HealthcheckResults":
 		v, ok := value.(SingularityTaskHealthcheckResultList)
 		if ok {
@@ -99,16 +121,6 @@ func (self *SingularityTaskHistory) SetField(name string, value interface{}) err
 			return nil
 		} else {
 			return fmt.Errorf("Field shellCommandHistory/ShellCommandHistory: value %v(%T) couldn't be cast to type SingularityTaskShellCommandHistoryList", value, value)
-		}
-
-	case "task", "Task":
-		v, ok := value.(*SingularityTask)
-		if ok {
-			self.Task = v
-			self.present["task"] = true
-			return nil
-		} else {
-			return fmt.Errorf("Field task/Task: value %v(%T) couldn't be cast to type *SingularityTask", value, value)
 		}
 
 	case "taskMetadata", "TaskMetadata":
@@ -147,6 +159,22 @@ func (self *SingularityTaskHistory) GetField(name string) (interface{}, error) {
 		}
 		return nil, fmt.Errorf("Field Directory no set on Directory %+v", self)
 
+	case "containerId", "ContainerId":
+		if self.present != nil {
+			if _, ok := self.present["containerId"]; ok {
+				return self.ContainerId, nil
+			}
+		}
+		return nil, fmt.Errorf("Field ContainerId no set on ContainerId %+v", self)
+
+	case "task", "Task":
+		if self.present != nil {
+			if _, ok := self.present["task"]; ok {
+				return self.Task, nil
+			}
+		}
+		return nil, fmt.Errorf("Field Task no set on Task %+v", self)
+
 	case "healthcheckResults", "HealthcheckResults":
 		if self.present != nil {
 			if _, ok := self.present["healthcheckResults"]; ok {
@@ -170,14 +198,6 @@ func (self *SingularityTaskHistory) GetField(name string) (interface{}, error) {
 			}
 		}
 		return nil, fmt.Errorf("Field ShellCommandHistory no set on ShellCommandHistory %+v", self)
-
-	case "task", "Task":
-		if self.present != nil {
-			if _, ok := self.present["task"]; ok {
-				return self.Task, nil
-			}
-		}
-		return nil, fmt.Errorf("Field Task no set on Task %+v", self)
 
 	case "taskMetadata", "TaskMetadata":
 		if self.present != nil {
@@ -209,6 +229,12 @@ func (self *SingularityTaskHistory) ClearField(name string) error {
 	case "directory", "Directory":
 		self.present["directory"] = false
 
+	case "containerId", "ContainerId":
+		self.present["containerId"] = false
+
+	case "task", "Task":
+		self.present["task"] = false
+
 	case "healthcheckResults", "HealthcheckResults":
 		self.present["healthcheckResults"] = false
 
@@ -217,9 +243,6 @@ func (self *SingularityTaskHistory) ClearField(name string) error {
 
 	case "shellCommandHistory", "ShellCommandHistory":
 		self.present["shellCommandHistory"] = false
-
-	case "task", "Task":
-		self.present["task"] = false
 
 	case "taskMetadata", "TaskMetadata":
 		self.present["taskMetadata"] = false
@@ -243,7 +266,7 @@ func (self *SingularityTaskHistoryList) Absorb(other swaggering.DTO) error {
 		*self = *like
 		return nil
 	}
-	return fmt.Errorf("A SingularityTaskHistory cannot absorb the values from %v", other)
+	return fmt.Errorf("A SingularityTaskHistoryList cannot copy the values from %#v", other)
 }
 
 func (list *SingularityTaskHistoryList) Populate(jsonReader io.ReadCloser) (err error) {
