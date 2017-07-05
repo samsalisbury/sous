@@ -36,8 +36,6 @@ before_deploy: git clean -fd && git reset --hard HEAD && go get github.com/karal
 deploy:
   file_glob: true
   provider: releases
-  api_key:
-    secure: KoJl6jHnAG3TwDiUMo0dXcCHXid7NTkIVgwxMZECW5Jc3b45Hc7WZ+P9N7k7qjkogt3R2FTtdcjs5+I/nph2Xx3QB2PgpXHWGdj0LAQEh8g1cCbc/HV7Ydjex1l5qwrXKE9V+2pCdVEWMYLKC2gXpGtlgOZCZI++o44apukm0VyLueb73Qw9AoZcMF9oYBof7a3HsN82yzXDmF9k7cW3V10vNma/TLAo6o52olaz7KDKdppTfuCVQFmjAaNDEbUi1O2QG6tg+gSuKx4KYmhdt1IaFDBmgypmf7hvvdPXEqZluW8CNSmflb7OSRp7u6v1v0zKlG4HG3LeVq2UcScrGjkori16MpdPZIopkpTeCzKlTOnf7+dmPWcjs9NMpxKIXuAhG7fpLIFEupsDDwzTlwmBZG6vZkUHCfI4q20/+CG/Ck3jQGXUXVowJK8tSckST0ucWkuOg5TB239TLy6QeO3kwvsvNjT++/0poE59/GZsMULU/DzGzmHRfU5xxm0n9TJDhTD6GhtlfjS/NeKSRruVXPeuN+sr5XnUXLMtLnyMoRmC0Oh00G/Dpzq6pXSItZW2et1lXf7wXUEWmWmPX8pahfYVwH4cjfyEZ4ajdoO2IdDMYpgXjDc53JopeX4BkLpUSpRzRjMm3Yb4y6Az0iyv9Y+cXrIhWzFVCluGtOg=
   file:
   - artifacts/sous-darwin-amd64_*.tar.gz
   - artifacts/sous-linux-amd64_*.tar.gz
@@ -45,6 +43,8 @@ deploy:
   on:
     tags: true
   skip_cleanup: true
+  api_key:
+    secure: CDvIs31EtrSZ82I8pSNKKVwRWGEzyb+SBfpE718CpUYH2/GuZHSEFJrjmTT37tvwOk7zcA/fDhlEGnGu0gQW16gTWQTf4JjGy7i0nby5zQu4/NT2dKe35reAKhvzCPoee1rcT4YrhGLATU+S49fVO2/CdRn/S5tIlUZpywVrgLaTd8qsEoNvaBWKHjrbTZrp7K3qBRZHRqcaM1qgs//q35tbRVgDQdqIWwm/0cc3Q4oeRLAOlSc0uUrci9lZ7au3VsyfRImtLP5X7pYPw5Er1pKCdQxjxMGr0bf5pSzooq4kw2/mOFWA8RCSQKY8t8bvAmnNAF8iKqE6JO8RUiJn5a3viXPlt2vbI/jVmDNvIN3TzRk9tKKfBJbxH4gZrrEazZIuBPNWGGS4gXxJEISKgPXFoh/g3nP4nsyIMQv/w+Ye9M85NnBpJHhlnWRSAfpXdQ8y3KTxHKAJ2ofGpW1P085kidhhQJrTUst7RW1BeSGOk3V4AE53kLUnz5JbSf8BP+GqrsJb+JeDUaw0UwniOt5e8sSj5TXptDjUjQU0MC7uNUQkE3414EHJzJ8PNMboCv65rWawMYqN8irsXTadEUuE/dMxRUsECnNLcYPCRvbnJJV9HqhG2pdIxuYeRstuttgfB5QIw+LX4V/Dj0PHtXjDtH09yH+bdVvpRQdXIMY=
 notifications:
   hipchat:
     on_failure: always
