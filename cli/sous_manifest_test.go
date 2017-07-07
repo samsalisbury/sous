@@ -82,7 +82,7 @@ func TestManifestYAML(t *testing.T) {
 						"ports":  "1",
 					},
 					Startup: sous.Startup{
-						CheckReadyURIPath: &uripath,
+						CheckReadyURIPath: uripath,
 					},
 				},
 			},
@@ -97,5 +97,5 @@ func TestManifestYAML(t *testing.T) {
 	err = yaml.Unmarshal(yml, &newM)
 	require.NoError(t, err)
 
-	assert.Equal(t, *newM.Deployments["ci"].Startup.CheckReadyURIPath, uripath)
+	assert.Equal(t, newM.Deployments["ci"].Startup.CheckReadyURIPath, uripath)
 }
