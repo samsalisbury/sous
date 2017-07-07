@@ -1,5 +1,7 @@
 package sous
 
+import "fmt"
+
 type Startup struct {
 	CheckReadyURIPath    string `yaml:",omitempty"`
 	CheckReadyURITimeout int    `yaml:",omitempty"`
@@ -35,9 +37,9 @@ func (s Startup) UnmergeDefaults(old, def Startup) Startup {
 		n.CheckReadyURIPath = zeroStartup.CheckReadyURIPath
 	}
 
-	if s.CheckReadURITimeout == def.CheckReadURITimeout &&
-		old.CheckReadURITimeout == zeroStartup.CheckReadURITimeout {
-		n.CheckReadURITimeout = zeroStartup.CheckReadURITimeout
+	if s.CheckReadyURITimeout == def.CheckReadyURITimeout &&
+		old.CheckReadyURITimeout == zeroStartup.CheckReadyURITimeout {
+		n.CheckReadyURITimeout = zeroStartup.CheckReadyURITimeout
 	}
 
 	if s.Timeout == def.Timeout &&
@@ -57,40 +59,16 @@ func (s Startup) diff(o Startup) []string {
 	diffs := []string{}
 	diff := func(format string, a ...interface{}) { diffs = append(diffs, fmt.Sprintf(format, a...)) }
 
-	if s.CheckReadyURIPath != nil {
-		if o.CheckReadyURIPath == nil {
-			diff("CheckReadyURIPath; this %q, other empty", *s.CheckReadyURIPath)
-		} else if *s.CheckReadyURIPath != *o.CheckReadyURIPath {
-			diff("CheckReadyURIPath; this %q, other %q", *s.CheckReadyURIPath, *o.CheckReadyURIPath)
-		}
-	} else {
-		if o.CheckReadyURIPath != nil {
-			diff("CheckReadyURIPath; this empty, other %q", *o.CheckReadyURIPath)
-		}
+	if s.CheckReadyURIPath != o.CheckReadyURIPath {
+		diff("CheckReadyURIPath; this %q, other %q", s.CheckReadyURIPath, o.CheckReadyURIPath)
 	}
 
-	if s.CheckReadyURITimeout != nil {
-		if o.CheckReadyURITimeout == nil {
-			diff("CheckReadyURITimeout; this %d, other empty", *s.CheckReadyURITimeout)
-		} else if *s.CheckReadyURITimeout != *o.CheckReadyURITimeout {
-			diff("CheckReadyURITimeout; this %d, other %d", *s.CheckReadyURITimeout, *o.CheckReadyURITimeout)
-		}
-	} else {
-		if o.CheckReadyURITimeout != nil {
-			diff("CheckReadyURITimeout; this empty, other %d", *o.CheckReadyURITimeout)
-		}
+	if s.CheckReadyURITimeout != o.CheckReadyURITimeout {
+		diff("CheckReadyURITimeout; this %d, other %d", s.CheckReadyURITimeout, o.CheckReadyURITimeout)
 	}
 
-	if s.Timeout != nil {
-		if o.Timeout == nil {
-			diff("Timeout; this %d, other empty", *s.Timeout)
-		} else if *s.Timeout != *o.Timeout {
-			diff("Timeout; this %d, other %d", *s.Timeout, *o.Timeout)
-		}
-	} else {
-		if o.Timeout != nil {
-			diff("Timeout; this empty, other %d", *o.Timeout)
-		}
+	if s.Timeout != o.Timeout {
+		diff("Timeout; this %d, other %d", s.Timeout, o.Timeout)
 	}
 
 	return diffs

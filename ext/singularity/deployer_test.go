@@ -428,8 +428,7 @@ func TestChangesDep(t *testing.T) {
 	}
 
 	changed = baseDep.Clone()
-	hcpath := "/something/something/healthcheck"
-	changed.Startup.CheckReadyURIPath = &hcpath
+	changed.Startup.CheckReadyURIPath = "/something/something/healthcheck"
 
 	if !changesDep(testPair(changed)) {
 		t.Error("Change to Startup on deployment reported as no change")

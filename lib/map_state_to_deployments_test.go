@@ -76,7 +76,7 @@ func makeTestManifests() Manifests {
 						},
 						NumInstances: 2,
 						Startup: Startup{
-							CheckReadyURIPath: &omalleyReadyURI,
+							CheckReadyURIPath: omalleyReadyURI,
 						},
 					},
 				},
@@ -165,7 +165,7 @@ var expectedDeployments = NewDeployments(
 			},
 			NumInstances: 2,
 			Startup: Startup{
-				CheckReadyURIPath: &omalleyReadyURI,
+				CheckReadyURIPath: omalleyReadyURI,
 			},
 		},
 	},

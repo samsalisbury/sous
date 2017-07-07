@@ -167,21 +167,7 @@ func (dc DeployConfig) Clone() (c DeployConfig) {
 		}
 	}
 	c.Volumes = dc.Volumes.Clone()
-
-	if dc.Startup.CheckReadyURIPath != nil {
-		uripath := *dc.Startup.CheckReadyURIPath
-		c.Startup.CheckReadyURIPath = &uripath
-	}
-
-	if dc.Startup.CheckReadyURITimeout != nil {
-		crtimeout := *dc.Startup.CheckReadyURITimeout
-		c.Startup.CheckReadyURITimeout = &crtimeout
-	}
-
-	if dc.Startup.Timeout != nil {
-		timeout := *dc.Startup.Timeout
-		c.Startup.Timeout = &timeout
-	}
+	c.Startup = dc.Startup
 
 	return
 }
@@ -269,15 +255,7 @@ func flattenDeployConfigs(dcs []DeployConfig) DeployConfig {
 			}
 		}
 
-		if dc.Startup.CheckReadyURIPath == nil {
-			dc.Startup.CheckReadyURIPath = c.Startup.CheckReadyURIPath
-		}
-		if dc.Startup.CheckReadyURITimeout == nil {
-			dc.Startup.CheckReadyURITimeout = c.Startup.CheckReadyURITimeout
-		}
-		if dc.Startup.Timeout == nil {
-			dc.Startup.Timeout = c.Startup.Timeout
-		}
+		dc.Startup = c.Startup
 	}
 	return dc
 }

@@ -23,7 +23,7 @@ func TestManifest_Clone(t *testing.T) {
 					},
 					NumInstances: 3,
 					Startup: Startup{
-						CheckReadyURITimeout: &crutime,
+						CheckReadyURITimeout: crutime,
 					},
 				},
 				Version: orignalVersion,

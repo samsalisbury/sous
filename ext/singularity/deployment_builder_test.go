@@ -193,17 +193,11 @@ func TestBuildDeployment(t *testing.T) {
 	assert.Equal(t, actual.ClusterName, expected.ClusterName)
 	assert.Equal(t, actual.Status, expected.Status)
 
-	if assert.NotNil(t, actual.Startup.CheckReadyURIPath) {
-		assert.Equal(t, *actual.Startup.CheckReadyURIPath, "/health-report")
-	}
+	assert.Equal(t, actual.Startup.CheckReadyURIPath, "/health-report")
 
-	if assert.NotNil(t, actual.Startup.CheckReadyURITimeout) {
-		assert.Equal(t, *actual.Startup.CheckReadyURITimeout, 350)
-	}
+	assert.Equal(t, actual.Startup.CheckReadyURITimeout, 350)
 
-	if assert.NotNil(t, actual.Startup.Timeout) {
-		assert.Equal(t, *actual.Startup.Timeout, 700)
-	}
+	assert.Equal(t, actual.Startup.Timeout, 700)
 }
 
 func TestBuildDeployment_failed_deploy(t *testing.T) {

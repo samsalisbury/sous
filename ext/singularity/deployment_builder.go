@@ -382,18 +382,15 @@ func (db *deploymentBuilder) unpackDeployConfig() error {
 	}
 
 	if db.deploy.HealthcheckUri != "" { // terrible hack
-		val := string(db.deploy.HealthcheckUri)
-		db.Target.Startup.CheckReadyURIPath = &val
+		db.Target.Startup.CheckReadyURIPath = string(db.deploy.HealthcheckUri)
 	}
 
 	if db.deploy.HealthcheckTimeoutSeconds != 0 {
-		val := int(db.deploy.HealthcheckTimeoutSeconds)
-		db.Target.Startup.CheckReadyURITimeout = &val
+		db.Target.Startup.CheckReadyURITimeout = int(db.deploy.HealthcheckTimeoutSeconds)
 	}
 
 	if db.deploy.DeployHealthTimeoutSeconds != 0 {
-		val := int(db.deploy.DeployHealthTimeoutSeconds)
-		db.Target.Startup.Timeout = &val
+		db.Target.Startup.Timeout = int(db.deploy.DeployHealthTimeoutSeconds)
 	}
 
 	return nil
