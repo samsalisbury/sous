@@ -77,6 +77,12 @@ func (ds Deployments) PutbackManifests(defs Defs, olds Manifests) (Manifests, er
 			DeployConfig: d.DeployConfig.Clone(),
 		}
 
+		if was {
+			if oldD, had := old.Deployments[d.ClusterName]; had {
+				spec.DeployConfig.Startup = d.Cluster.Startup.UnmergeDefaults(spec.DeployConfig.Startup, oldD.Startup)
+			}
+		}
+
 		for k, v := range spec.DeployConfig.Env {
 			clusterVal, ok := d.Cluster.Env[k]
 			if !ok {
@@ -199,10 +205,16 @@ func DeploymentsFromManifest(defs Defs, m *Manifest) (Deployments, error) {
 // BuildDeployment constructs a deployment out of a Manifest.
 func BuildDeployment(defs Defs, m *Manifest, nick string, spec DeploySpec, inherit []DeploySpec) (*Deployment, error) {
 	ownMap := NewOwnerSet(m.Owners...)
+	cluster := defs.Clusters[nick]
+
 	ds := flattenDeploySpecs(append([]DeploySpec{spec}, inherit...))
+	ds.Startup = cluster.Startup.MergeDefaults(ds.Startup)
+
+	// XXX Env merging belongs here
+
 	return &Deployment{
 		ClusterName:  nick,
-		Cluster:      defs.Clusters[nick],
+		Cluster:      cluster,
 		DeployConfig: ds.DeployConfig,
 		Flavor:       m.Flavor,
 		Owners:       ownMap,

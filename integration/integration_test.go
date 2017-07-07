@@ -74,9 +74,9 @@ func (suite *integrationSuite) manifest(nc *docker.NameCache, drepo, containerDi
 			"test-cluster": sous.DeploySpec{
 				DeployConfig: sous.DeployConfig{
 					Startup: sous.Startup{
-						CheckReadyURIPath:    &checkReadyPath,
-						CheckReadyURITimeout: &checkReadyTimeout,
-						Timeout:              &checkReadyTimeout,
+						CheckReadyURIPath:    checkReadyPath,
+						CheckReadyURITimeout: checkReadyTimeout,
+						Timeout:              checkReadyTimeout,
 					},
 					Resources:    sous.Resources{"cpus": "0.1", "memory": "100", "ports": "1"},
 					Env:          sous.Env{"repo": drepo}, //map[s]s
@@ -137,7 +137,7 @@ func (suite *integrationSuite) deployDefaultContainers() {
 	nilStartup := sous.Startup{}
 	timeout := 500
 	startup := sous.Startup{
-		Timeout: &timeout,
+		Timeout: timeout,
 	}
 
 	registerAndDeploy(ip, "test-cluster", "hello-labels", "github.com/docker-library/hello-world", "hello-labels", "latest", []int32{}, nilStartup)
@@ -255,9 +255,9 @@ func (suite *integrationSuite) TestFailedTimedOutService() {
 	timeout := 50
 	uriPath := "slow-healthy"
 	startup := sous.Startup{
-		Timeout:              &timeout,
-		CheckReadyURIPath:    &uriPath,
-		CheckReadyURITimeout: &timeout,
+		Timeout:              timeout,
+		CheckReadyURIPath:    uriPath,
+		CheckReadyURITimeout: timeout,
 	}
 	registerAndDeploy(ip, "test-cluster", "webapp", "github.com/example/webapp", "webapp", "latest", []int32{}, startup)
 
@@ -270,9 +270,9 @@ func (suite *integrationSuite) TestFailedNotHealthyService() {
 	timeout := 60
 	uriPath := "sick"
 	startup := sous.Startup{
-		Timeout:              &timeout,
-		CheckReadyURIPath:    &uriPath,
-		CheckReadyURITimeout: &timeout,
+		Timeout:              timeout,
+		CheckReadyURIPath:    uriPath,
+		CheckReadyURITimeout: timeout,
 	}
 	registerAndDeploy(ip, "test-cluster", "webapp", "github.com/example/webapp", "webapp", "latest", []int32{}, startup)
 
@@ -285,9 +285,9 @@ func (suite *integrationSuite) TestSuccessfulService() {
 	timeout := 300
 	uriPath := "healthy"
 	startup := sous.Startup{
-		Timeout:              &timeout,
-		CheckReadyURIPath:    &uriPath,
-		CheckReadyURITimeout: &timeout,
+		Timeout:              timeout,
+		CheckReadyURIPath:    uriPath,
+		CheckReadyURITimeout: timeout,
 	}
 	registerAndDeploy(ip, "test-cluster", "webapp", "github.com/example/webapp", "webapp", "latest", []int32{}, startup)
 
@@ -309,7 +309,7 @@ func (suite *integrationSuite) TestFailedDeployFollowingSuccessfulDeploy() {
 
 	timeout := 500
 	registerAndDeploy(ip, clusterName, repoName, sourceRepo, "succeedthenfail-succeed", "1.0.0-succeed", ports, sous.Startup{
-		Timeout: &timeout,
+		Timeout: timeout,
 	})
 
 	deployState := suite.waitUntilSettledStatus(clusters, sourceRepo)
