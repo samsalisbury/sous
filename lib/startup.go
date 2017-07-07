@@ -11,38 +11,38 @@ type Startup struct {
 var zeroStartup = Startup{}
 
 // MergeDefaults merges default values with a Startup and returns the result
-func (s Startup) MergeDefaults(def Startup) Startup {
-	n := s
+func (s Startup) MergeDefaults(base Startup) Startup {
+	n := base
 	if n.CheckReadyURIPath == zeroStartup.CheckReadyURIPath {
-		n.CheckReadyURIPath = def.CheckReadyURIPath
+		n.CheckReadyURIPath = s.CheckReadyURIPath
 	}
 
 	if n.CheckReadyURITimeout == zeroStartup.CheckReadyURITimeout {
-		n.CheckReadyURITimeout = def.CheckReadyURITimeout
+		n.CheckReadyURITimeout = s.CheckReadyURITimeout
 	}
 
 	if n.Timeout == zeroStartup.Timeout {
-		n.Timeout = def.Timeout
+		n.Timeout = s.Timeout
 	}
 
 	return n
 }
 
 // UnmergeDefaults unmerges default values from a Startup based on an old value and returns the result
-func (s Startup) UnmergeDefaults(old, def Startup) Startup {
-	n := s
+func (s Startup) UnmergeDefaults(base, old Startup) Startup {
+	n := base
 
-	if s.CheckReadyURIPath == def.CheckReadyURIPath &&
+	if base.CheckReadyURIPath == s.CheckReadyURIPath &&
 		old.CheckReadyURIPath == zeroStartup.CheckReadyURIPath {
 		n.CheckReadyURIPath = zeroStartup.CheckReadyURIPath
 	}
 
-	if s.CheckReadyURITimeout == def.CheckReadyURITimeout &&
+	if base.CheckReadyURITimeout == s.CheckReadyURITimeout &&
 		old.CheckReadyURITimeout == zeroStartup.CheckReadyURITimeout {
 		n.CheckReadyURITimeout = zeroStartup.CheckReadyURITimeout
 	}
 
-	if s.Timeout == def.Timeout &&
+	if base.Timeout == s.Timeout &&
 		old.Timeout == zeroStartup.Timeout {
 		n.Timeout = zeroStartup.Timeout
 	}
