@@ -1,6 +1,10 @@
 package sous
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/samsalisbury/semv"
+)
 
 type (
 	// A ResolveFilter filters Deployments, DeployStates and Clusters for the
@@ -8,7 +12,7 @@ type (
 	ResolveFilter struct {
 		Repo     string
 		Offset   ResolveFieldMatcher
-		Tag      string
+		Tag      ResolveFieldMatcher
 		Revision string
 		Flavor   ResolveFieldMatcher
 		Cluster  string
@@ -35,7 +39,7 @@ func (rf *ResolveFilter) matchOffset(offset string) bool {
 }
 
 func (rf *ResolveFilter) matchTag(tag string) bool {
-	return rf.Tag == "" || tag == rf.Tag
+	return rf.Tag.match(tag)
 }
 
 func (rf *ResolveFilter) matchRevision(rev string) bool {
@@ -54,11 +58,27 @@ func (rf *ResolveFilter) matchDeployStatus(status DeployStatus) bool {
 	return (rf.Status == DeployStatusAny || status == rf.Status)
 }
 
+// SetTag sets the tag based on a tag string - is ensures the tag parses as semver.
+func (rf *ResolveFilter) SetTag(tag string) error {
+	if tag == "" {
+		rf.Tag = ResolveFieldMatcher{All: true}
+		return nil
+	}
+
+	tagVersion, err := parseSemverTagWithOptionalPrefix(tag)
+	if err != nil {
+		return fmt.Errorf("version %q not valid: expected something like [servicename-]1.2.3", rf.Tag.Match)
+	}
+
+	rf.Tag = ResolveFieldMatcher{Match: tagVersion.Format(semv.Complete)}
+	return nil
+}
+
 // All returns true if the ResolveFilter would allow all deployments.
 func (rf *ResolveFilter) All() bool {
 	return rf.Repo == "" &&
 		rf.Offset.All &&
-		rf.Tag == "" &&
+		rf.Tag.All &&
 		rf.Revision == "" &&
 		rf.Flavor.All &&
 		rf.Cluster == ""
@@ -79,13 +99,13 @@ func (rf *ResolveFilter) SourceLocation() (SourceLocation, bool) {
 
 // SourceID returns a SourceID based on the ResolveFilter and a ManifestID
 func (rf *ResolveFilter) SourceID(mid ManifestID) (SourceID, error) {
-	if rf.Tag == "" {
+	if rf.Tag.All {
 		return SourceID{}, fmt.Errorf("you must provide the -tag flag")
 	}
 
-	newVersion, err := parseSemverTagWithOptionalPrefix(rf.Tag)
+	newVersion, err := semv.Parse(rf.Tag.Match)
 	if err != nil {
-		return SourceID{}, fmt.Errorf("version %q not valid: expected something like [servicename-]1.2.3", rf.Tag)
+		return SourceID{}, err
 	}
 
 	return mid.Source.SourceID(newVersion), nil
@@ -100,7 +120,7 @@ func (rf *ResolveFilter) DeploymentID(mid ManifestID) (DeploymentID, error) {
 }
 
 func (rf *ResolveFilter) String() string {
-	cl, fl, rp, of, tg, rv := rf.Cluster, rf.Flavor.Match, rf.Repo, rf.Offset.Match, rf.Tag, rf.Revision
+	cl, fl, rp, of, tg, rv := rf.Cluster, rf.Flavor.Match, rf.Repo, rf.Offset.Match, rf.Tag.Match, rf.Revision
 	if cl == "" {
 		cl = `*`
 	}
@@ -113,7 +133,7 @@ func (rf *ResolveFilter) String() string {
 	if rf.Offset.All {
 		of = `*`
 	}
-	if tg == "" {
+	if rf.Tag.All {
 		tg = `*`
 	}
 	if rv == "" {

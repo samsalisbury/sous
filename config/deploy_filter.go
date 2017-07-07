@@ -26,7 +26,12 @@ func (f *DeployFilterFlags) BuildFilter(parseSL func(string) (sous.SourceLocatio
 
 	rf.Repo = f.Repo
 	rf.Cluster = f.Cluster
-	rf.Tag = f.Tag
+
+	err := rf.SetTag(f.Tag)
+	if err != nil {
+		return nil, err
+	}
+
 	rf.Revision = f.Revision
 
 	if f.Offset == "*" || (f.Offset == "" && f.All) {

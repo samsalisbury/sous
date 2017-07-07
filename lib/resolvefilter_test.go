@@ -7,7 +7,7 @@ func TestGetSourceID(t *testing.T) {
 	rMid := MustParseManifestID("github.com/blah/blah")
 
 	t.Run("no tag", func(t *testing.T) {
-		sid, err := (&ResolveFilter{}).SourceID(zMid)
+		sid, err := (&ResolveFilter{Tag: ResolveFieldMatcher{All: true}}).SourceID(zMid)
 		if err.Error() != `you must provide the -tag flag` {
 			t.Errorf("expected error about tag flag, got: %q", err)
 		}
@@ -18,8 +18,8 @@ func TestGetSourceID(t *testing.T) {
 	})
 
 	t.Run("badly formatted version tag", func(t *testing.T) {
-		sid, err := (&ResolveFilter{Tag: "nope"}).SourceID(zMid)
-		if err.Error() != `version "nope" not valid: expected something like [servicename-]1.2.3` {
+		sid, err := (&ResolveFilter{Tag: ResolveFieldMatcher{Match: "nope"}}).SourceID(zMid)
+		if err.Error() != `unexpected character 'n' at position 0` {
 			t.Errorf("expected version formatting error, got: %q", err)
 		}
 		zSid := SourceID{}
@@ -29,7 +29,7 @@ func TestGetSourceID(t *testing.T) {
 	})
 
 	t.Run("successful source id", func(t *testing.T) {
-		sid, err := (&ResolveFilter{Cluster: "blah", Tag: "1.1.1"}).SourceID(rMid)
+		sid, err := (&ResolveFilter{Cluster: "blah", Tag: ResolveFieldMatcher{Match: "1.1.1"}}).SourceID(rMid)
 		if err != nil {
 			t.Fatalf("no error expected, but got: %q", err)
 		}
@@ -57,7 +57,7 @@ func TestGetDeployID(t *testing.T) {
 	})
 
 	t.Run("successful deploy id", func(t *testing.T) {
-		did, err := (&ResolveFilter{Cluster: "blah", Tag: "1.1.1"}).DeploymentID(rMid)
+		did, err := (&ResolveFilter{Cluster: "blah", Tag: ResolveFieldMatcher{Match: "1.1.1"}}).DeploymentID(rMid)
 		if err != nil {
 			t.Fatalf("no error expected, but got: %q", err)
 		}

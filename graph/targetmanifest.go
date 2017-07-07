@@ -26,13 +26,13 @@ func newRefinedResolveFilter(f *sous.ResolveFilter, discovered *SourceContextDis
 	if !f.Offset.All && offset.Match == "" {
 		offset = f.Offset
 	}
-	rrf := RefinedResolveFilter(*f)
+	rrf := &(*f)
 	rrf.Repo = repo
 	rrf.Offset = offset
-	if f.Tag == "" {
-		rrf.Tag = discovered.TagVersion()
+	if f.Tag.All {
+		rrf.SetTag(discovered.TagVersion())
 	}
-	return &rrf, nil
+	return (*RefinedResolveFilter)(rrf), nil
 }
 
 func newTargetManifestID(rrf *RefinedResolveFilter) (TargetManifestID, error) {
