@@ -76,6 +76,7 @@ func (ds Deployments) PutbackManifests(defs Defs, olds Manifests) (Manifests, er
 			Version:      d.SourceID.Version,
 			DeployConfig: d.DeployConfig.Clone(),
 		}
+
 		for k, v := range spec.DeployConfig.Env {
 			clusterVal, ok := d.Cluster.Env[k]
 			if !ok {

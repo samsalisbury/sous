@@ -43,14 +43,6 @@ type (
 	// single instances of an application.
 	Env map[string]string
 
-	// Startup is a struct of options related to container startup.  Members are
-	// pointers so that they can be ignored if nil.
-	Startup struct {
-		CheckReadyURIPath    *string `yaml:",omitempty"`
-		CheckReadyURITimeout *int    `yaml:",omitempty"`
-		Timeout              *int    `yaml:",omitempty"`
-	}
-
 	// Metadata represents an opaque map of metadata - Sous is agnostic about
 	// its contents, except to validate it against the top level schema.
 	Metadata map[string]string
@@ -155,54 +147,6 @@ func (dc *DeployConfig) Diff(o DeployConfig) (bool, []string) {
 	diffs = append(diffs, dc.Startup.diff(o.Startup)...)
 	// TODO: Compare Args
 	return len(diffs) == 0, diffs
-}
-
-// Equal returns true if s == o.
-func (s Startup) Equal(o Startup) bool {
-	return len(s.diff(o)) == 0
-}
-
-func (s Startup) diff(o Startup) []string {
-	diffs := []string{}
-	diff := func(format string, a ...interface{}) { diffs = append(diffs, fmt.Sprintf(format, a...)) }
-
-	if s.CheckReadyURIPath != nil {
-		if o.CheckReadyURIPath == nil {
-			diff("CheckReadyURIPath; this %q, other empty", *s.CheckReadyURIPath)
-		} else if *s.CheckReadyURIPath != *o.CheckReadyURIPath {
-			diff("CheckReadyURIPath; this %q, other %q", *s.CheckReadyURIPath, *o.CheckReadyURIPath)
-		}
-	} else {
-		if o.CheckReadyURIPath != nil {
-			diff("CheckReadyURIPath; this empty, other %q", *o.CheckReadyURIPath)
-		}
-	}
-
-	if s.CheckReadyURITimeout != nil {
-		if o.CheckReadyURITimeout == nil {
-			diff("CheckReadyURITimeout; this %d, other empty", *s.CheckReadyURITimeout)
-		} else if *s.CheckReadyURITimeout != *o.CheckReadyURITimeout {
-			diff("CheckReadyURITimeout; this %d, other %d", *s.CheckReadyURITimeout, *o.CheckReadyURITimeout)
-		}
-	} else {
-		if o.CheckReadyURITimeout != nil {
-			diff("CheckReadyURITimeout; this empty, other %d", *o.CheckReadyURITimeout)
-		}
-	}
-
-	if s.Timeout != nil {
-		if o.Timeout == nil {
-			diff("Timeout; this %d, other empty", *s.Timeout)
-		} else if *s.Timeout != *o.Timeout {
-			diff("Timeout; this %d, other %d", *s.Timeout, *o.Timeout)
-		}
-	} else {
-		if o.Timeout != nil {
-			diff("Timeout; this empty, other %d", *o.Timeout)
-		}
-	}
-
-	return diffs
 }
 
 // Clone returns a deep copy of this DeployConfig.

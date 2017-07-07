@@ -76,6 +76,8 @@ type (
 		BaseURL string
 		// Env is the default environment for all deployments in this region.
 		Env EnvDefaults
+		// Startup in the default Startup health config for this region.
+		Startup Startup
 		// AllowedAdvisories lists the artifact advisories which are permissible in
 		// this cluster
 		AllowedAdvisories []string
