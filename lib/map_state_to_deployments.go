@@ -67,6 +67,13 @@ func (ds Deployments) PutbackManifests(defs Defs, olds Manifests) (Manifests, er
 		m, ok := ms.Get(mid)
 		old, was := olds.Get(mid)
 
+		var oldSpec DeploySpec
+		var hadSpec bool
+
+		if was {
+			oldSpec, hadSpec = old.Deployments[d.ClusterName]
+		}
+
 		if !ok {
 			m = &Manifest{Deployments: DeploySpecs{}}
 			m.Owners = d.Owners.Slice()
@@ -77,11 +84,8 @@ func (ds Deployments) PutbackManifests(defs Defs, olds Manifests) (Manifests, er
 			DeployConfig: d.DeployConfig.Clone(),
 		}
 
-		if was {
-			if oldD, had := old.Deployments[d.ClusterName]; had {
-				spec.DeployConfig.Startup = d.Cluster.Startup.UnmergeDefaults(spec.DeployConfig.Startup, oldD.Startup)
-			}
-		}
+		// if was && hadSpec { if there's no old Spec, we'd unmerge from a zero Startup anyway...
+		spec.DeployConfig.Startup = d.Cluster.Startup.UnmergeDefaults(spec.DeployConfig.Startup, oldSpec.Startup)
 
 		for k, v := range spec.DeployConfig.Env {
 			clusterVal, ok := d.Cluster.Env[k]
@@ -90,20 +94,15 @@ func (ds Deployments) PutbackManifests(defs Defs, olds Manifests) (Manifests, er
 			}
 			if string(clusterVal) == v {
 				Log.Debug.Printf("Redundant environment definition: %s=%s", k, v)
-				if was {
-					if oldSpec, had := old.Deployments[d.ClusterName]; had {
-						if _, present := oldSpec.Env[k]; present {
-							Log.Debug.Printf("Env pair %s=%s present in existing manifest: retained.", k, v)
-						} else {
-							Log.Debug.Printf("Env pair %s=%s absent in existing manifest: elided.", k, v)
-							delete(spec.Env, k)
-						}
+				if was && hadSpec {
+					if _, present := oldSpec.Env[k]; present {
+						Log.Debug.Printf("Env pair %s=%s present in existing manifest: retained.", k, v)
 					} else {
-						Log.Debug.Printf("Cluster %q absent in existing manifest: eliding %s=%s.", d.ClusterName, k, v)
+						Log.Debug.Printf("Env pair %s=%s absent in existing manifest: elided.", k, v)
 						delete(spec.Env, k)
 					}
 				} else {
-					Log.Debug.Printf("Manifest for %v absent in existing manifest list: eliding %s=%s.", mid, k, v)
+					Log.Debug.Printf("Manifest for %v or cluster %q absent in existing manifest list: eliding %s=%s.", mid, d.ClusterName, k, v)
 					delete(spec.Env, k)
 				}
 			}
