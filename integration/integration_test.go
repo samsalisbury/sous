@@ -47,6 +47,8 @@ func (suite *integrationSuite) deploymentWithRepo(clusterNames []string, repo st
 func (suite *integrationSuite) findRepo(deps sous.DeployStates, repo string) sous.DeploymentID {
 	for i, d := range deps.Snapshot() {
 		if d != nil {
+			suite.T().Log(i)
+			suite.T().Logf("%q =? %q", i.ManifestID.Source.Repo, repo)
 			if i.ManifestID.Source.Repo == repo {
 				return i
 			}
@@ -369,6 +371,8 @@ func (suite *integrationSuite) TestMissingImage() {
 }
 
 func (suite *integrationSuite) TestResolve() {
+	sous.Log.BeChatty()
+	defer sous.Log.BeQuiet()
 	suite.deployDefaultContainers()
 	clusterDefs := sous.Defs{
 		Clusters: sous.Clusters{
@@ -404,7 +408,9 @@ func (suite *integrationSuite) TestResolve() {
 	// ****
 	r := sous.NewResolver(suite.deployer, suite.nameCache, &sous.ResolveFilter{})
 
+	sous.Log.Warn.Print("Begining OneTwo")
 	err = r.Begin(deploymentsOneTwo, clusterDefs.Clusters).Wait()
+	sous.Log.Warn.Print("Finished OneTwo")
 	if err != nil {
 		suite.Fail(err.Error())
 	}
@@ -414,14 +420,14 @@ func (suite *integrationSuite) TestResolve() {
 	clusters := []string{"test-cluster"}
 	ds, which := suite.deploymentWithRepo(clusters, repoOne)
 	deps := ds.Snapshot()
-	suite.T().Logf("which: %s", which)
+	suite.T().Logf("which: %#v", which)
 	if suite.NotEqual(which, none, "opentable/one not successfully deployed") {
 		one := deps[which]
 		suite.Equal(1, one.NumInstances)
 	}
 
 	which = suite.findRepo(ds, repoTwo)
-	suite.T().Logf("which: %s", which)
+	suite.T().Logf("which: %#v", which)
 	if suite.NotEqual(none, which, "opentable/two not successfully deployed") {
 		two := deps[which]
 		suite.Equal(1, two.NumInstances)
