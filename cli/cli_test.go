@@ -252,8 +252,8 @@ func TestInvokeServer(t *testing.T) {
 	server, good := exe.Cmd.(*SousServer)
 	require.True(t, good)
 	assert.NotNil(t, server.SousGraph)
-	assert.True(t, server.AutoResolver.ResolveFilter.Offset.All, "server.AutoResolver.ResolveFilter.Offset.All")
-	assert.True(t, server.AutoResolver.ResolveFilter.Flavor.All, "server.AutoResolver.ResolveFilter.Flavor.All")
+	assert.True(t, server.AutoResolver.ResolveFilter.Offset.All(), "server.AutoResolver.ResolveFilter.Offset.All")
+	assert.True(t, server.AutoResolver.ResolveFilter.Flavor.All(), "server.AutoResolver.ResolveFilter.Flavor.All")
 }
 
 /*

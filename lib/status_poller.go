@@ -158,7 +158,8 @@ func newSubPoller(clusterName, serverURL string, baseFilter *ResolveFilter, user
 
 	loc := *baseFilter
 	loc.Cluster = ""
-	loc.Tag = ResolveFieldMatcher{All: true}
+
+	loc.Tag = ResolveFieldMatcher{}
 	loc.Revision = ""
 
 	id := *baseFilter

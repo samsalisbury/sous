@@ -75,7 +75,7 @@ func TestSubPoller_ComputeState(t *testing.T) {
 	testCompute := func(version string, intent *Deployment, current *DiffResolution, expected ResolveState) {
 		sub := subPoller{
 			idFilter: &ResolveFilter{
-				Tag: ResolveFieldMatcher{Match: version},
+				Tag: NewResolveFieldMatcher(version),
 			},
 		}
 		if actual := sub.computeState(intent, current); expected != actual {

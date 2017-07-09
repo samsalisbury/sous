@@ -14,22 +14,25 @@ func newRefinedResolveFilter(f *sous.ResolveFilter, discovered *SourceContextDis
 		f = &sous.ResolveFilter{}
 	}
 	repo := c.PrimaryRemoteURL
-	offset := sous.ResolveFieldMatcher{Match: c.OffsetDir}
+	offset := sous.ResolveFieldMatcher{}
+	if c.OffsetDir != "" {
+		offset = sous.NewResolveFieldMatcher(c.OffsetDir)
+	}
 
 	if f.Repo != "" {
 		repo = f.Repo
-		offset = sous.ResolveFieldMatcher{All: true}
+		offset = sous.ResolveFieldMatcher{}
 	}
 	if repo == "" {
 		return nil, errors.Errorf("no repo specified, please use -repo or run sous inside a git repo with a configured remote")
 	}
-	if !f.Offset.All && offset.Match == "" {
+	if !f.Offset.All() && offset.All() {
 		offset = f.Offset
 	}
 	rrf := &(*f)
 	rrf.Repo = repo
 	rrf.Offset = offset
-	if f.Tag.All {
+	if f.Tag.All() && discovered.TagVersion() != "" {
 		rrf.SetTag(discovered.TagVersion())
 	}
 	return (*RefinedResolveFilter)(rrf), nil
@@ -42,12 +45,13 @@ func newTargetManifestID(rrf *RefinedResolveFilter) (TargetManifestID, error) {
 	if rrf.Repo == "" {
 		return TargetManifestID{}, errors.Errorf("empty Repo")
 	}
+
 	return TargetManifestID{
 		Source: sous.SourceLocation{
 			Repo: rrf.Repo,
-			Dir:  rrf.Offset.Match,
+			Dir:  rrf.Offset.ValueOr(""),
 		},
-		Flavor: rrf.Flavor.Match,
+		Flavor: rrf.Flavor.ValueOr(""),
 	}, nil
 }
 

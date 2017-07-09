@@ -26,23 +26,21 @@ func (f *DeployFilterFlags) BuildFilter(parseSL func(string) (sous.SourceLocatio
 
 	rf.Repo = f.Repo
 	rf.Cluster = f.Cluster
-
-	err := rf.SetTag(f.Tag)
-	if err != nil {
-		return nil, err
-	}
-
 	rf.Revision = f.Revision
 
-	if f.Offset == "*" || (f.Offset == "" && f.All) {
-		rf.Offset = sous.ResolveFieldMatcher{All: true}
-	} else {
-		rf.Offset = sous.ResolveFieldMatcher{Match: f.Offset}
+	if !f.All && f.Tag != "" && f.Tag != "*" {
+		err := rf.SetTag(f.Tag)
+		if err != nil {
+			return nil, err
+		}
 	}
-	if f.Flavor == "*" || (f.Flavor == "" && f.All) {
-		rf.Flavor = sous.ResolveFieldMatcher{All: true}
-	} else {
-		rf.Flavor = sous.ResolveFieldMatcher{Match: f.Flavor}
+
+	if f.Offset != "*" && !(f.All && f.Offset == "") {
+		rf.Offset = sous.NewResolveFieldMatcher(f.Offset)
+	}
+
+	if f.Flavor != "*" && !(f.All && f.Flavor == "") {
+		rf.Flavor = sous.NewResolveFieldMatcher(f.Flavor)
 	}
 
 	if f.Source != "" {
@@ -57,7 +55,7 @@ func (f *DeployFilterFlags) BuildFilter(parseSL func(string) (sous.SourceLocatio
 			return nil, errors.Wrap(err, "error parsing -source flag")
 		}
 		rf.Repo = sl.Repo
-		rf.Offset.Match = sl.Dir
+		rf.Offset.Match = &sl.Dir
 	}
 
 	if f.All && !rf.All() {
