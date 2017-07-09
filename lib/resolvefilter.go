@@ -27,6 +27,7 @@ type (
 	}
 )
 
+// NewResolveFieldMatcher wraps a string in a ResolveFieldMatcher that matches that string.
 func NewResolveFieldMatcher(match string) ResolveFieldMatcher {
 	return ResolveFieldMatcher{Match: &match}
 }
