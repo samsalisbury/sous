@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
-## [Unreleased](//github.com/opentable/sous/compare/0.5.18...HEAD)
+## [0.5.20](//github.com/opentable/sous/compare/0.5.18...0.5.20)
 ### Fixed
 - Client: `sous deploy` wasn't recognizing its version if there was a prefix supplied.
 
