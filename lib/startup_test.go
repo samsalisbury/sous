@@ -30,20 +30,32 @@ func (s *StartupTest) PutGet(defaults, merged, base Startup) {
 func (s *StartupTest) TestPutGet() {
 	s.PutGet(
 		Startup{}, //zero default
-		Startup{false, "/health", 100, 10},
+		Startup{CheckReadyURIPath: "/health", CheckReadyURITimeout: 100, Timeout: 10},
+		Startup{}, //zero base
+	)
+
+	s.PutGet(
+		Startup{CheckReadyFailureStatuses: []int{410, 503}},
+		Startup{CheckReadyFailureStatuses: []int{410, 503}},
 		Startup{}, //zero base
 	)
 
 	s.PutGet(
 		Startup{}, //zero default
-		Startup{false, "/health", 100, 10},
-		Startup{false, "/health", 0, 0},
+		Startup{CheckReadyFailureStatuses: []int{410, 503}},
+		Startup{CheckReadyFailureStatuses: []int{410, 503}},
 	)
 
 	s.PutGet(
-		Startup{false, "/health", 100, 0},
-		Startup{false, "/health", 100, 10},
-		Startup{true, "", 0, 0},
+		Startup{}, //zero default
+		Startup{CheckReadyURIPath: "/health", CheckReadyURITimeout: 100, Timeout: 10},
+		Startup{CheckReadyURIPath: "/health"},
+	)
+
+	s.PutGet(
+		Startup{CheckReadyURIPath: "/health", CheckReadyURITimeout: 100, Timeout: 0},
+		Startup{CheckReadyURIPath: "/health", CheckReadyURITimeout: 100, Timeout: 10},
+		Startup{SkipReadyTest: true},
 	)
 }
 
@@ -54,18 +66,77 @@ func (s *StartupTest) GetPut(defaults, base Startup) {
 func (s *StartupTest) TestGetPut() {
 	s.GetPut(
 		Startup{}, // zero default
-		Startup{false, "/health", 100, 10},
+		Startup{CheckReadyURIPath: "/health", CheckReadyURITimeout: 100, Timeout: 10},
 	)
 
 	s.GetPut(
 		Startup{}, // zero default
-		Startup{false, "/health", 100, 10},
+		Startup{CheckReadyURIPath: "/health", CheckReadyURITimeout: 100, Timeout: 10},
 	)
 
 	s.GetPut(
-		Startup{false, "/heath", 100, 0},
-		Startup{true, "", 0, 10},
+		Startup{CheckReadyURIPath: "/heath", CheckReadyURITimeout: 100, Timeout: 0},
+		Startup{SkipReadyTest: true, Timeout: 10},
 	)
+
+	s.GetPut(
+		Startup{}, // zero default
+		Startup{CheckReadyFailureStatuses: []int{410, 503}},
+	)
+
+	s.GetPut(
+		Startup{
+			SkipConnectTest: true,
+			ConnectDelay:    234,
+			ConnectInterval: 678,
+			SkipReadyTest:   true,
+		},
+		Startup{
+			CheckReadyProtocol:  "https",
+			CheckReadyPortIndex: 2,
+			CheckReadyInterval:  978,
+			CheckReadyRetries:   67,
+		},
+	)
+
+}
+
+func (s *StartupTest) TestMerge() {
+	left := Startup{
+		SkipConnectTest:      true,
+		ConnectDelay:         234,
+		ConnectInterval:      678,
+		SkipReadyTest:        true,
+		CheckReadyURITimeout: 100,
+		Timeout:              10,
+	}
+	right := Startup{
+		CheckReadyURIPath:         "/health",
+		CheckReadyFailureStatuses: []int{410, 503},
+		CheckReadyProtocol:        "https",
+		CheckReadyPortIndex:       2,
+		CheckReadyInterval:        978,
+		CheckReadyRetries:         67,
+	}
+
+	merged := Startup{
+		CheckReadyURIPath:         "/health",
+		CheckReadyURITimeout:      100,
+		Timeout:                   10,
+		CheckReadyFailureStatuses: []int{410, 503},
+		SkipConnectTest:           true,
+		ConnectDelay:              234,
+		ConnectInterval:           678,
+		SkipReadyTest:             true,
+		CheckReadyProtocol:        "https",
+		CheckReadyPortIndex:       2,
+		CheckReadyInterval:        978,
+		CheckReadyRetries:         67,
+	}
+
+	s.Equal(merged, left.MergeDefaults(right))
+	s.Equal(merged, right.MergeDefaults(left))
+
 }
 
 // PutPut is guaranteed by the instance receiver
