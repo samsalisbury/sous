@@ -21,6 +21,7 @@ func TestDeploymentDiffAnalysis(t *testing.T) {
 		"Deployment.Cluster.Env",
 		"Deployment.Cluster.AllowedAdvisories",
 		"Deployment.Cluster.Startup",
+		"Deployment.Cluster.Startup.SkipReadyTest",
 		"Deployment.Cluster.Startup.CheckReadyURIPath",
 		"Deployment.Cluster.Startup.CheckReadyURITimeout",
 		"Deployment.Cluster.Startup.Timeout",

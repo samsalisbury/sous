@@ -2,7 +2,10 @@ package sous
 
 import "fmt"
 
+// Startup is the configuration for startup checks for a service deployment.
+// c.f. DeployConfig for use.
 type Startup struct {
+	SkipReadyTest        bool   `yaml:",omitempty"`
 	CheckReadyURIPath    string `yaml:",omitempty"`
 	CheckReadyURITimeout int    `yaml:",omitempty"`
 	Timeout              int    `yaml:",omitempty"`
@@ -58,6 +61,10 @@ func (s Startup) Equal(o Startup) bool {
 func (s Startup) diff(o Startup) []string {
 	diffs := []string{}
 	diff := func(format string, a ...interface{}) { diffs = append(diffs, fmt.Sprintf(format, a...)) }
+
+	if s.SkipReadyTest != o.SkipReadyTest {
+		diff("SkipReadyTest; this %q, other %q", s.SkipReadyTest, o.SkipReadyTest)
+	}
 
 	if s.CheckReadyURIPath != o.CheckReadyURIPath {
 		diff("CheckReadyURIPath; this %q, other %q", s.CheckReadyURIPath, o.CheckReadyURIPath)

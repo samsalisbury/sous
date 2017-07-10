@@ -29,21 +29,21 @@ func (s *StartupTest) PutGet(defaults, merged, base Startup) {
 
 func (s *StartupTest) TestPutGet() {
 	s.PutGet(
-		Startup{"", 0, 0},
-		Startup{"/health", 100, 10},
-		Startup{"", 0, 0},
+		Startup{}, //zero default
+		Startup{false, "/health", 100, 10},
+		Startup{}, //zero base
 	)
 
 	s.PutGet(
-		Startup{"", 0, 0},
-		Startup{"/health", 100, 10},
-		Startup{"/health", 0, 0},
+		Startup{}, //zero default
+		Startup{false, "/health", 100, 10},
+		Startup{false, "/health", 0, 0},
 	)
 
 	s.PutGet(
-		Startup{"/heath", 100, 0},
-		Startup{"/health", 100, 10},
-		Startup{"", 0, 0},
+		Startup{false, "/health", 100, 0},
+		Startup{false, "/health", 100, 10},
+		Startup{true, "", 0, 0},
 	)
 }
 
@@ -53,18 +53,18 @@ func (s *StartupTest) GetPut(defaults, base Startup) {
 
 func (s *StartupTest) TestGetPut() {
 	s.GetPut(
-		Startup{"", 0, 0},
-		Startup{"/health", 100, 10},
+		Startup{}, // zero default
+		Startup{false, "/health", 100, 10},
 	)
 
 	s.GetPut(
-		Startup{"", 0, 0},
-		Startup{"/health", 100, 10},
+		Startup{}, // zero default
+		Startup{false, "/health", 100, 10},
 	)
 
 	s.GetPut(
-		Startup{"/heath", 100, 0},
-		Startup{"", 0, 10},
+		Startup{false, "/heath", 100, 0},
+		Startup{true, "", 0, 10},
 	)
 }
 

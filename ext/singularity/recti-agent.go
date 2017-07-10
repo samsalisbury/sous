@@ -96,10 +96,6 @@ func buildDeployRequest(d sous.Deployable, reqID string, metadata map[string]str
 	metadata[sous.ClusterNameLabel] = d.Deployment.ClusterName
 	metadata[sous.FlavorLabel] = d.Deployment.Flavor
 
-	checkReadyPath := d.Deployment.DeployConfig.Startup.CheckReadyURIPath
-	checkReadyPathTimeout := d.Deployment.DeployConfig.Startup.CheckReadyURITimeout
-	checkReadyTimeout := d.Deployment.DeployConfig.Startup.Timeout
-
 	dockerInfo, err := swaggering.LoadMap(&dtos.SingularityDockerInfo{}, dtoMap{
 		"Image":   dockerImage,
 		"Network": dtos.SingularityDockerInfoSingularityDockerNetworkTypeBRIDGE, //defaulting to all bridge
@@ -139,17 +135,23 @@ func buildDeployRequest(d sous.Deployable, reqID string, metadata map[string]str
 		return nil, err
 	}
 
-	dep, err := swaggering.LoadMap(&dtos.SingularityDeploy{}, dtoMap{
-		"Id":                         depID,
-		"RequestId":                  reqID,
-		"Resources":                  res,
-		"ContainerInfo":              ci,
-		"Env":                        map[string]string(e),
-		"Metadata":                   metadata,
-		"HealthcheckUri":             checkReadyPath,
-		"HealthcheckTimeoutSeconds":  int64(checkReadyPathTimeout),
-		"DeployHealthTimeoutSeconds": int64(checkReadyTimeout),
-	})
+	depMap := dtoMap{
+		"Id":            depID,
+		"RequestId":     reqID,
+		"Resources":     res,
+		"ContainerInfo": ci,
+		"Env":           map[string]string(e),
+		"Metadata":      metadata,
+	}
+
+	startup := d.Deployment.DeployConfig.Startup
+	if !startup.SkipReadyTest {
+		depMap["HealthcheckUri"] = startup.CheckReadyURIPath
+		depMap["HealthcheckTimeoutSeconds"] = int64(startup.CheckReadyURITimeout)
+	}
+	depMap["DeployHealthTimeoutSeconds"] = int64(startup.Timeout)
+
+	dep, err := swaggering.LoadMap(&dtos.SingularityDeploy{}, depMap)
 	if err != nil {
 		return nil, err
 	}
