@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
+## [Unreleased](//github.com/opentable/sous/compare/0.5.18...HEAD)
+### Fixed
+- Client: `sous deploy` wasn't recognizing its version if there was a prefix supplied.
+
 ## [0.5.18](//github.com/opentable/sous/compare/0.5.16...0.5.18)
 ### Added
 - Client: `sous query clusters` will enumerate all the logical clusters sous currently handles, for ease of manifest editing and deployment.

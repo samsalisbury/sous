@@ -75,7 +75,7 @@ func TestSubPoller_ComputeState(t *testing.T) {
 	testCompute := func(version string, intent *Deployment, current *DiffResolution, expected ResolveState) {
 		sub := subPoller{
 			idFilter: &ResolveFilter{
-				Tag: version,
+				Tag: NewResolveFieldMatcher(version),
 			},
 		}
 		if actual := sub.computeState(intent, current); expected != actual {
@@ -212,6 +212,7 @@ func TestStatusPoller(t *testing.T) {
 	rf := &ResolveFilter{
 		Repo: repoName,
 	}
+	rf.SetTag("")
 
 	cl, err := restful.NewClient(mainSrv.URL, SilentLogSet())
 	if err != nil {
@@ -310,6 +311,7 @@ func TestStatusPoller_OldServer2(t *testing.T) {
 	rf := &ResolveFilter{
 		Repo: repoName,
 	}
+	rf.SetTag("")
 
 	cl, err := restful.NewClient(mainSrv.URL, SilentLogSet())
 	if err != nil {
@@ -418,6 +420,7 @@ func TestStatusPoller_MesosFailed(t *testing.T) {
 	rf := &ResolveFilter{
 		Repo: repoName,
 	}
+	rf.SetTag("")
 
 	cl, err := restful.NewClient(mainSrv.URL, SilentLogSet())
 	if err != nil {
