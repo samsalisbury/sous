@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
+## [Unreleased](//github.com/opentable/sous/compare/0.5.20...HEAD)
+### Added
+- Server: Startup field SkipReadyCheck added - rather than omitting a
+  healthcheck URI, services must set this field `true` in order to signal that
+  they don't make use of a "ready" endpoint.
+### Changed
+- Server: Startup DeployConfig part fields now have cluster-based default
+  values. (These should be configued in the GDM before this version is
+  deployed!)
+
 ## [0.5.20](//github.com/opentable/sous/compare/0.5.18...0.5.20)
 ### Fixed
 - Client: `sous deploy` wasn't recognizing its version if there was a prefix supplied.
