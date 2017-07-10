@@ -33,7 +33,7 @@ func TestDeployFilter(t *testing.T) {
 
 	testFilter := func(df DeployFilterFlags, idxs ...int) {
 		rf, err := df.BuildFilter(shc.ParseSourceLocation)
-		assert.NoError(t, err)
+		assert.NoError(t, err, "For %#v", df)
 
 		for n, dep := range deploys {
 			if len(idxs) > 0 && idxs[0] == n {
