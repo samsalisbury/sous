@@ -67,6 +67,13 @@ func (ds Deployments) PutbackManifests(defs Defs, olds Manifests) (Manifests, er
 		m, ok := ms.Get(mid)
 		old, was := olds.Get(mid)
 
+		var oldSpec DeploySpec
+		var hadSpec bool
+
+		if was {
+			oldSpec, hadSpec = old.Deployments[d.ClusterName]
+		}
+
 		if !ok {
 			m = &Manifest{Deployments: DeploySpecs{}}
 			m.Owners = d.Owners.Slice()
@@ -76,6 +83,10 @@ func (ds Deployments) PutbackManifests(defs Defs, olds Manifests) (Manifests, er
 			Version:      d.SourceID.Version,
 			DeployConfig: d.DeployConfig.Clone(),
 		}
+
+		// if was && hadSpec { if there's no old Spec, we'd unmerge from a zero Startup anyway...
+		spec.DeployConfig.Startup = d.Cluster.Startup.UnmergeDefaults(spec.DeployConfig.Startup, oldSpec.Startup)
+
 		for k, v := range spec.DeployConfig.Env {
 			clusterVal, ok := d.Cluster.Env[k]
 			if !ok {
@@ -83,20 +94,15 @@ func (ds Deployments) PutbackManifests(defs Defs, olds Manifests) (Manifests, er
 			}
 			if string(clusterVal) == v {
 				Log.Debug.Printf("Redundant environment definition: %s=%s", k, v)
-				if was {
-					if oldSpec, had := old.Deployments[d.ClusterName]; had {
-						if _, present := oldSpec.Env[k]; present {
-							Log.Debug.Printf("Env pair %s=%s present in existing manifest: retained.", k, v)
-						} else {
-							Log.Debug.Printf("Env pair %s=%s absent in existing manifest: elided.", k, v)
-							delete(spec.Env, k)
-						}
+				if was && hadSpec {
+					if _, present := oldSpec.Env[k]; present {
+						Log.Debug.Printf("Env pair %s=%s present in existing manifest: retained.", k, v)
 					} else {
-						Log.Debug.Printf("Cluster %q absent in existing manifest: eliding %s=%s.", d.ClusterName, k, v)
+						Log.Debug.Printf("Env pair %s=%s absent in existing manifest: elided.", k, v)
 						delete(spec.Env, k)
 					}
 				} else {
-					Log.Debug.Printf("Manifest for %v absent in existing manifest list: eliding %s=%s.", mid, k, v)
+					Log.Debug.Printf("Manifest for %v or cluster %q absent in existing manifest list: eliding %s=%s.", mid, d.ClusterName, k, v)
 					delete(spec.Env, k)
 				}
 			}
@@ -198,10 +204,16 @@ func DeploymentsFromManifest(defs Defs, m *Manifest) (Deployments, error) {
 // BuildDeployment constructs a deployment out of a Manifest.
 func BuildDeployment(defs Defs, m *Manifest, nick string, spec DeploySpec, inherit []DeploySpec) (*Deployment, error) {
 	ownMap := NewOwnerSet(m.Owners...)
+	cluster := defs.Clusters[nick]
+
 	ds := flattenDeploySpecs(append([]DeploySpec{spec}, inherit...))
+	ds.Startup = cluster.Startup.MergeDefaults(ds.Startup)
+
+	// XXX Env merging belongs here
+
 	return &Deployment{
 		ClusterName:  nick,
-		Cluster:      defs.Clusters[nick],
+		Cluster:      cluster,
 		DeployConfig: ds.DeployConfig,
 		Flavor:       m.Flavor,
 		Owners:       ownMap,

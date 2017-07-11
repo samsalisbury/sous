@@ -140,7 +140,7 @@ func TestHandlesManifestPut(t *testing.T) {
 						"ports":  "1",
 					},
 					Startup: sous.Startup{
-						CheckReadyURIPath: &uripath,
+						CheckReadyURIPath: uripath,
 					},
 				},
 			},
@@ -165,7 +165,7 @@ func TestHandlesManifestPut(t *testing.T) {
 	require.IsType(&sous.Manifest{}, data)
 	assert.Len(data.(*sous.Manifest).Owners, 2)
 	assert.Equal(data.(*sous.Manifest).Owners[1], "judson")
-	assert.Equal(*data.(*sous.Manifest).Deployments["ci"].Startup.CheckReadyURIPath, uripath)
+	assert.Equal(data.(*sous.Manifest).Deployments["ci"].Startup.CheckReadyURIPath, uripath)
 
 	changed, found := state.Manifests.Get(sous.ManifestID{Source: sous.SourceLocation{Repo: "gh"}})
 	require.True(found)

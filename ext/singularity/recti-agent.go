@@ -96,10 +96,6 @@ func buildDeployRequest(d sous.Deployable, reqID string, metadata map[string]str
 	metadata[sous.ClusterNameLabel] = d.Deployment.ClusterName
 	metadata[sous.FlavorLabel] = d.Deployment.Flavor
 
-	checkReadyPath := d.Deployment.DeployConfig.Startup.CheckReadyURIPath
-	checkReadyPathTimeout := d.Deployment.DeployConfig.Startup.CheckReadyURITimeout
-	checkReadyTimeout := d.Deployment.DeployConfig.Startup.Timeout
-
 	dockerInfo, err := swaggering.LoadMap(&dtos.SingularityDockerInfo{}, dtoMap{
 		"Image":   dockerImage,
 		"Network": dtos.SingularityDockerInfoSingularityDockerNetworkTypeBRIDGE, //defaulting to all bridge
@@ -139,38 +135,25 @@ func buildDeployRequest(d sous.Deployable, reqID string, metadata map[string]str
 		return nil, err
 	}
 
-	dep, err := swaggering.LoadMap(&dtos.SingularityDeploy{}, dtoMap{
+	depMap := dtoMap{
 		"Id":            depID,
 		"RequestId":     reqID,
 		"Resources":     res,
 		"ContainerInfo": ci,
 		"Env":           map[string]string(e),
 		"Metadata":      metadata,
-		//"DeployHealthTimeoutSeconds": int64(sous.SingularityDeployTimeout),
-	})
+	}
+
+	startup := d.Deployment.DeployConfig.Startup
+	if !startup.SkipReadyTest {
+		depMap["HealthcheckUri"] = startup.CheckReadyURIPath
+		depMap["HealthcheckTimeoutSeconds"] = int64(startup.CheckReadyURITimeout)
+	}
+	depMap["DeployHealthTimeoutSeconds"] = int64(startup.Timeout)
+
+	dep, err := swaggering.LoadMap(&dtos.SingularityDeploy{}, depMap)
 	if err != nil {
 		return nil, err
-	}
-
-	if checkReadyPath != nil {
-		if err := dep.SetField("HealthcheckUri", *checkReadyPath); err != nil {
-			return nil, err
-		}
-		Log.Debug.Printf("Override SingularityDeploy HealthcheckUri with %s", *checkReadyPath)
-	}
-
-	if checkReadyPathTimeout != nil {
-		if err := dep.SetField("HealthcheckTimeoutSeconds", int64(*checkReadyPathTimeout)); err != nil {
-			return nil, err
-		}
-		Log.Debug.Printf("Override SingularityDeploy HealthcheckTimeoutSeconds with %d", *checkReadyPathTimeout)
-	}
-
-	if checkReadyTimeout != nil {
-		if err := dep.SetField("DeployHealthTimeoutSeconds", int64(*checkReadyTimeout)); err != nil {
-			return nil, err
-		}
-		Log.Debug.Printf("Override SingularityDeploy DeployHealthTimeoutSeconds with %d", *checkReadyTimeout)
 	}
 
 	Log.Debug.Printf("Deploy: %+ v", dep)

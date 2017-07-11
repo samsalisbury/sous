@@ -20,7 +20,11 @@ func TestDeploymentDiffAnalysis(t *testing.T) {
 		"Deployment.Cluster.BaseURL",
 		"Deployment.Cluster.Env",
 		"Deployment.Cluster.AllowedAdvisories",
-
+		"Deployment.Cluster.Startup",
+		"Deployment.Cluster.Startup.SkipReadyTest",
+		"Deployment.Cluster.Startup.CheckReadyURIPath",
+		"Deployment.Cluster.Startup.CheckReadyURITimeout",
+		"Deployment.Cluster.Startup.Timeout",
 		// SourceID.Location is incorporated into the value of ID(),
 		// is is compared directly - Repo and Dir are compared implicitly thereby
 		"Deployment.SourceID.Location.Repo",
