@@ -118,18 +118,12 @@ func TestContainerStartupOptions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tmpl := "expected:%s got:%s"
-	if dr.Deploy.HealthcheckUri != checkReadyPath {
-		t.Fatalf(tmpl, checkReadyPath, dr.Deploy.HealthcheckUri)
-	} else {
-		t.Logf(tmpl, checkReadyPath, dr.Deploy.HealthcheckUri)
+	if dr.Deploy.Healthcheck.Uri != checkReadyPath {
+		t.Errorf("expected:%s got:%s", checkReadyPath, dr.Deploy.HealthcheckUri)
 	}
 
-	tmpl = "expected:%d got:%d"
-	if dr.Deploy.DeployHealthTimeoutSeconds != int64(checkReadyTimeout) {
-		t.Fatalf(tmpl, checkReadyTimeout, dr.Deploy.DeployHealthTimeoutSeconds)
-	} else {
-		t.Logf(tmpl, checkReadyTimeout, dr.Deploy.DeployHealthTimeoutSeconds)
+	if dr.Deploy.Healthcheck.StartupTimeoutSeconds != int32(checkReadyTimeout) {
+		t.Errorf("expected:%d got:%d", checkReadyTimeout, dr.Deploy.DeployHealthTimeoutSeconds)
 	}
 
 }

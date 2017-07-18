@@ -76,6 +76,7 @@ func (suite *integrationSuite) manifest(nc *docker.NameCache, drepo, containerDi
 			"test-cluster": sous.DeploySpec{
 				DeployConfig: sous.DeployConfig{
 					Startup: sous.Startup{
+						CheckReadyProtocol:   "http",
 						CheckReadyURIPath:    checkReadyPath,
 						CheckReadyURITimeout: checkReadyTimeout,
 						Timeout:              checkReadyTimeout,

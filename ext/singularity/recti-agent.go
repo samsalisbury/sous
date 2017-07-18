@@ -145,11 +145,35 @@ func buildDeployRequest(d sous.Deployable, reqID string, metadata map[string]str
 	}
 
 	startup := d.Deployment.DeployConfig.Startup
-	if !startup.SkipReadyTest {
-		depMap["HealthcheckUri"] = startup.CheckReadyURIPath
-		depMap["HealthcheckTimeoutSeconds"] = int64(startup.CheckReadyURITimeout)
+	if !startup.SkipReadyTest || !startup.SkipConnectTest {
+		hcMap := dtoMap{}
+
+		if !startup.SkipReadyTest || !startup.SkipConnectTest {
+			hcMap["StartupDelaySeconds"] = int32(startup.ConnectDelay)
+			hcMap["StartupTimeoutSeconds"] = int32(startup.Timeout)
+			hcMap["StartupIntervalSeconds"] = int32(startup.ConnectInterval)
+		}
+
+		if !startup.SkipReadyTest {
+			failStatuses := make([]int32, len(startup.CheckReadyFailureStatuses))
+			for n, c := range startup.CheckReadyFailureStatuses {
+				failStatuses[n] = int32(c)
+			}
+			hcMap["FailureStatusCodes"] = failStatuses
+
+			hcMap["Protocol"] = dtos.HealthcheckOptionsHealthcheckProtocol(startup.CheckReadyProtocol)
+			hcMap["Uri"] = startup.CheckReadyURIPath
+			hcMap["PortIndex"] = int32(startup.CheckReadyPortIndex)
+			hcMap["ResponseTimeoutSeconds"] = int32(startup.CheckReadyURITimeout)
+			hcMap["IntervalSeconds"] = int32(startup.CheckReadyInterval)
+			hcMap["MaxRetries"] = int32(startup.CheckReadyRetries)
+		}
+		hc, err := swaggering.LoadMap(&dtos.HealthcheckOptions{}, hcMap)
+		if err != nil {
+			return nil, err
+		}
+		depMap["Healthcheck"] = hc
 	}
-	depMap["DeployHealthTimeoutSeconds"] = int64(startup.Timeout)
 
 	dep, err := swaggering.LoadMap(&dtos.SingularityDeploy{}, depMap)
 	if err != nil {
