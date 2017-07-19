@@ -79,6 +79,8 @@ func WrapCompose(m *testing.M, composeDir string) (resultCode int) {
 // ResetSingularity clears out the state from the integration singularity service
 // Call it (with and extra call deferred) anywhere integration tests use Singularity
 func ResetSingularity() {
+	const pollLimit = 30
+	const retryLimit = 3
 	log.Print("Resetting Singularity...")
 	singClient := sing.NewClient(SingularityURL)
 
@@ -87,31 +89,33 @@ func ResetSingularity() {
 		panic(err)
 	}
 
-	for _, r := range reqList {
-		_, err := singClient.DeleteRequest(r.Request.Id, nil)
-		if err != nil {
-			panic(err)
+	// Singularity is sometimes not actually deleting a request until the second attempt...
+	for j := retryLimit; j >= 0; j-- {
+		for _, r := range reqList {
+			_, err := singClient.DeleteRequest(r.Request.Id, nil)
+			if err != nil {
+				panic(err)
+			}
 		}
-	}
 
-	log.Printf("Singularity resetting: Issued deletes for %d requests. Awaiting confirmation they've quit.", len(reqList))
+		log.Printf("Singularity resetting: Issued deletes for %d requests. Awaiting confirmation they've quit.", len(reqList))
 
-	const triesLimit = 100
-	for i := triesLimit; i > 0; i-- {
-		reqList, err = singClient.GetRequests(false)
-		if err != nil {
-			panic(err)
+		for i := pollLimit; i > 0; i-- {
+			reqList, err = singClient.GetRequests(false)
+			if err != nil {
+				panic(err)
+			}
+			if len(reqList) == 0 {
+				log.Printf("Singularity successfully reset.")
+				return
+			}
+			time.Sleep(time.Second)
 		}
-		if len(reqList) == 0 {
-			log.Printf("Singularity successfully reset.")
-			return
-		}
-		time.Sleep(time.Second)
 	}
 	for n, req := range reqList {
-		log.Printf("Singularity reset failure: stubborn request: #%d/%d %#v", n, len(reqList), req)
+		log.Printf("Singularity reset failure: stubborn request: #%d/%d %#v", n+1, len(reqList), req)
 	}
-	panic(fmt.Errorf("singularity not reset after %d tries - %d requests remain", triesLimit, len(reqList)))
+	panic(fmt.Errorf("singularity not reset after %d * %d tries - %d requests remain", retryLimit, pollLimit, len(reqList)))
 }
 
 // BuildImageName constructs a simple image name rooted at the SingularityURL

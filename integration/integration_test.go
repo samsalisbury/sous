@@ -103,17 +103,22 @@ func (suite *integrationSuite) newNameCache(name string) *docker.NameCache {
 
 func (suite *integrationSuite) waitUntilSettledStatus(clusters []string, sourceRepo string) *sous.DeployState {
 	sleepTime := time.Duration(5) * time.Second
-	suite.T().Log("Awaiting stabilization of Singularity (all deploys either Active or Failed)...")
-	for counter := 1; ; counter++ {
+	suite.T().Logf("Awaiting stabilization of Singularity deploy %q (either Active or Failed)...", sourceRepo)
+	const waitLimit = 100
+	var deployState *sous.DeployState
+	for counter := 1; counter < waitLimit; counter++ {
 		ds, which := suite.deploymentWithRepo(clusters, sourceRepo)
 		deps := ds.Snapshot()
-		deployState := deps[which]
+		deployState = deps[which]
 		suite.Require().NotNil(deployState)
 		if deployState.Status == sous.DeployStatusActive || deployState.Status == sous.DeployStatusFailed {
+			suite.T().Logf("Stabilized with %s", deployState.Status)
 			return deployState
 		}
 		time.Sleep(sleepTime)
 	}
+	suite.FailNow("Never stabilized", "%q didn't settle after %d polls; final status was %s", sourceRepo, waitLimit, deployState.Status)
+	return nil
 }
 
 func (suite *integrationSuite) statusIs(ds *sous.DeployState, expected sous.DeployStatus) {
@@ -134,7 +139,7 @@ func (suite *integrationSuite) BeforeTest(suiteName, testName string) {
 }
 
 func (suite *integrationSuite) deployDefaultContainers() {
-	nilStartup := sous.Startup{}
+	nilStartup := sous.Startup{SkipTest: true}
 	timeout := 500
 	startup := sous.Startup{
 		Timeout: timeout,
