@@ -312,8 +312,8 @@ func (suite *integrationSuite) TestFailedDeployFollowingSuccessfulDeploy() {
 
 	timeout := 500
 	registerAndDeploy(ip, clusterName, repoName, sourceRepo, "succeedthenfail-succeed", "1.0.0-succeed", ports, sous.Startup{
-		SkipReadyTest: true,
-		Timeout:       timeout,
+		SkipTest: true,
+		Timeout:  timeout,
 	})
 
 	deployState := suite.waitUntilSettledStatus(clusters, sourceRepo)

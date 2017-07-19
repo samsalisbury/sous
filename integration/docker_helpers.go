@@ -233,15 +233,16 @@ func startInstance(url, clusterName, imageName, repoName string, ports []int32, 
 		}),
 	}
 
-	if !startup.SkipReadyTest {
+	if !startup.SkipTest {
 		log.Printf("HealthcheckURI: %s", startup.CheckReadyURIPath)
 		depMap["HealthcheckUri"] = startup.CheckReadyURIPath
+
 		log.Printf("HealthcheckTimeoutSeconds: %d", startup.CheckReadyURITimeout)
 		depMap["HealthcheckTimeoutSeconds"] = int64(startup.CheckReadyURITimeout)
-	}
 
-	log.Printf("DeployHealthTimeoutSeconds: %d", startup.Timeout)
-	depMap["DeployHealthTimeoutSeconds"] = int64(startup.Timeout)
+		log.Printf("DeployHealthTimeoutSeconds: %d", startup.Timeout)
+		depMap["DeployHealthTimeoutSeconds"] = int64(startup.Timeout)
+	}
 
 	depReqMap := dtoMap{
 		"Deploy": loadMap(&dtos.SingularityDeploy{}, depMap),
