@@ -279,27 +279,36 @@ func newRegistryDumper(r sous.Registry) *sous.RegistryDumper {
 }
 
 func newLogSet(v *config.Verbosity, err ErrWriter) *sous.LogSet { // XXX temporary until we settle on logging
-	sous.Log.Info.SetOutput(err)
+	ls := sous.NewLogSet(err)
+
+	ls.BeTerse()
+	sous.Log.BeTerse()
 
 	if v.Debug {
 		if v.Loud {
-			sous.Log.Vomit.SetOutput(err)
+			ls.BeChatty()
+			sous.Log.BeChatty()
+		} else {
+			ls.BeHelpful()
+			sous.Log.BeHelpful()
 		}
-		sous.Log.Debug.SetOutput(err)
 	}
 	//if v.Loud {
 	//}
 	if v.Quiet {
-		sous.Log.Info.SetOutput(ioutil.Discard)
+		ls.BeHelpful()
+		sous.Log.BeQuiet()
 	}
 	if v.Silent {
-		sous.Log.Info.SetOutput(ioutil.Discard)
+		ls.BeQuiet()
+		sous.Log.BeQuiet()
 	}
 
 	//sous.Log.Warn.Println("Normal output enabled")
-	sous.Log.Vomit.Println("Verbose debugging enabled")
-	sous.Log.Debug.Println("Regular debugging enabled")
-	return &sous.Log
+	ls.Vomitf("Verbose debugging enabled")
+	ls.Debugf("Regular debugging enabled")
+
+	return ls
 }
 
 func newSourceContextDiscovery(g LocalGitRepo) *SourceContextDiscovery {

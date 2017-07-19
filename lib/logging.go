@@ -28,6 +28,7 @@ type (
 		Notice *logwrapper
 		Vomit  *logwrapper
 
+		err   io.Writer
 		vomit *log.Logger
 		debug *log.Logger
 		warn  *log.Logger
@@ -43,7 +44,7 @@ var (
 	// Log collects various loggers to use for different levels of logging
 	// XXX A goal should be to remove this global, and instead inject logging where we need it.
 	Log = func() LogSet {
-		return *(NewLogSet(os.Stderr, ioutil.Discard, ioutil.Discard))
+		return *(NewLogSet(os.Stderr))
 	}()
 )
 
@@ -52,51 +53,71 @@ func (w *logwrapper) Printf(f string, vs ...interface{}) {
 }
 
 func (w *logwrapper) Print(vs ...interface{}) {
-	w.ffn("print", vs...)
+	w.ffn(fmt.Sprint(vs...))
 }
 
 func (w *logwrapper) Println(vs ...interface{}) {
-	w.ffn("println", vs...)
+	w.ffn(fmt.Sprint(vs...))
 }
 
 // SilentLogSet returns a logset that discards everything by default
 func SilentLogSet() *LogSet {
-	return NewLogSet(ioutil.Discard, ioutil.Discard, ioutil.Discard)
+	ls := NewLogSet(os.Stderr)
+	ls.BeQuiet()
+	return ls
 }
 
 // NewLogSet builds a new Logset that feeds to the listed writers
-func NewLogSet(warn, debug, vomit io.Writer) *LogSet {
+func NewLogSet(err io.Writer) *LogSet {
 	ls := &LogSet{
-		// Debug is a logger - use log.SetOutput to get output from
-		vomit: log.New(vomit, "vomit: ", log.Lshortfile|log.Ldate|log.Ltime),
-		debug: log.New(debug, "debug: ", log.Lshortfile|log.Ldate|log.Ltime),
-		warn:  log.New(warn, "warn: ", 0),
+		err:   err,
+		vomit: log.New(err, "vomit: ", log.Lshortfile|log.Ldate|log.Ltime),
+		debug: log.New(err, "debug: ", log.Lshortfile|log.Ldate|log.Ltime),
+		warn:  log.New(err, "warn: ", 0),
 	}
-	ls.Debug = &logwrapper{ffn: ls.Debugf}
-	ls.Vomit = &logwrapper{ffn: ls.Vomitf}
-	ls.Warn = &logwrapper{ffn: ls.Warnf}
+	ls.Debug = &logwrapper{ffn: ls.debugf}
+	ls.Vomit = &logwrapper{ffn: ls.vomitf}
+	ls.Warn = &logwrapper{ffn: ls.warnf}
 	ls.Info = ls.Warn
 	ls.Notice = ls.Warn
 	return ls
 }
 
 // Vomitf is a simple wrapper on Vomit.Printf
-func (ls LogSet) Vomitf(f string, as ...interface{}) { ls.vomit.Printf(f, as...) }
+func (ls LogSet) Vomitf(f string, as ...interface{}) { ls.vomit.Output(2, fmt.Sprintf(f, as...)) }
+func (ls LogSet) vomitf(f string, as ...interface{}) { ls.vomit.Output(4, fmt.Sprintf(f, as...)) }
 
 // Debugf is a simple wrapper on Debug.Printf
-func (ls LogSet) Debugf(f string, as ...interface{}) { ls.debug.Printf(f, as...) }
+func (ls LogSet) Debugf(f string, as ...interface{}) { ls.debug.Output(2, fmt.Sprintf(f, as...)) }
+func (ls LogSet) debugf(f string, as ...interface{}) { ls.debug.Output(4, fmt.Sprintf(f, as...)) }
 
 // Warnf is a simple wrapper on Warn.Printf
-func (ls LogSet) Warnf(f string, as ...interface{}) { ls.warn.Printf(f, as...) }
+func (ls LogSet) Warnf(f string, as ...interface{}) { ls.warn.Output(2, fmt.Sprintf(f, as...)) }
+func (ls LogSet) warnf(f string, as ...interface{}) { ls.warn.Output(4, fmt.Sprintf(f, as...)) }
 
 // BeChatty gets the LogSet to print all its output - useful for temporary debugging
 func (ls LogSet) BeChatty() {
-	ls.warn.SetOutput(os.Stderr)
+	ls.warn.SetOutput(ls.err)
 	ls.warn.SetFlags(log.Llongfile | log.Ltime)
-	ls.vomit.SetOutput(os.Stderr)
+	ls.vomit.SetOutput(ls.err)
 	ls.vomit.SetFlags(log.Llongfile | log.Ltime)
-	ls.debug.SetOutput(os.Stderr)
+	ls.debug.SetOutput(ls.err)
 	ls.debug.SetFlags(log.Llongfile | log.Ltime)
+}
+
+// BeHelpful gets the LogSet to print debugging output
+func (ls LogSet) BeHelpful() {
+	ls.BeQuiet()
+	ls.warn.SetOutput(ls.err)
+	ls.warn.SetFlags(log.Llongfile | log.Ltime)
+	ls.debug.SetOutput(ls.err)
+	ls.debug.SetFlags(log.Llongfile | log.Ltime)
+}
+
+// BeTerse gets the LogSet to print debugging output
+func (ls LogSet) BeTerse() {
+	ls.BeQuiet()
+	ls.warn.SetOutput(ls.err)
 }
 
 // BeQuiet gets the LogSet to discard all its output

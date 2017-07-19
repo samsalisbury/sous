@@ -66,8 +66,9 @@ func TestWriteState(t *testing.T) {
 	}
 
 	di := psyringe.New()
-	di.Add(sous.NewLogSet(os.Stderr, os.Stderr, os.Stderr))
-	//di.Add(sous.NewLogSet(os.Stderr, ioutil.Discard, ioutil.Discard))
+	ls := sous.NewLogSet(os.Stderr)
+	ls.BeChatty()
+	di.Add(ls)
 	graph.AddInternals(di)
 	di.Add(
 		func() graph.StateReader { return graph.StateReader{StateReader: &sm} },

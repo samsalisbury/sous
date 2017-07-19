@@ -22,7 +22,7 @@ func TestManifestGet(t *testing.T) {
 		},
 		State:     makeTestState(),
 		OutWriter: graph.OutWriter(out),
-		LogSet:    sous.NewLogSet(os.Stderr, os.Stderr, os.Stderr),
+		LogSet:    sous.NewLogSet(os.Stderr),
 	}
 	res := smg.Execute([]string{})
 	assert.Equal(t, 0, res.ExitCode())
@@ -53,7 +53,7 @@ func TestManifestSet(t *testing.T) {
 		State:            state,
 		InReader:         graph.InReader(in),
 		StateWriter:      writer,
-		LogSet:           sous.NewLogSet(os.Stderr, os.Stderr, os.Stderr),
+		LogSet:           sous.NewLogSet(os.Stderr),
 	}
 
 	assert.Equal(t, 0, dummyWriter.WriteCount)

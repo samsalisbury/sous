@@ -493,7 +493,7 @@ func clobber(db *sql.DB) {
 func captureRepos(db *sql.DB) (repos []string) {
 	res, err := db.Query("select name from docker_repo_name;")
 	if err != nil {
-		Log.Debug.Print(err)
+		Log.Debug.Printf("%v", err)
 		return
 	}
 	defer res.Close()
