@@ -28,8 +28,8 @@ type (
 		Notice *logwrapper
 		Vomit  *logwrapper
 
+		vomit *log.Logger
 		debug *log.Logger
-		info  *log.Logger
 		warn  *log.Logger
 	}
 
@@ -51,12 +51,12 @@ func (w *logwrapper) Printf(f string, vs ...interface{}) {
 	w.ffn(f, vs...)
 }
 
-func (w *logwrapper) Print(f string, vs ...interface{}) {
-	w.ffn(f, vs...)
+func (w *logwrapper) Print(vs ...interface{}) {
+	w.ffn("print", vs...)
 }
 
-func (w *logwrapper) Printf(f string, vs ...interface{}) {
-	w.ffn(f, vs...)
+func (w *logwrapper) Println(vs ...interface{}) {
+	w.ffn("println", vs...)
 }
 
 // SilentLogSet returns a logset that discards everything by default
@@ -66,12 +66,18 @@ func SilentLogSet() *LogSet {
 
 // NewLogSet builds a new Logset that feeds to the listed writers
 func NewLogSet(warn, debug, vomit io.Writer) *LogSet {
-	return &LogSet{
+	ls := &LogSet{
 		// Debug is a logger - use log.SetOutput to get output from
 		vomit: log.New(vomit, "vomit: ", log.Lshortfile|log.Ldate|log.Ltime),
 		debug: log.New(debug, "debug: ", log.Lshortfile|log.Ldate|log.Ltime),
 		warn:  log.New(warn, "warn: ", 0),
 	}
+	ls.Debug = &logwrapper{ffn: ls.Debugf}
+	ls.Vomit = &logwrapper{ffn: ls.Vomitf}
+	ls.Warn = &logwrapper{ffn: ls.Warnf}
+	ls.Info = ls.Warn
+	ls.Notice = ls.Warn
+	return ls
 }
 
 // Vomitf is a simple wrapper on Vomit.Printf
@@ -110,17 +116,17 @@ func SetupLogging(il ILogger) {
 	})
 }
 
-func logMaybeMap(l *log.Logger, args ...interface{}) {
+func logMaybeMap(l *logwrapper, args ...interface{}) {
 	msg, mok := args[0].(string)
 	fields, fok := args[1].(map[string]interface{})
 	if !(mok && fok) {
-		l.Println(args)
+		l.Printf(fmt.Sprint(args))
 		return
 	}
 	msg = msg + ": "
 	for k, v := range fields {
 		msg = fmt.Sprintf("%s %s = %v", msg, k, v)
 	}
-	l.Print(msg)
+	l.Printf(msg)
 	return
 }
