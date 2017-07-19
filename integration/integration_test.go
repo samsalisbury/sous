@@ -312,7 +312,6 @@ func (suite *integrationSuite) TestFailedDeployFollowingSuccessfulDeploy() {
 	var ports []int32
 	const repoName = "succeedthenfail"
 
-	timeout := 500
 	registerAndDeploy(ip, clusterName, repoName, sourceRepo, "succeedthenfail-succeed", "1.0.0-succeed", ports, sous.Startup{
 		SkipTest: true,
 	})
