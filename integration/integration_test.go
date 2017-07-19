@@ -47,8 +47,6 @@ func (suite *integrationSuite) deploymentWithRepo(clusterNames []string, repo st
 func (suite *integrationSuite) findRepo(deps sous.DeployStates, repo string) sous.DeploymentID {
 	for i, d := range deps.Snapshot() {
 		if d != nil {
-			suite.T().Log(i)
-			suite.T().Logf("%q =? %q", i.ManifestID.Source.Repo, repo)
 			if i.ManifestID.Source.Repo == repo {
 				return i
 			}
@@ -105,13 +103,12 @@ func (suite *integrationSuite) newNameCache(name string) *docker.NameCache {
 
 func (suite *integrationSuite) waitUntilSettledStatus(clusters []string, sourceRepo string) *sous.DeployState {
 	sleepTime := time.Duration(5) * time.Second
-	suite.T().Log("About to snapshot the state - it may take some time.")
+	suite.T().Log("Awaiting stabilization of Singularity (all deploys either Active or Failed)...")
 	for counter := 1; ; counter++ {
 		ds, which := suite.deploymentWithRepo(clusters, sourceRepo)
 		deps := ds.Snapshot()
 		deployState := deps[which]
 		suite.Require().NotNil(deployState)
-		suite.T().Logf("deployState:%s", deployState.String())
 		if deployState.Status == sous.DeployStatusActive || deployState.Status == sous.DeployStatusFailed {
 			return deployState
 		}

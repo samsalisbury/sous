@@ -94,17 +94,24 @@ func ResetSingularity() {
 		}
 	}
 
-	for i := 100; i > 0; i-- {
-		verifyReqList, err := singClient.GetRequests(false)
+	log.Printf("Singularity resetting: Issued deletes for %d requests. Awaiting confirmation they've quit.", len(reqList))
+
+	const triesLimit = 100
+	for i := triesLimit; i > 0; i-- {
+		reqList, err = singClient.GetRequests(false)
 		if err != nil {
 			panic(err)
 		}
-		log.Printf("Singularity reset. Remaining requests:%d", len(verifyReqList))
-		if len(verifyReqList) == 0 {
-			break
+		if len(reqList) == 0 {
+			log.Printf("Singularity successfully reset.")
+			return
 		}
 		time.Sleep(time.Second)
 	}
+	for n, req := range reqList {
+		log.Printf("Singularity reset failure: stubborn request: #%d/%d %#v", n, len(reqList), req)
+	}
+	panic(fmt.Errorf("singularity not reset after %d tries - %d requests remain", triesLimit, len(reqList)))
 }
 
 // BuildImageName constructs a simple image name rooted at the SingularityURL
