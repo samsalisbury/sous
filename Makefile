@@ -159,6 +159,7 @@ test: test-gofmt test-staticcheck test-unit test-integration
 
 test-staticcheck: install-staticcheck
 	staticcheck -ignore "$$(cat staticcheck.ignore)" $(SOUS_PACKAGES)
+	staticcheck -tags integration -ignore "$$(cat staticcheck.ignore)" github.com/opentable/sous/integration
 
 test-gofmt:
 	bin/check-gofmt

@@ -129,6 +129,9 @@ func singReqDep(url, ryaml, dyaml string) (*dtos.SingularityRequestParent, error
 	logBody("POST /api/deploys", dqz)
 
 	rqz, err := h.Get(ru)
+	if err != nil {
+		return nil, err
+	}
 
 	time.Sleep(3 * time.Second)
 
