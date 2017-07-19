@@ -22,20 +22,42 @@ type (
 
 	// LogSet is the stopgap for a decent injectable logger
 	LogSet struct {
-		Debug  *log.Logger
-		Info   *log.Logger
-		Warn   *log.Logger
-		Notice *log.Logger
-		Vomit  *log.Logger
+		Debug  *logwrapper
+		Info   *logwrapper
+		Warn   *logwrapper
+		Notice *logwrapper
+		Vomit  *logwrapper
+
+		debug *log.Logger
+		info  *log.Logger
+		warn  *log.Logger
+	}
+
+	// A temporary type until we can stop using the LogSet loggers directly
+	logwrapper struct {
+		ffn func(string, ...interface{})
 	}
 )
 
 var (
 	// Log collects various loggers to use for different levels of logging
+	// XXX A goal should be to remove this global, and instead inject logging where we need it.
 	Log = func() LogSet {
 		return *(NewLogSet(os.Stderr, ioutil.Discard, ioutil.Discard))
 	}()
 )
+
+func (w *logwrapper) Printf(f string, vs ...interface{}) {
+	w.ffn(f, vs...)
+}
+
+func (w *logwrapper) Print(f string, vs ...interface{}) {
+	w.ffn(f, vs...)
+}
+
+func (w *logwrapper) Printf(f string, vs ...interface{}) {
+	w.ffn(f, vs...)
+}
 
 // SilentLogSet returns a logset that discards everything by default
 func SilentLogSet() *LogSet {
@@ -44,41 +66,38 @@ func SilentLogSet() *LogSet {
 
 // NewLogSet builds a new Logset that feeds to the listed writers
 func NewLogSet(warn, debug, vomit io.Writer) *LogSet {
-	warnLogger := log.New(warn, "warn: ", 0)
 	return &LogSet{
 		// Debug is a logger - use log.SetOutput to get output from
-		Vomit:  log.New(vomit, "vomit: ", log.Lshortfile|log.Ldate|log.Ltime),
-		Debug:  log.New(debug, "debug: ", log.Lshortfile|log.Ldate|log.Ltime),
-		Info:   warnLogger, // XXX deprecate Info
-		Notice: warnLogger, // XXX deprecate Notice
-		Warn:   warnLogger,
+		vomit: log.New(vomit, "vomit: ", log.Lshortfile|log.Ldate|log.Ltime),
+		debug: log.New(debug, "debug: ", log.Lshortfile|log.Ldate|log.Ltime),
+		warn:  log.New(warn, "warn: ", 0),
 	}
 }
 
 // Vomitf is a simple wrapper on Vomit.Printf
-func (ls LogSet) Vomitf(f string, as ...interface{}) { ls.Vomit.Printf(f, as...) }
+func (ls LogSet) Vomitf(f string, as ...interface{}) { ls.vomit.Printf(f, as...) }
 
 // Debugf is a simple wrapper on Debug.Printf
-func (ls LogSet) Debugf(f string, as ...interface{}) { ls.Debug.Printf(f, as...) }
+func (ls LogSet) Debugf(f string, as ...interface{}) { ls.debug.Printf(f, as...) }
 
 // Warnf is a simple wrapper on Warn.Printf
-func (ls LogSet) Warnf(f string, as ...interface{}) { ls.Warn.Printf(f, as...) }
+func (ls LogSet) Warnf(f string, as ...interface{}) { ls.warn.Printf(f, as...) }
 
 // BeChatty gets the LogSet to print all its output - useful for temporary debugging
 func (ls LogSet) BeChatty() {
-	ls.Warn.SetOutput(os.Stderr)
-	ls.Warn.SetFlags(log.Llongfile | log.Ltime)
-	ls.Vomit.SetOutput(os.Stderr)
-	ls.Vomit.SetFlags(log.Llongfile | log.Ltime)
-	ls.Debug.SetOutput(os.Stderr)
-	ls.Debug.SetFlags(log.Llongfile | log.Ltime)
+	ls.warn.SetOutput(os.Stderr)
+	ls.warn.SetFlags(log.Llongfile | log.Ltime)
+	ls.vomit.SetOutput(os.Stderr)
+	ls.vomit.SetFlags(log.Llongfile | log.Ltime)
+	ls.debug.SetOutput(os.Stderr)
+	ls.debug.SetFlags(log.Llongfile | log.Ltime)
 }
 
 // BeQuiet gets the LogSet to discard all its output
 func (ls LogSet) BeQuiet() {
-	ls.Vomit.SetOutput(ioutil.Discard)
-	ls.Debug.SetOutput(ioutil.Discard)
-	ls.Warn.SetOutput(ioutil.Discard)
+	ls.vomit.SetOutput(ioutil.Discard)
+	ls.debug.SetOutput(ioutil.Discard)
+	ls.warn.SetOutput(ioutil.Discard)
 }
 
 // SetupLogging sets up an ILogger to log into the Sous logging regime
