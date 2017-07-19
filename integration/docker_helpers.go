@@ -209,6 +209,7 @@ func startInstance(url, clusterName, imageName, repoName string, ports []int32, 
 	}).(*dtos.SingularityRequest)
 
 	for {
+		log.Printf("Creating request %q", reqID)
 		_, err := sing.PostRequest(req)
 		if err != nil {
 			log.Printf("PostRequest error:%#v", err)
@@ -261,7 +262,8 @@ func startInstance(url, clusterName, imageName, repoName string, ports []int32, 
 
 	depReq := loadMap(&dtos.SingularityDeployRequest{}, depReqMap).(*dtos.SingularityDeployRequest)
 
-	log.Printf("Constructed SingularityDeployRequest %#v containing SingularityDeploy %#v", depReq, *depReq.Deploy)
+	log.Printf("Constructed SingularityDeployRequest %#v", depReq)
+	log.Printf("  containing SingularityDeploy %#v", *depReq.Deploy)
 
 	_, err = sing.Deploy(depReq)
 	if err != nil {
