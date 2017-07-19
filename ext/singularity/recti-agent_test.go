@@ -5,6 +5,7 @@ import (
 
 	"github.com/opentable/go-singularity/dtos"
 	sous "github.com/opentable/sous/lib"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestStripMetadata(t *testing.T) {
@@ -99,6 +100,54 @@ func TestFailOnNilBuildArtifact(t *testing.T) {
 	}
 }
 
+func TestMapStartup(t *testing.T) {
+	buildHealthcheckedDTOMap := func(t *testing.T, ready bool) dtoMap {
+		depMap := dtoMap{}
+		startup := sous.Startup{
+			SkipTest: ready,
+
+			ConnectDelay:    106,
+			Timeout:         107,
+			ConnectInterval: 108,
+
+			CheckReadyProtocol:        "https",
+			CheckReadyURIPath:         "dummyCheckReadyURIPath",
+			CheckReadyPortIndex:       114,
+			CheckReadyFailureStatuses: []int{500},
+			CheckReadyURITimeout:      116,
+			CheckReadyInterval:        117,
+			CheckReadyRetries:         118,
+		}
+		err := MapStartupIntoHealthcheckOptions(&depMap, startup)
+		if err != nil {
+			t.Fatalf("Received and error loading a map!")
+		}
+		return depMap
+	}
+
+	t.Run("Skip", func(t *testing.T) {
+		dep := buildHealthcheckedDTOMap(t, true)
+		assert.NotContains(t, dep, "Healthcheck")
+	})
+
+	t.Run("Don't skip", func(t *testing.T) {
+		dep := buildHealthcheckedDTOMap(t, false)
+		if assert.Contains(t, dep, "Healthcheck") {
+			hco := dep["Healthcheck"].(*dtos.HealthcheckOptions)
+			assert.Equal(t, int32(106), hco.StartupDelaySeconds)                           //ConnectDelay
+			assert.Equal(t, int32(107), hco.StartupTimeoutSeconds)                         //Timeout
+			assert.Equal(t, int32(108), hco.StartupIntervalSeconds)                        //ConnectInterval
+			assert.Equal(t, dtos.HealthcheckOptionsHealthcheckProtocolhttps, hco.Protocol) //CheckReadyProtocol
+			assert.Equal(t, "dummyCheckReadyURIPath", hco.Uri)                             //CheckReadyURIPath
+			assert.Equal(t, int32(114), hco.PortIndex)                                     //CheckReadyPortIndex
+			assert.Equal(t, []int32{500}, hco.FailureStatusCodes)                          //CheckReadyFailureStatuses
+			assert.Equal(t, int32(116), hco.ResponseTimeoutSeconds)                        //CheckReadyURITimeout
+			assert.Equal(t, int32(117), hco.IntervalSeconds)                               //CheckReadyInterval
+			assert.Equal(t, int32(118), hco.MaxRetries)                                    //CheckReadyRetries
+		}
+	})
+}
+
 func TestContainerStartupOptions(t *testing.T) {
 	checkReadyPath := "/use-this-route"
 	checkReadyTimeout := 45
@@ -118,12 +167,13 @@ func TestContainerStartupOptions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if dr.Deploy.Healthcheck.Uri != checkReadyPath {
-		t.Errorf("expected:%s got:%s", checkReadyPath, dr.Deploy.HealthcheckUri)
+		t.Errorf("expected:%s got:%s", checkReadyPath, dr.Deploy.Healthcheck.Uri)
 	}
 
 	if dr.Deploy.Healthcheck.StartupTimeoutSeconds != int32(checkReadyTimeout) {
-		t.Errorf("expected:%d got:%d", checkReadyTimeout, dr.Deploy.DeployHealthTimeoutSeconds)
+		t.Errorf("expected:%d got:%d", checkReadyTimeout, dr.Deploy.Healthcheck.StartupTimeoutSeconds)
 	}
 
 }

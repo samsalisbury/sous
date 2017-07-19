@@ -73,6 +73,8 @@ func (dc *DeployConfig) Validate() []Flaw {
 
 	flaws = append(flaws, rezs.Validate()...)
 
+	flaws = append(flaws, dc.Startup.Validate()...)
+
 	for _, f := range flaws {
 		f.AddContext("deploy config", dc)
 	}

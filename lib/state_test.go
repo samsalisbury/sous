@@ -48,6 +48,9 @@ func TestState_Validate(t *testing.T) {
 								"ports":  "1",
 							},
 							NumInstances: 3,
+							Startup: Startup{
+								SkipTest: true,
+							},
 						},
 						Version: semv.MustParse("1"),
 					},

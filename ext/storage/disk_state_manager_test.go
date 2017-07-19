@@ -104,7 +104,11 @@ func exampleState() *sous.State {
 								"ports":  "1",
 							},
 							NumInstances: 6,
-							Volumes:      sous.Volumes{},
+							Startup: sous.Startup{
+								CheckReadyProtocol: "HTTPS",
+								CheckReadyURIPath:  "/health",
+							},
+							Volumes: sous.Volumes{},
 						},
 						Version: semv.MustParse("1.0.0-rc.1+deadbeef"),
 					},
@@ -119,6 +123,10 @@ func exampleState() *sous.State {
 						DeployConfig: sous.DeployConfig{
 							Env: sous.Env{
 								"DEBUG": "YES",
+							},
+							Startup: sous.Startup{
+								CheckReadyProtocol: "HTTPS",
+								CheckReadyURIPath:  "/health",
 							},
 							Resources: sous.Resources{
 								"cpus":   "1",
@@ -138,10 +146,18 @@ func exampleState() *sous.State {
 				"cluster-1": &sous.Cluster{
 					Kind:    "singularity",
 					BaseURL: "http://singularity.example.com",
+					Startup: sous.Startup{
+						CheckReadyProtocol: "HTTPS",
+						CheckReadyURIPath:  "/health",
+					},
 				},
 				"other-cluster": &sous.Cluster{
 					Kind:    "singularity",
 					BaseURL: "http://some.singularity.cluster",
+					Startup: sous.Startup{
+						CheckReadyProtocol: "HTTPS",
+						CheckReadyURIPath:  "/health",
+					},
 				},
 			},
 			EnvVars:   sous.EnvDefs{},

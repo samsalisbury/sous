@@ -173,7 +173,7 @@ func (r *deployer) RectifyModifies(
 				Prior: pair.Prior.Deployment.Clone(),
 				Post:  pair.Post.Deployment.Clone(),
 			}
-			Log.Debug.Printf("%#v", err)
+			Log.Debug.Print(err)
 			result.Error = sous.WrapResolveError(&sous.ChangeError{Deployments: dp, Err: err})
 			result.Desc = "not updated"
 		} else if pair.Prior.Status == sous.DeployStatusFailed || pair.Post.Status == sous.DeployStatusFailed {
@@ -235,6 +235,12 @@ func (r *deployer) RectifySingleModification(pair *sous.DeployablePair) (err err
 
 	return nil
 }
+
+// XXX for logging and other UI purposes, the best thing would be if the
+// DeployablePair had a "diff" method that returned a (cached) list of
+// differences, which these two functions could filter for req/dep triggering
+// changes. Then, rather than simply computing the conditional, the deployer
+// could report ("deploy required because of %v", diffs)
 
 func changesReq(pair *sous.DeployablePair) bool {
 	return pair.Prior.NumInstances != pair.Post.NumInstances

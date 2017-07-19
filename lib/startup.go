@@ -3,18 +3,17 @@ package sous
 import (
 	"fmt"
 	"sort"
+	"strings"
 )
 
 // Startup is the configuration for startup checks for a service deployment.
 // c.f. DeployConfig for use.
 type Startup struct { //                             Singularity fields
-	SkipConnectTest bool `yaml:",omitempty"`
+	SkipTest bool `yaml:",omitempty"`
 
 	ConnectDelay    int `yaml:",omitempty"` // Healthcheck.StartupDelaySeconds
 	Timeout         int `yaml:",omitempty"` // Healthcheck.StartupTimeoutSeconds
 	ConnectInterval int `yaml:",omitempty"` // Healthcheck.StartupIntervalSeconds
-
-	SkipReadyTest bool `yaml:",omitempty"`
 
 	CheckReadyProtocol        string `yaml:",omitempty"` // Healthcheck.Protocol
 	CheckReadyURIPath         string `yaml:",omitempty"` // Healthcheck.URI
@@ -32,12 +31,62 @@ type Startup struct { //                             Singularity fields
 
 var zeroStartup = Startup{}
 
+// Validate implements Flawed on Startup.
+func (s *Startup) Validate() []Flaw {
+	flaws := []Flaw{}
+
+	if !s.SkipTest {
+		if s.ConnectDelay < 0 {
+			flaws = append(flaws, FatalFlaw("ConnectDelay less than zero: %d!", s.ConnectDelay))
+		}
+		if s.Timeout < 0 {
+			flaws = append(flaws, FatalFlaw("Timeout less than zero: %d!", s.Timeout))
+		}
+		if s.ConnectInterval < 0 {
+			flaws = append(flaws, FatalFlaw("ConnectInterval less than zero: %d!", s.ConnectInterval))
+		}
+
+		if s.CheckReadyPortIndex < 0 {
+			flaws = append(flaws, FatalFlaw("CheckReadyPortIndex less than zero: %d!", s.CheckReadyPortIndex))
+		}
+		if s.CheckReadyURITimeout < 0 {
+			flaws = append(flaws, FatalFlaw("CheckReadyURITimeout less than zero: %d!", s.CheckReadyURITimeout))
+		}
+		if s.CheckReadyInterval < 0 {
+			flaws = append(flaws, FatalFlaw("CheckReadyInterval less than zero: %d!", s.CheckReadyInterval))
+		}
+		if s.CheckReadyRetries < 0 {
+			flaws = append(flaws, FatalFlaw("CheckReadyRetries less than zero: %d!", s.CheckReadyRetries))
+		}
+
+		switch s.CheckReadyProtocol {
+		default:
+			flaws = append(flaws, FatalFlaw("CheckReadyProtocol must be HTTP or HTTPS, was %q.", s.CheckReadyProtocol))
+		case "https", "http":
+			flaws = append(flaws, NewFlaw(fmt.Sprintf("CheckReadyProtocol must be HTTP or HTTPS, was %q (lowercase).", s.CheckReadyProtocol),
+				func() error {
+					s.CheckReadyProtocol = strings.ToUpper(s.CheckReadyProtocol)
+					return nil
+				}))
+		case "HTTPS", "HTTP":
+		}
+
+		for _, status := range s.CheckReadyFailureStatuses {
+			if status < 0 {
+				flaws = append(flaws, FatalFlaw("CheckReadyFailureStatuses includes a value less that zero: %d", status))
+			}
+		}
+	}
+
+	return flaws
+}
+
 // MergeDefaults merges default values with a Startup and returns the result
 func (s Startup) MergeDefaults(base Startup) Startup {
 	n := base
 
-	if n.SkipConnectTest == zeroStartup.SkipConnectTest {
-		n.SkipConnectTest = s.SkipConnectTest
+	if n.SkipTest == zeroStartup.SkipTest {
+		n.SkipTest = s.SkipTest
 	}
 
 	if n.ConnectDelay == zeroStartup.ConnectDelay {
@@ -50,10 +99,6 @@ func (s Startup) MergeDefaults(base Startup) Startup {
 
 	if n.ConnectInterval == zeroStartup.ConnectInterval {
 		n.ConnectInterval = s.ConnectInterval
-	}
-
-	if n.SkipReadyTest == zeroStartup.SkipReadyTest {
-		n.SkipReadyTest = s.SkipReadyTest
 	}
 
 	if n.CheckReadyProtocol == zeroStartup.CheckReadyProtocol {
@@ -92,9 +137,9 @@ func (s Startup) MergeDefaults(base Startup) Startup {
 func (s Startup) UnmergeDefaults(base, old Startup) Startup {
 	n := base
 
-	if base.SkipConnectTest == s.SkipConnectTest &&
-		old.SkipConnectTest == zeroStartup.SkipConnectTest {
-		n.SkipConnectTest = zeroStartup.SkipConnectTest
+	if base.SkipTest == s.SkipTest &&
+		old.SkipTest == zeroStartup.SkipTest {
+		n.SkipTest = zeroStartup.SkipTest
 	}
 
 	if base.ConnectDelay == s.ConnectDelay &&
@@ -110,11 +155,6 @@ func (s Startup) UnmergeDefaults(base, old Startup) Startup {
 	if base.ConnectInterval == s.ConnectInterval &&
 		old.ConnectInterval == zeroStartup.ConnectInterval {
 		n.ConnectInterval = zeroStartup.ConnectInterval
-	}
-
-	if base.SkipReadyTest == s.SkipReadyTest &&
-		old.SkipReadyTest == zeroStartup.SkipReadyTest {
-		n.SkipReadyTest = zeroStartup.SkipReadyTest
 	}
 
 	if base.CheckReadyProtocol == s.CheckReadyProtocol &&
@@ -173,63 +213,67 @@ func (s Startup) Equal(o Startup) bool {
 
 func (s Startup) diff(o Startup) []string {
 	diffs := []string{}
-	diff := func(format string, a ...interface{}) { diffs = append(diffs, fmt.Sprintf(format, a...)) }
-
-	if s.SkipReadyTest != o.SkipReadyTest {
-		diff("SkipReadyTest; this %t, other %t", s.SkipReadyTest, o.SkipReadyTest)
+	diff := func(format string, a ...interface{}) {
+		d := fmt.Sprintf(format, a...)
+		Log.Vomitf("Startup diff: %s", d)
+		diffs = append(diffs, d)
 	}
 
-	if s.SkipConnectTest != o.SkipConnectTest {
-		diff("SkipConnectTest; this %t, other %t", s.SkipConnectTest, o.SkipConnectTest)
+	l, r := s, o
+	if s.SkipTest == true { //redundant, but makes ConfirmTree happy
+		l = zeroStartup
+	}
+	if o.SkipTest == true {
+		r = zeroStartup
 	}
 
-	if s.ConnectDelay != o.ConnectDelay {
-		diff("ConnectDelay; this %d, other %d", s.ConnectDelay, o.ConnectDelay)
+	if l.ConnectDelay != r.ConnectDelay {
+		diff("ConnectDelay; this %d, other %d", l.ConnectDelay, r.ConnectDelay)
 	}
 
-	if s.ConnectInterval != o.ConnectInterval {
-		diff("ConnectInterval; this %d, other %d", s.ConnectInterval, o.ConnectInterval)
+	if l.ConnectInterval != r.ConnectInterval {
+		diff("ConnectInterval; this %d, other %d", l.ConnectInterval, r.ConnectInterval)
 	}
 
-	if s.Timeout != o.Timeout {
-		diff("Timeout; this %d, other %d", s.Timeout, o.Timeout)
+	if l.Timeout != r.Timeout {
+		diff("Timeout; this %d, other %d", l.Timeout, r.Timeout)
 	}
 
-	if s.CheckReadyProtocol != o.CheckReadyProtocol {
-		diff("CheckReadyProtocol; this %q, other %q", s.CheckReadyProtocol, o.CheckReadyProtocol)
+	if l.CheckReadyProtocol != r.CheckReadyProtocol {
+		diff("CheckReadyProtocol; this %q, other %q", l.CheckReadyProtocol, r.CheckReadyProtocol)
 	}
 
-	if s.CheckReadyPortIndex != o.CheckReadyPortIndex {
-		diff("CheckReadyPortIndex; this %d, other %d", s.CheckReadyPortIndex, o.CheckReadyPortIndex)
+	if l.CheckReadyPortIndex != r.CheckReadyPortIndex {
+		diff("CheckReadyPortIndex; this %d, other %d", l.CheckReadyPortIndex, r.CheckReadyPortIndex)
 	}
 
-	if len(s.CheckReadyFailureStatuses) != len(o.CheckReadyFailureStatuses) {
-		diff("CheckReadyFailureStatuses; this %v, other %v", s.CheckReadyFailureStatuses, o.CheckReadyFailureStatuses)
+	if len(l.CheckReadyFailureStatuses) != len(r.CheckReadyFailureStatuses) {
+		diff("CheckReadyFailureStatuses; this %v, other %v", l.CheckReadyFailureStatuses, r.CheckReadyFailureStatuses)
 	} else {
-		sort.Ints(o.CheckReadyFailureStatuses)
-		sort.Ints(s.CheckReadyFailureStatuses)
-		for n, sfs := range s.CheckReadyFailureStatuses {
-			if sfs != o.CheckReadyFailureStatuses[n] {
-				diff("CheckReadyFailureStatuses; this %v, other %v", s.CheckReadyFailureStatuses, o.CheckReadyFailureStatuses)
+		sort.Ints(r.CheckReadyFailureStatuses)
+		sort.Ints(l.CheckReadyFailureStatuses)
+		for n, sfs := range l.CheckReadyFailureStatuses {
+			if sfs != r.CheckReadyFailureStatuses[n] {
+				diff("CheckReadyFailureStatuses; this %v, other %v", l.CheckReadyFailureStatuses, r.CheckReadyFailureStatuses)
 				break
 			}
 		}
 	}
 
-	if s.CheckReadyInterval != o.CheckReadyInterval {
-		diff("CheckReadyInterval; this %d, other %d", s.CheckReadyInterval, o.CheckReadyInterval)
+	if l.CheckReadyInterval != r.CheckReadyInterval {
+		diff("CheckReadyInterval; this %d, other %d", l.CheckReadyInterval, r.CheckReadyInterval)
 	}
 
-	if s.CheckReadyRetries != o.CheckReadyRetries {
-		diff("CheckReadyRetries; this %d, other %d", s.CheckReadyRetries, o.CheckReadyRetries)
+	if l.CheckReadyRetries != r.CheckReadyRetries {
+		diff("CheckReadyRetries; this %d, other %d", l.CheckReadyRetries, r.CheckReadyRetries)
 	}
 
-	if s.CheckReadyURIPath != o.CheckReadyURIPath {
-		diff("CheckReadyURIPath; this %q, other %q", s.CheckReadyURIPath, o.CheckReadyURIPath)
+	if l.CheckReadyURIPath != r.CheckReadyURIPath {
+		diff("CheckReadyURIPath; this %q, other %q", l.CheckReadyURIPath, r.CheckReadyURIPath)
 	}
 
-	if s.CheckReadyURITimeout != o.CheckReadyURITimeout {
-		diff("CheckReadyURITimeout; this %d, other %d", s.CheckReadyURITimeout, o.CheckReadyURITimeout)
+	if l.CheckReadyURITimeout != r.CheckReadyURITimeout {
+		diff("CheckReadyURITimeout; this %d, other %d", l.CheckReadyURITimeout, r.CheckReadyURITimeout)
 	}
 
 	return diffs

@@ -252,6 +252,7 @@ func baseDeployment() *sous.Deployment {
 	startDep.Env = sous.Env{"A": "A"}
 	startDep.Kind = sous.ManifestKindService
 	startDep.DeployConfig.Resources = sous.Resources{"cpus": "0.1", "memory": "100", "ports": "1"}
+	startDep.Startup = sous.Startup{SkipTest: true}
 	return &startDep
 }
 
@@ -318,11 +319,57 @@ func TestStableDeployment(t *testing.T) {
 	assert.False(t, changesDep(pair), "Roundtrip of Deployment through Singularity DTOs reported as changing Deploy!")
 }
 
+func TestScaling(t *testing.T) {
+	startDep := baseDeployment()
+	startDep.NumInstances = 5
+	pair := matchedPair(t, startDep)
+	pair.Prior.NumInstances = 16
+
+	diff, diffs := pair.Prior.Deployment.Diff(pair.Post.Deployment)
+	assert.True(t, diff)
+	assert.NotEmpty(t, diffs)
+
+	assert.True(t, changesReq(pair), "Updating number of intstances reported as not changing Request!")
+	assert.False(t, changesDep(pair), "Roundtrip of Deployment through Singularity DTOs reported as changing Deploy!")
+}
+
+func TestEnableStartupChangedDeployment(t *testing.T) {
+	startDep := baseDeployment()
+	startDep.Startup.SkipTest = true
+
+	pair := matchedPair(t, startDep)
+
+	startDep.Startup.SkipTest = false
+	pair.Prior.Startup.CheckReadyProtocol = "HTTPS"
+
+	diff, diffs := pair.Prior.Deployment.Diff(pair.Post.Deployment)
+	assert.True(t, diff)
+	assert.NotEmpty(t, diffs)
+
+	assert.False(t, changesReq(pair), "Roundtrip of Deployment through Singularity DTOs reported as changing Request!")
+	assert.True(t, changesDep(pair), "Startup checks change reported as not changing Deploy!")
+}
+
+func TestStartupChangedDeployment(t *testing.T) {
+	startDep := baseDeployment()
+	startDep.Startup.SkipTest = false
+	startDep.Startup.CheckReadyProtocol = "HTTP"
+	pair := matchedPair(t, startDep)
+	pair.Prior.Startup.CheckReadyProtocol = "HTTPS"
+
+	diff, diffs := pair.Prior.Deployment.Diff(pair.Post.Deployment)
+	assert.True(t, diff)
+	assert.NotEmpty(t, diffs)
+
+	assert.False(t, changesReq(pair), "Roundtrip of Deployment through Singularity DTOs reported as changing Request!")
+	assert.True(t, changesDep(pair), "Startup checks change reported as not changing Deploy!")
+}
+
 func TestEnvChangedDeployment(t *testing.T) {
 	startDep := baseDeployment()
 	startDep.Env["TEST"] = "starting"
 	pair := matchedPair(t, startDep)
-	pair.Post.Env["TEST"] = "ending"
+	pair.Prior.Env["TEST"] = "ending"
 
 	diff, diffs := pair.Prior.Deployment.Diff(pair.Post.Deployment)
 	assert.True(t, diff)
@@ -432,6 +479,14 @@ func TestChangesDep(t *testing.T) {
 
 	if !changesDep(testPair(changed)) {
 		t.Error("Change to Startup on deployment reported as no change")
+	}
+
+	changed = baseDep.Clone()
+	changed.Startup.SkipTest = true
+	baseDep.Startup.ConnectDelay = 100
+
+	if !changesDep(testPair(changed)) {
+		t.Errorf("Change to Startup on deployment reported as no change: \n%#v\n  vs\n%#v ", baseDep.Startup, changed.Startup)
 	}
 }
 

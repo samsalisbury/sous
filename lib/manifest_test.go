@@ -71,21 +71,29 @@ func TestManifest_Clone(t *testing.T) {
 
 }
 
+var skippyStartup = Startup{
+	SkipTest: true,
+}
+
 var manifestTests = []struct {
+	TestName                        string
 	OriginalManifest, FixedManifest *Manifest
 	FlawDesc, RepairError           string
 }{
 	{
+		TestName:         "empty missing kind",
 		OriginalManifest: &Manifest{},
 		FixedManifest:    &Manifest{Kind: ManifestKindService},
 		FlawDesc:         `manifest "" missing Kind`},
 	{
+		TestName:         "invalid kind",
 		OriginalManifest: &Manifest{Kind: "some invalid kind"},
 		FixedManifest:    &Manifest{Kind: "some invalid kind"},
 		FlawDesc:         `ManifestKind "some invalid kind" not valid`,
 		RepairError:      "unable to repair invalid ManifestKind",
 	},
 	{
+		TestName: "missing memory resource",
 		OriginalManifest: &Manifest{
 			Kind: ManifestKindService,
 			Deployments: DeploySpecs{
@@ -97,6 +105,7 @@ var manifestTests = []struct {
 							"ports": "1",
 						},
 						NumInstances: 3,
+						Startup:      skippyStartup,
 					},
 					Version: semv.MustParse("1"),
 				},
@@ -114,6 +123,7 @@ var manifestTests = []struct {
 							"ports":  "1",
 						},
 						NumInstances: 3,
+						Startup:      skippyStartup,
 					},
 					Version: semv.MustParse("1"),
 				},
@@ -123,6 +133,7 @@ var manifestTests = []struct {
 	},
 	{
 		// NOTE: This one is valid, hence no FlawDesc.
+		TestName: "valid",
 		OriginalManifest: &Manifest{
 			Kind: ManifestKindService,
 			Deployments: DeploySpecs{
@@ -134,6 +145,7 @@ var manifestTests = []struct {
 							"ports":  "1",
 						},
 						NumInstances: 3,
+						Startup:      skippyStartup,
 					},
 					Version: semv.MustParse("1"),
 				},
@@ -144,48 +156,50 @@ var manifestTests = []struct {
 
 func TestManifest_Validate(t *testing.T) {
 	for i, test := range manifestTests {
-		m := test.OriginalManifest
-		flaws := m.Validate()
-		expectedNumFlaws := 1
-		if test.FlawDesc == "" {
-			expectedNumFlaws = 0
-		}
-		if len(flaws) != expectedNumFlaws {
-			for _, f := range flaws {
-				t.Error(f)
+		t.Run(test.TestName, func(t *testing.T) {
+			m := test.OriginalManifest
+			flaws := m.Validate()
+			expectedNumFlaws := 1
+			if test.FlawDesc == "" {
+				expectedNumFlaws = 0
 			}
-			t.Fatalf("%d: got %d flaws; want %d", i, len(flaws), expectedNumFlaws)
-		}
-		if test.FlawDesc != "" {
-			expectedFlawDesc := test.FlawDesc
-			actualFlawDesc := fmt.Sprint(flaws[0])
-			if actualFlawDesc != expectedFlawDesc {
-				t.Errorf("got flaw desc %q; want %q", actualFlawDesc, expectedFlawDesc)
+			if len(flaws) != expectedNumFlaws {
+				for _, f := range flaws {
+					t.Error(f)
+				}
+				t.Fatalf("%d: got %d flaws; want %d", i, len(flaws), expectedNumFlaws)
 			}
-		}
-		if expectedNumFlaws == 0 {
-			return
-		}
-		err := flaws[0].Repair()
-		expected := test.RepairError
-		if test.RepairError == "" {
-			if err != nil {
-				t.Fatal(err)
+			if test.FlawDesc != "" {
+				expectedFlawDesc := test.FlawDesc
+				actualFlawDesc := fmt.Sprint(flaws[0])
+				if actualFlawDesc != expectedFlawDesc {
+					t.Errorf("got flaw desc %q; want %q", actualFlawDesc, expectedFlawDesc)
+				}
 			}
-		} else if err == nil {
-			t.Fatalf("got nil; want error %q", expected)
-		} else {
-			actual := err.Error()
-			if actual != expected {
-				t.Errorf("got error %q; want %q", actual, expected)
+			if expectedNumFlaws == 0 {
+				return
 			}
-		}
-		if test.FixedManifest != nil {
-			different, differences := m.Diff(test.FixedManifest)
-			if different {
-				t.Errorf("repaired manifest not as expected: % #v", differences)
+			err := flaws[0].Repair()
+			expected := test.RepairError
+			if test.RepairError == "" {
+				if err != nil {
+					t.Fatal(err)
+				}
+			} else if err == nil {
+				t.Fatalf("got nil; want error %q", expected)
+			} else {
+				actual := err.Error()
+				if actual != expected {
+					t.Errorf("got error %q; want %q", actual, expected)
+				}
 			}
-		}
+			if test.FixedManifest != nil {
+				different, differences := m.Diff(test.FixedManifest)
+				if different {
+					t.Errorf("repaired manifest not as expected: % #v", differences)
+				}
+			}
+		})
 	}
 }
 
