@@ -264,7 +264,7 @@ func newResolver(filter *sous.ResolveFilter, d sous.Deployer, r sous.Registry) *
 }
 
 func newAutoResolver(rez *sous.Resolver, sr StateReader, ls *logging.LogSet) *sous.AutoResolver {
-	return sous.NewAutoResolver(rez, sr, ls)
+	return sous.NewAutoResolver(rez, sr, ls.Child("autoresolver"))
 }
 
 func newSourceHostChooser() sous.SourceHostChooser {

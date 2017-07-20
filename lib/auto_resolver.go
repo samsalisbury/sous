@@ -99,7 +99,7 @@ func (ar *AutoResolver) updateStatus() {
 	}
 	ar.write(func() {
 		ls := ar.currentRecorder.CurrentStatus()
-		logging.Log.Debug.Printf("Recording live status from %p: %v", ar, ls)
+		logging.Log.Debugf("Recording live status from %p: %v", ar, ls)
 		ar.liveStatus = &ls
 	})
 }
@@ -111,7 +111,7 @@ func (ar *AutoResolver) Statuses() (stable, live *ResolveStatus) {
 	ar.updateStatus()
 	ar.RLock()
 	defer ar.RUnlock()
-	logging.Log.Debug.Printf("Reporting statuses from %p: %v %v", ar, ar.stableStatus, ar.liveStatus)
+	logging.Log.Debugf("Reporting statuses from %p: %v %v", ar, ar.stableStatus, ar.liveStatus)
 	return ar.stableStatus, ar.liveStatus
 }
 
@@ -127,11 +127,11 @@ func loopTilDone(f func(), done TriggerChannel) {
 }
 
 func (ar *AutoResolver) write(f func()) {
-	logging.Log.Vomit.Printf("Locking autoresolver for write...")
+	logging.Log.Vomitf("Locking autoresolver for write...")
 	ar.Lock()
 	defer func() {
 		ar.Unlock()
-		logging.Log.Vomit.Printf("Unlocked autoresolver")
+		logging.Log.Vomitf("Unlocked autoresolver")
 	}()
 	f()
 }
@@ -149,7 +149,7 @@ func (ar *AutoResolver) resolveLoop(tc, done TriggerChannel, ac announceChannel)
 		case <-done:
 			return
 		case t := <-tc:
-			ar.LogSet.Debug.Printf("Received extra trigger before starting Resolve: %v", t)
+			ar.LogSet.Debugf("Received extra trigger before starting Resolve: %v", t)
 			continue
 		}
 
@@ -158,15 +158,15 @@ func (ar *AutoResolver) resolveLoop(tc, done TriggerChannel, ac announceChannel)
 }
 
 func (ar *AutoResolver) resolveOnce(ac announceChannel) {
-	ar.LogSet.Debug.Print("Beginning Resolve")
+	ar.LogSet.Debugf("Beginning Resolve")
 	state, err := ar.StateReader.ReadState()
-	ar.LogSet.Debug.Printf("Reading current state: err: %v", err)
+	ar.LogSet.Debugf("Reading current state: err: %v", err)
 	if err != nil {
 		ac <- err
 		return
 	}
 	ar.GDM, err = state.Deployments()
-	ar.LogSet.Debug.Printf("Reading GDM from state: err: %v", err)
+	ar.LogSet.Debugf("Reading GDM from state: err: %v", err)
 
 	if err != nil {
 		ac <- err
@@ -182,11 +182,18 @@ func (ar *AutoResolver) resolveOnce(ac announceChannel) {
 	ac <- ar.currentRecorder.Wait()
 	ar.write(func() {
 		ss := ar.currentRecorder.CurrentStatus()
-		logging.Log.Debug.Printf("Recording stable status from %p: %v", ar, ss)
+		logging.Log.Debugf("Recording stable status from %p: %v", ar, ss)
+
+		if ss.Started.Before(ss.Finished) {
+			ar.LogSet.GetTimer("fullcycle").Update(ss.Finished.Sub(ss.Started))
+		} else {
+			ar.LogSet.Warnf("No finished time recorded for supposed stable status.")
+		}
+
 		ar.stableStatus = &ss
 	})
 	ar.Statuses() // XXX this is debugging
-	ar.LogSet.Debug.Print("Completed resolve")
+	ar.LogSet.Debugf("Completed resolve")
 }
 
 func (ar *AutoResolver) afterDone(tc, done TriggerChannel, ac announceChannel) {
@@ -209,7 +216,7 @@ func (ar *AutoResolver) errorLogging(tc, done TriggerChannel, errs announceChann
 		return
 	case e := <-errs:
 		if e != nil {
-			ar.LogSet.Warn.Print(e)
+			ar.LogSet.Warnf("error:", e)
 		}
 	}
 }

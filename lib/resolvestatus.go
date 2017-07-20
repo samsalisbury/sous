@@ -2,6 +2,7 @@ package sous
 
 import (
 	"sync"
+	"time"
 
 	"github.com/opentable/sous/util/logging"
 )
@@ -9,6 +10,11 @@ import (
 type (
 	// ResolveStatus captures the status of a Resolve
 	ResolveStatus struct {
+		// Started collects the time that the Status began being collected
+		Started,
+		// Finished collects the time that the Status was completed - or the zero
+		// time if the status is still live.
+		Finished time.Time
 		// Phase reports the current phase of resolution
 		Phase string
 		// Intended are the deployments that are the target of this resolution
@@ -22,7 +28,7 @@ type (
 	// ResolveRecorder represents the status of a resolve run.
 	ResolveRecorder struct {
 		status *ResolveStatus
-		// logging.Log is a channel of statuses of individual diff resolutions.
+		// Log is a channel of statuses of individual diff resolutions.
 		Log chan DiffResolution
 		// finished may be closed with no error, or closed after a single
 		// error is emitted to the channel.
@@ -64,6 +70,7 @@ const (
 func NewResolveRecorder(intended Deployments, f func(*ResolveRecorder)) *ResolveRecorder {
 	rr := &ResolveRecorder{
 		status: &ResolveStatus{
+			Started:  time.Now(),
 			Intended: []*Deployment{},
 			Log:      []DiffResolution{},
 			Errs:     ResolveErrors{Causes: []ErrorWrapper{}},
@@ -93,6 +100,7 @@ func NewResolveRecorder(intended Deployments, f func(*ResolveRecorder)) *Resolve
 		f(rr)
 		close(rr.Log)
 		rr.write(func() {
+			rr.status.Finished = time.Now()
 			if rr.err == nil {
 				rr.status.Phase = "finished"
 			}
