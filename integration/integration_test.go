@@ -4,6 +4,7 @@ package integration
 
 import (
 	"fmt"
+	"os"
 	"testing"
 	"time"
 
@@ -100,7 +101,7 @@ func (suite *integrationSuite) newNameCache(name string) *docker.NameCache {
 
 	suite.Require().NoError(err)
 
-	return docker.NewNameCache(registryName, suite.registry, db)
+	return docker.NewNameCache(registryName, suite.registry, logging.NewLogSet("", os.Stdout), db)
 }
 
 func (suite *integrationSuite) waitUntilSettledStatus(clusters []string, sourceRepo string) *sous.DeployState {

@@ -30,6 +30,8 @@ type (
 		Notice *logwrapper
 		Vomit  *logwrapper
 
+		name string
+
 		metrics metrics.Registry
 
 		err   io.Writer
@@ -47,6 +49,10 @@ type (
 var (
 	// Log collects various loggers to use for different levels of logging
 	// XXX A goal should be to remove this global, and instead inject logging where we need it.
+	//
+	// Notice that the global LotSet doesn't have metrics available - when you
+	// want metrics in a component, you need to add an injected LogSet. c.f.
+	// ext/docker/image_mapping.go
 	Log = func() LogSet {
 		return *(NewLogSet("", os.Stderr))
 	}()
@@ -75,22 +81,37 @@ func SilentLogSet() *LogSet {
 // If name is "", no metric collector will be built, and all metrics provided
 // by this logset will be bitbuckets.
 func NewLogSet(name string, err io.Writer) *LogSet {
+	ls := newls(name, err)
+	if name != "" {
+		ls.metrics = metrics.NewPrefixedRegistry(name)
+	}
+	return ls
+}
+
+// Child produces a child logset, namespaced under "name".
+func (ls *LogSet) Child(name string) *LogSet {
+	child := newls(ls.name+"."+name, ls.err)
+	if ls.metrics != nil {
+		child.metrics = metrics.NewPrefixedChildRegistry(ls.metrics, "."+name)
+	}
+	return child
+}
+
+func newls(name string, err io.Writer) *LogSet {
 	ls := &LogSet{
 		err:   err,
-		vomit: log.New(err, "vomit: ", log.Lshortfile|log.Ldate|log.Ltime),
-		debug: log.New(err, "debug: ", log.Lshortfile|log.Ldate|log.Ltime),
-		warn:  log.New(err, "warn: ", 0),
+		name:  name,
+		vomit: log.New(err, name+" vomit:", log.Lshortfile|log.Ldate|log.Ltime),
+		debug: log.New(err, name+" debug: ", log.Lshortfile|log.Ldate|log.Ltime),
+		warn:  log.New(err, name+" warn: ", 0),
 	}
 	ls.Debug = &logwrapper{ffn: ls.debugf}
 	ls.Vomit = &logwrapper{ffn: ls.vomitf}
 	ls.Warn = &logwrapper{ffn: ls.warnf}
 	ls.Info = ls.Warn
 	ls.Notice = ls.Warn
-
-	if name != "" {
-		ls.metrics = metrics.NewPrefixedRegistry(name)
-	}
 	return ls
+
 }
 
 // Vomitf is a simple wrapper on Vomit.Printf

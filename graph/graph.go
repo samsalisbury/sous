@@ -458,11 +458,11 @@ func newRegistrar(db *docker.Builder) sous.Registrar {
 	return db
 }
 
-func newRegistry(dryrun DryrunOption, cfg LocalSousConfig, cl LocalDockerClient) (sous.Registry, error) {
+func newRegistry(dryrun DryrunOption, cfg LocalSousConfig, ls *logging.LogSet, cl LocalDockerClient) (sous.Registry, error) {
 	if dryrun == DryrunBoth || dryrun == DryrunRegistry {
 		return sous.NewDummyRegistry(), nil
 	}
-	return newDockerRegistry(cfg, cl)
+	return newDockerRegistry(cfg, ls, cl)
 }
 
 func newDeployer(dryrun DryrunOption, nc *docker.NameCache) sous.Deployer {
@@ -554,19 +554,19 @@ func NewCurrentGDM(state *sous.State) (CurrentGDM, error) {
 // sous native types.
 
 // newDockerRegistry creates a Docker version of sous.Registry
-func newDockerRegistry(cfg LocalSousConfig, cl LocalDockerClient) (*docker.NameCache, error) {
+func newDockerRegistry(cfg LocalSousConfig, ls *logging.LogSet, cl LocalDockerClient) (*docker.NameCache, error) {
 	dbCfg := cfg.Docker.DBConfig()
 	db, err := docker.GetDatabase(&dbCfg)
 	if err != nil {
 		return nil, errors.Wrap(err, "building name cache DB")
 	}
 	drh := cfg.Docker.RegistryHost
-	return docker.NewNameCache(drh, cl.Client, db), nil
+	return docker.NewNameCache(drh, cl.Client, ls.Child("docker-images"), db), nil
 }
 
-func newInserter(cfg LocalSousConfig, cl LocalDockerClient) (sous.Inserter, error) {
+func newInserter(cfg LocalSousConfig, ls *logging.LogSet, cl LocalDockerClient) (sous.Inserter, error) {
 	if cfg.Server == "" {
-		return newDockerRegistry(cfg, cl)
+		return newDockerRegistry(cfg, ls, cl)
 	}
 	return sous.NewHTTPNameInserter(cfg.Server)
 }

@@ -17,6 +17,7 @@ import (
 	"github.com/opentable/sous/ext/singularity"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/docker_registry"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/whitespace"
 	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
@@ -48,7 +49,7 @@ func TestBuildDeployments(t *testing.T) {
 	clusterNick := "tcluster"
 	reqID := appLocation + clusterNick
 
-	nc := docker.NewNameCache("", drc, db)
+	nc := docker.NewNameCache("", drc, logging.SilentLogSet(), db)
 
 	singCl := sing.NewClient(SingularityURL)
 	//singCl.Debug = true

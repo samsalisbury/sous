@@ -74,7 +74,7 @@ func testBuildInserter(t *testing.T, serverStr string) sous.Inserter {
 			DatabaseDriver:     "sqlite3_sous",
 			DatabaseConnection: docker.InMemory,
 		},
-	}}, LocalDockerClient{})
+	}}, logging.SilentLogSet(), LocalDockerClient{})
 	if err != nil {
 		t.Fatal(err)
 	}
