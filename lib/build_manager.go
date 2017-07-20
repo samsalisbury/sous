@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/opentable/sous/util/firsterr"
+	"github.com/opentable/sous/util/logging"
 	"github.com/pkg/errors"
 )
 
@@ -48,7 +49,7 @@ func (m *BuildManager) Build() (*BuildResult, error) {
 // advisories; warns about the advisories and does not register otherwise.
 func (m *BuildManager) RegisterAndWarnAdvisories(br *BuildResult, bc *BuildContext) error {
 	if err := m.BuildConfig.GuardRegister(bc); err != nil {
-		Log.Warn.Println(err)
+		logging.Log.Warn.Println(err)
 	}
 	return m.Register(br, bc)
 }

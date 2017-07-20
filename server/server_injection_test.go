@@ -7,7 +7,7 @@ import (
 
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
-	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -56,7 +56,7 @@ func TestStatusHandlerInjection(t *testing.T) {
 	statusGet, ok := sh.(*StatusHandler)
 	require.True(ok)
 
-	sous.Log.Debug.Printf("%#v", statusGet)
+	logging.Log.Debug.Printf("%#v", statusGet)
 	assert.NotPanics(func() {
 		_ = statusGet.AutoResolver.String()
 	})
@@ -72,6 +72,6 @@ func TestGDMHandlerInjection(t *testing.T) {
 	gdmPut, ok := sh.(*PUTGDMHandler)
 	require.True(ok)
 
-	sous.Log.Debug.Printf("%#v", gdmPut)
+	logging.Log.Debug.Printf("%#v", gdmPut)
 	assert.NotNil(gdmPut.StateManager)
 }

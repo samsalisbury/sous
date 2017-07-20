@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 	"github.com/pborman/uuid"
 	"github.com/pkg/errors"
 )
@@ -58,11 +59,11 @@ func (gsm *GitStateManager) gitOut(cmd ...string) (string, error) {
 	}
 	out, err := git.CombinedOutput()
 	if err == nil {
-		sous.Log.Debug.Printf("%+v: success", git.Args)
+		logging.Log.Debug.Printf("%+v: success", git.Args)
 	} else {
-		sous.Log.Debug.Printf("%+v: error: %v", git.Args, err)
+		logging.Log.Debug.Printf("%+v: error: %v", git.Args, err)
 	}
-	sous.Log.Vomit.Print("git: " + string(out))
+	logging.Log.Vomit.Print("git: " + string(out))
 	return string(out), errors.Wrapf(err, strings.Join(git.Args, " ")+": "+string(out))
 }
 
@@ -204,19 +205,19 @@ func (gsm *GitStateManager) WriteState(s *sous.State, u sous.User) error {
 			// Success.
 			return nil
 		}
-		sous.Log.Debug.Printf("git push failed; trying again (%d attempts left): %s", remainingAttempts, err)
+		logging.Log.Debug.Printf("git push failed; trying again (%d attempts left): %s", remainingAttempts, err)
 		gsm.reset(tn)
 		if err := gsm.git("pull"); err != nil {
 			return err
 		}
 		if err := gsm.git("cherry-pick", newTag); err != nil {
 			// If cherry-pick fails, then there's a real conflict.
-			sous.Log.Warn.Printf("attempt to rectify conflicts with git cherry-pick failed: %s", err)
+			logging.Log.Warn.Printf("attempt to rectify conflicts with git cherry-pick failed: %s", err)
 			if err := gsm.git("cherry-pick", "--abort"); err != nil {
-				sous.Log.Warn.Printf("cherry-pick --abort failed: %s", err)
+				logging.Log.Warn.Printf("cherry-pick --abort failed: %s", err)
 				return err
 			}
-			sous.Log.Debug.Printf("Successfully cherry-picked new changes, re-attempting push.")
+			logging.Log.Debug.Printf("Successfully cherry-picked new changes, re-attempting push.")
 		}
 	}
 	return fmt.Errorf("unable to merge changes")

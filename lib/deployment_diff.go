@@ -1,6 +1,10 @@
 package sous
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/opentable/sous/util/logging"
+)
 
 type (
 	// DeploymentPair is a pair of deployments that represent a "before and after" style relationship
@@ -67,7 +71,7 @@ func newStateDiffer(intended DeployStates) *stateDiffer {
 	for _, e := range i {
 		ds = append(ds, e.String())
 	}
-	Log.Vomit.Print(strings.Join(ds, "\n    "))
+	logging.Log.Vomit.Print(strings.Join(ds, "\n    "))
 
 	startMap := make(map[DeploymentID]*DeployState)
 	for _, dep := range i {
@@ -85,7 +89,7 @@ func newDiffer(intended Deployments) *differ {
 	for _, e := range i {
 		ds = append(ds, e.String())
 	}
-	Log.Vomit.Print(strings.Join(ds, "\n    "))
+	logging.Log.Vomit.Print(strings.Join(ds, "\n    "))
 
 	startMap := make(map[DeploymentID]*DeployState)
 	for _, dep := range i {
@@ -113,13 +117,13 @@ func (d *stateDiffer) diff(existing DeployStates) {
 	for _, e := range eds {
 		ds = append(ds, e.String())
 	}
-	Log.Vomit.Print(strings.Join(ds, "\n    "))
+	logging.Log.Vomit.Print(strings.Join(ds, "\n    "))
 
 	for id, existingDS := range existing.Snapshot() {
 		intendDS, exists := d.from[id]
 		if !exists {
 
-			Log.Debug.Printf("New deployment: %q", id)
+			logging.Log.Debug.Printf("New deployment: %q", id)
 
 			d.Start <- &DeployablePair{ // XXX s/Created/Create
 				name:  id,
@@ -135,7 +139,7 @@ func (d *stateDiffer) diff(existing DeployStates) {
 		different, differences := existingDS.Diff(intendDS)
 
 		if different {
-			Log.Debug.Printf("Modified deployment: %q (% #v)", id, differences)
+			logging.Log.Debug.Printf("Modified deployment: %q (% #v)", id, differences)
 
 			d.Update <- &DeployablePair{
 				name:         id,
@@ -152,7 +156,7 @@ func (d *stateDiffer) diff(existing DeployStates) {
 			continue
 		}
 
-		Log.Debug.Printf("Retained deployment: %q (% #v)", id, differences)
+		logging.Log.Debug.Printf("Retained deployment: %q (% #v)", id, differences)
 		d.Stable <- &DeployablePair{
 			name:         id,
 			ExecutorData: intendDS.ExecutorData,
@@ -169,7 +173,7 @@ func (d *stateDiffer) diff(existing DeployStates) {
 
 	for _, deletedDS := range d.from {
 
-		Log.Debug.Printf("Deleted deployment: %q", deletedDS.ID())
+		logging.Log.Debug.Printf("Deleted deployment: %q", deletedDS.ID())
 
 		d.Stop <- &DeployablePair{
 			name:         deletedDS.ID(),
@@ -191,13 +195,13 @@ func (d *differ) diff(existing Deployments) {
 	for _, e := range e {
 		ds = append(ds, e.String())
 	}
-	Log.Vomit.Print(strings.Join(ds, "\n    "))
+	logging.Log.Vomit.Print(strings.Join(ds, "\n    "))
 
 	for id, existingDeployment := range e {
 		intendedDeployment, exists := d.from[id]
 		if !exists {
 
-			Log.Debug.Printf("New deployment: %q", id)
+			logging.Log.Debug.Printf("New deployment: %q", id)
 
 			d.Start <- &DeployablePair{
 				name:  id,
@@ -210,7 +214,7 @@ func (d *differ) diff(existing Deployments) {
 		different, differences := existingDeployment.Diff(&intendedDeployment.Deployment)
 		if different {
 
-			Log.Debug.Printf("Modified deployment: %q (% #v)", id, differences)
+			logging.Log.Debug.Printf("Modified deployment: %q (% #v)", id, differences)
 
 			d.Update <- &DeployablePair{
 				name:  id,
@@ -228,7 +232,7 @@ func (d *differ) diff(existing Deployments) {
 
 	for _, deletedDeployment := range d.from {
 
-		Log.Debug.Printf("Deleted deployment: %q", deletedDeployment.ID())
+		logging.Log.Debug.Printf("Deleted deployment: %q", deletedDeployment.ID())
 
 		d.Stop <- &DeployablePair{
 			name:  deletedDeployment.ID(),

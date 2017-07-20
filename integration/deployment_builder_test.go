@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"testing"
 	"time"
 
@@ -25,10 +24,11 @@ import (
 
 func TestBuildDeployments(t *testing.T) {
 
+	// XXX unskip this
 	t.Skipf("Failing test on master preventing progress on other stories.")
 
 	assert := assert.New(t)
-	sous.Log.Debug.SetOutput(os.Stdout)
+	//logging.Log.Debug.SetOutput(os.Stdout)
 
 	ResetSingularity()
 	defer ResetSingularity()

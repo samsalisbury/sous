@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 	"github.com/pkg/errors"
 )
@@ -150,7 +151,7 @@ func NewStatusPoller(cl restful.HTTPClient, rf *ResolveFilter, user User) *Statu
 	}
 }
 
-func newSubPoller(clusterName, serverURL string, baseFilter *ResolveFilter, user User, logs LogSet) (*subPoller, error) {
+func newSubPoller(clusterName, serverURL string, baseFilter *ResolveFilter, user User, logs logging.LogSet) (*subPoller, error) {
 	cl, err := restful.NewClient(serverURL, logs)
 	if err != nil {
 		return nil, err
@@ -229,20 +230,20 @@ func (sp *StatusPoller) subPollers(clusters *serverListData, deps Deployments) (
 	for _, s := range clusters.Servers {
 		// skip clusters the user isn't interested in
 		if !sp.ResolveFilter.FilterClusterName(s.ClusterName) {
-			Log.Vomit.Printf("%s not requested for polling", s.ClusterName)
+			logging.Log.Vomit.Printf("%s not requested for polling", s.ClusterName)
 			continue
 		}
 		// skip clusters that there's no current intention of deploying into
 		if _, intended := deps.Single(func(d *Deployment) bool {
 			return d.ClusterName == s.ClusterName
 		}); !intended {
-			Log.Debug.Printf("No intention in GDM for %s to deploy %s", s.ClusterName, sp.ResolveFilter)
+			logging.Log.Debug.Printf("No intention in GDM for %s to deploy %s", s.ClusterName, sp.ResolveFilter)
 			continue
 		}
-		Log.Debug.Printf("Starting poller against %v", s)
+		logging.Log.Debug.Printf("Starting poller against %v", s)
 
 		// Kick off a separate process to issue HTTP requests against this cluster.
-		sub, err := newSubPoller(s.ClusterName, s.URL, sp.ResolveFilter, sp.User, Log)
+		sub, err := newSubPoller(s.ClusterName, s.URL, sp.ResolveFilter, sp.User, logging.Log)
 		if err != nil {
 			return nil, err
 		}
@@ -281,13 +282,13 @@ func (sp *StatusPoller) poll(subs []*subPoller) ResolveState {
 func (sp *StatusPoller) nextSubStatus(collect chan statPair) {
 	update := <-collect
 	sp.pollChans[update.url] = update.stat
-	Log.Debug.Printf("%s reports state: %s", update.url, update.stat)
+	logging.Log.Debug.Printf("%s reports state: %s", update.url, update.stat)
 }
 
 func (sp *StatusPoller) updateStatus() {
 	max := ResolveMAX
 	for u, s := range sp.pollChans {
-		Log.Vomit.Printf("Current state from %s: %s", u, s)
+		logging.Log.Vomit.Printf("Current state from %s: %s", u, s)
 
 		//if max is already > EJECT, we can quit without waiting for other subs
 		if s <= max {
@@ -327,8 +328,8 @@ func (sub *subPoller) start(rs chan statPair, done chan struct{}) {
 func (sub *subPoller) pollOnce() ResolveState {
 	data := &statusData{}
 	if _, err := sub.Retrieve("./status", nil, data, sub.User.HTTPHeaders()); err != nil {
-		Log.Debug.Printf("%s: error on GET /status: %s", sub.ClusterName, errors.Cause(err))
-		Log.Vomit.Printf("%s: %T %+v", sub.ClusterName, errors.Cause(err), err)
+		logging.Log.Debug.Printf("%s: error on GET /status: %s", sub.ClusterName, errors.Cause(err))
+		logging.Log.Vomit.Printf("%s: %T %+v", sub.ClusterName, errors.Cause(err), err)
 		sub.httpErrorCount++
 		if sub.httpErrorCount > 10 {
 			return ResolveFailed
@@ -360,8 +361,8 @@ func (sub *subPoller) pollOnce() ResolveState {
 func (sub *subPoller) stateFeatures(kind string, rezState *ResolveStatus) (*Deployment, *DiffResolution) {
 	current := diffResolutionFor(rezState, sub.locationFilter)
 	srvIntent := serverIntent(rezState, sub.locationFilter)
-	Log.Debug.Printf("%s reports %s intent to resolve [%v]", sub.URL, kind, srvIntent)
-	Log.Debug.Printf("%s reports %s rez: %v", sub.URL, kind, current)
+	logging.Log.Debug.Printf("%s reports %s intent to resolve [%v]", sub.URL, kind, srvIntent)
+	logging.Log.Debug.Printf("%s reports %s rez: %v", sub.URL, kind, current)
 
 	return srvIntent, current
 }
@@ -402,13 +403,13 @@ func (sub *subPoller) computeState(srvIntent *Deployment, current *DiffResolutio
 		// resolution cycle, Singularity will e.g. have finished a pending->running
 		// transition and be ready to receive a new Deploy)
 		if IsTransientResolveError(current.Error) {
-			Log.Debug.Printf("%s: received resolver error %s, retrying", sub.ClusterName, current.Error)
+			logging.Log.Debug.Printf("%s: received resolver error %s, retrying", sub.ClusterName, current.Error)
 			return ResolveErredRez
 		}
 		// Other errors are unlikely to clear by themselves. In this case, log the
 		// error for operator action, and consider this subpoller done as failed.
-		Log.Vomit.Printf("%#v", current)
-		Log.Vomit.Printf("%#v", current.Error)
+		logging.Log.Vomit.Printf("%#v", current)
+		logging.Log.Vomit.Printf("%#v", current.Error)
 		subject := ""
 		if sub.locationFilter == nil {
 			subject = "<no filter defined>"
@@ -420,7 +421,7 @@ func (sub *subPoller) computeState(srvIntent *Deployment, current *DiffResolutio
 				subject = sub.locationFilter.String()
 			}
 		}
-		Log.Warn.Printf("Deployment of %s to %s failed: %s", subject, sub.ClusterName, current.Error.String)
+		logging.Log.Warn.Printf("Deployment of %s to %s failed: %s", subject, sub.ClusterName, current.Error.String)
 		return ResolveFailed
 	}
 
@@ -440,18 +441,18 @@ func (sub *subPoller) computeState(srvIntent *Deployment, current *DiffResolutio
 }
 
 func serverIntent(rstat *ResolveStatus, rf *ResolveFilter) *Deployment {
-	Log.Debug.Printf("Filtering with %q", rf)
+	logging.Log.Debug.Printf("Filtering with %q", rf)
 	if rstat == nil {
-		Log.Debug.Printf("Nil resolve status!")
+		logging.Log.Debug.Printf("Nil resolve status!")
 		return nil
 	}
-	Log.Vomit.Printf("Filtering %#v", rstat.Intended)
+	logging.Log.Vomit.Printf("Filtering %#v", rstat.Intended)
 	var dep *Deployment
 
 	for _, d := range rstat.Intended {
 		if rf.FilterDeployment(d) {
 			if dep != nil {
-				Log.Debug.Printf("With %s we didn't match exactly one deployment.", rf)
+				logging.Log.Debug.Printf("With %s we didn't match exactly one deployment.", rf)
 				return nil
 			}
 			dep = d
@@ -463,17 +464,17 @@ func serverIntent(rstat *ResolveStatus, rf *ResolveFilter) *Deployment {
 
 func diffResolutionFor(rstat *ResolveStatus, rf *ResolveFilter) *DiffResolution {
 	if rstat == nil {
-		Log.Vomit.Printf("Status was nil - no match for %s", rf)
+		logging.Log.Vomit.Printf("Status was nil - no match for %s", rf)
 		return nil
 	}
 	rezs := rstat.Log
 	for _, rez := range rezs {
 		if rf.FilterManifestID(rez.ManifestID) {
-			Log.Vomit.Printf("Matching intent for %s: %#v", rf, rez)
+			logging.Log.Vomit.Printf("Matching intent for %s: %#v", rf, rez)
 			return &rez
 		}
 	}
-	Log.Vomit.Printf("No match for %s in %d entries", rf, len(rezs))
+	logging.Log.Vomit.Printf("No match for %s in %d entries", rf, len(rezs))
 	return nil
 }
 

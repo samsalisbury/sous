@@ -1,6 +1,10 @@
 package sous
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/opentable/sous/util/logging"
+)
 
 type (
 	// Volume describes a deployment's volume mapping
@@ -26,16 +30,16 @@ const (
 // Equal is used to compare Volumes pairs
 func (vs Volumes) Equal(o Volumes) bool {
 	if len(vs) != len(o) {
-		Log.Vomit.Print("Volume lengths differ")
+		logging.Log.Vomit.Print("Volume lengths differ")
 		return false
 	}
 	c := append(Volumes{}, o...)
 
-	Log.Vomit.Printf("comparing: %v =? %v", vs, c)
+	logging.Log.Vomit.Printf("comparing: %v =? %v", vs, c)
 	for _, v := range vs {
 		m := false
 		for i, ov := range c {
-			Log.Vomit.Printf("comparing: %v =? %v", v, ov)
+			logging.Log.Vomit.Printf("comparing: %v =? %v", v, ov)
 
 			if v.Equal(ov) {
 				m = true
@@ -47,14 +51,14 @@ func (vs Volumes) Equal(o Volumes) bool {
 			}
 		}
 		if !m {
-			Log.Vomit.Printf("missing volume: %v", v)
+			logging.Log.Vomit.Printf("missing volume: %v", v)
 			return false
 		}
 	}
 	if len(c) == 0 {
 		return true
 	}
-	Log.Vomit.Printf("missing volumes: %v", c)
+	logging.Log.Vomit.Printf("missing volumes: %v", c)
 	return false
 }
 

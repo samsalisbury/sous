@@ -3,6 +3,8 @@ package sous
 import (
 	"fmt"
 	"sync"
+
+	"github.com/opentable/sous/util/logging"
 )
 
 type (
@@ -71,7 +73,7 @@ func (d *DeployableChans) collect() diffSet {
 // GuardImage checks that a deployment is valid before deploying it.
 func GuardImage(r Registry, d *Deployment) (*BuildArtifact, error) {
 	if d.NumInstances == 0 {
-		Log.Info.Printf("Deployment %q has 0 instances, skipping artifact check.", d.ID())
+		logging.Log.Info.Printf("Deployment %q has 0 instances, skipping artifact check.", d.ID())
 		return nil, nil
 	}
 	art, err := r.GetArtifact(d.SourceID)
@@ -122,19 +124,19 @@ func (d *DeployableChans) ResolveNames(r Registry, diff *DeployableChans, errs c
 func resolveCreates(r Registry, from chan *DeployablePair, to chan *DeployablePair, errs chan *DiffResolution) {
 	for dp := range from {
 		dep := dp.Post
-		Log.Vomit.Printf("Deployment processed, needs artifact: %#v", dep)
+		logging.Log.Vomit.Printf("Deployment processed, needs artifact: %#v", dep)
 
 		da, err := resolveName(r, dep)
 		if err != nil {
-			Log.Info.Printf("Unable to create new deployment %q: %s", dep.ID(), err)
-			Log.Debug.Printf("Failed create deployment %q: % #v", dep.ID(), dep)
+			logging.Log.Info.Printf("Unable to create new deployment %q: %s", dep.ID(), err)
+			logging.Log.Debug.Printf("Failed create deployment %q: % #v", dep.ID(), dep)
 			errs <- err
 			continue
 		}
 
 		if da.BuildArtifact == nil {
-			Log.Info.Printf("Unable to create new deployment %q: no artifact for SourceID %q", dep.ID(), dep.SourceID)
-			Log.Debug.Printf("Failed create deployment %q: % #v", dep.ID(), dep)
+			logging.Log.Info.Printf("Unable to create new deployment %q: no artifact for SourceID %q", dep.ID(), dep.SourceID)
+			logging.Log.Debug.Printf("Failed create deployment %q: % #v", dep.ID(), dep)
 			continue
 		}
 		to <- &DeployablePair{ExecutorData: dp.ExecutorData, name: dp.name, Prior: nil, Post: da}
@@ -161,27 +163,27 @@ func maybeResolveDeletes(r Registry, from chan *DeployablePair, to chan *Deploya
 }
 
 func maybeResolveSingle(r Registry, dep *Deployable) *Deployable {
-	Log.Vomit.Printf("Attempting to resolve optional artifact: %#v (stable or deletes don't need images)", dep)
+	logging.Log.Vomit.Printf("Attempting to resolve optional artifact: %#v (stable or deletes don't need images)", dep)
 	da, err := resolveName(r, dep)
 	if err != nil {
-		Log.Debug.Printf("Error resolving stopped or stable deployment (proceeding anyway): %#v: %#v", dep, err)
+		logging.Log.Debug.Printf("Error resolving stopped or stable deployment (proceeding anyway): %#v: %#v", dep, err)
 	}
 	return da
 }
 
 func resolvePairs(r Registry, from chan *DeployablePair, to chan *DeployablePair, errs chan *DiffResolution) {
 	for depPair := range from {
-		Log.Vomit.Printf("Pair of deployments processed, needs artifact: %#v", depPair)
+		logging.Log.Vomit.Printf("Pair of deployments processed, needs artifact: %#v", depPair)
 		d, err := resolvePair(r, depPair)
 		if err != nil {
-			Log.Info.Printf("Unable to modify deployment %q: %s", depPair.Post, err)
-			Log.Debug.Printf("Failed modify deployment %q: % #v", depPair.ID(), depPair.Post)
+			logging.Log.Info.Printf("Unable to modify deployment %q: %s", depPair.Post, err)
+			logging.Log.Debug.Printf("Failed modify deployment %q: % #v", depPair.ID(), depPair.Post)
 			errs <- err
 			continue
 		}
 		if d.Post.BuildArtifact == nil {
-			Log.Info.Printf("Unable to modify deployment %q: no artifact for SourceID %q", depPair.ID(), depPair.Post.SourceID)
-			Log.Debug.Printf("Failed modify deployment %q: % #v", depPair.ID(), depPair.Post)
+			logging.Log.Info.Printf("Unable to modify deployment %q: no artifact for SourceID %q", depPair.ID(), depPair.Post.SourceID)
+			logging.Log.Debug.Printf("Failed modify deployment %q: % #v", depPair.ID(), depPair.Post)
 			continue
 		}
 		to <- d

@@ -8,8 +8,8 @@ import (
 	"os"
 
 	"github.com/opentable/sous/graph"
-	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/yaml"
 	"github.com/pkg/errors"
 )
@@ -20,7 +20,7 @@ var (
 		return EnsureErrorResult(fmt.Errorf(format, a...))
 	}
 	EnsureErrorResult = func(err error) cmdr.ErrorResult {
-		sous.Log.Debug.Println(err)
+		logging.Log.Debug.Println(err)
 		return cmdr.EnsureErrorResult(err)
 	}
 )
@@ -161,7 +161,7 @@ func NewSousCLI(s *Sous, in io.Reader, out, errout io.Writer) (*CLI, error) {
 			err = errors.Cause(err)
 			causeStr := err.Error()
 			if originalErr != causeStr {
-				sous.Log.Debug.Println(originalErr)
+				logging.Log.Debug.Println(originalErr)
 			}
 		}
 		return EnsureErrorResult(err)

@@ -3,6 +3,7 @@ package sous
 import (
 	"fmt"
 
+	"github.com/opentable/sous/util/logging"
 	"github.com/pkg/errors"
 	"github.com/samsalisbury/semv"
 )
@@ -93,16 +94,16 @@ func (ds Deployments) PutbackManifests(defs Defs, olds Manifests) (Manifests, er
 				continue
 			}
 			if string(clusterVal) == v {
-				Log.Debug.Printf("Redundant environment definition: %s=%s", k, v)
+				logging.Log.Debug.Printf("Redundant environment definition: %s=%s", k, v)
 				if was && hadSpec {
 					if _, present := oldSpec.Env[k]; present {
-						Log.Debug.Printf("Env pair %s=%s present in existing manifest: retained.", k, v)
+						logging.Log.Debug.Printf("Env pair %s=%s present in existing manifest: retained.", k, v)
 					} else {
-						Log.Debug.Printf("Env pair %s=%s absent in existing manifest: elided.", k, v)
+						logging.Log.Debug.Printf("Env pair %s=%s absent in existing manifest: elided.", k, v)
 						delete(spec.Env, k)
 					}
 				} else {
-					Log.Debug.Printf("Manifest for %v or cluster %q absent in existing manifest list: eliding %s=%s.", mid, d.ClusterName, k, v)
+					logging.Log.Debug.Printf("Manifest for %v or cluster %q absent in existing manifest list: eliding %s=%s.", mid, d.ClusterName, k, v)
 					delete(spec.Env, k)
 				}
 			}
@@ -159,7 +160,7 @@ func (ds Deployments) RawManifests(defs Defs) (Manifests, error) {
 				continue
 			}
 			if string(clusterVal) == v {
-				Log.Debug.Printf("Redundant environment definition: %s=%s", k, v)
+				logging.Log.Debug.Printf("Redundant environment definition: %s=%s", k, v)
 			}
 		}
 		m.Deployments[d.ClusterName] = spec

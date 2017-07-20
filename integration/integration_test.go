@@ -12,6 +12,7 @@ import (
 	"github.com/opentable/sous/ext/singularity"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/docker_registry"
+	"github.com/opentable/sous/util/logging"
 	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/suite"
 )
@@ -372,8 +373,8 @@ func (suite *integrationSuite) TestMissingImage() {
 }
 
 func (suite *integrationSuite) TestResolve() {
-	sous.Log.BeChatty()
-	defer sous.Log.BeQuiet()
+	logging.Log.BeChatty()
+	defer logging.Log.BeQuiet()
 	suite.deployDefaultContainers()
 	clusterDefs := sous.Defs{
 		Clusters: sous.Clusters{
@@ -409,9 +410,9 @@ func (suite *integrationSuite) TestResolve() {
 	// ****
 	r := sous.NewResolver(suite.deployer, suite.nameCache, &sous.ResolveFilter{})
 
-	sous.Log.Warn.Print("Begining OneTwo")
+	logging.Log.Warn.Print("Begining OneTwo")
 	err = r.Begin(deploymentsOneTwo, clusterDefs.Clusters).Wait()
-	sous.Log.Warn.Print("Finished OneTwo")
+	logging.Log.Warn.Print("Finished OneTwo")
 	if err != nil {
 		suite.Fail(err.Error())
 	}

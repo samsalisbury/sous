@@ -8,6 +8,7 @@ import (
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/firsterr"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 	"github.com/pkg/errors"
 )
@@ -25,7 +26,7 @@ type (
 	// PUTManifestHandler handles PUT exchanges for manifests
 	PUTManifestHandler struct {
 		*sous.State
-		*sous.LogSet
+		*logging.LogSet
 		*http.Request
 		*restful.QueryValues
 		User        ClientUser

@@ -17,6 +17,7 @@ import (
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
 	"github.com/opentable/sous/util/docker_registry"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 	"github.com/opentable/sous/util/shell"
 	"github.com/pkg/errors"
@@ -262,7 +263,7 @@ func newResolver(filter *sous.ResolveFilter, d sous.Deployer, r sous.Registry) *
 	return sous.NewResolver(d, r, filter)
 }
 
-func newAutoResolver(rez *sous.Resolver, sr StateReader, ls *sous.LogSet) *sous.AutoResolver {
+func newAutoResolver(rez *sous.Resolver, sr StateReader, ls *logging.LogSet) *sous.AutoResolver {
 	return sous.NewAutoResolver(rez, sr, ls)
 }
 
@@ -278,33 +279,33 @@ func newRegistryDumper(r sous.Registry) *sous.RegistryDumper {
 	return sous.NewRegistryDumper(r)
 }
 
-func newLogSet(v *config.Verbosity, err ErrWriter) *sous.LogSet { // XXX temporary until we settle on logging
-	ls := sous.NewLogSet(err)
+func newLogSet(v *config.Verbosity, err ErrWriter) *logging.LogSet { // XXX temporary until we settle on logging
+	ls := logging.NewLogSet("sous", err)
 
 	ls.BeTerse()
-	sous.Log.BeTerse()
+	logging.Log.BeTerse()
 
 	if v.Debug {
 		if v.Loud {
 			ls.BeChatty()
-			sous.Log.BeChatty()
+			logging.Log.BeChatty()
 		} else {
 			ls.BeHelpful()
-			sous.Log.BeHelpful()
+			logging.Log.BeHelpful()
 		}
 	}
 	//if v.Loud {
 	//}
 	if v.Quiet {
 		ls.BeHelpful()
-		sous.Log.BeQuiet()
+		logging.Log.BeQuiet()
 	}
 	if v.Silent {
 		ls.BeQuiet()
-		sous.Log.BeQuiet()
+		logging.Log.BeQuiet()
 	}
 
-	//sous.Log.Warn.Println("Normal output enabled")
+	//logging.Log.Warn.Println("Normal output enabled")
 	ls.Vomitf("Verbose debugging enabled")
 	ls.Debugf("Regular debugging enabled")
 
@@ -421,7 +422,7 @@ func newLocalGitRepo(c LocalGitClient) (v LocalGitRepo, err error) {
 	return v, initErr(err, "opening local git repository")
 }
 
-func newSelector(regClient LocalDockerClient, log *sous.LogSet) sous.Selector {
+func newSelector(regClient LocalDockerClient, log *logging.LogSet) sous.Selector {
 	return &sous.EchoSelector{
 		Factory: func(ctx *sous.BuildContext) (sous.Buildpack, error) {
 			sbp := docker.NewSplitBuildpack(regClient.Client)
@@ -480,13 +481,13 @@ func newDockerClient() LocalDockerClient {
 
 // newHTTPClient returns an HTTP client if c.Server is not empty.
 // Otherwise it returns nil, and emits some warnings.
-func newHTTPClient(c LocalSousConfig, user sous.User, log *sous.LogSet) (HTTPClient, error) {
+func newHTTPClient(c LocalSousConfig, user sous.User, log *logging.LogSet) (HTTPClient, error) {
 	if c.Server == "" {
-		sous.Log.Warn.Println("No server set, Sous is running in server or workstation mode.")
-		sous.Log.Warn.Println("Configure a server like this: sous config server http://some.sous.server")
+		logging.Log.Warn.Println("No server set, Sous is running in server or workstation mode.")
+		logging.Log.Warn.Println("Configure a server like this: sous config server http://some.sous.server")
 		return HTTPClient{}, nil
 	}
-	sous.Log.Debug.Printf("Using server at %s", c.Server)
+	logging.Log.Debug.Printf("Using server at %s", c.Server)
 	cl, err := restful.NewClient(c.Server, log)
 	return HTTPClient{HTTPClient: cl}, err
 }
@@ -496,7 +497,7 @@ func newHTTPClient(c LocalSousConfig, user sous.User, log *sous.LogSet) (HTTPCli
 // If it returns a sous.GitStateManager, it emits a warning log.
 func newStateManager(cl HTTPClient, c LocalSousConfig) *StateManager {
 	if c.Server == "" {
-		sous.Log.Warn.Printf("Using local state stored at %s", c.StateLocation)
+		logging.Log.Warn.Printf("Using local state stored at %s", c.StateLocation)
 		dm := storage.NewDiskStateManager(c.StateLocation)
 		return &StateManager{StateManager: storage.NewGitStateManager(dm)}
 	}
@@ -505,13 +506,13 @@ func newStateManager(cl HTTPClient, c LocalSousConfig) *StateManager {
 }
 
 func newStatusPoller(cl HTTPClient, rf *RefinedResolveFilter, user sous.User) *sous.StatusPoller {
-	sous.Log.Debug.Printf("Building StatusPoller...")
+	logging.Log.Debug.Printf("Building StatusPoller...")
 	if cl.HTTPClient == nil {
-		sous.Log.Debug.Print(sous.Log.Warn)
-		sous.Log.Warn.Printf("Unable to poll for status.")
+		logging.Log.Debug.Print(logging.Log.Warn)
+		logging.Log.Warn.Printf("Unable to poll for status.")
 		return nil
 	}
-	sous.Log.Debug.Printf("...looks good...")
+	logging.Log.Debug.Printf("...looks good...")
 	return sous.NewStatusPoller(cl, (*sous.ResolveFilter)(rf), user)
 }
 

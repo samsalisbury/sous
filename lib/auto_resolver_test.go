@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/opentable/sous/util/logging"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -12,7 +13,7 @@ func dummyResolver() *Resolver {
 }
 
 func setupAR() *AutoResolver {
-	ls := SilentLogSet()
+	ls := logging.SilentLogSet()
 	return NewAutoResolver(dummyResolver(), &DummyStateManager{State: NewState()}, ls)
 }
 

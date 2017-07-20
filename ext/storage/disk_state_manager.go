@@ -17,6 +17,7 @@ import (
 
 	"github.com/opentable/hy"
 	"github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/yaml"
 	"github.com/pkg/errors"
 )
@@ -42,10 +43,10 @@ func NewDiskStateManager(baseDir string) *DiskStateManager {
 }
 
 func repairState(s *sous.State) error {
-	sous.Log.Vomit.Printf("Validating State")
+	logging.Log.Vomit.Printf("Validating State")
 	flaws := s.Validate()
 
-	sous.Log.Vomit.Printf("Repairing State")
+	logging.Log.Vomit.Printf("Repairing State")
 	_, es := sous.RepairAll(flaws)
 
 	if len(es) > 0 {
@@ -62,7 +63,7 @@ func repairState(s *sous.State) error {
 func (dsm *DiskStateManager) ReadState() (*sous.State, error) {
 	// TODO: Allow state dir to be passed as flag in sous/cli.
 	// TODO: Consider returning a error to indicate if the state dir exists at all.
-	sous.Log.Vomit.Printf("Reading state from disk")
+	logging.Log.Vomit.Printf("Reading state from disk")
 	s := sous.NewState()
 	err := dsm.Codec.Read(dsm.BaseDir, s)
 	if err != nil {
@@ -97,6 +98,6 @@ func (dsm *DiskStateManager) WriteState(s *sous.State, u sous.User) error {
 	if e := repairState(s); e != nil {
 		return e
 	}
-	sous.Log.Vomit.Printf("Writing state to disk")
+	logging.Log.Vomit.Printf("Writing state to disk")
 	return dsm.Codec.Write(dsm.BaseDir, s)
 }

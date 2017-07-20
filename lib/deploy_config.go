@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/opentable/sous/util/logging"
 	"github.com/pkg/errors"
 )
 
@@ -107,7 +108,7 @@ func (dc *DeployConfig) String() string {
 
 // Equal is used to compare DeployConfigs
 func (dc *DeployConfig) Equal(o DeployConfig) bool {
-	Log.Vomit.Printf("%+ v ?= %+ v", dc, o)
+	logging.Log.Vomit.Printf("%+ v ?= %+ v", dc, o)
 	diff, _ := dc.Diff(o)
 	return !diff
 }
@@ -174,37 +175,37 @@ func (dc DeployConfig) Clone() (c DeployConfig) {
 
 // Equal compares Envs
 func (e Env) Equal(o Env) bool {
-	Log.Vomit.Printf("Envs: %+ v ?= %+ v", e, o)
+	logging.Log.Vomit.Printf("Envs: %+ v ?= %+ v", e, o)
 	if len(e) != len(o) {
-		Log.Vomit.Printf("Envs: %+ v != %+ v (%d != %d)", e, o, len(e), len(o))
+		logging.Log.Vomit.Printf("Envs: %+ v != %+ v (%d != %d)", e, o, len(e), len(o))
 		return false
 	}
 
 	for name, value := range e {
 		if ov, ok := o[name]; !ok || ov != value {
-			Log.Vomit.Printf("Envs: %+ v != %+ v [%q] %q != %q", e, o, name, value, ov)
+			logging.Log.Vomit.Printf("Envs: %+ v != %+ v [%q] %q != %q", e, o, name, value, ov)
 			return false
 		}
 	}
-	Log.Vomit.Printf("Envs: %+ v == %+ v !", e, o)
+	logging.Log.Vomit.Printf("Envs: %+ v == %+ v !", e, o)
 	return true
 }
 
 // Equal compares Metadatas
 func (e Metadata) Equal(o Metadata) bool {
-	Log.Vomit.Printf("Metadatas: %+ v ?= %+ v", e, o)
+	logging.Log.Vomit.Printf("Metadatas: %+ v ?= %+ v", e, o)
 	if len(e) != len(o) {
-		Log.Vomit.Printf("Metadatas: %+ v != %+ v (%d != %d)", e, o, len(e), len(o))
+		logging.Log.Vomit.Printf("Metadatas: %+ v != %+ v (%d != %d)", e, o, len(e), len(o))
 		return false
 	}
 
 	for name, value := range e {
 		if ov, ok := o[name]; !ok || ov != value {
-			Log.Vomit.Printf("Metadatas: %+ v != %+ v [%q] %q != %q", e, o, name, value, ov)
+			logging.Log.Vomit.Printf("Metadatas: %+ v != %+ v [%q] %q != %q", e, o, name, value, ov)
 			return false
 		}
 	}
-	Log.Vomit.Printf("Metadatas: %+ v == %+ v !", e, o)
+	logging.Log.Vomit.Printf("Metadatas: %+ v == %+ v !", e, o)
 	return true
 }
 

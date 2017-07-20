@@ -9,6 +9,7 @@ import (
 
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -157,7 +158,7 @@ func TestHandlesManifestPut(t *testing.T) {
 		StateWriter: writer,
 		State:       state,
 		QueryValues: &restful.QueryValues{q},
-		LogSet:      &sous.Log,
+		LogSet:      &logging.Log,
 	}
 
 	data, status := th.Exchange()

@@ -7,6 +7,7 @@ import (
 
 	"github.com/opentable/go-singularity"
 	"github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/swaggering"
 	"github.com/pkg/errors"
 	"github.com/satori/go.uuid"
@@ -111,9 +112,9 @@ func (r *deployer) buildSingClient(url string) *singularity.Client {
 func rectifyRecover(d interface{}, f string, err *error) {
 	if r := recover(); r != nil {
 		stack := string(debug.Stack())
-		sous.Log.Warn.Printf("Panic in %s with %# v", f, d)
-		sous.Log.Warn.Printf("  %v", r)
-		sous.Log.Warn.Print(stack)
+		logging.Log.Warn.Printf("Panic in %s with %# v", f, d)
+		logging.Log.Warn.Printf("  %v", r)
+		logging.Log.Warn.Print(stack)
 		*err = errors.Errorf("Panicked: %s; stack trace:\n%s", r, stack)
 	}
 }
@@ -158,7 +159,7 @@ func (r *deployer) RectifySingleDelete(d *sous.DeployablePair) (err error) {
 
 	// TODO: Alert the owner of this request that there is no manifest for it;
 	// they should either delete the request manually, or else add the manifest back.
-	sous.Log.Warn.Printf("NOT DELETING REQUEST %q (FOR: %q)", requestID, d.ID())
+	logging.Log.Warn.Printf("NOT DELETING REQUEST %q (FOR: %q)", requestID, d.ID())
 	return nil
 	// The following line deletes requests when it is not commented out.
 	//return r.Client.DeleteRequest(d.Cluster.BaseURL, requestID, "deleting request for removed manifest")

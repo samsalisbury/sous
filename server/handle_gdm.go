@@ -7,6 +7,7 @@ import (
 
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 )
 
@@ -16,7 +17,7 @@ type (
 
 	// GETGDMHandler is an injectable request handler
 	GETGDMHandler struct {
-		*sous.LogSet
+		*logging.LogSet
 		GDM      *LiveGDM
 		RzWriter *restful.ResponseWriter
 	}
@@ -24,7 +25,7 @@ type (
 	// PUTGDMHandler is an injectable request handler
 	PUTGDMHandler struct {
 		*http.Request
-		*sous.LogSet
+		*logging.LogSet
 		GDM          *LiveGDM
 		StateManager *graph.StateManager
 		User         ClientUser
@@ -40,7 +41,7 @@ func (gr *GDMResource) Get() restful.Exchanger { return &GETGDMHandler{} }
 
 // Exchange implements the Handler interface
 func (h *GETGDMHandler) Exchange() (interface{}, int) {
-	sous.Log.Debug.Print(h.GDM)
+	logging.Log.Debug.Print(h.GDM)
 	data := gdmWrapper{Deployments: make([]*sous.Deployment, 0)}
 	keys := sous.DeploymentIDSlice(h.GDM.Keys())
 	sort.Sort(keys)
@@ -62,7 +63,7 @@ func (gr *GDMResource) Put() restful.Exchanger { return &PUTGDMHandler{} }
 
 // Exchange implements the Handler interface
 func (h *PUTGDMHandler) Exchange() (interface{}, int) {
-	sous.Log.Debug.Print(h.GDM)
+	logging.Log.Debug.Print(h.GDM)
 
 	data := gdmWrapper{}
 	dec := json.NewDecoder(h.Request.Body)

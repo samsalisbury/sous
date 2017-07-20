@@ -11,6 +11,7 @@ import (
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/server"
 	"github.com/opentable/sous/util/cmdr"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/shell"
 )
 
@@ -18,7 +19,7 @@ import (
 type SousServer struct {
 	Sous              *Sous
 	DeployFilterFlags config.DeployFilterFlags
-	Log               *sous.LogSet
+	Log               *logging.LogSet
 
 	*config.Config
 	*graph.SousGraph

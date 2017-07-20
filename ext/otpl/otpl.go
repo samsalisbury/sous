@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/shell"
 )
 
@@ -57,7 +58,7 @@ func (sr SingularityResources) SousResources() sous.Resources {
 
 // NewManifestParser generates a new ManifestParser with default logging.
 func NewManifestParser() *ManifestParser {
-	return &ManifestParser{debugf: sous.Log.Debug.Printf, debug: sous.Log.Debug.Println}
+	return &ManifestParser{debugf: logging.Log.Debug.Printf, debug: logging.Log.Debug.Println}
 }
 
 type otplDeployConfig struct {

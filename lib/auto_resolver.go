@@ -3,6 +3,8 @@ package sous
 import (
 	"sync"
 	"time"
+
+	"github.com/opentable/sous/util/logging"
 )
 
 type (
@@ -22,7 +24,7 @@ type (
 		StateReader
 		GDM Deployments
 		*Resolver
-		*LogSet
+		*logging.LogSet
 		listeners []autoResolveListener
 		sync.RWMutex
 		stableStatus, liveStatus *ResolveStatus
@@ -35,7 +37,7 @@ func (tc TriggerChannel) trigger() {
 }
 
 // NewAutoResolver creates a new AutoResolver.
-func NewAutoResolver(rez *Resolver, sr StateReader, ls *LogSet) *AutoResolver {
+func NewAutoResolver(rez *Resolver, sr StateReader, ls *logging.LogSet) *AutoResolver {
 	ar := &AutoResolver{
 		UpdateTime:  60 * time.Second,
 		Resolver:    rez,
@@ -97,7 +99,7 @@ func (ar *AutoResolver) updateStatus() {
 	}
 	ar.write(func() {
 		ls := ar.currentRecorder.CurrentStatus()
-		Log.Debug.Printf("Recording live status from %p: %v", ar, ls)
+		logging.Log.Debug.Printf("Recording live status from %p: %v", ar, ls)
 		ar.liveStatus = &ls
 	})
 }
@@ -109,7 +111,7 @@ func (ar *AutoResolver) Statuses() (stable, live *ResolveStatus) {
 	ar.updateStatus()
 	ar.RLock()
 	defer ar.RUnlock()
-	Log.Debug.Printf("Reporting statuses from %p: %v %v", ar, ar.stableStatus, ar.liveStatus)
+	logging.Log.Debug.Printf("Reporting statuses from %p: %v %v", ar, ar.stableStatus, ar.liveStatus)
 	return ar.stableStatus, ar.liveStatus
 }
 
@@ -125,11 +127,11 @@ func loopTilDone(f func(), done TriggerChannel) {
 }
 
 func (ar *AutoResolver) write(f func()) {
-	Log.Vomit.Printf("Locking autoresolver for write...")
+	logging.Log.Vomit.Printf("Locking autoresolver for write...")
 	ar.Lock()
 	defer func() {
 		ar.Unlock()
-		Log.Vomit.Printf("Unlocked autoresolver")
+		logging.Log.Vomit.Printf("Unlocked autoresolver")
 	}()
 	f()
 }
@@ -180,7 +182,7 @@ func (ar *AutoResolver) resolveOnce(ac announceChannel) {
 	ac <- ar.currentRecorder.Wait()
 	ar.write(func() {
 		ss := ar.currentRecorder.CurrentStatus()
-		Log.Debug.Printf("Recording stable status from %p: %v", ar, ss)
+		logging.Log.Debug.Printf("Recording stable status from %p: %v", ar, ss)
 		ar.stableStatus = &ss
 	})
 	ar.Statuses() // XXX this is debugging

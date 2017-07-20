@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/opentable/sous/util/logging"
 	"github.com/pkg/errors"
 )
 
@@ -110,7 +111,7 @@ func IsTransientResolveError(err error) bool {
 	case *ErrorWrapper:
 		// ErrorWrappers carry string data about an error across an HTTP
 		// transaction.  We basically need to check it's Type field.
-		Log.Vomit.Printf("Checking err string type: %s", terr.Type)
+		logging.Log.Vomit.Printf("Checking err string type: %s", terr.Type)
 		switch terr.Type {
 		default:
 			return false

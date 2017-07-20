@@ -5,8 +5,8 @@ import (
 
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
-	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/whitespace"
 	"github.com/samsalisbury/semv"
 )
@@ -16,7 +16,7 @@ type Sous struct {
 	// CLI is a reference to the CLI singleton. We use it here to set global
 	// verbosity.
 	CLI *CLI
-	*sous.LogSet
+	*logging.LogSet
 	// Err is the error message stream.
 	Err *graph.ErrOut
 	// Version is the version of Sous itself.

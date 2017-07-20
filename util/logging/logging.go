@@ -1,4 +1,4 @@
-package sous
+package logging
 
 import (
 	"fmt"
@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+
+	metrics "github.com/rcrowley/go-metrics"
 )
 
 type (
@@ -28,6 +30,8 @@ type (
 		Notice *logwrapper
 		Vomit  *logwrapper
 
+		metrics metrics.Registry
+
 		err   io.Writer
 		vomit *log.Logger
 		debug *log.Logger
@@ -44,7 +48,7 @@ var (
 	// Log collects various loggers to use for different levels of logging
 	// XXX A goal should be to remove this global, and instead inject logging where we need it.
 	Log = func() LogSet {
-		return *(NewLogSet(os.Stderr))
+		return *(NewLogSet("", os.Stderr))
 	}()
 )
 
@@ -62,13 +66,15 @@ func (w *logwrapper) Println(vs ...interface{}) {
 
 // SilentLogSet returns a logset that discards everything by default
 func SilentLogSet() *LogSet {
-	ls := NewLogSet(os.Stderr)
+	ls := NewLogSet("", os.Stderr)
 	ls.BeQuiet()
 	return ls
 }
 
 // NewLogSet builds a new Logset that feeds to the listed writers
-func NewLogSet(err io.Writer) *LogSet {
+// If name is "", no metric collector will be built, and all metrics provided
+// by this logset will be bitbuckets.
+func NewLogSet(name string, err io.Writer) *LogSet {
 	ls := &LogSet{
 		err:   err,
 		vomit: log.New(err, "vomit: ", log.Lshortfile|log.Ldate|log.Ltime),
@@ -80,6 +86,10 @@ func NewLogSet(err io.Writer) *LogSet {
 	ls.Warn = &logwrapper{ffn: ls.warnf}
 	ls.Info = ls.Warn
 	ls.Notice = ls.Warn
+
+	if name != "" {
+		ls.metrics = metrics.NewPrefixedRegistry(name)
+	}
 	return ls
 }
 

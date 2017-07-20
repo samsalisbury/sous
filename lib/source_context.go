@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/opentable/sous/util/logging"
 	"github.com/samsalisbury/semv"
 )
 
@@ -81,7 +82,7 @@ func (sc *SourceContext) Version() SourceID {
 		},
 		Version: v,
 	}
-	Log.Debug.Printf("Version: % #v", sv)
+	logging.Log.Debug.Printf("Version: % #v", sv)
 	return sv
 }
 

@@ -2,6 +2,8 @@ package sous
 
 import (
 	"sync"
+
+	"github.com/opentable/sous/util/logging"
 )
 
 type (
@@ -11,7 +13,7 @@ type (
 		Phase string
 		// Intended are the deployments that are the target of this resolution
 		Intended []*Deployment
-		// Log collects the resolution steps that have been performed
+		// logging.Log collects the resolution steps that have been performed
 		Log []DiffResolution
 		// Errs collects errors during resolution
 		Errs ResolveErrors
@@ -20,7 +22,7 @@ type (
 	// ResolveRecorder represents the status of a resolve run.
 	ResolveRecorder struct {
 		status *ResolveStatus
-		// Log is a channel of statuses of individual diff resolutions.
+		// logging.Log is a channel of statuses of individual diff resolutions.
 		Log chan DiffResolution
 		// finished may be closed with no error, or closed after a single
 		// error is emitted to the channel.
@@ -80,7 +82,7 @@ func NewResolveRecorder(intended Deployments, f func(*ResolveRecorder)) *Resolve
 				rr.status.Log = append(rr.status.Log, rez)
 				if rez.Error != nil {
 					rr.status.Errs.Causes = append(rr.status.Errs.Causes, ErrorWrapper{error: rez.Error})
-					Log.Debug.Printf("resolve error = %+v\n", rez.Error)
+					logging.Log.Debug.Printf("resolve error = %+v\n", rez.Error)
 				}
 			})
 		}

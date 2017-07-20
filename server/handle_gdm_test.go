@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 	"github.com/stretchr/testify/assert"
 )
@@ -17,7 +18,7 @@ func TestHandlesGDMGet(t *testing.T) {
 
 	th := &GETGDMHandler{
 		RzWriter: &restful.ResponseWriter{w},
-		LogSet:   &sous.Log,
+		LogSet:   &logging.Log,
 		GDM: &LiveGDM{
 			Etag:        etag,
 			Deployments: sous.NewDeployments(),
