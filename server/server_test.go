@@ -17,18 +17,31 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type serverTests struct {
-	suite.Suite
-	server *httptest.Server
-	url    string
-}
+type (
+	serverTests struct {
+		suite.Suite
+		server *httptest.Server
+		url    string
+	}
 
-type serverSuite struct {
-	serverTests
-}
+	serverSuite struct {
+		serverTests
+	}
 
-type profServerSuite struct {
-	serverTests
+	profServerSuite struct {
+		serverTests
+	}
+
+	dummyLogger struct{}
+)
+
+func (dummyLogger) Warnf(string, ...interface{})  {}
+func (dummyLogger) Debugf(string, ...interface{}) {}
+func (dummyLogger) Vomitf(string, ...interface{}) {}
+func (dummyLogger) ExpHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("This should be some metrics here."))
+	})
 }
 
 func (suite serverTests) prepare() *graph.SousGraph {
@@ -52,14 +65,13 @@ func (suite serverTests) prepare() *graph.SousGraph {
 func (suite *serverSuite) SetupTest() {
 	g := suite.prepare()
 
-	logger := restful.PlaceholderLogger()
-	suite.serverTests.server = httptest.NewServer(Handler(g, logger))
+	suite.serverTests.server = httptest.NewServer(Handler(g, dummyLogger{}))
 	suite.serverTests.url = suite.server.URL
 }
 
 func (suite *profServerSuite) SetupTest() {
 	g := suite.prepare()
-	suite.serverTests.server = httptest.NewServer(profilingHandler(g, restful.PlaceholderLogger())) // <--- profiling
+	suite.serverTests.server = httptest.NewServer(ProfilingHandler(g, dummyLogger{})) // <--- profiling
 	suite.serverTests.url = suite.server.URL
 }
 
