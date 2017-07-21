@@ -30,6 +30,8 @@ type (
 		Notice *logwrapper
 		Vomit  *logwrapper
 
+		level uint
+
 		name string
 
 		metrics metrics.Registry
@@ -82,6 +84,7 @@ func SilentLogSet() *LogSet {
 // by this logset will be bitbuckets.
 func NewLogSet(name string, err io.Writer) *LogSet {
 	ls := newls(name, err)
+	ls.imposeLevel()
 	if name != "" {
 		ls.metrics = metrics.NewPrefixedRegistry(name + ".")
 	}
@@ -91,6 +94,8 @@ func NewLogSet(name string, err io.Writer) *LogSet {
 // Child produces a child logset, namespaced under "name".
 func (ls *LogSet) Child(name string) *LogSet {
 	child := newls(ls.name+"."+name, ls.err)
+	child.level = ls.level
+	child.imposeLevel()
 	if ls.metrics != nil {
 		child.metrics = metrics.NewPrefixedChildRegistry(ls.metrics, name+".")
 	}
@@ -101,6 +106,7 @@ func newls(name string, err io.Writer) *LogSet {
 	ls := &LogSet{
 		err:   err,
 		name:  name,
+		level: 1,
 		vomit: log.New(err, name+" vomit:", log.Lshortfile|log.Ldate|log.Ltime),
 		debug: log.New(err, name+" debug: ", log.Lshortfile|log.Ldate|log.Ltime),
 		warn:  log.New(err, name+" warn: ", 0),
@@ -126,36 +132,50 @@ func (ls LogSet) debugf(f string, as ...interface{}) { ls.debug.Output(4, fmt.Sp
 func (ls LogSet) Warnf(f string, as ...interface{}) { ls.warn.Output(2, fmt.Sprintf(f, as...)) }
 func (ls LogSet) warnf(f string, as ...interface{}) { ls.warn.Output(4, fmt.Sprintf(f, as...)) }
 
-// BeChatty gets the LogSet to print all its output - useful for temporary debugging
-func (ls LogSet) BeChatty() {
-	ls.warn.SetOutput(ls.err)
-	ls.warn.SetFlags(log.Llongfile | log.Ltime)
-	ls.vomit.SetOutput(ls.err)
-	ls.vomit.SetFlags(log.Llongfile | log.Ltime)
-	ls.debug.SetOutput(ls.err)
-	ls.debug.SetFlags(log.Llongfile | log.Ltime)
-}
+func (ls LogSet) imposeLevel() {
+	ls.vomit.SetOutput(ioutil.Discard)
+	ls.debug.SetOutput(ioutil.Discard)
+	ls.warn.SetOutput(ioutil.Discard)
+	ls.warn.SetFlags(log.LstdFlags)
 
-// BeHelpful gets the LogSet to print debugging output
-func (ls LogSet) BeHelpful() {
-	ls.BeQuiet()
-	ls.warn.SetOutput(ls.err)
-	ls.warn.SetFlags(log.Llongfile | log.Ltime)
-	ls.debug.SetOutput(ls.err)
-	ls.debug.SetFlags(log.Llongfile | log.Ltime)
-}
+	if ls.level >= 1 {
+		ls.warn.SetOutput(ls.err)
+		ls.warn.SetFlags(log.Llongfile | log.Ltime)
+	}
 
-// BeTerse gets the LogSet to print debugging output
-func (ls LogSet) BeTerse() {
-	ls.BeQuiet()
-	ls.warn.SetOutput(ls.err)
+	if ls.level >= 2 {
+		ls.vomit.SetOutput(ls.err)
+		ls.vomit.SetFlags(log.Llongfile | log.Ltime)
+	}
+
+	if ls.level >= 3 {
+		ls.debug.SetOutput(ls.err)
+		ls.debug.SetFlags(log.Llongfile | log.Ltime)
+	}
 }
 
 // BeQuiet gets the LogSet to discard all its output
 func (ls LogSet) BeQuiet() {
-	ls.vomit.SetOutput(ioutil.Discard)
-	ls.debug.SetOutput(ioutil.Discard)
-	ls.warn.SetOutput(ioutil.Discard)
+	ls.level = 0
+	ls.imposeLevel()
+}
+
+// BeTerse gets the LogSet to print debugging output
+func (ls LogSet) BeTerse() {
+	ls.level = 1
+	ls.imposeLevel()
+}
+
+// BeHelpful gets the LogSet to print debugging output
+func (ls LogSet) BeHelpful() {
+	ls.level = 2
+	ls.imposeLevel()
+}
+
+// BeChatty gets the LogSet to print all its output - useful for temporary debugging
+func (ls LogSet) BeChatty() {
+	ls.level = 3
+	ls.imposeLevel()
 }
 
 // SetupLogging sets up an ILogger to log into the Sous logging regime

@@ -282,9 +282,6 @@ func newRegistryDumper(r sous.Registry) *sous.RegistryDumper {
 func newLogSet(v *config.Verbosity, err ErrWriter) *logging.LogSet { // XXX temporary until we settle on logging
 	ls := logging.NewLogSet("sous", err)
 
-	ls.BeTerse()
-	logging.Log.BeTerse()
-
 	if v.Debug {
 		if v.Loud {
 			ls.BeChatty()
