@@ -110,6 +110,16 @@ func (suite serverTests) encodeJSON(data interface{}) io.Reader {
 	return buf
 }
 
+func (suite serverTests) TestMetricsPresent() {
+	res, err := http.Get(suite.url + "/debug/metrics")
+	suite.NoError(err)
+
+	bs, err := ioutil.ReadAll(res.Body)
+	suite.NoError(err)
+
+	suite.Equal(string(bs), "This should be some metrics here.")
+}
+
 func (suite serverTests) TestUpdateServers() {
 	res, err := http.Get(suite.url + "/servers")
 	suite.NoError(err)
