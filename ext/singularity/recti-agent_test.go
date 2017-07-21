@@ -118,7 +118,7 @@ func TestMapStartup(t *testing.T) {
 			CheckReadyInterval:        117,
 			CheckReadyRetries:         118,
 		}
-		err := MapStartupIntoHealthcheckOptions(&depMap, startup)
+		err := MapStartupIntoHealthcheckOptions((*map[string]interface{})(&depMap), startup)
 		if err != nil {
 			t.Fatalf("Received and error loading a map!")
 		}

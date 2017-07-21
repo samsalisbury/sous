@@ -144,7 +144,7 @@ func buildDeployRequest(d sous.Deployable, reqID string, metadata map[string]str
 		"Metadata":      metadata,
 	}
 
-	if err := MapStartupIntoHealthcheckOptions(&depMap, d.Deployment.DeployConfig.Startup); err != nil {
+	if err := MapStartupIntoHealthcheckOptions((*map[string]interface{})(&depMap), d.Deployment.DeployConfig.Startup); err != nil {
 		return nil, err
 	}
 
@@ -166,7 +166,9 @@ func buildDeployRequest(d sous.Deployable, reqID string, metadata map[string]str
 
 // MapStartupIntoHealthcheckOptions updates the given dtoMap with fields for a
 // HealthcheckOptions struct if appropriate.
-func MapStartupIntoHealthcheckOptions(depMap *dtoMap, startup sous.Startup) error {
+// map[string]interface{} is used so that the function can be exported
+// and used in integration tests. Once type aliases land, these backflips can go away.
+func MapStartupIntoHealthcheckOptions(depMap *map[string]interface{}, startup sous.Startup) error {
 	if startup.SkipTest {
 		return nil
 	}

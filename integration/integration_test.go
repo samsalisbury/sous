@@ -143,7 +143,9 @@ func (suite *integrationSuite) deployDefaultContainers() {
 	nilStartup := sous.Startup{SkipTest: true}
 	timeout := 500
 	startup := sous.Startup{
-		Timeout: timeout,
+		Timeout:            timeout,
+		CheckReadyURIPath:  "/healthy",
+		CheckReadyProtocol: "HTTP",
 	}
 
 	registerAndDeploy(ip, "test-cluster", "hello-labels", "github.com/docker-library/hello-world", "hello-labels", "latest", []int32{}, nilStartup)
@@ -262,6 +264,7 @@ func (suite *integrationSuite) TestFailedTimedOutService() {
 	uriPath := "slow-healthy"
 	startup := sous.Startup{
 		Timeout:              timeout,
+		CheckReadyProtocol:   "HTTP",
 		CheckReadyURIPath:    uriPath,
 		CheckReadyURITimeout: timeout,
 	}
@@ -276,6 +279,7 @@ func (suite *integrationSuite) TestFailedNotHealthyService() {
 	timeout := 60
 	uriPath := "sick"
 	startup := sous.Startup{
+		CheckReadyProtocol:   "HTTP",
 		Timeout:              timeout,
 		CheckReadyURIPath:    uriPath,
 		CheckReadyURITimeout: timeout,
@@ -291,6 +295,7 @@ func (suite *integrationSuite) TestSuccessfulService() {
 	timeout := 300
 	uriPath := "healthy"
 	startup := sous.Startup{
+		CheckReadyProtocol:   "HTTP",
 		Timeout:              timeout,
 		CheckReadyURIPath:    uriPath,
 		CheckReadyURITimeout: timeout,
@@ -304,10 +309,13 @@ func (suite *integrationSuite) TestSuccessfulService() {
 }
 
 func (suite *integrationSuite) TestFailedDeployFollowingSuccessfulDeploy() {
-	if os.Getenv("CI") == "true" {
-		// XXX means we need to do a desktop check before deploys
-		suite.T().Skipf("On travis, we get 'Only 0 of 1 tasks could be launched for deploy, there may not be enough resources to launch the remaining tasks'")
-	}
+	/*
+		If Travis passes after Fri Jul 21 10:52:27 PDT 2017 , remove this.
+			if os.Getenv("CI") == "true" {
+				// XXX means we need to do a desktop check before deploys
+				suite.T().Skipf("On travis, we get 'Only 0 of 1 tasks could be launched for deploy, there may not be enough resources to launch the remaining tasks'")
+			}
+	*/
 	clusters := []string{"test-cluster"}
 
 	const sourceRepo = "github.com/user/succeedthenfail" // Part of request ID.
@@ -330,7 +338,7 @@ func (suite *integrationSuite) TestFailedDeployFollowingSuccessfulDeploy() {
 
 	// Create an assert on a failed deployment.
 
-	registerAndDeploy(ip, clusterName, repoName, sourceRepo, "succeedthenfail-fail", "2.0.0-fail", ports, sous.Startup{})
+	registerAndDeploy(ip, clusterName, repoName, sourceRepo, "succeedthenfail-fail", "2.0.0-fail", ports, sous.Startup{SkipTest: true})
 
 	deployState = suite.waitUntilSettledStatus(clusters, sourceRepo)
 	suite.statusIs(deployState, sous.DeployStatusFailed)
