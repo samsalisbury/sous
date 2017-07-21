@@ -249,13 +249,12 @@ func (nc *NameCache) getImageName(sid sous.SourceID) (string, strpairs, error) {
 		nc.Log.GetCounter("cache-error").Inc(1)
 		return "", nil, errors.Wrapf(err, "getting name from cache of %s", nc.DockerRegistryHost)
 	}
+	nc.Log.GetCounter("cache-miss").Inc(1)
 	// The error was a NoImageNameFound.
 	if name, qualities, err = nc.getImageNameAfterHarvest(sid); err != nil {
 		// Failed even after a harvest, give up.
-		nc.Log.GetCounter("cache-error").Inc(1)
 		return "", nil, errors.Wrapf(err, "getting image from cache after harvest from %s", nc.DockerRegistryHost)
 	}
-	nc.Log.GetCounter("cache-miss").Inc(1)
 	return name, qualities, nil
 }
 
@@ -404,7 +403,7 @@ var schema = []string{
 	"create table docker_image_qualities(" +
 		"assertion_id integer primary key autoincrement" +
 		", metadata_id references docker_search_metadata" +
-		"    not null" +
+		"    on delete cascade" +
 		", quality text not null" +
 		", kind text not null" +
 		", constraint upsertable unique (metadata_id, quality, kind) on conflict ignore" +
@@ -474,7 +473,7 @@ func (nc *NameCache) GroomDatabase() error {
 
 		for _, cmd := range schema {
 			if err := sqlExec(db, cmd); err != nil {
-				return errors.Wrapf(err, "groom DB/create: %v", db)
+				panic(errors.Wrapf(err, "groom DB/create: %v", db))
 			}
 		}
 		if _, err := db.Exec("insert into _database_metadata_ (name, value) values"+
@@ -575,11 +574,11 @@ func (nc *NameCache) dump(io io.Writer) {
 }
 
 func (nc *NameCache) rowCount(table string) {
-	row := nc.DB.QueryRow("select count(1) from $1", table)
+	row := nc.DB.QueryRow("select count(1) from " + table)
 	var n int64
 	err := row.Scan(&n)
 	if err != nil {
-		nc.Log.Warnf("error counting rows in table %q: %v", err)
+		nc.Log.Warnf("error counting rows in table %q: %v", table, err)
 	}
 	nc.Log.GetUpdater("dbrows." + table).Update(n)
 }

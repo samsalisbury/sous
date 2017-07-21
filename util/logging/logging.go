@@ -83,7 +83,7 @@ func SilentLogSet() *LogSet {
 func NewLogSet(name string, err io.Writer) *LogSet {
 	ls := newls(name, err)
 	if name != "" {
-		ls.metrics = metrics.NewPrefixedRegistry(name)
+		ls.metrics = metrics.NewPrefixedRegistry(name + ".")
 	}
 	return ls
 }
@@ -92,7 +92,7 @@ func NewLogSet(name string, err io.Writer) *LogSet {
 func (ls *LogSet) Child(name string) *LogSet {
 	child := newls(ls.name+"."+name, ls.err)
 	if ls.metrics != nil {
-		child.metrics = metrics.NewPrefixedChildRegistry(ls.metrics, "."+name)
+		child.metrics = metrics.NewPrefixedChildRegistry(ls.metrics, name+".")
 	}
 	return child
 }

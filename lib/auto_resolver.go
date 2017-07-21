@@ -185,7 +185,7 @@ func (ar *AutoResolver) resolveOnce(ac announceChannel) {
 		logging.Log.Debugf("Recording stable status from %p: %v", ar, ss)
 
 		if ss.Started.Before(ss.Finished) {
-			ar.LogSet.GetTimer("fullcycle").Update(ss.Finished.Sub(ss.Started))
+			ar.LogSet.GetTimer("fullcycle-duration").Update(ss.Finished.Sub(ss.Started))
 		} else {
 			ar.LogSet.Warnf("No finished time recorded for supposed stable status.")
 		}
