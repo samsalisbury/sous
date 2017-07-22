@@ -473,7 +473,7 @@ func (nc *NameCache) GroomDatabase() error {
 
 		for _, cmd := range schema {
 			if err := sqlExec(db, cmd); err != nil {
-				panic(errors.Wrapf(err, "groom DB/create: %v", db))
+				return errors.Wrapf(err, "groom DB/create: %v", db)
 			}
 		}
 		if _, err := db.Exec("insert into _database_metadata_ (name, value) values"+
