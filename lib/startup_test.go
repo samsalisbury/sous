@@ -55,7 +55,7 @@ func (s *StartupTest) TestPutGet() {
 	s.PutGet(
 		Startup{CheckReadyURIPath: "/health", CheckReadyURITimeout: 100, Timeout: 0},
 		Startup{CheckReadyURIPath: "/health", CheckReadyURITimeout: 100, Timeout: 10},
-		Startup{SkipTest: true},
+		Startup{SkipCheck: true},
 	)
 }
 
@@ -76,7 +76,7 @@ func (s *StartupTest) TestGetPut() {
 
 	s.GetPut(
 		Startup{CheckReadyURIPath: "/heath", CheckReadyURITimeout: 100, Timeout: 0},
-		Startup{SkipTest: true, Timeout: 10},
+		Startup{SkipCheck: true, Timeout: 10},
 	)
 
 	s.GetPut(
@@ -88,7 +88,7 @@ func (s *StartupTest) TestGetPut() {
 		Startup{
 			ConnectDelay:    234,
 			ConnectInterval: 678,
-			SkipTest:        true,
+			SkipCheck:       true,
 		},
 		Startup{
 			CheckReadyProtocol:  "https",
@@ -104,7 +104,7 @@ func (s *StartupTest) TestMerge() {
 	left := Startup{
 		ConnectDelay:         234,
 		ConnectInterval:      678,
-		SkipTest:             true,
+		SkipCheck:            true,
 		CheckReadyURITimeout: 100,
 		Timeout:              10,
 	}
@@ -124,7 +124,7 @@ func (s *StartupTest) TestMerge() {
 		CheckReadyFailureStatuses: []int{410, 503},
 		ConnectDelay:              234,
 		ConnectInterval:           678,
-		SkipTest:                  true,
+		SkipCheck:                 true,
 		CheckReadyProtocol:        "https",
 		CheckReadyPortIndex:       2,
 		CheckReadyInterval:        978,

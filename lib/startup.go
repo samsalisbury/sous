@@ -9,7 +9,7 @@ import (
 // Startup is the configuration for startup checks for a service deployment.
 // c.f. DeployConfig for use.
 type Startup struct { //                             Singularity fields
-	SkipTest bool `yaml:",omitempty"`
+	SkipCheck bool `yaml:",omitempty"`
 
 	ConnectDelay    int `yaml:",omitempty"` // Healthcheck.StartupDelaySeconds
 	Timeout         int `yaml:",omitempty"` // Healthcheck.StartupTimeoutSeconds
@@ -35,7 +35,7 @@ var zeroStartup = Startup{}
 func (s *Startup) Validate() []Flaw {
 	flaws := []Flaw{}
 
-	if !s.SkipTest {
+	if !s.SkipCheck {
 		if s.ConnectDelay < 0 {
 			flaws = append(flaws, FatalFlaw("ConnectDelay less than zero: %d!", s.ConnectDelay))
 		}
@@ -85,8 +85,8 @@ func (s *Startup) Validate() []Flaw {
 func (s Startup) MergeDefaults(base Startup) Startup {
 	n := base
 
-	if n.SkipTest == zeroStartup.SkipTest {
-		n.SkipTest = s.SkipTest
+	if n.SkipCheck == zeroStartup.SkipCheck {
+		n.SkipCheck = s.SkipCheck
 	}
 
 	if n.ConnectDelay == zeroStartup.ConnectDelay {
@@ -137,9 +137,9 @@ func (s Startup) MergeDefaults(base Startup) Startup {
 func (s Startup) UnmergeDefaults(base, old Startup) Startup {
 	n := base
 
-	if base.SkipTest == s.SkipTest &&
-		old.SkipTest == zeroStartup.SkipTest {
-		n.SkipTest = zeroStartup.SkipTest
+	if base.SkipCheck == s.SkipCheck &&
+		old.SkipCheck == zeroStartup.SkipCheck {
+		n.SkipCheck = zeroStartup.SkipCheck
 	}
 
 	if base.ConnectDelay == s.ConnectDelay &&
@@ -220,10 +220,10 @@ func (s Startup) diff(o Startup) []string {
 	}
 
 	l, r := s, o
-	if s.SkipTest == true { //redundant, but makes ConfirmTree happy
+	if s.SkipCheck == true { //redundant, but makes ConfirmTree happy
 		l = zeroStartup
 	}
-	if o.SkipTest == true {
+	if o.SkipCheck == true {
 		r = zeroStartup
 	}
 

@@ -104,7 +104,7 @@ func TestMapStartup(t *testing.T) {
 	buildHealthcheckedDTOMap := func(t *testing.T, ready bool) dtoMap {
 		depMap := dtoMap{}
 		startup := sous.Startup{
-			SkipTest: ready,
+			SkipCheck: ready,
 
 			ConnectDelay:    106,
 			Timeout:         107,

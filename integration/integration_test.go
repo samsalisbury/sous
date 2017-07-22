@@ -139,7 +139,7 @@ func (suite *integrationSuite) BeforeTest(suiteName, testName string) {
 }
 
 func (suite *integrationSuite) deployDefaultContainers() {
-	nilStartup := sous.Startup{SkipTest: true}
+	nilStartup := sous.Startup{SkipCheck: true}
 	timeout := 500
 	startup := sous.Startup{
 		Timeout:            timeout,
@@ -325,7 +325,7 @@ func (suite *integrationSuite) TestFailedDeployFollowingSuccessfulDeploy() {
 	const repoName = "succeedthenfail"
 
 	registerAndDeploy(ip, clusterName, repoName, sourceRepo, "succeedthenfail-succeed", "1.0.0-succeed", ports, sous.Startup{
-		SkipTest: true,
+		SkipCheck: true,
 	})
 
 	deployState := suite.waitUntilSettledStatus(clusters, sourceRepo)
@@ -337,7 +337,7 @@ func (suite *integrationSuite) TestFailedDeployFollowingSuccessfulDeploy() {
 
 	// Create an assert on a failed deployment.
 
-	registerAndDeploy(ip, clusterName, repoName, sourceRepo, "succeedthenfail-fail", "2.0.0-fail", ports, sous.Startup{SkipTest: true})
+	registerAndDeploy(ip, clusterName, repoName, sourceRepo, "succeedthenfail-fail", "2.0.0-fail", ports, sous.Startup{SkipCheck: true})
 
 	deployState = suite.waitUntilSettledStatus(clusters, sourceRepo)
 	suite.statusIs(deployState, sous.DeployStatusFailed)

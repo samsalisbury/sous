@@ -252,7 +252,7 @@ func baseDeployment() *sous.Deployment {
 	startDep.Env = sous.Env{"A": "A"}
 	startDep.Kind = sous.ManifestKindService
 	startDep.DeployConfig.Resources = sous.Resources{"cpus": "0.1", "memory": "100", "ports": "1"}
-	startDep.Startup = sous.Startup{SkipTest: true}
+	startDep.Startup = sous.Startup{SkipCheck: true}
 	return &startDep
 }
 
@@ -335,11 +335,11 @@ func TestScaling(t *testing.T) {
 
 func TestEnableStartupChangedDeployment(t *testing.T) {
 	startDep := baseDeployment()
-	startDep.Startup.SkipTest = true
+	startDep.Startup.SkipCheck = true
 
 	pair := matchedPair(t, startDep)
 
-	startDep.Startup.SkipTest = false
+	startDep.Startup.SkipCheck = false
 	pair.Prior.Startup.CheckReadyProtocol = "HTTPS"
 
 	diff, diffs := pair.Prior.Deployment.Diff(pair.Post.Deployment)
@@ -352,7 +352,7 @@ func TestEnableStartupChangedDeployment(t *testing.T) {
 
 func TestStartupChangedDeployment(t *testing.T) {
 	startDep := baseDeployment()
-	startDep.Startup.SkipTest = false
+	startDep.Startup.SkipCheck = false
 	startDep.Startup.CheckReadyProtocol = "HTTP"
 	pair := matchedPair(t, startDep)
 	pair.Prior.Startup.CheckReadyProtocol = "HTTPS"
@@ -482,7 +482,7 @@ func TestChangesDep(t *testing.T) {
 	}
 
 	changed = baseDep.Clone()
-	changed.Startup.SkipTest = true
+	changed.Startup.SkipCheck = true
 	baseDep.Startup.ConnectDelay = 100
 
 	if !changesDep(testPair(changed)) {

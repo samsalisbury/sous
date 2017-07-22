@@ -72,7 +72,7 @@ func TestManifest_Clone(t *testing.T) {
 }
 
 var skippyStartup = Startup{
-	SkipTest: true,
+	SkipCheck: true,
 }
 
 var manifestTests = []struct {

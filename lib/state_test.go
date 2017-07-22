@@ -49,7 +49,7 @@ func TestState_Validate(t *testing.T) {
 							},
 							NumInstances: 3,
 							Startup: Startup{
-								SkipTest: true,
+								SkipCheck: true,
 							},
 						},
 						Version: semv.MustParse("1"),

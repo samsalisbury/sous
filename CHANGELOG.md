@@ -8,7 +8,7 @@ with respect to its command line interface and HTTP interface.
 
 ## [Unreleased](//github.com/opentable/sous/compare/0.5.20...HEAD)
 ### Added
-- Server: Startup field SkipTests added - rather than omitting a
+- Server: Startup field SkipChecks added - rather than omitting a
   healthcheck URI, services must set this field `true` in order to signal that
   they don't make use of a "ready" endpoint.
 - Server: Full set of Singularity 0.15 HealthcheckOptions now supported.

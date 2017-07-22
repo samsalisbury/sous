@@ -12,7 +12,7 @@ func TestValidateRepair(t *testing.T) {
 		Resources: make(Resources),
 		Startup: Startup{
 
-			SkipTest: true,
+			SkipCheck: true,
 		},
 	}
 	dc.Resources["cpus"] = "0.25"

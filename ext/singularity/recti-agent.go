@@ -169,7 +169,7 @@ func buildDeployRequest(d sous.Deployable, reqID string, metadata map[string]str
 // map[string]interface{} is used so that the function can be exported
 // and used in integration tests. Once type aliases land, these backflips can go away.
 func MapStartupIntoHealthcheckOptions(depMap *map[string]interface{}, startup sous.Startup) error {
-	if startup.SkipTest {
+	if startup.SkipCheck {
 		return nil
 	}
 
