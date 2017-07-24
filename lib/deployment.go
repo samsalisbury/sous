@@ -8,7 +8,6 @@ import (
 	"io"
 	"strings"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/opentable/sous/util/logging"
 )
 
@@ -105,8 +104,8 @@ func (d *Deployment) ID() DeploymentID {
 // Validate implements Flawed for State
 func (d *Deployment) Validate() []Flaw {
 	var flaws []Flaw
+
 	if d.Kind == "" {
-		spew.Dump(d)
 		flaws = append(flaws, NewFlaw(
 			fmt.Sprintf("manifest %q missing Kind", d.ID()),
 			func() error { d.Kind = ManifestKindService; return nil },
