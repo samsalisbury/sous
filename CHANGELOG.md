@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
-## [Unreleased](//github.com/opentable/sous/compare/0.5.20...HEAD)
+## [0.5.21](//github.com/opentable/sous/compare/0.5.20...0.5.21)
 ### Added
 - Server: Startup field "SkipCheck" added - rather than omitting a
   healthcheck URI, services must set this field `true` in order to signal that
@@ -19,7 +19,9 @@ with respect to its command line interface and HTTP interface.
 - Server: Metrics exposed on an HTTP endpoint.
 - Developer: LogSet extracted to new util/logging package, some refiguring of
   the types and interfaces there with an eye to pulling in a structured logger.
-
+- Client: Command `sous plunbing normalizegdm` is a utility to round-trip the
+- Sous storage format. With luck, running this command after manual changes to
+  the GDM repo will correct false conflicts.
 ### Changed
 - Server: Startup DeployConfig part fields now have cluster-based default
   values. (These should be configued in the GDM before this version is
@@ -27,10 +29,16 @@ with respect to its command line interface and HTTP interface.
   Most notably, the CheckReadyProtocol needs a default ("HTTP" or "HTTPS")
   because Singularity validates the value on its side.
 
-## [0.5.20](//github.com/opentable/sous/compare/0.5.18...0.5.20)
+## [0.5.20](//github.com/opentable/sous/compare/0.5.19...0.5.20)
 ### Fixed
 - Client: `sous deploy` wasn't recognizing its version if there was a prefix supplied.
 
+## [0.5.19](//github.com/opentable/sous/compare/0.5.18...0.5.19)
+
+Only changes in this release are related to deployment.
+
+### Fixed
+- Developer: deployment key changed to a machine account.
 ## [0.5.18](//github.com/opentable/sous/compare/0.5.16...0.5.18)
 ### Added
 - Client: `sous query clusters` will enumerate all the logical clusters sous currently handles, for ease of manifest editing and deployment.
