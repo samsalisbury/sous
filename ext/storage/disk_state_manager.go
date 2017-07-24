@@ -46,7 +46,7 @@ func repairState(s *sous.State) error {
 	logging.Log.Vomit.Printf("Validating State")
 	flaws := s.Validate()
 
-	logging.Log.Vomit.Printf("Repairing State")
+	logging.Log.Vomit.Printf("Repairing State: %d flaws", len(flaws))
 	_, es := sous.RepairAll(flaws)
 
 	if len(es) > 0 {

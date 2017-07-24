@@ -26,24 +26,6 @@ func (ms Manifests) Deployments(defs Defs) (Deployments, error) {
 			return ds, fmt.Errorf("conflicting deploys: %s", conflict)
 		}
 	}
-	for _, id := range ds.Keys() {
-		d, _ := ds.Get(id)
-		for name, val := range d.Cluster.Env {
-			if _, ok := d.Env[name]; ok {
-				continue
-			}
-			d.Env[name] = string(val)
-		}
-		cluster, ok := defs.Clusters[d.ClusterName]
-		if !ok {
-			return ds, errors.Errorf("cluster %q is not described in defs.yaml (but specified in manifest %q)",
-				d.ClusterName, id.ManifestID)
-		}
-		if cluster == nil {
-			return ds, errors.Errorf("cluster %q is nil, check defs.yaml", d.ClusterName)
-		}
-		d.Cluster = cluster
-	}
 	return ds, nil
 }
 
@@ -190,10 +172,10 @@ func DeploymentsFromManifest(defs Defs, m *Manifest) (Deployments, error) {
 	for clusterName, spec := range m.Deployments {
 		cluster, ok := defs.Clusters[clusterName]
 		if !ok {
-			return ds, errors.Errorf("cluster %q not described in defs.yaml", clusterName)
+			return ds, errors.Errorf("cluster %q is not described in defs.yaml (but specified in manifest %q)", clusterName, m.ID())
 		}
 		spec.clusterName = cluster.BaseURL
-		d, err := BuildDeployment(defs, m, clusterName, spec, inherit)
+		d, err := BuildDeployment(m, clusterName, cluster, spec, inherit)
 		if err != nil {
 			return ds, err
 		}
@@ -203,14 +185,18 @@ func DeploymentsFromManifest(defs Defs, m *Manifest) (Deployments, error) {
 }
 
 // BuildDeployment constructs a deployment out of a Manifest.
-func BuildDeployment(defs Defs, m *Manifest, nick string, spec DeploySpec, inherit []DeploySpec) (*Deployment, error) {
+func BuildDeployment(m *Manifest, nick string, cluster *Cluster, spec DeploySpec, inherit []DeploySpec) (*Deployment, error) {
 	ownMap := NewOwnerSet(m.Owners...)
-	cluster := defs.Clusters[nick]
 
 	ds := flattenDeploySpecs(append([]DeploySpec{spec}, inherit...))
 	ds.Startup = cluster.Startup.MergeDefaults(ds.Startup)
 
-	// XXX Env merging belongs here
+	for name, val := range cluster.Env {
+		if _, ok := ds.Env[name]; ok {
+			continue
+		}
+		ds.Env[name] = string(val)
+	}
 
 	return &Deployment{
 		ClusterName:  nick,

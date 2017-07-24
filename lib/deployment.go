@@ -8,6 +8,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/opentable/sous/util/logging"
 )
 
@@ -99,6 +100,29 @@ func (d *Deployment) ID() DeploymentID {
 		ManifestID: d.ManifestID(),
 		Cluster:    d.ClusterName,
 	}
+}
+
+// Validate implements Flawed for State
+func (d *Deployment) Validate() []Flaw {
+	var flaws []Flaw
+	if d.Kind == "" {
+		spew.Dump(d)
+		flaws = append(flaws, NewFlaw(
+			fmt.Sprintf("manifest %q missing Kind", d.ID()),
+			func() error { d.Kind = ManifestKindService; return nil },
+		))
+	} else {
+		flaws = append(flaws, d.Kind.Validate()...)
+	}
+
+	cf := d.DeployConfig.Validate()
+	flaws = append(flaws, cf...)
+
+	for _, f := range flaws {
+		f.AddContext("deployment", d)
+	}
+
+	return flaws
 }
 
 // ManifestID returns the ID of the Manifest describing this deployment.

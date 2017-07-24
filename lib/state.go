@@ -205,19 +205,22 @@ func (s *State) BaseURLs() []string {
 func (s *State) Validate() []Flaw {
 	var flaws []Flaw
 
-	for _, manifest := range s.Manifests.Snapshot() {
-		flaws = append(flaws, manifest.Validate()...)
+	for _, m := range s.Manifests.Snapshot() {
+		flaws = append(flaws, m.Validate()...)
+	}
+
+	ds, err := s.Deployments()
+	if err != nil {
+		return []Flaw{FatalFlaw("Cannot merge a set of deployments to validate: %v", err)}
+	}
+	for _, depl := range ds.Snapshot() {
+		flaws = append(flaws, depl.Validate()...)
 	}
 
 	for _, f := range flaws {
 		f.AddContext("state", s)
 	}
 	return flaws
-}
-
-// Repair implements Flawed for State
-func (s *State) Repair(fs []Flaw) error {
-	return errors.Errorf("Can't do nuffin with flaws yet")
 }
 
 // UpdateDeployments upserts ds into the State

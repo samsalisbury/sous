@@ -48,15 +48,21 @@ func TestState_Validate(t *testing.T) {
 								"ports":  "1",
 							},
 							NumInstances: 3,
-							Startup: Startup{
-								SkipCheck: true,
-							},
 						},
 						Version: semv.MustParse("1"),
 					},
 				},
 			},
 		}),
+		Defs: Defs{
+			Clusters: Clusters{
+				"some-cluster": {
+					Startup: Startup{
+						SkipCheck: true,
+					},
+				},
+			},
+		},
 	}
 
 	flaws := validState.Validate()
