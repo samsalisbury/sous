@@ -8,6 +8,7 @@ import (
 	"github.com/opentable/sous/graph"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/yaml"
 	"github.com/pkg/errors"
 )
@@ -16,7 +17,7 @@ type SousManifestGet struct {
 	config.DeployFilterFlags
 	graph.TargetManifestID
 	*sous.State
-	*sous.LogSet
+	*logging.LogSet
 	graph.OutWriter
 	*sous.ResolveFilter
 }

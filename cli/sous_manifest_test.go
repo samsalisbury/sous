@@ -7,6 +7,7 @@ import (
 
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/yaml"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -22,7 +23,7 @@ func TestManifestGet(t *testing.T) {
 		},
 		State:     makeTestState(),
 		OutWriter: graph.OutWriter(out),
-		LogSet:    sous.NewLogSet(os.Stderr, os.Stderr, os.Stderr),
+		LogSet:    logging.NewLogSet("", os.Stderr),
 	}
 	res := smg.Execute([]string{})
 	assert.Equal(t, 0, res.ExitCode())
@@ -53,7 +54,7 @@ func TestManifestSet(t *testing.T) {
 		State:            state,
 		InReader:         graph.InReader(in),
 		StateWriter:      writer,
-		LogSet:           sous.NewLogSet(os.Stderr, os.Stderr, os.Stderr),
+		LogSet:           logging.NewLogSet("", os.Stderr),
 	}
 
 	assert.Equal(t, 0, dummyWriter.WriteCount)

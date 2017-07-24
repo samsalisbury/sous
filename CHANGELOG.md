@@ -11,6 +11,11 @@ with respect to its command line interface and HTTP interface.
 - Server: Startup field SkipReadyCheck added - rather than omitting a
   healthcheck URI, services must set this field `true` in order to signal that
   they don't make use of a "ready" endpoint.
+- Server: Logging extended to collect metrics.
+- Server: Metrics exposed on an HTTP endpoint.
+- Developer: LogSet extracted to new util/logging package, some refiguring of
+  the types and interfaces there with an eye to pulling in a structured logger.
+
 ### Changed
 - Server: Startup DeployConfig part fields now have cluster-based default
   values. (These should be configued in the GDM before this version is

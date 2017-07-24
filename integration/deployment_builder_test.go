@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"testing"
 	"time"
 
@@ -18,6 +17,7 @@ import (
 	"github.com/opentable/sous/ext/singularity"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/docker_registry"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/whitespace"
 	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
@@ -25,10 +25,11 @@ import (
 
 func TestBuildDeployments(t *testing.T) {
 
+	// XXX unskip this
 	t.Skipf("Failing test on master preventing progress on other stories.")
 
 	assert := assert.New(t)
-	sous.Log.Debug.SetOutput(os.Stdout)
+	//logging.Log.Debug.SetOutput(os.Stdout)
 
 	ResetSingularity()
 	defer ResetSingularity()
@@ -48,7 +49,7 @@ func TestBuildDeployments(t *testing.T) {
 	clusterNick := "tcluster"
 	reqID := appLocation + clusterNick
 
-	nc := docker.NewNameCache("", drc, db)
+	nc := docker.NewNameCache("", drc, logging.SilentLogSet(), db)
 
 	singCl := sing.NewClient(SingularityURL)
 	//singCl.Debug = true

@@ -9,6 +9,7 @@ import (
 	"github.com/opentable/sous/graph"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
+	"github.com/opentable/sous/util/logging"
 	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -98,7 +99,7 @@ func TestInvokeDeploy_RepoFlag(t *testing.T) {
 	require.True(ok)
 	su := &SousUpdate{}
 	sps := &SousPlumbingStatus{}
-	sous.Log.Debug.Printf("Plumbing Update...")
+	logging.Log.Debug.Printf("Plumbing Update...")
 	require.NoError(sd.CLI.Plumb(su, sps))
 
 	assert.NotEqual(su.ResolveFilter.Repo, "")
@@ -106,7 +107,7 @@ func TestInvokeDeploy_RepoFlag(t *testing.T) {
 	assert.NotEqual(su.Manifest.ID().Source.Repo, "")
 	assert.NotEqual(su.Manifest.ID().Source.Repo, "github.com/example/project")
 
-	sous.Log.Debug.Printf("%#v", sps)
+	logging.Log.Debug.Printf("%#v", sps)
 	if assert.NotNil(sps.StatusPoller) {
 		assert.NotEqual(sps.StatusPoller.Repo, "")
 		assert.Equal(sps.StatusPoller.Repo, su.Manifest.ID().Source.Repo)
@@ -368,7 +369,7 @@ func TestInvokeRectifyWithoutFilterFlags(t *testing.T) {
 	assert.Equal(rect.SourceFlags.All, false)
 	require.NotNil(rect.Resolver.ResolveFilter)
 
-	sous.Log.Vomit.Printf("%#v", rect.Resolver.ResolveFilter)
+	logging.Log.Vomit.Printf("%#v", rect.Resolver.ResolveFilter)
 	assert.Equal(rect.Resolver.ResolveFilter.All(), true)
 }
 

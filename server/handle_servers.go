@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/opentable/sous/config"
-	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 )
 
@@ -22,7 +22,7 @@ type (
 	ServerListUpdater struct {
 		*http.Request
 		Config *config.Config
-		Log    *sous.LogSet
+		Log    *logging.LogSet
 	}
 
 	server struct {

@@ -20,10 +20,30 @@ type logSet interface {
 	Vomitf(format string, a ...interface{})
 	Debugf(format string, a ...interface{})
 	Warnf(format string, a ...interface{})
+	ExpHandler() http.Handler
+}
+
+// Run starts a server up.
+func Run(laddr string, handler http.Handler) error {
+	s := &http.Server{Addr: laddr, Handler: handler}
+	return s.ListenAndServe()
 }
 
 // Handler builds the http.Handler for the Sous server httprouter.
 func Handler(mainGraph *graph.SousGraph, ls logSet) http.Handler {
+	handler := mux(mainGraph, ls)
+	addMetrics(handler, ls)
+	return handler
+}
+
+// Handler builds the http.Handler for the Sous server httprouter.
+func ProfilingHandler(mainGraph *graph.SousGraph, ls logSet) http.Handler {
+	handler := mux(mainGraph, ls)
+	addMetrics(handler, ls)
+	return handler
+}
+
+func mux(mainGraph *graph.SousGraph, ls logSet) *http.ServeMux {
 	mainGraph.Inject(&fixedPoints{})
 	gf := func() restful.Injector {
 		g := mainGraph.Clone()
@@ -31,35 +51,21 @@ func Handler(mainGraph *graph.SousGraph, ls logSet) http.Handler {
 
 		return g
 	}
-	return SousRouteMap.BuildRouter(gf, ls)
-}
+	router := SousRouteMap.BuildRouter(gf, ls)
 
-// Run starts a server up.
-func Run(mainGraph *graph.SousGraph, laddr string, ls logSet) error {
-	s := &http.Server{
-		Addr:    laddr,
-		Handler: Handler(mainGraph, ls),
-	}
-	return s.ListenAndServe()
-}
-
-func profilingHandler(mainGraph *graph.SousGraph, ls logSet) http.Handler {
 	handler := http.NewServeMux()
-	handler.Handle("/", Handler(mainGraph, ls))
+	handler.Handle("/", router)
+	return handler
+}
 
+func addMetrics(handler *http.ServeMux, ls logSet) {
+	handler.Handle("/debug/metrics", ls.ExpHandler())
+}
+
+func addProfiling(handler *http.ServeMux) {
 	handler.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
 	handler.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
 	handler.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
 	handler.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
 	handler.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
-	return handler
-}
-
-// RunWithProfiling mixes in the pprof handlers so that we can return profiles
-func RunWithProfiling(mainGraph *graph.SousGraph, laddr string, ls logSet) error {
-	s := &http.Server{
-		Addr:    laddr,
-		Handler: profilingHandler(mainGraph, ls),
-	}
-	return s.ListenAndServe()
 }

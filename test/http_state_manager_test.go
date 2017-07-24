@@ -11,6 +11,7 @@ import (
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/server"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 	"github.com/samsalisbury/psyringe"
 	"github.com/samsalisbury/semv"
@@ -66,8 +67,9 @@ func TestWriteState(t *testing.T) {
 	}
 
 	di := psyringe.New()
-	di.Add(sous.NewLogSet(os.Stderr, os.Stderr, os.Stderr))
-	//di.Add(sous.NewLogSet(os.Stderr, ioutil.Discard, ioutil.Discard))
+	ls := logging.NewLogSet("", os.Stderr)
+	ls.BeChatty()
+	di.Add(ls)
 	graph.AddInternals(di)
 	di.Add(
 		func() graph.StateReader { return graph.StateReader{StateReader: &sm} },
@@ -82,10 +84,10 @@ func TestWriteState(t *testing.T) {
 		return cdi
 	}
 
-	testServer := httptest.NewServer(server.SousRouteMap.BuildRouter(gf, sous.Log))
+	testServer := httptest.NewServer(server.SousRouteMap.BuildRouter(gf, logging.Log))
 	defer testServer.Close()
 
-	cl, err := restful.NewClient(testServer.URL, sous.Log)
+	cl, err := restful.NewClient(testServer.URL, logging.Log)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -6,6 +6,7 @@ import (
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/ext/otpl"
 	"github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 	"github.com/pkg/errors"
 )
 
@@ -42,7 +43,7 @@ func newUserSelectedOTPLDeploySpecs(detected detectedOTPLDeployManifest, tmid Ta
 	} else {
 		flavors := detected.Manifests.Flavors()
 		if flags.Flavor == "" {
-			defer sous.Log.Warn.Println("use the -flavor flag to pick a flavor")
+			defer logging.Log.Warn.Println("use the -flavor flag to pick a flavor")
 		}
 		return nowt, fmt.Errorf("flavor %q not detected; pick from: %s", flags.Flavor, flavors)
 	}
@@ -59,7 +60,7 @@ func newUserSelectedOTPLDeploySpecs(detected detectedOTPLDeployManifest, tmid Ta
 	deploySpecs := sous.DeploySpecs{}
 	for clusterName, spec := range detectedManifest.Deployments {
 		if _, ok := state.Defs.Clusters[clusterName]; !ok {
-			sous.Log.Warn.Printf("otpl-deploy config for cluster %q ignored", clusterName)
+			logging.Log.Warn.Printf("otpl-deploy config for cluster %q ignored", clusterName)
 			continue
 		}
 		deploySpecs[clusterName] = spec

@@ -7,6 +7,7 @@ import (
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 	"github.com/pkg/errors"
 )
@@ -120,7 +121,7 @@ func updateRetryLoop(sm sous.StateManager, sid sous.SourceID, did sous.Deploymen
 func updateState(s *sous.State, gdm sous.Deployments, sid sous.SourceID, did sous.DeploymentID) error {
 	deployment, ok := gdm.Get(did)
 	if !ok {
-		sous.Log.Warn.Printf("Deployment %q does not exist, creating.\n", did)
+		logging.Log.Warn.Printf("Deployment %q does not exist, creating.\n", did)
 		deployment = &sous.Deployment{}
 	}
 

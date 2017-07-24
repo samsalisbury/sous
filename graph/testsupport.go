@@ -5,6 +5,7 @@ import (
 
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/docker_registry"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 	"github.com/opentable/sous/util/yaml"
 )
@@ -29,7 +30,7 @@ func TestGraphWithConfig(in io.Reader, out, err io.Writer, cfg string) *SousGrap
 	graph := buildBaseGraph(in, out, err)
 	addTestFilesystem(graph)
 	addTestNetwork(graph)
-	sous.Log.Vomitf("Adding confing:\n%s", cfg)
+	logging.Log.Vomitf("Adding confing:\n%s", cfg)
 	graph.Add(configYAML(cfg))
 	graph.Add(sous.User{Name: "Test User", Email: "testuser@example.com"})
 	return graph

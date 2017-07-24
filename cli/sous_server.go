@@ -11,6 +11,7 @@ import (
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/server"
 	"github.com/opentable/sous/util/cmdr"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/shell"
 )
 
@@ -18,7 +19,7 @@ import (
 type SousServer struct {
 	Sous              *Sous
 	DeployFilterFlags config.DeployFilterFlags
-	Log               *sous.LogSet
+	Log               *logging.LogSet
 
 	*config.Config
 	*graph.SousGraph
@@ -84,9 +85,9 @@ func (ss *SousServer) Execute(args []string) cmdr.Result {
 	}
 
 	if ss.flags.profiling {
-		return EnsureErrorResult(server.RunWithProfiling(ss.SousGraph, ss.flags.laddr, ss.Log)) //always non-nil
+		return EnsureErrorResult(server.Run(ss.flags.laddr, server.ProfilingHandler(ss.SousGraph, ss.Log))) //always non-nil
 	} else {
-		return EnsureErrorResult(server.Run(ss.SousGraph, ss.flags.laddr, ss.Log)) //always non-nil
+		return EnsureErrorResult(server.Run(ss.flags.laddr, server.Handler(ss.SousGraph, ss.Log))) //always non-nil
 	}
 }
 

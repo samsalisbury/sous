@@ -17,6 +17,7 @@ import (
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
 	"github.com/opentable/sous/util/docker_registry"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 	"github.com/opentable/sous/util/shell"
 	"github.com/pkg/errors"
@@ -262,8 +263,8 @@ func newResolver(filter *sous.ResolveFilter, d sous.Deployer, r sous.Registry) *
 	return sous.NewResolver(d, r, filter)
 }
 
-func newAutoResolver(rez *sous.Resolver, sr StateReader, ls *sous.LogSet) *sous.AutoResolver {
-	return sous.NewAutoResolver(rez, sr, ls)
+func newAutoResolver(rez *sous.Resolver, sr StateReader, ls *logging.LogSet) *sous.AutoResolver {
+	return sous.NewAutoResolver(rez, sr, ls.Child("autoresolver"))
 }
 
 func newSourceHostChooser() sous.SourceHostChooser {
@@ -278,28 +279,34 @@ func newRegistryDumper(r sous.Registry) *sous.RegistryDumper {
 	return sous.NewRegistryDumper(r)
 }
 
-func newLogSet(v *config.Verbosity, err ErrWriter) *sous.LogSet { // XXX temporary until we settle on logging
-	sous.Log.Info.SetOutput(err)
+func newLogSet(v *config.Verbosity, err ErrWriter) *logging.LogSet { // XXX temporary until we settle on logging
+	ls := logging.NewLogSet("sous", err)
 
 	if v.Debug {
 		if v.Loud {
-			sous.Log.Vomit.SetOutput(err)
+			ls.BeChatty()
+			logging.Log.BeChatty()
+		} else {
+			ls.BeHelpful()
+			logging.Log.BeHelpful()
 		}
-		sous.Log.Debug.SetOutput(err)
 	}
 	//if v.Loud {
 	//}
 	if v.Quiet {
-		sous.Log.Info.SetOutput(ioutil.Discard)
+		ls.BeHelpful()
+		logging.Log.BeQuiet()
 	}
 	if v.Silent {
-		sous.Log.Info.SetOutput(ioutil.Discard)
+		ls.BeQuiet()
+		logging.Log.BeQuiet()
 	}
 
-	//sous.Log.Warn.Println("Normal output enabled")
-	sous.Log.Vomit.Println("Verbose debugging enabled")
-	sous.Log.Debug.Println("Regular debugging enabled")
-	return &sous.Log
+	//logging.Log.Warn.Println("Normal output enabled")
+	ls.Vomitf("Verbose debugging enabled")
+	ls.Debugf("Regular debugging enabled")
+
+	return ls
 }
 
 func newSourceContextDiscovery(g LocalGitRepo) *SourceContextDiscovery {
@@ -412,7 +419,7 @@ func newLocalGitRepo(c LocalGitClient) (v LocalGitRepo, err error) {
 	return v, initErr(err, "opening local git repository")
 }
 
-func newSelector(regClient LocalDockerClient, log *sous.LogSet) sous.Selector {
+func newSelector(regClient LocalDockerClient, log *logging.LogSet) sous.Selector {
 	return &sous.EchoSelector{
 		Factory: func(ctx *sous.BuildContext) (sous.Buildpack, error) {
 			sbp := docker.NewSplitBuildpack(regClient.Client)
@@ -448,11 +455,11 @@ func newRegistrar(db *docker.Builder) sous.Registrar {
 	return db
 }
 
-func newRegistry(dryrun DryrunOption, cfg LocalSousConfig, cl LocalDockerClient) (sous.Registry, error) {
+func newRegistry(dryrun DryrunOption, cfg LocalSousConfig, ls *logging.LogSet, cl LocalDockerClient) (sous.Registry, error) {
 	if dryrun == DryrunBoth || dryrun == DryrunRegistry {
 		return sous.NewDummyRegistry(), nil
 	}
-	return newDockerRegistry(cfg, cl)
+	return newDockerRegistry(cfg, ls, cl)
 }
 
 func newDeployer(dryrun DryrunOption, nc *docker.NameCache) sous.Deployer {
@@ -471,13 +478,13 @@ func newDockerClient() LocalDockerClient {
 
 // newHTTPClient returns an HTTP client if c.Server is not empty.
 // Otherwise it returns nil, and emits some warnings.
-func newHTTPClient(c LocalSousConfig, user sous.User, log *sous.LogSet) (HTTPClient, error) {
+func newHTTPClient(c LocalSousConfig, user sous.User, log *logging.LogSet) (HTTPClient, error) {
 	if c.Server == "" {
-		sous.Log.Warn.Println("No server set, Sous is running in server or workstation mode.")
-		sous.Log.Warn.Println("Configure a server like this: sous config server http://some.sous.server")
+		logging.Log.Warn.Println("No server set, Sous is running in server or workstation mode.")
+		logging.Log.Warn.Println("Configure a server like this: sous config server http://some.sous.server")
 		return HTTPClient{}, nil
 	}
-	sous.Log.Debug.Printf("Using server at %s", c.Server)
+	logging.Log.Debug.Printf("Using server at %s", c.Server)
 	cl, err := restful.NewClient(c.Server, log)
 	return HTTPClient{HTTPClient: cl}, err
 }
@@ -487,7 +494,7 @@ func newHTTPClient(c LocalSousConfig, user sous.User, log *sous.LogSet) (HTTPCli
 // If it returns a sous.GitStateManager, it emits a warning log.
 func newStateManager(cl HTTPClient, c LocalSousConfig) *StateManager {
 	if c.Server == "" {
-		sous.Log.Warn.Printf("Using local state stored at %s", c.StateLocation)
+		logging.Log.Warn.Printf("Using local state stored at %s", c.StateLocation)
 		dm := storage.NewDiskStateManager(c.StateLocation)
 		return &StateManager{StateManager: storage.NewGitStateManager(dm)}
 	}
@@ -496,13 +503,13 @@ func newStateManager(cl HTTPClient, c LocalSousConfig) *StateManager {
 }
 
 func newStatusPoller(cl HTTPClient, rf *RefinedResolveFilter, user sous.User) *sous.StatusPoller {
-	sous.Log.Debug.Printf("Building StatusPoller...")
+	logging.Log.Debug.Printf("Building StatusPoller...")
 	if cl.HTTPClient == nil {
-		sous.Log.Debug.Print(sous.Log.Warn)
-		sous.Log.Warn.Printf("Unable to poll for status.")
+		logging.Log.Debug.Print(logging.Log.Warn)
+		logging.Log.Warn.Printf("Unable to poll for status.")
 		return nil
 	}
-	sous.Log.Debug.Printf("...looks good...")
+	logging.Log.Debug.Printf("...looks good...")
 	return sous.NewStatusPoller(cl, (*sous.ResolveFilter)(rf), user)
 }
 
@@ -544,19 +551,19 @@ func NewCurrentGDM(state *sous.State) (CurrentGDM, error) {
 // sous native types.
 
 // newDockerRegistry creates a Docker version of sous.Registry
-func newDockerRegistry(cfg LocalSousConfig, cl LocalDockerClient) (*docker.NameCache, error) {
+func newDockerRegistry(cfg LocalSousConfig, ls *logging.LogSet, cl LocalDockerClient) (*docker.NameCache, error) {
 	dbCfg := cfg.Docker.DBConfig()
 	db, err := docker.GetDatabase(&dbCfg)
 	if err != nil {
 		return nil, errors.Wrap(err, "building name cache DB")
 	}
 	drh := cfg.Docker.RegistryHost
-	return docker.NewNameCache(drh, cl.Client, db), nil
+	return docker.NewNameCache(drh, cl.Client, ls.Child("docker-images"), db), nil
 }
 
-func newInserter(cfg LocalSousConfig, cl LocalDockerClient) (sous.Inserter, error) {
+func newInserter(cfg LocalSousConfig, ls *logging.LogSet, cl LocalDockerClient) (sous.Inserter, error) {
 	if cfg.Server == "" {
-		return newDockerRegistry(cfg, cl)
+		return newDockerRegistry(cfg, ls, cl)
 	}
 	return sous.NewHTTPNameInserter(cfg.Server)
 }

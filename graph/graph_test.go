@@ -10,6 +10,7 @@ import (
 	"github.com/opentable/sous/ext/docker"
 	"github.com/opentable/sous/ext/storage"
 	"github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/shell"
 	"github.com/samsalisbury/psyringe"
 )
@@ -31,7 +32,7 @@ func TestBuildGraph(t *testing.T) {
 func injectedStateManager(t *testing.T, cfg *config.Config) *StateManager {
 	g := psyringe.New()
 	g.Add(newUser)
-	g.Add(sous.SilentLogSet())
+	g.Add(logging.SilentLogSet())
 	g.Add(newStateManager)
 	g.Add(LocalSousConfig{Config: cfg})
 	g.Add(newHTTPClient)
@@ -73,7 +74,7 @@ func testBuildInserter(t *testing.T, serverStr string) sous.Inserter {
 			DatabaseDriver:     "sqlite3_sous",
 			DatabaseConnection: docker.InMemory,
 		},
-	}}, LocalDockerClient{})
+	}}, logging.SilentLogSet(), LocalDockerClient{})
 	if err != nil {
 		t.Fatal(err)
 	}

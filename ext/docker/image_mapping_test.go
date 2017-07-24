@@ -12,6 +12,7 @@ import (
 
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/docker_registry"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/spies"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
@@ -85,7 +86,7 @@ func TestReharvest(t *testing.T) {
 	host := "docker.repo.io"
 	base := "ot/wackadoo"
 
-	nc := NewNameCache(host, dc, inMemoryDB("reharvest"))
+	nc := NewNameCache(host, dc, logging.SilentLogSet(), inMemoryDB("reharvest"))
 
 	vstr := "1.2.3"
 	sv := sous.MustNewSourceID("https://github.com/opentable/wackadoo", "nested/there", vstr)
@@ -131,7 +132,7 @@ func TestHarvestGuessedRepo(t *testing.T) {
 	dc := docker_registry.NewDummyClient()
 
 	host := "docker.repo.io"
-	nc := NewNameCache(host, dc, inMemoryDB("guessed_repo"))
+	nc := NewNameCache(host, dc, logging.SilentLogSet(), inMemoryDB("guessed_repo"))
 
 	sl := sous.SourceLocation{
 		Repo: "https://github.com/opentable/wackadoo",
@@ -152,7 +153,7 @@ func TestRoundTrip(t *testing.T) {
 	host := "docker.repo.io"
 	base := "ot/wackadoo"
 
-	nc := NewNameCache(host, dc, inMemoryDB("roundtrip"))
+	nc := NewNameCache(host, dc, logging.SilentLogSet(), inMemoryDB("roundtrip"))
 
 	sv := sous.MustNewSourceID("https://github.com/opentable/wackadoo", "nested/there", "1.2.3")
 
@@ -200,7 +201,7 @@ func TestCanonicalizesToConfiguredRegistry(t *testing.T) {
 	dockerCache := "nearby-docker-cache.repo.io"
 	base := "ot/wackadoo"
 
-	nc := NewNameCache(dockerCache, dc, inMemoryDB("canonsucceeds"))
+	nc := NewNameCache(dockerCache, dc, logging.SilentLogSet(), inMemoryDB("canonsucceeds"))
 
 	in := base + ":version-1.2.3"
 	digest := "sha256:012345678901234567890123456789AB012345678901234567890123456789AB"
@@ -258,7 +259,7 @@ func TestLeavesRegistryUnchangedWhenUnknown(t *testing.T) {
 	dockerCache := "nearby-docker-cache.repo.io"
 	base := "ot/wackadoo"
 
-	nc := NewNameCache(dockerCache, dc, inMemoryDB("canonsucceeds"))
+	nc := NewNameCache(dockerCache, dc, logging.SilentLogSet(), inMemoryDB("canonsucceeds"))
 
 	in := base + ":version-1.2.3"
 	digest := "sha256:012345678901234567890123456789AB012345678901234567890123456789AB"
@@ -304,7 +305,7 @@ func TestHarvestAlso(t *testing.T) {
 	base := "ot/wackadoo"
 	repo := "github.com/opentable/test-app"
 
-	nc := NewNameCache(host, dc, inMemoryDB("harvest_also"))
+	nc := NewNameCache(host, dc, logging.SilentLogSet(), inMemoryDB("harvest_also"))
 
 	stuffBA := func(n, v string) sous.SourceID {
 		ba := &sous.BuildArtifact{
@@ -351,7 +352,7 @@ func TestSecondCanonicalName(t *testing.T) {
 
 	host := "docker.repo.io"
 	base := "ot/wackadoo"
-	nc := NewNameCache(host, dc, inMemoryDB("secondCN"))
+	nc := NewNameCache(host, dc, logging.SilentLogSet(), inMemoryDB("secondCN"))
 
 	repo := "github.com/opentable/test-app"
 
@@ -399,7 +400,7 @@ func TestHarvesting(t *testing.T) {
 
 	host := "docker.repo.io"
 	base := "ot/wackadoo"
-	nc := NewNameCache(host, dc, inMemoryDB("harvesting"))
+	nc := NewNameCache(host, dc, logging.SilentLogSet(), inMemoryDB("harvesting"))
 
 	v := "1.2.3"
 	sv := sous.MustNewSourceID("https://github.com/opentable/wackadoo", "nested/there", v)
@@ -456,7 +457,7 @@ func TestRecordAdvisories(t *testing.T) {
 	dc := docker_registry.NewDummyClient()
 	host := "docker.repo.io"
 	base := "ot/wackadoo"
-	nc := NewNameCache(host, dc, inMemoryDB("advisories"))
+	nc := NewNameCache(host, dc, logging.SilentLogSet(), inMemoryDB("advisories"))
 	v := "1.2.3"
 	sv := sous.MustNewSourceID("https://github.com/opentable/wackadoo", "nested/there", v)
 	digest := "sha256:012345678901234567890123456789AB012345678901234567890123456789AB"
@@ -480,7 +481,7 @@ func TestDump(t *testing.T) {
 	io := &bytes.Buffer{}
 
 	dc := docker_registry.NewDummyClient()
-	nc := NewNameCache("", dc, inMemoryDB("dump"))
+	nc := NewNameCache("", dc, logging.SilentLogSet(), inMemoryDB("dump"))
 
 	nc.dump(io)
 	assert.Regexp(`name_id`, io.String())
@@ -489,7 +490,7 @@ func TestDump(t *testing.T) {
 func TestMissingName(t *testing.T) {
 	assert := assert.New(t)
 	dc := docker_registry.NewDummyClient()
-	nc := NewNameCache("", dc, inMemoryDB("missing"))
+	nc := NewNameCache("", dc, logging.SilentLogSet(), inMemoryDB("missing"))
 
 	v := "4.5.6"
 	sv := sous.MustNewSourceID("https://github.com/opentable/brand-new-idea", "nested/there", v)

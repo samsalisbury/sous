@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/yaml"
 )
 
@@ -59,7 +59,7 @@ func (cl *configLoader) Load(target interface{}, filePath string) error {
 		}
 		// I'd like to say "override with e.g. SOUS_CONFIG_FILE", but the
 		// construction of the path happens elsewhere.
-		sous.Log.Info.Printf("No config file found at %q, using defaults.", filePath)
+		logging.Log.Info.Printf("No config file found at %q, using defaults.", filePath)
 	} else {
 		if err := cl.loadYAMLFile(target, filePath); err != nil {
 			return err
@@ -174,7 +174,7 @@ func (cl *configLoader) overrideField(sf reflect.StructField, originalVal reflec
 	if !present {
 		return nil
 	}
-	sous.Log.Debug.Printf("Environment configuration OVERRIDE: %s=%s\n", envName, envVal)
+	logging.Log.Debug.Printf("Environment configuration OVERRIDE: %s=%s\n", envName, envVal)
 	var finalVal reflect.Value
 	switch originalVal.Interface().(type) {
 	default:

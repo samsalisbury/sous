@@ -1,8 +1,8 @@
 package singularity
 
-import "github.com/opentable/sous/lib"
+import "github.com/opentable/sous/util/logging"
 
 var (
-	// Log is an alias to sous.Log
-	Log = sous.Log
+	// Log is an alias to logging.Log
+	Log = logging.Log
 )

@@ -9,6 +9,7 @@ import (
 	"github.com/opentable/sous/graph"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/yaml"
 	"github.com/pkg/errors"
 )
@@ -20,7 +21,7 @@ type SousManifestSet struct {
 	graph.StateWriter
 	graph.InReader
 	*sous.ResolveFilter
-	*sous.LogSet
+	*logging.LogSet
 	User sous.User
 }
 

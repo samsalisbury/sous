@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 	"strings"
+
+	"github.com/opentable/sous/util/logging"
 )
 
 type (
@@ -173,7 +175,7 @@ func (d *Deployment) Diff(o *Deployment) (bool, []string) {
 	if d.ID() != o.ID() {
 		panic(fmt.Sprintf("attempt to compare deployment %q with %q", d.ID(), o.ID()))
 	}
-	Log.Debug.Printf("Comparing two versions of deployment %q", d.ID())
+	logging.Log.Debug.Printf("Comparing two versions of deployment %q", d.ID())
 	var diffs []string
 	diff := func(format string, a ...interface{}) { diffs = append(diffs, fmt.Sprintf(format, a...)) }
 	if d.ClusterName != o.ClusterName {

@@ -19,8 +19,8 @@ var Sous = &cli.Sous{
 func main() {
 	defer handlePanic()
 	// Eventually, these should become flags on the top level application
-	//sous.Log.Info.SetOutput(os.Stderr)
-	//sous.Log.Debug.SetOutput(os.Stderr)
+	//logging.Log.Info.SetOutput(os.Stderr)
+	//logging.Log.Debug.SetOutput(os.Stderr)
 	log.SetFlags(log.Flags() | log.Lshortfile)
 
 	c, err := cli.NewSousCLI(Sous, os.Stdin, os.Stdout, os.Stderr)

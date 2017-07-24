@@ -2,16 +2,24 @@ package sous
 
 import (
 	"sync"
+	"time"
+
+	"github.com/opentable/sous/util/logging"
 )
 
 type (
 	// ResolveStatus captures the status of a Resolve
 	ResolveStatus struct {
+		// Started collects the time that the Status began being collected
+		Started,
+		// Finished collects the time that the Status was completed - or the zero
+		// time if the status is still live.
+		Finished time.Time
 		// Phase reports the current phase of resolution
 		Phase string
 		// Intended are the deployments that are the target of this resolution
 		Intended []*Deployment
-		// Log collects the resolution steps that have been performed
+		// logging.Log collects the resolution steps that have been performed
 		Log []DiffResolution
 		// Errs collects errors during resolution
 		Errs ResolveErrors
@@ -62,6 +70,7 @@ const (
 func NewResolveRecorder(intended Deployments, f func(*ResolveRecorder)) *ResolveRecorder {
 	rr := &ResolveRecorder{
 		status: &ResolveStatus{
+			Started:  time.Now(),
 			Intended: []*Deployment{},
 			Log:      []DiffResolution{},
 			Errs:     ResolveErrors{Causes: []ErrorWrapper{}},
@@ -80,7 +89,7 @@ func NewResolveRecorder(intended Deployments, f func(*ResolveRecorder)) *Resolve
 				rr.status.Log = append(rr.status.Log, rez)
 				if rez.Error != nil {
 					rr.status.Errs.Causes = append(rr.status.Errs.Causes, ErrorWrapper{error: rez.Error})
-					Log.Debug.Printf("resolve error = %+v\n", rez.Error)
+					logging.Log.Debug.Printf("resolve error = %+v\n", rez.Error)
 				}
 			})
 		}
@@ -91,6 +100,7 @@ func NewResolveRecorder(intended Deployments, f func(*ResolveRecorder)) *Resolve
 		f(rr)
 		close(rr.Log)
 		rr.write(func() {
+			rr.status.Finished = time.Now()
 			if rr.err == nil {
 				rr.status.Phase = "finished"
 			}

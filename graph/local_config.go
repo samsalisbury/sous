@@ -11,8 +11,8 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/opentable/sous/config"
-	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/configloader"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/whitespace"
 	"github.com/opentable/sous/util/yaml"
 	"github.com/pkg/errors"
@@ -50,7 +50,7 @@ func newLocalSousConfig(pic PossiblyInvalidConfig) (v LocalSousConfig, err error
 
 func newConfigLoader() *ConfigLoader {
 	cl := configloader.New()
-	sous.SetupLogging(cl)
+	logging.SetupLogging(cl)
 	return &ConfigLoader{ConfigLoader: cl}
 }
 
@@ -74,12 +74,12 @@ func newPossiblyInvalidConfig(path string, defaultConfig DefaultConfig, gcl *Con
 		if err := pic.Validate(); err != nil {
 			// If the config is invalid, warn but write it anyway and allow the
 			// user to correct it themselves.
-			sous.Log.Warn.Printf("Newly initialised config file is invalid: %s", err)
-			sous.Log.Warn.Printf("Please correct the issue by editing %s", path)
+			logging.Log.Warn.Printf("Newly initialised config file is invalid: %s", err)
+			logging.Log.Warn.Printf("Please correct the issue by editing %s", path)
 		}
 		lsc := &LocalSousConfig{pic.Config}
 		lsc.Save(path)
-		sous.Log.Info.Println("initialised config file: " + path)
+		logging.Log.Info.Println("initialised config file: " + path)
 	}()
 	_, err := os.Stat(path)
 	if os.IsNotExist(err) {
@@ -102,7 +102,7 @@ func userInput(prompt, vDefault, eg string, v *string) {
 	reader := bufio.NewReader(os.Stdin)
 	in, err := reader.ReadString('\n')
 	if err != nil {
-		sous.Log.Warn.Printf("Failed to read input: %s", err)
+		logging.Log.Warn.Printf("Failed to read input: %s", err)
 		return
 	}
 	// Strip the newline and any other whitespace.
@@ -115,15 +115,15 @@ func userInput(prompt, vDefault, eg string, v *string) {
 
 func userInitConfig(c *config.Config) {
 	if !terminal.IsTerminal(int(os.Stdout.Fd())) {
-		sous.Log.Warn.Println("Unable to run interactive configuration; stdout isn't attached to a terminal.")
+		logging.Log.Warn.Println("Unable to run interactive configuration; stdout isn't attached to a terminal.")
 		return
 	}
 	if !terminal.IsTerminal(int(os.Stdin.Fd())) {
-		sous.Log.Warn.Println("Unable to run interactive configuration; stdin isn't attached to a terminall.")
+		logging.Log.Warn.Println("Unable to run interactive configuration; stdin isn't attached to a terminall.")
 		return
 	}
 	if os.Getenv("TASK_HOST") != "" { // XXX This is terrible, but the terminal check fails (which breaks the Mesos servers)
-		sous.Log.Warn.Println("Refusing to run interactive configuration; TASK_HOST is set.")
+		logging.Log.Warn.Println("Refusing to run interactive configuration; TASK_HOST is set.")
 		return
 	}
 	fmt.Println(`

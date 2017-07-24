@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/opentable/sous/util/logging"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -74,7 +75,7 @@ func (nrs *NameResolveTestSuite) SetupTest() {
 }
 
 func (nrs *NameResolveTestSuite) TearDownTest() {
-	Log.BeQuiet()
+	logging.Log.BeQuiet()
 }
 
 func (nrs *NameResolveTestSuite) TestResolveNameGood() {

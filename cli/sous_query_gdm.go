@@ -6,6 +6,7 @@ import (
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
+	"github.com/opentable/sous/util/logging"
 )
 
 // SousQueryGDM is the description of the `sous query gdm` command
@@ -34,7 +35,7 @@ func (*SousQueryGDM) RegisterOn(psy Addable) {
 
 // Execute defines the behavior of `sous query gdm`
 func (sb *SousQueryGDM) Execute(args []string) cmdr.Result {
-	sous.Log.Vomit.Printf("%v", sb.GDM.Snapshot())
+	logging.Log.Vomit.Printf("%v", sb.GDM.Snapshot())
 	sous.DumpDeployments(os.Stdout, sb.GDM.Deployments)
 	return cmdr.Success()
 }

@@ -4,6 +4,7 @@ package integration
 
 import (
 	"fmt"
+	"os"
 	"testing"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/opentable/sous/ext/singularity"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/docker_registry"
+	"github.com/opentable/sous/util/logging"
 	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/suite"
 )
@@ -99,7 +101,7 @@ func (suite *integrationSuite) newNameCache(name string) *docker.NameCache {
 
 	suite.Require().NoError(err)
 
-	return docker.NewNameCache(registryName, suite.registry, db)
+	return docker.NewNameCache(registryName, suite.registry, logging.NewLogSet("", os.Stdout), db)
 }
 
 func (suite *integrationSuite) waitUntilSettledStatus(clusters []string, sourceRepo string) *sous.DeployState {
@@ -372,8 +374,8 @@ func (suite *integrationSuite) TestMissingImage() {
 }
 
 func (suite *integrationSuite) TestResolve() {
-	sous.Log.BeChatty()
-	defer sous.Log.BeQuiet()
+	logging.Log.BeChatty()
+	defer logging.Log.BeQuiet()
 	suite.deployDefaultContainers()
 	clusterDefs := sous.Defs{
 		Clusters: sous.Clusters{
@@ -409,9 +411,9 @@ func (suite *integrationSuite) TestResolve() {
 	// ****
 	r := sous.NewResolver(suite.deployer, suite.nameCache, &sous.ResolveFilter{})
 
-	sous.Log.Warn.Print("Begining OneTwo")
+	logging.Log.Warn.Print("Begining OneTwo")
 	err = r.Begin(deploymentsOneTwo, clusterDefs.Clusters).Wait()
-	sous.Log.Warn.Print("Finished OneTwo")
+	logging.Log.Warn.Print("Finished OneTwo")
 	if err != nil {
 		suite.Fail(err.Error())
 	}
