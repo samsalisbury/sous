@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
-## [Unreleased](//github.com/opentable/sous/compare/0.5.21...HEAD)
+## [0.5.22](//github.com/opentable/sous/compare/0.5.21...0.5.22)
 ### Fixed
 - Server: Validation checks didn't consider default values.
 
