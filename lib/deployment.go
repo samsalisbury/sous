@@ -101,6 +101,29 @@ func (d *Deployment) ID() DeploymentID {
 	}
 }
 
+// Validate implements Flawed for State
+func (d *Deployment) Validate() []Flaw {
+	var flaws []Flaw
+
+	if d.Kind == "" {
+		flaws = append(flaws, NewFlaw(
+			fmt.Sprintf("manifest %q missing Kind", d.ID()),
+			func() error { d.Kind = ManifestKindService; return nil },
+		))
+	} else {
+		flaws = append(flaws, d.Kind.Validate()...)
+	}
+
+	cf := d.DeployConfig.Validate()
+	flaws = append(flaws, cf...)
+
+	for _, f := range flaws {
+		f.AddContext("deployment", d)
+	}
+
+	return flaws
+}
+
 // ManifestID returns the ID of the Manifest describing this deployment.
 func (d *Deployment) ManifestID() ManifestID {
 	return ManifestID{
