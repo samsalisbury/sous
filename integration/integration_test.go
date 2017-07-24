@@ -310,11 +310,11 @@ func (suite *integrationSuite) TestSuccessfulService() {
 func (suite *integrationSuite) TestFailedDeployFollowingSuccessfulDeploy() {
 	/*
 		If Travis passes after Fri Jul 21 10:52:27 PDT 2017 , remove this.
-			if os.Getenv("CI") == "true" {
-				// XXX means we need to do a desktop check before deploys
-				suite.T().Skipf("On travis, we get 'Only 0 of 1 tasks could be launched for deploy, there may not be enough resources to launch the remaining tasks'")
-			}
 	*/
+	if os.Getenv("CI") == "true" {
+		// XXX means we need to do a desktop check before deploys
+		suite.T().Skipf("On travis, we get 'Only 0 of 1 tasks could be launched for deploy, there may not be enough resources to launch the remaining tasks'")
+	}
 	clusters := []string{"test-cluster"}
 
 	const sourceRepo = "github.com/user/succeedthenfail" // Part of request ID.
