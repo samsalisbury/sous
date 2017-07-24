@@ -152,9 +152,11 @@ func TestBuildDeployment(t *testing.T) {
 					"com.opentable.sous.clustername": "left",
 				},
 
-				HealthcheckUri:             "/health-report",
-				HealthcheckTimeoutSeconds:  350,
-				DeployHealthTimeoutSeconds: 700,
+				Healthcheck: &dtos.HealthcheckOptions{
+					Uri: "/health-report",
+					ResponseTimeoutSeconds: 350,
+					StartupTimeoutSeconds:  700,
+				},
 
 				ContainerInfo: &dtos.SingularityContainerInfo{
 					Type:   "DOCKER",

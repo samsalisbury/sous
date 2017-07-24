@@ -5,14 +5,18 @@ Clusters:
     Kind: singularity
     BaseURL: http://singularity.example.com
     Env: {}
-    Startup: {}
+    Startup:
+      CheckReadyProtocol: HTTPS
+      CheckReadyURIPath: /health
     AllowedAdvisories: []
   other-cluster:
     Name: ""
     Kind: singularity
     BaseURL: http://some.singularity.cluster
     Env: {}
-    Startup: {}
+    Startup:
+      CheckReadyProtocol: HTTPS
+      CheckReadyURIPath: /health
     AllowedAdvisories: []
 EnvVars: []
 Resources: []

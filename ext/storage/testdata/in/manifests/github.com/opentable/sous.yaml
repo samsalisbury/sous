@@ -13,4 +13,7 @@ Deployments:
       SOME_DB_URL: https://some.database
     NumInstances: 6
     Volumes: []
+    Startup:
+      CheckReadyProtocol: HTTPS
+      CheckReadyURIPath: /health
     Version: 1.0.0-rc.1+deadbeef

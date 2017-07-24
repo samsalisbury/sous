@@ -49,8 +49,6 @@ func (suite *integrationSuite) deploymentWithRepo(clusterNames []string, repo st
 func (suite *integrationSuite) findRepo(deps sous.DeployStates, repo string) sous.DeploymentID {
 	for i, d := range deps.Snapshot() {
 		if d != nil {
-			suite.T().Log(i)
-			suite.T().Logf("%q =? %q", i.ManifestID.Source.Repo, repo)
 			if i.ManifestID.Source.Repo == repo {
 				return i
 			}
@@ -78,6 +76,7 @@ func (suite *integrationSuite) manifest(nc *docker.NameCache, drepo, containerDi
 			"test-cluster": sous.DeploySpec{
 				DeployConfig: sous.DeployConfig{
 					Startup: sous.Startup{
+						CheckReadyProtocol:   "HTTP",
 						CheckReadyURIPath:    checkReadyPath,
 						CheckReadyURITimeout: checkReadyTimeout,
 						Timeout:              checkReadyTimeout,
@@ -106,18 +105,22 @@ func (suite *integrationSuite) newNameCache(name string) *docker.NameCache {
 
 func (suite *integrationSuite) waitUntilSettledStatus(clusters []string, sourceRepo string) *sous.DeployState {
 	sleepTime := time.Duration(5) * time.Second
-	suite.T().Log("About to snapshot the state - it may take some time.")
-	for counter := 1; ; counter++ {
+	suite.T().Logf("Awaiting stabilization of Singularity deploy %q (either Active or Failed)...", sourceRepo)
+	const waitLimit = 100
+	var deployState *sous.DeployState
+	for counter := 1; counter < waitLimit; counter++ {
 		ds, which := suite.deploymentWithRepo(clusters, sourceRepo)
 		deps := ds.Snapshot()
-		deployState := deps[which]
+		deployState = deps[which]
 		suite.Require().NotNil(deployState)
-		suite.T().Logf("deployState:%s", deployState.String())
 		if deployState.Status == sous.DeployStatusActive || deployState.Status == sous.DeployStatusFailed {
+			suite.T().Logf("Stabilized with %s", deployState.Status)
 			return deployState
 		}
 		time.Sleep(sleepTime)
 	}
+	suite.FailNow("Never stabilized", "%q didn't settle after %d polls; final status was %s", sourceRepo, waitLimit, deployState.Status)
+	return nil
 }
 
 func (suite *integrationSuite) statusIs(ds *sous.DeployState, expected sous.DeployStatus) {
@@ -138,10 +141,12 @@ func (suite *integrationSuite) BeforeTest(suiteName, testName string) {
 }
 
 func (suite *integrationSuite) deployDefaultContainers() {
-	nilStartup := sous.Startup{}
+	nilStartup := sous.Startup{SkipCheck: true}
 	timeout := 500
 	startup := sous.Startup{
-		Timeout: timeout,
+		Timeout:            timeout,
+		CheckReadyURIPath:  "/healthy",
+		CheckReadyProtocol: "HTTP",
 	}
 
 	registerAndDeploy(ip, "test-cluster", "hello-labels", "github.com/docker-library/hello-world", "hello-labels", "latest", []int32{}, nilStartup)
@@ -260,6 +265,7 @@ func (suite *integrationSuite) TestFailedTimedOutService() {
 	uriPath := "slow-healthy"
 	startup := sous.Startup{
 		Timeout:              timeout,
+		CheckReadyProtocol:   "HTTP",
 		CheckReadyURIPath:    uriPath,
 		CheckReadyURITimeout: timeout,
 	}
@@ -274,6 +280,7 @@ func (suite *integrationSuite) TestFailedNotHealthyService() {
 	timeout := 60
 	uriPath := "sick"
 	startup := sous.Startup{
+		CheckReadyProtocol:   "HTTP",
 		Timeout:              timeout,
 		CheckReadyURIPath:    uriPath,
 		CheckReadyURITimeout: timeout,
@@ -289,6 +296,7 @@ func (suite *integrationSuite) TestSuccessfulService() {
 	timeout := 300
 	uriPath := "healthy"
 	startup := sous.Startup{
+		CheckReadyProtocol:   "HTTP",
 		Timeout:              timeout,
 		CheckReadyURIPath:    uriPath,
 		CheckReadyURITimeout: timeout,
@@ -302,6 +310,13 @@ func (suite *integrationSuite) TestSuccessfulService() {
 }
 
 func (suite *integrationSuite) TestFailedDeployFollowingSuccessfulDeploy() {
+	/*
+		If Travis passes after Fri Jul 21 10:52:27 PDT 2017 , remove this.
+	*/
+	if os.Getenv("CI") == "true" {
+		// XXX means we need to do a desktop check before deploys
+		suite.T().Skipf("On travis, we get 'Only 0 of 1 tasks could be launched for deploy, there may not be enough resources to launch the remaining tasks'")
+	}
 	clusters := []string{"test-cluster"}
 
 	const sourceRepo = "github.com/user/succeedthenfail" // Part of request ID.
@@ -311,10 +326,8 @@ func (suite *integrationSuite) TestFailedDeployFollowingSuccessfulDeploy() {
 	var ports []int32
 	const repoName = "succeedthenfail"
 
-	timeout := 500
 	registerAndDeploy(ip, clusterName, repoName, sourceRepo, "succeedthenfail-succeed", "1.0.0-succeed", ports, sous.Startup{
-		SkipReadyTest: true,
-		Timeout:       timeout,
+		SkipCheck: true,
 	})
 
 	deployState := suite.waitUntilSettledStatus(clusters, sourceRepo)
@@ -326,7 +339,7 @@ func (suite *integrationSuite) TestFailedDeployFollowingSuccessfulDeploy() {
 
 	// Create an assert on a failed deployment.
 
-	registerAndDeploy(ip, clusterName, repoName, sourceRepo, "succeedthenfail-fail", "2.0.0-fail", ports, sous.Startup{})
+	registerAndDeploy(ip, clusterName, repoName, sourceRepo, "succeedthenfail-fail", "2.0.0-fail", ports, sous.Startup{SkipCheck: true})
 
 	deployState = suite.waitUntilSettledStatus(clusters, sourceRepo)
 	suite.statusIs(deployState, sous.DeployStatusFailed)

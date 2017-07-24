@@ -26,6 +26,9 @@ func buildManifest(cluster, repo, version string) *sous.Manifest {
 			cluster: sous.DeploySpec{
 				Version: semv.MustParse(version),
 				DeployConfig: sous.DeployConfig{
+					Startup: sous.Startup{
+						CheckReadyProtocol: "HTTPS",
+					},
 					Resources: sous.Resources{
 						"cpus":   "1",
 						"memory": "256",

@@ -141,7 +141,8 @@ func TestHandlesManifestPut(t *testing.T) {
 						"ports":  "1",
 					},
 					Startup: sous.Startup{
-						CheckReadyURIPath: uripath,
+						CheckReadyProtocol: "HTTP",
+						CheckReadyURIPath:  uripath,
 					},
 				},
 			},

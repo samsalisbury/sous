@@ -160,8 +160,18 @@ func TestNewTargetManifest(t *testing.T) {
 	s := sous.NewState()
 	cls := sous.Clusters{}
 	cls["test"] = &sous.Cluster{
-		Name:    "test",
-		Kind:    "singularity",
+		Name: "test",
+		Kind: "singularity",
+		Startup: sous.Startup{
+			Timeout:                   180,
+			ConnectDelay:              5,
+			ConnectInterval:           3,
+			CheckReadyProtocol:        "HTTPS",
+			CheckReadyURIPath:         "/health",
+			CheckReadyFailureStatuses: []int{500, 503},
+			CheckReadyInterval:        1,
+			CheckReadyRetries:         50,
+		},
 		BaseURL: "http://singularity.example.com/",
 	}
 	s.Defs.Clusters = cls

@@ -79,6 +79,8 @@ func WrapCompose(m *testing.M, composeDir string) (resultCode int) {
 // ResetSingularity clears out the state from the integration singularity service
 // Call it (with and extra call deferred) anywhere integration tests use Singularity
 func ResetSingularity() {
+	const pollLimit = 30
+	const retryLimit = 3
 	log.Print("Resetting Singularity...")
 	singClient := sing.NewClient(SingularityURL)
 
@@ -87,24 +89,33 @@ func ResetSingularity() {
 		panic(err)
 	}
 
-	for _, r := range reqList {
-		_, err := singClient.DeleteRequest(r.Request.Id, nil)
-		if err != nil {
-			panic(err)
+	// Singularity is sometimes not actually deleting a request until the second attempt...
+	for j := retryLimit; j >= 0; j-- {
+		for _, r := range reqList {
+			_, err := singClient.DeleteRequest(r.Request.Id, nil)
+			if err != nil {
+				panic(err)
+			}
 		}
-	}
 
-	for i := 100; i > 0; i-- {
-		verifyReqList, err := singClient.GetRequests(false)
-		if err != nil {
-			panic(err)
+		log.Printf("Singularity resetting: Issued deletes for %d requests. Awaiting confirmation they've quit.", len(reqList))
+
+		for i := pollLimit; i > 0; i-- {
+			reqList, err = singClient.GetRequests(false)
+			if err != nil {
+				panic(err)
+			}
+			if len(reqList) == 0 {
+				log.Printf("Singularity successfully reset.")
+				return
+			}
+			time.Sleep(time.Second)
 		}
-		log.Printf("Singularity reset. Remaining requests:%d", len(verifyReqList))
-		if len(verifyReqList) == 0 {
-			break
-		}
-		time.Sleep(time.Second)
 	}
+	for n, req := range reqList {
+		log.Printf("Singularity reset failure: stubborn request: #%d/%d %#v", n+1, len(reqList), req)
+	}
+	panic(fmt.Errorf("singularity not reset after %d * %d tries - %d requests remain", retryLimit, pollLimit, len(reqList)))
 }
 
 // BuildImageName constructs a simple image name rooted at the SingularityURL
@@ -198,6 +209,7 @@ func startInstance(url, clusterName, imageName, repoName string, ports []int32, 
 	}).(*dtos.SingularityRequest)
 
 	for {
+		log.Printf("Creating request %q", reqID)
 		_, err := sing.PostRequest(req)
 		if err != nil {
 			log.Printf("PostRequest error:%#v", err)
@@ -233,15 +245,10 @@ func startInstance(url, clusterName, imageName, repoName string, ports []int32, 
 		}),
 	}
 
-	if !startup.SkipReadyTest {
-		log.Printf("HealthcheckURI: %s", startup.CheckReadyURIPath)
-		depMap["HealthcheckUri"] = startup.CheckReadyURIPath
-		log.Printf("HealthcheckTimeoutSeconds: %d", startup.CheckReadyURITimeout)
-		depMap["HealthcheckTimeoutSeconds"] = int64(startup.CheckReadyURITimeout)
+	err = singularity.MapStartupIntoHealthcheckOptions((*map[string]interface{})(&depMap), startup)
+	if err != nil {
+		return err
 	}
-
-	log.Printf("DeployHealthTimeoutSeconds: %d", startup.Timeout)
-	depMap["DeployHealthTimeoutSeconds"] = int64(startup.Timeout)
 
 	depReqMap := dtoMap{
 		"Deploy": loadMap(&dtos.SingularityDeploy{}, depMap),
@@ -249,7 +256,8 @@ func startInstance(url, clusterName, imageName, repoName string, ports []int32, 
 
 	depReq := loadMap(&dtos.SingularityDeployRequest{}, depReqMap).(*dtos.SingularityDeployRequest)
 
-	log.Printf("Constructed SingularityDeployRequest %#v containing SingularityDeploy %#v", depReq, *depReq.Deploy)
+	log.Printf("Constructed SingularityDeployRequest %#v", depReq)
+	log.Printf("  containing SingularityDeploy %#v", *depReq.Deploy)
 
 	_, err = sing.Deploy(depReq)
 	if err != nil {

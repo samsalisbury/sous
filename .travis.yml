@@ -15,6 +15,7 @@ script:
 - make reject-wip
 after_script:
 - docker ps || true
+- docker logs testregistry_master_1 || true
 - docker logs testregistry_slave_1 || true
 after_success:
 - if [ x$TRAVIS_PULL_REQUEST != "xfalse" ]; then make coverage; fi

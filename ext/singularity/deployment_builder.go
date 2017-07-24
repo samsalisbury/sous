@@ -99,6 +99,7 @@ func (db *deploymentBuilder) isRetryable(err error) bool {
 	return !isMalformed(err) &&
 		!ignorableDeploy(err) &&
 		db.req.SourceURL != "" &&
+
 		db.req.ReqParent != nil &&
 		db.req.ReqParent.Request != nil &&
 		db.req.ReqParent.Request.Id != ""
@@ -381,16 +382,21 @@ func (db *deploymentBuilder) unpackDeployConfig() error {
 		Log.Debug.Printf("%q %+v", db.reqID, db.Target.DeployConfig.Volumes[0])
 	}
 
-	if db.deploy.HealthcheckUri != "" { // terrible hack
-		db.Target.Startup.CheckReadyURIPath = string(db.deploy.HealthcheckUri)
-	}
+	if db.deploy.Healthcheck != nil {
+		db.Target.Startup.ConnectDelay = int(db.deploy.Healthcheck.StartupDelaySeconds)
+		db.Target.Startup.Timeout = int(db.deploy.Healthcheck.StartupTimeoutSeconds)
+		db.Target.Startup.ConnectInterval = int(db.deploy.Healthcheck.StartupIntervalSeconds)
+		db.Target.Startup.CheckReadyProtocol = string(db.deploy.Healthcheck.Protocol)
+		db.Target.Startup.CheckReadyURIPath = string(db.deploy.Healthcheck.Uri)
+		db.Target.Startup.CheckReadyPortIndex = int(db.deploy.Healthcheck.PortIndex)
+		db.Target.Startup.CheckReadyURITimeout = int(db.deploy.Healthcheck.ResponseTimeoutSeconds)
+		db.Target.Startup.CheckReadyInterval = int(db.deploy.Healthcheck.IntervalSeconds)
+		db.Target.Startup.CheckReadyRetries = int(db.deploy.Healthcheck.MaxRetries)
 
-	if db.deploy.HealthcheckTimeoutSeconds != 0 {
-		db.Target.Startup.CheckReadyURITimeout = int(db.deploy.HealthcheckTimeoutSeconds)
-	}
-
-	if db.deploy.DeployHealthTimeoutSeconds != 0 {
-		db.Target.Startup.Timeout = int(db.deploy.DeployHealthTimeoutSeconds)
+		db.Target.Startup.CheckReadyFailureStatuses = make([]int, len(db.deploy.Healthcheck.FailureStatusCodes))
+		for n, code := range db.deploy.Healthcheck.FailureStatusCodes {
+			db.Target.Startup.CheckReadyFailureStatuses[n] = int(code)
+		}
 	}
 
 	return nil

@@ -8,9 +8,13 @@ with respect to its command line interface and HTTP interface.
 
 ## [Unreleased](//github.com/opentable/sous/compare/0.5.20...HEAD)
 ### Added
-- Server: Startup field SkipReadyCheck added - rather than omitting a
+- Server: Startup field "SkipCheck" added - rather than omitting a
   healthcheck URI, services must set this field `true` in order to signal that
   they don't make use of a "ready" endpoint.
+- Server: Full set of Singularity 0.15 HealthcheckOptions now supported.
+  Previous field names on Startup retained for compatibility,
+  although there may be nuanced changes in how they're interpreted
+  (because Singularity no longer supports the old version.)
 - Server: Logging extended to collect metrics.
 - Server: Metrics exposed on an HTTP endpoint.
 - Developer: LogSet extracted to new util/logging package, some refiguring of
@@ -20,6 +24,8 @@ with respect to its command line interface and HTTP interface.
 - Server: Startup DeployConfig part fields now have cluster-based default
   values. (These should be configued in the GDM before this version is
   deployed!)
+  Most notably, the CheckReadyProtocol needs a default ("HTTP" or "HTTPS")
+  because Singularity validates the value on its side.
 
 ## [0.5.20](//github.com/opentable/sous/compare/0.5.18...0.5.20)
 ### Fixed

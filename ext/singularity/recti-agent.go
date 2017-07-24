@@ -144,12 +144,9 @@ func buildDeployRequest(d sous.Deployable, reqID string, metadata map[string]str
 		"Metadata":      metadata,
 	}
 
-	startup := d.Deployment.DeployConfig.Startup
-	if !startup.SkipReadyTest {
-		depMap["HealthcheckUri"] = startup.CheckReadyURIPath
-		depMap["HealthcheckTimeoutSeconds"] = int64(startup.CheckReadyURITimeout)
+	if err := MapStartupIntoHealthcheckOptions((*map[string]interface{})(&depMap), d.Deployment.DeployConfig.Startup); err != nil {
+		return nil, err
 	}
-	depMap["DeployHealthTimeoutSeconds"] = int64(startup.Timeout)
 
 	dep, err := swaggering.LoadMap(&dtos.SingularityDeploy{}, depMap)
 	if err != nil {
@@ -165,6 +162,38 @@ func buildDeployRequest(d sous.Deployable, reqID string, metadata map[string]str
 		return nil, err
 	}
 	return depReq.(*dtos.SingularityDeployRequest), nil
+}
+
+// MapStartupIntoHealthcheckOptions updates the given dtoMap with fields for a
+// HealthcheckOptions struct if appropriate.
+// map[string]interface{} is used so that the function can be exported
+// and used in integration tests. Once type aliases land, these backflips can go away.
+func MapStartupIntoHealthcheckOptions(depMap *map[string]interface{}, startup sous.Startup) error {
+	if startup.SkipCheck {
+		return nil
+	}
+
+	hcMap := dtoMap{}
+
+	hcMap["StartupDelaySeconds"] = int32(startup.ConnectDelay)
+	hcMap["StartupTimeoutSeconds"] = int32(startup.Timeout)
+	hcMap["StartupIntervalSeconds"] = int32(startup.ConnectInterval)
+	failStatuses := make([]int32, len(startup.CheckReadyFailureStatuses))
+	for n, c := range startup.CheckReadyFailureStatuses {
+		failStatuses[n] = int32(c)
+	}
+	hcMap["FailureStatusCodes"] = failStatuses
+
+	hcMap["Protocol"] = dtos.HealthcheckOptionsHealthcheckProtocol(startup.CheckReadyProtocol)
+	hcMap["Uri"] = startup.CheckReadyURIPath
+	hcMap["PortIndex"] = int32(startup.CheckReadyPortIndex)
+	hcMap["ResponseTimeoutSeconds"] = int32(startup.CheckReadyURITimeout)
+	hcMap["IntervalSeconds"] = int32(startup.CheckReadyInterval)
+	hcMap["MaxRetries"] = int32(startup.CheckReadyRetries)
+
+	hc, err := swaggering.LoadMap(&dtos.HealthcheckOptions{}, hcMap)
+	(*depMap)["Healthcheck"] = hc
+	return err
 }
 
 func singRequestFromDeployment(dep *sous.Deployment, reqID string) (string, *dtos.SingularityRequest, error) {

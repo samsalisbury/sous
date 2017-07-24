@@ -88,8 +88,13 @@ func defaultDeploySpecs(clusters sous.Clusters) sous.DeploySpecs {
 	for name := range clusters {
 		defaults[name] = sous.DeploySpec{
 			DeployConfig: sous.DeployConfig{
-				Resources:    sous.Resources{},
-				Env:          map[string]string{},
+				Resources: sous.Resources{},
+				Env:       map[string]string{},
+				Startup: sous.Startup{
+					CheckReadyProtocol: "HTTP",
+					CheckReadyURIPath:  "/health",
+				},
+				// XXX Should be 0 - used when no config has been specified
 				NumInstances: 1,
 			},
 		}
