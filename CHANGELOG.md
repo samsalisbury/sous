@@ -20,7 +20,7 @@ with respect to its command line interface and HTTP interface.
 - Developer: LogSet extracted to new util/logging package, some refiguring of
   the types and interfaces there with an eye to pulling in a structured logger.
 - Client: Command `sous plunbing normalizegdm` is a utility to round-trip the
-- Sous storage format. With luck, running this command after manual changes to
+  Sous storage format. With luck, running this command after manual changes to
   the GDM repo will correct false conflicts.
 ### Changed
 - Server: Startup DeployConfig part fields now have cluster-based default
