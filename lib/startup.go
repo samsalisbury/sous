@@ -215,7 +215,6 @@ func (s Startup) diff(o Startup) []string {
 	diffs := []string{}
 	diff := func(format string, a ...interface{}) {
 		d := fmt.Sprintf(format, a...)
-		Log.Vomitf("Startup diff: %s", d)
 		diffs = append(diffs, d)
 	}
 
