@@ -24,15 +24,6 @@ type (
 		Config *config.Config
 		Log    *logging.LogSet
 	}
-
-	server struct {
-		ClusterName string
-		URL         string
-	}
-
-	serverListData struct {
-		Servers []server
-	}
 )
 
 // Get implements Getable on ServerListResource

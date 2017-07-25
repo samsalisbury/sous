@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"net/http/pprof"
 
-	"github.com/hydrogen18/memlistener"
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/util/restful"
