@@ -30,11 +30,6 @@ func Run(laddr string, handler http.Handler) error {
 	return s.ListenAndServe()
 }
 
-// InMemory creates an in memory server.
-func InMemory(handler http.Handler) *memlistener.MemoryServer {
-	ms := memlistener.NewInMemoryServer(handler)
-}
-
 // Handler builds the http.Handler for the Sous server httprouter.
 func Handler(mainGraph *graph.SousGraph, ls logSet) http.Handler {
 	handler := mux(mainGraph, ls)

@@ -101,16 +101,18 @@ func NewClient(serverURL string, ls logSet) (*LiveHTTPClient, error) {
 }
 
 // NewInMemoryClient wraps a MemoryListener in a restful.Client
-func NewInMemoryClient(ms *memlistener.MemoryServer, ls logSet) (*LiveHTTPClient, error) {
+func NewInMemoryClient(handler http.Handler, ls logSet) (HTTPClient, error) {
 	u, err := url.Parse("http://in.memory.server")
 	if err != nil {
 		return nil, err
 	}
 
+	ms := memlistener.NewInMemoryServer(handler)
+
 	client := &LiveHTTPClient{
 		serverURL: u,
 		logSet:    ls,
-		Client:    ms.NewClient(),
+		Client:    *ms.NewClient(),
 	}
 
 	return client, nil
