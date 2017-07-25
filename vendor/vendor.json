@@ -159,6 +159,12 @@
 			"revisionTime": "2016-03-17T21:34:30Z"
 		},
 		{
+			"checksumSHA1": "yc+wQcQjt9ss2aUyuoSVeODlzH0=",
+			"path": "github.com/hydrogen18/memlistener",
+			"revision": "54553eb933fb8c2d6103afed4c7173d807d26c0a",
+			"revisionTime": "2014-11-26T15:21:55Z"
+		},
+		{
 			"checksumSHA1": "Drsz3oT4NmM2tVQCRk+occxVvPA=",
 			"path": "github.com/julienschmidt/httprouter",
 			"revision": "d8ff598a019f2c7bad0980917a588193cf26666e",

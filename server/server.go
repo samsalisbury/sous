@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/http/pprof"
 
+	"github.com/hydrogen18/memlistener"
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/util/restful"
@@ -27,6 +28,11 @@ type logSet interface {
 func Run(laddr string, handler http.Handler) error {
 	s := &http.Server{Addr: laddr, Handler: handler}
 	return s.ListenAndServe()
+}
+
+// InMemory creates an in memory server.
+func InMemory(handler http.Handler) *memlistener.MemoryServer {
+	ms := memlistener.NewInMemoryServer(handler)
 }
 
 // Handler builds the http.Handler for the Sous server httprouter.

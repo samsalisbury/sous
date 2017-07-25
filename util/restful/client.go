@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/hydrogen18/memlistener"
 	"github.com/opentable/sous/util/readdebugger"
 	"github.com/pkg/errors"
 )
@@ -97,6 +98,22 @@ func NewClient(serverURL string, ls logSet) (*LiveHTTPClient, error) {
 	client.Client.Transport = &http.Transport{Proxy: http.ProxyFromEnvironment, DisableCompression: true}
 
 	return client, errors.Wrapf(err, "new Sous REST client")
+}
+
+// NewInMemoryClient wraps a MemoryListener in a restful.Client
+func NewInMemoryClient(ms *memlistener.MemoryServer, ls logSet) (*LiveHTTPClient, error) {
+	u, err := url.Parse("http://in.memory.server")
+	if err != nil {
+		return nil, err
+	}
+
+	client := &LiveHTTPClient{
+		serverURL: u,
+		logSet:    ls,
+		Client:    ms.NewClient(),
+	}
+
+	return client, nil
 }
 
 // ****
