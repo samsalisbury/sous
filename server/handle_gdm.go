@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"sort"
 
-	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
@@ -27,12 +26,8 @@ type (
 		*http.Request
 		*logging.LogSet
 		GDM          *LiveGDM
-		StateManager *graph.StateManager
+		StateManager sous.StateManager
 		User         ClientUser
-	}
-
-	gdmWrapper struct {
-		Deployments []*sous.Deployment
 	}
 )
 

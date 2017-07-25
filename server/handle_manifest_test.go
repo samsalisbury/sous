@@ -7,7 +7,6 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
@@ -124,7 +123,7 @@ func TestHandlesManifestPut(t *testing.T) {
 		Source: sous.SourceLocation{Repo: "gh"},
 		Kind:   sous.ManifestKindService,
 	})
-	writer := graph.StateWriter{StateWriter: &sous.DummyStateManager{State: state}}
+	writer := &sous.DummyStateManager{State: state}
 
 	uripath := "certainly/i/am/healthy"
 

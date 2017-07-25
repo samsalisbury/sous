@@ -18,7 +18,7 @@ type SousUpdate struct {
 	OTPLFlags         config.OTPLFlags
 	Manifest          graph.TargetManifest
 	GDM               graph.CurrentGDM
-	StateManager      *graph.StateManager
+	Client            *graph.HTTPClient
 	ResolveFilter     *graph.RefinedResolveFilter
 	User              sous.User
 }
@@ -30,7 +30,7 @@ const sousUpdateHelp = `update the version to be deployed in a cluster
 usage: sous update -cluster <name> [-tag <semver>] [-use-otpl-deploy|-ignore-otpl-deploy]
 
 sous update will update the version tag for this application in the named
-cluster. You can then use 'sous rectify' to have that version deployed.
+cluster.
 `
 
 // Help returns the help string for this command
@@ -62,11 +62,12 @@ func (su *SousUpdate) Execute(args []string) cmdr.Result {
 		return EnsureErrorResult(err)
 	}
 
-	gdm, err := updateRetryLoop(su.StateManager.StateManager, sid, did, su.User)
+	gdm, err := updateRetryLoop(su.Client, sid, did, su.User)
 	if err != nil {
 		return EnsureErrorResult(err)
 	}
 
+	// we update the in-memory GDM so that we can poll based on it.
 	for k, d := range gdm.Snapshot() {
 		su.GDM.Set(k, d)
 	}
@@ -80,7 +81,10 @@ func (su *SousUpdate) Execute(args []string) cmdr.Result {
 // server-side. In this case, the disappointed `sous update` should retry, up
 // to the number of times of manifests there are defined for this
 // SourceLocation
-func updateRetryLoop(sm sous.StateManager, sid sous.SourceID, did sous.DeploymentID, user sous.User) (sous.Deployments, error) {
+func updateRetryLoop(cl restful.HTTPClient, sid sous.SourceID, did sous.DeploymentID, user sous.User) (sous.Deployments, error) {
+
+	sm := sous.NewHTTPStateManager(cl)
+
 	tryLimit := 2
 
 	mid := did.ManifestID

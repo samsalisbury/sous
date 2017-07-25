@@ -73,8 +73,7 @@ func TestInvokeUpdate(t *testing.T) {
 	assert.Len(exe.Args, 0)
 	update, good := exe.Cmd.(*SousUpdate)
 	require.True(good)
-	assert.NotNil(update.StateManager)
-	assert.NotNil(update.StateManager.StateManager)
+	assert.NotNil(update.Client)
 }
 
 func TestInvokeDeploy(t *testing.T) {

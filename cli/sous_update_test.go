@@ -5,6 +5,7 @@ import (
 
 	"github.com/opentable/sous/graph"
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/restful"
 	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/assert"
 )
@@ -82,7 +83,9 @@ func TestUpdateState(t *testing.T) {
 }
 
 func TestUpdateRetryLoop(t *testing.T) {
-	dsm := &sous.DummyStateManager{State: sous.NewState()}
+	cl := &restful.DummyHTTPClient{}
+
+	//dsm := &sous.DummyStateManager{State: sous.NewState()}
 	/*
 		Source SourceLocation `validate:"nonzero"`
 		Flavor string `yaml:",omitempty"`
@@ -99,29 +102,26 @@ func TestUpdateRetryLoop(t *testing.T) {
 		},
 	}
 	t.Log(mani.ID())
-	dsm.State.Manifests.Add(mani)
-	dsm.State.Defs.Clusters = sous.Clusters{"blah": {}}
+	//dsm.State.Manifests.Add(mani)
+	// dsm.State.Defs.Clusters = sous.Clusters{"blah": {}}
 	user := sous.User{Name: "Judson the Unlucky", Email: "unlucky@opentable.com"}
-	deps, err := updateRetryLoop(dsm, sourceID, depID, user)
+
+	deps, err := updateRetryLoop(cl, sourceID, depID, user)
 
 	assert.NoError(t, err)
 	assert.Equal(t, 1, deps.Len())
 	dep, present := deps.Get(depID)
 	assert.True(t, present)
 	assert.Equal(t, "1.2.3", dep.SourceID.Version.String())
-	assert.True(t, dsm.ReadCount > 0, "No requests made against state manager")
+	//assert.True(t, dsm.ReadCount > 0, "No requests made against state manager")
 }
-
-type DummyStateManager struct{}
-
-func (dsm *DummyStateManager) WriteState(s *sous.State, u sous.User) error { return nil }
-func (dsm *DummyStateManager) ReadState() (*sous.State, error)             { return nil, nil }
 
 //XXX should actually drive interesting behavior
 func TestSousUpdate_Execute(t *testing.T) {
-	dsm := &DummyStateManager{}
+	//dsm := &sous.DummyStateManager{}
 	su := SousUpdate{
-		StateManager:  &graph.StateManager{dsm},
+		//StateManager:  &graph.StateManager{dsm},
+		Client:        &restful.DummyHTTPClient{},
 		Manifest:      graph.TargetManifest{Manifest: &sous.Manifest{}},
 		ResolveFilter: &graph.RefinedResolveFilter{},
 	}

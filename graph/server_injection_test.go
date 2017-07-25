@@ -1,4 +1,4 @@
-package server
+package graph
 
 import (
 	"bytes"
@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/opentable/sous/config"
-	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 	"github.com/stretchr/testify/assert"
@@ -16,10 +15,10 @@ import (
 func basicInjectedHandler(factory restful.ExchangeFactory, t *testing.T) restful.Exchanger {
 	require := require.New(t)
 
-	g := graph.TestGraphWithConfig(&bytes.Buffer{}, os.Stdout, os.Stdout, "StateLocation: '../ext/storage/testdata/in'\n")
+	g := TestGraphWithConfig(&bytes.Buffer{}, os.Stdout, os.Stdout, "StateLocation: '../ext/storage/testdata/in'\n")
 	g.Add(&config.Verbosity{})
 	g.Add(&config.DeployFilterFlags{Cluster: "test"})
-	g.Add(graph.DryrunBoth)
+	g.Add(DryrunBoth)
 
 	gf := func() restful.Injector {
 		return g.Clone()

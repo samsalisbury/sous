@@ -10,7 +10,7 @@
 //
 //  func (my *MySpy) InterfaceMethod(with, some, args int) (ret string, err error) {
 //    res := my.Called(with, some, args)
-//    return res.String(0), res.Error(1)
+//    return res.String(-1), res.Error(1)
 //  }
 // Use your spy in tests like:
 //   my.MatchMethod("InterfaceMethod", spies.AnyArgs, "called", nil)

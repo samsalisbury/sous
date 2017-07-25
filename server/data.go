@@ -1,6 +1,9 @@
 package server
 
-import "github.com/opentable/sous/util/restful"
+import (
+	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/restful"
+)
 
 type (
 	server struct {
@@ -10,6 +13,16 @@ type (
 
 	serverListData struct {
 		Servers []server
+	}
+
+	gdmWrapper struct {
+		Deployments []*sous.Deployment
+	}
+
+	// A LiveGDM wraps a sous.Deployments and gets refreshed per server request
+	LiveGDM struct {
+		Etag string
+		sous.Deployments
 	}
 )
 
@@ -39,4 +52,24 @@ func (ld *serverListData) VariancesFrom(other restful.Comparable) restful.Varian
 		}
 		return restful.Variances{}
 	}
+}
+
+// EmptyReceiver implements Comparable on gdmWrapper
+func (g *gdmWrapper) EmptyReceiver() restful.Comparable {
+	return &gdmWrapper{Deployments: []*sous.Deployment{}}
+}
+
+// VariancesFrom implements Comparable on gdmWrapper
+func (g *gdmWrapper) VariancesFrom(other restful.Comparable) restful.Variances {
+	switch og := other.(type) {
+	default:
+		return restful.Variances{"Not a gdmWrapper"}
+	case *gdmWrapper:
+		return g.unwrap().VariancesFrom(og.unwrap())
+	}
+}
+
+func (g *gdmWrapper) unwrap() *sous.Deployments {
+	ds := sous.NewDeployments(g.Deployments...)
+	return &ds
 }

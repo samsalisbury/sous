@@ -5,6 +5,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log" //ok
+	"net/http"
 	"os"
 	"os/user"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/opentable/sous/ext/singularity"
 	"github.com/opentable/sous/ext/storage"
 	"github.com/opentable/sous/lib"
+	"github.com/opentable/sous/server"
 	"github.com/opentable/sous/util/cmdr"
 	"github.com/opentable/sous/util/docker_registry"
 	"github.com/opentable/sous/util/logging"
@@ -425,14 +427,14 @@ func newSelector(regClient LocalDockerClient, log *logging.LogSet) sous.Selector
 			sbp := docker.NewSplitBuildpack(regClient.Client)
 			dr, err := sbp.Detect(ctx)
 			if err == nil && dr.Compatible {
-				log.Info.Printf("Building with split container buildpack")
+				log.Warnf("Building with split container buildpack")
 				return sbp, nil
 			}
 
 			dfbp := docker.NewDockerfileBuildpack()
 			dr, err = dfbp.Detect(ctx)
 			if err == nil && dr.Compatible {
-				log.Info.Printf("Building with simple dockerfile buildpack")
+				log.Warnf("Building with simple dockerfile buildpack")
 				return dfbp, nil
 			}
 			return nil, errors.New("no buildpack detected for project")
@@ -476,16 +478,21 @@ func newDockerClient() LocalDockerClient {
 	return LocalDockerClient{docker_registry.NewClient()}
 }
 
+func newServerHandler(g *SousGraph, log *logging.LogSet) http.Handler {
+	return server.Handler(g, log.Child("http-server"))
+}
+
 // newHTTPClient returns an HTTP client if c.Server is not empty.
 // Otherwise it returns nil, and emits some warnings.
-func newHTTPClient(c LocalSousConfig, user sous.User, log *logging.LogSet) (HTTPClient, error) {
+func newHTTPClient(c LocalSousConfig, user sous.User, srvr http.Handler, log *logging.LogSet) (HTTPClient, error) {
 	if c.Server == "" {
 		logging.Log.Warn.Println("No server set, Sous is running in server or workstation mode.")
 		logging.Log.Warn.Println("Configure a server like this: sous config server http://some.sous.server")
-		return HTTPClient{}, nil
+		cl, err := restful.NewInMemoryClient(srvr, log.Child("local-http"))
+		return HTTPClient{HTTPClient: cl}, err
 	}
 	logging.Log.Debug.Printf("Using server at %s", c.Server)
-	cl, err := restful.NewClient(c.Server, log)
+	cl, err := restful.NewClient(c.Server, log.Child("http-client"))
 	return HTTPClient{HTTPClient: cl}, err
 }
 
@@ -563,7 +570,7 @@ func newDockerRegistry(cfg LocalSousConfig, ls *logging.LogSet, cl LocalDockerCl
 
 func newInserter(cfg LocalSousConfig, ls *logging.LogSet, cl LocalDockerClient) (sous.Inserter, error) {
 	if cfg.Server == "" {
-		return newDockerRegistry(cfg, ls, cl)
+		return newDockerRegistry(cfg, ls.Child("docker-registry"), cl)
 	}
 	return sous.NewHTTPNameInserter(cfg.Server)
 }
