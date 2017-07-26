@@ -35,7 +35,9 @@ func injectedStateManager(t *testing.T, cfg *config.Config) *StateManager {
 	g.Add(logging.SilentLogSet())
 	g.Add(newStateManager)
 	g.Add(LocalSousConfig{Config: cfg})
+	g.Add(newServerHandler)
 	g.Add(newHTTPClient)
+	g.Add(&SousGraph{g})
 
 	smRcvr := struct {
 		Sm *StateManager

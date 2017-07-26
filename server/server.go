@@ -47,6 +47,7 @@ type logSet interface {
 	Vomitf(format string, a ...interface{})
 	Debugf(format string, a ...interface{})
 	Warnf(format string, a ...interface{})
+	HasMetrics() bool
 	ExpHandler() http.Handler
 }
 
@@ -79,7 +80,9 @@ func mux(gf func() restful.Injector, ls logSet) *http.ServeMux {
 }
 
 func addMetrics(handler *http.ServeMux, ls logSet) {
-	handler.Handle("/debug/metrics", ls.ExpHandler())
+	if ls.HasMetrics() {
+		handler.Handle("/debug/metrics", ls.ExpHandler())
+	}
 }
 
 func addProfiling(handler *http.ServeMux) {

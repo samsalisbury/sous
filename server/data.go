@@ -24,6 +24,14 @@ type (
 		Etag string
 		sous.Deployments
 	}
+
+	// ClientUser is a local alias for sous.User
+	ClientUser sous.User
+
+	// StateManager is a DI adapter
+	StateManager struct {
+		sous.StateManager
+	}
 )
 
 func (ld *serverListData) EmptyReceiver() restful.Comparable {

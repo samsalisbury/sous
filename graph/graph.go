@@ -41,6 +41,7 @@ type (
 	// SousGraph is a dependency injector used to flesh out Sous commands
 	// with their dependencies.
 	SousGraph struct{ *psyringe.Psyringe }
+
 	// OutWriter is typically set to os.Stdout.
 	OutWriter io.Writer
 	// ErrWriter is typically set to os.Stderr.
@@ -50,6 +51,11 @@ type (
 	// StatusWaitStable represents if `sous plumbing status` should continue to
 	// poll until the selected t
 	StatusWaitStable bool
+	// ProfilingServer records whether a profiling server was requested
+	ProfilingServer bool
+
+	// XXX one at a time, unexport all these wrapper types
+
 	// Version represents a version of Sous.
 	Version struct{ semv.Version }
 	// LocalSousConfig is the configuration for Sous.
@@ -71,6 +77,8 @@ type (
 	LocalDockerClient struct{ docker_registry.Client }
 	// HTTPClient wraps the sous.HTTPClient interface
 	HTTPClient struct{ restful.HTTPClient }
+	// ServerHandler wraps the http.Handler for the sous server
+	ServerHandler struct{ http.Handler }
 	// StateManager simply wraps the sous.StateManager interface
 	StateManager struct{ sous.StateManager }
 	// StateReader wraps a storage.StateReader.
@@ -121,6 +129,7 @@ func BuildGraph(in io.Reader, out, err io.Writer) *SousGraph {
 	AddFilesystem(graph)
 	AddNetwork(graph)
 	graph.Add(newUser)
+	graph.Add(graph)
 	return graph
 }
 
@@ -197,6 +206,7 @@ func AddConfig(graph adder) {
 func AddNetwork(graph adder) {
 	graph.Add(
 		newDockerClient,
+		newServerHandler,
 		newHTTPClient,
 	)
 }
@@ -478,17 +488,35 @@ func newDockerClient() LocalDockerClient {
 	return LocalDockerClient{docker_registry.NewClient()}
 }
 
-func newServerHandler(g *SousGraph, log *logging.LogSet) http.Handler {
-	return server.Handler(g, log.Child("http-server"))
+func newServerHandler(g *SousGraph, log *logging.LogSet) ServerHandler {
+	perReqGraph := g.Scope("per-request")
+	perReqGraph.Add(getLiveGDM)
+	perReqGraph.Add(getUser)
+
+	gf := func() restful.Injector {
+		return perReqGraph.Clone()
+	}
+
+	var handler http.Handler
+
+	var profilingQuery struct{ Yes ProfilingServer }
+	g.Inject(&profilingQuery)
+	if profilingQuery.Yes {
+		handler = server.ProfilingHandler(gf, log.Child("http-server"))
+	} else {
+		handler = server.Handler(gf, log.Child("http-server"))
+	}
+
+	return ServerHandler{handler}
 }
 
 // newHTTPClient returns an HTTP client if c.Server is not empty.
 // Otherwise it returns nil, and emits some warnings.
-func newHTTPClient(c LocalSousConfig, user sous.User, srvr http.Handler, log *logging.LogSet) (HTTPClient, error) {
+func newHTTPClient(c LocalSousConfig, user sous.User, srvr ServerHandler, log *logging.LogSet) (HTTPClient, error) {
 	if c.Server == "" {
 		logging.Log.Warn.Println("No server set, Sous is running in server or workstation mode.")
 		logging.Log.Warn.Println("Configure a server like this: sous config server http://some.sous.server")
-		cl, err := restful.NewInMemoryClient(srvr, log.Child("local-http"))
+		cl, err := restful.NewInMemoryClient(srvr.Handler, log.Child("local-http"))
 		return HTTPClient{HTTPClient: cl}, err
 	}
 	logging.Log.Debug.Printf("Using server at %s", c.Server)

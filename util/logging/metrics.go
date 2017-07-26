@@ -52,6 +52,11 @@ func (u *multiUpdate) Update(n int64) {
 	u.last.Update(n)
 }
 
+// HasMetrics indicates whether this LogSet has been configured with metrics
+func (ls *LogSet) HasMetrics() bool {
+	return ls.metrics != nil
+}
+
 // ExpHandler returns an http.Handler to export metrics registered with this LogSet.
 // panics if the LogSet hasn't been set up with metrics yet.
 func (ls *LogSet) ExpHandler() http.Handler {

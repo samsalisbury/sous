@@ -22,7 +22,7 @@ type SousServer struct {
 	Log               *logging.LogSet
 
 	*config.Config
-	*graph.SousGraph
+	*graph.ServerHandler
 	*sous.AutoResolver
 
 	flags struct {
@@ -66,6 +66,7 @@ func (ss *SousServer) RegisterOn(psy Addable) {
 	ss.DeployFilterFlags.Offset = "*"
 	ss.DeployFilterFlags.Flavor = "*"
 	psy.Add(&ss.DeployFilterFlags)
+	psy.Add(graph.ProfilingServer(ss.flags.profiling))
 }
 
 // Execute is part of the cmdr.Command interface(s).
@@ -84,11 +85,7 @@ func (ss *SousServer) Execute(args []string) cmdr.Result {
 		ss.flags.profiling = true
 	}
 
-	if ss.flags.profiling {
-		return EnsureErrorResult(server.Run(ss.flags.laddr, server.ProfilingHandler(ss.SousGraph, ss.Log))) //always non-nil
-	} else {
-		return EnsureErrorResult(server.Run(ss.flags.laddr, server.Handler(ss.SousGraph, ss.Log))) //always non-nil
-	}
+	return EnsureErrorResult(server.Run(ss.flags.laddr, ss.ServerHandler.Handler))
 }
 
 func ensureGDMExists(repo, localPath string, log func(string, ...interface{})) error {

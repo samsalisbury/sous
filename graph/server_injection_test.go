@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/opentable/sous/config"
+	"github.com/opentable/sous/server"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 	"github.com/stretchr/testify/assert"
@@ -13,8 +14,6 @@ import (
 )
 
 func basicInjectedHandler(factory restful.ExchangeFactory, t *testing.T) restful.Exchanger {
-	require := require.New(t)
-
 	g := TestGraphWithConfig(&bytes.Buffer{}, os.Stdout, os.Stdout, "StateLocation: '../ext/storage/testdata/in'\n")
 	g.Add(&config.Verbosity{})
 	g.Add(&config.DeployFilterFlags{Cluster: "test"})
@@ -24,53 +23,44 @@ func basicInjectedHandler(factory restful.ExchangeFactory, t *testing.T) restful
 		return g.Clone()
 	}
 
-	exchLogger := SousRouteMap.SingleExchanger(factory, gf, restful.PlaceholderLogger())
+	exchLogger := server.SousRouteMap.SingleExchanger(factory, gf, restful.PlaceholderLogger())
 
 	logger, ok := exchLogger.(*restful.ExchangeLogger)
-	require.True(ok)
+	require.True(t, ok)
 
 	return logger.Exchanger
 }
 
 func TestServerListHandlerInjection(t *testing.T) {
-	assert := assert.New(t)
-	require := require.New(t)
-
-	slr := &ServerListResource{}
+	slr := &server.ServerListResource{}
 	slh := basicInjectedHandler(slr.Get, t)
 
-	serverListGet, ok := slh.(*ServerListHandler)
-	require.True(ok)
+	serverListGet, ok := slh.(*server.ServerListHandler)
+	require.True(t, ok)
 
-	assert.NotNil(serverListGet.Config)
+	assert.NotNil(t, serverListGet.Config)
 }
 
 func TestStatusHandlerInjection(t *testing.T) {
-	assert := assert.New(t)
-	require := require.New(t)
-
-	sr := &StatusResource{}
+	sr := &server.StatusResource{}
 	sh := basicInjectedHandler(sr.Get, t)
 
-	statusGet, ok := sh.(*StatusHandler)
-	require.True(ok)
+	statusGet, ok := sh.(*server.StatusHandler)
+	require.True(t, ok)
 
 	logging.Log.Debug.Printf("%#v", statusGet)
-	assert.NotPanics(func() {
+	assert.NotPanics(t, func() {
 		_ = statusGet.AutoResolver.String()
 	})
 }
 
 func TestGDMHandlerInjection(t *testing.T) {
-	assert := assert.New(t)
-	require := require.New(t)
-
-	sr := &GDMResource{}
+	sr := &server.GDMResource{}
 	sh := basicInjectedHandler(sr.Put, t)
 
-	gdmPut, ok := sh.(*PUTGDMHandler)
-	require.True(ok)
+	gdmPut, ok := sh.(*server.PUTGDMHandler)
+	require.True(t, ok)
 
 	logging.Log.Debug.Printf("%#v", gdmPut)
-	assert.NotNil(gdmPut.StateManager)
+	assert.NotNil(t, gdmPut.StateManager)
 }

@@ -121,7 +121,7 @@ func TestSousUpdate_Execute(t *testing.T) {
 	//dsm := &sous.DummyStateManager{}
 	su := SousUpdate{
 		//StateManager:  &graph.StateManager{dsm},
-		Client:        &restful.DummyHTTPClient{},
+		Client:        &graph.HTTPClient{&restful.DummyHTTPClient{}},
 		Manifest:      graph.TargetManifest{Manifest: &sous.Manifest{}},
 		ResolveFilter: &graph.RefinedResolveFilter{},
 	}
