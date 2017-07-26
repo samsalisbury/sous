@@ -32,9 +32,9 @@ func (slr *ServerListResource) Put() restful.Exchanger { return &ServerListUpdat
 
 // Exchange implements restful.Exchanger on ServerListHandler
 func (slh *ServerListHandler) Exchange() (interface{}, int) {
-	data := serverListData{Servers: []server{}}
+	data := ServerListData{Servers: []NameData{}}
 	for name, url := range slh.Config.SiblingURLs {
-		data.Servers = append(data.Servers, server{ClusterName: name, URL: url})
+		data.Servers = append(data.Servers, NameData{ClusterName: name, URL: url})
 	}
 	return data, 200
 }
@@ -42,7 +42,7 @@ func (slh *ServerListHandler) Exchange() (interface{}, int) {
 // Exchange implements restful.Exchanger on ServerListUpdater
 func (slh *ServerListUpdater) Exchange() (interface{}, int) {
 	dec := json.NewDecoder(slh.Request.Body)
-	data := serverListData{Servers: []server{}}
+	data := ServerListData{Servers: []NameData{}}
 	dec.Decode(&data)
 
 	slh.Log.Vomit.Printf("Updating server list to: %#v", data)

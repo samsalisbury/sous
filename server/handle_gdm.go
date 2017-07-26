@@ -37,7 +37,7 @@ func (gr *GDMResource) Get() restful.Exchanger { return &GETGDMHandler{} }
 // Exchange implements the Handler interface
 func (h *GETGDMHandler) Exchange() (interface{}, int) {
 	logging.Log.Debug.Print(h.GDM)
-	data := gdmWrapper{Deployments: make([]*sous.Deployment, 0)}
+	data := GDMWrapper{Deployments: make([]*sous.Deployment, 0)}
 	keys := sous.DeploymentIDSlice(h.GDM.Keys())
 	sort.Sort(keys)
 
@@ -60,7 +60,7 @@ func (gr *GDMResource) Put() restful.Exchanger { return &PUTGDMHandler{} }
 func (h *PUTGDMHandler) Exchange() (interface{}, int) {
 	logging.Log.Debug.Print(h.GDM)
 
-	data := gdmWrapper{}
+	data := GDMWrapper{}
 	dec := json.NewDecoder(h.Request.Body)
 	dec.Decode(&data)
 	deps := sous.NewDeployments(data.Deployments...)

@@ -231,6 +231,7 @@ func AddSingularity(graph adder) {
 func AddState(graph adder) {
 	graph.Add(
 		newStateManager,
+		newServerStateManager,
 		newLocalStateReader,
 		newLocalStateWriter,
 	)
@@ -489,12 +490,11 @@ func newDockerClient() LocalDockerClient {
 }
 
 func newServerHandler(g *SousGraph, log *logging.LogSet) ServerHandler {
-	perReqGraph := g.Scope("per-request")
-	perReqGraph.Add(getLiveGDM)
-	perReqGraph.Add(getUser)
-
 	gf := func() restful.Injector {
-		return perReqGraph.Clone()
+		perReqGraph := g.Clone()
+		perReqGraph.Add(getLiveGDM)
+		perReqGraph.Add(getUser)
+		return perReqGraph
 	}
 
 	var handler http.Handler
@@ -535,6 +535,10 @@ func newStateManager(cl HTTPClient, c LocalSousConfig) *StateManager {
 	}
 	hsm := sous.NewHTTPStateManager(cl)
 	return &StateManager{StateManager: hsm}
+}
+
+func newServerStateManager(sm *StateManager) server.StateManager {
+	return server.StateManager{StateManager: sm.StateManager}
 }
 
 func newStatusPoller(cl HTTPClient, rf *RefinedResolveFilter, user sous.User) *sous.StatusPoller {

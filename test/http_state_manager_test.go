@@ -61,6 +61,7 @@ func TestWriteState(t *testing.T) {
 	state.Manifests.Add(changesManifest)
 
 	sm := sous.DummyStateManager{State: state}
+
 	smm, err := sm.ReadState()
 	if err != nil {
 		t.Fatal("State manager double is broken", err)
@@ -70,24 +71,31 @@ func TestWriteState(t *testing.T) {
 	}
 
 	di := psyringe.New()
+
 	ls := logging.NewLogSet("", os.Stderr)
 	ls.BeChatty()
 	di.Add(ls)
+
 	graph.AddInternals(di)
 	di.Add(
 		func() graph.StateReader { return graph.StateReader{StateReader: &sm} },
 		func() graph.StateWriter { return graph.StateWriter{StateWriter: &sm} },
 		func() *graph.StateManager { return &graph.StateManager{StateManager: &sm} },
+		func() server.StateManager { return server.StateManager{StateManager: &sm} },
 	)
 	di.Add(&config.Verbosity{})
+	graph.AddNetwork(di)
 
-	gf := func() restful.Injector {
-		cdi := di.Clone()
-		server.AddsPerRequest(cdi)
-		return cdi
+	serverScoop := struct {
+		Handler graph.ServerHandler
+	}{}
+	di.Add(&graph.SousGraph{di})
+	di.MustInject(&serverScoop)
+	if serverScoop.Handler.Handler == nil {
+		t.Fatalf("Didn't inject http.Handler!")
 	}
 
-	testServer := httptest.NewServer(server.SousRouteMap.BuildRouter(gf, logging.Log))
+	testServer := httptest.NewServer(serverScoop.Handler.Handler)
 	defer testServer.Close()
 
 	cl, err := restful.NewClient(testServer.URL, logging.Log)

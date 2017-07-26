@@ -29,10 +29,11 @@ func BuildTestGraph(in io.Reader, out, err io.Writer) *SousGraph {
 func TestGraphWithConfig(in io.Reader, out, err io.Writer, cfg string) *SousGraph {
 	graph := buildBaseGraph(in, out, err)
 	addTestFilesystem(graph)
-	addTestNetwork(graph)
 	logging.Log.Vomitf("Adding confing:\n%s", cfg)
 	graph.Add(configYAML(cfg))
 	graph.Add(sous.User{Name: "Test User", Email: "testuser@example.com"})
+	graph.Add(graph)
+	addTestNetwork(graph)
 	return graph
 }
 
@@ -43,6 +44,7 @@ func addTestFilesystem(graph adder) {
 func addTestNetwork(graph adder) {
 	graph.Add(newDummyHTTPClient)
 	graph.Add(newDummyDockerClient)
+	graph.Add(newServerHandler)
 }
 
 func newDummyHTTPClient() HTTPClient {

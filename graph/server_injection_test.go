@@ -61,6 +61,6 @@ func TestGDMHandlerInjection(t *testing.T) {
 	gdmPut, ok := sh.(*server.PUTGDMHandler)
 	require.True(t, ok)
 
-	logging.Log.Debug.Printf("%#v", gdmPut)
-	assert.NotNil(t, gdmPut.StateManager)
+	t.Logf("%#v", gdmPut)
+	assert.NotNil(t, gdmPut.StateManager.StateManager)
 }

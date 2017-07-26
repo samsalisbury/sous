@@ -6,16 +6,18 @@ import (
 )
 
 type (
-	server struct {
+	NameData struct {
 		ClusterName string
 		URL         string
 	}
 
-	serverListData struct {
-		Servers []server
+	// ServerListData is the DTO for lists of servers
+	ServerListData struct {
+		Servers []NameData
 	}
 
-	gdmWrapper struct {
+	// GDMWrapper is the DTO wrapper for sous.Deployments
+	GDMWrapper struct {
 		Deployments []*sous.Deployment
 	}
 
@@ -34,20 +36,20 @@ type (
 	}
 )
 
-func (ld *serverListData) EmptyReceiver() restful.Comparable {
-	return &serverListData{Servers: []server{}}
+func (ld *ServerListData) EmptyReceiver() restful.Comparable {
+	return &ServerListData{Servers: []NameData{}}
 }
 
-func (ld *serverListData) VariancesFrom(other restful.Comparable) restful.Variances {
+func (ld *ServerListData) VariancesFrom(other restful.Comparable) restful.Variances {
 	switch ol := other.(type) {
 	default:
 		return restful.Variances{"not a list of Deployments"}
-	case *serverListData:
+	case *ServerListData:
 		if len(ld.Servers) != len(ol.Servers) {
 			return restful.Variances{"server list lengths differ"}
 		}
 		for _, l := range ld.Servers {
-			var found *server
+			var found *NameData
 			for _, r := range ol.Servers {
 				if l.ClusterName == r.ClusterName && l.URL == r.URL {
 					found = &r
@@ -63,21 +65,21 @@ func (ld *serverListData) VariancesFrom(other restful.Comparable) restful.Varian
 }
 
 // EmptyReceiver implements Comparable on gdmWrapper
-func (g *gdmWrapper) EmptyReceiver() restful.Comparable {
-	return &gdmWrapper{Deployments: []*sous.Deployment{}}
+func (g *GDMWrapper) EmptyReceiver() restful.Comparable {
+	return &GDMWrapper{Deployments: []*sous.Deployment{}}
 }
 
 // VariancesFrom implements Comparable on gdmWrapper
-func (g *gdmWrapper) VariancesFrom(other restful.Comparable) restful.Variances {
+func (g *GDMWrapper) VariancesFrom(other restful.Comparable) restful.Variances {
 	switch og := other.(type) {
 	default:
 		return restful.Variances{"Not a gdmWrapper"}
-	case *gdmWrapper:
+	case *GDMWrapper:
 		return g.unwrap().VariancesFrom(og.unwrap())
 	}
 }
 
-func (g *gdmWrapper) unwrap() *sous.Deployments {
+func (g *GDMWrapper) unwrap() *sous.Deployments {
 	ds := sous.NewDeployments(g.Deployments...)
 	return &ds
 }
