@@ -22,7 +22,7 @@ type SousServer struct {
 	Log               *logging.LogSet
 
 	*config.Config
-	*graph.ServerHandler
+	graph.ServerHandler
 	*sous.AutoResolver
 
 	flags struct {

@@ -125,11 +125,11 @@ const (
 // BuildGraph builds the dependency injection graph, used to populate commands
 // invoked by the user.
 func BuildGraph(in io.Reader, out, err io.Writer) *SousGraph {
-	graph := buildBaseGraph(in, out, err)
+	graph := BuildBaseGraph(in, out, err)
 	AddFilesystem(graph)
 	AddNetwork(graph)
+	AddState(graph)
 	graph.Add(newUser)
-	graph.Add(graph)
 	return graph
 }
 
@@ -137,7 +137,8 @@ func newUser(c LocalSousConfig) sous.User {
 	return c.User
 }
 
-func buildBaseGraph(in io.Reader, out, err io.Writer) *SousGraph {
+// BuildBaseGraph constructs a graph with essentials - intended for testing
+func BuildBaseGraph(in io.Reader, out, err io.Writer) *SousGraph {
 	graph := &SousGraph{psyringe.New()}
 	// stdout, stderr
 	graph.Add(
@@ -152,8 +153,8 @@ func buildBaseGraph(in io.Reader, out, err io.Writer) *SousGraph {
 	AddConfig(graph)
 	AddDocker(graph)
 	AddSingularity(graph)
-	AddState(graph)
 	AddInternals(graph)
+	graph.Add(graph)
 	return graph
 }
 

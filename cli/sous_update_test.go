@@ -1,13 +1,17 @@
 package cli
 
 import (
+	"bytes"
+	"io/ioutil"
 	"testing"
 
+	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/restful"
 	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var updateStateTests = []struct {
@@ -83,9 +87,8 @@ func TestUpdateState(t *testing.T) {
 }
 
 func TestUpdateRetryLoop(t *testing.T) {
-	cl := &restful.DummyHTTPClient{}
+	dsm := &sous.DummyStateManager{State: sous.NewState()}
 
-	//dsm := &sous.DummyStateManager{State: sous.NewState()}
 	/*
 		Source SourceLocation `validate:"nonzero"`
 		Flavor string `yaml:",omitempty"`
@@ -106,6 +109,18 @@ func TestUpdateRetryLoop(t *testing.T) {
 	// dsm.State.Defs.Clusters = sous.Clusters{"blah": {}}
 	user := sous.User{Name: "Judson the Unlucky", Email: "unlucky@opentable.com"}
 
+	g := graph.BuildBaseGraph(&bytes.Buffer{}, ioutil.Discard, ioutil.Discard)
+	graph.AddNetwork(g)
+	graph.AddTestConfig(g, "")
+	g.Add(user)
+
+	g.Add(func() *graph.StateManager { return &graph.StateManager{dsm} })
+	g.Add(&config.Verbosity{})
+	scoopClient := struct{ graph.HTTPClient }{}
+	g.MustInject(&scoopClient)
+	cl := scoopClient.HTTPClient.HTTPClient
+	require.NotNil(t, cl)
+
 	deps, err := updateRetryLoop(cl, sourceID, depID, user)
 
 	assert.NoError(t, err)
@@ -121,7 +136,7 @@ func TestSousUpdate_Execute(t *testing.T) {
 	//dsm := &sous.DummyStateManager{}
 	su := SousUpdate{
 		//StateManager:  &graph.StateManager{dsm},
-		Client:        &graph.HTTPClient{&restful.DummyHTTPClient{}},
+		Client:        graph.HTTPClient{&restful.DummyHTTPClient{}},
 		Manifest:      graph.TargetManifest{Manifest: &sous.Manifest{}},
 		ResolveFilter: &graph.RefinedResolveFilter{},
 	}

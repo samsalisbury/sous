@@ -1,6 +1,7 @@
 package test
 
 import (
+	"bytes"
 	"log"
 	"net/http/httptest"
 	"os"
@@ -13,7 +14,6 @@ import (
 	"github.com/opentable/sous/server"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
-	"github.com/samsalisbury/psyringe"
 	"github.com/samsalisbury/semv"
 )
 
@@ -70,13 +70,17 @@ func TestWriteState(t *testing.T) {
 		t.Fatal("State manager double is empty")
 	}
 
-	di := psyringe.New()
+	di := graph.BuildBaseGraph(&bytes.Buffer{}, os.Stderr, os.Stderr)
+	graph.AddNetwork(di)
+	/*
+				di := psyringe.New()
+				ls := logging.NewLogSet("", os.Stderr)
+				ls.BeChatty()
+				di.Add(ls)
 
-	ls := logging.NewLogSet("", os.Stderr)
-	ls.BeChatty()
-	di.Add(ls)
+			graph.AddInternals(di)
+	t*/
 
-	graph.AddInternals(di)
 	di.Add(
 		func() graph.StateReader { return graph.StateReader{StateReader: &sm} },
 		func() graph.StateWriter { return graph.StateWriter{StateWriter: &sm} },
@@ -84,12 +88,11 @@ func TestWriteState(t *testing.T) {
 		func() server.StateManager { return server.StateManager{StateManager: &sm} },
 	)
 	di.Add(&config.Verbosity{})
-	graph.AddNetwork(di)
 
 	serverScoop := struct {
 		Handler graph.ServerHandler
 	}{}
-	di.Add(&graph.SousGraph{di})
+
 	di.MustInject(&serverScoop)
 	if serverScoop.Handler.Handler == nil {
 		t.Fatalf("Didn't inject http.Handler!")

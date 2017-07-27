@@ -142,11 +142,6 @@ func NewSousCLI(s *Sous, in io.Reader, out, errout io.Writer) (*CLI, error) {
 			}
 		}
 
-		// This is tricky: we need to inject the completely added graph to the
-		// graph itself so that sous_server can pass a complete graph to
-		// server.RunServer
-		g.Add(g)
-
 		for _, c := range chain {
 			if err := g.Inject(c); err != nil {
 				return err

@@ -18,7 +18,7 @@ type SousUpdate struct {
 	OTPLFlags         config.OTPLFlags
 	Manifest          graph.TargetManifest
 	GDM               graph.CurrentGDM
-	Client            *graph.HTTPClient
+	Client            graph.HTTPClient
 	ResolveFilter     *graph.RefinedResolveFilter
 	User              sous.User
 }
