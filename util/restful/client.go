@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/textproto"
 	"net/url"
 
 	"github.com/hydrogen18/memlistener"
@@ -21,6 +22,7 @@ type (
 		serverURL *url.URL
 		http.Client
 		logSet
+		commonHeaders http.Header
 	}
 
 	resourceState struct {
@@ -82,12 +84,13 @@ func Retryable(err error) bool {
 }
 
 // NewClient returns a new LiveHTTPClient for a particular serverURL.
-func NewClient(serverURL string, ls logSet) (*LiveHTTPClient, error) {
+func NewClient(serverURL string, ls logSet, headers ...map[string]string) (*LiveHTTPClient, error) {
 	u, err := url.Parse(serverURL)
 
 	client := &LiveHTTPClient{
-		serverURL: u,
-		logSet:    ls,
+		serverURL:     u,
+		logSet:        ls,
+		commonHeaders: buildHeaders(headers),
 	}
 
 	// XXX: This is in response to a mysterious issue surrounding automatic gzip
@@ -101,7 +104,7 @@ func NewClient(serverURL string, ls logSet) (*LiveHTTPClient, error) {
 }
 
 // NewInMemoryClient wraps a MemoryListener in a restful.Client
-func NewInMemoryClient(handler http.Handler, ls logSet) (HTTPClient, error) {
+func NewInMemoryClient(handler http.Handler, ls logSet, headers ...map[string]string) (HTTPClient, error) {
 	u, err := url.Parse("http://in.memory.server")
 	if err != nil {
 		return nil, err
@@ -110,12 +113,23 @@ func NewInMemoryClient(handler http.Handler, ls logSet) (HTTPClient, error) {
 	ms := memlistener.NewInMemoryServer(handler)
 
 	client := &LiveHTTPClient{
-		serverURL: u,
-		logSet:    ls,
-		Client:    *ms.NewClient(),
+		serverURL:     u,
+		logSet:        ls,
+		Client:        *ms.NewClient(),
+		commonHeaders: buildHeaders(headers),
 	}
 
 	return client, nil
+}
+
+func buildHeaders(maybeHeaders []map[string]string) http.Header {
+	hs := make(http.Header)
+	if len(maybeHeaders) > 0 {
+		for k, v := range maybeHeaders[0] {
+			hs.Set(k, v)
+		}
+	}
+	return hs
 }
 
 // ****
@@ -249,18 +263,31 @@ func (client *LiveHTTPClient) buildRequest(method, url string, headers map[strin
 
 	rq, err := http.NewRequest(method, url, JSON)
 
+	if headers == nil {
+		headers = map[string]string{}
+	}
 	/*
 		rq.Header.Add("Sous-User-Name", user.Name)
 		rq.Header.Add("Sous-User-Email", user.Email)
 	*/
 
-	if headers != nil {
-		for k, v := range headers {
-			rq.Header.Add(k, v)
-		}
-	}
+	client.updateHeaders(rq, headers)
 
 	return rq, err
+}
+
+func (client *LiveHTTPClient) updateHeaders(rq *http.Request, headers map[string]string) {
+	for k, v := range headers {
+		rq.Header.Add(k, v)
+	}
+
+	for k, v := range client.commonHeaders {
+		if _, overridden := rq.Header[textproto.CanonicalMIMEHeaderKey(k)]; !overridden {
+			for _, s := range v {
+				rq.Header.Add(k, s)
+			}
+		}
+	}
 }
 
 func (client *LiveHTTPClient) sendRequest(rq *http.Request, ierr error) (*http.Response, error) {

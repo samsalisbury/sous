@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	"github.com/opentable/sous/config"
+	"github.com/opentable/sous/ext/storage"
+	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/server"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
@@ -14,7 +16,13 @@ import (
 )
 
 func basicInjectedHandler(factory restful.ExchangeFactory, t *testing.T) restful.Exchanger {
-	g := TestGraphWithConfig(&bytes.Buffer{}, os.Stdout, os.Stdout, "StateLocation: '../ext/storage/testdata/in'\n")
+	emptyState := sous.State{
+		Manifests: sous.NewManifests(),
+		Defs:      sous.Defs{DockerRepo: "nowhere.example.com"},
+	}
+	storage.PrepareTestGitRepo(t, &emptyState, "../ext/storage/testdata/remote", "../ext/storage/testdata/out")
+	g := TestGraphWithConfig(&bytes.Buffer{}, os.Stdout, os.Stdout, "StateLocation: '../ext/storage/testdata/out'\n")
+
 	g.Add(&config.Verbosity{})
 	g.Add(&config.DeployFilterFlags{Cluster: "test"})
 	g.Add(DryrunBoth)
@@ -39,6 +47,28 @@ func TestServerListHandlerInjection(t *testing.T) {
 	require.True(t, ok)
 
 	assert.NotNil(t, serverListGet.Config)
+}
+
+func TestServerGetDefHandlerInjection(t *testing.T) {
+	sdr := &server.StateDefResource{}
+
+	slh := basicInjectedHandler(sdr.Get, t)
+
+	serverDefsGet, ok := slh.(*server.StateDefGetHandler)
+	require.True(t, ok)
+
+	assert.NotNil(t, serverDefsGet.State)
+}
+
+func TestServerPutGDMHandlerInjection(t *testing.T) {
+	sdr := &server.GDMResource{}
+
+	slh := basicInjectedHandler(sdr.Put, t)
+
+	handler, ok := slh.(*server.PUTGDMHandler)
+	require.True(t, ok)
+
+	assert.NotNil(t, handler.StateManager.StateManager)
 }
 
 func TestStatusHandlerInjection(t *testing.T) {

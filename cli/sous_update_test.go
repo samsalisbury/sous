@@ -3,11 +3,15 @@ package cli
 import (
 	"bytes"
 	"io/ioutil"
+	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/server"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/assert"
@@ -100,13 +104,26 @@ func TestUpdateRetryLoop(t *testing.T) {
 	sourceID := sous.MustNewSourceID("github.com/user/project", "", "1.2.3")
 	mani := &sous.Manifest{
 		Source: sourceID.Location,
+		Kind:   sous.ManifestKindService,
+
 		Deployments: sous.DeploySpecs{
-			"blah": {Version: semv.MustParse("0.0.0")},
+			"blah": {
+				Version: semv.MustParse("0.0.0"),
+				DeployConfig: sous.DeployConfig{
+					Resources: sous.Resources{
+						"cpus":   "1",
+						"memory": "100",
+						"ports":  "1",
+					},
+					Startup: sous.Startup{SkipCheck: true},
+				},
+			},
 		},
 	}
 	t.Log(mani.ID())
-	//dsm.State.Manifests.Add(mani)
-	// dsm.State.Defs.Clusters = sous.Clusters{"blah": {}}
+	dsm.State.SetEtag("asdfasdf")
+	dsm.State.Manifests.Add(mani)
+	dsm.State.Defs.Clusters = sous.Clusters{"blah": {}}
 	user := sous.User{Name: "Judson the Unlucky", Email: "unlucky@opentable.com"}
 
 	g := graph.BuildBaseGraph(&bytes.Buffer{}, ioutil.Discard, ioutil.Discard)
@@ -114,12 +131,25 @@ func TestUpdateRetryLoop(t *testing.T) {
 	graph.AddTestConfig(g, "")
 	g.Add(user)
 
-	g.Add(func() *graph.StateManager { return &graph.StateManager{dsm} })
+	g.Add(
+		func() server.StateManager { return server.StateManager{dsm} },
+		func() graph.StateReader { return graph.StateReader{dsm} },
+	)
 	g.Add(&config.Verbosity{})
-	scoopClient := struct{ graph.HTTPClient }{}
-	g.MustInject(&scoopClient)
-	cl := scoopClient.HTTPClient.HTTPClient
-	require.NotNil(t, cl)
+
+	serverScoop := struct {
+		Handler graph.ServerHandler
+		LogSet  *logging.LogSet
+	}{}
+	g.MustInject(&serverScoop)
+	if serverScoop.Handler.Handler == nil {
+		t.Fatalf("Didn't inject http.Handler!")
+	}
+	testServer := httptest.NewServer(serverScoop.Handler.Handler)
+	defer testServer.Close()
+
+	cl, err := restful.NewInMemoryClient(serverScoop.Handler.Handler, serverScoop.LogSet, map[string]string{"X-Gatelatch": os.Getenv("GATELATCH")})
+	require.NoError(t, err)
 
 	deps, err := updateRetryLoop(cl, sourceID, depID, user)
 

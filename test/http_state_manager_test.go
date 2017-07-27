@@ -89,19 +89,15 @@ func TestWriteState(t *testing.T) {
 	)
 	di.Add(&config.Verbosity{})
 
-	serverScoop := struct {
-		Handler graph.ServerHandler
-	}{}
-
+	serverScoop := struct{ Handler graph.ServerHandler }{}
 	di.MustInject(&serverScoop)
 	if serverScoop.Handler.Handler == nil {
 		t.Fatalf("Didn't inject http.Handler!")
 	}
-
 	testServer := httptest.NewServer(serverScoop.Handler.Handler)
 	defer testServer.Close()
 
-	cl, err := restful.NewClient(testServer.URL, logging.Log)
+	cl, err := restful.NewClient(testServer.URL, logging.Log, map[string]string{"X-Gatelatch": "please"})
 	if err != nil {
 		t.Fatal(err)
 	}

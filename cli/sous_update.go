@@ -7,7 +7,6 @@ import (
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
-	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 	"github.com/pkg/errors"
 )
@@ -27,7 +26,7 @@ func init() { TopLevelCommands["update"] = &SousUpdate{} }
 
 const sousUpdateHelp = `update the version to be deployed in a cluster
 
-usage: sous update -cluster <name> [-tag <semver>] [-use-otpl-deploy|-ignore-otpl-deploy]
+usage: sous update -cluster <name> [-tag <semver>]
 
 sous update will update the version tag for this application in the named
 cluster.
@@ -125,7 +124,6 @@ func updateRetryLoop(cl restful.HTTPClient, sid sous.SourceID, did sous.Deployme
 func updateState(s *sous.State, gdm sous.Deployments, sid sous.SourceID, did sous.DeploymentID) error {
 	deployment, ok := gdm.Get(did)
 	if !ok {
-		logging.Log.Warn.Printf("Deployment %q does not exist, creating.\n", did)
 		deployment = &sous.Deployment{}
 	}
 
