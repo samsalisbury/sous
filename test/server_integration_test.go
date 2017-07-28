@@ -120,7 +120,7 @@ func (suite integrationServerTests) TestUpdateServers() {
 		Servers: []server.NameData{{ClusterName: "name", URL: "http://url"}},
 	}
 
-	err = updater.Update(nil, &newServers, nil)
+	err = updater.Update(&newServers, nil)
 	suite.NoError(err)
 
 	data = server.ServerListData{}

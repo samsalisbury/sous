@@ -15,11 +15,11 @@ import (
 
 type SousManifestGet struct {
 	config.DeployFilterFlags
+	*sous.ResolveFilter
 	graph.TargetManifestID
-	*sous.State
+	graph.HTTPClient
 	*logging.LogSet
 	graph.OutWriter
-	*sous.ResolveFilter
 }
 
 func init() { ManifestSubcommands["get"] = &SousManifestGet{} }
@@ -39,11 +39,18 @@ func (smg *SousManifestGet) RegisterOn(psy Addable) {
 func (smg *SousManifestGet) Execute(args []string) cmdr.Result {
 	mid := sous.ManifestID(smg.TargetManifestID)
 
-	mani, present := smg.State.Manifests.Get(mid)
-	if !present {
+	manifestQuery := map[string]string{}
+	manifestQuery["repo"] = mid.Source.Repo
+	manifestQuery["offset"] = mid.Source.Dir
+	manifestQuery["flavor"] = mid.Flavor
+
+	mani := sous.Manifest{}
+	_, err := smg.HTTPClient.Retrieve("./manifests", manifestQuery, &mani, nil)
+
+	if err != nil {
 		return EnsureErrorResult(errors.Errorf("No manifest matched by %v yet. See `sous init`", smg.ResolveFilter))
 	}
-	smg.Vomit.Print(spew.Sdump(mani))
+	smg.Vomitf(spew.Sdump(mani))
 
 	yml, err := yaml.Marshal(mani)
 	if err != nil {

@@ -10,7 +10,7 @@
 //
 //  func (my *MySpy) InterfaceMethod(with, some, args int) (ret string, err error) {
 //    res := my.Called(with, some, args)
-//    return res.String(-1), res.Error(1)
+//    return res.String(0), res.Error(1)
 //  }
 // Use your spy in tests like:
 //   my.MatchMethod("InterfaceMethod", spies.AnyArgs, "called", nil)
@@ -47,6 +47,11 @@ type (
 		matchers []matcher
 		calls    []call
 	}
+
+	// A PassedArger implements PassedArgs
+	PassedArger interface {
+		PassedArgs() mock.Arguments
+	}
 )
 
 // NewSpy makes a Spy
@@ -77,6 +82,12 @@ func (s *Spy) String() string {
 
 func (c call) String() string {
 	return fmt.Sprintf("%s(%s) -> (%s)", c.method, c.args, c.res)
+}
+
+func (c call) PassedArgs() mock.Arguments {
+	as := make(mock.Arguments, len(c.args))
+	copy(as, c.args)
+	return as
 }
 
 // Match records an arbitrary predicate to match against a method call

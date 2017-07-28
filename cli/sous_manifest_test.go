@@ -8,6 +8,7 @@ import (
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/restful/restfultest"
 	"github.com/opentable/sous/util/yaml"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -15,18 +16,31 @@ import (
 
 func TestManifestGet(t *testing.T) {
 	out := &bytes.Buffer{}
+
+	cl, control := restfultest.NewHTTPClientSpy()
+	control.Any(
+		"Retrieve",
+		testManifest(), restfultest.DummyUpdater(), nil,
+	)
+
 	smg := &SousManifestGet{
 		TargetManifestID: graph.TargetManifestID{
 			Source: sous.SourceLocation{
 				Repo: project1.Repo,
 			},
 		},
-		State:     makeTestState(),
+		HTTPClient: graph.HTTPClient{cl},
+
 		OutWriter: graph.OutWriter(out),
 		LogSet:    logging.NewLogSet("", os.Stderr),
 	}
 	res := smg.Execute([]string{})
 	assert.Equal(t, 0, res.ExitCode())
+
+	if assert.Len(t, control.Calls(), 1) {
+		assert.Regexp(t, "/manifests", control.Calls()[0].PassedArgs().String(0))
+		assert.Contains(t, control.Calls()[0].PassedArgs().Get(1).(map[string]string), "repo")
+	}
 
 	assert.Regexp(t, "github", out.String())
 }
@@ -40,6 +54,7 @@ func TestManifestSet(t *testing.T) {
 	baseState := makeTestState()
 	mani, present := baseState.Manifests.Get(mid)
 	require.True(t, present)
+
 	mani.Flavor = "vanilla"
 	yml, err := yaml.Marshal(mani)
 	require.NoError(t, err)
@@ -49,12 +64,15 @@ func TestManifestSet(t *testing.T) {
 
 	dummyWriter := sous.DummyStateManager{State: state}
 	writer := graph.StateWriter{StateWriter: &dummyWriter}
+
 	sms := &SousManifestSet{
 		TargetManifestID: graph.TargetManifestID(mid),
-		State:            state,
-		InReader:         graph.InReader(in),
-		StateWriter:      writer,
-		LogSet:           logging.NewLogSet("", os.Stderr),
+
+		State:       state,
+		StateWriter: writer,
+
+		InReader: graph.InReader(in),
+		LogSet:   logging.NewLogSet("", os.Stderr),
 	}
 
 	assert.Equal(t, 0, dummyWriter.WriteCount)
@@ -67,11 +85,10 @@ func TestManifestSet(t *testing.T) {
 	assert.Equal(t, upManifest.Flavor, "vanilla")
 }
 
-func TestManifestYAML(t *testing.T) {
+func testManifest() *sous.Manifest {
 	uripath := "certainly/i/am/healthy"
-
-	manifest := &sous.Manifest{
-		Source: sous.SourceLocation{Repo: "gh"},
+	return &sous.Manifest{
+		Source: sous.SourceLocation{Repo: "github.com/opentable/aproject"},
 		Owners: []string{"sam", "judson"},
 		Kind:   sous.ManifestKindService,
 		Deployments: sous.DeploySpecs{
@@ -89,8 +106,11 @@ func TestManifestYAML(t *testing.T) {
 			},
 		},
 	}
+}
 
-	yml, err := yaml.Marshal(manifest)
+func TestManifestYAML(t *testing.T) {
+	uripath := "certainly/i/am/healthy"
+	yml, err := yaml.Marshal(testManifest())
 	require.NoError(t, err)
 	assert.Regexp(t, "(?i).*checkready.*", string(yml))
 

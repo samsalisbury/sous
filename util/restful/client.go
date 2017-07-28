@@ -28,6 +28,7 @@ type (
 	resourceState struct {
 		client       *LiveHTTPClient
 		path, etag   string
+		qparms       map[string]string
 		body         io.Reader
 		resourceJSON io.Reader
 	}
@@ -36,13 +37,23 @@ type (
 	//   It's designed to handle basic CRUD operations in a safe and restful way.
 	HTTPClient interface {
 		Create(urlPath string, qParms map[string]string, rqBody interface{}, headers map[string]string) error
-		Retrieve(urlPath string, qParms map[string]string, rzBody interface{}, headers map[string]string) (Updater, error)
-		Delete(urlPath string, qParms map[string]string, from *resourceState, headers map[string]string) error
+		Retrieve(urlPath string, qParms map[string]string, rzBody interface{}, headers map[string]string) (UpdateDeleter, error)
 	}
 
 	// An Updater captures the state of a retrieved resource so that it can be updated later.
 	Updater interface {
-		Update(params map[string]string, body Comparable, headers map[string]string) error
+		Update(body Comparable, headers map[string]string) error
+	}
+
+	// A Deleter captures the state of a retrieved resource so that it can be later deleted.
+	Deleter interface {
+		Delete(headers map[string]string) error
+	}
+
+	// An UpdateDeleter allows for a given resource to be updated or deleted.
+	UpdateDeleter interface {
+		Updater
+		Deleter
 	}
 
 	// DummyHTTPClient doesn't really make HTTP requests.
@@ -68,8 +79,12 @@ type (
 	retryableError string
 )
 
-func (rs *resourceState) Update(qParms map[string]string, qBody Comparable, headers map[string]string) error {
-	return rs.client.update(rs.path, qParms, rs, qBody, headers)
+func (rs *resourceState) Update(qBody Comparable, headers map[string]string) error {
+	return rs.client.update(rs.path, rs.qparms, rs, qBody, headers)
+}
+
+func (rs *resourceState) Delete(headers map[string]string) error {
+	return rs.client.deelete(rs.path, rs.qparms, rs, headers)
 }
 
 func (re retryableError) Error() string {
@@ -139,7 +154,7 @@ func buildHeaders(maybeHeaders []map[string]string) http.Header {
 // are returned if anything goes wrong, including a non-Success HTTP result
 // (but note that there may be a response anyway.
 // It returns an Updater so that the resource can be updated later
-func (client *LiveHTTPClient) Retrieve(urlPath string, qParms map[string]string, rzBody interface{}, headers map[string]string) (Updater, error) {
+func (client *LiveHTTPClient) Retrieve(urlPath string, qParms map[string]string, rzBody interface{}, headers map[string]string) (UpdateDeleter, error) {
 	url, err := client.buildURL(urlPath, qParms)
 	rq, err := client.buildRequest("GET", url, headers, nil, nil, err)
 	rz, err := client.sendRequest(rq, err)
@@ -163,9 +178,7 @@ func (client *LiveHTTPClient) Create(urlPath string, qParms map[string]string, q
 	}(), "Create %s", urlPath)
 }
 
-// Delete removes a resource from the server, granted that we know the resource that we're removing.
-// It functions similarly to Update, but issues DELETE requests.
-func (client *LiveHTTPClient) Delete(urlPath string, qParms map[string]string, from *resourceState, headers map[string]string) error {
+func (client *LiveHTTPClient) deelete(urlPath string, qParms map[string]string, from *resourceState, headers map[string]string) error {
 	return errors.Wrapf(func() error {
 		url, err := client.buildURL(urlPath, qParms)
 		etag := from.etag
@@ -194,7 +207,7 @@ func (*DummyHTTPClient) Create(urlPath string, qParms map[string]string, rqBody 
 }
 
 // Retrieve implements HTTPClient on DummyHTTPClient - it does nothing and returns nil
-func (*DummyHTTPClient) Retrieve(urlPath string, qParms map[string]string, rzBody interface{}, headers map[string]string) (Updater, error) {
+func (*DummyHTTPClient) Retrieve(urlPath string, qParms map[string]string, rzBody interface{}, headers map[string]string) (UpdateDeleter, error) {
 	return nil, nil
 }
 
@@ -204,7 +217,7 @@ func (*DummyHTTPClient) update(urlPath string, qParms map[string]string, from *r
 }
 
 // Delete implements HTTPClient on DummyHTTPClient - it does nothing and returns nil
-func (*DummyHTTPClient) Delete(urlPath string, qParms map[string]string, from *resourceState, headers map[string]string) error {
+func (*DummyHTTPClient) deelete(urlPath string, qParms map[string]string, from *resourceState, headers map[string]string) error {
 	return nil
 }
 
