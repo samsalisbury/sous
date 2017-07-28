@@ -16,8 +16,8 @@ import (
 type SousMetadataGet struct {
 	config.DeployFilterFlags
 	*sous.ResolveFilter
-	*sous.State
-	graph.CurrentGDM
+	graph.TargetManifestID
+	graph.HTTPClient
 	graph.OutWriter
 }
 
@@ -36,37 +36,17 @@ func (smg *SousMetadataGet) RegisterOn(psy Addable) {
 }
 
 func (smg *SousMetadataGet) Execute(args []string) cmdr.Result {
-	if smg.DeployFilterFlags.Repo == "" {
-		return EnsureErrorResult(errors.Errorf("-repo is required"))
-	}
-	filtered := smg.CurrentGDM.Clone().Filter(smg.ResolveFilter.FilterDeployment)
-	if smg.ResolveFilter.Cluster != "" {
-		dep, err := filtered.Only()
-		if err != nil {
-			return EnsureErrorResult(err)
-		}
-		if dep == nil {
-			return EnsureErrorResult(errors.Errorf("No manifest matched by %v", smg.ResolveFilter))
-		}
-		if err := outputMetadata(dep.Metadata, smg.ResolveFilter.Cluster, args, smg.OutWriter); err != nil {
-			return EnsureErrorResult(err)
-		}
-		return cmdr.Success()
-	}
+	mani := sous.Manifest{}
+	_, err := smg.HTTPClient.Retrieve("./manifests", smg.TargetManifestID.QueryMap(), &mani, nil)
 
-	manis, err := filtered.RawManifests(smg.State.Defs)
 	if err != nil {
-		return EnsureErrorResult(err)
-	}
-	mani, err := manis.Only()
-	if err != nil {
-		return EnsureErrorResult(err)
-	}
-	if mani == nil {
-		return EnsureErrorResult(errors.Errorf("No manifest matched by %v", smg.ResolveFilter))
+		return EnsureErrorResult(errors.Errorf("No manifest matched by %v.", smg.ResolveFilter))
 	}
 
 	for clusterName, deploySpec := range mani.Deployments {
+		if !smg.ResolveFilter.FilterClusterName(clusterName) {
+			continue
+		}
 		smg.OutWriter.Write([]byte(fmt.Sprintf("Metadata for deployment in %s\n", clusterName)))
 		if err := outputMetadata(deploySpec.Metadata, clusterName, args, smg.OutWriter); err != nil {
 			return EnsureErrorResult(err)

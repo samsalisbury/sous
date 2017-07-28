@@ -13,9 +13,9 @@ import (
 type SousMetadataSet struct {
 	config.DeployFilterFlags
 	*sous.ResolveFilter
-	*sous.State
-	graph.CurrentGDM
-	sous.StateWriter
+	graph.TargetManifestID
+	graph.HTTPClient
+
 	User sous.User
 }
 
@@ -37,25 +37,23 @@ func (smg *SousMetadataSet) Execute(args []string) cmdr.Result {
 	if len(args) < 2 {
 		return EnsureErrorResult(errors.Errorf("<name> and <value> both required"))
 	}
-	if smg.DeployFilterFlags.Repo == "" {
-		return EnsureErrorResult(errors.Errorf("-repo is required"))
-	}
-
 	key := args[0]
 	value := args[1]
 
-	filtered := smg.CurrentGDM.Clone().Filter(smg.ResolveFilter.FilterDeployment)
-	insertion := make([]*sous.Deployment, 0, filtered.Len())
-	for _, dep := range filtered.Snapshot() {
-		dep.Metadata[key] = value
-		insertion = append(insertion, dep)
-	}
-
-	if err := smg.State.UpdateDeployments(insertion...); err != nil {
+	mani := sous.Manifest{}
+	up, err := smg.HTTPClient.Retrieve("./manifests", smg.TargetManifestID.QueryMap(), &mani, nil)
+	if err != nil {
 		return EnsureErrorResult(err)
 	}
 
-	if err := smg.StateWriter.WriteState(smg.State, smg.User); err != nil {
+	for cname, depspec := range mani.Deployments {
+		if !smg.ResolveFilter.FilterClusterName(cname) {
+			continue
+		}
+		depspec.Metadata[key] = value
+	}
+
+	if err := up.Update(&mani, smg.User.HTTPHeaders()); err != nil {
 		return EnsureErrorResult(err)
 	}
 

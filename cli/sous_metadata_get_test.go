@@ -7,7 +7,7 @@ import (
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
 	sous "github.com/opentable/sous/lib"
-	"github.com/samsalisbury/semv"
+	"github.com/opentable/sous/util/restful/restfultest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -55,21 +55,23 @@ func TestMetadataGetAll(t *testing.T) {
 }
 
 func runCommand(t *testing.T, args []string, dff config.DeployFilterFlags) string {
+	cl, control := restfultest.NewHTTPClientSpy()
 	out := &bytes.Buffer{}
-	state := makeTestState()
 	shc := sous.SourceHostChooser{}
 	rf, err := dff.BuildFilter(shc.ParseSourceLocation)
 	require.NoError(t, err)
-	deps, err := state.Deployments()
-	require.NoError(t, err)
 	smg := SousMetadataGet{
+		TargetManifestID:  graph.TargetManifestID{Source: sous.SourceLocation{Repo: project1.Repo}},
 		DeployFilterFlags: dff,
 		ResolveFilter:     rf,
-		State:             state,
-		CurrentGDM:        graph.CurrentGDM{Deployments: deps},
+		HTTPClient:        graph.HTTPClient{cl},
 		OutWriter:         graph.OutWriter(out),
 	}
 
+	control.Any(
+		"Retrieve",
+		testManifest("with-metadata"), restfultest.DummyUpdater(), nil,
+	)
 	res := smg.Execute(args)
 	assert.Equal(t, 0, res.ExitCode())
 
@@ -103,34 +105,6 @@ func makeTestState() *sous.State {
 				"cluster-2": cluster2,
 			},
 		},
-		Manifests: sous.NewManifests(
-			&sous.Manifest{
-				Source: project1,
-				Owners: []string{"owner1"},
-				Kind:   sous.ManifestKindService,
-				Deployments: sous.DeploySpecs{
-					"cluster-1": {
-						Version: semv.MustParse("1.0.0"),
-						DeployConfig: sous.DeployConfig{
-							Metadata: sous.Metadata{
-								"BuildBranch": "master",
-								"DeployOn":    "build success",
-							},
-							NumInstances: 2,
-						},
-					},
-					"cluster-2": {
-						Version: semv.MustParse("2.0.0"),
-						DeployConfig: sous.DeployConfig{
-							Metadata: sous.Metadata{
-								"BuildBranch": "master",
-								"DeployOn":    "version advance",
-							},
-							NumInstances: 3,
-						},
-					},
-				},
-			},
-		),
+		Manifests: sous.NewManifests(testManifest("with-metadata")),
 	}
 }

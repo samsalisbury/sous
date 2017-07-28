@@ -19,11 +19,6 @@ func TestManifestGet(t *testing.T) {
 	out := &bytes.Buffer{}
 
 	cl, control := restfultest.NewHTTPClientSpy()
-	control.Any(
-		"Retrieve",
-		testManifest(), restfultest.DummyUpdater(), nil,
-	)
-
 	smg := &SousManifestGet{
 		TargetManifestID: graph.TargetManifestID{
 			Source: sous.SourceLocation{
@@ -35,6 +30,12 @@ func TestManifestGet(t *testing.T) {
 		OutWriter: graph.OutWriter(out),
 		LogSet:    logging.NewLogSet("", os.Stderr),
 	}
+
+	control.Any(
+		"Retrieve",
+		testManifest("simple"), restfultest.DummyUpdater(), nil,
+	)
+
 	res := smg.Execute([]string{})
 	assert.Equal(t, 0, res.ExitCode())
 
@@ -54,8 +55,7 @@ func TestManifestSet(t *testing.T) {
 		},
 	}
 
-	baseMani := testManifest()
-	mani := testManifest()
+	mani := testManifest("simple")
 
 	mani.Flavor = "vanilla"
 	yml, err := yaml.Marshal(mani)
@@ -75,11 +75,11 @@ func TestManifestSet(t *testing.T) {
 	control.MatchMethod(
 		"Retrieve",
 		spies.Once(),
-		baseMani, updater, nil,
+		testManifest("simple"), updater, nil,
 	)
 	control.Any(
 		"Retrieve",
-		baseMani, restfultest.DummyUpdater(), nil,
+		testManifest("simple"), restfultest.DummyUpdater(), nil,
 	)
 	upctl.Any(
 		"Update",
@@ -99,32 +99,9 @@ func TestManifestSet(t *testing.T) {
 	}
 }
 
-func testManifest() *sous.Manifest {
-	uripath := "certainly/i/am/healthy"
-	return &sous.Manifest{
-		Source: sous.SourceLocation{Repo: project1.Repo},
-		Owners: []string{"sam", "judson"},
-		Kind:   sous.ManifestKindService,
-		Deployments: sous.DeploySpecs{
-			"ci": sous.DeploySpec{
-				DeployConfig: sous.DeployConfig{
-					Resources: sous.Resources{
-						"cpus":   "0.1",
-						"memory": "100",
-						"ports":  "1",
-					},
-					Startup: sous.Startup{
-						CheckReadyURIPath: uripath,
-					},
-				},
-			},
-		},
-	}
-}
-
 func TestManifestYAML(t *testing.T) {
 	uripath := "certainly/i/am/healthy"
-	yml, err := yaml.Marshal(testManifest())
+	yml, err := yaml.Marshal(testManifest("simple"))
 	require.NoError(t, err)
 	assert.Regexp(t, "(?i).*checkready.*", string(yml))
 

@@ -211,7 +211,7 @@ func TestInvokeMetadataGet(t *testing.T) {
 	assert.NotNil(exe)
 	metaGet, good := exe.Cmd.(*SousMetadataGet)
 	require.True(good)
-	assert.NotNil(metaGet.State)
+	assert.NotNil(metaGet.HTTPClient.HTTPClient)
 }
 
 func TestInvokeMetadataSet(t *testing.T) {
@@ -221,7 +221,7 @@ func TestInvokeMetadataSet(t *testing.T) {
 	assert.NotNil(exe)
 	metaSet, good := exe.Cmd.(*SousMetadataSet)
 	require.True(good)
-	assert.NotNil(metaSet.State)
+	assert.NotNil(metaSet.HTTPClient.HTTPClient)
 }
 
 func TestInvokeManifestGet(t *testing.T) {
