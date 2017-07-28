@@ -72,6 +72,19 @@ func AnyArgs(mock.Arguments) bool {
 	return true
 }
 
+// Once is a convenience for CallCount(1)
+func Once() func(mock.Arguments) bool {
+	return CallCount(1)
+}
+
+// CallCount constructs a predicate that allows a method to be called a certain number of times.
+func CallCount(n int) func(mock.Arguments) bool {
+	return func(mock.Arguments) bool {
+		n--
+		return n >= 0
+	}
+}
+
 func (s *Spy) String() string {
 	str := "Calls: "
 	for _, c := range s.calls {

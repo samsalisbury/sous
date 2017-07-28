@@ -81,8 +81,7 @@ func (c *HTTPClientSpy) Retrieve(url string, ps map[string]string, bd interface{
 // Update is a spy implementation of the restful.HTTPClient.Update method
 func (u *UpdateSpy) Update(bd restful.Comparable, hs map[string]string) error {
 	res := u.Called(bd, hs)
-	roundtrip(res.Get(0), bd)
-	return res.Error(1)
+	return res.Error(0)
 }
 
 // Delete is a spy implementation of the restful.HTTPClient.Delete method

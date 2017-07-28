@@ -17,8 +17,7 @@ import (
 type SousManifestSet struct {
 	config.DeployFilterFlags
 	graph.TargetManifestID
-	*sous.State
-	graph.StateWriter
+	graph.HTTPClient
 	graph.InReader
 	*sous.ResolveFilter
 	*logging.LogSet
@@ -46,9 +45,16 @@ func (smg *SousManifestSet) RegisterOn(psy Addable) {
 func (smg *SousManifestSet) Execute(args []string) cmdr.Result {
 	mid := sous.ManifestID(smg.TargetManifestID)
 
-	_, present := smg.State.Manifests.Get(mid)
-	if !present {
-		return EnsureErrorResult(errors.Errorf("No manifest matched by %v yet. See `sous init`", smg.ResolveFilter))
+	manifestQuery := map[string]string{}
+	manifestQuery["repo"] = mid.Source.Repo
+	manifestQuery["offset"] = mid.Source.Dir
+	manifestQuery["flavor"] = mid.Flavor
+
+	mani := sous.Manifest{}
+	up, err := smg.HTTPClient.Retrieve("./manifests", manifestQuery, &mani, nil)
+
+	if err != nil {
+		return EnsureErrorResult(errors.Errorf("No manifest matched by %v yet. See `sous init` (%v)", smg.ResolveFilter, err))
 	}
 
 	yml := sous.Manifest{}
@@ -61,8 +67,8 @@ func (smg *SousManifestSet) Execute(args []string) cmdr.Result {
 		return EnsureErrorResult(err)
 	}
 	smg.Vomit.Print(spew.Sdump(yml))
-	smg.State.Manifests.Set(mid, &yml)
-	err = smg.StateWriter.WriteState(smg.State, smg.User)
+
+	err = up.Update(&yml, nil)
 	if err != nil {
 		return EnsureErrorResult(err)
 	}

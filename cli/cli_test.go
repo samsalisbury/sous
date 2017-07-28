@@ -241,7 +241,7 @@ func TestInvokeManifestSet(t *testing.T) {
 	assert.NotNil(exe)
 	maniSet, good := exe.Cmd.(*SousManifestSet)
 	require.True(good)
-	assert.NotNil(maniSet.StateWriter)
+	assert.NotNil(maniSet.HTTPClient.HTTPClient)
 }
 
 func TestInvokeServer(t *testing.T) {
