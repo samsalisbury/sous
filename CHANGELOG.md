@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
+## [Unreleased](//github.com/opentable/sous/compare/0.5.22...HEAD)
+### Changed:
+- Client: Client commands now have a "local server" available if no server is
+  configurated. This is the start of the path to using HTTP client/server
+  interactions for everything, as opposed to strategizing storage modules.
+
 ## [0.5.22](//github.com/opentable/sous/compare/0.5.21...0.5.22)
 ### Fixed
 - Server: Validation checks didn't consider default values.

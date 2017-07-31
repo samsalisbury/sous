@@ -34,6 +34,7 @@ func TestGraphWithConfig(in io.Reader, out, err io.Writer, cfg string) *SousGrap
 	return graph
 }
 
+// AddTestConfig adds configuration objects to the DI.
 func AddTestConfig(graph adder, cfg string) {
 	graph.Add(configYAML(cfg))
 	graph.Add(newTestConfigLoader)

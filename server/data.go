@@ -6,13 +6,14 @@ import (
 )
 
 type (
+	// NameData structs contain the pair of clustername to URL for data transfer
 	NameData struct {
 		ClusterName string
 		URL         string
 	}
 
 	// ServerListData is the DTO for lists of servers
-	ServerListData struct {
+	ServerListData struct { // not actually a stutter - "server" means two different things.
 		Servers []NameData
 	}
 
@@ -36,10 +37,12 @@ type (
 	}
 )
 
+// EmptyReceiver implements Comparable on ServerListData
 func (ld *ServerListData) EmptyReceiver() restful.Comparable {
 	return &ServerListData{Servers: []NameData{}}
 }
 
+// VariancesFrom implements Comparable on ServerListData
 func (ld *ServerListData) VariancesFrom(other restful.Comparable) restful.Variances {
 	switch ol := other.(type) {
 	default:

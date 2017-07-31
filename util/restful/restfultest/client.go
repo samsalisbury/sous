@@ -13,7 +13,7 @@ type (
 		*spies.Spy
 	}
 
-	// HTTPClientSpy is a spy implementation of restful.Updater
+	// UpdateSpy is a spy implementation of restful.Updater
 	UpdateSpy struct {
 		*spies.Spy
 	}
