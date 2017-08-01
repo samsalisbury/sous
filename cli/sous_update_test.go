@@ -1,12 +1,21 @@
 package cli
 
 import (
+	"bytes"
+	"io/ioutil"
+	"net/http/httptest"
+	"os"
 	"testing"
 
+	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/server"
+	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/restful"
 	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var updateStateTests = []struct {
@@ -83,6 +92,7 @@ func TestUpdateState(t *testing.T) {
 
 func TestUpdateRetryLoop(t *testing.T) {
 	dsm := &sous.DummyStateManager{State: sous.NewState()}
+
 	/*
 		Source SourceLocation `validate:"nonzero"`
 		Flavor string `yaml:",omitempty"`
@@ -94,34 +104,69 @@ func TestUpdateRetryLoop(t *testing.T) {
 	sourceID := sous.MustNewSourceID("github.com/user/project", "", "1.2.3")
 	mani := &sous.Manifest{
 		Source: sourceID.Location,
+		Kind:   sous.ManifestKindService,
+
 		Deployments: sous.DeploySpecs{
-			"blah": {Version: semv.MustParse("0.0.0")},
+			"blah": {
+				Version: semv.MustParse("0.0.0"),
+				DeployConfig: sous.DeployConfig{
+					Resources: sous.Resources{
+						"cpus":   "1",
+						"memory": "100",
+						"ports":  "1",
+					},
+					Startup: sous.Startup{SkipCheck: true},
+				},
+			},
 		},
 	}
 	t.Log(mani.ID())
+	dsm.State.SetEtag("asdfasdf")
 	dsm.State.Manifests.Add(mani)
 	dsm.State.Defs.Clusters = sous.Clusters{"blah": {}}
 	user := sous.User{Name: "Judson the Unlucky", Email: "unlucky@opentable.com"}
-	deps, err := updateRetryLoop(dsm, sourceID, depID, user)
+
+	g := graph.BuildBaseGraph(&bytes.Buffer{}, ioutil.Discard, ioutil.Discard)
+	graph.AddNetwork(g)
+	graph.AddTestConfig(g, "")
+	g.Add(user)
+
+	g.Add(
+		func() server.StateManager { return server.StateManager{dsm} },
+		func() graph.StateReader { return graph.StateReader{dsm} },
+	)
+	g.Add(&config.Verbosity{})
+
+	serverScoop := struct {
+		Handler graph.ServerHandler
+		LogSet  *logging.LogSet
+	}{}
+	g.MustInject(&serverScoop)
+	if serverScoop.Handler.Handler == nil {
+		t.Fatalf("Didn't inject http.Handler!")
+	}
+	testServer := httptest.NewServer(serverScoop.Handler.Handler)
+	defer testServer.Close()
+
+	cl, err := restful.NewInMemoryClient(serverScoop.Handler.Handler, serverScoop.LogSet, map[string]string{"X-Gatelatch": os.Getenv("GATELATCH")})
+	require.NoError(t, err)
+
+	deps, err := updateRetryLoop(cl, sourceID, depID, user)
 
 	assert.NoError(t, err)
 	assert.Equal(t, 1, deps.Len())
 	dep, present := deps.Get(depID)
 	assert.True(t, present)
 	assert.Equal(t, "1.2.3", dep.SourceID.Version.String())
-	assert.True(t, dsm.ReadCount > 0, "No requests made against state manager")
+	//assert.True(t, dsm.ReadCount > 0, "No requests made against state manager")
 }
-
-type DummyStateManager struct{}
-
-func (dsm *DummyStateManager) WriteState(s *sous.State, u sous.User) error { return nil }
-func (dsm *DummyStateManager) ReadState() (*sous.State, error)             { return nil, nil }
 
 //XXX should actually drive interesting behavior
 func TestSousUpdate_Execute(t *testing.T) {
-	dsm := &DummyStateManager{}
+	//dsm := &sous.DummyStateManager{}
 	su := SousUpdate{
-		StateManager:  &graph.StateManager{dsm},
+		//StateManager:  &graph.StateManager{dsm},
+		Client:        graph.HTTPClient{&restful.DummyHTTPClient{}},
 		Manifest:      graph.TargetManifest{Manifest: &sous.Manifest{}},
 		ResolveFilter: &graph.RefinedResolveFilter{},
 	}

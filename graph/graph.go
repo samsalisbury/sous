@@ -5,6 +5,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log" //ok
+	"net/http"
 	"os"
 	"os/user"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/opentable/sous/ext/singularity"
 	"github.com/opentable/sous/ext/storage"
 	"github.com/opentable/sous/lib"
+	"github.com/opentable/sous/server"
 	"github.com/opentable/sous/util/cmdr"
 	"github.com/opentable/sous/util/docker_registry"
 	"github.com/opentable/sous/util/logging"
@@ -39,6 +41,7 @@ type (
 	// SousGraph is a dependency injector used to flesh out Sous commands
 	// with their dependencies.
 	SousGraph struct{ *psyringe.Psyringe }
+
 	// OutWriter is typically set to os.Stdout.
 	OutWriter io.Writer
 	// ErrWriter is typically set to os.Stderr.
@@ -48,6 +51,11 @@ type (
 	// StatusWaitStable represents if `sous plumbing status` should continue to
 	// poll until the selected t
 	StatusWaitStable bool
+	// ProfilingServer records whether a profiling server was requested
+	ProfilingServer bool
+
+	// XXX one at a time, unexport all these wrapper types
+
 	// Version represents a version of Sous.
 	Version struct{ semv.Version }
 	// LocalSousConfig is the configuration for Sous.
@@ -69,6 +77,8 @@ type (
 	LocalDockerClient struct{ docker_registry.Client }
 	// HTTPClient wraps the sous.HTTPClient interface
 	HTTPClient struct{ restful.HTTPClient }
+	// ServerHandler wraps the http.Handler for the sous server
+	ServerHandler struct{ http.Handler }
 	// StateManager simply wraps the sous.StateManager interface
 	StateManager struct{ sous.StateManager }
 	// StateReader wraps a storage.StateReader.
@@ -115,9 +125,10 @@ const (
 // BuildGraph builds the dependency injection graph, used to populate commands
 // invoked by the user.
 func BuildGraph(in io.Reader, out, err io.Writer) *SousGraph {
-	graph := buildBaseGraph(in, out, err)
+	graph := BuildBaseGraph(in, out, err)
 	AddFilesystem(graph)
 	AddNetwork(graph)
+	AddState(graph)
 	graph.Add(newUser)
 	return graph
 }
@@ -126,7 +137,8 @@ func newUser(c LocalSousConfig) sous.User {
 	return c.User
 }
 
-func buildBaseGraph(in io.Reader, out, err io.Writer) *SousGraph {
+// BuildBaseGraph constructs a graph with essentials - intended for testing
+func BuildBaseGraph(in io.Reader, out, err io.Writer) *SousGraph {
 	graph := &SousGraph{psyringe.New()}
 	// stdout, stderr
 	graph.Add(
@@ -141,8 +153,8 @@ func buildBaseGraph(in io.Reader, out, err io.Writer) *SousGraph {
 	AddConfig(graph)
 	AddDocker(graph)
 	AddSingularity(graph)
-	AddState(graph)
 	AddInternals(graph)
+	graph.Add(graph)
 	return graph
 }
 
@@ -195,6 +207,7 @@ func AddConfig(graph adder) {
 func AddNetwork(graph adder) {
 	graph.Add(
 		newDockerClient,
+		newServerHandler,
 		newHTTPClient,
 	)
 }
@@ -219,6 +232,7 @@ func AddSingularity(graph adder) {
 func AddState(graph adder) {
 	graph.Add(
 		newStateManager,
+		newServerStateManager,
 		newLocalStateReader,
 		newLocalStateWriter,
 	)
@@ -425,14 +439,14 @@ func newSelector(regClient LocalDockerClient, log *logging.LogSet) sous.Selector
 			sbp := docker.NewSplitBuildpack(regClient.Client)
 			dr, err := sbp.Detect(ctx)
 			if err == nil && dr.Compatible {
-				log.Info.Printf("Building with split container buildpack")
+				log.Warnf("Building with split container buildpack")
 				return sbp, nil
 			}
 
 			dfbp := docker.NewDockerfileBuildpack()
 			dr, err = dfbp.Detect(ctx)
 			if err == nil && dr.Compatible {
-				log.Info.Printf("Building with simple dockerfile buildpack")
+				log.Warnf("Building with simple dockerfile buildpack")
 				return dfbp, nil
 			}
 			return nil, errors.New("no buildpack detected for project")
@@ -476,16 +490,38 @@ func newDockerClient() LocalDockerClient {
 	return LocalDockerClient{docker_registry.NewClient()}
 }
 
+func newServerHandler(g *SousGraph, log *logging.LogSet) ServerHandler {
+	gf := func() restful.Injector {
+		perReqGraph := g.Clone()
+		perReqGraph.Add(getLiveGDM)
+		perReqGraph.Add(getUser)
+		return perReqGraph
+	}
+
+	var handler http.Handler
+
+	var profilingQuery struct{ Yes ProfilingServer }
+	g.Inject(&profilingQuery)
+	if profilingQuery.Yes {
+		handler = server.ProfilingHandler(gf, log.Child("http-server"))
+	} else {
+		handler = server.Handler(gf, log.Child("http-server"))
+	}
+
+	return ServerHandler{handler}
+}
+
 // newHTTPClient returns an HTTP client if c.Server is not empty.
 // Otherwise it returns nil, and emits some warnings.
-func newHTTPClient(c LocalSousConfig, user sous.User, log *logging.LogSet) (HTTPClient, error) {
+func newHTTPClient(c LocalSousConfig, user sous.User, srvr ServerHandler, log *logging.LogSet) (HTTPClient, error) {
 	if c.Server == "" {
 		logging.Log.Warn.Println("No server set, Sous is running in server or workstation mode.")
 		logging.Log.Warn.Println("Configure a server like this: sous config server http://some.sous.server")
-		return HTTPClient{}, nil
+		cl, err := restful.NewInMemoryClient(srvr.Handler, log.Child("local-http"))
+		return HTTPClient{HTTPClient: cl}, err
 	}
 	logging.Log.Debug.Printf("Using server at %s", c.Server)
-	cl, err := restful.NewClient(c.Server, log)
+	cl, err := restful.NewClient(c.Server, log.Child("http-client"))
 	return HTTPClient{HTTPClient: cl}, err
 }
 
@@ -500,6 +536,10 @@ func newStateManager(cl HTTPClient, c LocalSousConfig) *StateManager {
 	}
 	hsm := sous.NewHTTPStateManager(cl)
 	return &StateManager{StateManager: hsm}
+}
+
+func newServerStateManager(sm *StateManager) server.StateManager {
+	return server.StateManager{StateManager: sm.StateManager}
 }
 
 func newStatusPoller(cl HTTPClient, rf *RefinedResolveFilter, user sous.User) *sous.StatusPoller {
@@ -563,7 +603,7 @@ func newDockerRegistry(cfg LocalSousConfig, ls *logging.LogSet, cl LocalDockerCl
 
 func newInserter(cfg LocalSousConfig, ls *logging.LogSet, cl LocalDockerClient) (sous.Inserter, error) {
 	if cfg.Server == "" {
-		return newDockerRegistry(cfg, ls, cl)
+		return newDockerRegistry(cfg, ls.Child("docker-registry"), cl)
 	}
 	return sous.NewHTTPNameInserter(cfg.Server)
 }

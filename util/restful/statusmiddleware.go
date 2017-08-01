@@ -12,6 +12,7 @@ type (
 
 	// A StatusMiddleware processes panics into 500s and other status codes.
 	StatusMiddleware struct {
+		gatelatch string
 		logSet
 	}
 )

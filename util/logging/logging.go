@@ -121,15 +121,15 @@ func newls(name string, err io.Writer) *LogSet {
 }
 
 // Vomitf is a simple wrapper on Vomit.Printf
-func (ls LogSet) Vomitf(f string, as ...interface{}) { ls.vomit.Output(2, fmt.Sprintf(f, as...)) }
+func (ls LogSet) Vomitf(f string, as ...interface{}) { ls.vomit.Output(3, fmt.Sprintf(f, as...)) }
 func (ls LogSet) vomitf(f string, as ...interface{}) { ls.vomit.Output(4, fmt.Sprintf(f, as...)) }
 
 // Debugf is a simple wrapper on Debug.Printf
-func (ls LogSet) Debugf(f string, as ...interface{}) { ls.debug.Output(2, fmt.Sprintf(f, as...)) }
+func (ls LogSet) Debugf(f string, as ...interface{}) { ls.debug.Output(3, fmt.Sprintf(f, as...)) }
 func (ls LogSet) debugf(f string, as ...interface{}) { ls.debug.Output(4, fmt.Sprintf(f, as...)) }
 
 // Warnf is a simple wrapper on Warn.Printf
-func (ls LogSet) Warnf(f string, as ...interface{}) { ls.warn.Output(2, fmt.Sprintf(f, as...)) }
+func (ls LogSet) Warnf(f string, as ...interface{}) { ls.warn.Output(3, fmt.Sprintf(f, as...)) }
 func (ls LogSet) warnf(f string, as ...interface{}) { ls.warn.Output(4, fmt.Sprintf(f, as...)) }
 
 func (ls LogSet) imposeLevel() {

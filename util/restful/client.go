@@ -7,8 +7,10 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/textproto"
 	"net/url"
 
+	"github.com/hydrogen18/memlistener"
 	"github.com/opentable/sous/util/readdebugger"
 	"github.com/pkg/errors"
 )
@@ -20,11 +22,13 @@ type (
 		serverURL *url.URL
 		http.Client
 		logSet
+		commonHeaders http.Header
 	}
 
 	resourceState struct {
 		client       *LiveHTTPClient
 		path, etag   string
+		qparms       map[string]string
 		body         io.Reader
 		resourceJSON io.Reader
 	}
@@ -33,13 +37,23 @@ type (
 	//   It's designed to handle basic CRUD operations in a safe and restful way.
 	HTTPClient interface {
 		Create(urlPath string, qParms map[string]string, rqBody interface{}, headers map[string]string) error
-		Retrieve(urlPath string, qParms map[string]string, rzBody interface{}, headers map[string]string) (Updater, error)
-		Delete(urlPath string, qParms map[string]string, from *resourceState, headers map[string]string) error
+		Retrieve(urlPath string, qParms map[string]string, rzBody interface{}, headers map[string]string) (UpdateDeleter, error)
 	}
 
 	// An Updater captures the state of a retrieved resource so that it can be updated later.
 	Updater interface {
-		Update(params map[string]string, body Comparable, headers map[string]string) error
+		Update(body Comparable, headers map[string]string) error
+	}
+
+	// A Deleter captures the state of a retrieved resource so that it can be later deleted.
+	Deleter interface {
+		Delete(headers map[string]string) error
+	}
+
+	// An UpdateDeleter allows for a given resource to be updated or deleted.
+	UpdateDeleter interface {
+		Updater
+		Deleter
 	}
 
 	// DummyHTTPClient doesn't really make HTTP requests.
@@ -65,8 +79,12 @@ type (
 	retryableError string
 )
 
-func (rs *resourceState) Update(qParms map[string]string, qBody Comparable, headers map[string]string) error {
-	return rs.client.update(rs.path, qParms, rs, qBody, headers)
+func (rs *resourceState) Update(qBody Comparable, headers map[string]string) error {
+	return rs.client.update(rs.path, rs.qparms, rs, qBody, headers)
+}
+
+func (rs *resourceState) Delete(headers map[string]string) error {
+	return rs.client.deelete(rs.path, rs.qparms, rs, headers)
 }
 
 func (re retryableError) Error() string {
@@ -81,12 +99,13 @@ func Retryable(err error) bool {
 }
 
 // NewClient returns a new LiveHTTPClient for a particular serverURL.
-func NewClient(serverURL string, ls logSet) (*LiveHTTPClient, error) {
+func NewClient(serverURL string, ls logSet, headers ...map[string]string) (*LiveHTTPClient, error) {
 	u, err := url.Parse(serverURL)
 
 	client := &LiveHTTPClient{
-		serverURL: u,
-		logSet:    ls,
+		serverURL:     u,
+		logSet:        ls,
+		commonHeaders: buildHeaders(headers),
 	}
 
 	// XXX: This is in response to a mysterious issue surrounding automatic gzip
@@ -99,6 +118,35 @@ func NewClient(serverURL string, ls logSet) (*LiveHTTPClient, error) {
 	return client, errors.Wrapf(err, "new Sous REST client")
 }
 
+// NewInMemoryClient wraps a MemoryListener in a restful.Client
+func NewInMemoryClient(handler http.Handler, ls logSet, headers ...map[string]string) (HTTPClient, error) {
+	u, err := url.Parse("http://in.memory.server")
+	if err != nil {
+		return nil, err
+	}
+
+	ms := memlistener.NewInMemoryServer(handler)
+
+	client := &LiveHTTPClient{
+		serverURL:     u,
+		logSet:        ls,
+		Client:        *ms.NewClient(),
+		commonHeaders: buildHeaders(headers),
+	}
+
+	return client, nil
+}
+
+func buildHeaders(maybeHeaders []map[string]string) http.Header {
+	hs := make(http.Header)
+	if len(maybeHeaders) > 0 {
+		for k, v := range maybeHeaders[0] {
+			hs.Set(k, v)
+		}
+	}
+	return hs
+}
+
 // ****
 
 // Retrieve makes a GET request on urlPath, after transforming qParms into ?&=
@@ -106,7 +154,7 @@ func NewClient(serverURL string, ls logSet) (*LiveHTTPClient, error) {
 // are returned if anything goes wrong, including a non-Success HTTP result
 // (but note that there may be a response anyway.
 // It returns an Updater so that the resource can be updated later
-func (client *LiveHTTPClient) Retrieve(urlPath string, qParms map[string]string, rzBody interface{}, headers map[string]string) (Updater, error) {
+func (client *LiveHTTPClient) Retrieve(urlPath string, qParms map[string]string, rzBody interface{}, headers map[string]string) (UpdateDeleter, error) {
 	url, err := client.buildURL(urlPath, qParms)
 	rq, err := client.buildRequest("GET", url, headers, nil, nil, err)
 	rz, err := client.sendRequest(rq, err)
@@ -130,9 +178,7 @@ func (client *LiveHTTPClient) Create(urlPath string, qParms map[string]string, q
 	}(), "Create %s", urlPath)
 }
 
-// Delete removes a resource from the server, granted that we know the resource that we're removing.
-// It functions similarly to Update, but issues DELETE requests.
-func (client *LiveHTTPClient) Delete(urlPath string, qParms map[string]string, from *resourceState, headers map[string]string) error {
+func (client *LiveHTTPClient) deelete(urlPath string, qParms map[string]string, from *resourceState, headers map[string]string) error {
 	return errors.Wrapf(func() error {
 		url, err := client.buildURL(urlPath, qParms)
 		etag := from.etag
@@ -161,7 +207,7 @@ func (*DummyHTTPClient) Create(urlPath string, qParms map[string]string, rqBody 
 }
 
 // Retrieve implements HTTPClient on DummyHTTPClient - it does nothing and returns nil
-func (*DummyHTTPClient) Retrieve(urlPath string, qParms map[string]string, rzBody interface{}, headers map[string]string) (Updater, error) {
+func (*DummyHTTPClient) Retrieve(urlPath string, qParms map[string]string, rzBody interface{}, headers map[string]string) (UpdateDeleter, error) {
 	return nil, nil
 }
 
@@ -171,7 +217,7 @@ func (*DummyHTTPClient) update(urlPath string, qParms map[string]string, from *r
 }
 
 // Delete implements HTTPClient on DummyHTTPClient - it does nothing and returns nil
-func (*DummyHTTPClient) Delete(urlPath string, qParms map[string]string, from *resourceState, headers map[string]string) error {
+func (*DummyHTTPClient) deelete(urlPath string, qParms map[string]string, from *resourceState, headers map[string]string) error {
 	return nil
 }
 
@@ -230,18 +276,31 @@ func (client *LiveHTTPClient) buildRequest(method, url string, headers map[strin
 
 	rq, err := http.NewRequest(method, url, JSON)
 
+	if headers == nil {
+		headers = map[string]string{}
+	}
 	/*
 		rq.Header.Add("Sous-User-Name", user.Name)
 		rq.Header.Add("Sous-User-Email", user.Email)
 	*/
 
-	if headers != nil {
-		for k, v := range headers {
-			rq.Header.Add(k, v)
-		}
-	}
+	client.updateHeaders(rq, headers)
 
 	return rq, err
+}
+
+func (client *LiveHTTPClient) updateHeaders(rq *http.Request, headers map[string]string) {
+	for k, v := range headers {
+		rq.Header.Add(k, v)
+	}
+
+	for k, v := range client.commonHeaders {
+		if _, overridden := rq.Header[textproto.CanonicalMIMEHeaderKey(k)]; !overridden {
+			for _, s := range v {
+				rq.Header.Add(k, s)
+			}
+		}
+	}
 }
 
 func (client *LiveHTTPClient) sendRequest(rq *http.Request, ierr error) (*http.Response, error) {

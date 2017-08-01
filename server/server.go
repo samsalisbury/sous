@@ -4,22 +4,50 @@ import (
 	"net/http"
 	"net/http/pprof"
 
-	"github.com/opentable/sous/config"
-	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/util/restful"
 )
 
+/*
 // this ensures that certain objects are injected early, so that they'll remain
 // the same across requests
 type fixedPoints struct {
 	*config.Config
 	*graph.StateManager
 }
+	mainGraph.Inject(&fixedPoints{})
+	gf := func() restful.Injector {
+		g := mainGraph.Clone()
+		AddsPerRequest(g)
+
+		return g
+	}
+
+// AddsPerRequest registers items into a SousGraph that need to be fresh per request
+func AddsPerRequest(g restful.Injector) {
+	g.Add(liveGDM)
+	g.Add(getUser)
+}
+
+func liveGDM(sr graph.StateReader) (*LiveGDM, error) {
+	state, err := graph.NewCurrentState(sr)
+	if err != nil {
+		return nil, err
+	}
+	gdm, err := graph.NewCurrentGDM(state)
+	if err != nil {
+		return nil, err
+	}
+	// Ignore this error because an empty string etag is acceptable.
+	etag, _ := state.GetEtag()
+	return &LiveGDM{Etag: etag, Deployments: gdm.Deployments}, nil
+}
+*/
 
 type logSet interface {
 	Vomitf(format string, a ...interface{})
 	Debugf(format string, a ...interface{})
 	Warnf(format string, a ...interface{})
+	HasMetrics() bool
 	ExpHandler() http.Handler
 }
 
@@ -30,27 +58,20 @@ func Run(laddr string, handler http.Handler) error {
 }
 
 // Handler builds the http.Handler for the Sous server httprouter.
-func Handler(mainGraph *graph.SousGraph, ls logSet) http.Handler {
-	handler := mux(mainGraph, ls)
+func Handler(gf func() restful.Injector, ls logSet) http.Handler {
+	handler := mux(gf, ls)
 	addMetrics(handler, ls)
 	return handler
 }
 
 // Handler builds the http.Handler for the Sous server httprouter.
-func ProfilingHandler(mainGraph *graph.SousGraph, ls logSet) http.Handler {
-	handler := mux(mainGraph, ls)
+func ProfilingHandler(gf func() restful.Injector, ls logSet) http.Handler {
+	handler := mux(gf, ls)
 	addMetrics(handler, ls)
 	return handler
 }
 
-func mux(mainGraph *graph.SousGraph, ls logSet) *http.ServeMux {
-	mainGraph.Inject(&fixedPoints{})
-	gf := func() restful.Injector {
-		g := mainGraph.Clone()
-		AddsPerRequest(g)
-
-		return g
-	}
+func mux(gf func() restful.Injector, ls logSet) *http.ServeMux {
 	router := SousRouteMap.BuildRouter(gf, ls)
 
 	handler := http.NewServeMux()
@@ -59,7 +80,9 @@ func mux(mainGraph *graph.SousGraph, ls logSet) *http.ServeMux {
 }
 
 func addMetrics(handler *http.ServeMux, ls logSet) {
-	handler.Handle("/debug/metrics", ls.ExpHandler())
+	if ls.HasMetrics() {
+		handler.Handle("/debug/metrics", ls.ExpHandler())
+	}
 }
 
 func addProfiling(handler *http.ServeMux) {

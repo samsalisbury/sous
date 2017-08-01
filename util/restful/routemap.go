@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/pkg/errors"
@@ -71,7 +72,7 @@ type (
 )
 
 func (rm *RouteMap) buildMetaHandler(r *httprouter.Router, grf func() Injector, ls logSet) *MetaHandler {
-	ph := &StatusMiddleware{logSet: ls}
+	ph := &StatusMiddleware{logSet: ls, gatelatch: os.Getenv("GATELATCH")}
 	mh := &MetaHandler{
 		graphFac:      grf,
 		router:        r,

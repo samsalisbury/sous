@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/firsterr"
 	"github.com/opentable/sous/util/logging"
@@ -30,14 +29,14 @@ type (
 		*http.Request
 		*restful.QueryValues
 		User        ClientUser
-		StateWriter graph.StateWriter
+		StateWriter sous.StateWriter
 	}
 
 	// DELETEManifestHandler handles DELETE exchanges for manifests
 	DELETEManifestHandler struct {
 		*sous.State
 		*restful.QueryValues
-		StateWriter graph.StateWriter
+		StateWriter sous.StateWriter
 	}
 )
 

@@ -39,14 +39,13 @@ type (
 	}
 )
 
-func checkURL(URL, called string, args ...interface{}) error {
-	called = fmt.Sprintf(called, args...)
+func checkURL(URL string) error {
 	u, err := url.Parse(URL)
 	if err != nil {
-		return errors.Wrapf(err, "%s %q is not a valid URL", called, URL)
+		return errors.Wrapf(err, "%q is not a valid URL", URL)
 	}
 	if u.Scheme != "http" && u.Scheme != "https" {
-		return errors.Errorf("%s %q must begin with http:// or https://", called, URL)
+		return errors.Errorf("%q must begin with http:// or https://", URL)
 	}
 	return nil
 }
@@ -54,13 +53,13 @@ func checkURL(URL, called string, args ...interface{}) error {
 // Validate returns an error if this config is invalid.
 func (c Config) Validate() error {
 	if c.Server != "" {
-		if err := checkURL(c.Server, "Config.Server"); err != nil {
-			return err
+		if err := checkURL(c.Server); err != nil {
+			return errors.Wrapf(err, "Config.Server")
 		}
 	}
 	for n, url := range c.SiblingURLs {
-		if err := checkURL(url, "Config.SiblingURLs[%d]", n); err != nil {
-			return err
+		if err := checkURL(url); err != nil {
+			return errors.Wrapf(err, "Config.SiblingURLs[%s]", n)
 		}
 	}
 	return nil

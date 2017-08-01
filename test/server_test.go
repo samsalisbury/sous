@@ -1,4 +1,4 @@
-package server
+package test
 
 import (
 	"bytes"
@@ -13,6 +13,7 @@ import (
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/ext/storage"
 	"github.com/opentable/sous/graph"
+	"github.com/opentable/sous/server"
 	"github.com/opentable/sous/util/restful"
 	"github.com/stretchr/testify/suite"
 )
@@ -44,7 +45,7 @@ func (dummyLogger) ExpHandler() http.Handler {
 	})
 }
 
-func (suite serverTests) prepare() *graph.SousGraph {
+func (suite serverTests) prepare(extras ...interface{}) http.Handler {
 	sourcepath, remotepath, outpath :=
 		"../ext/storage/testdata/in",
 		"../ext/storage/testdata/remote",
@@ -58,20 +59,29 @@ func (suite serverTests) prepare() *graph.SousGraph {
 
 	g := graph.TestGraphWithConfig(&bytes.Buffer{}, os.Stdout, os.Stdout,
 		"StateLocation: '"+outpath+"'\n")
+	g.Add(extras...)
 	g.Add(&config.Verbosity{})
-	return g
+
+	serverScoop := struct {
+		Handler graph.ServerHandler
+	}{}
+	g.MustInject(&serverScoop)
+	if serverScoop.Handler.Handler == nil {
+		suite.FailNow("Didn't inject http.Handler!")
+	}
+	return serverScoop.Handler.Handler
 }
 
 func (suite *serverSuite) SetupTest() {
-	g := suite.prepare()
+	h := suite.prepare()
 
-	suite.serverTests.server = httptest.NewServer(Handler(g, dummyLogger{}))
+	suite.serverTests.server = httptest.NewServer(h)
 	suite.serverTests.url = suite.server.URL
 }
 
 func (suite *profServerSuite) SetupTest() {
-	g := suite.prepare()
-	suite.serverTests.server = httptest.NewServer(ProfilingHandler(g, dummyLogger{})) // <--- profiling
+	h := suite.prepare(graph.ProfilingServer(true))
+	suite.serverTests.server = httptest.NewServer(h) // <--- profiling
 	suite.serverTests.url = suite.server.URL
 }
 
@@ -117,7 +127,7 @@ func (suite serverTests) TestMetricsPresent() {
 	bs, err := ioutil.ReadAll(res.Body)
 	suite.NoError(err)
 
-	suite.Equal(string(bs), "This should be some metrics here.")
+	suite.Regexp("Mallocs", string(bs))
 }
 
 func (suite serverTests) TestUpdateServers() {
@@ -125,14 +135,14 @@ func (suite serverTests) TestUpdateServers() {
 	suite.NoError(err)
 
 	etag := res.Header.Get("Etag")
-	data := &serverListData{}
+	data := &server.ServerListData{}
 	suite.decodeJSON(res, data)
 	suite.Len(data.Servers, 0)
 
 	client := &http.Client{}
 
-	newServers := &serverListData{
-		Servers: []server{server{ClusterName: "name", URL: "url"}},
+	newServers := &server.ServerListData{
+		Servers: []server.NameData{{ClusterName: "name", URL: "http://url"}},
 	}
 
 	req, err := http.NewRequest("PUT", suite.url+"/servers", restful.InjectCanaryAttr(suite.encodeJSON(newServers), etag))
@@ -144,7 +154,7 @@ func (suite serverTests) TestUpdateServers() {
 	res, err = http.Get(suite.url + "/servers")
 	suite.NoError(err)
 
-	data = &serverListData{}
+	data = &server.ServerListData{}
 	suite.decodeJSON(res, data)
 	suite.Len(data.Servers, 1)
 }

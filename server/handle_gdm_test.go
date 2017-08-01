@@ -27,5 +27,5 @@ func TestHandlesGDMGet(t *testing.T) {
 	data, status := th.Exchange()
 	assert.Equal(w.Header().Get("Etag"), etag)
 	assert.Equal(status, 200)
-	assert.Len(data.(gdmWrapper).Deployments, 0)
+	assert.Len(data.(GDMWrapper).Deployments, 0)
 }

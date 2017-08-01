@@ -125,7 +125,7 @@ func (hsm *HTTPStateManager) getManifests(defs Defs) (Manifests, error) {
 
 func (hsm *HTTPStateManager) putDeployments(new Deployments) error {
 	wNew := wrapDeployments(new)
-	return errors.Wrapf(hsm.gdmState.Update(nil, &wNew, hsm.User.HTTPHeaders()), "putting GDM")
+	return errors.Wrapf(hsm.gdmState.Update(&wNew, hsm.User.HTTPHeaders()), "putting GDM")
 }
 
 // EmptyReceiver implements Comparable on Manifest

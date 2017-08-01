@@ -19,11 +19,11 @@ func TestHandleServerList_Get(t *testing.T) {
 	rez, stat := h.Exchange()
 	assert.Equal(stat, 200)
 
-	list, yup := rez.(serverListData)
+	list, yup := rez.(ServerListData)
 	assert.True(yup)
 
 	if list.Servers[0].ClusterName == "right" {
-		list.Servers = []server{list.Servers[1], list.Servers[0]}
+		list.Servers = []NameData{list.Servers[1], list.Servers[0]}
 	}
 
 	// test predates config []string -> map[string]string

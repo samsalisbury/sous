@@ -27,6 +27,7 @@ func prepareCommand(t *testing.T, cl []string) (*CLI, *cmdr.PreparedExecution, f
 	require.NoError(err)
 
 	c.baseGraph = graph.BuildTestGraph(stdin, stdout, stderr)
+	//spew.Dump(c.baseGraph)
 
 	exe, err := c.Prepare(cl)
 	require.NoError(err)
@@ -73,8 +74,7 @@ func TestInvokeUpdate(t *testing.T) {
 	assert.Len(exe.Args, 0)
 	update, good := exe.Cmd.(*SousUpdate)
 	require.True(good)
-	assert.NotNil(update.StateManager)
-	assert.NotNil(update.StateManager.StateManager)
+	assert.NotNil(update.Client)
 }
 
 func TestInvokeDeploy(t *testing.T) {
@@ -211,7 +211,7 @@ func TestInvokeMetadataGet(t *testing.T) {
 	assert.NotNil(exe)
 	metaGet, good := exe.Cmd.(*SousMetadataGet)
 	require.True(good)
-	assert.NotNil(metaGet.State)
+	assert.NotNil(metaGet.HTTPClient.HTTPClient)
 }
 
 func TestInvokeMetadataSet(t *testing.T) {
@@ -221,7 +221,7 @@ func TestInvokeMetadataSet(t *testing.T) {
 	assert.NotNil(exe)
 	metaSet, good := exe.Cmd.(*SousMetadataSet)
 	require.True(good)
-	assert.NotNil(metaSet.State)
+	assert.NotNil(metaSet.HTTPClient.HTTPClient)
 }
 
 func TestInvokeManifestGet(t *testing.T) {
@@ -231,7 +231,7 @@ func TestInvokeManifestGet(t *testing.T) {
 	assert.NotNil(exe)
 	maniGet, good := exe.Cmd.(*SousManifestGet)
 	require.True(good)
-	assert.NotNil(maniGet.State)
+	assert.NotNil(maniGet.HTTPClient.HTTPClient)
 }
 
 func TestInvokeManifestSet(t *testing.T) {
@@ -241,7 +241,7 @@ func TestInvokeManifestSet(t *testing.T) {
 	assert.NotNil(exe)
 	maniSet, good := exe.Cmd.(*SousManifestSet)
 	require.True(good)
-	assert.NotNil(maniSet.StateWriter)
+	assert.NotNil(maniSet.HTTPClient.HTTPClient)
 }
 
 func TestInvokeServer(t *testing.T) {
@@ -252,7 +252,8 @@ func TestInvokeServer(t *testing.T) {
 	assert.NotNil(t, exe)
 	server, good := exe.Cmd.(*SousServer)
 	require.True(t, good)
-	assert.NotNil(t, server.SousGraph)
+	assert.NotNil(t, server.ServerHandler)
+	assert.NotNil(t, server.ServerHandler.Handler)
 	assert.True(t, server.AutoResolver.ResolveFilter.Offset.All(), "server.AutoResolver.ResolveFilter.Offset.All")
 	assert.True(t, server.AutoResolver.ResolveFilter.Flavor.All(), "server.AutoResolver.ResolveFilter.Flavor.All")
 }

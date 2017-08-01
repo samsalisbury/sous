@@ -47,6 +47,11 @@ type (
 		matchers []matcher
 		calls    []call
 	}
+
+	// A PassedArger implements PassedArgs
+	PassedArger interface {
+		PassedArgs() mock.Arguments
+	}
 )
 
 // NewSpy makes a Spy
@@ -67,6 +72,19 @@ func AnyArgs(mock.Arguments) bool {
 	return true
 }
 
+// Once is a convenience for CallCount(1)
+func Once() func(mock.Arguments) bool {
+	return CallCount(1)
+}
+
+// CallCount constructs a predicate that allows a method to be called a certain number of times.
+func CallCount(n int) func(mock.Arguments) bool {
+	return func(mock.Arguments) bool {
+		n--
+		return n >= 0
+	}
+}
+
 func (s *Spy) String() string {
 	str := "Calls: "
 	for _, c := range s.calls {
@@ -77,6 +95,12 @@ func (s *Spy) String() string {
 
 func (c call) String() string {
 	return fmt.Sprintf("%s(%s) -> (%s)", c.method, c.args, c.res)
+}
+
+func (c call) PassedArgs() mock.Arguments {
+	as := make(mock.Arguments, len(c.args))
+	copy(as, c.args)
+	return as
 }
 
 // Match records an arbitrary predicate to match against a method call
