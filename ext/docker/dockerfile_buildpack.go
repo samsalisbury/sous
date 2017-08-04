@@ -12,7 +12,9 @@ import (
 
 // DockerfileBuildpack is a simple buildpack for building projects using
 // their own Dockerfile.
-type DockerfileBuildpack struct{}
+type DockerfileBuildpack struct {
+	detected *sous.DetectResult
+}
 
 const (
 	// AppVersionBuildArg is the name of a docker build argument used to inject
@@ -49,8 +51,31 @@ func NewDockerfileBuildpack() *DockerfileBuildpack {
 
 var successfulBuildRE = regexp.MustCompile(`Successfully built (\w+)`)
 
+// Detect detects if c has a Dockerfile or not.
+func (d *DockerfileBuildpack) Detect(c *sous.BuildContext) (*sous.DetectResult, error) {
+	dfPath := filepath.Join(c.Source.OffsetDir, "Dockerfile")
+	if !c.Sh.Exists(dfPath) {
+		return nil, fmt.Errorf("%s does not exist", dfPath)
+	}
+	sh := c.Sh.Clone()
+	sh.LongRunning(false)
+	df, err := sh.Stdout("cat", dfPath)
+	if err != nil {
+		return nil, err
+	}
+	hasAppVersion := appVersionPattern.MatchString(df)
+	hasAppRevision := appRevisionPattern.MatchString(df)
+	logging.Log.Debug.Printf("Detected a dockerfile at %q. Accepts version: %t, accepts revision: %t", dfPath, hasAppVersion, hasAppRevision)
+	result := &sous.DetectResult{Compatible: true, Data: detectData{
+		HasAppVersionArg:  hasAppVersion,
+		HasAppRevisionArg: hasAppRevision,
+	}}
+	return result, nil
+}
+
 // Build implements Buildpack.Build
-func (d *DockerfileBuildpack) Build(c *sous.BuildContext, dr *sous.DetectResult) (*sous.BuildResult, error) {
+func (d *DockerfileBuildpack) Build(c *sous.BuildContext) (*sous.BuildResult, error) {
+	dr := d.detected
 	start := time.Now()
 	offset := c.Source.OffsetDir
 	if offset == "" {
@@ -81,30 +106,7 @@ func (d *DockerfileBuildpack) Build(c *sous.BuildContext, dr *sous.DetectResult)
 	}
 
 	return &sous.BuildResult{
-		ImageID:    match[1],
-		Elapsed:    time.Since(start),
-		Advisories: c.Advisories,
+		Elapsed:  time.Since(start),
+		Products: []*sous.BuildProduct{{ID: match[1]}},
 	}, nil
-}
-
-// Detect detects if c has a Dockerfile or not.
-func (d *DockerfileBuildpack) Detect(c *sous.BuildContext) (*sous.DetectResult, error) {
-	dfPath := filepath.Join(c.Source.OffsetDir, "Dockerfile")
-	if !c.Sh.Exists(dfPath) {
-		return nil, fmt.Errorf("%s does not exist", dfPath)
-	}
-	sh := c.Sh.Clone()
-	sh.LongRunning(false)
-	df, err := sh.Stdout("cat", dfPath)
-	if err != nil {
-		return nil, err
-	}
-	hasAppVersion := appVersionPattern.MatchString(df)
-	hasAppRevision := appRevisionPattern.MatchString(df)
-	logging.Log.Debug.Printf("Detected a dockerfile at %q. Accepts version: %t, accepts revision: %t", dfPath, hasAppVersion, hasAppRevision)
-	result := &sous.DetectResult{Compatible: true, Data: detectData{
-		HasAppVersionArg:  hasAppVersion,
-		HasAppRevisionArg: hasAppRevision,
-	}}
-	return result, nil
 }

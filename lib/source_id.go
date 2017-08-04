@@ -44,6 +44,17 @@ type (
 	}
 )
 
+// MakeSourceID is a convenience function to build a SourceID.
+func MakeSourceID(repo, dir, version string) SourceID {
+	return SourceID{
+		Location: SourceLocation{
+			Repo: repo,
+			Dir:  dir,
+		},
+		Version: semv.MustParse(version),
+	}
+}
+
 // DefaultDelim is the default delimiter between parts of the string
 // representation of a SourceID or a SourceLocation.
 const DefaultDelim = ","

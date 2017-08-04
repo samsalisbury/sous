@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/davecgh/go-spew/spew"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/docker_registry"
 	"github.com/opentable/sous/util/shell"
@@ -135,17 +136,19 @@ func TestSplitBuildpackDetect(t *testing.T) {
 	// Perhaps we should consider ENVs for those?
 }
 
-func TestSplitBuildpackBuildTemplating(t *testing.T) {
-	sb := &splitBuilder{
-		RunSpec: &SplitImageRunSpec{
+func TestRunnableBuildpackBuildTemplating(t *testing.T) {
+	sb := &runnableBuilder{
+		RunSpec: SplitImageRunSpec{
 			Image: sbmImage{From: "scratch"},
 			Files: []sbmInstall{
 				{Source: sbmFile{Dir: "src"}, Destination: sbmFile{Dir: "dest"}},
 			},
 			Exec: []string{"cat", "/etc/shadow"},
 		},
-		VersionConfig:  "APP_VERSION=1.2.3",
-		RevisionConfig: "APP_REVISION=cabba9edeadbeef",
+		splitBuilder: &splitBuilder{
+			VersionConfig:  "APP_VERSION=1.2.3",
+			RevisionConfig: "APP_REVISION=cabba9edeadbeef",
+		},
 	}
 	buf := &bytes.Buffer{}
 
@@ -167,8 +170,7 @@ func TestSplitBuildpackBuildTemplating(t *testing.T) {
 	//hasString("LABEL com.opentable.sous.build-image=") //once we push the build image...
 }
 
-func TestSplitBuildpackBuildLoadManifest(t *testing.T) {
-	sb := &splitBuilder{}
+func TestRunspecLoadLegacyManifest(t *testing.T) {
 
 	mBuf := bytes.NewBufferString(`{
   "image": {
@@ -182,31 +184,113 @@ func TestSplitBuildpackBuildLoadManifest(t *testing.T) {
     }
   ],
   "exec": ["/sous-demo"]
-}`)
+	}`)
 
-	sb.RunSpec = &SplitImageRunSpec{}
+	runspec := &MultiImageRunSpec{}
 	dec := json.NewDecoder(mBuf)
-	dec.Decode(sb.RunSpec)
+	dec.Decode(runspec)
 
-	if sb.RunSpec.Image.From != "scratch" {
+	if runspec.Image.From != "scratch" {
 		t.Error("RunSpec didn't load Image.From")
 	}
 
-	if len(sb.RunSpec.Files) != 1 {
+	if len(runspec.Files) != 1 {
 		t.Fatal("No files loaded")
 	}
-	if sb.RunSpec.Files[0].Source.Dir != "/built" {
+	if runspec.Files[0].Source.Dir != "/built" {
 		t.Error("RunSpec didn't load Files[0].Source")
 	}
-	if sb.RunSpec.Files[0].Destination.Dir != "/" {
+	if runspec.Files[0].Destination.Dir != "/" {
 		t.Error("RunSpec didn't load Files[0].Destination")
 	}
 
-	if len(sb.RunSpec.Validate()) > 0 {
+	if len(runspec.Validate()) > 0 {
 		t.Error("Expected RunSpec to validate")
+	}
+
+	nrs := runspec.Normalized()
+	if len(nrs.Images) != 1 {
+		t.Error("Normalized runspec doesn't have 1 Images [sic]")
 	}
 }
 
+func TestRunspecLoadMultiManifest(t *testing.T) {
+
+	mBuf := bytes.NewBufferString(`{
+		"images": [
+			{
+				"image": {
+					"type": "Docker",
+					"from": "scratch"
+				},
+				"files": [
+					{
+						"source": { "dir": "/built"},
+						"dest":   { "dir": "/"}
+					}
+				],
+				"exec": ["/sous-demo"]
+		  },
+			{
+				"image": {
+					"type": "Docker",
+					"from": "scratch"
+				},
+				"files": [
+					{
+						"source": { "dir": "/built-extra"},
+						"dest":   { "dir": "/"}
+					}
+				],
+				"exec": ["/sous-scratch"]
+		  }
+    ]
+	}`)
+
+	runspec := &MultiImageRunSpec{}
+	dec := json.NewDecoder(mBuf)
+	err := dec.Decode(runspec)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(runspec.Images) != 2 {
+		spew.Dump(runspec)
+		t.Fatal("runspec doesn't have 2 Images [sic]")
+	}
+
+	if runspec.Images[0].Image.From != "scratch" {
+		t.Error("RunSpec didn't load Image.From")
+	}
+
+	if len(runspec.Images[0].Files) != 1 {
+		t.Fatal("No files loaded")
+	}
+	if runspec.Images[0].Files[0].Source.Dir != "/built" {
+		t.Error("RunSpec didn't load Files[0].Source")
+	}
+	if runspec.Images[0].Files[0].Destination.Dir != "/" {
+		t.Error("RunSpec didn't load Files[0].Destination")
+	}
+
+	if len(runspec.Validate()) > 0 {
+		t.Error("Expected RunSpec to validate")
+	}
+
+	nrs := runspec.Normalized()
+	if len(nrs.Images) != 2 {
+		t.Error("Normalized runspec doesn't have 2 Images [sic]")
+	}
+
+	runspec.SplitImageRunSpec = &SplitImageRunSpec{
+		Image: sbmImage{From: "scratch"},
+	}
+
+	if len(runspec.Validate()) == 0 {
+		t.Error("Expected RunSpec not to validate with mixed legacy/new data")
+	}
+
+}
 func TestRunSpecValidate(t *testing.T) {
 	rs := &SplitImageRunSpec{}
 	flaws := rs.Validate()

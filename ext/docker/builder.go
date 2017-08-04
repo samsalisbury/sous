@@ -51,6 +51,34 @@ func NewBuilder(nc sous.Inserter, drh string, sourceShell, scratchShell shell.Sh
 	return b, nil
 }
 
+// ApplyMetadata implements sous.Labeller on Builder.
+// It applies container metadata etc. to a container.
+func (b *Builder) ApplyMetadata(br *sous.BuildResult) error {
+	for _, prod := range br.Products {
+		err := b.applyMetadata(prod)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Register registers the build artifact to the the registry
+func (b *Builder) Register(br *sous.BuildResult) error {
+	for _, prod := range br.Products {
+		err := b.pushToRegistry(prod)
+		if err != nil {
+			return err
+		}
+
+		err = b.recordName(prod)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (b *Builder) debug(msg string) {
 	Log.Debug.Printf(msg)
 }
@@ -59,43 +87,20 @@ func (b *Builder) info(msg string) {
 	Log.Info.Printf(msg)
 }
 
-// Register registers the build artifact to the the registry
-func (b *Builder) Register(br *sous.BuildResult, bc *sous.BuildContext) error {
-	err := b.pushToRegistry(br, bc)
-	if err != nil {
-		return err
-	}
+func (b *Builder) applyMetadata(bp *sous.BuildProduct) error {
+	bp.VersionName = b.VersionTag(bp.Source, bp.Kind)
+	bp.RevisionName = b.RevisionTag(bp.Source, bp.Kind, time.Now())
 
-	return b.recordName(br, bc)
-}
-
-// ApplyMetadata implements sous.Labeller on Builder.
-// It applies container metadata etc. to a container.
-func (b *Builder) ApplyMetadata(br *sous.BuildResult, bc *sous.BuildContext) error {
-	return b.applyMetadata(br, "", bc)
-}
-
-func (b *Builder) applyMetadata(br *sous.BuildResult, kind string, bc *sous.BuildContext) error {
-	br.VersionName = b.VersionTag(bc.Version(), kind)
-	br.RevisionName = b.RevisionTag(bc.Version(), kind, time.Now())
-
-	c := b.SourceShell.Cmd("docker", "build", "-t", br.VersionName, "-t", br.RevisionName, "-")
-	bf := b.metadataDockerfile(br, bc)
+	c := b.SourceShell.Cmd("docker", "build", "-t", bp.VersionName, "-t", bp.RevisionName, "-")
+	bf := b.metadataDockerfile(bp)
 	c.SetStdin(bf)
-
-	for kind, rez := range br.ExtraResults {
-		err := b.applyMetadata(rez, kind, bc)
-		if err != nil {
-			return err
-		}
-	}
 
 	return c.Succeed()
 }
 
-func (b *Builder) metadataDockerfile(br *sous.BuildResult, bc *sous.BuildContext) io.Reader {
+func (b *Builder) metadataDockerfile(bp *sous.BuildProduct) io.Reader {
 	bf := bytes.Buffer{}
-	sv := bc.Version()
+	sv := bp.Source
 	md, err := templatestore.LoadText(templateVFS, "metadata", "metadataDockerfile.tmpl")
 	if err != nil {
 		panic(err)
@@ -106,23 +111,17 @@ func (b *Builder) metadataDockerfile(br *sous.BuildResult, bc *sous.BuildContext
 		Labels     map[string]string
 		Advisories []string
 	}{
-		br.ImageID,
+		bp.ID,
 		Labels(sv),
-		br.Advisories,
+		bp.Advisories,
 	})
 	return &bf
 }
 
 // pushToRegistry sends the built image to the registry
-func (b *Builder) pushToRegistry(br *sous.BuildResult, bc *sous.BuildContext) error {
-	for _, rez := range br.ExtraResults {
-		if err := b.pushToRegistry(rez, bc); err != nil {
-			return err
-		}
-	}
-
-	verr := b.SourceShell.Run("docker", "push", br.VersionName)
-	rerr := b.SourceShell.Run("docker", "push", br.RevisionName)
+func (b *Builder) pushToRegistry(bp *sous.BuildProduct) error {
+	verr := b.SourceShell.Run("docker", "push", bp.VersionName)
+	rerr := b.SourceShell.Run("docker", "push", bp.RevisionName)
 
 	if verr == nil {
 		return rerr
@@ -131,12 +130,12 @@ func (b *Builder) pushToRegistry(br *sous.BuildResult, bc *sous.BuildContext) er
 }
 
 // recordName inserts metadata about the newly built image into our local name cache
-func (b *Builder) recordName(br *sous.BuildResult, bc *sous.BuildContext) error {
-	sv := bc.Version()
-	in := br.VersionName
+func (b *Builder) recordName(bp *sous.BuildProduct) error {
+	sv := bp.Source
+	in := bp.VersionName
 	b.SourceShell.ConsoleEcho(fmt.Sprintf("[recording \"%s\" as the docker name for \"%s\"]", in, sv.String()))
 	var qs []sous.Quality
-	for _, adv := range br.Advisories {
+	for _, adv := range bp.Advisories {
 		qs = append(qs, sous.Quality{Name: adv, Kind: "advisory"})
 	}
 	return b.ImageMapper.Insert(sv, in, "", qs)

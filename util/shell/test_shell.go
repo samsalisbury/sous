@@ -63,6 +63,17 @@ func NewTestShell(path string, files map[string]string) (*TestShell, error) {
 	return &ts, nil
 }
 
+// HistoryMatching allows tests to filter for specific commands.
+func (s *TestShell) HistoryMatching(f func(*DummyCommand) bool) []*DummyCommand {
+	matches := []*DummyCommand{}
+	for _, c := range s.History {
+		if f(c) {
+			matches = append(matches, c)
+		}
+	}
+	return matches
+}
+
 // Cmd creates a new Command based on this shell.
 func (s *TestShell) Cmd(name string, args ...interface{}) Cmd {
 	sargs := make([]string, len(args))
