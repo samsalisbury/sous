@@ -35,19 +35,19 @@ func (m *BuildManager) Build() (*BuildResult, error) {
 		func(e *error) { bp, *e = m.SelectBuildpack(bc) },
 		func(e *error) { br, *e = bp.Build(bc) },
 		func(e *error) { br.Contextualize(bc) },
-		func(e *error) { *e = m.ApplyMetadata(br, bc) },
-		func(e *error) { *e = m.RegisterAndWarnAdvisories(br, bc) },
+		func(e *error) { *e = m.ApplyMetadata(br) },
+		func(e *error) { *e = m.RegisterAndWarnAdvisories(br) },
 	)
 	return br, err
 }
 
 // RegisterAndWarnAdvisories registers the image if there are no blocking
 // advisories; warns about the advisories and does not register otherwise.
-func (m *BuildManager) RegisterAndWarnAdvisories(br *BuildResult, bc *BuildContext) error {
-	if err := m.BuildConfig.GuardRegister(bc); err != nil {
+func (m *BuildManager) RegisterAndWarnAdvisories(br *BuildResult) error {
+	if err := m.BuildConfig.GuardRegister(br); err != nil {
 		logging.Log.Warn.Println(err)
 	}
-	return m.Register(br, bc)
+	return m.Register(br)
 }
 
 // OffsetFromWorkdir sets the offset for the BuildManager to be the indicated directory.

@@ -14,7 +14,7 @@ type (
 
 	// Labeller defines a container-based build system.
 	Labeller interface {
-		ApplyMetadata(*BuildResult, *BuildContext) error
+		ApplyMetadata(*BuildResult) error
 	}
 
 	// Registrar defines the interface to register build results to be deployed
@@ -22,7 +22,7 @@ type (
 	Registrar interface {
 		// Register takes a BuildResult and makes it available for the deployment
 		// target system to find during deployment
-		Register(*BuildResult, *BuildContext) error
+		Register(*BuildResult) error
 	}
 
 	// Strpairs is a slice of Strpair.

@@ -231,10 +231,20 @@ func TestEphemeralTag(t *testing.T) {
 	*/
 
 	ctx := bc.NewContext()
+	br := contextualizedResults(ctx)
 	assert.Equal(`1.2.3+abcd`, ctx.Source.Version().Version.String())
 	assert.Contains(ctx.Advisories, string(EphemeralTag))
 	assert.NotContains(ctx.Advisories, string(TagNotHead))
-	assert.NoError(bc.GuardRegister(ctx))
+	assert.NoError(bc.GuardRegister(br))
+}
+
+func contextualizedResults(ctx *BuildContext) *BuildResult {
+	br := &BuildResult{
+		Products: []*BuildProduct{{}},
+	}
+	br.Contextualize(ctx)
+	return br
+
 }
 
 func TestSetsOffset(t *testing.T) {
@@ -271,7 +281,7 @@ func TestDirtyWorkspaceAdvisory(t *testing.T) {
 
 	ctx := bc.NewContext()
 	assert.Contains(ctx.Advisories, string(DirtyWS))
-	assert.Error(bc.GuardRegister(ctx))
+	assert.Error(bc.GuardRegister(contextualizedResults(ctx)))
 }
 
 func TestUnpushedRevisionAdvisory(t *testing.T) {
@@ -345,8 +355,8 @@ func TestBuildConfig_GuardRegister(t *testing.T) {
 	c := &BuildConfig{}
 	bc := &BuildContext{}
 	bc.Advisories = []string{"dirty workspace"}
-	err := c.GuardRegister(bc)
-	expected := "build may not be deployable in all clusters due to advisories:\n  dirty workspace"
+	err := c.GuardRegister(contextualizedResults(bc))
+	expected := "build may not be deployable in all clusters due to advisories:\n  ,0.0.0-unversioned: dirty workspace"
 	if err == nil {
 		t.Fatalf("got nil; want error %q", expected)
 	}
