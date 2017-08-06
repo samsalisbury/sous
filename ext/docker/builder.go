@@ -6,6 +6,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/nyarly/inlinefiles/templatestore"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/shell"
@@ -93,6 +94,7 @@ func (b *Builder) applyMetadata(bp *sous.BuildProduct) error {
 
 	c := b.SourceShell.Cmd("docker", "build", "-t", bp.VersionName, "-t", bp.RevisionName, "-")
 	bf := b.metadataDockerfile(bp)
+	spew.Dump(c)
 	c.SetStdin(bf)
 
 	return c.Succeed()

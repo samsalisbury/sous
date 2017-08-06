@@ -25,7 +25,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/pkg/errors"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -35,17 +35,17 @@ type (
 		result mock.Arguments
 	}
 
-	call struct {
+	Call struct {
 		method string
 		args   mock.Arguments
-		res    mock.Arguments
+		res    results
 	}
 
 	// A Spy is a type for use in testing - it's intended to be embedded in spy
 	// implementations.
 	Spy struct {
 		matchers []matcher
-		calls    []call
+		calls    []Call
 	}
 
 	// A PassedArger implements PassedArgs
@@ -58,7 +58,7 @@ type (
 func NewSpy() *Spy {
 	return &Spy{
 		matchers: []matcher{},
-		calls:    []call{},
+		calls:    []Call{},
 	}
 }
 
@@ -93,17 +93,17 @@ func (s *Spy) String() string {
 	return str
 }
 
-func (c call) String() string {
+func (c Call) String() string {
 	return fmt.Sprintf("%s(%s) -> (%s)", c.method, c.args, c.res)
 }
 
-func (c call) PassedArgs() mock.Arguments {
+func (c Call) PassedArgs() mock.Arguments {
 	as := make(mock.Arguments, len(c.args))
 	copy(as, c.args)
 	return as
 }
 
-// Match records an arbitrary predicate to match against a method call
+// Match records an arbitrary predicate to match against a method Call
 func (s *Spy) Match(pred func(string, mock.Arguments) bool, result ...interface{}) {
 	s.matchers = append(s.matchers, matcher{pred: pred, result: mock.Arguments(result)})
 }
@@ -121,28 +121,33 @@ func (s *Spy) MatchMethod(method string, pred func(mock.Arguments) bool, result 
 	})
 }
 
-// Any records that any call to method get result as a reply
+// Any records that any Call to method get result as a reply
 func (s *Spy) Any(method string, result ...interface{}) {
+	spew.Dump(method, result)
 	s.matchers = append(s.matchers,
 		matcher{
 			pred: func(m string, a mock.Arguments) bool {
+				spew.Dump(m, method, m == method)
 				return method == m
 			},
 			result: mock.Arguments(result),
 		})
 }
 
-func (s *Spy) findArgs(functionName string, args mock.Arguments) mock.Arguments {
+func (s *Spy) findArgs(functionName string, args mock.Arguments) results {
 	for _, m := range s.matchers {
 		if m.pred(functionName, args) {
-			return m.result
+			if m.result == nil {
+				return presentResult{mock.Arguments{}}
+			}
+			return presentResult{m.result}
 		}
 	}
-	return nil
+	return missingResult{}
 }
 
 // Called is used by embedders of Spy to indicate that the method is called.
-func (s *Spy) Called(argList ...interface{}) mock.Arguments {
+func (s *Spy) Called(argList ...interface{}) results {
 	pc, _, _, ok := runtime.Caller(1)
 	if !ok {
 		panic("Couldn't get caller info")
@@ -159,33 +164,37 @@ func (s *Spy) Called(argList ...interface{}) mock.Arguments {
 	}
 	parts := strings.Split(functionPath, ".")
 	functionName := parts[len(parts)-1]
+	spew.Dump(functionPath, functionName)
 
 	args := mock.Arguments(argList)
 
 	found := s.findArgs(functionName, args)
 
-	if found == nil {
-		panic(errors.Errorf("Couldn't find an expected call for %s(%s)", functionName, args))
-	}
-
-	s.calls = append(s.calls, call{functionName, args, found})
+	s.calls = append(s.calls, Call{functionName, args, found})
 	return found
 }
 
-// CallsTo returns the calls to the named method
-func (s *Spy) CallsTo(name string) []call {
-	calls := []call{}
+// CallsMatching returns a list of calls for with f() returns true.
+func (s *Spy) CallsMatching(f func(name string, args mock.Arguments) bool) []Call {
+	calls := []Call{}
 	for _, c := range s.calls {
-		if c.method == name {
+		if f(c.method, c.args) {
 			calls = append(calls, c)
 		}
 	}
 	return calls
 }
 
+// CallsTo returns the calls to the named method
+func (s *Spy) CallsTo(name string) []Call {
+	return s.CallsMatching(func(n string, _ mock.Arguments) bool {
+		return name == n
+	})
+}
+
 // Calls returns all the calls made to the spy
-func (s *Spy) Calls() []call {
-	cs := make([]call, len(s.calls))
+func (s *Spy) Calls() []Call {
+	cs := make([]Call, len(s.calls))
 	copy(cs, s.calls)
 	return cs
 }

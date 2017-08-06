@@ -114,7 +114,7 @@ func (sbp *SplitBuildpack) Build(ctx *sous.BuildContext) (*sous.BuildResult, err
 	return &sous.BuildResult{
 		Elapsed: time.Since(start),
 		Products: []*sous.BuildProduct{
-			{ID: script.deployImageID},
+			//{ID: script.deployImageID},
 			{ID: script.buildImageID,
 				Kind: "builder", Advisories: []string{string(sous.IsBuilder)}},
 		},

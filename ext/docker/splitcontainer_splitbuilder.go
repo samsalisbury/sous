@@ -19,7 +19,6 @@ type splitBuilder struct {
 	RevisionConfig   string
 	buildImageID     string
 	buildContainerID string
-	deployImageID    string
 	tempDir          string
 	buildDir         string
 	RunSpec          *MultiImageRunSpec

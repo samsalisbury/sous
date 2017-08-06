@@ -2,9 +2,11 @@ package docker
 
 import (
 	"io/ioutil"
+	"os"
 	"testing"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/shell"
 	"github.com/opentable/sous/util/spies"
@@ -50,11 +52,11 @@ func TestTagStrings(t *testing.T) {
 }
 
 func TestBuilderApplyMetadata(t *testing.T) {
-	srcSh, err := shell.NewTestShell("", map[string]string{})
-	require.NoError(t, err)
+	srcSh, srcCtl := shell.NewTestShell()
 
-	scratchSh, err := shell.NewTestShell("/tmp", map[string]string{"/tmp/__exists__": ""})
-	require.NoError(t, err)
+	scratchSh, scratchCtl := shell.NewTestShell()
+
+	scratchCtl.Any("List", []os.FileInfo{}, nil)
 
 	nc := sous.NewInserterSpy()
 	nc.Match(spies.Always, nil)
@@ -69,6 +71,10 @@ func TestBuilderApplyMetadata(t *testing.T) {
 		},
 	}
 
+	buildcmd, buildctl := srcCtl.CmdFor("docker", "build")
+	buildctl.Any("SetStdin")
+	spew.Dump(buildcmd)
+
 	err = b.ApplyMetadata(br)
 	assert.NoError(t, err)
 
@@ -76,7 +82,5 @@ func TestBuilderApplyMetadata(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, nc.CallsTo("Insert"), 2)
 
-	assert.Len(t, srcSh.HistoryMatching(func(c *shell.DummyCommand) bool {
-		return c.Command.Name == "docker" && c.Command.Args[0] == "push"
-	}), 4)
+	assert.Len(t, srcCtl.CmdsLike("docker", "push"), 4)
 }
