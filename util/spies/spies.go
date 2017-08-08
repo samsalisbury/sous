@@ -25,7 +25,6 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -123,11 +122,9 @@ func (s *Spy) MatchMethod(method string, pred func(mock.Arguments) bool, result 
 
 // Any records that any Call to method get result as a reply
 func (s *Spy) Any(method string, result ...interface{}) {
-	spew.Dump(method, result)
 	s.matchers = append(s.matchers,
 		matcher{
 			pred: func(m string, a mock.Arguments) bool {
-				spew.Dump(m, method, m == method)
 				return method == m
 			},
 			result: mock.Arguments(result),
@@ -164,7 +161,6 @@ func (s *Spy) Called(argList ...interface{}) results {
 	}
 	parts := strings.Split(functionPath, ".")
 	functionName := parts[len(parts)-1]
-	spew.Dump(functionPath, functionName)
 
 	args := mock.Arguments(argList)
 

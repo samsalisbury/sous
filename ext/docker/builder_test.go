@@ -2,14 +2,11 @@ package docker
 
 import (
 	"io/ioutil"
-	"os"
 	"testing"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/shell"
-	"github.com/opentable/sous/util/spies"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -54,12 +51,9 @@ func TestTagStrings(t *testing.T) {
 func TestBuilderApplyMetadata(t *testing.T) {
 	srcSh, srcCtl := shell.NewTestShell()
 
-	scratchSh, scratchCtl := shell.NewTestShell()
-
-	scratchCtl.Any("List", []os.FileInfo{}, nil)
+	scratchSh, _ := shell.NewTestShell()
 
 	nc := sous.NewInserterSpy()
-	nc.Match(spies.Always, nil)
 
 	b, err := NewBuilder(nc, "docker.example.com", srcSh, scratchSh)
 	require.NoError(t, err)
@@ -70,10 +64,6 @@ func TestBuilderApplyMetadata(t *testing.T) {
 			{Kind: "builder"},
 		},
 	}
-
-	buildcmd, buildctl := srcCtl.CmdFor("docker", "build")
-	buildctl.Any("SetStdin")
-	spew.Dump(buildcmd)
 
 	err = b.ApplyMetadata(br)
 	assert.NoError(t, err)

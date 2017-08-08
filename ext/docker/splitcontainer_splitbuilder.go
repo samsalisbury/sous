@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/davecgh/go-spew/spew"
 	sous "github.com/opentable/sous/lib"
 )
 
@@ -52,6 +53,7 @@ func (sb *splitBuilder) buildBuild() error {
 		return err
 	}
 
+	spew.Dump(output)
 	match := successfulBuildRE.FindStringSubmatch(string(output))
 	if match == nil {
 		return fmt.Errorf("Couldn't find container id in:\n%s", output)

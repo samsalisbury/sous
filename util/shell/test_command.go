@@ -1,6 +1,7 @@
 package shell
 
 import (
+	"bytes"
 	"encoding/json"
 	"io"
 
@@ -13,8 +14,9 @@ type (
 		*spies.Spy
 	}
 
-	// Allows an associated TestCommand to be controlled and inspected
+	// TestCommandController Allows an associated TestCommand to be controlled and inspected
 	TestCommandController struct {
+		cmd *TestCommand
 		*spies.Spy
 	}
 
@@ -30,7 +32,8 @@ type (
 // which it can be controlled and inspected.
 func NewTestCommand() (*TestCommand, *TestCommandController) {
 	spy := spies.NewSpy()
-	return &TestCommand{spy}, &TestCommandController{spy}
+	cmd := &TestCommand{spy}
+	return cmd, &TestCommandController{cmd, spy}
 }
 
 // Stdout implements Cmd on TestCommand
@@ -113,4 +116,17 @@ func (c *TestCommand) FailResult() (*Result, error) {
 func (c *TestCommand) String() string {
 	res := c.Called()
 	return res.String(0)
+}
+
+func (c *TestCommandController) ResultSuccess(out, err string) {
+	ob := &Output{bytes.NewBufferString(out)}
+	eb := &Output{bytes.NewBufferString(err)}
+	cb := &Output{bytes.NewBufferString(out + err)}
+	res := &Result{Command: c.cmd, Stdout: ob, Stderr: eb, Combined: cb, Err: nil, ExitCode: 0}
+
+	c.MatchMethod("Result", spies.AnyArgs, res, nil)
+	c.MatchMethod("SucceedResult", spies.AnyArgs, res, nil)
+	c.MatchMethod("Succeed", spies.AnyArgs, nil)
+	c.MatchMethod("Stdout", spies.AnyArgs, out, nil)
+	c.MatchMethod("Stderr", spies.AnyArgs, err, nil)
 }
