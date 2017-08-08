@@ -195,7 +195,7 @@ func (m *Machine) MD5s(paths ...string) (md5s map[string]string, err error) {
 		err = nil
 		if len(newPaths) > 0 {
 			args := append([]string{"ssh", m.name, "sudo", "md5sum"}, newPaths...)
-			stdout, stderr, err = dockerMachine(args...)
+			stdout, _, err = dockerMachine(args...)
 			if err != nil {
 				md5s = nil
 				return
