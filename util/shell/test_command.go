@@ -118,6 +118,7 @@ func (c *TestCommand) String() string {
 	return res.String(0)
 }
 
+// ResultSuccess sets up the TestCommand to behave like it ran successfully with particular stdout/stderr.
 func (c *TestCommandController) ResultSuccess(out, err string) {
 	ob := &Output{bytes.NewBufferString(out)}
 	eb := &Output{bytes.NewBufferString(err)}

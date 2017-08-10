@@ -72,14 +72,6 @@ func TestWriteState(t *testing.T) {
 
 	di := graph.BuildBaseGraph(&bytes.Buffer{}, os.Stderr, os.Stderr)
 	graph.AddNetwork(di)
-	/*
-				di := psyringe.New()
-				ls := logging.NewLogSet("", os.Stderr)
-				ls.BeChatty()
-				di.Add(ls)
-
-			graph.AddInternals(di)
-	t*/
 
 	di.Add(
 		func() graph.StateReader { return graph.StateReader{StateReader: &sm} },

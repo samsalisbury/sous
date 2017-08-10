@@ -19,6 +19,7 @@ type (
 		*/
 	}
 
+	// A TestShellController manages the spy-ness of a TestShell.
 	TestShellController struct {
 		*spies.Spy
 	}
@@ -52,7 +53,7 @@ func (s *TestShell) LongRunning(is bool) {
 	s.Called(is)
 }
 
-//Dir implements Shell on TestShell
+//CD implements Shell on TestShell
 func (s *TestShell) CD(dir string) error {
 	res := s.Called(dir)
 	return res.Error(0)
@@ -153,12 +154,14 @@ func cmdWithArgs(parts ...string) func(string, mock.Arguments) bool {
 	}
 }
 
+// CmdFor sets up a TestCommand to be returned to calls to Cmd with a particular prefix of arguments.
 func (ctl *TestShellController) CmdFor(parts ...string) (*TestCommand, *TestCommandController) {
 	cmd, c := NewTestCommand()
 	ctl.Match(cmdWithArgs(parts...), cmd)
 	return cmd, c
 }
 
+// CmdsLike returns calls to Cmd with a prefix of arguments.
 func (ctl *TestShellController) CmdsLike(parts ...string) []spies.Call {
 	return ctl.CallsMatching(cmdWithArgs(parts...))
 }
