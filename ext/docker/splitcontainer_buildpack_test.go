@@ -9,7 +9,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/docker_registry"
 	"github.com/opentable/sous/util/shell"
@@ -255,7 +254,6 @@ func TestRunspecLoadMultiManifest(t *testing.T) {
 	}
 
 	if len(runspec.Images) != 2 {
-		spew.Dump(runspec)
 		t.Fatal("runspec doesn't have 2 Images [sic]")
 	}
 
