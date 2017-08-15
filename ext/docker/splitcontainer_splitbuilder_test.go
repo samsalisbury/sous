@@ -95,3 +95,15 @@ func TestSplitBuilder_ConstructSubBuilders(t *testing.T) {
 	assert.NoError(t, builder.constructImageBuilders())
 	assert.Len(t, builder.subBuilders, 2)
 }
+
+func TestSplitBuilder_Result(t *testing.T) {
+	builder := splitBuilder{
+		context: &sous.BuildContext{},
+	}
+	builder.subBuilders = []*runnableBuilder{{
+		RunSpec:      SplitImageRunSpec{Kind: "tester"},
+		splitBuilder: &builder,
+	}}
+	res := builder.result()
+	assert.Len(t, res.Products, 2)
+}
