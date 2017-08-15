@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	sous "github.com/opentable/sous/lib"
 )
@@ -15,6 +16,7 @@ import (
 type splitBuilder struct {
 	context          *sous.BuildContext
 	detected         *sous.DetectResult
+	start            time.Time
 	VersionConfig    string
 	RevisionConfig   string
 	buildImageID     string
@@ -25,26 +27,45 @@ type splitBuilder struct {
 	subBuilders      []*runnableBuilder
 }
 
+func (sb *splitBuilder) versionName() string {
+	v := sb.context.Version().Version
+	v.Meta = ""
+	return v.String()
+}
+
+func (sb *splitBuilder) revisionName() string {
+	return sb.context.Version().RevID()
+}
+
+func (sb *splitBuilder) versionConfig() string {
+	return fmt.Sprintf("%s=%s", AppVersionBuildArg, sb.versionName())
+}
+
+func (sb *splitBuilder) revisionConfig() string {
+	return fmt.Sprintf("%s=%s", AppRevisionBuildArg, sb.revisionName())
+}
+
+func (sb *splitBuilder) begin() error {
+	sb.start = time.Now()
+	return nil
+}
+
 func (sb *splitBuilder) buildBuild() error {
 	offset := sb.context.Source.OffsetDir
 	if offset == "" {
 		offset = "."
 	}
 
-	v := sb.context.Version().Version
-	v.Meta = ""
-	sb.VersionConfig = fmt.Sprintf("%s=%s", AppVersionBuildArg, v)
-	sb.RevisionConfig = fmt.Sprintf("%s=%s", AppRevisionBuildArg, sb.context.Version().RevID())
-
 	cmd := []interface{}{"build", "--pull"}
 	r := sb.detected.Data.(detectData)
 	if r.HasAppVersionArg {
-		cmd = append(cmd, "--build-arg", sb.VersionConfig)
+		cmd = append(cmd, "--build-arg", sb.versionConfig())
 	}
 	if r.HasAppRevisionArg {
-		cmd = append(cmd, "--build-arg", sb.RevisionConfig)
+		cmd = append(cmd, "--build-arg", sb.revisionConfig())
 	}
 
+	// XXX I really think this should be "-f", path.Join(offset, "Dockerfile") -jdl
 	cmd = append(cmd, offset)
 
 	output, err := sb.context.Sh.Stdout("docker", cmd...)
@@ -152,4 +173,22 @@ func (sb *splitBuilder) templateDockerfiles() error {
 
 func (sb *splitBuilder) buildRunnables() error {
 	return sb.eachBuilder((*runnableBuilder).build)
+}
+
+func (sb *splitBuilder) result() *sous.BuildResult {
+	return &sous.BuildResult{
+		Elapsed: time.Since(sb.start),
+		Products: append(
+			sb.products(),
+			&sous.BuildProduct{ID: sb.buildImageID, Kind: "builder",
+				Advisories: append(sb.context.Advisories, string(sous.IsBuilder), string(sous.NotService))}),
+	}
+}
+
+func (sb *splitBuilder) products() (ps []*sous.BuildProduct) {
+	sb.eachBuilder(func(b *runnableBuilder) error {
+		ps = append(ps, b.product())
+		return nil
+	})
+	return
 }

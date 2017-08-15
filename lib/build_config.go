@@ -23,6 +23,10 @@ type (
 )
 
 const (
+	// NotService is an advisory that this container is not a service, but
+	// instead a support container of some kind and should not itself be
+	// deployed.
+	NotService = AdvisoryName(`support container`)
 	// IsBuilder is an advisory that this container was used to build a finished
 	// image, and should not itself be deployed.
 	IsBuilder = AdvisoryName(`is a build image`)

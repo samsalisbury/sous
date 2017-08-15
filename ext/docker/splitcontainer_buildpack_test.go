@@ -145,8 +145,16 @@ func TestRunnableBuildpackBuildTemplating(t *testing.T) {
 			Exec: []string{"cat", "/etc/shadow"},
 		},
 		splitBuilder: &splitBuilder{
-			VersionConfig:  "APP_VERSION=1.2.3",
-			RevisionConfig: "APP_REVISION=cabba9edeadbeef",
+			context: &sous.BuildContext{
+				Source: sous.SourceContext{
+					RemoteURL:  "github.com/example/project",
+					OffsetDir:  "",
+					NearestTag: sous.Tag{Name: "1.2.3"},
+					Revision:   "cabba9edeadbeef",
+				},
+			},
+			//VersionConfig:  "APP_VERSION=1.2.3",
+			//RevisionConfig: "APP_REVISION=cabba9edeadbeef",
 		},
 	}
 	buf := &bytes.Buffer{}
@@ -161,7 +169,6 @@ func TestRunnableBuildpackBuildTemplating(t *testing.T) {
 			t.Errorf("No %q in dockerfile.", needle)
 		}
 	}
-	t.Log(dockerfile)
 	hasString("FROM scratch")
 	hasString("ENV APP_VERSION=1.2.3 APP_REVISION=cabba9edeadbeef")
 	hasString("COPY dest dest")

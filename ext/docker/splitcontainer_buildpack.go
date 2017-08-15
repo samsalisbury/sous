@@ -4,7 +4,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/docker/docker/builder/dockerfile/parser"
 	sous "github.com/opentable/sous/lib"
@@ -84,8 +83,6 @@ func (sbp *SplitBuildpack) Detect(ctx *sous.BuildContext) (*sous.DetectResult, e
 // Build implements Buildpack on SplitBuildpack
 func (sbp *SplitBuildpack) Build(ctx *sous.BuildContext) (*sous.BuildResult, error) {
 	drez := sbp.detected
-	start := time.Now()
-
 	script := splitBuilder{context: ctx, detected: drez, subBuilders: []*runnableBuilder{}}
 
 	/*
@@ -98,6 +95,7 @@ func (sbp *SplitBuildpack) Build(ctx *sous.BuildContext) (*sous.BuildResult, err
 		  in $TMPDIR docker build - < {templated Dockerfile} #-> Successfully built (image id)
 	*/
 	err := firsterr.Returned(
+		script.begin,
 		script.buildBuild,
 		script.setupTempdir,
 		script.createBuildContainer,
@@ -111,12 +109,5 @@ func (sbp *SplitBuildpack) Build(ctx *sous.BuildContext) (*sous.BuildResult, err
 		script.buildRunnables,
 	)
 
-	return &sous.BuildResult{
-		Elapsed: time.Since(start),
-		Products: []*sous.BuildProduct{
-			//{ID: script.deployImageID},
-			{ID: script.buildImageID,
-				Kind: "builder", Advisories: []string{string(sous.IsBuilder)}},
-		},
-	}, err
+	return script.result(), err
 }

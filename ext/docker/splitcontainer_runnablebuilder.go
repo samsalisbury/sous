@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
 )
 
@@ -17,11 +18,19 @@ type runnableBuilder struct {
 }
 
 func (rb *runnableBuilder) VersionConfig() string {
-	return rb.splitBuilder.VersionConfig
+	return rb.splitBuilder.versionConfig()
 }
 
 func (rb *runnableBuilder) RevisionConfig() string {
-	return rb.splitBuilder.RevisionConfig
+	return rb.splitBuilder.revisionConfig()
+}
+
+func (rb *runnableBuilder) versionName() string {
+	return rb.splitBuilder.versionName()
+}
+
+func (rb *runnableBuilder) revisionName() string {
+	return rb.splitBuilder.revisionName()
 }
 
 func (rb *runnableBuilder) buildDir() string {
@@ -94,4 +103,19 @@ func (rb *runnableBuilder) build() error {
 	rb.deployImageID = match[1]
 
 	return nil
+}
+
+func (rb *runnableBuilder) product() *sous.BuildProduct {
+	advisories := rb.splitBuilder.context.Advisories
+	if rb.RunSpec.Kind != "" {
+		advisories = append(advisories, string(sous.NotService))
+	}
+	return &sous.BuildProduct{
+		Source:       rb.splitBuilder.context.Version(),
+		Kind:         rb.RunSpec.Kind,
+		ID:           rb.deployImageID, // was ImageID
+		Advisories:   advisories,
+		VersionName:  rb.versionName(),
+		RevisionName: rb.revisionName(),
+	}
 }

@@ -8,10 +8,14 @@ import (
 
 // A SplitImageRunSpec is the JSON structure that describes an individual deploy container.
 type SplitImageRunSpec struct {
+	// Kind is used to denote that the image isn't a "normal" i.e. deployable
+	// service image, but instead some other kind. Examples include "builder" or
+	// "test" or "uploader"
+	Kind string `json:"kind"`
 
 	// Offset is the usual Sous offset: the path relative to the root of the
 	// project that selects one of several services built from the same codebase.
-	Offset string `json: "offset"`
+	Offset string `json:"offset"`
 
 	// Image describes the base of the deploy image. type should be "docker" and
 	// from should be a suitable FROM image.
