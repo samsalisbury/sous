@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
+## [0.5.24](//github.com/opentable/sous/compare/0.5.23...0.5.24)
+
+### Fixed
+- Client: the `sous manifest get` and `set` commands correctly accept a `-flavor` switch.
+
 ## [0.5.23](//github.com/opentable/sous/compare/0.5.22...0.5.23)
 ### Added:
 - Client: Split buildpacks can now provide a list of targets,
