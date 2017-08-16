@@ -27,7 +27,7 @@ func TestManifestGetArgs(t *testing.T) {
 }
 
 func TestManifestSetArgs(t *testing.T) {
-	fs := flag.NewFlagSet("test-for-manifest-get", flag.ContinueOnError)
+	fs := flag.NewFlagSet("test-for-manifest-set", flag.ContinueOnError)
 	smg := &SousManifestSet{}
 	smg.AddFlags(fs)
 	fs.Parse([]string{"-repo", "github.com/example/test", "-flavor", "winning"})
