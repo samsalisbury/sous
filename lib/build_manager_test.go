@@ -118,30 +118,30 @@ func TestOffsetFromWorkdirWhenOffsetAlreadyConfigd(t *testing.T) {
 
 type FakeRegistrar struct{}
 
-func (FakeRegistrar) Register(*BuildResult, *BuildContext) error { return nil }
+func (FakeRegistrar) Register(*BuildResult) error { return nil }
 
 func TestBuildManager_RegisterAndWarnAdvisories_withAdvisories(t *testing.T) {
-	br := &BuildResult{}
 	bc := &BuildContext{
 		Advisories: []string{"dirty workspace"},
 	}
+	br := contextualizedResults(bc)
 	m := &BuildManager{
 		Registrar: FakeRegistrar{},
 	}
-	if err := m.RegisterAndWarnAdvisories(br, bc); err != nil {
+	if err := m.RegisterAndWarnAdvisories(br); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestBuildManager_RegisterAndWarnAdvisories_noAdvisories(t *testing.T) {
-	br := &BuildResult{}
 	bc := &BuildContext{
 		Advisories: []string{},
 	}
+	br := contextualizedResults(bc)
 	m := &BuildManager{
 		Registrar: FakeRegistrar{},
 	}
-	if err := m.RegisterAndWarnAdvisories(br, bc); err != nil {
+	if err := m.RegisterAndWarnAdvisories(br); err != nil {
 		t.Fatal(err)
 	}
 }

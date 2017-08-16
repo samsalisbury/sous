@@ -78,10 +78,10 @@ func (suite *buildingTestSuite) TestSplitContainer() {
 	suite.NoError(err)
 	suite.True(dr.Compatible, "Split buildpack reported incompatible project")
 
-	br, err := sbp.Build(ctx, dr)
+	br, err := sbp.Build(ctx)
 	suite.NoError(err)
-	suite.Require().NotZero(br.ImageID)
-	inspectB, err := exec.Command("docker", "inspect", br.ImageID).Output()
+	suite.Require().NotZero(br.Products[0].ID)
+	inspectB, err := exec.Command("docker", "inspect", br.Products[0].ID).Output()
 	suite.NoError(err)
 	inspected := string(inspectB)
 	suite.Regexp(`APP_VERSION=1[.]2[.]3`, inspected)

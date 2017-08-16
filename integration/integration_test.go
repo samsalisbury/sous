@@ -387,8 +387,6 @@ func (suite *integrationSuite) TestMissingImage() {
 }
 
 func (suite *integrationSuite) TestResolve() {
-	logging.Log.BeChatty()
-	defer logging.Log.BeQuiet()
 	suite.deployDefaultContainers()
 	clusterDefs := sous.Defs{
 		Clusters: sous.Clusters{

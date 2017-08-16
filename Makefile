@@ -43,7 +43,8 @@ LINUX_TARBALL := $(LINUX_RELEASE_DIR).tar.gz
 CONCAT_XGO_ARGS := -go $(GO_VERSION) -branch master -deps $(SQLITE_URL) --dest $(BIN_DIR) --ldflags $(FLAGS)
 COVER_DIR := /tmp/sous-cover
 TEST_VERBOSE := $(if $(VERBOSE),-v,)
-SOUS_PACKAGES:= $(shell go list -f '{{ range .Deps }}{{.}}{{printf "\n"}}{{end}}' | grep '^github.com/opentable' | grep -v 'vendor')
+SOUS_PACKAGES:= $(shell go list -f '{{.ImportPath}}' ./... | grep -v 'vendor')
+SOUS_PACKAGES_WITH_TESTS:= $(shell go list -f '{{if len .TestGoFiles}}{{.ImportPath}}{{end}}' ./...)
 SOUS_CONTAINER_IMAGES:= "docker images | egrep '127.0.0.1:5000|testregistry_'"
 
 help:
@@ -165,7 +166,7 @@ test-gofmt:
 	bin/check-gofmt
 
 test-unit:
-	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -timeout 2m ./...
+	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -timeout 2m $(SOUS_PACKAGES_WITH_TESTS)
 
 test-integration: setup-containers
 	SOUS_QA_DESC=$(QA_DESC) go test -timeout 30m $(EXTRA_GO_FLAGS)  $(TEST_VERBOSE) ./integration --tags=integration

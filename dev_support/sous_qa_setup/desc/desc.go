@@ -56,7 +56,7 @@ func LoadDesc(descPath string) (EnvDesc, error) {
 	dec := json.NewDecoder(descReader)
 	err = dec.Decode(&desc)
 
-	return desc, nil
+	return desc, err
 }
 
 // Complete returns false if any filed of the EnvDesc has been left empty.

@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
 ## [Unreleased](//github.com/opentable/sous/compare/0.5.22...HEAD)
+### Added:
+- Client: Split buildpacks can now provide a list of targets,
+  and produce all their build products in one `sous build`.
 ### Changed:
 - Client: Client commands now have a "local server" available if no server is
   configurated. This is the start of the path to using HTTP client/server

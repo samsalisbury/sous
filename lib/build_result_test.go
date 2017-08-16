@@ -12,9 +12,11 @@ func TestBuildResultString(t *testing.T) {
 	assert := assert.New(t)
 
 	br := &BuildResult{
-		Elapsed:     time.Second * 5,
-		Advisories:  []string{"ephemeral tag"},
-		VersionName: "something-something-2.3.4",
+		Elapsed: time.Second * 5,
+		Products: []*BuildProduct{{
+			Advisories:  []string{"ephemeral tag"},
+			VersionName: "something-something-2.3.4",
+		}},
 	}
 
 	str := fmt.Sprintln(br)

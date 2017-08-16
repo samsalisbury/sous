@@ -25,7 +25,6 @@ func (m *BuildManager) Build() (*BuildResult, error) {
 	// TODO if BuildConfig.ForceClone, then clone
 	var (
 		bp Buildpack
-		dr *DetectResult
 		bc *BuildContext
 		br *BuildResult
 	)
@@ -34,24 +33,21 @@ func (m *BuildManager) Build() (*BuildResult, error) {
 		func(e *error) { bc = m.BuildConfig.NewContext() },
 		func(e *error) { *e = m.BuildConfig.GuardStrict(bc) },
 		func(e *error) { bp, *e = m.SelectBuildpack(bc) },
-		// TODO: Maybe return the detected detect result from SelectBuildpack to
-		// avoid running detect twice for the chosen buildpack.
-		func(e *error) { dr, *e = bp.Detect(bc) },
-		func(e *error) { br, *e = bp.Build(bc, dr) },
-		func(e *error) { br.Advisories = bc.Advisories },
-		func(e *error) { *e = m.ApplyMetadata(br, bc) },
-		func(e *error) { *e = m.RegisterAndWarnAdvisories(br, bc) },
+		func(e *error) { br, *e = bp.Build(bc) },
+		func(e *error) { br.Contextualize(bc) },
+		func(e *error) { *e = m.ApplyMetadata(br) },
+		func(e *error) { *e = m.RegisterAndWarnAdvisories(br) },
 	)
 	return br, err
 }
 
 // RegisterAndWarnAdvisories registers the image if there are no blocking
 // advisories; warns about the advisories and does not register otherwise.
-func (m *BuildManager) RegisterAndWarnAdvisories(br *BuildResult, bc *BuildContext) error {
-	if err := m.BuildConfig.GuardRegister(bc); err != nil {
+func (m *BuildManager) RegisterAndWarnAdvisories(br *BuildResult) error {
+	if err := m.BuildConfig.GuardRegister(br); err != nil {
 		logging.Log.Warn.Println(err)
 	}
-	return m.Register(br, bc)
+	return m.Register(br)
 }
 
 // OffsetFromWorkdir sets the offset for the BuildManager to be the indicated directory.
