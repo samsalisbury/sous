@@ -13,6 +13,7 @@
 //     error reporting
 //   d. Contextualization - i.e. pull message fields from a context.Context
 //        or from a logging context likewise contextualized.
+//   e. ELK specific fields (i.e. "this is schema xyz")
 
 // Nice to have:
 //   z. Output filtering disjoint from creation (i.e. *not* log.debug but rather debug stuff from the singularity API)
@@ -28,6 +29,16 @@ type (
 	metricser interface{}
 	logger    interface{}
 	// error interface{}
+
 )
 
 // New(name string, ...args) error
+
+// messages.NewClientSendHTTPRequest(serverURL, "./manifest", parms)
+// messages.NewClientGotHTTPResponse(serverURL"./manifest", parms, statuscode, body(?), duration)
+
+NewHTTPRequest() *HTTPRequest{
+	return &HTTPRequest{
+
+	}
+}
