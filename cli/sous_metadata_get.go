@@ -37,7 +37,7 @@ func (smg *SousMetadataGet) RegisterOn(psy Addable) {
 
 func (smg *SousMetadataGet) Execute(args []string) cmdr.Result {
 	mani := sous.Manifest{}
-	_, err := smg.HTTPClient.Retrieve("./manifests", smg.TargetManifestID.QueryMap(), &mani, nil)
+	_, err := smg.HTTPClient.Retrieve("/manifest", smg.TargetManifestID.QueryMap(), &mani, nil)
 
 	if err != nil {
 		return EnsureErrorResult(errors.Errorf("No manifest matched by %v.", smg.ResolveFilter))

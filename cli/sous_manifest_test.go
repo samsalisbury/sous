@@ -62,7 +62,7 @@ func TestManifestGet(t *testing.T) {
 	assert.Equal(t, 0, res.ExitCode())
 
 	if assert.Len(t, control.Calls(), 1) {
-		assert.Regexp(t, "/manifests", control.Calls()[0].PassedArgs().String(0))
+		assert.Regexp(t, "/manifest", control.Calls()[0].PassedArgs().String(0))
 		params := control.Calls()[0].PassedArgs().Get(1).(map[string]string)
 		assert.Contains(t, params, "repo")
 		assert.Contains(t, params, "flavor")
@@ -116,7 +116,7 @@ func TestManifestSet(t *testing.T) {
 
 	if assert.Len(t, control.Calls(), 1) {
 		args := control.Calls()[0].PassedArgs()
-		assert.Regexp(t, "/manifests", args.String(0))
+		assert.Regexp(t, "/manifest", args.String(0))
 	}
 	if assert.Len(t, upctl.Calls(), 1) {
 		args := upctl.Calls()[0].PassedArgs()
