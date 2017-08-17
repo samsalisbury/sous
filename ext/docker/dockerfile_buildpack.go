@@ -70,7 +70,7 @@ func (d *DockerfileBuildpack) Detect(c *sous.BuildContext) (*sous.DetectResult, 
 		HasAppVersionArg:  hasAppVersion,
 		HasAppRevisionArg: hasAppRevision,
 	}}
-	d.detected = resut
+	d.detected = result
 	return result, nil
 }
 
