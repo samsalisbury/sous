@@ -45,7 +45,12 @@ func (rb *runnableBuilder) extractFiles() error {
 		fromPath := fmt.Sprintf("%s:%s", sb.buildContainerID, inst.Source.Dir)
 		toPath := filepath.Join(rb.buildDir(), inst.Destination.Dir)
 
-		_, err := sb.context.Sh.Stdout("docker", "cp", fromPath, toPath)
+		err := os.MkdirAll(toPath, os.ModePerm)
+		if err != nil {
+			return err
+		}
+
+		_, err = sb.context.Sh.Stdout("docker", "cp", fromPath, toPath)
 		if err != nil {
 			return err
 		}
