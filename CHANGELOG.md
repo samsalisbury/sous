@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
+## [0.5.27](//github.com/opentable/sous/compare/0.5.26...0.5.27)
+### Fixed
+- Client: omitting query params on update.
+- Client: Failed to merge maps to null values (which came from original JSON).
+
 ## [0.5.26](//github.com/opentable/sous/compare/0.5.25...0.5.26)
 ### Fixed
 - Client: using wrong name for the /manifest endpoint
