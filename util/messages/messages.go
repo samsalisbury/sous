@@ -26,8 +26,32 @@
 package messages
 
 type (
-	metricser interface{}
-	logger    interface{}
+	messageSink interface {
+		LogMessage(interface{})
+	}
+
+	metricsSink interface {
+		GetTimer(name string) logging.Timer
+		GetCounter(name string) logging.Counter
+		GetUpdater(name string) logging.Updater
+	}
+
+	logSink interface {
+		messageSink
+		metricsSink
+	}
+
+	logMessage interface {
+		logTo(messageSink)
+	}
+
+	metricsMessage interface {
+		metricsTo(metricsSink)
+	}
+
+	message interface {
+	}
+
 	// error interface{}
 
 )
@@ -37,8 +61,76 @@ type (
 // messages.NewClientSendHTTPRequest(serverURL, "./manifest", parms)
 // messages.NewClientGotHTTPResponse(serverURL"./manifest", parms, statuscode, body(?), duration)
 
-NewHTTPRequest() *HTTPRequest{
-	return &HTTPRequest{
+/*
 
+	messages.WithClientContext(ctx, logger).ReportClientSendHTTPRequest(...)
+
+	// How do we runtime check this without the Context having a specific type?
+
+	clientContext(ctx).LogClientSendHTTPRequest(logger, ...)
+
+	// ^^^ just moves the problem around - clientContext is going to ctx.Value(...).(ClientContext),
+	// which can fail at runtime.
+
+	messages.SessionDataFromContext(ctx)
+	  -> gets several data items from the ctx...
+		-> if any are missing, return a "partialSessionData" which cobbles together a dead letter.
+
+
+  A static analysis approach here would:
+
+	Check that the JSON tags on structs matched the schemas they claim.
+	Check that schema-required fields tie with params to the contructor.
+	Maybe check that contexted messages were always receiving contexts with the right WithValues
+
+	A code generation approach would:
+
+	Take the schemas and produce structs with JSON tags
+	Produce constructors for the structs with the required fields.
+	Produce LogXXX methods and functions around those constructors.
+
+	We can live without those, probably, if we build the interfaces *as if*...
+
+*/
+
+func deliver(message something, logger logSink) {
+	if lm, is := message.(logger); is {
+		// filtering messages?
+		lm.logTo(logger)
+	}
+
+	if mm, is := message.(metricser); is {
+		mm.metricsTo(logger)
+	}
+
+}
+
+func ReportClientHTTPResponse(logger logSink, server, path string, parms map[string]string, status int, dur time.Duration) {
+	m := newClientHTTPResponse(server, path, parms, status, dur)
+	deliver(m, logger)
+}
+
+type clientHTTPResponse struct {
+	partial bool
+	Server  string
+	Method  string
+	Path    string
+	Parms   map[string]string
+	Status  int
+	Dur     time.Duration
+}
+
+type clientHTTPResponseSchemaWrapper struct {
+	clientHTTPResponse
+	SchemaName string `json:"@loglov3-otl"`
+}
+
+func newClientHTTPResponse(server, path string, parms map[string]string, status int, dur time.Duration) *clientHTTPResponse {
+	return &ClientHTTPResponse{
+		Server: server,
+		Path:   path,
+		Parms:  parms,
+		Status: status,
+		Dur:    dur,
 	}
 }
