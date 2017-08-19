@@ -115,8 +115,11 @@ func (rb *runnableBuilder) product() *sous.BuildProduct {
 	if rb.RunSpec.Kind != "" {
 		advisories = append(advisories, string(sous.NotService))
 	}
+	sid := rb.splitBuilder.context.Version()
+	sid.Location.Dir = rb.RunSpec.Offset
+	fmt.Println(sid)
 	return &sous.BuildProduct{
-		Source:       rb.splitBuilder.context.Version(),
+		Source:       sid,
 		Kind:         rb.RunSpec.Kind,
 		ID:           rb.deployImageID, // was ImageID
 		Advisories:   advisories,

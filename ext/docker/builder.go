@@ -6,6 +6,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/nyarly/inlinefiles/templatestore"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/shell"
@@ -88,6 +89,9 @@ func (b *Builder) info(msg string) {
 }
 
 func (b *Builder) applyMetadata(bp *sous.BuildProduct) error {
+	sc := spew.NewDefaultConfig()
+	sc.DisableMethods = true
+	b.info(sc.Sdump(bp))
 	bp.VersionName = b.VersionTag(bp.Source, bp.Kind)
 	bp.RevisionName = b.RevisionTag(bp.Source, bp.Kind, time.Now())
 

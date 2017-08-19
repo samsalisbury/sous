@@ -121,7 +121,7 @@ func (br *BuildResult) String() string {
 }
 
 func (bp *BuildProduct) String() string {
-	str := fmt.Sprintf("Built: %q", bp.VersionName)
+	str := fmt.Sprintf("Built: %q %q", bp.VersionName, bp.Kind)
 	if len(bp.Advisories) > 0 {
 		str = str + "\nAdvisories:\n  " + strings.Join(bp.Advisories, "  \n")
 	}
