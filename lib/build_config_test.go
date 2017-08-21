@@ -238,6 +238,43 @@ func TestEphemeralTag(t *testing.T) {
 	assert.NoError(bc.GuardRegister(br))
 }
 
+func TestContextualization(t *testing.T) {
+	repo := "github.com/opentable/present"
+	bc := BuildConfig{
+		Tag: "1.2.3",
+		Context: &BuildContext{
+			Sh: &shell.Sh{},
+			Source: SourceContext{
+				PrimaryRemoteURL:   repo,
+				Revision:           "abcd",
+				NearestTagName:     "1.2.0",
+				NearestTagRevision: "3541",
+			},
+		},
+	}
+
+	ctx := bc.NewContext()
+
+	otherrepo := "github.com/example/elsewhere"
+	otherdir := "deep/inside"
+	br := &BuildResult{Products: []*BuildProduct{{}, {
+		Source: SourceID{
+			Location: SourceLocation{
+				Repo: otherrepo,
+				Dir:  otherdir,
+			},
+		},
+	}}}
+
+	br.Contextualize(ctx)
+	assert.Len(t, br.Products, 2)
+	assert.Equal(t, br.Products[0].Source.Location.Repo, repo)
+	assert.Equal(t, br.Products[0].Source.Location.Dir, "")
+
+	assert.Equal(t, br.Products[1].Source.Location.Repo, otherrepo)
+	assert.Equal(t, br.Products[1].Source.Location.Dir, otherdir)
+}
+
 func contextualizedResults(ctx *BuildContext) *BuildResult {
 	br := &BuildResult{
 		Products: []*BuildProduct{{}},
