@@ -117,8 +117,8 @@ func (rb *runnableBuilder) product() *sous.BuildProduct {
 	}
 	sid := rb.splitBuilder.context.Version()
 	sid.Location.Dir = rb.RunSpec.Offset
-	fmt.Println(sid)
-	return &sous.BuildProduct{
+
+	bp := &sous.BuildProduct{
 		Source:       sid,
 		Kind:         rb.RunSpec.Kind,
 		ID:           rb.deployImageID, // was ImageID
@@ -126,4 +126,6 @@ func (rb *runnableBuilder) product() *sous.BuildProduct {
 		VersionName:  rb.versionName(),
 		RevisionName: rb.revisionName(),
 	}
+
+	return bp
 }

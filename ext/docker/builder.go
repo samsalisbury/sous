@@ -92,6 +92,7 @@ func (b *Builder) applyMetadata(bp *sous.BuildProduct) error {
 	sc := spew.NewDefaultConfig()
 	sc.DisableMethods = true
 	b.info(sc.Sdump(bp))
+
 	bp.VersionName = b.VersionTag(bp.Source, bp.Kind)
 	bp.RevisionName = b.RevisionTag(bp.Source, bp.Kind, time.Now())
 

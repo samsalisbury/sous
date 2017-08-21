@@ -10,7 +10,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 )
 
 type splitBuilder struct {
@@ -187,7 +189,12 @@ func (sb *splitBuilder) result() *sous.BuildResult {
 
 func (sb *splitBuilder) products() (ps []*sous.BuildProduct) {
 	sb.eachBuilder(func(b *runnableBuilder) error {
-		ps = append(ps, b.product())
+		bp := b.product()
+		sc := spew.NewDefaultConfig()
+		sc.DisableMethods = true
+		logging.Log.Warnf(sc.Sdump(bp))
+
+		ps = append(ps, bp)
 		return nil
 	})
 	return
