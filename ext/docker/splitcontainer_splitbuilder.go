@@ -11,7 +11,6 @@ import (
 	"time"
 
 	sous "github.com/opentable/sous/lib"
-	"github.com/opentable/sous/util/logging"
 )
 
 type splitBuilder struct {
