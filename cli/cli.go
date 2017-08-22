@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/util/cmdr"
 	"github.com/opentable/sous/util/logging"
@@ -156,7 +155,6 @@ func NewSousCLI(s *Sous, in io.Reader, out, errout io.Writer) (*CLI, error) {
 			}
 			g := cli.scopedGraph(c, under)
 			if err := g.Inject(c); err != nil {
-				spew.Dump(g, c)
 				return errors.Wrapf(err, "setup for execute")
 			}
 		}
