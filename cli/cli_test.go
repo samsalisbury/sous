@@ -27,7 +27,6 @@ func prepareCommand(t *testing.T, cl []string) (*CLI, *cmdr.PreparedExecution, f
 	require.NoError(err)
 
 	c.baseGraph = graph.BuildTestGraph(stdin, stdout, stderr)
-	//spew.Dump(c.baseGraph)
 
 	exe, err := c.Prepare(cl)
 	require.NoError(err)

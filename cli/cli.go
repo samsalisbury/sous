@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime/debug"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/util/cmdr"
 	"github.com/opentable/sous/util/logging"
@@ -82,7 +84,8 @@ func (cli *CLI) Plumb(cmds ...cmdr.Executor) error {
 
 // BuildCLIGraph builds the CLI DI graph.
 func BuildCLIGraph(cli *CLI, root *Sous, in io.Reader, out, err io.Writer) *graph.SousGraph {
-	g := cli.baseGraph.Clone()
+	spew.Print("BuildCLIGraph", string(debug.Stack()))
+	g := cli.baseGraph //was .Clone() - caused problems
 	g.Add(cli)
 	g.Add(root)
 	g.Add(func(c *CLI) graph.Out {
@@ -91,7 +94,7 @@ func BuildCLIGraph(cli *CLI, root *Sous, in io.Reader, out, err io.Writer) *grap
 	g.Add(func(c *CLI) graph.ErrOut {
 		return graph.ErrOut{Output: c.Err}
 	})
-	cli.SousGraph = &graph.SousGraph{Psyringe: g} //Ugh, weird state.
+	cli.SousGraph = g
 
 	return cli.SousGraph
 }
