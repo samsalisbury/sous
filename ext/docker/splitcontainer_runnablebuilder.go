@@ -45,7 +45,12 @@ func (rb *runnableBuilder) extractFiles() error {
 		fromPath := fmt.Sprintf("%s:%s", sb.buildContainerID, inst.Source.Dir)
 		toPath := filepath.Join(rb.buildDir(), inst.Destination.Dir)
 
-		_, err := sb.context.Sh.Stdout("docker", "cp", fromPath, toPath)
+		err := os.MkdirAll(toPath, os.ModePerm)
+		if err != nil {
+			return err
+		}
+
+		_, err = sb.context.Sh.Stdout("docker", "cp", fromPath, toPath)
 		if err != nil {
 			return err
 		}
@@ -110,12 +115,17 @@ func (rb *runnableBuilder) product() *sous.BuildProduct {
 	if rb.RunSpec.Kind != "" {
 		advisories = append(advisories, string(sous.NotService))
 	}
-	return &sous.BuildProduct{
-		Source:       rb.splitBuilder.context.Version(),
+	sid := rb.splitBuilder.context.Version()
+	sid.Location.Dir = rb.RunSpec.Offset
+
+	bp := &sous.BuildProduct{
+		Source:       sid,
 		Kind:         rb.RunSpec.Kind,
 		ID:           rb.deployImageID, // was ImageID
 		Advisories:   advisories,
 		VersionName:  rb.versionName(),
 		RevisionName: rb.revisionName(),
 	}
+
+	return bp
 }

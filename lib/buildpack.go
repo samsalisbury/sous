@@ -104,7 +104,9 @@ func (s *EchoSelector) SelectBuildpack(c *BuildContext) (Buildpack, error) {
 func (br *BuildResult) Contextualize(c *BuildContext) {
 	advs := c.Advisories
 	for _, prdt := range br.Products {
-		prdt.Source = c.Version() // ugh, yeah - Source and Version are both SourceID
+		if prdt.Source.Location.Repo == "" { // i.e. the buildstrat hasn't set the Source
+			prdt.Source = c.Version() // ugh, yeah - Source and Version are both SourceID
+		}
 		if prdt.Advisories == nil {
 			prdt.Advisories = make([]string, 0, len(advs))
 		}
@@ -121,7 +123,7 @@ func (br *BuildResult) String() string {
 }
 
 func (bp *BuildProduct) String() string {
-	str := fmt.Sprintf("Built: %q", bp.VersionName)
+	str := fmt.Sprintf("Built: %q %q", bp.VersionName, bp.Kind)
 	if len(bp.Advisories) > 0 {
 		str = str + "\nAdvisories:\n  " + strings.Join(bp.Advisories, "  \n")
 	}
