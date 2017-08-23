@@ -3,7 +3,6 @@ package graph
 import (
 	"io"
 
-	"github.com/davecgh/go-spew/spew"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/docker_registry"
 	"github.com/opentable/sous/util/restful"
@@ -56,7 +55,6 @@ func newDummyDockerClient() LocalDockerClient {
 }
 
 func newTestConfigLoader(configYAML configYAML) *ConfigLoader {
-	spew.Dump(configYAML)
 	cl := &testConfigLoader{configYAML: configYAML}
 	return &ConfigLoader{ConfigLoader: cl}
 }

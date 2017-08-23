@@ -1,7 +1,6 @@
 package graph
 
 import (
-	"github.com/davecgh/go-spew/spew"
 	sous "github.com/opentable/sous/lib"
 	"github.com/pkg/errors"
 )
@@ -66,7 +65,6 @@ func (mid TargetManifestID) QueryMap() map[string]string {
 }
 
 func newTargetManifest(auto userSelectedOTPLDeployManifest, tmid TargetManifestID, s *sous.State) TargetManifest {
-	spew.Dump(tmid, s)
 	mid := sous.ManifestID(tmid)
 	m, ok := s.Manifests.Get(mid)
 

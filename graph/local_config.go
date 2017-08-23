@@ -10,7 +10,6 @@ import (
 
 	"golang.org/x/crypto/ssh/terminal"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/util/configloader"
 	"github.com/opentable/sous/util/logging"
@@ -50,14 +49,12 @@ func newLocalSousConfig(pic PossiblyInvalidConfig) (v LocalSousConfig, err error
 }
 
 func newConfigLoader() *ConfigLoader {
-	spew.Dump("live config loader")
 	cl := configloader.New()
 	logging.SetupLogging(cl)
 	return &ConfigLoader{ConfigLoader: cl}
 }
 
 func newPossiblyInvalidConfig(path string, defaultConfig DefaultConfig, gcl *ConfigLoader) (PossiblyInvalidConfig, error) {
-	spew.Dump(gcl)
 	cl := gcl.ConfigLoader
 
 	pic := defaultConfig
