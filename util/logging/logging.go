@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/Sirupsen/logrus"
 	metrics "github.com/rcrowley/go-metrics"
 )
 
@@ -40,6 +41,8 @@ type (
 		vomit *log.Logger
 		debug *log.Logger
 		warn  *log.Logger
+
+		logrus logrus.Logger
 	}
 
 	// A temporary type until we can stop using the LogSet loggers directly
@@ -116,6 +119,8 @@ func newls(name string, err io.Writer) *LogSet {
 	ls.Warn = &logwrapper{ffn: ls.warnf}
 	ls.Info = ls.Warn
 	ls.Notice = ls.Warn
+
+	ls.LogMessage = logrus.New()
 	return ls
 
 }

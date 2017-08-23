@@ -23,13 +23,12 @@
 // b & d are in tension.
 // also, a with OTLs, because optional fields
 
-package messages
+package logging
 
 import (
 	"runtime"
+	"strings"
 	"time"
-
-	"github.com/opentable/sous/util/logging"
 )
 
 type (
@@ -38,9 +37,9 @@ type (
 	}
 
 	metricsSink interface {
-		GetTimer(name string) logging.Timer
-		GetCounter(name string) logging.Counter
-		GetUpdater(name string) logging.Updater
+		GetTimer(name string) Timer
+		GetCounter(name string) Counter
+		GetUpdater(name string) Updater
 	}
 
 	logSink interface {
@@ -58,15 +57,13 @@ type (
 		metricsTo(metricsSink)
 	}
 
-	message interface {
-	}
-
 	callerInfo struct {
 		frame   runtime.Frame
 		unknown bool
 	}
 
-	level int
+	fieldReportF func(string, interface{})
+	level        int
 	// error interface{}
 
 )
@@ -127,7 +124,7 @@ func getCallerInfo() callerInfo {
 	runtime.Callers(2, callers)
 	frames := runtime.CallersFrames(callers)
 	for frame, more := frames.Next(); more; frame, more = frames.Next() {
-		if strings.Index(frame.File, "util/messages") == -1 {
+		if strings.Index(frame.File, "util/logging") == -1 {
 			return callerInfo{frame: frame}
 		}
 	}
@@ -146,9 +143,12 @@ func (info callerInfo) eachField(f func(string, interface{})) {
 	f("function", info.frame.Function)
 }
 
-func deliver(message something, logger logSink) {
+func getCallTime() callTime {
+	return time.Now()
+}
+
+func deliver(message interface{}, logger logSink) {
 	if lm, is := message.(logger); is {
-		// filtering messages?
 		level := getLevel(lm)
 		logger.LogMessage(level, lm)
 	}
@@ -163,27 +163,58 @@ func ReportClientHTTPResponse(logger logSink, server, path string, parms map[str
 	deliver(m, logger)
 }
 
+type (
+	callTime time.Time
+)
+
 type clientHTTPResponse struct {
-	partial bool
-	Server  string
-	Method  string
-	Path    string
-	Parms   map[string]string
-	Status  int
-	Dur     time.Duration
+	callerInfo
+	callTime
+	level
+	server string
+	method string
+	path   string
+	parms  map[string]string
+	status int
+	dur    time.duration
 }
 
-type clientHTTPResponseSchemaWrapper struct {
-	clientHTTPResponse
-	SchemaName string `json:"@loglov3-otl"`
+func (lvl level) defaultLevel() level {
+	return lvl
+}
+
+func (time callTime) eachField(f fieldReportF) {
+	f("time", time)
 }
 
 func newClientHTTPResponse(server, path string, parms map[string]string, status int, dur time.Duration) *clientHTTPResponse {
 	return &ClientHTTPResponse{
-		Server: server,
-		Path:   path,
-		Parms:  parms,
-		Status: status,
-		Dur:    dur,
+		level:      informationLevel,
+		callerInfo: getCallerInfo(),
+		callTime:   getCallTime(),
+
+		server: server,
+		path:   path,
+		parms:  parms,
+		status: status,
+		dur:    dur,
 	}
+}
+
+func (msg *clientHTTPResponse) metricsTo(metrics metricsSink) {
+	metrics.GetTimer("http-client").Update(msg.dur)
+}
+
+func (msg *clientHTTPResponse) eachField(f fieldReportF) {
+	f("server", msg.server)
+	f("path", msg.path)
+	f("parms", msg.parms)
+	f("status", msg.status)
+	f("dur", msg.dur)
+	msg.time.eachField(f)
+	msg.callerInfo.eachField(f)
+}
+
+func (msg *clientHTTPResponse) message() string {
+	return msg.status
 }
