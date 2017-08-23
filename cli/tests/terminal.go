@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/opentable/sous/cli"
+	"github.com/opentable/sous/graph"
 	"github.com/samsalisbury/semv"
 	"github.com/xrash/smetrics"
 )
@@ -42,7 +43,8 @@ func NewTerminal(t *testing.T, vstr string) *Terminal {
 	err := io.MultiWriter(baseerr.Buffer, combined.Buffer)
 
 	s := &cli.Sous{Version: v}
-	c, er := cli.NewSousCLI(s, in, out, err)
+	di := graph.BuildTestGraph(in, out, err)
+	c, er := cli.NewSousCLI(di, s, in, out, err)
 	if er != nil {
 		panic(er)
 	}

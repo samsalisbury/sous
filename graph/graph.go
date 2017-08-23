@@ -8,7 +8,9 @@ import (
 	"net/http"
 	"os"
 	"os/user"
+	"runtime/debug"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/ext/docker"
 	"github.com/opentable/sous/ext/git"
@@ -186,6 +188,7 @@ func AddShells(graph adder) {
 
 // AddFilesystem adds filesystem to the graph.
 func AddFilesystem(graph adder) {
+	spew.Print(string(debug.Stack()))
 	graph.Add(
 		newConfigLoader,
 	)
@@ -529,6 +532,7 @@ func newHTTPClient(c LocalSousConfig, user sous.User, srvr ServerHandler, log *l
 // Otherwise it returns a wrapped sous.GitStateManager, for local git based GDM.
 // If it returns a sous.GitStateManager, it emits a warning log.
 func newStateManager(cl HTTPClient, c LocalSousConfig) *StateManager {
+	spew.Dump("newStateManager", c)
 	if c.Server == "" {
 		logging.Log.Warn.Printf("Using local state stored at %s", c.StateLocation)
 		dm := storage.NewDiskStateManager(c.StateLocation)
