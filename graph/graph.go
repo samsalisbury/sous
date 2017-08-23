@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"os"
 	"os/user"
-	"runtime/debug"
 
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/ext/docker"
