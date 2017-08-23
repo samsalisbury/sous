@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
-## [Unreleased](//github.com/opentable/sous/compare/0.5.27...HEAD)
+## [0.5.28](//github.com/opentable/sous/compare/0.5.27...0.5.28)
 ### Fixed
 - Client & Server: rework of DI to contain scope of variable assignment,
   and retain scope from CLI invocation to server.
