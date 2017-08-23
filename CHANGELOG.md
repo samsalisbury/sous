@@ -8,6 +8,8 @@ with respect to its command line interface and HTTP interface.
 
 ## [Unreleased](//github.com/opentable/sous/compare/0.5.27...HEAD)
 ### Fixed
+- Client & Server: rework of DI to contain scope of variable assignment,
+  and retain scope from CLI invocation to server.
 - Client: multiple target builds weren't getting their offsets recorded correctly.
 
 ## [0.5.27](//github.com/opentable/sous/compare/0.5.26...0.5.27)

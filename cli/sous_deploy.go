@@ -54,7 +54,7 @@ func (sd *SousDeploy) RegisterOn(psy Addable) {
 
 // Execute fulfills the cmdr.Executor interface.
 func (sd *SousDeploy) Execute(args []string) cmdr.Result {
-	res := sd.CLI.Plumbing(&SousUpdate{}, []string{})
+	res := sd.CLI.Plumbing(sd, &SousUpdate{}, []string{})
 
 	sd.CLI.OutputResult(res)
 	if !sd.CLI.IsSuccess(res) {
@@ -63,12 +63,12 @@ func (sd *SousDeploy) Execute(args []string) cmdr.Result {
 
 	// Running serverless, so run rectify.
 	if sd.Config.Server == "" {
-		return sd.CLI.Plumbing(&SousRectify{}, []string{})
+		return sd.CLI.Plumbing(sd, &SousRectify{}, []string{})
 	}
 
 	if sd.waitStable {
 		fmt.Fprintf(sd.CLI.Out, "Waiting for server to report that deploy has stabilized...\n")
-		return sd.CLI.Plumbing(&SousPlumbingStatus{}, []string{})
+		return sd.CLI.Plumbing(sd, &SousPlumbingStatus{}, []string{})
 	}
 	return cmdr.Successf("Updated the global deploy manifest. Deploy in process.")
 

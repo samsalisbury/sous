@@ -20,12 +20,26 @@ import (
 // Methods of GitStateManager are serialised, and thus safe for concurrent
 // access. No two GitStateManagers should have DiskStateManagers using the same
 // BaseDir.
-type GitStateManager struct {
-	// All reads and writes must use exclusive lock, because read affects state
-	// by doing a git pull.
-	sync.Mutex
-	*DiskStateManager //can't just be a StateReader/Writer: needs dir
-	remote            string
+type (
+	GitStateManager struct {
+		// All reads and writes must use exclusive lock, because read affects state
+		// by doing a git pull.
+		sync.Mutex
+		*DiskStateManager //can't just be a StateReader/Writer: needs dir
+		remote            string
+	}
+
+	gsmError string
+)
+
+func (err gsmError) Error() string {
+	return string(err)
+}
+
+// IsGSMError returns true if err is a git-state-manager error
+func IsGSMError(err error) bool {
+	_, is := err.(gsmError)
+	return is
 }
 
 // NewGitStateManager creates a new GitStateManager wrapping the provided
@@ -41,7 +55,7 @@ func (gsm *GitStateManager) git(cmd ...string) error {
 
 func (gsm *GitStateManager) gitOut(cmd ...string) (string, error) {
 	if !gsm.isRepo() {
-		return "", fmt.Errorf("not in a git repo")
+		return "", gsmError("not in a git repo")
 	}
 	git := exec.Command(`git`, cmd...)
 	git.Dir = gsm.DiskStateManager.BaseDir

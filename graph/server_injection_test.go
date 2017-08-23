@@ -60,6 +60,17 @@ func TestServerGetDefHandlerInjection(t *testing.T) {
 	assert.NotNil(t, serverDefsGet.State)
 }
 
+func TestServerGetManifestHandlerInjection(t *testing.T) {
+	mr := &server.ManifestResource{}
+
+	mgh := basicInjectedHandler(mr.Get, t)
+
+	serverManifestGet, ok := mgh.(*server.GETManifestHandler)
+	require.True(t, ok)
+
+	assert.NotNil(t, serverManifestGet.State)
+}
+
 func TestServerPutGDMHandlerInjection(t *testing.T) {
 	sdr := &server.GDMResource{}
 

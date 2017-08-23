@@ -122,6 +122,7 @@ func (c *CLI) Prepare(args []string) (*PreparedExecution, error) {
 	base, ff := c.Root, c.GlobalFlagSetFuncs
 	if c.Hooks.Startup != nil {
 		c.Hooks.Startup(c)
+		c.Hooks.Startup = nil
 	}
 	return c.prepare(base, args, ff)
 }

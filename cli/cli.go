@@ -39,6 +39,7 @@ type (
 	CLI struct {
 		*cmdr.CLI
 		baseGraph, SousGraph *graph.SousGraph
+		scopedGraphs         map[cmdr.Command]*graph.SousGraph
 	}
 	// Addable objects are able to receive lists of interface{}, presumably to add
 	// them to a DI registry. Abstracts Psyringe's Add()
@@ -63,17 +64,17 @@ func SuccessYAML(v interface{}) cmdr.Result {
 
 // Plumbing injects a command with the current psyringe,
 // then it Executes it, returning the result.
-func (cli *CLI) Plumbing(cmd cmdr.Executor, args []string) cmdr.Result {
-	if err := cli.Plumb(cmd); err != nil {
+func (cli *CLI) Plumbing(from cmdr.Command, cmd cmdr.Executor, args []string) cmdr.Result {
+	if err := cli.Plumb(from, cmd); err != nil {
 		return cmdr.EnsureErrorResult(err)
 	}
 	return cmd.Execute(args)
 }
 
 // Plumb injects a lists of commands with the currect psyringe, returning early in the event of an error
-func (cli *CLI) Plumb(cmds ...cmdr.Executor) error {
+func (cli *CLI) Plumb(from cmdr.Command, cmds ...cmdr.Executor) error {
 	for _, cmd := range cmds {
-		if err := cli.SousGraph.Inject(cmd); err != nil {
+		if err := cli.scopedGraph(from, nil).Inject(cmd); err != nil {
 			return err
 		}
 	}
@@ -82,7 +83,7 @@ func (cli *CLI) Plumb(cmds ...cmdr.Executor) error {
 
 // BuildCLIGraph builds the CLI DI graph.
 func BuildCLIGraph(cli *CLI, root *Sous, in io.Reader, out, err io.Writer) *graph.SousGraph {
-	g := cli.baseGraph.Clone()
+	g := cli.baseGraph //was .Clone() - caused problems
 	g.Add(cli)
 	g.Add(root)
 	g.Add(func(c *CLI) graph.Out {
@@ -91,9 +92,24 @@ func BuildCLIGraph(cli *CLI, root *Sous, in io.Reader, out, err io.Writer) *grap
 	g.Add(func(c *CLI) graph.ErrOut {
 		return graph.ErrOut{Output: c.Err}
 	})
-	cli.SousGraph = &graph.SousGraph{Psyringe: g} //Ugh, weird state.
+	cli.SousGraph = g
 
 	return cli.SousGraph
+}
+
+func (cli *CLI) scopedGraph(cmd, under cmdr.Command) *graph.SousGraph {
+	if g, ok := cli.scopedGraphs[cmd]; ok {
+		return g
+	}
+
+	parent := cli.scopedGraphs[under]
+
+	g := &graph.SousGraph{Psyringe: parent.Clone()}
+	if r, ok := cmd.(Registrant); ok {
+		r.RegisterOn(g)
+	}
+	cli.scopedGraphs[cmd] = g
+	return g
 }
 
 // NewSousCLI creates a new Sous cli app.
@@ -117,14 +133,10 @@ func NewSousCLI(s *Sous, in io.Reader, out, errout io.Writer) (*CLI, error) {
 		baseGraph: graph.BuildGraph(in, out, errout),
 	}
 
-	var g *graph.SousGraph
-	var chain []cmdr.Command
-
-	cli.Hooks.Startup = func(*cmdr.CLI) error {
-		g = BuildCLIGraph(cli, s, in, out, errout)
-		chain = make([]cmdr.Command, 0)
-		return nil
-	}
+	chain := []cmdr.Command{}
+	rootGraph := BuildCLIGraph(cli, s, in, out, errout)
+	s.RegisterOn(rootGraph)
+	cli.scopedGraphs = map[cmdr.Command]*graph.SousGraph{s: rootGraph}
 
 	cli.Hooks.Parsed = func(cmd cmdr.Command) error {
 		chain = append(chain, cmd)
@@ -136,15 +148,14 @@ func NewSousCLI(s *Sous, in io.Reader, out, errout io.Writer) (*CLI, error) {
 	cli.Hooks.PreExecute = func(cmd cmdr.Command) error {
 		// Create the CLI dependency graph.
 
-		for _, c := range chain {
-			if r, ok := c.(Registrant); ok {
-				r.RegisterOn(g)
+		for n, c := range chain {
+			var under cmdr.Command
+			if n > 0 {
+				under = chain[n-1]
 			}
-		}
-
-		for _, c := range chain {
+			g := cli.scopedGraph(c, under)
 			if err := g.Inject(c); err != nil {
-				return err
+				return errors.Wrapf(err, "setup for execute")
 			}
 		}
 		return nil
