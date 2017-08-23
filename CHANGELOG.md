@@ -11,6 +11,7 @@ with respect to its command line interface and HTTP interface.
 - Client & Server: rework of DI to contain scope of variable assignment,
   and retain scope from CLI invocation to server.
 - Client: multiple target builds weren't getting their offsets recorded correctly.
+- Developer: dependency injection provider now an injected dependency of the CLI object.
 
 ## [0.5.27](//github.com/opentable/sous/compare/0.5.26...0.5.27)
 ### Fixed

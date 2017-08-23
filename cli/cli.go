@@ -113,7 +113,7 @@ func (cli *CLI) scopedGraph(cmd, under cmdr.Command) *graph.SousGraph {
 }
 
 // NewSousCLI creates a new Sous cli app.
-func NewSousCLI(s *Sous, in io.Reader, out, errout io.Writer) (*CLI, error) {
+func NewSousCLI(di *graph.SousGraph, s *Sous, in io.Reader, out, errout io.Writer) (*CLI, error) {
 
 	stdout := cmdr.NewOutput(out)
 	stderr := cmdr.NewOutput(errout)
@@ -130,7 +130,7 @@ func NewSousCLI(s *Sous, in io.Reader, out, errout io.Writer) (*CLI, error) {
 			HelpCommand: os.Args[0] + " help",
 		},
 
-		baseGraph: graph.BuildGraph(in, out, errout),
+		baseGraph: di,
 	}
 
 	chain := []cmdr.Command{}
