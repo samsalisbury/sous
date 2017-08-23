@@ -27,7 +27,7 @@ package messages
 
 type (
 	messageSink interface {
-		LogMessage(interface{})
+		LogMessage(level, logMessage)
 	}
 
 	metricsSink interface {
@@ -42,7 +42,9 @@ type (
 	}
 
 	logMessage interface {
-		logTo(messageSink)
+		defaultLevel() level
+		message() string
+		eachField(func(name string, value interface{}))
 	}
 
 	metricsMessage interface {
@@ -52,8 +54,17 @@ type (
 	message interface {
 	}
 
+	level int
 	// error interface{}
 
+)
+
+const (
+	criticalLevel    = level(iota)
+	warningLevel     = level(iota)
+	informationLevel = level(iota)
+	debugLevel       = level(iota)
+	// "extra" debug available
 )
 
 // New(name string, ...args) error
@@ -93,16 +104,22 @@ type (
 
 */
 
+// The plan here is to be able to extend this behavior such that e.g. the rules
+// for levels of messages can be configured or updated at runtime.
+func getLevel(lm logMessage) level {
+	lm.defaultLevel()
+}
+
 func deliver(message something, logger logSink) {
 	if lm, is := message.(logger); is {
 		// filtering messages?
-		lm.logTo(logger)
+		level := getLevel(lm)
+		logger.LogMessage(level, lm)
 	}
 
 	if mm, is := message.(metricser); is {
 		mm.metricsTo(logger)
 	}
-
 }
 
 func ReportClientHTTPResponse(logger logSink, server, path string, parms map[string]string, status int, dur time.Duration) {
