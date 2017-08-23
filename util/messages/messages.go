@@ -25,6 +25,13 @@
 
 package messages
 
+import (
+	"runtime"
+	"time"
+
+	"github.com/opentable/sous/util/logging"
+)
+
 type (
 	messageSink interface {
 		LogMessage(level, logMessage)
@@ -52,6 +59,11 @@ type (
 	}
 
 	message interface {
+	}
+
+	callerInfo struct {
+		frame   runtime.Frame
+		unknown bool
 	}
 
 	level int
@@ -108,6 +120,30 @@ const (
 // for levels of messages can be configured or updated at runtime.
 func getLevel(lm logMessage) level {
 	lm.defaultLevel()
+}
+
+func getCallerInfo() callerInfo {
+	callers := make([]uintptr, 10)
+	runtime.Callers(2, callers)
+	frames := runtime.CallersFrames(callers)
+	for frame, more := frames.Next(); more; frame, more = frames.Next() {
+		if strings.Index(frame.File, "util/messages") == -1 {
+			return callerInfo{frame: frame}
+		}
+	}
+	return callerInfo{unknown: true}
+}
+
+func (info callerInfo) eachField(f func(string, interface{})) {
+	if unknown {
+		f("file", "<unknown>")
+		f("line", "<unknown>")
+		f("function", "<unknown>")
+		return
+	}
+	f("file", info.frame.File)
+	f("line", info.frame.Line)
+	f("function", info.frame.Function)
 }
 
 func deliver(message something, logger logSink) {
