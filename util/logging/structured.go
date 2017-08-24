@@ -6,6 +6,10 @@ import "github.com/Sirupsen/logrus"
 func (ls *LogSet) LogMessage(lvl level, msg logMessage) {
 	logto := logrus.FieldLogger(ls.logrus)
 
+	ls.eachField(func(name string, value interface{}) {
+		logto = logto.WithField(name, value)
+	})
+
 	msg.eachField(func(name string, value interface{}) {
 		logto = logto.WithField(name, value)
 	})
@@ -22,4 +26,8 @@ func (ls *LogSet) LogMessage(lvl level, msg logMessage) {
 	case debugLevel:
 		logto.Debug(msg.message())
 	}
+}
+
+func (ls *LogSet) eachField(f fieldReportF) {
+	f("component-id", ls.name)
 }

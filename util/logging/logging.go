@@ -143,20 +143,26 @@ func (ls LogSet) imposeLevel() {
 	ls.warn.SetOutput(ioutil.Discard)
 	ls.warn.SetFlags(log.LstdFlags)
 
+	ls.logrus.SetLevel(logrus.ErrorLevel)
+
 	if ls.level >= 1 {
 		ls.warn.SetOutput(ls.err)
 		ls.warn.SetFlags(log.Llongfile | log.Ltime)
+		ls.logrus.SetLevel(logrus.WarnLevel)
 	}
 
 	if ls.level >= 2 {
-		ls.vomit.SetOutput(ls.err)
-		ls.vomit.SetFlags(log.Llongfile | log.Ltime)
+		ls.debug.SetOutput(ls.err)
+		ls.debug.SetFlags(log.Llongfile | log.Ltime)
+		ls.logrus.SetLevel(logrus.DebugLevel)
 	}
 
 	if ls.level >= 3 {
-		ls.debug.SetOutput(ls.err)
-		ls.debug.SetFlags(log.Llongfile | log.Ltime)
+		ls.vomit.SetOutput(ls.err)
+		ls.vomit.SetFlags(log.Llongfile | log.Ltime)
+		ls.logrus.SetLevel(logrus.DebugLevel)
 	}
+
 }
 
 // BeQuiet gets the LogSet to discard all its output

@@ -206,6 +206,7 @@ func (msg *clientHTTPResponse) metricsTo(metrics metricsSink) {
 }
 
 func (msg *clientHTTPResponse) eachField(f fieldReportF) {
+	f("@loglov3-otl", "sous-client-http-response-v1")
 	f("server", msg.server)
 	f("path", msg.path)
 	f("parms", msg.parms)
