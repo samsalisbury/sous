@@ -22,7 +22,13 @@ type (
 		ExpHandler() http.Handler
 	}
 
-	ServerContext struct {
+	userExtractor struct{}
+)
+
+type (
+	// ComponentLocator is a service locator for the Sous components that server
+	// endpoints need to function.
+	ComponentLocator struct {
 		*logging.LogSet
 		*config.Config
 		sous.Inserter
@@ -30,11 +36,9 @@ type (
 		*sous.ResolveFilter
 		*sous.AutoResolver
 	}
-
-	userExtractor struct{}
 )
 
-func (ctx ServerContext) LiveState() *sous.State {
+func (ctx ComponentLocator) LiveState() *sous.State {
 	state, err := ctx.StateReader.ReadState()
 	if os.IsNotExist(errors.Cause(err)) || storage.IsGSMError(err) {
 		ctx.Warnf("error reading state:", err)
@@ -61,20 +65,20 @@ func Run(laddr string, handler http.Handler) error {
 }
 
 // Handler builds the http.Handler for the Sous server httprouter.
-func Handler(sc ServerContext, ls logSet) http.Handler {
+func Handler(sc ComponentLocator, ls logSet) http.Handler {
 	handler := mux(sc, ls)
 	addMetrics(handler, ls)
 	return handler
 }
 
 // Handler builds the http.Handler for the Sous server httprouter.
-func ProfilingHandler(sc ServerContext, ls logSet) http.Handler {
+func ProfilingHandler(sc ComponentLocator, ls logSet) http.Handler {
 	handler := mux(sc, ls)
 	addMetrics(handler, ls)
 	return handler
 }
 
-func mux(sc ServerContext, ls logSet) *http.ServeMux {
+func mux(sc ComponentLocator, ls logSet) *http.ServeMux {
 	router := routemap(sc).BuildRouter(ls)
 
 	handler := http.NewServeMux()
@@ -82,7 +86,7 @@ func mux(sc ServerContext, ls logSet) *http.ServeMux {
 	return handler
 }
 
-func routemap(context ServerContext) *restful.RouteMap {
+func routemap(context ComponentLocator) *restful.RouteMap {
 	return &restful.RouteMap{
 		{"gdm", "/gdm", newGDMResource(context)},
 		{"defs", "/defs", newStateDefResource(context)},

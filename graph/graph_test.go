@@ -35,7 +35,7 @@ func injectedStateManager(t *testing.T, cfg *config.Config) *StateManager {
 	g.Add(logging.SilentLogSet())
 	g.Add(newStateManager)
 	g.Add(LocalSousConfig{Config: cfg})
-	g.Add(newServerContext)
+	g.Add(newServerComponentLocator)
 	g.Add(newResolveFilter)
 	g.Add(newSourceHostChooser)
 	g.Add(DryrunBoth)

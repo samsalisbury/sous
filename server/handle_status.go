@@ -11,7 +11,7 @@ import (
 type (
 	// StatusResource encapsulates a status response.
 	StatusResource struct {
-		context ServerContext
+		context ComponentLocator
 	}
 
 	// StatusHandler handles requests for status.
@@ -26,7 +26,7 @@ type (
 	}
 )
 
-func newStatusResource(ctx ServerContext) *StatusResource {
+func newStatusResource(ctx ComponentLocator) *StatusResource {
 	return &StatusResource{context: ctx}
 }
 

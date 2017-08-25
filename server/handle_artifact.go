@@ -14,7 +14,7 @@ import (
 type (
 	ArtifactResource struct {
 		restful.QueryParser
-		context ServerContext
+		context ComponentLocator
 	}
 
 	PUTArtifactHandler struct {
@@ -24,10 +24,11 @@ type (
 	}
 )
 
-func newArtifactResource(ctx ServerContext) *ArtifactResource {
+func newArtifactResource(ctx ComponentLocator) *ArtifactResource {
 	return &ArtifactResource{context: ctx}
 }
 
+// Put implements Putable on ArtifactResource, which marks it as accepting PUT requests
 func (ar *ArtifactResource) Put(_ http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
 	return &PUTArtifactHandler{
 		Request:     req,
@@ -36,6 +37,7 @@ func (ar *ArtifactResource) Put(_ http.ResponseWriter, req *http.Request, _ http
 	}
 }
 
+// Exchange implements Exchanger on PUTArtifactHandler
 func (pah *PUTArtifactHandler) Exchange() (interface{}, int) {
 	ba := sous.BuildArtifact{}
 	dec := json.NewDecoder(pah.Request.Body)

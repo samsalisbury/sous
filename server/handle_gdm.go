@@ -15,7 +15,7 @@ type (
 	// GDMResource is the resource for the GDM
 	GDMResource struct {
 		userExtractor
-		context ServerContext
+		context ComponentLocator
 	}
 
 	// GETGDMHandler is an injectable request handler
@@ -35,7 +35,7 @@ type (
 	}
 )
 
-func newGDMResource(ctx ServerContext) *GDMResource {
+func newGDMResource(ctx ComponentLocator) *GDMResource {
 	return &GDMResource{context: ctx}
 }
 

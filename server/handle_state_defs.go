@@ -9,8 +9,9 @@ import (
 )
 
 type (
+	// StateDefResource defines the /defs endpoint
 	StateDefResource struct {
-		context ServerContext
+		context ComponentLocator
 	}
 
 	StateDefGetHandler struct {
@@ -18,7 +19,7 @@ type (
 	}
 )
 
-func newStateDefResource(ctx ServerContext) *StateDefResource {
+func newStateDefResource(ctx ComponentLocator) *StateDefResource {
 	return &StateDefResource{context: ctx}
 }
 

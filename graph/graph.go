@@ -268,7 +268,7 @@ func AddInternals(graph adder) {
 		newAutoResolver,
 		newInserter,
 		newStatusPoller,
-		newServerContext,
+		newServerComponentLocator,
 	)
 }
 
@@ -493,15 +493,15 @@ func newDockerClient() LocalDockerClient {
 	return LocalDockerClient{docker_registry.NewClient()}
 }
 
-func newServerHandler(g *SousGraph, ServerContext server.ServerContext, log *logging.LogSet) ServerHandler {
+func newServerHandler(g *SousGraph, ComponentLocator server.ComponentLocator, log *logging.LogSet) ServerHandler {
 	var handler http.Handler
 
 	profileQuery := struct{ Yes ProfilingServer }{}
 	g.Inject(&profileQuery)
 	if profileQuery.Yes {
-		handler = server.ProfilingHandler(ServerContext, log.Child("http-server"))
+		handler = server.ProfilingHandler(ComponentLocator, log.Child("http-server"))
 	} else {
-		handler = server.Handler(ServerContext, log.Child("http-server"))
+		handler = server.Handler(ComponentLocator, log.Child("http-server"))
 	}
 
 	return ServerHandler{handler}

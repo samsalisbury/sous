@@ -13,7 +13,7 @@ import (
 type (
 	// ServerListResource dispatches /servers
 	ServerListResource struct {
-		context ServerContext
+		context ComponentLocator
 	}
 
 	// ServerListHandler handles GET for /servers
@@ -29,16 +29,18 @@ type (
 	}
 )
 
-func newServerListResource(context ServerContext) *ServerListResource {
+func newServerListResource(context ComponentLocator) *ServerListResource {
 	return &ServerListResource{context: context}
 }
 
-// Get implements Getable on ServerListResource
+// Get implements Getable on ServerListResource, which marks it as accepting GET requests
 func (slr *ServerListResource) Get(http.ResponseWriter, *http.Request, httprouter.Params) restful.Exchanger {
 	return &ServerListHandler{
 		Config: slr.context.Config,
 	}
 }
+
+// Put implements Putable on ServerListResource, which marks is as accepting PUT requests
 func (slr *ServerListResource) Put(_ http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
 	return &ServerListUpdater{
 		Config:  slr.context.Config,

@@ -13,11 +13,11 @@ type (
 		url.Values
 	}
 
-	// a convenience embed for parsing query values
+	// QueryParser is a convenience embed for parsing query values
 	QueryParser struct{}
 )
 
-// parses query values out of a url, returning an empty list of values in the event of an error
+// ParseQuery parses query values out of a url, returning an empty list of values in the event of an error
 func (QueryParser) ParseQuery(req *http.Request) QueryValues {
 	v, err := url.ParseQuery(req.URL.RawQuery)
 	if err != nil {

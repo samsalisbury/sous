@@ -22,12 +22,6 @@ type (
 		Deployments []*sous.Deployment
 	}
 
-	// A LiveGDM wraps a sous.Deployments and gets refreshed per server request
-	LiveGDM struct {
-		Etag string
-		sous.Deployments
-	}
-
 	// ClientUser is a local alias for sous.User
 	ClientUser sous.User
 

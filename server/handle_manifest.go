@@ -18,7 +18,7 @@ type (
 	ManifestResource struct {
 		userExtractor
 		restful.QueryParser
-		context ServerContext
+		context ComponentLocator
 	}
 
 	// GETManifestHandler handles GET exchanges for manifests
@@ -45,7 +45,7 @@ type (
 	}
 )
 
-func newManifestResource(ctx ServerContext) *ManifestResource {
+func newManifestResource(ctx ComponentLocator) *ManifestResource {
 	return &ManifestResource{context: ctx}
 }
 
