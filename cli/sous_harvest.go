@@ -26,6 +26,7 @@ usage: sous harvest <repo>...
 // Help prints the help
 func (*SousHarvest) Help() string { return sousHarvestHelp }
 
+// RegisterOn implements Registrar on SousHarvest
 func (*SousHarvest) RegisterOn(psy Addable) {
 	psy.Add(graph.DryrunNeither)
 	psy.Add(&config.DeployFilterFlags{})
