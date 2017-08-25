@@ -52,7 +52,7 @@ func newManifestResource(ctx ComponentLocator) *ManifestResource {
 // Get implements Getable for ManifestResource
 func (mr *ManifestResource) Get(_ http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
 	return &GETManifestHandler{
-		State:       mr.context.LiveState(),
+		State:       mr.context.liveState(),
 		QueryValues: mr.ParseQuery(req),
 	}
 }
@@ -60,7 +60,7 @@ func (mr *ManifestResource) Get(_ http.ResponseWriter, req *http.Request, _ http
 // Put implements Putable for ManifestResource
 func (mr *ManifestResource) Put(_ http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
 	return &PUTManifestHandler{
-		State:       mr.context.LiveState(),
+		State:       mr.context.liveState(),
 		LogSet:      mr.context.LogSet,
 		Request:     req,
 		QueryValues: mr.ParseQuery(req),
@@ -72,7 +72,7 @@ func (mr *ManifestResource) Put(_ http.ResponseWriter, req *http.Request, _ http
 // Delete implements Deleteable for ManifestResource
 func (mr *ManifestResource) Delete(_ http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
 	return &DELETEManifestHandler{
-		State:       mr.context.LiveState(),
+		State:       mr.context.liveState(),
 		QueryValues: mr.ParseQuery(req),
 		StateWriter: sous.StateWriter(mr.context.StateManager),
 	}

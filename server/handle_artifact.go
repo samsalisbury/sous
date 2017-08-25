@@ -12,11 +12,13 @@ import (
 )
 
 type (
+	// ArtifactResource provides the /artifact endpoint
 	ArtifactResource struct {
 		restful.QueryParser
 		context ComponentLocator
 	}
 
+	// PUTArtifactHandler handles PUT requests to /artifact
 	PUTArtifactHandler struct {
 		*http.Request
 		restful.QueryValues

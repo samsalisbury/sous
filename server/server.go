@@ -38,7 +38,7 @@ type (
 	}
 )
 
-func (ctx ComponentLocator) LiveState() *sous.State {
+func (ctx ComponentLocator) liveState() *sous.State {
 	state, err := ctx.StateReader.ReadState()
 	if os.IsNotExist(errors.Cause(err)) || storage.IsGSMError(err) {
 		ctx.Warnf("error reading state:", err)

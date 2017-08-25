@@ -27,7 +27,7 @@ func newStateDefResource(ctx ComponentLocator) *StateDefResource {
 // handle GET requests.)
 func (sdr *StateDefResource) Get(http.ResponseWriter, *http.Request, httprouter.Params) restful.Exchanger {
 	return &StateDefGetHandler{
-		State: sdr.context.LiveState(),
+		State: sdr.context.liveState(),
 	}
 }
 

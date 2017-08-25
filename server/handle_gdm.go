@@ -43,7 +43,7 @@ func newGDMResource(ctx ComponentLocator) *GDMResource {
 func (gr *GDMResource) Get(writer http.ResponseWriter, _ *http.Request, _ httprouter.Params) restful.Exchanger {
 	return &GETGDMHandler{
 		LogSet:   gr.context.LogSet,
-		GDM:      gr.context.LiveState(),
+		GDM:      gr.context.liveState(),
 		RzWriter: writer,
 	}
 }
@@ -78,7 +78,7 @@ func (gr *GDMResource) Put(_ http.ResponseWriter, req *http.Request, _ httproute
 	return &PUTGDMHandler{
 		Request:      req,
 		LogSet:       gr.context.LogSet,
-		GDM:          gr.context.LiveState(),
+		GDM:          gr.context.liveState(),
 		StateManager: gr.context.StateManager,
 		User:         gr.GetUser(req),
 	}
