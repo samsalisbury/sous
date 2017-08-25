@@ -167,7 +167,7 @@ func NewSousCLI(di *graph.SousGraph, s *Sous, in io.Reader, out, errout io.Write
 			err = errors.Cause(err)
 			causeStr := err.Error()
 			if originalErr != causeStr {
-				logging.Log.Debug.Println(originalErr)
+				logging.Log.Debugf("%v\n", originalErr)
 			}
 		}
 		return EnsureErrorResult(err)

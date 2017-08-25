@@ -27,6 +27,7 @@ func (*SousHarvest) Help() string { return sousHarvestHelp }
 
 func (*SousHarvest) RegisterOn(psy Addable) {
 	psy.Add(graph.DryrunNeither)
+	psy.Add(&config.DeployFilterFlags{})
 }
 
 // Execute defines the behavior of `sous query gdm`

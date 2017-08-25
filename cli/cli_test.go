@@ -201,6 +201,13 @@ func TestInvokeQueryArtifacts(t *testing.T) {
 	assert.NotNil(exe)
 }
 
+func TestInvokeQueryClusters(t *testing.T) {
+	assert := assert.New(t)
+
+	exe := justCommand(t, []string{`sous`, `query`, `clusters`})
+	assert.NotNil(exe)
+}
+
 func TestInvokeMetadataGet(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)

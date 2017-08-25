@@ -3,6 +3,7 @@ package cli
 import (
 	"os"
 
+	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
@@ -31,6 +32,7 @@ func (*SousQueryGDM) Help() string { return sousQueryGDMHelp }
 
 func (*SousQueryGDM) RegisterOn(psy Addable) {
 	psy.Add(graph.DryrunNeither)
+	psy.Add(&config.DeployFilterFlags{})
 }
 
 // Execute defines the behavior of `sous query gdm`
