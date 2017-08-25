@@ -7,6 +7,8 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/pkg/errors"
 )
 
 const canarySuffix = `": "canary",`
@@ -29,7 +31,7 @@ func InjectCanaryAttr(json io.Reader, attrName string) io.Reader {
 
 	// 'JSON' doesn't include a '{'
 	if err != nil {
-		panic(err)
+		panic(errors.Wrapf(err, "attempting to add canary attribute"))
 	}
 
 	prefix := bytes.NewReader([]byte(`{"` + attrName + canarySuffix))

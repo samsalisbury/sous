@@ -10,7 +10,7 @@ type pm map[string]string
 
 func TestSousRoutes(t *testing.T) {
 	test := func(er string, name string, kvs ...restful.KV) {
-		ar, err := SousRouteMap.PathFor(name, kvs...)
+		ar, err := routemap(ServerContext{}).PathFor(name, kvs...)
 		if err != nil {
 			t.Fatalf("Error getting a path: %#v", err)
 		}

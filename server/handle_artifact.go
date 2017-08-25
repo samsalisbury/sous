@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/julienschmidt/httprouter"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/firsterr"
 	"github.com/opentable/sous/util/restful"
@@ -11,16 +12,29 @@ import (
 )
 
 type (
-	ArtifactResource struct{}
+	ArtifactResource struct {
+		restful.QueryParser
+		context ServerContext
+	}
 
 	PUTArtifactHandler struct {
 		*http.Request
-		*restful.QueryValues
+		restful.QueryValues
 		sous.Inserter
 	}
 )
 
-func (ar *ArtifactResource) Put() *PUTArtifactHandler { return &PUTArtifactHandler{} }
+func newArtifactResource(ctx ServerContext) *ArtifactResource {
+	return &ArtifactResource{context: ctx}
+}
+
+func (ar *ArtifactResource) Put(_ http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
+	return &PUTArtifactHandler{
+		Request:     req,
+		QueryValues: ar.ParseQuery(req),
+		Inserter:    ar.context.Inserter,
+	}
+}
 
 func (pah *PUTArtifactHandler) Exchange() (interface{}, int) {
 	ba := sous.BuildArtifact{}
@@ -43,7 +57,7 @@ func (pah *PUTArtifactHandler) Exchange() (interface{}, int) {
 	return "", http.StatusOK
 }
 
-func sourceIDFromValues(qv *restful.QueryValues) (sous.SourceID, error) {
+func sourceIDFromValues(qv restful.QueryValues) (sous.SourceID, error) {
 	var r, o, vs string
 	var v semv.Version
 	var err error

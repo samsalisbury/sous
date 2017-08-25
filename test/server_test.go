@@ -61,6 +61,8 @@ func (suite serverTests) prepare(extras ...interface{}) http.Handler {
 		"StateLocation: '"+outpath+"'\n")
 	g.Add(extras...)
 	g.Add(&config.Verbosity{})
+	g.Add(&config.DeployFilterFlags{})
+	g.Add(graph.DryrunBoth)
 
 	serverScoop := struct {
 		Handler graph.ServerHandler

@@ -17,9 +17,9 @@ import (
 func TestQueryValuesToManifestIDHappyPath(t *testing.T) {
 	assert := assert.New(t)
 
-	pq := func(s string) *restful.QueryValues {
+	pq := func(s string) restful.QueryValues {
 		v, _ := url.ParseQuery(s)
-		return &restful.QueryValues{v}
+		return restful.QueryValues{v}
 	}
 	ev := func(x interface{}, e error) error {
 		return e
@@ -47,9 +47,9 @@ func TestQueryValuesToManifestIDHappyPath(t *testing.T) {
 func TestQueryValuesToManifestIDSadPath(t *testing.T) {
 	assert := assert.New(t)
 
-	pq := func(s string) *restful.QueryValues {
+	pq := func(s string) restful.QueryValues {
 		v, _ := url.ParseQuery(s)
-		return &restful.QueryValues{v}
+		return restful.QueryValues{v}
 	}
 	ev := func(x interface{}, e error) error {
 		return e
@@ -70,7 +70,7 @@ func TestHandlesManifestGetNotKnown(t *testing.T) {
 
 	th := &GETManifestHandler{
 		State:       sous.NewState(),
-		QueryValues: &restful.QueryValues{q},
+		QueryValues: restful.QueryValues{q},
 	}
 	_, status := th.Exchange()
 	assert.Equal(404, status)
@@ -87,7 +87,7 @@ func TestHandlesManifestGetBadURL(t *testing.T) {
 
 	th := &GETManifestHandler{
 		State:       state,
-		QueryValues: &restful.QueryValues{q},
+		QueryValues: restful.QueryValues{q},
 	}
 	_, status := th.Exchange()
 	assert.Equal(404, status)
@@ -105,7 +105,7 @@ func TestHandlesManifestGet(t *testing.T) {
 
 	th := &GETManifestHandler{
 		State:       state,
-		QueryValues: &restful.QueryValues{q},
+		QueryValues: restful.QueryValues{q},
 	}
 	_, status := th.Exchange()
 	assert.Equal(status, 200)
@@ -157,7 +157,7 @@ func TestHandlesManifestPut(t *testing.T) {
 		Request:     req,
 		StateWriter: writer,
 		State:       state,
-		QueryValues: &restful.QueryValues{q},
+		QueryValues: restful.QueryValues{q},
 		LogSet:      &logging.Log,
 	}
 

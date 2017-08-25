@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/julienschmidt/httprouter"
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
@@ -11,7 +12,9 @@ import (
 
 type (
 	// ServerListResource dispatches /servers
-	ServerListResource struct{}
+	ServerListResource struct {
+		context ServerContext
+	}
 
 	// ServerListHandler handles GET for /servers
 	ServerListHandler struct {
@@ -26,9 +29,23 @@ type (
 	}
 )
 
+func newServerListResource(context ServerContext) *ServerListResource {
+	return &ServerListResource{context: context}
+}
+
 // Get implements Getable on ServerListResource
-func (slr *ServerListResource) Get() restful.Exchanger { return &ServerListHandler{} }
-func (slr *ServerListResource) Put() restful.Exchanger { return &ServerListUpdater{} }
+func (slr *ServerListResource) Get(http.ResponseWriter, *http.Request, httprouter.Params) restful.Exchanger {
+	return &ServerListHandler{
+		Config: slr.context.Config,
+	}
+}
+func (slr *ServerListResource) Put(_ http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
+	return &ServerListUpdater{
+		Config:  slr.context.Config,
+		Log:     slr.context.LogSet,
+		Request: req,
+	}
+}
 
 // Exchange implements restful.Exchanger on ServerListHandler
 func (slh *ServerListHandler) Exchange() (interface{}, int) {
