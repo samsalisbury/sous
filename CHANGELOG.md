@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
-## [Unreleased](//github.com/opentable/sous/compare/0.5.28...HEAD)
+## [0.5.29](//github.com/opentable/sous/compare/0.5.28...0.5.29)
 ### Changed
 - Developer: DI system no longer used on a per-request basis.
 
