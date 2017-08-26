@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"runtime/debug"
 )
 
@@ -18,15 +17,14 @@ type (
 )
 
 func (ph *StatusMiddleware) errorBody(status int, rq *http.Request, w io.Writer, data interface{}, err error, stack []byte) {
-	gatelatch := os.Getenv("GATELATCH")
-	if gatelatch == "" {
+	if ph.gatelatch == "" {
 		w.Write([]byte(fmt.Sprintf("%s\n", data)))
 		return
 	}
 
-	if header := rq.Header.Get("X-Gatelatch"); header != gatelatch {
+	if header := rq.Header.Get("X-Gatelatch"); header != ph.gatelatch {
 		w.Write([]byte(fmt.Sprintf("%s\n", data)))
-		ph.Warnf("Gatelatch header (%q) didn't match gatelatch env (%s)", gatelatch, header)
+		ph.Warnf("Gatelatch header (%q) didn't match gatelatch env (%s)", ph.gatelatch, header)
 		return
 	}
 

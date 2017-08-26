@@ -81,6 +81,8 @@ type (
 	ServerHandler struct{ http.Handler }
 	// StateManager simply wraps the sous.StateManager interface
 	StateManager struct{ sous.StateManager }
+	// ServerStateManager simply wraps the sous.StateManager interface
+	ServerStateManager struct{ sous.StateManager }
 	// StateReader wraps a storage.StateReader.
 	StateReader struct{ sous.StateReader }
 	// StateWriter wraps a storage.StateWriter, and should be configured to
@@ -188,6 +190,7 @@ func AddShells(graph adder) {
 func AddFilesystem(graph adder) {
 	graph.Add(
 		newConfigLoader,
+		newServerStateManager,
 	)
 }
 
@@ -232,7 +235,6 @@ func AddSingularity(graph adder) {
 func AddState(graph adder) {
 	graph.Add(
 		newStateManager,
-		newServerStateManager,
 		newLocalStateReader,
 		newLocalStateWriter,
 	)
@@ -266,6 +268,7 @@ func AddInternals(graph adder) {
 		newAutoResolver,
 		newInserter,
 		newStatusPoller,
+		newServerComponentLocator,
 	)
 }
 
@@ -277,7 +280,7 @@ func newResolver(filter *sous.ResolveFilter, d sous.Deployer, r sous.Registry) *
 	return sous.NewResolver(d, r, filter)
 }
 
-func newAutoResolver(rez *sous.Resolver, sr StateReader, ls *logging.LogSet) *sous.AutoResolver {
+func newAutoResolver(rez *sous.Resolver, sr *ServerStateManager, ls *logging.LogSet) *sous.AutoResolver {
 	return sous.NewAutoResolver(rez, sr, ls.Child("autoresolver"))
 }
 
@@ -490,22 +493,15 @@ func newDockerClient() LocalDockerClient {
 	return LocalDockerClient{docker_registry.NewClient()}
 }
 
-func newServerHandler(g *SousGraph, log *logging.LogSet) ServerHandler {
-	gf := func() restful.Injector {
-		perReqGraph := g.Clone()
-		perReqGraph.Add(getLiveGDM)
-		perReqGraph.Add(getUser)
-		return perReqGraph
-	}
-
+func newServerHandler(g *SousGraph, ComponentLocator server.ComponentLocator, log *logging.LogSet) ServerHandler {
 	var handler http.Handler
 
-	var profilingQuery struct{ Yes ProfilingServer }
-	g.Inject(&profilingQuery)
-	if profilingQuery.Yes {
-		handler = server.ProfilingHandler(gf, log.Child("http-server"))
+	profileQuery := struct{ Yes ProfilingServer }{}
+	g.Inject(&profileQuery)
+	if profileQuery.Yes {
+		handler = server.ProfilingHandler(ComponentLocator, log.Child("http-server"))
 	} else {
-		handler = server.Handler(gf, log.Child("http-server"))
+		handler = server.Handler(ComponentLocator, log.Child("http-server"))
 	}
 
 	return ServerHandler{handler}
@@ -525,21 +521,21 @@ func newHTTPClient(c LocalSousConfig, user sous.User, srvr ServerHandler, log *l
 	return HTTPClient{HTTPClient: cl}, err
 }
 
+func newServerStateManager(c LocalSousConfig) *ServerStateManager {
+	dm := storage.NewDiskStateManager(c.StateLocation)
+	return &ServerStateManager{StateManager: storage.NewGitStateManager(dm)}
+}
+
 // newStateManager returns a wrapped sous.HTTPStateManager if cl is not nil.
 // Otherwise it returns a wrapped sous.GitStateManager, for local git based GDM.
 // If it returns a sous.GitStateManager, it emits a warning log.
 func newStateManager(cl HTTPClient, c LocalSousConfig) *StateManager {
 	if c.Server == "" {
 		logging.Log.Warn.Printf("Using local state stored at %s", c.StateLocation)
-		dm := storage.NewDiskStateManager(c.StateLocation)
-		return &StateManager{StateManager: storage.NewGitStateManager(dm)}
+		return &StateManager{StateManager: newServerStateManager(c).StateManager}
 	}
 	hsm := sous.NewHTTPStateManager(cl)
 	return &StateManager{StateManager: hsm}
-}
-
-func newServerStateManager(sm *StateManager) server.StateManager {
-	return server.StateManager{StateManager: sm.StateManager}
 }
 
 func newStatusPoller(cl HTTPClient, rf *RefinedResolveFilter, user sous.User) *sous.StatusPoller {

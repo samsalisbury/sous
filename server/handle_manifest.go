@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/julienschmidt/httprouter"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/firsterr"
 	"github.com/opentable/sous/util/logging"
@@ -14,12 +15,16 @@ import (
 
 type (
 	// ManifestResource describes resources for manifests
-	ManifestResource struct{}
+	ManifestResource struct {
+		userExtractor
+		restful.QueryParser
+		context ComponentLocator
+	}
 
 	// GETManifestHandler handles GET exchanges for manifests
 	GETManifestHandler struct {
 		*sous.State
-		*restful.QueryValues
+		restful.QueryValues
 	}
 
 	// PUTManifestHandler handles PUT exchanges for manifests
@@ -27,7 +32,7 @@ type (
 		*sous.State
 		*logging.LogSet
 		*http.Request
-		*restful.QueryValues
+		restful.QueryValues
 		User        ClientUser
 		StateWriter sous.StateWriter
 	}
@@ -35,19 +40,43 @@ type (
 	// DELETEManifestHandler handles DELETE exchanges for manifests
 	DELETEManifestHandler struct {
 		*sous.State
-		*restful.QueryValues
+		restful.QueryValues
 		StateWriter sous.StateWriter
 	}
 )
 
+func newManifestResource(ctx ComponentLocator) *ManifestResource {
+	return &ManifestResource{context: ctx}
+}
+
 // Get implements Getable for ManifestResource
-func (mr *ManifestResource) Get() restful.Exchanger { return &GETManifestHandler{} }
+func (mr *ManifestResource) Get(_ http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
+	return &GETManifestHandler{
+		State:       mr.context.liveState(),
+		QueryValues: mr.ParseQuery(req),
+	}
+}
 
 // Put implements Putable for ManifestResource
-func (mr *ManifestResource) Put() restful.Exchanger { return &PUTManifestHandler{} }
+func (mr *ManifestResource) Put(_ http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
+	return &PUTManifestHandler{
+		State:       mr.context.liveState(),
+		LogSet:      mr.context.LogSet,
+		Request:     req,
+		QueryValues: mr.ParseQuery(req),
+		User:        mr.GetUser(req),
+		StateWriter: sous.StateWriter(mr.context.StateManager),
+	}
+}
 
 // Delete implements Deleteable for ManifestResource
-func (mr *ManifestResource) Delete() restful.Exchanger { return &DELETEManifestHandler{} }
+func (mr *ManifestResource) Delete(_ http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
+	return &DELETEManifestHandler{
+		State:       mr.context.liveState(),
+		QueryValues: mr.ParseQuery(req),
+		StateWriter: sous.StateWriter(mr.context.StateManager),
+	}
+}
 
 // Exchange implements restful.Exchanger
 func (gmh *GETManifestHandler) Exchange() (interface{}, int) {
@@ -113,7 +142,7 @@ ManifestID{
 }
 */
 
-func manifestIDFromValues(qv *restful.QueryValues) (sous.ManifestID, error) {
+func manifestIDFromValues(qv restful.QueryValues) (sous.ManifestID, error) {
 	var r, o, f string
 	var err error
 	err = firsterr.Returned(

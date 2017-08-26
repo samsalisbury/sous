@@ -39,7 +39,7 @@ func TestPUTArtifact(t *testing.T) {
 
 	pah := &PUTArtifactHandler{
 		Request:     req,
-		QueryValues: &restful.QueryValues{q},
+		QueryValues: restful.QueryValues{q},
 		Inserter: &artifactTestInserter{
 			insFunc: func(s sous.SourceID, in, et string, qz []sous.Quality) error {
 				inSid = s

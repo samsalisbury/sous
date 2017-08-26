@@ -45,9 +45,10 @@ func (suite integrationServerTests) prepare() http.Handler {
 
 	storage.PrepareTestGitRepo(suite.T(), s, remotepath, outpath)
 
-	g := graph.TestGraphWithConfig(&bytes.Buffer{}, os.Stdout, os.Stdout,
-		"StateLocation: '"+outpath+"'\n")
+	g := graph.TestGraphWithConfig(&bytes.Buffer{}, os.Stdout, os.Stdout, "StateLocation: '"+outpath+"'\n")
 	g.Add(&config.Verbosity{})
+	g.Add(&config.DeployFilterFlags{})
+	g.Add(graph.DryrunBoth)
 
 	/*
 		state := &sous.State{}

@@ -3,6 +3,7 @@ package cli
 import (
 	"os"
 
+	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
@@ -32,6 +33,7 @@ func (*SousQueryAds) Help() string { return sousQueryAdsHelp }
 // RegisterOn adds stuff to the graph.
 func (*SousQueryAds) RegisterOn(psy Addable) {
 	psy.Add(graph.DryrunNeither)
+	psy.Add(&config.DeployFilterFlags{})
 }
 
 // Execute defines the behavior of `sous query ads`

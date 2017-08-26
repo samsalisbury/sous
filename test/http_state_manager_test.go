@@ -11,7 +11,6 @@ import (
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
-	"github.com/opentable/sous/server"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 	"github.com/samsalisbury/semv"
@@ -74,10 +73,15 @@ func TestWriteState(t *testing.T) {
 	graph.AddNetwork(di)
 
 	di.Add(
+		func() *config.DeployFilterFlags { return &config.DeployFilterFlags{} },
+		func() graph.DryrunOption { return graph.DryrunBoth },
+
 		func() graph.StateReader { return graph.StateReader{StateReader: &sm} },
 		func() graph.StateWriter { return graph.StateWriter{StateWriter: &sm} },
 		func() *graph.StateManager { return &graph.StateManager{StateManager: &sm} },
-		func() server.StateManager { return server.StateManager{StateManager: &sm} },
+
+		func() *graph.ServerStateManager { return &graph.ServerStateManager{StateManager: &sm} },
+		func() *graph.ConfigLoader { return graph.NewTestConfigLoader("") },
 	)
 	di.Add(&config.Verbosity{})
 

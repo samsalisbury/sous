@@ -20,7 +20,6 @@ type (
 	// The MetaHandler collects common behavior for route handlers.
 	MetaHandler struct {
 		router        *httprouter.Router
-		graphFac      func() Injector //XXX This is a workaround for a bug in psyringe.Clone()
 		statusHandler *StatusMiddleware
 		logSet
 	}
@@ -34,7 +33,7 @@ type (
 	// ExchangeLogger wraps and logs the exchange.
 	ExchangeLogger struct {
 		Exchanger Exchanger
-		*logSetWrapper
+		logSet
 		*http.Request
 		httprouter.Params
 	}
@@ -137,33 +136,25 @@ func (mh *MetaHandler) PutHandling(factory ExchangeFactory) httprouter.Handle {
 
 // InstallPanicHandler installs an panic handler into the router.
 func (mh *MetaHandler) InstallPanicHandler() {
-	g := mh.graphFac()
-	g.Inject(mh.statusHandler)
 	mh.router.PanicHandler = func(w http.ResponseWriter, r *http.Request, recovered interface{}) {
 		//log.Print(recovered)
 		mh.statusHandler.HandlePanic(w, r, recovered)
 	}
-
 }
 
-func (mh *MetaHandler) ExchangeGraph(w http.ResponseWriter, r *http.Request, p httprouter.Params) Injector {
-	g := mh.graphFac()
-	g.Add(&ResponseWriter{ResponseWriter: w}, r, p)
-	g.Add(parseQueryValues)
-	g.Add(&logSetWrapper{mh.logSet})
-	return g
+func (mh *MetaHandler) buildLogger(h Exchanger, r *http.Request, p httprouter.Params) *ExchangeLogger {
+	return &ExchangeLogger{
+		logSet:    mh.logSet,
+		Exchanger: h,
+		Request:   r,
+		Params:    p,
+	}
 }
 
 func (mh *MetaHandler) injectedHandler(factory ExchangeFactory, w http.ResponseWriter, r *http.Request, p httprouter.Params) Exchanger {
-	h := factory()
+	h := factory(w, r, p)
 
-	exGraph := mh.ExchangeGraph(w, r, p)
-	exGraph.MustInject(h)
-
-	logger := &ExchangeLogger{}
-	exGraph.MustInject(logger)
-	logger.Exchanger = h
-	return logger
+	return mh.buildLogger(h, r, p)
 }
 
 func (mh *MetaHandler) writeHeaders(status int, w http.ResponseWriter, r *http.Request, data interface{}) {

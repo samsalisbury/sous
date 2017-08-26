@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
@@ -22,6 +23,7 @@ Note that Sous may discover more images after attempting a rectify
 
 func (*SousQueryArtifacts) RegisterOn(psy Addable) {
 	psy.Add(graph.DryrunNeither)
+	psy.Add(&config.DeployFilterFlags{})
 }
 
 // Help prints the help
