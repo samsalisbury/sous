@@ -41,11 +41,10 @@ func applyChanges(base, changed, target map[string]interface{}) map[string]inter
 				}
 			}
 		case map[string]interface{}:
+			delete(base, k)
 			if b, old := base[k]; !old || b == nil {
-				delete(base, k)
 				target[k] = v //created
 			} else {
-				delete(base, k)
 				// Unchecked cast: if base[k] isn't also a map, we have bigger problems.
 				// If target[k] isn't a map, then the server has changed the type under us, and we should crash
 
