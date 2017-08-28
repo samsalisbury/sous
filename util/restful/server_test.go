@@ -236,8 +236,7 @@ func (t *PutConditionalsSuite) TestPutConditionalsWithoutCanaryIsRejected() {
 	res, err := http.Get(t.server.URL + "/test/one?extra=two")
 	t.NoError(err)
 	var td TestData
-	dec := json.NewDecoder(readdebugger.New(res.Body, func(b []byte, n int, e error) {
-	}))
+	dec := json.NewDecoder(readdebugger.New(res.Body, func(b []byte, n int, e error) {}))
 	t.NoError(dec.Decode(&td))
 	res.Body.Close()
 	t.Equal(td, TestData{"base", "one", "two"})
