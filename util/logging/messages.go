@@ -176,7 +176,7 @@ type clientHTTPResponse struct {
 	path   string
 	parms  map[string]string
 	status int
-	dur    time.duration
+	dur    time.Duration
 }
 
 func (lvl level) defaultLevel() level {

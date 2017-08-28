@@ -42,7 +42,7 @@ type (
 		debug *log.Logger
 		warn  *log.Logger
 
-		logrus logrus.Logger
+		logrus *logrus.Logger
 	}
 
 	// A temporary type until we can stop using the LogSet loggers directly
@@ -120,7 +120,7 @@ func newls(name string, err io.Writer) *LogSet {
 	ls.Info = ls.Warn
 	ls.Notice = ls.Warn
 
-	ls.LogMessage = logrus.New()
+	ls.logrus = logrus.New()
 	return ls
 
 }
