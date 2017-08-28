@@ -31,7 +31,7 @@ Sous init uses contextual information from your current source code tree and
 repository to generate a basic configuration for that project. You will need to
 flesh out some additional details.
 
-init must be invoked in a git repository that has either an 'upstream' or 
+init must be invoked in a git repository that has either an 'upstream' or
 'origin' remote configured.
 
 init will register the project on every known server.`
@@ -44,6 +44,7 @@ func (si *SousInit) RegisterOn(psy Addable) {
 	// Add a zero DepoyFilterFlags to the graph, as we assume a clean build.
 	psy.Add(&si.DeployFilterFlags)
 	psy.Add(&si.Flags)
+	psy.Add(graph.DryrunNeither)
 }
 
 // AddFlags adds the flags for sous init.

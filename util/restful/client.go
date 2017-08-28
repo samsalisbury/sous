@@ -308,7 +308,6 @@ func (client *LiveHTTPClient) sendRequest(rq *http.Request, ierr error) (*http.R
 	if ierr != nil {
 		return nil, ierr
 	}
-	// spew.Dump(client.logSet) //XXX these child logsets aren't logging to debug correctly
 	// needs to be fixed in coming log update
 	client.Debugf("Sending %s %q", rq.Method, rq.URL)
 	rz, err := client.httpRequest(rq)
