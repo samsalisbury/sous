@@ -18,7 +18,7 @@ func (SousManifest) Subcommands() cmdr.Commands {
 }
 
 func (sm *SousManifest) RegisterOn(psy Addable) {
-	psy.Add(graph.DryrunBoth)
+	psy.Add(graph.DryrunNeither)
 }
 
 func (*SousManifest) Help() string { return sousManifestHelp }

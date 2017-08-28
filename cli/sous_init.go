@@ -44,7 +44,7 @@ func (si *SousInit) RegisterOn(psy Addable) {
 	// Add a zero DepoyFilterFlags to the graph, as we assume a clean build.
 	psy.Add(&si.DeployFilterFlags)
 	psy.Add(&si.Flags)
-	psy.Add(graph.DryrunBoth)
+	psy.Add(graph.DryrunNeither)
 }
 
 // AddFlags adds the flags for sous init.

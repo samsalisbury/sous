@@ -27,7 +27,7 @@ func (SousMetadata) Subcommands() cmdr.Commands {
 }
 
 func (SousMetadata) RegisterOn(psy Addable) {
-	psy.Add(graph.DryrunBoth)
+	psy.Add(graph.DryrunNeither)
 }
 
 func (*SousMetadata) Help() string { return sousMetadataHelp }
