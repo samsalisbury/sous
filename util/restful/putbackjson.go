@@ -42,6 +42,7 @@ func applyChanges(base, changed, target map[string]interface{}) map[string]inter
 			}
 		case map[string]interface{}:
 			if b, old := base[k]; !old || b == nil {
+				delete(base, k)
 				target[k] = v //created
 			} else {
 				delete(base, k)
