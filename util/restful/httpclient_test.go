@@ -22,7 +22,8 @@ func TestPutbackJSON(t *testing.T) {
 			"z": 1,
 			"y": [{"q":"q", "z": "o"}],
 			"x": "x"
-		}
+		},
+		"e": null
 	}`)
 
 	baseB := bytes.NewBufferString(`{
@@ -56,6 +57,7 @@ func TestPutbackJSON(t *testing.T) {
 	assert.Equal(t, 7.0, mapped["a"]) //missing from update
 	assert.Equal(t, "y", mapped["b"])
 	assert.Equal(t, "w", dig(mapped, "d", "y", 0, "q"))
+	assert.Equal(t, "a", dig(mapped, "e", "a"))
 }
 
 func TestClientRetrieve(t *testing.T) {
