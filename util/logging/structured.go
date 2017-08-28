@@ -1,6 +1,6 @@
 package logging
 
-import "github.com/Sirupsen/logrus"
+import "github.com/sirupsen/logrus"
 
 // LogMessage records a message to one or more structured logs
 func (ls *LogSet) LogMessage(lvl level, msg logMessage) {

@@ -9,13 +9,6 @@
 			"revisionTime": "2016-08-18T22:37:30Z"
 		},
 		{
-			"checksumSHA1": "htjvdG/znrHmFYRQBqA2vHrJsF4=",
-			"comment": "v0.10.0-16-gcd7d1bb",
-			"path": "github.com/Sirupsen/logrus",
-			"revision": "cd7d1bbe41066b6c1f19780f895901052150a575",
-			"revisionTime": "2016-04-25T09:32:37Z"
-		},
-		{
 			"checksumSHA1": "dvabztWVQX8f6oMLRyv4dLH+TGY=",
 			"path": "github.com/davecgh/go-spew/spew",
 			"revision": "346938d642f2ec3594ed81d874461961cd0faa76",
@@ -260,6 +253,12 @@
 			"path": "github.com/satori/go.uuid",
 			"revision": "f9ab0dce87d815821e221626b772e3475a0d2749",
 			"revisionTime": "2016-03-24T11:22:44Z"
+		},
+		{
+			"checksumSHA1": "BYvROBsiyAXK4sq6yhDe8RgT4LM=",
+			"path": "github.com/sirupsen/logrus",
+			"revision": "89742aefa4b206dcf400792f3bd35b542998eb3b",
+			"revisionTime": "2017-08-22T13:27:46Z"
 		},
 		{
 			"checksumSHA1": "EO+jcRet/AJ6IY3lBO8l8BLsZWg=",

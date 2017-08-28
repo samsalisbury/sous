@@ -7,8 +7,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/Sirupsen/logrus"
 	metrics "github.com/rcrowley/go-metrics"
+	"github.com/sirupsen/logrus"
 )
 
 type (
