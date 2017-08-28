@@ -1,6 +1,9 @@
 package cli
 
-import "github.com/opentable/sous/util/cmdr"
+import (
+	"github.com/opentable/sous/graph"
+	"github.com/opentable/sous/util/cmdr"
+)
 
 type SousManifest struct{}
 
@@ -12,6 +15,10 @@ const sousManifestHelp = `query and manipulate deployment manifests`
 
 func (SousManifest) Subcommands() cmdr.Commands {
 	return ManifestSubcommands
+}
+
+func (sm *SousManifest) RegisterOn(psy Addable) {
+	psy.Add(graph.DryrunBoth)
 }
 
 func (*SousManifest) Help() string { return sousManifestHelp }

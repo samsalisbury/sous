@@ -211,7 +211,6 @@ func AddNetwork(graph adder) {
 	graph.Add(
 		newDockerClient,
 		newServerHandler,
-		newHTTPClient,
 	)
 }
 
@@ -269,6 +268,7 @@ func AddInternals(graph adder) {
 		newInserter,
 		newStatusPoller,
 		newServerComponentLocator,
+		newHTTPClient,
 	)
 }
 

@@ -45,6 +45,7 @@ func (su *SousUpdate) AddFlags(fs *flag.FlagSet) {
 func (su *SousUpdate) RegisterOn(psy Addable) {
 	psy.Add(&su.DeployFilterFlags)
 	psy.Add(&su.OTPLFlags)
+	psy.Add(graph.DryrunBoth)
 }
 
 // Execute fulfills the cmdr.Executor interface.

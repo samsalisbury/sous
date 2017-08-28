@@ -20,7 +20,7 @@ var (
 		return EnsureErrorResult(fmt.Errorf(format, a...))
 	}
 	EnsureErrorResult = func(err error) cmdr.ErrorResult {
-		logging.Log.Debug.Println(err)
+		logging.Log.Debugf("%#v", err)
 		return cmdr.EnsureErrorResult(err)
 	}
 )

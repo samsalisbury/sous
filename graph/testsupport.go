@@ -42,7 +42,6 @@ func AddTestConfig(graph adder, cfg string) {
 }
 
 func addTestNetwork(graph adder) {
-	graph.Add(newDummyHTTPClient)
 	graph.Add(newDummyDockerClient)
 	graph.Add(newServerHandler)
 }
