@@ -6,11 +6,13 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
-## [Unreleased](//github.com/opentable/sous/compare/0.5.29...HEAD)
+## [0.5.30](//github.com/opentable/sous/compare/0.5.29...0.5.30)
 
 ### Fixed
-- Client: certain commands were missing DI for a particular value. These are fixed, and tests added for the omission.
-- Client: new values for optional fields no longer elided on `manifest set`
+- Client: certain commands were missing DI for a particular value. These are
+  fixed, and tests added for the omission.
+- Client: new values for optional fields no longer elided on `manifest set` -
+  if the value was missing, the new value would be silently dropped.
 
 ## [0.5.29](//github.com/opentable/sous/compare/0.5.28...0.5.29)
 ### Changed
