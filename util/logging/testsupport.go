@@ -2,13 +2,55 @@ package logging
 
 import "github.com/nyarly/spies"
 
-type logSinkSpy struct {
-	*spies.Spy
+type (
+	logSinkSpy struct {
+		spy *spies.Spy
+	}
+
+	logSinkController struct {
+		*spies.Spy
+	}
+
+	counterSpy struct {
+		spy *spies.Spy
+	}
+	counterController struct {
+		*spies.Spy
+	}
+
+	timerSpy struct {
+		spy *spies.Spy
+	}
+	timerController struct {
+		*spies.Spy
+	}
+
+	updaterSpy struct {
+		spy *spies.Spy
+	}
+	updaterController struct {
+		*spies.Spy
+	}
+)
+
+func newLogSinkSpy() (logSink, logSinkController) {
+	spy := spies.NewSpy()
+	return logSinkSpy{spy: spy}, logSinkController{spy}
 }
 
-func newLogSinkSpy() (logSink, *spies.Spy) {
+func newCounterSpy() (Counter, counterController) {
 	spy := spies.NewSpy()
-	return logSinkSpy{spy}, spy
+	return counterSpy{spy: spy}, counterController{spy}
+}
+
+func newTimerSpy() (Timer, timerController) {
+	spy := spies.NewSpy()
+	return timerSpy{spy: spy}, timerController{spy}
+}
+
+func newUpdaterSpy() (Updater, updaterController) {
+	spy := spies.NewSpy()
+	return updaterSpy{spy: spy}, updaterController{spy}
 }
 
 /*
@@ -24,20 +66,61 @@ func newLogSinkSpy() (logSink, *spies.Spy) {
 */
 
 func (lss logSinkSpy) GetCounter(name string) Counter {
-	res := lss.Spy.Called(name)
+	res := lss.spy.Called(name)
 	return res.Get(0).(Counter)
 }
 
 func (lss logSinkSpy) GetTimer(name string) Timer {
-	res := lss.Spy.Called(name)
+	res := lss.spy.Called(name)
 	return res.Get(0).(Timer)
 }
 
 func (lss logSinkSpy) GetUpdater(name string) Updater {
-	res := lss.Spy.Called(name)
+	res := lss.spy.Called(name)
 	return res.Get(0).(Updater)
 }
 
 func (lss logSinkSpy) LogMessage(l level, m logMessage) {
-	lss.Spy.Called(l, m)
+	lss.spy.Called(l, m)
+}
+
+func (lsc logSinkController) setupDefaultMetrics() (counterController, timerController, updaterController) {
+	cs, cc := newCounterSpy()
+	ts, tc := newTimerSpy()
+	us, uc := newUpdaterSpy()
+
+	lsc.MatchMethod("GetCounter", spies.AnyArgs, cs)
+	lsc.MatchMethod("GetTimer", spies.AnyArgs, ts)
+	lsc.MatchMethod("GetUpdater", spies.AnyArgs, us)
+
+	return cc, tc, uc
+}
+
+func (cs counterSpy) Clear() {
+	cs.spy.Called()
+}
+
+func (cs counterSpy) Inc(i int64) {
+	cs.spy.Called(i)
+}
+
+func (cs counterSpy) Dec(i int64) {
+	cs.spy.Called(i)
+}
+
+func (ts timerSpy) Time(f func()) {
+	ts.spy.Called(f)
+	f()
+}
+
+func (ts timerSpy) Update(d time.Duration) {
+	ts.spy.Called(d)
+}
+
+func (ts timerSpy) UpdateSince(t time.Time) {
+	ts.spy.Called(t)
+}
+
+func (us updaterSpy) Update(i int64) {
+	us.spy.Called(i)
 }

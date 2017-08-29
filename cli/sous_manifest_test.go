@@ -5,11 +5,11 @@ import (
 	"os"
 	"testing"
 
+	"github.com/nyarly/spies"
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful/restfultest"
-	"github.com/opentable/sous/util/spies"
 	"github.com/opentable/sous/util/yaml"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
