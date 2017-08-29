@@ -26,7 +26,6 @@
 package logging
 
 import (
-	"fmt"
 	"runtime"
 	"strings"
 	"time"
@@ -34,70 +33,85 @@ import (
 
 type (
 	messageSink interface {
-		LogMessage(level, logMessage)
 	}
 
-	metricsSink interface {
-		GetTimer(name string) Timer
-		GetCounter(name string) Counter
-		GetUpdater(name string) Updater
+	/*
+		Counter interface {
+			Clear()
+			Inc(int64)
+			Dec(int64)
+		}
+
+		// Timer is a write-only interface over a timer.
+		Timer interface {
+			Time(func())
+			Update(time.Duration)
+			UpdateSince(time.Time)
+		}
+
+		// Updater is a generalization of write-only metrics - integers that can be set.
+		// e.g. simple gauges or analyzed samples etc.
+		Updater interface {
+			Update(int64)
+		}
+
+	*/
+	LogSink interface {
+		LogMessage(Level, LogMessage)
+
+		ClearCounter(name string)
+		IncCounter(name string, amount int64)
+		DecCounter(name string, amount int64)
+
+		UpdateTimer(name string, dur time.Duration)
+		UpdateTimerSince(name string, time time.Time)
+
+		UpdateSample(name string, value int64)
 	}
 
-	logSink interface {
-		messageSink
-		metricsSink
+	LogMessage interface {
+		DefaultLevel() Level
+		Message() string
+		EachField(FieldReportFn)
 	}
 
-	logMessage interface {
-		defaultLevel() level
-		message() string
-		eachField(fieldReportF)
+	MetricsMessage interface {
+		MetricsTo(LogSink)
 	}
 
-	metricsMessage interface {
-		metricsTo(metricsSink)
-	}
-
-	callerInfo struct {
+	// CallerInfo describes the source of a log message.
+	CallerInfo struct {
 		frame   runtime.Frame
 		unknown bool
 	}
 
-	fieldReportF func(string, interface{})
-	level        int
+	// CallTime captures the time at which a log message was generated.
+	CallTime time.Time
+
+	FieldReportFn func(string, interface{})
+
+	// Level is the "level" of a log message (e.g. debug vs fatal)
+	Level int
 	// error interface{}
 
 )
 
 const (
-	criticalLevel    = level(iota)
-	warningLevel     = level(iota)
-	informationLevel = level(iota)
-	debugLevel       = level(iota)
+	// CriticalLevel is the level for logging critical errors.
+	CriticalLevel = Level(iota)
+
+	// WarningLevel is the level for messages that may be problematic.
+	WarningLevel = Level(iota)
+
+	// InformationLevel is for messages generated during normal operation.
+	InformationLevel = Level(iota)
+
+	// DebugLevel is for messages primarily of interest to the software's developers.
+	DebugLevel = Level(iota)
 	// "extra" debug available
 )
 
-// New(name string, ...args) error
-
-// messages.NewClientSendHTTPRequest(serverURL, "./manifest", parms)
-// messages.NewClientGotHTTPResponse(serverURL"./manifest", parms, statuscode, body(?), duration)
-
 /*
-
-	messages.WithClientContext(ctx, logger).ReportClientSendHTTPRequest(...)
-
-	// How do we runtime check this without the Context having a specific type?
-
-	clientContext(ctx).LogClientSendHTTPRequest(logger, ...)
-
-	// ^^^ just moves the problem around - clientContext is going to ctx.Value(...).(ClientContext),
-	// which can fail at runtime.
-
-	messages.SessionDataFromContext(ctx)
-	  -> gets several data items from the ctx...
-		-> if any are missing, return a "partialSessionData" which cobbles together a dead letter.
-
-
   A static analysis approach here would:
 
 	Check that the JSON tags on structs matched the schemas they claim.
@@ -114,25 +128,37 @@ const (
 
 */
 
-// The plan here is to be able to extend this behavior such that e.g. the rules
-// for levels of messages can be configured or updated at runtime.
-func getLevel(lm logMessage) level {
-	return lm.defaultLevel()
+func Deliver(message interface{}, logger LogSink) {
+	if lm, is := message.(LogMessage); is {
+		Level := getLevel(lm)
+		logger.LogMessage(Level, lm)
+	}
+
+	if mm, is := message.(MetricsMessage); is {
+		mm.MetricsTo(logger)
+	}
 }
 
-func getCallerInfo() callerInfo {
+// The plan here is to be able to extend this behavior such that e.g. the rules
+// for levels of messages can be configured or updated at runtime.
+func getLevel(lm LogMessage) Level {
+	return lm.DefaultLevel()
+}
+
+// GetCallerInfo captures a CallerInfo based on where it's called.
+func GetCallerInfo() CallerInfo {
 	callers := make([]uintptr, 10)
 	runtime.Callers(2, callers)
 	frames := runtime.CallersFrames(callers)
 	for frame, more := frames.Next(); more; frame, more = frames.Next() {
 		if strings.Index(frame.File, "util/logging") == -1 {
-			return callerInfo{frame: frame}
+			return CallerInfo{frame: frame}
 		}
 	}
-	return callerInfo{unknown: true}
+	return CallerInfo{unknown: true}
 }
 
-func (info callerInfo) eachField(f func(string, interface{})) {
+func (info CallerInfo) EachField(f func(string, interface{})) {
 	if info.unknown {
 		f("file", "<unknown>")
 		f("line", "<unknown>")
@@ -144,82 +170,15 @@ func (info callerInfo) eachField(f func(string, interface{})) {
 	f("function", info.frame.Function)
 }
 
-func getCallTime() callTime {
-	return callTime(time.Now())
+// GetCallTime captures the current call time.
+func GetCallTime() CallTime {
+	return CallTime(time.Now())
 }
 
-func deliver(message interface{}, logger logSink) {
-	if lm, is := message.(logMessage); is {
-		level := getLevel(lm)
-		logger.LogMessage(level, lm)
-	}
-
-	if mm, is := message.(metricsMessage); is {
-		mm.metricsTo(logger)
-	}
-}
-
-// ReportClientHTTPResponse reports a response recieved by Sous as a client.
-func ReportClientHTTPResponse(logger logSink, method, server, path string, parms map[string]string, status int, dur time.Duration) {
-	m := newClientHTTPResponse(method, server, path, parms, status, dur)
-	deliver(m, logger)
-}
-
-type (
-	callTime time.Time
-)
-
-type clientHTTPResponse struct {
-	callerInfo
-	callTime
-	level
-	method string
-	server string
-	path   string
-	parms  map[string]string
-	status int
-	dur    time.Duration
-}
-
-func (lvl level) defaultLevel() level {
+func (lvl Level) DefaultLevel() Level {
 	return lvl
 }
 
-func (time callTime) eachField(f fieldReportF) {
+func (time CallTime) EachField(f FieldReportFn) {
 	f("time", time)
-}
-
-func newClientHTTPResponse(method, server, path string, parms map[string]string, status int, dur time.Duration) *clientHTTPResponse {
-	return &clientHTTPResponse{
-		level:      informationLevel,
-		callerInfo: getCallerInfo(),
-		callTime:   getCallTime(),
-
-		method: method,
-		server: server,
-		path:   path,
-		parms:  parms,
-		status: status,
-		dur:    dur,
-	}
-}
-
-func (msg *clientHTTPResponse) metricsTo(metrics metricsSink) {
-	metrics.GetTimer("http-client").Update(msg.dur)
-}
-
-func (msg *clientHTTPResponse) eachField(f fieldReportF) {
-	f("@loglov3-otl", "sous-client-http-response-v1")
-	f("method", msg.method)
-	f("server", msg.server)
-	f("path", msg.path)
-	f("parms", msg.parms)
-	f("status", msg.status)
-	f("dur", msg.dur)
-	msg.callTime.eachField(f)
-	msg.callerInfo.eachField(f)
-}
-
-func (msg *clientHTTPResponse) message() string {
-	return fmt.Sprintf("%d", msg.status)
 }

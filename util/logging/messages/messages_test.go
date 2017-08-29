@@ -1,32 +1,25 @@
-package logging
+package messages
 
 import (
 	"testing"
 	"time"
 
+	"github.com/opentable/sous/util/logging"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestClientHTTPReponseInterfaces(t *testing.T) {
-	msg := newClientHTTPResponse("", "", "", map[string]string{}, 200, 0)
-
-	assert.Implements(t, (*logMessage)(nil), msg)
-	assert.Implements(t, (*metricsMessage)(nil), msg)
-}
-
 func TestReportCHResponse(t *testing.T) {
-	logger, control := newLogSinkSpy()
-	mcontrols := control.setupDefaultMetrics()
+	logger, control := logging.NewLogSinkSpy()
 	ReportClientHTTPResponse(logger, "GET", "http://example.com", "/api", map[string]string{"a": "a"}, 200, time.Millisecond*30)
 
-	assert.Len(t, mcontrols.timer.CallsTo("Update"), 1)
+	assert.Len(t, control.CallsTo("UpdateTimer"), 1)
 	logCalls := control.CallsTo("LogMessage")
 	require.Len(t, logCalls, 1)
-	assert.Equal(t, logCalls[0].PassedArgs().Get(0), informationLevel)
-	message := logCalls[0].PassedArgs().Get(1).(logMessage)
+	assert.Equal(t, logCalls[0].PassedArgs().Get(0), logging.InformationLevel)
+	message := logCalls[0].PassedArgs().Get(1).(logging.LogMessage)
 	actualFields := map[string]interface{}{}
-	message.eachField(func(name string, value interface{}) {
+	message.EachField(func(name string, value interface{}) {
 		assert.NotContains(t, actualFields, name) //don't clobber a field
 		actualFields[name] = value
 	})
