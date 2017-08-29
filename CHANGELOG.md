@@ -10,6 +10,7 @@ with respect to its command line interface and HTTP interface.
 
 ### Fixed
 - Client: certain commands were missing DI for a particular value. These are fixed, and tests added for the omission.
+- Client: new values for optional fields no longer elided on `manifest set`
 
 ## [0.5.29](//github.com/opentable/sous/compare/0.5.28...0.5.29)
 ### Changed
