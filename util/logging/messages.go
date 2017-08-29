@@ -26,6 +26,7 @@
 package logging
 
 import (
+	"fmt"
 	"runtime"
 	"strings"
 	"time"
@@ -116,7 +117,7 @@ const (
 // The plan here is to be able to extend this behavior such that e.g. the rules
 // for levels of messages can be configured or updated at runtime.
 func getLevel(lm logMessage) level {
-	lm.defaultLevel()
+	return lm.defaultLevel()
 }
 
 func getCallerInfo() callerInfo {
@@ -132,7 +133,7 @@ func getCallerInfo() callerInfo {
 }
 
 func (info callerInfo) eachField(f func(string, interface{})) {
-	if unknown {
+	if info.unknown {
 		f("file", "<unknown>")
 		f("line", "<unknown>")
 		f("function", "<unknown>")
@@ -144,16 +145,16 @@ func (info callerInfo) eachField(f func(string, interface{})) {
 }
 
 func getCallTime() callTime {
-	return time.Now()
+	return callTime(time.Now())
 }
 
 func deliver(message interface{}, logger logSink) {
-	if lm, is := message.(logger); is {
+	if lm, is := message.(logMessage); is {
 		level := getLevel(lm)
 		logger.LogMessage(level, lm)
 	}
 
-	if mm, is := message.(metricser); is {
+	if mm, is := message.(metricsMessage); is {
 		mm.metricsTo(logger)
 	}
 }
@@ -188,7 +189,7 @@ func (time callTime) eachField(f fieldReportF) {
 }
 
 func newClientHTTPResponse(server, path string, parms map[string]string, status int, dur time.Duration) *clientHTTPResponse {
-	return &ClientHTTPResponse{
+	return &clientHTTPResponse{
 		level:      informationLevel,
 		callerInfo: getCallerInfo(),
 		callTime:   getCallTime(),
@@ -212,10 +213,10 @@ func (msg *clientHTTPResponse) eachField(f fieldReportF) {
 	f("parms", msg.parms)
 	f("status", msg.status)
 	f("dur", msg.dur)
-	msg.time.eachField(f)
+	msg.callTime.eachField(f)
 	msg.callerInfo.eachField(f)
 }
 
 func (msg *clientHTTPResponse) message() string {
-	return msg.status
+	return fmt.Sprintf("%d", msg.status)
 }
