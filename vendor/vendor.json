@@ -176,6 +176,12 @@
 			"revisionTime": "2016-12-10T01:35:37Z"
 		},
 		{
+			"checksumSHA1": "636hzSokJ8y7gabllKd3ild4Ids=",
+			"path": "github.com/nyarly/spies",
+			"revision": "6df459fddaf2f0ac856648e0c0d43f4d491b04de",
+			"revisionTime": "2017-08-08T23:35:25Z"
+		},
+		{
 			"checksumSHA1": "3fxAMDIT/IeTdXInoWxtikWOfK0=",
 			"path": "github.com/opentable/go-singularity",
 			"revision": "166411442e50ba424abe36dc8243305b97405f4e",

@@ -1,6 +1,10 @@
 package logging
 
-import "github.com/nyarly/spies"
+import (
+	"time"
+
+	"github.com/nyarly/spies"
+)
 
 type (
 	logSinkSpy struct {

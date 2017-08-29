@@ -6,7 +6,8 @@ import (
 )
 
 func TestReportCHResponse(t *testing.T) {
-	logger, spy := newLogSinkSpy()
+	logger, control := newLogSinkSpy()
+	control.setupDefaultMetrics()
 	ReportClientHTTPResponse(logger, "http://example.com", "/api", map[string]string{"a": "a"}, 200, time.Millisecond*30)
 
 }
