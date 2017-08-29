@@ -54,9 +54,11 @@ func TestPutbackJSON(t *testing.T) {
 	b, err := ioutil.ReadAll(outB)
 	assert.NoError(t, err)
 	json.Unmarshal(b, &mapped)
-	assert.Equal(t, 7.0, mapped["a"]) //missing from update
+	assert.Equal(t, 7.0, mapped["a"]) //missing from base, therefore untouched
 	assert.Equal(t, "y", mapped["b"])
 	assert.Equal(t, "w", dig(mapped, "d", "y", 0, "q"))
+	assert.Equal(t, "w", dig(mapped, "d", "y", 1, "zx"))
+	assert.Equal(t, float64(1), dig(mapped, "d", "z"))
 	assert.Equal(t, "a", dig(mapped, "e", "a"))
 }
 
