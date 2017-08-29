@@ -51,7 +51,7 @@ type (
 	logMessage interface {
 		defaultLevel() level
 		message() string
-		eachField(func(name string, value interface{}))
+		eachField(fieldReportF)
 	}
 
 	metricsMessage interface {
@@ -159,8 +159,9 @@ func deliver(message interface{}, logger logSink) {
 	}
 }
 
-func ReportClientHTTPResponse(logger logSink, server, path string, parms map[string]string, status int, dur time.Duration) {
-	m := newClientHTTPResponse(server, path, parms, status, dur)
+// ReportClientHTTPResponse reports a response recieved by Sous as a client.
+func ReportClientHTTPResponse(logger logSink, method, server, path string, parms map[string]string, status int, dur time.Duration) {
+	m := newClientHTTPResponse(method, server, path, parms, status, dur)
 	deliver(m, logger)
 }
 
@@ -172,8 +173,8 @@ type clientHTTPResponse struct {
 	callerInfo
 	callTime
 	level
-	server string
 	method string
+	server string
 	path   string
 	parms  map[string]string
 	status int
@@ -188,12 +189,13 @@ func (time callTime) eachField(f fieldReportF) {
 	f("time", time)
 }
 
-func newClientHTTPResponse(server, path string, parms map[string]string, status int, dur time.Duration) *clientHTTPResponse {
+func newClientHTTPResponse(method, server, path string, parms map[string]string, status int, dur time.Duration) *clientHTTPResponse {
 	return &clientHTTPResponse{
 		level:      informationLevel,
 		callerInfo: getCallerInfo(),
 		callTime:   getCallTime(),
 
+		method: method,
 		server: server,
 		path:   path,
 		parms:  parms,
@@ -208,6 +210,7 @@ func (msg *clientHTTPResponse) metricsTo(metrics metricsSink) {
 
 func (msg *clientHTTPResponse) eachField(f fieldReportF) {
 	f("@loglov3-otl", "sous-client-http-response-v1")
+	f("method", msg.method)
 	f("server", msg.server)
 	f("path", msg.path)
 	f("parms", msg.parms)

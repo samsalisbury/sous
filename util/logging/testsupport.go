@@ -35,6 +35,12 @@ type (
 	updaterController struct {
 		*spies.Spy
 	}
+
+	metricsControllers struct {
+		counter counterController
+		timer   timerController
+		updater updaterController
+	}
 )
 
 func newLogSinkSpy() (logSink, logSinkController) {
@@ -88,7 +94,7 @@ func (lss logSinkSpy) LogMessage(l level, m logMessage) {
 	lss.spy.Called(l, m)
 }
 
-func (lsc logSinkController) setupDefaultMetrics() (counterController, timerController, updaterController) {
+func (lsc logSinkController) setupDefaultMetrics() metricsControllers {
 	cs, cc := newCounterSpy()
 	ts, tc := newTimerSpy()
 	us, uc := newUpdaterSpy()
@@ -97,7 +103,7 @@ func (lsc logSinkController) setupDefaultMetrics() (counterController, timerCont
 	lsc.MatchMethod("GetTimer", spies.AnyArgs, ts)
 	lsc.MatchMethod("GetUpdater", spies.AnyArgs, us)
 
-	return cc, tc, uc
+	return metricsControllers{cc, tc, uc}
 }
 
 func (cs counterSpy) Clear() {

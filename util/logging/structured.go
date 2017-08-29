@@ -16,7 +16,7 @@ func (ls *LogSet) LogMessage(lvl level, msg logMessage) {
 
 	switch lvl {
 	default:
-		logto.Printf("unknown level: %d - %q", msg.message())
+		logto.Printf("unknown level: %d - %q", lvl, msg.message())
 	case criticalLevel:
 		logto.Error(msg.message())
 	case warningLevel:
