@@ -336,6 +336,8 @@ func (v *exprVisitor) Visit(n ast.Node) ast.Visitor {
 		return &selectorVisitor{parentRef: v.pRef()}
 	case *ast.CallExpr:
 		return &callVisitor{parentRef: v.pRef()}
+	case *ast.IndexExpr:
+		// in these contexts, not interesting
 	case *ast.Ident:
 		// in these contexts, not interesting
 	case *ast.CompositeLit:
