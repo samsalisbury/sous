@@ -3,8 +3,6 @@ package logging
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
-	"log"
 	"os"
 
 	metrics "github.com/rcrowley/go-metrics"
@@ -37,15 +35,13 @@ type (
 
 		metrics metrics.Registry
 
-		err   io.Writer
-		vomit *log.Logger
-		debug *log.Logger
-		warn  *log.Logger
+		err io.Writer
 
 		logrus *logrus.Logger
 	}
 
 	// A temporary type until we can stop using the LogSet loggers directly
+	// XXX remove and fix accesses to Debug, Info, etc. to be Debugf etc
 	logwrapper struct {
 		ffn func(string, ...interface{})
 	}
@@ -110,9 +106,6 @@ func newls(name string, err io.Writer) *LogSet {
 		err:   err,
 		name:  name,
 		level: 1,
-		vomit: log.New(err, name+" vomit:", log.Lshortfile|log.Ldate|log.Ltime),
-		debug: log.New(err, name+" debug: ", log.Lshortfile|log.Ldate|log.Ltime),
-		warn:  log.New(err, name+" warn: ", 0),
 	}
 	ls.Debug = &logwrapper{ffn: ls.debugf}
 	ls.Vomit = &logwrapper{ffn: ls.vomitf}
@@ -126,40 +119,37 @@ func newls(name string, err io.Writer) *LogSet {
 }
 
 // Vomitf is a simple wrapper on Vomit.Printf
-func (ls LogSet) Vomitf(f string, as ...interface{}) { ls.vomit.Output(3, fmt.Sprintf(f, as...)) }
-func (ls LogSet) vomitf(f string, as ...interface{}) { ls.vomit.Output(4, fmt.Sprintf(f, as...)) }
+func (ls LogSet) Vomitf(f string, as ...interface{}) { ls.vomitf(f, as...) }
+func (ls LogSet) vomitf(f string, as ...interface{}) {
+	m := newGenericMsg(DebugLevel, fmt.Sprintf(f, as...))
+	Deliver(m, ls)
+}
 
 // Debugf is a simple wrapper on Debug.Printf
-func (ls LogSet) Debugf(f string, as ...interface{}) { ls.debug.Output(3, fmt.Sprintf(f, as...)) }
-func (ls LogSet) debugf(f string, as ...interface{}) { ls.debug.Output(4, fmt.Sprintf(f, as...)) }
+func (ls LogSet) Debugf(f string, as ...interface{}) { ls.debugf(f, as...) }
+func (ls LogSet) debugf(f string, as ...interface{}) {
+	m := newGenericMsg(DebugLevel, fmt.Sprintf(f, as...))
+	Deliver(m, ls)
+}
 
-// Warnf is a simple wrapper on Warn.Printf
-func (ls LogSet) Warnf(f string, as ...interface{}) { ls.warn.Output(3, fmt.Sprintf(f, as...)) }
-func (ls LogSet) warnf(f string, as ...interface{}) { ls.warn.Output(4, fmt.Sprintf(f, as...)) }
+func (ls LogSet) Warnf(f string, as ...interface{}) { ls.warnf(f, as...) }
+func (ls LogSet) warnf(f string, as ...interface{}) {
+	m := newGenericMsg(WarningLevel, fmt.Sprintf(f, as...))
+	Deliver(m, ls)
+}
 
 func (ls LogSet) imposeLevel() {
-	ls.vomit.SetOutput(ioutil.Discard)
-	ls.debug.SetOutput(ioutil.Discard)
-	ls.warn.SetOutput(ioutil.Discard)
-	ls.warn.SetFlags(log.LstdFlags)
-
 	ls.logrus.SetLevel(logrus.ErrorLevel)
 
 	if ls.level >= 1 {
-		ls.warn.SetOutput(ls.err)
-		ls.warn.SetFlags(log.Llongfile | log.Ltime)
 		ls.logrus.SetLevel(logrus.WarnLevel)
 	}
 
 	if ls.level >= 2 {
-		ls.debug.SetOutput(ls.err)
-		ls.debug.SetFlags(log.Llongfile | log.Ltime)
 		ls.logrus.SetLevel(logrus.DebugLevel)
 	}
 
 	if ls.level >= 3 {
-		ls.vomit.SetOutput(ls.err)
-		ls.vomit.SetFlags(log.Llongfile | log.Ltime)
 		ls.logrus.SetLevel(logrus.DebugLevel)
 	}
 

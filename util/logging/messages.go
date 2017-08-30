@@ -139,6 +139,36 @@ func Deliver(message interface{}, logger LogSink) {
 	}
 }
 
+// ClearCounter implements part of LogSink on LogSet
+func (ls LogSet) ClearCounter(name string) {
+	ls.GetCounter(name).Clear()
+}
+
+// IncCounter implements part of LogSink on LogSet
+func (ls LogSet) IncCounter(name string, amount int64) {
+	ls.GetCounter(name).Inc(amount)
+}
+
+// DecCounter implements part of LogSink on LogSet
+func (ls LogSet) DecCounter(name string, amount int64) {
+	ls.GetCounter(name).Dec(amount)
+}
+
+// UpdateTimer implements part of LogSink on LogSet
+func (ls LogSet) UpdateTimer(name string, dur time.Duration) {
+	ls.GetTimer(name).Update(dur)
+}
+
+// UpdateTimerSince implements part of LogSink on LogSet
+func (ls LogSet) UpdateTimerSince(name string, time time.Time) {
+	ls.GetTimer(name).UpdateSince(time)
+}
+
+// UpdateSample implements part of LogSink on LogSet
+func (ls LogSet) UpdateSample(name string, value int64) {
+	ls.GetUpdater(name).Update(value)
+}
+
 // The plan here is to be able to extend this behavior such that e.g. the rules
 // for levels of messages can be configured or updated at runtime.
 func getLevel(lm LogMessage) Level {
