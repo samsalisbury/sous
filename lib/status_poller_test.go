@@ -205,7 +205,7 @@ func TestStatusPoller(t *testing.T) {
 				"flavor": "canhaz"
 			} ],
 			"log":[ {
-					"manifestid": "` + repoName + `-canhaz",
+					"manifestid": "` + repoName + `~canhaz",
 					"desc": "unchanged"
 				} ]
 		},
@@ -219,6 +219,8 @@ func TestStatusPoller(t *testing.T) {
 		Repo: repoName,
 	}
 	rf.SetTag("")
+	// XXX Flavor
+	//   and deploy should probably not treat Flavor as * by default (instead "")
 
 	cl, err := restful.NewClient(mainSrv.URL, logging.SilentLogSet())
 	if err != nil {
