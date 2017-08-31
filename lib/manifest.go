@@ -132,6 +132,14 @@ func (m *Manifest) Validate() []Flaw {
 		flaws = append(flaws, m.Kind.Validate()...)
 	}
 
+	/*
+		Cannot validate Deployments without defs...
+		In other words, we need (part of) the State context to do that.
+		for _, spec := range m.Deployments {
+			flaws = append(flaws, spec.Validate()...)
+		}
+	*/
+
 	for _, f := range flaws {
 		f.AddContext("manifest", m)
 	}

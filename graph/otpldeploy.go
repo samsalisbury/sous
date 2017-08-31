@@ -19,9 +19,18 @@ func newDetectedOTPLConfig(wd LocalWorkDirShell, otplFlags *config.OTPLFlags) (d
 	return detectedOTPLDeployManifest{otplDeploySpecs}, nil
 }
 
-func newUserSelectedOTPLDeploySpecs(detected detectedOTPLDeployManifest, tmid TargetManifestID, flags *config.OTPLFlags, state *sous.State) (userSelectedOTPLDeployManifest, error) {
+func newUserSelectedOTPLDeploySpecs(
+	detected detectedOTPLDeployManifest,
+	tmid TargetManifestID,
+	flags *config.OTPLFlags,
+	state *sous.State,
+) (userSelectedOTPLDeployManifest, error) {
 	var nowt userSelectedOTPLDeployManifest
+
 	if detected.Manifests.Len() == 0 {
+		if flags.UseOTPLDeploy {
+			return nowt, errors.New("use of otpl configuration was specified, but no valid deployments were found in config/")
+		}
 		return nowt, nil
 	}
 	mid := sous.ManifestID(tmid)
