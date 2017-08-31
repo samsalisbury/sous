@@ -6,8 +6,11 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
-## [0.5.30](//github.com/opentable/sous/compare/0.5.29...0.5.30)
+## [Unreleased](//github.com/opentable/sous/compare/0.5.30...HEAD)
+### Fixed
+- Client: `sous init` defaults resources correctly in the absence of other input.
 
+## [0.5.30](//github.com/opentable/sous/compare/0.5.29...0.5.30)
 ### Fixed
 - Client: certain commands were missing DI for a particular value. These are
   fixed, and tests added for the omission.
