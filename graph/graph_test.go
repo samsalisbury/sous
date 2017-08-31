@@ -13,7 +13,19 @@ import (
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/shell"
 	"github.com/samsalisbury/psyringe"
+	"github.com/stretchr/testify/require"
 )
+
+func TestNewStatusPoller(t *testing.T) {
+	// func newRefinedResolveFilter(f *sous.ResolveFilter, discovered *SourceContextDiscovery) (*RefinedResolveFilter, error) {
+	rf, err := newRefinedResolveFilter(f, disc)
+	require.NoError(err)
+	cl := newDummyHTTPClient()
+
+	//newStatusPoller(cl HTTPClient, rf *RefinedResolveFilter, user sous.User) *sous.StatusPoller {
+	poller := newStatusPoller(cl, rf, user)
+
+}
 
 func TestBuildGraph(t *testing.T) {
 	log.SetFlags(log.Flags() | log.Lshortfile)
