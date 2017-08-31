@@ -192,7 +192,8 @@ func TestStatusPoller(t *testing.T) {
 				"sourceid": {
 					"location": "` + repoName + `",
 					"version": "1.0.1+1234"
-				}
+				},
+				"flavor": "canhaz"
 			}
 		],
 		"completed": {
@@ -200,15 +201,19 @@ func TestStatusPoller(t *testing.T) {
 				"sourceid": {
 					"location": "` + repoName + `",
 					"version": "1.0.1+1234"
-				}
+				},
+				"flavor": "canhaz"
 			} ],
 			"log":[ {
-					"manifestid": "` + repoName + `",
+					"manifestid": "` + repoName + `-canhaz",
 					"desc": "unchanged"
 				} ]
 		},
 		"inprogress": {"log":[]}
 	}`)
+
+	logging.Log.BeChatty()
+	defer logging.Log.BeQuiet()
 
 	rf := &ResolveFilter{
 		Repo: repoName,
