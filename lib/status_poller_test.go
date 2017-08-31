@@ -175,14 +175,16 @@ func TestStatusPoller(t *testing.T) {
 				"sourceid": {
 					"location": "` + repoName + `",
 					"version": "1.0.1+1234"
-				}
+				},
+				"flavor": "canhaz"
 			},
 			{
 				"clustername": "main",
 				"sourceid": {
 					"location": "` + repoName + `",
 					"version": "1.0.1+1234"
-				}
+				},
+				"flavor": "canhaz"
 			}
 		]
 	}`)
@@ -216,7 +218,7 @@ func TestStatusPoller(t *testing.T) {
 	defer logging.Log.BeQuiet()
 
 	rf := &ResolveFilter{
-		Repo: repoName,
+		Repo: NewResolveFieldMatcher(repoName),
 	}
 	rf.SetTag("")
 	// XXX Flavor
@@ -317,7 +319,7 @@ func TestStatusPoller_OldServer2(t *testing.T) {
 	}`)
 
 	rf := &ResolveFilter{
-		Repo: repoName,
+		Repo: NewResolveFieldMatcher(repoName),
 	}
 	rf.SetTag("")
 
@@ -426,7 +428,7 @@ func TestStatusPoller_MesosFailed(t *testing.T) {
 	}`)
 
 	rf := &ResolveFilter{
-		Repo: repoName,
+		Repo: NewResolveFieldMatcher(repoName),
 	}
 	rf.SetTag("")
 
@@ -511,7 +513,7 @@ func TestStatusPoller_NotIntended(t *testing.T) {
 	}`)
 
 	rf := &ResolveFilter{
-		Repo: repoName,
+		Repo: NewResolveFieldMatcher(repoName),
 	}
 
 	cl, err := restful.NewClient(mainSrv.URL, logging.SilentLogSet())
@@ -562,7 +564,7 @@ func TestStatusPoller_OldServer(t *testing.T) {
 	mainSrv := httptest.NewServer(http.HandlerFunc(h))
 
 	rf := &ResolveFilter{
-		Repo: "github.com/something/summat",
+		Repo: NewResolveFieldMatcher("github.com/something/summat"),
 	}
 
 	cl, err := restful.NewClient(mainSrv.URL, logging.SilentLogSet())

@@ -158,12 +158,12 @@ func newSubPoller(clusterName, serverURL string, baseFilter *ResolveFilter, user
 	}
 
 	loc := *baseFilter
-	loc.Cluster = ""
+	loc.Cluster = ResolveFieldMatcher{}
 	loc.Tag = ResolveFieldMatcher{}
-	loc.Revision = ""
+	loc.Revision = ResolveFieldMatcher{}
 
 	id := *baseFilter
-	id.Cluster = ""
+	id.Cluster = ResolveFieldMatcher{}
 
 	return &subPoller{
 		ClusterName:    clusterName,

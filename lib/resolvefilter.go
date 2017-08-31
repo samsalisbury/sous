@@ -10,12 +10,13 @@ type (
 	// A ResolveFilter filters Deployments, DeployStates and Clusters for the
 	// purpose of Resolve.resolve().
 	ResolveFilter struct {
-		Repo     string
+		//       xxx type-per-field? value?
+		Repo     ResolveFieldMatcher
 		Offset   ResolveFieldMatcher
 		Tag      ResolveFieldMatcher
-		Revision string
+		Revision ResolveFieldMatcher
 		Flavor   ResolveFieldMatcher
-		Cluster  string
+		Cluster  ResolveFieldMatcher
 		Status   DeployStatus
 	}
 
@@ -50,7 +51,7 @@ func (matcher ResolveFieldMatcher) ValueOr(def string) string {
 }
 
 func (rf *ResolveFilter) matchRepo(repo string) bool {
-	return rf.Repo == "" || repo == rf.Repo
+	return rf.Repo.match(repo)
 }
 
 func (rf *ResolveFilter) matchOffset(offset string) bool {
@@ -62,7 +63,7 @@ func (rf *ResolveFilter) matchTag(tag string) bool {
 }
 
 func (rf *ResolveFilter) matchRevision(rev string) bool {
-	return rf.Revision == "" || rev == rf.Revision
+	return rf.Revision.match(rev)
 }
 
 func (rf *ResolveFilter) matchFlavor(flavor string) bool {
@@ -70,7 +71,7 @@ func (rf *ResolveFilter) matchFlavor(flavor string) bool {
 }
 
 func (rf *ResolveFilter) matchCluster(cluster string) bool {
-	return rf.Cluster == "" || cluster == rf.Cluster
+	return rf.Cluster.match(cluster)
 }
 
 func (rf *ResolveFilter) matchDeployStatus(status DeployStatus) bool {
@@ -90,24 +91,25 @@ func (rf *ResolveFilter) SetTag(tag string) error {
 
 // All returns true if the ResolveFilter would allow All deployments.
 func (rf *ResolveFilter) All() bool {
-	return rf.Repo == "" &&
+	return rf.Repo.All() &&
 		rf.Offset.All() &&
 		rf.Tag.All() &&
-		rf.Revision == "" &&
+		rf.Revision.All() &&
 		rf.Flavor.All() &&
-		rf.Cluster == ""
+		rf.Cluster.All()
+	// xxx && rf.Status.All() ?
 }
 
 // SourceLocation returns a SourceLocation and true if this ResolveFilter
 // describes a complete specific source location (i.e. it has exact Repo and
 // Offset matches set). Otherwise it returns a zero SourceLocation and false.
 func (rf *ResolveFilter) SourceLocation() (SourceLocation, bool) {
-	if rf.Repo == "*" || rf.Repo == "" || rf.Offset.All() {
+	if rf.Repo.All() || rf.Offset.All() {
 		return SourceLocation{}, false
 	}
 	return SourceLocation{
-		Repo: rf.Repo,
-		Dir:  *rf.Offset.Match,
+		Repo: rf.Repo.ValueOr("<unspecified!>"),
+		Dir:  rf.Offset.ValueOr("<unspecified!>"),
 	}, true
 }
 
@@ -117,7 +119,7 @@ func (rf *ResolveFilter) SourceID(mid ManifestID) (SourceID, error) {
 		return SourceID{}, fmt.Errorf("you must provide the -tag flag")
 	}
 
-	newVersion, err := semv.Parse(*rf.Tag.Match)
+	newVersion, err := semv.Parse(rf.Tag.ValueOr("<untagged!>"))
 	if err != nil {
 		return SourceID{}, err
 	}
@@ -127,31 +129,23 @@ func (rf *ResolveFilter) SourceID(mid ManifestID) (SourceID, error) {
 
 // DeploymentID returns a DeploymentID based on the ResolveFilter and a ManifestID
 func (rf *ResolveFilter) DeploymentID(mid ManifestID) (DeploymentID, error) {
-	if rf.Cluster == "" {
+	if rf.Cluster.All() {
 		return DeploymentID{}, fmt.Errorf("you must select a cluster using the -cluster flag")
 	}
-	return DeploymentID{ManifestID: mid, Cluster: rf.Cluster}, nil
+	return DeploymentID{ManifestID: mid, Cluster: rf.Cluster.ValueOr("<no-cluster!>")}, nil
 }
 
 func (rf *ResolveFilter) String() string {
-	cl, rp, rv := rf.Cluster, rf.Repo, rf.Revision
-	if cl == "" {
-		cl = `*`
-	}
-	if rp == "" {
-		rp = `*`
-	}
-	if rv == "" {
-		rv = `*`
-	}
-
-	fl := rf.Flavor.ValueOr("*")
-	of := rf.Offset.ValueOr("*")
-	tg := rf.Tag.ValueOr("*")
 
 	return fmt.Sprintf(
 		"<cluster:%s repo:%s offset:%s flavor:%s tag:%s revision:%s>",
-		cl, rp, of, fl, tg, rv)
+		rf.Cluster.ValueOr("*"),
+		rf.Repo.ValueOr("*"),
+		rf.Revision.ValueOr("*"),
+		rf.Flavor.ValueOr("*"),
+		rf.Offset.ValueOr("*"),
+		rf.Tag.ValueOr("*"),
+	)
 }
 
 // FilteredClusters returns a new Clusters relevant to the Deployments that this
