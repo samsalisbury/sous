@@ -10,8 +10,10 @@ with respect to its command line interface and HTTP interface.
 ### Changed
 - Developer: Refactors of filters and logging. Mostly to the good.
 
+## [0.5.31](//github.com/opentable/sous/compare/0.5.30...0.5.31)
+### Fixed
+- Client: `sous init` defaults resources correctly in the absence of other input.
 ## [0.5.30](//github.com/opentable/sous/compare/0.5.29...0.5.30)
-
 ### Fixed
 - Client: certain commands were missing DI for a particular value. These are
   fixed, and tests added for the omission.

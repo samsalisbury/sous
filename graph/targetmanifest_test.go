@@ -9,18 +9,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type newUserSelectedOTPLDeploySpecTest struct {
-	DetectedManifest *sous.Manifest
-	//XXX
-	TSL              TargetManifestID
-	Flags            config.OTPLFlags
-	Clusters         sous.Clusters
-	ExpectedManifest *sous.Manifest
-	ExpectedErr      string
-}
-
-var nusodsTests = []newUserSelectedOTPLDeploySpecTest{}
-
 func TestNewUserSelectedOTPLDeploySpecs(t *testing.T) {
 	testcase := func(
 		name string,
