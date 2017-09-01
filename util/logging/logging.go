@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/davecgh/go-spew/spew"
 	metrics "github.com/rcrowley/go-metrics"
 	"github.com/sirupsen/logrus"
 )
@@ -121,20 +122,21 @@ func newls(name string, err io.Writer) *LogSet {
 // Vomitf is a simple wrapper on Vomit.Printf
 func (ls LogSet) Vomitf(f string, as ...interface{}) { ls.vomitf(f, as...) }
 func (ls LogSet) vomitf(f string, as ...interface{}) {
-	m := newGenericMsg(DebugLevel, fmt.Sprintf(f, as...))
+	m := NewGenericMsg(DebugLevel, fmt.Sprintf(f, as...), nil)
 	Deliver(m, ls)
 }
 
 // Debugf is a simple wrapper on Debug.Printf
 func (ls LogSet) Debugf(f string, as ...interface{}) { ls.debugf(f, as...) }
 func (ls LogSet) debugf(f string, as ...interface{}) {
-	m := newGenericMsg(DebugLevel, fmt.Sprintf(f, as...))
+	spew.Dump("debugf", ls)
+	m := NewGenericMsg(DebugLevel, fmt.Sprintf(f, as...), nil)
 	Deliver(m, ls)
 }
 
 func (ls LogSet) Warnf(f string, as ...interface{}) { ls.warnf(f, as...) }
 func (ls LogSet) warnf(f string, as ...interface{}) {
-	m := newGenericMsg(WarningLevel, fmt.Sprintf(f, as...))
+	m := NewGenericMsg(WarningLevel, fmt.Sprintf(f, as...), nil)
 	Deliver(m, ls)
 }
 

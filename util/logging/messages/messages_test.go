@@ -9,9 +9,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestReportCHResponse(t *testing.T) {
+func TestReportCHResponseFields(t *testing.T) {
 	logger, control := logging.NewLogSinkSpy()
-	ReportClientHTTPResponse(logger, "GET", "http://example.com", "/api", map[string]string{"a": "a"}, 200, time.Millisecond*30)
+	ReportClientHTTPResponseFields(logger, "GET", "http://example.com", "/api", map[string]string{"a": "a"}, 200, time.Millisecond*30)
 
 	assert.Len(t, control.CallsTo("UpdateTimer"), 1)
 	logCalls := control.CallsTo("LogMessage")

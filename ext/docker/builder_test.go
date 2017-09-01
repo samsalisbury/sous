@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nyarly/spies"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/shell"
 	"github.com/stretchr/testify/assert"

@@ -3,6 +3,7 @@ package messages
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/opentable/sous/util/logging"
@@ -30,11 +31,16 @@ func ReportClientHTTPResponseFields(logger logging.LogSink, method, server, path
 func ReportClientHTTPResponse(logger logging.LogSink, rz http.Response, dur time.Duration) {
 	url := rz.Request.URL
 
+	qps := map[string]string{}
+	for k, v := range url.Query() {
+		qps[k] = strings.Join(v, ",")
+	}
+
 	m := newClientHTTPResponse(
 		rz.Request.Method,
 		url.Scheme+"://"+url.Host,
 		url.Path,
-		url.Query(),
+		qps,
 		rz.StatusCode,
 		dur,
 	)

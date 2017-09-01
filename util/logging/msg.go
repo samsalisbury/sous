@@ -1,7 +1,7 @@
 package logging
 
 type genericMsg struct {
-	//CallerInfo
+	CallerInfo
 	CallTime
 	Level
 	message string
