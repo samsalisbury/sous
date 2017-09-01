@@ -5,27 +5,39 @@ type genericMsg struct {
 	CallTime
 	Level
 	message string
+	fields  map[string]interface{}
 }
 
-// ReportClientHTTPResponse reports a response recieved by Sous as a client, as provided as fields.
+// ReportMsg is an appropriate for most off-the-cuff logging. It probably calls
+// to be replaced with something more specialized, though.
 func ReportMsg(logger LogSink, lvl Level, msg string) {
-	m := newGenericMsg(lvl, msg)
+	m := NewGenericMsg(lvl, msg, nil)
 	Deliver(m, logger)
 }
 
-func newGenericMsg(lvl Level, msg string) *genericMsg {
+// NewGenericMsg creates an event out of a map of fields. There are no metrics
+// associated with the event - for that you need to define a specialized
+// message type.
+func NewGenericMsg(lvl Level, msg string, fields map[string]interface{}) LogMessage {
 	return &genericMsg{
-		Level: lvl,
-		//CallerInfo: GetCallerInfo(),
-		CallTime: GetCallTime(),
+		Level:      lvl,
+		CallerInfo: GetCallerInfo(),
+		CallTime:   GetCallTime(),
 
 		message: msg,
+		fields:  fields,
 	}
 }
 
 func (msg *genericMsg) EachField(f FieldReportFn) {
-	f("@loglov3-otl", "msg-v1")
+	if _, hasSchema := msg.fields["@loglov3-otl"]; !hasSchema {
+		f("@loglov3-otl", "msg-v1")
+	}
+	for k, v := range msg.fields {
+		f(k, v)
+	}
 	msg.CallTime.EachField(f)
+	msg.CallerInfo.EachField(f)
 }
 
 func (msg *genericMsg) Message() string {
