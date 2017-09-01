@@ -18,7 +18,7 @@ type SousManifestGet struct {
 	*sous.ResolveFilter
 	graph.TargetManifestID
 	graph.HTTPClient
-	*logging.LogSet
+	logging.LogSet
 	graph.OutWriter
 }
 

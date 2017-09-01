@@ -16,7 +16,7 @@ type Sous struct {
 	// CLI is a reference to the CLI singleton. We use it here to set global
 	// verbosity.
 	CLI *CLI
-	*logging.LogSet
+	logging.LogSet
 	// Err is the error message stream.
 	Err *graph.ErrOut
 	// Version is the version of Sous itself.

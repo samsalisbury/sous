@@ -20,7 +20,7 @@ type (
 
 	// GETGDMHandler is an injectable request handler
 	GETGDMHandler struct {
-		*logging.LogSet
+		logging.LogSet
 		GDM      *sous.State
 		RzWriter http.ResponseWriter
 	}
@@ -28,7 +28,7 @@ type (
 	// PUTGDMHandler is an injectable request handler
 	PUTGDMHandler struct {
 		*http.Request
-		*logging.LogSet
+		logging.LogSet
 		GDM          *sous.State
 		StateManager sous.StateManager
 		User         ClientUser

@@ -6,7 +6,7 @@ import (
 	"github.com/opentable/sous/util/logging"
 )
 
-func newServerComponentLocator(ls *logging.LogSet, cfg LocalSousConfig, ins sous.Inserter, sm *ServerStateManager, rf *sous.ResolveFilter, ar *sous.AutoResolver) server.ComponentLocator {
+func newServerComponentLocator(ls logging.LogSet, cfg LocalSousConfig, ins sous.Inserter, sm *ServerStateManager, rf *sous.ResolveFilter, ar *sous.AutoResolver) server.ComponentLocator {
 	return server.ComponentLocator{
 		LogSet:        ls,
 		Config:        cfg.Config,

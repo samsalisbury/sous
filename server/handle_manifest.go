@@ -30,7 +30,7 @@ type (
 	// PUTManifestHandler handles PUT exchanges for manifests
 	PUTManifestHandler struct {
 		*sous.State
-		*logging.LogSet
+		logging.LogSet
 		*http.Request
 		restful.QueryValues
 		User        ClientUser

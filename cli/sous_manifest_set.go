@@ -20,7 +20,7 @@ type SousManifestSet struct {
 	graph.HTTPClient
 	graph.InReader
 	*sous.ResolveFilter
-	*logging.LogSet
+	logging.LogSet
 	User sous.User
 }
 

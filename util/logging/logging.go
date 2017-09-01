@@ -56,7 +56,7 @@ var (
 	// want metrics in a component, you need to add an injected LogSet. c.f.
 	// ext/docker/image_mapping.go
 	Log = func() LogSet {
-		return *(NewLogSet("", os.Stderr))
+		return NewLogSet("", os.Stderr)
 	}()
 )
 
@@ -73,7 +73,7 @@ func (w *logwrapper) Println(vs ...interface{}) {
 }
 
 // SilentLogSet returns a logset that discards everything by default
-func SilentLogSet() *LogSet {
+func SilentLogSet() LogSet {
 	ls := NewLogSet("", os.Stderr)
 	ls.BeQuiet()
 	return ls
@@ -82,7 +82,7 @@ func SilentLogSet() *LogSet {
 // NewLogSet builds a new Logset that feeds to the listed writers
 // If name is "", no metric collector will be built, and all metrics provided
 // by this logset will be bitbuckets.
-func NewLogSet(name string, err io.Writer) *LogSet {
+func NewLogSet(name string, err io.Writer) LogSet {
 	ls := newls(name, err)
 	ls.imposeLevel()
 	if name != "" {
@@ -92,7 +92,7 @@ func NewLogSet(name string, err io.Writer) *LogSet {
 }
 
 // Child produces a child logset, namespaced under "name".
-func (ls *LogSet) Child(name string) *LogSet {
+func (ls *LogSet) Child(name string) LogSet {
 	child := newls(ls.name+"."+name, ls.err)
 	child.level = ls.level
 	child.imposeLevel()
@@ -102,8 +102,8 @@ func (ls *LogSet) Child(name string) *LogSet {
 	return child
 }
 
-func newls(name string, err io.Writer) *LogSet {
-	ls := &LogSet{
+func newls(name string, err io.Writer) LogSet {
+	ls := LogSet{
 		err:   err,
 		name:  name,
 		level: 1,
@@ -111,26 +111,32 @@ func newls(name string, err io.Writer) *LogSet {
 		debug: log.New(err, name+" debug: ", log.Lshortfile|log.Ldate|log.Ltime),
 		warn:  log.New(err, name+" warn: ", 0),
 	}
-	ls.Debug = &logwrapper{ffn: ls.debugf}
-	ls.Vomit = &logwrapper{ffn: ls.vomitf}
-	ls.Warn = &logwrapper{ffn: ls.warnf}
+	ls.Debug = &logwrapper{ffn: logto(ls.debug, 4)}
+	ls.Vomit = &logwrapper{ffn: logto(ls.vomit, 4)}
+	ls.Warn = &logwrapper{ffn: logto(ls.warn, 4)}
 	ls.Info = ls.Warn
 	ls.Notice = ls.Warn
 	return ls
 
 }
 
+func logto(to *log.Logger, depth int) func(string, ...interface{}) {
+	return func(f string, as ...interface{}) {
+		to.Output(depth, fmt.Sprintf(f, as...))
+	}
+}
+
 // Vomitf is a simple wrapper on Vomit.Printf
-func (ls LogSet) Vomitf(f string, as ...interface{}) { ls.vomit.Output(2, fmt.Sprintf(f, as...)) }
-func (ls LogSet) vomitf(f string, as ...interface{}) { ls.vomit.Output(2, fmt.Sprintf(f, as...)) }
+func (ls LogSet) Vomitf(f string, as ...interface{}) { logto(ls.vomit, 3)(f, as...) }
+func (ls LogSet) vomitf(f string, as ...interface{}) { logto(ls.vomit, 3)(f, as...) }
 
 // Debugf is a simple wrapper on Debug.Printf
-func (ls LogSet) Debugf(f string, as ...interface{}) { ls.debug.Output(2, fmt.Sprintf(f, as...)) }
-func (ls LogSet) debugf(f string, as ...interface{}) { ls.debug.Output(2, fmt.Sprintf(f, as...)) }
+func (ls LogSet) Debugf(f string, as ...interface{}) { logto(ls.debug, 3)(f, as...) }
+func (ls LogSet) debugf(f string, as ...interface{}) { logto(ls.debug, 3)(f, as...) }
 
 // Warnf is a simple wrapper on Warn.Printf
-func (ls LogSet) Warnf(f string, as ...interface{}) { ls.warn.Output(2, fmt.Sprintf(f, as...)) }
-func (ls LogSet) warnf(f string, as ...interface{}) { ls.warn.Output(2, fmt.Sprintf(f, as...)) }
+func (ls LogSet) Warnf(f string, as ...interface{}) { logto(ls.warn, 3)(f, as...) }
+func (ls LogSet) warnf(f string, as ...interface{}) { logto(ls.warn, 3)(f, as...) }
 
 func (ls LogSet) imposeLevel() {
 	ls.vomit.SetOutput(ioutil.Discard)

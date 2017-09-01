@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 	"github.com/pkg/errors"
@@ -17,6 +18,7 @@ type (
 		User      User
 		pollChans map[string]ResolveState
 		status    ResolveState
+		logs      logging.LogSet
 	}
 
 	subPoller struct {
@@ -25,6 +27,7 @@ type (
 		locationFilter, idFilter *ResolveFilter
 		User                     User
 		httpErrorCount           int
+		logs                     logging.LogSet
 	}
 
 	// copied from server - avoiding coupling to server implemention
@@ -143,16 +146,18 @@ func (rs ResolveState) String() string {
 }
 
 // NewStatusPoller returns a new *StatusPoller.
-func NewStatusPoller(cl restful.HTTPClient, rf *ResolveFilter, user User) *StatusPoller {
+func NewStatusPoller(cl restful.HTTPClient, rf *ResolveFilter, user User, logs logging.LogSet) *StatusPoller {
 	return &StatusPoller{
 		HTTPClient:    cl,
 		ResolveFilter: rf,
 		User:          user,
+		logs:          logs,
 	}
 }
 
 func newSubPoller(clusterName, serverURL string, baseFilter *ResolveFilter, user User, logs logging.LogSet) (*subPoller, error) {
-	cl, err := restful.NewClient(serverURL, logs)
+	spew.Dump(logs)
+	cl, err := restful.NewClient(serverURL, logs.Child("http"))
 	if err != nil {
 		return nil, err
 	}
@@ -172,6 +177,7 @@ func newSubPoller(clusterName, serverURL string, baseFilter *ResolveFilter, user
 		locationFilter: &loc,
 		idFilter:       &id,
 		User:           user,
+		logs:           logs.Child(clusterName),
 	}, nil
 }
 
@@ -212,6 +218,7 @@ func (sp *StatusPoller) waitForever() (ResolveState, error) {
 	deps = deps.Filter(sp.ResolveFilter.FilterDeployment)
 	if deps.Len() == 0 {
 		// No deployments match the filter, bail out now.
+		sp.logs.Debugf("No deployments from /gdm matched %s", sp.ResolveFilter)
 		return ResolveNotIntended, nil
 	}
 
