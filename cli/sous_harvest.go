@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 
+	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
@@ -25,8 +26,10 @@ usage: sous harvest <repo>...
 // Help prints the help
 func (*SousHarvest) Help() string { return sousHarvestHelp }
 
+// RegisterOn implements Registrar on SousHarvest
 func (*SousHarvest) RegisterOn(psy Addable) {
 	psy.Add(graph.DryrunNeither)
+	psy.Add(&config.DeployFilterFlags{})
 }
 
 // Execute defines the behavior of `sous query gdm`

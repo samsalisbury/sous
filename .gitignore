@@ -5,7 +5,8 @@ sous
 !sous/
 .agignore
 check-compile.results
-testdata/
+**/testdata/gen/
+.git/
 util/cmdr/cmdr-example/cmdr-example
 qa_desc.json
 sous_qa_setup

@@ -11,13 +11,13 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/opentable/sous/util/readdebugger"
-	"github.com/samsalisbury/psyringe"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
 type (
 	TestResource struct {
+		QueryParser
 		Data string
 	}
 
@@ -25,14 +25,14 @@ type (
 		*TestResource
 
 		httprouter.Params
-		*QueryValues
+		QueryValues
 	}
 	TestPutExchanger struct {
 		*TestResource
 
 		*http.Request
 		httprouter.Params
-		*QueryValues
+		QueryValues
 	}
 
 	TestData struct {
@@ -40,8 +40,25 @@ type (
 	}
 )
 
-func (tr *TestResource) Get() Exchanger { return &TestGetExchanger{TestResource: tr} }
-func (tr *TestResource) Put() Exchanger { return &TestPutExchanger{TestResource: tr} }
+func newTestResource(data string) *TestResource {
+	return &TestResource{Data: data}
+}
+
+func (tr *TestResource) Get(write http.ResponseWriter, req *http.Request, ps httprouter.Params) Exchanger {
+	return &TestGetExchanger{
+		TestResource: tr,
+		Params:       ps,
+		QueryValues:  tr.ParseQuery(req),
+	}
+}
+func (tr *TestResource) Put(write http.ResponseWriter, req *http.Request, ps httprouter.Params) Exchanger {
+	return &TestPutExchanger{
+		TestResource: tr,
+		Request:      req,
+		Params:       ps,
+		QueryValues:  tr.ParseQuery(req),
+	}
+}
 
 func (ge *TestGetExchanger) Exchange() (interface{}, int) {
 	p := ge.Params.ByName("param")
@@ -68,7 +85,7 @@ func (ge *TestPutExchanger) Exchange() (interface{}, int) {
 
 func testRouteMap() *RouteMap {
 	return &RouteMap{
-		{"test", "/test/:param", &TestResource{"base"}},
+		{"test", "/test/:param", newTestResource("base")},
 	}
 }
 
@@ -105,7 +122,7 @@ func TestRenderDataCanaries(t *testing.T) {
 	assert.NotZero(t, etag)
 
 	assert.Contains(t, dump, etag)
-	assert.Equal(t, dump[etag].(string), "canary")
+	assert.Equal(t, "canary", dump[etag].(string))
 }
 
 type PutConditionalsSuite struct {
@@ -115,8 +132,7 @@ type PutConditionalsSuite struct {
 }
 
 func (t *PutConditionalsSuite) SetupTest() {
-	dif := func() Injector { return psyringe.New() }
-	t.server = httptest.NewServer(testRouteMap().BuildRouter(dif, &fallbackLogger{}))
+	t.server = httptest.NewServer(testRouteMap().BuildRouter(&fallbackLogger{}))
 
 	t.client = &http.Client{}
 }
@@ -138,8 +154,8 @@ func (t *PutConditionalsSuite) TestOptionsAllowCORS() {
 	req.Header.Add("Origin", "test-client.example.com")
 	res, err := t.client.Do(req)
 	t.NoError(err)
-	t.Equal(res.Status, "200 OK")
-	t.Equal(res.Header.Get("Access-Control-Allow-Origin"), "test-client.example.com")
+	t.Equal("200 OK", res.Status)
+	t.Equal("test-client.example.com", res.Header.Get("Access-Control-Allow-Origin"))
 	t.T().Log(res.Header)
 	methods := res.Header.Get("Access-Control-Allow-Methods")
 	t.Regexp("GET", methods)
@@ -164,7 +180,7 @@ func (t *PutConditionalsSuite) TestPutConditionalsNoneMatch() {
 	req.Header.Add("If-None-Match", "*")
 	res, err := t.client.Do(req)
 	t.NoError(err)
-	t.Equal(res.Status, "200 OK")
+	t.Equal("200 OK", res.Status)
 }
 
 func (t *PutConditionalsSuite) TestPutConditionalsNoneMatchRejected() {
@@ -172,7 +188,7 @@ func (t *PutConditionalsSuite) TestPutConditionalsNoneMatchRejected() {
 	req.Header.Add("If-None-Match", "*")
 	res, err := t.client.Do(req)
 	t.NoError(err)
-	t.Equal(res.Status, "412 Precondition Failed")
+	t.Equal("412 Precondition Failed", res.Status)
 }
 
 func (t *PutConditionalsSuite) TestPutConditionals() {
@@ -184,26 +200,24 @@ func (t *PutConditionalsSuite) TestPutConditionals() {
 	t.NoError(dec.Decode(&td))
 	res.Body.Close()
 
-	t.Equal(TestData{"base", "one", "two"}, td)
+	t.Equal(td, TestData{"base", "one", "two"})
 	etag := res.Header.Get("Etag")
-	t.NotEqual(etag, "")
+	t.NotEqual("", etag)
 
 	req := t.testReq("PUT", "/test/one?extra=two", TestData{"changed", "one", "two"})
 	res, err = t.client.Do(req)
 	t.NoError(err)
-	t.Equal(res.Status, "428 Precondition Required")
+	t.Equal("428 Precondition Required", res.Status)
 }
 
 func (t *PutConditionalsSuite) TestPutConditionalsMatched() {
 	res, err := http.Get(t.server.URL + "/test/one?extra=two")
 	t.NoError(err)
 	var td TestData
-	dec := json.NewDecoder(readdebugger.New(res.Body, func(b []byte, n int, e error) {
-		//spew.Dump(b, n, e)
-	}))
+	dec := json.NewDecoder(readdebugger.New(res.Body, func(b []byte, n int, e error) {}))
 	t.NoError(dec.Decode(&td))
 	res.Body.Close()
-	t.Equal(TestData{"base", "one", "two"}, td)
+	t.Equal(td, TestData{"base", "one", "two"})
 	etag := res.Header.Get("Etag")
 
 	req := t.testReq("PUT", "/test/one?extra=two", map[string]interface{}{
@@ -215,19 +229,17 @@ func (t *PutConditionalsSuite) TestPutConditionalsMatched() {
 	req.Header.Add("If-Match", etag)
 	res, err = t.client.Do(req)
 	t.NoError(err)
-	t.Equal(res.Status, "200 OK")
+	t.Equal("200 OK", res.Status)
 }
 
 func (t *PutConditionalsSuite) TestPutConditionalsWithoutCanaryIsRejected() {
 	res, err := http.Get(t.server.URL + "/test/one?extra=two")
 	t.NoError(err)
 	var td TestData
-	dec := json.NewDecoder(readdebugger.New(res.Body, func(b []byte, n int, e error) {
-		//spew.Dump(b, n, e)
-	}))
+	dec := json.NewDecoder(readdebugger.New(res.Body, func(b []byte, n int, e error) {}))
 	t.NoError(dec.Decode(&td))
 	res.Body.Close()
-	t.Equal(TestData{"base", "one", "two"}, td)
+	t.Equal(td, TestData{"base", "one", "two"})
 	etag := res.Header.Get("Etag")
 
 	req := t.testReq("PUT", "/test/one?extra=two", map[string]interface{}{
@@ -238,7 +250,7 @@ func (t *PutConditionalsSuite) TestPutConditionalsWithoutCanaryIsRejected() {
 	req.Header.Add("If-Match", etag)
 	res, err = t.client.Do(req)
 	t.NoError(err)
-	t.Equal(res.StatusCode, 400)
+	t.Equal(400, res.StatusCode)
 }
 
 func (t *PutConditionalsSuite) TestPutConditionalsMatchedRejected() {
@@ -246,7 +258,7 @@ func (t *PutConditionalsSuite) TestPutConditionalsMatchedRejected() {
 	req.Header.Add("If-Match", "blarglearglebarg")
 	res, err := t.client.Do(req)
 	t.NoError(err)
-	t.Equal(res.Status, "412 Precondition Failed")
+	t.Equal("412 Precondition Failed", res.Status)
 }
 
 func TestPutConditionals(t *testing.T) {

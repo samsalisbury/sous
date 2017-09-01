@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"text/tabwriter"
 
+	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/util/cmdr"
 )
@@ -40,6 +41,7 @@ func (*SousQueryClusters) Help() string { return sousQueryClustersHelp }
 // RegisterOn registers items on the DI graph
 func (*SousQueryClusters) RegisterOn(psy Addable) {
 	psy.Add(graph.DryrunNeither)
+	psy.Add(&config.DeployFilterFlags{})
 }
 
 // AddFlags adds the flags for sous query clusters.

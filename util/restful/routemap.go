@@ -19,7 +19,7 @@ type (
 
 	// An ExchangeFactory builds an Exchanger -
 	// they're used to configure the RouteMap
-	ExchangeFactory func() Exchanger
+	ExchangeFactory func(http.ResponseWriter, *http.Request, httprouter.Params) Exchanger
 
 	routeEntry struct {
 		Name, Path string
@@ -35,22 +35,22 @@ type (
 
 	// Getable tags ResourceFamilies that respond to GET
 	Getable interface {
-		Get() Exchanger
+		Get(http.ResponseWriter, *http.Request, httprouter.Params) Exchanger
 	}
 
 	// Putable tags ResourceFamilies that respond to PUT
 	Putable interface {
-		Put() Exchanger
+		Put(http.ResponseWriter, *http.Request, httprouter.Params) Exchanger
 	}
 
 	// Deleteable tags ResourceFamilies that respond to DELETE
 	Deleteable interface {
-		Delete() Exchanger
+		Delete(http.ResponseWriter, *http.Request, httprouter.Params) Exchanger
 	}
 
 	// Optionsable tags ResourceFamilies that respond to OPTIONS
 	Optionsable interface {
-		Options() Exchanger
+		Options(http.ResponseWriter, *http.Request, httprouter.Params) Exchanger
 	}
 	/*
 		Postable interface {
@@ -71,10 +71,9 @@ type (
 	}
 )
 
-func (rm *RouteMap) buildMetaHandler(r *httprouter.Router, grf func() Injector, ls logSet) *MetaHandler {
+func (rm *RouteMap) buildMetaHandler(r *httprouter.Router, ls logSet) *MetaHandler {
 	ph := &StatusMiddleware{logSet: ls, gatelatch: os.Getenv("GATELATCH")}
 	mh := &MetaHandler{
-		graphFac:      grf,
 		router:        r,
 		statusHandler: ph,
 		logSet:        ls,
@@ -85,9 +84,9 @@ func (rm *RouteMap) buildMetaHandler(r *httprouter.Router, grf func() Injector, 
 }
 
 // BuildRouter builds a returns an http.Handler based on some constant configuration
-func (rm *RouteMap) BuildRouter(grf func() Injector, ls logSet) http.Handler {
+func (rm *RouteMap) BuildRouter(ls logSet) http.Handler {
 	r := httprouter.New()
-	mh := rm.buildMetaHandler(r, grf, ls)
+	mh := rm.buildMetaHandler(r, ls)
 
 	for _, e := range *rm {
 		get, canGet := e.Resource.(Getable)
@@ -115,7 +114,7 @@ func (rm *RouteMap) BuildRouter(grf func() Injector, ls logSet) http.Handler {
 	return r
 }
 
-func defaultOptions(res Resource) func() Exchanger {
+func defaultOptions(res Resource) ExchangeFactory {
 	ex := &defaultOptionsExchanger{methods: []string{"OPTIONS"}}
 
 	if _, can := res.(Getable); can {
@@ -128,7 +127,7 @@ func defaultOptions(res Resource) func() Exchanger {
 		ex.methods = append(ex.methods, "DELETE")
 	}
 
-	return func() Exchanger {
+	return func(http.ResponseWriter, *http.Request, httprouter.Params) Exchanger {
 		return ex
 	}
 }
@@ -144,7 +143,7 @@ func (rm *RouteMap) SingleExchanger(factory ExchangeFactory, gf func() Injector,
 	w := httptest.NewRecorder()
 	rq := httptest.NewRequest("GET", "/", nil)
 
-	mh := rm.buildMetaHandler(r, gf, ls)
+	mh := rm.buildMetaHandler(r, ls)
 
 	return mh.injectedHandler(factory, w, rq, httprouter.Params{})
 }

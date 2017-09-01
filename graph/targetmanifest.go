@@ -95,11 +95,12 @@ func newTargetManifest(auto userSelectedOTPLDeployManifest, tmid TargetManifestI
 func defaultDeploySpecs(clusters sous.Clusters) sous.DeploySpecs {
 	defaults := sous.DeploySpecs{}
 	for name := range clusters {
-		defaults[name] = sous.DeploySpec{
+		spec := sous.DeploySpec{
 			DeployConfig: sous.DeployConfig{
 				Resources: sous.Resources{},
 				Env:       map[string]string{},
 				Startup: sous.Startup{
+					// should be defaults in the clusters, but we want to make these clear and explicit
 					CheckReadyProtocol: "HTTP",
 					CheckReadyURIPath:  "/health",
 				},
@@ -107,6 +108,11 @@ func defaultDeploySpecs(clusters sous.Clusters) sous.DeploySpecs {
 				NumInstances: 1,
 			},
 		}
+
+		// repairing the validation flaws on a fresh DeploySpec sets defaults.
+		// more importantly, this is a single consistent way to set those defaults.
+		sous.RepairAll(spec.Validate())
+		defaults[name] = spec
 	}
 	return defaults
 }

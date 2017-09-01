@@ -6,7 +6,49 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
-## [Unreleased](//github.com/opentable/sous/compare/0.5.22...HEAD)
+## [0.5.31](//github.com/opentable/sous/compare/0.5.30...0.5.31)
+### Fixed
+- Client: `sous init` defaults resources correctly in the absence of other input.
+
+## [0.5.30](//github.com/opentable/sous/compare/0.5.29...0.5.30)
+### Fixed
+- Client: certain commands were missing DI for a particular value. These are
+  fixed, and tests added for the omission.
+- Client: new values for optional fields no longer elided on `manifest set` -
+  if the value was missing, the new value would be silently dropped.
+
+## [0.5.29](//github.com/opentable/sous/compare/0.5.28...0.5.29)
+### Changed
+- Developer: DI system no longer used on a per-request basis.
+
+## [0.5.28](//github.com/opentable/sous/compare/0.5.27...0.5.28)
+### Fixed
+- Client & Server: rework of DI to contain scope of variable assignment,
+  and retain scope from CLI invocation to server.
+- Client: multiple target builds weren't getting their offsets recorded correctly.
+- Developer: dependency injection provider now an injected dependency of the CLI object.
+
+## [0.5.27](//github.com/opentable/sous/compare/0.5.26...0.5.27)
+### Fixed
+- Client: omitting query params on update.
+- Client: Failed to merge maps to null values (which came from original JSON).
+
+## [0.5.26](//github.com/opentable/sous/compare/0.5.25...0.5.26)
+### Fixed
+- Client: using wrong name for the /manifest endpoint
+
+## [0.5.25](//github.com/opentable/sous/compare/0.5.24...0.5.25)
+### Fixed
+- Client: simple dockerfile builds were crashing
+
+## [0.5.24](//github.com/opentable/sous/compare/0.5.23...0.5.24)
+### Fixed
+- Client: the `sous manifest get` and `set` commands correctly accept a `-flavor` switch.
+
+## [0.5.23](//github.com/opentable/sous/compare/0.5.22...0.5.23)
+### Added:
+- Client: Split buildpacks can now provide a list of targets,
+  and produce all their build products in one `sous build`.
 ### Changed:
 - Client: Client commands now have a "local server" available if no server is
   configurated. This is the start of the path to using HTTP client/server

@@ -23,6 +23,10 @@ type (
 )
 
 const (
+	// NotService is an advisory that this container is not a service, but
+	// instead a support container of some kind and should not itself be
+	// deployed.
+	NotService = AdvisoryName(`support container`)
 	// IsBuilder is an advisory that this container was used to build a finished
 	// image, and should not itself be deployed.
 	IsBuilder = AdvisoryName(`is a build image`)
@@ -150,12 +154,14 @@ func (c *BuildConfig) GuardStrict(bc *BuildContext) error {
 }
 
 // GuardRegister returns an error if any development-only advisories exist
-func (c *BuildConfig) GuardRegister(bc *BuildContext) error {
+func (c *BuildConfig) GuardRegister(br *BuildResult) error {
 	var blockers []string
-	for _, a := range bc.Advisories {
-		switch AdvisoryName(a) {
-		case DirtyWS, UnpushedRev, NoRepoAdv, NotRequestedRevision:
-			blockers = append(blockers, a)
+	for _, p := range br.Products {
+		for _, a := range p.Advisories {
+			switch AdvisoryName(a) {
+			case DirtyWS, UnpushedRev, NoRepoAdv, NotRequestedRevision:
+				blockers = append(blockers, fmt.Sprintf("%s: %s", p.Source.String(), a))
+			}
 		}
 	}
 	if len(blockers) > 0 {

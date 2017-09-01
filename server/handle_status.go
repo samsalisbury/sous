@@ -3,6 +3,7 @@ package server
 import (
 	"net/http"
 
+	"github.com/julienschmidt/httprouter"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/restful"
 )
@@ -10,6 +11,7 @@ import (
 type (
 	// StatusResource encapsulates a status response.
 	StatusResource struct {
+		context ComponentLocator
 	}
 
 	// StatusHandler handles requests for status.
@@ -24,8 +26,17 @@ type (
 	}
 )
 
+func newStatusResource(ctx ComponentLocator) *StatusResource {
+	return &StatusResource{context: ctx}
+}
+
 // Get implements Getable on StatusResource.
-func (*StatusResource) Get() restful.Exchanger { return &StatusHandler{} }
+func (sr *StatusResource) Get(http.ResponseWriter, *http.Request, httprouter.Params) restful.Exchanger {
+	return &StatusHandler{
+		AutoResolver:  sr.context.AutoResolver,
+		ResolveFilter: sr.context.ResolveFilter,
+	}
+}
 
 // Exchange implements the Handler interface.
 func (h *StatusHandler) Exchange() (interface{}, int) {

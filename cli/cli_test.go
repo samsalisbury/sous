@@ -23,11 +23,9 @@ func prepareCommand(t *testing.T, cl []string) (*CLI, *cmdr.PreparedExecution, f
 	stderr := &bytes.Buffer{}
 
 	s := &Sous{Version: semv.MustParse(`1.2.3`)}
-	c, err := NewSousCLI(s, stdin, stdout, stderr)
+	di := graph.BuildTestGraph(stdin, stdout, stderr)
+	c, err := NewSousCLI(di, s, stdin, stdout, stderr)
 	require.NoError(err)
-
-	c.baseGraph = graph.BuildTestGraph(stdin, stdout, stderr)
-	//spew.Dump(c.baseGraph)
 
 	exe, err := c.Prepare(cl)
 	require.NoError(err)
@@ -100,7 +98,7 @@ func TestInvokeDeploy_RepoFlag(t *testing.T) {
 	su := &SousUpdate{}
 	sps := &SousPlumbingStatus{}
 	logging.Log.Debug.Printf("Plumbing Update...")
-	require.NoError(sd.CLI.Plumb(su, sps))
+	require.NoError(sd.CLI.Plumb(sd, su, sps))
 
 	assert.NotEqual(su.ResolveFilter.Repo, "")
 	assert.NotEqual(su.ResolveFilter.Repo, "github.com/example/project")
@@ -117,7 +115,7 @@ func TestInvokeDeploy_RepoFlag(t *testing.T) {
 	sd, ok = exe.Cmd.(*SousDeploy)
 	require.True(ok)
 	su = &SousUpdate{}
-	sd.CLI.Plumb(su, sps)
+	sd.CLI.Plumb(sd, su, sps)
 	assert.Equal(su.ResolveFilter.Repo, "github.com/example/project")
 
 	assert.Equal(su.Manifest.ID().Source.Repo, sps.StatusPoller.Repo)
@@ -200,6 +198,13 @@ func TestInvokeQueryArtifacts(t *testing.T) {
 	assert := assert.New(t)
 
 	exe := justCommand(t, []string{`sous`, `query`, `artifacts`})
+	assert.NotNil(exe)
+}
+
+func TestInvokeQueryClusters(t *testing.T) {
+	assert := assert.New(t)
+
+	exe := justCommand(t, []string{`sous`, `query`, `clusters`})
 	assert.NotNil(exe)
 }
 
@@ -347,7 +352,8 @@ func TestInvokeWithUnknownFlags(t *testing.T) {
 	stderr := &bytes.Buffer{}
 
 	s := &Sous{Version: semv.MustParse(`1.2.3`)}
-	c, err := NewSousCLI(s, stdin, stdout, stderr)
+	di := graph.BuildTestGraph(stdin, stdout, stderr)
+	c, err := NewSousCLI(di, s, stdin, stdout, stderr)
 	require.NoError(err)
 
 	c.Invoke([]string{`sous`, `-cobblers`})

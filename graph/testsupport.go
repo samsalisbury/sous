@@ -31,17 +31,17 @@ func TestGraphWithConfig(in io.Reader, out, err io.Writer, cfg string) *SousGrap
 	graph.Add(sous.User{Name: "Test User", Email: "testuser@example.com"})
 	AddState(graph)
 	addTestNetwork(graph)
+	graph.Add(newServerStateManager)
 	return graph
 }
 
 // AddTestConfig adds configuration objects to the DI.
 func AddTestConfig(graph adder, cfg string) {
 	graph.Add(configYAML(cfg))
-	graph.Add(newTestConfigLoader)
+	graph.Add(NewTestConfigLoader)
 }
 
 func addTestNetwork(graph adder) {
-	graph.Add(newDummyHTTPClient)
 	graph.Add(newDummyDockerClient)
 	graph.Add(newServerHandler)
 }
@@ -54,7 +54,8 @@ func newDummyDockerClient() LocalDockerClient {
 	return LocalDockerClient{Client: docker_registry.NewDummyClient()}
 }
 
-func newTestConfigLoader(configYAML configYAML) *ConfigLoader {
+// NewTestConfigLoader produces a faked ConfigLoader
+func NewTestConfigLoader(configYAML configYAML) *ConfigLoader {
 	cl := &testConfigLoader{configYAML: configYAML}
 	return &ConfigLoader{ConfigLoader: cl}
 }

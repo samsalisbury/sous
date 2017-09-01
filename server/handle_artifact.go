@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/julienschmidt/httprouter"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/firsterr"
 	"github.com/opentable/sous/util/restful"
@@ -11,17 +12,34 @@ import (
 )
 
 type (
-	ArtifactResource struct{}
+	// ArtifactResource provides the /artifact endpoint
+	ArtifactResource struct {
+		restful.QueryParser
+		context ComponentLocator
+	}
 
+	// PUTArtifactHandler handles PUT requests to /artifact
 	PUTArtifactHandler struct {
 		*http.Request
-		*restful.QueryValues
+		restful.QueryValues
 		sous.Inserter
 	}
 )
 
-func (ar *ArtifactResource) Put() *PUTArtifactHandler { return &PUTArtifactHandler{} }
+func newArtifactResource(ctx ComponentLocator) *ArtifactResource {
+	return &ArtifactResource{context: ctx}
+}
 
+// Put implements Putable on ArtifactResource, which marks it as accepting PUT requests
+func (ar *ArtifactResource) Put(_ http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
+	return &PUTArtifactHandler{
+		Request:     req,
+		QueryValues: ar.ParseQuery(req),
+		Inserter:    ar.context.Inserter,
+	}
+}
+
+// Exchange implements Exchanger on PUTArtifactHandler
 func (pah *PUTArtifactHandler) Exchange() (interface{}, int) {
 	ba := sous.BuildArtifact{}
 	dec := json.NewDecoder(pah.Request.Body)
@@ -43,7 +61,7 @@ func (pah *PUTArtifactHandler) Exchange() (interface{}, int) {
 	return "", http.StatusOK
 }
 
-func sourceIDFromValues(qv *restful.QueryValues) (sous.SourceID, error) {
+func sourceIDFromValues(qv restful.QueryValues) (sous.SourceID, error) {
 	var r, o, vs string
 	var v semv.Version
 	var err error

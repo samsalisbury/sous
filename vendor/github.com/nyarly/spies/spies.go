@@ -34,6 +34,7 @@ type (
 		result mock.Arguments
 	}
 
+	// A Call represents a recorded call to a spied-upon method.
 	Call struct {
 		method string
 		args   mock.Arguments
@@ -96,6 +97,7 @@ func (c Call) String() string {
 	return fmt.Sprintf("%s(%s) -> (%s)", c.method, c.args, c.res)
 }
 
+// PassedArgs returns the arguments that were passed to a Call so that they can be inspected.
 func (c Call) PassedArgs() mock.Arguments {
 	as := make(mock.Arguments, len(c.args))
 	copy(as, c.args)

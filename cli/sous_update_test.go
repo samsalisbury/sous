@@ -10,7 +10,6 @@ import (
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
 	sous "github.com/opentable/sous/lib"
-	"github.com/opentable/sous/server"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 	"github.com/samsalisbury/semv"
@@ -132,7 +131,9 @@ func TestUpdateRetryLoop(t *testing.T) {
 	g.Add(user)
 
 	g.Add(
-		func() server.StateManager { return server.StateManager{dsm} },
+		func() *config.DeployFilterFlags { return &config.DeployFilterFlags{} },
+		func() graph.DryrunOption { return graph.DryrunBoth },
+		func() *graph.ServerStateManager { return &graph.ServerStateManager{dsm} },
 		func() graph.StateReader { return graph.StateReader{dsm} },
 	)
 	g.Add(&config.Verbosity{})

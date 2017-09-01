@@ -41,7 +41,7 @@ func (smg *SousMetadataSet) Execute(args []string) cmdr.Result {
 	value := args[1]
 
 	mani := sous.Manifest{}
-	up, err := smg.HTTPClient.Retrieve("./manifests", smg.TargetManifestID.QueryMap(), &mani, nil)
+	up, err := smg.HTTPClient.Retrieve("/manifest", smg.TargetManifestID.QueryMap(), &mani, nil)
 	if err != nil {
 		return EnsureErrorResult(err)
 	}

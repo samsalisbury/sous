@@ -8,6 +8,21 @@ import (
 
 type jsonMap map[string]interface{}
 
+// This function is used in order to safely update JSON based on (possibly) out of date local structs.
+// We serialize our version of the struct, and then produce an updated version
+// of the JSON based on what changed in our understanding of the JSON. Fields
+// that don't serialize (because, presumably, they're additive changes to the
+// API) are untouched.
+//
+// Of note is that lists of all kinds are considered a "unit" of comparison.
+// For the time being this is sufficient, but it means that a list-of-object is
+// potentially a backwards-compatibility issue. The problem isn't insoluable,
+// but it's more challenging than it's worth at the moment.
+
+// originalBuf should contain the JSON-as-received.
+// baseBuf should contain a round-trip to the DTO captured when the original was received.
+// changedBuf should contain the serialization of the updated DTO
+//
 func putbackJSON(originalBuf, baseBuf, changedBuf io.Reader) *bytes.Buffer {
 	var original, base, changed jsonMap
 	if err := mapDecode(originalBuf, &original); err != nil {
@@ -35,16 +50,14 @@ func applyChanges(base, changed, target map[string]interface{}) map[string]inter
 			if b, old := base[k]; !old {
 				target[k] = v //created
 			} else {
-				delete(base, k)
 				if !same(b, v) { // changed
 					target[k] = v
 				}
 			}
 		case map[string]interface{}:
-			if b, old := base[k]; !old {
+			if b, old := base[k]; !old || b == nil {
 				target[k] = v //created
 			} else {
-				delete(base, k)
 				// Unchecked cast: if base[k] isn't also a map, we have bigger problems.
 				// If target[k] isn't a map, then the server has changed the type under us, and we should crash
 
@@ -58,6 +71,7 @@ func applyChanges(base, changed, target map[string]interface{}) map[string]inter
 				target[k] = newMap
 			}
 		}
+		delete(base, k)
 	}
 
 	// the remaining fields were deleted

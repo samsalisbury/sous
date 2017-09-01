@@ -162,6 +162,7 @@ func (client *LiveHTTPClient) Retrieve(urlPath string, qParms map[string]string,
 	if state != nil {
 		state.client = client
 		state.path = urlPath
+		state.qparms = qParms
 	}
 	return state, errors.Wrapf(err, "Retrieve %s", urlPath)
 }
@@ -307,6 +308,8 @@ func (client *LiveHTTPClient) sendRequest(rq *http.Request, ierr error) (*http.R
 	if ierr != nil {
 		return nil, ierr
 	}
+	// needs to be fixed in coming log update
+	client.Debugf("Sending %s %q", rq.Method, rq.URL)
 	rz, err := client.httpRequest(rq)
 	if err != nil {
 		client.Debugf("Received %v", err)

@@ -44,7 +44,7 @@ func TestMetadataSet(t *testing.T) {
 
 	if assert.Len(t, control.Calls(), 1) {
 		args := control.Calls()[0].PassedArgs()
-		assert.Regexp(t, "/manifests", args.String(0))
+		assert.Regexp(t, "/manifest", args.String(0))
 	}
 	if assert.Len(t, upctl.Calls(), 1) {
 		args := upctl.Calls()[0].PassedArgs()

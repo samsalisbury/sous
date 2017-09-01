@@ -3,52 +3,59 @@ package server
 import (
 	"net/http"
 	"net/http/pprof"
+	"os"
 
+	"github.com/opentable/sous/config"
+	"github.com/opentable/sous/ext/storage"
+	"github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
+	"github.com/pkg/errors"
 )
 
-/*
-// this ensures that certain objects are injected early, so that they'll remain
-// the same across requests
-type fixedPoints struct {
-	*config.Config
-	*graph.StateManager
-}
-	mainGraph.Inject(&fixedPoints{})
-	gf := func() restful.Injector {
-		g := mainGraph.Clone()
-		AddsPerRequest(g)
-
-		return g
+type (
+	logSet interface {
+		Vomitf(format string, a ...interface{})
+		Debugf(format string, a ...interface{})
+		Warnf(format string, a ...interface{})
+		HasMetrics() bool
+		ExpHandler() http.Handler
 	}
 
-// AddsPerRequest registers items into a SousGraph that need to be fresh per request
-func AddsPerRequest(g restful.Injector) {
-	g.Add(liveGDM)
-	g.Add(getUser)
-}
+	userExtractor struct{}
+)
 
-func liveGDM(sr graph.StateReader) (*LiveGDM, error) {
-	state, err := graph.NewCurrentState(sr)
+type (
+	// ComponentLocator is a service locator for the Sous components that server
+	// endpoints need to function.
+	ComponentLocator struct {
+		*logging.LogSet
+		*config.Config
+		sous.Inserter
+		sous.StateManager
+		*sous.ResolveFilter
+		*sous.AutoResolver
+	}
+)
+
+func (ctx ComponentLocator) liveState() *sous.State {
+	state, err := ctx.StateReader.ReadState()
+	if os.IsNotExist(errors.Cause(err)) || storage.IsGSMError(err) {
+		ctx.Warnf("error reading state:", err)
+		ctx.Warnf("defaulting to empty state")
+		return sous.NewState()
+	}
 	if err != nil {
-		return nil, err
+		return nil
 	}
-	gdm, err := graph.NewCurrentGDM(state)
-	if err != nil {
-		return nil, err
-	}
-	// Ignore this error because an empty string etag is acceptable.
-	etag, _ := state.GetEtag()
-	return &LiveGDM{Etag: etag, Deployments: gdm.Deployments}, nil
+	return state
 }
-*/
 
-type logSet interface {
-	Vomitf(format string, a ...interface{})
-	Debugf(format string, a ...interface{})
-	Warnf(format string, a ...interface{})
-	HasMetrics() bool
-	ExpHandler() http.Handler
+func (userExtractor) GetUser(req *http.Request) ClientUser {
+	return ClientUser{
+		Name:  req.Header.Get("Sous-User-Name"),
+		Email: req.Header.Get("Sous-User-Email"),
+	}
 }
 
 // Run starts a server up.
@@ -58,25 +65,36 @@ func Run(laddr string, handler http.Handler) error {
 }
 
 // Handler builds the http.Handler for the Sous server httprouter.
-func Handler(gf func() restful.Injector, ls logSet) http.Handler {
-	handler := mux(gf, ls)
+func Handler(sc ComponentLocator, ls logSet) http.Handler {
+	handler := mux(sc, ls)
 	addMetrics(handler, ls)
 	return handler
 }
 
 // Handler builds the http.Handler for the Sous server httprouter.
-func ProfilingHandler(gf func() restful.Injector, ls logSet) http.Handler {
-	handler := mux(gf, ls)
+func ProfilingHandler(sc ComponentLocator, ls logSet) http.Handler {
+	handler := mux(sc, ls)
 	addMetrics(handler, ls)
 	return handler
 }
 
-func mux(gf func() restful.Injector, ls logSet) *http.ServeMux {
-	router := SousRouteMap.BuildRouter(gf, ls)
+func mux(sc ComponentLocator, ls logSet) *http.ServeMux {
+	router := routemap(sc).BuildRouter(ls)
 
 	handler := http.NewServeMux()
 	handler.Handle("/", router)
 	return handler
+}
+
+func routemap(context ComponentLocator) *restful.RouteMap {
+	return &restful.RouteMap{
+		{"gdm", "/gdm", newGDMResource(context)},
+		{"defs", "/defs", newStateDefResource(context)},
+		{"manifest", "/manifest", newManifestResource(context)},
+		{"artifact", "/artifact", newArtifactResource(context)},
+		{"status", "/status", newStatusResource(context)},
+		{"servers", "/servers", newServerListResource(context)},
+	}
 }
 
 func addMetrics(handler *http.ServeMux, ls logSet) {

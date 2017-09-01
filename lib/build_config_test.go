@@ -231,10 +231,57 @@ func TestEphemeralTag(t *testing.T) {
 	*/
 
 	ctx := bc.NewContext()
+	br := contextualizedResults(ctx)
 	assert.Equal(`1.2.3+abcd`, ctx.Source.Version().Version.String())
 	assert.Contains(ctx.Advisories, string(EphemeralTag))
 	assert.NotContains(ctx.Advisories, string(TagNotHead))
-	assert.NoError(bc.GuardRegister(ctx))
+	assert.NoError(bc.GuardRegister(br))
+}
+
+func TestContextualization(t *testing.T) {
+	repo := "github.com/opentable/present"
+	bc := BuildConfig{
+		Tag: "1.2.3",
+		Context: &BuildContext{
+			Sh: &shell.Sh{},
+			Source: SourceContext{
+				PrimaryRemoteURL:   repo,
+				Revision:           "abcd",
+				NearestTagName:     "1.2.0",
+				NearestTagRevision: "3541",
+			},
+		},
+	}
+
+	ctx := bc.NewContext()
+
+	otherrepo := "github.com/example/elsewhere"
+	otherdir := "deep/inside"
+	br := &BuildResult{Products: []*BuildProduct{{}, {
+		Source: SourceID{
+			Location: SourceLocation{
+				Repo: otherrepo,
+				Dir:  otherdir,
+			},
+		},
+	}}}
+
+	br.Contextualize(ctx)
+	assert.Len(t, br.Products, 2)
+	assert.Equal(t, br.Products[0].Source.Location.Repo, repo)
+	assert.Equal(t, br.Products[0].Source.Location.Dir, "")
+
+	assert.Equal(t, br.Products[1].Source.Location.Repo, otherrepo)
+	assert.Equal(t, br.Products[1].Source.Location.Dir, otherdir)
+}
+
+func contextualizedResults(ctx *BuildContext) *BuildResult {
+	br := &BuildResult{
+		Products: []*BuildProduct{{}},
+	}
+	br.Contextualize(ctx)
+	return br
+
 }
 
 func TestSetsOffset(t *testing.T) {
@@ -271,7 +318,7 @@ func TestDirtyWorkspaceAdvisory(t *testing.T) {
 
 	ctx := bc.NewContext()
 	assert.Contains(ctx.Advisories, string(DirtyWS))
-	assert.Error(bc.GuardRegister(ctx))
+	assert.Error(bc.GuardRegister(contextualizedResults(ctx)))
 }
 
 func TestUnpushedRevisionAdvisory(t *testing.T) {
@@ -345,8 +392,8 @@ func TestBuildConfig_GuardRegister(t *testing.T) {
 	c := &BuildConfig{}
 	bc := &BuildContext{}
 	bc.Advisories = []string{"dirty workspace"}
-	err := c.GuardRegister(bc)
-	expected := "build may not be deployable in all clusters due to advisories:\n  dirty workspace"
+	err := c.GuardRegister(contextualizedResults(bc))
+	expected := "build may not be deployable in all clusters due to advisories:\n  ,0.0.0-unversioned: dirty workspace"
 	if err == nil {
 		t.Fatalf("got nil; want error %q", expected)
 	}

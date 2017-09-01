@@ -17,19 +17,12 @@ func TestMetadataDockerfile(t *testing.T) {
 
 	b := Builder{}
 
-	br := sous.BuildResult{
-		ImageID:    "identifier",
+	bp := sous.BuildProduct{
+		ID:         "identifier",
 		Advisories: []string{`something is horribly wrong`},
+		Source:     sous.MakeSourceID("github.com/opentable/test", "sub", "2.3.7+abcd"),
 	}
-	bc := sous.BuildContext{
-		Source: sous.SourceContext{
-			OffsetDir:  "sub",
-			RemoteURL:  "github.com/opentable/test",
-			Revision:   "abcd",
-			NearestTag: sous.Tag{Name: "2.3.7", Revision: "abcd"},
-		},
-	}
-	mddf, err := ioutil.ReadAll(b.metadataDockerfile(&br, &bc))
+	mddf, err := ioutil.ReadAll(b.metadataDockerfile(&bp))
 
 	assert.NoError(err)
 	assert.Equal(
@@ -57,29 +50,28 @@ func TestTagStrings(t *testing.T) {
 }
 
 func TestBuilderApplyMetadata(t *testing.T) {
-	srcSh, err := shell.NewTestShell("", map[string]string{})
-	require.NoError(t, err)
+	srcSh, srcCtl := shell.NewTestShell()
 
-	scratchSh, err := shell.NewTestShell("/tmp", map[string]string{"/tmp/__exists__": ""})
-	require.NoError(t, err)
+	scratchSh, _ := shell.NewTestShell()
 
 	nc := sous.NewInserterSpy()
-	nc.Match(spies.Always, nil)
 
 	b, err := NewBuilder(nc, "docker.example.com", srcSh, scratchSh)
 	require.NoError(t, err)
 
 	br := &sous.BuildResult{
-		ExtraResults: map[string]*sous.BuildResult{
-			"builder": {},
+		Products: []*sous.BuildProduct{
+			{},
+			{Kind: "builder"},
 		},
 	}
 
-	bc := &sous.BuildContext{}
-
-	err = b.ApplyMetadata(br, bc)
+	err = b.ApplyMetadata(br)
 	assert.NoError(t, err)
 
-	err = b.Register(br, bc)
+	err = b.Register(br)
 	assert.NoError(t, err)
+	assert.Len(t, nc.CallsTo("Insert"), 2)
+
+	assert.Len(t, srcCtl.CmdsLike("docker", "push"), 4)
 }

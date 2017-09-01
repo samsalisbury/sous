@@ -4,9 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
+	"github.com/opentable/sous/util/logging"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestPutbackJSON(t *testing.T) {
@@ -18,7 +22,8 @@ func TestPutbackJSON(t *testing.T) {
 			"z": 1,
 			"y": [{"q":"q", "z": "o"}],
 			"x": "x"
-		}
+		},
+		"e": null
 	}`)
 
 	baseB := bytes.NewBufferString(`{
@@ -27,7 +32,8 @@ func TestPutbackJSON(t *testing.T) {
 		"d": {
 			"y": [{"q":"q"}],
 			"x": "x"
-		}
+		},
+		"e": null
 	}`)
 
 	updatedB := bytes.NewBufferString(`{
@@ -36,7 +42,8 @@ func TestPutbackJSON(t *testing.T) {
 		"d": {
 			"y": [{"q":"w"}, {"zx": "w"}],
 			"x": "c"
-		}
+		},
+		"e": {"a": "a"}
 	}`)
 
 	outB := putbackJSON(origB, baseB, updatedB)
@@ -47,9 +54,26 @@ func TestPutbackJSON(t *testing.T) {
 	b, err := ioutil.ReadAll(outB)
 	assert.NoError(t, err)
 	json.Unmarshal(b, &mapped)
-	assert.Equal(t, 7.0, mapped["a"]) //missing from update
+	assert.Equal(t, 7.0, mapped["a"]) //missing from base, therefore untouched
 	assert.Equal(t, "y", mapped["b"])
 	assert.Equal(t, "w", dig(mapped, "d", "y", 0, "q"))
+	assert.Equal(t, "w", dig(mapped, "d", "y", 1, "zx"))
+	assert.Equal(t, float64(1), dig(mapped, "d", "z"))
+	assert.Equal(t, "a", dig(mapped, "e", "a"))
+}
+
+func TestClientRetrieve(t *testing.T) {
+	ls := logging.NewLogSet("dummy", ioutil.Discard)
+	s := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		rw.Write([]byte("{}"))
+	}))
+	c, err := NewClient(s.URL, ls, map[string]string{})
+	require.NoError(t, err)
+	body := map[string]interface{}{}
+	up, err := c.Retrieve("/path", map[string]string{"query": "present"}, &body, map[string]string{})
+	require.NoError(t, err)
+
+	assert.Contains(t, up.(*resourceState).qparms, "query")
 }
 
 func dig(m interface{}, index ...interface{}) interface{} {

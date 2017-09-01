@@ -44,7 +44,7 @@ func (smg *SousManifestSet) RegisterOn(psy Addable) {
 
 func (smg *SousManifestSet) Execute(args []string) cmdr.Result {
 	mani := sous.Manifest{}
-	up, err := smg.HTTPClient.Retrieve("./manifests", smg.TargetManifestID.QueryMap(), &mani, nil)
+	up, err := smg.HTTPClient.Retrieve("/manifest", smg.TargetManifestID.QueryMap(), &mani, nil)
 
 	if err != nil {
 		return EnsureErrorResult(errors.Errorf("No manifest matched by %v yet. See `sous init` (%v)", smg.ResolveFilter, err))

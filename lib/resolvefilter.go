@@ -2,8 +2,6 @@ package sous
 
 import (
 	"fmt"
-	"log"
-	"runtime/debug"
 
 	"github.com/samsalisbury/semv"
 )
@@ -83,8 +81,6 @@ func (rf *ResolveFilter) matchDeployStatus(status DeployStatus) bool {
 func (rf *ResolveFilter) SetTag(tag string) error {
 	tagVersion, err := parseSemverTagWithOptionalPrefix(tag)
 	if err != nil {
-		log.Printf("%q", tag)
-		log.Print(string(debug.Stack()))
 		return fmt.Errorf("version %q not valid: expected something like [servicename-]1.2.3", tag)
 	}
 

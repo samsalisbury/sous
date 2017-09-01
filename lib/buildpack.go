@@ -14,7 +14,7 @@ type (
 
 	// Labeller defines a container-based build system.
 	Labeller interface {
-		ApplyMetadata(*BuildResult, *BuildContext) error
+		ApplyMetadata(*BuildResult) error
 	}
 
 	// Registrar defines the interface to register build results to be deployed
@@ -22,7 +22,7 @@ type (
 	Registrar interface {
 		// Register takes a BuildResult and makes it available for the deployment
 		// target system to find during deployment
-		Register(*BuildResult, *BuildContext) error
+		Register(*BuildResult) error
 	}
 
 	// Strpairs is a slice of Strpair.
@@ -49,7 +49,7 @@ type (
 	// kind of project.
 	Buildpack interface {
 		Detect(*BuildContext) (*DetectResult, error)
-		Build(*BuildContext, *DetectResult) (*BuildResult, error)
+		Build(*BuildContext) (*BuildResult, error)
 	}
 
 	// DetectResult represents the result of a detection.
@@ -67,14 +67,29 @@ type (
 	}
 	// BuildResult represents the result of a build made with a Buildpack.
 	BuildResult struct {
-		ImageID                   string
-		VersionName, RevisionName string
-		Advisories                []string
-		Elapsed                   time.Duration
-		ExtraResults              map[string]*BuildResult
+		Elapsed  time.Duration
+		Products []*BuildProduct
 	}
 
-	// EchoSelector wraps a buildpack Factory. But why?
+	// A BuildProduct is one of the individual outputs of a buildpack.
+	BuildProduct struct {
+		// Source and Kind identify the build - the source inputs and the kind of build product
+		Source SourceID
+		Kind   string
+
+		// ID is the artifact identifier - specific to product kind; e.g. docker
+		// products have image ids.
+		// Advisories contain the QA advisories determined on the build, and convey
+		// prescriptive advice about how the image might be deployed.
+		ID         string // was ImageID
+		Advisories []string
+
+		// VersionName and RevisionName cache computations about how to refer to the image.
+		VersionName  string
+		RevisionName string
+	}
+
+	// EchoSelector wraps a buildpack Factory. (But why?)
 	EchoSelector struct {
 		Factory func(*BuildContext) (Buildpack, error)
 	}
@@ -85,12 +100,34 @@ func (s *EchoSelector) SelectBuildpack(c *BuildContext) (Buildpack, error) {
 	return s.Factory(c)
 }
 
-func (br *BuildResult) String() string {
-	str := fmt.Sprintf("Built: %q", br.VersionName)
-	if len(br.Advisories) > 0 {
-		str = str + "\nAdvisories:\n  " + strings.Join(br.Advisories, "  \n")
+// Contextualize records details from the BuildContext into the BuildResult
+func (br *BuildResult) Contextualize(c *BuildContext) {
+	advs := c.Advisories
+	for _, prdt := range br.Products {
+		if prdt.Source.Location.Repo == "" { // i.e. the buildstrat hasn't set the Source
+			prdt.Source = c.Version() // ugh, yeah - Source and Version are both SourceID
+		}
+		if prdt.Advisories == nil {
+			prdt.Advisories = make([]string, 0, len(advs))
+		}
+		prdt.Advisories = append(prdt.Advisories, advs...)
 	}
-	return fmt.Sprintf("%s\nElapsed: %s", str, br.Elapsed)
+}
+
+func (br *BuildResult) String() string {
+	str := ""
+	for _, p := range br.Products {
+		str = str + p.String() + "\n"
+	}
+	return str + fmt.Sprintf("Elapsed: %s", br.Elapsed)
+}
+
+func (bp *BuildProduct) String() string {
+	str := fmt.Sprintf("Built: %q %q", bp.VersionName, bp.Kind)
+	if len(bp.Advisories) > 0 {
+		str = str + "\nAdvisories:\n  " + strings.Join(bp.Advisories, "  \n")
+	}
+	return str
 }
 
 // NewBuildArtifact creates a new BuildArtifact representing a Docker

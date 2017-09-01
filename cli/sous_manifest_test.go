@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"flag"
 	"os"
 	"testing"
 
@@ -15,6 +16,26 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestManifestGetArgs(t *testing.T) {
+	fs := flag.NewFlagSet("test-for-manifest-get", flag.ContinueOnError)
+	smg := &SousManifestGet{}
+	smg.AddFlags(fs)
+	fs.Parse([]string{"-repo", "github.com/example/test", "-flavor", "winning"})
+
+	assert.Equal(t, "github.com/example/test", smg.DeployFilterFlags.Repo)
+	assert.Equal(t, "winning", smg.DeployFilterFlags.Flavor)
+}
+
+func TestManifestSetArgs(t *testing.T) {
+	fs := flag.NewFlagSet("test-for-manifest-set", flag.ContinueOnError)
+	smg := &SousManifestSet{}
+	smg.AddFlags(fs)
+	fs.Parse([]string{"-repo", "github.com/example/test", "-flavor", "winning"})
+
+	assert.Equal(t, "github.com/example/test", smg.DeployFilterFlags.Repo)
+	assert.Equal(t, "winning", smg.DeployFilterFlags.Flavor)
+}
+
 func TestManifestGet(t *testing.T) {
 	out := &bytes.Buffer{}
 
@@ -24,6 +45,7 @@ func TestManifestGet(t *testing.T) {
 			Source: sous.SourceLocation{
 				Repo: project1.Repo,
 			},
+			Flavor: "chocolate",
 		},
 		HTTPClient: graph.HTTPClient{cl},
 
@@ -40,8 +62,11 @@ func TestManifestGet(t *testing.T) {
 	assert.Equal(t, 0, res.ExitCode())
 
 	if assert.Len(t, control.Calls(), 1) {
-		assert.Regexp(t, "/manifests", control.Calls()[0].PassedArgs().String(0))
-		assert.Contains(t, control.Calls()[0].PassedArgs().Get(1).(map[string]string), "repo")
+		assert.Regexp(t, "/manifest", control.Calls()[0].PassedArgs().String(0))
+		params := control.Calls()[0].PassedArgs().Get(1).(map[string]string)
+		assert.Contains(t, params, "repo")
+		assert.Contains(t, params, "flavor")
+		assert.Equal(t, params["flavor"], "chocolate")
 	}
 
 	assert.Regexp(t, "github", out.String())
@@ -91,7 +116,7 @@ func TestManifestSet(t *testing.T) {
 
 	if assert.Len(t, control.Calls(), 1) {
 		args := control.Calls()[0].PassedArgs()
-		assert.Regexp(t, "/manifests", args.String(0))
+		assert.Regexp(t, "/manifest", args.String(0))
 	}
 	if assert.Len(t, upctl.Calls(), 1) {
 		args := upctl.Calls()[0].PassedArgs()
