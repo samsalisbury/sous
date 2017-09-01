@@ -25,9 +25,12 @@ type (
 		Load(data interface{}, path string) error
 	}
 
+	// DefaultFiller can fill defaults for a config
 	DefaultFiller interface {
 		FillDefaults() error
 	}
+
+	// A Validator validates
 	Validator interface {
 		Validate() error
 	}
