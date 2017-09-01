@@ -108,7 +108,9 @@ const (
 
 	// DebugLevel is for messages primarily of interest to the software's developers.
 	DebugLevel = Level(iota)
-	// "extra" debug available
+
+	// ExtraDebugLevel1 is the first level of "super" debug messages.
+	ExtraDebugLevel1 = Level(iota)
 )
 
 /*

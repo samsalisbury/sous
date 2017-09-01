@@ -10,7 +10,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/yaml"
 )
@@ -175,7 +174,6 @@ func (cl *configLoader) overrideField(sf reflect.StructField, originalVal reflec
 	if !present {
 		return nil
 	}
-	spew.Dump("Log", logging.Log)
 	logging.Log.Debug.Printf("Environment configuration OVERRIDE: %s=%s\n", envName, envVal)
 	var finalVal reflect.Value
 	switch originalVal.Interface().(type) {

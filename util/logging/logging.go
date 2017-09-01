@@ -5,7 +5,6 @@ import (
 	"io"
 	"os"
 
-	"github.com/davecgh/go-spew/spew"
 	metrics "github.com/rcrowley/go-metrics"
 	"github.com/sirupsen/logrus"
 )
@@ -24,11 +23,11 @@ type (
 
 	// LogSet is the stopgap for a decent injectable logger
 	LogSet struct {
-		Debug  *logwrapper
-		Info   *logwrapper
-		Warn   *logwrapper
-		Notice *logwrapper
-		Vomit  *logwrapper
+		Debug  logwrapper
+		Info   logwrapper
+		Warn   logwrapper
+		Notice logwrapper
+		Vomit  logwrapper
 
 		level uint
 
@@ -43,9 +42,7 @@ type (
 
 	// A temporary type until we can stop using the LogSet loggers directly
 	// XXX remove and fix accesses to Debug, Info, etc. to be Debugf etc
-	logwrapper struct {
-		ffn func(string, ...interface{})
-	}
+	logwrapper func(string, ...interface{})
 )
 
 var (
@@ -60,16 +57,16 @@ var (
 	}()
 )
 
-func (w *logwrapper) Printf(f string, vs ...interface{}) {
-	w.ffn(f, vs...)
+func (w logwrapper) Printf(f string, vs ...interface{}) {
+	w(f, vs...)
 }
 
-func (w *logwrapper) Print(vs ...interface{}) {
-	w.ffn(fmt.Sprint(vs...))
+func (w logwrapper) Print(vs ...interface{}) {
+	w(fmt.Sprint(vs...))
 }
 
-func (w *logwrapper) Println(vs ...interface{}) {
-	w.ffn(fmt.Sprint(vs...))
+func (w logwrapper) Println(vs ...interface{}) {
+	w(fmt.Sprint(vs...))
 }
 
 // SilentLogSet returns a logset that discards everything by default
@@ -83,7 +80,12 @@ func SilentLogSet() *LogSet {
 // If name is "", no metric collector will be built, and all metrics provided
 // by this logset will be bitbuckets.
 func NewLogSet(name string, err io.Writer) *LogSet {
-	ls := newls(name, err)
+	// logrus uses a pool for entries, which means we probably really should only have one.
+	// this means that output configuration and level limiting is global to the logset and
+	// its children.
+	lgrs := logrus.New()
+	lgrs.Out = err
+	ls := newls(name, err, lgrs)
 	ls.imposeLevel()
 	if name != "" {
 		ls.metrics = metrics.NewPrefixedRegistry(name + ".")
@@ -93,7 +95,7 @@ func NewLogSet(name string, err io.Writer) *LogSet {
 
 // Child produces a child logset, namespaced under "name".
 func (ls *LogSet) Child(name string) *LogSet {
-	child := newls(ls.name+"."+name, ls.err)
+	child := newls(ls.name+"."+name, ls.err, ls.logrus)
 	child.level = ls.level
 	child.imposeLevel()
 	if ls.metrics != nil {
@@ -102,19 +104,19 @@ func (ls *LogSet) Child(name string) *LogSet {
 	return child
 }
 
-func newls(name string, err io.Writer) *LogSet {
+func newls(name string, err io.Writer, lgrs *logrus.Logger) *LogSet {
 	ls := &LogSet{
-		err:   err,
-		name:  name,
-		level: 1,
+		err:    err,
+		name:   name,
+		level:  1,
+		logrus: lgrs,
 	}
-	ls.Debug = &logwrapper{ffn: ls.debugf}
-	ls.Vomit = &logwrapper{ffn: ls.vomitf}
-	ls.Warn = &logwrapper{ffn: ls.warnf}
-	ls.Info = ls.Warn
+	ls.Warn = logwrapper(func(f string, as ...interface{}) { ls.warnf(f, as) })
 	ls.Notice = ls.Warn
+	ls.Info = ls.Warn
+	ls.Debug = logwrapper(func(f string, as ...interface{}) { ls.debugf(f, as) })
+	ls.Vomit = logwrapper(func(f string, as ...interface{}) { ls.vomitf(f, as) })
 
-	ls.logrus = logrus.New()
 	return ls
 
 }
@@ -122,14 +124,13 @@ func newls(name string, err io.Writer) *LogSet {
 // Vomitf is a simple wrapper on Vomit.Printf
 func (ls LogSet) Vomitf(f string, as ...interface{}) { ls.vomitf(f, as...) }
 func (ls LogSet) vomitf(f string, as ...interface{}) {
-	m := NewGenericMsg(DebugLevel, fmt.Sprintf(f, as...), nil)
+	m := NewGenericMsg(ExtraDebugLevel1, fmt.Sprintf(f, as...), nil)
 	Deliver(m, ls)
 }
 
 // Debugf is a simple wrapper on Debug.Printf
 func (ls LogSet) Debugf(f string, as ...interface{}) { ls.debugf(f, as...) }
 func (ls LogSet) debugf(f string, as ...interface{}) {
-	spew.Dump("debugf", ls)
 	m := NewGenericMsg(DebugLevel, fmt.Sprintf(f, as...), nil)
 	Deliver(m, ls)
 }
@@ -154,7 +155,6 @@ func (ls LogSet) imposeLevel() {
 	if ls.level >= 3 {
 		ls.logrus.SetLevel(logrus.DebugLevel)
 	}
-
 }
 
 // BeQuiet gets the LogSet to discard all its output
@@ -191,7 +191,7 @@ func SetupLogging(il ILogger) {
 	})
 }
 
-func logMaybeMap(l *logwrapper, args ...interface{}) {
+func logMaybeMap(l logwrapper, args ...interface{}) {
 	msg, mok := args[0].(string)
 	fields, fok := args[1].(map[string]interface{})
 	if !(mok && fok) {

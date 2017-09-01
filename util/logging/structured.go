@@ -25,6 +25,8 @@ func (ls LogSet) LogMessage(lvl Level, msg LogMessage) {
 		logto.Info(msg.Message())
 	case DebugLevel:
 		logto.Debug(msg.Message())
+	case ExtraDebugLevel1:
+		logto.Debug(msg.Message())
 	}
 }
 
