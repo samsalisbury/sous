@@ -94,7 +94,7 @@ func (d *Deployment) String() string {
 	if d.Cluster != nil {
 		clusterName = d.Cluster.Name
 	}
-	return fmt.Sprintf("%s @ %s %s", d.SourceID, clusterName, d.DeployConfig.String())
+	return fmt.Sprintf("%s %q @ %s %s", d.SourceID, d.Flavor, clusterName, d.DeployConfig.String())
 }
 
 // ID returns the DeployID of this deployment.

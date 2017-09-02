@@ -18,7 +18,7 @@ func TestHandlesGDMGet(t *testing.T) {
 
 	th := &GETGDMHandler{
 		RzWriter: &restful.ResponseWriter{w},
-		LogSet:   &logging.Log,
+		LogSet:   logging.Log,
 		GDM:      sous.NewState(),
 	}
 

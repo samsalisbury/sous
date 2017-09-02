@@ -32,7 +32,7 @@ type (
 		RegistryClient     docker_registry.Client
 		DB                 *sql.DB
 		DockerRegistryHost string
-		Log                *logging.LogSet
+		Log                logging.LogSet
 	}
 
 	imageName string
@@ -89,7 +89,7 @@ func (e NotModifiedErr) Error() string {
 }
 
 // NewNameCache builds a new name cache.
-func NewNameCache(drh string, cl docker_registry.Client, ls *logging.LogSet, db *sql.DB) *NameCache {
+func NewNameCache(drh string, cl docker_registry.Client, ls logging.LogSet, db *sql.DB) *NameCache {
 	nc := &NameCache{
 		RegistryClient:     cl,
 		DB:                 db,

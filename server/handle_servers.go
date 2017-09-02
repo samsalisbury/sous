@@ -25,7 +25,7 @@ type (
 	ServerListUpdater struct {
 		*http.Request
 		Config *config.Config
-		Log    *logging.LogSet
+		Log    logging.LogSet
 	}
 )
 

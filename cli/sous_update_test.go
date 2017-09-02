@@ -140,7 +140,7 @@ func TestUpdateRetryLoop(t *testing.T) {
 
 	serverScoop := struct {
 		Handler graph.ServerHandler
-		LogSet  *logging.LogSet
+		LogSet  logging.LogSet
 	}{}
 	g.MustInject(&serverScoop)
 	if serverScoop.Handler.Handler == nil {

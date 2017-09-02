@@ -24,7 +24,7 @@ type (
 		StateReader
 		GDM Deployments
 		*Resolver
-		*logging.LogSet
+		logging.LogSet
 		listeners []autoResolveListener
 		sync.RWMutex
 		stableStatus, liveStatus *ResolveStatus
@@ -37,7 +37,7 @@ func (tc TriggerChannel) trigger() {
 }
 
 // NewAutoResolver creates a new AutoResolver.
-func NewAutoResolver(rez *Resolver, sr StateReader, ls *logging.LogSet) *AutoResolver {
+func NewAutoResolver(rez *Resolver, sr StateReader, ls logging.LogSet) *AutoResolver {
 	ar := &AutoResolver{
 		UpdateTime:  60 * time.Second,
 		Resolver:    rez,

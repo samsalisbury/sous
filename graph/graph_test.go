@@ -13,7 +13,37 @@ import (
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/shell"
 	"github.com/samsalisbury/psyringe"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+func TestNewStatusPoller(t *testing.T) {
+	testPoller := func(sf config.DeployFilterFlags) *sous.StatusPoller {
+		shc := sous.SourceHostChooser{}
+		f, err := sf.BuildFilter(shc.ParseSourceLocation)
+		require.NoError(t, err)
+
+		// func newRefinedResolveFilter(f *sous.ResolveFilter, discovered *SourceContextDiscovery) (*RefinedResolveFilter, error) {
+
+		disc := &SourceContextDiscovery{
+			SourceContext: &sous.SourceContext{
+				PrimaryRemoteURL: "github.com/somewhere/thing",
+				NearestTag:       sous.Tag{Name: "1.2.3", Revision: "cabbage"},
+				Tags:             []sous.Tag{},
+			},
+		}
+		rf, err := newRefinedResolveFilter(f, disc)
+		require.NoError(t, err)
+		cl := newDummyHTTPClient()
+		user := sous.User{}
+
+		//newStatusPoller(cl HTTPClient, rf *RefinedResolveFilter, user sous.User) *sous.StatusPoller {
+		return newStatusPoller(cl, rf, user, logging.SilentLogSet())
+	}
+
+	p := testPoller(config.DeployFilterFlags{})
+	assert.False(t, p.ResolveFilter.Flavor.All())
+}
 
 func TestBuildGraph(t *testing.T) {
 	log.SetFlags(log.Flags() | log.Lshortfile)

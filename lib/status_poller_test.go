@@ -175,14 +175,16 @@ func TestStatusPoller(t *testing.T) {
 				"sourceid": {
 					"location": "` + repoName + `",
 					"version": "1.0.1+1234"
-				}
+				},
+				"flavor": "canhaz"
 			},
 			{
 				"clustername": "main",
 				"sourceid": {
 					"location": "` + repoName + `",
 					"version": "1.0.1+1234"
-				}
+				},
+				"flavor": "canhaz"
 			}
 		]
 	}`)
@@ -192,7 +194,8 @@ func TestStatusPoller(t *testing.T) {
 				"sourceid": {
 					"location": "` + repoName + `",
 					"version": "1.0.1+1234"
-				}
+				},
+				"flavor": "canhaz"
 			}
 		],
 		"completed": {
@@ -200,10 +203,11 @@ func TestStatusPoller(t *testing.T) {
 				"sourceid": {
 					"location": "` + repoName + `",
 					"version": "1.0.1+1234"
-				}
+				},
+				"flavor": "canhaz"
 			} ],
 			"log":[ {
-					"manifestid": "` + repoName + `",
+					"manifestid": "` + repoName + `~canhaz",
 					"desc": "unchanged"
 				} ]
 		},
@@ -211,15 +215,17 @@ func TestStatusPoller(t *testing.T) {
 	}`)
 
 	rf := &ResolveFilter{
-		Repo: repoName,
+		Repo: NewResolveFieldMatcher(repoName),
 	}
 	rf.SetTag("")
+	// XXX Flavor
+	//   and deploy should probably not treat Flavor as * by default (instead "")
 
 	cl, err := restful.NewClient(mainSrv.URL, logging.SilentLogSet())
 	if err != nil {
 		t.Fatalf("Error building HTTP client: %#v", err)
 	}
-	poller := NewStatusPoller(cl, rf, User{Name: "Test User"})
+	poller := NewStatusPoller(cl, rf, User{Name: "Test User"}, logging.SilentLogSet())
 
 	testCh := make(chan ResolveState)
 	go func() {
@@ -310,7 +316,7 @@ func TestStatusPoller_OldServer2(t *testing.T) {
 	}`)
 
 	rf := &ResolveFilter{
-		Repo: repoName,
+		Repo: NewResolveFieldMatcher(repoName),
 	}
 	rf.SetTag("")
 
@@ -318,7 +324,7 @@ func TestStatusPoller_OldServer2(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error building HTTP client: %#v", err)
 	}
-	poller := NewStatusPoller(cl, rf, User{Name: "Test User"})
+	poller := NewStatusPoller(cl, rf, User{Name: "Test User"}, logging.SilentLogSet())
 
 	testCh := make(chan ResolveState)
 	go func() {
@@ -419,7 +425,7 @@ func TestStatusPoller_MesosFailed(t *testing.T) {
 	}`)
 
 	rf := &ResolveFilter{
-		Repo: repoName,
+		Repo: NewResolveFieldMatcher(repoName),
 	}
 	rf.SetTag("")
 
@@ -427,7 +433,7 @@ func TestStatusPoller_MesosFailed(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error building HTTP client: %#v", err)
 	}
-	poller := NewStatusPoller(cl, rf, User{Name: "Test User"})
+	poller := NewStatusPoller(cl, rf, User{Name: "Test User"}, logging.SilentLogSet())
 
 	testCh := make(chan ResolveState)
 	go func() {
@@ -504,14 +510,14 @@ func TestStatusPoller_NotIntended(t *testing.T) {
 	}`)
 
 	rf := &ResolveFilter{
-		Repo: repoName,
+		Repo: NewResolveFieldMatcher(repoName),
 	}
 
 	cl, err := restful.NewClient(mainSrv.URL, logging.SilentLogSet())
 	if err != nil {
 		t.Fatalf("Error building HTTP client: %#v", err)
 	}
-	poller := NewStatusPoller(cl, rf, User{Name: "Test User"})
+	poller := NewStatusPoller(cl, rf, User{Name: "Test User"}, logging.SilentLogSet())
 
 	testCh := make(chan ResolveState)
 	go func() {
@@ -555,14 +561,14 @@ func TestStatusPoller_OldServer(t *testing.T) {
 	mainSrv := httptest.NewServer(http.HandlerFunc(h))
 
 	rf := &ResolveFilter{
-		Repo: "github.com/something/summat",
+		Repo: NewResolveFieldMatcher("github.com/something/summat"),
 	}
 
 	cl, err := restful.NewClient(mainSrv.URL, logging.SilentLogSet())
 	if err != nil {
 		t.Fatalf("Error building HTTP client: %#v", err)
 	}
-	poller := NewStatusPoller(cl, rf, User{Name: "Test User"})
+	poller := NewStatusPoller(cl, rf, User{Name: "Test User"}, logging.SilentLogSet())
 
 	testCh := make(chan ResolveState)
 	go func() {
