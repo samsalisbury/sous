@@ -9,3 +9,9 @@ type Config struct {
 		BrokerList   string `env:"SOUS_KAFKA_BROKERS"`
 	}
 }
+
+func (cfg *Config) Fixup() {
+	if len(cfg.Brokers) == 0 && cfg.BrokerList != "" {
+		cfg.Brokers = strings.Split(cfg.BrokerList, ",")
+	}
+}
