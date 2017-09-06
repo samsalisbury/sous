@@ -1,0 +1,13 @@
+Todo in messaging:
+
+operator output - messages for a local operator vs. logged
+errors - model on pkg/errors
+loglov3 requirements
+  @timestamp
+  @uuid
+delivery to grafite
+testing for metrics
+  delivered to grafite
+  reported on /debug/metrics
+
+removing legacy interfaces

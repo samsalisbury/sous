@@ -27,6 +27,10 @@ type (
 		err io.Writer
 
 		logrus *logrus.Logger
+
+		liveConfig *Config
+
+		console io.Writer
 	}
 
 	// A temporary type until we can stop using the LogSet loggers directly
@@ -105,9 +109,54 @@ func newls(name string, err io.Writer, lgrs *logrus.Logger) *LogSet {
 	ls.Info = ls.Warn
 	ls.Debug = logwrapper(func(f string, as ...interface{}) { ls.debugf(f, as) })
 	ls.Vomit = logwrapper(func(f string, as ...interface{}) { ls.vomitf(f, as) })
+	ls.console = os.Stderr
 
 	return ls
+}
 
+// Configure allows an existing LogSet to change its settings.
+func (ls *LogSet) Configure(cfg Config) error {
+	err := ls.configureKafka(cfg)
+	if err != nil {
+		return err
+	}
+
+	ls.liveConfig = cfg
+}
+
+func (ls LogSet) configureKafka(cfg Config) error {
+	if ls.liveConfig != nil && ls.liveConfig.useKafka() {
+		if cfg.useKafka() {
+			reportLogConfigurationWarning(ls, "cannot reconfigure kafka")
+		} else {
+			reportLogConfigurationWarning(ls, "cannot disable kafka")
+		}
+		return
+	}
+
+	if !cfg.useKafka() {
+		return
+	}
+
+	hook, err := kafkalogrus.NewKafkaLogrusHook("kafkahook",
+		cfg.getKafkaLevels(),
+		&logrus.JSONFormatter{},
+		cfg.getBrokers(),
+		cfg.Kafka.Topic,
+		false)
+
+	// One cause of errors: can't reach any brokers
+	// c.f. https://github.com/Shopify/sarama/blob/master/client.go#L114
+	if err != nil {
+		return err
+	}
+
+	ls.logrus.AddHook(hook)
+}
+
+// Console implements LogSink on LogSet
+func (ls LogSet) Console() io.Writer {
+	return ls.console
 }
 
 // Vomitf is a simple wrapper on Vomit.Printf

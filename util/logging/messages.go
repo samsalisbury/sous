@@ -67,6 +67,8 @@ type (
 		UpdateTimerSince(name string, time time.Time)
 
 		UpdateSample(name string, value int64)
+
+		Console() io.Writer
 	}
 
 	LogMessage interface {
@@ -77,6 +79,10 @@ type (
 
 	MetricsMessage interface {
 		MetricsTo(LogSink)
+	}
+
+	ConsoleMessage interface {
+		WriteToConsole(console io.Writer)
 	}
 
 	// CallerInfo describes the source of a log message.
@@ -139,6 +145,10 @@ func Deliver(message interface{}, logger LogSink) {
 	if mm, is := message.(MetricsMessage); is {
 		mm.MetricsTo(logger)
 	}
+
+	if cm, is := message.(ConsoleMessage); is {
+		cm.WriteToConsole(logger.Console())
+	}
 }
 
 // ClearCounter implements part of LogSink on LogSet
@@ -178,14 +188,19 @@ func getLevel(lm LogMessage) Level {
 }
 
 // GetCallerInfo captures a CallerInfo based on where it's called.
-func GetCallerInfo() CallerInfo {
+func GetCallerInfo(excluding ...string) CallerInfo {
 	callers := make([]uintptr, 10)
 	runtime.Callers(2, callers)
 	frames := runtime.CallersFrames(callers)
+
+FrameLoop:
 	for frame, more := frames.Next(); more; frame, more = frames.Next() {
-		if strings.Index(frame.File, "util/logging") == -1 {
-			return CallerInfo{frame: frame}
+		for _, not := range append(excluding, "util/logging") {
+			if strings.Index(frame.File, not) != -1 {
+				continue FrameLoop
+			}
 		}
+		return CallerInfo{frame: frame}
 	}
 	return CallerInfo{unknown: true}
 }
