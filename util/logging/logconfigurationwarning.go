@@ -1,33 +1,46 @@
 package logging
 
-type logConfigurationWarning struct {
+import (
+	"fmt"
+	"io"
+)
+
+type logConfigurationError struct {
 	CallerInfo
 	CallTime
 	message string
 }
 
-func reportLogConfigurationWarning(ls LogSet, msg string) {
-	warning := newLogConfigurationWarning(msg)
+func reportLogConfigurationError(ls LogSet, msg string) {
+	warning := newLogConfigurationError(msg)
 	Deliver(warning, ls)
 }
 
-func newLogConfigurationWarning(msg string) *logConfigurationWarning {
-	return &logConfigurationWarning{
+func newLogConfigurationError(msg string) *logConfigurationError {
+	return &logConfigurationError{
 		message:    msg,
 		CallTime:   GetCallTime(),
 		CallerInfo: GetCallerInfo("reportLogConfigurationWarning", "newLogConfigurationWarning"),
 	}
 }
 
-func (l *logConfigurationWarning) DefaultLevel() Level {
+func (l *logConfigurationError) DefaultLevel() Level {
 	return WarningLevel
 }
 
-func (l *logConfigurationWarning) Message() string {
+func (l *logConfigurationError) Message() string {
 	return l.message
 }
 
-func (l *logConfigurationWarning) EachField(f FieldReportFn) {
+func (l *logConfigurationError) EachField(f FieldReportFn) {
 	l.CallTime.EachField(f)
 	l.CallerInfo.EachField(f)
+}
+
+func (l *logConfigurationError) WriteToConsole(console io.Writer) {
+	fmt.Fprintf(console, "problem configuring logging: %s", l.message)
+}
+
+func (l *logConfigurationError) Error() string {
+	return ConsoleError(l)
 }

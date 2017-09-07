@@ -34,6 +34,8 @@ type (
 		BuildStateDir string `env:"SOUS_BUILD_STATE_DIR"`
 		// Docker is the Docker configuration.
 		Docker docker.Config
+		// Logging is the logging configuration.
+		Logging logging.Config
 		// User identifies the user of this client.
 		User sous.User
 	}
@@ -62,6 +64,9 @@ func (c Config) Validate() error {
 			return errors.Wrapf(err, "Config.SiblingURLs[%s]", n)
 		}
 	}
+	if err := c.Logging.Validate(); err != nil {
+		return errors.Wrapf(err, "Config.Logging")
+	}
 	return nil
 }
 
@@ -84,6 +89,9 @@ func (c *Config) Equal(other *Config) bool {
 		return false
 	}
 	if c.Docker != other.Docker {
+		return false
+	}
+	if !c.Logging.Equal(other.Logging) {
 		return false
 	}
 	if len(c.SiblingURLs) != len(other.SiblingURLs) {

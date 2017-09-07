@@ -85,12 +85,6 @@ type (
 		WriteToConsole(console io.Writer)
 	}
 
-	// CallerInfo describes the source of a log message.
-	CallerInfo struct {
-		frame   runtime.Frame
-		unknown bool
-	}
-
 	// CallTime captures the time at which a log message was generated.
 	CallTime time.Time
 
@@ -187,34 +181,12 @@ func getLevel(lm LogMessage) Level {
 	return lm.DefaultLevel()
 }
 
-// GetCallerInfo captures a CallerInfo based on where it's called.
-func GetCallerInfo(excluding ...string) CallerInfo {
-	callers := make([]uintptr, 10)
-	runtime.Callers(2, callers)
-	frames := runtime.CallersFrames(callers)
-
-FrameLoop:
-	for frame, more := frames.Next(); more; frame, more = frames.Next() {
-		for _, not := range append(excluding, "util/logging") {
-			if strings.Index(frame.File, not) != -1 {
-				continue FrameLoop
-			}
-		}
-		return CallerInfo{frame: frame}
-	}
-	return CallerInfo{unknown: true}
-}
-
-func (info CallerInfo) EachField(f func(string, interface{})) {
-	if info.unknown {
-		f("file", "<unknown>")
-		f("line", "<unknown>")
-		f("function", "<unknown>")
-		return
-	}
-	f("file", info.frame.File)
-	f("line", info.frame.Line)
-	f("function", info.frame.Function)
+// ConsoleError receives a ConsoleMessage and returns the string as it would be printed to the console.
+// This can be used to implement the error interface on ConsoleMessages
+func ConsoleError(msg ConsoleMessage) string {
+	buf := &bytes.Buffer{}
+	msg.WriteToConsole(buf)
+	return buf.String()
 }
 
 // GetCallTime captures the current call time.

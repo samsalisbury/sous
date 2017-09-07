@@ -16,6 +16,42 @@ type Config struct {
 		Brokers      []string
 		BrokerList   string `env:"SOUS_KAFKA_BROKERS"`
 	}
+	Graphite struct {
+		Enabled bool
+		Server  string `env:"SOUS_GRAPHITE_SERVER"`
+	}
+}
+
+func (cfg Config) Equal(other Config) bool {
+	if cfg.Kafka.Enabled != other.Kafka.Enabled {
+		return false
+	}
+	if cfg.Kafka.Enabled {
+		if cfg.Kafka.DefaultLevel != other.Kafka.DefaultLevel ||
+			cfg.Kafka.Topic != other.Kafka.Topic {
+			return false
+		}
+		lbrokers := cfg.getBrokers()
+		rbrokers := cfg.getBrokers()
+		if len(lbrokers) != len(rbrokers) {
+			return false
+		}
+
+		for i := len(lbrokers); i > 0; i-- {
+			if lbrokers[i] != rbrokers[i] {
+				return false
+			}
+		}
+	}
+	if cfg.Graphite.Enabled != other.Graphite.Enabled {
+		return false
+	}
+
+	if cfg.Graphite.Enabled && (cfg.Graphite.Server != other.Graphite.Server) {
+		return false
+	}
+
+	return true
 }
 
 func (cfg Config) getBrokers() []string {
@@ -26,14 +62,14 @@ func (cfg Config) getBrokers() []string {
 }
 
 func (cfg Config) getKafkaLevels() []logrus.Level {
-	switch {
+	switch cfg.Kafka.DefaultLevel {
 	default:
 		return []logrus.Level{
 			logrus.PanicLevel,
 			logrus.FatalLevel,
 			logrus.ErrorLevel,
 		}
-	case "Critial":
+	case "Critical":
 		return []logrus.Level{
 			logrus.PanicLevel,
 			logrus.FatalLevel,
@@ -84,6 +120,7 @@ func (cfg Config) Validate() error {
 	if err := cfg.validateKafka(); cfg.useKafka() && err != nil {
 		return err
 	}
+	return nil
 }
 
 func (cfg Config) validateKafka() error {

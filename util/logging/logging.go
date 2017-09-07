@@ -1,12 +1,17 @@
 package logging
 
 import (
+	"context"
 	"fmt"
 	"io"
+	"net"
 	"os"
+	"time"
 
+	graphite "github.com/cyberdelia/go-metrics-graphite"
 	metrics "github.com/rcrowley/go-metrics"
 	"github.com/sirupsen/logrus"
+	"github.com/tracer0tong/kafkalogrus"
 )
 
 type (
@@ -18,19 +23,15 @@ type (
 		Notice logwrapper
 		Vomit  logwrapper
 
-		level uint
-
-		name string
-
-		metrics metrics.Registry
-
-		err io.Writer
-
-		logrus *logrus.Logger
-
-		liveConfig *Config
-
-		console io.Writer
+		level          uint
+		name           string
+		metrics        metrics.Registry
+		err            io.Writer
+		logrus         *logrus.Logger
+		liveConfig     *Config
+		console        io.Writer
+		context        context.Context
+		graphiteCancel func()
 	}
 
 	// A temporary type until we can stop using the LogSet loggers directly
@@ -109,7 +110,9 @@ func newls(name string, err io.Writer, lgrs *logrus.Logger) *LogSet {
 	ls.Info = ls.Warn
 	ls.Debug = logwrapper(func(f string, as ...interface{}) { ls.debugf(f, as) })
 	ls.Vomit = logwrapper(func(f string, as ...interface{}) { ls.vomitf(f, as) })
+
 	ls.console = os.Stderr
+	ls.context = context.Background()
 
 	return ls
 }
@@ -121,21 +124,25 @@ func (ls *LogSet) Configure(cfg Config) error {
 		return err
 	}
 
-	ls.liveConfig = cfg
+	err = ls.configureGraphite(cfg)
+	if err != nil {
+		return err
+	}
+
+	ls.liveConfig = &cfg
+	return nil
 }
 
 func (ls LogSet) configureKafka(cfg Config) error {
 	if ls.liveConfig != nil && ls.liveConfig.useKafka() {
 		if cfg.useKafka() {
-			reportLogConfigurationWarning(ls, "cannot reconfigure kafka")
-		} else {
-			reportLogConfigurationWarning(ls, "cannot disable kafka")
+			return newLogConfigurationError("cannot reconfigure kafka")
 		}
-		return
+		return newLogConfigurationError("cannot disable kafka")
 	}
 
 	if !cfg.useKafka() {
-		return
+		return nil
 	}
 
 	hook, err := kafkalogrus.NewKafkaLogrusHook("kafkahook",
@@ -152,6 +159,47 @@ func (ls LogSet) configureKafka(cfg Config) error {
 	}
 
 	ls.logrus.AddHook(hook)
+	return nil
+}
+
+func (ls LogSet) configureGraphite(cfg Config) error {
+	addr, err := net.ResolveTCPAddr("tcp", cfg.Graphite.Server)
+	if err != nil {
+		return err
+	}
+	gCfg := graphite.Config{
+		Addr:          addr,
+		Registry:      ls.metrics,
+		FlushInterval: 30 * time.Second,
+		DurationUnit:  time.Nanosecond,
+		Prefix:        "sous",
+		Percentiles:   []float64{0.5, 0.75, 0.95, 0.99, 0.999},
+	}
+
+	gCtx, cancel := context.WithCancel(ls.context)
+
+	if ls.graphiteCancel != nil {
+		ls.graphiteCancel()
+	}
+
+	ls.graphiteCancel = cancel
+	go graphiteLoop(gCtx, gCfg)
+	return nil
+}
+
+func graphiteLoop(ctx context.Context, cfg graphite.Config) {
+	ticker := time.NewTicker(cfg.FlushInterval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			if err := graphite.Once(cfg); err != nil {
+				reportGraphiteError(ls, err)
+			}
+		case <-ctx.Done():
+			return
+		}
+	}
 }
 
 // Console implements LogSink on LogSet

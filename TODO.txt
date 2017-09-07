@@ -1,13 +1,19 @@
 Todo in messaging:
 
-operator output - messages for a local operator vs. logged
-errors - model on pkg/errors
 loglov3 requirements
   @timestamp
   @uuid
-delivery to grafite
+  ... (collect from ot-v1)
+resettable timers (cyclic? noncyclic?)
 testing for metrics
-  delivered to grafite
+  delivered to graphite
   reported on /debug/metrics
+OTLs - write & PR
+Add messages instead of logging.
+errors - model on pkg/errors
 
 removing legacy interfaces
+
+log every recover
+log every early goroutine exit
+(debug) log every goroutine exit (and metrics for "now I'm done")
