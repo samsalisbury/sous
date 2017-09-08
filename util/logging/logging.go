@@ -10,6 +10,7 @@ import (
 
 	graphite "github.com/cyberdelia/go-metrics-graphite"
 	metrics "github.com/rcrowley/go-metrics"
+	"github.com/samsalisbury/semv"
 	"github.com/sirupsen/logrus"
 	"github.com/tracer0tong/kafkalogrus"
 )
@@ -23,6 +24,7 @@ type (
 		Notice logwrapper
 		Vomit  logwrapper
 
+		appIdent       *applicationID
 		level          uint
 		name           string
 		metrics        metrics.Registry
@@ -47,7 +49,7 @@ var (
 	// want metrics in a component, you need to add an injected LogSet. c.f.
 	// ext/docker/image_mapping.go
 	Log = func() LogSet {
-		return *(NewLogSet("", os.Stderr))
+		return *(NewLogSet(semv.MustParse("0.0.0"), "", os.Stderr))
 	}()
 )
 
@@ -65,7 +67,7 @@ func (w logwrapper) Println(vs ...interface{}) {
 
 // SilentLogSet returns a logset that discards everything by default
 func SilentLogSet() *LogSet {
-	ls := NewLogSet("", os.Stderr)
+	ls := NewLogSet(semv.MustParse("0.0.0"), "", os.Stderr)
 	ls.BeQuiet()
 	return ls
 }
@@ -73,7 +75,7 @@ func SilentLogSet() *LogSet {
 // NewLogSet builds a new Logset that feeds to the listed writers
 // If name is "", no metric collector will be built, and all metrics provided
 // by this logset will be bitbuckets.
-func NewLogSet(name string, err io.Writer) *LogSet {
+func NewLogSet(version semv.Version, name string, err io.Writer) *LogSet {
 	// logrus uses a pool for entries, which means we probably really should only have one.
 	// this means that output configuration and level limiting is global to the logset and
 	// its children.
@@ -84,6 +86,7 @@ func NewLogSet(name string, err io.Writer) *LogSet {
 	if name != "" {
 		ls.metrics = metrics.NewPrefixedRegistry(name + ".")
 	}
+	ls.appIdent = collectAppID(version)
 	return ls
 }
 
@@ -119,6 +122,8 @@ func newls(name string, err io.Writer, lgrs *logrus.Logger) *LogSet {
 
 // Configure allows an existing LogSet to change its settings.
 func (ls *LogSet) Configure(cfg Config) error {
+	ls.logrus.SetLevel(cfg.getLogrusLevel())
+
 	err := ls.configureKafka(cfg)
 	if err != nil {
 		return err
@@ -183,11 +188,11 @@ func (ls LogSet) configureGraphite(cfg Config) error {
 	}
 
 	ls.graphiteCancel = cancel
-	go graphiteLoop(gCtx, gCfg)
+	go graphiteLoop(ls, gCtx, gCfg)
 	return nil
 }
 
-func graphiteLoop(ctx context.Context, cfg graphite.Config) {
+func graphiteLoop(ls LogSet, ctx context.Context, cfg graphite.Config) {
 	ticker := time.NewTicker(cfg.FlushInterval)
 	defer ticker.Stop()
 	for {

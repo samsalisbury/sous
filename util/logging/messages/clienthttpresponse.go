@@ -11,7 +11,6 @@ import (
 
 type clientHTTPResponse struct {
 	logging.CallerInfo
-	logging.CallTime
 	logging.Level
 	method string
 	server string
@@ -51,7 +50,6 @@ func newClientHTTPResponse(method, server, path string, parms map[string]string,
 	return &clientHTTPResponse{
 		Level:      logging.InformationLevel,
 		CallerInfo: logging.GetCallerInfo(),
-		CallTime:   logging.GetCallTime(),
 
 		method: method,
 		server: server,
@@ -74,7 +72,6 @@ func (msg *clientHTTPResponse) EachField(f logging.FieldReportFn) {
 	f("parms", msg.parms)
 	f("status", msg.status)
 	f("dur", msg.dur)
-	msg.CallTime.EachField(f)
 	msg.CallerInfo.EachField(f)
 }
 

@@ -1,6 +1,7 @@
 package logging
 
 import (
+	"io"
 	"time"
 
 	"github.com/nyarly/spies"
@@ -20,21 +21,6 @@ func NewLogSinkSpy() (LogSink, logSinkController) {
 	spy := spies.NewSpy()
 	return logSinkSpy{spy: spy}, logSinkController{spy}
 }
-
-/*
-	LogSink interface {
-		LogMessage(level, logMessage)
-
-		ClearCounter(name string)
-		IncCounter(name string, amount int64)
-		DecCounter(name string, amount int64)
-
-		UpdateTimer(name string, dur time.Duration)
-		UpdateTimerSince(name string, time time.Time)
-
-		UpdateSample(name string, value int64)
-	}
-*/
 
 func (lss logSinkSpy) LogMessage(lvl Level, msg LogMessage) {
 	lss.spy.Called(lvl, msg)
@@ -62,4 +48,9 @@ func (lss logSinkSpy) UpdateTimerSince(name string, time time.Time) {
 
 func (lss logSinkSpy) UpdateSample(name string, value int64) {
 	lss.spy.Called(name, value)
+}
+
+func (lss logSinkSpy) Console() io.Writer {
+	res := lss.spy.Called()
+	return res.Get(0).(io.Writer)
 }

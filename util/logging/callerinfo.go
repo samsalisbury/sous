@@ -4,10 +4,14 @@ import (
 	"bytes"
 	"runtime"
 	"strings"
+	"time"
 )
 
 // CallerInfo describes the source of a log message.
+// It should be included in almost every message, to capture information about
+// when and where the message was created.
 type CallerInfo struct {
+	callTime    time.Time
 	goroutineID string
 	callers     []uintptr
 	excluding   []string
@@ -27,12 +31,14 @@ func GetCallerInfo(excluding ...string) CallerInfo {
 		buf = buf[:idx]
 	}
 	return CallerInfo{
+		callTime:    time.Now(),
 		goroutineID: string(buf),
 		callers:     callers,
 		excluding:   excluding,
 	}
 }
 
+// EachField calls f repeatedly with name/value pairs that capture what CallerInfo knows about the message.
 func (info CallerInfo) EachField(f func(string, interface{})) {
 	unknown := true
 	frames := runtime.CallersFrames(info.callers)
@@ -50,6 +56,7 @@ FrameLoop:
 		break
 	}
 
+	f("@timestamp", info.callTime.Format(time.RFC3339))
 	f("thread-name", info.goroutineID)
 	if unknown {
 		f("file", "<unknown>")

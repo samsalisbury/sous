@@ -9,6 +9,9 @@ import (
 
 // Config captures outside configuration for a root LogSet
 type Config struct {
+	Basic struct {
+		Level string `env:"SOUS_LOGGING_LEVEL"`
+	}
 	Kafka struct {
 		Enabled      bool
 		DefaultLevel string `env:"SOUS_KAFKA_LOG_LEVEL"`
@@ -54,6 +57,26 @@ func (cfg Config) Equal(other Config) bool {
 	return true
 }
 
+func (cfg Config) getBasicLevel() Level {
+	if cfg.Basic.Level == "" {
+		return CriticalLevel // console output should be via ConsoleMessages, not logging.
+	}
+	return levelFromString(cfg.Basic.Level)
+}
+
+func (cfg Config) getLogrusLevel() logrus.Level {
+	switch cfg.getBasicLevel() {
+	default:
+		return logrus.WarnLevel
+	case DebugLevel, ExtraDebugLevel1, ExtremeLevel:
+		return logrus.DebugLevel
+	case InformationLevel:
+		return logrus.InfoLevel
+	case CriticalLevel:
+		return logrus.ErrorLevel
+	}
+}
+
 func (cfg Config) getBrokers() []string {
 	if len(cfg.Kafka.Brokers) != 0 {
 		return cfg.Kafka.Brokers
@@ -62,53 +85,26 @@ func (cfg Config) getBrokers() []string {
 }
 
 func (cfg Config) getKafkaLevels() []logrus.Level {
-	switch cfg.Kafka.DefaultLevel {
-	default:
-		return []logrus.Level{
-			logrus.PanicLevel,
-			logrus.FatalLevel,
-			logrus.ErrorLevel,
-		}
-	case "Critical":
-		return []logrus.Level{
-			logrus.PanicLevel,
-			logrus.FatalLevel,
-			logrus.ErrorLevel,
-		}
-	case "Warning":
-		return []logrus.Level{
-			logrus.PanicLevel,
-			logrus.FatalLevel,
-			logrus.ErrorLevel,
-			logrus.WarnLevel,
-		}
-	case "Information":
-		return []logrus.Level{
-			logrus.PanicLevel,
-			logrus.FatalLevel,
-			logrus.ErrorLevel,
-			logrus.WarnLevel,
-			logrus.InfoLevel,
-		}
-	case "Debug":
-		return []logrus.Level{
-			logrus.PanicLevel,
-			logrus.FatalLevel,
-			logrus.ErrorLevel,
-			logrus.WarnLevel,
-			logrus.InfoLevel,
-			logrus.DebugLevel,
-		}
-	case "ExtraDebug1":
-		return []logrus.Level{
-			logrus.PanicLevel,
-			logrus.FatalLevel,
-			logrus.ErrorLevel,
-			logrus.WarnLevel,
-			logrus.InfoLevel,
-			logrus.DebugLevel,
-		}
+	level := levelFromString(cfg.Kafka.DefaultLevel)
+	kafkaLevels := []logrus.Level{
+		logrus.PanicLevel,
+		logrus.FatalLevel,
+		logrus.ErrorLevel,
 	}
+
+	if level >= WarningLevel {
+		kafkaLevels = append(kafkaLevels, logrus.WarnLevel)
+	}
+
+	if level >= InformationLevel {
+		kafkaLevels = append(kafkaLevels, logrus.InfoLevel)
+	}
+
+	if level >= DebugLevel {
+		kafkaLevels = append(kafkaLevels, logrus.InfoLevel)
+	}
+
+	return kafkaLevels
 }
 
 func (cfg Config) useKafka() bool {

@@ -26,8 +26,8 @@
 package logging
 
 import (
-	"runtime"
-	"strings"
+	"bytes"
+	"io"
 	"time"
 )
 
@@ -85,32 +85,10 @@ type (
 		WriteToConsole(console io.Writer)
 	}
 
-	// CallTime captures the time at which a log message was generated.
-	CallTime time.Time
-
 	FieldReportFn func(string, interface{})
 
-	// Level is the "level" of a log message (e.g. debug vs fatal)
-	Level int
 	// error interface{}
 
-)
-
-const (
-	// CriticalLevel is the level for logging critical errors.
-	CriticalLevel = Level(iota)
-
-	// WarningLevel is the level for messages that may be problematic.
-	WarningLevel = Level(iota)
-
-	// InformationLevel is for messages generated during normal operation.
-	InformationLevel = Level(iota)
-
-	// DebugLevel is for messages primarily of interest to the software's developers.
-	DebugLevel = Level(iota)
-
-	// ExtraDebugLevel1 is the first level of "super" debug messages.
-	ExtraDebugLevel1 = Level(iota)
 )
 
 /*
@@ -189,15 +167,6 @@ func ConsoleError(msg ConsoleMessage) string {
 	return buf.String()
 }
 
-// GetCallTime captures the current call time.
-func GetCallTime() CallTime {
-	return CallTime(time.Now())
-}
-
 func (lvl Level) DefaultLevel() Level {
 	return lvl
-}
-
-func (time CallTime) EachField(f FieldReportFn) {
-	f("time", time)
 }

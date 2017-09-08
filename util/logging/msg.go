@@ -2,7 +2,6 @@ package logging
 
 type genericMsg struct {
 	CallerInfo
-	CallTime
 	Level
 	message string
 	fields  map[string]interface{}
@@ -22,7 +21,6 @@ func NewGenericMsg(lvl Level, msg string, fields map[string]interface{}) LogMess
 	return &genericMsg{
 		Level:      lvl,
 		CallerInfo: GetCallerInfo(),
-		CallTime:   GetCallTime(),
 
 		message: msg,
 		fields:  fields,
@@ -36,7 +34,6 @@ func (msg *genericMsg) EachField(f FieldReportFn) {
 	for k, v := range msg.fields {
 		f(k, v)
 	}
-	msg.CallTime.EachField(f)
 	msg.CallerInfo.EachField(f)
 }
 

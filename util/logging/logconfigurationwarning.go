@@ -7,7 +7,6 @@ import (
 
 type logConfigurationError struct {
 	CallerInfo
-	CallTime
 	message string
 }
 
@@ -19,7 +18,6 @@ func reportLogConfigurationError(ls LogSet, msg string) {
 func newLogConfigurationError(msg string) *logConfigurationError {
 	return &logConfigurationError{
 		message:    msg,
-		CallTime:   GetCallTime(),
 		CallerInfo: GetCallerInfo("reportLogConfigurationWarning", "newLogConfigurationWarning"),
 	}
 }
@@ -30,11 +28,6 @@ func (l *logConfigurationError) DefaultLevel() Level {
 
 func (l *logConfigurationError) Message() string {
 	return l.message
-}
-
-func (l *logConfigurationError) EachField(f FieldReportFn) {
-	l.CallTime.EachField(f)
-	l.CallerInfo.EachField(f)
 }
 
 func (l *logConfigurationError) WriteToConsole(console io.Writer) {
