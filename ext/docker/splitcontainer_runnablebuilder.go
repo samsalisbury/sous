@@ -45,7 +45,7 @@ func (rb *runnableBuilder) extractFiles() error {
 		fromPath := fmt.Sprintf("%s:%s", sb.buildContainerID, inst.Source.Dir)
 		toPath := filepath.Join(rb.buildDir(), inst.Destination.Dir)
 
-		err := os.MkdirAll(toPath, os.ModePerm)
+		err := os.MkdirAll(filepath.Dir(toPath), os.ModePerm)
 		if err != nil {
 			return err
 		}
