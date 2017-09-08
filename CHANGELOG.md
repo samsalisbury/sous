@@ -10,6 +10,10 @@ with respect to its command line interface and HTTP interface.
 ### Changed
 - Developer: Refactors of filters and logging. Mostly to the good.
 
+### Fixed
+- Client: `sous build` for split containers was adding a path component,
+  which broke the resulting deploy container.
+
 ## [0.5.31](//github.com/opentable/sous/compare/0.5.30...0.5.31)
 ### Fixed
 - Client: `sous init` defaults resources correctly in the absence of other input.
