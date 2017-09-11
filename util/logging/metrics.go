@@ -53,13 +53,13 @@ func (u *multiUpdate) Update(n int64) {
 }
 
 // HasMetrics indicates whether this LogSet has been configured with metrics
-func (ls *LogSet) HasMetrics() bool {
+func (ls LogSet) HasMetrics() bool {
 	return ls.metrics != nil
 }
 
 // ExpHandler returns an http.Handler to export metrics registered with this LogSet.
 // panics if the LogSet hasn't been set up with metrics yet.
-func (ls *LogSet) ExpHandler() http.Handler {
+func (ls LogSet) ExpHandler() http.Handler {
 	if ls.metrics == nil {
 		panic("LogSet metric unset!")
 	}
@@ -67,7 +67,7 @@ func (ls *LogSet) ExpHandler() http.Handler {
 }
 
 // GetTimer returns a timer so that components can record timing metrics.
-func (ls *LogSet) GetTimer(name string) Timer {
+func (ls LogSet) GetTimer(name string) Timer {
 	if ls.metrics == nil {
 		return metrics.NilTimer{}
 	}
@@ -75,7 +75,7 @@ func (ls *LogSet) GetTimer(name string) Timer {
 }
 
 // GetCounter returns a counter so that components can count things.
-func (ls *LogSet) GetCounter(name string) Counter {
+func (ls LogSet) GetCounter(name string) Counter {
 	if ls.metrics == nil {
 		return metrics.NilCounter{}
 	}
@@ -83,7 +83,7 @@ func (ls *LogSet) GetCounter(name string) Counter {
 }
 
 // GetUpdater returns an updater that records both the immediate value and a decaying sample.
-func (ls *LogSet) GetUpdater(name string) Updater {
+func (ls LogSet) GetUpdater(name string) Updater {
 	if ls.metrics == nil {
 		return metrics.NilGauge{}
 	}

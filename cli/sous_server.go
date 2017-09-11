@@ -19,7 +19,7 @@ import (
 type SousServer struct {
 	Sous              *Sous
 	DeployFilterFlags config.DeployFilterFlags
-	Log               *logging.LogSet
+	Log               logging.LogSet
 
 	*config.Config
 	graph.ServerHandler

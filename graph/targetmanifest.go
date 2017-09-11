@@ -13,28 +13,25 @@ func newRefinedResolveFilter(f *sous.ResolveFilter, discovered *SourceContextDis
 	if f == nil { // XXX I think this needs to be supplied anyway by consumers..
 		f = &sous.ResolveFilter{}
 	}
-	repo := c.PrimaryRemoteURL
-	offset := sous.ResolveFieldMatcher{}
-	if c.OffsetDir != "" {
-		offset = sous.NewResolveFieldMatcher(c.OffsetDir)
+
+	rrf := &(*f)
+
+	if rrf.Repo.All() {
+		if c.PrimaryRemoteURL != "" {
+			rrf.Repo = sous.NewResolveFieldMatcher(c.PrimaryRemoteURL)
+		}
+		if rrf.Offset.All() && c.OffsetDir != "" {
+			rrf.Offset = sous.NewResolveFieldMatcher(c.OffsetDir)
+		}
+		if f.Tag.All() && discovered.SourceContext != nil && discovered.TagVersion() != "" {
+			rrf.SetTag(discovered.TagVersion())
+		}
 	}
 
-	if f.Repo != "" {
-		repo = f.Repo
-		offset = sous.ResolveFieldMatcher{}
-	}
-	if repo == "" {
+	if rrf.Repo.All() {
 		return nil, errors.Errorf("no repo specified, please use -repo or run sous inside a git repo with a configured remote")
 	}
-	if !f.Offset.All() && offset.All() {
-		offset = f.Offset
-	}
-	rrf := &(*f)
-	rrf.Repo = repo
-	rrf.Offset = offset
-	if f.Tag.All() && discovered.TagVersion() != "" {
-		rrf.SetTag(discovered.TagVersion())
-	}
+
 	return (*RefinedResolveFilter)(rrf), nil
 }
 
@@ -42,13 +39,13 @@ func newTargetManifestID(rrf *RefinedResolveFilter) (TargetManifestID, error) {
 	if rrf == nil {
 		return TargetManifestID{}, errors.Errorf("nil ResolveFilter")
 	}
-	if rrf.Repo == "" {
+	if rrf.Repo.All() {
 		return TargetManifestID{}, errors.Errorf("empty Repo")
 	}
 
 	return TargetManifestID{
 		Source: sous.SourceLocation{
-			Repo: rrf.Repo,
+			Repo: rrf.Repo.ValueOr(""),
 			Dir:  rrf.Offset.ValueOr(""),
 		},
 		Flavor: rrf.Flavor.ValueOr(""),

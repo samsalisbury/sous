@@ -164,7 +164,7 @@ func (client *LiveHTTPClient) Retrieve(urlPath string, qParms map[string]string,
 		state.path = urlPath
 		state.qparms = qParms
 	}
-	return state, errors.Wrapf(err, "Retrieve %s", urlPath)
+	return state, errors.Wrapf(err, "Retrieve %s %v", urlPath, qParms)
 }
 
 // Create uses the contents of qBody to create a new resource at the server at urlPath/qParms
@@ -176,7 +176,7 @@ func (client *LiveHTTPClient) Create(urlPath string, qParms map[string]string, q
 		rz, err := client.sendRequest(rq, err)
 		_, err = client.getBody(rz, nil, err)
 		return err
-	}(), "Create %s", urlPath)
+	}(), "Create %s %v", urlPath, qParms)
 }
 
 func (client *LiveHTTPClient) deelete(urlPath string, qParms map[string]string, from *resourceState, headers map[string]string) error {
@@ -187,7 +187,7 @@ func (client *LiveHTTPClient) deelete(urlPath string, qParms map[string]string, 
 		rz, err := client.sendRequest(rq, err)
 		_, err = client.getBody(rz, nil, err)
 		return err
-	}(), "Delete %s", urlPath)
+	}(), "Delete %s %v", urlPath, qParms)
 }
 
 func (client *LiveHTTPClient) update(urlPath string, qParms map[string]string, from *resourceState, qBody Comparable, headers map[string]string) error {
@@ -199,7 +199,7 @@ func (client *LiveHTTPClient) update(urlPath string, qParms map[string]string, f
 		rz, err := client.sendRequest(rq, err)
 		_, err = client.getBody(rz, nil, err)
 		return err
-	}(), "Update %s", urlPath)
+	}(), "Update %s %v", urlPath, qParms)
 }
 
 // Create implements HTTPClient on DummyHTTPClient - it does nothing and returns nil

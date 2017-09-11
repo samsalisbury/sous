@@ -30,7 +30,7 @@ func TestGetSourceID(t *testing.T) {
 	})
 
 	t.Run("successful source id", func(t *testing.T) {
-		sid, err := (&ResolveFilter{Cluster: "blah", Tag: NewResolveFieldMatcher("1.1.1")}).SourceID(rMid)
+		sid, err := (&ResolveFilter{Cluster: NewResolveFieldMatcher("blah"), Tag: NewResolveFieldMatcher("1.1.1")}).SourceID(rMid)
 		if err != nil {
 			t.Fatalf("no error expected, but got: %q", err)
 		}
@@ -58,7 +58,7 @@ func TestGetDeployID(t *testing.T) {
 	})
 
 	t.Run("successful deploy id", func(t *testing.T) {
-		did, err := (&ResolveFilter{Cluster: "blah", Tag: NewResolveFieldMatcher("1.1.1")}).DeploymentID(rMid)
+		did, err := (&ResolveFilter{Cluster: NewResolveFieldMatcher("blah"), Tag: NewResolveFieldMatcher("1.1.1")}).DeploymentID(rMid)
 		if err != nil {
 			t.Fatalf("no error expected, but got: %q", err)
 		}

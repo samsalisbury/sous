@@ -29,7 +29,7 @@ type (
 	// ComponentLocator is a service locator for the Sous components that server
 	// endpoints need to function.
 	ComponentLocator struct {
-		*logging.LogSet
+		logging.LogSet
 		*config.Config
 		sous.Inserter
 		sous.StateManager

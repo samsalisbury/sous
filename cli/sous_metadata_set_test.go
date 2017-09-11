@@ -14,8 +14,8 @@ func TestMetadataSet(t *testing.T) {
 	cl, control := restfultest.NewHTTPClientSpy()
 	mani := testManifest("with-metadata")
 	rf := sous.ResolveFilter{
-		Repo:    mani.Source.Repo,
-		Cluster: "cluster-1",
+		Repo:    sous.NewResolveFieldMatcher(mani.Source.Repo),
+		Cluster: sous.NewResolveFieldMatcher("cluster-1"),
 	}
 
 	sms := &SousMetadataSet{

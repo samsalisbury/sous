@@ -95,32 +95,33 @@ func TestInvokeDeploy_RepoFlag(t *testing.T) {
 	exe := justCommand(t, []string{`sous`, `deploy`, `-cluster`, `ci-sf`, `-tag`, `1.2.3`})
 	sd, ok := exe.Cmd.(*SousDeploy)
 	require.True(ok)
+
 	su := &SousUpdate{}
 	sps := &SousPlumbingStatus{}
 	logging.Log.Debug.Printf("Plumbing Update...")
 	require.NoError(sd.CLI.Plumb(sd, su, sps))
 
-	assert.NotEqual(su.ResolveFilter.Repo, "")
-	assert.NotEqual(su.ResolveFilter.Repo, "github.com/example/project")
-	assert.NotEqual(su.Manifest.ID().Source.Repo, "")
-	assert.NotEqual(su.Manifest.ID().Source.Repo, "github.com/example/project")
+	assert.NotEqual("", su.ResolveFilter.Repo)
+	assert.NotEqual("github.com/example/project", su.ResolveFilter.Repo)
 
-	logging.Log.Debug.Printf("%#v", sps)
+	assert.NotEqual("", su.Manifest.ID().Source.Repo)
+	assert.NotEqual("github.com/example/project", su.Manifest.ID().Source.Repo)
+
 	if assert.NotNil(sps.StatusPoller) {
-		assert.NotEqual(sps.StatusPoller.Repo, "")
-		assert.Equal(sps.StatusPoller.Repo, su.Manifest.ID().Source.Repo)
+		assert.NotEqual("", sps.StatusPoller.Repo)
+		assert.Equal(sps.StatusPoller.ResolveFilter.Repo.ValueOr("{globbed!!!}"), su.Manifest.ID().Source.Repo)
 	}
 
 	exe = justCommand(t, []string{`sous`, `deploy`, `-cluster`, `ci-sf`, `-repo`, `github.com/example/project`, `-tag`, `1.2.3`})
 	sd, ok = exe.Cmd.(*SousDeploy)
 	require.True(ok)
+
 	su = &SousUpdate{}
 	sd.CLI.Plumb(sd, su, sps)
-	assert.Equal(su.ResolveFilter.Repo, "github.com/example/project")
 
-	assert.Equal(su.Manifest.ID().Source.Repo, sps.StatusPoller.Repo)
-	assert.Equal(su.Manifest.ID().Source.Repo, "github.com/example/project")
-
+	assert.Equal("github.com/example/project", su.ResolveFilter.Repo.ValueOr("{globbed!!!}"))
+	assert.Equal("github.com/example/project", su.Manifest.ID().Source.Repo)
+	assert.Equal("github.com/example/project", sps.StatusPoller.ResolveFilter.Repo.ValueOr("{globbed!!!}"))
 }
 
 /*

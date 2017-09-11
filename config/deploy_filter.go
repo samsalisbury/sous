@@ -24,23 +24,17 @@ type DeployFilterFlags struct {
 func (f *DeployFilterFlags) BuildFilter(parseSL func(string) (sous.SourceLocation, error)) (*sous.ResolveFilter, error) {
 	rf := &sous.ResolveFilter{}
 
-	rf.Repo = f.Repo
-	rf.Cluster = f.Cluster
-	rf.Revision = f.Revision
+	rf.Repo = buildFieldMatcher(f.Repo, true)
+	rf.Cluster = buildFieldMatcher(f.Cluster, true)
+	rf.Revision = buildFieldMatcher(f.Revision, true)
+	rf.Offset = buildFieldMatcher(f.Offset, f.All)
+	rf.Flavor = buildFieldMatcher(f.Flavor, f.All)
 
 	if !f.All && f.Tag != "" && f.Tag != "*" {
 		err := rf.SetTag(f.Tag)
 		if err != nil {
 			return nil, err
 		}
-	}
-
-	if f.Offset != "*" && !(f.All && f.Offset == "") {
-		rf.Offset = sous.NewResolveFieldMatcher(f.Offset)
-	}
-
-	if f.Flavor != "*" && !(f.All && f.Flavor == "") {
-		rf.Flavor = sous.NewResolveFieldMatcher(f.Flavor)
 	}
 
 	if f.Source != "" {
@@ -54,8 +48,8 @@ func (f *DeployFilterFlags) BuildFilter(parseSL func(string) (sous.SourceLocatio
 		if err != nil {
 			return nil, errors.Wrap(err, "error parsing -source flag")
 		}
-		rf.Repo = sl.Repo
-		rf.Offset.Match = &sl.Dir
+		rf.Repo = sous.NewResolveFieldMatcher(sl.Repo)
+		rf.Offset = sous.NewResolveFieldMatcher(sl.Dir)
 	}
 
 	if f.All && !rf.All() {
@@ -63,6 +57,13 @@ func (f *DeployFilterFlags) BuildFilter(parseSL func(string) (sous.SourceLocatio
 	}
 
 	return rf, nil
+}
+
+func buildFieldMatcher(config string, all bool) sous.ResolveFieldMatcher {
+	if config == "*" || (all && config == "") {
+		return sous.ResolveFieldMatcher{}
+	}
+	return sous.NewResolveFieldMatcher(config)
 }
 
 // BuildPredicate returns a predicate used for filtering targeted deployments.

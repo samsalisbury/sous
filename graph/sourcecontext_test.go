@@ -14,16 +14,16 @@ type resolveSourceLocationInput struct {
 }
 
 func TestResolveSourceLocation_failure(t *testing.T) {
+	assertSourceContextError := func(t *testing.T, flags *sous.ResolveFilter, ctx *SourceContextDiscovery, msgPattern string) {
+		_, actualErr := newRefinedResolveFilter(flags, ctx)
+		require.NotNil(t, actualErr)
+		assert.Regexp(t, msgPattern, actualErr.Error())
+	}
+
 	assertSourceContextError(t, &sous.ResolveFilter{}, &SourceContextDiscovery{},
 		"no repo specified, please use -repo or run sous inside a git repo with a configured remote")
 	assertSourceContextError(t, nil, &SourceContextDiscovery{},
 		"no repo specified, please use -repo or run sous inside a git repo with a configured remote")
-}
-
-func assertSourceContextError(t *testing.T, flags *sous.ResolveFilter, ctx *SourceContextDiscovery, msgPattern string) {
-	_, actualErr := newRefinedResolveFilter(flags, ctx)
-	assert.NotNil(t, actualErr)
-	assert.Regexp(t, msgPattern, actualErr.Error())
 }
 
 func assertSourceContextSuccess(t *testing.T, expected sous.ManifestID, flags *sous.ResolveFilter, ctx *sous.SourceContext) {
@@ -41,12 +41,12 @@ func assertSourceContextSuccess(t *testing.T, expected sous.ManifestID, flags *s
 func TestResolveSourceLocation_success(t *testing.T) {
 	assertSourceContextSuccess(t,
 		sous.ManifestID{Source: sous.SourceLocation{Repo: "github.com/user/project"}},
-		&sous.ResolveFilter{Repo: "github.com/user/project"},
+		&sous.ResolveFilter{Repo: sous.NewResolveFieldMatcher("github.com/user/project")},
 		&sous.SourceContext{PrimaryRemoteURL: "github.com/user/project"},
 	)
 	assertSourceContextSuccess(t,
 		sous.ManifestID{Source: sous.SourceLocation{Repo: "github.com/user/project", Dir: "some/path"}},
-		&sous.ResolveFilter{Repo: "github.com/user/project", Offset: sous.NewResolveFieldMatcher("some/path")},
+		&sous.ResolveFilter{Repo: sous.NewResolveFieldMatcher("github.com/user/project"), Offset: sous.NewResolveFieldMatcher("some/path")},
 		&sous.SourceContext{
 			PrimaryRemoteURL: "github.com/user/project",
 			OffsetDir:        "some/path",
@@ -55,7 +55,7 @@ func TestResolveSourceLocation_success(t *testing.T) {
 	assertSourceContextSuccess(t,
 		sous.ManifestID{Source: sous.SourceLocation{Repo: "github.com/from/flags"}},
 		&sous.ResolveFilter{
-			Repo: "github.com/from/flags",
+			Repo: sous.NewResolveFieldMatcher("github.com/from/flags"),
 		},
 		&sous.SourceContext{
 			PrimaryRemoteURL: "github.com/original/context",
