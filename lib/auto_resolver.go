@@ -24,7 +24,7 @@ type (
 		StateReader
 		GDM Deployments
 		*Resolver
-		logging.LogSet
+		logging.LogSink
 		listeners []autoResolveListener
 		sync.RWMutex
 		stableStatus, liveStatus *ResolveStatus
@@ -37,12 +37,12 @@ func (tc TriggerChannel) trigger() {
 }
 
 // NewAutoResolver creates a new AutoResolver.
-func NewAutoResolver(rez *Resolver, sr StateReader, ls logging.LogSet) *AutoResolver {
+func NewAutoResolver(rez *Resolver, sr StateReader, ls logging.LogSink) *AutoResolver {
 	ar := &AutoResolver{
 		UpdateTime:  60 * time.Second,
 		Resolver:    rez,
 		StateReader: sr,
-		LogSet:      ls,
+		LogSink:     ls,
 		listeners:   make([]autoResolveListener, 0),
 	}
 	ar.StandardListeners()
@@ -149,7 +149,7 @@ func (ar *AutoResolver) resolveLoop(tc, done TriggerChannel, ac announceChannel)
 		case <-done:
 			return
 		case t := <-tc:
-			ar.LogSet.Debugf("Received extra trigger before starting Resolve: %v", t)
+			ar.LogSink.Debugf("Received extra trigger before starting Resolve: %v", t)
 			continue
 		}
 
@@ -158,15 +158,15 @@ func (ar *AutoResolver) resolveLoop(tc, done TriggerChannel, ac announceChannel)
 }
 
 func (ar *AutoResolver) resolveOnce(ac announceChannel) {
-	ar.LogSet.Debugf("Beginning Resolve")
+	ar.LogSink.Debugf("Beginning Resolve")
 	state, err := ar.StateReader.ReadState()
-	ar.LogSet.Debugf("Reading current state: err: %v", err)
+	ar.LogSink.Debugf("Reading current state: err: %v", err)
 	if err != nil {
 		ac <- err
 		return
 	}
 	ar.GDM, err = state.Deployments()
-	ar.LogSet.Debugf("Reading GDM from state: err: %v", err)
+	ar.LogSink.Debugf("Reading GDM from state: err: %v", err)
 
 	if err != nil {
 		ac <- err
@@ -185,15 +185,15 @@ func (ar *AutoResolver) resolveOnce(ac announceChannel) {
 		logging.Log.Debugf("Recording stable status from %p: %v", ar, ss)
 
 		if ss.Started.Before(ss.Finished) {
-			ar.LogSet.GetTimer("fullcycle-duration").Update(ss.Finished.Sub(ss.Started))
+			ar.LogSink.UpdateTimer("fullcycle-duration", ss.Finished.Sub(ss.Started))
 		} else {
-			ar.LogSet.Warnf("No finished time recorded for supposed stable status.")
+			ar.LogSink.Warnf("No finished time recorded for supposed stable status.")
 		}
 
 		ar.stableStatus = &ss
 	})
 	ar.Statuses() // XXX this is debugging
-	ar.LogSet.Debugf("Completed resolve")
+	ar.LogSink.Debugf("Completed resolve")
 }
 
 func (ar *AutoResolver) afterDone(tc, done TriggerChannel, ac announceChannel) {
@@ -216,7 +216,7 @@ func (ar *AutoResolver) errorLogging(tc, done TriggerChannel, errs announceChann
 		return
 	case e := <-errs:
 		if e != nil {
-			ar.LogSet.Warnf("error:", e)
+			ar.LogSink.Warnf("error:", e)
 		}
 	}
 }

@@ -18,7 +18,7 @@ type (
 		User      User
 		pollChans map[string]ResolveState
 		status    ResolveState
-		logs      logging.LogSet
+		logs      logging.LogSink
 	}
 
 	subPoller struct {
@@ -27,7 +27,7 @@ type (
 		locationFilter, idFilter *ResolveFilter
 		User                     User
 		httpErrorCount           int
-		logs                     logging.LogSet
+		logs                     logging.LogSink
 	}
 
 	// copied from server - avoiding coupling to server implemention
@@ -146,7 +146,7 @@ func (rs ResolveState) String() string {
 }
 
 // NewStatusPoller returns a new *StatusPoller.
-func NewStatusPoller(cl restful.HTTPClient, rf *ResolveFilter, user User, logs logging.LogSet) *StatusPoller {
+func NewStatusPoller(cl restful.HTTPClient, rf *ResolveFilter, user User, logs logging.LogSink) *StatusPoller {
 	return &StatusPoller{
 		HTTPClient:    cl,
 		ResolveFilter: rf,
@@ -155,7 +155,7 @@ func NewStatusPoller(cl restful.HTTPClient, rf *ResolveFilter, user User, logs l
 	}
 }
 
-func newSubPoller(clusterName, serverURL string, baseFilter *ResolveFilter, user User, logs logging.LogSet) (*subPoller, error) {
+func newSubPoller(clusterName, serverURL string, baseFilter *ResolveFilter, user User, logs logging.LogSink) (*subPoller, error) {
 	spew.Dump(logs)
 	cl, err := restful.NewClient(serverURL, logs.Child("http"))
 	if err != nil {

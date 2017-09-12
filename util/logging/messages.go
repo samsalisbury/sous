@@ -56,7 +56,18 @@ type (
 		}
 
 	*/
+
+	temporaryOldStyleLogging interface {
+		Debugf(f string, as ...interface{})
+		Vomitf(f string, as ...interface{})
+		Warnf(f string, as ...interface{})
+	}
+
 	LogSink interface {
+		temporaryOldStyleLogging
+
+		Child(name string) LogSink
+
 		LogMessage(Level, LogMessage)
 
 		ClearCounter(name string)

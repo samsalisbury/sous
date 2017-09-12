@@ -32,7 +32,7 @@ type (
 		RegistryClient     docker_registry.Client
 		DB                 *sql.DB
 		DockerRegistryHost string
-		Log                logging.LogSet
+		Log                logging.LogSink
 	}
 
 	imageName string
@@ -89,7 +89,7 @@ func (e NotModifiedErr) Error() string {
 }
 
 // NewNameCache builds a new name cache.
-func NewNameCache(drh string, cl docker_registry.Client, ls logging.LogSet, db *sql.DB) *NameCache {
+func NewNameCache(drh string, cl docker_registry.Client, ls logging.LogSink, db *sql.DB) *NameCache {
 	nc := &NameCache{
 		RegistryClient:     cl,
 		DB:                 db,
@@ -118,7 +118,7 @@ func (nc *NameCache) Warmup(r string) error {
 	for _, t := range ts {
 		nc.Log.Debugf("Harvested tag: %v for repo: %v", t, r)
 		in, err := reference.WithTag(ref, t)
-		nc.Log.Vomit.Print(in, err)
+		nc.Log.Vomitf("%v %v", in, err)
 		if err == nil {
 			a := NewBuildArtifact(in.String(), strpairs{})
 			nc.GetSourceID(a) //pull it into the cache...
@@ -162,9 +162,9 @@ func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
 
 	etag, repo, offset, version, _, err := nc.dbQueryOnName(in)
 	if nif, ok := err.(NoSourceIDFound); ok {
-		nc.Log.Vomit.Print(nif)
+		nc.Log.Vomitf("%v", nif)
 	} else if err != nil {
-		nc.Log.Vomit.Print("Err: ", err)
+		nc.Log.Vomitf("Err: %v", err)
 		return sous.SourceID{}, err
 	} else {
 		nc.Log.Vomitf("Found: %v %v %v %v", repo, offset, version, etag)
@@ -240,16 +240,16 @@ func (nc *NameCache) getImageName(sid sous.SourceID) (string, strpairs, error) {
 	defer func() { nc.Log.Debugf("SourceID: %q -> image name %s", sid, name) }()
 	if err == nil {
 		// We got it from the cache first time.
-		nc.Log.GetCounter("cache-hit").Inc(1)
+		nc.Log.IncCounter("cache-hit", 1)
 		return name, qualities, nil
 	}
 	if _, ok := errors.Cause(err).(NoImageNameFound); !ok {
 		// We got a probable database error, give up.
 		nc.Log.Warnf("Cache error: %s", err)
-		nc.Log.GetCounter("cache-error").Inc(1)
+		nc.Log.IncCounter("cache-error", 1)
 		return "", nil, errors.Wrapf(err, "getting name from cache of %s", nc.DockerRegistryHost)
 	}
-	nc.Log.GetCounter("cache-miss").Inc(1)
+	nc.Log.IncCounter("cache-miss", 1)
 	// The error was a NoImageNameFound.
 	if name, qualities, err = nc.getImageNameAfterHarvest(sid); err != nil {
 		// Failed even after a harvest, give up.
@@ -493,7 +493,7 @@ func (nc *NameCache) GroomDatabase() error {
 }
 
 func (nc *NameCache) clobber(db *sql.DB) {
-	nc.Log.Debug.Print("DB Clobbering time!")
+	nc.Log.Debugf("DB Clobbering time!")
 	sqlExec(db, "PRAGMA writable_schema = 1;")
 	sqlExec(db, "delete from sqlite_master where type in ('table', 'index', 'trigger');")
 	sqlExec(db, "PRAGMA writable_schema = 0;")
@@ -580,11 +580,11 @@ func (nc *NameCache) rowCount(table string) {
 	if err != nil {
 		nc.Log.Warnf("error counting rows in table %q: %v", table, err)
 	}
-	nc.Log.GetUpdater("dbrows." + table).Update(n)
+	nc.Log.UpdateSample("dbrows."+table, n)
 }
 
 func (nc *NameCache) tableMetrics() {
-	nc.Log.GetUpdater("dbconns").Update(int64(nc.DB.Stats().OpenConnections))
+	nc.Log.UpdateSample("dbconns", int64(nc.DB.Stats().OpenConnections))
 	nc.rowCount("docker_repo_name")
 	nc.rowCount("docker_search_location")
 	nc.rowCount("docker_search_metadata")

@@ -5,14 +5,19 @@ DLQ something something...
 Related: easy to fail to implement a logging interface and not get the data you wanted.
 Tests per message - check against a golden master, test GMs against checker.
 (how to confirm test per message?)
+So: test helpers for logging.
 
 testing for metrics
   delivered to graphite
   reported on /debug/metrics
+
 OTLs - write & PR
+
 Add messages instead of logging.
+
 errors - model on pkg/errors
   OTL?
+
 resettable timers (cyclic? noncyclic?)
   "observables", run just before each graphite delivery
   timers "observe" the the time since they were reset into a sample

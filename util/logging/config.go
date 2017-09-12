@@ -40,7 +40,8 @@ func (cfg Config) Equal(other Config) bool {
 			return false
 		}
 
-		for i := len(lbrokers); i > 0; i-- {
+		// order?
+		for i := len(lbrokers) - 1; i >= 0; i-- {
 			if lbrokers[i] != rbrokers[i] {
 				return false
 			}

@@ -79,6 +79,8 @@ type (
 	HTTPClient struct{ restful.HTTPClient }
 	// ServerHandler wraps the http.Handler for the sous server
 	ServerHandler struct{ http.Handler }
+	// MetricsHandler wraps an http.Handler for metrics
+	MetricsHandler struct{ http.Handler }
 	// StateManager simply wraps the sous.StateManager interface
 	StateManager struct{ sous.StateManager }
 	// ServerStateManager simply wraps the sous.StateManager interface
@@ -168,6 +170,8 @@ type adder interface {
 func AddLogs(graph adder) {
 	graph.Add(
 		newLogSet,
+		newLogSink,
+		newMetricsHandler,
 	)
 }
 
@@ -296,8 +300,8 @@ func newRegistryDumper(r sous.Registry) *sous.RegistryDumper {
 	return sous.NewRegistryDumper(r)
 }
 
-func newLogSet(v *config.Verbosity, err ErrWriter) logging.LogSet { // XXX temporary until we settle on logging
-	ls := logging.NewLogSet("sous", err)
+func newLogSet(v *config.Verbosity, version Version, err ErrWriter) *logging.LogSet { // XXX temporary until we settle on logging
+	ls := logging.NewLogSet(version.Version, "sous", err)
 
 	if v.Debug {
 		if v.Loud {
@@ -324,6 +328,14 @@ func newLogSet(v *config.Verbosity, err ErrWriter) logging.LogSet { // XXX tempo
 	ls.Debugf("Regular debugging enabled")
 
 	return ls
+}
+
+func newLogSink(set *logging.LogSet) logging.LogSink {
+	return set
+}
+
+func newMetricsHandler(set *logging.LogSet) MetricsHandler {
+	return MetricsHandler{set.ExpHandler()}
 }
 
 func newSourceContextDiscovery(g LocalGitRepo) *SourceContextDiscovery {
@@ -493,15 +505,15 @@ func newDockerClient() LocalDockerClient {
 	return LocalDockerClient{docker_registry.NewClient()}
 }
 
-func newServerHandler(g *SousGraph, ComponentLocator server.ComponentLocator, log logging.LogSet) ServerHandler {
+func newServerHandler(g *SousGraph, ComponentLocator server.ComponentLocator, metrics MetricsHandler, log logging.LogSet) ServerHandler {
 	var handler http.Handler
 
 	profileQuery := struct{ Yes ProfilingServer }{}
 	g.Inject(&profileQuery)
 	if profileQuery.Yes {
-		handler = server.ProfilingHandler(ComponentLocator, log.Child("http-server"))
+		handler = server.ProfilingHandler(ComponentLocator, metrics, log.Child("http-server"))
 	} else {
-		handler = server.Handler(ComponentLocator, log.Child("http-server"))
+		handler = server.Handler(ComponentLocator, metrics, log.Child("http-server"))
 	}
 
 	return ServerHandler{handler}

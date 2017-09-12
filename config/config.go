@@ -10,6 +10,7 @@ import (
 	"github.com/opentable/sous/ext/docker"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/firsterr"
+	"github.com/opentable/sous/util/logging"
 	"github.com/pkg/errors"
 )
 

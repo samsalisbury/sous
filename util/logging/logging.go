@@ -24,15 +24,20 @@ type (
 		Notice logwrapper
 		Vomit  logwrapper
 
+		level Level
+		name  string
+
+		metrics metrics.Registry
+		*dumpBundle
+	}
+
+	// ugh - I don't know what else to call this though
+	dumpBundle struct {
 		appIdent       *applicationID
-		level          uint
-		name           string
-		metrics        metrics.Registry
+		context        context.Context
 		err            io.Writer
 		logrus         *logrus.Logger
 		liveConfig     *Config
-		console        io.Writer
-		context        context.Context
 		graphiteCancel func()
 	}
 
@@ -73,49 +78,54 @@ func SilentLogSet() *LogSet {
 }
 
 // NewLogSet builds a new Logset that feeds to the listed writers
-// If name is "", no metric collector will be built, and all metrics provided
-// by this logset will be bitbuckets.
 func NewLogSet(version semv.Version, name string, err io.Writer) *LogSet {
 	// logrus uses a pool for entries, which means we probably really should only have one.
 	// this means that output configuration and level limiting is global to the logset and
 	// its children.
 	lgrs := logrus.New()
 	lgrs.Out = err
-	ls := newls(name, err, lgrs)
+
+	bundle := newdb(version, err, lgrs)
+
+	ls := newls(name, WarningLevel, bundle)
 	ls.imposeLevel()
-	if name != "" {
+
+	if name == "" {
+		ls.metrics = metrics.NewRegistry()
+	} else {
 		ls.metrics = metrics.NewPrefixedRegistry(name + ".")
 	}
-	ls.appIdent = collectAppID(version)
 	return ls
 }
 
 // Child produces a child logset, namespaced under "name".
-func (ls *LogSet) Child(name string) *LogSet {
-	child := newls(ls.name+"."+name, ls.err, ls.logrus)
-	child.level = ls.level
-	child.imposeLevel()
-	if ls.metrics != nil {
-		child.metrics = metrics.NewPrefixedChildRegistry(ls.metrics, name+".")
-	}
+func (ls LogSet) Child(name string) LogSink {
+	child := newls(ls.name+"."+name, ls.level, ls.dumpBundle)
+	child.metrics = metrics.NewPrefixedChildRegistry(ls.metrics, name+".")
 	return child
 }
 
-func newls(name string, err io.Writer, lgrs *logrus.Logger) *LogSet {
-	ls := &LogSet{
-		err:    err,
-		name:   name,
-		level:  1,
-		logrus: lgrs,
+func newdb(vrsn semv.Version, err io.Writer, lgrs *logrus.Logger) *dumpBundle {
+	return &dumpBundle{
+		appIdent: collectAppID(vrsn),
+		context:  context.Background(),
+		err:      err,
+		logrus:   lgrs,
 	}
+}
+
+func newls(name string, level Level, bundle *dumpBundle) *LogSet {
+	ls := &LogSet{
+		name:       name,
+		level:      level,
+		dumpBundle: bundle,
+	}
+
 	ls.Warn = logwrapper(func(f string, as ...interface{}) { ls.warnf(f, as) })
 	ls.Notice = ls.Warn
 	ls.Info = ls.Warn
 	ls.Debug = logwrapper(func(f string, as ...interface{}) { ls.debugf(f, as) })
 	ls.Vomit = logwrapper(func(f string, as ...interface{}) { ls.vomitf(f, as) })
-
-	ls.console = os.Stderr
-	ls.context = context.Background()
 
 	return ls
 }
@@ -209,7 +219,7 @@ func graphiteLoop(ls LogSet, ctx context.Context, cfg graphite.Config) {
 
 // Console implements LogSink on LogSet
 func (ls LogSet) Console() io.Writer {
-	return ls.console
+	return ls.err
 }
 
 // Vomitf is a simple wrapper on Vomit.Printf

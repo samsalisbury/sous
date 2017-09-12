@@ -1,6 +1,7 @@
 package logging
 
 import (
+	"fmt"
 	"io"
 	"time"
 
@@ -53,4 +54,25 @@ func (lss logSinkSpy) UpdateSample(name string, value int64) {
 func (lss logSinkSpy) Console() io.Writer {
 	res := lss.spy.Called()
 	return res.Get(0).(io.Writer)
+}
+
+// These do what LogSet does so that it'll be easier to replace the interface
+func (lss logSinkSpy) Vomitf(f string, as ...interface{}) {
+	m := NewGenericMsg(ExtraDebugLevel1, fmt.Sprintf(f, as...), nil)
+	Deliver(m, lss)
+}
+
+func (lss logSinkSpy) Debugf(f string, as ...interface{}) {
+	m := NewGenericMsg(DebugLevel, fmt.Sprintf(f, as...), nil)
+	Deliver(m, lss)
+}
+
+func (lss logSinkSpy) Warnf(f string, as ...interface{}) {
+	m := NewGenericMsg(WarningLevel, fmt.Sprintf(f, as...), nil)
+	Deliver(m, lss)
+}
+
+func (lss logSinkSpy) Child(name string) LogSink {
+	lss.spy.Called(name)
+	return lss //easier than managing a whole new lss
 }
