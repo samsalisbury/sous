@@ -23,7 +23,7 @@ func prepareCommand(t *testing.T, cl []string) (*CLI, *cmdr.PreparedExecution, f
 	stderr := &bytes.Buffer{}
 
 	s := &Sous{Version: semv.MustParse(`1.2.3`)}
-	di := graph.BuildTestGraph(stdin, stdout, stderr)
+	di := graph.BuildTestGraph(semv.Version{}, stdin, stdout, stderr)
 	c, err := NewSousCLI(di, s, stdout, stderr)
 	require.NoError(err)
 
@@ -353,7 +353,7 @@ func TestInvokeWithUnknownFlags(t *testing.T) {
 	stderr := &bytes.Buffer{}
 
 	s := &Sous{Version: semv.MustParse(`1.2.3`)}
-	di := graph.BuildTestGraph(stdin, stdout, stderr)
+	di := graph.BuildTestGraph(semv.Version{}, stdin, stdout, stderr)
 	c, err := NewSousCLI(di, s, stdout, stderr)
 	require.NoError(err)
 

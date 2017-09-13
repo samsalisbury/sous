@@ -15,6 +15,7 @@ import (
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/server"
 	"github.com/opentable/sous/util/restful"
+	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -57,7 +58,7 @@ func (suite serverTests) prepare(extras ...interface{}) http.Handler {
 
 	storage.PrepareTestGitRepo(suite.T(), s, remotepath, outpath)
 
-	g := graph.TestGraphWithConfig(&bytes.Buffer{}, os.Stdout, os.Stdout,
+	g := graph.TestGraphWithConfig(semv.Version{}, &bytes.Buffer{}, os.Stdout, os.Stdout,
 		"StateLocation: '"+outpath+"'\n")
 	g.Add(extras...)
 	g.Add(&config.Verbosity{})
