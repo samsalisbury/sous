@@ -63,13 +63,7 @@ type (
 		Warnf(f string, as ...interface{})
 	}
 
-	LogSink interface {
-		temporaryOldStyleLogging
-
-		Child(name string) LogSink
-
-		LogMessage(Level, LogMessage)
-
+	MetricsSink interface {
 		ClearCounter(name string)
 		IncCounter(name string, amount int64)
 		DecCounter(name string, amount int64)
@@ -79,7 +73,29 @@ type (
 
 		UpdateSample(name string, value int64)
 
-		Console() io.Writer
+		Done()
+	}
+
+	LogSink interface {
+		temporaryOldStyleLogging
+
+		Child(name string) LogSink
+
+		LogMessage(Level, LogMessage)
+
+		Metrics() MetricsSink
+
+		Console() WriteDoner
+	}
+
+	// Something like a WriteCloser, but the Done message also asserts that something useful was written
+	WriteDoner interface {
+		io.Writer
+		Done()
+	}
+
+	writeDoner struct {
+		io.Writer
 	}
 
 	LogMessage interface {
@@ -89,7 +105,7 @@ type (
 	}
 
 	MetricsMessage interface {
-		MetricsTo(LogSink)
+		MetricsTo(MetricsSink)
 	}
 
 	ConsoleMessage interface {
@@ -119,18 +135,35 @@ type (
 
 */
 
+func nopDoner(w io.Writer) WriteDoner {
+	return &writeDoner{w}
+}
+
+func (writeDoner) Done() {}
+
 func Deliver(message interface{}, logger LogSink) {
+	silent := true
+
 	if lm, is := message.(LogMessage); is {
+		silent = false
 		Level := getLevel(lm)
 		logger.LogMessage(Level, lm)
 	}
 
 	if mm, is := message.(MetricsMessage); is {
-		mm.MetricsTo(logger)
+		silent = false
+		metrics := logger.Metrics()
+		mm.MetricsTo(metrics)
+		metrics.Done()
 	}
 
 	if cm, is := message.(ConsoleMessage); is {
+		silent = false
 		cm.WriteToConsole(logger.Console())
+	}
+
+	if _, dont := message.(*silentMessageError); silent && !dont {
+		reportSilentMessage(logger, message)
 	}
 }
 

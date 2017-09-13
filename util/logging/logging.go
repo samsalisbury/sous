@@ -217,9 +217,18 @@ func graphiteLoop(ls LogSet, ctx context.Context, cfg graphite.Config) {
 	}
 }
 
+// xxx quickie for providing metricssink
+func (ls LogSet) Metrics() MetricsSink {
+	return ls
+}
+
+// xxx noop until extracted a metrics sink
+func (ls LogSet) Done() {
+}
+
 // Console implements LogSink on LogSet
-func (ls LogSet) Console() io.Writer {
-	return ls.err
+func (ls LogSet) Console() WriteDoner {
+	return nopDoner(ls.err)
 }
 
 // Vomitf is a simple wrapper on Vomit.Printf

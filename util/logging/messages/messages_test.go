@@ -13,7 +13,7 @@ func TestReportCHResponseFields(t *testing.T) {
 	logger, control := logging.NewLogSinkSpy()
 	ReportClientHTTPResponseFields(logger, "GET", "http://example.com", "/api", map[string]string{"a": "a"}, 200, time.Millisecond*30)
 
-	assert.Len(t, control.CallsTo("UpdateTimer"), 1)
+	assert.Len(t, control.Metrics.CallsTo("UpdateTimer"), 1)
 	logCalls := control.CallsTo("LogMessage")
 	require.Len(t, logCalls, 1)
 	assert.Equal(t, logCalls[0].PassedArgs().Get(0), logging.InformationLevel)

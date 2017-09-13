@@ -60,7 +60,7 @@ func newClientHTTPResponse(method, server, path string, parms map[string]string,
 	}
 }
 
-func (msg *clientHTTPResponse) MetricsTo(metrics logging.LogSink) {
+func (msg *clientHTTPResponse) MetricsTo(metrics logging.MetricsSink) {
 	metrics.UpdateTimer("http-client", msg.dur)
 }
 
