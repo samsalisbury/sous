@@ -13,6 +13,7 @@ import (
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/shell"
 	"github.com/samsalisbury/psyringe"
+	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -38,7 +39,7 @@ func TestNewStatusPoller(t *testing.T) {
 		user := sous.User{}
 
 		//newStatusPoller(cl HTTPClient, rf *RefinedResolveFilter, user sous.User) *sous.StatusPoller {
-		return newStatusPoller(cl, rf, user, logging.SilentLogSet())
+		return newStatusPoller(cl, rf, user, LogSink{logging.SilentLogSet()})
 	}
 
 	p := testPoller(config.DeployFilterFlags{})
@@ -47,7 +48,7 @@ func TestNewStatusPoller(t *testing.T) {
 
 func TestBuildGraph(t *testing.T) {
 	log.SetFlags(log.Flags() | log.Lshortfile)
-	g := BuildGraph(&bytes.Buffer{}, ioutil.Discard, ioutil.Discard)
+	g := BuildGraph(semv.MustParse("0.0.0"), &bytes.Buffer{}, ioutil.Discard, ioutil.Discard)
 	g.Add(DryrunBoth)
 	g.Add(&config.Verbosity{})
 	g.Add(&config.DeployFilterFlags{})
@@ -62,7 +63,8 @@ func TestBuildGraph(t *testing.T) {
 func injectedStateManager(t *testing.T, cfg *config.Config) *StateManager {
 	g := psyringe.New()
 	g.Add(newUser)
-	g.Add(logging.SilentLogSet())
+	g.Add(LogSink{logging.SilentLogSet()})
+	g.Add(MetricsHandler{})
 	g.Add(newStateManager)
 	g.Add(LocalSousConfig{Config: cfg})
 	g.Add(newServerComponentLocator)
@@ -119,7 +121,7 @@ func testBuildInserter(t *testing.T, serverStr string) sous.Inserter {
 			DatabaseDriver:     "sqlite3_sous",
 			DatabaseConnection: docker.InMemory,
 		},
-	}}, logging.SilentLogSet(), LocalDockerClient{})
+	}}, LogSink{logging.SilentLogSet()}, LocalDockerClient{})
 	if err != nil {
 		t.Fatal(err)
 	}

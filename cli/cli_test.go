@@ -24,7 +24,7 @@ func prepareCommand(t *testing.T, cl []string) (*CLI, *cmdr.PreparedExecution, f
 
 	s := &Sous{Version: semv.MustParse(`1.2.3`)}
 	di := graph.BuildTestGraph(stdin, stdout, stderr)
-	c, err := NewSousCLI(di, s, stdin, stdout, stderr)
+	c, err := NewSousCLI(di, s, stdout, stderr)
 	require.NoError(err)
 
 	exe, err := c.Prepare(cl)
@@ -354,7 +354,7 @@ func TestInvokeWithUnknownFlags(t *testing.T) {
 
 	s := &Sous{Version: semv.MustParse(`1.2.3`)}
 	di := graph.BuildTestGraph(stdin, stdout, stderr)
-	c, err := NewSousCLI(di, s, stdin, stdout, stderr)
+	c, err := NewSousCLI(di, s, stdout, stderr)
 	require.NoError(err)
 
 	c.Invoke([]string{`sous`, `-cobblers`})

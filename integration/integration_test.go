@@ -100,7 +100,7 @@ func (suite *integrationSuite) newNameCache(name string) *docker.NameCache {
 
 	suite.Require().NoError(err)
 
-	return docker.NewNameCache(registryName, suite.registry, logging.NewLogSet("", os.Stdout), db)
+	return docker.NewNameCache(registryName, suite.registry, logging.NewLogSet(semv.MustParse("0.0.0"), "", os.Stdout), db)
 }
 
 func (suite *integrationSuite) waitUntilSettledStatus(clusters []string, sourceRepo string) *sous.DeployState {

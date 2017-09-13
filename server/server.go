@@ -18,8 +18,6 @@ type (
 		Vomitf(format string, a ...interface{})
 		Debugf(format string, a ...interface{})
 		Warnf(format string, a ...interface{})
-		HasMetrics() bool
-		ExpHandler() http.Handler
 	}
 
 	userExtractor struct{}
@@ -29,7 +27,7 @@ type (
 	// ComponentLocator is a service locator for the Sous components that server
 	// endpoints need to function.
 	ComponentLocator struct {
-		logging.LogSet
+		logging.LogSink
 		*config.Config
 		sous.Inserter
 		sous.StateManager

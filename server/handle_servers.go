@@ -25,7 +25,7 @@ type (
 	ServerListUpdater struct {
 		*http.Request
 		Config *config.Config
-		Log    logging.LogSet
+		Log    logging.LogSink
 	}
 )
 
@@ -44,7 +44,7 @@ func (slr *ServerListResource) Get(http.ResponseWriter, *http.Request, httproute
 func (slr *ServerListResource) Put(_ http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
 	return &ServerListUpdater{
 		Config:  slr.context.Config,
-		Log:     slr.context.LogSet,
+		Log:     slr.context.LogSink,
 		Request: req,
 	}
 }
@@ -64,7 +64,7 @@ func (slh *ServerListUpdater) Exchange() (interface{}, int) {
 	data := ServerListData{Servers: []NameData{}}
 	dec.Decode(&data)
 
-	slh.Log.Vomit.Printf("Updating server list to: %#v", data)
+	slh.Log.Vomitf("Updating server list to: %#v", data)
 
 	if slh.Config.SiblingURLs == nil {
 		slh.Config.SiblingURLs = make(map[string]string)

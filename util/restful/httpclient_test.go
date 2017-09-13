@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/opentable/sous/util/logging"
+	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -63,7 +64,7 @@ func TestPutbackJSON(t *testing.T) {
 }
 
 func TestClientRetrieve(t *testing.T) {
-	ls := logging.NewLogSet("dummy", ioutil.Discard)
+	ls := logging.NewLogSet(semv.MustParse("0.0.0"), "dummy", ioutil.Discard)
 	s := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		rw.Write([]byte("{}"))
 	}))

@@ -20,7 +20,7 @@ type SousManifestSet struct {
 	graph.HTTPClient
 	graph.InReader
 	*sous.ResolveFilter
-	logging.LogSet
+	logging.LogSink
 	User sous.User
 }
 
@@ -59,7 +59,7 @@ func (smg *SousManifestSet) Execute(args []string) cmdr.Result {
 	if err != nil {
 		return EnsureErrorResult(err)
 	}
-	smg.Vomit.Print(spew.Sdump(yml))
+	smg.Vomitf("%v", spew.Sdump(yml))
 
 	err = up.Update(&yml, nil)
 	if err != nil {

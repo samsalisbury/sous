@@ -30,8 +30,10 @@ func TestReportCHResponseFields(t *testing.T) {
 		"file":"/nix/store/br0ngwcjyffc7d060spw44wah1hdnlwn-go-1.7.4/share/go/src/testing/testing.go",
 		"time":logging.callTime{sec:63639633602, nsec:854240181, loc:(*time.Location)(0x8f3780)},
 	*/
-	assert.Contains(t, actualFields, "line", "function", "file", "time")
-	for _, f := range []string{"line", "function", "file", "time"} {
+
+	variableFields := []string{"line", "function", "file", "@timestamp", "thread-name"}
+	for _, f := range variableFields {
+		assert.Contains(t, actualFields, f)
 		delete(actualFields, f)
 	}
 

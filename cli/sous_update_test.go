@@ -10,7 +10,6 @@ import (
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
 	sous "github.com/opentable/sous/lib"
-	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/assert"
@@ -125,7 +124,7 @@ func TestUpdateRetryLoop(t *testing.T) {
 	dsm.State.Defs.Clusters = sous.Clusters{"blah": {}}
 	user := sous.User{Name: "Judson the Unlucky", Email: "unlucky@opentable.com"}
 
-	g := graph.BuildBaseGraph(&bytes.Buffer{}, ioutil.Discard, ioutil.Discard)
+	g := graph.BuildBaseGraph(semv.Version{}, &bytes.Buffer{}, ioutil.Discard, ioutil.Discard)
 	graph.AddNetwork(g)
 	graph.AddTestConfig(g, "")
 	g.Add(user)
@@ -140,7 +139,7 @@ func TestUpdateRetryLoop(t *testing.T) {
 
 	serverScoop := struct {
 		Handler graph.ServerHandler
-		LogSet  logging.LogSet
+		LogSink graph.LogSink
 	}{}
 	g.MustInject(&serverScoop)
 	if serverScoop.Handler.Handler == nil {
@@ -149,7 +148,7 @@ func TestUpdateRetryLoop(t *testing.T) {
 	testServer := httptest.NewServer(serverScoop.Handler.Handler)
 	defer testServer.Close()
 
-	cl, err := restful.NewInMemoryClient(serverScoop.Handler.Handler, serverScoop.LogSet, map[string]string{"X-Gatelatch": os.Getenv("GATELATCH")})
+	cl, err := restful.NewInMemoryClient(serverScoop.Handler.Handler, serverScoop.LogSink.LogSink, map[string]string{"X-Gatelatch": os.Getenv("GATELATCH")})
 	require.NoError(t, err)
 
 	deps, err := updateRetryLoop(cl, sourceID, depID, user)

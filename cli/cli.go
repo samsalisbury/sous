@@ -82,7 +82,7 @@ func (cli *CLI) Plumb(from cmdr.Command, cmds ...cmdr.Executor) error {
 }
 
 // BuildCLIGraph builds the CLI DI graph.
-func BuildCLIGraph(cli *CLI, root *Sous, in io.Reader, out, err io.Writer) *graph.SousGraph {
+func BuildCLIGraph(root *Sous, cli *CLI, out, err io.Writer) *graph.SousGraph {
 	g := cli.baseGraph //was .Clone() - caused problems
 	g.Add(cli)
 	g.Add(root)
@@ -113,7 +113,7 @@ func (cli *CLI) scopedGraph(cmd, under cmdr.Command) *graph.SousGraph {
 }
 
 // NewSousCLI creates a new Sous cli app.
-func NewSousCLI(di *graph.SousGraph, s *Sous, in io.Reader, out, errout io.Writer) (*CLI, error) {
+func NewSousCLI(di *graph.SousGraph, s *Sous, out, errout io.Writer) (*CLI, error) {
 
 	stdout := cmdr.NewOutput(out)
 	stderr := cmdr.NewOutput(errout)
@@ -134,7 +134,7 @@ func NewSousCLI(di *graph.SousGraph, s *Sous, in io.Reader, out, errout io.Write
 	}
 
 	chain := []cmdr.Command{}
-	rootGraph := BuildCLIGraph(cli, s, in, out, errout)
+	rootGraph := BuildCLIGraph(s, cli, out, errout)
 	s.RegisterOn(rootGraph)
 	cli.scopedGraphs = map[cmdr.Command]*graph.SousGraph{s: rootGraph}
 

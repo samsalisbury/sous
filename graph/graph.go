@@ -3,8 +3,7 @@ package graph
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
-	"log" //ok
+	"io/ioutil" //ok
 	"net/http"
 	"os"
 	"os/user"
@@ -56,8 +55,6 @@ type (
 
 	// XXX one at a time, unexport all these wrapper types
 
-	// Version represents a version of Sous.
-	Version struct{ semv.Version }
 	// LocalSousConfig is the configuration for Sous.
 	LocalSousConfig struct{ *config.Config }
 	// LocalWorkDir is the user's current working directory when they invoke Sous.
@@ -81,6 +78,8 @@ type (
 	ServerHandler struct{ http.Handler }
 	// MetricsHandler wraps an http.Handler for metrics
 	MetricsHandler struct{ http.Handler }
+	// LogSink wraps logging.LogSink
+	LogSink struct{ logging.LogSink }
 	// StateManager simply wraps the sous.StateManager interface
 	StateManager struct{ sous.StateManager }
 	// ServerStateManager simply wraps the sous.StateManager interface
@@ -128,8 +127,8 @@ const (
 
 // BuildGraph builds the dependency injection graph, used to populate commands
 // invoked by the user.
-func BuildGraph(in io.Reader, out, err io.Writer) *SousGraph {
-	graph := BuildBaseGraph(in, out, err)
+func BuildGraph(vrsn semv.Version, in io.Reader, out, err io.Writer) *SousGraph {
+	graph := BuildBaseGraph(vrsn, in, out, err)
 	AddFilesystem(graph)
 	AddNetwork(graph)
 	AddState(graph)
@@ -142,7 +141,7 @@ func newUser(c LocalSousConfig) sous.User {
 }
 
 // BuildBaseGraph constructs a graph with essentials - intended for testing
-func BuildBaseGraph(in io.Reader, out, err io.Writer) *SousGraph {
+func BuildBaseGraph(vrsn semv.Version, in io.Reader, out, err io.Writer) *SousGraph {
 	graph := &SousGraph{psyringe.New()}
 	// stdout, stderr
 	graph.Add(
@@ -159,6 +158,7 @@ func BuildBaseGraph(in io.Reader, out, err io.Writer) *SousGraph {
 	AddSingularity(graph)
 	AddInternals(graph)
 	graph.Add(graph)
+	graph.Add(vrsn)
 	return graph
 }
 
@@ -284,7 +284,7 @@ func newResolver(filter *sous.ResolveFilter, d sous.Deployer, r sous.Registry) *
 	return sous.NewResolver(d, r, filter)
 }
 
-func newAutoResolver(rez *sous.Resolver, sr *ServerStateManager, ls logging.LogSet) *sous.AutoResolver {
+func newAutoResolver(rez *sous.Resolver, sr *ServerStateManager, ls LogSink) *sous.AutoResolver {
 	return sous.NewAutoResolver(rez, sr, ls.Child("autoresolver"))
 }
 
@@ -300,8 +300,8 @@ func newRegistryDumper(r sous.Registry) *sous.RegistryDumper {
 	return sous.NewRegistryDumper(r)
 }
 
-func newLogSet(v *config.Verbosity, version Version, err ErrWriter) *logging.LogSet { // XXX temporary until we settle on logging
-	ls := logging.NewLogSet(version.Version, "sous", err)
+func newLogSet(v *config.Verbosity, version semv.Version, err ErrWriter) *logging.LogSet {
+	ls := logging.NewLogSet(version, "sous", err)
 
 	if v.Debug {
 		if v.Loud {
@@ -330,8 +330,8 @@ func newLogSet(v *config.Verbosity, version Version, err ErrWriter) *logging.Log
 	return ls
 }
 
-func newLogSink(set *logging.LogSet) logging.LogSink {
-	return set
+func newLogSink(set *logging.LogSet) LogSink {
+	return LogSink{set}
 }
 
 func newMetricsHandler(set *logging.LogSet) MetricsHandler {
@@ -448,7 +448,7 @@ func newLocalGitRepo(c LocalGitClient) (v LocalGitRepo, err error) {
 	return v, initErr(err, "opening local git repository")
 }
 
-func newSelector(regClient LocalDockerClient, log logging.LogSet) sous.Selector {
+func newSelector(regClient LocalDockerClient, log LogSink) sous.Selector {
 	return &sous.EchoSelector{
 		Factory: func(ctx *sous.BuildContext) (sous.Buildpack, error) {
 			sbp := docker.NewSplitBuildpack(regClient.Client)
@@ -484,18 +484,18 @@ func newRegistrar(db *docker.Builder) sous.Registrar {
 	return db
 }
 
-func newRegistry(dryrun DryrunOption, cfg LocalSousConfig, ls logging.LogSet, cl LocalDockerClient) (sous.Registry, error) {
+func newRegistry(dryrun DryrunOption, cfg LocalSousConfig, ls LogSink, cl LocalDockerClient) (sous.Registry, error) {
 	if dryrun == DryrunBoth || dryrun == DryrunRegistry {
 		return sous.NewDummyRegistry(), nil
 	}
 	return newDockerRegistry(cfg, ls, cl)
 }
 
-func newDeployer(dryrun DryrunOption, nc *docker.NameCache) sous.Deployer {
+func newDeployer(dryrun DryrunOption, nc *docker.NameCache, ls LogSink) sous.Deployer {
 	// Eventually, based on configuration, we may make different decisions here.
 	if dryrun == DryrunBoth || dryrun == DryrunScheduler {
 		drc := sous.NewDummyRectificationClient()
-		drc.SetLogger(log.New(os.Stdout, "rectify: ", 0))
+		drc.SetLogger(ls.Child("rectify"))
 		return singularity.NewDeployer(drc)
 	}
 	return singularity.NewDeployer(singularity.NewRectiAgent(nc))
@@ -505,7 +505,7 @@ func newDockerClient() LocalDockerClient {
 	return LocalDockerClient{docker_registry.NewClient()}
 }
 
-func newServerHandler(g *SousGraph, ComponentLocator server.ComponentLocator, metrics MetricsHandler, log logging.LogSet) ServerHandler {
+func newServerHandler(g *SousGraph, ComponentLocator server.ComponentLocator, metrics MetricsHandler, log LogSink) ServerHandler {
 	var handler http.Handler
 
 	profileQuery := struct{ Yes ProfilingServer }{}
@@ -521,14 +521,14 @@ func newServerHandler(g *SousGraph, ComponentLocator server.ComponentLocator, me
 
 // newHTTPClient returns an HTTP client if c.Server is not empty.
 // Otherwise it returns nil, and emits some warnings.
-func newHTTPClient(c LocalSousConfig, user sous.User, srvr ServerHandler, log logging.LogSet) (HTTPClient, error) {
+func newHTTPClient(c LocalSousConfig, user sous.User, srvr ServerHandler, log LogSink) (HTTPClient, error) {
 	if c.Server == "" {
-		logging.Log.Warn.Println("No server set, Sous is running in server or workstation mode.")
-		logging.Log.Warn.Println("Configure a server like this: sous config server http://some.sous.server")
+		log.Warnf("No server set, Sous is running in server or workstation mode.")
+		log.Warnf("Configure a server like this: sous config server http://some.sous.server")
 		cl, err := restful.NewInMemoryClient(srvr.Handler, log.Child("local-http"))
 		return HTTPClient{HTTPClient: cl}, err
 	}
-	logging.Log.Debug.Printf("Using server at %s", c.Server)
+	log.Debugf("Using server at %s", c.Server)
 	cl, err := restful.NewClient(c.Server, log.Child("http-client"))
 	return HTTPClient{HTTPClient: cl}, err
 }
@@ -541,23 +541,22 @@ func newServerStateManager(c LocalSousConfig) *ServerStateManager {
 // newStateManager returns a wrapped sous.HTTPStateManager if cl is not nil.
 // Otherwise it returns a wrapped sous.GitStateManager, for local git based GDM.
 // If it returns a sous.GitStateManager, it emits a warning log.
-func newStateManager(cl HTTPClient, c LocalSousConfig) *StateManager {
+func newStateManager(cl HTTPClient, c LocalSousConfig, log LogSink) *StateManager {
 	if c.Server == "" {
-		logging.Log.Warn.Printf("Using local state stored at %s", c.StateLocation)
+		log.Warnf("Using local state stored at %s", c.StateLocation)
 		return &StateManager{StateManager: newServerStateManager(c).StateManager}
 	}
 	hsm := sous.NewHTTPStateManager(cl)
 	return &StateManager{StateManager: hsm}
 }
 
-func newStatusPoller(cl HTTPClient, rf *RefinedResolveFilter, user sous.User, logs logging.LogSet) *sous.StatusPoller {
-	logging.Log.Debug.Printf("Building StatusPoller...")
+func newStatusPoller(cl HTTPClient, rf *RefinedResolveFilter, user sous.User, logs LogSink) *sous.StatusPoller {
+	logs.Debugf("Building StatusPoller...")
 	if cl.HTTPClient == nil {
-		logging.Log.Debug.Print(logging.Log.Warn)
-		logging.Log.Warn.Printf("Unable to poll for status.")
+		logs.Warnf("Unable to poll for status.")
 		return nil
 	}
-	logging.Log.Debug.Printf("...looks good...")
+	logs.Debugf("...looks good...")
 	return sous.NewStatusPoller(cl, (*sous.ResolveFilter)(rf), user, logs)
 }
 
@@ -570,11 +569,11 @@ func newLocalStateWriter(sm *StateManager) StateWriter {
 }
 
 // NewCurrentState returns the current *sous.State.
-func NewCurrentState(sr StateReader) (*sous.State, error) {
+func NewCurrentState(sr StateReader, log LogSink) (*sous.State, error) {
 	state, err := sr.ReadState()
 	if os.IsNotExist(errors.Cause(err)) || storage.IsGSMError(err) {
-		log.Println("error reading state:", err)
-		log.Println("defaulting to empty state")
+		log.Warnf("error reading state: %v", err)
+		log.Warnf("defaulting toempty state")
 		return sous.NewState(), nil
 	}
 	return state, initErr(err, "reading sous state")
@@ -599,7 +598,7 @@ func NewCurrentGDM(state *sous.State) (CurrentGDM, error) {
 // sous native types.
 
 // newDockerRegistry creates a Docker version of sous.Registry
-func newDockerRegistry(cfg LocalSousConfig, ls logging.LogSet, cl LocalDockerClient) (*docker.NameCache, error) {
+func newDockerRegistry(cfg LocalSousConfig, ls LogSink, cl LocalDockerClient) (*docker.NameCache, error) {
 	dbCfg := cfg.Docker.DBConfig()
 	db, err := docker.GetDatabase(&dbCfg)
 	if err != nil {
@@ -609,9 +608,9 @@ func newDockerRegistry(cfg LocalSousConfig, ls logging.LogSet, cl LocalDockerCli
 	return docker.NewNameCache(drh, cl.Client, ls.Child("docker-images"), db), nil
 }
 
-func newInserter(cfg LocalSousConfig, ls logging.LogSet, cl LocalDockerClient) (sous.Inserter, error) {
+func newInserter(cfg LocalSousConfig, ls LogSink, cl LocalDockerClient) (sous.Inserter, error) {
 	if cfg.Server == "" {
-		return newDockerRegistry(cfg, ls.Child("docker-registry"), cl)
+		return newDockerRegistry(cfg, LogSink{ls.Child("docker-registry")}, cl)
 	}
 	return sous.NewHTTPNameInserter(cfg.Server)
 }

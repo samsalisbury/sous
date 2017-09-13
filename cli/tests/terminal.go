@@ -44,7 +44,7 @@ func NewTerminal(t *testing.T, vstr string) *Terminal {
 
 	s := &cli.Sous{Version: v}
 	di := graph.BuildTestGraph(in, out, err)
-	c, er := cli.NewSousCLI(di, s, in, out, err)
+	c, er := cli.NewSousCLI(di, s, out, err)
 	if er != nil {
 		panic(er)
 	}

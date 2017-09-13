@@ -7,6 +7,7 @@ import (
 	"github.com/opentable/sous/util/docker_registry"
 	"github.com/opentable/sous/util/restful"
 	"github.com/opentable/sous/util/yaml"
+	"github.com/samsalisbury/semv"
 )
 
 type (
@@ -26,7 +27,7 @@ func BuildTestGraph(in io.Reader, out, err io.Writer) *SousGraph {
 
 // TestGraphWithConfig accepts a custom Sous config string
 func TestGraphWithConfig(in io.Reader, out, err io.Writer, cfg string) *SousGraph {
-	graph := BuildBaseGraph(in, out, err)
+	graph := BuildBaseGraph(semv.Version{}, in, out, err)
 	AddTestConfig(graph, cfg)
 	graph.Add(sous.User{Name: "Test User", Email: "testuser@example.com"})
 	AddState(graph)
