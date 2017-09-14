@@ -182,13 +182,8 @@ func (ar *AutoResolver) resolveOnce(ac announceChannel) {
 	ac <- ar.currentRecorder.Wait()
 	ar.write(func() {
 		ss := ar.currentRecorder.CurrentStatus()
-		logging.Log.Debugf("Recording stable status from %p: %v", ar, ss)
 
-		if ss.Started.Before(ss.Finished) {
-			ar.LogSink.UpdateTimer("fullcycle-duration", ss.Finished.Sub(ss.Started))
-		} else {
-			ar.LogSink.Warnf("No finished time recorded for supposed stable status.")
-		}
+		reportResolverStatus(ar.LogSink, &ss)
 
 		ar.stableStatus = &ss
 	})

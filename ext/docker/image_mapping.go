@@ -228,7 +228,7 @@ func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
 		nc.Log.Vomitf("Recorded mirrored names: %v for %q at registry %s (err: %v)", md.AllNames, md.Registry+"/"+md.CanonicalName, md.Registry, err)
 	}
 
-	nc.tableMetrics()
+	reportTableMetrics(nc.Log, nc.DB)
 	nc.Log.Debugf("Image name: %s -> (updated) Source ID: %v", in, newSID)
 	return newSID, err
 }
@@ -237,19 +237,18 @@ func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
 func (nc *NameCache) getImageName(sid sous.SourceID) (string, strpairs, error) {
 	nc.Log.Vomitf("Getting image name for %+v", sid)
 	name, qualities, err := nc.getImageNameFromCache(sid)
-	defer func() { nc.Log.Debugf("SourceID: %q -> image name %s", sid, name) }()
 	if err == nil {
 		// We got it from the cache first time.
-		nc.Log.IncCounter("cache-hit", 1)
+		reportCacheHit(nc.Log, sid, name)
+
 		return name, qualities, nil
 	}
 	if _, ok := errors.Cause(err).(NoImageNameFound); !ok {
 		// We got a probable database error, give up.
-		nc.Log.Warnf("Cache error: %s", err)
-		nc.Log.IncCounter("cache-error", 1)
+		reportCacheError(nc.Log, sid, err)
 		return "", nil, errors.Wrapf(err, "getting name from cache of %s", nc.DockerRegistryHost)
 	}
-	nc.Log.IncCounter("cache-miss", 1)
+	reportCacheMiss(nc.Log, sid, name)
 	// The error was a NoImageNameFound.
 	if name, qualities, err = nc.getImageNameAfterHarvest(sid); err != nil {
 		// Failed even after a harvest, give up.
@@ -294,7 +293,7 @@ func (nc *NameCache) GetCanonicalName(in string) (string, error) {
 // used by Builder at the moment to register after a build
 func (nc *NameCache) Insert(sid sous.SourceID, in, etag string, qs []sous.Quality) error {
 	err := nc.dbInsert(sid, in, etag, qs)
-	nc.tableMetrics()
+	reportTableMetrics(nc.Log, nc.DB)
 	return err
 }
 
@@ -573,23 +572,31 @@ func (nc *NameCache) dump(io io.Writer) {
 	nc.dumpRows(io, "select * from docker_image_qualities")
 }
 
-func (nc *NameCache) rowCount(table string) {
-	row := nc.DB.QueryRow("select count(1) from " + table)
-	var n int64
-	err := row.Scan(&n)
-	if err != nil {
-		nc.Log.Warnf("error counting rows in table %q: %v", table, err)
-	}
-	nc.Log.UpdateSample("dbrows."+table, n)
+type tableMetrics struct {
+	DB *sql.DB
 }
 
-func (nc *NameCache) tableMetrics() {
-	nc.Log.UpdateSample("dbconns", int64(nc.DB.Stats().OpenConnections))
-	nc.rowCount("docker_repo_name")
-	nc.rowCount("docker_search_location")
-	nc.rowCount("docker_search_metadata")
-	nc.rowCount("docker_search_name")
-	nc.rowCount("docker_image_qualities")
+func (tm tableMetrics) rowCount(table string, sink logging.MetricsSink) {
+	row := tm.DB.QueryRow("select count(1) from " + table)
+	var n int64
+	row.Scan(&n)
+	sink.UpdateSample("dbrows."+table, n)
+}
+
+func (tm tableMetrics) MetricsTo(sink logging.MetricsSink) {
+	sink.UpdateSample("dbconns", int64(tm.DB.Stats().OpenConnections))
+	tm.rowCount("docker_repo_name", sink)
+	tm.rowCount("docker_search_location", sink)
+	tm.rowCount("docker_search_metadata", sink)
+	tm.rowCount("docker_search_name", sink)
+	tm.rowCount("docker_image_qualities", sink)
+}
+
+func reportTableMetrics(logger logging.LogSink, db *sql.DB) {
+	msg := tableMetrics{
+		DB: db,
+	}
+	logging.Deliver(msg, logger)
 }
 
 func sqlExec(db *sql.DB, sql string) error {
