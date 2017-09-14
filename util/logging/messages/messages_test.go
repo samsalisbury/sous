@@ -11,7 +11,8 @@ import (
 
 func TestReportCHResponseFields(t *testing.T) {
 	logger, control := logging.NewLogSinkSpy()
-	ReportClientHTTPResponseFields(logger, "GET", "http://example.com", "/api", map[string]string{"a": "a"}, 200, time.Millisecond*30)
+	msg := newClientHTTPResponse("GET", "http://example.com/api?a=a", 200, 0, 123, time.Millisecond*30)
+	logging.Deliver(msg, logger)
 
 	assert.Len(t, control.Metrics.CallsTo("UpdateTimer"), 1)
 	logCalls := control.CallsTo("LogMessage")
@@ -38,13 +39,17 @@ func TestReportCHResponseFields(t *testing.T) {
 	}
 
 	assert.Equal(t, map[string]interface{}{
-		"@loglov3-otl": "sous-client-http-response-v1",
-		"method":       "GET",
-		"server":       "http://example.com",
-		"parms":        map[string]string{"a": "a"},
-		"path":         "/api",
-		"dur":          time.Duration(30000000),
-		"status":       200,
+		"@loglov3-otl":  "http-v1",
+		"incoming":      false,
+		"method":        "GET",
+		"url":           "http://example.com/api?a=a",
+		"server":        "example.com",
+		"path":          "/api",
+		"querystring":   "a=a",
+		"duration":      time.Duration(30000000),
+		"body-size":     int64(0),
+		"response-size": int64(123),
+		"status":        200,
 	}, actualFields)
 
 }
