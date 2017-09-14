@@ -63,6 +63,28 @@ type (
 		Warnf(f string, as ...interface{})
 	}
 
+	// A LogSink can be used in Deliver to send messages for logging.
+	LogSink interface {
+		temporaryOldStyleLogging
+
+		// Child returns a namespaced child
+		Child(name string) LogSink
+
+		// LogMessage is used to record structured LogMessages
+		LogMessage(Level, LogMessage)
+
+		// Metrics returns a MetricsSink, which will be used to record MetricsMessages.
+		Metrics() MetricsSink
+
+		// Console returns a WriteDoner, which will be used to record ConsoleMessages.
+		Console() WriteDoner
+	}
+
+	// A MetricsSink is passed into a MetricsMessage's MetricsTo(), so that the
+	// it can record its metrics. Once done, the Done method is called - if the
+	// metrics are incomplete or insistent, the MetricsSink can then report
+	// errors.
+	// xxx this facility is preliminary, and Sous doesn't yet record these errors.
 	MetricsSink interface {
 		ClearCounter(name string)
 		IncCounter(name string, amount int64)
@@ -76,19 +98,11 @@ type (
 		Done()
 	}
 
-	LogSink interface {
-		temporaryOldStyleLogging
-
-		Child(name string) LogSink
-
-		LogMessage(Level, LogMessage)
-
-		Metrics() MetricsSink
-
-		Console() WriteDoner
-	}
-
 	// Something like a WriteCloser, but the Done message also asserts that something useful was written
+	// After a console message has been written, the Done method is called, so
+	// that the WriteDoner can report about badly formed or missing console
+	// messages.
+	// xxx this facility is preliminary, and Sous doesn't yet record these errors.
 	WriteDoner interface {
 		io.Writer
 		Done()
@@ -98,24 +112,27 @@ type (
 		io.Writer
 	}
 
+	// A LogMessage has structured data to report to a log (c.f. Deliver)
 	LogMessage interface {
 		DefaultLevel() Level
 		Message() string
 		EachField(FieldReportFn)
 	}
 
+	// A MetricsMessage has metrics data to record (c.f. Deliver)
 	MetricsMessage interface {
 		MetricsTo(MetricsSink)
 	}
 
+	// A ConsoleMessage has messages to report to a local human operator (c.f. Deliver)
 	ConsoleMessage interface {
 		WriteToConsole(console io.Writer)
 	}
 
+	// FieldReportFn is used by LogMessages to report their fields.
 	FieldReportFn func(string, interface{})
 
 	// error interface{}
-
 )
 
 /*
@@ -141,6 +158,10 @@ func nopDoner(w io.Writer) WriteDoner {
 
 func (writeDoner) Done() {}
 
+// Deliver is the core of the logging messages design. Messages may implement
+// any of LogMessage, MetricsMessage or ConsoleMessage, and appropriate action
+// will be taken. The upshot is that messages can be Delivered on the spot and
+// later determine what facilities are appropriate.
 func Deliver(message interface{}, logger LogSink) {
 	silent := true
 
@@ -211,6 +232,7 @@ func ConsoleError(msg ConsoleMessage) string {
 	return buf.String()
 }
 
+// DefaultLevel is a convenience - by embedding a Level, a message can partially implement LogMessage
 func (lvl Level) DefaultLevel() Level {
 	return lvl
 }

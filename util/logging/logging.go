@@ -218,11 +218,15 @@ func graphiteLoop(ls LogSet, ctx context.Context, cfg graphite.Config) {
 	}
 }
 
+// Metrics returns a MetricsSink, which can receive various metrics related method calls. (c.f)
+// LogSet.Metrics returns itself -
 // xxx quickie for providing metricssink
 func (ls LogSet) Metrics() MetricsSink {
 	return ls
 }
 
+// Done signals that the LogSet (as a MetricsSink) is done being used -
+// LogSet's current implementation treats this as a no-op but c.f. MetricsSink.
 // xxx noop until extracted a metrics sink
 func (ls LogSet) Done() {
 }
