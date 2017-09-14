@@ -1,6 +1,9 @@
 package logging
 
 import (
+	"fmt"
+	"io"
+
 	"github.com/davecgh/go-spew/spew"
 )
 
@@ -36,4 +39,8 @@ func (msg *silentMessageError) EachField(f FieldReportFn) {
 
 func (msg *silentMessageError) Message() string {
 	return spew.Sprintf("%+#v", msg.message)
+}
+
+func (msg *silentMessageError) WriteToConsole(w io.Writer) {
+	fmt.Fprintf(w, "ERROR: a message of type %T was generated, but it did not emit any output. This is a bug in Sous.\n", msg.message)
 }

@@ -2,7 +2,9 @@ Todo in messaging:
 
 DLQ something something...
   Very easy to neglect the OTL field, which would silently drop log messages.
-Related: easy to fail to implement a logging interface and not get the data you wanted.
+  Could implement MetricsOn or Console, but not report a metric/write
+    (partly covered now with Done()s on those - need a "schtum" call,
+    and then to check "used")
 Tests per message - check against a golden master, test GMs against checker.
 (how to confirm test per message?)
 So: test helpers for logging.
