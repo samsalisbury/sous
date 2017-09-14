@@ -10,7 +10,8 @@ import (
 // Config captures outside configuration for a root LogSet
 type Config struct {
 	Basic struct {
-		Level string `env:"SOUS_LOGGING_LEVEL"`
+		Level          string `env:"SOUS_LOGGING_LEVEL"`
+		DisableConsole bool
 	}
 	Kafka struct {
 		Enabled      bool
@@ -58,7 +59,10 @@ func (cfg Config) Equal(other Config) bool {
 	return true
 }
 
-func (cfg Config) getBasicLevel() Level {
+// Gets the basic level of logging for this configuration.
+// that is, the level of messages that would be logged that should be emitted to the console
+// this is separate from messages that are designed for human consumption
+func (cfg Config) GetBasicLevel() Level {
 	if cfg.Basic.Level == "" {
 		return CriticalLevel // console output should be via ConsoleMessages, not logging.
 	}
@@ -66,10 +70,10 @@ func (cfg Config) getBasicLevel() Level {
 }
 
 func (cfg Config) getLogrusLevel() logrus.Level {
-	switch cfg.getBasicLevel() {
+	switch cfg.GetBasicLevel() {
 	default:
 		return logrus.WarnLevel
-	case DebugLevel, ExtraDebugLevel1, ExtremeLevel:
+	case DebugLevel, ExtraDebug1Level, ExtremeLevel:
 		return logrus.DebugLevel
 	case InformationLevel:
 		return logrus.InfoLevel

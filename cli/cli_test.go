@@ -238,6 +238,7 @@ func TestInvokeManifestGet(t *testing.T) {
 	maniGet, good := exe.Cmd.(*SousManifestGet)
 	require.True(good)
 	assert.NotNil(maniGet.HTTPClient.HTTPClient)
+	assert.NotNil(maniGet.LogSink)
 }
 
 func TestInvokeManifestSet(t *testing.T) {

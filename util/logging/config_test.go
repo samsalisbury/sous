@@ -22,7 +22,7 @@ func pangramConfig() Config {
 func TestLoggingConfig(t *testing.T) {
 	t.Run("level", func(t *testing.T) {
 		cfg := pangramConfig()
-		assert.Equal(t, cfg.getBasicLevel(), CriticalLevel)
+		assert.Equal(t, cfg.GetBasicLevel(), CriticalLevel)
 		assert.Equal(t, cfg.getLogrusLevel(), logrus.ErrorLevel)
 	})
 

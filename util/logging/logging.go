@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net"
 	"os"
 	"time"
@@ -34,12 +35,12 @@ type (
 
 	// ugh - I don't know what else to call this though
 	dumpBundle struct {
-		appIdent       *applicationID
-		context        context.Context
-		err            io.Writer
-		logrus         *logrus.Logger
-		liveConfig     *Config
-		graphiteCancel func()
+		appIdent        *applicationID
+		context         context.Context
+		err, defaultErr io.Writer
+		logrus          *logrus.Logger
+		liveConfig      *Config
+		graphiteCancel  func()
 	}
 
 	// A temporary type until we can stop using the LogSet loggers directly
@@ -108,10 +109,11 @@ func (ls LogSet) Child(name string) LogSink {
 
 func newdb(vrsn semv.Version, err io.Writer, lgrs *logrus.Logger) *dumpBundle {
 	return &dumpBundle{
-		appIdent: collectAppID(vrsn),
-		context:  context.Background(),
-		err:      err,
-		logrus:   lgrs,
+		appIdent:   collectAppID(vrsn),
+		context:    context.Background(),
+		err:        err,
+		defaultErr: err,
+		logrus:     lgrs,
 	}
 }
 
@@ -134,6 +136,12 @@ func newls(name string, level Level, bundle *dumpBundle) *LogSet {
 // Configure allows an existing LogSet to change its settings.
 func (ls *LogSet) Configure(cfg Config) error {
 	ls.logrus.SetLevel(cfg.getLogrusLevel())
+
+	if cfg.Basic.DisableConsole {
+		ls.dumpBundle.err = ioutil.Discard
+	} else {
+		ls.dumpBundle.err = ls.dumpBundle.defaultErr
+	}
 
 	err := ls.configureKafka(cfg)
 	if err != nil {
@@ -240,7 +248,7 @@ func (ls LogSet) Console() WriteDoner {
 // Vomitf is a simple wrapper on Vomit.Printf
 func (ls LogSet) Vomitf(f string, as ...interface{}) { ls.vomitf(f, as...) }
 func (ls LogSet) vomitf(f string, as ...interface{}) {
-	m := NewGenericMsg(ExtraDebugLevel1, fmt.Sprintf(f, as...), nil)
+	m := NewGenericMsg(ExtraDebug1Level, fmt.Sprintf(f, as...), nil)
 	Deliver(m, ls)
 }
 

@@ -4,7 +4,7 @@ package logging
 
 import "fmt"
 
-const _Level_name = "CriticalLevelWarningLevelInformationLevelDebugLevelExtraDebugLevel1ExtremeLevel"
+const _Level_name = "CriticalLevelWarningLevelInformationLevelDebugLevelExtraDebug1LevelExtremeLevel"
 
 var _Level_index = [...]uint8{0, 13, 25, 41, 51, 67, 79}
 

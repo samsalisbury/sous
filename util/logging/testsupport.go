@@ -59,7 +59,7 @@ func (lss logSinkSpy) LogMessage(lvl Level, msg LogMessage) {
 
 // These do what LogSet does so that it'll be easier to replace the interface
 func (lss logSinkSpy) Vomitf(f string, as ...interface{}) {
-	m := NewGenericMsg(ExtraDebugLevel1, fmt.Sprintf(f, as...), nil)
+	m := NewGenericMsg(ExtraDebug1Level, fmt.Sprintf(f, as...), nil)
 	Deliver(m, lss)
 }
 

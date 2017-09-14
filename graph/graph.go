@@ -302,26 +302,7 @@ func newRegistryDumper(r sous.Registry) *sous.RegistryDumper {
 
 func newLogSet(v *config.Verbosity, version semv.Version, err ErrWriter) *logging.LogSet {
 	ls := logging.NewLogSet(version, "sous", err)
-
-	if v.Debug {
-		if v.Loud {
-			ls.BeChatty()
-			logging.Log.BeChatty()
-		} else {
-			ls.BeHelpful()
-			logging.Log.BeHelpful()
-		}
-	}
-	//if v.Loud {
-	//}
-	if v.Quiet {
-		ls.BeHelpful()
-		logging.Log.BeQuiet()
-	}
-	if v.Silent {
-		ls.BeQuiet()
-		logging.Log.BeQuiet()
-	}
+	ls.Configure(v.LoggingConfiguration())
 
 	//logging.Log.Warn.Println("Normal output enabled")
 	ls.Vomitf("Verbose debugging enabled")
