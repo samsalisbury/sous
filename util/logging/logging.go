@@ -18,6 +18,7 @@ import (
 type (
 	// LogSet is the stopgap for a decent injectable logger
 	LogSet struct {
+		// xxx remove these as phase 1 of completing transition
 		Debug  logwrapper
 		Info   logwrapper
 		Warn   logwrapper
@@ -231,6 +232,7 @@ func (ls LogSet) Console() WriteDoner {
 	return nopDoner(ls.err)
 }
 
+// xxx phase 2 of complete transition: remove these methods in favor of specific messages
 // Vomitf is a simple wrapper on Vomit.Printf
 func (ls LogSet) Vomitf(f string, as ...interface{}) { ls.vomitf(f, as...) }
 func (ls LogSet) vomitf(f string, as ...interface{}) {
