@@ -156,7 +156,6 @@ func NewStatusPoller(cl restful.HTTPClient, rf *ResolveFilter, user User, logs l
 }
 
 func newSubPoller(clusterName, serverURL string, baseFilter *ResolveFilter, user User, logs logging.LogSet) (*subPoller, error) {
-	spew.Dump(logs)
 	cl, err := restful.NewClient(serverURL, logs.Child("http"))
 	if err != nil {
 		return nil, err
