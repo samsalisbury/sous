@@ -249,6 +249,7 @@ func TestInvokeManifestSet(t *testing.T) {
 	maniSet, good := exe.Cmd.(*SousManifestSet)
 	require.True(good)
 	assert.NotNil(maniSet.HTTPClient.HTTPClient)
+	assert.NotNil(maniSet.LogSink)
 }
 
 func TestInvokeServer(t *testing.T) {
