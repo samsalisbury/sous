@@ -2,7 +2,6 @@ package swaggering
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"io/ioutil"
 )
@@ -29,29 +28,7 @@ type (
 		dtos    chan dummyDTOResponse
 		simples chan dummySimpleResponse
 	}
-
-	// StarvedChannelError means that a channel needed a value but didn't have one
-	StarvedChannelError struct {
-		m, p, kind, bodyT string
-		pp, qp            urlParams
-	}
 )
-
-func makeStarvedChannelError(kind, m, p string, pp, qp urlParams, b ...DTO) *StarvedChannelError {
-	bodyT := "<empty>"
-	if len(b) > 0 {
-		bodyT = fmt.Sprintf("%T", b[0])
-	}
-	return &StarvedChannelError{
-		m: m, p: p, pp: pp, qp: qp,
-		kind:  kind,
-		bodyT: bodyT,
-	}
-}
-
-func (e *StarvedChannelError) Error() string {
-	return fmt.Sprintf("No %s resp for %s %s params: %v %v body: %s", e.kind, e.m, e.p, e.pp, e.qp, e.bodyT)
-}
 
 // NewChannelDummy returns a pair of a DummyClient and a DummyControl.
 // Responses fed to DummyControl will be returned by the DummyClient
@@ -63,20 +40,12 @@ func NewChannelDummy() (DummyClient, DummyControl) {
 
 	clnt := DummyClient{
 		NextDTO: func(m, p string, pp, qp urlParams, b ...DTO) (DTO, error) {
-			select {
-			case dr := <-ctrl.dtos:
-				return dr.dto, dr.err
-			default:
-				return nil, makeStarvedChannelError("dto", m, p, pp, qp, b...)
-			}
+			dr := <-ctrl.dtos
+			return dr.dto, dr.err
 		},
 		NextSimple: func(m, p string, pp, qp urlParams, b ...DTO) (string, error) {
-			select {
-			case sr := <-ctrl.simples:
-				return sr.body, sr.err
-			default:
-				return "", makeStarvedChannelError("dto", m, p, pp, qp, b...)
-			}
+			sr := <-ctrl.simples
+			return sr.body, sr.err
 		},
 	}
 

@@ -9,11 +9,16 @@
 			"revisionTime": "2016-08-18T22:37:30Z"
 		},
 		{
-			"checksumSHA1": "htjvdG/znrHmFYRQBqA2vHrJsF4=",
-			"comment": "v0.10.0-16-gcd7d1bb",
-			"path": "github.com/Sirupsen/logrus",
-			"revision": "cd7d1bbe41066b6c1f19780f895901052150a575",
-			"revisionTime": "2016-04-25T09:32:37Z"
+			"checksumSHA1": "EddXnllITE2MqGjj8Xw9hHFjuE8=",
+			"path": "github.com/Shopify/sarama",
+			"revision": "15174039fd207656a0f97f52bc78ec7793deeada",
+			"revisionTime": "2017-08-25T18:38:27Z"
+		},
+		{
+			"checksumSHA1": "/6H1rhQmbq8mEP29pnmLmdwBKUE=",
+			"path": "github.com/cyberdelia/go-metrics-graphite",
+			"revision": "39f87cc3b432bbb898d7c643c0e93cac2bc865ad",
+			"revisionTime": "2016-12-19T23:08:53Z"
 		},
 		{
 			"checksumSHA1": "dvabztWVQX8f6oMLRyv4dLH+TGY=",
@@ -145,6 +150,30 @@
 			"revisionTime": "2016-02-16T23:20:12Z"
 		},
 		{
+			"checksumSHA1": "y2Kh4iPlgCPXSGTCcFpzePYdzzg=",
+			"path": "github.com/eapache/go-resiliency/breaker",
+			"revision": "b1fe83b5b03f624450823b751b662259ffc6af70",
+			"revisionTime": "2017-06-07T16:36:15Z"
+		},
+		{
+			"checksumSHA1": "WHl96RVZlOOdF4Lb1OOadMpw8ls=",
+			"path": "github.com/eapache/go-xerial-snappy",
+			"revision": "bb955e01b9346ac19dc29eb16586c90ded99a98c",
+			"revisionTime": "2016-06-09T14:24:08Z"
+		},
+		{
+			"checksumSHA1": "oCCs6kDanizatplM5e/hX76busE=",
+			"path": "github.com/eapache/queue",
+			"revision": "44cc805cf13205b55f69e14bcb69867d1ae92f98",
+			"revisionTime": "2016-08-05T00:47:13Z"
+		},
+		{
+			"checksumSHA1": "p/8vSviYF91gFflhrt5vkyksroo=",
+			"path": "github.com/golang/snappy",
+			"revision": "553a641470496b2327abcac10b36396bd98e45c9",
+			"revisionTime": "2017-02-15T23:32:05Z"
+		},
+		{
 			"checksumSHA1": "iIUYZyoanCQQTUaWsu8b+iOSPt4=",
 			"comment": "v1.1-2-ga8d44e7",
 			"path": "github.com/gorilla/context",
@@ -183,6 +212,12 @@
 			"revisionTime": "2016-12-10T01:35:37Z"
 		},
 		{
+			"checksumSHA1": "636hzSokJ8y7gabllKd3ild4Ids=",
+			"path": "github.com/nyarly/spies",
+			"revision": "6df459fddaf2f0ac856648e0c0d43f4d491b04de",
+			"revisionTime": "2017-08-08T23:35:25Z"
+		},
+		{
 			"checksumSHA1": "3fxAMDIT/IeTdXInoWxtikWOfK0=",
 			"path": "github.com/opentable/go-singularity",
 			"revision": "166411442e50ba424abe36dc8243305b97405f4e",
@@ -201,7 +236,7 @@
 			"revisionTime": "2016-08-20T15:25:38Z"
 		},
 		{
-			"checksumSHA1": "pWy/a5syfz5YCARcvCcV5/ygzqQ=",
+			"checksumSHA1": "5GnAp0RETgoWf+Asq2DCw3ceE+w=",
 			"path": "github.com/opentable/swaggering",
 			"revision": "48c3213297e582f0e3c5aa1ca440ff27f5c4c311",
 			"revisionTime": "2016-07-18T22:12:07Z"
@@ -211,6 +246,18 @@
 			"path": "github.com/pborman/uuid",
 			"revision": "c55201b036063326c5b1b89ccfe45a184973d073",
 			"revisionTime": "2016-02-16T16:37:10Z"
+		},
+		{
+			"checksumSHA1": "FGg99nQ56Fo3radSCuU1AeEUJug=",
+			"path": "github.com/pierrec/lz4",
+			"revision": "08c27939df1bd95e881e2c2367a749964ad1fceb",
+			"revisionTime": "2017-08-28T19:29:35Z"
+		},
+		{
+			"checksumSHA1": "zPWRjzsPeXCoqmidIcJtHbvrvRs=",
+			"path": "github.com/pierrec/xxHash/xxHash32",
+			"revision": "a0006b13c722f7f12368c00a3d3c2ae8a999a0c6",
+			"revisionTime": "2017-07-14T08:24:55Z"
 		},
 		{
 			"checksumSHA1": "2HSjyUZ4IMkCeA34TjJ0/f+Kk/k=",
@@ -237,7 +284,7 @@
 			"revisionTime": "2016-11-28T21:05:44Z"
 		},
 		{
-			"checksumSHA1": "2V/cOeTyEzxHlGrc245asBdVjz8=",
+			"checksumSHA1": "dH+qw8ZPrERZljJeM2FesLFlpyg=",
 			"path": "github.com/samsalisbury/psyringe",
 			"revision": "5f46c5431ed3997dd5c1a78cd6580aad8329fce9",
 			"revisionTime": "2017-02-11T10:25:57Z"
@@ -260,6 +307,12 @@
 			"path": "github.com/satori/go.uuid",
 			"revision": "f9ab0dce87d815821e221626b772e3475a0d2749",
 			"revisionTime": "2016-03-24T11:22:44Z"
+		},
+		{
+			"checksumSHA1": "BYvROBsiyAXK4sq6yhDe8RgT4LM=",
+			"path": "github.com/sirupsen/logrus",
+			"revision": "89742aefa4b206dcf400792f3bd35b542998eb3b",
+			"revisionTime": "2017-08-22T13:27:46Z"
 		},
 		{
 			"checksumSHA1": "EO+jcRet/AJ6IY3lBO8l8BLsZWg=",
@@ -303,6 +356,12 @@
 			"path": "github.com/stretchr/testify/suite",
 			"revision": "4d4bfba8f1d1027c4fdbe371823030df51419987",
 			"revisionTime": "2017-01-30T11:31:45Z"
+		},
+		{
+			"checksumSHA1": "OsWu8yEIQGXZrlDkW4jzc7jiu7Q=",
+			"path": "github.com/tracer0tong/kafkalogrus",
+			"revision": "ddfc7dbef6a8a3f9fd20c8286e9bfdb99bf9f69e",
+			"revisionTime": "2017-08-16T17:57:46Z"
 		},
 		{
 			"checksumSHA1": "FvjFAsGryjeu76HSh28J2+CYGcs=",
