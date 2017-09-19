@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
+## [Unreleased](//github.com/opentable/sous/compare/0.5.32...HEAD)
+### Fixed
+- Server: Flavor metadata wasn't being pulled back into the ADS during rectify, which led to bad behaviors in deploy.
+
 ## [0.5.32](//github.com/opentable/sous/compare/0.5.31...0.5.32)
 ### Changed
 - Developer: Refactors of filters and logging. Mostly to the good.
