@@ -102,6 +102,7 @@ func TestBuildDeployment_errors(t *testing.T) {
 
 	fakeSing.cannedAnswer.Deploy.Metadata = map[string]string{
 		"com.opentable.sous.clustername": "left",
+		"com.opentable.sous.flavor":      "vanilla",
 	}
 
 	_, err = BuildDeployment(fakeReg, testClusters, req)
@@ -150,6 +151,7 @@ func TestBuildDeployment(t *testing.T) {
 			Deploy: &dtos.SingularityDeploy{
 				Metadata: map[string]string{
 					"com.opentable.sous.clustername": "left",
+					"com.opentable.sous.flavor":      "vanilla",
 				},
 
 				Healthcheck: &dtos.HealthcheckOptions{
@@ -191,9 +193,11 @@ func TestBuildDeployment(t *testing.T) {
 
 	expected := sous.DeployState{Status: sous.DeployStatusActive}
 	expected.ClusterName = "left"
+	expected.Flavor = "vanilla"
 
 	assert.Equal(t, actual.ClusterName, expected.ClusterName)
 	assert.Equal(t, actual.Status, expected.Status)
+	assert.Equal(t, actual.Flavor, expected.Flavor)
 
 	assert.Equal(t, actual.Startup.CheckReadyURIPath, "/health-report")
 
@@ -234,6 +238,7 @@ func TestBuildDeployment_failed_deploy(t *testing.T) {
 			Deploy: &dtos.SingularityDeploy{
 				Metadata: map[string]string{
 					"com.opentable.sous.clustername": "left",
+					"com.opentable.sous.flavor":      "",
 				},
 				ContainerInfo: &dtos.SingularityContainerInfo{
 					Type:   "DOCKER",
@@ -285,7 +290,7 @@ func TestBuildingRequestID(t *testing.T) {
 		},
 	}
 	db.clusters[cn] = &sous.Cluster{}
-	if err := db.assignClusterName(); err != nil {
+	if err := db.restoreFromMetadata(); err != nil {
 		t.Errorf("unexpect error: %v", err)
 	}
 	if db.Target.ClusterName != cn {
@@ -381,7 +386,7 @@ func TestBuildingRequestIDTwoClusters(t *testing.T) {
 		request:  &dtos.SingularityRequest{Id: "::" + cn},
 		req:      SingReq{SourceURL: url},
 	}
-	assert.NoError(t, db.assignClusterName())
+	assert.NoError(t, db.restoreFromMetadata())
 	assert.Equal(t, db.Target.ClusterName, cn)
 
 	db2 := &deploymentBuilder{
@@ -395,7 +400,7 @@ func TestBuildingRequestIDTwoClusters(t *testing.T) {
 		request:  &dtos.SingularityRequest{Id: "::" + cn2},
 		req:      SingReq{SourceURL: url},
 	}
-	assert.NoError(t, db2.assignClusterName())
+	assert.NoError(t, db2.restoreFromMetadata())
 	assert.Equal(t, db2.Target.ClusterName, cn2)
 }
 

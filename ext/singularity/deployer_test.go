@@ -290,7 +290,7 @@ func matchedPair(t *testing.T, startDep *sous.Deployment) *sous.DeployablePair {
 	}
 
 	assert.NoError(t, db.extractArtifactName(), "Could not extract ArtifactName (Docker image name) from SingularityDeploy.")
-	assert.NoError(t, db.assignClusterName(), "Could not determine cluster name based on SingularityDeploy Metadata.")
+	assert.NoError(t, db.restoreFromMetadata(), "Could not determine cluster name based on SingularityDeploy Metadata.")
 	assert.NoError(t, db.unpackDeployConfig(), "Could not convert data from a SingularityDeploy to a sous.Deployment.")
 	assert.NoError(t, db.determineManifestKind(), "Could not determine SingularityRequestType.")
 
