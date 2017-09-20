@@ -20,7 +20,7 @@ type (
 
 	// GETGDMHandler is an injectable request handler
 	GETGDMHandler struct {
-		logging.LogSet
+		logging.LogSink
 		GDM      *sous.State
 		RzWriter http.ResponseWriter
 	}
@@ -28,7 +28,7 @@ type (
 	// PUTGDMHandler is an injectable request handler
 	PUTGDMHandler struct {
 		*http.Request
-		logging.LogSet
+		logging.LogSink
 		GDM          *sous.State
 		StateManager sous.StateManager
 		User         ClientUser
@@ -42,7 +42,7 @@ func newGDMResource(ctx ComponentLocator) *GDMResource {
 // Get implements Getable on GDMResource
 func (gr *GDMResource) Get(writer http.ResponseWriter, _ *http.Request, _ httprouter.Params) restful.Exchanger {
 	return &GETGDMHandler{
-		LogSet:   gr.context.LogSet,
+		LogSink:  gr.context.LogSink,
 		GDM:      gr.context.liveState(),
 		RzWriter: writer,
 	}
@@ -77,7 +77,7 @@ func (h *GETGDMHandler) Exchange() (interface{}, int) {
 func (gr *GDMResource) Put(_ http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
 	return &PUTGDMHandler{
 		Request:      req,
-		LogSet:       gr.context.LogSet,
+		LogSink:      gr.context.LogSink,
 		GDM:          gr.context.liveState(),
 		StateManager: gr.context.StateManager,
 		User:         gr.GetUser(req),
@@ -95,19 +95,19 @@ func (h *PUTGDMHandler) Exchange() (interface{}, int) {
 
 	state, err := h.StateManager.ReadState()
 	if err != nil {
-		h.Warn.Printf("%#v", err)
+		h.Warnf("%#v", err)
 		return "Error loading state from storage", http.StatusInternalServerError
 	}
 
 	state.Manifests, err = deps.PutbackManifests(state.Defs, state.Manifests)
 	if err != nil {
-		h.Warn.Printf("%#v", err)
+		h.Warnf("%#v", err)
 		return "Error getting state", http.StatusConflict
 	}
 
 	flaws := state.Validate()
 	if len(flaws) > 0 {
-		h.Warn.Printf("%#v", flaws)
+		h.Warnf("%#v", flaws)
 		return "Invalid GDM", http.StatusBadRequest
 	}
 
@@ -116,7 +116,7 @@ func (h *PUTGDMHandler) Exchange() (interface{}, int) {
 	}
 
 	if err := h.StateManager.WriteState(state, sous.User(h.User)); err != nil {
-		h.Warn.Printf("%#v", err)
+		h.Warnf("%#v", err)
 		return "Error committing state", http.StatusInternalServerError
 	}
 

@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"io"
 
-	"github.com/opentable/sous/util/spies"
+	"github.com/nyarly/spies"
 )
 
 type (

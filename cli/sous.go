@@ -96,6 +96,5 @@ func (s *Sous) usage() cmdr.ErrorResult {
 
 // Subcommands returns all the top-level sous subcommands.
 func (s *Sous) Subcommands() cmdr.Commands {
-	//s.CLI.SetVerbosity(s.Verbosity())
 	return TopLevelCommands
 }

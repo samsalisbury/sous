@@ -50,7 +50,6 @@ func newLocalSousConfig(pic PossiblyInvalidConfig) (v LocalSousConfig, err error
 
 func newConfigLoader() *ConfigLoader {
 	cl := configloader.New()
-	logging.SetupLogging(cl)
 	return &ConfigLoader{ConfigLoader: cl}
 }
 

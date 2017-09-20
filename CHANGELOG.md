@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
+## [Unreleased](//github.com/opentable/sous/compare/0.5.32...HEAD)
+### Added
+- Structured logging. Default logging will be structured (and colorful!)
+  because of using logrus. Configuration should allow delivery of metrics to
+  graphite and log entries to ELK.
+
 ## [0.5.32](//github.com/opentable/sous/compare/0.5.31...0.5.32)
 ### Changed
 - Developer: Refactors of filters and logging. Mostly to the good.

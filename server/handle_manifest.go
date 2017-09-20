@@ -30,7 +30,7 @@ type (
 	// PUTManifestHandler handles PUT exchanges for manifests
 	PUTManifestHandler struct {
 		*sous.State
-		logging.LogSet
+		logging.LogSink
 		*http.Request
 		restful.QueryValues
 		User        ClientUser
@@ -61,7 +61,7 @@ func (mr *ManifestResource) Get(_ http.ResponseWriter, req *http.Request, _ http
 func (mr *ManifestResource) Put(_ http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
 	return &PUTManifestHandler{
 		State:       mr.context.liveState(),
-		LogSet:      mr.context.LogSet,
+		LogSink:     mr.context.LogSink,
 		Request:     req,
 		QueryValues: mr.ParseQuery(req),
 		User:        mr.GetUser(req),
@@ -119,7 +119,7 @@ func (pmh *PUTManifestHandler) Exchange() (interface{}, int) {
 
 	flaws := m.Validate()
 	if len(flaws) > 0 {
-		pmh.Vomit.Print(spew.Sdump(flaws))
+		pmh.Vomitf(spew.Sdump(flaws))
 		return "Invalid manifest", http.StatusBadRequest
 	}
 	pmh.State.Manifests.Set(mid, m)

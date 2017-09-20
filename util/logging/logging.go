@@ -1,51 +1,51 @@
 package logging
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
+	"net"
 	"os"
+	"time"
 
+	graphite "github.com/cyberdelia/go-metrics-graphite"
 	metrics "github.com/rcrowley/go-metrics"
+	"github.com/samsalisbury/semv"
+	"github.com/sirupsen/logrus"
+	"github.com/tracer0tong/kafkalogrus"
 )
 
 type (
-	// ILogger is like this:
-	// XXX This is a complete placeholder for work in the ilog branch
-	// I needed some extra logging for config process, and didn't want to double
-	// down on a process we knew we were going to abandon
-	// XXX Further thought: I really think we should look log15 (or something) as our logging platform.
-	// It won't be perfect, but it also won't suck up work
-	ILogger interface {
-		SetLogFunc(func(...interface{}))
-		SetDebugFunc(func(...interface{}))
-	}
-
 	// LogSet is the stopgap for a decent injectable logger
 	LogSet struct {
-		Debug  *logwrapper
-		Info   *logwrapper
-		Warn   *logwrapper
-		Notice *logwrapper
-		Vomit  *logwrapper
+		// xxx remove these as phase 1 of completing transition
+		Debug  logwrapper
+		Info   logwrapper
+		Warn   logwrapper
+		Notice logwrapper
+		Vomit  logwrapper
 
-		level uint
-
-		name string
+		level Level
+		name  string
 
 		metrics metrics.Registry
+		*dumpBundle
+	}
 
-		err   io.Writer
-		vomit *log.Logger
-		debug *log.Logger
-		warn  *log.Logger
+	// ugh - I don't know what else to call this though
+	dumpBundle struct {
+		appIdent        *applicationID
+		context         context.Context
+		err, defaultErr io.Writer
+		logrus          *logrus.Logger
+		liveConfig      *Config
+		graphiteCancel  func()
 	}
 
 	// A temporary type until we can stop using the LogSet loggers directly
-	logwrapper struct {
-		ffn func(string, ...interface{})
-	}
+	// XXX remove and fix accesses to Debug, Info, etc. to be Debugf etc
+	logwrapper func(string, ...interface{})
 )
 
 var (
@@ -56,107 +56,228 @@ var (
 	// want metrics in a component, you need to add an injected LogSet. c.f.
 	// ext/docker/image_mapping.go
 	Log = func() LogSet {
-		return NewLogSet("", os.Stderr)
+		return *(NewLogSet(semv.MustParse("0.0.0"), "", os.Stderr))
 	}()
 )
 
-func (w *logwrapper) Printf(f string, vs ...interface{}) {
-	w.ffn(f, vs...)
+func (w logwrapper) Printf(f string, vs ...interface{}) {
+	w(f, vs...)
 }
 
-func (w *logwrapper) Print(vs ...interface{}) {
-	w.ffn(fmt.Sprint(vs...))
+func (w logwrapper) Print(vs ...interface{}) {
+	w(fmt.Sprint(vs...))
 }
 
-func (w *logwrapper) Println(vs ...interface{}) {
-	w.ffn(fmt.Sprint(vs...))
+func (w logwrapper) Println(vs ...interface{}) {
+	w(fmt.Sprint(vs...))
 }
 
 // SilentLogSet returns a logset that discards everything by default
-func SilentLogSet() LogSet {
-	ls := NewLogSet("", os.Stderr)
+func SilentLogSet() *LogSet {
+	ls := NewLogSet(semv.MustParse("0.0.0"), "", os.Stderr)
 	ls.BeQuiet()
 	return ls
 }
 
 // NewLogSet builds a new Logset that feeds to the listed writers
-// If name is "", no metric collector will be built, and all metrics provided
-// by this logset will be bitbuckets.
-func NewLogSet(name string, err io.Writer) LogSet {
-	ls := newls(name, err)
+func NewLogSet(version semv.Version, name string, err io.Writer) *LogSet {
+	// logrus uses a pool for entries, which means we probably really should only have one.
+	// this means that output configuration and level limiting is global to the logset and
+	// its children.
+	lgrs := logrus.New()
+	lgrs.Out = err
+
+	bundle := newdb(version, err, lgrs)
+
+	ls := newls(name, WarningLevel, bundle)
 	ls.imposeLevel()
-	if name != "" {
+
+	if name == "" {
+		ls.metrics = metrics.NewRegistry()
+	} else {
 		ls.metrics = metrics.NewPrefixedRegistry(name + ".")
 	}
 	return ls
 }
 
 // Child produces a child logset, namespaced under "name".
-func (ls *LogSet) Child(name string) LogSet {
-	child := newls(ls.name+"."+name, ls.err)
-	child.level = ls.level
-	child.imposeLevel()
-	if ls.metrics != nil {
-		child.metrics = metrics.NewPrefixedChildRegistry(ls.metrics, name+".")
-	}
+func (ls LogSet) Child(name string) LogSink {
+	child := newls(ls.name+"."+name, ls.level, ls.dumpBundle)
+	child.metrics = metrics.NewPrefixedChildRegistry(ls.metrics, name+".")
 	return child
 }
 
-func newls(name string, err io.Writer) LogSet {
-	ls := LogSet{
-		err:   err,
-		name:  name,
-		level: 1,
-		vomit: log.New(err, name+" vomit:", log.Lshortfile|log.Ldate|log.Ltime),
-		debug: log.New(err, name+" debug: ", log.Lshortfile|log.Ldate|log.Ltime),
-		warn:  log.New(err, name+" warn: ", 0),
+func newdb(vrsn semv.Version, err io.Writer, lgrs *logrus.Logger) *dumpBundle {
+	return &dumpBundle{
+		appIdent:   collectAppID(vrsn),
+		context:    context.Background(),
+		err:        err,
+		defaultErr: err,
+		logrus:     lgrs,
 	}
-	ls.Debug = &logwrapper{ffn: logto(ls.debug, 4)}
-	ls.Vomit = &logwrapper{ffn: logto(ls.vomit, 4)}
-	ls.Warn = &logwrapper{ffn: logto(ls.warn, 4)}
-	ls.Info = ls.Warn
+}
+
+func newls(name string, level Level, bundle *dumpBundle) *LogSet {
+	ls := &LogSet{
+		name:       name,
+		level:      level,
+		dumpBundle: bundle,
+	}
+
+	ls.Warn = logwrapper(func(f string, as ...interface{}) { ls.warnf(f, as) })
 	ls.Notice = ls.Warn
-	return ls
+	ls.Info = ls.Warn
+	ls.Debug = logwrapper(func(f string, as ...interface{}) { ls.debugf(f, as) })
+	ls.Vomit = logwrapper(func(f string, as ...interface{}) { ls.vomitf(f, as) })
 
+	return ls
 }
 
-func logto(to *log.Logger, depth int) func(string, ...interface{}) {
-	return func(f string, as ...interface{}) {
-		to.Output(depth, fmt.Sprintf(f, as...))
+// Configure allows an existing LogSet to change its settings.
+func (ls *LogSet) Configure(cfg Config) error {
+	ls.logrus.SetLevel(cfg.getLogrusLevel())
+
+	if cfg.Basic.DisableConsole {
+		ls.dumpBundle.err = ioutil.Discard
+	} else {
+		ls.dumpBundle.err = ls.dumpBundle.defaultErr
+	}
+
+	err := ls.configureKafka(cfg)
+	if err != nil {
+		return err
+	}
+
+	err = ls.configureGraphite(cfg)
+	if err != nil {
+		return err
+	}
+
+	ls.liveConfig = &cfg
+	return nil
+}
+
+func (ls LogSet) configureKafka(cfg Config) error {
+	if ls.liveConfig != nil && ls.liveConfig.useKafka() {
+		if cfg.useKafka() {
+			return newLogConfigurationError("cannot reconfigure kafka")
+		}
+		return newLogConfigurationError("cannot disable kafka")
+	}
+
+	if !cfg.useKafka() {
+		return nil
+	}
+
+	hook, err := kafkalogrus.NewKafkaLogrusHook("kafkahook",
+		cfg.getKafkaLevels(),
+		&logrus.JSONFormatter{},
+		cfg.getBrokers(),
+		cfg.Kafka.Topic,
+		false)
+
+	// One cause of errors: can't reach any brokers
+	// c.f. https://github.com/Shopify/sarama/blob/master/client.go#L114
+	if err != nil {
+		return err
+	}
+
+	ls.logrus.AddHook(hook)
+	return nil
+}
+
+func (ls LogSet) configureGraphite(cfg Config) error {
+	addr, err := net.ResolveTCPAddr("tcp", cfg.Graphite.Server)
+	if err != nil {
+		return err
+	}
+	gCfg := graphite.Config{
+		Addr:          addr,
+		Registry:      ls.metrics,
+		FlushInterval: 30 * time.Second,
+		DurationUnit:  time.Nanosecond,
+		Prefix:        "sous",
+		Percentiles:   []float64{0.5, 0.75, 0.95, 0.99, 0.999},
+	}
+
+	gCtx, cancel := context.WithCancel(ls.context)
+
+	if ls.graphiteCancel != nil {
+		ls.graphiteCancel()
+	}
+
+	ls.graphiteCancel = cancel
+	go graphiteLoop(ls, gCtx, gCfg)
+	return nil
+}
+
+func graphiteLoop(ls LogSet, ctx context.Context, cfg graphite.Config) {
+	ticker := time.NewTicker(cfg.FlushInterval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			if err := graphite.Once(cfg); err != nil {
+				reportGraphiteError(ls, err)
+			}
+		case <-ctx.Done():
+			return
+		}
 	}
 }
 
+// Metrics returns a MetricsSink, which can receive various metrics related method calls. (c.f)
+// LogSet.Metrics returns itself -
+// xxx quickie for providing metricssink
+func (ls LogSet) Metrics() MetricsSink {
+	return ls
+}
+
+// Done signals that the LogSet (as a MetricsSink) is done being used -
+// LogSet's current implementation treats this as a no-op but c.f. MetricsSink.
+// xxx noop until extracted a metrics sink
+func (ls LogSet) Done() {
+}
+
+// Console implements LogSink on LogSet
+func (ls LogSet) Console() WriteDoner {
+	return nopDoner(ls.err)
+}
+
+// xxx phase 2 of complete transition: remove these methods in favor of specific messages
 // Vomitf is a simple wrapper on Vomit.Printf
-func (ls LogSet) Vomitf(f string, as ...interface{}) { logto(ls.vomit, 3)(f, as...) }
-func (ls LogSet) vomitf(f string, as ...interface{}) { logto(ls.vomit, 3)(f, as...) }
+func (ls LogSet) Vomitf(f string, as ...interface{}) { ls.vomitf(f, as...) }
+func (ls LogSet) vomitf(f string, as ...interface{}) {
+	m := NewGenericMsg(ExtraDebug1Level, fmt.Sprintf(f, as...), nil)
+	Deliver(m, ls)
+}
 
 // Debugf is a simple wrapper on Debug.Printf
-func (ls LogSet) Debugf(f string, as ...interface{}) { logto(ls.debug, 3)(f, as...) }
-func (ls LogSet) debugf(f string, as ...interface{}) { logto(ls.debug, 3)(f, as...) }
+func (ls LogSet) Debugf(f string, as ...interface{}) { ls.debugf(f, as...) }
+func (ls LogSet) debugf(f string, as ...interface{}) {
+	m := NewGenericMsg(DebugLevel, fmt.Sprintf(f, as...), nil)
+	Deliver(m, ls)
+}
 
-// Warnf is a simple wrapper on Warn.Printf
-func (ls LogSet) Warnf(f string, as ...interface{}) { logto(ls.warn, 3)(f, as...) }
-func (ls LogSet) warnf(f string, as ...interface{}) { logto(ls.warn, 3)(f, as...) }
+func (ls LogSet) Warnf(f string, as ...interface{}) { ls.warnf(f, as...) }
+func (ls LogSet) warnf(f string, as ...interface{}) {
+	m := NewGenericMsg(WarningLevel, fmt.Sprintf(f, as...), nil)
+	Deliver(m, ls)
+}
 
 func (ls LogSet) imposeLevel() {
-	ls.vomit.SetOutput(ioutil.Discard)
-	ls.debug.SetOutput(ioutil.Discard)
-	ls.warn.SetOutput(ioutil.Discard)
-	ls.warn.SetFlags(log.LstdFlags)
+	ls.logrus.SetLevel(logrus.ErrorLevel)
 
 	if ls.level >= 1 {
-		ls.warn.SetOutput(ls.err)
-		ls.warn.SetFlags(log.Llongfile | log.Ltime)
+		ls.logrus.SetLevel(logrus.WarnLevel)
 	}
 
 	if ls.level >= 2 {
-		ls.vomit.SetOutput(ls.err)
-		ls.vomit.SetFlags(log.Llongfile | log.Ltime)
+		ls.logrus.SetLevel(logrus.DebugLevel)
 	}
 
 	if ls.level >= 3 {
-		ls.debug.SetOutput(ls.err)
-		ls.debug.SetFlags(log.Llongfile | log.Ltime)
+		ls.logrus.SetLevel(logrus.DebugLevel)
 	}
 }
 
@@ -182,29 +303,4 @@ func (ls LogSet) BeHelpful() {
 func (ls LogSet) BeChatty() {
 	ls.level = 3
 	ls.imposeLevel()
-}
-
-// SetupLogging sets up an ILogger to log into the Sous logging regime
-func SetupLogging(il ILogger) {
-	il.SetLogFunc(func(args ...interface{}) {
-		logMaybeMap(Log.Warn, args...)
-	})
-	il.SetDebugFunc(func(args ...interface{}) {
-		logMaybeMap(Log.Debug, args...)
-	})
-}
-
-func logMaybeMap(l *logwrapper, args ...interface{}) {
-	msg, mok := args[0].(string)
-	fields, fok := args[1].(map[string]interface{})
-	if !(mok && fok) {
-		l.Printf(fmt.Sprint(args))
-		return
-	}
-	msg = msg + ": "
-	for k, v := range fields {
-		msg = fmt.Sprintf("%s %s = %v", msg, k, v)
-	}
-	l.Printf(msg)
-	return
 }

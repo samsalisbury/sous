@@ -164,11 +164,6 @@ func (c *CLI) printTip(tip string) {
 	c.Err.Printfln(tip)
 }
 
-// SetVerbosity sets the verbosity.
-func (c *CLI) SetVerbosity(v Verbosity) {
-	c.Err.Verbosity = v
-}
-
 // ListSubcommands returns a slice of strings with the names of each subcommand
 // as they need to be entered by the user, arranged alphabetically.
 func (c *CLI) ListSubcommands(base Command) []string {

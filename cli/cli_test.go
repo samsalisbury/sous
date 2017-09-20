@@ -23,8 +23,8 @@ func prepareCommand(t *testing.T, cl []string) (*CLI, *cmdr.PreparedExecution, f
 	stderr := &bytes.Buffer{}
 
 	s := &Sous{Version: semv.MustParse(`1.2.3`)}
-	di := graph.BuildTestGraph(stdin, stdout, stderr)
-	c, err := NewSousCLI(di, s, stdin, stdout, stderr)
+	di := graph.BuildTestGraph(semv.Version{}, stdin, stdout, stderr)
+	c, err := NewSousCLI(di, s, stdout, stderr)
 	require.NoError(err)
 
 	exe, err := c.Prepare(cl)
@@ -238,6 +238,7 @@ func TestInvokeManifestGet(t *testing.T) {
 	maniGet, good := exe.Cmd.(*SousManifestGet)
 	require.True(good)
 	assert.NotNil(maniGet.HTTPClient.HTTPClient)
+	assert.NotNil(maniGet.LogSink)
 }
 
 func TestInvokeManifestSet(t *testing.T) {
@@ -248,6 +249,7 @@ func TestInvokeManifestSet(t *testing.T) {
 	maniSet, good := exe.Cmd.(*SousManifestSet)
 	require.True(good)
 	assert.NotNil(maniSet.HTTPClient.HTTPClient)
+	assert.NotNil(maniSet.LogSink)
 }
 
 func TestInvokeServer(t *testing.T) {
@@ -353,8 +355,8 @@ func TestInvokeWithUnknownFlags(t *testing.T) {
 	stderr := &bytes.Buffer{}
 
 	s := &Sous{Version: semv.MustParse(`1.2.3`)}
-	di := graph.BuildTestGraph(stdin, stdout, stderr)
-	c, err := NewSousCLI(di, s, stdin, stdout, stderr)
+	di := graph.BuildTestGraph(semv.Version{}, stdin, stdout, stderr)
+	c, err := NewSousCLI(di, s, stdout, stderr)
 	require.NoError(err)
 
 	c.Invoke([]string{`sous`, `-cobblers`})

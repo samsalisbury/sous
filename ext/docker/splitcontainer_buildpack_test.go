@@ -9,10 +9,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/nyarly/spies"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/docker_registry"
 	"github.com/opentable/sous/util/shell"
-	"github.com/opentable/sous/util/spies"
 	"github.com/pkg/errors"
 )
 

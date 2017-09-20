@@ -12,8 +12,6 @@ type (
 	// emit tables. It is designed to be used sequentially, writing and changing
 	// context on each call to one of its methods.
 	Output struct {
-		// Verbosity is the verbosity of this output.
-		Verbosity Verbosity
 		// Errors contains any errors this output has encountered whilst
 		// writing to Writer.
 		Errors []error

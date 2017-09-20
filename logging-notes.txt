@@ -1,0 +1,11 @@
+Things that should for sure be logged:
+
+HTTP requests and responses - Sous API.
+HTTP requests and responses - 3rd party APIs: Docker registry, Singularity.
+User actions.
+API errors.
+
+Review Gregg on instrumentation.
+
+Done:
+Docker name cache requests, hits, misses.

@@ -1,6 +1,6 @@
 package sous
 
-import "github.com/opentable/sous/util/spies"
+import "github.com/nyarly/spies"
 
 type (
 	// ImageLabeller can get the image labels for a given imageName
