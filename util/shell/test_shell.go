@@ -3,7 +3,7 @@ package shell
 import (
 	"os"
 
-	"github.com/opentable/sous/util/spies"
+	"github.com/nyarly/spies"
 	"github.com/stretchr/testify/mock"
 )
 

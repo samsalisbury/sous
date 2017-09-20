@@ -3,12 +3,11 @@ package graph
 import (
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/server"
-	"github.com/opentable/sous/util/logging"
 )
 
-func newServerComponentLocator(ls logging.LogSet, cfg LocalSousConfig, ins sous.Inserter, sm *ServerStateManager, rf *sous.ResolveFilter, ar *sous.AutoResolver) server.ComponentLocator {
+func newServerComponentLocator(ls LogSink, cfg LocalSousConfig, ins sous.Inserter, sm *ServerStateManager, rf *sous.ResolveFilter, ar *sous.AutoResolver) server.ComponentLocator {
 	return server.ComponentLocator{
-		LogSet:        ls,
+		LogSink:       ls.LogSink,
 		Config:        cfg.Config,
 		Inserter:      ins,
 		StateManager:  sm.StateManager,

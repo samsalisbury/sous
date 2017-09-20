@@ -18,8 +18,6 @@ type (
 		Vomitf(format string, a ...interface{})
 		Debugf(format string, a ...interface{})
 		Warnf(format string, a ...interface{})
-		HasMetrics() bool
-		ExpHandler() http.Handler
 	}
 
 	userExtractor struct{}
@@ -29,7 +27,7 @@ type (
 	// ComponentLocator is a service locator for the Sous components that server
 	// endpoints need to function.
 	ComponentLocator struct {
-		logging.LogSet
+		logging.LogSink
 		*config.Config
 		sous.Inserter
 		sous.StateManager
@@ -65,16 +63,17 @@ func Run(laddr string, handler http.Handler) error {
 }
 
 // Handler builds the http.Handler for the Sous server httprouter.
-func Handler(sc ComponentLocator, ls logSet) http.Handler {
+func Handler(sc ComponentLocator, metrics http.Handler, ls logSet) http.Handler {
 	handler := mux(sc, ls)
-	addMetrics(handler, ls)
+	addMetrics(handler, metrics)
 	return handler
 }
 
 // Handler builds the http.Handler for the Sous server httprouter.
-func ProfilingHandler(sc ComponentLocator, ls logSet) http.Handler {
+func ProfilingHandler(sc ComponentLocator, metrics http.Handler, ls logSet) http.Handler {
 	handler := mux(sc, ls)
-	addMetrics(handler, ls)
+	addMetrics(handler, metrics)
+	addProfiling(handler)
 	return handler
 }
 
@@ -97,10 +96,8 @@ func routemap(context ComponentLocator) *restful.RouteMap {
 	}
 }
 
-func addMetrics(handler *http.ServeMux, ls logSet) {
-	if ls.HasMetrics() {
-		handler.Handle("/debug/metrics", ls.ExpHandler())
-	}
+func addMetrics(handler *http.ServeMux, metrics http.Handler) {
+	handler.Handle("/debug/metrics", metrics)
 }
 
 func addProfiling(handler *http.ServeMux) {

@@ -3,8 +3,8 @@ package restfultest
 import (
 	"encoding/json"
 
+	"github.com/nyarly/spies"
 	"github.com/opentable/sous/util/restful"
-	"github.com/opentable/sous/util/spies"
 )
 
 type (

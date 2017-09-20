@@ -1,0 +1,31 @@
+Todo in messaging:
+
+DLQ something something...
+  Very easy to neglect the OTL field, which would silently drop log messages.
+  Could implement MetricsOn or Console, but not report a metric/write
+    (partly covered now with Done()s on those - need a "schtum" call,
+    and then to check "used")
+Tests per message - check against a golden master, test GMs against checker.
+(how to confirm test per message?)
+So: test helpers for logging.
+
+testing for metrics
+  delivered to graphite
+  reported on /debug/metrics
+
+OTLs - write & PR
+
+Add messages instead of logging.
+
+errors - model on pkg/errors
+  OTL?
+
+resettable timers (cyclic? noncyclic?)
+  "observables", run just before each graphite delivery
+  timers "observe" the the time since they were reset into a sample
+
+removing legacy interfaces
+
+log every recover
+log every early goroutine exit
+(debug) log every goroutine exit (and metrics for "now I'm done")

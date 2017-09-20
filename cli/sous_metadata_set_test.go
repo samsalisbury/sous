@@ -3,10 +3,10 @@ package cli
 import (
 	"testing"
 
+	"github.com/nyarly/spies"
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/restful/restfultest"
-	"github.com/opentable/sous/util/spies"
 	"github.com/stretchr/testify/assert"
 )
 

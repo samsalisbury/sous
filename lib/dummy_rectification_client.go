@@ -1,14 +1,14 @@
 package sous
 
 import (
-	"log"
+	"github.com/opentable/sous/util/logging"
 )
 
 type (
 	// DummyRectificationClient implements RectificationClient but doesn't act on the Mesos scheduler;
 	// instead it collects the changes that would be performed and options
 	DummyRectificationClient struct {
-		logger   *log.Logger
+		logger   logging.LogSink
 		Created  []Deployable
 		Deployed []Deployable
 		Deleted  []dummyDelete
@@ -25,20 +25,14 @@ func NewDummyRectificationClient() *DummyRectificationClient {
 }
 
 // SetLogger sets the logger for the client
-func (drc *DummyRectificationClient) SetLogger(l *log.Logger) {
-	l.Println("dummy begin")
+func (drc *DummyRectificationClient) SetLogger(l logging.LogSink) {
+	l.Warnf("dummy begin")
 	drc.logger = l
-}
-
-func (drc *DummyRectificationClient) log(v ...interface{}) {
-	if drc.logger != nil {
-		drc.logger.Print(v...)
-	}
 }
 
 func (drc *DummyRectificationClient) logf(f string, v ...interface{}) {
 	if drc.logger != nil {
-		drc.logger.Printf(f, v...)
+		drc.logger.Warnf(f, v...)
 	}
 }
 

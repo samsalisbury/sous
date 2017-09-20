@@ -25,28 +25,20 @@ type (
 		Load(data interface{}, path string) error
 	}
 
+	// DefaultFiller can fill defaults for a config
 	DefaultFiller interface {
 		FillDefaults() error
 	}
+
+	// A Validator validates
 	Validator interface {
 		Validate() error
 	}
 
 	configLoader struct {
 		// Log is called with debug level logs about how values are resolved.
-		Debug, Info func(...interface{})
 	}
 )
-
-// SetLogFunc implements sous.ILogger on configLoader
-func (cl *configLoader) SetLogFunc(f func(...interface{})) {
-	cl.Info = f
-}
-
-// SetDebugFunc implements sous.ILogger on configLoader
-func (cl *configLoader) SetDebugFunc(f func(...interface{})) {
-	cl.Debug = f
-}
 
 func (cl *configLoader) Load(target interface{}, filePath string) error {
 	if target == nil {

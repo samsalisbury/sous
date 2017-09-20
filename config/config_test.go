@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/opentable/sous/ext/docker"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestDefaultStateLocation(t *testing.T) {
@@ -164,4 +165,11 @@ func TestEnsureDirExists(t *testing.T) {
 	if actualErr != expectedErr {
 		t.Errorf("got error %q; want %q", actualErr, expectedErr)
 	}
+}
+
+func TestDefaultConfig(t *testing.T) {
+	u := LocalUser{&user.User{}}
+	cfg := u.DefaultConfig()
+	assert.Regexp(t, ".*data.db", cfg.Docker.DatabaseConnection)
+
 }

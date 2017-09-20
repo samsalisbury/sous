@@ -158,7 +158,7 @@ func TestHandlesManifestPut(t *testing.T) {
 		StateWriter: writer,
 		State:       state,
 		QueryValues: restful.QueryValues{q},
-		LogSet:      logging.Log,
+		LogSink:     logging.Log,
 	}
 
 	data, status := th.Exchange()

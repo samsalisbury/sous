@@ -6,12 +6,13 @@ import (
 	"os"
 	"testing"
 
+	"github.com/nyarly/spies"
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful/restfultest"
-	"github.com/opentable/sous/util/spies"
 	"github.com/opentable/sous/util/yaml"
+	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -50,7 +51,7 @@ func TestManifestGet(t *testing.T) {
 		HTTPClient: graph.HTTPClient{cl},
 
 		OutWriter: graph.OutWriter(out),
-		LogSet:    logging.NewLogSet("", os.Stderr),
+		LogSink:   graph.LogSink{logging.NewLogSet(semv.MustParse("0.0.0"), "", os.Stderr)},
 	}
 
 	control.Any(
@@ -93,7 +94,7 @@ func TestManifestSet(t *testing.T) {
 		HTTPClient: graph.HTTPClient{cl},
 
 		InReader: graph.InReader(in),
-		LogSet:   logging.NewLogSet("", os.Stderr),
+		LogSink:  graph.LogSink{logging.NewLogSet(semv.MustParse("0.0.0"), "", os.Stderr)},
 	}
 
 	updater, upctl := restfultest.NewUpdateSpy()

@@ -24,8 +24,8 @@ func main() {
 	//logging.Log.Debug.SetOutput(os.Stderr)
 	log.SetFlags(log.Flags() | log.Lshortfile)
 
-	di := graph.BuildGraph(os.Stdin, os.Stdout, os.Stderr)
-	c, err := cli.NewSousCLI(di, Sous, os.Stdin, os.Stdout, os.Stderr)
+	di := graph.BuildGraph(Sous.Version, os.Stdin, os.Stdout, os.Stderr)
+	c, err := cli.NewSousCLI(di, Sous, os.Stdout, os.Stderr)
 	if err != nil {
 		die(err)
 	}
