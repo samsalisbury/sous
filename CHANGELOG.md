@@ -12,6 +12,9 @@ with respect to its command line interface and HTTP interface.
   because of using logrus. Configuration should allow delivery of metrics to
   graphite and log entries to ELK.
 
+### Fixed
+- Server: Flavor metadata wasn't being pulled back into the ADS during rectify, which led to bad behaviors in deploy.
+
 ## [0.5.32](//github.com/opentable/sous/compare/0.5.31...0.5.32)
 ### Changed
 - Developer: Refactors of filters and logging. Mostly to the good.

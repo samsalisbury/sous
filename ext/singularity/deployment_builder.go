@@ -128,7 +128,7 @@ func (db *deploymentBuilder) completeConstruction() error {
 		wrapError(db.determineStatus, "Could not determine current status of SingularityDeploy"),
 		wrapError(db.extractArtifactName, "Could not extract ArtifactName (Docker image name) from SingularityDeploy."),
 		wrapError(db.retrieveImageLabels, "Could not retrieve ImageLabels (Docker image labels) from sous.Registry."),
-		wrapError(db.assignClusterName, "Could not determine cluster name based on SingularityDeploy Metadata."),
+		wrapError(db.restoreFromMetadata, "Could not determine cluster name based on SingularityDeploy Metadata."),
 		wrapError(db.unpackDeployConfig, "Could not convert data from a SingularityDeploy to a sous.Deployment."),
 		wrapError(db.determineManifestKind, "Could not determine SingularityRequestType."),
 	)
@@ -338,12 +338,29 @@ func (db *deploymentBuilder) retrieveImageLabels() error {
 	return nil
 }
 
-func (db *deploymentBuilder) assignClusterName() error {
+func getMetadataField(field string, md map[string]string) (val string, err error) {
 	var ok bool
-	db.Target.ClusterName, ok = db.deploy.Metadata[sous.ClusterNameLabel]
+	val, ok = md[field]
 	if !ok {
-		return malformedResponse{fmt.Sprintf("Deploy Metadata did not include a %s", sous.ClusterNameLabel)}
+		err = malformedResponse{fmt.Sprintf("Deploy Metadata did not include a %s", field)}
 	}
+	return
+}
+
+func (db *deploymentBuilder) restoreFromMetadata() error {
+	var err error
+	db.Target.ClusterName, err = getMetadataField(sous.ClusterNameLabel, db.deploy.Metadata)
+	if err != nil {
+		return err
+	}
+
+	// An absent flavor from the metadata is unseemly, but probably means that
+	// the deploy predates flavor metadata handling
+	// perhaps it's worth logging about this, or erroring on this and clobbering
+	// old requests.
+	//  - if you're debugging a deploy issue related to flavor, let's enforce
+	//  this more strictly, and we'll deal with the fallout then -jdl
+	db.Target.Flavor, _ = getMetadataField(sous.FlavorLabel, db.deploy.Metadata)
 	return nil
 }
 
