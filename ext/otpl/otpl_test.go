@@ -72,6 +72,23 @@ func TestManifestParser_ParseManifest(t *testing.T) {
 	      },
 	      "other fields": "are ignored"
 	    }`,
+		"config/cluster1.flavor1/singularity-request.json": `{
+	        "owners": ["owner1@example.com"],
+	        "instances": 2,
+	        "other fields": "are ignored"
+	    }`,
+		"config/cluster1.flavor1/singularity.json": `{
+	      "resources": {
+	          "cpus": 0.002,
+	          "memoryMb": 96,
+	          "numPorts": 1
+	      },
+	      "env": {
+	          "SOME_VAR": "22",
+	          "OT_ENV_FLAVOR": "flavor1"
+	      },
+	      "other fields": "are ignored"
+	    }`,
 	}
 
 	const testDataDir = "testdata/gen"
@@ -114,9 +131,34 @@ func TestManifestParser_ParseManifest(t *testing.T) {
 				},
 			},
 		},
+		&sous.Manifest{
+			//Source: sous.MustParseSourceLocation("github.com/test/project"),
+			Flavor: "flavor1",
+			Owners: []string{"owner1@example.com"},
+			Kind:   "",
+			Deployments: sous.DeploySpecs{
+				"cluster1": sous.DeploySpec{
+					DeployConfig: sous.DeployConfig{
+						Resources: sous.Resources{
+							"cpus":   "0.002",
+							"memory": "96",
+							"ports":  "1",
+						},
+						Metadata: sous.Metadata(nil),
+						Env: sous.Env{
+							"SOME_VAR": "22",
+							"OT_ENV_FLAVOR": "flavor1",
+						},
+						NumInstances: 2,
+						Volumes:      sous.Volumes(nil),
+					},
+					Version: semv.MustParse("0.0.0"),
+				},
+			},
+		},
 	)
 
-	if different, diffs := actual.Diff(expected); different {
+	if different, diffs := expected.Diff(actual); different {
 		t.Errorf("parsed manifest not as expected")
 		for _, diff := range diffs {
 			t.Error(diff)

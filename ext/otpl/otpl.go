@@ -10,6 +10,7 @@ import (
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/shell"
+	"strings"
 )
 
 type (
@@ -62,16 +63,35 @@ func NewManifestParser() *ManifestParser {
 }
 
 type otplDeployConfig struct {
-	// Name is either "<cluster>" or "<cluster>.<flavor>".
-	// It is unique for all OTPL configs in a single project.
+	// Name is "<cluster>".
+	// It is unique for all OTPL configs in a single project by flavor.
 	Name   string
 	Owners []string
 	Spec   *sous.DeploySpec
 }
 
+type otplDeployManifest struct {
+	Owners   sous.OwnerSet
+	Specs    sous.DeploySpecs
+}
+
+type otplDeployManifests map[string]otplDeployManifest
+
+func GetDeployManifest(manifests otplDeployManifests, key string) otplDeployManifest {
+	if manifest, ok := manifests[key]; ok {
+		return manifest;
+	}
+	manifest := otplDeployManifest{
+		Owners: sous.OwnerSet{},
+		Specs: sous.DeploySpecs{},
+	}
+	manifests[key] = manifest
+	return manifest;
+}
+
 // ParseManifests searches the working directory of wd to find otpl-deploy
-// config files in their standard locations (config/{cluster-name}), and
-// converts them to sous.DeploySpecs.
+// config files in their standard locations (config/{cluster-name}] or
+// config/{cluster-name}.{flavor}), and converts them to sous.DeploySpecs.
 func (mp *ManifestParser) ParseManifests(wd shell.Shell) sous.Manifests {
 	wd = wd.Clone()
 	manifests := sous.NewManifests()
@@ -104,20 +124,37 @@ func (mp *ManifestParser) ParseManifests(wd shell.Shell) sous.Manifests {
 			}
 		}()
 	}
-	deployConfigs := sous.DeploySpecs{}
-	owners := sous.NewOwnerSet()
+	deployManifests := otplDeployManifests{}
 	for s := range c {
-		deployConfigs[s.Name] = *s.Spec
+		cluster, flavor := GetClusterAndFlavor(s)
+		deployManifest := GetDeployManifest(deployManifests, flavor)
+		deployManifest.Specs[cluster] = *s.Spec
 		for _, o := range s.Owners {
-			owners.Add(o)
+			deployManifest.Owners.Add(o)
 		}
 	}
-	return sous.NewManifests(
-		&sous.Manifest{
-			Deployments: deployConfigs,
-			Owners:      owners.Slice(),
-		},
-	)
+
+	for flavor, dm := range deployManifests {
+		manifests.Add(&sous.Manifest{
+			Flavor:      flavor,
+			Deployments: dm.Specs,
+			Owners:      dm.Owners.Slice(),
+		})
+	}
+	return manifests
+}
+
+// GetClusterAndFlavor returns the cluster and flavor by extracting values
+// from the otplDeployConfig name.  The pattern is {cluster}.{flavor} as
+// defined in the otpl scripts.
+func GetClusterAndFlavor(s *otplDeployConfig) (string, string) {
+	splitName := strings.Split(s.Name, ".")
+	cluster := splitName[0]
+	flavor := ""
+	if len(splitName) > 1 {
+		flavor = splitName[1]
+	}
+	return cluster, flavor
 }
 
 // ParseSingleOTPLConfig returns a single sous.DeploySpec from the working
