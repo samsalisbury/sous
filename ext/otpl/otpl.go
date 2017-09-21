@@ -77,7 +77,7 @@ type otplDeployManifest struct {
 
 type otplDeployManifests map[string]otplDeployManifest
 
-func GetDeployManifest(manifests otplDeployManifests, key string) otplDeployManifest {
+func getDeployManifest(manifests otplDeployManifests, key string) otplDeployManifest {
 	if manifest, ok := manifests[key]; ok {
 		return manifest;
 	}
@@ -126,8 +126,8 @@ func (mp *ManifestParser) ParseManifests(wd shell.Shell) sous.Manifests {
 	}
 	deployManifests := otplDeployManifests{}
 	for s := range c {
-		cluster, flavor := GetClusterAndFlavor(s)
-		deployManifest := GetDeployManifest(deployManifests, flavor)
+		cluster, flavor := getClusterAndFlavor(s)
+		deployManifest := getDeployManifest(deployManifests, flavor)
 		deployManifest.Specs[cluster] = *s.Spec
 		for _, o := range s.Owners {
 			deployManifest.Owners.Add(o)
@@ -147,7 +147,7 @@ func (mp *ManifestParser) ParseManifests(wd shell.Shell) sous.Manifests {
 // GetClusterAndFlavor returns the cluster and flavor by extracting values
 // from the otplDeployConfig name.  The pattern is {cluster}.{flavor} as
 // defined in the otpl scripts.
-func GetClusterAndFlavor(s *otplDeployConfig) (string, string) {
+func getClusterAndFlavor(s *otplDeployConfig) (string, string) {
 	splitName := strings.Split(s.Name, ".")
 	cluster := splitName[0]
 	flavor := ""
