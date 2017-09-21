@@ -146,7 +146,7 @@ func TestManifestParser_ParseManifest(t *testing.T) {
 						},
 						Metadata: sous.Metadata(nil),
 						Env: sous.Env{
-							"SOME_VAR": "22",
+							"SOME_VAR":      "22",
 							"OT_ENV_FLAVOR": "flavor1",
 						},
 						NumInstances: 2,

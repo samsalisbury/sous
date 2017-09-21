@@ -71,22 +71,22 @@ type otplDeployConfig struct {
 }
 
 type otplDeployManifest struct {
-	Owners   sous.OwnerSet
-	Specs    sous.DeploySpecs
+	Owners sous.OwnerSet
+	Specs  sous.DeploySpecs
 }
 
 type otplDeployManifests map[string]otplDeployManifest
 
 func getDeployManifest(manifests otplDeployManifests, key string) otplDeployManifest {
 	if manifest, ok := manifests[key]; ok {
-		return manifest;
+		return manifest
 	}
 	manifest := otplDeployManifest{
 		Owners: sous.OwnerSet{},
-		Specs: sous.DeploySpecs{},
+		Specs:  sous.DeploySpecs{},
 	}
 	manifests[key] = manifest
-	return manifest;
+	return manifest
 }
 
 // ParseManifests searches the working directory of wd to find otpl-deploy
