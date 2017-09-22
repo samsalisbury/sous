@@ -7,10 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
 ## [Unreleased](//github.com/opentable/sous/compare/0.5.33...HEAD)
+### Added
+- Client: When calling `sous init -flavor X` automatically add OT_ENV_FLAVOR value to the Env variables
+
 ### Fixed
 - Client: `sous init -use-otpl-deploy` wasn't handling flavors properly.
 - Client: `sous init -ignore-otpl-deploy` caused panic.
-- Client: `sous init -flavor X` wasn't adding OT_ENV_FLAVOR value to the Env variables
 
 ## [0.5.33](//github.com/opentable/sous/compare/0.5.32...0.5.33)
 ### Added
