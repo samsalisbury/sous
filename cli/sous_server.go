@@ -11,7 +11,6 @@ import (
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/server"
 	"github.com/opentable/sous/util/cmdr"
-	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/shell"
 )
 
@@ -19,7 +18,7 @@ import (
 type SousServer struct {
 	Sous              *Sous
 	DeployFilterFlags config.DeployFilterFlags
-	Log               logging.LogSet
+	Log               graph.LogSink
 
 	*config.Config
 	graph.ServerHandler
@@ -71,15 +70,15 @@ func (ss *SousServer) RegisterOn(psy Addable) {
 
 // Execute is part of the cmdr.Command interface(s).
 func (ss *SousServer) Execute(args []string) cmdr.Result {
-	if err := ensureGDMExists(ss.flags.gdmRepo, ss.Config.StateLocation, ss.Log.Info.Printf); err != nil {
+	if err := ensureGDMExists(ss.flags.gdmRepo, ss.Config.StateLocation, ss.Log.Warnf); err != nil {
 		return EnsureErrorResult(err)
 	}
-	ss.Log.Info.Println("Starting scheduled GDM resolution.")
-	ss.Log.Debug.Print("Filtering the GDM to resolve on this server to: %v", ss.DeployFilterFlags)
+	ss.Log.Warnf("Starting scheduled GDM resolution.")
+	ss.Log.Warnf("Filtering the GDM to resolve on this server to: %v", ss.DeployFilterFlags)
 
 	ss.AutoResolver.Kickoff()
 
-	ss.Log.Info.Printf("Sous Server v%s running at %s for %s", ss.Sous.Version, ss.flags.laddr, ss.DeployFilterFlags.Cluster)
+	ss.Log.Warnf("Sous Server v%s running at %s for %s", ss.Sous.Version, ss.flags.laddr, ss.DeployFilterFlags.Cluster)
 
 	if os.Getenv("SOUS_PROFILING") == "enable" {
 		ss.flags.profiling = true
