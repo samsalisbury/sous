@@ -13,6 +13,7 @@ with respect to its command line interface and HTTP interface.
 ### Fixed
 - Client: `sous init -use-otpl-deploy` wasn't handling flavors properly.
 - Client: `sous init -ignore-otpl-deploy` caused panic.
+- Server: Logging wasn't being properly initialized and crashed on boot.
 
 ## [0.5.33](//github.com/opentable/sous/compare/0.5.32...0.5.33)
 ### Added

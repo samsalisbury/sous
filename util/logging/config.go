@@ -125,12 +125,12 @@ func (cfg Config) Validate() error {
 }
 
 func (cfg Config) validateKafka() error {
-	switch cfg.Kafka.DefaultLevel {
-	default:
-		return errors.Errorf("default Kafka log level unrecognized: configured as %q", cfg.Kafka.DefaultLevel)
-	case "":
+	if cfg.Kafka.DefaultLevel == "" {
 		return errors.Errorf("default Kafka log level empty")
-	case "Critical", "Warning", "Information", "Debug", "ExtraDebug1":
+	}
+
+	if levelFromString(cfg.Kafka.DefaultLevel) == ExtremeLevel {
+		return errors.Errorf("default Kafka log level unrecognized: configured as %q", cfg.Kafka.DefaultLevel)
 	}
 
 	switch {
