@@ -23,6 +23,8 @@ type SousInit struct {
 
 func init() { TopLevelCommands["init"] = &SousInit{} }
 
+const OT_ENV_FLAVOR = "OT_ENV_FLAVOR"
+
 const sousInitHelp = `initialise a new sous project
 
 usage: sous init
@@ -67,6 +69,14 @@ func (si *SousInit) Execute(args []string) cmdr.Result {
 
 	if cluster != "" {
 		m.Deployments = sous.DeploySpecs{cluster: m.Deployments[cluster]}
+	}
+
+	flavor := si.DeployFilterFlags.Flavor
+
+	if flavor != "" {
+		for _, d := range m.Deployments {
+			d.Env[OT_ENV_FLAVOR] = flavor
+		}
 	}
 
 	if ok := si.State.Manifests.Add(m); !ok {
