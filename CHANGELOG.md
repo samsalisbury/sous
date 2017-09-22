@@ -10,6 +10,7 @@ with respect to its command line interface and HTTP interface.
 ### Fixed
 - Client: `sous init -use-otpl-deploy` wasn't handling flavors properly.
 - Client: `sous init -ignore-otpl-deploy` caused panic.
+- Client: `sous init -flavor X` wasn't adding OT_ENV_FLAVOR value to the Env variables
 
 ## [0.5.33](//github.com/opentable/sous/compare/0.5.32...0.5.33)
 ### Added
