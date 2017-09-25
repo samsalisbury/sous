@@ -5,7 +5,7 @@ type graphiteError struct {
 	CallerInfo
 }
 
-func reportGraphiteError(ls LogSet, err error) {
+func reportGraphiteError(ls LogSink, err error) {
 	msg := newGraphiteError(err)
 	Deliver(msg, ls)
 }

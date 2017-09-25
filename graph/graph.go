@@ -430,24 +430,7 @@ func newLocalGitRepo(c LocalGitClient) (v LocalGitRepo, err error) {
 }
 
 func newSelector(regClient LocalDockerClient, log LogSink) sous.Selector {
-	return &sous.EchoSelector{
-		Factory: func(ctx *sous.BuildContext) (sous.Buildpack, error) {
-			sbp := docker.NewSplitBuildpack(regClient.Client)
-			dr, err := sbp.Detect(ctx)
-			if err == nil && dr.Compatible {
-				log.Warnf("Building with split container buildpack")
-				return sbp, nil
-			}
-
-			dfbp := docker.NewDockerfileBuildpack()
-			dr, err = dfbp.Detect(ctx)
-			if err == nil && dr.Compatible {
-				log.Warnf("Building with simple dockerfile buildpack")
-				return dfbp, nil
-			}
-			return nil, errors.New("no buildpack detected for project")
-		},
-	}
+	return docker.NewBuildStrategySelector(log, regClient)
 }
 
 func newDockerBuilder(cfg LocalSousConfig, nc *docker.NameCache, ctx *sous.SourceContext, source LocalWorkDirShell, scratch ScratchDirShell) (*docker.Builder, error) {

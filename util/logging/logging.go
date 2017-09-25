@@ -157,6 +157,46 @@ func (ls *LogSet) Configure(cfg Config) error {
 	return nil
 }
 
+type kafkaConfigurationMessage struct {
+	CallerInfo
+	hook    *kafkalogrus.KafkaLogrusHook
+	brokers []string
+	topic   string
+}
+
+func reportKafkaConfig(hook *kafkalogrus.KafkaLogrusHook, cfg Config, ls LogSink) {
+	msg := kafkaConfigurationMessage{
+		CallerInfo: GetCallerInfo(),
+		hook:       hook,
+		brokers:    cfg.getBrokers(),
+		topic:      cfg.Kafka.Topic,
+	}
+	Deliver(msg, ls)
+}
+
+func (kcm kafkaConfigurationMessage) DefaultLevel() Level {
+	return InformationLevel
+}
+
+func (kcm kafkaConfigurationMessage) Message() string {
+	if kcm.hook == nil {
+		return "Not connecting to Kafka."
+	}
+	return "Connecting to Kafka"
+}
+
+func (kcm kafkaConfigurationMessage) EachField(f FieldReportFn) {
+	f("@loglov3-otl", "sous-kafka-config")
+	kcm.CallerInfo.EachField(f)
+	if kcm.hook == nil {
+		return
+	}
+	f("logging-topic", kcm.topic)
+	f("brokers", kcm.brokers)
+	f("logger-id", kcm.hook.Id())
+	f("levels", kcm.hook.Levels())
+}
+
 func (ls LogSet) configureKafka(cfg Config) error {
 	if ls.liveConfig != nil && ls.liveConfig.useKafka() {
 		if cfg.useKafka() {
@@ -166,6 +206,7 @@ func (ls LogSet) configureKafka(cfg Config) error {
 	}
 
 	if !cfg.useKafka() {
+		reportKafkaConfig(nil, cfg, ls)
 		return nil
 	}
 
@@ -181,24 +222,66 @@ func (ls LogSet) configureKafka(cfg Config) error {
 	if err != nil {
 		return err
 	}
+	reportKafkaConfig(hook, cfg, ls)
 
 	ls.logrus.AddHook(hook)
 	return nil
 }
 
+type graphiteConfigMessage struct {
+	CallerInfo
+	cfg *graphite.Config
+}
+
+func reportGraphiteConfig(cfg *graphite.Config, ls LogSink) {
+	msg := graphiteConfigMessage{
+		CallerInfo: GetCallerInfo(),
+		cfg:        cfg,
+	}
+	Deliver(msg, ls)
+}
+
+func (gcm graphiteConfigMessage) DefaultLevel() Level {
+	return InformationLevel
+}
+
+func (gcm graphiteConfigMessage) Message() string {
+	if gcm.cfg == nil {
+		return "Not connecting to Graphite server"
+	}
+	return "Connecting to Graphite server"
+}
+
+func (gcm graphiteConfigMessage) EachField(f FieldReportFn) {
+	f("@loglov3-otl", "sous-graphite-config")
+	gcm.CallerInfo.EachField(f)
+	if gcm.cfg == nil {
+		return
+	}
+	f("server-addr", gcm.cfg.Addr)
+	f("flush-interval", gcm.cfg.FlushInterval)
+}
+
 func (ls LogSet) configureGraphite(cfg Config) error {
-	addr, err := net.ResolveTCPAddr("tcp", cfg.Graphite.Server)
-	if err != nil {
-		return err
+	var gCfg *graphite.Config
+
+	if cfg.useGraphite() {
+		addr, err := net.ResolveTCPAddr("tcp", cfg.Graphite.Server)
+		if err != nil {
+			return err
+		}
+
+		gCfg = &graphite.Config{
+			Addr:          addr,
+			Registry:      ls.metrics,
+			FlushInterval: 30 * time.Second,
+			DurationUnit:  time.Nanosecond,
+			Prefix:        "sous",
+			Percentiles:   []float64{0.5, 0.75, 0.95, 0.99, 0.999},
+		}
+
 	}
-	gCfg := graphite.Config{
-		Addr:          addr,
-		Registry:      ls.metrics,
-		FlushInterval: 30 * time.Second,
-		DurationUnit:  time.Nanosecond,
-		Prefix:        "sous",
-		Percentiles:   []float64{0.5, 0.75, 0.95, 0.99, 0.999},
-	}
+	reportGraphiteConfig(gCfg, ls)
 
 	gCtx, cancel := context.WithCancel(ls.context)
 
@@ -207,18 +290,26 @@ func (ls LogSet) configureGraphite(cfg Config) error {
 	}
 
 	ls.graphiteCancel = cancel
-	go graphiteLoop(ls, gCtx, gCfg)
+	go metricsLoop(gCtx, ls, gCfg)
+
 	return nil
 }
 
-func graphiteLoop(ls LogSet, ctx context.Context, cfg graphite.Config) {
-	ticker := time.NewTicker(cfg.FlushInterval)
+func metricsLoop(ctx context.Context, ls LogSet, cfg *graphite.Config) {
+	interval := time.Second * 30
+	if cfg != nil {
+		interval = cfg.FlushInterval
+	}
+	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 	for {
 		select {
 		case <-ticker.C:
-			if err := graphite.Once(cfg); err != nil {
-				reportGraphiteError(ls, err)
+			// TODO: metrics observation goes here
+			if cfg != nil {
+				if err := graphite.Once(*cfg); err != nil {
+					reportGraphiteError(ls, err)
+				}
 			}
 		case <-ctx.Done():
 			return
@@ -245,20 +336,22 @@ func (ls LogSet) Console() WriteDoner {
 }
 
 // xxx phase 2 of complete transition: remove these methods in favor of specific messages
-// Vomitf is a simple wrapper on Vomit.Printf
+
+// Vomitf logs a message at ExtraDebug1Level.
 func (ls LogSet) Vomitf(f string, as ...interface{}) { ls.vomitf(f, as...) }
 func (ls LogSet) vomitf(f string, as ...interface{}) {
 	m := NewGenericMsg(ExtraDebug1Level, fmt.Sprintf(f, as...), nil)
 	Deliver(m, ls)
 }
 
-// Debugf is a simple wrapper on Debug.Printf
+// Debugf logs a message a DebugLevel.
 func (ls LogSet) Debugf(f string, as ...interface{}) { ls.debugf(f, as...) }
 func (ls LogSet) debugf(f string, as ...interface{}) {
 	m := NewGenericMsg(DebugLevel, fmt.Sprintf(f, as...), nil)
 	Deliver(m, ls)
 }
 
+// Warnf logs a message at WarningLevel.
 func (ls LogSet) Warnf(f string, as ...interface{}) { ls.warnf(f, as...) }
 func (ls LogSet) warnf(f string, as ...interface{}) {
 	m := NewGenericMsg(WarningLevel, fmt.Sprintf(f, as...), nil)
