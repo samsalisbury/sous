@@ -116,10 +116,24 @@ func (cfg Config) useKafka() bool {
 	return cfg.Kafka.Enabled
 }
 
+func (cfg Config) useGraphite() bool {
+	return cfg.Graphite.Enabled
+}
+
 // Validate asserts the validity of the logging configuration
 func (cfg Config) Validate() error {
+	if err := cfg.validateGraphite(); cfg.useGraphite() && err != nil {
+		return err
+	}
 	if err := cfg.validateKafka(); cfg.useKafka() && err != nil {
 		return err
+	}
+	return nil
+}
+
+func (cfg Config) validateGraphite() error {
+	if cfg.Graphite.Server == "" {
+		return errors.New("no graphite server address provided")
 	}
 	return nil
 }

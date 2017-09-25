@@ -88,17 +88,7 @@ type (
 		VersionName  string
 		RevisionName string
 	}
-
-	// EchoSelector wraps a buildpack Factory. (But why?)
-	EchoSelector struct {
-		Factory func(*BuildContext) (Buildpack, error)
-	}
 )
-
-// SelectBuildpack tries to select a buildpack for this BuildContext.
-func (s *EchoSelector) SelectBuildpack(c *BuildContext) (Buildpack, error) {
-	return s.Factory(c)
-}
 
 // Contextualize records details from the BuildContext into the BuildResult
 func (br *BuildResult) Contextualize(c *BuildContext) {
