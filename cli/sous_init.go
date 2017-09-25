@@ -77,7 +77,16 @@ func (si *SousInit) Execute(args []string) cmdr.Result {
 	flavor := si.DeployFilterFlags.Flavor
 
 	if flavor != "" {
-		for _, d := range m.Deployments {
+		for c, d := range m.Deployments {
+			if d.Env == nil {
+				d = sous.DeploySpec{
+					DeployConfig: sous.DeployConfig{
+						Resources: d.Resources,
+						Env:       map[string](string){},
+					},
+				}
+				m.Deployments[c] = d
+			}
 			d.Env[OT_ENV_FLAVOR] = flavor
 		}
 	}
