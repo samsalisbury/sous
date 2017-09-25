@@ -47,6 +47,9 @@ func (si *SousInit) RegisterOn(psy Addable) {
 	psy.Add(&si.DeployFilterFlags)
 	psy.Add(&si.Flags)
 	psy.Add(graph.DryrunNeither)
+
+	// ugh - there has to be a better way!
+	si.Flags.Flavor = si.DeployFilterFlags.Flavor
 }
 
 // AddFlags adds the flags for sous init.

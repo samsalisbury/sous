@@ -10,6 +10,7 @@ with respect to its command line interface and HTTP interface.
 
 ### Fixed
 - Client and server: various logging output is clearer and more correct.
+- Client: Flavor flag wasn't being passed to otpl deploy logic.
 
 ## [0.5.34](//github.com/opentable/sous/compare/0.5.33...0.5.34)
 ### Added
