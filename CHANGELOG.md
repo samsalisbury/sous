@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
+## [Unreleased](//github.com/opentable/sous/compare/0.5.35...HEAD)
+
+### Changed
+- Client: Improve testability of default OT_ENV_FLAVOR logic and test.
+
 ## [0.5.35](//github.com/opentable/sous/compare/0.5.34...0.5.35)
 
 ### Fixed

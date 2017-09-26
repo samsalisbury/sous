@@ -8,6 +8,8 @@ import (
 // RefinedResolveFilter is a sous.ResolveFilter refined by user-requested flags.
 type RefinedResolveFilter sous.ResolveFilter
 
+const OT_ENV_FLAVOR = "OT_ENV_FLAVOR"
+
 func newRefinedResolveFilter(f *sous.ResolveFilter, discovered *SourceContextDiscovery) (*RefinedResolveFilter, error) {
 	c := discovered.GetContext()
 	if f == nil { // XXX I think this needs to be supplied anyway by consumers..
@@ -79,6 +81,12 @@ func newTargetManifest(auto userSelectedOTPLDeployManifest, tmid TargetManifestI
 	}
 	if len(deploySpecs) == 0 {
 		deploySpecs = defaultDeploySpecs(s.Defs.Clusters)
+	}
+
+	if tmid.Flavor != "" {
+		for _, d := range deploySpecs {
+			d.Env[OT_ENV_FLAVOR] = tmid.Flavor
+		}
 	}
 
 	m.Deployments = deploySpecs

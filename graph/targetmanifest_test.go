@@ -71,6 +71,26 @@ func TestNewUserSelectedOTPLDeploySpecs(t *testing.T) {
 			Owners: []string{},
 		},
 	)
+
+	testcase("detected with flavor and flags say use",
+		&sous.Manifest{
+			Flavor: "neopolitan",
+			Deployments: sous.DeploySpecs{
+				"some-cluster": {},
+			},
+		},
+		config.OTPLFlags{UseOTPLDeploy: true, Flavor: "neopolitan"},
+		sous.Clusters{
+			"some-cluster": nil,
+		},
+		&sous.Manifest{
+			Flavor: "neopolitan",
+			Deployments: sous.DeploySpecs{
+				"some-cluster": {},
+			},
+			Owners: []string{},
+		},
+	)
 }
 
 func TestNewUserSelectedOTPLDeploySpecs_Errors(t *testing.T) {
@@ -168,4 +188,26 @@ func TestNewTargetManifest(t *testing.T) {
 		t.Errorf("Invalid new manifest: %#v, flaws were %v", tm.Manifest, flaws)
 	}
 
+	var expected = &sous.Manifest{
+		Source: sl,
+		Kind:   "http-service",
+		Flavor: flavor,
+		Deployments: sous.DeploySpecs{
+			"test": sous.DeploySpec{
+				DeployConfig: sous.DeployConfig{
+					Resources: sous.Resources{
+						"cpus":   "0.1",
+						"memory": "100",
+						"ports":  "1"},
+					NumInstances: 1,
+					Startup: sous.Startup{
+						CheckReadyProtocol: "HTTP",
+						CheckReadyURIPath:  "/health",
+					},
+					Env: map[string](string){OT_ENV_FLAVOR: flavor},
+				},
+			},
+		},
+	}
+	assert.Equal(t, expected, tm.Manifest)
 }
