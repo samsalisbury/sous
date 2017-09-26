@@ -127,12 +127,33 @@ func TestNewUserSelectedOTPLDeploySpecs_Errors(t *testing.T) {
 		"otpl-deploy detected in config/, please specify either -use-otpl-deploy, or -ignore-otpl-deploy to proceed",
 	)
 
+	testcase("detected with flavor, flags set to use but no flavor specified",
+		&sous.Manifest{
+			Flavor: "chocolate",
+			Deployments: sous.DeploySpecs{
+				"some-cluster": {},
+			},
+		},
+		config.OTPLFlags{UseOTPLDeploy: true},
+		"flavor \"\" not detected; pick from: [\"chocolate\"]",
+	)
+
+	testcase("detected with flavor, flags set to use but unknown flavor specified",
+		&sous.Manifest{
+			Flavor: "chocolate",
+			Deployments: sous.DeploySpecs{
+				"some-cluster": {},
+			},
+		},
+		config.OTPLFlags{UseOTPLDeploy: true, Flavor: "strawberry"},
+		"flavor \"strawberry\" not detected; pick from: [\"chocolate\"]",
+	)
+
 	testcase("not detected but flags expect one",
 		nil,
 		config.OTPLFlags{UseOTPLDeploy: true},
 		"use of otpl configuration was specified, but no valid deployments were found in config/",
 	)
-
 }
 
 func TestNewTargetManifest_Existing(t *testing.T) {

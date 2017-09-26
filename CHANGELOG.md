@@ -8,6 +8,10 @@ with respect to its command line interface and HTTP interface.
 
 ## [Unreleased](//github.com/opentable/sous/compare/0.5.35...HEAD)
 
+### Fixed
+- Client: If only one otpl config found with no flavor, and a flavor is specified the found config was used.
+- Client: If only one otpl config found for only one flavor, and no flavor or different flavor specified the found config was used.
+
 ### Changed
 - Client: Improve testability of default OT_ENV_FLAVOR logic and test.
 
