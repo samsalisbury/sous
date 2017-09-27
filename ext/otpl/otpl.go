@@ -172,6 +172,10 @@ func (mp *ManifestParser) parseSingleOTPLConfig(wd shell.Shell) *otplDeployConfi
 			"singularity.json"), err)
 		return nil
 	}
+	if v.Env == nil {
+		v.Env = map[string](string){}
+	}
+
 	deploySpec := &otplDeployConfig{
 		Name: path.Base(wd.Dir()),
 		Spec: &sous.DeploySpec{

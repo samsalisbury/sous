@@ -41,11 +41,7 @@ func newUserSelectedOTPLDeploySpecs(
 
 	var detectedManifest *sous.Manifest
 
-	if onlyManifest, err := detected.Manifests.Only(); err == nil {
-		// There is only one manifest, use it.
-		detectedManifest = onlyManifest
-		// There are multiple manifests, try to find one matching -flavor.
-	} else if flavoredManifest, ok := detected.Manifests.Single(func(m *sous.Manifest) bool {
+	if flavoredManifest, ok := detected.Manifests.Single(func(m *sous.Manifest) bool {
 		return m.Flavor == flags.Flavor
 	}); ok {
 		detectedManifest = flavoredManifest
@@ -54,7 +50,7 @@ func newUserSelectedOTPLDeploySpecs(
 		if flags.Flavor == "" {
 			defer logging.Log.Warn.Println("use the -flavor flag to pick a flavor")
 		}
-		return nowt, fmt.Errorf("flavor %q not detected; pick from: %s", flags.Flavor, flavors)
+		return nowt, fmt.Errorf("flavor %q not detected; pick from: %q", flags.Flavor, flavors)
 	}
 
 	if !flags.UseOTPLDeploy && !flags.IgnoreOTPLDeploy && len(detectedManifest.Deployments) != 0 {

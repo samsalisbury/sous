@@ -71,6 +71,26 @@ func TestNewUserSelectedOTPLDeploySpecs(t *testing.T) {
 			Owners: []string{},
 		},
 	)
+
+	testcase("detected with flavor and flags say use",
+		&sous.Manifest{
+			Flavor: "neopolitan",
+			Deployments: sous.DeploySpecs{
+				"some-cluster": {},
+			},
+		},
+		config.OTPLFlags{UseOTPLDeploy: true, Flavor: "neopolitan"},
+		sous.Clusters{
+			"some-cluster": nil,
+		},
+		&sous.Manifest{
+			Flavor: "neopolitan",
+			Deployments: sous.DeploySpecs{
+				"some-cluster": {},
+			},
+			Owners: []string{},
+		},
+	)
 }
 
 func TestNewUserSelectedOTPLDeploySpecs_Errors(t *testing.T) {
@@ -107,12 +127,33 @@ func TestNewUserSelectedOTPLDeploySpecs_Errors(t *testing.T) {
 		"otpl-deploy detected in config/, please specify either -use-otpl-deploy, or -ignore-otpl-deploy to proceed",
 	)
 
+	testcase("detected with flavor, flags set to use but no flavor specified",
+		&sous.Manifest{
+			Flavor: "chocolate",
+			Deployments: sous.DeploySpecs{
+				"some-cluster": {},
+			},
+		},
+		config.OTPLFlags{UseOTPLDeploy: true},
+		"flavor \"\" not detected; pick from: [\"chocolate\"]",
+	)
+
+	testcase("detected with flavor, flags set to use but unknown flavor specified",
+		&sous.Manifest{
+			Flavor: "chocolate",
+			Deployments: sous.DeploySpecs{
+				"some-cluster": {},
+			},
+		},
+		config.OTPLFlags{UseOTPLDeploy: true, Flavor: "strawberry"},
+		"flavor \"strawberry\" not detected; pick from: [\"chocolate\"]",
+	)
+
 	testcase("not detected but flags expect one",
 		nil,
 		config.OTPLFlags{UseOTPLDeploy: true},
 		"use of otpl configuration was specified, but no valid deployments were found in config/",
 	)
-
 }
 
 func TestNewTargetManifest_Existing(t *testing.T) {
@@ -168,4 +209,26 @@ func TestNewTargetManifest(t *testing.T) {
 		t.Errorf("Invalid new manifest: %#v, flaws were %v", tm.Manifest, flaws)
 	}
 
+	var expected = &sous.Manifest{
+		Source: sl,
+		Kind:   "http-service",
+		Flavor: flavor,
+		Deployments: sous.DeploySpecs{
+			"test": sous.DeploySpec{
+				DeployConfig: sous.DeployConfig{
+					Resources: sous.Resources{
+						"cpus":   "0.1",
+						"memory": "100",
+						"ports":  "1"},
+					NumInstances: 1,
+					Startup: sous.Startup{
+						CheckReadyProtocol: "HTTP",
+						CheckReadyURIPath:  "/health",
+					},
+					Env: map[string](string){OT_ENV_FLAVOR: flavor},
+				},
+			},
+		},
+	}
+	assert.Equal(t, expected, tm.Manifest)
 }

@@ -23,8 +23,6 @@ type SousInit struct {
 
 func init() { TopLevelCommands["init"] = &SousInit{} }
 
-const OT_ENV_FLAVOR = "OT_ENV_FLAVOR"
-
 const sousInitHelp = `initialise a new sous project
 
 usage: sous init
@@ -72,43 +70,6 @@ func (si *SousInit) Execute(args []string) cmdr.Result {
 
 	if cluster != "" {
 		m.Deployments = sous.DeploySpecs{cluster: m.Deployments[cluster]}
-	}
-
-	flavor := si.DeployFilterFlags.Flavor
-
-	/*
-		nyarly:
-		Why not
-
-		if d.Env == nil {
-			d.Env = map[string]string{ OT_ENV_FLAVOR: flavor }
-		} else {
-			d.Env[OT_ENV_FLAVOR] = flavor
-		}
-
-		richardhopton:
-		I tried that first but it didn't write Env to Yaml. I also tried setting Env
-		on DeployConfig property too. This was the only way I could get it to work
-		:-(
-	*/
-
-	/*
-		In some near term interaction, we should extract the actual execution code
-		and be able to test this behavior. -jdl
-	*/
-	if flavor != "" {
-		for c, d := range m.Deployments {
-			if d.Env == nil {
-				d = sous.DeploySpec{
-					DeployConfig: sous.DeployConfig{
-						Resources: d.Resources,
-						Env:       map[string](string){},
-					},
-				}
-				m.Deployments[c] = d
-			}
-			d.Env[OT_ENV_FLAVOR] = flavor
-		}
 	}
 
 	if ok := si.State.Manifests.Add(m); !ok {
