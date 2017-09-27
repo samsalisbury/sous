@@ -13,6 +13,7 @@ import (
 	"text/tabwriter"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/docker/distribution"
 	"github.com/docker/distribution/reference"
 	"github.com/pkg/errors"
@@ -33,6 +34,7 @@ type (
 		DB                 *sql.DB
 		DockerRegistryHost string
 		Log                logging.LogSink
+		groomOnce          sync.Once
 	}
 
 	imageName string
@@ -89,15 +91,14 @@ func (e NotModifiedErr) Error() string {
 }
 
 // NewNameCache builds a new name cache.
-func NewNameCache(drh string, cl docker_registry.Client, ls logging.LogSink, db *sql.DB) *NameCache {
+func NewNameCache(drh string, cl docker_registry.Client, ls logging.LogSink, db *sql.DB) (*NameCache, error) {
 	nc := &NameCache{
 		RegistryClient:     cl,
 		DB:                 db,
 		DockerRegistryHost: drh,
 		Log:                ls,
 	}
-	nc.GroomDatabase()
-	return nc
+	return nc, nc.GroomDatabase()
 }
 
 // ListSourceIDs lists all the known SourceIDs.
@@ -458,37 +459,41 @@ func semverEqual(a, b string) (bool, error) {
 	return aVer.Equals(bVer), nil
 }
 
+var testMtx = sync.Mutex{}
+
 // GroomDatabase ensures that the database to back the cache is the correct schema
 func (nc *NameCache) GroomDatabase() error {
 	db := nc.DB
+	var err error
 	var tgp string
-	err := db.QueryRow("select value from _database_metadata_ where name = 'fingerprint';").Scan(&tgp)
-	if err != nil || tgp != schemaFingerprint {
-		//log.Println(err, tgp, schemaFingerprint)
-		err = nil
-		repos := nc.captureRepos(db)
+	nc.groomOnce.Do(func() {
+		queryErr := db.QueryRow("select value from _database_metadata_ where name = 'fingerprint';").Scan(&tgp)
+		if queryErr != nil || tgp != schemaFingerprint {
+			repos := nc.captureRepos(db)
 
-		nc.clobber(db)
+			nc.clobber(db)
 
-		for _, cmd := range schema {
-			if err := sqlExec(db, cmd); err != nil {
-				return errors.Wrapf(err, "groom DB/create: %v", db)
+			for _, cmd := range schema {
+				if err = sqlExec(db, cmd); err != nil {
+					spew.Dump(err)
+					return
+				}
+			}
+			if _, err = db.Exec("insert into _database_metadata_ (name, value) values"+
+				" ('fingerprint', ?),"+
+				" ('created', ?);",
+				schemaFingerprint, time.Now().UTC().Format(time.UnixDate)); err != nil {
+				return
+			}
+			for _, r := range repos {
+				if err = nc.Warmup(r); err != nil {
+					return
+				}
 			}
 		}
-		if _, err := db.Exec("insert into _database_metadata_ (name, value) values"+
-			" ('fingerprint', ?),"+
-			" ('created', ?);",
-			schemaFingerprint, time.Now().UTC().Format(time.UnixDate)); err != nil {
-			return errors.Wrapf(err, "groom DB/fp: %v", db)
-		}
-		for _, r := range repos {
-			if err := nc.Warmup(r); err != nil {
-				return errors.Wrap(err, "groom DB")
-			}
-		}
-	}
+	})
 
-	return errors.Wrap(err, "groom DB")
+	return errors.Wrapf(err, "groom DB: %v", db)
 }
 
 func (nc *NameCache) clobber(db *sql.DB) {

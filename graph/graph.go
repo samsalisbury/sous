@@ -569,12 +569,17 @@ func newDockerRegistry(cfg LocalSousConfig, ls LogSink, cl LocalDockerClient) (*
 		return nil, errors.Wrap(err, "building name cache DB")
 	}
 	drh := cfg.Docker.RegistryHost
-	return docker.NewNameCache(drh, cl.Client, ls.Child("docker-images"), db), nil
+	return docker.NewNameCache(drh, cl.Client, ls.Child("docker-images"), db)
 }
 
-func newInserter(cfg LocalSousConfig, ls LogSink, cl LocalDockerClient) (sous.Inserter, error) {
+func newInserter(graph *SousGraph, cfg LocalSousConfig) (sous.Inserter, error) {
 	if cfg.Server == "" {
-		return newDockerRegistry(cfg, LogSink{ls.Child("docker-registry")}, cl)
+		registryScoop := struct {
+			NC *docker.NameCache
+		}{}
+		// Otherwise we race another call to newDockerRegistry and all is pain and woe.
+		err := graph.Inject(&registryScoop)
+		return registryScoop.NC, err
 	}
 	return sous.NewHTTPNameInserter(cfg.Server)
 }
