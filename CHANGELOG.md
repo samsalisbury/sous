@@ -13,6 +13,7 @@ with respect to its command line interface and HTTP interface.
 - Client: If only one otpl config found for only one flavor, and no flavor or different flavor specified the found config was used.
 - Client: `sous plumbing normalizegdm` broke the DI rules and added
   `DryrunNeither` an extra time, which led to a panic.
+- Server: Initial database grooming had a race condition. Solved by ensuring NameCache is singular.
 
 ### Changed
 - Client: Improve testability of default OT_ENV_FLAVOR logic and test.

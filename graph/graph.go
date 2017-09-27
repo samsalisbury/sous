@@ -448,11 +448,11 @@ func newRegistrar(db *docker.Builder) sous.Registrar {
 	return db
 }
 
-func newRegistry(dryrun DryrunOption, cfg LocalSousConfig, ls LogSink, cl LocalDockerClient) (sous.Registry, error) {
+func newRegistry(graph *SousGraph, dryrun DryrunOption) (sous.Registry, error) {
 	if dryrun == DryrunBoth || dryrun == DryrunRegistry {
 		return sous.NewDummyRegistry(), nil
 	}
-	return newDockerRegistry(cfg, ls, cl)
+	return theDockerRegistry(graph)
 }
 
 func newDeployer(dryrun DryrunOption, nc *docker.NameCache, ls LogSink) sous.Deployer {
@@ -569,12 +569,22 @@ func newDockerRegistry(cfg LocalSousConfig, ls LogSink, cl LocalDockerClient) (*
 		return nil, errors.Wrap(err, "building name cache DB")
 	}
 	drh := cfg.Docker.RegistryHost
-	return docker.NewNameCache(drh, cl.Client, ls.Child("docker-images"), db), nil
+	return docker.NewNameCache(drh, cl.Client, ls.Child("docker-images"), db)
 }
 
-func newInserter(cfg LocalSousConfig, ls LogSink, cl LocalDockerClient) (sous.Inserter, error) {
+// This maintains the singleton nature of the NameCache, which is important,
+// because otherwise we race to groom the database.
+func theDockerRegistry(graph *SousGraph) (*docker.NameCache, error) {
+	registryScoop := struct {
+		NC *docker.NameCache
+	}{}
+	err := graph.Inject(&registryScoop)
+	return registryScoop.NC, err
+}
+
+func newInserter(graph *SousGraph, cfg LocalSousConfig) (sous.Inserter, error) {
 	if cfg.Server == "" {
-		return newDockerRegistry(cfg, LogSink{ls.Child("docker-registry")}, cl)
+		return theDockerRegistry(graph)
 	}
 	return sous.NewHTTPNameInserter(cfg.Server)
 }

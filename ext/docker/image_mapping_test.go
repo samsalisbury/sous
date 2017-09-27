@@ -78,61 +78,14 @@ func BenchmarkCreateInMemoryDB(b *testing.B) {
 	}
 }
 
-func TestReharvest(t *testing.T) {
-	assert := assert.New(t)
-
-	dc := docker_registry.NewDummyClient()
-
-	host := "docker.repo.io"
-	base := "ot/wackadoo"
-
-	nc := NewNameCache(host, dc, logging.SilentLogSet(), inMemoryDB("reharvest"))
-
-	vstr := "1.2.3"
-	sv := sous.MustNewSourceID("https://github.com/opentable/wackadoo", "nested/there", vstr)
-	in := base + ":version-" + vstr
-	digest := "sha256:012345678901234567890123456789AB012345678901234567890123456789AB"
-	cn := base + "@" + digest
-
-	dc.FeedMetadata(docker_registry.Metadata{
-		Registry:      host,
-		Labels:        Labels(sv),
-		Etag:          digest,
-		CanonicalName: cn,
-		AllNames:      []string{cn, in},
-	})
-	gotSV, err := nc.GetSourceID(NewBuildArtifact(host+"/"+in, nil)) // XXX Really prefix with host?
-	if assert.Nil(err) {
-		assert.Equal(gotSV, sv)
-	}
-	nc.dump(os.Stderr)
-
-	nc.DB.Exec("update _database_metadata_ set value='' where name='fingerprint'")
-
-	dc.FeedTags([]string{"version" + vstr})
-	dc.FeedMetadata(docker_registry.Metadata{
-		Registry:      host,
-		Labels:        Labels(sv),
-		Etag:          digest,
-		CanonicalName: cn,
-		AllNames:      []string{cn, in},
-	})
-	nc.dump(os.Stderr)
-	err = nc.GroomDatabase()
-	assert.NoError(err)
-	nc.dump(os.Stderr)
-
-	assert.Len(dc.CallsTo("GetImageMetadata"), 2)
-	assert.Len(dc.CallsTo("AllTags"), 1)
-}
-
 func TestHarvestGuessedRepo(t *testing.T) {
 	assert := assert.New(t)
 
 	dc := docker_registry.NewDummyClient()
 
 	host := "docker.repo.io"
-	nc := NewNameCache(host, dc, logging.SilentLogSet(), inMemoryDB("guessed_repo"))
+	nc, err := NewNameCache(host, dc, logging.SilentLogSet(), inMemoryDB("guessed_repo"))
+	assert.NoError(err)
 
 	sl := sous.SourceLocation{
 		Repo: "https://github.com/opentable/wackadoo",
@@ -153,13 +106,14 @@ func TestRoundTrip(t *testing.T) {
 	host := "docker.repo.io"
 	base := "ot/wackadoo"
 
-	nc := NewNameCache(host, dc, logging.SilentLogSet(), inMemoryDB("roundtrip"))
+	nc, err := NewNameCache(host, dc, logging.SilentLogSet(), inMemoryDB("roundtrip"))
+	assert.NoError(err)
 
 	sv := sous.MustNewSourceID("https://github.com/opentable/wackadoo", "nested/there", "1.2.3")
 
 	in := base + ":version-1.2.3"
 	digest := "sha256:012345678901234567890123456789AB012345678901234567890123456789AB"
-	err := nc.Insert(sv, in, digest, []sous.Quality{})
+	err = nc.Insert(sv, in, digest, []sous.Quality{})
 	assert.NoError(err)
 
 	cn, err := nc.GetCanonicalName(in)
@@ -201,7 +155,8 @@ func TestCanonicalizesToConfiguredRegistry(t *testing.T) {
 	dockerCache := "nearby-docker-cache.repo.io"
 	base := "ot/wackadoo"
 
-	nc := NewNameCache(dockerCache, dc, logging.SilentLogSet(), inMemoryDB("canonsucceeds"))
+	nc, err := NewNameCache(dockerCache, dc, logging.SilentLogSet(), inMemoryDB("canonsucceeds"))
+	assert.NoError(err)
 
 	in := base + ":version-1.2.3"
 	digest := "sha256:012345678901234567890123456789AB012345678901234567890123456789AB"
@@ -259,7 +214,8 @@ func TestLeavesRegistryUnchangedWhenUnknown(t *testing.T) {
 	dockerCache := "nearby-docker-cache.repo.io"
 	base := "ot/wackadoo"
 
-	nc := NewNameCache(dockerCache, dc, logging.SilentLogSet(), inMemoryDB("canonsucceeds"))
+	nc, err := NewNameCache(dockerCache, dc, logging.SilentLogSet(), inMemoryDB("canonsucceeds"))
+	assert.NoError(err)
 
 	in := base + ":version-1.2.3"
 	digest := "sha256:012345678901234567890123456789AB012345678901234567890123456789AB"
@@ -305,7 +261,8 @@ func TestHarvestAlso(t *testing.T) {
 	base := "ot/wackadoo"
 	repo := "github.com/opentable/test-app"
 
-	nc := NewNameCache(host, dc, logging.SilentLogSet(), inMemoryDB("harvest_also"))
+	nc, err := NewNameCache(host, dc, logging.SilentLogSet(), inMemoryDB("harvest_also"))
+	assert.NoError(err)
 
 	stuffBA := func(n, v string) sous.SourceID {
 		ba := &sous.BuildArtifact{
@@ -336,7 +293,7 @@ func TestHarvestAlso(t *testing.T) {
 	sid2 := stuffBA("dick", "0.2.2")
 	sid3 := stuffBA("harry", "0.2.3")
 
-	_, err := nc.GetArtifact(sid1) //which should not miss
+	_, err = nc.GetArtifact(sid1) //which should not miss
 	assert.NoError(err)
 	_, err = nc.GetArtifact(sid2) //which should not miss
 	assert.NoError(err)
@@ -352,7 +309,8 @@ func TestSecondCanonicalName(t *testing.T) {
 
 	host := "docker.repo.io"
 	base := "ot/wackadoo"
-	nc := NewNameCache(host, dc, logging.SilentLogSet(), inMemoryDB("secondCN"))
+	nc, err := NewNameCache(host, dc, logging.SilentLogSet(), inMemoryDB("secondCN"))
+	require.NoError(t, err)
 
 	repo := "github.com/opentable/test-app"
 
@@ -387,7 +345,7 @@ func TestSecondCanonicalName(t *testing.T) {
 	sid1 := stuffBA(`012345678901234567890123456789AB012345678901234567890123456789AB`)
 	sid2 := stuffBA(`ABCDEFABCDEFABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEF12341234566`)
 
-	_, err := nc.GetArtifact(sid1) //which should not miss
+	_, err = nc.GetArtifact(sid1) //which should not miss
 	assert.NoError(err)
 
 	_, err = nc.GetArtifact(sid2) //which should not miss
@@ -400,7 +358,8 @@ func TestHarvesting(t *testing.T) {
 
 	host := "docker.repo.io"
 	base := "ot/wackadoo"
-	nc := NewNameCache(host, dc, logging.SilentLogSet(), inMemoryDB("harvesting"))
+	nc, err := NewNameCache(host, dc, logging.SilentLogSet(), inMemoryDB("harvesting"))
+	assert.NoError(err)
 
 	v := "1.2.3"
 	sv := sous.MustNewSourceID("https://github.com/opentable/wackadoo", "nested/there", v)
@@ -422,7 +381,7 @@ func TestHarvesting(t *testing.T) {
 	})
 
 	// a la a SetCollector getting the SV
-	_, err := nc.GetSourceID(NewBuildArtifact(in, nil))
+	_, err = nc.GetSourceID(NewBuildArtifact(in, nil))
 	if err != nil {
 		fmt.Printf("%+v", err)
 	}
@@ -457,7 +416,8 @@ func TestRecordAdvisories(t *testing.T) {
 	dc := docker_registry.NewDummyClient()
 	host := "docker.repo.io"
 	base := "ot/wackadoo"
-	nc := NewNameCache(host, dc, logging.SilentLogSet(), inMemoryDB("advisories"))
+	nc, err := NewNameCache(host, dc, logging.SilentLogSet(), inMemoryDB("advisories"))
+	require.NoError(err)
 	v := "1.2.3"
 	sv := sous.MustNewSourceID("https://github.com/opentable/wackadoo", "nested/there", v)
 	digest := "sha256:012345678901234567890123456789AB012345678901234567890123456789AB"
@@ -465,7 +425,7 @@ func TestRecordAdvisories(t *testing.T) {
 
 	qs := []sous.Quality{{Name: "ephemeral_tag", Kind: "advisory"}}
 
-	err := nc.Insert(sv, cn, digest, qs)
+	err = nc.Insert(sv, cn, digest, qs)
 	assert.NoError(err)
 
 	arty, err := nc.GetArtifact(sv)
@@ -481,7 +441,8 @@ func TestDump(t *testing.T) {
 	io := &bytes.Buffer{}
 
 	dc := docker_registry.NewDummyClient()
-	nc := NewNameCache("", dc, logging.SilentLogSet(), inMemoryDB("dump"))
+	nc, err := NewNameCache("", dc, logging.SilentLogSet(), inMemoryDB("dump"))
+	assert.NoError(err)
 
 	nc.dump(io)
 	assert.Regexp(`name_id`, io.String())
@@ -490,7 +451,8 @@ func TestDump(t *testing.T) {
 func TestMissingName(t *testing.T) {
 	assert := assert.New(t)
 	dc := docker_registry.NewDummyClient()
-	nc := NewNameCache("", dc, logging.SilentLogSet(), inMemoryDB("missing"))
+	nc, err := NewNameCache("", dc, logging.SilentLogSet(), inMemoryDB("missing"))
+	assert.NoError(err)
 
 	v := "4.5.6"
 	sv := sous.MustNewSourceID("https://github.com/opentable/brand-new-idea", "nested/there", v)
