@@ -14,11 +14,6 @@ type SousPlumbingNormalizeGDM struct {
 
 func init() { PlumbingSubcommands["normalizegdm"] = &SousPlumbingNormalizeGDM{} }
 
-// RegisterOn registers services on Addable
-func (*SousPlumbingNormalizeGDM) RegisterOn(psy Addable) {
-	psy.Add(graph.DryrunNeither)
-}
-
 // Help prints the help
 func (*SousPlumbingNormalizeGDM) Help() string {
 	return `Normalizes the storage format of GDM.
