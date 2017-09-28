@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
 
+## [Unreleased](//github.com/opentable/sous/compare/0.5.36...HEAD)
+
+### Fixed
+* All: Cloned DI providers ("psyringe") were resulting in 2+ NameCaches, and
+  uncontrolled access to the Docker registry cachce DB. A race condition led to
+  errors that prevented deployment of Sous, and then blocked use of the CLI
+  client. A stopgap was set up to force a NameCache to be provided early.
+
 ## [0.5.36](//github.com/opentable/sous/compare/0.5.35...0.5.36)
 
 ### Fixed
