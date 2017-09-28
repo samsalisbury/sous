@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 
-	"github.com/opentable/sous/ext/docker"
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/util/cmdr"
 	"github.com/opentable/sous/util/logging"
@@ -137,18 +136,6 @@ func NewSousCLI(di *graph.SousGraph, s *Sous, out, errout io.Writer) (*CLI, erro
 	chain := []cmdr.Command{}
 	rootGraph := BuildCLIGraph(s, cli, out, errout)
 	s.RegisterOn(rootGraph)
-
-	/*
-		This ensures the singularity of the field types - otherwise, if they're
-		injected twice and we have issues.
-
-		This is a temporary fix ahead of transitioning to a simpler DI.
-		 - jdl 9/28/17
-	*/
-	fixedPoint := struct {
-		*docker.NameCache
-	}{}
-	rootGraph.MustInject(&fixedPoint)
 
 	cli.scopedGraphs = map[cmdr.Command]*graph.SousGraph{s: rootGraph}
 

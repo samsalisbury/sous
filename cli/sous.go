@@ -4,6 +4,7 @@ import (
 	"flag"
 
 	"github.com/opentable/sous/config"
+	"github.com/opentable/sous/ext/docker"
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/util/cmdr"
 	"github.com/opentable/sous/util/whitespace"
@@ -31,6 +32,16 @@ type Sous struct {
 		Help bool
 		config.Verbosity
 	}
+
+	/*
+		This ensures the singularity of the field types - otherwise, if they're
+		injected twice and we have issues.
+
+		This is a temporary fix ahead of transitioning to a simpler DI.
+		 - jdl 9/28/17
+	*/
+	// added as a field here so that it will be singleton for the app
+	SingletonNameCache *docker.NameCache
 }
 
 // TopLevelCommands is populated once per command file (beginning sous_) in this

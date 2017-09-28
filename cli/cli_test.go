@@ -388,8 +388,7 @@ func TestInvokeRectifyWithDebugFlags(t *testing.T) {
 	require := require.New(t)
 
 	// XXX see below
-	//_, exe, _, stderr := prepareCommand(t, []string{`sous`, `rectify`, `-d`, `-v`, `-all`})
-	_, exe, _, _ := prepareCommand(t, []string{`sous`, `rectify`, `-d`, `-v`, `-all`})
+	_, exe, _, stderr := prepareCommand(t, []string{`sous`, `rectify`, `-d`, `-v`, `-all`})
 	assert.Len(exe.Args, 0)
 	require.IsType(&SousRectify{}, exe.Cmd)
 
@@ -399,11 +398,8 @@ func TestInvokeRectifyWithDebugFlags(t *testing.T) {
 	assert.NotNil(rect.GDM)
 	require.NotNil(rect.SourceFlags)
 	assert.Equal(rect.SourceFlags.All, true)
-	/*
-		XXX this mechanism needs to be reinstated, but it'll have to be after current outage is fixed
-		assert.Regexp(`Verbose debugging`, stderr.String())
-		assert.Regexp(`Regular debugging`, stderr.String())
-	*/
+	assert.Regexp(`Verbose debugging`, stderr.String())
+	assert.Regexp(`Regular debugging`, stderr.String())
 }
 
 func TestInvokeRectifyDryruns(t *testing.T) {
