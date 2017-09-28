@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
 
+## [Unreleased](//github.com/opentable/sous/compare/0.5.37...HEAD)
+
+### Fixed
+* All: restores -d and -v flags
+
 ## [0.5.37](//github.com/opentable/sous/compare/0.5.36...0.5.37)
 
 ### Fixed
