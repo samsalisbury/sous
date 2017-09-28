@@ -537,7 +537,7 @@ func NewCurrentState(sr StateReader, log LogSink) (*sous.State, error) {
 	state, err := sr.ReadState()
 	if os.IsNotExist(errors.Cause(err)) || storage.IsGSMError(err) {
 		log.Warnf("error reading state: %v", err)
-		log.Warnf("defaulting toempty state")
+		log.Warnf("defaulting to empty state")
 		return sous.NewState(), nil
 	}
 	return state, initErr(err, "reading sous state")
