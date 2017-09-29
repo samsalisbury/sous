@@ -40,11 +40,12 @@ func newPossiblyInvalidLocalSousConfig(u config.LocalUser, defaultConfig Default
 	return v, initErr(err, "getting configuration")
 }
 
-func newLocalSousConfig(pic PossiblyInvalidConfig) (v LocalSousConfig, err error) {
+func newLocalSousConfig(pic PossiblyInvalidConfig, ls *logging.LogSet) (v LocalSousConfig, err error) {
 	v.Config, err = pic.Config, pic.Validate()
 	if err != nil {
 		err = errors.Wrapf(err, "tip: run 'sous config' to see and manipulate your configuration")
 	}
+	ls.Configure(v.Config.Logging)
 	return v, initErr(err, "validating configuration")
 }
 
