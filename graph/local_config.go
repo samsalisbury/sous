@@ -43,10 +43,10 @@ func newPossiblyInvalidLocalSousConfig(u config.LocalUser, defaultConfig Default
 func newLocalSousConfig(pic PossiblyInvalidConfig, ls *logging.LogSet) (v LocalSousConfig, err error) {
 	v.Config, err = pic.Config, pic.Validate()
 	if err != nil {
-		err = errors.Wrapf(err, "tip: run 'sous config' to see and manipulate your configuration")
+		return LocalSousConfig{}, errors.Wrapf(err, "tip: run 'sous config' to see and manipulate your configuration")
 	}
-	ls.Configure(v.Config.Logging)
-	return v, initErr(err, "validating configuration")
+	cerr := ls.Configure(v.Config.Logging)
+	return v, initErr(cerr, "validating configuration")
 }
 
 func newConfigLoader() *ConfigLoader {

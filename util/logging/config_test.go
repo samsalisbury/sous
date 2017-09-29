@@ -31,6 +31,11 @@ func TestLoggingConfig(t *testing.T) {
 		assert.Equal(t, cfg.getBrokers(), []string{"127.0.0.1:5000", "127.0.0.2:5000"})
 	})
 
+	t.Run("graphite server", func(t *testing.T) {
+		cfg := pangramConfig()
+		assert.Equal(t, cfg.getGraphiteServer(), "graphite.example.com:2003")
+	})
+
 	t.Run("Equal", func(t *testing.T) {
 		cfg := pangramConfig()
 		other := Config{}
