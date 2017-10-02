@@ -56,7 +56,7 @@ var (
 	// want metrics in a component, you need to add an injected LogSet. c.f.
 	// ext/docker/image_mapping.go
 	Log = func() LogSet {
-		return *(NewLogSet(semv.MustParse("0.0.0"), "", os.Stderr))
+		return *(NewLogSet(semv.MustParse("0.0.0"), "sous.global", os.Stderr))
 	}()
 )
 
@@ -163,7 +163,7 @@ func logrusFormatter() logrus.Formatter {
 
 		//our names for these fields
 		FieldMap: logrus.FieldMap{
-			logrus.FieldKeyMsg:   "message",
+			logrus.FieldKeyMsg:   "call-stack-message",
 			logrus.FieldKeyLevel: "severity",
 		},
 	}

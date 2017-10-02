@@ -157,37 +157,7 @@ func (ar *AutoResolver) resolveLoop(tc, done TriggerChannel, ac announceChannel)
 	}
 }
 
-type resolveStateMessage struct {
-	callerInfo logging.CallerInfo
-	state      string
-}
-
-func newResolveStateMessage(state string) resolveStateMessage {
-	return resolveStateMessage{
-		callerInfo: logging.GetCallerInfo("auto_resolver"),
-		state:      state,
-	}
-}
-
-func (msg resolveStateMessage) MetricsTo(ms logging.MetricsSink) {
-	ms.IncCounter(msg.state, 1)
-}
-
-func (msg resolveStateMessage) DefaultLevel() logging.Level {
-	return logging.InformationLevel
-}
-
-func (msg resolveStateMessage) Message() string {
-	return msg.state
-}
-
-func (msg resolveStateMessage) EachField(f logging.FieldReportFn) {
-	f("@loglov3-otl", "sous-resolver-state-v1")
-	msg.callerInfo.EachField(f)
-}
-
 func (ar *AutoResolver) resolveOnce(ac announceChannel) {
-	logging.Deliver(newResolveStateMessage("begin"), ar.LogSink)
 	state, err := ar.StateReader.ReadState()
 	ar.LogSink.Debugf("Reading current state: err: %v", err)
 	if err != nil {
@@ -217,7 +187,6 @@ func (ar *AutoResolver) resolveOnce(ac announceChannel) {
 		ar.stableStatus = &ss
 	})
 	ar.Statuses() // XXX this is debugging
-	logging.Deliver(newResolveStateMessage("complete"), ar.LogSink)
 }
 
 func (ar *AutoResolver) afterDone(tc, done TriggerChannel, ac announceChannel) {

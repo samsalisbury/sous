@@ -27,11 +27,13 @@ func (gcm graphiteConfigMessage) Message() string {
 }
 
 func (gcm graphiteConfigMessage) EachField(f FieldReportFn) {
-	f("@loglov3-otl", "sous-graphite-config")
+	f("@loglov3-otl", "sous-graphite-config-v1")
 	gcm.CallerInfo.EachField(f)
 	if gcm.cfg == nil {
+		f("connected", false)
 		return
 	}
+	f("connected", true)
 	f("server-addr", gcm.cfg.Addr)
 	f("flush-interval", gcm.cfg.FlushInterval)
 }

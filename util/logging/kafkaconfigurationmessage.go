@@ -31,11 +31,13 @@ func (kcm kafkaConfigurationMessage) Message() string {
 }
 
 func (kcm kafkaConfigurationMessage) EachField(f FieldReportFn) {
-	f("@loglov3-otl", "sous-kafka-config")
+	f("@loglov3-otl", "sous-kafka-config-v1")
 	kcm.CallerInfo.EachField(f)
 	if kcm.hook == nil {
+		f("connected", false)
 		return
 	}
+	f("connected", true)
 	f("logging-topic", kcm.topic)
 	f("brokers", kcm.brokers)
 	f("logger-id", kcm.hook.Id())
