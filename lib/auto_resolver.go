@@ -158,10 +158,11 @@ func (ar *AutoResolver) resolveLoop(tc, done TriggerChannel, ac announceChannel)
 }
 
 type resolveStateMessage struct {
-	state string
+	callerInfo logging.CallerInfo
+	state      string
 }
 
-func newResolveStateMessage(state string) {
+func newResolveStateMessage(state string) resolveStateMessage {
 	return resolveStateMessage{
 		callerInfo: logging.GetCallerInfo("auto_resolver"),
 		state:      state,
