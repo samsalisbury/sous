@@ -85,13 +85,15 @@ func (msg *clientHTTPResponse) EachField(f logging.FieldReportFn) {
 	f("status", msg.status)
 	f("duration", msg.dur)
 
-	f("url", msg.url)
 	f("body-size", msg.requestSize)
+	// body?
 	f("response-size", msg.responseSize)
+	// response-body?
 
-	f("server", msg.server)
-	f("path", msg.path)
-	f("querystring", msg.parms)
+	f("url", msg.url)
+	f("url-hostname", msg.server)
+	f("url-pathname", msg.path)
+	f("url-querystring", msg.parms)
 	msg.CallerInfo.EachField(f)
 }
 

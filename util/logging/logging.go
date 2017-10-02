@@ -157,6 +157,18 @@ func (ls *LogSet) Configure(cfg Config) error {
 	return nil
 }
 
+func logrusFormatter() logrus.Formatter {
+	return &logrus.JSONFormatter{
+		DisableTimestamp: true, //we capture the timestamp when message created
+
+		//our names for these fields
+		FieldMap: logrus.FieldMap{
+			logrus.FieldKeyMsg:   "message",
+			logrus.FieldKeyLevel: "severity",
+		},
+	}
+}
+
 func (ls LogSet) configureKafka(cfg Config) error {
 	if ls.liveConfig != nil && ls.liveConfig.useKafka() {
 		if cfg.useKafka() {
@@ -172,7 +184,7 @@ func (ls LogSet) configureKafka(cfg Config) error {
 
 	hook, err := kafkalogrus.NewKafkaLogrusHook("kafkahook",
 		cfg.getKafkaLevels(),
-		&logrus.JSONFormatter{},
+		logrusFormatter(),
 		cfg.getBrokers(),
 		cfg.Kafka.Topic,
 		false)
