@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+
+if type versiontool > /dev/null; then
+  echo -n
+else
+  echo versiontool not found
+  echo "try: go get github.com/nyarly/versiontool"
+fi
+
+newversion=$(versiontool increment $(git tag | grep '[.].*[.*]' | versiontool sort | tail -n 1))
+echo Updating to $newversion
+
+set -x
+sed -i "/Unreleased.*HEAD/ s/Unreleased\|HEAD/$newversion/g" CHANGELOG.md
+grep $newversion CHANGELOG.md
+
+git commit -am "Releasing $newversion"
+git tag -sm "Release" $newversion
+git push
