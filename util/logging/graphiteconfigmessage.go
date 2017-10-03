@@ -34,6 +34,6 @@ func (gcm graphiteConfigMessage) EachField(f FieldReportFn) {
 		return
 	}
 	f("sous-successful-connection", true)
-	f("server-addr", gcm.cfg.Addr)
-	f("flush-interval", gcm.cfg.FlushInterval)
+	f("graphite-server-address", gcm.cfg.Addr)
+	f("graphite-flush-interval", gcm.cfg.FlushInterval)
 }
