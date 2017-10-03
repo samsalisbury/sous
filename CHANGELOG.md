@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
 
+## [Unreleased](//github.com/opentable/sous/compare/0.5.39..HEAD)
+
+### Fixed
+
+* Server: mismatches with logging schemas
+
 ## [0.5.39](//github.com/opentable/sous/compare/0.5.38..0.5.39)
 
 ### Fixed
