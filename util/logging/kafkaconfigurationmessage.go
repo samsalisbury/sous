@@ -34,12 +34,12 @@ func (kcm kafkaConfigurationMessage) EachField(f FieldReportFn) {
 	f("@loglov3-otl", "sous-kafka-config-v1")
 	kcm.CallerInfo.EachField(f)
 	if kcm.hook == nil {
-		f("connected", false)
+		f("sous-successful-connection", false)
 		return
 	}
-	f("connected", true)
-	f("logging-topic", kcm.topic)
-	f("brokers", kcm.brokers)
-	f("logger-id", kcm.hook.Id())
-	f("levels", kcm.hook.Levels())
+	f("sous-successful-connection", true)
+	f("kafka-logging-topic", kcm.topic)
+	f("kafka-brokers", kcm.brokers)
+	f("kafka-logger-id", kcm.hook.Id())
+	f("kafka-logging-levels", kcm.hook.Levels())
 }
