@@ -93,7 +93,7 @@ func (msg cacheErrorMessage) MetricsTo(ms logging.MetricsSink) {
 }
 
 func (msg cacheErrorMessage) Message() string {
-	return "cache hit"
+	return "cache error"
 }
 
 func (msg cacheErrorMessage) EachField(f logging.FieldReportFn) {

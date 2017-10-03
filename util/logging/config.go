@@ -112,6 +112,13 @@ func (cfg Config) getKafkaLevels() []logrus.Level {
 	return kafkaLevels
 }
 
+func (cfg Config) getGraphiteServer() string {
+	if strings.Index(cfg.Graphite.Server, ":") != -1 {
+		return cfg.Graphite.Server
+	}
+	return strings.Join([]string{cfg.Graphite.Server, "2003"}, ":")
+}
+
 func (cfg Config) useKafka() bool {
 	return cfg.Kafka.Enabled
 }

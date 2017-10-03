@@ -25,6 +25,7 @@ func (msg resolveCompleteMessage) MetricsTo(m logging.MetricsSink) {
 	if msg.status.Started.Before(msg.status.Finished) {
 		m.UpdateTimer("fullcycle-duration", msg.status.Finished.Sub(msg.status.Started))
 	}
+	m.UpdateSample("resolution-errors", int64(len(msg.status.Errs.Causes)))
 }
 
 func (msg resolveCompleteMessage) DefaultLevel() logging.Level {
@@ -48,8 +49,6 @@ func (msg resolveCompleteMessage) EachField(f logging.FieldReportFn) {
 	f("@loglov3-otl", "sous-resolution-result-v1")
 	f("started-at", msg.status.Started.Format(time.RFC3339))
 	f("finished-at", msg.status.Finished.Format(time.RFC3339))
-	f("errors", msg.status.Errs.Causes)
-	f("resolutions", msg.status.Log)
-	f("intended", msg.status.Intended)
+	f("error-count", len(msg.status.Errs.Causes))
 	msg.CallerInfo.EachField(f)
 }

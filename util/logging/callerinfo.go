@@ -59,12 +59,12 @@ FrameLoop:
 	f("@timestamp", info.callTime.Format(time.RFC3339))
 	f("thread-name", info.goroutineID)
 	if unknown {
-		f("file", "<unknown>")
-		f("line", "<unknown>")
-		f("function", "<unknown>")
+		f("call-stack-file", "<unknown>")
+		f("call-stack-line-number", "<unknown>")
+		f("call-stack-function", "<unknown>")
 		return
 	}
-	f("file", frame.File)
-	f("line", frame.Line)
-	f("function", frame.Function)
+	f("call-stack-file", frame.File)
+	f("call-stack-line-number", frame.Line)
+	f("call-stack-function", frame.Function)
 }

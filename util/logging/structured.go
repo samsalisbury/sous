@@ -17,6 +17,8 @@ func (ls LogSet) LogMessage(lvl Level, msg LogMessage) {
 		logto = logto.WithField(name, value)
 	})
 
+	logto = logto.WithField("severity", lvl.String())
+
 	switch lvl {
 	default:
 		logto.Printf("unknown Level: %d - %q", lvl, msg.Message())

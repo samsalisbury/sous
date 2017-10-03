@@ -28,8 +28,9 @@ func NewGenericMsg(lvl Level, msg string, fields map[string]interface{}) LogMess
 }
 
 func (msg *genericMsg) EachField(f FieldReportFn) {
+	// XXX belongs maybe in the top level structured message engine
 	if _, hasSchema := msg.fields["@loglov3-otl"]; !hasSchema {
-		f("@loglov3-otl", "msg-v1")
+		f("@loglov3-otl", "sous-generic-v1")
 	}
 	for k, v := range msg.fields {
 		f(k, v)

@@ -33,7 +33,7 @@ func (msg *silentMessageError) MetricsTo(metrics MetricsSink) {
 }
 
 func (msg *silentMessageError) EachField(f FieldReportFn) {
-	f("@loglov3-otl", "msg-v1")
+	f("@loglov3-otl", "sous-generic-v1")
 	msg.CallerInfo.EachField(f)
 }
 

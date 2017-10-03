@@ -158,7 +158,6 @@ func (ar *AutoResolver) resolveLoop(tc, done TriggerChannel, ac announceChannel)
 }
 
 func (ar *AutoResolver) resolveOnce(ac announceChannel) {
-	ar.LogSink.Debugf("Beginning Resolve")
 	state, err := ar.StateReader.ReadState()
 	ar.LogSink.Debugf("Reading current state: err: %v", err)
 	if err != nil {
@@ -188,7 +187,6 @@ func (ar *AutoResolver) resolveOnce(ac announceChannel) {
 		ar.stableStatus = &ss
 	})
 	ar.Statuses() // XXX this is debugging
-	ar.LogSink.Debugf("Completed resolve")
 }
 
 func (ar *AutoResolver) afterDone(tc, done TriggerChannel, ac announceChannel) {
