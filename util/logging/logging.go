@@ -107,9 +107,26 @@ func (ls LogSet) Child(name string) LogSink {
 	return child
 }
 
+func getEnvHash() map[string]string {
+	h := map[string]string{}
+	get := func(n string) {
+		if v, has := os.LookupEnv(n); has {
+			h[n] = v
+		}
+	}
+	get("OT_ENV")
+	get("OT_ENV_TYPE")
+	get("OT_ENV_LOCATION")
+	get("TASK_ID")
+	get("INSTANCE_NO")
+	return h
+}
+
 func newdb(vrsn semv.Version, err io.Writer, lgrs *logrus.Logger) *dumpBundle {
+	env := getEnvHash()
+
 	return &dumpBundle{
-		appIdent:   collectAppID(vrsn),
+		appIdent:   collectAppID(vrsn, env),
 		context:    context.Background(),
 		err:        err,
 		defaultErr: err,

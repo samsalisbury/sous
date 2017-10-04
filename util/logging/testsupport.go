@@ -2,9 +2,11 @@ package logging
 
 import (
 	"fmt"
+	"testing"
 	"time"
 
 	"github.com/nyarly/spies"
+	"github.com/stretchr/testify/assert"
 )
 
 type (
@@ -135,4 +137,24 @@ func (wds writeDonerSpy) Write(p []byte) (n int, err error) {
 
 func (wds writeDonerSpy) Done() {
 	wds.spy.Called()
+}
+
+// AssertMessageFields is a testing function - it receives an eachFielder and confirms that it:
+//  * generates no duplicate fields
+//  * generates fields with the names in variableFields, and ignores their values
+//  * generates fields with the names and values in fixedFields
+func AssertMessageFields(t *testing.T, msg eachFielder, variableFields []string, fixedFields map[string]interface{}) {
+	actualFields := map[string]interface{}{}
+
+	msg.EachField(func(name string, value interface{}) {
+		assert.NotContains(t, actualFields, name) //don't clobber a field
+		actualFields[name] = value
+	})
+
+	for _, f := range variableFields {
+		assert.Contains(t, actualFields, f)
+		delete(actualFields, f)
+	}
+
+	assert.Equal(t, fixedFields, actualFields)
 }

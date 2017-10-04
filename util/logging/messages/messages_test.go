@@ -32,24 +32,20 @@ func TestReportCHResponseFields(t *testing.T) {
 		"time":logging.callTime{sec:63639633602, nsec:854240181, loc:(*time.Location)(0x8f3780)},
 	*/
 
-	variableFields := []string{"call-stack-line-number", "call-stack-function", "call-stack-file", "@timestamp", "thread-name"}
-	for _, f := range variableFields {
-		assert.Contains(t, actualFields, f)
-		delete(actualFields, f)
-	}
-
-	assert.Equal(t, map[string]interface{}{
-		"@loglov3-otl":    "http-v1",
-		"incoming":        false,
-		"method":          "GET",
-		"url":             "http://example.com/api?a=a",
-		"url-hostname":    "example.com",
-		"url-pathname":    "/api",
-		"url-querystring": "a=a",
-		"duration":        time.Duration(30000000),
-		"body-size":       int64(0),
-		"response-size":   int64(123),
-		"status":          200,
-	}, actualFields)
+	logging.AssertMessageFields(t, message,
+		[]string{"call-stack-line-number", "call-stack-function", "call-stack-file", "@timestamp", "thread-name"},
+		map[string]interface{}{
+			"@loglov3-otl":    "http-v1",
+			"incoming":        false,
+			"method":          "GET",
+			"url":             "http://example.com/api?a=a",
+			"url-hostname":    "example.com",
+			"url-pathname":    "/api",
+			"url-querystring": "a=a",
+			"duration":        time.Duration(30000000),
+			"body-size":       int64(0),
+			"response-size":   int64(123),
+			"status":          200,
+		})
 
 }
