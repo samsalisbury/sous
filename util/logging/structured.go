@@ -40,7 +40,7 @@ func (ls LogSet) eachField(f FieldReportFn) {
 	} else {
 		f("component-id", "sous")
 	}
-	f("logger", ls.name)
+	f("logger-name", ls.name)
 	f("@uuid", uuid.New())
 
 	ls.appIdent.EachField(f)
