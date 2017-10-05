@@ -35,7 +35,12 @@ func (ls LogSet) LogMessage(lvl Level, msg LogMessage) {
 	}
 }
 func (ls LogSet) eachField(f FieldReportFn) {
-	f("component-id", ls.name)
+	if ls.appRole != "" {
+		f("component-id", "sous-"+ls.appRole)
+	} else {
+		f("component-id", "sous")
+	}
+	f("logger-name", ls.name)
 	f("@uuid", uuid.New())
 
 	ls.appIdent.EachField(f)

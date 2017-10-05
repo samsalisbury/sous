@@ -26,8 +26,9 @@ type (
 		Notice logwrapper
 		Vomit  logwrapper
 
-		level Level
-		name  string
+		level   Level
+		name    string
+		appRole string
 
 		metrics metrics.Registry
 		*dumpBundle
@@ -56,7 +57,7 @@ var (
 	// want metrics in a component, you need to add an injected LogSet. c.f.
 	// ext/docker/image_mapping.go
 	Log = func() LogSet {
-		return *(NewLogSet(semv.MustParse("0.0.0"), "sous.global", os.Stderr))
+		return *(NewLogSet(semv.MustParse("0.0.0"), "sous.global", "", os.Stderr))
 	}()
 )
 
@@ -74,13 +75,13 @@ func (w logwrapper) Println(vs ...interface{}) {
 
 // SilentLogSet returns a logset that discards everything by default
 func SilentLogSet() *LogSet {
-	ls := NewLogSet(semv.MustParse("0.0.0"), "", os.Stderr)
+	ls := NewLogSet(semv.MustParse("0.0.0"), "", "", os.Stderr)
 	ls.BeQuiet()
 	return ls
 }
 
 // NewLogSet builds a new Logset that feeds to the listed writers
-func NewLogSet(version semv.Version, name string, err io.Writer) *LogSet {
+func NewLogSet(version semv.Version, name string, role string, err io.Writer) *LogSet {
 	// logrus uses a pool for entries, which means we probably really should only have one.
 	// this means that output configuration and level limiting is global to the logset and
 	// its children.
@@ -89,7 +90,7 @@ func NewLogSet(version semv.Version, name string, err io.Writer) *LogSet {
 
 	bundle := newdb(version, err, lgrs)
 
-	ls := newls(name, WarningLevel, bundle)
+	ls := newls(name, role, WarningLevel, bundle)
 	ls.imposeLevel()
 
 	// use sous.<env>.<region>.*, he said
@@ -103,7 +104,7 @@ func NewLogSet(version semv.Version, name string, err io.Writer) *LogSet {
 
 // Child produces a child logset, namespaced under "name".
 func (ls LogSet) Child(name string) LogSink {
-	child := newls(ls.name+"."+name, ls.level, ls.dumpBundle)
+	child := newls(ls.name+"."+name, ls.appRole, ls.level, ls.dumpBundle)
 	child.metrics = metrics.NewPrefixedChildRegistry(ls.metrics, name+".")
 	return child
 }
@@ -135,9 +136,10 @@ func newdb(vrsn semv.Version, err io.Writer, lgrs *logrus.Logger) *dumpBundle {
 	}
 }
 
-func newls(name string, level Level, bundle *dumpBundle) *LogSet {
+func newls(name string, role string, level Level, bundle *dumpBundle) *LogSet {
 	ls := &LogSet{
 		name:       name,
+		appRole:    role,
 		level:      level,
 		dumpBundle: bundle,
 	}

@@ -13,6 +13,7 @@ with respect to its command line interface and HTTP interface.
 * All: ot_* fields are actually populated - also instance-no
 * All: metrics are scoped to env and region so that multiple sous instances don't
   clobber each other's metrics.
+* All: component-id refers to the whole "sous" application; scoped loggers goes in logger-name
 
 ## [0.5.40](//github.com/opentable/sous/compare/0.5.39..0.5.40)
 
