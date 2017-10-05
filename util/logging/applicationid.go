@@ -72,3 +72,7 @@ func (id *applicationID) EachField(f FieldReportFn) {
 		  singularity-task-id:
 	*/
 }
+
+func (id *applicationID) metricsScope() string {
+	return id.otenvtype + "." + id.otenvlocation
+}

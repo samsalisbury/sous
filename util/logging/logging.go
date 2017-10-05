@@ -92,10 +92,11 @@ func NewLogSet(version semv.Version, name string, err io.Writer) *LogSet {
 	ls := newls(name, WarningLevel, bundle)
 	ls.imposeLevel()
 
+	// use sous.<env>.<region>.*, he said
 	if name == "" {
-		ls.metrics = metrics.NewRegistry()
+		ls.metrics = metrics.NewPrefixedRegistry("sous." + bundle.appIdent.metricsScope())
 	} else {
-		ls.metrics = metrics.NewPrefixedRegistry(name + ".")
+		ls.metrics = metrics.NewPrefixedRegistry(name + "." + bundle.appIdent.metricsScope())
 	}
 	return ls
 }

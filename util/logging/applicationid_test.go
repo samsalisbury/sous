@@ -4,9 +4,10 @@ import (
 	"testing"
 
 	"github.com/samsalisbury/semv"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestApplicationId(t *testing.T) {
+func TestApplicationIdMessageFields(t *testing.T) {
 	apid := collectAppID(semv.MustParse("2.3.9"), map[string]string{
 		"OT_ENV":          "staging-luna",
 		"OT_ENV_TYPE":     "staging",
@@ -15,18 +16,24 @@ func TestApplicationId(t *testing.T) {
 		"INSTANCE_NO":     "17",
 	})
 
-	variableFields := []string{"host"}
+	t.Run("MessageFields", func(t *testing.T) {
+		variableFields := []string{"host"}
 
-	fixedFields := map[string]interface{}{
-		"ot-env":              "staging-luna",
-		"application-version": "2.3.9",
-		"ot-env-type":         "staging",
-		"ot-env-location":     "luna",
-		"singularity-task-id": "cabbage",
-		"service-type":        "sous",
-		"instance-no":         uint(17),
-		"sequence-number":     uint(1), // a little fragile
-	}
+		fixedFields := map[string]interface{}{
+			"ot-env":              "staging-luna",
+			"application-version": "2.3.9",
+			"ot-env-type":         "staging",
+			"ot-env-location":     "luna",
+			"singularity-task-id": "cabbage",
+			"service-type":        "sous",
+			"instance-no":         uint(17),
+			"sequence-number":     uint(1), // a little fragile
+		}
 
-	AssertMessageFields(t, apid, variableFields, fixedFields)
+		AssertMessageFields(t, apid, variableFields, fixedFields)
+	})
+
+	t.Run("MetricsScope", func(t *testing.T) {
+		assert.Equal(t, "staging.luna", apid.metricsScope())
+	})
 }
