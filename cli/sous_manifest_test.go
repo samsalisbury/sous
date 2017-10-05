@@ -51,7 +51,7 @@ func TestManifestGet(t *testing.T) {
 		HTTPClient: graph.HTTPClient{cl},
 
 		OutWriter: graph.OutWriter(out),
-		LogSink:   graph.LogSink{logging.NewLogSet(semv.MustParse("0.0.0"), "", os.Stderr)},
+		LogSink:   graph.LogSink{logging.NewLogSet(semv.MustParse("0.0.0"), "", "", os.Stderr)},
 	}
 
 	control.Any(
@@ -94,7 +94,7 @@ func TestManifestSet(t *testing.T) {
 		HTTPClient: graph.HTTPClient{cl},
 
 		InReader: graph.InReader(in),
-		LogSink:  graph.LogSink{logging.NewLogSet(semv.MustParse("0.0.0"), "", os.Stderr)},
+		LogSink:  graph.LogSink{logging.NewLogSet(semv.MustParse("0.0.0"), "", "", os.Stderr)},
 	}
 
 	updater, upctl := restfultest.NewUpdateSpy()
