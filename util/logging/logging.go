@@ -94,11 +94,9 @@ func NewLogSet(version semv.Version, name string, role string, err io.Writer) *L
 	ls.imposeLevel()
 
 	// use sous.<env>.<region>.*, he said
-	if name == "" {
-		ls.metrics = metrics.NewPrefixedRegistry("sous." + bundle.appIdent.metricsScope())
-	} else {
-		ls.metrics = metrics.NewPrefixedRegistry(name + "." + bundle.appIdent.metricsScope())
-	}
+	// sous. comes from the GraphiteConfig "Prefix" field.
+	// <env>.<region> from metricsScope()
+	ls.metrics = metrics.NewPrefixedRegistry(bundle.appIdent.metricsScope() + ".")
 	return ls
 }
 
