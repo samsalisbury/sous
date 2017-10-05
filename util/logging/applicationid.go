@@ -2,6 +2,7 @@ package logging
 
 import (
 	"os"
+	"strconv"
 
 	"github.com/samsalisbury/semv"
 )
@@ -20,10 +21,10 @@ type applicationID struct {
 	sequenceNumber     uint
 }
 
-func collectAppID(version semv.Version) *applicationID {
+func collectAppID(version semv.Version, env map[string]string) *applicationID {
 	id := applicationID{}
 	getenv := func(n string) string {
-		v, found := os.LookupEnv("OTENV")
+		v, found := env[n]
 		if !found {
 			return "unknown"
 		}
@@ -33,7 +34,9 @@ func collectAppID(version semv.Version) *applicationID {
 	id.otenvtype = getenv("OT_ENV_TYPE")
 	id.otenvlocation = getenv("OT_ENV_LOCATION")
 	id.singularitytaskid = getenv("TASK_ID")
-
+	if i, err := strconv.ParseUint(getenv("INSTANCE_NO"), 10, 32); err == nil {
+		id.instanceno = uint(i)
+	}
 	host, err := os.Hostname()
 	id.host = host
 	if err != nil {
@@ -68,4 +71,8 @@ func (id *applicationID) EachField(f FieldReportFn) {
 		  application-version:      # distinguish the deployment that's logging; e.g. TC id, package.json...
 		  singularity-task-id:
 	*/
+}
+
+func (id *applicationID) metricsScope() string {
+	return id.otenvtype + "." + id.otenvlocation
 }

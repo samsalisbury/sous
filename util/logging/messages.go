@@ -112,11 +112,15 @@ type (
 		io.Writer
 	}
 
+	eachFielder interface {
+		EachField(FieldReportFn)
+	}
+
 	// A LogMessage has structured data to report to a log (c.f. Deliver)
 	LogMessage interface {
 		DefaultLevel() Level
 		Message() string
-		EachField(FieldReportFn)
+		eachFielder
 	}
 
 	// A MetricsMessage has metrics data to record (c.f. Deliver)
