@@ -1,6 +1,7 @@
 package sous
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
@@ -110,57 +111,149 @@ func (dp *DeployablePair) ID() DeploymentID {
 	return dp.name
 }
 
-// ResolveNames resolves diffs.
-func (d *DeployableChans) ResolveNames(r Registry, diff *DeployableChans, errs chan *DiffResolution) {
-	d.WaitGroup = sync.WaitGroup{}
-	d.Add(4)
-	go func() { resolveCreates(r, diff.Start, d.Start, errs); d.Done() }()
-	go func() { maybeResolveDeletes(r, diff.Stop, d.Stop, errs); d.Done() }()
-	go func() { maybeResolveRetains(r, diff.Stable, d.Stable, errs); d.Done() }()
-	go func() { resolvePairs(r, diff.Update, d.Update, errs); d.Done() }()
-	go func() { d.Wait(); close(errs) }()
+// DeployableProcessor processes DeployablePairs off of a DeployableChans channel
+type DeployableProcessor interface {
+	Start(dp *DeployablePair) *DeployablePair
+	Stop(dp *DeployablePair) *DeployablePair
+	Stable(dp *DeployablePair) *DeployablePair
+	Update(dp *DeployablePair) *DeployablePair
+	StartClosed()
+	StopClosed()
+	StableClosed()
+	UpdateClosed()
 }
 
-func resolveCreates(r Registry, from chan *DeployablePair, to chan *DeployablePair, errs chan *DiffResolution) {
-	for dp := range from {
-		dep := dp.Post
-		logging.Log.Vomit.Printf("Deployment processed, needs artifact: %#v", dep)
+// Pipeline attaches a DeployableProcessor to the DeployableChans, and returns a new DeployableChans.
+func (d *DeployableChans) Pipeline(ctx context.Context, proc DeployableProcessor) *DeployableChans {
+	out := NewDeployableChans(1)
 
-		da, err := resolveName(r, dep)
-		if err != nil {
-			logging.Log.Info.Printf("Unable to create new deployment %q: %s", dep.ID(), err)
-			logging.Log.Debug.Printf("Failed create deployment %q: % #v", dep.ID(), dep)
-			errs <- err
-			continue
+	process := func(from, to chan *DeployablePair, doProc func(dp *DeployablePair) *DeployablePair, closed func()) {
+		defer closed()
+		defer close(to)
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case dp, ok := <-from:
+				if ok {
+					if proked := doProc(dp); proked != nil {
+						to <- proked
+					}
+				} else {
+					return
+				}
+			}
 		}
-
-		if da.BuildArtifact == nil {
-			logging.Log.Info.Printf("Unable to create new deployment %q: no artifact for SourceID %q", dep.ID(), dep.SourceID)
-			logging.Log.Debug.Printf("Failed create deployment %q: % #v", dep.ID(), dep)
-			continue
-		}
-		to <- &DeployablePair{ExecutorData: dp.ExecutorData, name: dp.name, Prior: nil, Post: da}
 	}
-	close(to)
+
+	go process(d.Start, out.Start, proc.Start, proc.StartClosed)
+	go process(d.Stop, out.Stop, proc.Stop, proc.StopClosed)
+	go process(d.Stable, out.Stable, proc.Stable, proc.StableClosed)
+	go process(d.Update, out.Update, proc.Update, proc.UpdateClosed)
+	return out
+}
+
+// DeployablePassThrough implements DeployableProcessor trivially: each method simply passes its argument on
+type DeployablePassThrough struct{}
+
+func (DeployablePassThrough) Start(dp *DeployablePair) *DeployablePair {
+	return dp
+}
+
+func (DeployablePassThrough) Stop(dp *DeployablePair) *DeployablePair {
+	return dp
+}
+
+func (DeployablePassThrough) Stable(dp *DeployablePair) *DeployablePair {
+	return dp
+}
+
+func (DeployablePassThrough) Update(dp *DeployablePair) *DeployablePair {
+	return dp
+}
+
+func (DeployablePassThrough) StartClosed() {}
+
+func (DeployablePassThrough) StopClosed() {}
+
+func (DeployablePassThrough) StableClosed() {}
+
+func (DeployablePassThrough) UpdateClosed() {}
+
+type nameResolver struct {
+	DeployablePassThrough
+	wait     sync.WaitGroup
+	registry Registry
+	errs     chan *DiffResolution
+}
+
+func (names *nameResolver) Start(dp *DeployablePair) *DeployablePair {
+	dep := dp.Post
+	logging.Log.Vomit.Printf("Deployment processed, needs artifact: %#v", dep)
+
+	da, err := resolveName(names.registry, dep)
+	if err != nil {
+		logging.Log.Info.Printf("Unable to create new deployment %q: %s", dep.ID(), err)
+		logging.Log.Debug.Printf("Failed create deployment %q: % #v", dep.ID(), dep)
+		names.errs <- err
+		return nil
+	}
+
+	if da.BuildArtifact == nil {
+		logging.Log.Info.Printf("Unable to create new deployment %q: no artifact for SourceID %q", dep.ID(), dep.SourceID)
+		logging.Log.Debug.Printf("Failed create deployment %q: % #v", dep.ID(), dep)
+		return nil
+	}
+	return &DeployablePair{ExecutorData: dp.ExecutorData, name: dp.name, Prior: nil, Post: da}
+}
+
+func (names *nameResolver) Stop(dp *DeployablePair) *DeployablePair {
+	da := maybeResolveSingle(names.registry, dp.Prior)
+	return &DeployablePair{ExecutorData: dp.ExecutorData, name: dp.name, Prior: da, Post: nil}
+}
+
+func (names *nameResolver) Stable(dp *DeployablePair) *DeployablePair {
+	da := maybeResolveSingle(names.registry, dp.Post)
+	return &DeployablePair{ExecutorData: dp.ExecutorData, name: dp.name, Prior: da, Post: da}
+}
+
+func (names *nameResolver) StartClosed() {
+	names.wait.Done()
+}
+
+func (names *nameResolver) StopClosed() {
+	names.wait.Done()
+}
+
+func (names *nameResolver) StableClosed() {
+	names.wait.Done()
+}
+
+func (names *nameResolver) UpdateClosed() {
+	names.wait.Done()
+}
+
+func (names *nameResolver) ready() {
+	names.wait.Add(4)
+	go func() {
+		names.wait.Wait()
+		close(names.errs)
+	}()
+}
+
+// ResolveNames resolves diffs.
+func (d *DeployableChans) ResolveNames(r Registry, diff *DeployableChans, errs chan *DiffResolution) {
+	names := &nameResolver{
+		registry: r,
+		errs:     errs,
+	}
+	names.ready()
+
+	//out :=
+	d.Pipeline(context.Background(), names)
 }
 
 // XXX now that everything is DeployablePairs, this can probably be simplified
-
-func maybeResolveRetains(r Registry, from chan *DeployablePair, to chan *DeployablePair, errs chan *DiffResolution) {
-	for dp := range from {
-		da := maybeResolveSingle(r, dp.Post)
-		to <- &DeployablePair{ExecutorData: dp.ExecutorData, name: dp.name, Prior: da, Post: da}
-	}
-	close(to)
-}
-
-func maybeResolveDeletes(r Registry, from chan *DeployablePair, to chan *DeployablePair, errs chan *DiffResolution) {
-	for dp := range from {
-		da := maybeResolveSingle(r, dp.Prior)
-		to <- &DeployablePair{ExecutorData: dp.ExecutorData, name: dp.name, Prior: da, Post: nil}
-	}
-	close(to)
-}
 
 func maybeResolveSingle(r Registry, dep *Deployable) *Deployable {
 	logging.Log.Vomit.Printf("Attempting to resolve optional artifact: %#v (stable or deletes don't need images)", dep)
