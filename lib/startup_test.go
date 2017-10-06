@@ -137,3 +137,20 @@ func (s *StartupTest) TestMerge() {
 }
 
 // PutPut is guaranteed by the instance receiver
+
+func TestStartup_diff(t *testing.T) {
+	a := Startup{}
+	b := Startup{SkipCheck: true}
+	actualDiff := a.diff(b)
+	expected := "blah"
+	if len(actualDiff) == 0 {
+		t.Fatalf("no diff for %+v vs %+v", a, b)
+	}
+	if len(actualDiff) != 1 {
+		t.Fatalf("multiple diffs for %+v vs %+v (%+v)", a, b, actualDiff)
+	}
+	actual := actualDiff[0]
+	if actual != expected {
+		t.Fatalf("got diff %q; want %q", actual, expected)
+	}
+}
