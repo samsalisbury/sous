@@ -2,6 +2,7 @@ package sous
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/opentable/sous/util/logging"
@@ -62,6 +63,7 @@ type (
 	statPair struct {
 		url  string
 		stat ResolveState
+		err  error
 	}
 )
 
@@ -311,8 +313,8 @@ func (sp *StatusPoller) finished() bool {
 // c.f. pollOnce.
 func (sub *subPoller) start(rs chan statPair, done chan struct{}) {
 	rs <- statPair{url: sub.URL, stat: ResolveNotPolled}
-	stat := sub.pollOnce()
-	rs <- statPair{url: sub.URL, stat: stat}
+	stat, err := sub.pollOnce()
+	rs <- statPair{url: sub.URL, stat: stat, err: err}
 	ticker := time.NewTicker(time.Second / 2)
 	defer ticker.Stop()
 	for {
@@ -321,24 +323,24 @@ func (sub *subPoller) start(rs chan statPair, done chan struct{}) {
 		}
 		select {
 		case <-ticker.C:
-			stat = sub.pollOnce()
-			rs <- statPair{url: sub.URL, stat: stat}
+			stat, err = sub.pollOnce()
+			rs <- statPair{url: sub.URL, stat: stat, err: err}
 		case <-done:
 			return
 		}
 	}
 }
 
-func (sub *subPoller) pollOnce() ResolveState {
+func (sub *subPoller) pollOnce() (ResolveState, error) {
 	data := &statusData{}
 	if _, err := sub.Retrieve("./status", nil, data, sub.User.HTTPHeaders()); err != nil {
 		logging.Log.Debugf("%s: error on GET /status: %s", sub.ClusterName, errors.Cause(err))
 		logging.Log.Vomitf("%s: %T %+v", sub.ClusterName, errors.Cause(err), err)
 		sub.httpErrorCount++
 		if sub.httpErrorCount > 10 {
-			return ResolveFailed
+			return ResolveFailed, fmt.Errorf("more than 10 HTTP errors, giving up; latest error: %s", err)
 		}
-		return ResolveErredHTTP
+		return ResolveErredHTTP, err
 	}
 	sub.httpErrorCount = 0
 
@@ -351,7 +353,7 @@ func (sub *subPoller) pollOnce() ResolveState {
 		data.InProgress.Intended = data.Deployments
 	}
 
-	currentState := sub.computeState(sub.stateFeatures("in-progress", data.InProgress))
+	currentState, err := sub.computeState(sub.stateFeatures("in-progress", data.InProgress))
 
 	if currentState == ResolveNotStarted ||
 		currentState == ResolveNotVersion ||
@@ -359,7 +361,7 @@ func (sub *subPoller) pollOnce() ResolveState {
 		return sub.computeState(sub.stateFeatures("completed", data.Completed))
 	}
 
-	return currentState
+	return currentState, err
 }
 
 func (sub *subPoller) stateFeatures(kind string, rezState *ResolveStatus) (*Deployment, *DiffResolution) {
@@ -374,13 +376,13 @@ func (sub *subPoller) stateFeatures(kind string, rezState *ResolveStatus) (*Depl
 // computeState takes the servers intended deployment, and the stable and
 // current DiffResolutions and computes the state of resolution for the
 // deployment based on that data.
-func (sub *subPoller) computeState(srvIntent *Deployment, current *DiffResolution) ResolveState {
+func (sub *subPoller) computeState(srvIntent *Deployment, current *DiffResolution) (ResolveState, error) {
 	// In there's no intent for the deployment in the current resolution, we
 	// haven't started on it yet. Remember that we've already determined that the
 	// most-recent GDM does have the deployment scheduled for this cluster, so it
 	// should be picked up in the next cycle.
 	if srvIntent == nil {
-		return ResolveNotStarted
+		return ResolveNotStarted, nil
 	}
 
 	// This is a nuanced distinction from the above: the cluster is in the
@@ -389,7 +391,7 @@ func (sub *subPoller) computeState(srvIntent *Deployment, current *DiffResolutio
 	// Next cycle! (note that in both cases, we're likely to poll again several
 	// times before that cycle starts.)
 	if !sub.idFilter.FilterDeployment(srvIntent) {
-		return ResolveNotVersion
+		return ResolveNotVersion, nil
 	}
 
 	// If there's no DiffResolution yet for our Deployment, then we're still
@@ -397,7 +399,7 @@ func (sub *subPoller) computeState(srvIntent *Deployment, current *DiffResolutio
 	// this could only happen in the first attempt to resolve a recent change to
 	// the GDM, and only before the cluster has gotten a DiffResolution recorded.
 	if current == nil {
-		return ResolvePendingRequest
+		return ResolvePendingRequest, nil
 	}
 
 	if current.Error != nil {
@@ -408,7 +410,7 @@ func (sub *subPoller) computeState(srvIntent *Deployment, current *DiffResolutio
 		// transition and be ready to receive a new Deploy)
 		if IsTransientResolveError(current.Error) {
 			logging.Log.Debugf("%s: received resolver error %s, retrying", sub.ClusterName, current.Error)
-			return ResolveErredRez
+			return ResolveErredRez, current.Error
 		}
 		// Other errors are unlikely to clear by themselves. In this case, log the
 		// error for operator action, and consider this subpoller done as failed.
@@ -426,7 +428,7 @@ func (sub *subPoller) computeState(srvIntent *Deployment, current *DiffResolutio
 			}
 		}
 		logging.Log.Warn.Printf("Deployment of %s to %s failed: %s", subject, sub.ClusterName, current.Error.String)
-		return ResolveFailed
+		return ResolveFailed, current.Error
 	}
 
 	// In the case where the GDM and ADS deployments are the same, the /status
@@ -434,14 +436,14 @@ func (sub *subPoller) computeState(srvIntent *Deployment, current *DiffResolutio
 	// intend to deploy matches this cluster's current resolver's intend to
 	// deploy, and that that matches the deploy that's running. Success!
 	if current.Desc == StableDiff {
-		return ResolveComplete
+		return ResolveComplete, nil
 	}
 
 	if current.Desc == ComingDiff {
-		return ResolveTasksStarting
+		return ResolveTasksStarting, nil
 	}
 
-	return ResolveInProgress
+	return ResolveInProgress, nil
 }
 
 func serverIntent(rstat *ResolveStatus, rf *ResolveFilter) *Deployment {

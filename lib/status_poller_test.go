@@ -79,7 +79,7 @@ func TestSubPoller_ComputeState(t *testing.T) {
 				Tag: NewResolveFieldMatcher(version),
 			},
 		}
-		if actual := sub.computeState(intent, current); expected != actual {
+		if actual, _ := sub.computeState(intent, current); expected != actual {
 			t.Errorf("sub.computeState(%v, %v) -> %v != %v", intent, current, actual, expected)
 		}
 	}
