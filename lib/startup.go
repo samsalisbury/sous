@@ -226,6 +226,10 @@ func (s Startup) diff(o Startup) []string {
 		r = zeroStartup
 	}
 
+	if s.SkipCheck != o.SkipCheck {
+		diff("SkipCheck; this %v, other %v", s.SkipCheck, o.SkipCheck)
+	}
+
 	if l.ConnectDelay != r.ConnectDelay {
 		diff("ConnectDelay; this %d, other %d", l.ConnectDelay, r.ConnectDelay)
 	}

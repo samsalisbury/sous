@@ -142,7 +142,7 @@ func TestStartup_diff(t *testing.T) {
 	a := Startup{}
 	b := Startup{SkipCheck: true}
 	actualDiff := a.diff(b)
-	expected := "blah"
+	expected := `SkipCheck; this false, other true`
 	if len(actualDiff) == 0 {
 		t.Fatalf("no diff for %+v vs %+v", a, b)
 	}
