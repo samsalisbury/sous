@@ -39,24 +39,59 @@ func assertSourceContextSuccess(t *testing.T, expected sous.ManifestID, flags *s
 }
 
 func TestResolveSourceLocation_success(t *testing.T) {
+
+	// -repo set and matches detected repo, so that repo used.
 	assertSourceContextSuccess(t,
-		sous.ManifestID{Source: sous.SourceLocation{Repo: "github.com/user/project"}},
-		&sous.ResolveFilter{Repo: sous.NewResolveFieldMatcher("github.com/user/project")},
-		&sous.SourceContext{PrimaryRemoteURL: "github.com/user/project"},
+		// expected
+		sous.ManifestID{
+			Source: sous.SourceLocation{
+				Repo: "github.com/user/project",
+			},
+		},
+		// flags
+		&sous.ResolveFilter{
+			Repo: sous.NewResolveFieldMatcher("github.com/user/project"),
+		},
+		// context
+		&sous.SourceContext{
+			PrimaryRemoteURL: "github.com/user/project",
+		},
 	)
+
+	// -repo and -offset set, providing full SourceLocation.
 	assertSourceContextSuccess(t,
-		sous.ManifestID{Source: sous.SourceLocation{Repo: "github.com/user/project", Dir: "some/path"}},
-		&sous.ResolveFilter{Repo: sous.NewResolveFieldMatcher("github.com/user/project"), Offset: sous.NewResolveFieldMatcher("some/path")},
+		// expected
+		sous.ManifestID{
+			Source: sous.SourceLocation{
+				Repo: "github.com/user/project",
+				Dir:  "some/path",
+			},
+		},
+		// flags
+		&sous.ResolveFilter{
+			Repo:   sous.NewResolveFieldMatcher("github.com/user/project"),
+			Offset: sous.NewResolveFieldMatcher("some/path"),
+		},
+		// context
 		&sous.SourceContext{
 			PrimaryRemoteURL: "github.com/user/project",
 			OffsetDir:        "some/path",
 		},
 	)
+
+	// -repo set explicitly, therefore detected offset ignored.
 	assertSourceContextSuccess(t,
-		sous.ManifestID{Source: sous.SourceLocation{Repo: "github.com/from/flags"}},
+		// expected
+		sous.ManifestID{
+			Source: sous.SourceLocation{
+				Repo: "github.com/from/flags",
+			},
+		},
+		// flags
 		&sous.ResolveFilter{
 			Repo: sous.NewResolveFieldMatcher("github.com/from/flags"),
 		},
+		// context
 		&sous.SourceContext{
 			PrimaryRemoteURL: "github.com/original/context",
 			OffsetDir:        "the/detected/offset",
