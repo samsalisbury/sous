@@ -97,4 +97,22 @@ func TestResolveSourceLocation_success(t *testing.T) {
 			OffsetDir:        "the/detected/offset",
 		},
 	)
+
+	// No flags, therefore use detected repo and offset.
+	assertSourceContextSuccess(t,
+		// expected
+		sous.ManifestID{
+			Source: sous.SourceLocation{
+				Repo: "github.com/original/context",
+				Dir:  "the/detected/offset",
+			},
+		},
+		// flags (empty)
+		&sous.ResolveFilter{},
+		// context
+		&sous.SourceContext{
+			PrimaryRemoteURL: "github.com/original/context",
+			OffsetDir:        "the/detected/offset",
+		},
+	)
 }
