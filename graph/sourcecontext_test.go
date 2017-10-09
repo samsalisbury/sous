@@ -33,9 +33,9 @@ func assertSourceContextSuccess(t *testing.T, expected sous.ManifestID, flags *s
 
 	actual, err := newTargetManifestID(rrf)
 	assert.NoError(t, err)
-	assert.Equal(t, actual.Source.Repo, expected.Source.Repo, "repos differ")
-	assert.Equal(t, actual.Source.Dir, expected.Source.Dir, "offsets differ")
-	assert.Equal(t, actual.Flavor, expected.Flavor, "flavors differ")
+	assert.Equal(t, expected.Source.Repo, actual.Source.Repo, "repos differ")
+	assert.Equal(t, expected.Source.Dir, actual.Source.Dir, "offsets differ")
+	assert.Equal(t, expected.Flavor, actual.Flavor, "flavors differ")
 }
 
 func TestResolveSourceLocation_success(t *testing.T) {
@@ -85,6 +85,7 @@ func TestResolveSourceLocation_success(t *testing.T) {
 		sous.ManifestID{
 			Source: sous.SourceLocation{
 				Repo: "github.com/from/flags",
+				Dir:  "",
 			},
 		},
 		// flags
@@ -108,7 +109,7 @@ func TestResolveSourceLocation_success(t *testing.T) {
 			},
 		},
 		// flags (empty)
-		&sous.ResolveFilter{},
+		nil,
 		// context
 		&sous.SourceContext{
 			PrimaryRemoteURL: "github.com/original/context",
