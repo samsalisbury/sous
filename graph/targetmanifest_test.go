@@ -175,6 +175,25 @@ func TestNewTargetManifest_Existing(t *testing.T) {
 	}
 }
 
+func TestNewTargetManifest_Existing_withOffset(t *testing.T) {
+	detected := userSelectedOTPLDeployManifest{}
+	sl := sous.MustParseSourceLocation("github.com/user/project,offset")
+	flavor := "some-flavor"
+	mid := sous.ManifestID{Source: sl, Flavor: flavor}
+	tmid := TargetManifestID(mid)
+	m := &sous.Manifest{Source: sl, Flavor: flavor, Kind: sous.ManifestKindService}
+	s := sous.NewState()
+	s.Manifests.Add(m)
+	tm := newTargetManifest(detected, tmid, s)
+	if tm.Source != sl {
+		t.Errorf("unexpected manifest %q", m)
+	}
+	flaws := tm.Manifest.Validate()
+	if len(flaws) > 0 {
+		t.Errorf("Invalid existing manifest: %#v, flaws were %v", tm.Manifest, flaws)
+	}
+}
+
 func TestNewTargetManifest(t *testing.T) {
 	detected := userSelectedOTPLDeployManifest{}
 	sl := sous.MustParseSourceLocation("github.com/user/project")
