@@ -94,20 +94,19 @@ func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveRecord
 		//	ds.Status = DeployStatusPending
 		//})
 
-		namer := NewDeployableChans(10)
+		var namer *DeployableChans
 		var wg sync.WaitGroup
 		recorder.performGuaranteedPhase("resolving deployment artifacts", func() {
-			errs := make(chan *DiffResolution)
+			namer = diffs.ResolveNames(r.Registry)
 			wg.Add(1)
 			go func() {
-				for err := range errs {
+				for err := range namer.Errs {
 					recorder.Log <- *err
 					//DiffResolution{Error: &ErrorWrapper{error: err}}
 				}
 				wg.Done()
 			}()
 			// TODO: ResolveNames should take rs.Log instead of errs.
-			namer.ResolveNames(r.Registry, diffs, errs)
 		})
 
 		recorder.performGuaranteedPhase("rectification", func() {

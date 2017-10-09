@@ -49,6 +49,7 @@ type (
 	}
 
 	// ResolutionType marks the kind of a DiffResolution
+	// XXX should be made an int and generate with gostringer
 	ResolutionType string
 )
 

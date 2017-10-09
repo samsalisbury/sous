@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/opentable/sous/util/logging"
+	"github.com/pkg/errors"
 )
 
 type (
@@ -13,6 +15,7 @@ type (
 	// cluster
 	DeployableChans struct {
 		Start, Stop, Stable, Update chan *DeployablePair
+		Errs                        chan *DiffResolution
 		sync.WaitGroup
 	}
 
@@ -42,6 +45,7 @@ func NewDeployableChans(size ...int) *DeployableChans {
 		Stop:   make(chan *DeployablePair, s),
 		Stable: make(chan *DeployablePair, s),
 		Update: make(chan *DeployablePair, s),
+		Errs:   make(chan *DiffResolution, s),
 	}
 }
 
@@ -51,6 +55,7 @@ func (d *DeployableChans) Close() {
 	close(d.Stop)
 	close(d.Stable)
 	close(d.Update)
+	close(d.Errs)
 }
 
 func (d *DeployableChans) collect() diffSet {
@@ -113,30 +118,41 @@ func (dp *DeployablePair) ID() DeploymentID {
 
 // DeployableProcessor processes DeployablePairs off of a DeployableChans channel
 type DeployableProcessor interface {
-	Start(dp *DeployablePair) *DeployablePair
-	Stop(dp *DeployablePair) *DeployablePair
-	Stable(dp *DeployablePair) *DeployablePair
-	Update(dp *DeployablePair) *DeployablePair
-	StartClosed()
-	StopClosed()
-	StableClosed()
-	UpdateClosed()
+	Start(dp *DeployablePair) (*DeployablePair, *DiffResolution)
+	Stop(dp *DeployablePair) (*DeployablePair, *DiffResolution)
+	Stable(dp *DeployablePair) (*DeployablePair, *DiffResolution)
+	Update(dp *DeployablePair) (*DeployablePair, *DiffResolution)
 }
 
 // Pipeline attaches a DeployableProcessor to the DeployableChans, and returns a new DeployableChans.
 func (d *DeployableChans) Pipeline(ctx context.Context, proc DeployableProcessor) *DeployableChans {
 	out := NewDeployableChans(1)
 
-	process := func(from, to chan *DeployablePair, doProc func(dp *DeployablePair) *DeployablePair, closed func()) {
-		defer closed()
+	wg := sync.WaitGroup{}
+	wg.Add(4)
+
+	go func() {
+		for rez := range d.Errs {
+			out.Errs <- rez
+		}
+		wg.Wait()
+		close(out.Errs)
+	}()
+
+	process := func(from, to chan *DeployablePair, doProc func(dp *DeployablePair) (*DeployablePair, *DiffResolution)) {
 		defer close(to)
+		defer wg.Done()
 		for {
 			select {
 			case <-ctx.Done():
 				return
 			case dp, ok := <-from:
 				if ok {
-					if proked := doProc(dp); proked != nil {
+					proked, rez := doProc(dp)
+					if rez != nil {
+						out.Errs <- rez
+					}
+					if proked != nil {
 						to <- proked
 					}
 				} else {
@@ -146,48 +162,42 @@ func (d *DeployableChans) Pipeline(ctx context.Context, proc DeployableProcessor
 		}
 	}
 
-	go process(d.Start, out.Start, proc.Start, proc.StartClosed)
-	go process(d.Stop, out.Stop, proc.Stop, proc.StopClosed)
-	go process(d.Stable, out.Stable, proc.Stable, proc.StableClosed)
-	go process(d.Update, out.Update, proc.Update, proc.UpdateClosed)
+	go process(d.Start, out.Start, proc.Start)
+	go process(d.Stop, out.Stop, proc.Stop)
+	go process(d.Stable, out.Stable, proc.Stable)
+	go process(d.Update, out.Update, proc.Update)
 	return out
 }
 
 // DeployablePassThrough implements DeployableProcessor trivially: each method simply passes its argument on
 type DeployablePassThrough struct{}
 
-func (DeployablePassThrough) Start(dp *DeployablePair) *DeployablePair {
-	return dp
+// Start returns its argument
+func (DeployablePassThrough) Start(dp *DeployablePair) (*DeployablePair, *DiffResolution) {
+	return dp, nil
 }
 
-func (DeployablePassThrough) Stop(dp *DeployablePair) *DeployablePair {
-	return dp
+// Stop returns its argument
+func (DeployablePassThrough) Stop(dp *DeployablePair) (*DeployablePair, *DiffResolution) {
+	return dp, nil
 }
 
-func (DeployablePassThrough) Stable(dp *DeployablePair) *DeployablePair {
-	return dp
+// Stable returns its argument
+func (DeployablePassThrough) Stable(dp *DeployablePair) (*DeployablePair, *DiffResolution) {
+	return dp, nil
 }
 
-func (DeployablePassThrough) Update(dp *DeployablePair) *DeployablePair {
-	return dp
+// Update returns its argument
+func (DeployablePassThrough) Update(dp *DeployablePair) (*DeployablePair, *DiffResolution) {
+	return dp, nil
 }
-
-func (DeployablePassThrough) StartClosed() {}
-
-func (DeployablePassThrough) StopClosed() {}
-
-func (DeployablePassThrough) StableClosed() {}
-
-func (DeployablePassThrough) UpdateClosed() {}
 
 type nameResolver struct {
-	DeployablePassThrough
-	wait     sync.WaitGroup
 	registry Registry
-	errs     chan *DiffResolution
 }
 
-func (names *nameResolver) Start(dp *DeployablePair) *DeployablePair {
+func (names *nameResolver) Start(dp *DeployablePair) (*DeployablePair, *DiffResolution) {
+	spew.Dump(names)
 	dep := dp.Post
 	logging.Log.Vomit.Printf("Deployment processed, needs artifact: %#v", dep)
 
@@ -195,62 +205,58 @@ func (names *nameResolver) Start(dp *DeployablePair) *DeployablePair {
 	if err != nil {
 		logging.Log.Info.Printf("Unable to create new deployment %q: %s", dep.ID(), err)
 		logging.Log.Debug.Printf("Failed create deployment %q: % #v", dep.ID(), dep)
-		names.errs <- err
-		return nil
+		return nil, err
 	}
 
 	if da.BuildArtifact == nil {
 		logging.Log.Info.Printf("Unable to create new deployment %q: no artifact for SourceID %q", dep.ID(), dep.SourceID)
 		logging.Log.Debug.Printf("Failed create deployment %q: % #v", dep.ID(), dep)
-		return nil
+		return nil, &DiffResolution{
+			DeploymentID: dp.ID(),
+			Desc:         "not created",
+			Error:        WrapResolveError(errors.Errorf("Unable to create new deployment %q: no artifact for SourceID %q", dep.ID(), dep.SourceID)),
+		}
 	}
-	return &DeployablePair{ExecutorData: dp.ExecutorData, name: dp.name, Prior: nil, Post: da}
+	return &DeployablePair{ExecutorData: dp.ExecutorData, name: dp.name, Prior: nil, Post: da}, nil
 }
 
-func (names *nameResolver) Stop(dp *DeployablePair) *DeployablePair {
+func (names *nameResolver) Update(depPair *DeployablePair) (*DeployablePair, *DiffResolution) {
+	logging.Log.Vomit.Printf("Pair of deployments processed, needs artifact: %#v", depPair)
+	d, err := resolvePair(names.registry, depPair)
+	if err != nil {
+		logging.Log.Info.Printf("Unable to modify deployment %q: %s", depPair.Post, err)
+		logging.Log.Debug.Printf("Failed modify deployment %q: % #v", depPair.ID(), depPair.Post)
+		return nil, err
+	}
+	if d.Post.BuildArtifact == nil {
+		logging.Log.Info.Printf("Unable to modify deployment %q: no artifact for SourceID %q", depPair.ID(), depPair.Post.SourceID)
+		logging.Log.Debug.Printf("Failed modify deployment %q: % #v", depPair.ID(), depPair.Post)
+		return nil, &DiffResolution{
+			DeploymentID: depPair.ID(),
+			Desc:         "not updated",
+			Error:        WrapResolveError(errors.Errorf("Unable to modify new deployment %q: no artifact for SourceID %q", depPair.ID(), depPair.Post.SourceID)),
+		}
+	}
+	return d, nil
+}
+
+// Stop always returns no error because we don't need a deploy artifact to delete a deploy
+func (names *nameResolver) Stop(dp *DeployablePair) (*DeployablePair, *DiffResolution) {
 	da := maybeResolveSingle(names.registry, dp.Prior)
-	return &DeployablePair{ExecutorData: dp.ExecutorData, name: dp.name, Prior: da, Post: nil}
+	return &DeployablePair{ExecutorData: dp.ExecutorData, name: dp.name, Prior: da, Post: nil}, nil
 }
 
-func (names *nameResolver) Stable(dp *DeployablePair) *DeployablePair {
+// Stable always returns no error because we don't need a deploy artifact for unchanged deploys
+func (names *nameResolver) Stable(dp *DeployablePair) (*DeployablePair, *DiffResolution) {
 	da := maybeResolveSingle(names.registry, dp.Post)
-	return &DeployablePair{ExecutorData: dp.ExecutorData, name: dp.name, Prior: da, Post: da}
-}
-
-func (names *nameResolver) StartClosed() {
-	names.wait.Done()
-}
-
-func (names *nameResolver) StopClosed() {
-	names.wait.Done()
-}
-
-func (names *nameResolver) StableClosed() {
-	names.wait.Done()
-}
-
-func (names *nameResolver) UpdateClosed() {
-	names.wait.Done()
-}
-
-func (names *nameResolver) ready() {
-	names.wait.Add(4)
-	go func() {
-		names.wait.Wait()
-		close(names.errs)
-	}()
+	return &DeployablePair{ExecutorData: dp.ExecutorData, name: dp.name, Prior: da, Post: da}, nil
 }
 
 // ResolveNames resolves diffs.
-func (d *DeployableChans) ResolveNames(r Registry, diff *DeployableChans, errs chan *DiffResolution) {
-	names := &nameResolver{
-		registry: r,
-		errs:     errs,
-	}
-	names.ready()
+func (d *DeployableChans) ResolveNames(r Registry) *DeployableChans {
+	names := &nameResolver{registry: r}
 
-	//out :=
-	d.Pipeline(context.Background(), names)
+	return d.Pipeline(context.Background(), names)
 }
 
 // XXX now that everything is DeployablePairs, this can probably be simplified
@@ -262,26 +268,6 @@ func maybeResolveSingle(r Registry, dep *Deployable) *Deployable {
 		logging.Log.Debug.Printf("Error resolving stopped or stable deployment (proceeding anyway): %#v: %#v", dep, err)
 	}
 	return da
-}
-
-func resolvePairs(r Registry, from chan *DeployablePair, to chan *DeployablePair, errs chan *DiffResolution) {
-	for depPair := range from {
-		logging.Log.Vomit.Printf("Pair of deployments processed, needs artifact: %#v", depPair)
-		d, err := resolvePair(r, depPair)
-		if err != nil {
-			logging.Log.Info.Printf("Unable to modify deployment %q: %s", depPair.Post, err)
-			logging.Log.Debug.Printf("Failed modify deployment %q: % #v", depPair.ID(), depPair.Post)
-			errs <- err
-			continue
-		}
-		if d.Post.BuildArtifact == nil {
-			logging.Log.Info.Printf("Unable to modify deployment %q: no artifact for SourceID %q", depPair.ID(), depPair.Post.SourceID)
-			logging.Log.Debug.Printf("Failed modify deployment %q: % #v", depPair.ID(), depPair.Post)
-			continue
-		}
-		to <- d
-	}
-	close(to)
 }
 
 func resolveName(r Registry, d *Deployable) (*Deployable, *DiffResolution) {

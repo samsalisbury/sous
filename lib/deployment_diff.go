@@ -77,9 +77,11 @@ func newStateDiffer(intended DeployStates) *stateDiffer {
 	for _, dep := range i {
 		startMap[dep.Name()] = dep
 	}
+	chans := NewDeployableChans(len(i))
+
 	return &stateDiffer{
 		from:            startMap,
-		DeployableChans: NewDeployableChans(len(i)),
+		DeployableChans: chans,
 	}
 }
 
@@ -95,9 +97,11 @@ func newDiffer(intended Deployments) *differ {
 	for _, dep := range i {
 		startMap[dep.Name()] = &DeployState{Deployment: *dep}
 	}
+	chans := NewDeployableChans(len(i))
+
 	return &differ{
 		from:            startMap,
-		DeployableChans: NewDeployableChans(len(i)),
+		DeployableChans: chans,
 	}
 }
 
