@@ -177,7 +177,10 @@ func TestNewTargetManifest_Existing(t *testing.T) {
 
 func TestNewTargetManifest_Existing_withOffset(t *testing.T) {
 	detected := userSelectedOTPLDeployManifest{}
-	sl := sous.MustParseSourceLocation("github.com/user/project,offset")
+	sl := sous.SourceLocation{
+		Repo: "github.com/user/project",
+		Dir:  "server",
+	}
 	flavor := "some-flavor"
 	mid := sous.ManifestID{Source: sl, Flavor: flavor}
 	tmid := TargetManifestID(mid)
