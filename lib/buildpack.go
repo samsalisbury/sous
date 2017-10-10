@@ -34,7 +34,7 @@ type (
 	// BuildArtifact describes the actual built binary Sous will deploy
 	BuildArtifact struct {
 		Name, Type string
-		Qualities  []Quality
+		Qualities  Qualities
 	}
 
 	// A Quality represents a characteristic of a BuildArtifact that needs to be recorded.
@@ -44,6 +44,9 @@ type (
 		// Known kinds include: advisory
 		Kind string
 	}
+
+	// Qualities is a list of Quality
+	Qualities []Quality
 
 	// Buildpack is a set of instructions used to build a particular
 	// kind of project.
@@ -89,6 +92,14 @@ type (
 		RevisionName string
 	}
 )
+
+func (qs Qualities) String() string {
+	strs := []string{}
+	for _, q := range qs {
+		strs = append(strs, q.Name)
+	}
+	return strings.Join(strs, ",")
+}
 
 // Contextualize records details from the BuildContext into the BuildResult
 func (br *BuildResult) Contextualize(c *BuildContext) {

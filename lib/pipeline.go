@@ -12,8 +12,14 @@ func (d *DeployableChans) Pipeline(ctx context.Context, proc DeployableProcessor
 	wg := sync.WaitGroup{}
 	wg.Add(4)
 
+	handle := nullHandler
+	if handler, is := proc.(DeployableResolutionHandler); is {
+		handle = handler.HandleResolution
+	}
+
 	go func() {
 		for rez := range d.Errs {
+			handle(rez)
 			out.Errs <- rez
 		}
 		wg.Wait()
@@ -31,6 +37,7 @@ func (d *DeployableChans) Pipeline(ctx context.Context, proc DeployableProcessor
 				if ok {
 					proked, rez := doProc(dp)
 					if rez != nil {
+						handle(rez)
 						out.Errs <- rez
 					}
 					if proked != nil {
@@ -50,12 +57,18 @@ func (d *DeployableChans) Pipeline(ctx context.Context, proc DeployableProcessor
 	return out
 }
 
+func nullHandler(err *DiffResolution) {}
+
 // DeployableProcessor processes DeployablePairs off of a DeployableChans channel
 type DeployableProcessor interface {
 	Start(dp *DeployablePair) (*DeployablePair, *DiffResolution)
 	Stop(dp *DeployablePair) (*DeployablePair, *DiffResolution)
 	Stable(dp *DeployablePair) (*DeployablePair, *DiffResolution)
 	Update(dp *DeployablePair) (*DeployablePair, *DiffResolution)
+}
+
+type DeployableResolutionHandler interface {
+	HandleResolution(err *DiffResolution)
 }
 
 // DeployablePassThrough implements DeployableProcessor trivially: each method simply passes its argument on

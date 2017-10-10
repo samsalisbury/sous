@@ -143,6 +143,7 @@ func (wds writeDonerSpy) Done() {
 //  * generates no duplicate fields
 //  * generates fields with the names in variableFields, and ignores their values
 //  * generates fields with the names and values in fixedFields
+//  * generates an @loglov3-otl field
 func AssertMessageFields(t *testing.T, msg eachFielder, variableFields []string, fixedFields map[string]interface{}) {
 	actualFields := map[string]interface{}{}
 
@@ -151,6 +152,7 @@ func AssertMessageFields(t *testing.T, msg eachFielder, variableFields []string,
 		actualFields[name] = value
 	})
 
+	assert.Contains(t, actualFields, "@loglov3-otl") // if this is missing, we DLQ
 	for _, f := range variableFields {
 		assert.Contains(t, actualFields, f)
 		delete(actualFields, f)
