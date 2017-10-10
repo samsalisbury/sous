@@ -1,11 +1,5 @@
 package sous
 
-import (
-	"strings"
-
-	"github.com/opentable/sous/util/logging"
-)
-
 type (
 	// DeploymentPair is a pair of deployments that represent a "before and after" style relationship
 	DeploymentPair struct {
@@ -68,11 +62,6 @@ func (d Deployments) Diff(other Deployments) *DeployableChans {
 
 func newStateDiffer(intended DeployStates) *stateDiffer {
 	i := intended.Snapshot()
-	ds := []string{"Computing diff from:"}
-	for _, e := range i {
-		ds = append(ds, e.String())
-	}
-	logging.Log.Vomit.Print(strings.Join(ds, "\n    "))
 
 	startMap := make(map[DeploymentID]*DeployState)
 	for _, dep := range i {
@@ -88,11 +77,6 @@ func newStateDiffer(intended DeployStates) *stateDiffer {
 
 func newDiffer(intended Deployments) *differ {
 	i := intended.Snapshot()
-	ds := []string{"Computing diff from:"}
-	for _, e := range i {
-		ds = append(ds, e.String())
-	}
-	logging.Log.Vomit.Print(strings.Join(ds, "\n    "))
 
 	startMap := make(map[DeploymentID]*DeployState)
 	for _, dep := range i {
@@ -117,19 +101,10 @@ func (d Deployments) promote(all DeployStatus) DeployStates {
 
 func (d *stateDiffer) diff(existing DeployStates) {
 	defer d.DeployableChans.Close()
-	eds := existing.Snapshot()
-	ds := []string{"Computing diff to:"}
-	for _, e := range eds {
-		ds = append(ds, e.String())
-	}
-	logging.Log.Vomit.Print(strings.Join(ds, "\n    "))
 
 	for id, existingDS := range existing.Snapshot() {
 		intendDS, exists := d.from[id]
 		if !exists {
-
-			logging.Log.Debug.Printf("New deployment: %q", id)
-
 			d.Start <- &DeployablePair{ // XXX s/Created/Create
 				name:  id,
 				Prior: nil,
@@ -144,8 +119,6 @@ func (d *stateDiffer) diff(existing DeployStates) {
 		different, differences := existingDS.Diff(intendDS)
 
 		if different {
-			logging.Log.Debug.Printf("Modified deployment: %q (% #v)", id, differences)
-
 			d.Update <- &DeployablePair{
 				name:         id,
 				Diffs:        differences,
@@ -162,7 +135,6 @@ func (d *stateDiffer) diff(existing DeployStates) {
 			continue
 		}
 
-		logging.Log.Debug.Printf("Retained deployment: %q (% #v)", id, differences)
 		d.Stable <- &DeployablePair{
 			name:         id,
 			Diffs:        Differences{},
@@ -179,9 +151,6 @@ func (d *stateDiffer) diff(existing DeployStates) {
 	}
 
 	for _, deletedDS := range d.from {
-
-		logging.Log.Debug.Printf("Deleted deployment: %q", deletedDS.ID())
-
 		d.Stop <- &DeployablePair{
 			name:         deletedDS.ID(),
 			ExecutorData: deletedDS.ExecutorData,
@@ -198,18 +167,10 @@ func (d *differ) diff(existing Deployments) {
 	defer d.DeployableChans.Close()
 
 	e := existing.Snapshot()
-	ds := []string{"Computing diff to:"}
-	for _, e := range e {
-		ds = append(ds, e.String())
-	}
-	logging.Log.Vomit.Print(strings.Join(ds, "\n    "))
 
 	for id, existingDeployment := range e {
 		intendedDeployment, exists := d.from[id]
 		if !exists {
-
-			logging.Log.Debug.Printf("New deployment: %q", id)
-
 			d.Start <- &DeployablePair{
 				name:  id,
 				Prior: nil,
@@ -220,9 +181,6 @@ func (d *differ) diff(existing Deployments) {
 		delete(d.from, id)
 		different, differences := existingDeployment.Diff(&intendedDeployment.Deployment)
 		if different {
-
-			logging.Log.Debug.Printf("Modified deployment: %q (% #v)", id, differences)
-
 			d.Update <- &DeployablePair{
 				name:  id,
 				Diffs: differences,
@@ -240,9 +198,6 @@ func (d *differ) diff(existing Deployments) {
 	}
 
 	for _, deletedDeployment := range d.from {
-
-		logging.Log.Debug.Printf("Deleted deployment: %q", deletedDeployment.ID())
-
 		d.Stop <- &DeployablePair{
 			name:  deletedDeployment.ID(),
 			Prior: &Deployable{Deployment: &deletedDeployment.Deployment, Status: deletedDeployment.Status},
