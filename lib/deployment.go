@@ -197,13 +197,20 @@ func (d *Deployment) Equal(o *Deployment) bool {
 	return !diff
 }
 
+// Differences records the differences between two Deployments
+type Differences []string
+
+func (diffs Differences) String() string {
+	return strings.Join(diffs, ", ")
+}
+
 // Diff returns the differences between this deployment and another.
-func (d *Deployment) Diff(o *Deployment) (bool, []string) {
+func (d *Deployment) Diff(o *Deployment) (bool, Differences) {
 	if d.ID() != o.ID() {
 		panic(fmt.Sprintf("attempt to compare deployment %q with %q", d.ID(), o.ID()))
 	}
 	logging.Log.Debug.Printf("Comparing two versions of deployment %q", d.ID())
-	var diffs []string
+	var diffs Differences
 	diff := func(format string, a ...interface{}) { diffs = append(diffs, fmt.Sprintf(format, a...)) }
 	if d.ClusterName != o.ClusterName {
 		diff("cluster name; this: %q; other: %q", d.ClusterName, o.ClusterName)

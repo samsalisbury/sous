@@ -1,6 +1,11 @@
 package sous
 
-import "sync"
+import (
+	"context"
+	"sync"
+
+	"github.com/opentable/sous/util/logging"
+)
 
 type (
 	// Resolver is responsible for resolving intended and actual deployment
@@ -9,6 +14,7 @@ type (
 		Deployer Deployer
 		Registry Registry
 		*ResolveFilter
+		ls logging.LogSink
 	}
 
 	// DeploymentPredicate takes a *Deployment and returns true if the
@@ -18,11 +24,12 @@ type (
 )
 
 // NewResolver creates a new Resolver.
-func NewResolver(d Deployer, r Registry, rf *ResolveFilter) *Resolver {
+func NewResolver(d Deployer, r Registry, rf *ResolveFilter, ls logging.LogSink) *Resolver {
 	return &Resolver{
 		Deployer:      d,
 		Registry:      r,
 		ResolveFilter: rf,
+		ls:            ls,
 	}
 }
 
@@ -94,10 +101,12 @@ func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveRecord
 		//	ds.Status = DeployStatusPending
 		//})
 
-		var namer *DeployableChans
+		var logger *DeployableChans
 		var wg sync.WaitGroup
+		ctx := context.Background()
 		recorder.performGuaranteedPhase("resolving deployment artifacts", func() {
-			namer = diffs.ResolveNames(r.Registry)
+			namer := diffs.ResolveNames(ctx, r.Registry)
+			logger = namer.Log(ctx, r.ls)
 			wg.Add(1)
 			go func() {
 				for err := range namer.Errs {
@@ -110,7 +119,7 @@ func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveRecord
 		})
 
 		recorder.performGuaranteedPhase("rectification", func() {
-			r.rectify(namer, recorder.Log)
+			r.rectify(logger, recorder.Log)
 		})
 		wg.Wait()
 	})

@@ -14,10 +14,10 @@ type nameResolver struct {
 }
 
 // ResolveNames resolves diffs.
-func (d *DeployableChans) ResolveNames(r Registry) *DeployableChans {
+func (d *DeployableChans) ResolveNames(ctx context.Context, r Registry) *DeployableChans {
 	names := &nameResolver{registry: r}
 
-	return d.Pipeline(context.Background(), names)
+	return d.Pipeline(ctx, names)
 }
 
 func (names *nameResolver) Start(dp *DeployablePair) (*DeployablePair, *DiffResolution) {

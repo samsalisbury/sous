@@ -17,6 +17,7 @@ type (
 	// situation, where the Prior Deployable is the known state and the Post
 	// Deployable is the desired state.
 	DeployablePair struct {
+		Diffs        Differences
 		Prior, Post  *Deployable
 		name         DeploymentID
 		ExecutorData interface{}

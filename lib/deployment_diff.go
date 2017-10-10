@@ -11,6 +11,7 @@ type (
 	DeploymentPair struct {
 		name        DeploymentID
 		Prior, Post *Deployment
+		Diffs       Differences
 		Status      DeployStatus
 	}
 	// DeploymentPairs is a list of DeploymentPair
@@ -147,6 +148,7 @@ func (d *stateDiffer) diff(existing DeployStates) {
 
 			d.Update <- &DeployablePair{
 				name:         id,
+				Diffs:        differences,
 				ExecutorData: intendDS.ExecutorData,
 				Prior: &Deployable{
 					Deployment: &intendDS.Deployment,
@@ -163,6 +165,7 @@ func (d *stateDiffer) diff(existing DeployStates) {
 		logging.Log.Debug.Printf("Retained deployment: %q (% #v)", id, differences)
 		d.Stable <- &DeployablePair{
 			name:         id,
+			Diffs:        Differences{},
 			ExecutorData: intendDS.ExecutorData,
 			Prior: &Deployable{
 				Deployment: &intendDS.Deployment,
@@ -222,6 +225,7 @@ func (d *differ) diff(existing Deployments) {
 
 			d.Update <- &DeployablePair{
 				name:  id,
+				Diffs: differences,
 				Prior: &Deployable{Deployment: &intendedDeployment.Deployment, Status: intendedDeployment.Status},
 				Post:  &Deployable{Deployment: existingDeployment, Status: DeployStatusActive},
 			}
@@ -229,6 +233,7 @@ func (d *differ) diff(existing Deployments) {
 		}
 		d.Stable <- &DeployablePair{
 			name:  id,
+			Diffs: Differences{},
 			Prior: &Deployable{Deployment: &intendedDeployment.Deployment, Status: intendedDeployment.Status},
 			Post:  &Deployable{Deployment: &intendedDeployment.Deployment, Status: intendedDeployment.Status},
 		}
