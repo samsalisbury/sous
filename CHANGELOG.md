@@ -8,8 +8,12 @@ with respect to its command line interface and HTTP interface.
 
 
 ## [Unreleased](//github.com/opentable/sous/compare/0.5.42..HEAD)
+
 ### Added
 * Server: deployment diffs are now logged as structured messages.
+### Fixed
+* All: Changing Startup.SkipCheck now correctly results in a re-deploy with the
+  updated value.
 
 ## [0.5.42](//github.com/opentable/sous/compare/0.5.41..0.5.42)
 ### Fixed
