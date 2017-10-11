@@ -314,34 +314,39 @@ func (sp *StatusPoller) finished() bool {
 // c.f. pollOnce.
 func (sub *subPoller) start(rs chan pollResult, done chan struct{}) {
 	rs <- pollResult{url: sub.URL, stat: ResolveNotPolled}
-	stat, err := sub.pollOnce()
-	rs <- pollResult{url: sub.URL, stat: stat, err: err}
+	pollResult := sub.pollOnce()
+	rs <- pollResult
 	ticker := time.NewTicker(time.Second / 2)
 	defer ticker.Stop()
 	for {
-		if stat >= ResolveTERMINALS {
+		if pollResult.stat >= ResolveTERMINALS {
 			return
 		}
 		select {
 		case <-ticker.C:
-			stat, err = sub.pollOnce()
-			rs <- pollResult{url: sub.URL, stat: stat, err: err}
+			rs <- sub.pollOnce()
 		case <-done:
 			return
 		}
 	}
 }
 
-func (sub *subPoller) pollOnce() (ResolveState, error) {
+func (sub *subPoller) result(rs ResolveState, data *statusData, err error) pollResult {
+	resolveID := data.InProgress.Started.String()
+	return pollResult{url: sub.URL, stat: rs, resolveID: resolveID, err: err}
+}
+
+func (sub *subPoller) pollOnce() pollResult {
 	data := &statusData{}
 	if _, err := sub.Retrieve("./status", nil, data, sub.User.HTTPHeaders()); err != nil {
 		logging.Log.Debugf("%s: error on GET /status: %s", sub.ClusterName, errors.Cause(err))
 		logging.Log.Vomitf("%s: %T %+v", sub.ClusterName, errors.Cause(err), err)
 		sub.httpErrorCount++
 		if sub.httpErrorCount > 10 {
-			return ResolveFailed, fmt.Errorf("more than 10 HTTP errors, giving up; latest error: %s", err)
+			return sub.result(ResolveFailed, data,
+				fmt.Errorf("more than 10 HTTP errors, giving up; latest error: %s", err))
 		}
-		return ResolveErredHTTP, err
+		return sub.result(ResolveErredHTTP, data, err)
 	}
 	sub.httpErrorCount = 0
 
@@ -359,10 +364,11 @@ func (sub *subPoller) pollOnce() (ResolveState, error) {
 	if currentState == ResolveNotStarted ||
 		currentState == ResolveNotVersion ||
 		currentState == ResolvePendingRequest {
-		return sub.computeState(sub.stateFeatures("completed", data.Completed))
+		state, err := sub.computeState(sub.stateFeatures("completed", data.Completed))
+		return sub.result(state, data, err)
 	}
 
-	return currentState, err
+	return sub.result(currentState, data, err)
 }
 
 func (sub *subPoller) stateFeatures(kind string, rezState *ResolveStatus) (*Deployment, *DiffResolution) {
