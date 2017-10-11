@@ -10,6 +10,9 @@ with respect to its command line interface and HTTP interface.
 ### Fixed
 * Client: commands 'sous deploy', 'sous manifest get' and 'sous manifest set' now receive the correct auto-detected offset
   so you no longer require the -offset flag in most cases (unless you need to override it).
+* Server: Changing Startup.SkipCheck now correctly results in a re-deploy with the
+  updated value.
+
 
 ## [0.5.42](//github.com/opentable/sous/compare/0.5.41..0.5.42)
 ### Fixed
