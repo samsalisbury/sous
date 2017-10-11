@@ -190,7 +190,7 @@ func AssertMessageFields(t *testing.T, msg eachFielder, variableFields []string,
 				}
 				otl["fields"].(map[string]interface{})[n] = map[string]interface{}{"type": "string", "optional": true}
 			case bool:
-				otl["fields"].(map[string]interface{})[n] = map[string]interface{}{"type": "bool", "optional": true}
+				otl["fields"].(map[string]interface{})[n] = map[string]interface{}{"type": "boolean", "optional": true}
 			case int32, uint32:
 				otl["fields"].(map[string]interface{})[n] = map[string]interface{}{"type": "int", "optional": true}
 			case int, uint, int64, uint64:
