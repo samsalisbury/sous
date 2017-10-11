@@ -60,10 +60,11 @@ type (
 	// resolving a particular SourceID.
 	ResolveState int
 
-	statPair struct {
-		url  string
-		stat ResolveState
-		err  error
+	pollResult struct {
+		url       string
+		stat      ResolveState
+		err       error
+		resolveID string
 	}
 )
 
@@ -264,7 +265,7 @@ func (sp *StatusPoller) poll(subs []*subPoller) ResolveState {
 	if len(subs) == 0 {
 		return ResolveNotIntended
 	}
-	collect := make(chan statPair)
+	collect := make(chan pollResult)
 	done := make(chan struct{})
 	go func() {
 		sp.pollChans = map[string]ResolveState{}
@@ -285,7 +286,7 @@ func (sp *StatusPoller) poll(subs []*subPoller) ResolveState {
 	return sp.status
 }
 
-func (sp *StatusPoller) nextSubStatus(collect chan statPair) {
+func (sp *StatusPoller) nextSubStatus(collect chan pollResult) {
 	update := <-collect
 	sp.pollChans[update.url] = update.stat
 	logging.Log.Debugf("%s reports state: %s", update.url, update.stat)
@@ -311,10 +312,10 @@ func (sp *StatusPoller) finished() bool {
 
 // start issues a new /status request every half second, reporting the state as computed.
 // c.f. pollOnce.
-func (sub *subPoller) start(rs chan statPair, done chan struct{}) {
-	rs <- statPair{url: sub.URL, stat: ResolveNotPolled}
+func (sub *subPoller) start(rs chan pollResult, done chan struct{}) {
+	rs <- pollResult{url: sub.URL, stat: ResolveNotPolled}
 	stat, err := sub.pollOnce()
-	rs <- statPair{url: sub.URL, stat: stat, err: err}
+	rs <- pollResult{url: sub.URL, stat: stat, err: err}
 	ticker := time.NewTicker(time.Second / 2)
 	defer ticker.Stop()
 	for {
@@ -324,7 +325,7 @@ func (sub *subPoller) start(rs chan statPair, done chan struct{}) {
 		select {
 		case <-ticker.C:
 			stat, err = sub.pollOnce()
-			rs <- statPair{url: sub.URL, stat: stat, err: err}
+			rs <- pollResult{url: sub.URL, stat: stat, err: err}
 		case <-done:
 			return
 		}
