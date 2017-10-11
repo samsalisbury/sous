@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
+## [Unreleased](//github.com/opentable/sous/compare/0.5.42...master)
+
+### Added
+* Client: `sous init` command now has `-dryrun` flag, so you can generate a manifest
+  without sending it to the server. This flag interacts with the `-flavor`,
+  `-use-otpl-deploy` and `-ignore-otpl-deploy` flags as well, so you can check sous'
+  intentions in all these scenarios without accidentally creating manifests you don't want.
+
 ## [0.5.42](//github.com/opentable/sous/compare/0.5.41..0.5.42)
 ### Fixed
 * All: Graphite output was like `sous.sous.ci.sfautoresolver.fullcycle-duration.count`, now `sous.ci.sf.auto...`
