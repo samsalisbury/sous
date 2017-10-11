@@ -6,9 +6,8 @@ import (
 	"testing"
 	"time"
 
-	yaml "gopkg.in/yaml.v2"
-
 	"github.com/nyarly/spies"
+	"github.com/opentable/sous/util/yaml"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -155,7 +154,6 @@ func AssertMessageFields(t *testing.T, msg eachFielder, variableFields []string,
 		actualFields[name] = value
 	})
 
-	assert.Contains(t, actualFields, "@loglov3-otl") // if this is missing, we DLQ
 	for _, f := range variableFields {
 		assert.Contains(t, actualFields, f)
 		delete(actualFields, f)
@@ -163,7 +161,7 @@ func AssertMessageFields(t *testing.T, msg eachFielder, variableFields []string,
 
 	assert.Equal(t, fixedFields, actualFields)
 
-	if !t.Failed() {
+	if _, hasOTL := actualFields["@loglov3-otl"]; !t.Failed() && hasOTL {
 		tmpfile, err := ioutil.TempFile("", actualFields["@loglov3-otl"].(string))
 		if err != nil {
 			t.Logf("Problem trying to open file to write proposed OTL: %v", err)
