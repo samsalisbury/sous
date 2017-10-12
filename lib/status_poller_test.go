@@ -102,9 +102,15 @@ func TestStatusPoller_updateState(t *testing.T) {
 	assert := assert.New(t)
 
 	sp := &StatusPoller{
-		pollChans: map[string]ResolveState{
-			"one": ResolveInProgress,
-			"two": ResolveErredHTTP,
+		statePerCluster: map[string]*pollerState{
+			"one": &pollerState{
+				LastResult: pollResult{stat: ResolveInProgress},
+				//LastCycle:  true,
+			},
+			"two": &pollerState{
+				LastResult: pollResult{stat: ResolveErredHTTP},
+				//LastCycle:  true,
+			},
 		},
 		status: ResolveNotStarted,
 	}
@@ -118,19 +124,25 @@ func TestStatusPoller_updateState(t *testing.T) {
 	assert.False(sp.finished(), "StatusPoller reported finished: %s", sp.status)
 	assertStatus(ResolveInProgress)
 
-	sp.pollChans["one"] = ResolveTasksStarting
+	sp.statePerCluster["one"].LastResult.stat = ResolveTasksStarting
 
 	assert.False(sp.finished(), "StatusPoller reported finished: %s", sp.status)
 	assertStatus(ResolveTasksStarting)
 
-	sp.pollChans["one"] = ResolveComplete
-	sp.pollChans["two"] = ResolveComplete
+	sp.statePerCluster["one"].LastResult.stat = ResolveComplete
+	sp.statePerCluster["two"].LastResult.stat = ResolveComplete
+
+	assert.False(sp.finished(), "finised despite LastCycle == false")
+	assertStatus(ResolveInProgress)
+
+	sp.statePerCluster["one"].LastCycle = true
+	sp.statePerCluster["two"].LastCycle = true
 
 	assert.True(sp.finished(), "StatusPoller reported NOT finished: %s", sp.status)
 	assertStatus(ResolveComplete)
 
-	sp.pollChans["one"] = ResolveComplete
-	sp.pollChans["two"] = ResolveFailed
+	sp.statePerCluster["one"].LastResult.stat = ResolveComplete
+	sp.statePerCluster["two"].LastResult.stat = ResolveFailed
 
 	assert.True(sp.finished(), "StatusPoller reported NOT finished: %s", sp.status)
 	assertStatus(ResolveFailed)
@@ -140,14 +152,21 @@ func TestStatusPoller(t *testing.T) {
 	serversRE := regexp.MustCompile(`/servers$`)
 	statusRE := regexp.MustCompile(`/status$`)
 	gdmRE := regexp.MustCompile(`/gdm$`)
-	var gdmJSON, serversJSON, statusJSON []byte
+	var gdmJSON, serversJSON, statusJSON, statusJSON2 []byte
+
+	statusCalled := false
 
 	h := func(rw http.ResponseWriter, r *http.Request) {
 		url := r.URL.String()
 		if serversRE.MatchString(url) {
 			rw.Write(serversJSON)
 		} else if statusRE.MatchString(url) {
-			rw.Write(statusJSON)
+			if !statusCalled {
+				statusCalled = true
+				rw.Write(statusJSON)
+			} else {
+				rw.Write(statusJSON2)
+			}
 		} else if gdmRE.MatchString(url) {
 			rw.Write(gdmJSON)
 		} else {
@@ -211,7 +230,32 @@ func TestStatusPoller(t *testing.T) {
 					"desc": "unchanged"
 				} ]
 		},
-		"inprogress": {"log":[]}
+		"inprogress": {"log":[], "started": "2017-10-11T14:26:05.975369893Z"}
+	}`)
+	statusJSON2 = []byte(`{
+		"deployments": [
+			{
+				"sourceid": {
+					"location": "` + repoName + `",
+					"version": "1.0.1+1234"
+				},
+				"flavor": "canhaz"
+			}
+		],
+		"completed": {
+			"intended": [ {
+				"sourceid": {
+					"location": "` + repoName + `",
+					"version": "1.0.1+1234"
+				},
+				"flavor": "canhaz"
+			} ],
+			"log":[ {
+					"manifestid": "` + repoName + `~canhaz",
+					"desc": "unchanged"
+				} ]
+		},
+		"inprogress": {"log":[], "started": "2018-10-11T14:27:05.975369893Z"}
 	}`)
 
 	rf := &ResolveFilter{
@@ -236,7 +280,7 @@ func TestStatusPoller(t *testing.T) {
 		testCh <- rState
 	}()
 
-	timeout := 100 * time.Millisecond
+	timeout := 3000 * time.Millisecond
 	select {
 	case <-time.After(timeout):
 		t.Errorf("Happy path polling took more than %s", timeout)

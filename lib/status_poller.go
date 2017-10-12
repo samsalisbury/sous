@@ -15,10 +15,19 @@ type (
 	StatusPoller struct {
 		restful.HTTPClient
 		*ResolveFilter
-		User      User
-		pollChans map[string]ResolveState
-		status    ResolveState
-		logs      logging.LogSink
+		User            User
+		statePerCluster map[string]*pollerState
+		status          ResolveState
+		logs            logging.LogSink
+	}
+
+	pollerState struct {
+		// LastResult is the last result this poller received.
+		LastResult pollResult
+		// LastCycle is true after the resolveID changes.
+		// This is used to indicate that when resolveID changes again,
+		// the poller should give up if still going.
+		LastCycle bool
 	}
 
 	subPoller struct {
@@ -268,7 +277,7 @@ func (sp *StatusPoller) poll(subs []*subPoller) ResolveState {
 	collect := make(chan pollResult)
 	done := make(chan struct{})
 	go func() {
-		sp.pollChans = map[string]ResolveState{}
+		sp.statePerCluster = map[string]*pollerState{}
 		for {
 			sp.nextSubStatus(collect)
 			if sp.finished() {
@@ -288,20 +297,42 @@ func (sp *StatusPoller) poll(subs []*subPoller) ResolveState {
 
 func (sp *StatusPoller) nextSubStatus(collect chan pollResult) {
 	update := <-collect
-	sp.pollChans[update.url] = update.stat
+	if lastState, ok := sp.statePerCluster[update.url]; ok {
+		if lastState.LastResult.resolveID != "" && lastState.LastResult.resolveID != update.resolveID {
+			// TODO: Look at this.
+			panic("LAST_CYCLE_W00t")
+			sp.statePerCluster[update.url].LastCycle = true
+		}
+	} else {
+		sp.statePerCluster[update.url] = &pollerState{LastResult: update}
+	}
+	sp.statePerCluster[update.url].LastResult = update
 	logging.Log.Debugf("%s reports state: %s", update.url, update.stat)
 }
 
 func (sp *StatusPoller) updateStatus() {
 	max := ResolveMAX
-	for u, s := range sp.pollChans {
+	for u, s := range sp.statePerCluster {
 		logging.Log.Vomitf("Current state from %s: %s", u, s)
 
+		// Discard statuses from the initial resolve cycle, just report
+		// 'in progress' until the resolveID has changed thus LastCycle == true.
+		if !s.LastCycle {
+			// Quick math.Min impl for integers...
+			if ResolveTERMINALS < s.LastResult.stat {
+				max = ResolveInProgress
+			} else {
+				max = s.LastResult.stat
+			}
+			break
+		}
+
 		//if max is already > EJECT, we can quit without waiting for other subs
-		if s <= max {
-			max = s
+		if s.LastResult.stat <= max {
+			max = s.LastResult.stat
 		}
 	}
+
 	sp.status = max
 }
 
@@ -324,7 +355,8 @@ func (sub *subPoller) start(rs chan pollResult, done chan struct{}) {
 		}
 		select {
 		case <-ticker.C:
-			rs <- sub.pollOnce()
+			latest := sub.pollOnce()
+			rs <- latest
 		case <-done:
 			return
 		}
