@@ -41,6 +41,7 @@ func (suite *integrationSuite) deploymentWithRepo(clusterNames []string, repo st
 	}
 	deps, err := suite.deployer.RunningDeployments(suite.nameCache, clusters)
 	if suite.NoError(err) {
+		suite.T().Logf("%#v", deps)
 		return deps, suite.findRepo(deps, repo)
 	}
 	return sous.NewDeployStates(), none
@@ -199,7 +200,7 @@ func (suite *integrationSuite) TestGetRunningDeploymentSet_testCluster() {
 	for i := 0; i < numberOfTestRuns; i++ {
 		ds, which := suite.deploymentWithRepo(clusters, "github.com/example/webapp")
 		deps := ds.Snapshot()
-		if suite.Equal(4, len(deps)) {
+		if suite.Equal(4, len(deps), "%#v should have members") {
 			webapp := deps[which]
 			cacheHitText := fmt.Sprintf("on cache hit %d", i+1)
 			suite.Equal(SingularityURL, webapp.Cluster.BaseURL, cacheHitText)
@@ -377,7 +378,7 @@ func (suite *integrationSuite) TestMissingImage() {
 
 	err = r.Begin(deploymentsOne, clusterDefs.Clusters).Wait()
 
-	suite.Error(err)
+	suite.Error(err, "should report 'missing image'")
 
 	// ****
 	time.Sleep(1 * time.Second)
