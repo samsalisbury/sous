@@ -199,6 +199,7 @@ func (sp *StatusPoller) Wait(ctx context.Context) (ResolveState, error) {
 }
 
 func (sp *StatusPoller) waitForever() (ResolveState, error) {
+	reportPollerStart(sp.logs, sp)
 	// Retrieve the list of servers known to our main server.
 	clusters := &serverListData{}
 	if _, err := sp.Retrieve("./servers", nil, clusters, sp.User.HTTPHeaders()); err != nil {
