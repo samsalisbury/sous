@@ -62,25 +62,6 @@ func SuccessYAML(v interface{}) cmdr.Result {
 	return cmdr.SuccessData(b)
 }
 
-// Plumbing injects a command with the current psyringe,
-// then it Executes it, returning the result.
-func (cli *CLI) Plumbing(from cmdr.Command, cmd cmdr.Executor, args []string) cmdr.Result {
-	if err := cli.Plumb(from, cmd); err != nil {
-		return cmdr.EnsureErrorResult(err)
-	}
-	return cmd.Execute(args)
-}
-
-// Plumb injects a lists of commands with the currect psyringe, returning early in the event of an error
-func (cli *CLI) Plumb(from cmdr.Command, cmds ...cmdr.Executor) error {
-	for _, cmd := range cmds {
-		if err := cli.scopedGraph(from, nil).Inject(cmd); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // BuildCLIGraph builds the CLI DI graph.
 func BuildCLIGraph(root *Sous, cli *CLI, out, err io.Writer) *graph.SousGraph {
 	g := cli.baseGraph //was .Clone() - caused problems
