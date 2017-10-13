@@ -102,18 +102,17 @@ func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveRecord
 		//})
 
 		var logger *DeployableChans
-		var wg sync.WaitGroup
 		ctx := context.Background()
 		recorder.performGuaranteedPhase("resolving deployment artifacts", func() {
 			namer := diffs.ResolveNames(ctx, r.Registry)
 			logger = namer.Log(ctx, r.ls)
-			wg.Add(1)
+			logger.Add(1)
 			go func() {
 				for err := range namer.Errs {
 					recorder.Log <- *err
 					//DiffResolution{Error: &ErrorWrapper{error: err}}
 				}
-				wg.Done()
+				logger.Done()
 			}()
 			// TODO: ResolveNames should take rs.Log instead of errs.
 		})
@@ -121,6 +120,6 @@ func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveRecord
 		recorder.performGuaranteedPhase("rectification", func() {
 			r.rectify(logger, recorder.Log)
 		})
-		wg.Wait()
+		logger.Wait()
 	})
 }
