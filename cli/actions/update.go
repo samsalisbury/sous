@@ -1,7 +1,6 @@
 package actions
 
 import (
-	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
@@ -10,7 +9,7 @@ import (
 )
 
 // SousUpdate is the command description for `sous update`
-type update struct {
+type Update struct {
 	Manifest      graph.TargetManifest
 	GDM           graph.CurrentGDM
 	Client        graph.HTTPClient
@@ -18,19 +17,8 @@ type update struct {
 	User          sous.User
 }
 
-// GetUpdate returns an update Action
-func GetUpdate(di injector, dff config.DeployFilterFlags, otpl config.OTPLFlags) Action {
-	guardedAdd(di, "DeployFilterFlags", &dff)
-	guardedAdd(di, "OTPLFlags", &otpl)
-	guardedAdd(di, "Dryrun", graph.DryrunNeither)
-
-	update = &update{}
-	di.Inject(update)
-	return update
-}
-
 // Do performs the appropriate update, returning nil on success.
-func (u *update) Do() error {
+func (u *Update) Do() error {
 	mid := u.Manifest.ID()
 
 	rf := (*sous.ResolveFilter)(u.ResolveFilter)

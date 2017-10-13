@@ -9,20 +9,13 @@ import (
 	"github.com/pkg/errors"
 )
 
-type pollstatus struct {
+// PollStatus manages the command to poll the server for status.
+type PollStatus struct {
 	StatusPoller *sous.StatusPoller
 }
 
-// GetPollStatus produces an Action to poll the status of a deployment.
-func GetPollStatus(di injector, dff config.DeployFilterFlags) Action {
-	guardedAdd(di, "DeployFilterFlags", &dff)
-
-	ps := &pollstatus{}
-	di.Inject(ps)
-	return ps
-}
-
-func (ps *pollstatus) Do() error {
+// Do implements Action on PollStatus.
+func (ps *PollStatus) Do() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
 	state, err := ps.StatusPoller.Wait(ctx)

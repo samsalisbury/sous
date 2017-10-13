@@ -62,7 +62,7 @@ func (sr *SousRectify) Execute(args []string) cmdr.Result {
 			"(Or -all if you really mean to rectify the whole world; see 'sous help rectify'.)")
 	}
 
-	rectify := actions.GetRectify(sr.SousGraph, sr.dryrun, sr.SourceFlags)
+	rectify := sr.SousGraph.GetRectify(sr.dryrun, sr.SourceFlags)
 	if err := rectify.Do(); err != nil {
 		return EnsureErrorResult(err)
 	}

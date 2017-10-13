@@ -39,7 +39,10 @@ type (
 	ErrOut struct{ *cmdr.Output }
 	// SousGraph is a dependency injector used to flesh out Sous commands
 	// with their dependencies.
-	SousGraph struct{ *psyringe.Psyringe }
+	SousGraph struct {
+		addGuards map[string]bool
+		*psyringe.Psyringe
+	}
 
 	// OutWriter is typically set to os.Stdout.
 	OutWriter io.Writer
@@ -142,7 +145,10 @@ func newUser(c LocalSousConfig) sous.User {
 
 // BuildBaseGraph constructs a graph with essentials - intended for testing
 func BuildBaseGraph(vrsn semv.Version, in io.Reader, out, err io.Writer) *SousGraph {
-	graph := &SousGraph{psyringe.New()}
+	graph := &SousGraph{
+		addGuards: map[string]bool{},
+		Psyringe:  psyringe.New(),
+	}
 	// stdout, stderr
 	graph.Add(
 		func() InReader { return in },

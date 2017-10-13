@@ -6,23 +6,15 @@ import (
 	"github.com/opentable/sous/lib"
 )
 
-type rectify struct {
+// Rectify processes a workstation rectify command. Mostly deprecated by sous server, but very useful when it is.
+type Rectify struct {
 	Resolver *sous.Resolver
 	GDM      graph.CurrentGDM
 	State    *sous.State
 }
 
-// GetRectify produces a rectify action.
-func GetRectify(di injector, dryrun string, srcFlags cli.SourceFlags) Action {
-	guardedAdd(di, "Dryrun", graph.DryrunOption(dryrun))
-	guardedAdd(di, "SourceFlags", &srcFlags)
-
-	r := &rectify{}
-	di.Inject(r)
-	return r
-}
-
-func (sr *rectify) Do() error {
+// Do implements Action on Rectify.
+func (sr *Rectify) Do() error {
 	if err := sr.Resolver.Begin(sr.GDM.Clone(), sr.State.Defs.Clusters).Wait(); err != nil {
 		return err
 	}

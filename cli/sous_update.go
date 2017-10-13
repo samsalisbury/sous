@@ -36,7 +36,7 @@ func (su *SousUpdate) AddFlags(fs *flag.FlagSet) {
 
 // Execute fulfills the cmdr.Executor interface.
 func (su *SousUpdate) Execute(args []string) cmdr.Result {
-	update := actions.GetUpdate(su.SousGraph, su.DeployFilterFlags, su.OTPLFlags)
+	update := su.SousGraph.GetUpdate(su.DeployFilterFlags, su.OTPLFlags)
 	err := update.Do()
 	if err != nil {
 		return EnsureErrorResult(err)
