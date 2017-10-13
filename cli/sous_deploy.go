@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 
+	"github.com/opentable/sous/cli/actions"
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/util/cmdr"
@@ -11,7 +12,8 @@ import (
 
 // SousDeploy is the command description for `sous deploy`.
 type SousDeploy struct {
-	Config            graph.LocalSousConfig
+	SousGraph graph.SousGraph
+
 	CLI               *CLI
 	DeployFilterFlags config.DeployFilterFlags
 	OTPLFlags         config.OTPLFlags
@@ -44,31 +46,32 @@ func (sd *SousDeploy) AddFlags(fs *flag.FlagSet) {
 			"values are none,scheduler,registry,both")
 }
 
-// RegisterOn adds the DeploymentConfig to the psyringe to configure the
-// labeller and registrar.
-func (sd *SousDeploy) RegisterOn(psy Addable) {
-	psy.Add(&sd.DeployFilterFlags)
-	psy.Add(&sd.OTPLFlags)
-	psy.Add(graph.DryrunOption(sd.dryrunOption))
-}
-
 // Execute fulfills the cmdr.Executor interface.
 func (sd *SousDeploy) Execute(args []string) cmdr.Result {
-	res := sd.CLI.Plumbing(sd, &SousUpdate{}, []string{})
-
-	sd.CLI.OutputResult(res)
-	if !sd.CLI.IsSuccess(res) {
-		return res
+	//func GetUpdate(di injector, dff config.DeployFilterFlags, otpl config.OTPLFlags) Action {
+	update := actions.GetUpdate(sd.SousGraph, sd.DeployFilterFlags, sd.OTPLFlags)
+	if err := update.Do(); err != nil {
+		return cmdr.EnsureErrorResult(err)
 	}
+	sd.CLI.OutputResult(cmdr.Success("Updated global manifest."))
 
 	// Running serverless, so run rectify.
 	if sd.Config.Server == "" {
-		return sd.CLI.Plumbing(sd, &SousRectify{}, []string{})
+		rectify := actions.GetRectify(sd.SousGraph, sd.dryrunOption, sd, sd.dryrunOption, sd.DeployFilterFlags)
+		if err := rectify.Do(); err != nil {
+			return cmdr.EnsureErrorResult(err)
+		}
+		return cmdr.Success("Successfully rectified")
 	}
 
 	if sd.waitStable {
 		fmt.Fprintf(sd.CLI.Out, "Waiting for server to report that deploy has stabilized...\n")
-		return sd.CLI.Plumbing(sd, &SousPlumbingStatus{}, []string{})
+
+		poll := actions.GetPollStatus(sd.SousGraph, sd.DeployFilterFlags)
+		if err := poll.Do(); err != nil {
+			return cmdr.EnsureErrorResult(err)
+		}
+		return cmdr.Success("Deploy complete")
 	}
 	return cmdr.Successf("Updated the global deploy manifest. Deploy in process.")
 

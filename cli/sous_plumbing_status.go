@@ -12,8 +12,10 @@ import (
 
 // SousPlumbingStatus is the `sous plumbing status` object.
 type SousPlumbingStatus struct {
+	SousGraph graph.SousGraph
+	Config    graph.LocalSousConfig
+
 	DeployFilterFlags config.DeployFilterFlags
-	StatusPoller      *sous.StatusPoller
 }
 
 func init() { PlumbingSubcommands["status"] = &SousPlumbingStatus{} }
@@ -28,27 +30,16 @@ func (sps *SousPlumbingStatus) AddFlags(fs *flag.FlagSet) {
 	MustAddFlags(fs, &sps.DeployFilterFlags, DeployFilterFlagsHelp)
 }
 
-// RegisterOn implements Registrant on SousPlumbingStatus.
-func (sps *SousPlumbingStatus) RegisterOn(psy Addable) {
-	psy.Add(&sps.DeployFilterFlags)
-}
-
 // Execute implements cmdr.Executor on SousPlumbingStatus.
 func (sps *SousPlumbingStatus) Execute(args []string) cmdr.Result {
-
-	if sps.StatusPoller == nil {
+	if sr.Config.Server == "" {
 		return cmdr.UsageErrorf("Please configure a server using 'sous config Server <url>'")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
-	defer cancel()
-	state, err := sps.StatusPoller.Wait(ctx)
-	if err != nil {
+	poll := actions.GetPollStatus(sps.SousGraph, sps.DeployFilterFlags)
+	if err := poll.Do(); err != nil {
 		return cmdr.EnsureErrorResult(err)
 	}
-	if state != sous.ResolveComplete {
-		return cmdr.UsageErrorf("failed (state is %s)", state)
-	}
-
 	return cmdr.Success()
+
 }

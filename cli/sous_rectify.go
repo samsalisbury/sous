@@ -11,16 +11,9 @@ import (
 
 // SousRectify is the injectable command object used for `sous rectify`.
 type SousRectify struct {
-	Config      graph.LocalSousConfig
-	State       *sous.State
-	GDM         graph.CurrentGDM
-	SourceFlags config.DeployFilterFlags
-	Resolver    *sous.Resolver
-	flags       struct {
-		dryrun                string
-		repo, offset, cluster string
-		all                   bool
-	}
+	Config    graph.LocalSousConfig
+	dryrun    string
+	SousGraph graph.SousGraph
 }
 
 func init() { TopLevelCommands["rectify"] = &SousRectify{} }
@@ -53,16 +46,9 @@ func (sr *SousRectify) AddFlags(fs *flag.FlagSet) {
 	MustAddFlags(fs, &sr.SourceFlags, RectifyFilterFlagsHelp,
 		map[string]interface{}{"offset": "*", "flavor": "*"})
 
-	fs.StringVar(&sr.flags.dryrun, "dry-run", "none",
+	fs.StringVar(&sr.dryrun, "dry-run", "none",
 		"prevent rectify from actually changing things - "+
 			"values are none,scheduler,registry,both")
-}
-
-// RegisterOn adds the DeploymentConfig to the psyringe to configure the
-// labeller and registrar.
-func (sr *SousRectify) RegisterOn(psy Addable) {
-	psy.Add(graph.DryrunOption(sr.flags.dryrun))
-	psy.Add(&sr.SourceFlags)
 }
 
 // Execute fulfils the cmdr.Executor interface.
@@ -76,7 +62,8 @@ func (sr *SousRectify) Execute(args []string) cmdr.Result {
 			"(Or -all if you really mean to rectify the whole world; see 'sous help rectify'.)")
 	}
 
-	if err := sr.Resolver.Begin(sr.GDM.Clone(), sr.State.Defs.Clusters).Wait(); err != nil {
+	rectify := actions.GetRectify(sr.SousGraph, sr.dryrun, sr.SourceFlags)
+	if err := rectify.Do(); err != nil {
 		return EnsureErrorResult(err)
 	}
 

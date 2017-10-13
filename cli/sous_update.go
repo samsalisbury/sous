@@ -3,23 +3,17 @@ package cli
 import (
 	"flag"
 
+	"github.com/opentable/sous/cli/actions"
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
-	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
-	"github.com/opentable/sous/util/restful"
-	"github.com/pkg/errors"
 )
 
 // SousUpdate is the command description for `sous update`
 type SousUpdate struct {
 	DeployFilterFlags config.DeployFilterFlags
 	OTPLFlags         config.OTPLFlags
-	Manifest          graph.TargetManifest
-	GDM               graph.CurrentGDM
-	Client            graph.HTTPClient
-	ResolveFilter     *graph.RefinedResolveFilter
-	User              sous.User
+	SousGraph         graph.SousGraph
 }
 
 func init() { TopLevelCommands["update"] = &SousUpdate{} }
@@ -40,96 +34,12 @@ func (su *SousUpdate) AddFlags(fs *flag.FlagSet) {
 	MustAddFlags(fs, &su.DeployFilterFlags, DeployFilterFlagsHelp)
 }
 
-// RegisterOn adds the DeploymentConfig to the psyringe to configure the
-// labeller and registrar
-func (su *SousUpdate) RegisterOn(psy Addable) {
-	psy.Add(&su.DeployFilterFlags)
-	psy.Add(&su.OTPLFlags)
-	psy.Add(graph.DryrunNeither)
-}
-
 // Execute fulfills the cmdr.Executor interface.
 func (su *SousUpdate) Execute(args []string) cmdr.Result {
-	mid := su.Manifest.ID()
-
-	rf := (*sous.ResolveFilter)(su.ResolveFilter)
-	sid, err := rf.SourceID(mid)
+	update := actions.GetUpdate(su.SousGraph, su.DeployFilterFlags, su.OTPLFlags)
+	err := update.Do()
 	if err != nil {
 		return EnsureErrorResult(err)
 	}
-	did, err := rf.DeploymentID(mid)
-	if err != nil {
-		return EnsureErrorResult(err)
-	}
-
-	gdm, err := updateRetryLoop(su.Client, sid, did, su.User)
-	if err != nil {
-		return EnsureErrorResult(err)
-	}
-
-	// we update the in-memory GDM so that we can poll based on it.
-	for k, d := range gdm.Snapshot() {
-		su.GDM.Set(k, d)
-	}
-
 	return cmdr.Success("Updated global manifest.")
-}
-
-// If multiple updates are attempted at once for different clusters, there's
-// the possibility that they will collide in their updates, either interleaving
-// their GDM retreive/manifest update operations, or the git pull/push
-// server-side. In this case, the disappointed `sous update` should retry, up
-// to the number of times of manifests there are defined for this
-// SourceLocation
-func updateRetryLoop(cl restful.HTTPClient, sid sous.SourceID, did sous.DeploymentID, user sous.User) (sous.Deployments, error) {
-
-	sm := sous.NewHTTPStateManager(cl)
-
-	tryLimit := 2
-
-	mid := did.ManifestID
-
-	for tries := 0; tries < tryLimit; tries++ {
-		state, err := sm.ReadState()
-		if err != nil {
-			return sous.NewDeployments(), err
-		}
-		manifest, ok := state.Manifests.Get(mid)
-		if !ok {
-			return sous.NewDeployments(), cmdr.UsageErrorf("No manifest found for %q - try 'sous init' first.", mid)
-		}
-
-		tryLimit = len(manifest.Deployments)
-
-		gdm, err := state.Deployments()
-		if err != nil {
-			return sous.NewDeployments(), err
-		}
-
-		if err := updateState(state, gdm, sid, did); err != nil {
-			return sous.NewDeployments(), err
-		}
-		if err := sm.WriteState(state, user); err != nil {
-			if !restful.Retryable(err) {
-				return sous.NewDeployments(), err
-			}
-
-			continue
-		}
-
-		return gdm, nil
-	}
-	return sous.NewDeployments(), errors.Errorf("Tried %d to update %v - %v", tryLimit, sid, did)
-}
-
-func updateState(s *sous.State, gdm sous.Deployments, sid sous.SourceID, did sous.DeploymentID) error {
-	deployment, ok := gdm.Get(did)
-	if !ok {
-		deployment = &sous.Deployment{}
-	}
-
-	deployment.SourceID = sid
-	deployment.ClusterName = did.Cluster
-
-	return s.UpdateDeployments(deployment)
 }
