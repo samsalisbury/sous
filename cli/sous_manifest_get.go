@@ -14,7 +14,7 @@ import (
 
 type SousManifestGet struct {
 	config.DeployFilterFlags
-	*sous.ResolveFilter
+	ResolveFilter *graph.RefinedResolveFilter
 	graph.TargetManifestID
 	graph.HTTPClient
 	graph.LogSink

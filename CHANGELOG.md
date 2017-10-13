@@ -13,6 +13,11 @@ with respect to its command line interface and HTTP interface.
   without sending it to the server. This flag interacts with the `-flavor`,
   `-use-otpl-deploy` and `-ignore-otpl-deploy` flags as well, so you can check sous'
   intentions in all these scenarios without accidentally creating manifests you don't want.
+### Fixed
+* Client: commands 'sous deploy', 'sous manifest get' and 'sous manifest set' now receive the correct auto-detected offset
+  so you no longer require the -offset flag in most cases (unless you need to override it).
+* Server: Changing Startup.SkipCheck now correctly results in a re-deploy with the
+  updated value.
 
 ## [0.5.42](//github.com/opentable/sous/compare/0.5.41..0.5.42)
 ### Fixed

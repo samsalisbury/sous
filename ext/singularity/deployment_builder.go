@@ -414,6 +414,8 @@ func (db *deploymentBuilder) unpackDeployConfig() error {
 		for n, code := range db.deploy.Healthcheck.FailureStatusCodes {
 			db.Target.Startup.CheckReadyFailureStatuses[n] = int(code)
 		}
+	} else {
+		db.Target.Startup.SkipCheck = true
 	}
 
 	return nil
