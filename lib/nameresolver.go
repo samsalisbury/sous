@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/opentable/sous/util/logging"
 	"github.com/pkg/errors"
 )
@@ -21,7 +20,6 @@ func (d *DeployableChans) ResolveNames(ctx context.Context, r Registry) *Deploya
 }
 
 func (names *nameResolver) Start(dp *DeployablePair) (*DeployablePair, *DiffResolution) {
-	spew.Dump(names)
 	dep := dp.Post
 	logging.Log.Vomit.Printf("Deployment processed, needs artifact: %#v", dep)
 

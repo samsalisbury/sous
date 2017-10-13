@@ -2,10 +2,12 @@ package logging
 
 import (
 	"fmt"
+	"io/ioutil"
 	"testing"
 	"time"
 
 	"github.com/nyarly/spies"
+	"github.com/opentable/sous/util/yaml"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -143,6 +145,7 @@ func (wds writeDonerSpy) Done() {
 //  * generates no duplicate fields
 //  * generates fields with the names in variableFields, and ignores their values
 //  * generates fields with the names and values in fixedFields
+//  * generates an @loglov3-otl field
 func AssertMessageFields(t *testing.T, msg eachFielder, variableFields []string, fixedFields map[string]interface{}) {
 	actualFields := map[string]interface{}{}
 
@@ -157,4 +160,55 @@ func AssertMessageFields(t *testing.T, msg eachFielder, variableFields []string,
 	}
 
 	assert.Equal(t, fixedFields, actualFields)
+
+	if _, hasOTL := actualFields["@loglov3-otl"]; !t.Failed() && hasOTL {
+		tmpfile, err := ioutil.TempFile("", actualFields["@loglov3-otl"].(string))
+		if err != nil {
+			t.Logf("Problem trying to open file to write proposed OTL: %v", err)
+			return
+		}
+		otl := map[string]interface{}{
+			"otl": map[string]interface{}{
+				"name":        actualFields["@loglov3-otl"],
+				"description": "<description goes here>",
+				"owners":      []string{"sous-team"},
+				"inherits":    []string{"ot-v1", "call-stack-v1"},
+			},
+			"fields": map[string]interface{}{},
+		}
+
+		for n, v := range actualFields {
+			switch val := v.(type) {
+			default:
+				t.Logf("Don't know the OTL type for %v %[1]t", v)
+				return
+			case string:
+				if val == "@loglov3-otl" {
+					continue
+				}
+				otl["fields"].(map[string]interface{})[n] = map[string]interface{}{"type": "string", "optional": true}
+			case bool:
+				otl["fields"].(map[string]interface{})[n] = map[string]interface{}{"type": "boolean", "optional": true}
+			case int32, uint32:
+				otl["fields"].(map[string]interface{})[n] = map[string]interface{}{"type": "int", "optional": true}
+			case int, uint, int64, uint64:
+				otl["fields"].(map[string]interface{})[n] = map[string]interface{}{"type": "long", "optional": true}
+			case float32, float64:
+				otl["fields"].(map[string]interface{})[n] = map[string]interface{}{"type": "float", "optional": true}
+			case time.Time:
+				otl["fields"].(map[string]interface{})[n] = map[string]interface{}{"type": "timestamp", "optional": true}
+			}
+		}
+
+		b, err := yaml.Marshal(otl)
+		if err != nil {
+			t.Logf("Problem trying to serialize proposed OTL: %v", err)
+			return
+		}
+		if _, err = tmpfile.Write(b); err == nil {
+			t.Logf("Proposed OTL written to %q", tmpfile.Name())
+		} else {
+			t.Logf("Problem trying to write proposed OTL: %v", err)
+		}
+	}
 }

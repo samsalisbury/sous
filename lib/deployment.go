@@ -61,6 +61,10 @@ func (depID *DeploymentID) Digest() []byte {
 	return h.Sum(nil)
 }
 
+func (depID DeploymentID) String() string {
+	return depID.Cluster + ":" + depID.ManifestID.String()
+}
+
 // Clone returns a deep copy of this deployment.
 func (d Deployment) Clone() *Deployment {
 	d.DeployConfig = d.DeployConfig.Clone()
@@ -201,7 +205,7 @@ func (d *Deployment) Equal(o *Deployment) bool {
 type Differences []string
 
 func (diffs Differences) String() string {
-	return strings.Join(diffs, ", ")
+	return strings.Join(diffs, "\n")
 }
 
 // Diff returns the differences between this deployment and another.
