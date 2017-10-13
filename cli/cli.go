@@ -38,6 +38,7 @@ type (
 	// CLI describes the command line interface for Sous
 	CLI struct {
 		*cmdr.CLI
+		LogSink              logging.LogSink
 		baseGraph, SousGraph *graph.SousGraph
 		scopedGraphs         map[cmdr.Command]*graph.SousGraph
 	}
@@ -93,13 +94,22 @@ func (cli *CLI) scopedGraph(cmd, under cmdr.Command) *graph.SousGraph {
 	return g
 }
 
+// Invoke wraps the cmdr.CLI Invoke for logging.
+func (cli *CLI) Invoke(args []string) Result {
+	reportInvocation(args, cli.LogSink)
+	res := cli.CLI.Invoke(args)
+	reportResult(res, cli.LogSink)
+	return res
+}
+
 // NewSousCLI creates a new Sous cli app.
-func NewSousCLI(di *graph.SousGraph, s *Sous, out, errout io.Writer) (*CLI, error) {
+func NewSousCLI(di *graph.SousGraph, s *Sous, logsink logging.LogSink, out, errout io.Writer) (*CLI, error) {
 
 	stdout := cmdr.NewOutput(out)
 	stderr := cmdr.NewOutput(errout)
 
 	cli := &CLI{
+		LogSink: logsink,
 		CLI: &cmdr.CLI{
 			Root: s,
 			Out:  stdout,
