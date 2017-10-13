@@ -22,12 +22,18 @@ func newRefinedResolveFilter(f *sous.ResolveFilter, discovered *SourceContextDis
 		if c.PrimaryRemoteURL != "" {
 			rrf.Repo = sous.NewResolveFieldMatcher(c.PrimaryRemoteURL)
 		}
-		if rrf.Offset.All() && c.OffsetDir != "" {
+		if rrf.Offset.All() || *rrf.Offset.Match == "" {
 			rrf.Offset = sous.NewResolveFieldMatcher(c.OffsetDir)
 		}
 		if f.Tag.All() && discovered.SourceContext != nil && discovered.TagVersion() != "" {
 			rrf.SetTag(discovered.TagVersion())
 		}
+	} else {
+		var offset string
+		if rrf.Offset.Match != nil {
+			offset = *rrf.Offset.Match
+		}
+		rrf.Offset = sous.NewResolveFieldMatcher(offset)
 	}
 
 	if rrf.Repo.All() {
