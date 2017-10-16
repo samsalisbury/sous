@@ -3,28 +3,23 @@ package sous
 import (
 	"context"
 	"sync"
+
+	"github.com/davecgh/go-spew/spew"
 )
 
 // Pipeline attaches a DeployableProcessor to the DeployableChans, and returns a new DeployableChans.
 func (d *DeployableChans) Pipeline(ctx context.Context, proc DeployableProcessor) *DeployableChans {
 	out := NewDeployableChans(1)
 
-	wg := sync.WaitGroup{}
-	wg.Add(4)
-
 	handle := nullHandler
 	if handler, is := proc.(DeployableResolutionHandler); is {
 		handle = handler.HandleResolution
 	}
 
-	go func() {
-		for rez := range d.Errs {
-			handle(rez)
-			out.Errs <- rez
-		}
-		wg.Wait()
-		close(out.Errs)
-	}()
+	d.Add(1) // for the errs channel
+
+	wg := sync.WaitGroup{}
+	wg.Add(4)
 
 	process := func(from, to chan *DeployablePair, doProc func(dp *DeployablePair) (*DeployablePair, *DiffResolution)) {
 		defer close(to)
@@ -50,6 +45,16 @@ func (d *DeployableChans) Pipeline(ctx context.Context, proc DeployableProcessor
 		}
 	}
 
+	go func() {
+		for rez := range d.Errs {
+			handle(rez)
+			out.Errs <- rez
+		}
+		wg.Wait()
+		close(out.Errs)
+		d.Done()
+	}()
+
 	go process(d.Start, out.Start, proc.Start)
 	go process(d.Stop, out.Stop, proc.Stop)
 	go process(d.Stable, out.Stable, proc.Stable)
@@ -57,7 +62,9 @@ func (d *DeployableChans) Pipeline(ctx context.Context, proc DeployableProcessor
 	return out
 }
 
-func nullHandler(err *DiffResolution) {}
+func nullHandler(err *DiffResolution) {
+	spew.Dump(err)
+}
 
 // DeployableProcessor processes DeployablePairs off of a DeployableChans channel
 type DeployableProcessor interface {

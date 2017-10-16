@@ -103,6 +103,11 @@ func (suite *integrationSuite) newNameCache(name string) *docker.NameCache {
 
 	cache, err := docker.NewNameCache(registryName, suite.registry, logging.NewLogSet(semv.MustParse("0.0.0"), "", "", os.Stdout), db)
 	suite.Require().NoError(err)
+
+	ids, err := cache.ListSourceIDs()
+	suite.Require().NoError(err)
+	suite.Require().Len(ids, 0, "Stale images in cache: %v", ids)
+
 	return cache
 }
 
@@ -138,6 +143,7 @@ func (suite *integrationSuite) BeforeTest(suiteName, testName string) {
 	suite.registry = docker_registry.NewClient()
 	suite.registry.BecomeFoolishlyTrusting()
 
+	suite.T().Logf("New name cache for %q", testName)
 	suite.nameCache = suite.newNameCache(testName)
 	suite.client = singularity.NewRectiAgent(suite.nameCache)
 	suite.deployer = singularity.NewDeployer(suite.client)
@@ -189,6 +195,10 @@ func (suite *integrationSuite) TestNameCache() {
 	suite.Equal("1.1.1", labels[docker.DockerVersionLabel])
 }
 
+func (suite *integrationSuite) depsCount(deps map[sous.DeploymentID]*sous.DeployState, count int) bool {
+	return suite.Len(deps, count, "should have %d members, has %d: \n%#v", count, len(deps), deps)
+}
+
 func (suite *integrationSuite) TestGetRunningDeploymentSet_testCluster() {
 	suite.deployDefaultContainers()
 	clusters := []string{"test-cluster"}
@@ -200,7 +210,7 @@ func (suite *integrationSuite) TestGetRunningDeploymentSet_testCluster() {
 	for i := 0; i < numberOfTestRuns; i++ {
 		ds, which := suite.deploymentWithRepo(clusters, "github.com/example/webapp")
 		deps := ds.Snapshot()
-		if suite.Equal(4, len(deps), "%#v should have members") {
+		if suite.depsCount(deps, 4) {
 			webapp := deps[which]
 			cacheHitText := fmt.Sprintf("on cache hit %d", i+1)
 			suite.Equal(SingularityURL, webapp.Cluster.BaseURL, cacheHitText)
@@ -221,7 +231,7 @@ func (suite *integrationSuite) TestGetRunningDeploymentSet_otherCluster() {
 
 	ds, which := suite.deploymentWithRepo(clusters, "github.com/example/webapp")
 	deps := ds.Snapshot()
-	if suite.Equal(1, len(deps)) {
+	if suite.depsCount(deps, 1) {
 		webapp := deps[which]
 		suite.Equal(SingularityURL, webapp.Cluster.BaseURL)
 		suite.Regexp("^0\\.1", webapp.Resources["cpus"])    // XXX strings and floats...
@@ -241,7 +251,7 @@ func (suite *integrationSuite) TestGetRunningDeploymentSet_all() {
 
 	ds, which := suite.deploymentWithRepo(clusters, "github.com/example/webapp")
 	deps := ds.Snapshot()
-	if suite.Equal(5, len(deps)) {
+	if suite.depsCount(deps, 5) {
 		webapp := deps[which]
 		suite.Equal(SingularityURL, webapp.Cluster.BaseURL)
 		suite.Regexp("^0\\.1", webapp.Resources["cpus"])    // XXX strings and floats...
@@ -378,6 +388,7 @@ func (suite *integrationSuite) TestMissingImage() {
 
 	err = r.Begin(deploymentsOne, clusterDefs.Clusters).Wait()
 
+	suite.T().Logf("Missing Image Error: %v", err)
 	suite.Error(err, "should report 'missing image'")
 
 	// ****
@@ -386,7 +397,7 @@ func (suite *integrationSuite) TestMissingImage() {
 	clusters := []string{"test-cluster"}
 
 	_, which := suite.deploymentWithRepo(clusters, repoOne)
-	suite.Equal(which, none, "opentable/one was deployed")
+	suite.Equal(which, none, "opentable/one was deployed, should not be")
 }
 
 func (suite *integrationSuite) TestResolve() {
