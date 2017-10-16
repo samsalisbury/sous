@@ -115,8 +115,11 @@ func TestStatusPoller_updateState(t *testing.T) {
 		status: ResolveNotStarted,
 	}
 
-	assertStatus := func(status ResolveState) {
-		assert.Equal(sp.status, status, "StatusPoller total state was %s, expected %s", sp.status, status)
+	assertStatus := func(expected ResolveState) {
+		actual := sp.status
+		if actual != expected {
+			t.Errorf("got %s; want %s", actual, expected)
+		}
 	}
 
 	/// TODO: tests for "competing states"

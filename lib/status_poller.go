@@ -315,11 +315,11 @@ func (sp *StatusPoller) updateStatus() {
 	for u, s := range sp.statePerCluster {
 		logging.Log.Vomitf("Current state from %s: %s", u, s)
 
-		// Discard statuses from the initial resolve cycle, just report
+		// Discard statuses from the initial resolve cycle, report max status of
 		// 'in progress' until the resolveID has changed thus LastCycle == true.
 		if !s.LastCycle {
 			// Quick math.Min impl for integers...
-			if ResolveTERMINALS < s.LastResult.stat {
+			if ResolveTERMINALS <= s.LastResult.stat {
 				max = ResolveInProgress
 			} else {
 				max = s.LastResult.stat

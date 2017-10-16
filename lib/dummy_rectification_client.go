@@ -45,7 +45,7 @@ func (drc *DummyRectificationClient) Deploy(d Deployable, reqID string) error {
 
 // PostRequest (cluster, request id, instance count)
 func (drc *DummyRectificationClient) PostRequest(d Deployable, id string) error {
-	drc.logf("Creating application %#v", d, id)
+	drc.logf("Creating application %#v %s", d, id)
 	drc.Created = append(drc.Created, d)
 	return nil
 }
