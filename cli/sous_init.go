@@ -13,12 +13,14 @@ import (
 type SousInit struct {
 	DeployFilterFlags config.DeployFilterFlags
 	Flags             config.OTPLFlags
-	Target            graph.TargetManifest
-	WD                graph.LocalWorkDirShell
-	GDM               graph.CurrentGDM
-	State             *sous.State
-	StateWriter       graph.StateWriter
-	User              sous.User
+	// DryRunFlag prints out the manifest but does not save it.
+	DryRunFlag  bool
+	Target      graph.TargetManifest
+	WD          graph.LocalWorkDirShell
+	GDM         graph.CurrentGDM
+	State       *sous.State
+	StateWriter graph.StateWriter
+	User        sous.User
 }
 
 func init() { TopLevelCommands["init"] = &SousInit{} }
@@ -55,6 +57,7 @@ func (si *SousInit) AddFlags(fs *flag.FlagSet) {
 	MustAddFlags(fs, &si.Flags, OtplFlagsHelp)
 	fs.StringVar(&si.DeployFilterFlags.Flavor, "flavor", "", flavorFlagHelp)
 	fs.StringVar(&si.DeployFilterFlags.Cluster, "cluster", "", clusterFlagHelp)
+	fs.BoolVar(&si.DryRunFlag, "dryrun", false, "print out the created manifest but do not save it")
 }
 
 // Execute fulfills the cmdr.Executor interface
@@ -70,6 +73,9 @@ func (si *SousInit) Execute(args []string) cmdr.Result {
 
 	if cluster != "" {
 		m.Deployments = sous.DeploySpecs{cluster: m.Deployments[cluster]}
+	}
+	if si.DryRunFlag {
+		return SuccessYAML(m)
 	}
 
 	if ok := si.State.Manifests.Add(m); !ok {
