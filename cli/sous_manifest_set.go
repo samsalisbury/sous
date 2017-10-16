@@ -18,7 +18,7 @@ type SousManifestSet struct {
 	graph.TargetManifestID
 	graph.HTTPClient
 	graph.InReader
-	*sous.ResolveFilter
+	ResolveFilter graph.RefinedResolveFilter
 	graph.LogSink
 	User sous.User
 }
