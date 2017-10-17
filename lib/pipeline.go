@@ -31,6 +31,7 @@ func (d *DeployableChans) Pipeline(ctx context.Context, proc DeployableProcessor
 			case dp, ok := <-from:
 				if ok {
 					proked, rez := doProc(dp)
+					spew.Dump(doProc, proked, rez)
 					if rez != nil {
 						handle(rez)
 						out.Errs <- rez
@@ -63,7 +64,7 @@ func (d *DeployableChans) Pipeline(ctx context.Context, proc DeployableProcessor
 }
 
 func nullHandler(err *DiffResolution) {
-	spew.Dump(err)
+	spew.Dump("nullHandler", err)
 }
 
 // DeployableProcessor processes DeployablePairs off of a DeployableChans channel

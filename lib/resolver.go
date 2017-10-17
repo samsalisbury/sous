@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/opentable/sous/util/logging"
 )
 
@@ -121,5 +122,6 @@ func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveRecord
 			r.rectify(logger, recorder.Log)
 		})
 		logger.Wait()
+		spew.Dump("done resolving")
 	})
 }

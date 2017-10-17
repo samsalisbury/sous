@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/opentable/sous/util/logging"
 )
 
@@ -140,6 +141,7 @@ func (msg *deployableMessage) EachField(f logging.FieldReportFn) {
 }
 
 func (log loggingProcessor) HandleResolution(rez *DiffResolution) {
+	spew.Dump("loggingProcessor", rez)
 	msg := &diffRezMessage{
 		resolution: rez,
 		callerInfo: logging.GetCallerInfo("loggingprocessor"),

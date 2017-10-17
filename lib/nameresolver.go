@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/opentable/sous/util/logging"
 	"github.com/pkg/errors"
 )
@@ -110,6 +111,7 @@ func guardImage(r Registry, d *Deployment) (*BuildArtifact, error) {
 		return nil, nil
 	}
 	art, err := r.GetArtifact(d.SourceID)
+	spew.Dump("resolving", d.SourceID, art, err)
 	if err != nil {
 		return nil, &MissingImageNameError{err}
 	}
