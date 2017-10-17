@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/lib"
 	"github.com/pkg/errors"
 )

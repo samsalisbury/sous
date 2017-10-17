@@ -202,6 +202,11 @@ func (c *Client) NearestTag() (string, error) {
 	return c.stdout("describe", "--tags", "--abbrev=0", "--always")
 }
 
+// NearestAnnotatedTag returns the nearest tag contained in the HEAD revision.
+func (c *Client) NearestAnnotatedTag() (string, error) {
+	return c.stdout("describe", "--abbrev=0", "--always")
+}
+
 // CurrentBranch returns the currently checked out branch name.
 func (c *Client) CurrentBranch() (string, error) {
 	return c.stdout("rev-parse", "--abbrev-ref", "HEAD")

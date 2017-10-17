@@ -1,7 +1,6 @@
 package actions
 
 import (
-	"github.com/opentable/sous/graph"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
 	"github.com/opentable/sous/util/restful"
@@ -10,10 +9,10 @@ import (
 
 // SousUpdate is the command description for `sous update`
 type Update struct {
-	Manifest      graph.TargetManifest
-	GDM           graph.CurrentGDM
-	Client        graph.HTTPClient
-	ResolveFilter *graph.RefinedResolveFilter
+	Manifest      *sous.Manifest
+	GDM           sous.Deployments
+	Client        restful.HTTPClient
+	ResolveFilter *sous.ResolveFilter
 	User          sous.User
 }
 
@@ -21,12 +20,11 @@ type Update struct {
 func (u *Update) Do() error {
 	mid := u.Manifest.ID()
 
-	rf := (*sous.ResolveFilter)(u.ResolveFilter)
-	sid, err := rf.SourceID(mid)
+	sid, err := u.ResolveFilter.SourceID(mid)
 	if err != nil {
 		return err
 	}
-	did, err := rf.DeploymentID(mid)
+	did, err := u.ResolveFilter.DeploymentID(mid)
 	if err != nil {
 		return err
 	}

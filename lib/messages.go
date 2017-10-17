@@ -1,10 +1,13 @@
 package sous
 
+import "github.com/opentable/sous/util/logging"
+
 type pollerStartMessage struct {
-	poller *StatusPoller
+	callerInfo logging.CallerInfo
+	poller     *StatusPoller
 }
 
-func reportPollerStart(logsink logging.LogSink, poller *StatusPoller) *pollerStartMessage {
+func reportPollerStart(logsink logging.LogSink, poller *StatusPoller) {
 	msg := &pollerStartMessage{
 		callerInfo: logging.GetCallerInfo(),
 		poller:     poller,
@@ -20,7 +23,7 @@ func (msg *pollerStartMessage) Message() string {
 	return "Deployment polling starting"
 }
 
-func (msg *pollerStartMessage) EachField(f FieldReportFn) {
+func (msg *pollerStartMessage) EachField(f logging.FieldReportFn) {
 	f("@loglov3-otl", "sous-status-polling-v1")
 	msg.callerInfo.EachField(f)
 	// ResolveFilter

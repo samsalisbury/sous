@@ -3,9 +3,10 @@ package graph
 import (
 	"github.com/opentable/sous/cli/actions"
 	"github.com/opentable/sous/config"
+	sous "github.com/opentable/sous/lib"
 )
 
-func (di *SousGraph) guardedAdd(di injector, guardName string, value interface{}) {
+func (di *SousGraph) guardedAdd(guardName string, value interface{}) {
 	if di.addGuards[guardName] {
 		return
 	}
@@ -19,15 +20,27 @@ func (di *SousGraph) GetUpdate(dff config.DeployFilterFlags, otpl config.OTPLFla
 	di.guardedAdd("OTPLFlags", &otpl)
 	di.guardedAdd("Dryrun", DryrunNeither)
 
-	update = &actions.Update{}
-	di.Inject(update)
-	return update
+	updateScoop := struct {
+		Manifest      TargetManifest
+		GDM           CurrentGDM
+		Client        HTTPClient
+		ResolveFilter *RefinedResolveFilter
+		User          sous.User
+	}{}
+	di.Inject(&updateScoop)
+	return &actions.Update{
+		Manifest:      updateScoop.Manifest.Manifest,
+		GDM:           updateScoop.GDM.Deployments,
+		Client:        updateScoop.Client.HTTPClient,
+		ResolveFilter: (*sous.ResolveFilter)(updateScoop.ResolveFilter),
+		User:          updateScoop.User,
+	}
 }
 
 // GetRectify produces a rectify Action.
-func (di *SousGraph) GetRectify(dryrun string, srcFlags cli.SourceFlags) actions.Action {
-	di.guardedAdd("Dryrun", graph.DryrunOption(dryrun))
-	di.guardedAdd("SourceFlags", &srcFlags)
+func (di *SousGraph) GetRectify(dryrun string, dff config.DeployFilterFlags) actions.Action {
+	di.guardedAdd("Dryrun", DryrunOption(dryrun))
+	di.guardedAdd("DeployFilterFlags", &dff)
 
 	r := &actions.Rectify{}
 	di.Inject(r)

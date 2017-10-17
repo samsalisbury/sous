@@ -325,8 +325,17 @@ func newMetricsHandler(set *logging.LogSet) MetricsHandler {
 	return MetricsHandler{set.ExpHandler()}
 }
 
-func newSourceContextDiscovery(g LocalGitRepo) *SourceContextDiscovery {
+func newSourceContextDiscovery(g LocalGitRepo, ls LogSink) *SourceContextDiscovery {
 	c, err := g.SourceContext()
+	detected := c.NearestTagName
+	annotated, err := g.Client.NearestAnnotatedTag()
+
+	logging.Deliver(logging.NewGenericMsg(logging.InformationLevel, "source context tag", map[string]interface{}{
+		"detected-tag":              detected,
+		"nearest-annotated-tag":     annotated,
+		"detected-equals-annotated": (detected == annotated),
+	}), ls)
+
 	return &SourceContextDiscovery{
 		Error:         err,
 		SourceContext: c,

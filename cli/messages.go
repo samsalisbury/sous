@@ -12,12 +12,12 @@ type invocationMessage struct {
 	args []string
 }
 
-func reportInvocation(logsink logging.LogSink, args []string) *invocationMessage {
-	msg := &invocationMessage{
+func reportInvocation(args []string, ls logging.LogSink) {
+	msg := invocationMessage{
 		callerInfo: logging.GetCallerInfo("cli/cli"),
 		args:       args,
 	}
-	logging.Deliver(msg, logsink)
+	logging.Deliver(msg, ls)
 }
 
 func (msg *invocationMessage) DefaultLevel() logging.Level {
@@ -28,17 +28,9 @@ func (msg *invocationMessage) Message() string {
 	return fmt.Sprintf("Invoked with: %q", msg.args)
 }
 
-func (msg *invocationMessage) EachField(f FieldReportFn) {
+func (msg *invocationMessage) EachField(f logging.FieldReportFn) {
 	f("@loglov3-otl", "sous-generic-v1")
 	msg.callerInfo.EachField(f)
-}
-
-func reportInvocation(args []string, ls logging.LogSink) {
-	msg := invocationMessage{
-		callerInfo: logging.GetCallerInfo("cli/cli"),
-		args:       args,
-	}
-	logging.Deliver(msg, ls)
 }
 
 type cliResultMessage struct {
@@ -46,7 +38,7 @@ type cliResultMessage struct {
 	start, end time.Time
 }
 
-func reportCliResult(logsink logging.LogSink, start time.Time, res cmdr.Result) *cliResultMessage {
+func reportCLIResult(logsink logging.LogSink, start time.Time, res cmdr.Result) *cliResultMessage {
 	msg := &cliResultMessage{
 		callerInfo: logging.GetCallerInfo("cli/cli"),
 		res:        res,
@@ -64,7 +56,7 @@ func (msg *cliResultMessage) Message() string {
 	return fmt.Sprintf("Returned result: %q", msg.res)
 }
 
-func (msg *cliResultMessage) EachField(f FieldReportFn) {
+func (msg *cliResultMessage) EachField(f logging.FieldReportFn) {
 	f("@loglov3-otl", "sous-cli-result-v1")
 	msg.callerInfo.EachField(f)
 	f("exit-code", msg.res.ExitCode())

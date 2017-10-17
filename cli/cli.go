@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"time"
 
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/util/cmdr"
@@ -95,11 +96,11 @@ func (cli *CLI) scopedGraph(cmd, under cmdr.Command) *graph.SousGraph {
 }
 
 // Invoke wraps the cmdr.CLI Invoke for logging.
-func (cli *CLI) Invoke(args []string) Result {
+func (cli *CLI) Invoke(args []string) cmdr.Result {
 	start := time.Now()
 	reportInvocation(args, cli.LogSink)
 	res := cli.CLI.Invoke(args)
-	reportResult(res, start, cli.LogSink)
+	reportCLIResult(res, start, cli.LogSink)
 	return res
 }
 
