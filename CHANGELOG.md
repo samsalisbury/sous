@@ -6,14 +6,20 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
-
 ## [Unreleased](//github.com/opentable/sous/compare/0.5.42..HEAD)
 
 ### Added
 * Server: deployment diffs are now logged as structured messages.
+* Client: `sous init` command now has `-dryrun` flag, so you can generate a manifest
+  without sending it to the server. This flag interacts with the `-flavor`,
+  `-use-otpl-deploy` and `-ignore-otpl-deploy` flags as well, so you can check sous'
+  intentions in all these scenarios without accidentally creating manifests you don't want.
+  
 ### Fixed
-* All: Changing Startup.SkipCheck now correctly results in a re-deploy with the
+* Server: Changing Startup.SkipCheck now correctly results in a re-deploy with the
   updated value.
+* Client: commands 'sous deploy', 'sous manifest get' and 'sous manifest set' now receive the correct auto-detected offset
+  so you no longer require the -offset flag in most cases (unless you need to override it).
 
 ## [0.5.42](//github.com/opentable/sous/compare/0.5.41..0.5.42)
 ### Fixed
