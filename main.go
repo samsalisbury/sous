@@ -7,6 +7,7 @@ import (
 
 	"github.com/opentable/sous/cli"
 	"github.com/opentable/sous/graph"
+	"github.com/opentable/sous/util/logging"
 )
 
 // Sous is the Sous CLI root command.
@@ -24,8 +25,9 @@ func main() {
 	//logging.Log.Debug.SetOutput(os.Stderr)
 	log.SetFlags(log.Flags() | log.Lshortfile)
 
-	di := graph.BuildGraph(Sous.Version, os.Stdin, os.Stdout, os.Stderr)
-	c, err := cli.NewSousCLI(di, Sous, os.Stdout, os.Stderr)
+	ls := logging.NewLogSet(Sous.Version, "sous", "", os.Stderr)
+	di := graph.BuildGraph(Sous.Version, ls, os.Stdin, os.Stdout, os.Stderr)
+	c, err := cli.NewSousCLI(di, Sous, ls, os.Stdout, os.Stderr)
 	if err != nil {
 		die(err)
 	}

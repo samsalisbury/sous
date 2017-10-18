@@ -23,6 +23,11 @@ type (
 	}
 )
 
+// NewDummyStateManager returns a dummy StateManager, suitable for testing.
+func NewDummyStateManager() *DummyStateManager {
+	return &DummyStateManager{State: NewState()}
+}
+
 // ReadState implements StateManager
 func (sm *DummyStateManager) ReadState() (*State, error) {
 	sm.ReadCount++

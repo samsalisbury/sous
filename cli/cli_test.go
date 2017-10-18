@@ -5,9 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/opentable/sous/ext/docker"
 	"github.com/opentable/sous/graph"
-	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
 	"github.com/opentable/sous/util/logging"
 	"github.com/samsalisbury/semv"
@@ -24,7 +22,8 @@ func prepareCommand(t *testing.T, cl []string) (*CLI, *cmdr.PreparedExecution, f
 
 	s := &Sous{Version: semv.MustParse(`1.2.3`)}
 	di := graph.BuildTestGraph(semv.Version{}, stdin, stdout, stderr)
-	c, err := NewSousCLI(di, s, stdout, stderr)
+	ls := logging.SilentLogSet()
+	c, err := NewSousCLI(di, s, ls, stdout, stderr)
 	require.NoError(err)
 
 	exe, err := c.Prepare(cl)
@@ -70,58 +69,13 @@ func TestInvokeUpdate(t *testing.T) {
 	exe := justCommand(t, []string{`sous`, `update`})
 	assert.NotNil(exe)
 	assert.Len(exe.Args, 0)
-	update, good := exe.Cmd.(*SousUpdate)
-	require.True(good)
-	assert.NotNil(update.Client)
+	require.IsType((*SousUpdate)(nil), exe.Cmd)
 }
 
 func TestInvokeDeploy(t *testing.T) {
-	assert := assert.New(t)
-	require := require.New(t)
-
 	exe := justCommand(t, []string{`sous`, `deploy`, `-cluster`, `ci-sf`, `-tag`, `1.2.3`})
-	assert.NotNil(exe)
-	assert.Len(exe.Args, 0)
-	deploy, good := exe.Cmd.(*SousDeploy)
-	require.True(good)
-	assert.Equal(deploy.DeployFilterFlags.Cluster, `ci-sf`)
-	assert.Equal(deploy.DeployFilterFlags.Tag, `1.2.3`)
-}
-
-func TestInvokeDeploy_RepoFlag(t *testing.T) {
-	assert := assert.New(t)
-	require := require.New(t)
-
-	exe := justCommand(t, []string{`sous`, `deploy`, `-cluster`, `ci-sf`, `-tag`, `1.2.3`})
-	sd, ok := exe.Cmd.(*SousDeploy)
-	require.True(ok)
-
-	su := &SousUpdate{}
-	sps := &SousPlumbingStatus{}
-	logging.Log.Debug.Printf("Plumbing Update...")
-	require.NoError(sd.CLI.Plumb(sd, su, sps))
-
-	assert.NotEqual("", su.ResolveFilter.Repo)
-	assert.NotEqual("github.com/example/project", su.ResolveFilter.Repo)
-
-	assert.NotEqual("", su.Manifest.ID().Source.Repo)
-	assert.NotEqual("github.com/example/project", su.Manifest.ID().Source.Repo)
-
-	if assert.NotNil(sps.StatusPoller) {
-		assert.NotEqual("", sps.StatusPoller.Repo)
-		assert.Equal(sps.StatusPoller.ResolveFilter.Repo.ValueOr("{globbed!!!}"), su.Manifest.ID().Source.Repo)
-	}
-
-	exe = justCommand(t, []string{`sous`, `deploy`, `-cluster`, `ci-sf`, `-repo`, `github.com/example/project`, `-tag`, `1.2.3`})
-	sd, ok = exe.Cmd.(*SousDeploy)
-	require.True(ok)
-
-	su = &SousUpdate{}
-	sd.CLI.Plumb(sd, su, sps)
-
-	assert.Equal("github.com/example/project", su.ResolveFilter.Repo.ValueOr("{globbed!!!}"))
-	assert.Equal("github.com/example/project", su.Manifest.ID().Source.Repo)
-	assert.Equal("github.com/example/project", sps.StatusPoller.ResolveFilter.Repo.ValueOr("{globbed!!!}"))
+	require.IsType(t, (*SousDeploy)(nil), exe.Cmd)
+	// using new actions package
 }
 
 /*
@@ -356,76 +310,25 @@ func TestInvokeWithUnknownFlags(t *testing.T) {
 
 	s := &Sous{Version: semv.MustParse(`1.2.3`)}
 	di := graph.BuildTestGraph(semv.Version{}, stdin, stdout, stderr)
-	c, err := NewSousCLI(di, s, stdout, stderr)
+	ls := logging.SilentLogSet()
+	c, err := NewSousCLI(di, s, ls, stdout, stderr)
 	require.NoError(err)
 
 	c.Invoke([]string{`sous`, `-cobblers`})
 	assert.Regexp(`flag provided but not defined`, stderr.String())
 }
 
-func TestInvokeRectifyWithoutFilterFlags(t *testing.T) {
+func TestInvokeRectify(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	_, exe, _, _ := prepareCommand(t, []string{`sous`, `rectify`})
+	exe := justCommand(t, []string{`sous`, `rectify`})
 	assert.Len(exe.Args, 0)
 	require.IsType(&SousRectify{}, exe.Cmd)
 
-	rect := exe.Cmd.(*SousRectify)
-
-	assert.NotNil(rect.Config)
-	assert.NotNil(rect.GDM)
-	require.NotNil(rect.SourceFlags)
-	assert.Equal(rect.SourceFlags.All, false)
-	require.NotNil(rect.Resolver.ResolveFilter)
-
-	logging.Log.Vomit.Printf("%#v", rect.Resolver.ResolveFilter)
-	assert.Equal(rect.Resolver.ResolveFilter.All(), true)
-}
-
-func TestInvokeRectifyWithDebugFlags(t *testing.T) {
-	assert := assert.New(t)
-	require := require.New(t)
-
-	// XXX see below
-	_, exe, _, stderr := prepareCommand(t, []string{`sous`, `rectify`, `-d`, `-v`, `-all`})
+	exe = justCommand(t, []string{`sous`, `rectify`, `-d`, `-v`, `-all`})
 	assert.Len(exe.Args, 0)
 	require.IsType(&SousRectify{}, exe.Cmd)
-
-	rect := exe.Cmd.(*SousRectify)
-
-	assert.NotNil(rect.Config)
-	assert.NotNil(rect.GDM)
-	require.NotNil(rect.SourceFlags)
-	assert.Equal(rect.SourceFlags.All, true)
-	assert.Regexp(`Verbose debugging`, stderr.String())
-	assert.Regexp(`Regular debugging`, stderr.String())
-}
-
-func TestInvokeRectifyDryruns(t *testing.T) {
-	assert := assert.New(t)
-	require := require.New(t)
-
-	testDryRun := func(which string) (sous.Deployer, sous.Registry) {
-		exe := justCommand(t, []string{`sous`, `rectify`, `-dry-run`, which, `-repo`, `github.com/somewhere`})
-		assert.Len(exe.Args, 0)
-		require.IsType(&SousRectify{}, exe.Cmd)
-		rect := exe.Cmd.(*SousRectify)
-		// currently no easy way to tell if the deploy client is live or dummy
-		return nil, rect.Resolver.Registry
-	}
-
-	_, r := testDryRun("both")
-	assert.IsType(&sous.DummyRegistry{}, r)
-
-	_, r = testDryRun("none")
-	assert.IsType(&docker.NameCache{}, r)
-
-	_, r = testDryRun("scheduler")
-	assert.IsType(&docker.NameCache{}, r)
-
-	_, r = testDryRun("registry")
-	assert.IsType(&sous.DummyRegistry{}, r)
 }
 
 /*

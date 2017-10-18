@@ -130,12 +130,13 @@ const (
 
 // BuildGraph builds the dependency injection graph, used to populate commands
 // invoked by the user.
-func BuildGraph(vrsn semv.Version, in io.Reader, out, err io.Writer) *SousGraph {
+func BuildGraph(vrsn semv.Version, ls *logging.LogSet, in io.Reader, out, err io.Writer) *SousGraph {
 	graph := BuildBaseGraph(vrsn, in, out, err)
 	AddFilesystem(graph)
 	AddNetwork(graph)
 	AddState(graph)
 	graph.Add(newUser)
+	graph.Add(ls)
 	return graph
 }
 
@@ -143,12 +144,16 @@ func newUser(c LocalSousConfig) sous.User {
 	return c.User
 }
 
-// BuildBaseGraph constructs a graph with essentials - intended for testing
-func BuildBaseGraph(vrsn semv.Version, in io.Reader, out, err io.Writer) *SousGraph {
-	graph := &SousGraph{
+func newSousGraph() *SousGraph {
+	return &SousGraph{
 		addGuards: map[string]bool{},
 		Psyringe:  psyringe.New(),
 	}
+}
+
+// BuildBaseGraph constructs a graph with essentials - intended for testing
+func BuildBaseGraph(vrsn semv.Version, in io.Reader, out, err io.Writer) *SousGraph {
+	graph := newSousGraph()
 	// stdout, stderr
 	graph.Add(
 		func() InReader { return in },
@@ -175,7 +180,6 @@ type adder interface {
 // AddLogs adds a logset to the graph.
 func AddLogs(graph adder) {
 	graph.Add(
-		newLogSet,
 		newLogSink,
 		newMetricsHandler,
 	)
@@ -306,18 +310,12 @@ func newRegistryDumper(r sous.Registry) *sous.RegistryDumper {
 	return sous.NewRegistryDumper(r)
 }
 
-func newLogSet(v *config.Verbosity, version semv.Version, err ErrWriter) *logging.LogSet {
-	ls := logging.NewLogSet(version, "sous", "", err)
-	ls.Configure(v.LoggingConfiguration())
+func newLogSink(v config.Verbosity, set *logging.LogSet) LogSink {
+	set.Configure(v.LoggingConfiguration())
 
 	//logging.Log.Warn.Println("Normal output enabled")
-	ls.Vomitf("Verbose debugging enabled")
-	ls.Debugf("Regular debugging enabled")
-
-	return ls
-}
-
-func newLogSink(set *logging.LogSet) LogSink {
+	set.Vomitf("Verbose debugging enabled")
+	set.Debugf("Regular debugging enabled")
 	return LogSink{set}
 }
 
@@ -327,6 +325,12 @@ func newMetricsHandler(set *logging.LogSet) MetricsHandler {
 
 func newSourceContextDiscovery(g LocalGitRepo, ls LogSink) *SourceContextDiscovery {
 	c, err := g.SourceContext()
+	if err != nil {
+		return &SourceContextDiscovery{
+			Error:         err,
+			SourceContext: nil,
+		}
+	}
 	detected := c.NearestTagName
 	annotated, err := g.Client.NearestAnnotatedTag()
 

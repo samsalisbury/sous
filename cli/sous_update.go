@@ -3,7 +3,6 @@ package cli
 import (
 	"flag"
 
-	"github.com/opentable/sous/cli/actions"
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/util/cmdr"

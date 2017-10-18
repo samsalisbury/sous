@@ -11,7 +11,6 @@ import (
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/shell"
-	"github.com/samsalisbury/psyringe"
 	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -47,7 +46,7 @@ func TestNewStatusPoller(t *testing.T) {
 
 func TestBuildGraph(t *testing.T) {
 	log.SetFlags(log.Flags() | log.Lshortfile)
-	g := BuildGraph(semv.MustParse("0.0.0"), &bytes.Buffer{}, ioutil.Discard, ioutil.Discard)
+	g := BuildGraph(semv.MustParse("0.0.0"), logging.SilentLogSet(), &bytes.Buffer{}, ioutil.Discard, ioutil.Discard)
 	g.Add(DryrunBoth)
 	g.Add(&config.Verbosity{})
 	g.Add(&config.DeployFilterFlags{})
@@ -60,7 +59,7 @@ func TestBuildGraph(t *testing.T) {
 
 }
 func injectedStateManager(t *testing.T, cfg *config.Config) *StateManager {
-	g := psyringe.New()
+	g := newSousGraph()
 	g.Add(newUser)
 	g.Add(LogSink{logging.SilentLogSet()})
 	g.Add(MetricsHandler{})
@@ -81,7 +80,7 @@ func injectedStateManager(t *testing.T, cfg *config.Config) *StateManager {
 	g.Add(newAutoResolver)
 	g.Add(newServerHandler)
 	g.Add(newHTTPClient)
-	g.Add(&SousGraph{g})
+	g.Add(g)
 
 	smRcvr := struct {
 		Sm *StateManager

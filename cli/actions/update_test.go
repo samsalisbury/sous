@@ -1,15 +1,14 @@
-package cli
+package actions
 
 import (
-	"bytes"
-	"io/ioutil"
-	"net/http/httptest"
+	"net/http"
 	"os"
 	"testing"
 
 	"github.com/opentable/sous/config"
-	"github.com/opentable/sous/graph"
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/server"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/assert"
@@ -124,31 +123,22 @@ func TestUpdateRetryLoop(t *testing.T) {
 	dsm.State.Defs.Clusters = sous.Clusters{"blah": {}}
 	user := sous.User{Name: "Judson the Unlucky", Email: "unlucky@opentable.com"}
 
-	g := graph.BuildBaseGraph(semv.Version{}, &bytes.Buffer{}, ioutil.Discard, ioutil.Discard)
-	graph.AddNetwork(g)
-	graph.AddTestConfig(g, "")
-	g.Add(user)
+	inserter := sous.NewInserterSpy()
 
-	g.Add(
-		func() *config.DeployFilterFlags { return &config.DeployFilterFlags{} },
-		func() graph.DryrunOption { return graph.DryrunBoth },
-		func() *graph.ServerStateManager { return &graph.ServerStateManager{dsm} },
-		func() graph.StateReader { return graph.StateReader{dsm} },
-	)
-	g.Add(&config.Verbosity{})
-
-	serverScoop := struct {
-		Handler graph.ServerHandler
-		LogSink graph.LogSink
-	}{}
-	g.MustInject(&serverScoop)
-	if serverScoop.Handler.Handler == nil {
-		t.Fatalf("Didn't inject http.Handler!")
+	locator := server.ComponentLocator{
+		LogSink:       logging.SilentLogSet(),
+		Config:        &config.Config{},
+		Inserter:      inserter,
+		StateManager:  sous.NewDummyStateManager(),
+		ResolveFilter: &sous.ResolveFilter{},
+		AutoResolver:  &sous.AutoResolver{},
 	}
-	testServer := httptest.NewServer(serverScoop.Handler.Handler)
-	defer testServer.Close()
 
-	cl, err := restful.NewInMemoryClient(serverScoop.Handler.Handler, serverScoop.LogSink.LogSink, map[string]string{"X-Gatelatch": os.Getenv("GATELATCH")})
+	ls := logging.SilentLogSet()
+
+	handler := server.Handler(locator, http.NotFoundHandler(), ls)
+
+	cl, err := restful.NewInMemoryClient(handler, ls, map[string]string{"X-Gatelatch": os.Getenv("GATELATCH")})
 	require.NoError(t, err)
 
 	deps, err := updateRetryLoop(cl, sourceID, depID, user)
@@ -164,11 +154,13 @@ func TestUpdateRetryLoop(t *testing.T) {
 //XXX should actually drive interesting behavior
 func TestSousUpdate_Execute(t *testing.T) {
 	//dsm := &sous.DummyStateManager{}
-	su := SousUpdate{
+	su := Update{
 		//StateManager:  &graph.StateManager{dsm},
-		Client:        graph.HTTPClient{&restful.DummyHTTPClient{}},
-		Manifest:      graph.TargetManifest{Manifest: &sous.Manifest{}},
-		ResolveFilter: &graph.RefinedResolveFilter{},
+		Manifest:      &sous.Manifest{},
+		GDM:           sous.NewDeployments(),
+		Client:        &restful.DummyHTTPClient{},
+		ResolveFilter: &sous.ResolveFilter{},
+		User:          sous.User{},
 	}
-	su.Execute(nil)
+	assert.NoError(t, su.Do())
 }
