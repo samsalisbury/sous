@@ -13,6 +13,7 @@ import (
 type SousDeploy struct {
 	SousGraph graph.SousGraph
 
+	Config            graph.LocalSousConfig
 	CLI               *CLI
 	DeployFilterFlags config.DeployFilterFlags
 	OTPLFlags         config.OTPLFlags
@@ -56,7 +57,7 @@ func (sd *SousDeploy) Execute(args []string) cmdr.Result {
 
 	// Running serverless, so run rectify.
 	if sd.Config.Server == "" {
-		rectify := sd.SousGraph.GetRectify(sd.dryrunOption, sd, sd.dryrunOption, sd.DeployFilterFlags)
+		rectify := sd.SousGraph.GetRectify(sd.dryrunOption, sd.DeployFilterFlags)
 		if err := rectify.Do(); err != nil {
 			return cmdr.EnsureErrorResult(err)
 		}

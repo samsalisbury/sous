@@ -30,7 +30,7 @@ func (sps *SousPlumbingStatus) AddFlags(fs *flag.FlagSet) {
 
 // Execute implements cmdr.Executor on SousPlumbingStatus.
 func (sps *SousPlumbingStatus) Execute(args []string) cmdr.Result {
-	if sr.Config.Server == "" {
+	if sps.Config.Server == "" {
 		return cmdr.UsageErrorf("Please configure a server using 'sous config Server <url>'")
 	}
 

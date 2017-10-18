@@ -5,15 +5,15 @@ import (
 
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
-	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
 )
 
 // SousRectify is the injectable command object used for `sous rectify`.
 type SousRectify struct {
-	Config    graph.LocalSousConfig
-	dryrun    string
-	SousGraph graph.SousGraph
+	Config            graph.LocalSousConfig
+	dryrun            string
+	SousGraph         graph.SousGraph
+	DeployFilterFlags config.DeployFilterFlags
 }
 
 func init() { TopLevelCommands["rectify"] = &SousRectify{} }
@@ -43,7 +43,7 @@ func (*SousRectify) Help() string { return sousRectifyHelp }
 
 // AddFlags adds flags for sous rectify.
 func (sr *SousRectify) AddFlags(fs *flag.FlagSet) {
-	MustAddFlags(fs, &sr.SourceFlags, RectifyFilterFlagsHelp,
+	MustAddFlags(fs, &sr.DeployFilterFlags, RectifyFilterFlagsHelp,
 		map[string]interface{}{"offset": "*", "flavor": "*"})
 
 	fs.StringVar(&sr.dryrun, "dry-run", "none",
@@ -57,12 +57,13 @@ func (sr *SousRectify) Execute(args []string) cmdr.Result {
 		return cmdr.UsageErrorf("rectify is deprecated; the server at %s handles rectification.\n"+
 			`If you really want to run rectification locally, unset config.server: 'sous config server ""'`, sr.Config.Server)
 	}
-	if !sr.SourceFlags.All && sr.Resolver.ResolveFilter.All() {
+	rectify := sr.SousGraph.GetRectify(sr.dryrun, sr.DeployFilterFlags)
+
+	if !sr.DeployFilterFlags.All && rectify. {
 		return cmdr.UsageErrorf("Please specify what to rectify using the -repo tag.\n" +
 			"(Or -all if you really mean to rectify the whole world; see 'sous help rectify'.)")
 	}
 
-	rectify := sr.SousGraph.GetRectify(sr.dryrun, sr.SourceFlags)
 	if err := rectify.Do(); err != nil {
 		return EnsureErrorResult(err)
 	}

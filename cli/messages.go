@@ -9,7 +9,8 @@ import (
 )
 
 type invocationMessage struct {
-	args []string
+	callerInfo logging.CallerInfo
+	args       []string
 }
 
 func reportInvocation(args []string, ls logging.LogSink) {
@@ -34,18 +35,23 @@ func (msg *invocationMessage) EachField(f logging.FieldReportFn) {
 }
 
 type cliResultMessage struct {
+	callerInfo logging.CallerInfo
 	res        cmdr.Result
 	start, end time.Time
 }
 
-func reportCLIResult(logsink logging.LogSink, start time.Time, res cmdr.Result) *cliResultMessage {
-	msg := &cliResultMessage{
+func reportCLIResult(logsink logging.LogSink, start time.Time, res cmdr.Result) {
+	msg := newCLIResult(start, res)
+	logging.Deliver(msg, logsink)
+}
+
+func newCLIResult(start time.Time, res cmdr.Result) *cliResultMessage {
+	return &cliResultMessage{
 		callerInfo: logging.GetCallerInfo("cli/cli"),
 		res:        res,
 		start:      start,
 		end:        time.Now(),
 	}
-	logging.Deliver(msg, logsink)
 }
 
 func (msg *cliResultMessage) DefaultLevel() logging.Level {

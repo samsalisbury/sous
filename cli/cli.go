@@ -100,7 +100,7 @@ func (cli *CLI) Invoke(args []string) cmdr.Result {
 	start := time.Now()
 	reportInvocation(args, cli.LogSink)
 	res := cli.CLI.Invoke(args)
-	reportCLIResult(res, start, cli.LogSink)
+	reportCLIResult(cli.LogSink, start, res)
 	return res
 }
 
