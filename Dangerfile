@@ -13,6 +13,18 @@ if !git.modified_files.include?("CHANGELOG.md") && (app_changes && !declared_tri
   fail("Please include a CHANGELOG entry.", sticky: false)
 end
 
+if prose.mdspell_installed? and prose.proselint_installed?
+  prose.lint_files "docs/*.md"
+else
+  message "mdspell or proselint not available - prose not linted"
+end
+
 lgtm.check_lgtm
 
-p git.diff.full_diff
+git.diff.each do |file|
+  file.patch.each_line do |patch_line|
+    if /^\+[^+].*spew\./ =~ patch_line
+      fail "Debugging output: #{patch_line} (there may be others)"
+    end
+  end
+end
