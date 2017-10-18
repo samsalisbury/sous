@@ -95,7 +95,7 @@ func NewResolveRecorder(intended Deployments, f func(*ResolveRecorder)) *Resolve
 			rr.write(func() {
 				rr.status.Log = append(rr.status.Log, rez)
 				if rez.Error != nil {
-					spew.Dump("rez Error", rez.Error)
+					spew.Printf("rez Error %v", rez.Error)
 					rr.status.Errs.Causes = append(rr.status.Errs.Causes, ErrorWrapper{error: rez.Error})
 					logging.Log.Debug.Printf("resolve error = %+v\n", rez.Error)
 				}
@@ -112,7 +112,9 @@ func NewResolveRecorder(intended Deployments, f func(*ResolveRecorder)) *Resolve
 			if rr.err == nil {
 				rr.status.Phase = "finished"
 			}
+			spew.Dump("closing Log")
 			close(rr.Log)
+			spew.Dump("Log closed")
 		})
 	}()
 	return rr

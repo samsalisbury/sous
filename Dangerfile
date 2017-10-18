@@ -14,3 +14,5 @@ if !git.modified_files.include?("CHANGELOG.md") && (app_changes && !declared_tri
 end
 
 lgtm.check_lgtm
+
+p git.diff.full_diff

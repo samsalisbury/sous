@@ -32,7 +32,7 @@ func (d *DeployableChans) Pipeline(ctx context.Context, proc DeployableProcessor
 				if ok {
 					proked, rez := doProc(dp)
 					if rez != nil {
-						spew.Printf("Pipeline rez: %v", rez)
+						spew.Printf("Pipeline rez: %v\n", rez)
 						handle(rez)
 						out.Errs <- rez
 					}
@@ -49,6 +49,7 @@ func (d *DeployableChans) Pipeline(ctx context.Context, proc DeployableProcessor
 	go func() {
 		for rez := range d.Errs {
 			handle(rez)
+			spew.Printf("Passthrough rez: %v\n", rez)
 			out.Errs <- rez
 		}
 		wg.Wait()

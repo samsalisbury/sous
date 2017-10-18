@@ -109,10 +109,12 @@ func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveRecord
 			logger = namer.Log(ctx, r.ls)
 			logger.Add(1)
 			go func() {
-				for err := range namer.Errs {
+				for err := range logger.Errs {
+					spew.Printf("resolver copy err: %v\n", err)
 					recorder.Log <- *err
 					//DiffResolution{Error: &ErrorWrapper{error: err}}
 				}
+				spew.Printf("logger.Errs closed\n")
 				logger.Done()
 			}()
 			// TODO: ResolveNames should take rs.Log instead of errs.
