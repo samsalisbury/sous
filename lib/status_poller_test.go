@@ -1,6 +1,7 @@
 package sous
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"net/http"
@@ -105,51 +106,121 @@ func TestStatusPoller_updateState(t *testing.T) {
 	sp := &StatusPoller{
 		statePerCluster: map[string]*pollerState{
 			"one": &pollerState{
-				LastResult: pollResult{stat: ResolveInProgress},
+				LastResult: pollResult{stat: ResolveNotPolled},
 				//LastCycle:  true,
 			},
 			"two": &pollerState{
-				LastResult: pollResult{stat: ResolveErredHTTP},
+				LastResult: pollResult{stat: ResolveNotPolled},
 				//LastCycle:  true,
 			},
 		},
-		status: ResolveNotStarted,
+		status: ResolveNotPolled,
+	}
+
+	// keep track of ordered results so far for better test output.
+	var resultsSoFar []pollResult
+	resultsSoFarStr := func() string {
+		return ""
+		buf := &bytes.Buffer{}
+		for _, r := range resultsSoFar {
+			fmt.Fprintf(buf, "cluster: %s; state: %s; ResolveID: %s\n",
+				r.url, r.stat, r.resolveID)
+		}
+		return buf.String()
 	}
 
 	assertStatus := func(expected ResolveState) {
 		actual := sp.status
 		if actual != expected {
-			t.Errorf("got %s; want %s", actual, expected)
+			t.Errorf("got %s; want %s (after %d results):\n%s",
+				actual, expected, len(resultsSoFar), resultsSoFarStr())
 		}
 	}
+	result := func(clusterName, resolveID string, status ResolveState) {
+		result := pollResult{
+			url:       clusterName,
+			stat:      status,
+			resolveID: resolveID,
+		}
+		sp.nextSubStatus(result)
+		resultsSoFar = append(resultsSoFar, result)
+		sp.updateStatus()
+	}
+
+	first := "2017-10-18T14:29:37.115976034Z"
+	second := "2017-11-18T14:29:37.115976034Z"
 
 	/// TODO: tests for "competing states"
 
-	assert.False(sp.finished(), "StatusPoller reported finished: %s", sp.status)
-	assertStatus(ResolveInProgress)
-
-	sp.statePerCluster["one"].LastResult.stat = ResolveTasksStarting
+	assertStatus(ResolveNotPolled)
 
 	assert.False(sp.finished(), "StatusPoller reported finished: %s", sp.status)
-	assertStatus(ResolveTasksStarting)
 
-	sp.statePerCluster["one"].LastResult.stat = ResolveComplete
-	sp.statePerCluster["two"].LastResult.stat = ResolveComplete
+	result("one", first, ResolveNotPolled)
+	result("two", first, ResolveNotPolled)
+	assertStatus(ResolveNotPolled)
 
-	assert.False(sp.finished(), "finised despite LastCycle == false")
+	// One moves to ResolveNotStarted, overall now ResolveNotStarted.
+	result("one", first, ResolveNotStarted)
+	assertStatus(ResolveNotStarted)
+	assert.False(sp.finished(), "StatusPoller reported finished: %s", sp.status)
+
+	// Two also moved to ResolveNotStarted, overall still ResolveNotStarted.
+	result("two", first, ResolveNotStarted)
+	assertStatus(ResolveNotStarted)
+
+	// One moved to ResolveNotVersion, overall ResolveNotVersion
+	result("one", first, ResolveNotVersion)
+	assertStatus(ResolveNotVersion)
+
+	// One moved to ResolveInProgress, overall ResolveInProgress
+	result("one", first, ResolveInProgress)
 	assertStatus(ResolveInProgress)
 
-	sp.statePerCluster["one"].LastCycle = true
-	sp.statePerCluster["two"].LastCycle = true
+	// One moved to ResolveTasksStarting, overall ResolveInProgress
+	// because still on first resolveID.
+	result("one", first, ResolveTasksStarting)
+	assertStatus(ResolveInProgress)
 
-	assert.True(sp.finished(), "StatusPoller reported NOT finished: %s", sp.status)
-	assertStatus(ResolveComplete)
+	// One moved to ResolveNotStarted (second resolveID).
+	// Overall still ResolveInProgress because two still on first resolveID.
+	result("one", second, ResolveNotStarted)
+	assertStatus(ResolveInProgress)
 
-	sp.statePerCluster["one"].LastResult.stat = ResolveComplete
-	sp.statePerCluster["two"].LastResult.stat = ResolveFailed
+	// One and two both move to ResolveNotPolled (second resolveID).
+	// Overall still ResolveInProgress because that's the highest
+	// so far.
+	result("one", second, ResolveNotPolled)
+	result("two", second, ResolveNotPolled)
+	assertStatus(ResolveInProgress)
 
-	assert.True(sp.finished(), "StatusPoller reported NOT finished: %s", sp.status)
-	assertStatus(ResolveFailed)
+	// One moves to ResolveFailed but two still not complete so still ResolveInProgress
+	result("one", second, ResolveFailed)
+	result("two", second, ResolveNotPolled)
+	assertStatus(ResolveInProgress)
+
+	//sp.statePerCluster["one"].LastResult.stat = ResolveTasksStarting
+
+	//assert.False(sp.finished(), "StatusPoller reported finished: %s", sp.status)
+	//assertStatus(ResolveTasksStarting)
+
+	//sp.statePerCluster["one"].LastResult.stat = ResolveComplete
+	//sp.statePerCluster["two"].LastResult.stat = ResolveComplete
+
+	//assert.False(sp.finished(), "finised despite LastCycle == false")
+	//assertStatus(ResolveInProgress)
+
+	//sp.statePerCluster["one"].LastCycle = true
+	//sp.statePerCluster["two"].LastCycle = true
+
+	//assert.True(sp.finished(), "StatusPoller reported NOT finished: %s", sp.status)
+	//assertStatus(ResolveComplete)
+
+	//sp.statePerCluster["one"].LastResult.stat = ResolveComplete
+	//sp.statePerCluster["two"].LastResult.stat = ResolveFailed
+
+	//assert.True(sp.finished(), "StatusPoller reported NOT finished: %s", sp.status)
+	//assertStatus(ResolveFailed)
 }
 
 func TestStatusPoller(t *testing.T) {

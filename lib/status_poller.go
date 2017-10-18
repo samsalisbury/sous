@@ -19,6 +19,7 @@ type (
 		statePerCluster map[string]*pollerState
 		status          ResolveState
 		logs            logging.LogSink
+		results         chan pollResult
 	}
 
 	pollerState struct {
@@ -65,63 +66,12 @@ type (
 		Completed, InProgress *ResolveStatus
 	}
 
-	// A ResolveState reflects the state of the Sous clusters in regard to
-	// resolving a particular SourceID.
-	ResolveState int
-
 	pollResult struct {
 		url       string
 		stat      ResolveState
 		err       error
 		resolveID string
 	}
-)
-
-const (
-	// ResolveNotPolled is the entry state. It means we haven't received data
-	// from a server yet.
-	ResolveNotPolled ResolveState = iota
-	// ResolveNotStarted conveys the condition that the server is not yet working
-	// to resolve the SourceLocation in question. Granted that a manifest update
-	// has succeeded, expect that once the current auto-resolve cycle concludes,
-	// the resolve-subject GDM will be updated, and we'll move past this state.
-	ResolveNotStarted
-	// ResolveNotVersion conveys that the server knows the SourceLocation
-	// already, but is resolving a different version. Again, expect that on the
-	// next auto-resolve cycle we'll move past this state.
-	ResolveNotVersion
-	// ResolvePendingRequest conveys that, while the server has registered the
-	// intent for the current resolve cycle, no request has yet been made to
-	// Singularity.
-	ResolvePendingRequest
-	// ResolveInProgress conveys a resolve action has been taken by the server,
-	// which implies that the server's intended version (which we've confirmed is
-	// the same as our intended version) is different from the
-	// Mesos/Singularity's version.
-	ResolveInProgress
-	// ResolveTasksStarting is the state when the resolution is complete from
-	// Sous' point of view, but awaiting tasks starting in the cluster.
-	ResolveTasksStarting
-	// ResolveErredHTTP  conveys that the HTTP request to the server returned an error
-	ResolveErredHTTP
-	// ResolveErredRez conveys that the resolving server reported a transient error
-	ResolveErredRez
-	// ResolveNotIntended indicates that a particular cluster does not intend to
-	// deploy the given deployment(s)
-	ResolveNotIntended
-	// ResolveFailed indicates that a particular cluster is in a failed state
-	// regarding resolving the deployments, and that resolution cannot proceed.
-	ResolveFailed
-	// ResolveComplete is the success state: the server knows about our intended
-	// deployment, and that deployment has returned as having been stable.
-	ResolveComplete
-	// ResolveMAX is not a state itself: it marks the top end of resolutions. All
-	// other states belong before it.
-	ResolveMAX
-
-	// ResolveTERMINALS is not a state itself: it demarks resolution states that
-	// might proceed from states that are complete
-	ResolveTERMINALS = ResolveNotIntended
 )
 
 // XXX we might consider using go generate with `stringer` (c.f.)
@@ -211,6 +161,7 @@ func (sp *StatusPoller) Wait(ctx context.Context) (ResolveState, error) {
 }
 
 func (sp *StatusPoller) waitForever() (ResolveState, error) {
+	sp.results = make(chan pollResult)
 	// Retrieve the list of servers known to our main server.
 	clusters := &serverListData{}
 	if _, err := sp.Retrieve("./servers", nil, clusters, sp.User.HTTPHeaders()); err != nil {
@@ -274,12 +225,11 @@ func (sp *StatusPoller) poll(subs []*subPoller) ResolveState {
 	if len(subs) == 0 {
 		return ResolveNotIntended
 	}
-	collect := make(chan pollResult)
 	done := make(chan struct{})
 	go func() {
 		sp.statePerCluster = map[string]*pollerState{}
 		for {
-			sp.nextSubStatus(collect)
+			sp.nextSubStatusBurst()
 			if sp.finished() {
 				close(done)
 				return
@@ -288,20 +238,28 @@ func (sp *StatusPoller) poll(subs []*subPoller) ResolveState {
 	}()
 
 	for _, s := range subs {
-		go s.start(collect, done)
+		go s.start(sp.results, done)
 	}
 
 	<-done
 	return sp.status
 }
 
-func (sp *StatusPoller) nextSubStatus(collect chan pollResult) {
-	update := <-collect
+func (sp *StatusPoller) nextSubStatusBurst() {
+	for {
+		select {
+		case <-time.After(time.Second):
+			return
+		case update := <-sp.results:
+			sp.nextSubStatus(update)
+		}
+	}
+}
+
+func (sp *StatusPoller) nextSubStatus(update pollResult) {
 	if lastState, ok := sp.statePerCluster[update.url]; ok {
 		if lastState.LastResult.resolveID != "" && lastState.LastResult.resolveID != update.resolveID {
-			// TODO: Look at this.
-			panic("LAST_CYCLE_W00t")
-			sp.statePerCluster[update.url].LastCycle = true
+			lastState.LastCycle = true
 		}
 	} else {
 		sp.statePerCluster[update.url] = &pollerState{LastResult: update}
@@ -310,30 +268,49 @@ func (sp *StatusPoller) nextSubStatus(collect chan pollResult) {
 	logging.Log.Debugf("%s reports state: %s", update.url, update.stat)
 }
 
+func minStatus(a, b ResolveState) ResolveState {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func maxStatus(a, b ResolveState) ResolveState {
+	if a > b {
+		return a
+	}
+	return b
+}
+
 func (sp *StatusPoller) updateStatus() {
-	max := ResolveMAX
+	max := ResolveNotPolled
+	totalMax := ResolveFailed
+	totalMin := ResolveNotPolled
+	allLastCycle := true
 	for u, s := range sp.statePerCluster {
 		logging.Log.Vomitf("Current state from %s: %s", u, s)
-
-		// Discard statuses from the initial resolve cycle, report max status of
-		// 'in progress' until the resolveID has changed thus LastCycle == true.
+		//max = maxStatus(max, s.LastResult.stat)
 		if !s.LastCycle {
-			// Quick math.Min impl for integers...
-			if ResolveTERMINALS <= s.LastResult.stat {
-				max = ResolveInProgress
-			} else {
-				max = s.LastResult.stat
-			}
-			break
+			allLastCycle = false
 		}
-
-		//if max is already > EJECT, we can quit without waiting for other subs
-		if s.LastResult.stat <= max {
-			max = s.LastResult.stat
+		if s.LastResult.stat <= ResolveTERMINALS {
+			totalMax = minStatus(totalMax, ResolveTERMINALS)
 		}
+		max = maxStatus(max, s.LastResult.stat)
+		//max = minStatus(max, totalMax)
+		//max = maxStatus(max, totalMin)
 	}
 
-	sp.status = max
+	if allLastCycle {
+		totalMin = maxStatus(totalMin, ResolveInProgress)
+	} else {
+		totalMax = minStatus(totalMax, ResolveInProgress)
+	}
+
+	max = maxStatus(max, totalMin)
+	max = minStatus(max, totalMax)
+
+	sp.status = maxStatus(sp.status, max)
 }
 
 func (sp *StatusPoller) finished() bool {
