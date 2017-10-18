@@ -3,6 +3,7 @@ package logging
 import (
 	"os"
 	"strconv"
+	"sync/atomic"
 
 	"github.com/samsalisbury/semv"
 )
@@ -18,7 +19,7 @@ type applicationID struct {
 	singularitytaskid  string
 	applicationversion string
 	instanceno         uint
-	sequenceNumber     uint
+	sequenceNumber     uint64
 }
 
 func collectAppID(version semv.Version, env map[string]string) *applicationID {
@@ -48,9 +49,13 @@ func collectAppID(version semv.Version, env map[string]string) *applicationID {
 	return &id
 }
 
+// seq returns the next sequence number in a concurrency-safe manner.
+func (id *applicationID) seq() uint64 {
+	return atomic.AddUint64(&id.sequenceNumber, 1)
+}
+
 func (id *applicationID) EachField(f FieldReportFn) {
-	id.sequenceNumber++
-	f("sequence-number", id.sequenceNumber)
+	f("sequence-number", id.seq())
 	f("ot-env", id.otenv)
 	f("ot-env-type", id.otenvtype)
 	f("ot-env-location", id.otenvlocation)
