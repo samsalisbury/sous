@@ -23,7 +23,7 @@ func fixtureDeployFilterFlags() config.DeployFilterFlags {
 }
 
 func fixtureGraph() *SousGraph {
-	return &SousGraph{}
+	return DefaultTestGraph()
 }
 
 func TestActionUpdate(t *testing.T) {
@@ -31,8 +31,18 @@ func TestActionUpdate(t *testing.T) {
 	update, rightType := action.(*actions.Update)
 	require.True(t, rightType)
 
-	assert.Equal(t, "github.com/example/project", update.ResolveFilter.Repo.ValueOr("{globbed!!!}"))
+	require.NotNil(t, update)
+	require.NotNil(t, update.Manifest)
 	assert.Equal(t, "github.com/example/project", update.Manifest.ID().Source.Repo)
+
+	require.NotNil(t, update.ResolveFilter)
+	require.NotNil(t, update.ResolveFilter.Repo)
+	assert.Equal(t, "github.com/example/project", update.ResolveFilter.Repo.ValueOr("{globbed!!!}"))
+
+	// these need more specific tests than "NotNil"
+	require.NotNil(t, update.GDM)
+	require.NotNil(t, update.User)
+	require.NotNil(t, update.Client)
 }
 
 func TestActionPollStatus(t *testing.T) {
@@ -58,26 +68,18 @@ func TestActionRectify(t *testing.T) {
 }
 
 func TestActionRectifyDryruns(t *testing.T) {
-	assert := assert.New(t)
-	require := require.New(t)
-
-	testDryRun := func(which string) (sous.Deployer, sous.Registry) {
-		action := fixtureGraph().GetRectify("none", fixtureDeployFilterFlags())
-		require.IsType(&actions.Rectify{}, action)
-		rect := action.(*actions.Rectify)
-		// currently no easy way to tell if the deploy client is live or dummy
-		return nil, rect.Resolver.Registry
+	testDryRun := func(which string, expectedRegistryType sous.Registry) {
+		t.Run("dryrun is "+which, func(t *testing.T) {
+			action := fixtureGraph().GetRectify("none", fixtureDeployFilterFlags())
+			require.IsType(t, &actions.Rectify{}, action)
+			rect := action.(*actions.Rectify)
+			require.NotNil(t, rect.Resolver)
+			assert.IsType(t, expectedRegistryType, rect.Resolver.Registry)
+		})
 	}
 
-	_, r := testDryRun("both")
-	assert.IsType(&sous.DummyRegistry{}, r)
-
-	_, r = testDryRun("none")
-	assert.IsType(&docker.NameCache{}, r)
-
-	_, r = testDryRun("scheduler")
-	assert.IsType(&docker.NameCache{}, r)
-
-	_, r = testDryRun("registry")
-	assert.IsType(&sous.DummyRegistry{}, r)
+	testDryRun("both", &sous.DummyRegistry{})
+	testDryRun("none", &docker.NameCache{})
+	testDryRun("scheduler", &docker.NameCache{})
+	testDryRun("registry", &sous.DummyRegistry{})
 }

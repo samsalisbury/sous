@@ -310,7 +310,7 @@ func newRegistryDumper(r sous.Registry) *sous.RegistryDumper {
 	return sous.NewRegistryDumper(r)
 }
 
-func newLogSink(v config.Verbosity, set *logging.LogSet) LogSink {
+func newLogSink(v *config.Verbosity, set *logging.LogSet) LogSink {
 	set.Configure(v.LoggingConfiguration())
 
 	//logging.Log.Warn.Println("Normal output enabled")

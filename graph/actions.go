@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"github.com/davecgh/go-spew/spew"
 	"github.com/opentable/sous/cli/actions"
 	"github.com/opentable/sous/config"
 	sous "github.com/opentable/sous/lib"
@@ -28,6 +29,7 @@ func (di *SousGraph) GetUpdate(dff config.DeployFilterFlags, otpl config.OTPLFla
 		User          sous.User
 	}{}
 	di.Inject(&updateScoop)
+	spew.Dump(updateScoop)
 	return &actions.Update{
 		Manifest:      updateScoop.Manifest.Manifest,
 		GDM:           updateScoop.GDM.Deployments,

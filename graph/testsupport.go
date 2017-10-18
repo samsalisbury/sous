@@ -1,10 +1,13 @@
 package graph
 
 import (
+	"bytes"
 	"io"
+	"io/ioutil"
 
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/docker_registry"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 	"github.com/opentable/sous/util/yaml"
 	"github.com/samsalisbury/semv"
@@ -20,6 +23,11 @@ type (
 
 const defaultConfig = ""
 
+func DefaultTestGraph() *SousGraph {
+	stdin := ioutil.NopCloser(bytes.NewReader(nil))
+	return BuildTestGraph(semv.MustParse("1.1.1"), stdin, ioutil.Discard, ioutil.Discard)
+}
+
 // BuildTestGraph builds a standard graph suitable for testing
 func BuildTestGraph(v semv.Version, in io.Reader, out, err io.Writer) *SousGraph {
 	return TestGraphWithConfig(v, in, out, err, defaultConfig)
@@ -27,7 +35,8 @@ func BuildTestGraph(v semv.Version, in io.Reader, out, err io.Writer) *SousGraph
 
 // TestGraphWithConfig accepts a custom Sous config string
 func TestGraphWithConfig(v semv.Version, in io.Reader, out, err io.Writer, cfg string) *SousGraph {
-	graph := BuildBaseGraph(v, in, out, err)
+	ls := logging.SilentLogSet()
+	graph := BuildBaseGraph(v, ls, in, out, err)
 	AddTestConfig(graph, cfg)
 	graph.Add(sous.User{Name: "Test User", Email: "testuser@example.com"})
 	AddState(graph)
