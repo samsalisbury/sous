@@ -131,12 +131,11 @@ const (
 // BuildGraph builds the dependency injection graph, used to populate commands
 // invoked by the user.
 func BuildGraph(vrsn semv.Version, ls *logging.LogSet, in io.Reader, out, err io.Writer) *SousGraph {
-	graph := BuildBaseGraph(vrsn, in, out, err)
+	graph := BuildBaseGraph(vrsn, ls, in, out, err)
 	AddFilesystem(graph)
 	AddNetwork(graph)
 	AddState(graph)
 	graph.Add(newUser)
-	graph.Add(ls)
 	return graph
 }
 
@@ -152,10 +151,12 @@ func newSousGraph() *SousGraph {
 }
 
 // BuildBaseGraph constructs a graph with essentials - intended for testing
-func BuildBaseGraph(vrsn semv.Version, in io.Reader, out, err io.Writer) *SousGraph {
+func BuildBaseGraph(vrsn semv.Version, ls *logging.LogSet, in io.Reader, out, err io.Writer) *SousGraph {
 	graph := newSousGraph()
 	// stdout, stderr
 	graph.Add(
+		vrsn,
+		ls,
 		func() InReader { return in },
 		func() OutWriter { return out },
 		func() ErrWriter { return err },
@@ -169,7 +170,6 @@ func BuildBaseGraph(vrsn semv.Version, in io.Reader, out, err io.Writer) *SousGr
 	AddSingularity(graph)
 	AddInternals(graph)
 	graph.Add(graph)
-	graph.Add(vrsn)
 	return graph
 }
 
