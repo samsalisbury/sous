@@ -8,7 +8,7 @@ before_install:
 - bin/ci-setup
 install:
 - bundle
-- sudo pip install proseline
+- pip install proseline
 - "./bin/vendor-check"
 script:
 - bundle exec danger
