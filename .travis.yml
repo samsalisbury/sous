@@ -8,7 +8,7 @@ before_install:
 - bin/ci-setup
 install:
 - bundle
-- pip install proseline
+- sudo apt-get install python3-proselint
 - "./bin/vendor-check"
 script:
 - bundle exec danger
