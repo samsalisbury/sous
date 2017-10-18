@@ -4,7 +4,6 @@ import (
 	"context"
 	"sync"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/opentable/sous/util/logging"
 )
 
@@ -77,11 +76,13 @@ func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveRecord
 	intended = intended.Filter(r.FilterDeployment)
 
 	return NewResolveRecorder(intended, func(recorder *ResolveRecorder) {
+		var actual DeployStates
+		var diffs *DeployableChans
+		var logger *DeployableChans
+
 		recorder.performGuaranteedPhase("filtering clusters", func() {
 			clusters = r.FilteredClusters(clusters)
 		})
-
-		var actual DeployStates
 
 		recorder.performPhase("getting running deployments", func() error {
 			var err error
@@ -93,16 +94,10 @@ func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveRecord
 			actual = actual.Filter(r.FilterDeployStates)
 		})
 
-		var diffs *DeployableChans
 		recorder.performGuaranteedPhase("generating diff", func() {
 			diffs = actual.Diff(intended)
 		})
 
-		//recorder.TasksStarting = actual.Filter(func(ds *DeployState) bool {
-		//	ds.Status = DeployStatusPending
-		//})
-
-		var logger *DeployableChans
 		ctx := context.Background()
 		recorder.performGuaranteedPhase("resolving deployment artifacts", func() {
 			namer := diffs.ResolveNames(ctx, r.Registry)
@@ -110,11 +105,9 @@ func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveRecord
 			logger.Add(1)
 			go func() {
 				for err := range logger.Errs {
-					spew.Printf("resolver copy err: %v\n", err)
 					recorder.Log <- *err
 					//DiffResolution{Error: &ErrorWrapper{error: err}}
 				}
-				spew.Printf("logger.Errs closed\n")
 				logger.Done()
 			}()
 			// TODO: ResolveNames should take rs.Log instead of errs.
@@ -123,8 +116,6 @@ func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveRecord
 		recorder.performGuaranteedPhase("rectification", func() {
 			r.rectify(logger, recorder.Log)
 		})
-		spew.Dump("Waiting for logger")
 		logger.Wait()
-		spew.Dump("logger is done")
 	})
 }
