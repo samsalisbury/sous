@@ -389,7 +389,7 @@ func (suite *integrationSuite) TestMissingImage() {
 	err = r.Begin(deploymentsOne, clusterDefs.Clusters).Wait()
 
 	suite.T().Logf("Missing Image Error: %v", err)
-	suite.Error(err, "should report 'missing image'")
+	suite.Error(err, "should report 'missing image' for opentable/one")
 
 	// ****
 	time.Sleep(1 * time.Second)

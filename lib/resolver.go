@@ -121,7 +121,8 @@ func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveRecord
 		recorder.performGuaranteedPhase("rectification", func() {
 			r.rectify(logger, recorder.Log)
 		})
+		spew.Dump("Waiting for logger")
 		logger.Wait()
-		spew.Dump("done resolving")
+		spew.Dump("logger is done")
 	})
 }

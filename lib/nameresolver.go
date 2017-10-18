@@ -25,6 +25,7 @@ func (names *nameResolver) Start(dp *DeployablePair) (*DeployablePair, *DiffReso
 	logging.Log.Vomit.Printf("Deployment processed, needs artifact: %#v", dep)
 
 	da, err := resolveName(names.registry, dep)
+	spew.Printf("Start resolve name %v %v", dep.Deployment.SourceID, err)
 	if err != nil {
 		logging.Log.Info.Printf("Unable to create new deployment %q: %s", dep.ID(), err)
 		logging.Log.Debug.Printf("Failed create deployment %q: % #v", dep.ID(), dep)
@@ -111,7 +112,7 @@ func guardImage(r Registry, d *Deployment) (*BuildArtifact, error) {
 		return nil, nil
 	}
 	art, err := r.GetArtifact(d.SourceID)
-	spew.Dump("resolving", d.SourceID, art, err)
+	spew.Dump("resolving name", d.SourceID, err)
 	if err != nil {
 		return nil, &MissingImageNameError{err}
 	}

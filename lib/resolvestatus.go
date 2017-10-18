@@ -92,15 +92,16 @@ func NewResolveRecorder(intended Deployments, f func(*ResolveRecorder)) *Resolve
 
 	go func() {
 		for rez := range rr.Log {
-			spew.Dump("resolve recorder", rez)
 			rr.write(func() {
 				rr.status.Log = append(rr.status.Log, rez)
 				if rez.Error != nil {
+					spew.Dump("rez Error", rez.Error)
 					rr.status.Errs.Causes = append(rr.status.Errs.Causes, ErrorWrapper{error: rez.Error})
 					logging.Log.Debug.Printf("resolve error = %+v\n", rez.Error)
 				}
 			})
 		}
+		spew.Dump("closing finished")
 		close(rr.finished)
 	}()
 
@@ -151,6 +152,7 @@ func (rr *ResolveRecorder) Done() bool {
 // Wait blocks until the resolution is finished.
 func (rr *ResolveRecorder) Wait() error {
 	<-rr.finished
+	spew.Dump("finished closed")
 	var err error
 	rr.read(func() {
 		err = rr.err
