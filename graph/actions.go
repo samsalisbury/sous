@@ -1,7 +1,6 @@
 package graph
 
 import (
-	"github.com/davecgh/go-spew/spew"
 	"github.com/opentable/sous/cli/actions"
 	"github.com/opentable/sous/config"
 	sous "github.com/opentable/sous/lib"
@@ -28,8 +27,7 @@ func (di *SousGraph) GetUpdate(dff config.DeployFilterFlags, otpl config.OTPLFla
 		ResolveFilter *RefinedResolveFilter
 		User          sous.User
 	}{}
-	di.Inject(&updateScoop)
-	spew.Dump(updateScoop)
+	di.MustInject(&updateScoop)
 	return &actions.Update{
 		Manifest:      updateScoop.Manifest.Manifest,
 		GDM:           updateScoop.GDM.Deployments,
@@ -45,15 +43,16 @@ func (di *SousGraph) GetRectify(dryrun string, dff config.DeployFilterFlags) act
 	di.guardedAdd("DeployFilterFlags", &dff)
 
 	r := &actions.Rectify{}
-	di.Inject(r)
+	di.MustInject(r)
 	return r
 }
 
 // GetPollStatus produces an Action to poll the status of a deployment.
-func (di *SousGraph) GetPollStatus(dff config.DeployFilterFlags) actions.Action {
+func (di *SousGraph) GetPollStatus(dryrun string, dff config.DeployFilterFlags) actions.Action {
+	di.guardedAdd("Dryrun", DryrunOption(dryrun))
 	di.guardedAdd("DeployFilterFlags", &dff)
 
 	ps := &actions.PollStatus{}
-	di.Inject(ps)
+	di.MustInject(ps)
 	return ps
 }

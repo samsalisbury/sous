@@ -1,7 +1,6 @@
 package graph
 
 import (
-	"github.com/davecgh/go-spew/spew"
 	sous "github.com/opentable/sous/lib"
 	"github.com/pkg/errors"
 )
@@ -71,12 +70,10 @@ func (mid TargetManifestID) QueryMap() map[string]string {
 }
 
 func newTargetManifest(auto userSelectedOTPLDeployManifest, tmid TargetManifestID, s *sous.State) TargetManifest {
-	spew.Dump("newTargetManifest", tmid)
 	mid := sous.ManifestID(tmid)
 	m, ok := s.Manifests.Get(mid)
 
 	if ok {
-		spew.Dump(m)
 		return TargetManifest{m}
 	}
 
@@ -103,7 +100,6 @@ func newTargetManifest(auto userSelectedOTPLDeployManifest, tmid TargetManifestI
 
 	fls := m.Validate()
 	sous.RepairAll(fls)
-	spew.Dump(m)
 	return TargetManifest{m}
 }
 

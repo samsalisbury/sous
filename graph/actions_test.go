@@ -13,7 +13,7 @@ import (
 
 func fixtureDeployFilterFlags() config.DeployFilterFlags {
 	return config.DeployFilterFlags{
-		Repo:    "github.com/somewhere",
+		Repo:    "github.com/example/project",
 		Offset:  "",
 		Flavor:  "vanilla",
 		Tag:     "0.1.22",
@@ -23,7 +23,9 @@ func fixtureDeployFilterFlags() config.DeployFilterFlags {
 }
 
 func fixtureGraph() *SousGraph {
-	return DefaultTestGraph()
+	graph := DefaultTestGraph()
+	graph.Add(&config.Verbosity{})
+	return graph
 }
 
 func TestActionUpdate(t *testing.T) {
@@ -46,7 +48,7 @@ func TestActionUpdate(t *testing.T) {
 }
 
 func TestActionPollStatus(t *testing.T) {
-	action := fixtureGraph().GetPollStatus(fixtureDeployFilterFlags())
+	action := fixtureGraph().GetPollStatus("both", fixtureDeployFilterFlags())
 	pollStatus, rightType := action.(*actions.PollStatus)
 	require.True(t, rightType)
 
@@ -70,7 +72,7 @@ func TestActionRectify(t *testing.T) {
 func TestActionRectifyDryruns(t *testing.T) {
 	testDryRun := func(which string, expectedRegistryType sous.Registry) {
 		t.Run("dryrun is "+which, func(t *testing.T) {
-			action := fixtureGraph().GetRectify("none", fixtureDeployFilterFlags())
+			action := fixtureGraph().GetRectify(which, fixtureDeployFilterFlags())
 			require.IsType(t, &actions.Rectify{}, action)
 			rect := action.(*actions.Rectify)
 			require.NotNil(t, rect.Resolver)
@@ -79,7 +81,7 @@ func TestActionRectifyDryruns(t *testing.T) {
 	}
 
 	testDryRun("both", &sous.DummyRegistry{})
+	testDryRun("registry", &sous.DummyRegistry{})
 	testDryRun("none", &docker.NameCache{})
 	testDryRun("scheduler", &docker.NameCache{})
-	testDryRun("registry", &sous.DummyRegistry{})
 }

@@ -67,7 +67,7 @@ func (sd *SousDeploy) Execute(args []string) cmdr.Result {
 	if sd.waitStable {
 		fmt.Fprintf(sd.CLI.Out, "Waiting for server to report that deploy has stabilized...\n")
 
-		poll := sd.SousGraph.GetPollStatus(sd.DeployFilterFlags)
+		poll := sd.SousGraph.GetPollStatus(sd.dryrunOption, sd.DeployFilterFlags)
 		if err := poll.Do(); err != nil {
 			return cmdr.EnsureErrorResult(err)
 		}
