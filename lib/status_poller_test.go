@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"regexp"
+	"sync"
 	"testing"
 	"time"
 
@@ -158,8 +159,15 @@ func TestStatusPoller(t *testing.T) {
 	var gdmJSON, serversJSON, statusJSON, statusJSON2 []byte
 
 	statusCalled := false
+	handleMutex := sync.Mutex{}
 
 	h := func(rw http.ResponseWriter, r *http.Request) {
+		// For testing purposes, we want to ensure we handle
+		// responses one at a time since statusCalled must
+		// be false on the first call and true on the second.
+		// The race detector picked up this issue.
+		handleMutex.Lock()
+		defer handleMutex.Unlock()
 		url := r.URL.String()
 		if serversRE.MatchString(url) {
 			rw.Write(serversJSON)
