@@ -31,7 +31,7 @@ type (
 		*config.Config
 		sous.Inserter
 		sous.StateManager
-		*sous.ResolveFilter
+		ResolveFilter *sous.ResolveFilter
 		*sous.AutoResolver
 	}
 )

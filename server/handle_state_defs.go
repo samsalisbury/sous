@@ -3,6 +3,7 @@ package server
 import (
 	"net/http"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/julienschmidt/httprouter"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/restful"
@@ -20,6 +21,7 @@ type (
 )
 
 func newStateDefResource(ctx ComponentLocator) *StateDefResource {
+	spew.Printf("%p\n\n", ctx)
 	return &StateDefResource{context: ctx}
 }
 

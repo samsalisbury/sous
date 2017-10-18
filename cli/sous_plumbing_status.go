@@ -34,7 +34,7 @@ func (sps *SousPlumbingStatus) Execute(args []string) cmdr.Result {
 		return cmdr.UsageErrorf("Please configure a server using 'sous config Server <url>'")
 	}
 
-	poll := sps.SousGraph.GetPollStatus(sps.DeployFilterFlags)
+	poll := sps.SousGraph.GetPollStatus("none", sps.DeployFilterFlags)
 	if err := poll.Do(); err != nil {
 		return cmdr.EnsureErrorResult(err)
 	}
