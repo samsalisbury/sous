@@ -283,34 +283,61 @@ func maxStatus(a, b ResolveState) ResolveState {
 }
 
 func (sp *StatusPoller) updateStatus() {
-	max := ResolveNotPolled
-	totalMax := ResolveFailed
-	totalMin := ResolveNotPolled
-	allLastCycle := true
+	sp.status = sp.computeStatus()
+}
+
+func (sp *StatusPoller) computeStatus() ResolveState {
+	firstCycleMax := ResolveState(0)
+	firstCycleMin := ResolveMAX
+	lastCycleMax := ResolveState(0)
+	lastCycleMin := ResolveMAX
 	for u, s := range sp.statePerCluster {
 		logging.Log.Vomitf("Current state from %s: %s", u, s)
-		//max = maxStatus(max, s.LastResult.stat)
-		if !s.LastCycle {
-			allLastCycle = false
+		if s.LastCycle {
+			lastCycleMax = maxStatus(lastCycleMax, s.LastResult.stat)
+			lastCycleMin = minStatus(lastCycleMin, s.LastResult.stat)
+		} else {
+			firstCycleMax = maxStatus(firstCycleMax, s.LastResult.stat)
+			firstCycleMin = minStatus(firstCycleMin, s.LastResult.stat)
 		}
-		if s.LastResult.stat <= ResolveTERMINALS {
-			totalMax = minStatus(totalMax, ResolveTERMINALS)
-		}
-		max = maxStatus(max, s.LastResult.stat)
-		//max = minStatus(max, totalMax)
-		//max = maxStatus(max, totalMin)
 	}
 
-	if allLastCycle {
-		totalMin = maxStatus(totalMin, ResolveInProgress)
-	} else {
-		totalMax = minStatus(totalMax, ResolveInProgress)
+	// All completed successfully in first cycle.
+	if firstCycleMax == ResolveComplete && firstCycleMin == ResolveComplete {
+		return ResolveComplete
 	}
 
-	max = maxStatus(max, totalMin)
-	max = minStatus(max, totalMax)
+	// Nothing is in last cycle.
+	if lastCycleMax == 0 && lastCycleMin == ResolveMAX {
+		return minStatus(firstCycleMax, ResolveInProgress)
+	}
 
-	sp.status = maxStatus(sp.status, max)
+	// There is at least one resolution still in first cycle.
+	if firstCycleMax != 0 && firstCycleMin != ResolveMAX {
+		// At least one resolution in second cycle has failed.
+		if lastCycleMax == ResolveFailed {
+			return ResolveFailed
+		}
+		// Report ResolveInProgress because still waiting for
+		// certainty.
+		return ResolveInProgress
+	}
+
+	// All in last cycle from this point on.
+
+	// At least one failed.
+	if lastCycleMax == ResolveFailed {
+		return ResolveFailed
+	}
+
+	// All complete.
+	if lastCycleMax == ResolveComplete && lastCycleMin == ResolveComplete {
+		return ResolveComplete
+	}
+
+	// Report ResolveInProgress since we are on second resolve and don't
+	// want statuses to go backwards.
+	return ResolveInProgress
 }
 
 func (sp *StatusPoller) finished() bool {

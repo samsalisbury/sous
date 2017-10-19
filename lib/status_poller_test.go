@@ -120,7 +120,6 @@ func TestStatusPoller_updateState(t *testing.T) {
 	// keep track of ordered results so far for better test output.
 	var resultsSoFar []pollResult
 	resultsSoFarStr := func() string {
-		return ""
 		buf := &bytes.Buffer{}
 		for _, r := range resultsSoFar {
 			fmt.Fprintf(buf, "cluster: %s; state: %s; ResolveID: %s\n",
@@ -148,7 +147,7 @@ func TestStatusPoller_updateState(t *testing.T) {
 	}
 
 	first := "2017-10-18T14:29:37.115976034Z"
-	second := "2017-11-18T14:29:37.115976034Z"
+	second := "2018-11-18T14:29:37.115976034Z"
 
 	/// TODO: tests for "competing states"
 
@@ -182,9 +181,18 @@ func TestStatusPoller_updateState(t *testing.T) {
 	result("one", first, ResolveTasksStarting)
 	assertStatus(ResolveInProgress)
 
-	// One moved to ResolveNotStarted (second resolveID).
+	// Both move to ResolveComplete in first cycle, overall ResolveComplete.
+	result("one", first, ResolveComplete)
+	result("two", first, ResolveComplete)
+	assertStatus(ResolveComplete)
+
+	// One moves to ResolveFailed in first cycle, overall ResolveInProgress
+	result("one", first, ResolveFailed)
+	assertStatus(ResolveInProgress)
+
+	// Two moves to ResolveNotStarted (second resolveID).
 	// Overall still ResolveInProgress because two still on first resolveID.
-	result("one", second, ResolveNotStarted)
+	result("two", second, ResolveNotStarted)
 	assertStatus(ResolveInProgress)
 
 	// One and two both move to ResolveNotPolled (second resolveID).
@@ -194,33 +202,19 @@ func TestStatusPoller_updateState(t *testing.T) {
 	result("two", second, ResolveNotPolled)
 	assertStatus(ResolveInProgress)
 
-	// One moves to ResolveFailed but two still not complete so still ResolveInProgress
+	// One moves to ResolveFailed in last cycle. Overall failed.
 	result("one", second, ResolveFailed)
-	result("two", second, ResolveNotPolled)
+	assertStatus(ResolveFailed)
+
+	// One moves to ResolveComplete in last cycle, still in progress.
+	result("one", second, ResolveComplete)
 	assertStatus(ResolveInProgress)
 
-	//sp.statePerCluster["one"].LastResult.stat = ResolveTasksStarting
+	result("two", second, ResolveFailed)
+	assertStatus(ResolveFailed)
 
-	//assert.False(sp.finished(), "StatusPoller reported finished: %s", sp.status)
-	//assertStatus(ResolveTasksStarting)
-
-	//sp.statePerCluster["one"].LastResult.stat = ResolveComplete
-	//sp.statePerCluster["two"].LastResult.stat = ResolveComplete
-
-	//assert.False(sp.finished(), "finised despite LastCycle == false")
-	//assertStatus(ResolveInProgress)
-
-	//sp.statePerCluster["one"].LastCycle = true
-	//sp.statePerCluster["two"].LastCycle = true
-
-	//assert.True(sp.finished(), "StatusPoller reported NOT finished: %s", sp.status)
-	//assertStatus(ResolveComplete)
-
-	//sp.statePerCluster["one"].LastResult.stat = ResolveComplete
-	//sp.statePerCluster["two"].LastResult.stat = ResolveFailed
-
-	//assert.True(sp.finished(), "StatusPoller reported NOT finished: %s", sp.status)
-	//assertStatus(ResolveFailed)
+	result("two", second, ResolveComplete)
+	assertStatus(ResolveComplete)
 }
 
 func TestStatusPoller(t *testing.T) {
