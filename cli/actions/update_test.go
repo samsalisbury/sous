@@ -170,6 +170,7 @@ func TestUpdateRetryLoop(t *testing.T) {
 	}
 
 	spew.Printf("%p\n\n", locator)
+	spew.Printf("%v\n", locator.StateManager)
 	handler := server.Handler(locator, http.NotFoundHandler(), ls)
 
 	cl, err := restful.NewInMemoryClient(handler, ls, map[string]string{"X-Gatelatch": os.Getenv("GATELATCH")})

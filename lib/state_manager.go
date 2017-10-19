@@ -1,5 +1,7 @@
 package sous
 
+import "github.com/davecgh/go-spew/spew"
+
 type (
 	// StateReader knows how to read state.
 	StateReader interface {
@@ -30,6 +32,7 @@ func NewDummyStateManager() *DummyStateManager {
 
 // ReadState implements StateManager
 func (sm *DummyStateManager) ReadState() (*State, error) {
+	spew.Dump(sm)
 	sm.ReadCount++
 	return sm.State, nil
 }
