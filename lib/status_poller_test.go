@@ -356,7 +356,7 @@ func TestStatusPoller(t *testing.T) {
 		testCh <- rState
 	}()
 
-	timeout := 3000 * time.Millisecond
+	timeout := 3 * PollTimeout
 	select {
 	case <-time.After(timeout):
 		t.Errorf("Happy path polling took more than %s", timeout)
@@ -455,7 +455,7 @@ func TestStatusPoller_OldServer2(t *testing.T) {
 		testCh <- rState
 	}()
 
-	timeout := 100 * time.Millisecond
+	timeout := 3 * PollTimeout
 	select {
 	case <-time.After(timeout):
 		t.Errorf("Happy path polling took more than %s", timeout)
@@ -470,14 +470,24 @@ func TestStatusPoller_MesosFailed(t *testing.T) {
 	serversRE := regexp.MustCompile(`/servers$`)
 	statusRE := regexp.MustCompile(`/status$`)
 	gdmRE := regexp.MustCompile(`/gdm$`)
-	var gdmJSON, serversJSON, statusJSON []byte
+	var gdmJSON, serversJSON, statusJSON, statusJSON2 []byte
+
+	handleMutex := &sync.Mutex{}
+	statusCalled := false
 
 	h := func(rw http.ResponseWriter, r *http.Request) {
+		handleMutex.Lock()
+		defer handleMutex.Unlock()
 		url := r.URL.String()
 		if serversRE.MatchString(url) {
 			rw.Write(serversJSON)
 		} else if statusRE.MatchString(url) {
-			rw.Write(statusJSON)
+			if !statusCalled {
+				statusCalled = true
+				rw.Write(statusJSON)
+			} else {
+				rw.Write(statusJSON2)
+			}
 		} else if gdmRE.MatchString(url) {
 			rw.Write(gdmJSON)
 		} else {
@@ -541,7 +551,35 @@ func TestStatusPoller_MesosFailed(t *testing.T) {
 					}
 				} ]
 		},
-		"inprogress": {"log":[]}
+		"inprogress": {"log":[], "started": "2017-10-11T14:26:05.975369893Z"}
+	}`)
+
+	statusJSON2 = []byte(`{
+		"deployments": [
+			{
+				"sourceid": {
+					"location": "` + repoName + `",
+					"version": "1.0.1+1234"
+				}
+			}
+		],
+		"completed": {
+			"intended": [ {
+					"sourceid": {
+						"location": "` + repoName + `",
+						"version": "1.0.1+1234"
+					}
+				} ],
+			"log":[ {
+					"manifestid": "` + repoName + `",
+					"desc": "unchanged",
+					"error": {
+					  "type": "FailedStatusError",
+						"string": "Deploy failed on Singularity."
+					}
+				} ]
+		},
+		"inprogress": {"log":[], "started": "2018-11-12T14:26:05.975369893Z"}
 	}`)
 
 	rf := &ResolveFilter{
@@ -561,11 +599,11 @@ func TestStatusPoller_MesosFailed(t *testing.T) {
 		if err != nil {
 			t.Errorf("Error starting poller: %#v", err)
 		}
-		t.Logf("Returned state: %#v", rState)
+		t.Logf("Returned state: %s", rState)
 		testCh <- rState
 	}()
 
-	timeout := 300 * time.Millisecond
+	timeout := 10 * PollTimeout
 	select {
 	case <-time.After(timeout):
 		t.Errorf("Happy path polling took more than %s", timeout)

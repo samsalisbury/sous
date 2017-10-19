@@ -50,3 +50,35 @@ const (
 	// might proceed from states that are complete
 	ResolveTERMINALS = ResolveNotIntended
 )
+
+// XXX we might consider using go generate with `stringer` (c.f.)
+func (rs ResolveState) String() string {
+	switch rs {
+	default:
+		return "unknown (oops)"
+	case ResolveNotPolled:
+		return "ResolveNotPolled"
+	case ResolveNotStarted:
+		return "ResolveNotStarted"
+	case ResolvePendingRequest:
+		return "ResolvePendingRequest"
+	case ResolveNotVersion:
+		return "ResolveNotVersion"
+	case ResolveInProgress:
+		return "ResolveInProgress"
+	case ResolveErredHTTP:
+		return "ResolveErredHTTP"
+	case ResolveErredRez:
+		return "ResolveErredRez"
+	case ResolveTasksStarting:
+		return "ResolveTasksStarting"
+	case ResolveNotIntended:
+		return "ResolveNotIntended"
+	case ResolveFailed:
+		return "ResolveFailed"
+	case ResolveComplete:
+		return "ResolveComplete"
+	case ResolveMAX:
+		return "resolve maximum marker - not a real state, received in error?"
+	}
+}

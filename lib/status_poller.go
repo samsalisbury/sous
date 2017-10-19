@@ -74,37 +74,8 @@ type (
 	}
 )
 
-// XXX we might consider using go generate with `stringer` (c.f.)
-func (rs ResolveState) String() string {
-	switch rs {
-	default:
-		return "unknown (oops)"
-	case ResolveNotPolled:
-		return "ResolveNotPolled"
-	case ResolveNotStarted:
-		return "ResolveNotStarted"
-	case ResolvePendingRequest:
-		return "ResolvePendingRequest"
-	case ResolveNotVersion:
-		return "ResolveNotVersion"
-	case ResolveInProgress:
-		return "ResolveInProgress"
-	case ResolveErredHTTP:
-		return "ResolveErredHTTP"
-	case ResolveErredRez:
-		return "ResolveErredRez"
-	case ResolveTasksStarting:
-		return "ResolveTasksStarting"
-	case ResolveNotIntended:
-		return "ResolveNotIntended"
-	case ResolveFailed:
-		return "ResolveFailed"
-	case ResolveComplete:
-		return "ResolveComplete"
-	case ResolveMAX:
-		return "resolve maximum marker - not a real state, received in error?"
-	}
-}
+// PollTimeout is the pause between each polling request to /status.
+const PollTimeout = 500 * time.Millisecond
 
 // NewStatusPoller returns a new *StatusPoller.
 func NewStatusPoller(cl restful.HTTPClient, rf *ResolveFilter, user User, logs logging.LogSink) *StatusPoller {
@@ -248,7 +219,7 @@ func (sp *StatusPoller) poll(subs []*subPoller) ResolveState {
 func (sp *StatusPoller) nextSubStatusBurst() {
 	for {
 		select {
-		case <-time.After(time.Second):
+		default:
 			return
 		case update := <-sp.results:
 			sp.nextSubStatus(update)
@@ -307,27 +278,23 @@ func (sp *StatusPoller) computeStatus() ResolveState {
 		return ResolveComplete
 	}
 
+	// At least one resolution in second cycle has failed.
+	if lastCycleMax == ResolveFailed {
+		return ResolveFailed
+	}
+
 	// Nothing is in last cycle.
 	if lastCycleMax == 0 && lastCycleMin == ResolveMAX {
 		return minStatus(firstCycleMax, ResolveInProgress)
 	}
 
+	// All in last cycle from this point on.
+
 	// There is at least one resolution still in first cycle.
 	if firstCycleMax != 0 && firstCycleMin != ResolveMAX {
-		// At least one resolution in second cycle has failed.
-		if lastCycleMax == ResolveFailed {
-			return ResolveFailed
-		}
 		// Report ResolveInProgress because still waiting for
 		// certainty.
 		return ResolveInProgress
-	}
-
-	// All in last cycle from this point on.
-
-	// At least one failed.
-	if lastCycleMax == ResolveFailed {
-		return ResolveFailed
 	}
 
 	// All complete.
@@ -335,9 +302,9 @@ func (sp *StatusPoller) computeStatus() ResolveState {
 		return ResolveComplete
 	}
 
-	// Report ResolveInProgress since we are on second resolve and don't
-	// want statuses to go backwards.
-	return ResolveInProgress
+	// Report at least ResolveInProgress since we are on second resolve
+	// and don't want statuses to go backwards.
+	return maxStatus(ResolveInProgress, lastCycleMin)
 }
 
 func (sp *StatusPoller) finished() bool {
@@ -351,12 +318,12 @@ func (sub *subPoller) start(rs chan pollResult, done chan struct{}) {
 	rs <- pollResult{url: sub.URL, stat: ResolveNotPolled}
 	pollResult := sub.pollOnce()
 	rs <- pollResult
-	ticker := time.NewTicker(time.Second / 2)
+	ticker := time.NewTicker(PollTimeout)
 	defer ticker.Stop()
 	for {
-		if pollResult.stat >= ResolveTERMINALS {
-			return
-		}
+		//if sub.lastCycle && pollResult.stat >= ResolveTERMINALS {
+		//	return
+		//}
 		select {
 		case <-ticker.C:
 			latest := sub.pollOnce()
@@ -459,18 +426,18 @@ func (sub *subPoller) computeState(srvIntent *Deployment, current *DiffResolutio
 		// error for operator action, and consider this subpoller done as failed.
 		logging.Log.Vomitf("%#v", current)
 		logging.Log.Vomitf("%#v", current.Error)
-		subject := ""
-		if sub.locationFilter == nil {
-			subject = "<no filter defined>"
-		} else {
-			sourceLocation, ok := sub.locationFilter.SourceLocation()
-			if ok {
-				subject = sourceLocation.String()
-			} else {
-				subject = sub.locationFilter.String()
-			}
-		}
-		logging.Log.Warn.Printf("Deployment of %s to %s failed: %s", subject, sub.ClusterName, current.Error.String)
+		//subject := ""
+		//if sub.locationFilter == nil {
+		//	subject = "<no filter defined>"
+		//} else {
+		//	sourceLocation, ok := sub.locationFilter.SourceLocation()
+		//	if ok {
+		//		subject = sourceLocation.String()
+		//	} else {
+		//		subject = sub.locationFilter.String()
+		//	}
+		//}
+		//logging.Log.Warn.Printf("Deployment of %s to %s failed: %s", subject, sub.ClusterName, current.Error.String)
 		return ResolveFailed, current.Error
 	}
 
