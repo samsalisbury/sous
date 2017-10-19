@@ -1,6 +1,7 @@
 package sous
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -15,7 +16,6 @@ type NameResolveTestSuite struct {
 	testCluster *Cluster
 	depChans    *DeployableChans
 	diffChans   *DeployableChans
-	errChan     chan *DiffResolution
 }
 
 func (nrs *NameResolveTestSuite) makeTestDep() *Deployable {
@@ -68,10 +68,8 @@ func (nrs *NameResolveTestSuite) SetupTest() {
 
 	nrs.reg = NewDummyRegistry()
 
-	nrs.depChans = NewDeployableChans(10)
 	dc := NewDeployableChans(10)
 	nrs.diffChans = dc
-	nrs.errChan = make(chan *DiffResolution, 10)
 }
 
 func (nrs *NameResolveTestSuite) TearDownTest() {
@@ -102,7 +100,7 @@ func (nrs *NameResolveTestSuite) TestResolveNameSkipped() {
 }
 
 func (nrs *NameResolveTestSuite) TestResolveNameStartChannel() {
-	nrs.depChans.ResolveNames(nrs.reg, nrs.diffChans, nrs.errChan)
+	nrs.depChans = nrs.diffChans.ResolveNames(context.Background(), nrs.reg)
 	nrs.diffChans.Start <- nrs.makeTestDepPair(nil, nrs.makeTestDep())
 
 	select {
@@ -110,7 +108,7 @@ func (nrs *NameResolveTestSuite) TestResolveNameStartChannel() {
 		nrs.NotNil(started)
 		nrs.NotNil(started.Post.Deployment)
 		nrs.NotNil(started.Post.BuildArtifact)
-	case err := <-nrs.errChan:
+	case err := <-nrs.depChans.Errs:
 		nrs.Fail("Unexpected error: %v", err)
 	case <-time.After(time.Second / 2):
 		nrs.Fail("Timeout waiting for depChans to resolve")
@@ -118,7 +116,7 @@ func (nrs *NameResolveTestSuite) TestResolveNameStartChannel() {
 }
 
 func (nrs *NameResolveTestSuite) TestResolveNameUpdateChannel() {
-	nrs.depChans.ResolveNames(nrs.reg, nrs.diffChans, nrs.errChan)
+	nrs.depChans = nrs.diffChans.ResolveNames(context.Background(), nrs.reg)
 	nrs.diffChans.Update <- &DeployablePair{
 		Prior: nrs.makeTestDep(),
 		Post:  nrs.makeTestDep(),
@@ -128,7 +126,7 @@ func (nrs *NameResolveTestSuite) TestResolveNameUpdateChannel() {
 	case updated := <-nrs.depChans.Update:
 		nrs.NotNil(updated)
 		nrs.NotNil(updated.Post.BuildArtifact)
-	case err := <-nrs.errChan:
+	case err := <-nrs.depChans.Errs:
 		nrs.Fail("Unexpected error: %v", err)
 	case <-time.After(time.Second / 2):
 		nrs.Fail("Timeout waiting for depChans to resolve")
@@ -137,13 +135,13 @@ func (nrs *NameResolveTestSuite) TestResolveNameUpdateChannel() {
 
 func (nrs *NameResolveTestSuite) TestResolveNameStartChannelUnresolved() {
 	nrs.reg.FeedArtifact(nil, fmt.Errorf("not found"))
-	nrs.depChans.ResolveNames(nrs.reg, nrs.diffChans, nrs.errChan)
+	nrs.depChans = nrs.diffChans.ResolveNames(context.Background(), nrs.reg)
 	nrs.diffChans.Start <- nrs.makeTestDepPair(nil, nrs.makeTestDep())
 
 	select {
 	case <-nrs.depChans.Start:
 		nrs.Fail("Shouldn't process a starting deployment")
-	case err := <-nrs.errChan:
+	case err := <-nrs.depChans.Errs:
 		nrs.Error(err.Error)
 	case <-time.After(time.Second / 2):
 		nrs.Fail("Timeout waiting for depChans to resolve")
@@ -152,13 +150,13 @@ func (nrs *NameResolveTestSuite) TestResolveNameStartChannelUnresolved() {
 
 func (nrs *NameResolveTestSuite) TestResolveNameStopChannelUnresolved() {
 	nrs.reg.FeedArtifact(nil, fmt.Errorf("not found"))
-	nrs.depChans.ResolveNames(nrs.reg, nrs.diffChans, nrs.errChan)
+	nrs.depChans = nrs.diffChans.ResolveNames(context.Background(), nrs.reg)
 	nrs.diffChans.Stop <- nrs.makeTestDepPair(nrs.makeTestDep(), nil)
 
 	select {
 	case stopped := <-nrs.depChans.Stop:
 		nrs.NotNil(stopped)
-	case err := <-nrs.errChan:
+	case err := <-nrs.depChans.Errs:
 		nrs.Fail("Unexpected error: %v", err)
 	case <-time.After(time.Second / 2):
 		nrs.Fail("Timeout waiting for depChans to resolve")

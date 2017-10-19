@@ -7,6 +7,7 @@ go:
 before_install:
 - bin/ci-setup
 install:
+# - sudo apt-get install python3-proselint
 - bundle
 - "./bin/vendor-check"
 script:
@@ -18,7 +19,7 @@ after_script:
 - docker logs testregistry_master_1 || true
 - docker logs testregistry_slave_1 || true
 after_success:
-- if [ x$TRAVIS_PULL_REQUEST != "xfalse" ]; then make coverage; fi
+- make coverage
 - bin/codecov -f /tmp/sous-cover/count_merged.txt
 env:
   global:
