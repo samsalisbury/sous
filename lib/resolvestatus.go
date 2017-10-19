@@ -1,6 +1,7 @@
 package sous
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -49,6 +50,7 @@ type (
 	}
 
 	// ResolutionType marks the kind of a DiffResolution
+	// XXX should be made an int and generate with gostringer
 	ResolutionType string
 )
 
@@ -64,6 +66,10 @@ const (
 	// DeleteDiff - a deployment was active that wasn't intended at all, and was deleted.
 	DeleteDiff = ResolutionType("deleted")
 )
+
+func (rez DiffResolution) String() string {
+	return fmt.Sprintf("%s %s %v", rez.DeploymentID, rez.Desc, rez.Error)
+}
 
 // NewResolveRecorder creates a new ResolveRecorder and calls f with it as its
 // argument. It then returns that ResolveRecorder immediately.
@@ -98,12 +104,12 @@ func NewResolveRecorder(intended Deployments, f func(*ResolveRecorder)) *Resolve
 
 	go func() {
 		f(rr)
-		close(rr.Log)
 		rr.write(func() {
 			rr.status.Finished = time.Now()
 			if rr.err == nil {
 				rr.status.Phase = "finished"
 			}
+			close(rr.Log)
 		})
 	}()
 	return rr
@@ -143,11 +149,13 @@ func (rr *ResolveRecorder) Done() bool {
 func (rr *ResolveRecorder) Wait() error {
 	<-rr.finished
 	var err error
-	rr.read(func() { err = rr.err })
-	if err != nil {
-		return err
-	}
-	return rr.status.Err()
+	rr.read(func() {
+		err = rr.err
+		if err == nil {
+			err = rr.status.Err()
+		}
+	})
+	return err
 }
 
 func (rr *ResolveRecorder) earlyExit() (yes bool) {

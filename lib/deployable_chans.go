@@ -1,10 +1,7 @@
 package sous
 
 import (
-	"fmt"
 	"sync"
-
-	"github.com/opentable/sous/util/logging"
 )
 
 type (
@@ -12,6 +9,7 @@ type (
 	// cluster
 	DeployableChans struct {
 		Start, Stop, Stable, Update chan *DeployablePair
+		Errs                        chan *DiffResolution
 		sync.WaitGroup
 	}
 
@@ -19,14 +17,29 @@ type (
 	// situation, where the Prior Deployable is the known state and the Post
 	// Deployable is the desired state.
 	DeployablePair struct {
+		Diffs        Differences
 		Prior, Post  *Deployable
 		name         DeploymentID
 		ExecutorData interface{}
 	}
 
+	// DeployablePairKind describes the disposition of a DeployablePair
+	DeployablePairKind int
+
 	diffSet struct {
 		New, Gone, Same, Changed DeployablePairs
 	}
+)
+
+const (
+	// SameKind prior is unchanged from post
+	SameKind DeployablePairKind = iota
+	// AddedKind means an added deployable - there's no prior
+	AddedKind
+	// RemovedKind means a removed deployable - no post
+	RemovedKind
+	// ModifiedKind means modified deployable - post and prior are different
+	ModifiedKind
 )
 
 // NewDeployableChans returns a new DeployableChans with channels buffered to
@@ -41,6 +54,7 @@ func NewDeployableChans(size ...int) *DeployableChans {
 		Stop:   make(chan *DeployablePair, s),
 		Stable: make(chan *DeployablePair, s),
 		Update: make(chan *DeployablePair, s),
+		Errs:   make(chan *DiffResolution, s),
 	}
 }
 
@@ -50,6 +64,7 @@ func (d *DeployableChans) Close() {
 	close(d.Stop)
 	close(d.Stable)
 	close(d.Update)
+	close(d.Errs)
 }
 
 func (d *DeployableChans) collect() diffSet {
@@ -70,142 +85,36 @@ func (d *DeployableChans) collect() diffSet {
 	return ds
 }
 
-// GuardImage checks that a deployment is valid before deploying it.
-func GuardImage(r Registry, d *Deployment) (*BuildArtifact, error) {
-	if d.NumInstances == 0 {
-		logging.Log.Info.Printf("Deployment %q has 0 instances, skipping artifact check.", d.ID())
-		return nil, nil
-	}
-	art, err := r.GetArtifact(d.SourceID)
-	if err != nil {
-		return nil, &MissingImageNameError{err}
-	}
-	for _, q := range art.Qualities {
-		if q.Kind == "advisory" {
-			if q.Name == "" {
-				continue
-			}
-			advisoryIsValid := false
-			var allowedAdvisories []string
-			if d.Cluster == nil {
-				return nil, fmt.Errorf("nil cluster on deployment %q", d)
-			}
-			allowedAdvisories = d.Cluster.AllowedAdvisories
-			for _, aa := range allowedAdvisories {
-				if aa == q.Name {
-					advisoryIsValid = true
-					break
-				}
-			}
-			if !advisoryIsValid {
-				return nil, &UnacceptableAdvisory{q, &d.SourceID}
-			}
-		}
-	}
-	return art, err
-}
-
 // ID returns the ID of this DeployablePair.
 func (dp *DeployablePair) ID() DeploymentID {
 	return dp.name
 }
 
-// ResolveNames resolves diffs.
-func (d *DeployableChans) ResolveNames(r Registry, diff *DeployableChans, errs chan *DiffResolution) {
-	d.WaitGroup = sync.WaitGroup{}
-	d.Add(4)
-	go func() { resolveCreates(r, diff.Start, d.Start, errs); d.Done() }()
-	go func() { maybeResolveDeletes(r, diff.Stop, d.Stop, errs); d.Done() }()
-	go func() { maybeResolveRetains(r, diff.Stable, d.Stable, errs); d.Done() }()
-	go func() { resolvePairs(r, diff.Update, d.Update, errs); d.Done() }()
-	go func() { d.Wait(); close(errs) }()
-}
-
-func resolveCreates(r Registry, from chan *DeployablePair, to chan *DeployablePair, errs chan *DiffResolution) {
-	for dp := range from {
-		dep := dp.Post
-		logging.Log.Vomit.Printf("Deployment processed, needs artifact: %#v", dep)
-
-		da, err := resolveName(r, dep)
-		if err != nil {
-			logging.Log.Info.Printf("Unable to create new deployment %q: %s", dep.ID(), err)
-			logging.Log.Debug.Printf("Failed create deployment %q: % #v", dep.ID(), dep)
-			errs <- err
-			continue
-		}
-
-		if da.BuildArtifact == nil {
-			logging.Log.Info.Printf("Unable to create new deployment %q: no artifact for SourceID %q", dep.ID(), dep.SourceID)
-			logging.Log.Debug.Printf("Failed create deployment %q: % #v", dep.ID(), dep)
-			continue
-		}
-		to <- &DeployablePair{ExecutorData: dp.ExecutorData, name: dp.name, Prior: nil, Post: da}
+// Kind returns the kind of the pair
+func (dp *DeployablePair) Kind() DeployablePairKind {
+	switch {
+	case dp.Prior == nil:
+		return AddedKind
+	case dp.Post == nil:
+		return RemovedKind
+	case len(dp.Diffs) == 0:
+		return SameKind
+	default:
+		return ModifiedKind
 	}
-	close(to)
 }
 
-// XXX now that everything is DeployablePairs, this can probably be simplified
-
-func maybeResolveRetains(r Registry, from chan *DeployablePair, to chan *DeployablePair, errs chan *DiffResolution) {
-	for dp := range from {
-		da := maybeResolveSingle(r, dp.Post)
-		to <- &DeployablePair{ExecutorData: dp.ExecutorData, name: dp.name, Prior: da, Post: da}
+func (kind DeployablePairKind) String() string {
+	switch kind {
+	default:
+		return "unknown"
+	case SameKind:
+		return "same"
+	case AddedKind:
+		return "added"
+	case RemovedKind:
+		return "removed"
+	case ModifiedKind:
+		return "modified"
 	}
-	close(to)
-}
-
-func maybeResolveDeletes(r Registry, from chan *DeployablePair, to chan *DeployablePair, errs chan *DiffResolution) {
-	for dp := range from {
-		da := maybeResolveSingle(r, dp.Prior)
-		to <- &DeployablePair{ExecutorData: dp.ExecutorData, name: dp.name, Prior: da, Post: nil}
-	}
-	close(to)
-}
-
-func maybeResolveSingle(r Registry, dep *Deployable) *Deployable {
-	logging.Log.Vomit.Printf("Attempting to resolve optional artifact: %#v (stable or deletes don't need images)", dep)
-	da, err := resolveName(r, dep)
-	if err != nil {
-		logging.Log.Debug.Printf("Error resolving stopped or stable deployment (proceeding anyway): %#v: %#v", dep, err)
-	}
-	return da
-}
-
-func resolvePairs(r Registry, from chan *DeployablePair, to chan *DeployablePair, errs chan *DiffResolution) {
-	for depPair := range from {
-		logging.Log.Vomit.Printf("Pair of deployments processed, needs artifact: %#v", depPair)
-		d, err := resolvePair(r, depPair)
-		if err != nil {
-			logging.Log.Info.Printf("Unable to modify deployment %q: %s", depPair.Post, err)
-			logging.Log.Debug.Printf("Failed modify deployment %q: % #v", depPair.ID(), depPair.Post)
-			errs <- err
-			continue
-		}
-		if d.Post.BuildArtifact == nil {
-			logging.Log.Info.Printf("Unable to modify deployment %q: no artifact for SourceID %q", depPair.ID(), depPair.Post.SourceID)
-			logging.Log.Debug.Printf("Failed modify deployment %q: % #v", depPair.ID(), depPair.Post)
-			continue
-		}
-		to <- d
-	}
-	close(to)
-}
-
-func resolveName(r Registry, d *Deployable) (*Deployable, *DiffResolution) {
-	art, err := GuardImage(r, d.Deployment)
-	if err != nil {
-		return d, &DiffResolution{
-			DeploymentID: d.ID(),
-			Error:        &ErrorWrapper{error: err},
-		}
-	}
-	d.BuildArtifact = art
-	return d, nil
-}
-
-func resolvePair(r Registry, depPair *DeployablePair) (*DeployablePair, *DiffResolution) {
-	prior, _ := resolveName(r, depPair.Prior)
-	post, err := resolveName(r, depPair.Post)
-
-	return &DeployablePair{ExecutorData: depPair.ExecutorData, name: depPair.name, Prior: prior, Post: post}, err
 }
