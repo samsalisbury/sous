@@ -98,6 +98,12 @@ func resolveName(r Registry, d *Deployable) (*Deployable, *DiffResolution) {
 }
 
 func resolvePair(r Registry, depPair *DeployablePair) (*DeployablePair, *DiffResolution) {
+	// In every case where we resolve a pair of names, the "prior" name is not a target -
+	// in other words, it's nice to know, but not knowing it doesn't prevent progress of the resolution process.
+	// We therefore can discard errors here in a similar way that we discard them in maybeResolveSingle.
+	// However, the larger view is that we might want to undo any change we make, and not having the artifact name
+	// of the *current* deploy would mean that we're performing an update we don't know how (in this moment) to reverse.
+	// [ this issue is captured in SOUS-727 for tracking purposes ]
 	prior, _ := resolveName(r, depPair.Prior)
 	post, err := resolveName(r, depPair.Post)
 
@@ -114,25 +120,23 @@ func guardImage(r Registry, d *Deployment) (*BuildArtifact, error) {
 		return nil, &MissingImageNameError{err}
 	}
 	for _, q := range art.Qualities {
-		if q.Kind == "advisory" {
-			if q.Name == "" {
-				continue
+		if q.Kind != "advisory" || q.Name == "" {
+			continue
+		}
+		advisoryIsValid := false
+		var allowedAdvisories []string
+		if d.Cluster == nil {
+			return nil, fmt.Errorf("nil cluster on deployment %q", d)
+		}
+		allowedAdvisories = d.Cluster.AllowedAdvisories
+		for _, aa := range allowedAdvisories {
+			if aa == q.Name {
+				advisoryIsValid = true
+				break
 			}
-			advisoryIsValid := false
-			var allowedAdvisories []string
-			if d.Cluster == nil {
-				return nil, fmt.Errorf("nil cluster on deployment %q", d)
-			}
-			allowedAdvisories = d.Cluster.AllowedAdvisories
-			for _, aa := range allowedAdvisories {
-				if aa == q.Name {
-					advisoryIsValid = true
-					break
-				}
-			}
-			if !advisoryIsValid {
-				return nil, &UnacceptableAdvisory{q, &d.SourceID}
-			}
+		}
+		if !advisoryIsValid {
+			return nil, &UnacceptableAdvisory{q, &d.SourceID}
 		}
 	}
 	return art, err

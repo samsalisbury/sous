@@ -2,6 +2,17 @@ package sous
 
 import "github.com/samsalisbury/semv"
 
+// These functions gin up fixtures for various complex structs to be used where
+// a tested component needs e.g. a real manifest but where the manifest itself
+// isn't important.
+// These functions all follow the pattern
+//    xxxFixture(name string) xxx {
+//      switch name {
+//        default:
+//          [a vanilla instance]
+//        ...
+// If more specific forms are required, add them as "named" fixtures here.
+
 func deployConfigFixture(name string) DeployConfig {
 	switch name {
 	default:

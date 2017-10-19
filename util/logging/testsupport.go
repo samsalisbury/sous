@@ -161,6 +161,9 @@ func AssertMessageFields(t *testing.T, msg eachFielder, variableFields []string,
 
 	assert.Equal(t, fixedFields, actualFields)
 
+	// If the test passes, write a proposed OTL to a tempfile and report the path.
+	// These are super useful for updating the logging schemas,
+	// and get us a long way toward aligning our fields with theirs.
 	if _, hasOTL := actualFields["@loglov3-otl"]; !t.Failed() && hasOTL {
 		tmpfile, err := ioutil.TempFile("", actualFields["@loglov3-otl"].(string))
 		if err != nil {

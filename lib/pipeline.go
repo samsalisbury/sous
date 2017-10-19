@@ -26,18 +26,18 @@ func (d *DeployableChans) Pipeline(ctx context.Context, proc DeployableProcessor
 			select {
 			case <-ctx.Done():
 				return
-			case dp, ok := <-from:
-				if ok {
-					proked, rez := doProc(dp)
-					if rez != nil {
-						handle(rez)
-						out.Errs <- rez
-					}
-					if proked != nil {
-						to <- proked
-					}
-				} else {
+			case dp, open := <-from:
+				if !open {
 					return
+				}
+
+				proked, rez := doProc(dp)
+				if rez != nil {
+					handle(rez)
+					out.Errs <- rez
+				}
+				if proked != nil {
+					to <- proked
 				}
 			}
 		}
