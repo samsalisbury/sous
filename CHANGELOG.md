@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
+## [Unreleased](//github.com/opentable/sous/compare/0.5.42..HEAD)
+### Fixed
+* Client: 'sous deploy' now waits for a complete resolution to take place before
+  reporting failure. This avoids a race condition where earlier failures could
+  be misreported as failures with the current deployment.
+
 ## [0.5.42](//github.com/opentable/sous/compare/0.5.41..0.5.42)
 ### Fixed
 * All: Graphite output was like `sous.sous.ci.sfautoresolver.fullcycle-duration.count`, now `sous.ci.sf.auto...`
