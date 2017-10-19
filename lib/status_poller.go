@@ -426,18 +426,18 @@ func (sub *subPoller) computeState(srvIntent *Deployment, current *DiffResolutio
 		// error for operator action, and consider this subpoller done as failed.
 		logging.Log.Vomitf("%#v", current)
 		logging.Log.Vomitf("%#v", current.Error)
-		//subject := ""
-		//if sub.locationFilter == nil {
-		//	subject = "<no filter defined>"
-		//} else {
-		//	sourceLocation, ok := sub.locationFilter.SourceLocation()
-		//	if ok {
-		//		subject = sourceLocation.String()
-		//	} else {
-		//		subject = sub.locationFilter.String()
-		//	}
-		//}
-		//logging.Log.Warn.Printf("Deployment of %s to %s failed: %s", subject, sub.ClusterName, current.Error.String)
+		subject := ""
+		if sub.locationFilter == nil {
+			subject = "<no filter defined>"
+		} else {
+			sourceLocation, ok := sub.locationFilter.SourceLocation()
+			if ok {
+				subject = sourceLocation.String()
+			} else {
+				subject = sub.locationFilter.String()
+			}
+		}
+		logging.Log.Warn.Printf("Deployment of %s to %s failed: %s", subject, sub.ClusterName, current.Error.String)
 		return ResolveFailed, current.Error
 	}
 
