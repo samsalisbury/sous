@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 	"github.com/pkg/errors"
@@ -358,14 +357,12 @@ func (sub *subPoller) pollOnce() pollResult {
 		logging.Log.Vomitf("%s: %T %+v", sub.ClusterName, errors.Cause(err), err)
 		sub.httpErrorCount++
 		if sub.httpErrorCount > 10 {
-			spew.Println("total http error", err)
 			return sub.result(
 				ResolveHTTPFailed,
 				data,
 				fmt.Errorf("more than 10 HTTP errors, giving up; latest error: %s", err),
 			)
 		}
-		spew.Println("http error", sub.httpErrorCount)
 		return sub.result(ResolveErredHTTP, data, err)
 	}
 	sub.httpErrorCount = 0
