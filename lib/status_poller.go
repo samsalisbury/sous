@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 	"github.com/pkg/errors"
@@ -285,6 +286,11 @@ func (sp *StatusPoller) computeStatus() ResolveState {
 	}
 
 	// At least one resolution in second cycle has failed.
+	if firstCycleMax == ResolveHTTPFailed {
+		return ResolveHTTPFailed
+	}
+
+	// At least one resolution in second cycle has failed.
 	if lastCycleMax == ResolveFailed {
 		return ResolveFailed
 	}
@@ -338,7 +344,10 @@ func (sub *subPoller) start(rs chan pollResult, done chan struct{}) {
 }
 
 func (sub *subPoller) result(rs ResolveState, data *statusData, err error) pollResult {
-	resolveID := data.InProgress.Started.String()
+	resolveID := "<none in progress>"
+	if data.InProgress != nil {
+		resolveID = data.InProgress.Started.String()
+	}
 	return pollResult{url: sub.URL, stat: rs, resolveID: resolveID, err: err}
 }
 
@@ -349,9 +358,14 @@ func (sub *subPoller) pollOnce() pollResult {
 		logging.Log.Vomitf("%s: %T %+v", sub.ClusterName, errors.Cause(err), err)
 		sub.httpErrorCount++
 		if sub.httpErrorCount > 10 {
-			return sub.result(ResolveFailed, data,
-				fmt.Errorf("more than 10 HTTP errors, giving up; latest error: %s", err))
+			spew.Println("total http error", err)
+			return sub.result(
+				ResolveHTTPFailed,
+				data,
+				fmt.Errorf("more than 10 HTTP errors, giving up; latest error: %s", err),
+			)
 		}
+		spew.Println("http error", sub.httpErrorCount)
 		return sub.result(ResolveErredHTTP, data, err)
 	}
 	sub.httpErrorCount = 0

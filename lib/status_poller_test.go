@@ -263,7 +263,6 @@ func TestStatusPoller_brokenServer(t *testing.T) {
 		} else if gdmRE.MatchString(url) {
 			rw.Write(gdmJSON)
 		} else {
-			t.Errorf("Bad request: %#v", r)
 			rw.WriteHeader(500)
 			rw.Write([]byte{})
 		}
@@ -322,13 +321,13 @@ func TestStatusPoller_brokenServer(t *testing.T) {
 		testCh <- rState
 	}()
 
-	timeout := 3 * PollTimeout
+	timeout := 15 * PollTimeout
 	select {
 	case <-time.After(timeout):
-		t.Errorf("Happy path polling took more than %s", timeout)
+		t.Errorf("Total HTTP failure recognition took more than %s", timeout)
 	case rState := <-testCh:
-		if rState != ResolveComplete {
-			t.Errorf("Resolve state was %s not %s", rState, ResolveComplete)
+		if rState != ResolveHTTPFailed {
+			t.Errorf("Resolve state was %s not %s", rState, ResolveHTTPFailed)
 		}
 	}
 }

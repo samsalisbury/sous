@@ -42,6 +42,9 @@ const (
 	// ResolveFailed indicates that a particular cluster is in a failed state
 	// regarding resolving the deployments, and that resolution cannot proceed.
 	ResolveFailed
+	// ResolveHTTPFailed indicates that the sous server in a particular cluster
+	// has returned HTTP errors 10 consequetive times and is assumed down
+	ResolveHTTPFailed
 	// ResolveMAX is not a state itself: it marks the top end of resolutions. All
 	// other states belong before it.
 	ResolveMAX
@@ -76,6 +79,8 @@ func (rs ResolveState) String() string {
 		return "ResolveNotIntended"
 	case ResolveFailed:
 		return "ResolveFailed"
+	case ResolveHTTPFailed:
+		return "ResolveHTTPFailed"
 	case ResolveComplete:
 		return "ResolveComplete"
 	case ResolveMAX:
