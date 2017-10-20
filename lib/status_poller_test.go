@@ -1,18 +1,19 @@
 package sous
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 	"github.com/samsalisbury/semv"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestResolveState_String(t *testing.T) {
@@ -79,7 +80,7 @@ func TestSubPoller_ComputeState(t *testing.T) {
 				Tag: NewResolveFieldMatcher(version),
 			},
 		}
-		if actual := sub.computeState(intent, current); expected != actual {
+		if actual, _ := sub.computeState(intent, current); expected != actual {
 			t.Errorf("sub.computeState(%v, %v) -> %v != %v", intent, current, actual, expected)
 		}
 	}
@@ -98,56 +99,176 @@ func TestSubPoller_ComputeState(t *testing.T) {
 	testCompute("1.0", deployment("1.0", DeployStatusPending), diffRez("coming", nil), ResolveTasksStarting)
 }
 
+type isFinished bool
+
+const (
+	finished    isFinished = true
+	notFinished            = false
+)
+
+func (i isFinished) String() string {
+	if i {
+		return "finished"
+	}
+	return "not finished"
+}
+
 func TestStatusPoller_updateState(t *testing.T) {
-	assert := assert.New(t)
 
 	sp := &StatusPoller{
-		pollChans: map[string]ResolveState{
-			"one": ResolveInProgress,
-			"two": ResolveErredHTTP,
+		statePerCluster: map[string]*pollerState{
+			"one": &pollerState{
+				LastResult: pollResult{stat: ResolveNotPolled},
+			},
+			"two": &pollerState{
+				LastResult: pollResult{stat: ResolveNotPolled},
+			},
 		},
-		status: ResolveNotStarted,
+		status: ResolveNotPolled,
 	}
 
-	assertStatus := func(status ResolveState) {
-		assert.Equal(sp.status, status, "StatusPoller total state was %s, expected %s", sp.status, status)
+	// keep track of ordered results so far for better test output.
+	var resultsSoFar []pollResult
+	resultsSoFarStr := func() string {
+		buf := &bytes.Buffer{}
+		for _, r := range resultsSoFar {
+			fmt.Fprintf(buf, "cluster: %s; state: %s; ResolveID: %s\n",
+				r.url, r.stat, r.resolveID)
+		}
+		return buf.String()
 	}
+
+	expect := func(expectedRS ResolveState, expectedFinished isFinished) {
+		actualRS := sp.status
+		actualFinished := isFinished(sp.finished())
+		if actualRS != expectedRS || actualFinished != expectedFinished {
+			t.Errorf("got %s (%s); want %s (%s) (after %d results):\n%s",
+				actualRS, actualFinished, expectedRS, expectedFinished,
+				len(resultsSoFar), resultsSoFarStr())
+		}
+	}
+
+	result := func(clusterName, resolveID string, status ResolveState) {
+		result := pollResult{
+			url:       clusterName,
+			stat:      status,
+			resolveID: resolveID,
+		}
+		sp.nextSubStatus(result)
+		resultsSoFar = append(resultsSoFar, result)
+		sp.updateStatus()
+	}
+
+	first := "2017-10-18T14:29:37.115976034Z"
+	second := "2018-11-18T14:29:37.115976034Z"
 
 	/// TODO: tests for "competing states"
 
-	assert.False(sp.finished(), "StatusPoller reported finished: %s", sp.status)
-	assertStatus(ResolveInProgress)
+	expect(ResolveNotPolled, notFinished)
 
-	sp.pollChans["one"] = ResolveTasksStarting
+	result("one", first, ResolveNotPolled)
+	result("two", first, ResolveNotPolled)
+	expect(ResolveNotPolled, notFinished)
 
-	assert.False(sp.finished(), "StatusPoller reported finished: %s", sp.status)
-	assertStatus(ResolveTasksStarting)
+	// One moves to ResolveNotStarted, overall now ResolveNotStarted.
+	result("one", first, ResolveNotStarted)
+	expect(ResolveNotStarted, notFinished)
 
-	sp.pollChans["one"] = ResolveComplete
-	sp.pollChans["two"] = ResolveComplete
+	// Two also moved to ResolveNotStarted, overall still ResolveNotStarted.
+	result("two", first, ResolveNotStarted)
+	expect(ResolveNotStarted, notFinished)
 
-	assert.True(sp.finished(), "StatusPoller reported NOT finished: %s", sp.status)
-	assertStatus(ResolveComplete)
+	// One moved to ResolveNotVersion, overall ResolveNotVersion
+	result("one", first, ResolveNotVersion)
+	expect(ResolveNotVersion, notFinished)
 
-	sp.pollChans["one"] = ResolveComplete
-	sp.pollChans["two"] = ResolveFailed
+	// One moved to ResolveInProgress, overall ResolveInProgress
+	result("one", first, ResolveInProgress)
+	expect(ResolveInProgress, notFinished)
 
-	assert.True(sp.finished(), "StatusPoller reported NOT finished: %s", sp.status)
-	assertStatus(ResolveFailed)
+	// One moved to ResolveTasksStarting, overall ResolveInProgress
+	// because still on first resolveID.
+	result("one", first, ResolveTasksStarting)
+	expect(ResolveInProgress, notFinished)
+
+	// Both move to ResolveComplete in first cycle, overall ResolveComplete.
+	result("one", first, ResolveComplete)
+	result("two", first, ResolveComplete)
+	expect(ResolveComplete, finished)
+
+	// One moves to ResolveFailed in first cycle, overall ResolveInProgress
+	result("one", first, ResolveFailed)
+	expect(ResolveInProgress, notFinished)
+
+	// Two moves to ResolveNotStarted (second resolveID).
+	// Overall still ResolveInProgress because two still on first resolveID.
+	result("two", second, ResolveNotStarted)
+	expect(ResolveFailed, finished)
+
+	// One and two both move to ResolveNotPolled (second resolveID).
+	// Overall still ResolveInProgress because that's the highest
+	// so far.
+	result("one", second, ResolveNotPolled)
+	result("two", second, ResolveNotPolled)
+	expect(ResolveInProgress, notFinished)
+
+	// One moves to ResolveFailed in last cycle. Overall failed.
+	result("one", second, ResolveFailed)
+	expect(ResolveFailed, finished)
+
+	// One moves to ResolveComplete in last cycle, still in progress
+	// because "two" still in ResolveNotPolled, second cycle.
+	result("one", second, ResolveComplete)
+	expect(ResolveInProgress, notFinished)
+
+	// Two moves to ResolveFailed in last cycle, finished failed
+	// because one complete.
+	result("two", second, ResolveFailed)
+	expect(ResolveFailed, finished)
+
+	// Two moves to ResolveComplete in last cycle, finished complete
+	// because one and two both complete in second cycle.
+	result("two", second, ResolveComplete)
+	expect(ResolveComplete, finished)
+
+	// Two moves to ResolveNotVersion in last cycle, finished failed
+	// because this means the change was never received by the GDM.
+	result("two", second, ResolveNotVersion)
+	expect(ResolveFailed, finished)
+
+	// Two moves to ResolveNotStarted in last cycle, finished failed
+	// because this means the change has been missed and will not be
+	// deployed.
+	result("two", second, ResolveNotStarted)
+	expect(ResolveFailed, finished)
 }
 
 func TestStatusPoller(t *testing.T) {
 	serversRE := regexp.MustCompile(`/servers$`)
 	statusRE := regexp.MustCompile(`/status$`)
 	gdmRE := regexp.MustCompile(`/gdm$`)
-	var gdmJSON, serversJSON, statusJSON []byte
+	var gdmJSON, serversJSON, statusJSON, statusJSON2 []byte
+
+	statusCalled := false
+	handleMutex := sync.Mutex{}
 
 	h := func(rw http.ResponseWriter, r *http.Request) {
+		// For testing purposes, we want to ensure we handle
+		// responses one at a time since statusCalled must
+		// be false on the first call and true on the second.
+		// The race detector picked up this issue.
+		handleMutex.Lock()
+		defer handleMutex.Unlock()
 		url := r.URL.String()
 		if serversRE.MatchString(url) {
 			rw.Write(serversJSON)
 		} else if statusRE.MatchString(url) {
-			rw.Write(statusJSON)
+			if !statusCalled {
+				statusCalled = true
+				rw.Write(statusJSON)
+			} else {
+				rw.Write(statusJSON2)
+			}
 		} else if gdmRE.MatchString(url) {
 			rw.Write(gdmJSON)
 		} else {
@@ -211,7 +332,32 @@ func TestStatusPoller(t *testing.T) {
 					"desc": "unchanged"
 				} ]
 		},
-		"inprogress": {"log":[]}
+		"inprogress": {"log":[], "started": "2017-10-11T14:26:05.975369893Z"}
+	}`)
+	statusJSON2 = []byte(`{
+		"deployments": [
+			{
+				"sourceid": {
+					"location": "` + repoName + `",
+					"version": "1.0.1+1234"
+				},
+				"flavor": "canhaz"
+			}
+		],
+		"completed": {
+			"intended": [ {
+				"sourceid": {
+					"location": "` + repoName + `",
+					"version": "1.0.1+1234"
+				},
+				"flavor": "canhaz"
+			} ],
+			"log":[ {
+					"manifestid": "` + repoName + `~canhaz",
+					"desc": "unchanged"
+				} ]
+		},
+		"inprogress": {"log":[], "started": "2018-10-11T14:27:05.975369893Z"}
 	}`)
 
 	rf := &ResolveFilter{
@@ -236,7 +382,7 @@ func TestStatusPoller(t *testing.T) {
 		testCh <- rState
 	}()
 
-	timeout := 100 * time.Millisecond
+	timeout := 3 * PollTimeout
 	select {
 	case <-time.After(timeout):
 		t.Errorf("Happy path polling took more than %s", timeout)
@@ -335,7 +481,7 @@ func TestStatusPoller_OldServer2(t *testing.T) {
 		testCh <- rState
 	}()
 
-	timeout := 100 * time.Millisecond
+	timeout := 3 * PollTimeout
 	select {
 	case <-time.After(timeout):
 		t.Errorf("Happy path polling took more than %s", timeout)
@@ -350,14 +496,24 @@ func TestStatusPoller_MesosFailed(t *testing.T) {
 	serversRE := regexp.MustCompile(`/servers$`)
 	statusRE := regexp.MustCompile(`/status$`)
 	gdmRE := regexp.MustCompile(`/gdm$`)
-	var gdmJSON, serversJSON, statusJSON []byte
+	var gdmJSON, serversJSON, statusJSON, statusJSON2 []byte
+
+	handleMutex := &sync.Mutex{}
+	statusCalled := false
 
 	h := func(rw http.ResponseWriter, r *http.Request) {
+		handleMutex.Lock()
+		defer handleMutex.Unlock()
 		url := r.URL.String()
 		if serversRE.MatchString(url) {
 			rw.Write(serversJSON)
 		} else if statusRE.MatchString(url) {
-			rw.Write(statusJSON)
+			if !statusCalled {
+				statusCalled = true
+				rw.Write(statusJSON)
+			} else {
+				rw.Write(statusJSON2)
+			}
 		} else if gdmRE.MatchString(url) {
 			rw.Write(gdmJSON)
 		} else {
@@ -421,7 +577,35 @@ func TestStatusPoller_MesosFailed(t *testing.T) {
 					}
 				} ]
 		},
-		"inprogress": {"log":[]}
+		"inprogress": {"log":[], "started": "2017-10-11T14:26:05.975369893Z"}
+	}`)
+
+	statusJSON2 = []byte(`{
+		"deployments": [
+			{
+				"sourceid": {
+					"location": "` + repoName + `",
+					"version": "1.0.1+1234"
+				}
+			}
+		],
+		"completed": {
+			"intended": [ {
+					"sourceid": {
+						"location": "` + repoName + `",
+						"version": "1.0.1+1234"
+					}
+				} ],
+			"log":[ {
+					"manifestid": "` + repoName + `",
+					"desc": "unchanged",
+					"error": {
+					  "type": "FailedStatusError",
+						"string": "Deploy failed on Singularity."
+					}
+				} ]
+		},
+		"inprogress": {"log":[], "started": "2018-11-12T14:26:05.975369893Z"}
 	}`)
 
 	rf := &ResolveFilter{
@@ -441,11 +625,11 @@ func TestStatusPoller_MesosFailed(t *testing.T) {
 		if err != nil {
 			t.Errorf("Error starting poller: %#v", err)
 		}
-		t.Logf("Returned state: %#v", rState)
+		t.Logf("Returned state: %s", rState)
 		testCh <- rState
 	}()
 
-	timeout := 300 * time.Millisecond
+	timeout := 3 * PollTimeout
 	select {
 	case <-time.After(timeout):
 		t.Errorf("Happy path polling took more than %s", timeout)
