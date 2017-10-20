@@ -113,14 +113,14 @@ type (
 	}
 
 	eachFielder interface {
-		EachField(FieldReportFn)
+		EachField(fn FieldReportFn)
 	}
 
 	// A LogMessage has structured data to report to a log (c.f. Deliver)
 	LogMessage interface {
 		DefaultLevel() Level
 		Message() string
-		eachFielder
+		EachField(fn FieldReportFn)
 	}
 
 	// A MetricsMessage has metrics data to record (c.f. Deliver)
@@ -169,6 +169,8 @@ func (writeDoner) Done() {}
 func Deliver(message interface{}, logger LogSink) {
 	silent := true
 
+	defer loggingPanicsShouldntCrashTheApp(logger)
+
 	if lm, is := message.(LogMessage); is {
 		silent = false
 		Level := getLevel(lm)
@@ -189,6 +191,18 @@ func Deliver(message interface{}, logger LogSink) {
 
 	if _, dont := message.(*silentMessageError); silent && !dont {
 		reportSilentMessage(logger, message)
+	}
+}
+
+// a fake "message" designed to trigger the well-tested silentMessageError
+type loggingPanicFakeMessage struct{}
+
+// granted that logging can be set up in the first place,
+// problems with a logging message should not crash the whole app
+// therefore: recover the panic do the simplest thing that will be logged,
+func loggingPanicsShouldntCrashTheApp(ls LogSink) {
+	if rec := recover(); rec != nil {
+		Deliver(loggingPanicFakeMessage{}, ls)
 	}
 }
 
