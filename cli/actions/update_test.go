@@ -6,7 +6,6 @@ import (
 	"github.com/opentable/sous/config"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/server"
-	"github.com/opentable/sous/util/restful"
 	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -134,15 +133,24 @@ func TestUpdateRetryLoop(t *testing.T) {
 func TestSousUpdate_Execute(t *testing.T) {
 	//dsm := &sous.DummyStateManager{}
 
+	cl, control, err := server.TestingInMemoryClient()
+	require.NoError(t, err)
+
 	manifest := sous.Manifest{
 		Source: sous.SourceLocation{
 			Repo: "github.com/example/project",
 			Dir:  "",
 		},
 		Flavor: "",
+		Kind:   sous.ManifestKindService,
 		Deployments: map[string]sous.DeploySpec{
 			"test-cluster": {
 				DeployConfig: sous.DeployConfig{
+					Resources: sous.Resources{
+						"cpus":   "1",
+						"memory": "100",
+						"ports":  "1",
+					},
 					NumInstances: 1,
 					Startup: sous.Startup{
 						SkipCheck: true,
@@ -153,7 +161,7 @@ func TestSousUpdate_Execute(t *testing.T) {
 		},
 	}
 
-	defs := sous.Defs{
+	control.State.Defs = sous.Defs{
 		DockerRepo: "",
 		Clusters: map[string]*sous.Cluster{
 			"test-cluster": {
@@ -168,6 +176,8 @@ func TestSousUpdate_Execute(t *testing.T) {
 		},
 	}
 
+	control.State.Manifests.Add(&manifest)
+
 	dff := config.DeployFilterFlags{
 		Repo:    manifest.Source.Repo,
 		Offset:  manifest.Source.Dir,
@@ -181,15 +191,14 @@ func TestSousUpdate_Execute(t *testing.T) {
 	filter, err := dff.BuildFilter(shc.ParseSourceLocation)
 	require.NoError(t, err)
 
-	ms := sous.NewManifests(&manifest)
-	gdm, err := ms.Deployments(defs)
+	gdm, err := control.State.Deployments()
 	require.NoError(t, err)
 
 	su := Update{
 		//StateManager:  &graph.StateManager{dsm},
 		Manifest:      &manifest,
 		GDM:           gdm,
-		Client:        &restful.DummyHTTPClient{},
+		Client:        cl,
 		ResolveFilter: filter,
 		User:          sous.User{},
 	}
