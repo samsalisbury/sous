@@ -85,8 +85,6 @@ func TestUpdateState(t *testing.T) {
 }
 
 func TestUpdateRetryLoop(t *testing.T) {
-	dsm := &sous.DummyStateManager{State: sous.NewState()}
-
 	/*
 		Source SourceLocation `validate:"nonzero"`
 		Flavor string `yaml:",omitempty"`
@@ -94,14 +92,14 @@ func TestUpdateRetryLoop(t *testing.T) {
 		Kind ManifestKind `validate:"nonzero"`
 		Deployments DeploySpecs `validate:"keys=nonempty,values=nonzero"`
 	*/
-	depID := sous.DeploymentID{Cluster: "blah", ManifestID: sous.MustParseManifestID("github.com/user/project")}
+	depID := sous.DeploymentID{Cluster: "test-cluster", ManifestID: sous.MustParseManifestID("github.com/user/project")}
 	sourceID := sous.MustNewSourceID("github.com/user/project", "", "1.2.3")
 	mani := &sous.Manifest{
 		Source: sourceID.Location,
 		Kind:   sous.ManifestKindService,
 
 		Deployments: sous.DeploySpecs{
-			"blah": {
+			"test-cluster": {
 				Version: semv.MustParse("0.0.0"),
 				DeployConfig: sous.DeployConfig{
 					Resources: sous.Resources{
@@ -115,13 +113,12 @@ func TestUpdateRetryLoop(t *testing.T) {
 		},
 	}
 	t.Log(mani.ID())
-	dsm.State.SetEtag("asdfasdf")
-	dsm.State.Manifests.Add(mani)
-	dsm.State.Defs.Clusters = sous.Clusters{"blah": {}}
 	user := sous.User{Name: "Judson the Unlucky", Email: "unlucky@opentable.com"}
 
-	cl, err := server.TestingInMemoryClient()
+	cl, control, err := server.TestingInMemoryClient()
 	require.NoError(t, err)
+
+	control.State.Manifests.Add(mani)
 
 	deps, err := updateRetryLoop(cl, sourceID, depID, user)
 

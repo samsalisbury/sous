@@ -11,7 +11,12 @@ import (
 	"github.com/samsalisbury/semv"
 )
 
-func TestingInMemoryClient() (restful.HTTPClient, error) {
+type TestServerControl struct {
+	State    *sous.State
+	Inserter sous.InserterSpy
+}
+
+func TestingInMemoryClient() (restful.HTTPClient, TestServerControl, error) {
 	inserter := sous.NewInserterSpy()
 
 	state := sous.NewState()
@@ -26,17 +31,7 @@ func TestingInMemoryClient() (restful.HTTPClient, error) {
 					"X": "1",
 				},
 				Startup: sous.Startup{
-					SkipCheck:                 true,
-					ConnectDelay:              0,
-					Timeout:                   0,
-					ConnectInterval:           0,
-					CheckReadyProtocol:        "",
-					CheckReadyURIPath:         "",
-					CheckReadyPortIndex:       0,
-					CheckReadyFailureStatuses: nil,
-					CheckReadyURITimeout:      0,
-					CheckReadyInterval:        0,
-					CheckReadyRetries:         0,
+					SkipCheck: true,
 				},
 				AllowedAdvisories: []string{},
 			},
@@ -45,6 +40,7 @@ func TestingInMemoryClient() (restful.HTTPClient, error) {
 		Resources: sous.FieldDefinitions{},
 		Metadata:  sous.FieldDefinitions{},
 	}
+	state.SetEtag("cabbages!")
 
 	ls := logging.NewLogSet(semv.MustParse("1.1.1"), "", "", os.Stderr)
 
@@ -59,5 +55,10 @@ func TestingInMemoryClient() (restful.HTTPClient, error) {
 
 	handler := Handler(locator, http.NotFoundHandler(), ls)
 
-	return restful.NewInMemoryClient(handler, ls, map[string]string{"X-Gatelatch": os.Getenv("GATELATCH")})
+	cl, err := restful.NewInMemoryClient(handler, ls, map[string]string{"X-Gatelatch": os.Getenv("GATELATCH")})
+	control := TestServerControl{
+		State:    state,
+		Inserter: inserter,
+	}
+	return cl, control, err
 }
