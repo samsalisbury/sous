@@ -134,6 +134,14 @@ func TestDiffMessages_incomplete(t *testing.T) {
 	}
 
 	logging.AssertMessageFields(t, msg, fixedFields, variableFields)
+
+	msg.pair = &DeployablePair{}
+
+	variableFields["sous-diff-disposition"] = "added"
+	variableFields["sous-deployment-id"] = ":"
+	variableFields["sous-manifest-id"] = ""
+
+	logging.AssertMessageFields(t, msg, fixedFields, variableFields)
 }
 
 func TestDiffResolutionMessages(t *testing.T) {
