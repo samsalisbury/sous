@@ -116,6 +116,26 @@ func TestDiffMessages(t *testing.T) {
 	logging.AssertMessageFields(t, msg, fixedFields, fields)
 }
 
+func TestDiffMessages_incomplete(t *testing.T) {
+	msg := &deployableMessage{
+		callerInfo: logging.GetCallerInfo(),
+	}
+
+	fixedFields := []string{
+		"@timestamp",
+		"call-stack-file",
+		"call-stack-line-number",
+		"call-stack-function",
+		"thread-name",
+	}
+
+	variableFields := map[string]interface{}{
+		"@loglov3-otl": "sous-deployment-diff",
+	}
+
+	logging.AssertMessageFields(t, msg, fixedFields, variableFields)
+}
+
 func TestDiffResolutionMessages(t *testing.T) {
 	msg := &diffRezMessage{
 		callerInfo: logging.GetCallerInfo(),
