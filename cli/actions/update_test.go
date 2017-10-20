@@ -181,7 +181,7 @@ func TestUpdateRetryLoop(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 1, deps.Len())
 	dep, present := deps.Get(depID)
-	assert.True(t, present)
+	require.True(t, present)
 	assert.Equal(t, "1.2.3", dep.SourceID.Version.String())
 	//assert.True(t, dsm.ReadCount > 0, "No requests made against state manager")
 }
@@ -189,12 +189,64 @@ func TestUpdateRetryLoop(t *testing.T) {
 //XXX should actually drive interesting behavior
 func TestSousUpdate_Execute(t *testing.T) {
 	//dsm := &sous.DummyStateManager{}
+
+	manifest := sous.Manifest{
+		Source: sous.SourceLocation{
+			Repo: "github.com/example/project",
+			Dir:  "",
+		},
+		Flavor: "",
+		Deployments: map[string]sous.DeploySpec{
+			"test-cluster": {
+				DeployConfig: sous.DeployConfig{
+					NumInstances: 1,
+					Startup: sous.Startup{
+						SkipCheck: true,
+					},
+				},
+				Version: semv.MustParse("0.0.1"),
+			},
+		},
+	}
+
+	defs := sous.Defs{
+		DockerRepo: "",
+		Clusters: map[string]*sous.Cluster{
+			"test-cluster": {
+				Name:    "test-cluster",
+				Kind:    "singularity",
+				BaseURL: "test-cluster.example.com",
+				Startup: sous.Startup{
+					SkipCheck: true,
+				},
+				AllowedAdvisories: nil,
+			},
+		},
+	}
+
+	dff := config.DeployFilterFlags{
+		Repo:    manifest.Source.Repo,
+		Offset:  manifest.Source.Dir,
+		Flavor:  manifest.Flavor,
+		Cluster: "test-cluster",
+		Tag:     manifest.Deployments["test-cluster"].Version.String(),
+	}
+
+	shc := sous.SourceHostChooser{}
+
+	filter, err := dff.BuildFilter(shc.ParseSourceLocation)
+	require.NoError(t, err)
+
+	ms := sous.NewManifests(&manifest)
+	gdm, err := ms.Deployments(defs)
+	require.NoError(t, err)
+
 	su := Update{
 		//StateManager:  &graph.StateManager{dsm},
-		Manifest:      &sous.Manifest{},
-		GDM:           sous.NewDeployments(),
+		Manifest:      &manifest,
+		GDM:           gdm,
 		Client:        &restful.DummyHTTPClient{},
-		ResolveFilter: &sous.ResolveFilter{},
+		ResolveFilter: filter,
 		User:          sous.User{},
 	}
 	assert.NoError(t, su.Do())

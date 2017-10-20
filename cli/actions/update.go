@@ -1,6 +1,7 @@
 package actions
 
 import (
+	"github.com/davecgh/go-spew/spew"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
 	"github.com/opentable/sous/util/restful"
@@ -49,6 +50,7 @@ func (u *Update) Do() error {
 // SourceLocation
 func updateRetryLoop(cl restful.HTTPClient, sid sous.SourceID, did sous.DeploymentID, user sous.User) (sous.Deployments, error) {
 
+	spew.Dump(cl, sid, did, user)
 	sm := sous.NewHTTPStateManager(cl)
 
 	tryLimit := 2
