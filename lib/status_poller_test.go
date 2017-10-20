@@ -613,7 +613,7 @@ func TestStatusPoller_MesosFailed(t *testing.T) {
 		testCh <- rState
 	}()
 
-	timeout := 10 * PollTimeout
+	timeout := 3 * PollTimeout
 	select {
 	case <-time.After(timeout):
 		t.Errorf("Happy path polling took more than %s", timeout)
