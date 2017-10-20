@@ -5,7 +5,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/opentable/sous/config"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/server"
@@ -169,8 +168,6 @@ func TestUpdateRetryLoop(t *testing.T) {
 		AutoResolver:  &sous.AutoResolver{},
 	}
 
-	spew.Printf("%p\n\n", locator)
-	spew.Printf("%v\n", locator.StateManager)
 	handler := server.Handler(locator, http.NotFoundHandler(), ls)
 
 	cl, err := restful.NewInMemoryClient(handler, ls, map[string]string{"X-Gatelatch": os.Getenv("GATELATCH")})
