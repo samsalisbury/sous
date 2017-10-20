@@ -6,14 +6,12 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
-## [Unreleased](//github.com/opentable/sous/compare/0.5.42..HEAD)
-### Added
-* Client: `sous init` command now has `-dryrun` flag, so you can generate a manifest
-  without sending it to the server. This flag interacts with the `-flavor`,
-  `-use-otpl-deploy` and `-ignore-otpl-deploy` flags as well, so you can check sous'
-  intentions in all these scenarios without accidentally creating manifests you don't want.
-  
+## [Unreleased](//github.com/opentable/sous/compare/0.5.43..HEAD)
+
 ### Fixed
+
+* Server: diff messages could panic when logging them if the diff didn't resolve correctly.
+* All: logging panics would crash the app.
 * Client: 'sous deploy' now waits for a complete resolution to take place before
   reporting failure. This avoids a race condition where earlier failures could
   be misreported as failures with the current deployment.
@@ -21,10 +19,21 @@ with respect to its command line interface and HTTP interface.
   resolve cycle has completed, or if the latest version in the GDM does not match that
   expected. This solves an issue where deployments would appear to hang for a long time 
   and eventually fail with a confusing error message, often due to conflicting updates.
-* Client: commands 'sous deploy', 'sous manifest get' and 'sous manifest set' now receive the correct auto-detected offset
-  so you no longer require the -offset flag in most cases (unless you need to override it).
+
+## [0.5.43](//github.com/opentable/sous/compare/0.5.42..0.5.43)
+
+### Added
+* Server: deployment diffs are now logged as structured messages.
+* Client: `sous init` command now has `-dryrun` flag, so you can generate a manifest
+  without sending it to the server. This flag interacts with the `-flavor`,
+  `-use-otpl-deploy` and `-ignore-otpl-deploy` flags as well, so you can check sous'
+  intentions in all these scenarios without accidentally creating manifests you don't want.
+
+### Fixed
 * Server: Changing Startup.SkipCheck now correctly results in a re-deploy with the
   updated value.
+* Client: commands 'sous deploy', 'sous manifest get' and 'sous manifest set' now receive the correct auto-detected offset
+  so you no longer require the -offset flag in most cases (unless you need to override it).
 
 ## [0.5.42](//github.com/opentable/sous/compare/0.5.41..0.5.42)
 ### Fixed

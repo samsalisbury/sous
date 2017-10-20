@@ -1,6 +1,11 @@
 package sous
 
-import "sync"
+import (
+	"context"
+	"sync"
+
+	"github.com/opentable/sous/util/logging"
+)
 
 type (
 	// Resolver is responsible for resolving intended and actual deployment
@@ -9,6 +14,7 @@ type (
 		Deployer Deployer
 		Registry Registry
 		*ResolveFilter
+		ls logging.LogSink
 	}
 
 	// DeploymentPredicate takes a *Deployment and returns true if the
@@ -18,11 +24,12 @@ type (
 )
 
 // NewResolver creates a new Resolver.
-func NewResolver(d Deployer, r Registry, rf *ResolveFilter) *Resolver {
+func NewResolver(d Deployer, r Registry, rf *ResolveFilter, ls logging.LogSink) *Resolver {
 	return &Resolver{
 		Deployer:      d,
 		Registry:      r,
 		ResolveFilter: rf,
+		ls:            ls,
 	}
 }
 
@@ -69,11 +76,13 @@ func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveRecord
 	intended = intended.Filter(r.FilterDeployment)
 
 	return NewResolveRecorder(intended, func(recorder *ResolveRecorder) {
+		var actual DeployStates
+		var diffs *DeployableChans
+		var logger *DeployableChans
+
 		recorder.performGuaranteedPhase("filtering clusters", func() {
 			clusters = r.FilteredClusters(clusters)
 		})
-
-		var actual DeployStates
 
 		recorder.performPhase("getting running deployments", func() error {
 			var err error
@@ -85,34 +94,28 @@ func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveRecord
 			actual = actual.Filter(r.FilterDeployStates)
 		})
 
-		var diffs *DeployableChans
 		recorder.performGuaranteedPhase("generating diff", func() {
 			diffs = actual.Diff(intended)
 		})
 
-		//recorder.TasksStarting = actual.Filter(func(ds *DeployState) bool {
-		//	ds.Status = DeployStatusPending
-		//})
-
-		namer := NewDeployableChans(10)
-		var wg sync.WaitGroup
+		ctx := context.Background()
 		recorder.performGuaranteedPhase("resolving deployment artifacts", func() {
-			errs := make(chan *DiffResolution)
-			wg.Add(1)
+			namer := diffs.ResolveNames(ctx, r.Registry)
+			logger = namer.Log(ctx, r.ls)
+			logger.Add(1)
 			go func() {
-				for err := range errs {
+				for err := range logger.Errs {
 					recorder.Log <- *err
 					//DiffResolution{Error: &ErrorWrapper{error: err}}
 				}
-				wg.Done()
+				logger.Done()
 			}()
 			// TODO: ResolveNames should take rs.Log instead of errs.
-			namer.ResolveNames(r.Registry, diffs, errs)
 		})
 
 		recorder.performGuaranteedPhase("rectification", func() {
-			r.rectify(namer, recorder.Log)
+			r.rectify(logger, recorder.Log)
 		})
-		wg.Wait()
+		logger.Wait()
 	})
 }

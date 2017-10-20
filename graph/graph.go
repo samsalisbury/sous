@@ -280,8 +280,8 @@ func newResolveFilter(sf *config.DeployFilterFlags, shc sous.SourceHostChooser) 
 	return sf.BuildFilter(shc.ParseSourceLocation)
 }
 
-func newResolver(filter *sous.ResolveFilter, d sous.Deployer, r sous.Registry) *sous.Resolver {
-	return sous.NewResolver(d, r, filter)
+func newResolver(filter *sous.ResolveFilter, d sous.Deployer, r sous.Registry, ls LogSink) *sous.Resolver {
+	return sous.NewResolver(d, r, filter, ls.Child("resolver"))
 }
 
 func newAutoResolver(rez *sous.Resolver, sr *ServerStateManager, ls LogSink) *sous.AutoResolver {
