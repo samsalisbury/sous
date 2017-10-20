@@ -1,6 +1,17 @@
 package server
 
-func InMemoryClient() (Client, error) {
+import (
+	"net/http"
+	"os"
+
+	"github.com/opentable/sous/config"
+	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/restful"
+	"github.com/samsalisbury/semv"
+)
+
+func TestingInMemoryClient() (restful.HTTPClient, error) {
 	inserter := sous.NewInserterSpy()
 
 	state := sous.NewState()
@@ -37,7 +48,7 @@ func InMemoryClient() (Client, error) {
 
 	ls := logging.NewLogSet(semv.MustParse("1.1.1"), "", "", os.Stderr)
 
-	locator := server.ComponentLocator{
+	locator := ComponentLocator{
 		LogSink:       ls,
 		Config:        &config.Config{},
 		Inserter:      inserter,
@@ -46,7 +57,7 @@ func InMemoryClient() (Client, error) {
 		AutoResolver:  &sous.AutoResolver{},
 	}
 
-	handler := server.Handler(locator, http.NotFoundHandler(), ls)
+	handler := Handler(locator, http.NotFoundHandler(), ls)
 
 	return restful.NewInMemoryClient(handler, ls, map[string]string{"X-Gatelatch": os.Getenv("GATELATCH")})
 }
