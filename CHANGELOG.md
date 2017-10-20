@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
+
+## [Unreleased](//github.com/opentable/sous/compare/0.5.44..HEAD)
+
+### Added
+* Client: a separate status for "API requests are broken".
+
+### Fixed
+* Client: a panic would occur if the remote server wasn't available or responded with a 500.
+
 ## [0.5.44](//github.com/opentable/sous/compare/0.5.43..0.5.44)
 
 ### Fixed
@@ -17,7 +26,7 @@ with respect to its command line interface and HTTP interface.
   be misreported as failures with the current deployment.
 * Client: 'sous deploy' now bails out if no changes are detected after the present
   resolve cycle has completed, or if the latest version in the GDM does not match that
-  expected. This solves an issue where deployments would appear to hang for a long time 
+  expected. This solves an issue where deployments would appear to hang for a long time
   and eventually fail with a confusing error message, often due to conflicting updates.
 
 ## [0.5.43](//github.com/opentable/sous/compare/0.5.42..0.5.43)
