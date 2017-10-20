@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
+## [Unreleased](//github.com/opentable/sous/compare/0.5.43..HEAD)
+
+### Fixed
+
+* Server: diff messages could panic when logging them if the diff didn't resolve correctly.
+* All: logging panics would crash the app.
+
 ## [0.5.43](//github.com/opentable/sous/compare/0.5.42..0.5.43)
 
 ### Added
@@ -14,7 +21,7 @@ with respect to its command line interface and HTTP interface.
   without sending it to the server. This flag interacts with the `-flavor`,
   `-use-otpl-deploy` and `-ignore-otpl-deploy` flags as well, so you can check sous'
   intentions in all these scenarios without accidentally creating manifests you don't want.
-  
+
 ### Fixed
 * Server: Changing Startup.SkipCheck now correctly results in a re-deploy with the
   updated value.
