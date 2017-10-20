@@ -267,6 +267,12 @@ func (sp *StatusPoller) computeStatus() ResolveState {
 		if s.LastCycle {
 			lastCycleMax = maxStatus(lastCycleMax, s.LastResult.stat)
 			lastCycleMin = minStatus(lastCycleMin, s.LastResult.stat)
+			if s.LastResult.stat == ResolveNotVersion {
+				return ResolveFailed
+			}
+			if s.LastResult.stat == ResolveNotStarted {
+				return ResolveFailed
+			}
 		} else {
 			firstCycleMax = maxStatus(firstCycleMax, s.LastResult.stat)
 			firstCycleMin = minStatus(firstCycleMin, s.LastResult.stat)

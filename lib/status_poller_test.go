@@ -203,7 +203,7 @@ func TestStatusPoller_updateState(t *testing.T) {
 	// Two moves to ResolveNotStarted (second resolveID).
 	// Overall still ResolveInProgress because two still on first resolveID.
 	result("two", second, ResolveNotStarted)
-	expect(ResolveInProgress, notFinished)
+	expect(ResolveFailed, finished)
 
 	// One and two both move to ResolveNotPolled (second resolveID).
 	// Overall still ResolveInProgress because that's the highest
@@ -216,15 +216,31 @@ func TestStatusPoller_updateState(t *testing.T) {
 	result("one", second, ResolveFailed)
 	expect(ResolveFailed, finished)
 
-	// One moves to ResolveComplete in last cycle, still in progress.
+	// One moves to ResolveComplete in last cycle, still in progress
+	// because "two" still in ResolveNotPolled, second cycle.
 	result("one", second, ResolveComplete)
 	expect(ResolveInProgress, notFinished)
 
+	// Two moves to ResolveFailed in last cycle, finished failed
+	// because one complete.
 	result("two", second, ResolveFailed)
 	expect(ResolveFailed, finished)
 
+	// Two moves to ResolveComplete in last cycle, finished complete
+	// because one and two both complete in second cycle.
 	result("two", second, ResolveComplete)
 	expect(ResolveComplete, finished)
+
+	// Two moves to ResolveNotVersion in last cycle, finished failed
+	// because this means the change was never received by the GDM.
+	result("two", second, ResolveNotVersion)
+	expect(ResolveFailed, finished)
+
+	// Two moves to ResolveNotStarted in last cycle, finished failed
+	// because this means the change has been missed and will not be
+	// deployed.
+	result("two", second, ResolveNotStarted)
+	expect(ResolveFailed, finished)
 }
 
 func TestStatusPoller(t *testing.T) {
