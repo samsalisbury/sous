@@ -14,7 +14,6 @@ import (
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 	"github.com/samsalisbury/semv"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestResolveState_String(t *testing.T) {
@@ -100,18 +99,29 @@ func TestSubPoller_ComputeState(t *testing.T) {
 	testCompute("1.0", deployment("1.0", DeployStatusPending), diffRez("coming", nil), ResolveTasksStarting)
 }
 
+type isFinished bool
+
+const (
+	finished    isFinished = true
+	notFinished            = false
+)
+
+func (i isFinished) String() string {
+	if i {
+		return "finished"
+	}
+	return "not finished"
+}
+
 func TestStatusPoller_updateState(t *testing.T) {
-	assert := assert.New(t)
 
 	sp := &StatusPoller{
 		statePerCluster: map[string]*pollerState{
 			"one": &pollerState{
 				LastResult: pollResult{stat: ResolveNotPolled},
-				//LastCycle:  true,
 			},
 			"two": &pollerState{
 				LastResult: pollResult{stat: ResolveNotPolled},
-				//LastCycle:  true,
 			},
 		},
 		status: ResolveNotPolled,
@@ -128,13 +138,16 @@ func TestStatusPoller_updateState(t *testing.T) {
 		return buf.String()
 	}
 
-	assertStatus := func(expected ResolveState) {
-		actual := sp.status
-		if actual != expected {
-			t.Errorf("got %s; want %s (after %d results):\n%s",
-				actual, expected, len(resultsSoFar), resultsSoFarStr())
+	expect := func(expectedRS ResolveState, expectedFinished isFinished) {
+		actualRS := sp.status
+		actualFinished := isFinished(sp.finished())
+		if actualRS != expectedRS || actualFinished != expectedFinished {
+			t.Errorf("got %s (%s); want %s (%s) (after %d results):\n%s",
+				actualRS, actualFinished, expectedRS, expectedFinished,
+				len(resultsSoFar), resultsSoFarStr())
 		}
 	}
+
 	result := func(clusterName, resolveID string, status ResolveState) {
 		result := pollResult{
 			url:       clusterName,
@@ -151,70 +164,67 @@ func TestStatusPoller_updateState(t *testing.T) {
 
 	/// TODO: tests for "competing states"
 
-	assertStatus(ResolveNotPolled)
-
-	assert.False(sp.finished(), "StatusPoller reported finished: %s", sp.status)
+	expect(ResolveNotPolled, notFinished)
 
 	result("one", first, ResolveNotPolled)
 	result("two", first, ResolveNotPolled)
-	assertStatus(ResolveNotPolled)
+	expect(ResolveNotPolled, notFinished)
 
 	// One moves to ResolveNotStarted, overall now ResolveNotStarted.
 	result("one", first, ResolveNotStarted)
-	assertStatus(ResolveNotStarted)
-	assert.False(sp.finished(), "StatusPoller reported finished: %s", sp.status)
+	expect(ResolveNotStarted, notFinished)
 
 	// Two also moved to ResolveNotStarted, overall still ResolveNotStarted.
 	result("two", first, ResolveNotStarted)
-	assertStatus(ResolveNotStarted)
+	expect(ResolveNotStarted, notFinished)
 
 	// One moved to ResolveNotVersion, overall ResolveNotVersion
 	result("one", first, ResolveNotVersion)
-	assertStatus(ResolveNotVersion)
+	expect(ResolveNotVersion, notFinished)
 
 	// One moved to ResolveInProgress, overall ResolveInProgress
 	result("one", first, ResolveInProgress)
-	assertStatus(ResolveInProgress)
+	expect(ResolveInProgress, notFinished)
 
 	// One moved to ResolveTasksStarting, overall ResolveInProgress
 	// because still on first resolveID.
 	result("one", first, ResolveTasksStarting)
-	assertStatus(ResolveInProgress)
+	expect(ResolveInProgress, notFinished)
 
 	// Both move to ResolveComplete in first cycle, overall ResolveComplete.
 	result("one", first, ResolveComplete)
 	result("two", first, ResolveComplete)
-	assertStatus(ResolveComplete)
+	expect(ResolveComplete, finished)
 
 	// One moves to ResolveFailed in first cycle, overall ResolveInProgress
 	result("one", first, ResolveFailed)
-	assertStatus(ResolveInProgress)
+	expect(ResolveInProgress, notFinished)
 
 	// Two moves to ResolveNotStarted (second resolveID).
 	// Overall still ResolveInProgress because two still on first resolveID.
 	result("two", second, ResolveNotStarted)
-	assertStatus(ResolveInProgress)
+	expect(ResolveInProgress, notFinished)
 
 	// One and two both move to ResolveNotPolled (second resolveID).
 	// Overall still ResolveInProgress because that's the highest
 	// so far.
 	result("one", second, ResolveNotPolled)
 	result("two", second, ResolveNotPolled)
-	assertStatus(ResolveInProgress)
+	expect(ResolveInProgress, notFinished)
 
 	// One moves to ResolveFailed in last cycle. Overall failed.
 	result("one", second, ResolveFailed)
-	assertStatus(ResolveFailed)
+	expect(ResolveFailed, finished)
 
 	// One moves to ResolveComplete in last cycle, still in progress.
 	result("one", second, ResolveComplete)
-	assertStatus(ResolveInProgress)
+	expect(ResolveInProgress, notFinished)
 
 	result("two", second, ResolveFailed)
-	assertStatus(ResolveFailed)
+	expect(ResolveFailed, finished)
 
 	result("two", second, ResolveComplete)
-	assertStatus(ResolveComplete)
+	expect(ResolveComplete, finished)
 }
 
 func TestStatusPoller(t *testing.T) {
