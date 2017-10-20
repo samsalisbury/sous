@@ -17,6 +17,10 @@ with respect to its command line interface and HTTP interface.
 * Client: 'sous deploy' now waits for a complete resolution to take place before
   reporting failure. This avoids a race condition where earlier failures could
   be misreported as failures with the current deployment.
+* Client: 'sous deploy' now bails out if no changes are detected after the present
+  resolve cycle has completed, or if the latest version in the GDM does not match that
+  expected. This solves an issue where deployments would appear to hang for a long time 
+  and eventually fail with a confusing error message, often due to conflicting updates.
 * Client: commands 'sous deploy', 'sous manifest get' and 'sous manifest set' now receive the correct auto-detected offset
   so you no longer require the -offset flag in most cases (unless you need to override it).
 * Server: Changing Startup.SkipCheck now correctly results in a re-deploy with the
