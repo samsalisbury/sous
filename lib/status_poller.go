@@ -321,9 +321,6 @@ func (sub *subPoller) start(rs chan pollResult, done chan struct{}) {
 	ticker := time.NewTicker(PollTimeout)
 	defer ticker.Stop()
 	for {
-		//if sub.lastCycle && pollResult.stat >= ResolveTERMINALS {
-		//	return
-		//}
 		select {
 		case <-ticker.C:
 			latest := sub.pollOnce()
