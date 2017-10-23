@@ -284,8 +284,8 @@ func (sp *StatusPoller) computeStatus() ResolveState {
 		return ResolveComplete
 	}
 
-	// At least one resolution in second cycle has failed.
-	if firstCycleMax == ResolveHTTPFailed {
+	// If any poller detects ResolveHTTPFailed, we'll never see another status
+	if firstCycleMax == ResolveHTTPFailed || lastCycleMax == ResolveHTTPFailed {
 		return ResolveHTTPFailed
 	}
 
