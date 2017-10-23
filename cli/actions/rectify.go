@@ -2,12 +2,14 @@ package actions
 
 import (
 	"github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 )
 
 // Rectify processes a workstation rectify command. Mostly deprecated by sous server, but very useful when it is.
 type Rectify struct {
 	Resolver *sous.Resolver
 	State    *sous.State
+	Log      logging.LogSink
 }
 
 // Do implements Action on Rectify.

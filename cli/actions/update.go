@@ -1,8 +1,11 @@
 package actions
 
 import (
+	"fmt"
+	"time"
+
 	sous "github.com/opentable/sous/lib"
-	"github.com/opentable/sous/util/cmdr"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 	"github.com/pkg/errors"
 )
@@ -14,6 +17,7 @@ type Update struct {
 	Client        restful.HTTPClient
 	ResolveFilter *sous.ResolveFilter
 	User          sous.User
+	Log           logging.LogSink
 }
 
 // Do performs the appropriate update, returning nil on success.
@@ -29,7 +33,7 @@ func (u *Update) Do() error {
 		return err
 	}
 
-	gdm, err := updateRetryLoop(u.Client, sid, did, u.User)
+	gdm, err := updateRetryLoop(u.Log, u.Client, sid, did, u.User)
 	if err != nil {
 		return err
 	}
@@ -47,45 +51,57 @@ func (u *Update) Do() error {
 // server-side. In this case, the disappointed `sous update` should retry, up
 // to the number of times of manifests there are defined for this
 // SourceLocation
-func updateRetryLoop(cl restful.HTTPClient, sid sous.SourceID, did sous.DeploymentID, user sous.User) (sous.Deployments, error) {
-
+func updateRetryLoop(ls logging.LogSink, cl restful.HTTPClient, sid sous.SourceID, did sous.DeploymentID, user sous.User) (sous.Deployments, error) {
 	sm := sous.NewHTTPStateManager(cl)
 
 	tryLimit := 2
 
 	mid := did.ManifestID
 
+	start := time.Now()
+
 	for tries := 0; tries < tryLimit; tries++ {
+		logging.Deliver(newUpdateBeginMessage(tries, sid, did, user, start), ls)
+
 		state, err := sm.ReadState()
 		if err != nil {
 			return sous.NewDeployments(), err
 		}
 		manifest, ok := state.Manifests.Get(mid)
 		if !ok {
-			return sous.NewDeployments(), cmdr.UsageErrorf("No manifest found for %q - try 'sous init' first.", mid)
+			err := fmt.Errorf("No manifest found for %q - try 'sous init' first.", mid)
+			logging.Deliver(newUpdateErrorMessage(tries, sid, did, user, start, err), ls)
+			return sous.NewDeployments(), err
 		}
 
 		tryLimit = len(manifest.Deployments)
 
 		gdm, err := state.Deployments()
 		if err != nil {
+			logging.Deliver(newUpdateErrorMessage(tries, sid, did, user, start, err), ls)
 			return sous.NewDeployments(), err
 		}
 
 		if err := updateState(state, gdm, sid, did); err != nil {
+			logging.Deliver(newUpdateErrorMessage(tries, sid, did, user, start, err), ls)
 			return sous.NewDeployments(), err
 		}
 		if err := sm.WriteState(state, user); err != nil {
 			if !restful.Retryable(err) {
+				logging.Deliver(newUpdateErrorMessage(tries, sid, did, user, start, err), ls)
 				return sous.NewDeployments(), err
 			}
 
 			continue
 		}
 
+		logging.Deliver(newUpdateSuccessMessage(tries, sid, did, user, start), ls)
 		return gdm, nil
 	}
-	return sous.NewDeployments(), errors.Errorf("Tried %d to update %v - %v", tryLimit, sid, did)
+
+	err := errors.Errorf("Tried %d to update %v - %v", tryLimit, sid, did)
+	logging.Deliver(newUpdateErrorMessage(tryLimit, sid, did, user, start, err), ls)
+	return sous.NewDeployments(), err
 }
 
 func updateState(s *sous.State, gdm sous.Deployments, sid sous.SourceID, did sous.DeploymentID) error {

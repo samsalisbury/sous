@@ -167,6 +167,9 @@ func (writeDoner) Done() {}
 // will be taken. The upshot is that messages can be Delivered on the spot and
 // later determine what facilities are appropriate.
 func Deliver(message interface{}, logger LogSink) {
+	if logger == nil {
+		return
+	}
 	silent := true
 
 	defer loggingPanicsShouldntCrashTheApp(logger)

@@ -87,3 +87,17 @@ func (rs ResolveState) String() string {
 		return "resolve maximum marker - not a real state, received in error?"
 	}
 }
+
+func minStatus(a, b ResolveState) ResolveState {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func maxStatus(a, b ResolveState) ResolveState {
+	if a > b {
+		return a
+	}
+	return b
+}

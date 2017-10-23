@@ -6,6 +6,7 @@ import (
 	"github.com/opentable/sous/config"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/server"
+	"github.com/opentable/sous/util/logging"
 	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -119,7 +120,9 @@ func TestUpdateRetryLoop(t *testing.T) {
 
 	control.State.Manifests.Add(mani)
 
-	deps, err := updateRetryLoop(cl, sourceID, depID, user)
+	ls := logging.SilentLogSet()
+
+	deps, err := updateRetryLoop(ls, cl, sourceID, depID, user)
 
 	assert.NoError(t, err)
 	assert.Equal(t, 1, deps.Len())
@@ -131,8 +134,6 @@ func TestUpdateRetryLoop(t *testing.T) {
 
 //XXX should actually drive interesting behavior
 func TestSousUpdate_Execute(t *testing.T) {
-	//dsm := &sous.DummyStateManager{}
-
 	cl, control, err := server.TestingInMemoryClient()
 	require.NoError(t, err)
 
