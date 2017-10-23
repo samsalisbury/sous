@@ -243,6 +243,95 @@ func TestStatusPoller_updateState(t *testing.T) {
 	expect(ResolveFailed, finished)
 }
 
+func TestStatusPoller_brokenServer(t *testing.T) {
+	serversRE := regexp.MustCompile(`/servers$`)
+	gdmRE := regexp.MustCompile(`/gdm$`)
+	var gdmJSON, serversJSON []byte
+
+	handleMutex := sync.Mutex{}
+
+	h := func(rw http.ResponseWriter, r *http.Request) {
+		// For testing purposes, we want to ensure we handle
+		// responses one at a time since statusCalled must
+		// be false on the first call and true on the second.
+		// The race detector picked up this issue.
+		handleMutex.Lock()
+		defer handleMutex.Unlock()
+		url := r.URL.String()
+		if serversRE.MatchString(url) {
+			rw.Write(serversJSON)
+		} else if gdmRE.MatchString(url) {
+			rw.Write(gdmJSON)
+		} else {
+			rw.WriteHeader(500)
+			rw.Write([]byte{})
+		}
+	}
+
+	mainSrv := httptest.NewServer(http.HandlerFunc(h))
+	otherSrv := httptest.NewServer(http.HandlerFunc(h))
+
+	repoName := "github.com/opentable/example"
+	serversJSON = []byte(`{
+		"servers": [
+			{"clustername": "main", "url":"` + mainSrv.URL + `"},
+			{"clustername": "other", "url":"` + otherSrv.URL + `"}
+		]
+	}`)
+	gdmJSON = []byte(`{
+		"deployments": [
+			{
+				"clustername": "other",
+				"sourceid": {
+					"location": "` + repoName + `",
+					"version": "1.0.1+1234"
+				},
+				"flavor": "canhaz"
+			},
+			{
+				"clustername": "main",
+				"sourceid": {
+					"location": "` + repoName + `",
+					"version": "1.0.1+1234"
+				},
+				"flavor": "canhaz"
+			}
+		]
+	}`)
+
+	rf := &ResolveFilter{
+		Repo: NewResolveFieldMatcher(repoName),
+	}
+	rf.SetTag("")
+	// XXX Flavor
+	//   and deploy should probably not treat Flavor as * by default (instead "")
+
+	cl, err := restful.NewClient(mainSrv.URL, logging.SilentLogSet())
+	if err != nil {
+		t.Fatalf("Error building HTTP client: %#v", err)
+	}
+	poller := NewStatusPoller(cl, rf, User{Name: "Test User"}, logging.SilentLogSet())
+
+	testCh := make(chan ResolveState)
+	go func() {
+		rState, err := poller.Wait(context.Background())
+		if err != nil {
+			t.Errorf("Error starting poller: %#v", err)
+		}
+		testCh <- rState
+	}()
+
+	timeout := 15 * PollTimeout
+	select {
+	case <-time.After(timeout):
+		t.Errorf("Total HTTP failure recognition took more than %s", timeout)
+	case rState := <-testCh:
+		if rState != ResolveHTTPFailed {
+			t.Errorf("Resolve state was %s not %s", rState, ResolveHTTPFailed)
+		}
+	}
+}
+
 func TestStatusPoller(t *testing.T) {
 	serversRE := regexp.MustCompile(`/servers$`)
 	statusRE := regexp.MustCompile(`/status$`)
