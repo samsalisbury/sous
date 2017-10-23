@@ -92,6 +92,9 @@ func (msg *deployableMessage) EachField(f logging.FieldReportFn) {
 	}
 
 	deployableFields := func(prefix string, d *Deployable) {
+		if d == nil {
+			return
+		}
 		f(prefix+"-status", d.Status.String())
 		f(prefix+"-clustername", d.Deployment.ClusterName)
 		f(prefix+"-repo", d.Deployment.SourceID.Location.Repo)
@@ -124,18 +127,20 @@ func (msg *deployableMessage) EachField(f logging.FieldReportFn) {
 
 	f("@loglov3-otl", "sous-deployment-diff")
 	msg.callerInfo.EachField(f)
-	f("sous-deployment-id", msg.pair.ID().String())
-	f("sous-manifest-id", msg.pair.ID().ManifestID.String())
-	f("sous-diff-disposition", msg.pair.Kind().String())
-	if msg.pair.Kind() == ModifiedKind {
-		f("sous-deployment-diffs", msg.pair.Diffs.String())
-	}
+	if msg.pair != nil {
+		f("sous-deployment-id", msg.pair.ID().String())
+		f("sous-manifest-id", msg.pair.ID().ManifestID.String())
+		f("sous-diff-disposition", msg.pair.Kind().String())
+		if msg.pair.Kind() == ModifiedKind {
+			f("sous-deployment-diffs", msg.pair.Diffs.String())
+		}
 
-	if msg.pair.Prior != nil {
-		deployableFields("sous-prior", msg.pair.Prior)
-	}
-	if msg.pair.Post != nil {
-		deployableFields("sous-post", msg.pair.Post)
+		if msg.pair.Prior != nil {
+			deployableFields("sous-prior", msg.pair.Prior)
+		}
+		if msg.pair.Post != nil {
+			deployableFields("sous-post", msg.pair.Post)
+		}
 	}
 }
 

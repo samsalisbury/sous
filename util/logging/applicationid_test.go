@@ -27,7 +27,7 @@ func TestApplicationIdMessageFields(t *testing.T) {
 			"singularity-task-id": "cabbage",
 			"service-type":        "sous",
 			"instance-no":         uint(17),
-			"sequence-number":     uint(1), // a little fragile
+			"sequence-number":     uint64(1), // a little fragile
 		}
 
 		AssertMessageFields(t, apid, variableFields, fixedFields)

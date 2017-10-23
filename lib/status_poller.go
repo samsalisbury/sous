@@ -2,6 +2,7 @@ package sous
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/opentable/sous/util/logging"
@@ -14,10 +15,20 @@ type (
 	StatusPoller struct {
 		restful.HTTPClient
 		*ResolveFilter
-		User      User
-		pollChans map[string]ResolveState
-		status    ResolveState
-		logs      logging.LogSink
+		User            User
+		statePerCluster map[string]*pollerState
+		status          ResolveState
+		logs            logging.LogSink
+		results         chan pollResult
+	}
+
+	pollerState struct {
+		// LastResult is the last result this poller received.
+		LastResult pollResult
+		// LastCycle is true after the resolveID changes.
+		// This is used to indicate that when resolveID changes again,
+		// the poller should give up if still going.
+		LastCycle bool
 	}
 
 	subPoller struct {
@@ -55,94 +66,16 @@ type (
 		Completed, InProgress *ResolveStatus
 	}
 
-	// A ResolveState reflects the state of the Sous clusters in regard to
-	// resolving a particular SourceID.
-	ResolveState int
-
-	statPair struct {
-		url  string
-		stat ResolveState
+	pollResult struct {
+		url       string
+		stat      ResolveState
+		err       error
+		resolveID string
 	}
 )
 
-const (
-	// ResolveNotPolled is the entry state. It means we haven't received data
-	// from a server yet.
-	ResolveNotPolled ResolveState = iota
-	// ResolveNotStarted conveys the condition that the server is not yet working
-	// to resolve the SourceLocation in question. Granted that a manifest update
-	// has succeeded, expect that once the current auto-resolve cycle concludes,
-	// the resolve-subject GDM will be updated, and we'll move past this state.
-	ResolveNotStarted
-	// ResolveNotVersion conveys that the server knows the SourceLocation
-	// already, but is resolving a different version. Again, expect that on the
-	// next auto-resolve cycle we'll move past this state.
-	ResolveNotVersion
-	// ResolvePendingRequest conveys that, while the server has registered the
-	// intent for the current resolve cycle, no request has yet been made to
-	// Singularity.
-	ResolvePendingRequest
-	// ResolveInProgress conveys a resolve action has been taken by the server,
-	// which implies that the server's intended version (which we've confirmed is
-	// the same as our intended version) is different from the
-	// Mesos/Singularity's version.
-	ResolveInProgress
-	// ResolveTasksStarting is the state when the resolution is complete from
-	// Sous' point of view, but awaiting tasks starting in the cluster.
-	ResolveTasksStarting
-	// ResolveErredHTTP  conveys that the HTTP request to the server returned an error
-	ResolveErredHTTP
-	// ResolveErredRez conveys that the resolving server reported a transient error
-	ResolveErredRez
-	// ResolveNotIntended indicates that a particular cluster does not intend to
-	// deploy the given deployment(s)
-	ResolveNotIntended
-	// ResolveFailed indicates that a particular cluster is in a failed state
-	// regarding resolving the deployments, and that resolution cannot proceed.
-	ResolveFailed
-	// ResolveComplete is the success state: the server knows about our intended
-	// deployment, and that deployment has returned as having been stable.
-	ResolveComplete
-	// ResolveMAX is not a state itself: it marks the top end of resolutions. All
-	// other states belong before it.
-	ResolveMAX
-
-	// ResolveTERMINALS is not a state itself: it demarks resolution states that
-	// might proceed from states that are complete
-	ResolveTERMINALS = ResolveNotIntended
-)
-
-// XXX we might consider using go generate with `stringer` (c.f.)
-func (rs ResolveState) String() string {
-	switch rs {
-	default:
-		return "unknown (oops)"
-	case ResolveNotPolled:
-		return "ResolveNotPolled"
-	case ResolveNotStarted:
-		return "ResolveNotStarted"
-	case ResolvePendingRequest:
-		return "ResolvePendingRequest"
-	case ResolveNotVersion:
-		return "ResolveNotVersion"
-	case ResolveInProgress:
-		return "ResolveInProgress"
-	case ResolveErredHTTP:
-		return "ResolveErredHTTP"
-	case ResolveErredRez:
-		return "ResolveErredRez"
-	case ResolveTasksStarting:
-		return "ResolveTasksStarting"
-	case ResolveNotIntended:
-		return "ResolveNotIntended"
-	case ResolveFailed:
-		return "ResolveFailed"
-	case ResolveComplete:
-		return "ResolveComplete"
-	case ResolveMAX:
-		return "resolve maximum marker - not a real state, received in error?"
-	}
-}
+// PollTimeout is the pause between each polling request to /status.
+const PollTimeout = 500 * time.Millisecond
 
 // NewStatusPoller returns a new *StatusPoller.
 func NewStatusPoller(cl restful.HTTPClient, rf *ResolveFilter, user User, logs logging.LogSink) *StatusPoller {
@@ -200,6 +133,7 @@ func (sp *StatusPoller) Wait(ctx context.Context) (ResolveState, error) {
 
 func (sp *StatusPoller) waitForever() (ResolveState, error) {
 	reportPollerStart(sp.logs, sp)
+	sp.results = make(chan pollResult)
 	// Retrieve the list of servers known to our main server.
 	clusters := &serverListData{}
 	if _, err := sp.Retrieve("./servers", nil, clusters, sp.User.HTTPHeaders()); err != nil {
@@ -263,12 +197,11 @@ func (sp *StatusPoller) poll(subs []*subPoller) ResolveState {
 	if len(subs) == 0 {
 		return ResolveNotIntended
 	}
-	collect := make(chan statPair)
 	done := make(chan struct{})
 	go func() {
-		sp.pollChans = map[string]ResolveState{}
+		sp.statePerCluster = map[string]*pollerState{}
 		for {
-			sp.nextSubStatus(collect)
+			sp.nextSubStatusBurst()
 			if sp.finished() {
 				close(done)
 				return
@@ -277,30 +210,113 @@ func (sp *StatusPoller) poll(subs []*subPoller) ResolveState {
 	}()
 
 	for _, s := range subs {
-		go s.start(collect, done)
+		go s.start(sp.results, done)
 	}
 
 	<-done
 	return sp.status
 }
 
-func (sp *StatusPoller) nextSubStatus(collect chan statPair) {
-	update := <-collect
-	sp.pollChans[update.url] = update.stat
+func (sp *StatusPoller) nextSubStatusBurst() {
+	for {
+		select {
+		default:
+			return
+		case update := <-sp.results:
+			sp.nextSubStatus(update)
+		}
+	}
+}
+
+func (sp *StatusPoller) nextSubStatus(update pollResult) {
+	if lastState, ok := sp.statePerCluster[update.url]; ok {
+		if lastState.LastResult.resolveID != "" && lastState.LastResult.resolveID != update.resolveID {
+			lastState.LastCycle = true
+		}
+	} else {
+		sp.statePerCluster[update.url] = &pollerState{LastResult: update}
+	}
+	sp.statePerCluster[update.url].LastResult = update
 	logging.Log.Debugf("%s reports state: %s", update.url, update.stat)
 }
 
-func (sp *StatusPoller) updateStatus() {
-	max := ResolveMAX
-	for u, s := range sp.pollChans {
-		logging.Log.Vomitf("Current state from %s: %s", u, s)
+func minStatus(a, b ResolveState) ResolveState {
+	if a < b {
+		return a
+	}
+	return b
+}
 
-		//if max is already > EJECT, we can quit without waiting for other subs
-		if s <= max {
-			max = s
+func maxStatus(a, b ResolveState) ResolveState {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+func (sp *StatusPoller) updateStatus() {
+	sp.status = sp.computeStatus()
+}
+
+func (sp *StatusPoller) computeStatus() ResolveState {
+	firstCycleMax := ResolveState(0)
+	firstCycleMin := ResolveMAX
+	lastCycleMax := ResolveState(0)
+	lastCycleMin := ResolveMAX
+	for u, s := range sp.statePerCluster {
+		logging.Log.Vomitf("Current state from %s: %s", u, s)
+		if s.LastCycle {
+			lastCycleMax = maxStatus(lastCycleMax, s.LastResult.stat)
+			lastCycleMin = minStatus(lastCycleMin, s.LastResult.stat)
+			if s.LastResult.stat == ResolveNotVersion {
+				return ResolveFailed
+			}
+			if s.LastResult.stat == ResolveNotStarted {
+				return ResolveFailed
+			}
+		} else {
+			firstCycleMax = maxStatus(firstCycleMax, s.LastResult.stat)
+			firstCycleMin = minStatus(firstCycleMin, s.LastResult.stat)
 		}
 	}
-	sp.status = max
+
+	// All completed successfully in first cycle.
+	if firstCycleMax == ResolveComplete && firstCycleMin == ResolveComplete {
+		return ResolveComplete
+	}
+
+	// If any poller detects ResolveHTTPFailed, we'll never see another status
+	if firstCycleMax == ResolveHTTPFailed || lastCycleMax == ResolveHTTPFailed {
+		return ResolveHTTPFailed
+	}
+
+	// At least one resolution in second cycle has failed.
+	if lastCycleMax == ResolveFailed {
+		return ResolveFailed
+	}
+
+	// Nothing is in last cycle.
+	if lastCycleMax == 0 && lastCycleMin == ResolveMAX {
+		return minStatus(firstCycleMax, ResolveInProgress)
+	}
+
+	// All in last cycle from this point on.
+
+	// There is at least one resolution still in first cycle.
+	if firstCycleMax != 0 && firstCycleMin != ResolveMAX {
+		// Report ResolveInProgress because still waiting for
+		// certainty.
+		return ResolveInProgress
+	}
+
+	// All complete.
+	if lastCycleMax == ResolveComplete && lastCycleMin == ResolveComplete {
+		return ResolveComplete
+	}
+
+	// Report at least ResolveInProgress since we are on second resolve
+	// and don't want statuses to go backwards.
+	return maxStatus(ResolveInProgress, lastCycleMin)
 }
 
 func (sp *StatusPoller) finished() bool {
@@ -310,36 +326,45 @@ func (sp *StatusPoller) finished() bool {
 
 // start issues a new /status request every half second, reporting the state as computed.
 // c.f. pollOnce.
-func (sub *subPoller) start(rs chan statPair, done chan struct{}) {
-	rs <- statPair{url: sub.URL, stat: ResolveNotPolled}
-	stat := sub.pollOnce()
-	rs <- statPair{url: sub.URL, stat: stat}
-	ticker := time.NewTicker(time.Second / 2)
+func (sub *subPoller) start(rs chan pollResult, done chan struct{}) {
+	rs <- pollResult{url: sub.URL, stat: ResolveNotPolled}
+	pollResult := sub.pollOnce()
+	rs <- pollResult
+	ticker := time.NewTicker(PollTimeout)
 	defer ticker.Stop()
 	for {
-		if stat >= ResolveTERMINALS {
-			return
-		}
 		select {
 		case <-ticker.C:
-			stat = sub.pollOnce()
-			rs <- statPair{url: sub.URL, stat: stat}
+			latest := sub.pollOnce()
+			rs <- latest
 		case <-done:
 			return
 		}
 	}
 }
 
-func (sub *subPoller) pollOnce() ResolveState {
+func (sub *subPoller) result(rs ResolveState, data *statusData, err error) pollResult {
+	resolveID := "<none in progress>"
+	if data.InProgress != nil {
+		resolveID = data.InProgress.Started.String()
+	}
+	return pollResult{url: sub.URL, stat: rs, resolveID: resolveID, err: err}
+}
+
+func (sub *subPoller) pollOnce() pollResult {
 	data := &statusData{}
 	if _, err := sub.Retrieve("./status", nil, data, sub.User.HTTPHeaders()); err != nil {
 		logging.Log.Debugf("%s: error on GET /status: %s", sub.ClusterName, errors.Cause(err))
 		logging.Log.Vomitf("%s: %T %+v", sub.ClusterName, errors.Cause(err), err)
 		sub.httpErrorCount++
 		if sub.httpErrorCount > 10 {
-			return ResolveFailed
+			return sub.result(
+				ResolveHTTPFailed,
+				data,
+				fmt.Errorf("more than 10 HTTP errors, giving up; latest error: %s", err),
+			)
 		}
-		return ResolveErredHTTP
+		return sub.result(ResolveErredHTTP, data, err)
 	}
 	sub.httpErrorCount = 0
 
@@ -352,15 +377,16 @@ func (sub *subPoller) pollOnce() ResolveState {
 		data.InProgress.Intended = data.Deployments
 	}
 
-	currentState := sub.computeState(sub.stateFeatures("in-progress", data.InProgress))
+	currentState, err := sub.computeState(sub.stateFeatures("in-progress", data.InProgress))
 
 	if currentState == ResolveNotStarted ||
 		currentState == ResolveNotVersion ||
 		currentState == ResolvePendingRequest {
-		return sub.computeState(sub.stateFeatures("completed", data.Completed))
+		state, err := sub.computeState(sub.stateFeatures("completed", data.Completed))
+		return sub.result(state, data, err)
 	}
 
-	return currentState
+	return sub.result(currentState, data, err)
 }
 
 func (sub *subPoller) stateFeatures(kind string, rezState *ResolveStatus) (*Deployment, *DiffResolution) {
@@ -375,13 +401,13 @@ func (sub *subPoller) stateFeatures(kind string, rezState *ResolveStatus) (*Depl
 // computeState takes the servers intended deployment, and the stable and
 // current DiffResolutions and computes the state of resolution for the
 // deployment based on that data.
-func (sub *subPoller) computeState(srvIntent *Deployment, current *DiffResolution) ResolveState {
+func (sub *subPoller) computeState(srvIntent *Deployment, current *DiffResolution) (ResolveState, error) {
 	// In there's no intent for the deployment in the current resolution, we
 	// haven't started on it yet. Remember that we've already determined that the
 	// most-recent GDM does have the deployment scheduled for this cluster, so it
 	// should be picked up in the next cycle.
 	if srvIntent == nil {
-		return ResolveNotStarted
+		return ResolveNotStarted, nil
 	}
 
 	// This is a nuanced distinction from the above: the cluster is in the
@@ -390,7 +416,7 @@ func (sub *subPoller) computeState(srvIntent *Deployment, current *DiffResolutio
 	// Next cycle! (note that in both cases, we're likely to poll again several
 	// times before that cycle starts.)
 	if !sub.idFilter.FilterDeployment(srvIntent) {
-		return ResolveNotVersion
+		return ResolveNotVersion, nil
 	}
 
 	// If there's no DiffResolution yet for our Deployment, then we're still
@@ -398,7 +424,7 @@ func (sub *subPoller) computeState(srvIntent *Deployment, current *DiffResolutio
 	// this could only happen in the first attempt to resolve a recent change to
 	// the GDM, and only before the cluster has gotten a DiffResolution recorded.
 	if current == nil {
-		return ResolvePendingRequest
+		return ResolvePendingRequest, nil
 	}
 
 	if current.Error != nil {
@@ -409,7 +435,7 @@ func (sub *subPoller) computeState(srvIntent *Deployment, current *DiffResolutio
 		// transition and be ready to receive a new Deploy)
 		if IsTransientResolveError(current.Error) {
 			logging.Log.Debugf("%s: received resolver error %s, retrying", sub.ClusterName, current.Error)
-			return ResolveErredRez
+			return ResolveErredRez, current.Error
 		}
 		// Other errors are unlikely to clear by themselves. In this case, log the
 		// error for operator action, and consider this subpoller done as failed.
@@ -427,7 +453,7 @@ func (sub *subPoller) computeState(srvIntent *Deployment, current *DiffResolutio
 			}
 		}
 		logging.Log.Warn.Printf("Deployment of %s to %s failed: %s", subject, sub.ClusterName, current.Error.String)
-		return ResolveFailed
+		return ResolveFailed, current.Error
 	}
 
 	// In the case where the GDM and ADS deployments are the same, the /status
@@ -435,14 +461,14 @@ func (sub *subPoller) computeState(srvIntent *Deployment, current *DiffResolutio
 	// intend to deploy matches this cluster's current resolver's intend to
 	// deploy, and that that matches the deploy that's running. Success!
 	if current.Desc == StableDiff {
-		return ResolveComplete
+		return ResolveComplete, nil
 	}
 
 	if current.Desc == ComingDiff {
-		return ResolveTasksStarting
+		return ResolveTasksStarting, nil
 	}
 
-	return ResolveInProgress
+	return ResolveInProgress, nil
 }
 
 func serverIntent(rstat *ResolveStatus, rf *ResolveFilter) *Deployment {
