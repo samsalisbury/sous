@@ -172,7 +172,7 @@ func Deliver(message interface{}, logger LogSink) {
 	}
 	silent := true
 
-	defer loggingPanicsShouldntCrashTheApp(logger)
+	defer loggingPanicsShouldntCrashTheApp(logger, message)
 
 	if lm, is := message.(LogMessage); is {
 		silent = false
@@ -198,14 +198,16 @@ func Deliver(message interface{}, logger LogSink) {
 }
 
 // a fake "message" designed to trigger the well-tested silentMessageError
-type loggingPanicFakeMessage struct{}
+type loggingPanicFakeMessage struct {
+	broken interface{}
+}
 
 // granted that logging can be set up in the first place,
 // problems with a logging message should not crash the whole app
 // therefore: recover the panic do the simplest thing that will be logged,
-func loggingPanicsShouldntCrashTheApp(ls LogSink) {
+func loggingPanicsShouldntCrashTheApp(ls LogSink, msg interface{}) {
 	if rec := recover(); rec != nil {
-		Deliver(loggingPanicFakeMessage{}, ls)
+		Deliver(loggingPanicFakeMessage{msg}, ls)
 	}
 }
 
