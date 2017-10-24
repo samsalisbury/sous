@@ -116,6 +116,7 @@ func (i isFinished) String() string {
 func TestStatusPoller_updateState(t *testing.T) {
 
 	sp := &StatusPoller{
+		logs: logging.SilentLogSet(),
 		statePerCluster: map[string]*pollerState{
 			"one": &pollerState{
 				LastResult: pollResult{stat: ResolveNotPolled},

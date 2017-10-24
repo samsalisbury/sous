@@ -202,6 +202,7 @@ func TestSousUpdate_Execute(t *testing.T) {
 		Client:        cl,
 		ResolveFilter: filter,
 		User:          sous.User{},
+		Log:           control.Log,
 	}
 	assert.NoError(t, su.Do())
 }

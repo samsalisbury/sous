@@ -14,6 +14,7 @@ import (
 type TestServerControl struct {
 	State    *sous.State
 	Inserter sous.InserterSpy
+	Log      logging.LogSink
 }
 
 func TestingInMemoryClient() (restful.HTTPClient, TestServerControl, error) {
@@ -59,6 +60,7 @@ func TestingInMemoryClient() (restful.HTTPClient, TestServerControl, error) {
 	control := TestServerControl{
 		State:    state,
 		Inserter: inserter,
+		Log:      ls,
 	}
 	return cl, control, err
 }

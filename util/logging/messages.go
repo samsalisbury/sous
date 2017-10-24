@@ -168,7 +168,7 @@ func (writeDoner) Done() {}
 // later determine what facilities are appropriate.
 func Deliver(message interface{}, logger LogSink) {
 	if logger == nil {
-		return
+		panic("null logger")
 	}
 	silent := true
 
