@@ -74,9 +74,12 @@ func (cli *CLI) Plumbing(from cmdr.Command, cmd cmdr.Executor, args []string) cm
 // Plumb injects a lists of commands with the currect psyringe, returning early in the event of an error
 func (cli *CLI) Plumb(from cmdr.Command, cmds ...cmdr.Executor) error {
 	for _, cmd := range cmds {
-		if err := cli.scopedGraph(from, nil).Inject(cmd); err != nil {
+		if err := cli.baseGraph.Inject(cmd); err != nil {
 			return err
 		}
+		//if err := cli.scopedGraph(from, nil).Inject(cmd); err != nil {
+		//	return err
+		//}
 	}
 	return nil
 }
@@ -97,20 +100,20 @@ func BuildCLIGraph(root *Sous, cli *CLI, out, err io.Writer) *graph.SousGraph {
 	return cli.SousGraph
 }
 
-func (cli *CLI) scopedGraph(cmd, under cmdr.Command) *graph.SousGraph {
-	if g, ok := cli.scopedGraphs[cmd]; ok {
-		return g
-	}
-
-	parent := cli.scopedGraphs[under]
-
-	g := &graph.SousGraph{Psyringe: parent.Clone()}
-	if r, ok := cmd.(Registrant); ok {
-		r.RegisterOn(g)
-	}
-	cli.scopedGraphs[cmd] = g
-	return g
-}
+//func (cli *CLI) scopedGraph(cmd, under cmdr.Command) *graph.SousGraph {
+//	if g, ok := cli.scopedGraphs[cmd]; ok {
+//		return g
+//	}
+//
+//	parent := cli.scopedGraphs[under]
+//
+//	g := &graph.SousGraph{Psyringe: parent.Clone()}
+//	if r, ok := cmd.(Registrant); ok {
+//		r.RegisterOn(g)
+//	}
+//	cli.scopedGraphs[cmd] = g
+//	return g
+//}
 
 // NewSousCLI creates a new Sous cli app.
 func NewSousCLI(di *graph.SousGraph, s *Sous, out, errout io.Writer) (*CLI, error) {
@@ -133,32 +136,44 @@ func NewSousCLI(di *graph.SousGraph, s *Sous, out, errout io.Writer) (*CLI, erro
 		baseGraph: di,
 	}
 
-	chain := []cmdr.Command{}
+	//chain := []cmdr.Command{}
 	rootGraph := BuildCLIGraph(s, cli, out, errout)
-	s.RegisterOn(rootGraph)
+	//s.RegisterOn(rootGraph)
 
-	cli.scopedGraphs = map[cmdr.Command]*graph.SousGraph{s: rootGraph}
+	//cli.scopedGraphs = map[cmdr.Command]*graph.SousGraph{s: rootGraph}
 
+	//cli.Hooks.Parsed = func(cmd cmdr.Command) error {
+	//	chain = append(chain, cmd)
+	//	return nil
+	//}
 	cli.Hooks.Parsed = func(cmd cmdr.Command) error {
-		chain = append(chain, cmd)
+		if registrant, ok := cmd.(interface {
+			RegisterOn(Addable)
+		}); ok {
+			registrant.RegisterOn(cli.baseGraph)
+		}
 		return nil
 	}
 
 	// Before Execute is called on any command, inject it with values from the
 	// graph.
 	cli.Hooks.PreExecute = func(cmd cmdr.Command) error {
-		// Create the CLI dependency graph.
 
-		for n, c := range chain {
-			var under cmdr.Command
-			if n > 0 {
-				under = chain[n-1]
-			}
-			g := cli.scopedGraph(c, under)
-			if err := g.Inject(c); err != nil {
-				return errors.Wrapf(err, "setup for execute")
-			}
+		// Create the CLI dependency graph.
+		if err := rootGraph.Inject(cmd); err != nil {
+			return err
 		}
+
+		//for n, c := range chain {
+		//	var under cmdr.Command
+		//	if n > 0 {
+		//		under = chain[n-1]
+		//	}
+		//	g := cli.scopedGraph(c, under)
+		//	if err := g.Inject(c); err != nil {
+		//		return errors.Wrapf(err, "setup for execute")
+		//	}
+		//}
 		return nil
 	}
 

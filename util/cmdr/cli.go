@@ -194,7 +194,9 @@ func (c *CLI) prepare(cmd Command, cmdArgs []string, flagAddFuncs []func(*flag.F
 			flagAddFuncs = []func(*flag.FlagSet){}
 		}
 		// add these flags to the agglomeration
-		flagAddFuncs = append(flagAddFuncs, cmdWithFlags.AddFlags)
+		//flagAddFuncs = append(flagAddFuncs, cmdWithFlags.AddFlags)
+		// Just add the bottom level flags.
+		flagAddFuncs = []func(*flag.FlagSet){cmdWithFlags.AddFlags}
 	}
 	// If this command has subcommands, first try to descend into one of them.
 	if cmdWithSubcmd, ok := cmd.(Subcommander); ok && len(cmdArgs) != 0 {
