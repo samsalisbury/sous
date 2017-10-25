@@ -190,9 +190,6 @@ func (c *CLI) prepare(cmd Command, cmdArgs []string, flagAddFuncs []func(*flag.F
 	cmdArgs = cmdArgs[1:]
 	// Add and parse flags for this command.
 	if cmdWithFlags, ok := cmd.(AddsFlags); ok {
-		if flagAddFuncs == nil {
-			flagAddFuncs = []func(*flag.FlagSet){}
-		}
 		// Just add the bottom level flags.
 		flagAddFuncs = []func(*flag.FlagSet){cmdWithFlags.AddFlags}
 	}
