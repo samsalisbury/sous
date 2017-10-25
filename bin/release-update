@@ -16,5 +16,5 @@ sed -i "/Unreleased.*HEAD/ s/Unreleased\|HEAD/$newversion/g" CHANGELOG.md
 grep $newversion CHANGELOG.md
 
 git commit -am "Releasing $newversion"
-git tag -sm "Release" $newversion
+git tag -m "Release" $newversion
 git push
