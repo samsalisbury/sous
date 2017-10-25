@@ -1,9 +1,6 @@
 package cli
 
 import (
-	"flag"
-
-	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/ext/docker"
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/util/cmdr"
@@ -13,8 +10,7 @@ import (
 
 // Sous is the main sous command.
 type Sous struct {
-	// CLI is a reference to the CLI singleton. We use it here to set global
-	// verbosity.
+	// CLI is a reference to the CLI singleton.
 	CLI *CLI
 	graph.LogSink
 	// Err is the error message stream.
@@ -30,7 +26,6 @@ type Sous struct {
 	// flags holds the values of flags passed to this command
 	flags struct {
 		Help bool
-		config.Verbosity
 	}
 
 	/*
@@ -69,14 +64,6 @@ pull requests are welcome.
 
 // Help returns the top-level help for Sous.
 func (*Sous) Help() string { return sousHelp }
-
-// AddFlags adds sous' flags.
-func (s *Sous) AddFlags(fs *flag.FlagSet) {}
-
-// RegisterOn adds the Sous object itself to the Psyringe
-func (s *Sous) RegisterOn(psy Addable) {
-	//psy.Add(&s.flags.Verbosity)
-}
 
 // Execute exists to present a helpful error to the user, in the case they just
 // run 'sous' with not subcommand.

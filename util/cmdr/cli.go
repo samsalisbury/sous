@@ -119,12 +119,12 @@ func (c *CLI) InvokeAndExit(args []string) {
 // which is usually a nicer user experience than having to remember strictly
 // which subcommand a flag is applicable to.
 func (c *CLI) Prepare(args []string) (*PreparedExecution, error) {
-	base, ff := c.Root, c.GlobalFlagSetFuncs
+	base := c.Root
 	if c.Hooks.Startup != nil {
 		c.Hooks.Startup(c)
 		c.Hooks.Startup = nil
 	}
-	return c.prepare(base, args, ff)
+	return c.prepare(base, args, nil)
 }
 
 // runHook runs the hook if it's not nil, and returns the hook's error.
