@@ -41,18 +41,12 @@ type (
 	// CLI describes the command line interface for Sous
 	CLI struct {
 		*cmdr.CLI
-		baseGraph, SousGraph *graph.SousGraph
-		scopedGraphs         map[cmdr.Command]*graph.SousGraph
+		graph *graph.SousGraph
 	}
 	// Addable objects are able to receive lists of interface{}, presumably to add
 	// them to a DI registry. Abstracts Psyringe's Add()
 	Addable interface {
 		Add(...interface{})
-	}
-
-	// A Registrant is able to add values to an Addable (implicitly: a Psyringe)
-	Registrant interface {
-		RegisterOn(Addable)
 	}
 )
 
@@ -78,16 +72,16 @@ func (cli *CLI) Plumbing(from cmdr.Command, cmd cmdr.Executor, args []string) cm
 // returning early in the event of an error
 func (cli *CLI) Plumb(from cmdr.Command, cmds ...cmdr.Executor) error {
 	for _, cmd := range cmds {
-		if err := cli.baseGraph.Inject(cmd); err != nil {
+		if err := cli.graph.Inject(cmd); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-// BuildCLIGraph builds the CLI DI graph.
-func BuildCLIGraph(root *Sous, cli *CLI, out, err io.Writer) *graph.SousGraph {
-	g := cli.baseGraph //was .Clone() - caused problems
+// buildCLIGraph builds the CLI DI graph.
+func buildCLIGraph(root *Sous, cli *CLI, out, err io.Writer) {
+	g := cli.graph
 	g.Add(cli)
 	g.Add(root)
 	g.Add(func(c *CLI) graph.Out {
@@ -96,9 +90,6 @@ func BuildCLIGraph(root *Sous, cli *CLI, out, err io.Writer) *graph.SousGraph {
 	g.Add(func(c *CLI) graph.ErrOut {
 		return graph.ErrOut{Output: c.Err}
 	})
-	cli.SousGraph = g
-
-	return cli.SousGraph
 }
 
 // NewSousCLI creates a new Sous cli app.
@@ -132,27 +123,28 @@ func NewSousCLI(di *graph.SousGraph, s *Sous, out, errout io.Writer) (*CLI, erro
 				},
 			},
 		},
-		baseGraph: di,
+		graph: di,
 	}
 
-	rootGraph := BuildCLIGraph(s, cli, out, errout)
+	buildCLIGraph(s, cli, out, errout)
+
 	addVerbosityOnce := sync.Once{}
 
 	cli.Hooks.Parsed = func(cmd cmdr.Command) error {
 		addVerbosityOnce.Do(func() {
-			rootGraph.Add(&verbosity)
+			cli.graph.Add(&verbosity)
 		})
 		if registrant, ok := cmd.(interface {
 			RegisterOn(Addable)
 		}); ok {
-			registrant.RegisterOn(cli.baseGraph)
+			registrant.RegisterOn(cli.graph)
 		}
 		return nil
 	}
 
 	// Before Execute is called on any command, inject its dependencies.
 	cli.Hooks.PreExecute = func(cmd cmdr.Command) error {
-		return rootGraph.Inject(cmd)
+		return cli.graph.Inject(cmd)
 	}
 
 	cli.Hooks.PreFail = func(err error) cmdr.ErrorResult {
