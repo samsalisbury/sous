@@ -14,6 +14,10 @@ with respect to its command line interface and HTTP interface.
 
 ### Fixed
 * Client: a panic would occur if the remote server wasn't available or responded with a 500.
+* Attempting to fix invalid config using 'sous config' was not possible because we
+  were validating config as a precondition to executing the command. We now only
+  validate config for commands that rely on a valid config, so 'sous config' can be
+  used to correct issues.
 
 ## [0.5.44](//github.com/opentable/sous/compare/0.5.43..0.5.44)
 
