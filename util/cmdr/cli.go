@@ -193,8 +193,6 @@ func (c *CLI) prepare(cmd Command, cmdArgs []string, flagAddFuncs []func(*flag.F
 		if flagAddFuncs == nil {
 			flagAddFuncs = []func(*flag.FlagSet){}
 		}
-		// add these flags to the agglomeration
-		//flagAddFuncs = append(flagAddFuncs, cmdWithFlags.AddFlags)
 		// Just add the bottom level flags.
 		flagAddFuncs = []func(*flag.FlagSet){cmdWithFlags.AddFlags}
 	}
@@ -203,9 +201,6 @@ func (c *CLI) prepare(cmd Command, cmdArgs []string, flagAddFuncs []func(*flag.F
 		subcommandName := cmdArgs[0]
 		subcommands := cmdWithSubcmd.Subcommands()
 		if cmdWithSubCmd, ok := subcommands[subcommandName]; ok {
-			//if err := c.runHook(c.Hooks.Parsed, cmd); err != nil {
-			//	return nil, EnsureErrorResult(err)
-			//}
 			return c.prepare(cmdWithSubCmd, cmdArgs, flagAddFuncs)
 		}
 	}
