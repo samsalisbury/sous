@@ -38,6 +38,7 @@ func (smg *SousManifestSet) AddFlags(fs *flag.FlagSet) {
 }
 
 func (smg *SousManifestSet) RegisterOn(psy Addable) {
+	psy.Add(graph.DryrunNeither)
 	psy.Add(&smg.DeployFilterFlags)
 }
 

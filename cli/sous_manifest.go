@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/util/cmdr"
 )
 
@@ -18,11 +17,6 @@ const sousManifestHelp = `query and manipulate deployment manifests`
 // Subcommands implements Subcommander on SousManifest
 func (SousManifest) Subcommands() cmdr.Commands {
 	return ManifestSubcommands
-}
-
-// RegisterOn implements Registrant on SousManifest
-func (sm *SousManifest) RegisterOn(psy Addable) {
-	psy.Add(graph.DryrunNeither)
 }
 
 // Help implements Command on SousManifest
