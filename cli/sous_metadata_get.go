@@ -32,6 +32,7 @@ func (smg *SousMetadataGet) AddFlags(fs *flag.FlagSet) {
 }
 
 func (smg *SousMetadataGet) RegisterOn(psy Addable) {
+	psy.Add(graph.DryrunNeither)
 	psy.Add(&smg.DeployFilterFlags)
 }
 
