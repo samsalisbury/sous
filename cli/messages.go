@@ -13,12 +13,15 @@ type invocationMessage struct {
 	args       []string
 }
 
-func reportInvocation(args []string, ls logging.LogSink) {
-	msg := invocationMessage{
-		callerInfo: logging.GetCallerInfo("cli/cli"),
+func reportInvocation(ls logging.LogSink, args []string) {
+	logging.Deliver(newInvocationMessage(args), ls)
+}
+
+func newInvocationMessage(args []string) *invocationMessage {
+	return &invocationMessage{
+		callerInfo: logging.GetCallerInfo("cli/messages", "cli/cli"),
 		args:       args,
 	}
-	logging.Deliver(msg, ls)
 }
 
 func (msg *invocationMessage) DefaultLevel() logging.Level {
@@ -26,28 +29,31 @@ func (msg *invocationMessage) DefaultLevel() logging.Level {
 }
 
 func (msg *invocationMessage) Message() string {
-	return fmt.Sprintf("Invoked with: %q", msg.args)
+	return "Invoked"
 }
 
 func (msg *invocationMessage) EachField(f logging.FieldReportFn) {
-	f("@loglov3-otl", "sous-generic-v1")
+	f("@loglov3-otl", "sous-cli-v1")
 	msg.callerInfo.EachField(f)
+	f("arguments", fmt.Sprintf("%q", msg.args))
 }
 
 type cliResultMessage struct {
 	callerInfo logging.CallerInfo
+	args       []string
 	res        cmdr.Result
 	start, end time.Time
 }
 
-func reportCLIResult(logsink logging.LogSink, start time.Time, res cmdr.Result) {
-	msg := newCLIResult(start, res)
+func reportCLIResult(logsink logging.LogSink, args []string, start time.Time, res cmdr.Result) {
+	msg := newCLIResult(args, start, res)
 	logging.Deliver(msg, logsink)
 }
 
-func newCLIResult(start time.Time, res cmdr.Result) *cliResultMessage {
+func newCLIResult(args []string, start time.Time, res cmdr.Result) *cliResultMessage {
 	return &cliResultMessage{
-		callerInfo: logging.GetCallerInfo("cli/cli"),
+		callerInfo: logging.GetCallerInfo("cli/messages", "cli/cli"),
+		args:       args,
 		res:        res,
 		start:      start,
 		end:        time.Now(),
@@ -63,8 +69,9 @@ func (msg *cliResultMessage) Message() string {
 }
 
 func (msg *cliResultMessage) EachField(f logging.FieldReportFn) {
-	f("@loglov3-otl", "sous-cli-result-v1")
+	f("@loglov3-otl", "sous-cli-v1")
 	msg.callerInfo.EachField(f)
 	f("exit-code", msg.res.ExitCode())
 	f("duration", msg.end.Sub(msg.start))
+	f("arguments", fmt.Sprintf("%q", msg.args))
 }

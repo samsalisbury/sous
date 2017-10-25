@@ -74,6 +74,9 @@ type (
 
 // WrapResolveError wraps an error inside an *ErrorWrapper for marshaling.
 func WrapResolveError(err error) *ErrorWrapper {
+	if ew, is := err.(*ErrorWrapper); is {
+		return ew
+	}
 	return &ErrorWrapper{error: err}
 }
 
@@ -84,6 +87,13 @@ func WrapResolveError(err error) *ErrorWrapper {
 func (ew ErrorWrapper) MarshalJSON() ([]byte, error) {
 	ew.MarshallableError = buildMarshableError(ew.error)
 	return json.Marshal(ew.MarshallableError)
+}
+
+func (ew ErrorWrapper) Error() string {
+	if ew.error != nil {
+		return ew.error.Error()
+	}
+	return ew.String
 }
 
 func buildMarshableError(err error) MarshallableError {

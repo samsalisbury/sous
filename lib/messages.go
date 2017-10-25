@@ -8,16 +8,22 @@ type (
 		poller     *StatusPoller
 	}
 
-	pollerResolvedMessage struct {
+	subreportMessage struct {
 		callerInfo logging.CallerInfo
 		poller     *StatusPoller
-		status     ResolveState
-		err        error
+		update     pollResult
 	}
 
 	pollerStatusMessage struct {
 		callerInfo logging.CallerInfo
 		poller     *StatusPoller
+	}
+
+	pollerResolvedMessage struct {
+		callerInfo logging.CallerInfo
+		poller     *StatusPoller
+		status     ResolveState
+		err        error
 	}
 )
 
@@ -27,10 +33,7 @@ func reportPollerResolved(logsink logging.LogSink, sp *StatusPoller, status Reso
 }
 
 func reportPollerStart(logsink logging.LogSink, poller *StatusPoller) {
-	msg := &pollerStartMessage{
-		callerInfo: logging.GetCallerInfo("sous/lib/messages"),
-		poller:     poller,
-	}
+	msg := newPollerStartMessage(poller)
 	logging.Deliver(msg, logsink)
 }
 
@@ -46,7 +49,7 @@ func reportSubreport(logsink logging.LogSink, poller *StatusPoller, update pollR
 
 func resultFields(f logging.FieldReportFn, update pollResult) {
 	f("update-url", update.url)
-	f("update-status", update.stat)
+	f("update-status", update.stat.String())
 	f("update-resolve-id", update.resolveID)
 	if update.err != nil {
 		f("error", update.err.Error())
@@ -70,12 +73,19 @@ func resolveFilterFields(f logging.FieldReportFn, rf *ResolveFilter) {
 	if rf == nil {
 		return
 	}
-	f("cluster", rf.Cluster.ValueOr("*"))
-	f("repo", rf.Repo.ValueOr("*"))
-	f("offset", rf.Repo.ValueOr("*"))
-	f("tag", rf.Repo.ValueOr("*"))
-	f("revision", rf.Repo.ValueOr("*"))
-	f("flavor", rf.Repo.ValueOr("*"))
+	f("filter-cluster", rf.Cluster.ValueOr("*"))
+	f("filter-repo", rf.Repo.ValueOr("*"))
+	f("filter-offset", rf.Offset.ValueOr("*"))
+	f("filter-tag", rf.Tag.ValueOr("*"))
+	f("filter-revision", rf.Revision.ValueOr("*"))
+	f("filter-flavor", rf.Flavor.ValueOr("*"))
+}
+
+func newPollerStartMessage(poller *StatusPoller) *pollerStartMessage {
+	return &pollerStartMessage{
+		callerInfo: logging.GetCallerInfo("sous/lib/messages"),
+		poller:     poller,
+	}
 }
 
 func (msg *pollerStartMessage) DefaultLevel() logging.Level {
@@ -139,12 +149,6 @@ func (msg *pollerStatusMessage) EachField(f logging.FieldReportFn) {
 }
 
 //	reportSubreport(sp.logs, sp, update)
-
-type subreportMessage struct {
-	callerInfo logging.CallerInfo
-	poller     *StatusPoller
-	update     pollResult
-}
 
 func newSubreportMessage(poller *StatusPoller, update pollResult) *subreportMessage {
 	return &subreportMessage{

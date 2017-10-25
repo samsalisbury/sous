@@ -98,9 +98,9 @@ func (cli *CLI) scopedGraph(cmd, under cmdr.Command) *graph.SousGraph {
 // Invoke wraps the cmdr.CLI Invoke for logging.
 func (cli *CLI) Invoke(args []string) cmdr.Result {
 	start := time.Now()
-	reportInvocation(args, cli.LogSink)
+	reportInvocation(cli.LogSink, args)
 	res := cli.CLI.Invoke(args)
-	reportCLIResult(cli.LogSink, start, res)
+	reportCLIResult(cli.LogSink, args, start, res)
 	return res
 }
 

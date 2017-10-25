@@ -70,8 +70,8 @@ func (msg updateMessage) EachField(fn logging.FieldReportFn) {
 	fn("@loglov3-otl", "sous-update-v1")
 	msg.callerInfo.EachField(fn)
 	fn("try-number", msg.tries)
-	fn("source-id", msg.sid)
-	fn("deploy-id", msg.did)
+	fn("source-id", msg.sid.String())
+	fn("deploy-id", msg.did.String())
 	fn("user-email", msg.user.Email)
 	fn("started-at", msg.start)
 	if msg.finished {
