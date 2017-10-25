@@ -203,9 +203,9 @@ func (c *CLI) prepare(cmd Command, cmdArgs []string, flagAddFuncs []func(*flag.F
 		subcommandName := cmdArgs[0]
 		subcommands := cmdWithSubcmd.Subcommands()
 		if cmdWithSubCmd, ok := subcommands[subcommandName]; ok {
-			if err := c.runHook(c.Hooks.Parsed, cmd); err != nil {
-				return nil, EnsureErrorResult(err)
-			}
+			//if err := c.runHook(c.Hooks.Parsed, cmd); err != nil {
+			//	return nil, EnsureErrorResult(err)
+			//}
 			return c.prepare(cmdWithSubCmd, cmdArgs, flagAddFuncs)
 		}
 	}

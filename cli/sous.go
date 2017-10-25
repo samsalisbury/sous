@@ -71,20 +71,11 @@ pull requests are welcome.
 func (*Sous) Help() string { return sousHelp }
 
 // AddFlags adds sous' flags.
-func (s *Sous) AddFlags(fs *flag.FlagSet) {
-	fs.BoolVar(&s.flags.Verbosity.Silent, "s", false,
-		"silent: silence all non-essential output")
-	fs.BoolVar(&s.flags.Verbosity.Quiet, "q", false,
-		"quiet: output only essential error messages")
-	fs.BoolVar(&s.flags.Verbosity.Loud, "v", false,
-		"loud: output extra info, including all shell commands")
-	fs.BoolVar(&s.flags.Verbosity.Debug, "d", false,
-		"debug: output detailed logs of internal operations")
-}
+func (s *Sous) AddFlags(fs *flag.FlagSet) {}
 
 // RegisterOn adds the Sous object itself to the Psyringe
 func (s *Sous) RegisterOn(psy Addable) {
-	psy.Add(&s.flags.Verbosity)
+	//psy.Add(&s.flags.Verbosity)
 }
 
 // Execute exists to present a helpful error to the user, in the case they just

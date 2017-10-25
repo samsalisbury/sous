@@ -3,10 +3,12 @@
 package cli
 
 import (
+	"flag"
 	"fmt"
 	"io"
 	"os"
 
+	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/util/cmdr"
 	"github.com/opentable/sous/util/logging"
@@ -104,6 +106,7 @@ func BuildCLIGraph(root *Sous, cli *CLI, out, err io.Writer) *graph.SousGraph {
 //	if g, ok := cli.scopedGraphs[cmd]; ok {
 //		return g
 //	}
+
 //
 //	parent := cli.scopedGraphs[under]
 //
@@ -121,6 +124,8 @@ func NewSousCLI(di *graph.SousGraph, s *Sous, out, errout io.Writer) (*CLI, erro
 	stdout := cmdr.NewOutput(out)
 	stderr := cmdr.NewOutput(errout)
 
+	var verbosity config.Verbosity
+
 	cli := &CLI{
 		CLI: &cmdr.CLI{
 			Root: s,
@@ -131,8 +136,19 @@ func NewSousCLI(di *graph.SousGraph, s *Sous, out, errout io.Writer) (*CLI, erro
 			// uses the standard flag.ErrHelp value to decide whether or not to show
 			// this.
 			HelpCommand: os.Args[0] + " help",
+			GlobalFlagSetFuncs: []func(*flag.FlagSet){
+				func(fs *flag.FlagSet) {
+					fs.BoolVar(&verbosity.Silent, "s", false,
+						"silent: silence all non-essential output")
+					fs.BoolVar(&verbosity.Quiet, "q", false,
+						"quiet: output only essential error messages")
+					fs.BoolVar(&verbosity.Loud, "v", false,
+						"loud: output extra info, including all shell commands")
+					fs.BoolVar(&verbosity.Debug, "d", false,
+						"debug: output detailed logs of internal operations")
+				},
+			},
 		},
-
 		baseGraph: di,
 	}
 
@@ -147,6 +163,7 @@ func NewSousCLI(di *graph.SousGraph, s *Sous, out, errout io.Writer) (*CLI, erro
 	//	return nil
 	//}
 	cli.Hooks.Parsed = func(cmd cmdr.Command) error {
+		rootGraph.Add(&verbosity)
 		if registrant, ok := cmd.(interface {
 			RegisterOn(Addable)
 		}); ok {
