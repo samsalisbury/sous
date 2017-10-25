@@ -49,14 +49,15 @@ func formatSubcommands(c Command) string {
 }
 
 func (cli *CLI) formatFlags(command Command) string {
-	addsFlags, ok := command.(AddsFlags)
-	if !ok {
-		return ""
+	fs := flag.NewFlagSet("help", flag.ContinueOnError)
+	for _, globalFlagFunc := range cli.GlobalFlagSetFuncs {
+		globalFlagFunc(fs)
 	}
 	b := &bytes.Buffer{}
 	b.WriteString("\n\noptions:\n")
-	fs := flag.NewFlagSet("help", flag.ContinueOnError)
-	addsFlags.AddFlags(fs)
+	if addsFlags, ok := command.(AddsFlags); ok {
+		addsFlags.AddFlags(fs)
+	}
 	fs.SetOutput(b)
 	fs.PrintDefaults()
 	return b.String()
