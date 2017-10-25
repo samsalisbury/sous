@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sync"
 
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
@@ -135,9 +136,12 @@ func NewSousCLI(di *graph.SousGraph, s *Sous, out, errout io.Writer) (*CLI, erro
 	}
 
 	rootGraph := BuildCLIGraph(s, cli, out, errout)
+	addVerbosityOnce := sync.Once{}
 
 	cli.Hooks.Parsed = func(cmd cmdr.Command) error {
-		rootGraph.Add(&verbosity)
+		addVerbosityOnce.Do(func() {
+			rootGraph.Add(&verbosity)
+		})
 		if registrant, ok := cmd.(interface {
 			RegisterOn(Addable)
 		}); ok {
