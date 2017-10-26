@@ -11,12 +11,18 @@ import (
 	"github.com/samsalisbury/semv"
 )
 
+// TestServerControl wraps the spies and dummies used to construct a test
+// server. Can be used to control or inspect while using the client returned by
+// TestingInMemoryClient.
 type TestServerControl struct {
 	State    *sous.State
 	Inserter sous.InserterSpy
 	Log      logging.LogSink
 }
 
+// TestingInMemoryClient returns a restful.HTTPClient that sends requests to a
+// dummy server, as well as a TestServerControl struct to control and inspect
+// the test server.
 func TestingInMemoryClient() (restful.HTTPClient, TestServerControl, error) {
 	inserter := sous.NewInserterSpy()
 

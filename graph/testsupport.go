@@ -23,6 +23,7 @@ type (
 
 const defaultConfig = ""
 
+// DefaultTestGraph results a SousGraph suitable for testing without worrying about details.
 func DefaultTestGraph() *SousGraph {
 	stdin := ioutil.NopCloser(bytes.NewReader(nil))
 	return BuildTestGraph(semv.MustParse("1.1.1"), stdin, ioutil.Discard, ioutil.Discard)

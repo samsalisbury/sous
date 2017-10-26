@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// SousUpdate is the command description for `sous update`
+// Update is the command description for `sous update`
 type Update struct {
 	Manifest      *sous.Manifest
 	GDM           sous.Deployments

@@ -11,6 +11,8 @@ with respect to its command line interface and HTTP interface.
 
 ### Added
 * Client: a separate status for "API requests are broken".
+* Client: many new log messages during `sous update`, `sous deploy` and `sous plumbing status`.
+* Client: general log message for start and end of command execution.
 
 ### Fixed
 * Client: a panic would occur if the remote server wasn't available or responded with a 500.

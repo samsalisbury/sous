@@ -32,10 +32,14 @@ func NewInterval(start, end time.Time) MessageInterval {
 	}
 }
 
+// Complete queries whether the interval is closed - in other words: does it have an end time?
 func (i MessageInterval) Complete() bool {
 	return i.end != zeroTime
 }
 
+// EachField implements eachFielder on MessageInterval.
+// In general, messages that include a MessageInterval should pass the
+// FieldReportFn they receive on their own EachField to their interval.
 func (i MessageInterval) EachField(fn FieldReportFn) {
 	fn("started-at", i.start.Format(time.RFC3339))
 	if i.Complete() {
