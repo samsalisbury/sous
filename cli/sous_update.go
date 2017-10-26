@@ -12,7 +12,7 @@ import (
 type SousUpdate struct {
 	DeployFilterFlags config.DeployFilterFlags
 	OTPLFlags         config.OTPLFlags
-	SousGraph         graph.SousGraph
+	SousGraph         *graph.SousGraph
 }
 
 func init() { TopLevelCommands["update"] = &SousUpdate{} }

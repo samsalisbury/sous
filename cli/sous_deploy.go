@@ -11,7 +11,7 @@ import (
 
 // SousDeploy is the command description for `sous deploy`.
 type SousDeploy struct {
-	SousGraph graph.SousGraph
+	SousGraph *graph.SousGraph
 
 	Config            graph.LocalSousConfig
 	CLI               *CLI

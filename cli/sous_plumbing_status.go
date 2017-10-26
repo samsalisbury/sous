@@ -10,7 +10,7 @@ import (
 
 // SousPlumbingStatus is the `sous plumbing status` object.
 type SousPlumbingStatus struct {
-	SousGraph graph.SousGraph
+	SousGraph *graph.SousGraph
 	Config    graph.LocalSousConfig
 
 	DeployFilterFlags config.DeployFilterFlags

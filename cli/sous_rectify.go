@@ -13,7 +13,7 @@ import (
 type SousRectify struct {
 	Config            graph.LocalSousConfig
 	dryrun            string
-	SousGraph         graph.SousGraph
+	SousGraph         *graph.SousGraph
 	DeployFilterFlags config.DeployFilterFlags
 	SourceHostChooser sous.SourceHostChooser
 }
