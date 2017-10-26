@@ -54,6 +54,7 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"runtime"
 	"sort"
 	"sync"
 
@@ -62,11 +63,12 @@ import (
 
 // Psyringe is a dependency injection container.
 type Psyringe struct {
-	parent         *Psyringe
-	scope          string
-	values         map[reflect.Type]reflect.Value
-	ctors          map[reflect.Type]*ctor
-	injectionTypes map[reflect.Type]struct{}
+	parent             *Psyringe
+	scope              string
+	values             map[reflect.Type]reflect.Value
+	ctors              map[reflect.Type]*ctor
+	injectionTypes     map[reflect.Type]struct{}
+	debugAddedLocation map[reflect.Type]string
 }
 
 // New creates a new Psyringe, and adds the provided constructors and values to
@@ -84,12 +86,13 @@ func New(constructorsAndValues ...interface{}) *Psyringe {
 // useful if you are dynamically generating the arguments.
 func NewErr(constructorsAndValues ...interface{}) (*Psyringe, error) {
 	p := &Psyringe{
-		scope:          "<root>",
-		values:         map[reflect.Type]reflect.Value{},
-		ctors:          map[reflect.Type]*ctor{},
-		injectionTypes: map[reflect.Type]struct{}{},
+		scope:              "<root>",
+		values:             map[reflect.Type]reflect.Value{},
+		ctors:              map[reflect.Type]*ctor{},
+		injectionTypes:     map[reflect.Type]struct{}{},
+		debugAddedLocation: map[reflect.Type]string{},
 	}
-	return p, errors.Wrap(p.AddErr(constructorsAndValues...), "Add failed")
+	return p, errors.Wrap(p.addErr(constructorsAndValues...), "Add failed")
 }
 
 // Add adds constructors and values to the Psyringe. It panics if any
@@ -110,6 +113,11 @@ func (p *Psyringe) Add(constructorsAndValues ...interface{}) {
 // AddErr is similar to Add, but returns an error instead of panicking. This is
 // useful if you are dynamically generating the arguments.
 func (p *Psyringe) AddErr(constructorsAndValues ...interface{}) error {
+	return p.addErr(constructorsAndValues...)
+}
+
+// addErr just exists to make callerinfo consistent in Psyringe.add.
+func (p *Psyringe) addErr(constructorsAndValues ...interface{}) error {
 	for i, thing := range constructorsAndValues {
 		if thing == nil {
 			return fmt.Errorf("cannot add nil (argument %d)", i)
@@ -374,13 +382,16 @@ func (p *Psyringe) scopeNameInUse(name string) bool {
 
 func (p *Psyringe) registerInjectionType(t reflect.Type) error {
 	if scope, registered := p.injectionTypeRegistrationScope(t); registered {
-		message := fmt.Sprintf("injection type %s already registered", t)
+		message := fmt.Sprintf("injection type %s already registered at %s", t, p.debugAddedLocation[t])
 		if scope == p.scope {
 			return errors.New(message)
 		}
 		return fmt.Errorf("%s (scope %s)", message, scope)
 	}
 	p.injectionTypes[t] = struct{}{}
+	_, file, line, _ := runtime.Caller(6)
+	p.debugAddedLocation[t] = fmt.Sprintf("%s:%d", file, line)
+
 	return nil
 }
 
