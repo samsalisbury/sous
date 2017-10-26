@@ -231,7 +231,8 @@ func AddNetwork(graph adder) {
 // AddDocker adds Docker to the graph.
 func AddDocker(graph adder) {
 	graph.Add(
-		newDockerRegistry,
+		newLazyNameCache,
+		newNameCache,
 		newDockerBuilder,
 		newSelector,
 	)
@@ -467,21 +468,26 @@ func newRegistrar(db *docker.Builder) sous.Registrar {
 	return db
 }
 
-func newRegistry(graph *SousGraph, dryrun DryrunOption) (sous.Registry, error) {
+func newRegistry(graph *SousGraph, nc lazyNameCache, dryrun DryrunOption) (sous.Registry, error) {
 	if dryrun == DryrunBoth || dryrun == DryrunRegistry {
 		return sous.NewDummyRegistry(), nil
 	}
-	return theDockerRegistry(graph)
+	return nc()
 }
 
-func newDeployer(dryrun DryrunOption, nc *docker.NameCache, ls LogSink) sous.Deployer {
+func newDeployer(dryrun DryrunOption, nc lazyNameCache, ls LogSink) (sous.Deployer, error) {
 	// Eventually, based on configuration, we may make different decisions here.
 	if dryrun == DryrunBoth || dryrun == DryrunScheduler {
 		drc := sous.NewDummyRectificationClient()
 		drc.SetLogger(ls.Child("rectify"))
-		return singularity.NewDeployer(drc)
+		return singularity.NewDeployer(drc), nil
 	}
-	return singularity.NewDeployer(singularity.NewRectiAgent(nc))
+	// We need the real name cache.
+	nameCache, err := nc()
+	if err != nil {
+		return nil, err
+	}
+	return singularity.NewDeployer(singularity.NewRectiAgent(nameCache)), nil
 }
 
 func newDockerClient() LocalDockerClient {
@@ -574,30 +580,9 @@ func NewCurrentGDM(state *sous.State) (CurrentGDM, error) {
 // The funcs named makeXXX below are used to create specific implementations of
 // sous native types.
 
-// newDockerRegistry creates a Docker version of sous.Registry
-func newDockerRegistry(cfg LocalSousConfig, ls LogSink, cl LocalDockerClient) (*docker.NameCache, error) {
-	dbCfg := cfg.Docker.DBConfig()
-	db, err := docker.GetDatabase(&dbCfg)
-	if err != nil {
-		return nil, errors.Wrap(err, "building name cache DB")
-	}
-	drh := cfg.Docker.RegistryHost
-	return docker.NewNameCache(drh, cl.Client, ls.Child("docker-images"), db)
-}
-
-// This maintains the singleton nature of the NameCache, which is important,
-// because otherwise we race to groom the database.
-func theDockerRegistry(graph *SousGraph) (*docker.NameCache, error) {
-	registryScoop := struct {
-		NC *docker.NameCache
-	}{}
-	err := graph.Inject(&registryScoop)
-	return registryScoop.NC, err
-}
-
-func newInserter(graph *SousGraph, cfg LocalSousConfig) (sous.Inserter, error) {
+func newInserter(cfg LocalSousConfig, nc lazyNameCache) (sous.Inserter, error) {
 	if cfg.Server == "" {
-		return theDockerRegistry(graph)
+		return nc()
 	}
 	return sous.NewHTTPNameInserter(cfg.Server)
 }
