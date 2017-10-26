@@ -180,15 +180,16 @@ func AssertMessageFields(t *testing.T, msg eachFielder, variableFields []string,
 			"fields": map[string]interface{}{},
 		}
 
-		for n, v := range actualFields {
-			switch val := v.(type) {
+		msg.EachField(func(n string, v interface{}) {
+			switch n {
+			case "call-stack-line-number", "call-stack-function", "call-stack-file", "@timestamp", "thread-name", "@loglov3-otl":
+				return
+			}
+			switch v.(type) {
 			default:
-				t.Logf("Don't know the OTL type for %v %[1]t", v)
+				t.Errorf("Don't know the OTL type for %v %[1]t", v)
 				return
 			case string:
-				if val == "@loglov3-otl" {
-					continue
-				}
 				otl["fields"].(map[string]interface{})[n] = map[string]interface{}{"type": "string", "optional": true}
 			case bool:
 				otl["fields"].(map[string]interface{})[n] = map[string]interface{}{"type": "boolean", "optional": true}
@@ -201,7 +202,7 @@ func AssertMessageFields(t *testing.T, msg eachFielder, variableFields []string,
 			case time.Time:
 				otl["fields"].(map[string]interface{})[n] = map[string]interface{}{"type": "timestamp", "optional": true}
 			}
-		}
+		})
 
 		b, err := yaml.Marshal(otl)
 		if err != nil {

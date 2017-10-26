@@ -11,12 +11,11 @@ import (
 type (
 	updateMessage struct {
 		callerInfo logging.CallerInfo
-		finished   bool
 		tries      int
 		sid        sous.SourceID
 		did        sous.DeploymentID
 		user       sous.User
-		start      time.Time
+		interval   logging.MessageInterval
 		err        error
 	}
 )
@@ -28,19 +27,18 @@ func newUpdateBeginMessage(tries int, sid sous.SourceID, did sous.DeploymentID, 
 		sid:        sid,
 		did:        did,
 		user:       user,
-		start:      start,
+		interval:   logging.OpenInterval(start),
 	}
 }
 
 func newUpdateSuccessMessage(tries int, sid sous.SourceID, did sous.DeploymentID, user sous.User, start time.Time) updateMessage {
 	return updateMessage{
 		callerInfo: logging.GetCallerInfo("cli/actions"),
-		finished:   true,
 		tries:      tries,
 		sid:        sid,
 		did:        did,
 		user:       user,
-		start:      start,
+		interval:   logging.CompleteInterval(start),
 	}
 }
 
@@ -51,7 +49,7 @@ func newUpdateErrorMessage(tries int, sid sous.SourceID, did sous.DeploymentID, 
 		sid:        sid,
 		did:        did,
 		user:       user,
-		start:      start,
+		interval:   logging.OpenInterval(start),
 		err:        err,
 	}
 }
@@ -60,7 +58,7 @@ func (msg updateMessage) Message() string {
 	if msg.err != nil {
 		return "Error during update"
 	}
-	if msg.finished {
+	if msg.interval.Complete() {
 		return "Update successful"
 	}
 	return "Beginning update"
@@ -69,14 +67,13 @@ func (msg updateMessage) Message() string {
 func (msg updateMessage) EachField(fn logging.FieldReportFn) {
 	fn("@loglov3-otl", "sous-update-v1")
 	msg.callerInfo.EachField(fn)
+	msg.interval.EachField(fn)
+
 	fn("try-number", msg.tries)
 	fn("source-id", msg.sid.String())
 	fn("deploy-id", msg.did.String())
 	fn("user-email", msg.user.Email)
-	fn("started-at", msg.start)
-	if msg.finished {
-		fn("finished-at", time.Now())
-	}
+
 	if msg.err != nil {
 		fn("error", msg.err.Error())
 	}

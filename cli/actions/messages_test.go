@@ -52,6 +52,7 @@ func TestUpdateBeginMessage(t *testing.T) {
 		"deploy-id":    "test-example:github.com/opentable/example,first~vanilla",
 		"user-email":   "jdoe@example.com",
 		"try-number":   2,
+		"duration":     int64(0),
 	}
 
 	logging.AssertMessageFields(t, msg, fixedFields, variableFields)
@@ -92,6 +93,7 @@ func TestUpdateSuccessMessage(t *testing.T) {
 		"thread-name",
 		"started-at",
 		"finished-at",
+		"duration",
 	}
 
 	variableFields := map[string]interface{}{
@@ -149,6 +151,7 @@ func TestUpdateErrorMessage(t *testing.T) {
 		"user-email":   "jdoe@example.com",
 		"try-number":   2,
 		"error":        "everything is on fire",
+		"duration":     int64(0),
 	}
 
 	logging.AssertMessageFields(t, msg, fixedFields, variableFields)

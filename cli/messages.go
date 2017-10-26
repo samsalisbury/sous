@@ -42,7 +42,7 @@ type cliResultMessage struct {
 	callerInfo logging.CallerInfo
 	args       []string
 	res        cmdr.Result
-	start, end time.Time
+	interval   logging.MessageInterval
 }
 
 func reportCLIResult(logsink logging.LogSink, args []string, start time.Time, res cmdr.Result) {
@@ -55,8 +55,7 @@ func newCLIResult(args []string, start time.Time, res cmdr.Result) *cliResultMes
 		callerInfo: logging.GetCallerInfo("cli/messages", "cli/cli"),
 		args:       args,
 		res:        res,
-		start:      start,
-		end:        time.Now(),
+		interval:   logging.CompleteInterval(start),
 	}
 }
 
@@ -71,7 +70,7 @@ func (msg *cliResultMessage) Message() string {
 func (msg *cliResultMessage) EachField(f logging.FieldReportFn) {
 	f("@loglov3-otl", "sous-cli-v1")
 	msg.callerInfo.EachField(f)
-	f("exit-code", msg.res.ExitCode())
-	f("duration", msg.end.Sub(msg.start))
+	msg.interval.EachField(f)
 	f("arguments", fmt.Sprintf("%q", msg.args))
+	f("exit-code", msg.res.ExitCode())
 }

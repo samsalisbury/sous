@@ -83,7 +83,7 @@ func (msg *clientHTTPResponse) EachField(f logging.FieldReportFn) {
 	f("incoming", false)
 	f("method", msg.method)
 	f("status", msg.status)
-	f("duration", msg.dur)
+	f("duration", int64(msg.dur/time.Microsecond))
 
 	f("body-size", msg.requestSize)
 	// body?

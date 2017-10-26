@@ -19,11 +19,6 @@ func TestReportCHResponseFields(t *testing.T) {
 	require.Len(t, logCalls, 1)
 	assert.Equal(t, logCalls[0].PassedArgs().Get(0), logging.InformationLevel)
 	message := logCalls[0].PassedArgs().Get(1).(logging.LogMessage)
-	actualFields := map[string]interface{}{}
-	message.EachField(func(name string, value interface{}) {
-		assert.NotContains(t, actualFields, name) //don't clobber a field
-		actualFields[name] = value
-	})
 
 	/*
 		"line":610,
@@ -32,20 +27,21 @@ func TestReportCHResponseFields(t *testing.T) {
 		"time":logging.callTime{sec:63639633602, nsec:854240181, loc:(*time.Location)(0x8f3780)},
 	*/
 
-	logging.AssertMessageFields(t, message,
-		[]string{"call-stack-line-number", "call-stack-function", "call-stack-file", "@timestamp", "thread-name"},
-		map[string]interface{}{
-			"@loglov3-otl":    "http-v1",
-			"incoming":        false,
-			"method":          "GET",
-			"url":             "http://example.com/api?a=a",
-			"url-hostname":    "example.com",
-			"url-pathname":    "/api",
-			"url-querystring": "a=a",
-			"duration":        time.Duration(30000000),
-			"body-size":       int64(0),
-			"response-size":   int64(123),
-			"status":          200,
-		})
+	fixedFields := []string{"call-stack-line-number", "call-stack-function", "call-stack-file", "@timestamp", "thread-name"}
 
+	variableFields := map[string]interface{}{
+		"@loglov3-otl":    "http-v1",
+		"incoming":        false,
+		"method":          "GET",
+		"url":             "http://example.com/api?a=a",
+		"url-hostname":    "example.com",
+		"url-pathname":    "/api",
+		"url-querystring": "a=a",
+		"duration":        int64(30000),
+		"body-size":       int64(0),
+		"response-size":   int64(123),
+		"status":          200,
+	}
+
+	logging.AssertMessageFields(t, message, fixedFields, variableFields)
 }

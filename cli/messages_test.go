@@ -48,6 +48,8 @@ func TestResultMessage(t *testing.T) {
 		"call-stack-function",
 		"thread-name",
 		"duration",
+		"started-at",
+		"finished-at",
 	}
 
 	variableFields := map[string]interface{}{

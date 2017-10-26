@@ -169,7 +169,7 @@ func TestPollerStatusMessage(t *testing.T) {
 		"filter-revision": "*",
 		"filter-flavor":   "*",
 		"filter-offset":   "*",
-		"status":          "ResolveNotPolled",
+		"deploy-status":   "ResolveNotPolled",
 	}
 
 	logging.AssertMessageFields(t, msg, fixedFields, variableFields)
@@ -220,7 +220,7 @@ func TestPollerResolvedMessage(t *testing.T) {
 		"filter-revision": "*",
 		"filter-flavor":   "*",
 		"filter-offset":   "*",
-		"status":          "ResolveComplete",
+		"deploy-status":   "ResolveComplete",
 	}
 
 	logging.AssertMessageFields(t, msg, fixedFields, variableFields)

@@ -123,7 +123,7 @@ func (msg *pollerResolvedMessage) EachField(f logging.FieldReportFn) {
 	f("@loglov3-otl", "sous-status-polling-v1")
 	msg.callerInfo.EachField(f)
 	pollerFields(f, msg.poller)
-	f("status", msg.status.String())
+	f("deploy-status", msg.status.String())
 }
 
 func newPollerStatusMessage(poller *StatusPoller) *pollerStatusMessage {
@@ -145,7 +145,7 @@ func (msg *pollerStatusMessage) EachField(f logging.FieldReportFn) {
 	f("@loglov3-otl", "sous-status-polling-v1")
 	msg.callerInfo.EachField(f)
 	pollerFields(f, msg.poller)
-	f("status", msg.poller.status.String())
+	f("deploy-status", msg.poller.status.String())
 }
 
 //	reportSubreport(sp.logs, sp, update)

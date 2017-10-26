@@ -10,13 +10,14 @@ type resolveCompleteMessage struct {
 	logging.CallerInfo
 	logging.Level
 	status *ResolveStatus
+	logging.MessageInterval
 }
 
 func reportResolverStatus(logger logging.LogSink, status *ResolveStatus) {
 	msg := resolveCompleteMessage{
-		CallerInfo: logging.GetCallerInfo("reportResolverStatus"),
-		Level:      logging.InformationLevel,
-		status:     status,
+		CallerInfo:      logging.GetCallerInfo("reportResolverStatus"),
+		Level:           logging.InformationLevel,
+		MessageInterval: logging.NewInterval(status.Started, status.Finished),
 	}
 	logging.Deliver(msg, logger)
 }
@@ -51,4 +52,5 @@ func (msg resolveCompleteMessage) EachField(f logging.FieldReportFn) {
 	f("finished-at", msg.status.Finished.Format(time.RFC3339))
 	f("error-count", len(msg.status.Errs.Causes))
 	msg.CallerInfo.EachField(f)
+	msg.MessageInterval.EachField(f)
 }
