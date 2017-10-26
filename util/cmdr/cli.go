@@ -119,12 +119,12 @@ func (c *CLI) InvokeAndExit(args []string) {
 // which is usually a nicer user experience than having to remember strictly
 // which subcommand a flag is applicable to.
 func (c *CLI) Prepare(args []string) (*PreparedExecution, error) {
-	base, ff := c.Root, c.GlobalFlagSetFuncs
+	base := c.Root
 	if c.Hooks.Startup != nil {
 		c.Hooks.Startup(c)
 		c.Hooks.Startup = nil
 	}
-	return c.prepare(base, args, ff)
+	return c.prepare(base, args, nil)
 }
 
 // runHook runs the hook if it's not nil, and returns the hook's error.
@@ -190,20 +190,14 @@ func (c *CLI) prepare(cmd Command, cmdArgs []string, flagAddFuncs []func(*flag.F
 	cmdArgs = cmdArgs[1:]
 	// Add and parse flags for this command.
 	if cmdWithFlags, ok := cmd.(AddsFlags); ok {
-		if flagAddFuncs == nil {
-			flagAddFuncs = []func(*flag.FlagSet){}
-		}
-		// add these flags to the agglomeration
-		flagAddFuncs = append(flagAddFuncs, cmdWithFlags.AddFlags)
+		// Just add the bottom level flags.
+		flagAddFuncs = []func(*flag.FlagSet){cmdWithFlags.AddFlags}
 	}
 	// If this command has subcommands, first try to descend into one of them.
 	if cmdWithSubcmd, ok := cmd.(Subcommander); ok && len(cmdArgs) != 0 {
 		subcommandName := cmdArgs[0]
 		subcommands := cmdWithSubcmd.Subcommands()
 		if cmdWithSubCmd, ok := subcommands[subcommandName]; ok {
-			if err := c.runHook(c.Hooks.Parsed, cmd); err != nil {
-				return nil, EnsureErrorResult(err)
-			}
 			return c.prepare(cmdWithSubCmd, cmdArgs, flagAddFuncs)
 		}
 	}

@@ -1,10 +1,6 @@
 package cli
 
 import (
-	"flag"
-
-	"github.com/opentable/sous/config"
-	"github.com/opentable/sous/ext/docker"
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/util/cmdr"
 	"github.com/opentable/sous/util/whitespace"
@@ -13,8 +9,7 @@ import (
 
 // Sous is the main sous command.
 type Sous struct {
-	// CLI is a reference to the CLI singleton. We use it here to set global
-	// verbosity.
+	// CLI is a reference to the CLI singleton.
 	CLI *CLI
 	graph.LogSink
 	// Err is the error message stream.
@@ -30,18 +25,7 @@ type Sous struct {
 	// flags holds the values of flags passed to this command
 	flags struct {
 		Help bool
-		config.Verbosity
 	}
-
-	/*
-		This ensures the singularity of the field types - otherwise, if they're
-		injected twice and we have issues.
-
-		This is a temporary fix ahead of transitioning to a simpler DI.
-		 - jdl 9/28/17
-	*/
-	// added as a field here so that it will be singleton for the app
-	SingletonNameCache *docker.NameCache
 }
 
 // TopLevelCommands is populated once per command file (beginning sous_) in this
@@ -69,23 +53,6 @@ pull requests are welcome.
 
 // Help returns the top-level help for Sous.
 func (*Sous) Help() string { return sousHelp }
-
-// AddFlags adds sous' flags.
-func (s *Sous) AddFlags(fs *flag.FlagSet) {
-	fs.BoolVar(&s.flags.Verbosity.Silent, "s", false,
-		"silent: silence all non-essential output")
-	fs.BoolVar(&s.flags.Verbosity.Quiet, "q", false,
-		"quiet: output only essential error messages")
-	fs.BoolVar(&s.flags.Verbosity.Loud, "v", false,
-		"loud: output extra info, including all shell commands")
-	fs.BoolVar(&s.flags.Verbosity.Debug, "d", false,
-		"debug: output detailed logs of internal operations")
-}
-
-// RegisterOn adds the Sous object itself to the Psyringe
-func (s *Sous) RegisterOn(psy Addable) {
-	psy.Add(&s.flags.Verbosity)
-}
 
 // Execute exists to present a helpful error to the user, in the case they just
 // run 'sous' with not subcommand.

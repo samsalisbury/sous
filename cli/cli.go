@@ -3,11 +3,14 @@
 package cli
 
 import (
+	"flag"
 	"fmt"
 	"io"
 	"os"
+	"sync"
 	"time"
 
+	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/util/cmdr"
 	"github.com/opentable/sous/util/logging"
@@ -39,9 +42,8 @@ type (
 	// CLI describes the command line interface for Sous
 	CLI struct {
 		*cmdr.CLI
-		LogSink              logging.LogSink
-		baseGraph, SousGraph *graph.SousGraph
-		scopedGraphs         map[cmdr.Command]*graph.SousGraph
+		LogSink logging.LogSink
+		graph   *graph.SousGraph
 	}
 	// Addable objects are able to receive lists of interface{}, presumably to add
 	// them to a DI registry. Abstracts Psyringe's Add()
@@ -64,9 +66,9 @@ func SuccessYAML(v interface{}) cmdr.Result {
 	return cmdr.SuccessData(b)
 }
 
-// BuildCLIGraph builds the CLI DI graph.
-func BuildCLIGraph(root *Sous, cli *CLI, out, err io.Writer) *graph.SousGraph {
-	g := cli.baseGraph //was .Clone() - caused problems
+// buildCLIGraph builds the CLI DI graph.
+func buildCLIGraph(root *Sous, cli *CLI, out, err io.Writer) {
+	g := cli.graph //was .Clone() - caused problems
 	g.Add(cli)
 	g.Add(root)
 	g.Add(func(c *CLI) graph.Out {
@@ -75,24 +77,6 @@ func BuildCLIGraph(root *Sous, cli *CLI, out, err io.Writer) *graph.SousGraph {
 	g.Add(func(c *CLI) graph.ErrOut {
 		return graph.ErrOut{Output: c.Err}
 	})
-	cli.SousGraph = g
-
-	return cli.SousGraph
-}
-
-func (cli *CLI) scopedGraph(cmd, under cmdr.Command) *graph.SousGraph {
-	if g, ok := cli.scopedGraphs[cmd]; ok {
-		return g
-	}
-
-	parent := cli.scopedGraphs[under]
-
-	g := &graph.SousGraph{Psyringe: parent.Clone()}
-	if r, ok := cmd.(Registrant); ok {
-		r.RegisterOn(g)
-	}
-	cli.scopedGraphs[cmd] = g
-	return g
 }
 
 // Invoke wraps the cmdr.CLI Invoke for logging.
@@ -110,6 +94,8 @@ func NewSousCLI(di *graph.SousGraph, s *Sous, logsink logging.LogSink, out, erro
 	stdout := cmdr.NewOutput(out)
 	stderr := cmdr.NewOutput(errout)
 
+	var verbosity config.Verbosity
+
 	cli := &CLI{
 		LogSink: logsink,
 		CLI: &cmdr.CLI{
@@ -121,38 +107,40 @@ func NewSousCLI(di *graph.SousGraph, s *Sous, logsink logging.LogSink, out, erro
 			// uses the standard flag.ErrHelp value to decide whether or not to show
 			// this.
 			HelpCommand: os.Args[0] + " help",
+			GlobalFlagSetFuncs: []func(*flag.FlagSet){
+				func(fs *flag.FlagSet) {
+					fs.BoolVar(&verbosity.Silent, "s", false,
+						"silent: silence all non-essential output")
+					fs.BoolVar(&verbosity.Quiet, "q", false,
+						"quiet: output only essential error messages")
+					fs.BoolVar(&verbosity.Loud, "v", false,
+						"loud: output extra info, including all shell commands")
+					fs.BoolVar(&verbosity.Debug, "d", false,
+						"debug: output detailed logs of internal operations")
+				},
+			},
 		},
 
-		baseGraph: di,
+		graph: di,
 	}
 
-	chain := []cmdr.Command{}
-	rootGraph := BuildCLIGraph(s, cli, out, errout)
-	s.RegisterOn(rootGraph)
+	buildCLIGraph(s, cli, out, errout)
 
-	cli.scopedGraphs = map[cmdr.Command]*graph.SousGraph{s: rootGraph}
+	var addVerbosityOnce sync.Once
 
 	cli.Hooks.Parsed = func(cmd cmdr.Command) error {
-		chain = append(chain, cmd)
+		addVerbosityOnce.Do(func() {
+			cli.graph.Add(&verbosity)
+		})
+		if registrant, ok := cmd.(Registrant); ok {
+			registrant.RegisterOn(cli.graph)
+		}
 		return nil
 	}
 
-	// Before Execute is called on any command, inject it with values from the
-	// graph.
+	// Before Execute is called on any command, inject its dependencies.
 	cli.Hooks.PreExecute = func(cmd cmdr.Command) error {
-		// Create the CLI dependency graph.
-
-		for n, c := range chain {
-			var under cmdr.Command
-			if n > 0 {
-				under = chain[n-1]
-			}
-			g := cli.scopedGraph(c, under)
-			if err := g.Inject(c); err != nil {
-				return errors.Wrapf(err, "setup for execute")
-			}
-		}
-		return nil
+		return errors.Wrapf(cli.graph.Inject(cmd), "setup for execute")
 	}
 
 	cli.Hooks.PreFail = func(err error) cmdr.ErrorResult {

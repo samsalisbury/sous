@@ -51,7 +51,10 @@ package psyringe
 
 import (
 	"fmt"
+	"log"
+	"os"
 	"reflect"
+	"runtime"
 	"sort"
 	"sync"
 
@@ -60,11 +63,12 @@ import (
 
 // Psyringe is a dependency injection container.
 type Psyringe struct {
-	parent         *Psyringe
-	scope          string
-	values         map[reflect.Type]reflect.Value
-	ctors          map[reflect.Type]*ctor
-	injectionTypes map[reflect.Type]struct{}
+	parent             *Psyringe
+	scope              string
+	values             map[reflect.Type]reflect.Value
+	ctors              map[reflect.Type]*ctor
+	injectionTypes     map[reflect.Type]struct{}
+	debugAddedLocation map[reflect.Type]string
 }
 
 // New creates a new Psyringe, and adds the provided constructors and values to
@@ -82,12 +86,13 @@ func New(constructorsAndValues ...interface{}) *Psyringe {
 // useful if you are dynamically generating the arguments.
 func NewErr(constructorsAndValues ...interface{}) (*Psyringe, error) {
 	p := &Psyringe{
-		scope:          "<root>",
-		values:         map[reflect.Type]reflect.Value{},
-		ctors:          map[reflect.Type]*ctor{},
-		injectionTypes: map[reflect.Type]struct{}{},
+		scope:              "<root>",
+		values:             map[reflect.Type]reflect.Value{},
+		ctors:              map[reflect.Type]*ctor{},
+		injectionTypes:     map[reflect.Type]struct{}{},
+		debugAddedLocation: map[reflect.Type]string{},
 	}
-	return p, errors.Wrap(p.AddErr(constructorsAndValues...), "Add failed")
+	return p, errors.Wrap(p.addErr(constructorsAndValues...), "Add failed")
 }
 
 // Add adds constructors and values to the Psyringe. It panics if any
@@ -108,6 +113,11 @@ func (p *Psyringe) Add(constructorsAndValues ...interface{}) {
 // AddErr is similar to Add, but returns an error instead of panicking. This is
 // useful if you are dynamically generating the arguments.
 func (p *Psyringe) AddErr(constructorsAndValues ...interface{}) error {
+	return p.addErr(constructorsAndValues...)
+}
+
+// addErr just exists to make callerinfo consistent in Psyringe.add.
+func (p *Psyringe) addErr(constructorsAndValues ...interface{}) error {
 	for i, thing := range constructorsAndValues {
 		if thing == nil {
 			return fmt.Errorf("cannot add nil (argument %d)", i)
@@ -280,6 +290,7 @@ func (p *Psyringe) inject(target interface{}) error {
 	if v.IsNil() {
 		return fmt.Errorf("target is nil")
 	}
+	debugf("injecting into a %s", ptr)
 	nfs := t.NumField()
 	wg := sync.WaitGroup{}
 	wg.Add(nfs)
@@ -291,7 +302,9 @@ func (p *Psyringe) inject(target interface{}) error {
 	for i := 0; i < nfs; i++ {
 		go func(f reflect.Value, fieldName string) {
 			defer wg.Done()
-			if fv, ok, err := p.getValueForStructField(f.Type(), fieldName); ok && err == nil {
+			fieldType := f.Type()
+			debugf("injecting field %s.%s (%s)", ptr, fieldName, fieldType)
+			if fv, ok, err := p.getValueForStructField(fieldType, fieldName); ok && err == nil {
 				f.Set(fv)
 			} else if err != nil {
 				errs <- err
@@ -320,6 +333,7 @@ func (p *Psyringe) getValueForStructField(t reflect.Type, name string) (reflect.
 }
 
 func (p *Psyringe) getValueForConstructor(forCtor *ctor, paramIndex int, t reflect.Type) (reflect.Value, error) {
+	debugf("getting a %s for arg %d for constructor of %s", t, paramIndex, forCtor.outType)
 	if v, ok := p.values[t]; ok {
 		return v, nil
 	}
@@ -368,13 +382,16 @@ func (p *Psyringe) scopeNameInUse(name string) bool {
 
 func (p *Psyringe) registerInjectionType(t reflect.Type) error {
 	if scope, registered := p.injectionTypeRegistrationScope(t); registered {
-		message := fmt.Sprintf("injection type %s already registered", t)
+		message := fmt.Sprintf("injection type %s already registered at %s", t, p.debugAddedLocation[t])
 		if scope == p.scope {
 			return errors.New(message)
 		}
 		return fmt.Errorf("%s (scope %s)", message, scope)
 	}
 	p.injectionTypes[t] = struct{}{}
+	_, file, line, _ := runtime.Caller(6)
+	p.debugAddedLocation[t] = fmt.Sprintf("%s:%d", file, line)
+
 	return nil
 }
 
@@ -386,4 +403,21 @@ func (p *Psyringe) testValueOrConstructorIsRegistered(paramType reflect.Type) er
 		return nil
 	}
 	return errors.Errorf("no constructor or value for %s", paramType)
+}
+
+var debugf = func(string, ...interface{}) {}
+
+const debugFileKey = "PSYRINGE_DEBUG_FILE"
+
+func init() {
+	if debugFile := os.Getenv(debugFileKey); debugFile != "" {
+		if fd, err := os.Create(debugFile); err != nil {
+			log.Printf("psyringe: Unable to open %q (set by %s)", debugFile, debugFileKey)
+		} else {
+			l := log.New(fd, "psyringe: DEBUG: ", log.LstdFlags)
+			debugf = func(format string, a ...interface{}) {
+				l.Printf(format, a...)
+			}
+		}
+	}
 }
