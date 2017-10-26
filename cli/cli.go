@@ -48,6 +48,11 @@ type (
 	Addable interface {
 		Add(...interface{})
 	}
+
+	// A Registrant is able to add values to an Addable (implicitly: a Psyringe)
+	Registrant interface {
+		RegisterOn(Addable)
+	}
 )
 
 // SuccessYAML lets you return YAML on the command line.
@@ -134,9 +139,7 @@ func NewSousCLI(di *graph.SousGraph, s *Sous, out, errout io.Writer) (*CLI, erro
 		addVerbosityOnce.Do(func() {
 			cli.graph.Add(&verbosity)
 		})
-		if registrant, ok := cmd.(interface {
-			RegisterOn(Addable)
-		}); ok {
+		if registrant, ok := cmd.(Registrant); ok {
 			registrant.RegisterOn(cli.graph)
 		}
 		return nil
