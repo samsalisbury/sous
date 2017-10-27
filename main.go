@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/opentable/sous/cli"
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/util/logging"
@@ -28,7 +27,6 @@ func main() {
 
 	ls := logging.NewLogSet(Sous.Version, "sous", "", os.Stderr)
 	di := graph.BuildGraph(Sous.Version, ls, os.Stdin, os.Stdout, os.Stderr)
-	spew.Printf("main: %p\n", di)
 	c, err := cli.NewSousCLI(di, Sous, ls, os.Stdout, os.Stderr)
 	if err != nil {
 		die(err)
