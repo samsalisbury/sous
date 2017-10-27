@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
 ## [Unreleased](//github.com/opentable/sous/compare/0.5.48..HEAD)
+### Fixed
+* Server: at least one bootched log message type has been caught and corrected.
 
 ## [0.5.48](//github.com/opentable/sous/compare/0.5.47..0.5.48)
 
