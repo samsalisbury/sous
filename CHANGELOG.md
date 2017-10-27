@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
+## [Unreleased](//github.com/opentable/sous/compare/0.5.47..HEAD)
+
+### Fixed
+* Erroneous output on stdout breaking some cli consumers.
+
 
 ## [0.5.47](//github.com/opentable/sous/compare/0.5.46..0.5.47)
 
