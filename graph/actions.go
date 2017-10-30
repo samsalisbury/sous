@@ -1,7 +1,6 @@
 package graph
 
 import (
-	"github.com/davecgh/go-spew/spew"
 	"github.com/opentable/sous/cli/actions"
 	"github.com/opentable/sous/config"
 	sous "github.com/opentable/sous/lib"
@@ -17,7 +16,6 @@ func (di *SousGraph) guardedAdd(guardName string, value interface{}) {
 
 // GetUpdate returns an update Action.
 func (di *SousGraph) GetUpdate(dff config.DeployFilterFlags, otpl config.OTPLFlags) actions.Action {
-	spew.Printf("GetUpdate: %p\n", di)
 	di.guardedAdd("DeployFilterFlags", &dff)
 	di.guardedAdd("OTPLFlags", &otpl)
 	di.guardedAdd("Dryrun", DryrunNeither)
