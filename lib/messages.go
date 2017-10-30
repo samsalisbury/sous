@@ -27,18 +27,18 @@ type (
 	}
 )
 
-func reportPollerResolved(logsink logging.LogSink, sp *StatusPoller, status ResolveState, err error) {
-	msg := newPollerResolvedMessage(sp, status, err)
-	logging.Deliver(msg, logsink)
-}
-
 func reportPollerStart(logsink logging.LogSink, poller *StatusPoller) {
 	msg := newPollerStartMessage(poller)
 	logging.Deliver(msg, logsink)
 }
 
-func reportPollerStatus(logsink logging.LogSink, poller *StatusPoller) {
-	msg := newPollerStatusMessage(poller)
+func reportPollerResolved(logsink logging.LogSink, sp *StatusPoller, status ResolveState, err error) {
+	msg := newPollerResolvedMessage(sp, status, err)
+	logging.Deliver(msg, logsink)
+}
+
+func reportPollerStatus(logsink logging.LogSink, poller *StatusPoller, old ResolveState) {
+	msg := newPollerStatusMessage(poller, old)
 	logging.Deliver(msg, logsink)
 }
 
@@ -126,10 +126,11 @@ func (msg *pollerResolvedMessage) EachField(f logging.FieldReportFn) {
 	f("deploy-status", msg.status.String())
 }
 
-func newPollerStatusMessage(poller *StatusPoller) *pollerStatusMessage {
+func newPollerStatusMessage(poller *StatusPoller, old ResolveState) *pollerStatusMessage {
 	return &pollerStatusMessage{
-		callerInfo: logging.GetCallerInfo("sous/lib/messages"),
-		poller:     poller,
+		callerInfo:    logging.GetCallerInfo("sous/lib/messages"),
+		poller:        poller,
+		previousState: old,
 	}
 }
 
@@ -146,6 +147,14 @@ func (msg *pollerStatusMessage) EachField(f logging.FieldReportFn) {
 	msg.callerInfo.EachField(f)
 	pollerFields(f, msg.poller)
 	f("deploy-status", msg.poller.status.String())
+}
+
+func (msg *pollerStatusMessage) WriteToConsole(console io.Writer) {
+	if msg.poller.status == msg.oldStatus {
+		console.Write([]byte{'.'})
+		return
+	}
+	fmt.Fprintf(console, "\n%s", msg.poller.status)
 }
 
 //	reportSubreport(sp.logs, sp, update)

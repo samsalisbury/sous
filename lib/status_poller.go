@@ -211,8 +211,9 @@ func (sp *StatusPoller) finished() bool {
 }
 
 func (sp *StatusPoller) updateStatus() {
+	oldStatus := sp.status
 	sp.status = sp.computeStatus()
-	reportPollerStatus(sp.logs, sp)
+	reportPollerStatus(sp.logs, sp, oldStatus)
 }
 
 func (sp *StatusPoller) computeStatus() ResolveState {
