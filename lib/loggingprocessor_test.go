@@ -116,6 +116,175 @@ func TestDiffMessages(t *testing.T) {
 	logging.AssertMessageFields(t, msg, fixedFields, fields)
 }
 
+func TestDiffMessages_knownpanic(t *testing.T) {
+	msg := &deployableMessage{
+		pair: &DeployablePair{
+			Diffs: Differences{},
+			Prior: &Deployable{
+				Status: 0,
+				Deployment: &Deployment{
+					DeployConfig: DeployConfig{
+						Resources: map[string]string{
+							"ports":  "3",
+							"cpus":   "0.1",
+							"memory": "1024",
+						},
+						Metadata: map[string]string{
+							"": "",
+						},
+						Env: map[string]string{
+							"OT_DISCO_INIT_URL:": "discovery-ci-uswest2.otenv.com",
+						},
+						NumInstances: 1,
+						Volumes:      nil,
+						Startup: Startup{
+							SkipCheck:                 false,
+							ConnectDelay:              10,
+							Timeout:                   30,
+							ConnectInterval:           1,
+							CheckReadyProtocol:        "HTTP",
+							CheckReadyURIPath:         "/health",
+							CheckReadyPortIndex:       0,
+							CheckReadyFailureStatuses: []int{500, 503},
+							CheckReadyURITimeout:      5,
+							CheckReadyInterval:        1,
+							CheckReadyRetries:         120,
+						},
+					},
+					ClusterName: "",
+					Cluster:     nil,
+					SourceID: SourceID{
+						Location: SourceLocation{
+							Repo: "github.com/opentable/consumer-service-xyz",
+							Dir:  "",
+						},
+						Version: semv.MustParse("0.0.1"),
+					},
+					Flavor: "",
+					Owners: map[string]struct{}{},
+					Kind:   "",
+				},
+				BuildArtifact: nil,
+			},
+			Post: &Deployable{
+				Status: 0,
+				Deployment: &Deployment{
+					DeployConfig: DeployConfig{
+						Resources: map[string]string{
+							"ports":  "3",
+							"cpus":   "0.1",
+							"memory": "1024",
+						},
+						Metadata: map[string]string{
+							"": "",
+						},
+						Env: map[string]string{
+							"OT_DISCO_INIT_URL:": "discovery-ci-uswest2.otenv.com",
+						},
+						NumInstances: 1,
+						Volumes:      nil,
+						Startup: Startup{
+							SkipCheck:                 false,
+							ConnectDelay:              10,
+							Timeout:                   30,
+							ConnectInterval:           1,
+							CheckReadyProtocol:        "HTTP",
+							CheckReadyURIPath:         "/health",
+							CheckReadyPortIndex:       0,
+							CheckReadyFailureStatuses: []int{500, 503},
+							CheckReadyURITimeout:      5,
+							CheckReadyInterval:        1,
+							CheckReadyRetries:         120,
+						},
+					},
+					ClusterName: "",
+					Cluster:     nil,
+					SourceID: SourceID{
+						Location: SourceLocation{
+							Repo: "github.com/opentable/consumer-service-xyz",
+							Dir:  "",
+						},
+						Version: semv.MustParse("0.0.1"),
+					},
+					Flavor: "",
+					Owners: map[string]struct{}{},
+					Kind:   "",
+				},
+				BuildArtifact: nil,
+			},
+		},
+	}
+
+	fixedFields := []string{
+		"@timestamp",
+		"call-stack-file",
+		"call-stack-line-number",
+		"call-stack-function",
+		"thread-name",
+	}
+
+	variableFields := map[string]interface{}{
+		"@loglov3-otl":          "sous-deployment-diff",
+		"sous-deployment-id":    ":",
+		"sous-diff-disposition": "same",
+		"sous-manifest-id":      "",
+
+		"sous-post-checkready-failurestatuses": "500,503",
+		"sous-post-checkready-interval":        1,
+		"sous-post-checkready-portindex":       0,
+		"sous-post-checkready-protocol":        "HTTP",
+		"sous-post-checkready-retries":         120,
+		"sous-post-checkready-uripath":         "/health",
+		"sous-post-checkready-uritimeout":      5,
+		"sous-post-clustername":                "",
+		"sous-post-env":                        "{\"OT_DISCO_INIT_URL:\":\"discovery-ci-uswest2.otenv.com\"}",
+		"sous-post-flavor":                     "",
+		"sous-post-kind":                       "",
+		"sous-post-metadata":                   "{\"\":\"\"}",
+		"sous-post-numinstances":               1,
+		"sous-post-offset":                     "",
+		"sous-post-owners":                     "",
+		"sous-post-repo":                       "github.com/opentable/consumer-service-xyz",
+		"sous-post-resources":                  "{\"cpus\":\"0.1\",\"memory\":\"1024\",\"ports\":\"3\"}",
+		"sous-post-startup-connectdelay":       10,
+		"sous-post-startup-connectinterval":    1,
+		"sous-post-startup-skipcheck":          false,
+		"sous-post-startup-timeout":            30,
+		"sous-post-status":                     "DeployStatusAny",
+		"sous-post-tag":                        "0.0.1",
+		"sous-post-volumes":                    "null",
+
+		"sous-prior-checkready-failurestatuses": "500,503",
+		"sous-prior-checkready-interval":        1,
+		"sous-prior-checkready-portindex":       0,
+		"sous-prior-checkready-protocol":        "HTTP",
+		"sous-prior-checkready-retries":         120,
+		"sous-prior-checkready-uripath":         "/health",
+		"sous-prior-checkready-uritimeout":      5,
+		"sous-prior-clustername":                "",
+		"sous-prior-env":                        "{\"OT_DISCO_INIT_URL:\":\"discovery-ci-uswest2.otenv.com\"}",
+		"sous-prior-flavor":                     "",
+		"sous-prior-kind":                       "",
+		"sous-prior-metadata":                   "{\"\":\"\"}",
+		"sous-prior-numinstances":               1,
+		"sous-prior-offset":                     "",
+		"sous-prior-owners":                     "",
+		"sous-prior-repo":                       "github.com/opentable/consumer-service-xyz",
+		"sous-prior-resources":                  "{\"cpus\":\"0.1\",\"memory\":\"1024\",\"ports\":\"3\"}",
+		"sous-prior-startup-connectdelay":       10,
+		"sous-prior-startup-connectinterval":    1,
+		"sous-prior-startup-skipcheck":          false,
+		"sous-prior-startup-timeout":            30,
+		"sous-prior-status":                     "DeployStatusAny",
+		"sous-prior-tag":                        "0.0.1",
+		"sous-prior-volumes":                    "null",
+	}
+
+	assert.NotPanics(t, func() {
+		logging.AssertMessageFields(t, msg, fixedFields, variableFields)
+	})
+}
+
 func TestDiffMessages_incomplete(t *testing.T) {
 	msg := &deployableMessage{
 		callerInfo: logging.GetCallerInfo(),

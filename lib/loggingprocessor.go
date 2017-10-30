@@ -91,6 +91,35 @@ func (msg *deployableMessage) EachField(f logging.FieldReportFn) {
 		return strings.Join(strs, ",")
 	}
 
+	deployConfigFields := func(prefix string, dc DeployConfig) {
+		f(prefix+"-resources", marshal("resources", dc.Resources))
+		f(prefix+"-metadata", marshal("metadata", dc.Metadata))
+		f(prefix+"-env", marshal("env", dc.Env))
+		f(prefix+"-numinstances", dc.NumInstances)
+		f(prefix+"-volumes", marshal("volumes", dc.Volumes))
+		f(prefix+"-startup-skipcheck", dc.Startup.SkipCheck)
+		f(prefix+"-startup-connectdelay", dc.Startup.ConnectDelay)
+		f(prefix+"-startup-timeout", dc.Startup.Timeout)
+		f(prefix+"-startup-connectinterval", dc.Startup.ConnectInterval)
+		f(prefix+"-checkready-protocol", dc.Startup.CheckReadyProtocol)
+		f(prefix+"-checkready-uripath", dc.Startup.CheckReadyURIPath)
+		f(prefix+"-checkready-portindex", dc.Startup.CheckReadyPortIndex)
+		f(prefix+"-checkready-failurestatuses", failureStatsAsStrings(dc.Startup.CheckReadyFailureStatuses))
+		f(prefix+"-checkready-uritimeout", dc.Startup.CheckReadyURITimeout)
+		f(prefix+"-checkready-interval", dc.Startup.CheckReadyInterval)
+		f(prefix+"-checkready-retries", dc.Startup.CheckReadyRetries)
+	}
+
+	buildArtifactFields := func(prefix string, ba *BuildArtifact) {
+		if ba == nil {
+			return
+		}
+
+		f(prefix+"-artifact-name", ba.Name)
+		f(prefix+"-artifact-type", ba.Type)
+		f(prefix+"-artifact-qualities", ba.Qualities.String())
+	}
+
 	deployableFields := func(prefix string, d *Deployable) {
 		if d == nil {
 			return
@@ -103,26 +132,8 @@ func (msg *deployableMessage) EachField(f logging.FieldReportFn) {
 		f(prefix+"-flavor", d.Deployment.Flavor)
 		f(prefix+"-owners", strings.Join(d.Deployment.Owners.Slice(), ","))
 		f(prefix+"-kind", string(d.Deployment.Kind))
-		f(prefix+"-resources", marshal("resources", d.DeployConfig.Resources))
-		f(prefix+"-metadata", marshal("metadata", d.DeployConfig.Metadata))
-		f(prefix+"-env", marshal("env", d.DeployConfig.Env))
-		f(prefix+"-numinstances", d.DeployConfig.NumInstances)
-		f(prefix+"-volumes", marshal("volumes", d.DeployConfig.Volumes))
-		f(prefix+"-startup-skipcheck", d.DeployConfig.Startup.SkipCheck)
-		f(prefix+"-startup-connectdelay", d.DeployConfig.Startup.ConnectDelay)
-		f(prefix+"-startup-timeout", d.DeployConfig.Startup.Timeout)
-		f(prefix+"-startup-connectinterval", d.DeployConfig.Startup.ConnectInterval)
-		f(prefix+"-checkready-protocol", d.DeployConfig.Startup.CheckReadyProtocol)
-		f(prefix+"-checkready-uripath", d.DeployConfig.Startup.CheckReadyURIPath)
-		f(prefix+"-checkready-portindex", d.DeployConfig.Startup.CheckReadyPortIndex)
-		f(prefix+"-checkready-failurestatuses", failureStatsAsStrings(d.DeployConfig.Startup.CheckReadyFailureStatuses))
-		f(prefix+"-checkready-uritimeout", d.DeployConfig.Startup.CheckReadyURITimeout)
-		f(prefix+"-checkready-interval", d.DeployConfig.Startup.CheckReadyInterval)
-		f(prefix+"-checkready-retries", d.DeployConfig.Startup.CheckReadyRetries)
-
-		f(prefix+"-artifact-name", d.BuildArtifact.Name)
-		f(prefix+"-artifact-type", d.BuildArtifact.Type)
-		f(prefix+"-artifact-qualities", d.BuildArtifact.Qualities.String())
+		deployConfigFields(prefix, d.DeployConfig)
+		buildArtifactFields(prefix, d.BuildArtifact)
 	}
 
 	f("@loglov3-otl", "sous-deployment-diff")
