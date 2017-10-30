@@ -280,9 +280,9 @@ func TestDiffMessages_knownpanic(t *testing.T) {
 		"sous-prior-volumes":                    "null",
 	}
 
-	//assert.NotPanics(t, func() {
-	logging.AssertMessageFields(t, msg, fixedFields, variableFields)
-	//})
+	assert.NotPanics(t, func() {
+		logging.AssertMessageFields(t, msg, fixedFields, variableFields)
+	})
 }
 
 func TestDiffMessages_incomplete(t *testing.T) {
