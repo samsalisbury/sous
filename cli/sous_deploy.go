@@ -53,7 +53,6 @@ func (sd *SousDeploy) Execute(args []string) cmdr.Result {
 	if err := update.Do(); err != nil {
 		return cmdr.EnsureErrorResult(err)
 	}
-	sd.CLI.OutputResult(cmdr.Success("Updated global manifest."))
 
 	// Running serverless, so run rectify.
 	if sd.Config.Server == "" {
@@ -73,6 +72,6 @@ func (sd *SousDeploy) Execute(args []string) cmdr.Result {
 		}
 		return cmdr.Success("Deploy complete")
 	}
-	return cmdr.Successf("Updated the global deploy manifest. Deploy in process.")
+	return cmdr.Successf("Deploy in process.")
 
 }

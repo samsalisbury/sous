@@ -82,5 +82,9 @@ func (msg updateMessage) EachField(fn logging.FieldReportFn) {
 func (msg updateMessage) WriteToConsole(console io.Writer) {
 	if msg.err != nil {
 		console.Write([]byte(msg.err.Error()))
+		return
+	}
+	if msg.interval.Complete() {
+		console.Write([]byte("Updated global manifest"))
 	}
 }
