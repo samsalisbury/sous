@@ -10,20 +10,12 @@ import (
 func TestInvocationMessage(t *testing.T) {
 	msg := newInvocationMessage([]string{"testing", "test"})
 
-	fixedFields := []string{
-		"@timestamp",
-		"call-stack-file",
-		"call-stack-line-number",
-		"call-stack-function",
-		"thread-name",
-	}
-
-	variableFields := map[string]interface{}{
+	fixedFields := map[string]interface{}{
 		"@loglov3-otl": "sous-cli-v1",
 		"arguments":    `["testing" "test"]`,
 	}
 
-	logging.AssertMessageFields(t, msg, fixedFields, variableFields)
+	logging.AssertMessageFields(t, msg, logging.StandardVariableFields, fixedFields)
 }
 
 type testResult struct {
@@ -41,6 +33,7 @@ func TestResultMessage(t *testing.T) {
 		testResult{1},
 	)
 
+	/*j
 	fixedFields := []string{
 		"@timestamp",
 		"call-stack-file",
@@ -51,12 +44,13 @@ func TestResultMessage(t *testing.T) {
 		"started-at",
 		"finished-at",
 	}
+	*/
 
-	variableFields := map[string]interface{}{
+	fixedFields := map[string]interface{}{
 		"@loglov3-otl": "sous-cli-v1",
 		"arguments":    `["testing" "test"]`,
 		"exit-code":    1,
 	}
 
-	logging.AssertMessageFields(t, msg, fixedFields, variableFields)
+	logging.AssertMessageFields(t, msg, append(logging.StandardVariableFields, logging.IntervalVariableFields...), fixedFields)
 }

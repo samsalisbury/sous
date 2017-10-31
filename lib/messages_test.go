@@ -38,15 +38,7 @@ func TestPollerStartMessage(t *testing.T) {
 
 	msg := newPollerStartMessage(poller)
 
-	fixedFields := []string{
-		"@timestamp",
-		"call-stack-file",
-		"call-stack-line-number",
-		"call-stack-function",
-		"thread-name",
-	}
-
-	variableFields := map[string]interface{}{
+	fixedFields := map[string]interface{}{
 		"@loglov3-otl":    "sous-status-polling-v1",
 		"user-name":       "Jane Doe",
 		"user-email":      "jdoe@example.com",
@@ -58,7 +50,7 @@ func TestPollerStartMessage(t *testing.T) {
 		"filter-offset":   "*",
 	}
 
-	logging.AssertMessageFields(t, msg, fixedFields, variableFields)
+	logging.AssertMessageFields(t, msg, logging.StandardVariableFields, fixedFields)
 }
 func TestPollerSubreportMessage(t *testing.T) {
 	repo := "github.com/opentable/example"
@@ -98,15 +90,7 @@ func TestPollerSubreportMessage(t *testing.T) {
 
 	msg := newSubreportMessage(poller, update)
 
-	fixedFields := []string{
-		"@timestamp",
-		"call-stack-file",
-		"call-stack-line-number",
-		"call-stack-function",
-		"thread-name",
-	}
-
-	variableFields := map[string]interface{}{
+	fixedFields := map[string]interface{}{
 		"@loglov3-otl":      "sous-polling-subresult-v1",
 		"user-name":         "Jane Doe",
 		"user-email":        "jdoe@example.com",
@@ -121,7 +105,7 @@ func TestPollerSubreportMessage(t *testing.T) {
 		"update-status":     "ResolveNotPolled",
 	}
 
-	logging.AssertMessageFields(t, msg, fixedFields, variableFields)
+	logging.AssertMessageFields(t, msg, logging.StandardVariableFields, fixedFields)
 }
 
 func TestPollerStatusMessage(t *testing.T) {
@@ -151,15 +135,7 @@ func TestPollerStatusMessage(t *testing.T) {
 
 	msg := newPollerStatusMessage(poller, ResolveInProgress)
 
-	fixedFields := []string{
-		"@timestamp",
-		"call-stack-file",
-		"call-stack-line-number",
-		"call-stack-function",
-		"thread-name",
-	}
-
-	variableFields := map[string]interface{}{
+	fixedFields := map[string]interface{}{
 		"@loglov3-otl":    "sous-status-polling-v1",
 		"user-name":       "Jane Doe",
 		"user-email":      "jdoe@example.com",
@@ -172,7 +148,7 @@ func TestPollerStatusMessage(t *testing.T) {
 		"deploy-status":   "ResolveNotPolled",
 	}
 
-	logging.AssertMessageFields(t, msg, fixedFields, variableFields)
+	logging.AssertMessageFields(t, msg, logging.StandardVariableFields, fixedFields)
 }
 
 func TestPollerResolvedMessage(t *testing.T) {
@@ -202,15 +178,7 @@ func TestPollerResolvedMessage(t *testing.T) {
 
 	msg := newPollerResolvedMessage(poller, ResolveComplete, fmt.Errorf("not really an error just want some attention"))
 
-	fixedFields := []string{
-		"@timestamp",
-		"call-stack-file",
-		"call-stack-line-number",
-		"call-stack-function",
-		"thread-name",
-	}
-
-	variableFields := map[string]interface{}{
+	fixedFields := map[string]interface{}{
 		"@loglov3-otl":    "sous-status-polling-v1",
 		"user-name":       "Jane Doe",
 		"user-email":      "jdoe@example.com",
@@ -223,5 +191,5 @@ func TestPollerResolvedMessage(t *testing.T) {
 		"deploy-status":   "ResolveComplete",
 	}
 
-	logging.AssertMessageFields(t, msg, fixedFields, variableFields)
+	logging.AssertMessageFields(t, msg, logging.StandardVariableFields, fixedFields)
 }

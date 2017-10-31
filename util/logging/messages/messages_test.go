@@ -20,16 +20,7 @@ func TestReportCHResponseFields(t *testing.T) {
 	assert.Equal(t, logCalls[0].PassedArgs().Get(0), logging.InformationLevel)
 	message := logCalls[0].PassedArgs().Get(1).(logging.LogMessage)
 
-	/*
-		"line":610,
-		"function":"testing.tRunner",
-		"file":"/nix/store/br0ngwcjyffc7d060spw44wah1hdnlwn-go-1.7.4/share/go/src/testing/testing.go",
-		"time":logging.callTime{sec:63639633602, nsec:854240181, loc:(*time.Location)(0x8f3780)},
-	*/
-
-	fixedFields := []string{"call-stack-line-number", "call-stack-function", "call-stack-file", "@timestamp", "thread-name"}
-
-	variableFields := map[string]interface{}{
+	fixedFields := map[string]interface{}{
 		"@loglov3-otl":    "http-v1",
 		"incoming":        false,
 		"method":          "GET",
@@ -43,5 +34,5 @@ func TestReportCHResponseFields(t *testing.T) {
 		"status":          200,
 	}
 
-	logging.AssertMessageFields(t, message, fixedFields, variableFields)
+	logging.AssertMessageFields(t, message, logging.StandardVariableFields, fixedFields)
 }
