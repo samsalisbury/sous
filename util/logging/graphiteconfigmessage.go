@@ -1,6 +1,10 @@
 package logging
 
-import graphite "github.com/cyberdelia/go-metrics-graphite"
+import (
+	"time"
+
+	graphite "github.com/cyberdelia/go-metrics-graphite"
+)
 
 type graphiteConfigMessage struct {
 	CallerInfo
@@ -34,6 +38,6 @@ func (gcm graphiteConfigMessage) EachField(f FieldReportFn) {
 		return
 	}
 	f("sous-successful-connection", true)
-	f("graphite-server-address", gcm.cfg.Addr)
-	f("graphite-flush-interval", gcm.cfg.FlushInterval)
+	f("graphite-server-address", gcm.cfg.Addr.String())
+	f("graphite-flush-interval", int64(gcm.cfg.FlushInterval/time.Microsecond))
 }

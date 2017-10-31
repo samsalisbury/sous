@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
+
+## [Unreleased](//github.com/opentable/sous/compare/0.5.49..HEAD)
+### Fixed
+* All: log entries weren't conforming to the requirements of our schemas.
+
 ## [0.5.49](//github.com/opentable/sous/compare/0.5.48..0.5.49)
 ### Fixed
 * Server: at least one botched log message type has been caught and corrected.

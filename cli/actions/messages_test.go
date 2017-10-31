@@ -37,16 +37,7 @@ func TestUpdateBeginMessage(t *testing.T) {
 		time.Now(),
 	)
 
-	fixedFields := []string{
-		"@timestamp",
-		"call-stack-file",
-		"call-stack-line-number",
-		"call-stack-function",
-		"thread-name",
-		"started-at",
-	}
-
-	variableFields := map[string]interface{}{
+	fixedFields := map[string]interface{}{
 		"@loglov3-otl": "sous-update-v1",
 		"source-id":    "github.com/opentable/example,1.2.7,first",
 		"deploy-id":    "test-example:github.com/opentable/example,first~vanilla",
@@ -55,7 +46,7 @@ func TestUpdateBeginMessage(t *testing.T) {
 		"duration":     int64(0),
 	}
 
-	logging.AssertMessageFields(t, msg, fixedFields, variableFields)
+	logging.AssertMessageFields(t, msg, append(logging.StandardVariableFields, "started-at"), fixedFields)
 }
 
 func TestUpdateSuccessMessage(t *testing.T) {
@@ -85,18 +76,7 @@ func TestUpdateSuccessMessage(t *testing.T) {
 		time.Now(),
 	)
 
-	fixedFields := []string{
-		"@timestamp",
-		"call-stack-file",
-		"call-stack-line-number",
-		"call-stack-function",
-		"thread-name",
-		"started-at",
-		"finished-at",
-		"duration",
-	}
-
-	variableFields := map[string]interface{}{
+	fixedFields := map[string]interface{}{
 		"@loglov3-otl": "sous-update-v1",
 		"source-id":    "github.com/opentable/example,1.2.7,first",
 		"deploy-id":    "test-example:github.com/opentable/example,first~vanilla",
@@ -104,7 +84,7 @@ func TestUpdateSuccessMessage(t *testing.T) {
 		"try-number":   2,
 	}
 
-	logging.AssertMessageFields(t, msg, fixedFields, variableFields)
+	logging.AssertMessageFields(t, msg, append(logging.StandardVariableFields, logging.IntervalVariableFields...), fixedFields)
 }
 
 func TestUpdateErrorMessage(t *testing.T) {
@@ -135,16 +115,7 @@ func TestUpdateErrorMessage(t *testing.T) {
 		fmt.Errorf("everything is on fire"),
 	)
 
-	fixedFields := []string{
-		"@timestamp",
-		"call-stack-file",
-		"call-stack-line-number",
-		"call-stack-function",
-		"thread-name",
-		"started-at",
-	}
-
-	variableFields := map[string]interface{}{
+	fixedFields := map[string]interface{}{
 		"@loglov3-otl": "sous-update-v1",
 		"source-id":    "github.com/opentable/example,1.2.7,first",
 		"deploy-id":    "test-example:github.com/opentable/example,first~vanilla",
@@ -154,5 +125,5 @@ func TestUpdateErrorMessage(t *testing.T) {
 		"duration":     int64(0),
 	}
 
-	logging.AssertMessageFields(t, msg, fixedFields, variableFields)
+	logging.AssertMessageFields(t, msg, append(logging.StandardVariableFields, "started-at"), fixedFields)
 }

@@ -31,14 +31,6 @@ func TestDiffMessages(t *testing.T) {
 		callerInfo: logging.GetCallerInfo(),
 	}
 
-	fixedFields := []string{
-		"@timestamp",
-		"call-stack-file",
-		"call-stack-line-number",
-		"call-stack-function",
-		"thread-name",
-	}
-
 	fields := map[string]interface{}{
 		"@loglov3-otl":          "sous-deployment-diff",
 		"sous-deployment-id":    "test-cluster:github.com/opentable/example",
@@ -104,7 +96,7 @@ func TestDiffMessages(t *testing.T) {
 
 	msg.pair.name = msg.pair.Prior.ID()
 
-	logging.AssertMessageFields(t, msg, fixedFields, fields)
+	logging.AssertMessageFields(t, msg, logging.StandardVariableFields, fields)
 
 	msg.pair.Post.Deployment.SourceID.Version = semv.MustParse("0.0.2")
 	msg.pair.Diffs = Differences{"version not the same (this is the test message)"}
@@ -113,7 +105,7 @@ func TestDiffMessages(t *testing.T) {
 	fields["sous-post-tag"] = "0.0.2"
 	fields["sous-diff-disposition"] = "modified"
 
-	logging.AssertMessageFields(t, msg, fixedFields, fields)
+	logging.AssertMessageFields(t, msg, logging.StandardVariableFields, fields)
 }
 
 func TestDiffMessages_knownpanic(t *testing.T) {
@@ -215,15 +207,7 @@ func TestDiffMessages_knownpanic(t *testing.T) {
 		},
 	}
 
-	fixedFields := []string{
-		"@timestamp",
-		"call-stack-file",
-		"call-stack-line-number",
-		"call-stack-function",
-		"thread-name",
-	}
-
-	variableFields := map[string]interface{}{
+	fixedFields := map[string]interface{}{
 		"@loglov3-otl":          "sous-deployment-diff",
 		"sous-deployment-id":    ":",
 		"sous-diff-disposition": "same",
@@ -281,7 +265,7 @@ func TestDiffMessages_knownpanic(t *testing.T) {
 	}
 
 	assert.NotPanics(t, func() {
-		logging.AssertMessageFields(t, msg, fixedFields, variableFields)
+		logging.AssertMessageFields(t, msg, logging.StandardVariableFields, fixedFields)
 	})
 }
 
@@ -290,27 +274,19 @@ func TestDiffMessages_incomplete(t *testing.T) {
 		callerInfo: logging.GetCallerInfo(),
 	}
 
-	fixedFields := []string{
-		"@timestamp",
-		"call-stack-file",
-		"call-stack-line-number",
-		"call-stack-function",
-		"thread-name",
-	}
-
-	variableFields := map[string]interface{}{
+	fixedFields := map[string]interface{}{
 		"@loglov3-otl": "sous-deployment-diff",
 	}
 
-	logging.AssertMessageFields(t, msg, fixedFields, variableFields)
+	logging.AssertMessageFields(t, msg, logging.StandardVariableFields, fixedFields)
 
 	msg.pair = &DeployablePair{}
 
-	variableFields["sous-diff-disposition"] = "added"
-	variableFields["sous-deployment-id"] = ":"
-	variableFields["sous-manifest-id"] = ""
+	fixedFields["sous-diff-disposition"] = "added"
+	fixedFields["sous-deployment-id"] = ":"
+	fixedFields["sous-manifest-id"] = ""
 
-	logging.AssertMessageFields(t, msg, fixedFields, variableFields)
+	logging.AssertMessageFields(t, msg, logging.StandardVariableFields, fixedFields)
 }
 
 func TestDiffResolutionMessages(t *testing.T) {
@@ -327,15 +303,8 @@ func TestDiffResolutionMessages(t *testing.T) {
 			Error: WrapResolveError(fmt.Errorf("dumb test error")),
 		},
 	}
-	fixedFields := []string{
-		"@timestamp",
-		"call-stack-file",
-		"call-stack-line-number",
-		"call-stack-function",
-		"thread-name",
-	}
 
-	logging.AssertMessageFields(t, msg, fixedFields, map[string]interface{}{
+	logging.AssertMessageFields(t, msg, logging.StandardVariableFields, map[string]interface{}{
 		"@loglov3-otl":                 "sous-diff-resolution",
 		"sous-resolution-errortype":    "*errors.errorString",
 		"sous-resolution-errormessage": "dumb test error",
