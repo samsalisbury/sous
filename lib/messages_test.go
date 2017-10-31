@@ -149,7 +149,7 @@ func TestPollerStatusMessage(t *testing.T) {
 		status: 0,
 	}
 
-	msg := newPollerStatusMessage(poller)
+	msg := newPollerStatusMessage(poller, ResolveInProgress)
 
 	fixedFields := []string{
 		"@timestamp",

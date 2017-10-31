@@ -88,6 +88,40 @@ func (rs ResolveState) String() string {
 	}
 }
 
+// Prose returns a string that explains what the state means.
+func (rs ResolveState) Prose() string {
+	switch rs {
+	default:
+		return "unknown (oops)"
+	case ResolveNotPolled:
+		return "No data from server yet"
+	case ResolveNotStarted:
+		return "Waiting for server to begin resolution"
+	case ResolvePendingRequest:
+		return "Waiting for request to be made to cluster"
+	case ResolveNotVersion:
+		return "Waiting for server to acknowledge new version"
+	case ResolveInProgress:
+		return "Waiting for cluster to acknowledge deploy request"
+	case ResolveErredHTTP:
+		return "HTTP request to Sous server errored"
+	case ResolveErredRez:
+		return "Transient error on server, retrying"
+	case ResolveTasksStarting:
+		return "Cluster has accepted deploy request, awaiting service boot"
+	case ResolveNotIntended:
+		return "Sous server does not intend to deploy this version - probably another deploy request received"
+	case ResolveFailed:
+		return "The attempt to resolve this service failed"
+	case ResolveHTTPFailed:
+		return "HTTP connection to the Sous server has failed"
+	case ResolveComplete:
+		return "Deployment resolution is complete"
+	case ResolveMAX:
+		return "resolve maximum marker - not a real state, received in error?"
+	}
+}
+
 func minStatus(a, b ResolveState) ResolveState {
 	if a < b {
 		return a

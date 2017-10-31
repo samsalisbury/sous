@@ -85,6 +85,6 @@ func (msg updateMessage) WriteToConsole(console io.Writer) {
 		return
 	}
 	if msg.interval.Complete() {
-		console.Write([]byte("Updated global manifest"))
+		console.Write([]byte("Updated global manifest\n"))
 	}
 }

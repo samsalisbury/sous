@@ -1,6 +1,11 @@
 package sous
 
-import "github.com/opentable/sous/util/logging"
+import (
+	"fmt"
+	"io"
+
+	"github.com/opentable/sous/util/logging"
+)
 
 type (
 	pollerStartMessage struct {
@@ -15,8 +20,9 @@ type (
 	}
 
 	pollerStatusMessage struct {
-		callerInfo logging.CallerInfo
-		poller     *StatusPoller
+		callerInfo    logging.CallerInfo
+		poller        *StatusPoller
+		previousState ResolveState
 	}
 
 	pollerResolvedMessage struct {
@@ -150,11 +156,14 @@ func (msg *pollerStatusMessage) EachField(f logging.FieldReportFn) {
 }
 
 func (msg *pollerStatusMessage) WriteToConsole(console io.Writer) {
-	if msg.poller.status == msg.oldStatus {
+	if msg.poller.status == msg.previousState {
 		console.Write([]byte{'.'})
 		return
 	}
-	fmt.Fprintf(console, "\n%s", msg.poller.status)
+	fmt.Fprintf(console, "\n%s", msg.poller.status.Prose())
+	if msg.poller.finished() {
+		console.Write([]byte{'\n'})
+	}
 }
 
 //	reportSubreport(sp.logs, sp, update)

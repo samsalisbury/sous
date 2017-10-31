@@ -70,7 +70,7 @@ func (sd *SousDeploy) Execute(args []string) cmdr.Result {
 		if err := poll.Do(); err != nil {
 			return cmdr.EnsureErrorResult(err)
 		}
-		return cmdr.Success("Deploy complete")
+		return cmdr.Success("")
 	}
 	return cmdr.Successf("Deploy in process.")
 

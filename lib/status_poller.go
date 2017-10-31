@@ -166,7 +166,9 @@ func (sp *StatusPoller) poll(subs []*subPoller) ResolveState {
 	go func() {
 		sp.statePerCluster = map[string]*pollerState{}
 		for {
-			sp.nextSubStatusBurst()
+			update := <-sp.results
+			sp.nextSubStatus(update)
+
 			if sp.finished() {
 				close(done)
 				return
@@ -180,17 +182,6 @@ func (sp *StatusPoller) poll(subs []*subPoller) ResolveState {
 
 	<-done
 	return sp.status
-}
-
-func (sp *StatusPoller) nextSubStatusBurst() {
-	for {
-		select {
-		default:
-			return
-		case update := <-sp.results:
-			sp.nextSubStatus(update)
-		}
-	}
 }
 
 func (sp *StatusPoller) nextSubStatus(update pollResult) {
