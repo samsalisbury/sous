@@ -62,7 +62,7 @@ func (info CallerInfo) EachField(f FieldReportFn) {
 		}
 	}
 
-	f("@timestamp", info.callTime.Format(time.RFC3339))
+	f("@timestamp", info.callTime.UTC().Format(time.RFC3339))
 	f("thread-name", info.goroutineID)
 	f("call-stack-trace", stack)
 

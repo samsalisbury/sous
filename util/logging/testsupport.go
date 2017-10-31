@@ -167,6 +167,12 @@ func AssertMessageFields(t *testing.T, msg eachFielder, variableFields []string,
 	msg.EachField(func(name string, value interface{}) {
 		assert.NotContains(t, actualFields, name) //don't clobber a field
 		actualFields[name] = value
+		switch name {
+		case "@timestamp", "started-at", "finished-at": // known timestamp fields
+			if assert.IsType(t, "", value) {
+				assert.Regexp(t, `.*Z$`, value.(string), "%s: %q not in UTC!", name, value)
+			}
+		}
 	})
 
 	for _, f := range variableFields {

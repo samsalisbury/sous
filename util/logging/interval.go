@@ -41,9 +41,9 @@ func (i MessageInterval) Complete() bool {
 // In general, messages that include a MessageInterval should pass the
 // FieldReportFn they receive on their own EachField to their interval.
 func (i MessageInterval) EachField(fn FieldReportFn) {
-	fn("started-at", i.start.Format(time.RFC3339))
+	fn("started-at", i.start.UTC().Format(time.RFC3339))
 	if i.Complete() {
-		fn("finished-at", i.end.Format(time.RFC3339))
+		fn("finished-at", i.end.UTC().Format(time.RFC3339))
 	}
 	if i.end.After(i.start) {
 		fn("duration", int64(i.end.Sub(i.start)/time.Microsecond))
