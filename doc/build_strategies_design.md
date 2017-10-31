@@ -6,62 +6,95 @@ it documents our design process and ideas.*
 
 ## Design Goals
 
-sous build should be able to
+`sous build` should:
 
-* Build based on a named configuration
-  (which we expect to be a build docker image name).
-* Cache fetched dependencies
-  (e.g. Maven's .m2 or node's node_modules or Ruby gems).
-* Cache intermediate build products
-  (for local development.)
-* Produce small-as-possible product image.
-* Produce more than one product image.
-* Users should be able to make small overrides to the build process,
-  if only so that quick experiments are possible
-* Sous controllers should be able to audit the build processes in place,
-  so that they can be consolidated -
-  i.e. "small overrides" should be reasonably public so that we can find audit divergences.
-* Sous init, or a related tool,
+* Build using a Docker image
+  (known as a "builder image")
+  configured in the manifest.
+* Produce runnable Docker images as output (known as "product images")
+* Cache fetched dependencies when building on developer machines
+  (e.g. Maven's `.m2` or node's `node_modules` or Ruby gems).
+* Cache intermediate build products when building on developer machines
+  (for rapid local development.)
+* Perform a clean build at will
+  (for continuous delivery).
+* Produce the smallest possible product image layer (i.e. the part that represents
+  the application being built rather than its runtime dependencies).
+* Produce more than one product image per source code repository.
+* Users should be able to make small overrides to the build process
+  locally on their machine
+  to facilitate experimentation.
+* It should be possible to audit the build images in use
+  so that they can be consolidated.
+* `sous init`, or a related tool,
   should be able to guess at the "best" named build configuration
-  and set it up automatically, or provide options to the local operator
+  and set it up automatically, or provide hints to the local operator
   about what to choose.
-  `sous build` should hint at this tool
+* `sous build` should hint at the above tool
   when a configuration is unavailable or sub-optimal
-  (i.e. at some point the "simple dockerfile" strategy should suggest there might be a better way.)
+  (i.e. at some point the "simple-dockerfile" strategy
+  might suggest using "mount-run-split".
 
 
 ## Current Proposal
 
-The manifest for the project has a sub-entry like:
+Each manifest has a `Build` stanza describing how sous should build its images.
 ```
   Build:
     Type: mount-run-split
     Image: docker.internal.com/our-maven:latest
 ```
 
-`mount-run-split` is the goal design here.
-We might bless `simple-dockerfile` and `build-copy-split` as well.
-For the time being, the type is superfluous - if there's
-a non-empty image field, we proceed with this proposal.
-It provides an avenue for future alternatives,
-however.
+Possible `Type` values could be: 
 
-We start by synthesizing a small Dockerfile like
+* `mount-run-split` meaning we run the `Image` with various directories from
+  the local machine mounted. The result is that one of those directories is
+  populated with built runnable artifacts. We then split those artifacts
+  amongst various output containers ready for deployment.
+* `simple-dockerfile` meaning we simply build the `Dockerfile` in the project's
+  source code repository (actually `SourceLocation`). This `Type` would not
+  use the `Image` field at all and would is capable of producing only one
+  artifact at a time (the docker image produced by `docker build`).
+
+Simple-dockerfile type builds are already supported by Sous, and are currently the
+default when a Dockerfile is present in the working directory when executing
+'sous build'.
+
+The rest of this document describes in more detail the `mount-run-split` build
+type, which we think should be the standard type used by most projects.
+
+### mount-run-split builds
+
+We start by synthesizing a one-line Dockerfile in memory
+based on the image named in `Build.Image` from the YAML proposed above.
+
 ```
 FROM docker.internal.com/our-maven:latest
 ```
-`sous build` "builds" this container.
+
+`sous build` builds this image, known as the "builder image", using `docker build`.
+We call it the "builder image" because it
+is used to build the project, and is not itself a deployable artifact.
 (We could simply `docker pull` the image,
 but we get the advantage
-of having a single code path for one-off experiments.)
-It then `docker run`s it with three mounted volumes:
-one for fetched dependences,
-one for intermediate products
-and one for output products (i.e. jar files).
+of having a single code path for one-off experiments, see below.)
+
+We then `docker run` the built image with three mounted volumes:
+
+* /external for externally fetched dependencies
+* /working for intermediate products
+* /output for output products (e.g. jar files, directories, executables etc.)
+
+Each builder image compatible with `mount-run-split` must contain a `runspec.json`
+file (typically at the root of the filesystem, although this can be overridden by
+adding the line `ENV SOUS_RUN_IMAGE_SPEC={some-other-path}`).` This runspec file
+specifies how runnable artifacts produced by running the build container will be
+executed once they are delivered into runnable docker images (see below).
+
 The runspec is delivered into the output volume
 by the build tools and scripts in the build image,
 and Sous uses the runspec to scatter products in the output into run images.
-The actual build images will also be responsible
+The builder images will also be responsible
 for arranging the volumes into the directory structure
 required by the build tools
 (e.g. symlinks or mount -o bind for ~/.mvn2).
@@ -161,3 +194,15 @@ to execution agents
 as possible.
 Overall small images,
 and small unique layers both address those requirements.
+
+**SS:** We should allow using an embedded `Dockerfile` in the `Build` stanza of
+the manifest, so that small overrides can be made for specific projects.
+
+**JL:** By limiting the manfiest entry to an image, it means that "blessed" build images will need to be built and pushed external to a particular project. (Our internal set of build images being an example of that process.) I don't want to start inlining Dockerfiles into the manifest - that seems like an auditing nightmare.
+
+**SS:** So for anything that wants to be deployed, you must push a build image that
+can build it, experimentation is strictly off-line on local dev machines. Any builder
+image in your source code repository will be ignored unless using
+`-override-build-dockerfile` in which case your image will receive advisories that make
+it undeployable in any environment.
+
