@@ -1,5 +1,7 @@
 package sous
 
+import "fmt"
+
 // A ResolveState reflects the state of the Sous clusters in regard to
 // resolving a particular SourceID.
 type ResolveState int
@@ -91,34 +93,35 @@ func (rs ResolveState) String() string {
 // Prose returns a string that explains what the state means.
 func (rs ResolveState) Prose() string {
 	switch rs {
+	// Sous is...
 	default:
-		return "unknown (oops)"
+		return fmt.Sprintf("returning an impossible status (%d), please report this error", rs)
 	case ResolveNotPolled:
-		return "No data from server yet"
+		return "waiting for data from Sous server"
 	case ResolveNotStarted:
-		return "Waiting for server to begin resolution"
+		return "waiting for Sous server to begin deployment"
 	case ResolvePendingRequest:
-		return "Waiting for request to be made to cluster"
+		return "queueing instructions to Singularity"
 	case ResolveNotVersion:
-		return "Waiting for server to acknowledge new version"
+		return "waiting for Sous server to acknowledge intended version"
 	case ResolveInProgress:
-		return "Waiting for cluster to acknowledge deploy request"
+		return "waiting for Singularity to complete deployments"
 	case ResolveErredHTTP:
-		return "HTTP request to Sous server errored"
+		return "receiving an unexpected HTTP response from Sous server"
 	case ResolveErredRez:
-		return "Transient error on server, retrying"
+		return "re-trying after experiencing a transient error"
 	case ResolveTasksStarting:
-		return "Cluster has accepted deploy request, awaiting service boot"
+		return "waiting for instances to start on Singularity"
 	case ResolveNotIntended:
-		return "Sous server does not intend to deploy this version - probably another deploy request received"
+		return "not intending to perform this deployment (attempting to deploy a different version)"
 	case ResolveFailed:
-		return "The attempt to resolve this service failed"
+		return "giving up because the deployment failed"
 	case ResolveHTTPFailed:
-		return "HTTP connection to the Sous server has failed"
+		return "giving up because the HTTP connection to Sous server has failed"
 	case ResolveComplete:
-		return "Deployment resolution is complete"
+		return "finished deploying"
 	case ResolveMAX:
-		return "resolve maximum marker - not a real state, received in error?"
+		return "returning an impossible status (ResolveMAX), please report this issue"
 	}
 }
 
