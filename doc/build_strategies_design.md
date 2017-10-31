@@ -41,27 +41,27 @@ it documents our design process and ideas.*
 Each manifest has a `Build` stanza describing how sous should build its images.
 ```
   Build:
-    Type: mount-run-split
+    Strategy: mount-run-split
     Image: docker.internal.com/our-maven:latest
 ```
 
-Possible `Type` values could be: 
+Possible `Strategy` values could be: 
 
 * `mount-run-split` meaning we run the `Image` with various directories from
   the local machine mounted. The result is that one of those directories is
   populated with built runnable artifacts. We then split those artifacts
   amongst various output containers ready for deployment.
 * `simple-dockerfile` meaning we simply build the `Dockerfile` in the project's
-  source code repository (actually `SourceLocation`). This `Type` would not
+  source code repository (actually `SourceLocation`). This `Strategy` would not
   use the `Image` field at all and would is capable of producing only one
   artifact at a time (the docker image produced by `docker build`).
 
-Simple-dockerfile type builds are already supported by Sous, and are currently the
+Simple-dockerfile strategy builds are already supported by Sous, and are currently the
 default when a Dockerfile is present in the working directory when executing
 'sous build'.
 
 The rest of this document describes in more detail the `mount-run-split` build
-type, which we think should be the standard type used by most projects.
+strategy, which we think should be the standard strategy used by most projects.
 
 ### mount-run-split builds
 
@@ -109,14 +109,8 @@ However, using a Dockerfile for this purpose allows for the "small changes" requ
 
 It should be possible for Sous
 to add labels related to the build process
-to the final deployed images,
-which would give us the data required for audits -
-effectively, we could chase the long tail of the histogram
-of "build image digest"
-(because variant builds would have a different digest -
-I'm 85% sure that "conformant" builds would all have the same digest),
-and other labels would provide enough data
-to track down the actual built dockerfile.
+to the final build images
+for auditing purposes.
 
 We could add a /sous directory to built deploy artifacts
 and store e.g. the build Dockerfile there for reference purposes.
@@ -124,7 +118,7 @@ and store e.g. the build Dockerfile there for reference purposes.
 In order to allow for easy development of new build containers,
 and to effect transition to existing ones,
 `sous build` would be extended with two new flags:
-`-dev` would allow a number of non-production-suitale changes
+`-dev` would allow a number of non-production-suitable changes
 to the Sous build process, like
 caching of intermediate artifacts,
 flags to build programs to output more logging.
@@ -135,7 +129,7 @@ instead of consulting the manifest.
 
 Right after getting the manifest to build from,
 Sous should issue `git config` commands to store
-the type and
+the strategy and
 the image
 that it discovers.
 Then, if on a future build it can't get the manifest
@@ -163,7 +157,7 @@ a signal that we should look for a local Dockerfile
 
 We might have a period where we encourage users to switch
 to having a Build section
-even if it's to have `Type: simple-dockerfile`.
+even if it's to have `Strategy: simple-dockerfile`.
 Then, we'd trust what we find in the manifest,
 but fall back to looking for a Dockerfile.
 
