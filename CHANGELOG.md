@@ -8,7 +8,10 @@ with respect to its command line interface and HTTP interface.
 
 ## [Unreleased](//github.com/opentable/sous/compare/0.5.48..HEAD)
 ### Fixed
-* Server: at least one bootched log message type has been caught and corrected.
+* Server: at least one botched log message type has been caught and corrected.
+
+### Added
+* Client: more descriptive output from 'sous deploy' and 'sous update' commands.
 
 ## [0.5.48](//github.com/opentable/sous/compare/0.5.47..0.5.48)
 
