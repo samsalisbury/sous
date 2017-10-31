@@ -113,7 +113,7 @@ func (rs ResolveState) Prose() string {
 	case ResolveTasksStarting:
 		return "waiting for instances to start on Singularity"
 	case ResolveNotIntended:
-		return "not intending to perform this deployment (attempting to deploy a different version)"
+		return "not intending to perform this deployment (another request to deploy this may have been received)"
 	case ResolveFailed:
 		return "giving up because the deployment failed"
 	case ResolveHTTPFailed:
