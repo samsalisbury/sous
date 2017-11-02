@@ -90,7 +90,7 @@ func NewLogSet(version semv.Version, name string, role string, err io.Writer) *L
 
 	bundle := newdb(version, err, lgrs)
 
-	ls := newls(name, role, WarningLevel, bundle)
+	ls := newls(name, role, DebugLevel, bundle) //level constrains Kafka output
 	ls.imposeLevel()
 
 	// use sous.<env>.<region>.*, he said

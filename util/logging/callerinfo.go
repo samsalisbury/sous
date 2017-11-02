@@ -48,7 +48,7 @@ func (info CallerInfo) EachField(f FieldReportFn) {
 	var stack string
 	var more bool
 
-	for aframe, more = frames.Next(); more; frame, more = frames.Next() {
+	for aframe, more = frames.Next(); more; aframe, more = frames.Next() {
 		stack = fmt.Sprintf("%s%s %s:%d\n", stack, aframe.Function, aframe.File, aframe.Line)
 
 		if unknown {

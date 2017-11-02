@@ -38,7 +38,7 @@ func (msg *silentMessageError) EachField(f FieldReportFn) {
 }
 
 func (msg *silentMessageError) Message() string {
-	return spew.Sprintf("%+#v", msg.message)
+	return spew.Sprintf("SILENT: %+#v", msg.message)
 }
 
 func (msg *silentMessageError) WriteToConsole(w io.Writer) {

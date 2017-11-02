@@ -106,7 +106,7 @@ func (cfg Config) getKafkaLevels() []logrus.Level {
 	}
 
 	if level >= DebugLevel {
-		kafkaLevels = append(kafkaLevels, logrus.InfoLevel)
+		kafkaLevels = append(kafkaLevels, logrus.DebugLevel)
 	}
 
 	return kafkaLevels

@@ -1,6 +1,8 @@
 package logging
 
-import "github.com/tracer0tong/kafkalogrus"
+import (
+	"github.com/tracer0tong/kafkalogrus"
+)
 
 type kafkaConfigurationMessage struct {
 	CallerInfo
