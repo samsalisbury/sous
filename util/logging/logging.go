@@ -144,11 +144,11 @@ func newls(name string, role string, level Level, bundle *dumpBundle) *LogSet {
 		dumpBundle: bundle,
 	}
 
-	ls.Warn = logwrapper(func(f string, as ...interface{}) { ls.warnf(f, as) })
+	ls.Warn = logwrapper(func(f string, as ...interface{}) { ls.Warnf(f, as) })
 	ls.Notice = ls.Warn
 	ls.Info = ls.Warn
-	ls.Debug = logwrapper(func(f string, as ...interface{}) { ls.debugf(f, as) })
-	ls.Vomit = logwrapper(func(f string, as ...interface{}) { ls.vomitf(f, as) })
+	ls.Debug = logwrapper(func(f string, as ...interface{}) { ls.Debugf(f, as) })
+	ls.Vomit = logwrapper(func(f string, as ...interface{}) { ls.Vomitf(f, as) })
 
 	return ls
 }
@@ -308,23 +308,23 @@ func (ls LogSet) Console() WriteDoner {
 // xxx phase 2 of complete transition: remove these methods in favor of specific messages
 
 // Vomitf logs a message at ExtraDebug1Level.
-func (ls LogSet) Vomitf(f string, as ...interface{}) { ls.vomitf(f, as...) }
-func (ls LogSet) vomitf(f string, as ...interface{}) {
+func (ls LogSet) Vomitf(f string, as ...interface{}) {
 	m := NewGenericMsg(ExtraDebug1Level, fmt.Sprintf(f, as...), nil)
+	m.ExcludeMe()
 	Deliver(m, ls)
 }
 
 // Debugf logs a message a DebugLevel.
-func (ls LogSet) Debugf(f string, as ...interface{}) { ls.debugf(f, as...) }
-func (ls LogSet) debugf(f string, as ...interface{}) {
+func (ls LogSet) Debugf(f string, as ...interface{}) {
 	m := NewGenericMsg(DebugLevel, fmt.Sprintf(f, as...), nil)
+	m.ExcludeMe()
 	Deliver(m, ls)
 }
 
 // Warnf logs a message at WarningLevel.
-func (ls LogSet) Warnf(f string, as ...interface{}) { ls.warnf(f, as...) }
-func (ls LogSet) warnf(f string, as ...interface{}) {
+func (ls LogSet) Warnf(f string, as ...interface{}) {
 	m := NewGenericMsg(WarningLevel, fmt.Sprintf(f, as...), nil)
+	m.ExcludeMe()
 	Deliver(m, ls)
 }
 

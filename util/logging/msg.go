@@ -11,16 +11,17 @@ type genericMsg struct {
 // to be replaced with something more specialized, though.
 func ReportMsg(logger LogSink, lvl Level, msg string) {
 	m := NewGenericMsg(lvl, msg, nil)
+	m.ExcludeMe()
 	Deliver(m, logger)
 }
 
 // NewGenericMsg creates an event out of a map of fields. There are no metrics
 // associated with the event - for that you need to define a specialized
 // message type.
-func NewGenericMsg(lvl Level, msg string, fields map[string]interface{}) LogMessage {
+func NewGenericMsg(lvl Level, msg string, fields map[string]interface{}) *genericMsg {
 	return &genericMsg{
 		Level:      lvl,
-		CallerInfo: GetCallerInfo(),
+		CallerInfo: GetCallerInfo(NotHere()),
 
 		message: msg,
 		fields:  fields,

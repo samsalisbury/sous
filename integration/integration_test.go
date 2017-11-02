@@ -463,7 +463,7 @@ func (suite *integrationSuite) TestResolve() {
 		suite.Equal(1, two.NumInstances)
 	}
 
-	spew.Dump(logController.Calls())
+	spew.Dump("*** CALLS ***", logController.Calls())
 
 	// ****
 	suite.T().Log("Resolving from one+two to two+three")
