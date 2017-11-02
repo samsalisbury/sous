@@ -16,13 +16,14 @@ type silentMessageError struct {
 // ReportClientHTTPResponse reports a response recieved by Sous as a client, as provided as fields.
 func reportSilentMessage(logger LogSink, message interface{}) {
 	m := newSilentMessageError(message)
+	m.ExcludeMe()
 	Deliver(m, logger)
 }
 
 func newSilentMessageError(message interface{}) *silentMessageError {
 	return &silentMessageError{
 		Level:      CriticalLevel,
-		CallerInfo: GetCallerInfo(),
+		CallerInfo: GetCallerInfo(NotHere()),
 
 		message: message,
 	}

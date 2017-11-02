@@ -433,8 +433,10 @@ func (suite *integrationSuite) TestResolve() {
 	deploymentsTwoThree, err := stateTwoThree.Deployments()
 	suite.Require().NoError(err)
 
+	logsink, logController := logging.NewLogSinkSpy()
+
 	// ****
-	r := sous.NewResolver(suite.deployer, suite.nameCache, &sous.ResolveFilter{}, logging.SilentLogSet())
+	r := sous.NewResolver(suite.deployer, suite.nameCache, &sous.ResolveFilter{}, logsink)
 
 	logging.Log.Warn.Print("Begining OneTwo")
 	err = r.Begin(deploymentsOneTwo, clusterDefs.Clusters).Wait()
@@ -449,7 +451,7 @@ func (suite *integrationSuite) TestResolve() {
 	ds, which := suite.deploymentWithRepo(clusters, repoOne)
 	deps := ds.Snapshot()
 	suite.T().Logf("which: %#v", which)
-	if suite.NotEqual(which, none, "opentable/one not successfully deployed") {
+	if suite.NotEqual(none, which, "opentable/one not successfully deployed") {
 		one := deps[which]
 		suite.Equal(1, one.NumInstances)
 	}
@@ -460,6 +462,8 @@ func (suite *integrationSuite) TestResolve() {
 		two := deps[which]
 		suite.Equal(1, two.NumInstances)
 	}
+
+	spew.Dump(logController.Calls())
 
 	// ****
 	suite.T().Log("Resolving from one+two to two+three")

@@ -14,12 +14,14 @@ type invocationMessage struct {
 }
 
 func reportInvocation(ls logging.LogSink, args []string) {
-	logging.Deliver(newInvocationMessage(args), ls)
+	msg := newInvocationMessage(args)
+	msg.callerInfo.ExcludeMe()
+	logging.Deliver(msg, ls)
 }
 
 func newInvocationMessage(args []string) *invocationMessage {
 	return &invocationMessage{
-		callerInfo: logging.GetCallerInfo("cli/messages", "cli/cli"),
+		callerInfo: logging.GetCallerInfo(logging.NotHere()),
 		args:       args,
 	}
 }
@@ -47,12 +49,13 @@ type cliResultMessage struct {
 
 func reportCLIResult(logsink logging.LogSink, args []string, start time.Time, res cmdr.Result) {
 	msg := newCLIResult(args, start, res)
+	msg.callerInfo.ExcludeMe()
 	logging.Deliver(msg, logsink)
 }
 
 func newCLIResult(args []string, start time.Time, res cmdr.Result) *cliResultMessage {
 	return &cliResultMessage{
-		callerInfo: logging.GetCallerInfo("cli/messages", "cli/cli"),
+		callerInfo: logging.GetCallerInfo(logging.NotHere()),
 		args:       args,
 		res:        res,
 		interval:   logging.CompleteInterval(start),

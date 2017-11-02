@@ -46,7 +46,7 @@ type strategyChoiceMessage struct {
 func reportStrategyChoice(choice string, log logging.LogSink) {
 	msg := strategyChoiceMessage{
 		choice:     choice,
-		CallerInfo: logging.GetCallerInfo("docker/selector"),
+		CallerInfo: logging.GetCallerInfo(logging.NotHere()),
 	}
 	logging.Deliver(msg, log)
 }
