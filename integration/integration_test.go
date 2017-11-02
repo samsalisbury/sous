@@ -5,6 +5,7 @@ package integration
 import (
 	"fmt"
 	"os"
+	"sort"
 	"testing"
 	"time"
 
@@ -101,7 +102,7 @@ func (suite *integrationSuite) newNameCache(name string) *docker.NameCache {
 
 	suite.Require().NoError(err)
 
-	cache, err := docker.NewNameCache(registryName, suite.registry, logging.NewLogSet(semv.MustParse("0.0.0"), "", "", os.Stdout), db)
+	cache, err := docker.NewNameCache(registryName, suite.registry, logging.SilentLogSet(), db)
 	suite.Require().NoError(err)
 
 	ids, err := cache.ListSourceIDs()
@@ -463,7 +464,18 @@ func (suite *integrationSuite) TestResolve() {
 		suite.Equal(1, two.NumInstances)
 	}
 
-	spew.Dump("*** CALLS ***", logController.Calls())
+	dispositions := []string{}
+	for _, call := range logController.CallsTo("LogMessage") {
+		if lm, is := call.PassedArgs().Get(1).(logging.LogMessage); is {
+			lm.EachField(func(name string, val interface{}) {
+				if disp, is := val.(string); is && name == "sous-diff-disposition" {
+					dispositions = append(dispositions, disp)
+				}
+			})
+		}
+	}
+	sort.Strings(dispositions)
+	suite.Equal(dispositions, []string{"added", "added", "removed", "removed", "removed", "removed"})
 
 	// ****
 	suite.T().Log("Resolving from one+two to two+three")
@@ -479,7 +491,13 @@ func (suite *integrationSuite) TestResolve() {
 		err = r.Begin(deploymentsTwoThree, clusterDefs.Clusters).Wait()
 		if err != nil {
 			//suite.Require().NotRegexp(`Pending deploy already in progress`, err.Error())
-			suite.T().Logf("Singularity error:%s - will try %d more times", spew.Sdump(err), tries)
+			suffix := `           this is dumb but it would suck to panic during tests
+                                                                            what
+																																						  is
+																																							up
+																																					gofmt?
+			                                                                          `
+			suite.T().Logf("Singularity error:%s... - will try %d more times", spew.Sdump(err)[0:len(suffix)], tries)
 			time.Sleep(2 * time.Second)
 		} else {
 			// err was nil, so no need to keep retrying.

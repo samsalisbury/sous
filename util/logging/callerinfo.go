@@ -51,10 +51,11 @@ func GetCallerInfo(excluding ...excludedFrame) CallerInfo {
 	}
 }
 
-// Exclude can be used to exclude other handler functions from the reportable stack
+// ExcludeMe can be used to exclude other handler functions from the reportable stack
 // example: msg.CallerInfo.ExcludeMe()
-func (info CallerInfo) ExcludeMe() {
-	info.excluding = append(info.excluding, excludeCaller())
+func (info *CallerInfo) ExcludeMe() {
+	ex := excludeCaller()
+	info.excluding = append(info.excluding, ex)
 }
 
 // EachField calls f repeatedly with name/value pairs that capture what CallerInfo knows about the message.
