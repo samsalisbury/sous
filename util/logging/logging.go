@@ -41,6 +41,7 @@ type (
 		err, defaultErr io.Writer
 		logrus          *logrus.Logger
 		liveConfig      *Config
+		kafkaEnabled    bool //temporary for the kafka on-exit hack
 		graphiteCancel  func()
 	}
 
@@ -176,6 +177,16 @@ func (ls *LogSet) Configure(cfg Config) error {
 	return nil
 }
 
+// AtExit implements part of LogSink on LogSet
+func (ls LogSet) AtExit() {
+	// XXX This is a terrible hack, and should be replaced with code
+	// to properly drain the kafka producer,
+	// and send one last batch of stats to graphite
+	if ls.kafkaEnabled {
+		time.Sleep(600 * time.Millisecond) // ensures that the kafka producer does one last flush
+	}
+}
+
 func logrusFormatter() logrus.Formatter {
 	return &logrus.JSONFormatter{
 		DisableTimestamp: true, //we capture the timestamp when message created
@@ -200,6 +211,8 @@ func (ls LogSet) configureKafka(cfg Config) error {
 		reportKafkaConfig(nil, cfg, ls)
 		return nil
 	}
+
+	ls.dumpBundle.kafkaEnabled = true
 
 	hook, err := kafkalogrus.NewKafkaLogrusHook("kafkahook",
 		cfg.getKafkaLevels(),

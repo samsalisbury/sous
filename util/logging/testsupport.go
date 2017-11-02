@@ -92,6 +92,10 @@ func (lss logSinkSpy) Metrics() MetricsSink {
 	return res.Get(0).(MetricsSink)
 }
 
+func (lss logSinkSpy) AtExit() {
+	lss.spy.Called()
+}
+
 // Returns a spy/controller pair
 func NewMetricsSpy() (MetricsSink, metricsSinkController) {
 	spy := spies.NewSpy()
