@@ -57,7 +57,8 @@ var (
 	// want metrics in a component, you need to add an injected LogSet. c.f.
 	// ext/docker/image_mapping.go
 	Log = func() LogSet {
-		return *(NewLogSet(semv.MustParse("0.0.0"), "sous.global", "", os.Stderr))
+		//return *(NewLogSet(semv.MustParse("0.0.0"), "sous.global", "", os.Stderr))
+		return *(SilentLogSet()) // we'll configure it later
 	}()
 )
 
