@@ -29,6 +29,11 @@ const maxRequestIDLen = 99
 // between the version string and the UUID string.
 const maxVersionLen = 31
 
+// DefaultMaxHTTPConcurrencyPerServer is the default maximum number of
+// concurrent HTTP requests to send per Singularity server.
+// To configure per deployer, see OptMaxHTTPConcurrencyPerServer.
+const DefaultMaxHTTPConcurrencyPerServer = 10
+
 /*
 The imagined use case here is like this:
 
@@ -40,9 +45,13 @@ dChans := intendedSet.Diff(existingSet)
 
 type (
 	deployer struct {
-		Client  rectificationClient
-		singFac func(string) *singularity.Client
+		Client        rectificationClient
+		singFac       func(string) *singularity.Client
+		ReqsPerServer int
 	}
+
+	// DeployerOption is an option for configuring singularity deployers.
+	DeployerOption func(*deployer)
 
 	// rectificationClient abstracts the raw interactions with Singularity.
 	rectificationClient interface {
@@ -69,8 +78,18 @@ func stripDeployID(in string) string {
 }
 
 // NewDeployer creates a new Singularity-based sous.Deployer.
-func NewDeployer(c rectificationClient) sous.Deployer {
-	return &deployer{Client: c}
+func NewDeployer(c rectificationClient, options ...DeployerOption) *deployer {
+	d := &deployer{Client: c, ReqsPerServer: DefaultMaxHTTPConcurrencyPerServer}
+	for _, opt := range options {
+		opt(d)
+	}
+	return d
+}
+
+// OptMaxHTTPReqsPerServer overrides the DefaultMaxHTTPConcurrencyPerServer
+// for this server.
+func OptMaxHTTPReqsPerServer(n int) DeployerOption {
+	return func(d *deployer) { d.ReqsPerServer = n }
 }
 
 // RectifyCreates implements sous.Deployer on deployer

@@ -62,6 +62,7 @@ func TestGetDepSetWorks(t *testing.T) {
 			whip[url] = co
 			return cl
 		},
+		10,
 	}
 
 	clusters := sous.Clusters{"test": {BaseURL: "http://test-singularity.org/"}}

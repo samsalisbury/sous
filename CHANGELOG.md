@@ -8,34 +8,41 @@ with respect to its command line interface and HTTP interface.
 
 ## [Unreleased](//github.com/opentable/sous/compare/0.5.50...HEAD)
 
+
+### Added
+* Server: max concurrent HTTP requests per Singularity server now configurable
+  using `MaxHTTPConcurrencySingularity` in config file or
+  `MAX_HTTP_CONCURRENCY_SINGULARITY` env var. Default is 10 was previously
+  hard-coded to 10, so this is an opt-in change.
+
 ### Changed
 * All: some logging behaviors - there may be more output than we'd like
 * All: logging - capture the CLI output to Kafka, test that diff logs are generated.
 * All: backtrace selection more accurate (i.e. the reported source of log entries is generally where they're actually reported)
 
-## [0.5.50](//github.com/opentable/sous/compare/0.5.49..0.5.50)
+## [0.5.50](//github.com/opentable/sous/compare/0.5.49...0.5.50)
 ### Fixed
 * All: log entries weren't conforming to the requirements of our schemas.
 
-## [0.5.49](//github.com/opentable/sous/compare/0.5.48..0.5.49)
+## [0.5.49](//github.com/opentable/sous/compare/0.5.48...0.5.49)
 ### Fixed
 * Server: at least one botched log message type has been caught and corrected.
 
 ### Added
 * Client: more descriptive output from 'sous deploy' and 'sous update' commands.
 
-## [0.5.48](//github.com/opentable/sous/compare/0.5.47..0.5.48)
+## [0.5.48](//github.com/opentable/sous/compare/0.5.47...0.5.48)
 
 ### Fixed
 * Erroneous output on stdout breaking some cli consumers.
 
 
-## [0.5.47](//github.com/opentable/sous/compare/0.5.46..0.5.47)
+## [0.5.47](//github.com/opentable/sous/compare/0.5.46...0.5.47)
 
 ### Fixed
 Both: DI interaction causing panic on boot.
 
-## [0.5.46](//github.com/opentable/sous/compare/0.5.44..0.5.46)
+## [0.5.46](//github.com/opentable/sous/compare/0.5.44...0.5.46)
 
 ### Added
 * Client: a separate status for "API requests are broken".
@@ -49,7 +56,7 @@ Both: DI interaction causing panic on boot.
   validate config for commands that rely on a valid config, so 'sous config' can be
   used to correct issues.
 
-## [0.5.44](//github.com/opentable/sous/compare/0.5.43..0.5.44)
+## [0.5.44](//github.com/opentable/sous/compare/0.5.43...0.5.44)
 
 ### Fixed
 
@@ -63,7 +70,7 @@ Both: DI interaction causing panic on boot.
   expected. This solves an issue where deployments would appear to hang for a long time
   and eventually fail with a confusing error message, often due to conflicting updates.
 
-## [0.5.43](//github.com/opentable/sous/compare/0.5.42..0.5.43)
+## [0.5.43](//github.com/opentable/sous/compare/0.5.42...0.5.43)
 
 ### Added
 * Server: deployment diffs are now logged as structured messages.
@@ -78,11 +85,11 @@ Both: DI interaction causing panic on boot.
 * Client: commands 'sous deploy', 'sous manifest get' and 'sous manifest set' now receive the correct auto-detected offset
   so you no longer require the -offset flag in most cases (unless you need to override it).
 
-## [0.5.42](//github.com/opentable/sous/compare/0.5.41..0.5.42)
+## [0.5.42](//github.com/opentable/sous/compare/0.5.41...0.5.42)
 ### Fixed
 * All: Graphite output was like `sous.sous.ci.sfautoresolver.fullcycle-duration.count`, now `sous.ci.sf.auto...`
 
-## [0.5.41](//github.com/opentable/sous/compare/0.5.40..0.5.41)
+## [0.5.41](//github.com/opentable/sous/compare/0.5.40...0.5.41)
 
 ### Fixed
 
@@ -91,13 +98,13 @@ Both: DI interaction causing panic on boot.
   clobber each other's metrics.
 * All: component-id refers to the whole "sous" application; scoped loggers goes in logger-name
 
-## [0.5.40](//github.com/opentable/sous/compare/0.5.39..0.5.40)
+## [0.5.40](//github.com/opentable/sous/compare/0.5.39...0.5.40)
 
 ### Fixed
 
 * Server: mismatches with logging schemas
 
-## [0.5.39](//github.com/opentable/sous/compare/0.5.38..0.5.39)
+## [0.5.39](//github.com/opentable/sous/compare/0.5.38...0.5.39)
 
 ### Fixed
 * Server: logging configuration actually gets applied,
