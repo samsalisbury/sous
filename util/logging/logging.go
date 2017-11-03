@@ -41,6 +41,7 @@ type (
 		err, defaultErr io.Writer
 		logrus          *logrus.Logger
 		liveConfig      *Config
+		kafkaEnabled    bool //temporary for the kafka on-exit hack
 		graphiteCancel  func()
 	}
 
@@ -57,7 +58,8 @@ var (
 	// want metrics in a component, you need to add an injected LogSet. c.f.
 	// ext/docker/image_mapping.go
 	Log = func() LogSet {
-		return *(NewLogSet(semv.MustParse("0.0.0"), "sous.global", "", os.Stderr))
+		//return *(NewLogSet(semv.MustParse("0.0.0"), "sous.global", "", os.Stderr))
+		return *(SilentLogSet()) // we'll configure it later
 	}()
 )
 
@@ -142,11 +144,11 @@ func newls(name string, role string, level Level, bundle *dumpBundle) *LogSet {
 		dumpBundle: bundle,
 	}
 
-	ls.Warn = logwrapper(func(f string, as ...interface{}) { ls.warnf(f, as) })
+	ls.Warn = logwrapper(func(f string, as ...interface{}) { ls.Warnf(f, as) })
 	ls.Notice = ls.Warn
 	ls.Info = ls.Warn
-	ls.Debug = logwrapper(func(f string, as ...interface{}) { ls.debugf(f, as) })
-	ls.Vomit = logwrapper(func(f string, as ...interface{}) { ls.vomitf(f, as) })
+	ls.Debug = logwrapper(func(f string, as ...interface{}) { ls.Debugf(f, as) })
+	ls.Vomit = logwrapper(func(f string, as ...interface{}) { ls.Vomitf(f, as) })
 
 	return ls
 }
@@ -175,6 +177,16 @@ func (ls *LogSet) Configure(cfg Config) error {
 	return nil
 }
 
+// AtExit implements part of LogSink on LogSet
+func (ls LogSet) AtExit() {
+	// XXX This is a terrible hack, and should be replaced with code
+	// to properly drain the kafka producer,
+	// and send one last batch of stats to graphite
+	if ls.kafkaEnabled {
+		time.Sleep(600 * time.Millisecond) // ensures that the kafka producer does one last flush
+	}
+}
+
 func logrusFormatter() logrus.Formatter {
 	return &logrus.JSONFormatter{
 		DisableTimestamp: true, //we capture the timestamp when message created
@@ -199,6 +211,8 @@ func (ls LogSet) configureKafka(cfg Config) error {
 		reportKafkaConfig(nil, cfg, ls)
 		return nil
 	}
+
+	ls.dumpBundle.kafkaEnabled = true
 
 	hook, err := kafkalogrus.NewKafkaLogrusHook("kafkahook",
 		cfg.getKafkaLevels(),
@@ -294,23 +308,23 @@ func (ls LogSet) Console() WriteDoner {
 // xxx phase 2 of complete transition: remove these methods in favor of specific messages
 
 // Vomitf logs a message at ExtraDebug1Level.
-func (ls LogSet) Vomitf(f string, as ...interface{}) { ls.vomitf(f, as...) }
-func (ls LogSet) vomitf(f string, as ...interface{}) {
+func (ls LogSet) Vomitf(f string, as ...interface{}) {
 	m := NewGenericMsg(ExtraDebug1Level, fmt.Sprintf(f, as...), nil)
+	m.ExcludeMe()
 	Deliver(m, ls)
 }
 
 // Debugf logs a message a DebugLevel.
-func (ls LogSet) Debugf(f string, as ...interface{}) { ls.debugf(f, as...) }
-func (ls LogSet) debugf(f string, as ...interface{}) {
+func (ls LogSet) Debugf(f string, as ...interface{}) {
 	m := NewGenericMsg(DebugLevel, fmt.Sprintf(f, as...), nil)
+	m.ExcludeMe()
 	Deliver(m, ls)
 }
 
 // Warnf logs a message at WarningLevel.
-func (ls LogSet) Warnf(f string, as ...interface{}) { ls.warnf(f, as...) }
-func (ls LogSet) warnf(f string, as ...interface{}) {
+func (ls LogSet) Warnf(f string, as ...interface{}) {
 	m := NewGenericMsg(WarningLevel, fmt.Sprintf(f, as...), nil)
+	m.ExcludeMe()
 	Deliver(m, ls)
 }
 

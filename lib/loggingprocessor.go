@@ -48,7 +48,7 @@ func (log loggingProcessor) Update(dp *DeployablePair) (*DeployablePair, *DiffRe
 func (log loggingProcessor) doLog(dp *DeployablePair) {
 	msg := &deployableMessage{
 		pair:       dp,
-		callerInfo: logging.GetCallerInfo("loggingprocessor"),
+		callerInfo: logging.GetCallerInfo(logging.NotHere()),
 	}
 
 	logging.Deliver(msg, log.ls)
@@ -158,7 +158,7 @@ func (msg *deployableMessage) EachField(f logging.FieldReportFn) {
 func (log loggingProcessor) HandleResolution(rez *DiffResolution) {
 	msg := &diffRezMessage{
 		resolution: rez,
-		callerInfo: logging.GetCallerInfo("loggingprocessor"),
+		callerInfo: logging.GetCallerInfo(logging.NotHere()),
 	}
 	logging.Deliver(msg, log.ls)
 }

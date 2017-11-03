@@ -15,7 +15,7 @@ type resolveCompleteMessage struct {
 
 func reportResolverStatus(logger logging.LogSink, status *ResolveStatus) {
 	msg := resolveCompleteMessage{
-		CallerInfo:      logging.GetCallerInfo("reportResolverStatus"),
+		CallerInfo:      logging.GetCallerInfo(logging.NotHere()),
 		Level:           logging.InformationLevel,
 		MessageInterval: logging.NewInterval(status.Started, status.Finished),
 	}

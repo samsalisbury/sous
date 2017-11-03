@@ -6,7 +6,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
-## [Unreleased](//github.com/opentable/sous/compare/0.5.50...master)
+## [Unreleased](//github.com/opentable/sous/compare/0.5.50...HEAD)
+
 
 ### Added
 * Server: max concurrent HTTP requests per Singularity server now configurable
@@ -16,6 +17,8 @@ with respect to its command line interface and HTTP interface.
 
 ### Changed
 * All: some logging behaviors - there may be more output than we'd like
+* All: logging - capture the CLI output to Kafka, test that diff logs are generated.
+* All: backtrace selection more accurate (i.e. the reported source of log entries is generally where they're actually reported)
 
 ## [0.5.50](//github.com/opentable/sous/compare/0.5.49...0.5.50)
 ### Fixed

@@ -49,6 +49,7 @@ func ReportClientHTTPResponse(logger logging.LogSink, rz http.Response, dur time
 		rz.ContentLength,
 		dur,
 	)
+	m.ExcludeMe()
 	logging.Deliver(m, logger)
 }
 
@@ -60,7 +61,7 @@ func newClientHTTPResponse(method, urlstring string, status int, rqSize, rzSize 
 
 	return &clientHTTPResponse{
 		Level:      logging.InformationLevel,
-		CallerInfo: logging.GetCallerInfo(),
+		CallerInfo: logging.GetCallerInfo(logging.NotHere()),
 
 		method:       method,
 		url:          urlstring,

@@ -7,13 +7,14 @@ type graphiteError struct {
 
 func reportGraphiteError(ls LogSink, err error) {
 	msg := newGraphiteError(err)
+	msg.ExcludeMe()
 	Deliver(msg, ls)
 }
 
 func newGraphiteError(err error) graphiteError {
 	return graphiteError{
 		error:      err,
-		CallerInfo: GetCallerInfo("reportGraphiteError", "newGraphiteError"),
+		CallerInfo: GetCallerInfo(NotHere()),
 	}
 }
 

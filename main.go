@@ -26,6 +26,7 @@ func main() {
 	log.SetFlags(log.Flags() | log.Lshortfile)
 
 	ls := logging.NewLogSet(Sous.Version, "sous", "", os.Stderr)
+	defer ls.AtExit()
 	di := graph.BuildGraph(Sous.Version, ls, os.Stdin, os.Stdout, os.Stderr)
 	c, err := cli.NewSousCLI(di, Sous, ls, os.Stdout, os.Stderr)
 	if err != nil {
