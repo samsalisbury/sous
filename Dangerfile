@@ -1,7 +1,7 @@
 # Sometimes it's a README fix, or something like that - which isn't relevant for
 # including in a project's CHANGELOG for example
-$modified_app_files = git.modified_files.grep(/(?<!_test)\.go$/)
-app_changed = !$modified_app_files.empty?
+modified_app_files = git.modified_files.grep(/(?<!_test)\.go$/)
+app_changed = !modified_app_files.empty?
 declared_trivial = github.pr_title.include? "#trivial" || !app_changed
 
 # Make it more obvious that a PR is a work in progress and shouldn't be merged yet
@@ -33,7 +33,10 @@ end
 lgtm.check_lgtm
 
 def check_for_debug
-  $modified_app_files.each do |file|
+  git.modified_files.each do |file|
+    if file.end_with?("_test.go")
+      next
+    end 
     file.patch.each_line do |patch_line|
       if /^\+[^+].*spew\./ =~ patch_line
         fail "Debugging output: #{patch_line} (there may be others)"
