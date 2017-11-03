@@ -33,8 +33,8 @@ end
 lgtm.check_lgtm
 
 def check_for_debug
-  git.diff.filter do |file|
-    file.path !~ /_test.go$/
+  git.diff.reject do |file|
+    file.path =~ /_test.go$/
   end.each do |file|
     file.patch.each_line do |patch_line|
       if /^\+[^+].*spew\./ =~ patch_line
