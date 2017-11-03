@@ -14,10 +14,9 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ReqsPerServer limits the number of simultaneous number of requests made
-// against a single Singularity server
 const (
-	ReqsPerServer = 10
+	// MaxAssemblers is the maximum number of simultaneous deployment
+	// assemblers.
 	MaxAssemblers = 100
 )
 
@@ -51,8 +50,8 @@ func (sc *deployer) RunningDeployments(reg sous.Registry, clusters sous.Clusters
 	errCh := make(chan error)
 	deps = sous.NewDeployStates()
 	sings := make(map[string]struct{})
-	reqCh := make(chan SingReq, len(clusters)*ReqsPerServer)
-	depCh := make(chan *sous.DeployState, ReqsPerServer)
+	reqCh := make(chan SingReq, len(clusters)*sc.ReqsPerServer)
+	depCh := make(chan *sous.DeployState, sc.ReqsPerServer)
 
 	defer close(depCh)
 	// XXX The intention here was to use something like the gotools context to

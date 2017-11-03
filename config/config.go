@@ -39,6 +39,9 @@ type (
 		Logging logging.Config
 		// User identifies the user of this client.
 		User sous.User
+		// MaxHTTPConcurrencySingularity is the maximum number of concurrent
+		// requests that can be made to a single Singularity instance.
+		MaxHTTPConcurrencySingularity int `env:"MAX_HTTP_CONCURRENCY_SINGULARITY"`
 	}
 )
 
@@ -75,6 +78,7 @@ func (c Config) Validate() error {
 func DefaultConfig() Config {
 	return Config{
 		Docker: docker.DefaultConfig(),
+		MaxHTTPConcurrencySingularity: 10,
 	}
 }
 

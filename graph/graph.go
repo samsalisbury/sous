@@ -475,19 +475,24 @@ func newRegistry(graph *SousGraph, nc lazyNameCache, dryrun DryrunOption) (sous.
 	return nc()
 }
 
-func newDeployer(dryrun DryrunOption, nc lazyNameCache, ls LogSink) (sous.Deployer, error) {
+func newDeployer(dryrun DryrunOption, nc lazyNameCache, ls LogSink, c LocalSousConfig) (sous.Deployer, error) {
 	// Eventually, based on configuration, we may make different decisions here.
 	if dryrun == DryrunBoth || dryrun == DryrunScheduler {
 		drc := sous.NewDummyRectificationClient()
 		drc.SetLogger(ls.Child("rectify"))
-		return singularity.NewDeployer(drc), nil
+		return singularity.NewDeployer(drc,
+			singularity.OptMaxHTTPReqsPerServer(c.MaxHTTPConcurrencySingularity),
+		), nil
 	}
 	// We need the real name cache.
 	nameCache, err := nc()
 	if err != nil {
 		return nil, err
 	}
-	return singularity.NewDeployer(singularity.NewRectiAgent(nameCache)), nil
+	return singularity.NewDeployer(
+		singularity.NewRectiAgent(nameCache),
+		singularity.OptMaxHTTPReqsPerServer(c.MaxHTTPConcurrencySingularity),
+	), nil
 }
 
 func newDockerClient() LocalDockerClient {
