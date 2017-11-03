@@ -33,10 +33,9 @@ end
 lgtm.check_lgtm
 
 def check_for_debug
-  git.modified_files.each do |file|
-    if file.end_with?("_test.go")
-      next
-    end 
+  git.diff.filter do |file|
+    file.path !~ /_test.go$/
+  end.each do |file|
     file.patch.each_line do |patch_line|
       if /^\+[^+].*spew\./ =~ patch_line
         fail "Debugging output: #{patch_line} (there may be others)"
