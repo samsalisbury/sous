@@ -475,7 +475,8 @@ func (suite *integrationSuite) TestResolve() {
 		}
 	}
 	sort.Strings(dispositions)
-	suite.Equal(dispositions, []string{"added", "added", "removed", "removed", "removed", "removed"})
+	expectedDispositions := []string{"added", "added", "removed", "removed", "removed", "removed"}
+	suite.Equal(expectedDispositions, dispositions)
 
 	// ****
 	suite.T().Log("Resolving from one+two to two+three")
