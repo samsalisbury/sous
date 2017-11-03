@@ -35,21 +35,25 @@ type (
 
 func reportPollerStart(logsink logging.LogSink, poller *StatusPoller) {
 	msg := newPollerStartMessage(poller)
+	msg.callerInfo.ExcludeMe()
 	logging.Deliver(msg, logsink)
 }
 
 func reportPollerResolved(logsink logging.LogSink, sp *StatusPoller, status ResolveState, err error) {
 	msg := newPollerResolvedMessage(sp, status, err)
+	msg.callerInfo.ExcludeMe()
 	logging.Deliver(msg, logsink)
 }
 
 func reportPollerStatus(logsink logging.LogSink, poller *StatusPoller, old ResolveState) {
 	msg := newPollerStatusMessage(poller, old)
+	msg.callerInfo.ExcludeMe()
 	logging.Deliver(msg, logsink)
 }
 
 func reportSubreport(logsink logging.LogSink, poller *StatusPoller, update pollResult) {
 	msg := newSubreportMessage(poller, update)
+	msg.callerInfo.ExcludeMe()
 	logging.Deliver(msg, logsink)
 }
 
@@ -89,7 +93,7 @@ func resolveFilterFields(f logging.FieldReportFn, rf *ResolveFilter) {
 
 func newPollerStartMessage(poller *StatusPoller) *pollerStartMessage {
 	return &pollerStartMessage{
-		callerInfo: logging.GetCallerInfo("sous/lib/messages"),
+		callerInfo: logging.GetCallerInfo(logging.NotHere()),
 		poller:     poller,
 	}
 }
@@ -110,7 +114,7 @@ func (msg *pollerStartMessage) EachField(f logging.FieldReportFn) {
 
 func newPollerResolvedMessage(sp *StatusPoller, status ResolveState, err error) *pollerResolvedMessage {
 	return &pollerResolvedMessage{
-		callerInfo: logging.GetCallerInfo("sous/lib/messages"),
+		callerInfo: logging.GetCallerInfo(logging.NotHere()),
 		poller:     sp,
 		status:     status,
 		err:        err,
@@ -134,7 +138,7 @@ func (msg *pollerResolvedMessage) EachField(f logging.FieldReportFn) {
 
 func newPollerStatusMessage(poller *StatusPoller, old ResolveState) *pollerStatusMessage {
 	return &pollerStatusMessage{
-		callerInfo:    logging.GetCallerInfo("sous/lib/messages"),
+		callerInfo:    logging.GetCallerInfo(logging.NotHere()),
 		poller:        poller,
 		previousState: old,
 	}
@@ -170,7 +174,7 @@ func (msg *pollerStatusMessage) WriteToConsole(console io.Writer) {
 
 func newSubreportMessage(poller *StatusPoller, update pollResult) *subreportMessage {
 	return &subreportMessage{
-		callerInfo: logging.GetCallerInfo("sous/lib/messages"),
+		callerInfo: logging.GetCallerInfo(logging.NotHere()),
 		poller:     poller,
 		update:     update,
 	}

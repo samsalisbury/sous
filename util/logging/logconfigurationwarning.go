@@ -12,13 +12,14 @@ type logConfigurationError struct {
 
 func reportLogConfigurationError(ls LogSet, msg string) {
 	warning := newLogConfigurationError(msg)
+	warning.ExcludeMe()
 	Deliver(warning, ls)
 }
 
 func newLogConfigurationError(msg string) *logConfigurationError {
 	return &logConfigurationError{
 		message:    msg,
-		CallerInfo: GetCallerInfo("reportLogConfigurationWarning", "newLogConfigurationWarning"),
+		CallerInfo: GetCallerInfo(NotHere()),
 	}
 }
 

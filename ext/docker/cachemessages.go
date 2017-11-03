@@ -30,7 +30,7 @@ type (
 
 func reportCacheHit(logger logging.LogSink, sid sous.SourceID, name string) {
 	msg := cacheHitMessage{
-		CallerInfo: logging.GetCallerInfo("reportCacheHit"),
+		CallerInfo: logging.GetCallerInfo(logging.NotHere()),
 		Level:      logging.InformationLevel,
 		source:     sid,
 		imageName:  name,
@@ -55,7 +55,7 @@ func (msg cacheHitMessage) EachField(f logging.FieldReportFn) {
 
 func reportCacheMiss(logger logging.LogSink, sid sous.SourceID, name string) {
 	msg := cacheMissMessage{
-		CallerInfo: logging.GetCallerInfo("reportCacheMiss"),
+		CallerInfo: logging.GetCallerInfo(logging.NotHere()),
 		Level:      logging.InformationLevel,
 		source:     sid,
 		imageName:  name,
@@ -80,7 +80,7 @@ func (msg cacheMissMessage) EachField(f logging.FieldReportFn) {
 
 func reportCacheError(logger logging.LogSink, sid sous.SourceID, err error) {
 	msg := cacheErrorMessage{
-		CallerInfo: logging.GetCallerInfo("reportCacheError"),
+		CallerInfo: logging.GetCallerInfo(logging.NotHere()),
 		Level:      logging.InformationLevel,
 		source:     sid,
 		err:        err,

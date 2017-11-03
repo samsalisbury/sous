@@ -1,7 +1,8 @@
 # Sometimes it's a README fix, or something like that - which isn't relevant for
 # including in a project's CHANGELOG for example
-app_changes = !git.modified_files.grep(/(?<!_test)\.go$/).empty?
-declared_trivial = github.pr_title.include? "#trivial" || !app_changes
+modified_app_files = git.modified_files.grep(/(?<!_test)\.go$/)
+app_changed = !modified_app_files.empty?
+declared_trivial = github.pr_title.include? "#trivial" || !app_changed
 
 # Make it more obvious that a PR is a work in progress and shouldn't be merged yet
 warn("PR is classed as Work in Progress") if github.pr_title.include? "[WIP]"
@@ -9,7 +10,7 @@ warn("PR is classed as Work in Progress") if github.pr_title.include? "[WIP]"
 # Warn when there is a big PR
 warn("Big PR: #{git.lines_of_code} lines of code changed") if git.lines_of_code > 500
 
-if !git.modified_files.include?("CHANGELOG.md") && (app_changes && !declared_trivial)
+if !git.modified_files.include?("CHANGELOG.md") && (app_changed && !declared_trivial)
   fail("Please include a CHANGELOG entry.", sticky: false)
 end
 
@@ -32,7 +33,9 @@ end
 lgtm.check_lgtm
 
 def check_for_debug
-  git.diff.each do |file|
+  git.diff.reject do |file|
+    file.path =~ /_test.go$/
+  end.each do |file|
     file.patch.each_line do |patch_line|
       if /^\+[^+].*spew\./ =~ patch_line
         fail "Debugging output: #{patch_line} (there may be others)"

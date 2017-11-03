@@ -5,6 +5,7 @@ package integration
 import (
 	"fmt"
 	"os"
+	"sort"
 	"testing"
 	"time"
 
@@ -101,7 +102,7 @@ func (suite *integrationSuite) newNameCache(name string) *docker.NameCache {
 
 	suite.Require().NoError(err)
 
-	cache, err := docker.NewNameCache(registryName, suite.registry, logging.NewLogSet(semv.MustParse("0.0.0"), "", "", os.Stdout), db)
+	cache, err := docker.NewNameCache(registryName, suite.registry, logging.SilentLogSet(), db)
 	suite.Require().NoError(err)
 
 	ids, err := cache.ListSourceIDs()
@@ -433,8 +434,10 @@ func (suite *integrationSuite) TestResolve() {
 	deploymentsTwoThree, err := stateTwoThree.Deployments()
 	suite.Require().NoError(err)
 
+	logsink, logController := logging.NewLogSinkSpy()
+
 	// ****
-	r := sous.NewResolver(suite.deployer, suite.nameCache, &sous.ResolveFilter{}, logging.SilentLogSet())
+	r := sous.NewResolver(suite.deployer, suite.nameCache, &sous.ResolveFilter{}, logsink)
 
 	logging.Log.Warn.Print("Begining OneTwo")
 	err = r.Begin(deploymentsOneTwo, clusterDefs.Clusters).Wait()
@@ -449,7 +452,7 @@ func (suite *integrationSuite) TestResolve() {
 	ds, which := suite.deploymentWithRepo(clusters, repoOne)
 	deps := ds.Snapshot()
 	suite.T().Logf("which: %#v", which)
-	if suite.NotEqual(which, none, "opentable/one not successfully deployed") {
+	if suite.NotEqual(none, which, "opentable/one not successfully deployed") {
 		one := deps[which]
 		suite.Equal(1, one.NumInstances)
 	}
@@ -460,6 +463,20 @@ func (suite *integrationSuite) TestResolve() {
 		two := deps[which]
 		suite.Equal(1, two.NumInstances)
 	}
+
+	dispositions := []string{}
+	for _, call := range logController.CallsTo("LogMessage") {
+		if lm, is := call.PassedArgs().Get(1).(logging.LogMessage); is {
+			lm.EachField(func(name string, val interface{}) {
+				if disp, is := val.(string); is && name == "sous-diff-disposition" {
+					dispositions = append(dispositions, disp)
+				}
+			})
+		}
+	}
+	sort.Strings(dispositions)
+	expectedDispositions := []string{"added", "added", "removed", "removed", "removed", "removed"}
+	suite.Equal(expectedDispositions, dispositions)
 
 	// ****
 	suite.T().Log("Resolving from one+two to two+three")
@@ -475,7 +492,13 @@ func (suite *integrationSuite) TestResolve() {
 		err = r.Begin(deploymentsTwoThree, clusterDefs.Clusters).Wait()
 		if err != nil {
 			//suite.Require().NotRegexp(`Pending deploy already in progress`, err.Error())
-			suite.T().Logf("Singularity error:%s - will try %d more times", spew.Sdump(err), tries)
+			suffix := `           this is dumb but it would suck to panic during tests
+                                                                            what
+																																						  is
+																																							up
+																																					gofmt?
+			                                                                          `
+			suite.T().Logf("Singularity error:%s... - will try %d more times", spew.Sdump(err)[0:len(suffix)], tries)
 			time.Sleep(2 * time.Second)
 		} else {
 			// err was nil, so no need to keep retrying.

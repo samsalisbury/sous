@@ -78,6 +78,9 @@ type (
 
 		// Console returns a WriteDoner, which will be used to record ConsoleMessages.
 		Console() WriteDoner
+
+		// AtExit() does last-minute cleanup of stuff
+		AtExit()
 	}
 
 	// A MetricsSink is passed into a MetricsMessage's MetricsTo(), so that the

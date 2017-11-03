@@ -85,7 +85,6 @@ func (cli *CLI) Invoke(args []string) cmdr.Result {
 	reportInvocation(cli.LogSink, args)
 	res := cli.CLI.Invoke(args)
 	reportCLIResult(cli.LogSink, args, start, res)
-	time.Sleep(600 * time.Millisecond) // otherwise we'll never see the CLIResult on Kafka
 	return res
 }
 

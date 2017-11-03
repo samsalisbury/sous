@@ -22,7 +22,7 @@ type (
 
 func newUpdateBeginMessage(tries int, sid sous.SourceID, did sous.DeploymentID, user sous.User, start time.Time) updateMessage {
 	return updateMessage{
-		callerInfo: logging.GetCallerInfo("cli/actions"),
+		callerInfo: logging.GetCallerInfo(logging.NotHere()),
 		tries:      tries,
 		sid:        sid,
 		did:        did,
@@ -33,7 +33,7 @@ func newUpdateBeginMessage(tries int, sid sous.SourceID, did sous.DeploymentID, 
 
 func newUpdateSuccessMessage(tries int, sid sous.SourceID, did sous.DeploymentID, user sous.User, start time.Time) updateMessage {
 	return updateMessage{
-		callerInfo: logging.GetCallerInfo("cli/actions"),
+		callerInfo: logging.GetCallerInfo(logging.NotHere()),
 		tries:      tries,
 		sid:        sid,
 		did:        did,
@@ -44,7 +44,7 @@ func newUpdateSuccessMessage(tries int, sid sous.SourceID, did sous.DeploymentID
 
 func newUpdateErrorMessage(tries int, sid sous.SourceID, did sous.DeploymentID, user sous.User, start time.Time, err error) updateMessage {
 	return updateMessage{
-		callerInfo: logging.GetCallerInfo("cli/actions"),
+		callerInfo: logging.GetCallerInfo(logging.NotHere()),
 		tries:      tries,
 		sid:        sid,
 		did:        did,

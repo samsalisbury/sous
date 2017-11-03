@@ -13,7 +13,7 @@ type graphiteConfigMessage struct {
 
 func reportGraphiteConfig(cfg *graphite.Config, ls LogSink) {
 	msg := graphiteConfigMessage{
-		CallerInfo: GetCallerInfo(),
+		CallerInfo: GetCallerInfo(NotHere()),
 		cfg:        cfg,
 	}
 	Deliver(msg, ls)
