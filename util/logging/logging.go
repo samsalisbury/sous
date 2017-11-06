@@ -194,11 +194,8 @@ func (ls *LogSet) Configure(cfg Config) error {
 
 // AtExit implements part of LogSink on LogSet
 func (ls LogSet) AtExit() {
-	// XXX This is a terrible hack, and should be replaced with code
-	// to properly drain the kafka producer,
-	// and send one last batch of stats to graphite
-	if ls.kafkaEnabled {
-		time.Sleep(600 * time.Millisecond) // ensures that the kafka producer does one last flush
+	if ls.dumpBundle.kafkaSink != nil {
+		ls.dumpBundle.kafkaSink.closedown()
 	}
 }
 

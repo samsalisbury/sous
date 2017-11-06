@@ -17,4 +17,4 @@ grep $newversion CHANGELOG.md
 
 git commit -am "Releasing $newversion"
 git tag -m "Release" $newversion
-git push
+git push origin $newversion
