@@ -136,19 +136,19 @@ func newdb(vrsn semv.Version, err io.Writer, lgrs *logrus.Logger) *dumpBundle {
 	}
 }
 
-func (db *dumpBundle) replaceKafka(hook *kafkaSink) {
+func (db *dumpBundle) replaceKafka(sink *kafkaSink) {
 	var old *kafkaSink
-	old, db.kafkaSink = db.kafkaSink, hook
+	old, db.kafkaSink = db.kafkaSink, sink
 	if old != nil {
 		old.closedown()
 	}
 }
 
-func (db *dumpBundle) sendToKafka(lvl Level, entry *logrus.Entry) {
+func (db *dumpBundle) sendToKafka(lvl Level, entry *logrus.Entry) error {
 	if db.kafkaSink == nil {
-		return
+		return nil
 	}
-	db.kafkaSink.send(lvl, entry)
+	return db.kafkaSink.send(lvl, entry)
 }
 
 func newls(name string, role string, level Level, bundle *dumpBundle) *LogSet {
@@ -220,7 +220,7 @@ func (ls LogSet) configureKafka(cfg Config) error {
 		return nil
 	}
 
-	hook, err := newKafkaSink("kafkahook",
+	sink, err := newKafkaSink("kafkahook",
 		cfg.getKafkaLevel(),
 		logrusFormatter(),
 		cfg.getBrokers(),
@@ -232,9 +232,9 @@ func (ls LogSet) configureKafka(cfg Config) error {
 	if err != nil {
 		return err
 	}
-	reportKafkaConfig(hook, cfg, ls)
+	reportKafkaConfig(sink, cfg, ls)
 
-	ls.dumpBundle.replaceKafka(hook)
+	ls.dumpBundle.replaceKafka(sink)
 
 	return nil
 }

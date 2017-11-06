@@ -14,7 +14,10 @@ func (ls LogSet) LogMessage(lvl Level, msg LogMessage) {
 		logto = logto.WithField(name, value)
 	})
 
-	ls.dumpBundle.sendToKafka(lvl, logto)
+	err := ls.dumpBundle.sendToKafka(lvl, logto)
+	if _, isKafkaSend := msg.(*kafkaSendErrorMessage); err != nil && !isKafkaSend {
+		reportKafkaSendError(ls, err)
+	}
 
 	switch lvl {
 	default:
@@ -41,11 +44,4 @@ func (ls LogSet) eachField(f FieldReportFn) {
 	f("@uuid", uuid.New())
 
 	ls.appIdent.EachField(f)
-
-	/*
-	 "@timestamp":
-	    type: timestamp
-	    description: Core timestamp field, used by Logstash and Elasticsearch for time indexing
-
-	*/
 }

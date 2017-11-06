@@ -39,7 +39,7 @@ func newKafkaSink(
 		return nil, err
 	}
 
-	hook := &kafkaSink{
+	sink := &kafkaSink{
 		id:           id,
 		defaultTopic: defaultTopic,
 		level:        level,
@@ -47,28 +47,28 @@ func newKafkaSink(
 		producer:     producer,
 	}
 
-	hook.exit.Add(1)
+	sink.exit.Add(1)
 
 	go func() {
 		for err := range producer.Errors() {
 			log.Printf("Failed to send log entry to Kafka: %v\n", err)
 		}
-		hook.exit.Done()
+		sink.exit.Done()
 	}()
 
-	return hook, nil
+	return sink, nil
 }
 
-func (hook *kafkaSink) ID() string {
-	return hook.id
+func (sink *kafkaSink) ID() string {
+	return sink.id
 }
 
-func (hook *kafkaSink) send(lvl Level, entry *logrus.Entry) error {
+func (sink *kafkaSink) send(lvl Level, entry *logrus.Entry) error {
 	var partitionKey sarama.ByteEncoder
 	var b []byte
 	var err error
 
-	if lvl <= hook.level {
+	if lvl <= sink.level {
 		return nil
 	}
 
@@ -82,13 +82,13 @@ func (hook *kafkaSink) send(lvl Level, entry *logrus.Entry) error {
 	}
 	partitionKey = sarama.ByteEncoder(uuidStr)
 
-	if b, err = hook.formatter.Format(entry); err != nil {
+	if b, err = sink.formatter.Format(entry); err != nil {
 		return err
 	}
 	value := sarama.ByteEncoder(b)
 
-	topic := hook.defaultTopic
-	hook.producer.Input() <- &sarama.ProducerMessage{
+	topic := sink.defaultTopic
+	sink.producer.Input() <- &sarama.ProducerMessage{
 		Key:   partitionKey,
 		Topic: topic,
 		Value: value,
@@ -96,7 +96,7 @@ func (hook *kafkaSink) send(lvl Level, entry *logrus.Entry) error {
 	return nil
 }
 
-func (hook *kafkaSink) closedown() {
-	hook.producer.AsyncClose()
-	hook.exit.Wait()
+func (sink *kafkaSink) closedown() {
+	sink.producer.AsyncClose()
+	sink.exit.Wait()
 }
