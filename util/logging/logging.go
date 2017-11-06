@@ -40,7 +40,6 @@ type (
 		err, defaultErr io.Writer
 		logrus          *logrus.Logger
 		liveConfig      *Config
-		kafkaEnabled    bool //temporary for the kafka on-exit hack
 		kafkaSink       *kafkaSink
 		graphiteCancel  func()
 	}
