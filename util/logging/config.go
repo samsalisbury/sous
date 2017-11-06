@@ -89,27 +89,8 @@ func (cfg Config) getBrokers() []string {
 	return strings.Split(cfg.Kafka.BrokerList, ",")
 }
 
-func (cfg Config) getKafkaLevels() []logrus.Level {
-	level := levelFromString(cfg.Kafka.DefaultLevel)
-	kafkaLevels := []logrus.Level{
-		logrus.PanicLevel,
-		logrus.FatalLevel,
-		logrus.ErrorLevel,
-	}
-
-	if level >= WarningLevel {
-		kafkaLevels = append(kafkaLevels, logrus.WarnLevel)
-	}
-
-	if level >= InformationLevel {
-		kafkaLevels = append(kafkaLevels, logrus.InfoLevel)
-	}
-
-	if level >= DebugLevel {
-		kafkaLevels = append(kafkaLevels, logrus.DebugLevel)
-	}
-
-	return kafkaLevels
+func (cfg Config) getKafkaLevel() Level {
+	return levelFromString(cfg.Kafka.DefaultLevel)
 }
 
 func (cfg Config) getGraphiteServer() string {

@@ -1,17 +1,13 @@
 package logging
 
-import (
-	"github.com/tracer0tong/kafkalogrus"
-)
-
 type kafkaConfigurationMessage struct {
 	CallerInfo
-	hook    *kafkalogrus.KafkaLogrusHook
+	hook    *kafkaSink
 	brokers []string
 	topic   string
 }
 
-func reportKafkaConfig(hook *kafkalogrus.KafkaLogrusHook, cfg Config, ls LogSink) {
+func reportKafkaConfig(hook *kafkaSink, cfg Config, ls LogSink) {
 	msg := kafkaConfigurationMessage{
 		CallerInfo: GetCallerInfo(),
 		hook:       hook,
@@ -42,6 +38,6 @@ func (kcm kafkaConfigurationMessage) EachField(f FieldReportFn) {
 	f("sous-successful-connection", true)
 	f("kafka-logging-topic", kcm.topic)
 	f("kafka-brokers", kcm.brokers)
-	f("kafka-logger-id", kcm.hook.Id())
-	f("kafka-logging-levels", kcm.hook.Levels())
+	f("kafka-logger-id", kcm.hook.ID())
+	f("kafka-logging-levels", kcm.hook.level.String())
 }
