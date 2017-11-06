@@ -6,9 +6,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
-## [Unreleased](//github.com/opentable/sous/compare/0.5.50...HEAD)
+## [Unreleased](//github.com/opentable/sous/compare/0.5.51...HEAD)
 
 
+## [0.5.51](//github.com/opentable/sous/compare/0.5.50...0.5.51)
 ### Added
 * Server: max concurrent HTTP requests per Singularity server now configurable
   using `MaxHTTPConcurrencySingularity` in config file or
