@@ -14,6 +14,9 @@ else
   echo "try: go get github.com/nyarly/versiontool"
 fi
 
+git pull
+git pull --tags
+
 newversion="$(versiontool increment "$(git tag | grep '[.].*[.*]' | versiontool sort | tail -n 1)")"
 
 if git tag | grep -q $newversion; then
