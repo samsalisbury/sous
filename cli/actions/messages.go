@@ -1,6 +1,7 @@
 package actions
 
 import (
+	"fmt"
 	"io"
 	"time"
 
@@ -14,6 +15,7 @@ type (
 		tries      int
 		sid        sous.SourceID
 		did        sous.DeploymentID
+		manifest   *sous.Manifest
 		user       sous.User
 		interval   logging.MessageInterval
 		err        error
@@ -31,12 +33,13 @@ func newUpdateBeginMessage(tries int, sid sous.SourceID, did sous.DeploymentID, 
 	}
 }
 
-func newUpdateSuccessMessage(tries int, sid sous.SourceID, did sous.DeploymentID, user sous.User, start time.Time) updateMessage {
+func newUpdateSuccessMessage(tries int, sid sous.SourceID, did sous.DeploymentID, manifest *sous.Manifest, user sous.User, start time.Time) updateMessage {
 	return updateMessage{
 		callerInfo: logging.GetCallerInfo(logging.NotHere()),
 		tries:      tries,
 		sid:        sid,
 		did:        did,
+		manifest:   manifest,
 		user:       user,
 		interval:   logging.CompleteInterval(start),
 	}
@@ -85,6 +88,9 @@ func (msg updateMessage) WriteToConsole(console io.Writer) {
 		return
 	}
 	if msg.interval.Complete() {
-		console.Write([]byte("Updated global manifest\n"))
+		version := msg.sid.Version.String()
+		numInstances := msg.manifest.Deployments[msg.did.Cluster].NumInstances
+
+		fmt.Fprintf(console, "Updated global manifest: %d instances of version %s\n", numInstances, version)
 	}
 }
