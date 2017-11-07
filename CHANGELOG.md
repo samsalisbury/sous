@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
+## [Unreleased](//github.com/opentable/sous/compare/0.5.52...HEAD)
+
+### Fixed
+* Server: the resolve complete message is properly emitted and produces stats
+
 ## [0.5.52](//github.com/opentable/sous/compare/0.5.51...0.5.52)
 
 ### Changed

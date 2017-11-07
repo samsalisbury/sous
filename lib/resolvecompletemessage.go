@@ -1,8 +1,6 @@
 package sous
 
 import (
-	"time"
-
 	"github.com/opentable/sous/util/logging"
 )
 
@@ -18,6 +16,7 @@ func reportResolverStatus(logger logging.LogSink, status *ResolveStatus) {
 		CallerInfo:      logging.GetCallerInfo(logging.NotHere()),
 		Level:           logging.InformationLevel,
 		MessageInterval: logging.NewInterval(status.Started, status.Finished),
+		status:          status,
 	}
 	logging.Deliver(msg, logger)
 }
@@ -48,8 +47,6 @@ func (msg resolveCompleteMessage) Message() string {
 
 func (msg resolveCompleteMessage) EachField(f logging.FieldReportFn) {
 	f("@loglov3-otl", "sous-resolution-result-v1")
-	f("started-at", msg.status.Started.Format(time.RFC3339))
-	f("finished-at", msg.status.Finished.Format(time.RFC3339))
 	f("error-count", len(msg.status.Errs.Causes))
 	msg.CallerInfo.EachField(f)
 	msg.MessageInterval.EachField(f)
