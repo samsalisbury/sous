@@ -15,10 +15,22 @@ else
 fi
 
 newversion="$(versiontool increment "$(git tag | grep '[.].*[.*]' | versiontool sort | tail -n 1)")"
+
+if git tag | grep -q $newversion; then
+  echo "Tag $newversion is already in use"
+  echo "  (this actually shouldn't happen - try manual release)"
+  exit 2
+fi
 echo "Updating to $newversion"
 
+if git diff-index --quiet HEAD; then
+  : # no unstaged changes == no problems
+else
+  echo "Unstaged changes in repo. Please commit before running $0"
+  exit 3
+fi
 #set -x
-sed -Ei '' "/Unreleased.*(HEAD|master)/ s/Unreleased|HEAD|master/$newversion/g" CHANGELOG.md
+sed -Ei'' "/Unreleased.*(HEAD|master)/ s/Unreleased|HEAD|master/$newversion/g" CHANGELOG.md
 git diff CHANGELOG.md
 
 if [ $YES = 0 ]; then
