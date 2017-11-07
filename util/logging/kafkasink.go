@@ -50,10 +50,10 @@ func newKafkaSink(
 	sink.exit.Add(1)
 
 	go func() {
+		defer sink.exit.Done()
 		for err := range producer.Errors() {
 			log.Printf("Failed to send log entry to Kafka: %v\n", err)
 		}
-		sink.exit.Done()
 	}()
 
 	return sink, nil
