@@ -31,12 +31,16 @@ func TestResolveCompleteMessage(t *testing.T) {
 	reportResolverStatus(logger, status)
 
 	assert.Len(t, control.Metrics.CallsTo("UpdateTimer"), 1)
+	assert.Len(t, control.Metrics.CallsTo("UpdateSample"), 1)
 	logCalls := control.CallsTo("LogMessage")
 	require.Len(t, logCalls, 1)
-	assert.Equal(t, logCalls[0].PassedArgs().Get(0), logging.InformationLevel)
+	assert.Equal(t, logCalls[0].PassedArgs().Get(0), logging.WarningLevel)
 	msg := logCalls[0].PassedArgs().Get(1).(logging.LogMessage)
 
-	fixedFields := map[string]interface{}{}
+	fixedFields := map[string]interface{}{
+		"error-count":  1,
+		"@loglov3-otl": "sous-resolution-result-v1",
+	}
 
-	logging.AssertMessageFields(t, msg, logging.StandardVariableFields, fixedFields)
+	logging.AssertMessageFields(t, msg, append(logging.StandardVariableFields, logging.IntervalVariableFields...), fixedFields)
 }
