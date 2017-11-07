@@ -95,7 +95,7 @@ func updateRetryLoop(ls logging.LogSink, cl restful.HTTPClient, sid sous.SourceI
 			continue
 		}
 
-		logging.Deliver(newUpdateSuccessMessage(tries, sid, did, user, start), ls)
+		logging.Deliver(newUpdateSuccessMessage(tries, sid, did, manifest, user, start), ls)
 		return gdm, nil
 	}
 

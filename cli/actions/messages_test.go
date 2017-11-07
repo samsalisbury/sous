@@ -69,6 +69,24 @@ func TestUpdateSuccessMessage(t *testing.T) {
 			},
 			Cluster: "test-example",
 		},
+		&sous.Manifest{
+			Source: sous.SourceLocation{
+				Repo: "github.com/opentable/example",
+				Dir:  "first",
+			},
+			Kind: "http",
+			Deployments: map[string]sous.DeploySpec{
+				"test-example": {
+					DeployConfig: sous.DeployConfig{
+						NumInstances: 3,
+						Startup: sous.Startup{
+							SkipCheck: true,
+						},
+					},
+					Version: semv.MustParse("1.2.7"),
+				},
+			},
+		},
 		sous.User{
 			Name:  "John Doe",
 			Email: "jdoe@example.com",

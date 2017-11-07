@@ -122,7 +122,7 @@ func newPollerResolvedMessage(sp *StatusPoller, status ResolveState, err error) 
 }
 
 func (msg *pollerResolvedMessage) DefaultLevel() logging.Level {
-	return logging.WarningLevel
+	return logging.InformationLevel
 }
 
 func (msg *pollerResolvedMessage) Message() string {
@@ -134,6 +134,26 @@ func (msg *pollerResolvedMessage) EachField(f logging.FieldReportFn) {
 	msg.callerInfo.EachField(f)
 	pollerFields(f, msg.poller)
 	f("deploy-status", msg.status.String())
+}
+
+func (msg *pollerResolvedMessage) WriteToConsole(console io.Writer) {
+	if msg.poller == nil {
+		return
+	}
+	rf := msg.poller.ResolveFilter
+	if rf == nil {
+		return
+	}
+	sourceLocation := rf.Repo.ValueOr("")
+	if rf.Offset.ValueOr("") != "" {
+		sourceLocation += ("," + rf.Offset.ValueOr(""))
+	}
+	if rf.Flavor.ValueOr("") != "" {
+		sourceLocation += ("~" + rf.Flavor.ValueOr(""))
+	}
+	version := rf.Tag.ValueOr("")
+	clusterName := rf.Cluster.ValueOr("")
+	fmt.Fprintf(console, "%s %s successfully deployed to %s.\n", sourceLocation, version, clusterName)
 }
 
 func newPollerStatusMessage(poller *StatusPoller, old ResolveState) *pollerStatusMessage {
