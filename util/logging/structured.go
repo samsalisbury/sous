@@ -1,13 +1,10 @@
 package logging
 
-import (
-	"github.com/pborman/uuid"
-	"github.com/sirupsen/logrus"
-)
+import "github.com/pborman/uuid"
 
 // LogMessage records a message to one or more structured logs
 func (ls LogSet) LogMessage(lvl Level, msg LogMessage) {
-	logto := logrus.FieldLogger(ls.logrus)
+	logto := ls.logrus.WithField("severity", lvl.String())
 
 	ls.eachField(func(name string, value interface{}) {
 		logto = logto.WithField(name, value)
@@ -17,7 +14,10 @@ func (ls LogSet) LogMessage(lvl Level, msg LogMessage) {
 		logto = logto.WithField(name, value)
 	})
 
-	logto = logto.WithField("severity", lvl.String())
+	err := ls.dumpBundle.sendToKafka(lvl, logto)
+	if _, isKafkaSend := msg.(*kafkaSendErrorMessage); err != nil && !isKafkaSend {
+		reportKafkaSendError(ls, err)
+	}
 
 	switch lvl {
 	default:
@@ -44,11 +44,4 @@ func (ls LogSet) eachField(f FieldReportFn) {
 	f("@uuid", uuid.New())
 
 	ls.appIdent.EachField(f)
-
-	/*
-	 "@timestamp":
-	    type: timestamp
-	    description: Core timestamp field, used by Logstash and Elasticsearch for time indexing
-
-	*/
 }

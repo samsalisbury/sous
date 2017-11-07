@@ -8,6 +8,9 @@ with respect to its command line interface and HTTP interface.
 
 ## [Unreleased](//github.com/opentable/sous/compare/0.5.51...HEAD)
 
+### Changed
+* All: Logging to Kafka no longer goes through logrus.
+
 ### Added
 * Client: console output related to deploys. Reports the number of instances
   intended, and reflects the successfully deployed source ID and target
