@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+YES="$1"
+if [ "$YES" = "-y" ]; then
+	YES=1
+else
+	YES=0
+fi
 
 if type versiontool > /dev/null; then
   echo -n
@@ -11,10 +17,18 @@ fi
 newversion="$(versiontool increment "$(git tag | grep '[.].*[.*]' | versiontool sort | tail -n 1)")"
 echo "Updating to $newversion"
 
-set -x
-sed -i "/Unreleased.*HEAD/ s/Unreleased\|HEAD/$newversion/g" CHANGELOG.md
-grep "$newversion" CHANGELOG.md
+#set -x
+sed -Ei '' "/Unreleased.*(HEAD|master)/ s/Unreleased|HEAD|master/$newversion/g" CHANGELOG.md
+git diff CHANGELOG.md
 
-git commit -am "Releasing $newversion"
-git tag -m "Release" "$newversion"
-git push origin "$newversion"
+if [ $YES = 0 ]; then
+	echo "Updated CHANGELOG.md; use -y flag to also commit to master, add tag and push."
+	exit 0
+fi
+
+if [ $YES = 1 ]; then
+  git add CHANGELOG.md
+  git commit -m "Releasing $newversion"
+  git tag -m "Release" "$newversion"
+  git push origin "$newversion" master
+fi
