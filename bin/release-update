@@ -14,6 +14,12 @@ else
   echo "try: go get github.com/nyarly/versiontool"
 fi
 
+git rev-parse --symbolic-full-name @ | grep -q 'master'
+if [ ! $? == 0 ]; then
+  echo "Not on master branch!"
+  echo 1
+fi
+
 git pull
 git pull --tags
 
@@ -30,6 +36,7 @@ if git diff-index --quiet HEAD; then
   : # no unstaged changes == no problems
 else
   echo "Unstaged changes in repo. Please commit before running $0"
+  git diff-index HEAD
   exit 3
 fi
 #set -x
