@@ -206,12 +206,22 @@ func singRequestFromDeployment(dep *sous.Deployment, reqID string) (string, *dto
 	if err != nil {
 		return "", nil, err
 	}
-	req, err := swaggering.LoadMap(&dtos.SingularityRequest{}, dtoMap{
+	reqFields := dtoMap{
 		"Id":          reqID,
 		"RequestType": reqType,
 		"Instances":   int32(instanceCount),
 		"Owners":      swaggering.StringList(owners.Slice()),
-	})
+	}
+	if reqType == dtos.SingularityRequestRequestTypeSCHEDULED {
+		reqFields["Schedule"] = dep.Schedule
+
+		// until and unless someone asks
+		reqFields["ScheduleType"] = dtos.SingularityRequestScheduleTypeCRON
+
+		// also present but not addressed:
+		// taskExecutionTimeLimitMillis
+	}
+	req, err := swaggering.LoadMap(&dtos.SingularityRequest{}, reqFields)
 
 	if err != nil {
 		return "", nil, err

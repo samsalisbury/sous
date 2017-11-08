@@ -293,6 +293,7 @@ func matchedPair(t *testing.T, startDep *sous.Deployment) *sous.DeployablePair {
 	assert.NoError(t, db.restoreFromMetadata(), "Could not determine cluster name based on SingularityDeploy Metadata.")
 	assert.NoError(t, db.unpackDeployConfig(), "Could not convert data from a SingularityDeploy to a sous.Deployment.")
 	assert.NoError(t, db.determineManifestKind(), "Could not determine SingularityRequestType.")
+	assert.NoError(t, db.extractSchedule(), "Could not determine schedule.")
 
 	post := &db.Target.Deployment
 
@@ -329,8 +330,41 @@ func TestScaling(t *testing.T) {
 	assert.True(t, diff)
 	assert.NotEmpty(t, diffs)
 
-	assert.True(t, changesReq(pair), "Updating number of intstances reported as not changing Request!")
+	assert.True(t, changesReq(pair), "Updating number of instances reported as not changing Request!")
 	assert.False(t, changesDep(pair), "Roundtrip of Deployment through Singularity DTOs reported as changing Deploy!")
+}
+
+func TestScheduling(t *testing.T) {
+	startDep := baseDeployment()
+	startDep.Kind = sous.ManifestKindScheduled
+	startDep.Schedule = "* 3 * * *"
+	pair := matchedPair(t, startDep)
+
+	assert.Equal(t, pair.Prior.Schedule, pair.Post.Schedule)
+	assert.Equal(t, pair.Prior.Kind, pair.Post.Kind)
+
+	pair.Prior.Schedule = "* 2 * * *"
+
+	diff, diffs := pair.Prior.Deployment.Diff(pair.Post.Deployment)
+	assert.True(t, diff)
+	assert.NotEmpty(t, diffs)
+
+	assert.True(t, changesReq(pair), "Updating schedule reported as not changing Request!")
+	assert.False(t, changesDep(pair), "Roundtrip of Deployment through Singularity DTOs reported as changing Deploy!")
+}
+
+func TestSchedulingOnlyForScheduled(t *testing.T) {
+	startDep := baseDeployment()
+	startDep.Schedule = "* 3 * * *"
+	pair := matchedPair(t, startDep)
+	pair.Prior.Schedule = "* 2 * * *"
+
+	diff, diffs := pair.Prior.Deployment.Diff(pair.Post.Deployment)
+	assert.False(t, diff)
+	assert.Empty(t, diffs)
+
+	assert.False(t, changesReq(pair), "Changed schedule data for HTTP service treated as changing Request!")
+	assert.False(t, changesDep(pair), "Changed schedule data for HTTP service treated as changing Deploy!")
 }
 
 func TestEnableStartupChangedDeployment(t *testing.T) {

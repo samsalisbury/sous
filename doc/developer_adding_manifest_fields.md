@@ -199,7 +199,151 @@ And now:
 ok      github.com/opentable/sous/lib   0.013s
 ```
 
-* SingReq/SingDep <-> Deployment
-* SingRep/Dep -> Deployment: deployment_builder
-* Deployment -> SingReq/Dep: recti-agent, deployer
-    * changesReq & changesDep
+## From Sous Deployments to Singularity objects
+
+Likewise, we're going to add a test that updating the Deployment
+is reported as requiring an update to the Singularity Request.
+
+```diff
+--- a/ext/singularity/deployer_test.go
++++ b/ext/singularity/deployer_test.go
+@@ -329,10 +329,39 @@ func TestScaling(t *testing.T) {
++func TestScheduling(t *testing.T) {
++       startDep := baseDeployment()
++       startDep.Kind = sous.ManifestKindScheduled
++       startDep.Schedule = "* 3 * * *"
++       pair := matchedPair(t, startDep)
+
++       assert.Equal(t, pair.Prior.Schedule, pair.Post.Schedule)
++       assert.Equal(t, pair.Prior.Kind, pair.Post.Kind)
++
++       pair.Prior.Schedule = "* 2 * * *"
++
++       diff, diffs := pair.Prior.Deployment.Diff(pair.Post.Deployment)
++       assert.True(t, diff)
++       assert.NotEmpty(t, diffs)
++
++       assert.True(t, changesReq(pair), "Updating schedule reported as not changing Request!")
++       assert.False(t, changesDep(pair), "Roundtrip of Deployment through Singularity DTOs reported as changing Deploy!")
++}
++
++func TestSchedulingOnlyForScheduled(t *testing.T) {
++       startDep := baseDeployment()
++       startDep.Schedule = "* 3 * * *"
++       pair := matchedPair(t, startDep)
++       pair.Prior.Schedule = "* 2 * * *"
++
++       diff, diffs := pair.Prior.Deployment.Diff(pair.Post.Deployment)
++       assert.False(t, diff)
++       assert.Empty(t, diffs)
++
++       assert.False(t, changesReq(pair), "Changed schedule data for HTTP service treated as changing Request!")
++       assert.False(t, changesDep(pair), "Changed schedule data for HTTP service treated as changing Deploy!")
++}
++
+```
+
+```shell
+⮀ go test ./ext/singularity
+--- FAIL: TestScheduling (0.00s)
+        Error Trace:    deployer_test.go:342
+        Error:          Not equal:
+                        expected: "* 3 * * *"
+                        received: ""
+        Error Trace:    deployer_test.go:347
+        Error:          Should be true
+        Messages:       Updating schedule reported as not changing Request!
+FAIL
+FAIL    github.com/opentable/sous/ext/singularity       0.072s
+```
+
+Key here is that `matchedPair` produces
+what should be a matched `DeployablePair`
+by round-tripping the `baseDeployment` into Singularity JSON,
+and then back.
+This means that it tests all the machinery for converting
+Deployments into Singularity Requests and Deploys.
+
+The test that changesReq() is true is contextual to the field we're adding -
+it's important that Sous knows then it should send commands to Singularity.
+`changesReq` is the easier to fix:
+```diff
+--- a/ext/singularity/deployer.go
++++ b/ext/singularity/deployer.go
+@@ -263,7 +263,9 @@ func (r *deployer) RectifySingleModification(pair *sous.DeployablePair) (err err
+ // could report ("deploy required because of %v", diffs)
+
+ func changesReq(pair *sous.DeployablePair) bool {
+-       return pair.Prior.NumInstances != pair.Post.NumInstances
++       return (pair.Prior.Kind == sous.ManifestKindScheduled && pair.Prior.Schedule != pair.Post.Schedule) ||
++               pair.Prior.Kind != pair.Post.Kind ||
++               pair.Prior.NumInstances != pair.Post.NumInstances
+ }
+```
+
+To get the round trip working,
+we need to ensure that the schedule makes it
+into the generated Request:
+
+```diff
+--- a/ext/singularity/deployment_builder.go
++++ b/ext/singularity/deployment_builder.go
+@@ -5,6 +5,7 @@ import (
+        "fmt"
+        "strings"
+
++       "github.com/davecgh/go-spew/spew"
+        "github.com/opentable/go-singularity/dtos"
+        "github.com/opentable/sous/ext/docker"
+        "github.com/opentable/sous/lib"
+@@ -131,6 +132,7 @@ func (db *deploymentBuilder) completeConstruction() error {
+                wrapError(db.restoreFromMetadata, "Could not determine cluster name based on SingularityDeploy Metadata."),
+                wrapError(db.unpackDeployConfig, "Could not convert data from a SingularityDeploy to a sous.Deployment."),
+                wrapError(db.determineManifestKind, "Could not determine SingularityRequestType."),
++               wrapError(db.extractSchedule, "Could not determine Singularity schedule."),
+        )
+ }
+
+@@ -438,3 +440,15 @@ func (db *deploymentBuilder) determineManifestKind() error {
+        }
+        return nil
+ }
++
++func (db *deploymentBuilder) extractSchedule() error {
++       spew.Dump(db.Target.Kind)
++       if db.Target.Kind == sous.ManifestKindScheduled {
++               if db.request == nil {
++                       return fmt.Errorf("Request is nil!")
++               }
++               spew.Dump(db.request.Schedule)
++               db.Target.DeployConfig.Schedule = db.request.Schedule
++       }
++       return nil
++}
+diff --git a/ext/singularity/recti-agent.go b/ext/singularity/recti-agent.go
+index c086ca40..9f06007d 100644
+--- a/ext/singularity/recti-agent.go
++++ b/ext/singularity/recti-agent.go
+@@ -206,12 +206,22 @@ func singRequestFromDeployment(dep *sous.Deployment, reqID string) (string, *dto
+        if err != nil {
+                return "", nil, err
+        }
+-       req, err := swaggering.LoadMap(&dtos.SingularityRequest{}, dtoMap{
++       reqFields := dtoMap{
+                "Id":          reqID,
+                "RequestType": reqType,
+                "Instances":   int32(instanceCount),
+                "Owners":      swaggering.StringList(owners.Slice()),
+-       })
++       }
++       if reqType == dtos.SingularityRequestRequestTypeSCHEDULED {
++               reqFields["Schedule"] = dep.Schedule
++
++               // until and unless someone asks
++               reqFields["ScheduleType"] = dtos.SingularityRequestScheduleTypeCRON
++
++               // also present but not addressed:
++               // taskExecutionTimeLimitMillis
++       }
++       req, err := swaggering.LoadMap(&dtos.SingularityRequest{}, reqFields)
+```
