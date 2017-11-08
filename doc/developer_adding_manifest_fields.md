@@ -42,9 +42,30 @@ the `Deployment.Diff` method doesn't consider your field.
 
 ## Fix Diff
 
+Add code to `Deployment.Diff` to consider your field across Deployments.
+```diff
+--- a/lib/deployment.go
++++ b/lib/deployment.go
+@@ -231,6 +231,13 @@ func (d *Deployment) Diff(o *Deployment) (bool, Differences) {
+                diff("kind; this: %q; other: %q", d.Kind, o.Kind)
+        }
 
++       // Schedule is only significant for Scheduled Jobs
++       if d.Kind == ScheduledJob {
++               if d.Schedule != o.Schedule {
++                       diff("schedule; this: %q, other: %q", d.Schedule, o.Schedule)
++               }
++       }
++
+```
 
-* fix Diff
+Run the test again:
+
+```shell
+⮀ go test ./lib -run TestDeploymentDiffAnalysis
+ok      github.com/opentable/sous/lib   0.032s
+```
+
 * Deployment <-> Manifest
 * SingReq/SingDep <-> Deployment
 * SingRep/Dep -> Deployment: deployment_builder
