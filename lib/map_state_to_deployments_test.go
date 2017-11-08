@@ -5,11 +5,13 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/assert"
 )
 
 var project1 = SourceLocation{Repo: "github.com/user/project"}
+var project2 = SourceLocation{Repo: "github.com/user/scheduled"}
 var cluster1 = &Cluster{
 	Name:    "cluster-1",
 	Kind:    "singularity",
@@ -135,6 +137,22 @@ func makeTestManifests() Manifests {
 				},
 			},
 		},
+		&Manifest{
+			Source: project2,
+			Kind:   ManifestKindScheduled,
+			Deployments: DeploySpecs{
+				"cluster-1": {
+					Version:  semv.MustParse("0.2.4"),
+					Schedule: "* */2 * * *",
+					DeployConfig: DeployConfig{
+						Resources: Resources{
+							"cpus": "0.4",
+							"mem":  "256",
+						},
+					},
+				},
+			},
+		},
 	)
 }
 
@@ -231,6 +249,19 @@ var expectedDeployments = NewDeployments(
 			NumInstances: 5,
 		},
 	},
+	&Deployment{
+		SourceID:    project2.SourceID(semv.MustParse("0.2.4")),
+		ClusterName: "cluster-2",
+		Cluster:     cluster2,
+		Kind:        ManifestKindScheduled,
+		Schedule:    "* */2 * * *",
+		DeployConfig: DeployConfig{
+			Resources: Resources{
+				"cpus": "0.4",
+				"mem":  "256",
+			},
+		},
+	},
 )
 
 func TestState_DeploymentsCloned(t *testing.T) {
@@ -242,7 +273,8 @@ func TestState_DeploymentsCloned(t *testing.T) {
 
 	exSnap := expectedDeployments.Snapshot()
 	if len(actualDeployments.Snapshot()) != len(exSnap) {
-		t.Error("deployments different lengths")
+		spew.Dump(actualDeployments.Snapshot())
+		t.Errorf("deployments different lengths: expected %d, got %d", len(exSnap), len(actualDeployments.Snapshot()))
 	}
 	for id, expected := range exSnap {
 		actual, ok := actualDeployments.Get(id)
@@ -276,7 +308,7 @@ func TestState_IndependentDeploySpecs(t *testing.T) {
 	// any compiler optimisation from eliding the call.
 	TestStateIndependentDeploySpecsState, err = originalDeployments.PutbackManifests(defs, originalManifests)
 	if err != nil {
-		t.Error(err)
+		t.Errorf("Expected no error while updating manifests, got: %v", err)
 	}
 	newDeployment, ok := originalDeployments.Get(did)
 	if !ok {
@@ -493,7 +525,7 @@ func TestDeployments_PutbackManifestHasEnvRetains(t *testing.T) {
 func compareDeployments(t *testing.T, expectedDeployments, actualDeployments Deployments) {
 	exSnap := expectedDeployments.Snapshot()
 	if len(actualDeployments.Snapshot()) != len(exSnap) {
-		t.Error("deployments different lengths")
+		t.Errorf("deployments different lengths, expected %d got %d", len(exSnap), len(actualDeployments.Snapshot()))
 	}
 	for id, expected := range exSnap {
 		actual, ok := actualDeployments.Get(id)

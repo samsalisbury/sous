@@ -51,7 +51,7 @@ Add code to `Deployment.Diff` to consider your field across Deployments.
         }
 
 +       // Schedule is only significant for Scheduled Jobs
-+       if d.Kind == ScheduledJob {
++       if d.Kind == ManifestKindScheduled {
 +               if d.Schedule != o.Schedule {
 +                       diff("schedule; this: %q, other: %q", d.Schedule, o.Schedule)
 +               }
@@ -65,6 +65,60 @@ Run the test again:
 ⮀ go test ./lib -run TestDeploymentDiffAnalysis
 ok      github.com/opentable/sous/lib   0.032s
 ```
+
+## Ensure that Deployments and Manifests Map
+
+Add to the `map_deployments_to_state_test.go` like:
+```diff
+--- a/lib/map_state_to_deployments_test.go
++++ b/lib/map_state_to_deployments_test.go
+@@ -10,6 +10,7 @@ import (
+ )
+
+ var project1 = SourceLocation{Repo: "github.com/user/project"}
++var project2 = SourceLocation{Repo: "github.com/user/scheduled"}
+ var cluster1 = &Cluster{
+        Name:    "cluster-1",
+        Kind:    "singularity",
+@@ -135,6 +136,21 @@ func makeTestManifests() Manifests {
+                                },
+                        },
+                },
++               &Manifest{
++                       Source: project2,
++                       Kind:   ManifestKindScheduled,
++                       Deployments: DeploySpecs{
++                               "cluster-1": {
++                                       Version: semv.MustParse("0.2.4"),
++                                       DeployConfig: DeployConfig{
++                                               Resources: Resources{
++                                                       "cpus": "0.4",
++                                                       "mem":  "256",
++                                               },
++                                       },
++                               },
++                       },
++               },
+        )
+ }
+```
+
+This'll cause new test failures.
+Some will be assumptions the tests make:
+in this case, we've added a new manifest, and
+the test Deployments only produce 2.
+```shell
+⮀ go test ./lib
+--- FAIL: TestState_DeploymentsCloned (0.00s)
+        map_state_to_deployments_test.go:261: deployments different lengths: expected 4, got 5
+--- FAIL: TestState_Deployments (0.00s)
+        map_state_to_deployments_test.go:512: deployments different lengths, expected 4 got 5
+--- FAIL: TestDeployments_Manifests (0.00s)
+        map_state_to_deployments_test.go:530: got 2 manifests; want 3
+```
+
+
+
 
 * Deployment <-> Manifest
 * SingReq/SingDep <-> Deployment

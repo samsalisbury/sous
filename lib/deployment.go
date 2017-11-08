@@ -232,7 +232,7 @@ func (d *Deployment) Diff(o *Deployment) (bool, Differences) {
 	}
 
 	// Schedule is only significant for Scheduled Jobs
-	if d.Kind == ScheduledJob {
+	if d.Kind == ManifestKindScheduled {
 		if d.Schedule != o.Schedule {
 			diff("schedule; this: %q, other: %q", d.Schedule, o.Schedule)
 		}
