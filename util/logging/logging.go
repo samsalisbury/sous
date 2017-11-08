@@ -13,7 +13,6 @@ import (
 	metrics "github.com/rcrowley/go-metrics"
 	"github.com/samsalisbury/semv"
 	"github.com/sirupsen/logrus"
-	"github.com/tracer0tong/kafkalogrus"
 )
 
 type (
@@ -41,7 +40,7 @@ type (
 		err, defaultErr io.Writer
 		logrus          *logrus.Logger
 		liveConfig      *Config
-		kafkaEnabled    bool //temporary for the kafka on-exit hack
+		kafkaSink       *kafkaSink
 		graphiteCancel  func()
 	}
 
@@ -136,6 +135,21 @@ func newdb(vrsn semv.Version, err io.Writer, lgrs *logrus.Logger) *dumpBundle {
 	}
 }
 
+func (db *dumpBundle) replaceKafka(sink *kafkaSink) {
+	var old *kafkaSink
+	old, db.kafkaSink = db.kafkaSink, sink
+	if old != nil {
+		old.closedown()
+	}
+}
+
+func (db *dumpBundle) sendToKafka(lvl Level, entry *logrus.Entry) error {
+	if db.kafkaSink == nil {
+		return nil
+	}
+	return db.kafkaSink.send(lvl, entry)
+}
+
 func newls(name string, role string, level Level, bundle *dumpBundle) *LogSet {
 	ls := &LogSet{
 		name:       name,
@@ -179,11 +193,8 @@ func (ls *LogSet) Configure(cfg Config) error {
 
 // AtExit implements part of LogSink on LogSet
 func (ls LogSet) AtExit() {
-	// XXX This is a terrible hack, and should be replaced with code
-	// to properly drain the kafka producer,
-	// and send one last batch of stats to graphite
-	if ls.kafkaEnabled {
-		time.Sleep(600 * time.Millisecond) // ensures that the kafka producer does one last flush
+	if ls.dumpBundle.kafkaSink != nil {
+		ls.dumpBundle.kafkaSink.closedown()
 	}
 }
 
@@ -200,22 +211,13 @@ func logrusFormatter() logrus.Formatter {
 }
 
 func (ls LogSet) configureKafka(cfg Config) error {
-	if ls.liveConfig != nil && ls.liveConfig.useKafka() {
-		if cfg.useKafka() {
-			return newLogConfigurationError("cannot reconfigure kafka")
-		}
-		return newLogConfigurationError("cannot disable kafka")
-	}
-
 	if !cfg.useKafka() {
 		reportKafkaConfig(nil, cfg, ls)
 		return nil
 	}
 
-	ls.dumpBundle.kafkaEnabled = true
-
-	hook, err := kafkalogrus.NewKafkaLogrusHook("kafkahook",
-		cfg.getKafkaLevels(),
+	sink, err := newKafkaSink("kafkahook",
+		cfg.getKafkaLevel(),
 		logrusFormatter(),
 		cfg.getBrokers(),
 		cfg.Kafka.Topic,
@@ -226,9 +228,10 @@ func (ls LogSet) configureKafka(cfg Config) error {
 	if err != nil {
 		return err
 	}
-	reportKafkaConfig(hook, cfg, ls)
+	reportKafkaConfig(sink, cfg, ls)
 
-	ls.logrus.AddHook(hook)
+	ls.dumpBundle.replaceKafka(sink)
+
 	return nil
 }
 
