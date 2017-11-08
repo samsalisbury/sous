@@ -38,6 +38,8 @@ type (
 		Owners OwnerSet
 		// Kind is the kind of software that SourceRepo represents.
 		Kind ManifestKind
+		// Schedule is a cronjob-format schedule for jobs.
+		Schedule string
 	}
 
 	// A DeploymentID identifies a deployment.
