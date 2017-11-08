@@ -141,10 +141,10 @@ func makeTestManifests() Manifests {
 			Source: project2,
 			Kind:   ManifestKindScheduled,
 			Deployments: DeploySpecs{
-				"cluster-1": {
-					Version:  semv.MustParse("0.2.4"),
-					Schedule: "* */2 * * *",
+				"cluster-2": {
+					Version: semv.MustParse("0.2.4"),
 					DeployConfig: DeployConfig{
+						Schedule: "* */2 * * *",
 						Resources: Resources{
 							"cpus": "0.4",
 							"mem":  "256",
@@ -254,11 +254,14 @@ var expectedDeployments = NewDeployments(
 		ClusterName: "cluster-2",
 		Cluster:     cluster2,
 		Kind:        ManifestKindScheduled,
-		Schedule:    "* */2 * * *",
 		DeployConfig: DeployConfig{
+			Schedule: "* */2 * * *",
 			Resources: Resources{
 				"cpus": "0.4",
 				"mem":  "256",
+			},
+			Env: Env{
+				"CLUSTER_LONG_NAME": "Cluster Two",
 			},
 		},
 	},
@@ -533,8 +536,8 @@ func compareDeployments(t *testing.T, expectedDeployments, actualDeployments Dep
 			t.Errorf("missing deployment %q", id)
 			continue
 		}
-		if !actual.Equal(expected) {
-			t.Errorf("\n\ngot:\n%v\n\nwant:\n%v\n", jsonDump(actual), jsonDump(expected))
+		if different, diffs := actual.Diff(expected); different {
+			t.Errorf("\n\ngot:\n%v\ndifferences:\n%s\n", jsonDump(actual), strings.Join(diffs, "\n"))
 		}
 	}
 }

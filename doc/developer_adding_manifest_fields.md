@@ -72,35 +72,27 @@ Add to the `map_deployments_to_state_test.go` like:
 ```diff
 --- a/lib/map_state_to_deployments_test.go
 +++ b/lib/map_state_to_deployments_test.go
-@@ -10,6 +10,7 @@ import (
- )
-
  var project1 = SourceLocation{Repo: "github.com/user/project"}
 +var project2 = SourceLocation{Repo: "github.com/user/scheduled"}
  var cluster1 = &Cluster{
-        Name:    "cluster-1",
-        Kind:    "singularity",
-@@ -135,6 +136,21 @@ func makeTestManifests() Manifests {
-                                },
-                        },
+@@ -231,6 +249,19 @@ var expectedDeployments = NewDeployments(
+                        NumInstances: 5,
                 },
-+               &Manifest{
-+                       Source: project2,
-+                       Kind:   ManifestKindScheduled,
-+                       Deployments: DeploySpecs{
-+                               "cluster-1": {
-+                                       Version: semv.MustParse("0.2.4"),
-+                                       DeployConfig: DeployConfig{
-+                                               Resources: Resources{
-+                                                       "cpus": "0.4",
-+                                                       "mem":  "256",
-+                                               },
-+                                       },
-+                               },
+        },
++       &Deployment{
++               SourceID:    project2.SourceID(semv.MustParse("0.2.4")),
++               ClusterName: "cluster-2",
++               Cluster:     cluster2,
++               Kind:        ManifestKindScheduled,
++               Schedule:    "* */2 * * *",
++               DeployConfig: DeployConfig{
++                       Resources: Resources{
++                               "cpus": "0.4",
++                               "mem":  "256",
 +                       },
 +               },
-        )
- }
++       },
+ )
 ```
 
 This'll cause new test failures.
@@ -117,10 +109,96 @@ the test Deployments only produce 2.
         map_state_to_deployments_test.go:530: got 2 manifests; want 3
 ```
 
+Add a new Manifest to `makeTestManifests` to make up the numbers -
+you can either leave an empty one or try to sketch out what you'd expect:
+```diff
+--- a/lib/map_state_to_deployments_test.go
++++ b/lib/map_state_to_deployments_test.go
+@@ -135,6 +137,22 @@ func makeTestManifests() Manifests {
+                                },
+                        },
+                },
++               &Manifest{
++                       Source: project2,
++                       Kind:   ManifestKindScheduled,
++                       Deployments: DeploySpecs{
++                               "cluster-1": {
++                                       Version:  semv.MustParse("0.2.4"),
++                                       Schedule: "* */2 * * *",
++                                       DeployConfig: DeployConfig{
++                                               Resources: Resources{
++                                                       "cpus": "0.4",
++                                                       "mem":  "256",
++                                               },
++                                       },
++                               },
++                       },
++               },
+        )
+ }
+```
 
+(The `fillstruct` tool (available in vim-go as `:GoFillStruct` is invaluable for this.)
 
+Now if you run tests, you'll get errors that'll drive fixes to `map_state_to_deployments.go`,
+thanks to the Diff method working.
+```shell
+⮀ go test ./lib -run Bounce
+--- FAIL: TestState_DeploymentsBounce (0.00s)
+        map_state_to_deployments_test.go:537:
 
-* Deployment <-> Manifest
+                got:
+                {
+                // ... snip ...
+                  "Kind": "scheduled",
+                  "Schedule": ""
+                }
+                differences:
+                schedule; this: "", other: "* */2 * * *"
+                env; this: map[CLUSTER_LONG_NAME:Cluster Two]; other: map[]
+FAIL
+FAIL    github.com/opentable/sous/lib   0.013s
+```
+
+In this the changes were like:
+```diff
+--- a/lib/deploy_config.go
++++ b/lib/deploy_config.go
+@@ -35,6 +35,8 @@ type (
+                Volumes Volumes
+                // Startup containts healthcheck options for this deploy.
+                Startup Startup `yaml:",omitempty"`
++               // Schedule is a cronjob-format schedule for jobs.
++               Schedule string
+        }
+
+        // A DeployConfigs is a map from cluster name to DeployConfig
+@@ -171,6 +173,7 @@ func (dc DeployConfig) Clone() (c DeployConfig) {
+        }
+        c.Volumes = dc.Volumes.Clone()
+        c.Startup = dc.Startup
++       c.Schedule = dc.Schedule
+
+        return
+ }
+@@ -242,6 +245,12 @@ func flattenDeployConfigs(dcs []DeployConfig) DeployConfig {
+                }
+        }
+        for _, c := range dcs {
++               if c.Schedule != "" {
++                       dc.Schedule = c.Schedule
++                       break
++               }
++       }
++       for _, c := range dcs {
+```
+
+And now:
+```shell
+⮀ go test ./lib -run Bounce
+ok      github.com/opentable/sous/lib   0.013s
+```
+
 * SingReq/SingDep <-> Deployment
 * SingRep/Dep -> Deployment: deployment_builder
 * Deployment -> SingReq/Dep: recti-agent, deployer
