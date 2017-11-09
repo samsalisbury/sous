@@ -10,6 +10,7 @@ import (
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 	"github.com/opentable/sous/util/yaml"
+	"github.com/samsalisbury/psyringe"
 	"github.com/samsalisbury/semv"
 )
 
@@ -36,25 +37,23 @@ func BuildTestGraph(v semv.Version, in io.Reader, out, err io.Writer) *SousGraph
 
 // TestGraphWithConfig accepts a custom Sous config string
 func TestGraphWithConfig(v semv.Version, in io.Reader, out, err io.Writer, cfg string) *SousGraph {
-	ls := logging.SilentLogSet()
-	graph := BuildBaseGraph(v, ls, in, out, err)
-	AddTestConfig(graph, cfg)
-	graph.Add(sous.User{Name: "Test User", Email: "testuser@example.com"})
-	AddState(graph)
-	addTestNetwork(graph)
-	graph.Add(newServerStateManager)
+
+	graph := BuildGraph(v, logging.SilentLogSet(), in, out, err)
+
+	// testGraph methods affect graph as well.
+	testGraph := psyringe.TestPsyringe{Psyringe: graph.Psyringe}
+
+	// Replace things from the real graph.
+	testGraph.Replace(sous.User{Name: "Test User", Email: "testuser@example.com"})
+	testGraph.Replace(NewTestConfigLoader)
+	testGraph.Replace(newDummyDockerClient)
+	testGraph.Replace(newServerHandler)
+	testGraph.Replace(newServerStateManager)
+
+	// Add config.
+	testGraph.Add(configYAML(cfg))
+
 	return graph
-}
-
-// AddTestConfig adds configuration objects to the DI.
-func AddTestConfig(graph adder, cfg string) {
-	graph.Add(configYAML(cfg))
-	graph.Add(NewTestConfigLoader)
-}
-
-func addTestNetwork(graph adder) {
-	graph.Add(newDummyDockerClient)
-	graph.Add(newServerHandler)
 }
 
 func newDummyHTTPClient() HTTPClient {

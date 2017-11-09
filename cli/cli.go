@@ -16,6 +16,7 @@ import (
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/yaml"
 	"github.com/pkg/errors"
+	"github.com/samsalisbury/psyringe/experiment"
 )
 
 // Func aliases, for convenience returning from commands.
@@ -140,6 +141,7 @@ func NewSousCLI(di *graph.SousGraph, s *Sous, logsink logging.LogSink, out, erro
 
 	// Before Execute is called on any command, inject its dependencies.
 	cli.Hooks.PreExecute = func(cmd cmdr.Command) error {
+		cli.graph.Hooks.NoValueForStructField = experiment.OptionalFieldHandler()
 		return errors.Wrapf(cli.graph.Inject(cmd), "setup for execute")
 	}
 

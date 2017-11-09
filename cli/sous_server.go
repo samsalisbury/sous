@@ -17,7 +17,7 @@ import (
 // A SousServer represents the `sous server` command.
 type SousServer struct {
 	Sous              *Sous
-	DeployFilterFlags config.DeployFilterFlags
+	DeployFilterFlags config.DeployFilterFlags `inject:"optional"`
 	Log               graph.LogSink
 
 	*config.Config

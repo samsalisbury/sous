@@ -13,15 +13,15 @@ type Sous struct {
 	CLI *CLI
 	graph.LogSink
 	// Err is the error message stream.
-	Err *graph.ErrOut
+	Err *graph.ErrOut `inject:"optional"`
 	// Version is the version of Sous itself.
 	Version semv.Version
 	// OS is the OS this Sous is running on.
-	OS string
+	OS string `inject:"optional"`
 	// Arch is the architecture this Sous is running on.
-	Arch string
+	Arch string `inject:"optional"`
 	// GoVersion is the version of Go this sous was built with.
-	GoVersion string
+	GoVersion string `inject:"optional"`
 	// flags holds the values of flags passed to this command
 	flags struct {
 		Help bool

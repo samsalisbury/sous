@@ -14,11 +14,11 @@ import (
 )
 
 type SousManifestSet struct {
-	config.DeployFilterFlags
+	config.DeployFilterFlags `inject:"optional"`
 	graph.TargetManifestID
 	graph.HTTPClient
 	graph.InReader
-	ResolveFilter graph.RefinedResolveFilter
+	ResolveFilter graph.RefinedResolveFilter `inject:"optional"`
 	graph.LogSink
 	User sous.User
 }
