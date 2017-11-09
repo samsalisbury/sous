@@ -5,7 +5,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/assert"
 )
@@ -276,7 +275,6 @@ func TestState_DeploymentsCloned(t *testing.T) {
 
 	exSnap := expectedDeployments.Snapshot()
 	if len(actualDeployments.Snapshot()) != len(exSnap) {
-		spew.Dump(actualDeployments.Snapshot())
 		t.Errorf("deployments different lengths: expected %d, got %d", len(exSnap), len(actualDeployments.Snapshot()))
 	}
 	for id, expected := range exSnap {

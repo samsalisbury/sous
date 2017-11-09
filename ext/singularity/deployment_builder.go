@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/opentable/go-singularity/dtos"
 	"github.com/opentable/sous/ext/docker"
 	"github.com/opentable/sous/lib"
@@ -442,12 +441,10 @@ func (db *deploymentBuilder) determineManifestKind() error {
 }
 
 func (db *deploymentBuilder) extractSchedule() error {
-	spew.Dump(db.Target.Kind)
 	if db.Target.Kind == sous.ManifestKindScheduled {
 		if db.request == nil {
 			return fmt.Errorf("Request is nil!")
 		}
-		spew.Dump(db.request.Schedule)
 		db.Target.DeployConfig.Schedule = db.request.Schedule
 	}
 	return nil
