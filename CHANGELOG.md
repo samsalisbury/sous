@@ -10,6 +10,10 @@ with respect to its command line interface and HTTP interface.
 ### Added
 * All: a Schedule field on Manifests, which should publish to Singularity to allow for scheduled tasks.
 
+### Fixed
+* All: a bug in the Kafka subcomponent meant that the reverse sense was being applied to log entries.
+  Furthermore, the severity was wrong, and the messages were being omitted.
+
 ## [0.5.53](//github.com/opentable/sous/compare/0.5.52...0.5.53)
 
 ### Fixed

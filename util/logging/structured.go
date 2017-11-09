@@ -14,6 +14,7 @@ func (ls LogSet) LogMessage(lvl Level, msg LogMessage) {
 		logto = logto.WithField(name, value)
 	})
 
+	logto.Message = msg.Message()
 	err := ls.dumpBundle.sendToKafka(lvl, logto)
 	if _, isKafkaSend := msg.(*kafkaSendErrorMessage); err != nil && !isKafkaSend {
 		reportKafkaSendError(ls, err)

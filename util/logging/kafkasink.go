@@ -63,12 +63,16 @@ func (sink *kafkaSink) ID() string {
 	return sink.id
 }
 
+func (sink kafkaSink) shouldSend(lvl Level) bool {
+	return lvl <= sink.level
+}
+
 func (sink *kafkaSink) send(lvl Level, entry *logrus.Entry) error {
 	var partitionKey sarama.ByteEncoder
 	var b []byte
 	var err error
 
-	if lvl <= sink.level {
+	if !sink.shouldSend(lvl) {
 		return nil
 	}
 
@@ -82,6 +86,7 @@ func (sink *kafkaSink) send(lvl Level, entry *logrus.Entry) error {
 	}
 	partitionKey = sarama.ByteEncoder(uuidStr)
 
+	entry.Level = lvl.logrusLevel()
 	if b, err = sink.formatter.Format(entry); err != nil {
 		return err
 	}
