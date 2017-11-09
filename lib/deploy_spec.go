@@ -28,8 +28,6 @@ type (
 		//     2. The metadata field is the full revision ID of the commit
 		//        which the tag in 1. points to.
 		Version semv.Version `validate:"nonzero"`
-		// For scheduled jobs, they need a schedule
-		Schedule string
 		// clusterName is the name of the cluster this deployment belongs to. Upon
 		// parsing the Manifest, this will be set to the key in
 		// Manifests.Deployments which points at this Deployment.
