@@ -11,15 +11,16 @@ those changes are made in the right way.
 ## Add to Deployment
 
 Make you first change to the Deployment struct
-(or one of it's embedded structs)
-in `lib/deployment.go`.
+(or one of it's embedded structs).
+In this case, it makes most sense
+to update `DeployConfig`.
 ```diff
---- a/lib/deployment.go
-+++ b/lib/deployment.go
-@@ -38,6 +38,8 @@ type (
-                Owners OwnerSet
-                // Kind is the kind of software that SourceRepo represents.
-                Kind ManifestKind
+--- a/lib/deploy_config.go
++++ b/lib/deploy_config.go
+@@ -35,6 +35,8 @@ type (
+                Volumes Volumes
+                // Startup containts healthcheck options for this deploy.
+                Startup Startup `yaml:",omitempty"`
 +               // Schedule is a cronjob-format schedule for jobs.
 +               Schedule string
         }
@@ -84,8 +85,8 @@ Add to the `map_deployments_to_state_test.go` like:
 +               ClusterName: "cluster-2",
 +               Cluster:     cluster2,
 +               Kind:        ManifestKindScheduled,
-+               Schedule:    "* */2 * * *",
 +               DeployConfig: DeployConfig{
++                       Schedule:    "* */2 * * *",
 +                       Resources: Resources{
 +                               "cpus": "0.4",
 +                               "mem":  "256",
@@ -162,16 +163,6 @@ FAIL    github.com/opentable/sous/lib   0.013s
 
 In this the changes were like:
 ```diff
---- a/lib/deploy_config.go
-+++ b/lib/deploy_config.go
-@@ -35,6 +35,8 @@ type (
-                Volumes Volumes
-                // Startup containts healthcheck options for this deploy.
-                Startup Startup `yaml:",omitempty"`
-+               // Schedule is a cronjob-format schedule for jobs.
-+               Schedule string
-        }
-
         // A DeployConfigs is a map from cluster name to DeployConfig
 @@ -171,6 +173,7 @@ func (dc DeployConfig) Clone() (c DeployConfig) {
         }
@@ -292,7 +283,6 @@ into the generated Request:
         "fmt"
         "strings"
 
-+       "github.com/davecgh/go-spew/spew"
         "github.com/opentable/go-singularity/dtos"
         "github.com/opentable/sous/ext/docker"
         "github.com/opentable/sous/lib"
@@ -310,12 +300,10 @@ into the generated Request:
  }
 +
 +func (db *deploymentBuilder) extractSchedule() error {
-+       spew.Dump(db.Target.Kind)
 +       if db.Target.Kind == sous.ManifestKindScheduled {
 +               if db.request == nil {
 +                       return fmt.Errorf("Request is nil!")
 +               }
-+               spew.Dump(db.request.Schedule)
 +               db.Target.DeployConfig.Schedule = db.request.Schedule
 +       }
 +       return nil
@@ -347,3 +335,13 @@ index c086ca40..9f06007d 100644
 +       }
 +       req, err := swaggering.LoadMap(&dtos.SingularityRequest{}, reqFields)
 ```
+
+## Wrapping Up
+
+At this point,
+we should have a new field threaded through
+from Manifest to Singularity,
+which means that users can manipulate
+their tasks in a new way.
+We wrap up with a `make test` (which includes integration tests)
+and a PR.
