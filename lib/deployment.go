@@ -229,6 +229,13 @@ func (d *Deployment) Diff(o *Deployment) (bool, Differences) {
 		diff("kind; this: %q; other: %q", d.Kind, o.Kind)
 	}
 
+	// Schedule is only significant for Scheduled Jobs
+	if d.Kind == ManifestKindScheduled {
+		if d.Schedule != o.Schedule {
+			diff("schedule; this: %q, other: %q", d.Schedule, o.Schedule)
+		}
+	}
+
 	if len(d.Owners) != len(o.Owners) {
 		diff("number of owners; this: %+v; other: %+v", len(d.Owners), len(o.Owners))
 	}

@@ -222,14 +222,5 @@ func flattenDeploySpecs(dss []DeploySpec) DeploySpec {
 			break
 		}
 	}
-	/*
-		DSs have to be unique by clusterName, nicht war?
-			for _, s := range dss {
-				if s.clusterName != "" {
-					ds.clusterName = s.clusterName
-					break
-				}
-			}
-	*/
 	return ds
 }

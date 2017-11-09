@@ -263,7 +263,9 @@ func (r *deployer) RectifySingleModification(pair *sous.DeployablePair) (err err
 // could report ("deploy required because of %v", diffs)
 
 func changesReq(pair *sous.DeployablePair) bool {
-	return pair.Prior.NumInstances != pair.Post.NumInstances
+	return (pair.Prior.Kind == sous.ManifestKindScheduled && pair.Prior.Schedule != pair.Post.Schedule) ||
+		pair.Prior.Kind != pair.Post.Kind ||
+		pair.Prior.NumInstances != pair.Post.NumInstances
 }
 
 func changesDep(pair *sous.DeployablePair) bool {

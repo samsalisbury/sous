@@ -35,6 +35,8 @@ type (
 		Volumes Volumes
 		// Startup containts healthcheck options for this deploy.
 		Startup Startup `yaml:",omitempty"`
+		// Schedule is a cronjob-format schedule for jobs.
+		Schedule string
 	}
 
 	// A DeployConfigs is a map from cluster name to DeployConfig
@@ -171,6 +173,7 @@ func (dc DeployConfig) Clone() (c DeployConfig) {
 	}
 	c.Volumes = dc.Volumes.Clone()
 	c.Startup = dc.Startup
+	c.Schedule = dc.Schedule
 
 	return
 }
@@ -238,6 +241,12 @@ func flattenDeployConfigs(dcs []DeployConfig) DeployConfig {
 	for _, c := range dcs {
 		if len(c.Volumes) != 0 {
 			dc.Volumes = c.Volumes
+			break
+		}
+	}
+	for _, c := range dcs {
+		if c.Schedule != "" {
+			dc.Schedule = c.Schedule
 			break
 		}
 	}

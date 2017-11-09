@@ -15,4 +15,5 @@ Deployments:
     Startup:
       CheckReadyProtocol: HTTPS
       CheckReadyURIPath: /health
+    Schedule: ""
     Version: 0.3.1-beta+b4d455ee

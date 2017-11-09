@@ -131,6 +131,7 @@ func (db *deploymentBuilder) completeConstruction() error {
 		wrapError(db.restoreFromMetadata, "Could not determine cluster name based on SingularityDeploy Metadata."),
 		wrapError(db.unpackDeployConfig, "Could not convert data from a SingularityDeploy to a sous.Deployment."),
 		wrapError(db.determineManifestKind, "Could not determine SingularityRequestType."),
+		wrapError(db.extractSchedule, "Could not determine Singularity schedule."),
 	)
 }
 
@@ -435,6 +436,16 @@ func (db *deploymentBuilder) determineManifestKind() error {
 		db.Target.Kind = sous.ManifestKindScheduled
 	case dtos.SingularityRequestRequestTypeRUN_ONCE:
 		db.Target.Kind = sous.ManifestKindOnce
+	}
+	return nil
+}
+
+func (db *deploymentBuilder) extractSchedule() error {
+	if db.Target.Kind == sous.ManifestKindScheduled {
+		if db.request == nil {
+			return fmt.Errorf("Request is nil!")
+		}
+		db.Target.DeployConfig.Schedule = db.request.Schedule
 	}
 	return nil
 }

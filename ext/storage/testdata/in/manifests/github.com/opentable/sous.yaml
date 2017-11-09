@@ -16,4 +16,5 @@ Deployments:
     Startup:
       CheckReadyProtocol: HTTPS
       CheckReadyURIPath: /health
+    Schedule: ""
     Version: 1.0.0-rc.1+deadbeef
