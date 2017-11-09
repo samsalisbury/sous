@@ -72,7 +72,7 @@ func (sink *kafkaSink) send(lvl Level, entry *logrus.Entry) error {
 	var b []byte
 	var err error
 
-	if sink.shouldSend(lvl) {
+	if !sink.shouldSend(lvl) {
 		return nil
 	}
 
@@ -86,6 +86,7 @@ func (sink *kafkaSink) send(lvl Level, entry *logrus.Entry) error {
 	}
 	partitionKey = sarama.ByteEncoder(uuidStr)
 
+	entry.Level = lvl.logrusLevel()
 	if b, err = sink.formatter.Format(entry); err != nil {
 		return err
 	}

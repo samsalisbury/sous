@@ -1,6 +1,10 @@
 package logging
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/sirupsen/logrus"
+)
 
 // Level is the "level" of a log message (e.g. debug vs fatal)
 type Level int
@@ -36,4 +40,21 @@ func levelFromString(name string) Level {
 		}
 	}
 	return ExtremeLevel
+}
+
+func (lvl Level) logrusLevel() logrus.Level {
+	switch lvl {
+	default:
+		return logrus.DebugLevel
+	case CriticalLevel:
+		return logrus.ErrorLevel
+	case WarningLevel:
+		return logrus.WarnLevel
+	case InformationLevel:
+		return logrus.InfoLevel
+	case DebugLevel:
+		return logrus.DebugLevel
+	case ExtraDebug1Level:
+		return logrus.DebugLevel
+	}
 }
