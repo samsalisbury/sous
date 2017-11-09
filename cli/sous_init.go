@@ -11,10 +11,10 @@ import (
 
 // SousInit is the command description for `sous init`
 type SousInit struct {
-	DeployFilterFlags config.DeployFilterFlags
-	Flags             config.OTPLFlags
+	DeployFilterFlags config.DeployFilterFlags `inject:"optional"`
+	Flags             config.OTPLFlags         `inject:"optional"`
 	// DryRunFlag prints out the manifest but does not save it.
-	DryRunFlag  bool
+	DryRunFlag  bool `inject:"optional"`
 	Target      graph.TargetManifest
 	WD          graph.LocalWorkDirShell
 	GDM         graph.CurrentGDM

@@ -14,7 +14,7 @@ type SousRectify struct {
 	Config            graph.LocalSousConfig
 	dryrun            string
 	SousGraph         *graph.SousGraph
-	DeployFilterFlags config.DeployFilterFlags
+	DeployFilterFlags config.DeployFilterFlags `inject:"optional"`
 	SourceHostChooser sous.SourceHostChooser
 }
 

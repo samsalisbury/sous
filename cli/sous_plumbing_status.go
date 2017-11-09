@@ -13,7 +13,7 @@ type SousPlumbingStatus struct {
 	SousGraph *graph.SousGraph
 	Config    graph.LocalSousConfig
 
-	DeployFilterFlags config.DeployFilterFlags
+	DeployFilterFlags config.DeployFilterFlags `inject:"optional"`
 }
 
 func init() { PlumbingSubcommands["status"] = &SousPlumbingStatus{} }

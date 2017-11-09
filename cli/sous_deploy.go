@@ -15,8 +15,8 @@ type SousDeploy struct {
 
 	Config            graph.LocalSousConfig
 	CLI               *CLI
-	DeployFilterFlags config.DeployFilterFlags
-	OTPLFlags         config.OTPLFlags
+	DeployFilterFlags config.DeployFilterFlags `inject:"optional"`
+	OTPLFlags         config.OTPLFlags         `inject:"optional"`
 	dryrunOption      string
 	waitStable        bool
 }

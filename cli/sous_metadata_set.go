@@ -11,7 +11,7 @@ import (
 )
 
 type SousMetadataSet struct {
-	config.DeployFilterFlags
+	config.DeployFilterFlags `inject:"optional"`
 	*sous.ResolveFilter
 	graph.TargetManifestID
 	graph.HTTPClient

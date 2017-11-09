@@ -10,8 +10,8 @@ import (
 
 // SousUpdate is the command description for `sous update`
 type SousUpdate struct {
-	DeployFilterFlags config.DeployFilterFlags
-	OTPLFlags         config.OTPLFlags
+	DeployFilterFlags config.DeployFilterFlags `inject:"optional"`
+	OTPLFlags         config.OTPLFlags         `inject:"optional"`
 	SousGraph         *graph.SousGraph
 }
 

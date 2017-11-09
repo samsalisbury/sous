@@ -13,8 +13,8 @@ import (
 )
 
 type SousManifestGet struct {
-	config.DeployFilterFlags
-	ResolveFilter *graph.RefinedResolveFilter
+	config.DeployFilterFlags `inject:"optional"`
+	ResolveFilter            *graph.RefinedResolveFilter `inject:"optional"`
 	graph.TargetManifestID
 	graph.HTTPClient
 	graph.LogSink
