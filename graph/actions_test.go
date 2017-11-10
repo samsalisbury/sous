@@ -29,7 +29,8 @@ func fixtureGraph() *SousGraph {
 }
 
 func TestActionUpdate(t *testing.T) {
-	action := fixtureGraph().GetUpdate(fixtureDeployFilterFlags(), config.OTPLFlags{})
+	action, err := fixtureGraph().GetUpdate(fixtureDeployFilterFlags(), config.OTPLFlags{})
+	require.NoError(t, err)
 	update, rightType := action.(*actions.Update)
 	require.True(t, rightType)
 
@@ -48,7 +49,8 @@ func TestActionUpdate(t *testing.T) {
 }
 
 func TestActionPollStatus(t *testing.T) {
-	action := fixtureGraph().GetPollStatus("both", fixtureDeployFilterFlags())
+	action, err := fixtureGraph().GetPollStatus("both", fixtureDeployFilterFlags())
+	require.NoError(t, err)
 	pollStatus, rightType := action.(*actions.PollStatus)
 	require.True(t, rightType)
 
@@ -58,7 +60,8 @@ func TestActionPollStatus(t *testing.T) {
 }
 
 func TestActionRectify(t *testing.T) {
-	action := fixtureGraph().GetRectify("none", fixtureDeployFilterFlags())
+	action, err := fixtureGraph().GetRectify("none", fixtureDeployFilterFlags())
+	require.NoError(t, err)
 
 	rect, rightType := action.(*actions.Rectify)
 	require.True(t, rightType)
@@ -72,7 +75,8 @@ func TestActionRectify(t *testing.T) {
 func TestActionRectifyDryruns(t *testing.T) {
 	testDryRun := func(which string, expectedRegistryType sous.Registry) {
 		t.Run("dryrun is "+which, func(t *testing.T) {
-			action := fixtureGraph().GetRectify(which, fixtureDeployFilterFlags())
+			action, err := fixtureGraph().GetRectify(which, fixtureDeployFilterFlags())
+			require.NoError(t, err)
 			require.IsType(t, &actions.Rectify{}, action)
 			rect := action.(*actions.Rectify)
 			require.NotNil(t, rect.Resolver)

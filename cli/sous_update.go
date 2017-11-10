@@ -35,9 +35,11 @@ func (su *SousUpdate) AddFlags(fs *flag.FlagSet) {
 
 // Execute fulfills the cmdr.Executor interface.
 func (su *SousUpdate) Execute(args []string) cmdr.Result {
-	update := su.SousGraph.GetUpdate(su.DeployFilterFlags, su.OTPLFlags)
-	err := update.Do()
+	update, err := su.SousGraph.GetUpdate(su.DeployFilterFlags, su.OTPLFlags)
 	if err != nil {
+		return cmdr.EnsureErrorResult(err)
+	}
+	if err := update.Do(); err != nil {
 		return EnsureErrorResult(err)
 	}
 	return cmdr.Success("Updated global manifest.")
