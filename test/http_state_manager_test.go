@@ -69,8 +69,7 @@ func TestWriteState(t *testing.T) {
 		t.Fatal("State manager double is empty")
 	}
 
-	ls := logging.SilentLogSet()
-	di := graph.BuildBaseGraph(semv.Version{}, ls, &bytes.Buffer{}, os.Stderr, os.Stderr)
+	di := graph.BuildBaseGraph(semv.Version{}, &bytes.Buffer{}, os.Stderr, os.Stderr)
 	graph.AddNetwork(di)
 
 	di.Add(

@@ -38,12 +38,16 @@ func BuildTestGraph(v semv.Version, in io.Reader, out, err io.Writer) *SousGraph
 // TestGraphWithConfig accepts a custom Sous config string
 func TestGraphWithConfig(v semv.Version, in io.Reader, out, err io.Writer, cfg string) *SousGraph {
 
-	graph := BuildGraph(v, logging.SilentLogSet(), in, out, err)
+	graph := BuildGraph(v, in, out, err)
 
 	// testGraph methods affect graph as well.
 	testGraph := psyringe.TestPsyringe{Psyringe: graph.Psyringe}
 
 	// Replace things from the real graph.
+	testGraph.Add(func() logging.LogSink {
+		return logging.SilentLogSet()
+	})
+	testGraph.Replace(logging.SilentLogSet())
 	testGraph.Replace(sous.User{Name: "Test User", Email: "testuser@example.com"})
 	testGraph.Replace(NewTestConfigLoader)
 	testGraph.Replace(newDummyDockerClient)

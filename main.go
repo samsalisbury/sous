@@ -25,13 +25,21 @@ func main() {
 	//logging.Log.Debug.SetOutput(os.Stderr)
 	log.SetFlags(log.Flags() | log.Lshortfile)
 
-	ls := logging.NewLogSet(Sous.Version, "sous", "", os.Stderr)
-	defer ls.AtExit()
-	di := graph.BuildGraph(Sous.Version, ls, os.Stdin, os.Stdout, os.Stderr)
-	c, err := cli.NewSousCLI(di, Sous, ls, os.Stdout, os.Stderr)
+	di := graph.BuildGraph(Sous.Version, os.Stdin, os.Stdout, os.Stderr)
+	type logSetScoop struct {
+		*logging.LogSet
+	}
+	lss := &logSetScoop{}
+	di.MustInject(lss)
+	defer func() {
+		lss.LogSet.AtExit()
+	}()
+
+	c, err := cli.NewSousCLI(di, Sous, os.Stdout, os.Stderr)
 	if err != nil {
 		die(err)
 	}
+	c.LogSink = lss.LogSet
 
 	result := c.Invoke(os.Args)
 	exitCode := result.ExitCode()

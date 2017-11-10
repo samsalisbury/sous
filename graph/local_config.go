@@ -40,17 +40,9 @@ func newPossiblyInvalidLocalSousConfig(u config.LocalUser, defaultConfig Default
 	return v, initErr(err, "getting configuration")
 }
 
-func newLocalSousConfig(pic PossiblyInvalidConfig, ls *logging.LogSet, notReallyButPsyringeSequencingDep LogSink) (v LocalSousConfig, err error) {
+func newLocalSousConfig(pic PossiblyInvalidConfig) (v LocalSousConfig, err error) {
 	v.Config, err = pic.Config, pic.Validate()
-	if err != nil {
-		return LocalSousConfig{}, errors.Wrapf(err, "tip: run 'sous config' to see and manipulate your configuration")
-	}
-	cerr := ls.Configure(v.Config.Logging)
-	if cerr != nil {
-		return v, initErr(cerr, "validating configuration")
-	}
-	cerr = logging.Log.Configure(v.Config.Logging)
-	return v, initErr(cerr, "validating configuration")
+	return v, errors.Wrapf(err, "tip: run 'sous config' to see and manipulate your configuration")
 }
 
 func newConfigLoader() *ConfigLoader {

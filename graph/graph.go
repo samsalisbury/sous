@@ -130,8 +130,8 @@ const (
 
 // BuildGraph builds the dependency injection graph, used to populate commands
 // invoked by the user.
-func BuildGraph(vrsn semv.Version, ls *logging.LogSet, in io.Reader, out, err io.Writer) *SousGraph {
-	graph := BuildBaseGraph(vrsn, ls, in, out, err)
+func BuildGraph(vrsn semv.Version, in io.Reader, out, err io.Writer) *SousGraph {
+	graph := BuildBaseGraph(vrsn, in, out, err)
 	AddFilesystem(graph)
 	AddNetwork(graph)
 	AddState(graph)
@@ -151,12 +151,12 @@ func newSousGraph() *SousGraph {
 }
 
 // BuildBaseGraph constructs a graph with essentials - intended for testing
-func BuildBaseGraph(vrsn semv.Version, ls *logging.LogSet, in io.Reader, out, err io.Writer) *SousGraph {
+func BuildBaseGraph(vrsn semv.Version, in io.Reader, out, err io.Writer) *SousGraph {
 	graph := newSousGraph()
 	// stdout, stderr
 	graph.Add(
 		vrsn,
-		ls,
+		//ls,
 		func() InReader { return in },
 		func() OutWriter { return out },
 		func() ErrWriter { return err },
@@ -180,6 +180,7 @@ type adder interface {
 // AddLogs adds a logset to the graph.
 func AddLogs(graph adder) {
 	graph.Add(
+		newLogSet,
 		newLogSink,
 		newMetricsHandler,
 	)
@@ -311,10 +312,24 @@ func newRegistryDumper(r sous.Registry) *sous.RegistryDumper {
 	return sous.NewRegistryDumper(r)
 }
 
+func newLogSet(v semv.Version, config LocalSousConfig) (*logging.LogSet, error) {
+	if config.Logging.Basic.DisableConsole {
+		return logging.NewLogSet(v, "", "", ioutil.Discard), nil
+	}
+	ls := logging.NewLogSet(v, "", "", os.Stderr)
+	cerr := ls.Configure(config.Logging)
+	if cerr != nil {
+		return ls, initErr(cerr, "validating logging configuration")
+	}
+	cerr = logging.Log.Configure(config.Logging)
+	return ls, initErr(cerr, "validating logging configuration")
+}
+
 func newLogSink(v *config.Verbosity, set *logging.LogSet) LogSink {
 	set.Configure(v.LoggingConfiguration())
 
 	//logging.Log.Warn.Println("Normal output enabled")
+	set.Info("Info debugging enabled")
 	set.Vomitf("Verbose debugging enabled")
 	set.Debugf("Regular debugging enabled")
 	return LogSink{set}

@@ -17,6 +17,7 @@ import (
 	"github.com/opentable/sous/util/yaml"
 	"github.com/pkg/errors"
 	"github.com/samsalisbury/psyringe/experiment"
+	"github.com/samsalisbury/semv"
 )
 
 // Func aliases, for convenience returning from commands.
@@ -68,8 +69,7 @@ func SuccessYAML(v interface{}) cmdr.Result {
 }
 
 // buildCLIGraph builds the CLI DI graph.
-func buildCLIGraph(root *Sous, cli *CLI, out, err io.Writer) {
-	g := cli.graph //was .Clone() - caused problems
+func buildCLIGraph(root *Sous, cli *CLI, g *graph.SousGraph, out, err io.Writer) *graph.SousGraph {
 	g.Add(cli)
 	g.Add(root)
 	g.Add(func(c *CLI) graph.Out {
@@ -78,54 +78,56 @@ func buildCLIGraph(root *Sous, cli *CLI, out, err io.Writer) {
 	g.Add(func(c *CLI) graph.ErrOut {
 		return graph.ErrOut{Output: c.Err}
 	})
+	return g
 }
 
 // Invoke wraps the cmdr.CLI Invoke for logging.
 func (cli *CLI) Invoke(args []string) cmdr.Result {
 	start := time.Now()
-	reportInvocation(cli.LogSink, args)
+	ls := cli.LogSink
+	if ls == nil {
+		ls = logging.NewLogSet(semv.Version{}, "sous", "", os.Stderr)
+	}
+	reportInvocation(ls, args)
 	res := cli.CLI.Invoke(args)
-	reportCLIResult(cli.LogSink, args, start, res)
+	reportCLIResult(ls, args, start, res)
 	return res
 }
 
 // NewSousCLI creates a new Sous cli app.
-func NewSousCLI(di *graph.SousGraph, s *Sous, logsink logging.LogSink, out, errout io.Writer) (*CLI, error) {
+func NewSousCLI(di *graph.SousGraph, s *Sous, out, errout io.Writer) (*CLI, error) {
 
 	stdout := cmdr.NewOutput(out)
 	stderr := cmdr.NewOutput(errout)
 
 	var verbosity config.Verbosity
 
-	cli := &CLI{
-		LogSink: logsink,
-		CLI: &cmdr.CLI{
-			Root: s,
-			Out:  stdout,
-			Err:  stderr,
-			// HelpCommand is shown to the user if they type something that looks
-			// like they want help, but which isn't recognised by Sous properly. It
-			// uses the standard flag.ErrHelp value to decide whether or not to show
-			// this.
-			HelpCommand: os.Args[0] + " help",
-			GlobalFlagSetFuncs: []func(*flag.FlagSet){
-				func(fs *flag.FlagSet) {
-					fs.BoolVar(&verbosity.Silent, "s", false,
-						"silent: silence all non-essential output")
-					fs.BoolVar(&verbosity.Quiet, "q", false,
-						"quiet: output only essential error messages")
-					fs.BoolVar(&verbosity.Loud, "v", false,
-						"loud: output extra info, including all shell commands")
-					fs.BoolVar(&verbosity.Debug, "d", false,
-						"debug: output detailed logs of internal operations")
-				},
+	cli := &CLI{}
+
+	cli.CLI = &cmdr.CLI{
+		Root: s,
+		Out:  stdout,
+		Err:  stderr,
+		// HelpCommand is shown to the user if they type something that looks
+		// like they want help, but which isn't recognised by Sous properly. It
+		// uses the standard flag.ErrHelp value to decide whether or not to show
+		// this.
+		HelpCommand: os.Args[0] + " help",
+		GlobalFlagSetFuncs: []func(*flag.FlagSet){
+			func(fs *flag.FlagSet) {
+				fs.BoolVar(&verbosity.Silent, "s", false,
+					"silent: silence all non-essential output")
+				fs.BoolVar(&verbosity.Quiet, "q", false,
+					"quiet: output only essential error messages")
+				fs.BoolVar(&verbosity.Loud, "v", false,
+					"loud: output extra info, including all shell commands")
+				fs.BoolVar(&verbosity.Debug, "d", false,
+					"debug: output detailed logs of internal operations")
 			},
 		},
-
-		graph: di,
 	}
 
-	buildCLIGraph(s, cli, out, errout)
+	cli.graph = buildCLIGraph(s, cli, di, out, errout)
 
 	var addVerbosityOnce sync.Once
 

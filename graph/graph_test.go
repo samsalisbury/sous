@@ -46,7 +46,7 @@ func TestNewStatusPoller(t *testing.T) {
 
 func TestBuildGraph(t *testing.T) {
 	log.SetFlags(log.Flags() | log.Lshortfile)
-	g := BuildGraph(semv.MustParse("0.0.0"), logging.SilentLogSet(), &bytes.Buffer{}, ioutil.Discard, ioutil.Discard)
+	g := BuildGraph(semv.MustParse("0.0.0"), &bytes.Buffer{}, ioutil.Discard, ioutil.Discard)
 	g.Add(DryrunBoth)
 	g.Add(&config.Verbosity{})
 	g.Add(&config.DeployFilterFlags{})
