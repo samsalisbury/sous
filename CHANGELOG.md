@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
+## [Unreleased](//github.com/opentable/sous/compare/0.5.54...master)
+### Changed
+* CLI: Quieter output for local operators. Previously many log messages were
+  emitted to stderr which made CLI use difficult due to information overload.
+
 ## [0.5.54](//github.com/opentable/sous/compare/0.5.53...0.5.54)
 ### Added
 * All: a Schedule field on Manifests, which should publish to Singularity to allow for scheduled tasks.
