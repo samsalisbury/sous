@@ -8,7 +8,6 @@ import (
 	"github.com/opentable/sous/cli"
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/util/logging"
-	"github.com/pkg/errors"
 )
 
 // Sous is the Sous CLI root command.
@@ -21,9 +20,10 @@ var Sous = &cli.Sous{
 
 func main() {
 	defer handlePanic()
-	// Eventually, these should become flags on the top level application
-	//logging.Log.Info.SetOutput(os.Stderr)
-	//logging.Log.Debug.SetOutput(os.Stderr)
+	os.Exit(action())
+}
+
+func action() int {
 	log.SetFlags(log.Flags() | log.Lshortfile)
 
 	di := graph.BuildGraph(Sous.Version, os.Stdin, os.Stdout, os.Stderr)
@@ -32,8 +32,8 @@ func main() {
 	}
 	lss := &logSetScoop{}
 	if err := di.Inject(lss); err != nil {
-		cause := errors.Cause(err)
-		die(cause)
+		fmt.Fprintln(os.Stderr, err)
+		return 70
 	}
 	defer func() {
 		lss.LogSet.AtExit()
@@ -41,20 +41,12 @@ func main() {
 
 	c, err := cli.NewSousCLI(di, Sous, os.Stdout, os.Stderr)
 	if err != nil {
-		die(err)
+		fmt.Fprintln(os.Stderr, err)
+		return 70
 	}
 	c.LogSink = lss.LogSet
 
-	result := c.Invoke(os.Args)
-	exitCode := result.ExitCode()
-
-	os.Exit(exitCode)
-}
-
-// die is only used to exit during very early initialisation
-func die(v ...interface{}) {
-	fmt.Fprintln(os.Stderr, v...)
-	os.Exit(70)
+	return c.Invoke(os.Args).ExitCode()
 }
 
 // handlePanic gives us one last chance to send a message to the user in case a
@@ -64,6 +56,7 @@ func handlePanic() {
 	if os.Getenv("DEBUG") == "YES" {
 		return
 	}
+
 	fmt.Println(panicMessage)
 	fmt.Printf("Sous Version: %s\n\n", Version)
 }
