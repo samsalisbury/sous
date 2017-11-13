@@ -8,6 +8,7 @@ import (
 	"github.com/opentable/sous/cli"
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/util/logging"
+	"github.com/pkg/errors"
 )
 
 // Sous is the Sous CLI root command.
@@ -30,7 +31,10 @@ func main() {
 		*logging.LogSet
 	}
 	lss := &logSetScoop{}
-	di.MustInject(lss)
+	if err := di.Inject(lss); err != nil {
+		cause := errors.Cause(err)
+		die(cause)
+	}
 	defer func() {
 		lss.LogSet.AtExit()
 	}()

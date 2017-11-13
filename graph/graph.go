@@ -312,17 +312,28 @@ func newRegistryDumper(r sous.Registry) *sous.RegistryDumper {
 	return sous.NewRegistryDumper(r)
 }
 
-func newLogSet(v semv.Version, config LocalSousConfig) (*logging.LogSet, error) {
-	if config.Logging.Basic.DisableConsole {
-		return logging.NewLogSet(v, "", "", ioutil.Discard), nil
-	}
+// newLogSet relies only on PossiblyInvalidConfig because we need to initialise
+// logging very early on, but don't want to break other commands that do not
+// rely on valid configuration (especially 'sous config' which explicitly needs
+// to handle broken config in order to allow fixing it).
+//
+// If handed invalid config, we emit a warning on stderr and proceed with a
+// default LogSet.
+func newLogSet(v semv.Version, config PossiblyInvalidConfig) (*logging.LogSet, error) {
 	ls := logging.NewLogSet(v, "", "", os.Stderr)
-	cerr := ls.Configure(config.Logging)
-	if cerr != nil {
-		return ls, initErr(cerr, "validating logging configuration")
+	if configErr := config.Logging.Validate(); configErr != nil {
+		// Direct print to stderr to make sure this gets printed in spite of any
+		// other issues with logging.
+		defer fmt.Fprintf(os.Stderr, "WARNING: Invalid configuration: %s\n", configErr)
+		config.Logging = logging.Config{}
 	}
-	cerr = logging.Log.Configure(config.Logging)
-	return ls, initErr(cerr, "validating logging configuration")
+	if err := ls.Configure(config.Logging); err != nil {
+		return ls, initErr(err, "validating logging configuration")
+	}
+	if err := logging.Log.Configure(config.Logging); err != nil {
+		return ls, initErr(err, "validating logging configuration")
+	}
+	return ls, nil
 }
 
 func newLogSink(v *config.Verbosity, set *logging.LogSet) LogSink {
