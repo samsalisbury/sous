@@ -1,4 +1,4 @@
-// The configloader package provides YAML-based configuration files, with
+// Package configloader provides YAML-based configuration files, with
 // automatic environment variable overriding.
 package configloader
 
@@ -14,7 +14,8 @@ import (
 	"github.com/opentable/sous/util/yaml"
 )
 
-func New() *configLoader {
+// New returns a new ConfigLoader.
+func New() ConfigLoader {
 	return &configLoader{}
 }
 
@@ -23,6 +24,16 @@ type (
 	ConfigLoader interface {
 		//Loads a YAML formated configuration from path into data.
 		Load(data interface{}, path string) error
+		// SetValue sets a value at path key, as long as it can convert value to
+		// the correct type for that key. Otherwise it returns an error.
+		SetValue(target interface{}, key, value string) error
+		// SetValidValue is similar to SetValue except is also returns an error
+		// if the resulting target is not valid. (If target does not implement
+		// Validator then it is assumed to be valid.)
+		SetValidValue(target interface{}, key, value string) error
+		// GetValue returns the value of key in target, or nil and a non-nil
+		// error if that key is not found.
+		GetValue(target interface{}, key string) (interface{}, error)
 	}
 
 	// DefaultFiller can fill defaults for a config
@@ -62,10 +73,7 @@ func (cl *configLoader) Load(target interface{}, filePath string) error {
 			return err
 		}
 	}
-	if err := cl.overrideWithEnv(target); err != nil {
-		return err
-	}
-	return nil
+	return cl.overrideWithEnv(target)
 }
 
 func (cl *configLoader) Validate(target interface{}) error {
@@ -155,6 +163,13 @@ func (cl *configLoader) SetValue(target interface{}, name, value string) error {
 		}
 		return nil
 	})
+}
+
+func (cl *configLoader) SetValidValue(target interface{}, name, value string) error {
+	if err := cl.SetValue(target, name, value); err != nil {
+		return err
+	}
+	return cl.Validate(target)
 }
 
 func (cl *configLoader) overrideField(sf reflect.StructField, originalVal reflect.Value) error {

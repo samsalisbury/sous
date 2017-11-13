@@ -78,3 +78,15 @@ func (cl *testConfigLoader) Load(data interface{}, path string) error {
 	err := yaml.Unmarshal([]byte(cl.configYAML), data)
 	return err
 }
+
+func (cl *testConfigLoader) SetValue(interface{}, string, string) error {
+	panic("testConfigLoader does not implement SetValue")
+}
+
+func (cl *testConfigLoader) SetValidValue(interface{}, string, string) error {
+	panic("testConfigLoader does not implement SetValidValue")
+}
+
+func (cl *testConfigLoader) GetValue(interface{}, string) (interface{}, error) {
+	panic("testConfigLoader does not implement SetValue")
+}

@@ -158,7 +158,7 @@ func (c *LocalSousConfig) GetValue(name string) (string, error) {
 
 // SetValue stores a particular value on the config
 func (c *LocalSousConfig) SetValue(path, name, value string) error {
-	if err := configloader.New().SetValue(c.Config, name, value); err != nil {
+	if err := configloader.New().SetValidValue(c.Config, name, value); err != nil {
 		return err
 	}
 	return c.Save(path)

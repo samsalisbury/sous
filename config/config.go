@@ -51,7 +51,7 @@ func checkURL(URL string) error {
 		return errors.Wrapf(err, "%q is not a valid URL", URL)
 	}
 	if u.Scheme != "http" && u.Scheme != "https" {
-		return errors.Errorf("%q must begin with http:// or https://", URL)
+		return errors.Errorf("URL %q must begin with http:// or https://", URL)
 	}
 	return nil
 }
