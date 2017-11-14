@@ -17,16 +17,16 @@ const (
 	// and listens and responds to HTTP requests.
 	ManifestKindService ManifestKind = "http-service"
 	// ManifestKindWorker represents a worker process.
-	ManifestKindWorker = "worker"
+	ManifestKindWorker ManifestKind = "worker"
 	// ManifestKindOnDemand represents an on-demand service.
-	ManifestKindOnDemand = "on-demand"
+	ManifestKindOnDemand ManifestKind = "on-demand"
 	// ManifestKindScheduled represents a scheduled task.
-	ManifestKindScheduled = "scheduled"
+	ManifestKindScheduled ManifestKind = "scheduled"
 	// ManifestKindOnce represents a one-off job.
-	ManifestKindOnce = "once"
+	ManifestKindOnce ManifestKind = "once"
 	// ScheduledJob represents a process which starts on some schedule, and
 	// exits when it completes its task.
-	ScheduledJob = "scheduled-job"
+	ScheduledJob ManifestKind = "scheduled-job"
 )
 
 // Validate returns a list of flaws with this ManifestKind.
