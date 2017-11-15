@@ -34,8 +34,11 @@ func main() {
 // Sous fails (e.g. when we can't set up logging or other elementary issues).
 const InitializationFailedExitCode = 70
 
-func guessVerbosity(cliArgs []string) *config.Verbosity {
-	var v, d bool
+func sniffVerbosity(cliArgs []string) graph.VerbosityOverride {
+	var s, q, v, d bool
+	// We want to give higher verbosity precedence in the case more than
+	// one flag is set, so first check for them all then return the most
+	// verbose one detected.
 	for _, a := range cliArgs {
 		if a == "-d" {
 			d = true
@@ -43,14 +46,38 @@ func guessVerbosity(cliArgs []string) *config.Verbosity {
 		if a == "-v" {
 			v = true
 		}
+		if a == "-q" {
+			q = true
+		}
+		if a == "-s" {
+			s = true
+		}
 	}
 	if d {
-		return &config.Verbosity{Debug: true}
+		return graph.VerbosityOverride{
+			Overridden: true,
+			Value:      &config.Verbosity{Debug: true},
+		}
 	}
 	if v {
-		return &config.Verbosity{Loud: true}
+		return graph.VerbosityOverride{
+			Overridden: true,
+			Value:      &config.Verbosity{Loud: true},
+		}
 	}
-	return &config.Verbosity{}
+	if q {
+		return graph.VerbosityOverride{
+			Overridden: true,
+			Value:      &config.Verbosity{Quiet: true},
+		}
+	}
+	if s {
+		return graph.VerbosityOverride{
+			Overridden: true,
+			Value:      &config.Verbosity{Silent: true},
+		}
+	}
+	return graph.VerbosityOverride{}
 }
 
 func action() int {
@@ -63,7 +90,7 @@ func action() int {
 	// In addition, by cloning the graph here, we allow later configuration
 	// of verbosity and logging in general.
 	initializationDI := di.Clone()
-	initializationDI.Add(guessVerbosity(os.Args))
+	initializationDI.Add(sniffVerbosity(os.Args))
 
 	type logSetScoop struct {
 		*logging.LogSet
@@ -78,10 +105,13 @@ func action() int {
 		// Gracefully shut down the logs created at initialization.
 		lss.LogSet.AtExit()
 		// Grab the LogSet used by the main di graph to AtExit on that too.
-		if err := di.Inject(lss); err != nil {
-			panic(fmt.Sprintf("failed to gracefully shut down logging: %s", err))
+		// If we fail to get it here, don't worry as that means it was never
+		// instantiated by the main graph. This can happen if e.g. a bad flag
+		// is passed to the CLI which causes an exit prior to the Parsed event
+		// firing on the CLI.
+		if err := di.Inject(lss); err == nil {
+			lss.LogSet.AtExit()
 		}
-		lss.LogSet.AtExit()
 	}()
 
 	c, err := cli.NewSousCLI(di, Sous, os.Stdout, os.Stderr)

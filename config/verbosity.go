@@ -26,3 +26,21 @@ func (v Verbosity) LoggingConfiguration() logging.Config {
 
 	return cfg
 }
+
+// LoggingConfigurationToVerbosity is the inverse of
+// Verbosity.LoggingConfiguration.
+func LoggingConfigurationToVerbosity(c logging.Config) *Verbosity {
+	switch c.Basic.Level {
+	default:
+		return &Verbosity{}
+	case "critical":
+		if c.Basic.DisableConsole {
+			return &Verbosity{Silent: true}
+		}
+		return &Verbosity{Quiet: true}
+	case "debug":
+		return &Verbosity{Debug: true}
+	case "extradebug1":
+		return &Verbosity{Loud: true}
+	}
+}

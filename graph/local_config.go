@@ -29,6 +29,13 @@ type (
 
 	// ConfigLoader wraps the configloader.ConfigLoader interface
 	ConfigLoader struct{ configloader.ConfigLoader }
+
+	// VerbosityOverride indicates if verbosity has been overridden by CLI
+	// flags, and if so to what verbosity.
+	VerbosityOverride struct {
+		Overridden bool
+		Value      *config.Verbosity
+	}
 )
 
 func newSousConfig(lsc LocalSousConfig) *config.Config {
@@ -43,6 +50,17 @@ func newPossiblyInvalidLocalSousConfig(u config.LocalUser, defaultConfig Default
 func newLocalSousConfig(pic PossiblyInvalidConfig) (v LocalSousConfig, err error) {
 	v.Config, err = pic.Config, pic.Validate()
 	return v, errors.Wrapf(err, "tip: run 'sous config' to see and manipulate your configuration")
+}
+
+func newVerbosity(pic PossiblyInvalidConfig, override VerbosityOverride) *config.Verbosity {
+	if override.Overridden {
+		return override.Value
+	}
+	if err := pic.Logging.Validate(); err != nil {
+		fmt.Fprintf(os.Stderr, "WARNING: Invalid configuration: %s\n", err)
+		return &config.Verbosity{}
+	}
+	return config.LoggingConfigurationToVerbosity(pic.Logging)
 }
 
 func newConfigLoader() *ConfigLoader {

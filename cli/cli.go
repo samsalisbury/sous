@@ -133,7 +133,17 @@ func NewSousCLI(di *graph.SousGraph, s *Sous, out, errout io.Writer) (*CLI, erro
 
 	cli.Hooks.Parsed = func(cmd cmdr.Command) error {
 		addVerbosityOnce.Do(func() {
-			cli.graph.Add(&verbosity)
+			if verbosity.Silent ||
+				verbosity.Quiet ||
+				verbosity.Loud ||
+				verbosity.Debug {
+				cli.graph.Add(graph.VerbosityOverride{
+					Overridden: true,
+					Value:      &verbosity,
+				})
+			} else {
+				cli.graph.Add(graph.VerbosityOverride{})
+			}
 		})
 		if registrant, ok := cmd.(Registrant); ok {
 			registrant.RegisterOn(cli.graph)
