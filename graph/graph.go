@@ -56,8 +56,6 @@ type (
 	// ProfilingServer records whether a profiling server was requested
 	ProfilingServer bool
 
-	// XXX one at a time, unexport all these wrapper types
-
 	// LocalSousConfig is the configuration for Sous.
 	LocalSousConfig struct{ *config.Config }
 	// LocalWorkDir is the user's current working directory when they invoke Sous.
@@ -130,8 +128,8 @@ const (
 
 // BuildGraph builds the dependency injection graph, used to populate commands
 // invoked by the user.
-func BuildGraph(vrsn semv.Version, in io.Reader, out, err io.Writer) *SousGraph {
-	graph := BuildBaseGraph(vrsn, in, out, err)
+func BuildGraph(v semv.Version, in io.Reader, out, err io.Writer) *SousGraph {
+	graph := BuildBaseGraph(v, in, out, err)
 	AddFilesystem(graph)
 	AddNetwork(graph)
 	AddState(graph)
@@ -151,12 +149,10 @@ func newSousGraph() *SousGraph {
 }
 
 // BuildBaseGraph constructs a graph with essentials - intended for testing
-func BuildBaseGraph(vrsn semv.Version, in io.Reader, out, err io.Writer) *SousGraph {
+func BuildBaseGraph(version semv.Version, in io.Reader, out, err io.Writer) *SousGraph {
 	graph := newSousGraph()
-	// stdout, stderr
 	graph.Add(
-		vrsn,
-		//ls,
+		version,
 		func() InReader { return in },
 		func() OutWriter { return out },
 		func() ErrWriter { return err },
@@ -339,7 +335,6 @@ func newLogSet(v semv.Version, config PossiblyInvalidConfig) (*logging.LogSet, e
 func newLogSink(v *config.Verbosity, set *logging.LogSet) LogSink {
 	set.Configure(v.LoggingConfiguration())
 
-	//logging.Log.Warn.Println("Normal output enabled")
 	set.Info("Info debugging enabled")
 	set.Vomitf("Verbose debugging enabled")
 	set.Debugf("Regular debugging enabled")
@@ -460,8 +455,6 @@ func newLocalWorkDirShell(verbosity *config.Verbosity, l LocalWorkDir) (v LocalW
 	v.Sh, err = shell.DefaultInDir(string(l))
 	v.TeeEcho = os.Stdout //XXX should use a writer
 	v.Sh.Debug = verbosity.Debug
-	//v.TeeOut = os.Stdout
-	//v.TeeErr = os.Stderr
 	return v, initErr(err, "getting current working directory")
 }
 
