@@ -29,6 +29,10 @@ func main() {
 	os.Exit(action())
 }
 
+// InitializationFailedExitCode (70) is returned when early initialization of
+// Sous fails (e.g. when we can't set up logging or other elementary issues).
+const InitializationFailedExitCode = 70
+
 func action() int {
 	log.SetFlags(log.Flags() | log.Lshortfile)
 
@@ -39,7 +43,7 @@ func action() int {
 	lss := &logSetScoop{}
 	if err := di.Inject(lss); err != nil {
 		fmt.Fprintln(os.Stderr, err)
-		return 70
+		return InitializationFailedExitCode
 	}
 	defer func() {
 		lss.LogSet.AtExit()
@@ -48,7 +52,7 @@ func action() int {
 	c, err := cli.NewSousCLI(di, Sous, os.Stdout, os.Stderr)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
-		return 70
+		return InitializationFailedExitCode
 	}
 	c.LogSink = lss.LogSet
 
