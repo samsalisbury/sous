@@ -19,6 +19,12 @@ var Sous = &cli.Sous{
 }
 
 func main() {
+	// handlePanic will only happen if os.Exit does not get called.
+	// The only way for os.Exit not to get called is if action() panics,
+	// so handlePanic here is panic-specific behaviour.
+	// The reason action is its own method is to allow other deferred calls in
+	// there to also happen in spite of panic or return, and definitely before
+	// os.Exit can be called.
 	defer handlePanic()
 	os.Exit(action())
 }
@@ -53,10 +59,12 @@ func action() int {
 // panic leaks right up to the top of the program. You can disable this message
 // for brevity of output by setting DEBUG=YES
 func handlePanic() {
+	// It is important that this method does not call recover() because we want
+	// the runtime to handle spitting out the default stack trace after the
+	// message is printed.
 	if os.Getenv("DEBUG") == "YES" {
 		return
 	}
-
 	fmt.Println(panicMessage)
 	fmt.Printf("Sous Version: %s\n\n", Version)
 }
