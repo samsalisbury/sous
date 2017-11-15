@@ -315,7 +315,7 @@ func newRegistryDumper(r sous.Registry) *sous.RegistryDumper {
 //
 // If handed invalid config, we emit a warning on stderr and proceed with a
 // default LogSet.
-func newLogSet(v semv.Version, config PossiblyInvalidConfig) (*logging.LogSet, error) {
+func newLogSet(v semv.Version, config PossiblyInvalidConfig, verb *config.Verbosity) (*logging.LogSet, error) {
 	ls := logging.NewLogSet(v, "", "", os.Stderr)
 	if configErr := config.Logging.Validate(); configErr != nil {
 		// Direct print to stderr to make sure this gets printed in spite of any
@@ -323,6 +323,10 @@ func newLogSet(v semv.Version, config PossiblyInvalidConfig) (*logging.LogSet, e
 		defer fmt.Fprintf(os.Stderr, "WARNING: Invalid configuration: %s\n", configErr)
 		config.Logging = logging.Config{}
 	}
+
+	verbosityLoggingConfig := verb.LoggingConfiguration()
+	config.Logging.Basic.Level = verbosityLoggingConfig.Basic.Level
+
 	if err := ls.Configure(config.Logging); err != nil {
 		return ls, initErr(err, "validating logging configuration")
 	}

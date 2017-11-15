@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/opentable/sous/cli"
+	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/util/logging"
 )
@@ -33,19 +34,53 @@ func main() {
 // Sous fails (e.g. when we can't set up logging or other elementary issues).
 const InitializationFailedExitCode = 70
 
+func guessVerbosity(cliArgs []string) *config.Verbosity {
+	var v, d bool
+	for _, a := range cliArgs {
+		if a == "-d" {
+			d = true
+		}
+		if a == "-v" {
+			v = true
+		}
+	}
+	if d {
+		return &config.Verbosity{Debug: true}
+	}
+	if v {
+		return &config.Verbosity{Loud: true}
+	}
+	return &config.Verbosity{}
+}
+
 func action() int {
 	log.SetFlags(log.Flags() | log.Lshortfile)
 
 	di := graph.BuildGraph(Sous.Version, os.Stdin, os.Stdout, os.Stderr)
+
+	// We can't call flag.Parse yet because haven't defined our
+	// flags. However, we want to guess at verbosity from the command line.
+	// In addition, by cloning the graph here, we allow later configuration
+	// of verbosity and logging in general.
+	initializationDI := di.Clone()
+	initializationDI.Add(guessVerbosity(os.Args))
+
 	type logSetScoop struct {
 		*logging.LogSet
 	}
 	lss := &logSetScoop{}
-	if err := di.Inject(lss); err != nil {
+	if err := initializationDI.Inject(lss); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return InitializationFailedExitCode
 	}
+
 	defer func() {
+		// Gracefully shut down the logs created at initialization.
+		lss.LogSet.AtExit()
+		// Grab the LogSet used by the main di graph to AtExit on that too.
+		if err := di.Inject(lss); err != nil {
+			panic(fmt.Sprintf("failed to gracefully shut down logging: %s", err))
+		}
 		lss.LogSet.AtExit()
 	}()
 
