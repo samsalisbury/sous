@@ -319,9 +319,7 @@ func newRegistryDumper(r sous.Registry) *sous.RegistryDumper {
 func newLogSet(v semv.Version, config PossiblyInvalidConfig, verb *config.Verbosity) (*logging.LogSet, error) {
 	ls := logging.NewLogSet(v, "", "", os.Stderr)
 	if configErr := config.Logging.Validate(); configErr != nil {
-		// Direct print to stderr to make sure this gets printed in spite of any
-		// other issues with logging.
-		defer fmt.Fprintf(os.Stderr, "WARNING: Invalid configuration: %s\n", configErr)
+		// No need to warn here, this is handled by PIC constructor.
 		config.Logging = logging.Config{}
 	}
 

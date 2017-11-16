@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"golang.org/x/crypto/ssh/terminal"
 
@@ -42,8 +43,15 @@ func newSousConfig(lsc LocalSousConfig) *config.Config {
 	return lsc.Config
 }
 
+var printConfigWarningOnce sync.Once
+
 func newPossiblyInvalidLocalSousConfig(u config.LocalUser, defaultConfig DefaultConfig, gcl *ConfigLoader) (PossiblyInvalidConfig, error) {
 	v, err := newPossiblyInvalidConfig(u.ConfigFile(), defaultConfig, gcl)
+	if err := v.Validate(); err != nil {
+		printConfigWarningOnce.Do(func() {
+			fmt.Fprintf(os.Stderr, "WARNING: Invalid configuration: %s\n", err)
+		})
+	}
 	return v, initErr(err, "getting configuration")
 }
 
@@ -57,7 +65,7 @@ func newVerbosity(pic PossiblyInvalidConfig, override VerbosityOverride) *config
 		return override.Value
 	}
 	if err := pic.Logging.Validate(); err != nil {
-		fmt.Fprintf(os.Stderr, "WARNING: Invalid configuration: %s\n", err)
+		// No need to emit warning, that always happens now.
 		return &config.Verbosity{}
 	}
 	return config.LoggingConfigurationToVerbosity(pic.Logging)
