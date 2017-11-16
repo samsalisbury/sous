@@ -16,7 +16,6 @@ import (
 	"github.com/opentable/sous/ext/storage"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/server"
-	"github.com/opentable/sous/util/cmdr"
 	"github.com/opentable/sous/util/docker_registry"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
@@ -27,23 +26,12 @@ import (
 )
 
 type (
-	// Out is an output used for real data a Command returns. This should only
-	// be used when a command needs to write directly to stdout, using the
-	// formatting options that come with an output. Usually, you should use a
-	// SuccessResult with Data to return data.
-	Out struct{ *cmdr.Output }
-	// ErrOut is an output used for logging from a Command. This should only be
-	// used when a Command needs to write a lot of data to stderr, using the
-	// formatting options that come with and Output. Usually you should use and
-	// ErrorResult to return error messages.
-	ErrOut struct{ *cmdr.Output }
 	// SousGraph is a dependency injector used to flesh out Sous commands
 	// with their dependencies.
 	SousGraph struct {
 		addGuards map[string]bool
 		*psyringe.Psyringe
 	}
-
 	// OutWriter is typically set to os.Stdout.
 	OutWriter io.Writer
 	// ErrWriter is typically set to os.Stderr.

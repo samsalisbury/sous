@@ -45,11 +45,12 @@ func newSousConfig(lsc LocalSousConfig) *config.Config {
 
 var printConfigWarningOnce sync.Once
 
-func newPossiblyInvalidLocalSousConfig(u config.LocalUser, defaultConfig DefaultConfig, gcl *ConfigLoader) (PossiblyInvalidConfig, error) {
+func newPossiblyInvalidLocalSousConfig(u config.LocalUser,
+	defaultConfig DefaultConfig, gcl *ConfigLoader, stderr ErrWriter) (PossiblyInvalidConfig, error) {
 	v, err := newPossiblyInvalidConfig(u.ConfigFile(), defaultConfig, gcl)
 	if err := v.Validate(); err != nil {
 		printConfigWarningOnce.Do(func() {
-			fmt.Fprintf(os.Stderr, "WARNING: Invalid configuration: %s\n", err)
+			fmt.Fprintf(stderr, "WARNING: Invalid configuration: %s\n", err)
 		})
 	}
 	return v, initErr(err, "getting configuration")

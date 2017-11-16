@@ -72,12 +72,6 @@ func SuccessYAML(v interface{}) cmdr.Result {
 func buildCLIGraph(root *Sous, cli *CLI, g *graph.SousGraph, out, err io.Writer) *graph.SousGraph {
 	g.Add(cli)
 	g.Add(root)
-	g.Add(func(c *CLI) graph.Out {
-		return graph.Out{Output: c.Out}
-	})
-	g.Add(func(c *CLI) graph.ErrOut {
-		return graph.ErrOut{Output: c.Err}
-	})
 	return g
 }
 
