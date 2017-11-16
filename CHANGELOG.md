@@ -6,7 +6,9 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
-## [Unreleased](//github.com/opentable/sous/compare/0.5.54...master)
+## [Unreleased](//github.com/opentable/sous/compare/0.5.55...master)
+
+## [0.5.55](//github.com/opentable/sous/compare/0.5.55...0.5.54)
 ### Changed
 * CLI: Quieter output for local operators. Previously many log messages were
   emitted to stderr which made CLI use difficult due to information overload.
