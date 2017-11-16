@@ -114,16 +114,7 @@ func NewSousCLI(di *graph.SousGraph, s *Sous, out, errout io.Writer) (*CLI, erro
 		// this.
 		HelpCommand: os.Args[0] + " help",
 		GlobalFlagSetFuncs: []func(*flag.FlagSet){
-			func(fs *flag.FlagSet) {
-				fs.BoolVar(&verbosity.Silent, "s", false,
-					"silent: silence all non-essential output")
-				fs.BoolVar(&verbosity.Quiet, "q", false,
-					"quiet: output only essential error messages")
-				fs.BoolVar(&verbosity.Loud, "v", false,
-					"loud: output extra info, including all shell commands")
-				fs.BoolVar(&verbosity.Debug, "d", false,
-					"debug: output detailed logs of internal operations")
-			},
+			AddVerbosityFlags(&verbosity),
 		},
 	}
 

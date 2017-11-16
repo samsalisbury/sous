@@ -1,7 +1,9 @@
 package main
 
 import (
+	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 
@@ -34,94 +36,82 @@ func main() {
 // Sous fails (e.g. when we can't set up logging or other elementary issues).
 const InitializationFailedExitCode = 70
 
-func sniffVerbosity(cliArgs []string) graph.VerbosityOverride {
-	var s, q, v, d bool
-	// We want to give higher verbosity precedence in the case more than
-	// one flag is set, so first check for them all then return the most
-	// verbose one detected.
-	for _, a := range cliArgs {
-		if a == "-d" {
-			d = true
-		}
-		if a == "-v" {
-			v = true
-		}
-		if a == "-q" {
-			q = true
-		}
-		if a == "-s" {
-			s = true
-		}
+func getLogSet(graph *graph.SousGraph) (*logging.LogSet, error) {
+	type logSetScoop struct {
+		*logging.LogSet
 	}
-	if d {
-		return graph.VerbosityOverride{
-			Overridden: true,
-			Value:      &config.Verbosity{Debug: true},
-		}
+	lss := &logSetScoop{}
+	if err := graph.Inject(lss); err != nil {
+		return nil, err
 	}
-	if v {
-		return graph.VerbosityOverride{
-			Overridden: true,
-			Value:      &config.Verbosity{Loud: true},
-		}
-	}
-	if q {
-		return graph.VerbosityOverride{
-			Overridden: true,
-			Value:      &config.Verbosity{Quiet: true},
-		}
-	}
-	if s {
-		return graph.VerbosityOverride{
-			Overridden: true,
-			Value:      &config.Verbosity{Silent: true},
-		}
-	}
-	return graph.VerbosityOverride{}
+	return lss.LogSet, nil
 }
 
 func action() int {
 	log.SetFlags(log.Flags() | log.Lshortfile)
 
-	di := graph.BuildGraph(Sous.Version, os.Stdin, os.Stdout, os.Stderr)
+	mainGraph := graph.BuildGraph(Sous.Version, os.Stdin, os.Stdout, os.Stderr)
 
-	// We can't call flag.Parse yet because haven't defined our
-	// flags. However, we want to guess at verbosity from the command line.
-	// In addition, by cloning the graph here, we allow later configuration
-	// of verbosity and logging in general.
-	initializationDI := di.Clone()
-	initializationDI.Add(sniffVerbosity(os.Args))
-
-	type logSetScoop struct {
-		*logging.LogSet
-	}
-	lss := &logSetScoop{}
-	if err := initializationDI.Inject(lss); err != nil {
+	// Clone the graph so we can add early verbosity override from flags.
+	preParseGraph := &graph.SousGraph{Psyringe: mainGraph.Clone()}
+	preParseGraph.Add(earlyLoggingVerbosityOverride(os.Args))
+	preParseLogSet, err := getLogSet(preParseGraph)
+	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return InitializationFailedExitCode
 	}
 
 	defer func() {
 		// Gracefully shut down the logs created at initialization.
-		lss.LogSet.AtExit()
-		// Grab the LogSet used by the main di graph to AtExit on that too.
+		preParseLogSet.AtExit()
+		// Grab the LogSet used by the main graph to AtExit on that too.
 		// If we fail to get it here, don't worry as that means it was never
 		// instantiated by the main graph. This can happen if e.g. a bad flag
 		// is passed to the CLI which causes an exit prior to the Parsed event
 		// firing on the CLI.
-		if err := di.Inject(lss); err == nil {
-			lss.LogSet.AtExit()
+		if mainLogSet, err := getLogSet(mainGraph); err == nil {
+			mainLogSet.AtExit()
 		}
 	}()
 
-	c, err := cli.NewSousCLI(di, Sous, os.Stdout, os.Stderr)
+	c, err := cli.NewSousCLI(mainGraph, Sous, os.Stdout, os.Stderr)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return InitializationFailedExitCode
 	}
-	c.LogSink = lss.LogSet
+	// This LogSink is replaced after the Parsed event fires on the CLI.
+	c.LogSink = preParseLogSet
 
 	return c.Invoke(os.Args).ExitCode()
+}
+
+func earlyLoggingVerbosityOverride(cliArgs []string) graph.VerbosityOverride {
+	globalFS := flag.NewFlagSet("verbosity", flag.ContinueOnError)
+	globalFS.SetOutput(ioutil.Discard)
+	var verbosity config.Verbosity
+	cli.AddVerbosityFlags(&verbosity)(globalFS)
+	// Explicitly ignore this error because we expect there to be other flags
+	// that are not yet defined.
+	// This behaviour tested by https://play.golang.org/p/kEy-mtM3H0
+	//
+	// NOTE: It is possible that a flag taking an argument that is validly "-d"
+	// or one of the other verbosity flags will confuse this method into setting
+	// the verbosity incorrectly. This is why we only use this for
+	// initialisation logging. Later the entire command line is parsed again
+	// (once we know which command is being run), and a new LogSet is created
+	// based on the result of that, which is therefore guaranteed to be
+	// as accurate as the FlagSet.Parse method.
+	_ = globalFS.Parse(os.Args)
+	// Nothing was overridden by flags as verbosity == zero verbosity.
+	if (verbosity == config.Verbosity{}) {
+		// The zero verbosity override means we defer to config or defaults.
+		return graph.VerbosityOverride{}
+	}
+	// At least one verbosity flag was present, so verbosity is overridden.
+	return graph.VerbosityOverride{
+		Overridden: true,
+		Value:      &verbosity,
+	}
 }
 
 // handlePanic gives us one last chance to send a message to the user in case a
