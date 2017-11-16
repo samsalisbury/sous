@@ -48,7 +48,7 @@ func TestBuildGraph(t *testing.T) {
 	log.SetFlags(log.Flags() | log.Lshortfile)
 	g := BuildGraph(semv.MustParse("0.0.0"), &bytes.Buffer{}, ioutil.Discard, ioutil.Discard)
 	g.Add(DryrunBoth)
-	g.Add(&config.Verbosity{})
+	g.Add(VerbosityOverride{})
 	g.Add(&config.DeployFilterFlags{})
 	g.Add(&config.PolicyFlags{}) //provided by SousBuild
 	g.Add(&config.OTPLFlags{})   //provided by SousInit and SousDeploy
