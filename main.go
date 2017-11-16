@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/opentable/sous/cli"
 	"github.com/opentable/sous/config"
@@ -86,6 +87,13 @@ func action() int {
 }
 
 func earlyLoggingVerbosityOverride(cliArgs []string) graph.VerbosityOverride {
+	// Filter out probable non-flag args.
+	flagArgs := []string{}
+	for _, arg := range cliArgs {
+		if strings.HasPrefix(arg, "-") {
+			flagArgs = append(flagArgs, arg)
+		}
+	}
 	globalFS := flag.NewFlagSet("verbosity", flag.ContinueOnError)
 	globalFS.SetOutput(ioutil.Discard)
 	var verbosity config.Verbosity
@@ -101,7 +109,7 @@ func earlyLoggingVerbosityOverride(cliArgs []string) graph.VerbosityOverride {
 	// (once we know which command is being run), and a new LogSet is created
 	// based on the result of that, which is therefore guaranteed to be
 	// as accurate as the FlagSet.Parse method.
-	_ = globalFS.Parse(os.Args)
+	_ = globalFS.Parse(flagArgs)
 	// Nothing was overridden by flags as verbosity == zero verbosity.
 	if (verbosity == config.Verbosity{}) {
 		// The zero verbosity override means we defer to config or defaults.
