@@ -22,7 +22,7 @@ func New() ConfigLoader {
 type (
 	// ConfigLoader loads configuration.
 	ConfigLoader interface {
-		//Loads a YAML formated configuration from path into data.
+		//Loads a YAML formatted configuration from path into data.
 		Load(data interface{}, path string) error
 		// SetValue sets a value at path key, as long as it can convert value to
 		// the correct type for that key. Otherwise it returns an error.

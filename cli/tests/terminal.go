@@ -52,7 +52,15 @@ func NewTerminal(t *testing.T, vstr string) *Terminal {
 	}
 
 	testGraph := psyringe.TestPsyringe{Psyringe: di.Psyringe}
-	return &Terminal{c, baseout, baseerr, combined, []string{}, t, testGraph}
+	return &Terminal{
+		CLI:      c,
+		Stdout:   baseout,
+		Stderr:   baseerr,
+		Combined: combined,
+		History:  []string{},
+		T:        t,
+		Graph:    testGraph,
+	}
 }
 
 // RunCommand takes a command line, turns it into args, and passes it to a CLI
@@ -131,7 +139,14 @@ func (out TestOutput) ShouldBeEmpty() {
 // ShouldContain fails the test if the output does not contain byteSlice.
 func (out TestOutput) ShouldContain(byteSlice []byte) {
 	if !bytes.Contains(out.Buffer.Bytes(), byteSlice) {
-		out.T.Errorf("did not contain %s", byteSlice)
+		out.T.Errorf("did not contain %q", byteSlice)
+	}
+}
+
+// ShouldContainString fails the test if the output does not contain s.
+func (out TestOutput) ShouldContainString(s string) {
+	if !strings.Contains(out.Buffer.String(), s) {
+		out.T.Errorf("did not contain %q", s)
 	}
 }
 

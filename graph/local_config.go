@@ -45,15 +45,23 @@ func newSousConfig(lsc LocalSousConfig) *config.Config {
 
 var printConfigWarningOnce sync.Once
 
-func newPossiblyInvalidLocalSousConfig(u config.LocalUser,
-	defaultConfig DefaultConfig, gcl *ConfigLoader, stderr ErrWriter) (PossiblyInvalidConfig, error) {
+// RawConfig is a config.Config that's been read from disk but not validated.
+type RawConfig PossiblyInvalidConfig
+
+func newRawConfig(u config.LocalUser,
+	defaultConfig DefaultConfig, gcl *ConfigLoader) (RawConfig, error) {
 	v, err := newPossiblyInvalidConfig(u.ConfigFile(), defaultConfig, gcl)
+	return RawConfig(v), initErr(err, "reading config file")
+}
+
+func newPossiblyInvalidLocalSousConfig(raw RawConfig, stderr ErrWriter) PossiblyInvalidConfig {
+	v := PossiblyInvalidConfig(raw)
 	if err := v.Validate(); err != nil {
 		printConfigWarningOnce.Do(func() {
 			fmt.Fprintf(stderr, "WARNING: Invalid configuration: %s\n", err)
 		})
 	}
-	return v, initErr(err, "getting configuration")
+	return v
 }
 
 func newLocalSousConfig(pic PossiblyInvalidConfig) (v LocalSousConfig, err error) {

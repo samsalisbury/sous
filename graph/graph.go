@@ -197,8 +197,9 @@ func AddFilesystem(graph adder) {
 func AddConfig(graph adder) {
 	c := config.DefaultConfig()
 	graph.Add(
-		newPossiblyInvalidLocalSousConfig,
 		DefaultConfig{&c},
+		newRawConfig,
+		newPossiblyInvalidLocalSousConfig,
 		newLocalSousConfig,
 		newVerbosity,
 		newSousConfig,

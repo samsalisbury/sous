@@ -65,7 +65,7 @@ func TestSousConfig_invalidConfig(t *testing.T) {
 
 	defer term.PrintFailureSummary()
 
-	testConfig := graph.PossiblyInvalidConfig{}
+	testConfig := graph.RawConfig{}
 	if err := term.Graph.Realise(&testConfig); err != nil {
 		t.Fatal(err)
 	}
@@ -84,5 +84,6 @@ func TestSousConfig_invalidConfig(t *testing.T) {
 	}
 	term.Stdout.ShouldContain(yamlConfig)
 
-	term.Stderr.ShouldBeEmpty()
+	const configWarning = `WARNING: Invalid configuration: Config.Server: URL "not a valid URL" must begin with http:// or https://`
+	term.Stderr.ShouldContainString(configWarning)
 }
