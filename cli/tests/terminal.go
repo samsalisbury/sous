@@ -10,6 +10,7 @@ import (
 
 	"github.com/opentable/sous/cli"
 	"github.com/opentable/sous/graph"
+	"github.com/samsalisbury/psyringe"
 	"github.com/samsalisbury/semv"
 	"github.com/xrash/smetrics"
 )
@@ -22,6 +23,7 @@ type (
 		Stdout, Stderr, Combined TestOutput
 		History                  []string
 		T                        *testing.T
+		Graph                    psyringe.TestPsyringe
 	}
 	// TestOutput allows inspection of output streams from the Terminal.
 	TestOutput struct {
@@ -49,7 +51,16 @@ func NewTerminal(t *testing.T, vstr string) *Terminal {
 		panic(er)
 	}
 
-	return &Terminal{c, baseout, baseerr, combined, []string{}, t}
+	testGraph := psyringe.TestPsyringe{Psyringe: di.Psyringe}
+	return &Terminal{
+		CLI:      c,
+		Stdout:   baseout,
+		Stderr:   baseerr,
+		Combined: combined,
+		History:  []string{},
+		T:        t,
+		Graph:    testGraph,
+	}
 }
 
 // RunCommand takes a command line, turns it into args, and passes it to a CLI
@@ -116,6 +127,27 @@ func (out TestOutput) HasLineMatching(s string) bool {
 		}
 	}
 	return false
+}
+
+// ShouldBeEmpty fails the test if the output is not empty.
+func (out TestOutput) ShouldBeEmpty() {
+	if out.Buffer.Len() != 0 {
+		out.T.Errorf("got length %d; want 0", out.Buffer.Len())
+	}
+}
+
+// ShouldContain fails the test if the output does not contain byteSlice.
+func (out TestOutput) ShouldContain(byteSlice []byte) {
+	if !bytes.Contains(out.Buffer.Bytes(), byteSlice) {
+		out.T.Errorf("did not contain %q", byteSlice)
+	}
+}
+
+// ShouldContainString fails the test if the output does not contain s.
+func (out TestOutput) ShouldContainString(s string) {
+	if !strings.Contains(out.Buffer.String(), s) {
+		out.T.Errorf("did not contain %q", s)
+	}
 }
 
 // ShouldHaveExactLine fails the test if the output did not contain the line s.

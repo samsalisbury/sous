@@ -40,13 +40,16 @@ func TestGraphWithConfig(v semv.Version, in io.Reader, out, err io.Writer, cfg s
 
 	graph := BuildGraph(v, in, out, err)
 
+	// Add missing stuff to the graph (these are things that come from early
+	// initialization in main.go.
+	graph.Add(func() logging.LogSink {
+		return logging.SilentLogSet()
+	})
+
 	// testGraph methods affect graph as well.
 	testGraph := psyringe.TestPsyringe{Psyringe: graph.Psyringe}
 
 	// Replace things from the real graph.
-	testGraph.Add(func() logging.LogSink {
-		return logging.SilentLogSet()
-	})
 	testGraph.Replace(logging.SilentLogSet())
 	testGraph.Replace(sous.User{Name: "Test User", Email: "testuser@example.com"})
 	testGraph.Replace(NewTestConfigLoader)

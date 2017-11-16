@@ -47,8 +47,8 @@ func (suite integrationServerTests) prepare() http.Handler {
 	storage.PrepareTestGitRepo(suite.T(), s, remotepath, outpath)
 
 	g := graph.TestGraphWithConfig(semv.Version{}, &bytes.Buffer{}, os.Stdout, os.Stdout, "StateLocation: '"+outpath+"'\n")
-	g.Add(&config.Verbosity{})
 	g.Add(&config.DeployFilterFlags{})
+	g.Add(graph.VerbosityOverride{})
 	g.Add(graph.DryrunBoth)
 
 	/*

@@ -16,7 +16,6 @@ import (
 	"github.com/opentable/sous/ext/storage"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/server"
-	"github.com/opentable/sous/util/cmdr"
 	"github.com/opentable/sous/util/docker_registry"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
@@ -27,23 +26,12 @@ import (
 )
 
 type (
-	// Out is an output used for real data a Command returns. This should only
-	// be used when a command needs to write directly to stdout, using the
-	// formatting options that come with an output. Usually, you should use a
-	// SuccessResult with Data to return data.
-	Out struct{ *cmdr.Output }
-	// ErrOut is an output used for logging from a Command. This should only be
-	// used when a Command needs to write a lot of data to stderr, using the
-	// formatting options that come with and Output. Usually you should use and
-	// ErrorResult to return error messages.
-	ErrOut struct{ *cmdr.Output }
 	// SousGraph is a dependency injector used to flesh out Sous commands
 	// with their dependencies.
 	SousGraph struct {
 		addGuards map[string]bool
 		*psyringe.Psyringe
 	}
-
 	// OutWriter is typically set to os.Stdout.
 	OutWriter io.Writer
 	// ErrWriter is typically set to os.Stderr.
@@ -55,8 +43,6 @@ type (
 	StatusWaitStable bool
 	// ProfilingServer records whether a profiling server was requested
 	ProfilingServer bool
-
-	// XXX one at a time, unexport all these wrapper types
 
 	// LocalSousConfig is the configuration for Sous.
 	LocalSousConfig struct{ *config.Config }
@@ -130,8 +116,8 @@ const (
 
 // BuildGraph builds the dependency injection graph, used to populate commands
 // invoked by the user.
-func BuildGraph(vrsn semv.Version, in io.Reader, out, err io.Writer) *SousGraph {
-	graph := BuildBaseGraph(vrsn, in, out, err)
+func BuildGraph(v semv.Version, in io.Reader, out, err io.Writer) *SousGraph {
+	graph := BuildBaseGraph(v, in, out, err)
 	AddFilesystem(graph)
 	AddNetwork(graph)
 	AddState(graph)
@@ -151,12 +137,10 @@ func newSousGraph() *SousGraph {
 }
 
 // BuildBaseGraph constructs a graph with essentials - intended for testing
-func BuildBaseGraph(vrsn semv.Version, in io.Reader, out, err io.Writer) *SousGraph {
+func BuildBaseGraph(version semv.Version, in io.Reader, out, err io.Writer) *SousGraph {
 	graph := newSousGraph()
-	// stdout, stderr
 	graph.Add(
-		vrsn,
-		//ls,
+		version,
 		func() InReader { return in },
 		func() OutWriter { return out },
 		func() ErrWriter { return err },
@@ -213,9 +197,11 @@ func AddFilesystem(graph adder) {
 func AddConfig(graph adder) {
 	c := config.DefaultConfig()
 	graph.Add(
-		newPossiblyInvalidLocalSousConfig,
 		DefaultConfig{&c},
+		newRawConfig,
+		newPossiblyInvalidLocalSousConfig,
 		newLocalSousConfig,
+		newVerbosity,
 		newSousConfig,
 		newLocalWorkDir,
 	)
@@ -319,14 +305,16 @@ func newRegistryDumper(r sous.Registry) *sous.RegistryDumper {
 //
 // If handed invalid config, we emit a warning on stderr and proceed with a
 // default LogSet.
-func newLogSet(v semv.Version, config PossiblyInvalidConfig) (*logging.LogSet, error) {
+func newLogSet(v semv.Version, config PossiblyInvalidConfig, verb *config.Verbosity) (*logging.LogSet, error) {
 	ls := logging.NewLogSet(v, "", "", os.Stderr)
 	if configErr := config.Logging.Validate(); configErr != nil {
-		// Direct print to stderr to make sure this gets printed in spite of any
-		// other issues with logging.
-		defer fmt.Fprintf(os.Stderr, "WARNING: Invalid configuration: %s\n", configErr)
+		// No need to warn here, this is handled by PIC constructor.
 		config.Logging = logging.Config{}
 	}
+
+	verbosityLoggingConfig := verb.LoggingConfiguration()
+	config.Logging.Basic.Level = verbosityLoggingConfig.Basic.Level
+
 	if err := ls.Configure(config.Logging); err != nil {
 		return ls, initErr(err, "validating logging configuration")
 	}
@@ -339,7 +327,6 @@ func newLogSet(v semv.Version, config PossiblyInvalidConfig) (*logging.LogSet, e
 func newLogSink(v *config.Verbosity, set *logging.LogSet) LogSink {
 	set.Configure(v.LoggingConfiguration())
 
-	//logging.Log.Warn.Println("Normal output enabled")
 	set.Info("Info debugging enabled")
 	set.Vomitf("Verbose debugging enabled")
 	set.Debugf("Regular debugging enabled")
@@ -460,8 +447,6 @@ func newLocalWorkDirShell(verbosity *config.Verbosity, l LocalWorkDir) (v LocalW
 	v.Sh, err = shell.DefaultInDir(string(l))
 	v.TeeEcho = os.Stdout //XXX should use a writer
 	v.Sh.Debug = verbosity.Debug
-	//v.TeeOut = os.Stdout
-	//v.TeeErr = os.Stderr
 	return v, initErr(err, "getting current working directory")
 }
 

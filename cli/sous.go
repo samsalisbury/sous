@@ -12,8 +12,6 @@ type Sous struct {
 	// CLI is a reference to the CLI singleton.
 	CLI *CLI
 	graph.LogSink
-	// Err is the error message stream.
-	Err *graph.ErrOut `inject:"optional"`
 	// Version is the version of Sous itself.
 	Version semv.Version
 	// OS is the OS this Sous is running on.

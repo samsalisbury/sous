@@ -11,6 +11,12 @@ with respect to its command line interface and HTTP interface.
 * CLI: Quieter output for local operators. Previously many log messages were
   emitted to stderr which made CLI use difficult due to information overload.
 
+### Fixed
+* CLI: -s -q -v and -d (silent, quiet, verbose, and debug) flags now set the
+  logging level appropriately. You'll now see a lot more output when using
+  -d and -v flags, and only critical errors from -s, critical and console output
+  from -q.
+
 ## [0.5.54](//github.com/opentable/sous/compare/0.5.53...0.5.54)
 ### Added
 * All: a Schedule field on Manifests, which should publish to Singularity to allow for scheduled tasks.

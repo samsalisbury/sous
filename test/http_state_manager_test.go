@@ -83,9 +83,9 @@ func TestWriteState(t *testing.T) {
 		func() *graph.ServerStateManager { return &graph.ServerStateManager{StateManager: &sm} },
 		func() *graph.ConfigLoader { return graph.NewTestConfigLoader("") },
 	)
-	di.Add(&config.Verbosity{})
 
 	serverScoop := struct{ Handler graph.ServerHandler }{}
+	di.Add(graph.VerbosityOverride{})
 	di.MustInject(&serverScoop)
 	if serverScoop.Handler.Handler == nil {
 		t.Fatalf("Didn't inject http.Handler!")

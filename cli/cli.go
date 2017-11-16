@@ -72,12 +72,6 @@ func SuccessYAML(v interface{}) cmdr.Result {
 func buildCLIGraph(root *Sous, cli *CLI, g *graph.SousGraph, out, err io.Writer) *graph.SousGraph {
 	g.Add(cli)
 	g.Add(root)
-	g.Add(func(c *CLI) graph.Out {
-		return graph.Out{Output: c.Out}
-	})
-	g.Add(func(c *CLI) graph.ErrOut {
-		return graph.ErrOut{Output: c.Err}
-	})
 	return g
 }
 
@@ -114,16 +108,7 @@ func NewSousCLI(di *graph.SousGraph, s *Sous, out, errout io.Writer) (*CLI, erro
 		// this.
 		HelpCommand: os.Args[0] + " help",
 		GlobalFlagSetFuncs: []func(*flag.FlagSet){
-			func(fs *flag.FlagSet) {
-				fs.BoolVar(&verbosity.Silent, "s", false,
-					"silent: silence all non-essential output")
-				fs.BoolVar(&verbosity.Quiet, "q", false,
-					"quiet: output only essential error messages")
-				fs.BoolVar(&verbosity.Loud, "v", false,
-					"loud: output extra info, including all shell commands")
-				fs.BoolVar(&verbosity.Debug, "d", false,
-					"debug: output detailed logs of internal operations")
-			},
+			AddVerbosityFlags(&verbosity),
 		},
 	}
 
@@ -133,7 +118,17 @@ func NewSousCLI(di *graph.SousGraph, s *Sous, out, errout io.Writer) (*CLI, erro
 
 	cli.Hooks.Parsed = func(cmd cmdr.Command) error {
 		addVerbosityOnce.Do(func() {
-			cli.graph.Add(&verbosity)
+			if verbosity.Silent ||
+				verbosity.Quiet ||
+				verbosity.Loud ||
+				verbosity.Debug {
+				cli.graph.Add(graph.VerbosityOverride{
+					Overridden: true,
+					Value:      &verbosity,
+				})
+			} else {
+				cli.graph.Add(graph.VerbosityOverride{})
+			}
 		})
 		if registrant, ok := cmd.(Registrant); ok {
 			registrant.RegisterOn(cli.graph)
