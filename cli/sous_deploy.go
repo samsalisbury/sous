@@ -49,14 +49,20 @@ func (sd *SousDeploy) AddFlags(fs *flag.FlagSet) {
 // Execute fulfills the cmdr.Executor interface.
 func (sd *SousDeploy) Execute(args []string) cmdr.Result {
 	//func GetUpdate(di injector, dff config.DeployFilterFlags, otpl config.OTPLFlags) Action {
-	update := sd.SousGraph.GetUpdate(sd.DeployFilterFlags, sd.OTPLFlags)
+	update, err := sd.SousGraph.GetUpdate(sd.DeployFilterFlags, sd.OTPLFlags)
+	if err != nil {
+		return cmdr.EnsureErrorResult(err)
+	}
 	if err := update.Do(); err != nil {
 		return cmdr.EnsureErrorResult(err)
 	}
 
 	// Running serverless, so run rectify.
 	if sd.Config.Server == "" {
-		rectify := sd.SousGraph.GetRectify(sd.dryrunOption, sd.DeployFilterFlags)
+		rectify, err := sd.SousGraph.GetRectify(sd.dryrunOption, sd.DeployFilterFlags)
+		if err != nil {
+			return cmdr.EnsureErrorResult(err)
+		}
 		if err := rectify.Do(); err != nil {
 			return cmdr.EnsureErrorResult(err)
 		}
@@ -66,7 +72,10 @@ func (sd *SousDeploy) Execute(args []string) cmdr.Result {
 	if sd.waitStable {
 		fmt.Fprintf(sd.CLI.Out, "Waiting for server to report that deploy has stabilized...\n")
 
-		poll := sd.SousGraph.GetPollStatus(sd.dryrunOption, sd.DeployFilterFlags)
+		poll, err := sd.SousGraph.GetPollStatus(sd.dryrunOption, sd.DeployFilterFlags)
+		if err != nil {
+			return cmdr.EnsureErrorResult(err)
+		}
 		if err := poll.Do(); err != nil {
 			return cmdr.EnsureErrorResult(err)
 		}

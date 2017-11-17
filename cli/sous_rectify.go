@@ -70,7 +70,10 @@ func (sr *SousRectify) Execute(args []string) cmdr.Result {
 			"(Or -all if you really mean to rectify the whole world; see 'sous help rectify'.)")
 	}
 
-	rectify := sr.SousGraph.GetRectify(sr.dryrun, sr.DeployFilterFlags)
+	rectify, err := sr.SousGraph.GetRectify(sr.dryrun, sr.DeployFilterFlags)
+	if err != nil {
+		return cmdr.EnsureErrorResult(err)
+	}
 
 	if err := rectify.Do(); err != nil {
 		return EnsureErrorResult(err)
