@@ -13,8 +13,8 @@ type (
 	Resolver struct {
 		Deployer Deployer
 		Registry Registry
-		*ResolveFilter
-		ls logging.LogSink
+		Filter   *ResolveFilter
+		ls       logging.LogSink
 	}
 
 	// DeploymentPredicate takes a *Deployment and returns true if the
@@ -26,10 +26,10 @@ type (
 // NewResolver creates a new Resolver.
 func NewResolver(d Deployer, r Registry, rf *ResolveFilter, ls logging.LogSink) *Resolver {
 	return &Resolver{
-		Deployer:      d,
-		Registry:      r,
-		ResolveFilter: rf,
-		ls:            ls,
+		Deployer: d,
+		Registry: r,
+		Filter:   rf,
+		ls:       ls,
 	}
 }
 
@@ -73,7 +73,7 @@ func (r *Resolver) reportStable(stable <-chan *DeployablePair, results chan<- Di
 // the actual set, compute the diffs and then issue the commands to rectify
 // those differences.
 func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveRecorder {
-	intended = intended.Filter(r.FilterDeployment)
+	intended = intended.Filter(r.Filter.FilterDeployment)
 
 	return NewResolveRecorder(intended, func(recorder *ResolveRecorder) {
 		var actual DeployStates
@@ -81,7 +81,7 @@ func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveRecord
 		var logger *DeployableChans
 
 		recorder.performGuaranteedPhase("filtering clusters", func() {
-			clusters = r.FilteredClusters(clusters)
+			clusters = r.Filter.FilteredClusters(clusters)
 		})
 
 		recorder.performPhase("getting running deployments", func() error {
@@ -91,7 +91,7 @@ func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveRecord
 		})
 
 		recorder.performGuaranteedPhase("filtering running deployments", func() {
-			actual = actual.Filter(r.FilterDeployStates)
+			actual = actual.Filter(r.Filter.FilterDeployStates)
 		})
 
 		recorder.performGuaranteedPhase("generating diff", func() {

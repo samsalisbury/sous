@@ -65,8 +65,8 @@ func TestActionRectify(t *testing.T) {
 
 	assert.NotNil(t, rect.State)
 	require.NotNil(t, rect.Resolver)
-	require.NotNil(t, rect.Resolver.ResolveFilter)
-	assert.Equal(t, rect.Resolver.ResolveFilter.All(), false)
+	require.NotNil(t, rect.Resolver.Filter)
+	assert.Equal(t, rect.Resolver.Filter.All(), false)
 }
 
 func TestActionRectifyDryruns(t *testing.T) {
