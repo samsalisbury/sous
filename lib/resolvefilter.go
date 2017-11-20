@@ -26,6 +26,17 @@ type (
 	}
 )
 
+// SingleDeploymentResolveFilter returns a filter that matches exactly the
+// DeploymentID id.
+func SingleDeploymentResolveFilter(id DeploymentID) *ResolveFilter {
+	return &ResolveFilter{
+		Repo:    NewResolveFieldMatcher(id.ManifestID.Source.Repo),
+		Offset:  NewResolveFieldMatcher(id.ManifestID.Source.Dir),
+		Flavor:  NewResolveFieldMatcher(id.ManifestID.Flavor),
+		Cluster: NewResolveFieldMatcher(id.Cluster),
+	}
+}
+
 // NewResolveFieldMatcher wraps a string in a ResolveFieldMatcher that matches that string.
 func NewResolveFieldMatcher(match string) ResolveFieldMatcher {
 	return ResolveFieldMatcher{Match: &match}
