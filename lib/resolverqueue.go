@@ -67,7 +67,15 @@ func NewResolverQueue(sr StateReader, d Deployer, r Registry, rf *ResolveFilter,
 	}
 }
 
-// Start begins reading state and rectifying each deployment.
+const (
+	// BackgroundPriority is the default priority for every item in a new
+	// ResolverQueue. Higher priority resolvers are dealt with before lower
+	// priority ones. Those with equal priority are dealt with FIFO.
+	BackgroundPriority int = 100
+)
+
+// Start begins reading state and starts the main loop, rectifying the top
+// r.MaxConcurrentResolvers at a time.
 func (r *ResolverQueue) Start() error {
 	r.Lock()
 	defer r.Unlock()
@@ -78,18 +86,58 @@ func (r *ResolverQueue) Start() error {
 	r.queue = make([]*SingleDeployResolver, intended.Len())
 	var i int
 	for id, d := range intended.Snapshot() {
-		filter := SingleDeploymentResolveFilter(id)
-		resolver := NewResolver(r.deployer, r.registry, filter, r.logSet)
-		r.queue[i] = &SingleDeployResolver{
-			Priority:     100,
-			DeploymentID: id,
-			Intended:     d,
-			Resolver:     resolver,
-			RWMutex:      &sync.RWMutex{},
-		}
+		r.queue[i] = r.newSingleDeploymentResolver(id, d, BackgroundPriority)
 	}
 	go r.mainLoop()
 	return nil
+}
+
+// Enqueue queues up a new SingleDeployResolver targeted at id with the
+// specified priority. If there is already an enqueued SingleDeployResolver for
+// this DeploymentID, it is replaced with a new one (reading the state again to
+// get the latest intention) with the priority specified.
+func (r *ResolverQueue) Enqueue(id DeploymentID, priority int) (intended *Deployment, err error) {
+	r.Lock()
+	defer r.Unlock()
+	intended, ok, err := r.intendedSingleDeployment(id)
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		return nil, fmt.Errorf("no intended deployment with id %q", id)
+	}
+	newSDR := r.newSingleDeploymentResolver(id, intended, priority)
+	for i, sdr := range r.queue {
+		if sdr.DeploymentID == id {
+			*sdr = *newSDR
+			heap.Fix(r, i)
+			return intended, nil
+		}
+	}
+	r.queue = append(r.queue, newSDR)
+	heap.Fix(r, len(r.queue)-1)
+	return intended, nil
+}
+
+func (r *ResolverQueue) intendedSingleDeployment(id DeploymentID) (*Deployment, bool, error) {
+	intended, err := r.intended()
+	if err != nil {
+		return nil, false, err
+	}
+	d, ok := intended.Get(id)
+	return d, ok, nil
+}
+
+func (r *ResolverQueue) newSingleDeploymentResolver(id DeploymentID, d *Deployment, priority int) *SingleDeployResolver {
+	filter := SingleDeploymentResolveFilter(id)
+	resolver := NewResolver(r.deployer, r.registry, filter, r.logSet)
+	return &SingleDeployResolver{
+		Priority:     priority,
+		DeploymentID: id,
+		Intended:     d,
+		Resolver:     resolver,
+		RWMutex:      &sync.RWMutex{},
+	}
 }
 
 func (r *ResolverQueue) mainLoop() {
