@@ -349,6 +349,16 @@ func (ls LogSet) imposeLevel() {
 	}
 }
 
+// BeSilent not only sets the log level to Error,
+// it also sets console output to Discard
+//.Note that as implemented, console output cannot be recovered -
+// it's assumed that BeSilent will be called once per execution.
+func (ls LogSet) BeSilent() {
+	ls.level = 0
+	ls.imposeLevel()
+	ls.dumpBundle.err = ioutil.Discard
+}
+
 // BeQuiet gets the LogSet to discard all its output
 func (ls LogSet) BeQuiet() {
 	ls.level = 0

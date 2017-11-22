@@ -325,7 +325,8 @@ func newLogSet(v semv.Version, config PossiblyInvalidConfig, verb *config.Verbos
 }
 
 func newLogSink(v *config.Verbosity, set *logging.LogSet) LogSink {
-	set.Configure(v.LoggingConfiguration())
+	//set.Configure(v.LoggingConfiguration())
+	v.UpdateLevel(set)
 
 	set.Info("Info debugging enabled")
 	set.Vomitf("Verbose debugging enabled")

@@ -255,7 +255,7 @@ func AssertConfiguration(ls *LogSet, graphiteURL string) error {
 	if ls.dumpBundle.graphiteConfig == nil {
 		return fmt.Errorf("graphiteConfig is nil!")
 	}
-	if ls.dumpBundle.graphiteConfig.Addr != addr {
+	if ls.dumpBundle.graphiteConfig.Addr.String() != addr.String() {
 		return fmt.Errorf("Graphite URL was %q not %q(%s)", ls.dumpBundle.graphiteConfig.Addr, addr, graphiteURL)
 	}
 	return nil

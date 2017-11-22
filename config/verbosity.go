@@ -27,6 +27,21 @@ func (v Verbosity) LoggingConfiguration() logging.Config {
 	return cfg
 }
 
+func (v Verbosity) UpdateLevel(set *logging.LogSet) {
+	switch {
+	default:
+		// do nothing - if no flag provided, keep configured levels
+	case v.Silent:
+		set.BeSilent()
+	case v.Quiet:
+		set.BeQuiet()
+	case v.Loud:
+		set.BeChatty()
+	case v.Debug:
+		set.BeHelpful()
+	}
+}
+
 // LoggingConfigurationToVerbosity is the inverse of
 // Verbosity.LoggingConfiguration.
 func LoggingConfigurationToVerbosity(c logging.Config) *Verbosity {
