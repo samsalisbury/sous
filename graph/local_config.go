@@ -48,8 +48,7 @@ var printConfigWarningOnce sync.Once
 // RawConfig is a config.Config that's been read from disk but not validated.
 type RawConfig PossiblyInvalidConfig
 
-func newRawConfig(u config.LocalUser,
-	defaultConfig DefaultConfig, gcl *ConfigLoader) (RawConfig, error) {
+func newRawConfig(u config.LocalUser, defaultConfig DefaultConfig, gcl *ConfigLoader) (RawConfig, error) {
 	v, err := newPossiblyInvalidConfig(u.ConfigFile(), defaultConfig, gcl)
 	return RawConfig(v), initErr(err, "reading config file")
 }

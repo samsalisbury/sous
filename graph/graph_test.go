@@ -11,6 +11,7 @@ import (
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/shell"
+	"github.com/samsalisbury/psyringe"
 	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -56,8 +57,42 @@ func TestBuildGraph(t *testing.T) {
 	if err := g.Test(); err != nil {
 		t.Fatalf("unexpected error: %s", err)
 	}
+}
+
+func TestLogSink(t *testing.T) {
+	log.SetFlags(log.Flags() | log.Lshortfile)
+	g := BuildGraph(semv.MustParse("0.0.0"), &bytes.Buffer{}, ioutil.Discard, ioutil.Discard)
+	g.Add(DryrunBoth)
+	g.Add(VerbosityOverride{})
+	g.Add(&config.DeployFilterFlags{})
+	g.Add(&config.PolicyFlags{}) //provided by SousBuild
+	g.Add(&config.OTPLFlags{})   //provided by SousInit and SousDeploy
+
+	tg := &psyringe.TestPsyringe{g.Psyringe}
+	rawConfig := RawConfig{Config: &config.Config{}}
+	rawConfig.Config.Logging.Graphite.Server = "graphite-server.example.com"
+	tg.Replace(rawConfig)
+	/*
+		tg.Replace(VerbosityOverride{
+			Overridden: true,
+			Value: &config.Verbosity{
+				Loud:  true,
+				Debug: true,
+			},
+		})
+	*/
+
+	scoop := struct{ LogSink }{}
+
+	tg.MustInject(&scoop)
+
+	set, is := scoop.LogSink.LogSink.(*logging.LogSet)
+
+	assert.True(t, is)
+	assert.NoError(t, logging.AssertConfiguration(set, "graphite-server.example.com"))
 
 }
+
 func injectedStateManager(t *testing.T, cfg *config.Config) *StateManager {
 	g := newSousGraph()
 	g.Add(newUser)

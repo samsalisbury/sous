@@ -241,3 +241,11 @@ func AssertMessageFields(t *testing.T, msg eachFielder, variableFields []string,
 		}
 	}
 }
+
+// AssertConfiguration is a testing method - it allows us to test that certain configuration values are as expected.
+func AssertConfiguration(ls *LogSet, graphiteURL string) error {
+	if ls.dumpBundle.liveConfig.Graphite.Server != graphiteURL {
+		return fmt.Errorf("Graphite URL was %q not %q", ls.dumpBundle.liveConfig.Graphite.Server, graphiteURL)
+	}
+	return nil
+}
