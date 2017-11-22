@@ -3,6 +3,7 @@ package logging
 import (
 	"fmt"
 	"io/ioutil"
+	"net"
 	"testing"
 	"time"
 
@@ -244,8 +245,18 @@ func AssertMessageFields(t *testing.T, msg eachFielder, variableFields []string,
 
 // AssertConfiguration is a testing method - it allows us to test that certain configuration values are as expected.
 func AssertConfiguration(ls *LogSet, graphiteURL string) error {
-	if ls.dumpBundle.liveConfig.Graphite.Server != graphiteURL {
-		return fmt.Errorf("Graphite URL was %q not %q", ls.dumpBundle.liveConfig.Graphite.Server, graphiteURL)
+	addr, err := net.ResolveTCPAddr("tcp", graphiteURL)
+	if err != nil {
+		return err
+	}
+	if ls.dumpBundle == nil {
+		return fmt.Errorf("dumpBundle is nil!")
+	}
+	if ls.dumpBundle.graphiteConfig == nil {
+		return fmt.Errorf("graphiteConfig is nil!")
+	}
+	if ls.dumpBundle.graphiteConfig.Addr != addr {
+		return fmt.Errorf("Graphite URL was %q not %q(%s)", ls.dumpBundle.graphiteConfig.Addr, addr, graphiteURL)
 	}
 	return nil
 }

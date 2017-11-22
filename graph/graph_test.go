@@ -70,7 +70,15 @@ func TestLogSink(t *testing.T) {
 
 	tg := &psyringe.TestPsyringe{g.Psyringe}
 	rawConfig := RawConfig{Config: &config.Config{}}
-	rawConfig.Config.Logging.Graphite.Server = "graphite-server.example.com"
+	logcfg := &rawConfig.Config.Logging
+	logcfg.Basic.Level = "debug"
+	//logcfg.Kafka.Enabled = true
+	logcfg.Kafka.DefaultLevel = "debug"
+	logcfg.Kafka.Topic = "logging"
+	logcfg.Kafka.BrokerList = "kafka.example.com:9292"
+	logcfg.Graphite.Enabled = true
+	logcfg.Graphite.Server = "localhost:3333"
+
 	tg.Replace(rawConfig)
 	/*
 		tg.Replace(VerbosityOverride{
@@ -89,7 +97,7 @@ func TestLogSink(t *testing.T) {
 	set, is := scoop.LogSink.LogSink.(*logging.LogSet)
 
 	assert.True(t, is)
-	assert.NoError(t, logging.AssertConfiguration(set, "graphite-server.example.com"))
+	assert.NoError(t, logging.AssertConfiguration(set, "localhost:3333"))
 
 }
 

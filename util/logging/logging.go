@@ -42,6 +42,7 @@ type (
 		liveConfig      *Config
 		kafkaSink       *kafkaSink
 		graphiteCancel  func()
+		graphiteConfig  *graphite.Config
 	}
 
 	// A temporary type until we can stop using the LogSet loggers directly
@@ -255,6 +256,7 @@ func (ls LogSet) configureGraphite(cfg Config) error {
 
 	}
 	reportGraphiteConfig(gCfg, ls)
+	ls.dumpBundle.graphiteConfig = gCfg
 
 	gCtx, cancel := context.WithCancel(ls.context)
 
