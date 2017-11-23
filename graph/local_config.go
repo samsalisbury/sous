@@ -30,13 +30,6 @@ type (
 
 	// ConfigLoader wraps the configloader.ConfigLoader interface
 	ConfigLoader struct{ configloader.ConfigLoader }
-
-	// VerbosityOverride indicates if verbosity has been overridden by CLI
-	// flags, and if so to what verbosity.
-	VerbosityOverride struct {
-		Overridden bool
-		Value      *config.Verbosity
-	}
 )
 
 func newSousConfig(lsc LocalSousConfig) *config.Config {
@@ -48,8 +41,7 @@ var printConfigWarningOnce sync.Once
 // RawConfig is a config.Config that's been read from disk but not validated.
 type RawConfig PossiblyInvalidConfig
 
-func newRawConfig(u config.LocalUser,
-	defaultConfig DefaultConfig, gcl *ConfigLoader) (RawConfig, error) {
+func newRawConfig(u config.LocalUser, defaultConfig DefaultConfig, gcl *ConfigLoader) (RawConfig, error) {
 	v, err := newPossiblyInvalidConfig(u.ConfigFile(), defaultConfig, gcl)
 	return RawConfig(v), initErr(err, "reading config file")
 }
@@ -67,17 +59,6 @@ func newPossiblyInvalidLocalSousConfig(raw RawConfig, stderr ErrWriter) Possibly
 func newLocalSousConfig(pic PossiblyInvalidConfig) (v LocalSousConfig, err error) {
 	v.Config, err = pic.Config, pic.Validate()
 	return v, errors.Wrapf(err, "tip: run 'sous config' to see and manipulate your configuration")
-}
-
-func newVerbosity(pic PossiblyInvalidConfig, override VerbosityOverride) *config.Verbosity {
-	if override.Overridden {
-		return override.Value
-	}
-	if err := pic.Logging.Validate(); err != nil {
-		// No need to emit warning, that always happens now.
-		return &config.Verbosity{}
-	}
-	return config.LoggingConfigurationToVerbosity(pic.Logging)
 }
 
 func newConfigLoader() *ConfigLoader {

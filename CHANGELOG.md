@@ -10,6 +10,7 @@ with respect to its command line interface and HTTP interface.
 ### Fixed
 * CLI: No longer panics under normal operation (e.g. when trying to run 'sous deploy'
   outside of a git repo, or when server connection fails etc).
+* Both: Logging goes to Kafka and Graphite when configured to again.
 
 ## [0.5.55](//github.com/opentable/sous/compare/0.5.54...0.5.55)
 ### Changed

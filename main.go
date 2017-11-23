@@ -55,25 +55,14 @@ func action() int {
 
 	// Clone the graph so we can add early verbosity override from flags.
 	preParseGraph := &graph.SousGraph{Psyringe: mainGraph.Clone()}
-	preParseGraph.Add(earlyLoggingVerbosityOverride(os.Args))
+	preParseGraph.Add(earlyLoggingVerbosity(os.Args))
 	preParseLogSet, err := getLogSet(preParseGraph)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return InitializationFailedExitCode
 	}
 
-	defer func() {
-		// Gracefully shut down the logs created at initialization.
-		preParseLogSet.AtExit()
-		// Grab the LogSet used by the main graph to AtExit on that too.
-		// If we fail to get it here, don't worry as that means it was never
-		// instantiated by the main graph. This can happen if e.g. a bad flag
-		// is passed to the CLI which causes an exit prior to the Parsed event
-		// firing on the CLI.
-		if mainLogSet, err := getLogSet(mainGraph); err == nil {
-			mainLogSet.AtExit()
-		}
-	}()
+	defer cleanUpLogging(mainGraph, preParseLogSet)
 
 	c, err := cli.NewSousCLI(mainGraph, Sous, os.Stdout, os.Stderr)
 	if err != nil {
@@ -86,7 +75,20 @@ func action() int {
 	return c.Invoke(os.Args).ExitCode()
 }
 
-func earlyLoggingVerbosityOverride(cliArgs []string) graph.VerbosityOverride {
+func cleanUpLogging(mainGraph *graph.SousGraph, preParseLogSet *logging.LogSet) {
+	// Gracefully shut down the logs created at initialization.
+	preParseLogSet.AtExit()
+	// Grab the LogSet used by the main graph to AtExit on that too.
+	// If we fail to get it here, don't worry as that means it was never
+	// instantiated by the main graph. This can happen if e.g. a bad flag
+	// is passed to the CLI which causes an exit prior to the Parsed event
+	// firing on the CLI.
+	if mainLogSet, err := getLogSet(mainGraph); err == nil {
+		mainLogSet.AtExit()
+	}
+}
+
+func earlyLoggingVerbosity(cliArgs []string) *config.Verbosity {
 	// Filter out probable non-flag args.
 	flagArgs := []string{}
 	for _, arg := range cliArgs {
@@ -96,8 +98,8 @@ func earlyLoggingVerbosityOverride(cliArgs []string) graph.VerbosityOverride {
 	}
 	globalFS := flag.NewFlagSet("verbosity", flag.ContinueOnError)
 	globalFS.SetOutput(ioutil.Discard)
-	var verbosity config.Verbosity
-	cli.AddVerbosityFlags(&verbosity)(globalFS)
+	verbosity := &config.Verbosity{}
+	cli.AddVerbosityFlags(verbosity)(globalFS)
 	// Explicitly ignore this error because we expect there to be other flags
 	// that are not yet defined.
 	// This behaviour tested by https://play.golang.org/p/kEy-mtM3H0
@@ -110,16 +112,8 @@ func earlyLoggingVerbosityOverride(cliArgs []string) graph.VerbosityOverride {
 	// based on the result of that, which is therefore guaranteed to be
 	// as accurate as the FlagSet.Parse method.
 	_ = globalFS.Parse(flagArgs)
-	// Nothing was overridden by flags as verbosity == zero verbosity.
-	if (verbosity == config.Verbosity{}) {
-		// The zero verbosity override means we defer to config or defaults.
-		return graph.VerbosityOverride{}
-	}
-	// At least one verbosity flag was present, so verbosity is overridden.
-	return graph.VerbosityOverride{
-		Overridden: true,
-		Value:      &verbosity,
-	}
+
+	return verbosity
 }
 
 // handlePanic gives us one last chance to send a message to the user in case a

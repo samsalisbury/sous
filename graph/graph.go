@@ -201,7 +201,6 @@ func AddConfig(graph adder) {
 		newRawConfig,
 		newPossiblyInvalidLocalSousConfig,
 		newLocalSousConfig,
-		newVerbosity,
 		newSousConfig,
 		newLocalWorkDir,
 	)
@@ -305,15 +304,12 @@ func newRegistryDumper(r sous.Registry) *sous.RegistryDumper {
 //
 // If handed invalid config, we emit a warning on stderr and proceed with a
 // default LogSet.
-func newLogSet(v semv.Version, config PossiblyInvalidConfig, verb *config.Verbosity) (*logging.LogSet, error) {
+func newLogSet(v semv.Version, config PossiblyInvalidConfig) (*logging.LogSet, error) {
 	ls := logging.NewLogSet(v, "", "", os.Stderr)
 	if configErr := config.Logging.Validate(); configErr != nil {
 		// No need to warn here, this is handled by PIC constructor.
 		config.Logging = logging.Config{}
 	}
-
-	verbosityLoggingConfig := verb.LoggingConfiguration()
-	config.Logging.Basic.Level = verbosityLoggingConfig.Basic.Level
 
 	if err := ls.Configure(config.Logging); err != nil {
 		return ls, initErr(err, "validating logging configuration")
@@ -325,7 +321,8 @@ func newLogSet(v semv.Version, config PossiblyInvalidConfig, verb *config.Verbos
 }
 
 func newLogSink(v *config.Verbosity, set *logging.LogSet) LogSink {
-	set.Configure(v.LoggingConfiguration())
+	//set.Configure(v.LoggingConfiguration())
+	v.UpdateLevel(set)
 
 	set.Info("Info debugging enabled")
 	set.Vomitf("Verbose debugging enabled")

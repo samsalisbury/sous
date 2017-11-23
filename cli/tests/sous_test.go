@@ -1,7 +1,6 @@
 package tests
 
 import (
-	"log"
 	"testing"
 
 	"github.com/opentable/sous/config"
@@ -15,7 +14,7 @@ func TestSous(t *testing.T) {
 	// Invoke the CLI
 	term.RunCommand("sous")
 
-	log.Print(term.Stderr)
+	t.Log(term.Stderr)
 	term.Stdout.ShouldHaveNumLines(0)
 	term.Stderr.ShouldHaveNumLines(43)
 
