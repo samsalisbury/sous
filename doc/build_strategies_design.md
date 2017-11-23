@@ -99,19 +99,19 @@ see below.)
 
 We then `docker run` the built image with four mounted volumes:
 
-* `/input` for the source artifacts
+* `/input` for the source (i.e. code and other things checked into the repo)
 * `/vendor` for externally fetched dependencies
 * `/working` for intermediate products
 * `/output` for output products (e.g. jar files, directories, executables etc.)
 
-Sous is responsible for choosing
-the host directories to mount.
-The `/input` directory is mounted from the current Sous context.
-The `/output` directory will be a temporary directory created per build.
+Sous is responsible for making a copy of files from the current sous context,
+and copying them into the `/input` directory inside the container.
 
-The `/vendor` and `/working` directories will depend on invocation,
-but we anticipate them being under
-a Sous-specific subdirectory of
+The `/output` directory will be a temporary on the sous user's machine,
+mounted inside the container. A new `/output` dir will be created per build.
+
+The `/vendor` and `/working` directories will be mounted from the local filesystem,
+we anticipate them being under a Sous-specific subdirectory of
 `$XDG_DATA_HOME`
 or
 `$XDG_CACHE_HOME`
@@ -119,6 +119,7 @@ or
 `~/.local/share/sous`
 and
 `~/.cache/sous`.)
+
 Directories should be created for each unique project,
 although arguably the `/vendor` directory should
 be per build image,
@@ -161,25 +162,54 @@ A runspec looks like this:
 }
 ```
 
-Any number of objects can be in the `images` object.
+The `images` object is keyed by `offset` which corresponds to a subdirectory in the repo.
+The `images` object can therefore contain up to one item per subdirectory in the repo (recursively).
+Acceptable `offset` values include sub-sub-directories and so-forth, e.g.: `service` `src/service` `src/service/api` etc).
+
 Sous will convert this runspec into
-a series of synthetic dockerfiles like
+a series of synthetic Dockerfiles based on the runspec data, e.g.:
+
 ```Dockerfile
 FROM microsoft/aspnetcore:2.0
 COPY /srv /
 CMD ["dotnet", "/srv/service.dll"]
 ```
 
-and `build` them in the directory mounted on `/output`.
+It will `build` them in the directory mounted on `/output`.
+Note that at this point all compilation has taken place,
+and the 'build' should be merely a `COPY` operation.
+
 The resulting images will be labelled with Sous metadata,
 with the offset pulled from the name of the image object
 (in this case: `service`.)
 
 It is the responsibility of the build image
-and its client projects
-to coordinate their offset sub-projects.
-E.g. Maven projects have the idea of "submodules"
-which can be hooked on to define offset images.
+to produce at most one offset per subdirectory,
+and to determine which subdirectories represent runnable items.
+
+For example, Maven projects have the idea of "submodules"
+defined in their pom.xml file, which correspond to
+subdirectories. At present there is nothing inside the `pom.xml` that indicates
+if a particular module corresponds to a runnable/deployable artifact.
+We will need to solve this problem, some potential options are:
+
+1. Require that any deployable modules are first `sous init`ed and check for the existence
+   of a manifest for each.
+2. Require a file in the root of the source repo listing deployable offsets.
+3. Establish a rule that `pom.xml` files must add some metadata to the `modules` section about
+   which offsets are to be considered deployable. (Other ecosystems would need an equivalent
+   rule in this case.)
+
+> I (Sam) favour option 1 as that ensures that we have deployment configuration for these
+offsets as well, so that we can actually deploy them. 'sous init' needs to provide guidance
+about 'sous init'ing offsets, and 'sous build' / 'sous deploy' need to print very clear messages
+about each item they are building and deploying so that if any are missing they can be added
+by the user.
+
+> **Note** we could then allow recognising tags for differing offsets using tag prefixes to support
+versioning offsets differently where necessary. In the absence of prefixed-tags we could assume that
+the entire repo is versioned as one. We would probably need to be explicit about which model is 
+used in the 'project' definition in the GDM.
 
 ### Observations
 
