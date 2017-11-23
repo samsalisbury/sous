@@ -336,49 +336,54 @@ func (ls LogSet) Warnf(f string, as ...interface{}) {
 func (ls LogSet) imposeLevel() {
 	ls.logrus.SetLevel(logrus.ErrorLevel)
 
-	if ls.level >= 1 {
+	if ls.level >= WarningLevel {
 		ls.logrus.SetLevel(logrus.WarnLevel)
 	}
 
-	if ls.level >= 2 {
+	if ls.level >= DebugLevel {
 		ls.logrus.SetLevel(logrus.DebugLevel)
 	}
 
-	if ls.level >= 3 {
+	if ls.level >= ExtraDebug1Level {
 		ls.logrus.SetLevel(logrus.DebugLevel)
 	}
+}
+
+// GetLevel returns the current level of this LogSet
+func (ls LogSet) GetLevel() Level {
+	return ls.level
 }
 
 // BeSilent not only sets the log level to Error,
 // it also sets console output to Discard
 //.Note that as implemented, console output cannot be recovered -
 // it's assumed that BeSilent will be called once per execution.
-func (ls LogSet) BeSilent() {
+func (ls *LogSet) BeSilent() {
 	ls.level = 0
 	ls.imposeLevel()
 	ls.dumpBundle.err = ioutil.Discard
 }
 
 // BeQuiet gets the LogSet to discard all its output
-func (ls LogSet) BeQuiet() {
-	ls.level = 0
+func (ls *LogSet) BeQuiet() {
+	ls.level = CriticalLevel
 	ls.imposeLevel()
 }
 
 // BeTerse gets the LogSet to print debugging output
-func (ls LogSet) BeTerse() {
-	ls.level = 1
+func (ls *LogSet) BeTerse() {
+	ls.level = WarningLevel
 	ls.imposeLevel()
 }
 
 // BeHelpful gets the LogSet to print debugging output
-func (ls LogSet) BeHelpful() {
-	ls.level = 2
+func (ls *LogSet) BeHelpful() {
+	ls.level = DebugLevel
 	ls.imposeLevel()
 }
 
 // BeChatty gets the LogSet to print all its output - useful for temporary debugging
-func (ls LogSet) BeChatty() {
-	ls.level = 3
+func (ls *LogSet) BeChatty() {
+	ls.level = ExtraDebug1Level
 	ls.imposeLevel()
 }
