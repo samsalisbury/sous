@@ -6,11 +6,13 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
-## [Unreleased](//github.com/opentable/sous/compare/0.5.55...master)
+## [Unreleased](//github.com/opentable/sous/compare/0.5.56...master)
+
+## [0.5.56](//github.com/opentable/sous/compare/0.5.55...0.5.56)
 ### Fixed
 * CLI: No longer panics under normal operation (e.g. when trying to run 'sous deploy'
   outside of a git repo, or when server connection fails etc).
-* Both: Logging goes to Kafka and Graphite when configured to again.
+* CLI + Server: Logging goes to Kafka and Graphite when configured to again.
 
 ## [0.5.55](//github.com/opentable/sous/compare/0.5.54...0.5.55)
 ### Changed
