@@ -24,7 +24,7 @@ func fixtureDeployFilterFlags() config.DeployFilterFlags {
 
 func fixtureGraph() *SousGraph {
 	graph := DefaultTestGraph()
-	graph.Add(VerbosityOverride{})
+	graph.Add(&config.Verbosity{})
 	return graph
 }
 

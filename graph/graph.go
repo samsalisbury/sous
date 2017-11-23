@@ -201,7 +201,6 @@ func AddConfig(graph adder) {
 		newRawConfig,
 		newPossiblyInvalidLocalSousConfig,
 		newLocalSousConfig,
-		newVerbosity,
 		newSousConfig,
 		newLocalWorkDir,
 	)

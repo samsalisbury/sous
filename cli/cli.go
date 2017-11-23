@@ -94,7 +94,7 @@ func NewSousCLI(di *graph.SousGraph, s *Sous, out, errout io.Writer) (*CLI, erro
 	stdout := cmdr.NewOutput(out)
 	stderr := cmdr.NewOutput(errout)
 
-	var verbosity config.Verbosity
+	verbosity := &config.Verbosity{}
 
 	cli := &CLI{}
 
@@ -108,7 +108,7 @@ func NewSousCLI(di *graph.SousGraph, s *Sous, out, errout io.Writer) (*CLI, erro
 		// this.
 		HelpCommand: os.Args[0] + " help",
 		GlobalFlagSetFuncs: []func(*flag.FlagSet){
-			AddVerbosityFlags(&verbosity),
+			AddVerbosityFlags(verbosity),
 		},
 	}
 
@@ -118,17 +118,7 @@ func NewSousCLI(di *graph.SousGraph, s *Sous, out, errout io.Writer) (*CLI, erro
 
 	cli.Hooks.Parsed = func(cmd cmdr.Command) error {
 		addVerbosityOnce.Do(func() {
-			if verbosity.Silent ||
-				verbosity.Quiet ||
-				verbosity.Loud ||
-				verbosity.Debug {
-				cli.graph.Add(graph.VerbosityOverride{
-					Overridden: true,
-					Value:      &verbosity,
-				})
-			} else {
-				cli.graph.Add(graph.VerbosityOverride{})
-			}
+			cli.graph.Add(verbosity)
 		})
 		if registrant, ok := cmd.(Registrant); ok {
 			registrant.RegisterOn(cli.graph)

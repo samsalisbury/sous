@@ -85,7 +85,7 @@ func TestWriteState(t *testing.T) {
 	)
 
 	serverScoop := struct{ Handler graph.ServerHandler }{}
-	di.Add(graph.VerbosityOverride{})
+	di.Add(&config.Verbosity{})
 	di.MustInject(&serverScoop)
 	if serverScoop.Handler.Handler == nil {
 		t.Fatalf("Didn't inject http.Handler!")
