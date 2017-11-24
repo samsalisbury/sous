@@ -94,6 +94,9 @@ func (vs Volumes) Clone() Volumes {
 }
 
 func (d *Deployment) String() string {
+	if d == nil {
+		return "<nil>"
+	}
 	clusterName := "<unknown>"
 	if d.Cluster != nil {
 		clusterName = d.Cluster.Name
