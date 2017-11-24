@@ -153,3 +153,44 @@ func TestDigest(t *testing.T) {
 		t.Logf(tmpl, dStr, expected)
 	}
 }
+
+func TestDeployment_String(t *testing.T) {
+	// The key (name) of each test case looks roughly like what you would expect
+	// from fmt.Sprintf("%+v"). We do not use this since we are testing
+	// representations of the test case, so there is a possibility that doing
+	// this would beg the same question as the test and thus make output
+	// confusing.
+	testCases := map[string]struct {
+		in   *Deployment
+		want string
+	}{
+		// The nil test case is what inspired these tests as we had a panic
+		// during usage of 'sous deploy' because of it.
+		"nil": {
+			in:   nil,
+			want: "<nil>",
+		},
+		"&Deployment{}": {
+			in: &Deployment{},
+			// Current value of want reflects current reality.
+			// I think we can do better than this representation...
+			want: ",0.0.0 \"\" @ <unknown> #0 {false 0 0 0   0 <nil> 0 0 0} map[] : map[] []",
+		},
+	}
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			var recovered interface{}
+			var got string
+			func() {
+				defer func() { recovered = recover() }()
+				got = tc.in.String()
+			}()
+			if recovered != nil {
+				t.Errorf("panicked with %v", recovered)
+			}
+			if got != tc.want {
+				t.Errorf("got %q; want %q", got, tc.want)
+			}
+		})
+	}
+}
