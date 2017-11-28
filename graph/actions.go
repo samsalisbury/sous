@@ -1,9 +1,12 @@
 package graph
 
 import (
+	"os"
+
 	"github.com/opentable/sous/cli/actions"
 	"github.com/opentable/sous/config"
 	sous "github.com/opentable/sous/lib"
+	"github.com/samsalisbury/semv"
 )
 
 func (di *SousGraph) guardedAdd(guardName string, value interface{}) {
@@ -77,5 +80,39 @@ func (di *SousGraph) GetPollStatus(dryrun string, dff config.DeployFilterFlags) 
 
 	return &actions.PollStatus{
 		StatusPoller: scoop.StatusPoller,
+	}, nil
+}
+
+// GetServer returns the server action.
+func (di *SousGraph) GetServer(dff config.DeployFilterFlags, dryrun string, laddr string, gdmRepo string, profiling bool) (actions.Action, error) {
+	dff.Offset = "*"
+	dff.Flavor = "*"
+	profiling = profiling || os.Getenv("SOUS_PROFILING") == "enable"
+
+	di.guardedAdd("DeployFilterFlags", &dff)
+	di.guardedAdd("Dryrun", DryrunOption(dryrun))
+	di.guardedAdd("ProfilingServer", ProfilingServer(profiling))
+
+	scoop := struct {
+		Version       semv.Version
+		LogSink       LogSink
+		Config        *config.Config
+		ServerHandler ServerHandler
+		AutoResolver  *sous.AutoResolver
+	}{}
+
+	if err := di.Inject(&scoop); err != nil {
+		return nil, err
+	}
+
+	return &actions.Server{
+		DeployFilterFlags: dff,
+		GDMRepo:           gdmRepo,
+		ListenAddr:        laddr,
+		Version:           scoop.Version,
+		Log:               scoop.LogSink.LogSink,
+		Config:            scoop.Config,
+		ServerHandler:     scoop.ServerHandler.Handler,
+		AutoResolver:      scoop.AutoResolver,
 	}, nil
 }
