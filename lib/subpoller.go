@@ -154,7 +154,7 @@ func serverIntent(rstat *ResolveStatus, rf *ResolveFilter) *Deployment {
 			dep = d
 		}
 	}
-	logging.Log.Debugf("Filtering found %s", dep.String())
+	logging.Log.Debugf("Filtering found %s", dep)
 
 	return dep
 }
