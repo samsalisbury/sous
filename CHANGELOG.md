@@ -8,6 +8,12 @@ with respect to its command line interface and HTTP interface.
 
 ## [Unreleased](//github.com/opentable/sous/compare/0.5.56...master)
 
+### Fixed
+* Server: Profiling configuration - accepts SOUS_PROFILING environment variable correctly.
+
+### Changed
+* Developer: Server action extracted.
+
 ## [0.5.56](//github.com/opentable/sous/compare/0.5.55...0.5.56)
 ### Fixed
 * CLI: No longer panics under normal operation (e.g. when trying to run 'sous deploy'
