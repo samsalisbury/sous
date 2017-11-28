@@ -1,4 +1,4 @@
-package cli
+package actions
 
 import (
 	"io/ioutil"

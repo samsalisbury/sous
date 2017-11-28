@@ -219,10 +219,10 @@ func TestInvokeServer(t *testing.T) {
 	assert.NotNil(t, exe)
 	server, good := exe.Cmd.(*SousServer)
 	require.True(t, good)
-	assert.NotNil(t, server.ServerHandler)
-	assert.NotNil(t, server.ServerHandler.Handler)
-	assert.True(t, server.AutoResolver.ResolveFilter.Offset.All(), "server.AutoResolver.ResolveFilter.Offset.All")
-	assert.True(t, server.AutoResolver.ResolveFilter.Flavor.All(), "server.AutoResolver.ResolveFilter.Flavor.All")
+
+	assert.Equal(t, "test", server.DeployFilterFlags.Cluster)
+	assert.Equal(t, "none", server.dryrun)
+	assert.Equal(t, false, server.profiling)
 }
 
 /*

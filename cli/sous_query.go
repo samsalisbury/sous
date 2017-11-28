@@ -7,7 +7,6 @@ import (
 )
 
 type SousQuery struct {
-	Sous  *Sous
 	flags struct {
 		target              string
 		rebuild, rebuildAll bool
