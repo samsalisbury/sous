@@ -83,6 +83,7 @@ func (di *SousGraph) GetPollStatus(dryrun string, dff config.DeployFilterFlags) 
 	}, nil
 }
 
+// GetServer returns the server action.
 func (di *SousGraph) GetServer(dff config.DeployFilterFlags, dryrun string, laddr string, gdmRepo string, profiling bool) (actions.Action, error) {
 	dff.Offset = "*"
 	dff.Flavor = "*"

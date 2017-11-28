@@ -28,7 +28,7 @@ type Server struct {
 	*sous.AutoResolver
 }
 
-// Execute is part of the cmdr.Command interface(s).
+// Do runs the server.
 func (ss *Server) Do() error {
 	if err := ensureGDMExists(ss.GDMRepo, ss.Config.StateLocation, ss.Log.Warnf); err != nil {
 		return err
