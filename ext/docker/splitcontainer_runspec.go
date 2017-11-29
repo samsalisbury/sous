@@ -50,7 +50,7 @@ type sbmInstall struct {
 }
 
 type sbmFile struct {
-	Dir string `json: "dir"`
+	Dir string `json:"dir"`
 }
 
 // Validate implements Flawed on MultiImageRunSpec
