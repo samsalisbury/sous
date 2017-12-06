@@ -10,7 +10,7 @@ import (
 	"github.com/opentable/sous/util/logging"
 )
 
-type clientHTTPResponse struct {
+type httpLogEntry struct {
 	logging.CallerInfo
 	logging.Level
 	serverSide     bool
@@ -29,26 +29,27 @@ type clientHTTPResponse struct {
 /*
 // ReportClientHTTPResponse reports a response recieved by Sous as a client, as provided as fields.
 func ReportClientHTTPResponseFields(logger logging.LogSink, method, server, path string, parms map[string]string, status int, dur time.Duration) {
-	m := newClientHTTPResponse(method, server, path, parms, status, dur)
+	m := newHTTPLogEntry(method, server, path, parms, status, dur)
 	logging.Deliver(m, logger)
 }
 */
 
 // ReportClientHTTPResponse reports a response recieved by Sous as a client.
-func ReportClientHTTPResponse(logger logging.LogSink, rz http.Response, resName string, dur time.Duration) {
-	msg := buildHTTPLogMessage(false, rz, resName, dur)
+func ReportClientHTTPResponse(logger logging.LogSink, rz *http.Response, resName string, dur time.Duration) {
+	m := buildHTTPLogMessage(false, rz, resName, dur)
 	m.ExcludeMe()
 	logging.Deliver(m, logger)
 }
 
 // ReportServerHTTPResponse reports a response recieved by Sous as a client.
-func ReportServerHTTPResponse(logger logging.LogSink, rz http.Response, resName string, dur time.Duration) {
-	msg := buildHTTPLogMessage(true, rz, resName, dur)
+// n.b. this interface subject to change
+func ReportServerHTTPResponse(logger logging.LogSink, rz *http.Response, resName string, dur time.Duration) {
+	m := buildHTTPLogMessage(true, rz, resName, dur)
 	m.ExcludeMe()
 	logging.Deliver(m, logger)
 }
 
-func buildHTTPLogMessage(logger logging.LogSink, server bool, rz http.Response, resName string, dur time.Duration) *clientHTTPResponse {
+func buildHTTPLogMessage(server bool, rz *http.Response, resName string, dur time.Duration) *httpLogEntry {
 	url := rz.Request.URL
 
 	qps := map[string]string{}
@@ -56,7 +57,7 @@ func buildHTTPLogMessage(logger logging.LogSink, server bool, rz http.Response, 
 		qps[k] = strings.Join(v, ",")
 	}
 
-	m := newClientHTTPResponse(
+	m := newHTTPLogEntry(
 		server,
 		resName,
 		rz.Request.Method,
@@ -70,13 +71,13 @@ func buildHTTPLogMessage(logger logging.LogSink, server bool, rz http.Response, 
 	return m
 }
 
-func newClientHTTPResponse(server bool, resName, method, urlstring string, status int, rqSize, rzSize int64, dur time.Duration) *clientHTTPResponse {
+func newHTTPLogEntry(server bool, resName, method, urlstring string, status int, rqSize, rzSize int64, dur time.Duration) *httpLogEntry {
 	u, err := url.Parse(urlstring)
 	if err != nil {
 		u = &url.URL{}
 	}
 
-	return &clientHTTPResponse{
+	return &httpLogEntry{
 		Level:      logging.InformationLevel,
 		CallerInfo: logging.GetCallerInfo(logging.NotHere()),
 
@@ -94,7 +95,7 @@ func newClientHTTPResponse(server bool, resName, method, urlstring string, statu
 	}
 }
 
-func (msg *clientHTTPResponse) MetricsTo(metrics logging.MetricsSink) {
+func (msg *httpLogEntry) MetricsTo(metrics logging.MetricsSink) {
 	side := "client"
 	if msg.serverSide {
 		side = "server"
@@ -102,14 +103,14 @@ func (msg *clientHTTPResponse) MetricsTo(metrics logging.MetricsSink) {
 	metrics.UpdateTimer(fmt.Sprintf("%s-http-request-duration", side), msg.dur)
 	metrics.UpdateTimer(fmt.Sprintf("%s-http-request-duration.%s", side, msg.resourceFamily), msg.dur)
 
-	metrics.IncCounter(fmt.Sprintf("%s-http-status.%d", side, status), 1)
-	metrics.IncCounter(fmt.Sprintf("%s-http-status.%s.%d", side, msg.resourceFamily, status), 1)
+	metrics.IncCounter(fmt.Sprintf("%s-http-status.%d", side, msg.status), 1)
+	metrics.IncCounter(fmt.Sprintf("%s-http-status.%s.%d", side, msg.resourceFamily, msg.status), 1)
 
 	metrics.UpdateSample(fmt.Sprintf("%s-http-request-size", side), msg.requestSize)
 	metrics.UpdateSample(fmt.Sprintf("%s-http-request-size.%s", side, msg.resourceFamily), msg.requestSize)
 }
 
-func (msg *clientHTTPResponse) EachField(f logging.FieldReportFn) {
+func (msg *httpLogEntry) EachField(f logging.FieldReportFn) {
 	f("@loglov3-otl", "sous-http-v1")
 	f("resource-family", msg.resourceFamily)
 	f("incoming", msg.serverSide)
@@ -129,6 +130,6 @@ func (msg *clientHTTPResponse) EachField(f logging.FieldReportFn) {
 	msg.CallerInfo.EachField(f)
 }
 
-func (msg *clientHTTPResponse) Message() string {
+func (msg *httpLogEntry) Message() string {
 	return fmt.Sprintf("%d", msg.status)
 }
