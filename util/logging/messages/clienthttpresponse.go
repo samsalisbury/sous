@@ -13,15 +13,17 @@ import (
 type clientHTTPResponse struct {
 	logging.CallerInfo
 	logging.Level
-	method       string
-	url          string
-	server       string
-	path         string
-	parms        string
-	status       int
-	requestSize  int64
-	responseSize int64
-	dur          time.Duration
+	serverSide     bool
+	resourceFamily string
+	method         string
+	url            string
+	server         string
+	path           string
+	parms          string
+	status         int
+	requestSize    int64
+	responseSize   int64
+	dur            time.Duration
 }
 
 /*
@@ -33,7 +35,20 @@ func ReportClientHTTPResponseFields(logger logging.LogSink, method, server, path
 */
 
 // ReportClientHTTPResponse reports a response recieved by Sous as a client.
-func ReportClientHTTPResponse(logger logging.LogSink, rz http.Response, dur time.Duration) {
+func ReportClientHTTPResponse(logger logging.LogSink, rz http.Response, resName string, dur time.Duration) {
+	msg := buildHTTPLogMessage(false, rz, resName, dur)
+	m.ExcludeMe()
+	logging.Deliver(m, logger)
+}
+
+// ReportServerHTTPResponse reports a response recieved by Sous as a client.
+func ReportServerHTTPResponse(logger logging.LogSink, rz http.Response, resName string, dur time.Duration) {
+	msg := buildHTTPLogMessage(true, rz, resName, dur)
+	m.ExcludeMe()
+	logging.Deliver(m, logger)
+}
+
+func buildHTTPLogMessage(logger logging.LogSink, server bool, rz http.Response, resName string, dur time.Duration) *clientHTTPResponse {
 	url := rz.Request.URL
 
 	qps := map[string]string{}
@@ -42,6 +57,8 @@ func ReportClientHTTPResponse(logger logging.LogSink, rz http.Response, dur time
 	}
 
 	m := newClientHTTPResponse(
+		server,
+		resName,
 		rz.Request.Method,
 		url.String(),
 		rz.StatusCode,
@@ -50,10 +67,10 @@ func ReportClientHTTPResponse(logger logging.LogSink, rz http.Response, dur time
 		dur,
 	)
 	m.ExcludeMe()
-	logging.Deliver(m, logger)
+	return m
 }
 
-func newClientHTTPResponse(method, urlstring string, status int, rqSize, rzSize int64, dur time.Duration) *clientHTTPResponse {
+func newClientHTTPResponse(server bool, resName, method, urlstring string, status int, rqSize, rzSize int64, dur time.Duration) *clientHTTPResponse {
 	u, err := url.Parse(urlstring)
 	if err != nil {
 		u = &url.URL{}
@@ -63,25 +80,39 @@ func newClientHTTPResponse(method, urlstring string, status int, rqSize, rzSize 
 		Level:      logging.InformationLevel,
 		CallerInfo: logging.GetCallerInfo(logging.NotHere()),
 
-		method:       method,
-		url:          urlstring,
-		server:       u.Host,
-		path:         u.Path,
-		parms:        u.RawQuery,
-		status:       status,
-		requestSize:  rqSize,
-		responseSize: rzSize,
-		dur:          dur,
+		serverSide:     server,
+		resourceFamily: resName,
+		method:         method,
+		url:            urlstring,
+		server:         u.Host,
+		path:           u.Path,
+		parms:          u.RawQuery,
+		status:         status,
+		requestSize:    rqSize,
+		responseSize:   rzSize,
+		dur:            dur,
 	}
 }
 
 func (msg *clientHTTPResponse) MetricsTo(metrics logging.MetricsSink) {
-	metrics.UpdateTimer("http-request-duration", msg.dur)
+	side := "client"
+	if msg.serverSide {
+		side = "server"
+	}
+	metrics.UpdateTimer(fmt.Sprintf("%s-http-request-duration", side), msg.dur)
+	metrics.UpdateTimer(fmt.Sprintf("%s-http-request-duration.%s", side, msg.resourceFamily), msg.dur)
+
+	metrics.IncCounter(fmt.Sprintf("%s-http-status.%d", side, status), 1)
+	metrics.IncCounter(fmt.Sprintf("%s-http-status.%s.%d", side, msg.resourceFamily, status), 1)
+
+	metrics.UpdateSample(fmt.Sprintf("%s-http-request-size", side), msg.requestSize)
+	metrics.UpdateSample(fmt.Sprintf("%s-http-request-size.%s", side, msg.resourceFamily), msg.requestSize)
 }
 
 func (msg *clientHTTPResponse) EachField(f logging.FieldReportFn) {
-	f("@loglov3-otl", "http-v1")
-	f("incoming", false)
+	f("@loglov3-otl", "sous-http-v1")
+	f("resource-family", msg.resourceFamily)
+	f("incoming", msg.serverSide)
 	f("method", msg.method)
 	f("status", msg.status)
 	f("duration", int64(msg.dur/time.Microsecond))
