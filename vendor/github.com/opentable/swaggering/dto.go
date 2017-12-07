@@ -33,6 +33,7 @@ type (
 	}
 
 	// StringList - it's a list, now with 100% more string
+	// wiseacre! I wish you'd documented why this was important
 	StringList []string
 )
 
