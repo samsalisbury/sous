@@ -1,6 +1,7 @@
 package actions
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -8,8 +9,17 @@ import (
 	"testing"
 )
 
-// TODO: This would be better as separate tests for each case.
 func TestEnsureGDMExists(t *testing.T) {
+	testCases := []struct {
+		path       string
+		createFile bool
+	}{
+		{"does-not-exist", false},
+		{"empty-source-location", false},
+		{"nonempty-source-location", true},
+	}
+
+	//Setup Test Data
 	testDataDir := "testdata/gen/test-ensure-gdm-exists"
 
 	if err := os.RemoveAll(testDataDir); err != nil {
@@ -20,25 +30,14 @@ func TestEnsureGDMExists(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	gdmSourceRepo := path.Join(wd, testDataDir, "test-repo")
-	nonexistentSourceLocation := path.Join(testDataDir, "does-not-exist")
-	emptySourceLocation := path.Join(testDataDir, "empty-source-location")
-	nonemptySourceLocation := path.Join(testDataDir, "nonempty-source-location")
-	someFile := path.Join(testDataDir, "a-file")
 
 	if err := os.MkdirAll(gdmSourceRepo, 0777); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.MkdirAll(emptySourceLocation, 0777); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.MkdirAll(nonemptySourceLocation, 0777); err != nil {
-		t.Fatal(err)
-	}
-	nonemptyFile := path.Join(nonemptySourceLocation, "another-file")
-	if err := ioutil.WriteFile(nonemptyFile, []byte("hi"), 0777); err != nil {
-		t.Fatal(err)
-	}
+
+	someFile := path.Join(testDataDir, "a-file")
 	if err := ioutil.WriteFile(someFile, []byte("hi"), 0777); err != nil {
 		t.Fatal(err)
 	}
@@ -60,43 +59,47 @@ func TestEnsureGDMExists(t *testing.T) {
 	git("add", "-A")
 	git("commit", "-m", "a message")
 
-	// SourceLocation dir does not exist; repo does.
-	if err := ensureGDMExists(gdmSourceRepo, nonexistentSourceLocation, t.Logf); err != nil {
-		t.Error(err)
+	//Test
+	for _, testCase := range testCases {
+		t.Run(fmt.Sprintf("path: %s", testCase.path), func(t *testing.T) {
+			testPath := path.Join(testDataDir, testCase.path)
+			if err := os.MkdirAll(testPath, 0777); err != nil {
+				t.Fatal(err)
+			}
+
+			if testCase.createFile {
+				nonemptyFile := path.Join(testPath, "another-file")
+				if err := ioutil.WriteFile(nonemptyFile, []byte("hi"), 0777); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			if err := ensureGDMExists(gdmSourceRepo, testPath, t.Logf); err != nil {
+				t.Error(err)
+			}
+
+		})
 	}
 
-	// SourceLocation dir exists and is empty.
-	if err := ensureGDMExists(gdmSourceRepo, emptySourceLocation, t.Logf); err != nil {
-		t.Error(err)
-	}
-
-	// SourceLocation dir exists and is not empty.
-	if err := ensureGDMExists(gdmSourceRepo, nonemptySourceLocation, t.Logf); err != nil {
-		t.Error(err)
-	}
-
-	// Cleanup
-	if err := os.RemoveAll(nonexistentSourceLocation); err != nil {
+	//Tear Down test data
+	if err := os.RemoveAll(testDataDir); err != nil {
 		t.Fatal(err)
 	}
-	// GDM source repo does not exist.
-	{
-		err := ensureGDMExists("this-path-does-not-exist", "", t.Logf)
-		if err == nil {
-			t.Error("expected error when GDM repo does not exist")
-		}
-	}
+}
 
-	// Cleanup.
-	if err := os.RemoveAll(nonexistentSourceLocation); err != nil {
-		t.Fatal(err)
-	}
-	// GDM source repo is not a repo.
-	{
-		err := ensureGDMExists(someFile, "", t.Logf)
-		if err == nil {
-			t.Error("expected error when GDM repo does not exist")
-		}
-	}
+func TestGDMNotARepo(t *testing.T) {
+	testDataDir := "testdata/gen/test-ensure-gdm-exists"
+	someFile := path.Join(testDataDir, "a-file")
 
+	err := ensureGDMExists(someFile, "", t.Logf)
+	if err == nil {
+		t.Error("expected error when GDM repo does not exist")
+	}
+}
+
+func TestEnsureNoGDM(t *testing.T) {
+	err := ensureGDMExists("this-path-does-not-exist", "", t.Logf)
+	if err == nil {
+		t.Error("expected error when GDM repo does not exist")
+	}
 }
