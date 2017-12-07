@@ -18,6 +18,8 @@ import (
 	"github.com/docker/distribution/registry/api/v2"
 	"github.com/docker/distribution/registry/client"
 	"github.com/docker/distribution/registry/client/transport"
+	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 )
 
 /*
@@ -29,6 +31,35 @@ import (
 	for easy referece and as a source for continuing absorbtion
 
 */
+
+type httpClient struct {
+	http *http.Client
+	log  logging.LogSink
+}
+
+// Do wraps http.Client.Do, and logs the response
+func (c *httpClient) Do(resourceName string, req *http.Request) (*http.Response, error) {
+	start := time.Now()
+	res, err := c.http.Do(req)
+	messages.ReportClientHTTPResponse(c.log, res, resourceName, time.Now().Sub(start))
+	return res, err
+}
+
+// Get wraps http.Client.Get, and logs the response
+func (c *httpClient) Get(resourceName string, url string) (resp *http.Response, err error) {
+	start := time.Now()
+	res, err := c.http.Get(url)
+	messages.ReportClientHTTPResponse(c.log, res, resourceName, time.Now().Sub(start))
+	return res, err
+}
+
+// Head wraps http.Client.Head, and logs the response
+func (c *httpClient) Head(resourceName string, url string) (resp *http.Response, err error) {
+	start := time.Now()
+	res, err := c.http.Head(url)
+	messages.ReportClientHTTPResponse(c.log, res, resourceName, time.Now().Sub(start))
+	return res, err
+}
 
 // checkHTTPRedirect is a callback that can manipulate redirected HTTP
 // requests. It is used to preserve Accept and Range headers.
@@ -70,10 +101,12 @@ func NewRegistryOld(ctx context.Context, baseURL string, transport http.RoundTri
 		return nil, err
 	}
 
-	client := &http.Client{
-		Transport:     transport,
-		Timeout:       1 * time.Minute,
-		CheckRedirect: checkHTTPRedirect,
+	client := httpClient{
+		http: &http.Client{
+			Transport:     transport,
+			Timeout:       1 * time.Minute,
+			CheckRedirect: checkHTTPRedirect,
+		},
 	}
 
 	return &oldRegistry{
@@ -91,7 +124,7 @@ func NewRegistryOld(ctx context.Context, baseURL string, transport http.RoundTri
 // but we don't need to features. At some point this likely becomes our own
 // private Docker client, so don't worry about keeping parity with the original
 type oldRegistry struct {
-	client  *http.Client
+	client  httpClient
 	ub      *v2.URLBuilder
 	context context.Context
 }
@@ -109,7 +142,7 @@ func (r *oldRegistry) Repositories(ctx context.Context, entries []string, last s
 		return 0, err
 	}
 
-	resp, err := r.client.Get(u)
+	resp, err := r.client.Get("docker.repositories", u)
 	if err != nil {
 		return 0, err
 	}
@@ -141,7 +174,7 @@ func (r *oldRegistry) Repositories(ctx context.Context, entries []string, last s
 	return numFilled, returnErr
 }
 
-func (r *registry) Blobs(ctx context.Context) distribution.BlobStore {
+func (r *oldRegistry) Blobs(ctx context.Context) distribution.BlobStore {
 	return nil
 }
 
@@ -204,7 +237,7 @@ func descriptorFromResponse(response *http.Response) (distribution.Descriptor, e
 
 }
 
-func (r *registry) Tags(ctx context.Context) *tags {
+func (r *oldRegistry) Tags(ctx context.Context) *tags {
 	return &tags{
 		client: r.client,
 		ub:     r.ub,
@@ -213,7 +246,7 @@ func (r *registry) Tags(ctx context.Context) *tags {
 
 // tags implements remote tagging operations.
 type tags struct {
-	client  *http.Client
+	client  httpClient
 	ub      *v2.URLBuilder
 	context context.Context
 	name    reference.Named
@@ -242,7 +275,7 @@ func (t *tags) Get(ctx context.Context, tag string) (distribution.Descriptor, er
 	}
 
 	var attempts int
-	resp, err := t.client.Do(req)
+	resp, err := t.client.Do("docker.tag", req)
 check:
 	if err != nil {
 		return distribution.Descriptor{}, err
@@ -262,7 +295,7 @@ check:
 			req.Header.Add("Accept", t)
 		}
 
-		resp, err = t.client.Do(req)
+		resp, err = t.client.Do("docker.tag", req)
 		attempts++
 		if attempts > 1 {
 			return distribution.Descriptor{}, err
@@ -412,7 +445,7 @@ func (ms *manifests) Delete(ctx context.Context, dgst digest.Digest) error {
 type blobs struct {
 	name   reference.Named
 	ub     *v2.URLBuilder
-	client *http.Client
+	client httpClient
 
 	statter distribution.BlobDescriptorService
 	distribution.BlobDeleter
@@ -457,7 +490,7 @@ func (bs *blobs) Open(ctx context.Context, dgst digest.Digest) (distribution.Rea
 		return nil, err
 	}
 
-	return transport.NewHTTPReadSeeker(bs.client, blobURL,
+	return transport.NewHTTPReadSeeker(bs.client.http, blobURL,
 		func(resp *http.Response) error {
 			if resp.StatusCode == http.StatusNotFound {
 				return distribution.ErrBlobUnknown
@@ -593,7 +626,7 @@ func (bs *blobs) Delete(ctx context.Context, dgst digest.Digest) error {
 type blobStatter struct {
 	name   reference.Named
 	ub     *v2.URLBuilder
-	client *http.Client
+	client httpClient
 }
 
 func (bs *blobStatter) Stat(ctx context.Context, dgst digest.Digest) (distribution.Descriptor, error) {
@@ -606,7 +639,7 @@ func (bs *blobStatter) Stat(ctx context.Context, dgst digest.Digest) (distributi
 		return distribution.Descriptor{}, err
 	}
 
-	resp, err := bs.client.Head(u)
+	resp, err := bs.client.Head("docker.blob", u)
 	if err != nil {
 		return distribution.Descriptor{}, err
 	}
@@ -663,7 +696,7 @@ func (bs *blobStatter) Clear(ctx context.Context, dgst digest.Digest) error {
 		return err
 	}
 
-	resp, err := bs.client.Do(req)
+	resp, err := bs.client.Do("docker.blob", req)
 	if err != nil {
 		return err
 	}
