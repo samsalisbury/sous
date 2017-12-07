@@ -488,7 +488,9 @@ func newDeployer(dryrun DryrunOption, nc lazyNameCache, ls LogSink, c LocalSousC
 	if dryrun == DryrunBoth || dryrun == DryrunScheduler {
 		drc := sous.NewDummyRectificationClient()
 		drc.SetLogger(ls.Child("rectify"))
-		return singularity.NewDeployer(drc,
+		return singularity.NewDeployer(
+			drc,
+			ls,
 			singularity.OptMaxHTTPReqsPerServer(c.MaxHTTPConcurrencySingularity),
 		), nil
 	}
@@ -499,6 +501,7 @@ func newDeployer(dryrun DryrunOption, nc lazyNameCache, ls LogSink, c LocalSousC
 	}
 	return singularity.NewDeployer(
 		singularity.NewRectiAgent(nameCache),
+		ls,
 		singularity.OptMaxHTTPReqsPerServer(c.MaxHTTPConcurrencySingularity),
 	), nil
 }

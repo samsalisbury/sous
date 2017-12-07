@@ -9,6 +9,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/opentable/go-singularity/dtos"
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -526,7 +527,7 @@ func TestChangesDep(t *testing.T) {
 
 func TestPendingModification(t *testing.T) {
 	drc := sous.NewDummyRectificationClient()
-	deployer := NewDeployer(drc)
+	deployer := NewDeployer(drc, logging.SilentLogSet())
 
 	verStr := "0.0.1"
 	dpl := &sous.Deployment{
@@ -584,7 +585,7 @@ func TestPendingModification(t *testing.T) {
 
 func TestModificationOfFailed(t *testing.T) {
 	drc := sous.NewDummyRectificationClient()
-	deployer := NewDeployer(drc)
+	deployer := NewDeployer(drc, logging.SilentLogSet())
 
 	verStr := "0.0.1"
 	dpl := &sous.Deployment{
@@ -643,7 +644,7 @@ func TestModificationOfFailed(t *testing.T) {
 }
 
 func TestOptMaxHTTPReqsPerServer(t *testing.T) {
-	deployer := NewDeployer(nil)
+	deployer := NewDeployer(nil, logging.SilentLogSet())
 	if deployer.ReqsPerServer != DefaultMaxHTTPConcurrencyPerServer {
 		t.Fatal("Not using default")
 	}
@@ -651,7 +652,7 @@ func TestOptMaxHTTPReqsPerServer(t *testing.T) {
 	if x == DefaultMaxHTTPConcurrencyPerServer {
 		t.Fatal("Bad test, please specify a non-default value.")
 	}
-	deployer2 := NewDeployer(nil, OptMaxHTTPReqsPerServer(x))
+	deployer2 := NewDeployer(nil, logging.SilentLogSet(), OptMaxHTTPReqsPerServer(x))
 	if deployer2.ReqsPerServer != x {
 		t.Fatalf("got %d; want %d", deployer2.ReqsPerServer, x)
 	}

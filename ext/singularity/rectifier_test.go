@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -145,7 +146,7 @@ func TestModifyScale(t *testing.T) {
 
 	client := sous.NewDummyRectificationClient()
 
-	deployer := NewDeployer(client)
+	deployer := NewDeployer(client, logging.SilentLogSet())
 
 	mods <- pair
 	close(mods)
@@ -178,7 +179,7 @@ func TestModifyImage(t *testing.T) {
 	log := make(chan sous.DiffResolution, 10)
 
 	client := sous.NewDummyRectificationClient()
-	deployer := NewDeployer(client)
+	deployer := NewDeployer(client, logging.SilentLogSet())
 
 	mods <- pair
 	close(mods)
@@ -215,7 +216,7 @@ func TestModifyResources(t *testing.T) {
 	log := make(chan sous.DiffResolution, 10)
 
 	client := sous.NewDummyRectificationClient()
-	deployer := NewDeployer(client)
+	deployer := NewDeployer(client, logging.SilentLogSet())
 
 	mods <- pair
 	close(mods)
@@ -256,7 +257,7 @@ func TestModify(t *testing.T) {
 	results := make(chan sous.DiffResolution, 10)
 
 	client := sous.NewDummyRectificationClient()
-	deployer := NewDeployer(client)
+	deployer := NewDeployer(client, logging.SilentLogSet())
 
 	mods <- pair
 	close(mods)
@@ -308,7 +309,7 @@ func TestDeletes(t *testing.T) {
 	log := make(chan sous.DiffResolution, 10)
 
 	client := sous.NewDummyRectificationClient()
-	deployer := NewDeployer(client)
+	deployer := NewDeployer(client, logging.SilentLogSet())
 
 	dels <- deleted
 	close(dels)
@@ -365,7 +366,7 @@ func TestCreates(t *testing.T) {
 	log := make(chan sous.DiffResolution, 10)
 
 	client := sous.NewDummyRectificationClient()
-	deployer := NewDeployer(client)
+	deployer := NewDeployer(client, logging.SilentLogSet())
 
 	crts <- created
 	close(crts)
