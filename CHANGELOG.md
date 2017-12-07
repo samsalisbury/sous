@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
 ## [Unreleased](//github.com/opentable/sous/compare/0.5.57...HEAD)
-* [TODO] Server: HTTP client requests to Singularity log to Kafka
+* Server: HTTP client requests to Singularity log to Kafka
 * [TODO] Server: HTTP client requests to the Docker registry log to Kafka
 * [TODO] Server: HTTP server responses log to Kafka
 
