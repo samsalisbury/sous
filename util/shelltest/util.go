@@ -43,10 +43,6 @@ func TemplateConfigs(sourceDir, targetDir string, configData interface{}) error 
 			return err
 		}
 
-		if err != nil {
-			return err
-		}
-
 		if info.IsDir() {
 			return nil
 		}
@@ -57,9 +53,10 @@ func TemplateConfigs(sourceDir, targetDir string, configData interface{}) error 
 		}
 
 		if 0 != (info.Mode() & os.ModeSymlink) {
-			linkT, err := os.Readlink(path)
-			if err != nil {
-				return errors.Wrap(err, "readlink")
+			linkT, errLink := os.Readlink(path)
+
+			if errLink != nil {
+				return errors.Wrap(errLink, "readlink")
 			}
 			if filepath.IsAbs(linkT) {
 				linkT, err = filepath.Rel(sourceDir, linkT)
@@ -92,7 +89,12 @@ func TemplateConfigs(sourceDir, targetDir string, configData interface{}) error 
 		if err != nil {
 			return errors.Wrap(err, "create target")
 		}
-		defer target.Close()
+
+		defer func() {
+			if cerr := target.Close(); cerr != nil && err == nil {
+				err = cerr
+			}
+		}()
 
 		tmpl, err := template.New(f.Name()).Parse(string(bytes))
 		if err != nil {
