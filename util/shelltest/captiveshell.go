@@ -91,7 +91,12 @@ func newLiveStream(name string, from io.Reader, events <-chan int) *liveStream {
 
 func newShell(env map[string]string) (sh *captiveShell, err error) {
 	sh = &captiveShell{}
-	sh.Cmd = exec.Command("bash", "--norc", "-i")
+
+	// docker build current directory
+	cmdName := "bash"
+	cmdArgs := []string{"--norc", "-i"}
+
+	sh.Cmd = exec.Command(cmdName, cmdArgs...) // nolint : warning on subprocess can be dangerous
 
 	for k, v := range env {
 		sh.Cmd.Env = append(sh.Cmd.Env, k+"="+v)

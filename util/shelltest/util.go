@@ -35,7 +35,7 @@ func BuildPath(exes ...string) (string, error) {
 }
 
 // TemplateConfigs walks the sourceDir, templating into targetDir based on configData
-func TemplateConfigs(sourceDir, targetDir string, configData interface{}) error {
+func TemplateConfigs(sourceDir, targetDir string, configData interface{}) error { // nolint : TODO: complexity of this function is warning
 	log.Printf("Templating %q -> %q.", sourceDir, targetDir)
 	var linkCount, templCount int
 	err := filepath.Walk(sourceDir, func(path string, info os.FileInfo, err error) error {
