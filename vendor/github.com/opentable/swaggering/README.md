@@ -5,8 +5,11 @@ Swagger 1.2 code generator
 
 Swaggering is a library for generating code based on Swagger 1.2 JSON description files.
 
-You'll very likely want to look at opentable/swagger-client-maker to actually make use of this code,
-but you're encouraged to review and reuse this library.
+To *use* this library, you'll probably want to
+
+```bash
+go get github.com/opentable/swaggering/cmd/swagger-client-maker
+```
 
 # Note
 
@@ -15,6 +18,7 @@ Swaggering does its best to generate code anyway -
 when there are references to models that don't exist in the API
 Swaggering templates in struct fields but comments them out.
 I've found the best thing is to amend the JSON rather than the resulting code.
+For that, `jq` is an invaluable tool.
 
 # Building
 

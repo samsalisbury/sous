@@ -11,9 +11,13 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 )
 
 type (
@@ -21,7 +25,7 @@ type (
 	MetaHandler struct {
 		router        *httprouter.Router
 		statusHandler *StatusMiddleware
-		logSet
+		logging.LogSink
 	}
 
 	// ResponseWriter wraps the the http.ResponseWriter interface.
@@ -33,7 +37,7 @@ type (
 	// ExchangeLogger wraps and logs the exchange.
 	ExchangeLogger struct {
 		Exchanger Exchanger
-		logSet
+		logging.LogSink
 		*http.Request
 		httprouter.Params
 	}
@@ -54,9 +58,49 @@ func (xlog *ExchangeLogger) Exchange() (data interface{}, status int) {
 	return
 }
 
+type loggingResponseWriter struct {
+	http.ResponseWriter
+	req          *http.Request
+	log          logging.LogSink
+	resourceName string
+	start        time.Time
+	statusCode   int
+}
+
+// WriteHeader implements and overrides ResponseWriter on loggingResponseWriter -
+// it records the status as reported for logging.
+func (lrw *loggingResponseWriter) WriteHeader(status int) {
+	lrw.statusCode = status
+	lrw.ResponseWriter.WriteHeader(status)
+}
+
+// Write logs the response. If ContentLength is set, we use that, otherwise we report a 0 length.
+// Unfortunately, ResponseWriter's contract makes it impossible to get the true content length.
+func (lrw loggingResponseWriter) Write(b []byte) (int, error) {
+	n, err := lrw.ResponseWriter.Write(b)
+
+	// ParseInt returns 0 and an syntax error if the provided string doesn't parse well.
+	contentLength, _ := strconv.ParseInt(lrw.ResponseWriter.Header().Get("Content-Length"), 10, 64)
+	messages.ReportServerHTTPResponse(lrw.log, lrw.req, lrw.statusCode, contentLength, lrw.resourceName, time.Now().Sub(lrw.start))
+
+	return n, err
+}
+
+func (mh *MetaHandler) wrapResponseWriter(resName string, rq *http.Request, rw http.ResponseWriter) http.ResponseWriter {
+	return &loggingResponseWriter{
+		ResponseWriter: rw,
+		req:            rq,
+		log:            mh.LogSink,
+		start:          time.Now(),
+		statusCode:     http.StatusOK,
+		resourceName:   resName,
+	}
+}
+
 // GetHandling handles Get requests.
-func (mh *MetaHandler) GetHandling(factory ExchangeFactory) httprouter.Handle {
-	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+func (mh *MetaHandler) GetHandling(resName string, factory ExchangeFactory) httprouter.Handle {
+	return func(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		w := mh.wrapResponseWriter(resName, r, rw)
 		h := mh.injectedHandler(factory, w, r, p)
 		data, status := h.Exchange()
 		w.Header().Add("Access-Control-Allow-Origin", "*") //XXX configurable by app
@@ -65,8 +109,9 @@ func (mh *MetaHandler) GetHandling(factory ExchangeFactory) httprouter.Handle {
 }
 
 // DeleteHandling handles Delete requests.
-func (mh *MetaHandler) DeleteHandling(factory ExchangeFactory) httprouter.Handle {
-	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+func (mh *MetaHandler) DeleteHandling(resName string, factory ExchangeFactory) httprouter.Handle {
+	return func(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		w := mh.wrapResponseWriter(resName, r, rw)
 		h := mh.injectedHandler(factory, w, r, p)
 		_, status := h.Exchange()
 		mh.renderData(status, w, r, nil)
@@ -74,8 +119,9 @@ func (mh *MetaHandler) DeleteHandling(factory ExchangeFactory) httprouter.Handle
 }
 
 // HeadHandling handles Head requests.
-func (mh *MetaHandler) HeadHandling(factory ExchangeFactory) httprouter.Handle {
-	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+func (mh *MetaHandler) HeadHandling(resName string, factory ExchangeFactory) httprouter.Handle {
+	return func(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		w := mh.wrapResponseWriter(resName, r, rw)
 		h := mh.injectedHandler(factory, w, r, p)
 		_, status := h.Exchange()
 		mh.writeHeaders(status, w, r, nil)
@@ -83,8 +129,9 @@ func (mh *MetaHandler) HeadHandling(factory ExchangeFactory) httprouter.Handle {
 }
 
 // OptionsHandling handles Options requests.
-func (mh *MetaHandler) OptionsHandling(factory ExchangeFactory) httprouter.Handle {
-	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+func (mh *MetaHandler) OptionsHandling(resName string, factory ExchangeFactory) httprouter.Handle {
+	return func(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		w := mh.wrapResponseWriter(resName, r, rw)
 		h := mh.injectedHandler(factory, w, r, p)
 		data, status := h.Exchange()
 
@@ -98,8 +145,9 @@ func (mh *MetaHandler) OptionsHandling(factory ExchangeFactory) httprouter.Handl
 }
 
 // PutHandling handles PUT requests.
-func (mh *MetaHandler) PutHandling(factory ExchangeFactory) httprouter.Handle {
-	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+func (mh *MetaHandler) PutHandling(resName string, factory ExchangeFactory) httprouter.Handle {
+	return func(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		w := mh.wrapResponseWriter(resName, r, rw)
 		if r.Header.Get("If-Match") == "" && r.Header.Get("If-None-Match") == "" {
 			mh.writeHeaders(http.StatusPreconditionRequired, w, r, "PUT requires If-Match or If-None-Match")
 			return
@@ -144,7 +192,7 @@ func (mh *MetaHandler) InstallPanicHandler() {
 
 func (mh *MetaHandler) buildLogger(h Exchanger, r *http.Request, p httprouter.Params) *ExchangeLogger {
 	return &ExchangeLogger{
-		logSet:    mh.logSet,
+		LogSink:   mh.LogSink,
 		Exchanger: h,
 		Request:   r,
 		Params:    p,

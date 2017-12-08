@@ -154,9 +154,9 @@ func TestContainerStartupOptions(t *testing.T) {
 
 	mockStatus := sous.DeployStatus(sous.DeployStatusPending)
 	d := sous.Deployable{
-		mockStatus,
-		&sous.Deployment{},
-		&sous.BuildArtifact{},
+		Status:        mockStatus,
+		Deployment:    &sous.Deployment{},
+		BuildArtifact: &sous.BuildArtifact{},
 	}
 
 	d.ClusterName = "TestContainerStartupOptionsCluster"

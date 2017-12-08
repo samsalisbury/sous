@@ -5,11 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
+	"time"
+
+	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 )
 
 type (
@@ -17,16 +20,16 @@ type (
 	// make actual HTTP requests of the API server
 	Requester interface {
 		// DTORequest performs an HTTP request and populates a DTO based on the response
-		DTORequest(dto DTO, method, path string, pathParams, queryParams urlParams, body ...DTO) error
+		DTORequest(resourceName string, dto DTO, method, path string, pathParams, queryParams urlParams, body ...DTO) error
 
 		// Request performs an HTTP request and returns the body of the response
-		Request(method, path string, pathParams, queryParams urlParams, body ...DTO) (io.ReadCloser, error)
+		Request(resourceName string, method string, path string, pathParams urlParams, queryParams urlParams, body ...DTO) (io.ReadCloser, error)
 	}
 
 	// GenericClient is a generic client for Swagger described services
 	GenericClient struct {
 		BaseURL string
-		Logger  Logger
+		Logger  logging.LogSink
 		HTTP    http.Client
 	}
 
@@ -46,8 +49,8 @@ func (e *ReqError) Error() string {
 }
 
 // DTORequest performs an HTTP request and populates a DTO based on the response
-func (gc *GenericClient) DTORequest(pop DTO, method, path string, pathParams, queryParams urlParams, body ...DTO) (err error) {
-	resBody, err := gc.Request(method, path, pathParams, queryParams, body...)
+func (gc *GenericClient) DTORequest(resourceName string, pop DTO, method, path string, pathParams, queryParams urlParams, body ...DTO) (err error) {
+	resBody, err := gc.Request(resourceName, method, path, pathParams, queryParams, body...)
 	if err != nil {
 		return
 	}
@@ -56,15 +59,19 @@ func (gc *GenericClient) DTORequest(pop DTO, method, path string, pathParams, qu
 }
 
 // Request performs an HTTP request and returns the body of the response
-func (gc *GenericClient) Request(method, path string, pathParams, queryParams urlParams, body ...DTO) (resBody io.ReadCloser, err error) {
+func (gc *GenericClient) Request(resourceName, method, path string, pathParams, queryParams urlParams, body ...DTO) (resBody io.ReadCloser, err error) {
 	req, err := gc.buildRequest(method, path, pathParams, queryParams, body...)
 	if err != nil {
 		return
 	}
+	start := time.Now()
 	res, err := gc.HTTP.Do(req)
 	if err != nil {
 		return
 	}
+
+	messages.ReportClientHTTPResponse(gc.Logger, res, resourceName, time.Now().Sub(start))
+
 	if res.StatusCode > 299 {
 		rerr := &ReqError{
 			Status:  res.StatusCode,
@@ -78,15 +85,7 @@ func (gc *GenericClient) Request(method, path string, pathParams, queryParams ur
 		err = rerr
 		return
 	}
-	if gc.Logger.Debugging() {
-		buf := bytes.Buffer{}
-		buf.ReadFrom(res.Body)
-		gc.Logger.Debug("response", map[string]interface{}{"url": req.URL, "body": buf.String()})
-		resBody = ioutil.NopCloser(&buf)
-	} else {
-		resBody = res.Body
-	}
-	return
+	return res.Body, nil
 }
 
 func (gc *GenericClient) buildRequest(method, path string, pathParams, queryParams urlParams, bodies ...DTO) (req *http.Request, err error) {
@@ -101,8 +100,6 @@ func (gc *GenericClient) buildRequest(method, path string, pathParams, queryPara
 	}
 	url.Path = strings.Join([]string{strings.TrimRight(url.Path, "/"), strings.TrimLeft(path, "/")}, "/")
 
-	gc.Logger.Debug("URL", map[string]interface{}{"url": url})
-
 	if len(bodies) > 0 {
 		req, err = gc.buildBodyRequest(method, url.String(), bodies[0])
 	} else {
@@ -112,7 +109,6 @@ func (gc *GenericClient) buildRequest(method, path string, pathParams, queryPara
 }
 
 func (gc *GenericClient) buildBodilessRequest(method, path string) (req *http.Request, err error) {
-	gc.Logger.Debug("request [no body]", map[string]interface{}{"method": method, "path": path})
 	req, err = http.NewRequest(method, path, nil)
 	return
 }
@@ -121,7 +117,6 @@ func (gc *GenericClient) buildBodyRequest(method, path string, bodyObj DTO) (req
 	buf := bytes.Buffer{}
 	enc := json.NewEncoder(&buf)
 	enc.Encode(bodyObj) // XXX Here, consider a goroutine and a PipeWriter
-	gc.Logger.Debug("request", map[string]interface{}{"method": method, "path": path, "body": buf.String()})
 	req, err = http.NewRequest(method, path, &buf)
 	req.Header.Add("Content-Type", "application/json")
 	return

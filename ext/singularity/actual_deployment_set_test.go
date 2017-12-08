@@ -6,6 +6,7 @@ import (
 	"github.com/opentable/go-singularity"
 	"github.com/opentable/go-singularity/dtos"
 	"github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/swaggering"
 	"github.com/stretchr/testify/assert"
 )
@@ -17,52 +18,55 @@ func TestGetDepSetWorks(t *testing.T) {
 
 	reg := sous.NewDummyRegistry()
 	client := sous.NewDummyRectificationClient()
-	dep := deployer{client,
-		func(url string) *singularity.Client {
-			cl, co := singularity.NewDummyClient(url)
+	singFac := func(url string) *singularity.Client {
+		cl, co := singularity.NewDummyClient(url)
 
-			co.FeedDTO(&dtos.SingularityRequestParentList{
-				&dtos.SingularityRequestParent{
-					RequestDeployState: &dtos.SingularityRequestDeployState{
-						ActiveDeploy: &dtos.SingularityDeployMarker{
-							DeployId:  "testdep",
-							RequestId: "testreq",
-						},
-					},
-					Request: &dtos.SingularityRequest{
-						Id:          "testreq",
-						RequestType: dtos.SingularityRequestRequestTypeSERVICE,
-						Owners:      swaggering.StringList{"jlester@opentable.com"},
+		co.FeedDTO(&dtos.SingularityRequestParentList{
+			&dtos.SingularityRequestParent{
+				RequestDeployState: &dtos.SingularityRequestDeployState{
+					ActiveDeploy: &dtos.SingularityDeployMarker{
+						DeployId:  "testdep",
+						RequestId: "testreq",
 					},
 				},
-			}, nil)
+				Request: &dtos.SingularityRequest{
+					Id:          "testreq",
+					RequestType: dtos.SingularityRequestRequestTypeSERVICE,
+					Owners:      swaggering.StringList{"jlester@opentable.com"},
+				},
+			},
+		}, nil)
 
-			co.FeedDTO(&dtos.SingularityDeployHistoryList{
-				{
-					Deploy: &dtos.SingularityDeploy{
-						Metadata: map[string]string{
-							"com.opentable.sous.clustername": "left",
-						},
-						Id: "testdep",
-						ContainerInfo: &dtos.SingularityContainerInfo{
-							Type:   dtos.SingularityContainerInfoSingularityContainerTypeDOCKER,
-							Docker: &dtos.SingularityDockerInfo{},
-							Volumes: dtos.SingularityVolumeList{
-								&dtos.SingularityVolume{
-									HostPath:      "/onhost",
-									ContainerPath: "/indocker",
-									Mode:          dtos.SingularityVolumeSingularityDockerVolumeModeRW,
-								},
+		co.FeedDTO(&dtos.SingularityDeployHistoryList{
+			{
+				Deploy: &dtos.SingularityDeploy{
+					Metadata: map[string]string{
+						"com.opentable.sous.clustername": "left",
+					},
+					Id: "testdep",
+					ContainerInfo: &dtos.SingularityContainerInfo{
+						Type:   dtos.SingularityContainerInfoSingularityContainerTypeDOCKER,
+						Docker: &dtos.SingularityDockerInfo{},
+						Volumes: dtos.SingularityVolumeList{
+							&dtos.SingularityVolume{
+								HostPath:      "/onhost",
+								ContainerPath: "/indocker",
+								Mode:          dtos.SingularityVolumeSingularityDockerVolumeModeRW,
 							},
 						},
-						Resources: &dtos.Resources{},
 					},
-				}}, nil)
+					Resources: &dtos.Resources{},
+				},
+			}}, nil)
 
-			whip[url] = co
-			return cl
-		},
-		10,
+		whip[url] = co
+		return cl
+	}
+	dep := deployer{
+		Client:        client,
+		singFac:       singFac,
+		ReqsPerServer: 10,
+		log:           logging.SilentLogSet(),
 	}
 
 	clusters := sous.Clusters{"test": {BaseURL: "http://test-singularity.org/"}}

@@ -9,7 +9,8 @@ import (
 	"regexp"
 	"text/template"
 
-	"golang.org/x/tools/godoc/vfs"
+	"github.com/nyarly/inlinefiles/templatestore"
+
 	"golang.org/x/tools/imports"
 )
 
@@ -17,80 +18,51 @@ import (
 
 // Renderer is responsible for actually turning the parsed API into go code
 type Renderer struct {
-	targetDir                   string
-	modelTmpl, apiTmpl, dtoTmpl *template.Template
+	targetDir string
+	//modelTmpl, apiTmpl *template.Template
+	structTmpl, codefileTmpl *template.Template
 }
 
 // NewRenderer creates a new renderer
-func NewRenderer(tgt string) (renderer *Renderer) {
-	renderer = &Renderer{targetDir: tgt}
+func NewRenderer(tgt string) *Renderer {
+	renderer := &Renderer{targetDir: tgt}
 
-	renderer.apiTmpl = template.Must(loadTemplate(Templates, "api", "api.tmpl"))
-	opT := renderer.apiTmpl.New("operation")
-	template.Must(loadTemplateInto(Templates, opT, "operation.tmpl"))
-	tyT := opT.New("type")
-	template.Must(loadTemplateInto(Templates, tyT, "type.tmpl"))
+	renderer.codefileTmpl = template.Must(templatestore.LoadText(Templates, "codefile", "codefile.tmpl"))
+	template.Must(templatestore.LoadTextOnto(Templates, renderer.codefileTmpl, "method", "method.tmpl"))
+	//template.Must(templatestore.LoadTextOnto(Templates, opT, "type", "type.tmpl"))
 
-	renderer.modelTmpl = template.Must(loadTemplate(Templates, "model", "model.tmpl"))
+	renderer.structTmpl = template.Must(templatestore.LoadText(Templates, "struct", "struct.tmpl"))
 
-	return
+	/*
+		renderer.apiTmpl = template.Must(templatestore.LoadText(Templates, "api", "api.tmpl"))
+		opT := template.Must(templatestore.LoadTextOnto(Templates, renderer.apiTmpl, "operation", "operation.tmpl"))
+		template.Must(templatestore.LoadTextOnto(Templates, opT, "type", "type.tmpl"))
+
+		renderer.modelTmpl = template.Must(templatestore.LoadText(Templates, "model", "model.tmpl"))
+	*/
+
+	return renderer
 }
 
 // RenderService performs the rendering of a service
 func RenderService(target string, ingester *Context) {
 	self := NewRenderer(target)
-	for _, model := range ingester.models {
-		if model.GoUses {
-			log.Print("Model: ", model.GoName)
-			path := filepath.Join("dtos", snakeCase(model.GoName))
-			err := self.renderModel(path, model)
-			if err != nil {
-				log.Print(err)
-			}
-		}
-	}
-
-	for _, api := range ingester.apis {
-		log.Print("API: ", api.Path)
-		err := self.renderAPI(apiPath(api.Path), api)
+	for _, strct := range ingester.structs {
+		log.Print("DTO Struct: ", strct.Name)
+		path := filepath.Join("dtos", snakeCase(strct.Name))
+		err := self.writeStruct(path, strct)
 		if err != nil {
 			log.Print(err)
 		}
 	}
-}
 
-func templateSource(fs vfs.Opener, fName string) (string, error) {
-	tmplFile, err := fs.Open(fName)
-	if err != nil {
-		return "", err
+	for _, codefile := range ingester.codefiles {
+		log.Printf("API code file: %s", codefile.Name)
+		err := self.writeCodeFile(codefile.Name, codefile)
+		if err != nil {
+			log.Print(err)
+		}
 	}
-	tmplB := &bytes.Buffer{}
-	_, err = tmplB.ReadFrom(tmplFile)
-	return tmplB.String(), err
-}
-
-func loadTemplate(fs vfs.Opener, tName, fName string) (*template.Template, error) {
-	return loadTemplateInto(fs, template.New(tName), fName)
-}
-
-func loadTemplateInto(fs vfs.Opener, tpl *template.Template, fName string) (*template.Template, error) {
-	src, err := templateSource(fs, fName)
-	if err != nil {
-		return nil, err
-	}
-	return tpl.Parse(src)
-}
-
-func apiPath(urlPath string) string {
-	slashes := regexp.MustCompile("/+")
-	unders := regexp.MustCompile("^_+")
-	brackets := regexp.MustCompile("[}{]")
-
-	urlPath = slashes.ReplaceAllString(urlPath, "_")
-	urlPath = unders.ReplaceAllString(urlPath, "")
-	urlPath = brackets.ReplaceAllString(urlPath, "")
-
-	return urlPath
 }
 
 func snakeCase(symbol string) string {
@@ -115,39 +87,28 @@ func snakeCase(symbol string) string {
 	}
 }
 
-func (r *Renderer) renderModel(path string, model *Model) error {
-	return renderOut(r.targetDir, path, r.modelTmpl, model)
+func (r *Renderer) writeStruct(path string, strct *Struct) error {
+	fullpath := r.fullpath(path)
+	fb, err := r.renderStruct(fullpath, strct)
+	return writeCode(fullpath, fb, err)
 }
 
-func (r *Renderer) renderAPI(path string, api *Api) error {
-	return renderOut(r.targetDir, path, r.apiTmpl, api)
+func (r *Renderer) writeCodeFile(path string, cfile *CodeFile) error {
+	fullpath := r.fullpath(path)
+	fb, err := r.renderCodeFile(fullpath, cfile)
+	return writeCode(fullpath, fb, err)
 }
 
-func renderOut(dir, path string, tmpl *template.Template, context interface{}) error {
-	fullpath := filepath.Join(dir, path) + ".go"
-	fb, err := renderCode(fullpath, tmpl, context)
-	if err == nil {
-		err = writeCode(fullpath, fb)
-	}
-	return err
+func (r *Renderer) fullpath(path string) string {
+	return filepath.Join(r.targetDir, path) + ".go"
 }
 
-func writeCode(fullpath string, formattedBytes []byte) error {
-	log.Print("Rendering to ", fullpath)
-	if len(formattedBytes) == 0 {
-		log.Print("Empty!")
-		return nil
-	}
+func (r *Renderer) renderStruct(fullpath string, strct *Struct) ([]byte, error) {
+	return renderCode(fullpath, r.structTmpl, strct)
+}
 
-	targetFile, err := os.Create(fullpath)
-	defer targetFile.Close()
-	if err != nil {
-		return fmt.Errorf("Problem creating file %s: %v", fullpath, err)
-	}
-
-	targetFile.Write(formattedBytes)
-
-	return nil
+func (r *Renderer) renderCodeFile(path string, cfile *CodeFile) ([]byte, error) {
+	return renderCode(path, r.codefileTmpl, cfile)
 }
 
 func renderCode(fullpath string, tmpl *template.Template, context interface{}) (fb []byte, err error) {
@@ -164,4 +125,30 @@ func renderCode(fullpath string, tmpl *template.Template, context interface{}) (
 	}
 
 	return fb, err
+}
+
+func writeCode(fullpath string, formattedBytes []byte, err error) error {
+	if err != nil {
+		return err
+	}
+	log.Print("Rendering to ", fullpath)
+	if len(formattedBytes) == 0 {
+		log.Print("Empty!")
+		return nil
+	}
+
+	dir := filepath.Dir(fullpath)
+	if dir != "." {
+		os.MkdirAll(dir, os.ModePerm)
+	}
+
+	targetFile, err := os.Create(fullpath)
+	defer targetFile.Close()
+	if err != nil {
+		return fmt.Errorf("Problem creating file %s: %v", fullpath, err)
+	}
+
+	targetFile.Write(formattedBytes)
+
+	return nil
 }

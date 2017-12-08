@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/readdebugger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -132,7 +133,7 @@ type PutConditionalsSuite struct {
 }
 
 func (t *PutConditionalsSuite) SetupTest() {
-	t.server = httptest.NewServer(testRouteMap().BuildRouter(&fallbackLogger{}))
+	t.server = httptest.NewServer(testRouteMap().BuildRouter(logging.SilentLogSet()))
 
 	t.client = &http.Client{}
 }

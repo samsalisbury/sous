@@ -48,6 +48,7 @@ type (
 		Client        rectificationClient
 		singFac       func(string) *singularity.Client
 		ReqsPerServer int
+		log           logging.LogSink
 	}
 
 	// DeployerOption is an option for configuring singularity deployers.
@@ -78,8 +79,8 @@ func stripDeployID(in string) string {
 }
 
 // NewDeployer creates a new Singularity-based sous.Deployer.
-func NewDeployer(c rectificationClient, options ...DeployerOption) *deployer {
-	d := &deployer{Client: c, ReqsPerServer: DefaultMaxHTTPConcurrencyPerServer}
+func NewDeployer(c rectificationClient, ls logging.LogSink, options ...DeployerOption) *deployer {
+	d := &deployer{Client: c, log: ls, ReqsPerServer: DefaultMaxHTTPConcurrencyPerServer}
 	for _, opt := range options {
 		opt(d)
 	}
@@ -120,9 +121,9 @@ func (r *deployer) SetSingularityFactory(fn func(string) *singularity.Client) {
 	r.singFac = fn
 }
 
-func (r *deployer) buildSingClient(url string) *singularity.Client {
+func (r *deployer) buildSingClient(url string, log logging.LogSink) *singularity.Client {
 	if r.singFac == nil {
-		return singularity.NewClient(url)
+		return singularity.NewClient(url, log)
 		//return singularity.NewClient(url, swaggering.StdlibDebugLogger{})
 	}
 	return r.singFac(url)

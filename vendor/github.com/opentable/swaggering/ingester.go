@@ -17,6 +17,8 @@ type ServiceApiJSON struct {
 	Path, Desc string
 }
 
+var fileRE = regexp.MustCompile(`^/(\w+).{format}$`)
+
 func ProcessService(dir string, ingester *Context) {
 	ingester.ProcessServiceDir(dir)
 }
@@ -28,14 +30,11 @@ func (ingester *Context) ProcessServiceDir(dir string) {
 
 	loadJSONfromPath(fullpath, apis)
 
-	fileRE := regexp.MustCompile(`^/(\w+).{format}$`)
-
 	for _, api := range apis.Apis {
-		smi := fileRE.FindStringSubmatchIndex(api.Path)
-		file := []byte("")
-		file = fileRE.ExpandString(file, "$1.json", api.Path, smi)
+		sms := fileRE.FindStringSubmatch(api.Path)
+		file := string(sms[1])
 
-		ingester.ingestApifromPath(filepath.Join(dir, string(file)))
+		ingester.ingestApifromPath(file, filepath.Join(dir, file+".json"))
 	}
 }
 
@@ -61,7 +60,7 @@ func loadJSON(fullpath string, data io.Reader, into interface{}) {
 	}
 }
 
-func (ctx *Context) ingestApifromPath(fullpath string) {
+func (ctx *Context) ingestApifromPath(name, fullpath string) {
 	log.Print("Processing:", fullpath)
 
 	data, err := os.Open(fullpath)
@@ -69,12 +68,13 @@ func (ctx *Context) ingestApifromPath(fullpath string) {
 		log.Print("Trouble with", fullpath, ":", err)
 		return
 	}
-	ctx.IngestApi(fullpath, data)
+	ctx.IngestApi(name, fullpath, data)
 }
 
-func (ctx *Context) IngestApi(aspath string, data io.Reader) {
+func (ctx *Context) IngestApi(name, aspath string, data io.Reader) {
 	ctx.swaggers = append(ctx.swaggers, &Swagger{})
 	swagger := ctx.swaggers[len(ctx.swaggers)-1]
+	swagger.name = name
 
 	loadJSON(aspath, data, swagger)
 }

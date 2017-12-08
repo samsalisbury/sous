@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
+## [Unreleased](//github.com/opentable/sous/compare/0.5.57...HEAD)
+* Server: HTTP client requests to Singularity log to Kafka
+* Server: HTTP client requests to the Docker registry log to Kafka
+* Server: HTTP server responses log to Kafka
+* Server: Additional metrics reported per request kind, per host and per kind,host pair.
+
 ## [0.5.57](//github.com/opentable/sous/compare/0.5.56...0.5.57)
 ### Fixed
 * CLI + Server: No longer panics when printing a nil Deployment.
