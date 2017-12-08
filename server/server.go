@@ -14,12 +14,6 @@ import (
 )
 
 type (
-	logSet interface {
-		Vomitf(format string, a ...interface{})
-		Debugf(format string, a ...interface{})
-		Warnf(format string, a ...interface{})
-	}
-
 	userExtractor struct{}
 )
 
@@ -63,21 +57,21 @@ func Run(laddr string, handler http.Handler) error {
 }
 
 // Handler builds the http.Handler for the Sous server httprouter.
-func Handler(sc ComponentLocator, metrics http.Handler, ls logSet) http.Handler {
+func Handler(sc ComponentLocator, metrics http.Handler, ls logging.LogSink) http.Handler {
 	handler := mux(sc, ls)
 	addMetrics(handler, metrics)
 	return handler
 }
 
 // Handler builds the http.Handler for the Sous server httprouter.
-func ProfilingHandler(sc ComponentLocator, metrics http.Handler, ls logSet) http.Handler {
+func ProfilingHandler(sc ComponentLocator, metrics http.Handler, ls logging.LogSink) http.Handler {
 	handler := mux(sc, ls)
 	addMetrics(handler, metrics)
 	addProfiling(handler)
 	return handler
 }
 
-func mux(sc ComponentLocator, ls logSet) *http.ServeMux {
+func mux(sc ComponentLocator, ls logging.LogSink) *http.ServeMux {
 	router := routemap(sc).BuildRouter(ls)
 
 	handler := http.NewServeMux()

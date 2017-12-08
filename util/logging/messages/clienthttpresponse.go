@@ -36,21 +36,21 @@ func ReportClientHTTPResponseFields(logger logging.LogSink, method, server, path
 
 // ReportClientHTTPResponse reports a response recieved by Sous as a client.
 func ReportClientHTTPResponse(logger logging.LogSink, rz *http.Response, resName string, dur time.Duration) {
-	m := buildHTTPLogMessage(false, rz, resName, dur)
+	m := buildHTTPLogMessage(false, rz.Request, rz.StatusCode, rz.ContentLength, resName, dur)
 	m.ExcludeMe()
 	logging.Deliver(m, logger)
 }
 
 // ReportServerHTTPResponse reports a response recieved by Sous as a client.
 // n.b. this interface subject to change
-func ReportServerHTTPResponse(logger logging.LogSink, rz *http.Response, resName string, dur time.Duration) {
-	m := buildHTTPLogMessage(true, rz, resName, dur)
+func ReportServerHTTPResponse(logger logging.LogSink, rq *http.Request, statusCode int, contentLength int64, resName string, dur time.Duration) {
+	m := buildHTTPLogMessage(true, rq, statusCode, contentLength, resName, dur)
 	m.ExcludeMe()
 	logging.Deliver(m, logger)
 }
 
-func buildHTTPLogMessage(server bool, rz *http.Response, resName string, dur time.Duration) *httpLogEntry {
-	url := rz.Request.URL
+func buildHTTPLogMessage(server bool, rq *http.Request, statusCode int, responseContentLength int64, resName string, dur time.Duration) *httpLogEntry {
+	url := rq.URL
 
 	qps := map[string]string{}
 	for k, v := range url.Query() {
@@ -60,11 +60,11 @@ func buildHTTPLogMessage(server bool, rz *http.Response, resName string, dur tim
 	m := newHTTPLogEntry(
 		server,
 		resName,
-		rz.Request.Method,
+		rq.Method,
 		url.String(),
-		rz.StatusCode,
-		rz.Request.ContentLength,
-		rz.ContentLength,
+		statusCode,
+		rq.ContentLength,
+		responseContentLength,
 		dur,
 	)
 	m.ExcludeMe()

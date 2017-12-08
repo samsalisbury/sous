@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/opentable/sous/util/logging"
 	"github.com/pkg/errors"
 )
 
@@ -71,12 +72,12 @@ type (
 	}
 )
 
-func (rm *RouteMap) buildMetaHandler(r *httprouter.Router, ls logSet) *MetaHandler {
+func (rm *RouteMap) buildMetaHandler(r *httprouter.Router, ls logging.LogSink) *MetaHandler {
 	ph := &StatusMiddleware{logSet: ls, gatelatch: os.Getenv("GATELATCH")}
 	mh := &MetaHandler{
 		router:        r,
 		statusHandler: ph,
-		logSet:        ls,
+		LogSink:       ls,
 	}
 	mh.InstallPanicHandler()
 
@@ -84,7 +85,7 @@ func (rm *RouteMap) buildMetaHandler(r *httprouter.Router, ls logSet) *MetaHandl
 }
 
 // BuildRouter builds a returns an http.Handler based on some constant configuration
-func (rm *RouteMap) BuildRouter(ls logSet) http.Handler {
+func (rm *RouteMap) BuildRouter(ls logging.LogSink) http.Handler {
 	r := httprouter.New()
 	mh := rm.buildMetaHandler(r, ls)
 
@@ -138,7 +139,7 @@ func (doex *defaultOptionsExchanger) Exchange() (interface{}, int) {
 
 // SingleExchanger returns a single exchanger for the given exchange factory
 // and injector factory. Can be useful in testing or trickier integrations.
-func (rm *RouteMap) SingleExchanger(factory ExchangeFactory, gf func() Injector, ls logSet) Exchanger {
+func (rm *RouteMap) SingleExchanger(factory ExchangeFactory, gf func() Injector, ls logging.LogSink) Exchanger {
 	r := httprouter.New()
 	w := httptest.NewRecorder()
 	rq := httptest.NewRequest("GET", "/", nil)

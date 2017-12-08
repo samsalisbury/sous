@@ -41,7 +41,9 @@ type httpClient struct {
 func (c *httpClient) Do(resourceName string, req *http.Request) (*http.Response, error) {
 	start := time.Now()
 	res, err := c.http.Do(req)
-	messages.ReportClientHTTPResponse(c.log, res, resourceName, time.Now().Sub(start))
+	if res != nil {
+		messages.ReportClientHTTPResponse(c.log, res, resourceName, time.Now().Sub(start))
+	}
 	return res, err
 }
 
@@ -49,7 +51,9 @@ func (c *httpClient) Do(resourceName string, req *http.Request) (*http.Response,
 func (c *httpClient) Get(resourceName string, url string) (resp *http.Response, err error) {
 	start := time.Now()
 	res, err := c.http.Get(url)
-	messages.ReportClientHTTPResponse(c.log, res, resourceName, time.Now().Sub(start))
+	if res != nil {
+		messages.ReportClientHTTPResponse(c.log, res, resourceName, time.Now().Sub(start))
+	}
 	return res, err
 }
 
@@ -57,7 +61,9 @@ func (c *httpClient) Get(resourceName string, url string) (resp *http.Response, 
 func (c *httpClient) Head(resourceName string, url string) (resp *http.Response, err error) {
 	start := time.Now()
 	res, err := c.http.Head(url)
-	messages.ReportClientHTTPResponse(c.log, res, resourceName, time.Now().Sub(start))
+	if res != nil {
+		messages.ReportClientHTTPResponse(c.log, res, resourceName, time.Now().Sub(start))
+	}
 	return res, err
 }
 
