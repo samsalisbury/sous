@@ -87,19 +87,59 @@ func TestEnsureGDMExists(t *testing.T) {
 	}
 }
 
-func TestGDMNotARepo(t *testing.T) {
+func TestEnsureGDMExists_notARepoFile(t *testing.T) {
 	testDataDir := "testdata/gen/test-ensure-gdm-exists"
+
+	if err := os.MkdirAll(testDataDir, 0777); err != nil {
+		t.Fatal(err)
+	}
+
 	someFile := path.Join(testDataDir, "a-file")
+
+	if err := ioutil.WriteFile(someFile, []byte("hi"), 0777); err != nil {
+		t.Fatal(err)
+	}
 
 	err := ensureGDMExists(someFile, "", t.Logf)
 	if err == nil {
-		t.Error("expected error when GDM repo does not exist")
+		t.Error("expected error when GDM repo does not exist, path is valid to a file")
 	}
+
+	if err := os.RemoveAll(testDataDir); err != nil {
+		t.Fatal(err)
+	}
+
 }
 
-func TestEnsureNoGDM(t *testing.T) {
+func TestEnsureGDMExists_notARepoDir(t *testing.T) {
+	testDataDir := "testdata/gen/test-ensure-gdm-exists"
+
+	if err := os.MkdirAll(testDataDir, 0777); err != nil {
+		t.Fatal(err)
+	}
+
+	someDir := path.Join(testDataDir, "a-dir")
+
+	if _, err := os.Stat(someDir); os.IsNotExist(err) {
+		if err := os.Mkdir(someDir, 0777); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	err := ensureGDMExists(someDir, "", t.Logf)
+	if err == nil {
+		t.Error("expected error when GDM repo does not exist, path is valid to a dir")
+	}
+
+	if err := os.RemoveAll(testDataDir); err != nil {
+		t.Fatal(err)
+	}
+
+}
+
+func TestEnsureGDMExists_pathDoesNotExist(t *testing.T) {
 	err := ensureGDMExists("this-path-does-not-exist", "", t.Logf)
 	if err == nil {
-		t.Error("expected error when GDM repo does not exist")
+		t.Error("expected error when GDM repo does not exist, path not valid")
 	}
 }
