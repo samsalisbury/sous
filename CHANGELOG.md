@@ -10,7 +10,7 @@ with respect to its command line interface and HTTP interface.
 * Server: HTTP client requests to Singularity log to Kafka
 * Server: HTTP client requests to the Docker registry log to Kafka
 * Server: HTTP server responses log to Kafka
-* [TODO] Server: Additional metrics reported per request kind, per host and per kind,host pair.
+* Server: Additional metrics reported per request kind, per host and per kind,host pair.
 
 ## [0.5.57](//github.com/opentable/sous/compare/0.5.56...0.5.57)
 ### Fixed
