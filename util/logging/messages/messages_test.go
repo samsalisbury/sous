@@ -14,9 +14,9 @@ func TestReportCHResponseFields(t *testing.T) {
 	msg := newHTTPLogEntry(false, "example-api", "GET", "http://example.com/api?a=a", 200, 0, 123, time.Millisecond*30)
 	logging.Deliver(msg, logger)
 
-	assert.Len(t, control.Metrics.CallsTo("UpdateTimer"), 2)
-	assert.Len(t, control.Metrics.CallsTo("UpdateSample"), 2)
-	assert.Len(t, control.Metrics.CallsTo("IncCounter"), 2)
+	assert.Len(t, control.Metrics.CallsTo("UpdateTimer"), 3)
+	assert.Len(t, control.Metrics.CallsTo("UpdateSample"), 3)
+	assert.Len(t, control.Metrics.CallsTo("IncCounter"), 3)
 	logCalls := control.CallsTo("LogMessage")
 	require.Len(t, logCalls, 1)
 	assert.Equal(t, logCalls[0].PassedArgs().Get(0), logging.InformationLevel)

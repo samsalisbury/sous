@@ -100,14 +100,36 @@ func (msg *httpLogEntry) MetricsTo(metrics logging.MetricsSink) {
 	if msg.serverSide {
 		side = "server"
 	}
-	metrics.UpdateTimer(fmt.Sprintf("%s-http-request-duration", side), msg.dur)
-	metrics.UpdateTimer(fmt.Sprintf("%s-http-request-duration.%s", side, msg.resourceFamily), msg.dur)
+	host := strings.Replace(msg.server, ".", "_", -1)
 
-	metrics.IncCounter(fmt.Sprintf("%s-http-status.%d", side, msg.status), 1)
-	metrics.IncCounter(fmt.Sprintf("%s-http-status.%s.%d", side, msg.resourceFamily, msg.status), 1)
+	nameGen := func(pat string, fields ...interface{}) []string {
+		base := fmt.Sprintf("%s-%s-%s", side, msg.method, pat)
+		if len(fields) > 0 {
+			base = fmt.Sprintf(base, fields...)
+		}
 
-	metrics.UpdateSample(fmt.Sprintf("%s-http-request-size", side), msg.requestSize)
-	metrics.UpdateSample(fmt.Sprintf("%s-http-request-size.%s", side, msg.resourceFamily), msg.requestSize)
+		// put the metrics into 3 buckets:
+		// by "resource family" - a way of aggregating URLs
+		// by hostname (with s/./_/g for graphite's comfort)
+		// by the pair of (resource, host)
+		return []string{
+			fmt.Sprintf("%s.%s", base, msg.resourceFamily),
+			fmt.Sprintf("%s.%s", base, host),
+			fmt.Sprintf("%s.%s.%s", base, host, msg.resourceFamily),
+		}
+	}
+
+	for _, name := range nameGen("http-request-duration") {
+		metrics.UpdateTimer(name, msg.dur)
+	}
+
+	for _, name := range nameGen("http-status.%d", msg.status) {
+		metrics.IncCounter(name, 1)
+	}
+
+	for _, name := range nameGen("http-request-size") {
+		metrics.UpdateSample(name, msg.requestSize)
+	}
 }
 
 func (msg *httpLogEntry) EachField(f logging.FieldReportFn) {
