@@ -275,9 +275,9 @@ func (ls *liveStream) Write(buf []byte) (count int, err error) {
 		count, err = b.Write(buf)
 
 		if ls.debugDir != "" {
-			_, err = ls.debugs[n].Write(buf)
-			if err != nil {
-				log.Printf("Error while writing bytes: %v", err)
+			_, werr := ls.debugs[n].Write(buf)
+			if werr != nil {
+				log.Printf("Error while writing bytes: %v", werr)
 				log.Printf("Was trying to write: %s", string(buf))
 			}
 		}
