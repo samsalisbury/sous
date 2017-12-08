@@ -86,20 +86,21 @@ func (lrw loggingResponseWriter) Write(b []byte) (int, error) {
 	return n, err
 }
 
-func (mh *MetaHandler) wrapResponseWriter(rq *http.Request, rw http.ResponseWriter) http.ResponseWriter {
+func (mh *MetaHandler) wrapResponseWriter(resName string, rq *http.Request, rw http.ResponseWriter) http.ResponseWriter {
 	return &loggingResponseWriter{
 		ResponseWriter: rw,
 		req:            rq,
 		log:            mh.LogSink,
 		start:          time.Now(),
 		statusCode:     http.StatusOK,
+		resourceName:   resName,
 	}
 }
 
 // GetHandling handles Get requests.
-func (mh *MetaHandler) GetHandling(factory ExchangeFactory) httprouter.Handle {
+func (mh *MetaHandler) GetHandling(resName string, factory ExchangeFactory) httprouter.Handle {
 	return func(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		w := mh.wrapResponseWriter(r, rw)
+		w := mh.wrapResponseWriter(resName, r, rw)
 		h := mh.injectedHandler(factory, w, r, p)
 		data, status := h.Exchange()
 		w.Header().Add("Access-Control-Allow-Origin", "*") //XXX configurable by app
@@ -108,9 +109,9 @@ func (mh *MetaHandler) GetHandling(factory ExchangeFactory) httprouter.Handle {
 }
 
 // DeleteHandling handles Delete requests.
-func (mh *MetaHandler) DeleteHandling(factory ExchangeFactory) httprouter.Handle {
+func (mh *MetaHandler) DeleteHandling(resName string, factory ExchangeFactory) httprouter.Handle {
 	return func(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		w := mh.wrapResponseWriter(r, rw)
+		w := mh.wrapResponseWriter(resName, r, rw)
 		h := mh.injectedHandler(factory, w, r, p)
 		_, status := h.Exchange()
 		mh.renderData(status, w, r, nil)
@@ -118,9 +119,9 @@ func (mh *MetaHandler) DeleteHandling(factory ExchangeFactory) httprouter.Handle
 }
 
 // HeadHandling handles Head requests.
-func (mh *MetaHandler) HeadHandling(factory ExchangeFactory) httprouter.Handle {
+func (mh *MetaHandler) HeadHandling(resName string, factory ExchangeFactory) httprouter.Handle {
 	return func(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		w := mh.wrapResponseWriter(r, rw)
+		w := mh.wrapResponseWriter(resName, r, rw)
 		h := mh.injectedHandler(factory, w, r, p)
 		_, status := h.Exchange()
 		mh.writeHeaders(status, w, r, nil)
@@ -128,9 +129,9 @@ func (mh *MetaHandler) HeadHandling(factory ExchangeFactory) httprouter.Handle {
 }
 
 // OptionsHandling handles Options requests.
-func (mh *MetaHandler) OptionsHandling(factory ExchangeFactory) httprouter.Handle {
+func (mh *MetaHandler) OptionsHandling(resName string, factory ExchangeFactory) httprouter.Handle {
 	return func(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		w := mh.wrapResponseWriter(r, rw)
+		w := mh.wrapResponseWriter(resName, r, rw)
 		h := mh.injectedHandler(factory, w, r, p)
 		data, status := h.Exchange()
 
@@ -144,9 +145,9 @@ func (mh *MetaHandler) OptionsHandling(factory ExchangeFactory) httprouter.Handl
 }
 
 // PutHandling handles PUT requests.
-func (mh *MetaHandler) PutHandling(factory ExchangeFactory) httprouter.Handle {
+func (mh *MetaHandler) PutHandling(resName string, factory ExchangeFactory) httprouter.Handle {
 	return func(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		w := mh.wrapResponseWriter(r, rw)
+		w := mh.wrapResponseWriter(resName, r, rw)
 		if r.Header.Get("If-Match") == "" && r.Header.Get("If-None-Match") == "" {
 			mh.writeHeaders(http.StatusPreconditionRequired, w, r, "PUT requires If-Match or If-None-Match")
 			return

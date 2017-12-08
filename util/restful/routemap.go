@@ -96,19 +96,19 @@ func (rm *RouteMap) BuildRouter(ls logging.LogSink) http.Handler {
 		opt, canOpt := e.Resource.(Optionsable)
 
 		if canGet {
-			r.Handle("GET", e.Path, mh.GetHandling(get.Get))
-			r.Handle("HEAD", e.Path, mh.HeadHandling(get.Get))
+			r.Handle("GET", e.Path, mh.GetHandling(e.Name, get.Get))
+			r.Handle("HEAD", e.Path, mh.HeadHandling(e.Name, get.Get))
 		}
 		if canPut {
-			r.Handle("PUT", e.Path, mh.PutHandling(put.Put))
+			r.Handle("PUT", e.Path, mh.PutHandling(e.Name, put.Put))
 		}
 		if canDel {
-			r.Handle("DELETE", e.Path, mh.DeleteHandling(del.Delete))
+			r.Handle("DELETE", e.Path, mh.DeleteHandling(e.Name, del.Delete))
 		}
 		if canOpt {
-			r.Handle("OPTIONS", e.Path, mh.OptionsHandling(opt.Options))
+			r.Handle("OPTIONS", e.Path, mh.OptionsHandling(e.Name, opt.Options))
 		} else {
-			r.Handle("OPTIONS", e.Path, mh.OptionsHandling(defaultOptions(e.Resource)))
+			r.Handle("OPTIONS", e.Path, mh.OptionsHandling(e.Name, defaultOptions(e.Resource)))
 		}
 	}
 
