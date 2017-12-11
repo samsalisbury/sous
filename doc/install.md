@@ -35,7 +35,7 @@ $ VERSION=0.1.7
 # In the following curl command:
 #     -L means follow HTTP redirects.
 #     -O means save the file to the current directory  with the same name.
-$ curl -LO https://github.com/opentable/sous/releases/download/v$VERSION/sous-darwin-amd64_$VERSION.tar.gz
+$ curl -LO https://github.com/opentable/sous/releases/download/$VERSION/sous-darwin-amd64_$VERSION.tar.gz
 $ tar -vxzf sous-darwin-amd64_$VERSION.tar.gz
 ```
 
