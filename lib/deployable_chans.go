@@ -8,8 +8,8 @@ type (
 	// A DeployableChans is a bundle of channels describing actions to take on a
 	// cluster
 	DeployableChans struct {
-		Start, Stop, Stable, Update chan *DeployablePair
-		Errs                        chan *DiffResolution
+		Pairs chan *DeployablePair
+		Errs  chan *DiffResolution
 		sync.WaitGroup
 	}
 
@@ -17,6 +17,7 @@ type (
 	// situation, where the Prior Deployable is the known state and the Post
 	// Deployable is the desired state.
 	DeployablePair struct {
+		Kind         DeployablePairKind
 		Diffs        Differences
 		Prior, Post  *Deployable
 		name         DeploymentID
@@ -27,7 +28,7 @@ type (
 	DeployablePairKind int
 
 	diffSet struct {
-		New, Gone, Same, Changed DeployablePairs
+		Pairs DeployablePairs
 	}
 )
 
@@ -50,37 +51,22 @@ func NewDeployableChans(size ...int) *DeployableChans {
 		s = size[0]
 	}
 	return &DeployableChans{
-		Start:  make(chan *DeployablePair, s),
-		Stop:   make(chan *DeployablePair, s),
-		Stable: make(chan *DeployablePair, s),
-		Update: make(chan *DeployablePair, s),
-		Errs:   make(chan *DiffResolution, s),
+		Pairs: make(chan *DeployablePair, s),
+		Errs:  make(chan *DiffResolution, s),
 	}
 }
 
 // Close closes all the channels in a DeployableChans in a single action
 func (d *DeployableChans) Close() {
-	close(d.Start)
-	close(d.Stop)
-	close(d.Stable)
-	close(d.Update)
+	close(d.Pairs)
 	close(d.Errs)
 }
 
 func (d *DeployableChans) collect() diffSet {
 	ds := newDiffSet()
 
-	for n := range d.Start {
-		ds.New = append(ds.New, n)
-	}
-	for g := range d.Stop {
-		ds.Gone = append(ds.Gone, g)
-	}
-	for s := range d.Stable {
-		ds.Same = append(ds.Same, s)
-	}
-	for m := range d.Update {
-		ds.Changed = append(ds.Changed, m)
+	for m := range d.Pairs {
+		ds.Pairs = append(ds.Pairs, m)
 	}
 	return ds
 }
@@ -88,20 +74,6 @@ func (d *DeployableChans) collect() diffSet {
 // ID returns the ID of this DeployablePair.
 func (dp *DeployablePair) ID() DeploymentID {
 	return dp.name
-}
-
-// Kind returns the kind of the pair
-func (dp *DeployablePair) Kind() DeployablePairKind {
-	switch {
-	case dp.Prior == nil:
-		return AddedKind
-	case dp.Post == nil:
-		return RemovedKind
-	case len(dp.Diffs) == 0:
-		return SameKind
-	default:
-		return ModifiedKind
-	}
 }
 
 func (kind DeployablePairKind) String() string {
