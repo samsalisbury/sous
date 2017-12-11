@@ -90,3 +90,18 @@ func (kind DeployablePairKind) String() string {
 		return "modified"
 	}
 }
+
+func (kind DeployablePairKind) ResolveVerb() string {
+	switch kind {
+	default:
+		return ""
+	case SameKind:
+		return "take no action"
+	case AddedKind:
+		return "create new deployment"
+	case RemovedKind:
+		return "delete existing deployment"
+	case ModifiedKind:
+		return "update existing deployment"
+	}
+}

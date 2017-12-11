@@ -5,6 +5,11 @@ import (
 	"sync"
 )
 
+// DeployableProcessor processes DeployablePairs off of a DeployableChans channel
+type DeployableProcessor interface {
+	Pairs(dp *DeployablePair) (*DeployablePair, *DiffResolution)
+}
+
 // Pipeline attaches a DeployableProcessor to the DeployableChans, and returns a new DeployableChans.
 func (d *DeployableChans) Pipeline(ctx context.Context, proc DeployableProcessor) *DeployableChans {
 	out := NewDeployableChans(1)
@@ -53,22 +58,11 @@ func (d *DeployableChans) Pipeline(ctx context.Context, proc DeployableProcessor
 		d.Done()
 	}()
 
-	go process(d.Start, out.Start, proc.Start)
-	go process(d.Stop, out.Stop, proc.Stop)
-	go process(d.Stable, out.Stable, proc.Stable)
-	go process(d.Update, out.Update, proc.Update)
+	go process(d.Pairs, out.Pairs, proc.Pairs)
 	return out
 }
 
 func nullHandler(err *DiffResolution) {}
-
-// DeployableProcessor processes DeployablePairs off of a DeployableChans channel
-type DeployableProcessor interface {
-	Start(dp *DeployablePair) (*DeployablePair, *DiffResolution)
-	Stop(dp *DeployablePair) (*DeployablePair, *DiffResolution)
-	Stable(dp *DeployablePair) (*DeployablePair, *DiffResolution)
-	Update(dp *DeployablePair) (*DeployablePair, *DiffResolution)
-}
 
 type DeployableResolutionHandler interface {
 	HandleResolution(err *DiffResolution)

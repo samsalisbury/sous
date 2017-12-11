@@ -25,22 +25,7 @@ type deployableMessage struct {
 	callerInfo logging.CallerInfo
 }
 
-func (log loggingProcessor) Start(dp *DeployablePair) (*DeployablePair, *DiffResolution) {
-	log.doLog(dp)
-	return dp, nil
-}
-
-func (log loggingProcessor) Stop(dp *DeployablePair) (*DeployablePair, *DiffResolution) {
-	log.doLog(dp)
-	return dp, nil
-}
-
-func (log loggingProcessor) Stable(dp *DeployablePair) (*DeployablePair, *DiffResolution) {
-	log.doLog(dp)
-	return dp, nil
-}
-
-func (log loggingProcessor) Update(dp *DeployablePair) (*DeployablePair, *DiffResolution) {
+func (log loggingProcessor) Pairs(dp *DeployablePair) (*DeployablePair, *DiffResolution) {
 	log.doLog(dp)
 	return dp, nil
 }
@@ -71,7 +56,7 @@ func (msg *deployableMessage) DefaultLevel() logging.Level {
 }
 
 func (msg *deployableMessage) Message() string {
-	return msg.pair.Kind().String() + " deployment diff"
+	return msg.pair.Kind.String() + " deployment diff"
 }
 
 func (msg *deployableMessage) EachField(f logging.FieldReportFn) {
@@ -141,8 +126,8 @@ func (msg *deployableMessage) EachField(f logging.FieldReportFn) {
 	if msg.pair != nil {
 		f("sous-deployment-id", msg.pair.ID().String())
 		f("sous-manifest-id", msg.pair.ID().ManifestID.String())
-		f("sous-diff-disposition", msg.pair.Kind().String())
-		if msg.pair.Kind() == ModifiedKind {
+		f("sous-diff-disposition", msg.pair.Kind.String())
+		if msg.pair.Kind == ModifiedKind {
 			f("sous-deployment-diffs", msg.pair.Diffs.String())
 		}
 

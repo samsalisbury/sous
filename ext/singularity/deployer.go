@@ -79,7 +79,7 @@ func stripDeployID(in string) string {
 }
 
 // NewDeployer creates a new Singularity-based sous.Deployer.
-func NewDeployer(c rectificationClient, ls logging.LogSink, options ...DeployerOption) *deployer {
+func NewDeployer(c rectificationClient, ls logging.LogSink, options ...DeployerOption) sous.Deployer {
 	d := &deployer{Client: c, log: ls, ReqsPerServer: DefaultMaxHTTPConcurrencyPerServer}
 	for _, opt := range options {
 		opt(d)
@@ -93,27 +93,59 @@ func OptMaxHTTPReqsPerServer(n int) DeployerOption {
 	return func(d *deployer) { d.ReqsPerServer = n }
 }
 
-// RectifyCreates implements sous.Deployer on deployer
-func (r *deployer) RectifyCreates(cc <-chan *sous.DeployablePair, errs chan<- sous.DiffResolution) {
+// Rectify implements sous.Deployer on deployer
+func (r *deployer) Rectify(cc <-chan *sous.DeployablePair, errs chan<- sous.DiffResolution) {
 	for d := range cc {
-		result := sous.DiffResolution{DeploymentID: d.ID()}
-		if err := r.RectifySingleCreate(d); err != nil {
-			result.Desc = "not created"
-			switch t := err.(type) {
-			default:
-				result.Error = sous.WrapResolveError(&sous.CreateError{Deployment: d.Post.Deployment.Clone(), Err: err})
-			case *swaggering.ReqError:
-				if t.Status == 400 {
-					result.Error = sous.WrapResolveError(err)
-				} else {
+		pair := d // TODO: Remove this
+		switch d.Kind {
+		case sous.AddedKind:
+			result := sous.DiffResolution{DeploymentID: d.ID()}
+			if err := r.RectifySingleCreate(d); err != nil {
+				result.Desc = "not created"
+				switch t := err.(type) {
+				default:
 					result.Error = sous.WrapResolveError(&sous.CreateError{Deployment: d.Post.Deployment.Clone(), Err: err})
+				case *swaggering.ReqError:
+					if t.Status == 400 {
+						result.Error = sous.WrapResolveError(err)
+					} else {
+						result.Error = sous.WrapResolveError(&sous.CreateError{Deployment: d.Post.Deployment.Clone(), Err: err})
+					}
 				}
+			} else {
+				result.Desc = "created"
 			}
-		} else {
-			result.Desc = "created"
+			Log.Vomit.Printf("Reporting result of create: %#v", result)
+			errs <- result
+		case sous.RemovedKind:
+			result := sous.DiffResolution{DeploymentID: d.ID()}
+			if err := r.RectifySingleDelete(d); err != nil {
+				result.Error = sous.WrapResolveError(&sous.DeleteError{Deployment: d.Prior.Deployment.Clone(), Err: err})
+				result.Desc = "not deleted"
+			} else {
+				result.Desc = "deleted"
+			}
+			Log.Vomit.Printf("Reporting result of delete: %#v", result)
+			errs <- result
+		case sous.ModifiedKind:
+			result := sous.DiffResolution{DeploymentID: pair.ID()}
+			if err := r.RectifySingleModification(pair); err != nil {
+				dp := &sous.DeploymentPair{
+					Prior: pair.Prior.Deployment.Clone(),
+					Post:  pair.Post.Deployment.Clone(),
+				}
+				Log.Debug.Print(err)
+				result.Error = sous.WrapResolveError(&sous.ChangeError{Deployments: dp, Err: err})
+				result.Desc = "not updated"
+			} else if pair.Prior.Status == sous.DeployStatusFailed || pair.Post.Status == sous.DeployStatusFailed {
+				result.Desc = "updated"
+				result.Error = sous.WrapResolveError(&sous.FailedStatusError{})
+			} else {
+				result.Desc = "updated"
+			}
+			Log.Vomit.Printf("Reporting result of modify: %#v", result)
+			errs <- result
 		}
-		Log.Vomit.Printf("Reporting result of create: %#v", result)
-		errs <- result
 	}
 }
 
@@ -155,20 +187,6 @@ func (r *deployer) RectifySingleCreate(d *sous.DeployablePair) (err error) {
 	return r.Client.Deploy(*d.Post, reqID)
 }
 
-func (r *deployer) RectifyDeletes(dc <-chan *sous.DeployablePair, errs chan<- sous.DiffResolution) {
-	for d := range dc {
-		result := sous.DiffResolution{DeploymentID: d.ID()}
-		if err := r.RectifySingleDelete(d); err != nil {
-			result.Error = sous.WrapResolveError(&sous.DeleteError{Deployment: d.Prior.Deployment.Clone(), Err: err})
-			result.Desc = "not deleted"
-		} else {
-			result.Desc = "deleted"
-		}
-		Log.Vomit.Printf("Reporting result of delete: %#v", result)
-		errs <- result
-	}
-}
-
 func (r *deployer) RectifySingleDelete(d *sous.DeployablePair) (err error) {
 	defer rectifyRecover(d, "RectifySingleDelete", &err)
 	data, ok := d.ExecutorData.(*singularityTaskData)
@@ -183,29 +201,6 @@ func (r *deployer) RectifySingleDelete(d *sous.DeployablePair) (err error) {
 	return nil
 	// The following line deletes requests when it is not commented out.
 	//return r.Client.DeleteRequest(d.Cluster.BaseURL, requestID, "deleting request for removed manifest")
-}
-
-func (r *deployer) RectifyModifies(
-	mc <-chan *sous.DeployablePair, errs chan<- sous.DiffResolution) {
-	for pair := range mc {
-		result := sous.DiffResolution{DeploymentID: pair.ID()}
-		if err := r.RectifySingleModification(pair); err != nil {
-			dp := &sous.DeploymentPair{
-				Prior: pair.Prior.Deployment.Clone(),
-				Post:  pair.Post.Deployment.Clone(),
-			}
-			Log.Debug.Print(err)
-			result.Error = sous.WrapResolveError(&sous.ChangeError{Deployments: dp, Err: err})
-			result.Desc = "not updated"
-		} else if pair.Prior.Status == sous.DeployStatusFailed || pair.Post.Status == sous.DeployStatusFailed {
-			result.Desc = "updated"
-			result.Error = sous.WrapResolveError(&sous.FailedStatusError{})
-		} else {
-			result.Desc = "updated"
-		}
-		Log.Vomit.Printf("Reporting result of modify: %#v", result)
-		errs <- result
-	}
 }
 
 func (r *deployer) RectifySingleModification(pair *sous.DeployablePair) (err error) {
