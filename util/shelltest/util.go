@@ -35,14 +35,10 @@ func BuildPath(exes ...string) (string, error) {
 }
 
 // TemplateConfigs walks the sourceDir, templating into targetDir based on configData
-func TemplateConfigs(sourceDir, targetDir string, configData interface{}) error {
+func TemplateConfigs(sourceDir, targetDir string, configData interface{}) error { // nolint : TODO: complexity of this function is warning
 	log.Printf("Templating %q -> %q.", sourceDir, targetDir)
 	var linkCount, templCount int
 	err := filepath.Walk(sourceDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-
 		if err != nil {
 			return err
 		}
@@ -57,9 +53,10 @@ func TemplateConfigs(sourceDir, targetDir string, configData interface{}) error 
 		}
 
 		if 0 != (info.Mode() & os.ModeSymlink) {
-			linkT, err := os.Readlink(path)
-			if err != nil {
-				return errors.Wrap(err, "readlink")
+			linkT, errLink := os.Readlink(path)
+
+			if errLink != nil {
+				return errors.Wrap(errLink, "readlink")
 			}
 			if filepath.IsAbs(linkT) {
 				linkT, err = filepath.Rel(sourceDir, linkT)
@@ -92,7 +89,12 @@ func TemplateConfigs(sourceDir, targetDir string, configData interface{}) error 
 		if err != nil {
 			return errors.Wrap(err, "create target")
 		}
-		defer target.Close()
+
+		defer func() {
+			if cerr := target.Close(); cerr != nil && err == nil {
+				err = cerr
+			}
+		}()
 
 		tmpl, err := template.New(f.Name()).Parse(string(bytes))
 		if err != nil {

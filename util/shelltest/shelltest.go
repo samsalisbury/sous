@@ -14,11 +14,11 @@ import (
 type (
 	// A ShellTest is a context for executing CLI commands and testing the results
 	ShellTest struct {
-		seq            *int
-		t              *testing.T
-		name, writeDir string
-		shell          *captiveShell
-		tmplContext    interface{}
+		seq         *int
+		t           *testing.T
+		writeDir    string
+		shell       *captiveShell
+		tmplContext interface{}
 	}
 
 	// A CheckFn receives the Result of running a script, and should inspect it,
@@ -72,7 +72,9 @@ func (st *ShellTest) DebugPrefix(prefix string) {
 // Template processes a tmplSrc as a text/template with the ShellTest's
 // template context. Useful for user advice, for instance.
 func (st *ShellTest) Template(name, tmplSrc string) (string, error) {
-	tmpl, err := template.New(name).Parse(whitespace.CleanWS(tmplSrc))
+
+	clean := whitespace.CleanWS(tmplSrc)
+	tmpl, err := template.New(name).Parse(clean)
 	if err != nil {
 		return "", err
 	}
@@ -86,7 +88,7 @@ func (st *ShellTest) Template(name, tmplSrc string) (string, error) {
 // Block runs a block of shell script, returning a new ShellTest. If the check
 // function includes a failing test, however, blocks run on the resulting
 // ShellTest will be skipped.
-func (st *ShellTest) Block(name, script string, check ...CheckFn) *ShellTest {
+func (st *ShellTest) Block(name, oldScript string, check ...CheckFn) *ShellTest {
 	if st.shell == nil { // When a shell fails, follow-on blocks aren't run
 		return st
 	}
@@ -95,11 +97,11 @@ func (st *ShellTest) Block(name, script string, check ...CheckFn) *ShellTest {
 		(*st.seq)++
 		blockName := fmt.Sprintf("%03d_%s", (*st.seq), name)
 		st.shell.BlockName(blockName)
-		script, err := st.Template(name, script)
+		newScript, err := st.Template(name, oldScript)
 		if err != nil {
 			t.Fatalf("Script loading err: %v", err)
 		}
-		res, err := st.shell.Run(script)
+		res, err := st.shell.Run(newScript)
 		if err != nil {
 			if st.writeDir != "" {
 				t.Logf("Shell script, output and errors written to %q.", filepath.Join(st.writeDir, blockName))
