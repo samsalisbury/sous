@@ -3,6 +3,7 @@ package docker_registry
 import (
 	"testing"
 
+	"github.com/opentable/sous/util/logging"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,7 +22,7 @@ func TestRegistries(t *testing.T) {
 func TestNewClient(t *testing.T) {
 	assert := assert.New(t)
 
-	c := NewClient()
+	c := NewClient(logging.SilentLogSet())
 	assert.NotNil(c)
 	c.Cancel()
 }

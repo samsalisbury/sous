@@ -141,7 +141,7 @@ func (suite *integrationSuite) BeforeTest(suiteName, testName string) {
 	ResetSingularity()
 	imageName = fmt.Sprintf("%s/%s:%s", registryName, "webapp", "latest")
 
-	suite.registry = docker_registry.NewClient()
+	suite.registry = docker_registry.NewClient(logging.SilentLogSet())
 	suite.registry.BecomeFoolishlyTrusting()
 
 	suite.T().Logf("New name cache for %q", testName)

@@ -34,7 +34,7 @@ func TestBuildDeployments(t *testing.T) {
 	ResetSingularity()
 	defer ResetSingularity()
 
-	drc := docker_registry.NewClient()
+	drc := docker_registry.NewClient(logging.SilentLogSet())
 	drc.BecomeFoolishlyTrusting()
 
 	db, err := docker.GetDatabase(&docker.DBConfig{
