@@ -8,28 +8,37 @@ import (
 	"time"
 )
 
-// CallerInfo describes the source of a log message.
-// It should be included in almost every message, to capture information about
-// when and where the message was created.
-type CallerInfo struct {
-	callTime    time.Time
-	goroutineID string
-	callers     []uintptr
-	excluding   []excludedFrame
-}
+type (
+	// CallerInfo describes the source of a log message.
+	// It should be included in almost every message, to capture information about
+	// when and where the message was created.
+	CallerInfo struct {
+		callTime    time.Time
+		goroutineID string
+		callers     []uintptr
+		excluding   []Excluder
+	}
 
-type excludedFrame struct {
-	function string
-	file     string
-	sensible bool
-}
+	// Excluder excludes a frame from being reported.
+	Excluder interface {
+		exclude(f runtime.Frame) bool
+	}
+
+	excludedFrame struct {
+		function string
+		file     string
+		sensible bool
+	}
+
+	excludeFile string
+)
 
 var notGCI excludedFrame
 
 // GetCallerInfo captures a CallerInfo based on where it's called.
-func GetCallerInfo(excluding ...excludedFrame) CallerInfo {
+func GetCallerInfo(excluding ...Excluder) CallerInfo {
 	if !notGCI.sensible {
-		notGCI = NotHere()
+		notGCI = NotHere().(excludedFrame)
 	}
 
 	callers := make([]uintptr, 10)
@@ -56,6 +65,11 @@ func GetCallerInfo(excluding ...excludedFrame) CallerInfo {
 func (info *CallerInfo) ExcludeMe() {
 	ex := excludeCaller()
 	info.excluding = append(info.excluding, ex)
+}
+
+// Exclude path is used to exclude paths that contain a pattern
+func (info *CallerInfo) ExcludePathPattern(pat string) {
+	info.excluding = append(info.excluding, excludeFile(pat))
 }
 
 // EachField calls f repeatedly with name/value pairs that capture what CallerInfo knows about the message.
@@ -113,7 +127,7 @@ func (info CallerInfo) reportableFrame(f runtime.Frame) bool {
 }
 
 // NotHere returns the frame of its caller to exclude from search as the source of a log entry
-func NotHere() excludedFrame {
+func NotHere() Excluder {
 	return excludeCaller()
 }
 
@@ -138,4 +152,8 @@ func (ef excludedFrame) exclude(f runtime.Frame) bool {
 		return true
 	}
 	return false
+}
+
+func (pat excludeFile) exclude(f runtime.Frame) bool {
+	return strings.Contains(f.File, string(pat))
 }

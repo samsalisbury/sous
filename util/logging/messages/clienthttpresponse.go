@@ -68,6 +68,8 @@ func buildHTTPLogMessage(server bool, rq *http.Request, statusCode int, response
 		dur,
 	)
 	m.ExcludeMe()
+	m.ExcludePathPattern("github.com/opentable/swaggering")     // XXX should be more local
+	m.ExcludePathPattern("github.com/opentable/go-singularity") // XXX should be more local
 	return m
 }
 
