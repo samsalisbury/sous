@@ -141,6 +141,7 @@ func TestModifyScale(t *testing.T) {
 	errs := make(chan sous.DiffResolution, 10)
 
 	pair := baseDeployablePair()
+	pair.Kind = sous.ModifiedKind
 	pair.Prior.Deployment.DeployConfig.NumInstances = 12
 	pair.Post.Deployment.DeployConfig.NumInstances = 24
 
@@ -150,7 +151,7 @@ func TestModifyScale(t *testing.T) {
 
 	mods <- pair
 	close(mods)
-	deployer.RectifyModifies(mods, errs)
+	deployer.Rectify(mods, errs)
 	close(errs)
 
 	for e := range errs {
@@ -171,6 +172,7 @@ func TestModifyImage(t *testing.T) {
 	before := "1.2.3-test"
 	after := "2.3.4-new"
 	pair := baseDeployablePair()
+	pair.Kind = sous.ModifiedKind
 	pair.Prior.Deployment.SourceID.Version = semv.MustParse(before)
 	pair.Post.Deployment.SourceID.Version = semv.MustParse(after)
 	pair.Post.BuildArtifact.Name = "2.3.4"
@@ -183,7 +185,7 @@ func TestModifyImage(t *testing.T) {
 
 	mods <- pair
 	close(mods)
-	deployer.RectifyModifies(mods, log)
+	deployer.Rectify(mods, log)
 	close(log)
 
 	for e := range log {
@@ -205,6 +207,8 @@ func TestModifyResources(t *testing.T) {
 
 	pair := baseDeployablePair()
 
+	pair.Kind = sous.ModifiedKind
+
 	pair.Prior.Deployment.SourceID.Version = semv.MustParse(version)
 	pair.Prior.Deployment.Resources["memory"] = "100"
 
@@ -220,7 +224,7 @@ func TestModifyResources(t *testing.T) {
 
 	mods <- pair
 	close(mods)
-	deployer.RectifyModifies(mods, log)
+	deployer.Rectify(mods, log)
 	close(log)
 
 	for e := range log {
@@ -244,6 +248,8 @@ func TestModify(t *testing.T) {
 
 	pair := baseDeployablePair()
 
+	pair.Kind = sous.ModifiedKind
+
 	pair.Prior.Deployment.SourceID.Version = semv.MustParse(before)
 	pair.Prior.Deployment.DeployConfig.NumInstances = 1
 	pair.Prior.Deployment.DeployConfig.Volumes = sous.Volumes{{"host", "container", "RO"}}
@@ -261,7 +267,7 @@ func TestModify(t *testing.T) {
 
 	mods <- pair
 	close(mods)
-	deployer.RectifyModifies(mods, results)
+	deployer.Rectify(mods, results)
 	close(results)
 
 	for e := range results {
@@ -286,6 +292,7 @@ func TestDeletes(t *testing.T) {
 	assert := assert.New(t)
 
 	deleted := &sous.DeployablePair{
+		Kind:         sous.RemovedKind,
 		ExecutorData: &singularityTaskData{requestID: "reqid"},
 		Prior: &sous.Deployable{
 			Deployment: &sous.Deployment{
@@ -313,7 +320,7 @@ func TestDeletes(t *testing.T) {
 
 	dels <- deleted
 	close(dels)
-	deployer.RectifyDeletes(dels, log)
+	deployer.Rectify(dels, log)
 	close(log)
 
 	for e := range log {
@@ -342,6 +349,7 @@ func TestCreates(t *testing.T) {
 	assert := assert.New(t)
 
 	created := &sous.DeployablePair{
+		Kind: sous.AddedKind,
 		Post: &sous.Deployable{
 			BuildArtifact: &sous.BuildArtifact{
 				Type: "docker",
@@ -370,7 +378,7 @@ func TestCreates(t *testing.T) {
 
 	crts <- created
 	close(crts)
-	deployer.RectifyCreates(crts, log)
+	deployer.Rectify(crts, log)
 	close(log)
 
 	for e := range log {

@@ -71,6 +71,16 @@ func (d *DeployableChans) collect() diffSet {
 	return ds
 }
 
+func (ds diffSet) Filter(predicate func(*DeployablePair) bool) []*DeployablePair {
+	var result []*DeployablePair
+	for _, dp := range ds.Pairs {
+		if predicate(dp) {
+			result = append(result, dp)
+		}
+	}
+	return result
+}
+
 // ID returns the ID of this DeployablePair.
 func (dp *DeployablePair) ID() DeploymentID {
 	return dp.name
@@ -91,6 +101,8 @@ func (kind DeployablePairKind) String() string {
 	}
 }
 
+// ResolveVerb provides an imperative verb describing the resolution action
+// required to resolve this kind of deployable pair.
 func (kind DeployablePairKind) ResolveVerb() string {
 	switch kind {
 	default:

@@ -44,7 +44,23 @@ func (nrs *NameResolveTestSuite) makeTestDepPair(prior, post *Deployable) *Deplo
 		id = post.ID()
 	}
 
+	var kind DeployablePairKind
+	if prior == nil && post != nil {
+		kind = AddedKind
+	} else if prior != nil && post == nil {
+		kind = RemovedKind
+	} else if prior != nil && post != nil {
+		if different, _ := post.Diff(prior.Deployment); different {
+			kind = ModifiedKind
+		} else {
+			kind = SameKind
+		}
+	} else {
+		panic("prior and post both nil in test")
+	}
+
 	return &DeployablePair{
+		Kind:  kind,
 		name:  id,
 		Prior: prior,
 		Post:  post,
@@ -101,10 +117,10 @@ func (nrs *NameResolveTestSuite) TestResolveNameSkipped() {
 
 func (nrs *NameResolveTestSuite) TestResolveNameStartChannel() {
 	nrs.depChans = nrs.diffChans.ResolveNames(context.Background(), nrs.reg)
-	nrs.diffChans.Start <- nrs.makeTestDepPair(nil, nrs.makeTestDep())
+	nrs.diffChans.Pairs <- nrs.makeTestDepPair(nil, nrs.makeTestDep())
 
 	select {
-	case started := <-nrs.depChans.Start:
+	case started := <-nrs.depChans.Pairs:
 		nrs.NotNil(started)
 		nrs.NotNil(started.Post.Deployment)
 		nrs.NotNil(started.Post.BuildArtifact)
@@ -117,13 +133,13 @@ func (nrs *NameResolveTestSuite) TestResolveNameStartChannel() {
 
 func (nrs *NameResolveTestSuite) TestResolveNameUpdateChannel() {
 	nrs.depChans = nrs.diffChans.ResolveNames(context.Background(), nrs.reg)
-	nrs.diffChans.Update <- &DeployablePair{
+	nrs.diffChans.Pairs <- &DeployablePair{
 		Prior: nrs.makeTestDep(),
 		Post:  nrs.makeTestDep(),
 	}
 
 	select {
-	case updated := <-nrs.depChans.Update:
+	case updated := <-nrs.depChans.Pairs:
 		nrs.NotNil(updated)
 		nrs.NotNil(updated.Post.BuildArtifact)
 	case err := <-nrs.depChans.Errs:
@@ -136,10 +152,10 @@ func (nrs *NameResolveTestSuite) TestResolveNameUpdateChannel() {
 func (nrs *NameResolveTestSuite) TestResolveNameStartChannelUnresolved() {
 	nrs.reg.FeedArtifact(nil, fmt.Errorf("not found"))
 	nrs.depChans = nrs.diffChans.ResolveNames(context.Background(), nrs.reg)
-	nrs.diffChans.Start <- nrs.makeTestDepPair(nil, nrs.makeTestDep())
+	nrs.diffChans.Pairs <- nrs.makeTestDepPair(nil, nrs.makeTestDep())
 
 	select {
-	case <-nrs.depChans.Start:
+	case <-nrs.depChans.Pairs:
 		nrs.Fail("Shouldn't process a starting deployment")
 	case err := <-nrs.depChans.Errs:
 		nrs.Error(err.Error)
@@ -151,10 +167,10 @@ func (nrs *NameResolveTestSuite) TestResolveNameStartChannelUnresolved() {
 func (nrs *NameResolveTestSuite) TestResolveNameStopChannelUnresolved() {
 	nrs.reg.FeedArtifact(nil, fmt.Errorf("not found"))
 	nrs.depChans = nrs.diffChans.ResolveNames(context.Background(), nrs.reg)
-	nrs.diffChans.Stop <- nrs.makeTestDepPair(nrs.makeTestDep(), nil)
+	nrs.diffChans.Pairs <- nrs.makeTestDepPair(nrs.makeTestDep(), nil)
 
 	select {
-	case stopped := <-nrs.depChans.Stop:
+	case stopped := <-nrs.depChans.Pairs:
 		nrs.NotNil(stopped)
 	case err := <-nrs.depChans.Errs:
 		nrs.Fail("Unexpected error: %v", err)
