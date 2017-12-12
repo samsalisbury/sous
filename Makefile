@@ -120,6 +120,12 @@ install-engulf:
 install-staticcheck:
 	go get honnef.co/go/tools/cmd/staticcheck
 
+install-metalinter:
+	go get github.com/alecthomas/gometalinter
+
+install-linters: install-metalinter
+	gometalinter --install > /dev/null
+
 install-build-tools: install-xgo install-govendor install-engulf install-staticcheck
 
 release: artifacts/$(DARWIN_TARBALL) artifacts/$(LINUX_TARBALL) artifacts/sous_$(SOUS_VERSION)_amd64.deb
@@ -158,9 +164,14 @@ legendary: coverage
 
 test: test-gofmt test-staticcheck test-unit test-integration
 
+test-dev: test-staticcheck test-unit
+
 test-staticcheck: install-staticcheck
 	staticcheck -ignore "$$(cat staticcheck.ignore)" $(SOUS_PACKAGES)
 	staticcheck -tags integration -ignore "$$(cat staticcheck.ignore)" github.com/opentable/sous/integration
+
+test-metalinter: install-linters
+	gometalinter --config gometalinter.json ./...
 
 test-gofmt:
 	bin/check-gofmt
