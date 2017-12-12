@@ -19,19 +19,21 @@ func (d *DeployableChans) ResolveNames(ctx context.Context, r Registry) *Deploya
 	return d.Pipeline(ctx, names)
 }
 
-func (names *nameResolver) Pairs(dp *DeployablePair) (*DeployablePair, *DiffResolution) {
+func (names *nameResolver) HandlePairs(dp *DeployablePair) (*DeployablePair, *DiffResolution) {
 	intended := dp.Post
-	action := dp.Kind.ResolveVerb()
+	deployID := dp.ID()
+	action := dp.Kind().ResolveVerb()
 	newImageName, newImageNameResolution := resolveName(names.registry, intended)
-	switch dp.Kind {
+	switch dp.Kind() {
 	default:
-		panic(fmt.Errorf("Unknown kind %v", dp.Kind))
+		panic(fmt.Errorf("Unknown kind %v", dp.Kind()))
+
 	case SameKind, RemovedKind:
 		if err := newImageNameResolution; err != nil {
-			logging.Log.Debug.Printf("Error resolving %s deployment (proceeding anyway): %#v: %#v", dp.Kind, intended.ID(), intended)
+			logging.Log.Debug.Printf("Error resolving %s deployment (proceeding anyway): %#v: %#v", dp.Kind(), deployID, intended)
 		}
 	case AddedKind, ModifiedKind:
-		logging.Log.Vomit.Printf("%s deployment processed, needs artifact: %#v", dp.Kind, intended)
+		logging.Log.Vomit.Printf("%s deployment processed, needs artifact: %#v", dp.Kind(), intended)
 		if err := newImageNameResolution; err != nil {
 			logging.Log.Info.Printf("Unable to %s %q: %s", action, intended.ID(), err)
 			logging.Log.Debug.Printf("Failed to %s %q: % #v", action, intended.ID(), intended)
@@ -52,6 +54,12 @@ func (names *nameResolver) Pairs(dp *DeployablePair) (*DeployablePair, *DiffReso
 }
 
 func resolveName(r Registry, d *Deployable) (*Deployable, *DiffResolution) {
+	if d == nil {
+		return nil, &DiffResolution{
+			Error: &ErrorWrapper{error: fmt.Errorf("nil deployable")},
+		}
+		//panic("NIL Deployable")
+	}
 	art, err := guardImage(r, d.Deployment)
 	if err != nil {
 		return d, &DiffResolution{

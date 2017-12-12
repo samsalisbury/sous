@@ -97,7 +97,13 @@ func OptMaxHTTPReqsPerServer(n int) DeployerOption {
 func (r *deployer) Rectify(cc <-chan *sous.DeployablePair, errs chan<- sous.DiffResolution) {
 	for d := range cc {
 		pair := d // TODO: Remove this
-		switch d.Kind {
+		switch d.Kind() {
+		case sous.SameKind:
+			resolution := d.SameResolution()
+			if d.Post.Status == sous.DeployStatusFailed {
+				resolution.Error = sous.WrapResolveError(&sous.FailedStatusError{})
+			}
+			errs <- resolution
 		case sous.AddedKind:
 			result := sous.DiffResolution{DeploymentID: d.ID()}
 			if err := r.RectifySingleCreate(d); err != nil {
@@ -113,7 +119,7 @@ func (r *deployer) Rectify(cc <-chan *sous.DeployablePair, errs chan<- sous.Diff
 					}
 				}
 			} else {
-				result.Desc = "created"
+				result.Desc = sous.CreateDiff
 			}
 			Log.Vomit.Printf("Reporting result of create: %#v", result)
 			errs <- result
@@ -123,7 +129,7 @@ func (r *deployer) Rectify(cc <-chan *sous.DeployablePair, errs chan<- sous.Diff
 				result.Error = sous.WrapResolveError(&sous.DeleteError{Deployment: d.Prior.Deployment.Clone(), Err: err})
 				result.Desc = "not deleted"
 			} else {
-				result.Desc = "deleted"
+				result.Desc = sous.DeleteDiff
 			}
 			Log.Vomit.Printf("Reporting result of delete: %#v", result)
 			errs <- result
@@ -138,10 +144,10 @@ func (r *deployer) Rectify(cc <-chan *sous.DeployablePair, errs chan<- sous.Diff
 				result.Error = sous.WrapResolveError(&sous.ChangeError{Deployments: dp, Err: err})
 				result.Desc = "not updated"
 			} else if pair.Prior.Status == sous.DeployStatusFailed || pair.Post.Status == sous.DeployStatusFailed {
-				result.Desc = "updated"
+				result.Desc = sous.ModifyDiff
 				result.Error = sous.WrapResolveError(&sous.FailedStatusError{})
 			} else {
-				result.Desc = "updated"
+				result.Desc = sous.ModifyDiff
 			}
 			Log.Vomit.Printf("Reporting result of modify: %#v", result)
 			errs <- result

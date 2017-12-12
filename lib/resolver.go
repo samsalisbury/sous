@@ -39,23 +39,6 @@ func (r *Resolver) rectify(dcs *DeployableChans, results chan DiffResolution) {
 	d.Rectify(dcs.Pairs, results)
 }
 
-func (r *Resolver) reportStable(stable <-chan *DeployablePair, results chan<- DiffResolution) {
-	for dp := range stable {
-		dep := dp.Prior
-		rez := DiffResolution{
-			DeploymentID: dep.ID(),
-			Desc:         StableDiff,
-		}
-		if dep.Status == DeployStatusPending {
-			rez.Desc = ComingDiff
-		}
-		if dep.Status == DeployStatusFailed {
-			rez.Error = WrapResolveError(&FailedStatusError{})
-		}
-		results <- rez
-	}
-}
-
 // Begin is similar to Resolve, except that it returns a ResolveRecorder almost
 // immediately, which can be queried for information about the ongoing
 // resolution. You can check if resolution is finished by calling Done() on the

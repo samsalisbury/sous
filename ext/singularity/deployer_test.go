@@ -548,7 +548,6 @@ func TestPendingModification(t *testing.T) {
 	}
 
 	dp := &sous.DeployablePair{
-		Kind:         sous.ModifiedKind,
 		ExecutorData: &singularityTaskData{requestID: "reqid"},
 		Post: &sous.Deployable{
 			BuildArtifact: &sous.BuildArtifact{
@@ -607,16 +606,7 @@ func TestModificationOfFailed(t *testing.T) {
 	}
 
 	dp := &sous.DeployablePair{
-		Kind:         sous.ModifiedKind,
 		ExecutorData: &singularityTaskData{requestID: "reqid"},
-		Post: &sous.Deployable{
-			BuildArtifact: &sous.BuildArtifact{
-				Name: "build-artifact",
-				Type: "docker",
-			},
-			Deployment: dpl.Clone(),
-			Status:     sous.DeployStatusFailed,
-		},
 		Prior: &sous.Deployable{
 			BuildArtifact: &sous.BuildArtifact{
 				Name: "build-artifact",
@@ -624,6 +614,14 @@ func TestModificationOfFailed(t *testing.T) {
 			},
 			Deployment: dpl.Clone(),
 			Status:     sous.DeployStatusActive,
+		},
+		Post: &sous.Deployable{
+			BuildArtifact: &sous.BuildArtifact{
+				Name: "build-artifact",
+				Type: "docker",
+			},
+			Deployment: dpl.Clone(),
+			Status:     sous.DeployStatusFailed,
 		},
 	}
 
@@ -636,7 +634,7 @@ func TestModificationOfFailed(t *testing.T) {
 
 	rez := <-rezCh
 
-	assert.Equal(t, rez.Desc, sous.ModifyDiff)
+	assert.Equal(t, sous.ModifyDiff, rez.Desc)
 	assert.Error(t, rez.Error)
 	assert.False(t, sous.IsTransientResolveError(rez.Error))
 	assert.Len(t, drc.Deployed, 1)

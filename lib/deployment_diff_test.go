@@ -46,25 +46,25 @@ func makeDepl(repo string, num int) *Deployment {
 
 func gone(ds diffSet) []*DeployablePair {
 	return ds.Filter(func(dp *DeployablePair) bool {
-		return dp.Kind == RemovedKind
+		return dp.Kind() == RemovedKind
 	})
 }
 
 func same(ds diffSet) []*DeployablePair {
 	return ds.Filter(func(dp *DeployablePair) bool {
-		return dp.Kind == SameKind
+		return dp.Kind() == SameKind
 	})
 }
 
 func changed(ds diffSet) []*DeployablePair {
 	return ds.Filter(func(dp *DeployablePair) bool {
-		return dp.Kind == ModifiedKind
+		return dp.Kind() == ModifiedKind
 	})
 }
 
 func created(ds diffSet) []*DeployablePair {
 	return ds.Filter(func(dp *DeployablePair) bool {
-		return dp.Kind == AddedKind
+		return dp.Kind() == AddedKind
 	})
 }
 

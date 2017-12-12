@@ -7,7 +7,7 @@ import (
 
 // DeployableProcessor processes DeployablePairs off of a DeployableChans channel
 type DeployableProcessor interface {
-	Pairs(dp *DeployablePair) (*DeployablePair, *DiffResolution)
+	HandlePairs(dp *DeployablePair) (*DeployablePair, *DiffResolution)
 }
 
 // Pipeline attaches a DeployableProcessor to the DeployableChans, and returns a new DeployableChans.
@@ -22,7 +22,7 @@ func (d *DeployableChans) Pipeline(ctx context.Context, proc DeployableProcessor
 	d.Add(1) // for the errs channel
 
 	wg := sync.WaitGroup{}
-	wg.Add(4)
+	wg.Add(1)
 
 	process := func(from, to chan *DeployablePair, doProc func(dp *DeployablePair) (*DeployablePair, *DiffResolution)) {
 		defer close(to)
@@ -58,12 +58,13 @@ func (d *DeployableChans) Pipeline(ctx context.Context, proc DeployableProcessor
 		d.Done()
 	}()
 
-	go process(d.Pairs, out.Pairs, proc.Pairs)
+	go process(d.Pairs, out.Pairs, proc.HandlePairs)
 	return out
 }
 
 func nullHandler(err *DiffResolution) {}
 
+// DeployableResolutionHandler handles the resolution of a single DiffResolution.
 type DeployableResolutionHandler interface {
 	HandleResolution(err *DiffResolution)
 }

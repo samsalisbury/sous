@@ -44,23 +44,7 @@ func (nrs *NameResolveTestSuite) makeTestDepPair(prior, post *Deployable) *Deplo
 		id = post.ID()
 	}
 
-	var kind DeployablePairKind
-	if prior == nil && post != nil {
-		kind = AddedKind
-	} else if prior != nil && post == nil {
-		kind = RemovedKind
-	} else if prior != nil && post != nil {
-		if different, _ := post.Diff(prior.Deployment); different {
-			kind = ModifiedKind
-		} else {
-			kind = SameKind
-		}
-	} else {
-		panic("prior and post both nil in test")
-	}
-
 	return &DeployablePair{
-		Kind:  kind,
 		name:  id,
 		Prior: prior,
 		Post:  post,
@@ -171,6 +155,7 @@ func (nrs *NameResolveTestSuite) TestResolveNameStopChannelUnresolved() {
 
 	select {
 	case stopped := <-nrs.depChans.Pairs:
+		nrs.True(stopped.Kind() == RemovedKind, "got %s; want RemovedKind", stopped.Kind)
 		nrs.NotNil(stopped)
 	case err := <-nrs.depChans.Errs:
 		nrs.Fail("Unexpected error: %v", err)

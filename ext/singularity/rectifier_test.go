@@ -141,7 +141,6 @@ func TestModifyScale(t *testing.T) {
 	errs := make(chan sous.DiffResolution, 10)
 
 	pair := baseDeployablePair()
-	pair.Kind = sous.ModifiedKind
 	pair.Prior.Deployment.DeployConfig.NumInstances = 12
 	pair.Post.Deployment.DeployConfig.NumInstances = 24
 
@@ -172,7 +171,6 @@ func TestModifyImage(t *testing.T) {
 	before := "1.2.3-test"
 	after := "2.3.4-new"
 	pair := baseDeployablePair()
-	pair.Kind = sous.ModifiedKind
 	pair.Prior.Deployment.SourceID.Version = semv.MustParse(before)
 	pair.Post.Deployment.SourceID.Version = semv.MustParse(after)
 	pair.Post.BuildArtifact.Name = "2.3.4"
@@ -206,8 +204,6 @@ func TestModifyResources(t *testing.T) {
 	version := "1.2.3-test"
 
 	pair := baseDeployablePair()
-
-	pair.Kind = sous.ModifiedKind
 
 	pair.Prior.Deployment.SourceID.Version = semv.MustParse(version)
 	pair.Prior.Deployment.Resources["memory"] = "100"
@@ -247,8 +243,6 @@ func TestModify(t *testing.T) {
 	after := "2.3.4-new"
 
 	pair := baseDeployablePair()
-
-	pair.Kind = sous.ModifiedKind
 
 	pair.Prior.Deployment.SourceID.Version = semv.MustParse(before)
 	pair.Prior.Deployment.DeployConfig.NumInstances = 1
@@ -292,7 +286,6 @@ func TestDeletes(t *testing.T) {
 	assert := assert.New(t)
 
 	deleted := &sous.DeployablePair{
-		Kind:         sous.RemovedKind,
 		ExecutorData: &singularityTaskData{requestID: "reqid"},
 		Prior: &sous.Deployable{
 			Deployment: &sous.Deployment{
@@ -349,7 +342,6 @@ func TestCreates(t *testing.T) {
 	assert := assert.New(t)
 
 	created := &sous.DeployablePair{
-		Kind: sous.AddedKind,
 		Post: &sous.Deployable{
 			BuildArtifact: &sous.BuildArtifact{
 				Type: "docker",

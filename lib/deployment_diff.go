@@ -5,7 +5,6 @@ type (
 	DeploymentPair struct {
 		name        DeploymentID
 		Prior, Post *Deployment
-		Diffs       Differences
 		Status      DeployStatus
 	}
 	// DeploymentPairs is a list of DeploymentPair
@@ -24,6 +23,13 @@ type (
 		*DeployableChans
 	}
 )
+
+// Diffs returns the diffs in this pair, from prior to post.
+// TODO: Cache the result.
+func (dp *DeploymentPair) Diffs() Differences {
+	_, differences := dp.Prior.Diff(dp.Post)
+	return differences
+}
 
 func newDiffSet() diffSet {
 	return diffSet{
@@ -92,63 +98,40 @@ func (d Deployments) promote(all DeployStatus) DeployStates {
 	return rds
 }
 
+func makeDeployablePair(exists bool, id DeploymentID, existingDS, intendedDS *DeployState) *DeployablePair {
+	var prior *Deployable
+	if exists {
+		prior = &Deployable{
+			Deployment: &intendedDS.Deployment,
+			Status:     intendedDS.Status,
+		}
+	}
+	post := &Deployable{
+		Deployment: &existingDS.Deployment,
+		Status:     existingDS.Status,
+	}
+
+	return &DeployablePair{
+		name:         id,
+		ExecutorData: intendedDS.ExecutorData,
+		Prior:        prior,
+		Post:         post,
+	}
+}
+
 func (d *stateDiffer) diff(existing DeployStates) {
 	defer d.DeployableChans.Close()
 
+	// Deployable pairs where the deployment should exist post rectification.
 	for id, existingDS := range existing.Snapshot() {
-		intendDS, exists := d.from[id]
-		if !exists {
-			d.Pairs <- &DeployablePair{
-				Kind:  AddedKind,
-				name:  id,
-				Prior: nil,
-				Post: &Deployable{
-					Deployment: &existingDS.Deployment,
-					Status:     existingDS.Status,
-				},
-			}
-			continue
-		}
+		intendedDS, exists := d.from[id]
+		d.Pairs <- makeDeployablePair(exists, id, existingDS, intendedDS)
 		delete(d.from, id)
-		different, differences := existingDS.Diff(intendDS)
-
-		if different {
-			d.Pairs <- &DeployablePair{
-				Kind:         ModifiedKind,
-				name:         id,
-				Diffs:        differences,
-				ExecutorData: intendDS.ExecutorData,
-				Prior: &Deployable{
-					Deployment: &intendDS.Deployment,
-					Status:     intendDS.Status,
-				},
-				Post: &Deployable{
-					Deployment: &existingDS.Deployment,
-					Status:     existingDS.Status,
-				},
-			}
-			continue
-		}
-
-		d.Pairs <- &DeployablePair{
-			Kind:         SameKind,
-			name:         id,
-			Diffs:        Differences{},
-			ExecutorData: intendDS.ExecutorData,
-			Prior: &Deployable{
-				Deployment: &intendDS.Deployment,
-				Status:     intendDS.Status,
-			},
-			Post: &Deployable{
-				Deployment: &existingDS.Deployment,
-				Status:     existingDS.Status,
-			},
-		}
 	}
 
+	// Deployable pairs for deleted deployments.refcitifation
 	for _, deletedDS := range d.from {
 		d.Pairs <- &DeployablePair{
-			Kind:         RemovedKind,
 			name:         deletedDS.ID(),
 			ExecutorData: deletedDS.ExecutorData,
 			Prior: &Deployable{
@@ -169,7 +152,6 @@ func (d *differ) diff(existing Deployments) {
 		intendedDeployment, exists := d.from[id]
 		if !exists {
 			d.Pairs <- &DeployablePair{
-				Kind:  AddedKind,
 				name:  id,
 				Prior: nil,
 				Post:  &Deployable{Deployment: existingDeployment, Status: DeployStatusActive},
@@ -177,21 +159,17 @@ func (d *differ) diff(existing Deployments) {
 			continue
 		}
 		delete(d.from, id)
-		different, differences := existingDeployment.Diff(&intendedDeployment.Deployment)
+		different, _ := existingDeployment.Diff(&intendedDeployment.Deployment)
 		if different {
 			d.Pairs <- &DeployablePair{
-				Kind:  ModifiedKind,
 				name:  id,
-				Diffs: differences,
 				Prior: &Deployable{Deployment: &intendedDeployment.Deployment, Status: intendedDeployment.Status},
 				Post:  &Deployable{Deployment: existingDeployment, Status: DeployStatusActive},
 			}
 			continue
 		}
 		d.Pairs <- &DeployablePair{
-			Kind:  SameKind,
 			name:  id,
-			Diffs: Differences{},
 			Prior: &Deployable{Deployment: &intendedDeployment.Deployment, Status: intendedDeployment.Status},
 			Post:  &Deployable{Deployment: &intendedDeployment.Deployment, Status: intendedDeployment.Status},
 		}
@@ -199,7 +177,6 @@ func (d *differ) diff(existing Deployments) {
 
 	for _, deletedDeployment := range d.from {
 		d.Pairs <- &DeployablePair{
-			Kind:  RemovedKind,
 			name:  deletedDeployment.ID(),
 			Prior: &Deployable{Deployment: &deletedDeployment.Deployment, Status: deletedDeployment.Status},
 			Post:  nil,
