@@ -44,13 +44,15 @@ func (dp *DeploymentPair) ID() DeploymentID {
 
 // Diff computes the differences between two sets of DeployStates
 func (d DeployStates) Diff(other Deployments) *DeployableChans {
-	difr := newStateDiffer(d)
-	go func(d *stateDiffer, o Deployments) {
-		e := o.promote(DeployStatusActive)
-		d.diff(e)
-	}(difr, other)
+	differ := newStateDiffer(d)
+	go func(differ *stateDiffer, other Deployments) {
+		// Promote "other" (i.e. intended) to "Active".
+		// We always intend "Active".
+		activeDeployments := other.promoteAll(DeployStatusActive)
+		differ.diff(activeDeployments)
+	}(differ, other)
 
-	return difr.DeployableChans
+	return differ.DeployableChans
 }
 
 // Diff computes the differences between two sets of Deployments
@@ -89,33 +91,35 @@ func newDiffer(intended Deployments) *differ {
 	}
 }
 
-func (d Deployments) promote(all DeployStatus) DeployStates {
+func (d Deployments) promoteAll(to DeployStatus) DeployStates {
 	rds := NewDeployStates()
 	for _, ad := range d.Snapshot() {
-		ds := &DeployState{Deployment: *ad, Status: all}
+		ds := &DeployState{Deployment: *ad, Status: to}
 		rds.Add(ds)
 	}
 	return rds
 }
 
 func makeDeployablePair(exists bool, id DeploymentID, existingDS, intendedDS *DeployState) *DeployablePair {
-	var prior *Deployable
+	var post *Deployable
+	var executorData interface{}
 	if exists {
-		prior = &Deployable{
+		post = &Deployable{
 			Deployment: &intendedDS.Deployment,
 			Status:     intendedDS.Status,
 		}
+		executorData = intendedDS.ExecutorData
 	}
-	post := &Deployable{
+	prior := &Deployable{
 		Deployment: &existingDS.Deployment,
 		Status:     existingDS.Status,
 	}
 
 	return &DeployablePair{
 		name:         id,
-		ExecutorData: intendedDS.ExecutorData,
-		Prior:        prior,
-		Post:         post,
+		ExecutorData: executorData,
+		Prior:        post,
+		Post:         prior,
 	}
 }
 

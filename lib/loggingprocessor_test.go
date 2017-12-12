@@ -99,7 +99,7 @@ func TestDiffMessages(t *testing.T) {
 
 	msg.pair.Post.Deployment.SourceID.Version = semv.MustParse("0.0.2")
 
-	fields["sous-deployment-diffs"] = "version not the same (this is the test message)"
+	fields["sous-deployment-diffs"] = "source id; this: \"github.com/opentable/example,0.0.1\"; other: \"github.com/opentable/example,0.0.2\""
 	fields["sous-post-tag"] = "0.0.2"
 	fields["sous-diff-disposition"] = "modified"
 
