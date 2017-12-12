@@ -117,10 +117,15 @@ func (nrs *NameResolveTestSuite) TestResolveNameStartChannel() {
 
 func (nrs *NameResolveTestSuite) TestResolveNameUpdateChannel() {
 	nrs.depChans = nrs.diffChans.ResolveNames(context.Background(), nrs.reg)
-	nrs.diffChans.Pairs <- &DeployablePair{
+
+	pair := &DeployablePair{
 		Prior: nrs.makeTestDep(),
 		Post:  nrs.makeTestDep(),
 	}
+
+	pair.Post.NumInstances = pair.Prior.NumInstances + 3
+
+	nrs.diffChans.Pairs <- pair
 
 	select {
 	case updated := <-nrs.depChans.Pairs:

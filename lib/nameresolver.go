@@ -21,18 +21,18 @@ func (d *DeployableChans) ResolveNames(ctx context.Context, r Registry) *Deploya
 
 func (names *nameResolver) HandlePairs(dp *DeployablePair) (*DeployablePair, *DiffResolution) {
 	intended := dp.Post
-	deployID := dp.ID()
 	action := dp.Kind().ResolveVerb()
-	newImageName, newImageNameResolution := resolveName(names.registry, intended)
+
+	newImageName := dp.Post
+
 	switch dp.Kind() {
 	default:
 		panic(fmt.Errorf("Unknown kind %v", dp.Kind()))
-
 	case SameKind, RemovedKind:
-		if err := newImageNameResolution; err != nil {
-			logging.Log.Debug.Printf("Error resolving %s deployment (proceeding anyway): %#v: %#v", dp.Kind(), deployID, intended)
-		}
+		// don't care about docker names
 	case AddedKind, ModifiedKind:
+		var newImageNameResolution *DiffResolution
+		newImageName, newImageNameResolution = resolveName(names.registry, intended)
 		logging.Log.Vomit.Printf("%s deployment processed, needs artifact: %#v", dp.Kind(), intended)
 		if err := newImageNameResolution; err != nil {
 			logging.Log.Info.Printf("Unable to %s %q: %s", action, intended.ID(), err)
