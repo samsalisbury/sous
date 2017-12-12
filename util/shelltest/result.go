@@ -45,12 +45,17 @@ func (res Result) WriteTo(dir, base string) error {
 	return allErr
 }
 
-func writePart(dir, base, ext, content string) error {
+func writePart(dir, base, ext, content string) (err error) {
 	file, err := os.Create(filepath.Join(dir, base+"."+ext))
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+
+	defer func() {
+		if cerr := file.Close(); cerr != nil && err == nil {
+			err = cerr
+		}
+	}()
 
 	_, err = file.WriteString(content)
 	return err

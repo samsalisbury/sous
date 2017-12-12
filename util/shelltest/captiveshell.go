@@ -91,7 +91,12 @@ func newLiveStream(name string, from io.Reader, events <-chan int) *liveStream {
 
 func newShell(env map[string]string) (sh *captiveShell, err error) {
 	sh = &captiveShell{}
-	sh.Cmd = exec.Command("bash", "--norc", "-i")
+
+	// docker build current directory
+	cmdName := "bash"
+	cmdArgs := []string{"--norc", "-i"}
+
+	sh.Cmd = exec.Command(cmdName, cmdArgs...) // nolint : warning on subprocess can be dangerous
 
 	for k, v := range env {
 		sh.Cmd.Env = append(sh.Cmd.Env, k+"="+v)
@@ -139,13 +144,24 @@ func newShell(env map[string]string) (sh *captiveShell, err error) {
 
 	sh.Cmd.ExtraFiles = []*os.File{doneWrite, envW, errW}
 
-	sh.Cmd.Start()
+	if err = sh.Cmd.Start(); err != nil {
+		return nil, err
+	}
 
-	doneWrite.Close()
-	envW.Close()
-	errW.Close()
+	defer close(doneWrite)
+	defer close(envW)
+	defer close(errW)
 
 	return
+}
+
+func close(c io.Closer) {
+	if c == nil {
+		return
+	}
+	if err := c.Close(); err != nil {
+		log.Println("failure to close resource:", err.Error())
+	}
 }
 
 func (sh *captiveShell) WriteTo(dir string) {
@@ -158,7 +174,9 @@ func (sh *captiveShell) BlockName(name string) {
 	}
 
 	path := filepath.Join(sh.writeDir, name)
-	os.MkdirAll(path, os.ModePerm)
+	if err := os.MkdirAll(path, os.ModePerm); err != nil {
+		panic(err)
+	}
 
 	sh.stdout.updateSaveTo(path)
 	sh.stderr.updateSaveTo(path)
@@ -184,7 +202,9 @@ func (ls *liveStream) updateSaveTo(dir string) {
 // returns the Result of running it.
 func (sh *captiveShell) Run(script string) (Result, error) {
 	st := stateCapture + "\n" + script + "\n" + exitCapture
-	sh.Stdin.Write([]byte(st))
+	if _, err := sh.Stdin.Write([]byte(st)); err != nil {
+		return Result{}, err
+	}
 	exit, err := sh.readExitStatus()
 	if err != nil {
 		return Result{}, err
@@ -224,7 +244,9 @@ func (ls *liveStream) reader(events <-chan int) {
 			if err != nil {
 				return
 			}
-			ls.Write(buf[0:count])
+			if _, err := ls.Write(buf[0:count]); err != nil {
+				return
+			}
 		case <-events:
 			return
 		}
@@ -234,7 +256,9 @@ func (ls *liveStream) reader(events <-chan int) {
 func (ls *liveStream) debugTo(name, prefix string) {
 	dir, _ := ioutil.TempDir("", prefix)
 	ls.debugDir = dir
-	os.MkdirAll(ls.debugDir, os.ModePerm)
+	if err := os.MkdirAll(ls.debugDir, os.ModePerm); err != nil {
+		panic(err)
+	}
 	ls.debugs = make([]io.Writer, len(ls.bufs))
 	log.Printf("Writing low-level debug output for %s's buffers into %q.", name, ls.debugDir)
 	for n := range ls.bufs {
@@ -251,16 +275,18 @@ func (ls *liveStream) Write(buf []byte) (count int, err error) {
 		count, err = b.Write(buf)
 
 		if ls.debugDir != "" {
-			_, err := ls.debugs[n].Write(buf)
-			if err != nil {
-				log.Printf("Error while writing bytes: %v", err)
+			_, werr := ls.debugs[n].Write(buf)
+			if werr != nil {
+				log.Printf("Error while writing bytes: %v", werr)
 				log.Printf("Was trying to write: %s", string(buf))
 			}
 		}
 	}
 
 	if ls.saveTo != nil {
-		ls.saveTo.Write(buf)
+		if count, err = ls.saveTo.Write(buf); err != nil {
+			return
+		}
 	}
 
 	return
@@ -292,7 +318,7 @@ func (sh *captiveShell) readExitStatus() (int, error) {
 	}
 
 	return strconv.Atoi(string(bytes.TrimFunc(sh.doneRead.Bytes(), func(r rune) bool {
-		return strings.Index(`0123456789`, string(r)) == -1
+		return !strings.Contains(`0123456789`, string(r))
 	})))
 
 }

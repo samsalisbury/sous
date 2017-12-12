@@ -506,8 +506,8 @@ func newDeployer(dryrun DryrunOption, nc lazyNameCache, ls LogSink, c LocalSousC
 	), nil
 }
 
-func newDockerClient() LocalDockerClient {
-	return LocalDockerClient{docker_registry.NewClient()}
+func newDockerClient(ls LogSink) LocalDockerClient {
+	return LocalDockerClient{docker_registry.NewClient(ls.LogSink)}
 }
 
 func newServerHandler(g *SousGraph, ComponentLocator server.ComponentLocator, metrics MetricsHandler, log LogSink) ServerHandler {

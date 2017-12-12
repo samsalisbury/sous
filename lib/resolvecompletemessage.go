@@ -26,6 +26,7 @@ func (msg resolveCompleteMessage) MetricsTo(m logging.MetricsSink) {
 		m.UpdateTimer("fullcycle-duration", msg.status.Finished.Sub(msg.status.Started))
 	}
 	m.UpdateSample("resolution-errors", int64(len(msg.status.Errs.Causes)))
+	m.IncCounter("resolution-count", 1)
 }
 
 func (msg resolveCompleteMessage) DefaultLevel() logging.Level {

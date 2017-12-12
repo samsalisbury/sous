@@ -12,13 +12,13 @@ func TestShAssumptions(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	res, err := shell.Run(`
-	cd /tmp
-	X=7
-	export CYGNUS=blackhole
-	echo $X
-	pwd
-	`)
+	//Intentially not having tabs, some shells will error on tab !: command not found
+	res, err := shell.Run(`cd /tmp
+X=7
+export CYGNUS=blackhole
+echo $X
+pwd
+`)
 
 	if err != nil {
 		t.Fatalf("error: %v", err)
@@ -30,11 +30,11 @@ func TestShAssumptions(t *testing.T) {
 		t.Errorf("Not in /tmp")
 	}
 
-	res, err = shell.Run(`
-	echo $X
-	pwd
-	env
-	`)
+	//Intentially not having tabs, some shells will error on tab !: command not found
+	res, err = shell.Run(`echo $X
+pwd
+env
+`)
 	if err != nil {
 		t.Fatalf("error: %v", err)
 	}

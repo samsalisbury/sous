@@ -18,8 +18,6 @@ import (
 	"github.com/docker/distribution/registry/api/v2"
 	"github.com/docker/distribution/registry/client"
 	"github.com/docker/distribution/registry/client/transport"
-	"github.com/opentable/sous/util/logging"
-	"github.com/opentable/sous/util/logging/messages"
 )
 
 /*
@@ -31,41 +29,6 @@ import (
 	for easy referece and as a source for continuing absorbtion
 
 */
-
-type httpClient struct {
-	http *http.Client
-	log  logging.LogSink
-}
-
-// Do wraps http.Client.Do, and logs the response
-func (c *httpClient) Do(resourceName string, req *http.Request) (*http.Response, error) {
-	start := time.Now()
-	res, err := c.http.Do(req)
-	if res != nil {
-		messages.ReportClientHTTPResponse(c.log, res, resourceName, time.Now().Sub(start))
-	}
-	return res, err
-}
-
-// Get wraps http.Client.Get, and logs the response
-func (c *httpClient) Get(resourceName string, url string) (resp *http.Response, err error) {
-	start := time.Now()
-	res, err := c.http.Get(url)
-	if res != nil {
-		messages.ReportClientHTTPResponse(c.log, res, resourceName, time.Now().Sub(start))
-	}
-	return res, err
-}
-
-// Head wraps http.Client.Head, and logs the response
-func (c *httpClient) Head(resourceName string, url string) (resp *http.Response, err error) {
-	start := time.Now()
-	res, err := c.http.Head(url)
-	if res != nil {
-		messages.ReportClientHTTPResponse(c.log, res, resourceName, time.Now().Sub(start))
-	}
-	return res, err
-}
 
 // checkHTTPRedirect is a callback that can manipulate redirected HTTP
 // requests. It is used to preserve Accept and Range headers.

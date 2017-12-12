@@ -11,6 +11,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/docker/distribution"
 	"github.com/docker/distribution/digest"
@@ -20,6 +21,8 @@ import (
 	"github.com/docker/distribution/registry/api/v2"
 	"github.com/docker/distribution/registry/client"
 	"github.com/docker/distribution/registry/client/transport"
+	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 	"golang.org/x/net/context"
 )
 
@@ -46,7 +49,13 @@ type (
 	liveClient struct {
 		ctx   context.Context
 		xport *http.Transport
+		log   logging.LogSink
 		Registries
+	}
+
+	httpClient struct {
+		http *http.Client
+		log  logging.LogSink
 	}
 
 	// Registries is a map+Mutex
@@ -76,6 +85,36 @@ type (
 	}
 )
 
+// Do wraps http.Client.Do, and logs the response
+func (c *httpClient) Do(resourceName string, req *http.Request) (*http.Response, error) {
+	start := time.Now()
+	res, err := c.http.Do(req)
+	if res != nil {
+		messages.ReportClientHTTPResponse(c.log, res, resourceName, time.Now().Sub(start))
+	}
+	return res, err
+}
+
+// Get wraps http.Client.Get, and logs the response
+func (c *httpClient) Get(resourceName string, url string) (resp *http.Response, err error) {
+	start := time.Now()
+	res, err := c.http.Get(url)
+	if res != nil {
+		messages.ReportClientHTTPResponse(c.log, res, resourceName, time.Now().Sub(start))
+	}
+	return res, err
+}
+
+// Head wraps http.Client.Head, and logs the response
+func (c *httpClient) Head(resourceName string, url string) (resp *http.Response, err error) {
+	start := time.Now()
+	res, err := c.http.Head(url)
+	if res != nil {
+		messages.ReportClientHTTPResponse(c.log, res, resourceName, time.Now().Sub(start))
+	}
+	return res, err
+}
+
 // NewRegistries makes a Registries
 func NewRegistries() Registries {
 	return Registries{regs: make(map[string]*registry)}
@@ -103,7 +142,7 @@ func (rs *Registries) DeleteRegistry(n string) error {
 }
 
 // NewClient builds a new client
-func NewClient() Client {
+func NewClient(log logging.LogSink) Client {
 	xport := &http.Transport{}
 	if extraCA := os.Getenv("SOUS_EXTRA_DOCKER_CA"); extraCA != "" {
 		pemBytes, err := ioutil.ReadFile(extraCA)
@@ -124,6 +163,7 @@ func NewClient() Client {
 		ctx:        context.Background(),
 		xport:      xport,
 		Registries: NewRegistries(),
+		log:        log,
 	}
 }
 
@@ -232,7 +272,7 @@ func (c *liveClient) registryForHostname(regHost string) (*registry, error) {
 	if reg := c.GetRegistry(url); reg != nil {
 		return reg, nil
 	}
-	reg, err := newRegistry(url, c.xport)
+	reg, err := newRegistry(url, c.xport, c.log)
 	if err != nil {
 		return nil, err
 	}
@@ -364,16 +404,19 @@ func (c *liveClient) metadataForImage(regHost string, ref reference.Named, etag 
  */
 
 // All returns all tag// NewRepository creates a new Repository for the given repository name and base URL.
-func newRegistry(baseURL string, transport http.RoundTripper) (*registry, error) {
+func newRegistry(baseURL string, transport http.RoundTripper, log logging.LogSink) (*registry, error) {
 	ub, err := v2.NewURLBuilderFromString(baseURL, false)
 	if err != nil {
 		return nil, err
 	}
 
-	client := &http.Client{
-		Transport:     transport,
-		CheckRedirect: checkHTTPRedirect,
-		// TODO(dmcgowan): create cookie jar
+	client := &httpClient{
+		http: &http.Client{
+			Transport:     transport,
+			CheckRedirect: checkHTTPRedirect,
+			// TODO(dmcgowan): create cookie jar
+		},
+		log: log,
 	}
 
 	return &registry{
@@ -383,7 +426,7 @@ func newRegistry(baseURL string, transport http.RoundTripper) (*registry, error)
 }
 
 type registry struct {
-	client *http.Client
+	client *httpClient
 	ub     *v2.URLBuilder
 }
 
@@ -417,7 +460,7 @@ func (r *registry) getBlob(ctx context.Context, name reference.Named, dgst diges
 		return nil, err
 	}
 
-	reader := transport.NewHTTPReadSeeker(r.client, blobURL,
+	reader := transport.NewHTTPReadSeeker(r.client.http, blobURL,
 		func(resp *http.Response) error {
 			if resp.StatusCode == http.StatusNotFound {
 				return distribution.ErrBlobUnknown
@@ -440,7 +483,7 @@ func (r *registry) getRepoTags(ref reference.Named) (tags []string, err error) {
 		return nil, err
 	}
 
-	resp, err := r.client.Do(req)
+	resp, err := r.client.Do("docker-repo-tags", req)
 	defer safeCloseBody(resp)
 
 	if err != nil {
@@ -477,7 +520,7 @@ func (r *registry) getManifestWithEtag(ctx context.Context, ref reference.Named,
 		return
 	}
 
-	resp, err := r.client.Do(req)
+	resp, err := r.client.Do("docker-manifest", req)
 	defer safeCloseBody(resp)
 
 	if err != nil {

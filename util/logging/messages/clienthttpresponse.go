@@ -26,16 +26,10 @@ type httpLogEntry struct {
 	dur            time.Duration
 }
 
-/*
-// ReportClientHTTPResponse reports a response recieved by Sous as a client, as provided as fields.
-func ReportClientHTTPResponseFields(logger logging.LogSink, method, server, path string, parms map[string]string, status int, dur time.Duration) {
-	m := newHTTPLogEntry(method, server, path, parms, status, dur)
-	logging.Deliver(m, logger)
-}
-*/
-
 // ReportClientHTTPResponse reports a response recieved by Sous as a client.
 func ReportClientHTTPResponse(logger logging.LogSink, rz *http.Response, resName string, dur time.Duration) {
+	// XXX dur should in fact be "start time.Time" and duration be computed here.
+	// swaggering now depends on this, so it's more of a hassle.
 	m := buildHTTPLogMessage(false, rz.Request, rz.StatusCode, rz.ContentLength, resName, dur)
 	m.ExcludeMe()
 	logging.Deliver(m, logger)
@@ -68,6 +62,8 @@ func buildHTTPLogMessage(server bool, rq *http.Request, statusCode int, response
 		dur,
 	)
 	m.ExcludeMe()
+	m.ExcludePathPattern("github.com/opentable/swaggering")     // XXX should be more local
+	m.ExcludePathPattern("github.com/opentable/go-singularity") // XXX should be more local
 	return m
 }
 
@@ -129,6 +125,10 @@ func (msg *httpLogEntry) MetricsTo(metrics logging.MetricsSink) {
 
 	for _, name := range nameGen("http-request-size") {
 		metrics.UpdateSample(name, msg.requestSize)
+	}
+
+	for _, name := range nameGen("http-response-size") {
+		metrics.UpdateSample(name, msg.responseSize)
 	}
 }
 
