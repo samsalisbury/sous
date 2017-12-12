@@ -10,6 +10,7 @@ import (
 	"github.com/opentable/sous/ext/docker"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/docker_registry"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/shell"
 	"github.com/stretchr/testify/suite"
 )
@@ -60,7 +61,7 @@ func (suite *buildingTestSuite) TearDownTest() {
 func (suite *buildingTestSuite) TestSplitContainer() {
 
 	//return fmt.Sprintf("%s/%s:%s", registryName, reponame, tag)
-	reg := docker_registry.NewClient()
+	reg := docker_registry.NewClient(logging.SilentLogSet())
 	sbp := docker.NewSplitBuildpack(reg)
 
 	sh, err := shell.DefaultInDir("testdata/split_test")

@@ -15,7 +15,7 @@ func TestReportCHResponseFields(t *testing.T) {
 	logging.Deliver(msg, logger)
 
 	assert.Len(t, control.Metrics.CallsTo("UpdateTimer"), 3)
-	assert.Len(t, control.Metrics.CallsTo("UpdateSample"), 3)
+	assert.Len(t, control.Metrics.CallsTo("UpdateSample"), 6)
 	assert.Len(t, control.Metrics.CallsTo("IncCounter"), 3)
 	logCalls := control.CallsTo("LogMessage")
 	require.Len(t, logCalls, 1)

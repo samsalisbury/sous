@@ -6,6 +6,7 @@ import (
 
 	"github.com/docopt/docopt-go"
 	"github.com/opentable/sous/util/docker_registry"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/whitespace"
 )
 
@@ -24,7 +25,7 @@ func main() {
 	}
 
 	imageName := parsed["<image-name>"].(string)
-	client := docker_registry.NewClient()
+	client := docker_registry.NewClient(logging.SilentLogSet())
 	if _, ok := parsed["--insecure"]; ok {
 		client.BecomeFoolishlyTrusting()
 	}
