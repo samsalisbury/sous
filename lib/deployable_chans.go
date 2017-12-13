@@ -12,8 +12,6 @@ type (
 		Errs  chan *DiffResolution
 		sync.WaitGroup
 	}
-
-	diffSet DeployablePairs
 )
 
 // NewDeployableChans returns a new DeployableChans with channels buffered to
@@ -35,23 +33,13 @@ func (d *DeployableChans) Close() {
 	close(d.Errs)
 }
 
-func (d *DeployableChans) collect() diffSet {
-	ds := newDiffSet()
+func (d *DeployableChans) collect() DeployablePairs {
+	ds := DeployablePairs{}
 
 	for m := range d.Pairs {
 		ds = append(ds, m)
 	}
 	return ds
-}
-
-func (ds diffSet) Filter(predicate func(*DeployablePair) bool) []*DeployablePair {
-	var result []*DeployablePair
-	for _, dp := range ds {
-		if predicate(dp) {
-			result = append(result, dp)
-		}
-	}
-	return result
 }
 
 // ID returns the ID of this DeployablePair.

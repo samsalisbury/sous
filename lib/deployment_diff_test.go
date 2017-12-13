@@ -44,25 +44,35 @@ func makeDepl(repo string, num int) *Deployment {
 	}
 }
 
-func gone(ds diffSet) []*DeployablePair {
+func (ds DeployablePairs) Filter(predicate func(*DeployablePair) bool) []*DeployablePair {
+	var result []*DeployablePair
+	for _, dp := range ds {
+		if predicate(dp) {
+			result = append(result, dp)
+		}
+	}
+	return result
+}
+
+func gone(ds DeployablePairs) []*DeployablePair {
 	return ds.Filter(func(dp *DeployablePair) bool {
 		return dp.Kind() == RemovedKind
 	})
 }
 
-func same(ds diffSet) []*DeployablePair {
+func same(ds DeployablePairs) []*DeployablePair {
 	return ds.Filter(func(dp *DeployablePair) bool {
 		return dp.Kind() == SameKind
 	})
 }
 
-func changed(ds diffSet) []*DeployablePair {
+func changed(ds DeployablePairs) []*DeployablePair {
 	return ds.Filter(func(dp *DeployablePair) bool {
 		return dp.Kind() == ModifiedKind
 	})
 }
 
-func created(ds diffSet) []*DeployablePair {
+func created(ds DeployablePairs) []*DeployablePair {
 	return ds.Filter(func(dp *DeployablePair) bool {
 		return dp.Kind() == AddedKind
 	})
@@ -125,7 +135,7 @@ func makeDeplState(repo string, num int, st DeployStatus, data interface{}) *Dep
 	}
 }
 
-func testStateDiff(exists *Deployment, intend *DeployState) diffSet {
+func testStateDiff(exists *Deployment, intend *DeployState) DeployablePairs {
 	intended := NewDeployStates()
 	existing := NewDeployments()
 
@@ -143,17 +153,17 @@ func testStateDiff(exists *Deployment, intend *DeployState) diffSet {
 func TestRealStateDiff(t *testing.T) {
 	assert := assert.New(t)
 
-	assertLengths := func(msg string, set diffSet, goneLen, sameLen, changedLen, createLen int) {
+	assertLengths := func(msg string, set DeployablePairs, goneLen, sameLen, changedLen, createLen int) {
 		assert.Len(gone(set), goneLen, "Checking Gone for %s", msg)
 		assert.Len(same(set), sameLen, "Checking Same for %s", msg)
 		assert.Len(changed(set), changedLen, "Checking Changed for %s", msg)
 		assert.Len(created(set), createLen, "Checking New for %s", msg)
 	}
 
-	assertGone := func(set diffSet) { assertLengths("gone", set, 1, 0, 0, 0) }
-	assertSame := func(set diffSet) { assertLengths("same", set, 0, 1, 0, 0) }
-	assertChanged := func(set diffSet) { assertLengths("changed", set, 0, 0, 1, 0) }
-	assertCreated := func(set diffSet) { assertLengths("created", set, 0, 0, 0, 1) }
+	assertGone := func(set DeployablePairs) { assertLengths("gone", set, 1, 0, 0, 0) }
+	assertSame := func(set DeployablePairs) { assertLengths("same", set, 0, 1, 0, 0) }
+	assertChanged := func(set DeployablePairs) { assertLengths("changed", set, 0, 0, 1, 0) }
+	assertCreated := func(set DeployablePairs) { assertLengths("created", set, 0, 0, 0, 1) }
 
 	repo := "https://github.com/opentable/one"
 

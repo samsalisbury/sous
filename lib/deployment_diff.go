@@ -31,10 +31,6 @@ func (dp *DeploymentPair) Diffs() Differences {
 	return differences
 }
 
-func newDiffSet() diffSet {
-	return diffSet{}
-}
-
 // ID returns the DeployID of this deployment pair.
 func (dp *DeploymentPair) ID() DeploymentID {
 	return dp.name
