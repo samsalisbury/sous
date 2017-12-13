@@ -1,5 +1,9 @@
 SHELL := /usr/bin/env bash
 
+XDG_DATA_HOME ?= $(HOME)/.local/share
+DEV_POSTGRES_DIR ?= $(XDG_DATA_HOME)/postgres
+DEV_POSTGRES_DATA_DIR ?= $(DEV_POSTGRES_DIR)/data
+
 SQLITE_URL := https://sqlite.org/2017/sqlite-autoconf-3160200.tar.gz
 GO_VERSION := 1.7.3
 DESCRIPTION := "Sous is a tool for building, testing, and deploying applications, using Docker, Mesos, and Singularity."
@@ -225,4 +229,14 @@ artifacts/sous_$(SOUS_VERSION)_amd64.deb: artifacts/$(LINUX_RELEASE_DIR)/sous
 	fpm -s dir -t deb -n sous -v $(SOUS_VERSION) --description $(DESCRIPTION) --url $(URL) artifacts/$(LINUX_RELEASE_DIR)/sous=/usr/bin/sous
 	mv sous_$(SOUS_VERSION)_amd64.deb artifacts/
 
-.PHONY: artifactory clean clean-containers clean-container-certs clean-running-containers clean-container-images coverage deb-build install-fpm install-jfrog install-ggen install-build-tools legendary release semvertagchk test test-gofmt test-integration setup-containers test-unit reject-wip wip staticcheck
+$(DEV_POSTGRES_DATA_DIR):
+	install -d -m 0700 $@
+	initdb $@
+
+$(DEV_POSTGRES_DATA_DIR)/postgresql.conf: $(DEV_POSTGRES_DATA_DIR) dev_support/postgres/postgresql.conf
+	cp dev_support/postgres/postgresql.conf $@
+
+start-postgres: $(DEV_POSTGRES_DATA_DIR)/postgresql.conf
+	postgres -D $(DEV_POSTGRES_DATA_DIR) -k $(DEV_POSTGRES_DIR)
+
+.PHONY: artifactory clean clean-containers clean-container-certs clean-running-containers clean-container-images coverage deb-build install-fpm install-jfrog install-ggen install-build-tools legendary release semvertagchk test test-gofmt test-integration setup-containers test-unit reject-wip wip staticcheck start-postgres

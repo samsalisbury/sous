@@ -1,6 +1,6 @@
 { pkgs ? import <nixpkgs> {} }:
 let
-  inherit (pkgs) lib stdenv ruby rake bundler bundlerEnv;
+  inherit (pkgs) lib stdenv ruby rake bundler bundlerEnv postgresql100 liquibase;
 
   rubyEnv = bundlerEnv {
     name = "sous-danger";
@@ -8,4 +8,13 @@ let
     gemdir = ./.;
   };
 in
-  rubyEnv.env
+  stdenv.mkDerivation {
+    name = "sous-env";
+    src = ./.;
+
+    buildInputs = [
+      rubyEnv
+      postgresql100
+      liquibase
+    ];
+  }
