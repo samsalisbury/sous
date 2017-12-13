@@ -166,7 +166,7 @@ test-gofmt:
 	bin/check-gofmt
 
 test-unit:
-	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -timeout 2m $(SOUS_PACKAGES_WITH_TESTS)
+	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -timeout 3m -race $(SOUS_PACKAGES_WITH_TESTS)
 
 test-integration: setup-containers
 	SOUS_QA_DESC=$(QA_DESC) go test -timeout 30m $(EXTRA_GO_FLAGS)  $(TEST_VERBOSE) ./integration --tags=integration
