@@ -2,7 +2,6 @@ package sous
 
 import (
 	"context"
-	"sync"
 )
 
 // DeployableProcessor processes DeployablePairs off of a DeployableChans channel
@@ -11,6 +10,18 @@ type DeployableProcessor interface {
 }
 
 // Pipeline attaches a DeployableProcessor to the DeployableChans, and returns a new DeployableChans.
+// Each segment of a pipeline consumes from
+//   a channel of DeployablePairs and
+//   a channel of error
+// and likewise produceds into a similar pair of channels.
+// Each 'Pair that comes over the channel is handled to the DeployableProcessor to be processed.
+// Processed pairs are put into the output channel,
+//   and errors from the processing go into the output error channel.
+// Incoming errors are repeated onto the output error channel as well.
+// The DeployableProcessor can optionally provide a HandleResolution method,
+// in which case processing errors (both its own and from upstream) will be provided
+// to that method. HandleResolution, by interface, has no return:
+// the errors proceed unconditionally to the output error channel regardless.
 func (d *DeployableChans) Pipeline(ctx context.Context, proc DeployableProcessor) *DeployableChans {
 	out := NewDeployableChans(1)
 
@@ -19,14 +30,14 @@ func (d *DeployableChans) Pipeline(ctx context.Context, proc DeployableProcessor
 		handle = handler.HandleResolution
 	}
 
-	d.Add(1) // for the errs channel
+	d.Add(2) // for the errs channel
 
-	wg := sync.WaitGroup{}
-	wg.Add(1)
+	transErrs := make(chan *DiffResolution)
 
-	process := func(from, to chan *DeployablePair, doProc func(dp *DeployablePair) (*DeployablePair, *DiffResolution)) {
+	go func(from, to chan *DeployablePair, doProc func(dp *DeployablePair) (*DeployablePair, *DiffResolution)) {
 		defer close(to)
-		defer wg.Done()
+		defer close(transErrs)
+		defer d.Done()
 		for {
 			select {
 			case <-ctx.Done():
@@ -39,26 +50,47 @@ func (d *DeployableChans) Pipeline(ctx context.Context, proc DeployableProcessor
 				proked, rez := doProc(dp)
 				if rez != nil {
 					handle(rez)
-					out.Errs <- rez
+					transErrs <- rez
 				}
 				if proked != nil {
 					to <- proked
 				}
 			}
 		}
-	}
+	}(d.Pairs, out.Pairs, proc.HandlePairs)
 
-	go func() {
-		for rez := range d.Errs {
-			handle(rez)
-			out.Errs <- rez
+	go func(upstream, local <-chan *DiffResolution) {
+		defer close(out.Errs)
+		defer d.Done()
+
+		for {
+			if upstream == nil && local == nil {
+				return
+			}
+
+			select {
+			case <-ctx.Done():
+				return
+			case rez, open := <-upstream:
+				if !open {
+					upstream = nil
+				}
+				if rez != nil {
+					handle(rez)
+					out.Errs <- rez
+				}
+			case rez, open := <-local:
+				if !open {
+					local = nil
+				}
+				if rez != nil {
+					handle(rez)
+					out.Errs <- rez
+				}
+			}
 		}
-		wg.Wait()
-		close(out.Errs)
-		d.Done()
-	}()
+	}(d.Errs, transErrs)
 
-	go process(d.Pairs, out.Pairs, proc.HandlePairs)
 	return out
 }
 

@@ -58,7 +58,6 @@ func resolveName(r Registry, d *Deployable) (*Deployable, *DiffResolution) {
 		return nil, &DiffResolution{
 			Error: &ErrorWrapper{error: fmt.Errorf("nil deployable")},
 		}
-		//panic("NIL Deployable")
 	}
 	art, err := guardImage(r, d.Deployment)
 	if err != nil {
