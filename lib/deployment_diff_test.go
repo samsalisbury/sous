@@ -15,8 +15,8 @@ func TestEmptyDiff(t *testing.T) {
 	dc := intended.Diff(existing)
 	ds := dc.collect()
 
-	if len(ds.Pairs) != 0 {
-		t.Errorf("got %d pairs; want 0", len(ds.Pairs))
+	if len(ds) != 0 {
+		t.Errorf("got %d pairs; want 0", len(ds))
 	}
 }
 

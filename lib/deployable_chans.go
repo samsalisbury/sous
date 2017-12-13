@@ -13,9 +13,7 @@ type (
 		sync.WaitGroup
 	}
 
-	diffSet struct {
-		Pairs DeployablePairs
-	}
+	diffSet DeployablePairs
 )
 
 // NewDeployableChans returns a new DeployableChans with channels buffered to
@@ -41,14 +39,14 @@ func (d *DeployableChans) collect() diffSet {
 	ds := newDiffSet()
 
 	for m := range d.Pairs {
-		ds.Pairs = append(ds.Pairs, m)
+		ds = append(ds, m)
 	}
 	return ds
 }
 
 func (ds diffSet) Filter(predicate func(*DeployablePair) bool) []*DeployablePair {
 	var result []*DeployablePair
-	for _, dp := range ds.Pairs {
+	for _, dp := range ds {
 		if predicate(dp) {
 			result = append(result, dp)
 		}
