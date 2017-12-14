@@ -1,7 +1,7 @@
 SHELL := /usr/bin/env bash
 
 XDG_DATA_HOME ?= $(HOME)/.local/share
-DEV_POSTGRES_DIR ?= $(XDG_DATA_HOME)/postgres
+DEV_POSTGRES_DIR ?= $(XDG_DATA_HOME)/sous/postgres
 DEV_POSTGRES_DATA_DIR ?= $(DEV_POSTGRES_DIR)/data
 
 SQLITE_URL := https://sqlite.org/2017/sqlite-autoconf-3160200.tar.gz
