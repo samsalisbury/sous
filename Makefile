@@ -241,12 +241,12 @@ postgres-start: $(DEV_POSTGRES_DATA_DIR)/postgresql.conf
 		postgres -D $(DEV_POSTGRES_DATA_DIR) -k $(DEV_POSTGRES_DIR) & \
 	fi
 	until pg_isready -h $(DEV_POSTGRES_DIR); do sleep 1; done
-	createdb -h $(DEV_POSTGRES_DIR) > /dev/null 2>&1 || true
+	createdb -h $(DEV_POSTGRES_DIR) sous > /dev/null 2>&1 || true
 
 postgres-stop:
 	pg_ctl stop -D $(DEV_POSTGRES_DATA_DIR)
 
 postgres-connect:
-	psql -h $(DEV_POSTGRES_DIR)
+	psql -h $(DEV_POSTGRES_DIR) sous
 
 .PHONY: artifactory clean clean-containers clean-container-certs clean-running-containers clean-container-images coverage deb-build install-fpm install-jfrog install-ggen install-build-tools legendary release semvertagchk test test-gofmt test-integration setup-containers test-unit reject-wip wip staticcheck postgres-start postgres-stop postgres-connect
