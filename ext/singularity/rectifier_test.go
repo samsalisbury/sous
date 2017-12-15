@@ -150,7 +150,7 @@ func TestModifyScale(t *testing.T) {
 
 	mods <- pair
 	close(mods)
-	deployer.RectifyModifies(mods, errs)
+	deployer.Rectify(mods, errs)
 	close(errs)
 
 	for e := range errs {
@@ -183,7 +183,7 @@ func TestModifyImage(t *testing.T) {
 
 	mods <- pair
 	close(mods)
-	deployer.RectifyModifies(mods, log)
+	deployer.Rectify(mods, log)
 	close(log)
 
 	for e := range log {
@@ -220,7 +220,7 @@ func TestModifyResources(t *testing.T) {
 
 	mods <- pair
 	close(mods)
-	deployer.RectifyModifies(mods, log)
+	deployer.Rectify(mods, log)
 	close(log)
 
 	for e := range log {
@@ -261,7 +261,7 @@ func TestModify(t *testing.T) {
 
 	mods <- pair
 	close(mods)
-	deployer.RectifyModifies(mods, results)
+	deployer.Rectify(mods, results)
 	close(results)
 
 	for e := range results {
@@ -313,7 +313,7 @@ func TestDeletes(t *testing.T) {
 
 	dels <- deleted
 	close(dels)
-	deployer.RectifyDeletes(dels, log)
+	deployer.Rectify(dels, log)
 	close(log)
 
 	for e := range log {
@@ -370,7 +370,7 @@ func TestCreates(t *testing.T) {
 
 	crts <- created
 	close(crts)
-	deployer.RectifyCreates(crts, log)
+	deployer.Rectify(crts, log)
 	close(log)
 
 	for e := range log {

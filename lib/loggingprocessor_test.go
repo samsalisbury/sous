@@ -24,7 +24,6 @@ func TestDeliversDiffMessages(t *testing.T) {
 func TestDiffMessages(t *testing.T) {
 	msg := &deployableMessage{
 		pair: &DeployablePair{
-			Diffs: Differences{},
 			Prior: deployableFixture(""),
 			Post:  deployableFixture(""),
 		},
@@ -99,9 +98,8 @@ func TestDiffMessages(t *testing.T) {
 	logging.AssertMessageFields(t, msg, logging.StandardVariableFields, fields)
 
 	msg.pair.Post.Deployment.SourceID.Version = semv.MustParse("0.0.2")
-	msg.pair.Diffs = Differences{"version not the same (this is the test message)"}
 
-	fields["sous-deployment-diffs"] = "version not the same (this is the test message)"
+	fields["sous-deployment-diffs"] = "source id; this: \"github.com/opentable/example,0.0.1\"; other: \"github.com/opentable/example,0.0.2\""
 	fields["sous-post-tag"] = "0.0.2"
 	fields["sous-diff-disposition"] = "modified"
 
@@ -111,7 +109,6 @@ func TestDiffMessages(t *testing.T) {
 func TestDiffMessages_knownpanic(t *testing.T) {
 	msg := &deployableMessage{
 		pair: &DeployablePair{
-			Diffs: Differences{},
 			Prior: &Deployable{
 				Status: 0,
 				Deployment: &Deployment{
