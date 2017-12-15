@@ -1,0 +1,4 @@
+SiblingURLs:
+  env1: http://foo.com
+  env2: http://bar.com
+  env3: http://example.com

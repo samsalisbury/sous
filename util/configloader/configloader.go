@@ -3,6 +3,7 @@
 package configloader
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -122,7 +123,9 @@ func (cl *configLoader) forEachField(target interface{}, f func(field reflect.St
 	return nil
 }
 
-func (cl *configLoader) forFieldNamed(target interface{}, name string, f func(field reflect.StructField, val reflect.Value) error) error {
+func (cl *configLoader) forFieldNamed(target interface{},
+	name string,
+	f func(field reflect.StructField, val reflect.Value) error) error {
 	found := false
 	err := cl.forEachField(target, func(field reflect.StructField, val reflect.Value) error {
 		if strings.ToLower(field.Name) == strings.ToLower(name) {
@@ -194,6 +197,12 @@ func (cl *configLoader) overrideField(sf reflect.StructField, originalVal reflec
 			return err
 		}
 		finalVal = reflect.ValueOf(i)
+	case map[string]string:
+		var d map[string]string
+		if err := json.Unmarshal([]byte(envVal), &d); err != nil {
+			return err
+		}
+		finalVal = reflect.ValueOf(d)
 	}
 	originalVal.Set(finalVal)
 	return nil

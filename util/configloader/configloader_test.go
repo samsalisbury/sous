@@ -14,6 +14,10 @@ type TestedNested struct {
 	NestedVar string `env:"TEST_NESTED_VAR"`
 }
 
+type TestedMap struct {
+	SiblingURLs map[string]string `env:"TEST_MAP"`
+}
+
 func (tc *TestConfig) FillDefaults() error {
 	if tc.SomeVar == "" {
 		tc.SomeVar = "default value"
@@ -87,5 +91,26 @@ func TestLoad_EmptyEnv(t *testing.T) {
 
 	if c.SomeVar != expected {
 		t.Errorf("got SomeVar=%q; want %q", c.SomeVar, expected)
+	}
+}
+
+func TestLoad_Map(t *testing.T) {
+	cl := New()
+	c := TestedMap{}
+
+	s := `{"env1": "foo", "env2": "bar"}`
+
+	os.Setenv("TEST_MAP", s)
+
+	if err := cl.Load(&c, "test_map_config.yaml"); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, ok := c.SiblingURLs["env3"]; ok {
+		t.Errorf("Failed to override map from environment variable")
+	}
+
+	if val := c.SiblingURLs["env1"]; val != "foo" {
+		t.Errorf("Value not expected")
 	}
 }

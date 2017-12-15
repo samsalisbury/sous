@@ -7,6 +7,7 @@ import (
 
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
+	"github.com/pkg/errors"
 )
 
 type (
@@ -22,7 +23,11 @@ type (
 	}
 )
 
-func newUpdateBeginMessage(tries int, sid sous.SourceID, did sous.DeploymentID, user sous.User, start time.Time) updateMessage {
+func newUpdateBeginMessage(tries int,
+	sid sous.SourceID,
+	did sous.DeploymentID,
+	user sous.User,
+	start time.Time) updateMessage {
 	return updateMessage{
 		callerInfo: logging.GetCallerInfo(logging.NotHere()),
 		tries:      tries,
@@ -33,7 +38,12 @@ func newUpdateBeginMessage(tries int, sid sous.SourceID, did sous.DeploymentID, 
 	}
 }
 
-func newUpdateSuccessMessage(tries int, sid sous.SourceID, did sous.DeploymentID, manifest *sous.Manifest, user sous.User, start time.Time) updateMessage {
+func newUpdateSuccessMessage(tries int,
+	sid sous.SourceID,
+	did sous.DeploymentID,
+	manifest *sous.Manifest,
+	user sous.User,
+	start time.Time) updateMessage {
 	return updateMessage{
 		callerInfo: logging.GetCallerInfo(logging.NotHere()),
 		tries:      tries,
@@ -45,7 +55,12 @@ func newUpdateSuccessMessage(tries int, sid sous.SourceID, did sous.DeploymentID
 	}
 }
 
-func newUpdateErrorMessage(tries int, sid sous.SourceID, did sous.DeploymentID, user sous.User, start time.Time, err error) updateMessage {
+func newUpdateErrorMessage(tries int,
+	sid sous.SourceID,
+	did sous.DeploymentID,
+	user sous.User,
+	start time.Time,
+	err error) updateMessage {
 	return updateMessage{
 		callerInfo: logging.GetCallerInfo(logging.NotHere()),
 		tries:      tries,
@@ -84,7 +99,9 @@ func (msg updateMessage) EachField(fn logging.FieldReportFn) {
 
 func (msg updateMessage) WriteToConsole(console io.Writer) {
 	if msg.err != nil {
-		console.Write([]byte(msg.err.Error()))
+		if _, err := console.Write([]byte(msg.err.Error())); err != nil {
+			fmt.Println(errors.Wrap(err, msg.err.Error()))
+		}
 		return
 	}
 	if msg.interval.Complete() {
