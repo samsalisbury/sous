@@ -3,6 +3,7 @@ SHELL := /usr/bin/env bash
 XDG_DATA_HOME ?= $(HOME)/.local/share
 DEV_POSTGRES_DIR ?= $(XDG_DATA_HOME)/sous/postgres
 DEV_POSTGRES_DATA_DIR ?= $(DEV_POSTGRES_DIR)/data
+PGPORT ?= 6543
 
 SQLITE_URL := https://sqlite.org/2017/sqlite-autoconf-3160200.tar.gz
 GO_VERSION := 1.7.3
@@ -238,15 +239,15 @@ $(DEV_POSTGRES_DATA_DIR)/postgresql.conf: $(DEV_POSTGRES_DATA_DIR) dev_support/p
 
 postgres-start: $(DEV_POSTGRES_DATA_DIR)/postgresql.conf
 	if ! (pg_isready -h $(DEV_POSTGRES_DIR)); then \
-		postgres -D $(DEV_POSTGRES_DATA_DIR) -k $(DEV_POSTGRES_DIR) & \
+		postgres -D $(DEV_POSTGRES_DATA_DIR) -p $(PGPORT) & \
 	fi
-	until pg_isready -h $(DEV_POSTGRES_DIR); do sleep 1; done
-	createdb -h $(DEV_POSTGRES_DIR) sous > /dev/null 2>&1 || true
+	until pg_isready -h localhost -p $(PGPORT); do sleep 1; done
+	createdb -h localhost -p $(PGPORT) sous > /dev/null 2>&1 || true
 
 postgres-stop:
 	pg_ctl stop -D $(DEV_POSTGRES_DATA_DIR)
 
 postgres-connect:
-	psql -h $(DEV_POSTGRES_DIR) sous
+	psql -h localhost -p $(PGPORT) sous
 
 .PHONY: artifactory clean clean-containers clean-container-certs clean-running-containers clean-container-images coverage deb-build install-fpm install-jfrog install-ggen install-build-tools legendary release semvertagchk test test-gofmt test-integration setup-containers test-unit reject-wip wip staticcheck postgres-start postgres-stop postgres-connect

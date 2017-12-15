@@ -1,4 +1,5 @@
-{ pkgs ? import <nixpkgs> {} }:
+{ pkgs ? import ~/dev/nixpkgs {} }:
+#{ pkgs ? import <nixpkgs> {} }:
 let
   inherit (pkgs) lib stdenv ruby rake bundler bundlerEnv postgresql100 liquibase;
 
