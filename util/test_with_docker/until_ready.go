@@ -53,7 +53,6 @@ func UntilReady(d, max time.Duration, fns ...ReadyFn) error {
 func sendPanicAsError(out chan error) {
 	rec := recover()
 	if rec == nil {
-		out <- nil
 		return
 	}
 	if err, ok := rec.(error); ok {

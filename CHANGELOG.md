@@ -6,10 +6,16 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
-## [Unreleased](//github.com/opentable/sous/compare/0.5.59...master)
+## [Unreleased](//github.com/opentable/sous/compare/0.5.60...master)
 
 ### Added
 * Server: Ability to load sous sibiling urls from environment variable
+
+## [0.5.60](//github.com/opentable/sous/compare/0.5.59...0.5.60)
+
+This release contains internal changes only; external behaviour is unmodified.
+See [the set of commits in this release](//github.com/opentable/sous/compare/0.5.59...0.5.60)
+for details of developer-facing changes.
 
 ## [0.5.59](//github.com/opentable/sous/compare/0.5.58...0.5.59)
 ### Fixed

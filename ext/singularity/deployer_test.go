@@ -570,7 +570,7 @@ func TestPendingModification(t *testing.T) {
 	dpCh := make(chan *sous.DeployablePair)
 	rezCh := make(chan sous.DiffResolution)
 
-	go deployer.RectifyModifies(dpCh, rezCh)
+	go deployer.Rectify(dpCh, rezCh)
 	dpCh <- dp
 	close(dpCh)
 
@@ -607,14 +607,6 @@ func TestModificationOfFailed(t *testing.T) {
 
 	dp := &sous.DeployablePair{
 		ExecutorData: &singularityTaskData{requestID: "reqid"},
-		Post: &sous.Deployable{
-			BuildArtifact: &sous.BuildArtifact{
-				Name: "build-artifact",
-				Type: "docker",
-			},
-			Deployment: dpl.Clone(),
-			Status:     sous.DeployStatusFailed,
-		},
 		Prior: &sous.Deployable{
 			BuildArtifact: &sous.BuildArtifact{
 				Name: "build-artifact",
@@ -623,18 +615,26 @@ func TestModificationOfFailed(t *testing.T) {
 			Deployment: dpl.Clone(),
 			Status:     sous.DeployStatusActive,
 		},
+		Post: &sous.Deployable{
+			BuildArtifact: &sous.BuildArtifact{
+				Name: "build-artifact",
+				Type: "docker",
+			},
+			Deployment: dpl.Clone(),
+			Status:     sous.DeployStatusFailed,
+		},
 	}
 
 	dpCh := make(chan *sous.DeployablePair)
 	rezCh := make(chan sous.DiffResolution)
 
-	go deployer.RectifyModifies(dpCh, rezCh)
+	go deployer.Rectify(dpCh, rezCh)
 	dpCh <- dp
 	close(dpCh)
 
 	rez := <-rezCh
 
-	assert.Equal(t, rez.Desc, sous.ModifyDiff)
+	assert.Equal(t, sous.ModifyDiff, rez.Desc)
 	assert.Error(t, rez.Error)
 	assert.False(t, sous.IsTransientResolveError(rez.Error))
 	assert.Len(t, drc.Deployed, 1)
@@ -644,15 +644,15 @@ func TestModificationOfFailed(t *testing.T) {
 }
 
 func TestOptMaxHTTPReqsPerServer(t *testing.T) {
-	deployer := NewDeployer(nil, logging.SilentLogSet())
-	if deployer.ReqsPerServer != DefaultMaxHTTPConcurrencyPerServer {
+	d := NewDeployer(nil, logging.SilentLogSet()).(*deployer)
+	if d.ReqsPerServer != DefaultMaxHTTPConcurrencyPerServer {
 		t.Fatal("Not using default")
 	}
 	const x = 512
 	if x == DefaultMaxHTTPConcurrencyPerServer {
 		t.Fatal("Bad test, please specify a non-default value.")
 	}
-	deployer2 := NewDeployer(nil, logging.SilentLogSet(), OptMaxHTTPReqsPerServer(x))
+	deployer2 := NewDeployer(nil, logging.SilentLogSet(), OptMaxHTTPReqsPerServer(x)).(*deployer)
 	if deployer2.ReqsPerServer != x {
 		t.Fatalf("got %d; want %d", deployer2.ReqsPerServer, x)
 	}
