@@ -14,6 +14,10 @@ type TestedNested struct {
 	NestedVar string `env:"TEST_NESTED_VAR"`
 }
 
+type TestedMap struct {
+	SiblingURLs map[string]string `env:"TEST_MAP"`
+}
+
 func (tc *TestConfig) FillDefaults() error {
 	if tc.SomeVar == "" {
 		tc.SomeVar = "default value"
@@ -24,7 +28,7 @@ func (tc *TestConfig) FillDefaults() error {
 func TestLoad(t *testing.T) {
 	cl := New()
 	c := TestConfig{}
-	if err := cl.Load(&c, "test_config.yaml"); err != nil {
+	if err := cl.Load(&c, "testdata/test_config.yaml"); err != nil {
 		t.Fatal(err)
 	}
 	expected := "some value"
@@ -36,7 +40,7 @@ func TestLoad(t *testing.T) {
 func TestLoad_Defaults(t *testing.T) {
 	cl := New()
 	c := TestConfig{}
-	if err := cl.Load(&c, "test_empty_config.yaml"); err != nil {
+	if err := cl.Load(&c, "testdata/test_empty_config.yaml"); err != nil {
 		t.Fatal(err)
 	}
 	expected := "default value"
@@ -57,7 +61,7 @@ func TestLoad_Env(t *testing.T) {
 		t.Fatalf("setenv failed")
 	}
 
-	if err := cl.Load(&c, "test_config.yaml"); err != nil {
+	if err := cl.Load(&c, "testdata/test_config.yaml"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -81,11 +85,32 @@ func TestLoad_EmptyEnv(t *testing.T) {
 		t.Fatalf("setenv failed")
 	}
 
-	if err := cl.Load(&c, "test_config.yaml"); err != nil {
+	if err := cl.Load(&c, "testdata/test_config.yaml"); err != nil {
 		t.Fatal(err)
 	}
 
 	if c.SomeVar != expected {
 		t.Errorf("got SomeVar=%q; want %q", c.SomeVar, expected)
+	}
+}
+
+func TestLoad_Map(t *testing.T) {
+	cl := New()
+	c := TestedMap{}
+
+	s := `{"env1": "foo", "env2": "bar"}`
+
+	os.Setenv("TEST_MAP", s)
+
+	if err := cl.Load(&c, "testdata/test_map_config.yaml"); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, ok := c.SiblingURLs["env3"]; ok {
+		t.Errorf("Failed to override map from environment variable")
+	}
+
+	if val := c.SiblingURLs["env1"]; val != "foo" {
+		t.Errorf("Expected: foo, got %s", val)
 	}
 }

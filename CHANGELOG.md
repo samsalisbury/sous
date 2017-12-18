@@ -8,6 +8,9 @@ with respect to its command line interface and HTTP interface.
 
 ## [Unreleased](//github.com/opentable/sous/compare/0.5.60...master)
 
+### Added
+* Server: Ability to load sous sibiling urls from environment variable
+
 ## [0.5.60](//github.com/opentable/sous/compare/0.5.59...0.5.60)
 
 This release contains internal changes only; external behaviour is unmodified.
