@@ -48,7 +48,7 @@
             <column name="crdef_port_index" type="INT">
                 <constraints nullable="false"/>
             </column>
-            <column name="crdef_failure_statuses" type="_INT4(10)">
+            <column name="crdef_failure_statuses" type="_INT4">
                 <constraints nullable="false"/>
             </column>
             <column name="crdef_url_timeout" type="INT">
@@ -135,7 +135,7 @@
             <column name="cr_retries" type="INT">
                 <constraints nullable="false"/>
             </column>
-            <column name="cr_failure_statuses" type="_INT4(10)">
+            <column name="cr_failure_statuses" type="_INT4">
                 <constraints nullable="false"/>
             </column>
             <column name="cr_skip" type="BOOLEAN">

@@ -243,6 +243,7 @@ postgres-start: $(DEV_POSTGRES_DATA_DIR)/postgresql.conf
 	fi
 	until pg_isready -h localhost -p $(PGPORT); do sleep 1; done
 	createdb -h localhost -p $(PGPORT) sous > /dev/null 2>&1 || true
+	liquibase --url jdbc:postgresql://localhost:$(PGPORT)/sous --changeLogFile=database/changelog.xml update
 
 postgres-stop:
 	pg_ctl stop -D $(DEV_POSTGRES_DATA_DIR)
@@ -251,3 +252,5 @@ postgres-connect:
 	psql -h localhost -p $(PGPORT) sous
 
 .PHONY: artifactory clean clean-containers clean-container-certs clean-running-containers clean-container-images coverage deb-build install-fpm install-jfrog install-ggen install-build-tools legendary release semvertagchk test test-gofmt test-integration setup-containers test-unit reject-wip wip staticcheck postgres-start postgres-stop postgres-connect
+
+#liquibase --url jdbc:postgresql://127.0.0.1:6543/sous --changeLogFile=database/changelog.xml update
