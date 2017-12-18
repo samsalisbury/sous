@@ -111,6 +111,6 @@ func TestLoad_Map(t *testing.T) {
 	}
 
 	if val := c.SiblingURLs["env1"]; val != "foo" {
-		t.Errorf("Value not expected")
+		t.Errorf("Expected: foo, got %s", val)
 	}
 }
