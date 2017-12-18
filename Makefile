@@ -251,6 +251,9 @@ postgres-stop:
 postgres-connect:
 	psql -h localhost -p $(PGPORT) sous
 
+postgres-update-schema: postgres-start
+	liquibase --url jdbc:postgresql://localhost:$(PGPORT)/sous --changeLogFile=database/changelog.xml update
+
 .PHONY: artifactory clean clean-containers clean-container-certs clean-running-containers clean-container-images coverage deb-build install-fpm install-jfrog install-ggen install-build-tools legendary release semvertagchk test test-gofmt test-integration setup-containers test-unit reject-wip wip staticcheck postgres-start postgres-stop postgres-connect
 
 #liquibase --url jdbc:postgresql://127.0.0.1:6543/sous --changeLogFile=database/changelog.xml update
