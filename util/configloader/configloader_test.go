@@ -28,7 +28,7 @@ func (tc *TestConfig) FillDefaults() error {
 func TestLoad(t *testing.T) {
 	cl := New()
 	c := TestConfig{}
-	if err := cl.Load(&c, "test_config.yaml"); err != nil {
+	if err := cl.Load(&c, "testdata/test_config.yaml"); err != nil {
 		t.Fatal(err)
 	}
 	expected := "some value"
@@ -40,7 +40,7 @@ func TestLoad(t *testing.T) {
 func TestLoad_Defaults(t *testing.T) {
 	cl := New()
 	c := TestConfig{}
-	if err := cl.Load(&c, "test_empty_config.yaml"); err != nil {
+	if err := cl.Load(&c, "testdata/test_empty_config.yaml"); err != nil {
 		t.Fatal(err)
 	}
 	expected := "default value"
@@ -61,7 +61,7 @@ func TestLoad_Env(t *testing.T) {
 		t.Fatalf("setenv failed")
 	}
 
-	if err := cl.Load(&c, "test_config.yaml"); err != nil {
+	if err := cl.Load(&c, "testdata/test_config.yaml"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -85,7 +85,7 @@ func TestLoad_EmptyEnv(t *testing.T) {
 		t.Fatalf("setenv failed")
 	}
 
-	if err := cl.Load(&c, "test_config.yaml"); err != nil {
+	if err := cl.Load(&c, "testdata/test_config.yaml"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -102,7 +102,7 @@ func TestLoad_Map(t *testing.T) {
 
 	os.Setenv("TEST_MAP", s)
 
-	if err := cl.Load(&c, "test_map_config.yaml"); err != nil {
+	if err := cl.Load(&c, "testdata/test_map_config.yaml"); err != nil {
 		t.Fatal(err)
 	}
 
