@@ -35,8 +35,11 @@ func NewResolver(d Deployer, r Registry, rf *ResolveFilter, ls logging.LogSink) 
 // rectify takes a DiffChans and issues the commands to the infrastructure to
 // reconcile the differences.
 func (r *Resolver) rectify(dcs *DeployableChans, results chan DiffResolution) {
-	d := r.Deployer
-	d.Rectify(dcs.Pairs, results)
+	for p := range dcs.Pairs {
+		sr := NewSingleRectification(*p)
+		go sr.Resolve(r.Deployer)
+		go func() { results <- sr.Wait() }()
+	}
 }
 
 // Begin is similar to Resolve, except that it returns a ResolveRecorder almost
