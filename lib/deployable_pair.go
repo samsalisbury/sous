@@ -27,18 +27,18 @@ const (
 	ModifiedKind
 )
 
-// Kind returns the kind of the pair
+// Kind returns the kind of the pair.
 func (dp *DeployablePair) Kind() DeployablePairKind {
 	switch {
+	default:
+		return SameKind
 	//case dp.Prior == nil && dp.Post == nil:
 	//	panic("nil, nil deployable pair")
 	case dp.Prior == nil:
 		return AddedKind
 	case dp.Post == nil:
 		return RemovedKind
-	case len(dp.Diffs()) == 0:
-		return SameKind
-	default:
+	case len(dp.Diffs()) != 0:
 		return ModifiedKind
 	}
 }
