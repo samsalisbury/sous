@@ -1,17 +1,29 @@
 package sous
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
 
-func TestSingleRectification(t *testing.T) {
+func TestSingleRectification_Resolve_completes(t *testing.T) {
 
-	dp := DeployablePair{}
+	// This test just checks that SingleRectification.Resolve actually
+	// completes.
 
-	sr := NewSingleRectification(dp)
+	sr := NewSingleRectification(DeployablePair{})
 
-	d := &DummyDeployer{}
+	done := make(chan struct{})
+	var r DiffResolution
 
-	r := sr.Resolve(d)
+	go func() {
+		r = sr.Resolve(&DummyDeployer{})
+		close(done)
+	}()
 
-	t.Log(r)
-
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		// A second is total overkill...
+		t.Errorf("resolution took more than a second")
+	}
 }

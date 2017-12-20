@@ -7,7 +7,6 @@ type SingleRectification struct {
 	Pair DeployablePair
 	// Resolution is the final resolution of this single rectification.
 	Resolution DiffResolution
-	done       chan struct{}
 }
 
 // NewSingleRectification is used to rectify differences on a single Deployment.
@@ -15,7 +14,6 @@ type SingleRectification struct {
 func NewSingleRectification(dp DeployablePair) *SingleRectification {
 	return &SingleRectification{
 		Pair: dp,
-		done: make(chan struct{}),
 	}
 }
 
@@ -32,12 +30,5 @@ func (sr *SingleRectification) Resolve(d Deployer) DiffResolution {
 	go d.Rectify(c, r)
 	// Set Resolution for later querying.
 	sr.Resolution = <-r
-	close(sr.done)
-	return sr.Resolution
-}
-
-// Wait waits until this rectification is done and returns the resolution.
-func (sr *SingleRectification) Wait() DiffResolution {
-	<-sr.done
 	return sr.Resolution
 }

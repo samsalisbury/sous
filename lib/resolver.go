@@ -37,8 +37,7 @@ func NewResolver(d Deployer, r Registry, rf *ResolveFilter, ls logging.LogSink) 
 func (r *Resolver) rectify(dcs *DeployableChans, results chan DiffResolution) {
 	for p := range dcs.Pairs {
 		sr := NewSingleRectification(*p)
-		sr.Resolve(r.Deployer)
-		results <- sr.Wait()
+		results <- sr.Resolve(r.Deployer)
 	}
 }
 
