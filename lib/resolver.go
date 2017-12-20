@@ -2,7 +2,6 @@ package sous
 
 import (
 	"context"
-	"sync"
 
 	"github.com/opentable/sous/util/logging"
 )
@@ -36,14 +35,11 @@ func NewResolver(d Deployer, r Registry, rf *ResolveFilter, ls logging.LogSink) 
 // rectify takes a DiffChans and issues the commands to the infrastructure to
 // reconcile the differences.
 func (r *Resolver) rectify(dcs *DeployableChans, results chan DiffResolution) {
-	wg := sync.WaitGroup{}
 	for p := range dcs.Pairs {
-		wg.Add(1)
 		sr := NewSingleRectification(*p)
-		go sr.Resolve(r.Deployer)
-		go func() { results <- sr.Wait(); wg.Done() }()
+		sr.Resolve(r.Deployer)
+		results <- sr.Wait()
 	}
-	wg.Wait()
 }
 
 // Begin is similar to Resolve, except that it returns a ResolveRecorder almost
