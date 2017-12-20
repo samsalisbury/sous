@@ -25,6 +25,8 @@ func (dd *DummyDeployer) RunningDeployments(reg Registry, from Clusters) (Deploy
 }
 
 // Rectify implements Deployer
-func (dd *DummyDeployer) Rectify(<-chan *DeployablePair, chan<- DiffResolution) {
-
+func (dd *DummyDeployer) Rectify(dps <-chan *DeployablePair, r chan<- DiffResolution) {
+	for range dps {
+		r <- DiffResolution{}
+	}
 }
