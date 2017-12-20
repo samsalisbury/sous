@@ -10,7 +10,7 @@ func TestSingleRectification_Resolve_completes(t *testing.T) {
 	// This test just checks that SingleRectification.Resolve actually
 	// completes.
 
-	sr := NewSingleRectification(DeployablePair{})
+	sr := NewRectification(DeployablePair{})
 
 	done := make(chan struct{})
 
