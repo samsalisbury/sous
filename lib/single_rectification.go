@@ -25,11 +25,11 @@ func (sr *SingleRectification) Resolve(d Deployer) DiffResolution {
 	// interface of Deployer.Rectify; we can probably make that interface
 	// simpler now.
 	c := make(chan *DeployablePair, 1)
-	defer close(c)
 	c <- &sr.Pair
+	close(c)
 	r := make(chan DiffResolution)
 	defer close(r)
-	d.Rectify(c, r)
+	go d.Rectify(c, r)
 	// Set Resolution for later querying.
 	sr.Resolution = <-r
 	close(sr.done)
