@@ -15,7 +15,8 @@ func TestSingleRectification_Resolve_completes(t *testing.T) {
 	done := make(chan struct{})
 
 	go func() {
-		sr.Resolve(&DummyDeployer{})
+		sr.Begin(&DummyDeployer{})
+		sr.Wait()
 		close(done)
 	}()
 
