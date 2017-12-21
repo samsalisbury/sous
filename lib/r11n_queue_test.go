@@ -369,6 +369,60 @@ func TestR11Queue_Next_Pop_race(t *testing.T) {
 
 }
 
+func TestR11nQueue_PushIfEmpty_sync(t *testing.T) {
+	rq := NewR11nQueue()
+	pushed, ok := rq.PushIfEmpty(&Rectification{})
+	if !ok {
+		t.Fatal("PushIfEmpty failed on new queue")
+	}
+	if pushed == nil {
+		t.Fatal("PushIfEmpty returned nil, true")
+	}
+
+	notPushed, ok := rq.PushIfEmpty(&Rectification{})
+	if ok {
+		t.Fatal("PushIfEmpty succeeded on non-empty queue")
+	}
+	if notPushed != nil {
+		t.Fatal("PushIfEmpty failed but returned a non-nil item")
+	}
+}
+
+func TestR11Queue_PushIfEmpty_async(t *testing.T) {
+
+	rq := NewR11nQueue()
+
+	const itemCount = 100
+	var oks, notoks int64
+	var wg sync.WaitGroup
+	wg.Add(itemCount)
+	for i := 0; i < itemCount; i++ {
+		go func() {
+			defer wg.Done()
+			qr, ok := rq.PushIfEmpty(&Rectification{})
+			if ok {
+				atomic.AddInt64(&oks, 1)
+				if qr == nil {
+					t.Error("got nil QueuedR11n; want not nil")
+				}
+				return
+			}
+			atomic.AddInt64(&notoks, 1)
+			if qr != nil {
+				t.Errorf("got non-nil QueuedR11n; want nil")
+			}
+		}()
+	}
+	wg.Wait()
+
+	if oks != 1 {
+		t.Errorf("got %d oks; want 1", oks)
+	}
+	if notoks != 99 {
+		t.Errorf("got %d not oks; want 99", notoks)
+	}
+}
+
 // makeTestR11nWithRepo creates a test rectification with
 // Pair.Post.Deployment.SourceID.Location.Repo == repo.
 // This is enough to check identity of the r11n using
