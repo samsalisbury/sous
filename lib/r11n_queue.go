@@ -65,14 +65,14 @@ func NewR11nID() R11nID {
 func (rq *R11nQueue) Push(r *Rectification) (*QueuedR11n, bool) {
 	rq.Lock()
 	defer rq.Unlock()
-	return rq.internalPush(r)
-}
-
-// internalPush assumes rq is already locked.
-func (rq *R11nQueue) internalPush(r *Rectification) (*QueuedR11n, bool) {
 	if len(rq.queue) == rq.cap {
 		return nil, false
 	}
+	return rq.internalPush(r), true
+}
+
+// internalPush assumes rq is already locked.
+func (rq *R11nQueue) internalPush(r *Rectification) *QueuedR11n {
 	id := NewR11nID()
 	qr := &QueuedR11n{
 		ID:            id,
@@ -81,17 +81,19 @@ func (rq *R11nQueue) internalPush(r *Rectification) (*QueuedR11n, bool) {
 	}
 	rq.refs[id] = qr
 	rq.queue <- qr
-	return qr, true
+	return qr
 }
 
 // PushIfEmpty adds an item to the queue if it is empty, and returns the wrapper
 // added and true if successful. If the queue is not empty, or is full, it
 // returns nil, false.
 func (rq *R11nQueue) PushIfEmpty(r *Rectification) (*QueuedR11n, bool) {
+	rq.Lock()
+	defer rq.Unlock()
 	if len(rq.queue) != 0 {
 		return nil, false
 	}
-	return rq.internalPush(r)
+	return rq.internalPush(r), true
 }
 
 // Len returns the current number of items in the queue.
@@ -107,20 +109,28 @@ func (rq *R11nQueue) Pop() (*QueuedR11n, bool) {
 	if len(rq.queue) == 0 {
 		return nil, false
 	}
-	return rq.internalNext(), true
+	qr := <-rq.queue
+	rq.handlePopped(qr.ID)
+	return qr, true
 }
 
 // Next is similar to Pop but waits until there is something on the queue to
 // return and then returns it.
 func (rq *R11nQueue) Next() *QueuedR11n {
-	return rq.internalNext()
+	if qr, ok := rq.Pop(); ok {
+		return qr
+	}
+	qr := <-rq.queue
+	rq.Lock()
+	defer rq.Unlock()
+	rq.handlePopped(qr.ID)
+	return qr
 }
 
-func (rq *R11nQueue) internalNext() *QueuedR11n {
-	qr := <-rq.queue
+// handlePopped assumes rq is locked.
+func (rq *R11nQueue) handlePopped(id R11nID) {
 	for _, r := range rq.refs {
 		r.Pos--
 	}
-	delete(rq.refs, qr.ID)
-	return qr
+	delete(rq.refs, id)
 }
