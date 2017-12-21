@@ -1,7 +1,7 @@
 SHELL := /usr/bin/env bash
 
 SQLITE_URL := https://sqlite.org/2017/sqlite-autoconf-3160200.tar.gz
-GO_VERSION := 1.7.3
+GO_VERSION := 1.9.2
 DESCRIPTION := "Sous is a tool for building, testing, and deploying applications, using Docker, Mesos, and Singularity."
 URL := https://github.com/opentable/sous
 
@@ -117,8 +117,8 @@ install-govendor:
 install-engulf:
 	go get github.com/nyarly/engulf
 
-install-staticcheck: install-govendor
-	govendor install +vendor honnef.co/go/tools/cmd/staticcheck
+install-staticcheck:
+	go install -v ./vendor/honnef.co/go/tools/cmd/staticcheck
 
 install-metalinter:
 	go get github.com/alecthomas/gometalinter
