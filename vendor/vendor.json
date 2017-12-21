@@ -428,6 +428,12 @@
 			"path": "golang.org/x/tools/imports",
 			"revision": "1cf0a337cd20f304e6caa20d6a07392e7f071245",
 			"revisionTime": "2016-08-17T05:08:34Z"
+		},
+		{
+			"checksumSHA1": "dP4Ft0yiZSTZOzzNho1Gg5b7o2w=",
+			"path": "honnef.co/go/tools/cmd/staticcheck",
+			"revision": "3139676c5e710ef5caf51cd29cc1ef2994cfb6b7",
+			"revisionTime": "2017-11-11T20:22:26Z"
 		}
 	],
 	"rootPath": "github.com/opentable/sous"

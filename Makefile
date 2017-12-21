@@ -117,8 +117,8 @@ install-govendor:
 install-engulf:
 	go get github.com/nyarly/engulf
 
-install-staticcheck:
-	go get honnef.co/go/tools/cmd/staticcheck
+install-staticcheck: install-govendor
+	govendor install +vendor honnef.co/go/tools/cmd/staticcheck
 
 install-metalinter:
 	go get github.com/alecthomas/gometalinter
