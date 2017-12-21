@@ -2,6 +2,8 @@ package sous
 
 import (
 	"fmt"
+	"sync"
+	"sync/atomic"
 	"testing"
 )
 
@@ -241,4 +243,69 @@ func TestR11nQueue_Push_Pop_sync(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestR11nQueue_Push_async(t *testing.T) {
+
+	// Make sure to run this test with the -race flag!
+
+	const queueSize = 10
+	const itemCount = 20
+
+	rq := NewR11nQueue(R11nQueueCap(queueSize))
+
+	// oks collects the number of oks received from Push.
+	var oks int64
+
+	var wg sync.WaitGroup
+	wg.Add(itemCount)
+	for i := 0; i < itemCount; i++ {
+		go func() {
+			_, ok := rq.Push(&Rectification{})
+			if ok {
+				atomic.AddInt64(&oks, 1)
+			}
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+
+	if oks != queueSize {
+		t.Errorf("got %d oks; want %d", oks, queueSize)
+	}
+
+}
+
+func TestR11nQueue_Pop_async(t *testing.T) {
+
+	// Make sure to run this test with the -race flag!
+
+	const queueSize = 10
+	const itemCount = 20
+
+	rq := NewR11nQueue(R11nQueueCap(queueSize))
+	for i := 0; i < queueSize; i++ {
+		rq.Push(&Rectification{})
+	}
+
+	// oks collects the number of oks received from Push.
+	var oks int64
+
+	var wg sync.WaitGroup
+	wg.Add(itemCount)
+	for i := 0; i < itemCount; i++ {
+		go func() {
+			_, ok := rq.Pop()
+			if ok {
+				atomic.AddInt64(&oks, 1)
+			}
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+
+	if oks != queueSize {
+		t.Errorf("got %d oks; want %d", oks, queueSize)
+	}
+
 }

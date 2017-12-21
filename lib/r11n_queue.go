@@ -1,12 +1,17 @@
 package sous
 
-import "github.com/pborman/uuid"
+import (
+	"sync"
+
+	"github.com/pborman/uuid"
+)
 
 // R11nQueue is a queue of rectifications.
 type R11nQueue struct {
 	cap   int
 	queue chan *QueuedR11n
 	refs  map[R11nID]*QueuedR11n
+	sync.Mutex
 }
 
 // R11nQueueCapDefault is the default capacity for a new R11nQueue.
@@ -58,6 +63,13 @@ func NewR11nID() R11nID {
 // If the push was successful, it returns the wrapper and true, otherwise it
 // returns nil and false.
 func (rq *R11nQueue) Push(r *Rectification) (*QueuedR11n, bool) {
+	rq.Lock()
+	defer rq.Unlock()
+	return rq.internalPush(r)
+}
+
+// internalPush assumes rq is already locked.
+func (rq *R11nQueue) internalPush(r *Rectification) (*QueuedR11n, bool) {
 	if len(rq.queue) == rq.cap {
 		return nil, false
 	}
@@ -79,7 +91,7 @@ func (rq *R11nQueue) PushIfEmpty(r *Rectification) (*QueuedR11n, bool) {
 	if len(rq.queue) != 0 {
 		return nil, false
 	}
-	return rq.Push(r)
+	return rq.internalPush(r)
 }
 
 // Len returns the current number of items in the queue.
@@ -90,13 +102,25 @@ func (rq *R11nQueue) Len() int {
 // Pop removes the item at the front of the queue and returns it plus true.
 // It returns nil and false if there are no items in the queue.
 func (rq *R11nQueue) Pop() (*QueuedR11n, bool) {
+	rq.Lock()
+	defer rq.Unlock()
 	if len(rq.queue) == 0 {
 		return nil, false
 	}
+	return rq.internalNext(), true
+}
+
+// Next is similar to Pop but waits until there is something on the queue to
+// return and then returns it.
+func (rq *R11nQueue) Next() *QueuedR11n {
+	return rq.internalNext()
+}
+
+func (rq *R11nQueue) internalNext() *QueuedR11n {
 	qr := <-rq.queue
 	for _, r := range rq.refs {
 		r.Pos--
 	}
 	delete(rq.refs, qr.ID)
-	return qr, true
+	return qr
 }
