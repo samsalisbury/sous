@@ -1,5 +1,13 @@
 package storage
 
+import (
+	"context"
+	"database/sql"
+
+	sous "github.com/opentable/sous/lib"
+	"github.com/samsalisbury/semv"
+)
+
 // ReadState implements sous.StateReader on PostgresStateManager
 func (m PostgresStateManager) ReadState() (*sous.State, error) {
 	context := context.TODO()
@@ -46,8 +54,9 @@ func loadEnvDefs(context context.Context, state *sous.State, tx *sql.Tx) error {
 			}
 			state.Defs.EnvVars = append(state.Defs.EnvVars, d)
 		}); err != nil {
-		return nil, err
+		return err
 	}
+	return nil
 }
 
 func loadResourceDefs(context context.Context, state *sous.State, tx *sql.Tx) error {
@@ -60,8 +69,9 @@ func loadResourceDefs(context context.Context, state *sous.State, tx *sql.Tx) er
 			}
 			state.Defs.Resources = append(state.Defs.Resources, d)
 		}); err != nil {
-		return nil, err
+		return err
 	}
+	return nil
 }
 
 func loadMetadataDefs(context context.Context, state *sous.State, tx *sql.Tx) error {
@@ -74,12 +84,13 @@ func loadMetadataDefs(context context.Context, state *sous.State, tx *sql.Tx) er
 			}
 			state.Defs.Metadata = append(state.Defs.Metadata, d)
 		}); err != nil {
-		return nil, err
+		return err
 	}
+	return nil
 }
 
 func loadClusters(context context.Context, state *sous.State, tx *sql.Tx) error {
-	clusters := make(map[int]*Cluster)
+	clusters := make(map[int]*sous.Cluster)
 	if err := loadTable(context,
 		`select
 		clusters.cluster_id, clusters.name, clusters.kind, base_url,
@@ -113,11 +124,12 @@ func loadClusters(context context.Context, state *sous.State, tx *sql.Tx) error 
 			}
 			c.AllowedAdvisories = append(c.AllowedAdvisories, q.Name)
 		}); err != nil {
-		return nil, err
+		return err
 	}
 	for _, c := range clusters {
 		state.Defs.Metadata = append(state.Defs.Clusters, c)
 	}
+	return nil
 }
 
 func loadManifests(context context.Context, state *sous.State, tx *sql.Tx) error {
@@ -205,11 +217,12 @@ func loadManifests(context context.Context, state *sous.State, tx *sql.Tx) error
 			}
 			m.Deployments[ds.clusterName] = ds
 		}); err != nil {
-		return nil, err
+		return err
 	}
+	return nil
 }
 
-func loadTable(ctx context.Contex, tx *sql.Tx, sql string, pack func(*sql.Rows) error) error {
+func loadTable(ctx context.Context, tx *sql.Tx, sql string, pack func(*sql.Rows) error) error {
 	rows, err := tx.QueryContext(ctx, "select name, desc, scope, type from env_fdefs;")
 	if err != nil {
 		return nil, err

@@ -6,7 +6,6 @@ import (
 
 	// it's a SQL db driver. This is how you do that.
 	_ "github.com/lib/pq"
-	sous "github.com/opentable/sous/lib"
 )
 
 type (
