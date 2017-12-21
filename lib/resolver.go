@@ -32,13 +32,20 @@ func NewResolver(d Deployer, r Registry, rf *ResolveFilter, ls logging.LogSink) 
 	}
 }
 
+var globalQueueSet = NewR11nQueueSet()
+
 // rectify takes a DiffChans and issues the commands to the infrastructure to
 // reconcile the differences.
 func (r *Resolver) rectify(dcs *DeployableChans, results chan DiffResolution) {
 	for p := range dcs.Pairs {
 		sr := NewRectification(*p)
+		queued, ok := globalQueueSet.PushIfEmpty(sr)
+		if !ok {
+			r.ls.Warnf("dropping rectification; queue not empty for %q", sr.Pair.ID())
+			continue
+		}
 		sr.Begin(r.Deployer)
-		results <- sr.Wait()
+		results <- queued.Rectification.Wait()
 	}
 }
 
