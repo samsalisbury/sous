@@ -13,10 +13,9 @@ func TestSingleRectification_Resolve_completes(t *testing.T) {
 	sr := NewSingleRectification(DeployablePair{})
 
 	done := make(chan struct{})
-	var r DiffResolution
 
 	go func() {
-		r = sr.Resolve(&DummyDeployer{})
+		sr.Resolve(&DummyDeployer{})
 		close(done)
 	}()
 
