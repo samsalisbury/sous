@@ -434,6 +434,18 @@
 			"path": "honnef.co/go/tools/cmd/staticcheck",
 			"revision": "3139676c5e710ef5caf51cd29cc1ef2994cfb6b7",
 			"revisionTime": "2017-11-11T20:22:26Z"
+		},
+		{
+			"checksumSHA1": "gKJKwlFyfVebwzqA3P/N3HJIq/0=",
+			"path": "honnef.co/go/tools/lint/lintutil",
+			"revision": "376b3b58b9e4def403181ee2fd3d4cc7de8375ae",
+			"revisionTime": "2017-11-25T07:40:24Z"
+		},
+		{
+			"checksumSHA1": "9kqdoLEm2gHS9QVE1OXWBCtRqhI=",
+			"path": "honnef.co/go/tools/staticcheck",
+			"revision": "376b3b58b9e4def403181ee2fd3d4cc7de8375ae",
+			"revisionTime": "2017-11-25T07:40:24Z"
 		}
 	],
 	"rootPath": "github.com/opentable/sous"
