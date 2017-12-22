@@ -6,7 +6,7 @@ DEV_POSTGRES_DATA_DIR ?= $(DEV_POSTGRES_DIR)/data
 PGPORT ?= 6543
 
 SQLITE_URL := https://sqlite.org/2017/sqlite-autoconf-3160200.tar.gz
-GO_VERSION := 1.7.3
+GO_VERSION := 1.9.2
 DESCRIPTION := "Sous is a tool for building, testing, and deploying applications, using Docker, Mesos, and Singularity."
 URL := https://github.com/opentable/sous
 
@@ -123,7 +123,7 @@ install-engulf:
 	go get github.com/nyarly/engulf
 
 install-staticcheck:
-	go get honnef.co/go/tools/cmd/staticcheck
+	go install -v ./vendor/honnef.co/go/tools/cmd/staticcheck
 
 install-metalinter:
 	go get github.com/alecthomas/gometalinter
