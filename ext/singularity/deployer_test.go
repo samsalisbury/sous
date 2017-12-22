@@ -570,7 +570,11 @@ func TestPendingModification(t *testing.T) {
 	dpCh := make(chan *sous.DeployablePair)
 	rezCh := make(chan sous.DiffResolution)
 
-	go deployer.Rectify(dpCh, rezCh)
+	go func() {
+		for d := range dpCh {
+			rezCh <- deployer.Rectify(d)
+		}
+	}()
 	dpCh <- dp
 	close(dpCh)
 
@@ -628,7 +632,11 @@ func TestModificationOfFailed(t *testing.T) {
 	dpCh := make(chan *sous.DeployablePair)
 	rezCh := make(chan sous.DiffResolution)
 
-	go deployer.Rectify(dpCh, rezCh)
+	go func() {
+		for d := range dpCh {
+			rezCh <- deployer.Rectify(d)
+		}
+	}()
 	dpCh <- dp
 	close(dpCh)
 

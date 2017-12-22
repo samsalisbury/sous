@@ -26,17 +26,7 @@ func NewRectification(dp DeployablePair) *Rectification {
 // once.
 func (r *Rectification) Begin(d Deployer) {
 	r.once.Do(func() {
-		// Right now we are just fudging along with the current channel-based
-		// interface of Deployer.Rectify; we can probably make that interface
-		// simpler now.
-		c := make(chan *DeployablePair, 1)
-		c <- &r.Pair
-		close(c)
-		res := make(chan DiffResolution)
-		defer close(res)
-		go d.Rectify(c, res)
-		// Set Resolution for later querying.
-		r.Resolution = <-res
+		r.Resolution = d.Rectify(&r.Pair)
 		close(r.done)
 	})
 }

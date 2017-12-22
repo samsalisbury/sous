@@ -34,9 +34,8 @@ func NewResolver(d Deployer, r Registry, rf *ResolveFilter, ls logging.LogSink) 
 
 var globalQueueSet = NewR11nQueueSet()
 
-// rectify takes a DiffChans and issues the commands to the infrastructure to
-// reconcile the differences.
-func (r *Resolver) rectify(dcs *DeployableChans, results chan DiffResolution) {
+// queueDiffs
+func (r *Resolver) queueDiffs(dcs *DeployableChans, results chan DiffResolution) {
 	for p := range dcs.Pairs {
 		sr := NewRectification(*p)
 		queued, ok := globalQueueSet.PushIfEmpty(sr)
@@ -44,7 +43,7 @@ func (r *Resolver) rectify(dcs *DeployableChans, results chan DiffResolution) {
 			r.ls.Warnf("dropping rectification; queue not empty for %q", sr.Pair.ID())
 			continue
 		}
-		sr.Begin(r.Deployer)
+		queued.Rectification.Begin(r.Deployer)
 		results <- queued.Rectification.Wait()
 	}
 }
@@ -100,7 +99,7 @@ func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveRecord
 		})
 
 		recorder.performGuaranteedPhase("rectification", func() {
-			r.rectify(logger, recorder.Log)
+			r.queueDiffs(logger, recorder.Log)
 		})
 		logger.Wait()
 	})
