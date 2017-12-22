@@ -88,6 +88,9 @@ func TestResolveRecorder(t *testing.T) {
 				rs.Log <- rez
 			}
 
+			// It is the responsibility of f to close the log when done.
+			close(rs.Log)
+
 			<-block // Wait for signal from the test that this func may finish.
 		})
 

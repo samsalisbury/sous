@@ -85,10 +85,11 @@ func NewResolveRecorder(intended Deployments, f func(*ResolveRecorder)) *Resolve
 		finished: make(chan struct{}),
 	}
 
-	for _, dpl := range intended.Snapshot() {
-		rr.status.Intended = append(rr.status.Intended, dpl)
+	for _, d := range intended.Snapshot() {
+		rr.status.Intended = append(rr.status.Intended, d)
 	}
 
+	// Update status incrementally.
 	go func() {
 		for rez := range rr.Log {
 			rr.write(func() {
@@ -102,6 +103,7 @@ func NewResolveRecorder(intended Deployments, f func(*ResolveRecorder)) *Resolve
 		close(rr.finished)
 	}()
 
+	// Execute the main function (f) over this resolve recorder.
 	go func() {
 		f(rr)
 		rr.write(func() {
@@ -109,7 +111,7 @@ func NewResolveRecorder(intended Deployments, f func(*ResolveRecorder)) *Resolve
 			if rr.err == nil {
 				rr.status.Phase = "finished"
 			}
-			close(rr.Log)
+			//close(rr.Log)
 		})
 	}()
 	return rr

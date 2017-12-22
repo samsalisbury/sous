@@ -32,6 +32,8 @@ func NewResolver(d Deployer, r Registry, rf *ResolveFilter, ls logging.LogSink) 
 	}
 }
 
+// globalQueueSet is a temporary solution to having a queue of rectifications
+// per Deployment. This will be replaced with a persistent queue.
 var globalQueueSet = NewR11nQueueSet()
 
 // queueDiffs
@@ -100,7 +102,9 @@ func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveRecord
 
 		recorder.performGuaranteedPhase("rectification", func() {
 			r.queueDiffs(logger, recorder.Log)
+			close(recorder.Log)
 		})
+
 		logger.Wait()
 	})
 }
