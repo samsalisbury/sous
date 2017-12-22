@@ -14,7 +14,7 @@ type SousConfig struct {
 
 func init() { TopLevelCommands["config"] = &SousConfig{} }
 
-const sousConfigHelp = `view and edit sous configuration
+const sousConfigHelp = `view and edit sous configuration (~/.config/sous/config.yaml)
 
 usage: sous config [<key> [value]]
 
