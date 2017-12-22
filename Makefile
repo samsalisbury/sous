@@ -48,6 +48,11 @@ else
 QA_DESC := $(SOUS_QA_DESC)
 endif
 
+ifndef INTEGRATION_TEST_TIMEOUT
+INTEGRATION_TEST_TIMEOUT := 30m
+endif
+
+
 FLAGS := "-X 'main.Revision=$(COMMIT)' -X 'main.VersionString=$(SOUS_VERSION)'"
 BIN_DIR := artifacts/bin
 DARWIN_RELEASE_DIR := sous-darwin-amd64_$(SOUS_VERSION)
@@ -195,7 +200,13 @@ test-unit:
 	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -timeout 3m -race $(SOUS_PACKAGES_WITH_TESTS)
 
 test-integration: setup-containers
-	SOUS_QA_DESC=$(QA_DESC) go test -timeout 30m $(EXTRA_GO_FLAGS)  $(TEST_VERBOSE) ./integration --tags=integration
+	@echo
+	@echo
+	@echo Integration tests timeout in $(INTEGRATION_TEST_TIMEOUT)
+	@echo Set INTEGRATION_TEST_TIMEOUT to override.
+	@echo
+	@echo
+	SOUS_QA_DESC=$(QA_DESC) go test -timeout $(INTEGRATION_TEST_TIMEOUT) $(EXTRA_GO_FLAGS)  $(TEST_VERBOSE) ./integration --tags=integration
 	@date
 
 $(QA_DESC): sous-qa-setup
