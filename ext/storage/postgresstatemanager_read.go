@@ -45,7 +45,7 @@ func (m PostgresStateManager) ReadState() (*sous.State, error) {
 }
 
 func loadEnvDefs(context context.Context, state *sous.State, tx *sql.Tx) error {
-	if err := loadTable(context,
+	if err := loadTable(context, tx,
 		"select name, desc, scope, type from env_var_defs;",
 		func(rows *sql.Rows) error {
 			d := sous.EnvDef{}
@@ -53,6 +53,7 @@ func loadEnvDefs(context context.Context, state *sous.State, tx *sql.Tx) error {
 				return err
 			}
 			state.Defs.EnvVars = append(state.Defs.EnvVars, d)
+			return nil
 		}); err != nil {
 		return err
 	}
@@ -60,7 +61,7 @@ func loadEnvDefs(context context.Context, state *sous.State, tx *sql.Tx) error {
 }
 
 func loadResourceDefs(context context.Context, state *sous.State, tx *sql.Tx) error {
-	if err := loadTable(context,
+	if err := loadTable(context, tx,
 		"select field_name, var_type, default_value from resource_fdefs;",
 		func(rows *sql.Rows) error {
 			d := sous.FieldDefinition{}
@@ -68,6 +69,7 @@ func loadResourceDefs(context context.Context, state *sous.State, tx *sql.Tx) er
 				return err
 			}
 			state.Defs.Resources = append(state.Defs.Resources, d)
+			return nil
 		}); err != nil {
 		return err
 	}
@@ -75,7 +77,7 @@ func loadResourceDefs(context context.Context, state *sous.State, tx *sql.Tx) er
 }
 
 func loadMetadataDefs(context context.Context, state *sous.State, tx *sql.Tx) error {
-	if err := loadTable(context,
+	if err := loadTable(context, tx,
 		"select field_name, var_type, default_value from metadata_fdefs;",
 		func(rows *sql.Rows) error {
 			d := sous.FieldDefinition{}
@@ -83,6 +85,7 @@ func loadMetadataDefs(context context.Context, state *sous.State, tx *sql.Tx) er
 				return err
 			}
 			state.Defs.Metadata = append(state.Defs.Metadata, d)
+			return nil
 		}); err != nil {
 		return err
 	}
@@ -91,7 +94,7 @@ func loadMetadataDefs(context context.Context, state *sous.State, tx *sql.Tx) er
 
 func loadClusters(context context.Context, state *sous.State, tx *sql.Tx) error {
 	clusters := make(map[int]*sous.Cluster)
-	if err := loadTable(context,
+	if err := loadTable(context, tx,
 		`select
 		clusters.cluster_id, clusters.name, clusters.kind, base_url,
 		crdef_skip, crdef_connect_delay, crdef_timeout, crdef_connect_interval,
@@ -110,7 +113,7 @@ func loadClusters(context context.Context, state *sous.State, tx *sql.Tx) error 
 			q := sous.Quality{}
 			if err := rows.Scan(
 				&cid, &c.Name, &c.Kind, &c.BaseURL,
-				&c.Startup.Skip, &c.Startup.ConnectDelay, &c.Startup.Timeout, &c.Startup.ConnectInterval,
+				&c.Startup.SkipCheck, &c.Startup.ConnectDelay, &c.Startup.Timeout, &c.Startup.ConnectInterval,
 				&c.Startup.CheckReadyProtocol, &c.Startup.CheckReadyURIPath, &c.Startup.CheckReadyPortIndex, &c.Startup.CheckReadyFailureStatuses,
 				&c.Startup.CheckReadyURITimeout, &c.Startup.CheckReadyInterval, &c.Startup.CheckReadyRetries,
 				&q.Name,
@@ -123,17 +126,18 @@ func loadClusters(context context.Context, state *sous.State, tx *sql.Tx) error 
 				clusters[cid] = c
 			}
 			c.AllowedAdvisories = append(c.AllowedAdvisories, q.Name)
+			return nil
 		}); err != nil {
 		return err
 	}
 	for _, c := range clusters {
-		state.Defs.Metadata = append(state.Defs.Clusters, c)
+		state.Defs.Clusters[c.Name] = c
 	}
 	return nil
 }
 
 func loadManifests(context context.Context, state *sous.State, tx *sql.Tx) error {
-	if err := loadTable(context,
+	if err := loadTable(context, tx,
 		// This query is somewhat naive and returns many more rows than we need
 		// specifically, every possible combination of env/resource/volume/metadata
 		// results in its own row. Maybe that could be reduced?
@@ -168,6 +172,7 @@ func loadManifests(context context.Context, state *sous.State, tx *sql.Tx) error
 			ds := sous.DeploySpec{}
 			vol := sous.Volume{}
 			var ownerEmail, versionString,
+				clusterName,
 				envKey, envValue,
 				resName, resValue,
 				mdName, mdValue string
@@ -175,10 +180,10 @@ func loadManifests(context context.Context, state *sous.State, tx *sql.Tx) error
 				&m.Source.Repo, &m.Source.Dir, &m.Flavor, &m.Kind,
 				&ownerEmail,
 				&versionString, &ds.NumInstances, &ds.Schedule,
-				&ds.Startup.Skip, &ds.Startup.ConnectDelay, &ds.Startup.Timeout, &ds.Startup.ConnectInterval,
+				&ds.Startup.SkipCheck, &ds.Startup.ConnectDelay, &ds.Startup.Timeout, &ds.Startup.ConnectInterval,
 				&ds.Startup.CheckReadyProtocol, &ds.Startup.CheckReadyURIPath, &ds.Startup.CheckReadyPortIndex, &ds.Startup.CheckReadyFailureStatuses,
 				&ds.Startup.CheckReadyURITimeout, &ds.Startup.CheckReadyInterval, &ds.Startup.CheckReadyRetries,
-				&ds.clusterName,
+				&clusterName,
 				&envKey, &envValue,
 				&resName, &resValue,
 				&mdName, &mdValue,
@@ -186,15 +191,15 @@ func loadManifests(context context.Context, state *sous.State, tx *sql.Tx) error
 			); err != nil {
 				return err
 			}
-			if newM, has := state.Manifests.Get(m.ID()); ok {
+			if newM, has := state.Manifests.Get(m.ID()); has {
 				m = newM
 			} else {
 				state.Manifests.Add(m)
 			}
-			set := NewOwnerSet(m.Owners...)
+			set := sous.NewOwnerSet(m.Owners...)
 			set.Add(ownerEmail)
 			m.Owners = set.Slice()
-			if newDS, has := m.Deployments[ds.clusterName]; has {
+			if newDS, has := m.Deployments[clusterName]; has {
 				ds = newDS
 			} else {
 				var err error
@@ -207,15 +212,16 @@ func loadManifests(context context.Context, state *sous.State, tx *sql.Tx) error
 			ds.Metadata[mdName] = mdValue
 			has := false
 			for i := range ds.Volumes {
-				if ds.Volumes[i].Equal(vol) {
+				if ds.Volumes[i].Equal(&vol) {
 					has = true
 					break
 				}
 			}
 			if !has {
-				ds.Volumes = append(ds.Volumes, vol)
+				ds.Volumes = append(ds.Volumes, &vol)
 			}
-			m.Deployments[ds.clusterName] = ds
+			m.Deployments[clusterName] = ds
+			return nil
 		}); err != nil {
 		return err
 	}
@@ -225,7 +231,7 @@ func loadManifests(context context.Context, state *sous.State, tx *sql.Tx) error
 func loadTable(ctx context.Context, tx *sql.Tx, sql string, pack func(*sql.Rows) error) error {
 	rows, err := tx.QueryContext(ctx, "select name, desc, scope, type from env_fdefs;")
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -234,7 +240,7 @@ func loadTable(ctx context.Context, tx *sql.Tx, sql string, pack func(*sql.Rows)
 		}
 	}
 	if err := rows.Err(); err != nil {
-		return
+		return err
 	}
 	return nil
 }
