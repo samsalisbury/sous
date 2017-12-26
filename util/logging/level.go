@@ -1,6 +1,7 @@
 package logging
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -39,6 +40,9 @@ func levelFromString(name string) Level {
 			return i
 		}
 	}
+
+	fmt.Printf("Failed to find a valid log level, going to use Extreme logging, configuration set was %s\n", name)
+
 	return ExtremeLevel
 }
 

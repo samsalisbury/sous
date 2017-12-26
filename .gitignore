@@ -17,6 +17,7 @@ var/
 .cleanprotect
 *.test
 
+
 ## Github/Gitignore: JetBrains
 
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio and Webstorm
@@ -27,6 +28,9 @@ var/
 .idea/**/tasks.xml
 .idea/dictionaries
 .vscode
+
+#visual code debug files
+debug
 
 # Sensitive or high-churn files:
 .idea/**/dataSources/
