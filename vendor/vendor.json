@@ -212,6 +212,18 @@
 			"revisionTime": "2017-11-26T05:04:59Z"
 		},
 		{
+			"checksumSHA1": "/OoEj0wxK7Rd25jAlZv1xi+e9wg=",
+			"path": "github.com/kisielk/gotool",
+			"revision": "d6ce6262d87e3a4e153e86023ff56ae771554a41",
+			"revisionTime": "2017-08-28T04:23:10Z"
+		},
+		{
+			"checksumSHA1": "9jyCVFMF5GDl15Vqp2ZxRmmNftE=",
+			"path": "github.com/kisielk/gotool/internal/load",
+			"revision": "d6ce6262d87e3a4e153e86023ff56ae771554a41",
+			"revisionTime": "2017-08-28T04:23:10Z"
+		},
+		{
 			"checksumSHA1": "+q6a7iju2XMMu5DB/we6odv3/Iw=",
 			"path": "github.com/mattn/go-sqlite3",
 			"revision": "38ee283dabf11c9cbdb968eebd79b1fa7acbabe6",

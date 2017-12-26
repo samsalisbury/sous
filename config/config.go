@@ -29,7 +29,7 @@ type (
 		// of sous servers. Each server must be configured with accessible URLs for
 		// all the servers in production, as named by cluster.
 		// (someday this should be replaced with a gossip protocol)
-		SiblingURLs map[string]string
+		SiblingURLs map[string]string `env:"SOUS_SIBLING_URLS"`
 		// BuildStateDir is a directory where information about builds
 		// performed by this user on this machine are stored.
 		BuildStateDir string `env:"SOUS_BUILD_STATE_DIR"`

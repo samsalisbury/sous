@@ -19,73 +19,46 @@ func (d *DeployableChans) ResolveNames(ctx context.Context, r Registry) *Deploya
 	return d.Pipeline(ctx, names)
 }
 
-func (names *nameResolver) Start(dp *DeployablePair) (*DeployablePair, *DiffResolution) {
-	dep := dp.Post
-	logging.Log.Vomit.Printf("Deployment processed, needs artifact: %#v", dep)
+func (names *nameResolver) HandlePairs(dp *DeployablePair) (*DeployablePair, *DiffResolution) {
+	intended := dp.Post
+	action := dp.Kind().ResolveVerb()
 
-	da, err := resolveName(names.registry, dep)
-	if err != nil {
-		logging.Log.Info.Printf("Unable to create new deployment %q: %s", dep.ID(), err)
-		logging.Log.Debug.Printf("Failed create deployment %q: % #v", dep.ID(), dep)
-		return nil, err
-	}
+	newImageName := dp.Post
 
-	if da.BuildArtifact == nil {
-		logging.Log.Info.Printf("Unable to create new deployment %q: no artifact for SourceID %q", dep.ID(), dep.SourceID)
-		logging.Log.Debug.Printf("Failed create deployment %q: % #v", dep.ID(), dep)
-		return nil, &DiffResolution{
-			DeploymentID: dp.ID(),
-			Desc:         "not created",
-			Error:        WrapResolveError(errors.Errorf("Unable to create new deployment %q: no artifact for SourceID %q", dep.ID(), dep.SourceID)),
+	switch dp.Kind() {
+	default:
+		panic(fmt.Errorf("Unknown kind %v", dp.Kind()))
+	case SameKind, RemovedKind:
+		// don't care about docker names
+	case AddedKind, ModifiedKind:
+		var newImageNameResolution *DiffResolution
+		newImageName, newImageNameResolution = resolveName(names.registry, intended)
+		logging.Log.Vomit.Printf("%s deployment processed, needs artifact: %#v", dp.Kind(), intended)
+		if err := newImageNameResolution; err != nil {
+			logging.Log.Info.Printf("Unable to %s %q: %s", action, intended.ID(), err)
+			logging.Log.Debug.Printf("Failed to %s %q: % #v", action, intended.ID(), intended)
+			return nil, err
+		}
+		if newImageName == nil {
+			logging.Log.Info.Printf("Unable to %s deployment %q: no artifact for SourceID %q", action, intended.ID(), intended.SourceID)
+			logging.Log.Debug.Printf("Failed to %s %q: % #v", action, intended.ID(), intended)
+			return nil, &DiffResolution{
+				DeploymentID: dp.ID(),
+				Desc:         "not created",
+				Error:        WrapResolveError(errors.Errorf("Unable to create new deployment %q: no artifact for SourceID %q", intended.ID(), intended.SourceID)),
+			}
 		}
 	}
-	return &DeployablePair{ExecutorData: dp.ExecutorData, name: dp.name, Prior: nil, Post: da}, nil
-}
 
-func (names *nameResolver) Update(depPair *DeployablePair) (*DeployablePair, *DiffResolution) {
-	logging.Log.Vomit.Printf("Pair of deployments processed, needs artifact: %#v", depPair)
-	d, err := resolvePair(names.registry, depPair)
-	if err != nil {
-		logging.Log.Info.Printf("Unable to modify deployment %q: %s", depPair.Post, err)
-		logging.Log.Debug.Printf("Failed modify deployment %q: % #v", depPair.ID(), depPair.Post)
-		return nil, err
-	}
-	if d.Post.BuildArtifact == nil {
-		logging.Log.Info.Printf("Unable to modify deployment %q: no artifact for SourceID %q", depPair.ID(), depPair.Post.SourceID)
-		logging.Log.Debug.Printf("Failed modify deployment %q: % #v", depPair.ID(), depPair.Post)
-		return nil, &DiffResolution{
-			DeploymentID: depPair.ID(),
-			Desc:         "not updated",
-			Error:        WrapResolveError(errors.Errorf("Unable to modify new deployment %q: no artifact for SourceID %q", depPair.ID(), depPair.Post.SourceID)),
-		}
-	}
-	return d, nil
-}
-
-// Stop always returns no error because we don't need a deploy artifact to delete a deploy
-func (names *nameResolver) Stop(dp *DeployablePair) (*DeployablePair, *DiffResolution) {
-	da := maybeResolveSingle(names.registry, dp.Prior)
-	return &DeployablePair{ExecutorData: dp.ExecutorData, name: dp.name, Prior: da, Post: nil}, nil
-}
-
-// Stable always returns no error because we don't need a deploy artifact for unchanged deploys
-func (names *nameResolver) Stable(dp *DeployablePair) (*DeployablePair, *DiffResolution) {
-	da := maybeResolveSingle(names.registry, dp.Post)
-	return &DeployablePair{ExecutorData: dp.ExecutorData, name: dp.name, Prior: da, Post: da}, nil
-}
-
-// XXX now that everything is DeployablePairs, this can probably be simplified
-
-func maybeResolveSingle(r Registry, dep *Deployable) *Deployable {
-	logging.Log.Vomit.Printf("Attempting to resolve optional artifact: %#v (stable or deletes don't need images)", dep)
-	da, err := resolveName(r, dep)
-	if err != nil {
-		logging.Log.Debug.Printf("Error resolving stopped or stable deployment (proceeding anyway): %#v: %#v", dep, err)
-	}
-	return da
+	return &DeployablePair{ExecutorData: dp.ExecutorData, name: dp.name, Prior: dp.Prior, Post: newImageName}, nil
 }
 
 func resolveName(r Registry, d *Deployable) (*Deployable, *DiffResolution) {
+	if d == nil {
+		return nil, &DiffResolution{
+			Error: &ErrorWrapper{error: fmt.Errorf("nil deployable")},
+		}
+	}
 	art, err := guardImage(r, d.Deployment)
 	if err != nil {
 		return d, &DiffResolution{
@@ -95,19 +68,6 @@ func resolveName(r Registry, d *Deployable) (*Deployable, *DiffResolution) {
 	}
 	d.BuildArtifact = art
 	return d, nil
-}
-
-func resolvePair(r Registry, depPair *DeployablePair) (*DeployablePair, *DiffResolution) {
-	// In every case where we resolve a pair of names, the "prior" name is not a target -
-	// in other words, it's nice to know, but not knowing it doesn't prevent progress of the resolution process.
-	// We therefore can discard errors here in a similar way that we discard them in maybeResolveSingle.
-	// However, the larger view is that we might want to undo any change we make, and not having the artifact name
-	// of the *current* deploy would mean that we're performing an update we don't know how (in this moment) to reverse.
-	// [ this issue is captured in SOUS-727 for tracking purposes ]
-	prior, _ := resolveName(r, depPair.Prior)
-	post, err := resolveName(r, depPair.Post)
-
-	return &DeployablePair{ExecutorData: depPair.ExecutorData, name: depPair.name, Prior: prior, Post: post}, err
 }
 
 func guardImage(r Registry, d *Deployment) (*BuildArtifact, error) {
