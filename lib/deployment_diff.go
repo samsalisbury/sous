@@ -7,11 +7,6 @@ type (
 		Prior, Post *Deployment
 		Status      DeployStatus
 	}
-	// DeploymentPairs is a list of DeploymentPair
-	DeploymentPairs []*DeploymentPair
-
-	// DeployablePairs is a list of DeployablePair
-	DeployablePairs []*DeployablePair
 
 	differ struct {
 		from map[DeploymentID]*DeployState

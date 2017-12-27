@@ -245,6 +245,10 @@ postgres-start: $(DEV_POSTGRES_DATA_DIR)/postgresql.conf
 	createdb -h localhost -p $(PGPORT) sous > /dev/null 2>&1 || true
 	liquibase --url jdbc:postgresql://localhost:$(PGPORT)/sous --changeLogFile=database/changelog.xml update
 
+postgres-test-prepare: $(DEV_POSTGRES_DATA_DIR)/postgresql.conf
+	createdb -h localhost -p $(PGPORT) sous-test-template > /dev/null 2>&1 || true
+	liquibase --url jdbc:postgresql://localhost:$(PGPORT)/sous-test-template --changeLogFile=database/changelog.xml update
+
 postgres-stop:
 	pg_ctl stop -D $(DEV_POSTGRES_DATA_DIR)
 

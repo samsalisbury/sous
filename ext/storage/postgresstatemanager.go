@@ -21,7 +21,7 @@ type (
 		User     string
 		Password string
 		Host     string
-		Port     int
+		Port     string
 	}
 )
 
@@ -35,5 +35,5 @@ func NewPostgresStateManager(cfg PostgresConfig) (*PostgresStateManager, error) 
 }
 
 func (c PostgresConfig) connStr() string {
-	return fmt.Sprintf("dbname=%s user=%s password=%s host=%s port=%d", c.DBName, c.User, c.Password, c.Host, c.Port)
+	return fmt.Sprintf("dbname=%s user=%s password=%s host=%s port=%s", c.DBName, c.User, c.Password, c.Host, c.Port)
 }

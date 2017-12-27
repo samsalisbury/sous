@@ -22,19 +22,19 @@ func (m PostgresStateManager) ReadState() (*sous.State, error) {
 
 	state := sous.NewState()
 
-	if err := loadEnvDefs(context, state, tx); err != nil {
+	if err := loadEnvDefs(context, tx, state); err != nil {
 		return nil, err
 	}
-	if err := loadResourceDefs(context, state, tx); err != nil {
+	if err := loadResourceDefs(context, tx, state); err != nil {
 		return nil, err
 	}
-	if err := loadMetadataDefs(context, state, tx); err != nil {
+	if err := loadMetadataDefs(context, tx, state); err != nil {
 		return nil, err
 	}
-	if err := loadClusters(context, state, tx); err != nil {
+	if err := loadClusters(context, tx, state); err != nil {
 		return nil, err
 	}
-	if err := loadManifests(context, state, tx); err != nil {
+	if err := loadManifests(context, tx, state); err != nil {
 		return nil, err
 	}
 
@@ -44,7 +44,7 @@ func (m PostgresStateManager) ReadState() (*sous.State, error) {
 	return state, nil
 }
 
-func loadEnvDefs(context context.Context, state *sous.State, tx *sql.Tx) error {
+func loadEnvDefs(context context.Context, tx *sql.Tx, state *sous.State) error {
 	if err := loadTable(context, tx,
 		"select name, desc, scope, type from env_var_defs;",
 		func(rows *sql.Rows) error {
@@ -60,7 +60,7 @@ func loadEnvDefs(context context.Context, state *sous.State, tx *sql.Tx) error {
 	return nil
 }
 
-func loadResourceDefs(context context.Context, state *sous.State, tx *sql.Tx) error {
+func loadResourceDefs(context context.Context, tx *sql.Tx, state *sous.State) error {
 	if err := loadTable(context, tx,
 		"select field_name, var_type, default_value from resource_fdefs;",
 		func(rows *sql.Rows) error {
@@ -76,7 +76,7 @@ func loadResourceDefs(context context.Context, state *sous.State, tx *sql.Tx) er
 	return nil
 }
 
-func loadMetadataDefs(context context.Context, state *sous.State, tx *sql.Tx) error {
+func loadMetadataDefs(context context.Context, tx *sql.Tx, state *sous.State) error {
 	if err := loadTable(context, tx,
 		"select field_name, var_type, default_value from metadata_fdefs;",
 		func(rows *sql.Rows) error {
@@ -92,7 +92,7 @@ func loadMetadataDefs(context context.Context, state *sous.State, tx *sql.Tx) er
 	return nil
 }
 
-func loadClusters(context context.Context, state *sous.State, tx *sql.Tx) error {
+func loadClusters(context context.Context, tx *sql.Tx, state *sous.State) error {
 	clusters := make(map[int]*sous.Cluster)
 	if err := loadTable(context, tx,
 		`select
@@ -136,7 +136,7 @@ func loadClusters(context context.Context, state *sous.State, tx *sql.Tx) error 
 	return nil
 }
 
-func loadManifests(context context.Context, state *sous.State, tx *sql.Tx) error {
+func loadManifests(context context.Context, tx *sql.Tx, state *sous.State) error {
 	if err := loadTable(context, tx,
 		// This query is somewhat naive and returns many more rows than we need
 		// specifically, every possible combination of env/resource/volume/metadata
@@ -166,6 +166,7 @@ func loadManifests(context context.Context, state *sous.State, tx *sql.Tx) error
 		where deployment_id in (
 			select max(deployment_id) from deployments group by cluster_id, component_id
 		)
+		and deployments.lifecycle != 'decommisioned'
 		`,
 		func(rows *sql.Rows) error {
 			m := &sous.Manifest{}
