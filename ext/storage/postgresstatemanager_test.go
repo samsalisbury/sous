@@ -28,15 +28,15 @@ func (suite *PostgresStateManagerSuite) SetupTest() {
 	connstr := fmt.Sprintf("dbname=sous-test-template host=localhost port=%s", port)
 	setupDB, err := sql.Open("postgres", connstr)
 	if err != nil {
-		suite.FailNow("Error setting up test database: %v. Did you already `make postgres-test-prepare`?")
+		suite.FailNow(fmt.Sprintf("Error setting up test database: %v. Did you already `make postgres-test-prepare`?", err))
 	}
 	// ignoring error because I think "no such DB is a failure"
 	setupDB.Exec("drop database sous-test")
 	if _, err := setupDB.Exec("create database sous-test template sous-test-template"); err != nil {
-		suite.FailNow("Error creating test database: %v", err)
+		suite.FailNow(fmt.Sprintf("Error creating test database: %v", err))
 	}
 	if err := setupDB.Close(); err != nil {
-		suite.FailNow("Error closing DB manipulation connection: %v", err)
+		suite.FailNow(fmt.Sprintf("Error closing DB manipulation connection: %v", err))
 	}
 
 	suite.manager, err = NewPostgresStateManager(PostgresConfig{
@@ -49,7 +49,7 @@ func (suite *PostgresStateManagerSuite) SetupTest() {
 
 	connstr = fmt.Sprintf("dbname=sous-test host=localhost port=%s", port)
 	if suite.db, err = sql.Open("postgres", connstr); err != nil {
-		suite.FailNow("Error establishing test-assertion DB connection: %v", err)
+		suite.FailNow(fmt.Sprintf("Error establishing test-assertion DB connection: %v", err))
 	}
 }
 
@@ -73,4 +73,8 @@ func (suite *PostgresStateManagerSuite) TestWriteState_success(t *testing.T) {
 		case sous.SameKind:
 		}
 	}
+}
+
+func TestPostgresStateManager(t *testing.T) {
+	suite.Run(t, new(PostgresStateManagerSuite))
 }
