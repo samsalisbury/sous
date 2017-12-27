@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
+## [Unreleased](//github.com/opentable/sous/compare/0.5.61...HEAD)
+
+### Added
+* Server: If don't set a valid default log level, use Extreme and print out a message
+
+
 ## [0.5.61](//github.com/opentable/sous/compare/0.5.60...0.5.61)
 
 ### Added

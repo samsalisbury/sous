@@ -130,13 +130,6 @@ func (cfg Config) validateGraphite() error {
 }
 
 func (cfg Config) validateKafka() error {
-	if cfg.Kafka.DefaultLevel == "" {
-		return errors.Errorf("default Kafka log level empty")
-	}
-
-	if levelFromString(cfg.Kafka.DefaultLevel) == ExtremeLevel {
-		return errors.Errorf("default Kafka log level unrecognized: configured as %q", cfg.Kafka.DefaultLevel)
-	}
 
 	switch {
 	default:

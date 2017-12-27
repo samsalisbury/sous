@@ -47,11 +47,15 @@ func (u *Update) Do() error {
 
 // If multiple updates are attempted at once for different clusters, there's
 // the possibility that they will collide in their updates, either interleaving
-// their GDM retreive/manifest update operations, or the git pull/push
+// their GDM retrieve/manifest update operations, or the git pull/push
 // server-side. In this case, the disappointed `sous update` should retry, up
 // to the number of times of manifests there are defined for this
 // SourceLocation
-func updateRetryLoop(ls logging.LogSink, cl restful.HTTPClient, sid sous.SourceID, did sous.DeploymentID, user sous.User) (sous.Deployments, error) {
+func updateRetryLoop(ls logging.LogSink,
+	cl restful.HTTPClient,
+	sid sous.SourceID,
+	did sous.DeploymentID,
+	user sous.User) (sous.Deployments, error) {
 	sm := sous.NewHTTPStateManager(cl)
 
 	tryLimit := 2
