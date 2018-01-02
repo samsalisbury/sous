@@ -46,7 +46,7 @@ func (m PostgresStateManager) ReadState() (*sous.State, error) {
 
 func loadEnvDefs(context context.Context, tx *sql.Tx, state *sous.State) error {
 	if err := loadTable(context, tx,
-		"select name, desc, scope, type from env_var_defs;",
+		`select "name", "desc", "scope", "type" from env_var_defs;`,
 		func(rows *sql.Rows) error {
 			d := sous.EnvDef{}
 			if err := rows.Scan(&d.Name, &d.Desc, &d.Scope, &d.Type); err != nil {
@@ -62,7 +62,7 @@ func loadEnvDefs(context context.Context, tx *sql.Tx, state *sous.State) error {
 
 func loadResourceDefs(context context.Context, tx *sql.Tx, state *sous.State) error {
 	if err := loadTable(context, tx,
-		"select field_name, var_type, default_value from resource_fdefs;",
+		`select "field_name", "var_type", "default_value" from resource_fdefs;`,
 		func(rows *sql.Rows) error {
 			d := sous.FieldDefinition{}
 			if err := rows.Scan(&d.Name, &d.Type, &d.Default); err != nil {
@@ -78,7 +78,7 @@ func loadResourceDefs(context context.Context, tx *sql.Tx, state *sous.State) er
 
 func loadMetadataDefs(context context.Context, tx *sql.Tx, state *sous.State) error {
 	if err := loadTable(context, tx,
-		"select field_name, var_type, default_value from metadata_fdefs;",
+		`select "field_name", "var_type", "default_value" from metadata_fdefs;`,
 		func(rows *sql.Rows) error {
 			d := sous.FieldDefinition{}
 			if err := rows.Scan(&d.Name, &d.Type, &d.Default); err != nil {
@@ -96,16 +96,16 @@ func loadClusters(context context.Context, tx *sql.Tx, state *sous.State) error 
 	clusters := make(map[int]*sous.Cluster)
 	if err := loadTable(context, tx,
 		`select
-		clusters.cluster_id, clusters.name, clusters.kind, base_url,
-		crdef_skip, crdef_connect_delay, crdef_timeout, crdef_connect_interval,
-		crdef_proto, crdef_path, crdef_port_index, crdef_failure_statuses,
-		crdef_url_timeout, crdef_interval, crdef_retries,
+		clusters.cluster_id, clusters.name, clusters.kind, "base_url",
+		"crdef_skip", "crdef_connect_delay", "crdef_timeout", "crdef_connect_interval",
+		"crdef_proto", "crdef_path", "crdef_port_index", "crdef_failure_statuses",
+		"crdef_url_timeout", "crdef_interval", "crdef_retries",
 		qualities.name
 		from
 			clusters
-			join cluster_qualities using cluster_id
-			join qualities using quality_id
-		where qualities.kind = "advisory";
+			join cluster_qualities using (cluster_id)
+			join qualities using (quality_id)
+		where qualities.kind = 'advisory';
 		`,
 		func(rows *sql.Rows) error {
 			var cid int
@@ -142,27 +142,27 @@ func loadManifests(context context.Context, tx *sql.Tx, state *sous.State) error
 		// specifically, every possible combination of env/resource/volume/metadata
 		// results in its own row. Maybe that could be reduced?
 		`select
-			repo, dir, flavor, kind,
-			email,
-			versionstring, num_instances, schedule_string,
-			cr_skip, cr_connect_delay, cr_timeout, cr_connect_interval,
-			cr_proto, cr_path, cr_port_index, cr_failure_statuses,
-			cr_url_timeout, cr_interval, cr_retries,
+			"repo", "dir", "flavor", clusters.kind,
+			"email",
+			"versionstring", "num_instances", "schedule_string",
+			"cr_skip", "cr_connect_delay", "cr_timeout", "cr_connect_interval",
+			"cr_proto", "cr_path", "cr_port_index", "cr_failure_statuses",
+			"cr_uri_timeout", "cr_interval", "cr_retries",
 			clusters.name,
 			envs.key, envs.value,
-			resource_name, resource_value,
+			"resource_name", "resource_value",
 			metadatas.name, metadatas.value,
-			host, container, mode
+			"host", "container", "mode"
 		from
 			components
-			join owner_components using component_id
-			join owners using owner_id
-			join deployments using component_id
-			join clusters using cluster_id
-			left join envs using deployment_id
-			left join resources using deployment_id
-			left join metadata using deployment_id
-			left join volumes using deployment_id
+			join component_owners using (component_id)
+			join owners using (owner_id)
+			join deployments using (component_id)
+			join clusters using (cluster_id)
+			left join envs using (deployment_id)
+			left join resources using (deployment_id)
+			left join metadatas using (deployment_id)
+			left join volumes using (deployment_id)
 		where deployment_id in (
 			select max(deployment_id) from deployments group by cluster_id, component_id
 		)
@@ -230,7 +230,7 @@ func loadManifests(context context.Context, tx *sql.Tx, state *sous.State) error
 }
 
 func loadTable(ctx context.Context, tx *sql.Tx, sql string, pack func(*sql.Rows) error) error {
-	rows, err := tx.QueryContext(ctx, "select name, desc, scope, type from env_fdefs;")
+	rows, err := tx.QueryContext(ctx, sql)
 	if err != nil {
 		return err
 	}

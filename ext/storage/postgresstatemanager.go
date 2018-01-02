@@ -22,6 +22,7 @@ type (
 		Password string
 		Host     string
 		Port     string
+		SSL      bool
 	}
 )
 
@@ -35,5 +36,16 @@ func NewPostgresStateManager(cfg PostgresConfig) (*PostgresStateManager, error) 
 }
 
 func (c PostgresConfig) connStr() string {
-	return fmt.Sprintf("dbname=%s user=%s password=%s host=%s port=%s", c.DBName, c.User, c.Password, c.Host, c.Port)
+	sslmode := "enable"
+	if !c.SSL {
+		sslmode = "disable"
+	}
+	conn := fmt.Sprintf("dbname=%s host=%s port=%s sslmode=%s", c.DBName, c.Host, c.Port, sslmode)
+	if c.User != "" {
+		conn = fmt.Sprintf("%s user=%s", conn, c.User)
+	}
+	if c.Password != "" {
+		conn = fmt.Sprintf("%s password=%s", conn, c.Password)
+	}
+	return conn
 }
