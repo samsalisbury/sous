@@ -5,6 +5,9 @@ DEV_POSTGRES_DIR ?= $(XDG_DATA_HOME)/sous/postgres
 DEV_POSTGRES_DATA_DIR ?= $(DEV_POSTGRES_DIR)/data
 PGPORT ?= 6543
 
+LIQUIBASE_DEFAULTS := ./dev_support/liquibase/liquibase.properties
+LIQUIBASE_FLAGS := --url jdbc:postgresql://localhost:$(PGPORT)/sous --changeLogFile=database/changelog.xml --defaultsFile=./dev_support/liquibase/liquibase.properties
+
 SQLITE_URL := https://sqlite.org/2017/sqlite-autoconf-3160200.tar.gz
 GO_VERSION := 1.9.2
 DESCRIPTION := "Sous is a tool for building, testing, and deploying applications, using Docker, Mesos, and Singularity."
@@ -243,7 +246,7 @@ postgres-start: $(DEV_POSTGRES_DATA_DIR)/postgresql.conf
 	fi
 	until pg_isready -h localhost -p $(PGPORT); do sleep 1; done
 	createdb -h localhost -p $(PGPORT) sous > /dev/null 2>&1 || true
-	liquibase --url jdbc:postgresql://localhost:$(PGPORT)/sous --changeLogFile=database/changelog.xml update
+	liquibase $(LIQUIBASE_FLAGS) update
 
 postgres-stop:
 	pg_ctl stop -D $(DEV_POSTGRES_DATA_DIR)
@@ -252,8 +255,11 @@ postgres-connect:
 	psql -h localhost -p $(PGPORT) sous
 
 postgres-update-schema: postgres-start
-	liquibase --url jdbc:postgresql://localhost:$(PGPORT)/sous --changeLogFile=database/changelog.xml update
+	liquibase $(LIQUIBASE_FLAGS) update
 
-.PHONY: artifactory clean clean-containers clean-container-certs clean-running-containers clean-container-images coverage deb-build install-fpm install-jfrog install-ggen install-build-tools legendary release semvertagchk test test-gofmt test-integration setup-containers test-unit reject-wip wip staticcheck postgres-start postgres-stop postgres-connect
+postgres-clean:
+	rm -r "$(DEV_POSTGRES_DIR)"
+
+.PHONY: artifactory clean clean-containers clean-container-certs clean-running-containers clean-container-images coverage deb-build install-fpm install-jfrog install-ggen install-build-tools legendary release semvertagchk test test-gofmt test-integration setup-containers test-unit reject-wip wip staticcheck postgres-start postgres-stop postgres-connect postgres-clean
 
 #liquibase --url jdbc:postgresql://127.0.0.1:6543/sous --changeLogFile=database/changelog.xml update
