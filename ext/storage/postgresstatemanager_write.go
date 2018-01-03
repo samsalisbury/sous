@@ -1,12 +1,17 @@
 package storage
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"fmt"
 	"strings"
+	"text/template"
+	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 )
 
 // WriteState implements StateWriter on PostgresStateManager
@@ -21,7 +26,7 @@ func (m PostgresStateManager) WriteState(state *sous.State, user sous.User) erro
 		tx.Rollback()
 	}(tx)
 
-	if err := storeManifests(context, state, tx); err != nil {
+	if err := storeManifests(context, m.log, state, tx); err != nil {
 		return err
 	}
 
@@ -31,17 +36,17 @@ func (m PostgresStateManager) WriteState(state *sous.State, user sous.User) erro
 	return nil
 }
 
-func storeManifests(ctx context.Context, state *sous.State, tx *sql.Tx) error {
+func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State, tx *sql.Tx) error {
 	newDeps, err := state.Deployments()
 	if err != nil {
 		return err
 	}
 
 	currentState := sous.NewState()
-	if err := loadClusters(ctx, tx, currentState); err != nil {
+	if err := loadClusters(ctx, log, tx, currentState); err != nil {
 		return err
 	}
-	if err := loadManifests(ctx, tx, currentState); err != nil {
+	if err := loadManifests(ctx, log, tx, currentState); err != nil {
 		return err
 	}
 	currentDeps, err := currentState.Deployments()
@@ -66,7 +71,7 @@ func storeManifests(ctx context.Context, state *sous.State, tx *sql.Tx) error {
 		}
 	}
 
-	if err := execInsertDeployments(ctx, tx, alldeps, "components", "on conflict do nothing", func(fields *fields, dep *sous.Deployment) {
+	if err := execInsertDeployments(ctx, log, tx, alldeps, "components", "on conflict do nothing", func(fields *fields, dep *sous.Deployment) {
 		fields.row(func(r rowdef) {
 			r.fd("'%s'", "repo", dep.SourceID.Location.Repo)
 			r.fd("'%s'", "dir", dep.SourceID.Location.Dir)
@@ -77,11 +82,11 @@ func storeManifests(ctx context.Context, state *sous.State, tx *sql.Tx) error {
 		return nil
 	}
 
-	if err := execInsertDeployments(ctx, tx, alldeps, "clusters", "on conflict %s do update set %s = ROW", func(fields *fields, dep *sous.Deployment) {
+	if err := execInsertDeployments(ctx, log, tx, alldeps, "clusters", `on conflict {{.Candidates}} do update set {{.NonCandidates}} = {{.NSNonCandidates "excluded"}}`, func(fields *fields, dep *sous.Deployment) {
 		c := dep.Cluster
 		s := c.Startup
 		fields.row(func(r rowdef) {
-			r.cf("'%s'", "name", c.Name)
+			r.cf("'%s'", "name", dep.ClusterName)
 			r.fd("'%s'", "kind", c.Kind)
 			r.fd("'%s'", "base_url", c.BaseURL)
 			startupFields(r, "crdef", s)
@@ -90,7 +95,7 @@ func storeManifests(ctx context.Context, state *sous.State, tx *sql.Tx) error {
 		return nil
 	}
 
-	if err := execInsertDeployments(ctx, tx, updates, "deployments", "", func(fields *fields, dep *sous.Deployment) {
+	if err := execInsertDeployments(ctx, log, tx, updates, "deployments", "", func(fields *fields, dep *sous.Deployment) {
 		sid := dep.SourceID
 		s := dep.Startup
 		fields.row(func(r rowdef) {
@@ -106,7 +111,7 @@ func storeManifests(ctx context.Context, state *sous.State, tx *sql.Tx) error {
 		return err
 	}
 
-	if err := execInsertDeployments(ctx, tx, deletes, "deployments", "", func(fields *fields, dep *sous.Deployment) {
+	if err := execInsertDeployments(ctx, log, tx, deletes, "deployments", "", func(fields *fields, dep *sous.Deployment) {
 		sid := dep.SourceID
 		s := dep.Startup
 		fields.row(func(r rowdef) {
@@ -122,7 +127,7 @@ func storeManifests(ctx context.Context, state *sous.State, tx *sql.Tx) error {
 		return err
 	}
 
-	if err := execInsertDeployments(ctx, tx, updates, "owners", "on conflict do nothing", func(fields *fields, dep *sous.Deployment) {
+	if err := execInsertDeployments(ctx, log, tx, updates, "owners", "on conflict do nothing", func(fields *fields, dep *sous.Deployment) {
 		for ownername := range dep.Owners {
 			fields.row(func(r rowdef) {
 				r.fd("'%s'", "email", ownername)
@@ -132,7 +137,7 @@ func storeManifests(ctx context.Context, state *sous.State, tx *sql.Tx) error {
 		return err
 	}
 
-	if err := execInsertDeployments(ctx, tx, updates, "owner_components", "on conflict do nothing", func(fields *fields, dep *sous.Deployment) {
+	if err := execInsertDeployments(ctx, log, tx, updates, "owner_components", "on conflict do nothing", func(fields *fields, dep *sous.Deployment) {
 		sid := dep.SourceID
 		for ownername := range dep.Owners {
 			fields.row(func(row rowdef) {
@@ -145,7 +150,7 @@ func storeManifests(ctx context.Context, state *sous.State, tx *sql.Tx) error {
 		return err
 	}
 
-	if err := execInsertDeployments(ctx, tx, updates, "envs", "on conflict do nothing", func(fields *fields, dep *sous.Deployment) {
+	if err := execInsertDeployments(ctx, log, tx, updates, "envs", "on conflict do nothing", func(fields *fields, dep *sous.Deployment) {
 		for key, value := range dep.Env {
 			fields.row(func(row rowdef) {
 				depID(row, dep)
@@ -157,7 +162,7 @@ func storeManifests(ctx context.Context, state *sous.State, tx *sql.Tx) error {
 		return err
 	}
 
-	if err := execInsertDeployments(ctx, tx, updates, "resources", "on conflict do nothing", func(fields *fields, dep *sous.Deployment) {
+	if err := execInsertDeployments(ctx, log, tx, updates, "resources", "on conflict do nothing", func(fields *fields, dep *sous.Deployment) {
 		for key, value := range dep.Resources {
 			fields.row(func(row rowdef) {
 				depID(row, dep)
@@ -169,7 +174,7 @@ func storeManifests(ctx context.Context, state *sous.State, tx *sql.Tx) error {
 		return err
 	}
 
-	if err := execInsertDeployments(ctx, tx, updates, "metadatas", "on conflict do nothing", func(fields *fields, dep *sous.Deployment) {
+	if err := execInsertDeployments(ctx, log, tx, updates, "metadatas", "on conflict do nothing", func(fields *fields, dep *sous.Deployment) {
 		for key, value := range dep.Metadata {
 			fields.row(func(row rowdef) {
 				depID(row, dep)
@@ -181,7 +186,7 @@ func storeManifests(ctx context.Context, state *sous.State, tx *sql.Tx) error {
 		return err
 	}
 
-	if err := execInsertDeployments(ctx, tx, updates, "volumes", "on conflict do nothing", func(fields *fields, dep *sous.Deployment) {
+	if err := execInsertDeployments(ctx, log, tx, updates, "volumes", "on conflict do nothing", func(fields *fields, dep *sous.Deployment) {
 		for _, volume := range dep.Volumes {
 			fields.row(func(row rowdef) {
 				depID(row, dep)
@@ -214,7 +219,7 @@ func startupFields(r rowdef, prefix string, s sous.Startup) {
 	r.fd("%d", prefix+"_timeout", s.Timeout)
 	r.fd("%d", prefix+"_connect_interval", s.ConnectInterval)
 	r.fd("%d", prefix+"_port_index", s.CheckReadyPortIndex)
-	r.fd("%d", prefix+"_url_timeout", s.CheckReadyURITimeout)
+	r.fd("%d", prefix+"_uri_timeout", s.CheckReadyURITimeout)
 	r.fd("%d", prefix+"_interval", s.CheckReadyInterval)
 	r.fd("%d", prefix+"_retries", s.CheckReadyRetries)
 	r.fd("%s", prefix+"_failure_statuses", sqlArray(s.CheckReadyFailureStatuses))
@@ -226,7 +231,7 @@ type fields struct {
 	rows     []row
 }
 
-func (f fields) getcol(col, frmt string, cand bool) *coldef {
+func (f *fields) getcol(col, frmt string, cand bool) *coldef {
 	if c, has := f.coldefs[col]; has {
 		if col != c.name || frmt != c.fmt || cand != c.candidate {
 			panic(fmt.Sprintf("Mismatched coldef: %#v != %q %q", c, col, frmt))
@@ -240,8 +245,9 @@ func (f fields) getcol(col, frmt string, cand bool) *coldef {
 }
 
 func (f *fields) row(fn func(rowdef)) {
-	row := &row{}
-	def := rowdef{row: row, fields: f}
+	row := row{}
+	f.rows = append(f.rows, row)
+	def := rowdef{row: &row, fields: f}
 	fn(def)
 }
 
@@ -250,13 +256,24 @@ func (f fields) potent() bool {
 }
 
 func (f fields) insertSQL(table, conflict string) string {
-	conflictClause := fmt.Sprintf(conflict, f.candidates(), f.noncandidates())
 	vs := f.values()
-	return fmt.Sprintf("insert into %s %s values %s %s", table, f.columns(), vs, conflictClause)
+	return fmt.Sprintf("insert into %s %s values %s %s", table, f.columns(), vs, f.conflictClause(conflict))
+}
+
+func (f fields) conflictClause(templ string) string {
+	buf := &bytes.Buffer{}
+	conflictTemplate := template.Must(template.New("conflict").Parse(templ))
+	conflictTemplate.Execute(buf, f)
+	return buf.String()
 }
 
 func (f fields) columns() string {
 	return "(" + strings.Join(f.colnames, ",") + ")"
+}
+
+// Candidates returns the index candidate columns for this fields.
+func (f fields) Candidates() string {
+	return f.candidates()
 }
 
 func (f fields) candidates() string {
@@ -264,6 +281,22 @@ func (f fields) candidates() string {
 	for _, name := range f.colnames {
 		if f.coldefs[name].candidate {
 			colnames = append(colnames, name)
+		}
+	}
+	return "(" + strings.Join(colnames, ",") + ")"
+}
+
+// NonCandidates returns noncandidate column names for this fields.
+func (f fields) NonCandidates() string {
+	return f.noncandidates()
+}
+
+// NSNonCandidates returns noncandidate columns namespaced with a table name.
+func (f fields) NSNonCandidates(namespace string) string {
+	colnames := []string{}
+	for _, name := range f.colnames {
+		if !f.coldefs[name].candidate {
+			colnames = append(colnames, namespace+"."+name)
 		}
 	}
 	return "(" + strings.Join(colnames, ",") + ")"
@@ -294,6 +327,8 @@ func (f fields) values() string {
 		}
 		lines = append(lines, fmt.Sprintf(format, vals...))
 	}
+	spew.Dump(format)
+	spew.Dump(lines)
 	return strings.Join(lines, ",\n")
 }
 
@@ -327,7 +362,7 @@ type field struct {
 	values []interface{}
 }
 
-func execInsertDeployments(ctx context.Context, tx *sql.Tx, ds sous.Deployments, table string, conflict string, fn func(*fields, *sous.Deployment)) error {
+func execInsertDeployments(ctx context.Context, log logging.LogSink, tx *sql.Tx, ds sous.Deployments, table string, conflict string, fn func(*fields, *sous.Deployment)) error {
 	fields := &fields{
 		coldefs: map[string]*coldef{},
 		rows:    []row{},
@@ -338,7 +373,10 @@ func execInsertDeployments(ctx context.Context, tx *sql.Tx, ds sous.Deployments,
 	if !fields.potent() {
 		return nil
 	}
-	_, err := tx.ExecContext(ctx, fields.insertSQL(table, conflict))
+	start := time.Now()
+	sql := fields.insertSQL(table, conflict)
+	_, err := tx.ExecContext(ctx, sql)
+	reportSQLMessage(log, start, sql, err)
 	return err
 }
 
@@ -372,5 +410,5 @@ func sqlArray(value []int) string {
 	for _, i := range value {
 		items = append(items, fmt.Sprintf("%d", i))
 	}
-	return "{" + strings.Join(items, ",") + "}"
+	return "'{" + strings.Join(items, ",") + "}'"
 }

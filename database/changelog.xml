@@ -51,7 +51,7 @@
             <column name="crdef_failure_statuses" type="_INT4">
                 <constraints nullable="false"/>
             </column>
-            <column name="crdef_url_timeout" type="INT">
+            <column name="crdef_uri_timeout" type="INT">
                 <constraints nullable="false"/>
             </column>
             <column name="crdef_interval" type="INT">
@@ -107,6 +107,9 @@
             </column>
             <column name="schedule_string" type="TEXT">
                 <constraints nullable="false"/>
+            </column>
+            <column name="lifecycle" type="ENUM('active', 'decomissioned')">
+              <constraints nullable="false"/>
             </column>
             <column name="cr_proto" type="TEXT">
                 <constraints nullable="false"/>
@@ -373,12 +376,5 @@
     </changeSet>
     <changeSet author="judson (generated)" id="1513795697969-39">
         <addForeignKeyConstraint baseColumnNames="deployment_id" baseTableName="volumes" constraintName="volumes_deployment_id_fkey" deferrable="false" initiallyDeferred="false" onDelete="CASCADE" onUpdate="NO ACTION" referencedColumnNames="deployment_id" referencedTableName="deployments"/>
-    </changeSet>
-    <changeSet author="judson (generated)" id="addDeploymentsLifecycle">
-      <addColumn tableName="deployments">
-        <column name="lifecycle" type="TEXT">
-          <constraints nullable="false"/>
-        </column>
-      </addColumn>
     </changeSet>
 </databaseChangeLog>

@@ -3,8 +3,10 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"time"
 
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 	"github.com/samsalisbury/semv"
 )
 
@@ -22,19 +24,19 @@ func (m PostgresStateManager) ReadState() (*sous.State, error) {
 
 	state := sous.NewState()
 
-	if err := loadEnvDefs(context, tx, state); err != nil {
+	if err := loadEnvDefs(context, m.log, tx, state); err != nil {
 		return nil, err
 	}
-	if err := loadResourceDefs(context, tx, state); err != nil {
+	if err := loadResourceDefs(context, m.log, tx, state); err != nil {
 		return nil, err
 	}
-	if err := loadMetadataDefs(context, tx, state); err != nil {
+	if err := loadMetadataDefs(context, m.log, tx, state); err != nil {
 		return nil, err
 	}
-	if err := loadClusters(context, tx, state); err != nil {
+	if err := loadClusters(context, m.log, tx, state); err != nil {
 		return nil, err
 	}
-	if err := loadManifests(context, tx, state); err != nil {
+	if err := loadManifests(context, m.log, tx, state); err != nil {
 		return nil, err
 	}
 
@@ -44,8 +46,8 @@ func (m PostgresStateManager) ReadState() (*sous.State, error) {
 	return state, nil
 }
 
-func loadEnvDefs(context context.Context, tx *sql.Tx, state *sous.State) error {
-	if err := loadTable(context, tx,
+func loadEnvDefs(context context.Context, log logging.LogSink, tx *sql.Tx, state *sous.State) error {
+	if err := loadTable(context, log, tx,
 		`select "name", "desc", "scope", "type" from env_var_defs;`,
 		func(rows *sql.Rows) error {
 			d := sous.EnvDef{}
@@ -60,8 +62,8 @@ func loadEnvDefs(context context.Context, tx *sql.Tx, state *sous.State) error {
 	return nil
 }
 
-func loadResourceDefs(context context.Context, tx *sql.Tx, state *sous.State) error {
-	if err := loadTable(context, tx,
+func loadResourceDefs(context context.Context, log logging.LogSink, tx *sql.Tx, state *sous.State) error {
+	if err := loadTable(context, log, tx,
 		`select "field_name", "var_type", "default_value" from resource_fdefs;`,
 		func(rows *sql.Rows) error {
 			d := sous.FieldDefinition{}
@@ -76,8 +78,8 @@ func loadResourceDefs(context context.Context, tx *sql.Tx, state *sous.State) er
 	return nil
 }
 
-func loadMetadataDefs(context context.Context, tx *sql.Tx, state *sous.State) error {
-	if err := loadTable(context, tx,
+func loadMetadataDefs(context context.Context, log logging.LogSink, tx *sql.Tx, state *sous.State) error {
+	if err := loadTable(context, log, tx,
 		`select "field_name", "var_type", "default_value" from metadata_fdefs;`,
 		func(rows *sql.Rows) error {
 			d := sous.FieldDefinition{}
@@ -92,9 +94,9 @@ func loadMetadataDefs(context context.Context, tx *sql.Tx, state *sous.State) er
 	return nil
 }
 
-func loadClusters(context context.Context, tx *sql.Tx, state *sous.State) error {
+func loadClusters(context context.Context, log logging.LogSink, tx *sql.Tx, state *sous.State) error {
 	clusters := make(map[int]*sous.Cluster)
-	if err := loadTable(context, tx,
+	if err := loadTable(context, log, tx,
 		`select
 		clusters.cluster_id, clusters.name, clusters.kind, "base_url",
 		"crdef_skip", "crdef_connect_delay", "crdef_timeout", "crdef_connect_interval",
@@ -136,8 +138,8 @@ func loadClusters(context context.Context, tx *sql.Tx, state *sous.State) error 
 	return nil
 }
 
-func loadManifests(context context.Context, tx *sql.Tx, state *sous.State) error {
-	if err := loadTable(context, tx,
+func loadManifests(context context.Context, log logging.LogSink, tx *sql.Tx, state *sous.State) error {
+	if err := loadTable(context, log, tx,
 		// This query is somewhat naive and returns many more rows than we need
 		// specifically, every possible combination of env/resource/volume/metadata
 		// results in its own row. Maybe that could be reduced?
@@ -229,8 +231,11 @@ func loadManifests(context context.Context, tx *sql.Tx, state *sous.State) error
 	return nil
 }
 
-func loadTable(ctx context.Context, tx *sql.Tx, sql string, pack func(*sql.Rows) error) error {
+func loadTable(ctx context.Context, log logging.LogSink, tx *sql.Tx, sql string, pack func(*sql.Rows) error) error {
+	start := time.Now()
 	rows, err := tx.QueryContext(ctx, sql)
+	reportSQLMessage(log, start, sql, err)
+
 	if err != nil {
 		return err
 	}

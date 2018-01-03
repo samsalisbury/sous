@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 	"github.com/stretchr/testify/suite"
 	// it's a SQL db driver. This is how you do that.
 	_ "github.com/lib/pq"
@@ -46,7 +47,10 @@ func (suite *PostgresStateManagerSuite) SetupTest() {
 		Host:     "localhost",
 		Port:     port,
 		SSL:      false,
-	})
+	}, logging.Log)
+	//}, logging.SilentLogSet())
+
+	logging.Log.BeChatty()
 
 	connstr = fmt.Sprintf("dbname=sous_test host=localhost port=%s sslmode=disable", port)
 	if suite.db, err = sql.Open("postgres", connstr); err != nil {

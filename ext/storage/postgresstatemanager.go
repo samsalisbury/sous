@@ -6,13 +6,15 @@ import (
 
 	// it's a SQL db driver. This is how you do that.
 	_ "github.com/lib/pq"
+	"github.com/opentable/sous/util/logging"
 )
 
 type (
 	// The PostgresStateManager provides the StateManager interface by
 	// reading/writing from a postgres database.
 	PostgresStateManager struct {
-		db *sql.DB
+		db  *sql.DB
+		log logging.LogSink
 	}
 
 	// A PostgresConfig describes how to connect to a postgres database
@@ -27,12 +29,12 @@ type (
 )
 
 // NewPostgresStateManager creates a new PostgresStateManager.
-func NewPostgresStateManager(cfg PostgresConfig) (*PostgresStateManager, error) {
+func NewPostgresStateManager(cfg PostgresConfig, log logging.LogSink) (*PostgresStateManager, error) {
 	db, err := sql.Open("postgres", cfg.connStr())
 	if err != nil {
 		return nil, err
 	}
-	return &PostgresStateManager{db: db}, nil
+	return &PostgresStateManager{db: db, log: log}, nil
 }
 
 func (c PostgresConfig) connStr() string {
