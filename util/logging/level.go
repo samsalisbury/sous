@@ -1,6 +1,7 @@
 package logging
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -39,6 +40,9 @@ func levelFromString(name string) Level {
 			return i
 		}
 	}
+
+	fmt.Printf("Logging: invalid level %q; falling back to Extreme.", name)
+
 	return ExtremeLevel
 }
 

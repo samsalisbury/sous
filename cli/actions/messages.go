@@ -108,6 +108,9 @@ func (msg updateMessage) WriteToConsole(console io.Writer) {
 		version := msg.sid.Version.String()
 		numInstances := msg.manifest.Deployments[msg.did.Cluster].NumInstances
 
-		fmt.Fprintf(console, "Updated global manifest: %d instances of version %s\n", numInstances, version)
+		if _, err := fmt.Fprintf(console, "Updated global manifest: %d instances of version %s\n",
+			numInstances, version); err != nil {
+			fmt.Println(errors.Wrap(err, msg.err.Error()))
+		}
 	}
 }
