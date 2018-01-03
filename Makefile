@@ -241,10 +241,10 @@ $(DEV_POSTGRES_DATA_DIR)/postgresql.conf: $(DEV_POSTGRES_DATA_DIR) dev_support/p
 	cp dev_support/postgres/postgresql.conf $@
 
 postgres-start: $(DEV_POSTGRES_DATA_DIR)/postgresql.conf
-	if ! (pg_isready -h $(DEV_POSTGRES_DIR)); then \
+	if ! (pg_isready -h localhost -p $(PGPORT)); then \
 		postgres -D $(DEV_POSTGRES_DATA_DIR) -p $(PGPORT) & \
+		until pg_isready -h localhost -p $(PGPORT); do sleep 1; done \
 	fi
-	until pg_isready -h localhost -p $(PGPORT); do sleep 1; done
 	createdb -h localhost -p $(PGPORT) sous > /dev/null 2>&1 || true
 	liquibase $(LIQUIBASE_FLAGS) update
 
