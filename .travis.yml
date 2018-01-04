@@ -11,7 +11,7 @@ install:
 # - sudo apt-get install python3-proselint
 - bundle
 - "./bin/vendor-check"
-- make postgres-test-setup
+- make postgres-test-prepare
 script:
 - bundle exec danger
 - make -j2 test
