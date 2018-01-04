@@ -2,6 +2,7 @@ package sous
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/opentable/sous/util/logging"
 )
@@ -34,19 +35,30 @@ func NewResolver(d Deployer, r Registry, rf *ResolveFilter, ls logging.LogSink) 
 
 // globalQueueSet is a temporary solution to having a queue of rectifications
 // per Deployment. This will be replaced with a persistent queue.
-var globalQueueSet = NewR11nQueueSet()
+var globalQueueSet *R11nQueueSet
 
 // queueDiffs
 func (r *Resolver) queueDiffs(dcs *DeployableChans, results chan DiffResolution) {
+	if globalQueueSet == nil {
+		globalQueueSet = NewR11nQueueSet(R11nQueueStartWithHandler(
+			func(qr *QueuedR11n) DiffResolution {
+				qr.Rectification.Begin(r.Deployer)
+				return qr.Rectification.Wait()
+			}))
+	}
 	for p := range dcs.Pairs {
 		sr := NewRectification(*p)
 		queued, ok := globalQueueSet.PushIfEmpty(sr)
 		if !ok {
+			panic("queue not empty")
 			r.ls.Warnf("dropping rectification; queue not empty for %q", sr.Pair.ID())
 			continue
 		}
-		queued.Rectification.Begin(r.Deployer)
-		results <- queued.Rectification.Wait()
+		result, ok := globalQueueSet.Wait(p.ID(), queued.ID)
+		if !ok {
+			panic(fmt.Sprintf("waiting on non-existent r11n %q", queued.ID))
+		}
+		results <- result
 	}
 }
 

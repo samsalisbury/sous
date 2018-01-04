@@ -12,6 +12,7 @@ type R11nQueue struct {
 	queue chan *QueuedR11n
 	refs  map[R11nID]*QueuedR11n
 	sync.Mutex
+	handlerMutex sync.Mutex
 }
 
 // R11nQueueCapDefault is the default capacity for a new R11nQueue.
@@ -38,6 +39,14 @@ func R11nQueueCap(cap int) R11nQueueOpt {
 	}
 }
 
+// R11nQueueStartWithHandler starts processing the queue using the supplied
+// handler.
+func R11nQueueStartWithHandler(handler func(*QueuedR11n) DiffResolution) R11nQueueOpt {
+	return func(rq *R11nQueue) {
+		rq.Start(handler)
+	}
+}
+
 func (rq *R11nQueue) init() *R11nQueue {
 	rq.queue = make(chan *QueuedR11n, rq.cap)
 	rq.refs = map[R11nID]*QueuedR11n{}
@@ -57,6 +66,34 @@ type R11nID string
 // NewR11nID returns a new random R11nID.
 func NewR11nID() R11nID {
 	return R11nID(uuid.New())
+}
+
+// Start starts applying handler to each item on the queue in order.
+func (rq *R11nQueue) Start(handler func(*QueuedR11n) DiffResolution) <-chan DiffResolution {
+	results := make(chan DiffResolution, 100)
+	go func() {
+		for {
+			qr := rq.Next()
+			rq.handlerMutex.Lock()
+			results <- handler(qr)
+			delete(rq.refs, qr.ID)
+			rq.handlerMutex.Unlock()
+		}
+	}()
+	return results
+}
+
+// Wait waits for a particular rectification to be processed then returns its
+// result. If that rectification is not in this queue, it immediately returns a
+// zero DiffResolution and false.
+func (rq *R11nQueue) Wait(id R11nID) (DiffResolution, bool) {
+	rq.Lock()
+	qr, ok := rq.refs[id]
+	rq.Unlock()
+	if ok {
+		return qr.Rectification.Wait(), true
+	}
+	return DiffResolution{}, false
 }
 
 // Push adds r to the queue, wrapped in a *QueuedR11n. It returns the wrapper.
@@ -90,7 +127,9 @@ func (rq *R11nQueue) internalPush(r *Rectification) *QueuedR11n {
 func (rq *R11nQueue) PushIfEmpty(r *Rectification) (*QueuedR11n, bool) {
 	rq.Lock()
 	defer rq.Unlock()
-	if len(rq.queue) != 0 {
+	// We look at refs since we only delete the ref after handling has happened.
+	// If we are busy handling a r11n, then we consider the queue non-empty.
+	if len(rq.refs) != 0 {
 		return nil, false
 	}
 	return rq.internalPush(r), true
@@ -132,5 +171,4 @@ func (rq *R11nQueue) handlePopped(id R11nID) {
 	for _, r := range rq.refs {
 		r.Pos--
 	}
-	delete(rq.refs, id)
 }
