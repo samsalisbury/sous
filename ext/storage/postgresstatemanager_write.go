@@ -16,7 +16,7 @@ import (
 // WriteState implements StateWriter on PostgresStateManager
 func (m PostgresStateManager) WriteState(state *sous.State, user sous.User) error {
 	context := context.TODO()
-	tx, err := m.db.BeginTx(context, nil)
+	tx, err := m.db.BeginTx(context, &sql.TxOptions{Isolation: sql.LevelRepeatableRead, ReadOnly: false})
 	if err != nil {
 		return err
 	}
@@ -341,6 +341,10 @@ func (f fields) values() string {
 	return strings.Join(lines, ",\n")
 }
 
+func (f fields) rowcount() int {
+	return len(f.rows)
+}
+
 type coldef struct {
 	fmt, name string
 	candidate bool
@@ -371,7 +375,15 @@ type field struct {
 	values []interface{}
 }
 
-func execInsertDeployments(ctx context.Context, log logging.LogSink, tx *sql.Tx, ds sous.Deployments, table string, conflict string, fn func(*fields, *sous.Deployment)) error {
+func execInsertDeployments(
+	ctx context.Context,
+	log logging.LogSink,
+	tx *sql.Tx,
+	ds sous.Deployments,
+	table string,
+	conflict string,
+	fn func(*fields, *sous.Deployment),
+) error {
 	fields := &fields{
 		coldefs: map[string]*coldef{},
 		rows:    []row{},
@@ -385,7 +397,7 @@ func execInsertDeployments(ctx context.Context, log logging.LogSink, tx *sql.Tx,
 	start := time.Now()
 	sql := fields.insertSQL(table, conflict)
 	_, err := tx.ExecContext(ctx, sql)
-	reportSQLMessage(log, start, sql, err)
+	reportSQLMessage(log, start, sql, fields.rowcount(), err)
 	return err
 }
 

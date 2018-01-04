@@ -14,7 +14,10 @@ import (
 // ReadState implements sous.StateReader on PostgresStateManager
 func (m PostgresStateManager) ReadState() (*sous.State, error) {
 	context := context.TODO()
-	tx, err := m.db.BeginTx(context, nil)
+
+	// default transation isolation is READ COMMITTED -
+	// I think we need at least REPEATABLE_READ.
+	tx, err := m.db.BeginTx(context, &sql.TxOptions{Isolation: sql.LevelRepeatableRead, ReadOnly: true})
 	if err != nil {
 		return nil, err
 	}
@@ -273,21 +276,24 @@ func loadManifests(context context.Context, log logging.LogSink, tx *sql.Tx, sta
 }
 
 func loadTable(ctx context.Context, log logging.LogSink, tx *sql.Tx, sql string, pack func(*sql.Rows) error) error {
+	rowcount := 0
 	start := time.Now()
 	rows, err := tx.QueryContext(ctx, sql)
-	reportSQLMessage(log, start, sql, err)
-
 	if err != nil {
+		reportSQLMessage(log, start, sql, rowcount, err)
 		return err
 	}
 	defer rows.Close()
 	for rows.Next() {
 		if err := pack(rows); err != nil {
+			reportSQLMessage(log, start, sql, rowcount, err)
 			return err
 		}
 	}
 	if err := rows.Err(); err != nil {
+		reportSQLMessage(log, start, sql, rowcount, err)
 		return err
 	}
+	reportSQLMessage(log, start, sql, rowcount, nil)
 	return nil
 }

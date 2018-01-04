@@ -9,21 +9,23 @@ import (
 type sqlMessage struct {
 	logging.CallerInfo
 	logging.MessageInterval
-	sql string
-	err error
+	sql      string
+	rowcount int
+	err      error
 }
 
-func newSQLMessage(started time.Time, sql string, err error) *sqlMessage {
+func newSQLMessage(started time.Time, sql string, rowcount int, err error) *sqlMessage {
 	return &sqlMessage{
 		CallerInfo:      logging.GetCallerInfo(logging.NotHere()),
 		MessageInterval: logging.NewInterval(started, time.Now()),
 		sql:             sql,
+		rowcount:        rowcount,
 		err:             err,
 	}
 }
 
-func reportSQLMessage(log logging.LogSink, started time.Time, sql string, err error) {
-	msg := newSQLMessage(started, sql, err)
+func reportSQLMessage(log logging.LogSink, started time.Time, sql string, rowcount int, err error) {
+	msg := newSQLMessage(started, sql, rowcount, err)
 	msg.ExcludeMe()
 	logging.Deliver(msg, log)
 }
@@ -46,8 +48,7 @@ func (msg *sqlMessage) EachField(fn logging.FieldReportFn) {
 	msg.CallerInfo.EachField(fn)
 	msg.MessageInterval.EachField(fn)
 	fn("sous-sql-query", msg.sql)
-	// sql.Rows are a cursor - they don't have a length...
-	//fn("sous-sql-rowsreturned", msg.rows)
+	fn("sous-sql-rows", msg.rowcount)
 	if msg.err != nil {
 		fn("sous-sql-errreturned", msg.err.Error())
 	}
