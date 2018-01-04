@@ -7,7 +7,7 @@ go:
 - 1.9.2
 before_install:
 - bin/ci-setup
-- curl -O https://github.com/liquibase/liquibase/releases/download/liquibase-parent-3.5.3/liquibase-debian_3.5.3_all.deb
+- curl -LO https://github.com/liquibase/liquibase/releases/download/liquibase-parent-3.5.3/liquibase-debian_3.5.3_all.deb
 - sudo dpkg -i ./liquibase-debian_3.5.3_all.deb
 - sudo apt-get install -f
 install:
