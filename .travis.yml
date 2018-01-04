@@ -1,7 +1,7 @@
 sudo: required
 services:
-- docker
-- postgresql
+  docker: "17.09-ce"
+  postgresql: "10.0"
 language: go
 go:
 - 1.9.2
@@ -10,6 +10,7 @@ before_install:
 - curl -LO https://github.com/liquibase/liquibase/releases/download/liquibase-parent-3.5.3/liquibase-debian_3.5.3_all.deb
 - sudo dpkg -i ./liquibase-debian_3.5.3_all.deb
 - sudo apt-get install -f
+- psql --version
 install:
 # - sudo apt-get install python3-proselint
 - bundle
