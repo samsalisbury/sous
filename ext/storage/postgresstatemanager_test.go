@@ -8,19 +8,30 @@ import (
 
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
-	"github.com/stretchr/testify/suite"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	// it's a SQL db driver. This is how you do that.
 	_ "github.com/lib/pq"
 )
 
 type PostgresStateManagerSuite struct {
-	suite.Suite
+	*assert.Assertions
+	t       *testing.T
+	require *require.Assertions
 	manager *PostgresStateManager
 	db      *sql.DB
 }
 
-func (suite *PostgresStateManagerSuite) SetupTest() {
+func SetupTest(t *testing.T) *PostgresStateManagerSuite {
 	var err error
+
+	t.Helper()
+
+	suite := &PostgresStateManagerSuite{
+		t:          t,
+		Assertions: assert.New(t),
+		require:    require.New(t),
+	}
 
 	port := "6543"
 	if np, set := os.LookupEnv("PGPORT"); set {
@@ -59,34 +70,27 @@ func (suite *PostgresStateManagerSuite) SetupTest() {
 	if suite.db, err = sql.Open("postgres", connstr); err != nil {
 		suite.FailNow("Error establishing test-assertion DB connection.", "Error: %v", err)
 	}
+	return suite
 }
 
-func (suite *PostgresStateManagerSuite) PluckSQL(sql string) interface{} {
-	var v interface{}
+func TestWriteState_success(t *testing.T) {
+	suite := SetupTest(t)
 
-	row := suite.db.QueryRow(sql)
-	err := row.Scan(&v)
-	suite.Require().NoError(err)
-
-	return v
-}
-
-func (suite *PostgresStateManagerSuite) TestWriteState_success() {
 	s := exampleState()
 
-	suite.Require().NoError(suite.manager.WriteState(s, testUser))
-	suite.Equal(int64(2), suite.PluckSQL("select count(*) from deployments"))
-	suite.Require().NoError(suite.manager.WriteState(s, testUser))
+	suite.require.NoError(suite.manager.WriteState(s, testUser))
+	suite.Equal(int64(2), suite.pluckSQL("select count(*) from deployments"))
+	suite.require.NoError(suite.manager.WriteState(s, testUser))
 	// Want to be sure that the deployments history doesn't vacuously grow.
-	suite.Equal(int64(2), suite.PluckSQL("select count(*) from deployments"))
+	suite.Equal(int64(2), suite.pluckSQL("select count(*) from deployments"))
 
 	ns, err := suite.manager.ReadState()
-	suite.Require().NoError(err)
+	suite.require.NoError(err)
 
 	oldD, err := s.Deployments()
-	suite.Require().NoError(err)
+	suite.require.NoError(err)
 	newD, err := ns.Deployments()
-	suite.Require().NoError(err)
+	suite.require.NoError(err)
 
 	for diff := range oldD.Diff(newD).Pairs {
 		switch diff.Kind() {
@@ -100,6 +104,14 @@ func (suite *PostgresStateManagerSuite) TestWriteState_success() {
 	}
 }
 
-func TestPostgresStateManager(t *testing.T) {
-	suite.Run(t, new(PostgresStateManagerSuite))
+func (suite *PostgresStateManagerSuite) pluckSQL(sql string) interface{} {
+	var v interface{}
+
+	suite.t.Helper()
+
+	row := suite.db.QueryRow(sql)
+	err := row.Scan(&v)
+	suite.require.NoError(err)
+
+	return v
 }
