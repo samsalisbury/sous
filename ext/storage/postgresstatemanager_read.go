@@ -60,7 +60,7 @@ func loadState(ctx context.Context, log logging.LogSink, tx *sql.Tx) (*sous.Stat
 }
 
 func loadEnvDefs(context context.Context, log logging.LogSink, tx *sql.Tx, state *sous.State) error {
-	if err := loadTable(context, log, tx,
+	return loadTable(context, log, tx,
 		`select "name", "desc", "scope", "type" from env_var_defs;`,
 		func(rows *sql.Rows) error {
 			d := sous.EnvDef{}
@@ -69,14 +69,11 @@ func loadEnvDefs(context context.Context, log logging.LogSink, tx *sql.Tx, state
 			}
 			state.Defs.EnvVars = append(state.Defs.EnvVars, d)
 			return nil
-		}); err != nil {
-		return err
-	}
-	return nil
+		})
 }
 
 func loadResourceDefs(context context.Context, log logging.LogSink, tx *sql.Tx, state *sous.State) error {
-	if err := loadTable(context, log, tx,
+	return loadTable(context, log, tx,
 		`select "field_name", "var_type", "default_value" from resource_fdefs;`,
 		func(rows *sql.Rows) error {
 			d := sous.FieldDefinition{}
@@ -85,14 +82,11 @@ func loadResourceDefs(context context.Context, log logging.LogSink, tx *sql.Tx, 
 			}
 			state.Defs.Resources = append(state.Defs.Resources, d)
 			return nil
-		}); err != nil {
-		return err
-	}
-	return nil
+		})
 }
 
 func loadMetadataDefs(context context.Context, log logging.LogSink, tx *sql.Tx, state *sous.State) error {
-	if err := loadTable(context, log, tx,
+	return loadTable(context, log, tx,
 		`select "field_name", "var_type", "default_value" from metadata_fdefs;`,
 		func(rows *sql.Rows) error {
 			d := sous.FieldDefinition{}
@@ -101,10 +95,7 @@ func loadMetadataDefs(context context.Context, log logging.LogSink, tx *sql.Tx, 
 			}
 			state.Defs.Metadata = append(state.Defs.Metadata, d)
 			return nil
-		}); err != nil {
-		return err
-	}
-	return nil
+		})
 }
 
 func loadClusters(context context.Context, log logging.LogSink, tx *sql.Tx, state *sous.State) error {
@@ -158,7 +149,7 @@ func loadClusters(context context.Context, log logging.LogSink, tx *sql.Tx, stat
 }
 
 func loadManifests(context context.Context, log logging.LogSink, tx *sql.Tx, state *sous.State) error {
-	if err := loadTable(context, log, tx,
+	return loadTable(context, log, tx,
 		// This query is somewhat naive and returns many more rows than we need
 		// specifically, every possible combination of env/resource/volume/metadata
 		// results in its own row. Maybe that could be reduced?
@@ -269,10 +260,7 @@ func loadManifests(context context.Context, log logging.LogSink, tx *sql.Tx, sta
 			}
 			m.Deployments[clusterName] = ds
 			return nil
-		}); err != nil {
-		return err
-	}
-	return nil
+		})
 }
 
 func loadTable(ctx context.Context, log logging.LogSink, tx *sql.Tx, sql string, pack func(*sql.Rows) error) error {
