@@ -29,15 +29,15 @@ func (suite *PostgresStateManagerSuite) SetupTest() {
 	connstr := fmt.Sprintf("dbname=sous_test_template host=localhost port=%s sslmode=disable", port)
 	setupDB, err := sql.Open("postgres", connstr)
 	if err != nil {
-		suite.FailNow(fmt.Sprintf("Error setting up test database: %v. Did you already `make postgres-test-prepare`?", err))
+		suite.FailNow("Error setting up test database", "Error: %v. Did you already `make postgres-test-prepare`?", err)
 	}
 	// ignoring error because I think "no such DB is a failure"
 	setupDB.Exec("drop database sous_test")
 	if _, err := setupDB.Exec("create database sous_test template sous_test_template"); err != nil {
-		suite.FailNow(fmt.Sprintf("Error creating test database: %q %v", connstr, err))
+		suite.FailNow("Error creating test database", "connstr %q err %v", connstr, err)
 	}
 	if err := setupDB.Close(); err != nil {
-		suite.FailNow(fmt.Sprintf("Error closing DB manipulation connection: %q %v", connstr, err))
+		suite.FailNow("Error closing DB manipulation connection", "connstr %q err %v", connstr, err)
 	}
 
 	suite.manager, err = NewPostgresStateManager(PostgresConfig{
@@ -47,14 +47,17 @@ func (suite *PostgresStateManagerSuite) SetupTest() {
 		Host:     "localhost",
 		Port:     port,
 		SSL:      false,
-	}, logging.Log)
-	//}, logging.SilentLogSet())
+	}, logging.SilentLogSet())
+	//}, logging.Log)
+	//logging.Log.BeChatty()
 
-	logging.Log.BeChatty()
+	if err != nil {
+		suite.FailNow("Setting up", "error: %v", err)
+	}
 
 	connstr = fmt.Sprintf("dbname=sous_test host=localhost port=%s sslmode=disable", port)
 	if suite.db, err = sql.Open("postgres", connstr); err != nil {
-		suite.FailNow(fmt.Sprintf("Error establishing test-assertion DB connection: %v", err))
+		suite.FailNow("Error establishing test-assertion DB connection.", "Error: %v", err)
 	}
 }
 
