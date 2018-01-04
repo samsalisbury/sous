@@ -26,6 +26,7 @@ after_success:
 env:
   global:
   - PGPORT=5432
+  - DEV_POSTGRES_DATA_DIR=$PGDATA
   - GIT_AUTHOR_NAME=SousCI
   - GIT_COMMITTER_NAME=SousCI
   - GIT_AUTHOR_EMAIL=sous@nowhere.in.particular.com
