@@ -1,6 +1,7 @@
 sudo: required
 services:
 - docker
+- postgresql
 language: go
 go:
 - 1.9.2
@@ -10,6 +11,7 @@ install:
 # - sudo apt-get install python3-proselint
 - bundle
 - "./bin/vendor-check"
+- make postgres-test-setup
 script:
 - bundle exec danger
 - make -j2 test
@@ -23,6 +25,7 @@ after_success:
 - bin/codecov -f /tmp/sous-cover/count_merged.txt
 env:
   global:
+  - PGPORT=5432
   - GIT_AUTHOR_NAME=SousCI
   - GIT_COMMITTER_NAME=SousCI
   - GIT_AUTHOR_EMAIL=sous@nowhere.in.particular.com
