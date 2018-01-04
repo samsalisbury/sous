@@ -37,7 +37,9 @@ func NewResolver(d Deployer, r Registry, rf *ResolveFilter, ls logging.LogSink) 
 // per Deployment. This will be replaced with a persistent queue.
 var globalQueueSet *R11nQueueSet
 
-// queueDiffs
+// queueDiffs adds a rectification for each required change in DeployableChans,
+// as long as there is no planned or currently executing resolution for the
+// DeploymentID relating to that rectification.
 func (r *Resolver) queueDiffs(dcs *DeployableChans, results chan DiffResolution) {
 	if globalQueueSet == nil {
 		globalQueueSet = NewR11nQueueSet(R11nQueueStartWithHandler(
@@ -50,7 +52,6 @@ func (r *Resolver) queueDiffs(dcs *DeployableChans, results chan DiffResolution)
 		sr := NewRectification(*p)
 		queued, ok := globalQueueSet.PushIfEmpty(sr)
 		if !ok {
-			panic("queue not empty")
 			r.ls.Warnf("dropping rectification; queue not empty for %q", sr.Pair.ID())
 			continue
 		}
