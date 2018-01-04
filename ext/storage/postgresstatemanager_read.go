@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
+	"github.com/lib/pq"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
 	"github.com/samsalisbury/semv"
@@ -22,27 +24,36 @@ func (m PostgresStateManager) ReadState() (*sous.State, error) {
 		tx.Rollback()
 	}(tx)
 
-	state := sous.NewState()
-
-	if err := loadEnvDefs(context, m.log, tx, state); err != nil {
-		return nil, err
-	}
-	if err := loadResourceDefs(context, m.log, tx, state); err != nil {
-		return nil, err
-	}
-	if err := loadMetadataDefs(context, m.log, tx, state); err != nil {
-		return nil, err
-	}
-	if err := loadClusters(context, m.log, tx, state); err != nil {
-		return nil, err
-	}
-	if err := loadManifests(context, m.log, tx, state); err != nil {
+	state, err := loadState(context, m.log, tx)
+	if err != nil {
 		return nil, err
 	}
 
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
+	return state, nil
+}
+
+func loadState(ctx context.Context, log logging.LogSink, tx *sql.Tx) (*sous.State, error) {
+	state := sous.NewState()
+
+	if err := loadEnvDefs(ctx, log, tx, state); err != nil {
+		return nil, err
+	}
+	if err := loadResourceDefs(ctx, log, tx, state); err != nil {
+		return nil, err
+	}
+	if err := loadMetadataDefs(ctx, log, tx, state); err != nil {
+		return nil, err
+	}
+	if err := loadClusters(ctx, log, tx, state); err != nil {
+		return nil, err
+	}
+	if err := loadManifests(ctx, log, tx, state); err != nil {
+		return nil, err
+	}
+
 	return state, nil
 }
 
@@ -101,36 +112,43 @@ func loadClusters(context context.Context, log logging.LogSink, tx *sql.Tx, stat
 		clusters.cluster_id, clusters.name, clusters.kind, "base_url",
 		"crdef_skip", "crdef_connect_delay", "crdef_timeout", "crdef_connect_interval",
 		"crdef_proto", "crdef_path", "crdef_port_index", "crdef_failure_statuses",
-		"crdef_url_timeout", "crdef_interval", "crdef_retries",
+		"crdef_uri_timeout", "crdef_interval", "crdef_retries",
 		qualities.name
 		from
 			clusters
-			join cluster_qualities using (cluster_id)
-			join qualities using (quality_id)
-		where qualities.kind = 'advisory';
+			left join cluster_qualities using (cluster_id)
+			left join qualities
+		    on cluster_qualities.quality_id = qualities.quality_id
+				and qualities.kind = 'advisory';
 		`,
 		func(rows *sql.Rows) error {
 			var cid int
 			c := &sous.Cluster{}
-			q := sous.Quality{}
+			var qname sql.NullString
 			if err := rows.Scan(
 				&cid, &c.Name, &c.Kind, &c.BaseURL,
 				&c.Startup.SkipCheck, &c.Startup.ConnectDelay, &c.Startup.Timeout, &c.Startup.ConnectInterval,
-				&c.Startup.CheckReadyProtocol, &c.Startup.CheckReadyURIPath, &c.Startup.CheckReadyPortIndex, &c.Startup.CheckReadyFailureStatuses,
+				&c.Startup.CheckReadyProtocol, &c.Startup.CheckReadyURIPath, &c.Startup.CheckReadyPortIndex, pq.Array(&c.Startup.CheckReadyFailureStatuses),
 				&c.Startup.CheckReadyURITimeout, &c.Startup.CheckReadyInterval, &c.Startup.CheckReadyRetries,
-				&q.Name,
+				&qname,
 			); err != nil {
 				return err
 			}
+			spew.Dump(c)
 			if newC, has := clusters[cid]; has {
 				c = newC
 			} else {
 				clusters[cid] = c
 			}
-			c.AllowedAdvisories = append(c.AllowedAdvisories, q.Name)
+			if qname.Valid {
+				c.AllowedAdvisories = append(c.AllowedAdvisories, qname.String)
+			}
 			return nil
 		}); err != nil {
 		return err
+	}
+	if state.Defs.Clusters == nil {
+		state.Defs.Clusters = sous.Clusters{}
 	}
 	for _, c := range clusters {
 		state.Defs.Clusters[c.Name] = c
@@ -144,7 +162,7 @@ func loadManifests(context context.Context, log logging.LogSink, tx *sql.Tx, sta
 		// specifically, every possible combination of env/resource/volume/metadata
 		// results in its own row. Maybe that could be reduced?
 		`select
-			"repo", "dir", "flavor", clusters.kind,
+			"repo", "dir", "flavor", components.kind,
 			"email",
 			"versionstring", "num_instances", "schedule_string",
 			"cr_skip", "cr_connect_delay", "cr_timeout", "cr_connect_interval",
@@ -168,29 +186,41 @@ func loadManifests(context context.Context, log logging.LogSink, tx *sql.Tx, sta
 		where deployment_id in (
 			select max(deployment_id) from deployments group by cluster_id, component_id
 		)
-		and deployments.lifecycle != 'decommisioned'
+		and deployments.lifecycle != 'decommissioned'
 		`,
 		func(rows *sql.Rows) error {
-			m := &sous.Manifest{}
-			ds := sous.DeploySpec{}
-			vol := sous.Volume{}
+			m := &sous.Manifest{
+				Owners:      []string{},
+				Deployments: map[string]sous.DeploySpec{},
+			}
+			ds := sous.DeploySpec{
+				DeployConfig: sous.DeployConfig{
+					Resources: map[string]string{},
+					Metadata:  map[string]string{},
+					Env:       map[string]string{},
+					Volumes:   sous.Volumes{},
+				},
+			}
 			var ownerEmail, versionString,
-				clusterName,
-				envKey, envValue,
+				clusterName string
+
+			var envKey, envValue,
 				resName, resValue,
-				mdName, mdValue string
+				mdName, mdValue,
+				volHost, volContainer, volMode sql.NullString
+
 			if err := rows.Scan(
 				&m.Source.Repo, &m.Source.Dir, &m.Flavor, &m.Kind,
 				&ownerEmail,
 				&versionString, &ds.NumInstances, &ds.Schedule,
 				&ds.Startup.SkipCheck, &ds.Startup.ConnectDelay, &ds.Startup.Timeout, &ds.Startup.ConnectInterval,
-				&ds.Startup.CheckReadyProtocol, &ds.Startup.CheckReadyURIPath, &ds.Startup.CheckReadyPortIndex, &ds.Startup.CheckReadyFailureStatuses,
+				&ds.Startup.CheckReadyProtocol, &ds.Startup.CheckReadyURIPath, &ds.Startup.CheckReadyPortIndex, pq.Array(&ds.Startup.CheckReadyFailureStatuses),
 				&ds.Startup.CheckReadyURITimeout, &ds.Startup.CheckReadyInterval, &ds.Startup.CheckReadyRetries,
 				&clusterName,
 				&envKey, &envValue,
 				&resName, &resValue,
 				&mdName, &mdValue,
-				&vol.Host, &vol.Container, &vol.Mode,
+				&volHost, &volContainer, &volMode,
 			); err != nil {
 				return err
 			}
@@ -210,18 +240,31 @@ func loadManifests(context context.Context, log logging.LogSink, tx *sql.Tx, sta
 					return err
 				}
 			}
-			ds.Env[envKey] = envValue
-			ds.Resources[resName] = resValue
-			ds.Metadata[mdName] = mdValue
-			has := false
-			for i := range ds.Volumes {
-				if ds.Volumes[i].Equal(&vol) {
-					has = true
-					break
-				}
+			if envKey.Valid && envValue.Valid {
+				ds.Env[envKey.String] = envValue.String
 			}
-			if !has {
-				ds.Volumes = append(ds.Volumes, &vol)
+			if resName.Valid && resValue.Valid {
+				ds.Resources[resName.String] = resValue.String
+			}
+			if mdName.Valid && mdValue.Valid {
+				ds.Metadata[mdName.String] = mdValue.String
+			}
+			if volHost.Valid && volContainer.Valid && volMode.Valid {
+				vol := sous.Volume{
+					Host:      volHost.String,
+					Container: volContainer.String,
+					Mode:      sous.VolumeMode(volMode.String),
+				}
+				has := false
+				for i := range ds.Volumes {
+					if ds.Volumes[i].Equal(&vol) {
+						has = true
+						break
+					}
+				}
+				if !has {
+					ds.Volumes = append(ds.Volumes, &vol)
+				}
 			}
 			m.Deployments[clusterName] = ds
 			return nil
@@ -233,6 +276,7 @@ func loadManifests(context context.Context, log logging.LogSink, tx *sql.Tx, sta
 
 func loadTable(ctx context.Context, log logging.LogSink, tx *sql.Tx, sql string, pack func(*sql.Rows) error) error {
 	start := time.Now()
+	rowcount := 0
 	rows, err := tx.QueryContext(ctx, sql)
 	reportSQLMessage(log, start, sql, err)
 
@@ -241,10 +285,12 @@ func loadTable(ctx context.Context, log logging.LogSink, tx *sql.Tx, sql string,
 	}
 	defer rows.Close()
 	for rows.Next() {
+		rowcount++
 		if err := pack(rows); err != nil {
 			return err
 		}
 	}
+	spew.Println("Rows: ", rowcount)
 	if err := rows.Err(); err != nil {
 		return err
 	}

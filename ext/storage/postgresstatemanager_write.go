@@ -42,11 +42,8 @@ func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State,
 		return err
 	}
 
-	currentState := sous.NewState()
-	if err := loadClusters(ctx, log, tx, currentState); err != nil {
-		return err
-	}
-	if err := loadManifests(ctx, log, tx, currentState); err != nil {
+	currentState, err := loadState(ctx, log, tx)
+	if err != nil {
 		return err
 	}
 	currentDeps, err := currentState.Deployments()
@@ -96,11 +93,10 @@ func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State,
 	}
 
 	if err := execInsertDeployments(ctx, log, tx, updates, "deployments", "", func(fields *fields, dep *sous.Deployment) {
-		sid := dep.SourceID
 		s := dep.Startup
 		fields.row(func(r rowdef) {
-			r.fd("(select component_id from components where repo = '%s' and dir = '%s' and flavor = '%s' and kind = '%s')", "component_id", sid.Location.Repo, sid.Location.Dir, dep.Flavor, dep.Kind)
-			r.fd("(select cluster_id from clusters where name = '%s')", "cluster_id", dep.ClusterName)
+			compID(r, dep)
+			clusterID(r, dep)
 			r.fd("'%s'", "versionstring", dep.SourceID.Version.String())
 			r.fd("%d", "num_instances", dep.NumInstances)
 			r.fd("'%s'", "schedule_string", dep.Schedule)
@@ -112,11 +108,10 @@ func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State,
 	}
 
 	if err := execInsertDeployments(ctx, log, tx, deletes, "deployments", "", func(fields *fields, dep *sous.Deployment) {
-		sid := dep.SourceID
 		s := dep.Startup
 		fields.row(func(r rowdef) {
-			r.fd("(select component_id from components where repo = '%s' and dir = '%s' and flavor = '%s' and kind = '%s')", "component_id", sid.Location.Repo, sid.Location.Dir, dep.Flavor, dep.Kind)
-			r.fd("(select cluster_id from clusters where name = '%s')", "cluster_id", dep.ClusterName)
+			compID(r, dep)
+			clusterID(r, dep)
 			r.fd("'%s'", "versionstring", dep.SourceID.Version.String())
 			r.fd("%d", "num_instances", dep.NumInstances)
 			r.fd("'%s'", "schedule_string", dep.Schedule)
@@ -137,13 +132,11 @@ func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State,
 		return err
 	}
 
-	if err := execInsertDeployments(ctx, log, tx, updates, "owner_components", "on conflict do nothing", func(fields *fields, dep *sous.Deployment) {
-		sid := dep.SourceID
+	if err := execInsertDeployments(ctx, log, tx, updates, "component_owners", "on conflict do nothing", func(fields *fields, dep *sous.Deployment) {
 		for ownername := range dep.Owners {
 			fields.row(func(row rowdef) {
-				depID(row, dep)
-				row.fd("(select component_id from components where repo = '%s' and dir = '%s' and flavor = '%s' and kind = '%s')", "component_id", sid.Location.Repo, sid.Location.Dir, dep.Flavor, dep.Kind)
-				row.fd("(select owner_id from owners where email = '%s')", "owner_id", ownername)
+				compID(row, dep)
+				ownerID(row, ownername)
 			})
 		}
 	}); err != nil {
@@ -204,11 +197,30 @@ func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State,
 
 func depID(row rowdef, dep *sous.Deployment) {
 	sid := dep.SourceID
-	row.fd(`(select deployment_id from deployments
-		join components using component_id
-		join clusters using cluster_id
-		where repo = '%s' and dir = '%s' and flavor = '%s' and kind = '%s' and cluster.name = '%s')`,
+	row.fd(`(select max(deployment_id)
+	from
+		deployments
+		join components using (component_id)
+		join clusters using (cluster_id)
+	where
+	  lifecycle = 'active' and
+	  repo = '%s' and dir = '%s' and flavor = '%s' and components.kind = '%s' and clusters.name = '%s')`,
 		"deployment_id", sid.Location.Repo, sid.Location.Dir, dep.Flavor, dep.Kind, dep.ClusterName)
+}
+
+func compID(row rowdef, dep *sous.Deployment) {
+	sid := dep.SourceID
+	row.fd(`(select component_id from components
+	  where repo = '%s' and dir = '%s' and flavor = '%s' and kind = '%s')`,
+		"component_id", sid.Location.Repo, sid.Location.Dir, dep.Flavor, dep.Kind)
+}
+
+func clusterID(row rowdef, dep *sous.Deployment) {
+	row.fd(`(select "cluster_id" from clusters where name = '%s')`, "cluster_id", dep.ClusterName)
+}
+
+func ownerID(row rowdef, ownername string) {
+	row.fd("(select owner_id from owners where email = '%s')", "owner_id", ownername)
 }
 
 func startupFields(r rowdef, prefix string, s sous.Startup) {

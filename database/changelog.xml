@@ -1,5 +1,9 @@
 <?xml version="1.1" encoding="UTF-8" standalone="no"?>
 <databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
+    <changeSet author="judson" id="1">
+      <sql>create type lifecycle_state as enum('active','decommissioned')</sql>
+      <rollback>drop type lifecycle_state</rollback>
+    </changeSet>
     <changeSet author="judson (generated)" id="1513795697969-1">
         <createTable tableName="cluster_qualities">
             <column autoIncrement="true" name="cluster_quality_id" type="SERIAL">
@@ -108,7 +112,7 @@
             <column name="schedule_string" type="TEXT">
                 <constraints nullable="false"/>
             </column>
-            <column name="lifecycle" type="ENUM('active', 'decomissioned')">
+            <column name="lifecycle" type="lifecycle_state">
               <constraints nullable="false"/>
             </column>
             <column name="cr_proto" type="TEXT">

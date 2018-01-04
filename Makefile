@@ -253,7 +253,7 @@ postgres-test-prepare: $(DEV_POSTGRES_DATA_DIR)/postgresql.conf
 	liquibase --url jdbc:postgresql://localhost:$(PGPORT)/sous_test_template --changeLogFile=database/changelog.xml update
 
 postgres-stop:
-	pg_ctl stop -D $(DEV_POSTGRES_DATA_DIR)
+	pg_ctl stop -D $(DEV_POSTGRES_DATA_DIR) || true
 
 postgres-connect:
 	psql -h localhost -p $(PGPORT) sous
@@ -261,7 +261,7 @@ postgres-connect:
 postgres-update-schema: postgres-start
 	liquibase $(LIQUIBASE_FLAGS) update
 
-postgres-clean:
+postgres-clean: postgres-stop
 	rm -r "$(DEV_POSTGRES_DIR)"
 
 .PHONY: artifactory clean clean-containers clean-container-certs clean-running-containers clean-container-images coverage deb-build install-fpm install-jfrog install-ggen install-build-tools legendary release semvertagchk test test-gofmt test-integration setup-containers test-unit reject-wip wip staticcheck postgres-start postgres-stop postgres-connect postgres-clean

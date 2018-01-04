@@ -75,7 +75,10 @@ func (suite *PostgresStateManagerSuite) TestWriteState_success() {
 	for diff := range oldD.Diff(newD).Pairs {
 		switch diff.Kind() {
 		default:
-			suite.Fail("Difference detected between written and read states", "%+#v", diff)
+			suite.Fail("Difference detected between written and read states", "They are: %s %+#v", diff.Kind(), diff)
+		case sous.ModifiedKind:
+			suite.Fail("Difference detected between written and read states", "%+#v %+#v", diff, diff.Diffs())
+
 		case sous.SameKind:
 		}
 	}
