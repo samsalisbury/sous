@@ -163,7 +163,7 @@ func TestR11nQueue_Push_Pop_sync(t *testing.T) {
 
 			// Iterate over each popped item.
 			i := 0
-			for popped, ok := rq.Pop(); ok; popped, ok = rq.Pop() {
+			for popped, ok := rq.pop(); ok; popped, ok = rq.pop() {
 				desc := fmt.Sprintf("popped %d", i)
 				t.Run(desc, func(t *testing.T) {
 
@@ -202,7 +202,7 @@ func TestR11nQueue_Push_Pop_sync(t *testing.T) {
 			}
 
 			// Now the queue is empty, Pop should return nil, false.
-			popped, ok := rq.Pop()
+			popped, ok := rq.pop()
 			if popped != nil {
 				t.Errorf("got QueuedR11n %s; want nil", popped.ID)
 			}
@@ -263,7 +263,7 @@ func TestR11nQueue_Pop_async(t *testing.T) {
 	wg.Add(itemCount)
 	for i := 0; i < itemCount; i++ {
 		go func() {
-			_, ok := rq.Pop()
+			_, ok := rq.pop()
 			if ok {
 				atomic.AddInt64(&oks, 1)
 			}
@@ -284,7 +284,7 @@ func TestR11Queue_Next(t *testing.T) {
 	nextChan := make(chan *QueuedR11n, 1)
 
 	go func() {
-		nextChan <- rq.Next()
+		nextChan <- rq.next()
 	}()
 
 	// Nasty sleep, want to prove rq.Next hasn't put anything on the queue.
@@ -325,7 +325,7 @@ func TestR11Queue_Next_Pop_race(t *testing.T) {
 
 	go func() {
 		// Try to pop in a hot loop.
-		for _, ok := rq.Pop(); ; _, ok = rq.Pop() {
+		for _, ok := rq.pop(); ; _, ok = rq.pop() {
 			if ok {
 				atomic.AddInt64(&pops, 1)
 				wg.Done()
@@ -334,7 +334,7 @@ func TestR11Queue_Next_Pop_race(t *testing.T) {
 	}()
 	go func() {
 		// Read next as fast as possible.
-		for rq.Next(); ; rq.Next() {
+		for rq.next(); ; rq.next() {
 			atomic.AddInt64(&nexts, 1)
 			wg.Done()
 		}

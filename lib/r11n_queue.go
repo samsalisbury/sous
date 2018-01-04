@@ -12,7 +12,6 @@ type R11nQueue struct {
 	queue chan *QueuedR11n
 	refs  map[R11nID]*QueuedR11n
 	sync.Mutex
-	handlerMutex sync.Mutex
 }
 
 // R11nQueueCapDefault is the default capacity for a new R11nQueue.
@@ -73,11 +72,9 @@ func (rq *R11nQueue) Start(handler func(*QueuedR11n) DiffResolution) <-chan Diff
 	results := make(chan DiffResolution, 100)
 	go func() {
 		for {
-			qr := rq.Next()
-			rq.handlerMutex.Lock()
+			qr := rq.next()
 			results <- handler(qr)
 			delete(rq.refs, qr.ID)
-			rq.handlerMutex.Unlock()
 		}
 	}()
 	return results
@@ -140,9 +137,9 @@ func (rq *R11nQueue) Len() int {
 	return len(rq.queue)
 }
 
-// Pop removes the item at the front of the queue and returns it plus true.
+// pop removes the item at the front of the queue and returns it plus true.
 // It returns nil and false if there are no items in the queue.
-func (rq *R11nQueue) Pop() (*QueuedR11n, bool) {
+func (rq *R11nQueue) pop() (*QueuedR11n, bool) {
 	rq.Lock()
 	defer rq.Unlock()
 	if len(rq.queue) == 0 {
@@ -153,10 +150,10 @@ func (rq *R11nQueue) Pop() (*QueuedR11n, bool) {
 	return qr, true
 }
 
-// Next is similar to Pop but waits until there is something on the queue to
+// next is similar to pop but waits until there is something on the queue to
 // return and then returns it.
-func (rq *R11nQueue) Next() *QueuedR11n {
-	if qr, ok := rq.Pop(); ok {
+func (rq *R11nQueue) next() *QueuedR11n {
+	if qr, ok := rq.pop(); ok {
 		return qr
 	}
 	qr := <-rq.queue
