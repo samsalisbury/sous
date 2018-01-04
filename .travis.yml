@@ -1,12 +1,21 @@
 sudo: required
 services:
-  docker: "17.09-ce"
-  postgresql: "10.0"
+- docker
+- postgresql
 language: go
 go:
 - 1.9.2
 before_install:
 - bin/ci-setup
+
+- sudo service postgresql stop
+- sudo apt-get remove -q 'postgresql-*'
+- sudo apt-get update -q
+- sudo apt-get install -q postgresql-10 postgresql-client-10
+- sudo cp /etc/postgresql/{9.6,10}/main/pg_hba.conf
+- sudo service postgresql restart
+- sudo psql -c 'CREATE ROLE travis SUPERUSER LOGIN CREATEDB;' -U postgres
+
 - curl -LO https://github.com/liquibase/liquibase/releases/download/liquibase-parent-3.5.3/liquibase-debian_3.5.3_all.deb
 - sudo dpkg -i ./liquibase-debian_3.5.3_all.deb
 - sudo apt-get install -f
