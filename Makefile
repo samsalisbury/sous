@@ -5,8 +5,15 @@ DEV_POSTGRES_DIR ?= $(XDG_DATA_HOME)/sous/postgres
 DEV_POSTGRES_DATA_DIR ?= $(DEV_POSTGRES_DIR)/data
 PGPORT ?= 6543
 
+DB_NAME = sous
+TEST_DB_NAME = sous_test_template
+
 LIQUIBASE_DEFAULTS := ./dev_support/liquibase/liquibase.properties
-LIQUIBASE_FLAGS := --url jdbc:postgresql://localhost:$(PGPORT)/sous --changeLogFile=database/changelog.xml --defaultsFile=./dev_support/liquibase/liquibase.properties
+LIQUIBASE_SERVER := jdbc:postgresql://localhost:$(PGPORT)
+LIQUIBASE_SHARED_FLAGS = --changeLogFile=database/changelog.xml --defaultsFile=./dev_support/liquibase/liquibase.properties
+
+LIQUIBASE_FLAGS := --url $(LIQUIBASE_SERVER)/$(DB_NAME) $(LIQUIBASE_SHARED_FLAGS)
+LIQUIBASE_TEST_FLAGS := --url $(LIQUIBASE_SERVER)/$(TEST_DB_NAME) $(LIQUIBASE_SHARED_FLAGS)
 
 SQLITE_URL := https://sqlite.org/2017/sqlite-autoconf-3160200.tar.gz
 GO_VERSION := 1.9.2
@@ -245,12 +252,12 @@ postgres-start: $(DEV_POSTGRES_DATA_DIR)/postgresql.conf
 		postgres -D $(DEV_POSTGRES_DATA_DIR) -p $(PGPORT) & \
 		until pg_isready -h localhost -p $(PGPORT); do sleep 1; done \
 	fi
-	createdb -h localhost -p $(PGPORT) sous > /dev/null 2>&1 || true
+	createdb -h localhost -p $(PGPORT) $(DB_NAME) > /dev/null 2>&1 || true
 	liquibase $(LIQUIBASE_FLAGS) update
 
 postgres-test-prepare: $(DEV_POSTGRES_DATA_DIR)/postgresql.conf
-	createdb -h localhost -p $(PGPORT) sous_test_template > /dev/null 2>&1 || true
-	liquibase --url jdbc:postgresql://localhost:$(PGPORT)/sous_test_template --changeLogFile=database/changelog.xml update
+	createdb -h localhost -p $(PGPORT) $(TEST_DB_NAME) > /dev/null 2>&1 || true
+	liquibase $(LIQUIBASE_TEST_FLAGS) update
 
 postgres-stop:
 	pg_ctl stop -D $(DEV_POSTGRES_DATA_DIR) || true
