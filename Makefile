@@ -255,7 +255,9 @@ postgres-start: $(DEV_POSTGRES_DATA_DIR)/postgresql.conf
 	createdb -h localhost -p $(PGPORT) $(DB_NAME) > /dev/null 2>&1 || true
 	liquibase $(LIQUIBASE_FLAGS) update
 
-postgres-test-prepare: $(DEV_POSTGRES_DATA_DIR)/postgresql.conf
+postgres-test-prepare: $(DEV_POSTGRES_DATA_DIR)/postgresql.conf postgres-create-testdb
+
+postgres-create-testdb:
 	createdb -h localhost -p $(PGPORT) $(TEST_DB_NAME) > /dev/null 2>&1 || true
 	liquibase $(LIQUIBASE_TEST_FLAGS) update
 
@@ -271,6 +273,11 @@ postgres-update-schema: postgres-start
 postgres-clean: postgres-stop
 	rm -r "$(DEV_POSTGRES_DIR)"
 
-.PHONY: artifactory clean clean-containers clean-container-certs clean-running-containers clean-container-images coverage deb-build install-fpm install-jfrog install-ggen install-build-tools legendary release semvertagchk test test-gofmt test-integration setup-containers test-unit reject-wip wip staticcheck postgres-start postgres-stop postgres-connect postgres-clean
+.PHONY: artifactory clean clean-containers clean-container-certs \
+	clean-running-containers clean-container-images coverage deb-build \
+	install-fpm install-jfrog install-ggen install-build-tools legendary release \
+	semvertagchk test test-gofmt test-integration setup-containers test-unit \
+	reject-wip wip staticcheck postgres-start postgres-stop postgres-connect \
+	postgres-clean postgres-create-testdb
 
 #liquibase --url jdbc:postgresql://127.0.0.1:6543/sous --changeLogFile=database/changelog.xml update
