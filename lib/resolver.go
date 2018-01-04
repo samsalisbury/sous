@@ -3,6 +3,7 @@ package sous
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/opentable/sous/util/logging"
 )
@@ -48,19 +49,27 @@ func (r *Resolver) queueDiffs(dcs *DeployableChans, results chan DiffResolution)
 				return qr.Rectification.Wait()
 			}))
 	}
+
+	var wg sync.WaitGroup
 	for p := range dcs.Pairs {
+		p := p
 		sr := NewRectification(*p)
 		queued, ok := globalQueueSet.PushIfEmpty(sr)
 		if !ok {
 			r.ls.Warnf("dropping rectification; queue not empty for %q", sr.Pair.ID())
 			continue
 		}
-		result, ok := globalQueueSet.Wait(p.ID(), queued.ID)
-		if !ok {
-			panic(fmt.Sprintf("waiting on non-existent r11n %q", queued.ID))
-		}
-		results <- result
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			result, ok := globalQueueSet.Wait(p.ID(), queued.ID)
+			if !ok {
+				panic(fmt.Sprintf("waiting on non-existent r11n %q", queued.ID))
+			}
+			results <- result
+		}()
 	}
+	wg.Wait()
 }
 
 // Begin is similar to Resolve, except that it returns a ResolveRecorder almost
