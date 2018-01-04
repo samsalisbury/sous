@@ -9,7 +9,6 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
 )
@@ -339,8 +338,6 @@ func (f fields) values() string {
 		}
 		lines = append(lines, fmt.Sprintf(format, vals...))
 	}
-	spew.Dump(format)
-	spew.Dump(lines)
 	return strings.Join(lines, ",\n")
 }
 

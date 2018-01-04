@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/lib/pq"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
@@ -134,7 +133,6 @@ func loadClusters(context context.Context, log logging.LogSink, tx *sql.Tx, stat
 			); err != nil {
 				return err
 			}
-			spew.Dump(c)
 			if newC, has := clusters[cid]; has {
 				c = newC
 			} else {
@@ -276,7 +274,6 @@ func loadManifests(context context.Context, log logging.LogSink, tx *sql.Tx, sta
 
 func loadTable(ctx context.Context, log logging.LogSink, tx *sql.Tx, sql string, pack func(*sql.Rows) error) error {
 	start := time.Now()
-	rowcount := 0
 	rows, err := tx.QueryContext(ctx, sql)
 	reportSQLMessage(log, start, sql, err)
 
@@ -285,12 +282,10 @@ func loadTable(ctx context.Context, log logging.LogSink, tx *sql.Tx, sql string,
 	}
 	defer rows.Close()
 	for rows.Next() {
-		rowcount++
 		if err := pack(rows); err != nil {
 			return err
 		}
 	}
-	spew.Println("Rows: ", rowcount)
 	if err := rows.Err(); err != nil {
 		return err
 	}

@@ -61,11 +61,24 @@ func (suite *PostgresStateManagerSuite) SetupTest() {
 	}
 }
 
+func (suite *PostgresStateManagerSuite) PluckSQL(sql string) interface{} {
+	var v interface{}
+
+	row := suite.db.QueryRow(sql)
+	err := row.Scan(&v)
+	suite.Require().NoError(err)
+
+	return v
+}
+
 func (suite *PostgresStateManagerSuite) TestWriteState_success() {
 	s := exampleState()
 
 	suite.Require().NoError(suite.manager.WriteState(s, testUser))
+	suite.Equal(int64(2), suite.PluckSQL("select count(*) from deployments"))
 	suite.Require().NoError(suite.manager.WriteState(s, testUser))
+	// Want to be sure that the deployments history doesn't vacuously grow.
+	suite.Equal(int64(2), suite.PluckSQL("select count(*) from deployments"))
 
 	ns, err := suite.manager.ReadState()
 	suite.Require().NoError(err)

@@ -103,6 +103,12 @@
             <column autoIncrement="true" name="deployment_id" type="SERIAL">
                 <constraints primaryKey="true" primaryKeyName="deployments_pkey"/>
             </column>
+            <column name="cluster_id" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="component_id" type="INT">
+                <constraints nullable="false"/>
+            </column>
             <column name="versionstring" type="TEXT">
                 <constraints nullable="false"/>
             </column>
@@ -148,12 +154,6 @@
             <column name="cr_skip" type="BOOLEAN">
                 <constraints nullable="false"/>
             </column>
-            <column name="cluster_id" type="INT">
-                <constraints nullable="false"/>
-            </column>
-            <column name="component_id" type="INT">
-                <constraints nullable="false"/>
-            </column>
         </createTable>
     </changeSet>
     <changeSet author="judson (generated)" id="1513795697969-6">
@@ -161,13 +161,13 @@
             <column autoIncrement="true" name="env_default_id" type="SERIAL">
                 <constraints primaryKey="true" primaryKeyName="env_defaults_pkey"/>
             </column>
+            <column name="cluster_id" type="INT">
+                <constraints nullable="false"/>
+            </column>
             <column name="key" type="TEXT">
                 <constraints nullable="false"/>
             </column>
             <column name="value" type="TEXT">
-                <constraints nullable="false"/>
-            </column>
-            <column name="cluster_id" type="INT">
                 <constraints nullable="false"/>
             </column>
         </createTable>
@@ -196,13 +196,13 @@
             <column autoIncrement="true" name="env_id" type="SERIAL">
                 <constraints primaryKey="true" primaryKeyName="envs_pkey"/>
             </column>
+            <column name="deployment_id" type="INT">
+                <constraints nullable="false"/>
+            </column>
             <column name="key" type="TEXT">
                 <constraints nullable="false"/>
             </column>
             <column name="value" type="TEXT">
-                <constraints nullable="false"/>
-            </column>
-            <column name="deployment_id" type="INT">
                 <constraints nullable="false"/>
             </column>
         </createTable>
@@ -226,13 +226,13 @@
             <column autoIncrement="true" name="metadata_id" type="SERIAL">
                 <constraints primaryKey="true" primaryKeyName="metadatas_pkey"/>
             </column>
+            <column name="deployment_id" type="INT">
+                <constraints nullable="false"/>
+            </column>
             <column name="name" type="TEXT">
                 <constraints nullable="false"/>
             </column>
             <column name="value" type="TEXT">
-                <constraints nullable="false"/>
-            </column>
-            <column name="deployment_id" type="INT">
                 <constraints nullable="false"/>
             </column>
         </createTable>
@@ -279,13 +279,13 @@
             <column autoIncrement="true" name="resource_id" type="SERIAL">
                 <constraints primaryKey="true" primaryKeyName="resources_pkey"/>
             </column>
+            <column name="deployment_id" type="INT">
+                <constraints nullable="false"/>
+            </column>
             <column name="resource_name" type="TEXT">
                 <constraints nullable="false"/>
             </column>
             <column name="resource_value" type="TEXT">
-                <constraints nullable="false"/>
-            </column>
-            <column name="deployment_id" type="INT">
                 <constraints nullable="false"/>
             </column>
         </createTable>
@@ -295,6 +295,9 @@
             <column autoIncrement="true" name="volume_id" type="SERIAL">
                 <constraints primaryKey="true" primaryKeyName="volumes_pkey"/>
             </column>
+            <column name="deployment_id" type="INT">
+                <constraints nullable="false"/>
+            </column>
             <column name="host" type="TEXT">
                 <constraints nullable="false"/>
             </column>
@@ -302,9 +305,6 @@
                 <constraints nullable="false"/>
             </column>
             <column name="mode" type="TEXT">
-                <constraints nullable="false"/>
-            </column>
-            <column name="deployment_id" type="INT">
                 <constraints nullable="false"/>
             </column>
         </createTable>
