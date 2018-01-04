@@ -7,6 +7,8 @@ go:
 - 1.9.2
 before_install:
 - bin/ci-setup
+- sudo apt-get -qq update
+- sudo apt-get -y liquibase
 install:
 # - sudo apt-get install python3-proselint
 - bundle
