@@ -54,7 +54,7 @@ func (r *Resolver) queueDiffs(dcs *DeployableChans, results chan DiffResolution)
 		sr := NewRectification(*p)
 		queued, ok := globalQueueSet.PushIfEmpty(sr)
 		if !ok {
-			r.ls.Warnf("dropping rectification; queue not empty for %q", sr.Pair.ID())
+			reportDroppedR11n(r.ls, sr, "queue not empty")
 			continue
 		}
 		wg.Add(1)

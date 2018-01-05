@@ -70,6 +70,25 @@ func (kind DeployablePairKind) String() string {
 	}
 }
 
+// ExpectedResolutionType returns the expected resolution for this kind.
+// This is used for logging purposes, when we drop a diff and don't attempt
+// to rectify it.
+func (kind DeployablePairKind) ExpectedResolutionType() ResolutionType {
+	switch kind {
+	default:
+		return "unknown"
+	case SameKind:
+		return StableDiff
+	case AddedKind:
+		// Note: we never return ComingDiff as that's an intermediate state.
+		return CreateDiff
+	case RemovedKind:
+		return DeleteDiff
+	case ModifiedKind:
+		return ModifyDiff
+	}
+}
+
 // ResolveVerb provides an imperative verb describing the resolution action
 // required to resolve this kind of deployable pair.
 func (kind DeployablePairKind) ResolveVerb() string {
