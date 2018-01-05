@@ -34,8 +34,6 @@ func NewResolver(d Deployer, r Registry, rf *ResolveFilter, ls logging.LogSink) 
 	}
 }
 
-// globalQueueSet is a temporary solution to having a queue of rectifications
-// per Deployment. This will be replaced with a persistent queue.
 var globalQueueSet *R11nQueueSet
 
 // queueDiffs adds a rectification for each required change in DeployableChans,

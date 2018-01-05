@@ -111,7 +111,6 @@ func NewResolveRecorder(intended Deployments, f func(*ResolveRecorder)) *Resolve
 			if rr.err == nil {
 				rr.status.Phase = "finished"
 			}
-			//close(rr.Log)
 		})
 	}()
 	return rr
