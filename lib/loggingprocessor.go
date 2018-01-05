@@ -167,7 +167,12 @@ func (msg diffRezMessage) EachField(f logging.FieldReportFn) {
 	f("sous-deployment-id", msg.resolution.DeploymentID.String())
 	f("sous-manifest-id", msg.resolution.ManifestID.String())
 	f("sous-resolution-description", string(msg.resolution.Desc))
-	marshallable := buildMarshableError(msg.resolution.Error.error)
-	f("sous-resolution-errortype", marshallable.Type)
-	f("sous-resolution-errormessage", marshallable.String)
+	if msg.resolution.Error != nil {
+		marshallable := buildMarshableError(msg.resolution.Error.error)
+		f("sous-resolution-errortype", marshallable.Type)
+		f("sous-resolution-errormessage", marshallable.String)
+	} else {
+		f("sous-resolution-errortype", "")
+		f("sous-resolution-errormessage", "")
+	}
 }
