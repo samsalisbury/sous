@@ -136,7 +136,7 @@ func exampleState(modify ...func(*sous.State)) *sous.State {
 							},
 							Resources: sous.Resources{
 								"cpus":   "0.1",
-								"memory": "2GB",
+								"memory": "2048",
 								"ports":  "1",
 							},
 							NumInstances: 6,
@@ -166,7 +166,7 @@ func exampleState(modify ...func(*sous.State)) *sous.State {
 							},
 							Resources: sous.Resources{
 								"cpus":   "1",
-								"memory": "256MB",
+								"memory": "256",
 								"ports":  "1",
 							},
 							Volumes: sous.Volumes{},
