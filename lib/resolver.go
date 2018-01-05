@@ -2,7 +2,6 @@ package sous
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	"github.com/opentable/sous/util/logging"
@@ -54,7 +53,7 @@ func (r *Resolver) queueDiffs(dcs *DeployableChans, results chan DiffResolution)
 		sr := NewRectification(*p)
 		queued, ok := globalQueueSet.PushIfEmpty(sr)
 		if !ok {
-			reportDroppedR11n(r.ls, sr, "queue not empty")
+			reportR11nAnomaly(r.ls, sr, r11nDroppedQueueNotEmpty)
 			continue
 		}
 		wg.Add(1)
@@ -62,7 +61,7 @@ func (r *Resolver) queueDiffs(dcs *DeployableChans, results chan DiffResolution)
 			defer wg.Done()
 			result, ok := globalQueueSet.Wait(p.ID(), queued.ID)
 			if !ok {
-				panic(fmt.Sprintf("waiting on non-existent r11n %q", queued.ID))
+				reportR11nAnomaly(r.ls, sr, r11nWentMissing)
 			}
 			results <- result
 		}()
