@@ -33,6 +33,8 @@ func (a r11nAnomaly) note() string {
 		return "unidentified anomaly"
 	case r11nDroppedQueueNotEmpty, r11nDroppedQueueFull:
 		return "not attempted"
+	case r11nWentMissing:
+		return "went missing"
 	}
 }
 
@@ -50,7 +52,7 @@ func (a r11nAnomaly) action() string {
 func (a r11nAnomaly) reason() string {
 	switch a {
 	default:
-		return "unknown"
+		return "reason unknown"
 	case r11nDroppedQueueNotEmpty:
 		return "queue not empty"
 	case r11nDroppedQueueFull:
@@ -60,11 +62,12 @@ func (a r11nAnomaly) reason() string {
 
 func (msg *r11nAnomalyMessage) Message() string {
 	return fmt.Sprintf("rectification %s: %s",
-		msg.anomaly.action(), msg.anomaly.note())
+		msg.anomaly.action(), msg.anomaly.reason())
 }
 
 func newR11nAnomalyMessage(r *Rectification, anomaly r11nAnomaly) *r11nAnomalyMessage {
-	desc := fmt.Sprintf("%s (%s)", r.Pair.Kind().ExpectedResolutionType(), anomaly.note())
+	desc := fmt.Sprintf("not %s (%s)",
+		r.Pair.Kind().ExpectedResolutionType(), anomaly.note())
 	return &r11nAnomalyMessage{
 		diffRezMessage: &diffRezMessage{
 			callerInfo: logging.GetCallerInfo(logging.NotHere()),
