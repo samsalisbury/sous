@@ -58,9 +58,9 @@ func SetupTest(t *testing.T) *PostgresStateManagerSuite {
 		Host:     "localhost",
 		Port:     port,
 		SSL:      false,
-	}, logging.SilentLogSet())
-	//}, logging.Log)
-	//logging.Log.BeChatty()
+		//}, logging.SilentLogSet())
+	}, logging.Log)
+	logging.Log.BeChatty()
 
 	if err != nil {
 		suite.FailNow("Setting up", "error: %v", err)
@@ -73,7 +73,7 @@ func SetupTest(t *testing.T) *PostgresStateManagerSuite {
 	return suite
 }
 
-func TestWriteState_success(t *testing.T) {
+func TestPostgresStateManagerWriteState_success(t *testing.T) {
 	suite := SetupTest(t)
 
 	s := exampleState()
