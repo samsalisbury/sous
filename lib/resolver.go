@@ -49,7 +49,6 @@ func (r *Resolver) queueDiffs(dcs *DeployableChans, results chan DiffResolution)
 
 	var wg sync.WaitGroup
 	for p := range dcs.Pairs {
-		p := p
 		sr := NewRectification(*p)
 		queued, ok := globalQueueSet.PushIfEmpty(sr)
 		if !ok {
@@ -57,9 +56,10 @@ func (r *Resolver) queueDiffs(dcs *DeployableChans, results chan DiffResolution)
 			continue
 		}
 		wg.Add(1)
+		did := p.ID() // Capture did from the range var p outside the goroutine.
 		go func() {
 			defer wg.Done()
-			result, ok := globalQueueSet.Wait(p.ID(), queued.ID)
+			result, ok := globalQueueSet.Wait(did, queued.ID)
 			if !ok {
 				reportR11nAnomaly(r.ls, sr, r11nWentMissing)
 			}
