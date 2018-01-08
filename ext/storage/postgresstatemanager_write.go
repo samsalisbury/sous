@@ -5,10 +5,12 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"regexp"
 	"strings"
 	"text/template"
 	"time"
 
+	"github.com/lib/pq"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
 )
@@ -69,10 +71,10 @@ func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State,
 
 	if err := execInsertDeployments(ctx, log, tx, alldeps, "components", "on conflict do nothing", func(fields *fields, dep *sous.Deployment) {
 		fields.row(func(r rowdef) {
-			r.fd("'%s'", "repo", dep.SourceID.Location.Repo)
-			r.fd("'%s'", "dir", dep.SourceID.Location.Dir)
-			r.fd("'%s'", "flavor", dep.Flavor)
-			r.fd("'%s'", "kind", dep.Kind)
+			r.fd("?", "repo", dep.SourceID.Location.Repo)
+			r.fd("?", "dir", dep.SourceID.Location.Dir)
+			r.fd("?", "flavor", dep.Flavor)
+			r.fd("?", "kind", dep.Kind)
 		})
 	}); err != nil {
 		return nil
@@ -82,9 +84,9 @@ func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State,
 		c := dep.Cluster
 		s := c.Startup
 		fields.row(func(r rowdef) {
-			r.cf("'%s'", "name", dep.ClusterName)
-			r.fd("'%s'", "kind", c.Kind)
-			r.fd("'%s'", "base_url", c.BaseURL)
+			r.cf("?", "name", dep.ClusterName)
+			r.fd("?", "kind", c.Kind)
+			r.fd("?", "base_url", c.BaseURL)
 			startupFields(r, "crdef", s)
 		})
 	}); err != nil {
@@ -96,10 +98,10 @@ func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State,
 		fields.row(func(r rowdef) {
 			compID(r, dep)
 			clusterID(r, dep)
-			r.fd("'%s'", "versionstring", dep.SourceID.Version.String())
-			r.fd("%d", "num_instances", dep.NumInstances)
-			r.fd("'%s'", "schedule_string", dep.Schedule)
-			r.fd("'%s'", "lifecycle", "active")
+			r.fd("?", "versionstring", dep.SourceID.Version.String())
+			r.fd("?", "num_instances", dep.NumInstances)
+			r.fd("?", "schedule_string", dep.Schedule)
+			r.fd("?", "lifecycle", "active")
 			startupFields(r, "cr", s)
 		})
 	}); err != nil {
@@ -111,10 +113,10 @@ func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State,
 		fields.row(func(r rowdef) {
 			compID(r, dep)
 			clusterID(r, dep)
-			r.fd("'%s'", "versionstring", dep.SourceID.Version.String())
-			r.fd("%d", "num_instances", dep.NumInstances)
-			r.fd("'%s'", "schedule_string", dep.Schedule)
-			r.fd("'%s'", "lifecycle", "decommisioned")
+			r.fd("?", "versionstring", dep.SourceID.Version.String())
+			r.fd("?", "num_instances", dep.NumInstances)
+			r.fd("?", "schedule_string", dep.Schedule)
+			r.fd("?", "lifecycle", "decommisioned")
 			startupFields(r, "cr", s)
 		})
 	}); err != nil {
@@ -124,7 +126,7 @@ func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State,
 	if err := execInsertDeployments(ctx, log, tx, updates, "owners", "on conflict do nothing", func(fields *fields, dep *sous.Deployment) {
 		for ownername := range dep.Owners {
 			fields.row(func(r rowdef) {
-				r.fd("'%s'", "email", ownername)
+				r.fd("?", "email", ownername)
 			})
 		}
 	}); err != nil {
@@ -146,8 +148,8 @@ func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State,
 		for key, value := range dep.Env {
 			fields.row(func(row rowdef) {
 				depID(row, dep)
-				row.fd("'%s'", "key", key)
-				row.fd("'%s'", "value", value)
+				row.fd("?", "key", key)
+				row.fd("?", "value", value)
 			})
 		}
 	}); err != nil {
@@ -158,8 +160,8 @@ func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State,
 		for key, value := range dep.Resources {
 			fields.row(func(row rowdef) {
 				depID(row, dep)
-				row.fd("'%s'", "resource_name", key)
-				row.fd("'%s'", "resource_value", value)
+				row.fd("?", "resource_name", key)
+				row.fd("?", "resource_value", value)
 			})
 		}
 	}); err != nil {
@@ -170,8 +172,8 @@ func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State,
 		for key, value := range dep.Metadata {
 			fields.row(func(row rowdef) {
 				depID(row, dep)
-				row.fd("'%s'", "name", key)
-				row.fd("'%s'", "value", value)
+				row.fd("?", "name", key)
+				row.fd("?", "value", value)
 			})
 		}
 	}); err != nil {
@@ -182,9 +184,9 @@ func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State,
 		for _, volume := range dep.Volumes {
 			fields.row(func(row rowdef) {
 				depID(row, dep)
-				row.fd("'%s'", "host", volume.Host)
-				row.fd("'%s'", "container", volume.Container)
-				row.fd("'%s'", "mode", volume.Mode)
+				row.fd("?", "host", volume.Host)
+				row.fd("?", "container", volume.Container)
+				row.fd("?", "mode", volume.Mode)
 			})
 		}
 	}); err != nil {
@@ -203,37 +205,41 @@ func depID(row rowdef, dep *sous.Deployment) {
 		join clusters using (cluster_id)
 	where
 	  lifecycle = 'active' and
-	  repo = '%s' and dir = '%s' and flavor = '%s' and components.kind = '%s' and clusters.name = '%s')`,
+	  repo = ? and dir = ? and flavor = ? and components.kind = ? and clusters.name = ?)`,
 		"deployment_id", sid.Location.Repo, sid.Location.Dir, dep.Flavor, dep.Kind, dep.ClusterName)
 }
 
 func compID(row rowdef, dep *sous.Deployment) {
 	sid := dep.SourceID
 	row.fd(`(select component_id from components
-	  where repo = '%s' and dir = '%s' and flavor = '%s' and kind = '%s')`,
+	  where repo = ? and dir = ? and flavor = ? and kind = ?)`,
 		"component_id", sid.Location.Repo, sid.Location.Dir, dep.Flavor, dep.Kind)
 }
 
 func clusterID(row rowdef, dep *sous.Deployment) {
-	row.fd(`(select "cluster_id" from clusters where name = '%s')`, "cluster_id", dep.ClusterName)
+	row.fd(`(select "cluster_id" from clusters where name = ?)`, "cluster_id", dep.ClusterName)
 }
 
 func ownerID(row rowdef, ownername string) {
-	row.fd("(select owner_id from owners where email = '%s')", "owner_id", ownername)
+	row.fd("(select owner_id from owners where email = ?)", "owner_id", ownername)
 }
 
 func startupFields(r rowdef, prefix string, s sous.Startup) {
-	r.fd("%t", prefix+"_skip", s.SkipCheck)
-	r.fd("'%s'", prefix+"_proto", s.CheckReadyProtocol)
-	r.fd("'%s'", prefix+"_path", s.CheckReadyURIPath)
-	r.fd("%d", prefix+"_connect_delay", s.ConnectDelay)
-	r.fd("%d", prefix+"_timeout", s.Timeout)
-	r.fd("%d", prefix+"_connect_interval", s.ConnectInterval)
-	r.fd("%d", prefix+"_port_index", s.CheckReadyPortIndex)
-	r.fd("%d", prefix+"_uri_timeout", s.CheckReadyURITimeout)
-	r.fd("%d", prefix+"_interval", s.CheckReadyInterval)
-	r.fd("%d", prefix+"_retries", s.CheckReadyRetries)
-	r.fd("%s", prefix+"_failure_statuses", sqlArray(s.CheckReadyFailureStatuses))
+	statuses := []int64{}
+	for _, n := range s.CheckReadyFailureStatuses {
+		statuses = append(statuses, int64(n))
+	}
+	r.fd("?", prefix+"_skip", s.SkipCheck)
+	r.fd("?", prefix+"_proto", s.CheckReadyProtocol)
+	r.fd("?", prefix+"_path", s.CheckReadyURIPath)
+	r.fd("?", prefix+"_connect_delay", s.ConnectDelay)
+	r.fd("?", prefix+"_timeout", s.Timeout)
+	r.fd("?", prefix+"_connect_interval", s.ConnectInterval)
+	r.fd("?", prefix+"_port_index", s.CheckReadyPortIndex)
+	r.fd("?", prefix+"_uri_timeout", s.CheckReadyURITimeout)
+	r.fd("?", prefix+"_interval", s.CheckReadyInterval)
+	r.fd("?", prefix+"_retries", s.CheckReadyRetries)
+	r.fd("?", prefix+"_failure_statuses", pq.Array(statuses))
 }
 
 type fields struct {
@@ -323,22 +329,38 @@ func (f fields) noncandidates() string {
 	return "(" + strings.Join(colnames, ",") + ")"
 }
 
+var placeholderQs = regexp.MustCompile(`\?`)
+
 func (f fields) values() string {
-	valpats := []string{}
-	for _, name := range f.colnames {
-		valpats = append(valpats, f.coldefs[name].fmt)
-	}
-	format := "(" + strings.Join(valpats, ",") + ")"
+	placeIdx := 0
 
 	lines := []string{}
+	for range f.rows {
+		valpats := []string{}
+		for _, name := range f.colnames {
+			pat := f.coldefs[name].fmt
+			pat = placeholderQs.ReplaceAllStringFunc(pat, func(q string) string {
+				placeIdx++
+				return fmt.Sprintf("$%d", placeIdx)
+			})
+
+			valpats = append(valpats, pat)
+		}
+		format := "(" + strings.Join(valpats, ",") + ")"
+		lines = append(lines, format)
+	}
+
+	return strings.Join(lines, ",\n")
+}
+
+func (f fields) insertValues() []interface{} {
+	vals := []interface{}{}
 	for _, r := range f.rows {
-		vals := []interface{}{}
 		for _, name := range f.colnames {
 			vals = append(vals, r[name].values...)
 		}
-		lines = append(lines, fmt.Sprintf(format, vals...))
 	}
-	return strings.Join(lines, ",\n")
+	return vals
 }
 
 func (f fields) rowcount() int {
@@ -396,7 +418,7 @@ func execInsertDeployments(
 	}
 	start := time.Now()
 	sql := fields.insertSQL(table, conflict)
-	_, err := tx.ExecContext(ctx, sql)
+	_, err := tx.ExecContext(ctx, sql, fields.insertValues()...)
 	reportSQLMessage(log, start, sql, fields.rowcount(), err)
 	return err
 }
