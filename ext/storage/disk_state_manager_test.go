@@ -37,16 +37,15 @@ func TestWriteState(t *testing.T) {
 func TestWriteState_out_of_order_owners(t *testing.T) {
 
 	const repo = "github.com/opentable/sous"
-	s := exampleState(func(s *sous.State) {
-		m, ok := s.Manifests.Single(func(m *sous.Manifest) bool {
-			return m.Source.Repo == repo
-		})
-		if !ok {
-			t.Fatalf("no manifest with repo %q found", repo)
-		}
-		// Switch owners around.
-		m.Owners[0], m.Owners[1] = m.Owners[1], m.Owners[0]
+	s := exampleState()
+	m, ok := s.Manifests.Single(func(m *sous.Manifest) bool {
+		return m.Source.Repo == repo
 	})
+	if !ok {
+		t.Fatalf("no manifest with repo %q found", repo)
+	}
+	// Switch owners around.
+	m.Owners[0], m.Owners[1] = m.Owners[1], m.Owners[0]
 
 	if err := os.RemoveAll("testdata/out"); err != nil {
 		t.Fatal(err)
@@ -115,7 +114,7 @@ func TestReadState_empty(t *testing.T) {
 // exampleState produces a canonical state. If you pass one or more modify
 // funcs, each will be applied in order before the state is returned.
 // You can use this to test scenarios that differ slightly from canonical form.
-func exampleState(modify ...func(*sous.State)) *sous.State {
+func exampleState() *sous.State {
 	sl := sous.SourceLocation{
 		Repo: "github.com/opentable/sous",
 	}
@@ -201,9 +200,5 @@ func exampleState(modify ...func(*sous.State)) *sous.State {
 			Metadata:  sous.FieldDefinitions{},
 		},
 	}
-	for _, m := range modify {
-		m(s)
-	}
 	return s
-
 }
