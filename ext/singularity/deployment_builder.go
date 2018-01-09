@@ -443,7 +443,7 @@ func (db *deploymentBuilder) determineManifestKind() error {
 func (db *deploymentBuilder) extractSchedule() error {
 	if db.Target.Kind == sous.ManifestKindScheduled {
 		if db.request == nil {
-			return fmt.Errorf("Request is nil!")
+			return fmt.Errorf("request is nil")
 		}
 		db.Target.DeployConfig.Schedule = db.request.Schedule
 	}

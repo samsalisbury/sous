@@ -70,7 +70,7 @@ func (sc *deployer) RunningDeployments(reg sous.Registry, clusters sous.Clusters
 		}
 		//sing.Debug = true
 		sings[url] = struct{}{}
-		client := sc.buildSingClient(url, sc.log)
+		client := sc.buildSingClient(url)
 		go singPipeline(reg, url, client, &depWait, &singWait, reqCh, errCh, clusters)
 	}
 

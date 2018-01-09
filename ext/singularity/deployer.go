@@ -159,10 +159,9 @@ func (r *deployer) SetSingularityFactory(fn func(string) *singularity.Client) {
 	r.singFac = fn
 }
 
-func (r *deployer) buildSingClient(url string, log logging.LogSink) *singularity.Client {
+func (r *deployer) buildSingClient(url string) *singularity.Client {
 	if r.singFac == nil {
-		return singularity.NewClient(url, log)
-		//return singularity.NewClient(url, swaggering.StdlibDebugLogger{})
+		return singularity.NewClient(url, r.log)
 	}
 	return r.singFac(url)
 }
