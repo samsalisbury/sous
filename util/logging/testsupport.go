@@ -33,6 +33,8 @@ type (
 		spy *spies.Spy
 	}
 
+	// LogSinkController allows testing code to manipulate and inspect the spies
+	// returned by NewLogSinkSpy
 	LogSinkController struct {
 		*spies.Spy
 		Metrics metricsSinkController
