@@ -42,7 +42,7 @@ func TestR11nQueue_Push_Pop_sync(t *testing.T) {
 				makeTestR11nWithRepo("one"),
 			},
 			WantPoppedOK: []func(*QueuedR11n) error{
-				checkPoppedR11nHasRepo("one"),
+				checkR11nHasRepo("one"),
 			},
 		},
 		{
@@ -53,8 +53,8 @@ func TestR11nQueue_Push_Pop_sync(t *testing.T) {
 				makeTestR11nWithRepo("two"),
 			},
 			WantPoppedOK: []func(*QueuedR11n) error{
-				checkPoppedR11nHasRepo("one"),
-				checkPoppedR11nHasRepo("two"),
+				checkR11nHasRepo("one"),
+				checkR11nHasRepo("two"),
 			},
 		},
 		{
@@ -78,7 +78,7 @@ func TestR11nQueue_Push_Pop_sync(t *testing.T) {
 				},
 			},
 			WantPoppedOK: []func(*QueuedR11n) error{
-				checkPoppedR11nHasRepo("one"),
+				checkR11nHasRepo("one"),
 			},
 		},
 		{
@@ -104,8 +104,8 @@ func TestR11nQueue_Push_Pop_sync(t *testing.T) {
 				},
 			},
 			WantPoppedOK: []func(*QueuedR11n) error{
-				checkPoppedR11nHasRepo("one"),
-				checkPoppedR11nHasRepo("two"),
+				checkR11nHasRepo("one"),
+				checkR11nHasRepo("two"),
 			},
 		},
 	}
@@ -303,7 +303,7 @@ func TestR11Queue_Next(t *testing.T) {
 	}
 
 	read := <-nextChan
-	if err := checkPoppedR11nHasRepo("hai")(read); err != nil {
+	if err := checkR11nHasRepo("hai")(read); err != nil {
 		t.Error(err)
 	}
 }
@@ -447,9 +447,9 @@ func makeTestR11nWithRepo(repo string) *Rectification {
 	return r
 }
 
-// checkPoppedR11nHasRepo checks identity of r11ns created with
+// checkR11nHasRepo checks identity of r11ns created with
 // makeTestR11nWithRepo.
-func checkPoppedR11nHasRepo(repo string) func(*QueuedR11n) error {
+func checkR11nHasRepo(repo string) func(*QueuedR11n) error {
 	return func(qr *QueuedR11n) error {
 		got := qr.Rectification.Pair.Post.Deployment.SourceID.Location.Repo
 		if got != repo {

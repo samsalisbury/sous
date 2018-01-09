@@ -56,7 +56,7 @@ func TestR11nQueueSet_PushIfEmpty(t *testing.T) {
 				}
 				return // Don't try to check repo on nil qr.
 			}
-			if err := checkPoppedR11nHasRepo(lastRepo)(gotQR); err != nil {
+			if err := checkR11nHasRepo(lastRepo)(gotQR); err != nil {
 				t.Error(err)
 			}
 
