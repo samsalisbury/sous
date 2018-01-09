@@ -79,11 +79,6 @@ func TestEnsureGDMExists(t *testing.T) {
 			}
 		})
 	}
-
-	//Tear Down test data
-	if err := os.RemoveAll(testDataDir); err != nil {
-		t.Fatal(err)
-	}
 }
 
 func TestEnsureGDMExists_notARepoFile(t *testing.T) {

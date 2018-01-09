@@ -33,7 +33,7 @@ type (
 		spy *spies.Spy
 	}
 
-	logSinkController struct {
+	LogSinkController struct {
 		*spies.Spy
 		Metrics metricsSinkController
 		Console writeDonerController
@@ -41,13 +41,13 @@ type (
 )
 
 // NewLogSinkSpy returns a spy/controller pair
-func NewLogSinkSpy() (LogSink, logSinkController) {
+func NewLogSinkSpy() (LogSink, LogSinkController) {
 	spy := spies.NewSpy()
 
 	console, cc := NewWriteDonerSpy()
 	metrics, mc := NewMetricsSpy()
 
-	ctrl := logSinkController{
+	ctrl := LogSinkController{
 		Spy:     spy,
 		Metrics: mc,
 		Console: cc,
@@ -167,6 +167,15 @@ var IntervalVariableFields = []string{"started-at", "finished-at", "duration"}
 //  * generates fields with the names and values in fixedFields
 //  * generates an @loglov3-otl field
 func AssertMessageFields(t *testing.T, msg eachFielder, variableFields []string, fixedFields map[string]interface{}) {
+	t.Helper()
+
+	assert.Contains(t, fixedFields, "@loglov3-otl", "Structured log entries need @loglov3-otl or will be DLQ'd")
+	rawAssertMessageFields(t, msg, variableFields, fixedFields)
+}
+
+func rawAssertMessageFields(t *testing.T, msg eachFielder, variableFields []string, fixedFields map[string]interface{}) {
+	t.Helper()
+
 	actualFields := map[string]interface{}{}
 
 	msg.EachField(func(name string, value interface{}) {
