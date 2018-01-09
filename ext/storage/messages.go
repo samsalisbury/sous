@@ -45,6 +45,7 @@ func (msg *sqlMessage) Message() string {
 
 // EachField implements LogMessage on sqlMessage
 func (msg *sqlMessage) EachField(fn logging.FieldReportFn) {
+	fn("@loglov3-otl", "sous-sql")
 	msg.CallerInfo.EachField(fn)
 	msg.MessageInterval.EachField(fn)
 	fn("sous-sql-query", msg.sql)
