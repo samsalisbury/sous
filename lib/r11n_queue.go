@@ -57,6 +57,7 @@ type QueuedR11n struct {
 	ID            R11nID
 	Pos           int
 	Rectification *Rectification
+	done          chan struct{}
 }
 
 // R11nID is a QueuedR11n identifier.
@@ -74,7 +75,10 @@ func (rq *R11nQueue) Start(handler func(*QueuedR11n) DiffResolution) <-chan Diff
 		for {
 			qr := rq.next()
 			results <- handler(qr)
+			close(qr.done)
+			rq.Lock()
 			delete(rq.refs, qr.ID)
+			rq.Unlock()
 		}
 	}()
 	return results
@@ -88,7 +92,8 @@ func (rq *R11nQueue) Wait(id R11nID) (DiffResolution, bool) {
 	qr, ok := rq.refs[id]
 	rq.Unlock()
 	if ok {
-		return qr.Rectification.Wait(), true
+		<-qr.done
+		return qr.Rectification.Resolution, true
 	}
 	return DiffResolution{}, false
 }
@@ -112,6 +117,7 @@ func (rq *R11nQueue) internalPush(r *Rectification) *QueuedR11n {
 		ID:            id,
 		Pos:           len(rq.queue),
 		Rectification: r,
+		done:          make(chan struct{}),
 	}
 	rq.refs[id] = qr
 	rq.queue <- qr

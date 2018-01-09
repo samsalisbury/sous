@@ -3,6 +3,7 @@ package sous
 import (
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestR11nQueueSet_PushIfEmpty(t *testing.T) {
@@ -60,5 +61,54 @@ func TestR11nQueueSet_PushIfEmpty(t *testing.T) {
 			}
 
 		})
+	}
+}
+
+func TestR11nQueueSet_Wait(t *testing.T) {
+
+	// proceed allows us to control when the queued r11n is processed.
+	proceed := make(chan struct{})
+
+	// Set up a queue that processes only on sends to proceed.
+	rqs := NewR11nQueueSet(R11nQueueStartWithHandler(func(*QueuedR11n) DiffResolution {
+		<-proceed
+		return DiffResolution{}
+	}))
+
+	// Push a r11n onto the queue.
+	qr, ok := rqs.PushIfEmpty(makeTestR11nWithRepo("hi"))
+	if !ok {
+		t.Fatalf("r11n not queued, cannot proceed with test")
+	}
+
+	// Completed marks the queue having processed the r11n pushed above.
+	completed := make(chan struct{})
+	var completedOK bool
+	go func() {
+		_, completedOK = rqs.Wait(qr.Rectification.Pair.ID(), qr.ID)
+		completed <- struct{}{}
+	}()
+
+	// If completed, fail the test because we didn't send to proceed yet.
+	select {
+	default:
+		// OK
+	case <-completed:
+		t.Fatalf("r11n processing completed before it should have")
+	}
+
+	// Allow the queue handler to proceed.
+	proceed <- struct{}{}
+
+	const timeout = time.Millisecond
+	select {
+	case <-time.After(timeout):
+		t.Fatalf("Wait did not return in under %s after completion", timeout)
+	case <-completed:
+		// OK
+	}
+
+	if !completedOK {
+		t.Fatalf("Wait failed for DeployID: %q; R11nID: %q", qr.Rectification.Pair.ID(), qr.ID)
 	}
 }
