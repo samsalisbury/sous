@@ -34,6 +34,7 @@ func TestDiffMessages(t *testing.T) {
 		"@loglov3-otl":          "sous-deployment-diff",
 		"sous-deployment-id":    "test-cluster:github.com/opentable/example",
 		"sous-diff-disposition": "same",
+		"sous-deployment-diffs": "No detailed diff because pairwise diff kind is \"same\"",
 		"sous-manifest-id":      "github.com/opentable/example",
 
 		"sous-prior-artifact-name":              "dockerhub.io/example:0.0.1",
@@ -208,6 +209,7 @@ func TestDiffMessages_knownpanic(t *testing.T) {
 		"@loglov3-otl":          "sous-deployment-diff",
 		"sous-deployment-id":    ":",
 		"sous-diff-disposition": "same",
+		"sous-deployment-diffs": "No detailed diff because pairwise diff kind is \"same\"",
 		"sous-manifest-id":      "",
 
 		"sous-post-checkready-failurestatuses": "500,503",
@@ -282,6 +284,7 @@ func TestDiffMessages_incomplete(t *testing.T) {
 	fixedFields["sous-diff-disposition"] = "added"
 	fixedFields["sous-deployment-id"] = ":"
 	fixedFields["sous-manifest-id"] = ""
+	fixedFields["sous-deployment-diffs"] = "No detailed diff because pairwise diff kind is \"added\""
 
 	logging.AssertMessageFields(t, msg, logging.StandardVariableFields, fixedFields)
 }
