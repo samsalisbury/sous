@@ -138,6 +138,9 @@ install-staticcheck:
 install-metalinter:
 	go get github.com/alecthomas/gometalinter
 
+install-liquibase:
+	brew install liquibase
+
 install-linters: install-metalinter
 	gometalinter --install > /dev/null
 
