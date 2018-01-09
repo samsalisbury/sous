@@ -1,16 +1,21 @@
 package sous
 
 import (
+	"container/ring"
 	"sync"
 
 	"github.com/pborman/uuid"
 )
 
+// MaxRefsPerR11nQueue is the maximum number of rectifications to cache in memory.
+const MaxRefsPerR11nQueue = 100
+
 // R11nQueue is a queue of rectifications.
 type R11nQueue struct {
-	cap   int
-	queue chan *QueuedR11n
-	refs  map[R11nID]*QueuedR11n
+	cap           int
+	queue         chan *QueuedR11n
+	refs, allRefs map[R11nID]*QueuedR11n
+	fifoRefs      *ring.Ring
 	sync.Mutex
 }
 
@@ -47,8 +52,12 @@ func R11nQueueStartWithHandler(handler func(*QueuedR11n) DiffResolution) R11nQue
 }
 
 func (rq *R11nQueue) init() *R11nQueue {
+	rq.Lock()
+	defer rq.Unlock()
 	rq.queue = make(chan *QueuedR11n, rq.cap)
 	rq.refs = map[R11nID]*QueuedR11n{}
+	rq.allRefs = map[R11nID]*QueuedR11n{}
+	rq.fifoRefs = ring.New(MaxRefsPerR11nQueue)
 	return rq
 }
 
@@ -75,8 +84,8 @@ func (rq *R11nQueue) Start(handler func(*QueuedR11n) DiffResolution) <-chan Diff
 		for {
 			qr := rq.next()
 			results <- handler(qr)
-			close(qr.done)
 			rq.Lock()
+			close(qr.done)
 			delete(rq.refs, qr.ID)
 			rq.Unlock()
 		}
@@ -89,7 +98,7 @@ func (rq *R11nQueue) Start(handler func(*QueuedR11n) DiffResolution) <-chan Diff
 // zero DiffResolution and false.
 func (rq *R11nQueue) Wait(id R11nID) (DiffResolution, bool) {
 	rq.Lock()
-	qr, ok := rq.refs[id]
+	qr, ok := rq.allRefs[id]
 	rq.Unlock()
 	if ok {
 		<-qr.done
@@ -120,6 +129,13 @@ func (rq *R11nQueue) internalPush(r *Rectification) *QueuedR11n {
 		done:          make(chan struct{}),
 	}
 	rq.refs[id] = qr
+	rq.allRefs[id] = qr
+	rq.fifoRefs = rq.fifoRefs.Next()
+	if rq.fifoRefs.Value != nil {
+		idToDelete := rq.fifoRefs.Value.(R11nID)
+		delete(rq.allRefs, idToDelete)
+	}
+	rq.fifoRefs.Value = id
 	rq.queue <- qr
 	return qr
 }

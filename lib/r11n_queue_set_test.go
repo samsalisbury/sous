@@ -86,7 +86,7 @@ func TestR11nQueueSet_Wait(t *testing.T) {
 	var completedOK bool
 	go func() {
 		_, completedOK = rqs.Wait(qr.Rectification.Pair.ID(), qr.ID)
-		completed <- struct{}{}
+		close(completed)
 	}()
 
 	// If completed, fail the test because we didn't send to proceed yet.
@@ -100,15 +100,14 @@ func TestR11nQueueSet_Wait(t *testing.T) {
 	// Allow the queue handler to proceed.
 	proceed <- struct{}{}
 
-	const timeout = time.Millisecond
+	const timeout = 10 * time.Millisecond
 	select {
 	case <-time.After(timeout):
 		t.Fatalf("Wait did not return in under %s after completion", timeout)
 	case <-completed:
-		// OK
-	}
-
-	if !completedOK {
-		t.Fatalf("Wait failed for DeployID: %q; R11nID: %q", qr.Rectification.Pair.ID(), qr.ID)
+		// OK, just check we completed OK.
+		if !completedOK {
+			t.Fatalf("Wait failed for DeployID: %q; R11nID: %q", qr.Rectification.Pair.ID(), qr.ID)
+		}
 	}
 }
