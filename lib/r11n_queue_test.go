@@ -428,7 +428,7 @@ func TestR11Queue_PushIfEmpty_async(t *testing.T) {
 // This is enough to check identity of the r11n using
 // checkPoppedR11nHasRepo.
 func makeTestR11nWithRepo(repo string) *Rectification {
-	return &Rectification{
+	r := &Rectification{
 		Pair: DeployablePair{
 			Post: &Deployable{
 				Status: 0,
@@ -442,6 +442,9 @@ func makeTestR11nWithRepo(repo string) *Rectification {
 			},
 		},
 	}
+	// TODO: Should we not derive name from Pair.Post/Prior instead?
+	r.Pair.name = r.Pair.Post.ID()
+	return r
 }
 
 // checkPoppedR11nHasRepo checks identity of r11ns created with
