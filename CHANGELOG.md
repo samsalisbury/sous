@@ -11,6 +11,9 @@ with respect to its command line interface and HTTP interface.
 ### Added
 * Server: If don't set a valid default log level, use Extreme and print out a message
 * Server: Storage module for Postgres. Uses placeholders correctly. As yet, not connected up.
+* Logging: sous-diff-resolution logs include two new fields 'sous-diff-source-type' and
+  'sous-diff-source-user'. These are currently hard-coded to 'global rectifier' and 'unknown'
+  but will receive other values in upcoming PRs soon.
 
 ### Fixed:
 * All: Creating a manifest with Owners field not sorted alphabetically was preventing
