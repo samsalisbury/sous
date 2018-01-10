@@ -1,7 +1,10 @@
 package sous
 
 import (
+	"context"
 	"sync"
+
+	"github.com/opentable/sous/util/logging"
 )
 
 type (
@@ -53,6 +56,12 @@ func (d *DeployableChans) Collect() DeployablePairs {
 // ID returns the ID of this DeployablePair.
 func (dp *DeployablePair) ID() DeploymentID {
 	return dp.name
+}
+
+// Log adds a logging pipeline step onto a DeployableChans
+func (d *DeployableChans) Log(ctx context.Context, ls logging.LogSink) *DeployableChans {
+	proc := loggingProcessor{ls: ls}
+	return d.Pipeline(ctx, proc)
 }
 
 func (kind DeployablePairKind) String() string {
