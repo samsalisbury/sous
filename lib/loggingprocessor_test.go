@@ -310,6 +310,8 @@ func TestDiffResolutionMessages(t *testing.T) {
 		"sous-resolution-errormessage": "dumb test error",
 		"sous-deployment-id":           "test-cluster:github.com/opentable/example",
 		"sous-manifest-id":             "github.com/opentable/example",
+		"sous-diff-source-type":        "global rectifier",
+		"sous-diff-source-user":        "unknown",
 		"sous-resolution-description":  "updated",
 	})
 }

@@ -20,6 +20,8 @@ func (msg diffRezMessage) EachField(f logging.FieldReportFn) {
 	msg.callerInfo.EachField(f)
 	f("sous-deployment-id", msg.resolution.DeploymentID.String())
 	f("sous-manifest-id", msg.resolution.ManifestID.String())
+	f("sous-diff-source-type", "global rectifier")
+	f("sous-diff-source-user", "unknown")
 	f("sous-resolution-description", string(msg.resolution.Desc))
 	marshallable := buildMarshableError(msg.resolution.Error.error)
 	f("sous-resolution-errortype", marshallable.Type)
