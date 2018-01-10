@@ -23,7 +23,12 @@ func (msg diffRezMessage) EachField(f logging.FieldReportFn) {
 	f("sous-diff-source-type", "global rectifier")
 	f("sous-diff-source-user", "unknown")
 	f("sous-resolution-description", string(msg.resolution.Desc))
-	marshallable := buildMarshableError(msg.resolution.Error.error)
-	f("sous-resolution-errortype", marshallable.Type)
-	f("sous-resolution-errormessage", marshallable.String)
+	if msg.resolution.Error != nil {
+		marshallable := buildMarshableError(msg.resolution.Error.error)
+		f("sous-resolution-errortype", marshallable.Type)
+		f("sous-resolution-errormessage", marshallable.String)
+	} else {
+		f("sous-resolution-errortype", "")
+		f("sous-resolution-errormessage", "")
+	}
 }

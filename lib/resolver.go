@@ -2,6 +2,7 @@ package sous
 
 import (
 	"context"
+	"sync"
 
 	"github.com/opentable/sous/util/logging"
 )
@@ -32,13 +33,40 @@ func NewResolver(d Deployer, r Registry, rf *ResolveFilter, ls logging.LogSink) 
 	}
 }
 
-// rectify takes a DiffChans and issues the commands to the infrastructure to
-// reconcile the differences.
-func (r *Resolver) rectify(dcs *DeployableChans, results chan DiffResolution) {
-	for p := range dcs.Pairs {
-		sr := NewSingleRectification(*p)
-		results <- sr.Resolve(r.Deployer)
+var globalQueueSet *R11nQueueSet
+
+// queueDiffs adds a rectification for each required change in DeployableChans,
+// as long as there is no planned or currently executing resolution for the
+// DeploymentID relating to that rectification.
+func (r *Resolver) queueDiffs(dcs *DeployableChans, results chan DiffResolution) {
+	if globalQueueSet == nil {
+		globalQueueSet = NewR11nQueueSet(R11nQueueStartWithHandler(
+			func(qr *QueuedR11n) DiffResolution {
+				qr.Rectification.Begin(r.Deployer)
+				return qr.Rectification.Wait()
+			}))
 	}
+
+	var wg sync.WaitGroup
+	for p := range dcs.Pairs {
+		sr := NewRectification(*p)
+		queued, ok := globalQueueSet.PushIfEmpty(sr)
+		if !ok {
+			reportR11nAnomaly(r.ls, sr, r11nDroppedQueueNotEmpty)
+			continue
+		}
+		wg.Add(1)
+		did := p.ID() // Capture did from the range var p outside the goroutine.
+		go func() {
+			defer wg.Done()
+			result, ok := globalQueueSet.Wait(did, queued.ID)
+			if !ok {
+				reportR11nAnomaly(r.ls, sr, r11nWentMissing)
+			}
+			results <- result
+		}()
+	}
+	wg.Wait()
 }
 
 // Begin is similar to Resolve, except that it returns a ResolveRecorder almost
@@ -92,8 +120,10 @@ func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveRecord
 		})
 
 		recorder.performGuaranteedPhase("rectification", func() {
-			r.rectify(logger, recorder.Log)
+			r.queueDiffs(logger, recorder.Log)
+			close(recorder.Log)
 		})
+
 		logger.Wait()
 	})
 }
