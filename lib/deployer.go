@@ -5,7 +5,7 @@ type (
 	// read, update, and delete deployments.
 	Deployer interface {
 		RunningDeployments(reg Registry, from Clusters) (DeployStates, error)
-		Rectify(<-chan *DeployablePair, chan<- DiffResolution)
+		Rectify(*DeployablePair) DiffResolution
 	}
 
 	// DummyDeployer is a noop deployer.
@@ -25,8 +25,6 @@ func (dd *DummyDeployer) RunningDeployments(reg Registry, from Clusters) (Deploy
 }
 
 // Rectify implements Deployer
-func (dd *DummyDeployer) Rectify(dps <-chan *DeployablePair, r chan<- DiffResolution) {
-	for range dps {
-		r <- DiffResolution{}
-	}
+func (dd *DummyDeployer) Rectify(*DeployablePair) DiffResolution {
+	return DiffResolution{}
 }

@@ -1,7 +1,10 @@
 package sous
 
 import (
+	"context"
 	"sync"
+
+	"github.com/opentable/sous/util/logging"
 )
 
 type (
@@ -55,6 +58,12 @@ func (dp *DeployablePair) ID() DeploymentID {
 	return dp.name
 }
 
+// Log adds a logging pipeline step onto a DeployableChans
+func (d *DeployableChans) Log(ctx context.Context, ls logging.LogSink) *DeployableChans {
+	proc := loggingProcessor{ls: ls}
+	return d.Pipeline(ctx, proc)
+}
+
 func (kind DeployablePairKind) String() string {
 	switch kind {
 	default:
@@ -67,6 +76,25 @@ func (kind DeployablePairKind) String() string {
 		return "removed"
 	case ModifiedKind:
 		return "modified"
+	}
+}
+
+// ExpectedResolutionType returns the expected resolution for this kind.
+// This is used for logging purposes, when we drop a diff and don't attempt
+// to rectify it.
+func (kind DeployablePairKind) ExpectedResolutionType() ResolutionType {
+	switch kind {
+	default:
+		return "unknown"
+	case SameKind:
+		return StableDiff
+	case AddedKind:
+		// Note: we never return ComingDiff as that's an intermediate state.
+		return CreateDiff
+	case RemovedKind:
+		return DeleteDiff
+	case ModifiedKind:
+		return ModifyDiff
 	}
 }
 

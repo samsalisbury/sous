@@ -30,7 +30,9 @@ func TestApplicationIdMessageFields(t *testing.T) {
 			"sequence-number":     uint64(1), // a little fragile
 		}
 
-		AssertMessageFields(t, apid, variableFields, fixedFields)
+		// rawAssertMessageFields because ApplicationID is used to support other
+		// messages - it isn't a fully-fledged structured log entry itself
+		rawAssertMessageFields(t, apid, variableFields, fixedFields)
 	})
 
 	t.Run("MetricsScope", func(t *testing.T) {
