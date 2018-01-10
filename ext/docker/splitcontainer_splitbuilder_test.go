@@ -78,6 +78,32 @@ func TestSplitBuilder_ValidateRunspec(t *testing.T) {
 	assert.Error(t, builder.validateRunSpec(), "should have returned error from invalid runspec")
 }
 
+func TestSplitBuilder_ValidateRunspec_noError(t *testing.T) {
+	builder := splitBuilder{
+		RunSpec: &MultiImageRunSpec{
+			SplitImageRunSpec: &SplitImageRunSpec{
+				Files: []sbmInstall{{Source: sbmFile{"a"}, Destination: sbmFile{"a"}}},
+			},
+		},
+	}
+
+	builder.RunSpec.SplitImageRunSpec.Image.Type = "docker"
+	builder.RunSpec.SplitImageRunSpec.Image.From = "test"
+	exec := make([]string, 3)
+	exec = append(exec, "a", "b", "c")
+	builder.RunSpec.SplitImageRunSpec.Exec = exec
+
+	assert.NoError(t, builder.validateRunSpec())
+}
+
+func TestSplitBuilder_ValidateRunspec_noImageError(t *testing.T) {
+	builder := splitBuilder{
+		RunSpec: &MultiImageRunSpec{},
+	}
+
+	assert.Error(t, builder.validateRunSpec(), "should error no Image present")
+}
+
 func TestSplitBuilder_ConstructSubBuilders(t *testing.T) {
 	builder := splitBuilder{
 		RunSpec: &MultiImageRunSpec{

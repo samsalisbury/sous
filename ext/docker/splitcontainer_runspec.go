@@ -62,12 +62,16 @@ func (ms *MultiImageRunSpec) Validate() []sous.Flaw {
 		}
 		fs = append(fs, ms.SplitImageRunSpec.Validate()...)
 	} else {
-		for idx, spec := range ms.Images {
-			sfs := spec.Validate()
-			for _, f := range sfs {
-				f.AddContext("image %d", idx)
+		if len(ms.Images) < 1 {
+			fs = append(fs, sous.FatalFlaw("No image was created, was .build-service marker file provided?"))
+		} else {
+			for idx, spec := range ms.Images {
+				sfs := spec.Validate()
+				for _, f := range sfs {
+					f.AddContext("image %d", idx)
+				}
+				fs = append(fs, sfs...)
 			}
-			fs = append(fs, sfs...)
 		}
 	}
 	return fs
