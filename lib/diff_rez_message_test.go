@@ -7,7 +7,7 @@ import (
 	"github.com/opentable/sous/util/logging"
 )
 
-func TestDiffResolutionMessages(t *testing.T) {
+func TestDiffRezMessage(t *testing.T) {
 	msg := &diffRezMessage{
 		callerInfo: logging.GetCallerInfo(),
 		resolution: &DiffResolution{

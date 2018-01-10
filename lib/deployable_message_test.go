@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDiffMessages(t *testing.T) {
+func TestDeployableMessage(t *testing.T) {
 	msg := &deployableMessage{
 		pair: &DeployablePair{
 			Prior: deployableFixture(""),
@@ -255,7 +255,7 @@ func TestDiffMessages_knownpanic(t *testing.T) {
 	})
 }
 
-func TestDiffMessages_incomplete(t *testing.T) {
+func TestDeployableMessage_incomplete(t *testing.T) {
 	msg := &deployableMessage{
 		callerInfo: logging.GetCallerInfo(),
 	}
