@@ -208,7 +208,7 @@ test-metalinter: install-linters
 test-gofmt:
 	bin/check-gofmt
 
-test-unit:
+test-unit: postgres-test-prepare
 	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -timeout 3m -race $(SOUS_PACKAGES_WITH_TESTS)
 
 test-integration: setup-containers
@@ -280,7 +280,7 @@ postgres-start: $(DEV_POSTGRES_DATA_DIR)/postgresql.conf
 
 postgres-test-prepare: $(DEV_POSTGRES_DATA_DIR)/postgresql.conf postgres-create-testdb
 
-postgres-create-testdb:
+postgres-create-testdb: postgres-start
 	createdb -h localhost -p $(PGPORT) $(TEST_DB_NAME) > /dev/null 2>&1 || true
 	liquibase $(LIQUIBASE_TEST_FLAGS) update
 
