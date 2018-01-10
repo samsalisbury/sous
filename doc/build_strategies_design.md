@@ -2,7 +2,10 @@
 
 *This document will be an explanation of Build Strategies and how they work.
 For the time being,
-it documents our design process and ideas.*
+it is
+__ON HOLD,__
+we'll revisit in the future when
+build strategies are top of priority again.*
 
 ## Design Goals
 
@@ -208,7 +211,7 @@ by the user.
 
 > **Note** we could then allow recognising tags for differing offsets using tag prefixes to support
 versioning offsets differently where necessary. In the absence of prefixed-tags we could assume that
-the entire repo is versioned as one. We would probably need to be explicit about which model is 
+the entire repo is versioned as one. We would probably need to be explicit about which model is
 used in the 'project' definition in the GDM.
 
 ### Observations
