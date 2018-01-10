@@ -3,6 +3,8 @@ package sous
 import (
 	"fmt"
 	"testing"
+
+	"github.com/opentable/sous/util/logging"
 )
 
 func TestR11nAnomalyMessage(t *testing.T) {
@@ -43,6 +45,19 @@ func TestR11nAnomalyMessage(t *testing.T) {
 			if gotDesc != tc.wantDesc {
 				t.Errorf("got desc %q; want %q", gotDesc, tc.wantDesc)
 			}
+
+			// See also diff_rez_message_test.go which tests these same
+			// fields including errors and deployment/manifest IDs.
+			logging.AssertMessageFields(t, m, logging.StandardVariableFields, map[string]interface{}{
+				"@loglov3-otl":                 "sous-diff-resolution",
+				"sous-resolution-errortype":    "",
+				"sous-resolution-errormessage": "",
+				"sous-deployment-id":           ":",
+				"sous-manifest-id":             "",
+				"sous-diff-source-type":        "global rectifier",
+				"sous-diff-source-user":        "unknown",
+				"sous-resolution-description":  string(tc.wantDesc),
+			})
 		})
 	}
 }
