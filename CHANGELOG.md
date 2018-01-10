@@ -11,7 +11,6 @@ with respect to its command line interface and HTTP interface.
 ### Added
 * Server: If don't set a valid default log level, use Extreme and print out a message
 * Server: storage module for Postgres. Uses placeholders correctly. As yet, not connected up.
-* Developer: the AssertMessageFields test helper now requires that @loglov3-otl be in the fixed fields.
 
 ### Fixed:
 * All: Creating a manifest with Owners field not sorted alphabetically was preventing
