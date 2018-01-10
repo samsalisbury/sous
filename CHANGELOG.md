@@ -6,18 +6,23 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
-## [Unreleased](//github.com/opentable/sous/compare/0.5.61...HEAD)
+## [Unreleased](//github.com/opentable/sous/compare/0.5.62...HEAD)
+
+## [0.5.62](//github.com/opentable/sous/compare/0.5.61...0.5.62)
 
 ### Added
-* Server: If don't set a valid default log level, use Extreme and print out a message
-* Server: storage module for Postgres. Uses placeholders correctly. As yet, not connected up.
+* Server: If default log level is invalid, use Extreme level and print out a message.
+* Logging: sous-diff-resolution logs include two new fields 'sous-diff-source-type' and
+  'sous-diff-source-user', hard-coded to 'global rectifier' and 'unknown'.
 
-### Fixed:
-* All: Creating a manifest with Owners field not sorted alphabetically was preventing
-  any updates to other manifests because the field was being sorted and thus creating
-  additional diffs (we disallow changed to the GDM that affect multiple manifests.)
-  Now the Owners field is always ordered alphabetically on write fixing this issue.
-* Server: the Owners field wasn't considered a Request changing deployment change.
+### Fixed
+* All: Setting a manifest with Owners field not alphabetically sorted no longer prevents updates
+  to other manifests. (Owners are always stored in alphabetical order now.)
+* Server: Kafka config validation now correctly checks if brokers were specified when Kafka is enabled.
+* Server: Changing the Owners list now correctly causes the Singularity request to be updated.
+
+## Internal
+* Server: Storage module for Postgres uses placeholders correctly. As yet, not connected up.
 
 ## [0.5.61](//github.com/opentable/sous/compare/0.5.60...0.5.61)
 
