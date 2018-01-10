@@ -267,7 +267,8 @@ func (r *deployer) RectifySingleModification(pair *sous.DeployablePair) (err err
 func changesReq(pair *sous.DeployablePair) bool {
 	return (pair.Prior.Kind == sous.ManifestKindScheduled && pair.Prior.Schedule != pair.Post.Schedule) ||
 		pair.Prior.Kind != pair.Post.Kind ||
-		pair.Prior.NumInstances != pair.Post.NumInstances
+		pair.Prior.NumInstances != pair.Post.NumInstances ||
+		!pair.Prior.Owners.Equal(pair.Post.Owners)
 }
 
 func changesDep(pair *sous.DeployablePair) bool {

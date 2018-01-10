@@ -129,6 +129,8 @@ func (msg *deployableMessage) EachField(f logging.FieldReportFn) {
 		f("sous-diff-disposition", msg.pair.Kind().String())
 		if msg.pair.Kind() == ModifiedKind {
 			f("sous-deployment-diffs", msg.pair.Diffs().String())
+		} else {
+			f("sous-deployment-diffs", fmt.Sprintf("No detailed diff because pairwise diff kind is %q", msg.pair.Kind()))
 		}
 
 		if msg.pair.Prior != nil {

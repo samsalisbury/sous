@@ -250,6 +250,7 @@ func baseDeployment() *sous.Deployment {
 	startDep.Cluster = &sous.Cluster{
 		BaseURL: "http://dummy.cluster.example.com/",
 	}
+	startDep.Owners = sous.NewOwnerSet()
 	startDep.Env = sous.Env{"A": "A"}
 	startDep.Kind = sous.ManifestKindService
 	startDep.DeployConfig.Resources = sous.Resources{"cpus": "0.1", "memory": "100", "ports": "1"}
@@ -332,6 +333,20 @@ func TestScaling(t *testing.T) {
 	assert.NotEmpty(t, diffs)
 
 	assert.True(t, changesReq(pair), "Updating number of instances reported as not changing Request!")
+	assert.False(t, changesDep(pair), "Roundtrip of Deployment through Singularity DTOs reported as changing Deploy!")
+}
+
+func TestOwners(t *testing.T) {
+	startDep := baseDeployment()
+	startDep.Owners.Add("tom@opentable.com")
+	pair := matchedPair(t, startDep)
+	pair.Prior.Owners.Add("harry@opentable.com")
+
+	diff, diffs := pair.Prior.Deployment.Diff(pair.Post.Deployment)
+	assert.True(t, diff)
+	assert.NotEmpty(t, diffs)
+
+	assert.True(t, changesReq(pair), "Updating owners reported as not changing Request!")
 	assert.False(t, changesDep(pair), "Roundtrip of Deployment through Singularity DTOs reported as changing Deploy!")
 }
 
