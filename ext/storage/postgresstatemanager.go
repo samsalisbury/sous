@@ -29,12 +29,8 @@ type (
 )
 
 // NewPostgresStateManager creates a new PostgresStateManager.
-func NewPostgresStateManager(cfg PostgresConfig, log logging.LogSink) (*PostgresStateManager, error) {
-	db, err := sql.Open("postgres", cfg.connStr())
-	if err != nil {
-		return nil, err
-	}
-	return &PostgresStateManager{db: db, log: log}, nil
+func NewPostgresStateManager(db *sql.DB, log logging.LogSink) *PostgresStateManager {
+	return &PostgresStateManager{db: db, log: log}
 }
 
 func (c PostgresConfig) connStr() string {
@@ -50,4 +46,9 @@ func (c PostgresConfig) connStr() string {
 		conn = fmt.Sprintf("%s password=%s", conn, c.Password)
 	}
 	return conn
+}
+
+// DB returns a database connection based on this config
+func (c PostgresConfig) DB() (*sql.DB, error) {
+	return sql.Open("postgres", c.connStr())
 }

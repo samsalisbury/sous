@@ -54,20 +54,22 @@ func SetupTest(t *testing.T) *PostgresStateManagerSuite {
 
 	sink, ctrl := logging.NewLogSinkSpy()
 
-	suite.manager, err = NewPostgresStateManager(PostgresConfig{
+	db, err := PostgresConfig{
 		DBName:   "sous_test",
 		User:     "",
 		Password: "",
 		Host:     "localhost",
 		Port:     port,
 		SSL:      false,
-	}, sink)
-
-	suite.logs = ctrl
+	}.DB()
 
 	if err != nil {
 		suite.FailNow("Setting up", "error: %v", err)
 	}
+
+	suite.manager = NewPostgresStateManager(db, sink)
+
+	suite.logs = ctrl
 
 	connstr = fmt.Sprintf("dbname=sous_test host=localhost port=%s sslmode=disable", port)
 	if suite.db, err = sql.Open("postgres", connstr); err != nil {
