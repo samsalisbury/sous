@@ -19,12 +19,12 @@ type (
 
 	// A PostgresConfig describes how to connect to a postgres database
 	PostgresConfig struct {
-		DBName   string
-		User     string
-		Password string
-		Host     string
-		Port     string
-		SSL      bool
+		DBName   string `env:"SOUS_PG_DBNAME"`
+		User     string `env:"SOUS_PG_USER"`
+		Password string `env:"SOUS_PG_PASSWORD"`
+		Host     string `env:"SOUS_PG_HOST"`
+		Port     string `env:"SOUS_PG_PORT"`
+		SSL      bool   `env:"SOUS_PG_SSL"`
 	}
 )
 
