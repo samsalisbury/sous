@@ -20,6 +20,7 @@ type PostgresStateManagerSuite struct {
 	require *require.Assertions
 	manager *PostgresStateManager
 	db      *sql.DB
+	logs    logging.LogSinkController
 }
 
 func SetupTest(t *testing.T) *PostgresStateManagerSuite {
@@ -51,6 +52,8 @@ func SetupTest(t *testing.T) *PostgresStateManagerSuite {
 		suite.FailNow("Error closing DB manipulation connection", "connstr %q err %v", connstr, err)
 	}
 
+	sink, ctrl := logging.NewLogSinkSpy()
+
 	suite.manager, err = NewPostgresStateManager(PostgresConfig{
 		DBName:   "sous_test",
 		User:     "",
@@ -58,9 +61,9 @@ func SetupTest(t *testing.T) *PostgresStateManagerSuite {
 		Host:     "localhost",
 		Port:     port,
 		SSL:      false,
-		//}, logging.SilentLogSet())
-	}, logging.Log)
-	logging.Log.BeChatty()
+	}, sink)
+
+	suite.logs = ctrl
 
 	if err != nil {
 		suite.FailNow("Setting up", "error: %v", err)
@@ -80,6 +83,15 @@ func TestPostgresStateManagerWriteState_success(t *testing.T) {
 
 	suite.require.NoError(suite.manager.WriteState(s, testUser))
 	suite.Equal(int64(2), suite.pluckSQL("select count(*) from deployments"))
+
+	assert.Len(t, suite.logs.CallsTo("LogMessage"), 12)
+	message := suite.logs.CallsTo("LogMessage")[0].PassedArgs().Get(1).(logging.LogMessage)
+	logging.AssertMessageFields(t, message, append(
+		append(logging.StandardVariableFields, logging.IntervalVariableFields...), "sous-sql-query", "sous-sql-rows"),
+		map[string]interface{}{
+			"@loglov3-otl": "sous-sql",
+		})
+
 	suite.require.NoError(suite.manager.WriteState(s, testUser))
 	// Want to be sure that the deployments history doesn't vacuously grow.
 	suite.Equal(int64(2), suite.pluckSQL("select count(*) from deployments"))

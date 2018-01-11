@@ -93,65 +93,65 @@ func OptMaxHTTPReqsPerServer(n int) DeployerOption {
 	return func(d *deployer) { d.ReqsPerServer = n }
 }
 
-// Rectify implements sous.Deployer on deployer
-func (r *deployer) Rectify(cc <-chan *sous.DeployablePair, errs chan<- sous.DiffResolution) {
-	for d := range cc {
-		pair := d // TODO: Remove this
-		switch d.Kind() {
-		case sous.SameKind:
-			resolution := d.SameResolution()
-			if d.Post.Status == sous.DeployStatusFailed {
-				resolution.Error = sous.WrapResolveError(&sous.FailedStatusError{})
-			}
-			errs <- resolution
-		case sous.AddedKind:
-			result := sous.DiffResolution{DeploymentID: d.ID()}
-			if err := r.RectifySingleCreate(d); err != nil {
-				result.Desc = "not created"
-				switch t := err.(type) {
-				default:
-					result.Error = sous.WrapResolveError(&sous.CreateError{Deployment: d.Post.Deployment.Clone(), Err: err})
-				case *swaggering.ReqError:
-					if t.Status == 400 {
-						result.Error = sous.WrapResolveError(err)
-					} else {
-						result.Error = sous.WrapResolveError(&sous.CreateError{Deployment: d.Post.Deployment.Clone(), Err: err})
-					}
-				}
-			} else {
-				result.Desc = sous.CreateDiff
-			}
-			Log.Vomit.Printf("Reporting result of create: %#v", result)
-			errs <- result
-		case sous.RemovedKind:
-			result := sous.DiffResolution{DeploymentID: d.ID()}
-			if err := r.RectifySingleDelete(d); err != nil {
-				result.Error = sous.WrapResolveError(&sous.DeleteError{Deployment: d.Prior.Deployment.Clone(), Err: err})
-				result.Desc = "not deleted"
-			} else {
-				result.Desc = sous.DeleteDiff
-			}
-			Log.Vomit.Printf("Reporting result of delete: %#v", result)
-			errs <- result
-		case sous.ModifiedKind:
-			result := sous.DiffResolution{DeploymentID: pair.ID()}
-			if err := r.RectifySingleModification(pair); err != nil {
-				dp := &sous.DeploymentPair{
-					Prior: pair.Prior.Deployment.Clone(),
-					Post:  pair.Post.Deployment.Clone(),
-				}
-				Log.Debug.Print(err)
-				result.Error = sous.WrapResolveError(&sous.ChangeError{Deployments: dp, Err: err})
-				result.Desc = "not updated"
-			} else if pair.Prior.Status == sous.DeployStatusFailed || pair.Post.Status == sous.DeployStatusFailed {
-				result.Desc = sous.ModifyDiff
-				result.Error = sous.WrapResolveError(&sous.FailedStatusError{})
-			} else {
-				result.Desc = sous.ModifyDiff
-			}
-			Log.Vomit.Printf("Reporting result of modify: %#v", result)
-			errs <- result
+// Rectify invokes actions to ensure that the real world matches pair.Post,
+// given that it currently matches pair.Prior.
+func (r *deployer) Rectify(pair *sous.DeployablePair) sous.DiffResolution {
+	switch k := pair.Kind(); k {
+	default:
+		panic(fmt.Sprintf("unrecognised kind %q", k))
+	case sous.SameKind:
+		resolution := pair.SameResolution()
+		if pair.Post.Status == sous.DeployStatusFailed {
+			resolution.Error = sous.WrapResolveError(&sous.FailedStatusError{})
 		}
+		return resolution
+	case sous.AddedKind:
+		result := sous.DiffResolution{DeploymentID: pair.ID()}
+		if err := r.RectifySingleCreate(pair); err != nil {
+			result.Desc = "not created"
+			switch t := err.(type) {
+			default:
+				result.Error = sous.WrapResolveError(&sous.CreateError{Deployment: pair.Post.Deployment.Clone(), Err: err})
+			case *swaggering.ReqError:
+				if t.Status == 400 {
+					result.Error = sous.WrapResolveError(err)
+				} else {
+					result.Error = sous.WrapResolveError(&sous.CreateError{Deployment: pair.Post.Deployment.Clone(), Err: err})
+				}
+			}
+		} else {
+			result.Desc = sous.CreateDiff
+		}
+		Log.Vomit.Printf("Reporting result of create: %#v", result)
+		return result
+	case sous.RemovedKind:
+		result := sous.DiffResolution{DeploymentID: pair.ID()}
+		if err := r.RectifySingleDelete(pair); err != nil {
+			result.Error = sous.WrapResolveError(&sous.DeleteError{Deployment: pair.Prior.Deployment.Clone(), Err: err})
+			result.Desc = "not deleted"
+		} else {
+			result.Desc = sous.DeleteDiff
+		}
+		Log.Vomit.Printf("Reporting result of delete: %#v", result)
+		return result
+	case sous.ModifiedKind:
+		result := sous.DiffResolution{DeploymentID: pair.ID()}
+		if err := r.RectifySingleModification(pair); err != nil {
+			dp := &sous.DeploymentPair{
+				Prior: pair.Prior.Deployment.Clone(),
+				Post:  pair.Post.Deployment.Clone(),
+			}
+			Log.Debug.Print(err)
+			result.Error = sous.WrapResolveError(&sous.ChangeError{Deployments: dp, Err: err})
+			result.Desc = "not updated"
+		} else if pair.Prior.Status == sous.DeployStatusFailed || pair.Post.Status == sous.DeployStatusFailed {
+			result.Desc = sous.ModifyDiff
+			result.Error = sous.WrapResolveError(&sous.FailedStatusError{})
+		} else {
+			result.Desc = sous.ModifyDiff
+		}
+		Log.Vomit.Printf("Reporting result of modify: %#v", result)
+		return result
 	}
 }
 
