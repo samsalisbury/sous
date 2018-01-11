@@ -11,6 +11,9 @@ with respect to its command line interface and HTTP interface.
 ### Added
 * CLI: If no image is present in runspec, return a fatal flaw in build.
 
+### Changed
+* All: error parsing repo from SourceLocation now more informative.
+
 ## [0.5.62](//github.com/opentable/sous/compare/0.5.61...0.5.62)
 
 ### Added
