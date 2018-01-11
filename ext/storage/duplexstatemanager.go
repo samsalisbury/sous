@@ -1,5 +1,13 @@
 package storage
 
+import (
+	"time"
+
+	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
+	"github.com/pkg/errors"
+)
+
 // A DuplexStateManager echoes StateManager operation to a primary StateManager,
 // but also ensures that writes occur to the secondary one.
 type DuplexStateManager struct {
@@ -18,9 +26,10 @@ func NewDuplexStateManager(primary, secondary sous.StateManager, log logging.Log
 
 // ReadState implements StateManager on DuplexStateManager
 func (dup *DuplexStateManager) ReadState() (*sous.State, error) {
+	user := sous.User{}
 	start := time.Now()
 	state, err := dup.primary.ReadState()
-	if err != nil {
+	if err == nil {
 		if err := dup.secondary.WriteState(state, user); err != nil {
 			logging.ReportError(dup.log, errors.Wrapf(err, "writing to secondary StateManager"))
 		}

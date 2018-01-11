@@ -13,12 +13,14 @@ import (
 
 // ReadState implements sous.StateReader on PostgresStateManager
 func (m PostgresStateManager) ReadState() (*sous.State, error) {
+	start := time.Now()
 	context := context.TODO()
 
 	// default transation isolation is READ COMMITTED -
 	// I think we need at least REPEATABLE_READ.
 	tx, err := m.db.BeginTx(context, &sql.TxOptions{Isolation: sql.LevelRepeatableRead, ReadOnly: true})
 	if err != nil {
+		reportReading(m.log, start, nil, err)
 		return nil, err
 	}
 	defer func(tx *sql.Tx) {
@@ -28,12 +30,15 @@ func (m PostgresStateManager) ReadState() (*sous.State, error) {
 
 	state, err := loadState(context, m.log, tx)
 	if err != nil {
+		reportReading(m.log, start, state, err)
 		return nil, err
 	}
 
 	if err := tx.Commit(); err != nil {
+		reportReading(m.log, start, state, err)
 		return nil, err
 	}
+	reportReading(m.log, start, state, nil)
 	return state, nil
 }
 

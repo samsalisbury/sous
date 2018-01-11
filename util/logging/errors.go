@@ -1,5 +1,7 @@
 package logging
 
+import "fmt"
+
 type errorMessage struct {
 	CallerInfo
 	err error
@@ -16,7 +18,7 @@ func ReportError(sink LogSink, err error) {
 
 func newErrorMessage(err error) *errorMessage {
 	return &errorMessage{
-		CallerInfo: NewCallerInfo(NotHere()),
+		CallerInfo: GetCallerInfo(NotHere()),
 		err:        err,
 	}
 }

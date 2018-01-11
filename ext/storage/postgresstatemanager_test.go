@@ -44,7 +44,8 @@ func SetupTest(t *testing.T) *PostgresStateManagerSuite {
 		suite.FailNow("Error setting up test database", "Error: %v. Did you already `make postgres-test-prepare`?", err)
 	}
 	// ignoring error because I think "no such DB is a failure"
-	setupDB.Exec("drop database sous_test")
+	_, err = setupDB.Exec("drop database sous_test")
+	t.Logf("Dropping sous_test DB (no such DB is expected): %v", err)
 	if _, err := setupDB.Exec("create database sous_test template sous_test_template"); err != nil {
 		suite.FailNow("Error creating test database", "connstr %q err %v", connstr, err)
 	}
@@ -86,7 +87,7 @@ func TestPostgresStateManagerWriteState_success(t *testing.T) {
 	suite.require.NoError(suite.manager.WriteState(s, testUser))
 	suite.Equal(int64(2), suite.pluckSQL("select count(*) from deployments"))
 
-	assert.Len(t, suite.logs.CallsTo("LogMessage"), 12)
+	assert.Len(t, suite.logs.CallsTo("LogMessage"), 13)
 	message := suite.logs.CallsTo("LogMessage")[0].PassedArgs().Get(1).(logging.LogMessage)
 	logging.AssertMessageFields(t, message, append(
 		append(logging.StandardVariableFields, logging.IntervalVariableFields...), "sous-sql-query", "sous-sql-rows"),

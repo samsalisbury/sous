@@ -17,9 +17,11 @@ import (
 
 // WriteState implements StateWriter on PostgresStateManager
 func (m PostgresStateManager) WriteState(state *sous.State, user sous.User) error {
+	start := time.Now()
 	context := context.TODO()
 	tx, err := m.db.BeginTx(context, &sql.TxOptions{Isolation: sql.LevelRepeatableRead, ReadOnly: false})
 	if err != nil {
+		reportWriting(m.log, start, state, err)
 		return err
 	}
 	defer func(tx *sql.Tx) {
@@ -28,12 +30,15 @@ func (m PostgresStateManager) WriteState(state *sous.State, user sous.User) erro
 	}(tx)
 
 	if err := storeManifests(context, m.log, state, tx); err != nil {
+		reportWriting(m.log, start, state, err)
 		return err
 	}
 
 	if err := tx.Commit(); err != nil {
+		reportWriting(m.log, start, state, err)
 		return err
 	}
+	reportWriting(m.log, start, state, nil)
 	return nil
 }
 
