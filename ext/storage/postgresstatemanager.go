@@ -50,5 +50,12 @@ func (c PostgresConfig) connStr() string {
 
 // DB returns a database connection based on this config
 func (c PostgresConfig) DB() (*sql.DB, error) {
-	return sql.Open("postgres", c.connStr())
+	db, err := sql.Open("postgres", c.connStr())
+	if err != nil {
+		return nil, err
+	}
+	if err := db.Ping(); err != nil {
+		return nil, err
+	}
+	return db, nil
 }
