@@ -560,7 +560,7 @@ func newServerStateManager(c LocalSousConfig, log LogSink) *ServerStateManager {
 func newStateManager(cl HTTPClient, c LocalSousConfig, log LogSink) *StateManager {
 	if c.Server == "" {
 		log.Warnf("Using local state stored at %s", c.StateLocation)
-		return &StateManager{StateManager: newServerStateManager(c).StateManager}
+		return &StateManager{StateManager: newServerStateManager(c, log).StateManager}
 	}
 	hsm := sous.NewHTTPStateManager(cl)
 	return &StateManager{StateManager: hsm}
