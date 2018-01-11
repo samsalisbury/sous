@@ -121,3 +121,8 @@ func (msg serverMessage) Message() string {
 func (msg serverMessage) composeMsg() string {
 	return fmt.Sprintf("%s, server v%s at %s for %s: DeployFilter Flags %v", msg.msg, msg.version, msg.listenAddress, msg.deployFilterFlags.Cluster, msg.deployFilterFlags)
 }
+
+func (msg serverMessage) EachField(f logging.FieldReportFn) {
+	f("@loglov3-otl", "sous-generic-v1")
+	msg.CallerInfo.EachField(f)
+}
