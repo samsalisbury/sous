@@ -1,6 +1,8 @@
 package actions
 
 import (
+	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -30,20 +32,20 @@ type Server struct {
 
 // Do runs the server.
 func (ss *Server) Do() error {
-	if err := ensureGDMExists(ss.GDMRepo, ss.Config.StateLocation, ss.Log.Warnf); err != nil {
+	if err := ensureGDMExists(ss.GDMRepo, ss.Config.StateLocation, ss.DeployFilterFlags, ss.ListenAddr, ss.Version, ss.Log); err != nil {
 		return err
 	}
-	ss.Log.Warnf("Starting scheduled GDM resolution.")
-	ss.Log.Warnf("Filtering the GDM to resolve on this server to: %v", ss.DeployFilterFlags)
+
+	logServerMessage("Starting scheduled GDM resolution.  Filtering the GDM to resolve on this server", ss.DeployFilterFlags, ss.Version, ss.ListenAddr, ss.Log)
 
 	ss.AutoResolver.Kickoff()
 
-	ss.Log.Warnf("Sous Server v%s running at %s for %s", ss.Version, ss.ListenAddr, ss.DeployFilterFlags.Cluster)
+	logServerMessage("Sous Server Running", ss.DeployFilterFlags, ss.Version, ss.ListenAddr, ss.Log)
 
 	return server.Run(ss.ListenAddr, ss.ServerHandler)
 }
 
-func ensureGDMExists(repo, localPath string, log func(string, ...interface{})) error {
+func ensureGDMExists(repo, localPath string, filterFlags config.DeployFilterFlags, listenAddress string, version semv.Version, log logging.LogSink) error {
 	s, err := os.Stat(localPath)
 	if err == nil && s.IsDir() {
 		files, err := ioutil.ReadDir(localPath)
@@ -53,7 +55,8 @@ func ensureGDMExists(repo, localPath string, log func(string, ...interface{})) e
 		if len(files) != 0 {
 			// The directory exists and is not empty, do nothing.
 			if repo != "" {
-				log("not pulling repo %q; directory already exist and is not empty: %q", repo, localPath)
+				msg := fmt.Sprintf("not pulling repo %q; directory already exist and is not empty: %q", repo, localPath)
+				logServerMessage(msg, filterFlags, version, listenAddress, log)
 			}
 			return nil
 		}
@@ -70,10 +73,51 @@ func ensureGDMExists(repo, localPath string, log func(string, ...interface{})) e
 	if err != nil {
 		return err
 	}
-	log("cloning %q into %q ...", repo, localPath)
+	msg := fmt.Sprintf("cloning %q into %q ...", repo, localPath)
+	logServerMessage(msg, filterFlags, version, listenAddress, log)
+
 	if err := g.CloneRepo(repo, localPath); err != nil {
 		return err
 	}
-	log("done")
+
+	logServerMessage("done", filterFlags, version, listenAddress, log)
+
 	return nil
+}
+
+type serverMessage struct {
+	logging.CallerInfo
+	msg               string
+	deployFilterFlags config.DeployFilterFlags
+	version           semv.Version
+	listenAddress     string
+	log               logging.LogSink
+}
+
+func logServerMessage(msg string, filterFlags config.DeployFilterFlags, version semv.Version, listenAddress string, log logging.LogSink) {
+	msgLog := serverMessage{
+		msg:               msg,
+		CallerInfo:        logging.GetCallerInfo(logging.NotHere()),
+		deployFilterFlags: filterFlags,
+		version:           version,
+		listenAddress:     listenAddress,
+		log:               log,
+	}
+	logging.Deliver(msgLog.composeMsg(), log)
+}
+
+func (msg serverMessage) WriteToConsole(console io.Writer) {
+	fmt.Fprintf(console, "%s\n", msg.composeMsg())
+}
+
+func (msg serverMessage) DefaultLevel() logging.Level {
+	return logging.WarningLevel
+}
+
+func (msg serverMessage) Message() string {
+	return msg.composeMsg()
+}
+
+func (msg serverMessage) composeMsg() string {
+	return fmt.Sprintf("%s, server v%s at %s for %s: DeployFilter Flags %v", msg.msg, msg.version, msg.listenAddress, msg.deployFilterFlags.Cluster, msg.deployFilterFlags)
 }

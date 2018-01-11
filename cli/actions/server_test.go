@@ -7,6 +7,10 @@ import (
 	"os/exec"
 	"path"
 	"testing"
+
+	"github.com/opentable/sous/config"
+	"github.com/opentable/sous/util/logging"
+	"github.com/samsalisbury/semv"
 )
 
 func TestEnsureGDMExists(t *testing.T) {
@@ -74,7 +78,11 @@ func TestEnsureGDMExists(t *testing.T) {
 				}
 			}
 
-			if err := ensureGDMExists(gdmSourceRepo, testPath, t.Logf); err != nil {
+			filters := config.DeployFilterFlags{}
+			logger, _ := logging.NewLogSinkSpy()
+			version := semv.Version{}
+
+			if err := ensureGDMExists(gdmSourceRepo, testPath, filters, "", version, logger); err != nil {
 				t.Error(err)
 			}
 		})
@@ -94,7 +102,11 @@ func TestEnsureGDMExists_notARepoFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err := ensureGDMExists(someFile, "", t.Logf)
+	filters := config.DeployFilterFlags{}
+	logger, _ := logging.NewLogSinkSpy()
+	version := semv.Version{}
+
+	err := ensureGDMExists(someFile, "", filters, "", version, logger)
 	if err == nil {
 		t.Error("expected error when GDM repo does not exist, path is valid to a file")
 	}
@@ -120,7 +132,11 @@ func TestEnsureGDMExists_notARepoDir(t *testing.T) {
 		}
 	}
 
-	err := ensureGDMExists(someDir, "", t.Logf)
+	filters := config.DeployFilterFlags{}
+	logger, _ := logging.NewLogSinkSpy()
+	version := semv.Version{}
+
+	err := ensureGDMExists(someDir, "", filters, "", version, logger)
 	if err == nil {
 		t.Error("expected error when GDM repo does not exist, path is valid to a dir")
 	}
@@ -132,7 +148,12 @@ func TestEnsureGDMExists_notARepoDir(t *testing.T) {
 }
 
 func TestEnsureGDMExists_pathDoesNotExist(t *testing.T) {
-	err := ensureGDMExists("this-path-does-not-exist", "", t.Logf)
+
+	filters := config.DeployFilterFlags{}
+	logger, _ := logging.NewLogSinkSpy()
+	version := semv.Version{}
+
+	err := ensureGDMExists("this-path-does-not-exist", "", filters, "", version, logger)
 	if err == nil {
 		t.Error("expected error when GDM repo does not exist, path not valid")
 	}
