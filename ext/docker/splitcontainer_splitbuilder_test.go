@@ -89,8 +89,7 @@ func TestSplitBuilder_ValidateRunspec_noError(t *testing.T) {
 
 	builder.RunSpec.SplitImageRunSpec.Image.Type = "docker"
 	builder.RunSpec.SplitImageRunSpec.Image.From = "test"
-	exec := make([]string, 3)
-	exec = append(exec, "a", "b", "c")
+	exec := []string{"a", "b", "c"}
 	builder.RunSpec.SplitImageRunSpec.Exec = exec
 
 	assert.NoError(t, builder.validateRunSpec())
@@ -101,7 +100,9 @@ func TestSplitBuilder_ValidateRunspec_noImageError(t *testing.T) {
 		RunSpec: &MultiImageRunSpec{},
 	}
 
-	assert.Error(t, builder.validateRunSpec(), "should error no Image present")
+	e := builder.validateRunSpec()
+	assert.Error(t, e, "should error no Image present")
+	assert.Contains(t, e.Error(), "No image was created")
 }
 
 func TestSplitBuilder_ConstructSubBuilders(t *testing.T) {
