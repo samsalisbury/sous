@@ -119,7 +119,12 @@ install-dev:
 	go install -ldflags "-X main.VersionString=$(DEV_VERSION)"
 	echo "Now run 'hash -r && sous version' to make sure you are using the dev version of sous."
 
-install-brew:
+homebrew:
+	@command -v brew > /dev/null 2>&1 || \
+		( echo "$(MAKECMDGOALS) requires homebrew, see https://brew.sh/"; \
+		exit 1 )
+
+install-brew: homebrew
 	rm "$$(which sous)" || true
 	brew uninstall opentable/public/sous || true
 	brew install opentable/public/sous
@@ -301,6 +306,6 @@ postgres-clean: postgres-stop
 	install-fpm install-jfrog install-ggen install-build-tools legendary release \
 	semvertagchk test test-gofmt test-integration setup-containers test-unit \
 	reject-wip wip staticcheck postgres-start postgres-stop postgres-connect \
-	postgres-clean postgres-create-testdb build-debug
+	postgres-clean postgres-create-testdb build-debug homebrew
 
 #liquibase --url jdbc:postgresql://127.0.0.1:6543/sous --changeLogFile=database/changelog.xml update
