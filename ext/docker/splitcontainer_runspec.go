@@ -63,7 +63,7 @@ func (ms *MultiImageRunSpec) Validate() []sous.Flaw {
 		fs = append(fs, ms.SplitImageRunSpec.Validate()...)
 	} else {
 		if len(ms.Images) < 1 {
-			fs = append(fs, sous.FatalFlaw("No image was created, please see https://github.com/opentable/sous-build-containers"))
+			fs = append(fs, sous.FatalFlaw("No image was created, no images present in runspec.json"))
 			return fs
 		}
 
