@@ -34,45 +34,18 @@ func SetupTest(t *testing.T) *PostgresStateManagerSuite {
 		require:    require.New(t),
 	}
 
-	port := "6543"
-	if np, set := os.LookupEnv("PGPORT"); set {
-		port = np
-	}
-	connstr := fmt.Sprintf("dbname=sous_test_template host=localhost port=%s sslmode=disable", port)
-	setupDB, err := sql.Open("postgres", connstr)
-	if err != nil {
-		suite.FailNow("Error setting up test database", "Error: %v. Did you already `make postgres-test-prepare`?", err)
-	}
-	// ignoring error because I think "no such DB is a failure"
-	_, err = setupDB.Exec("drop database sous_test")
-	t.Logf("Dropping sous_test DB (no such DB is expected): %v", err)
-	if _, err := setupDB.Exec("create database sous_test template sous_test_template"); err != nil {
-		suite.FailNow("Error creating test database", "connstr %q err %v", connstr, err)
-	}
-	if err := setupDB.Close(); err != nil {
-		suite.FailNow("Error closing DB manipulation connection", "connstr %q err %v", connstr, err)
-	}
+	db := setupDB(t)
 
 	sink, ctrl := logging.NewLogSinkSpy()
-
-	db, err := PostgresConfig{
-		DBName:   "sous_test",
-		User:     "",
-		Password: "",
-		Host:     "localhost",
-		Port:     port,
-		SSL:      false,
-	}.DB()
-
-	if err != nil {
-		suite.FailNow("Setting up", "error: %v", err)
-	}
-
 	suite.manager = NewPostgresStateManager(db, sink)
 
 	suite.logs = ctrl
 
-	connstr = fmt.Sprintf("dbname=sous_test host=localhost port=%s sslmode=disable", port)
+	port := "6543"
+	if np, set := os.LookupEnv("PGPORT"); set {
+		port = np
+	}
+	connstr := fmt.Sprintf("dbname=sous_test host=localhost port=%s sslmode=disable", port)
 	if suite.db, err = sql.Open("postgres", connstr); err != nil {
 		suite.FailNow("Error establishing test-assertion DB connection.", "Error: %v", err)
 	}

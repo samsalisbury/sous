@@ -33,7 +33,10 @@ func reportSQLMessage(log logging.LogSink, started time.Time, sql string, rowcou
 
 // DefaultLevel implements LogMessage on sqlMessage
 func (msg *sqlMessage) DefaultLevel() logging.Level {
-	return logging.InformationLevel
+	if msg.err == nil {
+		return logging.InformationLevel
+	}
+	return logging.WarningLevel
 }
 
 // Message implements LogMessage on sqlMessage
@@ -96,7 +99,10 @@ func newStoreMessage(started time.Time, dir direction, state *sous.State, err er
 }
 
 func (msg *storeMessage) DefaultLevel() logging.Level {
-	return logging.DebugLevel
+	if msg.err == nil {
+		return logging.DebugLevel
+	}
+	return logging.WarningLevel
 }
 
 func (msg *storeMessage) Message() string {

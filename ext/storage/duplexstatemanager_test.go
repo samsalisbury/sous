@@ -85,7 +85,10 @@ func setupDB(t *testing.T) *sql.DB {
 		t.FailNow()
 	}
 	// ignoring error because I think "no such DB is a failure"
-	setupDB.Exec("drop database sous_test")
+	if _, err := setupDB.Exec("drop database sous_test"); err != nil && !isNoDBError(err) {
+		t.Logf("Error dropping old test database connstr %q err %v", connstr, err)
+		t.FailNow()
+	}
 	if _, err := setupDB.Exec("create database sous_test template sous_test_template"); err != nil {
 		t.Logf("Error creating test database connstr %q err %v", connstr, err)
 		t.FailNow()
@@ -104,7 +107,7 @@ func setupDB(t *testing.T) *sql.DB {
 	}.DB()
 
 	if err != nil {
-		t.Logf("Setting up, error: %v", err)
+		t.Logf("Creating test sql.DB, error: %v", err)
 		t.FailNow()
 	}
 	return db
