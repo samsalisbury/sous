@@ -9,7 +9,7 @@ import (
 )
 
 // Test synchronous behaviour of the queue.
-func TestR11nQueue_Push_Pop_sync(t *testing.T) {
+func TestR11nQueue_Push_Next_sync(t *testing.T) {
 	testCases := []struct {
 		// Desc is a short description of the test.
 		Desc string
@@ -162,8 +162,9 @@ func TestR11nQueue_Push_Pop_sync(t *testing.T) {
 			}
 
 			// Iterate over each popped item.
-			i := 0
-			for popped, ok := rq.pop(); ok; popped, ok = rq.pop() {
+			initialQueueLen := rq.Len()
+			for i := 0; i < initialQueueLen; i++ {
+				popped := rq.next()
 				desc := fmt.Sprintf("popped %d", i)
 				t.Run(desc, func(t *testing.T) {
 
@@ -186,10 +187,6 @@ func TestR11nQueue_Push_Pop_sync(t *testing.T) {
 					if len(tc.WantPoppedOK) <= i {
 						return
 					}
-					// Popped assertions always assume we get something popped.
-					if !ok {
-						t.Fatalf("got !ok; want ok for WantPoppedOK")
-					}
 					if popped == nil {
 						t.Fatalf("got nil QueuedR11n; want not nil")
 					}
@@ -197,17 +194,21 @@ func TestR11nQueue_Push_Pop_sync(t *testing.T) {
 						t.Error(err)
 					}
 				})
-
-				i++
 			}
 
-			// Now the queue is empty, Pop should return nil, false.
-			popped, ok := rq.pop()
-			if popped != nil {
-				t.Errorf("got QueuedR11n %s; want nil", popped.ID)
-			}
-			if ok {
-				t.Errorf("got ok true; want false")
+			// Now the queue is empty, next should block.
+			select {
+			case <-time.After(10 * time.Millisecond):
+				// OK, next blocked for about 10 milliseconds.
+			case <-(func() <-chan struct{} {
+				c := make(chan struct{})
+				go func() {
+					defer close(c)
+					rq.next()
+				}()
+				return c
+			}()):
+				t.Fatal("Next did not block on empty queue.")
 			}
 		})
 	}
@@ -230,40 +231,6 @@ func TestR11nQueue_Push_async(t *testing.T) {
 	for i := 0; i < itemCount; i++ {
 		go func() {
 			_, ok := rq.Push(&Rectification{})
-			if ok {
-				atomic.AddInt64(&oks, 1)
-			}
-			wg.Done()
-		}()
-	}
-	wg.Wait()
-
-	if oks != queueSize {
-		t.Errorf("got %d oks; want %d", oks, queueSize)
-	}
-
-}
-
-func TestR11nQueue_Pop_async(t *testing.T) {
-
-	// Make sure to run this test with the -race flag!
-
-	const queueSize = 10
-	const itemCount = 20
-
-	rq := NewR11nQueue(R11nQueueCap(queueSize))
-	for i := 0; i < queueSize; i++ {
-		rq.Push(&Rectification{})
-	}
-
-	// oks collects the number of oks received from Push.
-	var oks int64
-
-	var wg sync.WaitGroup
-	wg.Add(itemCount)
-	for i := 0; i < itemCount; i++ {
-		go func() {
-			_, ok := rq.pop()
 			if ok {
 				atomic.AddInt64(&oks, 1)
 			}
@@ -306,67 +273,6 @@ func TestR11Queue_Next(t *testing.T) {
 	if err := checkR11nHasRepo("hai")(read); err != nil {
 		t.Error(err)
 	}
-}
-
-func TestR11Queue_Next_Pop_race(t *testing.T) {
-
-	// This test ensures that if using both Next and Pop, there are
-	// no data races. Ideally Next and Pop should receive about 50%
-	// of the items each.
-
-	rq := NewR11nQueue()
-
-	const itemCount = 1000
-
-	var pops, nexts int64
-
-	var wg sync.WaitGroup
-	wg.Add(2 * itemCount) // 2* because we want all pushes, and reads to finish.
-
-	go func() {
-		// Try to pop in a hot loop.
-		for _, ok := rq.pop(); ; _, ok = rq.pop() {
-			if ok {
-				atomic.AddInt64(&pops, 1)
-				wg.Done()
-			}
-		}
-	}()
-	go func() {
-		// Read next as fast as possible.
-		for rq.next(); ; rq.next() {
-			atomic.AddInt64(&nexts, 1)
-			wg.Done()
-		}
-	}()
-
-	go func() {
-		for i := 0; i < itemCount; i++ {
-			if _, ok := rq.Push(&Rectification{}); !ok {
-				i--
-				continue
-			}
-			wg.Done()
-		}
-	}()
-
-	wg.Wait()
-
-	// Strictly speaking this could happen even with this working,
-	// but sample size of 1000 means this is likely to be split 50/50.
-	if pops == 0 {
-		t.Errorf("Pop received no items")
-	}
-	if nexts == 0 {
-		t.Errorf("Next received no items")
-	}
-
-	if pops+nexts != itemCount {
-		t.Errorf("got %d pops and %d nexts (want: %d)", pops, nexts, pops+nexts)
-	} else {
-		t.Logf("success: got %d pops and %d nexts (total: %d)", pops, nexts, pops+nexts)
-	}
-
 }
 
 func TestR11nQueue_PushIfEmpty_sync(t *testing.T) {

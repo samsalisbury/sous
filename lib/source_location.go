@@ -116,7 +116,7 @@ func (sl SourceLocation) ShortName() (string, error) {
 	// A repo string split into three pieces should be at least three elements long: FQDN, organization, project.
 	splitLength := 3
 	if len(splitRepo) < splitLength {
-		return "", fmt.Errorf("String does not represent a repo.")
+		return "", fmt.Errorf("string %q does not represent a repo", sl.Repo)
 	}
 	return splitRepo[len(splitRepo)-1:][0], nil
 }
