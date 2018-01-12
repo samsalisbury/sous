@@ -28,6 +28,7 @@ install:
 - export DEV_POSTGRES_DATA_DIR
 - DEV_POSTGRES_DATA_DIR=$(psql -P t -P format=unaligned -d sous_test_template -c "select setting from pg_settings where name = 'data_directory';")
 - sudo psql -c 'DROP DATABASE sous_test_template;' -U postgres
+- sudo chmod 0777 /var/lib/postgresql/10/main
 - make postgres-create-testdb
 script:
 - bundle exec danger
