@@ -269,6 +269,7 @@ artifacts/sous_$(SOUS_VERSION)_amd64.deb: artifacts/$(LINUX_RELEASE_DIR)/sous
 	mv sous_$(SOUS_VERSION)_amd64.deb artifacts/
 
 $(DEV_POSTGRES_DATA_DIR):
+	@if [ -d "$@" ]; then exit 0; fi
 	install -d -m 0700 $@
 	initdb $@
 
