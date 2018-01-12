@@ -1,6 +1,8 @@
 package actions
 
 import (
+	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -30,20 +32,20 @@ type Server struct {
 
 // Do runs the server.
 func (ss *Server) Do() error {
-	if err := ensureGDMExists(ss.GDMRepo, ss.Config.StateLocation, ss.Log.Warnf); err != nil {
+	if err := ensureGDMExists(ss.GDMRepo, ss.Config.StateLocation, ss.DeployFilterFlags, ss.ListenAddr, ss.Log); err != nil {
 		return err
 	}
-	ss.Log.Warnf("Starting scheduled GDM resolution.")
-	ss.Log.Warnf("Filtering the GDM to resolve on this server to: %v", ss.DeployFilterFlags)
+
+	reportServerMessage("Starting scheduled GDM resolution.  Filtering the GDM to resolve on this server", ss.DeployFilterFlags, ss.ListenAddr, ss.Log)
 
 	ss.AutoResolver.Kickoff()
 
-	ss.Log.Warnf("Sous Server v%s running at %s for %s", ss.Version, ss.ListenAddr, ss.DeployFilterFlags.Cluster)
+	reportServerMessage("Sous Server Running", ss.DeployFilterFlags, ss.ListenAddr, ss.Log)
 
 	return server.Run(ss.ListenAddr, ss.ServerHandler)
 }
 
-func ensureGDMExists(repo, localPath string, log func(string, ...interface{})) error {
+func ensureGDMExists(repo, localPath string, filterFlags config.DeployFilterFlags, listenAddress string, log logging.LogSink) error {
 	s, err := os.Stat(localPath)
 	if err == nil && s.IsDir() {
 		files, err := ioutil.ReadDir(localPath)
@@ -53,7 +55,8 @@ func ensureGDMExists(repo, localPath string, log func(string, ...interface{})) e
 		if len(files) != 0 {
 			// The directory exists and is not empty, do nothing.
 			if repo != "" {
-				log("not pulling repo %q; directory already exist and is not empty: %q", repo, localPath)
+				msg := fmt.Sprintf("not pulling repo %q; directory already exist and is not empty: %q", repo, localPath)
+				reportServerMessage(msg, filterFlags, listenAddress, log)
 			}
 			return nil
 		}
@@ -70,10 +73,53 @@ func ensureGDMExists(repo, localPath string, log func(string, ...interface{})) e
 	if err != nil {
 		return err
 	}
-	log("cloning %q into %q ...", repo, localPath)
+	msg := fmt.Sprintf("cloning %q into %q ...", repo, localPath)
+	reportServerMessage(msg, filterFlags, listenAddress, log)
+
 	if err := g.CloneRepo(repo, localPath); err != nil {
 		return err
 	}
-	log("done")
+
+	reportServerMessage("done", filterFlags, listenAddress, log)
+
 	return nil
+}
+
+type serverMessage struct {
+	logging.CallerInfo
+	msg               string
+	deployFilterFlags config.DeployFilterFlags
+	listenAddress     string
+}
+
+func reportServerMessage(msg string, filterFlags config.DeployFilterFlags, listenAddress string, log logging.LogSink) {
+	msgLog := serverMessage{
+		msg:               msg,
+		CallerInfo:        logging.GetCallerInfo(logging.NotHere()),
+		deployFilterFlags: filterFlags,
+		listenAddress:     listenAddress,
+	}
+	logging.Deliver(msgLog, log)
+}
+
+func (msg serverMessage) WriteToConsole(console io.Writer) {
+	fmt.Fprintf(console, "%s\n", msg.composeMsg())
+}
+
+func (msg serverMessage) DefaultLevel() logging.Level {
+	return logging.WarningLevel
+}
+
+func (msg serverMessage) Message() string {
+	return msg.composeMsg()
+}
+
+func (msg serverMessage) composeMsg() string {
+	return fmt.Sprintf("%s, server at %s for %s: DeployFilter Flags %v", msg.msg, msg.listenAddress, msg.deployFilterFlags.Cluster, msg.deployFilterFlags)
+}
+
+func (msg serverMessage) EachField(f logging.FieldReportFn) {
+	f("@loglov3-otl", "sous-generic-v1")
+	f("listenAddress", msg.listenAddress)
+	msg.CallerInfo.EachField(f)
 }
