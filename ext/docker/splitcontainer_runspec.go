@@ -62,6 +62,11 @@ func (ms *MultiImageRunSpec) Validate() []sous.Flaw {
 		}
 		fs = append(fs, ms.SplitImageRunSpec.Validate()...)
 	} else {
+		if len(ms.Images) < 1 {
+			fs = append(fs, sous.FatalFlaw("No image was created, no images present in runspec.json"))
+			return fs
+		}
+
 		for idx, spec := range ms.Images {
 			sfs := spec.Validate()
 			for _, f := range sfs {

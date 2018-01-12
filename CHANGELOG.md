@@ -8,6 +8,16 @@ with respect to its command line interface and HTTP interface.
 
 ## [Unreleased](//github.com/opentable/sous/compare/0.5.62...HEAD)
 
+### Added
+* CLI: If no image is present in runspec, return a fatal flaw in build.
+* Server: Update logging to a more structured format
+
+### Changed
+* All: error parsing repo from SourceLocation now more informative.
+
+### Fixed
+* All: Data race in rectification queue.
+
 ## [0.5.62](//github.com/opentable/sous/compare/0.5.61...0.5.62)
 
 ### Added

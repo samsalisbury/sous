@@ -119,7 +119,12 @@ install-dev:
 	go install -ldflags "-X main.VersionString=$(DEV_VERSION)"
 	echo "Now run 'hash -r && sous version' to make sure you are using the dev version of sous."
 
-install-brew:
+homebrew:
+	@command -v brew > /dev/null 2>&1 || \
+		( echo "$(MAKECMDGOALS) requires homebrew, see https://brew.sh/"; \
+		exit 1 )
+
+install-brew: homebrew
 	rm "$$(which sous)" || true
 	brew uninstall opentable/public/sous || true
 	brew install opentable/public/sous
@@ -151,6 +156,9 @@ install-staticcheck:
 
 install-metalinter:
 	go get github.com/alecthomas/gometalinter
+
+install-liquibase:
+	brew install liquibase
 
 install-linters: install-metalinter
 	gometalinter --install > /dev/null
@@ -205,7 +213,7 @@ test-metalinter: install-linters
 test-gofmt:
 	bin/check-gofmt
 
-test-unit:
+test-unit: postgres-test-prepare
 	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -timeout 3m -race $(SOUS_PACKAGES_WITH_TESTS)
 
 test-integration: setup-containers
@@ -261,6 +269,7 @@ artifacts/sous_$(SOUS_VERSION)_amd64.deb: artifacts/$(LINUX_RELEASE_DIR)/sous
 	mv sous_$(SOUS_VERSION)_amd64.deb artifacts/
 
 $(DEV_POSTGRES_DATA_DIR):
+	@if [ -d "$@" ]; then exit 0; fi
 	install -d -m 0700 $@
 	initdb $@
 
@@ -277,7 +286,7 @@ postgres-start: $(DEV_POSTGRES_DATA_DIR)/postgresql.conf
 
 postgres-test-prepare: $(DEV_POSTGRES_DATA_DIR)/postgresql.conf postgres-create-testdb
 
-postgres-create-testdb:
+postgres-create-testdb: postgres-start
 	createdb -h localhost -p $(PGPORT) $(TEST_DB_NAME) > /dev/null 2>&1 || true
 	liquibase $(LIQUIBASE_TEST_FLAGS) update
 
@@ -298,6 +307,6 @@ postgres-clean: postgres-stop
 	install-fpm install-jfrog install-ggen install-build-tools legendary release \
 	semvertagchk test test-gofmt test-integration setup-containers test-unit \
 	reject-wip wip staticcheck postgres-start postgres-stop postgres-connect \
-	postgres-clean postgres-create-testdb build-debug
+	postgres-clean postgres-create-testdb build-debug homebrew
 
 #liquibase --url jdbc:postgresql://127.0.0.1:6543/sous --changeLogFile=database/changelog.xml update

@@ -16,6 +16,8 @@ type R11nQueue struct {
 	queue         chan *QueuedR11n
 	refs, allRefs map[R11nID]*QueuedR11n
 	fifoRefs      *ring.Ring
+	handler       func(*QueuedR11n) DiffResolution
+	start         bool
 	sync.Mutex
 }
 
@@ -30,7 +32,11 @@ func NewR11nQueue(opts ...R11nQueueOpt) *R11nQueue {
 	for _, opt := range opts {
 		opt(rq)
 	}
-	return rq.init()
+	rq.init()
+	if rq.start {
+		rq.Start(rq.handler)
+	}
+	return rq
 }
 
 // R11nQueueOpt is an option for configuring an R11nQueue.
@@ -47,7 +53,8 @@ func R11nQueueCap(cap int) R11nQueueOpt {
 // handler.
 func R11nQueueStartWithHandler(handler func(*QueuedR11n) DiffResolution) R11nQueueOpt {
 	return func(rq *R11nQueue) {
-		rq.Start(handler)
+		rq.handler = handler
+		rq.start = true
 	}
 }
 
@@ -79,6 +86,8 @@ func NewR11nID() R11nID {
 
 // Start starts applying handler to each item on the queue in order.
 func (rq *R11nQueue) Start(handler func(*QueuedR11n) DiffResolution) <-chan DiffResolution {
+	rq.Lock()
+	defer rq.Unlock()
 	results := make(chan DiffResolution, 100)
 	go func() {
 		for {
@@ -159,25 +168,9 @@ func (rq *R11nQueue) Len() int {
 	return len(rq.queue)
 }
 
-// pop removes the item at the front of the queue and returns it plus true.
-// It returns nil and false if there are no items in the queue.
-func (rq *R11nQueue) pop() (*QueuedR11n, bool) {
-	rq.Lock()
-	defer rq.Unlock()
-	if len(rq.queue) == 0 {
-		return nil, false
-	}
-	qr := <-rq.queue
-	rq.handlePopped(qr.ID)
-	return qr, true
-}
-
-// next is similar to pop but waits until there is something on the queue to
+// next waits until there is something on the queue to
 // return and then returns it.
 func (rq *R11nQueue) next() *QueuedR11n {
-	if qr, ok := rq.pop(); ok {
-		return qr
-	}
 	qr := <-rq.queue
 	rq.Lock()
 	defer rq.Unlock()
