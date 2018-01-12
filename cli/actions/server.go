@@ -91,7 +91,6 @@ type serverMessage struct {
 	deployFilterFlags config.DeployFilterFlags
 	version           semv.Version
 	listenAddress     string
-	log               logging.LogSink
 }
 
 func logServerMessage(msg string, filterFlags config.DeployFilterFlags, version semv.Version, listenAddress string, log logging.LogSink) {
@@ -101,9 +100,8 @@ func logServerMessage(msg string, filterFlags config.DeployFilterFlags, version 
 		deployFilterFlags: filterFlags,
 		version:           version,
 		listenAddress:     listenAddress,
-		log:               log,
 	}
-	logging.Deliver(msgLog.composeMsg(), log)
+	logging.Deliver(msgLog, log)
 }
 
 func (msg serverMessage) WriteToConsole(console io.Writer) {
