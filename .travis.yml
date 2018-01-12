@@ -24,6 +24,8 @@ install:
 # - sudo apt-get install python3-proselint
 - bundle
 - "./bin/vendor-check"
+- export DEV_POSTGRES_DATA_DIR
+- DEV_POSTGRES_DATA_DIR=$(psql -P t -P format=unaligned -d sous -c "select setting from pg_settings where name = 'data_directory';")
 - make postgres-create-testdb
 script:
 - bundle exec danger
