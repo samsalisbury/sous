@@ -13,7 +13,7 @@ with respect to its command line interface and HTTP interface.
 
 ## Internal
 * Server: Update logging to a more structured format
-
+* Server: Update resource logging to a more structured format
 ## [0.5.62](//github.com/opentable/sous/compare/0.5.61...0.5.62)
 
 ### Added
