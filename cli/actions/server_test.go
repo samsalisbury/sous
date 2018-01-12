@@ -7,6 +7,9 @@ import (
 	"os/exec"
 	"path"
 	"testing"
+
+	"github.com/opentable/sous/config"
+	"github.com/opentable/sous/util/logging"
 )
 
 func TestEnsureGDMExists(t *testing.T) {
@@ -73,8 +76,10 @@ func TestEnsureGDMExists(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
+			filters := config.DeployFilterFlags{}
+			logger, _ := logging.NewLogSinkSpy()
 
-			if err := ensureGDMExists(gdmSourceRepo, testPath, t.Logf); err != nil {
+			if err := ensureGDMExists(gdmSourceRepo, testPath, filters, "", logger); err != nil {
 				t.Error(err)
 			}
 		})
@@ -94,7 +99,10 @@ func TestEnsureGDMExists_notARepoFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err := ensureGDMExists(someFile, "", t.Logf)
+	filters := config.DeployFilterFlags{}
+	logger, _ := logging.NewLogSinkSpy()
+
+	err := ensureGDMExists(someFile, "", filters, "", logger)
 	if err == nil {
 		t.Error("expected error when GDM repo does not exist, path is valid to a file")
 	}
@@ -120,7 +128,10 @@ func TestEnsureGDMExists_notARepoDir(t *testing.T) {
 		}
 	}
 
-	err := ensureGDMExists(someDir, "", t.Logf)
+	filters := config.DeployFilterFlags{}
+	logger, _ := logging.NewLogSinkSpy()
+
+	err := ensureGDMExists(someDir, "", filters, "", logger)
 	if err == nil {
 		t.Error("expected error when GDM repo does not exist, path is valid to a dir")
 	}
@@ -132,7 +143,11 @@ func TestEnsureGDMExists_notARepoDir(t *testing.T) {
 }
 
 func TestEnsureGDMExists_pathDoesNotExist(t *testing.T) {
-	err := ensureGDMExists("this-path-does-not-exist", "", t.Logf)
+
+	filters := config.DeployFilterFlags{}
+	logger, _ := logging.NewLogSinkSpy()
+
+	err := ensureGDMExists("this-path-does-not-exist", "", filters, "", logger)
 	if err == nil {
 		t.Error("expected error when GDM repo does not exist, path not valid")
 	}

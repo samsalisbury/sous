@@ -73,7 +73,7 @@ func updateRetryLoop(ls logging.LogSink,
 		}
 		manifest, ok := state.Manifests.Get(mid)
 		if !ok {
-			err := fmt.Errorf("No manifest found for %q - try 'sous init' first.", mid)
+			err := fmt.Errorf("no manifest found for %q - try 'sous init' first", mid)
 			logging.Deliver(newUpdateErrorMessage(tries, sid, did, user, start, err), ls)
 			return sous.NewDeployments(), err
 		}
