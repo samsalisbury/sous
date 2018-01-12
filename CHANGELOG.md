@@ -15,6 +15,9 @@ with respect to its command line interface and HTTP interface.
 ### Changed
 * All: error parsing repo from SourceLocation now more informative.
 
+### Fixed
+* All: Data race in rectification queue.
+
 ## [0.5.62](//github.com/opentable/sous/compare/0.5.61...0.5.62)
 
 ### Added
