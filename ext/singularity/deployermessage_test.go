@@ -16,5 +16,9 @@ func TestDeployerMessage(t *testing.T) {
 	logCalls := control.CallsTo("LogMessage")
 	require.Len(t, logCalls, 1)
 	assert.Equal(t, logCalls[0].PassedArgs().Get(0), logging.InformationLevel)
+
+	//weak check on WriteToConsole
+	consoleCalls := control.CallsTo("Console")
+	require.Len(t, consoleCalls, 1)
 }
 
