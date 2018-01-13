@@ -14,10 +14,10 @@ type deployerMessage struct {
 	pair *sous.DeployablePair
 }
 
-func logDeployerMessage(message string, logger logging.LogSink, pair *sous.DeployablePair) {
+func logDeployerMessage(message string, pair *sous.DeployablePair, level logging.Level, logger logging.LogSink) {
 	msg := deployerMessage{
 		CallerInfo: logging.GetCallerInfo(logging.NotHere()),
-		Level: 		logging.InformationLevel,
+		Level: 		level,
 		msg:		message,
 		pair:		pair,
 	}
