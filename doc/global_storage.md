@@ -2,11 +2,11 @@
 
 One of Sous' core requirements
 is to maintain a global record of intended deployments
-and to ensure that that record is true
+and to ensure that the record is true
 with respect to what's actually deployed.
 
 There's a further requirement that,
-if the architecture were to experience a net-split,
+for instance, if the architecture were to experience a net-split,
 engineers local to a particular cluster
 should be able to administer their cluster.
 When the split is healed,
@@ -17,7 +17,7 @@ a problem of distributed consistency to solve.
 Sous needs a system that provides consistency and forward progress.
 That is, Sous must:
 
-* report values from the GDM that were issued to it at some point in the past
+* report values from the GDM(Global Deploy Manifest) that were issued to it at some point in the past
 * report its most recent understood value (not some arbitrary past value)
 * recording new values should advance the most recent value as much as possible
 
@@ -32,8 +32,10 @@ each local to the managing Sous server.
 Each node is authoritative
 about its local Deployments.
 That is,
-whatever version `clusterA` has for `service-foo` in `clusterA`
-is the definitive version for `service-foo` in `clusterA`.
+whatever version the `clusterA` server has for
+`service-foo` in `clusterA`
+is the definitive version for
+`service-foo` in `clusterA`.
 The server for `clusterB` has local data about
 `service-foo` in `clusterA`,
 that that data is considered
@@ -42,6 +44,7 @@ merely advisory.
 Sous clients communicate with a single server -
 although which server is a per-request determination.
 In the event of network isolation
+(or simply by preference)
 a user might configure their workstation to talk to their "closest" Sous server.
 The server handling a client request
 coordinates the response across the Sous infrastructure.
@@ -50,13 +53,15 @@ coordinates the response across the Sous infrastructure.
 
 During a `sous deploy`,
 the Sous client updates the Global Deploy Manifest.
+(Once the update is complete, the client monitors the resulting deploy.
+That part of `sous deploy` is out of scope of this document.)
 To do this it starts by issuing a
 `GET /gdm` HTTP request
 to its preferred Sous server.
 (Hereafter, this node is referred to as the "coordinating" server.)
 After manipulating the GDM data it receives,
 the client sends the new state back via a
-`PUT /gdm` request, conditional on "If-Not-Modified".
+`PUT /gdm` request, conditional on "If-Match".
 
 When a coordinating node receives a
 `GET /gdm`
@@ -90,14 +95,17 @@ and the contents of the request are successfully applied.
 The authoritative server may determine that its local state
 doesn't match the condition of the `PATCH`,
 but that applying the PATCH would have no effect -
-in other words, the data containing in the request are already
+in other words, the data contained in the request are already
 true about the DeployIDs listed in the request.
 In this case, the authority should return
 a 200 with its new state, as if a
 `GET /state/deployments` has been issued.
+The coordinating node,
+in this case,
+updates its local database.
 
-In the event of the remote responding `412 Precondition Failed` to the `PATCH`,
-(the `If-Match` condition fails,
+In the event of the remote responding `412 Precondition Failed` to the `PATCH`
+(because the `If-Match` condition fails,
 but the request would have implied a change to the authoritative state.)
 the coordinating node makes a new
 `GET /state/deployments` from the remote,
@@ -107,6 +115,9 @@ and the state it knew for that cluster when the `PUT /gdm` began.
 If there's an intersection between that difference
 and the change it is attempting with the `PATCH`,
 the overall `PUT /gdm` returns `412 Precondition Failed`.
+Otherwise,
+it is safe to retry the `PATCH`,
+and the coordinating node proceeds by doing so.
 
 If any of the authoritative servers return an error,
 in response to `PATCH /state/deployments`
@@ -117,12 +128,12 @@ which the client relates to the operator,
 so that they can potentially adjust and retry their request.
 
 Finally, the coordinating server
-out of band,
-echoes the original request on to
+echoes the original request
+out of band on to
 `PUT /advisory/gdm`
 to all its sibling servers.
 Each server receiving this `PUT` request
-uses the data therein to update its database
+uses the request body to update its database
 about Deployments for which it is *not* authoritative.
 The coordinating server, again, sends conditional requests,
 but disregards `412` responses.
@@ -149,12 +160,12 @@ the coordinator echoes those values on to the single authoritative server.
 At which point,
 there are three possibilities:
 
-* the message never reaches the remote authority
+0. the message never reaches the remote authority
   (it's otherwise not recorded) we rely on *some* error condition to detect this state,
   in the worst case, a network timeout.
-* the message reaches the remote authority and is recorded,
+0. the message reaches the remote authority and is recorded,
   but the acknowledgement fails - likewise, we receive an error.
-* the message is recorded and we receive the 200 ACK -
+0. the message is recorded and we receive the 200 ACK -
   this is the "happy path" and what we should expect most of the time.
 
 We cannot reliably distinguish cases 1 & 2 -
@@ -163,11 +174,8 @@ We report this to a human operator as
 "This deployment not verified - it may still deploy.
 These are the clusters not reporting: ..."
 
-The remote authority also can't distinguish 1 & 2
-(and indeed can't distinguish 2 & 3 if its ACK is lost).
-Without devising a
-(I think, unavoidably slow)
-global quorum,
+The remote authority, conversely, can't distinguish 2 & 3 if its ACK is lost.
+Without devising a global quorum,
 we can't avoid that uncertainty.
 We may be able to tune it though,
 since the practical fact is that there are error cases that do distinguish cases
