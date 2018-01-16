@@ -538,9 +538,20 @@ func newHTTPClient(c LocalSousConfig, user sous.User, srvr ServerHandler, log Lo
 	return HTTPClient{HTTPClient: cl}, err
 }
 
-func newServerStateManager(c LocalSousConfig) *ServerStateManager {
+func newServerStateManager(c LocalSousConfig, log LogSink) *ServerStateManager {
+	var secondary sous.StateManager
+	db, err := c.Database.DB()
+	if err == nil {
+		secondary = storage.NewPostgresStateManager(db, log)
+	} else {
+		logging.ReportError(log, errors.Wrapf(err, "connecting to database"))
+		secondary = storage.NewLogOnlyStateManager(log)
+	}
+
 	dm := storage.NewDiskStateManager(c.StateLocation)
-	return &ServerStateManager{StateManager: storage.NewGitStateManager(dm)}
+	gm := storage.NewGitStateManager(dm)
+	duplex := storage.NewDuplexStateManager(gm, secondary, log.LogSink)
+	return &ServerStateManager{StateManager: duplex}
 }
 
 // newStateManager returns a wrapped sous.HTTPStateManager if cl is not nil.
@@ -549,7 +560,7 @@ func newServerStateManager(c LocalSousConfig) *ServerStateManager {
 func newStateManager(cl HTTPClient, c LocalSousConfig, log LogSink) *StateManager {
 	if c.Server == "" {
 		log.Warnf("Using local state stored at %s", c.StateLocation)
-		return &StateManager{StateManager: newServerStateManager(c).StateManager}
+		return &StateManager{StateManager: newServerStateManager(c, log).StateManager}
 	}
 	hsm := sous.NewHTTPStateManager(cl)
 	return &StateManager{StateManager: hsm}

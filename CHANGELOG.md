@@ -10,10 +10,16 @@ with respect to its command line interface and HTTP interface.
 
 ### Added
 * CLI: If no image is present in runspec, return a fatal flaw in build.
-
-## Internal
+* Server: adding duplex state storage, to keep DB in sync until ready to switch over
 * Server: Update logging to a more structured format
 * Server: Update resource logging to a more structured format
+
+### Changed
+* All: error parsing repo from SourceLocation now more informative.
+
+### Fixed
+* All: Data race in rectification queue.
+
 ## [0.5.62](//github.com/opentable/sous/compare/0.5.61...0.5.62)
 
 ### Added
