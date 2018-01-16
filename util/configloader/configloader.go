@@ -189,6 +189,13 @@ func (cl *configLoader) overrideField(sf reflect.StructField, originalVal reflec
 	switch originalVal.Interface().(type) {
 	default:
 		return fmt.Errorf("unable to override fields of type %T", originalVal.Interface())
+	case bool:
+		bval, err := strconv.ParseBool(envVal)
+		if err == nil {
+			finalVal = reflect.ValueOf(bval)
+		} else {
+			finalVal = originalVal
+		}
 	case string:
 		finalVal = reflect.ValueOf(envVal)
 	case int:
