@@ -349,7 +349,7 @@ func newSourceContextDiscovery(g LocalGitRepo, ls LogSink) *SourceContextDiscove
 		"detected-tag":              detected,
 		"nearest-annotated-tag":     annotated,
 		"detected-equals-annotated": (detected == annotated),
-	}), ls)
+	}, false), ls)
 
 	return &SourceContextDiscovery{
 		Error:         err,
