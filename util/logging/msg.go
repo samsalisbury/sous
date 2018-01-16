@@ -13,6 +13,11 @@ type genericMsg struct {
 	console bool
 }
 
+// ReportConsoleMsg will set Console flag, so message is also outputed to console
+func ReportConsoleMsg(logger LogSink, lvl Level, msg string) {
+	ReportMsg(logger, lvl, msg, true)
+}
+
 // ReportMsg is an appropriate for most off-the-cuff logging. It probably calls
 // to be replaced with something more specialized, though.
 func ReportMsg(logger LogSink, lvl Level, msg string, console ...bool) {
@@ -20,7 +25,7 @@ func ReportMsg(logger LogSink, lvl Level, msg string, console ...bool) {
 	if len(console) > 0 {
 		useConsole = console[0]
 	}
-	m := NewGenericMsg(lvl, msg, nil, console)
+	m := NewGenericMsg(lvl, msg, nil, useConsole)
 	m.ExcludeMe()
 	Deliver(m, logger)
 }
