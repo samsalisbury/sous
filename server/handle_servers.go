@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
@@ -64,7 +65,7 @@ func (slh *ServerListUpdater) Exchange() (interface{}, int) {
 	data := ServerListData{Servers: []NameData{}}
 	dec.Decode(&data)
 
-	slh.Log.Vomitf("Updating server list to: %#v", data)
+	logging.ReportMsg(slh.Log, logging.ExtraDebug1Level, fmt.Sprintf("Updating server list to: %#v", data))
 
 	if slh.Config.SiblingURLs == nil {
 		slh.Config.SiblingURLs = make(map[string]string)
