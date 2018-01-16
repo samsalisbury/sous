@@ -8,6 +8,7 @@ import (
 	"path"
 
 	"github.com/opentable/sous/ext/docker"
+	"github.com/opentable/sous/ext/storage"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/firsterr"
 	"github.com/opentable/sous/util/logging"
@@ -25,6 +26,8 @@ type (
 		// considers the master. If this is not set, this node is considered
 		// to be a master. This value must be in URL format.
 		Server string `env:"SOUS_SERVER"`
+		// Database contains configuration for the local Postgresql DB.
+		Database storage.PostgresConfig
 		// SiblingURLs is a temporary measure for setting up a distributed cluster
 		// of sous servers. Each server must be configured with accessible URLs for
 		// all the servers in production, as named by cluster.
