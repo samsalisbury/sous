@@ -1,3 +1,69 @@
+// Package logging provides a framework for working with typed, structured
+// log systems. Specifically, we target an ELK stack that enforces a
+// whole-Elasticsearch schema for log entries. The target system drops
+// messages if they do not conform to the configured schema.
+//
+// The design of this package is premised on using the Go type system
+// to tighten the iteration cycle around working with our ELK stack.
+// Specifically, we define explicit log message structs,
+// and use constructor functions in order to control exactly the
+// fields that have to be collected. Ideally, on-the-spot log messages
+// will be guided by their constructors to provide the correct fields,
+// so that we're shielded from the dead-letter queue at the time of
+// logging.
+//
+// As a compliment to this process, we also allow for log messages
+// to report metrics, and to output console messages for a human
+// operator. The philosphy here is that one kind of reporting output
+// will often compliment another, and since these outputs are predicated
+// on the implementation of interfaces (c.f. LogMessage, MetricsMessage and
+// ConsoleMessage), it's easy to add new reporting to a particular
+// point of instrumentation in the code.
+//
+// Entry points to understanding this package are
+// the Deliver function, and the LogMessage, MetricsMessage and ConsoleMessage interfaces.
+//
+// An example log message might look like this:
+//  type exampleMessage struct {
+//    logging.CallerInfo
+//    logging.Level
+//    myField string
+//  }
+//
+//  func ReportExample(field string, sink logging.LogSink) {
+//    msg := newExampleMessage(field)
+//    msg.CallerInfo.ExcludeMe() // this filters out ReportExample from the logged call stack
+//    logging.Deliver(sink, msg) // this is the important part
+//  }
+//
+//  func newExampleMessage(field string) *exampleMessage {
+//    return &exampleMessage{
+//      CallerInfo: logging.GetCallerInfo(logging.NotHere()), // this formula captures the call point, while excluding the constructor
+//      Level: logging.DebugLevel,
+//      myField: field,
+//    }
+//  }
+//
+//  // func (msg *exampleMessage) DefaultLevel() logging.Level { ... }
+//  // we could define this method, or let the embedded Level handle it.
+//
+//  func (msg *exampleMessage) Message() {
+//    return msg.myField
+//  }
+//
+//  func (msg *exampleMessage) EachField(f logging.FieldReportFn) {
+//    f("@loglov3-otl", "example-message") // a requirement of our local ELK
+//    msg.CallerInfo.EachField(f) // so that the CallerInfo can register its fields
+//    f("my-field", msg.myField)
+//  }
+//
+// Final note: this package is in a state of transition. When Sous was
+// starting, we bowed to indecision and simply adopted the stdlib
+// "log" package, which turned out to be insufficient to our needs
+// with respect to the ELK stack, and somewhat complicated to deal with
+// in terms of leveled output. We're in the process of removing our
+// dependencies on the "old ways," but in the meantime the interface
+// is somewhat confusing, since there's two conflicted underlying approaches.
 package logging
 
 import (
@@ -17,8 +83,8 @@ import (
 
 type (
 	// LogSet is the stopgap for a decent injectable logger
+	//
 	LogSet struct {
-		// xxx remove these as phase 1 of completing transition
 		Debug  logwrapper
 		Info   logwrapper
 		Warn   logwrapper
@@ -50,27 +116,26 @@ type (
 	logwrapper func(string, ...interface{})
 )
 
-var (
-	// Log collects various loggers to use for different levels of logging
-	// XXX A goal should be to remove this global, and instead inject logging where we need it.
-	//
-	// Notice that the global LotSet doesn't have metrics available - when you
-	// want metrics in a component, you need to add an injected LogSet. c.f.
-	// ext/docker/image_mapping.go
-	Log = func() LogSet {
-		//return *(NewLogSet(semv.MustParse("0.0.0"), "sous.global", "", os.Stderr))
-		return *(SilentLogSet()) // we'll configure it later
-	}()
-)
+// Log collects various loggers to use for different levels of logging
+// Deprecation warning: the global logger is slated for removal.
+// All consumers of this package should migrate to injecting a local logger.
+//
+// Notice that the global LotSet doesn't have metrics available - when you
+// want metrics in a component, you need to add an injected LogSet. c.f.
+// ext/docker/image_mapping.go
+var Log = func() LogSet { return *(SilentLogSet()) }()
 
+// To be deprecated: Printf is part of the holdover from stdlib logging
 func (w logwrapper) Printf(f string, vs ...interface{}) {
 	w(f, vs...)
 }
 
+// To be deprecated: Print is part of the holdover from stdlib logging
 func (w logwrapper) Print(vs ...interface{}) {
 	w(fmt.Sprint(vs...))
 }
 
+// To be deprecated: Println is part of the holdover from stdlib logging
 func (w logwrapper) Println(vs ...interface{}) {
 	w(fmt.Sprint(vs...))
 }
@@ -313,6 +378,7 @@ func (ls LogSet) Console() WriteDoner {
 // xxx phase 2 of complete transition: remove these methods in favor of specific messages
 
 // Vomitf logs a message at ExtraDebug1Level.
+// To be deprecated: part of the old stdlib log hack
 func (ls LogSet) Vomitf(f string, as ...interface{}) {
 	m := NewGenericMsg(ExtraDebug1Level, fmt.Sprintf(f, as...), nil)
 	m.ExcludeMe()
@@ -320,6 +386,7 @@ func (ls LogSet) Vomitf(f string, as ...interface{}) {
 }
 
 // Debugf logs a message a DebugLevel.
+// To be deprecated: part of the old stdlib log hack
 func (ls LogSet) Debugf(f string, as ...interface{}) {
 	m := NewGenericMsg(DebugLevel, fmt.Sprintf(f, as...), nil)
 	m.ExcludeMe()
@@ -327,6 +394,7 @@ func (ls LogSet) Debugf(f string, as ...interface{}) {
 }
 
 // Warnf logs a message at WarningLevel.
+// To be deprecated: part of the old stdlib log hack
 func (ls LogSet) Warnf(f string, as ...interface{}) {
 	m := NewGenericMsg(WarningLevel, fmt.Sprintf(f, as...), nil)
 	m.ExcludeMe()
