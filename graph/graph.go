@@ -324,9 +324,9 @@ func newLogSink(v *config.Verbosity, set *logging.LogSet) LogSink {
 	//set.Configure(v.LoggingConfiguration())
 	v.UpdateLevel(set)
 
-	set.Info("Info debugging enabled")
-	set.Vomitf("Verbose debugging enabled")
-	set.Debugf("Regular debugging enabled")
+	logging.ReportMsg(set, logging.InformationLevel, "Info debugging enabled")
+	logging.ReportMsg(set, logging.ExtraDebug1Level, "Verbose debugging enabled")
+	logging.ReportMsg(set, logging.DebugLevel, "Regular debugging enabled")
 	return LogSink{set}
 }
 
