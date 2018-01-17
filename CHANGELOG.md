@@ -11,8 +11,7 @@ with respect to its command line interface and HTTP interface.
 ### Added
 * CLI: If no image is present in runspec, return a fatal flaw in build.
 * Server: adding duplex state storage, to keep DB in sync until ready to switch over
-* Server: Update logging to a more structured format
-* Server: Update resource logging to a more structured format
+* Server: Update logging to a more structured format: Resource, Server, Generic Msg
 
 ### Changed
 * All: error parsing repo from SourceLocation now more informative.
