@@ -211,53 +211,53 @@ func (r *deployer) RectifySingleDelete(d *sous.DeployablePair) (err error) {
 func (r *deployer) RectifySingleModification(pair *sous.DeployablePair) (err error) {
 	different, diffs := pair.Post.Deployment.Diff(pair.Prior.Deployment)
 	if !different {
-		logDeployerMessage(fmt.Sprintf("Attempting to rectify empty diff for %q", pair.ID()),
+		reportDeployerMessage(fmt.Sprintf("Attempting to rectify empty diff for %q", pair.ID()),
 			pair, logging.WarningLevel, logging.Log)
 	}
 
-	logDeployerMessage(fmt.Sprintf("Rectifying modified %q; Diffs: %s", pair.ID(), strings.Join(diffs, "\n")),
+	reportDeployerMessage(fmt.Sprintf("Rectifying modified %q; Diffs: %s", pair.ID(), strings.Join(diffs, "\n")),
 		pair, logging.InformationLevel, logging.Log)
-	logDeployerMessage(fmt.Sprintf("Full prior and post deployments: %q: \n  %# v \n    =>  \n  %# v", pair.ID(), pair.Prior.Deployment, pair.Post.Deployment),
+	reportDeployerMessage(fmt.Sprintf("Full prior and post deployments: %q: \n  %# v \n    =>  \n  %# v", pair.ID(), pair.Prior.Deployment, pair.Post.Deployment),
 		pair, logging.DebugLevel, logging.Log)
 	defer rectifyRecover(pair, "RectifySingleModification", &err)
 
 	data, ok := pair.ExecutorData.(*singularityTaskData)
 	if !ok {
 		err := errors.Errorf("Modification record %#v doesn't contain Singularity compatible data: was %T\n\t%#v", pair.ID(), data, pair)
-		logDeployerMessage(err.Error(), pair, logging.WarningLevel, logging.Log)
+		reportDeployerMessage(err.Error(), pair, logging.WarningLevel, logging.Log)
 		return err
 	}
 	reqID := data.requestID
 
 	changesApplied := false
-	logDeployerMessage(fmt.Sprintf("Operating on request %q", reqID),
+	reportDeployerMessage(fmt.Sprintf("Operating on request %q", reqID),
 		pair, logging.ExtraDebug1Level, logging.Log)
 	if changesReq(pair) {
-		logDeployerMessage("Updating Request...", pair, logging.DebugLevel, logging.Log)
+		reportDeployerMessage("Updating Request...", pair, logging.DebugLevel, logging.Log)
 		if err := r.Client.PostRequest(*pair.Post, reqID); err != nil {
-			logDeployerMessage(err.Error(), pair, logging.WarningLevel, logging.Log)
+			reportDeployerMessage(err.Error(), pair, logging.WarningLevel, logging.Log)
 			return err
 		}
 		changesApplied = true
 	} else {
-		logDeployerMessage(fmt.Sprintf("Request %q does not require changes", reqID),
+		reportDeployerMessage(fmt.Sprintf("Request %q does not require changes", reqID),
 			pair, logging.DebugLevel, logging.Log)
 	}
 
 	if changesDep(pair) {
-		logDeployerMessage("Deploying...", pair, logging.DebugLevel, logging.Log)
+		reportDeployerMessage("Deploying...", pair, logging.DebugLevel, logging.Log)
 		if err := r.Client.Deploy(*pair.Post, reqID); err != nil {
-			logDeployerMessage(err.Error(), pair, logging.WarningLevel, logging.Log)
+			reportDeployerMessage(err.Error(), pair, logging.WarningLevel, logging.Log)
 			return err
 		}
 		changesApplied = true
 	} else {
-		logDeployerMessage(fmt.Sprintf("Deploy at %q does not require changes", reqID),
+		reportDeployerMessage(fmt.Sprintf("Deploy at %q does not require changes", reqID),
 			pair, logging.DebugLevel, logging.Log)
 	}
 
 	if !changesApplied {
-		logDeployerMessage(fmt.Sprintf("No changes applied to Singularity for %q", pair.ID()),
+		reportDeployerMessage(fmt.Sprintf("No changes applied to Singularity for %q", pair.ID()),
 			pair, logging.DebugLevel, logging.Log)
 	}
 

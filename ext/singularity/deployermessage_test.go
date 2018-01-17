@@ -1,17 +1,17 @@
 package singularity
 
 import (
-	"testing"
 	"github.com/opentable/sous/util/logging"
-	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"testing"
 )
 
 func TestDeployerMessage(t *testing.T) {
 	logger, control := logging.NewLogSinkSpy()
 	pair := baseDeployablePair()
 
-	logDeployerMessage("test", pair, logging.InformationLevel, logger)
+	reportDeployerMessage("test", pair, logging.InformationLevel, logger)
 
 	logCalls := control.CallsTo("LogMessage")
 	require.Len(t, logCalls, 1)
@@ -21,4 +21,3 @@ func TestDeployerMessage(t *testing.T) {
 	consoleCalls := control.CallsTo("Console")
 	require.Len(t, consoleCalls, 1)
 }
-

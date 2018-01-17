@@ -1,31 +1,32 @@
 package singularity
 
 import (
-	"github.com/opentable/sous/util/logging"
-	"github.com/opentable/sous/lib"
-	"io"
 	"fmt"
+	"io"
+
+	"github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 )
 
 type deployerMessage struct {
 	logging.CallerInfo
 	logging.Level
-	msg string
+	msg  string
 	pair *sous.DeployablePair
 }
 
-func logDeployerMessage(message string, pair *sous.DeployablePair, level logging.Level, logger logging.LogSink) {
+func reportDeployerMessage(message string, pair *sous.DeployablePair, level logging.Level, logger logging.LogSink) {
 	msg := deployerMessage{
 		CallerInfo: logging.GetCallerInfo(logging.NotHere()),
-		Level: 		level,
-		msg:		message,
-		pair:		pair,
+		Level:      level,
+		msg:        message,
+		pair:       pair,
 	}
 	logging.Deliver(msg, logger)
 }
 
 func (msg deployerMessage) DefaultLevel() logging.Level {
-	return logging.InformationLevel
+	return msg.Level
 }
 
 func (msg deployerMessage) Message() string {
