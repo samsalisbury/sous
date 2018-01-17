@@ -802,7 +802,7 @@ func TestStatusPoller_NotIntended(t *testing.T) {
 		testCh <- rState
 	}()
 
-	timeout := 100 * time.Millisecond
+	timeout := PollTimeout
 	select {
 	case <-time.After(timeout):
 		t.Errorf("Empty subpoller polling took more than %s", timeout)
@@ -853,7 +853,7 @@ func TestStatusPoller_OldServer(t *testing.T) {
 		testCh <- rState
 	}()
 
-	timeout := 100 * time.Millisecond
+	timeout := PollTimeout
 	select {
 	case <-time.After(timeout):
 		t.Errorf("Sad path polling took more than %s", timeout)

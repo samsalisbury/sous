@@ -139,11 +139,11 @@ func TestStateManagerSelectsServer(t *testing.T) {
 	}
 }
 
-func TestStateManagerSelectsGit(t *testing.T) {
+func TestStateManagerSelectsDuplex(t *testing.T) {
 	smgr := injectedStateManager(t, &config.Config{Server: "", StateLocation: "/tmp/sous"})
 
-	if _, ok := smgr.StateManager.(*storage.GitStateManager); !ok {
-		t.Errorf("Injected %#v which isn't a GitStateManager", smgr.StateManager)
+	if _, ok := smgr.StateManager.(*storage.DuplexStateManager); !ok {
+		t.Errorf("Injected %#v which isn't a DuplexStateManager", smgr.StateManager)
 	}
 }
 
