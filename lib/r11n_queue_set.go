@@ -43,3 +43,8 @@ func (rqs *R11nQueueSet) Wait(did DeploymentID, id R11nID) (DiffResolution, bool
 	}
 	return rq.Wait(id)
 }
+
+// Queues returns a snapshot of queues in this set.
+func (rqs *R11nQueueSet) Queues() map[DeploymentID]*R11nQueue {
+	return rqs.set
+}
