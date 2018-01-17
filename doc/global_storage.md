@@ -53,7 +53,8 @@ coordinates the response across the Sous infrastructure.
 
 During a `sous deploy`,
 the Sous client updates the Global Deploy Manifest.
-(Once the update is complete, the client monitors the resulting deploy.
+(Once the update is complete, the client monitors the resulting deploy
+via separate requests to the responsible server nodes.
 That part of `sous deploy` is out of scope of this document.)
 To do this it starts by issuing a
 `GET /gdm` HTTP request
@@ -127,19 +128,21 @@ were unable to service the request,
 which the client relates to the operator,
 so that they can potentially adjust and retry their request.
 
-Finally, the coordinating server
-echoes the original request
-out of band on to
-`PUT /advisory/gdm`
-to all its sibling servers.
+Additionally,
+as authoritative servers accept
+`PATCH /state/deployments`
+requests
+(i.e. after having retuned 204 responses),
+they issue new
+`PUT /advisory/gdm?cluster=$name`
+requests
+to all known siblings
+(including their own cluster name
+in the query parameter.)
+
 Each server receiving this `PUT` request
 uses the request body to update its database
 about Deployments for which it is *not* authoritative.
-The coordinating server, again, sends conditional requests,
-but disregards `412` responses.
-The non-authoritative servers that *produce* `412`s,
-however, issue their own `GET /state/deployments`
-to update their local data.
 
 ## Implementation in Sous
 
