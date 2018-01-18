@@ -208,3 +208,49 @@ the PUTs and PATCHes laid out above being conditional
 (i.e.  with `If-Not-Modified` headers attached)
 and the GET-and-retry behavior
 when `PATCH` returns 412.
+
+# Failure Modes
+
+The Sous GDM storage design
+is intended to address
+a number of potential
+fault modes.
+
+First, we must consider
+the case in which
+the network link between a coordinating node
+and the Sous authority for a particular cluster
+is down (or has enough latency it might as well be.)
+
+Second, the case where
+the link between the client
+and a particular cluster is down.
+
+Third, where the Sous server
+for a particular cluster
+has crashed, and is unavailable.
+
+Or worse, where the Sous server
+for a particular cluster is misbehaving.
+
+Finally, we have the case where
+the network is working well,
+and all the Sous servers are running correctly,
+but one of the the services upon which Sous depends
+is down.
+For instance, if the Singularity controller
+for a cluster is down,
+or the Docker registry.
+
+In these cases,
+how do we want Sous to behave?
+Is it acceptable to partially update
+the GDM (and therefore the eventual ADS)?
+Is it preferable to refuse to do any update?
+
+What semantics
+of deployed artifacts can we accept?
+The version requested hours previous?
+The version that was deployed yesterday?
+Some arbitrary version of the service?
+No version at all?
