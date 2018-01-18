@@ -90,7 +90,7 @@ func (gr *GDMResource) Put(_ http.ResponseWriter, req *http.Request, _ httproute
 
 // Exchange implements the Handler interface
 func (h *PUTGDMHandler) Exchange() (interface{}, int) {
-	logging.Log.Debug.Print(h.GDM)
+	reportDebugHandleGDMMessage(fmt.Sprintf("Put GDM Handler Exchange with GDM: %v", h.GDM), nil, nil, h.LogSink)
 
 	data := GDMWrapper{}
 	dec := json.NewDecoder(h.Request.Body)
