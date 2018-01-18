@@ -2,8 +2,11 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 	"sort"
+	"strings"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/opentable/sous/lib"
@@ -95,20 +98,23 @@ func (h *PUTGDMHandler) Exchange() (interface{}, int) {
 
 	state, err := h.StateManager.ReadState()
 	if err != nil {
-		h.Warnf("%#v", err)
-		return "Error loading state from storage", http.StatusInternalServerError
+		msg := "Error loading state from storage"
+		reportHandleGDMMessage(msg, nil, err, h.LogSink)
+		return msg, http.StatusInternalServerError
 	}
 
 	state.Manifests, err = deps.PutbackManifests(state.Defs, state.Manifests)
 	if err != nil {
-		h.Warnf("%#v", err)
-		return "Error getting state", http.StatusConflict
+		msg := "Error getting state"
+		reportHandleGDMMessage(msg, nil, err, h.LogSink)
+		return msg, http.StatusConflict
 	}
 
 	flaws := state.Validate()
 	if len(flaws) > 0 {
-		h.Warnf("%#v", flaws)
-		return "Invalid GDM", http.StatusBadRequest
+		msg := "Invalid GDM"
+		reportHandleGDMMessage(msg, flaws, nil, h.LogSink)
+		return msg, http.StatusBadRequest
 	}
 
 	if _, got := h.Header["Etag"]; got {
@@ -116,9 +122,61 @@ func (h *PUTGDMHandler) Exchange() (interface{}, int) {
 	}
 
 	if err := h.StateManager.WriteState(state, sous.User(h.User)); err != nil {
-		h.Warnf("%#v", err)
-		return "Error committing state", http.StatusInternalServerError
+		msg := "Error committing state"
+		reportHandleGDMMessage(msg, flaws, err, h.LogSink)
+		return msg, http.StatusInternalServerError
 	}
 
 	return "", http.StatusNoContent
+}
+
+type handleGDMMessage struct {
+	logging.CallerInfo
+	msg   string
+	flaws []sous.Flaw
+	err   error
+}
+
+func reportHandleGDMMessage(msg string, flaws []sous.Flaw, err error, log logging.LogSink) {
+
+	msgLog := handleGDMMessage{
+		msg:        msg,
+		CallerInfo: logging.GetCallerInfo(logging.NotHere()),
+		err:        err,
+		flaws:      flaws,
+	}
+	logging.Deliver(msgLog, log)
+}
+
+func (msg handleGDMMessage) WriteToConsole(console io.Writer) {
+	fmt.Fprintf(console, "%s\n", msg.composeMsg())
+}
+
+func (msg handleGDMMessage) DefaultLevel() logging.Level {
+	level := logging.WarningLevel
+	return level
+}
+
+func (msg handleGDMMessage) Message() string {
+	return msg.composeMsg()
+}
+
+func (msg handleGDMMessage) returnFlawMsg() string {
+	var msgFlaws string
+	for _, flaw := range msg.flaws {
+		joined := []string{msgFlaws, fmt.Sprintf("%v", flaw)}
+		msgFlaws = strings.Join(joined, " ")
+	}
+	return msgFlaws
+}
+
+func (msg handleGDMMessage) composeMsg() string {
+	return fmt.Sprintf("Handle GDM Message %s: flaws %s, error %s", msg.msg, msg.returnFlawMsg(), msg.err.Error())
+}
+
+func (msg handleGDMMessage) EachField(f logging.FieldReportFn) {
+	f("@loglov3-otl", "sous-generic-v1")
+	f("flaws", msg.returnFlawMsg())
+	f("error", msg.err.Error())
+	msg.CallerInfo.EachField(f)
 }
