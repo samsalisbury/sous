@@ -53,7 +53,8 @@ func (gr *GDMResource) Get(writer http.ResponseWriter, _ *http.Request, _ httpro
 
 // Exchange implements the Handler interface
 func (h *GETGDMHandler) Exchange() (interface{}, int) {
-	logging.Log.Debugf("%v", h.GDM)
+	reportDebugHandleGDMMessage(fmt.Sprintf("Get GDM Handler Exchange with GDM: %v", h.GDM), nil, nil, h.LogSink)
+
 	data := GDMWrapper{Deployments: make([]*sous.Deployment, 0)}
 	deps, err := h.GDM.Deployments()
 	if err != nil {
@@ -135,15 +136,26 @@ type handleGDMMessage struct {
 	msg   string
 	flaws []sous.Flaw
 	err   error
+	debug bool
 }
 
-func reportHandleGDMMessage(msg string, flaws []sous.Flaw, err error, log logging.LogSink) {
+func reportDebugHandleGDMMessage(msg string, flaws []sous.Flaw, err error, log logging.LogSink) {
+	reportHandleGDMMessage(msg, flaws, err, log, true)
+}
+
+func reportHandleGDMMessage(msg string, flaws []sous.Flaw, err error, log logging.LogSink, debug ...bool) {
+
+	isDebug := false
+	if len(debug) > 0 {
+		isDebug = debug[0]
+	}
 
 	msgLog := handleGDMMessage{
 		msg:        msg,
 		CallerInfo: logging.GetCallerInfo(logging.NotHere()),
 		err:        err,
 		flaws:      flaws,
+		debug:      isDebug,
 	}
 	logging.Deliver(msgLog, log)
 }
@@ -154,6 +166,11 @@ func (msg handleGDMMessage) WriteToConsole(console io.Writer) {
 
 func (msg handleGDMMessage) DefaultLevel() logging.Level {
 	level := logging.WarningLevel
+
+	if msg.debug == true {
+		level = logging.DebugLevel
+	}
+
 	return level
 }
 
@@ -171,12 +188,28 @@ func (msg handleGDMMessage) returnFlawMsg() string {
 }
 
 func (msg handleGDMMessage) composeMsg() string {
-	return fmt.Sprintf("Handle GDM Message %s: flaws %s, error %s", msg.msg, msg.returnFlawMsg(), msg.err.Error())
+	errMsg := "nil"
+	if msg.err != nil {
+		errMsg = msg.err.Error()
+	}
+	flaws := msg.returnFlawMsg()
+	if flaws == "" {
+		flaws = "nil"
+	}
+	return fmt.Sprintf("Handle GDM Message %s: flaws {%s}, error {%s}", msg.msg, msg.returnFlawMsg(), errMsg)
 }
 
 func (msg handleGDMMessage) EachField(f logging.FieldReportFn) {
 	f("@loglov3-otl", "sous-generic-v1")
-	f("flaws", msg.returnFlawMsg())
-	f("error", msg.err.Error())
+
+	flaws := msg.returnFlawMsg()
+
+	if flaws != "" {
+		f("flaws", flaws)
+	}
+
+	if msg.err != nil {
+		f("error", msg.err.Error())
+	}
 	msg.CallerInfo.EachField(f)
 }
