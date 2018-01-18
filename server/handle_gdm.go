@@ -2,8 +2,11 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 	"sort"
+	"strings"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/opentable/sous/lib"
@@ -50,7 +53,8 @@ func (gr *GDMResource) Get(writer http.ResponseWriter, _ *http.Request, _ httpro
 
 // Exchange implements the Handler interface
 func (h *GETGDMHandler) Exchange() (interface{}, int) {
-	logging.Log.Debugf("%v", h.GDM)
+	reportDebugHandleGDMMessage(fmt.Sprintf("Get GDM Handler Exchange with GDM: %v", h.GDM), nil, nil, h.LogSink)
+
 	data := GDMWrapper{Deployments: make([]*sous.Deployment, 0)}
 	deps, err := h.GDM.Deployments()
 	if err != nil {
@@ -86,7 +90,7 @@ func (gr *GDMResource) Put(_ http.ResponseWriter, req *http.Request, _ httproute
 
 // Exchange implements the Handler interface
 func (h *PUTGDMHandler) Exchange() (interface{}, int) {
-	logging.Log.Debug.Print(h.GDM)
+	reportDebugHandleGDMMessage(fmt.Sprintf("Put GDM Handler Exchange with GDM: %v", h.GDM), nil, nil, h.LogSink)
 
 	data := GDMWrapper{}
 	dec := json.NewDecoder(h.Request.Body)
@@ -95,20 +99,23 @@ func (h *PUTGDMHandler) Exchange() (interface{}, int) {
 
 	state, err := h.StateManager.ReadState()
 	if err != nil {
-		h.Warnf("%#v", err)
-		return "Error loading state from storage", http.StatusInternalServerError
+		msg := "Error loading state from storage"
+		reportHandleGDMMessage(msg, nil, err, h.LogSink)
+		return msg, http.StatusInternalServerError
 	}
 
 	state.Manifests, err = deps.PutbackManifests(state.Defs, state.Manifests)
 	if err != nil {
-		h.Warnf("%#v", err)
-		return "Error getting state", http.StatusConflict
+		msg := "Error getting state"
+		reportHandleGDMMessage(msg, nil, err, h.LogSink)
+		return msg, http.StatusConflict
 	}
 
 	flaws := state.Validate()
 	if len(flaws) > 0 {
-		h.Warnf("%#v", flaws)
-		return "Invalid GDM", http.StatusBadRequest
+		msg := "Invalid GDM"
+		reportHandleGDMMessage(msg, flaws, nil, h.LogSink)
+		return msg, http.StatusBadRequest
 	}
 
 	if _, got := h.Header["Etag"]; got {
@@ -116,9 +123,93 @@ func (h *PUTGDMHandler) Exchange() (interface{}, int) {
 	}
 
 	if err := h.StateManager.WriteState(state, sous.User(h.User)); err != nil {
-		h.Warnf("%#v", err)
-		return "Error committing state", http.StatusInternalServerError
+		msg := "Error committing state"
+		reportHandleGDMMessage(msg, flaws, err, h.LogSink)
+		return msg, http.StatusInternalServerError
 	}
 
 	return "", http.StatusNoContent
+}
+
+type handleGDMMessage struct {
+	logging.CallerInfo
+	msg   string
+	flaws []sous.Flaw
+	err   error
+	debug bool
+}
+
+func reportDebugHandleGDMMessage(msg string, flaws []sous.Flaw, err error, log logging.LogSink) {
+	reportHandleGDMMessage(msg, flaws, err, log, true)
+}
+
+func reportHandleGDMMessage(msg string, flaws []sous.Flaw, err error, log logging.LogSink, debug ...bool) {
+
+	isDebug := false
+	if len(debug) > 0 {
+		isDebug = debug[0]
+	}
+
+	msgLog := handleGDMMessage{
+		msg:        msg,
+		CallerInfo: logging.GetCallerInfo(logging.NotHere()),
+		err:        err,
+		flaws:      flaws,
+		debug:      isDebug,
+	}
+	logging.Deliver(msgLog, log)
+}
+
+func (msg handleGDMMessage) WriteToConsole(console io.Writer) {
+	fmt.Fprintf(console, "%s\n", msg.composeMsg())
+}
+
+func (msg handleGDMMessage) DefaultLevel() logging.Level {
+	level := logging.WarningLevel
+
+	if msg.debug == true {
+		level = logging.DebugLevel
+	}
+
+	return level
+}
+
+func (msg handleGDMMessage) Message() string {
+	return msg.composeMsg()
+}
+
+func (msg handleGDMMessage) returnFlawMsg() string {
+	var msgFlaws string
+	for _, flaw := range msg.flaws {
+		joined := []string{msgFlaws, fmt.Sprintf("%v", flaw)}
+		msgFlaws = strings.Join(joined, " ")
+	}
+	return msgFlaws
+}
+
+func (msg handleGDMMessage) composeMsg() string {
+	errMsg := "nil"
+	if msg.err != nil {
+		errMsg = msg.err.Error()
+	}
+	flaws := msg.returnFlawMsg()
+	if flaws == "" {
+		flaws = "nil"
+	}
+	return fmt.Sprintf("Handle GDM Message %s: flaws {%s}, error {%s}", msg.msg, msg.returnFlawMsg(), errMsg)
+}
+
+func (msg handleGDMMessage) EachField(f logging.FieldReportFn) {
+	f("@loglov3-otl", "sous-generic-v1")
+
+	flaws := msg.returnFlawMsg()
+
+	if flaws != "" {
+		f("flaws", flaws)
+	}
+
+	if msg.err != nil {
+		f("error", msg.err.Error())
+	}
+	msg.CallerInfo.EachField(f)
 }
