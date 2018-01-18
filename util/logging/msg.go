@@ -1,30 +1,52 @@
 package logging
 
+import (
+	"fmt"
+	"io"
+)
+
 type genericMsg struct {
 	CallerInfo
 	Level
 	message string
 	fields  map[string]interface{}
+	console bool
+}
+
+// ReportConsoleMsg will set Console flag, so message is also outputed to console
+func ReportConsoleMsg(logger LogSink, lvl Level, msg string) {
+	ReportMsg(logger, lvl, msg, true)
 }
 
 // ReportMsg is an appropriate for most off-the-cuff logging. It probably calls
 // to be replaced with something more specialized, though.
-func ReportMsg(logger LogSink, lvl Level, msg string) {
-	m := NewGenericMsg(lvl, msg, nil)
+func ReportMsg(logger LogSink, lvl Level, msg string, console ...bool) {
+	useConsole := false
+	if len(console) > 0 {
+		useConsole = console[0]
+	}
+	m := NewGenericMsg(lvl, msg, nil, useConsole)
 	m.ExcludeMe()
 	Deliver(m, logger)
+}
+
+func (msg *genericMsg) WriteToConsole(console io.Writer) {
+	if msg.console {
+		fmt.Fprintf(console, "%s\n", msg)
+	}
 }
 
 // NewGenericMsg creates an event out of a map of fields. There are no metrics
 // associated with the event - for that you need to define a specialized
 // message type.
-func NewGenericMsg(lvl Level, msg string, fields map[string]interface{}) *genericMsg {
+func NewGenericMsg(lvl Level, msg string, fields map[string]interface{}, console bool) *genericMsg {
 	return &genericMsg{
 		Level:      lvl,
 		CallerInfo: GetCallerInfo(NotHere()),
 
 		message: msg,
 		fields:  fields,
+		console: console,
 	}
 }
 

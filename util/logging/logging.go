@@ -314,21 +314,21 @@ func (ls LogSet) Console() WriteDoner {
 
 // Vomitf logs a message at ExtraDebug1Level.
 func (ls LogSet) Vomitf(f string, as ...interface{}) {
-	m := NewGenericMsg(ExtraDebug1Level, fmt.Sprintf(f, as...), nil)
+	m := NewGenericMsg(ExtraDebug1Level, fmt.Sprintf(f, as...), nil, false)
 	m.ExcludeMe()
 	Deliver(m, ls)
 }
 
 // Debugf logs a message a DebugLevel.
 func (ls LogSet) Debugf(f string, as ...interface{}) {
-	m := NewGenericMsg(DebugLevel, fmt.Sprintf(f, as...), nil)
+	m := NewGenericMsg(DebugLevel, fmt.Sprintf(f, as...), nil, false)
 	m.ExcludeMe()
 	Deliver(m, ls)
 }
 
 // Warnf logs a message at WarningLevel.
 func (ls LogSet) Warnf(f string, as ...interface{}) {
-	m := NewGenericMsg(WarningLevel, fmt.Sprintf(f, as...), nil)
+	m := NewGenericMsg(WarningLevel, fmt.Sprintf(f, as...), nil, false)
 	m.ExcludeMe()
 	Deliver(m, ls)
 }
