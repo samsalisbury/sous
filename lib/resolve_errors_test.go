@@ -11,7 +11,7 @@ import (
 func TestIsTransientResolveError(t *testing.T) {
 	assert := assert.New(t)
 
-	assert.False(IsTransientResolveError(fmt.Errorf("Hi!")))
+	assert.False(IsTransientResolveError(fmt.Errorf("hi")))
 	assert.False(IsTransientResolveError(&UnacceptableAdvisory{}))
 	assert.False(IsTransientResolveError(errors.Wrap(&MissingImageNameError{}, "wrapped")))
 	assert.True(IsTransientResolveError(&CreateError{}))
