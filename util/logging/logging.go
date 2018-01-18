@@ -14,14 +14,34 @@
 //
 // As a compliment to this process, we also allow for log messages
 // to report metrics, and to output console messages for a human
-// operator. The philosphy here is that one kind of reporting output
+// operator.
+//
+// By implementing any combination of the interfaces LogMessage,
+// ConsoleMessage and MetricsMessage single log message may emit:
+// structured logs to the ELK stack (LogMessage)
+// textual logs to stderr (ConsoleMessage), or
+// metrics messages to graphite carbon endpoints (MetricsMessage)
+// Each message must implement at least one of those interfaces.
+//
+// The philosphy here is that one kind of reporting output
 // will often compliment another, and since these outputs are predicated
 // on the implementation of interfaces (c.f. LogMessage, MetricsMessage and
 // ConsoleMessage), it's easy to add new reporting to a particular
 // point of instrumentation in the code.
 //
+// If an intended message doesn't actually implement any of
+// the required interfaces (e.g. by missing out implementing DefaultLevel)
+// this package will create a new "silent message" log entry
+// detailing as much as possible about the non-message struct.
+// The same facility is used if the message causes a panic
+// while reporting - the theory is that logging should never
+// panic the app (even though it's very easy for it to do so.)
+// It is recommended to create alerts from you ELK stack when
+// "silent message log entries are created."
+//
 // Entry points to understanding this package are
-// the Deliver function, and the LogMessage, MetricsMessage and ConsoleMessage interfaces.
+// the Deliver function, and the LogMessage, MetricsMessage and
+// ConsoleMessage interfaces.
 //
 // An example log message might look like this:
 //  type exampleMessage struct {
