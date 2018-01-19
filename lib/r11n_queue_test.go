@@ -216,33 +216,41 @@ func TestR11nQueue_Push_Next_sync(t *testing.T) {
 
 func TestR11nQueue_Push_async(t *testing.T) {
 
-	// Make sure to run this test with the -race flag!
+	signal := make(chan struct{})
+	go func() {
+		// Make sure to run this test with the -race flag!
 
-	const queueSize = 10
-	const itemCount = 20
+		const queueSize = 10
+		const itemCount = 20
 
-	rq := NewR11nQueue(R11nQueueCap(queueSize))
+		rq := NewR11nQueue(R11nQueueCap(queueSize))
 
-	// oks collects the number of oks received from Push.
-	var oks int64
+		// oks collects the number of oks received from Push.
+		var oks int64
 
-	var wg sync.WaitGroup
-	wg.Add(itemCount)
-	for i := 0; i < itemCount; i++ {
-		go func() {
-			_, ok := rq.Push(&Rectification{})
-			if ok {
-				atomic.AddInt64(&oks, 1)
-			}
-			wg.Done()
-		}()
+		var wg sync.WaitGroup
+		wg.Add(itemCount)
+		for i := 0; i < itemCount; i++ {
+			go func() {
+				_, ok := rq.Push(&Rectification{})
+				if ok {
+					atomic.AddInt64(&oks, 1)
+				}
+				wg.Done()
+			}()
+		}
+		wg.Wait()
+
+		if oks != queueSize {
+			t.Errorf("got %d oks; want %d", oks, queueSize)
+		}
+		close(signal)
+	}()
+	select {
+	case <-signal:
+	case <-time.After(time.Second):
+		t.Errorf("push deadlocked")
 	}
-	wg.Wait()
-
-	if oks != queueSize {
-		t.Errorf("got %d oks; want %d", oks, queueSize)
-	}
-
 }
 
 func TestR11Queue_Next(t *testing.T) {
