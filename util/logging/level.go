@@ -11,6 +11,10 @@ import (
 type Level int
 
 //go:generate stringer -type Level
+
+// Level constants are used to communicate the severity of a log message. Note
+// that other possible values of Level will likely result in defaulting to
+// ExtraDebug1Level.
 const (
 	// CriticalLevel is the level for logging critical errors.
 	CriticalLevel Level = iota
