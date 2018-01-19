@@ -247,10 +247,13 @@ how do we want Sous to behave?
 Is it acceptable to partially update
 the GDM (and therefore the eventual ADS)?
 Is it preferable to refuse to do any update?
+Is it required to be able to choose
+per deployment
+between these cases?
 
 What semantics
 of deployed artifacts can we accept?
 The version requested hours previous?
 The version that was deployed yesterday?
 Some arbitrary version of the service?
-No version at all?
+No version at all? (As in: service goes down.)
