@@ -114,8 +114,8 @@ func (sub *subPoller) pollOnce() pollResult {
 func (sub *subPoller) stateFeatures(kind string, rezState *ResolveStatus) (*Deployment, *DiffResolution) {
 	current := diffResolutionFor(rezState, sub.locationFilter)
 	srvIntent := serverIntent(rezState, sub.locationFilter)
-	logging.Log.Debugf("%s reports %s intent to resolve [%v]", sub.URL, kind, srvIntent)
-	logging.Log.Debugf("%s reports %s rez: %v", sub.URL, kind, current)
+	reportDebugSubPollerMessage(fmt.Sprintf("%s reports %s intent to resolve [%v]", sub.URL, kind, srvIntent), sub.logs)
+	reportDebugSubPollerMessage(fmt.Sprintf("%s reports %s rez: %v", sub.URL, kind, current), sub.logs)
 
 	return srvIntent, current
 }
@@ -242,7 +242,10 @@ type subPollerMessage struct {
 }
 
 func reportErrorSubPollerMessage(err error, log logging.LogSink) {
-	msg := err.Error()
+	msg := "<missing error>"
+	if err != nil {
+		msg = err.Error()
+	}
 	reportSubPollerMessage(msg, log, false, false, true)
 }
 
