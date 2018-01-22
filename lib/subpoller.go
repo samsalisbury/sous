@@ -2,6 +2,7 @@ package sous
 
 import (
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/opentable/sous/util/logging"
@@ -230,4 +231,79 @@ func (sub *subPoller) computeState(srvIntent *Deployment, current *DiffResolutio
 	}
 
 	return ResolveInProgress, nil
+}
+
+type subPollerMessage struct {
+	logging.CallerInfo
+	msg          string
+	isDebugMsg   bool
+	isConsoleMsg bool
+	isErrorMsg   bool
+}
+
+func reportErrorSubPollerMessage(err error, log logging.LogSink) {
+	msg := err.Error()
+	reportSubPollerMessage(msg, log, false, false, true)
+}
+
+func reportDebugSubPollerMessage(msg string, log logging.LogSink) {
+	reportSubPollerMessage(msg, log, true)
+}
+
+func reportConsoleSubPollerMessage(msg string, log logging.LogSink) {
+	reportSubPollerMessage(msg, log, false, true)
+}
+
+func reportSubPollerMessage(msg string, log logging.LogSink, flags ...bool) {
+	debugStmt := false
+	consoleMsg := false
+	errorMsg := false
+	if len(flags) > 0 {
+		debugStmt = flags[0]
+		if len(flags) > 1 {
+			consoleMsg = flags[1]
+		}
+		if len(flags) > 2 {
+			errorMsg = flags[2]
+		}
+	}
+
+	msgLog := subPollerMessage{
+		msg:          msg,
+		CallerInfo:   logging.GetCallerInfo(logging.NotHere()),
+		isDebugMsg:   debugStmt,
+		isConsoleMsg: consoleMsg,
+		isErrorMsg:   errorMsg,
+	}
+	logging.Deliver(msgLog, log)
+}
+
+func (msg subPollerMessage) WriteToConsole(console io.Writer) {
+	if msg.isConsoleMsg {
+		fmt.Fprintf(console, "%s\n", msg.composeMsg())
+	}
+}
+
+func (msg subPollerMessage) DefaultLevel() logging.Level {
+	level := logging.WarningLevel
+	if msg.isDebugMsg {
+		level = logging.DebugLevel
+	}
+	if msg.isErrorMsg {
+		level = logging.WarningLevel
+	}
+	return level
+}
+
+func (msg subPollerMessage) Message() string {
+	return msg.composeMsg()
+}
+
+func (msg subPollerMessage) composeMsg() string {
+	return msg.msg
+}
+
+func (msg subPollerMessage) EachField(f logging.FieldReportFn) {
+	f("@loglov3-otl", "sous-generic-v1")
+	msg.CallerInfo.EachField(f)
 }
