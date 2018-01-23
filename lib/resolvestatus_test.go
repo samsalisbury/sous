@@ -5,61 +5,6 @@ import (
 	"testing"
 )
 
-var resolveStatusTests = []struct {
-	// Phases are named "test %d; phase %d" which are 1-indexed test number, and
-	// the 1-indexed phase number. See "Note 1" below.
-	Phases      []interface{}
-	Resolutions []DiffResolution
-
-	Error, FinalPhase string
-}{
-	{
-		// Test 1: no phases.
-		FinalPhase: "finished",
-	},
-	{
-		// Test 2: two phases.
-		Phases: []interface{}{
-			func() error {
-				return nil
-			},
-			func() {},
-		},
-		FinalPhase: "finished",
-	},
-	{
-		// Test 3: two phases, first fails.
-		Phases: []interface{}{
-			func() error {
-				return fmt.Errorf("an error")
-			},
-			func() {},
-		},
-		Error:      "an error",
-		FinalPhase: "phase 1",
-	},
-	{
-		// Test 4: six phases, fourth one fails.
-		Phases: []interface{}{
-			func() {},
-			func() {},
-			func() {},
-			func() error {
-				return fmt.Errorf("first error")
-			},
-			func() error {
-				return fmt.Errorf("an error")
-			},
-			func() {
-				panic("this will not be run due to the error above")
-			},
-		},
-		Resolutions: []DiffResolution{DiffResolution{Desc: "1"}},
-		Error:       "first error",
-		FinalPhase:  "phase 4",
-	},
-}
-
 type rrResult struct {
 	err         error
 	early, late ResolveStatus
