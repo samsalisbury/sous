@@ -178,10 +178,6 @@ func (rr *ResolveRecorder) performPhase(name string, f func() error) {
 	}
 }
 
-func (rr *ResolveRecorder) performGuaranteedPhase(name string, f func()) {
-	rr.performPhase(name, func() error { f(); return nil })
-}
-
 // setPhase sets the phase of this resolve status.
 func (rr *ResolveRecorder) setPhase(phase string) {
 	rr.write(func() {

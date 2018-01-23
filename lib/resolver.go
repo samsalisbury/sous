@@ -85,9 +85,11 @@ func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveRecord
 		var actual DeployStates
 		var diffs *DeployableChans
 		var logger *DeployableChans
+		ctx := context.Background()
 
-		recorder.performGuaranteedPhase("filtering clusters", func() {
+		recorder.performPhase("filtering clusters", func() error {
 			clusters = r.FilteredClusters(clusters)
+			return nil
 		})
 
 		recorder.performPhase("getting running deployments", func() error {
@@ -96,16 +98,17 @@ func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveRecord
 			return err
 		})
 
-		recorder.performGuaranteedPhase("filtering running deployments", func() {
+		recorder.performPhase("filtering running deployments", func() error {
 			actual = actual.Filter(r.FilterDeployStates)
+			return nil
 		})
 
-		recorder.performGuaranteedPhase("generating diff", func() {
+		recorder.performPhase("generating diff", func() error {
 			diffs = actual.Diff(intended)
+			return nil
 		})
 
-		ctx := context.Background()
-		recorder.performGuaranteedPhase("resolving deployment artifacts", func() {
+		recorder.performPhase("resolving deployment artifacts", func() error {
 			namer := diffs.ResolveNames(ctx, r.Registry)
 			logger = namer.Log(ctx, r.ls)
 			logger.Add(1)
@@ -117,11 +120,13 @@ func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveRecord
 				logger.Done()
 			}()
 			// TODO: ResolveNames should take rs.Log instead of errs.
+			return nil
 		})
 
-		recorder.performGuaranteedPhase("rectification", func() {
+		recorder.performPhase("rectification", func() error {
 			r.queueDiffs(logger, recorder.Log)
 			close(recorder.Log)
+			return nil
 		})
 
 		logger.Wait()
