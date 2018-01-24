@@ -34,7 +34,9 @@ func (msg deployerMessage) Message() string {
 }
 
 func (msg deployerMessage) EachField(f logging.FieldReportFn) {
-	f("@loglov3-otl", "sous-generic-v1")
+	f("@loglov3-otl", "sous-rectifier-singularity-v1")
+	f("pair-id", msg.pair.ID)
+	f("request-id", msg.pair.request.ID)
 	msg.CallerInfo.EachField(f)
 }
 
