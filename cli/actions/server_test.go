@@ -108,7 +108,7 @@ func TestEnsureGDMExists_notARepoFile(t *testing.T) {
 	}
 
 	if err := os.RemoveAll(testDataDir); err != nil {
-		t.Fatal(err)
+		t.Log(err)
 	}
 
 }
@@ -137,7 +137,7 @@ func TestEnsureGDMExists_notARepoDir(t *testing.T) {
 	}
 
 	if err := os.RemoveAll(testDataDir); err != nil {
-		t.Fatal(err)
+		t.Log(err)
 	}
 
 }
