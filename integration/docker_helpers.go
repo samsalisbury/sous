@@ -118,6 +118,38 @@ func ResetSingularity() {
 	panic(fmt.Errorf("singularity not reset after %d * %d tries - %d requests remain", retryLimit, pollLimit, len(reqList)))
 }
 
+func WaitForSingularity() {
+	log.Print("Waiting for Singularity to stabilize")
+
+	singClient := sing.NewClient(SingularityURL)
+
+	/*
+		reqList, err := singClient.GetRequests(false)
+		if err != nil {
+			panic(err)
+		}
+	*/
+
+	var pendingCount int
+	for {
+		deps, err := singClient.GetPendingDeploys()
+		if err != nil {
+			panic(err)
+		}
+
+		if len(deps) == 0 {
+			return
+		}
+
+		// reducing output noise by only reporting when the number changes
+		if len(deps) != pendingCount {
+			log.Printf("There are %d pending deploys still...", len(deps))
+			pendingCount = len(deps)
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+}
+
 // BuildImageName constructs a simple image name rooted at the SingularityURL
 func BuildImageName(reponame, tag string) string {
 	return fmt.Sprintf("%s/%s:%s", registryName, reponame, tag)

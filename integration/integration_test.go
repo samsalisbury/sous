@@ -4,7 +4,6 @@ package integration
 
 import (
 	"fmt"
-	"os"
 	"sort"
 	"testing"
 	"time"
@@ -42,7 +41,6 @@ func (suite *integrationSuite) deploymentWithRepo(clusterNames []string, repo st
 	}
 	deps, err := suite.deployer.RunningDeployments(suite.nameCache, clusters)
 	if suite.NoError(err) {
-		suite.T().Logf("%#v", deps)
 		return deps, suite.findRepo(deps, repo)
 	}
 	return sous.NewDeployStates(), none
@@ -113,9 +111,9 @@ func (suite *integrationSuite) newNameCache(name string) *docker.NameCache {
 }
 
 func (suite *integrationSuite) waitUntilSettledStatus(clusters []string, sourceRepo string) *sous.DeployState {
-	sleepTime := time.Duration(5) * time.Second
+	sleepTime := time.Duration(200) * time.Millisecond
 	suite.T().Logf("Awaiting stabilization of Singularity deploy %q (either Active or Failed)...", sourceRepo)
-	const waitLimit = 100
+	const waitLimit = 300
 	var deployState *sous.DeployState
 	for counter := 1; counter < waitLimit; counter++ {
 		ds, which := suite.deploymentWithRepo(clusters, sourceRepo)
@@ -166,6 +164,7 @@ func (suite *integrationSuite) deployDefaultContainers() {
 
 	// This deployment fails immediately, and never results in a successful deployment at that singularity request.
 	registerAndDeploy(ip, "test-cluster", "supposed-to-fail", "github.com/opentable/homer-says-doh", "fails-labels", "1-fails", []int32{}, nilStartup)
+	WaitForSingularity()
 }
 
 func (suite *integrationSuite) TearDownTest() {
@@ -176,7 +175,6 @@ func (suite *integrationSuite) TearDownTest() {
 }
 
 func (suite *integrationSuite) TestGetLabels() {
-	suite.T().Logf("%v %q", suite.registry, imageName)
 	labels, err := suite.registry.LabelsForImageName(imageName)
 
 	suite.Nil(err)
@@ -197,7 +195,7 @@ func (suite *integrationSuite) TestNameCache() {
 }
 
 func (suite *integrationSuite) depsCount(deps map[sous.DeploymentID]*sous.DeployState, count int) bool {
-	return suite.Len(deps, count, "should have %d members, has %d: \n%#v", count, len(deps), deps)
+	return suite.Len(deps, count, "Expected there to be %d deployments, but there are %d: \nDeployState map:\n%#v", count, len(deps), deps)
 }
 
 func (suite *integrationSuite) TestGetRunningDeploymentSet_testCluster() {
@@ -324,13 +322,14 @@ func (suite *integrationSuite) TestSuccessfulService() {
 }
 
 func (suite *integrationSuite) TestFailedDeployFollowingSuccessfulDeploy() {
+	/* I am commenting out this block pursuant to the following note. Let's see how it does.
 	/*
 		If Travis passes after Fri Jul 21 10:52:27 PDT 2017 , remove this.
-	*/
 	if os.Getenv("CI") == "true" {
 		// XXX means we need to do a desktop check before deploys
 		suite.T().Skipf("On travis, we get 'Only 0 of 1 tasks could be launched for deploy, there may not be enough resources to launch the remaining tasks'")
 	}
+	*/
 	clusters := []string{"test-cluster"}
 
 	const sourceRepo = "github.com/user/succeedthenfail" // Part of request ID.
@@ -393,7 +392,8 @@ func (suite *integrationSuite) TestMissingImage() {
 	suite.Error(err, "should report 'missing image' for opentable/one")
 
 	// ****
-	time.Sleep(1 * time.Second)
+
+	WaitForSingularity()
 
 	clusters := []string{"test-cluster"}
 
@@ -439,26 +439,25 @@ func (suite *integrationSuite) TestResolve() {
 	// ****
 	r := sous.NewResolver(suite.deployer, suite.nameCache, &sous.ResolveFilter{}, logsink)
 
-	logging.Log.Warn.Print("Begining OneTwo")
+	suite.T().Log("Begining OneTwo")
 	err = r.Begin(deploymentsOneTwo, clusterDefs.Clusters).Wait()
-	logging.Log.Warn.Print("Finished OneTwo")
+	suite.T().Log("Finished OneTwo")
 	if err != nil {
 		suite.Fail(err.Error())
 	}
 	// ****
-	time.Sleep(3 * time.Second)
+	//time.Sleep(3 * time.Second)
+	WaitForSingularity()
 
 	clusters := []string{"test-cluster"}
 	ds, which := suite.deploymentWithRepo(clusters, repoOne)
 	deps := ds.Snapshot()
-	suite.T().Logf("which: %#v", which)
 	if suite.NotEqual(none, which, "opentable/one not successfully deployed") {
 		one := deps[which]
 		suite.Equal(1, one.NumInstances)
 	}
 
 	which = suite.findRepo(ds, repoTwo)
-	suite.T().Logf("which: %#v", which)
 	if suite.NotEqual(none, which, "opentable/two not successfully deployed") {
 		two := deps[which]
 		suite.Equal(1, two.NumInstances)
@@ -476,7 +475,13 @@ func (suite *integrationSuite) TestResolve() {
 	}
 	sort.Strings(dispositions)
 	expectedDispositions := []string{"added", "added", "removed", "removed", "removed", "removed"}
-	suite.Equal(expectedDispositions, dispositions)
+	if !suite.Equal(expectedDispositions, dispositions) {
+		suite.T().Logf("All log messages:\n")
+		for _, call := range logController.CallsTo("LogMessage") {
+			suite.T().Logf("%q", call.PassedArgs().Get(1))
+		}
+
+	}
 
 	// ****
 	suite.T().Log("Resolving from one+two to two+three")
