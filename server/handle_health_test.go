@@ -3,19 +3,28 @@ package server
 import (
 	"testing"
 
-	sous "github.com/opentable/sous/lib"
+	"github.com/samsalisbury/semv"
 )
 
-func TestHandleServerList_Get(t *testing.T) {
+func TestHandleHealth_Get(t *testing.T) {
+	version := "3.4.5"
 
-	h := &getHealthHandler{}
-	rez, stat := h.Exchange()
+	h := &getHealthHandler{
+		version: semv.MustParse(version),
+	}
+	data, stat := h.Exchange()
 
 	if stat != 200 {
 		t.Errorf("Expecting 200 status; got %d", stat)
 	}
 
-	if rez.Version != sous.Version {
-		t.Errorf("Expecting %q; got %q", sous.Version, rez.Version)
+	rez, is := data.(Health)
+
+	if !is {
+		t.Fatalf("getHealthHandler didn't return a Health struct, but instead a %T: %[1]q", data)
+	}
+
+	if rez.Version != version {
+		t.Errorf("Expecting %q; got %q", version, rez.Version)
 	}
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 	"github.com/pkg/errors"
+	"github.com/samsalisbury/semv"
 )
 
 type (
@@ -27,6 +28,7 @@ type (
 		sous.StateManager
 		ResolveFilter *sous.ResolveFilter
 		*sous.AutoResolver
+		Version semv.Version
 	}
 )
 
