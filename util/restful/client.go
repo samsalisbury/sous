@@ -424,10 +424,6 @@ func reportClientMessage(msg string, channelName string, method string, url *url
 	logging.Deliver(msgLog, log)
 }
 
-func (msg clientMessage) WriteToConsole(console io.Writer) {
-	fmt.Fprintf(console, "%s\n", msg.composeMsg())
-}
-
 func (msg clientMessage) DefaultLevel() logging.Level {
 	level := logging.WarningLevel
 	if msg.isDebugMsg {
