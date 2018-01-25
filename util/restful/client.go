@@ -11,6 +11,7 @@ import (
 	"net/url"
 
 	"github.com/hydrogen18/memlistener"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/readdebugger"
 	"github.com/pkg/errors"
 )
@@ -281,8 +282,8 @@ func (client *LiveHTTPClient) buildRequest(method, url string, headers map[strin
 		headers = map[string]string{}
 	}
 	/*
-		rq.Header.Add("Sous-User-Name", user.Name)
-		rq.Header.Add("Sous-User-Email", user.Email)
+	   rq.Header.Add("Sous-User-Name", user.Name)
+	   rq.Header.Add("Sous-User-Email", user.Email)
 	*/
 
 	client.updateHeaders(rq, headers)
@@ -389,4 +390,66 @@ func (client *LiveHTTPClient) httpRequest(req *http.Request) (*http.Response, er
 
 	rz.Body = readdebugger.New(rz.Body, client.readerLogF("Read", "Client <-", req))
 	return rz, err
+}
+
+type clientMessage struct {
+	logging.CallerInfo
+	msg         string
+	channelName string
+	method      string
+	url         *url.URL
+	statusCode  int
+	isDebugMsg  bool
+}
+
+func reportDebugClientMessage(msg string, channelName string, method string, url *url.URL, statusCode int, log logging.LogSink) {
+	reportClientMessage(msg, channelName, method, url, statusCode, log, true)
+}
+
+func reportClientMessage(msg string, channelName string, method string, url *url.URL, statusCode int, log logging.LogSink, debug ...bool) {
+	debugStmt := false
+	if len(debug) > 0 {
+		debugStmt = debug[0]
+	}
+
+	msgLog := clientMessage{
+		msg:         msg,
+		CallerInfo:  logging.GetCallerInfo(logging.NotHere()),
+		channelName: channelName,
+		method:      method,
+		url:         url,
+		statusCode:  statusCode,
+		isDebugMsg:  debugStmt,
+	}
+	logging.Deliver(msgLog, log)
+}
+
+func (msg clientMessage) WriteToConsole(console io.Writer) {
+	fmt.Fprintf(console, "%s\n", msg.composeMsg())
+}
+
+func (msg clientMessage) DefaultLevel() logging.Level {
+	level := logging.WarningLevel
+	if msg.isDebugMsg {
+		level = logging.DebugLevel
+	}
+
+	return level
+}
+
+func (msg clientMessage) Message() string {
+	return msg.composeMsg()
+}
+
+func (msg clientMessage) composeMsg() string {
+	return fmt.Sprintf("%s: channel name %s, method %s, url %s, statusCode %v", msg.msg, msg.channelName, msg.method, msg.url, msg.statusCode)
+}
+
+func (msg clientMessage) EachField(f logging.FieldReportFn) {
+	f("@loglov3-otl", "sous-generic-v1")
+	f("channel_name", msg.channelName)
+	f("method", msg.method)
+	f("url", msg.url)
+	f("status_code", msg.statusCode)
+	msg.CallerInfo.EachField(f)
 }
