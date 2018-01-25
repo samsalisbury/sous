@@ -32,7 +32,7 @@ func ReportMsg(logger LogSink, lvl Level, msg string, console ...bool) {
 
 func (msg *genericMsg) WriteToConsole(console io.Writer) {
 	if msg.console {
-		fmt.Fprintf(console, "%s\n", msg)
+		fmt.Fprintf(console, "%s\n", msg.Message())
 	}
 }
 

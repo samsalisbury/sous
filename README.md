@@ -1,4 +1,4 @@
-# sous [![Build Status](https://secure.travis-ci.org/opentable/sous.png?branch=master)](http://travis-ci.org/opentable/sous) [![Report card](https://goreportcard.com/badge/github.com/opentable/sous)](https://goreportcard.com/report/github.com/opentable/sous)
+# sous [![Build Status](https://secure.travis-ci.org/opentable/sous.png?branch=master)](http://travis-ci.org/opentable/sous) [![Report card](https://goreportcard.com/badge/github.com/opentable/sous)](https://goreportcard.com/report/github.com/opentable/sous) [![Floobits Status](https://floobits.com/JC1738/sous.svg)](https://floobits.com/JC1738/sous/redirect)
 Sous is a tool for building, testing, and deploying applications, using
 Docker, Mesos, and Singularity.
 
