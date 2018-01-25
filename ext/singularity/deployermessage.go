@@ -11,16 +11,18 @@ import (
 type deployerMessage struct {
 	logging.CallerInfo
 	logging.Level
-	msg  string
-	pair *sous.DeployablePair
+	msg      string
+	pair     *sous.DeployablePair
+	taskData *singularityTaskData
 }
 
-func reportDeployerMessage(message string, pair *sous.DeployablePair, level logging.Level, logger logging.LogSink) {
+func reportDeployerMessage(message string, pair *sous.DeployablePair, taskData *singularityTaskData, level logging.Level, logger logging.LogSink) {
 	msg := deployerMessage{
 		CallerInfo: logging.GetCallerInfo(logging.NotHere()),
 		Level:      level,
 		msg:        message,
 		pair:       pair,
+		taskData:   taskData,
 	}
 	logging.Deliver(msg, logger)
 }
@@ -36,7 +38,7 @@ func (msg deployerMessage) Message() string {
 func (msg deployerMessage) EachField(f logging.FieldReportFn) {
 	f("@loglov3-otl", "sous-rectifier-singularity-v1")
 	f("pair-id", msg.pair.ID)
-	f("request-id", msg.pair.request.ID)
+	f("request-id", msg.taskData.requestID)
 	msg.CallerInfo.EachField(f)
 }
 
