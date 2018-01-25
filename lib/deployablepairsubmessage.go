@@ -30,7 +30,7 @@ func NewDeployablePairSubmessage(pair *DeployablePair) *DeployablePairSubmessage
 
 // EachField implements the EachFielder interface on DeployablePairSubmessage.
 func (msg *DeployablePairSubmessage) EachField(f logging.FieldReportFn) {
-	if pair == nil {
+	if msg.pair == nil {
 		return
 	}
 

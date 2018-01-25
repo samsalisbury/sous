@@ -1,11 +1,6 @@
 package sous
 
 import (
-	"encoding/json"
-	"fmt"
-	"strconv"
-	"strings"
-
 	"github.com/opentable/sous/util/logging"
 )
 
@@ -15,15 +10,15 @@ type deployableMessage struct {
 }
 
 func (msg *deployableMessage) DefaultLevel() logging.Level {
-	if msg.pair.Post == nil {
+	if msg.submessage.pair.Post == nil {
 		return logging.WarningLevel
 	}
 
-	if msg.pair.Prior == nil {
+	if msg.submessage.pair.Prior == nil {
 		return logging.InformationLevel
 	}
 
-	if len(msg.pair.Diffs()) == 0 {
+	if len(msg.submessage.pair.Diffs()) == 0 {
 		return logging.DebugLevel
 	}
 
@@ -31,7 +26,7 @@ func (msg *deployableMessage) DefaultLevel() logging.Level {
 }
 
 func (msg *deployableMessage) Message() string {
-	return msg.pair.Kind().String() + " deployment diff"
+	return msg.submessage.pair.Kind().String() + " deployment diff"
 }
 
 func (msg *deployableMessage) EachField(f logging.FieldReportFn) {
