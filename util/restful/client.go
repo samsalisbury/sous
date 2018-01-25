@@ -358,15 +358,15 @@ func (client *LiveHTTPClient) getBody(rz *http.Response, rzBody interface{}, err
 }
 
 func (client *LiveHTTPClient) logBody(dir, chName string, req *http.Request, b []byte, n int, err error) {
-	client.Vomitf("%s %s %q", chName, req.Method, req.URL)
+	reportDebugClientMessage("logBody", chName, req.Method, req.URL, 0, logging.Log)
 	comp := &bytes.Buffer{}
 	if err := json.Compact(comp, b[0:n]); err != nil {
-		client.Vomitf(string(b))
-		client.Vomitf("(problem compacting JSON for logging: %s)", err)
+		reportDebugClientMessage(fmt.Sprintf("%s", string(b)), chName, req.Method, req.URL, 0, logging.Log)
+		reportDebugClientMessage(fmt.Sprintf("problem compacting JSON for logging: %s)", err), chName, req.Method, req.URL, 0, logging.Log)
 	} else {
-		client.Vomitf(comp.String())
+		reportDebugClientMessage(fmt.Sprintf("%s", string(comp.String())), chName, req.Method, req.URL, 0, logging.Log)
 	}
-	client.Vomitf("%s %d bytes, result: %v", dir, n, err)
+	reportDebugClientMessage(fmt.Sprintf("%s %d bytes, result: %v", dir, n, err), chName, req.Method, req.URL, 0, logging.Log)
 }
 
 func (client *LiveHTTPClient) readerLogF(dir, chName string, req *http.Request) func(b []byte, n int, err error) {
@@ -375,7 +375,7 @@ func (client *LiveHTTPClient) readerLogF(dir, chName string, req *http.Request) 
 
 func (client *LiveHTTPClient) httpRequest(req *http.Request) (*http.Response, error) {
 	if req.Body == nil {
-		client.Vomitf("Client -> %s %q <empty request body>", req.Method, req.URL)
+		reportDebugClientMessage("Client -> <empty request body>", "", req.Method, req.URL, 0, logging.Log)
 	} else {
 		req.Body = readdebugger.New(req.Body, client.readerLogF("Sent", "Client ->", req))
 	}
@@ -384,7 +384,7 @@ func (client *LiveHTTPClient) httpRequest(req *http.Request) (*http.Response, er
 		return rz, err
 	}
 	if rz.Body == nil {
-		client.Vomitf("Client <- %s %q %d <empty response body>", req.Method, req.URL, rz.StatusCode)
+		reportDebugClientMessage("Client <- <empty response body>", "", req.Method, req.URL, rz.StatusCode, logging.Log)
 		return rz, err
 	}
 
