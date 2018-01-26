@@ -87,7 +87,7 @@ func TestDockerMetadataSet(t *testing.T) {
 
 func baseDeployablePair() *sous.DeployablePair {
 	return &sous.DeployablePair{
-		ExecutorData: &singularity.singularityTaskData{requestID: "reqid"},
+		ExecutorData: &singularityTaskData{requestID: "reqid"},
 		Prior: &sous.Deployable{
 			BuildArtifact: &sous.BuildArtifact{
 				Name: "the-prior-image",
