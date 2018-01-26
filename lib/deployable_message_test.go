@@ -273,6 +273,7 @@ func TestDiffMessages_knownpanic(t *testing.T) {
 func TestDeployableMessage_incomplete(t *testing.T) {
 	msg := &deployableMessage{
 		callerInfo: logging.GetCallerInfo(),
+		submessage: &DeployablePairSubmessage{},
 	}
 
 	fixedFields := map[string]interface{}{

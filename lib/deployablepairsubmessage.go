@@ -43,6 +43,10 @@ func (msg *DeployablePairSubmessage) EachField(f logging.FieldReportFn) {
 		f("sous-deployment-diffs", fmt.Sprintf("No detailed diff because pairwise diff kind is %q", msg.pair.Kind()))
 	}
 
-	msg.priorSub.EachField(f)
-	msg.postSub.EachField(f)
+	if msg.priorSub != nil {
+		msg.priorSub.EachField(f)
+	}
+	if msg.priorSub != nil {
+		msg.postSub.EachField(f)
+	}
 }
