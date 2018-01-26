@@ -138,7 +138,8 @@ func (suite *integrationSuite) statusIs(ds *sous.DeployState, expected sous.Depl
 }
 
 func (suite *integrationSuite) dumpLogs() {
-	suite.T().Log(suite.logbuf.String())
+	suite.T().Helper()
+	suite.T().Log("Log buffer:\n" + suite.logbuf.String())
 }
 
 func (suite *integrationSuite) BeforeTest(suiteName, testName string) {
@@ -206,7 +207,7 @@ func (suite *integrationSuite) TestNameCache() {
 }
 
 func (suite *integrationSuite) depsCount(deps map[sous.DeploymentID]*sous.DeployState, count int) bool {
-	if suite.Len(deps, count, "Expected there to be %d deployments, but there are %d: \nDeployState map:\n%#v", count, len(deps), deps) {
+	if suite.Len(deps, count, "Expected there to be %d deployments, but there are %d: \nDeployState map:\n%+#v", count, len(deps), deps) {
 		return true
 	}
 	suite.dumpLogs()
@@ -235,6 +236,8 @@ func (suite *integrationSuite) TestGetRunningDeploymentSet_testCluster() {
 			suite.Equal("91495f1b1630084e301241100ecf2e775f6b672c", webapp.SourceID.Version.Meta, cacheHitText)
 			suite.Equal(1, webapp.NumInstances, cacheHitText)
 			suite.Equal(sous.ManifestKindService, webapp.Kind, cacheHitText)
+		} else {
+			suite.T().Logf("Missing count occured in run #%d", i+1)
 		}
 	}
 }
@@ -493,7 +496,17 @@ func (suite *integrationSuite) TestResolve() {
 	if !suite.Equal(expectedDispositions, dispositions) {
 		suite.T().Logf("All log messages:\n")
 		for _, call := range logController.CallsTo("LogMessage") {
-			suite.T().Logf("%q", call.PassedArgs().Get(1))
+			if msg, is := call.PassedArgs().Get(1).(logging.LogMessage); is {
+				m := map[string]interface{}{}
+				msg.EachField(func(k string, v interface{}) {
+					m[k] = v
+				})
+				m["message"] = msg.Message()
+				suite.T().Log(spew.Sprintf("%#v", m))
+			} else {
+				suite.T().Logf("NOT A LOG MESSAGE: %+#v", call.PassedArgs().Get(1))
+			}
+
 		}
 
 	}

@@ -286,9 +286,12 @@ func matchedPair(t *testing.T, startDep *sous.Deployment) *sous.DeployablePair {
 	depReq := &dtos.SingularityDeployRequest{}
 	jsonRoundtrip(t, aDepReq, depReq)
 
+	log, _ := logging.NewLogSinkSpy()
+
 	db := &deploymentBuilder{
 		request: sRequest(req),
 		deploy:  depReq.Deploy,
+		log:     log,
 	}
 
 	assert.NoError(t, db.extractArtifactName(), "Could not extract ArtifactName (Docker image name) from SingularityDeploy.")
