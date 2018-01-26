@@ -3,6 +3,7 @@
 package integration
 
 import (
+	"bytes"
 	"fmt"
 	"sort"
 	"testing"
@@ -22,6 +23,7 @@ var imageName string
 
 type integrationSuite struct {
 	suite.Suite
+	logbuf    *bytes.Buffer
 	registry  docker_registry.Client
 	nameCache *docker.NameCache
 	client    *singularity.RectiAgent
@@ -113,7 +115,7 @@ func (suite *integrationSuite) newNameCache(name string) *docker.NameCache {
 func (suite *integrationSuite) waitUntilSettledStatus(clusters []string, sourceRepo string) *sous.DeployState {
 	sleepTime := time.Duration(200) * time.Millisecond
 	suite.T().Logf("Awaiting stabilization of Singularity deploy %q (either Active or Failed)...", sourceRepo)
-	const waitLimit = 300
+	const waitLimit = 1500 // = 5 minutes max
 	var deployState *sous.DeployState
 	for counter := 1; counter < waitLimit; counter++ {
 		ds, which := suite.deploymentWithRepo(clusters, sourceRepo)
@@ -135,17 +137,26 @@ func (suite *integrationSuite) statusIs(ds *sous.DeployState, expected sous.Depl
 	suite.Equal(actual, expected, "deploy status is %q; want %q\n%s\nIn: %s", actual, expected, ds.ExecutorMessage, spew.Sdump(ds))
 }
 
+func (suite *integrationSuite) dumpLogs() {
+	suite.T().Log(suite.logbuf.String())
+}
+
 func (suite *integrationSuite) BeforeTest(suiteName, testName string) {
 	ResetSingularity()
+
+	suite.logbuf = &bytes.Buffer{}
+	logset := logging.NewLogSet(semv.MustParse("0.0.0-integration"), "integration", "integration", suite.logbuf)
+	logset.BeChatty()
+
 	imageName = fmt.Sprintf("%s/%s:%s", registryName, "webapp", "latest")
 
-	suite.registry = docker_registry.NewClient(logging.SilentLogSet())
+	suite.registry = docker_registry.NewClient(logset)
 	suite.registry.BecomeFoolishlyTrusting()
 
 	suite.T().Logf("New name cache for %q", testName)
 	suite.nameCache = suite.newNameCache(testName)
 	suite.client = singularity.NewRectiAgent(suite.nameCache)
-	suite.deployer = singularity.NewDeployer(suite.client, logging.SilentLogSet())
+	suite.deployer = singularity.NewDeployer(suite.client, logset)
 }
 
 func (suite *integrationSuite) deployDefaultContainers() {
@@ -195,7 +206,11 @@ func (suite *integrationSuite) TestNameCache() {
 }
 
 func (suite *integrationSuite) depsCount(deps map[sous.DeploymentID]*sous.DeployState, count int) bool {
-	return suite.Len(deps, count, "Expected there to be %d deployments, but there are %d: \nDeployState map:\n%#v", count, len(deps), deps)
+	if suite.Len(deps, count, "Expected there to be %d deployments, but there are %d: \nDeployState map:\n%#v", count, len(deps), deps) {
+		return true
+	}
+	suite.dumpLogs()
+	return false
 }
 
 func (suite *integrationSuite) TestGetRunningDeploymentSet_testCluster() {
