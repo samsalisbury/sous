@@ -86,12 +86,12 @@ func newPossiblyInvalidConfig(path string, defaultConfig DefaultConfig, gcl *Con
 		if err := pic.Validate(); err != nil {
 			// If the config is invalid, warn but write it anyway and allow the
 			// user to correct it themselves.
-			logging.Log.Warn.Printf("Newly initialised config file is invalid: %s", err)
-			logging.Log.Warn.Printf("Please correct the issue by editing %s", path)
+			logging.ReportErrorConsole(logging.Log, errors.Wrapf(err, "Newly initialised config file is invalid"))
+			logging.ReportConsoleMsg(logging.Log, logging.WarningLevel, fmt.Sprintf("Please correct the issue by editing %s", path))
 		}
 		lsc := &LocalSousConfig{pic.Config}
 		lsc.Save(path)
-		logging.Log.Info.Println("initialised config file: " + path)
+		logging.ReportConsoleMsg(logging.Log, logging.InformationLevel, fmt.Sprintf("initialized config file: %s", path))
 	}()
 	_, err := os.Stat(path)
 	if os.IsNotExist(err) {
@@ -114,7 +114,7 @@ func userInput(prompt, vDefault, eg string, v *string) {
 	reader := bufio.NewReader(os.Stdin)
 	in, err := reader.ReadString('\n')
 	if err != nil {
-		logging.Log.Warn.Printf("Failed to read input: %s", err)
+		logging.ReportErrorConsole(logging.Log, errors.Wrapf(err, "Failed to read input"))
 		return
 	}
 	// Strip the newline and any other whitespace.
@@ -127,15 +127,15 @@ func userInput(prompt, vDefault, eg string, v *string) {
 
 func userInitConfig(c *config.Config) {
 	if !terminal.IsTerminal(int(os.Stdout.Fd())) {
-		logging.Log.Warn.Println("Unable to run interactive configuration; stdout isn't attached to a terminal.")
+		logging.ReportConsoleMsg(logging.Log, logging.WarningLevel, "Unable to run interactive configuration; stdout isn't attached to a terminal.")
 		return
 	}
 	if !terminal.IsTerminal(int(os.Stdin.Fd())) {
-		logging.Log.Warn.Println("Unable to run interactive configuration; stdin isn't attached to a terminall.")
+		logging.ReportConsoleMsg(logging.Log, logging.WarningLevel, "Unable to run interactive configuration; stdin isn't attached to a terminal.")
 		return
 	}
 	if os.Getenv("TASK_HOST") != "" { // XXX This is terrible, but the terminal check fails (which breaks the Mesos servers)
-		logging.Log.Warn.Println("Refusing to run interactive configuration; TASK_HOST is set.")
+		logging.ReportConsoleMsg(logging.Log, logging.WarningLevel, "Refusing to run interactive configuration; TASK_HOST is set.")
 		return
 	}
 	fmt.Println(`

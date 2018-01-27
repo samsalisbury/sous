@@ -2,6 +2,7 @@ package sous
 
 import (
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/opentable/sous/util/logging"
@@ -75,8 +76,8 @@ func (sub *subPoller) result(rs ResolveState, data *statusData, err error) pollR
 func (sub *subPoller) pollOnce() pollResult {
 	data := &statusData{}
 	if _, err := sub.Retrieve("./status", nil, data, sub.User.HTTPHeaders()); err != nil {
-		logging.Log.Debugf("%s: error on GET /status: %s", sub.ClusterName, errors.Cause(err))
-		logging.Log.Vomitf("%s: %T %+v", sub.ClusterName, errors.Cause(err), err)
+		reportDebugSubPollerMessage(fmt.Sprintf("%s: error on GET /status: %s", sub.ClusterName, errors.Cause(err)), sub.logs)
+		reportDebugSubPollerMessage(fmt.Sprintf("%s: %T %+v", sub.ClusterName, errors.Cause(err), err), sub.logs)
 		sub.httpErrorCount++
 		if sub.httpErrorCount > 10 {
 			return sub.result(
@@ -113,49 +114,48 @@ func (sub *subPoller) pollOnce() pollResult {
 func (sub *subPoller) stateFeatures(kind string, rezState *ResolveStatus) (*Deployment, *DiffResolution) {
 	current := diffResolutionFor(rezState, sub.locationFilter)
 	srvIntent := serverIntent(rezState, sub.locationFilter)
-	logging.Log.Debugf("%s reports %s intent to resolve [%v]", sub.URL, kind, srvIntent)
-	logging.Log.Debugf("%s reports %s rez: %v", sub.URL, kind, current)
+	reportDebugSubPollerMessage(fmt.Sprintf("%s reports %s intent to resolve [%v]", sub.URL, kind, srvIntent), sub.logs)
+	reportDebugSubPollerMessage(fmt.Sprintf("%s reports %s rez: %v", sub.URL, kind, current), sub.logs)
 
 	return srvIntent, current
 }
 
 func diffResolutionFor(rstat *ResolveStatus, rf *ResolveFilter) *DiffResolution {
 	if rstat == nil {
-		logging.Log.Vomitf("Status was nil - no match for %s", rf)
+		reportDebugSubPollerMessage(fmt.Sprintf("Status was nil - no match for %s", rf), logging.Log)
 		return nil
 	}
 	rezs := rstat.Log
 	for _, rez := range rezs {
-		logging.Log.Vomitf("Checking resolution for: %#v(%[1]T)", rez.ManifestID)
+		reportDebugSubPollerMessage(fmt.Sprintf("Checking resolution for: %#v(%[1]T)", rez.ManifestID), logging.Log)
 		if rf.FilterManifestID(rez.ManifestID) {
-			logging.Log.Vomitf("Matching intent for %s: %#v", rf, rez)
+			reportDebugSubPollerMessage(fmt.Sprintf("Matching intent for %s: %#v", rf, rez), logging.Log)
 			return &rez
 		}
 	}
-	logging.Log.Vomitf("No match for %s in %d entries", rf, len(rezs))
+	reportDebugSubPollerMessage(fmt.Sprintf("No match for %s in %d entries", rf, len(rezs)), logging.Log)
 	return nil
 }
 
 func serverIntent(rstat *ResolveStatus, rf *ResolveFilter) *Deployment {
-	logging.Log.Debugf("Filtering with %q", rf)
+	reportDebugSubPollerMessage(fmt.Sprintf("Filtering with %q", rf), logging.Log)
 	if rstat == nil {
-		logging.Log.Debugf("Nil resolve status!")
+		reportDebugSubPollerMessage("Nil resolve status!", logging.Log)
 		return nil
 	}
-	logging.Log.Vomitf("Filtering %s", rstat.Intended)
-	var dep *Deployment
+	reportDebugSubPollerMessage(fmt.Sprintf("Filtering %s", rstat.Intended), logging.Log)
 
+	var dep *Deployment
 	for _, d := range rstat.Intended {
 		if rf.FilterDeployment(d) {
 			if dep != nil {
-				logging.Log.Debugf("With %s we didn't match exactly one deployment.", rf)
+				reportDebugSubPollerMessage(fmt.Sprintf("With %s we didn't match exactly one deployment.", rf), logging.Log)
 				return nil
 			}
 			dep = d
 		}
 	}
-	logging.Log.Debugf("Filtering found %s", dep)
-
+	reportDebugSubPollerMessage(fmt.Sprintf("Filtering found %s", dep), logging.Log)
 	return dep
 }
 
@@ -195,13 +195,14 @@ func (sub *subPoller) computeState(srvIntent *Deployment, current *DiffResolutio
 		// resolution cycle, Singularity will e.g. have finished a pending->running
 		// transition and be ready to receive a new Deploy)
 		if IsTransientResolveError(current.Error) {
-			logging.Log.Debugf("%s: received resolver error %s, retrying", sub.ClusterName, current.Error)
+			reportDebugSubPollerMessage(fmt.Sprintf("%s: received resolver error %s, retrying", sub.ClusterName, current.Error), sub.logs)
 			return ResolveErredRez, current.Error
 		}
 		// Other errors are unlikely to clear by themselves. In this case, log the
 		// error for operator action, and consider this subpoller done as failed.
-		logging.Log.Vomitf("%#v", current)
-		logging.Log.Vomitf("%#v", current.Error)
+		reportDebugSubPollerMessage(fmt.Sprintf("%#v", current), sub.logs)
+		reportDebugSubPollerMessage(fmt.Sprintf("%#v", current.Error), sub.logs)
+
 		subject := ""
 		if sub.locationFilter == nil {
 			subject = "<no filter defined>"
@@ -213,7 +214,8 @@ func (sub *subPoller) computeState(srvIntent *Deployment, current *DiffResolutio
 				subject = sub.locationFilter.String()
 			}
 		}
-		logging.Log.Warn.Printf("Deployment of %s to %s failed: %s", subject, sub.ClusterName, current.Error.String)
+
+		reportSubPollerMessage(fmt.Sprintf("Deployment of %s to %s failed: %s", subject, sub.ClusterName, current.Error.String), sub.logs)
 		return ResolveFailed, current.Error
 	}
 
@@ -230,4 +232,82 @@ func (sub *subPoller) computeState(srvIntent *Deployment, current *DiffResolutio
 	}
 
 	return ResolveInProgress, nil
+}
+
+type subPollerMessage struct {
+	logging.CallerInfo
+	msg          string
+	isDebugMsg   bool
+	isConsoleMsg bool
+	isErrorMsg   bool
+}
+
+func reportErrorSubPollerMessage(err error, log logging.LogSink) {
+	msg := "<missing error>"
+	if err != nil {
+		msg = err.Error()
+	}
+	reportSubPollerMessage(msg, log, false, false, true)
+}
+
+func reportDebugSubPollerMessage(msg string, log logging.LogSink) {
+	reportSubPollerMessage(msg, log, true)
+}
+
+func reportConsoleSubPollerMessage(msg string, log logging.LogSink) {
+	reportSubPollerMessage(msg, log, false, true)
+}
+
+func reportSubPollerMessage(msg string, log logging.LogSink, flags ...bool) {
+	debugStmt := false
+	consoleMsg := false
+	errorMsg := false
+	if len(flags) > 0 {
+		debugStmt = flags[0]
+		if len(flags) > 1 {
+			consoleMsg = flags[1]
+		}
+		if len(flags) > 2 {
+			errorMsg = flags[2]
+		}
+	}
+
+	msgLog := subPollerMessage{
+		msg:          msg,
+		CallerInfo:   logging.GetCallerInfo(logging.NotHere()),
+		isDebugMsg:   debugStmt,
+		isConsoleMsg: consoleMsg,
+		isErrorMsg:   errorMsg,
+	}
+	logging.Deliver(msgLog, log)
+}
+
+func (msg subPollerMessage) WriteToConsole(console io.Writer) {
+	if msg.isConsoleMsg {
+		fmt.Fprintf(console, "%s\n", msg.composeMsg())
+	}
+}
+
+func (msg subPollerMessage) DefaultLevel() logging.Level {
+	level := logging.WarningLevel
+	if msg.isDebugMsg {
+		level = logging.DebugLevel
+	}
+	if msg.isErrorMsg {
+		level = logging.WarningLevel
+	}
+	return level
+}
+
+func (msg subPollerMessage) Message() string {
+	return msg.composeMsg()
+}
+
+func (msg subPollerMessage) composeMsg() string {
+	return msg.msg
+}
+
+func (msg subPollerMessage) EachField(f logging.FieldReportFn) {
+	f("@loglov3-otl", "sous-generic-v1")
+	msg.CallerInfo.EachField(f)
 }

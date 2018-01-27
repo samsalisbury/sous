@@ -2,6 +2,7 @@ package sous
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -77,4 +78,19 @@ func (gf GenericFlaw) AddContext(name string, thing interface{}) {
 
 func (gf GenericFlaw) Error() error {
 	return errors.Errorf(gf.String())
+}
+
+// FlawMessage struct to hold flaws message
+type FlawMessage struct {
+	Flaws []Flaw
+}
+
+// ReturnFlawMsg takes the flaws and creates a string for logging
+func (msg FlawMessage) ReturnFlawMsg() string {
+	var msgFlaws string
+	for _, flaw := range msg.Flaws {
+		joined := []string{msgFlaws, fmt.Sprintf("%v", flaw)}
+		msgFlaws = strings.Join(joined, " ")
+	}
+	return msgFlaws
 }
