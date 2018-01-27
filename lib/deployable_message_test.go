@@ -20,11 +20,11 @@ func TestDeployableMessage(t *testing.T) {
 			},
 			priorSub: &DeployableSubmessage{
 				deployable: prior,
-				prefix:     "",
+				prefix:     "sous-prior",
 			},
 			postSub: &DeployableSubmessage{
 				deployable: post,
-				prefix:     "",
+				prefix:     "sous-post",
 			},
 		},
 		callerInfo: logging.GetCallerInfo(),
@@ -205,6 +205,15 @@ func TestDiffMessages_knownpanic(t *testing.T) {
 				},
 			},
 		},
+	}
+
+	msg.submessage.priorSub = &DeployableSubmessage{
+		deployable: msg.submessage.pair.Prior,
+		prefix:     "sous-prior",
+	}
+	msg.submessage.postSub = &DeployableSubmessage{
+		deployable: msg.submessage.pair.Post,
+		prefix:     "sous-post",
 	}
 
 	fixedFields := map[string]interface{}{
