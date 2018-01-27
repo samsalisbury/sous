@@ -11,6 +11,7 @@ import (
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 	"github.com/pkg/errors"
+	"github.com/samsalisbury/semv"
 )
 
 type (
@@ -27,6 +28,7 @@ type (
 		sous.StateManager
 		ResolveFilter *sous.ResolveFilter
 		*sous.AutoResolver
+		Version semv.Version
 	}
 )
 
@@ -63,7 +65,7 @@ func Handler(sc ComponentLocator, metrics http.Handler, ls logging.LogSink) http
 	return handler
 }
 
-// Handler builds the http.Handler for the Sous server httprouter.
+// ProfilingHandler builds the http.Handler for the Sous server httprouter.
 func ProfilingHandler(sc ComponentLocator, metrics http.Handler, ls logging.LogSink) http.Handler {
 	handler := mux(sc, ls)
 	addMetrics(handler, metrics)
@@ -87,6 +89,7 @@ func routemap(context ComponentLocator) *restful.RouteMap {
 		{"artifact", "/artifact", newArtifactResource(context)},
 		{"status", "/status", newStatusResource(context)},
 		{"servers", "/servers", newServerListResource(context)},
+		{"health", "/health", newHealthResource(context)},
 	}
 }
 

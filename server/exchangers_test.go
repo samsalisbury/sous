@@ -23,4 +23,6 @@ func TestResourcesFulfillInterfaces(t *testing.T) {
 	assert.Implements(t, (*restful.Putable)(nil), newServerListResource(ComponentLocator{}))
 
 	assert.Implements(t, (*restful.Getable)(nil), newStatusResource(ComponentLocator{}))
+
+	assert.Implements(t, (*restful.Getable)(nil), newHealthResource(ComponentLocator{}))
 }

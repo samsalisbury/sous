@@ -9,6 +9,7 @@ import (
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/ext/storage"
 	"github.com/opentable/sous/lib"
+	"github.com/opentable/sous/server"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/shell"
 	"github.com/samsalisbury/psyringe"
@@ -89,11 +90,32 @@ func TestLogSink(t *testing.T) {
 
 	assert.True(t, is)
 	assert.NoError(t, logging.AssertConfiguration(set, "localhost:3333"))
+}
 
+func TestComponentLocatorInjection(t *testing.T) {
+	g := BuildGraph(semv.MustParse("2.3.7-somenonsense+ignorebuilds"), &bytes.Buffer{}, ioutil.Discard, ioutil.Discard)
+	g.Add(DryrunBoth)
+	g.Add(&config.Verbosity{})
+	g.Add(&config.DeployFilterFlags{})
+	g.Add(&config.PolicyFlags{}) //provided by SousBuild
+	g.Add(&config.OTPLFlags{})   //provided by SousInit and SousDeploy
+
+	scoop := struct{ server.ComponentLocator }{}
+	g.MustInject(&scoop)
+	locator := scoop.ComponentLocator
+
+	assert.NotNil(t, locator.LogSink)
+	assert.NotNil(t, locator.Config)
+	assert.NotNil(t, locator.Inserter)
+	assert.NotNil(t, locator.StateManager)
+	assert.NotNil(t, locator.ResolveFilter)
+	assert.NotNil(t, locator.AutoResolver)
+	assert.Equal(t, locator.Version.Format("M.m.p"), "2.3.7")
 }
 
 func injectedStateManager(t *testing.T, cfg *config.Config) *StateManager {
 	g := newSousGraph()
+	g.Add(semv.MustParse("9.9.9"))
 	g.Add(newUser)
 	g.Add(LogSink{logging.SilentLogSet()})
 	g.Add(MetricsHandler{})
