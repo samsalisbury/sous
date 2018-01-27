@@ -41,6 +41,7 @@ func (suite *integrationSuite) deploymentWithRepo(clusterNames []string, repo st
 	for _, name := range clusterNames {
 		clusters[name] = &sous.Cluster{BaseURL: SingularityURL}
 	}
+	suite.T().Logf("Calling RunningDeployments for clusters %#v", clusters)
 	deps, err := suite.deployer.RunningDeployments(suite.nameCache, clusters)
 	if suite.NoError(err) {
 		return deps, suite.findRepo(deps, repo)

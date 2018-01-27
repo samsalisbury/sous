@@ -110,7 +110,7 @@ func (sc *deployer) RunningDeployments(reg sous.Registry, clusters sous.Clusters
 				sc.log.Debugf("Errors channel closed. Finishing up.")
 				return deps, nil
 			}
-			if isMalformed(sc.log, err) || ignorableDeploy(err) {
+			if isMalformed(sc.log, err) || ignorableDeploy(sc.log, err) {
 				sc.log.Debugf("\n", err)
 				depWait.Done()
 			} else {
@@ -184,7 +184,6 @@ func (sc *deployer) singPipeline(
 	dw, wg *sync.WaitGroup,
 	reqs chan SingReq,
 	errs chan error,
-	//	clusters []string,
 	clusters sous.Clusters,
 ) {
 	sc.log.Vomitf("Starting cluster at %s", url)

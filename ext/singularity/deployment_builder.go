@@ -55,9 +55,11 @@ func (nsd nonSousError) Error() string {
 	return "Not a Sous SingularityDeploy."
 }
 
-func ignorableDeploy(err error) bool {
+func ignorableDeploy(log logging.LogSink, err error) bool {
+	log.Vomitf("checking to see if %+v is ignorable", err)
 	switch errors.Cause(err).(type) {
 	case nonSousError, notThisClusterError:
+		log.Vomitf("ignorable: %v", err)
 		return true
 	}
 	return false
@@ -99,7 +101,7 @@ func (db *deploymentBuilder) canRetry(err error) error {
 
 func (db *deploymentBuilder) isRetryable(err error) bool {
 	return !isMalformed(db.log, err) &&
-		!ignorableDeploy(err) &&
+		!ignorableDeploy(db.log, err) &&
 		db.req.SourceURL != "" &&
 
 		db.req.ReqParent != nil &&
@@ -264,6 +266,7 @@ func (db *deploymentBuilder) sousDeployCheck() error {
 	if cnl, ok := db.deploy.Metadata[sous.ClusterNameLabel]; ok {
 		for _, cn := range db.clusters.Names() {
 			if cnl == cn {
+				db.log.Vomitf("Deploy cluster %q found in clusters (%#v)", cnl, db.clusters)
 				return nil
 			}
 		}
