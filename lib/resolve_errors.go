@@ -99,7 +99,11 @@ func (ew ErrorWrapper) Error() string {
 func buildMarshableError(err error) MarshallableError {
 	ew := MarshallableError{}
 	ew.Type = fmt.Sprintf("%T", err)
-	ew.String = fmt.Sprintf("%s", err)
+	if err != nil {
+		ew.String = fmt.Sprintf("%s", err.Error())
+	} else {
+		ew.String = "Failed to marshal error, it was NULL"
+	}
 	return ew
 }
 

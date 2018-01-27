@@ -14,6 +14,7 @@ import (
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 	"github.com/samsalisbury/semv"
+	"github.com/stretchr/testify/require"
 )
 
 func TestResolveState_String(t *testing.T) {
@@ -42,12 +43,41 @@ func TestResolveState_String(t *testing.T) {
 	}
 }
 
+func makeTestDep() *Deployable {
+	return &Deployable{
+		Status: DeployStatusActive,
+		Deployment: &Deployment{
+			DeployConfig: DeployConfig{
+				NumInstances: 12,
+			},
+			ClusterName: "test",
+			Cluster:     &Cluster{Name: "dev-pp-sf"},
+			SourceID:    MustNewSourceID("gh.com", "offset", "0.0.2"),
+			Flavor:      "",
+			Owners:      OwnerSet{},
+			Kind:        "service",
+		},
+	}
+}
+
+func deploymentPair() *DeploymentPair {
+	deploymentPair := &DeploymentPair{
+		Prior: makeTestDep().Deployment,
+		Post:  makeTestDep().Deployment,
+	}
+	return deploymentPair
+}
+
 func TestSubPoller_ComputeState(t *testing.T) {
+	basePair := deploymentPair()
+	rezErr := &ChangeError{
+		Deployments: basePair,
+		Err:         fmt.Errorf("something bad"),
+	}
+	permErr := fmt.Errorf("something bad")
+
 	testRepo := "github.com/opentable/example"
 	testDir := ""
-
-	rezErr := &ChangeError{}
-	permErr := fmt.Errorf("something bad")
 
 	deployment := func(version string, status DeployStatus) *Deployment {
 		return &Deployment{
@@ -74,29 +104,35 @@ func TestSubPoller_ComputeState(t *testing.T) {
 		}
 	}
 
-	testCompute := func(version string, intent *Deployment, current *DiffResolution, expected ResolveState) {
+	testCompute := func(version string, intent *Deployment, current *DiffResolution, expected ResolveState, numLogMessageCalls int) {
+		logger, control := logging.NewLogSinkSpy()
 		sub := subPoller{
 			idFilter: &ResolveFilter{
 				Tag: NewResolveFieldMatcher(version),
 			},
+			logs: logger,
 		}
 		if actual, _ := sub.computeState(intent, current); expected != actual {
 			t.Errorf("sub.computeState(%v, %v) -> %v != %v", intent, current, actual, expected)
 		}
+
+		logCalls := control.CallsTo("LogMessage")
+		require.Len(t, logCalls, numLogMessageCalls)
+
 	}
 
-	testCompute("1.0", nil, nil, ResolveNotStarted)
-	testCompute("1.0", deployment("0.9", DeployStatusAny), nil, ResolveNotVersion)
-	testCompute("1.0", deployment("1.0", DeployStatusAny), nil, ResolvePendingRequest)
+	testCompute("1.0", nil, nil, ResolveNotStarted, 0)
+	testCompute("1.0", deployment("0.9", DeployStatusAny), nil, ResolveNotVersion, 0)
+	testCompute("1.0", deployment("1.0", DeployStatusAny), nil, ResolvePendingRequest, 0)
 
-	testCompute("1.0", deployment("1.0", DeployStatusAny), diffRez("update", nil), ResolveInProgress) //known update , no outcome yet
+	testCompute("1.0", deployment("1.0", DeployStatusAny), diffRez("update", nil), ResolveInProgress, 0) //known update , no outcome yet
 
-	testCompute("1.0", deployment("1.0", DeployStatusAny), diffRez("unchanged", rezErr), ResolveErredRez)
-	testCompute("1.0", deployment("1.0", DeployStatusAny), diffRez("unchanged", permErr), ResolveFailed)
+	testCompute("1.0", deployment("1.0", DeployStatusAny), diffRez("unchanged", rezErr), ResolveErredRez, 1)
+	testCompute("1.0", deployment("1.0", DeployStatusAny), diffRez("unchanged", permErr), ResolveFailed, 3)
 
-	testCompute("1.0", deployment("1.0", DeployStatusAny), diffRez("unchanged", nil), ResolveComplete)
+	testCompute("1.0", deployment("1.0", DeployStatusAny), diffRez("unchanged", nil), ResolveComplete, 0)
 
-	testCompute("1.0", deployment("1.0", DeployStatusPending), diffRez("coming", nil), ResolveTasksStarting)
+	testCompute("1.0", deployment("1.0", DeployStatusPending), diffRez("coming", nil), ResolveTasksStarting, 0)
 }
 
 type isFinished bool
