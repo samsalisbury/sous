@@ -10,6 +10,7 @@ import (
 	"github.com/opentable/sous/util/logging"
 )
 
+// HttpLogEntry struct to hold log entry messages
 type HttpLogEntry struct {
 	logging.CallerInfo
 	logging.Level
@@ -107,6 +108,7 @@ func newHTTPLogEntry(server bool, resName, method, urlstring string, status int,
 	}
 }
 
+// MetricsTo function to send metrics to graphite
 func (msg *HttpLogEntry) MetricsTo(metrics logging.MetricsSink) {
 	side := "client"
 	if msg.serverSide {
@@ -148,6 +150,7 @@ func (msg *HttpLogEntry) MetricsTo(metrics logging.MetricsSink) {
 	}
 }
 
+// EachField to populate the proper fields from message
 func (msg *HttpLogEntry) EachField(f logging.FieldReportFn) {
 	f("@loglov3-otl", "sous-http-v1")
 	f("resource-family", msg.resourceFamily)
@@ -168,10 +171,12 @@ func (msg *HttpLogEntry) EachField(f logging.FieldReportFn) {
 	msg.CallerInfo.EachField(f)
 }
 
+// Status method to retrieve status from message
 func (msg *HttpLogEntry) Status() int {
 	return msg.status
 }
 
+// Message retrieve message from log message
 func (msg *HttpLogEntry) Message() string {
 	return fmt.Sprintf("%d", msg.status)
 }
