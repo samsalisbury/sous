@@ -130,7 +130,25 @@ func WaitForSingularity() {
 		}
 	*/
 
-	var pendingCount int
+	pendingCount := -1
+	for {
+		reqs, err := singClient.GetPendingRequests()
+		if err != nil {
+			panic(err)
+		}
+
+		if len(reqs) == 0 {
+			break
+		}
+
+		if len(reqs) != pendingCount {
+			log.Printf("There are %d pending requests still...", len(reqs))
+			pendingCount = len(reqs)
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+
+	pendingCount = -1
 	for {
 		deps, err := singClient.GetPendingDeploys()
 		if err != nil {
@@ -138,6 +156,7 @@ func WaitForSingularity() {
 		}
 
 		if len(deps) == 0 {
+			log.Println("No pending requests or deploys at Singularity")
 			return
 		}
 
@@ -146,7 +165,7 @@ func WaitForSingularity() {
 			log.Printf("There are %d pending deploys still...", len(deps))
 			pendingCount = len(deps)
 		}
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(50 * time.Millisecond)
 	}
 }
 

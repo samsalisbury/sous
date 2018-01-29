@@ -15,7 +15,6 @@ with respect to its command line interface and HTTP interface.
 
 ### Changed
 * All: error parsing repo from SourceLocation now more informative.
-* Server: small change to private interface of ResolveRecorder
 
 ### Fixed
 * All: Data race in rectification queue.
