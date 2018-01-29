@@ -10,7 +10,7 @@ import (
 	"github.com/opentable/sous/util/logging"
 )
 
-type httpLogEntry struct {
+type HttpLogEntry struct {
 	logging.CallerInfo
 	logging.Level
 	serverSide     bool
@@ -43,7 +43,24 @@ func ReportServerHTTPResponse(logger logging.LogSink, rq *http.Request, statusCo
 	logging.Deliver(m, logger)
 }
 
-func buildHTTPLogMessage(server bool, rq *http.Request, statusCode int, responseContentLength int64, resName string, dur time.Duration) *httpLogEntry {
+// BuildClientHTTPResponse reports a response recieved by Sous as a client.
+func BuildClientHTTPResponse(rz *http.Response, resName string, dur time.Duration) *HttpLogEntry {
+	// XXX dur should in fact be "start time.Time" and duration be computed here.
+	// swaggering now depends on this, so it's more of a hassle.
+	m := buildHTTPLogMessage(false, rz.Request, rz.StatusCode, rz.ContentLength, resName, dur)
+	m.ExcludeMe()
+	return m
+}
+
+// BuildServerHTTPResponse reports a response recieved by Sous as a client.
+// n.b. this interface subject to change
+func BuildServerHTTPResponse(rq *http.Request, statusCode int, contentLength int64, resName string, dur time.Duration) *HttpLogEntry {
+	m := buildHTTPLogMessage(true, rq, statusCode, contentLength, resName, dur)
+	m.ExcludeMe()
+	return m
+}
+
+func buildHTTPLogMessage(server bool, rq *http.Request, statusCode int, responseContentLength int64, resName string, dur time.Duration) *HttpLogEntry {
 	url := rq.URL
 
 	qps := map[string]string{}
@@ -67,31 +84,30 @@ func buildHTTPLogMessage(server bool, rq *http.Request, statusCode int, response
 	return m
 }
 
-func newHTTPLogEntry(server bool, resName, method, urlstring string, status int, rqSize, rzSize int64, dur time.Duration) *httpLogEntry {
+func newHTTPLogEntry(server bool, resName, method, urlstring string, status int, rqSize, rzSize int64, dur time.Duration) *HttpLogEntry {
 	u, err := url.Parse(urlstring)
 	if err != nil {
 		u = &url.URL{}
 	}
 
-	return &httpLogEntry{
+	return &HttpLogEntry{
 		Level:      logging.InformationLevel,
 		CallerInfo: logging.GetCallerInfo(logging.NotHere()),
 
 		serverSide:     server,
-		resourceFamily: resName,
-		method:         method,
-		url:            urlstring,
-		server:         u.Host,
-		path:           u.Path,
-		parms:          u.RawQuery,
-		status:         status,
-		requestSize:    rqSize,
-		responseSize:   rzSize,
-		dur:            dur,
+		resourceFamily: resName, method: method,
+		url:          urlstring,
+		server:       u.Host,
+		path:         u.Path,
+		parms:        u.RawQuery,
+		status:       status,
+		requestSize:  rqSize,
+		responseSize: rzSize,
+		dur:          dur,
 	}
 }
 
-func (msg *httpLogEntry) MetricsTo(metrics logging.MetricsSink) {
+func (msg *HttpLogEntry) MetricsTo(metrics logging.MetricsSink) {
 	side := "client"
 	if msg.serverSide {
 		side = "server"
@@ -132,7 +148,7 @@ func (msg *httpLogEntry) MetricsTo(metrics logging.MetricsSink) {
 	}
 }
 
-func (msg *httpLogEntry) EachField(f logging.FieldReportFn) {
+func (msg *HttpLogEntry) EachField(f logging.FieldReportFn) {
 	f("@loglov3-otl", "sous-http-v1")
 	f("resource-family", msg.resourceFamily)
 	f("incoming", msg.serverSide)
@@ -152,6 +168,10 @@ func (msg *httpLogEntry) EachField(f logging.FieldReportFn) {
 	msg.CallerInfo.EachField(f)
 }
 
-func (msg *httpLogEntry) Message() string {
+func (msg *HttpLogEntry) Status() int {
+	return msg.status
+}
+
+func (msg *HttpLogEntry) Message() string {
 	return fmt.Sprintf("%d", msg.status)
 }
