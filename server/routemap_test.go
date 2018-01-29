@@ -38,4 +38,6 @@ func TestSousRoutes(t *testing.T) {
 		"/status",
 		"status",
 	)
+
+	test("/health", "health")
 }
