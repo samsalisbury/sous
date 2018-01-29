@@ -3,6 +3,7 @@ package singularity
 import (
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
@@ -13,16 +14,18 @@ type deployerMessage struct {
 	logging.Level
 	msg      string
 	pair     *sous.DeployablePair
+	diffs    *sous.Differences
 	taskData *singularityTaskData
 	error    error
 }
 
-func reportDeployerMessage(message string, pair *sous.DeployablePair, taskData *singularityTaskData, error error, level logging.Level, logger logging.LogSink) {
+func reportDeployerMessage(message string, pair *sous.DeployablePair, diffs *sous.Differences, taskData *singularityTaskData, error error, level logging.Level, logger logging.LogSink) {
 	msg := deployerMessage{
 		CallerInfo: logging.GetCallerInfo(logging.NotHere()),
 		Level:      level,
 		msg:        message,
 		pair:       pair,
+		diffs:      diffs,
 		taskData:   taskData,
 		error:      error,
 	}
@@ -40,6 +43,7 @@ func (msg deployerMessage) Message() string {
 func (msg deployerMessage) EachField(f logging.FieldReportFn) {
 	f("@loglov3-otl", "sous-rectifier-singularity-v1")
 	f("pair-id", msg.pair.ID)
+	f("diffs", strings.Join(*msg.diffs, "\n"))
 	f("request-id", msg.taskData.requestID)
 	f("error", msg.error.Error())
 	msg.CallerInfo.EachField(f)
