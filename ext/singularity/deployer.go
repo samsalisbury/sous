@@ -251,10 +251,6 @@ func (r *deployer) RectifySingleModification(pair *sous.DeployablePair) (err err
 		reportDeployerMessage("No change to deploy for request", pair, data, nil, logging.DebugLevel, logging.Log)
 	}
 
-	if !changesApplied {
-		reportDeployerMessage("No change to singularity", pair, data, nil, logging.DebugLevel, logging.Log)
-	}
-
 	return nil
 }
 
