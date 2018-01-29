@@ -237,7 +237,7 @@ func (r *deployer) RectifySingleModification(pair *sous.DeployablePair) (err err
 		}
 		changesApplied = true
 	} else {
-		reportDeployerMessage("No change to request", pair, data, nil, logging.DebugLevel, logging.Log)
+		reportDeployerMessage("No change to Singularity request required", pair, data, nil, logging.DebugLevel, logging.Log)
 	}
 
 	if changesDep(pair) {
@@ -248,7 +248,7 @@ func (r *deployer) RectifySingleModification(pair *sous.DeployablePair) (err err
 		}
 		changesApplied = true
 	} else {
-		reportDeployerMessage("No change to deploy for request", pair, data, nil, logging.DebugLevel, logging.Log)
+		reportDeployerMessage("No change to Singularity deployment required", pair, data, nil, logging.DebugLevel, logging.Log)
 	}
 
 	return nil
