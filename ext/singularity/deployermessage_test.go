@@ -12,7 +12,7 @@ func TestDeployerMessage(t *testing.T) {
 	logger, control := logging.NewLogSinkSpy()
 	pair := baseDeployablePair()
 
-	reportDeployerMessage("test", pair, nil, logging.InformationLevel, logger)
+	reportDeployerMessage("test", pair, nil, nil, logging.InformationLevel, logger)
 
 	logCalls := control.CallsTo("LogMessage")
 	require.Len(t, logCalls, 1)
