@@ -118,6 +118,9 @@ func ResetSingularity() {
 	panic(fmt.Errorf("singularity not reset after %d * %d tries - %d requests remain", retryLimit, pollLimit, len(reqList)))
 }
 
+// WaitForSingularity polls the test S9y server for pending requests and then pending deploys.
+// The idea is that, having issued requests and deploys to S9y, you can call WaitForSingularity
+// and when it returns you know that the server is in a stable state.
 func WaitForSingularity() {
 	log.Print("Waiting for Singularity to stabilize")
 
