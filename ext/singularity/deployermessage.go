@@ -14,12 +14,12 @@ type deployerMessage struct {
 	logging.Level
 	msg        string
 	submessage *sous.DeployablePairSubmessage
-	diffs      *sous.Differences
+	diffs      sous.Differences
 	taskData   *singularityTaskData
 	error      error
 }
 
-func reportDeployerMessage(message string, pair *sous.DeployablePair, diffs *sous.Differences, taskData *singularityTaskData, error error, level logging.Level, logger logging.LogSink) {
+func reportDeployerMessage(message string, pair *sous.DeployablePair, diffs sous.Differences, taskData *singularityTaskData, error error, level logging.Level, logger logging.LogSink) {
 	msg := deployerMessage{
 		CallerInfo: logging.GetCallerInfo(logging.NotHere()),
 		Level:      level,
@@ -42,7 +42,7 @@ func (msg deployerMessage) Message() string {
 
 func (msg deployerMessage) EachField(f logging.FieldReportFn) {
 	f("@loglov3-otl", "sous-rectifier-singularity-v1")
-	f("diffs", strings.Join(*msg.diffs, "\n"))
+	f("diffs", strings.Join(msg.diffs, "\n"))
 	f("request-id", msg.taskData.requestID)
 	f("error", msg.error.Error())
 	msg.CallerInfo.EachField(f)
