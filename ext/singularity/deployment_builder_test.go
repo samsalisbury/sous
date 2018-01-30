@@ -8,6 +8,7 @@ import (
 
 	"github.com/opentable/go-singularity/dtos"
 	"github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/swaggering"
 	"github.com/stretchr/testify/assert"
 )
@@ -48,56 +49,58 @@ func TestBuildDeployment_errors(t *testing.T) {
 		cannedAnswer: map[string]string{},
 	}
 
+	log, _ := logging.NewLogSinkSpy()
+
 	req := SingReq{
 		SourceURL: url,
 		Sing:      fakeSing,
 		ReqParent: reqParent,
 	}
-	_, err := BuildDeployment(fakeReg, testClusters, req)
+	_, err := BuildDeployment(fakeReg, testClusters, req, log)
 
 	assert.Error(t, err)
 
 	req.ReqParent.RequestDeployState = &dtos.SingularityRequestDeployState{}
-	_, err = BuildDeployment(fakeReg, testClusters, req)
+	_, err = BuildDeployment(fakeReg, testClusters, req, log)
 	assert.Error(t, err)
 
 	req.ReqParent.Request = &dtos.SingularityRequest{Id: "1234"}
-	_, err = BuildDeployment(fakeReg, testClusters, req)
+	_, err = BuildDeployment(fakeReg, testClusters, req, log)
 	assert.Error(t, err)
 
 	req.ReqParent.RequestDeployState.ActiveDeploy = &dtos.SingularityDeployMarker{}
-	_, err = BuildDeployment(fakeReg, testClusters, req)
+	_, err = BuildDeployment(fakeReg, testClusters, req, log)
 	assert.Error(t, err)
 
 	fakeSing.cannedAnswer.Deploy = &dtos.SingularityDeploy{}
-	_, err = BuildDeployment(fakeReg, testClusters, req)
+	_, err = BuildDeployment(fakeReg, testClusters, req, log)
 	assert.Error(t, err)
 
 	fakeSing.cannedAnswer.Deploy.ContainerInfo = &dtos.SingularityContainerInfo{}
-	_, err = BuildDeployment(fakeReg, testClusters, req)
+	_, err = BuildDeployment(fakeReg, testClusters, req, log)
 	assert.Error(t, err)
 
 	fakeSing.cannedAnswer.Deploy.ContainerInfo.Type = "DOCKER"
-	_, err = BuildDeployment(fakeReg, testClusters, req)
+	_, err = BuildDeployment(fakeReg, testClusters, req, log)
 	assert.Error(t, err)
 
 	fakeSing.cannedAnswer.Deploy.ContainerInfo.Docker = &dtos.SingularityDockerInfo{Image: "image-name"}
-	_, err = BuildDeployment(fakeReg, testClusters, req)
+	_, err = BuildDeployment(fakeReg, testClusters, req, log)
 	assert.Error(t, err)
 
 	fakeReg.cannedAnswer["com.opentable.sous.repo_url"] = "repo_url"
 	fakeReg.cannedAnswer["com.opentable.sous.version"] = "version"
 	fakeReg.cannedAnswer["com.opentable.sous.revision"] = "revision"
 	fakeReg.cannedAnswer["com.opentable.sous.repo_offset"] = "repo_offset"
-	_, err = BuildDeployment(fakeReg, testClusters, req)
+	_, err = BuildDeployment(fakeReg, testClusters, req, log)
 	assert.Error(t, err)
 
 	fakeReg.cannedAnswer["com.opentable.sous.version"] = "1.2.3"
-	_, err = BuildDeployment(fakeReg, testClusters, req)
+	_, err = BuildDeployment(fakeReg, testClusters, req, log)
 	assert.Error(t, err)
 
 	req.ReqParent.Request.Id = "repo_url,repo_offset::left"
-	_, err = BuildDeployment(fakeReg, testClusters, req)
+	_, err = BuildDeployment(fakeReg, testClusters, req, log)
 	assert.Error(t, err)
 
 	fakeSing.cannedAnswer.Deploy.Metadata = map[string]string{
@@ -105,19 +108,19 @@ func TestBuildDeployment_errors(t *testing.T) {
 		"com.opentable.sous.flavor":      "vanilla",
 	}
 
-	_, err = BuildDeployment(fakeReg, testClusters, req)
+	_, err = BuildDeployment(fakeReg, testClusters, req, log)
 	assert.Error(t, err)
 
 	fakeSing.cannedAnswer.Deploy.Resources = &dtos.Resources{}
-	_, err = BuildDeployment(fakeReg, testClusters, req)
+	_, err = BuildDeployment(fakeReg, testClusters, req, log)
 	assert.Error(t, err)
 
 	req.ReqParent.Request.RequestType = dtos.SingularityRequestRequestTypeSERVICE
-	_, err = BuildDeployment(fakeReg, testClusters, req)
+	_, err = BuildDeployment(fakeReg, testClusters, req, log)
 	assert.Error(t, err)
 
 	fakeSing.cannedAnswer.DeployMarker = &dtos.SingularityDeployMarker{}
-	_, err = BuildDeployment(fakeReg, testClusters, req)
+	_, err = BuildDeployment(fakeReg, testClusters, req, log)
 	assert.NoError(t, err)
 }
 
@@ -141,6 +144,8 @@ func TestBuildDeployment(t *testing.T) {
 			},
 		},
 	}
+
+	log, _ := logging.NewLogSinkSpy()
 
 	fakeSing := &fakeSingClient{
 		cannedAnswer: &dtos.SingularityDeployHistory{
@@ -187,7 +192,7 @@ func TestBuildDeployment(t *testing.T) {
 		},
 	}
 
-	actual, err := BuildDeployment(fakeReg, testClusters, req)
+	actual, err := BuildDeployment(fakeReg, testClusters, req, log)
 
 	assert.NoError(t, err)
 
@@ -258,6 +263,8 @@ func TestBuildDeployment_failed_deploy(t *testing.T) {
 
 	req.Sing = fakeSing
 
+	log, _ := logging.NewLogSinkSpy()
+
 	fakeReg := &fakeImageLabeller{
 		cannedAnswer: map[string]string{
 			"com.opentable.sous.repo_url":    "repo_url",
@@ -267,7 +274,7 @@ func TestBuildDeployment_failed_deploy(t *testing.T) {
 		},
 	}
 
-	actual, err := BuildDeployment(fakeReg, testClusters, req)
+	actual, err := BuildDeployment(fakeReg, testClusters, req, log)
 
 	assert.NoError(t, err)
 
