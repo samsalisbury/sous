@@ -12,11 +12,11 @@ import (
 type deployerMessage struct {
 	logging.CallerInfo
 	logging.Level
-	msg      string
-	pair     *sous.DeployablePair
-	diffs    *sous.Differences
-	taskData *singularityTaskData
-	error    error
+	msg        string
+	submessage *sous.DeployablePairSubmessage
+	diffs      *sous.Differences
+	taskData   *singularityTaskData
+	error      error
 }
 
 func reportDeployerMessage(message string, pair *sous.DeployablePair, diffs *sous.Differences, taskData *singularityTaskData, error error, level logging.Level, logger logging.LogSink) {
@@ -24,7 +24,7 @@ func reportDeployerMessage(message string, pair *sous.DeployablePair, diffs *sou
 		CallerInfo: logging.GetCallerInfo(logging.NotHere()),
 		Level:      level,
 		msg:        message,
-		pair:       pair,
+		submessage: sous.NewDeployablePairSubmessage(pair),
 		diffs:      diffs,
 		taskData:   taskData,
 		error:      error,
@@ -42,11 +42,11 @@ func (msg deployerMessage) Message() string {
 
 func (msg deployerMessage) EachField(f logging.FieldReportFn) {
 	f("@loglov3-otl", "sous-rectifier-singularity-v1")
-	f("pair-id", msg.pair.ID)
 	f("diffs", strings.Join(*msg.diffs, "\n"))
 	f("request-id", msg.taskData.requestID)
 	f("error", msg.error.Error())
 	msg.CallerInfo.EachField(f)
+	msg.submessage.EachField(f)
 }
 
 func (msg deployerMessage) WriteToConsole(console io.Writer) {
