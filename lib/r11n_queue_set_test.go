@@ -80,6 +80,7 @@ func TestR11nQueueSet_Push_async(t *testing.T) {
 		var wg sync.WaitGroup
 		wg.Add(itemCount)
 		for i := 0; i < itemCount; i++ {
+			i := i
 			go func() {
 				rq.Push(makeTestR11nWithRepo(strconv.Itoa(i)))
 				wg.Done()
