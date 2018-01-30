@@ -2,6 +2,7 @@ package sous
 
 import (
 	"fmt"
+	"io"
 	"math"
 	"strconv"
 
@@ -98,9 +99,9 @@ func (r Resources) Cpus() float64 {
 	if err != nil {
 		cpus = 0.1
 		if present {
-			logging.Log.Warn.Printf("Could not parse value: '%s' for cpus as a float, using default: %f", cpuStr, cpus)
+			reportResourceMessage(fmt.Sprintf("Could not parse value: '%s' for cpus as a float, using default: %f", cpuStr, cpus), r, logging.Log)
 		} else {
-			logging.Log.Vomit.Printf("Using default value for cpus: %f.", cpus)
+			reportDebugResourceMessage(fmt.Sprintf("Using default value for cpus: %f.", cpus), r, logging.Log)
 		}
 	}
 	return cpus
@@ -113,9 +114,9 @@ func (r Resources) Memory() float64 {
 	if err != nil {
 		memory = 100
 		if present {
-			logging.Log.Warn.Printf("Could not parse value: '%s' for memory as an int, using default: %f", memStr, memory)
+			reportResourceMessage(fmt.Sprintf("Could not parse value: '%s' for memory as an int, using default: %f", memStr, memory), r, logging.Log)
 		} else {
-			logging.Log.Vomit.Printf("Using default value for memory: %f.", memory)
+			reportDebugResourceMessage(fmt.Sprintf("Using default value for memory: %f.", memory), r, logging.Log)
 		}
 	}
 	return memory
@@ -128,9 +129,9 @@ func (r Resources) Ports() int32 {
 	if err != nil {
 		ports = 1
 		if present {
-			logging.Log.Warn.Printf("Could not parse value: '%s' for ports as a int, using default: %d", portStr, ports)
+			reportResourceMessage(fmt.Sprintf("Could not parse value: '%s' for ports as a int, using default: %d", portStr, ports), r, logging.Log)
 		} else {
-			logging.Log.Vomit.Printf("Using default value for ports: %d", ports)
+			reportDebugResourceMessage(fmt.Sprintf("Using default value for ports: %d", ports), r, logging.Log)
 		}
 	}
 	return int32(ports)
@@ -138,26 +139,100 @@ func (r Resources) Ports() int32 {
 
 // Equal checks equivalence between resource maps
 func (r Resources) Equal(o Resources) bool {
-	logging.Log.Vomit.Printf("Comparing resources: %+ v ?= %+ v", r, o)
+	reportDebugResourceMessage(fmt.Sprintf("Comparing resources: %+ v ?= %+ v", r, o), r, logging.Log)
 	if len(r) != len(o) {
-		logging.Log.Vomit.Println("Lengths differ")
+		reportDebugResourceMessage("Lengths differ", r, logging.Log)
 		return false
 	}
 
 	if r.Ports() != o.Ports() {
-		logging.Log.Vomit.Println("Ports differ")
+		reportDebugResourceMessage("Ports differ", r, logging.Log)
 		return false
 	}
 
 	if math.Abs(r.Cpus()-o.Cpus()) > 0.001 {
-		logging.Log.Vomit.Println("Cpus differ")
+		reportDebugResourceMessage("Cpus differ", r, logging.Log)
 		return false
 	}
 
 	if math.Abs(r.Memory()-o.Memory()) > 0.001 {
-		logging.Log.Vomit.Println("Memory differ")
+		reportDebugResourceMessage("Memory differ", r, logging.Log)
 		return false
 	}
 
 	return true
+}
+
+type resourceMessage struct {
+	logging.CallerInfo
+	msg        string
+	ports      int32
+	cpus       float64
+	memory     float64
+	isDebugMsg bool
+}
+
+func reportDebugResourceMessage(msg string, r Resources, log logging.LogSink) {
+	reportResourceMessage(msg, r, log, true)
+}
+
+func reportResourceMessage(msg string, r Resources, log logging.LogSink, debug ...bool) {
+	debugStmt := false
+	if len(debug) > 0 {
+		debugStmt = debug[0]
+	}
+
+	//not going to call Ports/Cpus/Memory to get values since those functions actually call reportResourceMessage
+	var ports int32
+	if portStr, present := r["ports"]; present {
+		ports64, _ := strconv.ParseInt(portStr, 10, 32)
+		ports = int32(ports64)
+	}
+	var memory float64
+	if memStr, present := r["memory"]; present {
+		memory, _ = strconv.ParseFloat(memStr, 64)
+	}
+	var cpus float64
+	if cpuStr, present := r["cpus"]; present {
+		cpus, _ = strconv.ParseFloat(cpuStr, 64)
+	}
+
+	msgLog := resourceMessage{
+		msg:        msg,
+		CallerInfo: logging.GetCallerInfo(logging.NotHere()),
+		ports:      ports,
+		cpus:       cpus,
+		memory:     memory,
+		isDebugMsg: debugStmt,
+	}
+	logging.Deliver(msgLog, log)
+}
+
+func (msg resourceMessage) WriteToConsole(console io.Writer) {
+	fmt.Fprintf(console, "%s\n", msg.composeMsg())
+}
+
+func (msg resourceMessage) DefaultLevel() logging.Level {
+	level := logging.WarningLevel
+	if msg.isDebugMsg {
+		level = logging.DebugLevel
+	}
+
+	return level
+}
+
+func (msg resourceMessage) Message() string {
+	return msg.composeMsg()
+}
+
+func (msg resourceMessage) composeMsg() string {
+	return fmt.Sprintf("%s: ports %v, cpus %v memory %v", msg.msg, msg.ports, msg.cpus, msg.memory)
+}
+
+func (msg resourceMessage) EachField(f logging.FieldReportFn) {
+	f("@loglov3-otl", "sous-generic-v1")
+	f("ports", msg.ports)
+	f("cpus", msg.cpus)
+	f("memory", msg.memory)
+	msg.CallerInfo.EachField(f)
 }

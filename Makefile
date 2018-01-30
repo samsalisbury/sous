@@ -82,6 +82,7 @@ help:
 	@echo "make test-staticcheck: runs static code analysis against project packages."
 	@echo "make wip: puts a marker file into workspace to prevent Travis from passing the build."
 	@echo "make build-debug: builds a linux debug version "
+	@echo "make generate-ctags: builds a tags file for project"
 	@echo
 	@echo "Add VERBOSE=1 for tons of extra output."
 
@@ -163,7 +164,13 @@ install-liquibase:
 install-linters: install-metalinter
 	gometalinter --install > /dev/null
 
+install-gotags: 
+	go get -u github.com/jstemmer/gotags
+
 install-build-tools: install-xgo install-govendor install-engulf install-staticcheck
+
+generate-ctags: install-gotags
+	gotags -R -f .tags .
 
 release: artifacts/$(DARWIN_TARBALL) artifacts/$(LINUX_TARBALL) artifacts/sous_$(SOUS_VERSION)_amd64.deb
 
@@ -307,6 +314,6 @@ postgres-clean: postgres-stop
 	install-fpm install-jfrog install-ggen install-build-tools legendary release \
 	semvertagchk test test-gofmt test-integration setup-containers test-unit \
 	reject-wip wip staticcheck postgres-start postgres-stop postgres-connect \
-	postgres-clean postgres-create-testdb build-debug homebrew
+	postgres-clean postgres-create-testdb build-debug homebrew install-gotags
 
 #liquibase --url jdbc:postgresql://127.0.0.1:6543/sous --changeLogFile=database/changelog.xml update

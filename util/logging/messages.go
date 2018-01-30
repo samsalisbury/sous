@@ -119,10 +119,15 @@ type (
 		EachField(fn FieldReportFn)
 	}
 
-	// A LogMessage has structured data to report to a log (c.f. Deliver)
+	// A LogMessage has structured data to report to the structured log server (c.f. Deliver).
+	// Almost every implementation of LogMessage should include a CallerInfo.
 	LogMessage interface {
+		// The severity level of this message, potentially (in the future) manipulated
+		// by dynamic rules.
 		DefaultLevel() Level
+		// A simple textual message describing the logged event. Usually hardcoded (or almost so.)
 		Message() string
+		// Called to report the individual fields for this message.
 		EachField(fn FieldReportFn)
 	}
 
@@ -165,9 +170,17 @@ func nopDoner(w io.Writer) WriteDoner {
 
 func (writeDoner) Done() {}
 
-// Deliver is the core of the logging messages design. Messages may implement
-// any of LogMessage, MetricsMessage or ConsoleMessage, and appropriate action
-// will be taken. The upshot is that messages can be Delivered on the spot and
+// Deliver is the core of the logging messages design.
+//
+// The message argument may implement
+// any of LogMessage, MetricsMessage or ConsoleMessage, and the
+// data contained in the message will be dispatched appropriately.
+//
+// Furthermore, messages that don't implement any of those interfaces,
+// or which panic when operated upon,
+// themselves generate a well-tested message so that they can be caught and fixed.
+//
+// The upshot is that messages can be Delivered on the spot and
 // later determine what facilities are appropriate.
 func Deliver(message interface{}, logger LogSink) {
 	if logger == nil {

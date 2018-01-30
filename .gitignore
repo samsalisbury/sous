@@ -32,6 +32,10 @@ var/
 #visual code debug files
 debug
 
+#floobits files
+.floo
+.flooignore
+
 # Sensitive or high-churn files:
 .idea/**/dataSources/
 .idea/**/dataSources.ids
@@ -77,3 +81,6 @@ fabric.properties
 *.iml
 .idea/
 !shell.nix
+
+# ctags files
+.tags
