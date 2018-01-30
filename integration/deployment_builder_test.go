@@ -34,7 +34,9 @@ func TestBuildDeployments(t *testing.T) {
 	ResetSingularity()
 	defer ResetSingularity()
 
-	drc := docker_registry.NewClient(logging.SilentLogSet())
+	log, _ := logging.NewLogSinkSpy()
+
+	drc := docker_registry.NewClient(log)
 	drc.BecomeFoolishlyTrusting()
 
 	db, err := docker.GetDatabase(&docker.DBConfig{
@@ -49,7 +51,7 @@ func TestBuildDeployments(t *testing.T) {
 	clusterNick := "tcluster"
 	reqID := appLocation + clusterNick
 
-	nc, err := docker.NewNameCache("", drc, logging.SilentLogSet(), db)
+	nc, err := docker.NewNameCache("", drc, log, db)
 	assert.NoError(err)
 
 	singCl := sing.NewClient(SingularityURL)
@@ -96,7 +98,7 @@ func TestBuildDeployments(t *testing.T) {
 
 	if assert.NoError(err) {
 		clusters := sous.Clusters{clusterNick: {BaseURL: SingularityURL}}
-		dep, err := singularity.BuildDeployment(nc, clusters, req)
+		dep, err := singularity.BuildDeployment(nc, clusters, req, log)
 
 		if assert.NoError(err) {
 			if assert.Len(dep.DeployConfig.Volumes, 1) {
