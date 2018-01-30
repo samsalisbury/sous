@@ -490,7 +490,7 @@ func newDeployer(dryrun DryrunOption, nc lazyNameCache, ls LogSink, c LocalSousC
 		drc.SetLogger(ls.Child("rectify"))
 		return singularity.NewDeployer(
 			drc,
-			ls.Child("deployer"),
+			ls.Child("singularity-deployer"),
 			singularity.OptMaxHTTPReqsPerServer(c.MaxHTTPConcurrencySingularity),
 		), nil
 	}
