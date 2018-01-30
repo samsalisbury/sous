@@ -65,7 +65,7 @@ func Handler(sc ComponentLocator, metrics http.Handler, ls logging.LogSink) http
 	return handler
 }
 
-// ProfilingHandler builds the http.Handler for the Sous server httprouter.
+// ProfilingHandler is similar to Handler but adds profiling endpoints as well.
 func ProfilingHandler(sc ComponentLocator, metrics http.Handler, ls logging.LogSink) http.Handler {
 	handler := mux(sc, ls)
 	addMetrics(handler, metrics)
@@ -90,6 +90,7 @@ func routemap(context ComponentLocator) *restful.RouteMap {
 		{"status", "/status", newStatusResource(context)},
 		{"servers", "/servers", newServerListResource(context)},
 		{"health", "/health", newHealthResource(context)},
+		{"deployments", "/deployments", newDeploymentsResource(context)},
 	}
 }
 
