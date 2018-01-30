@@ -202,7 +202,7 @@ func (r *deployer) RectifySingleDelete(d *sous.DeployablePair) (err error) {
 
 	// TODO: Alert the owner of this request that there is no manifest for it;
 	// they should either delete the request manually, or else add the manifest back.
-	r.log.Warn.Printf("NOT DELETING REQUEST %q (FOR: %q)", requestID, d.ID())
+	r.log.Warnf("NOT DELETING REQUEST %q (FOR: %q)", requestID, d.ID())
 	return nil
 	// The following line deletes requests when it is not commented out.
 	//return r.Client.DeleteRequest(d.Cluster.BaseURL, requestID, "deleting request for removed manifest")
