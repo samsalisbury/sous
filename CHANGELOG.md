@@ -11,7 +11,8 @@ with respect to its command line interface and HTTP interface.
 ### Added
 * CLI: If no image is present in runspec, return a fatal flaw in build.
 * Server: adding duplex state storage, to keep DB in sync until ready to switch over
-* Server: Update logging to a more structured format: server, resource, Generic Msg, handle_gdm, volume, local_config
+* Server: A /health endpoint. For the time being, just a 200 and the running version of Sous.
+* Server: Update logging to a more structured format: server, singularity, resource, Generic Msg, handle_gdm, subpoller, volume, local_config, disk_state_manager
 
 ### Changed
 * All: error parsing repo from SourceLocation now more informative.

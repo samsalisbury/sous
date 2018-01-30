@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"sort"
-	"strings"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/opentable/sous/lib"
@@ -133,17 +132,17 @@ func (h *PUTGDMHandler) Exchange() (interface{}, int) {
 
 type handleGDMMessage struct {
 	logging.CallerInfo
-	msg   string
-	flaws []sous.Flaw
-	err   error
-	debug bool
+	msg          string
+	flawsMessage sous.FlawMessage
+	err          error
+	debug        bool
 }
 
 func reportDebugHandleGDMMessage(msg string, flaws []sous.Flaw, err error, log logging.LogSink) {
 	reportHandleGDMMessage(msg, flaws, err, log, true)
 }
 
-func reportHandleGDMMessage(msg string, flaws []sous.Flaw, err error, log logging.LogSink, debug ...bool) {
+func reportHandleGDMMessage(msg string, f []sous.Flaw, err error, log logging.LogSink, debug ...bool) {
 
 	isDebug := false
 	if len(debug) > 0 {
@@ -151,11 +150,11 @@ func reportHandleGDMMessage(msg string, flaws []sous.Flaw, err error, log loggin
 	}
 
 	msgLog := handleGDMMessage{
-		msg:        msg,
-		CallerInfo: logging.GetCallerInfo(logging.NotHere()),
-		err:        err,
-		flaws:      flaws,
-		debug:      isDebug,
+		msg:          msg,
+		CallerInfo:   logging.GetCallerInfo(logging.NotHere()),
+		err:          err,
+		flawsMessage: sous.FlawMessage{f},
+		debug:        isDebug,
 	}
 	logging.Deliver(msgLog, log)
 }
@@ -178,31 +177,22 @@ func (msg handleGDMMessage) Message() string {
 	return msg.composeMsg()
 }
 
-func (msg handleGDMMessage) returnFlawMsg() string {
-	var msgFlaws string
-	for _, flaw := range msg.flaws {
-		joined := []string{msgFlaws, fmt.Sprintf("%v", flaw)}
-		msgFlaws = strings.Join(joined, " ")
-	}
-	return msgFlaws
-}
-
 func (msg handleGDMMessage) composeMsg() string {
 	errMsg := "nil"
 	if msg.err != nil {
 		errMsg = msg.err.Error()
 	}
-	flaws := msg.returnFlawMsg()
+	flaws := msg.flawsMessage.ReturnFlawMsg()
 	if flaws == "" {
 		flaws = "nil"
 	}
-	return fmt.Sprintf("Handle GDM Message %s: flaws {%s}, error {%s}", msg.msg, msg.returnFlawMsg(), errMsg)
+	return fmt.Sprintf("Handle GDM Message %s: flaws {%s}, error {%s}", msg.msg, flaws, errMsg)
 }
 
 func (msg handleGDMMessage) EachField(f logging.FieldReportFn) {
 	f("@loglov3-otl", "sous-generic-v1")
 
-	flaws := msg.returnFlawMsg()
+	flaws := msg.flawsMessage.ReturnFlawMsg()
 
 	if flaws != "" {
 		f("flaws", flaws)
