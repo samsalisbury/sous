@@ -36,10 +36,11 @@ whatever version the `clusterA` server has for
 `service-foo` in `clusterA`
 is the definitive version for
 `service-foo` in `clusterA`.
-The server for `clusterB` has local data about
-`service-foo` in `clusterA`,
-that that data is considered
-merely advisory.
+
+The server for `clusterB` has no data about
+`service-foo` in `clusterA` -
+instead, if needed,
+it queries the `clusterA` server.
 
 Sous clients communicate with a single server -
 although which server is a per-request determination.
@@ -66,25 +67,26 @@ the client sends the new state back via a
 
 When a coordinating node receives a
 `GET /gdm`
-it performs conditional
+it performs
 `GETs /state/deployments`
 to the respective authoritative servers.
-It bases the `If-None-Match` headers on its own local state.
-If the GETs come back with 200 instead of 304,
-the coordinating node updates its local database.
-In the event of a network or HTTP error,
-the coordinating server replies with its local most-recent information.
+If any authoritative servers fail to respond,
+or return an HTTP error status,
+an annotation is returned in
+the `/gdm` response.
 
 When a coordinating node receives a
 `PUT /gdm`
-it determines the implied changes,
-and partitions the deployments based on cluster.
+it partitions the deployments based on cluster.
 Those changes are then submitted
 to the managing Sous servers via
-`PATCH /state/deployments`.
-Again, this is a conditional request:
-the `If-Match` is based on the local data
-of the coordinating server.
+`PUT /state/deployments`.
+
+This is a conditional request:
+the `If-Match` is cached from the `GET`
+at the coordinating server.
+(Just a map of `/gdm` Etags to
+records of (cluster,etag) pairs.)
 Once those responses have come back with 204,
 the "coordinating" server records to its local DB,
 and returns 200 to the client.
@@ -93,56 +95,11 @@ The 204 reponse is used in the "happy path" case:
 where the authority's state matches the `If-Match` condition,
 and the contents of the request are successfully applied.
 
-The authoritative server may determine that its local state
-doesn't match the condition of the `PATCH`,
-but that applying the PATCH would have no effect -
-in other words, the data contained in the request are already
-true about the DeployIDs listed in the request.
-In this case, the authority should return
-a 200 with its new state, as if a
-`GET /state/deployments` has been issued.
-The coordinating node,
-in this case,
-updates its local database.
-
-In the event of the remote responding `412 Precondition Failed` to the `PATCH`
-(because the `If-Match` condition fails,
-but the request would have implied a change to the authoritative state.)
-the coordinating node makes a new
-`GET /state/deployments` from the remote,
-updates its local database and determine whether to try again.
-Specifically, it computes a difference of the new authoritative state
-and the state it knew for that cluster when the `PUT /gdm` began.
-If there's an intersection between that difference
-and the change it is attempting with the `PATCH`,
-the overall `PUT /gdm` returns `412 Precondition Failed`.
-Otherwise,
-it is safe to retry the `PATCH`,
-and the coordinating node proceeds by doing so.
-
-If any of the authoritative servers return an error,
-in response to `PATCH /state/deployments`
-the coordinating server returns a 503 error
-the body of which indicates which authoritative server(s)
-were unable to service the request,
-which the client relates to the operator,
-so that they can potentially adjust and retry their request.
-
-Additionally,
-as authoritative servers accept
-`PATCH /state/deployments`
-requests
-(i.e. after having retuned 204 responses),
-they issue new
-`PUT /advisory/gdm?cluster=$name`
-requests
-to all known siblings
-(including their own cluster name
-in the query parameter.)
-
-Each server receiving this `PUT` request
-uses the request body to update its database
-about Deployments for which it is *not* authoritative.
+In the event of the remote responding `412 Precondition Failed` to the `PUT`
+(because the `If-Match` condition fails,)
+the coordinating node
+likewise returns `412` to the client,
+who retries the update.
 
 ## Implementation in Sous
 
@@ -188,26 +145,21 @@ Regardless,
 assuming that the client defaults to some number of retries,
 and we accept that the remote authority
 receives updates and proceeds with a best effort,
-we get consistency and progress.
+we get consistency.
 
-In terms of consistent reporting,
-first, the advisory reporting on updates
-communicates values to non-authoritative servers when those values update.
-The second is the live update,
-and fallback to cached values.
-This serves as the definitive update mechanism,
-in a kind of "Just In Time" pattern.
-
-One general problem with distributed agreement
-has to do  with simultaneous updates.
-That is, if two clients
-(sending messages to the same or different coordinating servers)
-send conflicting data.
-This is the motivation behind all of
-the PUTs and PATCHes laid out above being conditional
-(i.e.  with `If-Not-Modified` headers attached)
-and the GET-and-retry behavior
-when `PATCH` returns 412.
+We don't get theoretical progress because
+it's possible for a series of clients
+to issue conflicting updates
+and retry them indefinitely.
+Practically, though,
+at some point there's one
+"last client standing",
+whose update "takes,"
+we enter a quiet phase,
+and the disappointed clients
+retry after that.
+This is no worse
+than the current situation.
 
 # Failure Modes
 
@@ -244,16 +196,25 @@ or the Docker registry.
 
 In these cases,
 how do we want Sous to behave?
-Is it acceptable to partially update
-the GDM (and therefore the eventual ADS)?
-Is it preferable to refuse to do any update?
-Is it required to be able to choose
-per deployment
-between these cases?
+Our survey of
+our engineering organization
+leads us to believe that:
+* It is better to do a partial update
+  than to refuse
+  in the case of an absent cluster server.
+* The requirement to control
+  that partial update
+  is at best weak.
+
+The reason for this is effectively that
+every service should be able to coexist with
+itself in different versions *anyway* -
+otherwise rolling updates would be impossible.
 
 What semantics
 of deployed artifacts can we accept?
-The version requested hours previous?
-The version that was deployed yesterday?
-Some arbitrary version of the service?
-No version at all? (As in: service goes down.)
+Here, the requirements are stricter.
+A deployment command needs to
+resolve or fail
+in some kind of reasonable time.
+(absolutely less than 30 minutes.)
