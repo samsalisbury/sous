@@ -13,8 +13,14 @@ func TestGETDeploymentHandler_Exchange(t *testing.T) {
 	if !ok {
 		t.Fatal("setup failed to push r11n")
 	}
-	queues.Push(newR11n("two"))
-	queues.Push(newR11n("two"))
+	queuedTwo1, ok := queues.Push(newR11n("two"))
+	if !ok {
+		t.Fatal("setup failed to push r11n")
+	}
+	queuedTwo2, ok := queues.Push(newR11n("two"))
+	if !ok {
+		t.Fatal("setup failed to push r11n")
+	}
 
 	t.Run("nonexistent_deployID", func(t *testing.T) {
 		gdh := &GETDeploymentHandler{
@@ -56,6 +62,40 @@ func TestGETDeploymentHandler_Exchange(t *testing.T) {
 			t.Errorf("got R11nID %q; want %q", gotR11nID, wantR11nID)
 		}
 
+	})
+	t.Run("two_queued", func(t *testing.T) {
+		gdh := &GETDeploymentHandler{
+			QueueSet:     queues,
+			DeploymentID: newDid("two"),
+		}
+		body, gotStatus := gdh.Exchange()
+		gotResponse := body.(deploymentResponse)
+		const wantStatus = 200
+		if gotStatus != wantStatus {
+			t.Errorf("got status %d; want %d", gotStatus, wantStatus)
+		}
+		gotLen := len(gotResponse.Queue)
+		wantLen := 2
+		if gotLen != wantLen {
+			t.Errorf("got %d queued; want %d", gotLen, wantLen)
+		}
+
+		{
+			item := gotResponse.Queue[0]
+			wantR11nID := queuedTwo1.ID
+			gotR11nID := item.ID
+			if gotR11nID != wantR11nID {
+				t.Errorf("got R11nID %q; want %q", gotR11nID, wantR11nID)
+			}
+		}
+		{
+			item := gotResponse.Queue[1]
+			wantR11nID := queuedTwo2.ID
+			gotR11nID := item.ID
+			if gotR11nID != wantR11nID {
+				t.Errorf("got R11nID %q; want %q", gotR11nID, wantR11nID)
+			}
+		}
 	})
 
 }

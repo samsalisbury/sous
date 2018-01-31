@@ -65,7 +65,7 @@ func Handler(sc ComponentLocator, metrics http.Handler, ls logging.LogSink) http
 	return handler
 }
 
-// ProfilingHandler is similar to Handler but adds profiling endpoints as well.
+// Handler builds the http.Handler for the Sous server httprouter.
 func ProfilingHandler(sc ComponentLocator, metrics http.Handler, ls logging.LogSink) http.Handler {
 	handler := mux(sc, ls)
 	addMetrics(handler, metrics)
