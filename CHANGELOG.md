@@ -16,6 +16,7 @@ with respect to its command line interface and HTTP interface.
 
 ### Changed
 * All: error parsing repo from SourceLocation now more informative.
+* Server: increased scoping of loggers - log entries should report their sources better.
 
 ### Fixed
 * All: Data race in rectification queue.
