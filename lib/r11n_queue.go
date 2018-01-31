@@ -2,6 +2,7 @@ package sous
 
 import (
 	"container/ring"
+	"sort"
 	"sync"
 
 	"github.com/pborman/uuid"
@@ -56,6 +57,24 @@ func R11nQueueStartWithHandler(handler func(*QueuedR11n) DiffResolution) R11nQue
 		rq.handler = handler
 		rq.start = true
 	}
+}
+
+// Snapshot returns a slice of items to be processed in the queue ordered by
+// their queue position. It includes the item being worked on at the head of the
+// queue.
+//
+// TODO SS: Tests for this...
+func (rq *R11nQueue) Snapshot() []QueuedR11n {
+	rq.Lock()
+	defer rq.Unlock()
+	var snapshot []QueuedR11n
+	for _, qr := range rq.refs {
+		snapshot = append(snapshot, *qr)
+	}
+	sort.Slice(snapshot, func(i, j int) bool {
+		return snapshot[i].Pos < snapshot[j].Pos
+	})
+	return snapshot
 }
 
 func (rq *R11nQueue) init() *R11nQueue {
