@@ -45,7 +45,7 @@ func (m *BuildManager) Build() (*BuildResult, error) {
 // advisories; warns about the advisories and does not register otherwise.
 func (m *BuildManager) RegisterAndWarnAdvisories(br *BuildResult) error {
 	if err := m.BuildConfig.GuardRegister(br); err != nil {
-		logging.Log.Warn.Println(err)
+		logging.ReportError(logging.Log, err)
 	}
 	return m.Register(br)
 }

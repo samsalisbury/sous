@@ -1,6 +1,7 @@
 package sous
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -99,7 +100,7 @@ func (ar *AutoResolver) updateStatus() {
 	}
 	ar.write(func() {
 		ls := ar.currentRecorder.CurrentStatus()
-		logging.Log.Debugf("Recording live status from %p: %v", ar, ls)
+		logging.ReportMsg(ar.LogSink, logging.DebugLevel, fmt.Sprintf("Recording live status from %p: %v", ar, ls))
 		ar.liveStatus = &ls
 	})
 }
@@ -111,7 +112,7 @@ func (ar *AutoResolver) Statuses() (stable, live *ResolveStatus) {
 	ar.updateStatus()
 	ar.RLock()
 	defer ar.RUnlock()
-	logging.Log.Debugf("Reporting statuses from %p: %v %v", ar, ar.stableStatus, ar.liveStatus)
+	logging.ReportMsg(ar.LogSink, logging.DebugLevel, fmt.Sprintf("Reporting statuses from %p: %v %v", ar, ar.stableStatus, ar.liveStatus))
 	return ar.stableStatus, ar.liveStatus
 }
 
@@ -127,11 +128,11 @@ func loopTilDone(f func(), done TriggerChannel) {
 }
 
 func (ar *AutoResolver) write(f func()) {
-	logging.Log.Vomitf("Locking autoresolver for write...")
+	logging.ReportMsg(ar.LogSink, logging.ExtraDebug1Level, "Locking autoresolver for write...")
 	ar.Lock()
 	defer func() {
 		ar.Unlock()
-		logging.Log.Vomitf("Unlocked autoresolver")
+		logging.ReportMsg(ar.LogSink, logging.ExtraDebug1Level, "Unlocked autoresolver")
 	}()
 	f()
 }
@@ -149,7 +150,7 @@ func (ar *AutoResolver) resolveLoop(tc, done TriggerChannel, ac announceChannel)
 		case <-done:
 			return
 		case t := <-tc:
-			ar.LogSink.Debugf("Received extra trigger before starting Resolve: %v", t)
+			logging.ReportMsg(ar.LogSink, logging.DebugLevel, fmt.Sprintf("Received extra trigger before starting Resolve: %v", t))
 			continue
 		}
 
@@ -159,13 +160,14 @@ func (ar *AutoResolver) resolveLoop(tc, done TriggerChannel, ac announceChannel)
 
 func (ar *AutoResolver) resolveOnce(ac announceChannel) {
 	state, err := ar.StateReader.ReadState()
-	ar.LogSink.Debugf("Reading current state: err: %v", err)
+	logging.ReportMsg(ar.LogSink, logging.DebugLevel, fmt.Sprintf("Reading current state: err: %v", err))
+
 	if err != nil {
 		ac <- err
 		return
 	}
 	ar.GDM, err = state.Deployments()
-	ar.LogSink.Debugf("Reading GDM from state: err: %v", err)
+	logging.ReportMsg(ar.LogSink, logging.DebugLevel, fmt.Sprintf("Reading GDM from state: err: %v", err))
 
 	if err != nil {
 		ac <- err
@@ -209,7 +211,7 @@ func (ar *AutoResolver) errorLogging(tc, done TriggerChannel, errs announceChann
 		return
 	case e := <-errs:
 		if e != nil {
-			ar.LogSink.Warnf("error:", e)
+			logging.ReportError(ar.LogSink, e)
 		}
 	}
 }

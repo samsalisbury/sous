@@ -118,6 +118,60 @@ func ResetSingularity() {
 	panic(fmt.Errorf("singularity not reset after %d * %d tries - %d requests remain", retryLimit, pollLimit, len(reqList)))
 }
 
+// WaitForSingularity polls the test S9y server for pending requests and then pending deploys.
+// The idea is that, having issued requests and deploys to S9y, you can call WaitForSingularity
+// and when it returns you know that the server is in a stable state.
+func WaitForSingularity() {
+	log.Print("Waiting for Singularity to stabilize")
+
+	singClient := sing.NewClient(SingularityURL)
+
+	/*
+		reqList, err := singClient.GetRequests(false)
+		if err != nil {
+			panic(err)
+		}
+	*/
+
+	pendingCount := -1
+	for {
+		reqs, err := singClient.GetPendingRequests()
+		if err != nil {
+			panic(err)
+		}
+
+		if len(reqs) == 0 {
+			break
+		}
+
+		if len(reqs) != pendingCount {
+			log.Printf("There are %d pending requests still...", len(reqs))
+			pendingCount = len(reqs)
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+
+	pendingCount = -1
+	for {
+		deps, err := singClient.GetPendingDeploys()
+		if err != nil {
+			panic(err)
+		}
+
+		if len(deps) == 0 {
+			log.Println("No pending requests or deploys at Singularity")
+			return
+		}
+
+		// reducing output noise by only reporting when the number changes
+		if len(deps) != pendingCount {
+			log.Printf("There are %d pending deploys still...", len(deps))
+			pendingCount = len(deps)
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+}
+
 // BuildImageName constructs a simple image name rooted at the SingularityURL
 func BuildImageName(reponame, tag string) string {
 	return fmt.Sprintf("%s/%s:%s", registryName, reponame, tag)

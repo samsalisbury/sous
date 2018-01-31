@@ -4,8 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	// it's a SQL db driver. This is how you do that.
-	_ "github.com/lib/pq"
+	"github.com/lib/pq"
 	"github.com/opentable/sous/util/logging"
 )
 
@@ -19,22 +18,18 @@ type (
 
 	// A PostgresConfig describes how to connect to a postgres database
 	PostgresConfig struct {
-		DBName   string
-		User     string
-		Password string
-		Host     string
-		Port     string
-		SSL      bool
+		DBName   string `env:"SOUS_PG_DBNAME"`
+		User     string `env:"SOUS_PG_USER"`
+		Password string `env:"SOUS_PG_PASSWORD"`
+		Host     string `env:"SOUS_PG_HOST"`
+		Port     string `env:"SOUS_PG_PORT"`
+		SSL      bool   `env:"SOUS_PG_SSL"`
 	}
 )
 
 // NewPostgresStateManager creates a new PostgresStateManager.
-func NewPostgresStateManager(cfg PostgresConfig, log logging.LogSink) (*PostgresStateManager, error) {
-	db, err := sql.Open("postgres", cfg.connStr())
-	if err != nil {
-		return nil, err
-	}
-	return &PostgresStateManager{db: db, log: log}, nil
+func NewPostgresStateManager(db *sql.DB, log logging.LogSink) *PostgresStateManager {
+	return &PostgresStateManager{db: db, log: log}
 }
 
 func (c PostgresConfig) connStr() string {
@@ -50,4 +45,24 @@ func (c PostgresConfig) connStr() string {
 		conn = fmt.Sprintf("%s password=%s", conn, c.Password)
 	}
 	return conn
+}
+
+// DB returns a database connection based on this config
+func (c PostgresConfig) DB() (*sql.DB, error) {
+	db, err := sql.Open("postgres", c.connStr())
+	if err != nil {
+		return nil, err
+	}
+	if err := db.Ping(); err != nil {
+		return nil, err
+	}
+	return db, nil
+}
+
+func isNoDBError(err error) bool {
+	pqerr, is := err.(*pq.Error)
+	if !is {
+		return false
+	}
+	return pqerr.Code == "3D000" // invalid_catalog_name per https://www.postgresql.org/docs/current/static/errcodes-appendix.html
 }
