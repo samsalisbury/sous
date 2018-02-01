@@ -448,8 +448,8 @@ func (msg clientMessage) composeMsg() string {
 }
 
 func (msg clientMessage) EachField(f logging.FieldReportFn) {
-	f("@loglov3-otl", "sous-http-v1")
+	//f("@loglov3-otl", "sous-http-v1") //httpMsg for now will be adding the otl type, might need refactor
 	f("channel_name", msg.channelName)
-	msg.httpMsg.EachField(f)
+	msg.httpMsg.EachFieldWithoutCallerInfo(f)
 	msg.CallerInfo.EachField(f)
 }

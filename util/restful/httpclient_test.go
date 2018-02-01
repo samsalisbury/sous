@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/opentable/sous/util/logging"
@@ -81,21 +82,30 @@ func TestClientRetrieve(t *testing.T) {
 	logCalls := ctrl.CallsTo("LogMessage")
 	//	require.Len(t, logCalls, 3)
 	assert.Contains(up.(*resourceState).qparms, "query")
+	var testIndex int
+	for i, v := range logCalls {
+		logmsg := v.PassedArgs().Get(1).(logging.LogMessage)
 
-	logLvl := logCalls[0].PassedArgs().Get(0).(logging.Level)
-	msg := logCalls[0].PassedArgs().Get(1).(logging.LogMessage)
+		msg := logmsg.Message()
+
+		if strings.Contains(msg, "logBody") {
+			testIndex = i
+			break
+			//logging.AssertMessageFields(t, tstmsg, logging.StandardVariableFields, fixedFields)
+		}
+	}
+	logLvl := logCalls[testIndex].PassedArgs().Get(0).(logging.Level)
+	tstmsg := logCalls[testIndex].PassedArgs().Get(1).(logging.LogMessage)
 
 	assert.Equal(logLvl, logging.DebugLevel)
-	assert.Contains(msg.Message(), "Sending GET")
 
-	//	fixedFields := map[string]interface{}{
-	//		"@loglov3-otl": "sous-http-v1",
-	//	}
-
-	//	logging.AssertMessageFields(t, msg, append(logging.StandardVariableFields,
-	//		logging.HTTPVariableFields...), fixedFields)
-
-	//	logging.AssertMessageFields(t, msg, logging.StandardVariableFields, fixedFields)
+	fixedFields := map[string]interface{}{
+		"@loglov3-otl": "sous-http-v1",
+	}
+	var variableFields []string
+	variableFields = append(logging.StandardVariableFields, logging.HTTPVariableFields...)
+	variableFields = append(variableFields, "channel_name")
+	logging.AssertMessageFields(t, tstmsg, variableFields, fixedFields)
 }
 
 func dig(m interface{}, index ...interface{}) interface{} {

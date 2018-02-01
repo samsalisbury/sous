@@ -151,6 +151,13 @@ func (msg *HTTPLogEntry) MetricsTo(metrics logging.MetricsSink) {
 
 // EachField to populate the proper fields from message
 func (msg *HTTPLogEntry) EachField(f logging.FieldReportFn) {
+	msg.EachFieldWithoutCallerInfo(f)
+	msg.CallerInfo.EachField(f)
+}
+
+// EachFieldWithoutCallerInfo allows sub messages to populate
+// logging.FieldReportFn without out having to call CallerInfo
+func (msg *HTTPLogEntry) EachFieldWithoutCallerInfo(f logging.FieldReportFn) {
 	f("@loglov3-otl", "sous-http-v1")
 	f("resource-family", msg.resourceFamily)
 	f("incoming", msg.serverSide)
@@ -167,7 +174,6 @@ func (msg *HTTPLogEntry) EachField(f logging.FieldReportFn) {
 	f("url-hostname", msg.server)
 	f("url-pathname", msg.path)
 	f("url-querystring", msg.parms)
-	msg.CallerInfo.EachField(f)
 }
 
 // Status method to retrieve status from message
