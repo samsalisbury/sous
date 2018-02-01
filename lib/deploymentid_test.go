@@ -115,3 +115,33 @@ func TestParseDeploymentID_success(t *testing.T) {
 		})
 	}
 }
+
+func TestParseDeploymentID_errors(t *testing.T) {
+	testCases := []struct {
+		in, want string
+	}{
+		{
+			in:   "",
+			want: "empty string not valid",
+		},
+		{
+			in:   ":~~",
+			want: `illegal manifest ID "~~" (contains more than one colon)`,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("%q", tc.in), func(t *testing.T) {
+			gotDeploymentID, gotErr := ParseDeploymentID(tc.in)
+			if gotErr == nil {
+				t.Fatalf("got nil error; want %q", tc.want)
+			}
+			got := gotErr.Error()
+			if got != tc.want {
+				t.Errorf("got error %q; want %q", got, tc.want)
+			}
+			if (gotDeploymentID != DeploymentID{}) {
+				t.Errorf("got nonzero DeploymentID %#v", gotDeploymentID)
+			}
+		})
+	}
+}

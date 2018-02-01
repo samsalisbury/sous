@@ -2,6 +2,7 @@ package sous
 
 import (
 	"crypto/md5"
+	"fmt"
 	"io"
 	"strings"
 )
@@ -16,11 +17,14 @@ type DeploymentID struct {
 // The string provided must be in the same format as emitted by
 // DeploymentID.String.
 func ParseDeploymentID(s string) (DeploymentID, error) {
+	if s == "" {
+		return DeploymentID{}, fmt.Errorf("empty string not valid")
+	}
 	clusterManifest := strings.SplitN(s, ":", 2)
 	cluster := clusterManifest[0]
 	manifestID, err := ParseManifestID(clusterManifest[1])
 	if err != nil {
-		panic(err)
+		return DeploymentID{}, err
 	}
 	return DeploymentID{
 		Cluster:    cluster,
