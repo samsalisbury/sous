@@ -30,7 +30,7 @@ type (
 	// RouteMap is a list of entries for routing
 	RouteMap []routeEntry
 
-	// Resource a ResourceFamily bundles up the exchangers that deal with a kind of resources
+	// A Resource bundles up the exchangers that deal with a kind of resources
 	// (n.b. that properly, URL == resource, so a URL pattern == many resources
 	Resource interface{}
 
