@@ -65,7 +65,6 @@ func TestPutbackJSON(t *testing.T) {
 
 func TestClientRetrieve(t *testing.T) {
 	assert := assert.New(t)
-	//ls := logging.NewLogSet(semv.MustParse("0.0.0"), "dummy", "", ioutil.Discard)
 	lt, ctrl := logging.NewLogSinkSpy()
 
 	s := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
@@ -80,8 +79,8 @@ func TestClientRetrieve(t *testing.T) {
 
 	require.NoError(t, err)
 	logCalls := ctrl.CallsTo("LogMessage")
-	//	require.Len(t, logCalls, 3)
 	assert.Contains(up.(*resourceState).qparms, "query")
+
 	var testIndex int
 	for i, v := range logCalls {
 		logmsg := v.PassedArgs().Get(1).(logging.LogMessage)
@@ -91,9 +90,9 @@ func TestClientRetrieve(t *testing.T) {
 		if strings.Contains(msg, "logBody") {
 			testIndex = i
 			break
-			//logging.AssertMessageFields(t, tstmsg, logging.StandardVariableFields, fixedFields)
 		}
 	}
+
 	logLvl := logCalls[testIndex].PassedArgs().Get(0).(logging.Level)
 	tstmsg := logCalls[testIndex].PassedArgs().Get(1).(logging.LogMessage)
 
@@ -102,6 +101,7 @@ func TestClientRetrieve(t *testing.T) {
 	fixedFields := map[string]interface{}{
 		"@loglov3-otl": "sous-http-v1",
 	}
+
 	var variableFields []string
 	variableFields = append(logging.StandardVariableFields, logging.HTTPVariableFields...)
 	variableFields = append(variableFields, "channel_name")
