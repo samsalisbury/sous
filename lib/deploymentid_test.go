@@ -100,3 +100,18 @@ func TestDeploymentID_String(t *testing.T) {
 		})
 	}
 }
+
+func TestParseDeploymentID_success(t *testing.T) {
+	for _, tc := range deploymentIDTestCases() {
+		t.Run(tc.desc, func(t *testing.T) {
+			got, err := ParseDeploymentID(tc.string)
+			if err != nil {
+				t.Fatalf("unexpected error: %s", err)
+			}
+			want := tc.deploymentID
+			if got != want {
+				t.Errorf("got %#v; want %#v", got, want)
+			}
+		})
+	}
+}
