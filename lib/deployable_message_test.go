@@ -9,10 +9,23 @@ import (
 )
 
 func TestDeployableMessage(t *testing.T) {
+	prior := deployableFixture("")
+	post := deployableFixture("")
+
 	msg := &deployableMessage{
-		pair: &DeployablePair{
-			Prior: deployableFixture(""),
-			Post:  deployableFixture(""),
+		submessage: &DeployablePairSubmessage{
+			pair: &DeployablePair{
+				Prior: prior,
+				Post:  post,
+			},
+			priorSub: &DeployableSubmessage{
+				deployable: prior,
+				prefix:     "sous-prior",
+			},
+			postSub: &DeployableSubmessage{
+				deployable: post,
+				prefix:     "sous-post",
+			},
 		},
 		callerInfo: logging.GetCallerInfo(),
 	}
@@ -81,11 +94,11 @@ func TestDeployableMessage(t *testing.T) {
 		"sous-post-volumes":                    "[]",
 	}
 
-	msg.pair.name = msg.pair.Prior.ID()
+	msg.submessage.pair.name = msg.submessage.pair.Prior.ID()
 
 	logging.AssertMessageFields(t, msg, logging.StandardVariableFields, fields)
 
-	msg.pair.Post.Deployment.SourceID.Version = semv.MustParse("0.0.2")
+	msg.submessage.pair.Post.Deployment.SourceID.Version = semv.MustParse("0.0.2")
 
 	fields["sous-deployment-diffs"] = "source id; this: \"github.com/opentable/example,0.0.1\"; other: \"github.com/opentable/example,0.0.2\""
 	fields["sous-post-tag"] = "0.0.2"
@@ -96,100 +109,111 @@ func TestDeployableMessage(t *testing.T) {
 
 func TestDiffMessages_knownpanic(t *testing.T) {
 	msg := &deployableMessage{
-		pair: &DeployablePair{
-			Prior: &Deployable{
-				Status: 0,
-				Deployment: &Deployment{
-					DeployConfig: DeployConfig{
-						Resources: map[string]string{
-							"ports":  "3",
-							"cpus":   "0.1",
-							"memory": "1024",
+		submessage: &DeployablePairSubmessage{
+			pair: &DeployablePair{
+				Prior: &Deployable{
+					Status: 0,
+					Deployment: &Deployment{
+						DeployConfig: DeployConfig{
+							Resources: map[string]string{
+								"ports":  "3",
+								"cpus":   "0.1",
+								"memory": "1024",
+							},
+							Metadata: map[string]string{
+								"": "",
+							},
+							Env: map[string]string{
+								"OT_DISCO_INIT_URL:": "discovery-ci-uswest2.otenv.com",
+							},
+							NumInstances: 1,
+							Volumes:      nil,
+							Startup: Startup{
+								SkipCheck:                 false,
+								ConnectDelay:              10,
+								Timeout:                   30,
+								ConnectInterval:           1,
+								CheckReadyProtocol:        "HTTP",
+								CheckReadyURIPath:         "/health",
+								CheckReadyPortIndex:       0,
+								CheckReadyFailureStatuses: []int{500, 503},
+								CheckReadyURITimeout:      5,
+								CheckReadyInterval:        1,
+								CheckReadyRetries:         120,
+							},
 						},
-						Metadata: map[string]string{
-							"": "",
+						ClusterName: "",
+						Cluster:     nil,
+						SourceID: SourceID{
+							Location: SourceLocation{
+								Repo: "github.com/opentable/consumer-service-xyz",
+								Dir:  "",
+							},
+							Version: semv.MustParse("0.0.1"),
 						},
-						Env: map[string]string{
-							"OT_DISCO_INIT_URL:": "discovery-ci-uswest2.otenv.com",
-						},
-						NumInstances: 1,
-						Volumes:      nil,
-						Startup: Startup{
-							SkipCheck:                 false,
-							ConnectDelay:              10,
-							Timeout:                   30,
-							ConnectInterval:           1,
-							CheckReadyProtocol:        "HTTP",
-							CheckReadyURIPath:         "/health",
-							CheckReadyPortIndex:       0,
-							CheckReadyFailureStatuses: []int{500, 503},
-							CheckReadyURITimeout:      5,
-							CheckReadyInterval:        1,
-							CheckReadyRetries:         120,
-						},
+						Flavor: "",
+						Owners: map[string]struct{}{},
+						Kind:   "",
 					},
-					ClusterName: "",
-					Cluster:     nil,
-					SourceID: SourceID{
-						Location: SourceLocation{
-							Repo: "github.com/opentable/consumer-service-xyz",
-							Dir:  "",
-						},
-						Version: semv.MustParse("0.0.1"),
-					},
-					Flavor: "",
-					Owners: map[string]struct{}{},
-					Kind:   "",
+					BuildArtifact: nil,
 				},
-				BuildArtifact: nil,
-			},
-			Post: &Deployable{
-				Status: 0,
-				Deployment: &Deployment{
-					DeployConfig: DeployConfig{
-						Resources: map[string]string{
-							"ports":  "3",
-							"cpus":   "0.1",
-							"memory": "1024",
+				Post: &Deployable{
+					Status: 0,
+					Deployment: &Deployment{
+						DeployConfig: DeployConfig{
+							Resources: map[string]string{
+								"ports":  "3",
+								"cpus":   "0.1",
+								"memory": "1024",
+							},
+							Metadata: map[string]string{
+								"": "",
+							},
+							Env: map[string]string{
+								"OT_DISCO_INIT_URL:": "discovery-ci-uswest2.otenv.com",
+							},
+							NumInstances: 1,
+							Volumes:      nil,
+							Startup: Startup{
+								SkipCheck:                 false,
+								ConnectDelay:              10,
+								Timeout:                   30,
+								ConnectInterval:           1,
+								CheckReadyProtocol:        "HTTP",
+								CheckReadyURIPath:         "/health",
+								CheckReadyPortIndex:       0,
+								CheckReadyFailureStatuses: []int{500, 503},
+								CheckReadyURITimeout:      5,
+								CheckReadyInterval:        1,
+								CheckReadyRetries:         120,
+							},
 						},
-						Metadata: map[string]string{
-							"": "",
+						ClusterName: "",
+						Cluster:     nil,
+						SourceID: SourceID{
+							Location: SourceLocation{
+								Repo: "github.com/opentable/consumer-service-xyz",
+								Dir:  "",
+							},
+							Version: semv.MustParse("0.0.1"),
 						},
-						Env: map[string]string{
-							"OT_DISCO_INIT_URL:": "discovery-ci-uswest2.otenv.com",
-						},
-						NumInstances: 1,
-						Volumes:      nil,
-						Startup: Startup{
-							SkipCheck:                 false,
-							ConnectDelay:              10,
-							Timeout:                   30,
-							ConnectInterval:           1,
-							CheckReadyProtocol:        "HTTP",
-							CheckReadyURIPath:         "/health",
-							CheckReadyPortIndex:       0,
-							CheckReadyFailureStatuses: []int{500, 503},
-							CheckReadyURITimeout:      5,
-							CheckReadyInterval:        1,
-							CheckReadyRetries:         120,
-						},
+						Flavor: "",
+						Owners: map[string]struct{}{},
+						Kind:   "",
 					},
-					ClusterName: "",
-					Cluster:     nil,
-					SourceID: SourceID{
-						Location: SourceLocation{
-							Repo: "github.com/opentable/consumer-service-xyz",
-							Dir:  "",
-						},
-						Version: semv.MustParse("0.0.1"),
-					},
-					Flavor: "",
-					Owners: map[string]struct{}{},
-					Kind:   "",
+					BuildArtifact: nil,
 				},
-				BuildArtifact: nil,
 			},
 		},
+	}
+
+	msg.submessage.priorSub = &DeployableSubmessage{
+		deployable: msg.submessage.pair.Prior,
+		prefix:     "sous-prior",
+	}
+	msg.submessage.postSub = &DeployableSubmessage{
+		deployable: msg.submessage.pair.Post,
+		prefix:     "sous-post",
 	}
 
 	fixedFields := map[string]interface{}{
@@ -258,6 +282,7 @@ func TestDiffMessages_knownpanic(t *testing.T) {
 func TestDeployableMessage_incomplete(t *testing.T) {
 	msg := &deployableMessage{
 		callerInfo: logging.GetCallerInfo(),
+		submessage: &DeployablePairSubmessage{},
 	}
 
 	fixedFields := map[string]interface{}{
@@ -266,7 +291,7 @@ func TestDeployableMessage_incomplete(t *testing.T) {
 
 	logging.AssertMessageFields(t, msg, logging.StandardVariableFields, fixedFields)
 
-	msg.pair = &DeployablePair{}
+	msg.submessage.pair = &DeployablePair{}
 
 	fixedFields["sous-diff-disposition"] = "added"
 	fixedFields["sous-deployment-id"] = ":"
