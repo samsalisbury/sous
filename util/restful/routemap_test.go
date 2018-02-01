@@ -155,6 +155,12 @@ func TestRouteMap_URIFor_success(t *testing.T) {
 			pathParams: map[string]string{"param1": "one", "param2": "two"},
 			wantURI:    "/gapped/one/gap/two/blah?one=1&two=2",
 		},
+		// With path param containing slash.
+		{
+			name:       "endparam",
+			pathParams: map[string]string{"endparam": "one/two/three"},
+			wantURI:    `/simple/one%2Ftwo%2Fthree`,
+		},
 	}
 
 	for _, tc := range testCases {

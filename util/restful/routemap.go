@@ -204,8 +204,7 @@ func (rm RouteMap) URIFor(name string, pathParams map[string]string, kvs ...KV) 
 		if !ok {
 			return "", fmt.Errorf("no path param for :%s", part)
 		}
-		pathParts[i] = value
+		pathParts[i] = url.PathEscape(value)
 	}
-	u.Path = strings.Join(pathParts, "/")
-	return "/" + u.String() + query, nil
+	return "/" + strings.Join(pathParts, "/") + query, nil
 }
