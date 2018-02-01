@@ -115,6 +115,11 @@ func routemap(context ComponentLocator) *restful.RouteMap {
 		},
 {"health", "/health", newHealthResource(context)},
 {"deployments", "/deployments", newDeploymentsResource(context)},
+		{
+			Name:     "single_deployment",
+			Path:     "/deployments/:DeploymentID",
+			Resource: newDeploymentResource(context),
+		},
 	}
 }
 
