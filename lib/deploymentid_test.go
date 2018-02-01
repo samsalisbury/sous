@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestDigest(t *testing.T) {
+func TestDeploymentID_Digest(t *testing.T) {
 	tmpl := "got:%s expected:%s"
 	expected := "3ea161adca77a01781628e8a7d24ad0e"
 	d := &DeploymentID{
