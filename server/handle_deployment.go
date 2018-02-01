@@ -12,7 +12,6 @@ type (
 	// DeploymentResource describes resources for single deployments.
 	DeploymentResource struct {
 		userExtractor
-		restful.QueryParser
 		context ComponentLocator
 	}
 
