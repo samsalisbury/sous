@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/opentable/sous/util/logging"
-	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -64,17 +63,39 @@ func TestPutbackJSON(t *testing.T) {
 }
 
 func TestClientRetrieve(t *testing.T) {
-	ls := logging.NewLogSet(semv.MustParse("0.0.0"), "dummy", "", ioutil.Discard)
+	assert := assert.New(t)
+	//ls := logging.NewLogSet(semv.MustParse("0.0.0"), "dummy", "", ioutil.Discard)
+	lt, ctrl := logging.NewLogSinkSpy()
+
 	s := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		rw.Write([]byte("{}"))
 	}))
-	c, err := NewClient(s.URL, ls, map[string]string{})
+
+	c, err := NewClient(s.URL, lt, map[string]string{})
 	require.NoError(t, err)
 	body := map[string]interface{}{}
-	up, err := c.Retrieve("/path", map[string]string{"query": "present"}, &body, map[string]string{})
-	require.NoError(t, err)
 
-	assert.Contains(t, up.(*resourceState).qparms, "query")
+	up, err := c.Retrieve("/path", map[string]string{"query": "present"}, &body, map[string]string{})
+
+	require.NoError(t, err)
+	logCalls := ctrl.CallsTo("LogMessage")
+	require.Len(t, logCalls, 3)
+	assert.Contains(up.(*resourceState).qparms, "query")
+
+	logLvl := logCalls[2].PassedArgs().Get(0).(logging.Level)
+	msg := logCalls[2].PassedArgs().Get(1).(logging.LogMessage)
+
+	assert.Equal(logLvl, logging.DebugLevel)
+	assert.Contains(msg.Message(), "Sending GET")
+
+	fixedFields := map[string]interface{}{
+		"@loglov3-otl": "sous-http-v1",
+	}
+
+	//logging.AssertMessageFields(t, msg, append(logging.StandardVariableFields,
+	//	logging.HTTPVariableFields...), fixedFields)
+
+	logging.AssertMessageFields(t, msg, logging.StandardVariableFields, fixedFields)
 }
 
 func dig(m interface{}, index ...interface{}) interface{} {

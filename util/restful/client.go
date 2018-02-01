@@ -394,7 +394,7 @@ type clientMessage struct {
 	logging.CallerInfo
 	msg         string
 	channelName string
-	httpMsg     *messages.HttpLogEntry
+	httpMsg     *messages.HTTPLogEntry
 	isDebugMsg  bool
 }
 
@@ -414,7 +414,7 @@ func reportServerMessage(msg string, channelName string, rq *http.Request, statu
 	reportMessage(m, msg, channelName, logger, true)
 }
 
-func reportMessage(httpmsg *messages.HttpLogEntry, msg string, channelName string, log logging.LogSink, debug ...bool) {
+func reportMessage(httpmsg *messages.HTTPLogEntry, msg string, channelName string, log logging.LogSink, debug ...bool) {
 	debugStmt := false
 	if len(debug) > 0 {
 		debugStmt = debug[0]
@@ -448,7 +448,7 @@ func (msg clientMessage) composeMsg() string {
 }
 
 func (msg clientMessage) EachField(f logging.FieldReportFn) {
-	f("@loglov3-otl", "sous-generic-v1")
+	f("@loglov3-otl", "sous-http-v1")
 	f("channel_name", msg.channelName)
 	msg.httpMsg.EachField(f)
 	msg.CallerInfo.EachField(f)
