@@ -458,7 +458,7 @@ func newLocalGitRepo(c LocalGitClient) (v LocalGitRepo, err error) {
 }
 
 func newSelector(regClient LocalDockerClient, log LogSink) sous.Selector {
-	return docker.NewBuildStrategySelector(log, regClient)
+	return docker.NewBuildStrategySelector(log.Child("docker-build-strategy"), regClient)
 }
 
 func newDockerBuilder(cfg LocalSousConfig, nc *docker.NameCache, ctx *sous.SourceContext, source LocalWorkDirShell, scratch ScratchDirShell) (*docker.Builder, error) {
@@ -490,7 +490,7 @@ func newDeployer(dryrun DryrunOption, nc lazyNameCache, ls LogSink, c LocalSousC
 		drc.SetLogger(ls.Child("rectify"))
 		return singularity.NewDeployer(
 			drc,
-			ls,
+			ls.Child("singularity-deployer"),
 			singularity.OptMaxHTTPReqsPerServer(c.MaxHTTPConcurrencySingularity),
 		), nil
 	}
@@ -507,7 +507,7 @@ func newDeployer(dryrun DryrunOption, nc lazyNameCache, ls LogSink, c LocalSousC
 }
 
 func newDockerClient(ls LogSink) LocalDockerClient {
-	return LocalDockerClient{docker_registry.NewClient(ls.LogSink)}
+	return LocalDockerClient{docker_registry.NewClient(ls.Child("docker-client"))}
 }
 
 func newServerHandler(g *SousGraph, ComponentLocator server.ComponentLocator, metrics MetricsHandler, log LogSink) ServerHandler {
@@ -542,15 +542,15 @@ func newServerStateManager(c LocalSousConfig, log LogSink) *ServerStateManager {
 	var secondary sous.StateManager
 	db, err := c.Database.DB()
 	if err == nil {
-		secondary = storage.NewPostgresStateManager(db, log)
+		secondary = storage.NewPostgresStateManager(db, log.Child("database"))
 	} else {
 		logging.ReportError(log, errors.Wrapf(err, "connecting to database"))
-		secondary = storage.NewLogOnlyStateManager(log)
+		secondary = storage.NewLogOnlyStateManager(log.Child("database"))
 	}
 
 	dm := storage.NewDiskStateManager(c.StateLocation)
 	gm := storage.NewGitStateManager(dm)
-	duplex := storage.NewDuplexStateManager(gm, secondary, log.LogSink)
+	duplex := storage.NewDuplexStateManager(gm, secondary, log.Child("duplex-state"))
 	return &ServerStateManager{StateManager: duplex}
 }
 
@@ -573,7 +573,7 @@ func newStatusPoller(cl HTTPClient, rf *RefinedResolveFilter, user sous.User, lo
 		return nil
 	}
 	logs.Debugf("...looks good...")
-	return sous.NewStatusPoller(cl, (*sous.ResolveFilter)(rf), user, logs)
+	return sous.NewStatusPoller(cl, (*sous.ResolveFilter)(rf), user, logs.Child("status-poller"))
 }
 
 func newLocalStateReader(sm *StateManager) StateReader {
