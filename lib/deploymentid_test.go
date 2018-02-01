@@ -23,27 +23,33 @@ func TestDeploymentID_Digest(t *testing.T) {
 	t.Logf("success: %q mapped to %q", got, want)
 }
 
-func TestDeploymentID_String(t *testing.T) {
-	testCases := []struct {
-		desc string
-		in   DeploymentID
-		want string
+// deploymentIDTestCases returns test cases for use by both String and Parse
+// tests.
+func deploymentIDTestCases() []struct {
+	desc         string
+	deploymentID DeploymentID
+	string       string
+} {
+	return []struct {
+		desc         string
+		deploymentID DeploymentID
+		string       string
 	}{
 		{
-			desc: "zero DeploymentID",
-			in:   DeploymentID{},
-			want: ":",
+			desc:         "zero DeploymentID",
+			deploymentID: DeploymentID{},
+			string:       ":",
 		},
 		{
 			desc: "cluster",
-			in: DeploymentID{
+			deploymentID: DeploymentID{
 				Cluster: "cluster1",
 			},
-			want: "cluster1:",
+			string: "cluster1:",
 		},
 		{
 			desc: "cluster-repo",
-			in: DeploymentID{
+			deploymentID: DeploymentID{
 				ManifestID: ManifestID{
 					Source: SourceLocation{
 						Repo: "repo1",
@@ -51,11 +57,11 @@ func TestDeploymentID_String(t *testing.T) {
 				},
 				Cluster: "cluster1",
 			},
-			want: "cluster1:repo1",
+			string: "cluster1:repo1",
 		},
 		{
 			desc: "cluster-repo-dir",
-			in: DeploymentID{
+			deploymentID: DeploymentID{
 				ManifestID: ManifestID{
 					Source: SourceLocation{
 						Repo: "repo1",
@@ -64,11 +70,11 @@ func TestDeploymentID_String(t *testing.T) {
 				},
 				Cluster: "cluster1",
 			},
-			want: "cluster1:repo1,dir1",
+			string: "cluster1:repo1,dir1",
 		},
 		{
 			desc: "cluster-repo-dir-flavor",
-			in: DeploymentID{
+			deploymentID: DeploymentID{
 				ManifestID: ManifestID{
 					Source: SourceLocation{
 						Repo: "repo1",
@@ -78,15 +84,18 @@ func TestDeploymentID_String(t *testing.T) {
 				},
 				Cluster: "cluster1",
 			},
-			want: "cluster1:repo1,dir1~flavor1",
+			string: "cluster1:repo1,dir1~flavor1",
 		},
 	}
+}
 
-	for _, tc := range testCases {
+func TestDeploymentID_String(t *testing.T) {
+	for _, tc := range deploymentIDTestCases() {
 		t.Run(tc.desc, func(t *testing.T) {
-			got := tc.in.String()
-			if got != tc.want {
-				t.Errorf("got %q; want %q", got, tc.want)
+			got := tc.deploymentID.String()
+			want := tc.string
+			if got != want {
+				t.Errorf("got %q; want %q", got, want)
 			}
 		})
 	}
