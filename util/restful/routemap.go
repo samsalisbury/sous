@@ -1,10 +1,12 @@
 package restful
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"strings"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/opentable/sous/util/logging"
@@ -171,4 +173,47 @@ func (rm *RouteMap) PathFor(name string, kvs ...KV) (string, error) {
 		}
 	}
 	return "", errors.Errorf("No route found for name %q", name)
+}
+
+// ByName returns the routeEntry named name and true if it exists or a zero
+// routeEntry and false otherwise.
+func (rm RouteMap) byName(name string) (routeEntry, bool) {
+	for _, e := range rm {
+		if e.Name == name {
+			return e, true
+		}
+	}
+	return routeEntry{}, false
+}
+
+// URIFor returns the URI (relative to the root) for the named route using
+// pathParams and kv to fill out path parameters and query values respectively.
+func (rm RouteMap) URIFor(name string, pathParams map[string]string, kvs ...KV) (string, error) {
+	r, ok := rm.byName(name)
+	if !ok {
+		return "", fmt.Errorf("no route named %q", name)
+	}
+	u, err := url.ParseRequestURI(r.Path)
+	if err != nil {
+		return "", fmt.Errorf("error parsing route URI for %q: %s", name, err)
+	}
+	if u.Path == "/" {
+		return u.String(), nil
+	}
+	pathParts := strings.Split(u.Path, "/")
+	pathParts = pathParts[1:]
+	for i, part := range pathParts {
+		if part[0] != ':' {
+			continue
+		}
+		part = part[1:]
+		value, ok := pathParams[part]
+		if !ok {
+			return "", fmt.Errorf("no path param for :%s", part)
+		}
+		pathParts[i] = value
+	}
+	u.Path = strings.Join(pathParts, "/")
+
+	return "/" + u.String(), nil
 }
