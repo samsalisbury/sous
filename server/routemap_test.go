@@ -41,6 +41,20 @@ func TestSousRoutes(t *testing.T) {
 		"status",
 		nil,
 	)
+
+	// This test checks that the deploymentID.String() implementation that
+	// exists at time of writing is read OK. This test will break if that
+	// implementation changes.
+	test(
+		"/deployments/my-cluster:github.com%2Fopentable%2Fblah%2Csome%2Fdir~orange",
+		"single_deployment",
+		map[string]string{
+			"DeploymentID": "my-cluster:github.com/opentable/blah,some/dir~orange",
+		},
+	)
+
+	// This test checks that the current implementation of DeploymentID.String()
+	// is read OK, and will likely be more resilient than the previous test.
 	did := sous.DeploymentID{
 		ManifestID: sous.ManifestID{
 			Source: sous.SourceLocation{
@@ -51,7 +65,6 @@ func TestSousRoutes(t *testing.T) {
 		},
 		Cluster: "my-cluster",
 	}
-
 	didStr := did.String()
 	t.Logf("DeploymentID string: %q", didStr)
 	escapedDidStr := url.PathEscape(didStr)
