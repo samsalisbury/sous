@@ -65,7 +65,7 @@ func Handler(sc ComponentLocator, metrics http.Handler, ls logging.LogSink) http
 	return handler
 }
 
-// Handler builds the http.Handler for the Sous server httprouter.
+// ProfilingHandler builds the http.Handler for the Sous server httprouter.
 func ProfilingHandler(sc ComponentLocator, metrics http.Handler, ls logging.LogSink) http.Handler {
 	handler := mux(sc, ls)
 	addMetrics(handler, metrics)
@@ -83,14 +83,38 @@ func mux(sc ComponentLocator, ls logging.LogSink) *http.ServeMux {
 
 func routemap(context ComponentLocator) *restful.RouteMap {
 	return &restful.RouteMap{
-		{"gdm", "/gdm", newGDMResource(context)},
-		{"defs", "/defs", newStateDefResource(context)},
-		{"manifest", "/manifest", newManifestResource(context)},
-		{"artifact", "/artifact", newArtifactResource(context)},
-		{"status", "/status", newStatusResource(context)},
-		{"servers", "/servers", newServerListResource(context)},
-		{"health", "/health", newHealthResource(context)},
-		{"deployments", "/deployments", newDeploymentsResource(context)},
+		{
+			Name:     "gdm",
+			Path:     "/gdm",
+			Resource: newGDMResource(context),
+		},
+		{
+			Name:     "defs",
+			Path:     "/defs",
+			Resource: newStateDefResource(context),
+		},
+		{
+			Name:     "manifest",
+			Path:     "/manifest",
+			Resource: newManifestResource(context),
+		},
+		{
+			Name:     "artifact",
+			Path:     "/artifact",
+			Resource: newArtifactResource(context),
+		},
+		{
+			Name:     "status",
+			Path:     "/status",
+			Resource: newStatusResource(context),
+		},
+		{
+			Name:     "servers",
+			Path:     "/servers",
+			Resource: newServerListResource(context),
+		},
+{"health", "/health", newHealthResource(context)},
+{"deployments", "/deployments", newDeploymentsResource(context)},
 	}
 }
 
