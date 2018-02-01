@@ -156,23 +156,23 @@ type KV []string
 
 // PathFor constructs a URL which should route back to the named route, with
 // supplied parameters
-func (rm *RouteMap) PathFor(name string, kvs ...KV) (string, error) {
+func (rm RouteMap) PathFor(name string, kvs ...KV) (string, error) {
 	params := url.Values{}
 	for _, kv := range kvs {
 		params.Add(kv[0], kv[1])
 	}
 
-	for _, e := range *rm {
-		if e.Name == name {
-			// Path parameters will need some regexp magic, I think
-			query := ""
-			if len(params) > 0 {
-				query = "?" + url.Values(params).Encode()
-			}
-			return e.Path + query, nil
-		}
+	r, ok := rm.byName(name)
+	if !ok {
+		return "", errors.Errorf("No route found for name %q", name)
 	}
-	return "", errors.Errorf("No route found for name %q", name)
+
+	// Path parameters will need some regexp magic, I think
+	query := ""
+	if len(params) > 0 {
+		query = "?" + url.Values(params).Encode()
+	}
+	return r.Path + query, nil
 }
 
 // ByName returns the routeEntry named name and true if it exists or a zero
@@ -197,9 +197,24 @@ func (rm RouteMap) URIFor(name string, pathParams map[string]string, kvs ...KV) 
 	if err != nil {
 		return "", fmt.Errorf("error parsing route URI for %q: %s", name, err)
 	}
-	if u.Path == "/" {
-		return u.String(), nil
+
+	// Calculate query string.
+	params := url.Values{}
+	for _, kv := range kvs {
+		params.Add(kv[0], kv[1])
 	}
+
+	query := ""
+	if len(params) > 0 {
+		query = "?" + url.Values(params).Encode()
+	}
+
+	// Special case for root, return early.
+	if u.Path == "/" {
+		return u.String() + query, nil
+	}
+
+	// For non-root calculate path based on path params.
 	pathParts := strings.Split(u.Path, "/")
 	pathParts = pathParts[1:]
 	for i, part := range pathParts {
@@ -214,6 +229,5 @@ func (rm RouteMap) URIFor(name string, pathParams map[string]string, kvs ...KV) 
 		pathParts[i] = value
 	}
 	u.Path = strings.Join(pathParts, "/")
-
-	return "/" + u.String(), nil
+	return "/" + u.String() + query, nil
 }
