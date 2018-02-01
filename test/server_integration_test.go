@@ -12,6 +12,7 @@ import (
 	"github.com/opentable/sous/graph"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/server"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/suite"
@@ -79,8 +80,10 @@ func (suite *liveServerSuite) SetupTest() {
 	suite.server = httptest.NewServer(h)
 	suite.user = sous.User{}
 
+	lt, _ := logging.NewLogSinkSpy()
+
 	var err error
-	suite.integrationServerTests.client, err = restful.NewClient(suite.server.URL, dummyLogger{})
+	suite.integrationServerTests.client, err = restful.NewClient(suite.server.URL, lt)
 	if err != nil {
 		suite.FailNow("Error constructing client: %v", err)
 	}
@@ -88,10 +91,10 @@ func (suite *liveServerSuite) SetupTest() {
 
 func (suite *inmemServerSuite) SetupTest() {
 	h := suite.prepare()
-
+	lt, _ := logging.NewLogSinkSpy()
 	suite.user = sous.User{}
 	var err error
-	suite.integrationServerTests.client, err = restful.NewInMemoryClient(h, dummyLogger{})
+	suite.integrationServerTests.client, err = restful.NewInMemoryClient(h, lt)
 	if err != nil {
 		suite.FailNow("Error constructing client: %v", err)
 	}

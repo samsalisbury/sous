@@ -10,7 +10,8 @@ import (
 	"github.com/opentable/sous/util/logging"
 )
 
-type httpLogEntry struct {
+// HTTPLogEntry struct to hold log entry messages
+type HTTPLogEntry struct {
 	logging.CallerInfo
 	logging.Level
 	serverSide     bool
@@ -43,7 +44,24 @@ func ReportServerHTTPResponse(logger logging.LogSink, rq *http.Request, statusCo
 	logging.Deliver(m, logger)
 }
 
-func buildHTTPLogMessage(server bool, rq *http.Request, statusCode int, responseContentLength int64, resName string, dur time.Duration) *httpLogEntry {
+// BuildClientHTTPResponse reports a response recieved by Sous as a client.
+func BuildClientHTTPResponse(rz *http.Response, resName string, dur time.Duration) *HTTPLogEntry {
+	// XXX dur should in fact be "start time.Time" and duration be computed here.
+	// swaggering now depends on this, so it's more of a hassle.
+	m := buildHTTPLogMessage(false, rz.Request, rz.StatusCode, rz.ContentLength, resName, dur)
+	m.ExcludeMe()
+	return m
+}
+
+// BuildServerHTTPResponse reports a response recieved by Sous as a client.
+// n.b. this interface subject to change
+func BuildServerHTTPResponse(rq *http.Request, statusCode int, contentLength int64, resName string, dur time.Duration) *HTTPLogEntry {
+	m := buildHTTPLogMessage(true, rq, statusCode, contentLength, resName, dur)
+	m.ExcludeMe()
+	return m
+}
+
+func buildHTTPLogMessage(server bool, rq *http.Request, statusCode int, responseContentLength int64, resName string, dur time.Duration) *HTTPLogEntry {
 	url := rq.URL
 
 	qps := map[string]string{}
@@ -67,18 +85,18 @@ func buildHTTPLogMessage(server bool, rq *http.Request, statusCode int, response
 	return m
 }
 
-func newHTTPLogEntry(server bool, resName, method, urlstring string, status int, rqSize, rzSize int64, dur time.Duration) *httpLogEntry {
+func newHTTPLogEntry(server bool, resName, method, urlstring string, status int, rqSize, rzSize int64, dur time.Duration) *HTTPLogEntry {
 	u, err := url.Parse(urlstring)
 	if err != nil {
 		u = &url.URL{}
 	}
 
-	return &httpLogEntry{
+	return &HTTPLogEntry{
 		Level:      logging.InformationLevel,
 		CallerInfo: logging.GetCallerInfo(logging.NotHere()),
 
 		serverSide:     server,
-		resourceFamily: resName,
+		resourceFamily: resName, 
 		method:         method,
 		url:            urlstring,
 		server:         u.Host,
@@ -91,7 +109,8 @@ func newHTTPLogEntry(server bool, resName, method, urlstring string, status int,
 	}
 }
 
-func (msg *httpLogEntry) MetricsTo(metrics logging.MetricsSink) {
+// MetricsTo function to send metrics to graphite
+func (msg *HTTPLogEntry) MetricsTo(metrics logging.MetricsSink) {
 	side := "client"
 	if msg.serverSide {
 		side = "server"
@@ -118,7 +137,6 @@ func (msg *httpLogEntry) MetricsTo(metrics logging.MetricsSink) {
 	for _, name := range nameGen("http-request-duration") {
 		metrics.UpdateTimer(name, msg.dur)
 	}
-
 	for _, name := range nameGen("http-status.%d", msg.status) {
 		metrics.IncCounter(name, 1)
 	}
@@ -132,7 +150,15 @@ func (msg *httpLogEntry) MetricsTo(metrics logging.MetricsSink) {
 	}
 }
 
-func (msg *httpLogEntry) EachField(f logging.FieldReportFn) {
+// EachField to populate the proper fields from message
+func (msg *HTTPLogEntry) EachField(f logging.FieldReportFn) {
+	msg.EachFieldWithoutCallerInfo(f)
+	msg.CallerInfo.EachField(f)
+}
+
+// EachFieldWithoutCallerInfo allows sub messages to populate
+// logging.FieldReportFn without out having to call CallerInfo
+func (msg *HTTPLogEntry) EachFieldWithoutCallerInfo(f logging.FieldReportFn) {
 	f("@loglov3-otl", "sous-http-v1")
 	f("resource-family", msg.resourceFamily)
 	f("incoming", msg.serverSide)
@@ -149,9 +175,14 @@ func (msg *httpLogEntry) EachField(f logging.FieldReportFn) {
 	f("url-hostname", msg.server)
 	f("url-pathname", msg.path)
 	f("url-querystring", msg.parms)
-	msg.CallerInfo.EachField(f)
 }
 
-func (msg *httpLogEntry) Message() string {
+// Status method to retrieve status from message
+func (msg *HTTPLogEntry) Status() int {
+	return msg.status
+}
+
+// Message retrieve message from log message
+func (msg *HTTPLogEntry) Message() string {
 	return fmt.Sprintf("%d", msg.status)
 }
