@@ -10,7 +10,6 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/opentable/sous/util/logging"
-	"github.com/pkg/errors"
 )
 
 type (
@@ -151,29 +150,8 @@ func (rm *RouteMap) SingleExchanger(factory ExchangeFactory, gf func() Injector,
 	return mh.injectedHandler(factory, w, rq, httprouter.Params{})
 }
 
-// KV (Key/Value) is a convenience type for PathFor
+// KV (Key/Value) is a convenience type for URIFor.
 type KV []string
-
-// PathFor constructs a URL which should route back to the named route, with
-// supplied parameters
-func (rm RouteMap) PathFor(name string, kvs ...KV) (string, error) {
-	params := url.Values{}
-	for _, kv := range kvs {
-		params.Add(kv[0], kv[1])
-	}
-
-	r, ok := rm.byName(name)
-	if !ok {
-		return "", errors.Errorf("No route found for name %q", name)
-	}
-
-	// Path parameters will need some regexp magic, I think
-	query := ""
-	if len(params) > 0 {
-		query = "?" + url.Values(params).Encode()
-	}
-	return r.Path + query, nil
-}
 
 // ByName returns the routeEntry named name and true if it exists or a zero
 // routeEntry and false otherwise.
