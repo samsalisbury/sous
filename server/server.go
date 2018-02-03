@@ -26,7 +26,8 @@ type (
 		*config.Config
 		sous.Inserter
 		sous.StateManager
-		ResolveFilter *sous.ResolveFilter
+		sous.ClusterManager // xxx temporary?
+		ResolveFilter       *sous.ResolveFilter
 		*sous.AutoResolver
 		Version semv.Version
 	}
