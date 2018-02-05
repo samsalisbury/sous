@@ -106,6 +106,7 @@ func NewResolveRecorder(intended Deployments, f func(*ResolveRecorder)) *Resolve
 	// Execute the main function (f) over this resolve recorder.
 	go func() {
 		f(rr)
+		close(rr.Log)
 		rr.write(func() {
 			rr.status.Finished = time.Now()
 			if rr.err == nil {

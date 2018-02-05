@@ -18,7 +18,6 @@ func exerciseResolveRecorder(t *testing.T, f func(*ResolveRecorder)) rrResult {
 	// Run all the phases in the test in order.
 	rs := NewResolveRecorder(NewDeployments(), func(rs *ResolveRecorder) {
 		f(rs)
-		close(rs.Log)
 		<-block // Wait for signal from the test that this func may finish.
 	})
 
