@@ -1,19 +1,22 @@
 package server
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/julienschmidt/httprouter"
 	sous "github.com/opentable/sous/lib"
 )
 
-func TestDeploymentResource_Get(t *testing.T) {
+func TestDeploymentResource_Get_no_errors(t *testing.T) {
 
 	testCases := []struct {
+		desc    string
 		params  httprouter.Params
 		wantDID sous.DeploymentID
 	}{
 		{
+			desc: "valid deploymentID",
 			params: httprouter.Params{
 				{Key: "DeploymentID", Value: "cluster1%3Agithub.com%2Fuser1%2Frepo1%2Cdir1~flavor1"},
 			},
@@ -31,15 +34,53 @@ func TestDeploymentResource_Get(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			dr := &DeploymentResource{}
+			got := dr.Get(nil, nil, tc.params).(*GETDeploymentHandler)
 
-		dr := &DeploymentResource{}
-		got := dr.Get(nil, nil, tc.params).(*GETDeploymentHandler)
+			gotDID := got.DeploymentID
+			if gotDID != tc.wantDID {
+				t.Errorf("got DeploymentID:\n%#v; want:\n%#v", gotDID, tc.wantDID)
+			}
 
-		gotDID := got.DeploymentID
+			if got.DeploymentIDErr != nil {
+				t.Errorf("unexpected error: %s", got.DeploymentIDErr)
+			}
+		})
+	}
 
-		if gotDID != tc.wantDID {
-			t.Errorf("got DeploymentID:\n%#v; want:\n%#v", gotDID, tc.wantDID)
-		}
+}
+
+func TestDeploymentResource_Get_DeploymentID_errors(t *testing.T) {
+
+	testCases := []struct {
+		params     httprouter.Params
+		wantDIDErr string
+	}{
+		{
+			params: httprouter.Params{
+				{Key: "DeploymentID", Value: "cluster1%-3Agithub.com%2Fuser1%2Frepo1%2Cdir1~flavor1"},
+			},
+			wantDIDErr: `invalid URL escape "%-3"`,
+		},
+		{
+			params: httprouter.Params{
+				{Key: "DeploymentID", Value: "cluster1Agithub.com%2Fuser1%2Frepo1%2Cdir1~flavor1"},
+			},
+			wantDIDErr: `does not contain a colon`,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.wantDIDErr, func(t *testing.T) {
+			dr := &DeploymentResource{}
+			got := dr.Get(nil, nil, tc.params).(*GETDeploymentHandler)
+
+			gotDIDErr := got.DeploymentIDErr
+			if gotDIDErr == nil || gotDIDErr.Error() != tc.wantDIDErr {
+				t.Fatalf("got error: %v; want %q", gotDIDErr, tc.wantDIDErr)
+			}
+		})
 	}
 
 }
@@ -135,7 +176,17 @@ func TestGETDeploymentHandler_Exchange(t *testing.T) {
 			}
 		}
 	})
+}
 
+func TestGETDeploymentHandler_Exchange_errors(t *testing.T) {
+	gdh := &GETDeploymentHandler{
+		DeploymentIDErr: fmt.Errorf("this error"),
+	}
+	_, gotStatus := gdh.Exchange()
+	const wantStatus = 404
+	if gotStatus != wantStatus {
+		t.Errorf("got status %d; want %d", gotStatus, wantStatus)
+	}
 }
 
 func newR11n(repo string) *sous.Rectification {

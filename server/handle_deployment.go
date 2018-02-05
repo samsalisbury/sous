@@ -6,6 +6,7 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/firsterr"
 	"github.com/opentable/sous/util/restful"
 )
 
@@ -18,8 +19,9 @@ type (
 
 	// GETDeploymentHandler handles GET exchanges for single deployments.
 	GETDeploymentHandler struct {
-		QueueSet     *sous.R11nQueueSet
-		DeploymentID sous.DeploymentID
+		QueueSet        *sous.R11nQueueSet
+		DeploymentID    sous.DeploymentID
+		DeploymentIDErr error
 	}
 )
 
@@ -28,23 +30,27 @@ func newDeploymentResource(ctx ComponentLocator) *DeploymentResource {
 }
 
 // Get implements Getable for DeploymentResource.
-func (mr *DeploymentResource) Get(_ http.ResponseWriter, req *http.Request, p httprouter.Params) restful.Exchanger {
-	didStr, err := url.PathUnescape(p.ByName("DeploymentID"))
-	if err != nil {
-		panic(err)
-	}
-	did, err := sous.ParseDeploymentID(didStr)
-	if err != nil {
-		panic(err)
-	}
+func (mr *DeploymentResource) Get(_ http.ResponseWriter, _ *http.Request, p httprouter.Params) restful.Exchanger {
+	var (
+		didStr string
+		did    sous.DeploymentID
+	)
+	didErr := firsterr.Set(
+		func(e *error) { didStr, *e = url.PathUnescape(p.ByName("DeploymentID")) },
+		func(e *error) { did, *e = sous.ParseDeploymentID(didStr) },
+	)
 
 	return &GETDeploymentHandler{
-		DeploymentID: did,
+		DeploymentID:    did,
+		DeploymentIDErr: didErr,
 	}
 }
 
 // Exchange implements restful.Exchanger
 func (gmh *GETDeploymentHandler) Exchange() (interface{}, int) {
+	if gmh.DeploymentIDErr != nil {
+		return nil, 404
+	}
 	queues := gmh.QueueSet.Queues()
 	queue, ok := queues[gmh.DeploymentID]
 	if !ok {
