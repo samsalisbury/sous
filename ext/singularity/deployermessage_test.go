@@ -29,6 +29,7 @@ func TestDeployerMessage(t *testing.T) {
 	expectedFields := map[string]interface{}{
 		"@loglov3-otl": "sous-rectifier-singularity-v1",
 		"request-id":   requestID,
+		"diffs": "",
 	}
 
 	logging.AssertMessageFields(t, logMessage, logging.StandardDeployerFields("sous-prior","sous-post"), expectedFields)
@@ -57,6 +58,31 @@ func TestDeployerMessageError(t *testing.T) {
 		"@loglov3-otl": "sous-rectifier-singularity-v1",
 		"request-id":   requestID,
 		"error": "Test error",
+		"diffs": "",
+	}
+
+	logging.AssertMessageFields(t, logMessage, logging.StandardDeployerFields("sous-prior","sous-post"), expectedFields)
+}
+
+func TestDeployerMessageDiffs(t *testing.T) {
+	logger, control := logging.NewLogSinkSpy()
+	pair := baseDeployablePair()
+	requestID := "12345"
+	taskData := &singularityTaskData{
+		requestID: requestID,
+	}
+	diffs := []string{"test", "test1", "test2"}
+
+
+	reportDeployerMessage("test", pair, diffs, taskData, nil, logging.InformationLevel, logger)
+
+	logCalls := control.CallsTo("LogMessage")
+	logMessage := logCalls[0].PassedArgs().Get(1).(deployerMessage)
+
+	expectedFields := map[string]interface{}{
+		"@loglov3-otl": "sous-rectifier-singularity-v1",
+		"request-id":   requestID,
+		"diffs": "test\ntest1\ntest2",
 	}
 
 	logging.AssertMessageFields(t, logMessage, logging.StandardDeployerFields("sous-prior","sous-post"), expectedFields)

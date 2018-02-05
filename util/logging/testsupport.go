@@ -166,7 +166,6 @@ var StandardVariableFields = []string{
 }
 
 var unprefixedDeployerFields = []string{
-	"diffs",
 	"sous-manifest-id",
 	"sous-deployment-diffs",
 	"sous-deployment-id",
