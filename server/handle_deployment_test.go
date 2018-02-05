@@ -3,8 +3,46 @@ package server
 import (
 	"testing"
 
+	"github.com/julienschmidt/httprouter"
 	sous "github.com/opentable/sous/lib"
 )
+
+func TestDeploymentResource_Get(t *testing.T) {
+
+	testCases := []struct {
+		params  httprouter.Params
+		wantDID sous.DeploymentID
+	}{
+		{
+			params: httprouter.Params{
+				{Key: "DeploymentID", Value: "cluster1%3Agithub.com%2Fuser1%2Frepo1%2Cdir1~flavor1"},
+			},
+			wantDID: sous.DeploymentID{
+				ManifestID: sous.ManifestID{
+					Source: sous.SourceLocation{
+						Repo: "github.com/user1/repo1",
+						Dir:  "dir1",
+					},
+					Flavor: "flavor1",
+				},
+				Cluster: "cluster1",
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+
+		dr := &DeploymentResource{}
+		got := dr.Get(nil, nil, tc.params).(*GETDeploymentHandler)
+
+		gotDID := got.DeploymentID
+
+		if gotDID != tc.wantDID {
+			t.Errorf("got DeploymentID:\n%#v; want:\n%#v", gotDID, tc.wantDID)
+		}
+	}
+
+}
 
 func TestGETDeploymentHandler_Exchange(t *testing.T) {
 

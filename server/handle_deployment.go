@@ -2,6 +2,7 @@ package server
 
 import (
 	"net/http"
+	"net/url"
 
 	"github.com/julienschmidt/httprouter"
 	sous "github.com/opentable/sous/lib"
@@ -27,8 +28,19 @@ func newDeploymentResource(ctx ComponentLocator) *DeploymentResource {
 }
 
 // Get implements Getable for DeploymentResource.
-func (mr *DeploymentResource) Get(_ http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
-	return &GETDeploymentHandler{}
+func (mr *DeploymentResource) Get(_ http.ResponseWriter, req *http.Request, p httprouter.Params) restful.Exchanger {
+	didStr, err := url.PathUnescape(p.ByName("DeploymentID"))
+	if err != nil {
+		panic(err)
+	}
+	did, err := sous.ParseDeploymentID(didStr)
+	if err != nil {
+		panic(err)
+	}
+
+	return &GETDeploymentHandler{
+		DeploymentID: did,
+	}
 }
 
 // Exchange implements restful.Exchanger
