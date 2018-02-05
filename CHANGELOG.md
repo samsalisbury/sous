@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
-## [Unreleased](//github.com/opentable/sous/compare/0.5.62...HEAD)
+## [0.5.63](//github.com/opentable/sous/compare/0.5.62...0.5.63)
 
 ### Added
 * CLI: If no image is present in runspec, return a fatal flaw in build.
