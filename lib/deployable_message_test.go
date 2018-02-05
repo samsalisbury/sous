@@ -9,8 +9,8 @@ import (
 )
 
 func TestDeployableMessage(t *testing.T) {
-	prior := deployableFixture("")
-	post := deployableFixture("")
+	prior := DeployableFixture("")
+	post := DeployableFixture("")
 
 	msg := &deployableMessage{
 		submessage: &DeployablePairSubmessage{
