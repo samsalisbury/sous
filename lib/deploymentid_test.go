@@ -128,6 +128,10 @@ func TestParseDeploymentID_errors(t *testing.T) {
 			in:   ":~~",
 			want: `illegal manifest ID "~~" (contains more than one colon)`,
 		},
+		{
+			in:   "nocolon",
+			want: "does not contain a colon",
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("%q", tc.in), func(t *testing.T) {

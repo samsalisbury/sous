@@ -21,6 +21,9 @@ func ParseDeploymentID(s string) (DeploymentID, error) {
 		return DeploymentID{}, fmt.Errorf("empty string not valid")
 	}
 	clusterManifest := strings.SplitN(s, ":", 2)
+	if len(clusterManifest) != 2 {
+		return DeploymentID{}, fmt.Errorf("does not contain a colon")
+	}
 	cluster := clusterManifest[0]
 	manifestID, err := ParseManifestID(clusterManifest[1])
 	if err != nil {
