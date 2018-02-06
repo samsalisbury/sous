@@ -11,10 +11,6 @@ type (
 
 	silentLogSet   struct{}
 	fallbackLogger struct{}
-
-	logSetWrapper struct {
-		logSet
-	}
 )
 
 // PlaceholderLogger returns a log set that fulfills the restful logging

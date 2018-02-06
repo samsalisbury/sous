@@ -9,8 +9,11 @@ import (
 	"net/http"
 	"net/textproto"
 	"net/url"
+	"time"
 
 	"github.com/hydrogen18/memlistener"
+	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 	"github.com/opentable/sous/util/readdebugger"
 	"github.com/pkg/errors"
 )
@@ -21,7 +24,7 @@ type (
 	LiveHTTPClient struct {
 		serverURL *url.URL
 		http.Client
-		logSet
+		logging.LogSink
 		commonHeaders http.Header
 	}
 
@@ -64,7 +67,7 @@ type (
 	Comparable interface {
 		// EmptyReceiver should return a pointer to an "zero value" for the recieving type.
 		// For example:
-		//   func (x *X) EmptyReceiver() { return &X{} }
+		///	//   func (x *X) EmptyReceiver() { return &X{} }
 		EmptyReceiver() Comparable
 
 		// VariancesFrom returns a list of differences from another Comparable.
@@ -99,12 +102,12 @@ func Retryable(err error) bool {
 }
 
 // NewClient returns a new LiveHTTPClient for a particular serverURL.
-func NewClient(serverURL string, ls logSet, headers ...map[string]string) (*LiveHTTPClient, error) {
+func NewClient(serverURL string, ls logging.LogSink, headers ...map[string]string) (*LiveHTTPClient, error) {
 	u, err := url.Parse(serverURL)
 
 	client := &LiveHTTPClient{
 		serverURL:     u,
-		logSet:        ls,
+		LogSink:       ls,
 		commonHeaders: buildHeaders(headers),
 	}
 
@@ -119,7 +122,7 @@ func NewClient(serverURL string, ls logSet, headers ...map[string]string) (*Live
 }
 
 // NewInMemoryClient wraps a MemoryListener in a restful.Client
-func NewInMemoryClient(handler http.Handler, ls logSet, headers ...map[string]string) (HTTPClient, error) {
+func NewInMemoryClient(handler http.Handler, ls logging.LogSink, headers ...map[string]string) (HTTPClient, error) {
 	u, err := url.Parse("http://in.memory.server")
 	if err != nil {
 		return nil, err
@@ -129,7 +132,7 @@ func NewInMemoryClient(handler http.Handler, ls logSet, headers ...map[string]st
 
 	client := &LiveHTTPClient{
 		serverURL:     u,
-		logSet:        ls,
+		LogSink:       ls,
 		Client:        *ms.NewClient(),
 		commonHeaders: buildHeaders(headers),
 	}
@@ -263,8 +266,8 @@ func (client *LiveHTTPClient) buildRequest(method, url string, headers map[strin
 		return nil, ierr
 	}
 
+	//	client.Debugf("Sending %s %q", method, url)
 	client.Debugf("Sending %s %q", method, url)
-
 	JSON := &bytes.Buffer{}
 
 	if rqBody != nil {
@@ -280,10 +283,6 @@ func (client *LiveHTTPClient) buildRequest(method, url string, headers map[strin
 	if headers == nil {
 		headers = map[string]string{}
 	}
-	/*
-		rq.Header.Add("Sous-User-Name", user.Name)
-		rq.Header.Add("Sous-User-Email", user.Email)
-	*/
 
 	client.updateHeaders(rq, headers)
 
@@ -357,15 +356,15 @@ func (client *LiveHTTPClient) getBody(rz *http.Response, rzBody interface{}, err
 }
 
 func (client *LiveHTTPClient) logBody(dir, chName string, req *http.Request, b []byte, n int, err error) {
-	client.Vomitf("%s %s %q", chName, req.Method, req.URL)
+	reportServerMessage("logBody", chName, req, 0, int64(n), "", time.Duration(int64(0)), client.LogSink)
 	comp := &bytes.Buffer{}
 	if err := json.Compact(comp, b[0:n]); err != nil {
-		client.Vomitf(string(b))
-		client.Vomitf("(problem compacting JSON for logging: %s)", err)
+		reportServerMessage(fmt.Sprintf("%s", string(b)), chName, req, 0, int64(n), "", time.Duration(int64(0)), client.LogSink)
+		reportServerMessage(fmt.Sprintf("problem compacting JSON for logging: %s)", err), chName, req, 0, int64(n), "", time.Duration(int64(0)), client.LogSink)
 	} else {
-		client.Vomitf(comp.String())
+		reportServerMessage(string(comp.String()), chName, req, 0, int64(n), "", time.Duration(int64(0)), client.LogSink)
 	}
-	client.Vomitf("%s %d bytes, result: %v", dir, n, err)
+	reportServerMessage(fmt.Sprintf("%s %d bytes, result: %v", dir, n, err), chName, req, 0, int64(n), "", time.Duration(int64(0)), client.LogSink)
 }
 
 func (client *LiveHTTPClient) readerLogF(dir, chName string, req *http.Request) func(b []byte, n int, err error) {
@@ -374,7 +373,7 @@ func (client *LiveHTTPClient) readerLogF(dir, chName string, req *http.Request) 
 
 func (client *LiveHTTPClient) httpRequest(req *http.Request) (*http.Response, error) {
 	if req.Body == nil {
-		client.Vomitf("Client -> %s %q <empty request body>", req.Method, req.URL)
+		reportServerMessage("Client -> <empty request body>", "", req, 0, int64(0), "", time.Duration(int64(0)), client.LogSink)
 	} else {
 		req.Body = readdebugger.New(req.Body, client.readerLogF("Sent", "Client ->", req))
 	}
@@ -383,10 +382,74 @@ func (client *LiveHTTPClient) httpRequest(req *http.Request) (*http.Response, er
 		return rz, err
 	}
 	if rz.Body == nil {
-		client.Vomitf("Client <- %s %q %d <empty response body>", req.Method, req.URL, rz.StatusCode)
+		reportServerMessage("Client <- <empty response body>", "", req, 0, int64(0), "", time.Duration(int64(0)), client.LogSink)
 		return rz, err
 	}
 
 	rz.Body = readdebugger.New(rz.Body, client.readerLogF("Read", "Client <-", req))
 	return rz, err
+}
+
+type clientMessage struct {
+	logging.CallerInfo
+	msg         string
+	channelName string
+	httpMsg     *messages.HTTPLogEntry
+	isDebugMsg  bool
+}
+
+/* func reportClientMessage(msg string, channelName string, rz *http.Response, resName string, dur time.Duration, logger logging.LogSink) {
+	// XXX dur should in fact be "start time.Time" and duration be computed here.
+	// swaggering now depends on this, so it's more of a hassle.
+	m := messages.BuildClientHTTPResponse(rz, resName, dur)
+	m.ExcludeMe()
+	reportMessage(m, msg, channelName, logger, true)
+} */
+
+// ReportServerHTTPResponse reports a response recieved by Sous as a client.
+// n.b. this interface subject to change
+func reportServerMessage(msg string, channelName string, rq *http.Request, statusCode int, contentLength int64, resName string, dur time.Duration, logger logging.LogSink) {
+	m := messages.BuildServerHTTPResponse(rq, statusCode, contentLength, resName, dur)
+	m.ExcludeMe()
+	reportMessage(m, msg, channelName, logger, true)
+}
+
+func reportMessage(httpmsg *messages.HTTPLogEntry, msg string, channelName string, log logging.LogSink, debug ...bool) {
+	debugStmt := false
+	if len(debug) > 0 {
+		debugStmt = debug[0]
+	}
+
+	msgLog := clientMessage{
+		msg:         msg,
+		CallerInfo:  logging.GetCallerInfo(logging.NotHere()),
+		channelName: channelName,
+		httpMsg:     httpmsg,
+		isDebugMsg:  debugStmt,
+	}
+	logging.Deliver(msgLog, log)
+}
+
+func (msg clientMessage) DefaultLevel() logging.Level {
+	level := logging.WarningLevel
+	if msg.isDebugMsg {
+		level = logging.DebugLevel
+	}
+
+	return level
+}
+
+func (msg clientMessage) Message() string {
+	return msg.composeMsg()
+}
+
+func (msg clientMessage) composeMsg() string {
+	return fmt.Sprintf("%s: channel name %s, status %d", msg.msg, msg.channelName, msg.httpMsg.Status())
+}
+
+func (msg clientMessage) EachField(f logging.FieldReportFn) {
+	//f("@loglov3-otl", "sous-http-v1") //httpMsg for now will be adding the otl type, might need refactor
+	f("channel_name", msg.channelName)
+	msg.httpMsg.EachFieldWithoutCallerInfo(f)
+	msg.CallerInfo.EachField(f)
 }

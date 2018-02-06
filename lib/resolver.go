@@ -125,7 +125,6 @@ func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveRecord
 
 		recorder.performPhase("rectification", func() error {
 			r.queueDiffs(logger, recorder.Log)
-			close(recorder.Log)
 			return nil
 		})
 

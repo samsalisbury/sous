@@ -222,6 +222,21 @@ func StandardDeployerFields(prefix1 string, prefix2 string) ([]string) {
 // (for incomplete intervals, just add "started-at" to the variableFields.)
 var IntervalVariableFields = []string{"started-at", "finished-at", "duration"}
 
+//HTTPVariableFields are the fields expected to be in HTTP Message
+var HTTPVariableFields = []string{
+	"resource-family",
+	"incoming",
+	"method",
+	"status",
+	"duration",
+	"body-size",
+	"response-size",
+	"url",
+	"url-hostname",
+	"url-pathname",
+	"url-querystring",
+}
+
 // AssertMessageFields is a testing function - it receives an eachFielder and confirms that it:
 //  * generates no duplicate fields
 //  * generates fields with the names in variableFields, and ignores their values
