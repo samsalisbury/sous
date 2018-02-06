@@ -203,6 +203,9 @@ var prefixedDeployerFields = []string{
 	"%s-volumes",
 }
 
+// StandardDeployerFields is used to create the standard logging fields
+// for the structured logging on the deployerMessage
+// takes the prior and post prefixes to generate the fields appropriately
 func StandardDeployerFields(prefix1 string, prefix2 string) ([]string) {
 	deployerFields := unprefixedDeployerFields
 	deployerFields = append(deployerFields, StandardVariableFields...)
