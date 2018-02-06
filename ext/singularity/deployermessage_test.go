@@ -7,6 +7,7 @@ import (
 	"github.com/opentable/sous/util/logging"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/opentable/sous/lib"
 )
 
 func TestDeployerMessage(t *testing.T) {
@@ -86,4 +87,50 @@ func TestDeployerMessageDiffs(t *testing.T) {
 	}
 
 	logging.AssertMessageFields(t, logMessage, logging.StandardDeployerFields("sous-prior","sous-post"), expectedFields)
+}
+
+func TestDiffResoltionMessage(t *testing.T) {
+	logger, control := logging.NewLogSinkSpy()
+
+	diffRes := sous.DiffResolution{
+		DeploymentID: sous.DeploymentID{
+			ManifestID: sous.ManifestID{
+				Source: sous.SourceLocation{
+					Repo: "repo/marker",
+					Dir:  "dir/marker",
+				},
+				Flavor: "thai",
+			},
+			Cluster:    "pp-sf",
+		},
+		Desc:         "description goes here",
+		Error:        &sous.ErrorWrapper{
+			MarshallableError: sous.MarshallableError{
+				Type:   "bad",
+				String: "error",
+			},
+		},
+	}
+
+
+	reportDiffResolutionMessage("test", &diffRes, logging.InformationLevel, logger)
+
+	logCalls := control.CallsTo("LogMessage")
+	require.Len(t, logCalls, 1)
+	assert.Equal(t, logCalls[0].PassedArgs().Get(0), logging.InformationLevel)
+
+	logMessage := logCalls[0].PassedArgs().Get(1).(diffResolutionMessage)
+
+	expectedFields := map[string]interface{}{
+		"@loglov3-otl": "sous-rectifier-singularity-v1",
+		"deployment-id":   diffRes.DeploymentID.String(),
+		"diffresolution-desc": string(diffRes.Desc),
+		"error": diffRes.Error.String,
+	}
+
+	logging.AssertMessageFields(t, logMessage, logging.StandardVariableFields, expectedFields)
+
+	//weak check on WriteToConsole
+	consoleCalls := control.CallsTo("Console")
+	require.Len(t, consoleCalls, 1)
 }

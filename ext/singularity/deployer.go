@@ -122,7 +122,7 @@ func (r *deployer) Rectify(pair *sous.DeployablePair) sous.DiffResolution {
 		} else {
 			result.Desc = sous.CreateDiff
 		}
-		Log.Vomit.Printf("Reporting result of create: %#v", result)
+		reportDiffResolutionMessage("Result of create", &result, logging.InformationLevel, r.log)
 		return result
 	case sous.RemovedKind:
 		result := sous.DiffResolution{DeploymentID: pair.ID()}
@@ -132,7 +132,7 @@ func (r *deployer) Rectify(pair *sous.DeployablePair) sous.DiffResolution {
 		} else {
 			result.Desc = sous.DeleteDiff
 		}
-		Log.Vomit.Printf("Reporting result of delete: %#v", result)
+		reportDiffResolutionMessage("Result of delete", &result, logging.InformationLevel, r.log)
 		return result
 	case sous.ModifiedKind:
 		result := sous.DiffResolution{DeploymentID: pair.ID()}
@@ -150,7 +150,7 @@ func (r *deployer) Rectify(pair *sous.DeployablePair) sous.DiffResolution {
 		} else {
 			result.Desc = sous.ModifyDiff
 		}
-		Log.Vomit.Printf("Reporting result of modify: %#v", result)
+		reportDiffResolutionMessage("Result of modify", &result, logging.InformationLevel, r.log)
 		return result
 	}
 }
@@ -177,7 +177,7 @@ func rectifyRecover(d interface{}, f string, err *error) {
 }
 
 func (r *deployer) RectifySingleCreate(d *sous.DeployablePair) (err error) {
-	Log.Debug.Printf("Rectifying creation %q:  \n %# v", d.ID(), d.Post)
+	reportDeployerMessage("Rectifying creation", d, nil, nil, nil, logging.InformationLevel, r.log)
 	defer rectifyRecover(d, "RectifySingleCreate", &err)
 	if err != nil {
 		return err
@@ -198,11 +198,12 @@ func (r *deployer) RectifySingleDelete(d *sous.DeployablePair) (err error) {
 	if !ok {
 		return errors.Errorf("Delete record %#v doesn't contain Singularity compatible data: was %T\n\t%#v", d.ID(), data, d)
 	}
-	requestID := data.requestID
 
 	// TODO: Alert the owner of this request that there is no manifest for it;
 	// they should either delete the request manually, or else add the manifest back.
-	r.log.Warnf("NOT DELETING REQUEST %q (FOR: %q)", requestID, d.ID())
+	//LH note this function seems incomplete at the moment, could benefit some revision SS, JL, JC
+	reportDeployerMessage("Rectify not deleting request", d, nil, data, nil, logging.WarningLevel, r.log)
+
 	return nil
 	// The following line deletes requests when it is not commented out.
 	//return r.Client.DeleteRequest(d.Cluster.BaseURL, requestID, "deleting request for removed manifest")
