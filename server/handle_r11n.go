@@ -67,6 +67,9 @@ func (gmh *GETR11nHandler) Exchange() (interface{}, int) {
 	if !ok {
 		return r11nResponse{}, 404
 	}
+	if gmh.WaitForResolution {
+		qr.Rectification.Wait()
+	}
 	return r11nResponse{
 		QueuePosition: qr.Pos,
 	}, 200
