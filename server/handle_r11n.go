@@ -41,14 +41,16 @@ func r11nIDFromRoute(p httprouter.Params) (sous.R11nID, error) {
 }
 
 // Get returns a configured GETR11nHandler.
-func (mr *R11nResource) Get(_ http.ResponseWriter, _ *http.Request, p httprouter.Params) restful.Exchanger {
+func (mr *R11nResource) Get(_ http.ResponseWriter, r *http.Request, p httprouter.Params) restful.Exchanger {
 	did, didErr := deploymentIDFromRoute(p)
 	rid, ridErr := r11nIDFromRoute(p)
+	wait := r.URL.Query().Get("wait") == "true"
 	return &GETR11nHandler{
-		DeploymentID:    did,
-		DeploymentIDErr: didErr,
-		R11nID:          rid,
-		R11nIDErr:       ridErr,
+		DeploymentID:      did,
+		DeploymentIDErr:   didErr,
+		R11nID:            rid,
+		R11nIDErr:         ridErr,
+		WaitForResolution: wait,
 	}
 }
 
