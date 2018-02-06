@@ -79,6 +79,8 @@ func (rq *R11nQueue) Snapshot() []QueuedR11n {
 
 // ByID returns the queued rectification matching ID and true if it exists, nil
 // and false otherwise.
+//
+// TODO: SS: Tests for this...
 func (rq *R11nQueue) ByID(id R11nID) (*QueuedR11n, bool) {
 	rq.Lock()
 	defer rq.Unlock()
@@ -137,11 +139,11 @@ func (rq *R11nQueue) Wait(id R11nID) (DiffResolution, bool) {
 	rq.Lock()
 	qr, ok := rq.allRefs[id]
 	rq.Unlock()
-	if ok {
-		<-qr.done
-		return qr.Rectification.Resolution, true
+	if !ok {
+		return DiffResolution{}, false
 	}
-	return DiffResolution{}, false
+	<-qr.done
+	return qr.Rectification.Resolution, true
 }
 
 // Push adds r to the queue, wrapped in a *QueuedR11n. It returns the wrapper.
