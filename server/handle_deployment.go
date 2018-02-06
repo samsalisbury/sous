@@ -1,12 +1,12 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 
 	"github.com/julienschmidt/httprouter"
 	sous "github.com/opentable/sous/lib"
-	"github.com/opentable/sous/util/firsterr"
 	"github.com/opentable/sous/util/restful"
 )
 
@@ -29,17 +29,21 @@ func newDeploymentResource(ctx ComponentLocator) *DeploymentResource {
 	return &DeploymentResource{context: ctx}
 }
 
+func deploymentIDFromRoute(p httprouter.Params) (sous.DeploymentID, error) {
+	didStr, err := url.PathUnescape(p.ByName("DeploymentID"))
+	if err != nil {
+		return sous.DeploymentID{}, fmt.Errorf("unescaping path: %s", err)
+	}
+	did, err := sous.ParseDeploymentID(didStr)
+	if err != nil {
+		return sous.DeploymentID{}, fmt.Errorf("parsing deployment ID from path: %s", err)
+	}
+	return did, nil
+}
+
 // Get implements Getable for DeploymentResource.
 func (mr *DeploymentResource) Get(_ http.ResponseWriter, _ *http.Request, p httprouter.Params) restful.Exchanger {
-	var (
-		didStr string
-		did    sous.DeploymentID
-	)
-	didErr := firsterr.Set(
-		func(e *error) { didStr, *e = url.PathUnescape(p.ByName("DeploymentID")) },
-		func(e *error) { did, *e = sous.ParseDeploymentID(didStr) },
-	)
-
+	did, didErr := deploymentIDFromRoute(p)
 	return &GETDeploymentHandler{
 		DeploymentID:    did,
 		DeploymentIDErr: didErr,
