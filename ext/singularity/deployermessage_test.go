@@ -40,6 +40,25 @@ func TestDeployerMessage(t *testing.T) {
 	require.Len(t, consoleCalls, 1)
 }
 
+func TestDeployerMessageNilCheck(t *testing.T) {
+	logger, control := logging.NewLogSinkSpy()
+
+	reportDeployerMessage("test", nil, nil, nil, nil, logging.InformationLevel, logger)
+
+	logCalls := control.CallsTo("LogMessage")
+	require.Len(t, logCalls, 1)
+	assert.Equal(t, logCalls[0].PassedArgs().Get(0), logging.InformationLevel)
+
+	logMessage := logCalls[0].PassedArgs().Get(1).(deployerMessage)
+
+	expectedFields := map[string]interface{}{
+		"@loglov3-otl": "sous-rectifier-singularity-v1",
+		"diffs": "",
+	}
+
+	logging.AssertMessageFields(t, logMessage, logging.StandardVariableFields, expectedFields)
+}
+
 func TestDeployerMessageError(t *testing.T) {
 	logger, control := logging.NewLogSinkSpy()
 	pair := baseDeployablePair()
@@ -89,7 +108,7 @@ func TestDeployerMessageDiffs(t *testing.T) {
 	logging.AssertMessageFields(t, logMessage, logging.StandardDeployerFields("sous-prior","sous-post"), expectedFields)
 }
 
-func TestDiffResoltionMessage(t *testing.T) {
+func TestDiffResolutionMessage(t *testing.T) {
 	logger, control := logging.NewLogSinkSpy()
 
 	diffRes := sous.DiffResolution{
