@@ -174,9 +174,9 @@ func TestGETR11nHandler_Exchange_errors(t *testing.T) {
 }
 
 func TestGETR11nHandler_Exchange_wait_success(t *testing.T) {
-	proceed := make(chan struct{})
+	block := make(chan struct{})
 	qh := func(qr *sous.QueuedR11n) sous.DiffResolution {
-		<-proceed
+		<-block
 		return sous.DiffResolution{}
 	}
 	queues := sous.NewR11nQueueSet(sous.R11nQueueStartWithHandler(qh))
@@ -202,17 +202,25 @@ func TestGETR11nHandler_Exchange_wait_success(t *testing.T) {
 		responses <- response{status: s, body: r}
 	}()
 
-	// At this point responses should not emit anything because proceed will be
+	// At this point responses should not emit anything because block will be
 	// blocking the queue from being processed, which should block Exchange from
 	// returning due to grh.WaitForResolution == true.
 	timeout := 10 * time.Millisecond
 	select {
 	// We may sometimes get away with default instead of this timeout here, but
-	// the short timeout gives Exchange a little more time to complete and
-	// should result in fewer false passes for this test.
+	// the short timeout gives Exchange a little more time to complete, and
+	// should result in fewer false passes for this assertion.
 	case <-time.After(timeout): // OK
 	case <-responses:
 		t.Fatalf("Exchange returned before %s, should have waited for resolution.", timeout)
+	}
+
+	// Close block to allow the queue processor to proceed.
+	close(block)
+	select {
+	case <-responses: // OK
+	case <-time.After(timeout):
+		t.Fatalf("Exchange did not return within %s of being unblocked.", timeout)
 	}
 
 }
