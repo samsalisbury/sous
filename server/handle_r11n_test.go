@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/julienschmidt/httprouter"
 	sous "github.com/opentable/sous/lib"
@@ -162,7 +163,7 @@ func TestGETR11nHandler_Exchange(t *testing.T) {
 }
 
 func TestGETR11nHandler_Exchange_errors(t *testing.T) {
-	gdh := &GETDeploymentHandler{
+	gdh := &GETR11nHandler{
 		DeploymentIDErr: fmt.Errorf("this error"),
 	}
 	_, gotStatus := gdh.Exchange()
@@ -170,4 +171,48 @@ func TestGETR11nHandler_Exchange_errors(t *testing.T) {
 	if gotStatus != wantStatus {
 		t.Errorf("got status %d; want %d", gotStatus, wantStatus)
 	}
+}
+
+func TestGETR11nHandler_Exchange_wait_success(t *testing.T) {
+	proceed := make(chan struct{})
+	qh := func(qr *sous.QueuedR11n) sous.DiffResolution {
+		<-proceed
+		return sous.DiffResolution{}
+	}
+	queues := sous.NewR11nQueueSet(sous.R11nQueueStartWithHandler(qh))
+	queuedOne1, ok := queues.Push(newR11n("one"))
+	if !ok {
+		t.Fatal("setup failed to push r11n")
+	}
+
+	grh := &GETR11nHandler{
+		WaitForResolution: true,
+		QueueSet:          queues,
+		DeploymentID:      newDid("one"),
+		R11nID:            queuedOne1.ID,
+	}
+
+	type response struct {
+		status int
+		body   interface{}
+	}
+	responses := make(chan response)
+	go func() {
+		r, s := grh.Exchange()
+		responses <- response{status: s, body: r}
+	}()
+
+	// At this point responses should not emit anything because proceed will be
+	// blocking the queue from being processed, which should block Exchange from
+	// returning due to grh.WaitForResolution == true.
+	timeout := 10 * time.Millisecond
+	select {
+	// We may sometimes get away with default instead of this timeout here, but
+	// the short timeout gives Exchange a little more time to complete and
+	// should result in fewer false passes for this test.
+	case <-time.After(timeout): // OK
+	case <-responses:
+		t.Fatalf("Exchange returned before %s, should have waited for resolution.", timeout)
+	}
+
 }

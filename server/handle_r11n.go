@@ -19,11 +19,12 @@ type (
 
 	// GETR11nHandler handles getting r11ns.
 	GETR11nHandler struct {
-		QueueSet        *sous.R11nQueueSet
-		DeploymentID    sous.DeploymentID
-		DeploymentIDErr error
-		R11nID          sous.R11nID
-		R11nIDErr       error
+		WaitForResolution bool
+		QueueSet          *sous.R11nQueueSet
+		DeploymentID      sous.DeploymentID
+		DeploymentIDErr   error
+		R11nID            sous.R11nID
+		R11nIDErr         error
 	}
 )
 
