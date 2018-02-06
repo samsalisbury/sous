@@ -48,6 +48,11 @@ type (
 		MustInject(...interface{})
 		Add(...interface{})
 	}
+
+	// HeaderAdder is an interface for response bodies to use to set headers
+	HeaderAdder interface {
+		AddHeaders(header http.Header)
+	}
 )
 
 // Exchange implements Exchanger on ExchangeLogger.
@@ -97,50 +102,51 @@ func (mh *MetaHandler) wrapResponseWriter(resName string, rq *http.Request, rw h
 	}
 }
 
+func (mh *MetaHandler) genericHandling(resName string, factory ExchangeFactory, rw http.ResponseWriter, r *http.Request, p httprouter.Params) (http.ResponseWriter, interface{}, int) {
+	w := mh.wrapResponseWriter(resName, r, rw)
+	h := mh.injectedHandler(factory, w, r, p)
+	data, status := h.Exchange()
+	if ha, is := data.(HeaderAdder); is {
+		ha.AddHeaders(w.Header())
+	}
+	return w, data, status
+}
+
 // GetHandling handles Get requests.
 func (mh *MetaHandler) GetHandling(resName string, factory ExchangeFactory) httprouter.Handle {
 	return func(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		w := mh.wrapResponseWriter(resName, r, rw)
-		h := mh.injectedHandler(factory, w, r, p)
-		data, status := h.Exchange()
-		w.Header().Add("Access-Control-Allow-Origin", "*") //XXX configurable by app
-		mh.renderData(status, w, r, data)
+		rw, data, status := mh.genericHandling(resName, factory, rw, r, p)
+		rw.Header().Add("Access-Control-Allow-Origin", "*") //XXX configurable by app
+		mh.renderData(status, rw, r, data)
 	}
 }
 
 // DeleteHandling handles Delete requests.
 func (mh *MetaHandler) DeleteHandling(resName string, factory ExchangeFactory) httprouter.Handle {
 	return func(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		w := mh.wrapResponseWriter(resName, r, rw)
-		h := mh.injectedHandler(factory, w, r, p)
-		_, status := h.Exchange()
-		mh.renderData(status, w, r, nil)
+		rw, _, status := mh.genericHandling(resName, factory, rw, r, p)
+		mh.renderData(status, rw, r, nil)
 	}
 }
 
 // HeadHandling handles Head requests.
 func (mh *MetaHandler) HeadHandling(resName string, factory ExchangeFactory) httprouter.Handle {
 	return func(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		w := mh.wrapResponseWriter(resName, r, rw)
-		h := mh.injectedHandler(factory, w, r, p)
-		_, status := h.Exchange()
-		mh.writeHeaders(status, w, r, nil)
+		rw, _, status := mh.genericHandling(resName, factory, rw, r, p)
+		mh.writeHeaders(status, rw, r, nil)
 	}
 }
 
 // OptionsHandling handles Options requests.
 func (mh *MetaHandler) OptionsHandling(resName string, factory ExchangeFactory) httprouter.Handle {
 	return func(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		w := mh.wrapResponseWriter(resName, r, rw)
-		h := mh.injectedHandler(factory, w, r, p)
-		data, status := h.Exchange()
-
-		w.Header().Add("Access-Control-Allow-Origin", r.Header.Get("Origin")) //XXX Yup: whoever was asking
-		w.Header().Add("Access-Control-Max-Age", "86400")
+		rw, data, status := mh.genericHandling(resName, factory, rw, r, p)
+		rw.Header().Add("Access-Control-Allow-Origin", r.Header.Get("Origin")) //XXX Yup: whoever was asking
+		rw.Header().Add("Access-Control-Max-Age", "86400")
 		if methods, ok := data.([]string); ok {
-			w.Header().Add("Access-Control-Allow-Methods", strings.Join(methods, ", "))
+			rw.Header().Add("Access-Control-Allow-Methods", strings.Join(methods, ", "))
 		}
-		mh.writeHeaders(status, w, r, nil)
+		mh.writeHeaders(status, rw, r, nil)
 	}
 }
 
@@ -178,6 +184,9 @@ func (mh *MetaHandler) PutHandling(resName string, factory ExchangeFactory) http
 		}
 		h := mh.injectedHandler(factory, w, r, p)
 		data, status := h.Exchange()
+		if ha, is := data.(HeaderAdder); is {
+			ha.AddHeaders(w.Header())
+		}
 		mh.renderData(status, w, r, data)
 	}
 }

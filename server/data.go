@@ -1,6 +1,11 @@
 package server
 
 import (
+	"crypto/sha512"
+	"encoding/base64"
+	"net/http"
+	"sort"
+
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/restful"
 )
@@ -76,15 +81,21 @@ func (g *GDMWrapper) VariancesFrom(other restful.Comparable) restful.Variances {
 	}
 }
 
+// AddHeaders implements HeaderAdder on GDMWrapper
+// GDMWrappers add an Etag to the response
+func (g *GDMWrapper) AddHeaders(headers http.Header) {
+	headers.Add("Etag", g.etag())
+}
+
 // Etag returns a string suitable for use in an Etag header for this data type.
-func (g *GDMWrapper) Etag() string {
-	deps := make([]*Deployments, 0, len(g.Deployments))
+func (g *GDMWrapper) etag() string {
+	deps := make([]*sous.Deployment, 0, len(g.Deployments))
 	copy(deps, g.Deployments)
-	sort.Slice(deps, func(i, j int) bool { return deps[i].ID() < deps[j].ID() })
+	sort.Slice(deps, func(i, j int) bool { return deps[i].ID().String() < deps[j].ID().String() })
 
 	hash := sha512.New()
 	for _, dep := range deps {
-		hash.Write(dep.String())
+		hash.Write([]byte(dep.String()))
 	}
 
 	return "w/" + base64.URLEncoding.EncodeToString(hash.Sum(nil))

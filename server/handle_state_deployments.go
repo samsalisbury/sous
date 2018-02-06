@@ -17,9 +17,8 @@ type (
 
 	// A GETStateDeployments is the exchanger for GET /state/deployments
 	GETStateDeployments struct {
-		cluster        sous.ClusterManager
-		clusterName    string
-		responseWriter http.ResponseWriter
+		cluster     sous.ClusterManager
+		clusterName string
 	}
 
 	// A PUTStateDeployments is the exchanger for PUT /state/deployments
@@ -36,11 +35,10 @@ func NewStateDeploymentResource(loc ComponentLocator) *StateDeploymentResource {
 }
 
 // Get implements restful.Getable on StateDeployments
-func (res *StateDeploymentResource) Get(rw http.ResponseWriter, _ *http.Request, _ httprouter.Params) restful.Exchanger {
+func (res *StateDeploymentResource) Get(http.ResponseWriter, *http.Request, httprouter.Params) restful.Exchanger {
 	return &GETStateDeployments{
-		cluster:        res.loc.ClusterManager,
-		clusterName:    res.loc.Cluster.ValueOr("no-cluster"),
-		responseWriter: rw,
+		cluster:     res.loc.ClusterManager,
+		clusterName: res.loc.Cluster.ValueOr("no-cluster"),
 	}
 }
 
@@ -64,8 +62,6 @@ func (gsd *GETStateDeployments) Exchange() (interface{}, int) {
 	for _, d := range deps.Snapshot() {
 		data.Deployments = append(data.Deployments, d)
 	}
-
-	gsd.responseWriter.Header().Set("Etag", "")
 
 	return data, http.StatusOK
 }
