@@ -2,6 +2,8 @@ package server
 
 import (
 	"fmt"
+	"net/http"
+	"net/url"
 	"testing"
 	"time"
 
@@ -14,8 +16,10 @@ func TestR11nResource_Get_no_errors(t *testing.T) {
 	testCases := []struct {
 		desc       string
 		params     httprouter.Params
+		query      string
 		wantDID    sous.DeploymentID
 		wantR11nID sous.R11nID
+		wantWait   bool
 	}{
 		{
 			desc: "valid deploymentID and r11nID",
@@ -35,12 +39,48 @@ func TestR11nResource_Get_no_errors(t *testing.T) {
 			},
 			wantR11nID: sous.R11nID("cabba9e"),
 		},
+		{
+			desc: "valid short DeploymentID and r11nID",
+			params: httprouter.Params{
+				{Key: "DeploymentID", Value: "cluster1%3Agithub.com%2Fuser1%2Frepo1"},
+				{Key: "R11nID", Value: "cabba9e"},
+			},
+			wantDID: sous.DeploymentID{
+				ManifestID: sous.ManifestID{
+					Source: sous.SourceLocation{
+						Repo: "github.com/user1/repo1",
+					},
+				},
+				Cluster: "cluster1",
+			},
+			wantR11nID: sous.R11nID("cabba9e"),
+		},
+		{
+			desc: "wait query",
+			params: httprouter.Params{
+				{Key: "DeploymentID", Value: "cluster1%3Agithub.com%2Fuser1%2Frepo1"},
+				{Key: "R11nID", Value: "cabba9e"},
+			},
+			query: "wait=true",
+			wantDID: sous.DeploymentID{
+				ManifestID: sous.ManifestID{
+					Source: sous.SourceLocation{
+						Repo: "github.com/user1/repo1",
+					},
+				},
+				Cluster: "cluster1",
+			},
+			wantR11nID: sous.R11nID("cabba9e"),
+			wantWait:   true,
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			dr := &R11nResource{}
-			got := dr.Get(nil, nil, tc.params).(*GETR11nHandler)
+			req := &http.Request{URL: &url.URL{RawQuery: tc.query}}
+
+			got := dr.Get(nil, req, tc.params).(*GETR11nHandler)
 
 			gotDID := got.DeploymentID
 			if gotDID != tc.wantDID {
@@ -53,6 +93,12 @@ func TestR11nResource_Get_no_errors(t *testing.T) {
 			gotRID := got.R11nID
 			if gotRID != tc.wantR11nID {
 				t.Errorf("got R11nID %q; want %q", gotRID, tc.wantR11nID)
+			}
+
+			gotWait := got.WaitForResolution
+			wantWait := tc.wantWait
+			if gotWait != wantWait {
+				t.Errorf("got WaitForResolution %t; want %t", gotWait, wantWait)
 			}
 		})
 	}
