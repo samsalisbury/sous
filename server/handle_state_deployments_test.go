@@ -81,8 +81,4 @@ func TestPutStateDeployments(t *testing.T) {
 	if len(ctrl.CallsTo("WriteCluster")) == 0 {
 		t.Errorf("No calls to WriteCluster")
 	}
-
-}
-
-func TestRoundtripStateDeployments(t *testing.T) {
 }

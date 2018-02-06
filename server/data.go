@@ -76,6 +76,20 @@ func (g *GDMWrapper) VariancesFrom(other restful.Comparable) restful.Variances {
 	}
 }
 
+// Etag returns a string suitable for use in an Etag header for this data type.
+func (g *GDMWrapper) Etag() string {
+	deps := make([]*Deployments, 0, len(g.Deployments))
+	copy(deps, g.Deployments)
+	sort.Slice(deps, func(i, j int) bool { return deps[i].ID() < deps[j].ID() })
+
+	hash := sha512.New()
+	for _, dep := range deps {
+		hash.Write(dep.String())
+	}
+
+	return "w/" + base64.URLEncoding.EncodeToString(hash.Sum(nil))
+}
+
 func (g *GDMWrapper) unwrap() *sous.Deployments {
 	ds := sous.NewDeployments(g.Deployments...)
 	return &ds
