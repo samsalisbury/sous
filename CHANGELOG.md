@@ -6,16 +6,17 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
-## [Unreleased](//github.com/opentable/sous/compare/0.5.62...HEAD)
+## [0.5.63](//github.com/opentable/sous/compare/0.5.62...0.5.63)
 
 ### Added
 * CLI: If no image is present in runspec, return a fatal flaw in build.
 * Server: adding duplex state storage, to keep DB in sync until ready to switch over
+* Server: Update logging to a more structured format: server, ext/singularity, resource, Generic Msg, handle_gdm, subpoller, volume, local_config, rest/client, disk_state_manager, router
 * Server: A /health endpoint. For the time being, just a 200 and the running version of Sous.
-* Server: Update logging to a more structured format: server, singularity, resource, Generic Msg, handle_gdm, subpoller, volume, local_config, disk_state_manager, router, more protection in here for nils also
 
 ### Changed
 * All: error parsing repo from SourceLocation now more informative.
+* Server: increased scoping of loggers - log entries should report their sources better.
 
 ### Fixed
 * All: Data race in rectification queue.

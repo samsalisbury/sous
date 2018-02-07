@@ -28,6 +28,8 @@ var/
 .idea/**/tasks.xml
 .idea/dictionaries
 .vscode
+Session.Vim
+.undodir
 
 #visual code debug files
 debug
