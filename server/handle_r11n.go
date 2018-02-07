@@ -63,11 +63,13 @@ func (gmh *GETR11nHandler) Exchange() (interface{}, int) {
 	// Note that all queries and waiting should be done using the QueueSet
 	// itself, not the rectification.
 	if gmh.WaitForResolution {
-		_, ok := gmh.QueueSet.Wait(gmh.DeploymentID, gmh.R11nID)
+		r, ok := gmh.QueueSet.Wait(gmh.DeploymentID, gmh.R11nID)
 		if !ok {
 			return r11nResponse{}, 404
 		}
-		return r11nResponse{}, 200
+		return r11nResponse{
+			Resolution: &r,
+		}, 200
 	}
 	queues := gmh.QueueSet.Queues()
 	queue, ok := queues[gmh.DeploymentID]
@@ -85,4 +87,7 @@ func (gmh *GETR11nHandler) Exchange() (interface{}, int) {
 
 type r11nResponse struct {
 	QueuePosition int
+	// Pointer here is just to allow nil which is a clearer indication of
+	// "nothing to see here" than a JSON-marshalled zero value would be.
+	Resolution *sous.DiffResolution
 }

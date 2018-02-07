@@ -54,7 +54,17 @@ func R11nQueueCap(cap int) R11nQueueOpt {
 // handler.
 func R11nQueueStartWithHandler(handler func(*QueuedR11n) DiffResolution) R11nQueueOpt {
 	return func(rq *R11nQueue) {
-		rq.handler = handler
+		rq.handler = func(qr *QueuedR11n) DiffResolution {
+			dr := handler(qr)
+			// TODO SS:
+			// This oddity ensures the resolution on the queued rectification
+			// matches that returned by the handler. This is only really
+			// important in testing where we don't want to run rectifications
+			// just to test the queue. However I would rather clean up the
+			// implementation to remove the need for this.
+			qr.Rectification.Resolution = dr
+			return dr
+		}
 		rq.start = true
 	}
 }

@@ -219,11 +219,17 @@ func TestGETR11nHandler_Exchange_errors(t *testing.T) {
 	}
 }
 
+// TestGETR11nHandler_Exchange_wait_success checks that when WaitForResolution
+// is true, Exchange does not return until the queue reports that the r11n is
+// done, and that it returns the expected Resolution result.
 func TestGETR11nHandler_Exchange_wait_success(t *testing.T) {
 	block := make(chan struct{})
 	qh := func(qr *sous.QueuedR11n) sous.DiffResolution {
 		<-block
-		return sous.DiffResolution{}
+		return sous.DiffResolution{
+			DeploymentID: newDid("one"),
+			Desc:         "desc1",
+		}
 	}
 	queues := sous.NewR11nQueueSet(sous.R11nQueueStartWithHandler(qh))
 	queuedOne1, ok := queues.Push(newR11n("one"))
@@ -266,9 +272,26 @@ func TestGETR11nHandler_Exchange_wait_success(t *testing.T) {
 	// Close block to allow the queue processor to proceed.
 	close(block)
 	select {
-	case <-responses: // OK
 	case <-time.After(timeout):
 		t.Fatalf("Exchange did not return within %s of being unblocked.", timeout)
+	case got := <-responses: // OK
+		const wantStatus = 200
+		if got.status != wantStatus {
+			t.Errorf("got status %d; want %d", got.status, wantStatus)
+		}
+		gotBody := got.body.(r11nResponse)
+		if gotBody.Resolution == nil {
+			t.Fatalf("unexpected nil Resolution")
+		}
+		gotDID := gotBody.Resolution.DeploymentID
+		wantDID := newDid("one")
+		if gotDID != wantDID {
+			t.Errorf("got DeploymentID %#v; want %#v", gotDID, wantDID)
+		}
+		gotDesc := gotBody.Resolution.Desc
+		wantDesc := sous.ResolutionType("desc1")
+		if gotDesc != wantDesc {
+			t.Errorf("got desc %q; want %q", gotDesc, wantDesc)
+		}
 	}
-
 }
