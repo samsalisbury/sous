@@ -75,5 +75,5 @@ func TestSousRoutes(t *testing.T) {
 		map[string]string{"DeploymentID": didStr},
 	)
 
-	test("/health", "health")
+	test("/health", "health", nil)
 }
