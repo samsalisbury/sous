@@ -2,9 +2,9 @@ package singularity
 
 import (
 	"fmt"
-	"io"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
+	"io"
 )
 
 type deployerMessage struct {
