@@ -238,10 +238,12 @@ func TestGETR11nHandler_Exchange_wait_success(t *testing.T) {
 		R11nID:            queuedOne1.ID,
 	}
 
+	// response wraps up the pair of return parameters from Exchange.
 	type response struct {
 		status int
 		body   interface{}
 	}
+	// Once Exchange completes, write its result to responses.
 	responses := make(chan response)
 	go func() {
 		r, s := grh.Exchange()

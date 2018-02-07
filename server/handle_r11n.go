@@ -60,6 +60,15 @@ func (gmh *GETR11nHandler) Exchange() (interface{}, int) {
 	if gmh.DeploymentIDErr != nil {
 		return nil, 404
 	}
+	// Note that all queries and waiting should be done using the QueueSet
+	// itself, not the rectification.
+	if gmh.WaitForResolution {
+		_, ok := gmh.QueueSet.Wait(gmh.DeploymentID, gmh.R11nID)
+		if !ok {
+			return r11nResponse{}, 404
+		}
+		return r11nResponse{}, 200
+	}
 	queues := gmh.QueueSet.Queues()
 	queue, ok := queues[gmh.DeploymentID]
 	if !ok {
@@ -68,9 +77,6 @@ func (gmh *GETR11nHandler) Exchange() (interface{}, int) {
 	qr, ok := queue.ByID(gmh.R11nID)
 	if !ok {
 		return r11nResponse{}, 404
-	}
-	if gmh.WaitForResolution {
-		qr.Rectification.Wait()
 	}
 	return r11nResponse{
 		QueuePosition: qr.Pos,
