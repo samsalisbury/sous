@@ -27,6 +27,7 @@ package logging
 
 import (
 	"bytes"
+	"flag"
 	"io"
 	"time"
 )
@@ -222,8 +223,11 @@ type loggingPanicFakeMessage struct {
 // problems with a logging message should not crash the whole app
 // therefore: recover the panic do the simplest thing that will be logged,
 func loggingPanicsShouldntCrashTheApp(ls LogSink, msg interface{}) {
-	if rec := recover(); rec != nil {
-		Deliver(loggingPanicFakeMessage{msg}, ls)
+
+	if flag.Lookup("test.v") == nil {
+		if rec := recover(); rec != nil {
+			Deliver(loggingPanicFakeMessage{msg}, ls)
+		}
 	}
 }
 

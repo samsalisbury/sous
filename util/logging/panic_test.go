@@ -21,14 +21,10 @@ func (msg terribadLogMessage) EachField(fn FieldReportFn) {
 }
 
 func TestLogMessagePanicking(t *testing.T) {
-	log, ctrl := NewLogSinkSpy()
+	log, _ := NewLogSinkSpy()
 
-	assert.NotPanics(t, func() {
+	assert.Panics(t, func() {
 		Deliver(terribadLogMessage{}, log)
 	})
 
-	calls := ctrl.CallsTo("LogMessage")
-	if assert.Len(t, calls, 1) {
-		assert.IsType(t, &silentMessageError{}, calls[0].PassedArgs().Get(1))
-	}
 }
