@@ -61,13 +61,13 @@ func TestDeploymentResource_Get_DeploymentID_errors(t *testing.T) {
 			params: httprouter.Params{
 				{Key: "DeploymentID", Value: "cluster1%-3Agithub.com%2Fuser1%2Frepo1%2Cdir1~flavor1"},
 			},
-			wantDIDErr: `invalid URL escape "%-3"`,
+			wantDIDErr: `unescaping path: invalid URL escape "%-3"`,
 		},
 		{
 			params: httprouter.Params{
 				{Key: "DeploymentID", Value: "cluster1Agithub.com%2Fuser1%2Frepo1%2Cdir1~flavor1"},
 			},
-			wantDIDErr: `does not contain a colon`,
+			wantDIDErr: `parsing deployment ID from path: does not contain a colon`,
 		},
 	}
 
