@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
+## [Unreleased](//github.com/opentable/sous/compare/0.5.63...master)
+
+### Added
+* Server: new endpoints /deploy-queues and /deploy-queue-item showing the
+  list of all deployment queues and their lengths, and individual queue items
+  respectively. /deploy-queue-item allows HTTP long-polling on the completion
+  of a single rectification be providing the ?wait=true query parameter.
+
 ## [0.5.63](//github.com/opentable/sous/compare/0.5.62...0.5.63)
 
 ### Added
