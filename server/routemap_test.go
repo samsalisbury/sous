@@ -46,11 +46,10 @@ func TestSousRoutes(t *testing.T) {
 	// exists at time of writing is read OK. This test will break if that
 	// implementation changes.
 	test(
-		"/deployments/my-cluster:github.com%2Fopentable%2Fblah%2Csome%2Fdir~orange",
+		"/deploy-queues?DeploymentID=my-cluster%3Agithub.com%2Fopentable%2Fblah%2Csome%2Fdir~orange",
 		"single_deployment",
-		map[string]string{
-			"DeploymentID": "my-cluster:github.com/opentable/blah,some/dir~orange",
-		},
+		nil,
+		restful.KV{"DeploymentID", "my-cluster:github.com/opentable/blah,some/dir~orange"},
 	)
 
 	// This test checks that the current implementation of DeploymentID.String()
@@ -67,12 +66,13 @@ func TestSousRoutes(t *testing.T) {
 	}
 	didStr := did.String()
 	t.Logf("DeploymentID string: %q", didStr)
-	escapedDidStr := url.PathEscape(didStr)
+	escapedDidStr := url.QueryEscape(didStr)
 	t.Logf("DeploymentID escaped: %q", escapedDidStr)
 	test(
-		"/deployments/"+escapedDidStr,
+		"/deploy-queues?DeploymentID="+escapedDidStr,
 		"single_deployment",
-		map[string]string{"DeploymentID": didStr},
+		nil,
+		restful.KV{"DeploymentID", did.String()},
 	)
 
 	test("/health", "health", nil)

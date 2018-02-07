@@ -32,8 +32,8 @@ func newR11nResource(ctx ComponentLocator) *R11nResource {
 	return &R11nResource{context: ctx}
 }
 
-func r11nIDFromRoute(p httprouter.Params) (sous.R11nID, error) {
-	ridStr, err := url.PathUnescape(p.ByName("R11nID"))
+func r11nIDFromRoute(r *http.Request) (sous.R11nID, error) {
+	ridStr, err := url.QueryUnescape(r.URL.Query().Get("R11nID"))
 	if err != nil {
 		return "", fmt.Errorf("unescaping path: %s", err)
 	}
@@ -41,9 +41,9 @@ func r11nIDFromRoute(p httprouter.Params) (sous.R11nID, error) {
 }
 
 // Get returns a configured GETR11nHandler.
-func (mr *R11nResource) Get(_ http.ResponseWriter, r *http.Request, p httprouter.Params) restful.Exchanger {
-	did, didErr := deploymentIDFromRoute(p)
-	rid, ridErr := r11nIDFromRoute(p)
+func (mr *R11nResource) Get(_ http.ResponseWriter, r *http.Request, _ httprouter.Params) restful.Exchanger {
+	did, didErr := deploymentIDFromRoute(r)
+	rid, ridErr := r11nIDFromRoute(r)
 	wait := r.URL.Query().Get("wait") == "true"
 	return &GETR11nHandler{
 		DeploymentID:      did,

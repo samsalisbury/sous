@@ -13,7 +13,7 @@ import (
 type (
 	// DeploymentResource describes resources for single deployments.
 	DeploymentResource struct {
-		userExtractor
+		restful.QueryParser
 		context ComponentLocator
 	}
 
@@ -29,8 +29,8 @@ func newDeploymentResource(ctx ComponentLocator) *DeploymentResource {
 	return &DeploymentResource{context: ctx}
 }
 
-func deploymentIDFromRoute(p httprouter.Params) (sous.DeploymentID, error) {
-	didStr, err := url.PathUnescape(p.ByName("DeploymentID"))
+func deploymentIDFromRoute(r *http.Request) (sous.DeploymentID, error) {
+	didStr, err := url.QueryUnescape(r.URL.Query().Get("DeploymentID"))
 	if err != nil {
 		return sous.DeploymentID{}, fmt.Errorf("unescaping path: %s", err)
 	}
@@ -42,8 +42,8 @@ func deploymentIDFromRoute(p httprouter.Params) (sous.DeploymentID, error) {
 }
 
 // Get implements Getable for DeploymentResource.
-func (mr *DeploymentResource) Get(_ http.ResponseWriter, _ *http.Request, p httprouter.Params) restful.Exchanger {
-	did, didErr := deploymentIDFromRoute(p)
+func (mr *DeploymentResource) Get(_ http.ResponseWriter, r *http.Request, _ httprouter.Params) restful.Exchanger {
+	did, didErr := deploymentIDFromRoute(r)
 	return &GETDeploymentHandler{
 		DeploymentID:    did,
 		DeploymentIDErr: didErr,

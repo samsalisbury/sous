@@ -2,12 +2,9 @@ package server
 
 import (
 	"fmt"
-	"net/http"
-	"net/url"
 	"testing"
 	"time"
 
-	"github.com/julienschmidt/httprouter"
 	sous "github.com/opentable/sous/lib"
 )
 
@@ -15,18 +12,14 @@ func TestR11nResource_Get_no_errors(t *testing.T) {
 
 	testCases := []struct {
 		desc       string
-		params     httprouter.Params
 		query      string
 		wantDID    sous.DeploymentID
 		wantR11nID sous.R11nID
 		wantWait   bool
 	}{
 		{
-			desc: "valid deploymentID and r11nID",
-			params: httprouter.Params{
-				{Key: "DeploymentID", Value: "cluster1%3Agithub.com%2Fuser1%2Frepo1%2Cdir1~flavor1"},
-				{Key: "R11nID", Value: "cabba9e"},
-			},
+			desc:  "valid deploymentID and r11nID",
+			query: "DeploymentID=cluster1%3Agithub.com%2Fuser1%2Frepo1%2Cdir1~flavor1&R11nID=cabba9e",
 			wantDID: sous.DeploymentID{
 				ManifestID: sous.ManifestID{
 					Source: sous.SourceLocation{
@@ -40,11 +33,8 @@ func TestR11nResource_Get_no_errors(t *testing.T) {
 			wantR11nID: sous.R11nID("cabba9e"),
 		},
 		{
-			desc: "valid short DeploymentID and r11nID",
-			params: httprouter.Params{
-				{Key: "DeploymentID", Value: "cluster1%3Agithub.com%2Fuser1%2Frepo1"},
-				{Key: "R11nID", Value: "cabba9e"},
-			},
+			desc:  "valid short DeploymentID and r11nID",
+			query: "DeploymentID=cluster1%3Agithub.com%2Fuser1%2Frepo1&R11nID=cabba9e",
 			wantDID: sous.DeploymentID{
 				ManifestID: sous.ManifestID{
 					Source: sous.SourceLocation{
@@ -56,12 +46,8 @@ func TestR11nResource_Get_no_errors(t *testing.T) {
 			wantR11nID: sous.R11nID("cabba9e"),
 		},
 		{
-			desc: "wait query",
-			params: httprouter.Params{
-				{Key: "DeploymentID", Value: "cluster1%3Agithub.com%2Fuser1%2Frepo1"},
-				{Key: "R11nID", Value: "cabba9e"},
-			},
-			query: "wait=true",
+			desc:  "wait query",
+			query: "DeploymentID=cluster1%3Agithub.com%2Fuser1%2Frepo1&R11nID=cabba9e&wait=true",
 			wantDID: sous.DeploymentID{
 				ManifestID: sous.ManifestID{
 					Source: sous.SourceLocation{
@@ -78,9 +64,9 @@ func TestR11nResource_Get_no_errors(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			dr := &R11nResource{}
-			req := &http.Request{URL: &url.URL{RawQuery: tc.query}}
+			req := makeRequestWithQuery(t, tc.query)
 
-			got := dr.Get(nil, req, tc.params).(*GETR11nHandler)
+			got := dr.Get(nil, req, nil).(*GETR11nHandler)
 
 			gotDID := got.DeploymentID
 			if gotDID != tc.wantDID {

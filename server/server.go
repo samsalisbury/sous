@@ -125,12 +125,12 @@ func routemap(context ComponentLocator) *restful.RouteMap {
 		},
 		{
 			Name:     "single_deployment",
-			Path:     "/deployments/:DeploymentID",
+			Path:     "/deploy-queues",
 			Resource: newDeploymentResource(context),
 		},
 		{
 			Name:     "single_rectification",
-			Path:     "/deployments/:DeploymentID/queued/:R11nID",
+			Path:     "/deploy-queue-item",
 			Resource: newR11nResource(context),
 		},
 	}

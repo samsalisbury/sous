@@ -2,24 +2,32 @@ package server
 
 import (
 	"fmt"
+	"net/http"
+	"net/url"
 	"testing"
 
-	"github.com/julienschmidt/httprouter"
 	sous "github.com/opentable/sous/lib"
 )
+
+func makeRequestWithQuery(t *testing.T, query string) *http.Request {
+	t.Helper()
+	u, err := url.Parse("?" + query)
+	if err != nil {
+		t.Fatalf("setup failed: parsing url: %s", err)
+	}
+	return &http.Request{URL: u}
+}
 
 func TestDeploymentResource_Get_no_errors(t *testing.T) {
 
 	testCases := []struct {
 		desc    string
-		params  httprouter.Params
+		query   string
 		wantDID sous.DeploymentID
 	}{
 		{
-			desc: "valid deploymentID",
-			params: httprouter.Params{
-				{Key: "DeploymentID", Value: "cluster1%3Agithub.com%2Fuser1%2Frepo1%2Cdir1~flavor1"},
-			},
+			desc:  "valid deploymentID",
+			query: "DeploymentID=cluster1%3Agithub.com%2Fuser1%2Frepo1%2Cdir1~flavor1",
 			wantDID: sous.DeploymentID{
 				ManifestID: sous.ManifestID{
 					Source: sous.SourceLocation{
@@ -36,7 +44,8 @@ func TestDeploymentResource_Get_no_errors(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			dr := &DeploymentResource{}
-			got := dr.Get(nil, nil, tc.params).(*GETDeploymentHandler)
+			req := makeRequestWithQuery(t, tc.query)
+			got := dr.Get(nil, req, nil).(*GETDeploymentHandler)
 
 			gotDID := got.DeploymentID
 			if gotDID != tc.wantDID {
@@ -48,25 +57,16 @@ func TestDeploymentResource_Get_no_errors(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestDeploymentResource_Get_DeploymentID_errors(t *testing.T) {
 
 	testCases := []struct {
-		params     httprouter.Params
+		query      string
 		wantDIDErr string
 	}{
 		{
-			params: httprouter.Params{
-				{Key: "DeploymentID", Value: "cluster1%-3Agithub.com%2Fuser1%2Frepo1%2Cdir1~flavor1"},
-			},
-			wantDIDErr: `unescaping path: invalid URL escape "%-3"`,
-		},
-		{
-			params: httprouter.Params{
-				{Key: "DeploymentID", Value: "cluster1Agithub.com%2Fuser1%2Frepo1%2Cdir1~flavor1"},
-			},
+			query:      "DeploymentID=cluster1Agithub.com%2Fuser1%2Frepo1%2Cdir1~flavor1",
 			wantDIDErr: `parsing deployment ID from path: does not contain a colon`,
 		},
 	}
@@ -74,7 +74,8 @@ func TestDeploymentResource_Get_DeploymentID_errors(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.wantDIDErr, func(t *testing.T) {
 			dr := &DeploymentResource{}
-			got := dr.Get(nil, nil, tc.params).(*GETDeploymentHandler)
+			req := makeRequestWithQuery(t, tc.query)
+			got := dr.Get(nil, req, nil).(*GETDeploymentHandler)
 
 			gotDIDErr := got.DeploymentIDErr
 			if gotDIDErr == nil || gotDIDErr.Error() != tc.wantDIDErr {
