@@ -1,13 +1,13 @@
 package singularity
 
 import (
-	"testing"
 	"errors"
+	"testing"
 
+	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/opentable/sous/lib"
 )
 
 func TestDeployerMessage(t *testing.T) {
@@ -17,7 +17,6 @@ func TestDeployerMessage(t *testing.T) {
 	taskData := &singularityTaskData{
 		requestID: requestID,
 	}
-
 
 	reportDeployerMessage("test", pair, nil, taskData, nil, logging.InformationLevel, logger)
 
@@ -30,10 +29,10 @@ func TestDeployerMessage(t *testing.T) {
 	expectedFields := map[string]interface{}{
 		"@loglov3-otl": "sous-rectifier-singularity-v1",
 		"request-id":   requestID,
-		"diffs": "",
+		"diffs":        "",
 	}
 
-	logging.AssertMessageFields(t, logMessage, logging.StandardDeployerFields("sous-prior","sous-post"), expectedFields)
+	logging.AssertMessageFields(t, logMessage, logging.StandardDeployerFields("sous-prior", "sous-post"), expectedFields)
 
 	//weak check on WriteToConsole
 	consoleCalls := control.CallsTo("Console")
@@ -53,7 +52,7 @@ func TestDeployerMessageNilCheck(t *testing.T) {
 
 	expectedFields := map[string]interface{}{
 		"@loglov3-otl": "sous-rectifier-singularity-v1",
-		"diffs": "",
+		"diffs":        "",
 	}
 
 	logging.AssertMessageFields(t, logMessage, logging.StandardVariableFields, expectedFields)
@@ -68,7 +67,6 @@ func TestDeployerMessageError(t *testing.T) {
 	}
 	err := errors.New("Test error")
 
-
 	reportDeployerMessage("test", pair, nil, taskData, err, logging.InformationLevel, logger)
 
 	logCalls := control.CallsTo("LogMessage")
@@ -77,11 +75,11 @@ func TestDeployerMessageError(t *testing.T) {
 	expectedFields := map[string]interface{}{
 		"@loglov3-otl": "sous-rectifier-singularity-v1",
 		"request-id":   requestID,
-		"error": "Test error",
-		"diffs": "",
+		"error":        "Test error",
+		"diffs":        "",
 	}
 
-	logging.AssertMessageFields(t, logMessage, logging.StandardDeployerFields("sous-prior","sous-post"), expectedFields)
+	logging.AssertMessageFields(t, logMessage, logging.StandardDeployerFields("sous-prior", "sous-post"), expectedFields)
 }
 
 func TestDeployerMessageDiffs(t *testing.T) {
@@ -93,7 +91,6 @@ func TestDeployerMessageDiffs(t *testing.T) {
 	}
 	diffs := []string{"test", "test1", "test2"}
 
-
 	reportDeployerMessage("test", pair, diffs, taskData, nil, logging.InformationLevel, logger)
 
 	logCalls := control.CallsTo("LogMessage")
@@ -102,10 +99,10 @@ func TestDeployerMessageDiffs(t *testing.T) {
 	expectedFields := map[string]interface{}{
 		"@loglov3-otl": "sous-rectifier-singularity-v1",
 		"request-id":   requestID,
-		"diffs": "test\ntest1\ntest2",
+		"diffs":        "test\ntest1\ntest2",
 	}
 
-	logging.AssertMessageFields(t, logMessage, logging.StandardDeployerFields("sous-prior","sous-post"), expectedFields)
+	logging.AssertMessageFields(t, logMessage, logging.StandardDeployerFields("sous-prior", "sous-post"), expectedFields)
 }
 
 func TestDiffResolutionMessage(t *testing.T) {
@@ -120,17 +117,16 @@ func TestDiffResolutionMessage(t *testing.T) {
 				},
 				Flavor: "thai",
 			},
-			Cluster:    "pp-sf",
+			Cluster: "pp-sf",
 		},
-		Desc:         "description goes here",
-		Error:        &sous.ErrorWrapper{
+		Desc: "description goes here",
+		Error: &sous.ErrorWrapper{
 			MarshallableError: sous.MarshallableError{
 				Type:   "bad",
 				String: "error",
 			},
 		},
 	}
-
 
 	reportDiffResolutionMessage("test", &diffRes, logging.InformationLevel, logger)
 
@@ -141,10 +137,10 @@ func TestDiffResolutionMessage(t *testing.T) {
 	logMessage := logCalls[0].PassedArgs().Get(1).(diffResolutionMessage)
 
 	expectedFields := map[string]interface{}{
-		"@loglov3-otl": "sous-rectifier-singularity-v1",
-		"deployment-id":   diffRes.DeploymentID.String(),
+		"@loglov3-otl":        "sous-rectifier-singularity-v1",
+		"deployment-id":       diffRes.DeploymentID.String(),
 		"diffresolution-desc": string(diffRes.Desc),
-		"error": diffRes.Error.String,
+		"error":               diffRes.Error.String,
 	}
 
 	logging.AssertMessageFields(t, logMessage, logging.StandardVariableFields, expectedFields)

@@ -170,7 +170,6 @@ var unprefixedDeployerFields = []string{
 	"sous-deployment-diffs",
 	"sous-deployment-id",
 	"sous-diff-disposition",
-
 }
 
 var prefixedDeployerFields = []string{
@@ -206,7 +205,7 @@ var prefixedDeployerFields = []string{
 // StandardDeployerFields is used to create the standard logging fields
 // for the structured logging on the deployerMessage
 // takes the prior and post prefixes to generate the fields appropriately
-func StandardDeployerFields(prefix1 string, prefix2 string) ([]string) {
+func StandardDeployerFields(prefix1 string, prefix2 string) []string {
 	deployerFields := unprefixedDeployerFields
 	deployerFields = append(deployerFields, StandardVariableFields...)
 	for _, str := range prefixedDeployerFields {
