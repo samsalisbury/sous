@@ -58,31 +58,31 @@ func (mr *R11nResource) Get(_ http.ResponseWriter, r *http.Request, p httprouter
 // non-200 responses otherwise.
 func (gmh *GETR11nHandler) Exchange() (interface{}, int) {
 	if gmh.DeploymentIDErr != nil {
-		return nil, 404
+		return nil, http.StatusNotFound
 	}
 	// Note that all queries and waiting should be done using the QueueSet
 	// itself, not the rectification.
 	if gmh.WaitForResolution {
 		r, ok := gmh.QueueSet.Wait(gmh.DeploymentID, gmh.R11nID)
 		if !ok {
-			return r11nResponse{}, 404
+			return r11nResponse{}, http.StatusNotFound
 		}
 		return r11nResponse{
 			Resolution: &r,
-		}, 200
+		}, http.StatusOK
 	}
 	queues := gmh.QueueSet.Queues()
 	queue, ok := queues[gmh.DeploymentID]
 	if !ok {
-		return deploymentResponse{}, 404
+		return deploymentResponse{}, http.StatusNotFound
 	}
 	qr, ok := queue.ByID(gmh.R11nID)
 	if !ok {
-		return r11nResponse{}, 404
+		return r11nResponse{}, http.StatusNotFound
 	}
 	return r11nResponse{
 		QueuePosition: qr.Pos,
-	}, 200
+	}, http.StatusOK
 }
 
 type r11nResponse struct {
