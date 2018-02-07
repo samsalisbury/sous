@@ -83,15 +83,15 @@ func mux(sc ComponentLocator, ls logging.LogSink) *http.ServeMux {
 }
 
 func routemap(context ComponentLocator) *restful.RouteMap {
-	return &restful.RouteMap{
-		{"gdm", "/gdm", newGDMResource(context)},
-		{"defs", "/defs", newStateDefResource(context)},
-		{"manifest", "/manifest", newManifestResource(context)},
-		{"artifact", "/artifact", newArtifactResource(context)},
-		{"status", "/status", newStatusResource(context)},
-		{"servers", "/servers", newServerListResource(context)},
-		{"health", "/health", newHealthResource(context)},
-	}
+	return restful.BuildRouteMap(func(re restful.RouteEntryBuilder) {
+		re("gdm", "/gdm", newGDMResource(context))
+		re("defs", "/defs", newStateDefResource(context))
+		re("manifest", "/manifest", newManifestResource(context))
+		re("artifact", "/artifact", newArtifactResource(context))
+		re("status", "/status", newStatusResource(context))
+		re("servers", "/servers", newServerListResource(context))
+		re("health", "/health", newHealthResource(context))
+	})
 }
 
 func addMetrics(handler *http.ServeMux, metrics http.Handler) {

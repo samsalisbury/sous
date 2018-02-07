@@ -134,6 +134,12 @@ func (suite integrationServerTests) TestUpdateServers() {
 	suite.Len(data.Servers, 1)
 }
 
+func (suite integrationServerTests) TestUpdateStateDeployments() {
+	data := server.GDMWrapper{Deployments: []*sous.Deployment{}}
+	err := suite.client.Create("./state/deployments", nil, &data, nil)
+	suite.NoError(err)
+}
+
 func TestLiveServerSuite(t *testing.T) {
 	suite.Run(t, new(liveServerSuite))
 }
