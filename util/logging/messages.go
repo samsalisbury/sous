@@ -183,13 +183,24 @@ func (writeDoner) Done() {}
 //
 // The upshot is that messages can be Delivered on the spot and
 // later determine what facilities are appropriate.
-func Deliver(message interface{}, logger LogSink) {
+func Deliver(message interface{}, logger LogSink, isTest ...bool) {
 	if logger == nil {
 		panic("null logger")
 	}
 	silent := true
 
-	defer loggingPanicsShouldntCrashTheApp(logger, message)
+	//determine if function running under test, allow overwritten value from flags
+	testFlag := func() bool {
+		if flag.Lookup("test.v") != nil {
+			return true
+		}
+		return false
+	}()
+	if len(isTest) > 0 {
+		testFlag = isTest[0]
+	}
+
+	defer loggingPanicsShouldntCrashTheApp(logger, message, testFlag)
 
 	if lm, is := message.(LogMessage); is {
 		silent = false
@@ -222,9 +233,9 @@ type loggingPanicFakeMessage struct {
 // granted that logging can be set up in the first place,
 // problems with a logging message should not crash the whole app
 // therefore: recover the panic do the simplest thing that will be logged,
-func loggingPanicsShouldntCrashTheApp(ls LogSink, msg interface{}) {
+func loggingPanicsShouldntCrashTheApp(ls LogSink, msg interface{}, testFlag bool) {
 
-	if flag.Lookup("test.v") == nil {
+	if testFlag == false {
 		if rec := recover(); rec != nil {
 			Deliver(loggingPanicFakeMessage{msg}, ls)
 		}
