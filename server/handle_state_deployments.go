@@ -29,8 +29,7 @@ type (
 	}
 )
 
-// NewStateDeploymentResource constructs a StateDeploymentResource
-func NewStateDeploymentResource(loc ComponentLocator) *StateDeploymentResource {
+func newStateDeploymentResource(loc ComponentLocator) *StateDeploymentResource {
 	return &StateDeploymentResource{loc: loc}
 }
 

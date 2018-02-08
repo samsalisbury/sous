@@ -91,7 +91,9 @@ func (suite *liveServerSuite) SetupTest() {
 
 func (suite *inmemServerSuite) SetupTest() {
 	h := suite.prepare()
-	lt, _ := logging.NewLogSinkSpy()
+	//lt, _ := logging.NewLogSinkSpy()
+	lt := logging.NewLogSet(semv.MustParse("0.0.0"), "", "", os.Stdout)
+	lt.BeChatty()
 	suite.user = sous.User{}
 	var err error
 	suite.integrationServerTests.client, err = restful.NewInMemoryClient(h, lt)
@@ -137,7 +139,12 @@ func (suite integrationServerTests) TestUpdateServers() {
 func (suite integrationServerTests) TestUpdateStateDeployments() {
 	data := server.GDMWrapper{Deployments: []*sous.Deployment{}}
 	err := suite.client.Create("./state/deployments", nil, &data, nil)
+	suite.Error(err, `412 Precondition Failed: "resource present for If-None-Match=*!\n"`)
+
+	updater, err := suite.client.Retrieve("./state/deployments", nil, &data, nil)
 	suite.NoError(err)
+	suite.Equal(data, "a rabbit")
+	suite.NotNil(updater)
 }
 
 func TestLiveServerSuite(t *testing.T) {

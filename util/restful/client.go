@@ -348,7 +348,7 @@ func (client *LiveHTTPClient) getBody(rz *http.Response, rzBody interface{}, err
 			resourceJSON: bytes.NewBuffer(rzJSON),
 		}, errors.Wrapf(err, "processing response body")
 	case rz.StatusCode < 200 || rz.StatusCode >= 300:
-		return nil, errors.Errorf("%s: %#v", rz.Status, string(b))
+		return nil, errors.Errorf("%s: %#v (%v)", rz.Status, string(b), b)
 	case rz.StatusCode == http.StatusConflict:
 		return nil, errors.Wrap(retryableError(fmt.Sprintf("%s: %#v", rz.Status, string(b))), "getBody")
 	}
@@ -410,6 +410,7 @@ type clientMessage struct {
 // n.b. this interface subject to change
 func reportServerMessage(msg string, channelName string, rq *http.Request, statusCode int, contentLength int64, resName string, dur time.Duration, logger logging.LogSink) {
 	m := messages.BuildServerHTTPResponse(rq, statusCode, contentLength, resName, dur)
+	fmt.Printf("reporting server message (ExcludeMe)\n")
 	m.ExcludeMe()
 	reportMessage(m, msg, channelName, logger, true)
 }

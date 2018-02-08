@@ -6,6 +6,8 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/davecgh/go-spew/spew"
 )
 
 type (
@@ -68,7 +70,9 @@ func GetCallerInfo(excluding ...Excluder) CallerInfo {
 // example: msg.CallerInfo.ExcludeMe()
 func (info *CallerInfo) ExcludeMe() {
 	ex := excludeCaller()
+	spew.Dump("ExcludeMe", ex)
 	info.excluding = append(info.excluding, ex)
+	spew.Dump(info.excluding, "ExcludeMe")
 }
 
 // Exclude path is used to exclude paths that contain a pattern
@@ -85,6 +89,7 @@ func (info CallerInfo) EachField(f FieldReportFn) {
 	var stack string
 	var more bool
 
+	fmt.Printf("Finding reportableFrame\n")
 	for aframe, more = frames.Next(); more; aframe, more = frames.Next() {
 		stack = fmt.Sprintf("%s%s %s:%d\n", stack, aframe.Function, aframe.File, aframe.Line)
 
@@ -122,11 +127,14 @@ func (info CallerInfo) reportableFrame(f runtime.Frame) bool {
 		return false
 	}
 
+	spew.Dump(info.excluding)
 	for _, ex := range info.excluding {
+		spew.Dump("checking", ex)
 		if ex.exclude(f) {
 			return false
 		}
 	}
+	spew.Dump("Got it", f)
 	return true
 }
 
@@ -152,6 +160,7 @@ func excludeCaller() excludedFrame {
 
 func (ef excludedFrame) exclude(f runtime.Frame) bool {
 	// frame.Function should be sufficient - they're qualified with package (and type)
+	spew.Dump([]string{ef.function, f.Function})
 	if ef.sensible && ef.function == f.Function {
 		return true
 	}
