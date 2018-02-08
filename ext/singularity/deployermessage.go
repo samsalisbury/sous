@@ -76,14 +76,13 @@ func (msg deployerMessage) EachField(f logging.FieldReportFn) {
 }
 func (msg diffResolutionMessage) EachField(f logging.FieldReportFn) {
 	f("@loglov3-otl", "sous-diff-resolution-v1")
-
 	f("sous-deployment-id", msg.diffResolution.DeploymentID.String())
+	f("sous-manifest-id", msg.diffResolution.ManifestID.String())
 	f("sous-resolution-description", string(msg.diffResolution.Desc))
 	if msg.diffResolution.Error != nil {
 		f("sous-resolution-errormessage", msg.diffResolution.Error.String)
 		f("sous-resolution-errortype", msg.diffResolution.Error.Type)
 	}
-
 	msg.CallerInfo.EachField(f)
 }
 

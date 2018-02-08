@@ -191,6 +191,7 @@ func TestDiffResolutionMessage(t *testing.T) {
 	expectedFields := map[string]interface{}{
 		"@loglov3-otl":                 "sous-diff-resolution-v1",
 		"sous-deployment-id":           diffRes.DeploymentID.String(),
+		"sous-manifest-id":             diffRes.DeploymentID.ManifestID.String(),
 		"sous-resolution-description":  string(diffRes.Desc),
 		"sous-resolution-errormessage": diffRes.Error.String,
 		"sous-resolution-errortype":    diffRes.Error.Type,
