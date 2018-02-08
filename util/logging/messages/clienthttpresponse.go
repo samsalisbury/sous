@@ -96,7 +96,7 @@ func newHTTPLogEntry(server bool, resName, method, urlstring string, status int,
 		CallerInfo: logging.GetCallerInfo(logging.NotHere()),
 
 		serverSide:     server,
-		resourceFamily: resName, 
+		resourceFamily: resName,
 		method:         method,
 		url:            urlstring,
 		server:         u.Host,
