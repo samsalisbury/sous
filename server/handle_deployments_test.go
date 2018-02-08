@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	sous "github.com/opentable/sous/lib"
+	"github.com/pborman/uuid"
 )
 
 func TestHandleDeployments_Exchange(t *testing.T) {
@@ -104,5 +105,30 @@ func newDid(repo string) sous.DeploymentID {
 				Repo: repo,
 			},
 		},
+	}
+}
+
+// TestHandleDeployments_Exchange_async should be run with the -race flag.
+func TestHandleDeployments_Exchange_async(t *testing.T) {
+
+	// Start writing to a new queueset that's also being processed in a hot loop.
+	qh := func(*sous.QueuedR11n) sous.DiffResolution { return sous.DiffResolution{} }
+	queues := sous.NewR11nQueueSet(sous.R11nQueueStartWithHandler(qh))
+	go func() {
+		for {
+			did := newDid(uuid.New())
+			did.Cluster = uuid.New()
+			r11n := newR11n("")
+			r11n.Pair.SetID(did)
+			queues.Push(r11n)
+		}
+	}()
+
+	// Set up a handler using the above busy queue set.
+	dh := GETDeploymentsHandler{QueueSet: queues}
+
+	// Start calling Exchange in a hot loop.
+	for i := 0; i < 1000; i++ {
+		dh.Exchange()
 	}
 }
