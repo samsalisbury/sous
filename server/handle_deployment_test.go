@@ -18,7 +18,7 @@ func makeRequestWithQuery(t *testing.T, query string) *http.Request {
 	return &http.Request{URL: u}
 }
 
-func TestDeploymentResource_Get_no_errors(t *testing.T) {
+func TestDeployQueueResource_Get_no_errors(t *testing.T) {
 
 	testCases := []struct {
 		desc    string
@@ -43,9 +43,9 @@ func TestDeploymentResource_Get_no_errors(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			dr := &DeploymentResource{}
+			dr := &DeployQueueResource{}
 			req := makeRequestWithQuery(t, tc.query)
-			got := dr.Get(nil, req, nil).(*GETDeploymentHandler)
+			got := dr.Get(nil, req, nil).(*GETDeployQueueHandler)
 
 			gotDID := got.DeploymentID
 			if gotDID != tc.wantDID {
@@ -59,7 +59,7 @@ func TestDeploymentResource_Get_no_errors(t *testing.T) {
 	}
 }
 
-func TestDeploymentResource_Get_DeploymentID_errors(t *testing.T) {
+func TestDeployQueueResource_Get_DeploymentID_errors(t *testing.T) {
 
 	testCases := []struct {
 		query      string
@@ -67,15 +67,15 @@ func TestDeploymentResource_Get_DeploymentID_errors(t *testing.T) {
 	}{
 		{
 			query:      "DeploymentID=cluster1Agithub.com%2Fuser1%2Frepo1%2Cdir1~flavor1",
-			wantDIDErr: `parsing deployment ID from path: does not contain a colon`,
+			wantDIDErr: `parsing DeploymentID from query: does not contain a colon`,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.wantDIDErr, func(t *testing.T) {
-			dr := &DeploymentResource{}
+			dr := &DeployQueueResource{}
 			req := makeRequestWithQuery(t, tc.query)
-			got := dr.Get(nil, req, nil).(*GETDeploymentHandler)
+			got := dr.Get(nil, req, nil).(*GETDeployQueueHandler)
 
 			gotDIDErr := got.DeploymentIDErr
 			if gotDIDErr == nil || gotDIDErr.Error() != tc.wantDIDErr {
@@ -86,7 +86,7 @@ func TestDeploymentResource_Get_DeploymentID_errors(t *testing.T) {
 
 }
 
-func TestGETDeploymentHandler_Exchange(t *testing.T) {
+func TestGETDeployQueueHandler_Exchange(t *testing.T) {
 
 	queues := sous.NewR11nQueueSet()
 	queuedOne1, ok := queues.Push(newR11n("one"))
@@ -103,12 +103,12 @@ func TestGETDeploymentHandler_Exchange(t *testing.T) {
 	}
 
 	t.Run("nonexistent_deployID", func(t *testing.T) {
-		gdh := &GETDeploymentHandler{
+		gdh := &GETDeployQueueHandler{
 			QueueSet:     queues,
 			DeploymentID: newDid("nonexistent"),
 		}
 		body, gotStatus := gdh.Exchange()
-		gotResponse := body.(deploymentResponse)
+		gotResponse := body.(deployQueueResponse)
 		const wantStatus = 404
 		if gotStatus != wantStatus {
 			t.Errorf("got status %d; want %d", gotStatus, wantStatus)
@@ -120,12 +120,12 @@ func TestGETDeploymentHandler_Exchange(t *testing.T) {
 		}
 	})
 	t.Run("one_queued", func(t *testing.T) {
-		gdh := &GETDeploymentHandler{
+		gdh := &GETDeployQueueHandler{
 			QueueSet:     queues,
 			DeploymentID: newDid("one"),
 		}
 		body, gotStatus := gdh.Exchange()
-		gotResponse := body.(deploymentResponse)
+		gotResponse := body.(deployQueueResponse)
 		const wantStatus = 200
 		if gotStatus != wantStatus {
 			t.Errorf("got status %d; want %d", gotStatus, wantStatus)
@@ -144,12 +144,12 @@ func TestGETDeploymentHandler_Exchange(t *testing.T) {
 
 	})
 	t.Run("two_queued", func(t *testing.T) {
-		gdh := &GETDeploymentHandler{
+		gdh := &GETDeployQueueHandler{
 			QueueSet:     queues,
 			DeploymentID: newDid("two"),
 		}
 		body, gotStatus := gdh.Exchange()
-		gotResponse := body.(deploymentResponse)
+		gotResponse := body.(deployQueueResponse)
 		const wantStatus = 200
 		if gotStatus != wantStatus {
 			t.Errorf("got status %d; want %d", gotStatus, wantStatus)
@@ -179,8 +179,8 @@ func TestGETDeploymentHandler_Exchange(t *testing.T) {
 	})
 }
 
-func TestGETDeploymentHandler_Exchange_errors(t *testing.T) {
-	gdh := &GETDeploymentHandler{
+func TestGETDeployQueueHandler_Exchange_errors(t *testing.T) {
+	gdh := &GETDeployQueueHandler{
 		DeploymentIDErr: fmt.Errorf("this error"),
 	}
 	_, gotStatus := gdh.Exchange()

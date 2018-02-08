@@ -8,7 +8,7 @@ import (
 	"github.com/pborman/uuid"
 )
 
-func TestGETDeploymentsHandler_Exchange(t *testing.T) {
+func TestGETAllDeployQueuesHandler_Exchange(t *testing.T) {
 
 	testCases := []struct {
 		desc       string
@@ -61,7 +61,7 @@ func TestGETDeploymentsHandler_Exchange(t *testing.T) {
 
 			}
 
-			handler := &GETDeploymentsHandler{
+			handler := &GETAllDeployQueuesHandler{
 				QueueSet: qs,
 			}
 
@@ -110,7 +110,7 @@ func newDid(repo string) sous.DeploymentID {
 }
 
 // TestGETDeploymentsHandler_Exchange_async should be run with the -race flag.
-func TestGETDeploymentsHandler_Exchange_async(t *testing.T) {
+func TestGETAllDeployQueuesHandler_Exchange_async(t *testing.T) {
 
 	// Start writing to a new queueset that's also being processed in a hot loop.
 	qh := func(*sous.QueuedR11n) sous.DiffResolution { return sous.DiffResolution{} }
@@ -127,7 +127,7 @@ func TestGETDeploymentsHandler_Exchange_async(t *testing.T) {
 	}()
 
 	// Set up a handler using the above busy queue set.
-	dh := GETDeploymentsHandler{QueueSet: queues}
+	dh := GETAllDeployQueuesHandler{QueueSet: queues}
 
 	// Start calling Exchange in a hot loop.
 	for i := 0; i < 1000; i++ {

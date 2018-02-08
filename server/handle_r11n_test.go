@@ -113,7 +113,7 @@ func TestGETR11nHandler_Exchange(t *testing.T) {
 			DeploymentID: newDid("nonexistent"),
 		}
 		body, gotStatus := gdh.Exchange()
-		gotResponse := body.(deploymentResponse)
+		gotResponse := body.(deployQueueResponse)
 		const wantStatus = 404
 		if gotStatus != wantStatus {
 			t.Errorf("got status %d; want %d", gotStatus, wantStatus)

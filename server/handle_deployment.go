@@ -11,21 +11,21 @@ import (
 )
 
 type (
-	// DeploymentResource describes resources for single deployments.
-	DeploymentResource struct {
+	// DeployQueueResource describes resources for single deployments.
+	DeployQueueResource struct {
 		context ComponentLocator
 	}
 
-	// GETDeploymentHandler handles GET exchanges for single deployments.
-	GETDeploymentHandler struct {
+	// GETDeployQueueHandler handles GET exchanges for single deployments.
+	GETDeployQueueHandler struct {
 		QueueSet        *sous.R11nQueueSet
 		DeploymentID    sous.DeploymentID
 		DeploymentIDErr error
 	}
 )
 
-func newDeploymentResource(ctx ComponentLocator) *DeploymentResource {
-	return &DeploymentResource{context: ctx}
+func newDeployQueueResource(ctx ComponentLocator) *DeployQueueResource {
+	return &DeployQueueResource{context: ctx}
 }
 
 func deploymentIDFromRoute(r *http.Request) (sous.DeploymentID, error) {
@@ -40,24 +40,24 @@ func deploymentIDFromRoute(r *http.Request) (sous.DeploymentID, error) {
 	return did, nil
 }
 
-// Get implements Getable for DeploymentResource.
-func (mr *DeploymentResource) Get(_ http.ResponseWriter, r *http.Request, _ httprouter.Params) restful.Exchanger {
-	did, didErr := deploymentIDFromRoute(r)
-	return &GETDeploymentHandler{
+// Get returns a configured GETDeployQueueHandler.
+func (r *DeployQueueResource) Get(_ http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
+	did, didErr := deploymentIDFromRoute(req)
+	return &GETDeployQueueHandler{
 		DeploymentID:    did,
 		DeploymentIDErr: didErr,
 	}
 }
 
-// Exchange implements restful.Exchanger
-func (gmh *GETDeploymentHandler) Exchange() (interface{}, int) {
-	if gmh.DeploymentIDErr != nil {
+// Exchange returns a deployQueueResponse representing a single deploy queue.
+func (h *GETDeployQueueHandler) Exchange() (interface{}, int) {
+	if h.DeploymentIDErr != nil {
 		return nil, 404
 	}
-	queues := gmh.QueueSet.Queues()
-	queue, ok := queues[gmh.DeploymentID]
+	queues := h.QueueSet.Queues()
+	queue, ok := queues[h.DeploymentID]
 	if !ok {
-		return deploymentResponse{}, 404
+		return deployQueueResponse{}, 404
 	}
 	var queued = make([]queuedDeployment, queue.Len())
 	for i, qr := range queue.Snapshot() {
@@ -65,10 +65,10 @@ func (gmh *GETDeploymentHandler) Exchange() (interface{}, int) {
 			ID: qr.ID,
 		}
 	}
-	return deploymentResponse{Queue: queued}, 200
+	return deployQueueResponse{Queue: queued}, 200
 }
 
-type deploymentResponse struct {
+type deployQueueResponse struct {
 	Queue []queuedDeployment
 }
 

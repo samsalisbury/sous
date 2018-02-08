@@ -40,29 +40,29 @@ func r11nIDFromRoute(r *http.Request) (sous.R11nID, error) {
 }
 
 // Get returns a configured GETR11nHandler.
-func (mr *R11nResource) Get(_ http.ResponseWriter, r *http.Request, _ httprouter.Params) restful.Exchanger {
-	did, didErr := deploymentIDFromRoute(r)
-	rid, ridErr := r11nIDFromRoute(r)
-	wait := r.URL.Query().Get("wait") == "true"
+func (r *R11nResource) Get(_ http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
+	did, didErr := deploymentIDFromRoute(req)
+	rid, ridErr := r11nIDFromRoute(req)
+	wait := req.URL.Query().Get("wait") == "true"
 	return &GETR11nHandler{
+		WaitForResolution: wait,
 		DeploymentID:      did,
 		DeploymentIDErr:   didErr,
 		R11nID:            rid,
 		R11nIDErr:         ridErr,
-		WaitForResolution: wait,
 	}
 }
 
 // Exchange returns the targeted r11nResponse and 200 if it exists, other
 // non-200 responses otherwise.
-func (gmh *GETR11nHandler) Exchange() (interface{}, int) {
-	if gmh.DeploymentIDErr != nil {
+func (h *GETR11nHandler) Exchange() (interface{}, int) {
+	if h.DeploymentIDErr != nil {
 		return nil, http.StatusNotFound
 	}
 	// Note that all queries and waiting should be done using the QueueSet
 	// itself, not the rectification.
-	if gmh.WaitForResolution {
-		r, ok := gmh.QueueSet.Wait(gmh.DeploymentID, gmh.R11nID)
+	if h.WaitForResolution {
+		r, ok := h.QueueSet.Wait(h.DeploymentID, h.R11nID)
 		if !ok {
 			return r11nResponse{}, http.StatusNotFound
 		}
@@ -70,12 +70,12 @@ func (gmh *GETR11nHandler) Exchange() (interface{}, int) {
 			Resolution: &r,
 		}, http.StatusOK
 	}
-	queues := gmh.QueueSet.Queues()
-	queue, ok := queues[gmh.DeploymentID]
+	queues := h.QueueSet.Queues()
+	queue, ok := queues[h.DeploymentID]
 	if !ok {
-		return deploymentResponse{}, http.StatusNotFound
+		return deployQueueResponse{}, http.StatusNotFound
 	}
-	qr, ok := queue.ByID(gmh.R11nID)
+	qr, ok := queue.ByID(h.R11nID)
 	if !ok {
 		return r11nResponse{}, http.StatusNotFound
 	}

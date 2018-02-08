@@ -12,6 +12,7 @@ type pm map[string]string
 
 func TestSousRoutes(t *testing.T) {
 	test := func(er, name string, params map[string]string, kvs ...restful.KV) {
+		t.Helper()
 		ar, err := routemap(ComponentLocator{}).URIFor(name, params, kvs...)
 		if err != nil {
 			t.Fatalf("Error getting a path: %#v", err)
@@ -46,8 +47,8 @@ func TestSousRoutes(t *testing.T) {
 	// exists at time of writing is read OK. This test will break if that
 	// implementation changes.
 	test(
-		"/deploy-queues?DeploymentID=my-cluster%3Agithub.com%2Fopentable%2Fblah%2Csome%2Fdir~orange",
-		"single_deployment",
+		"/deploy-queue?DeploymentID=my-cluster%3Agithub.com%2Fopentable%2Fblah%2Csome%2Fdir~orange",
+		"deploy-queue",
 		nil,
 		restful.KV{"DeploymentID", "my-cluster:github.com/opentable/blah,some/dir~orange"},
 	)
@@ -69,8 +70,8 @@ func TestSousRoutes(t *testing.T) {
 	escapedDidStr := url.QueryEscape(didStr)
 	t.Logf("DeploymentID escaped: %q", escapedDidStr)
 	test(
-		"/deploy-queues?DeploymentID="+escapedDidStr,
-		"single_deployment",
+		"/deploy-queue?DeploymentID="+escapedDidStr,
+		"deploy-queue",
 		nil,
 		restful.KV{"DeploymentID", did.String()},
 	)
