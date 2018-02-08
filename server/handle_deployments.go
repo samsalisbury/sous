@@ -11,15 +11,12 @@ import (
 type (
 	// DeploymentsResource describes resources for deployments.
 	DeploymentsResource struct {
-		userExtractor
-		restful.QueryParser
 		context ComponentLocator
 	}
 
 	// GETDeploymentsHandler handles GET exchanges for deployments.
 	GETDeploymentsHandler struct {
 		QueueSet *sous.R11nQueueSet
-		restful.QueryValues
 	}
 )
 

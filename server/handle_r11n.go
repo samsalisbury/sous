@@ -13,7 +13,6 @@ import (
 type (
 	// R11nResource is a handler factory for r11n handlers.
 	R11nResource struct {
-		userExtractor
 		context ComponentLocator
 	}
 

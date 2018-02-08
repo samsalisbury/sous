@@ -13,7 +13,6 @@ import (
 type (
 	// DeploymentResource describes resources for single deployments.
 	DeploymentResource struct {
-		restful.QueryParser
 		context ComponentLocator
 	}
 
