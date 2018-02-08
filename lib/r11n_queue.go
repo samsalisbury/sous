@@ -72,8 +72,6 @@ func R11nQueueStartWithHandler(handler func(*QueuedR11n) DiffResolution) R11nQue
 // Snapshot returns a slice of items to be processed in the queue ordered by
 // their queue position. It includes the item being worked on at the head of the
 // queue.
-//
-// TODO SS: Tests for this...
 func (rq *R11nQueue) Snapshot() []QueuedR11n {
 	rq.Lock()
 	defer rq.Unlock()

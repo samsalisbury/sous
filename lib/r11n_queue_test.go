@@ -9,7 +9,7 @@ import (
 )
 
 // Test synchronous behaviour of the queue.
-func TestR11nQueue_Push_Next_sync(t *testing.T) {
+func TestR11nQueue_Push_Next_Snapshot_sync(t *testing.T) {
 	testCases := []struct {
 		// Desc is a short description of the test.
 		Desc string
@@ -159,6 +159,20 @@ func TestR11nQueue_Push_Next_sync(t *testing.T) {
 			}
 			if gotLen != wantLen {
 				t.Errorf("got len %d; want %d", gotLen, wantLen)
+			}
+
+			// Check snapshot agrees...
+			snapshot := rq.Snapshot()
+			if gotLen := len(snapshot); gotLen != wantLen {
+				t.Errorf("got snapshot len %d; want %d", gotLen, wantLen)
+			}
+			// Check snapshot order matches queue position.
+			lastPos := -1
+			for _, qr := range snapshot {
+				if qr.Pos <= lastPos {
+					t.Errorf("snapshot order does not match queue position")
+				}
+				lastPos = qr.Pos
 			}
 
 			// Iterate over each popped item.
