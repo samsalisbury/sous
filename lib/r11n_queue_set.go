@@ -32,7 +32,7 @@ func (rqs *R11nQueueSet) PushIfEmpty(r *Rectification) (*QueuedR11n, bool) {
 }
 
 // Push creates a queue for the DeploymentID of r if it does not already
-// exist. It calls PushIfEmpty on that R11nQueue passing r.
+// exist. It calls Push on that R11nQueue passing r.
 func (rqs *R11nQueueSet) Push(r *Rectification) (*QueuedR11n, bool) {
 	rqs.Lock()
 	defer rqs.Unlock()
