@@ -66,16 +66,17 @@ func TestR11nQueueSet_PushIfEmpty(t *testing.T) {
 	}
 }
 
+// TestR11nQueueSet_Push_async tries to trigger the race detector by calling
+// Push repeatedly from multiple goroutines.
+// Make sure to run this test with the -race flag!
 func TestR11nQueueSet_Push_async(t *testing.T) {
 
 	signal := make(chan struct{})
 	go func() {
-		// Make sure to run this test with the -race flag!
 
-		const queueSize = 10
 		const itemCount = 20
 
-		rq := NewR11nQueueSet(R11nQueueCap(queueSize))
+		rq := NewR11nQueueSet()
 
 		var wg sync.WaitGroup
 		wg.Add(itemCount)
