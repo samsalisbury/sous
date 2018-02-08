@@ -270,6 +270,10 @@ func TestR11nQueue_ByID(t *testing.T) {
 	}
 }
 
+// TestR11nQueue_Push_async checks that queues never exceed capacity even when
+// pushed to concurrently from multiple goroutines. It also tries to detect
+// deadlocks more quickly using a timeout.
+// Run this test with the -race flag as well.
 func TestR11nQueue_Push_async(t *testing.T) {
 
 	signal := make(chan struct{})
@@ -358,6 +362,9 @@ func TestR11nQueue_PushIfEmpty_sync(t *testing.T) {
 	}
 }
 
+// TestR11Queue_PushIfEmpty_async checks that PushIfEmpty works as expected even
+// when called from multiple goroutines concurrently.
+// Run this test with the -race flag as well.
 func TestR11Queue_PushIfEmpty_async(t *testing.T) {
 
 	rq := NewR11nQueue()
