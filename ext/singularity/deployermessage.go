@@ -2,9 +2,10 @@ package singularity
 
 import (
 	"fmt"
+	"io"
+
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
-	"io"
 )
 
 type deployerMessage struct {
@@ -21,7 +22,7 @@ type diffResolutionMessage struct {
 	logging.CallerInfo
 	logging.Level
 	msg            string
-	diffResolution *sous.DiffResolution
+	diffResolution sous.DiffResolution
 }
 
 func reportDeployerMessage(message string, pair *sous.DeployablePair, diffs sous.Differences, taskData *singularityTaskData, error error, level logging.Level, logger logging.LogSink) {
@@ -37,7 +38,7 @@ func reportDeployerMessage(message string, pair *sous.DeployablePair, diffs sous
 	logging.Deliver(msg, logger)
 }
 
-func reportDiffResolutionMessage(message string, diffRes *sous.DiffResolution, level logging.Level, logger logging.LogSink) {
+func reportDiffResolutionMessage(message string, diffRes sous.DiffResolution, level logging.Level, logger logging.LogSink) {
 	msg := diffResolutionMessage{
 		CallerInfo:     logging.GetCallerInfo(logging.NotHere()),
 		Level:          level,
@@ -75,13 +76,13 @@ func (msg deployerMessage) EachField(f logging.FieldReportFn) {
 }
 func (msg diffResolutionMessage) EachField(f logging.FieldReportFn) {
 	f("@loglov3-otl", "sous-rectifier-singularity-v1")
-	if msg.diffResolution != nil {
-		f("deployment-id", msg.diffResolution.DeploymentID.String())
-		f("diffresolution-desc", string(msg.diffResolution.Desc))
-		if msg.diffResolution.Error != nil {
-			f("error", msg.diffResolution.Error.String)
-		}
+
+	f("deployment-id", msg.diffResolution.DeploymentID.String())
+	f("diffresolution-desc", string(msg.diffResolution.Desc))
+	if msg.diffResolution.Error != nil {
+		f("error", msg.diffResolution.Error.String)
 	}
+
 	msg.CallerInfo.EachField(f)
 }
 
