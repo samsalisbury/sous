@@ -2,6 +2,7 @@ package server
 
 import (
 	"testing"
+	"time"
 
 	sous "github.com/opentable/sous/lib"
 	"github.com/pborman/uuid"
@@ -121,6 +122,7 @@ func TestHandleDeployments_Exchange_async(t *testing.T) {
 			r11n := newR11n("")
 			r11n.Pair.SetID(did)
 			queues.Push(r11n)
+			time.Sleep(time.Millisecond)
 		}
 	}()
 

@@ -60,5 +60,11 @@ func (rqs *R11nQueueSet) Wait(did DeploymentID, id R11nID) (DiffResolution, bool
 
 // Queues returns a snapshot of queues in this set.
 func (rqs *R11nQueueSet) Queues() map[DeploymentID]*R11nQueue {
-	return rqs.set
+	rqs.Lock()
+	defer rqs.Unlock()
+	s := make(map[DeploymentID]*R11nQueue, len(rqs.set))
+	for k, v := range rqs.set {
+		s[k] = v
+	}
+	return s
 }
