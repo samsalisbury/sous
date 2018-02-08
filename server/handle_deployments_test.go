@@ -8,7 +8,7 @@ import (
 	"github.com/pborman/uuid"
 )
 
-func TestHandleDeployments_Exchange(t *testing.T) {
+func TestGETDeploymentsHandler_Exchange(t *testing.T) {
 
 	testCases := []struct {
 		desc       string
@@ -109,8 +109,8 @@ func newDid(repo string) sous.DeploymentID {
 	}
 }
 
-// TestHandleDeployments_Exchange_async should be run with the -race flag.
-func TestHandleDeployments_Exchange_async(t *testing.T) {
+// TestGETDeploymentsHandler_Exchange_async should be run with the -race flag.
+func TestGETDeploymentsHandler_Exchange_async(t *testing.T) {
 
 	// Start writing to a new queueset that's also being processed in a hot loop.
 	qh := func(*sous.QueuedR11n) sous.DiffResolution { return sous.DiffResolution{} }
