@@ -24,7 +24,8 @@ func TestLogMessagePanicking(t *testing.T) {
 	log, ctrl := NewLogSinkSpy()
 
 	assert.NotPanics(t, func() {
-		Deliver(terribadLogMessage{}, log, false)
+		noTestFunc := func() bool { return false }
+		Deliver(terribadLogMessage{}, log, noTestFunc)
 	})
 
 	calls := ctrl.CallsTo("LogMessage")

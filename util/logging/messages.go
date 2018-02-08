@@ -183,21 +183,22 @@ func (writeDoner) Done() {}
 //
 // The upshot is that messages can be Delivered on the spot and
 // later determine what facilities are appropriate.
-func Deliver(message interface{}, logger LogSink, isTest ...bool) {
+func Deliver(message interface{}, logger LogSink, options ...func() bool) {
 	if logger == nil {
 		panic("null logger")
 	}
 	silent := true
 
-	//determine if function running under test, allow overwritten value from flags
+	//determine if function running under test, allow overwritten value from options functions
 	testFlag := func() bool {
 		if flag.Lookup("test.v") != nil {
 			return true
 		}
 		return false
 	}()
-	if len(isTest) > 0 {
-		testFlag = isTest[0]
+
+	for _, op := range options {
+		testFlag = op()
 	}
 
 	defer loggingPanicsShouldntCrashTheApp(logger, message, testFlag)
