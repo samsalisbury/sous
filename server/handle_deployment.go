@@ -32,11 +32,11 @@ func newDeploymentResource(ctx ComponentLocator) *DeploymentResource {
 func deploymentIDFromRoute(r *http.Request) (sous.DeploymentID, error) {
 	didStr, err := url.QueryUnescape(r.URL.Query().Get("DeploymentID"))
 	if err != nil {
-		return sous.DeploymentID{}, fmt.Errorf("unescaping path: %s", err)
+		return sous.DeploymentID{}, fmt.Errorf("unescaping query: %s", err)
 	}
 	did, err := sous.ParseDeploymentID(didStr)
 	if err != nil {
-		return sous.DeploymentID{}, fmt.Errorf("parsing deployment ID from path: %s", err)
+		return sous.DeploymentID{}, fmt.Errorf("parsing DeploymentID from query: %s", err)
 	}
 	return did, nil
 }

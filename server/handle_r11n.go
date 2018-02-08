@@ -35,7 +35,7 @@ func newR11nResource(ctx ComponentLocator) *R11nResource {
 func r11nIDFromRoute(r *http.Request) (sous.R11nID, error) {
 	ridStr, err := url.QueryUnescape(r.URL.Query().Get("R11nID"))
 	if err != nil {
-		return "", fmt.Errorf("unescaping path: %s", err)
+		return "", fmt.Errorf("unescaping query: %s", err)
 	}
 	return sous.R11nID(ridStr), nil
 }
