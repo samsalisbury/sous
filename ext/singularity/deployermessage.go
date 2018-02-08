@@ -2,9 +2,10 @@ package singularity
 
 import (
 	"fmt"
+	"io"
+
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
-	"io"
 )
 
 type deployerMessage struct {
@@ -73,14 +74,15 @@ func (msg deployerMessage) EachField(f logging.FieldReportFn) {
 	msg.CallerInfo.EachField(f)
 	msg.submessage.EachField(f)
 }
+
 func (msg diffResolutionMessage) EachField(f logging.FieldReportFn) {
-	f("@loglov3-otl", "sous-rectifier-singularity-v1")
-	if msg.diffResolution != nil {
-		f("deployment-id", msg.diffResolution.DeploymentID.String())
-		f("diffresolution-desc", string(msg.diffResolution.Desc))
-		if msg.diffResolution.Error != nil {
-			f("error", msg.diffResolution.Error.String)
-		}
+	f("@loglov3-otl", "sous-diff-resolution-v1")
+	f("sous-deployment-id", msg.diffResolution.DeploymentID.String())
+	f("sous-manifest-id", msg.diffResolution.ManifestID.String())
+	f("sous-resolution-description", string(msg.diffResolution.Desc))
+	if msg.diffResolution.Error != nil {
+		f("sous-resolution-errormessage", msg.diffResolution.Error.String)
+		f("sous-resolution-errortype", msg.diffResolution.Error.Type)
 	}
 	msg.CallerInfo.EachField(f)
 }
