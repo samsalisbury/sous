@@ -10,6 +10,7 @@ import (
 	"github.com/nyarly/spies"
 	"github.com/opentable/sous/util/yaml"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type (
@@ -184,6 +185,34 @@ var HTTPVariableFields = []string{
 	"url-hostname",
 	"url-pathname",
 	"url-querystring",
+}
+
+// AssertReportFields calls it's log argument, and then asserts that a LogMessage
+// reported in that function conforms to the two fields arguments passed.
+// Use it to test "reportXXX" functions, since it tests for panics in the
+// reporting function as well.
+func AssertReportFields(t *testing.T, log func(LogSink), variableFields []string, fixedFields map[string]interface{}) {
+	_, message := AssertReport(t, log)
+	AssertMessageFields(t, message, variableFields, fixedFields)
+}
+
+// AssertReport calls its 'log' argument with a log sink, extracts a LogMessage
+// and returns the controller for the logsink and the message passed.
+// In general, prefer AssertReportFields, but if you need to further test e.g.
+// metrics delivery, calling AssertReport and then AssertMessageFields can be
+// a good way to do that.
+func AssertReport(t *testing.T, log func(LogSink)) (LogSinkController, LogMessage) {
+	sink, ctrl := NewLogSinkSpy()
+
+	require.NotPanics(t, func() {
+		log(sink)
+	})
+
+	logCalls := ctrl.CallsTo("LogMessage")
+	require.Len(t, logCalls, 1)
+	message := logCalls[0].PassedArgs().Get(1).(LogMessage)
+
+	return ctrl, message
 }
 
 // AssertMessageFields is a testing function - it receives an eachFielder and confirms that it:
