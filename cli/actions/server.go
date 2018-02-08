@@ -99,6 +99,7 @@ func reportServerMessage(msg string, filterFlags config.DeployFilterFlags, liste
 		deployFilterFlags: filterFlags,
 		listenAddress:     listenAddress,
 	}
+	msgLog.ExcludeMe()
 	logging.Deliver(msgLog, log)
 }
 

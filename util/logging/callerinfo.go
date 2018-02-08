@@ -3,6 +3,7 @@ package logging
 import (
 	"bytes"
 	"fmt"
+	"regexp"
 	"runtime"
 	"strings"
 	"time"
@@ -101,7 +102,7 @@ func (info CallerInfo) EachField(f FieldReportFn) {
 	if frame.Function == "" {
 		f("call-stack-function", "<unknown>")
 	} else {
-		f("call-stack-function", frame.Function)
+		f("call-stack-function", stripLocal(frame.Function))
 	}
 
 	if frame.File == "" {
@@ -111,6 +112,12 @@ func (info CallerInfo) EachField(f FieldReportFn) {
 	}
 
 	f("call-stack-line-number", frame.Line)
+}
+
+var localFnRE = regexp.MustCompile(`\.func\d+$`)
+
+func stripLocal(fn string) string {
+	return localFnRE.ReplaceAllString(fn, "")
 }
 
 func (info CallerInfo) reportableFrame(f runtime.Frame) bool {

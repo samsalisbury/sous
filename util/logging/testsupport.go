@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
+	"runtime"
 	"testing"
 	"time"
 
@@ -162,7 +163,7 @@ var StandardVariableFields = []string{
 	"call-stack-trace",
 	"call-stack-file",
 	"call-stack-line-number",
-	"call-stack-function",
+	//"call-stack-function",
 	"thread-name",
 }
 
@@ -187,13 +188,35 @@ var HTTPVariableFields = []string{
 	"url-querystring",
 }
 
+func getTestFunctionCallInfo(varFds []string, fixed map[string]interface{}) map[string]interface{} {
+	if _, has := fixed["call-stack-function"]; has {
+		return fixed
+	}
+
+	for _, f := range varFds {
+		if f == "call-stack-function" {
+			return fixed
+		}
+	}
+
+	if pc, _, _, ok := runtime.Caller(2); ok {
+		fms := runtime.CallersFrames([]uintptr{pc})
+		frame, _ := fms.Next()
+		function := frame.Function
+
+		fixed["call-stack-function"] = stripLocal(function)
+	}
+
+	return fixed
+}
+
 // AssertReportFields calls it's log argument, and then asserts that a LogMessage
 // reported in that function conforms to the two fields arguments passed.
 // Use it to test "reportXXX" functions, since it tests for panics in the
 // reporting function as well.
 func AssertReportFields(t *testing.T, log func(LogSink), variableFields []string, fixedFields map[string]interface{}) {
 	_, message := AssertReport(t, log)
-	AssertMessageFields(t, message, variableFields, fixedFields)
+	AssertMessageFields(t, message, variableFields, getTestFunctionCallInfo(variableFields, fixedFields))
 }
 
 // AssertReport calls its 'log' argument with a log sink, extracts a LogMessage
@@ -228,7 +251,7 @@ func AssertMessageFields(t *testing.T, msg eachFielder, variableFields []string,
 	t.Helper()
 
 	assert.Contains(t, fixedFields, "@loglov3-otl", "Structured log entries need @loglov3-otl or will be DLQ'd")
-	rawAssertMessageFields(t, msg, variableFields, fixedFields)
+	rawAssertMessageFields(t, msg, variableFields, getTestFunctionCallInfo(variableFields, fixedFields))
 }
 
 func rawAssertMessageFields(t *testing.T, msg eachFielder, variableFields []string, fixedFields map[string]interface{}) {

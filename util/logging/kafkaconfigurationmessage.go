@@ -1,5 +1,7 @@
 package logging
 
+import "strings"
+
 type kafkaConfigurationMessage struct {
 	CallerInfo
 	hook    *kafkaSink
@@ -14,6 +16,7 @@ func reportKafkaConfig(hook *kafkaSink, cfg Config, ls LogSink) {
 		brokers:    cfg.getBrokers(),
 		topic:      cfg.Kafka.Topic,
 	}
+	msg.ExcludeMe()
 	Deliver(msg, ls)
 }
 
@@ -37,7 +40,7 @@ func (kcm kafkaConfigurationMessage) EachField(f FieldReportFn) {
 	}
 	f("sous-successful-connection", true)
 	f("kafka-logging-topic", kcm.topic)
-	f("kafka-brokers", kcm.brokers)
+	f("kafka-brokers", strings.Join(kcm.brokers, ","))
 	f("kafka-logger-id", kcm.hook.ID())
 	f("kafka-logging-levels", kcm.hook.level.String())
 }

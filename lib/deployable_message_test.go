@@ -218,6 +218,7 @@ func TestDiffMessages_knownpanic(t *testing.T) {
 
 	fixedFields := map[string]interface{}{
 		"@loglov3-otl":          "sous-deployment-diff",
+		"call-stack-function":   "<unknown>", //XXX Not sure why this would be "unknown"
 		"sous-deployment-id":    ":",
 		"sous-diff-disposition": "same",
 		"sous-deployment-diffs": "No detailed diff because pairwise diff kind is \"same\"",
