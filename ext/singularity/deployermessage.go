@@ -64,23 +64,24 @@ func (msg diffResolutionMessage) Message() string {
 
 func (msg deployerMessage) EachField(f logging.FieldReportFn) {
 	f("@loglov3-otl", "sous-rectifier-singularity-v1")
-	f("diffs", msg.diffs.String())
+	f("sous-diffs", msg.diffs.String())
 	if msg.taskData != nil {
-		f("request-id", msg.taskData.requestID)
+		f("sous-request-id", msg.taskData.requestID)
 	}
 	if msg.error != nil {
-		f("error", msg.error.Error())
+		f("sous-error", msg.error.Error())
 	}
 	msg.CallerInfo.EachField(f)
 	msg.submessage.EachField(f)
 }
 func (msg diffResolutionMessage) EachField(f logging.FieldReportFn) {
-	f("@loglov3-otl", "sous-rectifier-singularity-v1")
+	f("@loglov3-otl", "sous-diff-resolution-v1")
 
-	f("deployment-id", msg.diffResolution.DeploymentID.String())
-	f("diffresolution-desc", string(msg.diffResolution.Desc))
+	f("sous-deployment-id", msg.diffResolution.DeploymentID.String())
+	f("sous-resolution-description", string(msg.diffResolution.Desc))
 	if msg.diffResolution.Error != nil {
-		f("error", msg.diffResolution.Error.String)
+		f("sous-resolution-errormessage", msg.diffResolution.Error.String)
+		f("sous-resolution-errortype", msg.diffResolution.Error.Type)
 	}
 
 	msg.CallerInfo.EachField(f)

@@ -13,8 +13,8 @@ import (
 var requestID = "12345"
 var defaultExpectedFields = map[string]interface{}{
 	"@loglov3-otl":                          "sous-rectifier-singularity-v1",
-	"request-id":                            requestID,
-	"diffs":                                 "",
+	"sous-request-id":                       requestID,
+	"sous-diffs":                            "",
 	"sous-deployment-id":                    ":",
 	"sous-deployment-diffs":                 "No detailed diff because pairwise diff kind is \"same\"",
 	"sous-diff-disposition":                 "same",
@@ -111,7 +111,7 @@ func TestDeployerMessageNilCheck(t *testing.T) {
 
 	expectedFields := map[string]interface{}{
 		"@loglov3-otl": "sous-rectifier-singularity-v1",
-		"diffs":        "",
+		"sous-diffs":   "",
 	}
 
 	logging.AssertMessageFields(t, logMessage, logging.StandardVariableFields, expectedFields)
@@ -125,7 +125,7 @@ func TestDeployerMessageError(t *testing.T) {
 	}
 	err := errors.New("Test error")
 	expectedFields := merge(defaultExpectedFields, map[string]interface{}{
-		"error": "Test error",
+		"sous-error": "Test error",
 	})
 
 	reportDeployerMessage("test", pair, nil, taskData, err, logging.InformationLevel, logger)
@@ -146,7 +146,7 @@ func TestDeployerMessageDiffs(t *testing.T) {
 	diffs := []string{"test", "test1", "test2"}
 
 	expectedFields := merge(defaultExpectedFields, map[string]interface{}{
-		"diffs": "test\ntest1\ntest2",
+		"sous-diffs": "test\ntest1\ntest2",
 	})
 
 	reportDeployerMessage("test", pair, diffs, taskData, nil, logging.InformationLevel, logger)
@@ -189,10 +189,11 @@ func TestDiffResolutionMessage(t *testing.T) {
 	logMessage := logCalls[0].PassedArgs().Get(1).(diffResolutionMessage)
 
 	expectedFields := map[string]interface{}{
-		"@loglov3-otl":        "sous-rectifier-singularity-v1",
-		"deployment-id":       diffRes.DeploymentID.String(),
-		"diffresolution-desc": string(diffRes.Desc),
-		"error":               diffRes.Error.String,
+		"@loglov3-otl":                 "sous-diff-resolution-v1",
+		"sous-deployment-id":           diffRes.DeploymentID.String(),
+		"sous-resolution-description":  string(diffRes.Desc),
+		"sous-resolution-errormessage": diffRes.Error.String,
+		"sous-resolution-errortype":    diffRes.Error.Type,
 	}
 
 	logging.AssertMessageFields(t, logMessage, logging.StandardVariableFields, expectedFields)
