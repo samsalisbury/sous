@@ -43,9 +43,15 @@ func (msg deployerMessage) Message() string {
 func (msg deployerMessage) EachField(f logging.FieldReportFn) {
 	f("@loglov3-otl", "sous-rectifier-singularity-v1")
 	f("pair-id", msg.pair.ID)
-	f("diffs", strings.Join(*msg.diffs, "\n"))
-	f("request-id", msg.taskData.requestID)
-	f("error", msg.error.Error())
+	if msg.diffs != nil {
+		f("diffs", strings.Join(*msg.diffs, "\n"))
+	}
+	if msg.taskData != nil {
+		f("request-id", msg.taskData.requestID)
+	}
+	if msg.error != nil {
+		f("error", msg.error.Error())
+	}
 	msg.CallerInfo.EachField(f)
 }
 
