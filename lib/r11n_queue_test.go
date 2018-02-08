@@ -228,6 +228,48 @@ func TestR11nQueue_Push_Next_Snapshot_sync(t *testing.T) {
 	}
 }
 
+func TestR11nQueue_ByID(t *testing.T) {
+	rq := NewR11nQueue()
+	r11nA := makeTestR11nWithRepo("a")
+	r11nB := makeTestR11nWithRepo("b")
+	qrIDA, ok := rq.Push(r11nA)
+	if !ok {
+		t.Fatal("setup failed to push r11n")
+	}
+	qrIDB, ok := rq.Push(r11nB)
+	if !ok {
+		t.Fatal("setup failed to push r11n")
+	}
+
+	gotA, okA := rq.ByID(qrIDA.ID)
+	if !okA {
+		t.Errorf("got !ok; want ok for item in queue")
+	}
+	gotRepoA := gotA.Rectification.Pair.ID().ManifestID.Source.Repo
+	wantRepoA := "a"
+	if gotRepoA != wantRepoA {
+		t.Errorf("got r11n with repo %q; want %q", gotRepoA, wantRepoA)
+	}
+
+	gotB, okB := rq.ByID(qrIDB.ID)
+	if !okB {
+		t.Errorf("got !ok; want ok for item in queue")
+	}
+	gotRepoB := gotB.Rectification.Pair.ID().ManifestID.Source.Repo
+	wantRepoB := "b"
+	if gotRepoB != wantRepoB {
+		t.Errorf("got r11n with repo %q; want %q", gotRepoB, wantRepoB)
+	}
+
+	gotC, okC := rq.ByID("nonexistent-id")
+	if okC {
+		t.Errorf("got ok; want !ok for item not in queue")
+	}
+	if gotC != nil {
+		t.Errorf("got a queued r11n; want nil")
+	}
+}
+
 func TestR11nQueue_Push_async(t *testing.T) {
 
 	signal := make(chan struct{})

@@ -87,8 +87,6 @@ func (rq *R11nQueue) Snapshot() []QueuedR11n {
 
 // ByID returns the queued rectification matching ID and true if it exists, nil
 // and false otherwise.
-//
-// TODO: SS: Tests for this...
 func (rq *R11nQueue) ByID(id R11nID) (*QueuedR11n, bool) {
 	rq.Lock()
 	defer rq.Unlock()
