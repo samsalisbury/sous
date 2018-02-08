@@ -22,7 +22,7 @@ type diffResolutionMessage struct {
 	logging.CallerInfo
 	logging.Level
 	msg            string
-	diffResolution *sous.DiffResolution
+	diffResolution sous.DiffResolution
 }
 
 func reportDeployerMessage(message string, pair *sous.DeployablePair, diffs sous.Differences, taskData *singularityTaskData, error error, level logging.Level, logger logging.LogSink) {
@@ -38,7 +38,7 @@ func reportDeployerMessage(message string, pair *sous.DeployablePair, diffs sous
 	logging.Deliver(msg, logger)
 }
 
-func reportDiffResolutionMessage(message string, diffRes *sous.DiffResolution, level logging.Level, logger logging.LogSink) {
+func reportDiffResolutionMessage(message string, diffRes sous.DiffResolution, level logging.Level, logger logging.LogSink) {
 	msg := diffResolutionMessage{
 		CallerInfo:     logging.GetCallerInfo(logging.NotHere()),
 		Level:          level,
@@ -64,12 +64,12 @@ func (msg diffResolutionMessage) Message() string {
 
 func (msg deployerMessage) EachField(f logging.FieldReportFn) {
 	f("@loglov3-otl", "sous-rectifier-singularity-v1")
-	f("diffs", msg.diffs.String())
+	f("sous-diffs", msg.diffs.String())
 	if msg.taskData != nil {
-		f("request-id", msg.taskData.requestID)
+		f("sous-request-id", msg.taskData.requestID)
 	}
 	if msg.error != nil {
-		f("error", msg.error.Error())
+		f("sous-error", msg.error.Error())
 	}
 	msg.CallerInfo.EachField(f)
 	msg.submessage.EachField(f)

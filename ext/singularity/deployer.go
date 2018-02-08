@@ -122,7 +122,7 @@ func (r *deployer) Rectify(pair *sous.DeployablePair) sous.DiffResolution {
 		} else {
 			result.Desc = sous.CreateDiff
 		}
-		reportDiffResolutionMessage("Result of create", &result, logging.InformationLevel, r.log)
+		reportDiffResolutionMessage("Result of create", result, logging.InformationLevel, r.log)
 		return result
 	case sous.RemovedKind:
 		result := sous.DiffResolution{DeploymentID: pair.ID()}
@@ -132,7 +132,7 @@ func (r *deployer) Rectify(pair *sous.DeployablePair) sous.DiffResolution {
 		} else {
 			result.Desc = sous.DeleteDiff
 		}
-		reportDiffResolutionMessage("Result of delete", &result, logging.InformationLevel, r.log)
+		reportDiffResolutionMessage("Result of delete", result, logging.InformationLevel, r.log)
 		return result
 	case sous.ModifiedKind:
 		result := sous.DiffResolution{DeploymentID: pair.ID()}
@@ -150,7 +150,7 @@ func (r *deployer) Rectify(pair *sous.DeployablePair) sous.DiffResolution {
 		} else {
 			result.Desc = sous.ModifyDiff
 		}
-		reportDiffResolutionMessage("Result of modify", &result, logging.InformationLevel, r.log)
+		reportDiffResolutionMessage("Result of modify", result, logging.InformationLevel, r.log)
 		return result
 	}
 }
