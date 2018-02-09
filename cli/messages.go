@@ -11,18 +11,20 @@ import (
 type invocationMessage struct {
 	callerInfo logging.CallerInfo
 	args       []string
+	interval   logging.MessageInterval
 }
 
-func reportInvocation(ls logging.LogSink, args []string) {
-	msg := newInvocationMessage(args)
+func reportInvocation(ls logging.LogSink, start time.Time, args []string) {
+	msg := newInvocationMessage(args, start)
 	msg.callerInfo.ExcludeMe()
 	logging.Deliver(msg, ls)
 }
 
-func newInvocationMessage(args []string) *invocationMessage {
+func newInvocationMessage(args []string, start time.Time) *invocationMessage {
 	return &invocationMessage{
 		callerInfo: logging.GetCallerInfo(logging.NotHere()),
 		args:       args,
+		interval:   logging.CompleteInterval(start),
 	}
 }
 
@@ -37,6 +39,7 @@ func (msg *invocationMessage) Message() string {
 func (msg *invocationMessage) EachField(f logging.FieldReportFn) {
 	f("@loglov3-otl", "sous-cli-v1")
 	msg.callerInfo.EachField(f)
+	msg.interval.EachField(f)
 	f("arguments", fmt.Sprintf("%q", msg.args))
 }
 
