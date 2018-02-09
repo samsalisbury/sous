@@ -11,69 +11,6 @@ import (
 )
 
 var requestID = "12345"
-var defaultExpectedFields = map[string]interface{}{
-	"@loglov3-otl":                          "sous-rectifier-singularity-v1",
-	"sous-request-id":                       requestID,
-	"sous-diffs":                            "",
-	"sous-deployment-id":                    ":",
-	"sous-deployment-diffs":                 "No detailed diff because pairwise diff kind is \"same\"",
-	"sous-diff-disposition":                 "same",
-	"sous-manifest-id":                      "",
-	"sous-post-artifact-name":               "the-post-image",
-	"sous-post-artifact-qualities":          "",
-	"sous-post-artifact-type":               "docker",
-	"sous-post-checkready-failurestatuses":  "",
-	"sous-post-checkready-interval":         0,
-	"sous-post-checkready-portindex":        0,
-	"sous-post-checkready-protocol":         "",
-	"sous-post-checkready-retries":          0,
-	"sous-post-checkready-uripath":          "",
-	"sous-post-checkready-uritimeout":       0,
-	"sous-post-clustername":                 "cluster",
-	"sous-post-env":                         "null",
-	"sous-post-flavor":                      "",
-	"sous-post-kind":                        "",
-	"sous-post-metadata":                    "null",
-	"sous-post-numinstances":                1,
-	"sous-post-offset":                      "",
-	"sous-post-owners":                      "",
-	"sous-post-repo":                        "fake.tld/org/project",
-	"sous-post-resources":                   "{}",
-	"sous-post-startup-connectdelay":        0,
-	"sous-post-startup-connectinterval":     0,
-	"sous-post-startup-skipcheck":           false,
-	"sous-post-startup-timeout":             0,
-	"sous-post-status":                      "DeployStatusAny",
-	"sous-post-tag":                         "0.0.0",
-	"sous-post-volumes":                     "null",
-	"sous-prior-artifact-name":              "the-prior-image",
-	"sous-prior-artifact-qualities":         "",
-	"sous-prior-artifact-type":              "docker",
-	"sous-prior-checkready-failurestatuses": "",
-	"sous-prior-checkready-interval":        0,
-	"sous-prior-checkready-portindex":       0,
-	"sous-prior-checkready-protocol":        "",
-	"sous-prior-checkready-retries":         0,
-	"sous-prior-checkready-uripath":         "",
-	"sous-prior-checkready-uritimeout":      0,
-	"sous-prior-clustername":                "cluster",
-	"sous-prior-env":                        "null",
-	"sous-prior-flavor":                     "",
-	"sous-prior-kind":                       "",
-	"sous-prior-metadata":                   "null",
-	"sous-prior-numinstances":               1,
-	"sous-prior-offset":                     "",
-	"sous-prior-owners":                     "",
-	"sous-prior-repo":                       "fake.tld/org/project",
-	"sous-prior-resources":                  "{}",
-	"sous-prior-startup-connectdelay":       0,
-	"sous-prior-startup-connectinterval":    0,
-	"sous-prior-startup-skipcheck":          false,
-	"sous-prior-startup-timeout":            0,
-	"sous-prior-status":                     "DeployStatusAny",
-	"sous-prior-tag":                        "0.0.0",
-	"sous-prior-volumes":                    "null",
-}
 
 func TestDeployerMessage(t *testing.T) {
 	logger, control := logging.NewLogSinkSpy()
@@ -91,7 +28,7 @@ func TestDeployerMessage(t *testing.T) {
 
 	logMessage := logCalls[0].PassedArgs().Get(1).(deployerMessage)
 
-	logging.AssertMessageFields(t, logMessage, logging.StandardVariableFields, defaultExpectedFields)
+	logging.AssertMessageFields(t, logMessage, logging.StandardVariableFields, defaultExpectedFields())
 
 	//weak check on WriteToConsole
 	consoleCalls := control.CallsTo("Console")
@@ -124,9 +61,8 @@ func TestDeployerMessageError(t *testing.T) {
 		requestID: requestID,
 	}
 	err := errors.New("Test error")
-	expectedFields := merge(defaultExpectedFields, map[string]interface{}{
-		"sous-error": "Test error",
-	})
+	expectedFields := defaultExpectedFields()
+	expectedFields["sous-error"] = "Test error"
 
 	reportDeployerMessage("test", pair, nil, taskData, err, logging.InformationLevel, logger)
 
@@ -144,10 +80,8 @@ func TestDeployerMessageDiffs(t *testing.T) {
 		requestID: requestID,
 	}
 	diffs := []string{"test", "test1", "test2"}
-
-	expectedFields := merge(defaultExpectedFields, map[string]interface{}{
-		"sous-diffs": "test\ntest1\ntest2",
-	})
+	expectedFields := defaultExpectedFields()
+	expectedFields["sous-diffs"] = "test\ntest1\ntest2"
 
 	reportDeployerMessage("test", pair, diffs, taskData, nil, logging.InformationLevel, logger)
 
@@ -204,13 +138,68 @@ func TestDiffResolutionMessage(t *testing.T) {
 	require.Len(t, consoleCalls, 1)
 }
 
-func merge(a, b map[string]interface{}) map[string]interface{} {
-	c := map[string]interface{}{}
-	for k, v := range a {
-		c[k] = v
+func defaultExpectedFields() map[string]interface{} {
+	return map[string]interface{}{
+		"@loglov3-otl":                          "sous-rectifier-singularity-v1",
+		"sous-request-id":                       requestID,
+		"sous-diffs":                            "",
+		"sous-deployment-id":                    ":",
+		"sous-deployment-diffs":                 "No detailed diff because pairwise diff kind is \"same\"",
+		"sous-diff-disposition":                 "same",
+		"sous-manifest-id":                      "",
+		"sous-post-artifact-name":               "the-post-image",
+		"sous-post-artifact-qualities":          "",
+		"sous-post-artifact-type":               "docker",
+		"sous-post-checkready-failurestatuses":  "",
+		"sous-post-checkready-interval":         0,
+		"sous-post-checkready-portindex":        0,
+		"sous-post-checkready-protocol":         "",
+		"sous-post-checkready-retries":          0,
+		"sous-post-checkready-uripath":          "",
+		"sous-post-checkready-uritimeout":       0,
+		"sous-post-clustername":                 "cluster",
+		"sous-post-env":                         "null",
+		"sous-post-flavor":                      "",
+		"sous-post-kind":                        "",
+		"sous-post-metadata":                    "null",
+		"sous-post-numinstances":                1,
+		"sous-post-offset":                      "",
+		"sous-post-owners":                      "",
+		"sous-post-repo":                        "fake.tld/org/project",
+		"sous-post-resources":                   "{}",
+		"sous-post-startup-connectdelay":        0,
+		"sous-post-startup-connectinterval":     0,
+		"sous-post-startup-skipcheck":           false,
+		"sous-post-startup-timeout":             0,
+		"sous-post-status":                      "DeployStatusAny",
+		"sous-post-tag":                         "0.0.0",
+		"sous-post-volumes":                     "null",
+		"sous-prior-artifact-name":              "the-prior-image",
+		"sous-prior-artifact-qualities":         "",
+		"sous-prior-artifact-type":              "docker",
+		"sous-prior-checkready-failurestatuses": "",
+		"sous-prior-checkready-interval":        0,
+		"sous-prior-checkready-portindex":       0,
+		"sous-prior-checkready-protocol":        "",
+		"sous-prior-checkready-retries":         0,
+		"sous-prior-checkready-uripath":         "",
+		"sous-prior-checkready-uritimeout":      0,
+		"sous-prior-clustername":                "cluster",
+		"sous-prior-env":                        "null",
+		"sous-prior-flavor":                     "",
+		"sous-prior-kind":                       "",
+		"sous-prior-metadata":                   "null",
+		"sous-prior-numinstances":               1,
+		"sous-prior-offset":                     "",
+		"sous-prior-owners":                     "",
+		"sous-prior-repo":                       "fake.tld/org/project",
+		"sous-prior-resources":                  "{}",
+		"sous-prior-startup-connectdelay":       0,
+		"sous-prior-startup-connectinterval":    0,
+		"sous-prior-startup-skipcheck":          false,
+		"sous-prior-startup-timeout":            0,
+		"sous-prior-status":                     "DeployStatusAny",
+		"sous-prior-tag":                        "0.0.0",
+		"sous-prior-volumes":                    "null",
 	}
-	for k, v := range b {
-		c[k] = v
-	}
-	return c
 }
