@@ -3,6 +3,7 @@ package messages
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"reflect"
 	"strings"
 
@@ -95,10 +96,17 @@ type logFieldsMessage struct {
 	JSONRepresentation string
 	jsonObj            *gabs.Container
 	msg                string
+	console            bool
 }
 
-//ReportLogFieldsMessage generate a logFieldsMessage log entry
-func ReportLogFieldsMessage(msg string, loglvl logging.Level, logSink logging.LogSink, items ...interface{}) {
+func (l logFieldsMessage) WriteToConsole(console io.Writer) {
+	fmt.Fprintf(console, "%s\n", l.composeMsg())
+}
+
+func (l logFieldsMessage) composeMsg() string {
+	return l.msg
+}
+func buildLogFieldsMessage(msg string, console bool, loglvl logging.Level) logFieldsMessage {
 	logMessage := logFieldsMessage{
 		CallerInfo:         logging.GetCallerInfo(logging.NotHere()),
 		Level:              loglvl,
@@ -106,16 +114,38 @@ func ReportLogFieldsMessage(msg string, loglvl logging.Level, logSink logging.Lo
 		Types:              []string{},
 		JSONRepresentation: "",
 		msg:                msg,
+		console:            console,
 	}
-	logMessage.jsonObj = gabs.New()
+
+	return logMessage
+
+}
+func ReportLogFieldsMessageToConsole(msg string, loglvl logging.Level, logSink logging.LogSink, items ...interface{}) {
+	logMessage := buildLogFieldsMessage(msg, true, loglvl)
+	logMessage.CallerInfo.ExcludeMe()
+	logMessage.reportLogFieldsMessage(logSink, items...)
+
+}
+
+//ReportLogFieldsMessage generate a logFieldsMessage log entry
+func ReportLogFieldsMessage(msg string, loglvl logging.Level, logSink logging.LogSink, items ...interface{}) {
+	logMessage := buildLogFieldsMessage(msg, false, loglvl)
+	logMessage.CallerInfo.ExcludeMe()
+
+	logMessage.reportLogFieldsMessage(logSink, items...)
+}
+
+func (l logFieldsMessage) reportLogFieldsMessage(logSink logging.LogSink, items ...interface{}) {
+	l.CallerInfo.ExcludeMe()
+	l.jsonObj = gabs.New()
 
 	for _, item := range items {
 		fields, types, jsonRep := defaultStructInfo(item)
-		logMessage.addFields(fields...)
-		logMessage.addTypes(types...)
-		logMessage.addJSON(jsonRep)
+		l.addFields(fields...)
+		l.addTypes(types...)
+		l.addJSON(jsonRep)
 	}
-	logging.Deliver(logMessage, logSink)
+	logging.Deliver(l, logSink)
 }
 
 func (l *logFieldsMessage) addJSON(json string) {
@@ -147,7 +177,7 @@ func (l *logFieldsMessage) addTypes(types ...string) {
 
 //Message return the message string associate with message
 func (l logFieldsMessage) Message() string {
-	return l.msg
+	return l.composeMsg()
 }
 
 func (l logFieldsMessage) EachField(fn logging.FieldReportFn) {
