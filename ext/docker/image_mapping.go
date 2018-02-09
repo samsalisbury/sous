@@ -884,4 +884,5 @@ func (nc *NameCache) dbQueryQualsForCName(cn string) (quals strpairs, err error)
 	err = rows.Err()
 
 	return
+
 }
