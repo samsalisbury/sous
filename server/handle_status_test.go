@@ -34,7 +34,8 @@ func TestHandlesStatusGet(t *testing.T) {
 		"@loglov3-otl": "sous-generic-v1",
 	}
 
-	logging.AssertMessageFields(t, msg, logging.StandardVariableFields, fixedFields)
+	// treating call-stack-function as variable because the changes to function names could affect it
+	logging.AssertMessageFields(t, msg, append(logging.StandardVariableFields, "call-stack-function"), fixedFields)
 
 	assert.Equal(status, 200)
 	assert.Len(data.(statusData).Deployments, 0)
