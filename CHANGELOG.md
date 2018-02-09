@@ -13,9 +13,9 @@ with respect to its command line interface and HTTP interface.
   list of all deployment queues and their lengths, and individual queue items
   respectively. /deploy-queue-item allows HTTP long-polling on the completion
   of a single rectification be providing the ?wait=true query parameter.
+* All: Default when testing, don't call recover when a log message fails to Deliver
 
 ## [0.5.63](//github.com/opentable/sous/compare/0.5.62...0.5.63)
-
 ### Added
 * CLI: If no image is present in runspec, return a fatal flaw in build.
 * Server: adding duplex state storage, to keep DB in sync until ready to switch over
