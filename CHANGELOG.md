@@ -10,6 +10,7 @@ with respect to its command line interface and HTTP interface.
 ### Added
 * All: Default when testing, don't call recover when a log message fails to Deliver
 * CLI: Added timing information to report invocation message
+* All: Logging Reporter that allows allows semi flexible fields to be indexed
 
 ## [0.5.63](//github.com/opentable/sous/compare/0.5.62...0.5.63)
 ### Added
