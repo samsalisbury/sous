@@ -63,6 +63,22 @@ const (
 	DirtyWS = AdvisoryName(`dirty workspace`)
 )
 
+// VeryPermissiveAdvisories returns all advisories that do not indicate a build
+// artifact is impossible to deploy. It is not recommended to use this set in
+// production.
+func VeryPermissiveAdvisories() Advisories {
+	return Advisories{UnknownRepo, NoRepoAdv, NotRequestedRevision, Unversioned, TagMismatch, TagNotHead, EphemeralTag, UnpushedRev, BogusRev, DirtyWS}
+}
+
+// Strings returns a slice of the underlying strings of these advisories.
+func (as Advisories) Strings() []string {
+	strings := make([]string, len(as))
+	for i, a := range as {
+		strings[i] = string(a)
+	}
+	return strings
+}
+
 // NewContext returns a new BuildContext updated based on the user's intent as expressed in the Config
 func (c *BuildConfig) NewContext() *BuildContext {
 	ctx := c.Context
