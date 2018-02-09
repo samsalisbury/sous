@@ -22,6 +22,10 @@ func removeDuplicates(elements []string) []string {
 	result := []string{}
 
 	for v := range elements {
+		//don't include empty
+		if elements[v] == "" {
+			continue
+		}
 		if encountered[elements[v]] == true {
 			// Do not add duplicate.
 		} else {
@@ -68,10 +72,6 @@ func DefaultStructInfo(o interface{}) (names []string, types []string, jsonStruc
 				names = append(names, innerNames...)
 				types = append(types, innerTypes...)
 			}
-			//fmt.Printf("value   : %+v\n", f.Value())
-			//fmt.Printf("is zero : %+v\n", f.IsZero())
-			//fmt.Printf("is kind : %s\n", f.Kind().String())
-			//fmt.Printf("is type : %s\n", getType(f.Value()))
 		}
 	}
 
@@ -97,7 +97,7 @@ type LogFieldsMessage struct {
 	msg                string
 }
 
-func ReportLogFieldsMessage(msg string, loglvl logging.Level, items ...interface{}) LogFieldsMessage {
+func ReportLogFieldsMessage(msg string, loglvl logging.Level, logSink logging.LogSink, items ...interface{}) {
 	logMessage := LogFieldsMessage{
 		CallerInfo:         logging.GetCallerInfo(logging.NotHere()),
 		Level:              loglvl,
@@ -114,14 +114,16 @@ func ReportLogFieldsMessage(msg string, loglvl logging.Level, items ...interface
 		logMessage.addTypes(types...)
 		logMessage.addJSON(jsonRep)
 	}
-	return logMessage
+	logging.Deliver(logMessage, logSink)
 }
 
 func (l *LogFieldsMessage) addJSON(json string) {
 	if l.jsonObj == nil {
 		l.jsonObj = gabs.New()
 	}
-	l.jsonObj.Set(json, "message")
+	if _, err := l.jsonObj.Set(json, "message"); err != nil {
+		fmt.Println("error: ", err)
+	}
 }
 func (l *LogFieldsMessage) addFields(fields ...string) {
 	if l.Fields == nil {
@@ -129,8 +131,8 @@ func (l *LogFieldsMessage) addFields(fields ...string) {
 	}
 	l.Fields = append(l.Fields, fields...)
 }
-func (l *LogFieldsMessage) DefaultLevel() logging.Level {
-	panic("not implemented")
+func (l LogFieldsMessage) DefaultLevel() logging.Level {
+	return l.Level
 }
 func (l *LogFieldsMessage) addTypes(types ...string) {
 	if l.Types == nil {
@@ -138,11 +140,11 @@ func (l *LogFieldsMessage) addTypes(types ...string) {
 	}
 	l.Types = append(l.Types, types...)
 }
-func (l *LogFieldsMessage) Message() string {
+func (l LogFieldsMessage) Message() string {
 	return l.msg
 }
 
-func (l *LogFieldsMessage) EachField(fn logging.FieldReportFn) {
+func (l LogFieldsMessage) EachField(fn logging.FieldReportFn) {
 
 	fn("@loglov3-otl", "sous-generic-v1")
 	fn("fields", strings.Join(l.Fields, ","))
