@@ -82,7 +82,7 @@ func (cli *CLI) Invoke(args []string) cmdr.Result {
 	if ls == nil {
 		ls = logging.NewLogSet(semv.Version{}, "sous", "", os.Stderr)
 	}
-	reportInvocation(ls, args)
+	reportInvocation(ls, start, args)
 	res := cli.CLI.Invoke(args)
 	reportCLIResult(ls, args, start, res)
 	return res
