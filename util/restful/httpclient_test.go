@@ -104,7 +104,8 @@ func TestClientRetrieve(t *testing.T) {
 
 	var variableFields []string
 	variableFields = append(logging.StandardVariableFields, logging.HTTPVariableFields...)
-	variableFields = append(variableFields, "channel_name")
+	// XXX call-stack-function is actually a problem here.
+	variableFields = append(variableFields, "channel_name", "call-stack-function")
 	logging.AssertMessageFields(t, tstmsg, variableFields, fixedFields)
 }
 

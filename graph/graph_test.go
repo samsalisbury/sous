@@ -69,7 +69,7 @@ func TestLogSink(t *testing.T) {
 	g.Add(&config.PolicyFlags{}) //provided by SousBuild
 	g.Add(&config.OTPLFlags{})   //provided by SousInit and SousDeploy
 
-	tg := &psyringe.TestPsyringe{g.Psyringe}
+	tg := &psyringe.TestPsyringe{Psyringe: g.Psyringe}
 	rawConfig := RawConfig{Config: &config.Config{}}
 	logcfg := &rawConfig.Config.Logging
 	logcfg.Basic.Level = "debug"
@@ -99,6 +99,18 @@ func TestComponentLocatorInjection(t *testing.T) {
 	g.Add(&config.DeployFilterFlags{})
 	g.Add(&config.PolicyFlags{}) //provided by SousBuild
 	g.Add(&config.OTPLFlags{})   //provided by SousInit and SousDeploy
+
+	tg := &psyringe.TestPsyringe{Psyringe: g.Psyringe}
+	rawConfig := RawConfig{Config: &config.Config{}}
+	logcfg := &rawConfig.Config.Logging
+	logcfg.Basic.Level = "debug"
+	//logcfg.Kafka.Enabled = true
+	logcfg.Kafka.DefaultLevel = "debug"
+	logcfg.Kafka.Topic = "logging"
+	logcfg.Kafka.BrokerList = "kafka.example.com:9292"
+	logcfg.Graphite.Enabled = true
+	logcfg.Graphite.Server = "localhost:3333"
+	tg.Replace(rawConfig)
 
 	scoop := struct{ server.ComponentLocator }{}
 	g.MustInject(&scoop)

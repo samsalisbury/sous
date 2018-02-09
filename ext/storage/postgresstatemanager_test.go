@@ -62,8 +62,9 @@ func TestPostgresStateManagerWriteState_success(t *testing.T) {
 
 	assert.Len(t, suite.logs.CallsTo("LogMessage"), 13)
 	message := suite.logs.CallsTo("LogMessage")[0].PassedArgs().Get(1).(logging.LogMessage)
+	// XXX This message deserves its own test
 	logging.AssertMessageFields(t, message, append(
-		append(logging.StandardVariableFields, logging.IntervalVariableFields...), "sous-sql-query", "sous-sql-rows"),
+		append(logging.StandardVariableFields, logging.IntervalVariableFields...), "call-stack-function", "sous-sql-query", "sous-sql-rows"),
 		map[string]interface{}{
 			"@loglov3-otl": "sous-sql",
 		})
