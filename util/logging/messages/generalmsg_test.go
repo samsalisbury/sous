@@ -23,3 +23,17 @@ func TestReportLogFieldsMessage_Complete(t *testing.T) {
 			"@loglov3-otl": "sous-generic-v1",
 		})
 }
+
+func TestReportLogFieldsMessage_NoInterface(t *testing.T) {
+	logging.AssertReportFields(t,
+		func(ls logging.LogSink) {
+			ReportLogFieldsMessage("This is test message no interface", logging.DebugLevel, ls)
+		},
+		logging.StandardVariableFields,
+		map[string]interface{}{
+			"fields":       "",
+			"types":        "",
+			"jsonStruct":   "{}",
+			"@loglov3-otl": "sous-generic-v1",
+		})
+}
