@@ -26,7 +26,7 @@ func removeDuplicates(elements []string) []string {
 		if elements[v] == "" {
 			continue
 		}
-		if encountered[elements[v]] == true {
+		if encountered[elements[v]] {
 			// Do not add duplicate.
 		} else {
 			// Record this element as an encountered element.
@@ -40,16 +40,16 @@ func removeDuplicates(elements []string) []string {
 }
 
 func getType(myvar interface{}) string {
-	if t := reflect.TypeOf(myvar); t.Kind() == reflect.Ptr {
+	var t reflect.Type
+	if t = reflect.TypeOf(myvar); t.Kind() == reflect.Ptr {
 		return "*" + t.Elem().Name()
-	} else {
-		return t.Name()
 	}
+	return t.Name()
 }
 
-//DefaultStructInfoFunc is the default implementation for structs to use to return names, types, and jsonStruct
+//DefaultStructInfo is the default implementation for structs to use to return names, types, and jsonStruct
 //It checks if the interface passed in implements InnerLogger and will use that instead
-func DefaultStructInfo(o interface{}) (names []string, types []string, jsonStruct string) {
+func defaultStructInfo(o interface{}) (names []string, types []string, jsonStruct string) {
 
 	if innerLog, ok := o.(InnerLogger); ok {
 		names, types, jsonStruct = innerLog.InnerLogInfo()
@@ -68,7 +68,7 @@ func DefaultStructInfo(o interface{}) (names []string, types []string, jsonStruc
 		if f.IsExported() {
 			types = append(types, getType(f.Value()))
 			if f.Kind() == reflect.Struct {
-				innerNames, innerTypes, _ := DefaultStructInfo(f.Value())
+				innerNames, innerTypes, _ := defaultStructInfo(f.Value())
 				names = append(names, innerNames...)
 				types = append(types, innerTypes...)
 			}
@@ -87,7 +87,7 @@ func DefaultStructInfo(o interface{}) (names []string, types []string, jsonStruc
 	return
 }
 
-type LogFieldsMessage struct {
+type logFieldsMessage struct {
 	logging.CallerInfo
 	logging.Level
 	Fields             []string
@@ -97,8 +97,9 @@ type LogFieldsMessage struct {
 	msg                string
 }
 
+//ReportLogFieldsMessage generate a logFieldsMessage log entry
 func ReportLogFieldsMessage(msg string, loglvl logging.Level, logSink logging.LogSink, items ...interface{}) {
-	logMessage := LogFieldsMessage{
+	logMessage := logFieldsMessage{
 		CallerInfo:         logging.GetCallerInfo(logging.NotHere()),
 		Level:              loglvl,
 		Fields:             []string{},
@@ -109,7 +110,7 @@ func ReportLogFieldsMessage(msg string, loglvl logging.Level, logSink logging.Lo
 	logMessage.jsonObj = gabs.New()
 
 	for _, item := range items {
-		fields, types, jsonRep := DefaultStructInfo(item)
+		fields, types, jsonRep := defaultStructInfo(item)
 		logMessage.addFields(fields...)
 		logMessage.addTypes(types...)
 		logMessage.addJSON(jsonRep)
@@ -117,7 +118,7 @@ func ReportLogFieldsMessage(msg string, loglvl logging.Level, logSink logging.Lo
 	logging.Deliver(logMessage, logSink)
 }
 
-func (l *LogFieldsMessage) addJSON(json string) {
+func (l *logFieldsMessage) addJSON(json string) {
 	if l.jsonObj == nil {
 		l.jsonObj = gabs.New()
 	}
@@ -125,26 +126,31 @@ func (l *LogFieldsMessage) addJSON(json string) {
 		fmt.Println("error: ", err)
 	}
 }
-func (l *LogFieldsMessage) addFields(fields ...string) {
+func (l *logFieldsMessage) addFields(fields ...string) {
 	if l.Fields == nil {
 		l.Fields = []string{}
 	}
 	l.Fields = append(l.Fields, fields...)
 }
-func (l LogFieldsMessage) DefaultLevel() logging.Level {
+
+//DefaultLevel return the default log level for this message
+func (l logFieldsMessage) DefaultLevel() logging.Level {
 	return l.Level
 }
-func (l *LogFieldsMessage) addTypes(types ...string) {
+
+func (l *logFieldsMessage) addTypes(types ...string) {
 	if l.Types == nil {
 		l.Types = []string{}
 	}
 	l.Types = append(l.Types, types...)
 }
-func (l LogFieldsMessage) Message() string {
+
+//Message return the message string associate with message
+func (l logFieldsMessage) Message() string {
 	return l.msg
 }
 
-func (l LogFieldsMessage) EachField(fn logging.FieldReportFn) {
+func (l logFieldsMessage) EachField(fn logging.FieldReportFn) {
 
 	fn("@loglov3-otl", "sous-generic-v1")
 	fn("fields", strings.Join(l.Fields, ","))
