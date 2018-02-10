@@ -140,6 +140,8 @@ func buildLogFieldsMessage(msg string, console bool, loglvl logging.Level) logFi
 		console:            console,
 	}
 
+	logMessage.jsonObj = gabs.New()
+	logMessage.jsonObj.Array("message", "array")
 	return logMessage
 
 }
@@ -160,7 +162,6 @@ func ReportLogFieldsMessage(msg string, loglvl logging.Level, logSink logging.Lo
 
 func (l logFieldsMessage) reportLogFieldsMessage(logSink logging.LogSink, items ...interface{}) {
 	l.CallerInfo.ExcludeMe()
-	l.jsonObj = gabs.New()
 
 	for _, item := range items {
 		fields, types, jsonRep := defaultStructInfo(item)
@@ -174,10 +175,16 @@ func (l logFieldsMessage) reportLogFieldsMessage(logSink logging.LogSink, items 
 func (l *logFieldsMessage) addJSON(json string) {
 	if l.jsonObj == nil {
 		l.jsonObj = gabs.New()
+		l.jsonObj.Array("message", "array")
 	}
-	if _, err := l.jsonObj.Set(json, "message"); err != nil {
+	if err := l.jsonObj.ArrayAppend(json, "message", "array"); err != nil {
 		fmt.Println("error: ", err)
 	}
+
+	/* if _, err := l.jsonObj.Set(json, "message"); err != nil {*/
+	//fmt.Println("error: ", err)
+	//}
+	/*}*/
 }
 func (l *logFieldsMessage) addFields(fields ...string) {
 	if l.Fields == nil {
