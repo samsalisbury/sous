@@ -101,8 +101,8 @@ func defaultStructInfo(o interface{}) (names []string, types []string, jsonStruc
 	} else {
 		fmt.Println("Failure to marshal map", err.Error())
 	}
-	names = removeDuplicates(names)
-	types = removeDuplicates(types)
+	names = names
+	types = types
 	return
 }
 
@@ -210,8 +210,8 @@ func (l logFieldsMessage) Message() string {
 func (l logFieldsMessage) EachField(fn logging.FieldReportFn) {
 
 	fn("@loglov3-otl", "sous-generic-v1")
-	fn("fields", strings.Join(l.Fields, ","))
-	fn("types", strings.Join(l.Types, ","))
+	fn("fields", strings.Join(removeDuplicates(l.Fields), ","))
+	fn("types", strings.Join(removeDuplicates(l.Types), ","))
 	if l.jsonObj != nil {
 		fn("jsonStruct", l.jsonObj.String())
 
