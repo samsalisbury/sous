@@ -19,7 +19,7 @@ func TestReportLogFieldsMessage_Complete(t *testing.T) {
 		map[string]interface{}{
 			"fields":       "Basic,Kafka,Graphite,Config,Level,DisableConsole,Enabled,DefaultLevel,Topic,Brokers,BrokerList,Server",
 			"types":        "Config,string,bool",
-			"jsonStruct":   "{\"message\":\"{\\\"Basic\\\":{\\\"DisableConsole\\\":false,\\\"Level\\\":\\\"\\\"},\\\"Graphite\\\":{\\\"Enabled\\\":false,\\\"Server\\\":\\\"\\\"},\\\"Kafka\\\":{\\\"BrokerList\\\":\\\"broker1,broker2,broker3\\\",\\\"Brokers\\\":null,\\\"DefaultLevel\\\":\\\"\\\",\\\"Enabled\\\":false,\\\"Topic\\\":\\\"test-topic\\\"}}\"}",
+			"jsonStruct":   "{\"message\":{\"array\":[\"{\\\"Basic\\\":{\\\"DisableConsole\\\":false,\\\"Level\\\":\\\"\\\"},\\\"Graphite\\\":{\\\"Enabled\\\":false,\\\"Server\\\":\\\"\\\"},\\\"Kafka\\\":{\\\"BrokerList\\\":\\\"broker1,broker2,broker3\\\",\\\"Brokers\\\":null,\\\"DefaultLevel\\\":\\\"\\\",\\\"Enabled\\\":false,\\\"Topic\\\":\\\"test-topic\\\"}}\"]}}",
 			"@loglov3-otl": "sous-generic-v1",
 		})
 }
@@ -33,7 +33,7 @@ func TestReportLogFieldsMessage_NoInterface(t *testing.T) {
 		map[string]interface{}{
 			"fields":       "",
 			"types":        "",
-			"jsonStruct":   "{}",
+			"jsonStruct":   "{\"message\":{\"array\":[]}}",
 			"@loglov3-otl": "sous-generic-v1",
 		})
 }
@@ -46,7 +46,25 @@ func TestReportLogFieldsMessage_String(t *testing.T) {
 		map[string]interface{}{
 			"fields":       "string",
 			"types":        "string",
-			"jsonStruct":   "{\"message\":\"{\\\"string\\\":{\\\"string\\\":\\\"simple string\\\"}}\"}",
+			"jsonStruct":   "{\"message\":{\"array\":[\"{\\\"string\\\":{\\\"string\\\":\\\"simple string\\\"}}\"]}}",
+			"@loglov3-otl": "sous-generic-v1",
+		})
+}
+
+func TestReportLogFieldsMessage_StructAndString(t *testing.T) {
+	logging.AssertReportFields(t,
+		func(ls logging.LogSink) {
+			cfg := logging.Config{}
+			cfg.Kafka.Topic = "test-topic"
+			cfg.Kafka.BrokerList = "broker1,broker2,broker3"
+
+			ReportLogFieldsMessage("This is test message", logging.DebugLevel, ls, cfg, "simple string")
+		},
+		logging.StandardVariableFields,
+		map[string]interface{}{
+			"fields":       "Basic,Kafka,Graphite,Config,Level,DisableConsole,Enabled,DefaultLevel,Topic,Brokers,BrokerList,Server,string",
+			"types":        "Config,string,bool,string",
+			"jsonStruct":   "{\"message\":{\"array\":[\"{\\\"Basic\\\":{\\\"DisableConsole\\\":false,\\\"Level\\\":\\\"\\\"},\\\"Graphite\\\":{\\\"Enabled\\\":false,\\\"Server\\\":\\\"\\\"},\\\"Kafka\\\":{\\\"BrokerList\\\":\\\"broker1,broker2,broker3\\\",\\\"Brokers\\\":null,\\\"DefaultLevel\\\":\\\"\\\",\\\"Enabled\\\":false,\\\"Topic\\\":\\\"test-topic\\\"}}\",\"{\\\"string\\\":{\\\"string\\\":\\\"simple string\\\"}}\"]}}",
 			"@loglov3-otl": "sous-generic-v1",
 		})
 }

@@ -180,12 +180,8 @@ func (l *logFieldsMessage) addJSON(json string) {
 	if err := l.jsonObj.ArrayAppend(json, "message", "array"); err != nil {
 		fmt.Println("error: ", err)
 	}
-
-	/* if _, err := l.jsonObj.Set(json, "message"); err != nil {*/
-	//fmt.Println("error: ", err)
-	//}
-	/*}*/
 }
+
 func (l *logFieldsMessage) addFields(fields ...string) {
 	if l.Fields == nil {
 		l.Fields = []string{}
@@ -210,6 +206,7 @@ func (l logFieldsMessage) Message() string {
 	return l.composeMsg()
 }
 
+//EachField will make sure individual fields are added for OTL
 func (l logFieldsMessage) EachField(fn logging.FieldReportFn) {
 
 	fn("@loglov3-otl", "sous-generic-v1")
