@@ -9,7 +9,7 @@ import (
 )
 
 // Test synchronous behaviour of the queue.
-func TestR11nQueue_Push_Next_sync(t *testing.T) {
+func TestR11nQueue_Push_Next_Snapshot_sync(t *testing.T) {
 	testCases := []struct {
 		// Desc is a short description of the test.
 		Desc string
@@ -161,6 +161,20 @@ func TestR11nQueue_Push_Next_sync(t *testing.T) {
 				t.Errorf("got len %d; want %d", gotLen, wantLen)
 			}
 
+			// Check snapshot agrees...
+			snapshot := rq.Snapshot()
+			if gotLen := len(snapshot); gotLen != wantLen {
+				t.Errorf("got snapshot len %d; want %d", gotLen, wantLen)
+			}
+			// Check snapshot order matches queue position.
+			lastPos := -1
+			for _, qr := range snapshot {
+				if qr.Pos <= lastPos {
+					t.Errorf("snapshot order does not match queue position")
+				}
+				lastPos = qr.Pos
+			}
+
 			// Iterate over each popped item.
 			initialQueueLen := rq.Len()
 			for i := 0; i < initialQueueLen; i++ {
@@ -214,35 +228,89 @@ func TestR11nQueue_Push_Next_sync(t *testing.T) {
 	}
 }
 
+func TestR11nQueue_ByID(t *testing.T) {
+	rq := NewR11nQueue()
+	r11nA := makeTestR11nWithRepo("a")
+	r11nB := makeTestR11nWithRepo("b")
+	qrIDA, ok := rq.Push(r11nA)
+	if !ok {
+		t.Fatal("setup failed to push r11n")
+	}
+	qrIDB, ok := rq.Push(r11nB)
+	if !ok {
+		t.Fatal("setup failed to push r11n")
+	}
+
+	gotA, okA := rq.ByID(qrIDA.ID)
+	if !okA {
+		t.Errorf("got !ok; want ok for item in queue")
+	}
+	gotRepoA := gotA.Rectification.Pair.ID().ManifestID.Source.Repo
+	wantRepoA := "a"
+	if gotRepoA != wantRepoA {
+		t.Errorf("got r11n with repo %q; want %q", gotRepoA, wantRepoA)
+	}
+
+	gotB, okB := rq.ByID(qrIDB.ID)
+	if !okB {
+		t.Errorf("got !ok; want ok for item in queue")
+	}
+	gotRepoB := gotB.Rectification.Pair.ID().ManifestID.Source.Repo
+	wantRepoB := "b"
+	if gotRepoB != wantRepoB {
+		t.Errorf("got r11n with repo %q; want %q", gotRepoB, wantRepoB)
+	}
+
+	gotC, okC := rq.ByID("nonexistent-id")
+	if okC {
+		t.Errorf("got ok; want !ok for item not in queue")
+	}
+	if gotC != nil {
+		t.Errorf("got a queued r11n; want nil")
+	}
+}
+
+// TestR11nQueue_Push_async checks that queues never exceed capacity even when
+// pushed to concurrently from multiple goroutines. It also tries to detect
+// deadlocks more quickly using a timeout.
+// Run this test with the -race flag as well.
 func TestR11nQueue_Push_async(t *testing.T) {
 
-	// Make sure to run this test with the -race flag!
+	signal := make(chan struct{})
+	go func() {
+		// Make sure to run this test with the -race flag!
 
-	const queueSize = 10
-	const itemCount = 20
+		const queueSize = 10
+		const itemCount = 20
 
-	rq := NewR11nQueue(R11nQueueCap(queueSize))
+		rq := NewR11nQueue(R11nQueueCap(queueSize))
 
-	// oks collects the number of oks received from Push.
-	var oks int64
+		// oks collects the number of oks received from Push.
+		var oks int64
 
-	var wg sync.WaitGroup
-	wg.Add(itemCount)
-	for i := 0; i < itemCount; i++ {
-		go func() {
-			_, ok := rq.Push(&Rectification{})
-			if ok {
-				atomic.AddInt64(&oks, 1)
-			}
-			wg.Done()
-		}()
+		var wg sync.WaitGroup
+		wg.Add(itemCount)
+		for i := 0; i < itemCount; i++ {
+			go func() {
+				_, ok := rq.Push(&Rectification{})
+				if ok {
+					atomic.AddInt64(&oks, 1)
+				}
+				wg.Done()
+			}()
+		}
+		wg.Wait()
+
+		if oks != queueSize {
+			t.Errorf("got %d oks; want %d", oks, queueSize)
+		}
+		close(signal)
+	}()
+	select {
+	case <-signal:
+	case <-time.After(time.Second):
+		t.Errorf("push deadlocked")
 	}
-	wg.Wait()
-
-	if oks != queueSize {
-		t.Errorf("got %d oks; want %d", oks, queueSize)
-	}
-
 }
 
 func TestR11Queue_Next(t *testing.T) {
@@ -294,6 +362,9 @@ func TestR11nQueue_PushIfEmpty_sync(t *testing.T) {
 	}
 }
 
+// TestR11Queue_PushIfEmpty_async checks that PushIfEmpty works as expected even
+// when called from multiple goroutines concurrently.
+// Run this test with the -race flag as well.
 func TestR11Queue_PushIfEmpty_async(t *testing.T) {
 
 	rq := NewR11nQueue()

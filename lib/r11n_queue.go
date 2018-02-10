@@ -2,6 +2,7 @@ package sous
 
 import (
 	"container/ring"
+	"sort"
 	"sync"
 
 	"github.com/pborman/uuid"
@@ -53,9 +54,44 @@ func R11nQueueCap(cap int) R11nQueueOpt {
 // handler.
 func R11nQueueStartWithHandler(handler func(*QueuedR11n) DiffResolution) R11nQueueOpt {
 	return func(rq *R11nQueue) {
-		rq.handler = handler
+		rq.handler = func(qr *QueuedR11n) DiffResolution {
+			dr := handler(qr)
+			// TODO SS:
+			// This oddity ensures the resolution on the queued rectification
+			// matches that returned by the handler. This is only really
+			// important in testing where we don't want to run rectifications
+			// just to test the queue. However I would rather clean up the
+			// implementation to remove the need for this.
+			qr.Rectification.Resolution = dr
+			return dr
+		}
 		rq.start = true
 	}
+}
+
+// Snapshot returns a slice of items to be processed in the queue ordered by
+// their queue position. It includes the item being worked on at the head of the
+// queue.
+func (rq *R11nQueue) Snapshot() []QueuedR11n {
+	rq.Lock()
+	defer rq.Unlock()
+	var snapshot []QueuedR11n
+	for _, qr := range rq.refs {
+		snapshot = append(snapshot, *qr)
+	}
+	sort.Slice(snapshot, func(i, j int) bool {
+		return snapshot[i].Pos < snapshot[j].Pos
+	})
+	return snapshot
+}
+
+// ByID returns the queued rectification matching ID and true if it exists, nil
+// and false otherwise.
+func (rq *R11nQueue) ByID(id R11nID) (*QueuedR11n, bool) {
+	rq.Lock()
+	defer rq.Unlock()
+	qr, ok := rq.refs[id]
+	return qr, ok
 }
 
 func (rq *R11nQueue) init() *R11nQueue {
@@ -109,11 +145,11 @@ func (rq *R11nQueue) Wait(id R11nID) (DiffResolution, bool) {
 	rq.Lock()
 	qr, ok := rq.allRefs[id]
 	rq.Unlock()
-	if ok {
-		<-qr.done
-		return qr.Rectification.Resolution, true
+	if !ok {
+		return DiffResolution{}, false
 	}
-	return DiffResolution{}, false
+	<-qr.done
+	return qr.Rectification.Resolution, true
 }
 
 // Push adds r to the queue, wrapped in a *QueuedR11n. It returns the wrapper.

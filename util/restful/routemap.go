@@ -1,14 +1,15 @@
 package restful
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"strings"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/opentable/sous/util/logging"
-	"github.com/pkg/errors"
 )
 
 type (
@@ -30,7 +31,7 @@ type (
 	// RouteMap is a list of entries for routing
 	RouteMap []routeEntry
 
-	// Resource a ResourceFamily bundles up the exchangers that deal with a kind of resources
+	// A Resource bundles up the exchangers that deal with a kind of resources
 	// (n.b. that properly, URL == resource, so a URL pattern == many resources
 	Resource interface{}
 
@@ -149,26 +150,61 @@ func (rm *RouteMap) SingleExchanger(factory ExchangeFactory, gf func() Injector,
 	return mh.injectedHandler(factory, w, rq, httprouter.Params{})
 }
 
-// KV (Key/Value) is a convenience type for PathFor
+// KV (Key/Value) is a convenience type for URIFor.
 type KV []string
 
-// PathFor constructs a URL which should route back to the named route, with
-// supplied parameters
-func (rm *RouteMap) PathFor(name string, kvs ...KV) (string, error) {
+// ByName returns the routeEntry named name and true if it exists or a zero
+// routeEntry and false otherwise.
+func (rm RouteMap) byName(name string) (routeEntry, bool) {
+	for _, e := range rm {
+		if e.Name == name {
+			return e, true
+		}
+	}
+	return routeEntry{}, false
+}
+
+// URIFor returns the URI (relative to the root) for the named route using
+// pathParams and kv to fill out path parameters and query values respectively.
+func (rm RouteMap) URIFor(name string, pathParams map[string]string, kvs ...KV) (string, error) {
+	r, ok := rm.byName(name)
+	if !ok {
+		return "", fmt.Errorf("no route named %q", name)
+	}
+	u, err := url.ParseRequestURI(r.Path)
+	if err != nil {
+		return "", fmt.Errorf("error parsing route URI for %q: %s", name, err)
+	}
+
+	// Calculate query string.
 	params := url.Values{}
 	for _, kv := range kvs {
 		params.Add(kv[0], kv[1])
 	}
 
-	for _, e := range *rm {
-		if e.Name == name {
-			// Path parameters will need some regexp magic, I think
-			query := ""
-			if len(params) > 0 {
-				query = "?" + url.Values(params).Encode()
-			}
-			return e.Path + query, nil
-		}
+	query := ""
+	if len(params) > 0 {
+		query = "?" + url.Values(params).Encode()
 	}
-	return "", errors.Errorf("No route found for name %q", name)
+
+	// Special case for root, return early.
+	if u.Path == "/" {
+		return u.String() + query, nil
+	}
+
+	// For non-root calculate path based on path params.
+	pathParts := strings.Split(u.Path, "/")
+	pathParts = pathParts[1:]
+	for i, part := range pathParts {
+		if part[0] != ':' {
+			continue
+		}
+		part = part[1:]
+		value, ok := pathParams[part]
+		if !ok {
+			return "", fmt.Errorf("no path param for :%s", part)
+		}
+		pathParts[i] = url.PathEscape(value)
+	}
+	return "/" + strings.Join(pathParts, "/") + query, nil
 }

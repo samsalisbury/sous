@@ -83,13 +83,56 @@ func mux(sc ComponentLocator, ls logging.LogSink) *http.ServeMux {
 
 func routemap(context ComponentLocator) *restful.RouteMap {
 	return &restful.RouteMap{
-		{"gdm", "/gdm", newGDMResource(context)},
-		{"defs", "/defs", newStateDefResource(context)},
-		{"manifest", "/manifest", newManifestResource(context)},
-		{"artifact", "/artifact", newArtifactResource(context)},
-		{"status", "/status", newStatusResource(context)},
-		{"servers", "/servers", newServerListResource(context)},
-		{"health", "/health", newHealthResource(context)},
+		{
+			Name:     "gdm",
+			Path:     "/gdm",
+			Resource: newGDMResource(context),
+		},
+		{
+			Name:     "defs",
+			Path:     "/defs",
+			Resource: newStateDefResource(context),
+		},
+		{
+			Name:     "manifest",
+			Path:     "/manifest",
+			Resource: newManifestResource(context),
+		},
+		{
+			Name:     "artifact",
+			Path:     "/artifact",
+			Resource: newArtifactResource(context),
+		},
+		{
+			Name:     "status",
+			Path:     "/status",
+			Resource: newStatusResource(context),
+		},
+		{
+			Name:     "servers",
+			Path:     "/servers",
+			Resource: newServerListResource(context),
+		},
+		{
+			Name:     "health",
+			Path:     "/health",
+			Resource: newHealthResource(context),
+		},
+		{
+			Name:     "all-deploy-queues",
+			Path:     "/all-deploy-queues",
+			Resource: newAllDeployQueuesResource(context),
+		},
+		{
+			Name:     "deploy-queue",
+			Path:     "/deploy-queue",
+			Resource: newDeployQueueResource(context),
+		},
+		{
+			Name:     "deploy-queue-item",
+			Path:     "/deploy-queue-item",
+			Resource: newR11nResource(context),
+		},
 	}
 }
 
