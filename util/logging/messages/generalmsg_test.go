@@ -44,7 +44,7 @@ func TestReportLogFieldsMessage_String(t *testing.T) {
 		},
 		logging.StandardVariableFields,
 		map[string]interface{}{
-			"fields":       "string",
+			"fields":       "",
 			"types":        "string",
 			"jsonStruct":   "{\"message\":{\"array\":[\"{\\\"string\\\":{\\\"string\\\":\\\"simple string\\\"}}\"]}}",
 			"@loglov3-otl": "sous-generic-v1",
@@ -62,7 +62,7 @@ func TestReportLogFieldsMessage_StructAndString(t *testing.T) {
 		},
 		logging.StandardVariableFields,
 		map[string]interface{}{
-			"fields":       "Basic,Kafka,Graphite,Config,Level,DisableConsole,Enabled,DefaultLevel,Topic,Brokers,BrokerList,Server,string",
+			"fields":       "Basic,Kafka,Graphite,Config,Level,DisableConsole,Enabled,DefaultLevel,Topic,Brokers,BrokerList,Server",
 			"types":        "Config,string,bool",
 			"jsonStruct":   "{\"message\":{\"array\":[\"{\\\"Basic\\\":{\\\"DisableConsole\\\":false,\\\"Level\\\":\\\"\\\"},\\\"Graphite\\\":{\\\"Enabled\\\":false,\\\"Server\\\":\\\"\\\"},\\\"Kafka\\\":{\\\"BrokerList\\\":\\\"broker1,broker2,broker3\\\",\\\"Brokers\\\":null,\\\"DefaultLevel\\\":\\\"\\\",\\\"Enabled\\\":false,\\\"Topic\\\":\\\"test-topic\\\"}}\",\"{\\\"string\\\":{\\\"string\\\":\\\"simple string\\\"}}\"]}}",
 			"@loglov3-otl": "sous-generic-v1",

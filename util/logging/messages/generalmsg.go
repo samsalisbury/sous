@@ -12,9 +12,9 @@ import (
 	"github.com/opentable/sous/util/logging"
 )
 
-//InnerLogger interface is used if struct wants to provide it's own way of returns names, types, and json string
+//InnerLogger interface is used if struct wants to provide it's own way of returns fields, types, and json string
 type InnerLogger interface {
-	InnerLogInfo() (names []string, types []string, jsonStruct string)
+	InnerLogInfo() (fields []string, types []string, jsonStruct string)
 }
 
 func removeDuplicates(elements []string) []string {
@@ -48,12 +48,12 @@ func getType(myvar interface{}) string {
 	return t.Name()
 }
 
-//DefaultStructInfo is the default implementation for structs to use to return names, types, and jsonStruct
+//DefaultStructInfo is the default implementation for structs to use to return fields, types, and jsonStruct
 //It checks if the interface passed in implements InnerLogger and will use that instead
-func defaultStructInfo(o interface{}) (names []string, types []string, jsonStruct string) {
+func defaultStructInfo(o interface{}) (fields []string, types []string, jsonStruct string) {
 
 	if innerLog, ok := o.(InnerLogger); ok {
-		names, types, jsonStruct = innerLog.InnerLogInfo()
+		fields, types, jsonStruct = innerLog.InnerLogInfo()
 		return
 	}
 	v := reflect.ValueOf(o)
@@ -65,10 +65,10 @@ func defaultStructInfo(o interface{}) (names []string, types []string, jsonStruc
 
 	//handle when it's not a struct
 	if v.Kind() != reflect.Struct {
+		fields = []string{}
 		types = []string{}
 		oType := getType(o)
 		types = append(types, oType)
-		names = types
 		jsonObj := gabs.New()
 		jsonObj.Set(o, oType, oType)
 		jsonStruct = jsonObj.String()
@@ -77,8 +77,8 @@ func defaultStructInfo(o interface{}) (names []string, types []string, jsonStruc
 
 	s := structs.New(o)
 
-	names = s.Names()
-	names = append(names, s.Name())
+	fields = s.Names()
+	fields = append(fields, s.Name())
 	types = []string{}
 
 	types = append(types, getType(o))
@@ -88,7 +88,7 @@ func defaultStructInfo(o interface{}) (names []string, types []string, jsonStruc
 			types = append(types, getType(f.Value()))
 			if f.Kind() == reflect.Struct {
 				innerNames, innerTypes, _ := defaultStructInfo(f.Value())
-				names = append(names, innerNames...)
+				fields = append(fields, innerNames...)
 				types = append(types, innerTypes...)
 			}
 		}
@@ -101,8 +101,7 @@ func defaultStructInfo(o interface{}) (names []string, types []string, jsonStruc
 	} else {
 		fmt.Println("Failure to marshal map", err.Error())
 	}
-	names = names
-	types = types
+
 	return
 }
 
