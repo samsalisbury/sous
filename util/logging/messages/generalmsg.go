@@ -56,6 +56,24 @@ func defaultStructInfo(o interface{}) (names []string, types []string, jsonStruc
 		names, types, jsonStruct = innerLog.InnerLogInfo()
 		return
 	}
+	v := reflect.ValueOf(o)
+
+	// if pointer get the underlying element≤
+	for v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+
+	//handle when it's not a struct
+	if v.Kind() != reflect.Struct {
+		types = []string{}
+		oType := getType(o)
+		types = append(types, oType)
+		names = types
+		jsonObj := gabs.New()
+		jsonObj.Set(o, oType, oType)
+		jsonStruct = jsonObj.String()
+		return
+	}
 
 	s := structs.New(o)
 

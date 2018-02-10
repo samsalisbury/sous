@@ -37,3 +37,16 @@ func TestReportLogFieldsMessage_NoInterface(t *testing.T) {
 			"@loglov3-otl": "sous-generic-v1",
 		})
 }
+func TestReportLogFieldsMessage_String(t *testing.T) {
+	logging.AssertReportFields(t,
+		func(ls logging.LogSink) {
+			ReportLogFieldsMessage("This is test message passing just a string", logging.DebugLevel, ls, "simple string")
+		},
+		logging.StandardVariableFields,
+		map[string]interface{}{
+			"fields":       "string",
+			"types":        "string",
+			"jsonStruct":   "{\"message\":\"{\\\"string\\\":{\\\"string\\\":\\\"simple string\\\"}}\"}",
+			"@loglov3-otl": "sous-generic-v1",
+		})
+}
