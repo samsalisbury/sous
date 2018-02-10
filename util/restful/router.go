@@ -86,7 +86,7 @@ func (lrw loggingResponseWriter) Write(b []byte) (int, error) {
 
 	// ParseInt returns 0 and an syntax error if the provided string doesn't parse well.
 	contentLength, _ := strconv.ParseInt(lrw.ResponseWriter.Header().Get("Content-Length"), 10, 64)
-	messages.ReportServerHTTPResponse(lrw.log, lrw.req, lrw.statusCode, contentLength, lrw.resourceName, time.Now().Sub(lrw.start))
+	messages.ReportServerHTTPResponding(lrw.log, "responding", lrw.req, lrw.statusCode, contentLength, lrw.resourceName, time.Now().Sub(lrw.start))
 
 	return n, err
 }

@@ -76,8 +76,9 @@ func TestClientRetrieve(t *testing.T) {
 	body := map[string]interface{}{}
 
 	up, err := c.Retrieve("/path", map[string]string{"query": "present"}, &body, map[string]string{})
-
+	ctrl.DumpLogs(t)
 	require.NoError(t, err)
+
 	logCalls := ctrl.CallsTo("LogMessage")
 	assert.Contains(up.(*resourceState).qparms, "query")
 
@@ -104,8 +105,6 @@ func TestClientRetrieve(t *testing.T) {
 
 	var variableFields []string
 	variableFields = append(logging.StandardVariableFields, logging.HTTPVariableFields...)
-	// XXX call-stack-function is actually a problem here.
-	variableFields = append(variableFields, "channel_name", "call-stack-function")
 	logging.AssertMessageFields(t, tstmsg, variableFields, fixedFields)
 }
 
