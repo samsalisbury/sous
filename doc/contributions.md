@@ -44,6 +44,31 @@ Use `./bin/dev-integration` to run full integration tests.
 In general, run `bin/test` in the course of normal development,
 reserving `bin/dev-integration` for just before pushing a pull request.
 
+### Postgres tests
+`make postgres-test-prepare`
+
+`make test-unit`
+
+You will need postgres, liquibase and a jdk installed
+
+Liquibase : https://github.com/sharadvishe/liquibase
+
+Postgres : brew or apt. In ubuntu/linux you will have to make some changes to the default install for it to work : 
+     
+Edit /etc/postgresql/N.N/main/postgresql.conf and change port from 5432 to 6543
+
+Edit /etc/postgresql/N.N/main/pg_hba.conf and change local connections to use 'trust'
+```
+# TYPE  DATABASE        USER            ADDRESS                 METHOD                                                   
+# "local" is for Unix domain socket connections only                
+local   all             all                                     trust                                                  
+# IPv4 local connections:         
+host    all             all             127.0.0.1/32            trust                                                        # IPv6 local connections:         
+host    all             all             ::1/128                 trust 
+```
+Add a role for your logged in user (https://www.digitalocean.com/community/tutorials/how-to-install-and-use-postgresql-on-ubuntu-16-04 Create a new Role):
+`sudo -u postgres createuser --interactive`
+
 ## Workflow
 
 We've adopted a pull-request, git-flow-y model of development for Sous.

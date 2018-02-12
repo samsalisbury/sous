@@ -74,6 +74,7 @@ func (msg deployerMessage) EachField(f logging.FieldReportFn) {
 	msg.CallerInfo.EachField(f)
 	msg.submessage.EachField(f)
 }
+
 func (msg diffResolutionMessage) EachField(f logging.FieldReportFn) {
 	f("@loglov3-otl", "sous-diff-resolution-v1")
 	f("sous-deployment-id", msg.diffResolution.DeploymentID.String())

@@ -5,9 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
+## [Unreleased](//github.com/opentable/sous/compare/0.5.63...HEAD)
+
+### Added
+* All: Default when testing, don't call recover when a log message fails to Deliver
 
 ## [0.5.63](//github.com/opentable/sous/compare/0.5.62...0.5.63)
-
 ### Added
 * CLI: If no image is present in runspec, return a fatal flaw in build.
 * Server: adding duplex state storage, to keep DB in sync until ready to switch over
