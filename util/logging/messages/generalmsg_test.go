@@ -1,6 +1,7 @@
 package messages
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/opentable/sous/util/logging"
@@ -85,6 +86,22 @@ func TestReportLogFieldsMessage_TwoStructs(t *testing.T) {
 			"fields": "Basic,Kafka,Graphite,Config,Level,DisableConsole,Enabled,DefaultLevel,Topic,Brokers,BrokerList,Server,Status,StatusCode,Proto,ProtoMajor,ProtoMinor,Header,Body,ContentLength,TransferEncoding,Close,Uncompressed,Trailer,Request,TLS,Response",
 			"types":  "Config,string,bool,*Response,int,Header,int64,*Request,*ConnectionState",
 			//"jsonStruct":   "{\"message\":{\"array\":[\"{\\\"Basic\\\":{\\\"DisableConsole\\\":false,\\\"Level\\\":\\\"\\\"},\\\"Graphite\\\":{\\\"Enabled\\\":false,\\\"Server\\\":\\\"\\\"},\\\"Kafka\\\":{\\\"BrokerList\\\":\\\"broker1,broker2,broker3\\\",\\\"Brokers\\\":null,\\\"DefaultLevel\\\":\\\"\\\",\\\"Enabled\\\":false,\\\"Topic\\\":\\\"test-topic\\\"}}\",\"{\\\"Response\\\":\\\"\\\\u0026{ 200  0 0 map[] \\\\u003cnil\\\\u003e 123 [] false false map[] 0xc420114000 \\\\u003cnil\\\\u003e}\\\"}\"]}}",
+			"@loglov3-otl": "sous-generic-v1",
+		})
+}
+
+func TestReportLogFieldsMessage_error(t *testing.T) {
+	logging.AssertReportFields(t,
+		func(ls logging.LogSink) {
+
+			err := fmt.Errorf("error msg")
+			ReportLogFieldsMessage("This is test message", logging.DebugLevel, ls, err)
+		},
+		logging.StandardVariableFields,
+		map[string]interface{}{
+			"fields":       "",
+			"types":        "error",
+			"jsonStruct":   "{\"message\":{\"array\":[\"{\\\"error\\\":{\\\"error\\\":\\\"error msg\\\"}}\"]}}",
 			"@loglov3-otl": "sous-generic-v1",
 		})
 }

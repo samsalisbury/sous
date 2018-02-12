@@ -78,6 +78,16 @@ func defaultStructInfo(o interface{}) (fields []string, types []string, jsonStru
 		return
 	}
 
+	//handle error interface explicitly to extract error msg
+	if anErr, ok := o.(error); ok {
+		fields = []string{}
+		types = []string{"error"}
+
+		jsonObj := gabs.New()
+		jsonObj.Set(anErr.Error(), "error", "error")
+		jsonStruct = jsonObj.String()
+		return
+	}
 	s := structs.New(o)
 
 	fields = s.Names()
@@ -104,7 +114,7 @@ func defaultStructInfo(o interface{}) (fields []string, types []string, jsonStru
 	} else {
 
 		jsonObj := gabs.New()
-		if _, err := jsonObj.Set(fmt.Sprintf("%v", o), s.Name()); err != nil {
+		if _, err := jsonObj.Set(fmt.Sprintf("%v", mapParent), s.Name()); err != nil {
 			jsonStruct = fmt.Sprintf("{\"%s\": \"Fail to create json\"}", s.Name())
 		}
 		jsonStruct = jsonObj.String()
