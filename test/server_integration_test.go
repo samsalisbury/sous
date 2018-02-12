@@ -14,6 +14,7 @@ import (
 	"github.com/opentable/sous/server"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
+	"github.com/samsalisbury/psyringe"
 	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/suite"
 )
@@ -23,6 +24,7 @@ type (
 		suite.Suite
 		client restful.HTTPClient
 		user   sous.User
+		log    logging.LogSinkController
 	}
 
 	liveServerSuite struct {
@@ -35,7 +37,7 @@ type (
 	}
 )
 
-func (suite integrationServerTests) prepare() http.Handler {
+func (suite integrationServerTests) prepare() (logging.LogSink, http.Handler) {
 	sourcepath, remotepath, outpath :=
 		"../ext/storage/testdata/in",
 		"../ext/storage/testdata/remote",
@@ -47,11 +49,16 @@ func (suite integrationServerTests) prepare() http.Handler {
 
 	storage.PrepareTestGitRepo(suite.T(), s, remotepath, outpath)
 
+	log, ctrl := logging.NewLogSinkSpy()
+	suite.log = ctrl
+
 	g := graph.TestGraphWithConfig(semv.Version{}, &bytes.Buffer{}, os.Stdout, os.Stdout, "StateLocation: '"+outpath+"'\n")
 	g.Add(&config.DeployFilterFlags{})
 	g.Add(&config.Verbosity{})
 	g.Add(graph.DryrunBoth)
 
+	testGraph := psyringe.TestPsyringe{Psyringe: g.Psyringe}
+	testGraph.Replace(graph.LogSink{LogSink: log})
 	/*
 		state := &sous.State{}
 		state.SetEtag("qwertybeatsdvorak")
@@ -71,16 +78,14 @@ func (suite integrationServerTests) prepare() http.Handler {
 	if serverScoop.Handler.Handler == nil {
 		suite.FailNow("Didn't inject http.Handler!")
 	}
-	return serverScoop.Handler.Handler
+	return log, serverScoop.Handler.Handler
 }
 
 func (suite *liveServerSuite) SetupTest() {
-	h := suite.prepare()
+	lt, h := suite.prepare()
 
 	suite.server = httptest.NewServer(h)
 	suite.user = sous.User{}
-
-	lt, _ := logging.NewLogSinkSpy()
 
 	var err error
 	suite.integrationServerTests.client, err = restful.NewClient(suite.server.URL, lt)
@@ -90,10 +95,8 @@ func (suite *liveServerSuite) SetupTest() {
 }
 
 func (suite *inmemServerSuite) SetupTest() {
-	h := suite.prepare()
-	//lt, _ := logging.NewLogSinkSpy()
-	lt := logging.NewLogSet(semv.MustParse("0.0.0"), "", "", os.Stdout)
-	lt.BeChatty()
+	lt, h := suite.prepare()
+
 	suite.user = sous.User{}
 	var err error
 	suite.integrationServerTests.client, err = restful.NewInMemoryClient(h, lt)
@@ -136,12 +139,16 @@ func (suite integrationServerTests) TestUpdateServers() {
 	suite.Len(data.Servers, 1)
 }
 
-func (suite integrationServerTests) TestUpdateStateDeployments() {
+func (suite integrationServerTests) TestUpdateStateDeployments_Precondition() {
 	data := server.GDMWrapper{Deployments: []*sous.Deployment{}}
 	err := suite.client.Create("./state/deployments", nil, &data, nil)
 	suite.Error(err, `412 Precondition Failed: "resource present for If-None-Match=*!\n"`)
+}
 
+func (suite integrationServerTests) TestUpdateStateDeployments() {
+	data := server.GDMWrapper{Deployments: []*sous.Deployment{}}
 	updater, err := suite.client.Retrieve("./state/deployments", nil, &data, nil)
+	suite.log.DumpLogs(suite.T())
 	suite.NoError(err)
 	suite.Equal(data, "a rabbit")
 	suite.NotNil(updater)

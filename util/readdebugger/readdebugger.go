@@ -2,8 +2,6 @@ package readdebugger
 
 import (
 	"io"
-
-	"github.com/davecgh/go-spew/spew"
 )
 
 type (
@@ -27,7 +25,6 @@ func New(rc io.Reader, log func([]byte, int, error)) io.ReadCloser {
 
 // Read implements Reader on readDebugger.
 func (rd *readDebugger) Read(p []byte) (int, error) {
-	spew.Printf("READING %p %p\n", rd, rd.wrapped)
 	n, err := rd.wrapped.Read(p)
 	rd.read = append(rd.read, p[:n]...)
 	rd.count += n

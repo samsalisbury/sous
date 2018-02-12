@@ -306,14 +306,9 @@ func (client *LiveHTTPClient) sendRequest(rq *http.Request, ierr error) (*http.R
 		return nil, ierr
 	}
 	// needs to be fixed in coming log update
-	client.Debugf("Sending %s %q", rq.Method, rq.URL)
 	rz, err := client.httpRequest(rq)
 	if err != nil {
-		client.Debugf("Received %v", err)
 		return rz, err
-	}
-	if rz != nil {
-		client.Debugf("Received \"%s %s\" -> %d", rq.Method, rq.URL, rz.StatusCode)
 	}
 	return rz, err
 }
