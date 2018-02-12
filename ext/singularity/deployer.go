@@ -169,6 +169,7 @@ func (r *deployer) buildSingClient(url string) *singularity.Client {
 func rectifyRecover(d interface{}, f string, err *error) {
 	if r := recover(); r != nil {
 		stack := string(debug.Stack())
+		//TODO LH once JC's generalmessage.reportLogFieldsMessage is merged use that here
 		logging.Log.Warn.Printf("Panic in %s with %# v", f, d)
 		logging.Log.Warn.Printf("  %v", r)
 		logging.Log.Warn.Print(stack)
