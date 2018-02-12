@@ -41,11 +41,14 @@ func removeDuplicates(elements []string) []string {
 }
 
 func getType(myvar interface{}) string {
-	var t reflect.Type
-	if t = reflect.TypeOf(myvar); t.Kind() == reflect.Ptr {
-		return "*" + t.Elem().Name()
+	if myvar != nil {
+		var t reflect.Type
+		if t = reflect.TypeOf(myvar); t.Kind() == reflect.Ptr {
+			return "*" + t.Elem().Name()
+		}
+		return t.Name()
 	}
-	return t.Name()
+	return ""
 }
 
 //DefaultStructInfo is the default implementation for structs to use to return fields, types, and jsonStruct
@@ -99,7 +102,12 @@ func defaultStructInfo(o interface{}) (fields []string, types []string, jsonStru
 	if mapB, err := json.Marshal(mapParent); err == nil {
 		jsonStruct = string(mapB)
 	} else {
-		fmt.Println("Failure to marshal map", err.Error())
+
+		jsonObj := gabs.New()
+		if _, err := jsonObj.Set(fmt.Sprintf("%v", o), s.Name()); err != nil {
+			jsonStruct = fmt.Sprintf("{\"%s\": \"Fail to create json\"}", s.Name())
+		}
+		jsonStruct = jsonObj.String()
 	}
 
 	return
@@ -117,9 +125,11 @@ type logFieldsMessage struct {
 }
 
 func (l logFieldsMessage) WriteToConsole(console io.Writer) {
-	fmt.Fprintf(console, "%s\n", l.composeMsg())
-	if l.jsonObj != nil {
-		fmt.Fprintf(console, "%s\n", l.jsonObj.StringIndent("", " "))
+	if l.console {
+		fmt.Fprintf(console, "%s\n", l.composeMsg())
+		if l.jsonObj != nil {
+			fmt.Fprintf(console, "%s\n", l.jsonObj.StringIndent("", " "))
+		}
 	}
 	fmt.Fprintf(console, "Fields: %s\n", strings.Join(l.Fields, ","))
 	fmt.Fprintf(console, "Types: %s\n", strings.Join(l.Types, ","))
@@ -144,6 +154,8 @@ func buildLogFieldsMessage(msg string, console bool, loglvl logging.Level) logFi
 	return logMessage
 
 }
+
+//ReportLogFieldsMessageToConsole report message to console
 func ReportLogFieldsMessageToConsole(msg string, loglvl logging.Level, logSink logging.LogSink, items ...interface{}) {
 	logMessage := buildLogFieldsMessage(msg, true, loglvl)
 	logMessage.CallerInfo.ExcludeMe()

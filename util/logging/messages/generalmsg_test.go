@@ -68,3 +68,23 @@ func TestReportLogFieldsMessage_StructAndString(t *testing.T) {
 			"@loglov3-otl": "sous-generic-v1",
 		})
 }
+
+//normally wouldn't use this logger with http response, but this was just done to test logging of a very complex structure and ensure it didn't fail
+//not going to put jsonStruct as expected, since it contains pointers that can change on run execution
+func TestReportLogFieldsMessage_TwoStructs(t *testing.T) {
+	logging.AssertReportFields(t,
+		func(ls logging.LogSink) {
+			cfg := logging.Config{}
+			cfg.Kafka.Topic = "test-topic"
+			cfg.Kafka.BrokerList = "broker1,broker2,broker3"
+			res := buildHTTPResponse(t, "GET", "http://example.com/api?a=a", 200, 0, 123)
+			ReportLogFieldsMessage("This is test message", logging.DebugLevel, ls, cfg, res)
+		},
+		append(logging.StandardVariableFields, "jsonStruct"),
+		map[string]interface{}{
+			"fields": "Basic,Kafka,Graphite,Config,Level,DisableConsole,Enabled,DefaultLevel,Topic,Brokers,BrokerList,Server,Status,StatusCode,Proto,ProtoMajor,ProtoMinor,Header,Body,ContentLength,TransferEncoding,Close,Uncompressed,Trailer,Request,TLS,Response",
+			"types":  "Config,string,bool,*Response,int,Header,int64,*Request,*ConnectionState",
+			//"jsonStruct":   "{\"message\":{\"array\":[\"{\\\"Basic\\\":{\\\"DisableConsole\\\":false,\\\"Level\\\":\\\"\\\"},\\\"Graphite\\\":{\\\"Enabled\\\":false,\\\"Server\\\":\\\"\\\"},\\\"Kafka\\\":{\\\"BrokerList\\\":\\\"broker1,broker2,broker3\\\",\\\"Brokers\\\":null,\\\"DefaultLevel\\\":\\\"\\\",\\\"Enabled\\\":false,\\\"Topic\\\":\\\"test-topic\\\"}}\",\"{\\\"Response\\\":\\\"\\\\u0026{ 200  0 0 map[] \\\\u003cnil\\\\u003e 123 [] false false map[] 0xc420114000 \\\\u003cnil\\\\u003e}\\\"}\"]}}",
+			"@loglov3-otl": "sous-generic-v1",
+		})
+}
