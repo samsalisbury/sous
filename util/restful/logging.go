@@ -1,6 +1,10 @@
 package restful
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/opentable/sous/util/logging"
+)
 
 type (
 	logSet interface {
@@ -27,3 +31,21 @@ func (sl *silentLogSet) Vomitf(string, ...interface{}) {}
 func (l *fallbackLogger) Warnf(f string, as ...interface{})  { fmt.Printf(f+"\n", as...) }
 func (l *fallbackLogger) Debugf(f string, as ...interface{}) { fmt.Printf(f+"\n", as...) }
 func (l *fallbackLogger) Vomitf(f string, as ...interface{}) { fmt.Printf(f+"\n", as...) }
+
+func (l *fallbackLogger) Child(name string) logging.LogSink {
+	return l
+}
+
+func (l *fallbackLogger) LogMessage(lvl logging.Level, msg logging.LogMessage) {
+	fmt.Printf("%s %#v\n", lvl, msg)
+}
+
+func (l *fallbackLogger) Metrics() logging.MetricsSink {
+	panic("not implemented")
+}
+
+func (l *fallbackLogger) Console() logging.WriteDoner {
+	panic("not implemented")
+}
+
+func (l *fallbackLogger) AtExit() {}

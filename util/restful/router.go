@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"time"
@@ -57,10 +58,14 @@ type (
 
 // Exchange implements Exchanger on ExchangeLogger.
 func (xlog *ExchangeLogger) Exchange() (data interface{}, status int) {
-	logging.ReportMsg(xlog.LogSink, logging.DebugLevel, fmt.Sprintf("Server: <- %s %s params: %v", xlog.Method, xlog.URL.String(), xlog.Params))
-	data, status = xlog.Exchanger.Exchange()
-	logging.ReportMsg(xlog.LogSink, logging.DebugLevel, fmt.Sprintf("Server: -> %d: %#v", status, data))
-	return
+	defer func() {
+		if p := recover(); p != nil {
+			// need to log this here, or we lose the real stack
+			xlog.LogSink.Warnf("%+#v\n%s", p, string(debug.Stack()))
+			panic(p)
+		}
+	}()
+	return xlog.Exchanger.Exchange()
 }
 
 type loggingResponseWriter struct {
@@ -103,6 +108,7 @@ func (mh *MetaHandler) wrapResponseWriter(resName string, rq *http.Request, rw h
 }
 
 func (mh *MetaHandler) genericHandling(resName string, factory ExchangeFactory, rw http.ResponseWriter, r *http.Request, p httprouter.Params) (http.ResponseWriter, interface{}, int) {
+	messages.ReportServerHTTPRequest(mh.LogSink, "received", r, resName)
 	w := mh.wrapResponseWriter(resName, r, rw)
 	h := mh.injectedHandler(factory, w, r, p)
 	data, status := h.Exchange()
@@ -194,7 +200,6 @@ func (mh *MetaHandler) PutHandling(resName string, factory ExchangeFactory) http
 // InstallPanicHandler installs an panic handler into the router.
 func (mh *MetaHandler) InstallPanicHandler() {
 	mh.router.PanicHandler = func(w http.ResponseWriter, r *http.Request, recovered interface{}) {
-		//log.Print(recovered)
 		mh.statusHandler.HandlePanic(w, r, recovered)
 	}
 }

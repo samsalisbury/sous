@@ -37,7 +37,7 @@ type (
 	}
 )
 
-func (suite integrationServerTests) prepare() (logging.LogSink, http.Handler) {
+func (suite *integrationServerTests) prepare() (logging.LogSink, http.Handler) {
 	sourcepath, remotepath, outpath :=
 		"../ext/storage/testdata/in",
 		"../ext/storage/testdata/remote",
@@ -145,7 +145,7 @@ func (suite integrationServerTests) TestUpdateStateDeployments_Precondition() {
 	suite.Error(err, `412 Precondition Failed: "resource present for If-None-Match=*!\n"`)
 }
 
-func (suite integrationServerTests) TestUpdateStateDeployments() {
+func (suite integrationServerTests) TestUpdateStateDeployments_Update() {
 	data := server.GDMWrapper{Deployments: []*sous.Deployment{}}
 	updater, err := suite.client.Retrieve("./state/deployments", nil, &data, nil)
 	suite.log.DumpLogs(suite.T())

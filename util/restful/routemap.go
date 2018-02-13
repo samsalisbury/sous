@@ -98,7 +98,7 @@ func BuildRouteMap(f func(RouteEntryBuilder)) *RouteMap {
 }
 
 func (rm *RouteMap) buildMetaHandler(r *httprouter.Router, ls logging.LogSink) *MetaHandler {
-	ph := &StatusMiddleware{logSet: ls, gatelatch: os.Getenv("GATELATCH")}
+	ph := &StatusMiddleware{LogSink: ls, gatelatch: os.Getenv("GATELATCH")}
 	mh := &MetaHandler{
 		router:        r,
 		statusHandler: ph,
