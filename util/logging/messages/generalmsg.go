@@ -107,7 +107,6 @@ func defaultStructInfo(o interface{}) (fields []string, types []string, jsonStru
 		}
 	}
 
-	jsonStruct = ""
 	mapParent := structs.Map(o)
 	if mapB, err := json.Marshal(mapParent); err == nil {
 		jsonStruct = string(mapB)
@@ -116,6 +115,7 @@ func defaultStructInfo(o interface{}) (fields []string, types []string, jsonStru
 		jsonObj := gabs.New()
 		if _, err := jsonObj.Set(fmt.Sprintf("%v", mapParent), s.Name()); err != nil {
 			jsonStruct = fmt.Sprintf("{\"%s\": \"Fail to create json\"}", s.Name())
+			return
 		}
 		jsonStruct = jsonObj.String()
 	}
