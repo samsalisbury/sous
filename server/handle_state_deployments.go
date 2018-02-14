@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/julienschmidt/httprouter"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/restful"
@@ -38,7 +37,6 @@ func newStateDeploymentResource(loc ComponentLocator) *StateDeploymentResource {
 
 // Get implements restful.Getable on StateDeployments
 func (res *StateDeploymentResource) Get(http.ResponseWriter, *http.Request, httprouter.Params) restful.Exchanger {
-	spew.Dump(res.loc.ResolveFilter)
 	return &GETStateDeployments{
 		cluster:     res.loc.ClusterManager,
 		clusterName: res.loc.ResolveFilter.Cluster.ValueOr("no-cluster"),
@@ -58,7 +56,6 @@ func (res *StateDeploymentResource) Put(_ http.ResponseWriter, req *http.Request
 // Exchange implements restful.Exchanger on GETStateDeployments
 func (gsd *GETStateDeployments) Exchange() (interface{}, int) {
 	data := GDMWrapper{Deployments: []*sous.Deployment{}}
-	spew.Dump(gsd)
 	deps, err := gsd.cluster.ReadCluster(gsd.clusterName)
 	if err != nil {
 		return err, http.StatusInternalServerError

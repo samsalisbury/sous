@@ -200,18 +200,6 @@
 			"revisionTime": "2016-08-10T19:53:38Z"
 		},
 		{
-			"checksumSHA1": "IfZcD4U1dtllJKlPNeD2aU4Jn98=",
-			"path": "github.com/lib/pq",
-			"revision": "83612a56d3dd153a94a629cd64925371c9adad78",
-			"revisionTime": "2017-11-26T05:04:59Z"
-		},
-		{
-			"checksumSHA1": "ATnwV0POluBNQEMjPdylodz0oK0=",
-			"path": "github.com/lib/pq/oid",
-			"revision": "83612a56d3dd153a94a629cd64925371c9adad78",
-			"revisionTime": "2017-11-26T05:04:59Z"
-		},
-		{
 			"checksumSHA1": "/OoEj0wxK7Rd25jAlZv1xi+e9wg=",
 			"path": "github.com/kisielk/gotool",
 			"revision": "d6ce6262d87e3a4e153e86023ff56ae771554a41",
@@ -222,6 +210,18 @@
 			"path": "github.com/kisielk/gotool/internal/load",
 			"revision": "d6ce6262d87e3a4e153e86023ff56ae771554a41",
 			"revisionTime": "2017-08-28T04:23:10Z"
+		},
+		{
+			"checksumSHA1": "IfZcD4U1dtllJKlPNeD2aU4Jn98=",
+			"path": "github.com/lib/pq",
+			"revision": "83612a56d3dd153a94a629cd64925371c9adad78",
+			"revisionTime": "2017-11-26T05:04:59Z"
+		},
+		{
+			"checksumSHA1": "ATnwV0POluBNQEMjPdylodz0oK0=",
+			"path": "github.com/lib/pq/oid",
+			"revision": "83612a56d3dd153a94a629cd64925371c9adad78",
+			"revisionTime": "2017-11-26T05:04:59Z"
 		},
 		{
 			"checksumSHA1": "+q6a7iju2XMMu5DB/we6odv3/Iw=",
@@ -236,10 +236,10 @@
 			"revisionTime": "2016-12-10T01:35:37Z"
 		},
 		{
-			"checksumSHA1": "636hzSokJ8y7gabllKd3ild4Ids=",
+			"checksumSHA1": "rY2ZER+lvtS5q3NinS8P8CAgBWo=",
 			"path": "github.com/nyarly/spies",
-			"revision": "6df459fddaf2f0ac856648e0c0d43f4d491b04de",
-			"revisionTime": "2017-08-08T23:35:25Z"
+			"revision": "0bdf1ab08cec840664dc0d09c2e76a6bc8f4e10a",
+			"revisionTime": "2018-02-14T22:50:20Z"
 		},
 		{
 			"checksumSHA1": "P8IObWuKUIAiaXku4KmZbxfJDGs=",
