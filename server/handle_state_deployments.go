@@ -14,6 +14,7 @@ type (
 	// A StateDeploymentResource provides for the /state/deployments resource family
 	StateDeploymentResource struct {
 		loc ComponentLocator
+		userExtractor
 	}
 
 	// A GETStateDeployments is the exchanger for GET /state/deployments
@@ -27,6 +28,7 @@ type (
 		cluster     sous.ClusterManager
 		clusterName string
 		req         *http.Request
+		User        ClientUser
 	}
 )
 
@@ -49,6 +51,7 @@ func (res *StateDeploymentResource) Put(_ http.ResponseWriter, req *http.Request
 		cluster:     res.loc.ClusterManager,
 		clusterName: res.loc.ResolveFilter.Cluster.ValueOr("no-cluster"),
 		req:         req,
+		User:        res.GetUser(req),
 	}
 }
 
@@ -79,7 +82,7 @@ func (psd *PUTStateDeployments) Exchange() (interface{}, int) {
 
 	deps := sous.NewDeployments(data.Deployments...)
 
-	err = psd.cluster.WriteCluster(psd.clusterName, deps)
+	err = psd.cluster.WriteCluster(psd.clusterName, deps, sous.User(psd.User))
 	if err != nil {
 		return err, http.StatusInternalServerError
 	}

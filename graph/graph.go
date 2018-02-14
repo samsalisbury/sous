@@ -69,6 +69,8 @@ type (
 	MetricsHandler struct{ http.Handler }
 	// LogSink wraps logging.LogSink
 	LogSink struct{ logging.LogSink }
+	// ClusterManager simply wraps the sous.ClusterManager interface
+	ClusterManager struct{ sous.ClusterManager }
 	// StateManager simply wraps the sous.StateManager interface
 	StateManager struct{ sous.StateManager }
 	// ServerStateManager simply wraps the sous.StateManager interface
@@ -235,6 +237,7 @@ func AddSingularity(graph adder) {
 func AddState(graph adder) {
 	graph.Add(
 		newStateManager,
+		newClusterManager,
 		newLocalStateReader,
 		newLocalStateWriter,
 	)
@@ -564,6 +567,10 @@ func newStateManager(cl HTTPClient, c LocalSousConfig, log LogSink) *StateManage
 	}
 	hsm := sous.NewHTTPStateManager(cl)
 	return &StateManager{StateManager: hsm}
+}
+
+func newClusterManager(sm *StateManager) ClusterManager {
+	return ClusterManager{ClusterManager: sous.MakeClusterManager(sm.StateManager)}
 }
 
 func newStatusPoller(cl HTTPClient, rf *RefinedResolveFilter, user sous.User, logs LogSink) *sous.StatusPoller {

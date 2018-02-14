@@ -99,8 +99,9 @@ func justBytes(b []byte, e error) io.ReadCloser {
 
 func TestRenderDataCanaries(t *testing.T) {
 	rr := httptest.NewRecorder()
+	ls, _ := logging.NewLogSinkSpy()
 	ph := &StatusMiddleware{
-		LogSink: &silentLogSet{},
+		LogSink: ls,
 	}
 	mh := &MetaHandler{
 		//graphFac:      grf,
