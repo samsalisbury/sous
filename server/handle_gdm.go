@@ -153,7 +153,7 @@ func reportHandleGDMMessage(msg string, f []sous.Flaw, err error, log logging.Lo
 		msg:          msg,
 		CallerInfo:   logging.GetCallerInfo(logging.NotHere()),
 		err:          err,
-		flawsMessage: sous.FlawMessage{f},
+		flawsMessage: sous.FlawMessage{Flaws: f},
 		debug:        isDebug,
 	}
 	logging.Deliver(msgLog, log)
