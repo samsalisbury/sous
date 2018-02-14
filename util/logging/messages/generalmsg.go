@@ -51,6 +51,12 @@ func getType(myvar interface{}) string {
 	return ""
 }
 
+func failedToParseJSON(name string) string {
+	jsonStruct := fmt.Sprintf("{\"%s\": \"Fail to create json\"}", name)
+	return jsonStruct
+
+}
+
 //DefaultStructInfo is the default implementation for structs to use to return fields, types, and jsonStruct
 //It checks if the interface passed in implements InnerLogger and will use that instead
 func defaultStructInfo(o interface{}) (fields []string, types []string, jsonStruct string) {
@@ -73,8 +79,11 @@ func defaultStructInfo(o interface{}) (fields []string, types []string, jsonStru
 		oType := getType(o)
 		types = append(types, oType)
 		jsonObj := gabs.New()
-		jsonObj.Set(o, oType, oType)
-		jsonStruct = jsonObj.String()
+		if _, err := jsonObj.Set(o, oType, oType); err != nil {
+			jsonStruct = failedToParseJSON(oType)
+		} else {
+			jsonStruct = jsonObj.String()
+		}
 		return
 	}
 
@@ -84,7 +93,10 @@ func defaultStructInfo(o interface{}) (fields []string, types []string, jsonStru
 		types = []string{"error"}
 
 		jsonObj := gabs.New()
-		jsonObj.Set(anErr.Error(), "error", "error")
+		if _, err := jsonObj.Set(anErr.Error(), "error", "error"); err != nil {
+			jsonStruct = failedToParseJSON("error")
+			return
+		}
 		jsonStruct = jsonObj.String()
 		return
 	}
@@ -114,13 +126,13 @@ func defaultStructInfo(o interface{}) (fields []string, types []string, jsonStru
 
 		jsonObj := gabs.New()
 		if _, err := jsonObj.Set(fmt.Sprintf("%v", mapParent), s.Name()); err != nil {
-			jsonStruct = fmt.Sprintf("{\"%s\": \"Fail to create json\"}", s.Name())
+			jsonStruct = failedToParseJSON(s.Name())
 			return
 		}
 		jsonStruct = jsonObj.String()
 	}
 
-	return
+	return fields, types, jsonStruct
 }
 
 type logFieldsMessage struct {
@@ -161,7 +173,9 @@ func buildLogFieldsMessage(msg string, console bool, loglvl logging.Level) logFi
 	}
 
 	logMessage.jsonObj = gabs.New()
-	logMessage.jsonObj.Array("message", "array")
+	if _, err := logMessage.jsonObj.Array("message", "array"); err != nil {
+		fmt.Println("Failed to add object array: ", err.Error())
+	}
 	return logMessage
 
 }
@@ -197,7 +211,9 @@ func (l logFieldsMessage) reportLogFieldsMessage(logSink logging.LogSink, items 
 func (l *logFieldsMessage) addJSON(json string) {
 	if l.jsonObj == nil {
 		l.jsonObj = gabs.New()
-		l.jsonObj.Array("message", "array")
+		if _, err := l.jsonObj.Array("message", "array"); err != nil {
+			fmt.Println("error:", err)
+		}
 	}
 	if err := l.jsonObj.ArrayAppend(json, "message", "array"); err != nil {
 		fmt.Println("error: ", err)

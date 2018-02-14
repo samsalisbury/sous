@@ -20,7 +20,7 @@ func TestReportLogFieldsMessage_Complete(t *testing.T) {
 		map[string]interface{}{
 			"fields":       "Basic,Kafka,Graphite,Config,Level,DisableConsole,Enabled,DefaultLevel,Topic,Brokers,BrokerList,Server",
 			"types":        "Config,string,bool",
-			"jsonStruct":   "{\"message\":{\"array\":[\"{\\\"Basic\\\":{\\\"DisableConsole\\\":false,\\\"Level\\\":\\\"\\\"},\\\"Graphite\\\":{\\\"Enabled\\\":false,\\\"Server\\\":\\\"\\\"},\\\"Kafka\\\":{\\\"BrokerList\\\":\\\"broker1,broker2,broker3\\\",\\\"Brokers\\\":null,\\\"DefaultLevel\\\":\\\"\\\",\\\"Enabled\\\":false,\\\"Topic\\\":\\\"test-topic\\\"}}\"]}}",
+			"jsonStruct":   "{\"message\":{\"array\":[\"{\\\"Basic\\\":{\\\"DisableConsole\\\":false,\\\"Level\\\":\\\"\\\"},\\\"Graphite\\\":{\\\"Enabled\\\":false,\\\"Server\\\":\\\"\\\"},\\\"Kafka\\\":{\\\"BrokerList\\\":\\\"broker1,broker2,broker3\\\",\\\"Brokers\\\":null,\\\"DefaultLevel\\\":\\\"\\\",\\\"Enabled\\\":false,\\\"Topic\\\":\\\"test-topic\\\"}}\"]}}", //nolint
 			"@loglov3-otl": "sous-generic-v1",
 		})
 }
@@ -65,13 +65,14 @@ func TestReportLogFieldsMessage_StructAndString(t *testing.T) {
 		map[string]interface{}{
 			"fields":       "Basic,Kafka,Graphite,Config,Level,DisableConsole,Enabled,DefaultLevel,Topic,Brokers,BrokerList,Server",
 			"types":        "Config,string,bool",
-			"jsonStruct":   "{\"message\":{\"array\":[\"{\\\"Basic\\\":{\\\"DisableConsole\\\":false,\\\"Level\\\":\\\"\\\"},\\\"Graphite\\\":{\\\"Enabled\\\":false,\\\"Server\\\":\\\"\\\"},\\\"Kafka\\\":{\\\"BrokerList\\\":\\\"broker1,broker2,broker3\\\",\\\"Brokers\\\":null,\\\"DefaultLevel\\\":\\\"\\\",\\\"Enabled\\\":false,\\\"Topic\\\":\\\"test-topic\\\"}}\",\"{\\\"string\\\":{\\\"string\\\":\\\"simple string\\\"}}\"]}}",
+			"jsonStruct":   "{\"message\":{\"array\":[\"{\\\"Basic\\\":{\\\"DisableConsole\\\":false,\\\"Level\\\":\\\"\\\"},\\\"Graphite\\\":{\\\"Enabled\\\":false,\\\"Server\\\":\\\"\\\"},\\\"Kafka\\\":{\\\"BrokerList\\\":\\\"broker1,broker2,broker3\\\",\\\"Brokers\\\":null,\\\"DefaultLevel\\\":\\\"\\\",\\\"Enabled\\\":false,\\\"Topic\\\":\\\"test-topic\\\"}}\",\"{\\\"string\\\":{\\\"string\\\":\\\"simple string\\\"}}\"]}}", //nolint
 			"@loglov3-otl": "sous-generic-v1",
 		})
 }
 
-//normally wouldn't use this logger with http response, but this was just done to test logging of a very complex structure and ensure it didn't fail
-//not going to put jsonStruct as expected, since it contains pointers that can change on run execution
+//normally wouldn't use this logger with http response, but this was just done to test logging of a very complex structure
+//and ensure it didn't fail ot going to put jsonStruct as expected, since it contains pointers that can change on run
+//execution
 func TestReportLogFieldsMessage_TwoStructs(t *testing.T) {
 	logging.AssertReportFields(t,
 		func(ls logging.LogSink) {
@@ -83,9 +84,8 @@ func TestReportLogFieldsMessage_TwoStructs(t *testing.T) {
 		},
 		append(logging.StandardVariableFields, "jsonStruct"),
 		map[string]interface{}{
-			"fields": "Basic,Kafka,Graphite,Config,Level,DisableConsole,Enabled,DefaultLevel,Topic,Brokers,BrokerList,Server,Status,StatusCode,Proto,ProtoMajor,ProtoMinor,Header,Body,ContentLength,TransferEncoding,Close,Uncompressed,Trailer,Request,TLS,Response",
-			"types":  "Config,string,bool,*Response,int,Header,int64,*Request,*ConnectionState",
-			//"jsonStruct":   "{\"message\":{\"array\":[\"{\\\"Basic\\\":{\\\"DisableConsole\\\":false,\\\"Level\\\":\\\"\\\"},\\\"Graphite\\\":{\\\"Enabled\\\":false,\\\"Server\\\":\\\"\\\"},\\\"Kafka\\\":{\\\"BrokerList\\\":\\\"broker1,broker2,broker3\\\",\\\"Brokers\\\":null,\\\"DefaultLevel\\\":\\\"\\\",\\\"Enabled\\\":false,\\\"Topic\\\":\\\"test-topic\\\"}}\",\"{\\\"Response\\\":\\\"\\\\u0026{ 200  0 0 map[] \\\\u003cnil\\\\u003e 123 [] false false map[] 0xc420114000 \\\\u003cnil\\\\u003e}\\\"}\"]}}",
+			"fields":       "Basic,Kafka,Graphite,Config,Level,DisableConsole,Enabled,DefaultLevel,Topic,Brokers,BrokerList,Server,Status,StatusCode,Proto,ProtoMajor,ProtoMinor,Header,Body,ContentLength,TransferEncoding,Close,Uncompressed,Trailer,Request,TLS,Response", //nolint
+			"types":        "Config,string,bool,*Response,int,Header,int64,*Request,*ConnectionState",
 			"@loglov3-otl": "sous-generic-v1",
 		})
 }
