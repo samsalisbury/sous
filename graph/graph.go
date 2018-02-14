@@ -270,6 +270,7 @@ func AddInternals(graph adder) {
 		newStatusPoller,
 		newServerComponentLocator,
 		newHTTPClient,
+		NewR11nQueueSet,
 	)
 }
 
@@ -277,8 +278,8 @@ func newResolveFilter(sf *config.DeployFilterFlags, shc sous.SourceHostChooser) 
 	return sf.BuildFilter(shc.ParseSourceLocation)
 }
 
-func newResolver(filter *sous.ResolveFilter, d sous.Deployer, r sous.Registry, ls LogSink) *sous.Resolver {
-	return sous.NewResolver(d, r, filter, ls.Child("resolver"))
+func newResolver(filter *sous.ResolveFilter, d sous.Deployer, r sous.Registry, ls LogSink, qs *sous.R11nQueueSet) *sous.Resolver {
+	return sous.NewResolver(d, r, filter, ls.Child("resolver"), qs)
 }
 
 func newAutoResolver(rez *sous.Resolver, sr *ServerStateManager, ls LogSink) *sous.AutoResolver {

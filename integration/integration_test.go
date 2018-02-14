@@ -12,6 +12,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/opentable/sous/ext/docker"
 	"github.com/opentable/sous/ext/singularity"
+	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/docker_registry"
 	"github.com/opentable/sous/util/logging"
@@ -400,7 +401,8 @@ func (suite *integrationSuite) TestMissingImage() {
 	}
 
 	// ****
-	r := sous.NewResolver(suite.deployer, suite.nameCache, &sous.ResolveFilter{}, logging.SilentLogSet())
+	qs := graph.NewR11nQueueSet(suite.deployer)
+	r := sous.NewResolver(suite.deployer, suite.nameCache, &sous.ResolveFilter{}, logging.SilentLogSet(), qs)
 
 	deploymentsOne, err := stateOne.Deployments()
 	suite.Require().NoError(err)
@@ -456,7 +458,8 @@ func (suite *integrationSuite) TestResolve() {
 	logsink, logController := logging.NewLogSinkSpy()
 
 	// ****
-	r := sous.NewResolver(suite.deployer, suite.nameCache, &sous.ResolveFilter{}, logsink)
+	qs := graph.NewR11nQueueSet(suite.deployer)
+	r := sous.NewResolver(suite.deployer, suite.nameCache, &sous.ResolveFilter{}, logsink, qs)
 
 	suite.T().Log("Begining OneTwo")
 	err = r.Begin(deploymentsOneTwo, clusterDefs.Clusters).Wait()
@@ -521,7 +524,8 @@ func (suite *integrationSuite) TestResolve() {
 		client := singularity.NewRectiAgent(suite.nameCache)
 		deployer := singularity.NewDeployer(client, logging.SilentLogSet())
 
-		r := sous.NewResolver(deployer, suite.nameCache, &sous.ResolveFilter{}, logging.SilentLogSet())
+		qs := graph.NewR11nQueueSet(suite.deployer)
+		r := sous.NewResolver(deployer, suite.nameCache, &sous.ResolveFilter{}, logging.SilentLogSet(), qs)
 
 		err = r.Begin(deploymentsTwoThree, clusterDefs.Clusters).Wait()
 		if err != nil {
