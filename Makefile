@@ -169,6 +169,11 @@ install-gotags:
 
 install-build-tools: install-xgo install-govendor install-engulf install-staticcheck
 
+vagrantup:
+	vagrant plugin install vagrant-docker-compose
+
+	vagrant up
+
 generate-ctags: install-gotags
 	gotags -R -f .tags .
 
