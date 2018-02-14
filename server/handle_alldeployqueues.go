@@ -26,7 +26,9 @@ func newAllDeployQueuesResource(ctx ComponentLocator) *AllDeployQueuesResource {
 
 // Get returns a configured GETAllDeployQueuesHandler.
 func (r *AllDeployQueuesResource) Get(_ http.ResponseWriter, _ *http.Request, _ httprouter.Params) restful.Exchanger {
-	return &GETAllDeployQueuesHandler{}
+	return &GETAllDeployQueuesHandler{
+		QueueSet: r.context.QueueSet,
+	}
 }
 
 // Exchange returns deploymentsResponse representing all queues managed by this

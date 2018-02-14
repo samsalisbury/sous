@@ -45,6 +45,7 @@ func (r *R11nResource) Get(_ http.ResponseWriter, req *http.Request, _ httproute
 	rid, ridErr := r11nIDFromRoute(req)
 	wait := req.URL.Query().Get("wait") == "true"
 	return &GETR11nHandler{
+		QueueSet:          r.context.QueueSet,
 		WaitForResolution: wait,
 		DeploymentID:      did,
 		DeploymentIDErr:   didErr,

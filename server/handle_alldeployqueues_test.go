@@ -1,12 +1,29 @@
 package server
 
 import (
+	"net/http"
+	"net/url"
 	"testing"
 	"time"
 
 	sous "github.com/opentable/sous/lib"
 	"github.com/pborman/uuid"
 )
+
+// TestNewAllDeployQueuesResource checks that the same queue set passed to the
+// constructor makes its way to the get handler.
+func TestNewAllDeployQueuesResource(t *testing.T) {
+	qs := &sous.R11nQueueSet{}
+	c := ComponentLocator{
+		QueueSet: qs,
+	}
+	adq := newAllDeployQueuesResource(c)
+
+	got := adq.Get(nil, &http.Request{URL: &url.URL{}}, nil).(*GETAllDeployQueuesHandler)
+	if got.QueueSet != qs {
+		t.Errorf("got different queueset")
+	}
+}
 
 func TestGETAllDeployQueuesHandler_Exchange(t *testing.T) {
 

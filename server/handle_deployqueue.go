@@ -44,6 +44,7 @@ func deploymentIDFromRoute(r *http.Request) (sous.DeploymentID, error) {
 func (r *DeployQueueResource) Get(_ http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
 	did, didErr := deploymentIDFromRoute(req)
 	return &GETDeployQueueHandler{
+		QueueSet:        r.context.QueueSet,
 		DeploymentID:    did,
 		DeploymentIDErr: didErr,
 	}
