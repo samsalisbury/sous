@@ -53,7 +53,7 @@ def check_for_debug
     file.path =~ /_test.go$/
   end.each do |file|
     file.patch.each_line do |patch_line|
-      if /^\+[^+].*spew\./ =~ patch_line
+      if /^.*spew\.Pr|Du|Fp|Fd/ =~ patch_line
         fail "Debugging output: #{patch_line} (there may be others)"
         return
       end
