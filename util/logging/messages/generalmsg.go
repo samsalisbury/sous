@@ -1,13 +1,13 @@
 package messages
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"reflect"
 	"strings"
 
 	"github.com/Jeffail/gabs"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/fatih/structs"
 	"github.com/opentable/sous/util/logging"
 )
@@ -59,7 +59,16 @@ func failedToParseJSON(name string) string {
 
 //DefaultStructInfo is the default implementation for structs to use to return fields, types, and jsonStruct
 //It checks if the interface passed in implements InnerLogger and will use that instead
-func defaultStructInfo(o interface{}) (fields []string, types []string, jsonStruct string) {
+func defaultStructInfo(o interface{}, depth ...int) (fields []string, types []string, jsonStruct string) {
+
+	//stop cyclical logging
+	currentDepth := 0
+	if len(depth) > 0 {
+		if depth[0] > 10 {
+			return
+		}
+		currentDepth = depth[0] + 1
+	}
 
 	if innerLog, ok := o.(InnerLogger); ok {
 		fields, types, jsonStruct = innerLog.InnerLogInfo()
@@ -112,27 +121,21 @@ func defaultStructInfo(o interface{}) (fields []string, types []string, jsonStru
 		if f.IsExported() {
 			types = append(types, getType(f.Value()))
 			if f.Kind() == reflect.Struct {
-				innerNames, innerTypes, _ := defaultStructInfo(f.Value())
+				innerNames, innerTypes, _ := defaultStructInfo(f.Value(), currentDepth)
 				fields = append(fields, innerNames...)
 				types = append(types, innerTypes...)
 			}
 		}
 	}
 
-	mapParent := structs.Map(o)
-	if mapB, err := json.Marshal(mapParent); err == nil {
-		jsonStruct = string(mapB)
-	} else {
-
-		jsonObj := gabs.New()
-		if _, err := jsonObj.Set(fmt.Sprintf("%v", mapParent), s.Name()); err != nil {
-			jsonStruct = failedToParseJSON(s.Name())
-			return
-		}
-		jsonStruct = jsonObj.String()
-	}
+	jsonStruct = deserialSpew(o)
 
 	return fields, types, jsonStruct
+}
+
+func deserialSpew(o interface{}) (spewString string) {
+	spewString = spew.Sdump(o)
+	return spewString
 }
 
 type logFieldsMessage struct {

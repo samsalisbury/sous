@@ -20,7 +20,7 @@ func TestReportLogFieldsMessage_Complete(t *testing.T) {
 		map[string]interface{}{
 			"fields":       "Basic,Kafka,Graphite,Config,Level,DisableConsole,Enabled,DefaultLevel,Topic,Brokers,BrokerList,Server",
 			"types":        "Config,string,bool",
-			"jsonStruct":   "{\"message\":{\"array\":[\"{\\\"Basic\\\":{\\\"DisableConsole\\\":false,\\\"Level\\\":\\\"\\\"},\\\"Graphite\\\":{\\\"Enabled\\\":false,\\\"Server\\\":\\\"\\\"},\\\"Kafka\\\":{\\\"BrokerList\\\":\\\"broker1,broker2,broker3\\\",\\\"Brokers\\\":null,\\\"DefaultLevel\\\":\\\"\\\",\\\"Enabled\\\":false,\\\"Topic\\\":\\\"test-topic\\\"}}\"]}}", //nolint
+			"jsonStruct":   "{\"message\":{\"array\":[\"(logging.Config) {\\n Basic: (struct { Level string \\\"env:\\\\\\\"SOUS_LOGGING_LEVEL\\\\\\\"\\\"; DisableConsole bool }) {\\n  Level: (string) \\\"\\\",\\n  DisableConsole: (bool) false\\n },\\n Kafka: (struct { Enabled bool; DefaultLevel string \\\"env:\\\\\\\"SOUS_KAFKA_LOG_LEVEL\\\\\\\"\\\"; Topic string \\\"env:\\\\\\\"SOUS_KAFKA_TOPIC\\\\\\\"\\\"; Brokers []string; BrokerList string \\\"env:\\\\\\\"SOUS_KAFKA_BROKERS\\\\\\\"\\\" }) {\\n  Enabled: (bool) false,\\n  DefaultLevel: (string) \\\"\\\",\\n  Topic: (string) (len=10) \\\"test-topic\\\",\\n  Brokers: ([]string) \\u003cnil\\u003e,\\n  BrokerList: (string) (len=23) \\\"broker1,broker2,broker3\\\"\\n },\\n Graphite: (struct { Enabled bool; Server string \\\"env:\\\\\\\"SOUS_GRAPHITE_SERVER\\\\\\\"\\\" }) {\\n  Enabled: (bool) false,\\n  Server: (string) \\\"\\\"\\n }\\n}\\n\"]}}",
 			"@loglov3-otl": "sous-generic-v1",
 		})
 }
@@ -65,7 +65,7 @@ func TestReportLogFieldsMessage_StructAndString(t *testing.T) {
 		map[string]interface{}{
 			"fields":       "Basic,Kafka,Graphite,Config,Level,DisableConsole,Enabled,DefaultLevel,Topic,Brokers,BrokerList,Server",
 			"types":        "Config,string,bool",
-			"jsonStruct":   "{\"message\":{\"array\":[\"{\\\"Basic\\\":{\\\"DisableConsole\\\":false,\\\"Level\\\":\\\"\\\"},\\\"Graphite\\\":{\\\"Enabled\\\":false,\\\"Server\\\":\\\"\\\"},\\\"Kafka\\\":{\\\"BrokerList\\\":\\\"broker1,broker2,broker3\\\",\\\"Brokers\\\":null,\\\"DefaultLevel\\\":\\\"\\\",\\\"Enabled\\\":false,\\\"Topic\\\":\\\"test-topic\\\"}}\",\"{\\\"string\\\":{\\\"string\\\":\\\"simple string\\\"}}\"]}}", //nolint
+			"jsonStruct":   "{\"message\":{\"array\":[\"(logging.Config) {\\n Basic: (struct { Level string \\\"env:\\\\\\\"SOUS_LOGGING_LEVEL\\\\\\\"\\\"; DisableConsole bool }) {\\n  Level: (string) \\\"\\\",\\n  DisableConsole: (bool) false\\n },\\n Kafka: (struct { Enabled bool; DefaultLevel string \\\"env:\\\\\\\"SOUS_KAFKA_LOG_LEVEL\\\\\\\"\\\"; Topic string \\\"env:\\\\\\\"SOUS_KAFKA_TOPIC\\\\\\\"\\\"; Brokers []string; BrokerList string \\\"env:\\\\\\\"SOUS_KAFKA_BROKERS\\\\\\\"\\\" }) {\\n  Enabled: (bool) false,\\n  DefaultLevel: (string) \\\"\\\",\\n  Topic: (string) (len=10) \\\"test-topic\\\",\\n  Brokers: ([]string) \\u003cnil\\u003e,\\n  BrokerList: (string) (len=23) \\\"broker1,broker2,broker3\\\"\\n },\\n Graphite: (struct { Enabled bool; Server string \\\"env:\\\\\\\"SOUS_GRAPHITE_SERVER\\\\\\\"\\\" }) {\\n  Enabled: (bool) false,\\n  Server: (string) \\\"\\\"\\n }\\n}\\n\",\"{\\\"string\\\":{\\\"string\\\":\\\"simple string\\\"}}\"]}}",
 			"@loglov3-otl": "sous-generic-v1",
 		})
 }
@@ -86,6 +86,27 @@ func TestReportLogFieldsMessage_TwoStructs(t *testing.T) {
 		map[string]interface{}{
 			"fields":       "Basic,Kafka,Graphite,Config,Level,DisableConsole,Enabled,DefaultLevel,Topic,Brokers,BrokerList,Server,Status,StatusCode,Proto,ProtoMajor,ProtoMinor,Header,Body,ContentLength,TransferEncoding,Close,Uncompressed,Trailer,Request,TLS,Response", //nolint
 			"types":        "Config,string,bool,*Response,int,Header,int64,*Request,*ConnectionState",
+			"@loglov3-otl": "sous-generic-v1",
+		})
+}
+
+func TestReportLogFieldsMessage_CyclicalReference(t *testing.T) {
+	logging.AssertReportFields(t,
+		func(ls logging.LogSink) {
+			type Parent struct {
+				Child   *Parent
+				LogData string
+			}
+
+			myVar := Parent{}
+			myVar.LogData = "Hello"
+			myVar.Child = &myVar
+			ReportLogFieldsMessageToConsole("This is test message", logging.DebugLevel, ls, myVar)
+		},
+		append(logging.StandardVariableFields, "jsonStruct"),
+		map[string]interface{}{
+			"fields":       "Child,LogData,Parent",
+			"types":        "Parent,*Parent,string",
 			"@loglov3-otl": "sous-generic-v1",
 		})
 }
