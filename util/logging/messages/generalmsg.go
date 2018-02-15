@@ -254,7 +254,7 @@ func (l logFieldsMessage) EachField(fn logging.FieldReportFn) {
 	fn("fields", strings.Join(removeDuplicates(l.Fields), ","))
 	fn("types", strings.Join(removeDuplicates(l.Types), ","))
 	if l.jsonObj != nil {
-		fn("jsonStruct", l.jsonObj.String())
+		fn("json-value", l.jsonObj.String())
 
 	}
 	l.CallerInfo.EachField(fn)

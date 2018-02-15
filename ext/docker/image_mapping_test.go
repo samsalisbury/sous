@@ -70,7 +70,7 @@ func BenchmarkCreateDB(b *testing.B) {
 func BenchmarkCreateInMemoryDB(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		dbName := fmt.Sprintf("inmemjory%d.db", i)
+		dbName := fmt.Sprintf("inmemory%d.db", i)
 		_, err := GetDatabase(&DBConfig{"sqlite3_sous", InMemoryConnection(dbName)})
 		if err != nil {
 			b.Log(err)
