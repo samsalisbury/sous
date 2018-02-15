@@ -484,7 +484,7 @@ func (nc *NameCache) GroomDatabase() error {
 
 			for _, cmd := range schema {
 				if err = sqlExec(db, cmd); err != nil {
-					spew.Dump(err)
+					messages.ReportLogFieldsMessage("error in sqlExec", nc.Log, logging.ExtraDebug1Level, err)
 					return
 				}
 			}
