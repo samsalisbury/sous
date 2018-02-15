@@ -29,7 +29,15 @@ func fixtureGraph() *SousGraph {
 }
 
 func TestActionUpdate(t *testing.T) {
-	action, err := fixtureGraph().GetUpdate(fixtureDeployFilterFlags(), config.OTPLFlags{})
+	fg := fixtureGraph()
+	flags := fixtureDeployFilterFlags()
+	fg.Add(&flags, config.OTPLFlags{})
+	if err := fg.Test(); err != nil {
+		t.Fatalf("fixtureGraph returned invalid graph: %s", err)
+	}
+	t.Fatalf("test passed")
+
+	action, err := fg.GetUpdate(flags, config.OTPLFlags{})
 	require.NoError(t, err)
 	update, rightType := action.(*actions.Update)
 	require.True(t, rightType)
