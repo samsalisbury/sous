@@ -27,7 +27,7 @@ type HTTPLogEntry struct {
 	dur            time.Duration
 }
 
-// ReportClientHTTPResponse reports a response recieved by Sous as a client.
+// ReportClientHTTPResponse reports a response received by Sous as a client.
 func ReportClientHTTPResponse(logger logging.LogSink, rz *http.Response, resName string, dur time.Duration) {
 	// XXX dur should in fact be "start time.Time" and duration be computed here.
 	// swaggering now depends on this, so it's more of a hassle.
@@ -36,7 +36,7 @@ func ReportClientHTTPResponse(logger logging.LogSink, rz *http.Response, resName
 	logging.Deliver(m, logger)
 }
 
-// ReportServerHTTPResponse reports a response recieved by Sous as a client.
+// ReportServerHTTPResponse reports a response received by Sous as a client.
 // n.b. this interface subject to change
 func ReportServerHTTPResponse(logger logging.LogSink, rq *http.Request, statusCode int, contentLength int64, resName string, dur time.Duration) {
 	m := buildHTTPLogMessage(true, rq, statusCode, contentLength, resName, dur)
@@ -44,7 +44,7 @@ func ReportServerHTTPResponse(logger logging.LogSink, rq *http.Request, statusCo
 	logging.Deliver(m, logger)
 }
 
-// BuildClientHTTPResponse reports a response recieved by Sous as a client.
+// BuildClientHTTPResponse reports a response received by Sous as a client.
 func BuildClientHTTPResponse(rz *http.Response, resName string, dur time.Duration) *HTTPLogEntry {
 	// XXX dur should in fact be "start time.Time" and duration be computed here.
 	// swaggering now depends on this, so it's more of a hassle.
@@ -53,7 +53,7 @@ func BuildClientHTTPResponse(rz *http.Response, resName string, dur time.Duratio
 	return m
 }
 
-// BuildServerHTTPResponse reports a response recieved by Sous as a client.
+// BuildServerHTTPResponse reports a response received by Sous as a client.
 // n.b. this interface subject to change
 func BuildServerHTTPResponse(rq *http.Request, statusCode int, contentLength int64, resName string, dur time.Duration) *HTTPLogEntry {
 	m := buildHTTPLogMessage(true, rq, statusCode, contentLength, resName, dur)

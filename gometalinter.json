@@ -10,7 +10,6 @@
         "misspell",
         "vet",
         "testify",
-        "gas",
         "varcheck",
         "errcheck",
         "goimports",
