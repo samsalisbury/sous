@@ -13,7 +13,6 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/docker/distribution"
 	"github.com/docker/distribution/reference"
 	"github.com/pkg/errors"
@@ -484,7 +483,7 @@ func (nc *NameCache) GroomDatabase() error {
 
 			for _, cmd := range schema {
 				if err = sqlExec(db, cmd); err != nil {
-					messages.ReportLogFieldsMessage("error in sqlExec", nc.Log, logging.ExtraDebug1Level, err)
+					messages.ReportLogFieldsMessage("error in sqlExec", logging.ExtraDebug1Level, nc.Log, err)
 					return
 				}
 			}
