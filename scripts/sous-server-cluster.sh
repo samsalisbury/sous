@@ -23,29 +23,14 @@ echo
 
 GDM_REMOTE_DIR="$BASE_DIR/remote_gdm"
 mkdir -p "$GDM_REMOTE_DIR"
+rm -rf "$GDM_REMOTE_DIR"
 echo "Writing test GDM to $GDM_REMOTE_DIR"
-DEFS="$GDM_REMOTE_DIR/defs.yaml"
-echo 'DockerRepo: '"$DOCKER_REG"'
-Clusters:' > "$DEFS"
-for CL in $CLUSTERS; do
-	echo '  '"$CL"':
-    Name: '"$CL"'
-    Kind: singularity
-    BaseURL: '$SING_URL'
-    AllowedAdvisories:
-    - source workspace lacked repo
-    - no repository
-    - requested revision not built
-    - no versioned tag
-    - tag mismatch
-    - tag not on built revision
-    - ephemeral tag
-    - unpushed revision
-    - bogus revision
-    - dirty workspace' >> "$DEFS"
-done
 
-cd "$GDM_REMOTE_DIR"
+# COMMA_CLUSTERS is needed for sous new-test-gdm call
+COMMA_CLUSTERS="${CLUSTERS// /,}"
+sous new-test-gdm -dir "$GDM_REMOTE_DIR" -clusters "$COMMA_CLUSTERS" -singularity "$SING_URL" -docker-reg "$DOCKER_REG"
+
+cd "$GDM_REMOTE_DIR" || { echo "Failed to CD to $GDM_REMOTE_DIR"; exit 1; }
 
 git init && git add defs.yaml && git commit -m "initial commit"
 
@@ -83,10 +68,20 @@ done
 echo "Starting cluster..."
 
 i=0
+PIDS=""
 for CL in $CLUSTERS; do
-	SOUS_CONFIG_DIR="$INST_DIR/config" sous server -listen ":555$i" &
+	SOUS_CONFIG_DIR="$INST_DIR/config" sous server -cluster $CL -listen ":555$i" &
+	PIDS="$PIDS$! "
 	i=$(( i + 1 ))
 done
 
+kill_servers() {
+	kill -15 $PIDS
+}
 
+trap kill_servers SIGINT
+
+echo "Sous servers running; press ctrl+c to kill."
+
+wait
 
