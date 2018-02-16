@@ -2,11 +2,28 @@ package server
 
 import (
 	"fmt"
+	"net/http"
+	"net/url"
 	"testing"
 	"time"
 
 	sous "github.com/opentable/sous/lib"
 )
+
+// TestNewR11nResource checks that the same queue set passed to the
+// constructor makes its way to the get handler.
+func TestNewR11nResource(t *testing.T) {
+	qs := &sous.R11nQueueSet{}
+	c := ComponentLocator{
+		QueueSet: qs,
+	}
+	dq := newR11nResource(c)
+
+	got := dq.Get(nil, &http.Request{URL: &url.URL{}}, nil).(*GETR11nHandler)
+	if got.QueueSet != qs {
+		t.Errorf("got different queueset")
+	}
+}
 
 func TestR11nResource_Get_no_errors(t *testing.T) {
 

@@ -14,7 +14,8 @@ type (
 		Deployer Deployer
 		Registry Registry
 		*ResolveFilter
-		ls logging.LogSink
+		ls       logging.LogSink
+		QueueSet *R11nQueueSet
 	}
 
 	// DeploymentPredicate takes a *Deployment and returns true if the
@@ -24,33 +25,24 @@ type (
 )
 
 // NewResolver creates a new Resolver.
-func NewResolver(d Deployer, r Registry, rf *ResolveFilter, ls logging.LogSink) *Resolver {
+func NewResolver(d Deployer, r Registry, rf *ResolveFilter, ls logging.LogSink, qs *R11nQueueSet) *Resolver {
 	return &Resolver{
 		Deployer:      d,
 		Registry:      r,
 		ResolveFilter: rf,
 		ls:            ls,
+		QueueSet:      qs,
 	}
 }
-
-var globalQueueSet *R11nQueueSet
 
 // queueDiffs adds a rectification for each required change in DeployableChans,
 // as long as there is no planned or currently executing resolution for the
 // DeploymentID relating to that rectification.
 func (r *Resolver) queueDiffs(dcs *DeployableChans, results chan DiffResolution) {
-	if globalQueueSet == nil {
-		globalQueueSet = NewR11nQueueSet(R11nQueueStartWithHandler(
-			func(qr *QueuedR11n) DiffResolution {
-				qr.Rectification.Begin(r.Deployer)
-				return qr.Rectification.Wait()
-			}))
-	}
-
 	var wg sync.WaitGroup
 	for p := range dcs.Pairs {
 		sr := NewRectification(*p)
-		queued, ok := globalQueueSet.PushIfEmpty(sr)
+		queued, ok := r.QueueSet.PushIfEmpty(sr)
 		if !ok {
 			reportR11nAnomaly(r.ls, sr, r11nDroppedQueueNotEmpty)
 			continue
@@ -59,7 +51,7 @@ func (r *Resolver) queueDiffs(dcs *DeployableChans, results chan DiffResolution)
 		did := p.ID() // Capture did from the range var p outside the goroutine.
 		go func() {
 			defer wg.Done()
-			result, ok := globalQueueSet.Wait(did, queued.ID)
+			result, ok := r.QueueSet.Wait(did, queued.ID)
 			if !ok {
 				reportR11nAnomaly(r.ls, sr, r11nWentMissing)
 			}

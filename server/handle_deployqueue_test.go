@@ -18,6 +18,21 @@ func makeRequestWithQuery(t *testing.T, query string) *http.Request {
 	return &http.Request{URL: u}
 }
 
+// TestNewDeployQueueResource checks that the same queue set passed to the
+// constructor makes its way to the get handler.
+func TestNewDeployQueueResource(t *testing.T) {
+	qs := &sous.R11nQueueSet{}
+	c := ComponentLocator{
+		QueueSet: qs,
+	}
+	dq := newDeployQueueResource(c)
+
+	got := dq.Get(nil, &http.Request{URL: &url.URL{}}, nil).(*GETDeployQueueHandler)
+	if got.QueueSet != qs {
+		t.Errorf("got different queueset")
+	}
+}
+
 func TestDeployQueueResource_Get_no_errors(t *testing.T) {
 
 	testCases := []struct {

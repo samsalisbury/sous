@@ -28,7 +28,8 @@ type (
 		sous.StateManager
 		ResolveFilter *sous.ResolveFilter
 		*sous.AutoResolver
-		Version semv.Version
+		Version  semv.Version
+		QueueSet *sous.R11nQueueSet
 	}
 )
 
