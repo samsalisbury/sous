@@ -10,7 +10,7 @@ HOST_VAGRANT_DIR="./dev_support/vagrant"
 
 Vagrant.configure(2) do |config|
 	config.vm.provision :docker
-	config.vm.provision :docker_compose, yml: SOURCE + "/integration/test-registry/docker-compose.yml", run: "always"
+	config.vm.provision :docker_compose
 
 	config.vm.define "linux", autostart: true, primary: true do |vmCfg|
 		vmCfg.vm.box = LINUX_BASE_BOX
@@ -26,30 +26,23 @@ Vagrant.configure(2) do |config|
 		vmCfg.vm.provision "shell", privileged: true, inline:
 			"cd " + SOURCE + "/dev_support/sous_qa_setup && go install"
 
-		#vmCfg.vm.provision "shell", inline: "sous_qa_setup --compose-dir=$GOPATH/src/github.com/opentable/sous/integration/test-registry/ > /home/vagrant/qa_desc.json"
+		vmCfg.vm.provision "shell", inline: "sous_qa_setup --compose-dir=$GOPATH/src/github.com/opentable/sous/integration/test-registry/ > /home/vagrant/qa_desc.json"
+
+		vmCfg.vm.provision "shell", inline: "cd " + SOURCE + "/integration/test-registry && docker-compose down"
+
+		vmCfg.vm.provision :docker_compose, yml: SOURCE + "/integration/test-registry/docker-compose.yml", run: "always"
 
 		# Copy server config to a nonstandard location (need to set
 		# SOUS_CONFIG_DIR=/home/vagrant/.config/sous-server when starting server)
-		vmCfg.vm.provision "file",
-			source: "./dev_support/vagrant/sous-server-config.yaml",
-			destination: "/home/vagrant/.config/sous-server1/config.yaml"
-		vmCfg.vm.provision "file",
-			source: "./dev_support/vagrant/sous-server-config.yaml",
-			destination: "/home/vagrant/.config/sous-server2/config.yaml"
-
-		# Copy client configuration to the default location so commands other than 'sous server' work normally.
-		vmCfg.vm.provision "file",
-			source: "./dev_support/vagrant/sous-client-config.yaml",
-			destination: "/home/vagrant/.config/sous/config.yaml"	
 
 		vmCfg.vm.synced_folder '.', SOURCE
 
-		vmCfg.vm.provision "shell", path: HOST_VAGRANT_DIR + "/start-sous-cluster.sh"
+		vmCfg.vm.provision "shell", path: "scripts/sous-server-cluster.sh"
 
 		# Expose sous server to the host.
-        vmCfg.vm.network "forwarded_port", guest: 4646, host: 4646, auto_correct: true
-        vmCfg.vm.network "forwarded_port", guest: 5757, host: 5757, auto_correct: true
-        vmCfg.vm.network "forwarded_port", guest: 22, host: 2200, auto_correct: true
+        vmCfg.vm.network "forwarded_port", guest: 5550, host: 5550, auto_correct: true
+        vmCfg.vm.network "forwarded_port", guest: 5551, host: 5551, auto_correct: true
+        vmCfg.vm.network "forwarded_port", guest: 5552, host: 5552, auto_correct: true
 
 	end
 end
