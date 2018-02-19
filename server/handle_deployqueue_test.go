@@ -120,11 +120,11 @@ func TestDeployQueueResource_Get_DeploymentID_errors(t *testing.T) {
 	}{
 		{
 			query:      "repo=github.com%2Fuser1%2Frepo1",
-			wantDIDErr: `missing query parameter "cluster"`,
+			wantDIDErr: `No cluster given`,
 		},
 		{
 			query:      "cluster=cluster1",
-			wantDIDErr: `missing query parameter "repo"`,
+			wantDIDErr: `No repo given`,
 		},
 	}
 
