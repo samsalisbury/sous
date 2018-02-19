@@ -41,8 +41,8 @@ func TestDeployQueueResource_Get_no_errors(t *testing.T) {
 		wantDID sous.DeploymentID
 	}{
 		{
-			desc:  "valid deploymentID",
-			query: "DeploymentID=cluster1%3Agithub.com%2Fuser1%2Frepo1%2Cdir1~flavor1",
+			desc:  "cluster,flavor,offset,repo",
+			query: "cluster=cluster1&flavor=flavor1&offset=dir1&repo=github.com%2Fuser1%2Frepo1",
 			wantDID: sous.DeploymentID{
 				ManifestID: sous.ManifestID{
 					Source: sous.SourceLocation{
@@ -50,6 +50,44 @@ func TestDeployQueueResource_Get_no_errors(t *testing.T) {
 						Dir:  "dir1",
 					},
 					Flavor: "flavor1",
+				},
+				Cluster: "cluster1",
+			},
+		},
+		{
+			desc:  "cluster,offset,repo",
+			query: "cluster=cluster1&offset=dir1&repo=github.com%2Fuser1%2Frepo1",
+			wantDID: sous.DeploymentID{
+				ManifestID: sous.ManifestID{
+					Source: sous.SourceLocation{
+						Repo: "github.com/user1/repo1",
+						Dir:  "dir1",
+					},
+				},
+				Cluster: "cluster1",
+			},
+		},
+		{
+			desc:  "cluster,flavor,repo",
+			query: "cluster=cluster1&flavor=flavor1&repo=github.com%2Fuser1%2Frepo1",
+			wantDID: sous.DeploymentID{
+				ManifestID: sous.ManifestID{
+					Source: sous.SourceLocation{
+						Repo: "github.com/user1/repo1",
+					},
+					Flavor: "flavor1",
+				},
+				Cluster: "cluster1",
+			},
+		},
+		{
+			desc:  "cluster,repo",
+			query: "cluster=cluster1&repo=github.com%2Fuser1%2Frepo1",
+			wantDID: sous.DeploymentID{
+				ManifestID: sous.ManifestID{
+					Source: sous.SourceLocation{
+						Repo: "github.com/user1/repo1",
+					},
 				},
 				Cluster: "cluster1",
 			},
@@ -81,8 +119,12 @@ func TestDeployQueueResource_Get_DeploymentID_errors(t *testing.T) {
 		wantDIDErr string
 	}{
 		{
-			query:      "DeploymentID=cluster1Agithub.com%2Fuser1%2Frepo1%2Cdir1~flavor1",
-			wantDIDErr: `parsing DeploymentID from query: does not contain a colon`,
+			query:      "repo=github.com%2Fuser1%2Frepo1",
+			wantDIDErr: `missing query parameter "cluster"`,
+		},
+		{
+			query:      "cluster=cluster1",
+			wantDIDErr: `missing query parameter "repo"`,
 		},
 	}
 
