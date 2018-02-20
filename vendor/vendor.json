@@ -308,16 +308,16 @@
 			"revisionTime": "2016-11-28T21:05:44Z"
 		},
 		{
-			"checksumSHA1": "Ih2XJenHBfEQGO3zE9QzUucpZuk=",
+			"checksumSHA1": "C14YBofViq1naOZy+MgYnd7V0nA=",
 			"path": "github.com/samsalisbury/psyringe",
-			"revision": "35c84fe1789e552039aaac08e93af79649c109b2",
-			"revisionTime": "2017-11-15T16:20:39Z"
+			"revision": "bf48489e3f670992e749ebf6f3b3a729b3d864f0",
+			"revisionTime": "2018-02-20T13:36:34Z"
 		},
 		{
 			"checksumSHA1": "HlLNyPqfD8bdWbEjcV3wPzTemc8=",
 			"path": "github.com/samsalisbury/psyringe/experiment",
-			"revision": "3f6ed6399db3e83068aec459996d893d257ab954",
-			"revisionTime": "2017-11-08T12:26:49Z"
+			"revision": "bf48489e3f670992e749ebf6f3b3a729b3d864f0",
+			"revisionTime": "2018-02-20T13:36:34Z"
 		},
 		{
 			"checksumSHA1": "IRgb8yeKkWGY5gp1TLk9rpGitB0=",
