@@ -56,7 +56,7 @@ func TestBuildGraph(t *testing.T) {
 	g.Add(&config.OTPLFlags{})   //provided by SousInit and SousDeploy
 
 	if err := g.Test(); err != nil {
-		t.Fatalf("unexpected error: %s", err)
+		t.Fatalf("invalid graph: %s", err)
 	}
 }
 
@@ -84,6 +84,9 @@ func TestLogSink(t *testing.T) {
 
 	scoop := struct{ LogSink }{}
 
+	if err := g.Test(); err != nil {
+		t.Fatalf("invalid graph: %s", err)
+	}
 	tg.MustInject(&scoop)
 
 	set, is := scoop.LogSink.LogSink.(*logging.LogSet)
@@ -113,6 +116,9 @@ func TestComponentLocatorInjection(t *testing.T) {
 	tg.Replace(rawConfig)
 
 	scoop := struct{ server.ComponentLocator }{}
+	if err := g.Test(); err != nil {
+		t.Fatalf("invalid graph: %s", err)
+	}
 	g.MustInject(&scoop)
 	locator := scoop.ComponentLocator
 
@@ -154,6 +160,9 @@ func injectedStateManager(t *testing.T, cfg *config.Config) *StateManager {
 	smRcvr := struct {
 		Sm *StateManager
 	}{}
+	if err := g.Test(); err != nil {
+		t.Fatalf("invalid graph: %s", err)
+	}
 	err := g.Inject(&smRcvr)
 	if err != nil {
 		t.Fatalf("Injection err: %+v", err)
