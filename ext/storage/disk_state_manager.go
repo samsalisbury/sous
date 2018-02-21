@@ -52,7 +52,7 @@ func repairState(s *sous.State) error {
 	reportDebugDiskStateManagerMessage("Validating State", nil, nil, logging.Log)
 
 	flaws := s.Validate()
-	reportDebugDiskStateManagerMessage("Repairng State flaws", flaws, nil, logging.Log)
+	reportDebugDiskStateManagerMessage("Repairing State flaws", flaws, nil, logging.Log)
 
 	_, es := sous.RepairAll(flaws)
 
@@ -132,7 +132,7 @@ func reportDiskStateManagerMessage(msg string, f []sous.Flaw, err error, log log
 		msg:          msg,
 		CallerInfo:   logging.GetCallerInfo(logging.NotHere()),
 		err:          err,
-		flawsMessage: sous.FlawMessage{f},
+		flawsMessage: sous.FlawMessage{Flaws: f},
 		debug:        isDebug,
 	}
 	logging.Deliver(msgLog, log)
