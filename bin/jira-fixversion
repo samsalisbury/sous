@@ -28,7 +28,7 @@ if [ $foundVersion != "true" ]; then
   curl -s -u "${jirauser}:${jirapassword}" \
     -H "Content-Type: application/json" \
     "$jiraserver/rest/api/2/version" \
-    --data "{ \"name\": \"${currentversion}\", \"project\": \"SOUS\", \"released\": true }"
+    --data "{ \"name\": \"${currentversion}\", \"project\": \"SOUS\" }"
 else
   echo "Version $currentversion already present in Jira."
 fi
