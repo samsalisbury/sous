@@ -1,9 +1,6 @@
-Server: http://localhost:4646
+Server: http://localhost:5550
 Docker:
   RegistryHost: "127.0.0.1:5000"
-Logging:
-  Basic:
-    Level: critical
 User:
   Name: Sous Client User
   Email: sous-client-user@example.com

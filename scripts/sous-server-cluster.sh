@@ -70,7 +70,7 @@ echo "Starting cluster..."
 i=0
 PIDS=""
 for CL in $CLUSTERS; do
-	SOUS_CONFIG_DIR="$INST_DIR/config" sous server -cluster $CL -listen ":555$i" &
+	SOUS_CONFIG_DIR="$INST_DIR/config" sous server -cluster "$CL" -listen ":555$i" > "/var/log/sous-server-$CL" 2>&1 &
 	PIDS="$PIDS$! "
 	i=$(( i + 1 ))
 done

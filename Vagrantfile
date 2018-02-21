@@ -3,12 +3,12 @@
 #
 
 LINUX_BASE_BOX = "bento/ubuntu-16.04"
-FREEBSD_BASE_BOX = "jen20/FreeBSD-11.1-RELEASE"
 
 SOURCE="/opt/gopath/src/github.com/opentable/sous"
 HOST_VAGRANT_DIR="./dev_support/vagrant"
 
 Vagrant.configure(2) do |config|
+
 	config.vm.provision :docker
 	config.vm.provision :docker_compose
 
@@ -26,18 +26,17 @@ Vagrant.configure(2) do |config|
 		vmCfg.vm.provision "shell", privileged: true, inline:
 			"cd " + SOURCE + "/dev_support/sous_qa_setup && go install"
 
+		vmCfg.vm.provision "file",
+			source: "dev_support/vagrant/sous-client-config.yaml",
+			destination: "~/.config/sous/config.yaml"
+
 		vmCfg.vm.provision "shell", inline: "sous_qa_setup --compose-dir=$GOPATH/src/github.com/opentable/sous/integration/test-registry/ > /home/vagrant/qa_desc.json"
 
 		vmCfg.vm.provision "shell", inline: "cd " + SOURCE + "/integration/test-registry && docker-compose down"
 
 		vmCfg.vm.provision :docker_compose, yml: SOURCE + "/integration/test-registry/docker-compose.yml", run: "always"
 
-		# Copy server config to a nonstandard location (need to set
-		# SOUS_CONFIG_DIR=/home/vagrant/.config/sous-server when starting server)
-
 		vmCfg.vm.synced_folder '.', SOURCE
-
-		vmCfg.vm.provision "shell", path: "scripts/sous-server-cluster.sh"
 
 		# Expose sous server to the host.
         vmCfg.vm.network "forwarded_port", guest: 5550, host: 5550, auto_correct: true
