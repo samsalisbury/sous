@@ -36,7 +36,7 @@ func TestR11nResource_Get_no_errors(t *testing.T) {
 	}{
 		{
 			desc:  "valid deploymentID and r11nID",
-			query: "DeploymentID=cluster1%3Agithub.com%2Fuser1%2Frepo1%2Cdir1~flavor1&R11nID=cabba9e",
+			query: "cluster=cluster1&repo=github.com%2Fuser1%2Frepo1&offset=dir1&flavor=flavor1&action=cabba9e",
 			wantDID: sous.DeploymentID{
 				ManifestID: sous.ManifestID{
 					Source: sous.SourceLocation{
@@ -51,7 +51,7 @@ func TestR11nResource_Get_no_errors(t *testing.T) {
 		},
 		{
 			desc:  "valid short DeploymentID and r11nID",
-			query: "DeploymentID=cluster1%3Agithub.com%2Fuser1%2Frepo1&R11nID=cabba9e",
+			query: "cluster=cluster1&repo=github.com%2Fuser1%2Frepo1&action=cabba9e",
 			wantDID: sous.DeploymentID{
 				ManifestID: sous.ManifestID{
 					Source: sous.SourceLocation{
@@ -64,7 +64,7 @@ func TestR11nResource_Get_no_errors(t *testing.T) {
 		},
 		{
 			desc:  "wait query",
-			query: "DeploymentID=cluster1%3Agithub.com%2Fuser1%2Frepo1&R11nID=cabba9e&wait=true",
+			query: "cluster=cluster1&repo=github.com%2Fuser1%2Frepo1&action=cabba9e&wait=true",
 			wantDID: sous.DeploymentID{
 				ManifestID: sous.ManifestID{
 					Source: sous.SourceLocation{
