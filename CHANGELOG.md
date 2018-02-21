@@ -6,16 +6,18 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
-## [Unreleased](//github.com/opentable/sous/compare/0.5.63...master)
+## [Unreleased](//github.com/opentable/sous/compare/0.5.65...master)
+
+## [0.5.65](//github.com/opentable/sous/compare/0.5.63...0.5.65)
 
 ### Added
 * Server: new endpoints /deploy-queues and /deploy-queue-item showing the
   list of all deployment queues and their lengths, and individual queue items
   respectively. /deploy-queue-item allows HTTP long-polling on the completion
   of a single rectification be providing the ?wait=true query parameter.
-* All: Default when testing, don't call recover when a log message fails to Deliver
-* CLI: Added timing information to report invocation message
-* All: Logging Reporter that allows allows semi flexible fields to be indexed
+* All: Default when testing, don't call recover when a log message fails to Deliver.
+* CLI: Added timing information to report invocation message.
+* All: Logging Reporter that allows allows semi flexible fields to be indexed.
 
 ## [0.5.63](//github.com/opentable/sous/compare/0.5.62...0.5.63)
 ### Added
