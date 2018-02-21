@@ -68,6 +68,9 @@ func (suite serverTests) prepare(extras ...interface{}) http.Handler {
 	serverScoop := struct {
 		Handler graph.ServerHandler
 	}{}
+
+	suite.Require().NoError(g.Test())
+
 	g.MustInject(&serverScoop)
 	if serverScoop.Handler.Handler == nil {
 		suite.FailNow("Didn't inject http.Handler!")
