@@ -32,7 +32,7 @@ func TestDeployableMessage(t *testing.T) {
 
 	fields := map[string]interface{}{
 		"@loglov3-otl":          "sous-deployment-diff",
-		"sous-deployment-id":    "test-cluster:github.com/opentable/example",
+		"sous-deployment-id":    "cluster-1:github.com/opentable/example",
 		"sous-diff-disposition": "same",
 		"sous-deployment-diffs": "No detailed diff because pairwise diff kind is \"same\"",
 		"sous-manifest-id":      "github.com/opentable/example",
@@ -47,7 +47,7 @@ func TestDeployableMessage(t *testing.T) {
 		"sous-prior-checkready-retries":         0,
 		"sous-prior-checkready-uripath":         "",
 		"sous-prior-checkready-uritimeout":      0,
-		"sous-prior-clustername":                "test-cluster",
+		"sous-prior-clustername":                "cluster-1",
 		"sous-prior-env":                        "{}",
 		"sous-prior-flavor":                     "",
 		"sous-prior-kind":                       "http-service",
@@ -75,7 +75,7 @@ func TestDeployableMessage(t *testing.T) {
 		"sous-post-checkready-retries":         0,
 		"sous-post-checkready-uripath":         "",
 		"sous-post-checkready-uritimeout":      0,
-		"sous-post-clustername":                "test-cluster",
+		"sous-post-clustername":                "cluster-1",
 		"sous-post-env":                        "{}",
 		"sous-post-flavor":                     "",
 		"sous-post-kind":                       "http-service",
