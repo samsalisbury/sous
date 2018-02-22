@@ -162,7 +162,7 @@ func reqID(rp *dtos.SingularityRequestParent) (id string) {
 func (db *deploymentBuilder) basics() error {
 	db.Target.Cluster = &sous.Cluster{BaseURL: db.req.SourceURL}
 	db.Target.ExecutorData = &singularityTaskData{requestID: reqID(db.req.ReqParent)}
-	db.log.Vomitf("Recording %v as requestID for instance.", db.Target.ExecutorData)
+	messages.ReportLogFieldsMessage("Recording as requestID for instance.", logging.ExtraDebug1Level, db.log, db.Target.ExecutorData)
 	db.request = db.req.ReqParent.Request
 	db.reqID = reqID(db.req.ReqParent)
 	return nil
@@ -205,19 +205,19 @@ func (db *deploymentBuilder) retrieveDeployHistory() error {
 	if db.depMarker == nil {
 		return db.retrieveHistoricDeploy()
 	}
-	db.log.Vomitf("%q Getting deploy based on Pending marker.", db.reqID)
+	messages.ReportLogFieldsMessage("Getting deploy based on Pending marker.", logging.ExtraDebug1Level, db.log, db.reqID)
 	return db.retrieveLiveDeploy()
 }
 
 func (db *deploymentBuilder) retrieveHistoricDeploy() error {
-	db.log.Vomitf("%q Getting deploy from history", db.reqID)
+	messages.ReportLogFieldsMessage("Getting deploy from history", logging.ExtraDebug1Level, db.log, db.reqID)
 	// !!! makes HTTP req
 	if db.request == nil {
 		return malformedResponse{"Singularity request parent had no request."}
 	}
 	sing := db.req.Sing
 	depHistList, err := sing.GetDeploys(db.request.Id, 1, 1)
-	db.log.Vomitf("%q Got history from Singularity with %d items.", db.reqID, len(depHistList))
+	messages.ReportLogFieldsMessage("Got history from Singularity with items.", logging.ExtraDebug1Level, db.log, db.reqID, len(depHistList))
 	if err != nil {
 		return errors.Wrap(err, "GetDeploys")
 	}
@@ -228,12 +228,12 @@ func (db *deploymentBuilder) retrieveHistoricDeploy() error {
 
 	partialHistory := depHistList[0]
 
-	db.log.Vomitf("%q %#v", db.reqID, partialHistory)
+	messages.ReportLogFieldsMessage("Partial history.", logging.ExtraDebug1Level, db.log, db.reqID, partialHistory)
 	if partialHistory.DeployMarker == nil {
 		return malformedResponse{"Singularity deploy history had no deploy marker."}
 	}
 
-	db.log.Vomitf("%q %#v", db.reqID, partialHistory.DeployMarker)
+	messages.ReportLogFieldsMessage("Partial history DeployMarker.", logging.ExtraDebug1Level, db.log, db.reqID, partialHistory.DeployMarker)
 	db.depMarker = partialHistory.DeployMarker
 	return db.retrieveLiveDeploy()
 }
