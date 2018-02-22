@@ -44,7 +44,7 @@ func ReportClientHTTPResponse(logger logging.LogSink, message string, rz *http.R
 	logging.Deliver(m, logger)
 }
 
-// ReportServerHTTPResponse reports a response recieved by Sous as a client.
+// ReportServerHTTPRequest reports a response recieved by Sous as a client.
 // n.b. this interface subject to change
 func ReportServerHTTPRequest(logger logging.LogSink, message string, rq *http.Request, resName string) {
 	m := buildHTTPLogMessage(true, false, message, rq, 0, 0, resName, 0)
@@ -52,19 +52,16 @@ func ReportServerHTTPRequest(logger logging.LogSink, message string, rq *http.Re
 	logging.Deliver(m, logger)
 }
 
-// BuildClientHTTPResponse reports a response recieved by Sous as a client.
-func BuildClientHTTPResponse(rz *http.Response, resName string, dur time.Duration) *HTTPLogEntry {
-	// XXX dur should in fact be "start time.Time" and duration be computed here.
-	// swaggering now depends on this, so it's more of a hassle.
-	m := buildHTTPLogMessage(false, rz.Request, rz.StatusCode, rz.ContentLength, resName, dur)
+// ReportServerHTTPResponse reports a response recieved by Sous as a client.
+func ReportServerHTTPResponse(logger logging.LogSink, message string, rz *http.Response, resName string, dur time.Duration) {
+	m := buildHTTPLogMessage(true, true, message, rz.Request, rz.StatusCode, rz.ContentLength, resName, dur)
 	m.ExcludeMe()
 	logging.Deliver(m, logger)
 }
 
-// BuildServerHTTPResponse reports a response recieved by Sous as a client.
-// n.b. this interface subject to change
-func BuildServerHTTPResponse(rq *http.Request, statusCode int, contentLength int64, resName string, dur time.Duration) *HTTPLogEntry {
-	m := buildHTTPLogMessage(true, rq, statusCode, contentLength, resName, dur)
+// ReportServerHTTPResponding reports a response to a request - this is useful in cases where a ResponseWriter is encapsulating the actual response.
+func ReportServerHTTPResponding(logger logging.LogSink, message string, req *http.Request, status int, responseContentLength int64, resName string, dur time.Duration) {
+	m := buildHTTPLogMessage(true, true, message, req, status, responseContentLength, resName, dur)
 	m.ExcludeMe()
 	logging.Deliver(m, logger)
 }
