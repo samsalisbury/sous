@@ -237,7 +237,6 @@ func AddSingularity(graph adder) {
 func AddState(graph adder) {
 	graph.Add(
 		newStateManager,
-		newClusterManager,
 		newLocalStateReader,
 		newLocalStateWriter,
 	)
@@ -567,10 +566,6 @@ func newStateManager(cl HTTPClient, c LocalSousConfig, log LogSink) *StateManage
 	}
 	hsm := sous.NewHTTPStateManager(cl)
 	return &StateManager{StateManager: hsm}
-}
-
-func newClusterManager(sm *StateManager) ClusterManager {
-	return ClusterManager{ClusterManager: sous.MakeClusterManager(sm.StateManager)}
 }
 
 func newStatusPoller(cl HTTPClient, rf *RefinedResolveFilter, user sous.User, logs LogSink) *sous.StatusPoller {

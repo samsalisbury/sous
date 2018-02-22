@@ -64,6 +64,8 @@ func (suite serverTests) prepare(extras ...interface{}) http.Handler {
 	g.Add(&config.Verbosity{})
 	g.Add(&config.DeployFilterFlags{})
 	g.Add(graph.DryrunBoth)
+	g.Add(&config.PolicyFlags{})
+	g.Add(&config.OTPLFlags{})
 
 	serverScoop := struct {
 		Handler graph.ServerHandler

@@ -54,6 +54,8 @@ func (suite *integrationServerTests) prepare() (logging.LogSink, http.Handler) {
 
 	g := graph.TestGraphWithConfig(semv.Version{}, &bytes.Buffer{}, os.Stdout, os.Stdout, "StateLocation: '"+outpath+"'\n")
 	g.Add(&config.DeployFilterFlags{})
+	g.Add(&config.PolicyFlags{})
+	g.Add(&config.OTPLFlags{})
 	g.Add(&config.Verbosity{})
 	g.Add(graph.DryrunBoth)
 
