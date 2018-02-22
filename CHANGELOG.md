@@ -8,6 +8,8 @@ with respect to its command line interface and HTTP interface.
 
 ## [Unreleased](//github.com/opentable/sous/compare/0.5.65...master)
 
+* All: Update logging package: deployment_builder.go
+
 ## [0.5.65](//github.com/opentable/sous/compare/0.5.63...0.5.65)
 
 ### Added
