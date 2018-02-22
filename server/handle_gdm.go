@@ -3,7 +3,6 @@ package server
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"sort"
 
@@ -153,10 +152,6 @@ func reportHandleGDMMessage(msg string, f []sous.Flaw, err error, log logging.Lo
 		debug:        isDebug,
 	}
 	logging.Deliver(msgLog, log)
-}
-
-func (msg handleGDMMessage) WriteToConsole(console io.Writer) {
-	fmt.Fprintf(console, "%s\n", msg.composeMsg())
 }
 
 func (msg handleGDMMessage) DefaultLevel() logging.Level {

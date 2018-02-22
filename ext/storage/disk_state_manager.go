@@ -139,7 +139,9 @@ func reportDiskStateManagerMessage(msg string, f []sous.Flaw, err error, log log
 }
 
 func (msg diskStateManagerMessage) WriteToConsole(console io.Writer) {
-	fmt.Fprintf(console, "%s\n", msg.composeMsg())
+	if !msg.debug {
+		fmt.Fprintf(console, "%s\n", msg.composeMsg())
+	}
 }
 
 func (msg diskStateManagerMessage) DefaultLevel() logging.Level {

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/util/cmdr"
 	"github.com/opentable/sous/util/logging"
@@ -23,15 +22,6 @@ func prepareCommand(t *testing.T, cl []string) (*CLI, *cmdr.PreparedExecution, f
 
 	s := &Sous{Version: semv.MustParse(`1.2.3`)}
 	di := graph.BuildTestGraph(semv.Version{}, stdin, stdout, stderr)
-	di.Add(&config.DeployFilterFlags{},
-		&config.PolicyFlags{},
-		graph.DryrunBoth,
-		&config.Verbosity{},
-		&config.OTPLFlags{},
-	)
-	if err := di.Test(); err != nil {
-		t.Fatalf("invalid graph: %s", err)
-	}
 	type logSetScoop struct {
 		*logging.LogSet
 	}

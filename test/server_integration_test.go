@@ -53,10 +53,8 @@ func (suite *integrationServerTests) prepare() (logging.LogSink, http.Handler) {
 	suite.log = ctrl
 
 	g := graph.TestGraphWithConfig(semv.Version{}, &bytes.Buffer{}, os.Stdout, os.Stdout, "StateLocation: '"+outpath+"'\n")
-	g.Add(&config.DeployFilterFlags{})
-	g.Add(&config.PolicyFlags{})
-	g.Add(&config.OTPLFlags{})
 	g.Add(&config.Verbosity{})
+	g.Add(&config.DeployFilterFlags{Cluster: "cluster-1"})
 	g.Add(graph.DryrunBoth)
 
 	testGraph := psyringe.TestPsyringe{Psyringe: g.Psyringe}
@@ -76,8 +74,6 @@ func (suite *integrationServerTests) prepare() (logging.LogSink, http.Handler) {
 	serverScoop := struct {
 		Handler graph.ServerHandler
 	}{}
-
-	suite.Require().NoError(g.Test())
 
 	g.MustInject(&serverScoop)
 	if serverScoop.Handler.Handler == nil {
@@ -151,12 +147,20 @@ func (suite integrationServerTests) TestUpdateStateDeployments_Precondition() {
 }
 
 func (suite integrationServerTests) TestUpdateStateDeployments_Update() {
-	data := server.GDMWrapper{Deployments: []*sous.Deployment{}}
+	data := server.GDMWrapper{}
+
 	updater, err := suite.client.Retrieve("./state/deployments", nil, &data, nil)
-	suite.log.DumpLogs(suite.T())
 	suite.NoError(err)
-	suite.Equal(data, "a rabbit")
+	suite.Len(data.Deployments, 1)
 	suite.NotNil(updater)
+
+	data.Deployments = append(data.Deployments, sous.DeploymentFixture("sequenced-repo"))
+	err = updater.Update(&data, nil)
+	suite.NoError(err)
+
+	_, err = suite.client.Retrieve("./state/deployments", nil, &data, nil)
+	suite.NoError(err)
+	suite.Len(data.Deployments, 2)
 }
 
 func TestLiveServerSuite(t *testing.T) {

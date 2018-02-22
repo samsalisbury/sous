@@ -31,12 +31,6 @@ func fixtureGraph() *SousGraph {
 func TestActionUpdate(t *testing.T) {
 	fg := fixtureGraph()
 	flags := fixtureDeployFilterFlags()
-	fg.Add(&flags, config.OTPLFlags{})
-	if err := fg.Test(); err != nil {
-		t.Fatalf("fixtureGraph returned invalid graph: %s", err)
-	}
-	t.Fatalf("test passed")
-
 	action, err := fg.GetUpdate(flags, config.OTPLFlags{})
 	require.NoError(t, err)
 	update, rightType := action.(*actions.Update)
@@ -59,9 +53,6 @@ func TestActionUpdate(t *testing.T) {
 func TestActionPollStatus(t *testing.T) {
 	fg := fixtureGraph()
 	fg.Add(fixtureDeployFilterFlags())
-	if err := fg.Test(); err != nil {
-		t.Fatalf("invalid graph: %s", err)
-	}
 
 	action, err := fg.GetPollStatus("both", fixtureDeployFilterFlags())
 	require.NoError(t, err)
@@ -76,9 +67,6 @@ func TestActionPollStatus(t *testing.T) {
 func TestActionRectify(t *testing.T) {
 	fg := fixtureGraph()
 	fg.Add(fixtureDeployFilterFlags())
-	if err := fg.Test(); err != nil {
-		t.Fatalf("invalid graph: %s", err)
-	}
 	action, err := fg.GetRectify("none", fixtureDeployFilterFlags())
 	require.NoError(t, err)
 
@@ -96,9 +84,6 @@ func TestActionRectifyDryruns(t *testing.T) {
 		t.Run("dryrun is "+which, func(t *testing.T) {
 			fg := fixtureGraph()
 			fg.Add(fixtureDeployFilterFlags())
-			if err := fg.Test(); err != nil {
-				t.Fatalf("invalid graph: %s", err)
-			}
 			action, err := fg.GetRectify(which, fixtureDeployFilterFlags())
 			require.NoError(t, err)
 			require.IsType(t, &actions.Rectify{}, action)

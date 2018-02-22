@@ -59,7 +59,7 @@ func DeploymentFixture(name string) *Deployment {
 	case "sequenced-repo":
 		return &Deployment{
 			DeployConfig: DeployConfigFixture(""),
-			ClusterName:  "test-cluster",
+			ClusterName:  "cluster-1",
 			SourceID: SourceID{
 				Location: SourceLocation{
 					Repo: fmt.Sprintf("github.com/opentable/example-%d", seq("dep-repo")),
@@ -75,7 +75,7 @@ func DeploymentFixture(name string) *Deployment {
 	default:
 		return &Deployment{
 			DeployConfig: DeployConfigFixture(""),
-			ClusterName:  "test-cluster",
+			ClusterName:  "cluster-1",
 			SourceID: SourceID{
 				Location: SourceLocation{
 					Repo: "github.com/opentable/example",
