@@ -10,6 +10,7 @@ import (
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/firsterr"
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 	"github.com/pkg/errors"
 )
 
@@ -56,10 +57,10 @@ func (nsd nonSousError) Error() string {
 }
 
 func ignorableDeploy(log logging.LogSink, err error) bool {
-	log.Vomitf("checking to see if %+v is ignorable", err)
+	messages.ReportLogFieldsMessage("checking to see if error is ignorable", logging.ExtraDebug1Level, log, err)
 	switch errors.Cause(err).(type) {
 	case nonSousError, notThisClusterError:
-		log.Vomitf("ignorable: %v", err)
+		messages.ReportLogFieldsMessage("ignorable", logging.ExtraDebug1Level, log, err)
 		return true
 	}
 	return false
