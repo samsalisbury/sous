@@ -1,7 +1,9 @@
 package sous
 
 import (
+	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -61,6 +63,38 @@ func TestR11nQueueSet_PushIfEmpty(t *testing.T) {
 			}
 
 		})
+	}
+}
+
+// TestR11nQueueSet_Push_async tries to trigger the race detector by calling
+// Push repeatedly from multiple goroutines.
+// Make sure to run this test with the -race flag!
+func TestR11nQueueSet_Push_async(t *testing.T) {
+
+	signal := make(chan struct{})
+	go func() {
+
+		const itemCount = 20
+
+		rq := NewR11nQueueSet()
+
+		var wg sync.WaitGroup
+		wg.Add(itemCount)
+		for i := 0; i < itemCount; i++ {
+			i := i
+			go func() {
+				rq.Push(makeTestR11nWithRepo(strconv.Itoa(i)))
+				wg.Done()
+			}()
+		}
+		wg.Wait()
+
+		close(signal)
+	}()
+	select {
+	case <-signal:
+	case <-time.After(time.Second):
+		t.Errorf("push deadlocked")
 	}
 }
 

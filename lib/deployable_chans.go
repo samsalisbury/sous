@@ -58,6 +58,11 @@ func (dp *DeployablePair) ID() DeploymentID {
 	return dp.name
 }
 
+// SetID sets the ID of this DeployablePair. Do not use except in tests.
+func (dp *DeployablePair) SetID(did DeploymentID) {
+	dp.name = did
+}
+
 // Log adds a logging pipeline step onto a DeployableChans
 func (d *DeployableChans) Log(ctx context.Context, ls logging.LogSink) *DeployableChans {
 	proc := loggingProcessor{ls: ls}

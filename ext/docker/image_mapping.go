@@ -13,7 +13,6 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/docker/distribution"
 	"github.com/docker/distribution/reference"
 	"github.com/pkg/errors"
@@ -22,6 +21,7 @@ import (
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/docker_registry"
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 	"github.com/samsalisbury/semv"
 )
 
@@ -117,12 +117,13 @@ func (nc *NameCache) Warmup(r string) error {
 		return errors.Wrapf(err, "warming up %q", r)
 	}
 	for _, t := range ts {
-		nc.Log.Debugf("Harvested tag: %v for repo: %v", t, r)
+		messages.ReportLogFieldsMessage("Harvested Tag", logging.DebugLevel, nc.Log, t, r)
 		in, err := reference.WithTag(ref, t)
-		nc.Log.Vomitf("%v %v", in, err)
 		if err == nil {
 			a := NewBuildArtifact(in.String(), strpairs{})
 			nc.GetSourceID(a) //pull it into the cache...
+		} else {
+			messages.ReportLogFieldsMessage("t loop", logging.WarningLevel, nc.Log, in, err)
 		}
 	}
 	return nil
@@ -159,16 +160,16 @@ func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
 	in := a.Name
 	var sid sous.SourceID
 
-	nc.Log.Vomitf("Getting source ID for %s", in)
+	messages.ReportLogFieldsMessage("Getting source ID for", logging.ExtraDebug1Level, nc.Log, in)
 
 	etag, repo, offset, version, _, err := nc.dbQueryOnName(in)
 	if nif, ok := err.(NoSourceIDFound); ok {
-		nc.Log.Vomitf("%v", nif)
+		messages.ReportLogFieldsMessage("err.(NoSourceIDFound)", logging.ExtraDebug1Level, nc.Log, nif)
 	} else if err != nil {
-		nc.Log.Vomitf("Err: %v", err)
+		messages.ReportLogFieldsMessage("GetSourceID error", logging.WarningLevel, nc.Log, err)
 		return sous.SourceID{}, err
 	} else {
-		nc.Log.Vomitf("Found: %v %v %v %v", repo, offset, version, etag)
+		messages.ReportLogFieldsMessage("Found", logging.ExtraDebug1Level, nc.Log, repo, offset, version, etag)
 
 		sid, err = sous.NewSourceID(repo, offset, version)
 		if err != nil {
@@ -178,15 +179,15 @@ func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
 		dockerRef, err := reference.Parse(in)
 
 		if r, isRef := dockerRef.(reference.Digested); err == nil && isRef {
-			nc.Log.Debugf("Image name %v has digest: using known source ID: %v", r, sid)
+			messages.ReportLogFieldsMessage("Image name has digest: using know source ID", logging.DebugLevel, nc.Log, r, sid)
 			return sid, nil
 		}
 	}
 
 	md, err := nc.RegistryClient.GetImageMetadata(in, etag)
-	nc.Log.Vomitf("%+ v %v %T %#v", md, err, err, err)
+	messages.ReportLogFieldsMessage("md and err", logging.ExtraDebug1Level, nc.Log, md, err)
 	if meansBodyUnchanged(err) {
-		nc.Log.Debugf("Image name: %s -> Source ID: %v", in, sid)
+		messages.ReportLogFieldsMessage("Image Name and SourceID", logging.ExtraDebug1Level, nc.Log, in, sid)
 		return sid, nil
 	}
 	if err != nil {
@@ -207,14 +208,14 @@ func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
 		_, err := nc.RegistryClient.GetImageMetadata(fullCanon, md.Etag)
 		if err != nil && !meansBodyUnchanged(err) {
 			fullCanon = md.Registry + "/" + md.CanonicalName
-			nc.Log.Debugf("Docker image name %q not found in %q, leaving as %q", md.CanonicalName, nc.DockerRegistryHost, fullCanon)
+			messages.ReportLogFieldsMessage("Docker image not found, levaing as", logging.DebugLevel, nc.Log, md.CanonicalName, nc.DockerRegistryHost, fullCanon)
 		}
 	}
 
-	nc.Log.Vomitf("Recording %q (with etag: %s) as canonical for %v", fullCanon, md.Etag, newSID)
+	messages.ReportLogFieldsMessage("Recording with etag as cannical for", logging.ExtraDebug1Level, nc.Log, fullCanon, md.Etag, newSID)
 	err = nc.dbInsert(newSID, fullCanon, md.Etag, qualities)
 	if err != nil {
-		nc.Log.Debugf("Err recording %q: %v", fullCanon, err)
+		messages.ReportLogFieldsMessage("Err recording", logging.DebugLevel, nc.Log, fullCanon, err)
 		return sid, err
 	}
 
@@ -223,20 +224,20 @@ func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
 		names = append(names, nc.DockerRegistryHost+"/"+n)
 	}
 	err = nc.dbAddNames(nc.DockerRegistryHost+"/"+md.CanonicalName, names)
-	nc.Log.Vomitf("Recorded additional names: %v for %q at registry %s (err: %v)", md.AllNames, fullCanon, nc.DockerRegistryHost, err)
+	messages.ReportLogFieldsMessage("Recorded additional names", logging.ExtraDebug1Level, nc.Log, md.AllNames, fullCanon, nc.DockerRegistryHost, err)
 	if err != nil && mirrored {
 		err = nc.dbAddNames(md.Registry+"/"+md.CanonicalName, names)
-		nc.Log.Vomitf("Recorded mirrored names: %v for %q at registry %s (err: %v)", md.AllNames, md.Registry+"/"+md.CanonicalName, md.Registry, err)
+		messages.ReportLogFieldsMessage("Recorded mirrored names", logging.ExtraDebug1Level, nc.Log, md.AllNames, md.Registry+"/"+md.CanonicalName, md.Registry, err)
 	}
 
 	reportTableMetrics(nc.Log, nc.DB)
-	nc.Log.Debugf("Image name: %s -> (updated) Source ID: %v", in, newSID)
+	messages.ReportLogFieldsMessage("Images name (updated Source ID:)", logging.DebugLevel, nc.Log, in, newSID)
 	return newSID, err
 }
 
 // GetImageName returns the docker image name for a given source ID
 func (nc *NameCache) getImageName(sid sous.SourceID) (string, strpairs, error) {
-	nc.Log.Vomitf("Getting image name for %+v", sid)
+	messages.ReportLogFieldsMessage("Getting image name for", logging.ExtraDebug1Level, nc.Log, sid)
 	name, qualities, err := nc.getImageNameFromCache(sid)
 	if err == nil {
 		// We got it from the cache first time.
@@ -265,7 +266,7 @@ func (nc *NameCache) getImageNameFromCache(sid sous.SourceID) (string, strpairs,
 
 func (nc *NameCache) getImageNameAfterHarvest(sid sous.SourceID) (string, strpairs, error) {
 	if err := nc.harvest(sid.Location); err != nil {
-		nc.Log.Debugf("getImageName: harvest error: %v", err)
+		messages.ReportLogFieldsMessage("getImageName: harvest err", logging.WarningLevel, nc.Log, err)
 		return "", nil, err
 	}
 	return nc.getImageNameFromCache(sid)
@@ -286,7 +287,7 @@ func qualitiesFromLabels(lm map[string]string) []sous.Quality {
 // GetCanonicalName returns the canonical name for an image given any known name
 func (nc *NameCache) GetCanonicalName(in string) (string, error) {
 	_, _, _, _, cn, err := nc.dbQueryOnName(in)
-	nc.Log.Debugf("Canonicalizing %s - got %s / %v", in, cn, err)
+	messages.ReportLogFieldsMessage("Canonicalizing - got", logging.DebugLevel, nc.Log, in, cn, err)
 	return cn, err
 }
 
@@ -298,17 +299,24 @@ func (nc *NameCache) Insert(sid sous.SourceID, in, etag string, qs []sous.Qualit
 	return err
 }
 
+/*Harvesting source location*/
+//{
+//"message": "{\"Dir\":\"nested/there\",\"Repo\":\"https://github.com/opentable/wackadoo\"}"
+//}
+//Fields: Repo,Dir,SourceLocation
+//Types: SourceLocation,string
+
 func (nc *NameCache) harvest(sl sous.SourceLocation) error {
-	nc.Log.Vomitf("Harvesting source location %#v", sl)
+	messages.ReportLogFieldsMessage("Harvesting source location", logging.ExtraDebug1Level, nc.Log, sl)
 	repos, err := nc.dbQueryOnSL(sl)
 	if err != nil {
-		nc.Log.Vomitf("Err looking up repos for location %#v: %v - proceeding with guessed repo", sl, err)
+		messages.ReportLogFieldsMessage("Err looking up repos for location - proceeding with guessed repo", logging.WarningLevel, nc.Log, sl, err)
 		repos = []string{}
 	}
 	guessed := fullRepoName(nc.DockerRegistryHost, sl, "")
 	knowGuess := false
 
-	nc.Log.Vomitf("Attempting to harvest %d repos", len(repos))
+	messages.ReportLogFieldsMessage("Attempting to harvest repos", logging.ExtraDebug1Level, nc.Log, repos)
 	for _, r := range repos {
 		if r == guessed {
 			knowGuess = true
@@ -475,7 +483,7 @@ func (nc *NameCache) GroomDatabase() error {
 
 			for _, cmd := range schema {
 				if err = sqlExec(db, cmd); err != nil {
-					spew.Dump(err)
+					messages.ReportLogFieldsMessage("error in sqlExec", logging.ExtraDebug1Level, nc.Log, err)
 					return
 				}
 			}
@@ -497,7 +505,7 @@ func (nc *NameCache) GroomDatabase() error {
 }
 
 func (nc *NameCache) clobber(db *sql.DB) {
-	nc.Log.Debugf("DB Clobbering time!")
+	messages.ReportLogFieldsMessage("DB Clobbering time!", logging.DebugLevel, nc.Log)
 	sqlExec(db, "PRAGMA writable_schema = 1;")
 	sqlExec(db, "delete from sqlite_master where type in ('table', 'index', 'trigger');")
 	sqlExec(db, "PRAGMA writable_schema = 0;")
@@ -507,7 +515,7 @@ func (nc *NameCache) clobber(db *sql.DB) {
 func (nc *NameCache) captureRepos(db *sql.DB) (repos []string) {
 	res, err := db.Query("select name from docker_repo_name;")
 	if err != nil {
-		nc.Log.Debugf("%v", err)
+		messages.ReportLogFieldsMessage("captureRepos", logging.WarningLevel, nc.Log, err)
 		return
 	}
 	defer res.Close()
@@ -628,7 +636,7 @@ func (nc *NameCache) ensureInDB(sel, ins string, args ...interface{}) (id int64,
 	row := nc.DB.QueryRow(sel, args[0:selN]...)
 	err = row.Scan(&id)
 	if err == nil {
-		nc.Log.Vomitf("Found id: %d with %q %v", id, sel, args)
+		messages.ReportLogFieldsMessage("Found", logging.ExtraDebug1Level, nc.Log, id, sel, args)
 		return
 	}
 
@@ -641,18 +649,19 @@ func (nc *NameCache) ensureInDB(sel, ins string, args ...interface{}) (id int64,
 		return 0, errors.Wrapf(err, "inserting new value: %q %v", ins, args[0:insN])
 	}
 	id, err = nr.LastInsertId()
-	nc.Log.Vomitf("Made (?err: %v) id: %d with %q", err, id, ins)
+
+	messages.ReportLogFieldsMessage("Made with", logging.ExtraDebug1Level, nc.Log, err, id, ins)
 	return id, errors.Wrapf(err, "getting id of new value: %q %v", ins, args[0:insN])
 }
 
 func (nc *NameCache) dbInsert(sid sous.SourceID, in, etag string, quals []sous.Quality) error {
 	ref, err := reference.ParseNamed(in)
-	nc.Log.Debugf("Parsed image name: %v from %q", ref, in)
+	messages.ReportLogFieldsMessage("Parsed image name from", logging.DebugLevel, nc.Log, ref, in)
 	if err != nil {
 		return errors.Errorf("%v for %v", err, in)
 	}
 
-	nc.Log.Vomitf("Inserting name %s for %#v", ref.Name(), sid)
+	messages.ReportLogFieldsMessage("Inserting name for", logging.ExtraDebug1Level, nc.Log, ref.Name(), sid)
 
 	var nid, id int64
 	nid, err = nc.ensureInDB(
@@ -664,7 +673,7 @@ func (nc *NameCache) dbInsert(sid sous.SourceID, in, etag string, quals []sous.Q
 		return err
 	}
 
-	nc.Log.Vomitf("name: %s -> id: %d", ref.Name(), nid)
+	messages.ReportLogFieldsMessage("name -> id", logging.ExtraDebug1Level, nc.Log, ref.Name(), nid)
 
 	id, err = nc.ensureInDB(
 		"select location_id from docker_search_location where repo = $1 and offset = $2",
@@ -675,7 +684,7 @@ func (nc *NameCache) dbInsert(sid sous.SourceID, in, etag string, quals []sous.Q
 		return err
 	}
 
-	nc.Log.Vomitf("Source Loc: %s -> id: %d", sid.Location, id)
+	messages.ReportLogFieldsMessage("Source Loc -> id", logging.ExtraDebug1Level, nc.Log, sid.Location, id)
 
 	_, err = nc.DB.Exec("insert or ignore into repo_through_location "+
 		"(repo_name_id, location_id) values ($1, $2)", nid, id)
@@ -684,7 +693,7 @@ func (nc *NameCache) dbInsert(sid sous.SourceID, in, etag string, quals []sous.Q
 	}
 
 	versionString := sid.Version.Format(semv.Complete)
-	nc.Log.Vomitf("Inserting metadata id:%v etag:%v name:%v version:%v", id, etag, in, versionString)
+	messages.ReportLogFieldsMessage("Inserting metadata id, etag, name, version", logging.ExtraDebug1Level, nc.Log, id, etag, in, versionString)
 
 	id, err = nc.ensureInDB(
 		"select metadata_id from docker_search_metadata  where canonicalName = $1",
@@ -706,8 +715,7 @@ func (nc *NameCache) dbInsert(sid sous.SourceID, in, etag string, quals []sous.Q
 			id, q.Name, q.Kind)
 	}
 
-	nc.Log.Vomitf("Inserting search name %v %v", id, in)
-
+	messages.ReportLogFieldsMessage("Inserting search name", logging.ExtraDebug1Level, nc.Log, id, in)
 	return nc.dbAddNamesForID(id, []string{in})
 }
 
@@ -722,7 +730,7 @@ func (nc *NameCache) dbAddNamesForID(id int64, ins []string) error {
 	for _, n := range ins {
 		_, err := add.Exec(id, n)
 		if err != nil {
-			nc.Log.Vomitf("%v %T", errors.Cause(err), errors.Cause(err))
+			messages.ReportLogFieldsMessage("error dbAddNamesForID", logging.WarningLevel, nc.Log, errors.Cause(err), err)
 			return errors.Wrapf(err, "adding name: %s", n)
 		}
 	}
@@ -731,7 +739,7 @@ func (nc *NameCache) dbAddNamesForID(id int64, ins []string) error {
 
 func (nc *NameCache) dbAddNames(cn string, ins []string) error {
 	var id int64
-	nc.Log.Debugf("Adding names for %s: %+v", cn, ins)
+	messages.ReportLogFieldsMessage("Adding names for", logging.DebugLevel, nc.Log, cn, ins)
 	row := nc.DB.QueryRow("select metadata_id from docker_search_metadata "+
 		"where canonicalName = $1", cn)
 	err := row.Scan(&id)
@@ -838,7 +846,7 @@ func (nc *NameCache) dbQueryCNameforSourceID(sid sous.SourceID) (cn string, ins 
 		"semverEqual(docker_search_metadata.version, $3)",
 		sid.Location.Repo, sid.Location.Dir, sid.Version.String())
 
-	nc.Log.Vomitf("Selecting on %q %q %q", sid.Location.Repo, sid.Location.Dir, sid.Version.String())
+	messages.ReportLogFieldsMessage("Selecting", logging.ExtraDebug1Level, nc.Log, sid.Location.Repo, sid.Location.Dir, sid.Version.String())
 
 	if err == sql.ErrNoRows {
 		err = errors.Wrap(NoImageNameFound{sid}, "")
@@ -884,4 +892,5 @@ func (nc *NameCache) dbQueryQualsForCName(cn string) (quals strpairs, err error)
 	err = rows.Err()
 
 	return
+
 }

@@ -8,14 +8,14 @@ import (
 )
 
 func TestInvocationMessage(t *testing.T) {
-	msg := newInvocationMessage([]string{"testing", "test"})
+	msg := newInvocationMessage([]string{"testing", "test"}, time.Now())
 
 	fixedFields := map[string]interface{}{
 		"@loglov3-otl": "sous-cli-v1",
 		"arguments":    `["testing" "test"]`,
 	}
 
-	logging.AssertMessageFields(t, msg, logging.StandardVariableFields, fixedFields)
+	logging.AssertMessageFields(t, msg, append(logging.StandardVariableFields, logging.IntervalVariableFields...), fixedFields)
 }
 
 type testResult struct {

@@ -1,12 +1,13 @@
 package main
 
 import (
-	"github.com/davecgh/go-spew/spew"
 	"github.com/opentable/sous/util/allfields"
+	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 )
 
 func main() {
 	ast := allfields.ParseDir("lib/")
 	tree := allfields.ExtractTree(ast, "Deployment")
-	spew.Dump(allfields.ConfirmTree(tree, ast, "Diff"))
+	messages.ReportLogFieldsMessage("Dump", logging.ExtraDebug1Level, logging.Log, allfields.ConfirmTree(tree, ast, "Diff"))
 }

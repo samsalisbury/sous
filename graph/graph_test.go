@@ -155,6 +155,7 @@ func injectedStateManager(t *testing.T, cfg *config.Config) *StateManager {
 	g.Add(newAutoResolver)
 	g.Add(newServerHandler)
 	g.Add(newHTTPClient)
+	g.Add(NewR11nQueueSet)
 	g.Add(g)
 
 	smRcvr := struct {

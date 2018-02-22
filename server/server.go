@@ -29,7 +29,8 @@ type (
 		sous.ClusterManager // xxx temporary?
 		ResolveFilter       *sous.ResolveFilter
 		*sous.AutoResolver
-		Version semv.Version
+		Version  semv.Version
+		QueueSet *sous.R11nQueueSet
 	}
 )
 
@@ -93,6 +94,60 @@ func routemap(context ComponentLocator) *restful.RouteMap {
 		re("health", "/health", newHealthResource(context))
 		re("state-deployments", "/state/deployments", newStateDeploymentResource(context))
 	})
+/*
+	return &restful.RouteMap{
+		{
+			Name:     "gdm",
+			Path:     "/gdm",
+			Resource: newGDMResource(context),
+		},
+		{
+			Name:     "defs",
+			Path:     "/defs",
+			Resource: newStateDefResource(context),
+		},
+		{
+			Name:     "manifest",
+			Path:     "/manifest",
+			Resource: newManifestResource(context),
+		},
+		{
+			Name:     "artifact",
+			Path:     "/artifact",
+			Resource: newArtifactResource(context),
+		},
+		{
+			Name:     "status",
+			Path:     "/status",
+			Resource: newStatusResource(context),
+		},
+		{
+			Name:     "servers",
+			Path:     "/servers",
+			Resource: newServerListResource(context),
+		},
+		{
+			Name:     "health",
+			Path:     "/health",
+			Resource: newHealthResource(context),
+		},
+		{
+			Name:     "all-deploy-queues",
+			Path:     "/all-deploy-queues",
+			Resource: newAllDeployQueuesResource(context),
+		},
+		{
+			Name:     "deploy-queue",
+			Path:     "/deploy-queue",
+			Resource: newDeployQueueResource(context),
+		},
+		{
+			Name:     "deploy-queue-item",
+			Path:     "/deploy-queue-item",
+			Resource: newR11nResource(context),
+		},
+	}
+*/
 }
 
 func addMetrics(handler *http.ServeMux, metrics http.Handler) {

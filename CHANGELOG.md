@@ -5,16 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
-## [Unreleased](//github.com/opentable/sous/compare/0.5.63...HEAD)
+
+## [Unreleased](//github.com/opentable/sous/compare/0.5.65...master)
+
+## [0.5.65](//github.com/opentable/sous/compare/0.5.63...0.5.65)
 
 ### Added
-* All: Default when testing, don't call recover when a log message fails to Deliver
+* Server: new endpoints /deploy-queues and /deploy-queue-item showing the
+  list of all deployment queues and their lengths, and individual queue items
+  respectively. /deploy-queue-item allows HTTP long-polling on the completion
+  of a single rectification be providing the ?wait=true query parameter.
+* All: Default when testing, don't call recover when a log message fails to Deliver.
+* CLI: Added timing information to report invocation message.
+* All: Logging Reporter that allows allows semi flexible fields to be indexed.
 
 ## [0.5.63](//github.com/opentable/sous/compare/0.5.62...0.5.63)
 ### Added
 * CLI: If no image is present in runspec, return a fatal flaw in build.
 * Server: adding duplex state storage, to keep DB in sync until ready to switch over
-* Server: Update logging to a more structured format: server, singularity, resource, Generic Msg, handle_gdm, subpoller, volume, local_config, rest/client, disk_state_manager, router
+* Server: Update logging to a more structured format: server, ext/singularity, resource, Generic Msg, handle_gdm, subpoller, volume, local_config, rest/client, disk_state_manager, router
 * Server: A /health endpoint. For the time being, just a 200 and the running version of Sous.
 
 ### Changed
