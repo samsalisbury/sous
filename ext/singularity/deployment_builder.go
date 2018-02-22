@@ -243,11 +243,11 @@ func (db *deploymentBuilder) retrieveLiveDeploy() error {
 	sing := db.req.Sing
 	dh, err := sing.GetDeploy(db.depMarker.RequestId, db.depMarker.DeployId)
 	if err != nil {
-		db.log.Vomitf("%q received error retrieving history entry for deploy marker: %#v %#v", db.reqID, db.depMarker, err)
+		messages.ReportLogFieldsMessage("Received error retrieving history entry for deploy marker.", logging.ExtraDebug1Level, db.log, db.reqID, db.depMarker, err)
 		return errors.Wrapf(err, "%q %#v", db.reqID, db.depMarker)
 	}
-	db.log.Vomitf("%q Deploy history entry retrieved: %#v", db.reqID, dh)
 
+	messages.ReportLogFieldsMessage("Deploy history entry retrieved.", logging.ExtraDebug1Level, db.log, db.reqID, dh)
 	db.history = dh
 
 	return nil
