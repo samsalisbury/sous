@@ -113,7 +113,7 @@ func (db *deploymentBuilder) isRetryable(err error) bool {
 // BuildDeployment does all the work to collect the data for a Deployment
 // from Singularity based on the initial SingularityRequest.
 func BuildDeployment(reg sous.ImageLabeller, clusters sous.Clusters, req SingReq, log logging.LogSink) (sous.DeployState, error) {
-	log.Vomitf("%#v", req.ReqParent)
+	messages.ReportLogFieldsMessage("Build Deployment", logging.ExtraDebug1Level, log, req.ReqParent)
 	db := deploymentBuilder{registry: reg, clusters: clusters, req: req, log: log}
 	return db.Target, db.canRetry(db.completeConstruction())
 }
@@ -254,7 +254,7 @@ func (db *deploymentBuilder) retrieveLiveDeploy() error {
 }
 
 func (db *deploymentBuilder) extractDeployFromDeployHistory() error {
-	db.log.Debugf("%q Extracting deploy from history: %#v", db.reqID, db.history)
+	messages.ReportLogFieldsMessage("Extracting deploy from history.", logging.DebugLevel, db.log, db.history)
 	db.deploy = db.history.Deploy
 	if db.deploy == nil {
 		return malformedResponse{"Singularity deploy history included no deploy"}
@@ -267,7 +267,7 @@ func (db *deploymentBuilder) sousDeployCheck() error {
 	if cnl, ok := db.deploy.Metadata[sous.ClusterNameLabel]; ok {
 		for _, cn := range db.clusters.Names() {
 			if cnl == cn {
-				db.log.Vomitf("Deploy cluster %q found in clusters (%#v)", cnl, db.clusters)
+				messages.ReportLogFieldsMessage("Deploy cluster found in clusters.", logging.ExtraDebug1Level, db.log, cnl, db.clusters)
 				return nil
 			}
 		}
@@ -330,8 +330,8 @@ func (db *deploymentBuilder) retrieveImageLabels() error {
 	if err != nil {
 		return malformedResponse{err.Error()}
 	}
-	db.log.Vomitf("%q Labels: %v", db.reqID, labels)
 
+	messages.ReportLogFieldsMessage("Labels", logging.ExtraDebug1Level, db.log, db.reqID, labels)
 	db.Target.SourceID, err = docker.SourceIDFromLabels(labels)
 	if err != nil {
 		return errors.Wrapf(malformedResponse{err.Error()}, "For reqID: %s", reqID(db.req.ReqParent))
@@ -368,7 +368,7 @@ func (db *deploymentBuilder) restoreFromMetadata() error {
 
 func (db *deploymentBuilder) unpackDeployConfig() error {
 	db.Target.Env = db.deploy.Env
-	db.log.Vomitf("%q Env: %+v", db.reqID, db.deploy.Env)
+	messages.ReportLogFieldsMessage("UnpackDeployConfig", logging.ExtraDebug1Level, db.log, db.reqID, db.deploy.Env)
 	if db.Target.Env == nil {
 		db.Target.Env = make(map[string]string)
 	}
@@ -396,9 +396,9 @@ func (db *deploymentBuilder) unpackDeployConfig() error {
 				Mode:      sous.VolumeMode(v.Mode),
 			})
 	}
-	db.log.Vomitf("%q Volumes %+v", db.reqID, db.Target.DeployConfig.Volumes)
+	messages.ReportLogFieldsMessage("Volumes", logging.ExtraDebug1Level, db.log, db.reqID, db.Target.DeployConfig.Volumes)
 	if len(db.Target.DeployConfig.Volumes) > 0 {
-		db.log.Debugf("%q %+v", db.reqID, db.Target.DeployConfig.Volumes[0])
+		messages.ReportLogFieldsMessage("UnpackDeployConfig volume 0", logging.DebugLevel, db.log, db.reqID, db.Target.DeployConfig.Volumes[0])
 	}
 
 	if db.deploy.Healthcheck != nil {
