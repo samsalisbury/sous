@@ -8,6 +8,7 @@ import (
 	"github.com/opentable/go-singularity"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 	"github.com/opentable/swaggering"
 	"github.com/pkg/errors"
 	"github.com/satori/go.uuid"
@@ -169,10 +170,7 @@ func (r *deployer) buildSingClient(url string) *singularity.Client {
 func rectifyRecover(d interface{}, f string, err *error) {
 	if r := recover(); r != nil {
 		stack := string(debug.Stack())
-		//TODO LH once JC's generalmessage.reportLogFieldsMessage is merged use that here
-		logging.Log.Warn.Printf("Panic in %s with %# v", f, d)
-		logging.Log.Warn.Printf("  %v", r)
-		logging.Log.Warn.Print(stack)
+		messages.ReportLogFieldsMessage("Panic", logging.WarningLevel, logging.Log, d, f, err, r, stack)
 		*err = errors.Errorf("Panicked: %s; stack trace:\n%s", r, stack)
 	}
 }
