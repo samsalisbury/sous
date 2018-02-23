@@ -57,10 +57,8 @@ func (nsd nonSousError) Error() string {
 }
 
 func ignorableDeploy(log logging.LogSink, err error) bool {
-	messages.ReportLogFieldsMessage("checking to see if error is ignorable", logging.ExtraDebug1Level, log, err)
 	switch errors.Cause(err).(type) {
 	case nonSousError, notThisClusterError:
-		messages.ReportLogFieldsMessage("ignorable", logging.ExtraDebug1Level, log, err)
 		return true
 	}
 	return false
@@ -73,13 +71,9 @@ func (mr malformedResponse) Error() string {
 func isMalformed(log logging.LogSink, err error) bool {
 	err = errors.Cause(err)
 	_, isMal := err.(malformedResponse)
-	log.Vomitf("is malformedResponse? err: %+v %T %t", err, err, isMal)
 	_, isUMT := err.(*json.UnmarshalTypeError)
-	log.Vomitf("is json unmarshal type error? err: %+v %T %t", err, err, isUMT)
 	_, isUST := err.(*json.UnsupportedTypeError)
-	log.Vomitf("is json unsupported type error? err: %+v %T %t", err, err, isUST)
 	_, isUSV := err.(*json.UnsupportedValueError)
-	log.Vomitf("is json unsupported value error? err: %+v %T %t", err, err, isUSV)
 	return isMal || isUMT || isUST || isUSV
 }
 
@@ -252,7 +246,6 @@ func (db *deploymentBuilder) retrieveLiveDeploy() error {
 }
 
 func (db *deploymentBuilder) extractDeployFromDeployHistory() error {
-	messages.ReportLogFieldsMessage("Extracting deploy from history.", logging.DebugLevel, db.log, db.history)
 	db.deploy = db.history.Deploy
 	if db.deploy == nil {
 		return malformedResponse{"Singularity deploy history included no deploy"}
