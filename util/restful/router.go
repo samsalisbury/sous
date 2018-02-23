@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"time"
@@ -48,14 +49,23 @@ type (
 		MustInject(...interface{})
 		Add(...interface{})
 	}
+
+	// HeaderAdder is an interface for response bodies to use to set headers
+	HeaderAdder interface {
+		AddHeaders(header http.Header)
+	}
 )
 
 // Exchange implements Exchanger on ExchangeLogger.
 func (xlog *ExchangeLogger) Exchange() (data interface{}, status int) {
-	logging.ReportMsg(xlog.LogSink, logging.DebugLevel, fmt.Sprintf("Server: <- %s %s params: %v", xlog.Method, xlog.URL.String(), xlog.Params))
-	data, status = xlog.Exchanger.Exchange()
-	logging.ReportMsg(xlog.LogSink, logging.DebugLevel, fmt.Sprintf("Server: -> %d: %#v", status, data))
-	return
+	defer func() {
+		if p := recover(); p != nil {
+			// need to log this here, or we lose the real stack
+			xlog.LogSink.Warnf("%+#v\n%s", p, string(debug.Stack()))
+			panic(p)
+		}
+	}()
+	return xlog.Exchanger.Exchange()
 }
 
 type loggingResponseWriter struct {
@@ -81,7 +91,7 @@ func (lrw loggingResponseWriter) Write(b []byte) (int, error) {
 
 	// ParseInt returns 0 and an syntax error if the provided string doesn't parse well.
 	contentLength, _ := strconv.ParseInt(lrw.ResponseWriter.Header().Get("Content-Length"), 10, 64)
-	messages.ReportServerHTTPResponse(lrw.log, lrw.req, lrw.statusCode, contentLength, lrw.resourceName, time.Now().Sub(lrw.start))
+	messages.ReportServerHTTPResponding(lrw.log, "responding", lrw.req, lrw.statusCode, contentLength, lrw.resourceName, time.Now().Sub(lrw.start))
 
 	return n, err
 }
@@ -97,50 +107,52 @@ func (mh *MetaHandler) wrapResponseWriter(resName string, rq *http.Request, rw h
 	}
 }
 
+func (mh *MetaHandler) genericHandling(resName string, factory ExchangeFactory, rw http.ResponseWriter, r *http.Request, p httprouter.Params) (http.ResponseWriter, interface{}, int) {
+	messages.ReportServerHTTPRequest(mh.LogSink, "received", r, resName)
+	w := mh.wrapResponseWriter(resName, r, rw)
+	h := mh.injectedHandler(factory, w, r, p)
+	data, status := h.Exchange()
+	if ha, is := data.(HeaderAdder); is {
+		ha.AddHeaders(w.Header())
+	}
+	return w, data, status
+}
+
 // GetHandling handles Get requests.
 func (mh *MetaHandler) GetHandling(resName string, factory ExchangeFactory) httprouter.Handle {
 	return func(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		w := mh.wrapResponseWriter(resName, r, rw)
-		h := mh.injectedHandler(factory, w, r, p)
-		data, status := h.Exchange()
-		w.Header().Add("Access-Control-Allow-Origin", "*") //XXX configurable by app
-		mh.renderData(status, w, r, data)
+		rw, data, status := mh.genericHandling(resName, factory, rw, r, p)
+		rw.Header().Add("Access-Control-Allow-Origin", "*") //XXX configurable by app
+		mh.renderData(status, rw, r, data)
 	}
 }
 
 // DeleteHandling handles Delete requests.
 func (mh *MetaHandler) DeleteHandling(resName string, factory ExchangeFactory) httprouter.Handle {
 	return func(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		w := mh.wrapResponseWriter(resName, r, rw)
-		h := mh.injectedHandler(factory, w, r, p)
-		_, status := h.Exchange()
-		mh.renderData(status, w, r, nil)
+		rw, _, status := mh.genericHandling(resName, factory, rw, r, p)
+		mh.renderData(status, rw, r, nil)
 	}
 }
 
 // HeadHandling handles Head requests.
 func (mh *MetaHandler) HeadHandling(resName string, factory ExchangeFactory) httprouter.Handle {
 	return func(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		w := mh.wrapResponseWriter(resName, r, rw)
-		h := mh.injectedHandler(factory, w, r, p)
-		_, status := h.Exchange()
-		mh.writeHeaders(status, w, r, nil)
+		rw, _, status := mh.genericHandling(resName, factory, rw, r, p)
+		mh.writeHeaders(status, rw, r, nil)
 	}
 }
 
 // OptionsHandling handles Options requests.
 func (mh *MetaHandler) OptionsHandling(resName string, factory ExchangeFactory) httprouter.Handle {
 	return func(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		w := mh.wrapResponseWriter(resName, r, rw)
-		h := mh.injectedHandler(factory, w, r, p)
-		data, status := h.Exchange()
-
-		w.Header().Add("Access-Control-Allow-Origin", r.Header.Get("Origin")) //XXX Yup: whoever was asking
-		w.Header().Add("Access-Control-Max-Age", "86400")
+		rw, data, status := mh.genericHandling(resName, factory, rw, r, p)
+		rw.Header().Add("Access-Control-Allow-Origin", r.Header.Get("Origin")) //XXX Yup: whoever was asking
+		rw.Header().Add("Access-Control-Max-Age", "86400")
 		if methods, ok := data.([]string); ok {
-			w.Header().Add("Access-Control-Allow-Methods", strings.Join(methods, ", "))
+			rw.Header().Add("Access-Control-Allow-Methods", strings.Join(methods, ", "))
 		}
-		mh.writeHeaders(status, w, r, nil)
+		mh.writeHeaders(status, rw, r, nil)
 	}
 }
 
@@ -178,6 +190,9 @@ func (mh *MetaHandler) PutHandling(resName string, factory ExchangeFactory) http
 		}
 		h := mh.injectedHandler(factory, w, r, p)
 		data, status := h.Exchange()
+		if ha, is := data.(HeaderAdder); is {
+			ha.AddHeaders(w.Header())
+		}
 		mh.renderData(status, w, r, data)
 	}
 }
@@ -185,7 +200,6 @@ func (mh *MetaHandler) PutHandling(resName string, factory ExchangeFactory) http
 // InstallPanicHandler installs an panic handler into the router.
 func (mh *MetaHandler) InstallPanicHandler() {
 	mh.router.PanicHandler = func(w http.ResponseWriter, r *http.Request, recovered interface{}) {
-		//log.Print(recovered)
 		mh.statusHandler.HandlePanic(w, r, recovered)
 	}
 }

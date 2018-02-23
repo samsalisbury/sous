@@ -15,6 +15,7 @@ with respect to its command line interface and HTTP interface.
   list of all deployment queues and their lengths, and individual queue items
   respectively. /deploy-queue-item allows HTTP long-polling on the completion
   of a single rectification be providing the ?wait=true query parameter.
+* Server: new endpoint /state/deployments allows cluster-specific updates to GDM.
 * All: Default when testing, don't call recover when a log message fails to Deliver.
 * CLI: Added timing information to report invocation message.
 * All: Logging Reporter that allows allows semi flexible fields to be indexed.

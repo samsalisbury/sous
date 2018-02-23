@@ -5,6 +5,8 @@ import (
 	"io"
 	"net/http"
 	"runtime/debug"
+
+	"github.com/opentable/sous/util/logging"
 )
 
 type (
@@ -12,7 +14,7 @@ type (
 	// A StatusMiddleware processes panics into 500s and other status codes.
 	StatusMiddleware struct {
 		gatelatch string
-		logSet
+		logging.LogSink
 	}
 )
 
@@ -64,11 +66,10 @@ func (ph *StatusMiddleware) HandleResponse(status int, r *http.Request, w http.R
 func (ph *StatusMiddleware) HandlePanic(w http.ResponseWriter, r *http.Request, recovered interface{}) {
 	w.WriteHeader(http.StatusInternalServerError)
 	stack := debug.Stack()
-	if ph.logSet == nil {
-		ph.logSet = &fallbackLogger{}
+	if ph.LogSink == nil {
+		ph.LogSink = &fallbackLogger{}
 	}
 	ph.Warnf("%+v", recovered)
-	ph.Warnf(string(stack))
 	ph.Warnf("Recovered, returned 500")
 	ph.errorBody(http.StatusInternalServerError, r, w, nil, recovered.(error), stack)
 	// XXX in a dev mode, print the panic in the response body

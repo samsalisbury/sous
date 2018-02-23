@@ -266,8 +266,6 @@ func (client *LiveHTTPClient) buildRequest(method, url string, headers map[strin
 		return nil, ierr
 	}
 
-	//	client.Debugf("Sending %s %q", method, url)
-	client.Debugf("Sending %s %q", method, url)
 	JSON := &bytes.Buffer{}
 
 	if rqBody != nil {
@@ -308,14 +306,9 @@ func (client *LiveHTTPClient) sendRequest(rq *http.Request, ierr error) (*http.R
 		return nil, ierr
 	}
 	// needs to be fixed in coming log update
-	client.Debugf("Sending %s %q", rq.Method, rq.URL)
 	rz, err := client.httpRequest(rq)
 	if err != nil {
-		client.Debugf("Received %v", err)
 		return rz, err
-	}
-	if rz != nil {
-		client.Debugf("Received \"%s %s\" -> %d", rq.Method, rq.URL, rz.StatusCode)
 	}
 	return rz, err
 }
@@ -348,108 +341,51 @@ func (client *LiveHTTPClient) getBody(rz *http.Response, rzBody interface{}, err
 			resourceJSON: bytes.NewBuffer(rzJSON),
 		}, errors.Wrapf(err, "processing response body")
 	case rz.StatusCode < 200 || rz.StatusCode >= 300:
-		return nil, errors.Errorf("%s: %#v", rz.Status, string(b))
+		return nil, errors.Errorf("%s: %#v (%v)", rz.Status, string(b), b)
 	case rz.StatusCode == http.StatusConflict:
 		return nil, errors.Wrap(retryableError(fmt.Sprintf("%s: %#v", rz.Status, string(b))), "getBody")
 	}
 
 }
 
-func (client *LiveHTTPClient) logBody(dir, chName string, req *http.Request, b []byte, n int, err error) {
-	reportServerMessage("logBody", chName, req, 0, int64(n), "", time.Duration(int64(0)), client.LogSink)
+func bodyMessage(b []byte, n int, err error) string {
 	comp := &bytes.Buffer{}
-	if err := json.Compact(comp, b[0:n]); err != nil {
-		reportServerMessage(fmt.Sprintf("%s", string(b)), chName, req, 0, int64(n), "", time.Duration(int64(0)), client.LogSink)
-		reportServerMessage(fmt.Sprintf("problem compacting JSON for logging: %s)", err), chName, req, 0, int64(n), "", time.Duration(int64(0)), client.LogSink)
-	} else {
-		reportServerMessage(string(comp.String()), chName, req, 0, int64(n), "", time.Duration(int64(0)), client.LogSink)
+	if err == io.EOF {
+		err = nil
 	}
-	reportServerMessage(fmt.Sprintf("%s %d bytes, result: %v", dir, n, err), chName, req, 0, int64(n), "", time.Duration(int64(0)), client.LogSink)
-}
-
-func (client *LiveHTTPClient) readerLogF(dir, chName string, req *http.Request) func(b []byte, n int, err error) {
-	return func(b []byte, n int, err error) { client.logBody(dir, chName, req, b, n, err) }
+	if cerr := json.Compact(comp, b[0:n]); cerr != nil {
+		return fmt.Sprintf("body: %d bytes: %q (read err: %v)", n, string(b), err)
+	} else {
+		return fmt.Sprintf("body: %d bytes, %s (read err: %v)", n, comp.String(), err)
+	}
 }
 
 func (client *LiveHTTPClient) httpRequest(req *http.Request) (*http.Response, error) {
 	if req.Body == nil {
-		reportServerMessage("Client -> <empty request body>", "", req, 0, int64(0), "", time.Duration(int64(0)), client.LogSink)
+		messages.ReportClientHTTPRequest(client.LogSink, "<empty request body>", req, "")
 	} else {
-		req.Body = readdebugger.New(req.Body, client.readerLogF("Sent", "Client ->", req))
+		req.Body = readdebugger.New(req.Body, func(b []byte, n int, err error) {
+			messages.ReportClientHTTPRequest(client.LogSink, bodyMessage(b, n, err), req, "")
+		})
 	}
+
+	sendTime := time.Now()
+
 	rz, err := client.Client.Do(req)
+	recvTime := time.Now()
+	rqDur := recvTime.Sub(sendTime)
+
 	if rz == nil {
 		return rz, err
 	}
 	if rz.Body == nil {
-		reportServerMessage("Client <- <empty response body>", "", req, 0, int64(0), "", time.Duration(int64(0)), client.LogSink)
+		messages.ReportClientHTTPResponse(client.LogSink, "<empty response body>", rz, "placeholder resource name", rqDur)
 		return rz, err
 	}
 
-	rz.Body = readdebugger.New(rz.Body, client.readerLogF("Read", "Client <-", req))
+	rz.Body = readdebugger.New(rz.Body, func(b []byte, n int, err error) {
+		messages.ReportClientHTTPResponse(client.LogSink, bodyMessage(b, n, err), rz, "", rqDur)
+	})
+
 	return rz, err
-}
-
-type clientMessage struct {
-	logging.CallerInfo
-	msg         string
-	channelName string
-	httpMsg     *messages.HTTPLogEntry
-	isDebugMsg  bool
-}
-
-/* func reportClientMessage(msg string, channelName string, rz *http.Response, resName string, dur time.Duration, logger logging.LogSink) {
-	// XXX dur should in fact be "start time.Time" and duration be computed here.
-	// swaggering now depends on this, so it's more of a hassle.
-	m := messages.BuildClientHTTPResponse(rz, resName, dur)
-	m.ExcludeMe()
-	reportMessage(m, msg, channelName, logger, true)
-} */
-
-// ReportServerHTTPResponse reports a response recieved by Sous as a client.
-// n.b. this interface subject to change
-func reportServerMessage(msg string, channelName string, rq *http.Request, statusCode int, contentLength int64, resName string, dur time.Duration, logger logging.LogSink) {
-	m := messages.BuildServerHTTPResponse(rq, statusCode, contentLength, resName, dur)
-	m.ExcludeMe()
-	reportMessage(m, msg, channelName, logger, true)
-}
-
-func reportMessage(httpmsg *messages.HTTPLogEntry, msg string, channelName string, log logging.LogSink, debug ...bool) {
-	debugStmt := false
-	if len(debug) > 0 {
-		debugStmt = debug[0]
-	}
-
-	msgLog := clientMessage{
-		msg:         msg,
-		CallerInfo:  logging.GetCallerInfo(logging.NotHere()),
-		channelName: channelName,
-		httpMsg:     httpmsg,
-		isDebugMsg:  debugStmt,
-	}
-	logging.Deliver(msgLog, log)
-}
-
-func (msg clientMessage) DefaultLevel() logging.Level {
-	level := logging.WarningLevel
-	if msg.isDebugMsg {
-		level = logging.DebugLevel
-	}
-
-	return level
-}
-
-func (msg clientMessage) Message() string {
-	return msg.composeMsg()
-}
-
-func (msg clientMessage) composeMsg() string {
-	return fmt.Sprintf("%s: channel name %s, status %d", msg.msg, msg.channelName, msg.httpMsg.Status())
-}
-
-func (msg clientMessage) EachField(f logging.FieldReportFn) {
-	//f("@loglov3-otl", "sous-http-v1") //httpMsg for now will be adding the otl type, might need refactor
-	f("channel_name", msg.channelName)
-	msg.httpMsg.EachFieldWithoutCallerInfo(f)
-	msg.CallerInfo.EachField(f)
 }

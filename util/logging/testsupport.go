@@ -70,16 +70,19 @@ func (lss logSinkSpy) LogMessage(lvl Level, msg LogMessage) {
 // These do what LogSet does so that it'll be easier to replace the interface
 func (lss logSinkSpy) Vomitf(f string, as ...interface{}) {
 	m := NewGenericMsg(ExtraDebug1Level, fmt.Sprintf(f, as...), nil, false)
+	m.ExcludeMe()
 	Deliver(m, lss)
 }
 
 func (lss logSinkSpy) Debugf(f string, as ...interface{}) {
 	m := NewGenericMsg(DebugLevel, fmt.Sprintf(f, as...), nil, false)
+	m.ExcludeMe()
 	Deliver(m, lss)
 }
 
 func (lss logSinkSpy) Warnf(f string, as ...interface{}) {
 	m := NewGenericMsg(WarningLevel, fmt.Sprintf(f, as...), nil, false)
+	m.ExcludeMe()
 	Deliver(m, lss)
 }
 
@@ -149,6 +152,32 @@ func (wds writeDonerSpy) Write(p []byte) (n int, err error) {
 
 func (wds writeDonerSpy) Done() {
 	wds.spy.Called()
+}
+
+// DumpLogs logs each logged message to the LogSinkSpy
+// Useful in integration tests to see what was logged
+func (lsc LogSinkController) DumpLogs(t *testing.T) {
+	for _, call := range lsc.CallsTo("LogMessage") {
+		line := ""
+		if ll, is := call.PassedArgs().Get(0).(Level); is {
+			line = ll.String()
+		} else {
+			line = "LEVEL??"
+		}
+		line = line + ": "
+		if lm, is := call.PassedArgs().Get(1).(LogMessage); is {
+			line = line + lm.Message()
+			line = line + " "
+
+			lm.EachField(func(name string, val interface{}) {
+				if name == "call-stack-trace" {
+					return
+				}
+				line = line + fmt.Sprintf("%s=%v ", name, val)
+			})
+		}
+		t.Log(line)
+	}
 }
 
 //

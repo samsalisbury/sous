@@ -26,7 +26,8 @@ type (
 		*config.Config
 		sous.Inserter
 		sous.StateManager
-		ResolveFilter *sous.ResolveFilter
+		sous.ClusterManager // xxx temporary?
+		ResolveFilter       *sous.ResolveFilter
 		*sous.AutoResolver
 		Version  semv.Version
 		QueueSet *sous.R11nQueueSet
@@ -83,58 +84,19 @@ func mux(sc ComponentLocator, ls logging.LogSink) *http.ServeMux {
 }
 
 func routemap(context ComponentLocator) *restful.RouteMap {
-	return &restful.RouteMap{
-		{
-			Name:     "gdm",
-			Path:     "/gdm",
-			Resource: newGDMResource(context),
-		},
-		{
-			Name:     "defs",
-			Path:     "/defs",
-			Resource: newStateDefResource(context),
-		},
-		{
-			Name:     "manifest",
-			Path:     "/manifest",
-			Resource: newManifestResource(context),
-		},
-		{
-			Name:     "artifact",
-			Path:     "/artifact",
-			Resource: newArtifactResource(context),
-		},
-		{
-			Name:     "status",
-			Path:     "/status",
-			Resource: newStatusResource(context),
-		},
-		{
-			Name:     "servers",
-			Path:     "/servers",
-			Resource: newServerListResource(context),
-		},
-		{
-			Name:     "health",
-			Path:     "/health",
-			Resource: newHealthResource(context),
-		},
-		{
-			Name:     "all-deploy-queues",
-			Path:     "/all-deploy-queues",
-			Resource: newAllDeployQueuesResource(context),
-		},
-		{
-			Name:     "deploy-queue",
-			Path:     "/deploy-queue",
-			Resource: newDeployQueueResource(context),
-		},
-		{
-			Name:     "deploy-queue-item",
-			Path:     "/deploy-queue-item",
-			Resource: newR11nResource(context),
-		},
-	}
+	return restful.BuildRouteMap(func(re restful.RouteEntryBuilder) {
+		re("gdm", "/gdm", newGDMResource(context))
+		re("defs", "/defs", newStateDefResource(context))
+		re("manifest", "/manifest", newManifestResource(context))
+		re("artifact", "/artifact", newArtifactResource(context))
+		re("status", "/status", newStatusResource(context))
+		re("servers", "/servers", newServerListResource(context))
+		re("health", "/health", newHealthResource(context))
+		re("state-deployments", "/state/deployments", newStateDeploymentResource(context))
+		re("all-deploy-queues", "/all-deploy-queues", newAllDeployQueuesResource(context))
+		re("deploy-queue", "/deploy-queue", newDeployQueueResource(context))
+		re("deploy-queue-item", "/deploy-queue-item", newR11nResource(context))
+	})
 }
 
 func addMetrics(handler *http.ServeMux, metrics http.Handler) {

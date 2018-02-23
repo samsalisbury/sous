@@ -69,6 +69,8 @@ type (
 	MetricsHandler struct{ http.Handler }
 	// LogSink wraps logging.LogSink
 	LogSink struct{ logging.LogSink }
+	// ClusterManager simply wraps the sous.ClusterManager interface
+	ClusterManager struct{ sous.ClusterManager }
 	// StateManager simply wraps the sous.StateManager interface
 	StateManager struct{ sous.StateManager }
 	// ServerStateManager simply wraps the sous.StateManager interface

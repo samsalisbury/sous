@@ -61,6 +61,7 @@ func (suite serverTests) prepare(extras ...interface{}) http.Handler {
 	g := graph.TestGraphWithConfig(semv.Version{}, &bytes.Buffer{}, os.Stdout, os.Stdout,
 		"StateLocation: '"+outpath+"'\n")
 	g.Add(extras...)
+
 	g.Add(&config.Verbosity{})
 	g.Add(&config.DeployFilterFlags{})
 	g.Add(graph.DryrunBoth)
@@ -68,6 +69,7 @@ func (suite serverTests) prepare(extras ...interface{}) http.Handler {
 	serverScoop := struct {
 		Handler graph.ServerHandler
 	}{}
+
 	g.MustInject(&serverScoop)
 	if serverScoop.Handler.Handler == nil {
 		suite.FailNow("Didn't inject http.Handler!")

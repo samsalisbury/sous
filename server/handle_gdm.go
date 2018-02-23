@@ -3,7 +3,6 @@ package server
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"sort"
 
@@ -23,8 +22,7 @@ type (
 	// GETGDMHandler is an injectable request handler
 	GETGDMHandler struct {
 		logging.LogSink
-		GDM      *sous.State
-		RzWriter http.ResponseWriter
+		GDM *sous.State
 	}
 
 	// PUTGDMHandler is an injectable request handler
@@ -44,9 +42,8 @@ func newGDMResource(ctx ComponentLocator) *GDMResource {
 // Get implements Getable on GDMResource
 func (gr *GDMResource) Get(writer http.ResponseWriter, _ *http.Request, _ httprouter.Params) restful.Exchanger {
 	return &GETGDMHandler{
-		LogSink:  gr.context.LogSink,
-		GDM:      gr.context.liveState(),
-		RzWriter: writer,
+		LogSink: gr.context.LogSink,
+		GDM:     gr.context.liveState(),
 	}
 }
 
@@ -70,8 +67,6 @@ func (h *GETGDMHandler) Exchange() (interface{}, int) {
 		}
 		data.Deployments = append(data.Deployments, d)
 	}
-	etag, _ := h.GDM.GetEtag()
-	h.RzWriter.Header().Set("Etag", etag)
 
 	return data, http.StatusOK
 }
@@ -157,10 +152,6 @@ func reportHandleGDMMessage(msg string, f []sous.Flaw, err error, log logging.Lo
 		debug:        isDebug,
 	}
 	logging.Deliver(msgLog, log)
-}
-
-func (msg handleGDMMessage) WriteToConsole(console io.Writer) {
-	fmt.Fprintf(console, "%s\n", msg.composeMsg())
 }
 
 func (msg handleGDMMessage) DefaultLevel() logging.Level {
