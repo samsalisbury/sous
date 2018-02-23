@@ -11,7 +11,7 @@ import (
 
 // This test demonstrates how to use AssertReport and AssertMessageFields separately,
 // along with why you might want to.
-func TestCHResponseFields(t *testing.T) {
+func TestReportClientHTTPResponseFields_assertReport(t *testing.T) {
 	res := buildHTTPResponse(t, "GET", "http://example.com/api?a=a", 200, 0, 123)
 	control, message := logging.AssertReport(t, func(logger logging.LogSink) {
 		ReportClientHTTPResponse(logger, "test", res, "example-api", time.Millisecond*30)
@@ -40,7 +40,7 @@ func TestCHResponseFields(t *testing.T) {
 		})
 }
 
-func TestReportClientHRequestFields(t *testing.T) {
+func TestReportClientHTTPRequestFields(t *testing.T) {
 	req := buildHTTPRequest(t, "GET", "http://example.com/api?a=a", 0)
 	logging.AssertReportFields(t,
 		func(logger logging.LogSink) {
@@ -63,7 +63,7 @@ func TestReportClientHRequestFields(t *testing.T) {
 		})
 }
 
-func TestReportServerHRequestFields(t *testing.T) {
+func TestReportServerHTTPRequestFields(t *testing.T) {
 	req := buildHTTPRequest(t, "GET", "http://example.com/api?a=a", 0)
 	logging.AssertReportFields(t,
 		func(logger logging.LogSink) {
@@ -86,7 +86,7 @@ func TestReportServerHRequestFields(t *testing.T) {
 		})
 }
 
-func TestReportClientHResponseFields(t *testing.T) {
+func TestReportClientHTTPResponseFields(t *testing.T) {
 	res := buildHTTPResponse(t, "GET", "http://example.com/api?a=a", 200, 0, 123)
 	logging.AssertReportFields(t,
 		func(logger logging.LogSink) {
@@ -109,7 +109,7 @@ func TestReportClientHResponseFields(t *testing.T) {
 		})
 }
 
-func TestReportServerHResponseFields(t *testing.T) {
+func TestReportServerHTTPResponseFields(t *testing.T) {
 	res := buildHTTPResponse(t, "GET", "http://example.com/api?a=a", 200, 0, 123)
 	logging.AssertReportFields(t,
 		func(logger logging.LogSink) {
@@ -132,7 +132,7 @@ func TestReportServerHResponseFields(t *testing.T) {
 		})
 }
 
-func TestReportServerHRespondingFields(t *testing.T) {
+func TestReportServerHTTPRespondingFields(t *testing.T) {
 	req := buildHTTPRequest(t, "PUT", "http://example.com/api?a=a", 20)
 	logging.AssertReportFields(t,
 		func(logger logging.LogSink) {
