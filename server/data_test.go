@@ -21,7 +21,7 @@ func TestGDMWrapperAddHeaders(t *testing.T) {
 
 	wrapper.AddHeaders(headers)
 
-	if strings.Index(headers.Get("Etag"), "w/") != 0 {
-		t.Errorf("Expected a w/ Etag, got %q", headers.Get("Etag"))
+	if !strings.HasPrefix(headers.Get("Etag"), "w/") {
+		t.Errorf("Expected Etag with prefix %q, got Etag %q", "w/", headers.Get("Etag"))
 	}
 }
