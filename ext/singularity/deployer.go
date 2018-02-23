@@ -142,7 +142,6 @@ func (r *deployer) Rectify(pair *sous.DeployablePair) sous.DiffResolution {
 				Prior: pair.Prior.Deployment.Clone(),
 				Post:  pair.Post.Deployment.Clone(),
 			}
-			Log.Debug.Print(err)
 			result.Error = sous.WrapResolveError(&sous.ChangeError{Deployments: dp, Err: err})
 			result.Desc = "not updated"
 		} else if pair.Prior.Status == sous.DeployStatusFailed || pair.Post.Status == sous.DeployStatusFailed {
