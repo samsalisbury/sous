@@ -88,12 +88,6 @@ func TestWriteState(t *testing.T) {
 
 	serverScoop := struct{ Handler graph.ServerHandler }{}
 	di.Add(&config.Verbosity{})
-	di.Add(sous.User{})
-	di.Add(&config.PolicyFlags{})
-	di.Add(&config.OTPLFlags{})
-	if err := di.Test(); err != nil {
-		t.Fatalf("invalid graph: %s", err)
-	}
 	di.MustInject(&serverScoop)
 	if serverScoop.Handler.Handler == nil {
 		t.Fatalf("Didn't inject http.Handler!")

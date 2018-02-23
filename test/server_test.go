@@ -61,17 +61,14 @@ func (suite serverTests) prepare(extras ...interface{}) http.Handler {
 	g := graph.TestGraphWithConfig(semv.Version{}, &bytes.Buffer{}, os.Stdout, os.Stdout,
 		"StateLocation: '"+outpath+"'\n")
 	g.Add(extras...)
+
 	g.Add(&config.Verbosity{})
 	g.Add(&config.DeployFilterFlags{})
 	g.Add(graph.DryrunBoth)
-	g.Add(&config.PolicyFlags{})
-	g.Add(&config.OTPLFlags{})
 
 	serverScoop := struct {
 		Handler graph.ServerHandler
 	}{}
-
-	suite.Require().NoError(g.Test())
 
 	g.MustInject(&serverScoop)
 	if serverScoop.Handler.Handler == nil {
