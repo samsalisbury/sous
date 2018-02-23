@@ -75,13 +75,11 @@ func isMalformed(log logging.LogSink, err error) bool {
 	log.Vomitf("is malformedResponse? err: %+v %T %t", err, err, isMal)
 	_, isUMT := err.(*json.UnmarshalTypeError)
 	log.Vomitf("is json unmarshal type error? err: %+v %T %t", err, err, isUMT)
-	_, isUMF := err.(*json.UnmarshalFieldError)
-	log.Vomitf("is json unmarshal value error? err: %+v %T %t", err, err, isUMF)
 	_, isUST := err.(*json.UnsupportedTypeError)
 	log.Vomitf("is json unsupported type error? err: %+v %T %t", err, err, isUST)
 	_, isUSV := err.(*json.UnsupportedValueError)
 	log.Vomitf("is json unsupported value error? err: %+v %T %t", err, err, isUSV)
-	return isMal || isUMT || isUMF || isUST || isUSV
+	return isMal || isUMT || isUST || isUSV
 }
 
 func (cr *canRetryRequest) Error() string {
