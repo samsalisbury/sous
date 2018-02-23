@@ -244,11 +244,11 @@ func newls(name string, role string, level Level, bundle *dumpBundle) *LogSet {
 		dumpBundle: bundle,
 	}
 
-	ls.Warn = logwrapper(func(f string, as ...interface{}) { ls.Warnf(f, as) })
+	ls.Warn = logwrapper(func(f string, as ...interface{}) { ls.Warnf(f, as...) })
 	ls.Notice = ls.Warn
 	ls.Info = ls.Warn
-	ls.Debug = logwrapper(func(f string, as ...interface{}) { ls.Debugf(f, as) })
-	ls.Vomit = logwrapper(func(f string, as ...interface{}) { ls.Vomitf(f, as) })
+	ls.Debug = logwrapper(func(f string, as ...interface{}) { ls.Debugf(f, as...) })
+	ls.Vomit = logwrapper(func(f string, as ...interface{}) { ls.Vomitf(f, as...) })
 
 	return ls
 }
