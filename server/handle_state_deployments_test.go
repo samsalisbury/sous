@@ -70,8 +70,9 @@ func TestPutStateDeployments(t *testing.T) {
 
 	data, status := ex.Exchange()
 
-	if status != 202 {
-		t.Fatalf("Expected 200 status, got %d", status)
+	wantStatus := 202
+	if status != wantStatus {
+		t.Fatalf("Expected %d status, got %d", wantStatus, status)
 	}
 
 	if data != nil {
