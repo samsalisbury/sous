@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+
+currentversion="$(git tag | grep '[.].*[.*]' | versiontool sort | tail -n 1)"
+jirauser=$(git config --get jira.user)
+jiraserver=$(git config --get jira.server)
+jirapassword=$(git config --get jira.password)
+
+echo "Marking $currentversion on currently closed tickets"
+islast="false"
+versions=""
+while [ $islast != "true" ]; do
+  response=$(curl -s -u "${jirauser}:${jirapassword}" -H "Content-Type: application/json" "$jiraserver/rest/api/2/project/SOUS/version" | tee /tmp/sous-version)
+  islast=$(echo $response | jq -r '.isLast')
+  names=$(echo $response | jq -r '.values[].name')
+  versions="${versions}${names}"
+done
+
+foundVersion="false"
+for v in $versions; do
+  if [ $v == $currentversion ]; then
+    foundVersion="true"
+    break
+  fi
+done
+
+if [ $foundVersion != "true" ]; then
+  echo "Creating $currentversion in Jira..."
+  curl -s -u "${jirauser}:${jirapassword}" \
+    -H "Content-Type: application/json" \
+    "$jiraserver/rest/api/2/version" \
+    --data "{ \"name\": \"${currentversion}\", \"project\": \"SOUS\" }"
+else
+  echo "Version $currentversion already present in Jira."
+fi
+
+#project = SOUS AND status = Closed and fixVersion is EMPTY
+issues=$(curl -s -u "${jirauser}:${jirapassword}" \
+  -H "Content-Type: application/json" \
+  "$jiraserver/rest/api/2/search?jql=project%20%3D%20SOUS%20AND%20status%20%3D%20Closed%20and%20fixVersion%20is%20EMPTY")
+
+echo "Setting fixVersion for the following issues:"
+echo $issues | jq -r '.issues[] | (.key + " " + .fields.summary)'
+
+for i in $( echo $issues | jq -r '.issues[].key'); do
+  curl -s -u "${jirauser}:${jirapassword}" \
+    -H "Content-Type: application/json" \
+    -X PUT \
+    "$jiraserver/rest/api/2/issue/$i" \
+    --data "{\"update\":{\"fixVersions\":[{\"add\":{\"name\": \"${currentversion}\"}}] }}"
+done

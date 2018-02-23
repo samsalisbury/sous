@@ -1,9 +1,7 @@
 package server
 
 import (
-	"fmt"
 	"net/http"
-	"net/url"
 
 	"github.com/julienschmidt/httprouter"
 	sous "github.com/opentable/sous/lib"
@@ -28,21 +26,10 @@ func newDeployQueueResource(ctx ComponentLocator) *DeployQueueResource {
 	return &DeployQueueResource{context: ctx}
 }
 
-func deploymentIDFromRoute(r *http.Request) (sous.DeploymentID, error) {
-	didStr, err := url.QueryUnescape(r.URL.Query().Get("DeploymentID"))
-	if err != nil {
-		return sous.DeploymentID{}, fmt.Errorf("unescaping query: %s", err)
-	}
-	did, err := sous.ParseDeploymentID(didStr)
-	if err != nil {
-		return sous.DeploymentID{}, fmt.Errorf("parsing DeploymentID from query: %s", err)
-	}
-	return did, nil
-}
-
 // Get returns a configured GETDeployQueueHandler.
 func (r *DeployQueueResource) Get(_ http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
-	did, didErr := deploymentIDFromRoute(req)
+	qv := restful.QueryValues{Values: req.URL.Query()}
+	did, didErr := deploymentIDFromValues(qv)
 	return &GETDeployQueueHandler{
 		QueueSet:        r.context.QueueSet,
 		DeploymentID:    did,

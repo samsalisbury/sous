@@ -7,7 +7,6 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/julienschmidt/httprouter"
 	"github.com/opentable/sous/lib"
-	"github.com/opentable/sous/util/firsterr"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 	"github.com/pkg/errors"
@@ -127,38 +126,4 @@ func (pmh *PUTManifestHandler) Exchange() (interface{}, int) {
 		return errors.Wrapf(err, "state recording collision - retry"), http.StatusConflict
 	}
 	return m, http.StatusOK
-}
-
-/*
-To recap:
-
-To look up a manifest, we need a manifestID:
-ManifestID{
-	SourceLocation{
-		Repo
-		Offset
-	}
-	Flavor
-}
-*/
-
-func manifestIDFromValues(qv restful.QueryValues) (sous.ManifestID, error) {
-	var r, o, f string
-	var err error
-	err = firsterr.Returned(
-		func() error { r, err = qv.Single("repo"); return err },
-		func() error { o, err = qv.Single("offset", ""); return err },
-		func() error { f, err = qv.Single("flavor", ""); return err },
-	)
-	if err != nil {
-		return sous.ManifestID{}, err
-	}
-
-	return sous.ManifestID{
-		Source: sous.SourceLocation{
-			Repo: r,
-			Dir:  o,
-		},
-		Flavor: f,
-	}, nil
 }
