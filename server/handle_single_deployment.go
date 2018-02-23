@@ -1,6 +1,10 @@
 package server
 
-import sous "github.com/opentable/sous/lib"
+import (
+	"net/http"
+
+	sous "github.com/opentable/sous/lib"
+)
 
 type (
 	// PUTSingleDeploymentHandler handles manifests containing single deployment
@@ -10,6 +14,11 @@ type (
 		DeploymentIDErr error
 		Body            *singleDeploymentBody
 		BodyErr         error
+		Header          http.Header
+		GDM             *sous.State
+		StateWriter     sous.StateWriter
+		QueueSet        *sous.R11nQueueSet
+		User            sous.User
 	}
 
 	// singleDeploymentBody is the response struct returned from handlers
@@ -26,5 +35,15 @@ type (
 // from the current actual deployment set. It first writes the new
 // deployment spec to the GDM.
 func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
-	return nil, 404
+	m, ok := psd.GDM.Manifests.Get(psd.Body.DeploymentID.ManifestID)
+	if !ok {
+		return psd.Body, 404
+	}
+
+	_, ok = m.Deployments[psd.Body.DeploymentID.Cluster]
+	if !ok {
+		return psd.Body, 404
+	}
+
+	return psd.Body, 200
 }
