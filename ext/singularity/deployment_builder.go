@@ -73,16 +73,14 @@ func (mr malformedResponse) Error() string {
 func isMalformed(log logging.LogSink, err error) bool {
 	err = errors.Cause(err)
 	_, isMal := err.(malformedResponse)
-	messages.ReportLogFieldsMessage("is malformedResponse?", logging.ExtraDebug1Level, log, err, isMal)
+	log.Vomitf("is malformedResponse? err: %+v %T %t", err, err, isMal)
 	_, isUMT := err.(*json.UnmarshalTypeError)
-	messages.ReportLogFieldsMessage("is json unmarshal type error?", logging.ExtraDebug1Level, log, err, isUMT)
-	_, isUMF := err.(*json.UnmarshalFieldError)
-	messages.ReportLogFieldsMessage("is json unmarshal value error?", logging.ExtraDebug1Level, log, err, isUMF)
+	log.Vomitf("is json unmarshal type error? err: %+v %T %t", err, err, isUMT)
 	_, isUST := err.(*json.UnsupportedTypeError)
-	messages.ReportLogFieldsMessage("is json unsupported type error?", logging.ExtraDebug1Level, log, err, isUST)
+	log.Vomitf("is json unsupported type error? err: %+v %T %t", err, err, isUST)
 	_, isUSV := err.(*json.UnsupportedValueError)
-	messages.ReportLogFieldsMessage("is json unsupported value error?", logging.ExtraDebug1Level, log, err, isUSV)
-	return isMal || isUMT || isUMF || isUST || isUSV
+	log.Vomitf("is json unsupported value error? err: %+v %T %t", err, err, isUSV)
+	return isMal || isUMT || isUST || isUSV
 }
 
 func (cr *canRetryRequest) Error() string {
