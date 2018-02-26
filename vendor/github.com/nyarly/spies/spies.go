@@ -24,6 +24,7 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
+	"sync"
 
 	"github.com/stretchr/testify/mock"
 )
@@ -34,7 +35,6 @@ type (
 		result mock.Arguments
 	}
 
-	// A Call represents a recorded call to a spied-upon method.
 	Call struct {
 		method string
 		args   mock.Arguments
@@ -46,6 +46,7 @@ type (
 	Spy struct {
 		matchers []matcher
 		calls    []Call
+		sync.RWMutex
 	}
 
 	// A PassedArger implements PassedArgs
@@ -87,6 +88,8 @@ func CallCount(n int) func(mock.Arguments) bool {
 
 func (s *Spy) String() string {
 	str := "Calls: "
+	s.RLock()
+	defer s.RUnlock()
 	for _, c := range s.calls {
 		str += c.String() + "\n"
 	}
@@ -97,7 +100,6 @@ func (c Call) String() string {
 	return fmt.Sprintf("%s(%s) -> (%s)", c.method, c.args, c.res)
 }
 
-// PassedArgs returns the arguments that were passed to a Call so that they can be inspected.
 func (c Call) PassedArgs() mock.Arguments {
 	as := make(mock.Arguments, len(c.args))
 	copy(as, c.args)
@@ -168,12 +170,16 @@ func (s *Spy) Called(argList ...interface{}) results {
 
 	found := s.findArgs(functionName, args)
 
+	s.Lock()
+	defer s.Unlock()
 	s.calls = append(s.calls, Call{functionName, args, found})
 	return found
 }
 
 // CallsMatching returns a list of calls for with f() returns true.
 func (s *Spy) CallsMatching(f func(name string, args mock.Arguments) bool) []Call {
+	s.RLock()
+	defer s.RUnlock()
 	calls := []Call{}
 	for _, c := range s.calls {
 		if f(c.method, c.args) {
@@ -192,6 +198,8 @@ func (s *Spy) CallsTo(name string) []Call {
 
 // Calls returns all the calls made to the spy
 func (s *Spy) Calls() []Call {
+	s.RLock()
+	s.RUnlock()
 	cs := make([]Call, len(s.calls))
 	copy(cs, s.calls)
 	return cs

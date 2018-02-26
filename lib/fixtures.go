@@ -1,6 +1,10 @@
 package sous
 
-import "github.com/samsalisbury/semv"
+import (
+	"fmt"
+
+	"github.com/samsalisbury/semv"
+)
 
 // These functions gin up fixtures for various complex structs to be used where
 // a tested component needs e.g. a real manifest but where the manifest itself
@@ -13,7 +17,21 @@ import "github.com/samsalisbury/semv"
 //        ...
 // If more specific forms are required, add them as "named" fixtures here.
 
-func deployConfigFixture(name string) DeployConfig {
+var sequences = map[string]int{}
+
+func seq(name string) int {
+	n, has := sequences[name]
+	if has {
+		n = n + 1
+		sequences[name] = n
+		return n
+	}
+	sequences[name] = 0
+	return 0
+}
+
+// DeployConfigFixture returns a fixtured DeployConfig. There are no defined stereotypes of this fixture yet.
+func DeployConfigFixture(name string) DeployConfig {
 	switch name {
 	default:
 		return DeployConfig{
@@ -33,12 +51,31 @@ func deployConfigFixture(name string) DeployConfig {
 	}
 }
 
-func deploymentFixture(name string) *Deployment {
+// DeploymentFixture returns a fixtured Deployment. Stereotypes:
+// * (default) a repeating "example" repo
+// * sequenced-repo - uses sequences to return distinct deployments
+func DeploymentFixture(name string) *Deployment {
 	switch name {
+	case "sequenced-repo":
+		return &Deployment{
+			DeployConfig: DeployConfigFixture(""),
+			ClusterName:  "cluster-1",
+			SourceID: SourceID{
+				Location: SourceLocation{
+					Repo: fmt.Sprintf("github.com/opentable/example-%d", seq("dep-repo")),
+					Dir:  "",
+				},
+				Version: semv.MustParse("0.0.1"),
+			},
+			Flavor: "",
+			Owners: OwnerSet{},
+			Kind:   ManifestKindService,
+			//Cluster *Cluster,
+		}
 	default:
 		return &Deployment{
-			DeployConfig: deployConfigFixture(""),
-			ClusterName:  "test-cluster",
+			DeployConfig: DeployConfigFixture(""),
+			ClusterName:  "cluster-1",
 			SourceID: SourceID{
 				Location: SourceLocation{
 					Repo: "github.com/opentable/example",
@@ -54,12 +91,13 @@ func deploymentFixture(name string) *Deployment {
 	}
 }
 
-func deployableFixture(name string) *Deployable {
+// DeployableFixture returns a fixtured Deployment. There are no defined stereotypes of this fixture yet.
+func DeployableFixture(name string) *Deployable {
 	switch name {
 	default:
 		return &Deployable{
 			Status:     DeployStatusActive,
-			Deployment: deploymentFixture(""),
+			Deployment: DeploymentFixture(""),
 			BuildArtifact: &BuildArtifact{
 				Type:      "docker",
 				Name:      "dockerhub.io/example:0.0.1",
@@ -69,7 +107,10 @@ func deployableFixture(name string) *Deployable {
 	}
 }
 
-func manifestFixture(name string) *Manifest {
+// ManifestFixture returns a fixtured Manifest. Stereotypes are:
+// * simple
+// * with-metadata
+func ManifestFixture(name string) *Manifest {
 	switch name {
 	default:
 		panic("testManifest: unknown name: " + name)

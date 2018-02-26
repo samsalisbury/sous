@@ -49,6 +49,7 @@ func TestNewStatusPoller(t *testing.T) {
 func TestBuildGraph(t *testing.T) {
 	log.SetFlags(log.Flags() | log.Lshortfile)
 	g := BuildGraph(semv.MustParse("0.0.0"), &bytes.Buffer{}, ioutil.Discard, ioutil.Discard)
+
 	g.Add(DryrunBoth)
 	g.Add(&config.Verbosity{})
 	g.Add(&config.DeployFilterFlags{})
@@ -56,18 +57,15 @@ func TestBuildGraph(t *testing.T) {
 	g.Add(&config.OTPLFlags{})   //provided by SousInit and SousDeploy
 
 	if err := g.Test(); err != nil {
-		t.Fatalf("unexpected error: %s", err)
+		t.Fatalf("invalid graph: %s", err)
 	}
 }
 
 func TestLogSink(t *testing.T) {
 	log.SetFlags(log.Flags() | log.Lshortfile)
 	g := BuildGraph(semv.MustParse("0.0.0"), &bytes.Buffer{}, ioutil.Discard, ioutil.Discard)
-	g.Add(DryrunBoth)
+
 	g.Add(&config.Verbosity{})
-	g.Add(&config.DeployFilterFlags{})
-	g.Add(&config.PolicyFlags{}) //provided by SousBuild
-	g.Add(&config.OTPLFlags{})   //provided by SousInit and SousDeploy
 
 	tg := &psyringe.TestPsyringe{Psyringe: g.Psyringe}
 	rawConfig := RawConfig{Config: &config.Config{}}
@@ -94,17 +92,15 @@ func TestLogSink(t *testing.T) {
 
 func TestComponentLocatorInjection(t *testing.T) {
 	g := BuildGraph(semv.MustParse("2.3.7-somenonsense+ignorebuilds"), &bytes.Buffer{}, ioutil.Discard, ioutil.Discard)
+
 	g.Add(DryrunBoth)
 	g.Add(&config.Verbosity{})
 	g.Add(&config.DeployFilterFlags{})
-	g.Add(&config.PolicyFlags{}) //provided by SousBuild
-	g.Add(&config.OTPLFlags{})   //provided by SousInit and SousDeploy
 
 	tg := &psyringe.TestPsyringe{Psyringe: g.Psyringe}
 	rawConfig := RawConfig{Config: &config.Config{}}
 	logcfg := &rawConfig.Config.Logging
 	logcfg.Basic.Level = "debug"
-	//logcfg.Kafka.Enabled = true
 	logcfg.Kafka.DefaultLevel = "debug"
 	logcfg.Kafka.Topic = "logging"
 	logcfg.Kafka.BrokerList = "kafka.example.com:9292"
@@ -113,7 +109,9 @@ func TestComponentLocatorInjection(t *testing.T) {
 	tg.Replace(rawConfig)
 
 	scoop := struct{ server.ComponentLocator }{}
+
 	g.MustInject(&scoop)
+
 	locator := scoop.ComponentLocator
 
 	assert.NotNil(t, locator.LogSink)
@@ -155,6 +153,11 @@ func injectedStateManager(t *testing.T, cfg *config.Config) *StateManager {
 	smRcvr := struct {
 		Sm *StateManager
 	}{}
+
+	if err := g.Test(); err != nil {
+		t.Fatalf("invalid graph: %s", err)
+	}
+
 	err := g.Inject(&smRcvr)
 	if err != nil {
 		t.Fatalf("Injection err: %+v", err)

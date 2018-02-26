@@ -76,8 +76,9 @@ func TestClientRetrieve(t *testing.T) {
 	body := map[string]interface{}{}
 
 	up, err := c.Retrieve("/path", map[string]string{"query": "present"}, &body, map[string]string{})
-
+	ctrl.DumpLogs(t)
 	require.NoError(t, err)
+
 	logCalls := ctrl.CallsTo("LogMessage")
 	assert.Contains(up.(*resourceState).qparms, "query")
 
@@ -87,7 +88,7 @@ func TestClientRetrieve(t *testing.T) {
 
 		msg := logmsg.Message()
 
-		if strings.Contains(msg, "logBody") {
+		if strings.Contains(msg, "Client <- body:") {
 			testIndex = i
 			break
 		}
@@ -96,16 +97,28 @@ func TestClientRetrieve(t *testing.T) {
 	logLvl := logCalls[testIndex].PassedArgs().Get(0).(logging.Level)
 	tstmsg := logCalls[testIndex].PassedArgs().Get(1).(logging.LogMessage)
 
-	assert.Equal(logLvl, logging.DebugLevel)
+	assert.Equal(logLvl, logging.InformationLevel)
 
 	fixedFields := map[string]interface{}{
-		"@loglov3-otl": "sous-http-v1",
+		"@loglov3-otl":    "sous-http-v1",
+		"body-size":       int64(0),
+		"incoming":        true,
+		"method":          "GET",
+		"resource-family": "",
+		"response-size":   int64(2),
+		"status":          200,
+		"url-pathname":    "/path",
+		"url-querystring": "query=present",
 	}
 
 	var variableFields []string
-	variableFields = append(logging.StandardVariableFields, logging.HTTPVariableFields...)
-	// XXX call-stack-function is actually a problem here.
-	variableFields = append(variableFields, "channel_name", "call-stack-function")
+	variableFields = append(
+		logging.StandardVariableFields,
+		"url",          // depends on the httptest server's random port
+		"url-hostname", // likewise
+		"duration",
+		"call-stack-function", // live log entries are squirrelly
+	)
 	logging.AssertMessageFields(t, tstmsg, variableFields, fixedFields)
 }
 

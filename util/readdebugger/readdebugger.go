@@ -1,6 +1,8 @@
 package readdebugger
 
-import "io"
+import (
+	"io"
+)
 
 type (
 	readDebugger struct {
