@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/opentable/sous/config"
@@ -38,10 +39,14 @@ type (
 )
 
 func (suite *integrationServerTests) prepare() (logging.LogSink, http.Handler) {
+	td, err := filepath.Abs("../ext/storage/testdata")
+	if err != nil {
+		suite.FailNow("setup failed: %s", err)
+	}
 	sourcepath, remotepath, outpath :=
-		"../ext/storage/testdata/in",
-		"../ext/storage/testdata/remote",
-		"../ext/storage/testdata/out"
+		filepath.Join(td, "in"),
+		filepath.Join(td, "remote"),
+		filepath.Join(td, "out")
 
 	dsm := storage.NewDiskStateManager(sourcepath)
 	s, err := dsm.ReadState()
