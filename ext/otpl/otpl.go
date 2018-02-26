@@ -7,10 +7,12 @@ import (
 	"strconv"
 	"sync"
 
+	"strings"
+
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 	"github.com/opentable/sous/util/shell"
-	"strings"
 )
 
 type (
@@ -18,9 +20,8 @@ type (
 	// NOTE: otpl-deploy config is an internal tool at OpenTable, one day this
 	// code will be removed.
 	ManifestParser struct {
-		debugf func(string, ...interface{})
-		debug  func(...interface{})
-		WD     shell.Shell
+		Log logging.LogSink
+		WD  shell.Shell
 	}
 	// SingularityJSON represents the JSON in an otpl-deploy singularity.json
 	// file.
@@ -58,8 +59,8 @@ func (sr SingularityResources) SousResources() sous.Resources {
 }
 
 // NewManifestParser generates a new ManifestParser with default logging.
-func NewManifestParser() *ManifestParser {
-	return &ManifestParser{debugf: logging.Log.Debug.Printf, debug: logging.Log.Debug.Println}
+func NewManifestParser(ls logging.LogSink) *ManifestParser {
+	return &ManifestParser{Log: ls}
 }
 
 type otplDeployConfig struct {
@@ -100,7 +101,7 @@ func (mp *ManifestParser) ParseManifests(wd shell.Shell) sous.Manifests {
 	}
 	l, err := wd.List()
 	if err != nil {
-		mp.debug(err)
+		messages.ReportLogFieldsMessageToConsole("error list of clone", logging.WarningLevel, mp.Log, err)
 		return manifests
 	}
 	c := make(chan *otplDeployConfig)
@@ -116,7 +117,7 @@ func (mp *ManifestParser) ParseManifests(wd shell.Shell) sous.Manifests {
 			}
 			wd := wd.Clone()
 			if err := wd.CD(f.Name()); err != nil {
-				mp.debug(err)
+				messages.ReportLogFieldsMessageToConsole("error cloning", logging.WarningLevel, mp.Log, err)
 				return
 			}
 			if otplConfig := mp.parseSingleOTPLConfig(wd); otplConfig != nil {
@@ -164,11 +165,11 @@ func getClusterAndFlavor(s *otplDeployConfig) (string, string) {
 func (mp *ManifestParser) parseSingleOTPLConfig(wd shell.Shell) *otplDeployConfig {
 	v := SingularityJSON{}
 	if !wd.Exists("singularity.json") {
-		mp.debugf("no singularity.json in %s", wd.Dir())
+		messages.ReportLogFieldsMessageToConsole("no singularity.json present", logging.WarningLevel, mp.Log, wd.Dir())
 		return nil
 	}
 	if err := wd.JSON(&v, "cat", "singularity.json"); err != nil {
-		mp.debugf("error reading %s: %s", path.Join(wd.Dir(),
+		messages.ReportLogFieldsMessageToConsole("error reading path", logging.WarningLevel, mp.Log, path.Join(wd.Dir(),
 			"singularity.json"), err)
 		return nil
 	}
@@ -187,12 +188,12 @@ func (mp *ManifestParser) parseSingleOTPLConfig(wd shell.Shell) *otplDeployConfi
 	}
 	request := SingularityRequestJSON{}
 	if !wd.Exists("singularity-request.json") {
-		mp.debugf("no singularity-request.json in %s", wd.Dir())
+		messages.ReportLogFieldsMessageToConsole("no singularity-request.json", logging.WarningLevel, mp.Log, wd.Dir())
 		return deploySpec
 	}
-	mp.debugf("%s/singularity-request.json exists, parsing it", wd.Dir())
 	if err := wd.JSON(&request, "cat", "singularity-request.json"); err != nil {
-		mp.debugf("error reading singularity-request.json: %s", err)
+		messages.ReportLogFieldsMessageToConsole("failed to read singularity-request.json", logging.WarningLevel,
+			mp.Log, err)
 		return deploySpec
 	}
 	deploySpec.Spec.NumInstances = request.Instances

@@ -10,11 +10,11 @@ import (
 	"github.com/pkg/errors"
 )
 
-func newDetectedOTPLConfig(wd LocalWorkDirShell, otplFlags *config.OTPLFlags) (detectedOTPLDeployManifest, error) {
+func newDetectedOTPLConfig(ls LogSink, wd LocalWorkDirShell, otplFlags *config.OTPLFlags) (detectedOTPLDeployManifest, error) {
 	if otplFlags.IgnoreOTPLDeploy {
 		return detectedOTPLDeployManifest{sous.NewManifests()}, nil
 	}
-	otplParser := otpl.NewManifestParser()
+	otplParser := otpl.NewManifestParser(ls)
 	otplDeploySpecs := otplParser.ParseManifests(wd.Sh)
 	return detectedOTPLDeployManifest{otplDeploySpecs}, nil
 }
