@@ -532,12 +532,12 @@ func newServerHandler(g *SousGraph, ComponentLocator server.ComponentLocator, me
 // Otherwise it returns nil, and emits some warnings.
 func newHTTPClient(c LocalSousConfig, user sous.User, srvr ServerHandler, log LogSink) (HTTPClient, error) {
 	if c.Server == "" {
-		log.Warnf("No server set, Sous is running in server or workstation mode.")
-		log.Warnf("Configure a server like this: sous config server http://some.sous.server")
+		messages.ReportLogFieldsMessageToConsole("No server set, Sous is running in server or workstation mode.", logging.WarningLevel, log)
+		messages.ReportLogFieldsMessageToConsole("Configure a server like this: sous config server http://some.sous.server", logging.WarningLevel, log)
 		cl, err := restful.NewInMemoryClient(srvr.Handler, log.Child("local-http"))
 		return HTTPClient{HTTPClient: cl}, err
 	}
-	log.Debugf("Using server at %s", c.Server)
+	messages.ReportLogFieldsMessageToConsole("Using server", logging.ExtraDebug1Level, log, c.Server)
 	cl, err := restful.NewClient(c.Server, log.Child("http-client"))
 	return HTTPClient{HTTPClient: cl}, err
 }
@@ -563,7 +563,7 @@ func newServerStateManager(c LocalSousConfig, log LogSink) *ServerStateManager {
 // If it returns a sous.GitStateManager, it emits a warning log.
 func newStateManager(cl HTTPClient, c LocalSousConfig, log LogSink) *StateManager {
 	if c.Server == "" {
-		log.Warnf("Using local state stored at %s", c.StateLocation)
+		messages.ReportLogFieldsMessageToConsole("Using local state stored at", logging.WarningLevel, log, c.StateLocation)
 		return &StateManager{StateManager: newServerStateManager(c, log).StateManager}
 	}
 	hsm := sous.NewHTTPStateManager(cl)
@@ -572,10 +572,10 @@ func newStateManager(cl HTTPClient, c LocalSousConfig, log LogSink) *StateManage
 
 func newStatusPoller(cl HTTPClient, rf *RefinedResolveFilter, user sous.User, logs LogSink) *sous.StatusPoller {
 	if cl.HTTPClient == nil {
-		messages.ReportLogFieldsMessage("Unable to poll for status.", logging.WarningLevel, logs, rf)
+		messages.ReportLogFieldsMessageToConsole("Unable to poll for status.", logging.WarningLevel, logs, rf)
 		return nil
 	}
-	messages.ReportLogFieldsMessage("...looks good...", logging.ExtraDebug1Level, logs)
+	messages.ReportLogFieldsMessageToConsole("...looks good...", logging.ExtraDebug1Level, logs)
 	return sous.NewStatusPoller(cl, (*sous.ResolveFilter)(rf), user, logs.Child("status-poller"))
 }
 
@@ -591,8 +591,7 @@ func newLocalStateWriter(sm *StateManager) StateWriter {
 func NewCurrentState(sr StateReader, log LogSink) (*sous.State, error) {
 	state, err := sr.ReadState()
 	if os.IsNotExist(errors.Cause(err)) || storage.IsGSMError(err) {
-		log.Warnf("error reading state: %v", err)
-		log.Warnf("defaulting to empty state")
+		messages.ReportLogFieldsMessageToConsole("error reading state, defaulting to empty state", logging.WarningLevel, log, err)
 		return sous.NewState(), nil
 	}
 	return state, initErr(err, "reading sous state")
