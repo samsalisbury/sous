@@ -8,7 +8,17 @@ with respect to its command line interface and HTTP interface.
 
 ## [Unreleased](//github.com/opentable/sous/compare/0.5.65...master)
 
-* All: Deployment builder now emits structured logs
+### Added
+* Server: Include connection string in db connection error log.
+
+### Changed
+* All: Top-level global logger labeled "GLOBAL".
+* All: Deployment builder now emits structured logs.
+
+### Fixed
+* All: Some formatted logs were incorrectly reporting missing values and were
+  indiscriminately trying to render a single slice in the first format verb.
+  Resolved so those logs format correctly.
 
 ## [0.5.65](//github.com/opentable/sous/compare/0.5.63...0.5.65)
 

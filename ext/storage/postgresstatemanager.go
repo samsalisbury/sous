@@ -3,6 +3,7 @@ package storage
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 
 	"github.com/lib/pq"
 	"github.com/opentable/sous/util/logging"
@@ -33,18 +34,30 @@ func NewPostgresStateManager(db *sql.DB, log logging.LogSink) *PostgresStateMana
 }
 
 func (c PostgresConfig) connStr() string {
-	sslmode := "enable"
-	if !c.SSL {
-		sslmode = "disable"
+	conn := []string{}
+	if c.Host != "" {
+		conn = append(conn, fmt.Sprintf("host=%s", c.Host))
 	}
-	conn := fmt.Sprintf("dbname=%s host=%s port=%s sslmode=%s", c.DBName, c.Host, c.Port, sslmode)
+	if c.Port != "" {
+		conn = append(conn, fmt.Sprintf("port=%s", c.Port))
+	}
+	if !c.SSL {
+		conn = append(conn, "sslmode=disable")
+	} else {
+		conn = append(conn, "sslmode=enable")
+	}
+
+	if c.DBName != "" {
+		conn = append(conn, fmt.Sprintf("dbname=%s", c.DBName))
+	}
+
 	if c.User != "" {
-		conn = fmt.Sprintf("%s user=%s", conn, c.User)
+		conn = append(conn, fmt.Sprintf("user=%s", c.User))
 	}
 	if c.Password != "" {
-		conn = fmt.Sprintf("%s password=%s", conn, c.Password)
+		conn = append(conn, fmt.Sprintf("password=%s", c.Password))
 	}
-	return conn
+	return strings.Join(conn, " ")
 }
 
 // DB returns a database connection based on this config

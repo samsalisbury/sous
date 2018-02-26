@@ -547,7 +547,7 @@ func newServerStateManager(c LocalSousConfig, log LogSink) *ServerStateManager {
 	if err == nil {
 		secondary = storage.NewPostgresStateManager(db, log.Child("database"))
 	} else {
-		logging.ReportError(log, errors.Wrapf(err, "connecting to database"))
+		logging.ReportError(log, errors.Wrapf(err, "connecting to database with %#v", c.Database))
 		secondary = storage.NewLogOnlyStateManager(log.Child("database"))
 	}
 
