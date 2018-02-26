@@ -38,7 +38,7 @@ func (m *BuildManager) Build() (*BuildResult, error) {
 		func(e *error) { *e = m.ApplyMetadata(br) },
 		func(e *error) { *e = m.RegisterAndWarnAdvisories(br) },
 	)
-	return br, err
+	return br, errors.Wrap(err, "unable to build")
 }
 
 // RegisterAndWarnAdvisories registers the image if there are no blocking
