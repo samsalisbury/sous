@@ -35,7 +35,7 @@ func (s *selector) SelectBuildpack(ctx *sous.BuildContext) (sous.Buildpack, erro
 		reportStrategyChoice("simple dockerfile", s.log)
 		return dfbp, nil
 	}
-	return nil, errors.New("no buildpack detected for project")
+	return nil, errors.New("no Dockerfile present")
 }
 
 type strategyChoiceMessage struct {
