@@ -10,6 +10,7 @@ import (
 	"github.com/opentable/go-singularity/dtos"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 	"github.com/pkg/errors"
 )
 
@@ -64,8 +65,7 @@ func (sc *deployer) RunningDeployments(reg sous.Registry, clusters sous.Clusters
 	//defer sc.rectClient.Cancel()
 
 	var depAssWait, singWait, depWait sync.WaitGroup
-
-	sc.log.Vomitf("Setting up to wait for %d clusters", len(clusters))
+	messages.ReportLogFieldsMessage("Setting up to wait for clusters", logging.ExtraDebug1Level, sc.log, clusters)
 	singWait.Add(len(clusters))
 	for _, url := range clusters {
 		url := url.BaseURL
@@ -85,38 +85,39 @@ func (sc *deployer) RunningDeployments(reg sous.Registry, clusters sous.Clusters
 		defer catchAndSend("closing channels", errCh, sc.log)
 
 		singWait.Wait()
-		sc.log.Debugf("All singularities polled for requests")
+		messages.ReportLogFieldsMessage("All singularities polled for requests", logging.DebugLevel, sc.log)
 
 		depWait.Wait()
-		sc.log.Debugf("All deploys processed")
+		messages.ReportLogFieldsMessage("All deploys processed", logging.DebugLevel, sc.log)
 
 		depAssWait.Wait()
-		sc.log.Debugf("All deployments assembled")
+		messages.ReportLogFieldsMessage("All deployments assembled", logging.DebugLevel, sc.log)
 
 		close(reqCh)
-		sc.log.Debugf("Closed reqCh")
+		messages.ReportLogFieldsMessage("Closed reqCh", logging.DebugLevel, sc.log)
+
 		close(errCh)
-		sc.log.Debugf("Closed errCh")
+		messages.ReportLogFieldsMessage("Closed errCh", logging.DebugLevel, sc.log)
 	}()
 
 	for {
 		select {
 		case dep := <-depCh:
 			deps.Add(dep)
-			sc.log.Debugf("Deployment #%d: %+v", deps.Len(), dep)
+			messages.ReportLogFieldsMessage("Adding deployment", logging.DebugLevel, sc.log, dep, deps.Len())
 			depWait.Done()
 		case err, cont := <-errCh:
 			if !cont {
-				sc.log.Debugf("Errors channel closed. Finishing up.")
+				messages.ReportLogFieldsMessage("Errors channel closed. Finishing up.", logging.DebugLevel, sc.log)
 				return deps, nil
 			}
 			if isMalformed(sc.log, err) || ignorableDeploy(sc.log, err) {
-				sc.log.Debugf("\n", err)
+				messages.ReportLogFieldsMessage("Error", logging.DebugLevel, sc.log, err)
 				depWait.Done()
 			} else {
 				retryable := retries.maybe(err, reqCh)
 				if !retryable {
-					sc.log.Warnf("Cannot retry: %v. Exiting", err)
+					messages.ReportLogFieldsMessage("Cannot retry exiting", logging.WarningLevel, sc.log, err)
 					return deps, err
 				}
 			}
@@ -131,8 +132,7 @@ func (rc retryCounter) maybe(err error, reqCh chan SingReq) bool {
 	if !ok {
 		return false
 	}
-
-	rc.log.Debugf("%T err = %+v\n", errors.Cause(err), errors.Cause(err))
+	messages.ReportLogFieldsMessage("Error", logging.DebugLevel, rc.log, errors.Cause(err))
 	count, ok := rc.count[rt.name()]
 	if !ok {
 		count = 0
@@ -153,7 +153,7 @@ func (rc retryCounter) maybe(err error, reqCh chan SingReq) bool {
 
 func catchAll(from string, log logging.LogSink) {
 	if err := recover(); err != nil {
-		log.Warnf("Recovering from %s where we received %v", from, err)
+		messages.ReportLogFieldsMessage("Recovering from error", logging.WarningLevel, log, from, err)
 	}
 }
 
@@ -164,8 +164,7 @@ func dontrecover() error {
 func catchAndSend(from string, errs chan error, log logging.LogSink) {
 	defer catchAll(from, log)
 	if err := recover(); err != nil {
-		log.Debugf("from = %s err = %+v\n", from, err)
-		log.Debugf("debug.Stack() = %+v\n", string(debug.Stack()))
+		messages.ReportLogFieldsMessage("Recovering from error", logging.WarningLevel, log, from, err, string(debug.Stack()))
 		switch err := err.(type) {
 		default:
 			if err != nil {
@@ -186,13 +185,13 @@ func (sc *deployer) singPipeline(
 	errs chan error,
 	clusters sous.Clusters,
 ) {
-	sc.log.Vomitf("Starting cluster at %s", url)
-	defer func() { sc.log.Vomitf("Completed cluster at %s", url) }()
+	messages.ReportLogFieldsMessage("Starting Cluster", logging.DebugLevel, sc.log, url)
+	defer func() { messages.ReportLogFieldsMessage("Completed Cluster", logging.DebugLevel, sc.log, url) }()
 	defer wg.Done()
 	defer catchAndSend(fmt.Sprintf("get requests: %s", url), errs, sc.log)
 	srp, err := sc.getSingularityRequestParents(client)
 	if err != nil {
-		sc.log.Vomitf("%v", err) //XXX connection reset by peer should be retried
+		messages.ReportLogFieldsMessage("Error in singPipeline", logging.DebugLevel, sc.log, err)
 		errs <- errors.Wrap(err, "getting request list")
 		return
 	}
@@ -200,7 +199,11 @@ func (sc *deployer) singPipeline(
 	rs := convertSingularityRequestParentsToSingReqs(url, client, srp)
 
 	for _, r := range rs {
-		sc.log.Vomitf("Req: %s %s %d", r.SourceURL, reqID(r.ReqParent), r.ReqParent.Request.Instances)
+		messages.ReportLogFieldsMessage("Request",
+			logging.DebugLevel,
+			sc.log, r.SourceURL,
+			reqID(r.ReqParent),
+			r.ReqParent.Request.Instances)
 		dw.Add(1)
 		reqs <- r
 	}
@@ -234,13 +237,13 @@ func (sc *deployer) depPipeline(
 	poolLimit := make(chan struct{}, poolCount)
 	for req := range reqCh {
 		depAssWait.Add(1)
-		sc.log.Vomitf("starting assembling for %q", reqID(req.ReqParent))
+		messages.ReportLogFieldsMessage("started assembling", logging.DebugLevel, sc.log, reqID(req.ReqParent))
 		go func(req SingReq) {
 			defer depAssWait.Done()
 			defer catchAndSend(fmt.Sprintf("dep from req %s", req.SourceURL), errCh, sc.log)
 			poolLimit <- struct{}{}
 			defer func() {
-				sc.log.Vomitf("finished assembling for %q", reqID(req.ReqParent))
+				messages.ReportLogFieldsMessage("finished assembling", logging.DebugLevel, sc.log, reqID(req.ReqParent))
 				<-poolLimit
 			}()
 
@@ -256,8 +259,8 @@ func (sc *deployer) depPipeline(
 }
 
 func (sc *deployer) assembleDeployState(reg sous.Registry, clusters sous.Clusters, req SingReq) (*sous.DeployState, error) {
-	sc.log.Vomitf("Assembling from: %s %s", req.SourceURL, reqID(req.ReqParent))
+	messages.ReportLogFieldsMessage("Assembling deploy state", logging.DebugLevel, sc.log, req.SourceURL, reqID(req.ReqParent))
 	tgt, err := BuildDeployment(reg, clusters, req, sc.log)
-	sc.log.Vomitf("Collected deployment: %#v", tgt)
+	messages.ReportLogFieldsMessage("Collected deployment", logging.DebugLevel, sc.log, tgt)
 	return &tgt, errors.Wrap(err, "Building deployment")
 }
