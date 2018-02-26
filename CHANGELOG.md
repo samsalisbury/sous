@@ -19,6 +19,7 @@ with respect to its command line interface and HTTP interface.
 * All: Some formatted logs were incorrectly reporting missing values and were
   indiscriminately trying to render a single slice in the first format verb.
   Resolved so those logs format correctly.
+* Server: postgres storage engine wasn't de-duplicating records as it parsed the GDM.
 
 ## [0.5.65](//github.com/opentable/sous/compare/0.5.63...0.5.65)
 
