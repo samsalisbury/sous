@@ -18,6 +18,7 @@ import (
 	"github.com/opentable/sous/server"
 	"github.com/opentable/sous/util/docker_registry"
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 	"github.com/opentable/sous/util/restful"
 	"github.com/opentable/sous/util/shell"
 	"github.com/pkg/errors"
@@ -570,12 +571,11 @@ func newStateManager(cl HTTPClient, c LocalSousConfig, log LogSink) *StateManage
 }
 
 func newStatusPoller(cl HTTPClient, rf *RefinedResolveFilter, user sous.User, logs LogSink) *sous.StatusPoller {
-	logs.Debugf("Building StatusPoller...")
 	if cl.HTTPClient == nil {
-		logs.Warnf("Unable to poll for status.")
+		messages.ReportLogFieldsMessage("Unable to poll for status.", logging.WarningLevel, logs, rf)
 		return nil
 	}
-	logs.Debugf("...looks good...")
+	messages.ReportLogFieldsMessage("...looks good...", logging.ExtraDebug1Level, logs)
 	return sous.NewStatusPoller(cl, (*sous.ResolveFilter)(rf), user, logs.Child("status-poller"))
 }
 
