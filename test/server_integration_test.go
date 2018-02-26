@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/opentable/sous/config"
@@ -14,6 +15,7 @@ import (
 	"github.com/opentable/sous/server"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
+	"github.com/pborman/uuid"
 	"github.com/samsalisbury/psyringe"
 	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/suite"
@@ -29,19 +31,29 @@ type (
 
 	liveServerSuite struct {
 		integrationServerTests
-		server *httptest.Server
+		server  *httptest.Server
+		cleanup func()
 	}
 
 	inmemServerSuite struct {
 		integrationServerTests
+		cleanup func()
 	}
 )
 
-func (suite *integrationServerTests) prepare() (logging.LogSink, http.Handler) {
+// prepare returns a logging.LogSink and http.Handler for use in tests.
+// It also returns a cleanup function which should be called to remove
+// temp files created after each test run.
+func (suite *integrationServerTests) prepare() (logging.LogSink, http.Handler, func()) {
+	td, err := filepath.Abs("../ext/storage/testdata")
+	if err != nil {
+		suite.FailNow("setup failed: %s", err)
+	}
+	temp := filepath.Join(os.TempDir(), "soustests", uuid.New())
 	sourcepath, remotepath, outpath :=
-		"../ext/storage/testdata/in",
-		"../ext/storage/testdata/remote",
-		"../ext/storage/testdata/out"
+		filepath.Join(td, "in"),
+		filepath.Join(temp, "remote"),
+		filepath.Join(temp, "out")
 
 	dsm := storage.NewDiskStateManager(sourcepath)
 	s, err := dsm.ReadState()
@@ -79,11 +91,20 @@ func (suite *integrationServerTests) prepare() (logging.LogSink, http.Handler) {
 	if serverScoop.Handler.Handler == nil {
 		suite.FailNow("Didn't inject http.Handler!")
 	}
-	return log, serverScoop.Handler.Handler
+	return log, serverScoop.Handler.Handler, func() {
+		if err := os.RemoveAll(outpath); err != nil {
+			suite.T().Errorf("cleanup failed: %s", err)
+		}
+		if err := os.RemoveAll(remotepath); err != nil {
+			suite.T().Errorf("cleanup failed: %s", err)
+		}
+	}
+
 }
 
 func (suite *liveServerSuite) SetupTest() {
-	lt, h := suite.prepare()
+	lt, h, cleanup := suite.prepare()
+	suite.cleanup = cleanup
 
 	suite.server = httptest.NewServer(h)
 	suite.user = sous.User{}
@@ -96,7 +117,8 @@ func (suite *liveServerSuite) SetupTest() {
 }
 
 func (suite *inmemServerSuite) SetupTest() {
-	lt, h := suite.prepare()
+	lt, h, cleanup := suite.prepare()
+	suite.cleanup = cleanup
 
 	suite.user = sous.User{}
 	var err error
@@ -108,6 +130,15 @@ func (suite *inmemServerSuite) SetupTest() {
 
 func (suite liveServerSuite) TearDownTest() {
 	suite.server.Close()
+	if suite.cleanup != nil {
+		suite.cleanup()
+	}
+}
+
+func (suite inmemServerSuite) TearDownTest() {
+	if suite.cleanup != nil {
+		suite.cleanup()
+	}
 }
 
 func (suite integrationServerTests) TestOverallRouter() {
