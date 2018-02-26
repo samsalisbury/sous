@@ -8,6 +8,10 @@ with respect to its command line interface and HTTP interface.
 
 ## [Unreleased](//github.com/opentable/sous/compare/0.5.65...master)
 
+* All: Add structured logging to status poller
+* All: Create a new structured log that auto extracts IDs and stores in seperate fields for
+  easier searching in logstash
+
 ## [0.5.65](//github.com/opentable/sous/compare/0.5.63...0.5.65)
 
 ### Added
