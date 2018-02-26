@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/julienschmidt/httprouter"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 	"github.com/opentable/sous/util/restful"
 	"github.com/pkg/errors"
 )
@@ -118,7 +118,7 @@ func (pmh *PUTManifestHandler) Exchange() (interface{}, int) {
 
 	flaws := m.Validate()
 	if len(flaws) > 0 {
-		pmh.Vomitf(spew.Sdump(flaws))
+		messages.ReportLogFieldsMessageToConsole("Exchange contains flaws", logging.ExtraDebug1Level, pmh.LogSink, flaws)
 		return "Invalid manifest", http.StatusBadRequest
 	}
 	pmh.State.Manifests.Set(mid, m)

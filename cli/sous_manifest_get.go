@@ -3,11 +3,12 @@ package cli
 import (
 	"flag"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
+	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 	"github.com/opentable/sous/util/yaml"
 	"github.com/pkg/errors"
 )
@@ -43,7 +44,7 @@ func (smg *SousManifestGet) Execute(args []string) cmdr.Result {
 	if err != nil {
 		return EnsureErrorResult(errors.Errorf("No manifest matched by %v yet. See `sous init` (%v)", smg.ResolveFilter, err))
 	}
-	smg.Vomitf(spew.Sdump(mani))
+	messages.ReportLogFieldsMessage("Sous manifest in Execute", logging.ExtraDebug1Level, smg.LogSink, mani)
 
 	yml, err := yaml.Marshal(mani)
 	if err != nil {

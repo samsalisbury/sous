@@ -4,11 +4,12 @@ import (
 	"flag"
 	"io/ioutil"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
+	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 	"github.com/opentable/sous/util/yaml"
 	"github.com/pkg/errors"
 )
@@ -59,7 +60,8 @@ func (smg *SousManifestSet) Execute(args []string) cmdr.Result {
 	if err != nil {
 		return EnsureErrorResult(err)
 	}
-	smg.Vomitf("%v", spew.Sdump(yml))
+
+	messages.ReportLogFieldsMessage("Manifest in Execute", logging.ExtraDebug1Level, smg.LogSink, yml)
 
 	err = up.Update(&yml, nil)
 	if err != nil {
