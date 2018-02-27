@@ -97,7 +97,7 @@ func TestClientRetrieve(t *testing.T) {
 	logLvl := logCalls[testIndex].PassedArgs().Get(0).(logging.Level)
 	tstmsg := logCalls[testIndex].PassedArgs().Get(1).(logging.LogMessage)
 
-	assert.Equal(logLvl, logging.InformationLevel)
+	assert.Equal(logLvl, logging.ExtraDebug1Level)
 
 	fixedFields := map[string]interface{}{
 		"@loglov3-otl":    "sous-http-v1",
