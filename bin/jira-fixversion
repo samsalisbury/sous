@@ -5,10 +5,25 @@ jirauser=$(git config --get jira.user)
 jiraserver=$(git config --get jira.server)
 jirapassword=$(git config --get jira.password)
 
+if [ -z "$jirauser" ]; then
+  echo "jira.user is empty!"
+  exit 1
+fi
+
+if [ -z "$jiraserver" ]; then
+  echo "jira.server is empty!"
+  exit 2
+fi
+
+if [ -z "$jirapassword" ]; then
+  echo "jira.password is empty!"
+  exit 3
+fi
+
 echo "Marking $currentversion on currently closed tickets"
 islast="false"
 versions=""
-while [ $islast != "true" ]; do
+while [ "$islast" != "true" ]; do
   response=$(curl -s -u "${jirauser}:${jirapassword}" -H "Content-Type: application/json" "$jiraserver/rest/api/2/project/SOUS/version" | tee /tmp/sous-version)
   islast=$(echo $response | jq -r '.isLast')
   names=$(echo $response | jq -r '.values[].name')
