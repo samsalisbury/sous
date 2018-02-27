@@ -44,6 +44,7 @@ slave:
     MESOS_IP: 127.0.0.1
     MESOS_CONTAINERIZERS: docker,mesos
     MESOS_ISOLATION: cgroups/cpu,cgroups/mem
+    MESOS_WORK_DIR: /var/lib/mesos
   volumes:
     - /var/run/docker.sock:/var/run/docker.sock
     - /sys:/sys
