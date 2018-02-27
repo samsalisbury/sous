@@ -113,8 +113,13 @@ func newHTTPLogEntry(
 		u = &url.URL{}
 	}
 
+	lvl := logging.InformationLevel
+	if status < 400 {
+		lvl = logging.ExtraDebug1Level
+	}
+
 	return &HTTPLogEntry{
-		Level:      logging.InformationLevel,
+		Level:      lvl,
 		CallerInfo: logging.GetCallerInfo(logging.NotHere()),
 
 		message:        message,
