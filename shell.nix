@@ -1,7 +1,7 @@
-{ pkgs ? import ~/dev/nixpkgs {} }:
-#{ pkgs ? import <nixpkgs> {} }:
+#{ pkgs ? import ~/dev/nixpkgs {} }:
+{ pkgs ? import <nixpkgs> {} }:
 let
-  inherit (pkgs) lib stdenv ruby rake bundler bundlerEnv postgresql100 liquibase proselint;
+  inherit (pkgs) lib stdenv ruby rake bundler bundlerEnv postgresql100 liquibase proselint docker_compose;
 
   rubyEnv = bundlerEnv {
     name = "sous-danger";
@@ -18,5 +18,6 @@ in
       rubyEnv
       postgresql100
       liquibase
+      docker_compose
     ];
   }

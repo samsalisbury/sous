@@ -68,6 +68,7 @@ func (suite *integrationSuite) manifest(nc *docker.NameCache, drepo, containerDi
 	nc.GetSourceID(docker.NewBuildArtifact(in, nil))
 
 	checkReadyPath := "/health"
+
 	checkReadyTimeout := 500
 
 	return &sous.Manifest{
@@ -182,6 +183,7 @@ func (suite *integrationSuite) deployDefaultContainers() {
 }
 
 func (suite *integrationSuite) TearDownTest() {
+	suite.dumpLogs()
 	// Previously, a ResetSingularity() was issued here. The ResetSingularity()
 	// in the BeforeTest() already makes sure that Singularity is reset before
 	// running a test case, so its presence here was redundant. With it gone, we
