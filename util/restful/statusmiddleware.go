@@ -7,6 +7,7 @@ import (
 	"runtime/debug"
 
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 )
 
 type (
@@ -49,13 +50,14 @@ func (ph *StatusMiddleware) errorBody(status int, rq *http.Request, w io.Writer,
 func (ph *StatusMiddleware) HandleResponse(status int, r *http.Request, w http.ResponseWriter, data interface{}) {
 	w.WriteHeader(status)
 
-	ph.Warnf("Responding: %d %s: %s %s", status, http.StatusText(status), r.Method, r.URL)
+	messages.ReportClientHTTPRequest(ph.LogSink, "Responding", r, r.Method)
+
 	if status >= 400 {
-		ph.Warnf("%+v", data)
+		messages.ReportLogFieldsMessage("Status >= 400", logging.WarningLevel, ph.LogSink, data)
 		ph.errorBody(status, r, w, data, nil, nil)
 	}
 	if status >= 200 && status < 300 {
-		ph.Debugf("%+v", data)
+		messages.ReportLogFieldsMessage("Status >= 200 && Status < 300", logging.DebugLevel, ph.LogSink, data)
 	}
 	// XXX in a dev mode, print the panic in the response body
 	// (normal ops it might leak secure data)
@@ -69,8 +71,7 @@ func (ph *StatusMiddleware) HandlePanic(w http.ResponseWriter, r *http.Request, 
 	if ph.LogSink == nil {
 		ph.LogSink = &fallbackLogger{}
 	}
-	ph.Warnf("%+v", recovered)
-	ph.Warnf("Recovered, returned 500")
+	messages.ReportLogFieldsMessage("Recovered, returned 500", logging.WarningLevel, ph.LogSink, recovered)
 	ph.errorBody(http.StatusInternalServerError, r, w, nil, recovered.(error), stack)
 	// XXX in a dev mode, print the panic in the response body
 	// (normal ops it might leak secure data)

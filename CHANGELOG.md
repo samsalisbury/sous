@@ -13,7 +13,7 @@ with respect to its command line interface and HTTP interface.
 
 ### Changed
 * All: Top-level global logger labeled "GLOBAL".
-* All: Deployment builder now emits structured logs.
+* All: Deployment builder, manifest get/set, StatusMiddleware, otplManifest now emits structured logs.
 * CLI: When sous build fails due to no Dockerfile, error says exactly that.
 
 ### Fixed
