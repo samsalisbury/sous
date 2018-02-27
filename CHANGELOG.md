@@ -10,6 +10,9 @@ with respect to its command line interface and HTTP interface.
 
 ### Added
 * Server: Include connection string in db connection error log.
+* Client: Add structured logging to status poller
+* All: Create a new structured log that auto extracts IDs and stores in seperate fields for
+  easier searching in logstash
 
 ### Changed
 * All: Top-level global logger labeled "GLOBAL".

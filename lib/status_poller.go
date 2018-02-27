@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 	"github.com/opentable/sous/util/restful"
 )
 
@@ -144,8 +145,7 @@ func (sp *StatusPoller) subPollers(clusters *serverListData, deps Deployments) (
 			logging.Log.Debugf("No intention in GDM for %s to deploy %s", s.ClusterName, sp.ResolveFilter)
 			continue
 		}
-		logging.Log.Debugf("Starting poller against %v", s)
-
+		messages.ReportLogFieldsMessage("Starting poller against", logging.DebugLevel, sp.logs, s)
 		// Kick off a separate process to issue HTTP requests against this cluster.
 		sub, err := newSubPoller(s.ClusterName, s.URL, sp.ResolveFilter, sp.User, logging.Log)
 		if err != nil {

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/opentable/sous/util/logging"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestReportLogFieldsMessage_Complete(t *testing.T) {
@@ -38,6 +39,7 @@ func TestReportLogFieldsMessage_NoInterface(t *testing.T) {
 			"@loglov3-otl": "sous-generic-v1",
 		})
 }
+
 func TestReportLogFieldsMessage_String(t *testing.T) {
 	logging.AssertReportFields(t,
 		func(ls logging.LogSink) {
@@ -123,6 +125,73 @@ func TestReportLogFieldsMessage_error(t *testing.T) {
 			"fields":       "",
 			"types":        "error",
 			"json-value":   "{\"message\":{\"array\":[\"{\\\"error\\\":{\\\"error\\\":\\\"error msg\\\"}}\"]}}",
+			"@loglov3-otl": "sous-generic-v1",
+		})
+}
+
+type Location struct {
+	Repo string
+	Dir  string
+}
+
+type TestInnerID struct {
+	Source Location
+}
+
+type TestID struct {
+	TestInnerID TestInnerID
+	Cluster     string
+}
+
+func TestExtractIDs_TwoIds(t *testing.T) {
+	l := buildLogFieldsMessage("this is a test", false, true, logging.ExtraDebug1Level)
+
+	d := &TestID{
+		TestInnerID: TestInnerID{
+			Source: Location{
+				Repo: "fake.tld/org/" + "project",
+				Dir:  "down/here",
+			},
+		},
+		Cluster: "test-cluster",
+	}
+
+	l.extractID(d)
+	assert.Equal(t, 2, len(l.idsMap))
+}
+
+func TestExtractIDs_NoIds(t *testing.T) {
+	l := buildLogFieldsMessage("this is a test", false, true, logging.ExtraDebug1Level)
+
+	foo := "hello"
+	l.extractID(foo)
+
+	assert.Equal(t, 0, len(l.idsMap))
+}
+
+//TestReportLogFieldsMessageWithIDs_TwoIds making json-value and id-values variable because ptr to ID, addresses change
+//betweeen runs
+func TestReportLogFieldsMessageWithIDs_TwoIds(t *testing.T) {
+	variableFields := []string{"json-value", "id-values"}
+	logging.AssertReportFields(t,
+		func(ls logging.LogSink) {
+			d := &TestID{
+				TestInnerID: TestInnerID{
+					Source: Location{
+						Repo: "fake.tld/org/" + "project",
+						Dir:  "down/here",
+					},
+				},
+				Cluster: "test-cluster",
+			}
+
+			ReportLogFieldsMessageWithIDs("This is test message", logging.DebugLevel, ls, d)
+		},
+		append(logging.StandardVariableFields, variableFields...),
+		map[string]interface{}{
+			"fields":       "TestInnerID,Cluster,TestID,Source,Repo,Dir,Location",
+			"types":        "*TestID,TestInnerID,Location,string",
+			"ids":          "TestID,TestInnerID",
 			"@loglov3-otl": "sous-generic-v1",
 		})
 }
