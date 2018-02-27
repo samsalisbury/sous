@@ -164,7 +164,7 @@ install-liquibase:
 install-linters: install-metalinter
 	gometalinter --install > /dev/null
 
-install-gotags: 
+install-gotags:
 	go get -u github.com/jstemmer/gotags
 
 install-build-tools: install-xgo install-govendor install-engulf install-staticcheck
@@ -227,6 +227,8 @@ test-integration: setup-containers
 	@echo
 	@echo
 	@echo Integration tests timeout in $(INTEGRATION_TEST_TIMEOUT)
+	@echo -n Began at:
+	@date
 	@echo Set INTEGRATION_TEST_TIMEOUT to override.
 	@echo
 	@echo
