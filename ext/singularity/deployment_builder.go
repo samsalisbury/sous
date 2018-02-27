@@ -10,6 +10,7 @@ import (
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/firsterr"
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 	"github.com/pkg/errors"
 )
 
@@ -56,10 +57,10 @@ func (nsd nonSousError) Error() string {
 }
 
 func ignorableDeploy(log logging.LogSink, err error) bool {
-	log.Vomitf("checking to see if %+v is ignorable", err)
+	messages.ReportLogFieldsMessage("checking to see if error is ignorable", logging.DebugLevel, log, err)
 	switch errors.Cause(err).(type) {
 	case nonSousError, notThisClusterError:
-		log.Vomitf("ignorable: %v", err)
+		messages.ReportLogFieldsMessage("error is ignorable", logging.DebugLevel, log, err)
 		return true
 	}
 	return false
@@ -72,15 +73,15 @@ func (mr malformedResponse) Error() string {
 func isMalformed(log logging.LogSink, err error) bool {
 	err = errors.Cause(err)
 	_, isMal := err.(malformedResponse)
-	log.Vomitf("is malformedResponse? err: %+v %T %t", err, err, isMal)
+	messages.ReportLogFieldsMessage("is malformedResponse?", logging.DebugLevel, log, err, isMal)
 	_, isUMT := err.(*json.UnmarshalTypeError)
-	log.Vomitf("is json unmarshal type error? err: %+v %T %t", err, err, isUMT)
+	messages.ReportLogFieldsMessage("is json unmarshal type error?", logging.DebugLevel, log, err, isUMT)
 	_, isUMF := err.(*json.UnmarshalFieldError)
-	log.Vomitf("is json unmarshal value error? err: %+v %T %t", err, err, isUMF)
+	messages.ReportLogFieldsMessage("is json unmarshal value error?", logging.DebugLevel, log, err, isUMF)
 	_, isUST := err.(*json.UnsupportedTypeError)
-	log.Vomitf("is json unsupported type error? err: %+v %T %t", err, err, isUST)
+	messages.ReportLogFieldsMessage("is json unsupported type error?", logging.DebugLevel, log, err, isUST)
 	_, isUSV := err.(*json.UnsupportedValueError)
-	log.Vomitf("is json unsupported value error? err: %+v %T %t", err, err, isUSV)
+	messages.ReportLogFieldsMessage("is json unsupported value error?", logging.DebugLevel, log, err, isUSV)
 	return isMal || isUMT || isUMF || isUST || isUSV
 }
 
@@ -112,7 +113,7 @@ func (db *deploymentBuilder) isRetryable(err error) bool {
 // BuildDeployment does all the work to collect the data for a Deployment
 // from Singularity based on the initial SingularityRequest.
 func BuildDeployment(reg sous.ImageLabeller, clusters sous.Clusters, req SingReq, log logging.LogSink) (sous.DeployState, error) {
-	log.Vomitf("%#v", req.ReqParent)
+	messages.ReportLogFieldsMessage("BuildDeployment request", logging.DebugLevel, log, req.ReqParent)
 	db := deploymentBuilder{registry: reg, clusters: clusters, req: req, log: log}
 	return db.Target, db.canRetry(db.completeConstruction())
 }
@@ -204,19 +205,19 @@ func (db *deploymentBuilder) retrieveDeployHistory() error {
 	if db.depMarker == nil {
 		return db.retrieveHistoricDeploy()
 	}
-	db.log.Vomitf("%q Getting deploy based on Pending marker.", db.reqID)
+	messages.ReportLogFieldsMessage("Getting deploy based on Pending marker.", logging.DebugLevel, db.log, db.reqID)
 	return db.retrieveLiveDeploy()
 }
 
 func (db *deploymentBuilder) retrieveHistoricDeploy() error {
-	db.log.Vomitf("%q Getting deploy from history", db.reqID)
+	messages.ReportLogFieldsMessage("Getting deploy from history", logging.DebugLevel, db.log, db.reqID)
 	// !!! makes HTTP req
 	if db.request == nil {
 		return malformedResponse{"Singularity request parent had no request."}
 	}
 	sing := db.req.Sing
 	depHistList, err := sing.GetDeploys(db.request.Id, 1, 1)
-	db.log.Vomitf("%q Got history from Singularity with %d items.", db.reqID, len(depHistList))
+	messages.ReportLogFieldsMessage("Got history from Singularity", logging.DebugLevel, db.log, db.reqID, len(depHistList))
 	if err != nil {
 		return errors.Wrap(err, "GetDeploys")
 	}
@@ -226,13 +227,11 @@ func (db *deploymentBuilder) retrieveHistoricDeploy() error {
 	}
 
 	partialHistory := depHistList[0]
-
-	db.log.Vomitf("%q %#v", db.reqID, partialHistory)
+	messages.ReportLogFieldsMessage("reqID and partialHistory", logging.DebugLevel, db.log, db.reqID, partialHistory)
 	if partialHistory.DeployMarker == nil {
 		return malformedResponse{"Singularity deploy history had no deploy marker."}
 	}
-
-	db.log.Vomitf("%q %#v", db.reqID, partialHistory.DeployMarker)
+	messages.ReportLogFieldsMessage("reqID and DeployMarker", logging.DebugLevel, db.log, db.reqID, partialHistory.DeployMarker)
 	db.depMarker = partialHistory.DeployMarker
 	return db.retrieveLiveDeploy()
 }
@@ -242,18 +241,22 @@ func (db *deploymentBuilder) retrieveLiveDeploy() error {
 	sing := db.req.Sing
 	dh, err := sing.GetDeploy(db.depMarker.RequestId, db.depMarker.DeployId)
 	if err != nil {
-		db.log.Vomitf("%q received error retrieving history entry for deploy marker: %#v %#v", db.reqID, db.depMarker, err)
+		messages.ReportLogFieldsMessage("reqID received error retrieving history entry for deploy marker",
+			logging.DebugLevel,
+			db.log,
+			db.reqID,
+			db.depMarker,
+			err)
 		return errors.Wrapf(err, "%q %#v", db.reqID, db.depMarker)
 	}
-	db.log.Vomitf("%q Deploy history entry retrieved: %#v", db.reqID, dh)
-
+	messages.ReportLogFieldsMessage("Deploy history entry retrieved", logging.DebugLevel, db.log, db.reqID, dh)
 	db.history = dh
 
 	return nil
 }
 
 func (db *deploymentBuilder) extractDeployFromDeployHistory() error {
-	db.log.Debugf("%q Extracting deploy from history: %#v", db.reqID, db.history)
+	messages.ReportLogFieldsMessage("Extracting deploy from history", logging.DebugLevel, db.log, db.reqID, db.history)
 	db.deploy = db.history.Deploy
 	if db.deploy == nil {
 		return malformedResponse{"Singularity deploy history included no deploy"}
@@ -266,7 +269,11 @@ func (db *deploymentBuilder) sousDeployCheck() error {
 	if cnl, ok := db.deploy.Metadata[sous.ClusterNameLabel]; ok {
 		for _, cn := range db.clusters.Names() {
 			if cnl == cn {
-				db.log.Vomitf("Deploy cluster %q found in clusters (%#v)", cnl, db.clusters)
+				messages.ReportLogFieldsMessage("Deploy cluster found in clusters",
+					logging.DebugLevel,
+					db.log,
+					cnl,
+					db.clusters)
 				return nil
 			}
 		}
@@ -329,7 +336,7 @@ func (db *deploymentBuilder) retrieveImageLabels() error {
 	if err != nil {
 		return malformedResponse{err.Error()}
 	}
-	db.log.Vomitf("%q Labels: %v", db.reqID, labels)
+	messages.ReportLogFieldsMessage("Labels", logging.DebugLevel, db.log, db.reqID, labels)
 
 	db.Target.SourceID, err = docker.SourceIDFromLabels(labels)
 	if err != nil {
@@ -367,7 +374,7 @@ func (db *deploymentBuilder) restoreFromMetadata() error {
 
 func (db *deploymentBuilder) unpackDeployConfig() error {
 	db.Target.Env = db.deploy.Env
-	db.log.Vomitf("%q Env: %+v", db.reqID, db.deploy.Env)
+	messages.ReportLogFieldsMessage("Env", logging.DebugLevel, db.log, db.reqID, db.deploy.Env)
 	if db.Target.Env == nil {
 		db.Target.Env = make(map[string]string)
 	}
@@ -395,9 +402,11 @@ func (db *deploymentBuilder) unpackDeployConfig() error {
 				Mode:      sous.VolumeMode(v.Mode),
 			})
 	}
-	db.log.Vomitf("%q Volumes %+v", db.reqID, db.Target.DeployConfig.Volumes)
+	messages.ReportLogFieldsMessage("Volumes", logging.DebugLevel, db.log, db.reqID, db.Target.DeployConfig.Volumes)
+
 	if len(db.Target.DeployConfig.Volumes) > 0 {
-		db.log.Debugf("%q %+v", db.reqID, db.Target.DeployConfig.Volumes[0])
+		messages.ReportLogFieldsMessage("volume", logging.DebugLevel, db.log, db.reqID, db.Target.DeployConfig.Volumes[0])
+
 	}
 
 	if db.deploy.Healthcheck != nil {
