@@ -1,18 +1,14 @@
 package storage
 
 import (
-	"bytes"
 	"context"
 	"database/sql"
-	"fmt"
-	"regexp"
-	"strings"
-	"text/template"
 	"time"
 
 	"github.com/lib/pq"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/sqlgen"
 	"github.com/pkg/errors"
 )
 
@@ -75,73 +71,73 @@ func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State,
 		}
 	}
 
-	if err := execInsertDeployments(ctx, log, tx, alldeps, "components", "on conflict do nothing", func(fields *fields, dep *sous.Deployment) {
-		fields.row(func(r rowdef) {
-			r.fd("?", "repo", dep.SourceID.Location.Repo)
-			r.fd("?", "dir", dep.SourceID.Location.Dir)
-			r.fd("?", "flavor", dep.Flavor)
-			r.fd("?", "kind", dep.Kind)
+	if err := execInsertDeployments(ctx, log, tx, alldeps, "components", "on conflict do nothing", func(fields sqlgen.FieldSet, dep *sous.Deployment) {
+		fields.Row(func(r sqlgen.RowDef) {
+			r.FD("?", "repo", dep.SourceID.Location.Repo)
+			r.FD("?", "dir", dep.SourceID.Location.Dir)
+			r.FD("?", "flavor", dep.Flavor)
+			r.FD("?", "kind", dep.Kind)
 		})
 	}); err != nil {
 		return nil
 	}
 
-	if err := execInsertDeployments(ctx, log, tx, alldeps, "clusters", `on conflict {{.Candidates}} do update set {{.NonCandidates}} = {{.NSNonCandidates "excluded"}}`, func(fields *fields, dep *sous.Deployment) {
+	if err := execInsertDeployments(ctx, log, tx, alldeps, "clusters", `on conflict {{.Candidates}} do update set {{.NonCandidates}} = {{.NSNonCandidates "excluded"}}`, func(fields sqlgen.FieldSet, dep *sous.Deployment) {
 		c := dep.Cluster
 		s := c.Startup
-		fields.row(func(r rowdef) {
-			r.cf("?", "name", dep.ClusterName)
-			r.fd("?", "kind", c.Kind)
-			r.fd("?", "base_url", c.BaseURL)
+		fields.Row(func(r sqlgen.RowDef) {
+			r.CF("?", "name", dep.ClusterName)
+			r.FD("?", "kind", c.Kind)
+			r.FD("?", "base_url", c.BaseURL)
 			startupFields(r, "crdef", s)
 		})
 	}); err != nil {
 		return nil
 	}
 
-	if err := execInsertDeployments(ctx, log, tx, updates, "deployments", "", func(fields *fields, dep *sous.Deployment) {
+	if err := execInsertDeployments(ctx, log, tx, updates, "deployments", "", func(fields sqlgen.FieldSet, dep *sous.Deployment) {
 		s := dep.Startup
-		fields.row(func(r rowdef) {
+		fields.Row(func(r sqlgen.RowDef) {
 			compID(r, dep)
 			clusterID(r, dep)
-			r.fd("?", "versionstring", dep.SourceID.Version.String())
-			r.fd("?", "num_instances", dep.NumInstances)
-			r.fd("?", "schedule_string", dep.Schedule)
-			r.fd("?", "lifecycle", "active")
+			r.FD("?", "versionstring", dep.SourceID.Version.String())
+			r.FD("?", "num_instances", dep.NumInstances)
+			r.FD("?", "schedule_string", dep.Schedule)
+			r.FD("?", "lifecycle", "active")
 			startupFields(r, "cr", s)
 		})
 	}); err != nil {
 		return err
 	}
 
-	if err := execInsertDeployments(ctx, log, tx, deletes, "deployments", "", func(fields *fields, dep *sous.Deployment) {
+	if err := execInsertDeployments(ctx, log, tx, deletes, "deployments", "", func(fields sqlgen.FieldSet, dep *sous.Deployment) {
 		s := dep.Startup
-		fields.row(func(r rowdef) {
+		fields.Row(func(r sqlgen.RowDef) {
 			compID(r, dep)
 			clusterID(r, dep)
-			r.fd("?", "versionstring", dep.SourceID.Version.String())
-			r.fd("?", "num_instances", dep.NumInstances)
-			r.fd("?", "schedule_string", dep.Schedule)
-			r.fd("?", "lifecycle", "decommisioned")
+			r.FD("?", "versionstring", dep.SourceID.Version.String())
+			r.FD("?", "num_instances", dep.NumInstances)
+			r.FD("?", "schedule_string", dep.Schedule)
+			r.FD("?", "lifecycle", "decommisioned")
 			startupFields(r, "cr", s)
 		})
 	}); err != nil {
 		return err
 	}
 
-	if err := execInsertDeployments(ctx, log, tx, updates, "owners", "on conflict do nothing", func(fields *fields, dep *sous.Deployment) {
+	if err := execInsertDeployments(ctx, log, tx, updates, "owners", "on conflict do nothing", func(fields sqlgen.FieldSet, dep *sous.Deployment) {
 		for ownername := range dep.Owners {
-			fields.row(func(r rowdef) {
-				r.fd("?", "email", ownername)
+			fields.Row(func(r sqlgen.RowDef) {
+				r.FD("?", "email", ownername)
 			})
 		}
 	}); err != nil {
 		return err
 	}
 
-	if err := execInsertDeployments(ctx, log, tx, updates, "component_owners", "on conflict do nothing", func(fields *fields, dep *sous.Deployment) {
+	if err := execInsertDeployments(ctx, log, tx, updates, "component_owners", "on conflict do nothing", func(fields sqlgen.FieldSet, dep *sous.Deployment) {
 		for ownername := range dep.Owners {
-			fields.row(func(row rowdef) {
+			fields.Row(func(row sqlgen.RowDef) {
 				compID(row, dep)
 				ownerID(row, ownername)
 			})
@@ -150,49 +146,49 @@ func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State,
 		return err
 	}
 
-	if err := execInsertDeployments(ctx, log, tx, updates, "envs", "on conflict do nothing", func(fields *fields, dep *sous.Deployment) {
+	if err := execInsertDeployments(ctx, log, tx, updates, "envs", "on conflict do nothing", func(fields sqlgen.FieldSet, dep *sous.Deployment) {
 		for key, value := range dep.Env {
-			fields.row(func(row rowdef) {
+			fields.Row(func(row sqlgen.RowDef) {
 				depID(row, dep)
-				row.fd("?", "key", key)
-				row.fd("?", "value", value)
+				row.FD("?", "key", key)
+				row.FD("?", "value", value)
 			})
 		}
 	}); err != nil {
 		return err
 	}
 
-	if err := execInsertDeployments(ctx, log, tx, updates, "resources", "on conflict do nothing", func(fields *fields, dep *sous.Deployment) {
+	if err := execInsertDeployments(ctx, log, tx, updates, "resources", "on conflict do nothing", func(fields sqlgen.FieldSet, dep *sous.Deployment) {
 		for key, value := range dep.Resources {
-			fields.row(func(row rowdef) {
+			fields.Row(func(row sqlgen.RowDef) {
 				depID(row, dep)
-				row.fd("?", "resource_name", key)
-				row.fd("?", "resource_value", value)
+				row.FD("?", "resource_name", key)
+				row.FD("?", "resource_value", value)
 			})
 		}
 	}); err != nil {
 		return err
 	}
 
-	if err := execInsertDeployments(ctx, log, tx, updates, "metadatas", "on conflict do nothing", func(fields *fields, dep *sous.Deployment) {
+	if err := execInsertDeployments(ctx, log, tx, updates, "metadatas", "on conflict do nothing", func(fields sqlgen.FieldSet, dep *sous.Deployment) {
 		for key, value := range dep.Metadata {
-			fields.row(func(row rowdef) {
+			fields.Row(func(row sqlgen.RowDef) {
 				depID(row, dep)
-				row.fd("?", "name", key)
-				row.fd("?", "value", value)
+				row.FD("?", "name", key)
+				row.FD("?", "value", value)
 			})
 		}
 	}); err != nil {
 		return err
 	}
 
-	if err := execInsertDeployments(ctx, log, tx, updates, "volumes", "on conflict do nothing", func(fields *fields, dep *sous.Deployment) {
+	if err := execInsertDeployments(ctx, log, tx, updates, "volumes", "on conflict do nothing", func(fields sqlgen.FieldSet, dep *sous.Deployment) {
 		for _, volume := range dep.Volumes {
-			fields.row(func(row rowdef) {
+			fields.Row(func(row sqlgen.RowDef) {
 				depID(row, dep)
-				row.fd("?", "host", volume.Host)
-				row.fd("?", "container", volume.Container)
-				row.fd("?", "mode", volume.Mode)
+				row.FD("?", "host", volume.Host)
+				row.FD("?", "container", volume.Container)
+				row.FD("?", "mode", volume.Mode)
 			})
 		}
 	}); err != nil {
@@ -202,9 +198,9 @@ func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State,
 	return nil
 }
 
-func depID(row rowdef, dep *sous.Deployment) {
+func depID(row sqlgen.RowDef, dep *sous.Deployment) {
 	sid := dep.SourceID
-	row.fd(`(select max(deployment_id)
+	row.FD(`(select max(deployment_id)
 	from
 		deployments
 		join components using (component_id)
@@ -215,249 +211,62 @@ func depID(row rowdef, dep *sous.Deployment) {
 		"deployment_id", sid.Location.Repo, sid.Location.Dir, dep.Flavor, dep.Kind, dep.ClusterName)
 }
 
-func compID(row rowdef, dep *sous.Deployment) {
+func compID(row sqlgen.RowDef, dep *sous.Deployment) {
 	sid := dep.SourceID
-	row.fd(`(select component_id from components
+	row.FD(`(select component_id from components
 	  where repo = ? and dir = ? and flavor = ? and kind = ?)`,
 		"component_id", sid.Location.Repo, sid.Location.Dir, dep.Flavor, dep.Kind)
 }
 
-func clusterID(row rowdef, dep *sous.Deployment) {
-	row.fd(`(select "cluster_id" from clusters where name = ?)`, "cluster_id", dep.ClusterName)
+func clusterID(row sqlgen.RowDef, dep *sous.Deployment) {
+	row.FD(`(select "cluster_id" from clusters where name = ?)`, "cluster_id", dep.ClusterName)
 }
 
-func ownerID(row rowdef, ownername string) {
-	row.fd("(select owner_id from owners where email = ?)", "owner_id", ownername)
+func ownerID(row sqlgen.RowDef, ownername string) {
+	row.FD("(select owner_id from owners where email = ?)", "owner_id", ownername)
 }
 
-func startupFields(r rowdef, prefix string, s sous.Startup) {
+func startupFields(r sqlgen.RowDef, prefix string, s sous.Startup) {
 	statuses := []int64{}
 	for _, n := range s.CheckReadyFailureStatuses {
 		statuses = append(statuses, int64(n))
 	}
-	r.fd("?", prefix+"_skip", s.SkipCheck)
-	r.fd("?", prefix+"_proto", s.CheckReadyProtocol)
-	r.fd("?", prefix+"_path", s.CheckReadyURIPath)
-	r.fd("?", prefix+"_connect_delay", s.ConnectDelay)
-	r.fd("?", prefix+"_timeout", s.Timeout)
-	r.fd("?", prefix+"_connect_interval", s.ConnectInterval)
-	r.fd("?", prefix+"_port_index", s.CheckReadyPortIndex)
-	r.fd("?", prefix+"_uri_timeout", s.CheckReadyURITimeout)
-	r.fd("?", prefix+"_interval", s.CheckReadyInterval)
-	r.fd("?", prefix+"_retries", s.CheckReadyRetries)
-	r.fd("?", prefix+"_failure_statuses", pq.Array(statuses))
-}
-
-type fields struct {
-	colnames []string
-	coldefs  map[string]*coldef
-	rows     []row
-}
-
-func (f *fields) getcol(col, frmt string, cand bool) *coldef {
-	if c, has := f.coldefs[col]; has {
-		if col != c.name || frmt != c.fmt || cand != c.candidate {
-			panic(fmt.Sprintf("Mismatched coldef: %#v != %q %q", c, col, frmt))
-		}
-		return c
-	}
-	c := &coldef{name: col, fmt: frmt, candidate: cand}
-	f.coldefs[col] = c
-	f.colnames = append(f.colnames, col)
-	return c
-}
-
-func (f *fields) row(fn func(rowdef)) {
-	row := row{}
-	f.rows = append(f.rows, row)
-	def := rowdef{row: &row, fields: f}
-	fn(def)
-}
-
-func (f fields) potent() bool {
-	return len(f.colnames) > 0
-}
-
-func (f fields) insertSQL(table, conflict string) string {
-	vs := f.values()
-	return fmt.Sprintf("insert into %s %s values %s %s", table, f.columns(), vs, f.conflictClause(conflict))
-}
-
-func (f fields) conflictClause(templ string) string {
-	buf := &bytes.Buffer{}
-	conflictTemplate := template.Must(template.New("conflict").Parse(templ))
-	conflictTemplate.Execute(buf, f)
-	return buf.String()
-}
-
-func (f fields) columns() string {
-	return "(" + strings.Join(f.colnames, ",") + ")"
-}
-
-// Candidates returns the index candidate columns for this fields.
-func (f fields) Candidates() string {
-	return f.candidates()
-}
-
-func (f fields) candidates() string {
-	colnames := []string{}
-	for _, name := range f.colnames {
-		if f.coldefs[name].candidate {
-			colnames = append(colnames, name)
-		}
-	}
-	return "(" + strings.Join(colnames, ",") + ")"
-}
-
-// NonCandidates returns noncandidate column names for this fields.
-func (f fields) NonCandidates() string {
-	return f.noncandidates()
-}
-
-// NSNonCandidates returns noncandidate columns namespaced with a table name.
-func (f fields) NSNonCandidates(namespace string) string {
-	colnames := []string{}
-	for _, name := range f.colnames {
-		if !f.coldefs[name].candidate {
-			colnames = append(colnames, namespace+"."+name)
-		}
-	}
-	return "(" + strings.Join(colnames, ",") + ")"
-}
-
-func (f fields) noncandidates() string {
-	colnames := []string{}
-	for _, name := range f.colnames {
-		if !f.coldefs[name].candidate {
-			colnames = append(colnames, name)
-		}
-	}
-	return "(" + strings.Join(colnames, ",") + ")"
-}
-
-var placeholderQs = regexp.MustCompile(`\?`)
-
-func (f fields) values() string {
-	placeIdx := 0
-
-	lines := []string{}
-	for range f.rows {
-		valpats := []string{}
-		for _, name := range f.colnames {
-			pat := f.coldefs[name].fmt
-			pat = placeholderQs.ReplaceAllStringFunc(pat, func(q string) string {
-				placeIdx++
-				return fmt.Sprintf("$%d", placeIdx)
-			})
-
-			valpats = append(valpats, pat)
-		}
-		format := "(" + strings.Join(valpats, ",") + ")"
-		lines = append(lines, format)
-	}
-
-	return strings.Join(lines, ",\n")
-}
-
-func (f fields) insertValues() []interface{} {
-	vals := []interface{}{}
-	for _, r := range f.rows {
-		for _, name := range f.colnames {
-			vals = append(vals, r[name].values...)
-		}
-	}
-	return vals
-}
-
-func (f fields) rowcount() int {
-	return len(f.rows)
-}
-
-type coldef struct {
-	fmt, name string
-	candidate bool
-}
-
-type row map[string]field
-
-type rowdef struct {
-	row    *row
-	fields *fields
-}
-
-func (r rowdef) deffield(fmt string, col string, vals []interface{}, cand bool) {
-	column := r.fields.getcol(col, fmt, cand)
-	(*r.row)[col] = field{column: column, values: vals}
-}
-
-func (r rowdef) fd(fmt string, col string, vals ...interface{}) {
-	r.deffield(fmt, col, vals, false)
-}
-
-func (r rowdef) cf(fmt string, col string, vals ...interface{}) {
-	r.deffield(fmt, col, vals, true)
-}
-
-type field struct {
-	column *coldef
-	values []interface{}
+	r.FD("?", prefix+"_skip", s.SkipCheck)
+	r.FD("?", prefix+"_proto", s.CheckReadyProtocol)
+	r.FD("?", prefix+"_path", s.CheckReadyURIPath)
+	r.FD("?", prefix+"_connect_delay", s.ConnectDelay)
+	r.FD("?", prefix+"_timeout", s.Timeout)
+	r.FD("?", prefix+"_connect_interval", s.ConnectInterval)
+	r.FD("?", prefix+"_port_index", s.CheckReadyPortIndex)
+	r.FD("?", prefix+"_uri_timeout", s.CheckReadyURITimeout)
+	r.FD("?", prefix+"_interval", s.CheckReadyInterval)
+	r.FD("?", prefix+"_retries", s.CheckReadyRetries)
+	r.FD("?", prefix+"_failure_statuses", pq.Array(statuses))
 }
 
 func execInsertDeployments(
 	ctx context.Context,
 	log logging.LogSink,
 	tx *sql.Tx,
+
 	ds sous.Deployments,
 	table string,
 	conflict string,
-	fn func(*fields, *sous.Deployment),
+	fn func(sqlgen.FieldSet, *sous.Deployment),
 ) error {
-	fields := &fields{
-		coldefs: map[string]*coldef{},
-		rows:    []row{},
-	}
+
+	fields := sqlgen.NewFieldset()
 	for _, d := range ds.Snapshot() {
 		fn(fields, d)
 	}
-	if !fields.potent() {
+	if !fields.Potent() {
 		return nil
 	}
 	start := time.Now()
-	sql := fields.insertSQL(table, conflict)
-	_, err := tx.ExecContext(ctx, sql, fields.insertValues()...)
-	reportSQLMessage(log, start, sql, fields.rowcount(), err)
+
+	sql := fields.InsertSQL(table, conflict)
+	_, err := tx.ExecContext(ctx, sql, fields.InsertValues()...)
+	reportSQLMessage(log, start, sql, fields.RowCount(), err)
+
 	return err
-}
-
-func zeroDep() *sous.Deployment {
-	return &sous.Deployment{
-		DeployConfig: sous.DeployConfig{
-			Resources: map[string]string{},
-			Metadata:  map[string]string{},
-			Env:       map[string]string{},
-			Volumes:   sous.Volumes{},
-		},
-		Cluster: &sous.Cluster{
-			Env:               map[string]sous.Var{},
-			Startup:           sous.Startup{},
-			AllowedAdvisories: []string{},
-		},
-		Owners: map[string]struct{}{},
-	}
-}
-
-func sqlValues(ds sous.Deployments, format string, f func(*sous.Deployment) []interface{}) string {
-	list := []string{}
-	for _, d := range ds.Snapshot() {
-		list = append(list, fmt.Sprintf(format, f(d)...))
-	}
-	return strings.Join(list, ",")
-}
-
-func sqlArray(value []int) string {
-	items := []string{}
-	for _, i := range value {
-		items = append(items, fmt.Sprintf("%d", i))
-	}
-	return "'{" + strings.Join(items, ",") + "}'"
 }
