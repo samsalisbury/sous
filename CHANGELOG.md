@@ -6,13 +6,15 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
+## [Unreleased](//github.com/opentable/sous/compare/0.5.65...master)
+
+* Server: PUT /single-deployment endpoint immediately adds a rectification
+  to the queue and returns a link to monitor for completion.
+
 ## [0.5.66](//github.com/opentable/sous/compare/0.5.65...0.5.66)
 
 ### Added
 * Server: Include connection string in db connection error log.
-* Client: Add structured logging to status poller
-* All: Create a new structured log that auto extracts IDs and stores in seperate fields for
-  easier searching in logstash
 
 ### Changed
 * All: Top-level global logger labeled "GLOBAL".
