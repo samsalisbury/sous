@@ -66,6 +66,8 @@ func TestPUTSingleDeploymentHandler_Exchange_normal(t *testing.T) {
 		// If true, we assert that a relevant one has been added to the queue,
 		// and that the response contains a link to the queued r11n.
 		WantQueuedR11n bool
+		// WantError is the error message we want to see in meta.
+		WantError string
 	}{
 		{
 			Desc: "no matching repo",
@@ -76,6 +78,7 @@ func TestPUTSingleDeploymentHandler_Exchange_normal(t *testing.T) {
 				return b, b.DeploymentID
 			},
 			WantStatus: 404,
+			WantError:  `No manifest with ID "nonexistent,dir1~flavor1"`,
 		},
 		{
 			Desc: "no matching cluster",
@@ -85,6 +88,7 @@ func TestPUTSingleDeploymentHandler_Exchange_normal(t *testing.T) {
 				return b, b.DeploymentID
 			},
 			WantStatus: 404,
+			WantError:  `No "nonexistent" deployment defined for "nonexistent:github.com/user1/repo1,dir1~flavor1"`,
 		},
 		{
 			Desc: "body deploy ID not match query",
@@ -96,6 +100,7 @@ func TestPUTSingleDeploymentHandler_Exchange_normal(t *testing.T) {
 				return b, did
 			},
 			WantStatus: 400,
+			WantError:  `Body contains deployment "cluster1:github.com/user1/repo1,dir1~flavor1", URL query is for deployment "cluster2:github.com/user1/repo1,dir1~flavor1"`,
 		},
 		{
 			Desc: "no change necessary",
@@ -170,6 +175,10 @@ func TestPUTSingleDeploymentHandler_Exchange_normal(t *testing.T) {
 			gotStateWritten := len(stateWriter.Spy.CallsTo("WriteState")) == 1
 			if gotStateWritten != tc.WantStateWritten {
 				t.Errorf("got state written: %t; want %t", gotStateWritten, tc.WantStateWritten)
+			}
+
+			if body.Meta.Error != tc.WantError {
+				t.Errorf("got Meta.Error = %q; want %q", body.Meta.Error, tc.WantError)
 			}
 
 			if !tc.WantQueuedR11n {

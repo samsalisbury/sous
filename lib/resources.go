@@ -101,7 +101,7 @@ func (r Resources) Cpus() float64 {
 		if present {
 			reportResourceMessage(fmt.Sprintf("Could not parse value: '%s' for cpus as a float, using default: %f", cpuStr, cpus), r, logging.Log)
 		} else {
-			reportDebugResourceMessage(fmt.Sprintf("Using default value for cpus: %f.", cpus), r, logging.Log)
+			//reportDebugResourceMessage(fmt.Sprintf("Using default value for cpus: %f.", cpus), r, logging.Log)
 		}
 	}
 	return cpus

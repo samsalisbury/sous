@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
 
 	sous "github.com/opentable/sous/lib"
@@ -34,6 +35,8 @@ type (
 	ResponseMeta struct {
 		// Links is a set of links related to a response body.
 		Links map[string]string
+		// Error is the error message returned.
+		Error string `json:",omitempty"`
 	}
 )
 
@@ -42,19 +45,26 @@ type (
 // from the current actual deployment set. It first writes the new
 // deployment spec to the GDM.
 func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
-	m, ok := psd.GDM.Manifests.Get(psd.Body.DeploymentID.ManifestID)
-	if !ok {
-		return psd.Body, 404
+	er := func(code int, f string, a ...interface{}) (*singleDeploymentBody, int) {
+		psd.Body.Meta.Error = fmt.Sprintf(f, a...)
+		return psd.Body, code
 	}
 
-	if psd.Body.DeploymentID != psd.DeploymentID {
-		return psd.Body, 400
+	did := psd.Body.DeploymentID
+
+	if did != psd.DeploymentID {
+		return er(400, "Body contains deployment %q, URL query is for deployment %q", did, psd.DeploymentID)
+	}
+
+	m, ok := psd.GDM.Manifests.Get(did.ManifestID)
+	if !ok {
+		return er(404, "No manifest with ID %q", did.ManifestID)
 	}
 
 	cluster := psd.Body.DeploymentID.Cluster
 	d, ok := m.Deployments[cluster]
 	if !ok {
-		return psd.Body, 404
+		return er(404, "No %q deployment defined for %q", cluster, did)
 	}
 	different, _ := psd.Body.DeploySpec.Diff(d)
 	if !different {
