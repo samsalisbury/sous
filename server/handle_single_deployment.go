@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -55,10 +56,14 @@ type (
 func (sdr *SingleDeploymentResource) Put(_ http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
 	qv := restful.QueryValues{Values: req.URL.Query()}
 	did, didErr := deploymentIDFromValues(qv)
+	body := &singleDeploymentBody{}
+	bodyErr := json.NewDecoder(req.Body).Decode(body)
 	return &PUTSingleDeploymentHandler{
 		User:            sous.User(sdr.userExtractor.GetUser(req)),
 		DeploymentID:    did,
 		DeploymentIDErr: didErr,
+		Body:            body,
+		BodyErr:         bodyErr,
 	}
 }
 
@@ -67,6 +72,15 @@ func (sdr *SingleDeploymentResource) Put(_ http.ResponseWriter, req *http.Reques
 // from the current actual deployment set. It first writes the new
 // deployment spec to the GDM.
 func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
+	if psd.BodyErr != nil {
+		return &singleDeploymentBody{
+			Meta: ResponseMeta{
+				Error:      fmt.Sprintf("Error parsing body: %s.", psd.BodyErr),
+				StatusCode: 400,
+			},
+		}, 400
+	}
+
 	er := func(code int, f string, a ...interface{}) (*singleDeploymentBody, int) {
 		psd.Body.Meta.Error = fmt.Sprintf(f, a...)
 		psd.Body.Meta.StatusCode = code

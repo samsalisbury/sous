@@ -3,6 +3,7 @@ package server
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -22,6 +23,7 @@ func TestSingleDeploymentResource_Put(t *testing.T) {
 		Desc             string
 		URL              string
 		Body             func(t *testing.T) []byte
+		WantBodyErr      string
 		Header           func(t *testing.T) http.Header
 		WantDeploymentID sous.DeploymentID
 		WantUser         sous.User
@@ -44,6 +46,62 @@ func TestSingleDeploymentResource_Put(t *testing.T) {
 					},
 				},
 				Cluster: "cluster1",
+			},
+			Header: func(t *testing.T) http.Header {
+				h := http.Header{}
+				h.Add("Sous-User-Name", "test-user")
+				h.Add("Sous-User-Email", "test-user@example.com")
+				return h
+			},
+			WantUser: sous.User{Name: "test-user", Email: "test-user@example.com"},
+		},
+		{
+			Desc: "valid body despite nonexistent cluster",
+			URL:  "/single-deployment?repo=github.com/user1/repo1&cluster=blah",
+			Body: func(t *testing.T) []byte {
+				b := makeBodyFromFixture(t, "github.com/user1/repo1", "cluster1")
+				j, err := json.Marshal(b)
+				if err != nil {
+					t.Fatalf("setup failed: %s", err)
+				}
+				return j
+			},
+			WantDeploymentID: sous.DeploymentID{
+				ManifestID: sous.ManifestID{
+					Source: sous.SourceLocation{
+						Repo: "github.com/user1/repo1",
+					},
+				},
+				Cluster: "blah",
+			},
+			Header: func(t *testing.T) http.Header {
+				h := http.Header{}
+				h.Add("Sous-User-Name", "test-user")
+				h.Add("Sous-User-Email", "test-user@example.com")
+				return h
+			},
+			WantUser: sous.User{Name: "test-user", Email: "test-user@example.com"},
+		},
+		{
+			Desc: "body is invalid json",
+			URL:  "/single-deployment?repo=github.com/user1/repo1&cluster=blah",
+			Body: func(t *testing.T) []byte {
+				b := makeBodyFromFixture(t, "github.com/user1/repo1", "cluster1")
+				j, err := json.Marshal(b)
+				if err != nil {
+					t.Fatalf("setup failed: %s", err)
+				}
+				j[0] = '?' // Make json invalid.
+				return j
+			},
+			WantBodyErr: "invalid character '?' looking for beginning of value",
+			WantDeploymentID: sous.DeploymentID{
+				ManifestID: sous.ManifestID{
+					Source: sous.SourceLocation{
+						Repo: "github.com/user1/repo1",
+					},
+				},
+				Cluster: "blah",
 			},
 			Header: func(t *testing.T) http.Header {
 				h := http.Header{}
@@ -85,6 +143,15 @@ func TestSingleDeploymentResource_Put(t *testing.T) {
 
 			if got.User != tc.WantUser {
 				t.Errorf("got user %# v; want %# v", got.User, tc.WantUser)
+			}
+
+			if tc.WantBodyErr != "" {
+				gotBodyErr := fmt.Sprint(got.BodyErr)
+				if gotBodyErr != tc.WantBodyErr {
+					t.Errorf("got body error %q; want %q", gotBodyErr, tc.WantBodyErr)
+				}
+			} else if got.BodyErr != nil {
+				t.Errorf("got body error %q; want nil", got.BodyErr)
 			}
 		})
 
@@ -129,6 +196,10 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 		// The body is sent as the PUT body of the request.
 		// We expect that the same body is returned on success.
 		BodyAndID func() (*singleDeploymentBody, sous.DeploymentID)
+		// BodyErrIn is an error parsing a body.
+		BodyErrIn error
+		// DeploymentIDErr is an error getting valid deployment ID.
+		DeploymentIDErr error
 		// OverrideGDMToDeployments allows testing for errors.
 		OverrideGDMToDeployments func(*sous.State) (sous.Deployments, error)
 		// OverrideStateWriter allows using a StateWriter that errors.
@@ -148,6 +219,15 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 		// WantError is the error message we want to see in meta.
 		WantError string
 	}{
+		{
+			Desc: "body parsing error",
+			BodyAndID: func() (*singleDeploymentBody, sous.DeploymentID) {
+				return nil, sous.DeploymentID{}
+			},
+			BodyErrIn:  errors.New("body parse error"),
+			WantStatus: 400,
+			WantError:  `Error parsing body: body parse error.`,
+		},
 		{
 			Desc: "no matching repo",
 			BodyAndID: func() (*singleDeploymentBody, sous.DeploymentID) {
@@ -293,6 +373,7 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 			psd := PUTSingleDeploymentHandler{
 				DeploymentID:     did,
 				Body:             sent,
+				BodyErr:          tc.BodyErrIn,
 				GDM:              state,
 				GDMToDeployments: stateToDeployments,
 				Header:           header,
