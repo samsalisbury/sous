@@ -98,7 +98,6 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 	}
 	fullDeployment, ok := deployments.Get(psd.DeploymentID)
 	if !ok {
-		// Note this line is not tested yet.
 		return er(500, "Deployment failed to round-trip to GDM.")
 	}
 
