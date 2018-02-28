@@ -64,12 +64,18 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 		panic(err)
 	}
 
+	// The full deployment can only be gotten from the full state, since it
+	// relies on State.Defs which is not part of this exchange. Therefore
+	// fish it out of the realized GDM returned from .Deployments()
+	//
+	// TODO SS:
+	// Note that this call is expensive, we should come up with a cheaper way
+	// to get single deployments.
 	deployments, err := psd.GDM.Deployments()
 	if err != nil {
 		// TODO SS: Don't panic.
 		panic(err)
 	}
-
 	fullDeployment, ok := deployments.Get(psd.DeploymentID)
 	if !ok {
 		// TODO SS: Don't panic.

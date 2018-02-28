@@ -12,7 +12,13 @@ import (
 	"github.com/samsalisbury/semv"
 )
 
-func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
+// TestPUTSingleDeploymentHandler_Exchange_normal checks that so long as all the
+// internal calls succeed, user input is handled correctly. This includes user
+// input that cannot be successfully operated on (e.g. IDs that can't be found,
+// faulty request bodies etc.
+// See TestPUTSingleDeploymentHandler_Exchange_exceptions for handling of
+// failing internal calls.
+func TestPUTSingleDeploymentHandler_Exchange_normal(t *testing.T) {
 
 	// makeBodyFromFixture returns a body derived from data in the test fixture.
 	makeBodyFromFixture := func(repo, cluster string) *singleDeploymentBody {
