@@ -63,8 +63,8 @@ func TestPUTSingleDeploymentHandler_Exchange_normal(t *testing.T) {
 		OverrideStateWriter stateWriterSpy
 		// WantStatus is the expected HTTP status for this request.
 		WantStatus int
-		// WantStateWritten true if we expect state to be written.
-		WantStateWritten bool
+		// WantWriteStateCalled true if we expect state to be written.
+		WantWriteStateCalled bool
 		// WantHeaders is a list of headers we expect in the response.
 		WantHeaders http.Header
 		// WantQueuedR11n indicates if we expect a R11n to be queued.
@@ -122,9 +122,9 @@ func TestPUTSingleDeploymentHandler_Exchange_normal(t *testing.T) {
 				b.DeploySpec.Version = semv.MustParse("2.0.0")
 				return b, b.DeploymentID
 			},
-			WantStatus:       200,
-			WantStateWritten: true,
-			WantQueuedR11n:   true,
+			WantStatus:           200,
+			WantWriteStateCalled: true,
+			WantQueuedR11n:       true,
 		},
 		{
 			Desc: "StateWriter.Write error",
@@ -134,10 +134,25 @@ func TestPUTSingleDeploymentHandler_Exchange_normal(t *testing.T) {
 				b.DeploySpec.Version = semv.MustParse("2.0.0")
 				return b, b.DeploymentID
 			},
-			OverrideStateWriter: newStateWriterSpyWithError("an error occured"),
-			WantStatus:          500,
-			WantStateWritten:    true,
-			WantError:           "Failed to write state: an error occured",
+			OverrideStateWriter:  newStateWriterSpyWithError("an error occured"),
+			WantStatus:           500,
+			WantWriteStateCalled: true,
+			WantError:            "Failed to write state: an error occured",
+		},
+		{
+			Desc: "State.Deployments error",
+			BodyAndID: func() (*singleDeploymentBody, sous.DeploymentID) {
+				b := makeBodyFromFixture("github.com/user1/repo1", "cluster1")
+				// Make a change to trigger write attempt.
+				b.DeploySpec.Version = semv.MustParse("2.0.0")
+				return b, b.DeploymentID
+			},
+			OverrideGDMToDeployments: func(*sous.State) (sous.Deployments, error) {
+				return sous.Deployments{}, errors.New("an error occured")
+			},
+			WantStatus:           500,
+			WantWriteStateCalled: true,
+			WantError:            "Unable to expand GDM: an error occured",
 		},
 	}
 
@@ -207,8 +222,8 @@ func TestPUTSingleDeploymentHandler_Exchange_normal(t *testing.T) {
 			}
 
 			gotStateWritten := len(stateWriter.Spy.CallsTo("WriteState")) == 1
-			if gotStateWritten != tc.WantStateWritten {
-				t.Errorf("got state written: %t; want %t", gotStateWritten, tc.WantStateWritten)
+			if gotStateWritten != tc.WantWriteStateCalled {
+				t.Errorf("got state written: %t; want %t", gotStateWritten, tc.WantWriteStateCalled)
 			}
 
 			if body.Meta.Error != tc.WantError {

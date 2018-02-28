@@ -94,8 +94,7 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 	// to get single deployments.
 	deployments, err := psd.GDMToDeployments(psd.GDM)
 	if err != nil {
-		// TODO SS: Don't panic.
-		panic(err)
+		return er(500, "Unable to expand GDM: %s", err)
 	}
 	fullDeployment, ok := deployments.Get(psd.DeploymentID)
 	if !ok {
