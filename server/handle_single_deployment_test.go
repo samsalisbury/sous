@@ -171,6 +171,10 @@ func TestPUTSingleDeploymentHandler_Exchange_normal(t *testing.T) {
 			if gotStatus != tc.WantStatus {
 				t.Errorf("got status %d; want %d", gotStatus, tc.WantStatus)
 			}
+			if body.Meta.StatusCode != gotStatus {
+				t.Errorf("got Meta.StatusCode = %d; != actual status code %d",
+					body.Meta.StatusCode, gotStatus)
+			}
 
 			gotStateWritten := len(stateWriter.Spy.CallsTo("WriteState")) == 1
 			if gotStateWritten != tc.WantStateWritten {

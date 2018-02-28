@@ -37,6 +37,8 @@ type (
 		Links map[string]string
 		// Error is the error message returned.
 		Error string `json:",omitempty"`
+		// StatusCode is the HTTP status code of this response.
+		StatusCode int
 	}
 )
 
@@ -47,6 +49,11 @@ type (
 func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 	er := func(code int, f string, a ...interface{}) (*singleDeploymentBody, int) {
 		psd.Body.Meta.Error = fmt.Sprintf(f, a...)
+		psd.Body.Meta.StatusCode = code
+		return psd.Body, code
+	}
+	success := func(code int) (interface{}, int) {
+		psd.Body.Meta.StatusCode = code
 		return psd.Body, code
 	}
 
@@ -68,7 +75,7 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 	}
 	different, _ := psd.Body.DeploySpec.Diff(d)
 	if !different {
-		return psd.Body, 200
+		return success(200)
 	}
 
 	m.Deployments[cluster] = psd.Body.DeploySpec
@@ -116,5 +123,5 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 		"queuedDeployAction": "/deploy-queue-item?action=" + string(qr.ID),
 	}
 
-	return psd.Body, 200
+	return success(200)
 }
