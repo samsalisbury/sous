@@ -9,6 +9,7 @@ import (
 	"github.com/nyarly/spies"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/test"
+	"github.com/pkg/errors"
 	"github.com/samsalisbury/semv"
 )
 
@@ -56,6 +57,10 @@ func TestPUTSingleDeploymentHandler_Exchange_normal(t *testing.T) {
 		// The body is sent as the PUT body of the request.
 		// We expect that the same body is returned on success.
 		BodyAndID func() (*singleDeploymentBody, sous.DeploymentID)
+		// OverrideGDMToDeployments allows testing for errors.
+		OverrideGDMToDeployments func(*sous.State) (sous.Deployments, error)
+		// OverrideStateWriter allows using a StateWriter that errors.
+		OverrideStateWriter stateWriterSpy
 		// WantStatus is the expected HTTP status for this request.
 		WantStatus int
 		// WantStateWritten true if we expect state to be written.
@@ -121,6 +126,19 @@ func TestPUTSingleDeploymentHandler_Exchange_normal(t *testing.T) {
 			WantStateWritten: true,
 			WantQueuedR11n:   true,
 		},
+		{
+			Desc: "StateWriter.Write error",
+			BodyAndID: func() (*singleDeploymentBody, sous.DeploymentID) {
+				b := makeBodyFromFixture("github.com/user1/repo1", "cluster1")
+				// Make a change to trigger write attempt.
+				b.DeploySpec.Version = semv.MustParse("2.0.0")
+				return b, b.DeploymentID
+			},
+			OverrideStateWriter: newStateWriterSpyWithError("an error occured"),
+			WantStatus:          500,
+			WantStateWritten:    true,
+			WantError:           "Failed to write state: an error occured",
+		},
 	}
 
 	for _, tc := range testCases {
@@ -131,6 +149,9 @@ func TestPUTSingleDeploymentHandler_Exchange_normal(t *testing.T) {
 			sent, did := tc.BodyAndID()
 			header := http.Header{}
 			stateWriter := newStateWriterSpy()
+			if tc.OverrideStateWriter != (stateWriterSpy{}) {
+				stateWriter = tc.OverrideStateWriter
+			}
 			queueSet := sous.NewR11nQueueSet()
 			user := sous.User{
 				Name:  "Test User",
@@ -140,6 +161,9 @@ func TestPUTSingleDeploymentHandler_Exchange_normal(t *testing.T) {
 			state := test.DefaultStateFixture()
 			stateToDeployments := func(s *sous.State) (sous.Deployments, error) {
 				return state.Deployments()
+			}
+			if tc.OverrideGDMToDeployments != nil {
+				stateToDeployments = tc.OverrideGDMToDeployments
 			}
 
 			psd := PUTSingleDeploymentHandler{
@@ -228,7 +252,10 @@ func TestPUTSingleDeploymentHandler_Exchange_normal(t *testing.T) {
 
 }
 
-type stateWriterSpy struct{ *spies.Spy }
+type stateWriterSpy struct {
+	Error error
+	*spies.Spy
+}
 
 func newStateWriterSpy() stateWriterSpy {
 	return stateWriterSpy{
@@ -236,6 +263,13 @@ func newStateWriterSpy() stateWriterSpy {
 	}
 }
 
+func newStateWriterSpyWithError(err string) stateWriterSpy {
+	s := newStateWriterSpy()
+	s.Error = errors.New(err)
+	return s
+}
+
 func (sw stateWriterSpy) WriteState(s *sous.State, u sous.User) error {
-	return sw.Called(s, u).Error(0)
+	sw.Called(s, u)
+	return sw.Error
 }

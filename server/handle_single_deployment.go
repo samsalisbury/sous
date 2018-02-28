@@ -82,8 +82,7 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 	m.Deployments[cluster] = psd.Body.DeploySpec
 
 	if err := psd.StateWriter.WriteState(psd.GDM, psd.User); err != nil {
-		// TODO SS: Don't panic.
-		panic(err)
+		return er(500, "Failed to write state: %s", err)
 	}
 
 	// The full deployment can only be gotten from the full state, since it
