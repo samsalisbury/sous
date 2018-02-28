@@ -13,6 +13,7 @@ with respect to its command line interface and HTTP interface.
 * Client: Add structured logging to status poller
 * All: Create a new structured log that auto extracts IDs and stores in seperate fields for
   easier searching in logstash
+* All: Add truncated message that was supposed to go to logstash if it is found to error out from delivery to Kafka
 
 ### Changed
 * All: Top-level global logger labeled "GLOBAL".
