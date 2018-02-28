@@ -10,6 +10,7 @@ import (
 	"github.com/opentable/go-singularity/dtos"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 	"github.com/pkg/errors"
 )
 
@@ -85,18 +86,18 @@ func (sc *deployer) RunningDeployments(reg sous.Registry, clusters sous.Clusters
 		defer catchAndSend("closing channels", errCh, sc.log)
 
 		singWait.Wait()
-		sc.log.Debugf("All singularities polled for requests")
+		messages.ReportLogFieldsMessage("All singularities polled for requests", logging.ExtraDebug1Level, sc.log)
 
 		depWait.Wait()
-		sc.log.Debugf("All deploys processed")
+		messages.ReportLogFieldsMessage("All deploys processed", logging.ExtraDebug1Level, sc.log)
 
 		depAssWait.Wait()
-		sc.log.Debugf("All deployments assembled")
+		messages.ReportLogFieldsMessage("All deployments assembled", logging.ExtraDebug1Level, sc.log)
 
 		close(reqCh)
-		sc.log.Debugf("Closed reqCh")
+		messages.ReportLogFieldsMessage("Closed reqCh", logging.ExtraDebug1Level, sc.log)
 		close(errCh)
-		sc.log.Debugf("Closed errCh")
+		messages.ReportLogFieldsMessage("Closed errCh", logging.ExtraDebug1Level, sc.log)
 	}()
 
 	for {
@@ -107,16 +108,16 @@ func (sc *deployer) RunningDeployments(reg sous.Registry, clusters sous.Clusters
 			depWait.Done()
 		case err, cont := <-errCh:
 			if !cont {
-				sc.log.Debugf("Errors channel closed. Finishing up.")
+				messages.ReportLogFieldsMessage("Errors channel closed. Finishing up.", logging.ExtraDebug1Level, sc.log)
 				return deps, nil
 			}
 			if isMalformed(sc.log, err) || ignorableDeploy(sc.log, err) {
-				sc.log.Debugf("\n", err)
+				logging.ReportError(sc.log, errors.Wrapf(err, "malformed or ignorable deploy"))
 				depWait.Done()
 			} else {
 				retryable := retries.maybe(err, reqCh)
 				if !retryable {
-					sc.log.Warnf("Cannot retry: %v. Exiting", err)
+					logging.ReportError(sc.log, errors.Wrapf(err, "cannot retry"))
 					return deps, err
 				}
 			}

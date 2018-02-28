@@ -276,14 +276,14 @@ func AssertReport(t *testing.T, log func(LogSink)) (LogSinkController, LogMessag
 // will be written to a tempfile.
 //
 // See also the StandardVariableFields and IntervalVariableFields convenience variables.
-func AssertMessageFields(t *testing.T, msg eachFielder, variableFields []string, fixedFields map[string]interface{}) {
+func AssertMessageFields(t *testing.T, msg EachFielder, variableFields []string, fixedFields map[string]interface{}) {
 	t.Helper()
 
 	assert.Contains(t, fixedFields, "@loglov3-otl", "Structured log entries need @loglov3-otl or will be DLQ'd")
 	rawAssertMessageFields(t, msg, variableFields, getTestFunctionCallInfo(variableFields, fixedFields))
 }
 
-func rawAssertMessageFields(t *testing.T, msg eachFielder, variableFields []string, fixedFields map[string]interface{}) {
+func rawAssertMessageFields(t *testing.T, msg EachFielder, variableFields []string, fixedFields map[string]interface{}) {
 	t.Helper()
 
 	actualFields := map[string]interface{}{}
