@@ -101,7 +101,7 @@ func (r Resources) Cpus() float64 {
 		if present {
 			reportResourceMessage(fmt.Sprintf("Could not parse value: '%s' for cpus as a float, using default: %f", cpuStr, cpus), r, logging.Log)
 		} else {
-			//reportDebugResourceMessage(fmt.Sprintf("Using default value for cpus: %f.", cpus), r, logging.Log)
+			reportDebugResourceMessage(fmt.Sprintf("Using default value for cpus: %f.", cpus), r, logging.Log)
 		}
 	}
 	return cpus
@@ -116,7 +116,7 @@ func (r Resources) Memory() float64 {
 		if present {
 			reportResourceMessage(fmt.Sprintf("Could not parse value: '%s' for memory as an int, using default: %f", memStr, memory), r, logging.Log)
 		} else {
-			//reportDebugResourceMessage(fmt.Sprintf("Using default value for memory: %f.", memory), r, logging.Log)
+			reportDebugResourceMessage(fmt.Sprintf("Using default value for memory: %f.", memory), r, logging.Log)
 		}
 	}
 	return memory
@@ -131,7 +131,7 @@ func (r Resources) Ports() int32 {
 		if present {
 			reportResourceMessage(fmt.Sprintf("Could not parse value: '%s' for ports as a int, using default: %d", portStr, ports), r, logging.Log)
 		} else {
-			//reportDebugResourceMessage(fmt.Sprintf("Using default value for ports: %d", ports), r, logging.Log)
+			reportDebugResourceMessage(fmt.Sprintf("Using default value for ports: %d", ports), r, logging.Log)
 		}
 	}
 	return int32(ports)
@@ -139,7 +139,7 @@ func (r Resources) Ports() int32 {
 
 // Equal checks equivalence between resource maps
 func (r Resources) Equal(o Resources) bool {
-	//reportDebugResourceMessage(fmt.Sprintf("Comparing resources: %+ v ?= %+ v", r, o), r, logging.Log)
+	reportDebugResourceMessage(fmt.Sprintf("Comparing resources: %+ v ?= %+ v", r, o), r, logging.Log)
 	if len(r) != len(o) {
 		reportDebugResourceMessage("Lengths differ", r, logging.Log)
 		return false
