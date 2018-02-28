@@ -19,7 +19,7 @@ type (
 		GDM              *sous.State
 		StateWriter      sous.StateWriter
 		GDMToDeployments func(*sous.State) (sous.Deployments, error)
-		QueueSet         *sous.R11nQueueSet
+		PushToQueueSet   func(r *sous.Rectification) (*sous.QueuedR11n, bool)
 		User             sous.User
 	}
 
@@ -98,8 +98,8 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 	}
 	fullDeployment, ok := deployments.Get(psd.DeploymentID)
 	if !ok {
-		// TODO SS: Don't panic.
-		panic("not ok")
+		// Note this line is not tested yet.
+		return er(500, "Deployment failed to round-trip to GDM")
 	}
 
 	r := &sous.Rectification{
@@ -113,9 +113,9 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 	}
 	r.Pair.SetID(psd.DeploymentID)
 
-	qr, ok := psd.QueueSet.Push(r)
+	qr, ok := psd.PushToQueueSet(r)
 	if !ok {
-		panic("not ok")
+		return er(409, "Queue full, please try again later.")
 	}
 
 	psd.Body.Meta.Links = map[string]string{

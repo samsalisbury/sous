@@ -61,6 +61,8 @@ func TestPUTSingleDeploymentHandler_Exchange_normal(t *testing.T) {
 		OverrideGDMToDeployments func(*sous.State) (sous.Deployments, error)
 		// OverrideStateWriter allows using a StateWriter that errors.
 		OverrideStateWriter stateWriterSpy
+		// OverridePushToQueueSet
+		OverridePushToQueueSet func(*sous.Rectification) (*sous.QueuedR11n, bool)
 		// WantStatus is the expected HTTP status for this request.
 		WantStatus int
 		// WantWriteStateCalled true if we expect state to be written.
@@ -154,6 +156,21 @@ func TestPUTSingleDeploymentHandler_Exchange_normal(t *testing.T) {
 			WantWriteStateCalled: true,
 			WantError:            "Unable to expand GDM: an error occured",
 		},
+		{
+			Desc: "PushToQueueSet error",
+			BodyAndID: func() (*singleDeploymentBody, sous.DeploymentID) {
+				b := makeBodyFromFixture("github.com/user1/repo1", "cluster1")
+				// Make a change to trigger write attempt.
+				b.DeploySpec.Version = semv.MustParse("2.0.0")
+				return b, b.DeploymentID
+			},
+			OverridePushToQueueSet: func(*sous.Rectification) (*sous.QueuedR11n, bool) {
+				return nil, false
+			},
+			WantStatus:           409,
+			WantWriteStateCalled: true,
+			WantError:            "Queue full, please try again later.",
+		},
 	}
 
 	for _, tc := range testCases {
@@ -181,6 +198,11 @@ func TestPUTSingleDeploymentHandler_Exchange_normal(t *testing.T) {
 				stateToDeployments = tc.OverrideGDMToDeployments
 			}
 
+			pushToQueueSet := queueSet.Push
+			if tc.OverridePushToQueueSet != nil {
+				pushToQueueSet = tc.OverridePushToQueueSet
+			}
+
 			psd := PUTSingleDeploymentHandler{
 				DeploymentID:     did,
 				Body:             sent,
@@ -188,7 +210,7 @@ func TestPUTSingleDeploymentHandler_Exchange_normal(t *testing.T) {
 				GDMToDeployments: stateToDeployments,
 				Header:           header,
 				StateWriter:      stateWriter,
-				QueueSet:         queueSet,
+				PushToQueueSet:   pushToQueueSet,
 				User:             user,
 			}
 
