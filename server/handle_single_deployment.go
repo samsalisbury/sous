@@ -52,6 +52,12 @@ type (
 	}
 )
 
+func newSingleDeploymentResource(cl ComponentLocator) *SingleDeploymentResource {
+	return &SingleDeploymentResource{
+		context: cl,
+	}
+}
+
 // Put returns a configured put single deployment handler.
 func (sdr *SingleDeploymentResource) Put(_ http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
 	qv := restful.QueryValues{Values: req.URL.Query()}
@@ -64,6 +70,8 @@ func (sdr *SingleDeploymentResource) Put(_ http.ResponseWriter, req *http.Reques
 		DeploymentIDErr: didErr,
 		Body:            body,
 		BodyErr:         bodyErr,
+		StateWriter:     sdr.context.StateManager,
+		PushToQueueSet:  sdr.context.QueueSet.Push,
 	}
 }
 

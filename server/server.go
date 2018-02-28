@@ -96,6 +96,7 @@ func routemap(context ComponentLocator) *restful.RouteMap {
 		re("all-deploy-queues", "/all-deploy-queues", newAllDeployQueuesResource(context))
 		re("deploy-queue", "/deploy-queue", newDeployQueueResource(context))
 		re("deploy-queue-item", "/deploy-queue-item", newR11nResource(context))
+		re("single-deployment", "/single-deployment-resource", newSingleDeploymentResource(context))
 	})
 }
 

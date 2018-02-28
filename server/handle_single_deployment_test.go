@@ -120,8 +120,17 @@ func TestSingleDeploymentResource_Put(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.Desc, func(t *testing.T) {
 
+			// Pointers to dependencies.
+			sm := &sous.DummyStateManager{}
+			qs := sous.NewR11nQueueSet()
+
 			// Setup.
-			r := SingleDeploymentResource{}
+			r := SingleDeploymentResource{
+				context: ComponentLocator{
+					StateManager: sm,
+					QueueSet:     qs,
+				},
+			}
 
 			u, err := url.Parse(tc.URL)
 			if err != nil {
@@ -174,6 +183,16 @@ func TestSingleDeploymentResource_Put(t *testing.T) {
 				}
 			} else if got.DeploymentIDErr != nil {
 				t.Errorf("got deployment ID error %q; want nil", got.DeploymentIDErr)
+			}
+
+			// Assert dependencies passed through.
+
+			if got.StateWriter.(*sous.DummyStateManager) != sm {
+				t.Errorf("want state manager passed through as state reader")
+			}
+			got.PushToQueueSet(&sous.Rectification{})
+			if qs.Queues()[sous.DeploymentID{}].Len() != 1 {
+				t.Errorf("want PushToQueueSet to push to the provided queueset")
 			}
 		})
 
