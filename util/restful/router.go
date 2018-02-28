@@ -19,6 +19,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/logging/messages"
+	"github.com/pkg/errors"
 )
 
 type (
@@ -60,8 +61,15 @@ type (
 func (xlog *ExchangeLogger) Exchange() (data interface{}, status int) {
 	defer func() {
 		if p := recover(); p != nil {
-			// need to log this here, or we lose the real stack
-			xlog.LogSink.Warnf("%+#v\n%s", p, string(debug.Stack()))
+			if pe, is := p.(error); is {
+				url := "<unknown>"
+				if xlog.Request != nil {
+					url = xlog.Request.RequestURI
+				}
+				logging.ReportError(xlog.LogSink, errors.Wrapf(pe, "%q\n%s", url, string(debug.Stack())))
+			} else {
+				messages.ReportLogFieldsMessage("Panic while processing request", logging.WarningLevel, xlog.LogSink, p, xlog.Request)
+			}
 			panic(p)
 		}
 	}()
