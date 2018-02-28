@@ -61,18 +61,18 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 	did := psd.Body.DeploymentID
 
 	if did != psd.DeploymentID {
-		return er(400, "Body contains deployment %q, URL query is for deployment %q", did, psd.DeploymentID)
+		return er(400, "Body contains deployment %q, URL query is for deployment %q.", did, psd.DeploymentID)
 	}
 
 	m, ok := psd.GDM.Manifests.Get(did.ManifestID)
 	if !ok {
-		return er(404, "No manifest with ID %q", did.ManifestID)
+		return er(404, "No manifest with ID %q.", did.ManifestID)
 	}
 
 	cluster := psd.Body.DeploymentID.Cluster
 	d, ok := m.Deployments[cluster]
 	if !ok {
-		return er(404, "No %q deployment defined for %q", cluster, did)
+		return er(404, "No %q deployment defined for %q.", cluster, did)
 	}
 	different, _ := psd.Body.DeploySpec.Diff(d)
 	if !different {
@@ -82,7 +82,7 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 	m.Deployments[cluster] = psd.Body.DeploySpec
 
 	if err := psd.StateWriter.WriteState(psd.GDM, psd.User); err != nil {
-		return er(500, "Failed to write state: %s", err)
+		return er(500, "Failed to write state: %s.", err)
 	}
 
 	// The full deployment can only be gotten from the full state, since it
@@ -94,12 +94,12 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 	// to get single deployments.
 	deployments, err := psd.GDMToDeployments(psd.GDM)
 	if err != nil {
-		return er(500, "Unable to expand GDM: %s", err)
+		return er(500, "Unable to expand GDM: %s.", err)
 	}
 	fullDeployment, ok := deployments.Get(psd.DeploymentID)
 	if !ok {
 		// Note this line is not tested yet.
-		return er(500, "Deployment failed to round-trip to GDM")
+		return er(500, "Deployment failed to round-trip to GDM.")
 	}
 
 	r := &sous.Rectification{

@@ -85,7 +85,7 @@ func TestPUTSingleDeploymentHandler_Exchange_normal(t *testing.T) {
 				return b, b.DeploymentID
 			},
 			WantStatus: 404,
-			WantError:  `No manifest with ID "nonexistent,dir1~flavor1"`,
+			WantError:  `No manifest with ID "nonexistent,dir1~flavor1".`,
 		},
 		{
 			Desc: "no matching cluster",
@@ -95,7 +95,7 @@ func TestPUTSingleDeploymentHandler_Exchange_normal(t *testing.T) {
 				return b, b.DeploymentID
 			},
 			WantStatus: 404,
-			WantError:  `No "nonexistent" deployment defined for "nonexistent:github.com/user1/repo1,dir1~flavor1"`,
+			WantError:  `No "nonexistent" deployment defined for "nonexistent:github.com/user1/repo1,dir1~flavor1".`,
 		},
 		{
 			Desc: "body deploy ID not match query",
@@ -107,7 +107,7 @@ func TestPUTSingleDeploymentHandler_Exchange_normal(t *testing.T) {
 				return b, did
 			},
 			WantStatus: 400,
-			WantError:  `Body contains deployment "cluster1:github.com/user1/repo1,dir1~flavor1", URL query is for deployment "cluster2:github.com/user1/repo1,dir1~flavor1"`,
+			WantError:  `Body contains deployment "cluster1:github.com/user1/repo1,dir1~flavor1", URL query is for deployment "cluster2:github.com/user1/repo1,dir1~flavor1".`,
 		},
 		{
 			Desc: "no change necessary",
@@ -139,7 +139,7 @@ func TestPUTSingleDeploymentHandler_Exchange_normal(t *testing.T) {
 			OverrideStateWriter:  newStateWriterSpyWithError("an error occured"),
 			WantStatus:           500,
 			WantWriteStateCalled: true,
-			WantError:            "Failed to write state: an error occured",
+			WantError:            "Failed to write state: an error occured.",
 		},
 		{
 			Desc: "State.Deployments error",
@@ -154,7 +154,22 @@ func TestPUTSingleDeploymentHandler_Exchange_normal(t *testing.T) {
 			},
 			WantStatus:           500,
 			WantWriteStateCalled: true,
-			WantError:            "Unable to expand GDM: an error occured",
+			WantError:            "Unable to expand GDM: an error occured.",
+		},
+		{
+			Desc: "State.Deployments returns no deployments",
+			BodyAndID: func() (*singleDeploymentBody, sous.DeploymentID) {
+				b := makeBodyFromFixture("github.com/user1/repo1", "cluster1")
+				// Make a change to trigger write attempt.
+				b.DeploySpec.Version = semv.MustParse("2.0.0")
+				return b, b.DeploymentID
+			},
+			OverrideGDMToDeployments: func(*sous.State) (sous.Deployments, error) {
+				return sous.NewDeployments(), nil
+			},
+			WantStatus:           500,
+			WantWriteStateCalled: true,
+			WantError:            "Deployment failed to round-trip to GDM.",
 		},
 		{
 			Desc: "PushToQueueSet error",
