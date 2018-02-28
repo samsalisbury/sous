@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+	"sort"
 	"strings"
 
 	"github.com/Jeffail/gabs"
@@ -205,9 +206,14 @@ func (l logFieldsMessage) returnIDs() (ids string, values string) {
 	valuesSlice := []string{}
 
 	if l.withIDs {
-		for k, v := range l.idsMap {
+
+		for k := range l.idsMap {
 			idsSlice = append(idsSlice, k)
-			valuesSlice = append(valuesSlice, v)
+		}
+		sort.Strings(idsSlice)
+
+		for _, k := range idsSlice {
+			valuesSlice = append(valuesSlice, l.idsMap[k])
 		}
 	}
 
