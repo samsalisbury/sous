@@ -4,10 +4,18 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/julienschmidt/httprouter"
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/restful"
 )
 
 type (
+	// SingleDeploymentResource creates handlers for dealing with single
+	// deployments.
+	SingleDeploymentResource struct {
+		userExtractor
+		context ComponentLocator
+	}
 	// PUTSingleDeploymentHandler handles manifests containing single deployment
 	// specs. See Exchange method for more details.
 	PUTSingleDeploymentHandler struct {
@@ -42,6 +50,17 @@ type (
 		StatusCode int
 	}
 )
+
+// Put returns a configured put single deployment handler.
+func (sdr *SingleDeploymentResource) Put(_ http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
+	qv := restful.QueryValues{Values: req.URL.Query()}
+	did, didErr := deploymentIDFromValues(qv)
+	return &PUTSingleDeploymentHandler{
+		User:            sous.User(sdr.userExtractor.GetUser(req)),
+		DeploymentID:    did,
+		DeploymentIDErr: didErr,
+	}
+}
 
 // Exchange triggers a deployment action when receiving
 // a Manifest containing a deployment matching DeploymentID that differs

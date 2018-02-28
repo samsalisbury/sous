@@ -1,6 +1,9 @@
 package server
 
 import (
+	"bytes"
+	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -13,32 +16,107 @@ import (
 	"github.com/samsalisbury/semv"
 )
 
-func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
+func TestSingleDeploymentResource_Put(t *testing.T) {
 
-	// makeBodyFromFixture returns a body derived from data in the test fixture.
-	makeBodyFromFixture := func(repo, cluster string) *singleDeploymentBody {
-		t.Helper()
-		state := test.DefaultStateFixture()
-		m, ok := state.Manifests.Single(func(m *sous.Manifest) bool {
-			return m.Source.Repo == repo
-		})
-		if !ok {
-			t.Fatalf("setup failed: no manifest with repo %q in default fixture", repo)
-		}
-		d, ok := m.Deployments[cluster]
-		if !ok {
-			t.Fatalf("setup failed: manifest %q has no deployment %q in default fixture", repo, cluster)
-		}
-		m.Deployments = nil
-		return &singleDeploymentBody{
-			ManifestHeader: *m,
-			DeploymentID: sous.DeploymentID{
-				ManifestID: m.ID(),
-				Cluster:    cluster,
+	testCases := []struct {
+		Desc             string
+		URL              string
+		Body             func(t *testing.T) []byte
+		Header           func(t *testing.T) http.Header
+		WantDeploymentID sous.DeploymentID
+		WantUser         sous.User
+	}{
+		{
+			Desc: "valid body",
+			URL:  "/single-deployment?repo=github.com/user1/repo1&cluster=cluster1",
+			Body: func(t *testing.T) []byte {
+				b := makeBodyFromFixture(t, "github.com/user1/repo1", "cluster1")
+				j, err := json.Marshal(b)
+				if err != nil {
+					t.Fatalf("setup failed: %s", err)
+				}
+				return j
 			},
-			DeploySpec: d,
-		}
+			WantDeploymentID: sous.DeploymentID{
+				ManifestID: sous.ManifestID{
+					Source: sous.SourceLocation{
+						Repo: "github.com/user1/repo1",
+					},
+				},
+				Cluster: "cluster1",
+			},
+			Header: func(t *testing.T) http.Header {
+				h := http.Header{}
+				h.Add("Sous-User-Name", "test-user")
+				h.Add("Sous-User-Email", "test-user@example.com")
+				return h
+			},
+			WantUser: sous.User{Name: "test-user", Email: "test-user@example.com"},
+		},
 	}
+
+	for _, tc := range testCases {
+		t.Run(tc.Desc, func(t *testing.T) {
+
+			// Setup.
+			r := SingleDeploymentResource{}
+
+			u, err := url.Parse(tc.URL)
+			if err != nil {
+				t.Fatalf("setup failed: %s", err)
+			}
+			bodyReadCloser := ioutil.NopCloser(bytes.NewBuffer(tc.Body(t)))
+
+			req := &http.Request{
+				URL:    u,
+				Body:   bodyReadCloser,
+				Header: tc.Header(t),
+			}
+
+			// Shebang.
+
+			got := r.Put(nil, req, nil).(*PUTSingleDeploymentHandler)
+
+			// Assertions.
+
+			if got.DeploymentID != tc.WantDeploymentID {
+				t.Errorf("got deployment ID %q; want %q", got.DeploymentID, tc.WantDeploymentID)
+			}
+
+			if got.User != tc.WantUser {
+				t.Errorf("got user %# v; want %# v", got.User, tc.WantUser)
+			}
+		})
+
+	}
+}
+
+// makeBodyFromFixture returns a body derived from data in the test fixture.
+var makeBodyFromFixture = func(t *testing.T, repo, cluster string) *singleDeploymentBody {
+	t.Helper()
+	state := test.DefaultStateFixture()
+	m, ok := state.Manifests.Single(func(m *sous.Manifest) bool {
+		return m.Source.Repo == repo
+	})
+	if !ok {
+		t.Fatalf("setup failed: no manifest with repo %q in default fixture", repo)
+	}
+	d, ok := m.Deployments[cluster]
+	if !ok {
+		t.Fatalf("setup failed: manifest %q has no deployment %q in default fixture", repo, cluster)
+	}
+	m.Deployments = nil
+	return &singleDeploymentBody{
+		ManifestHeader: *m,
+		DeploymentID: sous.DeploymentID{
+			ManifestID: m.ID(),
+			Cluster:    cluster,
+		},
+		DeploySpec: d,
+	}
+}
+
+func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 
 	testCases := []struct {
 		// Desc is a short unique description of the test case.
@@ -74,7 +152,7 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 			Desc: "no matching repo",
 			BodyAndID: func() (*singleDeploymentBody, sous.DeploymentID) {
 				// Return the deployment from the fixture unchanged.
-				b := makeBodyFromFixture("github.com/user1/repo1", "cluster1")
+				b := makeBodyFromFixture(t, "github.com/user1/repo1", "cluster1")
 				b.DeploymentID.ManifestID.Source.Repo = "nonexistent"
 				return b, b.DeploymentID
 			},
@@ -84,7 +162,7 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 		{
 			Desc: "no matching cluster",
 			BodyAndID: func() (*singleDeploymentBody, sous.DeploymentID) {
-				b := makeBodyFromFixture("github.com/user1/repo1", "cluster1")
+				b := makeBodyFromFixture(t, "github.com/user1/repo1", "cluster1")
 				b.DeploymentID.Cluster = "nonexistent"
 				return b, b.DeploymentID
 			},
@@ -94,7 +172,7 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 		{
 			Desc: "body deploy ID not match query",
 			BodyAndID: func() (*singleDeploymentBody, sous.DeploymentID) {
-				b := makeBodyFromFixture("github.com/user1/repo1", "cluster1")
+				b := makeBodyFromFixture(t, "github.com/user1/repo1", "cluster1")
 				did := b.DeploymentID
 				// cluster2 exists but is not defined in the body.
 				did.Cluster = "cluster2"
@@ -106,7 +184,7 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 		{
 			Desc: "no change necessary",
 			BodyAndID: func() (*singleDeploymentBody, sous.DeploymentID) {
-				b := makeBodyFromFixture("github.com/user1/repo1", "cluster1")
+				b := makeBodyFromFixture(t, "github.com/user1/repo1", "cluster1")
 				return b, b.DeploymentID
 			},
 			WantStatus: 200,
@@ -114,7 +192,7 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 		{
 			Desc: "change version",
 			BodyAndID: func() (*singleDeploymentBody, sous.DeploymentID) {
-				b := makeBodyFromFixture("github.com/user1/repo1", "cluster1")
+				b := makeBodyFromFixture(t, "github.com/user1/repo1", "cluster1")
 				b.DeploySpec.Version = semv.MustParse("2.0.0")
 				return b, b.DeploymentID
 			},
@@ -125,7 +203,7 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 		{
 			Desc: "StateWriter.Write error",
 			BodyAndID: func() (*singleDeploymentBody, sous.DeploymentID) {
-				b := makeBodyFromFixture("github.com/user1/repo1", "cluster1")
+				b := makeBodyFromFixture(t, "github.com/user1/repo1", "cluster1")
 				// Make a change to trigger write attempt.
 				b.DeploySpec.Version = semv.MustParse("2.0.0")
 				return b, b.DeploymentID
@@ -138,7 +216,7 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 		{
 			Desc: "State.Deployments error",
 			BodyAndID: func() (*singleDeploymentBody, sous.DeploymentID) {
-				b := makeBodyFromFixture("github.com/user1/repo1", "cluster1")
+				b := makeBodyFromFixture(t, "github.com/user1/repo1", "cluster1")
 				// Make a change to trigger write attempt.
 				b.DeploySpec.Version = semv.MustParse("2.0.0")
 				return b, b.DeploymentID
@@ -153,7 +231,7 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 		{
 			Desc: "State.Deployments returns no deployments",
 			BodyAndID: func() (*singleDeploymentBody, sous.DeploymentID) {
-				b := makeBodyFromFixture("github.com/user1/repo1", "cluster1")
+				b := makeBodyFromFixture(t, "github.com/user1/repo1", "cluster1")
 				// Make a change to trigger write attempt.
 				b.DeploySpec.Version = semv.MustParse("2.0.0")
 				return b, b.DeploymentID
@@ -168,7 +246,7 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 		{
 			Desc: "PushToQueueSet error",
 			BodyAndID: func() (*singleDeploymentBody, sous.DeploymentID) {
-				b := makeBodyFromFixture("github.com/user1/repo1", "cluster1")
+				b := makeBodyFromFixture(t, "github.com/user1/repo1", "cluster1")
 				// Make a change to trigger write attempt.
 				b.DeploySpec.Version = semv.MustParse("2.0.0")
 				return b, b.DeploymentID
