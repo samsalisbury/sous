@@ -2,6 +2,8 @@ package server
 
 import (
 	"net/http"
+	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/nyarly/spies"
@@ -50,11 +52,19 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 		BodyAndID func() (*singleDeploymentBody, sous.DeploymentID)
 		// WantStatus is the expected HTTP status for this request.
 		WantStatus int
+		// WantStateWritten true if we expect state to be written.
+		WantStateWritten bool
+		// WantHeaders is a list of headers we expect in the response.
+		WantHeaders http.Header
+		// WantQueuedR11n indicates if we expect a R11n to be queued.
+		// If true, we assert that a relevant one has been added to the queue,
+		// and that the response contains a link to the queued r11n.
+		WantQueuedR11n bool
 	}{
 		{
 			Desc: "no matching repo",
 			BodyAndID: func() (*singleDeploymentBody, sous.DeploymentID) {
-				// We return the deployment from the fixture unchanged.
+				// Return the deployment from the fixture unchanged.
 				b := makeBodyFromFixture("github.com/user1/repo1", "cluster1")
 				b.DeploymentID.ManifestID.Source.Repo = "nonexistent"
 				return b, b.DeploymentID
@@ -64,7 +74,6 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 		{
 			Desc: "no matching cluster",
 			BodyAndID: func() (*singleDeploymentBody, sous.DeploymentID) {
-				// We return the deployment from the fixture unchanged.
 				b := makeBodyFromFixture("github.com/user1/repo1", "cluster1")
 				b.DeploymentID.Cluster = "nonexistent"
 				return b, b.DeploymentID
@@ -74,7 +83,6 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 		{
 			Desc: "no change necessary",
 			BodyAndID: func() (*singleDeploymentBody, sous.DeploymentID) {
-				// We return the deployment from the fixture unchanged.
 				b := makeBodyFromFixture("github.com/user1/repo1", "cluster1")
 				return b, b.DeploymentID
 			},
@@ -83,17 +91,20 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 		{
 			Desc: "change version",
 			BodyAndID: func() (*singleDeploymentBody, sous.DeploymentID) {
-				// We return the deployment from the fixture unchanged.
 				b := makeBodyFromFixture("github.com/user1/repo1", "cluster1")
 				b.DeploySpec.Version = semv.MustParse("2.0.0")
 				return b, b.DeploymentID
 			},
-			WantStatus: 200,
+			WantStatus:       200,
+			WantStateWritten: true,
+			WantQueuedR11n:   true,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.Desc, func(t *testing.T) {
+
+			// Setup
 
 			sent, did := tc.BodyAndID()
 			header := http.Header{}
@@ -114,37 +125,79 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 				User:         user,
 			}
 
-			received, gotStatus := psd.Exchange()
+			// Shebang
 
-			got, ok := received.(*singleDeploymentBody)
+			gotBody, gotStatus := psd.Exchange()
+
+			// Assertions...
+
+			body, ok := gotBody.(*singleDeploymentBody)
 
 			if !ok {
-				t.Fatalf("got a %T; want a %T", received, got)
-			}
-
-			if gotStatus != tc.WantStatus {
-				t.Errorf("got status %d; want %d", gotStatus, tc.WantStatus)
+				t.Fatalf("got a %T; want a %T", gotBody, body)
 			}
 
 			// TODO SS: Add a diff method to singleDeploymentBody to print
 			// specific diffs for ease of reading test output and also because
 			// we may want to add metadata that does not participate in equality
 			// checks later.
-			if received != sent {
+			if gotBody != sent {
 				t.Errorf("received != sent:\nreceived:\n%#v\n\nsent:\n%#v",
-					received, sent) // Horror blob see todo above.
+					gotBody, sent) // Horror blob see todo above.
 			}
+
+			if gotStatus != tc.WantStatus {
+				t.Errorf("got status %d; want %d", gotStatus, tc.WantStatus)
+			}
+
+			gotStateWritten := len(stateWriter.Spy.CallsTo("WriteState")) == 1
+			if gotStateWritten != tc.WantStateWritten {
+				t.Errorf("got state written: %t; want %t", gotStateWritten, tc.WantStateWritten)
+			}
+
+			if !tc.WantQueuedR11n {
+				return
+			}
+			t.Run("queued R11n check", func(t *testing.T) {
+				qdaLink := "queuedDeployAction"
+				gotLink := body.Meta.Links[qdaLink]
+				wantPrefix := "/deploy-queue-item"
+
+				if !strings.HasPrefix(gotLink, wantPrefix) {
+					t.Fatalf("got Meta.Links[%q] == %q; want prefix %q",
+						qdaLink, gotLink, wantPrefix)
+				}
+
+				gotURL, err := url.Parse(gotLink)
+				if err != nil {
+					t.Fatalf("got Meta.Links[%q] == %q; not a valid URL: %s",
+						qdaLink, gotLink, err)
+				}
+
+				r11nID := sous.R11nID(gotURL.Query().Get("action"))
+				if r11nID == "" {
+					t.Fatalf("action query param empty")
+				}
+
+				q, ok := queueSet.Queues()[body.DeploymentID]
+				if !ok {
+					t.Fatalf("no queue for %s", body.DeploymentID)
+				}
+				if _, ok := q.ByID(r11nID); !ok {
+					t.Errorf("returned r11n ID %q not queued", r11nID)
+				}
+			})
 		})
 	}
 
 }
 
-type stateWriterSpy struct {
-	*spies.Spy
-}
+type stateWriterSpy struct{ *spies.Spy }
 
 func newStateWriterSpy() stateWriterSpy {
-	return stateWriterSpy{spies.NewSpy()}
+	return stateWriterSpy{
+		Spy: spies.NewSpy(),
+	}
 }
 
 func (sw stateWriterSpy) WriteState(s *sous.State, u sous.User) error {

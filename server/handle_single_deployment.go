@@ -24,9 +24,16 @@ type (
 	// singleDeploymentBody is the response struct returned from handlers
 	// of HTTP methods of a SingleDeploymentResource.
 	singleDeploymentBody struct {
+		Meta           ResponseMeta
 		DeploymentID   sous.DeploymentID
 		DeploySpec     sous.DeploySpec
 		ManifestHeader sous.Manifest
+	}
+
+	// ResponseMeta contains metadata to include in API response bodies.
+	ResponseMeta struct {
+		// Links is a set of links related to a response body.
+		Links map[string]string
 	}
 )
 
@@ -40,9 +47,53 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 		return psd.Body, 404
 	}
 
-	_, ok = m.Deployments[psd.Body.DeploymentID.Cluster]
+	cluster := psd.Body.DeploymentID.Cluster
+	d, ok := m.Deployments[cluster]
 	if !ok {
 		return psd.Body, 404
+	}
+	different, _ := psd.Body.DeploySpec.Diff(d)
+	if !different {
+		return psd.Body, 200
+	}
+
+	m.Deployments[cluster] = psd.Body.DeploySpec
+
+	if err := psd.StateWriter.WriteState(psd.GDM, psd.User); err != nil {
+		// TODO SS: Don't panic.
+		panic(err)
+	}
+
+	deployments, err := psd.GDM.Deployments()
+	if err != nil {
+		// TODO SS: Don't panic.
+		panic(err)
+	}
+
+	fullDeployment, ok := deployments.Get(psd.DeploymentID)
+	if !ok {
+		// TODO SS: Don't panic.
+		panic("not ok")
+	}
+
+	r := &sous.Rectification{
+		Pair: sous.DeployablePair{
+			Post: &sous.Deployable{
+				Status:     0,
+				Deployment: fullDeployment,
+			},
+			ExecutorData: nil,
+		},
+	}
+	r.Pair.SetID(psd.DeploymentID)
+
+	qr, ok := psd.QueueSet.Push(r)
+	if !ok {
+		panic("not ok")
+	}
+
+	psd.Body.Meta.Links = map[string]string{
+		"queuedDeployAction": "/deploy-queue-item?action=" + string(qr.ID),
 	}
 
 	return psd.Body, 200
