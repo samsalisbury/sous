@@ -11,15 +11,16 @@ type (
 	// PUTSingleDeploymentHandler handles manifests containing single deployment
 	// specs. See Exchange method for more details.
 	PUTSingleDeploymentHandler struct {
-		DeploymentID    sous.DeploymentID
-		DeploymentIDErr error
-		Body            *singleDeploymentBody
-		BodyErr         error
-		Header          http.Header
-		GDM             *sous.State
-		StateWriter     sous.StateWriter
-		QueueSet        *sous.R11nQueueSet
-		User            sous.User
+		DeploymentID     sous.DeploymentID
+		DeploymentIDErr  error
+		Body             *singleDeploymentBody
+		BodyErr          error
+		Header           http.Header
+		GDM              *sous.State
+		StateWriter      sous.StateWriter
+		GDMToDeployments func(*sous.State) (sous.Deployments, error)
+		QueueSet         *sous.R11nQueueSet
+		User             sous.User
 	}
 
 	// singleDeploymentBody is the response struct returned from handlers
@@ -92,7 +93,7 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 	// TODO SS:
 	// Note that this call is expensive, we should come up with a cheaper way
 	// to get single deployments.
-	deployments, err := psd.GDM.Deployments()
+	deployments, err := psd.GDMToDeployments(psd.GDM)
 	if err != nil {
 		// TODO SS: Don't panic.
 		panic(err)
