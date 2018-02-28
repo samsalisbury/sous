@@ -87,6 +87,17 @@ func TestPUTSingleDeploymentHandler_Exchange_normal(t *testing.T) {
 			WantStatus: 404,
 		},
 		{
+			Desc: "body deploy ID not match query",
+			BodyAndID: func() (*singleDeploymentBody, sous.DeploymentID) {
+				b := makeBodyFromFixture("github.com/user1/repo1", "cluster1")
+				did := b.DeploymentID
+				// cluster2 exists but is not defined in the body.
+				did.Cluster = "cluster2"
+				return b, did
+			},
+			WantStatus: 400,
+		},
+		{
 			Desc: "no change necessary",
 			BodyAndID: func() (*singleDeploymentBody, sous.DeploymentID) {
 				b := makeBodyFromFixture("github.com/user1/repo1", "cluster1")

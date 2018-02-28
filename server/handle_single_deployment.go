@@ -47,6 +47,10 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 		return psd.Body, 404
 	}
 
+	if psd.Body.DeploymentID != psd.DeploymentID {
+		return psd.Body, 400
+	}
+
 	cluster := psd.Body.DeploymentID.Cluster
 	d, ok := m.Deployments[cluster]
 	if !ok {
