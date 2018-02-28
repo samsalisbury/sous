@@ -20,13 +20,14 @@ import (
 func TestSingleDeploymentResource_Put(t *testing.T) {
 
 	testCases := []struct {
-		Desc             string
-		URL              string
-		Body             func(t *testing.T) []byte
-		WantBodyErr      string
-		Header           func(t *testing.T) http.Header
-		WantDeploymentID sous.DeploymentID
-		WantUser         sous.User
+		Desc                string
+		URL                 string
+		Body                func(t *testing.T) []byte
+		WantBodyErr         string
+		Header              func(t *testing.T) http.Header
+		WantDeploymentID    sous.DeploymentID
+		WantDeploymentIDErr string
+		WantUser            sous.User
 	}{
 		{
 			Desc: "valid body",
@@ -111,6 +112,46 @@ func TestSingleDeploymentResource_Put(t *testing.T) {
 			},
 			WantUser: sous.User{Name: "test-user", Email: "test-user@example.com"},
 		},
+		{
+			Desc: "missing cluster",
+			URL:  "/single-deployment?repo=github.com/user1/repo1",
+			Body: func(t *testing.T) []byte {
+				b := makeBodyFromFixture(t, "github.com/user1/repo1", "cluster1")
+				j, err := json.Marshal(b)
+				if err != nil {
+					t.Fatalf("setup failed: %s", err)
+				}
+				return j
+			},
+			WantDeploymentIDErr: "No cluster given",
+			Header: func(t *testing.T) http.Header {
+				h := http.Header{}
+				h.Add("Sous-User-Name", "test-user")
+				h.Add("Sous-User-Email", "test-user@example.com")
+				return h
+			},
+			WantUser: sous.User{Name: "test-user", Email: "test-user@example.com"},
+		},
+		{
+			Desc: "missing repo",
+			URL:  "/single-deployment?cluster=cluster1",
+			Body: func(t *testing.T) []byte {
+				b := makeBodyFromFixture(t, "github.com/user1/repo1", "cluster1")
+				j, err := json.Marshal(b)
+				if err != nil {
+					t.Fatalf("setup failed: %s", err)
+				}
+				return j
+			},
+			WantDeploymentIDErr: "No repo given",
+			Header: func(t *testing.T) http.Header {
+				h := http.Header{}
+				h.Add("Sous-User-Name", "test-user")
+				h.Add("Sous-User-Email", "test-user@example.com")
+				return h
+			},
+			WantUser: sous.User{Name: "test-user", Email: "test-user@example.com"},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -152,6 +193,14 @@ func TestSingleDeploymentResource_Put(t *testing.T) {
 				}
 			} else if got.BodyErr != nil {
 				t.Errorf("got body error %q; want nil", got.BodyErr)
+			}
+			if tc.WantDeploymentIDErr != "" {
+				gotDeploymentIDErr := fmt.Sprint(got.DeploymentIDErr)
+				if gotDeploymentIDErr != tc.WantDeploymentIDErr {
+					t.Errorf("got deployment ID error %q; want %q", gotDeploymentIDErr, tc.WantDeploymentIDErr)
+				}
+			} else if got.DeploymentIDErr != nil {
+				t.Errorf("got deployment ID error %q; want nil", got.DeploymentIDErr)
 			}
 		})
 
