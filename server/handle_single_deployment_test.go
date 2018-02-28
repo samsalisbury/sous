@@ -57,7 +57,7 @@ func TestSingleDeploymentResource_Put(t *testing.T) {
 			WantUser: sous.User{Name: "test-user", Email: "test-user@example.com"},
 		},
 		{
-			Desc: "valid body despite nonexistent cluster",
+			Desc: "valid body despite nonexistent cluster & mismatch with query",
 			URL:  "/single-deployment?repo=github.com/user1/repo1&cluster=blah",
 			Body: func(t *testing.T) []byte {
 				b := makeBodyFromFixture(t, "github.com/user1/repo1", "cluster1")
@@ -104,53 +104,16 @@ func TestSingleDeploymentResource_Put(t *testing.T) {
 				},
 				Cluster: "blah",
 			},
-			Header: func(t *testing.T) http.Header {
-				h := http.Header{}
-				h.Add("Sous-User-Name", "test-user")
-				h.Add("Sous-User-Email", "test-user@example.com")
-				return h
-			},
-			WantUser: sous.User{Name: "test-user", Email: "test-user@example.com"},
 		},
 		{
-			Desc: "missing cluster",
-			URL:  "/single-deployment?repo=github.com/user1/repo1",
-			Body: func(t *testing.T) []byte {
-				b := makeBodyFromFixture(t, "github.com/user1/repo1", "cluster1")
-				j, err := json.Marshal(b)
-				if err != nil {
-					t.Fatalf("setup failed: %s", err)
-				}
-				return j
-			},
+			Desc:                "missing cluster",
+			URL:                 "/single-deployment?repo=github.com/user1/repo1",
 			WantDeploymentIDErr: "No cluster given",
-			Header: func(t *testing.T) http.Header {
-				h := http.Header{}
-				h.Add("Sous-User-Name", "test-user")
-				h.Add("Sous-User-Email", "test-user@example.com")
-				return h
-			},
-			WantUser: sous.User{Name: "test-user", Email: "test-user@example.com"},
 		},
 		{
-			Desc: "missing repo",
-			URL:  "/single-deployment?cluster=cluster1",
-			Body: func(t *testing.T) []byte {
-				b := makeBodyFromFixture(t, "github.com/user1/repo1", "cluster1")
-				j, err := json.Marshal(b)
-				if err != nil {
-					t.Fatalf("setup failed: %s", err)
-				}
-				return j
-			},
+			Desc:                "missing repo",
+			URL:                 "/single-deployment?cluster=cluster1",
 			WantDeploymentIDErr: "No repo given",
-			Header: func(t *testing.T) http.Header {
-				h := http.Header{}
-				h.Add("Sous-User-Name", "test-user")
-				h.Add("Sous-User-Email", "test-user@example.com")
-				return h
-			},
-			WantUser: sous.User{Name: "test-user", Email: "test-user@example.com"},
 		},
 	}
 
@@ -164,12 +127,22 @@ func TestSingleDeploymentResource_Put(t *testing.T) {
 			if err != nil {
 				t.Fatalf("setup failed: %s", err)
 			}
-			bodyReadCloser := ioutil.NopCloser(bytes.NewBuffer(tc.Body(t)))
+
+			bodyBytes := []byte("{}")
+			if tc.Body != nil {
+				bodyBytes = tc.Body(t)
+			}
+			bodyReadCloser := ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+
+			var header http.Header
+			if tc.Header != nil {
+				header = tc.Header(t)
+			}
 
 			req := &http.Request{
 				URL:    u,
 				Body:   bodyReadCloser,
-				Header: tc.Header(t),
+				Header: header,
 			}
 
 			// Shebang.
