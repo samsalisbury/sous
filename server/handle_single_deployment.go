@@ -35,7 +35,6 @@ type (
 	// of HTTP methods of a SingleDeploymentResource.
 	singleDeploymentBody struct {
 		Meta           ResponseMeta
-		DeploymentID   sous.DeploymentID
 		DeploySpec     sous.DeploySpec
 		ManifestHeader sous.Manifest
 	}
@@ -108,18 +107,14 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 		return psd.err(400, "Error parsing body: %s.", psd.BodyErr)
 	}
 
-	did := psd.Body.DeploymentID
-
-	if did != psd.DeploymentID {
-		return psd.err(400, "Body contains deployment %q, URL query is for deployment %q.", did, psd.DeploymentID)
-	}
+	did := psd.DeploymentID
 
 	m, ok := psd.GDM.Manifests.Get(did.ManifestID)
 	if !ok {
 		return psd.err(404, "No manifest with ID %q.", did.ManifestID)
 	}
 
-	cluster := psd.Body.DeploymentID.Cluster
+	cluster := did.Cluster
 	d, ok := m.Deployments[cluster]
 	if !ok {
 		return psd.err(404, "No %q deployment defined for %q.", cluster, did)
