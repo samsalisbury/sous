@@ -79,71 +79,76 @@ func (sdr *SingleDeploymentResource) Put(_ http.ResponseWriter, req *http.Reques
 	}
 }
 
+// err returns the current Body of psd and the provided status code.
+// It ensures Meta.StatusCode is also set to the provided code.
+// It sets Meta.Error to a formatted error using format f and args a...
+func (psd *PUTSingleDeploymentHandler) err(code int, f string, a ...interface{}) (*singleDeploymentBody, int) {
+	psd.Body.Meta.Error = fmt.Sprintf(f, a...)
+	psd.Body.Meta.StatusCode = code
+	return psd.Body, code
+}
+
+// ok returns the current body of psd and the provided status code.
+// It ensures Meta.StatusCode is also set to the provided code.
+// It sets Meta.Links to the provided links.
+func (psd *PUTSingleDeploymentHandler) ok(code int, links map[string]string) (*singleDeploymentBody, int) {
+	psd.Body.Meta.StatusCode = code
+	psd.Body.Meta.Links = links
+	return psd.Body, code
+}
+
 // Exchange triggers a deployment action when receiving
 // a Manifest containing a deployment matching DeploymentID that differs
 // from the current actual deployment set. It first writes the new
 // deployment spec to the GDM.
 func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
-	if psd.BodyErr != nil {
-		return &singleDeploymentBody{
-			Meta: ResponseMeta{
-				Error:      fmt.Sprintf("Error parsing body: %s.", psd.BodyErr),
-				StatusCode: 400,
-			},
-		}, 400
-	}
 
-	er := func(code int, f string, a ...interface{}) (*singleDeploymentBody, int) {
-		psd.Body.Meta.Error = fmt.Sprintf(f, a...)
-		psd.Body.Meta.StatusCode = code
-		return psd.Body, code
-	}
-	success := func(code int) (interface{}, int) {
-		psd.Body.Meta.StatusCode = code
-		return psd.Body, code
+	if psd.BodyErr != nil {
+		psd.Body = &singleDeploymentBody{}
+		return psd.err(400, "Error parsing body: %s.", psd.BodyErr)
 	}
 
 	did := psd.Body.DeploymentID
 
 	if did != psd.DeploymentID {
-		return er(400, "Body contains deployment %q, URL query is for deployment %q.", did, psd.DeploymentID)
+		return psd.err(400, "Body contains deployment %q, URL query is for deployment %q.", did, psd.DeploymentID)
 	}
 
 	m, ok := psd.GDM.Manifests.Get(did.ManifestID)
 	if !ok {
-		return er(404, "No manifest with ID %q.", did.ManifestID)
+		return psd.err(404, "No manifest with ID %q.", did.ManifestID)
 	}
 
 	cluster := psd.Body.DeploymentID.Cluster
 	d, ok := m.Deployments[cluster]
 	if !ok {
-		return er(404, "No %q deployment defined for %q.", cluster, did)
+		return psd.err(404, "No %q deployment defined for %q.", cluster, did)
 	}
 	different, _ := psd.Body.DeploySpec.Diff(d)
 	if !different {
-		return success(200)
+		return psd.ok(200, nil)
 	}
 
 	m.Deployments[cluster] = psd.Body.DeploySpec
 
 	if err := psd.StateWriter.WriteState(psd.GDM, psd.User); err != nil {
-		return er(500, "Failed to write state: %s.", err)
+		return psd.err(500, "Failed to write state: %s.", err)
 	}
 
 	// The full deployment can only be gotten from the full state, since it
 	// relies on State.Defs which is not part of this exchange. Therefore
-	// fish it out of the realized GDM returned from .Deployments()
+	// fish it out of the realized GDM returned from GDMToDeployments.
 	//
 	// TODO SS:
 	// Note that this call is expensive, we should come up with a cheaper way
 	// to get single deployments.
 	deployments, err := psd.GDMToDeployments(psd.GDM)
 	if err != nil {
-		return er(500, "Unable to expand GDM: %s.", err)
+		return psd.err(500, "Unable to expand GDM: %s.", err)
 	}
 	fullDeployment, ok := deployments.Get(psd.DeploymentID)
 	if !ok {
-		return er(500, "Deployment failed to round-trip to GDM.")
+		return psd.err(500, "Deployment failed to round-trip to GDM.")
 	}
 
 	r := &sous.Rectification{
@@ -159,12 +164,10 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 
 	qr, ok := psd.PushToQueueSet(r)
 	if !ok {
-		return er(409, "Queue full, please try again later.")
+		return psd.err(409, "Queue full, please try again later.")
 	}
 
-	psd.Body.Meta.Links = map[string]string{
+	return psd.ok(201, map[string]string{
 		"queuedDeployAction": "/deploy-queue-item?action=" + string(qr.ID),
-	}
-
-	return success(200)
+	})
 }

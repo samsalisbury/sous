@@ -180,6 +180,7 @@ func TestSingleDeploymentResource_Put(t *testing.T) {
 			} else if got.BodyErr != nil {
 				t.Errorf("got body error %q; want nil", got.BodyErr)
 			}
+
 			if tc.WantDeploymentIDErr != "" {
 				gotDeploymentIDErr := fmt.Sprint(got.DeploymentIDErr)
 				if gotDeploymentIDErr != tc.WantDeploymentIDErr {
@@ -216,7 +217,8 @@ func TestSingleDeploymentResource_Put(t *testing.T) {
 			if gotDeployments.Len() != wantDeployments.Len() {
 				t.Errorf("GDMToDeployments not set to gdm.Deployments")
 			}
-			// TODO SS: Diff method on Deployments.
+			// TODO SS: Diff method on Deployments; mutate GDM and check this
+			// assertion still holds.
 
 		})
 
@@ -296,8 +298,8 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 		{
 			Desc: "no matching repo",
 			BodyAndID: func() (*singleDeploymentBody, sous.DeploymentID) {
-				// Return the deployment from the fixture unchanged.
 				b := makeBodyFromFixture(t, "github.com/user1/repo1", "cluster1")
+				// Set bogus repo.
 				b.DeploymentID.ManifestID.Source.Repo = "nonexistent"
 				return b, b.DeploymentID
 			},
@@ -308,6 +310,7 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 			Desc: "no matching cluster",
 			BodyAndID: func() (*singleDeploymentBody, sous.DeploymentID) {
 				b := makeBodyFromFixture(t, "github.com/user1/repo1", "cluster1")
+				// Set bogus cluster.
 				b.DeploymentID.Cluster = "nonexistent"
 				return b, b.DeploymentID
 			},
@@ -341,7 +344,7 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 				b.DeploySpec.Version = semv.MustParse("2.0.0")
 				return b, b.DeploymentID
 			},
-			WantStatus:           200,
+			WantStatus:           201,
 			WantWriteStateCalled: true,
 			WantQueuedR11n:       true,
 		},
