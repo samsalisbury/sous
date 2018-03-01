@@ -73,7 +73,7 @@ func (r *Resolver) queueDiffs(dcs *DeployableChans, results chan DiffResolution)
 func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveRecorder {
 	intended = intended.Filter(r.FilterDeployment)
 
-	return NewResolveRecorder(intended, func(recorder *ResolveRecorder) {
+	return NewResolveRecorder(intended, r.ls, func(recorder *ResolveRecorder) {
 		var actual DeployStates
 		var diffs *DeployableChans
 		var logger *DeployableChans
