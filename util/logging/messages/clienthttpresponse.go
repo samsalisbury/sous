@@ -14,7 +14,9 @@ import (
 type HTTPLogEntry struct {
 	logging.CallerInfo
 	logging.Level
+	message        string
 	serverSide     bool
+	isResponse     bool
 	resourceFamily string
 	method         string
 	url            string
@@ -27,41 +29,52 @@ type HTTPLogEntry struct {
 	dur            time.Duration
 }
 
-// ReportClientHTTPResponse reports a response received by Sous as a client.
-func ReportClientHTTPResponse(logger logging.LogSink, rz *http.Response, resName string, dur time.Duration) {
-	// XXX dur should in fact be "start time.Time" and duration be computed here.
-	// swaggering now depends on this, so it's more of a hassle.
-	m := buildHTTPLogMessage(false, rz.Request, rz.StatusCode, rz.ContentLength, resName, dur)
+// ReportClientHTTPRequest reports a response recieved by Sous as a client.
+// n.b. this interface subject to change
+func ReportClientHTTPRequest(logger logging.LogSink, message string, rq *http.Request, resName string) {
+	m := buildHTTPLogMessage(false, false, message, rq, 0, 0, resName, 0)
 	m.ExcludeMe()
 	logging.Deliver(m, logger)
 }
 
-// ReportServerHTTPResponse reports a response received by Sous as a client.
-// n.b. this interface subject to change
-func ReportServerHTTPResponse(logger logging.LogSink, rq *http.Request, statusCode int, contentLength int64, resName string, dur time.Duration) {
-	m := buildHTTPLogMessage(true, rq, statusCode, contentLength, resName, dur)
+// ReportClientHTTPResponse reports a response recieved by Sous as a client.
+func ReportClientHTTPResponse(logger logging.LogSink, message string, rz *http.Response, resName string, dur time.Duration) {
+	m := buildHTTPLogMessage(false, true, message, rz.Request, rz.StatusCode, rz.ContentLength, resName, dur)
 	m.ExcludeMe()
 	logging.Deliver(m, logger)
 }
 
-// BuildClientHTTPResponse reports a response received by Sous as a client.
-func BuildClientHTTPResponse(rz *http.Response, resName string, dur time.Duration) *HTTPLogEntry {
-	// XXX dur should in fact be "start time.Time" and duration be computed here.
-	// swaggering now depends on this, so it's more of a hassle.
-	m := buildHTTPLogMessage(false, rz.Request, rz.StatusCode, rz.ContentLength, resName, dur)
-	m.ExcludeMe()
-	return m
-}
-
-// BuildServerHTTPResponse reports a response received by Sous as a client.
+// ReportServerHTTPRequest reports a response recieved by Sous as a client.
 // n.b. this interface subject to change
-func BuildServerHTTPResponse(rq *http.Request, statusCode int, contentLength int64, resName string, dur time.Duration) *HTTPLogEntry {
-	m := buildHTTPLogMessage(true, rq, statusCode, contentLength, resName, dur)
+func ReportServerHTTPRequest(logger logging.LogSink, message string, rq *http.Request, resName string) {
+	m := buildHTTPLogMessage(true, false, message, rq, 0, 0, resName, 0)
 	m.ExcludeMe()
-	return m
+	logging.Deliver(m, logger)
 }
 
-func buildHTTPLogMessage(server bool, rq *http.Request, statusCode int, responseContentLength int64, resName string, dur time.Duration) *HTTPLogEntry {
+// ReportServerHTTPResponse reports a response recieved by Sous as a client.
+func ReportServerHTTPResponse(logger logging.LogSink, message string, rz *http.Response, resName string, dur time.Duration) {
+	m := buildHTTPLogMessage(true, true, message, rz.Request, rz.StatusCode, rz.ContentLength, resName, dur)
+	m.ExcludeMe()
+	logging.Deliver(m, logger)
+}
+
+// ReportServerHTTPResponding reports a response to a request - this is useful in cases where a ResponseWriter is encapsulating the actual response.
+func ReportServerHTTPResponding(logger logging.LogSink, message string, req *http.Request, status int, responseContentLength int64, resName string, dur time.Duration) {
+	m := buildHTTPLogMessage(true, true, message, req, status, responseContentLength, resName, dur)
+	m.ExcludeMe()
+	logging.Deliver(m, logger)
+}
+
+func buildHTTPLogMessage(
+	server, response bool,
+	message string,
+	rq *http.Request,
+	statusCode int,
+	responseContentLength int64,
+	resName string,
+	dur time.Duration,
+) *HTTPLogEntry {
 	url := rq.URL
 
 	qps := map[string]string{}
@@ -70,7 +83,9 @@ func buildHTTPLogMessage(server bool, rq *http.Request, statusCode int, response
 	}
 
 	m := newHTTPLogEntry(
+		message,
 		server,
+		response,
 		resName,
 		rq.Method,
 		url.String(),
@@ -85,17 +100,31 @@ func buildHTTPLogMessage(server bool, rq *http.Request, statusCode int, response
 	return m
 }
 
-func newHTTPLogEntry(server bool, resName, method, urlstring string, status int, rqSize, rzSize int64, dur time.Duration) *HTTPLogEntry {
+func newHTTPLogEntry(
+	message string,
+	server, response bool,
+	resName, method, urlstring string,
+	status int,
+	rqSize, rzSize int64,
+	dur time.Duration,
+) *HTTPLogEntry {
 	u, err := url.Parse(urlstring)
 	if err != nil {
 		u = &url.URL{}
 	}
 
+	lvl := logging.InformationLevel
+	if status < 400 {
+		lvl = logging.ExtraDebug1Level
+	}
+
 	return &HTTPLogEntry{
-		Level:      logging.InformationLevel,
+		Level:      lvl,
 		CallerInfo: logging.GetCallerInfo(logging.NotHere()),
 
+		message:        message,
 		serverSide:     server,
+		isResponse:     response,
 		resourceFamily: resName,
 		method:         method,
 		url:            urlstring,
@@ -159,9 +188,11 @@ func (msg *HTTPLogEntry) EachField(f logging.FieldReportFn) {
 // EachFieldWithoutCallerInfo allows sub messages to populate
 // logging.FieldReportFn without out having to call CallerInfo
 func (msg *HTTPLogEntry) EachFieldWithoutCallerInfo(f logging.FieldReportFn) {
+	// Could be simpler, but this is a precursor to logging the "isResponse" field
+	incoming := (msg.serverSide && !msg.isResponse) || (!msg.serverSide && msg.isResponse)
 	f("@loglov3-otl", "sous-http-v1")
 	f("resource-family", msg.resourceFamily)
-	f("incoming", msg.serverSide)
+	f("incoming", incoming)
 	f("method", msg.method)
 	f("status", msg.status)
 	f("duration", int64(msg.dur/time.Microsecond))
@@ -184,5 +215,19 @@ func (msg *HTTPLogEntry) Status() int {
 
 // Message retrieve message from log message
 func (msg *HTTPLogEntry) Message() string {
-	return fmt.Sprintf("%d", msg.status)
+	var channelName string
+	if msg.serverSide {
+		if msg.isResponse {
+			channelName = "<- Server "
+		} else {
+			channelName = "-> Server "
+		}
+	} else {
+		if msg.isResponse {
+			channelName = "Client <- "
+		} else {
+			channelName = "Client -> "
+		}
+	}
+	return channelName + msg.message
 }

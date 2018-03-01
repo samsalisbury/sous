@@ -57,10 +57,8 @@ func (nsd nonSousError) Error() string {
 }
 
 func ignorableDeploy(log logging.LogSink, err error) bool {
-	messages.ReportLogFieldsMessage("checking to see if error is ignorable", logging.DebugLevel, log, err)
 	switch errors.Cause(err).(type) {
 	case nonSousError, notThisClusterError:
-		messages.ReportLogFieldsMessage("error is ignorable", logging.DebugLevel, log, err)
 		return true
 	}
 	return false
@@ -73,16 +71,10 @@ func (mr malformedResponse) Error() string {
 func isMalformed(log logging.LogSink, err error) bool {
 	err = errors.Cause(err)
 	_, isMal := err.(malformedResponse)
-	messages.ReportLogFieldsMessage("is malformedResponse?", logging.DebugLevel, log, err, isMal)
 	_, isUMT := err.(*json.UnmarshalTypeError)
-	messages.ReportLogFieldsMessage("is json unmarshal type error?", logging.DebugLevel, log, err, isUMT)
-	_, isUMF := err.(*json.UnmarshalFieldError)
-	messages.ReportLogFieldsMessage("is json unmarshal value error?", logging.DebugLevel, log, err, isUMF)
 	_, isUST := err.(*json.UnsupportedTypeError)
-	messages.ReportLogFieldsMessage("is json unsupported type error?", logging.DebugLevel, log, err, isUST)
 	_, isUSV := err.(*json.UnsupportedValueError)
-	Messages.ReportLogFieldsMessage("is json unsupported value error?", logging.DebugLevel, log, err, isUSV)
-	return isMal || isUMT || isUMF || isUST || isUSV
+	return isMal || isUMT || isUST || isUSV
 }
 
 func (cr *canRetryRequest) Error() string {
@@ -113,7 +105,7 @@ func (db *deploymentBuilder) isRetryable(err error) bool {
 // BuildDeployment does all the work to collect the data for a Deployment
 // from Singularity based on the initial SingularityRequest.
 func BuildDeployment(reg sous.ImageLabeller, clusters sous.Clusters, req SingReq, log logging.LogSink) (sous.DeployState, error) {
-	messages.ReportLogFieldsMessage("BuildDeployment request", logging.DebugLevel, log, req.ReqParent)
+	messages.ReportLogFieldsMessage("Build Deployment", logging.ExtraDebug1Level, log, req.ReqParent)
 	db := deploymentBuilder{registry: reg, clusters: clusters, req: req, log: log}
 	return db.Target, db.canRetry(db.completeConstruction())
 }
@@ -162,7 +154,7 @@ func reqID(rp *dtos.SingularityRequestParent) (id string) {
 func (db *deploymentBuilder) basics() error {
 	db.Target.Cluster = &sous.Cluster{BaseURL: db.req.SourceURL}
 	db.Target.ExecutorData = &singularityTaskData{requestID: reqID(db.req.ReqParent)}
-	messages.ReportLogFieldsMessage("Recording requestID for instance", logging.DebugLevel, db.log, db.Target.ExecutorData)
+	messages.ReportLogFieldsMessage("Recording as requestID for instance.", logging.ExtraDebug1Level, db.log, db.Target.ExecutorData)
 	db.request = db.req.ReqParent.Request
 	db.reqID = reqID(db.req.ReqParent)
 	return nil
@@ -205,19 +197,19 @@ func (db *deploymentBuilder) retrieveDeployHistory() error {
 	if db.depMarker == nil {
 		return db.retrieveHistoricDeploy()
 	}
-	messages.ReportLogFieldsMessage("Getting deploy based on Pending marker.", logging.DebugLevel, db.log, db.reqID)
+	messages.ReportLogFieldsMessage("Getting deploy based on Pending marker.", logging.ExtraDebug1Level, db.log, db.reqID)
 	return db.retrieveLiveDeploy()
 }
 
 func (db *deploymentBuilder) retrieveHistoricDeploy() error {
-	messages.ReportLogFieldsMessage("Getting deploy from history", logging.DebugLevel, db.log, db.reqID)
+	messages.ReportLogFieldsMessage("Getting deploy from history", logging.ExtraDebug1Level, db.log, db.reqID)
 	// !!! makes HTTP req
 	if db.request == nil {
 		return malformedResponse{"Singularity request parent had no request."}
 	}
 	sing := db.req.Sing
 	depHistList, err := sing.GetDeploys(db.request.Id, 1, 1)
-	messages.ReportLogFieldsMessage("Got history from Singularity", logging.DebugLevel, db.log, db.reqID, len(depHistList))
+	messages.ReportLogFieldsMessage("Got history from Singularity with items.", logging.ExtraDebug1Level, db.log, db.reqID, len(depHistList))
 	if err != nil {
 		return errors.Wrap(err, "GetDeploys")
 	}
@@ -227,11 +219,13 @@ func (db *deploymentBuilder) retrieveHistoricDeploy() error {
 	}
 
 	partialHistory := depHistList[0]
-	messages.ReportLogFieldsMessage("reqID and partialHistory", logging.DebugLevel, db.log, db.reqID, partialHistory)
+
+	messages.ReportLogFieldsMessage("Partial history.", logging.ExtraDebug1Level, db.log, db.reqID, partialHistory)
 	if partialHistory.DeployMarker == nil {
 		return malformedResponse{"Singularity deploy history had no deploy marker."}
 	}
-	messages.ReportLogFieldsMessage("reqID and DeployMarker", logging.DebugLevel, db.log, db.reqID, partialHistory.DeployMarker)
+
+	messages.ReportLogFieldsMessage("Partial history DeployMarker.", logging.ExtraDebug1Level, db.log, db.reqID, partialHistory.DeployMarker)
 	db.depMarker = partialHistory.DeployMarker
 	return db.retrieveLiveDeploy()
 }
@@ -241,22 +235,17 @@ func (db *deploymentBuilder) retrieveLiveDeploy() error {
 	sing := db.req.Sing
 	dh, err := sing.GetDeploy(db.depMarker.RequestId, db.depMarker.DeployId)
 	if err != nil {
-		messages.ReportLogFieldsMessage("reqID received error retrieving history entry for deploy marker",
-			logging.DebugLevel,
-			db.log,
-			db.reqID,
-			db.depMarker,
-			err)
+		messages.ReportLogFieldsMessage("Received error retrieving history entry for deploy marker.", logging.ExtraDebug1Level, db.log, db.reqID, db.depMarker, err)
 		return errors.Wrapf(err, "%q %#v", db.reqID, db.depMarker)
 	}
-	messages.ReportLogFieldsMessage("Deploy history entry retrieved", logging.DebugLevel, db.log, db.reqID, dh)
+
+	messages.ReportLogFieldsMessage("Deploy history entry retrieved.", logging.ExtraDebug1Level, db.log, db.reqID, dh)
 	db.history = dh
 
 	return nil
 }
 
 func (db *deploymentBuilder) extractDeployFromDeployHistory() error {
-	messages.ReportLogFieldsMessage("Extracting deploy from history", logging.DebugLevel, db.log, db.reqID, db.history)
 	db.deploy = db.history.Deploy
 	if db.deploy == nil {
 		return malformedResponse{"Singularity deploy history included no deploy"}
@@ -269,11 +258,7 @@ func (db *deploymentBuilder) sousDeployCheck() error {
 	if cnl, ok := db.deploy.Metadata[sous.ClusterNameLabel]; ok {
 		for _, cn := range db.clusters.Names() {
 			if cnl == cn {
-				messages.ReportLogFieldsMessage("Deploy cluster found in clusters",
-					logging.DebugLevel,
-					db.log,
-					cnl,
-					db.clusters)
+				messages.ReportLogFieldsMessage("Deploy cluster found in clusters.", logging.ExtraDebug1Level, db.log, cnl, db.clusters)
 				return nil
 			}
 		}
@@ -336,8 +321,8 @@ func (db *deploymentBuilder) retrieveImageLabels() error {
 	if err != nil {
 		return malformedResponse{err.Error()}
 	}
-	messages.ReportLogFieldsMessage("Labels", logging.DebugLevel, db.log, db.reqID, labels)
 
+	messages.ReportLogFieldsMessage("Labels", logging.ExtraDebug1Level, db.log, db.reqID, labels)
 	db.Target.SourceID, err = docker.SourceIDFromLabels(labels)
 	if err != nil {
 		return errors.Wrapf(malformedResponse{err.Error()}, "For reqID: %s", reqID(db.req.ReqParent))
@@ -374,7 +359,7 @@ func (db *deploymentBuilder) restoreFromMetadata() error {
 
 func (db *deploymentBuilder) unpackDeployConfig() error {
 	db.Target.Env = db.deploy.Env
-	messages.ReportLogFieldsMessage("Env", logging.DebugLevel, db.log, db.reqID, db.deploy.Env)
+	messages.ReportLogFieldsMessage("UnpackDeployConfig", logging.ExtraDebug1Level, db.log, db.reqID, db.deploy.Env)
 	if db.Target.Env == nil {
 		db.Target.Env = make(map[string]string)
 	}
@@ -402,11 +387,9 @@ func (db *deploymentBuilder) unpackDeployConfig() error {
 				Mode:      sous.VolumeMode(v.Mode),
 			})
 	}
-	messages.ReportLogFieldsMessage("Volumes", logging.DebugLevel, db.log, db.reqID, db.Target.DeployConfig.Volumes)
-
+	messages.ReportLogFieldsMessage("Volumes", logging.ExtraDebug1Level, db.log, db.reqID, db.Target.DeployConfig.Volumes)
 	if len(db.Target.DeployConfig.Volumes) > 0 {
-		messages.ReportLogFieldsMessage("volume", logging.DebugLevel, db.log, db.reqID, db.Target.DeployConfig.Volumes[0])
-
+		messages.ReportLogFieldsMessage("UnpackDeployConfig volume 0", logging.DebugLevel, db.log, db.reqID, db.Target.DeployConfig.Volumes[0])
 	}
 
 	if db.deploy.Healthcheck != nil {

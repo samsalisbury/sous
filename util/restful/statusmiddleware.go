@@ -5,6 +5,9 @@ import (
 	"io"
 	"net/http"
 	"runtime/debug"
+
+	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 )
 
 type (
@@ -12,7 +15,7 @@ type (
 	// A StatusMiddleware processes panics into 500s and other status codes.
 	StatusMiddleware struct {
 		gatelatch string
-		logSet
+		logging.LogSink
 	}
 )
 
@@ -47,13 +50,14 @@ func (ph *StatusMiddleware) errorBody(status int, rq *http.Request, w io.Writer,
 func (ph *StatusMiddleware) HandleResponse(status int, r *http.Request, w http.ResponseWriter, data interface{}) {
 	w.WriteHeader(status)
 
-	ph.Warnf("Responding: %d %s: %s %s", status, http.StatusText(status), r.Method, r.URL)
+	messages.ReportClientHTTPRequest(ph.LogSink, "Responding", r, r.Method)
+
 	if status >= 400 {
-		ph.Warnf("%+v", data)
+		messages.ReportLogFieldsMessage("Status >= 400", logging.WarningLevel, ph.LogSink)
 		ph.errorBody(status, r, w, data, nil, nil)
 	}
 	if status >= 200 && status < 300 {
-		ph.Debugf("%+v", data)
+		messages.ReportLogFieldsMessage("Status >= 200 && Status < 300", logging.DebugLevel, ph.LogSink)
 	}
 	// XXX in a dev mode, print the panic in the response body
 	// (normal ops it might leak secure data)
@@ -64,12 +68,10 @@ func (ph *StatusMiddleware) HandleResponse(status int, r *http.Request, w http.R
 func (ph *StatusMiddleware) HandlePanic(w http.ResponseWriter, r *http.Request, recovered interface{}) {
 	w.WriteHeader(http.StatusInternalServerError)
 	stack := debug.Stack()
-	if ph.logSet == nil {
-		ph.logSet = &fallbackLogger{}
+	if ph.LogSink == nil {
+		ph.LogSink = &fallbackLogger{}
 	}
-	ph.Warnf("%+v", recovered)
-	ph.Warnf(string(stack))
-	ph.Warnf("Recovered, returned 500")
+	messages.ReportLogFieldsMessage("Recovered, returned 500", logging.WarningLevel, ph.LogSink)
 	ph.errorBody(http.StatusInternalServerError, r, w, nil, recovered.(error), stack)
 	// XXX in a dev mode, print the panic in the response body
 	// (normal ops it might leak secure data)

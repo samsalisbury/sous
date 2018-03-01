@@ -2,7 +2,6 @@ package test
 
 import (
 	"bytes"
-	"log"
 	"net/http/httptest"
 	"os"
 	"testing"
@@ -79,6 +78,9 @@ func TestWriteState(t *testing.T) {
 		func() graph.StateReader { return graph.StateReader{StateReader: &sm} },
 		func() graph.StateWriter { return graph.StateWriter{StateWriter: &sm} },
 		func() *graph.StateManager { return &graph.StateManager{StateManager: &sm} },
+		func(sm *graph.StateManager) graph.ClusterManager {
+			return graph.ClusterManager{ClusterManager: sous.MakeClusterManager(sm)}
+		},
 
 		func() *graph.ServerStateManager { return &graph.ServerStateManager{StateManager: &sm} },
 		func() *graph.ConfigLoader { return graph.NewTestConfigLoader("") },
@@ -93,7 +95,9 @@ func TestWriteState(t *testing.T) {
 	testServer := httptest.NewServer(serverScoop.Handler.Handler)
 	defer testServer.Close()
 
-	cl, err := restful.NewClient(testServer.URL, logging.Log, map[string]string{"X-Gatelatch": "please"})
+	logger, _ := logging.NewLogSinkSpy()
+
+	cl, err := restful.NewClient(testServer.URL, logger, map[string]string{"X-Gatelatch": "please"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -108,7 +112,7 @@ func TestWriteState(t *testing.T) {
 		t.Logf("hsm INITIAL state: Manifest %q; Kind = %q\n  %#v\n", id, m.Kind, m)
 	}
 
-	log.Println(spew.Sprintf("original state: %#++v", originalState))
+	t.Logf(spew.Sprintf("original state: %#++v", originalState))
 	if originalState.Manifests.Len() != state.Manifests.Len() {
 		t.Errorf("Local state has %d manifests to remote's %d", originalState.Manifests.Len(), state.Manifests.Len())
 	}

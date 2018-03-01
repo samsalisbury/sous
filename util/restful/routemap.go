@@ -28,6 +28,10 @@ type (
 		Resource
 	}
 
+	// RouteEntryBuilder is used to provide a concise way to define a route entry
+	// to BuildRouteMap (c.f.)
+	RouteEntryBuilder func(name string, path string, resource Resource)
+
 	// RouteMap is a list of entries for routing
 	RouteMap []routeEntry
 
@@ -73,8 +77,29 @@ type (
 	}
 )
 
+// BuildRouteMap receives a function that will define the route map.
+// It passes in a constructor for route entries, and appends the ones constructed
+// to the RouteMap.
+//   BuildRouteMap(func(re RouteEntryBuilder){
+//     re("me", "/author", newAuthorResource())
+//   })
+// This probably deserves a full example.
+func BuildRouteMap(f func(RouteEntryBuilder)) *RouteMap {
+	rm := RouteMap{}
+	res := func(name, path string, res Resource) {
+		rm = append(rm,
+			routeEntry{
+				Name:     name,
+				Path:     path,
+				Resource: res,
+			})
+	}
+	f(res)
+	return &rm
+}
+
 func (rm *RouteMap) buildMetaHandler(r *httprouter.Router, ls logging.LogSink) *MetaHandler {
-	ph := &StatusMiddleware{logSet: ls, gatelatch: os.Getenv("GATELATCH")}
+	ph := &StatusMiddleware{LogSink: ls, gatelatch: os.Getenv("GATELATCH")}
 	mh := &MetaHandler{
 		router:        r,
 		statusHandler: ph,

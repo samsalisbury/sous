@@ -70,7 +70,7 @@ func (gc *GenericClient) Request(resourceName, method, path string, pathParams, 
 		return
 	}
 
-	messages.ReportClientHTTPResponse(gc.Logger, res, resourceName, time.Now().Sub(start))
+	messages.ReportClientHTTPResponse(gc.Logger, "singularity request", res, resourceName, time.Now().Sub(start))
 
 	if res.StatusCode > 299 {
 		rerr := &ReqError{

@@ -5,6 +5,7 @@ import (
 
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/filemap"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/shell"
 	"github.com/samsalisbury/semv"
 )
@@ -100,8 +101,10 @@ func TestManifestParser_ParseManifest(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+
+		ls, _ := logging.NewLogSinkSpy()
 		// Shebang...
-		actual = NewManifestParser().ParseManifests(wd)
+		actual = NewManifestParser(ls).ParseManifests(wd)
 	}); fileMapErr != nil {
 		t.Fatal(fileMapErr)
 	}

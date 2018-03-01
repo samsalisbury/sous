@@ -3,6 +3,20 @@ Owners:
 - Sous Team
 Kind: http-service
 Deployments:
+  cluster-1:
+    Resources:
+      cpus: "1"
+      memory: "256"
+      ports: "1"
+    Env:
+      DEBUG: "YES"
+    NumInstances: 0
+    Volumes: []
+    Startup:
+      CheckReadyProtocol: HTTPS
+      CheckReadyURIPath: /health
+    Schedule: ""
+    Version: 0.3.1-beta+b4d455ee
   other-cluster:
     Resources:
       cpus: "1"

@@ -248,10 +248,10 @@
 			"revisionTime": "2016-12-10T01:35:37Z"
 		},
 		{
-			"checksumSHA1": "636hzSokJ8y7gabllKd3ild4Ids=",
+			"checksumSHA1": "rY2ZER+lvtS5q3NinS8P8CAgBWo=",
 			"path": "github.com/nyarly/spies",
-			"revision": "6df459fddaf2f0ac856648e0c0d43f4d491b04de",
-			"revisionTime": "2017-08-08T23:35:25Z"
+			"revision": "0bdf1ab08cec840664dc0d09c2e76a6bc8f4e10a",
+			"revisionTime": "2018-02-14T22:50:20Z"
 		},
 		{
 			"checksumSHA1": "P8IObWuKUIAiaXku4KmZbxfJDGs=",
@@ -320,16 +320,16 @@
 			"revisionTime": "2016-11-28T21:05:44Z"
 		},
 		{
-			"checksumSHA1": "Ih2XJenHBfEQGO3zE9QzUucpZuk=",
+			"checksumSHA1": "C14YBofViq1naOZy+MgYnd7V0nA=",
 			"path": "github.com/samsalisbury/psyringe",
-			"revision": "35c84fe1789e552039aaac08e93af79649c109b2",
-			"revisionTime": "2017-11-15T16:20:39Z"
+			"revision": "bf48489e3f670992e749ebf6f3b3a729b3d864f0",
+			"revisionTime": "2018-02-20T13:36:34Z"
 		},
 		{
 			"checksumSHA1": "HlLNyPqfD8bdWbEjcV3wPzTemc8=",
 			"path": "github.com/samsalisbury/psyringe/experiment",
-			"revision": "3f6ed6399db3e83068aec459996d893d257ab954",
-			"revisionTime": "2017-11-08T12:26:49Z"
+			"revision": "bf48489e3f670992e749ebf6f3b3a729b3d864f0",
+			"revisionTime": "2018-02-20T13:36:34Z"
 		},
 		{
 			"checksumSHA1": "IRgb8yeKkWGY5gp1TLk9rpGitB0=",

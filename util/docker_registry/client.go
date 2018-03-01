@@ -90,7 +90,7 @@ func (c *httpClient) Do(resourceName string, req *http.Request) (*http.Response,
 	start := time.Now()
 	res, err := c.http.Do(req)
 	if res != nil {
-		messages.ReportClientHTTPResponse(c.log, res, resourceName, time.Now().Sub(start))
+		messages.ReportClientHTTPResponse(c.log, "Docker: generic request", res, resourceName, time.Now().Sub(start))
 	}
 	return res, err
 }
@@ -100,7 +100,7 @@ func (c *httpClient) Get(resourceName string, url string) (resp *http.Response, 
 	start := time.Now()
 	res, err := c.http.Get(url)
 	if res != nil {
-		messages.ReportClientHTTPResponse(c.log, res, resourceName, time.Now().Sub(start))
+		messages.ReportClientHTTPResponse(c.log, "Docker: GET", res, resourceName, time.Now().Sub(start))
 	}
 	return res, err
 }
@@ -110,7 +110,7 @@ func (c *httpClient) Head(resourceName string, url string) (resp *http.Response,
 	start := time.Now()
 	res, err := c.http.Head(url)
 	if res != nil {
-		messages.ReportClientHTTPResponse(c.log, res, resourceName, time.Now().Sub(start))
+		messages.ReportClientHTTPResponse(c.log, "Docker: HEAD", res, resourceName, time.Now().Sub(start))
 	}
 	return res, err
 }

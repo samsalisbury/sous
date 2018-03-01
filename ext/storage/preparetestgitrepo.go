@@ -14,6 +14,7 @@ var testUser = sous.User{Name: "Test User", Email: "test@user.com"}
 
 // PrepareTestGitRepo prepares a git repo for test purposes.
 func PrepareTestGitRepo(t *testing.T, s *sous.State, remotepath, outpath string) {
+	t.Helper()
 
 	clobberDir(t, remotepath)
 	clobberDir(t, outpath)
@@ -39,6 +40,7 @@ func PrepareTestGitRepo(t *testing.T, s *sous.State, remotepath, outpath string)
 }
 
 func clobberDir(t *testing.T, path string) {
+	t.Helper()
 	if err := os.RemoveAll(path); err != nil {
 		t.Fatal(err)
 	}

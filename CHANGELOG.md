@@ -6,7 +6,36 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
-## [Unreleased](//github.com/opentable/sous/compare/0.5.65...master)
+## [Unreleased](//github.com/opentable/sous/compare/0.5.70...HEAD)
+
+### Fixed
+* Server: the PostgreSQL storage module successfully deduplicates proposed DB
+  records generated from user input now.
+
+## [0.5.67](//github.com/opentable/sous/compare/0.5.66...0.5.67)
+
+### Added
+* All: Add truncated message that was supposed to go to logstash if it is found to error out from delivery to Kafka
+
+## [0.5.66](//github.com/opentable/sous/compare/0.5.65...0.5.66)
+
+### Added
+* Server: Include connection string in db connection error log.
+* Client: Add structured logging to status poller
+* All: Create a new structured log that auto extracts IDs and stores in seperate fields for
+  easier searching in logstash
+
+### Changed
+* All: Top-level global logger labeled "GLOBAL".
+* All: Deployment builder, manifest get/set, StatusMiddleware, otplManifest now emits structured logs.
+* CLI: When sous build fails due to no Dockerfile, error says exactly that.
+* All: HTTP logging messages are at level "extra1" when successful
+
+### Fixed
+* All: Some formatted logs were incorrectly reporting missing values and were
+  indiscriminately trying to render a single slice in the first format verb.
+  Resolved so those logs format correctly.
+* Server: postgres storage engine wasn't de-duplicating records as it parsed the GDM.
 
 ## [0.5.65](//github.com/opentable/sous/compare/0.5.63...0.5.65)
 
@@ -15,6 +44,7 @@ with respect to its command line interface and HTTP interface.
   list of all deployment queues and their lengths, and individual queue items
   respectively. /deploy-queue-item allows HTTP long-polling on the completion
   of a single rectification be providing the ?wait=true query parameter.
+* Server: new endpoint /state/deployments allows cluster-specific updates to GDM.
 * All: Default when testing, don't call recover when a log message fails to Deliver.
 * CLI: Added timing information to report invocation message.
 * All: Logging Reporter that allows allows semi flexible fields to be indexed.

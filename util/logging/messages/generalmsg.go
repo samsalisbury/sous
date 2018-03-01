@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+	"sort"
 	"strings"
 
 	"github.com/Jeffail/gabs"
@@ -55,6 +56,41 @@ func failedToParseJSON(name string) string {
 	jsonStruct := fmt.Sprintf("{\"%s\": \"Fail to create json\"}", name)
 	return jsonStruct
 
+}
+
+func (l *logFieldsMessage) insertID(idName string, idValue interface{}) {
+	if strings.Contains(strings.ToLower(idName), "id") {
+		strIDValue := ""
+		if val, ok := idValue.(string); ok {
+			strIDValue = val
+		} else {
+			strIDValue = spew.Sdump(idValue)
+		}
+		if val, ok := l.idsMap[idName]; !ok {
+			l.idsMap[idName] = strIDValue
+		} else {
+			if !strings.Contains(val, strIDValue) {
+				l.idsMap[idName] = val + ", " + strIDValue
+			}
+		}
+	}
+}
+
+func (l *logFieldsMessage) extractID(o interface{}) {
+	if l.withIDs {
+		if structs.IsStruct(o) {
+			s := structs.New(o)
+			l.insertID(s.Name(), o)
+			for _, f := range s.Fields() {
+				if f.IsExported() {
+					l.insertID(f.Name(), f.Value())
+				}
+			}
+		} else {
+			t := reflect.TypeOf(o)
+			l.insertID(t.Name(), o)
+		}
+	}
 }
 
 //DefaultStructInfo is the default implementation for structs to use to return fields, types, and jsonStruct
@@ -109,6 +145,7 @@ func defaultStructInfo(o interface{}, depth ...int) (fields []string, types []st
 		jsonStruct = jsonObj.String()
 		return
 	}
+
 	s := structs.New(o)
 
 	fields = s.Names()
@@ -147,6 +184,8 @@ type logFieldsMessage struct {
 	jsonObj            *gabs.Container
 	msg                string
 	console            bool
+	withIDs            bool
+	idsMap             map[string]string
 }
 
 func (l logFieldsMessage) WriteToConsole(console io.Writer) {
@@ -161,10 +200,33 @@ func (l logFieldsMessage) WriteToConsole(console io.Writer) {
 	}
 }
 
+func (l logFieldsMessage) returnIDs() (ids string, values string) {
+
+	idsSlice := []string{}
+	valuesSlice := []string{}
+
+	if l.withIDs {
+
+		for k := range l.idsMap {
+			idsSlice = append(idsSlice, k)
+		}
+		sort.Strings(idsSlice)
+
+		for _, k := range idsSlice {
+			valuesSlice = append(valuesSlice, l.idsMap[k])
+		}
+	}
+
+	ids = strings.Join(idsSlice, ",")
+	values = strings.Join(valuesSlice, ",")
+
+	return ids, values
+}
+
 func (l logFieldsMessage) composeMsg() string {
 	return l.msg
 }
-func buildLogFieldsMessage(msg string, console bool, loglvl logging.Level) logFieldsMessage {
+func buildLogFieldsMessage(msg string, console bool, withIDs bool, loglvl logging.Level) logFieldsMessage {
 	logMessage := logFieldsMessage{
 		CallerInfo:         logging.GetCallerInfo(logging.NotHere()),
 		Level:              loglvl,
@@ -173,8 +235,10 @@ func buildLogFieldsMessage(msg string, console bool, loglvl logging.Level) logFi
 		JSONRepresentation: "",
 		msg:                msg,
 		console:            console,
+		withIDs:            withIDs,
 	}
 
+	logMessage.idsMap = make(map[string]string)
 	logMessage.jsonObj = gabs.New()
 	if _, err := logMessage.jsonObj.Array("message", "array"); err != nil {
 		fmt.Println("Failed to add object array: ", err.Error())
@@ -183,9 +247,17 @@ func buildLogFieldsMessage(msg string, console bool, loglvl logging.Level) logFi
 
 }
 
+//ReportLogFieldsMessageWithIDs report message with Ids
+func ReportLogFieldsMessageWithIDs(msg string, loglvl logging.Level, logSink logging.LogSink, items ...interface{}) {
+	logMessage := buildLogFieldsMessage(msg, false, true, loglvl)
+	logMessage.CallerInfo.ExcludeMe()
+	logMessage.reportLogFieldsMessage(logSink, items...)
+
+}
+
 //ReportLogFieldsMessageToConsole report message to console
 func ReportLogFieldsMessageToConsole(msg string, loglvl logging.Level, logSink logging.LogSink, items ...interface{}) {
-	logMessage := buildLogFieldsMessage(msg, true, loglvl)
+	logMessage := buildLogFieldsMessage(msg, true, false, loglvl)
 	logMessage.CallerInfo.ExcludeMe()
 	logMessage.reportLogFieldsMessage(logSink, items...)
 
@@ -193,7 +265,7 @@ func ReportLogFieldsMessageToConsole(msg string, loglvl logging.Level, logSink l
 
 //ReportLogFieldsMessage generate a logFieldsMessage log entry
 func ReportLogFieldsMessage(msg string, loglvl logging.Level, logSink logging.LogSink, items ...interface{}) {
-	logMessage := buildLogFieldsMessage(msg, false, loglvl)
+	logMessage := buildLogFieldsMessage(msg, false, false, loglvl)
 	logMessage.CallerInfo.ExcludeMe()
 
 	logMessage.reportLogFieldsMessage(logSink, items...)
@@ -203,6 +275,7 @@ func (l logFieldsMessage) reportLogFieldsMessage(logSink logging.LogSink, items 
 	l.CallerInfo.ExcludeMe()
 
 	for _, item := range items {
+		l.extractID(item)
 		fields, types, jsonRep := defaultStructInfo(item)
 		l.addFields(fields...)
 		l.addTypes(types...)
@@ -253,6 +326,13 @@ func (l logFieldsMessage) EachField(fn logging.FieldReportFn) {
 	fn("@loglov3-otl", "sous-generic-v1")
 	fn("fields", strings.Join(removeDuplicates(l.Fields), ","))
 	fn("types", strings.Join(removeDuplicates(l.Types), ","))
+
+	if l.withIDs {
+		ids, values := l.returnIDs()
+		fn("ids", ids)
+		fn("id-values", values)
+	}
+
 	if l.jsonObj != nil {
 		fn("json-value", l.jsonObj.String())
 

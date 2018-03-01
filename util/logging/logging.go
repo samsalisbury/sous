@@ -143,7 +143,7 @@ type (
 // Notice that the global LotSet doesn't have metrics available - when you
 // want metrics in a component, you need to add an injected LogSet. c.f.
 // ext/docker/image_mapping.go
-var Log = func() LogSet { return *(SilentLogSet()) }()
+var Log = func() LogSet { return *(SilentLogSet().Child("GLOBAL").(*LogSet)) }()
 
 // To be deprecated: Printf is part of the holdover from stdlib logging
 func (w logwrapper) Printf(f string, vs ...interface{}) {
@@ -244,11 +244,11 @@ func newls(name string, role string, level Level, bundle *dumpBundle) *LogSet {
 		dumpBundle: bundle,
 	}
 
-	ls.Warn = logwrapper(func(f string, as ...interface{}) { ls.Warnf(f, as) })
+	ls.Warn = logwrapper(func(f string, as ...interface{}) { ls.Warnf(f, as...) })
 	ls.Notice = ls.Warn
 	ls.Info = ls.Warn
-	ls.Debug = logwrapper(func(f string, as ...interface{}) { ls.Debugf(f, as) })
-	ls.Vomit = logwrapper(func(f string, as ...interface{}) { ls.Vomitf(f, as) })
+	ls.Debug = logwrapper(func(f string, as ...interface{}) { ls.Debugf(f, as...) })
+	ls.Vomit = logwrapper(func(f string, as ...interface{}) { ls.Vomitf(f, as...) })
 
 	return ls
 }

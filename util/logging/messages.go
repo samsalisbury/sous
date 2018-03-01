@@ -58,7 +58,7 @@ type (
 
 	*/
 
-	temporaryOldStyleLogging interface {
+	TemporaryOldStyleLogging interface {
 		Debugf(f string, as ...interface{})
 		Vomitf(f string, as ...interface{})
 		Warnf(f string, as ...interface{})
@@ -66,7 +66,7 @@ type (
 
 	// A LogSink can be used in Deliver to send messages for logging.
 	LogSink interface {
-		temporaryOldStyleLogging
+		TemporaryOldStyleLogging
 
 		// Child returns a namespaced child
 		Child(name string) LogSink

@@ -16,7 +16,7 @@ LIQUIBASE_FLAGS := --url $(LIQUIBASE_SERVER)/$(DB_NAME) $(LIQUIBASE_SHARED_FLAGS
 LIQUIBASE_TEST_FLAGS := --url $(LIQUIBASE_SERVER)/$(TEST_DB_NAME) $(LIQUIBASE_SHARED_FLAGS)
 
 SQLITE_URL := https://sqlite.org/2017/sqlite-autoconf-3160200.tar.gz
-GO_VERSION := 1.9.2
+GO_VERSION := 1.10
 DESCRIPTION := "Sous is a tool for building, testing, and deploying applications, using Docker, Mesos, and Singularity."
 URL := https://github.com/opentable/sous
 
@@ -164,7 +164,7 @@ install-liquibase:
 install-linters: install-metalinter
 	gometalinter --install > /dev/null
 
-install-gotags: 
+install-gotags:
 	go get -u github.com/jstemmer/gotags
 
 install-build-tools: install-xgo install-govendor install-engulf install-staticcheck
@@ -227,6 +227,8 @@ test-integration: setup-containers
 	@echo
 	@echo
 	@echo Integration tests timeout in $(INTEGRATION_TEST_TIMEOUT)
+	@echo -n Began at:
+	@date
 	@echo Set INTEGRATION_TEST_TIMEOUT to override.
 	@echo
 	@echo
