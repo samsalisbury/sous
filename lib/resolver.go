@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 )
 
 type (
@@ -42,8 +43,10 @@ func (r *Resolver) queueDiffs(dcs *DeployableChans, results chan DiffResolution)
 	var wg sync.WaitGroup
 	for p := range dcs.Pairs {
 		sr := NewRectification(*p)
+		messages.ReportLogFieldsMessageWithIDs("Adding to queset", logging.ExtraDebug1Level, r.ls, p, sr)
 		queued, ok := r.QueueSet.PushIfEmpty(sr)
 		if !ok {
+			messages.ReportLogFieldsMessageWithIDs("failed to que", logging.ExtraDebug1Level, r.ls, p, sr)
 			reportR11nAnomaly(r.ls, sr, r11nDroppedQueueNotEmpty)
 			continue
 		}
@@ -51,8 +54,10 @@ func (r *Resolver) queueDiffs(dcs *DeployableChans, results chan DiffResolution)
 		did := p.ID() // Capture did from the range var p outside the goroutine.
 		go func() {
 			defer wg.Done()
+			messages.ReportLogFieldsMessageWithIDs("Inserting to QueueSet.Wait", logging.ExtraDebug1Level, r.ls, queued.ID, p, sr)
 			result, ok := r.QueueSet.Wait(did, queued.ID)
 			if !ok {
+				messages.ReportLogFieldsMessageWithIDs("failed to QueueSet.Wait", logging.ExtraDebug1Level, r.ls, queued.ID, p, sr)
 				reportR11nAnomaly(r.ls, sr, r11nWentMissing)
 			}
 			results <- result
@@ -73,7 +78,7 @@ func (r *Resolver) queueDiffs(dcs *DeployableChans, results chan DiffResolution)
 func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveRecorder {
 	intended = intended.Filter(r.FilterDeployment)
 
-	return NewResolveRecorder(intended, func(recorder *ResolveRecorder) {
+	return NewResolveRecorder(intended, r.ls, func(recorder *ResolveRecorder) {
 		var actual DeployStates
 		var diffs *DeployableChans
 		var logger *DeployableChans
