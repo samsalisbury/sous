@@ -9,18 +9,27 @@ type (
 	}
 )
 
-func (r row) equal(other row) bool {
+func (r row) dupes(other row) bool {
+	hasCandidateField := false
 	for n, v := range r {
+		if !v.column.candidate {
+			continue
+		}
+		hasCandidateField = true
 		if !other[n].equal(v) {
 			return false
 		}
 	}
 	for n, v := range other {
+		if !v.column.candidate {
+			continue
+		}
+		hasCandidateField = true
 		if !r[n].equal(v) {
 			return false
 		}
 	}
-	return true
+	return hasCandidateField
 }
 
 func (f field) equal(other field) bool {

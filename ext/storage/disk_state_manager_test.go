@@ -147,6 +147,25 @@ func exampleState() *sous.State {
 						},
 						Version: semv.MustParse("1.0.0-rc.1+deadbeef"),
 					},
+					"other-cluster": sous.DeploySpec{
+						DeployConfig: sous.DeployConfig{
+							Env: sous.Env{
+								"SOME_DB_URL": "https://some.database",
+							},
+							Resources: sous.Resources{
+								"cpus":   "0.1",
+								"memory": "2048",
+								"ports":  "1",
+							},
+							NumInstances: 3,
+							Startup: sous.Startup{
+								CheckReadyProtocol: "HTTPS",
+								CheckReadyURIPath:  "/health",
+							},
+							Volumes: sous.Volumes{},
+						},
+						Version: semv.MustParse("1.0.0-rc.1+deadbeef"),
+					},
 				},
 			},
 			&sous.Manifest{
@@ -154,6 +173,24 @@ func exampleState() *sous.State {
 				Owners: []string{"Sous Team"},
 				Kind:   "http-service",
 				Deployments: map[string]sous.DeploySpec{
+					"cluster-1": {
+						DeployConfig: sous.DeployConfig{
+							Env: sous.Env{
+								"DEBUG": "YES",
+							},
+							Startup: sous.Startup{
+								CheckReadyProtocol: "HTTPS",
+								CheckReadyURIPath:  "/health",
+							},
+							Resources: sous.Resources{
+								"cpus":   "1",
+								"memory": "256",
+								"ports":  "1",
+							},
+							Volumes: sous.Volumes{},
+						},
+						Version: semv.MustParse("0.3.1-beta+b4d455ee"),
+					},
 					"other-cluster": {
 						DeployConfig: sous.DeployConfig{
 							Env: sous.Env{
