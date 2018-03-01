@@ -11,6 +11,7 @@ with respect to its command line interface and HTTP interface.
 ### Fixed
 * Server: the PostgreSQL storage module successfully deduplicates proposed DB
   records generated from user input now.
+* All: /all-deploy-queues returns correctly, with a somewhat different data format.
 
 ## [0.5.67](//github.com/opentable/sous/compare/0.5.66...0.5.67)
 
