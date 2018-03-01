@@ -24,7 +24,6 @@ type (
 		DeploymentIDErr  error
 		Body             *singleDeploymentBody
 		BodyErr          error
-		Header           http.Header
 		GDM              *sous.State
 		StateWriter      sous.StateWriter
 		GDMToDeployments func(*sous.State) (sous.Deployments, error)
@@ -64,6 +63,7 @@ func (sdr *SingleDeploymentResource) Put(_ http.ResponseWriter, req *http.Reques
 	did, didErr := deploymentIDFromValues(qv)
 	body := &singleDeploymentBody{}
 	bodyErr := json.NewDecoder(req.Body).Decode(body)
+	gdm := sdr.context.liveState()
 	return &PUTSingleDeploymentHandler{
 		User:            sous.User(sdr.userExtractor.GetUser(req)),
 		DeploymentID:    did,
@@ -72,6 +72,10 @@ func (sdr *SingleDeploymentResource) Put(_ http.ResponseWriter, req *http.Reques
 		BodyErr:         bodyErr,
 		StateWriter:     sdr.context.StateManager,
 		PushToQueueSet:  sdr.context.QueueSet.Push,
+		GDM:             gdm,
+		GDMToDeployments: func(s *sous.State) (sous.Deployments, error) {
+			return gdm.Deployments()
+		},
 	}
 }
 

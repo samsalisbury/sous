@@ -121,8 +121,11 @@ func TestSingleDeploymentResource_Put(t *testing.T) {
 		t.Run(tc.Desc, func(t *testing.T) {
 
 			// Pointers to dependencies.
-			sm := &sous.DummyStateManager{}
 			qs := sous.NewR11nQueueSet()
+			gdm := test.DefaultStateFixture()
+			sm := &sous.DummyStateManager{
+				State: test.DefaultStateFixture(),
+			}
 
 			// Setup.
 			r := SingleDeploymentResource{
@@ -161,7 +164,8 @@ func TestSingleDeploymentResource_Put(t *testing.T) {
 			// Assertions.
 
 			if got.DeploymentID != tc.WantDeploymentID {
-				t.Errorf("got deployment ID %q; want %q", got.DeploymentID, tc.WantDeploymentID)
+				t.Errorf("got deployment ID %q; want %q",
+					got.DeploymentID, tc.WantDeploymentID)
 			}
 
 			if got.User != tc.WantUser {
@@ -179,7 +183,8 @@ func TestSingleDeploymentResource_Put(t *testing.T) {
 			if tc.WantDeploymentIDErr != "" {
 				gotDeploymentIDErr := fmt.Sprint(got.DeploymentIDErr)
 				if gotDeploymentIDErr != tc.WantDeploymentIDErr {
-					t.Errorf("got deployment ID error %q; want %q", gotDeploymentIDErr, tc.WantDeploymentIDErr)
+					t.Errorf("got deployment ID error %q; want %q",
+						gotDeploymentIDErr, tc.WantDeploymentIDErr)
 				}
 			} else if got.DeploymentIDErr != nil {
 				t.Errorf("got deployment ID error %q; want nil", got.DeploymentIDErr)
@@ -190,10 +195,29 @@ func TestSingleDeploymentResource_Put(t *testing.T) {
 			if got.StateWriter.(*sous.DummyStateManager) != sm {
 				t.Errorf("want state manager passed through as state reader")
 			}
+
+			// PushToQueueSet must be set to QueueSet.Push. This is a func to
+			// aid with testing PUTSingleDeployment.Exchange method.
 			got.PushToQueueSet(&sous.Rectification{})
 			if qs.Queues()[sous.DeploymentID{}].Len() != 1 {
 				t.Errorf("want PushToQueueSet to push to the provided queueset")
 			}
+
+			// GDMToDeployments must be set to GDM.Deployments, and therefore
+			// they must produce the same set of deployments.
+			gotDeployments, err := got.GDMToDeployments(gdm)
+			if err != nil {
+				t.Errorf("GDMToDeployments failed: %s", err)
+			}
+			wantDeployments, err := gdm.Deployments()
+			if err != nil {
+				t.Errorf("setup failed: test fixture not valid: %s", err)
+			}
+			if gotDeployments.Len() != wantDeployments.Len() {
+				t.Errorf("GDMToDeployments not set to gdm.Deployments")
+			}
+			// TODO SS: Diff method on Deployments.
+
 		})
 
 	}
@@ -387,7 +411,6 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 			// Setup
 
 			sent, did := tc.BodyAndID()
-			header := http.Header{}
 			stateWriter := newStateWriterSpy()
 			if tc.OverrideStateWriter != (stateWriterSpy{}) {
 				stateWriter = tc.OverrideStateWriter
@@ -417,7 +440,6 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 				BodyErr:          tc.BodyErrIn,
 				GDM:              state,
 				GDMToDeployments: stateToDeployments,
-				Header:           header,
 				StateWriter:      stateWriter,
 				PushToQueueSet:   pushToQueueSet,
 				User:             user,
