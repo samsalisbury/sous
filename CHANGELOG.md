@@ -12,6 +12,9 @@ with respect to its command line interface and HTTP interface.
 * Server: the PostgreSQL storage module successfully deduplicates proposed DB
   records generated from user input now.
 
+### Added
+* Server: convert remainder of singularity package to generalmsg style logs
+	
 ## [0.5.67](//github.com/opentable/sous/compare/0.5.66...0.5.67)
 
 ### Added
