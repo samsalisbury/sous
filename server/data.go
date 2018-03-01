@@ -37,7 +37,13 @@ type (
 
 	// DeploymentQueuesResponse is used by the Deployment queue handler
 	DeploymentQueuesResponse struct {
-		Deployments map[sous.DeploymentID]int
+		Queues map[string]QueueDesc
+	}
+
+	// QueueDesc describes the queue related to a Deployment
+	QueueDesc struct {
+		sous.DeploymentID
+		Length int
 	}
 )
 

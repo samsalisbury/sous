@@ -34,12 +34,14 @@ func (r *AllDeployQueuesResource) Get(_ http.ResponseWriter, _ *http.Request, _ 
 // Exchange returns deploymentsResponse representing all queues managed by this
 // server instance.
 func (h *GETAllDeployQueuesHandler) Exchange() (interface{}, int) {
+	data := DeploymentQueuesResponse{Queues: map[string]QueueDesc{}}
+
 	queues := h.QueueSet.Queues()
-	m := map[sous.DeploymentID]int{}
 	for did, q := range queues {
-		m[did] = q.Len()
+		data.Queues[did.String()] = QueueDesc{
+			DeploymentID: did,
+			Length:       q.Len(),
+		}
 	}
-	return DeploymentQueuesResponse{
-		Deployments: m,
-	}, 200
+	return data, 200
 }

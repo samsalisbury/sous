@@ -60,7 +60,7 @@ func (ph *StatusMiddleware) HandlePanic(w http.ResponseWriter, r *http.Request, 
 	if ph.LogSink == nil {
 		ph.LogSink = &fallbackLogger{}
 	}
-	messages.ReportLogFieldsMessage("Recovered, returned 500", logging.WarningLevel, ph.LogSink)
+	messages.ReportLogFieldsMessage("Recovered, returned 500", logging.WarningLevel, ph.LogSink, recovered)
 	ph.errorBody(http.StatusInternalServerError, r, w, nil, recovered.(error), stack)
 	// XXX in a dev mode, print the panic in the response body
 	// (normal ops it might leak secure data)

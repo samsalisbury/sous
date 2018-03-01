@@ -26,94 +26,96 @@ func TestNewAllDeployQueuesResource(t *testing.T) {
 }
 
 func TestGETAllDeployQueuesHandler_Exchange(t *testing.T) {
+	t.Run("empty queue", func(t *testing.T) {
+		data, status := setupExchange(t)
+		assertSuccess(t, status)
+		dqr := assertIsDeploymentQueuesResponse(t, data)
+		assertQueueLength(t, dqr, sous.DeploymentID{}, 0)
+		assertLength(t, dqr, 0)
+	})
 
-	testCases := []struct {
-		desc       string
-		dids       []sous.DeploymentID
-		wantResult DeploymentQueuesResponse
-	}{
-		{
-			desc:       "empty queue",
-			dids:       []sous.DeploymentID{},
-			wantResult: DeploymentQueuesResponse{Deployments: map[sous.DeploymentID]int{}},
-		},
-		{
-			desc: "one DeploymentID",
-			dids: []sous.DeploymentID{newDid("one")},
-			wantResult: DeploymentQueuesResponse{Deployments: map[sous.DeploymentID]int{
-				newDid("one"): 1,
-			}},
-		},
-		{
-			desc: "two unique DeploymentIDs",
-			dids: []sous.DeploymentID{newDid("one"), newDid("two")},
-			wantResult: DeploymentQueuesResponse{Deployments: map[sous.DeploymentID]int{
-				newDid("one"): 1,
-				newDid("two"): 1,
-			}},
-		},
-		{
-			desc: "same DeploymentID twice",
-			dids: []sous.DeploymentID{newDid("one"), newDid("one")},
-			wantResult: DeploymentQueuesResponse{Deployments: map[sous.DeploymentID]int{
-				newDid("one"): 2,
-			}},
-		},
+	t.Run("one DeploymentID", func(t *testing.T) {
+		data, status := setupExchange(t, newDid("one"))
+		assertSuccess(t, status)
+		dqr := assertIsDeploymentQueuesResponse(t, data)
+		assertQueueLength(t, dqr, sous.DeploymentID{}, 0)
+		assertLength(t, dqr, 1)
+		assertQueueLength(t, dqr, newDid("one"), 1)
+	})
+
+	t.Run("two unique DeploymentIDs", func(t *testing.T) {
+		data, status := setupExchange(t, newDid("one"), newDid("two"))
+		assertSuccess(t, status)
+		dqr := assertIsDeploymentQueuesResponse(t, data)
+		assertQueueLength(t, dqr, sous.DeploymentID{}, 0)
+		assertLength(t, dqr, 2)
+		assertQueueLength(t, dqr, newDid("one"), 1)
+		assertQueueLength(t, dqr, newDid("two"), 1)
+	})
+
+	t.Run("same deployment twice", func(t *testing.T) {
+		data, status := setupExchange(t, newDid("one"), newDid("one"))
+		assertSuccess(t, status)
+		dqr := assertIsDeploymentQueuesResponse(t, data)
+		assertQueueLength(t, dqr, sous.DeploymentID{}, 0)
+		assertLength(t, dqr, 1)
+		assertQueueLength(t, dqr, newDid("one"), 2)
+	})
+
+}
+
+func setupExchange(t *testing.T, dids ...sous.DeploymentID) (interface{}, int) {
+	qs := sous.NewR11nQueueSet()
+
+	for _, did := range dids {
+		r11n := &sous.Rectification{
+			Pair: sous.DeployablePair{},
+		}
+
+		r11n.Pair.SetID(did)
+
+		if _, ok := qs.Push(r11n); !ok {
+			t.Fatal("precondition failed: failed to push r11n")
+		}
+
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.desc, func(t *testing.T) {
-			qs := sous.NewR11nQueueSet()
-
-			for _, did := range tc.dids {
-				r11n := &sous.Rectification{
-					Pair: sous.DeployablePair{},
-				}
-
-				r11n.Pair.SetID(did)
-
-				if _, ok := qs.Push(r11n); !ok {
-					t.Fatal("precondition failed: failed to push r11n")
-				}
-
-			}
-
-			handler := &GETAllDeployQueuesHandler{
-				QueueSet: qs,
-			}
-
-			data, gotStatusCode := handler.Exchange()
-
-			const wantStatusCode = 200
-			if gotStatusCode != wantStatusCode {
-				t.Errorf("got %d; want %d", gotStatusCode, wantStatusCode)
-			}
-
-			dr, ok := data.(DeploymentQueuesResponse)
-			if !ok {
-				t.Fatalf("got a %T; want a %T", data, dr)
-			}
-
-			wantLen := len(tc.wantResult.Deployments)
-			gotLen := len(dr.Deployments)
-			if gotLen != wantLen {
-				t.Fatalf("got %d queued deployments; want %d", gotLen, wantLen)
-			}
-
-			for did, wantCount := range tc.wantResult.Deployments {
-				gotCount := dr.Deployments[did]
-				if gotCount != wantCount {
-					t.Errorf("got %d queued rectifications for %q; want %d", gotCount, did, wantCount)
-				}
-			}
-
-			testCount := dr.Deployments[sous.DeploymentID{}]
-			if testCount != 0 {
-				t.Errorf("got %d for empty DeploymentID expected 0", testCount)
-			}
-		})
+	handler := &GETAllDeployQueuesHandler{
+		QueueSet: qs,
 	}
 
+	return handler.Exchange()
+}
+
+func assertSuccess(t *testing.T, status int) {
+	const wantStatusCode = 200
+	if status != wantStatusCode {
+		t.Errorf("got %d; want %d", status, wantStatusCode)
+	}
+
+}
+
+func assertIsDeploymentQueuesResponse(t *testing.T, data interface{}) DeploymentQueuesResponse {
+	dr, ok := data.(DeploymentQueuesResponse)
+	if !ok {
+		t.Fatalf("got a %T; want a %T", data, dr)
+		return DeploymentQueuesResponse{}
+	}
+	return dr
+}
+
+func assertLength(t *testing.T, dr DeploymentQueuesResponse, wantLen int) {
+	gotLen := len(dr.Queues)
+	if gotLen != wantLen {
+		t.Fatalf("got %d queued deployments; want %d", gotLen, wantLen)
+	}
+}
+
+func assertQueueLength(t *testing.T, dr DeploymentQueuesResponse, did sous.DeploymentID, wantCount int) {
+	gotCount := dr.Queues[did.String()].Length
+	if gotCount != wantCount {
+		t.Errorf("got %d queued rectifications for %q; want %d", gotCount, did.String(), wantCount)
+	}
 }
 
 func newDid(repo string) sous.DeploymentID {

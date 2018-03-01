@@ -250,12 +250,18 @@ func (mh *MetaHandler) renderData(status int, w *loggingResponseWriter, r *http.
 	if _, got := w.Header()[etagHeader]; !got {
 		digest := md5.New()
 		e := json.NewEncoder(io.MultiWriter(buf, digest))
-		e.Encode(data)
+		err := e.Encode(data)
+		if err != nil {
+			panic(err)
+		}
 		etag = base64.URLEncoding.EncodeToString(digest.Sum(nil))
 		w.Header().Add(etagHeader, etag)
 	} else {
 		e := json.NewEncoder(buf)
-		e.Encode(data)
+		err := e.Encode(data)
+		if err != nil {
+			panic(err)
+		}
 		etag = w.Header().Get(etagHeader)
 	}
 
