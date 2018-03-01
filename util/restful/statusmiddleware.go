@@ -53,11 +53,11 @@ func (ph *StatusMiddleware) HandleResponse(status int, r *http.Request, w http.R
 	messages.ReportClientHTTPRequest(ph.LogSink, "Responding", r, r.Method)
 
 	if status >= 400 {
-		messages.ReportLogFieldsMessage("Status >= 400", logging.WarningLevel, ph.LogSink, data)
+		messages.ReportLogFieldsMessage("Status >= 400", logging.WarningLevel, ph.LogSink)
 		ph.errorBody(status, r, w, data, nil, nil)
 	}
 	if status >= 200 && status < 300 {
-		messages.ReportLogFieldsMessage("Status >= 200 && Status < 300", logging.DebugLevel, ph.LogSink, data)
+		messages.ReportLogFieldsMessage("Status >= 200 && Status < 300", logging.DebugLevel, ph.LogSink)
 	}
 	// XXX in a dev mode, print the panic in the response body
 	// (normal ops it might leak secure data)
@@ -71,7 +71,7 @@ func (ph *StatusMiddleware) HandlePanic(w http.ResponseWriter, r *http.Request, 
 	if ph.LogSink == nil {
 		ph.LogSink = &fallbackLogger{}
 	}
-	messages.ReportLogFieldsMessage("Recovered, returned 500", logging.WarningLevel, ph.LogSink, recovered)
+	messages.ReportLogFieldsMessage("Recovered, returned 500", logging.WarningLevel, ph.LogSink)
 	ph.errorBody(http.StatusInternalServerError, r, w, nil, recovered.(error), stack)
 	// XXX in a dev mode, print the panic in the response body
 	// (normal ops it might leak secure data)

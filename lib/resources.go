@@ -2,7 +2,6 @@ package sous
 
 import (
 	"fmt"
-	"io"
 	"math"
 	"strconv"
 
@@ -206,10 +205,6 @@ func reportResourceMessage(msg string, r Resources, log logging.LogSink, debug .
 		isDebugMsg: debugStmt,
 	}
 	logging.Deliver(msgLog, log)
-}
-
-func (msg resourceMessage) WriteToConsole(console io.Writer) {
-	fmt.Fprintf(console, "%s\n", msg.composeMsg())
 }
 
 func (msg resourceMessage) DefaultLevel() logging.Level {

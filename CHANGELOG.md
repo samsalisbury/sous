@@ -11,6 +11,11 @@ with respect to its command line interface and HTTP interface.
 * Server: PUT /single-deployment endpoint immediately adds a rectification
   to the queue and returns a link to monitor for completion.
 
+## [0.5.67](//github.com/opentable/sous/compare/0.5.66...0.5.67)
+
+### Added
+* All: Add truncated message that was supposed to go to logstash if it is found to error out from delivery to Kafka
+
 ## [0.5.66](//github.com/opentable/sous/compare/0.5.65...0.5.66)
 
 ### Added

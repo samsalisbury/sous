@@ -52,6 +52,10 @@ func newKafkaSink(
 	go func() {
 		defer sink.exit.Done()
 		for err := range producer.Errors() {
+			val := err.Msg.Value.(sarama.ByteEncoder)
+			len := val.Length()
+			sVal := string(val[:len])
+			log.Printf("Msg is too large for Kafka: %s", sVal[0:5000])
 			log.Printf("Failed to send log entry to Kafka: %v\n", err)
 		}
 	}()
