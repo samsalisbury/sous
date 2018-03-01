@@ -57,8 +57,12 @@ func TestPostgresStateManagerWriteState_success(t *testing.T) {
 
 	s := exampleState()
 
-	suite.require.NoError(suite.manager.WriteState(s, testUser))
-	suite.Equal(int64(2), suite.pluckSQL("select count(*) from deployments"))
+	err := suite.manager.WriteState(s, testUser)
+	if !suite.NoError(err) {
+		suite.logs.DumpLogs(t)
+		t.FailNow()
+	}
+	suite.Equal(int64(4), suite.pluckSQL("select count(*) from deployments"))
 
 	assert.Len(t, suite.logs.CallsTo("LogMessage"), 13)
 	message := suite.logs.CallsTo("LogMessage")[0].PassedArgs().Get(1).(logging.LogMessage)
@@ -71,7 +75,7 @@ func TestPostgresStateManagerWriteState_success(t *testing.T) {
 
 	suite.require.NoError(suite.manager.WriteState(s, testUser))
 	// Want to be sure that the deployments history doesn't vacuously grow.
-	suite.Equal(int64(2), suite.pluckSQL("select count(*) from deployments"))
+	suite.Equal(int64(4), suite.pluckSQL("select count(*) from deployments"))
 
 	ns, err := suite.manager.ReadState()
 	suite.require.NoError(err)

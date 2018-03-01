@@ -147,7 +147,7 @@ func (suite integrationServerTests) TestOverallRouter() {
 	updater, err := suite.client.Retrieve("./gdm", nil, &gdm, suite.user.HTTPHeaders())
 	suite.NoError(err)
 
-	suite.Len(gdm.Deployments, 2)
+	suite.Len(gdm.Deployments, 4)
 	suite.NotZero(updater)
 }
 
@@ -182,7 +182,7 @@ func (suite integrationServerTests) TestUpdateStateDeployments_Update() {
 
 	updater, err := suite.client.Retrieve("./state/deployments", nil, &data, nil)
 	suite.NoError(err)
-	suite.Len(data.Deployments, 1)
+	suite.Len(data.Deployments, 2)
 	suite.NotNil(updater)
 
 	data.Deployments = append(data.Deployments, sous.DeploymentFixture("sequenced-repo"))
@@ -191,7 +191,7 @@ func (suite integrationServerTests) TestUpdateStateDeployments_Update() {
 
 	_, err = suite.client.Retrieve("./state/deployments", nil, &data, nil)
 	suite.NoError(err)
-	suite.Len(data.Deployments, 2)
+	suite.Len(data.Deployments, 3)
 }
 
 func TestLiveServerSuite(t *testing.T) {
