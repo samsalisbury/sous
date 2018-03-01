@@ -87,8 +87,9 @@ func (l *logFieldsMessage) extractID(o interface{}) {
 				}
 			}
 		} else {
-			t := reflect.TypeOf(o)
-			l.insertID(t.Name(), o)
+			if t := reflect.TypeOf(o); t != nil {
+				l.insertID(t.Name(), o)
+			}
 		}
 	}
 }
@@ -265,7 +266,7 @@ func ReportLogFieldsMessageToConsole(msg string, loglvl logging.Level, logSink l
 
 //ReportLogFieldsMessage generate a logFieldsMessage log entry
 func ReportLogFieldsMessage(msg string, loglvl logging.Level, logSink logging.LogSink, items ...interface{}) {
-	logMessage := buildLogFieldsMessage(msg, false, false, loglvl)
+	logMessage := buildLogFieldsMessage(msg, false, true, loglvl)
 	logMessage.CallerInfo.ExcludeMe()
 
 	logMessage.reportLogFieldsMessage(logSink, items...)
