@@ -39,11 +39,7 @@ func (h *GETAllDeployQueuesHandler) Exchange() (interface{}, int) {
 	for did, q := range queues {
 		m[did] = q.Len()
 	}
-	return deploymentsResponse{
+	return DeploymentQueuesResponse{
 		Deployments: m,
 	}, 200
-}
-
-type deploymentsResponse struct {
-	Deployments map[sous.DeploymentID]int
 }

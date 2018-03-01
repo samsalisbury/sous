@@ -111,7 +111,8 @@ func TestRenderDataCanaries(t *testing.T) {
 	rq := httptest.NewRequest("GET", "/somewhere", nil)
 	data := map[string]string{"a": "b"}
 
-	mh.renderData(200, rr, rq, data)
+	lrw := wrapResponseWriter(ls, "test", rq, rr)
+	mh.renderData(200, lrw, rq, data)
 
 	rz := rr.Result()
 	bodyB, err := ioutil.ReadAll(rz.Body)

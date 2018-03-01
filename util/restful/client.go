@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/hydrogen18/memlistener"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/logging/messages"
@@ -271,6 +272,12 @@ func (client *LiveHTTPClient) buildRequest(method, url string, headers map[strin
 	if rqBody != nil {
 		JSON = encodeJSON(rqBody)
 		if resource != nil {
+			defer func() {
+				if r := recover(); r != nil {
+					spew.Dump(r, resource)
+					panic(r)
+				}
+			}()
 			JSON = putbackJSON(resource.body, resource.resourceJSON, JSON)
 		}
 		client.Debugf("  body: %s", JSON.String())

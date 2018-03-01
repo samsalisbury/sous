@@ -45,22 +45,11 @@ func (ph *StatusMiddleware) errorBody(status int, rq *http.Request, w io.Writer,
 	return
 }
 
-// HandleResponse returns a 500 and logs the error.
+// HandleResponse returns empty responses.
 // It uses the LogSet provided by the graph.
 func (ph *StatusMiddleware) HandleResponse(status int, r *http.Request, w http.ResponseWriter, data interface{}) {
 	w.WriteHeader(status)
-
-	messages.ReportClientHTTPRequest(ph.LogSink, "Responding", r, r.Method)
-
-	if status >= 400 {
-		messages.ReportLogFieldsMessage("Status >= 400", logging.WarningLevel, ph.LogSink)
-		ph.errorBody(status, r, w, data, nil, nil)
-	}
-	if status >= 200 && status < 300 {
-		messages.ReportLogFieldsMessage("Status >= 200 && Status < 300", logging.DebugLevel, ph.LogSink)
-	}
-	// XXX in a dev mode, print the panic in the response body
-	// (normal ops it might leak secure data)
+	ph.errorBody(status, r, w, data, nil, nil)
 }
 
 // HandlePanic returns a 500 and logs the error.

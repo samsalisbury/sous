@@ -30,24 +30,24 @@ func TestGETAllDeployQueuesHandler_Exchange(t *testing.T) {
 	testCases := []struct {
 		desc       string
 		dids       []sous.DeploymentID
-		wantResult deploymentsResponse
+		wantResult DeploymentQueuesResponse
 	}{
 		{
 			desc:       "empty queue",
 			dids:       []sous.DeploymentID{},
-			wantResult: deploymentsResponse{Deployments: map[sous.DeploymentID]int{}},
+			wantResult: DeploymentQueuesResponse{Deployments: map[sous.DeploymentID]int{}},
 		},
 		{
 			desc: "one DeploymentID",
 			dids: []sous.DeploymentID{newDid("one")},
-			wantResult: deploymentsResponse{Deployments: map[sous.DeploymentID]int{
+			wantResult: DeploymentQueuesResponse{Deployments: map[sous.DeploymentID]int{
 				newDid("one"): 1,
 			}},
 		},
 		{
 			desc: "two unique DeploymentIDs",
 			dids: []sous.DeploymentID{newDid("one"), newDid("two")},
-			wantResult: deploymentsResponse{Deployments: map[sous.DeploymentID]int{
+			wantResult: DeploymentQueuesResponse{Deployments: map[sous.DeploymentID]int{
 				newDid("one"): 1,
 				newDid("two"): 1,
 			}},
@@ -55,7 +55,7 @@ func TestGETAllDeployQueuesHandler_Exchange(t *testing.T) {
 		{
 			desc: "same DeploymentID twice",
 			dids: []sous.DeploymentID{newDid("one"), newDid("one")},
-			wantResult: deploymentsResponse{Deployments: map[sous.DeploymentID]int{
+			wantResult: DeploymentQueuesResponse{Deployments: map[sous.DeploymentID]int{
 				newDid("one"): 2,
 			}},
 		},
@@ -89,7 +89,7 @@ func TestGETAllDeployQueuesHandler_Exchange(t *testing.T) {
 				t.Errorf("got %d; want %d", gotStatusCode, wantStatusCode)
 			}
 
-			dr, ok := data.(deploymentsResponse)
+			dr, ok := data.(DeploymentQueuesResponse)
 			if !ok {
 				t.Fatalf("got a %T; want a %T", data, dr)
 			}

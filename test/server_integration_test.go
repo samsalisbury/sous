@@ -155,6 +155,7 @@ func (suite integrationServerTests) TestUpdateServers() {
 	data := server.ServerListData{}
 	updater, err := suite.client.Retrieve("./servers", nil, &data, nil)
 
+	suite.log.DumpLogs(suite.T())
 	suite.NoError(err)
 	suite.Len(data.Servers, 0)
 
@@ -192,6 +193,15 @@ func (suite integrationServerTests) TestUpdateStateDeployments_Update() {
 	_, err = suite.client.Retrieve("./state/deployments", nil, &data, nil)
 	suite.NoError(err)
 	suite.Len(data.Deployments, 3)
+}
+
+func (suite integrationServerTests) TestGetAllDeployQueues() {
+	data := server.DeploymentQueuesResponse{}
+	updater, err := suite.client.Retrieve("./all-deploy-queues", nil, &data, nil)
+	suite.log.DumpLogs(suite.T())
+	suite.NoError(err)
+	suite.Len(data.Deployments, 2)
+	suite.NotNil(updater)
 }
 
 func TestLiveServerSuite(t *testing.T) {
