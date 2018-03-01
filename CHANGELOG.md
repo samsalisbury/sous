@@ -8,6 +8,9 @@ with respect to its command line interface and HTTP interface.
 
 ## [Unreleased](//github.com/opentable/sous/compare/0.5.70...HEAD)
 
+### Added
+* All: Updated cli, status_poller, client to start using structured logging
+
 ### Fixed
 * Server: the PostgreSQL storage module successfully deduplicates proposed DB
   records generated from user input now.
