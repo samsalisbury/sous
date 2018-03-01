@@ -185,13 +185,13 @@ func (sc *deployer) singPipeline(
 	errs chan error,
 	clusters sous.Clusters,
 ) {
-	messages.ReportLogFieldsMessage("Starting Cluster", logging.DebugLevel, sc.log, url)
-	defer func() { messages.ReportLogFieldsMessage("Completed Cluster", logging.DebugLevel, sc.log, url) }()
+	messages.ReportLogFieldsMessage("Starting Cluster", logging.ExtraDebug1Level, sc.log, url)
+	defer func() { messages.ReportLogFieldsMessage("Completed Cluster", logging.ExtraDebug1Level, sc.log, url) }()
 	defer wg.Done()
 	defer catchAndSend(fmt.Sprintf("get requests: %s", url), errs, sc.log)
 	srp, err := sc.getSingularityRequestParents(client)
 	if err != nil {
-		messages.ReportLogFieldsMessage("Error in singPipeline", logging.DebugLevel, sc.log, err)
+		messages.ReportLogFieldsMessage("Error in singPipeline", logging.ExtraDebug1Level, sc.log, err)
 		errs <- errors.Wrap(err, "getting request list")
 		return
 	}
@@ -200,7 +200,7 @@ func (sc *deployer) singPipeline(
 
 	for _, r := range rs {
 		messages.ReportLogFieldsMessage("Request",
-			logging.DebugLevel,
+			logging.ExtraDebug1Level,
 			sc.log, r.SourceURL,
 			reqID(r.ReqParent),
 			r.ReqParent.Request.Instances)
@@ -237,13 +237,13 @@ func (sc *deployer) depPipeline(
 	poolLimit := make(chan struct{}, poolCount)
 	for req := range reqCh {
 		depAssWait.Add(1)
-		messages.ReportLogFieldsMessage("started assembling", logging.DebugLevel, sc.log, reqID(req.ReqParent))
+		messages.ReportLogFieldsMessage("started assembling", logging.ExtraDebug1Level, sc.log, reqID(req.ReqParent))
 		go func(req SingReq) {
 			defer depAssWait.Done()
 			defer catchAndSend(fmt.Sprintf("dep from req %s", req.SourceURL), errCh, sc.log)
 			poolLimit <- struct{}{}
 			defer func() {
-				messages.ReportLogFieldsMessage("finished assembling", logging.DebugLevel, sc.log, reqID(req.ReqParent))
+				messages.ReportLogFieldsMessage("finished assembling", logging.ExtraDebug1Level, sc.log, reqID(req.ReqParent))
 				<-poolLimit
 			}()
 
@@ -259,8 +259,8 @@ func (sc *deployer) depPipeline(
 }
 
 func (sc *deployer) assembleDeployState(reg sous.Registry, clusters sous.Clusters, req SingReq) (*sous.DeployState, error) {
-	messages.ReportLogFieldsMessage("Assembling deploy state", logging.DebugLevel, sc.log, req.SourceURL, reqID(req.ReqParent))
+	messages.ReportLogFieldsMessage("Assembling deploy state", logging.ExtraDebug1Level, sc.log, req.SourceURL, reqID(req.ReqParent))
 	tgt, err := BuildDeployment(reg, clusters, req, sc.log)
-	messages.ReportLogFieldsMessage("Collected deployment", logging.DebugLevel, sc.log, tgt)
+	messages.ReportLogFieldsMessage("Collected deployment", logging.ExtraDebug1Level, sc.log, tgt)
 	return &tgt, errors.Wrap(err, "Building deployment")
 }
