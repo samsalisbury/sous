@@ -117,7 +117,7 @@ func (sp *StatusPoller) waitForever() (ResolveState, error) {
 	deps = deps.Filter(sp.ResolveFilter.FilterDeployment)
 	if deps.Len() == 0 {
 		// No deployments match the filter, bail out now.
-		sp.logs.Debugf("No deployments from /gdm matched %s", sp.ResolveFilter)
+		messages.ReportLogFieldsMessage("No deployments from /gdm matched", logging.DebugLevel, sp.logs, sp.ResolveFilter)
 		return ResolveNotIntended, nil
 	}
 
@@ -142,7 +142,7 @@ func (sp *StatusPoller) subPollers(clusters *serverListData, deps Deployments) (
 		if _, intended := deps.Single(func(d *Deployment) bool {
 			return d.ClusterName == s.ClusterName
 		}); !intended {
-			logging.Log.Debugf("No intention in GDM for %s to deploy %s", s.ClusterName, sp.ResolveFilter)
+			messages.ReportLogFieldsMessage("No intention in GDM for deploy", logging.DebugLevel, sp.logs, s.ClusterName, sp.ResolveFilter)
 			continue
 		}
 		messages.ReportLogFieldsMessage("Starting poller against", logging.DebugLevel, sp.logs, s)
