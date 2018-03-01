@@ -162,7 +162,7 @@ func reqID(rp *dtos.SingularityRequestParent) (id string) {
 func (db *deploymentBuilder) basics() error {
 	db.Target.Cluster = &sous.Cluster{BaseURL: db.req.SourceURL}
 	db.Target.ExecutorData = &singularityTaskData{requestID: reqID(db.req.ReqParent)}
-	db.log.Vomitf("Recording %v as requestID for instance.", db.Target.ExecutorData)
+	messages.ReportLogFieldsMessage("Recording requestID for instance", logging.DebugLevel, db.log, db.Target.ExecutorData)
 	db.request = db.req.ReqParent.Request
 	db.reqID = reqID(db.req.ReqParent)
 	return nil
