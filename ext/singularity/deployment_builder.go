@@ -81,7 +81,7 @@ func isMalformed(log logging.LogSink, err error) bool {
 	_, isUST := err.(*json.UnsupportedTypeError)
 	messages.ReportLogFieldsMessage("is json unsupported type error?", logging.DebugLevel, log, err, isUST)
 	_, isUSV := err.(*json.UnsupportedValueError)
-	messages.ReportLogFieldsMessage("is json unsupported value error?", logging.DebugLevel, log, err, isUSV)
+	Messages.ReportLogFieldsMessage("is json unsupported value error?", logging.DebugLevel, log, err, isUSV)
 	return isMal || isUMT || isUMF || isUST || isUSV
 }
 
