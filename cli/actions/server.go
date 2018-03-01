@@ -121,6 +121,6 @@ func (msg serverMessage) composeMsg() string {
 
 func (msg serverMessage) EachField(f logging.FieldReportFn) {
 	f("@loglov3-otl", "sous-generic-v1")
-	f("listen-address", msg.listenAddress)
+	f("sous-listen-address", msg.listenAddress)
 	msg.CallerInfo.EachField(f)
 }

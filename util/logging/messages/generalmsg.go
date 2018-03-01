@@ -324,13 +324,13 @@ func (l logFieldsMessage) Message() string {
 func (l logFieldsMessage) EachField(fn logging.FieldReportFn) {
 
 	fn("@loglov3-otl", "sous-generic-v1")
-	fn("fields", strings.Join(removeDuplicates(l.Fields), ","))
-	fn("types", strings.Join(removeDuplicates(l.Types), ","))
+	fn("sous-fields", strings.Join(removeDuplicates(l.Fields), ","))
+	fn("sous-types", strings.Join(removeDuplicates(l.Types), ","))
 
 	if l.withIDs {
 		ids, values := l.returnIDs()
-		fn("ids", ids)
-		fn("id-values", values)
+		fn("sous-ids", ids)
+		fn("sous-id-values", values)
 	}
 
 	if l.jsonObj != nil {
