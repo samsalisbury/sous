@@ -4,7 +4,7 @@ services:
 - postgresql
 language: go
 go:
-- 1.9.2
+- 1.10
 before_install:
 - bin/ci-setup
 
