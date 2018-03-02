@@ -65,37 +65,33 @@ func TestGETAllDeployQueuesHandler_Exchange(t *testing.T) {
 }
 
 func setupExchange(t *testing.T, dids ...sous.DeploymentID) (interface{}, int) {
+	t.Helper()
 	qs := sous.NewR11nQueueSet()
-
 	for _, did := range dids {
 		r11n := &sous.Rectification{
 			Pair: sous.DeployablePair{},
 		}
-
 		r11n.Pair.SetID(did)
-
 		if _, ok := qs.Push(r11n); !ok {
 			t.Fatal("precondition failed: failed to push r11n")
 		}
-
 	}
-
 	handler := &GETAllDeployQueuesHandler{
 		QueueSet: qs,
 	}
-
 	return handler.Exchange()
 }
 
 func assertSuccess(t *testing.T, status int) {
+	t.Helper()
 	const wantStatusCode = 200
 	if status != wantStatusCode {
 		t.Errorf("got %d; want %d", status, wantStatusCode)
 	}
-
 }
 
 func assertIsDeploymentQueuesResponse(t *testing.T, data interface{}) DeploymentQueuesResponse {
+	t.Helper()
 	dr, ok := data.(DeploymentQueuesResponse)
 	if !ok {
 		t.Fatalf("got a %T; want a %T", data, dr)
@@ -105,6 +101,7 @@ func assertIsDeploymentQueuesResponse(t *testing.T, data interface{}) Deployment
 }
 
 func assertNumQueues(t *testing.T, dr DeploymentQueuesResponse, wantLen int) {
+	t.Helper()
 	gotLen := len(dr.Queues)
 	if gotLen != wantLen {
 		t.Fatalf("got %d queued deployments; want %d", gotLen, wantLen)
@@ -112,9 +109,11 @@ func assertNumQueues(t *testing.T, dr DeploymentQueuesResponse, wantLen int) {
 }
 
 func assertQueueLength(t *testing.T, dr DeploymentQueuesResponse, did sous.DeploymentID, wantCount int) {
+	t.Helper()
 	gotCount := dr.Queues[did.String()].Length
 	if gotCount != wantCount {
-		t.Errorf("got %d queued rectifications for %q; want %d", gotCount, did.String(), wantCount)
+		t.Errorf("got %d queued rectifications for %q; want %d",
+			gotCount, did, wantCount)
 	}
 }
 
@@ -131,8 +130,8 @@ func newDid(repo string) sous.DeploymentID {
 // TestGETDeploymentsHandler_Exchange_async should be run with the -race flag.
 func TestGETAllDeployQueuesHandler_Exchange_async(t *testing.T) {
 
-	// Start writing to a new queueset that's also being processed in a hot loop.
-	qh := func(*sous.QueuedR11n) sous.DiffResolution { return sous.DiffResolution{} }
+	// Start writing to a new queueset that's also being processed rapidly.
+	qh := func(*sous.QueuedR11n) (dr sous.DiffResolution) { return }
 	queues := sous.NewR11nQueueSet(sous.R11nQueueStartWithHandler(qh))
 	go func() {
 		for {
