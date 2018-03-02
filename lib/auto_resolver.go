@@ -130,8 +130,9 @@ func loopTilDone(f func(), done TriggerChannel) {
 
 func (ar *AutoResolver) write(f func()) {
 	name, uuid := logging.RetrieveMetaData(f)
-	messages.ReportLogFieldsMessage("Locking autoresovle for write", logging.ExtraDebug1Level, ar.LogSink, name, uuid)
+	messages.ReportLogFieldsMessage("Waiting to Lock autoresovle for write", logging.ExtraDebug1Level, ar.LogSink, name, uuid)
 	ar.Lock()
+	messages.ReportLogFieldsMessage("Locked autoresovle for write", logging.ExtraDebug1Level, ar.LogSink, name, uuid)
 	defer func() {
 		ar.Unlock()
 		messages.ReportLogFieldsMessage("Unlocked autoresovler", logging.ExtraDebug1Level, ar.LogSink, name, uuid)
