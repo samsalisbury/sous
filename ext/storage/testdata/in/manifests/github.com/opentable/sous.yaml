@@ -30,5 +30,8 @@ Deployments:
     Startup:
       CheckReadyProtocol: HTTPS
       CheckReadyURIPath: /health
+      CheckReadyFailureStatuses:
+      - 500
+      - 503
     Schedule: ""
     Version: 1.0.0-rc.1+deadbeef

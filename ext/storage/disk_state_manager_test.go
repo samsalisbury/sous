@@ -159,8 +159,9 @@ func exampleState() *sous.State {
 							},
 							NumInstances: 3,
 							Startup: sous.Startup{
-								CheckReadyProtocol: "HTTPS",
-								CheckReadyURIPath:  "/health",
+								CheckReadyProtocol:        "HTTPS",
+								CheckReadyURIPath:         "/health",
+								CheckReadyFailureStatuses: []int{500, 503},
 							},
 							Volumes: sous.Volumes{},
 						},
