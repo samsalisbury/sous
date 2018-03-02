@@ -139,6 +139,7 @@ type (
 	logwrapper func(string, ...interface{})
 )
 
+//RetrieveMetaData used to help retrieve more info for logging about a func
 func RetrieveMetaData(f func()) (name string, uid string) {
 	if p := reflect.ValueOf(f).Pointer(); p != 0 {
 		if r := runtime.FuncForPC(p); r != nil {
