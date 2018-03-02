@@ -27,16 +27,16 @@ func TestNewAllDeployQueuesResource(t *testing.T) {
 
 func TestGETAllDeployQueuesHandler_Exchange(t *testing.T) {
 	t.Run("empty queue", func(t *testing.T) {
-		data, status := setupExchange(t)
-		assertSuccess(t, status)
+		data, status := setupAllQueueSetsExchange(t)
+		assertStatusCode200(t, status)
 		dqr := assertIsDeploymentQueuesResponse(t, data)
 		assertQueueLength(t, dqr, sous.DeploymentID{}, 0)
 		assertNumQueues(t, dqr, 0)
 	})
 
 	t.Run("one DeploymentID", func(t *testing.T) {
-		data, status := setupExchange(t, newDid("one"))
-		assertSuccess(t, status)
+		data, status := setupAllQueueSetsExchange(t, newDid("one"))
+		assertStatusCode200(t, status)
 		dqr := assertIsDeploymentQueuesResponse(t, data)
 		assertQueueLength(t, dqr, sous.DeploymentID{}, 0)
 		assertNumQueues(t, dqr, 1)
@@ -44,8 +44,8 @@ func TestGETAllDeployQueuesHandler_Exchange(t *testing.T) {
 	})
 
 	t.Run("two unique DeploymentIDs", func(t *testing.T) {
-		data, status := setupExchange(t, newDid("one"), newDid("two"))
-		assertSuccess(t, status)
+		data, status := setupAllQueueSetsExchange(t, newDid("one"), newDid("two"))
+		assertStatusCode200(t, status)
 		dqr := assertIsDeploymentQueuesResponse(t, data)
 		assertQueueLength(t, dqr, sous.DeploymentID{}, 0)
 		assertNumQueues(t, dqr, 2)
@@ -54,8 +54,8 @@ func TestGETAllDeployQueuesHandler_Exchange(t *testing.T) {
 	})
 
 	t.Run("same deployment twice", func(t *testing.T) {
-		data, status := setupExchange(t, newDid("one"), newDid("one"))
-		assertSuccess(t, status)
+		data, status := setupAllQueueSetsExchange(t, newDid("one"), newDid("one"))
+		assertStatusCode200(t, status)
 		dqr := assertIsDeploymentQueuesResponse(t, data)
 		assertQueueLength(t, dqr, sous.DeploymentID{}, 0)
 		assertNumQueues(t, dqr, 1)
@@ -64,7 +64,10 @@ func TestGETAllDeployQueuesHandler_Exchange(t *testing.T) {
 
 }
 
-func setupExchange(t *testing.T, dids ...sous.DeploymentID) (interface{}, int) {
+// setupAllQueueSetsExchange generates a R11nQueueSet having a new R11n pushed
+// to it for each id provided in dids. It injects this into a new
+// GETAllDeployQueuesHandler and calls Exchange, returning the result.
+func setupAllQueueSetsExchange(t *testing.T, dids ...sous.DeploymentID) (interface{}, int) {
 	t.Helper()
 	qs := sous.NewR11nQueueSet()
 	for _, did := range dids {
@@ -82,11 +85,11 @@ func setupExchange(t *testing.T, dids ...sous.DeploymentID) (interface{}, int) {
 	return handler.Exchange()
 }
 
-func assertSuccess(t *testing.T, status int) {
+func assertStatusCode200(t *testing.T, gotStatus int) {
 	t.Helper()
 	const wantStatusCode = 200
-	if status != wantStatusCode {
-		t.Errorf("got %d; want %d", status, wantStatusCode)
+	if gotStatus != wantStatusCode {
+		t.Errorf("got %d; want %d", gotStatus, wantStatusCode)
 	}
 }
 
