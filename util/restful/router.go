@@ -94,30 +94,31 @@ func (lrw *loggingResponseWriter) WriteHeader(status int) {
 
 // Write logs the response. If ContentLength is set, we use that, otherwise we report a 0 length.
 // Unfortunately, ResponseWriter's contract makes it impossible to get the true content length.
+// We assume that Write will *always* be called - since this RW is only used within this package,
+// that seems a safe assumption.
 func (lrw loggingResponseWriter) Write(b []byte) (int, error) {
-	n, err := lrw.ResponseWriter.Write(b)
-
-	// ParseInt returns 0 and an syntax error if the provided string doesn't parse well.
-	contentLength, _ := strconv.ParseInt(lrw.ResponseWriter.Header().Get("Content-Length"), 10, 64)
-	messages.ReportServerHTTPResponding(lrw.log, "responding", lrw.req, lrw.statusCode, contentLength, lrw.resourceName, time.Now().Sub(lrw.start))
-
-	return n, err
+	return lrw.ResponseWriter.Write(b)
 }
 
-func (mh *MetaHandler) wrapResponseWriter(resName string, rq *http.Request, rw http.ResponseWriter) http.ResponseWriter {
+func (lrw loggingResponseWriter) sendLog() {
+	contentLength, _ := strconv.ParseInt(lrw.ResponseWriter.Header().Get("Content-Length"), 10, 64)
+	messages.ReportServerHTTPResponding(lrw.log, "responding", lrw.req, lrw.statusCode, contentLength, lrw.resourceName, time.Now().Sub(lrw.start))
+}
+
+func wrapResponseWriter(logsink logging.LogSink, resName string, rq *http.Request, rw http.ResponseWriter) *loggingResponseWriter {
 	return &loggingResponseWriter{
 		ResponseWriter: rw,
 		req:            rq,
-		log:            mh.LogSink,
+		log:            logsink,
 		start:          time.Now(),
 		statusCode:     http.StatusOK,
 		resourceName:   resName,
 	}
 }
 
-func (mh *MetaHandler) genericHandling(resName string, factory ExchangeFactory, rw http.ResponseWriter, r *http.Request, p httprouter.Params) (http.ResponseWriter, interface{}, int) {
+func (mh *MetaHandler) genericHandling(resName string, factory ExchangeFactory, rw http.ResponseWriter, r *http.Request, p httprouter.Params) (*loggingResponseWriter, interface{}, int) {
 	messages.ReportServerHTTPRequest(mh.LogSink, "received", r, resName)
-	w := mh.wrapResponseWriter(resName, r, rw)
+	w := wrapResponseWriter(mh.LogSink, resName, r, rw)
 	h := mh.injectedHandler(factory, w, r, p)
 	data, status := h.Exchange()
 	if ha, is := data.(HeaderAdder); is {
@@ -129,45 +130,45 @@ func (mh *MetaHandler) genericHandling(resName string, factory ExchangeFactory, 
 // GetHandling handles Get requests.
 func (mh *MetaHandler) GetHandling(resName string, factory ExchangeFactory) httprouter.Handle {
 	return func(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		rw, data, status := mh.genericHandling(resName, factory, rw, r, p)
-		rw.Header().Add("Access-Control-Allow-Origin", "*") //XXX configurable by app
-		mh.renderData(status, rw, r, data)
+		lrw, data, status := mh.genericHandling(resName, factory, rw, r, p)
+		lrw.Header().Add("Access-Control-Allow-Origin", "*") //XXX configurable by app
+		mh.renderData(status, lrw, r, data)
 	}
 }
 
 // DeleteHandling handles Delete requests.
 func (mh *MetaHandler) DeleteHandling(resName string, factory ExchangeFactory) httprouter.Handle {
 	return func(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		rw, _, status := mh.genericHandling(resName, factory, rw, r, p)
-		mh.renderData(status, rw, r, nil)
+		lrw, _, status := mh.genericHandling(resName, factory, rw, r, p)
+		mh.renderData(status, lrw, r, nil)
 	}
 }
 
 // HeadHandling handles Head requests.
 func (mh *MetaHandler) HeadHandling(resName string, factory ExchangeFactory) httprouter.Handle {
 	return func(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		rw, _, status := mh.genericHandling(resName, factory, rw, r, p)
-		mh.writeHeaders(status, rw, r, nil)
+		lrw, _, status := mh.genericHandling(resName, factory, rw, r, p)
+		mh.writeHeaders(status, lrw, r, nil)
 	}
 }
 
 // OptionsHandling handles Options requests.
 func (mh *MetaHandler) OptionsHandling(resName string, factory ExchangeFactory) httprouter.Handle {
 	return func(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		rw, data, status := mh.genericHandling(resName, factory, rw, r, p)
-		rw.Header().Add("Access-Control-Allow-Origin", r.Header.Get("Origin")) //XXX Yup: whoever was asking
-		rw.Header().Add("Access-Control-Max-Age", "86400")
+		lrw, data, status := mh.genericHandling(resName, factory, rw, r, p)
+		lrw.Header().Add("Access-Control-Allow-Origin", r.Header.Get("Origin")) //XXX Yup: whoever was asking
+		lrw.Header().Add("Access-Control-Max-Age", "86400")
 		if methods, ok := data.([]string); ok {
-			rw.Header().Add("Access-Control-Allow-Methods", strings.Join(methods, ", "))
+			lrw.Header().Add("Access-Control-Allow-Methods", strings.Join(methods, ", "))
 		}
-		mh.writeHeaders(status, rw, r, nil)
+		mh.writeHeaders(status, lrw, r, nil)
 	}
 }
 
 // PutHandling handles PUT requests.
 func (mh *MetaHandler) PutHandling(resName string, factory ExchangeFactory) httprouter.Handle {
 	return func(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		w := mh.wrapResponseWriter(resName, r, rw)
+		w := wrapResponseWriter(mh.LogSink, resName, r, rw)
 		if r.Header.Get("If-Match") == "" && r.Header.Get("If-None-Match") == "" {
 			mh.writeHeaders(http.StatusPreconditionRequired, w, r, "PUT requires If-Match or If-None-Match")
 			return
@@ -227,15 +228,16 @@ func (mh *MetaHandler) injectedHandler(factory ExchangeFactory, w http.ResponseW
 	return mh.buildLogger(h, r, p)
 }
 
-func (mh *MetaHandler) writeHeaders(status int, w http.ResponseWriter, r *http.Request, data interface{}) {
+func (mh *MetaHandler) writeHeaders(status int, w *loggingResponseWriter, r *http.Request, data interface{}) {
 	mh.statusHandler.HandleResponse(status, r, w, data)
+	w.sendLog()
 }
 
 var etagHeader = http.CanonicalHeaderKey("Etag")
 var contentTypeHeader = http.CanonicalHeaderKey("Content-Type")
 var contentLengthHeader = http.CanonicalHeaderKey("Content-Length")
 
-func (mh *MetaHandler) renderData(status int, w http.ResponseWriter, r *http.Request, data interface{}) {
+func (mh *MetaHandler) renderData(status int, w *loggingResponseWriter, r *http.Request, data interface{}) {
 	if data == nil || status >= 300 {
 		mh.writeHeaders(status, w, r, data)
 		return
@@ -248,12 +250,18 @@ func (mh *MetaHandler) renderData(status int, w http.ResponseWriter, r *http.Req
 	if _, got := w.Header()[etagHeader]; !got {
 		digest := md5.New()
 		e := json.NewEncoder(io.MultiWriter(buf, digest))
-		e.Encode(data)
+		err := e.Encode(data)
+		if err != nil {
+			panic(err)
+		}
 		etag = base64.URLEncoding.EncodeToString(digest.Sum(nil))
 		w.Header().Add(etagHeader, etag)
 	} else {
 		e := json.NewEncoder(buf)
-		e.Encode(data)
+		err := e.Encode(data)
+		if err != nil {
+			panic(err)
+		}
 		etag = w.Header().Get(etagHeader)
 	}
 
@@ -265,12 +273,13 @@ func (mh *MetaHandler) renderData(status int, w http.ResponseWriter, r *http.Req
 		w.Header().Add(contentLengthHeader, fmt.Sprintf("%d", calcContentLength(buf, etag)))
 	}
 
-	mh.writeHeaders(status, w, r, data)
+	w.WriteHeader(status)
 	if buf.Len() > 0 {
 		io.Copy(w, InjectCanaryAttr(buf, etag))
 	} else {
 		io.Copy(w, buf)
 	}
+	w.sendLog()
 }
 
 func emptyBody() io.ReadCloser {
