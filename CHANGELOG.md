@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
+## [Unreleased](//github.com/opentable/sous/compare/0.5.71...master)
+
+### Changed
+* Log messages with `"@loglov3-otl": "sous-generic-v1"` field names changed:
+  `fields` -> `sous-fields`, `types` -> `sous-types`, `ids` -> `sous-ids`,
+  `id-values` -> `sous-id-values`.
+
 ## [0.5.71](//github.com/opentable/sous/compare/0.5.70...0.5.71)
 
 ### Added
