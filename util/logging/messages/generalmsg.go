@@ -87,8 +87,9 @@ func (l *logFieldsMessage) extractID(o interface{}) {
 				}
 			}
 		} else {
-			t := reflect.TypeOf(o)
-			l.insertID(t.Name(), o)
+			if t := reflect.TypeOf(o); t != nil {
+				l.insertID(t.Name(), o)
+			}
 		}
 	}
 }
@@ -265,7 +266,7 @@ func ReportLogFieldsMessageToConsole(msg string, loglvl logging.Level, logSink l
 
 //ReportLogFieldsMessage generate a logFieldsMessage log entry
 func ReportLogFieldsMessage(msg string, loglvl logging.Level, logSink logging.LogSink, items ...interface{}) {
-	logMessage := buildLogFieldsMessage(msg, false, false, loglvl)
+	logMessage := buildLogFieldsMessage(msg, false, true, loglvl)
 	logMessage.CallerInfo.ExcludeMe()
 
 	logMessage.reportLogFieldsMessage(logSink, items...)
@@ -324,13 +325,13 @@ func (l logFieldsMessage) Message() string {
 func (l logFieldsMessage) EachField(fn logging.FieldReportFn) {
 
 	fn("@loglov3-otl", "sous-generic-v1")
-	fn("fields", strings.Join(removeDuplicates(l.Fields), ","))
-	fn("types", strings.Join(removeDuplicates(l.Types), ","))
+	fn("sous-fields", strings.Join(removeDuplicates(l.Fields), ","))
+	fn("sous-types", strings.Join(removeDuplicates(l.Types), ","))
 
 	if l.withIDs {
 		ids, values := l.returnIDs()
-		fn("ids", ids)
-		fn("id-values", values)
+		fn("sous-ids", ids)
+		fn("sous-id-values", values)
 	}
 
 	if l.jsonObj != nil {

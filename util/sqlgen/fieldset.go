@@ -53,7 +53,7 @@ func (f *fieldset) Row(fn func(RowDef)) {
 	def := rowdef{row: &row, fieldset: f}
 	fn(def)
 	for _, r := range f.rows {
-		if r.equal(row) {
+		if r.dupes(row) {
 			return //kick back dupes
 		}
 	}

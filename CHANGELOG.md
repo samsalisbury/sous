@@ -6,11 +6,24 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
-## [Unreleased](//github.com/opentable/sous/compare/0.5.65...master)
+## [Unreleased](//github.com/opentable/sous/compare/0.5.71...master)
 
+### Added
 * Server: PUT /single-deployment endpoint immediately adds a rectification
   to the queue and returns a link to monitor for completion.
 
+## [0.5.71](//github.com/opentable/sous/compare/0.5.70...0.5.71)
+
+### Added
+* All: Updated cli, status_poller, client to start using structured logging
+
+### Fixed
+* Server: the PostgreSQL storage module successfully deduplicates proposed DB
+  records generated from user input now.
+
+### Added
+* Server: convert remainder of singularity package to generalmsg style logs
+	
 ## [0.5.67](//github.com/opentable/sous/compare/0.5.66...0.5.67)
 
 ### Added
@@ -20,6 +33,9 @@ with respect to its command line interface and HTTP interface.
 
 ### Added
 * Server: Include connection string in db connection error log.
+* Client: Add structured logging to status poller
+* All: Create a new structured log that auto extracts IDs and stores in seperate fields for
+  easier searching in logstash
 
 ### Changed
 * All: Top-level global logger labeled "GLOBAL".

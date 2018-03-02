@@ -14,6 +14,7 @@ import (
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/util/cmdr"
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 	"github.com/opentable/sous/util/yaml"
 	"github.com/pkg/errors"
 	"github.com/samsalisbury/psyringe/experiment"
@@ -26,7 +27,9 @@ var (
 		return EnsureErrorResult(fmt.Errorf(format, a...))
 	}
 	EnsureErrorResult = func(err error) cmdr.ErrorResult {
-		logging.Log.Debugf("%#v", err)
+		var ls logging.LogSink
+		ls = logging.Log
+		messages.ReportLogFieldsMessageToConsole("Error:", logging.DebugLevel, ls, err)
 		return cmdr.EnsureErrorResult(err)
 	}
 )
