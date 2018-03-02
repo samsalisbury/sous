@@ -8,6 +8,9 @@ with respect to its command line interface and HTTP interface.
 
 ## [Unreleased](//github.com/opentable/sous/compare/0.5.71...master)
 
+### Fixed
+* PostgreSQL storage correctly retrieves arrays of healthcheck failure statuses
+
 ### Changed
 * Log messages with `"@loglov3-otl": "sous-generic-v1"` field names changed:
   `fields` -> `sous-fields`, `types` -> `sous-types`, `ids` -> `sous-ids`,
@@ -25,7 +28,7 @@ with respect to its command line interface and HTTP interface.
 
 ### Added
 * Server: convert remainder of singularity package to generalmsg style logs
-	
+
 ## [0.5.67](//github.com/opentable/sous/compare/0.5.66...0.5.67)
 
 ### Added
