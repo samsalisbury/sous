@@ -31,7 +31,7 @@ func TestGETAllDeployQueuesHandler_Exchange(t *testing.T) {
 		assertSuccess(t, status)
 		dqr := assertIsDeploymentQueuesResponse(t, data)
 		assertQueueLength(t, dqr, sous.DeploymentID{}, 0)
-		assertLength(t, dqr, 0)
+		assertNumQueues(t, dqr, 0)
 	})
 
 	t.Run("one DeploymentID", func(t *testing.T) {
@@ -39,7 +39,7 @@ func TestGETAllDeployQueuesHandler_Exchange(t *testing.T) {
 		assertSuccess(t, status)
 		dqr := assertIsDeploymentQueuesResponse(t, data)
 		assertQueueLength(t, dqr, sous.DeploymentID{}, 0)
-		assertLength(t, dqr, 1)
+		assertNumQueues(t, dqr, 1)
 		assertQueueLength(t, dqr, newDid("one"), 1)
 	})
 
@@ -48,7 +48,7 @@ func TestGETAllDeployQueuesHandler_Exchange(t *testing.T) {
 		assertSuccess(t, status)
 		dqr := assertIsDeploymentQueuesResponse(t, data)
 		assertQueueLength(t, dqr, sous.DeploymentID{}, 0)
-		assertLength(t, dqr, 2)
+		assertNumQueues(t, dqr, 2)
 		assertQueueLength(t, dqr, newDid("one"), 1)
 		assertQueueLength(t, dqr, newDid("two"), 1)
 	})
@@ -58,7 +58,7 @@ func TestGETAllDeployQueuesHandler_Exchange(t *testing.T) {
 		assertSuccess(t, status)
 		dqr := assertIsDeploymentQueuesResponse(t, data)
 		assertQueueLength(t, dqr, sous.DeploymentID{}, 0)
-		assertLength(t, dqr, 1)
+		assertNumQueues(t, dqr, 1)
 		assertQueueLength(t, dqr, newDid("one"), 2)
 	})
 
@@ -104,7 +104,7 @@ func assertIsDeploymentQueuesResponse(t *testing.T, data interface{}) Deployment
 	return dr
 }
 
-func assertLength(t *testing.T, dr DeploymentQueuesResponse, wantLen int) {
+func assertNumQueues(t *testing.T, dr DeploymentQueuesResponse, wantLen int) {
 	gotLen := len(dr.Queues)
 	if gotLen != wantLen {
 		t.Fatalf("got %d queued deployments; want %d", gotLen, wantLen)
