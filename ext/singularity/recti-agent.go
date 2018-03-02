@@ -9,6 +9,8 @@ import (
 	"github.com/opentable/go-singularity"
 	"github.com/opentable/go-singularity/dtos"
 	"github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 	"github.com/opentable/swaggering"
 	"github.com/satori/go.uuid"
 )
@@ -73,14 +75,13 @@ func (ra *RectiAgent) Deploy(d sous.Deployable, reqID string) error {
 	if err != nil {
 		return err
 	}
-
-	Log.Debug.Printf("Deploying instance %#v to request %s", d, reqID)
+	messages.ReportLogFieldsMessage("Deploying instance", logging.DebugLevel, Log, d, reqID)
 	depReq, err := buildDeployRequest(d, reqID, labels)
 	if err != nil {
 		return err
 	}
 
-	Log.Debug.Printf("Deploy req: %+ v", depReq)
+	messages.ReportLogFieldsMessage("Deploy req", logging.DebugLevel, Log, depReq)
 	_, err = ra.singularityClient(clusterURI).Deploy(depReq)
 	return err
 }
@@ -152,10 +153,7 @@ func buildDeployRequest(d sous.Deployable, reqID string, metadata map[string]str
 	if err != nil {
 		return nil, err
 	}
-
-	Log.Debug.Printf("Deploy: %+ v", dep)
-	Log.Debug.Printf("  Container: %+ v", ci)
-	Log.Debug.Printf("  Docker: %+ v", dockerInfo)
+	messages.ReportLogFieldsMessage("Deploy", logging.DebugLevel, Log, dep, ci, dockerInfo)
 
 	depReq, err = swaggering.LoadMap(&dtos.SingularityDeployRequest{}, dtoMap{"Deploy": dep})
 	if err != nil {
@@ -201,7 +199,7 @@ func singRequestFromDeployment(dep *sous.Deployment, reqID string) (string, *dto
 	instanceCount := dep.DeployConfig.NumInstances
 	kind := dep.Kind
 	owners := dep.Owners
-	Log.Debug.Printf("Creating application %s %s %d", cluster, reqID, instanceCount)
+	messages.ReportLogFieldsMessage("Creating application", logging.DebugLevel, Log, cluster, reqID, instanceCount)
 	reqType, err := determineRequestType(kind)
 	if err != nil {
 		return "", nil, err
@@ -237,7 +235,7 @@ func (ra *RectiAgent) PostRequest(d sous.Deployable, reqID string) error {
 		return err
 	}
 
-	Log.Debug.Printf("Create Request: %+ v", req)
+	messages.ReportLogFieldsMessage("Create Request", logging.DebugLevel, Log, req)
 	_, err = ra.singularityClient(cluster).PostRequest(req)
 	return err
 }
@@ -261,7 +259,7 @@ func determineRequestType(kind sous.ManifestKind) (dtos.SingularityRequestReques
 
 // DeleteRequest sends a request to Singularity to delete a request
 func (ra *RectiAgent) DeleteRequest(cluster, reqID, message string) error {
-	Log.Debug.Printf("Deleting application %s %s %s", cluster, reqID, message)
+	messages.ReportLogFieldsMessage("Deleting application", logging.DebugLevel, Log, cluster, reqID, message)
 	req, err := swaggering.LoadMap(&dtos.SingularityDeleteRequestRequest{}, dtoMap{
 		"Message": "Sous: " + message,
 	})
@@ -269,7 +267,7 @@ func (ra *RectiAgent) DeleteRequest(cluster, reqID, message string) error {
 		return err
 	}
 
-	Log.Debug.Printf("Delete req: %+ v", req)
+	messages.ReportLogFieldsMessage("Delete req", logging.DebugLevel, Log, req)
 	_, err = ra.singularityClient(cluster).DeleteRequest(reqID,
 		req.(*dtos.SingularityDeleteRequestRequest))
 	return err
@@ -278,7 +276,7 @@ func (ra *RectiAgent) DeleteRequest(cluster, reqID, message string) error {
 // Scale sends requests to Singularity to change the number of instances
 // running for a given Request
 func (ra *RectiAgent) Scale(cluster, reqID string, instanceCount int, message string) error {
-	Log.Debug.Printf("Scaling %s %s %d %s", cluster, reqID, instanceCount, message)
+	messages.ReportLogFieldsMessage("Scaling", logging.DebugLevel, Log, cluster, reqID, instanceCount, message)
 	sr, err := swaggering.LoadMap(&dtos.SingularityScaleRequest{}, dtoMap{
 		"ActionId": "SOUS_RECTIFY_" + StripDeployID(uuid.NewV4().String()), // not positive this is appropriate
 		// omitting DurationMillis - bears discussion
@@ -291,7 +289,7 @@ func (ra *RectiAgent) Scale(cluster, reqID string, instanceCount int, message st
 		return err
 	}
 
-	Log.Debug.Printf("Scale req: %+ v", sr)
+	messages.ReportLogFieldsMessage("Scale req", logging.DebugLevel, Log, sr)
 	_, err = ra.singularityClient(cluster).Scale(reqID, sr.(*dtos.SingularityScaleRequest))
 	return err
 }

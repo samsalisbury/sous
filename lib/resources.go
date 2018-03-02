@@ -226,8 +226,8 @@ func (msg resourceMessage) composeMsg() string {
 
 func (msg resourceMessage) EachField(f logging.FieldReportFn) {
 	f("@loglov3-otl", "sous-generic-v1")
-	f("ports", msg.ports)
-	f("cpus", msg.cpus)
-	f("memory", msg.memory)
+	f("sous-resource-ports", msg.ports)
+	f("sous-resource-cpus", msg.cpus)
+	f("sous-resource-memory", msg.memory)
 	msg.CallerInfo.EachField(f)
 }

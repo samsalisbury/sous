@@ -6,13 +6,26 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
-## [Unreleased](//github.com/opentable/sous/compare/0.5.70...HEAD)
+## [Unreleased](//github.com/opentable/sous/compare/0.5.71...master)
+
+### Changed
+* Log messages with `"@loglov3-otl": "sous-generic-v1"` field names changed:
+  `fields` -> `sous-fields`, `types` -> `sous-types`, `ids` -> `sous-ids`,
+  `id-values` -> `sous-id-values`.
+
+## [0.5.71](//github.com/opentable/sous/compare/0.5.70...0.5.71)
+
+### Added
+* All: Updated cli, status_poller, client to start using structured logging
 
 ### Fixed
 * Server: the PostgreSQL storage module successfully deduplicates proposed DB
   records generated from user input now.
 * All: /all-deploy-queues returns correctly, with a somewhat different data format.
 
+### Added
+* Server: convert remainder of singularity package to generalmsg style logs
+	
 ## [0.5.67](//github.com/opentable/sous/compare/0.5.66...0.5.67)
 
 ### Added

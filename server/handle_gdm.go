@@ -186,11 +186,11 @@ func (msg handleGDMMessage) EachField(f logging.FieldReportFn) {
 	flaws := msg.flawsMessage.ReturnFlawMsg()
 
 	if flaws != "" {
-		f("flaws", flaws)
+		f("sous-flaws", flaws)
 	}
 
 	if msg.err != nil {
-		f("error", msg.err.Error())
+		f("sous-error", msg.err.Error())
 	}
 	msg.CallerInfo.EachField(f)
 }

@@ -3,6 +3,8 @@ package sous
 import (
 	"fmt"
 	"testing"
+
+	"github.com/opentable/sous/util/logging"
 )
 
 type rrResult struct {
@@ -14,9 +16,10 @@ type rrResult struct {
 func exerciseResolveRecorder(t *testing.T, f func(*ResolveRecorder)) rrResult {
 	rez := rrResult{}
 	block := make(chan struct{})
+	ls, _ := logging.NewLogSinkSpy()
 
 	// Run all the phases in the test in order.
-	rs := NewResolveRecorder(NewDeployments(), func(rs *ResolveRecorder) {
+	rs := NewResolveRecorder(NewDeployments(), ls, func(rs *ResolveRecorder) {
 		f(rs)
 		<-block // Wait for signal from the test that this func may finish.
 	})

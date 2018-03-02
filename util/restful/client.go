@@ -273,7 +273,7 @@ func (client *LiveHTTPClient) buildRequest(method, url string, headers map[strin
 		if resource != nil {
 			JSON = putbackJSON(resource.body, resource.resourceJSON, JSON)
 		}
-		client.Debugf("  body: %s", JSON.String())
+		messages.ReportLogFieldsMessage("JSON Body", logging.DebugLevel, client.LogSink, JSON.String())
 	}
 
 	rq, err := http.NewRequest(method, url, JSON)
@@ -321,7 +321,7 @@ func (client *LiveHTTPClient) getBody(rz *http.Response, rzBody interface{}, err
 
 	b, e := ioutil.ReadAll(rz.Body)
 	if e != nil {
-		client.Debugf("error reading from body: %v", e)
+		messages.ReportLogFieldsMessage("error reading from body", logging.DebugLevel, client.LogSink, e)
 		b = []byte{}
 	}
 
