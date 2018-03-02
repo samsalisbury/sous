@@ -231,7 +231,9 @@ func addNoMatchStar(headers map[string]string) map[string]string {
 	if headers == nil {
 		headers = map[string]string{}
 	}
-	headers["If-None-Match"] = "*"
+	if _, ok := headers["If-None-Match"]; !ok {
+		headers["If-None-Match"] = "*"
+	}
 	return headers
 }
 

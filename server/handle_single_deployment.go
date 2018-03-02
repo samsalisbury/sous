@@ -22,21 +22,13 @@ type (
 	PUTSingleDeploymentHandler struct {
 		DeploymentID     sous.DeploymentID
 		DeploymentIDErr  error
-		Body             *singleDeploymentBody
+		Body             *SingleDeploymentBody
 		BodyErr          error
 		GDM              *sous.State
 		StateWriter      sous.StateWriter
 		GDMToDeployments func(*sous.State) (sous.Deployments, error)
 		PushToQueueSet   func(r *sous.Rectification) (*sous.QueuedR11n, bool)
 		User             sous.User
-	}
-
-	// singleDeploymentBody is the response struct returned from handlers
-	// of HTTP methods of a SingleDeploymentResource.
-	singleDeploymentBody struct {
-		Meta           ResponseMeta
-		DeploySpec     sous.DeploySpec
-		ManifestHeader sous.Manifest
 	}
 
 	// ResponseMeta contains metadata to include in API response bodies.
@@ -60,7 +52,7 @@ func newSingleDeploymentResource(cl ComponentLocator) *SingleDeploymentResource 
 func (sdr *SingleDeploymentResource) Put(_ http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
 	qv := restful.QueryValues{Values: req.URL.Query()}
 	did, didErr := deploymentIDFromValues(qv)
-	body := &singleDeploymentBody{}
+	body := &SingleDeploymentBody{}
 	bodyErr := json.NewDecoder(req.Body).Decode(body)
 	gdm := sdr.context.liveState()
 	return &PUTSingleDeploymentHandler{
@@ -81,7 +73,7 @@ func (sdr *SingleDeploymentResource) Put(_ http.ResponseWriter, req *http.Reques
 // err returns the current Body of psd and the provided status code.
 // It ensures Meta.StatusCode is also set to the provided code.
 // It sets Meta.Error to a formatted error using format f and args a...
-func (psd *PUTSingleDeploymentHandler) err(code int, f string, a ...interface{}) (*singleDeploymentBody, int) {
+func (psd *PUTSingleDeploymentHandler) err(code int, f string, a ...interface{}) (*SingleDeploymentBody, int) {
 	psd.Body.Meta.Error = fmt.Sprintf(f, a...)
 	psd.Body.Meta.StatusCode = code
 	return psd.Body, code
@@ -90,7 +82,7 @@ func (psd *PUTSingleDeploymentHandler) err(code int, f string, a ...interface{})
 // ok returns the current body of psd and the provided status code.
 // It ensures Meta.StatusCode is also set to the provided code.
 // It sets Meta.Links to the provided links.
-func (psd *PUTSingleDeploymentHandler) ok(code int, links map[string]string) (*singleDeploymentBody, int) {
+func (psd *PUTSingleDeploymentHandler) ok(code int, links map[string]string) (*SingleDeploymentBody, int) {
 	psd.Body.Meta.StatusCode = code
 	psd.Body.Meta.Links = links
 	return psd.Body, code
@@ -103,7 +95,7 @@ func (psd *PUTSingleDeploymentHandler) ok(code int, links map[string]string) (*s
 func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 
 	if psd.BodyErr != nil {
-		psd.Body = &singleDeploymentBody{}
+		psd.Body = &SingleDeploymentBody{}
 		return psd.err(400, "Error parsing body: %s.", psd.BodyErr)
 	}
 

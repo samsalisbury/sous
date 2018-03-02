@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/opentable/sous/config"
@@ -174,6 +175,8 @@ func (suite integrationServerTests) TestUpdateServers() {
 func (suite integrationServerTests) TestUpdateStateDeployments_Precondition() {
 	data := server.GDMWrapper{Deployments: []*sous.Deployment{}}
 	err := suite.client.Create("./state/deployments", nil, &data, nil)
+	// TODO SS: This assertion does not check for the string, use EqualError
+	// once error is shorter...
 	suite.Error(err, `412 Precondition Failed: "resource present for If-None-Match=*!\n"`)
 }
 
@@ -192,6 +195,19 @@ func (suite integrationServerTests) TestUpdateStateDeployments_Update() {
 	_, err = suite.client.Retrieve("./state/deployments", nil, &data, nil)
 	suite.NoError(err)
 	suite.Len(data.Deployments, 3)
+}
+
+func (suite integrationServerTests) TestPUTSingleDeployment() {
+	data := server.SingleDeploymentBody{}
+	headers := map[string]string{"If-None-Match": "w/bogus"}
+	err := suite.client.Create("/single-deployment", nil, data, headers)
+	suite.Require().Error(err)
+	wantErrSubstring := "404 Not Found"
+	gotErr := err.Error()
+	if !strings.Contains(gotErr, wantErrSubstring) {
+		suite.FailNow("want error containing %q; got %q", wantErrSubstring, gotErr)
+	}
+	// TODO: Another test where PUT succeeds.
 }
 
 func TestLiveServerSuite(t *testing.T) {

@@ -3,6 +3,7 @@ package server
 import (
 	"crypto/sha512"
 	"encoding/base64"
+	"encoding/json"
 	"net/http"
 	"sort"
 
@@ -104,4 +105,29 @@ func (g GDMWrapper) etag() string {
 func (g *GDMWrapper) unwrap() *sous.Deployments {
 	ds := sous.NewDeployments(g.Deployments...)
 	return &ds
+}
+
+// SingleDeploymentBody is the response struct returned from handlers
+// of HTTP methods of a SingleDeploymentResource.
+type SingleDeploymentBody struct {
+	Meta           ResponseMeta
+	DeploySpec     sous.DeploySpec
+	ManifestHeader sous.Manifest
+}
+
+// Etag returns a string suitable for use in an Etag header for this data type.
+func (b *SingleDeploymentBody) etag() string {
+	hash := sha512.New()
+	ds, err := json.Marshal(b.DeploySpec)
+	if err != nil {
+		panic("unmarshallable SingleDeploymentBody.DeploySpec")
+	}
+	mh, err := json.Marshal(b.ManifestHeader)
+	if err != nil {
+		panic("unmarshallable SingleDeploymentBody.ManifestHeader")
+	}
+
+	hash.Write(ds)
+	hash.Write(mh)
+	return "w/" + base64.URLEncoding.EncodeToString(hash.Sum(nil))
 }
