@@ -93,9 +93,12 @@ import (
 	"io/ioutil"
 	"net"
 	"os"
+	"reflect"
+	"runtime"
 	"time"
 
 	graphite "github.com/cyberdelia/go-metrics-graphite"
+	"github.com/pborman/uuid"
 	metrics "github.com/rcrowley/go-metrics"
 	"github.com/samsalisbury/semv"
 	"github.com/sirupsen/logrus"
@@ -135,6 +138,16 @@ type (
 	// XXX remove and fix accesses to Debug, Info, etc. to be Debugf etc
 	logwrapper func(string, ...interface{})
 )
+
+func RetrieveMetaData(f func()) (name string, uid string) {
+	if p := reflect.ValueOf(f).Pointer(); p != 0 {
+		if r := runtime.FuncForPC(p); r != nil {
+			name = r.Name()
+		}
+	}
+	uid = uuid.New()
+	return name, uid
+}
 
 // Log collects various loggers to use for different levels of logging
 // Deprecation warning: the global logger is slated for removal.
