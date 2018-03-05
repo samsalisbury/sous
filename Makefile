@@ -224,7 +224,27 @@ test-unit: postgres-test-prepare
 	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -timeout 3m -race $(SOUS_PACKAGES_WITH_TESTS)
 
 test-unit-tc: postgres-test-prepare
-	go test -race -v $(SOUS_PACKAGES_WITH_TESTS) | docker run -i xjewer/go-test-teamcity
+	docker run --rm -it -v $(GOPATH):/gopath -v $(PWD):/app -e "GOPATH=/gopath" -w /app golang:1.10 go test -race -v $(SOUS_PACKAGES_WITH_TESTS) | docker run -i xjewer/go-test-teamcity
+
+test-unit-docker: postgres-test-prepare
+	echo $(PWD)
+	rm -rf ./src
+	cp -r ./vendor ./src
+	mkdir ./src/github.com/opentable/sous
+	rsync -r --exclude 'src' ./* ./src/github.com/opentable/sous
+	echo $(PWD)
+	docker run --rm -it -v $(PWD):/go -v $(PWD):/app -w /app golang:1.10 go test -race -v $(SOUS_PACKAGES_WITH_TESTS) | docker run -i xjewer/go-test-teamcity
+
+test-doc:
+	sudo rm -rf /tmp/sous
+	sudo mkdir /tmp/sous
+	sudo mkdir /tmp/sous/src
+	sudo cp -r ./vendor/* /tmp/sous/src
+	sudo mkdir /tmp/sous/src/github.com/opentable/sous
+	sudo cp -r ./* /tmp/sous/src/github.com/opentable/sous
+
+test-run: postgres-test-prepare
+	docker run --rm -v /tmp/sous:/go -v $(PWD):/app -w /app golang:1.10 go test -race -v $(SOUS_PACKAGES_WITH_TESTS) | docker run -i xjewer/go-test-teamcity
 
 test-integration: setup-containers
 	@echo
