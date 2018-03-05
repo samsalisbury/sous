@@ -44,7 +44,7 @@ func (res *StateDeploymentResource) Get(*restful.RouteMap, http.ResponseWriter, 
 }
 
 // Put implements restful.Putable on StateDeployments
-func (res *StateDeploymentResource) Put(_ http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
+func (res *StateDeploymentResource) Put(_ *restful.RouteMap, _ http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
 	return &PUTStateDeployments{
 		cluster:     res.loc.ClusterManager,
 		clusterName: res.loc.ResolveFilter.Cluster.ValueOr("no-cluster"),
