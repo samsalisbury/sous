@@ -95,6 +95,13 @@ func (suite *integrationServerTests) prepare() (logging.LogSink, http.Handler, f
 
 }
 
+func (suite integrationServerTests) errorMatches(err error, regexp string) {
+	suite.T().Helper()
+	if suite.Error(err) {
+		suite.Regexp(regexp, err.Error())
+	}
+}
+
 func (suite *liveServerSuite) SetupTest() {
 	lt, h, cleanup := suite.prepare()
 	suite.cleanup = cleanup
@@ -167,9 +174,7 @@ func (suite integrationServerTests) TestUpdateServers() {
 func (suite integrationServerTests) TestUpdateStateDeployments_Precondition() {
 	data := server.GDMWrapper{Deployments: []*sous.Deployment{}}
 	err := suite.client.Create("./state/deployments", nil, &data, nil)
-	// TODO SS: This assertion does not check for the string, use EqualError
-	// once error is shorter...
-	suite.Error(err, `412 Precondition Failed: "resource present for If-None-Match=*!\n"`)
+	suite.errorMatches(err, `^Create \./state/deployments params: map\[\]: 412 Precondition Failed: "resource present for If-None-Match=\*!\\n"`)
 }
 
 func (suite integrationServerTests) TestUpdateStateDeployments_Update() {
