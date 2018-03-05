@@ -194,6 +194,14 @@ func (suite integrationServerTests) TestUpdateStateDeployments_Update() {
 	suite.Len(data.Deployments, 3)
 }
 
+func (suite integrationServerTests) TestPUTSingleDeployment() {
+	data := server.SingleDeploymentBody{}
+	headers := map[string]string{"If-None-Match": "w/bogus"}
+	err := suite.client.Create("/single-deployment", nil, data, headers)
+	suite.Require().Error(err)
+	suite.errorMatches(err, "404 Not Found")
+}
+
 func (suite integrationServerTests) TestGetAllDeployQueues_empty() {
 	data := server.DeploymentQueuesResponse{}
 	updater, err := suite.client.Retrieve("./all-deploy-queues", nil, &data, nil)
