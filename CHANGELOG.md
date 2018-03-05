@@ -10,7 +10,7 @@ with respect to its command line interface and HTTP interface.
 
 ### Fixed
 * PostgreSQL storage correctly retrieves arrays of healthcheck failure statuses
-
+* Caught a race condition in the logging subsystem.
 ### Changed
 * Log messages with `"@loglov3-otl": "sous-generic-v1"` field names changed:
   `fields` -> `sous-fields`, `types` -> `sous-types`, `ids` -> `sous-ids`,

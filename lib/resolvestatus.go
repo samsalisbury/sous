@@ -200,15 +200,29 @@ func (rr *ResolveRecorder) Phase() string {
 
 // write encapsulates locking this ResolveRecorder for writing using f.
 func (rr *ResolveRecorder) write(f func()) {
+	name, uuid := logging.RetrieveMetaData(f)
+	messages.ReportLogFieldsMessage("Waiting to Lock resolverecorder for write", logging.ExtraDebug1Level, rr.logSink, name, uuid)
 	rr.Lock()
-	defer rr.Unlock()
+	messages.ReportLogFieldsMessage("Locked resolverecorder for write", logging.ExtraDebug1Level, rr.logSink, name, uuid)
+	defer func() {
+		rr.Unlock()
+		messages.ReportLogFieldsMessage("Unlocked resolverecorder for write", logging.ExtraDebug1Level,
+			rr.logSink, name, uuid)
+	}()
 	f()
 }
 
 // read encapsulates locking this ResolveRecorder for reading using f.
 func (rr *ResolveRecorder) read(f func()) {
+	name, uuid := logging.RetrieveMetaData(f)
+	messages.ReportLogFieldsMessage("Waiting to Lock resolverecorder for read", logging.ExtraDebug1Level, rr.logSink, name, uuid)
 	rr.RLock()
-	defer rr.RUnlock()
+	messages.ReportLogFieldsMessage("Locked resolverecorder for read", logging.ExtraDebug1Level, rr.logSink, name, uuid)
+	defer func() {
+		rr.RUnlock()
+		messages.ReportLogFieldsMessage("Unlocked resolverecorder for read", logging.ExtraDebug1Level,
+			rr.logSink, name, uuid)
+	}()
 	f()
 }
 
