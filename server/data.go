@@ -35,6 +35,17 @@ type (
 	StateManager struct {
 		sous.StateManager
 	}
+
+	// DeploymentQueuesResponse is used by the Deployment queue handler
+	DeploymentQueuesResponse struct {
+		Queues map[string]QueueDesc
+	}
+
+	// QueueDesc describes the queue related to a Deployment
+	QueueDesc struct {
+		sous.DeploymentID
+		Length int
+	}
 )
 
 // EmptyReceiver implements Comparable on ServerListData

@@ -8,6 +8,8 @@ with respect to its command line interface and HTTP interface.
 
 ## [Unreleased](//github.com/opentable/sous/compare/0.5.71...master)
 
+### Fixed
+* Caught a race condition in the logging subsystem.
 ### Changed
 * Log messages with `"@loglov3-otl": "sous-generic-v1"` field names changed:
   `fields` -> `sous-fields`, `types` -> `sous-types`, `ids` -> `sous-ids`,
@@ -25,10 +27,11 @@ with respect to its command line interface and HTTP interface.
 ### Fixed
 * Server: the PostgreSQL storage module successfully deduplicates proposed DB
   records generated from user input now.
+* All: /all-deploy-queues returns correctly, with a somewhat different data format.
 
 ### Added
 * Server: convert remainder of singularity package to generalmsg style logs
-	
+
 ## [0.5.67](//github.com/opentable/sous/compare/0.5.66...0.5.67)
 
 ### Added

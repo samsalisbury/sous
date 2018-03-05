@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -35,6 +36,7 @@ type (
 )
 
 var notGCI excludedFrame
+var gciOnce sync.Once
 
 // GetCallerInfo captures a CallerInfo based on where it's called.
 // It's very common to call this like:
@@ -42,9 +44,10 @@ var notGCI excludedFrame
 // which excludes the function that actually calls GetCallerInfo
 // (usually a message constructor) from the logged call stack.
 func GetCallerInfo(excluding ...Excluder) CallerInfo {
-	if !notGCI.sensible {
-		notGCI = NotHere().(excludedFrame)
-	}
+	gci := NotHere().(excludedFrame)
+	gciOnce.Do(func() {
+		notGCI = gci
+	})
 
 	callers := make([]uintptr, 10)
 	runtime.Callers(2, callers)

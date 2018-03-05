@@ -6,7 +6,6 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/opentable/sous/config"
@@ -25,9 +24,10 @@ import (
 type (
 	integrationServerTests struct {
 		suite.Suite
-		client restful.HTTPClient
-		user   sous.User
-		log    logging.LogSinkController
+		client           restful.HTTPClient
+		user             sous.User
+		log              logging.LogSinkController
+		componentLocator server.ComponentLocator
 	}
 
 	liveServerSuite struct {
@@ -72,26 +72,18 @@ func (suite *integrationServerTests) prepare() (logging.LogSink, http.Handler, f
 
 	testGraph := psyringe.TestPsyringe{Psyringe: g.Psyringe}
 	testGraph.Replace(graph.LogSink{LogSink: log})
-	/*
-		state := &sous.State{}
-		state.SetEtag("qwertybeatsdvorak")
-		sm := sous.DummyStateManager{State: state}
-
-		g.Add(
-			func() graph.StateReader { return graph.StateReader{StateReader: &sm} },
-			func() graph.StateWriter { return graph.StateWriter{StateWriter: &sm} },
-			func() *graph.StateManager { return &graph.StateManager{StateManager: &sm} },
-		)
-	*/
 
 	serverScoop := struct {
-		Handler graph.ServerHandler
+		Handler          graph.ServerHandler
+		ComponentLocator server.ComponentLocator
 	}{}
 
 	g.MustInject(&serverScoop)
+
 	if serverScoop.Handler.Handler == nil {
 		suite.FailNow("Didn't inject http.Handler!")
 	}
+	suite.componentLocator = serverScoop.ComponentLocator
 	return log, serverScoop.Handler.Handler, func() {
 		if err := os.RemoveAll(outpath); err != nil {
 			suite.T().Errorf("cleanup failed: %s", err)
@@ -197,17 +189,40 @@ func (suite integrationServerTests) TestUpdateStateDeployments_Update() {
 	suite.Len(data.Deployments, 3)
 }
 
-func (suite integrationServerTests) TestPUTSingleDeployment() {
-	data := server.SingleDeploymentBody{}
-	headers := map[string]string{"If-None-Match": "w/bogus"}
-	err := suite.client.Create("/single-deployment", nil, data, headers)
-	suite.Require().Error(err)
-	wantErrSubstring := "404 Not Found"
-	gotErr := err.Error()
-	if !strings.Contains(gotErr, wantErrSubstring) {
-		suite.FailNow("want error containing %q; got %q", wantErrSubstring, gotErr)
+func (suite integrationServerTests) TestGetAllDeployQueues_empty() {
+	data := server.DeploymentQueuesResponse{}
+	updater, err := suite.client.Retrieve("./all-deploy-queues", nil, &data, nil)
+	suite.NoError(err)
+	suite.Len(data.Queues, 0)
+	suite.NotNil(updater)
+}
+
+func (suite integrationServerTests) TestGetAllDeployQueues_nonempty() {
+	// Replace the default queueset with this one that doesn't process anything.
+	// Since componentLocator is not a pointer, we need to replace the QueueSet
+	// in memory directly.
+	// Go vet complains on the next about copying a sync.RWMutex.
+	// In this case it's a zero RWMutex at the time of copy, so it is in fact
+	// safe.
+	*suite.componentLocator.QueueSet = *(sous.NewR11nQueueSet())
+	// Just push one rectification with the zero DeploymentID.
+	pair := sous.DeployablePair{}
+	pair.SetID(sous.DeploymentID{Cluster: "cluster1", ManifestID: sous.ManifestID{
+		Source: sous.SourceLocation{
+			Repo: "github.com/opentable/repo1",
+		},
+	}})
+	suite.componentLocator.QueueSet.Push(&sous.Rectification{
+		Pair: pair,
+	})
+	if len(suite.componentLocator.QueueSet.Queues()) != 1 {
+		panic("setup failed")
 	}
-	// TODO: Another test where PUT succeeds.
+	data := server.DeploymentQueuesResponse{}
+	updater, err := suite.client.Retrieve("./all-deploy-queues", nil, &data, nil)
+	suite.NoError(err)
+	suite.Len(data.Queues, 1)
+	suite.NotNil(updater)
 }
 
 func TestLiveServerSuite(t *testing.T) {

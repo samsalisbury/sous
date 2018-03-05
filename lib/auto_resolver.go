@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 )
 
 type (
@@ -128,11 +129,13 @@ func loopTilDone(f func(), done TriggerChannel) {
 }
 
 func (ar *AutoResolver) write(f func()) {
-	logging.ReportMsg(ar.LogSink, logging.ExtraDebug1Level, "Locking autoresolver for write...")
+	name, uuid := logging.RetrieveMetaData(f)
+	messages.ReportLogFieldsMessage("Waiting to Lock autoresovle for write", logging.ExtraDebug1Level, ar.LogSink, name, uuid)
 	ar.Lock()
+	messages.ReportLogFieldsMessage("Locked autoresovle for write", logging.ExtraDebug1Level, ar.LogSink, name, uuid)
 	defer func() {
 		ar.Unlock()
-		logging.ReportMsg(ar.LogSink, logging.ExtraDebug1Level, "Unlocked autoresolver")
+		messages.ReportLogFieldsMessage("Unlocked autoresovler", logging.ExtraDebug1Level, ar.LogSink, name, uuid)
 	}()
 	f()
 }
