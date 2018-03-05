@@ -223,6 +223,9 @@ test-gofmt:
 test-unit: postgres-test-prepare
 	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -timeout 3m -race $(SOUS_PACKAGES_WITH_TESTS)
 
+test-unit-tc: postgres-test-prepare
+	go test -race -v $(SOUS_PACKAGES_WITH_TESTS) | docker run -i xjewer/go-test-teamcity
+
 test-integration: setup-containers
 	@echo
 	@echo
