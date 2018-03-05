@@ -103,7 +103,6 @@ func NewResolveRecorder(intended Deployments, ls logging.LogSink, f func(*Resolv
 				}
 			})
 		}
-		close(rr.finished)
 	}()
 
 	// Execute the main function (f) over this resolve recorder.
@@ -115,6 +114,7 @@ func NewResolveRecorder(intended Deployments, ls logging.LogSink, f func(*Resolv
 			if rr.err == nil {
 				rr.status.Phase = "finished"
 			}
+			close(rr.finished)
 		})
 	}()
 	return rr
