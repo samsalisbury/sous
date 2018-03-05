@@ -29,6 +29,8 @@ type (
 		GDMToDeployments func(*sous.State) (sous.Deployments, error)
 		PushToQueueSet   func(r *sous.Rectification) (*sous.QueuedR11n, bool)
 		User             sous.User
+		responseWriter   http.ResponseWriter
+		routeMap         *restful.RouteMap
 	}
 
 	// ResponseMeta contains metadata to include in API response bodies.
@@ -49,7 +51,7 @@ func newSingleDeploymentResource(cl ComponentLocator) *SingleDeploymentResource 
 }
 
 // Put returns a configured put single deployment handler.
-func (sdr *SingleDeploymentResource) Put(_ http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
+func (sdr *SingleDeploymentResource) Put(rm *restful.RouteMap, rw http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
 	qv := restful.QueryValues{Values: req.URL.Query()}
 	did, didErr := deploymentIDFromValues(qv)
 	body := &SingleDeploymentBody{}
@@ -67,6 +69,8 @@ func (sdr *SingleDeploymentResource) Put(_ http.ResponseWriter, req *http.Reques
 		GDMToDeployments: func(s *sous.State) (sous.Deployments, error) {
 			return gdm.Deployments()
 		},
+		responseWriter: rw,
+		routeMap:       rm,
 	}
 }
 
@@ -152,6 +156,12 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 	qr, ok := psd.PushToQueueSet(r)
 	if !ok {
 		return psd.err(409, "Queue full, please try again later.")
+	}
+
+	actionKV := restful.KV{"action", string(qr.ID)}
+	queueURI, err := psd.routeMap.URIFor("deploy-queue-item", nil, actionKV)
+	if err == nil {
+		psd.responseWriter.Header().Add("Location", queueURI)
 	}
 
 	return psd.ok(201, map[string]string{

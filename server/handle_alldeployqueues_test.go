@@ -18,8 +18,9 @@ func TestNewAllDeployQueuesResource(t *testing.T) {
 		QueueSet: qs,
 	}
 	adq := newAllDeployQueuesResource(c)
+	rm := routemap(c)
 
-	got := adq.Get(nil, &http.Request{URL: &url.URL{}}, nil).(*GETAllDeployQueuesHandler)
+	got := adq.Get(rm, nil, &http.Request{URL: &url.URL{}}, nil).(*GETAllDeployQueuesHandler)
 	if got.QueueSet != qs {
 		t.Errorf("got different queueset")
 	}

@@ -173,8 +173,9 @@ func (suite integrationServerTests) TestUpdateServers() {
 
 func (suite integrationServerTests) TestUpdateStateDeployments_Precondition() {
 	data := server.GDMWrapper{Deployments: []*sous.Deployment{}}
-	err := suite.client.Create("./state/deployments", nil, &data, nil)
+	res, err := suite.client.Create("./state/deployments", nil, &data, nil)
 	suite.errorMatches(err, `^Create \./state/deployments params: map\[\]: 412 Precondition Failed: "resource present for If-None-Match=\*!\\n"`)
+	suite.Nil(res)
 }
 
 func (suite integrationServerTests) TestUpdateStateDeployments_Update() {
@@ -196,10 +197,9 @@ func (suite integrationServerTests) TestUpdateStateDeployments_Update() {
 
 func (suite integrationServerTests) TestPUTSingleDeployment() {
 	data := server.SingleDeploymentBody{}
-	headers := map[string]string{"If-None-Match": "w/bogus"}
-	err := suite.client.Create("/single-deployment", nil, data, headers)
-	suite.Require().Error(err)
-	suite.errorMatches(err, "404 Not Found")
+	rez, err := suite.client.Create("/single-deployment", nil, data, nil)
+	suite.errorMatches(err, `412 Precondition Failed`) // already a zero deployment
+	suite.Nil(rez)
 }
 
 func (suite integrationServerTests) TestGetAllDeployQueues_empty() {

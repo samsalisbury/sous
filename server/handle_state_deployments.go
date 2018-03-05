@@ -36,7 +36,7 @@ func newStateDeploymentResource(loc ComponentLocator) *StateDeploymentResource {
 }
 
 // Get implements restful.Getable on StateDeployments
-func (res *StateDeploymentResource) Get(http.ResponseWriter, *http.Request, httprouter.Params) restful.Exchanger {
+func (res *StateDeploymentResource) Get(*restful.RouteMap, http.ResponseWriter, *http.Request, httprouter.Params) restful.Exchanger {
 	return &GETStateDeployments{
 		cluster:     res.loc.ClusterManager,
 		clusterName: res.loc.ResolveFilter.Cluster.ValueOr("no-cluster"),

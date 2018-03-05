@@ -40,7 +40,7 @@ func r11nIDFromRoute(r *http.Request) (sous.R11nID, error) {
 }
 
 // Get returns a configured GETR11nHandler.
-func (r *R11nResource) Get(_ http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
+func (r *R11nResource) Get(_ *restful.RouteMap, _ http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
 	did, didErr := deploymentIDFromValues(restful.QueryValues{Values: req.URL.Query()})
 	rid, ridErr := r11nIDFromRoute(req)
 	wait := req.URL.Query().Get("wait") == "true"

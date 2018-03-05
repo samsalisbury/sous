@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
@@ -128,12 +129,12 @@ func TestSingleDeploymentResource_Put(t *testing.T) {
 			}
 
 			// Setup.
-			r := SingleDeploymentResource{
-				context: ComponentLocator{
-					StateManager: sm,
-					QueueSet:     qs,
-				},
+			cl := ComponentLocator{
+				StateManager: sm,
+				QueueSet:     qs,
 			}
+			r := SingleDeploymentResource{context: cl}
+			rm := routemap(cl)
 
 			u, err := url.Parse(tc.URL)
 			if err != nil {
@@ -159,7 +160,7 @@ func TestSingleDeploymentResource_Put(t *testing.T) {
 
 			// Shebang.
 
-			got := r.Put(nil, req, nil).(*PUTSingleDeploymentHandler)
+			got := r.Put(rm, nil, req, nil).(*PUTSingleDeploymentHandler)
 
 			// Assertions.
 
@@ -426,6 +427,13 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 				pushToQueueSet = tc.OverridePushToQueueSet
 			}
 
+			cl := ComponentLocator{
+				//StateManager: stateWriter,
+				QueueSet: queueSet,
+			}
+
+			rm := routemap(cl)
+
 			psd := PUTSingleDeploymentHandler{
 				DeploymentID:     did,
 				Body:             sent,
@@ -435,6 +443,8 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 				StateWriter:      stateWriter,
 				PushToQueueSet:   pushToQueueSet,
 				User:             user,
+				routeMap:         rm,
+				responseWriter:   httptest.NewRecorder(),
 			}
 
 			// Shebang

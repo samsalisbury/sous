@@ -35,14 +35,14 @@ func newServerListResource(context ComponentLocator) *ServerListResource {
 }
 
 // Get implements Getable on ServerListResource, which marks it as accepting GET requests
-func (slr *ServerListResource) Get(http.ResponseWriter, *http.Request, httprouter.Params) restful.Exchanger {
+func (slr *ServerListResource) Get(*restful.RouteMap, http.ResponseWriter, *http.Request, httprouter.Params) restful.Exchanger {
 	return &ServerListHandler{
 		Config: slr.context.Config,
 	}
 }
 
 // Put implements Putable on ServerListResource, which marks is as accepting PUT requests
-func (slr *ServerListResource) Put(_ http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
+func (slr *ServerListResource) Put(_ *restful.RouteMap, _ http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
 	return &ServerListUpdater{
 		Config:  slr.context.Config,
 		Log:     slr.context.LogSink,
