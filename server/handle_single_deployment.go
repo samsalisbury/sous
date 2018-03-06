@@ -20,17 +20,15 @@ type (
 	// PUTSingleDeploymentHandler handles manifests containing single deployment
 	// specs. See Exchange method for more details.
 	PUTSingleDeploymentHandler struct {
-		DeploymentID     sous.DeploymentID
-		DeploymentIDErr  error
-		Body             *SingleDeploymentBody
-		BodyErr          error
-		GDM              *sous.State
-		StateWriter      sous.StateWriter
-		GDMToDeployments func(*sous.State) (sous.Deployments, error)
-		PushToQueueSet   func(r *sous.Rectification) (*sous.QueuedR11n, bool)
-		User             sous.User
-		responseWriter   http.ResponseWriter
-		routeMap         *restful.RouteMap
+		User              sous.User
+		DeploymentID      sous.DeploymentID
+		DeploymentIDErr   error
+		Body              *SingleDeploymentBody
+		BodyErr           error
+		DeploymentManager sous.DeploymentManager
+		QueueSet          *sous.R11nQueueSet
+		responseWriter    http.ResponseWriter
+		routeMap          *restful.RouteMap
 	}
 
 	// ResponseMeta contains metadata to include in API response bodies.
@@ -58,19 +56,15 @@ func (sdr *SingleDeploymentResource) Put(rm *restful.RouteMap, rw http.ResponseW
 	bodyErr := json.NewDecoder(req.Body).Decode(body)
 	gdm := sdr.context.liveState()
 	return &PUTSingleDeploymentHandler{
-		User:            sous.User(sdr.userExtractor.GetUser(req)),
-		DeploymentID:    did,
-		DeploymentIDErr: didErr,
-		Body:            body,
-		BodyErr:         bodyErr,
-		StateWriter:     sdr.context.StateManager,
-		PushToQueueSet:  sdr.context.QueueSet.Push,
-		GDM:             gdm,
-		GDMToDeployments: func(s *sous.State) (sous.Deployments, error) {
-			return gdm.Deployments()
-		},
-		responseWriter: rw,
-		routeMap:       rm,
+		User:              sous.User(sdr.userExtractor.GetUser(req)),
+		DeploymentID:      did,
+		DeploymentIDErr:   didErr,
+		Body:              body,
+		BodyErr:           bodyErr,
+		DeploymentManager: sdr.context.DeploymentManager,
+		QueueSet:          sdr.context.QueueSet,
+		responseWriter:    rw,
+		routeMap:          rm,
 	}
 }
 
@@ -105,55 +99,35 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 
 	did := psd.DeploymentID
 
-	m, ok := psd.GDM.Manifests.Get(did.ManifestID)
-	if !ok {
-		return psd.err(404, "No manifest with ID %q.", did.ManifestID)
+	dep, err := psd.DeploymentManager.ReadDeployment(did)
+	if err != nil {
+		return psd.err(404, "No manifest with ID %q. %v", did.ManifestID, err)
 	}
 
-	cluster := did.Cluster
-	d, ok := m.Deployments[cluster]
-	if !ok {
-		return psd.err(404, "No %q deployment defined for %q.", cluster, did)
-	}
-	different, _ := psd.Body.DeploySpec.Diff(d)
+	different, _ := psd.Body.DeploySpec.Diff(dep.DeploySpec())
 	if !different {
 		return psd.ok(200, nil)
 	}
 
-	m.Deployments[cluster] = psd.Body.DeploySpec
+	dep.SourceID.Version = psd.Body.DeploySpec.Version
+	dep.DeployConfig = psd.Body.DeploySpec.DeployConfig
 
-	if err := psd.StateWriter.WriteState(psd.GDM, psd.User); err != nil {
-		return psd.err(500, "Failed to write state: %s.", err)
-	}
-
-	// The full deployment can only be gotten from the full state, since it
-	// relies on State.Defs which is not part of this exchange. Therefore
-	// fish it out of the realized GDM returned from GDMToDeployments.
-	//
-	// TODO SS:
-	// Note that this call is expensive, we should come up with a cheaper way
-	// to get single deployments.
-	deployments, err := psd.GDMToDeployments(psd.GDM)
-	if err != nil {
-		return psd.err(500, "Unable to expand GDM: %s.", err)
-	}
-	fullDeployment, ok := deployments.Get(psd.DeploymentID)
-	if !ok {
-		return psd.err(500, "Deployment failed to round-trip to GDM.")
+	if err := psd.DeploymentManager.WriteDeployment(dep, psd.User); err != nil {
+		return psd.err(500, "Failed to write deployment: %s.", err)
 	}
 
 	r := &sous.Rectification{
 		Pair: sous.DeployablePair{
 			Post: &sous.Deployable{
 				Status:     0,
-				Deployment: fullDeployment,
+				Deployment: dep,
 			},
 			ExecutorData: nil,
 		},
 	}
 	r.Pair.SetID(psd.DeploymentID)
 
-	qr, ok := psd.PushToQueueSet(r)
+	qr, ok := psd.QueueSet.Push(r)
 	if !ok {
 		return psd.err(409, "Queue full, please try again later.")
 	}
