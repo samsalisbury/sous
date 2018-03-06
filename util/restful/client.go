@@ -366,9 +366,8 @@ func bodyMessage(b []byte, n int, err error) string {
 	}
 	if cerr := json.Compact(comp, b[0:n]); cerr != nil {
 		return fmt.Sprintf("body: %d bytes: %q (read err: %v)", n, string(b), err)
-	} else {
-		return fmt.Sprintf("body: %d bytes, %s (read err: %v)", n, comp.String(), err)
 	}
+	return fmt.Sprintf("body: %d bytes, %s (read err: %v)", n, comp.String(), err)
 }
 
 func (client *LiveHTTPClient) httpRequest(req *http.Request) (*http.Response, error) {
