@@ -1,8 +1,6 @@
 # Sous Taxonomy
 
-<p align="center">
 ![Sous Taxonomy](diagrams/taxonomy.png)
-</p>
 
 Sous deals with two aspects of software: runnable artifacts and running deployments.
 
@@ -23,9 +21,7 @@ artifacts and deployments they are interested in.
 
 ## Artifact Taxonomy
 
-<p align="center">
 ![Artifact Taxonomy](diagrams/artifact-taxonomy.png)
-</p>
 
 Artifacts are identified by the triple (Repo, Offset, Tag), known as a SourceID.
 We refer to the (Repo, Offset) pair by itself as the SourceLocation - this also
@@ -40,9 +36,7 @@ not change.
 
 ## Deployment Taxonomy
 
-<p align="center">
 ![Deployment Taxonomy](diagrams/deploy-taxonomy.png)
-</p>
 
 Sous identifies a deployment by its DeploymentID. DeploymentID is a pair,
 consisting of ManifestID and Cluster. Cluster is a simple opaque string that
