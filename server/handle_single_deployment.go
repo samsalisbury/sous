@@ -17,20 +17,32 @@ type (
 		userExtractor
 		context ComponentLocator
 	}
-	// PUTSingleDeploymentHandler handles manifests containing single deployment
+	// PUTSingleDeploymentHandler updates manifests containing single deployment
 	// specs. See Exchange method for more details.
 	PUTSingleDeploymentHandler struct {
-		DeploymentID     sous.DeploymentID
-		DeploymentIDErr  error
-		Body             *SingleDeploymentBody
+		SingleDeploymentHandler
 		BodyErr          error
-		GDM              *sous.State
 		StateWriter      sous.StateWriter
 		GDMToDeployments func(*sous.State) (sous.Deployments, error)
 		PushToQueueSet   func(r *sous.Rectification) (*sous.QueuedR11n, bool)
-		User             sous.User
-		responseWriter   http.ResponseWriter
 		routeMap         *restful.RouteMap
+	}
+
+	// GETSingleDeploymentHandler retrieves manifests containing single deployment
+	// specs. See Exchange method for more details.
+	GETSingleDeploymentHandler struct {
+		SingleDeploymentHandler
+	}
+
+	// SingleDeploymentHandler contains common data and methods to both
+	// the GET and PUT handlers.
+	SingleDeploymentHandler struct {
+		Body            *SingleDeploymentBody
+		DeploymentID    sous.DeploymentID
+		DeploymentIDErr error
+		GDM             *sous.State
+		User            sous.User
+		responseWriter  http.ResponseWriter
 	}
 
 	// ResponseMeta contains metadata to include in API response bodies.
@@ -50,34 +62,74 @@ func newSingleDeploymentResource(cl ComponentLocator) *SingleDeploymentResource 
 	}
 }
 
-// Put returns a configured put single deployment handler.
-func (sdr *SingleDeploymentResource) Put(rm *restful.RouteMap, rw http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
+func newSingleDeploymentHandler(req *http.Request, rw http.ResponseWriter, body *SingleDeploymentBody, gdm *sous.State, cl ComponentLocator, u sous.User) SingleDeploymentHandler {
 	qv := restful.QueryValues{Values: req.URL.Query()}
 	did, didErr := deploymentIDFromValues(qv)
-	body := &SingleDeploymentBody{}
-	bodyErr := json.NewDecoder(req.Body).Decode(body)
-	gdm := sdr.context.liveState()
-	return &PUTSingleDeploymentHandler{
-		User:            sous.User(sdr.userExtractor.GetUser(req)),
+	return SingleDeploymentHandler{
+		Body:            body,
+		User:            u,
 		DeploymentID:    did,
 		DeploymentIDErr: didErr,
-		Body:            body,
-		BodyErr:         bodyErr,
-		StateWriter:     sdr.context.StateManager,
-		PushToQueueSet:  sdr.context.QueueSet.Push,
 		GDM:             gdm,
+		responseWriter:  rw,
+	}
+}
+
+// Put returns a configured put single deployment handler.
+func (sdr *SingleDeploymentResource) Put(rm *restful.RouteMap, rw http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
+	gdm := sdr.context.liveState()
+	body := &SingleDeploymentBody{}
+	bodyErr := json.NewDecoder(req.Body).Decode(body)
+	sdh := newSingleDeploymentHandler(req, rw, body, gdm, sdr.context, sous.User(sdr.userExtractor.GetUser(req)))
+	return &PUTSingleDeploymentHandler{
+		SingleDeploymentHandler: sdh,
+		BodyErr:                 bodyErr,
+		StateWriter:             sdr.context.StateManager,
+		PushToQueueSet:          sdr.context.QueueSet.Push,
 		GDMToDeployments: func(s *sous.State) (sous.Deployments, error) {
 			return gdm.Deployments()
 		},
-		responseWriter: rw,
-		routeMap:       rm,
+		routeMap: rm,
 	}
+}
+
+// Get returns a configured get single deployment handler.
+func (sdr *SingleDeploymentResource) Get(rm *restful.RouteMap, rw http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
+	gdm := sdr.context.liveState()
+	body := &SingleDeploymentBody{}
+	sdh := newSingleDeploymentHandler(req, rw, body, gdm, sdr.context, sous.User(sdr.userExtractor.GetUser(req)))
+	return &GETSingleDeploymentHandler{
+		SingleDeploymentHandler: sdh,
+	}
+}
+
+// Exchange returns a single deployment.
+func (h *GETSingleDeploymentHandler) Exchange() (interface{}, int) {
+
+	did := h.DeploymentID
+
+	m, ok := h.GDM.Manifests.Get(did.ManifestID)
+	if !ok {
+		return h.err(404, "No manifest with ID %q.", did.ManifestID)
+	}
+
+	cluster := did.Cluster
+	d, ok := m.Deployments[cluster]
+	if !ok {
+		return h.err(404, "No %q deployment defined for %q.", cluster, did)
+	}
+
+	m.Deployments = nil
+	h.Body.DeploySpec = d
+	h.Body.ManifestHeader = *m
+
+	return h.ok(200, nil)
 }
 
 // err returns the current Body of psd and the provided status code.
 // It ensures Meta.StatusCode is also set to the provided code.
 // It sets Meta.Error to a formatted error using format f and args a...
-func (psd *PUTSingleDeploymentHandler) err(code int, f string, a ...interface{}) (*SingleDeploymentBody, int) {
+func (psd *SingleDeploymentHandler) err(code int, f string, a ...interface{}) (*SingleDeploymentBody, int) {
 	psd.Body.Meta.Error = fmt.Sprintf(f, a...)
 	psd.Body.Meta.StatusCode = code
 	return psd.Body, code
@@ -86,7 +138,7 @@ func (psd *PUTSingleDeploymentHandler) err(code int, f string, a ...interface{})
 // ok returns the current body of psd and the provided status code.
 // It ensures Meta.StatusCode is also set to the provided code.
 // It sets Meta.Links to the provided links.
-func (psd *PUTSingleDeploymentHandler) ok(code int, links map[string]string) (*SingleDeploymentBody, int) {
+func (psd *SingleDeploymentHandler) ok(code int, links map[string]string) (*SingleDeploymentBody, int) {
 	psd.Body.Meta.StatusCode = code
 	psd.Body.Meta.Links = links
 	return psd.Body, code
@@ -115,6 +167,7 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 	if !ok {
 		return psd.err(404, "No %q deployment defined for %q.", cluster, did)
 	}
+
 	different, _ := psd.Body.DeploySpec.Diff(d)
 	if !different {
 		return psd.ok(200, nil)

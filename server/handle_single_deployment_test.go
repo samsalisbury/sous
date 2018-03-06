@@ -427,24 +427,21 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 				pushToQueueSet = tc.OverridePushToQueueSet
 			}
 
-			cl := ComponentLocator{
-				//StateManager: stateWriter,
-				QueueSet: queueSet,
-			}
-
-			rm := routemap(cl)
+			rm := routemap(ComponentLocator{})
 
 			psd := PUTSingleDeploymentHandler{
-				DeploymentID:     did,
-				Body:             sent,
+				SingleDeploymentHandler: SingleDeploymentHandler{
+					DeploymentID:   did,
+					Body:           sent,
+					GDM:            state,
+					User:           user,
+					responseWriter: httptest.NewRecorder(),
+				},
 				BodyErr:          tc.BodyErrIn,
-				GDM:              state,
 				GDMToDeployments: stateToDeployments,
 				StateWriter:      stateWriter,
 				PushToQueueSet:   pushToQueueSet,
-				User:             user,
 				routeMap:         rm,
-				responseWriter:   httptest.NewRecorder(),
 			}
 
 			// Shebang
