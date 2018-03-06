@@ -16,10 +16,10 @@ import (
 type SousManifestGet struct {
 	config.DeployFilterFlags `inject:"optional"`
 	ResolveFilter            *graph.RefinedResolveFilter `inject:"optional"`
-	graph.TargetManifestID
-	graph.HTTPClient
-	graph.LogSink
-	graph.OutWriter
+	TargetManifestID         graph.TargetManifestID
+	HTTPClient               graph.HTTPClient
+	LogSink                  graph.LogSink
+	OutWriter                graph.OutWriter
 }
 
 func init() { ManifestSubcommands["get"] = &SousManifestGet{} }
