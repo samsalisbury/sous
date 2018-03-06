@@ -1,6 +1,8 @@
 # Sous Taxonomy
 
+<p align="center">
 ![Sous Taxonomy](diagrams/taxonomy.png)
+</p>
 
 Sous deals with two aspects of software: runnable artifacts and running deployments.
 
@@ -21,6 +23,10 @@ artifacts and deployments they are interested in.
 
 ## Artifact Taxonomy
 
+<p align="center">
+![Artifact Taxonomy](diagrams/artifact-taxonomy.png)
+</p>
+
 Artifacts are identified by the triple (Repo, Offset, Tag), known as a SourceID.
 We refer to the (Repo, Offset) pair by itself as the SourceLocation - this also
 forms part of the DeploymentID, see below.
@@ -32,9 +38,11 @@ Under the hood, we maintain a cache of build artifact digests, so that once a
 version of your software is deployed, the build artifact that represents it will
 not change.
 
-![Artifact Taxonomy](diagrams/artifact-taxonomy.png)
-
 ## Deployment Taxonomy
+
+<p align="center">
+![Deployment Taxonomy](diagrams/deploy-taxonomy.png)
+</p>
 
 Sous identifies a deployment by its DeploymentID. DeploymentID is a pair,
 consisting of ManifestID and Cluster. Cluster is a simple opaque string that
@@ -47,8 +55,6 @@ SourceLocation is a pair consisting of Repo (URL) and Offset (directory).
 Flavor is an arbitrary opaque string whose only purpose is to allow the
 creation of an arbitrary number of different manifests. An organisation may
 choose to attach meaning to different flavor strings.
-
-![Deployment Taxonomy](diagrams/deploy-taxonomy.png)
 
 ## Discussion
 
