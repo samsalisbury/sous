@@ -31,6 +31,7 @@ type (
 	resourceState struct {
 		client       *LiveHTTPClient
 		path, etag   string
+		headers      http.Header
 		qparms       map[string]string
 		body         io.Reader
 		resourceJSON io.Reader
@@ -57,6 +58,7 @@ type (
 	UpdateDeleter interface {
 		Updater
 		Deleter
+		Location() string
 	}
 
 	// DummyHTTPClient doesn't really make HTTP requests.
@@ -88,6 +90,10 @@ func (rs *resourceState) Update(qBody Comparable, headers map[string]string) err
 
 func (rs *resourceState) Delete(headers map[string]string) error {
 	return rs.client.deelete(rs.path, rs.qparms, rs, headers)
+}
+
+func (rs *resourceState) Location() string {
+	return rs.headers.Get("Location")
 }
 
 func (re retryableError) Error() string {
@@ -342,6 +348,7 @@ func (client *LiveHTTPClient) getBody(rz *http.Response, rzBody interface{}, err
 		return &resourceState{
 			etag:         rz.Header.Get("ETag"),
 			body:         bytes.NewBuffer(b),
+			headers:      rz.Header,
 			resourceJSON: bytes.NewBuffer(rzJSON),
 		}, errors.Wrapf(err, "processing response body")
 	case rz.StatusCode < 200 || rz.StatusCode >= 300:
