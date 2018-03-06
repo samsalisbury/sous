@@ -1,0 +1,9 @@
+digraph {
+	label="Deployments (DeployID)"
+	DeploymentID -> ManifestID
+	DeploymentID -> Cluster
+	ManifestID   -> SourceLocation
+    ManifestID   -> Flavor
+	SourceLocation -> Repo
+	SourceLocation -> Offset
+}
