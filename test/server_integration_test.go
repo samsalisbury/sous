@@ -84,6 +84,10 @@ func (suite *integrationServerTests) prepare() (logging.LogSink, http.Handler, f
 		suite.FailNow("Didn't inject http.Handler!")
 	}
 	suite.componentLocator = serverScoop.ComponentLocator
+
+	// Replace the default queueset with this one that doesn't process anything.
+	*suite.componentLocator.QueueSet = *(sous.NewR11nQueueSet())
+
 	return log, serverScoop.Handler.Handler, func() {
 		if err := os.RemoveAll(outpath); err != nil {
 			suite.T().Errorf("cleanup failed: %s", err)
@@ -93,6 +97,13 @@ func (suite *integrationServerTests) prepare() (logging.LogSink, http.Handler, f
 		}
 	}
 
+}
+
+func (suite integrationServerTests) errorMatches(err error, regexp string) {
+	suite.T().Helper()
+	if suite.Error(err) {
+		suite.Regexp(regexp, err.Error())
+	}
 }
 
 func (suite *liveServerSuite) SetupTest() {
@@ -166,8 +177,9 @@ func (suite integrationServerTests) TestUpdateServers() {
 
 func (suite integrationServerTests) TestUpdateStateDeployments_Precondition() {
 	data := server.GDMWrapper{Deployments: []*sous.Deployment{}}
-	err := suite.client.Create("./state/deployments", nil, &data, nil)
-	suite.Error(err, `412 Precondition Failed: "resource present for If-None-Match=*!\n"`)
+	res, err := suite.client.Create("./state/deployments", nil, &data, nil)
+	suite.errorMatches(err, `^Create \./state/deployments params: map\[\]: 412 Precondition Failed: resource present for If-None-Match=\*!`)
+	suite.Nil(res)
 }
 
 func (suite integrationServerTests) TestUpdateStateDeployments_Update() {
@@ -187,6 +199,25 @@ func (suite integrationServerTests) TestUpdateStateDeployments_Update() {
 	suite.Len(data.Deployments, 3)
 }
 
+func (suite integrationServerTests) TestPUTSingleDeployment() {
+	data := server.SingleDeploymentBody{}
+	rez, err := suite.client.Create("/single-deployment", nil, data, nil)
+	suite.errorMatches(err, `404 Not Found.*No manifest with ID`) // empty ID gets 404
+	suite.Nil(rez)
+
+	params := map[string]string{
+		"cluster": "cluster-1",
+		"repo":    "github.com/opentable/sous",
+		"offset":  "",
+		"tag":     "1.0.1",
+	}
+
+	rez, err = suite.client.Create("/single-deployment", params, data, nil)
+	suite.NoError(err)
+	suite.NotNil(rez)
+	suite.Regexp(`deploy-queue-item\?.*action=`, rez.Location())
+}
+
 func (suite integrationServerTests) TestGetAllDeployQueues_empty() {
 	data := server.DeploymentQueuesResponse{}
 	updater, err := suite.client.Retrieve("./all-deploy-queues", nil, &data, nil)
@@ -196,13 +227,11 @@ func (suite integrationServerTests) TestGetAllDeployQueues_empty() {
 }
 
 func (suite integrationServerTests) TestGetAllDeployQueues_nonempty() {
-	// Replace the default queueset with this one that doesn't process anything.
 	// Since componentLocator is not a pointer, we need to replace the QueueSet
 	// in memory directly.
 	// Go vet complains on the next about copying a sync.RWMutex.
 	// In this case it's a zero RWMutex at the time of copy, so it is in fact
 	// safe.
-	*suite.componentLocator.QueueSet = *(sous.NewR11nQueueSet())
 	// Just push one rectification with the zero DeploymentID.
 	pair := sous.DeployablePair{}
 	pair.SetID(sous.DeploymentID{Cluster: "cluster1", ManifestID: sous.ManifestID{

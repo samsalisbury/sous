@@ -28,7 +28,7 @@ func newHealthResource(loc ComponentLocator) *healthResource {
 	return &healthResource{locator: loc}
 }
 
-func (hr *healthResource) Get(http.ResponseWriter, *http.Request, httprouter.Params) restful.Exchanger {
+func (hr *healthResource) Get(*restful.RouteMap, http.ResponseWriter, *http.Request, httprouter.Params) restful.Exchanger {
 	return &getHealthHandler{
 		version: hr.locator.Version,
 	}

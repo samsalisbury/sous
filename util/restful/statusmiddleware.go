@@ -21,13 +21,13 @@ type (
 
 func (ph *StatusMiddleware) errorBody(status int, rq *http.Request, w io.Writer, data interface{}, err error, stack []byte) {
 	if ph.gatelatch == "" {
-		w.Write([]byte(fmt.Sprintf("%s\n", data)))
+		w.Write([]byte(fmt.Sprintf("%v\n", data)))
 		return
 	}
 
 	if header := rq.Header.Get("X-Gatelatch"); header != ph.gatelatch {
 		w.Write([]byte(fmt.Sprintf("%s\n", data)))
-		ph.Warnf("Gatelatch header (%q) didn't match gatelatch env (%s)", ph.gatelatch, header)
+		messages.ReportLogFieldsMessage("Gatelatch header didn't match gatelatch env", logging.WarningLevel, ph.LogSink, ph.gatelatch, header)
 		return
 	}
 

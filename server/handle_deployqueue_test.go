@@ -25,9 +25,10 @@ func TestNewDeployQueueResource(t *testing.T) {
 	c := ComponentLocator{
 		QueueSet: qs,
 	}
+	rm := routemap(c)
 	dq := newDeployQueueResource(c)
 
-	got := dq.Get(nil, &http.Request{URL: &url.URL{}}, nil).(*GETDeployQueueHandler)
+	got := dq.Get(rm, nil, &http.Request{URL: &url.URL{}}, nil).(*GETDeployQueueHandler)
 	if got.QueueSet != qs {
 		t.Errorf("got different queueset")
 	}
@@ -96,9 +97,12 @@ func TestDeployQueueResource_Get_no_errors(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
+			c := ComponentLocator{}
+			rm := routemap(c)
+
 			dr := &DeployQueueResource{}
 			req := makeRequestWithQuery(t, tc.query)
-			got := dr.Get(nil, req, nil).(*GETDeployQueueHandler)
+			got := dr.Get(rm, nil, req, nil).(*GETDeployQueueHandler)
 
 			gotDID := got.DeploymentID
 			if gotDID != tc.wantDID {
@@ -130,9 +134,11 @@ func TestDeployQueueResource_Get_DeploymentID_errors(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.wantDIDErr, func(t *testing.T) {
+			c := ComponentLocator{}
+			rm := routemap(c)
 			dr := &DeployQueueResource{}
 			req := makeRequestWithQuery(t, tc.query)
-			got := dr.Get(nil, req, nil).(*GETDeployQueueHandler)
+			got := dr.Get(rm, nil, req, nil).(*GETDeployQueueHandler)
 
 			gotDIDErr := got.DeploymentIDErr
 			if gotDIDErr == nil || gotDIDErr.Error() != tc.wantDIDErr {

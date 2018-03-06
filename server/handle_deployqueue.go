@@ -27,7 +27,7 @@ func newDeployQueueResource(ctx ComponentLocator) *DeployQueueResource {
 }
 
 // Get returns a configured GETDeployQueueHandler.
-func (r *DeployQueueResource) Get(_ http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
+func (r *DeployQueueResource) Get(_ *restful.RouteMap, _ http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
 	qv := restful.QueryValues{Values: req.URL.Query()}
 	did, didErr := deploymentIDFromValues(qv)
 	return &GETDeployQueueHandler{

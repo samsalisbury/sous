@@ -31,7 +31,7 @@ func newArtifactResource(ctx ComponentLocator) *ArtifactResource {
 }
 
 // Put implements Putable on ArtifactResource, which marks it as accepting PUT requests
-func (ar *ArtifactResource) Put(_ http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
+func (ar *ArtifactResource) Put(_ *restful.RouteMap, _ http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
 	return &PUTArtifactHandler{
 		Request:     req,
 		QueryValues: ar.ParseQuery(req),

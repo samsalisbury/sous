@@ -25,6 +25,7 @@ import (
 type (
 	// The MetaHandler collects common behavior for route handlers.
 	MetaHandler struct {
+		routeMap      *RouteMap
 		router        *httprouter.Router
 		statusHandler *StatusMiddleware
 		logging.LogSink
@@ -178,7 +179,11 @@ func (mh *MetaHandler) PutHandling(resName string, factory ExchangeFactory) http
 		gr.Method = "GET"
 		grez := mh.synthResponse(gr)
 
-		if r.Header.Get("If-None-Match") == "*" && grez.StatusCode != 404 {
+		if r.Header.Get("If-None-Match") == "*" &&
+			// if it's missing, then none match
+			grez.StatusCode != http.StatusNotFound &&
+			// if GET isn't allowed, then none can match
+			grez.StatusCode != http.StatusMethodNotAllowed {
 			mh.writeHeaders(http.StatusPreconditionFailed, w, r, "resource present for If-None-Match=*!")
 			return
 		}
@@ -223,7 +228,7 @@ func (mh *MetaHandler) buildLogger(h Exchanger, r *http.Request, p httprouter.Pa
 }
 
 func (mh *MetaHandler) injectedHandler(factory ExchangeFactory, w http.ResponseWriter, r *http.Request, p httprouter.Params) Exchanger {
-	h := factory(w, r, p)
+	h := factory(mh.routeMap, w, r, p)
 
 	return mh.buildLogger(h, r, p)
 }

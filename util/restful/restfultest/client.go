@@ -64,10 +64,10 @@ func DummyUpdater() restful.UpdateDeleter {
 }
 
 // Create is a spy implementation of the restful.HTTPClient.Create method
-func (c *HTTPClientSpy) Create(url string, ps map[string]string, bd interface{}, hs map[string]string) error {
+func (c *HTTPClientSpy) Create(url string, ps map[string]string, bd interface{}, hs map[string]string) (restful.UpdateDeleter, error) {
 	res := c.Called(url, ps, bd, hs)
 	roundtrip(res.Get(0), bd)
-	return res.Error(1)
+	return res.Get(1).(restful.UpdateDeleter), res.Error(2)
 }
 
 // Retrieve is a spy implementation of the restful.HTTPClient.Retrieve method
@@ -78,14 +78,20 @@ func (c *HTTPClientSpy) Retrieve(url string, ps map[string]string, bd interface{
 	return res.Get(1).(restful.UpdateDeleter), res.Error(2)
 }
 
-// Update is a spy implementation of the restful.HTTPClient.Update method
+// Update is a spy implementation of the restful.UpdateDeleter.Update method
 func (u *UpdateSpy) Update(bd restful.Comparable, hs map[string]string) error {
 	res := u.Called(bd, hs)
 	return res.Error(0)
 }
 
-// Delete is a spy implementation of the restful.HTTPClient.Delete method
+// Delete is a spy implementation of the restful.UpdateDeleter.Delete method
 func (u *UpdateSpy) Delete(hs map[string]string) error {
 	res := u.Called(hs)
 	return res.Error(0)
+}
+
+// Location is a spy implemention of restful.UpdateDeleter.Location method
+func (u *UpdateSpy) Location() string {
+	res := u.Called()
+	return res.String(0)
 }

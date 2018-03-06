@@ -21,7 +21,7 @@ type (
 
 	// An ExchangeFactory builds an Exchanger -
 	// they're used to configure the RouteMap
-	ExchangeFactory func(http.ResponseWriter, *http.Request, httprouter.Params) Exchanger
+	ExchangeFactory func(*RouteMap, http.ResponseWriter, *http.Request, httprouter.Params) Exchanger
 
 	routeEntry struct {
 		Name, Path string
@@ -41,22 +41,22 @@ type (
 
 	// Getable tags ResourceFamilies that respond to GET
 	Getable interface {
-		Get(http.ResponseWriter, *http.Request, httprouter.Params) Exchanger
+		Get(*RouteMap, http.ResponseWriter, *http.Request, httprouter.Params) Exchanger
 	}
 
 	// Putable tags ResourceFamilies that respond to PUT
 	Putable interface {
-		Put(http.ResponseWriter, *http.Request, httprouter.Params) Exchanger
+		Put(*RouteMap, http.ResponseWriter, *http.Request, httprouter.Params) Exchanger
 	}
 
 	// Deleteable tags ResourceFamilies that respond to DELETE
 	Deleteable interface {
-		Delete(http.ResponseWriter, *http.Request, httprouter.Params) Exchanger
+		Delete(*RouteMap, http.ResponseWriter, *http.Request, httprouter.Params) Exchanger
 	}
 
 	// Optionsable tags ResourceFamilies that respond to OPTIONS
 	Optionsable interface {
-		Options(http.ResponseWriter, *http.Request, httprouter.Params) Exchanger
+		Options(*RouteMap, http.ResponseWriter, *http.Request, httprouter.Params) Exchanger
 	}
 	/*
 		Postable interface {
@@ -101,6 +101,7 @@ func BuildRouteMap(f func(RouteEntryBuilder)) *RouteMap {
 func (rm *RouteMap) buildMetaHandler(r *httprouter.Router, ls logging.LogSink) *MetaHandler {
 	ph := &StatusMiddleware{LogSink: ls, gatelatch: os.Getenv("GATELATCH")}
 	mh := &MetaHandler{
+		routeMap:      rm,
 		router:        r,
 		statusHandler: ph,
 		LogSink:       ls,
@@ -154,7 +155,7 @@ func defaultOptions(res Resource) ExchangeFactory {
 		ex.methods = append(ex.methods, "DELETE")
 	}
 
-	return func(http.ResponseWriter, *http.Request, httprouter.Params) Exchanger {
+	return func(*RouteMap, http.ResponseWriter, *http.Request, httprouter.Params) Exchanger {
 		return ex
 	}
 }

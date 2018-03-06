@@ -16,6 +16,10 @@ with respect to its command line interface and HTTP interface.
   `fields` -> `sous-fields`, `types` -> `sous-types`, `ids` -> `sous-ids`,
   `id-values` -> `sous-id-values`.
 
+### Added
+* Server: PUT /single-deployment endpoint immediately adds a rectification
+  to the queue and returns a link to monitor for completion.
+
 ## [0.5.71](//github.com/opentable/sous/compare/0.5.70...0.5.71)
 
 ### Added
