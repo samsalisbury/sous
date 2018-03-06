@@ -12,6 +12,12 @@ import (
 )
 
 type (
+	// ResponseMeta contains metadata to include in API response bodies.
+	ResponseMeta struct {
+		// Links is a set of links related to a response body.
+		Links map[string]string
+	}
+
 	// NameData structs contain the pair of clustername to URL for data transfer
 	NameData struct {
 		ClusterName string
@@ -45,6 +51,13 @@ type (
 	QueueDesc struct {
 		sous.DeploymentID
 		Length int
+	}
+
+	// SingleDeploymentBody is the response struct returned from handlers
+	// of HTTP methods of a SingleDeploymentResource.
+	SingleDeploymentBody struct {
+		Meta       ResponseMeta
+		Deployment sous.Deployment
 	}
 )
 
@@ -100,6 +113,8 @@ func (g GDMWrapper) AddHeaders(headers http.Header) {
 }
 
 // Etag returns a string suitable for use in an Etag header for this data type.
+// n.b. that Etags are generated automatically for most restful bodies
+// GDMWrapper is unique because any *set* of Deployments is equivalent, regardless of their order.
 func (g GDMWrapper) etag() string {
 	deps := make([]*sous.Deployment, 0, len(g.Deployments))
 	copy(deps, g.Deployments)
@@ -118,27 +133,21 @@ func (g *GDMWrapper) unwrap() *sous.Deployments {
 	return &ds
 }
 
-// SingleDeploymentBody is the response struct returned from handlers
-// of HTTP methods of a SingleDeploymentResource.
-type SingleDeploymentBody struct {
-	Meta           ResponseMeta
-	DeploySpec     sous.DeploySpec
-	ManifestHeader sous.Manifest
+// AddHeaders implements HeaderAdder on SingleDeploymentBody
+func (b SingleDeploymentBody) AddHeaders(headers http.Header) {
+	headers.Add("Etag", b.etag())
 }
 
 // Etag returns a string suitable for use in an Etag header for this data type.
+// SingleDeploymentBody includes a Meta subobject, whose values may vary
+// independantly of the Etag.
 func (b *SingleDeploymentBody) etag() string {
 	hash := sha512.New()
-	ds, err := json.Marshal(b.DeploySpec)
+	ds, err := json.Marshal(b.Deployment)
 	if err != nil {
 		panic("unmarshallable SingleDeploymentBody.DeploySpec")
 	}
-	mh, err := json.Marshal(b.ManifestHeader)
-	if err != nil {
-		panic("unmarshallable SingleDeploymentBody.ManifestHeader")
-	}
 
 	hash.Write(ds)
-	hash.Write(mh)
 	return "w/" + base64.URLEncoding.EncodeToString(hash.Sum(nil))
 }

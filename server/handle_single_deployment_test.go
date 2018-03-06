@@ -3,256 +3,206 @@ package server
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
-	"io/ioutil"
-	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"strings"
 	"testing"
 
-	"github.com/nyarly/spies"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/test"
-	"github.com/pkg/errors"
-	"github.com/samsalisbury/semv"
 )
 
-func TestSingleDeploymentResource_Put(t *testing.T) {
-
-	testCases := []struct {
-		Desc                string
-		URL                 string
-		Body                func(t *testing.T) []byte
-		WantBodyErr         string
-		Header              func(t *testing.T) http.Header
-		WantDeploymentID    sous.DeploymentID
-		WantDeploymentIDErr string
-		WantUser            sous.User
-	}{
-		{
-			Desc: "valid body",
-			URL:  "/single-deployment?repo=github.com/user1/repo1&cluster=cluster1",
-			Body: func(t *testing.T) []byte {
-				b, _ := makeBodyFromFixture(t, "github.com/user1/repo1", "cluster1")
-				j, err := json.Marshal(b)
-				if err != nil {
-					t.Fatalf("setup failed: %s", err)
-				}
-				return j
-			},
-			WantDeploymentID: sous.DeploymentID{
-				ManifestID: sous.ManifestID{
-					Source: sous.SourceLocation{
-						Repo: "github.com/user1/repo1",
-					},
-				},
-				Cluster: "cluster1",
-			},
-			Header: func(t *testing.T) http.Header {
-				h := http.Header{}
-				h.Add("Sous-User-Name", "test-user")
-				h.Add("Sous-User-Email", "test-user@example.com")
-				return h
-			},
-			WantUser: sous.User{Name: "test-user", Email: "test-user@example.com"},
-		},
-		{
-			Desc: "valid body despite nonexistent cluster & mismatch with query",
-			URL:  "/single-deployment?repo=github.com/user1/repo1&cluster=blah",
-			Body: func(t *testing.T) []byte {
-				b, _ := makeBodyFromFixture(t, "github.com/user1/repo1", "cluster1")
-				j, err := json.Marshal(b)
-				if err != nil {
-					t.Fatalf("setup failed: %s", err)
-				}
-				return j
-			},
-			WantDeploymentID: sous.DeploymentID{
-				ManifestID: sous.ManifestID{
-					Source: sous.SourceLocation{
-						Repo: "github.com/user1/repo1",
-					},
-				},
-				Cluster: "blah",
-			},
-			Header: func(t *testing.T) http.Header {
-				h := http.Header{}
-				h.Add("Sous-User-Name", "test-user")
-				h.Add("Sous-User-Email", "test-user@example.com")
-				return h
-			},
-			WantUser: sous.User{Name: "test-user", Email: "test-user@example.com"},
-		},
-		{
-			Desc: "body is invalid json",
-			URL:  "/single-deployment?repo=github.com/user1/repo1&cluster=blah",
-			Body: func(t *testing.T) []byte {
-				b, _ := makeBodyFromFixture(t, "github.com/user1/repo1", "cluster1")
-				j, err := json.Marshal(b)
-				if err != nil {
-					t.Fatalf("setup failed: %s", err)
-				}
-				j[0] = '?' // Make json invalid.
-				return j
-			},
-			WantBodyErr: "invalid character '?' looking for beginning of value",
-			WantDeploymentID: sous.DeploymentID{
-				ManifestID: sous.ManifestID{
-					Source: sous.SourceLocation{
-						Repo: "github.com/user1/repo1",
-					},
-				},
-				Cluster: "blah",
-			},
-		},
-		{
-			Desc:                "missing cluster",
-			URL:                 "/single-deployment?repo=github.com/user1/repo1",
-			WantDeploymentIDErr: "No cluster given",
-		},
-		{
-			Desc:                "missing repo",
-			URL:                 "/single-deployment?cluster=cluster1",
-			WantDeploymentIDErr: "No repo given",
-		},
+func TestSingleDeploymentResource(t *testing.T) {
+	cl := ComponentLocator{
+		DeploymentManager: sous.MakeDeploymentManager(sm),
+		QueueSet:          qs,
 	}
+	r := newSingleDeploymentResource(cl)
 
-	for _, tc := range testCases {
-		t.Run(tc.Desc, func(t *testing.T) {
+	rm := routemap(cl)
 
-			// Pointers to dependencies.
-			qs := sous.NewR11nQueueSet()
-			gdm := test.DefaultStateFixture()
-			sm := &sous.DummyStateManager{
-				State: test.DefaultStateFixture(),
-			}
+	rw := httptest.NewRecorder()
 
-			// Setup.
-			cl := ComponentLocator{
-				StateManager: sm,
-				QueueSet:     qs,
-			}
-			r := SingleDeploymentResource{context: cl}
-			rm := routemap(cl)
+	t.Run("Get()", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "./single-deployment", nil)
 
-			u, err := url.Parse(tc.URL)
-			if err != nil {
-				t.Fatalf("setup failed: %s", err)
-			}
+		gex := r.Get(rm, rw, req, nil)
 
-			bodyBytes := []byte("{}")
-			if tc.Body != nil {
-				bodyBytes = tc.Body(t)
-			}
-			bodyReadCloser := ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+		if gex == nil {
+			t.Fatalf("r.Get returned nil")
+		}
 
-			var header http.Header
-			if tc.Header != nil {
-				header = tc.Header(t)
-			}
+		gsdh, is := gex.(*GETSingleDeploymentHandler)
+		if !is {
+			t.Fatalf("r.GET did not return a GETSingleDeploymentHandler")
+		}
+		if gsdh.responseWriter != rw {
+			t.Errorf("GET handler didn't get the ResponseWriter")
+		}
+		if gsdh.req != req {
+			t.Errorf("GET handler didn't get the Request")
+		}
+		if gsdh.DeploymentManager != cl.DeploymentManager {
+			t.Errorf("GET handler didn't get the DeploymentManager")
+		}
+	})
 
-			req := &http.Request{
-				URL:    u,
-				Body:   bodyReadCloser,
-				Header: header,
-			}
+	t.Run("Put()", func(t *testing.T) {
+		req := httptest.NewRequest("PUT", "./single-deployment", bytes.NewBufferString("{}"))
+		pex := r.Put(rm, rw, req, nil)
+		if pex == nil {
+			t.Fatalf("r.Get returned nil")
+		}
 
-			// Shebang.
+		psdh, is := pex.(*PUTSingleDeploymentHandler)
+		if !is {
+			t.Fatalf("r.PUT did not return a PUTSingleDeploymentHandler")
+		}
+		if psdh.responseWriter != rw {
+			t.Errorf("PUT handler didn't get the ResponseWriter")
+		}
+		if psdh.req != req {
+			t.Errorf("PUT handler didn't get the Request")
+		}
+		if psdh.DeploymentManager != cl.DeploymentManager {
+			t.Errorf("PUT handler didn't get the DeploymentManager")
+		}
+		if psdh.QueueSet != cl.QueueSet {
+			t.Errorf("PUT handler didn't get the QueueSet")
+		}
+		if psdh.routeMap != rm {
+			t.Errorf("PUT handler didn't get the route map")
+		}
+	})
 
-			got := r.Put(rm, nil, req, nil).(*PUTSingleDeploymentHandler)
-
-			// Assertions.
-
-			if got.DeploymentID != tc.WantDeploymentID {
-				t.Errorf("got deployment ID %q; want %q",
-					got.DeploymentID, tc.WantDeploymentID)
-			}
-
-			if got.User != tc.WantUser {
-				t.Errorf("got user %# v; want %# v", got.User, tc.WantUser)
-			}
-
-			if tc.WantBodyErr != "" {
-				gotBodyErr := fmt.Sprint(got.BodyErr)
-				if gotBodyErr != tc.WantBodyErr {
-					t.Errorf("got body error %q; want %q", gotBodyErr, tc.WantBodyErr)
-				}
-			} else if got.BodyErr != nil {
-				t.Errorf("got body error %q; want nil", got.BodyErr)
-			}
-
-			if tc.WantDeploymentIDErr != "" {
-				gotDeploymentIDErr := fmt.Sprint(got.DeploymentIDErr)
-				if gotDeploymentIDErr != tc.WantDeploymentIDErr {
-					t.Errorf("got deployment ID error %q; want %q",
-						gotDeploymentIDErr, tc.WantDeploymentIDErr)
-				}
-			} else if got.DeploymentIDErr != nil {
-				t.Errorf("got deployment ID error %q; want nil", got.DeploymentIDErr)
-			}
-
-			// Assert dependencies passed through.
-
-			if got.StateWriter.(*sous.DummyStateManager) != sm {
-				t.Errorf("want state manager passed through as state reader")
-			}
-
-			// PushToQueueSet must be set to QueueSet.Push. This is a func to
-			// aid with testing PUTSingleDeployment.Exchange method.
-			got.PushToQueueSet(&sous.Rectification{})
-			if qs.Queues()[sous.DeploymentID{}].Len() != 1 {
-				t.Errorf("want PushToQueueSet to push to the provided queueset")
-			}
-
-			// GDMToDeployments must be set to GDM.Deployments, and therefore
-			// they must produce the same set of deployments.
-			gotDeployments, err := got.GDMToDeployments(gdm)
-			if err != nil {
-				t.Errorf("GDMToDeployments failed: %s", err)
-			}
-			wantDeployments, err := gdm.Deployments()
-			if err != nil {
-				t.Errorf("setup failed: test fixture not valid: %s", err)
-			}
-			if gotDeployments.Len() != wantDeployments.Len() {
-				t.Errorf("GDMToDeployments not set to gdm.Deployments")
-			}
-			// TODO SS: Diff method on Deployments; mutate GDM and check this
-			// assertion still holds.
-
-		})
-
-	}
 }
 
-// makeBodyFromFixture returns a body derived from data in the test fixture.
-var makeBodyFromFixture = func(t *testing.T, repo, cluster string) (*SingleDeploymentBody, sous.DeploymentID) {
-	t.Helper()
-	state := test.DefaultStateFixture()
-	m, ok := state.Manifests.Single(func(m *sous.Manifest) bool {
-		return m.Source.Repo == repo
-	})
-	if !ok {
-		t.Fatalf("setup failed: no manifest with repo %q in default fixture", repo)
-	}
-	d, ok := m.Deployments[cluster]
-	if !ok {
-		t.Fatalf("setup failed: manifest %q has no deployment %q in default fixture", repo, cluster)
-	}
-	m.Deployments = nil
-
-	return &SingleDeploymentBody{
-			ManifestHeader: *m,
-			DeploySpec:     d,
-		},
-		sous.DeploymentID{
-			ManifestID: m.ID(),
-			Cluster:    cluster,
-		}
+type psdhExScenario struct {
+	response interface{}
+	status   int
 }
 
 func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
+	setup := func(sent *SingleDeploymentBody, did map[string]string) {
+		// Setup
+
+		stateWriter := newStateWriterSpy()
+		queueSet := sous.NewR11nQueueSet()
+		user := sous.User{
+			Name:  "Test User",
+			Email: "testuser@example.com",
+		}
+
+		state := test.DefaultStateFixture()
+		stateToDeployments := func(s *sous.State) (sous.Deployments, error) {
+			return state.Deployments()
+		}
+
+		rm := routemap(ComponentLocator{})
+
+		cl := ComponentLocator{
+			DeploymentManager: sous.MakeDeploymentManager(sm),
+			QueueSet:          qs,
+		}
+		r := newSingleDeploymentResource(cl)
+
+		rm := routemap(cl)
+
+		values := url.Values{}
+		for k, v := range did {
+			values.Add(k, v)
+		}
+		url := url.Parse("http://sous.example.com/single-deployment?" + values.Encode())
+
+		bytes, err := json.Marshal(sent)
+		if err != nil {
+			t.Fatalf("Error marshalling test sent body: %v", err)
+		}
+		body := bytes.NewBuffer(bytes)
+
+		req := httptest.NewRequest("PUT", "./single-deployment", body)
+
+		psd := r.Put(rm, req, rw, nil)
+
+		response, status := psd.Exchange()
+		return psdhExScenario{
+			response: response,
+			status:   status,
+		}
+	}
+
+	assertStatus := func(t *testing.T, expected int, scenario psdhExScenario) {
+		t.Helper()
+		if scenario.status != expected {
+			t.Errorf("Expected status %d, got %d", expected, scenario.status)
+		}
+	}
+
+	assertStringBody(t *testing.T, expected string, scenario) {
+		t.Helper()
+		body, is := scenario.response.(string)
+		if !is {
+			t.Errorf("Expected a simple string response - got %T", scenario.response)
+			return
+		}
+		if !strings.Contains(body, expected) {
+			t.Errorf("Expected response to contain %q, but not found in %q", expected, body)
+		}
+	}
+
+	didQuery := func(repo, offset, cluster, flavor string) map[string]string {
+		return map[string]string{
+			"repo": repo,
+			"offset": offset,
+			"cluster": cluster,
+			"flavor": flavor,
+		}
+	}
+
+	t.Run("body parsing error", func(t *testing.T) {
+		scenario := setup(nil, map[string]string{})
+		assertStatus(t, 400, scenario)
+		assertStringBody(t, `Error parsing body: body parse error.`, scenario)
+	})
+
+	t.Run("no matching repo", func(t *testing.T) {
+		scenario := setup(&SingleDeploymentBody{Deployment: sous.DeploymentFixture("")}, didQuery("nonexistent", "", "cluster-1", ""))
+		assertStatus(t, 404, scenario)
+		assertStringBody(t, "No manifest", scenario)
+	})
+
+	t.Run( "no matching cluster", func(t *testing.T) {
+		BodyAndID: func() (*SingleDeploymentBody, sous.DeploymentID) {
+		scenario := setup(&SingleDeploymentBody{Deployment: sous.DeploymentFixture("")}, didQuery("github.com/user1/repo1", "", "nonexistent", ""))
+		assertStatus(t, 404, scenario)
+		assertStringBody(t, "deployment defined", scenario)
+	})
+}
+
+/*
+	makeBodyFromFixture := func(t *testing.T, repo, cluster string) (*SingleDeploymentBody, sous.DeploymentID) {
+		t.Helper()
+		state := test.DefaultStateFixture()
+		m, ok := state.Manifests.Single(func(m *sous.Manifest) bool {
+			return m.Source.Repo == repo
+		})
+		if !ok {
+			t.Fatalf("setup failed: no manifest with repo %q in default fixture", repo)
+		}
+		d, ok := m.Deployments[cluster]
+		if !ok {
+			t.Fatalf("setup failed: manifest %q has no deployment %q in default fixture", repo, cluster)
+		}
+		m.Deployments = nil
+
+		return &SingleDeploymentBody{
+				ManifestHeader: *m,
+				DeploySpec:     d,
+			},
+			sous.DeploymentID{
+				ManifestID: m.ID(),
+				Cluster:    cluster,
+			}
+	}
 
 	testCases := []struct {
 		// Desc is a short unique description of the test case.
@@ -289,25 +239,6 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 		WantError string
 	}{
 		{
-			Desc: "body parsing error",
-			BodyAndID: func() (*SingleDeploymentBody, sous.DeploymentID) {
-				return nil, sous.DeploymentID{}
-			},
-			BodyErrIn:  errors.New("body parse error"),
-			WantStatus: 400,
-			WantError:  `Error parsing body: body parse error.`,
-		},
-		{
-			Desc: "no matching repo",
-			BodyAndID: func() (*SingleDeploymentBody, sous.DeploymentID) {
-				b, did := makeBodyFromFixture(t, "github.com/user1/repo1", "cluster1")
-				// Set bogus repo.
-				did.ManifestID.Source.Repo = "nonexistent"
-				return b, did
-			},
-			WantStatus: 404,
-			WantError:  `No manifest with ID "nonexistent,dir1~flavor1".`,
-		},
 		{
 			Desc: "no matching cluster",
 			BodyAndID: func() (*SingleDeploymentBody, sous.DeploymentID) {
@@ -401,53 +332,6 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.Desc, func(t *testing.T) {
 
-			// Setup
-
-			sent, did := tc.BodyAndID()
-			stateWriter := newStateWriterSpy()
-			if tc.OverrideStateWriter != (stateWriterSpy{}) {
-				stateWriter = tc.OverrideStateWriter
-			}
-			queueSet := sous.NewR11nQueueSet()
-			user := sous.User{
-				Name:  "Test User",
-				Email: "testuser@example.com",
-			}
-
-			state := test.DefaultStateFixture()
-			stateToDeployments := func(s *sous.State) (sous.Deployments, error) {
-				return state.Deployments()
-			}
-			if tc.OverrideGDMToDeployments != nil {
-				stateToDeployments = tc.OverrideGDMToDeployments
-			}
-
-			pushToQueueSet := queueSet.Push
-			if tc.OverridePushToQueueSet != nil {
-				pushToQueueSet = tc.OverridePushToQueueSet
-			}
-
-			rm := routemap(ComponentLocator{})
-
-			psd := PUTSingleDeploymentHandler{
-				SingleDeploymentHandler: SingleDeploymentHandler{
-					DeploymentID:   did,
-					Body:           sent,
-					GDM:            state,
-					User:           user,
-					responseWriter: httptest.NewRecorder(),
-				},
-				BodyErr:          tc.BodyErrIn,
-				GDMToDeployments: stateToDeployments,
-				StateWriter:      stateWriter,
-				PushToQueueSet:   pushToQueueSet,
-				routeMap:         rm,
-			}
-
-			// Shebang
-
-			gotBody, gotStatus := psd.Exchange()
-
 			// Assertions...
 
 			body, ok := gotBody.(*SingleDeploymentBody)
@@ -540,3 +424,4 @@ func (sw stateWriterSpy) WriteState(s *sous.State, u sous.User) error {
 	sw.Called(s, u)
 	return sw.Error
 }
+*/
