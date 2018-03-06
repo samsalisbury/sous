@@ -311,6 +311,13 @@ postgres-update-schema: postgres-start
 postgres-clean: postgres-stop
 	rm -r "$(DEV_POSTGRES_DIR)"
 
+graphs: $(patsubst %.dot,%.png,$(shell ls doc/*.dot))	
+
+doc/%.png: doc/%.dot
+	@command -v dot >/dev/null 2>&1 || { \
+		echo "ERROR: dot command not found, please install graphviz"; exit 1; }
+	dot -Tpng $(patsubst %.png,%.dot,$@) > $@
+
 .PHONY: artifactory clean clean-containers clean-container-certs \
 	clean-running-containers clean-container-images coverage deb-build \
 	install-fpm install-jfrog install-ggen install-build-tools legendary release \
