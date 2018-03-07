@@ -69,7 +69,7 @@ func TestSQLMessageRead(t *testing.T) {
 
 func assertMetricsCall(t *testing.T, spy logging.LogSinkController, method, metric string, expectedCount int) {
 	calls := spy.Metrics.CallsMatching(func(m string, args mock.Arguments) bool {
-		if method != method {
+		if m != method {
 			return false
 		}
 
