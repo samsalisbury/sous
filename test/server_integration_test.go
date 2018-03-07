@@ -167,7 +167,7 @@ func (suite integrationServerTests) TestUpdateServers() {
 		Servers: []server.NameData{{ClusterName: "name", URL: "http://url"}},
 	}
 
-	err = updater.Update(&newServers, nil)
+	_, err = updater.Update(&newServers, nil)
 	suite.NoError(err)
 
 	data = server.ServerListData{}
@@ -192,7 +192,7 @@ func (suite integrationServerTests) TestUpdateStateDeployments_Update() {
 	suite.NotNil(updater)
 
 	data.Deployments = append(data.Deployments, sous.DeploymentFixture("sequenced-repo"))
-	err = updater.Update(&data, nil)
+	_, err = updater.Update(&data, nil)
 	suite.NoError(err)
 
 	_, err = suite.client.Retrieve("./state/deployments", nil, &data, nil)
@@ -222,9 +222,9 @@ func (suite integrationServerTests) TestPUTSingleDeployment() {
 	suite.NoError(err)
 	suite.NotNil(rez)
 	data.Deployment.NumInstances = 100
-	err = rez.Update(&data, nil)
+	updater, err := rez.Update(&data, nil)
 	suite.NoError(err)
-	suite.Regexp(`deploy-queue-item\?.*action=`, rez.Location())
+	suite.Regexp(`deploy-queue-item\?.*action=`, updater.Location())
 }
 
 func (suite integrationServerTests) TestGetAllDeployQueues_empty() {
