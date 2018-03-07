@@ -1,9 +1,8 @@
-package test
+package sous
 
 import (
 	"fmt"
 
-	. "github.com/opentable/sous/lib"
 	"github.com/samsalisbury/semv"
 )
 
