@@ -16,7 +16,7 @@ type (
 
 	// GETAllDeployQueuesHandler handles GET exchanges for deployments.
 	GETAllDeployQueuesHandler struct {
-		QueueSet *sous.R11nQueueSet
+		QueueSet sous.QueueSet
 	}
 )
 

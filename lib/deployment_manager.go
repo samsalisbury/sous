@@ -30,6 +30,10 @@ func NewDeploymentManagerSpy() (DeploymentManager, *spies.Spy) {
 
 func (spy deploymentManagerSpy) ReadDeployment(did DeploymentID) (*Deployment, error) {
 	res := spy.Called(did)
+	if res.Get(0) == nil {
+		return nil, res.Error(1)
+	}
+
 	return res.Get(0).(*Deployment), res.Error(1)
 }
 

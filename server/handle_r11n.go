@@ -19,7 +19,7 @@ type (
 	// GETR11nHandler handles getting r11ns.
 	GETR11nHandler struct {
 		WaitForResolution bool
-		QueueSet          *sous.R11nQueueSet
+		QueueSet          sous.QueueSet
 		DeploymentID      sous.DeploymentID
 		DeploymentIDErr   error
 		R11nID            sous.R11nID

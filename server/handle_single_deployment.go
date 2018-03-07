@@ -20,7 +20,7 @@ type (
 	// specs. See Exchange method for more details.
 	PUTSingleDeploymentHandler struct {
 		SingleDeploymentHandler
-		QueueSet *sous.R11nQueueSet
+		QueueSet sous.QueueSet
 		routeMap *restful.RouteMap
 	}
 
@@ -73,7 +73,6 @@ func (sdr *SingleDeploymentResource) Put(rm *restful.RouteMap, rw http.ResponseW
 
 // Get returns a configured get single deployment handler.
 func (sdr *SingleDeploymentResource) Get(rm *restful.RouteMap, rw http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
-	gdm := sdr.context.liveState()
 	sdh := sdr.newSingleDeploymentHandler(req, rw)
 	return &GETSingleDeploymentHandler{SingleDeploymentHandler: sdh}
 }
@@ -126,7 +125,7 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 
 	dep, err := psd.DeploymentManager.ReadDeployment(did)
 	if err != nil {
-		return psd.err(404, "No deployment with ID %q. %v", did.ManifestID, err)
+		return psd.err(404, "No deployment with ID %q. %v", did, err)
 	}
 
 	different, _ := psd.Body.Deployment.Diff(dep)

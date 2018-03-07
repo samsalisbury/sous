@@ -31,7 +31,7 @@ type (
 		ResolveFilter          *sous.ResolveFilter
 		*sous.AutoResolver
 		Version  semv.Version
-		QueueSet *sous.R11nQueueSet
+		QueueSet sous.QueueSet
 	}
 )
 
