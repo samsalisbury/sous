@@ -3,6 +3,9 @@ SHELL := /usr/bin/env bash
 XDG_DATA_HOME ?= $(HOME)/.local/share
 DEV_POSTGRES_DIR ?= $(XDG_DATA_HOME)/sous/postgres
 DEV_POSTGRES_DATA_DIR ?= $(DEV_POSTGRES_DIR)/data
+DEV_DOCKER_POSTGRES_DIR ?= $(XDG_DATA_HOME)/sous/postgres_docker
+DEV_DOCKER_POSTGRES_DATA_DIR ?= $(DEV_DOCKER_POSTGRES_DIR)/data
+
 PGPORT ?= 6543
 DOCKERPGPORT ?= 5432
 PG_DOCKER_NAME ?= pgdocker
@@ -307,7 +310,7 @@ $(DEV_POSTGRES_DATA_DIR)/postgresql.conf: $(DEV_POSTGRES_DATA_DIR) dev_support/p
 postgres-docker-start:
 	if ! (docker run postgres:10.3 pg_isready -U postgres -h $(HOSTNAME) -p $(PGPORT)); then \
 		rm -rf $(DEV_POSTGRES_DATA_DIR) & \
-		docker run --name postgres -p $(PGPORT):5432 --rm --user "$(id -u):$(id -g)" -v /etc/passwd:/etc/passwd:ro -v $(DEV_POSTGRES_DATA_DIR):/var/lib/postgresql/data postgres:10.3 & \
+		docker run --name postgres -p $(PGPORT):5432 --rm --user "$(id -u):$(id -g)" -v /etc/passwd:/etc/passwd:ro -v $(DEV_DOCKER_POSTGRES_DATA_DIR):/var/lib/postgresql/data postgres:10.3 & \
 		until docker run postgres:10.3 pg_isready -h $(HOSTNAME) -p $(PGPORT); do sleep 1; done \
 	fi
 	docker run postgres:10.3 createdb -h $(HOSTNAME) -p $(PGPORT) -U postgres  $(DB_NAME) > /dev/null 2>&1 || true
