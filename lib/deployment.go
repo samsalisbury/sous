@@ -95,6 +95,7 @@ func (d *Deployment) Validate() []Flaw {
 
 	for _, f := range flaws {
 		f.AddContext("deployment", d)
+		f.AddContext("cluster", d.ClusterName)
 	}
 
 	return flaws
