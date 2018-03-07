@@ -196,12 +196,22 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 		}
 	}
 
-	t.Run("body parsing error", func(t *testing.T) {
+	t.Run("query parsing error", func(t *testing.T) {
 		scenario := setup(nil, map[string]string{})
+		scenario.hasDeployment(sous.DeploymentFixture(""))
 		scenario.exercise()
 
 		scenario.assertStatus(t, 400)
-		scenario.assertStringBody(t, `Error parsing body: body parse error.`)
+		scenario.assertStringBody(t, `Cannot decode Deployment ID:`)
+	})
+
+	t.Run("body parsing error", func(t *testing.T) {
+		scenario := setup(nil, didQuery("github.com/opentable/something", "", "cluster", ""))
+		scenario.hasDeployment(sous.DeploymentFixture(""))
+		scenario.exercise()
+
+		scenario.assertStatus(t, 400)
+		scenario.assertStringBody(t, `Invalid deployment`)
 	})
 
 	t.Run("no matching repo", func(t *testing.T) {

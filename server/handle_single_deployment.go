@@ -114,13 +114,18 @@ func (sdh *SingleDeploymentHandler) ok(code int, links map[string]string) (Singl
 // from the current actual deployment set. It first writes the new
 // deployment spec to the GDM.
 func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
+	did, err := psd.depID()
+	if err != nil {
+		return psd.err(400, "Cannot decode Deployment ID: %s.", err)
+	}
+
 	if err := json.NewDecoder(psd.req.Body).Decode(&psd.Body); err != nil {
 		return psd.err(400, "Error parsing body: %s.", err)
 	}
 
-	did, err := psd.depID()
-	if err != nil {
-		return psd.err(400, "Cannot decode Deployment ID: %s.", err)
+	flaws := psd.Body.Deployment.Validate()
+	if len(flaws) > 0 {
+		return psd.err(400, "Invalid deployment: %q", flaws)
 	}
 
 	dep, err := psd.DeploymentManager.ReadDeployment(did)
