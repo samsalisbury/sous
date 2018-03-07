@@ -15,12 +15,8 @@ LIQUIBASE_DEFAULTS := ./dev_support/liquibase/liquibase.properties
 LIQUIBASE_SERVER := jdbc:postgresql://localhost:$(PGPORT)
 LIQUIBASE_SHARED_FLAGS = --changeLogFile=database/changelog.xml --defaultsFile=./dev_support/liquibase/liquibase.properties
 
-LIQUIBASE_FLAGS := --url $(LIQUIBASE_SERVER)/$(DB_NAME) $(LIQUIBASE_SHARED_FLAGS)
-LIQUIBASE_TEST_FLAGS := --url $(LIQUIBASE_SERVER)/$(TEST_DB_NAME) $(LIQUIBASE_SHARED_FLAGS)
-
-LIQUIBASE_DOCKER_FLAGS := --url "$(LIQUIBASE_SERVER)/$(DB_NAME)?user=pguser&password=pguser" $(LIQUIBASE_SHARED_FLAGS)
-LIQUIBASE_DOCKER_TEST_FLAGS := --url "$(LIQUIBASE_SERVER)/$(TEST_DB_NAME)?user=pguser&password=pguser" $(LIQUIBASE_SHARED_FLAGS)
-
+LIQUIBASE_FLAGS := --url "$(LIQUIBASE_SERVER)/$(DB_NAME)?user=postgres" $(LIQUIBASE_SHARED_FLAGS)
+LIQUIBASE_TEST_FLAGS := --url "$(LIQUIBASE_SERVER)/$(TEST_DB_NAME)?user=postgres" $(LIQUIBASE_SHARED_FLAGS)
 
 SQLITE_URL := https://sqlite.org/2017/sqlite-autoconf-3160200.tar.gz
 GO_VERSION := 1.10
@@ -232,6 +228,9 @@ test-gofmt:
 test-unit: postgres-test-prepare
 	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -timeout 3m -race $(SOUS_PACKAGES_WITH_TESTS)
 
+test-unit-no:
+	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -timeout 3m -race $(SOUS_PACKAGES_WITH_TESTS)
+
 # Note, the TEMP DIR was needed for the volume mounting, tried to coalesce in the source folder but go kept picking up
 # the other source files and would create bad imports so used temp directory instead
 test-unit-tc:
@@ -305,22 +304,18 @@ $(DEV_POSTGRES_DATA_DIR):
 $(DEV_POSTGRES_DATA_DIR)/postgresql.conf: $(DEV_POSTGRES_DATA_DIR) dev_support/postgres/postgresql.conf
 	cp dev_support/postgres/postgresql.conf $@
 
-
 postgres-docker-start:
 	if ! (docker run postgres:10.3 pg_isready -h $(HOSTNAME) -p $(PGPORT)); then \
-		docker run --name postgres -p 6543:5432 --rm --user "$(id -u):$(id -g)" -v /etc/passwd:/etc/passwd:ro -v $(DEV_POSTGRES_DATA_DIR):/var/lib/postgresql/data postgres:10.3 & \
+		rm -rf $(DEV_POSTGRES_DATA_DIR) & \
+		docker run --name postgres -p $(PGPORT):5432 --rm --user "$(id -u):$(id -g)" -v /etc/passwd:/etc/passwd:ro -v $(DEV_POSTGRES_DATA_DIR):/var/lib/postgresql/data postgres:10.3 & \
 		until docker run postgres:10.3 pg_isready -h $(HOSTNAME) -p $(PGPORT); do sleep 1; done \
 	fi
-	docker run postgres:10.3 createdb -h $(HOSTNAME) -p $(PGPORT) -U postgres $(TEST_DB_NAME) > /dev/null 2>&1 || true
+	docker run postgres:10.3 createdb -h $(HOSTNAME) -p $(PGPORT) -U postgres  $(DB_NAME) > /dev/null 2>&1 || true
+	liquibase $(LIQUIBASE_FLAGS) update
 
-	#docker run -it -p 6543:5432 --rm --user "$(id -u):$(id -g)" -v /etc/passwd:/etc/passwd:ro -v $(DEV_POSTGRES_DATA_DIR):/var/lib/postgresql/data postgres
-	#docker run -it -p 6543:5432 --rm --user "$(id -u):$(id -g)" -v /etc/passwd:/etc/passwd:ro -v /home/jc/.local/share/sous/postgres:/var/lib/postgresql/data postgres
-		#docker run -it --rm -v pgdata:/var/lib/postgresql/data bash chown -R 1000:1000 /var/lib/postgresql/data & \
-		#docker run -it --rm --user 1000:1000 -v pgdata:/var/lib/postgresql/data postgres & \
-		#docker run -d --name $(PG_DOCKER_NAME) -v pgdata:/var/lib/postgresql/data -v "dev_support/postgres/postgresql.conf":/etc/postgresql/postgresql.conf postgres:10.3 -c 'config_file=/etc/postgresql/postgresql.conf' & \
-#docker volume create pgdata & \
-#		docker run -d --name $(PG_DOCKER_NAME) -p 5432:5432 -v pgdata:/var/lib/postgressql/data postgres:10.3 & \
-#		until docker run --rm --link $(PG_DOCKER_NAME):pg postgres:10.3 pg_isready -U postgres -h pg; do sleep 1; done \
+postgres-docker-create-testdb: postgres-docker-start
+	docker run postgres:10.3 createdb -h $(HOSTNAME) -p $(PGPORT) -U postgres  $(TEST_DB_NAME) > /dev/null 2>&1 || true
+	liquibase $(LIQUIBASE_TEST_FLAGS) update
 
 postgres-start: $(DEV_POSTGRES_DATA_DIR)/postgresql.conf
 	if ! (pg_isready -h localhost -p $(PGPORT)); then \
@@ -351,7 +346,7 @@ postgres-update-schema: postgres-start
 postgres-clean: postgres-stop
 	rm -r "$(DEV_POSTGRES_DIR)"
 
-diagrams: $(patsubst %.dot,%.png,$(shell ls doc/diagrams/*.dot))	
+diagrams: $(patsubst %.dot,%.png,$(shell ls doc/diagrams/*.dot))
 
 doc/diagrams/%.png: doc/diagrams/%.dot
 	@command -v dot >/dev/null 2>&1 || { \
