@@ -136,6 +136,10 @@ func (g *GDMWrapper) unwrap() *sous.Deployments {
 // AddHeaders implements HeaderAdder on SingleDeploymentBody
 func (b SingleDeploymentBody) AddHeaders(headers http.Header) {
 	headers.Add("Etag", b.etag())
+	queuedURL, ok := b.Meta.Links["queuedDeployAction"]
+	if ok {
+		headers.Add("Location", queuedURL)
+	}
 }
 
 func (b SingleDeploymentBody) EmptyReceiver() restful.Comparable {

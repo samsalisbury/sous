@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
@@ -102,6 +103,23 @@ func (scn psdhExScenario) assertStatus(t *testing.T, expected int) {
 	t.Helper()
 	if scn.status != expected {
 		t.Errorf("Expected status %d, got %d", expected, scn.status)
+	}
+}
+
+func (scn psdhExScenario) assertHeader(t *testing.T, wantKey, wantValue string) {
+	t.Helper()
+
+	getHeader, ok := scn.response.(restful.HeaderAdder)
+	if !ok {
+		t.Errorf("no header")
+		return
+	}
+	h := http.Header{}
+	getHeader.AddHeaders(h)
+
+	gotValue := h.Get(wantKey)
+	if gotValue != wantValue {
+		t.Errorf("got %q=%q; want %q=%q", wantKey, gotValue, wantKey, wantValue)
 	}
 }
 
@@ -240,13 +258,16 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 		query := didQuery("github.com/user1/repo1", "", "cluster1", "")
 		scenario := setup(body, query)
 		scenario.hasDeployment(sous.DeploymentFixture(""))
-		qr := &sous.QueuedR11n{}
+		qr := &sous.QueuedR11n{
+			ID: "actionid1",
+		}
 		scenario.queueSet.MatchMethod("Push", spies.AnyArgs, qr, true)
 		scenario.exercise()
 
 		scenario.assertStatus(t, 201)
 		scenario.assertDeploymentWritten(t)
 		scenario.assertR11nQueued(t)
+		scenario.assertHeader(t, "Location", "/deploy-queue-item?action=actionid1")
 	})
 
 	t.Run("WriteDeployment error", func(t *testing.T) {

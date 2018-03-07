@@ -163,7 +163,9 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 
 	actionKV := restful.KV{"action", string(qr.ID)}
 	queueURI, err := psd.routeMap.URIFor("deploy-queue-item", nil, actionKV)
-	spew.Dump(err)
+	if err != nil {
+		return psd.err(500, "Determining queue item URL: %s", err)
+	}
 	if err == nil {
 		psd.responseWriter.Header().Add("Location", queueURI)
 	}
