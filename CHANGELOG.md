@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
+## [Unreleased](//github.com/opentable/sous/compare/0.5.72...master)
+
+### Added
+* CLI: sous newdeploy command: Much faster deployments. This will become
+  the default 'sous deploy' after some real-world validation.
+
 ## [0.5.72](//github.com/opentable/sous/compare/0.5.71...0.5.72)
 
 ### Fixed
