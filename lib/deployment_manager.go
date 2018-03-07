@@ -22,6 +22,7 @@ type (
 	}
 )
 
+// NewDeploymentManagerSpy returns a spy for testing purposes.
 func NewDeploymentManagerSpy() (DeploymentManager, *spies.Spy) {
 	spy := &spies.Spy{}
 
