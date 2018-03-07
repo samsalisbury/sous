@@ -203,18 +203,20 @@ func (client *LiveHTTPClient) deelete(urlPath string, qParms map[string]string, 
 
 func (client *LiveHTTPClient) update(urlPath string, qParms map[string]string, from *resourceState, qBody Comparable, headers map[string]string) (UpdateDeleter, error) {
 	state := new(resourceState)
-	return state, errors.Wrapf(func() error {
+	err := errors.Wrapf(func() error {
 		url, err := client.buildURL(urlPath, qParms)
 		etag := from.etag
 		rq, err := client.buildRequest("PUT", url, addIfMatch(headers, etag), from, qBody, err)
 		rz, err := client.sendRequest(rq, err)
 		state, err = client.getBody(rz, nil, err)
 		client.enrichState(state, urlPath, qParms)
+		state.headers = rz.Header
 		return err
 	}(), "Update %s params: %v", urlPath, qParms)
+	return state, err
 }
 
-// Create implements HTTPClient on DummyHTTPClient - it does nothing and returns nil
+// Create implements HTTPClient on DummyHTTPClient - it does nothing and returns nil.
 func (*DummyHTTPClient) Create(urlPath string, qParms map[string]string, rqBody interface{}, headers map[string]string) (UpdateDeleter, error) {
 	return nil, nil
 }
