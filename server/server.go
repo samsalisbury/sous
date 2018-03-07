@@ -26,11 +26,12 @@ type (
 		*config.Config
 		sous.Inserter
 		sous.StateManager
-		sous.ClusterManager // xxx temporary?
-		ResolveFilter       *sous.ResolveFilter
+		sous.ClusterManager    // xxx temporary?
+		sous.DeploymentManager // xxx temporary?
+		ResolveFilter          *sous.ResolveFilter
 		*sous.AutoResolver
 		Version  semv.Version
-		QueueSet *sous.R11nQueueSet
+		QueueSet sous.QueueSet
 	}
 )
 

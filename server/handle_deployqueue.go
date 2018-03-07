@@ -16,7 +16,7 @@ type (
 
 	// GETDeployQueueHandler handles GET exchanges for single deployments.
 	GETDeployQueueHandler struct {
-		QueueSet        *sous.R11nQueueSet
+		QueueSet        sous.QueueSet
 		DeploymentID    sous.DeploymentID
 		DeploymentIDErr error
 	}

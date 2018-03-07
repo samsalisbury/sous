@@ -14,33 +14,30 @@ type (
 	// SingleDeploymentResource creates handlers for dealing with single
 	// deployments.
 	SingleDeploymentResource struct {
-		userExtractor
 		context ComponentLocator
 	}
-	// PUTSingleDeploymentHandler handles manifests containing single deployment
+	// PUTSingleDeploymentHandler updates manifests containing single deployment
 	// specs. See Exchange method for more details.
 	PUTSingleDeploymentHandler struct {
-		DeploymentID     sous.DeploymentID
-		DeploymentIDErr  error
-		Body             *SingleDeploymentBody
-		BodyErr          error
-		GDM              *sous.State
-		StateWriter      sous.StateWriter
-		GDMToDeployments func(*sous.State) (sous.Deployments, error)
-		PushToQueueSet   func(r *sous.Rectification) (*sous.QueuedR11n, bool)
-		User             sous.User
-		responseWriter   http.ResponseWriter
-		routeMap         *restful.RouteMap
+		SingleDeploymentHandler
+		QueueSet sous.QueueSet
+		routeMap *restful.RouteMap
 	}
 
-	// ResponseMeta contains metadata to include in API response bodies.
-	ResponseMeta struct {
-		// Links is a set of links related to a response body.
-		Links map[string]string
-		// Error is the error message returned.
-		Error string `json:",omitempty"`
-		// StatusCode is the HTTP status code of this response.
-		StatusCode int
+	// GETSingleDeploymentHandler retrieves manifests containing single deployment
+	// specs. See Exchange method for more details.
+	GETSingleDeploymentHandler struct {
+		SingleDeploymentHandler
+	}
+
+	// SingleDeploymentHandler contains common data and methods to both
+	// the GET and PUT handlers.
+	SingleDeploymentHandler struct {
+		userExtractor
+		Body              SingleDeploymentBody
+		DeploymentManager sous.DeploymentManager
+		req               *http.Request
+		responseWriter    http.ResponseWriter
 	}
 )
 
@@ -50,46 +47,66 @@ func newSingleDeploymentResource(cl ComponentLocator) *SingleDeploymentResource 
 	}
 }
 
+func (sdr *SingleDeploymentResource) newSingleDeploymentHandler(req *http.Request, rw http.ResponseWriter) SingleDeploymentHandler {
+	dm := sdr.context.DeploymentManager
+	return SingleDeploymentHandler{
+		DeploymentManager: dm,
+		responseWriter:    rw,
+		req:               req,
+	}
+}
+
+func (sdh *SingleDeploymentHandler) depID() (sous.DeploymentID, error) {
+	qv := restful.QueryValues{Values: sdh.req.URL.Query()}
+	return deploymentIDFromValues(qv)
+}
+
 // Put returns a configured put single deployment handler.
 func (sdr *SingleDeploymentResource) Put(rm *restful.RouteMap, rw http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
-	qv := restful.QueryValues{Values: req.URL.Query()}
-	did, didErr := deploymentIDFromValues(qv)
-	body := &SingleDeploymentBody{}
-	bodyErr := json.NewDecoder(req.Body).Decode(body)
-	gdm := sdr.context.liveState()
+	sdh := sdr.newSingleDeploymentHandler(req, rw)
 	return &PUTSingleDeploymentHandler{
-		User:            sous.User(sdr.userExtractor.GetUser(req)),
-		DeploymentID:    did,
-		DeploymentIDErr: didErr,
-		Body:            body,
-		BodyErr:         bodyErr,
-		StateWriter:     sdr.context.StateManager,
-		PushToQueueSet:  sdr.context.QueueSet.Push,
-		GDM:             gdm,
-		GDMToDeployments: func(s *sous.State) (sous.Deployments, error) {
-			return gdm.Deployments()
-		},
-		responseWriter: rw,
-		routeMap:       rm,
+		SingleDeploymentHandler: sdh,
+		QueueSet:                sdr.context.QueueSet,
+		routeMap:                rm,
 	}
+}
+
+// Get returns a configured get single deployment handler.
+func (sdr *SingleDeploymentResource) Get(rm *restful.RouteMap, rw http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
+	sdh := sdr.newSingleDeploymentHandler(req, rw)
+	return &GETSingleDeploymentHandler{SingleDeploymentHandler: sdh}
+}
+
+// Exchange returns a single deployment.
+func (h *GETSingleDeploymentHandler) Exchange() (interface{}, int) {
+	did, err := h.depID()
+	if err != nil {
+		return h.err(400, "Cannot decode Deployment ID: %s.", err)
+	}
+
+	dep, err := h.DeploymentManager.ReadDeployment(did)
+	if err != nil {
+		return h.err(404, "No deployment with ID %q: %v", did, err)
+	}
+
+	h.Body.Deployment = *dep
+
+	return h.ok(200, nil)
 }
 
 // err returns the current Body of psd and the provided status code.
 // It ensures Meta.StatusCode is also set to the provided code.
 // It sets Meta.Error to a formatted error using format f and args a...
-func (psd *PUTSingleDeploymentHandler) err(code int, f string, a ...interface{}) (*SingleDeploymentBody, int) {
-	psd.Body.Meta.Error = fmt.Sprintf(f, a...)
-	psd.Body.Meta.StatusCode = code
-	return psd.Body, code
+func (sdh *SingleDeploymentHandler) err(code int, f string, a ...interface{}) (interface{}, int) {
+	return fmt.Sprintf(f, a...), code
 }
 
 // ok returns the current body of psd and the provided status code.
 // It ensures Meta.StatusCode is also set to the provided code.
 // It sets Meta.Links to the provided links.
-func (psd *PUTSingleDeploymentHandler) ok(code int, links map[string]string) (*SingleDeploymentBody, int) {
-	psd.Body.Meta.StatusCode = code
-	psd.Body.Meta.Links = links
-	return psd.Body, code
+func (sdh *SingleDeploymentHandler) ok(code int, links map[string]string) (SingleDeploymentBody, int) {
+	sdh.Body.Meta.Links = links
+	return sdh.Body, code
 }
 
 // Exchange triggers a deployment action when receiving
@@ -97,74 +114,59 @@ func (psd *PUTSingleDeploymentHandler) ok(code int, links map[string]string) (*S
 // from the current actual deployment set. It first writes the new
 // deployment spec to the GDM.
 func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
-
-	if psd.BodyErr != nil {
-		psd.Body = &SingleDeploymentBody{}
-		return psd.err(400, "Error parsing body: %s.", psd.BodyErr)
+	did, err := psd.depID()
+	if err != nil {
+		return psd.err(400, "Cannot decode Deployment ID: %s.", err)
 	}
 
-	did := psd.DeploymentID
-
-	m, ok := psd.GDM.Manifests.Get(did.ManifestID)
-	if !ok {
-		return psd.err(404, "No manifest with ID %q.", did.ManifestID)
+	if err := json.NewDecoder(psd.req.Body).Decode(&psd.Body); err != nil {
+		return psd.err(400, "Error parsing body: %s.", err)
 	}
 
-	cluster := did.Cluster
-	d, ok := m.Deployments[cluster]
-	if !ok {
-		return psd.err(404, "No %q deployment defined for %q.", cluster, did)
+	flaws := psd.Body.Deployment.Validate()
+	if len(flaws) > 0 {
+		return psd.err(400, "Invalid deployment: %q", flaws)
 	}
-	different, _ := psd.Body.DeploySpec.Diff(d)
+
+	dep, err := psd.DeploymentManager.ReadDeployment(did)
+	if err != nil {
+		return psd.err(404, "No deployment with ID %q. %v", did, err)
+	}
+
+	different, _ := psd.Body.Deployment.Diff(dep)
 	if !different {
 		return psd.ok(200, nil)
 	}
 
-	m.Deployments[cluster] = psd.Body.DeploySpec
-
-	if err := psd.StateWriter.WriteState(psd.GDM, psd.User); err != nil {
-		return psd.err(500, "Failed to write state: %s.", err)
-	}
-
-	// The full deployment can only be gotten from the full state, since it
-	// relies on State.Defs which is not part of this exchange. Therefore
-	// fish it out of the realized GDM returned from GDMToDeployments.
-	//
-	// TODO SS:
-	// Note that this call is expensive, we should come up with a cheaper way
-	// to get single deployments.
-	deployments, err := psd.GDMToDeployments(psd.GDM)
-	if err != nil {
-		return psd.err(500, "Unable to expand GDM: %s.", err)
-	}
-	fullDeployment, ok := deployments.Get(psd.DeploymentID)
-	if !ok {
-		return psd.err(500, "Deployment failed to round-trip to GDM.")
+	user := sous.User(psd.GetUser(psd.req))
+	if err := psd.DeploymentManager.WriteDeployment(&psd.Body.Deployment, user); err != nil {
+		return psd.err(500, "Failed to write deployment: %s.", err)
 	}
 
 	r := &sous.Rectification{
 		Pair: sous.DeployablePair{
 			Post: &sous.Deployable{
 				Status:     0,
-				Deployment: fullDeployment,
+				Deployment: dep,
 			},
 			ExecutorData: nil,
 		},
 	}
-	r.Pair.SetID(psd.DeploymentID)
+	r.Pair.SetID(did)
 
-	qr, ok := psd.PushToQueueSet(r)
+	qr, ok := psd.QueueSet.Push(r)
 	if !ok {
 		return psd.err(409, "Queue full, please try again later.")
 	}
 
 	actionKV := restful.KV{"action", string(qr.ID)}
 	queueURI, err := psd.routeMap.URIFor("deploy-queue-item", nil, actionKV)
+	if err != nil {
+		return psd.err(500, "Determining queue item URL: %s", err)
+	}
 	if err == nil {
 		psd.responseWriter.Header().Add("Location", queueURI)
 	}
 
-	return psd.ok(201, map[string]string{
-		"queuedDeployAction": "/deploy-queue-item?action=" + string(qr.ID),
-	})
+	return psd.ok(201, map[string]string{"queuedDeployAction": queueURI})
 }

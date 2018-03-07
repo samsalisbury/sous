@@ -109,6 +109,15 @@ func (d *Deployment) ManifestID() ManifestID {
 	}
 }
 
+// DeploySpec returns a DeploySpec based on a Deployment
+func (d *Deployment) DeploySpec() DeploySpec {
+	return DeploySpec{
+		DeployConfig: d.DeployConfig,
+		Version:      d.SourceID.Version,
+		clusterName:  d.ClusterName,
+	}
+}
+
 // TabbedDeploymentHeaders returns the names of the fields for Tabbed, suitable
 // for use with text/tabwriter.
 func TabbedDeploymentHeaders() string {

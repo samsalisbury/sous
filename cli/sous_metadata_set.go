@@ -54,7 +54,7 @@ func (smg *SousMetadataSet) Execute(args []string) cmdr.Result {
 		depspec.Metadata[key] = value
 	}
 
-	if err := up.Update(&mani, smg.User.HTTPHeaders()); err != nil {
+	if _, err := up.Update(&mani, smg.User.HTTPHeaders()); err != nil {
 		return EnsureErrorResult(err)
 	}
 
