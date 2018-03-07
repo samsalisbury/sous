@@ -74,21 +74,22 @@ func (suite *integrationServerTests) prepare() (logging.LogSink, http.Handler, f
 	testGraph.Replace(graph.LogSink{LogSink: log})
 
 	serverScoop := struct {
-		Handler          graph.ServerHandler
 		ComponentLocator server.ComponentLocator
 	}{}
 
 	g.MustInject(&serverScoop)
 
-	if serverScoop.Handler.Handler == nil {
-		suite.FailNow("Didn't inject http.Handler!")
-	}
 	suite.componentLocator = serverScoop.ComponentLocator
 
 	// Replace the default queueset with this one that doesn't process anything.
-	*suite.componentLocator.QueueSet = *(sous.NewR11nQueueSet())
+	suite.componentLocator.QueueSet = sous.NewR11nQueueSet()
+	testGraph.Replace(suite.componentLocator)
 
-	return log, serverScoop.Handler.Handler, func() {
+	handlerScoop := struct {
+		Handler graph.ServerHandler
+	}{}
+	g.MustInject(&handlerScoop)
+	return log, handlerScoop.Handler.Handler, func() {
 		if err := os.RemoveAll(outpath); err != nil {
 			suite.T().Errorf("cleanup failed: %s", err)
 		}
@@ -200,8 +201,7 @@ func (suite integrationServerTests) TestUpdateStateDeployments_Update() {
 }
 
 func (suite integrationServerTests) TestPUTSingleDeployment() {
-	data := server.SingleDeploymentBody{}
-	rez, err := suite.client.Create("/single-deployment", nil, data, nil)
+	rez, err := suite.client.Retrieve("/single-deployment", nil, nil, nil)
 	suite.errorMatches(err, `404 Not Found.*No manifest with ID`) // empty ID gets 404
 	suite.Nil(rez)
 
@@ -212,9 +212,11 @@ func (suite integrationServerTests) TestPUTSingleDeployment() {
 		"tag":     "1.0.1",
 	}
 
-	rez, err = suite.client.Create("/single-deployment", params, data, nil)
+	data := server.SingleDeploymentBody{}
+	rez, err = suite.client.Retrieve("/single-deployment", params, nil, nil)
 	suite.NoError(err)
 	suite.NotNil(rez)
+	rez.Update(data, nil)
 	suite.Regexp(`deploy-queue-item\?.*action=`, rez.Location())
 }
 

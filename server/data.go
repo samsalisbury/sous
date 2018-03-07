@@ -138,6 +138,10 @@ func (b SingleDeploymentBody) AddHeaders(headers http.Header) {
 	headers.Add("Etag", b.etag())
 }
 
+func (b SingleDeploymentBody) EmptyReceiver() restful.Comparable {
+	return &SingleDeploymentBody{}
+}
+
 // Etag returns a string suitable for use in an Etag header for this data type.
 // SingleDeploymentBody includes a Meta subobject, whose values may vary
 // independantly of the Etag.
