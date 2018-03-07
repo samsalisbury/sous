@@ -56,12 +56,12 @@ func TestSingleDeploymentResource(t *testing.T) {
 		req := httptest.NewRequest("PUT", "http://sous.example.com/single-deployment", bytes.NewBufferString("{}"))
 		pex := r.Put(rm, rw, req, nil)
 		if pex == nil {
-			t.Fatalf("r.Get returned nil")
+			t.Fatalf("r.Put returned nil")
 		}
 
 		psdh, is := pex.(*PUTSingleDeploymentHandler)
 		if !is {
-			t.Fatalf("r.PUT did not return a PUTSingleDeploymentHandler")
+			t.Fatalf("r.Put did not return a PUTSingleDeploymentHandler")
 		}
 		if psdh.responseWriter != rw {
 			t.Errorf("PUT handler didn't get the ResponseWriter")
@@ -102,7 +102,6 @@ func (scn psdhExScenario) assertStatus(t *testing.T, expected int) {
 	t.Helper()
 	if scn.status != expected {
 		t.Errorf("Expected status %d, got %d", expected, scn.status)
-
 	}
 }
 
@@ -216,7 +215,7 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 
 	t.Run("no matching deployment", func(t *testing.T) {
 		dep := sous.DeploymentFixture("")
-		scenario := setup(&SingleDeploymentBody{Deployment: *dep}, didQuery("nonexistent", "", "cluster-1", ""))
+		scenario := setup(&SingleDeploymentBody{Deployment: *dep}, didQuery("github.com/user1/repo1", "", "cluster1", ""))
 		scenario.deploymentManager.MatchMethod("ReadDeployment", spies.AnyArgs, nil, errors.New("no deployment found"))
 		scenario.exercise()
 
@@ -230,6 +229,7 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 		scenario.hasDeployment(sous.DeploymentFixture(""))
 		scenario.exercise()
 
+		scenario.assertNoR11nQueued(t)
 		scenario.assertStatus(t, 200)
 	})
 
