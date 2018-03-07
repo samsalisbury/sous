@@ -1,27 +1,19 @@
 # Sometimes it's a README fix, or something like that - which isn't relevant for
 # including in a project's CHANGELOG for example
 modified_app_files = git.modified_files.grep(/(?<!_test)\.go$/)
-app_changed = !modified_app_files.empty?
 
-p modified_app_files.length
 modified_app_files = modified_app_files.find_all do |file|
   diff = git.diff_for_file(file)
   significant_lines = diff.patch.lines[5..-1].grep_v(%r{^(?: |[+-]\s*(?://|$)|@@)})
 
-  if !significant_lines.empty?
-    puts diff.patch
-    p significant_lines
-  end
-
   !significant_lines.empty?
 end
-p modified_app_files.length
-
+app_changed = !modified_app_files.empty?
 
 declared_trivial = github.pr_title.include? "#trivial" || !app_changed
 
 # Make it more obvious that a PR is a work in progress and shouldn't be merged yet
-warn("PR is classed as Work in Progress") if github.pr_title.include? "[WIP]"
+warn("PR is classed as Work in Progress") if github.pr_title.include? "WIP"
 
 # Warn when there is a big PR
 warn("Big PR: #{git.lines_of_code} lines of code changed") if git.lines_of_code > 500

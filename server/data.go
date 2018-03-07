@@ -142,10 +142,12 @@ func (b SingleDeploymentBody) AddHeaders(headers http.Header) {
 	}
 }
 
+// EmptyReceiver implements Comparable on SingleDeploymentBody
 func (b SingleDeploymentBody) EmptyReceiver() restful.Comparable {
 	return &SingleDeploymentBody{}
 }
 
+// VariancesFrom implements Comparable on SingleDeploymentBody
 func (b SingleDeploymentBody) VariancesFrom(other restful.Comparable) restful.Variances {
 	switch ob := other.(type) {
 	default:
