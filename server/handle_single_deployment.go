@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/julienschmidt/httprouter"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/restful"
@@ -106,6 +107,7 @@ func (sdh *SingleDeploymentHandler) err(code int, f string, a ...interface{}) (i
 // It sets Meta.Links to the provided links.
 func (sdh *SingleDeploymentHandler) ok(code int, links map[string]string) (SingleDeploymentBody, int) {
 	sdh.Body.Meta.Links = links
+	spew.Dump(sdh.Body)
 	return sdh.Body, code
 }
 
@@ -161,6 +163,7 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 
 	actionKV := restful.KV{"action", string(qr.ID)}
 	queueURI, err := psd.routeMap.URIFor("deploy-queue-item", nil, actionKV)
+	spew.Dump(err)
 	if err == nil {
 		psd.responseWriter.Header().Add("Location", queueURI)
 	}

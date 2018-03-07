@@ -142,6 +142,16 @@ func (b SingleDeploymentBody) EmptyReceiver() restful.Comparable {
 	return &SingleDeploymentBody{}
 }
 
+func (b SingleDeploymentBody) VariancesFrom(other restful.Comparable) restful.Variances {
+	switch ob := other.(type) {
+	default:
+		return restful.Variances{"Not a SingleDeploymentBody"}
+	case *SingleDeploymentBody:
+		_, diffs := (&b.Deployment).Diff(&ob.Deployment)
+		return restful.Variances(diffs)
+	}
+}
+
 // Etag returns a string suitable for use in an Etag header for this data type.
 // SingleDeploymentBody includes a Meta subobject, whose values may vary
 // independantly of the Etag.

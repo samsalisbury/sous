@@ -201,22 +201,29 @@ func (suite integrationServerTests) TestUpdateStateDeployments_Update() {
 }
 
 func (suite integrationServerTests) TestPUTSingleDeployment() {
-	rez, err := suite.client.Retrieve("/single-deployment", nil, nil, nil)
-	suite.errorMatches(err, `404 Not Found.*No manifest with ID`) // empty ID gets 404
+	params := map[string]string{
+		"cluster": "no-such-place",
+		"repo":    "github.com/xxx/xxx",
+		"offset":  "",
+		"tag":     "1.0.1",
+	}
+	rez, err := suite.client.Retrieve("/single-deployment", params, nil, nil)
+	suite.errorMatches(err, `404 Not Found.*No deployment with ID`) // empty ID gets 404
 	suite.Nil(rez)
 
-	params := map[string]string{
+	params = map[string]string{
 		"cluster": "cluster-1",
 		"repo":    "github.com/opentable/sous",
 		"offset":  "",
 		"tag":     "1.0.1",
 	}
-
 	data := server.SingleDeploymentBody{}
-	rez, err = suite.client.Retrieve("/single-deployment", params, nil, nil)
+	rez, err = suite.client.Retrieve("/single-deployment", params, &data, nil)
 	suite.NoError(err)
 	suite.NotNil(rez)
-	rez.Update(data, nil)
+	data.Deployment.NumInstances = 100
+	err = rez.Update(&data, nil)
+	suite.NoError(err)
 	suite.Regexp(`deploy-queue-item\?.*action=`, rez.Location())
 }
 
