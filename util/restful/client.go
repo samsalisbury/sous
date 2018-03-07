@@ -46,7 +46,7 @@ type (
 
 	// An Updater captures the state of a retrieved resource so that it can be updated later.
 	Updater interface {
-		Update(body Comparable, headers map[string]string) error
+		Update(body Comparable, headers map[string]string) (UpdateDeleter, error)
 	}
 
 	// A Deleter captures the state of a retrieved resource so that it can be later deleted.
@@ -69,7 +69,7 @@ type (
 	Comparable interface {
 		// EmptyReceiver should return a pointer to an "zero value" for the recieving type.
 		// For example:
-		///	//   func (x *X) EmptyReceiver() { return &X{} }
+		//   func (x *X) EmptyReceiver() Comparable { return &X{} }
 		EmptyReceiver() Comparable
 
 		// VariancesFrom returns a list of differences from another Comparable.
@@ -84,7 +84,7 @@ type (
 	retryableError string
 )
 
-func (rs *resourceState) Update(qBody Comparable, headers map[string]string) error {
+func (rs *resourceState) Update(qBody Comparable, headers map[string]string) (UpdateDeleter, error) {
 	return rs.client.update(rs.path, rs.qparms, rs, qBody, headers)
 }
 
@@ -201,14 +201,15 @@ func (client *LiveHTTPClient) deelete(urlPath string, qParms map[string]string, 
 	}(), "Delete %s params: %v", urlPath, qParms)
 }
 
-func (client *LiveHTTPClient) update(urlPath string, qParms map[string]string, from *resourceState, qBody Comparable, headers map[string]string) error {
-	return errors.Wrapf(func() error {
+func (client *LiveHTTPClient) update(urlPath string, qParms map[string]string, from *resourceState, qBody Comparable, headers map[string]string) (UpdateDeleter, error) {
+	state := new(resourceState)
+	return state, errors.Wrapf(func() error {
 		url, err := client.buildURL(urlPath, qParms)
-		//	etag := from.etag
 		etag := from.etag
 		rq, err := client.buildRequest("PUT", url, addIfMatch(headers, etag), from, qBody, err)
 		rz, err := client.sendRequest(rq, err)
-		_, err = client.getBody(rz, nil, err)
+		state, err = client.getBody(rz, nil, err)
+		client.enrichState(state, urlPath, qParms)
 		return err
 	}(), "Update %s params: %v", urlPath, qParms)
 }

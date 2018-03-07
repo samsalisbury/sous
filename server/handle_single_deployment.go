@@ -87,7 +87,7 @@ func (h *GETSingleDeploymentHandler) Exchange() (interface{}, int) {
 
 	dep, err := h.DeploymentManager.ReadDeployment(did)
 	if err != nil {
-		return h.err(404, "No deployment with ID %q. %v", did, err)
+		return h.err(404, "No deployment with ID %q: %v", did, err)
 	}
 
 	h.Body.Deployment = *dep
