@@ -31,6 +31,9 @@ const sousNewDeployHelp = `deploys a new version into a particular cluster
 
 usage: sous newdeploy -cluster <name> -tag <semver>
 
+EXPERIMENTAL COMMAND: This may or may not yet do what it says on the tin.
+Feel free to try it out, but if it breaks, you get to keep both pieces.
+
 sous deploy will deploy the version tag for this application in the named
 cluster.
 `
