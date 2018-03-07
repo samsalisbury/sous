@@ -18,8 +18,9 @@ func TestNewR11nResource(t *testing.T) {
 		QueueSet: qs,
 	}
 	dq := newR11nResource(c)
+	rm := routemap(c)
 
-	got := dq.Get(nil, &http.Request{URL: &url.URL{}}, nil).(*GETR11nHandler)
+	got := dq.Get(rm, nil, &http.Request{URL: &url.URL{}}, nil).(*GETR11nHandler)
 	if got.QueueSet != qs {
 		t.Errorf("got different queueset")
 	}
@@ -82,8 +83,10 @@ func TestR11nResource_Get_no_errors(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			dr := &R11nResource{}
 			req := makeRequestWithQuery(t, tc.query)
+			c := ComponentLocator{}
+			rm := routemap(c)
 
-			got := dr.Get(nil, req, nil).(*GETR11nHandler)
+			got := dr.Get(rm, nil, req, nil).(*GETR11nHandler)
 
 			gotDID := got.DeploymentID
 			if gotDID != tc.wantDID {

@@ -1,0 +1,7 @@
+digraph {
+	label="Artifacts (SourceID)"
+	SourceID -> SourceLocation
+	SourceID -> Tag
+	SourceLocation -> Repo
+	SourceLocation -> Offset
+}

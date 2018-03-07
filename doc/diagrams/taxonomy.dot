@@ -1,0 +1,24 @@
+digraph {
+	subgraph cluster_0 {
+		label="Artifacts"
+		SourceID
+		Tag
+	}
+
+	subgraph cluster_1 {
+		label="Deployments"
+		DeploymentID
+		ManifestID
+		Cluster
+		Flavor
+	}
+
+	SourceID -> SourceLocation
+	SourceID -> Tag
+	DeploymentID -> ManifestID
+	DeploymentID -> Cluster
+	ManifestID   -> SourceLocation
+    ManifestID   -> Flavor
+	SourceLocation -> Repo
+	SourceLocation -> Offset
+}

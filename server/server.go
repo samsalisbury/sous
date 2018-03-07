@@ -26,11 +26,12 @@ type (
 		*config.Config
 		sous.Inserter
 		sous.StateManager
-		sous.ClusterManager // xxx temporary?
-		ResolveFilter       *sous.ResolveFilter
+		sous.ClusterManager    // xxx temporary?
+		sous.DeploymentManager // xxx temporary?
+		ResolveFilter          *sous.ResolveFilter
 		*sous.AutoResolver
 		Version  semv.Version
-		QueueSet *sous.R11nQueueSet
+		QueueSet sous.QueueSet
 	}
 )
 
@@ -96,6 +97,7 @@ func routemap(context ComponentLocator) *restful.RouteMap {
 		re("all-deploy-queues", "/all-deploy-queues", newAllDeployQueuesResource(context))
 		re("deploy-queue", "/deploy-queue", newDeployQueueResource(context))
 		re("deploy-queue-item", "/deploy-queue-item", newR11nResource(context))
+		re("single-deployment", "/single-deployment", newSingleDeploymentResource(context))
 	})
 }
 

@@ -1,5 +1,6 @@
-#{ pkgs ? import ~/dev/nixpkgs {} }:
-{ pkgs ? import <nixpkgs> {} }:
+{ pkgs ? import ~/dev/nixpkgs {} }:
+#{ pkgs ? import <nixpkgs> {} }:
+
 let
   inherit (pkgs) lib stdenv bundlerEnv;
 
@@ -18,5 +19,6 @@ in
       pkgs.proselint
       pkgs.postgresql100
       pkgs.liquibase
+      pkgs.go
     ];
   }

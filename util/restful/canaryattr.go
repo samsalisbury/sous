@@ -38,7 +38,7 @@ func InjectCanaryAttr(json io.Reader, attrName string) io.Reader {
 	return io.MultiReader(prefix, json)
 }
 
-func (mh *MetaHandler) validCanaryAttr(w http.ResponseWriter, r *http.Request, etag string) bool {
+func (mh *MetaHandler) validCanaryAttr(w *loggingResponseWriter, r *http.Request, etag string) bool {
 	rbytes, err := ioutil.ReadAll(r.Body)
 
 	if err != nil {

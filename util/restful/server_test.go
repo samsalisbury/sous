@@ -45,14 +45,14 @@ func newTestResource(data string) *TestResource {
 	return &TestResource{Data: data}
 }
 
-func (tr *TestResource) Get(write http.ResponseWriter, req *http.Request, ps httprouter.Params) Exchanger {
+func (tr *TestResource) Get(rm *RouteMap, write http.ResponseWriter, req *http.Request, ps httprouter.Params) Exchanger {
 	return &TestGetExchanger{
 		TestResource: tr,
 		Params:       ps,
 		QueryValues:  tr.ParseQuery(req),
 	}
 }
-func (tr *TestResource) Put(write http.ResponseWriter, req *http.Request, ps httprouter.Params) Exchanger {
+func (tr *TestResource) Put(rm *RouteMap, write http.ResponseWriter, req *http.Request, ps httprouter.Params) Exchanger {
 	return &TestPutExchanger{
 		TestResource: tr,
 		Request:      req,
@@ -111,7 +111,8 @@ func TestRenderDataCanaries(t *testing.T) {
 	rq := httptest.NewRequest("GET", "/somewhere", nil)
 	data := map[string]string{"a": "b"}
 
-	mh.renderData(200, rr, rq, data)
+	lrw := wrapResponseWriter(ls, "test", rq, rr)
+	mh.renderData(200, lrw, rq, data)
 
 	rz := rr.Result()
 	bodyB, err := ioutil.ReadAll(rz.Body)

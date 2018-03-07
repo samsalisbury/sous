@@ -63,7 +63,7 @@ func (smg *SousManifestSet) Execute(args []string) cmdr.Result {
 
 	messages.ReportLogFieldsMessage("Manifest in Execute", logging.ExtraDebug1Level, smg.LogSink, yml)
 
-	err = up.Update(&yml, nil)
+	_, err = up.Update(&yml, nil)
 	if err != nil {
 		return EnsureErrorResult(err)
 	}

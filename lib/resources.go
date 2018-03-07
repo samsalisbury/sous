@@ -2,7 +2,6 @@ package sous
 
 import (
 	"fmt"
-	"io"
 	"math"
 	"strconv"
 
@@ -20,6 +19,7 @@ type (
 	// and tries to repair it from the state defaults
 	MissingResourceFlaw struct {
 		Resources
+		did            *DeploymentID
 		ClusterName    string
 		Field, Default string
 	}
@@ -41,6 +41,12 @@ func (f *MissingResourceFlaw) AddContext(name string, i interface{}) {
 			f.ClusterName = name
 		}
 	}
+	if name == "deployment" {
+		if dep, is := i.(*Deployment); is {
+			did := dep.ID()
+			f.did = &did
+		}
+	}
 	/*
 		// I'd misremembered that the State.Defs held the GDM-wide defaults
 		// which isn't true. Leaving this here to sort of demostrate the idea
@@ -54,10 +60,14 @@ func (f *MissingResourceFlaw) AddContext(name string, i interface{}) {
 }
 
 func (f *MissingResourceFlaw) String() string {
+	if f.did != nil {
+		return fmt.Sprintf("Missing resource field %q for deployment %s", f.Field, f.did)
+	}
 	name := f.ClusterName
 	if name == "" {
 		name = "??"
 	}
+
 	return fmt.Sprintf("Missing resource field %q for cluster %s", f.Field, name)
 }
 
@@ -208,10 +218,6 @@ func reportResourceMessage(msg string, r Resources, log logging.LogSink, debug .
 	logging.Deliver(msgLog, log)
 }
 
-func (msg resourceMessage) WriteToConsole(console io.Writer) {
-	fmt.Fprintf(console, "%s\n", msg.composeMsg())
-}
-
 func (msg resourceMessage) DefaultLevel() logging.Level {
 	level := logging.WarningLevel
 	if msg.isDebugMsg {
@@ -231,8 +237,8 @@ func (msg resourceMessage) composeMsg() string {
 
 func (msg resourceMessage) EachField(f logging.FieldReportFn) {
 	f("@loglov3-otl", "sous-generic-v1")
-	f("ports", msg.ports)
-	f("cpus", msg.cpus)
-	f("memory", msg.memory)
+	f("sous-resource-ports", msg.ports)
+	f("sous-resource-cpus", msg.cpus)
+	f("sous-resource-memory", msg.memory)
 	msg.CallerInfo.EachField(f)
 }

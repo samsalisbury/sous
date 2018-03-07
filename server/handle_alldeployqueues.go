@@ -16,7 +16,7 @@ type (
 
 	// GETAllDeployQueuesHandler handles GET exchanges for deployments.
 	GETAllDeployQueuesHandler struct {
-		QueueSet *sous.R11nQueueSet
+		QueueSet sous.QueueSet
 	}
 )
 
@@ -25,7 +25,7 @@ func newAllDeployQueuesResource(ctx ComponentLocator) *AllDeployQueuesResource {
 }
 
 // Get returns a configured GETAllDeployQueuesHandler.
-func (r *AllDeployQueuesResource) Get(_ http.ResponseWriter, _ *http.Request, _ httprouter.Params) restful.Exchanger {
+func (r *AllDeployQueuesResource) Get(_ *restful.RouteMap, _ http.ResponseWriter, _ *http.Request, _ httprouter.Params) restful.Exchanger {
 	return &GETAllDeployQueuesHandler{
 		QueueSet: r.context.QueueSet,
 	}
@@ -34,16 +34,14 @@ func (r *AllDeployQueuesResource) Get(_ http.ResponseWriter, _ *http.Request, _ 
 // Exchange returns deploymentsResponse representing all queues managed by this
 // server instance.
 func (h *GETAllDeployQueuesHandler) Exchange() (interface{}, int) {
-	queues := h.QueueSet.Queues()
-	m := map[sous.DeploymentID]int{}
-	for did, q := range queues {
-		m[did] = q.Len()
-	}
-	return deploymentsResponse{
-		Deployments: m,
-	}, 200
-}
+	data := DeploymentQueuesResponse{Queues: map[string]QueueDesc{}}
 
-type deploymentsResponse struct {
-	Deployments map[sous.DeploymentID]int
+	queues := h.QueueSet.Queues()
+	for did, q := range queues {
+		data.Queues[did.String()] = QueueDesc{
+			DeploymentID: did,
+			Length:       q.Len(),
+		}
+	}
+	return data, 200
 }

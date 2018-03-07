@@ -18,102 +18,107 @@ func TestNewAllDeployQueuesResource(t *testing.T) {
 		QueueSet: qs,
 	}
 	adq := newAllDeployQueuesResource(c)
+	rm := routemap(c)
 
-	got := adq.Get(nil, &http.Request{URL: &url.URL{}}, nil).(*GETAllDeployQueuesHandler)
+	got := adq.Get(rm, nil, &http.Request{URL: &url.URL{}}, nil).(*GETAllDeployQueuesHandler)
 	if got.QueueSet != qs {
 		t.Errorf("got different queueset")
 	}
 }
 
 func TestGETAllDeployQueuesHandler_Exchange(t *testing.T) {
+	t.Run("empty queue", func(t *testing.T) {
+		data, status := setupAllQueueSetsExchange(t)
+		assertStatusCode200(t, status)
+		dqr := assertIsDeploymentQueuesResponse(t, data)
+		assertQueueLength(t, dqr, sous.DeploymentID{}, 0)
+		assertNumQueues(t, dqr, 0)
+	})
 
-	testCases := []struct {
-		desc       string
-		dids       []sous.DeploymentID
-		wantResult deploymentsResponse
-	}{
-		{
-			desc:       "empty queue",
-			dids:       []sous.DeploymentID{},
-			wantResult: deploymentsResponse{Deployments: map[sous.DeploymentID]int{}},
-		},
-		{
-			desc: "one DeploymentID",
-			dids: []sous.DeploymentID{newDid("one")},
-			wantResult: deploymentsResponse{Deployments: map[sous.DeploymentID]int{
-				newDid("one"): 1,
-			}},
-		},
-		{
-			desc: "two unique DeploymentIDs",
-			dids: []sous.DeploymentID{newDid("one"), newDid("two")},
-			wantResult: deploymentsResponse{Deployments: map[sous.DeploymentID]int{
-				newDid("one"): 1,
-				newDid("two"): 1,
-			}},
-		},
-		{
-			desc: "same DeploymentID twice",
-			dids: []sous.DeploymentID{newDid("one"), newDid("one")},
-			wantResult: deploymentsResponse{Deployments: map[sous.DeploymentID]int{
-				newDid("one"): 2,
-			}},
-		},
+	t.Run("one DeploymentID", func(t *testing.T) {
+		data, status := setupAllQueueSetsExchange(t, newDid("one"))
+		assertStatusCode200(t, status)
+		dqr := assertIsDeploymentQueuesResponse(t, data)
+		assertQueueLength(t, dqr, sous.DeploymentID{}, 0)
+		assertNumQueues(t, dqr, 1)
+		assertQueueLength(t, dqr, newDid("one"), 1)
+	})
+
+	t.Run("two unique DeploymentIDs", func(t *testing.T) {
+		data, status := setupAllQueueSetsExchange(t, newDid("one"), newDid("two"))
+		assertStatusCode200(t, status)
+		dqr := assertIsDeploymentQueuesResponse(t, data)
+		assertQueueLength(t, dqr, sous.DeploymentID{}, 0)
+		assertNumQueues(t, dqr, 2)
+		assertQueueLength(t, dqr, newDid("one"), 1)
+		assertQueueLength(t, dqr, newDid("two"), 1)
+	})
+
+	t.Run("same deployment twice", func(t *testing.T) {
+		data, status := setupAllQueueSetsExchange(t, newDid("one"), newDid("one"))
+		assertStatusCode200(t, status)
+		dqr := assertIsDeploymentQueuesResponse(t, data)
+		assertQueueLength(t, dqr, sous.DeploymentID{}, 0)
+		assertNumQueues(t, dqr, 1)
+		assertQueueLength(t, dqr, newDid("one"), 2)
+	})
+
+}
+
+// setupAllQueueSetsExchange generates a R11nQueueSet having a new R11n pushed
+// to it for each id provided in dids. It injects this into a new
+// GETAllDeployQueuesHandler and calls Exchange, returning the result.
+func setupAllQueueSetsExchange(t *testing.T, dids ...sous.DeploymentID) (interface{}, int) {
+	t.Helper()
+	qs := sous.NewR11nQueueSet()
+	for _, did := range dids {
+		r11n := &sous.Rectification{
+			Pair: sous.DeployablePair{},
+		}
+		r11n.Pair.SetID(did)
+		if _, ok := qs.Push(r11n); !ok {
+			t.Fatal("precondition failed: failed to push r11n")
+		}
 	}
-
-	for _, tc := range testCases {
-		t.Run(tc.desc, func(t *testing.T) {
-			qs := sous.NewR11nQueueSet()
-
-			for _, did := range tc.dids {
-				r11n := &sous.Rectification{
-					Pair: sous.DeployablePair{},
-				}
-
-				r11n.Pair.SetID(did)
-
-				if _, ok := qs.Push(r11n); !ok {
-					t.Fatal("precondition failed: failed to push r11n")
-				}
-
-			}
-
-			handler := &GETAllDeployQueuesHandler{
-				QueueSet: qs,
-			}
-
-			data, gotStatusCode := handler.Exchange()
-
-			const wantStatusCode = 200
-			if gotStatusCode != wantStatusCode {
-				t.Errorf("got %d; want %d", gotStatusCode, wantStatusCode)
-			}
-
-			dr, ok := data.(deploymentsResponse)
-			if !ok {
-				t.Fatalf("got a %T; want a %T", data, dr)
-			}
-
-			wantLen := len(tc.wantResult.Deployments)
-			gotLen := len(dr.Deployments)
-			if gotLen != wantLen {
-				t.Fatalf("got %d queued deployments; want %d", gotLen, wantLen)
-			}
-
-			for did, wantCount := range tc.wantResult.Deployments {
-				gotCount := dr.Deployments[did]
-				if gotCount != wantCount {
-					t.Errorf("got %d queued rectifications for %q; want %d", gotCount, did, wantCount)
-				}
-			}
-
-			testCount := dr.Deployments[sous.DeploymentID{}]
-			if testCount != 0 {
-				t.Errorf("got %d for empty DeploymentID expected 0", testCount)
-			}
-		})
+	handler := &GETAllDeployQueuesHandler{
+		QueueSet: qs,
 	}
+	return handler.Exchange()
+}
 
+func assertStatusCode200(t *testing.T, gotStatus int) {
+	t.Helper()
+	const wantStatusCode = 200
+	if gotStatus != wantStatusCode {
+		t.Errorf("got %d; want %d", gotStatus, wantStatusCode)
+	}
+}
+
+func assertIsDeploymentQueuesResponse(t *testing.T, data interface{}) DeploymentQueuesResponse {
+	t.Helper()
+	dr, ok := data.(DeploymentQueuesResponse)
+	if !ok {
+		t.Fatalf("got a %T; want a %T", data, dr)
+		return DeploymentQueuesResponse{}
+	}
+	return dr
+}
+
+func assertNumQueues(t *testing.T, dr DeploymentQueuesResponse, wantLen int) {
+	t.Helper()
+	gotLen := len(dr.Queues)
+	if gotLen != wantLen {
+		t.Fatalf("got %d queued deployments; want %d", gotLen, wantLen)
+	}
+}
+
+func assertQueueLength(t *testing.T, dr DeploymentQueuesResponse, did sous.DeploymentID, wantCount int) {
+	t.Helper()
+	gotCount := dr.Queues[did.String()].Length
+	if gotCount != wantCount {
+		t.Errorf("got %d queued rectifications for %q; want %d",
+			gotCount, did, wantCount)
+	}
 }
 
 func newDid(repo string) sous.DeploymentID {
@@ -129,8 +134,8 @@ func newDid(repo string) sous.DeploymentID {
 // TestGETDeploymentsHandler_Exchange_async should be run with the -race flag.
 func TestGETAllDeployQueuesHandler_Exchange_async(t *testing.T) {
 
-	// Start writing to a new queueset that's also being processed in a hot loop.
-	qh := func(*sous.QueuedR11n) sous.DiffResolution { return sous.DiffResolution{} }
+	// Start writing to a new queueset that's also being processed rapidly.
+	qh := func(*sous.QueuedR11n) (dr sous.DiffResolution) { return }
 	queues := sous.NewR11nQueueSet(sous.R11nQueueStartWithHandler(qh))
 	go func() {
 		for {

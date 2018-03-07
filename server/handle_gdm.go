@@ -40,7 +40,7 @@ func newGDMResource(ctx ComponentLocator) *GDMResource {
 }
 
 // Get implements Getable on GDMResource
-func (gr *GDMResource) Get(writer http.ResponseWriter, _ *http.Request, _ httprouter.Params) restful.Exchanger {
+func (gr *GDMResource) Get(_ *restful.RouteMap, writer http.ResponseWriter, _ *http.Request, _ httprouter.Params) restful.Exchanger {
 	return &GETGDMHandler{
 		LogSink: gr.context.LogSink,
 		GDM:     gr.context.liveState(),
@@ -72,7 +72,7 @@ func (h *GETGDMHandler) Exchange() (interface{}, int) {
 }
 
 // Put implements Putable on GDMResource
-func (gr *GDMResource) Put(_ http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
+func (gr *GDMResource) Put(_ *restful.RouteMap, _ http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
 	return &PUTGDMHandler{
 		Request:      req,
 		LogSink:      gr.context.LogSink,
@@ -186,11 +186,11 @@ func (msg handleGDMMessage) EachField(f logging.FieldReportFn) {
 	flaws := msg.flawsMessage.ReturnFlawMsg()
 
 	if flaws != "" {
-		f("flaws", flaws)
+		f("sous-flaws", flaws)
 	}
 
 	if msg.err != nil {
-		f("error", msg.err.Error())
+		f("sous-error", msg.err.Error())
 	}
 	msg.CallerInfo.EachField(f)
 }

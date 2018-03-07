@@ -95,6 +95,7 @@ func (d *Deployment) Validate() []Flaw {
 
 	for _, f := range flaws {
 		f.AddContext("deployment", d)
+		f.AddContext("cluster", d.ClusterName)
 	}
 
 	return flaws
@@ -105,6 +106,15 @@ func (d *Deployment) ManifestID() ManifestID {
 	return ManifestID{
 		Source: d.SourceID.Location,
 		Flavor: d.Flavor,
+	}
+}
+
+// DeploySpec returns a DeploySpec based on a Deployment
+func (d *Deployment) DeploySpec() DeploySpec {
+	return DeploySpec{
+		DeployConfig: d.DeployConfig,
+		Version:      d.SourceID.Version,
+		clusterName:  d.ClusterName,
 	}
 }
 

@@ -1,13 +1,32 @@
 package sous
 
-import "sync"
+import (
+	"sync"
 
-// R11nQueueSet is a concurrency-safe mapping of DeploymentID to R11nQueue.
-type R11nQueueSet struct {
-	set  map[DeploymentID]*R11nQueue
-	opts []R11nQueueOpt
-	sync.RWMutex
-}
+	"github.com/nyarly/spies"
+)
+
+type (
+	// QueueSet is the interface for a set of queues
+	QueueSet interface {
+		PushIfEmpty(r *Rectification) (*QueuedR11n, bool)
+		Push(r *Rectification) (*QueuedR11n, bool)
+		Wait(did DeploymentID, id R11nID) (DiffResolution, bool)
+		Queues() map[DeploymentID]*R11nQueue
+	}
+
+	// R11nQueueSet is a concurrency-safe mapping of DeploymentID to R11nQueue.
+	R11nQueueSet struct {
+		set  map[DeploymentID]*R11nQueue
+		opts []R11nQueueOpt
+		sync.RWMutex
+	}
+
+	// QueueSetSpy is a spy for the QueueSet interface.
+	QueueSetSpy struct {
+		*spies.Spy
+	}
+)
 
 // NewR11nQueueSet returns a ready to use R11nQueueSet.
 func NewR11nQueueSet(opts ...R11nQueueOpt) *R11nQueueSet {
@@ -67,4 +86,37 @@ func (rqs *R11nQueueSet) Queues() map[DeploymentID]*R11nQueue {
 		s[k] = v
 	}
 	return s
+}
+
+// NewQueueSetSpy builds a spy/controller pair
+func NewQueueSetSpy() (QueueSet, *spies.Spy) {
+	spy := spies.NewSpy()
+	return QueueSetSpy{Spy: spy}, spy
+}
+
+// PushIfEmpty is a spy implementation of QueueSet
+func (s QueueSetSpy) PushIfEmpty(r *Rectification) (*QueuedR11n, bool) {
+	res := s.Called(r)
+	return res.Get(0).(*QueuedR11n), res.Bool(1)
+}
+
+// Push is a spy implementation of QueueSet
+func (s QueueSetSpy) Push(r *Rectification) (*QueuedR11n, bool) {
+	res := s.Called(r)
+	if res.Get(0) == nil {
+		return nil, false
+	}
+	return res.Get(0).(*QueuedR11n), res.Bool(1)
+}
+
+// Wait is a spy implementation of QueueSet
+func (s QueueSetSpy) Wait(did DeploymentID, id R11nID) (DiffResolution, bool) {
+	res := s.Called(did, id)
+	return res.Get(0).(DiffResolution), res.Bool(1)
+}
+
+// Queues is a spy implementation of QueueSet
+func (s QueueSetSpy) Queues() map[DeploymentID]*R11nQueue {
+	res := s.Called()
+	return res.Get(0).(map[DeploymentID]*R11nQueue)
 }

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 )
 
 type (
@@ -37,6 +38,7 @@ type (
 		// err is the final error returned from a phase that ends the resolution.
 		err error
 		sync.RWMutex
+		logSink logging.LogSink
 	}
 
 	// DiffResolution is the result of applying a single diff.
@@ -73,7 +75,7 @@ func (rez DiffResolution) String() string {
 
 // NewResolveRecorder creates a new ResolveRecorder and calls f with it as its
 // argument. It then returns that ResolveRecorder immediately.
-func NewResolveRecorder(intended Deployments, f func(*ResolveRecorder)) *ResolveRecorder {
+func NewResolveRecorder(intended Deployments, ls logging.LogSink, f func(*ResolveRecorder)) *ResolveRecorder {
 	rr := &ResolveRecorder{
 		status: &ResolveStatus{
 			Started:  time.Now(),
@@ -83,6 +85,7 @@ func NewResolveRecorder(intended Deployments, f func(*ResolveRecorder)) *Resolve
 		},
 		Log:      make(chan DiffResolution, 10),
 		finished: make(chan struct{}),
+		logSink:  ls,
 	}
 
 	for _, d := range intended.Snapshot() {
@@ -100,7 +103,6 @@ func NewResolveRecorder(intended Deployments, f func(*ResolveRecorder)) *Resolve
 				}
 			})
 		}
-		close(rr.finished)
 	}()
 
 	// Execute the main function (f) over this resolve recorder.
@@ -112,6 +114,7 @@ func NewResolveRecorder(intended Deployments, f func(*ResolveRecorder)) *Resolve
 			if rr.err == nil {
 				rr.status.Phase = "finished"
 			}
+			close(rr.finished)
 		})
 	}()
 	return rr
@@ -170,6 +173,7 @@ func (rr *ResolveRecorder) earlyExit() (yes bool) {
 // performPhase performs the requested phase, only if nothing has cancelled the
 // resolve.
 func (rr *ResolveRecorder) performPhase(name string, f func() error) {
+	messages.ReportLogFieldsMessage("Performing phase", logging.ExtraDebug1Level, rr.logSink, name)
 	if rr.earlyExit() {
 		return
 	}
@@ -181,6 +185,7 @@ func (rr *ResolveRecorder) performPhase(name string, f func() error) {
 
 // setPhase sets the phase of this resolve status.
 func (rr *ResolveRecorder) setPhase(phase string) {
+	messages.ReportLogFieldsMessage("Setting phase", logging.ExtraDebug1Level, rr.logSink, phase)
 	rr.write(func() {
 		rr.status.Phase = phase
 	})
@@ -195,15 +200,29 @@ func (rr *ResolveRecorder) Phase() string {
 
 // write encapsulates locking this ResolveRecorder for writing using f.
 func (rr *ResolveRecorder) write(f func()) {
+	name, uuid := logging.RetrieveMetaData(f)
+	messages.ReportLogFieldsMessage("Waiting to Lock resolverecorder for write", logging.ExtraDebug1Level, rr.logSink, name, uuid)
 	rr.Lock()
-	defer rr.Unlock()
+	messages.ReportLogFieldsMessage("Locked resolverecorder for write", logging.ExtraDebug1Level, rr.logSink, name, uuid)
+	defer func() {
+		rr.Unlock()
+		messages.ReportLogFieldsMessage("Unlocked resolverecorder for write", logging.ExtraDebug1Level,
+			rr.logSink, name, uuid)
+	}()
 	f()
 }
 
 // read encapsulates locking this ResolveRecorder for reading using f.
 func (rr *ResolveRecorder) read(f func()) {
+	name, uuid := logging.RetrieveMetaData(f)
+	messages.ReportLogFieldsMessage("Waiting to Lock resolverecorder for read", logging.ExtraDebug1Level, rr.logSink, name, uuid)
 	rr.RLock()
-	defer rr.RUnlock()
+	messages.ReportLogFieldsMessage("Locked resolverecorder for read", logging.ExtraDebug1Level, rr.logSink, name, uuid)
+	defer func() {
+		rr.RUnlock()
+		messages.ReportLogFieldsMessage("Unlocked resolverecorder for read", logging.ExtraDebug1Level,
+			rr.logSink, name, uuid)
+	}()
 	f()
 }
 

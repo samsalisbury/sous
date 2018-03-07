@@ -16,7 +16,7 @@ LIQUIBASE_FLAGS := --url $(LIQUIBASE_SERVER)/$(DB_NAME) $(LIQUIBASE_SHARED_FLAGS
 LIQUIBASE_TEST_FLAGS := --url $(LIQUIBASE_SERVER)/$(TEST_DB_NAME) $(LIQUIBASE_SHARED_FLAGS)
 
 SQLITE_URL := https://sqlite.org/2017/sqlite-autoconf-3160200.tar.gz
-GO_VERSION := 1.9.2
+GO_VERSION := 1.10
 DESCRIPTION := "Sous is a tool for building, testing, and deploying applications, using Docker, Mesos, and Singularity."
 URL := https://github.com/opentable/sous
 
@@ -65,7 +65,9 @@ COVER_DIR := /tmp/sous-cover
 TEST_VERBOSE := $(if $(VERBOSE),-v,)
 SOUS_PACKAGES:= $(shell go list -f '{{.ImportPath}}' ./... | grep -v 'vendor')
 SOUS_PACKAGES_WITH_TESTS:= $(shell go list -f '{{if len .TestGoFiles}}{{.ImportPath}}{{end}}' ./...)
+SOUS_TC_PACKAGES=$(shell docker run --rm -v $(PWD):/app -w /app golang:1.10 go list -f '{{if len .TestGoFiles}}{{.ImportPath}}{{end}}' ./... | grep -v 'vendor' | sed 's/_\/app/github.com\/opentable\/sous/')
 SOUS_CONTAINER_IMAGES:= "docker images | egrep '127.0.0.1:5000|testregistry_'"
+TC_TEMP_DIR ?= /tmp/sous
 
 help:
 	@echo --- options:
@@ -221,7 +223,23 @@ test-gofmt:
 	bin/check-gofmt
 
 test-unit: postgres-test-prepare
-	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -timeout 3m -race $(SOUS_PACKAGES_WITH_TESTS)
+	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -count 1 -timeout 3m -race $(SOUS_PACKAGES_WITH_TESTS)
+
+test-cached:
+	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -timeout 3m $(SOUS_PACKAGES_WITH_TESTS)
+
+# This should be test-metalinter, but we have a ways to go make metalinter happy
+dev-test: test-staticcheck test-cached
+
+# Note, the TEMP DIR was needed for the volume mounting, tried to coalesce in the source folder but go kept picking up
+# the other source files and would create bad imports so used temp directory instead
+test-unit-tc:
+	rm -rf $(TC_TEMP_DIR)
+	mkdir -p $(TC_TEMP_DIR)/src
+	cp -r ./vendor/* $(TC_TEMP_DIR)/src
+	mkdir -p $(TC_TEMP_DIR)/src/github.com/opentable/sous
+	cp -r ./* $(TC_TEMP_DIR)/src/github.com/opentable/sous
+	docker run --rm -v $(TC_TEMP_DIR):/go -v $(PWD):/app -w /app golang:1.10 go test -race -v $(SOUS_TC_PACKAGES) | docker run -i xjewer/go-test-teamcity
 
 test-integration: setup-containers
 	@echo
@@ -310,6 +328,13 @@ postgres-update-schema: postgres-start
 
 postgres-clean: postgres-stop
 	rm -r "$(DEV_POSTGRES_DIR)"
+
+diagrams: $(patsubst %.dot,%.png,$(shell ls doc/diagrams/*.dot))
+
+doc/diagrams/%.png: doc/diagrams/%.dot
+	@command -v dot >/dev/null 2>&1 || { \
+		echo "ERROR: dot command not found, please install graphviz"; exit 1; }
+	dot -Tpng $< > $@
 
 .PHONY: artifactory clean clean-containers clean-container-certs \
 	clean-running-containers clean-container-images coverage deb-build \

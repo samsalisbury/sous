@@ -31,6 +31,7 @@ type (
 	resourceState struct {
 		client       *LiveHTTPClient
 		path, etag   string
+		headers      http.Header
 		qparms       map[string]string
 		body         io.Reader
 		resourceJSON io.Reader
@@ -39,13 +40,13 @@ type (
 	// HTTPClient interacts with a HTTPServer
 	//   It's designed to handle basic CRUD operations in a safe and restful way.
 	HTTPClient interface {
-		Create(urlPath string, qParms map[string]string, rqBody interface{}, headers map[string]string) error
+		Create(urlPath string, qParms map[string]string, rqBody interface{}, headers map[string]string) (UpdateDeleter, error)
 		Retrieve(urlPath string, qParms map[string]string, rzBody interface{}, headers map[string]string) (UpdateDeleter, error)
 	}
 
 	// An Updater captures the state of a retrieved resource so that it can be updated later.
 	Updater interface {
-		Update(body Comparable, headers map[string]string) error
+		Update(body Comparable, headers map[string]string) (UpdateDeleter, error)
 	}
 
 	// A Deleter captures the state of a retrieved resource so that it can be later deleted.
@@ -57,6 +58,7 @@ type (
 	UpdateDeleter interface {
 		Updater
 		Deleter
+		Location() string
 	}
 
 	// DummyHTTPClient doesn't really make HTTP requests.
@@ -67,7 +69,7 @@ type (
 	Comparable interface {
 		// EmptyReceiver should return a pointer to an "zero value" for the recieving type.
 		// For example:
-		///	//   func (x *X) EmptyReceiver() { return &X{} }
+		//   func (x *X) EmptyReceiver() Comparable { return &X{} }
 		EmptyReceiver() Comparable
 
 		// VariancesFrom returns a list of differences from another Comparable.
@@ -82,12 +84,16 @@ type (
 	retryableError string
 )
 
-func (rs *resourceState) Update(qBody Comparable, headers map[string]string) error {
+func (rs *resourceState) Update(qBody Comparable, headers map[string]string) (UpdateDeleter, error) {
 	return rs.client.update(rs.path, rs.qparms, rs, qBody, headers)
 }
 
 func (rs *resourceState) Delete(headers map[string]string) error {
 	return rs.client.deelete(rs.path, rs.qparms, rs, headers)
+}
+
+func (rs *resourceState) Location() string {
+	return rs.headers.Get("Location")
 }
 
 func (re retryableError) Error() string {
@@ -162,24 +168,26 @@ func (client *LiveHTTPClient) Retrieve(urlPath string, qParms map[string]string,
 	rq, err := client.buildRequest("GET", url, headers, nil, nil, err)
 	rz, err := client.sendRequest(rq, err)
 	state, err := client.getBody(rz, rzBody, err)
+	return client.enrichState(state, urlPath, qParms), errors.Wrapf(err, "Retrieve %s params: %v", urlPath, qParms)
+}
+
+// Create uses the contents of qBody to create a new resource at the server at urlPath/qParms
+// It issues a PUT with "If-No-Match: *", so if a resource already exists, it'll return an error.
+func (client *LiveHTTPClient) Create(urlPath string, qParms map[string]string, qBody interface{}, headers map[string]string) (UpdateDeleter, error) {
+	url, err := client.buildURL(urlPath, qParms)
+	rq, err := client.buildRequest("PUT", url, addNoMatchStar(headers), nil, qBody, err)
+	rz, err := client.sendRequest(rq, err)
+	state, err := client.getBody(rz, nil, err)
+	return client.enrichState(state, urlPath, qParms), errors.Wrapf(err, "Create %s params: %v", urlPath, qParms)
+}
+
+func (client *LiveHTTPClient) enrichState(state *resourceState, urlPath string, qParms map[string]string) *resourceState {
 	if state != nil {
 		state.client = client
 		state.path = urlPath
 		state.qparms = qParms
 	}
-	return state, errors.Wrapf(err, "Retrieve %s %v", urlPath, qParms)
-}
-
-// Create uses the contents of qBody to create a new resource at the server at urlPath/qParms
-// It issues a PUT with "If-No-Match: *", so if a resource already exists, it'll return an error.
-func (client *LiveHTTPClient) Create(urlPath string, qParms map[string]string, qBody interface{}, headers map[string]string) error {
-	return errors.Wrapf(func() error {
-		url, err := client.buildURL(urlPath, qParms)
-		rq, err := client.buildRequest("PUT", url, addNoMatchStar(headers), nil, qBody, err)
-		rz, err := client.sendRequest(rq, err)
-		_, err = client.getBody(rz, nil, err)
-		return err
-	}(), "Create %s %v", urlPath, qParms)
+	return state
 }
 
 func (client *LiveHTTPClient) deelete(urlPath string, qParms map[string]string, from *resourceState, headers map[string]string) error {
@@ -190,24 +198,27 @@ func (client *LiveHTTPClient) deelete(urlPath string, qParms map[string]string, 
 		rz, err := client.sendRequest(rq, err)
 		_, err = client.getBody(rz, nil, err)
 		return err
-	}(), "Delete %s %v", urlPath, qParms)
+	}(), "Delete %s params: %v", urlPath, qParms)
 }
 
-func (client *LiveHTTPClient) update(urlPath string, qParms map[string]string, from *resourceState, qBody Comparable, headers map[string]string) error {
-	return errors.Wrapf(func() error {
+func (client *LiveHTTPClient) update(urlPath string, qParms map[string]string, from *resourceState, qBody Comparable, headers map[string]string) (UpdateDeleter, error) {
+	state := new(resourceState)
+	err := errors.Wrapf(func() error {
 		url, err := client.buildURL(urlPath, qParms)
-		//	etag := from.etag
 		etag := from.etag
 		rq, err := client.buildRequest("PUT", url, addIfMatch(headers, etag), from, qBody, err)
 		rz, err := client.sendRequest(rq, err)
-		_, err = client.getBody(rz, nil, err)
+		state, err = client.getBody(rz, nil, err)
+		client.enrichState(state, urlPath, qParms)
+		state.headers = rz.Header
 		return err
-	}(), "Update %s %v", urlPath, qParms)
+	}(), "Update %s params: %v", urlPath, qParms)
+	return state, err
 }
 
-// Create implements HTTPClient on DummyHTTPClient - it does nothing and returns nil
-func (*DummyHTTPClient) Create(urlPath string, qParms map[string]string, rqBody interface{}, headers map[string]string) error {
-	return nil
+// Create implements HTTPClient on DummyHTTPClient - it does nothing and returns nil.
+func (*DummyHTTPClient) Create(urlPath string, qParms map[string]string, rqBody interface{}, headers map[string]string) (UpdateDeleter, error) {
+	return nil, nil
 }
 
 // Retrieve implements HTTPClient on DummyHTTPClient - it does nothing and returns nil
@@ -231,7 +242,9 @@ func addNoMatchStar(headers map[string]string) map[string]string {
 	if headers == nil {
 		headers = map[string]string{}
 	}
-	headers["If-None-Match"] = "*"
+	if _, ok := headers["If-None-Match"]; !ok {
+		headers["If-None-Match"] = "*"
+	}
 	return headers
 }
 
@@ -273,7 +286,7 @@ func (client *LiveHTTPClient) buildRequest(method, url string, headers map[strin
 		if resource != nil {
 			JSON = putbackJSON(resource.body, resource.resourceJSON, JSON)
 		}
-		client.Debugf("  body: %s", JSON.String())
+		messages.ReportLogFieldsMessage("JSON Body", logging.DebugLevel, client.LogSink, JSON.String())
 	}
 
 	rq, err := http.NewRequest(method, url, JSON)
@@ -321,7 +334,7 @@ func (client *LiveHTTPClient) getBody(rz *http.Response, rzBody interface{}, err
 
 	b, e := ioutil.ReadAll(rz.Body)
 	if e != nil {
-		client.Debugf("error reading from body: %v", e)
+		messages.ReportLogFieldsMessage("error reading from body", logging.DebugLevel, client.LogSink, e)
 		b = []byte{}
 	}
 
@@ -338,10 +351,11 @@ func (client *LiveHTTPClient) getBody(rz *http.Response, rzBody interface{}, err
 		return &resourceState{
 			etag:         rz.Header.Get("ETag"),
 			body:         bytes.NewBuffer(b),
+			headers:      rz.Header,
 			resourceJSON: bytes.NewBuffer(rzJSON),
 		}, errors.Wrapf(err, "processing response body")
 	case rz.StatusCode < 200 || rz.StatusCode >= 300:
-		return nil, errors.Errorf("%s: %#v (%v)", rz.Status, string(b), b)
+		return nil, errors.Errorf("%s: %s (%v)", rz.Status, string(b), b)
 	case rz.StatusCode == http.StatusConflict:
 		return nil, errors.Wrap(retryableError(fmt.Sprintf("%s: %#v", rz.Status, string(b))), "getBody")
 	}
@@ -355,9 +369,8 @@ func bodyMessage(b []byte, n int, err error) string {
 	}
 	if cerr := json.Compact(comp, b[0:n]); cerr != nil {
 		return fmt.Sprintf("body: %d bytes: %q (read err: %v)", n, string(b), err)
-	} else {
-		return fmt.Sprintf("body: %d bytes, %s (read err: %v)", n, comp.String(), err)
 	}
+	return fmt.Sprintf("body: %d bytes, %s (read err: %v)", n, comp.String(), err)
 }
 
 func (client *LiveHTTPClient) httpRequest(req *http.Request) (*http.Response, error) {

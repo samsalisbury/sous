@@ -17,7 +17,7 @@ func TestReportClientHTTPResponseFields_assertReport(t *testing.T) {
 		ReportClientHTTPResponse(logger, "test", res, "example-api", time.Millisecond*30)
 	})
 
-	assert.Equal(t, control.CallsTo("LogMessage")[0].PassedArgs().Get(0), logging.InformationLevel)
+	assert.Equal(t, control.CallsTo("LogMessage")[0].PassedArgs().Get(0), logging.ExtraDebug1Level)
 	assert.Len(t, control.Metrics.CallsTo("UpdateTimer"), 3)
 	assert.Len(t, control.Metrics.CallsTo("UpdateSample"), 6)
 	assert.Len(t, control.Metrics.CallsTo("IncCounter"), 3)
@@ -38,6 +38,15 @@ func TestReportClientHTTPResponseFields_assertReport(t *testing.T) {
 			"response-size":   int64(123),
 			"status":          200,
 		})
+}
+
+func TestReportClientHTTPResponseFields_InfoLevelOnErrors(t *testing.T) {
+	res := buildHTTPResponse(t, "GET", "http://example.com/api?a=a", 401, 0, 123)
+	control, _ := logging.AssertReport(t, func(logger logging.LogSink) {
+		ReportClientHTTPResponse(logger, "test", res, "example-api", time.Millisecond*30)
+	})
+
+	assert.Equal(t, control.CallsTo("LogMessage")[0].PassedArgs().Get(0), logging.InformationLevel)
 }
 
 func TestReportClientHTTPRequestFields(t *testing.T) {

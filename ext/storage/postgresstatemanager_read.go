@@ -71,7 +71,7 @@ func loadEnvDefs(context context.Context, log logging.LogSink, tx *sql.Tx, state
 		func(rows *sql.Rows) error {
 			d := sous.EnvDef{}
 			if err := rows.Scan(&d.Name, &d.Desc, &d.Scope, &d.Type); err != nil {
-				return err
+				return errors.Wrapf(err, "loadEnvDefs")
 			}
 			state.Defs.EnvVars = append(state.Defs.EnvVars, d)
 			return nil
@@ -84,7 +84,7 @@ func loadResourceDefs(context context.Context, log logging.LogSink, tx *sql.Tx, 
 		func(rows *sql.Rows) error {
 			d := sous.FieldDefinition{}
 			if err := rows.Scan(&d.Name, &d.Type, &d.Default); err != nil {
-				return err
+				return errors.Wrapf(err, "loadResourceDefs")
 			}
 			state.Defs.Resources = append(state.Defs.Resources, d)
 			return nil
@@ -97,7 +97,7 @@ func loadMetadataDefs(context context.Context, log logging.LogSink, tx *sql.Tx, 
 		func(rows *sql.Rows) error {
 			d := sous.FieldDefinition{}
 			if err := rows.Scan(&d.Name, &d.Type, &d.Default); err != nil {
-				return err
+				return errors.Wrapf(err, "loadMetadataDefs")
 			}
 			state.Defs.Metadata = append(state.Defs.Metadata, d)
 			return nil
@@ -124,14 +124,15 @@ func loadClusters(context context.Context, log logging.LogSink, tx *sql.Tx, stat
 			var cid int
 			c := &sous.Cluster{}
 			var qname sql.NullString
+			failStates := make(pq.Int64Array, 10)
 			if err := rows.Scan(
 				&cid, &c.Name, &c.Kind, &c.BaseURL,
 				&c.Startup.SkipCheck, &c.Startup.ConnectDelay, &c.Startup.Timeout, &c.Startup.ConnectInterval,
-				&c.Startup.CheckReadyProtocol, &c.Startup.CheckReadyURIPath, &c.Startup.CheckReadyPortIndex, pq.Array(&c.Startup.CheckReadyFailureStatuses),
+				&c.Startup.CheckReadyProtocol, &c.Startup.CheckReadyURIPath, &c.Startup.CheckReadyPortIndex, &failStates,
 				&c.Startup.CheckReadyURITimeout, &c.Startup.CheckReadyInterval, &c.Startup.CheckReadyRetries,
 				&qname,
 			); err != nil {
-				return err
+				return errors.Wrapf(err, "loadClusters")
 			}
 			if newC, has := clusters[cid]; has {
 				c = newC
@@ -140,6 +141,9 @@ func loadClusters(context context.Context, log logging.LogSink, tx *sql.Tx, stat
 			}
 			if qname.Valid {
 				c.AllowedAdvisories = append(c.AllowedAdvisories, qname.String)
+			}
+			for _, s := range failStates {
+				c.Startup.CheckReadyFailureStatuses = append(c.Startup.CheckReadyFailureStatuses, int(s))
 			}
 			return nil
 		}); err != nil {
@@ -207,12 +211,14 @@ func loadManifests(context context.Context, log logging.LogSink, tx *sql.Tx, sta
 				mdName, mdValue,
 				volHost, volContainer, volMode sql.NullString
 
+			failStates := make(pq.Int64Array, 0)
+
 			if err := rows.Scan(
 				&m.Source.Repo, &m.Source.Dir, &m.Flavor, &m.Kind,
 				&ownerEmail,
 				&versionString, &ds.NumInstances, &ds.Schedule,
 				&ds.Startup.SkipCheck, &ds.Startup.ConnectDelay, &ds.Startup.Timeout, &ds.Startup.ConnectInterval,
-				&ds.Startup.CheckReadyProtocol, &ds.Startup.CheckReadyURIPath, &ds.Startup.CheckReadyPortIndex, pq.Array(&ds.Startup.CheckReadyFailureStatuses),
+				&ds.Startup.CheckReadyProtocol, &ds.Startup.CheckReadyURIPath, &ds.Startup.CheckReadyPortIndex, &failStates,
 				&ds.Startup.CheckReadyURITimeout, &ds.Startup.CheckReadyInterval, &ds.Startup.CheckReadyRetries,
 				&clusterName,
 				&envKey, &envValue,
@@ -220,7 +226,7 @@ func loadManifests(context context.Context, log logging.LogSink, tx *sql.Tx, sta
 				&mdName, &mdValue,
 				&volHost, &volContainer, &volMode,
 			); err != nil {
-				return err
+				return errors.Wrapf(err, "loadManifests")
 			}
 			if newM, has := state.Manifests.Get(m.ID()); has {
 				m = newM
@@ -235,7 +241,10 @@ func loadManifests(context context.Context, log logging.LogSink, tx *sql.Tx, sta
 			} else {
 				var err error
 				if ds.Version, err = semv.Parse(versionString); err != nil {
-					return err
+					return errors.Wrapf(err, "loadManifests parsing %q", versionString)
+				}
+				for _, s := range failStates {
+					ds.Startup.CheckReadyFailureStatuses = append(ds.Startup.CheckReadyFailureStatuses, int(s))
 				}
 			}
 			if envKey.Valid && envValue.Valid {
@@ -275,18 +284,18 @@ func loadTable(ctx context.Context, log logging.LogSink, tx *sql.Tx, sql string,
 	rows, err := tx.QueryContext(ctx, sql)
 	if err != nil {
 		reportSQLMessage(log, start, sql, rowcount, err)
-		return err
+		return errors.Wrapf(err, "loadTable %q", sql)
 	}
 	defer rows.Close()
 	for rows.Next() {
 		if err := pack(rows); err != nil {
 			reportSQLMessage(log, start, sql, rowcount, err)
-			return err
+			return errors.Wrapf(err, "sql %q", sql)
 		}
 	}
 	if err := rows.Err(); err != nil {
 		reportSQLMessage(log, start, sql, rowcount, err)
-		return err
+		return errors.Wrapf(err, "loadTable query error %q", sql)
 	}
 	reportSQLMessage(log, start, sql, rowcount, nil)
 	return nil

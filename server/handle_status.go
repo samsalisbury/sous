@@ -31,7 +31,7 @@ func newStatusResource(ctx ComponentLocator) *StatusResource {
 }
 
 // Get implements Getable on StatusResource.
-func (sr *StatusResource) Get(http.ResponseWriter, *http.Request, httprouter.Params) restful.Exchanger {
+func (sr *StatusResource) Get(*restful.RouteMap, http.ResponseWriter, *http.Request, httprouter.Params) restful.Exchanger {
 	return &StatusHandler{
 		AutoResolver:  sr.context.AutoResolver,
 		ResolveFilter: sr.context.ResolveFilter,

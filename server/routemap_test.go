@@ -77,4 +77,13 @@ func TestSousRoutes(t *testing.T) {
 	)
 
 	test("/health", "health", nil)
+
+	test(
+		"/single-deployment?cluster=cluster1&offset=alt&repo=github.com%2Fopentable%2Fsous",
+		"single-deployment",
+		nil,
+		restful.KV{"repo", "github.com/opentable/sous"},
+		restful.KV{"offset", "alt"},
+		restful.KV{"cluster", "cluster1"},
+	)
 }

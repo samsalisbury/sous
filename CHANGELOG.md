@@ -6,7 +6,46 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
-## [Unreleased](//github.com/opentable/sous/compare/0.5.65...master)
+## [Unreleased](//github.com/opentable/sous/compare/0.5.72...master)
+
+### Added
+* CLI: sous newdeploy command: Much faster deployments. This will become
+  the default 'sous deploy' after some real-world validation.
+* Flaws describing problems with resource fields now get more context.
+
+## [0.5.72](//github.com/opentable/sous/compare/0.5.71...0.5.72)
+
+### Fixed
+* PostgreSQL storage correctly retrieves arrays of healthcheck failure statuses
+* Caught a race condition in the logging subsystem.
+### Changed
+* Log messages with `"@loglov3-otl": "sous-generic-v1"` field names changed:
+  `fields` -> `sous-fields`, `types` -> `sous-types`, `ids` -> `sous-ids`,
+  `id-values` -> `sous-id-values`.
+
+### Added
+* Server: PUT /single-deployment endpoint immediately adds a rectification
+  to the queue and returns a link to monitor for completion.
+
+## [0.5.71](//github.com/opentable/sous/compare/0.5.70...0.5.71)
+
+### Added
+* All: Updated cli, status_poller, client to start using structured logging
+
+### Fixed
+* Server: the PostgreSQL storage module successfully deduplicates proposed DB
+  records generated from user input now.
+* All: /all-deploy-queues returns correctly, with a somewhat different data format.
+
+### Added
+* Server: convert remainder of singularity package to generalmsg style logs
+
+## [0.5.67](//github.com/opentable/sous/compare/0.5.66...0.5.67)
+
+### Added
+* All: Add truncated message that was supposed to go to logstash if it is found to error out from delivery to Kafka
+
+## [0.5.66](//github.com/opentable/sous/compare/0.5.65...0.5.66)
 
 ### Added
 * Server: Include connection string in db connection error log.
@@ -18,11 +57,13 @@ with respect to its command line interface and HTTP interface.
 * All: Top-level global logger labeled "GLOBAL".
 * All: Deployment builder, manifest get/set, StatusMiddleware, otplManifest now emits structured logs.
 * CLI: When sous build fails due to no Dockerfile, error says exactly that.
+* All: HTTP logging messages are at level "extra1" when successful
 
 ### Fixed
 * All: Some formatted logs were incorrectly reporting missing values and were
   indiscriminately trying to render a single slice in the first format verb.
   Resolved so those logs format correctly.
+* Server: postgres storage engine wasn't de-duplicating records as it parsed the GDM.
 
 ## [0.5.65](//github.com/opentable/sous/compare/0.5.63...0.5.65)
 

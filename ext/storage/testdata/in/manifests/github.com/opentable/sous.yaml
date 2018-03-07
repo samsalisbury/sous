@@ -18,3 +18,20 @@ Deployments:
       CheckReadyURIPath: /health
     Schedule: ""
     Version: 1.0.0-rc.1+deadbeef
+  other-cluster:
+    Resources:
+      cpus: "0.1"
+      memory: "2048"
+      ports: "1"
+    Env:
+      SOME_DB_URL: https://some.database
+    NumInstances: 3
+    Volumes: []
+    Startup:
+      CheckReadyProtocol: HTTPS
+      CheckReadyURIPath: /health
+      CheckReadyFailureStatuses:
+      - 500
+      - 503
+    Schedule: ""
+    Version: 1.0.0-rc.1+deadbeef

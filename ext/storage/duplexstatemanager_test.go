@@ -126,7 +126,7 @@ func assertStatesEqual(t *testing.T, oldState, newState *sous.State) {
 		default:
 			t.Errorf("Difference detected between written and read states: %s %+#v", diff.Kind(), diff)
 		case sous.ModifiedKind:
-			t.Errorf("Difference detected between written and read states: %+#v %+#v", diff, diff.Diffs())
+			t.Errorf("Difference detected between modified written and read states: %+#v %+#v", diff, diff.Diffs())
 
 		case sous.SameKind:
 		}
