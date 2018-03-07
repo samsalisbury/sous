@@ -128,7 +128,7 @@ func (scn psdhExScenario) assertDeploymentWritten(t *testing.T) {
 
 func (scn psdhExScenario) assertR11nQueued(t *testing.T) {
 	t.Helper()
-	calls := scn.queueSet.CallsTo("PushIfEmpty")
+	calls := scn.queueSet.CallsTo("Push")
 	if len(calls) == 0 {
 		t.Errorf("Expected that a recitification would be queued, but none were.")
 	}
@@ -214,24 +214,14 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 		scenario.assertStringBody(t, `Invalid deployment`)
 	})
 
-	t.Run("no matching repo", func(t *testing.T) {
+	t.Run("no matching deployment", func(t *testing.T) {
 		dep := sous.DeploymentFixture("")
 		scenario := setup(&SingleDeploymentBody{Deployment: *dep}, didQuery("nonexistent", "", "cluster-1", ""))
-		scenario.hasDeployment(sous.DeploymentFixture(""))
+		scenario.deploymentManager.MatchMethod("ReadDeployment", spies.AnyArgs, nil, errors.New("no deployment found"))
 		scenario.exercise()
 
 		scenario.assertStatus(t, 404)
-		scenario.assertStringBody(t, "No manifest")
-	})
-
-	t.Run("no matching cluster", func(t *testing.T) {
-		dep := sous.DeploymentFixture("")
-		scenario := setup(&SingleDeploymentBody{Deployment: *dep}, didQuery("github.com/user1/repo1", "", "nonexistent", ""))
-		scenario.hasDeployment(sous.DeploymentFixture(""))
-		scenario.exercise()
-
-		scenario.assertStatus(t, 404)
-		scenario.assertStringBody(t, "deployment defined")
+		scenario.assertStringBody(t, "No deployment with ID")
 	})
 
 	t.Run("no change necessary", func(t *testing.T) {
@@ -250,6 +240,8 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 		query := didQuery("github.com/user1/repo1", "", "cluster1", "")
 		scenario := setup(body, query)
 		scenario.hasDeployment(sous.DeploymentFixture(""))
+		qr := &sous.QueuedR11n{}
+		scenario.queueSet.MatchMethod("Push", spies.AnyArgs, qr, true)
 		scenario.exercise()
 
 		scenario.assertStatus(t, 201)
@@ -257,35 +249,25 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 		scenario.assertR11nQueued(t)
 	})
 
-	t.Run("ReadDeployment error", func(t *testing.T) {
-		dep := sous.DeploymentFixture("")
-		scenario := setup(&SingleDeploymentBody{Deployment: *dep}, didQuery("github.com/user1/repo1", "", "cluster1", ""))
-		scenario.deploymentManager.MatchMethod("ReadDeployment", spies.AnyArgs, &sous.Deployment{}, errors.New("an error occurred"))
-		scenario.exercise()
-
-		scenario.assertDeploymentWritten(t)
-		scenario.assertNoR11nQueued(t)
-		scenario.assertStatus(t, 500)
-		scenario.assertStringBody(t, "Unable to expand GDM: an error occured.")
-	})
-
 	t.Run("WriteDeployment error", func(t *testing.T) {
 		dep := sous.DeploymentFixture("")
+		dep.NumInstances = 7
 		scenario := setup(&SingleDeploymentBody{Deployment: *dep}, didQuery("github.com/user1/repo1", "", "cluster1", ""))
 		scenario.hasDeployment(sous.DeploymentFixture(""))
-		scenario.deploymentManager.MatchMethod("WriteDeployment", spies.AnyArgs, &sous.Deployment{}, errors.New("an error occurred"))
+		scenario.deploymentManager.MatchMethod("WriteDeployment", spies.AnyArgs, errors.New("an error occurred"))
 		scenario.exercise()
 
 		scenario.assertDeploymentWritten(t)
 		scenario.assertStatus(t, 500)
-		scenario.assertStringBody(t, "Unable to expand GDM: an error occured.")
+		scenario.assertStringBody(t, "Failed to write deployment")
 	})
 
 	t.Run("PushToQueueSet error", func(t *testing.T) {
 		dep := sous.DeploymentFixture("")
+		dep.NumInstances = 7
 		scenario := setup(&SingleDeploymentBody{Deployment: *dep}, didQuery("github.com/user1/repo1", "", "cluster1", ""))
 		scenario.hasDeployment(sous.DeploymentFixture(""))
-		scenario.queueSet.MatchMethod("PushIfEmpty", nil, false)
+		scenario.queueSet.MatchMethod("Push", spies.AnyArgs, &sous.QueuedR11n{}, false)
 		scenario.exercise()
 
 		scenario.assertDeploymentWritten(t)
