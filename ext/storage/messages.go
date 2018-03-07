@@ -114,6 +114,7 @@ func newStoreMessage(started time.Time, dir direction, state *sous.State, err er
 	}
 }
 
+// DefaultLevel implements LogMessage on storeMessage.
 func (msg *storeMessage) DefaultLevel() logging.Level {
 	if msg.err == nil {
 		return logging.DebugLevel
@@ -121,6 +122,7 @@ func (msg *storeMessage) DefaultLevel() logging.Level {
 	return logging.WarningLevel
 }
 
+// Message implements LogMessage on storeMessage.
 func (msg *storeMessage) Message() string {
 	return msg.direction.message()
 }
@@ -143,6 +145,7 @@ func (dir direction) String() string {
 	return "read"
 }
 
+// EachField implements LogMessage on storeMessage.
 func (msg *storeMessage) EachField(fn logging.FieldReportFn) {
 	fn("@loglov3-otl", "sous-storage")
 	msg.CallerInfo.EachField(fn)
