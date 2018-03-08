@@ -15,7 +15,15 @@ type deployerMessage struct {
 	error      error
 }
 
-func reportDeployerMessage(message string, pair *sous.DeployablePair, diffs sous.Differences, taskData *singularityTaskData, error error, level logging.Level, logger logging.LogSink) {
+func reportDeployerMessage(
+	message string,
+	pair *sous.DeployablePair,
+	diffs sous.Differences,
+	taskData *singularityTaskData,
+	error error,
+	level logging.Level,
+	logger logging.LogSink,
+) {
 	msg := deployerMessage{
 		CallerInfo: logging.GetCallerInfo(logging.NotHere()),
 		Level:      level,

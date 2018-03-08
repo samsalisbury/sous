@@ -132,7 +132,6 @@ func (rc retryCounter) maybe(err error, reqCh chan SingReq) bool {
 	if !ok {
 		return false
 	}
-	messages.ReportLogFieldsMessage("Error", logging.DebugLevel, rc.log, errors.Cause(err))
 	count, ok := rc.count[rt.name()]
 	if !ok {
 		count = 0
@@ -153,7 +152,7 @@ func (rc retryCounter) maybe(err error, reqCh chan SingReq) bool {
 
 func catchAll(from string, log logging.LogSink) {
 	if err := recover(); err != nil {
-		messages.ReportLogFieldsMessage("Recovering from error", logging.WarningLevel, log, from, err)
+		logging.ReportError(log, errors.Wrapf(err, "Recovering from panic: %s", from))
 	}
 }
 
@@ -164,7 +163,7 @@ func dontrecover() error {
 func catchAndSend(from string, errs chan error, log logging.LogSink) {
 	defer catchAll(from, log)
 	if err := recover(); err != nil {
-		messages.ReportLogFieldsMessage("Recovering from error", logging.WarningLevel, log, from, err, string(debug.Stack()))
+		logging.ReportError(log, errors.Wrapf(err, "Recovering from panic: %s", from))
 		switch err := err.(type) {
 		default:
 			if err != nil {
