@@ -9,6 +9,7 @@ import (
 	"github.com/opentable/sous/ext/storage"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 	"github.com/opentable/sous/util/restful"
 	"github.com/pkg/errors"
 	"github.com/samsalisbury/semv"
@@ -49,10 +50,16 @@ func (ctx ComponentLocator) liveState() *sous.State {
 }
 
 func (userExtractor) GetUser(req *http.Request) ClientUser {
-	return ClientUser{
+	clu := ClientUser{
 		Name:  req.Header.Get("Sous-User-Name"),
 		Email: req.Header.Get("Sous-User-Email"),
 	}
+
+	clu.Email = "jcastillo@opentable.com"
+	clu.Name = "Jim Castillo"
+	log := logging.Log
+	messages.ReportLogFieldsMessageToConsole("req header user", logging.ExtraDebug1Level, log, clu)
+	return clu
 }
 
 // Run starts a server up.

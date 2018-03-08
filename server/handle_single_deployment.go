@@ -7,6 +7,8 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 	"github.com/opentable/sous/util/restful"
 )
 
@@ -128,12 +130,12 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 		return psd.err(400, "Invalid deployment: %q", flaws)
 	}
 
-	dep, err := psd.DeploymentManager.ReadDeployment(did)
+	original, err := psd.DeploymentManager.ReadDeployment(did)
 	if err != nil {
 		return psd.err(404, "No deployment with ID %q. %v", did, err)
 	}
 
-	different, _ := psd.Body.Deployment.Diff(dep)
+	different, _ := psd.Body.Deployment.Diff(original)
 	if !different {
 		return psd.ok(200, nil)
 	}
@@ -144,9 +146,12 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 	}
 
 	r := sous.NewRectification(sous.DeployablePair{Post: &sous.Deployable{
-		Deployment: dep,
+		Deployment: &psd.Body.Deployment,
 	}})
 	r.Pair.SetID(did)
+
+	log := logging.Log
+	messages.ReportLogFieldsMessageToConsole("Pushing following onto queue", logging.ExtraDebug1Level, log, r)
 
 	qr, ok := psd.QueueSet.Push(r)
 	if !ok {
