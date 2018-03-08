@@ -102,6 +102,33 @@ func TestReportLogFieldsMessage_TwoStructs(t *testing.T) {
 		})
 }
 
+type testSubmessage struct {
+	field int
+}
+
+func (sm testSubmessage) EachField(f logging.FieldReportFn) {
+	f("test-field", sm.field)
+}
+
+func TestReportLogFieldsMessage_Submessage(t *testing.T) {
+	logging.AssertReportFields(t,
+		func(ls logging.LogSink) {
+			ReportLogFieldsMessage("Only a test", logging.DebugLevel, ls, testSubmessage{field: 42})
+		},
+		logging.StandardVariableFields,
+		map[string]interface{}{
+			"@loglov3-otl":        "sous-generic-v1",
+			"call-stack-function": "github.com/opentable/sous/util/logging/messages.TestReportLogFieldsMessage_Submessage",
+			"json-value":          "{\"message\":{\"array\":[]}}",
+			"sous-fields":         "",
+			"sous-id-values":      "",
+			"sous-ids":            "",
+			"sous-types":          "",
+			"test-field":          42,
+		},
+	)
+}
+
 func TestReportLogFieldsMessage_CyclicalReference(t *testing.T) {
 	logging.AssertReportFields(t,
 		func(ls logging.LogSink) {

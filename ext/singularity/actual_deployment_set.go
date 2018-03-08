@@ -2,7 +2,6 @@ package singularity
 
 import (
 	"fmt"
-	"runtime/debug"
 	"sync"
 	"time"
 
@@ -152,7 +151,11 @@ func (rc retryCounter) maybe(err error, reqCh chan SingReq) bool {
 
 func catchAll(from string, log logging.LogSink) {
 	if err := recover(); err != nil {
-		logging.ReportError(log, errors.Wrapf(err, "Recovering from panic: %s", from))
+		if e, is := err.(error); is {
+			logging.ReportError(log, errors.Wrapf(e, "Recovering from panic: %s", from))
+		} else {
+			messages.ReportLogFieldsMessage("Panicked with non-error", logging.DebugLevel, log, err, from)
+		}
 	}
 }
 
@@ -163,7 +166,11 @@ func dontrecover() error {
 func catchAndSend(from string, errs chan error, log logging.LogSink) {
 	defer catchAll(from, log)
 	if err := recover(); err != nil {
-		logging.ReportError(log, errors.Wrapf(err, "Recovering from panic: %s", from))
+		if e, is := err.(error); is {
+			logging.ReportError(log, errors.Wrapf(e, "Recovering from panic: %s", from))
+		} else {
+			messages.ReportLogFieldsMessage("Panicked with non-error", logging.DebugLevel, log, err, from)
+		}
 		switch err := err.(type) {
 		default:
 			if err != nil {

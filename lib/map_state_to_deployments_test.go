@@ -534,6 +534,8 @@ func compareDeployments(t *testing.T, expectedDeployments, actualDeployments Dep
 			t.Errorf("missing deployment %q", id)
 			continue
 		}
+
+		// XXX uses deployment.Diff
 		if different, diffs := actual.Diff(expected); different {
 			t.Errorf("\n\ngot:\n%v\ndifferences:\n%s\n", jsonDump(actual), strings.Join(diffs, "\n"))
 		}

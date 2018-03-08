@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 )
 
 type (
@@ -191,7 +192,6 @@ func (d *Deployment) Diff(o *Deployment) (bool, Differences) {
 	if d.ID() != o.ID() {
 		panic(fmt.Sprintf("attempt to compare deployment %q with %q", d.ID(), o.ID()))
 	}
-	logging.Log.Debug.Printf("Comparing two versions of deployment %q", d.ID())
 	var diffs Differences
 	diff := func(format string, a ...interface{}) { diffs = append(diffs, fmt.Sprintf(format, a...)) }
 	if d.ClusterName != o.ClusterName {
@@ -225,5 +225,11 @@ func (d *Deployment) Diff(o *Deployment) (bool, Differences) {
 	}
 	_, configDiffs := d.DeployConfig.Diff(o.DeployConfig)
 	diffs = append(diffs, configDiffs...)
+
+	messages.ReportLogFieldsMessage("Differences", logging.DebugLevel, logging.Log,
+		NewDeploymentSubmessage("sous-prior", d),
+		NewDeploymentSubmessage("sous-post", o),
+		diffs,
+	)
 	return len(diffs) != 0, diffs
 }
