@@ -66,7 +66,7 @@ func loadState(ctx context.Context, log logging.LogSink, tx *sql.Tx) (*sous.Stat
 }
 
 func loadEnvDefs(context context.Context, log logging.LogSink, tx *sql.Tx, state *sous.State) error {
-	return loadTable(context, log, tx,
+	return loadTable(context, log, tx, "env_var_defs",
 		`select "name", "desc", "scope", "type" from env_var_defs;`,
 		func(rows *sql.Rows) error {
 			d := sous.EnvDef{}
@@ -79,7 +79,7 @@ func loadEnvDefs(context context.Context, log logging.LogSink, tx *sql.Tx, state
 }
 
 func loadResourceDefs(context context.Context, log logging.LogSink, tx *sql.Tx, state *sous.State) error {
-	return loadTable(context, log, tx,
+	return loadTable(context, log, tx, "resource_fdefs",
 		`select "field_name", "var_type", "default_value" from resource_fdefs;`,
 		func(rows *sql.Rows) error {
 			d := sous.FieldDefinition{}
@@ -92,7 +92,7 @@ func loadResourceDefs(context context.Context, log logging.LogSink, tx *sql.Tx, 
 }
 
 func loadMetadataDefs(context context.Context, log logging.LogSink, tx *sql.Tx, state *sous.State) error {
-	return loadTable(context, log, tx,
+	return loadTable(context, log, tx, "metadata_fdefs",
 		`select "field_name", "var_type", "default_value" from metadata_fdefs;`,
 		func(rows *sql.Rows) error {
 			d := sous.FieldDefinition{}
@@ -106,7 +106,7 @@ func loadMetadataDefs(context context.Context, log logging.LogSink, tx *sql.Tx, 
 
 func loadClusters(context context.Context, log logging.LogSink, tx *sql.Tx, state *sous.State) error {
 	clusters := make(map[int]*sous.Cluster)
-	if err := loadTable(context, log, tx,
+	if err := loadTable(context, log, tx, "clusters",
 		`select
 		clusters.cluster_id, clusters.name, clusters.kind, "base_url",
 		"crdef_skip", "crdef_connect_delay", "crdef_timeout", "crdef_connect_interval",
@@ -159,7 +159,7 @@ func loadClusters(context context.Context, log logging.LogSink, tx *sql.Tx, stat
 }
 
 func loadManifests(context context.Context, log logging.LogSink, tx *sql.Tx, state *sous.State) error {
-	return loadTable(context, log, tx,
+	return loadTable(context, log, tx, "components",
 		// This query is somewhat naive and returns many more rows than we need
 		// specifically, every possible combination of env/resource/volume/metadata
 		// results in its own row. Maybe that could be reduced?
@@ -278,25 +278,25 @@ func loadManifests(context context.Context, log logging.LogSink, tx *sql.Tx, sta
 		})
 }
 
-func loadTable(ctx context.Context, log logging.LogSink, tx *sql.Tx, sql string, pack func(*sql.Rows) error) error {
+func loadTable(ctx context.Context, log logging.LogSink, tx *sql.Tx, mainTable string, sql string, pack func(*sql.Rows) error) error {
 	rowcount := 0
 	start := time.Now()
 	rows, err := tx.QueryContext(ctx, sql)
 	if err != nil {
-		reportSQLMessage(log, start, sql, rowcount, err)
+		reportSQLMessage(log, start, mainTable, read, sql, rowcount, err)
 		return errors.Wrapf(err, "loadTable %q", sql)
 	}
 	defer rows.Close()
 	for rows.Next() {
 		if err := pack(rows); err != nil {
-			reportSQLMessage(log, start, sql, rowcount, err)
+			reportSQLMessage(log, start, mainTable, read, sql, rowcount, err)
 			return errors.Wrapf(err, "sql %q", sql)
 		}
 	}
 	if err := rows.Err(); err != nil {
-		reportSQLMessage(log, start, sql, rowcount, err)
+		reportSQLMessage(log, start, mainTable, read, sql, rowcount, err)
 		return errors.Wrapf(err, "loadTable query error %q", sql)
 	}
-	reportSQLMessage(log, start, sql, rowcount, nil)
+	reportSQLMessage(log, start, mainTable, read, sql, rowcount, nil)
 	return nil
 }
