@@ -18,7 +18,7 @@ import (
 type SousNewDeploy struct {
 	DeployFilterFlags config.DeployFilterFlags `inject:"optional"`
 	StateReader       graph.StateReader
-	HTTPClient        graph.ClusterSpecificHTTPClient
+	HTTPClient        *graph.ClusterSpecificHTTPClient
 	TargetManifestID  graph.TargetManifestID
 	LogSink           graph.LogSink
 	dryrunOption      string
