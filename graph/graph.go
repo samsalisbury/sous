@@ -64,6 +64,8 @@ type (
 	LocalDockerClient struct{ docker_registry.Client }
 	// HTTPClient wraps the sous.HTTPClient interface
 	HTTPClient struct{ restful.HTTPClient }
+	// ClusterSpecificHTTPClient wraps the sous.HTTPClient interface
+	ClusterSpecificHTTPClient struct{ restful.HTTPClient }
 	// ServerHandler wraps the http.Handler for the sous server
 	ServerHandler struct{ http.Handler }
 	// MetricsHandler wraps an http.Handler for metrics
@@ -273,6 +275,7 @@ func AddInternals(graph adder) {
 		newStatusPoller,
 		newServerComponentLocator,
 		newHTTPClient,
+		newClusterSpecificHTTPClient,
 		NewR11nQueueSet,
 	)
 }
@@ -526,6 +529,44 @@ func newServerHandler(g *SousGraph, ComponentLocator server.ComponentLocator, me
 	}
 
 	return ServerHandler{handler}
+}
+
+// newClusterSpecificHTTPClient returns an HTTP client configured to talk to
+// the cluster defined by DeployFilterFlags.
+// Otherwise it returns nil, and emits some warnings.
+func newClusterSpecificHTTPClient(c HTTPClient, dff *config.DeployFilterFlags, log LogSink) (*ClusterSpecificHTTPClient, error) {
+
+	// These 2 types are copied from server/data.go
+	type NameData struct {
+		ClusterName string
+		URL         string
+	}
+	type ServerListData struct {
+		Servers []NameData
+	}
+
+	serverList := ServerListData{}
+	_, err := c.Retrieve("./servers", nil, &serverList, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	cluster := dff.Cluster
+	var serverURL string
+	for _, s := range serverList.Servers {
+		if s.ClusterName == cluster {
+			serverURL = s.URL
+		}
+	}
+	if serverURL == "" {
+		return nil, fmt.Errorf("no server for cluster %q", cluster)
+	}
+	messages.ReportLogFieldsMessageToConsole("Using server", logging.ExtraDebug1Level, log, serverURL)
+	cl, err := restful.NewClient(serverURL, log.Child("http-client"))
+	if err != nil {
+		return nil, err
+	}
+	return &ClusterSpecificHTTPClient{HTTPClient: cl}, nil
 }
 
 // newHTTPClient returns an HTTP client if c.Server is not empty.
