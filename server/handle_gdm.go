@@ -190,7 +190,7 @@ func (msg handleGDMMessage) EachField(f logging.FieldReportFn) {
 	}
 
 	if msg.err != nil {
-		f("sous-error", msg.err.Error())
+		f("error", msg.err.Error())
 	}
 	msg.CallerInfo.EachField(f)
 }

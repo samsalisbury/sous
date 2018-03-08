@@ -29,5 +29,5 @@ func (msg *kafkaSendErrorMessage) Message() string {
 func (msg *kafkaSendErrorMessage) EachField(f FieldReportFn) {
 	f("@loglov3-otl", "sous-generic-v1")
 	msg.callerInfo.EachField(f)
-	f("sous-error", msg.err.Error())
+	f("error", msg.err.Error())
 }
