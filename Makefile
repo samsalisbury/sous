@@ -230,6 +230,9 @@ test-gofmt:
 test-unit: postgres-test-prepare
 	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -count 1 -timeout 3m -race $(SOUS_PACKAGES_WITH_TESTS)
 
+test-unit-docker: postgres-docker-create-testdb
+	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -count 1 -timeout 3m $(SOUS_PACKAGES_WITH_TESTS)
+
 test-cached:
 	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -timeout 3m $(SOUS_PACKAGES_WITH_TESTS)
 
@@ -238,7 +241,7 @@ dev-test: test-staticcheck test-cached
 
 # Note, the TEMP DIR was needed for the volume mounting, tried to coalesce in the source folder but go kept picking up
 # the other source files and would create bad imports so used temp directory instead
-test-unit-tc:
+test-unit-tc: postgres-docker-create-testdb
 	rm -rf $(TC_TEMP_DIR)
 	mkdir -p $(TC_TEMP_DIR)/src
 	cp -r ./vendor/* $(TC_TEMP_DIR)/src
