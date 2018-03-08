@@ -317,12 +317,12 @@ postgres-docker-start:
 		docker run --name postgres -p $(PGPORT):5432 --rm --user "$(id -u):$(id -g)" -v /etc/passwd:/etc/passwd:ro -v $(DEV_DOCKER_POSTGRES_DATA_DIR):/var/lib/postgresql/data postgres:10.3 & \
 		until docker run postgres:10.3 pg_isready -h $(HOSTNAME) -p $(PGPORT); do sleep 1; done \
 	fi
-	docker run postgres:10.3 createdb -h $(HOSTNAME) -p $(PGPORT) -U postgres  $(DB_NAME) > /dev/null 2>&1 || true
+	docker run postgres:10.3 createdb -h $(HOSTNAME) -p $(PGPORT) $(DB_NAME) > /dev/null 2>&1 || true
 	docker run --rm -e CHANGELOG_FILE=changelog.xml -v $(PWD)/database:/changelogs -e "URL=$(LIQUIBASE_URL)" docker.otenv.com/liquibase:0.0.6
 
 
 postgres-docker-create-testdb: postgres-docker-start
-	docker run postgres:10.3 createdb -h $(HOSTNAME) -p $(PGPORT) -U postgres  $(TEST_DB_NAME) > /dev/null 2>&1 || true
+	docker run postgres:10.3 createdb -h $(HOSTNAME) -p $(PGPORT) $(TEST_DB_NAME) > /dev/null 2>&1 || true
 	docker run --rm -e CHANGELOG_FILE=changelog.xml -v $(PWD)/database:/changelogs -e "URL=$(LIQUIBASE_TEST_URL)" docker.otenv.com/liquibase:0.0.6
 
 
