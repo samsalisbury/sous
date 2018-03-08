@@ -230,6 +230,9 @@ test-gofmt:
 test-unit: postgres-test-prepare
 	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -count 1 -timeout 3m -race $(SOUS_PACKAGES_WITH_TESTS)
 
+test-unit-docker: postgres-docker-create-testdb
+	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -count 1 -timeout 3m $(SOUS_PACKAGES_WITH_TESTS)
+
 test-cached:
 	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -timeout 3m $(SOUS_PACKAGES_WITH_TESTS)
 
@@ -238,7 +241,7 @@ dev-test: test-staticcheck test-cached
 
 # Note, the TEMP DIR was needed for the volume mounting, tried to coalesce in the source folder but go kept picking up
 # the other source files and would create bad imports so used temp directory instead
-test-unit-tc:
+test-unit-tc: postgres-docker-create-testdb
 	rm -rf $(TC_TEMP_DIR)
 	mkdir -p $(TC_TEMP_DIR)/src
 	cp -r ./vendor/* $(TC_TEMP_DIR)/src
@@ -309,7 +312,7 @@ $(DEV_POSTGRES_DATA_DIR)/postgresql.conf: $(DEV_POSTGRES_DATA_DIR) dev_support/p
 	cp dev_support/postgres/postgresql.conf $@
 
 postgres-docker-start:
-	if ! (docker run postgres:10.3 pg_isready -U postgres -h $(HOSTNAME) -p $(PGPORT)); then \
+	if ! (docker run postgres:10.3 pg_isready -h $(HOSTNAME) -p $(PGPORT)); then \
 		rm -rf $(DEV_POSTGRES_DATA_DIR) & \
 		docker run --name postgres -p $(PGPORT):5432 --rm --user "$(id -u):$(id -g)" -v /etc/passwd:/etc/passwd:ro -v $(DEV_DOCKER_POSTGRES_DATA_DIR):/var/lib/postgresql/data postgres:10.3 & \
 		until docker run postgres:10.3 pg_isready -h $(HOSTNAME) -p $(PGPORT); do sleep 1; done \
