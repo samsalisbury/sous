@@ -15,11 +15,12 @@ DB_NAME = sous
 TEST_DB_NAME = sous_test_template
 
 LIQUIBASE_DEFAULTS := ./dev_support/liquibase/liquibase.properties
-LIQUIBASE_SERVER := jdbc:postgresql://localhost:$(PGPORT)
-LIQUIBASE_SHARED_FLAGS = --changeLogFile=database/changelog.xml --defaultsFile=./dev_support/liquibase/liquibase.properties
-
-LIQUIBASE_FLAGS := --url "$(LIQUIBASE_SERVER)/$(DB_NAME)?user=postgres" $(LIQUIBASE_SHARED_FLAGS)
-LIQUIBASE_TEST_FLAGS := --url "$(LIQUIBASE_SERVER)/$(TEST_DB_NAME)?user=postgres" $(LIQUIBASE_SHARED_FLAGS)
+LIQUIBASE_SERVER := jdbc:postgresql://$(HOSTNAME):$(PGPORT)
+LIQUIBASE_SHARED_FLAGS := --changeLogFile=database/changelog.xml --defaultsFile=./dev_support/liquibase/liquibase.properties
+LIQUIBASE_URL := "$(LIQUIBASE_SERVER)/$(DB_NAME)?user=postgres"
+LIQUIBASE_FLAGS := --url $(LIQUIBASE_URL) $(LIQUIBASE_SHARED_FLAGS)
+LIQUIBASE_TEST_URL := "$(LIQUIBASE_SERVER)/$(TEST_DB_NAME)?user=postgres"
+LIQUIBASE_TEST_FLAGS := --url $(LIQUIBASE_TEST_URL) $(LIQUIBASE_SHARED_FLAGS)
 
 SQLITE_URL := https://sqlite.org/2017/sqlite-autoconf-3160200.tar.gz
 GO_VERSION := 1.10
@@ -314,11 +315,13 @@ postgres-docker-start:
 		until docker run postgres:10.3 pg_isready -h $(HOSTNAME) -p $(PGPORT); do sleep 1; done \
 	fi
 	docker run postgres:10.3 createdb -h $(HOSTNAME) -p $(PGPORT) -U postgres  $(DB_NAME) > /dev/null 2>&1 || true
-	liquibase $(LIQUIBASE_FLAGS) update
+	docker run --rm -e CHANGELOG_FILE=changelog.xml -v $(PWD)/database:/changelogs -e "URL=$(LIQUIBASE_URL)" docker.otenv.com/liquibase:0.0.6
+	#liquibase $(LIQUIBASE_FLAGS) update
 
 postgres-docker-create-testdb: postgres-docker-start
 	docker run postgres:10.3 createdb -h $(HOSTNAME) -p $(PGPORT) -U postgres  $(TEST_DB_NAME) > /dev/null 2>&1 || true
-	liquibase $(LIQUIBASE_TEST_FLAGS) update
+	docker run --rm -e CHANGELOG_FILE=changelog.xml -v $(PWD)/database:/changelogs -e "URL=$(LIQUIBASE_TEST_URL)" docker.otenv.com/liquibase:0.0.6
+	#liquibase $(LIQUIBASE_TEST_FLAGS) update
 
 postgres-start: $(DEV_POSTGRES_DATA_DIR)/postgresql.conf
 	if ! (pg_isready -h localhost -p $(PGPORT)); then \
