@@ -7,8 +7,6 @@ DEV_DOCKER_POSTGRES_DIR ?= $(XDG_DATA_HOME)/sous/postgres_docker
 DEV_DOCKER_POSTGRES_DATA_DIR ?= $(DEV_DOCKER_POSTGRES_DIR)/data
 
 PGPORT ?= 6543
-DOCKERPGPORT ?= 5432
-PG_DOCKER_NAME ?= pgdocker
 
 HOSTNAME = $(shell hostname)
 DB_NAME = sous
@@ -230,19 +228,21 @@ test-gofmt:
 	bin/check-gofmt
 
 test-unit: postgres-test-prepare
-	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -timeout 3m -race $(SOUS_PACKAGES_WITH_TESTS)
+	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -count 1 -timeout 3m -race $(SOUS_PACKAGES_WITH_TESTS)
 
-test-unit-no:
-	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -timeout 3m -race $(SOUS_PACKAGES_WITH_TESTS)
+test-cached:
+	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -timeout 3m $(SOUS_PACKAGES_WITH_TESTS)
+
+# This should be test-metalinter, but we have a ways to go make metalinter happy
+dev-test: test-staticcheck test-cached
 
 # Note, the TEMP DIR was needed for the volume mounting, tried to coalesce in the source folder but go kept picking up
 # the other source files and would create bad imports so used temp directory instead
 test-unit-tc:
 	rm -rf $(TC_TEMP_DIR)
-	mkdir $(TC_TEMP_DIR)
-	mkdir $(TC_TEMP_DIR)/src
+	mkdir -p $(TC_TEMP_DIR)/src
 	cp -r ./vendor/* $(TC_TEMP_DIR)/src
-	mkdir $(TC_TEMP_DIR)/src/github.com/opentable/sous
+	mkdir -p $(TC_TEMP_DIR)/src/github.com/opentable/sous
 	cp -r ./* $(TC_TEMP_DIR)/src/github.com/opentable/sous
 	docker run --rm -v $(TC_TEMP_DIR):/go -v $(PWD):/app -w /app golang:1.10 go test -race -v $(SOUS_TC_PACKAGES) | docker run -i xjewer/go-test-teamcity
 
@@ -316,12 +316,12 @@ postgres-docker-start:
 	fi
 	docker run postgres:10.3 createdb -h $(HOSTNAME) -p $(PGPORT) -U postgres  $(DB_NAME) > /dev/null 2>&1 || true
 	docker run --rm -e CHANGELOG_FILE=changelog.xml -v $(PWD)/database:/changelogs -e "URL=$(LIQUIBASE_URL)" docker.otenv.com/liquibase:0.0.6
-	#liquibase $(LIQUIBASE_FLAGS) update
+
 
 postgres-docker-create-testdb: postgres-docker-start
 	docker run postgres:10.3 createdb -h $(HOSTNAME) -p $(PGPORT) -U postgres  $(TEST_DB_NAME) > /dev/null 2>&1 || true
 	docker run --rm -e CHANGELOG_FILE=changelog.xml -v $(PWD)/database:/changelogs -e "URL=$(LIQUIBASE_TEST_URL)" docker.otenv.com/liquibase:0.0.6
-	#liquibase $(LIQUIBASE_TEST_FLAGS) update
+
 
 postgres-start: $(DEV_POSTGRES_DATA_DIR)/postgresql.conf
 	if ! (pg_isready -h localhost -p $(PGPORT)); then \
@@ -343,9 +343,6 @@ postgres-stop:
 postgres-connect:
 	psql -h localhost -p $(PGPORT) sous
 
-postgres-docker-update-schema:
-	liquibase $(LIQUIBASE_DOCKER_FLAGS) update
-
 postgres-update-schema: postgres-start
 	liquibase $(LIQUIBASE_FLAGS) update
 
@@ -365,5 +362,3 @@ doc/diagrams/%.png: doc/diagrams/%.dot
 	semvertagchk test test-gofmt test-integration setup-containers test-unit \
 	reject-wip wip staticcheck postgres-start postgres-stop postgres-connect \
 	postgres-clean postgres-create-testdb build-debug homebrew install-gotags
-
-#liquibase --url jdbc:postgresql://127.0.0.1:6543/sous --changeLogFile=database/changelog.xml update
