@@ -78,7 +78,7 @@ func setupDB(t *testing.T) *sql.DB {
 	if np, set := os.LookupEnv("PGPORT"); set {
 		port = np
 	}
-	connstr := fmt.Sprintf("dbname=sous_test_template host=localhost port=%s sslmode=disable", port)
+	connstr := fmt.Sprintf("dbname=sous_test_template host=localhost port=%s user=postgres sslmode=disable", port)
 	setupDB, err := sql.Open("postgres", connstr)
 	if err != nil {
 		t.Logf("Error setting up test database Error: %v. Did you already `make postgres-test-prepare`?", err)
@@ -99,7 +99,7 @@ func setupDB(t *testing.T) *sql.DB {
 	}
 	db, err := PostgresConfig{
 		DBName:   "sous_test",
-		User:     "",
+		User:     "postgres",
 		Password: "",
 		Host:     "localhost",
 		Port:     port,

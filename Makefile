@@ -3,17 +3,22 @@ SHELL := /usr/bin/env bash
 XDG_DATA_HOME ?= $(HOME)/.local/share
 DEV_POSTGRES_DIR ?= $(XDG_DATA_HOME)/sous/postgres
 DEV_POSTGRES_DATA_DIR ?= $(DEV_POSTGRES_DIR)/data
+DEV_DOCKER_POSTGRES_DIR ?= $(XDG_DATA_HOME)/sous/postgres_docker
+DEV_DOCKER_POSTGRES_DATA_DIR ?= $(DEV_DOCKER_POSTGRES_DIR)/data
+
 PGPORT ?= 6543
 
+HOSTNAME = $(shell hostname)
 DB_NAME = sous
 TEST_DB_NAME = sous_test_template
 
 LIQUIBASE_DEFAULTS := ./dev_support/liquibase/liquibase.properties
-LIQUIBASE_SERVER := jdbc:postgresql://localhost:$(PGPORT)
-LIQUIBASE_SHARED_FLAGS = --changeLogFile=database/changelog.xml --defaultsFile=./dev_support/liquibase/liquibase.properties
-
-LIQUIBASE_FLAGS := --url $(LIQUIBASE_SERVER)/$(DB_NAME) $(LIQUIBASE_SHARED_FLAGS)
-LIQUIBASE_TEST_FLAGS := --url $(LIQUIBASE_SERVER)/$(TEST_DB_NAME) $(LIQUIBASE_SHARED_FLAGS)
+LIQUIBASE_SERVER := jdbc:postgresql://$(HOSTNAME):$(PGPORT)
+LIQUIBASE_SHARED_FLAGS := --changeLogFile=database/changelog.xml --defaultsFile=./dev_support/liquibase/liquibase.properties
+LIQUIBASE_URL := "$(LIQUIBASE_SERVER)/$(DB_NAME)?user=postgres"
+LIQUIBASE_FLAGS := --url $(LIQUIBASE_URL) $(LIQUIBASE_SHARED_FLAGS)
+LIQUIBASE_TEST_URL := "$(LIQUIBASE_SERVER)/$(TEST_DB_NAME)?user=postgres"
+LIQUIBASE_TEST_FLAGS := --url $(LIQUIBASE_TEST_URL) $(LIQUIBASE_SHARED_FLAGS)
 
 SQLITE_URL := https://sqlite.org/2017/sqlite-autoconf-3160200.tar.gz
 GO_VERSION := 1.10
@@ -303,6 +308,21 @@ $(DEV_POSTGRES_DATA_DIR):
 $(DEV_POSTGRES_DATA_DIR)/postgresql.conf: $(DEV_POSTGRES_DATA_DIR) dev_support/postgres/postgresql.conf
 	cp dev_support/postgres/postgresql.conf $@
 
+postgres-docker-start:
+	if ! (docker run postgres:10.3 pg_isready -U postgres -h $(HOSTNAME) -p $(PGPORT)); then \
+		rm -rf $(DEV_POSTGRES_DATA_DIR) & \
+		docker run --name postgres -p $(PGPORT):5432 --rm --user "$(id -u):$(id -g)" -v /etc/passwd:/etc/passwd:ro -v $(DEV_DOCKER_POSTGRES_DATA_DIR):/var/lib/postgresql/data postgres:10.3 & \
+		until docker run postgres:10.3 pg_isready -h $(HOSTNAME) -p $(PGPORT); do sleep 1; done \
+	fi
+	docker run postgres:10.3 createdb -h $(HOSTNAME) -p $(PGPORT) -U postgres  $(DB_NAME) > /dev/null 2>&1 || true
+	docker run --rm -e CHANGELOG_FILE=changelog.xml -v $(PWD)/database:/changelogs -e "URL=$(LIQUIBASE_URL)" docker.otenv.com/liquibase:0.0.6
+
+
+postgres-docker-create-testdb: postgres-docker-start
+	docker run postgres:10.3 createdb -h $(HOSTNAME) -p $(PGPORT) -U postgres  $(TEST_DB_NAME) > /dev/null 2>&1 || true
+	docker run --rm -e CHANGELOG_FILE=changelog.xml -v $(PWD)/database:/changelogs -e "URL=$(LIQUIBASE_TEST_URL)" docker.otenv.com/liquibase:0.0.6
+
+
 postgres-start: $(DEV_POSTGRES_DATA_DIR)/postgresql.conf
 	if ! (pg_isready -h localhost -p $(PGPORT)); then \
 		postgres -D $(DEV_POSTGRES_DATA_DIR) -p $(PGPORT) & \
@@ -342,5 +362,3 @@ doc/diagrams/%.png: doc/diagrams/%.dot
 	semvertagchk test test-gofmt test-integration setup-containers test-unit \
 	reject-wip wip staticcheck postgres-start postgres-stop postgres-connect \
 	postgres-clean postgres-create-testdb build-debug homebrew install-gotags
-
-#liquibase --url jdbc:postgresql://127.0.0.1:6543/sous --changeLogFile=database/changelog.xml update
