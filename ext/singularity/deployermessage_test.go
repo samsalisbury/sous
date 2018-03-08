@@ -62,7 +62,7 @@ func TestDeployerMessageError(t *testing.T) {
 	}
 	err := errors.New("Test error")
 	expectedFields := defaultExpectedFields()
-	expectedFields["sous-error"] = "Test error"
+	expectedFields["error"] = "Test error"
 
 	reportDeployerMessage("test", pair, nil, taskData, err, logging.InformationLevel, logger)
 
