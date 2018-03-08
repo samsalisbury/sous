@@ -143,15 +143,9 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 		return psd.err(500, "Failed to write deployment: %s.", err)
 	}
 
-	r := &sous.Rectification{
-		Pair: sous.DeployablePair{
-			Post: &sous.Deployable{
-				Status:     0,
-				Deployment: dep,
-			},
-			ExecutorData: nil,
-		},
-	}
+	r := sous.NewRectification(sous.DeployablePair{Post: &sous.Deployable{
+		Deployment: dep,
+	}})
 	r.Pair.SetID(did)
 
 	qr, ok := psd.QueueSet.Push(r)
