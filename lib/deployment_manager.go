@@ -79,6 +79,6 @@ func (dm *deploymentManagerDecorator) WriteDeployment(dep *Deployment, user User
 		return err
 	}
 
-	deps.Add(dep)
+	deps.Set(dep.ID(), dep)
 	return nil
 }
