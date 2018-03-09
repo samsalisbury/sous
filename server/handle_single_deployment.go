@@ -12,6 +12,8 @@ import (
 	"github.com/opentable/sous/util/restful"
 )
 
+// https://github.com/opentable/sous/blob/0a96ed483cd86abc9604993120e8dd211cf7adc6/server/handle_single_deployment.go
+
 type (
 	// SingleDeploymentResource creates handlers for dealing with single
 	// deployments.
@@ -22,8 +24,9 @@ type (
 	// specs. See Exchange method for more details.
 	PUTSingleDeploymentHandler struct {
 		SingleDeploymentHandler
-		QueueSet sous.QueueSet
-		routeMap *restful.RouteMap
+		QueueSet         sous.QueueSet
+		routeMap         *restful.RouteMap
+		GDMToDeployments func(*sous.State) (sous.Deployments, error)
 	}
 
 	// GETSingleDeploymentHandler retrieves manifests containing single deployment
@@ -40,6 +43,7 @@ type (
 		DeploymentManager sous.DeploymentManager
 		req               *http.Request
 		responseWriter    http.ResponseWriter
+		GDM               *sous.State
 	}
 )
 
@@ -49,12 +53,13 @@ func newSingleDeploymentResource(cl ComponentLocator) *SingleDeploymentResource 
 	}
 }
 
-func (sdr *SingleDeploymentResource) newSingleDeploymentHandler(req *http.Request, rw http.ResponseWriter) SingleDeploymentHandler {
+func (sdr *SingleDeploymentResource) newSingleDeploymentHandler(req *http.Request, rw http.ResponseWriter, gdm *sous.State) SingleDeploymentHandler {
 	dm := sdr.context.DeploymentManager
 	return SingleDeploymentHandler{
 		DeploymentManager: dm,
 		responseWriter:    rw,
 		req:               req,
+		GDM:               gdm,
 	}
 }
 
@@ -65,17 +70,22 @@ func (sdh *SingleDeploymentHandler) depID() (sous.DeploymentID, error) {
 
 // Put returns a configured put single deployment handler.
 func (sdr *SingleDeploymentResource) Put(rm *restful.RouteMap, rw http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
-	sdh := sdr.newSingleDeploymentHandler(req, rw)
+	gdm := sdr.context.liveState()
+	sdh := sdr.newSingleDeploymentHandler(req, rw, gdm)
 	return &PUTSingleDeploymentHandler{
 		SingleDeploymentHandler: sdh,
 		QueueSet:                sdr.context.QueueSet,
 		routeMap:                rm,
+		GDMToDeployments: func(s *sous.State) (sous.Deployments, error) {
+			return gdm.Deployments()
+		},
 	}
 }
 
 // Get returns a configured get single deployment handler.
 func (sdr *SingleDeploymentResource) Get(rm *restful.RouteMap, rw http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
-	sdh := sdr.newSingleDeploymentHandler(req, rw)
+	gdm := sdr.context.liveState()
+	sdh := sdr.newSingleDeploymentHandler(req, rw, gdm)
 	return &GETSingleDeploymentHandler{SingleDeploymentHandler: sdh}
 }
 
@@ -145,16 +155,14 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 		return psd.err(500, "Failed to write deployment: %s.", err)
 	}
 
-	/*
-	r := sous.NewRectification(sous.DeployablePair{Prior: &sous.Deployable{Deployment: original}, Post: &sous.Deployable{
-		Deployment: &psd.Body.Deployment,
-	}})
-*/
+	if err := psd.StateWriter.WriteState(psd.GDM, user); err != nil {
+		return psd.err(500, "Failed to write state: %s.", err)
+	}
+
 	r := sous.NewRectification(sous.DeployablePair{Post: &sous.Deployable{
 		Deployment: &psd.Body.Deployment,
 	}})
 
-	
 	r.Pair.SetID(did)
 
 	log := logging.Log
