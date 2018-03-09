@@ -84,7 +84,6 @@ func setupDB(t *testing.T) *sql.DB {
 		t.Logf("Error setting up test database Error: %v. Did you already `make postgres-test-prepare`?", err)
 		t.FailNow()
 	}
-	// ignoring error because I think "no such DB is a failure"
 	if _, err := setupDB.Exec("drop database sous_test"); err != nil && !isNoDBError(err) {
 		t.Logf("Error dropping old test database connstr %q err %v", connstr, err)
 		t.FailNow()
