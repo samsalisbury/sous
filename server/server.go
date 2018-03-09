@@ -55,8 +55,6 @@ func (userExtractor) GetUser(req *http.Request) ClientUser {
 		Email: req.Header.Get("Sous-User-Email"),
 	}
 
-	clu.Email = "jcastillo@opentable.com"
-	clu.Name = "Jim Castillo"
 	log := logging.Log
 	messages.ReportLogFieldsMessageToConsole("req header user", logging.ExtraDebug1Level, log, clu)
 	return clu
