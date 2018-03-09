@@ -550,8 +550,8 @@ func newClusterSpecificHTTPClient(c HTTPClient, dff *config.DeployFilterFlags, l
 	if err != nil {
 		return nil, err
 	}
-
 	cluster := dff.Cluster
+	messages.ReportLogFieldsMessageToConsole("Server List retrieved", logging.ExtraDebug1Level, log, serverList, cluster)
 	var serverURL string
 	for _, s := range serverList.Servers {
 		if s.ClusterName == cluster {
