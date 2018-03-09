@@ -145,9 +145,16 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 		return psd.err(500, "Failed to write deployment: %s.", err)
 	}
 
+	/*
+	r := sous.NewRectification(sous.DeployablePair{Prior: &sous.Deployable{Deployment: original}, Post: &sous.Deployable{
+		Deployment: &psd.Body.Deployment,
+	}})
+*/
 	r := sous.NewRectification(sous.DeployablePair{Post: &sous.Deployable{
 		Deployment: &psd.Body.Deployment,
 	}})
+
+	
 	r.Pair.SetID(did)
 
 	log := logging.Log
