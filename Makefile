@@ -3,22 +3,17 @@ SHELL := /usr/bin/env bash
 XDG_DATA_HOME ?= $(HOME)/.local/share
 DEV_POSTGRES_DIR ?= $(XDG_DATA_HOME)/sous/postgres
 DEV_POSTGRES_DATA_DIR ?= $(DEV_POSTGRES_DIR)/data
-DEV_DOCKER_POSTGRES_DIR ?= $(XDG_DATA_HOME)/sous/postgres_docker
-DEV_DOCKER_POSTGRES_DATA_DIR ?= $(DEV_DOCKER_POSTGRES_DIR)/data
-
 PGPORT ?= 6543
 
-HOSTNAME = $(shell hostname)
 DB_NAME = sous
 TEST_DB_NAME = sous_test_template
 
 LIQUIBASE_DEFAULTS := ./dev_support/liquibase/liquibase.properties
-LIQUIBASE_SERVER := jdbc:postgresql://$(HOSTNAME):$(PGPORT)
-LIQUIBASE_SHARED_FLAGS := --changeLogFile=database/changelog.xml --defaultsFile=./dev_support/liquibase/liquibase.properties
-LIQUIBASE_URL := "$(LIQUIBASE_SERVER)/$(DB_NAME)?user=postgres"
-LIQUIBASE_FLAGS := --url $(LIQUIBASE_URL) $(LIQUIBASE_SHARED_FLAGS)
-LIQUIBASE_TEST_URL := "$(LIQUIBASE_SERVER)/$(TEST_DB_NAME)?user=postgres"
-LIQUIBASE_TEST_FLAGS := --url $(LIQUIBASE_TEST_URL) $(LIQUIBASE_SHARED_FLAGS)
+LIQUIBASE_SERVER := jdbc:postgresql://localhost:$(PGPORT)
+LIQUIBASE_SHARED_FLAGS = --changeLogFile=database/changelog.xml --defaultsFile=./dev_support/liquibase/liquibase.properties
+
+LIQUIBASE_FLAGS := --url $(LIQUIBASE_SERVER)/$(DB_NAME) $(LIQUIBASE_SHARED_FLAGS)
+LIQUIBASE_TEST_FLAGS := --url $(LIQUIBASE_SERVER)/$(TEST_DB_NAME) $(LIQUIBASE_SHARED_FLAGS)
 
 SQLITE_URL := https://sqlite.org/2017/sqlite-autoconf-3160200.tar.gz
 GO_VERSION := 1.10
@@ -70,7 +65,6 @@ COVER_DIR := /tmp/sous-cover
 TEST_VERBOSE := $(if $(VERBOSE),-v,)
 SOUS_PACKAGES:= $(shell go list -f '{{.ImportPath}}' ./... | grep -v 'vendor')
 SOUS_PACKAGES_WITH_TESTS:= $(shell go list -f '{{if len .TestGoFiles}}{{.ImportPath}}{{end}}' ./...)
-SOUS_TC_PACKAGES=$(shell docker run --rm -v $(PWD):/app -w /app golang:1.10 go list -f '{{if len .TestGoFiles}}{{.ImportPath}}{{end}}' ./... | grep -v 'vendor' | sed 's/_\/app/github.com\/opentable\/sous/')
 SOUS_CONTAINER_IMAGES:= "docker images | egrep '127.0.0.1:5000|testregistry_'"
 TC_TEMP_DIR ?= /tmp/sous
 
@@ -228,26 +222,18 @@ test-gofmt:
 	bin/check-gofmt
 
 test-unit: postgres-test-prepare
-	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -count 1 -timeout 3m -race $(SOUS_PACKAGES_WITH_TESTS)
-
-test-unit-docker: postgres-docker-create-testdb
-	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -count 1 -timeout 3m $(SOUS_PACKAGES_WITH_TESTS)
-
-test-cached:
-	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -timeout 3m $(SOUS_PACKAGES_WITH_TESTS)
-
-# This should be test-metalinter, but we have a ways to go make metalinter happy
-dev-test: test-staticcheck test-cached
+	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -timeout 3m -race $(SOUS_PACKAGES_WITH_TESTS)
 
 # Note, the TEMP DIR was needed for the volume mounting, tried to coalesce in the source folder but go kept picking up
 # the other source files and would create bad imports so used temp directory instead
-test-unit-tc: postgres-docker-create-testdb
+test-unit-tc: postgres-test-prepare
 	rm -rf $(TC_TEMP_DIR)
-	mkdir -p $(TC_TEMP_DIR)/src
+	mkdir $(TC_TEMP_DIR)
+	mkdir $(TC_TEMP_DIR)/src
 	cp -r ./vendor/* $(TC_TEMP_DIR)/src
-	mkdir -p $(TC_TEMP_DIR)/src/github.com/opentable/sous
+	mkdir $(TC_TEMP_DIR)/src/github.com/opentable/sous
 	cp -r ./* $(TC_TEMP_DIR)/src/github.com/opentable/sous
-	docker run --rm -v $(TC_TEMP_DIR):/go -v $(PWD):/app -w /app golang:1.10 go test -race -v $(SOUS_TC_PACKAGES) | docker run -i xjewer/go-test-teamcity
+	docker run --rm -v $(TC_TEMP_DIR):/go -v $(PWD):/app -w /app golang:1.10 go test -race -v $(SOUS_PACKAGES_WITH_TESTS) | docker run -i xjewer/go-test-teamcity
 
 test-integration: setup-containers
 	@echo
@@ -311,21 +297,6 @@ $(DEV_POSTGRES_DATA_DIR):
 $(DEV_POSTGRES_DATA_DIR)/postgresql.conf: $(DEV_POSTGRES_DATA_DIR) dev_support/postgres/postgresql.conf
 	cp dev_support/postgres/postgresql.conf $@
 
-postgres-docker-start:
-	if ! (docker run postgres:10.3 pg_isready -h $(HOSTNAME) -p $(PGPORT)); then \
-		rm -rf $(DEV_POSTGRES_DATA_DIR) & \
-		docker run --name postgres -p $(PGPORT):5432 --rm --user "$(id -u):$(id -g)" -v /etc/passwd:/etc/passwd:ro -v $(DEV_DOCKER_POSTGRES_DATA_DIR):/var/lib/postgresql/data postgres:10.3 & \
-		until docker run postgres:10.3 pg_isready -h $(HOSTNAME) -p $(PGPORT); do sleep 1; done \
-	fi
-	docker run postgres:10.3 createdb -h $(HOSTNAME) -p $(PGPORT) $(DB_NAME) > /dev/null 2>&1 || true
-	docker run --rm -e CHANGELOG_FILE=changelog.xml -v $(PWD)/database:/changelogs -e "URL=$(LIQUIBASE_URL)" docker.otenv.com/liquibase:0.0.6
-
-
-postgres-docker-create-testdb: postgres-docker-start
-	docker run postgres:10.3 createdb -h $(HOSTNAME) -p $(PGPORT) $(TEST_DB_NAME) > /dev/null 2>&1 || true
-	docker run --rm -e CHANGELOG_FILE=changelog.xml -v $(PWD)/database:/changelogs -e "URL=$(LIQUIBASE_TEST_URL)" docker.otenv.com/liquibase:0.0.6
-
-
 postgres-start: $(DEV_POSTGRES_DATA_DIR)/postgresql.conf
 	if ! (pg_isready -h localhost -p $(PGPORT)); then \
 		postgres -D $(DEV_POSTGRES_DATA_DIR) -p $(PGPORT) & \
@@ -352,16 +323,11 @@ postgres-update-schema: postgres-start
 postgres-clean: postgres-stop
 	rm -r "$(DEV_POSTGRES_DIR)"
 
-diagrams: $(patsubst %.dot,%.png,$(shell ls doc/diagrams/*.dot))
-
-doc/diagrams/%.png: doc/diagrams/%.dot
-	@command -v dot >/dev/null 2>&1 || { \
-		echo "ERROR: dot command not found, please install graphviz"; exit 1; }
-	dot -Tpng $< > $@
-
 .PHONY: artifactory clean clean-containers clean-container-certs \
 	clean-running-containers clean-container-images coverage deb-build \
 	install-fpm install-jfrog install-ggen install-build-tools legendary release \
 	semvertagchk test test-gofmt test-integration setup-containers test-unit \
 	reject-wip wip staticcheck postgres-start postgres-stop postgres-connect \
 	postgres-clean postgres-create-testdb build-debug homebrew install-gotags
+
+#liquibase --url jdbc:postgresql://127.0.0.1:6543/sous --changeLogFile=database/changelog.xml update
