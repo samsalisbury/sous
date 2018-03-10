@@ -24,9 +24,10 @@ type (
 	// specs. See Exchange method for more details.
 	PUTSingleDeploymentHandler struct {
 		SingleDeploymentHandler
+		GDMToDeployments func(*sous.State) (sous.Deployments, error)
 		QueueSet         sous.QueueSet
 		routeMap         *restful.RouteMap
-		GDMToDeployments func(*sous.State) (sous.Deployments, error)
+		StateWriter      sous.StateWriter
 	}
 
 	// GETSingleDeploymentHandler retrieves manifests containing single deployment
@@ -79,6 +80,7 @@ func (sdr *SingleDeploymentResource) Put(rm *restful.RouteMap, rw http.ResponseW
 		GDMToDeployments: func(s *sous.State) (sous.Deployments, error) {
 			return gdm.Deployments()
 		},
+		StateWriter: sdr.context.StateManager,
 	}
 }
 
@@ -151,12 +153,21 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 	}
 
 	user := sous.User(psd.GetUser(psd.req))
-	if err := psd.DeploymentManager.WriteDeployment(&psd.Body.Deployment, user); err != nil {
-		return psd.err(500, "Failed to write deployment: %s.", err)
+	m, ok := psd.GDM.Manifests.Get(did.ManifestID)
+	if !ok {
+		return psd.err(404, "No manifest with ID %q.", did.ManifestID)
 	}
+
+	cluster := did.Cluster
+	newSpec := psd.Body.Deployment.DeploySpec()
+	m.Deployments[cluster] = newSpec
 
 	if err := psd.StateWriter.WriteState(psd.GDM, user); err != nil {
 		return psd.err(500, "Failed to write state: %s.", err)
+	}
+
+	if err := psd.DeploymentManager.WriteDeployment(&psd.Body.Deployment, user); err != nil {
+		return psd.err(500, "Failed to write deployment: %s.", err)
 	}
 
 	r := sous.NewRectification(sous.DeployablePair{Post: &sous.Deployable{
