@@ -160,6 +160,16 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 
 	cluster := did.Cluster
 	newSpec := psd.Body.Deployment.DeploySpec()
+	d, ok := m.Deployments[cluster]
+	if !ok {
+		return psd.err(404, "No %q deployment defined for %q.", cluster, did)
+	}
+
+	differentSpec, _ := newSpec.Diff(d)
+	if !differentSpec {
+		return psd.ok(200, nil)
+	}
+
 	m.Deployments[cluster] = newSpec
 
 	if err := psd.StateWriter.WriteState(psd.GDM, user); err != nil {
