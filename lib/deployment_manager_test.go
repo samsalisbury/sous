@@ -35,6 +35,7 @@ func TestDeploymentManager_ReadDeployment(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// XXX uses deployment.Diff
 	different, diffs := deployment.Diff(originalDeployment)
 	if different {
 		t.Errorf("ReadDeployment returned different deployment (diffs: %#v)", diffs)

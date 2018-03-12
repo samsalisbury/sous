@@ -6,17 +6,17 @@ import (
 	"github.com/opentable/sous/util/logging"
 )
 
-// A DeployablePairSubmessage collects the common bits of logging events with
+// A deployablePairSubmessage collects the common bits of logging events with
 // a DeployablePair in their context. e.g. rectifier differences and deployments.
-type DeployablePairSubmessage struct {
+type deployablePairSubmessage struct {
 	pair     *DeployablePair
-	priorSub *DeployableSubmessage
-	postSub  *DeployableSubmessage
+	priorSub logging.EachFielder
+	postSub  logging.EachFielder
 }
 
-// NewDeployablePairSubmessage returns a new DeployablePairSubmessage.
-func NewDeployablePairSubmessage(pair *DeployablePair) *DeployablePairSubmessage {
-	msg := &DeployablePairSubmessage{
+// NewDeployablePairSubmessage returns a new deployablePairSubmessage.
+func NewDeployablePairSubmessage(pair *DeployablePair) logging.Submessage {
+	msg := &deployablePairSubmessage{
 		pair: pair,
 	}
 
@@ -28,8 +28,24 @@ func NewDeployablePairSubmessage(pair *DeployablePair) *DeployablePairSubmessage
 	return msg
 }
 
-// EachField implements the EachFielder interface on DeployablePairSubmessage.
-func (msg *DeployablePairSubmessage) EachField(f logging.FieldReportFn) {
+func (msg *deployablePairSubmessage) RecommendedLevel() logging.Level {
+	if msg.pair.Post == nil {
+		return logging.WarningLevel
+	}
+
+	if msg.pair.Prior == nil {
+		return logging.InformationLevel
+	}
+
+	if len(msg.pair.Diffs()) == 0 {
+		return logging.DebugLevel
+	}
+
+	return logging.InformationLevel
+}
+
+// EachField implements the EachFielder interface on deployablePairSubmessage.
+func (msg *deployablePairSubmessage) EachField(f logging.FieldReportFn) {
 	if msg.pair == nil {
 		return
 	}

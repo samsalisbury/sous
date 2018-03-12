@@ -179,6 +179,7 @@ func deserialSpew(o interface{}) (spewString string) {
 type logFieldsMessage struct {
 	logging.CallerInfo
 	logging.Level
+	submessages        []logging.EachFielder
 	Fields             []string
 	Types              []string
 	JSONRepresentation string
@@ -192,12 +193,6 @@ type logFieldsMessage struct {
 func (l logFieldsMessage) WriteToConsole(console io.Writer) {
 	if l.console {
 		fmt.Fprintf(console, "%s\n", l.composeMsg())
-		if l.jsonObj != nil {
-			fmt.Fprintf(console, "%s\n", l.jsonObj.StringIndent("", " "))
-		}
-
-		fmt.Fprintf(console, "Fields: %s\n", strings.Join(l.Fields, ","))
-		fmt.Fprintf(console, "Types: %s\n", strings.Join(l.Types, ","))
 	}
 }
 
@@ -276,6 +271,10 @@ func (l logFieldsMessage) reportLogFieldsMessage(logSink logging.LogSink, items 
 	l.CallerInfo.ExcludeMe()
 
 	for _, item := range items {
+		if sm, is := item.(logging.EachFielder); is {
+			l.submessages = append(l.submessages, sm)
+			continue
+		}
 		l.extractID(item)
 		fields, types, jsonRep := defaultStructInfo(item)
 		l.addFields(fields...)
@@ -340,4 +339,7 @@ func (l logFieldsMessage) EachField(fn logging.FieldReportFn) {
 	}
 	l.CallerInfo.EachField(fn)
 
+	for _, sm := range l.submessages {
+		sm.EachField(fn)
+	}
 }
