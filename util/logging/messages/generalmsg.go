@@ -192,12 +192,6 @@ type logFieldsMessage struct {
 func (l logFieldsMessage) WriteToConsole(console io.Writer) {
 	if l.console {
 		fmt.Fprintf(console, "%s\n", l.composeMsg())
-		if l.jsonObj != nil {
-			fmt.Fprintf(console, "%s\n", l.jsonObj.StringIndent("", " "))
-		}
-
-		fmt.Fprintf(console, "Fields: %s\n", strings.Join(l.Fields, ","))
-		fmt.Fprintf(console, "Types: %s\n", strings.Join(l.Types, ","))
 	}
 }
 
@@ -335,7 +329,9 @@ func (l logFieldsMessage) EachField(fn logging.FieldReportFn) {
 	}
 
 	if l.jsonObj != nil {
-		fn("json-value", l.jsonObj.String())
+		if n, err := l.jsonObj.ArrayCount("message", "array"); n > 0 && err != nil {
+			fn("json-value", l.jsonObj.String())
+		}
 
 	}
 	l.CallerInfo.EachField(fn)

@@ -21,18 +21,18 @@ import (
 	"github.com/samsalisbury/semv"
 )
 
-// Func aliases, for convenience returning from commands.
-var (
-	GeneralErrorf = func(format string, a ...interface{}) cmdr.ErrorResult {
-		return EnsureErrorResult(fmt.Errorf(format, a...))
-	}
-	EnsureErrorResult = func(err error) cmdr.ErrorResult {
-		var ls logging.LogSink
-		ls = logging.Log
-		messages.ReportLogFieldsMessageToConsole("Error:", logging.DebugLevel, ls, err)
-		return cmdr.EnsureErrorResult(err)
-	}
-)
+// GeneralErrorf is an convenience method for returning from commands.
+func GeneralErrorf(format string, a ...interface{}) cmdr.ErrorResult {
+	return EnsureErrorResult(fmt.Errorf(format, a...))
+}
+
+// EnsureErrorResult is a convenience for returning from a command.
+func EnsureErrorResult(err error) cmdr.ErrorResult {
+	var ls logging.LogSink
+	ls = logging.Log
+	messages.ReportLogFieldsMessage("Error:", logging.DebugLevel, ls, err)
+	return cmdr.EnsureErrorResult(err)
+}
 
 // ProduceResult converts errors into Results
 func ProduceResult(err error) cmdr.Result {
