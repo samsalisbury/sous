@@ -258,8 +258,6 @@ func AddInternals(graph adder) {
 		newBuildContext,
 		newSourceContext,
 		newSourceContextDiscovery,
-		newLocalGitClient,
-		newLocalGitRepo,
 		newSourceHostChooser,
 		NewCurrentState,
 		NewCurrentGDM,
@@ -341,7 +339,27 @@ func newMetricsHandler(set *logging.LogSet) MetricsHandler {
 	return MetricsHandler{set.ExpHandler()}
 }
 
-func newSourceContextDiscovery(g LocalGitRepo, ls LogSink) *SourceContextDiscovery {
+func newSourceContextDiscovery(sh LocalWorkDirShell, ls LogSink) *SourceContextDiscovery {
+	var err error
+
+	gitc := LocalGitClient{}
+	gitc.Client, err = git.NewClient(sh.Sh)
+	if err != nil {
+		return &SourceContextDiscovery{
+			Error:         err,
+			SourceContext: nil,
+		}
+	}
+
+	g := LocalGitRepo{}
+	g.Repo, err = gitc.OpenRepo(".")
+	if err != nil {
+		return &SourceContextDiscovery{
+			Error:         err,
+			SourceContext: nil,
+		}
+	}
+
 	c, err := g.SourceContext()
 	if err != nil {
 		return &SourceContextDiscovery{
@@ -452,16 +470,6 @@ func newLocalWorkDirShell(verbosity *config.Verbosity, l LocalWorkDir) (v LocalW
 	v.TeeEcho = os.Stdout //XXX should use a writer
 	v.Sh.Debug = verbosity.Debug
 	return v, initErr(err, "getting current working directory")
-}
-
-func newLocalGitClient(sh LocalWorkDirShell) (v LocalGitClient, err error) {
-	v.Client, err = git.NewClient(sh.Sh)
-	return v, initErr(err, "initialising git client")
-}
-
-func newLocalGitRepo(c LocalGitClient) (v LocalGitRepo, err error) {
-	v.Repo, err = c.OpenRepo(".")
-	return v, initErr(err, "opening local git repository")
 }
 
 func newSelector(regClient LocalDockerClient, log LogSink) sous.Selector {
@@ -578,7 +586,7 @@ func newHTTPClient(c LocalSousConfig, user sous.User, srvr ServerHandler, log Lo
 		cl, err := restful.NewInMemoryClient(srvr.Handler, log.Child("local-http"))
 		return HTTPClient{HTTPClient: cl}, err
 	}
-	messages.ReportLogFieldsMessageToConsole("Using server", logging.ExtraDebug1Level, log, c.Server)
+	messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Using server %s", c.Server), logging.ExtraDebug1Level, log)
 	cl, err := restful.NewClient(c.Server, log.Child("http-client"))
 	return HTTPClient{HTTPClient: cl}, err
 }

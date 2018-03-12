@@ -334,7 +334,9 @@ func (l logFieldsMessage) EachField(fn logging.FieldReportFn) {
 	}
 
 	if l.jsonObj != nil {
-		fn("json-value", l.jsonObj.String())
+		if n, err := l.jsonObj.ArrayCount("message", "array"); n > 0 && err == nil {
+			fn("json-value", l.jsonObj.String())
+		}
 
 	}
 	l.CallerInfo.EachField(fn)
