@@ -10,12 +10,16 @@ func TestSingleRectification_Resolve_completes(t *testing.T) {
 	// This test just checks that SingleRectification.Resolve actually
 	// completes.
 
-	sr := NewRectification(DeployablePair{})
+	sr := NewRectification(DeployablePair{
+		Post: &Deployable{
+			Deployment: &Deployment{},
+		},
+	})
 
 	done := make(chan struct{})
 
 	go func() {
-		sr.Begin(&DummyDeployer{})
+		sr.Begin(&DummyDeployer{}, &DummyRegistry{})
 		sr.Wait()
 		close(done)
 	}()

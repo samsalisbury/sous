@@ -78,7 +78,7 @@ func (sd *SousNewDeploy) Execute(args []string) cmdr.Result {
 	messages.ReportLogFieldsMessage("SousNewDeploy.Execute Retrieved Deployment",
 		logging.ExtraDebug1Level, sd.LogSink, d)
 
-	d.Deployment.SourceID.Version = newVersion
+	d.Deployment.Version = newVersion
 
 	updateResponse, err := updater.Update(d, nil)
 	if err != nil {

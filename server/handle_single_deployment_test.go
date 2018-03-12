@@ -17,11 +17,10 @@ import (
 )
 
 func TestSingleDeploymentResource(t *testing.T) {
-	dm, _ := sous.NewDeploymentManagerSpy()
 	qs, _ := sous.NewQueueSetSpy()
 	cl := ComponentLocator{
-		DeploymentManager: dm,
-		QueueSet:          qs,
+		QueueSet:     qs,
+		StateManager: &sous.DummyStateManager{State: sous.DefaultStateFixture()},
 	}
 	r := newSingleDeploymentResource(cl)
 
@@ -48,9 +47,6 @@ func TestSingleDeploymentResource(t *testing.T) {
 		if gsdh.req != req {
 			t.Errorf("GET handler didn't get the Request")
 		}
-		if gsdh.DeploymentManager != cl.DeploymentManager {
-			t.Errorf("GET handler didn't get the DeploymentManager")
-		}
 	})
 
 	t.Run("Put()", func(t *testing.T) {
@@ -70,9 +66,6 @@ func TestSingleDeploymentResource(t *testing.T) {
 		if psdh.req != req {
 			t.Errorf("PUT handler didn't get the Request")
 		}
-		if psdh.DeploymentManager != cl.DeploymentManager {
-			t.Errorf("PUT handler didn't get the DeploymentManager")
-		}
 		if psdh.QueueSet != cl.QueueSet {
 			t.Errorf("PUT handler didn't get the QueueSet")
 		}
@@ -84,15 +77,12 @@ func TestSingleDeploymentResource(t *testing.T) {
 }
 
 type psdhExScenario struct {
-	handler           restful.Exchanger
-	response          interface{}
-	status            int
-	deploymentManager *spies.Spy
-	queueSet          *spies.Spy
-}
-
-func (scn *psdhExScenario) hasDeployment(dep *sous.Deployment) {
-	scn.deploymentManager.MatchMethod("ReadDeployment", spies.AnyArgs, dep, nil)
+	handler      restful.Exchanger
+	stateManager *sous.DummyStateManager
+	gdm          *sous.State
+	response     interface{}
+	status       int
+	queueSet     *spies.Spy
 }
 
 func (scn *psdhExScenario) exercise() {
@@ -137,9 +127,8 @@ func (scn psdhExScenario) assertStringBody(t *testing.T, expected string) {
 
 func (scn psdhExScenario) assertDeploymentWritten(t *testing.T) {
 	t.Helper()
-	calls := scn.deploymentManager.CallsTo("WriteDeployment")
-	if len(calls) == 0 {
-		t.Errorf("Expected that a deployment would be written, but none were.")
+	if scn.stateManager.WriteCount != 1 {
+		t.Errorf("Expected that a deployment would be written once; written %d times.", scn.stateManager.WriteCount)
 	}
 }
 
@@ -162,13 +151,11 @@ func (scn psdhExScenario) assertNoR11nQueued(t *testing.T) {
 
 func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 	setup := func(sent *SingleDeploymentBody, did map[string]string) *psdhExScenario {
-		// Setup
-
-		dmSpy, dmCtrl := sous.NewDeploymentManagerSpy()
 		qs, qsCtrl := sous.NewQueueSetSpy()
+		sm := &sous.DummyStateManager{State: sous.DefaultStateFixture()}
 		cl := ComponentLocator{
-			DeploymentManager: dmSpy,
-			QueueSet:          qs,
+			StateManager: sm,
+			QueueSet:     qs,
 		}
 		r := newSingleDeploymentResource(cl)
 
@@ -198,9 +185,10 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 		psd := r.Put(rm, rw, req, nil)
 
 		return &psdhExScenario{
-			handler:           psd,
-			deploymentManager: dmCtrl,
-			queueSet:          qsCtrl,
+			handler:      psd,
+			stateManager: sm,
+			queueSet:     qsCtrl,
+			gdm:          psd.(*PUTSingleDeploymentHandler).GDM,
 		}
 	}
 
@@ -213,9 +201,31 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 		}
 	}
 
+	makeBodyAndQuery := func(t *testing.T) (*SingleDeploymentBody, map[string]string) {
+		t.Helper()
+		m, ok := sous.DefaultStateFixture().Manifests.Get(
+			sous.ManifestID{
+				Source: sous.SourceLocation{
+					Repo: "github.com/user1/repo1",
+					Dir:  "dir1",
+				},
+				Flavor: "flavor1",
+			},
+		)
+		if !ok {
+			t.Fatal("Setup failed to get Manifest.")
+		}
+		dep, ok := m.Deployments["cluster1"]
+		if !ok {
+			t.Fatal("Setup failed to get DeploySpec.")
+		}
+		query := didQuery(m.Source.Repo, m.Source.Dir, "cluster1", m.Flavor)
+
+		return &SingleDeploymentBody{Deployment: dep}, query
+	}
+
 	t.Run("query parsing error", func(t *testing.T) {
 		scenario := setup(nil, map[string]string{})
-		scenario.hasDeployment(sous.DeploymentFixture(""))
 		scenario.exercise()
 
 		scenario.assertStatus(t, 400)
@@ -224,7 +234,6 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 
 	t.Run("body parsing error", func(t *testing.T) {
 		scenario := setup(nil, didQuery("github.com/opentable/something", "", "cluster", ""))
-		scenario.hasDeployment(sous.DeploymentFixture(""))
 		scenario.exercise()
 
 		scenario.assertStatus(t, 400)
@@ -232,19 +241,30 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 	})
 
 	t.Run("no matching deployment", func(t *testing.T) {
-		dep := sous.DeploymentFixture("")
-		scenario := setup(&SingleDeploymentBody{Deployment: *dep}, didQuery("github.com/user1/repo1", "", "cluster1", ""))
-		scenario.deploymentManager.MatchMethod("ReadDeployment", spies.AnyArgs, nil, errors.New("no deployment found"))
+		body, query := makeBodyAndQuery(t)
+		scenario := setup(body, query)
+		mid := sous.ManifestID{
+			Source: sous.SourceLocation{
+				Repo: "github.com/user1/repo1",
+				Dir:  "dir1",
+			},
+			Flavor: "flavor1",
+		}
+		m, ok := scenario.gdm.Manifests.Get(mid)
+		if !ok {
+			t.Fatal("Setup failed to get manifest.")
+		}
+		m.Deployments = sous.DeploySpecs{}
 		scenario.exercise()
 
 		scenario.assertStatus(t, 404)
-		scenario.assertStringBody(t, "No deployment with ID")
+		wantErr := `Manifest "github.com/user1/repo1,dir1~flavor1" has no deployment for cluster "cluster1".`
+		scenario.assertStringBody(t, wantErr)
 	})
 
 	t.Run("no change necessary", func(t *testing.T) {
-		dep := sous.DeploymentFixture("")
-		scenario := setup(&SingleDeploymentBody{Deployment: *dep}, didQuery("github.com/user1/repo1", "", "cluster1", ""))
-		scenario.hasDeployment(sous.DeploymentFixture(""))
+		body, query := makeBodyAndQuery(t)
+		scenario := setup(body, query)
 		scenario.exercise()
 
 		scenario.assertNoR11nQueued(t)
@@ -252,12 +272,9 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 	})
 
 	t.Run("change version", func(t *testing.T) {
-		dep := sous.DeploymentFixture("")
-		body := &SingleDeploymentBody{Deployment: *dep}
-		body.Deployment.SourceID.Version = semv.MustParse("2.0.0")
-		query := didQuery("github.com/user1/repo1", "", "cluster1", "")
+		body, query := makeBodyAndQuery(t)
+		body.Deployment.Version = semv.MustParse("2.0.0")
 		scenario := setup(body, query)
-		scenario.hasDeployment(sous.DeploymentFixture(""))
 		qr := &sous.QueuedR11n{
 			ID: "actionid1",
 		}
@@ -268,27 +285,26 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 		scenario.assertDeploymentWritten(t)
 		scenario.assertR11nQueued(t)
 		scenario.assertHeader(t, "Location",
-			"/deploy-queue-item?action=actionid1&cluster=cluster1&flavor=&offset=&repo=github.com%2Fuser1%2Frepo1")
+			"/deploy-queue-item?action=actionid1&cluster=cluster1&flavor=flavor1&offset=dir1&repo=github.com%2Fuser1%2Frepo1")
 	})
 
 	t.Run("WriteDeployment error", func(t *testing.T) {
-		dep := sous.DeploymentFixture("")
-		dep.NumInstances = 7
-		scenario := setup(&SingleDeploymentBody{Deployment: *dep}, didQuery("github.com/user1/repo1", "", "cluster1", ""))
-		scenario.hasDeployment(sous.DeploymentFixture(""))
-		scenario.deploymentManager.MatchMethod("WriteDeployment", spies.AnyArgs, errors.New("an error occurred"))
+		body, query := makeBodyAndQuery(t)
+		body.Deployment.NumInstances = 7
+		scenario := setup(body, query)
+
+		scenario.stateManager.WriteErr = errors.New("an error occurred")
 		scenario.exercise()
 
 		scenario.assertDeploymentWritten(t)
 		scenario.assertStatus(t, 500)
-		scenario.assertStringBody(t, "Failed to write deployment")
+		scenario.assertStringBody(t, "Failed to write state: an error occurred.")
 	})
 
 	t.Run("PushToQueueSet error", func(t *testing.T) {
-		dep := sous.DeploymentFixture("")
-		dep.NumInstances = 7
-		scenario := setup(&SingleDeploymentBody{Deployment: *dep}, didQuery("github.com/user1/repo1", "", "cluster1", ""))
-		scenario.hasDeployment(sous.DeploymentFixture(""))
+		body, query := makeBodyAndQuery(t)
+		body.Deployment.NumInstances = 7
+		scenario := setup(body, query)
 		scenario.queueSet.MatchMethod("Push", spies.AnyArgs, &sous.QueuedR11n{}, false)
 		scenario.exercise()
 

@@ -24,10 +24,9 @@ type (
 	// specs. See Exchange method for more details.
 	PUTSingleDeploymentHandler struct {
 		SingleDeploymentHandler
-		GDMToDeployments func(*sous.State) (sous.Deployments, error)
-		QueueSet         sous.QueueSet
-		routeMap         *restful.RouteMap
-		StateWriter      sous.StateWriter
+		QueueSet    sous.QueueSet
+		routeMap    *restful.RouteMap
+		StateWriter sous.StateWriter
 	}
 
 	// GETSingleDeploymentHandler retrieves manifests containing single deployment
@@ -40,11 +39,10 @@ type (
 	// the GET and PUT handlers.
 	SingleDeploymentHandler struct {
 		userExtractor
-		Body              SingleDeploymentBody
-		DeploymentManager sous.DeploymentManager
-		req               *http.Request
-		responseWriter    http.ResponseWriter
-		GDM               *sous.State
+		Body           SingleDeploymentBody
+		req            *http.Request
+		responseWriter http.ResponseWriter
+		GDM            *sous.State
 	}
 )
 
@@ -55,12 +53,10 @@ func newSingleDeploymentResource(cl ComponentLocator) *SingleDeploymentResource 
 }
 
 func (sdr *SingleDeploymentResource) newSingleDeploymentHandler(req *http.Request, rw http.ResponseWriter, gdm *sous.State) SingleDeploymentHandler {
-	dm := sdr.context.DeploymentManager
 	return SingleDeploymentHandler{
-		DeploymentManager: dm,
-		responseWriter:    rw,
-		req:               req,
-		GDM:               gdm,
+		responseWriter: rw,
+		req:            req,
+		GDM:            gdm,
 	}
 }
 
@@ -77,10 +73,7 @@ func (sdr *SingleDeploymentResource) Put(rm *restful.RouteMap, rw http.ResponseW
 		SingleDeploymentHandler: sdh,
 		QueueSet:                sdr.context.QueueSet,
 		routeMap:                rm,
-		GDMToDeployments: func(s *sous.State) (sous.Deployments, error) {
-			return gdm.Deployments()
-		},
-		StateWriter: sdr.context.StateManager,
+		StateWriter:             sdr.context.StateManager,
 	}
 }
 
@@ -98,12 +91,17 @@ func (h *GETSingleDeploymentHandler) Exchange() (interface{}, int) {
 		return h.err(400, "Cannot decode Deployment ID: %s.", err)
 	}
 
-	dep, err := h.DeploymentManager.ReadDeployment(did)
-	if err != nil {
-		return h.err(404, "No deployment with ID %q: %v", did, err)
+	m, ok := h.GDM.Manifests.Get(did.ManifestID)
+	if !ok {
+		return h.err(404, "No manifest with ID %q", did.ManifestID)
 	}
 
-	h.Body.Deployment = *dep
+	dep, ok := m.Deployments[did.Cluster]
+	if !ok {
+		return h.err(404, "Manifest %q has no deployment for cluster %q.", m.ID(), did.Cluster)
+	}
+
+	h.Body.Deployment = dep
 
 	return h.ok(200, nil)
 }
@@ -142,9 +140,14 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 		return psd.err(400, "Invalid deployment: %q", flaws)
 	}
 
-	original, err := psd.DeploymentManager.ReadDeployment(did)
-	if err != nil {
-		return psd.err(404, "No deployment with ID %q. %v", did, err)
+	m, ok := psd.GDM.Manifests.Get(did.ManifestID)
+	if !ok {
+		return psd.err(404, "No manifest with ID %q.", did.ManifestID)
+	}
+	original, ok := m.Deployments[did.Cluster]
+	if !ok {
+		return psd.err(404, "Manifest %q has no deployment for cluster %q.",
+			did.ManifestID, did.Cluster)
 	}
 
 	different, _ := psd.Body.Deployment.Diff(original)
@@ -153,35 +156,27 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 	}
 
 	user := sous.User(psd.GetUser(psd.req))
-	m, ok := psd.GDM.Manifests.Get(did.ManifestID)
-	if !ok {
-		return psd.err(404, "No manifest with ID %q.", did.ManifestID)
-	}
-
-	cluster := did.Cluster
-	newSpec := psd.Body.Deployment.DeploySpec()
-	d, ok := m.Deployments[cluster]
-	if !ok {
-		return psd.err(404, "No %q deployment defined for %q.", cluster, did)
-	}
-
-	differentSpec, _ := newSpec.Diff(d)
-	if !differentSpec {
-		return psd.ok(200, nil)
-	}
-
-	m.Deployments[cluster] = newSpec
 
 	if err := psd.StateWriter.WriteState(psd.GDM, user); err != nil {
 		return psd.err(500, "Failed to write state: %s.", err)
 	}
 
-	if err := psd.DeploymentManager.WriteDeployment(&psd.Body.Deployment, user); err != nil {
-		return psd.err(500, "Failed to write deployment: %s.", err)
+	// Round-trip the updated GDM back to deployments to check validity.
+	deployments, err := psd.GDM.Deployments()
+	if err != nil {
+		psd.err(500, "Failed to round-trip new deployment spec to GDM: %s", err)
+	}
+	newDeployment, ok := deployments.Get(did)
+	if !ok {
+		psd.err(500, "Failed to round-trip new deployment spec to GDM.")
+	}
+
+	if flaws := newDeployment.Validate(); len(flaws) != 0 {
+		return psd.err(400, "Deployment invalid after round-trip to GDM: %v", flaws)
 	}
 
 	r := sous.NewRectification(sous.DeployablePair{Post: &sous.Deployable{
-		Deployment: &psd.Body.Deployment,
+		Deployment: newDeployment,
 	}})
 
 	r.Pair.SetID(did)

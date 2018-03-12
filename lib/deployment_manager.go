@@ -78,7 +78,6 @@ func (dm *deploymentManagerDecorator) WriteDeployment(dep *Deployment, user User
 	if err != nil {
 		return err
 	}
-
 	deps.Set(dep.ID(), dep)
-	return nil
+	return dm.WriteState(state, user)
 }

@@ -20,6 +20,8 @@ type (
 	DummyStateManager struct {
 		*State
 		ReadCount, WriteCount int
+		WriteErr              error
+		ReadErr               error
 	}
 )
 
@@ -31,12 +33,12 @@ func NewDummyStateManager() *DummyStateManager {
 // ReadState implements StateManager
 func (sm *DummyStateManager) ReadState() (*State, error) {
 	sm.ReadCount++
-	return sm.State, nil
+	return sm.State, sm.ReadErr
 }
 
 // WriteState implements StateManager
 func (sm *DummyStateManager) WriteState(s *State, u User) error {
 	sm.WriteCount++
 	*sm.State = *s
-	return nil
+	return sm.WriteErr
 }

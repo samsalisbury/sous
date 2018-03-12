@@ -30,11 +30,10 @@ type (
 )
 
 // NewR11nQueueSet returns a ready to use R11nQueueSet.
-func NewR11nQueueSet(r Registry, opts ...R11nQueueOpt) *R11nQueueSet {
+func NewR11nQueueSet(opts ...R11nQueueOpt) *R11nQueueSet {
 	return &R11nQueueSet{
 		set:  map[DeploymentID]*R11nQueue{},
 		opts: opts,
-		reg:  r,
 	}
 }
 
@@ -57,11 +56,6 @@ func (rqs *R11nQueueSet) PushIfEmpty(r *Rectification) (*QueuedR11n, bool) {
 func (rqs *R11nQueueSet) Push(r *Rectification) (*QueuedR11n, bool) {
 	rqs.Lock()
 	defer rqs.Unlock()
-
-	if r.Pair.Post.BuildArtifact == nil {
-		pair, _ := HandlePairsByRegistry(rqs.reg, &r.Pair)
-		r.Pair = *pair
-	}
 	id := r.Pair.ID()
 	queue, ok := rqs.set[id]
 	if !ok {
