@@ -164,11 +164,11 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 	// Round-trip the updated GDM back to deployments to check validity.
 	deployments, err := psd.GDM.Deployments()
 	if err != nil {
-		psd.err(500, "Failed to round-trip new deployment spec to GDM: %s", err)
+		return psd.err(500, "Failed to round-trip new deployment spec to GDM: %s", err)
 	}
 	newDeployment, ok := deployments.Get(did)
 	if !ok {
-		psd.err(500, "Failed to round-trip new deployment spec to GDM.")
+		return psd.err(500, "Failed to round-trip new deployment spec to GDM.")
 	}
 
 	if flaws := newDeployment.Validate(); len(flaws) != 0 {
@@ -178,7 +178,6 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 	r := sous.NewRectification(sous.DeployablePair{Post: &sous.Deployable{
 		Deployment: newDeployment,
 	}})
-
 	r.Pair.SetID(did)
 
 	log := logging.Log
