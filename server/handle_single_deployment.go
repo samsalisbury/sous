@@ -155,6 +155,8 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 		return psd.ok(200, nil)
 	}
 
+	m.Deployments[did.Cluster] = psd.Body.Deployment
+
 	user := sous.User(psd.GetUser(psd.req))
 
 	if err := psd.StateWriter.WriteState(psd.GDM, user); err != nil {
