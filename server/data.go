@@ -56,9 +56,8 @@ type (
 	// SingleDeploymentBody is the response struct returned from handlers
 	// of HTTP methods of a SingleDeploymentResource.
 	SingleDeploymentBody struct {
-		Meta           ResponseMeta
-		ManifestHeader sous.Manifest
-		Deployment     sous.DeploySpec
+		Meta       ResponseMeta
+		Deployment sous.DeploySpec
 	}
 )
 
