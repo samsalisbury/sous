@@ -210,7 +210,9 @@ func (client *LiveHTTPClient) update(urlPath string, qParms map[string]string, f
 		rz, err := client.sendRequest(rq, err)
 		state, err = client.getBody(rz, nil, err)
 		client.enrichState(state, urlPath, qParms)
-		state.headers = rz.Header
+		if state != nil {
+			state.headers = rz.Header
+		}
 		return err
 	}(), "Update %s params: %v", urlPath, qParms)
 	return state, err
