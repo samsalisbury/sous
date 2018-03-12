@@ -37,7 +37,6 @@ func TestReportLogFieldsMessage_NoInterface(t *testing.T) {
 		map[string]interface{}{
 			"sous-fields":    "",
 			"sous-types":     "",
-			"json-value":     "{\"message\":{\"array\":[]}}",
 			"@loglov3-otl":   "sous-generic-v1",
 			"sous-ids":       "",
 			"sous-id-values": "",

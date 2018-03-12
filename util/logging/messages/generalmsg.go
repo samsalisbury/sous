@@ -329,7 +329,7 @@ func (l logFieldsMessage) EachField(fn logging.FieldReportFn) {
 	}
 
 	if l.jsonObj != nil {
-		if n, err := l.jsonObj.ArrayCount("message", "array"); n > 0 && err != nil {
+		if n, err := l.jsonObj.ArrayCount("message", "array"); n > 0 && err == nil {
 			fn("json-value", l.jsonObj.String())
 		}
 
