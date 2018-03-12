@@ -85,7 +85,10 @@ func (sd *SousNewDeploy) Execute(args []string) cmdr.Result {
 		return cmdr.EnsureErrorResult(err)
 	}
 
-	location := updateResponse.Location()
+	if location := updateResponse.Location(); location != "" {
+		return cmdr.Successf("Deployment queued at: %s", location)
+	}
+	return cmdr.Successf("Desired version for %q in cluster %q already %q",
+		sd.TargetManifestID, cluster, sd.DeployFilterFlags.Tag)
 
-	return cmdr.Successf("Deployment queued at: %s", location)
 }
