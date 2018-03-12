@@ -7,6 +7,8 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 	"github.com/opentable/sous/util/restful"
 )
 
@@ -128,12 +130,12 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 		return psd.err(400, "Invalid deployment: %q", flaws)
 	}
 
-	dep, err := psd.DeploymentManager.ReadDeployment(did)
+	original, err := psd.DeploymentManager.ReadDeployment(did)
 	if err != nil {
 		return psd.err(404, "No deployment with ID %q. %v", did, err)
 	}
 
-	different, _ := psd.Body.Deployment.Diff(dep)
+	different, _ := psd.Body.Deployment.Diff(original)
 	if !different {
 		return psd.ok(200, nil)
 	}
@@ -143,16 +145,13 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 		return psd.err(500, "Failed to write deployment: %s.", err)
 	}
 
-	r := &sous.Rectification{
-		Pair: sous.DeployablePair{
-			Post: &sous.Deployable{
-				Status:     0,
-				Deployment: dep,
-			},
-			ExecutorData: nil,
-		},
-	}
+	r := sous.NewRectification(sous.DeployablePair{Post: &sous.Deployable{
+		Deployment: &psd.Body.Deployment,
+	}})
 	r.Pair.SetID(did)
+
+	log := logging.Log
+	messages.ReportLogFieldsMessageToConsole("Pushing following onto queue", logging.ExtraDebug1Level, log, r)
 
 	qr, ok := psd.QueueSet.Push(r)
 	if !ok {
@@ -160,7 +159,12 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 	}
 
 	actionKV := restful.KV{"action", string(qr.ID)}
-	queueURI, err := psd.routeMap.URIFor("deploy-queue-item", nil, actionKV)
+	clusterKV := restful.KV{"cluster", did.Cluster}
+	repoKV := restful.KV{"repo", did.ManifestID.Source.Repo}
+	offsetKV := restful.KV{"offset", did.ManifestID.Source.Dir}
+	flavorKV := restful.KV{"flavor", did.ManifestID.Flavor}
+	queueURI, err := psd.routeMap.URIFor("deploy-queue-item", nil,
+		actionKV, clusterKV, repoKV, offsetKV, flavorKV)
 	if err != nil {
 		return psd.err(500, "Determining queue item URL: %s", err)
 	}

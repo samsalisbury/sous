@@ -119,7 +119,7 @@ func (scn psdhExScenario) assertHeader(t *testing.T, wantKey, wantValue string) 
 
 	gotValue := h.Get(wantKey)
 	if gotValue != wantValue {
-		t.Errorf("got %q=%q; want %q=%q", wantKey, gotValue, wantKey, wantValue)
+		t.Errorf("got:\n%q=%q\nwant:\n%q=%q", wantKey, gotValue, wantKey, wantValue)
 	}
 }
 
@@ -267,7 +267,8 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 		scenario.assertStatus(t, 201)
 		scenario.assertDeploymentWritten(t)
 		scenario.assertR11nQueued(t)
-		scenario.assertHeader(t, "Location", "/deploy-queue-item?action=actionid1")
+		scenario.assertHeader(t, "Location",
+			"/deploy-queue-item?action=actionid1&cluster=cluster1&flavor=&offset=&repo=github.com%2Fuser1%2Frepo1")
 	})
 
 	t.Run("WriteDeployment error", func(t *testing.T) {

@@ -69,7 +69,7 @@ func (msg deployerMessage) EachField(f logging.FieldReportFn) {
 		f("sous-request-id", msg.taskData.requestID)
 	}
 	if msg.error != nil {
-		f("sous-error", msg.error.Error())
+		f("error", msg.error.Error())
 	}
 	msg.CallerInfo.EachField(f)
 	msg.submessage.EachField(f)

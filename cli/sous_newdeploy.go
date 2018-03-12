@@ -18,7 +18,7 @@ import (
 type SousNewDeploy struct {
 	DeployFilterFlags config.DeployFilterFlags `inject:"optional"`
 	StateReader       graph.StateReader
-	HTTPClient        graph.HTTPClient
+	HTTPClient        *graph.ClusterSpecificHTTPClient
 	TargetManifestID  graph.TargetManifestID
 	LogSink           graph.LogSink
 	dryrunOption      string
@@ -61,14 +61,16 @@ func (sd *SousNewDeploy) RegisterOn(psy Addable) {
 // Execute creates the new deployment.
 func (sd *SousNewDeploy) Execute(args []string) cmdr.Result {
 
+	cluster := sd.DeployFilterFlags.Cluster
+
 	newVersion, err := semv.Parse(sd.DeployFilterFlags.Tag)
 	if err != nil {
-		return cmdr.UsageErrorf("not semver: %s", sd.DeployFilterFlags.Tag)
+		return cmdr.UsageErrorf("not semver: -tag %s", sd.DeployFilterFlags.Tag)
 	}
 
 	d := server.SingleDeploymentBody{}
 	q := sd.TargetManifestID.QueryMap()
-	q["cluster"] = sd.DeployFilterFlags.Cluster
+	q["cluster"] = cluster
 	updater, err := sd.HTTPClient.Retrieve("./single-deployment", q, &d, nil)
 	if err != nil {
 		return cmdr.EnsureErrorResult(err)

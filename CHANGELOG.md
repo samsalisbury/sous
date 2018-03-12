@@ -12,6 +12,7 @@ with respect to its command line interface and HTTP interface.
 * CLI: sous newdeploy command: Much faster deployments. This will become
   the default 'sous deploy' after some real-world validation.
 * Flaws describing problems with resource fields now get more context.
+* Recording metrics for DB access (rows, time, errors)
 
 ## [0.5.72](//github.com/opentable/sous/compare/0.5.71...0.5.72)
 

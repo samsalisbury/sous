@@ -74,32 +74,35 @@ func TestDuplexReadState(t *testing.T) {
 
 func setupDB(t *testing.T) *sql.DB {
 	t.Helper()
+	db, err := setupDBErr()
+	if err != nil {
+		t.Skipf("setupDB failed: %s", err)
+	}
+	return db
+}
+
+func setupDBErr() (*sql.DB, error) {
 	port := "6543"
 	if np, set := os.LookupEnv("PGPORT"); set {
 		port = np
 	}
-	connstr := fmt.Sprintf("dbname=sous_test_template host=localhost port=%s sslmode=disable", port)
+	connstr := fmt.Sprintf("dbname=sous_test_template host=localhost port=%s user=postgres sslmode=disable", port)
 	setupDB, err := sql.Open("postgres", connstr)
 	if err != nil {
-		t.Logf("Error setting up test database Error: %v. Did you already `make postgres-test-prepare`?", err)
-		t.FailNow()
+		return nil, fmt.Errorf("Error setting up test database Error: %v. Did you already `make postgres-test-prepare`?", err)
 	}
-	// ignoring error because I think "no such DB is a failure"
 	if _, err := setupDB.Exec("drop database sous_test"); err != nil && !isNoDBError(err) {
-		t.Logf("Error dropping old test database connstr %q err %v", connstr, err)
-		t.FailNow()
+		return nil, fmt.Errorf("Error dropping old test database connstr %q err %v", connstr, err)
 	}
 	if _, err := setupDB.Exec("create database sous_test template sous_test_template"); err != nil {
-		t.Logf("Error creating test database connstr %q err %v", connstr, err)
-		t.FailNow()
+		return nil, fmt.Errorf("Error creating test database connstr %q err %v", connstr, err)
 	}
 	if err := setupDB.Close(); err != nil {
-		t.Logf("Error closing DB manipulation connection connstr %q err %v", connstr, err)
-		t.FailNow()
+		return nil, fmt.Errorf("Error closing DB manipulation connection connstr %q err %v", connstr, err)
 	}
 	db, err := PostgresConfig{
 		DBName:   "sous_test",
-		User:     "",
+		User:     "postgres",
 		Password: "",
 		Host:     "localhost",
 		Port:     port,
@@ -107,10 +110,9 @@ func setupDB(t *testing.T) *sql.DB {
 	}.DB()
 
 	if err != nil {
-		t.Logf("Creating test sql.DB, error: %v", err)
-		t.FailNow()
+		return nil, fmt.Errorf("Creating test sql.DB, error: %v", err)
 	}
-	return db
+	return db, nil
 }
 
 func assertStatesEqual(t *testing.T, oldState, newState *sous.State) {

@@ -95,6 +95,10 @@ func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State,
 		return nil
 	}
 
+	// We use application diffs for deployments (instead of upserts) because
+	// otherwise it would be impossible to return to a previous state for a
+	// manifest. Since rollback is a concrete use case, we do not want e.g.
+	// "ON CONFLICT DO NOTHING", since there would be a previous identical state.
 	if err := execInsertDeployments(ctx, log, tx, updates, "deployments", "", func(fields sqlgen.FieldSet, dep *sous.Deployment) {
 		s := dep.Startup
 		fields.Row(func(r sqlgen.RowDef) {
@@ -110,6 +114,8 @@ func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State,
 		return err
 	}
 
+	// see above - this is the conterpart insert for "deletes", which we're
+	// tombstoning here.
 	if err := execInsertDeployments(ctx, log, tx, deletes, "deployments", "", func(fields sqlgen.FieldSet, dep *sous.Deployment) {
 		s := dep.Startup
 		fields.Row(func(r sqlgen.RowDef) {
@@ -266,7 +272,7 @@ func execInsertDeployments(
 
 	sql := fields.InsertSQL(table, conflict)
 	_, err := tx.ExecContext(ctx, sql, fields.InsertValues()...)
-	reportSQLMessage(log, start, sql, fields.RowCount(), err)
+	reportSQLMessage(log, start, table, write, sql, fields.RowCount(), err)
 
 	return err
 }

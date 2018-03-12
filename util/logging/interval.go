@@ -51,3 +51,10 @@ func (i MessageInterval) EachField(fn FieldReportFn) {
 		fn("duration", int64(0))
 	}
 }
+
+// TimeMetric records a duration metric for this interval if it's complete.
+func (i MessageInterval) TimeMetric(name string, sink MetricsSink) {
+	if i.Complete() {
+		sink.UpdateTimer(name, i.end.Sub(i.start))
+	}
+}
