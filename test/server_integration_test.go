@@ -208,7 +208,7 @@ func (suite integrationServerTests) TestPUTSingleDeployment() {
 		"tag":     "1.0.1",
 	}
 	rez, err := suite.client.Retrieve("/single-deployment", params, nil, nil)
-	suite.errorMatches(err, `404 Not Found.*No deployment with ID`) // empty ID gets 404
+	suite.errorMatches(err, `404 Not Found.*No manifest with ID`) // empty ID gets 404
 	suite.Nil(rez)
 
 	params = map[string]string{
