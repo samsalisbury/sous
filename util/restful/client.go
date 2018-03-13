@@ -2,6 +2,7 @@ package restful
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -42,6 +43,11 @@ type (
 	HTTPClient interface {
 		Create(urlPath string, qParms map[string]string, rqBody interface{}, headers map[string]string) (UpdateDeleter, error)
 		Retrieve(urlPath string, qParms map[string]string, rzBody interface{}, headers map[string]string) (UpdateDeleter, error)
+	}
+
+	HTTPClientWithContext interface {
+		CreateCtx(urlPath string, qParms map[string]string, rqBody interface{}, headers map[string]string, ctx context.Context) (UpdateDeleter, error)
+		RetrieveCtx(urlPath string, qParms map[string]string, rzBody interface{}, headers map[string]string, ctx context.Context) (UpdateDeleter, error)
 	}
 
 	// An Updater captures the state of a retrieved resource so that it can be updated later.
@@ -89,7 +95,7 @@ func (rs *resourceState) Update(qBody Comparable, headers map[string]string) (Up
 }
 
 func (rs *resourceState) Delete(headers map[string]string) error {
-	return rs.client.deelete(rs.path, rs.qparms, rs, headers)
+	return rs.client.delete(rs.path, rs.qparms, rs, headers)
 }
 
 func (rs *resourceState) Location() string {
@@ -156,6 +162,15 @@ func buildHeaders(maybeHeaders []map[string]string) http.Header {
 	return hs
 }
 
+func (client *LiveHTTPClient) getRequest(method string, urlPath string, qParms map[string]string, qBody interface{}, headers map[string]string, ctx context.Context) (*http.Request, error) {
+	url, err := client.buildURL(urlPath, qParms)
+	rq, err := client.buildRequest(method, url, headers, nil, qBody, err)
+	if ctx != nil {
+		rq = rq.WithContext(ctx)
+	}
+	return rq, err
+}
+
 // ****
 
 // Retrieve makes a GET request on urlPath, after transforming qParms into ?&=
@@ -164,8 +179,23 @@ func buildHeaders(maybeHeaders []map[string]string) http.Header {
 // (but note that there may be a response anyway.
 // It returns an Updater so that the resource can be updated later
 func (client *LiveHTTPClient) Retrieve(urlPath string, qParms map[string]string, rzBody interface{}, headers map[string]string) (UpdateDeleter, error) {
-	url, err := client.buildURL(urlPath, qParms)
-	rq, err := client.buildRequest("GET", url, headers, nil, nil, err)
+	//url, err := client.buildURL(urlPath, qParms)
+	//rq, err := client.buildRequest("GET", url, headers, nil, nil, err)
+	//rq, err := client.getRequest("GET", urlPath, qParms, nil, headers, nil)
+	//return client.retrieve(err, urlPath, qParms, rq, rzBody)
+	return client.RetrieveCtx(urlPath, qParms, rzBody, headers, nil)
+}
+
+//RetrieveCtx Add context to Retrieve to ability to cancel
+func (client *LiveHTTPClient) RetrieveCtx(urlPath string, qParms map[string]string, rzBody interface{}, headers map[string]string, ctx context.Context) (UpdateDeleter, error) {
+	//url, err := client.buildURL(urlPath, qParms)
+	//rq, err := client.buildRequest("GET", url, headers, nil, nil, err)
+	//rq = rq.WithContext(ctx)
+	rq, err := client.getRequest("GET", urlPath, qParms, nil, headers, ctx)
+	return client.retrieve(err, urlPath, qParms, rq, rzBody)
+}
+
+func (client *LiveHTTPClient) retrieve(err error, urlPath string, qParms map[string]string, rq *http.Request, rzBody interface{}) (UpdateDeleter, error) {
 	rz, err := client.sendRequest(rq, err)
 	state, err := client.getBody(rz, rzBody, err)
 	return client.enrichState(state, urlPath, qParms), errors.Wrapf(err, "Retrieve %s params: %v", urlPath, qParms)
@@ -176,11 +206,22 @@ func (client *LiveHTTPClient) Retrieve(urlPath string, qParms map[string]string,
 func (client *LiveHTTPClient) Create(urlPath string, qParms map[string]string, qBody interface{}, headers map[string]string) (UpdateDeleter, error) {
 	url, err := client.buildURL(urlPath, qParms)
 	rq, err := client.buildRequest("PUT", url, addNoMatchStar(headers), nil, qBody, err)
+	return client.create(err, urlPath, qParms, qBody, headers, rq)
+}
+
+//CreateCtx Add context to Create to ability to cancel
+func (client *LiveHTTPClient) CreateCtx(urlPath string, qParms map[string]string, qBody interface{}, headers map[string]string, ctx context.Context) (UpdateDeleter, error) {
+	url, err := client.buildURL(urlPath, qParms)
+	rq, err := client.buildRequest("PUT", url, addNoMatchStar(headers), nil, qBody, err)
+	rq = rq.WithContext(ctx)
+	return client.create(err, urlPath, qParms, qBody, headers, rq)
+}
+
+func (client *LiveHTTPClient) create(err error, urlPath string, qParms map[string]string, qBody interface{}, headers map[string]string, rq *http.Request) (UpdateDeleter, error) {
 	rz, err := client.sendRequest(rq, err)
 	state, err := client.getBody(rz, nil, err)
 	return client.enrichState(state, urlPath, qParms), errors.Wrapf(err, "Create %s params: %v", urlPath, qParms)
 }
-
 func (client *LiveHTTPClient) enrichState(state *resourceState, urlPath string, qParms map[string]string) *resourceState {
 	if state != nil {
 		state.client = client
@@ -190,7 +231,7 @@ func (client *LiveHTTPClient) enrichState(state *resourceState, urlPath string, 
 	return state
 }
 
-func (client *LiveHTTPClient) deelete(urlPath string, qParms map[string]string, from *resourceState, headers map[string]string) error {
+func (client *LiveHTTPClient) delete(urlPath string, qParms map[string]string, from *resourceState, headers map[string]string) error {
 	return errors.Wrapf(func() error {
 		url, err := client.buildURL(urlPath, qParms)
 		etag := from.etag
