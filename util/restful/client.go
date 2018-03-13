@@ -45,6 +45,8 @@ type (
 		Retrieve(urlPath string, qParms map[string]string, rzBody interface{}, headers map[string]string) (UpdateDeleter, error)
 	}
 
+	// HTTPClientWithContext interacts with a HTTPServer
+	//   It's designed to handle basic CRUD operations in a safe and restful way, adding context.
 	HTTPClientWithContext interface {
 		CreateCtx(urlPath string, qParms map[string]string, rqBody interface{}, headers map[string]string, ctx context.Context) (UpdateDeleter, error)
 		RetrieveCtx(urlPath string, qParms map[string]string, rzBody interface{}, headers map[string]string, ctx context.Context) (UpdateDeleter, error)
