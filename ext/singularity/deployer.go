@@ -107,6 +107,7 @@ func (r *deployer) Rectify(pair *sous.DeployablePair) sous.DiffResolution {
 		}
 		return resolution
 	case sous.AddedKind:
+		messages.ReportLogFieldsMessageToServerConsole("Starting an AddedKind", logging.ExtraDebug1Level, r.log, pair)
 		result := sous.DiffResolution{DeploymentID: pair.ID()}
 		if err := r.RectifySingleCreate(pair); err != nil {
 			result.Desc = "not created"
@@ -126,6 +127,7 @@ func (r *deployer) Rectify(pair *sous.DeployablePair) sous.DiffResolution {
 		reportDiffResolutionMessage("Result of create", result, logging.InformationLevel, r.log)
 		return result
 	case sous.RemovedKind:
+		messages.ReportLogFieldsMessageToServerConsole("Starting an RemoveKind", logging.ExtraDebug1Level, r.log, pair)
 		result := sous.DiffResolution{DeploymentID: pair.ID()}
 		if err := r.RectifySingleDelete(pair); err != nil {
 			result.Error = sous.WrapResolveError(&sous.DeleteError{Deployment: pair.Prior.Deployment.Clone(), Err: err})
@@ -137,6 +139,7 @@ func (r *deployer) Rectify(pair *sous.DeployablePair) sous.DiffResolution {
 		return result
 	case sous.ModifiedKind:
 		result := sous.DiffResolution{DeploymentID: pair.ID()}
+		messages.ReportLogFieldsMessageToServerConsole("Starting a ModifiedKind", logging.ExtraDebug1Level, r.log, pair)
 		if err := r.RectifySingleModification(pair); err != nil {
 			dp := &sous.DeploymentPair{
 				Prior: pair.Prior.Deployment.Clone(),
