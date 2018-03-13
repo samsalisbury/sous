@@ -66,10 +66,6 @@ func (msg *sqlMessage) EachField(fn logging.FieldReportFn) {
 	}
 }
 
-func (msg *sqlMessage) WriteToConsole(c io.Writer) {
-	fmt.Fprintf(c, "SQL: %s %s %d rows err:%s \n", msg.mainTable, msg.dir, msg.rowcount, msg.err)
-}
-
 // MetricsTo implements MetricsMessage on sqlMessage
 func (msg *sqlMessage) MetricsTo(sink logging.MetricsSink) {
 	msg.MessageInterval.TimeMetric(strings.Join([]string{msg.mainTable, msg.dir.String(), "time"}, "."), sink)
