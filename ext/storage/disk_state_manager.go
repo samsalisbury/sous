@@ -132,7 +132,7 @@ func reportDiskStateManagerMessage(msg string, f []sous.Flaw, err error, log log
 		msg:          msg,
 		CallerInfo:   logging.GetCallerInfo(logging.NotHere()),
 		err:          err,
-		flawsMessage: sous.FlawMessage{f},
+		flawsMessage: sous.FlawMessage{Flaws: f},
 		debug:        isDebug,
 	}
 	logging.Deliver(msgLog, log)

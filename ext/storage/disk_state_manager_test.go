@@ -171,8 +171,9 @@ func exampleState() *sous.State {
 			},
 			&sous.Manifest{
 				Source: sl2,
-				Owners: []string{"Sous Team"},
-				Kind:   "http-service",
+				Owners: []string{},
+				//Owners: []string{"Sous Team"},
+				Kind: "http-service",
 				Deployments: map[string]sous.DeploySpec{
 					"cluster-1": {
 						DeployConfig: sous.DeployConfig{

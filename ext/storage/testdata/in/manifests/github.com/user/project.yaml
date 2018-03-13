@@ -1,6 +1,5 @@
 Source: github.com/user/project
-Owners:
-- Sous Team
+Owners: []
 Kind: http-service
 Deployments:
   cluster-1:
