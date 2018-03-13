@@ -15,7 +15,8 @@ type SousServer struct {
 	dryrun,
 	laddr,
 	gdmRepo string
-	profiling bool
+	profiling          bool
+	enableAutoResolver bool
 }
 
 func init() { TopLevelCommands["server"] = &SousServer{} }
@@ -39,11 +40,12 @@ func (ss *SousServer) AddFlags(fs *flag.FlagSet) {
 	fs.StringVar(&ss.laddr, `listen`, `:80`, "The address to listen on, like '127.0.0.1:https'")
 	fs.StringVar(&ss.gdmRepo, "gdm-repo", "", "Git repo containing the GDM (cloned into config.SourceLocation)")
 	fs.BoolVar(&ss.profiling, "profiling", false, "Enable profiling in the server.")
+	fs.BoolVar(&ss.enableAutoResolver, "autoresolver", true, "Enable the autoresolver")
 }
 
 // Execute is part of the cmdr.Command interface(s).
 func (ss *SousServer) Execute(args []string) cmdr.Result {
-	server, err := ss.SousGraph.GetServer(ss.DeployFilterFlags, ss.dryrun, ss.laddr, ss.gdmRepo, ss.profiling)
+	server, err := ss.SousGraph.GetServer(ss.DeployFilterFlags, ss.dryrun, ss.laddr, ss.gdmRepo, ss.profiling, ss.enableAutoResolver)
 	if err != nil {
 		return cmdr.EnsureErrorResult(err)
 	}

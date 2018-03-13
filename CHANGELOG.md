@@ -13,6 +13,7 @@ with respect to its command line interface and HTTP interface.
   the default 'sous deploy' after some real-world validation.
 * Flaws describing problems with resource fields now get more context.
 * Recording metrics for DB access (rows, time, errors)
+* Server now accepts -autoresolver=false to disable to autoresolver.
 
 ### Fixed
 * Client: running `sous` from outside of git workspaces no longer results in

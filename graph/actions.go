@@ -84,7 +84,14 @@ func (di *SousGraph) GetPollStatus(dryrun string, dff config.DeployFilterFlags) 
 }
 
 // GetServer returns the server action.
-func (di *SousGraph) GetServer(dff config.DeployFilterFlags, dryrun string, laddr string, gdmRepo string, profiling bool) (actions.Action, error) {
+func (di *SousGraph) GetServer(
+	dff config.DeployFilterFlags,
+	dryrun string,
+	laddr string,
+	gdmRepo string,
+	profiling bool,
+	enableAutoResolver bool,
+) (actions.Action, error) {
 	dff.Offset = "*"
 	dff.Flavor = "*"
 	profiling = profiling || os.Getenv("SOUS_PROFILING") == "enable"
@@ -105,6 +112,11 @@ func (di *SousGraph) GetServer(dff config.DeployFilterFlags, dryrun string, ladd
 		return nil, err
 	}
 
+	ar := scoop.AutoResolver
+	if !enableAutoResolver {
+		ar = nil
+	}
+
 	return &actions.Server{
 		DeployFilterFlags: dff,
 		GDMRepo:           gdmRepo,
@@ -113,6 +125,6 @@ func (di *SousGraph) GetServer(dff config.DeployFilterFlags, dryrun string, ladd
 		Log:               scoop.LogSink.LogSink,
 		Config:            scoop.Config,
 		ServerHandler:     scoop.ServerHandler.Handler,
-		AutoResolver:      scoop.AutoResolver,
+		AutoResolver:      ar,
 	}, nil
 }
