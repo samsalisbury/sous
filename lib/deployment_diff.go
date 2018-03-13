@@ -22,6 +22,7 @@ type (
 // Diffs returns the diffs in this pair, from prior to post.
 // TODO: Cache the result.
 func (dp *DeploymentPair) Diffs() Differences {
+	// XXX uses deployment.Diff
 	_, differences := dp.Prior.Diff(dp.Post)
 	return differences
 }
@@ -122,7 +123,7 @@ func (d *stateDiffer) diff(existing DeployStates) {
 		delete(d.from, id)
 	}
 
-	// Deployable pairs for deleted deployments.refcitifation
+	// Deployable pairs for deleted deployments.rectification
 	for _, deletedDS := range d.from {
 		d.Pairs <- &DeployablePair{
 			name:         deletedDS.ID(),
@@ -152,6 +153,8 @@ func (d *differ) diff(existing Deployments) {
 			continue
 		}
 		delete(d.from, id)
+
+		// XXX uses deployment.Diff
 		different, _ := existingDeployment.Diff(&intendedDeployment.Deployment)
 		if different {
 			d.Pairs <- &DeployablePair{

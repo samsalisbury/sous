@@ -52,6 +52,7 @@ func (ds DeployStates) IgnoringStatus() Deployments {
 // Diff computes the list of differences between two DeployStates and returns
 // "true" if they're different, along with a list of differences
 func (ds *DeployState) Diff(o *DeployState) (bool, []string) {
+	// XXX uses deployment.Diff
 	_, depS := ds.Deployment.Diff(&o.Deployment)
 
 	if ds.Status != o.Status {

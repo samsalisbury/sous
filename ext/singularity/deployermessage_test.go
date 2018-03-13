@@ -31,8 +31,10 @@ func TestDeployerMessage(t *testing.T) {
 	logging.AssertMessageFields(t, logMessage, logging.StandardVariableFields, defaultExpectedFields())
 
 	//weak check on WriteToConsole
+	// these messages don't mean anything to most operators.
+	//   the ones who care can run with -d -v and get the raw logs.
 	consoleCalls := control.CallsTo("Console")
-	require.Len(t, consoleCalls, 1)
+	require.Len(t, consoleCalls, 0)
 }
 
 func TestDeployerMessageNilCheck(t *testing.T) {
@@ -134,8 +136,10 @@ func TestDiffResolutionMessage(t *testing.T) {
 	logging.AssertMessageFields(t, logMessage, logging.StandardVariableFields, expectedFields)
 
 	//weak check on WriteToConsole
+	// these messages don't mean anything to most operators.
+	//   the ones who care can run with -d -v and get the raw logs.
 	consoleCalls := control.CallsTo("Console")
-	require.Len(t, consoleCalls, 1)
+	require.Len(t, consoleCalls, 0)
 }
 
 func defaultExpectedFields() map[string]interface{} {

@@ -15,19 +15,10 @@ func (log loggingProcessor) HandlePairs(dp *DeployablePair) (*DeployablePair, *D
 
 func (log loggingProcessor) doLog(dp *DeployablePair) {
 	msg := &deployableMessage{
-		submessage: &DeployablePairSubmessage{
-			pair: dp,
-			priorSub: &DeployableSubmessage{
-				deployable: dp.Prior,
-				prefix:     "",
-			},
-			postSub: &DeployableSubmessage{
-				deployable: dp.Post,
-				prefix:     "",
-			},
-		},
-		callerInfo: logging.GetCallerInfo(logging.NotHere()),
+		pairmessage: NewDeployablePairSubmessage(dp),
+		callerInfo:  logging.GetCallerInfo(),
 	}
+	msg.callerInfo.ExcludeMe()
 
 	logging.Deliver(msg, log.ls)
 }

@@ -5,32 +5,21 @@ import (
 )
 
 type deployableMessage struct {
-	submessage *DeployablePairSubmessage
-	callerInfo logging.CallerInfo
+	pairmessage logging.Submessage
+	callerInfo  logging.CallerInfo
 }
 
 func (msg *deployableMessage) DefaultLevel() logging.Level {
-	if msg.submessage.pair.Post == nil {
-		return logging.WarningLevel
-	}
-
-	if msg.submessage.pair.Prior == nil {
-		return logging.InformationLevel
-	}
-
-	if len(msg.submessage.pair.Diffs()) == 0 {
-		return logging.DebugLevel
-	}
-
-	return logging.InformationLevel
+	return msg.pairmessage.RecommendedLevel()
 }
 
 func (msg *deployableMessage) Message() string {
-	return msg.submessage.pair.Kind().String() + " deployment diff"
+	//return msg.pairmessage.pair.Kind().String() + " deployment diff"
+	return "deployment diff"
 }
 
 func (msg *deployableMessage) EachField(f logging.FieldReportFn) {
 	f("@loglov3-otl", "sous-deployment-diff")
 	msg.callerInfo.EachField(f)
-	msg.submessage.EachField(f)
+	msg.pairmessage.EachField(f)
 }

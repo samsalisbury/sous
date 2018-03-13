@@ -2,7 +2,6 @@ package singularity
 
 import (
 	"fmt"
-	"runtime/debug"
 	"sync"
 	"time"
 
@@ -112,12 +111,12 @@ func (sc *deployer) RunningDeployments(reg sous.Registry, clusters sous.Clusters
 				return deps, nil
 			}
 			if isMalformed(sc.log, err) || ignorableDeploy(sc.log, err) {
-				messages.ReportLogFieldsMessage("Error", logging.DebugLevel, sc.log, err)
+				logging.ReportError(sc.log, errors.Wrapf(err, "malformed or ignorable deploy"))
 				depWait.Done()
 			} else {
 				retryable := retries.maybe(err, reqCh)
 				if !retryable {
-					messages.ReportLogFieldsMessage("Cannot retry exiting", logging.WarningLevel, sc.log, err)
+					logging.ReportError(sc.log, errors.Wrapf(err, "cannot retry"))
 					return deps, err
 				}
 			}
@@ -132,7 +131,6 @@ func (rc retryCounter) maybe(err error, reqCh chan SingReq) bool {
 	if !ok {
 		return false
 	}
-	messages.ReportLogFieldsMessage("Error", logging.DebugLevel, rc.log, errors.Cause(err))
 	count, ok := rc.count[rt.name()]
 	if !ok {
 		count = 0
@@ -153,7 +151,11 @@ func (rc retryCounter) maybe(err error, reqCh chan SingReq) bool {
 
 func catchAll(from string, log logging.LogSink) {
 	if err := recover(); err != nil {
-		messages.ReportLogFieldsMessage("Recovering from error", logging.WarningLevel, log, from, err)
+		if e, is := err.(error); is {
+			logging.ReportError(log, errors.Wrapf(e, "Recovering from panic: %s", from))
+		} else {
+			messages.ReportLogFieldsMessage("Panicked with non-error", logging.DebugLevel, log, err, from)
+		}
 	}
 }
 
@@ -164,7 +166,11 @@ func dontrecover() error {
 func catchAndSend(from string, errs chan error, log logging.LogSink) {
 	defer catchAll(from, log)
 	if err := recover(); err != nil {
-		messages.ReportLogFieldsMessage("Recovering from error", logging.WarningLevel, log, from, err, string(debug.Stack()))
+		if e, is := err.(error); is {
+			logging.ReportError(log, errors.Wrapf(e, "Recovering from panic: %s", from))
+		} else {
+			messages.ReportLogFieldsMessage("Panicked with non-error", logging.DebugLevel, log, err, from)
+		}
 		switch err := err.(type) {
 		default:
 			if err != nil {

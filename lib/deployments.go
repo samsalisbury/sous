@@ -48,6 +48,8 @@ func (ds *Deployments) VariancesFrom(other restful.Comparable) restful.Variances
 			if !has {
 				vs = append(vs, fmt.Sprintf("No deployment in other set for %v.", did))
 			}
+
+			// XXX uses deployment.Diff
 			_, diffs := dep.Diff(od)
 			vs = append(vs, diffs...)
 		}

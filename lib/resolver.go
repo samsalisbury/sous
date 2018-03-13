@@ -50,25 +50,24 @@ func (r *Resolver) queueDiffs(dcs *DeployableChans, results chan DiffResolution)
 			continue
 		}
 		sr := NewRectification(*p)
-		messages.ReportLogFieldsMessageWithIDs("Adding to queset", logging.ExtraDebug1Level, r.ls, p, sr)
+		messages.ReportLogFieldsMessageWithIDs("Adding to queue-set", logging.ExtraDebug1Level, r.ls, p, sr)
 		queued, ok := r.QueueSet.PushIfEmpty(sr)
 		if !ok {
-			messages.ReportLogFieldsMessageWithIDs("failed to que", logging.ExtraDebug1Level, r.ls, p, sr)
+			messages.ReportLogFieldsMessageWithIDs("Failed to queue", logging.ExtraDebug1Level, r.ls, p, sr)
 			reportR11nAnomaly(r.ls, sr, r11nDroppedQueueNotEmpty)
 			continue
 		}
 		wg.Add(1)
-		did := p.ID() // Capture did from the range var p outside the goroutine.
-		go func() {
+		go func(p *DeployablePair) {
 			defer wg.Done()
 			messages.ReportLogFieldsMessageWithIDs("Inserting to QueueSet.Wait", logging.ExtraDebug1Level, r.ls, queued.ID, p, sr)
-			result, ok := r.QueueSet.Wait(did, queued.ID)
+			result, ok := r.QueueSet.Wait(p.ID(), queued.ID)
 			if !ok {
-				messages.ReportLogFieldsMessageWithIDs("failed to QueueSet.Wait", logging.ExtraDebug1Level, r.ls, queued.ID, p, sr)
+				messages.ReportLogFieldsMessageWithIDs("Failed to QueueSet.Wait", logging.ExtraDebug1Level, r.ls, queued.ID, p, sr)
 				reportR11nAnomaly(r.ls, sr, r11nWentMissing)
 			}
 			results <- result
-		}()
+		}(p)
 	}
 	wg.Wait()
 }

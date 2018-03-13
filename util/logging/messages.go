@@ -116,8 +116,19 @@ type (
 		io.Writer
 	}
 
-	eachFielder interface {
+	// A EachFielder provides EachField - which calls its argument for each field it wants to submit for logging.
+	EachFielder interface {
 		EachField(fn FieldReportFn)
+	}
+
+	// A LevelRecommender can recommend a log level.
+	LevelRecommender interface {
+		RecommendedLevel() Level
+	}
+
+	Submessage interface {
+		EachFielder
+		LevelRecommender
 	}
 
 	// A LogMessage has structured data to report to the structured log server (c.f. Deliver).

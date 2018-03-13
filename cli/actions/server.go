@@ -38,7 +38,11 @@ func (ss *Server) Do() error {
 
 	reportServerMessage("Starting scheduled GDM resolution.  Filtering the GDM to resolve on this server", ss.DeployFilterFlags, ss.ListenAddr, ss.Log)
 
-	ss.AutoResolver.Kickoff()
+	if ss.AutoResolver != nil {
+		ss.AutoResolver.Kickoff()
+	} else {
+		reportServerMessage("Auto-resolver DISABLED", ss.DeployFilterFlags, ss.ListenAddr, ss.Log)
+	}
 
 	reportServerMessage("Sous Server Running", ss.DeployFilterFlags, ss.ListenAddr, ss.Log)
 
@@ -104,7 +108,7 @@ func reportServerMessage(msg string, filterFlags config.DeployFilterFlags, liste
 }
 
 func (msg serverMessage) WriteToConsole(console io.Writer) {
-	fmt.Fprintf(console, "%s\n", msg.composeMsg())
+	console.Write([]byte(msg.msg))
 }
 
 func (msg serverMessage) DefaultLevel() logging.Level {
@@ -112,15 +116,18 @@ func (msg serverMessage) DefaultLevel() logging.Level {
 }
 
 func (msg serverMessage) Message() string {
-	return msg.composeMsg()
-}
-
-func (msg serverMessage) composeMsg() string {
-	return fmt.Sprintf("%s, server at %s for %s: DeployFilter Flags %v", msg.msg, msg.listenAddress, msg.deployFilterFlags.Cluster, msg.deployFilterFlags)
+	return msg.msg
 }
 
 func (msg serverMessage) EachField(f logging.FieldReportFn) {
 	f("@loglov3-otl", "sous-generic-v1")
 	f("sous-listen-address", msg.listenAddress)
+	f("filter-cluster", msg.deployFilterFlags.Cluster)
+	f("filter-flavor", msg.deployFilterFlags.Flavor)
+	f("filter-offset", msg.deployFilterFlags.Offset)
+	f("filter-repo", msg.deployFilterFlags.Repo)
+	f("filter-revision", msg.deployFilterFlags.Revision)
+	f("filter-tag", msg.deployFilterFlags.Tag)
+
 	msg.CallerInfo.EachField(f)
 }

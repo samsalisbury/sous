@@ -13,12 +13,18 @@ with respect to its command line interface and HTTP interface.
   the default 'sous deploy' after some real-world validation.
 * Flaws describing problems with resource fields now get more context.
 * Recording metrics for DB access (rows, time, errors)
+* Server now accepts -autoresolver=false to disable to autoresolver.
+
+### Fixed
+* Client: running `sous` from outside of git workspaces no longer results in
+  a confusing Git error.
 
 ## [0.5.72](//github.com/opentable/sous/compare/0.5.71...0.5.72)
 
 ### Fixed
 * PostgreSQL storage correctly retrieves arrays of healthcheck failure statuses
 * Caught a race condition in the logging subsystem.
+
 ### Changed
 * Log messages with `"@loglov3-otl": "sous-generic-v1"` field names changed:
   `fields` -> `sous-fields`, `types` -> `sous-types`, `ids` -> `sous-ids`,
