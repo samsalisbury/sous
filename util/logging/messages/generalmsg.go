@@ -185,19 +185,22 @@ type logFieldsMessage struct {
 	jsonObj            *gabs.Container
 	msg                string
 	console            bool
+	serverConsole      bool
 	withIDs            bool
 	idsMap             map[string]string
 }
 
 func (l logFieldsMessage) WriteToConsole(console io.Writer) {
-	if l.console {
+	if l.console || l.serverConsole {
 		fmt.Fprintf(console, "%s\n", l.composeMsg())
-		if l.jsonObj != nil {
-			fmt.Fprintf(console, "%s\n", l.jsonObj.StringIndent("", " "))
-		}
+		if l.serverConsole {
+			if l.jsonObj != nil {
+				fmt.Fprintf(console, "%s\n", l.jsonObj.StringIndent("", " "))
+			}
 
-		fmt.Fprintf(console, "Fields: %s\n", strings.Join(l.Fields, ","))
-		fmt.Fprintf(console, "Types: %s\n", strings.Join(l.Types, ","))
+			fmt.Fprintf(console, "Fields: %s\n", strings.Join(l.Fields, ","))
+			fmt.Fprintf(console, "Types: %s\n", strings.Join(l.Types, ","))
+		}
 	}
 }
 
@@ -227,7 +230,7 @@ func (l logFieldsMessage) returnIDs() (ids string, values string) {
 func (l logFieldsMessage) composeMsg() string {
 	return l.msg
 }
-func buildLogFieldsMessage(msg string, console bool, withIDs bool, loglvl logging.Level) logFieldsMessage {
+func buildLogFieldsMessage(msg string, console bool, serverConsole bool, withIDs bool, loglvl logging.Level) logFieldsMessage {
 	logMessage := logFieldsMessage{
 		CallerInfo:         logging.GetCallerInfo(logging.NotHere()),
 		Level:              loglvl,
@@ -236,6 +239,7 @@ func buildLogFieldsMessage(msg string, console bool, withIDs bool, loglvl loggin
 		JSONRepresentation: "",
 		msg:                msg,
 		console:            console,
+		serverConsole:      serverConsole,
 		withIDs:            withIDs,
 	}
 
@@ -250,23 +254,28 @@ func buildLogFieldsMessage(msg string, console bool, withIDs bool, loglvl loggin
 
 //ReportLogFieldsMessageWithIDs report message with Ids
 func ReportLogFieldsMessageWithIDs(msg string, loglvl logging.Level, logSink logging.LogSink, items ...interface{}) {
-	logMessage := buildLogFieldsMessage(msg, false, true, loglvl)
+	logMessage := buildLogFieldsMessage(msg, false, false, true, loglvl)
 	logMessage.CallerInfo.ExcludeMe()
 	logMessage.reportLogFieldsMessage(logSink, items...)
-
 }
 
 //ReportLogFieldsMessageToConsole report message to console
 func ReportLogFieldsMessageToConsole(msg string, loglvl logging.Level, logSink logging.LogSink, items ...interface{}) {
-	logMessage := buildLogFieldsMessage(msg, true, false, loglvl)
+	logMessage := buildLogFieldsMessage(msg, true, false, false, loglvl)
 	logMessage.CallerInfo.ExcludeMe()
 	logMessage.reportLogFieldsMessage(logSink, items...)
+}
 
+//ReportLogFieldsMessageToServerConsole report message so that console will write out json and ids/fields
+func ReportLogFieldsMessageToServerConsole(msg string, loglvl logging.Level, logSink logging.LogSink, items ...interface{}) {
+	logMessage := buildLogFieldsMessage(msg, true, true, false, loglvl)
+	logMessage.CallerInfo.ExcludeMe()
+	logMessage.reportLogFieldsMessage(logSink, items...)
 }
 
 //ReportLogFieldsMessage generate a logFieldsMessage log entry
 func ReportLogFieldsMessage(msg string, loglvl logging.Level, logSink logging.LogSink, items ...interface{}) {
-	logMessage := buildLogFieldsMessage(msg, false, true, loglvl)
+	logMessage := buildLogFieldsMessage(msg, false, false, true, loglvl)
 	logMessage.CallerInfo.ExcludeMe()
 
 	logMessage.reportLogFieldsMessage(logSink, items...)

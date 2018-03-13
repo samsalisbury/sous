@@ -156,7 +156,7 @@ type TestID struct {
 }
 
 func TestExtractIDs_TwoIds(t *testing.T) {
-	l := buildLogFieldsMessage("this is a test", false, true, logging.ExtraDebug1Level)
+	l := buildLogFieldsMessage("this is a test", false, false, true, logging.ExtraDebug1Level)
 
 	d := &TestID{
 		TestInnerID: TestInnerID{
@@ -173,7 +173,7 @@ func TestExtractIDs_TwoIds(t *testing.T) {
 }
 
 func TestExtractIDs_NoIds(t *testing.T) {
-	l := buildLogFieldsMessage("this is a test", false, true, logging.ExtraDebug1Level)
+	l := buildLogFieldsMessage("this is a test", false, false, true, logging.ExtraDebug1Level)
 
 	foo := "hello"
 	l.extractID(foo)
