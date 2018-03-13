@@ -87,13 +87,21 @@ help:
 	@echo
 	@echo "Add VERBOSE=1 for tons of extra output."
 
-build-debug:
+build-debug: build-debug-linux build-debug-darwin
+
+build-debug-linux:
 	@if [[ $(SOUS_VERSION) != *"debug" ]]; then echo 'missing debug at the end of semv, please add'; exit -1; fi
 	echo "building debug version" $(SOUS_VERSION) "to" $(BIN_DIR) "with" $(CONCAT_XGO_ARGS)
-
 	mkdir -p $(BIN_DIR)
-	xgo $(CONCAT_XGO_ARGS) --targets=linux/amd64  ./
-	mv ./artifacts/bin/sous-linux-amd64 ./artifacts/bin/sous-$(SOUS_VERSION)
+	xgo $(CONCAT_XGO_ARGS) --targets=linux/amd64 ./
+	mv ./artifacts/bin/sous-linux-amd64 ./artifacts/bin/sous-linux-$(SOUS_VERSION)
+
+build-debug-darwin:
+	@if [[ $(SOUS_VERSION) != *"debug" ]]; then echo 'missing debug at the end of semv, please add'; exit -1; fi
+	echo "building debug version" $(SOUS_VERSION) "to" $(BIN_DIR) "with" $(CONCAT_XGO_ARGS)
+	mkdir -p $(BIN_DIR)
+	xgo $(CONCAT_XGO_ARGS) --targets=darwin/amd64 -out darwin ./
+	mv ./artifacts/bin/darwin* ./artifacts/bin/sous-darwin-$(SOUS_VERSION)
 
 clean:
 	rm -rf $(COVER_DIR)
