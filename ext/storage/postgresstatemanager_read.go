@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/lib/pq"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
@@ -231,7 +230,6 @@ func loadManifests(context context.Context, log logging.LogSink, tx *sql.Tx, sta
 			); err != nil {
 				return errors.Wrapf(err, "loadManifests")
 			}
-			spew.Dump(m.ID().String())
 			if newM, has := state.Manifests.Get(m.ID()); has {
 				m = newM
 			} else {

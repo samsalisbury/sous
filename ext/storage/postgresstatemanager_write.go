@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/lib/pq"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
@@ -71,25 +70,13 @@ func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State,
 			alldeps.Add(diff.Prior.Deployment)
 		}
 	}
-	spew.Dump(
-		currentDeps.Len(),
-		newDeps.Len(),
-		updates.Len(),
-		deletes.Len(),
-		alldeps.Len(),
-	)
 
-	for _, k := range newDeps.Keys() {
-		if _, there := currentDeps.Get(k); !there {
-			spew.Dump(k.String())
-			break
-		}
-	}
-
-	/*
-		for _, k := range currentDeps.Keys() {
-			spew.Dump(k)
-		}
+	/* XXX consider logging this
+	currentDeps.Len(),
+	newDeps.Len(),
+	updates.Len(),
+	deletes.Len(),
+	alldeps.Len(),
 	*/
 
 	if err := execInsertDeployments(ctx, log, tx, alldeps, "components", "on conflict do nothing", func(fields sqlgen.FieldSet, dep *sous.Deployment) {
