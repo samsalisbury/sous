@@ -2,6 +2,7 @@ package sous
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/opentable/sous/util/logging"
@@ -42,6 +43,12 @@ func NewResolver(d Deployer, r Registry, rf *ResolveFilter, ls logging.LogSink, 
 func (r *Resolver) queueDiffs(dcs *DeployableChans, results chan DiffResolution) {
 	var wg sync.WaitGroup
 	for p := range dcs.Pairs {
+		p := p
+		if p.Post == nil {
+			err := fmt.Errorf("queueDiffs called with nil Pair.Post in the chan")
+			logging.ReportError(r.ls, err)
+			continue
+		}
 		sr := NewRectification(*p)
 		messages.ReportLogFieldsMessageWithIDs("Adding to queue-set", logging.ExtraDebug1Level, r.ls, p, sr)
 		queued, ok := r.QueueSet.PushIfEmpty(sr)

@@ -406,7 +406,7 @@ func (suite *integrationSuite) TestMissingImage() {
 	}
 
 	// ****
-	qs := graph.NewR11nQueueSet(suite.deployer)
+	qs := graph.NewR11nQueueSet(suite.deployer, suite.nameCache)
 	r := sous.NewResolver(suite.deployer, suite.nameCache, &sous.ResolveFilter{}, logging.SilentLogSet(), qs)
 
 	deploymentsOne, err := stateOne.Deployments()
@@ -463,7 +463,7 @@ func (suite *integrationSuite) TestResolve() {
 	logsink, logController := logging.NewLogSinkSpy()
 
 	// ****
-	qs := graph.NewR11nQueueSet(suite.deployer)
+	qs := graph.NewR11nQueueSet(suite.deployer, suite.nameCache)
 	r := sous.NewResolver(suite.deployer, suite.nameCache, &sous.ResolveFilter{}, logsink, qs)
 
 	suite.T().Log("Begining OneTwo")
@@ -529,7 +529,7 @@ func (suite *integrationSuite) TestResolve() {
 		client := singularity.NewRectiAgent(suite.nameCache)
 		deployer := singularity.NewDeployer(client, logging.SilentLogSet())
 
-		qs := graph.NewR11nQueueSet(suite.deployer)
+		qs := graph.NewR11nQueueSet(suite.deployer, suite.nameCache)
 		r := sous.NewResolver(deployer, suite.nameCache, &sous.ResolveFilter{}, logging.SilentLogSet(), qs)
 
 		err = r.Begin(deploymentsTwoThree, clusterDefs.Clusters).Wait()

@@ -57,7 +57,7 @@ type (
 	// of HTTP methods of a SingleDeploymentResource.
 	SingleDeploymentBody struct {
 		Meta       ResponseMeta
-		Deployment sous.Deployment
+		Deployment sous.DeploySpec
 	}
 )
 
@@ -153,7 +153,7 @@ func (b SingleDeploymentBody) VariancesFrom(other restful.Comparable) restful.Va
 	default:
 		return restful.Variances{"Not a SingleDeploymentBody"}
 	case *SingleDeploymentBody:
-		_, diffs := (&b.Deployment).Diff(&ob.Deployment)
+		_, diffs := (&b.Deployment).Diff(ob.Deployment)
 		return restful.Variances(diffs)
 	}
 }

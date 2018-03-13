@@ -24,22 +24,14 @@ func NewRectification(dp DeployablePair) *Rectification {
 // Begin begins applying sr.Pair using d Deployer. Call Result to get the
 // result. Begin can be called multiple times but performs its function only
 // once.
-func (r *Rectification) Begin(d Deployer) {
+func (r *Rectification) Begin(d Deployer, reg Registry) {
 	r.once.Do(func() {
-		r.Resolution = d.Rectify(&r.Pair)
-		// TODO SS: This select statement is a bandage around the problem
-		// that somehow this channel is being closed before reaching the line
-		// below. I doubt it's a bug in sync.Once (though that should be
-		// eliminated). We should figure out the cause and remove this select.
-		select {
-		default:
-			close(r.done)
-		case _, open := <-r.done:
-			if open {
-				close(r.done)
-			}
-			// Already closed.
+		if r.Pair.Post.BuildArtifact == nil {
+			pair, _ := HandlePairsByRegistry(reg, &r.Pair)
+			r.Pair = *pair
 		}
+		r.Resolution = d.Rectify(&r.Pair)
+		close(r.done)
 	})
 }
 

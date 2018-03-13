@@ -78,14 +78,17 @@ func (sd *SousNewDeploy) Execute(args []string) cmdr.Result {
 	messages.ReportLogFieldsMessage("SousNewDeploy.Execute Retrieved Deployment",
 		logging.ExtraDebug1Level, sd.LogSink, d)
 
-	d.Deployment.SourceID.Version = newVersion
+	d.Deployment.Version = newVersion
 
 	updateResponse, err := updater.Update(d, nil)
 	if err != nil {
 		return cmdr.EnsureErrorResult(err)
 	}
 
-	location := updateResponse.Location()
+	if location := updateResponse.Location(); location != "" {
+		return cmdr.Successf("Deployment queued at: %s", location)
+	}
+	return cmdr.Successf("Desired version for %q in cluster %q already %q",
+		sd.TargetManifestID, cluster, sd.DeployFilterFlags.Tag)
 
-	return cmdr.Successf("Deployment queued at: %s", location)
 }

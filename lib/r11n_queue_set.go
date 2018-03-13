@@ -19,6 +19,7 @@ type (
 	R11nQueueSet struct {
 		set  map[DeploymentID]*R11nQueue
 		opts []R11nQueueOpt
+		reg  Registry
 		sync.RWMutex
 	}
 

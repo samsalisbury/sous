@@ -19,6 +19,11 @@ func (d *DeployableChans) ResolveNames(ctx context.Context, r Registry) *Deploya
 	return d.Pipeline(ctx, names)
 }
 
+func HandlePairsByRegistry(r Registry, dp *DeployablePair) (*DeployablePair, *DiffResolution) {
+	names := &nameResolver{registry: r}
+	return names.HandlePairs(dp)
+}
+
 func (names *nameResolver) HandlePairs(dp *DeployablePair) (*DeployablePair, *DiffResolution) {
 	intended := dp.Post
 	action := dp.Kind().ResolveVerb()

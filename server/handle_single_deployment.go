@@ -12,6 +12,8 @@ import (
 	"github.com/opentable/sous/util/restful"
 )
 
+// https://github.com/opentable/sous/blob/0a96ed483cd86abc9604993120e8dd211cf7adc6/server/handle_single_deployment.go
+
 type (
 	// SingleDeploymentResource creates handlers for dealing with single
 	// deployments.
@@ -22,8 +24,9 @@ type (
 	// specs. See Exchange method for more details.
 	PUTSingleDeploymentHandler struct {
 		SingleDeploymentHandler
-		QueueSet sous.QueueSet
-		routeMap *restful.RouteMap
+		QueueSet    sous.QueueSet
+		routeMap    *restful.RouteMap
+		StateWriter sous.StateWriter
 	}
 
 	// GETSingleDeploymentHandler retrieves manifests containing single deployment
@@ -36,10 +39,10 @@ type (
 	// the GET and PUT handlers.
 	SingleDeploymentHandler struct {
 		userExtractor
-		Body              SingleDeploymentBody
-		DeploymentManager sous.DeploymentManager
-		req               *http.Request
-		responseWriter    http.ResponseWriter
+		Body           SingleDeploymentBody
+		req            *http.Request
+		responseWriter http.ResponseWriter
+		GDM            *sous.State
 	}
 )
 
@@ -49,12 +52,11 @@ func newSingleDeploymentResource(cl ComponentLocator) *SingleDeploymentResource 
 	}
 }
 
-func (sdr *SingleDeploymentResource) newSingleDeploymentHandler(req *http.Request, rw http.ResponseWriter) SingleDeploymentHandler {
-	dm := sdr.context.DeploymentManager
+func (sdr *SingleDeploymentResource) newSingleDeploymentHandler(req *http.Request, rw http.ResponseWriter, gdm *sous.State) SingleDeploymentHandler {
 	return SingleDeploymentHandler{
-		DeploymentManager: dm,
-		responseWriter:    rw,
-		req:               req,
+		responseWriter: rw,
+		req:            req,
+		GDM:            gdm,
 	}
 }
 
@@ -65,17 +67,20 @@ func (sdh *SingleDeploymentHandler) depID() (sous.DeploymentID, error) {
 
 // Put returns a configured put single deployment handler.
 func (sdr *SingleDeploymentResource) Put(rm *restful.RouteMap, rw http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
-	sdh := sdr.newSingleDeploymentHandler(req, rw)
+	gdm := sdr.context.liveState()
+	sdh := sdr.newSingleDeploymentHandler(req, rw, gdm)
 	return &PUTSingleDeploymentHandler{
 		SingleDeploymentHandler: sdh,
 		QueueSet:                sdr.context.QueueSet,
 		routeMap:                rm,
+		StateWriter:             sdr.context.StateManager,
 	}
 }
 
 // Get returns a configured get single deployment handler.
 func (sdr *SingleDeploymentResource) Get(rm *restful.RouteMap, rw http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
-	sdh := sdr.newSingleDeploymentHandler(req, rw)
+	gdm := sdr.context.liveState()
+	sdh := sdr.newSingleDeploymentHandler(req, rw, gdm)
 	return &GETSingleDeploymentHandler{SingleDeploymentHandler: sdh}
 }
 
@@ -86,12 +91,17 @@ func (h *GETSingleDeploymentHandler) Exchange() (interface{}, int) {
 		return h.err(400, "Cannot decode Deployment ID: %s.", err)
 	}
 
-	dep, err := h.DeploymentManager.ReadDeployment(did)
-	if err != nil {
-		return h.err(404, "No deployment with ID %q: %v", did, err)
+	m, ok := h.GDM.Manifests.Get(did.ManifestID)
+	if !ok {
+		return h.err(404, "No manifest with ID %q", did.ManifestID)
 	}
 
-	h.Body.Deployment = *dep
+	dep, ok := m.Deployments[did.Cluster]
+	if !ok {
+		return h.err(404, "Manifest %q has no deployment for cluster %q.", m.ID(), did.Cluster)
+	}
+
+	h.Body.Deployment = dep
 
 	return h.ok(200, nil)
 }
@@ -116,6 +126,7 @@ func (sdh *SingleDeploymentHandler) ok(code int, links map[string]string) (Singl
 // from the current actual deployment set. It first writes the new
 // deployment spec to the GDM.
 func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
+	log := logging.Log
 	did, err := psd.depID()
 	if err != nil {
 		return psd.err(400, "Cannot decode Deployment ID: %s.", err)
@@ -125,14 +136,21 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 		return psd.err(400, "Error parsing body: %s.", err)
 	}
 
+	messages.ReportLogFieldsMessageToServerConsole("Exchange PutSingleDeplymentHandler", logging.ExtraDebug1Level, log, did, psd.Body)
+
 	flaws := psd.Body.Deployment.Validate()
 	if len(flaws) > 0 {
 		return psd.err(400, "Invalid deployment: %q", flaws)
 	}
 
-	original, err := psd.DeploymentManager.ReadDeployment(did)
-	if err != nil {
-		return psd.err(404, "No deployment with ID %q. %v", did, err)
+	m, ok := psd.GDM.Manifests.Get(did.ManifestID)
+	if !ok {
+		return psd.err(404, "No manifest with ID %q.", did.ManifestID)
+	}
+	original, ok := m.Deployments[did.Cluster]
+	if !ok {
+		return psd.err(404, "Manifest %q has no deployment for cluster %q.",
+			did.ManifestID, did.Cluster)
 	}
 
 	different, _ := psd.Body.Deployment.Diff(original)
@@ -140,18 +158,34 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 		return psd.ok(200, nil)
 	}
 
+	m.Deployments[did.Cluster] = psd.Body.Deployment
+
 	user := sous.User(psd.GetUser(psd.req))
-	if err := psd.DeploymentManager.WriteDeployment(&psd.Body.Deployment, user); err != nil {
-		return psd.err(500, "Failed to write deployment: %s.", err)
+
+	if err := psd.StateWriter.WriteState(psd.GDM, user); err != nil {
+		return psd.err(500, "Failed to write state: %s.", err)
+	}
+
+	// Round-trip the updated GDM back to deployments to check validity.
+	deployments, err := psd.GDM.Deployments()
+	if err != nil {
+		return psd.err(500, "Failed to round-trip new deployment spec to GDM: %s", err)
+	}
+	newDeployment, ok := deployments.Get(did)
+	if !ok {
+		return psd.err(500, "Failed to round-trip new deployment spec to GDM.")
+	}
+
+	if flaws := newDeployment.Validate(); len(flaws) != 0 {
+		return psd.err(400, "Deployment invalid after round-trip to GDM: %v", flaws)
 	}
 
 	r := sous.NewRectification(sous.DeployablePair{Post: &sous.Deployable{
-		Deployment: &psd.Body.Deployment,
+		Deployment: newDeployment,
 	}})
 	r.Pair.SetID(did)
 
-	log := logging.Log
-	messages.ReportLogFieldsMessageToConsole("Pushing following onto queue", logging.ExtraDebug1Level, log, r)
+	messages.ReportLogFieldsMessageToServerConsole("Pushing following onto queue", logging.ExtraDebug1Level, log, r)
 
 	qr, ok := psd.QueueSet.Push(r)
 	if !ok {

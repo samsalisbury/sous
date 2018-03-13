@@ -121,21 +121,19 @@ func NewR11nID() R11nID {
 }
 
 // Start starts applying handler to each item on the queue in order.
-func (rq *R11nQueue) Start(handler func(*QueuedR11n) DiffResolution) <-chan DiffResolution {
+func (rq *R11nQueue) Start(handler func(*QueuedR11n) DiffResolution) {
 	rq.Lock()
 	defer rq.Unlock()
-	results := make(chan DiffResolution, 100)
 	go func() {
 		for {
 			qr := rq.next()
-			results <- handler(qr)
+			handler(qr)
 			rq.Lock()
 			close(qr.done)
 			delete(rq.refs, qr.ID)
 			rq.Unlock()
 		}
 	}()
-	return results
 }
 
 // Wait waits for a particular rectification to be processed then returns its

@@ -118,7 +118,6 @@ func TestReportLogFieldsMessage_Submessage(t *testing.T) {
 		map[string]interface{}{
 			"@loglov3-otl":        "sous-generic-v1",
 			"call-stack-function": "github.com/opentable/sous/util/logging/messages.TestReportLogFieldsMessage_Submessage",
-			"json-value":          "{\"message\":{\"array\":[]}}",
 			"sous-fields":         "",
 			"sous-id-values":      "",
 			"sous-ids":            "",
@@ -182,7 +181,7 @@ type TestID struct {
 }
 
 func TestExtractIDs_TwoIds(t *testing.T) {
-	l := buildLogFieldsMessage("this is a test", false, true, logging.ExtraDebug1Level)
+	l := buildLogFieldsMessage("this is a test", false, false, true, logging.ExtraDebug1Level)
 
 	d := &TestID{
 		TestInnerID: TestInnerID{
@@ -199,7 +198,7 @@ func TestExtractIDs_TwoIds(t *testing.T) {
 }
 
 func TestExtractIDs_NoIds(t *testing.T) {
-	l := buildLogFieldsMessage("this is a test", false, true, logging.ExtraDebug1Level)
+	l := buildLogFieldsMessage("this is a test", false, false, true, logging.ExtraDebug1Level)
 
 	foo := "hello"
 	l.extractID(foo)

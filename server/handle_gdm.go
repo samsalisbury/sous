@@ -145,11 +145,13 @@ func reportHandleGDMMessage(msg string, f []sous.Flaw, err error, log logging.Lo
 	}
 
 	msgLog := handleGDMMessage{
-		msg:          msg,
-		CallerInfo:   logging.GetCallerInfo(logging.NotHere()),
-		err:          err,
-		flawsMessage: sous.FlawMessage{f},
-		debug:        isDebug,
+		msg:        msg,
+		CallerInfo: logging.GetCallerInfo(logging.NotHere()),
+		err:        err,
+		flawsMessage: sous.FlawMessage{
+			Flaws: f,
+		},
+		debug: isDebug,
 	}
 	logging.Deliver(msgLog, log)
 }

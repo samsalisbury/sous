@@ -60,7 +60,7 @@ func StateFixture(o StateFixtureOpts) *State {
 				ConnectDelay:              30,
 				Timeout:                   30,
 				ConnectInterval:           10,
-				CheckReadyProtocol:        "http",
+				CheckReadyProtocol:        "HTTP",
 				CheckReadyURIPath:         "/health",
 				CheckReadyFailureStatuses: []int{500},
 				CheckReadyURITimeout:      2,
@@ -81,7 +81,12 @@ func StateFixture(o StateFixtureOpts) *State {
 			manifest.Deployments[clusterName] = DeploySpec{
 				DeployConfig: DeployConfig{
 					Resources: map[string]string{
-						"cpus": "0.1",
+						"cpus":   "0.1",
+						"memory": "32",
+						"ports":  "1",
+					},
+					Startup: Startup{
+						CheckReadyProtocol: "HTTP",
 					},
 					Metadata: map[string]string{
 						"": "",
