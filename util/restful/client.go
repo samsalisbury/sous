@@ -179,23 +179,12 @@ func (client *LiveHTTPClient) getRequest(method string, urlPath string, qParms m
 // (but note that there may be a response anyway.
 // It returns an Updater so that the resource can be updated later
 func (client *LiveHTTPClient) Retrieve(urlPath string, qParms map[string]string, rzBody interface{}, headers map[string]string) (UpdateDeleter, error) {
-	//url, err := client.buildURL(urlPath, qParms)
-	//rq, err := client.buildRequest("GET", url, headers, nil, nil, err)
-	//rq, err := client.getRequest("GET", urlPath, qParms, nil, headers, nil)
-	//return client.retrieve(err, urlPath, qParms, rq, rzBody)
 	return client.RetrieveCtx(urlPath, qParms, rzBody, headers, nil)
 }
 
 //RetrieveCtx Add context to Retrieve to ability to cancel
 func (client *LiveHTTPClient) RetrieveCtx(urlPath string, qParms map[string]string, rzBody interface{}, headers map[string]string, ctx context.Context) (UpdateDeleter, error) {
-	//url, err := client.buildURL(urlPath, qParms)
-	//rq, err := client.buildRequest("GET", url, headers, nil, nil, err)
-	//rq = rq.WithContext(ctx)
 	rq, err := client.getRequest("GET", urlPath, qParms, nil, headers, ctx)
-	return client.retrieve(err, urlPath, qParms, rq, rzBody)
-}
-
-func (client *LiveHTTPClient) retrieve(err error, urlPath string, qParms map[string]string, rq *http.Request, rzBody interface{}) (UpdateDeleter, error) {
 	rz, err := client.sendRequest(rq, err)
 	state, err := client.getBody(rz, rzBody, err)
 	return client.enrichState(state, urlPath, qParms), errors.Wrapf(err, "Retrieve %s params: %v", urlPath, qParms)
@@ -204,24 +193,17 @@ func (client *LiveHTTPClient) retrieve(err error, urlPath string, qParms map[str
 // Create uses the contents of qBody to create a new resource at the server at urlPath/qParms
 // It issues a PUT with "If-No-Match: *", so if a resource already exists, it'll return an error.
 func (client *LiveHTTPClient) Create(urlPath string, qParms map[string]string, qBody interface{}, headers map[string]string) (UpdateDeleter, error) {
-	url, err := client.buildURL(urlPath, qParms)
-	rq, err := client.buildRequest("PUT", url, addNoMatchStar(headers), nil, qBody, err)
-	return client.create(err, urlPath, qParms, qBody, headers, rq)
+	return client.CreateCtx(urlPath, qParms, qBody, headers, nil)
 }
 
 //CreateCtx Add context to Create to ability to cancel
 func (client *LiveHTTPClient) CreateCtx(urlPath string, qParms map[string]string, qBody interface{}, headers map[string]string, ctx context.Context) (UpdateDeleter, error) {
-	url, err := client.buildURL(urlPath, qParms)
-	rq, err := client.buildRequest("PUT", url, addNoMatchStar(headers), nil, qBody, err)
-	rq = rq.WithContext(ctx)
-	return client.create(err, urlPath, qParms, qBody, headers, rq)
-}
-
-func (client *LiveHTTPClient) create(err error, urlPath string, qParms map[string]string, qBody interface{}, headers map[string]string, rq *http.Request) (UpdateDeleter, error) {
+	rq, err := client.getRequest("PUT", urlPath, qParms, qBody, addNoMatchStar(headers), ctx)
 	rz, err := client.sendRequest(rq, err)
 	state, err := client.getBody(rz, nil, err)
 	return client.enrichState(state, urlPath, qParms), errors.Wrapf(err, "Create %s params: %v", urlPath, qParms)
 }
+
 func (client *LiveHTTPClient) enrichState(state *resourceState, urlPath string, qParms map[string]string) *resourceState {
 	if state != nil {
 		state.client = client
