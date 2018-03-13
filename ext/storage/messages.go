@@ -1,6 +1,8 @@
 package storage
 
 import (
+	"fmt"
+	"io"
 	"strings"
 	"time"
 
@@ -62,6 +64,10 @@ func (msg *sqlMessage) EachField(fn logging.FieldReportFn) {
 	if msg.err != nil {
 		fn("sous-sql-errreturned", msg.err.Error())
 	}
+}
+
+func (msg *sqlMessage) WriteToConsole(c io.Writer) {
+	fmt.Fprintf(c, "SQL: %s %s %d rows err:%s \n", msg.mainTable, msg.dir, msg.rowcount, msg.err)
 }
 
 // MetricsTo implements MetricsMessage on sqlMessage
