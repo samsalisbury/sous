@@ -5,6 +5,7 @@ import (
 
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
+	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/server"
 	"github.com/opentable/sous/util/cmdr"
 	"github.com/opentable/sous/util/logging"
@@ -23,6 +24,7 @@ type SousNewDeploy struct {
 	LogSink           graph.LogSink
 	dryrunOption      string
 	waitStable        bool
+	User              sous.User
 }
 
 func init() { TopLevelCommands["newdeploy"] = &SousNewDeploy{} }
@@ -80,7 +82,7 @@ func (sd *SousNewDeploy) Execute(args []string) cmdr.Result {
 
 	d.Deployment.Version = newVersion
 
-	updateResponse, err := updater.Update(d, nil)
+	updateResponse, err := updater.Update(d, sd.User.HTTPHeaders())
 	if err != nil {
 		return cmdr.EnsureErrorResult(err)
 	}
