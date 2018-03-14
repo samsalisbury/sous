@@ -2,6 +2,7 @@ package restful
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -42,6 +43,13 @@ type (
 	HTTPClient interface {
 		Create(urlPath string, qParms map[string]string, rqBody interface{}, headers map[string]string) (UpdateDeleter, error)
 		Retrieve(urlPath string, qParms map[string]string, rzBody interface{}, headers map[string]string) (UpdateDeleter, error)
+	}
+
+	// HTTPClientWithContext interacts with a HTTPServer
+	//   It's designed to handle basic CRUD operations in a safe and restful way, adding context.
+	HTTPClientWithContext interface {
+		CreateCtx(ctx context.Context, urlPath string, qParms map[string]string, rqBody interface{}, headers map[string]string) (UpdateDeleter, error)
+		RetrieveCtx(ctx context.Context, ctrlpath string, qparms map[string]string, rzbody interface{}, headers map[string]string) (UpdateDeleter, error)
 	}
 
 	// An Updater captures the state of a retrieved resource so that it can be updated later.
@@ -89,7 +97,7 @@ func (rs *resourceState) Update(qBody Comparable, headers map[string]string) (Up
 }
 
 func (rs *resourceState) Delete(headers map[string]string) error {
-	return rs.client.deelete(rs.path, rs.qparms, rs, headers)
+	return rs.client.delete(rs.path, rs.qparms, rs, headers)
 }
 
 func (rs *resourceState) Location() string {
@@ -156,6 +164,15 @@ func buildHeaders(maybeHeaders []map[string]string) http.Header {
 	return hs
 }
 
+func (client *LiveHTTPClient) getRequest(ctx context.Context, method string, urlPath string, qParms map[string]string, qBody interface{}, headers map[string]string) (*http.Request, error) {
+	url, err := client.buildURL(urlPath, qParms)
+	rq, err := client.buildRequest(method, url, headers, nil, qBody, err)
+	if ctx != nil {
+		rq = rq.WithContext(ctx)
+	}
+	return rq, err
+}
+
 // ****
 
 // Retrieve makes a GET request on urlPath, after transforming qParms into ?&=
@@ -164,8 +181,12 @@ func buildHeaders(maybeHeaders []map[string]string) http.Header {
 // (but note that there may be a response anyway.
 // It returns an Updater so that the resource can be updated later
 func (client *LiveHTTPClient) Retrieve(urlPath string, qParms map[string]string, rzBody interface{}, headers map[string]string) (UpdateDeleter, error) {
-	url, err := client.buildURL(urlPath, qParms)
-	rq, err := client.buildRequest("GET", url, headers, nil, nil, err)
+	return client.RetrieveCtx(context.TODO(), urlPath, qParms, rzBody, headers)
+}
+
+//RetrieveCtx Add context to Retrieve to ability to cancel
+func (client *LiveHTTPClient) RetrieveCtx(ctx context.Context, urlPath string, qParms map[string]string, rzBody interface{}, headers map[string]string) (UpdateDeleter, error) {
+	rq, err := client.getRequest(ctx, "GET", urlPath, qParms, nil, headers)
 	rz, err := client.sendRequest(rq, err)
 	state, err := client.getBody(rz, rzBody, err)
 	return client.enrichState(state, urlPath, qParms), errors.Wrapf(err, "Retrieve %s params: %v", urlPath, qParms)
@@ -174,8 +195,12 @@ func (client *LiveHTTPClient) Retrieve(urlPath string, qParms map[string]string,
 // Create uses the contents of qBody to create a new resource at the server at urlPath/qParms
 // It issues a PUT with "If-No-Match: *", so if a resource already exists, it'll return an error.
 func (client *LiveHTTPClient) Create(urlPath string, qParms map[string]string, qBody interface{}, headers map[string]string) (UpdateDeleter, error) {
-	url, err := client.buildURL(urlPath, qParms)
-	rq, err := client.buildRequest("PUT", url, addNoMatchStar(headers), nil, qBody, err)
+	return client.CreateCtx(context.TODO(), urlPath, qParms, qBody, headers)
+}
+
+//CreateCtx Add context to Create to ability to cancel
+func (client *LiveHTTPClient) CreateCtx(ctx context.Context, urlPath string, qParms map[string]string, qBody interface{}, headers map[string]string) (UpdateDeleter, error) {
+	rq, err := client.getRequest(ctx, "PUT", urlPath, qParms, qBody, addNoMatchStar(headers))
 	rz, err := client.sendRequest(rq, err)
 	state, err := client.getBody(rz, nil, err)
 	return client.enrichState(state, urlPath, qParms), errors.Wrapf(err, "Create %s params: %v", urlPath, qParms)
@@ -190,7 +215,7 @@ func (client *LiveHTTPClient) enrichState(state *resourceState, urlPath string, 
 	return state
 }
 
-func (client *LiveHTTPClient) deelete(urlPath string, qParms map[string]string, from *resourceState, headers map[string]string) error {
+func (client *LiveHTTPClient) delete(urlPath string, qParms map[string]string, from *resourceState, headers map[string]string) error {
 	return errors.Wrapf(func() error {
 		url, err := client.buildURL(urlPath, qParms)
 		etag := from.etag

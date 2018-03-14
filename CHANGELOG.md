@@ -14,6 +14,7 @@ with respect to its command line interface and HTTP interface.
 * Flaws describing problems with resource fields now get more context.
 * Recording metrics for DB access (rows, time, errors)
 * Server now accepts -autoresolver=false to disable to autoresolver.
+* All: Added ability to add context to http requests
 
 ### Fixed
 * Client: running `sous` from outside of git workspaces no longer results in
