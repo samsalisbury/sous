@@ -108,10 +108,19 @@ func TestR11nResource_Get_no_errors(t *testing.T) {
 			}
 		})
 	}
-
 }
 
-func TestGETR11nHandler_Exchange(t *testing.T) {
+// TestGETR11nHandler_Exchange_static checks that with static queues (i.e. with
+// no queue processor) we always get back nil Resolutions and sensible queue
+// positions.
+func TestGETR11nHandler_Exchange_static(t *testing.T) {
+
+	wantNilResolution := func(t *testing.T, r r11nResponse) {
+		t.Helper()
+		if r.Resolution != nil {
+			t.Errorf("want nil Resolution; got %v", r.Resolution)
+		}
+	}
 
 	queues := sous.NewR11nQueueSet()
 	queuedOne1, ok := queues.Push(newR11n("one"))
@@ -127,90 +136,315 @@ func TestGETR11nHandler_Exchange(t *testing.T) {
 		t.Fatal("setup failed to push r11n")
 	}
 
+	wantStringReponse := func(t *testing.T, body interface{}, wantResponse string) {
+		t.Helper()
+		gotResponse, ok := body.(string)
+		if !ok {
+			t.Errorf("want a string; got a %T", body)
+			return
+		}
+		if gotResponse != wantResponse {
+			t.Errorf("got response string %q; want %q", gotResponse, wantResponse)
+		}
+	}
+	wantStatus404 := func(t *testing.T, gotStatus int) {
+		t.Helper()
+		if gotStatus != 404 {
+			t.Errorf("got status %d; want %d", gotStatus, 404)
+		}
+	}
+	wantStatus200 := func(t *testing.T, gotStatus int) {
+		t.Helper()
+		if gotStatus != 200 {
+			t.Errorf("got status %d; want %d", gotStatus, 200)
+		}
+	}
+	wantR11nResponse := func(t *testing.T, body interface{}) r11nResponse {
+		r, ok := body.(r11nResponse)
+		if !ok {
+			t.Fatal("got a %T; want a r11nResponse", body)
+		}
+		return r
+	}
+	wantQueuePos := func(t *testing.T, r r11nResponse, wantPos int) {
+		t.Helper()
+		gotPos := r.QueuePosition
+		if gotPos != wantPos {
+			t.Errorf("got queue position %d; want %d", gotPos, wantPos)
+		}
+	}
+
 	t.Run("nonexistent_deployID", func(t *testing.T) {
+		t.Parallel()
 		gdh := &GETR11nHandler{
 			QueueSet:     queues,
 			DeploymentID: newDid("nonexistent"),
 		}
 		body, gotStatus := gdh.Exchange()
-		gotResponse := body.(deployQueueResponse)
-		const wantStatus = 404
-		if gotStatus != wantStatus {
-			t.Errorf("got status %d; want %d", gotStatus, wantStatus)
+		wantStatus404(t, gotStatus)
+		wantStringReponse(t, body, `Nothing queued for ":nonexistent".`)
+	})
+	t.Run("nonexistent_deployID_wait", func(t *testing.T) {
+		t.Parallel()
+		gdh := &GETR11nHandler{
+			QueueSet:          queues,
+			DeploymentID:      newDid("nonexistent"),
+			R11nID:            "x",
+			WaitForResolution: true,
 		}
-		gotLen := len(gotResponse.Queue)
-		wantLen := 0
-		if gotLen != wantLen {
-			t.Errorf("got %d queued; want %d", gotLen, wantLen)
-		}
+		body, gotStatus := gdh.Exchange()
+		wantStatus404(t, gotStatus)
+		wantStringReponse(t, body, `Deploy action "x" not found in queue for ":nonexistent".`)
 	})
 	t.Run("nonexistent_r11nID", func(t *testing.T) {
+		t.Parallel()
 		gdh := &GETR11nHandler{
 			QueueSet:     queues,
 			DeploymentID: newDid("one"),
 			R11nID:       "nonexistent",
 		}
-		_, gotStatus := gdh.Exchange()
-		const wantStatus = 404
-		if gotStatus != wantStatus {
-			t.Errorf("got status %d; want %d", gotStatus, wantStatus)
-		}
+		body, gotStatus := gdh.Exchange()
+		wantStatus404(t, gotStatus)
+		wantStringReponse(t, body, `Deploy action "nonexistent" not found in queue for ":one".`)
 	})
 	t.Run("one_1", func(t *testing.T) {
+		t.Parallel()
 		gdh := &GETR11nHandler{
 			QueueSet:     queues,
 			DeploymentID: newDid("one"),
 			R11nID:       queuedOne1.ID,
 		}
 		body, gotStatus := gdh.Exchange()
-		gotResponse := body.(r11nResponse)
-		const wantStatus = 200
-		if gotStatus != wantStatus {
-			t.Errorf("got status %d; want %d", gotStatus, wantStatus)
-		}
-		gotPos := gotResponse.QueuePosition
-		const wantPos = 0
-		if gotPos != wantPos {
-			t.Errorf("got queue position %d; want %d", gotPos, wantPos)
-
-		}
+		wantStatus200(t, gotStatus)
+		gotResponse := wantR11nResponse(t, body)
+		wantQueuePos(t, gotResponse, 0)
+		wantNilResolution(t, gotResponse)
 	})
 	t.Run("two_1", func(t *testing.T) {
+		t.Parallel()
 		gdh := &GETR11nHandler{
 			QueueSet:     queues,
 			DeploymentID: newDid("two"),
 			R11nID:       queuedTwo1.ID,
 		}
 		body, gotStatus := gdh.Exchange()
-		gotResponse := body.(r11nResponse)
-		const wantStatus = 200
-		if gotStatus != wantStatus {
-			t.Errorf("got status %d; want %d", gotStatus, wantStatus)
-		}
-		gotPos := gotResponse.QueuePosition
-		const wantPos = 0
-		if gotPos != wantPos {
-			t.Errorf("got queue position %d; want %d", gotPos, wantPos)
-		}
+		wantStatus200(t, gotStatus)
+		gotResponse := wantR11nResponse(t, body)
+		wantQueuePos(t, gotResponse, 0)
+		wantNilResolution(t, gotResponse)
 	})
 	t.Run("two_2", func(t *testing.T) {
+		t.Parallel()
 		gdh := &GETR11nHandler{
 			QueueSet:     queues,
 			DeploymentID: newDid("two"),
 			R11nID:       queuedTwo2.ID,
 		}
 		body, gotStatus := gdh.Exchange()
-		gotResponse := body.(r11nResponse)
-		const wantStatus = 200
-		if gotStatus != wantStatus {
-			t.Errorf("got status %d; want %d", gotStatus, wantStatus)
+		wantStatus200(t, gotStatus)
+		gotResponse := wantR11nResponse(t, body)
+		wantQueuePos(t, gotResponse, 1)
+		wantNilResolution(t, gotResponse)
+	})
+}
+
+// TestGETR11nHandler_Exchange_afterprocessing checks queue responses after processing.
+func TestGETR11nHandler_Exchange_afterprocessing(t *testing.T) {
+
+	queues := sous.NewR11nQueueSet(sous.R11nQueueStartWithHandler(
+		func(qr *sous.QueuedR11n) sous.DiffResolution {
+			return sous.DiffResolution{
+				DeploymentID: qr.Rectification.Pair.ID(),
+				Desc:         "test-desc",
+				Error:        nil,
+			}
+		}))
+
+	queuedOne1, ok := queues.Push(newR11n("one"))
+	if !ok {
+		t.Fatal("setup failed to push r11n")
+	}
+	queuedTwo1, ok := queues.Push(newR11n("two"))
+	if !ok {
+		t.Fatal("setup failed to push r11n")
+	}
+	queuedTwo2, ok := queues.Push(newR11n("two"))
+	if !ok {
+		t.Fatal("setup failed to push r11n")
+	}
+
+	// Wait for all rectifications to complete.
+	queues.Wait(newDid("one"), queuedOne1.ID)
+	queues.Wait(newDid("two"), queuedTwo1.ID)
+	queues.Wait(newDid("two"), queuedTwo2.ID)
+
+	wantStringReponse := func(t *testing.T, body interface{}, wantResponse string) {
+		t.Helper()
+		gotResponse, ok := body.(string)
+		if !ok {
+			t.Errorf("got a %T; want a string", body)
+			return
 		}
-		gotPos := gotResponse.QueuePosition
-		const wantPos = 1
+		if gotResponse != wantResponse {
+			t.Errorf("got response string %q; want %q", gotResponse, wantResponse)
+		}
+	}
+	wantStandardResolution := func(t *testing.T, r r11nResponse) {
+		t.Helper()
+		if r.Resolution == nil {
+			t.Errorf("got nil resolution")
+			return
+		}
+		if r.Resolution.Error != nil {
+			t.Errorf("got resolution err %q; want nil", r.Resolution.Error)
+		}
+		if r.Resolution.Desc != "test-desc" {
+			t.Errorf("got desc %q; want %q", r.Resolution.Desc, "test-desc")
+		}
+	}
+
+	wantStatus404 := func(t *testing.T, gotStatus int) {
+		t.Helper()
+		if gotStatus != 404 {
+			t.Errorf("got status %d; want %d", gotStatus, 404)
+		}
+	}
+	wantStatus200 := func(t *testing.T, gotStatus int) {
+		t.Helper()
+		if gotStatus != 200 {
+			t.Errorf("got status %d; want %d", gotStatus, 200)
+		}
+	}
+	wantR11nResponse := func(t *testing.T, body interface{}) r11nResponse {
+		r, ok := body.(r11nResponse)
+		if !ok {
+			t.Fatalf("got a %T (%v); want a r11nResponse", body, body)
+		}
+		return r
+	}
+	wantQueuePos := func(t *testing.T, r r11nResponse, wantPos int) {
+		t.Helper()
+		gotPos := r.QueuePosition
 		if gotPos != wantPos {
 			t.Errorf("got queue position %d; want %d", gotPos, wantPos)
-
 		}
+	}
+
+	t.Run("nonexistent_deployID", func(t *testing.T) {
+		t.Parallel()
+		gdh := &GETR11nHandler{
+			QueueSet:     queues,
+			DeploymentID: newDid("nonexistent"),
+		}
+		body, gotStatus := gdh.Exchange()
+		wantStatus404(t, gotStatus)
+		wantStringReponse(t, body, `Nothing queued for ":nonexistent".`)
+	})
+	t.Run("nonexistent_deployID_wait", func(t *testing.T) {
+		t.Parallel()
+		gdh := &GETR11nHandler{
+			QueueSet:          queues,
+			DeploymentID:      newDid("nonexistent"),
+			R11nID:            "x",
+			WaitForResolution: true,
+		}
+		body, gotStatus := gdh.Exchange()
+		wantStatus404(t, gotStatus)
+		wantStringReponse(t, body, `Deploy action "x" not found in queue for ":nonexistent".`)
+	})
+	t.Run("nonexistent_r11nID", func(t *testing.T) {
+		t.Parallel()
+		gdh := &GETR11nHandler{
+			QueueSet:     queues,
+			DeploymentID: newDid("one"),
+			R11nID:       "nonexistent",
+		}
+		body, gotStatus := gdh.Exchange()
+		wantStatus404(t, gotStatus)
+		wantStringReponse(t, body, `Deploy action "nonexistent" not found in queue for ":one".`)
+	})
+	t.Run("one_1", func(t *testing.T) {
+		t.Parallel()
+		gdh := &GETR11nHandler{
+			QueueSet:     queues,
+			DeploymentID: newDid("one"),
+			R11nID:       queuedOne1.ID,
+		}
+		body, gotStatus := gdh.Exchange()
+		wantStatus200(t, gotStatus)
+		gotResponse := wantR11nResponse(t, body)
+		wantQueuePos(t, gotResponse, -1)
+		wantStandardResolution(t, gotResponse)
+	})
+	t.Run("two_1", func(t *testing.T) {
+		t.Parallel()
+		gdh := &GETR11nHandler{
+			QueueSet:     queues,
+			DeploymentID: newDid("two"),
+			R11nID:       queuedTwo1.ID,
+		}
+		body, gotStatus := gdh.Exchange()
+		wantStatus200(t, gotStatus)
+		gotResponse := wantR11nResponse(t, body)
+		wantQueuePos(t, gotResponse, -2)
+		wantStandardResolution(t, gotResponse)
+	})
+	t.Run("two_2", func(t *testing.T) {
+		t.Parallel()
+		gdh := &GETR11nHandler{
+			QueueSet:     queues,
+			DeploymentID: newDid("two"),
+			R11nID:       queuedTwo2.ID,
+		}
+		body, gotStatus := gdh.Exchange()
+		wantStatus200(t, gotStatus)
+		gotResponse := wantR11nResponse(t, body)
+		wantQueuePos(t, gotResponse, -1)
+		wantStandardResolution(t, gotResponse)
+	})
+
+	// With wait
+	t.Run("one_1_wait", func(t *testing.T) {
+		t.Parallel()
+		gdh := &GETR11nHandler{
+			QueueSet:          queues,
+			DeploymentID:      newDid("one"),
+			R11nID:            queuedOne1.ID,
+			WaitForResolution: true,
+		}
+		body, gotStatus := gdh.Exchange()
+		wantStatus200(t, gotStatus)
+		gotResponse := wantR11nResponse(t, body)
+		wantQueuePos(t, gotResponse, -1)
+		wantStandardResolution(t, gotResponse)
+	})
+	t.Run("two_1_wait", func(t *testing.T) {
+		t.Parallel()
+		gdh := &GETR11nHandler{
+			QueueSet:          queues,
+			DeploymentID:      newDid("two"),
+			R11nID:            queuedTwo1.ID,
+			WaitForResolution: true,
+		}
+		body, gotStatus := gdh.Exchange()
+		wantStatus200(t, gotStatus)
+		gotResponse := wantR11nResponse(t, body)
+		wantQueuePos(t, gotResponse, -2)
+		wantStandardResolution(t, gotResponse)
+	})
+	t.Run("two_2_wait", func(t *testing.T) {
+		t.Parallel()
+		gdh := &GETR11nHandler{
+			QueueSet:          queues,
+			DeploymentID:      newDid("two"),
+			R11nID:            queuedTwo2.ID,
+			WaitForResolution: true,
+		}
+		body, gotStatus := gdh.Exchange()
+		wantStatus200(t, gotStatus)
+		gotResponse := wantR11nResponse(t, body)
+		wantQueuePos(t, gotResponse, -1)
+		wantStandardResolution(t, gotResponse)
 	})
 }
 
