@@ -58,6 +58,7 @@ func NewLogSinkSpy() (LogSink, LogSinkController) {
 		Console: cc,
 	}
 	ctrl.MatchMethod("Console", spies.AnyArgs, console)
+	ctrl.MatchMethod("ExtraConsole", spies.AnyArgs, console)
 	ctrl.MatchMethod("Metrics", spies.AnyArgs, metrics)
 
 	return logSinkSpy{spy: spy}, ctrl
@@ -92,6 +93,11 @@ func (lss logSinkSpy) Child(name string) LogSink {
 }
 
 func (lss logSinkSpy) Console() WriteDoner {
+	res := lss.spy.Called()
+	return res.Get(0).(WriteDoner)
+}
+
+func (lss logSinkSpy) ExtraConsole() WriteDoner {
 	res := lss.spy.Called()
 	return res.Get(0).(WriteDoner)
 }

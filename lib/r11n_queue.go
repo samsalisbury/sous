@@ -90,7 +90,7 @@ func (rq *R11nQueue) Snapshot() []QueuedR11n {
 func (rq *R11nQueue) ByID(id R11nID) (*QueuedR11n, bool) {
 	rq.Lock()
 	defer rq.Unlock()
-	qr, ok := rq.refs[id]
+	qr, ok := rq.allRefs[id]
 	return qr, ok
 }
 
@@ -214,7 +214,7 @@ func (rq *R11nQueue) next() *QueuedR11n {
 
 // handlePopped assumes rq is locked.
 func (rq *R11nQueue) handlePopped(id R11nID) {
-	for _, r := range rq.refs {
+	for _, r := range rq.allRefs {
 		r.Pos--
 	}
 }

@@ -132,6 +132,7 @@ type (
 		kafkaSink       *kafkaSink
 		graphiteCancel  func()
 		graphiteConfig  *graphite.Config
+		extraConsole    io.Writer
 	}
 
 	// A temporary type until we can stop using the LogSet loggers directly
@@ -227,11 +228,12 @@ func newdb(vrsn semv.Version, err io.Writer, lgrs *logrus.Logger) *dumpBundle {
 	env := getEnvHash()
 
 	return &dumpBundle{
-		appIdent:   collectAppID(vrsn, env),
-		context:    context.Background(),
-		err:        err,
-		defaultErr: err,
-		logrus:     lgrs,
+		appIdent:     collectAppID(vrsn, env),
+		context:      context.Background(),
+		err:          err,
+		defaultErr:   err,
+		logrus:       lgrs,
+		extraConsole: ioutil.Discard,
 	}
 }
 
@@ -285,6 +287,12 @@ func (ls *LogSet) Configure(cfg Config) error {
 		ls.dumpBundle.err = ioutil.Discard
 	} else {
 		ls.dumpBundle.err = ls.dumpBundle.defaultErr
+	}
+
+	if cfg.Basic.ExtraConsole {
+		ls.dumpBundle.extraConsole = ls.dumpBundle.defaultErr
+	} else {
+		ls.dumpBundle.extraConsole = ioutil.Discard
 	}
 
 	ls.liveConfig = &cfg
@@ -407,6 +415,11 @@ func (ls LogSet) Done() {
 // Console implements LogSink on LogSet
 func (ls LogSet) Console() WriteDoner {
 	return nopDoner(ls.err)
+}
+
+// ExtraConsole implements LogSink on LogSet
+func (ls LogSet) ExtraConsole() WriteDoner {
+	return nopDoner(ls.extraConsole)
 }
 
 // xxx phase 2 of complete transition: remove these methods in favor of specific messages

@@ -63,25 +63,34 @@ func (h *GETR11nHandler) Exchange() (interface{}, int) {
 	// Note that all queries and waiting should be done using the QueueSet
 	// itself, not the rectification.
 	if h.WaitForResolution {
-		r, ok := h.QueueSet.Wait(h.DeploymentID, h.R11nID)
+		_, ok := h.QueueSet.Wait(h.DeploymentID, h.R11nID)
 		if !ok {
-			return r11nResponse{}, http.StatusNotFound
+			return fmt.Sprintf("Deploy action %q not found in queue for %q.",
+				h.R11nID, h.DeploymentID), http.StatusNotFound
 		}
-		return r11nResponse{
-			Resolution: &r,
-		}, http.StatusOK
 	}
 	queues := h.QueueSet.Queues()
 	queue, ok := queues[h.DeploymentID]
 	if !ok {
-		return deployQueueResponse{}, http.StatusNotFound
+		return fmt.Sprintf("Nothing queued for %q.", h.DeploymentID),
+			http.StatusNotFound
 	}
 	qr, ok := queue.ByID(h.R11nID)
 	if !ok {
-		return r11nResponse{}, http.StatusNotFound
+		return fmt.Sprintf("Deploy action %q not found in queue for %q.",
+			h.R11nID, h.DeploymentID), http.StatusNotFound
 	}
+
+	// XXX Should this be part of the ByID contract?
+	// Specifically, the Resolution field would need to be *DiffResolution
+	rez := &qr.Rectification.Resolution
+	if qr.Pos >= 0 {
+		rez = nil
+	}
+
 	return r11nResponse{
 		QueuePosition: qr.Pos,
+		Resolution:    rez,
 	}, http.StatusOK
 }
 

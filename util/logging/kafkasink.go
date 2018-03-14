@@ -70,7 +70,7 @@ func (sink *kafkaSink) ID() string {
 	return sink.id
 }
 
-func (sink kafkaSink) shouldSend(lvl Level) bool {
+func (sink *kafkaSink) shouldSend(lvl Level) bool {
 	return lvl <= sink.level
 }
 
