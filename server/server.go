@@ -56,7 +56,7 @@ func (userExtractor) GetUser(req *http.Request) ClientUser {
 	}
 
 	log := logging.Log
-	messages.ReportLogFieldsMessageToConsole("req header user", logging.ExtraDebug1Level, log, clu)
+	messages.ReportLogFieldsMessage("req header user", logging.ExtraDebug1Level, log, clu)
 	return clu
 }
 

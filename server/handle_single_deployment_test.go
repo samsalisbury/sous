@@ -12,6 +12,7 @@ import (
 
 	"github.com/nyarly/spies"
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 	"github.com/samsalisbury/semv"
 )
@@ -153,9 +154,11 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 	setup := func(sent *SingleDeploymentBody, did map[string]string) *psdhExScenario {
 		qs, qsCtrl := sous.NewQueueSetSpy()
 		sm := &sous.DummyStateManager{State: sous.DefaultStateFixture()}
+		log, _ := logging.NewLogSinkSpy()
 		cl := ComponentLocator{
 			StateManager: sm,
 			QueueSet:     qs,
+			LogSink:      log,
 		}
 		r := newSingleDeploymentResource(cl)
 

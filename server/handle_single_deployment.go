@@ -43,6 +43,7 @@ type (
 		req            *http.Request
 		responseWriter http.ResponseWriter
 		GDM            *sous.State
+		log            logging.LogSink
 	}
 )
 
@@ -57,6 +58,7 @@ func (sdr *SingleDeploymentResource) newSingleDeploymentHandler(req *http.Reques
 		responseWriter: rw,
 		req:            req,
 		GDM:            gdm,
+		log:            sdr.context.LogSink,
 	}
 }
 
@@ -126,7 +128,6 @@ func (sdh *SingleDeploymentHandler) ok(code int, links map[string]string) (Singl
 // from the current actual deployment set. It first writes the new
 // deployment spec to the GDM.
 func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
-	log := logging.Log
 	did, err := psd.depID()
 	if err != nil {
 		return psd.err(400, "Cannot decode Deployment ID: %s.", err)
@@ -136,7 +137,7 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 		return psd.err(400, "Error parsing body: %s.", err)
 	}
 
-	messages.ReportLogFieldsMessageToConsole("Exchange PutSingleDeplymentHandler", logging.ExtraDebug1Level, log, did, psd.Body)
+	messages.ReportLogFieldsMessageToConsole("Exchange PutSingleDeplymentHandler", logging.ExtraDebug1Level, psd.log, did, psd.Body)
 
 	flaws := psd.Body.Deployment.Validate()
 	if len(flaws) > 0 {
@@ -185,7 +186,7 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 	}})
 	r.Pair.SetID(did)
 
-	messages.ReportLogFieldsMessageToConsole("Pushing following onto queue", logging.ExtraDebug1Level, log, r)
+	messages.ReportLogFieldsMessageToConsole("Pushing following onto queue", logging.ExtraDebug1Level, psd.log, r)
 
 	qr, ok := psd.QueueSet.Push(r)
 	if !ok {
