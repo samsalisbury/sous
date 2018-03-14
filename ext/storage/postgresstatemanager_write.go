@@ -71,6 +71,14 @@ func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State,
 		}
 	}
 
+	/* XXX consider logging this
+	currentDeps.Len(),
+	newDeps.Len(),
+	updates.Len(),
+	deletes.Len(),
+	alldeps.Len(),
+	*/
+
 	if err := execInsertDeployments(ctx, log, tx, alldeps, "components", "on conflict do nothing", func(fields sqlgen.FieldSet, dep *sous.Deployment) {
 		fields.Row(func(r sqlgen.RowDef) {
 			r.FD("?", "repo", dep.SourceID.Location.Repo)

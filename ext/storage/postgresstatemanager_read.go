@@ -159,26 +159,26 @@ func loadClusters(context context.Context, log logging.LogSink, tx *sql.Tx, stat
 }
 
 func loadManifests(context context.Context, log logging.LogSink, tx *sql.Tx, state *sous.State) error {
-	return loadTable(context, log, tx, "components",
+	return loadTable(context, log, tx, "manifests",
 		// This query is somewhat naive and returns many more rows than we need
 		// specifically, every possible combination of env/resource/volume/metadata
 		// results in its own row. Maybe that could be reduced?
 		`select
 			"repo", "dir", "flavor", components.kind,
-			"email",
 			"versionstring", "num_instances", "schedule_string",
 			"cr_skip", "cr_connect_delay", "cr_timeout", "cr_connect_interval",
 			"cr_proto", "cr_path", "cr_port_index", "cr_failure_statuses",
 			"cr_uri_timeout", "cr_interval", "cr_retries",
 			clusters.name,
+			"host", "container", "mode",
 			envs.key, envs.value,
 			"resource_name", "resource_value",
 			metadatas.name, metadatas.value,
-			"host", "container", "mode"
+			"email"
 		from
 			components
-			join component_owners using (component_id)
-			join owners using (owner_id)
+			left join component_owners using (component_id)
+			left join owners using (owner_id)
 			join deployments using (component_id)
 			join clusters using (cluster_id)
 			left join envs using (deployment_id)
@@ -203,7 +203,7 @@ func loadManifests(context context.Context, log logging.LogSink, tx *sql.Tx, sta
 					Volumes:   sous.Volumes{},
 				},
 			}
-			var ownerEmail, versionString,
+			var versionString,
 				clusterName string
 
 			var envKey, envValue,
@@ -211,20 +211,22 @@ func loadManifests(context context.Context, log logging.LogSink, tx *sql.Tx, sta
 				mdName, mdValue,
 				volHost, volContainer, volMode sql.NullString
 
+			var ownerEmail sql.NullString
+
 			failStates := make(pq.Int64Array, 0)
 
 			if err := rows.Scan(
 				&m.Source.Repo, &m.Source.Dir, &m.Flavor, &m.Kind,
-				&ownerEmail,
 				&versionString, &ds.NumInstances, &ds.Schedule,
 				&ds.Startup.SkipCheck, &ds.Startup.ConnectDelay, &ds.Startup.Timeout, &ds.Startup.ConnectInterval,
 				&ds.Startup.CheckReadyProtocol, &ds.Startup.CheckReadyURIPath, &ds.Startup.CheckReadyPortIndex, &failStates,
 				&ds.Startup.CheckReadyURITimeout, &ds.Startup.CheckReadyInterval, &ds.Startup.CheckReadyRetries,
 				&clusterName,
+				&volHost, &volContainer, &volMode,
 				&envKey, &envValue,
 				&resName, &resValue,
 				&mdName, &mdValue,
-				&volHost, &volContainer, &volMode,
+				&ownerEmail,
 			); err != nil {
 				return errors.Wrapf(err, "loadManifests")
 			}
@@ -234,7 +236,13 @@ func loadManifests(context context.Context, log logging.LogSink, tx *sql.Tx, sta
 				state.Manifests.Add(m)
 			}
 			set := sous.NewOwnerSet(m.Owners...)
-			set.Add(ownerEmail)
+			if ownerEmail.Valid {
+				email, err := ownerEmail.Value()
+				if err != nil {
+					panic(err)
+				}
+				set.Add(email.(string))
+			}
 			m.Owners = set.Slice()
 			if newDS, has := m.Deployments[clusterName]; has {
 				ds = newDS
@@ -288,6 +296,7 @@ func loadTable(ctx context.Context, log logging.LogSink, tx *sql.Tx, mainTable s
 	}
 	defer rows.Close()
 	for rows.Next() {
+		rowcount++
 		if err := pack(rows); err != nil {
 			reportSQLMessage(log, start, mainTable, read, sql, rowcount, err)
 			return errors.Wrapf(err, "sql %q", sql)

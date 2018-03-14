@@ -109,6 +109,7 @@ func reportServerMessage(msg string, filterFlags config.DeployFilterFlags, liste
 
 func (msg serverMessage) WriteToConsole(console io.Writer) {
 	console.Write([]byte(msg.msg))
+	console.Write([]byte("\n"))
 }
 
 func (msg serverMessage) DefaultLevel() logging.Level {

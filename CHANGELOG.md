@@ -20,6 +20,7 @@ with respect to its command line interface and HTTP interface.
 ### Fixed
 * Client: running `sous` from outside of git workspaces no longer results in
   a confusing Git error.
+* Server: DB reading was omitting deployments without owners.
 
 ## [0.5.72](//github.com/opentable/sous/compare/0.5.71...0.5.72)
 
