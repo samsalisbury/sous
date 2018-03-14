@@ -48,8 +48,8 @@ type (
 	// HTTPClientWithContext interacts with a HTTPServer
 	//   It's designed to handle basic CRUD operations in a safe and restful way, adding context.
 	HTTPClientWithContext interface {
-		CreateCtx(urlPath string, qParms map[string]string, rqBody interface{}, headers map[string]string, ctx context.Context) (UpdateDeleter, error)
-		RetrieveCtx(urlPath string, qParms map[string]string, rzBody interface{}, headers map[string]string, ctx context.Context) (UpdateDeleter, error)
+		CreateCtx(ctx context.Context, urlPath string, qParms map[string]string, rqBody interface{}, headers map[string]string) (UpdateDeleter, error)
+		RetrieveCtx(ctx context.Context, ctrlpath string, qparms map[string]string, rzbody interface{}, headers map[string]string) (UpdateDeleter, error)
 	}
 
 	// An Updater captures the state of a retrieved resource so that it can be updated later.
@@ -164,7 +164,7 @@ func buildHeaders(maybeHeaders []map[string]string) http.Header {
 	return hs
 }
 
-func (client *LiveHTTPClient) getRequest(method string, urlPath string, qParms map[string]string, qBody interface{}, headers map[string]string, ctx context.Context) (*http.Request, error) {
+func (client *LiveHTTPClient) getRequest(ctx context.Context, method string, urlPath string, qParms map[string]string, qBody interface{}, headers map[string]string) (*http.Request, error) {
 	url, err := client.buildURL(urlPath, qParms)
 	rq, err := client.buildRequest(method, url, headers, nil, qBody, err)
 	if ctx != nil {
@@ -181,12 +181,12 @@ func (client *LiveHTTPClient) getRequest(method string, urlPath string, qParms m
 // (but note that there may be a response anyway.
 // It returns an Updater so that the resource can be updated later
 func (client *LiveHTTPClient) Retrieve(urlPath string, qParms map[string]string, rzBody interface{}, headers map[string]string) (UpdateDeleter, error) {
-	return client.RetrieveCtx(urlPath, qParms, rzBody, headers, nil)
+	return client.RetrieveCtx(context.TODO(), urlPath, qParms, rzBody, headers)
 }
 
 //RetrieveCtx Add context to Retrieve to ability to cancel
-func (client *LiveHTTPClient) RetrieveCtx(urlPath string, qParms map[string]string, rzBody interface{}, headers map[string]string, ctx context.Context) (UpdateDeleter, error) {
-	rq, err := client.getRequest("GET", urlPath, qParms, nil, headers, ctx)
+func (client *LiveHTTPClient) RetrieveCtx(ctx context.Context, urlPath string, qParms map[string]string, rzBody interface{}, headers map[string]string) (UpdateDeleter, error) {
+	rq, err := client.getRequest(ctx, "GET", urlPath, qParms, nil, headers)
 	rz, err := client.sendRequest(rq, err)
 	state, err := client.getBody(rz, rzBody, err)
 	return client.enrichState(state, urlPath, qParms), errors.Wrapf(err, "Retrieve %s params: %v", urlPath, qParms)
@@ -195,12 +195,12 @@ func (client *LiveHTTPClient) RetrieveCtx(urlPath string, qParms map[string]stri
 // Create uses the contents of qBody to create a new resource at the server at urlPath/qParms
 // It issues a PUT with "If-No-Match: *", so if a resource already exists, it'll return an error.
 func (client *LiveHTTPClient) Create(urlPath string, qParms map[string]string, qBody interface{}, headers map[string]string) (UpdateDeleter, error) {
-	return client.CreateCtx(urlPath, qParms, qBody, headers, nil)
+	return client.CreateCtx(context.TODO(), urlPath, qParms, qBody, headers)
 }
 
 //CreateCtx Add context to Create to ability to cancel
-func (client *LiveHTTPClient) CreateCtx(urlPath string, qParms map[string]string, qBody interface{}, headers map[string]string, ctx context.Context) (UpdateDeleter, error) {
-	rq, err := client.getRequest("PUT", urlPath, qParms, qBody, addNoMatchStar(headers), ctx)
+func (client *LiveHTTPClient) CreateCtx(ctx context.Context, urlPath string, qParms map[string]string, qBody interface{}, headers map[string]string) (UpdateDeleter, error) {
+	rq, err := client.getRequest(ctx, "PUT", urlPath, qParms, qBody, addNoMatchStar(headers))
 	rz, err := client.sendRequest(rq, err)
 	state, err := client.getBody(rz, nil, err)
 	return client.enrichState(state, urlPath, qParms), errors.Wrapf(err, "Create %s params: %v", urlPath, qParms)
