@@ -48,4 +48,8 @@ func (l *fallbackLogger) Console() logging.WriteDoner {
 	panic("not implemented")
 }
 
+func (l *fallbackLogger) ExtraConsole() logging.WriteDoner {
+	panic("not implemented")
+}
+
 func (l *fallbackLogger) AtExit() {}

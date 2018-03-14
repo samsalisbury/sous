@@ -80,6 +80,9 @@ type (
 		// Console returns a WriteDoner, which will be used to record ConsoleMessages.
 		Console() WriteDoner
 
+		// ExtraConsole returns a WriteDoner, which will be used to record ExtraConsoleMessages.
+		ExtraConsole() WriteDoner
+
 		// AtExit() does last-minute cleanup of stuff
 		AtExit()
 	}
@@ -151,6 +154,11 @@ type (
 	// A ConsoleMessage has messages to report to a local human operator (c.f. Deliver)
 	ConsoleMessage interface {
 		WriteToConsole(console io.Writer)
+	}
+
+	// A ExtraConsoleMessage has messages to report to a local human operator (c.f. Deliver)
+	ExtraConsoleMessage interface {
+		WriteExtraToConsole(console io.Writer)
 	}
 
 	// FieldReportFn is used by LogMessages to report their fields.
@@ -230,6 +238,9 @@ func Deliver(message interface{}, logger LogSink, options ...func() bool) {
 	if cm, is := message.(ConsoleMessage); is {
 		silent = false
 		cm.WriteToConsole(logger.Console())
+		if xm, is := message.(ExtraConsoleMessage); is {
+			xm.WriteExtraToConsole(logger.ExtraConsole())
+		}
 	}
 
 	if _, dont := message.(*silentMessageError); silent && !dont {

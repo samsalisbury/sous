@@ -12,6 +12,7 @@ type Config struct {
 	Basic struct {
 		Level          string `env:"SOUS_LOGGING_LEVEL"`
 		DisableConsole bool
+		ExtraConsole   bool `env:"SOUS_EXTRA_CONSOLE"`
 	}
 	Kafka struct {
 		Enabled      bool

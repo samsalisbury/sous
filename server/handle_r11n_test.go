@@ -8,6 +8,7 @@ import (
 	"time"
 
 	sous "github.com/opentable/sous/lib"
+	"github.com/stretchr/testify/assert"
 )
 
 // TestNewR11nResource checks that the same queue set passed to the
@@ -115,13 +116,6 @@ func TestR11nResource_Get_no_errors(t *testing.T) {
 // positions.
 func TestGETR11nHandler_Exchange_static(t *testing.T) {
 
-	wantNilResolution := func(t *testing.T, r r11nResponse) {
-		t.Helper()
-		if r.Resolution != nil {
-			t.Errorf("want nil Resolution; got %v", r.Resolution)
-		}
-	}
-
 	queues := sous.NewR11nQueueSet()
 	queuedOne1, ok := queues.Push(newR11n("one"))
 	if !ok {
@@ -136,6 +130,13 @@ func TestGETR11nHandler_Exchange_static(t *testing.T) {
 		t.Fatal("setup failed to push r11n")
 	}
 
+	wantNilResolution := func(t *testing.T, r r11nResponse) {
+		t.Helper()
+		assert.Nil(t, r.Resolution)
+		if r.Resolution != (*sous.DiffResolution)(nil) {
+			t.Errorf("want nil Resolution; got %v (%[1]T) %t", r.Resolution, (r.Resolution != (*sous.DiffResolution)(nil)))
+		}
+	}
 	wantStringReponse := func(t *testing.T, body interface{}, wantResponse string) {
 		t.Helper()
 		gotResponse, ok := body.(string)
@@ -173,74 +174,58 @@ func TestGETR11nHandler_Exchange_static(t *testing.T) {
 			t.Errorf("got queue position %d; want %d", gotPos, wantPos)
 		}
 	}
+	exercise := func(depID sous.DeploymentID, r11nID sous.R11nID, wait bool) (interface{}, int) {
+		gdh := &GETR11nHandler{
+			QueueSet:          queues,
+			DeploymentID:      depID,
+			R11nID:            r11nID,
+			WaitForResolution: wait,
+		}
+		return gdh.Exchange()
+	}
 
 	t.Run("nonexistent_deployID", func(t *testing.T) {
 		t.Parallel()
-		gdh := &GETR11nHandler{
-			QueueSet:     queues,
-			DeploymentID: newDid("nonexistent"),
-		}
-		body, gotStatus := gdh.Exchange()
+		body, gotStatus := exercise(newDid("nonexistent"), "", false)
 		wantStatus404(t, gotStatus)
 		wantStringReponse(t, body, `Nothing queued for ":nonexistent".`)
 	})
+
 	t.Run("nonexistent_deployID_wait", func(t *testing.T) {
 		t.Parallel()
-		gdh := &GETR11nHandler{
-			QueueSet:          queues,
-			DeploymentID:      newDid("nonexistent"),
-			R11nID:            "x",
-			WaitForResolution: true,
-		}
-		body, gotStatus := gdh.Exchange()
+		body, gotStatus := exercise(newDid("nonexistent"), "x", true)
 		wantStatus404(t, gotStatus)
 		wantStringReponse(t, body, `Deploy action "x" not found in queue for ":nonexistent".`)
 	})
+
 	t.Run("nonexistent_r11nID", func(t *testing.T) {
 		t.Parallel()
-		gdh := &GETR11nHandler{
-			QueueSet:     queues,
-			DeploymentID: newDid("one"),
-			R11nID:       "nonexistent",
-		}
-		body, gotStatus := gdh.Exchange()
+		body, gotStatus := exercise(newDid("one"), "nonexistent", false)
 		wantStatus404(t, gotStatus)
 		wantStringReponse(t, body, `Deploy action "nonexistent" not found in queue for ":one".`)
 	})
+
 	t.Run("one_1", func(t *testing.T) {
 		t.Parallel()
-		gdh := &GETR11nHandler{
-			QueueSet:     queues,
-			DeploymentID: newDid("one"),
-			R11nID:       queuedOne1.ID,
-		}
-		body, gotStatus := gdh.Exchange()
+		body, gotStatus := exercise(newDid("one"), queuedOne1.ID, false)
 		wantStatus200(t, gotStatus)
 		gotResponse := wantR11nResponse(t, body)
 		wantQueuePos(t, gotResponse, 0)
 		wantNilResolution(t, gotResponse)
 	})
+
 	t.Run("two_1", func(t *testing.T) {
 		t.Parallel()
-		gdh := &GETR11nHandler{
-			QueueSet:     queues,
-			DeploymentID: newDid("two"),
-			R11nID:       queuedTwo1.ID,
-		}
-		body, gotStatus := gdh.Exchange()
+		body, gotStatus := exercise(newDid("two"), queuedTwo1.ID, false)
 		wantStatus200(t, gotStatus)
 		gotResponse := wantR11nResponse(t, body)
 		wantQueuePos(t, gotResponse, 0)
 		wantNilResolution(t, gotResponse)
 	})
+
 	t.Run("two_2", func(t *testing.T) {
 		t.Parallel()
-		gdh := &GETR11nHandler{
-			QueueSet:     queues,
-			DeploymentID: newDid("two"),
-			R11nID:       queuedTwo2.ID,
-		}
-		body, gotStatus := gdh.Exchange()
+		body, gotStatus := exercise(newDid("two"), queuedTwo2.ID, false)
 		wantStatus200(t, gotStatus)
 		gotResponse := wantR11nResponse(t, body)
 		wantQueuePos(t, gotResponse, 1)

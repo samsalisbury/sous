@@ -136,7 +136,7 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 		return psd.err(400, "Error parsing body: %s.", err)
 	}
 
-	messages.ReportLogFieldsMessageToServerConsole("Exchange PutSingleDeplymentHandler", logging.ExtraDebug1Level, log, did, psd.Body)
+	messages.ReportLogFieldsMessageToConsole("Exchange PutSingleDeplymentHandler", logging.ExtraDebug1Level, log, did, psd.Body)
 
 	flaws := psd.Body.Deployment.Validate()
 	if len(flaws) > 0 {
@@ -185,7 +185,7 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 	}})
 	r.Pair.SetID(did)
 
-	messages.ReportLogFieldsMessageToServerConsole("Pushing following onto queue", logging.ExtraDebug1Level, log, r)
+	messages.ReportLogFieldsMessageToConsole("Pushing following onto queue", logging.ExtraDebug1Level, log, r)
 
 	qr, ok := psd.QueueSet.Push(r)
 	if !ok {

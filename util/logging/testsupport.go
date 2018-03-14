@@ -96,6 +96,11 @@ func (lss logSinkSpy) Console() WriteDoner {
 	return res.Get(0).(WriteDoner)
 }
 
+func (lss logSinkSpy) ExtraConsole() WriteDoner {
+	res := lss.spy.Called()
+	return res.Get(0).(WriteDoner)
+}
+
 func (lss logSinkSpy) Metrics() MetricsSink {
 	res := lss.spy.Called()
 	return res.Get(0).(MetricsSink)
