@@ -80,9 +80,17 @@ func (h *GETR11nHandler) Exchange() (interface{}, int) {
 		return fmt.Sprintf("Deploy action %q not found in queue for %q.",
 			h.R11nID, h.DeploymentID), http.StatusNotFound
 	}
+
+	// XXX Should this be part of the ByID contract?
+	// Specifically, the Resolution field would need to be *DiffResolution
+	rez := &qr.Rectification.Resolution
+	if qr.Pos >= 0 {
+		rez = nil
+	}
+
 	return r11nResponse{
 		QueuePosition: qr.Pos,
-		Resolution:    &qr.Rectification.Resolution,
+		Resolution:    rez,
 	}, http.StatusOK
 }
 
