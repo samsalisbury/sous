@@ -197,8 +197,10 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 	repoKV := restful.KV{"repo", did.ManifestID.Source.Repo}
 	offsetKV := restful.KV{"offset", did.ManifestID.Source.Dir}
 	flavorKV := restful.KV{"flavor", did.ManifestID.Flavor}
-	queueURI, err := psd.routeMap.URIFor("deploy-queue-item", nil,
+	hostName := psd.req.Host
+	queueURI, err := psd.routeMap.FullURIFor(hostName, "deploy-queue-item", nil,
 		actionKV, clusterKV, repoKV, offsetKV, flavorKV)
+
 	if err != nil {
 		return psd.err(500, "Determining queue item URL: %s", err)
 	}

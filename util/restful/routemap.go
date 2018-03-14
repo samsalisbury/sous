@@ -234,3 +234,9 @@ func (rm RouteMap) URIFor(name string, pathParams map[string]string, kvs ...KV) 
 	}
 	return "/" + strings.Join(pathParts, "/") + query, nil
 }
+
+// FQDN of the URIFor prepends the hostname.
+func (rm RouteMap) FullURIFor(hostName string, name string, pathParams map[string]string, kvs ...KV) (string, error) {
+	uri, err := rm.URIFor(name, pathParams, kvs...)
+	return hostName + uri, err
+}

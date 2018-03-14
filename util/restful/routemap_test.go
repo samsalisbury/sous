@@ -2,44 +2,44 @@ package restful
 
 import "testing"
 
-func TestRouteMap_URIFor_success(t *testing.T) {
-
-	makeTestRoutes := func() RouteMap {
-		return RouteMap{
-			{
-				Name: "root",
-				Path: "/",
-			},
-			{
-				Name: "simple",
-				Path: "/simple",
-			},
-			{
-				Name: "endparam",
-				Path: "/simple/:endparam",
-			},
-			{
-				Name: "midparam_blah",
-				Path: "/simple/:midparam/blah",
-			},
-			{
-				Name: "twoparam",
-				Path: "/twoparam/:param1/:param2",
-			},
-			{
-				Name: "twoparam_blah",
-				Path: "/twoparam/:param1/:param2/blah",
-			},
-			{
-				Name: "gappedparams",
-				Path: "/gapped/:param1/gap/:param2",
-			},
-			{
-				Name: "gappedparams_blah",
-				Path: "/gapped/:param1/gap/:param2/blah",
-			},
-		}
+func makeTestRoutes() RouteMap {
+	return RouteMap{
+		{
+			Name: "root",
+			Path: "/",
+		},
+		{
+			Name: "simple",
+			Path: "/simple",
+		},
+		{
+			Name: "endparam",
+			Path: "/simple/:endparam",
+		},
+		{
+			Name: "midparam_blah",
+			Path: "/simple/:midparam/blah",
+		},
+		{
+			Name: "twoparam",
+			Path: "/twoparam/:param1/:param2",
+		},
+		{
+			Name: "twoparam_blah",
+			Path: "/twoparam/:param1/:param2/blah",
+		},
+		{
+			Name: "gappedparams",
+			Path: "/gapped/:param1/gap/:param2",
+		},
+		{
+			Name: "gappedparams_blah",
+			Path: "/gapped/:param1/gap/:param2/blah",
+		},
 	}
+}
+
+func TestRouteMap_URIFor_success(t *testing.T) {
 
 	testCases := []struct {
 		name       string
@@ -180,4 +180,18 @@ func TestRouteMap_URIFor_success(t *testing.T) {
 		})
 	}
 
+}
+
+func TestRouteMap_FullURIFor_success(t *testing.T) {
+	routes := makeTestRoutes()
+	hostName := "127.0.0.1:8888"
+	gotFullURI, err := routes.FullURIFor(hostName, "simple", nil)
+	wantFullURI := "127.0.0.1:8888/simple"
+
+	if err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+	if gotFullURI != wantFullURI {
+		t.Errorf("got URI %q; want %q", gotFullURI, wantFullURI)
+	}
 }
