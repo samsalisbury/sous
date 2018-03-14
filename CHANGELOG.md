@@ -21,6 +21,7 @@ with respect to its command line interface and HTTP interface.
 * Client: running `sous` from outside of git workspaces no longer results in
   a confusing Git error.
 * Server: DB reading was omitting deployments without owners.
+* Server: /deploy-queue-item now returns correct queue position and Resolution field.
 
 ## [0.5.72](//github.com/opentable/sous/compare/0.5.71...0.5.72)
 
