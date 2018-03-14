@@ -285,7 +285,7 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 		scenario.assertDeploymentWritten(t)
 		scenario.assertR11nQueued(t)
 		scenario.assertHeader(t, "Location",
-			"/deploy-queue-item?action=actionid1&cluster=cluster1&flavor=flavor1&offset=dir1&repo=github.com%2Fuser1%2Frepo1")
+			"sous.example.com/deploy-queue-item?action=actionid1&cluster=cluster1&flavor=flavor1&offset=dir1&repo=github.com%2Fuser1%2Frepo1")
 	})
 
 	t.Run("WriteDeployment error", func(t *testing.T) {
