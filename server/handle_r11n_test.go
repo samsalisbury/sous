@@ -134,7 +134,7 @@ func TestGETR11nHandler_Exchange_static(t *testing.T) {
 		t.Helper()
 		assert.Nil(t, r.Resolution)
 		if r.Resolution != (*sous.DiffResolution)(nil) {
-			t.Errorf("want nil Resolution; got %v (%[1]T) %t", r.Resolution, (r.Resolution != (*sous.DiffResolution)(nil)))
+			t.Errorf("want nil Resolution; got %#v (%[1]T) %t", r.Resolution, (r.Resolution != (*sous.DiffResolution)(nil)))
 		}
 	}
 	wantStringReponse := func(t *testing.T, body interface{}, wantResponse string) {
