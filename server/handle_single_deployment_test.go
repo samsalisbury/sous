@@ -78,7 +78,7 @@ func TestSingleDeploymentResource(t *testing.T) {
 }
 
 type psdhExScenario struct {
-	handler      restful.Exchanger
+	handler      *PUTSingleDeploymentHandler
 	stateManager *sous.DummyStateManager
 	gdm          *sous.State
 	response     interface{}
@@ -137,7 +137,7 @@ func (scn psdhExScenario) assertR11nQueued(t *testing.T) {
 	t.Helper()
 	calls := scn.queueSet.CallsTo("Push")
 	if len(calls) == 0 {
-		t.Errorf("Expected that a recitification would be queued, but none were.")
+		t.Errorf("Expected that a rectification would be queued, but none were.")
 	}
 }
 
@@ -146,7 +146,7 @@ func (scn psdhExScenario) assertNoR11nQueued(t *testing.T) {
 	piecalls := scn.queueSet.CallsTo("PushIfEmpty")
 	pcalls := scn.queueSet.CallsTo("Push")
 	if len(piecalls) != 0 || len(pcalls) != 0 {
-		t.Errorf("Expected that no recitification would be queued, but one was.")
+		t.Errorf("Expected that no rectification would be queued, but one was.")
 	}
 }
 
@@ -185,13 +185,13 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 
 		rw := httptest.NewRecorder()
 
-		psd := r.Put(rm, rw, req, nil)
+		psd := r.Put(rm, rw, req, nil).(*PUTSingleDeploymentHandler)
 
 		return &psdhExScenario{
 			handler:      psd,
 			stateManager: sm,
 			queueSet:     qsCtrl,
-			gdm:          psd.(*PUTSingleDeploymentHandler).GDM,
+			gdm:          psd.GDM,
 		}
 	}
 
@@ -224,7 +224,7 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 		}
 		query := didQuery(m.Source.Repo, m.Source.Dir, "cluster1", m.Flavor)
 
-		return &SingleDeploymentBody{Deployment: dep}, query
+		return &SingleDeploymentBody{Deployment: &dep}, query
 	}
 
 	t.Run("query parsing error", func(t *testing.T) {
@@ -240,7 +240,7 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 		scenario.exercise()
 
 		scenario.assertStatus(t, 400)
-		scenario.assertStringBody(t, `Invalid deployment`)
+		scenario.assertStringBody(t, `Body.Deployment is nil.`)
 	})
 
 	t.Run("no matching deployment", func(t *testing.T) {
