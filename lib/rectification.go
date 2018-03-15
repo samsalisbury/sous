@@ -24,7 +24,7 @@ func NewRectification(dp DeployablePair) *Rectification {
 // Begin begins applying sr.Pair using d Deployer. Call Result to get the
 // result. Begin can be called multiple times but performs its function only
 // once.
-func (r *Rectification) Begin(d Deployer, reg Registry) {
+func (r *Rectification) Begin(d Deployer, reg Registry, clusters Clusters) {
 	r.once.Do(func() {
 		// For it to be sensible to separate Begin and Wait,
 		// this needs to happen async
@@ -34,6 +34,8 @@ func (r *Rectification) Begin(d Deployer, reg Registry) {
 				r.Pair = *pair
 			}
 			r.Resolution = d.Rectify(&r.Pair)
+
+			d.Status(reg, clusters, &r.Pair)
 
 			close(r.done)
 		}()

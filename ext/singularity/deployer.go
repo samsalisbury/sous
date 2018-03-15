@@ -1,6 +1,7 @@
 package singularity
 
 import (
+	"context"
 	"fmt"
 	"runtime/debug"
 	"strings"
@@ -203,20 +204,17 @@ func (r *deployer) RectifySingleDelete(d *sous.DeployablePair) (err error) {
 
 func (r *deployer) RectifySingleModification(pair *sous.DeployablePair) (err error) {
 	different, diffs := pair.Post.Deployment.Diff(pair.Prior.Deployment)
-	if !different {
-		reportDeployerMessage("Attempting to rectify empty diff",
-			pair, diffs, nil, nil, logging.WarningLevel, r.log)
+	if different {
+		reportDeployerMessage("Rectifying modified diffs", pair, diffs, nil, nil, logging.InformationLevel, r.log)
+	} else {
+		reportDeployerMessage("Attempting to rectify empty diff", pair, diffs, nil, nil, logging.WarningLevel, r.log)
 	}
-
-	reportDeployerMessage("Rectifying modified diffs", pair, diffs, nil, nil, logging.InformationLevel, r.log)
 
 	defer rectifyRecover(pair, "RectifySingleModification", &err)
 
 	data, ok := pair.ExecutorData.(*singularityTaskData)
 	if !ok {
-		err := errors.Errorf("Modification record %#v doesn't contain Singularity compatible data: was %T\n\t%#v", pair.ID(), data, pair)
-		reportDeployerMessage("Error modification not compatible with Singularity", pair, diffs, nil, err, logging.WarningLevel, r.log)
-		return err
+		return errors.Errorf("Modification record %#v doesn't contain Singularity compatible data: was %T\n\t%#v", pair.ID(), data, pair)
 	}
 	reqID := data.requestID
 
@@ -224,7 +222,6 @@ func (r *deployer) RectifySingleModification(pair *sous.DeployablePair) (err err
 	if changesReq(pair) {
 		reportDeployerMessage("Updating request", pair, diffs, data, nil, logging.DebugLevel, r.log)
 		if err := r.Client.PostRequest(*pair.Post, reqID); err != nil {
-			reportDeployerMessage("Error posting request to Singularity", pair, diffs, data, err, logging.WarningLevel, r.log)
 			return err
 		}
 	} else {
@@ -234,7 +231,6 @@ func (r *deployer) RectifySingleModification(pair *sous.DeployablePair) (err err
 	if changesDep(pair) {
 		reportDeployerMessage("Deploying", pair, diffs, data, nil, logging.DebugLevel, r.log)
 		if err := r.Client.Deploy(*pair.Post, reqID); err != nil {
-			reportDeployerMessage(err.Error(), pair, diffs, data, nil, logging.WarningLevel, r.log)
 			return err
 		}
 	} else {
