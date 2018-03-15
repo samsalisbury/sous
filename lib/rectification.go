@@ -26,12 +26,17 @@ func NewRectification(dp DeployablePair) *Rectification {
 // once.
 func (r *Rectification) Begin(d Deployer, reg Registry) {
 	r.once.Do(func() {
-		if r.Pair.Post.BuildArtifact == nil {
-			pair, _ := HandlePairsByRegistry(reg, &r.Pair)
-			r.Pair = *pair
-		}
-		r.Resolution = d.Rectify(&r.Pair)
-		close(r.done)
+		// For it to be sensible to separate Begin and Wait,
+		// this needs to happen async
+		go func() {
+			if r.Pair.Post.BuildArtifact == nil {
+				pair, _ := HandlePairsByRegistry(reg, &r.Pair)
+				r.Pair = *pair
+			}
+			r.Resolution = d.Rectify(&r.Pair)
+
+			close(r.done)
+		}()
 	})
 }
 

@@ -24,7 +24,6 @@ import (
 )
 
 func TestBuildDeployments(t *testing.T) {
-
 	// XXX unskip this
 	t.Skipf("Failing test on master preventing progress on other stories.")
 

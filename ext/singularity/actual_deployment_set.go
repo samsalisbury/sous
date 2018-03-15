@@ -240,6 +240,7 @@ func (sc *deployer) depPipeline(
 	errCh chan error,
 ) {
 	defer catchAndSend("dependency building", errCh, sc.log)
+	// XXX This doesn't as yet actually restrict the number of assemblers.
 	poolLimit := make(chan struct{}, poolCount)
 	for req := range reqCh {
 		depAssWait.Add(1)

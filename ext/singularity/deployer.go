@@ -52,9 +52,6 @@ type (
 		log           logging.LogSink
 	}
 
-	// DeployerOption is an option for configuring singularity deployers.
-	DeployerOption func(*deployer)
-
 	// rectificationClient abstracts the raw interactions with Singularity.
 	rectificationClient interface {
 		// Deploy creates a new deploy on a particular requeust
@@ -86,12 +83,6 @@ func NewDeployer(c rectificationClient, ls logging.LogSink, options ...DeployerO
 		opt(d)
 	}
 	return d
-}
-
-// OptMaxHTTPReqsPerServer overrides the DefaultMaxHTTPConcurrencyPerServer
-// for this server.
-func OptMaxHTTPReqsPerServer(n int) DeployerOption {
-	return func(d *deployer) { d.ReqsPerServer = n }
 }
 
 // Rectify invokes actions to ensure that the real world matches pair.Post,
@@ -229,7 +220,6 @@ func (r *deployer) RectifySingleModification(pair *sous.DeployablePair) (err err
 	}
 	reqID := data.requestID
 
-	//changesApplied := false
 	reportDeployerMessage("Operating on request", pair, diffs, data, nil, logging.ExtraDebug1Level, r.log)
 	if changesReq(pair) {
 		reportDeployerMessage("Updating request", pair, diffs, data, nil, logging.DebugLevel, r.log)
@@ -237,7 +227,6 @@ func (r *deployer) RectifySingleModification(pair *sous.DeployablePair) (err err
 			reportDeployerMessage("Error posting request to Singularity", pair, diffs, data, err, logging.WarningLevel, r.log)
 			return err
 		}
-		//changesApplied = true
 	} else {
 		reportDeployerMessage("No change to Singularity request required", pair, diffs, data, nil, logging.DebugLevel, r.log)
 	}
@@ -248,7 +237,6 @@ func (r *deployer) RectifySingleModification(pair *sous.DeployablePair) (err err
 			reportDeployerMessage(err.Error(), pair, diffs, data, nil, logging.WarningLevel, r.log)
 			return err
 		}
-		//changesApplied = true
 	} else {
 		reportDeployerMessage("No change to Singularity deployment required", pair, diffs, data, nil, logging.DebugLevel, r.log)
 	}
