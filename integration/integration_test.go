@@ -409,7 +409,7 @@ func (suite *integrationSuite) TestMissingImage() {
 	rf := &sous.ResolveFilter{}
 	sr := sous.NewDummyStateManager()
 	sr.State = &stateOne
-	qs := graph.NewR11nQueueSet(suite.deployer, suite.nameCache, rf, graph.StateReader{sr})
+	qs := graph.NewR11nQueueSet(suite.deployer, suite.nameCache, rf, &graph.ServerStateManager{sr})
 	r := sous.NewResolver(suite.deployer, suite.nameCache, rf, logging.SilentLogSet(), qs)
 
 	deploymentsOne, err := stateOne.Deployments()
@@ -469,7 +469,7 @@ func (suite *integrationSuite) TestResolve() {
 	rf := &sous.ResolveFilter{}
 	sr := sous.NewDummyStateManager()
 	sr.State = &stateOneTwo
-	qs := graph.NewR11nQueueSet(suite.deployer, suite.nameCache, rf, graph.StateReader{sr})
+	qs := graph.NewR11nQueueSet(suite.deployer, suite.nameCache, rf, &graph.ServerStateManager{sr})
 	r := sous.NewResolver(suite.deployer, suite.nameCache, rf, logsink, qs)
 
 	suite.T().Log("Begining OneTwo")
@@ -538,7 +538,7 @@ func (suite *integrationSuite) TestResolve() {
 		rf := &sous.ResolveFilter{}
 		sr := sous.NewDummyStateManager()
 		sr.State = &stateOneTwo
-		qs := graph.NewR11nQueueSet(suite.deployer, suite.nameCache, rf, graph.StateReader{sr})
+		qs := graph.NewR11nQueueSet(suite.deployer, suite.nameCache, rf, &graph.ServerStateManager{sr})
 		r := sous.NewResolver(deployer, suite.nameCache, rf, logging.SilentLogSet(), qs)
 
 		err = r.Begin(deploymentsTwoThree, clusterDefs.Clusters).Wait()
