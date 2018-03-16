@@ -1,7 +1,11 @@
 package cli
 
 import (
+	"encoding/json"
 	"flag"
+	"fmt"
+	"io/ioutil"
+	"net/http"
 
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
@@ -60,6 +64,11 @@ func (sd *SousNewDeploy) RegisterOn(psy Addable) {
 	psy.Add(&sd.DeployFilterFlags)
 }
 
+type SingleDeployResponse struct {
+	QueuePosition int
+	Resolution    sous.DiffResolution
+}
+
 // Execute creates the new deployment.
 func (sd *SousNewDeploy) Execute(args []string) cmdr.Result {
 
@@ -87,8 +96,28 @@ func (sd *SousNewDeploy) Execute(args []string) cmdr.Result {
 		return cmdr.EnsureErrorResult(err)
 	}
 
+	r := SingleDeployResponse{}
 	if location := updateResponse.Location(); location != "" {
-		return cmdr.Successf("Deployment queued at: %s", location)
+		//return cmdr.Successf("Deployment queued at: %s", location)
+		fmt.Printf("deployment queued at : %s", location)
+		//TODO LH at this point want to poll the url for the resolution
+		resp, err := http.Get("http://" + location)
+		if err != nil {
+			// handle error
+			fmt.Println("err : ", err)
+		}
+		defer resp.Body.Close()
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			fmt.Println("err : ", err)
+			// fmt.Printf("body %s", body)
+		} else {
+			fmt.Printf("body : %s", body)
+			//TODO LH this is not working the way I expect?
+			json.Unmarshal(body, r)
+			fmt.Printf("response : %s", r)
+		}
+
 	}
 	return cmdr.Successf("Desired version for %q in cluster %q already %q",
 		sd.TargetManifestID, cluster, sd.DeployFilterFlags.Tag)
