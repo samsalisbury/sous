@@ -1,7 +1,6 @@
 package singularity
 
 import (
-	"context"
 	"fmt"
 	"runtime/debug"
 	"strings"

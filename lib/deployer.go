@@ -8,7 +8,7 @@ type (
 	Deployer interface {
 		RunningDeployments(reg Registry, from Clusters) (DeployStates, error)
 		Rectify(*DeployablePair) DiffResolution
-		Status(Registry, Clusters, *DeployablePair) (DeployState, error)
+		Status(Registry, Clusters, *DeployablePair) (*DeployState, error)
 	}
 
 	// DeployerSpy is a noop deployer.
@@ -22,7 +22,7 @@ func NewDummyDeployer() Deployer {
 	d, c := NewDeployerSpy()
 	c.MatchMethod("RunningDeployments", spies.AnyArgs, NewDeployStates(), nil)
 	c.MatchMethod("Rectify", spies.AnyArgs, DiffResolution{})
-	c.MatchMethod("Status", spies.AnyArgs, DeployState{}, nil)
+	c.MatchMethod("Status", spies.AnyArgs, &DeployState{}, nil)
 	return d
 }
 
@@ -45,7 +45,7 @@ func (dd *DeployerSpy) Rectify(p *DeployablePair) DiffResolution {
 }
 
 // Status implements Deployer
-func (dd *DeployerSpy) Status(r Registry, c Clusters, p *DeployablePair) (DeployState, error) {
+func (dd *DeployerSpy) Status(r Registry, c Clusters, p *DeployablePair) (*DeployState, error) {
 	res := dd.Called(r, c, p)
-	return res.Get(0).(DeployState), res.Error(1)
+	return res.Get(0).(*DeployState), res.Error(1)
 }

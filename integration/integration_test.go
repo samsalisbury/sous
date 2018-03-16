@@ -406,8 +406,11 @@ func (suite *integrationSuite) TestMissingImage() {
 	}
 
 	// ****
-	qs := graph.NewR11nQueueSet(suite.deployer, suite.nameCache)
-	r := sous.NewResolver(suite.deployer, suite.nameCache, &sous.ResolveFilter{}, logging.SilentLogSet(), qs)
+	rf := &sous.ResolveFilter{}
+	sr := sous.NewDummyStateManager()
+	sr.State = &stateOne
+	qs := graph.NewR11nQueueSet(suite.deployer, suite.nameCache, rf, graph.StateReader{sr})
+	r := sous.NewResolver(suite.deployer, suite.nameCache, rf, logging.SilentLogSet(), qs)
 
 	deploymentsOne, err := stateOne.Deployments()
 	suite.Require().NoError(err)
@@ -463,8 +466,11 @@ func (suite *integrationSuite) TestResolve() {
 	logsink, logController := logging.NewLogSinkSpy()
 
 	// ****
-	qs := graph.NewR11nQueueSet(suite.deployer, suite.nameCache)
-	r := sous.NewResolver(suite.deployer, suite.nameCache, &sous.ResolveFilter{}, logsink, qs)
+	rf := &sous.ResolveFilter{}
+	sr := sous.NewDummyStateManager()
+	sr.State = &stateOneTwo
+	qs := graph.NewR11nQueueSet(suite.deployer, suite.nameCache, rf, graph.StateReader{sr})
+	r := sous.NewResolver(suite.deployer, suite.nameCache, rf, logsink, qs)
 
 	suite.T().Log("Begining OneTwo")
 	err = r.Begin(deploymentsOneTwo, clusterDefs.Clusters).Wait()
@@ -529,8 +535,11 @@ func (suite *integrationSuite) TestResolve() {
 		client := singularity.NewRectiAgent(suite.nameCache)
 		deployer := singularity.NewDeployer(client, logging.SilentLogSet())
 
-		qs := graph.NewR11nQueueSet(suite.deployer, suite.nameCache)
-		r := sous.NewResolver(deployer, suite.nameCache, &sous.ResolveFilter{}, logging.SilentLogSet(), qs)
+		rf := &sous.ResolveFilter{}
+		sr := sous.NewDummyStateManager()
+		sr.State = &stateOneTwo
+		qs := graph.NewR11nQueueSet(suite.deployer, suite.nameCache, rf, graph.StateReader{sr})
+		r := sous.NewResolver(deployer, suite.nameCache, rf, logging.SilentLogSet(), qs)
 
 		err = r.Begin(deploymentsTwoThree, clusterDefs.Clusters).Wait()
 		if err != nil {

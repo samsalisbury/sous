@@ -24,20 +24,34 @@ func NewRectification(dp DeployablePair) *Rectification {
 // Begin begins applying sr.Pair using d Deployer. Call Result to get the
 // result. Begin can be called multiple times but performs its function only
 // once.
-func (r *Rectification) Begin(d Deployer, reg Registry, clusters Clusters) {
+func (r *Rectification) Begin(d Deployer, reg Registry, rf *ResolveFilter, stateReader StateReader) {
 	r.once.Do(func() {
 		// For it to be sensible to separate Begin and Wait,
 		// this needs to happen async
 		go func() {
+			defer close(r.done)
 			if r.Pair.Post.BuildArtifact == nil {
 				pair, _ := HandlePairsByRegistry(reg, &r.Pair)
 				r.Pair = *pair
 			}
 			r.Resolution = d.Rectify(&r.Pair)
 
-			d.Status(reg, clusters, &r.Pair)
+			state, err := stateReader.ReadState()
+			if err != nil {
+				r.Resolution.Error = WrapResolveError(err)
+				return
+			}
 
-			close(r.done)
+			clusters := state.Defs.Clusters
+			clusters = rf.FilteredClusters(clusters)
+
+			depState, err := d.Status(reg, clusters, &r.Pair)
+			if err != nil {
+				r.Resolution.Error = WrapResolveError(err)
+				return
+			}
+			r.Resolution.DeployState = depState
+
 		}()
 	})
 }
