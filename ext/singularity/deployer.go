@@ -47,7 +47,7 @@ dChans := intendedSet.Diff(existingSet)
 type (
 	deployer struct {
 		Client        rectificationClient
-		singFac       func(string) *singularity.Client
+		singFac       func(string) singClient
 		ReqsPerServer int
 		log           logging.LogSink
 	}
@@ -149,11 +149,11 @@ func (r *deployer) Rectify(pair *sous.DeployablePair) sous.DiffResolution {
 	}
 }
 
-func (r *deployer) SetSingularityFactory(fn func(string) *singularity.Client) {
+func (r *deployer) SetSingularityFactory(fn func(string) singClient) {
 	r.singFac = fn
 }
 
-func (r *deployer) buildSingClient(url string) *singularity.Client {
+func (r *deployer) buildSingClient(url string) singClient {
 	if r.singFac == nil {
 		return singularity.NewClient(url, r.log)
 	}

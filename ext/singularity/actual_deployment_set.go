@@ -5,7 +5,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/opentable/go-singularity"
 	"github.com/opentable/go-singularity/dtos"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
@@ -25,16 +24,10 @@ type (
 	sRequest   *dtos.SingularityRequest
 	sDepMarker *dtos.SingularityDeployMarker
 
-	// A SingClient provides the interface needed to assemble a deployment.
-	SingClient interface {
-		GetDeploy(requestID string, deployID string) (*dtos.SingularityDeployHistory, error)
-		GetDeploys(requestID string, count, page int32) (dtos.SingularityDeployHistoryList, error)
-	}
-
 	// SingReq captures a request made to singularity with its initial response
 	SingReq struct {
 		SourceURL string
-		Sing      SingClient
+		Sing      singClient
 		ReqParent *dtos.SingularityRequestParent
 	}
 
@@ -185,7 +178,7 @@ func catchAndSend(from string, errs chan error, log logging.LogSink) {
 func (sc *deployer) singPipeline(
 	reg sous.Registry,
 	url string,
-	client *singularity.Client,
+	client singClient,
 	dw, wg *sync.WaitGroup,
 	reqs chan SingReq,
 	errs chan error,
@@ -215,13 +208,13 @@ func (sc *deployer) singPipeline(
 	}
 }
 
-func (sc *deployer) getSingularityRequestParents(client *singularity.Client) ([]*dtos.SingularityRequestParent, error) {
+func (sc *deployer) getSingularityRequestParents(client singClient) (dtos.SingularityRequestParentList, error) {
 	singRequests, err := client.GetRequests(false) // = don't use the 30 second cache
 
 	return singRequests, errors.Wrap(err, "getting request")
 }
 
-func convertSingularityRequestParentsToSingReqs(url string, client *singularity.Client, srp []*dtos.SingularityRequestParent) []SingReq {
+func convertSingularityRequestParentsToSingReqs(url string, client singClient, srp dtos.SingularityRequestParentList) []SingReq {
 	reqs := make([]SingReq, 0, len(srp))
 
 	for _, sr := range srp {
