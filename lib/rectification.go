@@ -45,12 +45,17 @@ func (r *Rectification) Begin(d Deployer, reg Registry, rf *ResolveFilter, state
 			clusters := state.Defs.Clusters
 			clusters = rf.FilteredClusters(clusters)
 
-			depState, err := d.Status(reg, clusters, &r.Pair)
-			if err != nil {
-				r.Resolution.Error = WrapResolveError(err)
-				return
+			for {
+				depState, err := d.Status(reg, clusters, &r.Pair)
+				if err != nil {
+					r.Resolution.Error = WrapResolveError(err)
+					return
+				}
+				r.Resolution.DeployState = depState
+				if depState.Final() {
+					return
+				}
 			}
-			r.Resolution.DeployState = depState
 
 		}()
 	})

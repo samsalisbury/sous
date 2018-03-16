@@ -49,6 +49,18 @@ func (ds DeployStates) IgnoringStatus() Deployments {
 	return deployments
 }
 
+// Final reports whether we should expect this DeployState to be finished -
+// in other words, DeployState.Final() -> false implies that a subsequent
+// DeployState will have a different status; polling components will want to poll again.
+func (ds DeployState) Final() bool {
+	switch ds.Status {
+	default:
+		return false
+	case DeployStatusActive, DeployStatusFailed:
+		return true
+	}
+}
+
 // Diff computes the list of differences between two DeployStates and returns
 // "true" if they're different, along with a list of differences
 func (ds *DeployState) Diff(o *DeployState) (bool, []string) {
