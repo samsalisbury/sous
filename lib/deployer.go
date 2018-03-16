@@ -26,6 +26,7 @@ func NewDummyDeployer() Deployer {
 	return d
 }
 
+// NewDeployerSpy returns a spy implementation of Deployer.
 func NewDeployerSpy() (Deployer, *spies.Spy) {
 	spy := spies.NewSpy()
 
