@@ -103,13 +103,11 @@ func (sd *SousNewDeploy) Execute(args []string) cmdr.Result {
 
 }
 
-func PollDeployQueue(location string, log logging.LogSink) cmdr.Result {
+func PollDeployQueue(location string, client restful.HTTPClient, loopIteration int, log logging.LogSink) cmdr.Result {
 	response := SingleDeployResponse{}
 	location = "http://" + location
 
-	client, _ := restful.NewClient(location, log, nil)
-
-	for i := 0; i < 10; i++ {
+	for i := 0; i < loopIteration; i++ {
 		_, err := client.Retrieve("", nil, &response, nil)
 		if err == nil {
 			cmdr.EnsureErrorResult(err)
@@ -123,7 +121,7 @@ func PollDeployQueue(location string, log logging.LogSink) cmdr.Result {
 			time.Sleep(1 * time.Second)
 		}
 	}
-	return cmdr.InternalErrorf("failed to deploy", location)
+	return cmdr.InternalErrorf("failed to deploy %s", location)
 }
 
 func checkResolution(resolution sous.DiffResolution) bool {
