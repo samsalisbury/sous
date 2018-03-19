@@ -105,7 +105,7 @@ func (sd *SousNewDeploy) Execute(args []string) cmdr.Result {
 
 }
 
-func PollDeployQueue(location string, client *restful.LiveHTTPClient, log logging.LogSink) cmdr.Result {
+func PollDeployQueue(location string, client restful.HTTPClient, loopIteration int, log logging.LogSink) cmdr.Result {
 	response := SingleDeployResponse{}
 	location = "http://" + location
 
@@ -126,16 +126,15 @@ func PollDeployQueue(location string, client *restful.LiveHTTPClient, log loggin
 			time.Sleep(1 * time.Second)
 		}
 	}
-	return cmdr.InternalErrorf("failed to deploy", location)
+	return cmdr.InternalErrorf("failed to deploy %s", location)
 }
 
 func checkResolution(resolution sous.DiffResolution) bool {
-	fmt.Printf("\n\n\n resolution : %v \n", resolution)
-	emptyRes := sous.DiffResolution{}
-	if resolution != emptyRes {
-		if resolution.Desc == "created" || resolution.Desc == "updated" {
-			return true
-		}
+	response := false
+	switch resolution.Desc {
+	case sous.CreateDiff:
+		response = true
 	}
-	return false
+	fmt.Printf("resolution : %+v", resolution)
+	return response
 }
