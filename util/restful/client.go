@@ -166,7 +166,10 @@ func buildHeaders(maybeHeaders []map[string]string) http.Header {
 
 func (client *LiveHTTPClient) getRequest(ctx context.Context, method string, urlPath string, qParms map[string]string, qBody interface{}, headers map[string]string) (*http.Request, error) {
 	url, err := client.buildURL(urlPath, qParms)
+	fmt.Printf("url err : %s \n", err)
 	rq, err := client.buildRequest(method, url, headers, nil, qBody, err)
+	fmt.Printf("rq err : %s \n", err)
+	fmt.Printf("rq : %s \n", rq)
 	if ctx != nil {
 		rq = rq.WithContext(ctx)
 	}

@@ -1,11 +1,9 @@
 package cli
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
-	"net/http"
+	"time"
 
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
@@ -14,6 +12,7 @@ import (
 	"github.com/opentable/sous/util/cmdr"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/logging/messages"
+	"github.com/opentable/sous/util/restful"
 	"github.com/samsalisbury/semv"
 )
 
@@ -96,30 +95,38 @@ func (sd *SousNewDeploy) Execute(args []string) cmdr.Result {
 		return cmdr.EnsureErrorResult(err)
 	}
 
-	r := SingleDeployResponse{}
 	if location := updateResponse.Location(); location != "" {
-		//return cmdr.Successf("Deployment queued at: %s", location)
-		fmt.Printf("deployment queued at : %s", location)
-		//TODO LH at this point want to poll the url for the resolution
-		resp, err := http.Get("http://" + location)
-		if err != nil {
-			// handle error
-			fmt.Println("err : ", err)
-		}
-		defer resp.Body.Close()
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			fmt.Println("err : ", err)
-			// fmt.Printf("body %s", body)
-		} else {
-			fmt.Printf("body : %s", body)
-			//TODO LH this is not working the way I expect?
-			json.Unmarshal(body, r)
-			fmt.Printf("response : %s", r)
-		}
-
+		return cmdr.Successf("Deployment queued at: %s", location)
 	}
 	return cmdr.Successf("Desired version for %q in cluster %q already %q",
 		sd.TargetManifestID, cluster, sd.DeployFilterFlags.Tag)
 
+}
+
+func PollDeployQueue(location string, log logging.LogSink) cmdr.Result {
+	response := SingleDeployResponse{}
+	location = "http://" + location
+
+	client, _ := restful.NewClient(location, log, nil)
+
+	for i := 0; i < 10; i++ {
+		_, err := client.Retrieve("", nil, &response, nil)
+		if err == nil {
+			cmdr.EnsureErrorResult(err)
+		}
+		queuePosition := response.QueuePosition
+		if queuePosition < 0 {
+			if checkResolution(response.Resolution) {
+				return cmdr.Successf("worked")
+			}
+		} else {
+			time.Sleep(1 * time.Second)
+		}
+	}
+	return cmdr.InternalErrorf("failed to deploy", location)
+}
+
+func checkResolution(resolution sous.DiffResolution) bool {
+	fmt.Printf("resolution : %+v", resolution)
+	return false
 }
