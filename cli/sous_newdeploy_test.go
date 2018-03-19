@@ -104,7 +104,6 @@ func TestPollDeployQueue_success(t *testing.T) {
 
 func Test_DeployQueueItem(t *testing.T) {
 	response := SingleDeployResponse{}
-
 	location = "http://" + location
 
 	updater, err := client.Retrieve(location, nil, &response, nil)
@@ -122,4 +121,11 @@ func TestPollDeployQueue_fail(t *testing.T) {
 
 	t.Logf("poll result %v", result)
 	assert.Equal(t, 70, result.ExitCode(), "This should fail")
+}
+func Test_PollDeployQueueBrokenURL(t *testing.T) {
+	brokenLocation := "http://never-going2.wrk/test"
+
+	result := PollDeployQueue(brokenLocation, client, 10, log)
+	fmt.Printf("result : %v", result)
+	assert.Equal(t, 70, result.ExitCode(), "should map to internal error")
 }
