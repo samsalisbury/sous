@@ -2,16 +2,10 @@ package cli
 
 import (
 	"flag"
-	"io/ioutil"
 
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
-	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
-	"github.com/opentable/sous/util/logging"
-	"github.com/opentable/sous/util/logging/messages"
-	"github.com/opentable/sous/util/yaml"
-	"github.com/pkg/errors"
 )
 
 type SousManifestSet struct {
@@ -39,7 +33,7 @@ func (smg *SousManifestSet) Execute(args []string) cmdr.Result {
 		return cmdr.EnsureErrorResult(err)
 	}
 
-	if err := set.Do(); err {
+	if err := set.Do(); err != nil {
 		return cmdr.EnsureErrorResult(err)
 	}
 

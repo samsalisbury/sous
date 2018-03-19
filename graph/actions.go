@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"io"
 	"os"
 
 	"github.com/opentable/sous/cli/actions"
@@ -17,6 +18,33 @@ func (di *SousGraph) guardedAdd(guardName string, value interface{}) {
 	di.Add(value)
 }
 
+// GetManifestGet injects a ManifestGet instances.
+func (di *SousGraph) GetManifestGet(dff config.DeployFilterFlags) (actions.Action, error) {
+	di.guardedAdd("DeployFilterFlags", &dff)
+	di.guardedAdd("Dryrun", DryrunNeither)
+
+	scoop := struct {
+		Dff  config.DeployFilterFlags
+		RF   *RefinedResolveFilter
+		Tmid TargetManifestID
+		HC   HTTPClient
+		L    LogSink
+		OW   OutWriter
+	}{}
+	if err := di.Inject(&scoop); err != nil {
+		return nil, err
+	}
+	return &actions.ManifestGet{
+		DeployFilterFlags: scoop.Dff,
+		ResolveFilter:     (*sous.ResolveFilter)(scoop.RF),
+		TargetManifestID:  sous.ManifestID(scoop.Tmid),
+		HTTPClient:        scoop.HC.HTTPClient,
+		LogSink:           scoop.L.LogSink,
+		OutWriter:         io.Writer(scoop.OW),
+	}, nil
+}
+
+// GetManifestSet injects a ManifestSet instance.
 func (di *SousGraph) GetManifestSet(dff config.DeployFilterFlags) (actions.Action, error) {
 	di.guardedAdd("DeployFilterFlags", &dff)
 	di.guardedAdd("Dryrun", DryrunNeither)
@@ -35,12 +63,12 @@ func (di *SousGraph) GetManifestSet(dff config.DeployFilterFlags) (actions.Actio
 	return &actions.ManifestSet{
 		DeployFilterFlags: scoop.Dff,
 		User:              scoop.U,
-		TargetManifestID:  scoop.Tmid,
+		ManifestID:        sous.ManifestID(scoop.Tmid),
 		HTTPClient:        scoop.HC,
 		InReader:          scoop.IR,
-		ResolveFilter:     scoop.RF,
+		ResolveFilter:     sous.ResolveFilter(scoop.RF),
 		LogSink:           scoop.LS,
-	}
+	}, nil
 }
 
 // GetUpdate returns an update Action.

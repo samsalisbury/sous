@@ -16,7 +16,7 @@ import (
 type SousMetadataGet struct {
 	config.DeployFilterFlags `inject:"optional"`
 	*sous.ResolveFilter
-	graph.TargetManifestID
+	TargetManifestID sous.ManifestID
 	graph.HTTPClient
 	graph.OutWriter
 }
