@@ -573,7 +573,7 @@ func (suite *integrationSuite) TestResolve() {
 																																							up
 																																					gofmt?
 			                                                                          `
-		suite.T().Logf("Singularity error:%s... - will try %d more times", spew.Sdump(err)[0:len(suffix)], tries)
+		log.Printf("Singularity error:%s... - will try %d more times", spew.Sdump(err)[0:len(suffix)], tries)
 		time.Sleep(2 * time.Second)
 	}
 
