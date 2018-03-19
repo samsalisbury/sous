@@ -103,7 +103,7 @@ func (h *GETSingleDeploymentHandler) Exchange() (interface{}, int) {
 		return h.err(404, "Manifest %q has no deployment for cluster %q.", m.ID(), did.Cluster)
 	}
 
-	h.Body.Deployment = dep
+	h.Body.Deployment = &dep
 
 	return h.ok(200, nil)
 }
@@ -137,12 +137,11 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 		return psd.err(400, "Error parsing body: %s.", err)
 	}
 
-	messages.ReportLogFieldsMessageToConsole("Exchange PutSingleDeplymentHandler", logging.ExtraDebug1Level, psd.log, did, psd.Body)
-
-	flaws := psd.Body.Deployment.Validate()
-	if len(flaws) > 0 {
-		return psd.err(400, "Invalid deployment: %q", flaws)
+	if psd.Body.Deployment == nil {
+		return psd.err(400, "Body.Deployment is nil.")
 	}
+
+	messages.ReportLogFieldsMessageToConsole("Exchange PutSingleDeplymentHandler", logging.ExtraDebug1Level, psd.log, did, psd.Body)
 
 	m, ok := psd.GDM.Manifests.Get(did.ManifestID)
 	if !ok {
@@ -159,7 +158,7 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 		return psd.ok(200, nil)
 	}
 
-	m.Deployments[did.Cluster] = psd.Body.Deployment
+	m.Deployments[did.Cluster] = *psd.Body.Deployment
 
 	user := sous.User(psd.GetUser(psd.req))
 
