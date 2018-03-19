@@ -139,10 +139,10 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 
 	messages.ReportLogFieldsMessageToConsole("Exchange PutSingleDeplymentHandler", logging.ExtraDebug1Level, psd.log, did, psd.Body)
 
-	flaws := psd.Body.Deployment.Validate()
-	if len(flaws) > 0 {
-		return psd.err(400, "Invalid deployment: %q", flaws)
-	}
+	// flaws := psd.Body.Deployment.Validate()
+	// if len(flaws) > 0 {
+	// 	return psd.err(400, "Invalid deployment: %q", flaws)
+	// }
 
 	m, ok := psd.GDM.Manifests.Get(did.ManifestID)
 	if !ok {

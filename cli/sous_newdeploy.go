@@ -2,6 +2,7 @@ package cli
 
 import (
 	"flag"
+	"fmt"
 	"time"
 
 	"github.com/opentable/sous/config"
@@ -95,7 +96,9 @@ func (sd *SousNewDeploy) Execute(args []string) cmdr.Result {
 	}
 
 	if location := updateResponse.Location(); location != "" {
-		return cmdr.Successf("Deployment queued at: %s", location)
+		//return cmdr.Successf("Deployment queued at: %s", location)
+		client, _ := restful.NewClient("", sd.LogSink, nil)
+		return PollDeployQueue(location, client, sd.LogSink)
 	}
 	return cmdr.Successf("Desired version for %q in cluster %q already %q",
 		sd.TargetManifestID, cluster, sd.DeployFilterFlags.Tag)
@@ -107,8 +110,11 @@ func PollDeployQueue(location string, client *restful.LiveHTTPClient, log loggin
 	location = "http://" + location
 
 	for i := 0; i < 10; i++ {
-		_, err := client.Retrieve(location, nil, &response, nil)
-		if err == nil {
+		updateDeleter, err := client.Retrieve(location, nil, &response, nil)
+		fmt.Printf("\nresponse : %v", response)
+		fmt.Printf("\nupdateDeleter : %v", updateDeleter)
+		fmt.Printf("\nerr : %v", err)
+		if err != nil {
 			cmdr.EnsureErrorResult(err)
 		}
 		queuePosition := response.QueuePosition
@@ -124,6 +130,12 @@ func PollDeployQueue(location string, client *restful.LiveHTTPClient, log loggin
 }
 
 func checkResolution(resolution sous.DiffResolution) bool {
-	//TODO LH get this implemented
+	fmt.Printf("\n\n\n resolution : %v \n", resolution)
+	emptyRes := sous.DiffResolution{}
+	if resolution != emptyRes {
+		if resolution.Desc == "created" || resolution.Desc == "updated" {
+			return true
+		}
+	}
 	return false
 }

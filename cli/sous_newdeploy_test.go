@@ -31,3 +31,9 @@ func Test_PollDeployQueueBrokenURL(t *testing.T) {
 	fmt.Printf("result : %v", result)
 	assert.Equal(t, 70, result.ExitCode(), "should map to internal error")
 }
+
+func Test_PollDeployQueueLocalLocation(t *testing.T) {
+	result := PollDeployQueue(location, client, log)
+	fmt.Printf("result : %v \n", result)
+	assert.Equal(t, 0, result.ExitCode(), "should return success")
+}
