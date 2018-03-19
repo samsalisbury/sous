@@ -490,32 +490,22 @@ func (suite *integrationSuite) TestResolve() {
 	//time.Sleep(3 * time.Second)
 	WaitForSingularity()
 
-	log.Print("492")
 	clusters := []string{"test-cluster"}
-	log.Print("494")
 	ds, which := suite.deploymentWithRepo(clusters, repoOne)
-	log.Print("496")
 	deps := ds.Snapshot()
-	log.Print("498")
 	if suite.NotEqual(none, which, "opentable/one not successfully deployed") {
 		one := deps[which]
 		suite.Equal(1, one.NumInstances)
 	}
-	log.Print("503")
 
-	log.Print("505")
 	which = suite.findRepo(ds, repoTwo)
-	log.Print("507")
 	if suite.NotEqual(none, which, "opentable/two not successfully deployed") {
 		two := deps[which]
 		suite.Equal(1, two.NumInstances)
 	}
-	log.Print("512")
 
 	dispositions := []string{}
-	log.Print("515")
 	for _, call := range logController.CallsTo("LogMessage") {
-		log.Print("517")
 		if lm, is := call.PassedArgs().Get(1).(logging.LogMessage); is {
 			lm.EachField(func(name string, val interface{}) {
 				if disp, is := val.(string); is && name == "sous-diff-disposition" {
@@ -524,9 +514,7 @@ func (suite *integrationSuite) TestResolve() {
 			})
 		}
 	}
-	log.Print("526")
 	sort.Strings(dispositions)
-	log.Print("528")
 	expectedDispositions := []string{"added", "added", "removed", "removed", "removed", "removed"}
 	if !suite.Equal(expectedDispositions, dispositions) {
 		log.Printf("All log messages:\n")
