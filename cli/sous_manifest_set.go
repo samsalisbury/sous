@@ -16,12 +16,7 @@ import (
 
 type SousManifestSet struct {
 	config.DeployFilterFlags `inject:"optional"`
-	graph.TargetManifestID
-	graph.HTTPClient
-	graph.InReader
-	ResolveFilter graph.RefinedResolveFilter `inject:"optional"`
-	graph.LogSink
-	User sous.User
+	SousGraph                *graph.SousGraph
 }
 
 func init() { ManifestSubcommands["set"] = &SousManifestSet{} }
@@ -38,34 +33,14 @@ func (smg *SousManifestSet) AddFlags(fs *flag.FlagSet) {
 	MustAddFlags(fs, &smg.DeployFilterFlags, ManifestFilterFlagsHelp)
 }
 
-func (smg *SousManifestSet) RegisterOn(psy Addable) {
-	psy.Add(graph.DryrunNeither)
-	psy.Add(&smg.DeployFilterFlags)
-}
-
 func (smg *SousManifestSet) Execute(args []string) cmdr.Result {
-	mani := sous.Manifest{}
-	up, err := smg.HTTPClient.Retrieve("/manifest", smg.TargetManifestID.QueryMap(), &mani, nil)
-
+	set, err := smg.SousGraph.GetManifestSet(smg.DeployFilterFlags)
 	if err != nil {
-		return EnsureErrorResult(errors.Errorf("No manifest matched by %v yet. See `sous init` (%v)", smg.ResolveFilter, err))
+		return cmdr.EnsureErrorResult(err)
 	}
 
-	yml := sous.Manifest{}
-	bytes, err := ioutil.ReadAll(smg.InReader)
-	if err != nil {
-		return EnsureErrorResult(err)
-	}
-	err = yaml.Unmarshal(bytes, &yml)
-	if err != nil {
-		return EnsureErrorResult(err)
-	}
-
-	messages.ReportLogFieldsMessage("Manifest in Execute", logging.ExtraDebug1Level, smg.LogSink, yml)
-
-	_, err = up.Update(&yml, nil)
-	if err != nil {
-		return EnsureErrorResult(err)
+	if err := set.Do(); err {
+		return cmdr.EnsureErrorResult(err)
 	}
 
 	return cmdr.Success()

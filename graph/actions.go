@@ -17,6 +17,32 @@ func (di *SousGraph) guardedAdd(guardName string, value interface{}) {
 	di.Add(value)
 }
 
+func (di *SousGraph) GetManifestSet(dff config.DeployFilterFlags) (actions.Action, error) {
+	di.guardedAdd("DeployFilterFlags", &dff)
+	di.guardedAdd("Dryrun", DryrunNeither)
+	scoop := struct {
+		Dff  config.DeployFilterFlags
+		Tmid TargetManifestID
+		HC   HTTPClient
+		IR   InReader
+		RF   RefinedResolveFilter
+		LS   LogSink
+		U    sous.User
+	}{}
+	if err := di.Inject(&scoop); err != nil {
+		return nil, err
+	}
+	return &actions.ManifestSet{
+		DeployFilterFlags: scoop.Dff,
+		User:              scoop.U,
+		TargetManifestID:  scoop.Tmid,
+		HTTPClient:        scoop.HC,
+		InReader:          scoop.IR,
+		ResolveFilter:     scoop.RF,
+		LogSink:           scoop.LS,
+	}
+}
+
 // GetUpdate returns an update Action.
 func (di *SousGraph) GetUpdate(dff config.DeployFilterFlags, otpl config.OTPLFlags) (actions.Action, error) {
 	di.guardedAdd("DeployFilterFlags", &dff)
