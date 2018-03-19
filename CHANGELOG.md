@@ -11,6 +11,8 @@ with respect to its command line interface and HTTP interface.
 
 ### Fixed
 * Server: /deploy-queue-item now returns correct queue position and Resolution field.
+* Server: /single-deployment validation now correctly validates only after taking
+  into consideration default values.
 
 ## [0.5.76](//github.com/opentable/sous/compare/0.5.72...0.5.76)
 
