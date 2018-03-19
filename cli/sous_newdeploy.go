@@ -2,7 +2,6 @@ package cli
 
 import (
 	"flag"
-	"fmt"
 	"time"
 
 	"github.com/opentable/sous/config"
@@ -103,14 +102,12 @@ func (sd *SousNewDeploy) Execute(args []string) cmdr.Result {
 
 }
 
-func PollDeployQueue(location string, log logging.LogSink) cmdr.Result {
+func PollDeployQueue(location string, client *restful.LiveHTTPClient, log logging.LogSink) cmdr.Result {
 	response := SingleDeployResponse{}
 	location = "http://" + location
 
-	client, _ := restful.NewClient(location, log, nil)
-
 	for i := 0; i < 10; i++ {
-		_, err := client.Retrieve("", nil, &response, nil)
+		_, err := client.Retrieve(location, nil, &response, nil)
 		if err == nil {
 			cmdr.EnsureErrorResult(err)
 		}
@@ -127,6 +124,6 @@ func PollDeployQueue(location string, log logging.LogSink) cmdr.Result {
 }
 
 func checkResolution(resolution sous.DiffResolution) bool {
-	fmt.Printf("resolution : %+v", resolution)
+	//TODO LH get this implemented
 	return false
 }

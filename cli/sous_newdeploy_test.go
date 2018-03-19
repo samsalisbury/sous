@@ -6,6 +6,7 @@ import (
 
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
+	"github.com/stretchr/testify/assert"
 )
 
 var log, _ = logging.NewLogSinkSpy()
@@ -14,7 +15,6 @@ var location = "127.0.0.1:8888/deploy-queue-item?action=bb836990-5ab2-4eab-9f52-
 
 func TestDeployQueueItem(t *testing.T) {
 	response := SingleDeployResponse{}
-
 	location = "http://" + location
 
 	updater, err := client.Retrieve(location, nil, &response, nil)
@@ -24,8 +24,10 @@ func TestDeployQueueItem(t *testing.T) {
 
 }
 
-func Test_PollDeployQueue(t *testing.T) {
-	location = "http://" + location
-	result := PollDeployQueue(location, log)
-	assert(t, result.ExitCode, 1)
+func Test_PollDeployQueueBrokenURL(t *testing.T) {
+	brokenLocation := "http://never-going2.wrk/test"
+
+	result := PollDeployQueue(brokenLocation, client, log)
+	fmt.Printf("result : %v", result)
+	assert.Equal(t, 70, result.ExitCode(), "should map to internal error")
 }
