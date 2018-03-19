@@ -5,6 +5,7 @@ package integration
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"os"
 	"sort"
 	"testing"
