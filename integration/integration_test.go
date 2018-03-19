@@ -489,32 +489,32 @@ func (suite *integrationSuite) TestResolve() {
 	//time.Sleep(3 * time.Second)
 	WaitForSingularity()
 
-	suite.T().Log("492")
+	log.Print("492")
 	clusters := []string{"test-cluster"}
-	suite.T().Log("494")
+	log.Print("494")
 	ds, which := suite.deploymentWithRepo(clusters, repoOne)
-	suite.T().Log("496")
+	log.Print("496")
 	deps := ds.Snapshot()
-	suite.T().Log("498")
+	log.Print("498")
 	if suite.NotEqual(none, which, "opentable/one not successfully deployed") {
 		one := deps[which]
 		suite.Equal(1, one.NumInstances)
 	}
-	suite.T().Log("503")
+	log.Print("503")
 
-	suite.T().Log("505")
+	log.Print("505")
 	which = suite.findRepo(ds, repoTwo)
-	suite.T().Log("507")
+	log.Print("507")
 	if suite.NotEqual(none, which, "opentable/two not successfully deployed") {
 		two := deps[which]
 		suite.Equal(1, two.NumInstances)
 	}
-	suite.T().Log("512")
+	log.Print("512")
 
 	dispositions := []string{}
-	suite.T().Log("515")
+	log.Print("515")
 	for _, call := range logController.CallsTo("LogMessage") {
-		suite.T().Log("517")
+		log.Print("517")
 		if lm, is := call.PassedArgs().Get(1).(logging.LogMessage); is {
 			lm.EachField(func(name string, val interface{}) {
 				if disp, is := val.(string); is && name == "sous-diff-disposition" {
@@ -523,12 +523,12 @@ func (suite *integrationSuite) TestResolve() {
 			})
 		}
 	}
-	suite.T().Log("526")
+	log.Print("526")
 	sort.Strings(dispositions)
-	suite.T().Log("528")
+	log.Print("528")
 	expectedDispositions := []string{"added", "added", "removed", "removed", "removed", "removed"}
 	if !suite.Equal(expectedDispositions, dispositions) {
-		suite.T().Logf("All log messages:\n")
+		log.Printf("All log messages:\n")
 		for _, call := range logController.CallsTo("LogMessage") {
 			if msg, is := call.PassedArgs().Get(1).(logging.LogMessage); is {
 				m := map[string]interface{}{}
@@ -536,9 +536,9 @@ func (suite *integrationSuite) TestResolve() {
 					m[k] = v
 				})
 				m["message"] = msg.Message()
-				suite.T().Log(spew.Sprintf("%#v", m))
+				log.Print(spew.Sprintf("%#v", m))
 			} else {
-				suite.T().Logf("NOT A LOG MESSAGE: %+#v", call.PassedArgs().Get(1))
+				log.Printf("NOT A LOG MESSAGE: %+#v", call.PassedArgs().Get(1))
 			}
 
 		}
@@ -546,7 +546,7 @@ func (suite *integrationSuite) TestResolve() {
 	}
 
 	// ****
-	suite.T().Log("Resolving from one+two to two+three")
+	log.Print("Resolving from one+two to two+three")
 
 	// XXX Let's hope this is a temporary solution to a testing issue
 	// The problem is laid out in DCOPS-7625
