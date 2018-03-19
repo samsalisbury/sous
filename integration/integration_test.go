@@ -170,6 +170,7 @@ func (suite *integrationSuite) BeforeTest(suiteName, testName string) {
 }
 
 func (suite *integrationSuite) deployDefaultContainers() {
+	suite.T().Log("Deploying default containers.")
 	nilStartup := sous.Startup{SkipCheck: true}
 	timeout := 500
 	startup := sous.Startup{
@@ -185,6 +186,7 @@ func (suite *integrationSuite) deployDefaultContainers() {
 
 	// This deployment fails immediately, and never results in a successful deployment at that singularity request.
 	registerAndDeploy(ip, "test-cluster", "supposed-to-fail", "github.com/opentable/homer-says-doh", "fails-labels", "1-fails", []int32{}, nilStartup)
+	suite.T().Log("Deploying default containers; waiting for singularity.")
 	WaitForSingularity()
 }
 
@@ -487,22 +489,32 @@ func (suite *integrationSuite) TestResolve() {
 	//time.Sleep(3 * time.Second)
 	WaitForSingularity()
 
+	suite.T().Log("492")
 	clusters := []string{"test-cluster"}
+	suite.T().Log("494")
 	ds, which := suite.deploymentWithRepo(clusters, repoOne)
+	suite.T().Log("496")
 	deps := ds.Snapshot()
+	suite.T().Log("498")
 	if suite.NotEqual(none, which, "opentable/one not successfully deployed") {
 		one := deps[which]
 		suite.Equal(1, one.NumInstances)
 	}
+	suite.T().Log("503")
 
+	suite.T().Log("505")
 	which = suite.findRepo(ds, repoTwo)
+	suite.T().Log("507")
 	if suite.NotEqual(none, which, "opentable/two not successfully deployed") {
 		two := deps[which]
 		suite.Equal(1, two.NumInstances)
 	}
+	suite.T().Log("512")
 
 	dispositions := []string{}
+	suite.T().Log("515")
 	for _, call := range logController.CallsTo("LogMessage") {
+		suite.T().Log("517")
 		if lm, is := call.PassedArgs().Get(1).(logging.LogMessage); is {
 			lm.EachField(func(name string, val interface{}) {
 				if disp, is := val.(string); is && name == "sous-diff-disposition" {
@@ -511,7 +523,9 @@ func (suite *integrationSuite) TestResolve() {
 			})
 		}
 	}
+	suite.T().Log("526")
 	sort.Strings(dispositions)
+	suite.T().Log("528")
 	expectedDispositions := []string{"added", "added", "removed", "removed", "removed", "removed"}
 	if !suite.Equal(expectedDispositions, dispositions) {
 		suite.T().Logf("All log messages:\n")
