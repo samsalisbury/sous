@@ -64,9 +64,14 @@ func (suite *integrationSuite) findRepo(deps sous.DeployStates, repo string) sou
 
 func (suite *integrationSuite) manifest(nc *docker.NameCache, drepo, containerDir, sourceURL, version string) *sous.Manifest {
 	in := BuildImageName(drepo, version)
-	BuildAndPushContainer(containerDir, in)
+	if err := BuildAndPushContainer(containerDir, in); err != nil {
+		suite.FailNow("setup failed to build and push container for %q: %s", in, err)
+	}
 
-	nc.GetSourceID(docker.NewBuildArtifact(in, nil))
+	_, err := nc.GetSourceID(docker.NewBuildArtifact(in, nil))
+	if err != nil {
+		suite.FailNow("setup failed to get source ID: %s", err)
+	}
 
 	checkReadyPath := "/health"
 
@@ -541,21 +546,20 @@ func (suite *integrationSuite) TestResolve() {
 		qs := graph.NewR11nQueueSet(suite.deployer, suite.nameCache, rf, &graph.ServerStateManager{sr})
 		r := sous.NewResolver(deployer, suite.nameCache, rf, logging.SilentLogSet(), qs)
 
-		err = r.Begin(deploymentsTwoThree, clusterDefs.Clusters).Wait()
-		if err != nil {
-			//suite.Require().NotRegexp(`Pending deploy already in progress`, err.Error())
-			suffix := `           this is dumb but it would suck to panic during tests
+		err := r.Begin(deploymentsTwoThree, clusterDefs.Clusters).Wait()
+		if err == nil {
+			// err was nil, so no need to keep retrying.
+			break
+		}
+		//suite.Require().NotRegexp(`Pending deploy already in progress`, err.Error())
+		suffix := `           this is dumb but it would suck to panic during tests
                                                                             what
 																																						  is
 																																							up
 																																					gofmt?
 			                                                                          `
-			suite.T().Logf("Singularity error:%s... - will try %d more times", spew.Sdump(err)[0:len(suffix)], tries)
-			time.Sleep(2 * time.Second)
-		} else {
-			// err was nil, so no need to keep retrying.
-			break
-		}
+		suite.T().Logf("Singularity error:%s... - will try %d more times", spew.Sdump(err)[0:len(suffix)], tries)
+		time.Sleep(2 * time.Second)
 	}
 
 	suite.Require().NoError(err)
