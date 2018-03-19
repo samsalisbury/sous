@@ -400,8 +400,21 @@ func (a R11nHandlerAsserts) wantR11nResponse(t *testing.T, body interface{}) r11
 func (a R11nHandlerAsserts) wantQueuePos(t *testing.T, r r11nResponse, wantPos int) {
 	t.Helper()
 	gotPos := r.QueuePosition
-	if gotPos != wantPos {
-		t.Errorf("got queue position %d; want %d", gotPos, wantPos)
+	switch {
+	case wantPos < 0:
+		if gotPos >= 0 {
+			t.Errorf("want queue pos < 0, got %d", gotPos)
+		}
+	case wantPos == 0:
+		if gotPos != 0 {
+			t.Errorf("want queue pos == 0, got %d", gotPos)
+		}
+	case wantPos > 0:
+		if gotPos <= 0 {
+			t.Errorf("want queue pos > 0, got %d", gotPos)
+		}
+	default:
+		panic("I don't understand how numbers work")
 	}
 }
 

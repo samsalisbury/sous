@@ -3,6 +3,8 @@ package sous
 import (
 	"testing"
 	"time"
+
+	"github.com/nyarly/spies"
 )
 
 func TestSingleRectification_Resolve_completes(t *testing.T) {
@@ -17,9 +19,13 @@ func TestSingleRectification_Resolve_completes(t *testing.T) {
 	})
 
 	done := make(chan struct{})
+	dpr, c := NewDeployerSpy()
+	c.MatchMethod("Status", spies.AnyArgs, &DeployState{Status: DeployStatusActive}, nil)
+	c.MatchMethod("Rectify", spies.AnyArgs, DiffResolution{}, nil)
+
+	sr.Begin(dpr, &DummyRegistry{}, &ResolveFilter{}, NewDummyStateManager())
 
 	go func() {
-		sr.Begin(&DummyDeployer{}, &DummyRegistry{})
 		sr.Wait()
 		close(done)
 	}()

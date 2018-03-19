@@ -18,7 +18,7 @@ func TestGetDepSetWorks(t *testing.T) {
 
 	reg := sous.NewDummyRegistry()
 	client := sous.NewDummyRectificationClient()
-	singFac := func(url string) *singularity.Client {
+	singFac := func(url string) singClient {
 		cl, co := singularity.NewDummyClient(url)
 
 		co.FeedDTO(&dtos.SingularityRequestParentList{

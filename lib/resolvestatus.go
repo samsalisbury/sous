@@ -49,6 +49,8 @@ type (
 		Desc ResolutionType
 		// Error captures the error (if any) encountered during diff resolution
 		Error *ErrorWrapper
+
+		DeployState *DeployState
 	}
 
 	// ResolutionType marks the kind of a DiffResolution
