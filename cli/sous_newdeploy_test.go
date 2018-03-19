@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 	"github.com/stretchr/testify/assert"
@@ -53,10 +54,23 @@ var location = "127.0.0.1:8888/deploy-queue-item?action=bb836990-5ab2-4eab-9f52-
 
 type MyMockedHTTPClient struct {
 	mock.Mock
+	body SingleDeployResponse
+}
+
+func (m *MyMockedHTTPClient) SetRZBody(body SingleDeployResponse) {
+	m.body = body
 }
 
 func (m *MyMockedHTTPClient) Retrieve(urlPath string, qParms map[string]string, rzBody interface{}, headers map[string]string) (restful.UpdateDeleter, error) {
 	args := m.Called(urlPath, qParms, rzBody, headers)
+	//couldn't just assign rzBody to m.body, would never take value, so had to explicitly set
+	if iSingleDeployResponse, ok := rzBody.(*SingleDeployResponse); ok {
+		iSingleDeployResponse.QueuePosition = m.body.QueuePosition
+		iSingleDeployResponse.Resolution.Desc = m.body.Resolution.Desc
+	}
+	//rzBody = m.body
+	//rzBody.(SingleDeployResponse).QueuePosition = -1
+	//rzBody.(SingleDeployResponse).DiffResolution.Desc = m.body.DiffResolution.Desc
 	return args.Get(0).(restful.UpdateDeleter), args.Error(1)
 }
 
@@ -69,7 +83,17 @@ func TestPollDeployQueue_success(t *testing.T) {
 
 	httpClient := new(MyMockedHTTPClient)
 
-	httpClient.On("Retrieve", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, nil)
+	deployResult := SingleDeployResponse{}
+	deployResult.QueuePosition = -1
+	diffResolution := sous.DiffResolution{}
+	diffResolution.Desc = sous.ResolutionType("created")
+	deployResult.Resolution = diffResolution
+
+	httpClient.SetRZBody(deployResult)
+
+	updateDeleter := new(MyMockedUpdateDeleter)
+
+	httpClient.On("Retrieve", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(updateDeleter, nil)
 
 	location = "http://" + location
 
