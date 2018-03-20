@@ -49,6 +49,11 @@ func (r *Resolver) queueDiffs(dcs *DeployableChans, results chan DiffResolution)
 			logging.ReportError(r.ls, err)
 			continue
 		}
+		// SameKind == "no diffs"
+		if p.Kind() == SameKind {
+			messages.ReportLogFieldsMessageWithIDs("Not adding equal diff", logging.ExtraDebug1Level, r.ls, p)
+			continue
+		}
 		sr := NewRectification(*p)
 		messages.ReportLogFieldsMessageWithIDs("Adding to queue-set", logging.ExtraDebug1Level, r.ls, p, sr)
 		queued, ok := r.QueueSet.PushIfEmpty(sr)
