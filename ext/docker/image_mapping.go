@@ -130,7 +130,7 @@ func (nc *NameCache) Warmup(r string) error {
 }
 
 func (nc *NameCache) warmupSingle(sid sous.SourceID) error {
-	in := versionName(sid, "")
+	in := versionTag(nc.DockerRegistryHost, sid, "")
 
 	a := NewBuildArtifact(in, strpairs{})
 	gsid, err := nc.GetSourceID(a)
