@@ -2,6 +2,7 @@ package cli
 
 import (
 	"flag"
+	"fmt"
 	"time"
 
 	"github.com/opentable/sous/config"
@@ -100,21 +101,33 @@ func (sd *SousNewDeploy) Execute(args []string) cmdr.Result {
 
 }
 
+func timeTrack(start time.Time) string {
+	elapsed := time.Since(start)
+	return elapsed.String()
+}
+
 // PollDeployQueue is used to poll server on status of Single Deployment.
 func PollDeployQueue(location string, client restful.HTTPClient, loopIteration int, log logging.LogSink) cmdr.Result {
+	start := time.Now()
 	response := dto.R11nResponse{}
 	location = "http://" + location
 
 	for i := 0; i < loopIteration; i++ {
 		_, err := client.Retrieve(location, nil, &response, nil)
-		messages.ReportLogFieldsMessageToConsole("PollDeployQueue called waiting for created response...", logging.ExtraDebug1Level, log, location, response, err)
-		if err != nil {
-			return cmdr.InternalErrorf("Failed to deploy: %s", err)
+
+		if i%10 == 0 {
+			msg := fmt.Sprintf("PollDeployQueue called waiting for created response... %s elapsed", timeTrack(start))
+			messages.ReportLogFieldsMessageToConsole(msg, logging.ExtraDebug1Level, log, location, response, err)
 		}
+
+		if err != nil {
+			return cmdr.InternalErrorf("Failed to deploy: %s duration: %s", err, timeTrack(start))
+		}
+
 		queuePosition := response.QueuePosition
 		if queuePosition < 0 && response.Resolution != nil {
 			if checkResolution(*response.Resolution) {
-				return cmdr.Successf("worked")
+				return cmdr.Successf("Deployment Complete %s, duration: %s", response.Resolution.DeploymentID.String(), timeTrack(start))
 			}
 		}
 		time.Sleep(1 * time.Second)
