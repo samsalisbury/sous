@@ -107,7 +107,7 @@ func PollDeployQueue(location string, client restful.HTTPClient, loopIteration i
 
 	for i := 0; i < loopIteration; i++ {
 		_, err := client.Retrieve(location, nil, &response, nil)
-		messages.ReportLogFieldsMessageToConsole("PollDeployQueue Retrieve called", logging.ExtraDebug1Level, log, location, response, err)
+		messages.ReportLogFieldsMessageToConsole("PollDeployQueue called waiting for created response...", logging.ExtraDebug1Level, log, location, response, err)
 		if err != nil {
 			return cmdr.InternalErrorf("Failed to deploy: %s", err)
 		}
