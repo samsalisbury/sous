@@ -8,16 +8,10 @@ import (
 	"github.com/opentable/sous/util/cmdr"
 )
 
+// SousManifestGet defines the `sous manifest get` command.
 type SousManifestGet struct {
 	config.DeployFilterFlags `inject:"optional"`
-
-	ResolveFilter    *graph.RefinedResolveFilter `inject:"optional"`
-	TargetManifestID graph.TargetManifestID
-	HTTPClient       graph.HTTPClient
-	LogSink          graph.LogSink
-	OutWriter        graph.OutWriter
-
-	SousGraph *graph.SousGraph
+	SousGraph                *graph.SousGraph
 }
 
 func init() { ManifestSubcommands["get"] = &SousManifestGet{} }
