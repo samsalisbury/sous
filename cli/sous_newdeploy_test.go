@@ -94,17 +94,22 @@ func TestPollDeployQueue_fail(t *testing.T) {
 	location := "127.0.0.1:8888/deploy-queue-item?action=bb836990-5ab2-4eab-9f52-ad3fd555539b&cluster=dev-ci-sf&flavor=&offset=&repo=github.com%2Fopentable%2Fsous-demo"
 
 	client, _ := restful.NewClient("", log, nil)
-	result := PollDeployQueue(location, client, 1, log)
+	result := PollDeployQueue(location, client, 10, log)
 
 	t.Logf("poll result %v", result)
 	assert.Equal(t, 70, result.ExitCode(), "This should fail")
 }
 
-func Test_PollDeployQueueBrokenURL(t *testing.T) {
-	brokenLocation := "http://never-going2.wrk/test"
+func TestCheckResolution(t *testing.T) {
+	resolution := sous.DiffResolution{}
+	resolution.Desc = sous.CreateDiff
+	assert.True(t, checkResolution(resolution), "resolution should be true")
 
-	client, _ := restful.NewClient("", log, nil)
-	result := PollDeployQueue(brokenLocation, client, 10, log)
-	t.Logf("result : %v", result)
-	assert.Equal(t, 70, result.ExitCode(), "should map to internal error")
+	resolution.Desc = sous.DeleteDiff
+	assert.True(t, !checkResolution(resolution), "resolution should be false")
+
+	resolution.Desc = sous.ModifyDiff
+	assert.True(t, checkResolution(resolution), "resolution should be true")
+
+	assert.True(t, !checkResolution(sous.DiffResolution{}), "empty resolution should be false")
 }
