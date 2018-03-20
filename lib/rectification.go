@@ -70,8 +70,10 @@ func (r *Rectification) Begin(d Deployer, reg Registry, rf *ResolveFilter, state
 				case <-tick.C:
 				case <-end.Done():
 					r.Lock()
-					r.Resolution.DeployState = &DeployState{}
-					r.Unlock()
+					defer r.Unlock()
+					if r.Resolution.DeployState == nil {
+						r.Resolution.DeployState = &DeployState{}
+					}
 					return
 				}
 			}
