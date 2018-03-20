@@ -107,6 +107,7 @@ func (sd *SousNewDeploy) Execute(args []string) cmdr.Result {
 
 }
 
+//PollDeployQueue used to poll server on status of Single Deployment
 func PollDeployQueue(location string, client restful.HTTPClient, loopIteration int, log logging.LogSink) cmdr.Result {
 	response := dto.R11nResponse{}
 	location = "http://" + location
