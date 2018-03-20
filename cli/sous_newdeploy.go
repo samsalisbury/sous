@@ -108,6 +108,7 @@ func PollDeployQueue(location string, client restful.HTTPClient, loopIteration i
 
 	for i := 0; i < loopIteration; i++ {
 		updateDeleter, err := client.Retrieve(location, nil, &response, nil)
+		messages.ReportLogFieldsMessageToConsole("PollDeployQueue Retrieve called", logging.ExtraDebug1Level, log, location, response, err)
 		fmt.Printf("\nresponse : %v", response)
 		fmt.Printf("\nupdateDeleter : %v", updateDeleter)
 		fmt.Printf("\nerr : %v", err)
