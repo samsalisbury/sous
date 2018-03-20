@@ -559,7 +559,7 @@ func newClusterSpecificHTTPClient(c HTTPClient, dff *config.DeployFilterFlags, l
 		return nil, err
 	}
 	cluster := dff.Cluster
-	messages.ReportLogFieldsMessageToConsole("Server List retrieved", logging.ExtraDebug1Level, log, serverList, cluster)
+	messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Server List retrieved %v", serverList), logging.ExtraDebug1Level, log, serverList, cluster)
 	var serverURL string
 	for _, s := range serverList.Servers {
 		if s.ClusterName == cluster {
@@ -569,7 +569,7 @@ func newClusterSpecificHTTPClient(c HTTPClient, dff *config.DeployFilterFlags, l
 	if serverURL == "" {
 		return nil, fmt.Errorf("no server for cluster %q", cluster)
 	}
-	messages.ReportLogFieldsMessageToConsole("Using server", logging.ExtraDebug1Level, log, serverURL)
+	messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Using server %s", serverURL), logging.ExtraDebug1Level, log, serverURL)
 	cl, err := restful.NewClient(serverURL, log.Child("http-client"))
 	if err != nil {
 		return nil, err
@@ -612,7 +612,7 @@ func newServerStateManager(c LocalSousConfig, log LogSink) *ServerStateManager {
 // If it returns a sous.GitStateManager, it emits a warning log.
 func newStateManager(cl HTTPClient, c LocalSousConfig, log LogSink) *StateManager {
 	if c.Server == "" {
-		messages.ReportLogFieldsMessageToConsole("Using local state stored at", logging.WarningLevel, log, c.StateLocation)
+		messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Using local state stored at", c.StateLocation), logging.WarningLevel, log, c.StateLocation)
 		return &StateManager{StateManager: newServerStateManager(c, log).StateManager}
 	}
 	hsm := sous.NewHTTPStateManager(cl)

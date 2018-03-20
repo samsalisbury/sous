@@ -117,7 +117,7 @@ func PollDeployQueue(location string, client restful.HTTPClient, loopIteration i
 
 		if i%10 == 0 {
 			msg := fmt.Sprintf("PollDeployQueue called waiting for created response... %s elapsed", timeTrack(start))
-			messages.ReportLogFieldsMessageToConsole(msg, logging.ExtraDebug1Level, log, location, response, err)
+			messages.ReportLogFieldsMessageToConsole(msg, logging.InformationLevel, log, location, response, err)
 		}
 
 		if err != nil {
