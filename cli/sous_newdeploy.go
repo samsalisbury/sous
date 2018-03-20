@@ -109,7 +109,7 @@ func PollDeployQueue(location string, client restful.HTTPClient, loopIteration i
 	response := SingleDeployResponse{}
 	location = "http://" + location
 
-	for i := 0; i < 10; i++ {
+	for i := 0; i < loopIteration; i++ {
 		updateDeleter, err := client.Retrieve(location, nil, &response, nil)
 		fmt.Printf("\nresponse : %v", response)
 		fmt.Printf("\nupdateDeleter : %v", updateDeleter)
