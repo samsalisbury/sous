@@ -57,7 +57,7 @@ func Labels(sid sous.SourceID) map[string]string {
 	return labels
 }
 
-var stripRE = regexp.MustCompile("^([[:alpha:]]+://)?(github.com(/opentable)?)?")
+var stripRE = regexp.MustCompile("^([[:alpha:]]+://)?(github.com(/opentable(/)?)?)?")
 
 func imageRepoName(sl sous.SourceLocation, kind string) string {
 	name := sl.Repo
