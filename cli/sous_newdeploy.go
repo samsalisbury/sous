@@ -98,7 +98,7 @@ func (sd *SousNewDeploy) Execute(args []string) cmdr.Result {
 	if location := updateResponse.Location(); location != "" {
 		//return cmdr.Successf("Deployment queued at: %s", location)
 		client, _ := restful.NewClient("", sd.LogSink, nil)
-		return PollDeployQueue(location, client, sd.LogSink)
+		return PollDeployQueue(location, client, 10, sd.LogSink)
 	}
 	return cmdr.Successf("Desired version for %q in cluster %q already %q",
 		sd.TargetManifestID, cluster, sd.DeployFilterFlags.Tag)

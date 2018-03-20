@@ -5,7 +5,7 @@ import "github.com/nyarly/spies"
 type (
 	// ImageLabeller can get the image labels for a given imageName
 	ImageLabeller interface {
-		//ImageLabels finds the sous (docker) labels for a given image name
+		//ImageLabels finds the (docker) labels for a given image name
 		ImageLabels(imageName string) (labels map[string]string, err error)
 	}
 
@@ -36,12 +36,15 @@ type (
 		// The etag can be (usually will be) the empty string
 		Insert(sid SourceID, in, etag string, qs []Quality) error
 	}
-)
 
-type (
 	// An InserterSpy is a spy implementation of the Inserter interface
 	InserterSpy struct {
 		*spies.Spy
+	}
+
+	// A RegistrySpy is a spy implementation of the Registry interface
+	RegistrySpy struct {
+		spy *spies.Spy
 	}
 )
 
@@ -53,4 +56,40 @@ func NewInserterSpy() InserterSpy {
 // Insert implements Inserter on InserterSpy
 func (is InserterSpy) Insert(sid SourceID, in, etag string, qs []Quality) error {
 	return is.Called(sid, in, etag, qs).Error(0)
+}
+
+// NewRegistrySpy returns a spy Registry for testing.
+func NewRegistrySpy() (RegistrySpy, *spies.Spy) {
+	spy := spies.NewSpy()
+	return RegistrySpy{spy: spy}, spy
+}
+
+// ImageLabels implements Registry on RegistrySpy.
+func (spy RegistrySpy) ImageLabels(imageName string) (labels map[string]string, err error) {
+	res := spy.spy.Called(imageName)
+	return res.Get(0).(map[string]string), res.Error(1)
+}
+
+// GetArtifact implements Registry on RegistrySpy.
+func (spy RegistrySpy) GetArtifact(sid SourceID) (*BuildArtifact, error) {
+	res := spy.spy.Called(sid)
+	return res.Get(0).(*BuildArtifact), res.Error(1)
+}
+
+// GetSourceID implements Registry on RegistrySpy.
+func (spy RegistrySpy) GetSourceID(art *BuildArtifact) (SourceID, error) {
+	res := spy.spy.Called(art)
+	return res.Get(0).(SourceID), res.Error(1)
+}
+
+// ListSourceIDs implements Registry on RegistrySpy.
+func (spy RegistrySpy) ListSourceIDs() ([]SourceID, error) {
+	res := spy.spy.Called()
+	return res.Get(0).([]SourceID), res.Error(1)
+}
+
+// Warmup implements Registry on RegistrySpy.
+func (spy RegistrySpy) Warmup(name string) error {
+	res := spy.spy.Called(name)
+	return res.Error(0)
 }

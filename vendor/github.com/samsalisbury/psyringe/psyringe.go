@@ -66,6 +66,7 @@ type Psyringe struct {
 	scope          string
 	injectionTypes injectionTypes
 	Hooks          Hooks
+	allowAddCycle  bool
 }
 
 // New creates a new Psyringe, and adds the provided constructors and values to
@@ -386,8 +387,14 @@ func (p *Psyringe) registerInjectionType(t reflect.Type, it *injectionType) erro
 	}
 	_, file, line, _ := runtime.Caller(5)
 	it.DebugAddedLocation = fmt.Sprintf("%s:%d", file, line)
-	p.injectionTypes.Add(t, it)
-	return nil
+	if err := p.injectionTypes.Add(t, it); err != nil {
+		return err
+	}
+	if p.allowAddCycle || it.Ctor == nil {
+		return nil
+	}
+	return errors.Wrapf(p.detectCycle(seen{}, it.Ctor),
+		"dependency cycle: %s", it.Ctor.outType)
 }
 
 func (p *Psyringe) testValueOrConstructorIsRegistered(paramType reflect.Type) error {

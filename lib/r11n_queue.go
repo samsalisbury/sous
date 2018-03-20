@@ -11,16 +11,31 @@ import (
 // MaxRefsPerR11nQueue is the maximum number of rectifications to cache in memory.
 const MaxRefsPerR11nQueue = 100
 
-// R11nQueue is a queue of rectifications.
-type R11nQueue struct {
-	cap           int
-	queue         chan *QueuedR11n
-	refs, allRefs map[R11nID]*QueuedR11n
-	fifoRefs      *ring.Ring
-	handler       func(*QueuedR11n) DiffResolution
-	start         bool
-	sync.Mutex
-}
+type (
+	// R11nQueue is a queue of rectifications.
+	R11nQueue struct {
+		cap           int
+		queue         chan *QueuedR11n
+		refs, allRefs map[R11nID]*QueuedR11n
+		fifoRefs      *ring.Ring
+		handler       func(*QueuedR11n) DiffResolution
+		start         bool
+		sync.Mutex
+	}
+	// QueuedR11n is a queue item wrapping a Rectification with an ID and position.
+	QueuedR11n struct {
+		ID            R11nID
+		Pos           int
+		Rectification *Rectification
+		done          chan struct{}
+	}
+
+	// R11nID is a QueuedR11n identifier.
+	R11nID string
+
+	// R11nQueueOpt is an option for configuring an R11nQueue.
+	R11nQueueOpt func(*R11nQueue)
+)
 
 // R11nQueueCapDefault is the default capacity for a new R11nQueue.
 const R11nQueueCapDefault = 10
@@ -39,9 +54,6 @@ func NewR11nQueue(opts ...R11nQueueOpt) *R11nQueue {
 	}
 	return rq
 }
-
-// R11nQueueOpt is an option for configuring an R11nQueue.
-type R11nQueueOpt func(*R11nQueue)
 
 // R11nQueueCap sets the max capacity of an R11nQueue to the supplied cap.
 func R11nQueueCap(cap int) R11nQueueOpt {
@@ -103,17 +115,6 @@ func (rq *R11nQueue) init() *R11nQueue {
 	rq.fifoRefs = ring.New(MaxRefsPerR11nQueue)
 	return rq
 }
-
-// QueuedR11n is a queue item wrapping a Rectification with an ID and position.
-type QueuedR11n struct {
-	ID            R11nID
-	Pos           int
-	Rectification *Rectification
-	done          chan struct{}
-}
-
-// R11nID is a QueuedR11n identifier.
-type R11nID string
 
 // NewR11nID returns a new random R11nID.
 func NewR11nID() R11nID {

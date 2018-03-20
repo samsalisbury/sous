@@ -27,10 +27,11 @@ func newServerComponentLocator(ls LogSink, cfg LocalSousConfig, ins sous.Inserte
 
 // NewR11nQueueSet returns a new queue set configured to start processing r11ns
 // immediately.
-func NewR11nQueueSet(d sous.Deployer, r sous.Registry) *sous.R11nQueueSet {
+func NewR11nQueueSet(d sous.Deployer, r sous.Registry, rf *sous.ResolveFilter, sm *ServerStateManager) *sous.R11nQueueSet {
+	sr := sm.StateManager
 	return sous.NewR11nQueueSet(sous.R11nQueueStartWithHandler(
 		func(qr *sous.QueuedR11n) sous.DiffResolution {
-			qr.Rectification.Begin(d, r)
+			qr.Rectification.Begin(d, r, rf, sr)
 			return qr.Rectification.Wait()
 		}))
 }

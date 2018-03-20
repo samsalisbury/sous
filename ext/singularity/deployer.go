@@ -47,13 +47,10 @@ dChans := intendedSet.Diff(existingSet)
 type (
 	deployer struct {
 		Client        rectificationClient
-		singFac       func(string) *singularity.Client
+		singFac       func(string) singClient
 		ReqsPerServer int
 		log           logging.LogSink
 	}
-
-	// DeployerOption is an option for configuring singularity deployers.
-	DeployerOption func(*deployer)
 
 	// rectificationClient abstracts the raw interactions with Singularity.
 	rectificationClient interface {
@@ -86,12 +83,6 @@ func NewDeployer(c rectificationClient, ls logging.LogSink, options ...DeployerO
 		opt(d)
 	}
 	return d
-}
-
-// OptMaxHTTPReqsPerServer overrides the DefaultMaxHTTPConcurrencyPerServer
-// for this server.
-func OptMaxHTTPReqsPerServer(n int) DeployerOption {
-	return func(d *deployer) { d.ReqsPerServer = n }
 }
 
 // Rectify invokes actions to ensure that the real world matches pair.Post,
@@ -158,11 +149,11 @@ func (r *deployer) Rectify(pair *sous.DeployablePair) sous.DiffResolution {
 	}
 }
 
-func (r *deployer) SetSingularityFactory(fn func(string) *singularity.Client) {
+func (r *deployer) SetSingularityFactory(fn func(string) singClient) {
 	r.singFac = fn
 }
 
-func (r *deployer) buildSingClient(url string) *singularity.Client {
+func (r *deployer) buildSingClient(url string) singClient {
 	if r.singFac == nil {
 		return singularity.NewClient(url, r.log)
 	}
@@ -212,32 +203,26 @@ func (r *deployer) RectifySingleDelete(d *sous.DeployablePair) (err error) {
 
 func (r *deployer) RectifySingleModification(pair *sous.DeployablePair) (err error) {
 	different, diffs := pair.Post.Deployment.Diff(pair.Prior.Deployment)
-	if !different {
-		reportDeployerMessage("Attempting to rectify empty diff",
-			pair, diffs, nil, nil, logging.WarningLevel, r.log)
+	if different {
+		reportDeployerMessage("Rectifying modified diffs", pair, diffs, nil, nil, logging.InformationLevel, r.log)
+	} else {
+		reportDeployerMessage("Attempting to rectify empty diff", pair, diffs, nil, nil, logging.WarningLevel, r.log)
 	}
-
-	reportDeployerMessage("Rectifying modified diffs", pair, diffs, nil, nil, logging.InformationLevel, r.log)
 
 	defer rectifyRecover(pair, "RectifySingleModification", &err)
 
 	data, ok := pair.ExecutorData.(*singularityTaskData)
 	if !ok {
-		err := errors.Errorf("Modification record %#v doesn't contain Singularity compatible data: was %T\n\t%#v", pair.ID(), data, pair)
-		reportDeployerMessage("Error modification not compatible with Singularity", pair, diffs, nil, err, logging.WarningLevel, r.log)
-		return err
+		return errors.Errorf("Modification record %#v doesn't contain Singularity compatible data: was %T\n\t%#v", pair.ID(), data, pair)
 	}
 	reqID := data.requestID
 
-	//changesApplied := false
 	reportDeployerMessage("Operating on request", pair, diffs, data, nil, logging.ExtraDebug1Level, r.log)
 	if changesReq(pair) {
 		reportDeployerMessage("Updating request", pair, diffs, data, nil, logging.DebugLevel, r.log)
 		if err := r.Client.PostRequest(*pair.Post, reqID); err != nil {
-			reportDeployerMessage("Error posting request to Singularity", pair, diffs, data, err, logging.WarningLevel, r.log)
 			return err
 		}
-		//changesApplied = true
 	} else {
 		reportDeployerMessage("No change to Singularity request required", pair, diffs, data, nil, logging.DebugLevel, r.log)
 	}
@@ -245,10 +230,8 @@ func (r *deployer) RectifySingleModification(pair *sous.DeployablePair) (err err
 	if changesDep(pair) {
 		reportDeployerMessage("Deploying", pair, diffs, data, nil, logging.DebugLevel, r.log)
 		if err := r.Client.Deploy(*pair.Post, reqID); err != nil {
-			reportDeployerMessage(err.Error(), pair, diffs, data, nil, logging.WarningLevel, r.log)
 			return err
 		}
-		//changesApplied = true
 	} else {
 		reportDeployerMessage("No change to Singularity deployment required", pair, diffs, data, nil, logging.DebugLevel, r.log)
 	}
