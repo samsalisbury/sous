@@ -131,7 +131,11 @@ func checkResolution(resolution sous.DiffResolution) bool {
 	switch resolution.Desc {
 	case sous.CreateDiff:
 		response = true
+	case sous.ModifyDiff:
+		response = true
+
 	}
+
 	fmt.Printf("resolution : %+v", resolution)
 	return response
 }
