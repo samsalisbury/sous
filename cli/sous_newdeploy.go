@@ -2,7 +2,6 @@ package cli
 
 import (
 	"flag"
-	"fmt"
 	"time"
 
 	"github.com/opentable/sous/config"
@@ -94,7 +93,7 @@ func (sd *SousNewDeploy) Execute(args []string) cmdr.Result {
 	if location := updateResponse.Location(); location != "" {
 		//return cmdr.Successf("Deployment queued at: %s", location)
 		client, _ := restful.NewClient("", sd.LogSink, nil)
-		return PollDeployQueue(location, client, 10, sd.LogSink)
+		return PollDeployQueue(location, client, 600, sd.LogSink)
 	}
 	return cmdr.Successf("Desired version for %q in cluster %q already %q",
 		sd.TargetManifestID, cluster, sd.DeployFilterFlags.Tag)
@@ -107,22 +106,18 @@ func PollDeployQueue(location string, client restful.HTTPClient, loopIteration i
 	location = "http://" + location
 
 	for i := 0; i < loopIteration; i++ {
-		updateDeleter, err := client.Retrieve(location, nil, &response, nil)
+		_, err := client.Retrieve(location, nil, &response, nil)
 		messages.ReportLogFieldsMessageToConsole("PollDeployQueue Retrieve called", logging.ExtraDebug1Level, log, location, response, err)
-		fmt.Printf("\nresponse : %v", response)
-		fmt.Printf("\nupdateDeleter : %v", updateDeleter)
-		fmt.Printf("\nerr : %v", err)
 		if err != nil {
 			return cmdr.InternalErrorf("Failed to deploy: %s", err)
 		}
 		queuePosition := response.QueuePosition
-		if queuePosition < 0 {
+		if queuePosition < 0 && response.Resolution != nil {
 			if checkResolution(*response.Resolution) {
 				return cmdr.Successf("worked")
 			}
-		} else {
-			time.Sleep(1 * time.Second)
 		}
+		time.Sleep(1 * time.Second)
 	}
 	return cmdr.InternalErrorf("failed to deploy %s", location)
 }
@@ -133,6 +128,5 @@ func checkResolution(resolution sous.DiffResolution) bool {
 	case sous.CreateDiff:
 		response = true
 	}
-	fmt.Printf("resolution : %+v", resolution)
 	return response
 }
