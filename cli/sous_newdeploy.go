@@ -115,7 +115,7 @@ func PollDeployQueue(location string, client restful.HTTPClient, loopIteration i
 		fmt.Printf("\nupdateDeleter : %v", updateDeleter)
 		fmt.Printf("\nerr : %v", err)
 		if err != nil {
-			cmdr.EnsureErrorResult(err)
+			return cmdr.EnsureErrorResult(err)
 		}
 		queuePosition := response.QueuePosition
 		if queuePosition < 0 {
