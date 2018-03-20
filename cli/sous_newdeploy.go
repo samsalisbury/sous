@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/opentable/sous/config"
+	"github.com/opentable/sous/dto"
 	"github.com/opentable/sous/graph"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/server"
@@ -63,11 +64,12 @@ func (sd *SousNewDeploy) RegisterOn(psy Addable) {
 	psy.Add(&sd.DeployFilterFlags)
 }
 
+/*
 type SingleDeployResponse struct {
 	QueuePosition int
 	Resolution    sous.DiffResolution
 }
-
+*/
 // Execute creates the new deployment.
 func (sd *SousNewDeploy) Execute(args []string) cmdr.Result {
 
@@ -106,7 +108,7 @@ func (sd *SousNewDeploy) Execute(args []string) cmdr.Result {
 }
 
 func PollDeployQueue(location string, client restful.HTTPClient, loopIteration int, log logging.LogSink) cmdr.Result {
-	response := SingleDeployResponse{}
+	response := dto.R11nResponse{}
 	location = "http://" + location
 
 	for i := 0; i < loopIteration; i++ {
@@ -119,7 +121,7 @@ func PollDeployQueue(location string, client restful.HTTPClient, loopIteration i
 		}
 		queuePosition := response.QueuePosition
 		if queuePosition < 0 {
-			if checkResolution(response.Resolution) {
+			if checkResolution(*response.Resolution) {
 				return cmdr.Successf("worked")
 			}
 		} else {
