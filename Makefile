@@ -103,6 +103,16 @@ build-debug-darwin:
 	xgo $(CONCAT_XGO_ARGS) --targets=darwin/amd64 -out darwin ./
 	mv ./artifacts/bin/darwin* ./artifacts/bin/sous-darwin-$(SOUS_VERSION)
 
+build-debug-deploy-linux: build-debug-linux
+	rm ~/go/bin/sous
+	cp ./artifacts/bin/sous-linux-$(SOUS_VERSION) ~/go/bin/sous
+	sous version
+
+build-debug-deploy-darwin: build-debug-darwin
+	rm ~/go/bin/sous
+	cp ./artifacts/bin/sous-darwin-$(SOUS_VERSION)
+	sous version
+
 clean:
 	rm -rf $(COVER_DIR)
 	git ls-files -z -o --exclude=.cleanprotect --exclude-per-directory=.cleanprotect | xargs -0 rm -rf
