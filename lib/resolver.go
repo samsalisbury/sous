@@ -54,6 +54,11 @@ func (r *Resolver) queueDiffs(dcs *DeployableChans, results chan DiffResolution)
 			messages.ReportLogFieldsMessageWithIDs("Not adding equal diff", logging.ExtraDebug1Level, r.ls, p)
 			continue
 		}
+		// until we have states, not going to bother with no ops
+		if p.Post.NumInstances == 0 || p.Post.DeploySpec().Version.String() == "0.0.0" {
+			messages.ReportLogFieldsMessageWithIDs("End deploy state is a no-op, not adding", logging.ExtraDebug1Level, r.ls, p)
+			continue
+		}
 		sr := NewRectification(*p)
 		messages.ReportLogFieldsMessageWithIDs("Adding to queue-set", logging.ExtraDebug1Level, r.ls, p, sr)
 		queued, ok := r.QueueSet.PushIfEmpty(sr)
