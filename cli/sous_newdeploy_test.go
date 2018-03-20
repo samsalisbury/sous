@@ -131,7 +131,7 @@ func Test_PollDeployQueueBrokenURL(t *testing.T) {
 }
 
 func Test_PollDeployQueueLocalLocation(t *testing.T) {
-	result := PollDeployQueue(location, client, log)
+	result := PollDeployQueue(location, client, 10, log)
 	fmt.Printf("result : %v \n", result)
 	assert.Equal(t, 0, result.ExitCode(), "should return success")
 }
