@@ -124,6 +124,7 @@ func TestPollDeployQueue_fail(t *testing.T) {
 	t.Logf("poll result %v", result)
 	assert.Equal(t, 70, result.ExitCode(), "This should fail")
 }
+
 func Test_PollDeployQueueBrokenURL(t *testing.T) {
 	brokenLocation := "http://never-going2.wrk/test"
 

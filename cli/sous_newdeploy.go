@@ -64,12 +64,6 @@ func (sd *SousNewDeploy) RegisterOn(psy Addable) {
 	psy.Add(&sd.DeployFilterFlags)
 }
 
-/*
-type SingleDeployResponse struct {
-	QueuePosition int
-	Resolution    sous.DiffResolution
-}
-*/
 // Execute creates the new deployment.
 func (sd *SousNewDeploy) Execute(args []string) cmdr.Result {
 
@@ -107,7 +101,7 @@ func (sd *SousNewDeploy) Execute(args []string) cmdr.Result {
 
 }
 
-//PollDeployQueue used to poll server on status of Single Deployment
+// PollDeployQueue is used to poll server on status of Single Deployment.
 func PollDeployQueue(location string, client restful.HTTPClient, loopIteration int, log logging.LogSink) cmdr.Result {
 	response := dto.R11nResponse{}
 	location = "http://" + location
@@ -118,7 +112,7 @@ func PollDeployQueue(location string, client restful.HTTPClient, loopIteration i
 		fmt.Printf("\nupdateDeleter : %v", updateDeleter)
 		fmt.Printf("\nerr : %v", err)
 		if err != nil {
-			return cmdr.EnsureErrorResult(err)
+			return cmdr.InternalErrorf("Failed to deploy: %s", err)
 		}
 		queuePosition := response.QueuePosition
 		if queuePosition < 0 {
