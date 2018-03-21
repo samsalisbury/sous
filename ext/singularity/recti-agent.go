@@ -89,7 +89,7 @@ func (ra *RectiAgent) Deploy(d sous.Deployable, reqID string) error {
 func buildDeployRequest(d sous.Deployable, reqID string, metadata map[string]string) (*dtos.SingularityDeployRequest, error) {
 	var depReq swaggering.Fielder
 	var depID string
-	if d.SchedulerDID == "" {
+	if d.SchedulerDID != "" {
 		depID = d.SchedulerDID
 	} else {
 		depID = computeDeployID(&d)
