@@ -60,12 +60,25 @@ func (r *Rectification) Begin(d Deployer, reg Registry, rf *ResolveFilter, state
 
 			// TODO constants / configs
 			tick := time.NewTicker(250 * time.Millisecond)
+			defer tick.Stop()
+
 			end, ec := context.WithTimeout(r.ctx, 20*time.Minute)
 			defer ec()
 
-			defer tick.Stop()
 			for {
-				r.pollOnce(d, reg, clusters)
+				s, err := r.pollOnce(d, reg, clusters)
+				if err != nil {
+					r.Lock()
+					r.Resolution.Error = &ErrorWrapper{error: err}
+					r.Unlock()
+					return
+				}
+				if s.Final() {
+					r.Lock()
+					r.Resolution.DeployState = s
+					r.Unlock()
+					return
+				}
 				select {
 				case <-tick.C:
 				case <-end.Done():
@@ -82,22 +95,13 @@ func (r *Rectification) Begin(d Deployer, reg Registry, rf *ResolveFilter, state
 	})
 }
 
-func (r *Rectification) pollOnce(d Deployer, reg Registry, clusters Clusters) {
+func (r *Rectification) pollOnce(d Deployer, reg Registry, clusters Clusters) (*DeployState, error) {
 	// XXX thread the context from Begin into Deployer.Status
 	depState, err := d.Status(reg, clusters, &r.Pair)
 	if err != nil {
-		r.Lock()
-		r.Resolution.Error = WrapResolveError(err)
-		r.Unlock()
-		r.cancel()
-		return
+		return nil, err
 	}
-	r.Lock()
-	r.Resolution.DeployState = depState
-	r.Unlock()
-	if depState.Final() {
-		r.cancel()
-	}
+	return depState, nil
 }
 
 // Wait must be called after Begin. It waits for and returns the result.
