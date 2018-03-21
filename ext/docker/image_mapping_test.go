@@ -357,7 +357,7 @@ func TestHarvesting(t *testing.T) {
 	dc := docker_registry.NewDummyClient()
 
 	host := "docker.repo.io"
-	base := "ot/wackadoo"
+	base := "wackadoo/nested/there"
 	nc, err := NewNameCache(host, dc, logging.SilentLogSet(), inMemoryDB("harvesting"))
 	assert.NoError(err)
 
@@ -367,7 +367,7 @@ func TestHarvesting(t *testing.T) {
 	v2 := "2.3.4"
 	sisterSV := sous.MustNewSourceID("https://github.com/opentable/wackadoo", "nested/there", v2)
 
-	tag := "version-1.2.3"
+	tag := "1.2.3"
 	digest := "sha256:012345678901234567890123456789AB012345678901234567890123456789AB"
 	cn := base + "@" + digest
 	in := base + ":" + tag
@@ -382,12 +382,9 @@ func TestHarvesting(t *testing.T) {
 
 	// a la a SetCollector getting the SV
 	_, err = nc.GetSourceID(NewBuildArtifact(in, nil))
-	if err != nil {
-		fmt.Printf("%+v", err)
-	}
 	assert.Nil(err)
 
-	tag = "version-2.3.4"
+	tag = "2.3.4"
 	dc.FeedTags([]string{tag})
 	digest = "sha256:abcdefabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeffffffff"
 	cn = base + "@" + digest
@@ -456,6 +453,8 @@ func TestMissingName(t *testing.T) {
 
 	v := "4.5.6"
 	sv := sous.MustNewSourceID("https://github.com/opentable/brand-new-idea", "nested/there", v)
+	dc.AddMetadata(`.*opentable/brand-new-idea.*`, docker_registry.Metadata{})
+	dc.MatchMethod("GetImageMetadata", spies.AnyArgs, docker_registry.Metadata{}, errors.Errorf("no such MD"))
 
 	name, _, err := nc.getImageName(sv)
 	assert.Equal("", name)

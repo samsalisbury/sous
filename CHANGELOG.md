@@ -11,6 +11,7 @@ with respect to its command line interface and HTTP interface.
 
 ### Added
 * Server: Single deployment rectification now waits for a reports a DeployState.
+* Server: Single deployment name cache harvests - hopefully will further speed deployments.
 
 ### Fixed
 * Server: /deploy-queue-item now returns correct queue position and Resolution field.
