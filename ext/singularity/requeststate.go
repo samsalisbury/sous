@@ -1,7 +1,10 @@
 package singularity
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
+	"strings"
 
 	sous "github.com/opentable/sous/lib"
 	"github.com/pkg/errors"
@@ -25,6 +28,8 @@ func (r *deployer) Status(reg sous.Registry, clusters sous.Clusters, pair *sous.
 
 	client := r.buildSingClient(url)
 
+	log.Println("Watching pending deployments for deploy ID:", pair.Post.SchedulerDID)
+
 WAIT_FOR_NOT_PENDING:
 
 	pending, err := client.GetPendingDeploys()
@@ -34,11 +39,22 @@ WAIT_FOR_NOT_PENDING:
 	if err != nil {
 		return nil, malformedResponse{"Getting pending deploys:" + err.Error()}
 	}
+	pds := make([]string, len(pending))
+	for i, p := range pending {
+		pds[i] = p.DeployMarker.DeployId
+	}
+	log.Printf("There are %d pending deploys: %s", len(pending), strings.Join(pds, ", "))
 	for _, p := range pending {
 		if p.DeployMarker.DeployId == pair.Post.SchedulerDID {
 			goto WAIT_FOR_NOT_PENDING
 		}
 	}
+
+	j, err := json.Marshal(pending)
+	if err != nil {
+		log.Printf("ERROR: Last response from singularity pending deploys: %s", err)
+	}
+	log.Printf("Last response from singularity pending deploys: %s", string(j))
 
 	//SKIP_PENDING_CHECK:
 
