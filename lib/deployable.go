@@ -6,4 +6,5 @@ type Deployable struct {
 	Status DeployStatus
 	*Deployment
 	*BuildArtifact
+	SchedulerDID string
 }

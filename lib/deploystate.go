@@ -12,6 +12,7 @@ type DeployState struct {
 	Status          DeployStatus
 	ExecutorMessage string
 	ExecutorData    interface{}
+	SchedulerURL    string
 }
 
 // DeployStatus represents the status of a deployment in an external cluster.

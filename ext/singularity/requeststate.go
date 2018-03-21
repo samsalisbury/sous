@@ -1,6 +1,8 @@
 package singularity
 
 import (
+	"fmt"
+
 	sous "github.com/opentable/sous/lib"
 	"github.com/pkg/errors"
 )
@@ -23,6 +25,23 @@ func (r *deployer) Status(reg sous.Registry, clusters sous.Clusters, pair *sous.
 
 	client := r.buildSingClient(url)
 
+WAIT_FOR_NOT_PENDING:
+
+	pending, err := client.GetPendingDeploys()
+	if pair.Post.SchedulerDID == "" {
+		goto SKIP_PENDING_CHECK
+	}
+	if err != nil {
+		return nil, malformedResponse{"Getting pending deploys:" + err.Error()}
+	}
+	for _, p := range pending {
+		if p.DeployMarker.DeployId == pair.Post.SchedulerDID {
+			goto WAIT_FOR_NOT_PENDING
+		}
+	}
+
+SKIP_PENDING_CHECK:
+
 	reqParent, err := client.GetRequest(reqID, false) //don't use the web cache
 	if err != nil {
 		return nil, err
@@ -35,6 +54,8 @@ func (r *deployer) Status(reg sous.Registry, clusters sous.Clusters, pair *sous.
 	}
 
 	tgt, err := BuildDeployment(reg, clusters, singReq, r.log)
+
+	tgt.SchedulerURL = fmt.Sprintf("http://%s/request/%s", url, reqID)
 
 	return &tgt, errors.Wrapf(err, "getting request state")
 }

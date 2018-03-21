@@ -73,7 +73,7 @@ func (r *Rectification) Begin(d Deployer, reg Registry, rf *ResolveFilter, state
 					r.Unlock()
 					return
 				}
-				if s.SourceID.Version == r.Pair.Post.SourceID.Version && s.Final() {
+				if s.Final() && s.SourceID.Equal(r.Pair.Post.SourceID) {
 					r.Lock()
 					r.Resolution.DeployState = s
 					r.Unlock()

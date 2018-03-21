@@ -92,7 +92,7 @@ func (sd *SousNewDeploy) Execute(args []string) cmdr.Result {
 	}
 
 	if location := updateResponse.Location(); location != "" {
-		//return cmdr.Successf("Deployment queued at: %s", location)
+		fmt.Printf("Deployment queued: %s\n", location)
 		client, _ := restful.NewClient("", sd.LogSink, nil)
 		return PollDeployQueue(location, client, 600, sd.LogSink)
 	}
