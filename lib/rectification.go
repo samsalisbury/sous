@@ -35,8 +35,6 @@ func NewRectification(dp DeployablePair) *Rectification {
 // once.
 func (r *Rectification) Begin(d Deployer, reg Registry, rf *ResolveFilter, stateReader StateReader) {
 	r.once.Do(func() {
-		// For it to be sensible to separate Begin and Wait,
-		// this needs to happen async
 		go func() {
 			defer r.cancel()
 			if r.Pair.Post.BuildArtifact == nil {
