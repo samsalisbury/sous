@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/opentable/sous/dto"
@@ -31,28 +30,6 @@ func (m *MyMockedUpdateDeleter) Location() string {
 	return args.String(0)
 }
 
-/*
-* 	Updater interface {
-		Update(body Comparable, headers map[string]string) (UpdateDeleter, error)
-	}
-
-	// A Deleter captures the state of a retrieved resource so that it can be later deleted.
-	Deleter interface {
-		Delete(headers map[string]string) error
-	}
-
-	// An UpdateDeleter allows for a given resource to be updated or deleted.
-	UpdateDeleter interface {
-		Updater
-		Deleter
-		Location() string
-	}
-*/
-
-var log, _ = logging.NewLogSinkSpy()
-var client, _ = restful.NewClient("", log, nil)
-var location = "127.0.0.1:8888/deploy-queue-item?action=bb836990-5ab2-4eab-9f52-ad3fd555539b&cluster=dev-ci-sf&flavor=&offset=&repo=github.com%2Fopentable%2Fsous-demo"
-
 type MyMockedHTTPClient struct {
 	mock.Mock
 	body dto.R11nResponse
@@ -62,6 +39,8 @@ func (m *MyMockedHTTPClient) SetRZBody(body dto.R11nResponse) {
 	m.body = body
 }
 
+var log, _ = logging.NewLogSinkSpy()
+
 func (m *MyMockedHTTPClient) Retrieve(urlPath string, qParms map[string]string, rzBody interface{}, headers map[string]string) (restful.UpdateDeleter, error) {
 	args := m.Called(urlPath, qParms, rzBody, headers)
 	//couldn't just assign rzBody to m.body, would never take value, so had to explicitly set
@@ -70,9 +49,6 @@ func (m *MyMockedHTTPClient) Retrieve(urlPath string, qParms map[string]string, 
 		iSingleDeployResponse.Resolution = &sous.DiffResolution{}
 		iSingleDeployResponse.Resolution.Desc = m.body.Resolution.Desc
 	}
-	//rzBody = m.body
-	//rzBody.(SingleDeployResponse).QueuePosition = -1
-	//rzBody.(SingleDeployResponse).DiffResolution.Desc = m.body.DiffResolution.Desc
 	return args.Get(0).(restful.UpdateDeleter), args.Error(1)
 }
 
@@ -81,54 +57,59 @@ func (m *MyMockedHTTPClient) Create(urlPath string, qParms map[string]string, rq
 	return args.Get(0).(restful.UpdateDeleter), args.Error(1)
 }
 
-func TestPollDeployQueue_success(t *testing.T) {
+func TestPollDeployQueue_success_created(t *testing.T) {
+	httpClient := createMockHTTPClient()
+	httpClient.SetRZBody(createDeployResult(-1, "created"))
 
-	httpClient := new(MyMockedHTTPClient)
-
-	deployResult := dto.R11nResponse{}
-	deployResult.QueuePosition = -1
-	diffResolution := &sous.DiffResolution{}
-	diffResolution.Desc = sous.ResolutionType("created")
-	deployResult.Resolution = diffResolution
-
-	httpClient.SetRZBody(deployResult)
-
-	updateDeleter := new(MyMockedUpdateDeleter)
-
-	httpClient.On("Retrieve", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(updateDeleter, nil)
-
-	location = "http://" + location
-
-	result := PollDeployQueue(location, httpClient, 1, log)
-	assert.Equal(t, 0, result.ExitCode(), "This should succeed")
-
+	result := PollDeployQueue("127.0.0.1:1234/deploy-queue-item", httpClient, 1, log)
+	assert.Equal(t, 0, result.ExitCode(), "created should return 0 exit code")
 }
 
-func Test_DeployQueueItem(t *testing.T) {
-	response := dto.R11nResponse{}
-	location = "http://" + location
+func TestPollDeployQueue_success_updated(t *testing.T) {
+	httpClient := createMockHTTPClient()
+	httpClient.SetRZBody(createDeployResult(-1, "updated"))
 
-	updater, err := client.Retrieve(location, nil, &response, nil)
-	fmt.Println("err : ", err)
-	fmt.Println("updater : ", updater)
-	fmt.Println("response : ", response)
+	result := PollDeployQueue("127.0.0.1:1234/deploy-queue-item", httpClient, 1, log)
+	assert.Equal(t, 0, result.ExitCode(), "updated should return 0 exit code")
+}
 
+func createMockHTTPClient() *MyMockedHTTPClient {
+	httpClient := new(MyMockedHTTPClient)
+	updateDeleter := new(MyMockedUpdateDeleter)
+	httpClient.On("Retrieve", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(updateDeleter, nil)
+
+	return httpClient
+}
+
+func createDeployResult(queuePosition int, resolutionType string) dto.R11nResponse {
+	deployResult := dto.R11nResponse{}
+	deployResult.QueuePosition = queuePosition
+	diffResolution := &sous.DiffResolution{}
+	diffResolution.Desc = sous.ResolutionType(resolutionType)
+	deployResult.Resolution = diffResolution
+	return deployResult
 }
 
 func TestPollDeployQueue_fail(t *testing.T) {
-	location = "http://" + location
+	location := "127.0.0.1:8888/deploy-queue-item?action=bb836990-5ab2-4eab-9f52-ad3fd555539b&cluster=dev-ci-sf&flavor=&offset=&repo=github.com%2Fopentable%2Fsous-demo"
 
-	client, _ := restful.NewClient(location, log, nil)
-	result := PollDeployQueue(location, client, 1, log)
+	client, _ := restful.NewClient("", log, nil)
+	result := PollDeployQueue(location, client, 10, log)
 
 	t.Logf("poll result %v", result)
 	assert.Equal(t, 70, result.ExitCode(), "This should fail")
 }
 
-func Test_PollDeployQueueBrokenURL(t *testing.T) {
-	brokenLocation := "http://never-going2.wrk/test"
+func TestCheckResolution(t *testing.T) {
+	resolution := sous.DiffResolution{}
+	resolution.Desc = sous.CreateDiff
+	assert.True(t, checkResolution(resolution), "resolution should be true")
 
-	result := PollDeployQueue(brokenLocation, client, 10, log)
-	fmt.Printf("result : %v", result)
-	assert.Equal(t, 70, result.ExitCode(), "should map to internal error")
+	resolution.Desc = sous.DeleteDiff
+	assert.True(t, !checkResolution(resolution), "resolution should be false")
+
+	resolution.Desc = sous.ModifyDiff
+	assert.True(t, checkResolution(resolution), "resolution should be true")
+
+	assert.True(t, !checkResolution(sous.DiffResolution{}), "empty resolution should be false")
 }
