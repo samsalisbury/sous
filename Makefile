@@ -32,6 +32,8 @@ DESC := $(shell git describe)
 DATE := $(shell date +%Y-%m-%dT%H-%M-%S)
 DEV_VERSION := "$(DESC)-devbuild-$(DATE)"
 
+SOUS_BIN_PATH := $(shell which sous 2> /dev/null || echo $$GOPATH/bin/sous)
+
 # Sous releases are tagged with format v0.0.0. semv library
 # does not understand the v prefix, so this lops it off.
 SOUS_VERSION ?= $(shell echo $(GIT_TAG) | sed 's/^v//')
@@ -103,14 +105,15 @@ build-debug-darwin:
 	xgo $(CONCAT_XGO_ARGS) --targets=darwin/amd64 -out darwin ./
 	mv ./artifacts/bin/darwin* ./artifacts/bin/sous-darwin-$(SOUS_VERSION)
 
-build-debug-deploy-linux: build-debug-linux
-	rm ~/go/bin/sous
-	cp ./artifacts/bin/sous-linux-$(SOUS_VERSION) ~/go/bin/sous
+install-debug-linux: build-debug-linux
+	rm $(SOUS_BIN_PATH) || true
+	cp ./artifacts/bin/sous-linux-$(SOUS_VERSION) $(SOUS_BIN_PATH)
 	sous version
 
-build-debug-deploy-darwin: build-debug-darwin
-	rm ~/go/bin/sous
-	cp ./artifacts/bin/sous-darwin-$(SOUS_VERSION)
+install-debug-darwin: build-debug-darwin
+	brew uninstall opentable/public/sous || true
+	rm $(SOUS_BIN_PATH) || true
+	cp ./artifacts/bin/sous-darwin-$(SOUS_VERSION) $(SOUS_BIN_PATH)
 	sous version
 
 clean:
@@ -346,6 +349,7 @@ postgres-clean: postgres-stop
 	install-fpm install-jfrog install-ggen install-build-tools legendary release \
 	semvertagchk test test-gofmt test-integration setup-containers test-unit \
 	reject-wip wip staticcheck postgres-start postgres-stop postgres-connect \
-	postgres-clean postgres-create-testdb build-debug homebrew install-gotags
+	postgres-clean postgres-create-testdb build-debug homebrew install-gotags \
+	install-debug-linux install-debug-darwin
 
 #liquibase --url jdbc:postgresql://127.0.0.1:6543/sous --changeLogFile=database/changelog.xml update
