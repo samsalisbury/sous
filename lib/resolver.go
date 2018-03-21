@@ -48,14 +48,18 @@ func (r *Resolver) queueDiffs(dcs *DeployableChans, results chan DiffResolution)
 			logging.ReportError(r.ls, err)
 			continue
 		}
-		// SameKind == "no diffs"
+		// SameKind == "no diffs" meaning a no-op; do not add to queue.
 		if p.Kind() == SameKind {
-			messages.ReportLogFieldsMessageWithIDs("Not adding equal diff", logging.ExtraDebug1Level, r.ls, p)
+			messages.ReportLogFieldsMessageWithIDs("Not adding equal diff",
+				logging.ExtraDebug1Level, r.ls, p)
 			continue
 		}
-		// until we have states, not going to bother with no ops
-		if p.Post.NumInstances == 0 || p.Post.DeploySpec().Version.String() == "0.0.0" {
-			messages.ReportLogFieldsMessageWithIDs("End deploy state is a no-op, not adding", logging.ExtraDebug1Level, r.ls, p)
+		// Zero instances or version 0.0.0 on brand new deployments is a no-op,
+		// so do not add to queue.
+		if p.Kind() == AddedKind && (p.Post.NumInstances == 0 ||
+			p.Post.DeploySpec().Version.String() == "0.0.0") {
+			messages.ReportLogFieldsMessageWithIDs("Not adding uninitialized new diff",
+				logging.ExtraDebug1Level, r.ls, p)
 			continue
 		}
 		sr := NewRectification(*p)
