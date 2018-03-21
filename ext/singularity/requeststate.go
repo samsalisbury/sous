@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	sous "github.com/opentable/sous/lib"
 	"github.com/pkg/errors"
@@ -27,15 +28,14 @@ func (r *deployer) Status(reg sous.Registry, clusters sous.Clusters, pair *sous.
 	}
 
 	client := r.buildSingClient(url)
-
 	log.Println("Watching pending deployments for deploy ID:", pair.Post.SchedulerDID)
+
+	counter := 0
 
 WAIT_FOR_NOT_PENDING:
 
 	pending, err := client.GetPendingDeploys()
-	//if pair.Post.SchedulerDID == "" {
-	//	goto SKIP_PENDING_CHECK
-	//}
+
 	if err != nil {
 		return nil, malformedResponse{"Getting pending deploys:" + err.Error()}
 	}
@@ -43,20 +43,33 @@ WAIT_FOR_NOT_PENDING:
 	for i, p := range pending {
 		pds[i] = p.DeployMarker.DeployId
 	}
-	log.Printf("There are %d pending deploys: %s", len(pending), strings.Join(pds, ", "))
-	for _, p := range pending {
-		if p.DeployMarker.DeployId == pair.Post.SchedulerDID {
-			goto WAIT_FOR_NOT_PENDING
-		}
+	log.Println("Watching pending deployments for deploy ID:", pair.Post.SchedulerDID)
+
+	log.Printf("Counter: %d - There are %d pending deploys: %s", counter, len(pending), strings.Join(pds, ", "))
+
+	//HACK
+	//poor man's wait, which seems to work since always, the item is in the queue, just the guid is off
+	//we might wait a little extra since others might be in queue, but counter will prevent run away
+	if len(pending) > 0 && counter < 600 {
+		time.Sleep(2 * time.Second)
+		counter = counter + 1
+		goto WAIT_FOR_NOT_PENDING
 	}
 
+	/*
+		for _, p := range pending {
+			if p.DeployMarker.DeployId == pair.Post.SchedulerDID && counter < 600 {
+				counter = counter + 1
+				time.Sleep(2 * time.Second) //this is what OTPL does
+				goto WAIT_FOR_NOT_PENDING
+			}
+		}
+	*/
 	j, err := json.Marshal(pending)
 	if err != nil {
 		log.Printf("ERROR: Last response from singularity pending deploys: %s", err)
 	}
 	log.Printf("Last response from singularity pending deploys: %s", string(j))
-
-	//SKIP_PENDING_CHECK:
 
 	reqParent, err := client.GetRequest(reqID, false) //don't use the web cache
 	if err != nil {
