@@ -115,6 +115,24 @@ func (re *ResolveErrors) Error() string {
 	return strings.Join(s, "\n  ")
 }
 
+// AnyTransientResolveErrors returns true for transient resolve errors
+// (see code for details).
+// The intention is to filter Resolver.Begin(...).Wait() results for loops,
+// so that transient errors can be retried.
+func AnyTransientResolveErrors(err error) bool {
+	switch te := errors.Cause(err).(type) {
+	default:
+		return false
+	case *ResolveErrors:
+		for _, e := range te.Causes {
+			if IsTransientResolveError(e) {
+				return true
+			}
+		}
+		return false
+	}
+}
+
 // IsTransientResolveError returns true for resolve errors which might resolve on
 // their own. All other errors, it returns false
 func IsTransientResolveError(err error) bool {
@@ -125,6 +143,14 @@ func IsTransientResolveError(err error) bool {
 	case *ErrorWrapper:
 		// ErrorWrappers carry string data about an error across an HTTP
 		// transaction.  We basically need to check it's Type field.
+
+		// First, if it has a non-nil error, it hasn't been serialized yet.
+		// Use the live error.
+		if terr.error != nil {
+			return IsTransientResolveError(terr.error)
+		}
+
+		// If not, then we need to rely on the strings.
 		logging.Log.Vomit.Printf("Checking err string type: %s", terr.Type)
 		switch terr.Type {
 		default:

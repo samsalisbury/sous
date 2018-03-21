@@ -11,11 +11,14 @@ with respect to its command line interface and HTTP interface.
 
 ### Added
 * Server: Single deployment rectification now waits for a reports a DeployState.
+* Server: Single deployment name cache harvests - hopefully will further speed deployments.
 
 ### Fixed
 * Server: /deploy-queue-item now returns correct queue position and Resolution field.
 * Server: /single-deployment validation now correctly validates only after taking
   into consideration default values.
+* Server: integration tests disregard failed deployments as blockers in certain cases
+
 
 ## [0.5.76](//github.com/opentable/sous/compare/0.5.72...0.5.76)
 
