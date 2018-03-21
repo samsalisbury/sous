@@ -2,10 +2,12 @@ package cli
 
 import (
 	"flag"
+	"os"
 
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/util/cmdr"
+	"github.com/opentable/sous/util/restful"
 )
 
 // SousManifestGet defines the `sous manifest get` command.
@@ -28,7 +30,7 @@ func (smg *SousManifestGet) AddFlags(fs *flag.FlagSet) {
 
 // Execute implements Executor on SousManifestGet.
 func (smg *SousManifestGet) Execute(args []string) cmdr.Result {
-	mg, err := smg.SousGraph.GetManifestGet(smg.DeployFilterFlags)
+	mg, err := smg.SousGraph.GetManifestGet(smg.DeployFilterFlags, os.Stdout, func(restful.Updater) {})
 	if err != nil {
 		return EnsureErrorResult(err)
 	}

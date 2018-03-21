@@ -7,6 +7,7 @@ import (
 	"github.com/opentable/sous/cli/actions"
 	"github.com/opentable/sous/config"
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/restful"
 	"github.com/samsalisbury/semv"
 )
 
@@ -19,7 +20,7 @@ func (di *SousGraph) guardedAdd(guardName string, value interface{}) {
 }
 
 // GetManifestGet injects a ManifestGet instances.
-func (di *SousGraph) GetManifestGet(dff config.DeployFilterFlags) (actions.Action, error) {
+func (di *SousGraph) GetManifestGet(dff config.DeployFilterFlags, out io.Writer, upCap func(restful.Updater)) (actions.Action, error) {
 	di.guardedAdd("DeployFilterFlags", &dff)
 	di.guardedAdd("Dryrun", DryrunNeither)
 
@@ -29,7 +30,6 @@ func (di *SousGraph) GetManifestGet(dff config.DeployFilterFlags) (actions.Actio
 		Tmid TargetManifestID
 		HC   HTTPClient
 		L    LogSink
-		OW   OutWriter
 	}{}
 	if err := di.Inject(&scoop); err != nil {
 		return nil, err
@@ -40,19 +40,19 @@ func (di *SousGraph) GetManifestGet(dff config.DeployFilterFlags) (actions.Actio
 		TargetManifestID:  sous.ManifestID(scoop.Tmid),
 		HTTPClient:        scoop.HC.HTTPClient,
 		LogSink:           scoop.L.LogSink,
-		OutWriter:         io.Writer(scoop.OW),
+		OutWriter:         out,
+		UpdaterCapture:    upCap,
 	}, nil
 }
 
 // GetManifestSet injects a ManifestSet instance.
-func (di *SousGraph) GetManifestSet(dff config.DeployFilterFlags) (actions.Action, error) {
+func (di *SousGraph) GetManifestSet(dff config.DeployFilterFlags, up restful.Updater, in io.Reader) (actions.Action, error) {
 	di.guardedAdd("DeployFilterFlags", &dff)
 	di.guardedAdd("Dryrun", DryrunNeither)
 	scoop := struct {
 		Dff  config.DeployFilterFlags
 		Tmid TargetManifestID
 		HC   HTTPClient
-		IR   InReader
 		RF   RefinedResolveFilter
 		LS   LogSink
 		U    sous.User
@@ -64,10 +64,11 @@ func (di *SousGraph) GetManifestSet(dff config.DeployFilterFlags) (actions.Actio
 		DeployFilterFlags: scoop.Dff,
 		User:              scoop.U,
 		ManifestID:        sous.ManifestID(scoop.Tmid),
-		HTTPClient:        scoop.HC,
-		InReader:          scoop.IR,
+		HTTPClient:        scoop.HC.HTTPClient,
+		InReader:          in,
 		ResolveFilter:     sous.ResolveFilter(scoop.RF),
-		LogSink:           scoop.LS,
+		LogSink:           scoop.LS.LogSink,
+		Updater:           up,
 	}, nil
 }
 

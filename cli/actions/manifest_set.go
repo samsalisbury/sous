@@ -9,8 +9,7 @@ import (
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/logging/messages"
 	"github.com/opentable/sous/util/restful"
-	"github.com/pkg/errors"
-	yaml "gopkg.in/yaml.v2"
+	"github.com/opentable/sous/util/yaml"
 )
 
 // ManifestSet is an Action for setting a manifest
@@ -21,18 +20,12 @@ type ManifestSet struct {
 	InReader      io.Reader
 	ResolveFilter sous.ResolveFilter
 	logging.LogSink
-	User sous.User
+	User    sous.User
+	Updater restful.Updater
 }
 
 // Do implements the Action interface on ManifestSet
 func (ms *ManifestSet) Do() error {
-	mani := sous.Manifest{}
-	up, err := ms.HTTPClient.Retrieve("/manifest", ms.ManifestID.QueryMap(), &mani, nil)
-
-	if err != nil {
-		return errors.Errorf("No manifest matched by %v yet. See `sous init` (%v)", ms.ResolveFilter, err)
-	}
-
 	yml := sous.Manifest{}
 	bytes, err := ioutil.ReadAll(ms.InReader)
 	if err != nil {
@@ -45,7 +38,7 @@ func (ms *ManifestSet) Do() error {
 
 	messages.ReportLogFieldsMessage("Manifest in Execute", logging.ExtraDebug1Level, ms.LogSink, yml)
 
-	_, err = up.Update(&yml, nil)
+	_, err = ms.Updater.Update(&yml, nil)
 	if err != nil {
 		return err
 	}
