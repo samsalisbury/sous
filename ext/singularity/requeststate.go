@@ -1,7 +1,6 @@
 package singularity
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
@@ -43,19 +42,9 @@ WAIT_FOR_NOT_PENDING:
 	for i, p := range pending {
 		pds[i] = p.DeployMarker.DeployId
 	}
-	log.Println("Watching pending deployments for deploy ID:", pair.Post.SchedulerDID)
 
+	log.Println("Watching pending deployments for deploy ID:", pair.Post.SchedulerDID)
 	log.Printf("Counter: %d - There are %d pending deploys: %s", counter, len(pending), strings.Join(pds, ", "))
-	/*
-		//HACK
-		//poor man's wait, which seems to work since always, the item is in the queue, just the guid is off
-		//we might wait a little extra since others might be in queue, but counter will prevent run away
-		if len(pending) > 0 && counter < 600 {
-			time.Sleep(2 * time.Second)
-			counter = counter + 1
-			goto WAIT_FOR_NOT_PENDING
-		}
-	*/
 
 	for _, p := range pending {
 		if p.DeployMarker.DeployId == pair.Post.SchedulerDID && counter < 600 {
@@ -64,12 +53,6 @@ WAIT_FOR_NOT_PENDING:
 			goto WAIT_FOR_NOT_PENDING
 		}
 	}
-
-	j, err := json.Marshal(pending)
-	if err != nil {
-		log.Printf("ERROR: Last response from singularity pending deploys: %s", err)
-	}
-	log.Printf("Last response from singularity pending deploys: %s", string(j))
 
 	reqParent, err := client.GetRequest(reqID, false) //don't use the web cache
 	if err != nil {

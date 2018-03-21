@@ -108,6 +108,7 @@ build-debug-darwin:
 install-debug-linux: build-debug-linux
 	rm $(SOUS_BIN_PATH) || true
 	cp ./artifacts/bin/sous-linux-$(SOUS_VERSION) $(SOUS_BIN_PATH)
+	cp ./artifacts/bin/sous-linux-$(SOUS_VERSION) ./artifacts/bin/sous-$(SOUS_VERSION)
 	sous version
 
 install-debug-darwin: build-debug-darwin
