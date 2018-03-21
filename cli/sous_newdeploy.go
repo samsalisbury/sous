@@ -136,13 +136,10 @@ func PollDeployQueue(location string, client restful.HTTPClient, loopIteration i
 }
 
 func checkResolution(resolution sous.DiffResolution) bool {
-	response := false
 	switch resolution.Desc {
-	case sous.CreateDiff:
-		response = true
-	case sous.ModifyDiff:
-		response = true
-
+	default:
+		return false
+	case sous.CreateDiff, sous.ModifyDiff:
+		return true
 	}
-	return response
 }
