@@ -28,9 +28,9 @@ func (r *deployer) Status(reg sous.Registry, clusters sous.Clusters, pair *sous.
 WAIT_FOR_NOT_PENDING:
 
 	pending, err := client.GetPendingDeploys()
-	if pair.Post.SchedulerDID == "" {
-		goto SKIP_PENDING_CHECK
-	}
+	//if pair.Post.SchedulerDID == "" {
+	//	goto SKIP_PENDING_CHECK
+	//}
 	if err != nil {
 		return nil, malformedResponse{"Getting pending deploys:" + err.Error()}
 	}
@@ -40,7 +40,7 @@ WAIT_FOR_NOT_PENDING:
 		}
 	}
 
-SKIP_PENDING_CHECK:
+	//SKIP_PENDING_CHECK:
 
 	reqParent, err := client.GetRequest(reqID, false) //don't use the web cache
 	if err != nil {
