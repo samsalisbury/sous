@@ -612,7 +612,7 @@ func newServerStateManager(c LocalSousConfig, log LogSink) *ServerStateManager {
 // If it returns a sous.GitStateManager, it emits a warning log.
 func newStateManager(cl HTTPClient, c LocalSousConfig, log LogSink) *StateManager {
 	if c.Server == "" {
-		messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Using local state stored at", c.StateLocation), logging.WarningLevel, log, c.StateLocation)
+		messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Using local state stored at %s", c.StateLocation), logging.WarningLevel, log, c.StateLocation)
 		return &StateManager{StateManager: newServerStateManager(c, log).StateManager}
 	}
 	hsm := sous.NewHTTPStateManager(cl)

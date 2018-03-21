@@ -132,7 +132,7 @@ func PollDeployQueue(location string, client restful.HTTPClient, loopIteration i
 		}
 		time.Sleep(1 * time.Second)
 	}
-	return cmdr.InternalErrorf("failed to deploy %s", location)
+	return cmdr.InternalErrorf("Failed to deploy %s", location)
 }
 
 func checkResolution(resolution sous.DiffResolution) bool {
