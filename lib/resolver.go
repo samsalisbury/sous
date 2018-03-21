@@ -43,7 +43,6 @@ func NewResolver(d Deployer, r Registry, rf *ResolveFilter, ls logging.LogSink, 
 func (r *Resolver) queueDiffs(dcs *DeployableChans, results chan DiffResolution) {
 	var wg sync.WaitGroup
 	for p := range dcs.Pairs {
-		p := p
 		if p.Post == nil {
 			err := fmt.Errorf("queueDiffs called with nil Pair.Post in the chan")
 			logging.ReportError(r.ls, err)
