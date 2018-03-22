@@ -109,12 +109,12 @@ func timeTrack(start time.Time) string {
 }
 
 // PollDeployQueue is used to poll server on status of Single Deployment.
-func PollDeployQueue(location string, client restful.HTTPClient, loopIteration int, log logging.LogSink) cmdr.Result {
+func PollDeployQueue(location string, client restful.HTTPClient, pollAtempts int, log logging.LogSink) cmdr.Result {
 	start := time.Now()
 	response := dto.R11nResponse{}
 	location = "http://" + location
 
-	for i := 0; i < loopIteration; i++ {
+	for i := 0; i < pollAtempts; i++ {
 		_, err := client.Retrieve(location, nil, &response, nil)
 
 		if i%10 == 0 {
