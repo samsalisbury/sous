@@ -29,6 +29,7 @@ type SousNewDeploy struct {
 	dryrunOption      string
 	waitStable        bool
 	User              sous.User
+	Config            graph.PossiblyInvalidConfig
 }
 
 func init() { TopLevelCommands["newdeploy"] = &SousNewDeploy{} }
@@ -94,7 +95,8 @@ func (sd *SousNewDeploy) Execute(args []string) cmdr.Result {
 	if location := updateResponse.Location(); location != "" {
 		fmt.Printf("Deployment queued: %s\n", location)
 		client, _ := restful.NewClient("", sd.LogSink, nil)
-		return PollDeployQueue(location, client, 600, sd.LogSink)
+		pollTime := sd.Config.Config.PollIntervalForClient
+		return PollDeployQueue(location, client, pollTime, sd.LogSink)
 	}
 	return cmdr.Successf("Desired version for %q in cluster %q already %q",
 		sd.TargetManifestID, cluster, sd.DeployFilterFlags.Tag)
