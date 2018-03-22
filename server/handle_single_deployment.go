@@ -191,7 +191,14 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 
 	r.Pair.SetID(did)
 
-	messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Pushing following onto queue %s:%s", r.Pair.Post.ID(), r.Pair.Post.DeploySpec().Version.String()), logging.ExtraDebug1Level, psd.log, r)
+	postID := ""
+	version := ""
+	if r.Pair.Post != nil {
+		postID = r.Pair.Post.ID().String()
+		version = r.Pair.Post.DeploySpec().Version.String()
+	}
+
+	messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Pushing following onto queue %s:%s", postID, version), logging.ExtraDebug1Level, psd.log, r)
 
 	qr, ok := psd.QueueSet.Push(r)
 	if !ok {
