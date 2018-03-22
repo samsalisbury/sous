@@ -130,8 +130,14 @@ func PollDeployQueue(location string, client restful.HTTPClient, loopIteration i
 			if response.Resolution.Error != nil {
 				return cmdr.EnsureErrorResult(err)
 			}
-			if checkResolution(*response.Resolution) {
-				return cmdr.Successf("Deployment Complete %s, duration: %s", response.Resolution.DeploymentID.String(), timeTrack(start))
+			if checkFinished(*response.Resolution) {
+
+				if checkResolutionSuccess(*response.Resolution) {
+					return cmdr.Successf("Deployment Complete %s, duration: %s", response.Resolution.DeploymentID.String(), timeTrack(start))
+				} else {
+					//exit out to error handler
+					break
+				}
 			}
 		}
 		time.Sleep(1 * time.Second)
@@ -139,11 +145,21 @@ func PollDeployQueue(location string, client restful.HTTPClient, loopIteration i
 	return cmdr.InternalErrorf("Failed to deploy %s", location)
 }
 
-func checkResolution(resolution sous.DiffResolution) bool {
+func checkFinished(resolution sous.DiffResolution) bool {
 	switch resolution.Desc {
 	default:
 		return false
 	case sous.CreateDiff, sous.ModifyDiff:
+		return true
+	}
+}
+
+func checkResolutionSuccess(resolution sous.DiffResolution) bool {
+	//We know 3 is a failure and 2 is a success so far
+	switch resolution.DeployState.Status {
+	default:
+		return false
+	case 2:
 		return true
 	}
 }

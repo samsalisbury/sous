@@ -48,6 +48,10 @@ func (m *MyMockedHTTPClient) Retrieve(urlPath string, qParms map[string]string, 
 		iSingleDeployResponse.QueuePosition = m.body.QueuePosition
 		iSingleDeployResponse.Resolution = &sous.DiffResolution{}
 		iSingleDeployResponse.Resolution.Desc = m.body.Resolution.Desc
+
+		iSingleDeployResponse.Resolution.DeployState = &sous.DeployState{}
+		iSingleDeployResponse.Resolution.DeployState.Status = m.body.Resolution.DeployState.Status
+
 	}
 	return args.Get(0).(restful.UpdateDeleter), args.Error(1)
 }
@@ -59,7 +63,7 @@ func (m *MyMockedHTTPClient) Create(urlPath string, qParms map[string]string, rq
 
 func TestPollDeployQueue_success_created(t *testing.T) {
 	httpClient := createMockHTTPClient()
-	httpClient.SetRZBody(createDeployResult(-1, "created"))
+	httpClient.SetRZBody(createDeployResult(-1, "created", 2))
 
 	result := PollDeployQueue("127.0.0.1:1234/deploy-queue-item", httpClient, 1, log)
 	assert.Equal(t, 0, result.ExitCode(), "created should return 0 exit code")
@@ -67,7 +71,7 @@ func TestPollDeployQueue_success_created(t *testing.T) {
 
 func TestPollDeployQueue_success_updated(t *testing.T) {
 	httpClient := createMockHTTPClient()
-	httpClient.SetRZBody(createDeployResult(-1, "updated"))
+	httpClient.SetRZBody(createDeployResult(-1, "updated", 2))
 
 	result := PollDeployQueue("127.0.0.1:1234/deploy-queue-item", httpClient, 1, log)
 	assert.Equal(t, 0, result.ExitCode(), "updated should return 0 exit code")
@@ -81,12 +85,15 @@ func createMockHTTPClient() *MyMockedHTTPClient {
 	return httpClient
 }
 
-func createDeployResult(queuePosition int, resolutionType string) dto.R11nResponse {
+func createDeployResult(queuePosition int, resolutionType string, status int) dto.R11nResponse {
 	deployResult := dto.R11nResponse{}
 	deployResult.QueuePosition = queuePosition
 	diffResolution := &sous.DiffResolution{}
 	diffResolution.Desc = sous.ResolutionType(resolutionType)
 	deployResult.Resolution = diffResolution
+	deployState := sous.DeployState{}
+	deployState.Status = sous.DeployStatus(status)
+	deployResult.Resolution.DeployState = &deployState
 	return deployResult
 }
 
@@ -100,16 +107,16 @@ func TestPollDeployQueue_fail(t *testing.T) {
 	assert.Equal(t, 70, result.ExitCode(), "This should fail")
 }
 
-func TestCheckResolution(t *testing.T) {
+func TestCheckFinished(t *testing.T) {
 	resolution := sous.DiffResolution{}
 	resolution.Desc = sous.CreateDiff
-	assert.True(t, checkResolution(resolution), "resolution should be true")
+	assert.True(t, checkFinished(resolution), "resolution should be true")
 
 	resolution.Desc = sous.DeleteDiff
-	assert.True(t, !checkResolution(resolution), "resolution should be false")
+	assert.True(t, !checkFinished(resolution), "resolution should be false")
 
 	resolution.Desc = sous.ModifyDiff
-	assert.True(t, checkResolution(resolution), "resolution should be true")
+	assert.True(t, checkFinished(resolution), "resolution should be true")
 
-	assert.True(t, !checkResolution(sous.DiffResolution{}), "empty resolution should be false")
+	assert.True(t, !checkFinished(sous.DiffResolution{}), "empty resolution should be false")
 }
