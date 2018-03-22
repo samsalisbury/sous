@@ -58,3 +58,7 @@ func (ctrl singClientSpyController) cannedDeploy(cannedAnswer *dtos.SingularityD
 	ctrl.MatchMethod("GetDeploy", spies.AnyArgs, cannedAnswer, nil)
 	ctrl.MatchMethod("GetDeploys", spies.AnyArgs, dtos.SingularityDeployHistoryList{cannedAnswer}, nil)
 }
+
+func (ctrl singClientSpyController) cannedPendingDeploys(cannedAnswer *dtos.SingularityPendingDeployList) {
+	ctrl.MatchMethod("GetPendingDeploys", spies.AnyArgs, cannedAnswer)
+}

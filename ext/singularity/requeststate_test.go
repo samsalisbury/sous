@@ -78,10 +78,13 @@ func singClientFixture() singClient {
 	}
 	dhl := dtos.SingularityDeployHistoryList{dh}
 
+	pds := dtos.SingularityPendingDeployList{}
+
 	sing, c := newSingClientSpy()
 	c.MatchMethod("GetRequest", spies.AnyArgs, req, nil)
 	c.MatchMethod("GetDeploy", spies.AnyArgs, dh, nil)
 	c.MatchMethod("GetDeploys", spies.AnyArgs, dhl, nil)
+	c.MatchMethod("GetPendingDeploys", spies.AnyArgs, pds, nil)
 
 	return sing
 }
