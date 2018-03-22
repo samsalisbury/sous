@@ -156,12 +156,26 @@ func checkFinished(resolution sous.DiffResolution) bool {
 	}
 }
 
+/*
+const (
+	// DeployStatusAny represents any deployment status.
+0	DeployStatusAny DeployStatus = iota
+	// DeployStatusPending means the deployment has been requested in the
+	// cluster, but is not yet running.
+1	DeployStatusPending
+	// DeployStatusActive means the deployment is up and running.
+2	DeployStatusActive
+	// DeployStatusFailed means the deployment has failed.
+3	DeployStatusFailed
+)
+For now treating everything but Active as return failed, could look to changin in future
+*/
 func checkResolutionSuccess(resolution sous.DiffResolution) bool {
 	//We know 3 is a failure and 2 is a success so far
 	switch resolution.DeployState.Status {
 	default:
 		return false
-	case 2:
+	case sous.DeployStatusActive:
 		return true
 	}
 }
