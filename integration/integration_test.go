@@ -550,10 +550,10 @@ func (suite *integrationSuite) TestResolve() {
 		r := sous.NewResolver(deployer, suite.nameCache, rf, logging.SilentLogSet(), qs)
 
 		err := r.Begin(deploymentsTwoThree, clusterDefs.Clusters).Wait()
-		if err == nil {
-			// err was nil, so no need to keep retrying.
+		if !sous.AnyTransientResolveErrors(err) {
 			break
 		}
+
 		//suite.Require().NotRegexp(`Pending deploy already in progress`, err.Error())
 		suffix := `           this is dumb but it would suck to panic during tests
                                                                             what
