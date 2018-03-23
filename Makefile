@@ -139,7 +139,7 @@ gitlog:
 install-dev:
 	brew uninstall opentable/public/sous || true
 	rm "$$(which sous)" || true
-	go install -ldflags "-X main.VersionString=$(DEV_VERSION)"
+	go install -tags integration -ldflags "-X main.VersionString=$(DEV_VERSION)"
 	echo "Now run 'hash -r && sous version' to make sure you are using the dev version of sous."
 
 homebrew:
