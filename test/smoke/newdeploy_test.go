@@ -289,8 +289,8 @@ func (i *Instance) Configure(config *config.Config, remoteGDMDir string) error {
 }
 
 func (i *Instance) Start(t *testing.T, binPath string) error {
-	cmd := exec.Command(binPath, "server", "-d", "-listen", i.Addr, "-cluster", i.ClusterName)
-	//cmd := exec.Command(binPath, "server", "-listen", i.Addr, "-cluster", i.ClusterName)
+	//cmd := exec.Command(binPath, "server", "-d", "-listen", i.Addr, "-cluster", i.ClusterName)
+	cmd := exec.Command(binPath, "server", "-listen", i.Addr, "-cluster", i.ClusterName)
 	cmd.Env = os.Environ()
 	cmd.Env = append(cmd.Env, fmt.Sprintf("SOUS_CONFIG_DIR=%s", i.ConfigDir))
 	stderr, err := os.Create(path.Join(i.LogDir, "stderr"))
@@ -460,11 +460,20 @@ func (c *TestClient) Run(t *testing.T, args ...string) (string, error) {
 	cmd := c.Cmd(t, args...)
 	fmt.Fprintf(os.Stderr, "SOUS_CONFIG_DIR = %q\n", c.ConfigDir)
 	fmt.Fprintf(os.Stderr, "running sous in %q: %s\n", c.Dir, args)
-	o, err := cmd.CombinedOutput()
-	if err != nil {
-		err = fmt.Errorf("running %s: %s; output:\n%s", strings.Join(args, " "), err, string(o))
+	// Add quotes to args with spaces for printing.
+	for i, a := range args {
+		if strings.Contains(a, " ") {
+			args[i] = `"` + a + `"`
+		}
 	}
-	return string(o), err
+	out := &bytes.Buffer{}
+	cmd.Stdout = io.MultiWriter(os.Stdout, out)
+	fmt.Fprintf(os.Stderr, "==> sous %s\n", strings.Join(args, " "))
+	err := cmd.Run()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+	}
+	return out.String(), err
 }
 
 func TestSousNewdeploy(t *testing.T) {
