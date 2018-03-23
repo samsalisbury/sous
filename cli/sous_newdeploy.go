@@ -128,21 +128,24 @@ func PollDeployQueue(location string, client restful.HTTPClient, pollAtempts int
 
 		queuePosition := response.QueuePosition
 
+		//check always for error
 		if response.Resolution != nil && response.Resolution.Error != nil {
 			return cmdr.EnsureErrorResult(err)
 		}
 
 		if queuePosition < 0 && response.Resolution != nil &&
 			response.Resolution.DeployState != nil {
-			if checkFinished(*response.Resolution) {
 
+			if checkFinished(*response.Resolution) {
 				if checkResolutionSuccess(*response.Resolution) {
-					return cmdr.Successf("Deployment Complete %s, duration: %s", response.Resolution.DeploymentID.String(), timeTrack(start))
+					return cmdr.Successf("Deployment Complete %s, duration: %s",
+						response.Resolution.DeploymentID.String(), timeTrack(start))
 				} else {
 					//exit out to error handler
 					break
 				}
 			}
+
 		}
 		time.Sleep(1 * time.Second)
 	}
