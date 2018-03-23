@@ -115,22 +115,20 @@ func PollDeployQueue(location string, client restful.HTTPClient, pollAtempts int
 	location = "http://" + location
 
 	for i := 0; i < pollAtempts; i++ {
-		_, err := client.Retrieve(location, nil, &response, nil)
+		if _, err := client.Retrieve(location, nil, &response, nil); err != nil {
+			return cmdr.InternalErrorf("Failed to deploy: %s duration: %s", err, timeTrack(start))
+		}
 
 		if i%10 == 0 {
 			msg := fmt.Sprintf("PollDeployQueue called waiting for created response... %s elapsed", timeTrack(start))
-			messages.ReportLogFieldsMessageToConsole(msg, logging.InformationLevel, log, location, response, err)
-		}
-
-		if err != nil {
-			return cmdr.InternalErrorf("Failed to deploy: %s duration: %s", err, timeTrack(start))
+			messages.ReportLogFieldsMessageToConsole(msg, logging.InformationLevel, log, location, response)
 		}
 
 		queuePosition := response.QueuePosition
 
 		//check always for error
 		if response.Resolution != nil && response.Resolution.Error != nil {
-			return cmdr.EnsureErrorResult(err)
+			return cmdr.EnsureErrorResult(response.Resolution.Error)
 		}
 
 		if queuePosition < 0 && response.Resolution != nil &&
