@@ -38,8 +38,15 @@ func (r *Rectification) Begin(d Deployer, reg Registry, rf *ResolveFilter, state
 		go func() {
 			defer r.cancel()
 			if r.Pair.Post.BuildArtifact == nil {
-				pair, _ := HandlePairsByRegistry(reg, &r.Pair)
-				r.Pair = *pair
+				pair, diff := HandlePairsByRegistry(reg, &r.Pair)
+				if diff.Error == nil {
+					r.Pair = *pair
+				} else {
+					r.Lock()
+					r.Resolution.Error = WrapResolveError(diff.Error)
+					r.Unlock()
+					return
+				}
 			}
 			r.Lock()
 			r.Resolution = d.Rectify(&r.Pair)
