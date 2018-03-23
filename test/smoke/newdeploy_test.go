@@ -370,7 +370,7 @@ func stopPIDs(t *testing.T) {
 			t.Fatalf("cannot inspect proc %d: %s", pid, err)
 		}
 		if psProc == nil {
-			t.Logf("process %d appears to not be running", pid)
+			t.Logf("skipping cleanup of %d (already stopped)", pid)
 			continue
 		}
 
