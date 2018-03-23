@@ -136,7 +136,7 @@ func PollDeployQueue(location string, client restful.HTTPClient, pollAtempts int
 
 			if checkFinished(*response.Resolution) {
 				if checkResolutionSuccess(*response.Resolution) {
-					return cmdr.Successf("Deployment Complete %s, duration: %s\n",
+					return cmdr.Successf("\n\tDeployment Complete %s, duration: %s\n",
 						response.Resolution.DeploymentID.String(), timeTrack(start))
 				} else {
 					//exit out to error handler
