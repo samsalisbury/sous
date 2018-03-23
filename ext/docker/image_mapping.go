@@ -121,7 +121,10 @@ func (nc *NameCache) Warmup(r string) error {
 		in, err := reference.WithTag(ref, t)
 		if err == nil {
 			a := NewBuildArtifact(in.String(), strpairs{})
-			nc.GetSourceID(a) //pull it into the cache...
+			_, err := nc.GetSourceID(a) //pull it into the cache...
+			if err != nil {
+				return errors.Wrapf(err, "getting SourceID")
+			}
 		} else {
 			messages.ReportLogFieldsMessage("t loop", logging.WarningLevel, nc.Log, in, err)
 		}
@@ -288,12 +291,11 @@ func (nc *NameCache) getImageNameAfterHarvest(sid sous.SourceID) (string, strpai
 	if err := nc.warmupSingle(sid); err == nil {
 		return nc.getImageNameFromCache(sid)
 	}
-	err := nc.harvest(sid.Location)
-	if err == nil {
-		return nc.getImageNameFromCache(sid)
+	if err := nc.harvest(sid.Location); err != nil {
+		messages.ReportLogFieldsMessage("getImageName: harvest err", logging.WarningLevel, nc.Log, err)
+		return "", nil, err
 	}
-	messages.ReportLogFieldsMessage("getImageName: harvest err", logging.WarningLevel, nc.Log, err)
-	return "", nil, err
+	return nc.getImageNameFromCache(sid)
 }
 
 func qualitiesFromLabels(lm map[string]string) []sous.Quality {
@@ -345,14 +347,12 @@ func (nc *NameCache) harvest(sl sous.SourceLocation) error {
 		if r == guessed {
 			knowGuess = true
 		}
-		err := nc.Warmup(r)
-		if err != nil {
+		if err := nc.Warmup(r); err != nil {
 			return err
 		}
 	}
 	if !knowGuess {
-		err := nc.Warmup(guessed)
-		if err != nil {
+		if err := nc.Warmup(guessed); err != nil {
 			return err
 		}
 	}
