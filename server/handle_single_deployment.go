@@ -187,8 +187,6 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 		Deployment: newDeployment,
 	}})
 
-	r.Pair.Post.SchedulerDID = computeDeployID(r.Pair.Post)
-
 	r.Pair.SetID(did)
 
 	postID := ""

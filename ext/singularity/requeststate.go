@@ -8,6 +8,7 @@ import (
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/logging/messages"
 	"github.com/pkg/errors"
+	uuid "github.com/satori/go.uuid"
 )
 
 // Status implements sous.Deployer on deployer.
@@ -26,7 +27,11 @@ func (r *deployer) Status(reg sous.Registry, clusters sous.Clusters, pair *sous.
 		return nil, errors.Errorf("No cluster found for %q. Known are: %q.", clusterName, clusters.Names())
 	}
 
-	depID := pair.Post.SchedulerDID
+	if pair.UUID == uuid.Nil {
+		pair.UUID = uuid.NewV4()
+	}
+	depID := computeDeployIDFromUUID(pair.Post, pair.UUID)
+
 	client := r.buildSingClient(url)
 
 	messages.ReportLogFieldsMessageToConsole(
@@ -48,7 +53,7 @@ func (r *deployer) Status(reg sous.Registry, clusters sous.Clusters, pair *sous.
 
 	tgt.SchedulerURL = fmt.Sprintf("http://%s/request/%s", url, reqID)
 	if !tgt.Status.Failed() {
-		status, err := r.checkPendingList(pair.Post, client)
+		status, err := r.checkPendingList(pair.Post, client, depID)
 		if err != nil {
 			return nil, errors.Wrapf(err, "getting pending state")
 		}
@@ -63,9 +68,7 @@ func (r *deployer) getRequestID(d *sous.Deployable) (string, error) {
 	return computeRequestID(d)
 }
 
-func (r *deployer) checkPendingList(d *sous.Deployable, client singClient) (sous.DeployStatus, error) {
-	depID := d.SchedulerDID
-
+func (r *deployer) checkPendingList(d *sous.Deployable, client singClient, depID string) (sous.DeployStatus, error) {
 	pending, err := client.GetPendingDeploys()
 
 	if err != nil {
