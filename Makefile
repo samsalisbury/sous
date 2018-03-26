@@ -140,7 +140,7 @@ gitlog:
 install-dev:
 	brew uninstall opentable/public/sous || true
 	rm "$$(which sous)" || true
-	go install -ldflags "-X main.VersionString=$(DEV_VERSION)"
+	go install -tags integration -ldflags "-X main.VersionString=$(DEV_VERSION)"
 	echo "Now run 'hash -r && sous version' to make sure you are using the dev version of sous."
 
 homebrew:
@@ -269,10 +269,14 @@ test-integration: setup-containers
 	SOUS_QA_DESC=$(QA_DESC) go test -timeout $(INTEGRATION_TEST_TIMEOUT) $(EXTRA_GO_FLAGS)  $(TEST_VERBOSE) ./integration --tags=integration
 	@date
 
+.PHONY: test-smoke
+test-smoke: install-dev $(QA_DESC)
+	SOUS_QA_DESC=$(QA_DESC) go test -tags smoke -v -count 1 ./test/smoke 
+
 $(QA_DESC): sous-qa-setup
 	./sous_qa_setup --compose-dir ./integration/test-registry/ --out-path=$(QA_DESC)
 
-setup-containers:  $(QA_DESC)
+setup-containers: $(QA_DESC)
 
 test-cli: setup-containers linux-build
 	rm -rf integration/raw_shell_output/0*
