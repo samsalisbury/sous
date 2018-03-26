@@ -28,9 +28,9 @@ func (r *deployer) Status(reg sous.Registry, clusters sous.Clusters, pair *sous.
 	}
 
 	client := r.buildSingClient(url)
-	log := logging.Log
 
-	messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Watching pending deployments for deploy ID: %s", pair.Post.SchedulerDID), logging.ExtraDebug1Level, log, pair.Post.SchedulerDID)
+	log := logging.Log
+	messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("\nWatching pending deployments for deploy ID: %s", pair.Post.SchedulerDID), logging.ExtraDebug1Level, log, pair.Post.SchedulerDID)
 	counter := 0
 
 WAIT_FOR_NOT_PENDING:
@@ -45,8 +45,7 @@ WAIT_FOR_NOT_PENDING:
 		pds[i] = p.DeployMarker.DeployId
 	}
 
-	messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Watching pending deployments for deploy ID: %s", pair.Post.SchedulerDID), logging.ExtraDebug1Level, log, pair.Post.SchedulerDID)
-	messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Counter: %d - There are %d pending deploys: %s", counter, len(pending), strings.Join(pds, ", ")), logging.ExtraDebug1Level, log, pair.Post.SchedulerDID)
+	messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("\nCounter: %d - There are %d pending deploys: %s", counter, len(pending), strings.Join(pds, ", ")), logging.ExtraDebug1Level, log, pair.Post.SchedulerDID)
 
 	for _, p := range pending {
 		if p.DeployMarker.DeployId == pair.Post.SchedulerDID && counter < 600 {
