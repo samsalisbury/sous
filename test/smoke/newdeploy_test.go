@@ -133,6 +133,9 @@ func (c *TestClient) Configure(server, dockerReg string) error {
 			Email: "sous-client1@example.com",
 		},
 	}
+	conf.Logging.Basic.Level = "ExtraDebug1"
+	conf.Logging.Basic.DisableConsole = false
+	conf.Logging.Basic.ExtraConsole = true
 	y, err := yaml.Marshal(conf)
 	if err != nil {
 		return err
