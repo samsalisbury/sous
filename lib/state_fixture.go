@@ -67,7 +67,7 @@ func StateFixture(o StateFixtureOpts) *State {
 				CheckReadyInterval:        2,
 				CheckReadyRetries:         256,
 			},
-			AllowedAdvisories: nil,
+			AllowedAdvisories: AllAdvisoryStrings(),
 		}
 		for _, mid := range m.Keys() {
 			manifest, ok := m.Get(mid)

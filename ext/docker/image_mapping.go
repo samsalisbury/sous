@@ -209,11 +209,13 @@ func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
 		return sid, nil
 	}
 	if err != nil {
+		messages.ReportLogFieldsMessage("No docker image found: "+err.Error(), logging.ExtraDebug1Level, nc.Log, in, sid, err)
 		return sid, err
 	}
 
 	newSID, err := SourceIDFromLabels(md.Labels)
 	if err != nil {
+		messages.ReportLogFieldsMessage("SourceIDFromLabels failed: "+err.Error(), logging.ExtraDebug1Level, nc.Log, in, sid, err)
 		return sid, err
 	}
 

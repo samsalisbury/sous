@@ -80,7 +80,7 @@ func (sd *SousNewDeploy) Execute(args []string) cmdr.Result {
 	q["cluster"] = cluster
 	updater, err := sd.HTTPClient.Retrieve("./single-deployment", q, &d, nil)
 	if err != nil {
-		return cmdr.EnsureErrorResult(err)
+		return cmdr.InternalErrorf("Failed to retrieve current deployment: %s", err)
 	}
 	messages.ReportLogFieldsMessage("SousNewDeploy.Execute Retrieved Deployment",
 		logging.ExtraDebug1Level, sd.LogSink, d)
@@ -89,12 +89,15 @@ func (sd *SousNewDeploy) Execute(args []string) cmdr.Result {
 
 	updateResponse, err := updater.Update(d, sd.User.HTTPHeaders())
 	if err != nil {
-		return cmdr.EnsureErrorResult(err)
+		return cmdr.InternalErrorf("Failed to update deployment: %s", err)
 	}
 
 	if location := updateResponse.Location(); location != "" {
 		fmt.Printf("Deployment queued: %s\n", location)
-		client, _ := restful.NewClient("", sd.LogSink, nil)
+		client, err := restful.NewClient("", sd.LogSink, nil)
+		if err != nil {
+			return cmdr.InternalErrorf("Failed to create polling client: %s", err)
+		}
 		pollTime := sd.Config.PollIntervalForClient
 		return PollDeployQueue(location, client, pollTime, sd.LogSink)
 	}
@@ -126,7 +129,6 @@ func PollDeployQueue(location string, client restful.HTTPClient, pollAtempts int
 
 		queuePosition := response.QueuePosition
 
-		//check always for error
 		if response.Resolution != nil && response.Resolution.Error != nil {
 			return cmdr.InternalErrorf("\n\tFailed to deploy: %s duration: %s\n", response.Resolution.Error, timeTrack(start))
 		}
@@ -138,16 +140,15 @@ func PollDeployQueue(location string, client restful.HTTPClient, pollAtempts int
 				if checkResolutionSuccess(*response.Resolution) {
 					return cmdr.Successf("\n\tDeployment Complete %s, %s, duration: %s\n",
 						response.Resolution.DeploymentID.String(), response.Resolution.DeployState.SourceID.Version, timeTrack(start))
-				} else {
-					//exit out to error handler
-					break
 				}
+				//exit out to error handler
+				return cmdr.InternalErrorf("Failed to deploy %s: %s", location, response.Resolution.Error)
 			}
 
 		}
 		time.Sleep(1 * time.Second)
 	}
-	return cmdr.InternalErrorf("\n\tFailed to deploy %s duration: %s\n", location, timeTrack(start))
+	return cmdr.InternalErrorf("Failed to deploy %s after %d attempts for duration: %s\n", location, pollAtempts, timeTrack(start))
 }
 
 func checkFinished(resolution sous.DiffResolution) bool {

@@ -1,6 +1,7 @@
 package sous
 
 import (
+	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -156,6 +157,7 @@ func (cs Clusters) Names() []string {
 		names[i] = name
 		i++
 	}
+	sort.Strings(names)
 	return names
 }
 
