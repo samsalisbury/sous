@@ -30,7 +30,7 @@ func (r *deployer) Status(reg sous.Registry, clusters sous.Clusters, pair *sous.
 	client := r.buildSingClient(url)
 	log := logging.Log
 
-	messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Watching pending deployments for deploy ID:", pair.Post.SchedulerDID), logging.ExtraDebug1Level, log, pair.Post.SchedulerDID)
+	messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Watching pending deployments for deploy ID: %s", pair.Post.SchedulerDID), logging.ExtraDebug1Level, log, pair.Post.SchedulerDID)
 	counter := 0
 
 WAIT_FOR_NOT_PENDING:
