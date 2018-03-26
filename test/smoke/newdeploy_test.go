@@ -600,6 +600,4 @@ CMD if [ -z "$T" ]; then T=2; fi; echo -n "Sleeping ${T}s..."; sleep $T; echo "D
 		t.Fatal(err)
 	}
 
-	panic("DONE")
-
 }
