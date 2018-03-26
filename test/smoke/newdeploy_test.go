@@ -138,6 +138,7 @@ func (c *TestClient) Configure(server, dockerReg string) error {
 			Email: "sous-client1@example.com",
 		},
 	}
+	conf.PollIntervalForClient = 600
 	conf.Logging.Basic.Level = "ExtraDebug1"
 	conf.Logging.Basic.DisableConsole = false
 	conf.Logging.Basic.ExtraConsole = true
