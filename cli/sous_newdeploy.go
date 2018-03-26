@@ -80,7 +80,7 @@ func (sd *SousNewDeploy) Execute(args []string) cmdr.Result {
 	q["cluster"] = cluster
 	updater, err := sd.HTTPClient.Retrieve("./single-deployment", q, &d, nil)
 	if err != nil {
-		return cmdr.EnsureErrorResult(err)
+		return cmdr.InternalErrorf("Failed to retrieve current deployment: %s", err)
 	}
 	messages.ReportLogFieldsMessage("SousNewDeploy.Execute Retrieved Deployment",
 		logging.ExtraDebug1Level, sd.LogSink, d)
@@ -89,14 +89,14 @@ func (sd *SousNewDeploy) Execute(args []string) cmdr.Result {
 
 	updateResponse, err := updater.Update(d, sd.User.HTTPHeaders())
 	if err != nil {
-		return cmdr.EnsureErrorResult(err)
+		return cmdr.InternalErrorf("Failed to update deployment: %s", err)
 	}
 
 	if location := updateResponse.Location(); location != "" {
 		fmt.Printf("Deployment queued: %s\n", location)
 		client, err := restful.NewClient("", sd.LogSink, nil)
 		if err != nil {
-			return EnsureErrorResult(err)
+			return cmdr.InternalErrorf("Failed to create polling client: %s", err)
 		}
 		pollTime := sd.Config.PollIntervalForClient
 		return PollDeployQueue(location, client, pollTime, sd.LogSink)
