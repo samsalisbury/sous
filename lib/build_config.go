@@ -63,6 +63,35 @@ const (
 	DirtyWS = AdvisoryName(`dirty workspace`)
 )
 
+// AllAdvisories returns all advisories.
+func AllAdvisories() []AdvisoryName {
+	return []AdvisoryName{
+		NotService,
+		IsBuilder,
+		UnknownRepo,
+		NoRepoAdv,
+		NotRequestedRevision,
+		Unversioned,
+		TagMismatch,
+		TagNotHead,
+		EphemeralTag,
+		UnpushedRev,
+		BogusRev,
+		DirtyWS,
+	}
+}
+
+// AllAdvisoryStrings is similar to AllAdvisories except it casts them to
+// strings.
+func AllAdvisoryStrings() []string {
+	as := AllAdvisories()
+	s := make([]string, len(as))
+	for i, a := range as {
+		s[i] = string(a)
+	}
+	return s
+}
+
 // NewContext returns a new BuildContext updated based on the user's intent as expressed in the Config
 func (c *BuildConfig) NewContext() *BuildContext {
 	ctx := c.Context

@@ -4,12 +4,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"regexp"
+	"strings"
 
 	"github.com/julienschmidt/httprouter"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/logging/messages"
 	"github.com/opentable/sous/util/restful"
+	uuid "github.com/satori/go.uuid"
 )
 
 // https://github.com/opentable/sous/blob/0a96ed483cd86abc9604993120e8dd211cf7adc6/server/handle_single_deployment.go
@@ -183,9 +186,19 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 	r := sous.NewRectification(sous.DeployablePair{Post: &sous.Deployable{
 		Deployment: newDeployment,
 	}})
+
+	r.Pair.Post.SchedulerDID = computeDeployID(r.Pair.Post)
+
 	r.Pair.SetID(did)
 
-	messages.ReportLogFieldsMessageToConsole("Pushing following onto queue", logging.ExtraDebug1Level, psd.log, r)
+	postID := ""
+	version := ""
+	if r.Pair.Post != nil {
+		postID = r.Pair.Post.ID().String()
+		version = r.Pair.Post.DeploySpec().Version.String()
+	}
+
+	messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Pushing following onto queue %s:%s", postID, version), logging.ExtraDebug1Level, psd.log, r)
 
 	qr, ok := psd.QueueSet.Push(r)
 	if !ok {
@@ -209,4 +222,59 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 	}
 
 	return psd.ok(201, map[string]string{"queuedDeployAction": queueURI})
+}
+
+// Copied from ext/singularity/deployer.go
+
+// Singularity DeployID must be <50
+const maxDeployIDLen = 49
+
+// Singularity RequestID must be <100
+const maxRequestIDLen = 99
+
+// maxVersionLen needs to account for the separator character
+// between the version string and the UUID string.
+const maxVersionLen = 31
+
+var illegalDeployIDChars = regexp.MustCompile(`[^a-zA-Z0-9_]`)
+var illegalRequestIDChars = regexp.MustCompile(`[^a-zA-Z0-9_-]`)
+
+func sanitizeDeployID(in string) string {
+	return illegalDeployIDChars.ReplaceAllString(in, "_")
+}
+
+func stripDeployID(in string) string {
+	return illegalDeployIDChars.ReplaceAllString(in, "")
+}
+
+// StripDeployID removes all characters forbidden in a Singularity deployID.
+func StripDeployID(in string) string {
+	return illegalDeployIDChars.ReplaceAllString(in, "")
+}
+
+func stripMetadata(in string) string {
+	return strings.Split(in, "+")[0]
+}
+
+func computeDeployID(d *sous.Deployable) string {
+	var versionTrunc string
+	uuidEntire := stripDeployID(uuid.NewV4().String())
+	versionSansMeta := stripMetadata(d.Deployment.SourceID.Version.String())
+	versionEntire := sanitizeDeployID(versionSansMeta)
+
+	if len(versionEntire) > maxVersionLen {
+		versionTrunc = versionEntire[0:maxVersionLen]
+	} else {
+		versionTrunc = versionEntire
+	}
+
+	depBase := strings.Join([]string{
+		versionTrunc,
+		uuidEntire,
+	}, "_")
+
+	if len(depBase) > maxDeployIDLen {
+		return depBase[:(maxDeployIDLen)]
+	}
+	return depBase
 }

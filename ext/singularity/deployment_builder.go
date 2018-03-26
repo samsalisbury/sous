@@ -284,7 +284,7 @@ func (db *deploymentBuilder) determineStatus() error {
 			msg = strings.Join(msgs, ", ")
 		}
 
-		db.Target.ExecutorMessage = fmt.Sprintf("Deploy faulure: %q %s/request/%s/deploy/%s",
+		db.Target.ExecutorMessage = fmt.Sprintf("Deploy failure: %q %s/request/%s/deploy/%s",
 			msg,
 			db.req.SourceURL,
 			db.history.Deploy.RequestId,

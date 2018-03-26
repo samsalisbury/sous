@@ -12,22 +12,8 @@ type DeployState struct {
 	Status          DeployStatus
 	ExecutorMessage string
 	ExecutorData    interface{}
+	SchedulerURL    string
 }
-
-// DeployStatus represents the status of a deployment in an external cluster.
-type DeployStatus int
-
-const (
-	// DeployStatusAny represents any deployment status.
-	DeployStatusAny DeployStatus = iota
-	// DeployStatusPending means the deployment has been requested in the
-	// cluster, but is not yet running.
-	DeployStatusPending
-	// DeployStatusActive means the deployment is up and running.
-	DeployStatusActive
-	// DeployStatusFailed means the deployment has failed.
-	DeployStatusFailed
-)
 
 func (ds DeployState) String() string {
 	return fmt.Sprintf("DEPLOYMENT:%s STATUS:%s EXECUTORDATA:%v", ds.Deployment.String(), ds.Status, ds.ExecutorData)
