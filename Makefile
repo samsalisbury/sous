@@ -269,6 +269,10 @@ test-integration: setup-containers
 	SOUS_QA_DESC=$(QA_DESC) go test -timeout $(INTEGRATION_TEST_TIMEOUT) $(EXTRA_GO_FLAGS)  $(TEST_VERBOSE) ./integration --tags=integration
 	@date
 
+.PHONY: test-smoke
+test-smoke: install-dev sous-qa-setup
+	SOUS_QA_DESC=$(QA_DESC) go test -v -count 1 ./test/smoke 
+
 $(QA_DESC): sous-qa-setup
 	./sous_qa_setup --compose-dir ./integration/test-registry/ --out-path=$(QA_DESC)
 
