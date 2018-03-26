@@ -129,7 +129,6 @@ func PollDeployQueue(location string, client restful.HTTPClient, pollAtempts int
 
 		queuePosition := response.QueuePosition
 
-		//check always for error
 		if response.Resolution != nil && response.Resolution.Error != nil {
 			return cmdr.InternalErrorf("\n\tFailed to deploy: %s duration: %s\n", response.Resolution.Error, timeTrack(start))
 		}
@@ -141,10 +140,9 @@ func PollDeployQueue(location string, client restful.HTTPClient, pollAtempts int
 				if checkResolutionSuccess(*response.Resolution) {
 					return cmdr.Successf("\n\tDeployment Complete %s, %s, duration: %s\n",
 						response.Resolution.DeploymentID.String(), response.Resolution.DeployState.SourceID.Version, timeTrack(start))
-				} else {
-					//exit out to error handler
-					break
 				}
+				//exit out to error handler
+				return cmdr.InternalErrorf("Failed to deploy %s: %s", location, response.Resolution.Error)
 			}
 
 		}
