@@ -270,13 +270,13 @@ test-integration: setup-containers
 	@date
 
 .PHONY: test-smoke
-test-smoke: install-dev sous-qa-setup
+test-smoke: install-dev $(QA_DESC)
 	SOUS_QA_DESC=$(QA_DESC) go test -v -count 1 ./test/smoke 
 
 $(QA_DESC): sous-qa-setup
 	./sous_qa_setup --compose-dir ./integration/test-registry/ --out-path=$(QA_DESC)
 
-setup-containers:  $(QA_DESC)
+setup-containers: $(QA_DESC)
 
 test-cli: setup-containers linux-build
 	rm -rf integration/raw_shell_output/0*
