@@ -582,7 +582,7 @@ CMD if [ -z "$T" ]; then T=2; fi; echo -n "Sleeping ${T}s..."; sleep $T; echo "D
 		t.Fatal(err)
 	}
 
-	if _, err := sous.Run(t, "newdeploy", "-cluster", "cluster1", "-tag", "1.2.3"); err != nil {
+	if _, err := sous.Run(t, "newdeploy", "-d", "-cluster", "cluster1", "-tag", "1.2.3"); err != nil {
 		t.Fatal(err)
 	}
 
