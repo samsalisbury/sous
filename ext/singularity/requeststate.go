@@ -2,11 +2,11 @@ package singularity
 
 import (
 	"fmt"
-	"log"
 	"strings"
-	"time"
 
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 	"github.com/pkg/errors"
 )
 
@@ -28,14 +28,14 @@ func (r *deployer) Status(reg sous.Registry, clusters sous.Clusters, pair *sous.
 
 	depID := computeDeployID(pair.Post)
 	client := r.buildSingClient(url)
-	log := logging.Log
 
-	messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Watching pending deployments for deploy ID: %s", pair.Post.SchedulerDID), logging.ExtraDebug1Level, log, pair.Post.SchedulerDID)
-	counter := 0
+	messages.ReportLogFieldsMessageToConsole(
+		fmt.Sprintf("Watching pending deployments for deploy ID: %s", pair.Post.SchedulerDID),
+		logging.ExtraDebug1Level, r.log, pair.Post.SchedulerDID)
 
 	reqParent, err := client.GetRequest(reqID, false) //don't use the web cache
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "getting request")
 	}
 
 	singReq := SingReq{
@@ -47,26 +47,12 @@ func (r *deployer) Status(reg sous.Registry, clusters sous.Clusters, pair *sous.
 	tgt, err := BuildDeployment(reg, clusters, singReq, r.log)
 
 	tgt.SchedulerURL = fmt.Sprintf("http://%s/request/%s", url, reqID)
-
-	pending, err := client.GetPendingDeploys()
-
-	if err != nil {
-		return nil, malformedResponse{"Getting pending deploys:" + err.Error()}
-	}
-	pds := make([]string, len(pending))
-	for i, p := range pending {
-		pds[i] = p.DeployMarker.DeployId
-	}
-
-	messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Watching pending deployments for deploy ID: %s", pair.Post.SchedulerDID), logging.ExtraDebug1Level, log, pair.Post.SchedulerDID)
-	messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Counter: %d - There are %d pending deploys: %s", counter, len(pending), strings.Join(pds, ", ")), logging.ExtraDebug1Level, log, pair.Post.SchedulerDID)
-
-	for _, p := range pending {
-		if p.DeployMarker.DeployId == depID && counter < 600 {
-			counter = counter + 1
-			time.Sleep(2 * time.Second) //this is what OTPL does
-			goto WAIT_FOR_NOT_PENDING
+	if !tgt.Status.Failed() {
+		status, err := r.checkPendingList(pair.Post, client)
+		if err != nil {
+			return nil, errors.Wrapf(err, "getting pending state")
 		}
+		tgt.Status = status
 	}
 
 	return &tgt, errors.Wrapf(err, "getting request state")
@@ -77,5 +63,30 @@ func (r *deployer) getRequestID(d *sous.Deployable) (string, error) {
 	return computeRequestID(d)
 }
 
-func (r *deployer) checkPendingList(d *sous.Deployable) bool {
+func (r *deployer) checkPendingList(d *sous.Deployable, client singClient) (sous.DeployStatus, error) {
+	depID := computeDeployID(d)
+
+	pending, err := client.GetPendingDeploys()
+
+	if err != nil {
+		return sous.DeployStatusAny, malformedResponse{"Getting pending deploys:" + err.Error()}
+	}
+	pds := make([]string, len(pending))
+	for i, p := range pending {
+		pds[i] = p.DeployMarker.DeployId
+	}
+
+	messages.ReportLogFieldsMessageToConsole(
+		fmt.Sprintf("Watching pending deployments for deploy ID: %s", depID),
+		logging.ExtraDebug1Level, r.log, depID)
+	messages.ReportLogFieldsMessageToConsole(
+		fmt.Sprintf("There are %d pending deploys: %s", len(pending), strings.Join(pds, ", ")),
+		logging.ExtraDebug1Level, r.log, depID)
+
+	for _, p := range pending {
+		if p.DeployMarker.DeployId == depID {
+			return sous.DeployStatusPending, nil
+		}
+	}
+	return sous.DeployStatusActive, nil
 }
