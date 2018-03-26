@@ -290,7 +290,10 @@ func (i *Instance) Configure(config *config.Config, remoteGDMDir string) error {
 
 func (i *Instance) Start(t *testing.T, binPath string) error {
 	//cmd := exec.Command(binPath, "server", "-d", "-listen", i.Addr, "-cluster", i.ClusterName)
-	cmd := exec.Command(binPath, "server", "-listen", i.Addr, "-cluster", i.ClusterName)
+
+	serverDebug := os.Getenv("SOUS_SERVER_DEBUG") == "true"
+
+	cmd := exec.Command(binPath, "server", "-listen", i.Addr, "-cluster", i.ClusterName, fmt.Sprintf("-d=%t", serverDebug))
 	cmd.Env = os.Environ()
 	cmd.Env = append(cmd.Env, fmt.Sprintf("SOUS_CONFIG_DIR=%s", i.ConfigDir))
 	stderr, err := os.Create(path.Join(i.LogDir, "stderr"))
