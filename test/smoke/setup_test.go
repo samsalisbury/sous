@@ -1,4 +1,4 @@
-package main
+package smoke
 
 import (
 	"bytes"
@@ -52,20 +52,7 @@ type TestClient struct {
 	Dir string
 }
 
-func setupEnv(t *testing.T) Fixture {
-	t.Helper()
-	// TODO SS: make this configurable by env var
-	// so can decide which bin to run against.
-	sousBin, err := exec.LookPath("sous")
-	if err != nil {
-		t.Fatalf("sous not found in path")
-	}
-	t.Logf("Server and client all using sous at %s", sousBin)
-
-	stopPIDs(t)
-	if testing.Short() {
-		t.Skipf("-short flag present")
-	}
+func getEnvDesc(t *testing.T) desc.EnvDesc {
 	descPath := os.Getenv("SOUS_QA_DESC")
 	if descPath == "" {
 		panic("SOUS_QA_DESC is unset! See sous_qa_setup.")
@@ -78,20 +65,64 @@ func setupEnv(t *testing.T) Fixture {
 	if err := json.NewDecoder(descReader).Decode(&envDesc); err != nil {
 		t.Fatalf("setup failed to decode %q: %s", descPath, err)
 	}
+	return envDesc
+}
 
-	baseDir := path.Join(os.TempDir(), "sous-test-cluster", time.Now().Format(time.RFC3339))
+func getSousBin(t *testing.T) string {
+	sousBin := os.Getenv("SMOKE_TEST_BINARY")
+	if sousBin != "" {
+		t.Logf("Using sous binary %q (from $SMOKE_TEST_BINARY)", sousBin)
+		return sousBin
+	}
+	sousBin, err := exec.LookPath("sous")
+	if err != nil {
+		t.Fatalf("sous not found in path")
+	}
+	t.Logf("Using sous binary %q (from $PATH)", sousBin)
+	return sousBin
+}
+
+func getDataDir(t *testing.T) string {
+	baseDir := os.Getenv("SMOKE_TEST_DATA_DIR")
+	from := "$SMOKE_TEST_DATA_DIR"
+	if baseDir == "" {
+		baseDir = os.TempDir()
+		from = "$TMPDIR"
+	}
+	baseDir = path.Join(baseDir, time.Now().Format(time.RFC3339))
+	t.Logf("Writing test data to %q (from %s)", baseDir, from)
+	if err := os.MkdirAll(baseDir, 0777); err != nil {
+		t.Fatalf("Failed to create smoke test data dir %q: %s", baseDir, err)
+	}
+	return baseDir
+}
+
+// addURLsToState pokes URLs from the env desc into the state.
+func addURLsToState(state *sous.State, envDesc desc.EnvDesc) {
+	for _, c := range state.Defs.Clusters {
+		c.BaseURL = envDesc.SingularityURL()
+	}
+	state.Defs.DockerRepo = envDesc.RegistryName()
+}
+
+func setupEnv(t *testing.T) Fixture {
+	t.Helper()
+	if testing.Short() {
+		t.Skipf("-short flag present")
+	}
+	stopPIDs(t)
+	sousBin := getSousBin(t)
+	envDesc := getEnvDesc(t)
+	baseDir := getDataDir(t)
 
 	state := sous.StateFixture(sous.StateFixtureOpts{
 		ClusterCount:  3,
 		ManifestCount: 3,
 	})
 
-	for _, c := range state.Defs.Clusters {
-		c.BaseURL = envDesc.SingularityURL()
-	}
-	state.Defs.DockerRepo = envDesc.RegistryName()
+	addURLsToState(state, envDesc)
 
-	c, err := newTestCluster(state, baseDir)
+	c, err := newSmokeTestFixture(state, baseDir)
 	if err != nil {
 		t.Fatalf("setting up test cluster: %s", err)
 	}
@@ -184,7 +215,7 @@ func mkCMD(dir, name string, args ...string) *exec.Cmd {
 	return c
 }
 
-func newTestCluster(state *sous.State, baseDir string) (*TestCluster, error) {
+func newSmokeTestFixture(state *sous.State, baseDir string) (*TestCluster, error) {
 	if err := os.MkdirAll(baseDir, 0777); err != nil {
 		return nil, err
 	}
