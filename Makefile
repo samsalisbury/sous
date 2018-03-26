@@ -271,7 +271,7 @@ test-integration: setup-containers
 
 .PHONY: test-smoke
 test-smoke: install-dev $(QA_DESC)
-	SOUS_QA_DESC=$(QA_DESC) go test -v -count 1 ./test/smoke 
+	SOUS_QA_DESC=$(QA_DESC) go test -tags smoke -v -count 1 ./test/smoke 
 
 $(QA_DESC): sous-qa-setup
 	./sous_qa_setup --compose-dir ./integration/test-registry/ --out-path=$(QA_DESC)
