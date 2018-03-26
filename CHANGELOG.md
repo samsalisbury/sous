@@ -19,7 +19,7 @@ with respect to its command line interface and HTTP interface.
 * Server: /single-deployment validation now correctly validates only after taking
   into consideration default values.
 * Server: integration tests disregard failed deployments as blockers in certain cases
-
+* Server: deployment operations are tracked by a UUID across API requests.
 
 ## [0.5.76](//github.com/opentable/sous/compare/0.5.72...0.5.76)
 
