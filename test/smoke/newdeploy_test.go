@@ -288,31 +288,44 @@ func (i *Instance) Configure(config *config.Config, remoteGDMDir string) error {
 	return nil
 }
 
-func (i *Instance) Start(t *testing.T, binPath string) error {
-	//cmd := exec.Command(binPath, "server", "-d", "-listen", i.Addr, "-cluster", i.ClusterName)
+func (i *Instance) RunCmd(t *testing.T, binPath string, args ...string) (*exec.Cmd, error) {
 
-	serverDebug := os.Getenv("SOUS_SERVER_DEBUG") == "true"
-
-	cmd := exec.Command(binPath, "server", "-listen", i.Addr, "-cluster", i.ClusterName, fmt.Sprintf("-d=%t", serverDebug))
+	cmd := exec.Command(binPath, args...)
 	cmd.Env = os.Environ()
 	cmd.Env = append(cmd.Env, fmt.Sprintf("SOUS_CONFIG_DIR=%s", i.ConfigDir))
 	stderr, err := os.Create(path.Join(i.LogDir, "stderr"))
 	if err != nil {
-		return err
+		return cmd, err
 	}
 	stdout, err := os.Create(path.Join(i.LogDir, "stdout"))
 	if err != nil {
-		return err
+		return cmd, err
 	}
 	combined, err := os.Create(path.Join(i.LogDir, "combined"))
 	if err != nil {
-		return err
+		return cmd, err
 	}
 
 	cmd.Stdout = io.MultiWriter(stdout, combined, os.Stdout)
 	cmd.Stderr = io.MultiWriter(stderr, combined, os.Stderr)
 
-	if err := cmd.Start(); err != nil {
+	return cmd, cmd.Start()
+}
+
+func (i *Instance) Start(t *testing.T, binPath string) error {
+
+	fmt.Fprintf(os.Stderr, "==> Instance %q config:\n", i.ClusterName)
+	configCMD, err := i.RunCmd(t, binPath, "config")
+	if err != nil {
+		t.Fatalf("setting up 'sous config': %s", err)
+	}
+	if err := configCMD.Wait(); err != nil {
+		t.Fatalf("running 'sous config': %s", err)
+	}
+
+	serverDebug := os.Getenv("SOUS_SERVER_DEBUG") == "true"
+	cmd, err := i.RunCmd(t, binPath, "server", "-listen", i.Addr, "-cluster", i.ClusterName, fmt.Sprintf("-d=%t", serverDebug))
+	if err != nil {
 		return err
 	}
 	if cmd.Process == nil {
