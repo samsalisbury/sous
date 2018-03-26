@@ -30,8 +30,8 @@ func (r *deployer) Status(reg sous.Registry, clusters sous.Clusters, pair *sous.
 	client := r.buildSingClient(url)
 
 	messages.ReportLogFieldsMessageToConsole(
-		fmt.Sprintf("Watching pending deployments for deploy ID: %s", pair.Post.SchedulerDID),
-		logging.ExtraDebug1Level, r.log, pair.Post.SchedulerDID)
+		fmt.Sprintf("Watching pending deployments for deploy ID: %s", depID),
+		logging.ExtraDebug1Level, r.log, depID)
 
 	reqParent, err := client.GetRequest(reqID, false) //don't use the web cache
 	if err != nil {
