@@ -237,7 +237,13 @@ func (c *TestCluster) Configure(envDesc desc.EnvDesc) error {
 			StateLocation: i.StateDir,
 			SiblingURLs:   siblingURLs,
 			Docker: docker.Config{
-				RegistryHost: envDesc.RegistryName(),
+				RegistryHost:       envDesc.RegistryName(),
+				DatabaseDriver:     "sqlite3_sous" + i.ClusterName,
+				DatabaseConnection: "file:dummy_" + i.ClusterName + ".db?mode=memory&cache=shared",
+			},
+			User: sous.User{
+				Name:  "Sous Server " + i.ClusterName,
+				Email: "sous-" + i.ClusterName + "@example.com",
 			},
 		}
 		if err := i.Configure(config, c.RemoteGDMDir); err != nil {
