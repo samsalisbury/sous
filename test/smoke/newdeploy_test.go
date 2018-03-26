@@ -56,7 +56,12 @@ func setupEnv(t *testing.T) Fixture {
 	t.Helper()
 	// TODO SS: make this configurable by env var
 	// so can decide which bin to run against.
-	sousBin := "sous"
+	sousBin, err := exec.LookPath("sous")
+	if err != nil {
+		t.Fatalf("sous not found in path")
+	}
+	t.Logf("Server and client all using sous at %s", sousBin)
+
 	stopPIDs(t)
 	if testing.Short() {
 		t.Skipf("-short flag present")
@@ -490,6 +495,7 @@ func (c *TestClient) Run(t *testing.T, args ...string) (string, error) {
 	}
 	out := &bytes.Buffer{}
 	cmd.Stdout = io.MultiWriter(os.Stdout, out)
+	cmd.Stderr = os.Stderr
 	fmt.Fprintf(os.Stderr, "==> sous %s\n", strings.Join(args, " "))
 	err := cmd.Run()
 	if err != nil {
@@ -545,6 +551,10 @@ CMD if [ -z "$T" ]; then T=2; fi; echo -n "Sleeping ${T}s..."; sleep $T; echo "D
 	}
 
 	sous := f.Client
+
+	if _, err := sous.Run(t, "version"); err != nil {
+		t.Fatal(err)
+	}
 
 	// sous init
 	sous.Dir = projectDir
