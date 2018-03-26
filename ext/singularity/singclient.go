@@ -12,6 +12,7 @@ type (
 		GetRequests(useCache bool) (dtos.SingularityRequestParentList, error)
 		GetDeploy(reqID, depID string) (*dtos.SingularityDeployHistory, error)
 		GetDeploys(reqID string, count int32, page int32) (dtos.SingularityDeployHistoryList, error)
+		GetPendingDeploys() (dtos.SingularityPendingDeployList, error)
 	}
 
 	singClientSpy struct {
@@ -48,7 +49,16 @@ func (spy singClientSpy) GetDeploys(reqID string, count int32, page int32) (dtos
 	return res.Get(0).(dtos.SingularityDeployHistoryList), res.Error(1)
 }
 
+func (spy singClientSpy) GetPendingDeploys() (dtos.SingularityPendingDeployList, error) {
+	res := spy.spy.Called()
+	return res.Get(0).(dtos.SingularityPendingDeployList), res.Error(1)
+}
+
 func (ctrl singClientSpyController) cannedDeploy(cannedAnswer *dtos.SingularityDeployHistory) {
 	ctrl.MatchMethod("GetDeploy", spies.AnyArgs, cannedAnswer, nil)
 	ctrl.MatchMethod("GetDeploys", spies.AnyArgs, dtos.SingularityDeployHistoryList{cannedAnswer}, nil)
+}
+
+func (ctrl singClientSpyController) cannedPendingDeploys(cannedAnswer *dtos.SingularityPendingDeployList) {
+	ctrl.MatchMethod("GetPendingDeploys", spies.AnyArgs, cannedAnswer)
 }

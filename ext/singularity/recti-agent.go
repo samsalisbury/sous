@@ -88,7 +88,12 @@ func (ra *RectiAgent) Deploy(d sous.Deployable, reqID string) error {
 
 func buildDeployRequest(d sous.Deployable, reqID string, metadata map[string]string) (*dtos.SingularityDeployRequest, error) {
 	var depReq swaggering.Fielder
-	depID := computeDeployID(&d)
+	var depID string
+	if d.SchedulerDID != "" {
+		depID = d.SchedulerDID
+	} else {
+		depID = computeDeployID(&d)
+	}
 	dockerImage := d.BuildArtifact.Name
 	r := d.Deployment.DeployConfig.Resources
 	e := d.Deployment.DeployConfig.Env

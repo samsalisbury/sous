@@ -29,6 +29,7 @@ type SousNewDeploy struct {
 	dryrunOption      string
 	waitStable        bool
 	User              sous.User
+	graph.PossiblyInvalidConfig
 }
 
 func init() { TopLevelCommands["newdeploy"] = &SousNewDeploy{} }
@@ -79,7 +80,7 @@ func (sd *SousNewDeploy) Execute(args []string) cmdr.Result {
 	q["cluster"] = cluster
 	updater, err := sd.HTTPClient.Retrieve("./single-deployment", q, &d, nil)
 	if err != nil {
-		return cmdr.EnsureErrorResult(err)
+		return cmdr.InternalErrorf("Failed to retrieve current deployment: %s", err)
 	}
 	messages.ReportLogFieldsMessage("SousNewDeploy.Execute Retrieved Deployment",
 		logging.ExtraDebug1Level, sd.LogSink, d)
@@ -88,13 +89,17 @@ func (sd *SousNewDeploy) Execute(args []string) cmdr.Result {
 
 	updateResponse, err := updater.Update(d, sd.User.HTTPHeaders())
 	if err != nil {
-		return cmdr.EnsureErrorResult(err)
+		return cmdr.InternalErrorf("Failed to update deployment: %s", err)
 	}
 
 	if location := updateResponse.Location(); location != "" {
-		//return cmdr.Successf("Deployment queued at: %s", location)
-		client, _ := restful.NewClient("", sd.LogSink, nil)
-		return PollDeployQueue(location, client, 600, sd.LogSink)
+		fmt.Printf("Deployment queued: %s\n", location)
+		client, err := restful.NewClient("", sd.LogSink, nil)
+		if err != nil {
+			return cmdr.InternalErrorf("Failed to create polling client: %s", err)
+		}
+		pollTime := sd.Config.PollIntervalForClient
+		return PollDeployQueue(location, client, pollTime, sd.LogSink)
 	}
 	return cmdr.Successf("Desired version for %q in cluster %q already %q",
 		sd.TargetManifestID, cluster, sd.DeployFilterFlags.Tag)
@@ -107,42 +112,74 @@ func timeTrack(start time.Time) string {
 }
 
 // PollDeployQueue is used to poll server on status of Single Deployment.
-func PollDeployQueue(location string, client restful.HTTPClient, loopIteration int, log logging.LogSink) cmdr.Result {
+func PollDeployQueue(location string, client restful.HTTPClient, pollAtempts int, log logging.LogSink) cmdr.Result {
 	start := time.Now()
 	response := dto.R11nResponse{}
 	location = "http://" + location
 
-	for i := 0; i < loopIteration; i++ {
-		_, err := client.Retrieve(location, nil, &response, nil)
-
-		if i%10 == 0 {
-			msg := fmt.Sprintf("PollDeployQueue called waiting for created response... %s elapsed", timeTrack(start))
-			messages.ReportLogFieldsMessageToConsole(msg, logging.InformationLevel, log, location, response, err)
+	for i := 0; i < pollAtempts; i++ {
+		if _, err := client.Retrieve(location, nil, &response, nil); err != nil {
+			return cmdr.InternalErrorf("\n\tFailed to deploy: %s duration: %s\n", err, timeTrack(start))
 		}
 
-		if err != nil {
-			return cmdr.InternalErrorf("Failed to deploy: %s duration: %s", err, timeTrack(start))
+		if i%10 == 0 {
+			msg := fmt.Sprintf("\nPollDeployQueue called waiting for created response... %s elapsed", timeTrack(start))
+			messages.ReportLogFieldsMessageToConsole(msg, logging.InformationLevel, log, location, response)
 		}
 
 		queuePosition := response.QueuePosition
-		if queuePosition < 0 && response.Resolution != nil {
-			if checkResolution(*response.Resolution) {
-				return cmdr.Successf("Deployment Complete %s, duration: %s", response.Resolution.DeploymentID.String(), timeTrack(start))
+
+		if response.Resolution != nil && response.Resolution.Error != nil {
+			return cmdr.InternalErrorf("\n\tFailed to deploy: %s duration: %s\n", response.Resolution.Error, timeTrack(start))
+		}
+
+		if queuePosition < 0 && response.Resolution != nil &&
+			response.Resolution.DeployState != nil {
+
+			if checkFinished(*response.Resolution) {
+				if checkResolutionSuccess(*response.Resolution) {
+					return cmdr.Successf("\n\tDeployment Complete %s, %s, duration: %s\n",
+						response.Resolution.DeploymentID.String(), response.Resolution.DeployState.SourceID.Version, timeTrack(start))
+				}
+				//exit out to error handler
+				return cmdr.InternalErrorf("Failed to deploy %s: %s", location, response.Resolution.Error)
 			}
+
 		}
 		time.Sleep(1 * time.Second)
 	}
-	return cmdr.InternalErrorf("Failed to deploy %s", location)
+	return cmdr.InternalErrorf("Failed to deploy %s after %d attempts for duration: %s\n", location, pollAtempts, timeTrack(start))
 }
 
-func checkResolution(resolution sous.DiffResolution) bool {
-	response := false
+func checkFinished(resolution sous.DiffResolution) bool {
 	switch resolution.Desc {
-	case sous.CreateDiff:
-		response = true
-	case sous.ModifyDiff:
-		response = true
-
+	default:
+		return false
+	case sous.CreateDiff, sous.ModifyDiff:
+		return true
 	}
-	return response
+}
+
+/*
+const (
+	// DeployStatusAny represents any deployment status.
+0	DeployStatusAny DeployStatus = iota
+	// DeployStatusPending means the deployment has been requested in the
+	// cluster, but is not yet running.
+1	DeployStatusPending
+	// DeployStatusActive means the deployment is up and running.
+2	DeployStatusActive
+	// DeployStatusFailed means the deployment has failed.
+3	DeployStatusFailed
+)
+For now treating everything but Active as return failed, could look to changin in future
+*/
+func checkResolutionSuccess(resolution sous.DiffResolution) bool {
+	//We know 3 is a failure and 2 is a success so far
+	switch resolution.DeployState.Status {
+	default:
+		return false
+	case sous.DeployStatusActive:
+		return true
+	}
 }

@@ -88,6 +88,13 @@ func NewDeployer(c rectificationClient, ls logging.LogSink, options ...DeployerO
 // Rectify invokes actions to ensure that the real world matches pair.Post,
 // given that it currently matches pair.Prior.
 func (r *deployer) Rectify(pair *sous.DeployablePair) sous.DiffResolution {
+	postID := ""
+	version := ""
+	if pair.Post != nil {
+		postID = pair.Post.ID().String()
+		version = pair.Post.DeploySpec().Version.String()
+	}
+
 	switch k := pair.Kind(); k {
 	default:
 		panic(fmt.Sprintf("unrecognised kind %q", k))
@@ -98,7 +105,7 @@ func (r *deployer) Rectify(pair *sous.DeployablePair) sous.DiffResolution {
 		}
 		return resolution
 	case sous.AddedKind:
-		messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Starting an AddedKind %s:%s", pair.Post.ID(), pair.Post.DeploySpec().Version.String()), logging.ExtraDebug1Level, r.log, pair)
+		messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Starting an AddedKind %s:%s", postID, version), logging.ExtraDebug1Level, r.log, pair)
 		result := sous.DiffResolution{DeploymentID: pair.ID()}
 		if err := r.RectifySingleCreate(pair); err != nil {
 			result.Desc = "not created"
@@ -118,7 +125,7 @@ func (r *deployer) Rectify(pair *sous.DeployablePair) sous.DiffResolution {
 		reportDiffResolutionMessage("Result of create", result, logging.InformationLevel, r.log)
 		return result
 	case sous.RemovedKind:
-		messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Starting an RemoveKind %s:%s", pair.Post.ID(), pair.Post.DeploySpec().Version.String()), logging.ExtraDebug1Level, r.log, pair)
+		messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Starting an RemoveKind %s:%s", postID, version), logging.ExtraDebug1Level, r.log, pair)
 		result := sous.DiffResolution{DeploymentID: pair.ID()}
 		if err := r.RectifySingleDelete(pair); err != nil {
 			result.Error = sous.WrapResolveError(&sous.DeleteError{Deployment: pair.Prior.Deployment.Clone(), Err: err})
@@ -130,7 +137,7 @@ func (r *deployer) Rectify(pair *sous.DeployablePair) sous.DiffResolution {
 		return result
 	case sous.ModifiedKind:
 		result := sous.DiffResolution{DeploymentID: pair.ID()}
-		messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Starting a ModifiedKind %s:%s", pair.Post.ID(), pair.Post.DeploySpec().Version.String()), logging.ExtraDebug1Level, r.log, pair)
+		messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Starting a ModifiedKind %s:%s", postID, version), logging.ExtraDebug1Level, r.log, pair)
 		if err := r.RectifySingleModification(pair); err != nil {
 			dp := &sous.DeploymentPair{
 				Prior: pair.Prior.Deployment.Clone(),

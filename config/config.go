@@ -45,6 +45,8 @@ type (
 		// MaxHTTPConcurrencySingularity is the maximum number of concurrent
 		// requests that can be made to a single Singularity instance.
 		MaxHTTPConcurrencySingularity int `env:"MAX_HTTP_CONCURRENCY_SINGULARITY"`
+		// PollIntervalForClient is the maximum number of checks for client on SOUS Deploy
+		PollIntervalForClient int `env:"SOUS_POLL_INTERVAL_FOR_CLIENT"`
 	}
 )
 
@@ -82,6 +84,7 @@ func DefaultConfig() Config {
 	return Config{
 		Docker: docker.DefaultConfig(),
 		MaxHTTPConcurrencySingularity: 10,
+		PollIntervalForClient:         600,
 	}
 }
 

@@ -36,7 +36,7 @@ func (hr *healthResource) Get(*restful.RouteMap, http.ResponseWriter, *http.Requ
 
 func (ghh *getHealthHandler) Exchange() (interface{}, int) {
 	return Health{
-		Version:  ghh.version.Format("M.m.p"),
-		Revision: ghh.version.Format("?"),
+		Version:  ghh.version.Format(semv.MMPPre),
+		Revision: ghh.version.Format(semv.Meta),
 	}, 200
 }

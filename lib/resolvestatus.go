@@ -50,7 +50,11 @@ type (
 		// Error captures the error (if any) encountered during diff resolution
 		Error *ErrorWrapper
 
+		// DeployState is the state of this deployment as running.
 		DeployState *DeployState
+
+		// SchedulerURL is a URL where this deployment can be seen.
+		SchedulerURL string
 	}
 
 	// ResolutionType marks the kind of a DiffResolution

@@ -2,6 +2,7 @@ package sous
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 )
@@ -35,13 +36,24 @@ func NewRectification(dp DeployablePair) *Rectification {
 // once.
 func (r *Rectification) Begin(d Deployer, reg Registry, rf *ResolveFilter, stateReader StateReader) {
 	r.once.Do(func() {
-		// For it to be sensible to separate Begin and Wait,
-		// this needs to happen async
 		go func() {
 			defer r.cancel()
 			if r.Pair.Post.BuildArtifact == nil {
-				pair, _ := HandlePairsByRegistry(reg, &r.Pair)
-				r.Pair = *pair
+				pair, diff := HandlePairsByRegistry(reg, &r.Pair)
+				if diff != nil && diff.Error != nil {
+					r.Lock()
+					r.Resolution.Error = WrapResolveError(diff.Error)
+					r.Unlock()
+					return
+				}
+				if pair != nil {
+					r.Pair = *pair
+				} else {
+					r.Lock()
+					r.Resolution.Error = WrapResolveError(fmt.Errorf("Unknown Error Occurred, no resolve error and no pair present"))
+					r.Unlock()
+					return
+				}
 			}
 			r.Lock()
 			r.Resolution = d.Rectify(&r.Pair)
@@ -73,7 +85,7 @@ func (r *Rectification) Begin(d Deployer, reg Registry, rf *ResolveFilter, state
 					r.Unlock()
 					return
 				}
-				if s.Final() {
+				if s.Final() && s.SourceID.Equal(r.Pair.Post.SourceID) {
 					r.Lock()
 					r.Resolution.DeployState = s
 					r.Unlock()

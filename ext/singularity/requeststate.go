@@ -1,7 +1,12 @@
 package singularity
 
 import (
+	"fmt"
+	"strings"
+
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 	"github.com/pkg/errors"
 )
 
@@ -21,11 +26,16 @@ func (r *deployer) Status(reg sous.Registry, clusters sous.Clusters, pair *sous.
 		return nil, errors.Errorf("No cluster found for %q. Known are: %q.", clusterName, clusters.Names())
 	}
 
+	depID := pair.Post.SchedulerDID
 	client := r.buildSingClient(url)
+
+	messages.ReportLogFieldsMessageToConsole(
+		fmt.Sprintf("Watching pending deployments for deploy ID: %s", depID),
+		logging.ExtraDebug1Level, r.log, depID)
 
 	reqParent, err := client.GetRequest(reqID, false) //don't use the web cache
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "getting request")
 	}
 
 	singReq := SingReq{
@@ -36,10 +46,47 @@ func (r *deployer) Status(reg sous.Registry, clusters sous.Clusters, pair *sous.
 
 	tgt, err := BuildDeployment(reg, clusters, singReq, r.log)
 
+	tgt.SchedulerURL = fmt.Sprintf("http://%s/request/%s", url, reqID)
+	if !tgt.Status.Failed() {
+		status, err := r.checkPendingList(pair.Post, client)
+		if err != nil {
+			return nil, errors.Wrapf(err, "getting pending state")
+		}
+		tgt.Status = status
+	}
+
 	return &tgt, errors.Wrapf(err, "getting request state")
 }
 
 func (r *deployer) getRequestID(d *sous.Deployable) (string, error) {
 	// TODO: add a cache of known Deployables to their Requests (and current state...)
 	return computeRequestID(d)
+}
+
+func (r *deployer) checkPendingList(d *sous.Deployable, client singClient) (sous.DeployStatus, error) {
+	depID := d.SchedulerDID
+
+	pending, err := client.GetPendingDeploys()
+
+	if err != nil {
+		return sous.DeployStatusAny, malformedResponse{"Getting pending deploys:" + err.Error()}
+	}
+	pds := make([]string, len(pending))
+	for i, p := range pending {
+		pds[i] = p.DeployMarker.DeployId
+	}
+
+	messages.ReportLogFieldsMessageToConsole(
+		fmt.Sprintf("Watching pending deployments for deploy ID: %s", depID),
+		logging.ExtraDebug1Level, r.log, depID)
+	messages.ReportLogFieldsMessageToConsole(
+		fmt.Sprintf("There are %d pending deploys: %s", len(pending), strings.Join(pds, ", ")),
+		logging.ExtraDebug1Level, r.log, depID)
+
+	for _, p := range pending {
+		if p.DeployMarker.DeployId == depID {
+			return sous.DeployStatusPending, nil
+		}
+	}
+	return sous.DeployStatusActive, nil
 }
