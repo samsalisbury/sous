@@ -139,9 +139,9 @@ func (c *TestClient) Configure(server, dockerReg string) error {
 		},
 	}
 	conf.PollIntervalForClient = 600
-	conf.Logging.Basic.Level = "ExtraDebug1"
-	conf.Logging.Basic.DisableConsole = false
-	conf.Logging.Basic.ExtraConsole = true
+	//conf.Logging.Basic.Level = "ExtraDebug1"
+	//conf.Logging.Basic.DisableConsole = false
+	//conf.Logging.Basic.ExtraConsole = true
 	y, err := yaml.Marshal(conf)
 	if err != nil {
 		return err
@@ -596,7 +596,7 @@ CMD if [ -z "$T" ]; then T=2; fi; echo -n "Sleeping ${T}s..."; sleep $T; echo "D
 		t.Fatal(err)
 	}
 
-	if _, err := sous.Run(t, "newdeploy", "-d", "-cluster", "cluster1", "-tag", "1.2.3"); err != nil {
+	if _, err := sous.Run(t, "newdeploy", "-cluster", "cluster1", "-tag", "1.2.3"); err != nil {
 		t.Fatal(err)
 	}
 
