@@ -26,7 +26,7 @@ func (r *deployer) Status(reg sous.Registry, clusters sous.Clusters, pair *sous.
 		return nil, errors.Errorf("No cluster found for %q. Known are: %q.", clusterName, clusters.Names())
 	}
 
-	depID := computeDeployID(pair.Post)
+	depID := pair.Post.SchedulerDID
 	client := r.buildSingClient(url)
 
 	messages.ReportLogFieldsMessageToConsole(
@@ -64,7 +64,7 @@ func (r *deployer) getRequestID(d *sous.Deployable) (string, error) {
 }
 
 func (r *deployer) checkPendingList(d *sous.Deployable, client singClient) (sous.DeployStatus, error) {
-	depID := computeDeployID(d)
+	depID := d.SchedulerDID
 
 	pending, err := client.GetPendingDeploys()
 
