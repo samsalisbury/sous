@@ -2,6 +2,7 @@ package sous
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 )
@@ -39,11 +40,17 @@ func (r *Rectification) Begin(d Deployer, reg Registry, rf *ResolveFilter, state
 			defer r.cancel()
 			if r.Pair.Post.BuildArtifact == nil {
 				pair, diff := HandlePairsByRegistry(reg, &r.Pair)
-				if diff.Error == nil {
+				if diff != nil && diff.Error != nil {
+					r.Lock()
+					r.Resolution.Error = WrapResolveError(diff.Error)
+					r.Unlock()
+					return
+				}
+				if pair != nil {
 					r.Pair = *pair
 				} else {
 					r.Lock()
-					r.Resolution.Error = WrapResolveError(diff.Error)
+					r.Resolution.Error = WrapResolveError(fmt.Errorf("Unknown Error Occurred, no resolve error and no pair present"))
 					r.Unlock()
 					return
 				}

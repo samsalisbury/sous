@@ -115,38 +115,39 @@ func PollDeployQueue(location string, client restful.HTTPClient, pollAtempts int
 	location = "http://" + location
 
 	for i := 0; i < pollAtempts; i++ {
-		_, err := client.Retrieve(location, nil, &response, nil)
-
-		if i%10 == 0 {
-			msg := fmt.Sprintf("PollDeployQueue called waiting for created response... %s elapsed", timeTrack(start))
-			messages.ReportLogFieldsMessageToConsole(msg, logging.InformationLevel, log, location, response, err)
+		if _, err := client.Retrieve(location, nil, &response, nil); err != nil {
+			return cmdr.InternalErrorf("\n\tFailed to deploy: %s duration: %s\n", err, timeTrack(start))
 		}
 
-		if err != nil {
-			return cmdr.InternalErrorf("Failed to deploy: %s duration: %s", err, timeTrack(start))
+		if i%10 == 0 {
+			msg := fmt.Sprintf("\nPollDeployQueue called waiting for created response... %s elapsed", timeTrack(start))
+			messages.ReportLogFieldsMessageToConsole(msg, logging.InformationLevel, log, location, response)
 		}
 
 		queuePosition := response.QueuePosition
 
+		//check always for error
 		if response.Resolution != nil && response.Resolution.Error != nil {
-			return cmdr.EnsureErrorResult(err)
+			return cmdr.InternalErrorf("\n\tFailed to deploy: %s duration: %s\n", response.Resolution.Error, timeTrack(start))
 		}
 
 		if queuePosition < 0 && response.Resolution != nil &&
 			response.Resolution.DeployState != nil {
-			if checkFinished(*response.Resolution) {
 
+			if checkFinished(*response.Resolution) {
 				if checkResolutionSuccess(*response.Resolution) {
-					return cmdr.Successf("Deployment Complete %s, duration: %s", response.Resolution.DeploymentID.String(), timeTrack(start))
+					return cmdr.Successf("\n\tDeployment Complete %s, %s, duration: %s\n",
+						response.Resolution.DeploymentID.String(), response.Resolution.DeployState.SourceID.Version, timeTrack(start))
 				} else {
 					//exit out to error handler
 					break
 				}
 			}
+
 		}
 		time.Sleep(1 * time.Second)
 	}
-	return cmdr.InternalErrorf("Failed to deploy %s", location)
+	return cmdr.InternalErrorf("Failed to deploy %s\n", location)
 }
 
 func checkFinished(resolution sous.DiffResolution) bool {
