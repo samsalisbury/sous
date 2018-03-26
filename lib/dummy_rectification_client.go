@@ -37,7 +37,7 @@ func (drc *DummyRectificationClient) logf(f string, v ...interface{}) {
 }
 
 // Deploy implements part of the RectificationClient interface
-func (drc *DummyRectificationClient) Deploy(d Deployable, reqID string) error {
+func (drc *DummyRectificationClient) Deploy(d Deployable, reqID, depID string) error {
 	drc.logf("Deploying instance %#v", d)
 	drc.Deployed = append(drc.Deployed, d)
 	return nil

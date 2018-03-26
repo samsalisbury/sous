@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"sync"
 	"time"
+
+	uuid "github.com/satori/go.uuid"
 )
 
 // Rectification represents the rectification of a single DeployablePair.
@@ -15,6 +17,7 @@ type Rectification struct {
 	sync.RWMutex
 	Resolution DiffResolution
 
+	uuid   uuid.UUID
 	once   sync.Once
 	ctx    context.Context
 	cancel func()
@@ -24,10 +27,13 @@ type Rectification struct {
 // After this its useful life is over.
 func NewRectification(dp DeployablePair) *Rectification {
 	c, cancel := context.WithCancel(context.Background())
+	u := uuid.NewV4()
+
 	return &Rectification{
 		Pair:   dp,
 		ctx:    c,
 		cancel: cancel,
+		uuid:   u,
 	}
 }
 
@@ -38,73 +44,82 @@ func (r *Rectification) Begin(d Deployer, reg Registry, rf *ResolveFilter, state
 	r.once.Do(func() {
 		go func() {
 			defer r.cancel()
-			if r.Pair.Post.BuildArtifact == nil {
-				pair, diff := HandlePairsByRegistry(reg, &r.Pair)
-				if diff != nil && diff.Error != nil {
-					r.Lock()
-					r.Resolution.Error = WrapResolveError(diff.Error)
-					r.Unlock()
-					return
-				}
-				if pair != nil {
-					r.Pair = *pair
-				} else {
-					r.Lock()
-					r.Resolution.Error = WrapResolveError(fmt.Errorf("Unknown Error Occurred, no resolve error and no pair present"))
-					r.Unlock()
-					return
-				}
-			}
-			r.Lock()
-			r.Resolution = d.Rectify(&r.Pair)
-			r.Unlock()
 
-			state, err := stateReader.ReadState()
-			if err != nil {
-				r.Lock()
-				r.Resolution.Error = WrapResolveError(err)
-				r.Unlock()
-				return
-			}
-
-			clusters := state.Defs.Clusters
-			clusters = rf.FilteredClusters(clusters)
-
-			// TODO constants / configs
-			tick := time.NewTicker(250 * time.Millisecond)
-			defer tick.Stop()
-
-			end, ec := context.WithTimeout(r.ctx, 20*time.Minute)
-			defer ec()
-
-			for {
-				s, err := r.pollOnce(d, reg, clusters)
-				if err != nil {
-					r.Lock()
-					r.Resolution.Error = &ErrorWrapper{error: err}
-					r.Unlock()
-					return
-				}
-				if s.Final() && s.SourceID.Equal(r.Pair.Post.SourceID) {
-					r.Lock()
-					r.Resolution.DeployState = s
-					r.Unlock()
-					return
-				}
-				select {
-				case <-tick.C:
-				case <-end.Done():
-					r.Lock()
-					defer r.Unlock()
-					if r.Resolution.DeployState == nil {
-						r.Resolution.DeployState = &DeployState{}
-					}
-					return
-				}
-			}
+			r.rectify(d, reg)
+			r.awaitDone(d, reg, rf, stateReader)
 
 		}()
 	})
+}
+
+func (r *Rectification) rectify(d Deployer, reg Registry) {
+	if r.Pair.Post.BuildArtifact == nil {
+		pair, diff := HandlePairsByRegistry(reg, &r.Pair)
+		if diff != nil && diff.Error != nil {
+			r.Lock()
+			r.Resolution.Error = WrapResolveError(diff.Error)
+			r.Unlock()
+			return
+		}
+		if pair != nil {
+			r.Pair = *pair
+		} else {
+			r.Lock()
+			r.Resolution.Error = WrapResolveError(fmt.Errorf("Unknown Error Occurred, no resolve error and no pair present"))
+			r.Unlock()
+			return
+		}
+	}
+	r.Lock()
+	r.Resolution = d.Rectify(&r.Pair)
+	r.Unlock()
+}
+
+func (r *Rectification) awaitDone(d Deployer, reg Registry, rf *ResolveFilter, stateReader StateReader) {
+	state, err := stateReader.ReadState()
+	if err != nil {
+		r.Lock()
+		r.Resolution.Error = WrapResolveError(err)
+		r.Unlock()
+		return
+	}
+
+	clusters := state.Defs.Clusters
+	clusters = rf.FilteredClusters(clusters)
+
+	// TODO constants / configs
+	tick := time.NewTicker(250 * time.Millisecond)
+	defer tick.Stop()
+
+	end, ec := context.WithTimeout(r.ctx, 20*time.Minute)
+	defer ec()
+
+	for {
+		s, err := r.pollOnce(d, reg, clusters)
+		if err != nil {
+			r.Lock()
+			r.Resolution.Error = &ErrorWrapper{error: err}
+			r.Unlock()
+			return
+		}
+		if s.Final() && s.SourceID.Equal(r.Pair.Post.SourceID) {
+			r.Lock()
+			r.Resolution.DeployState = s
+			r.Unlock()
+			return
+		}
+		select {
+		case <-tick.C:
+		case <-end.Done():
+			r.Lock()
+			defer r.Unlock()
+			if r.Resolution.DeployState == nil {
+				r.Resolution.DeployState = &DeployState{}
+			}
+			return
+		}
+	}
+
 }
 
 func (r *Rectification) pollOnce(d Deployer, reg Registry, clusters Clusters) (*DeployState, error) {

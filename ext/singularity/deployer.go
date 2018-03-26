@@ -55,7 +55,7 @@ type (
 	// rectificationClient abstracts the raw interactions with Singularity.
 	rectificationClient interface {
 		// Deploy creates a new deploy on a particular requeust
-		Deploy(d sous.Deployable, reqID string) error
+		Deploy(d sous.Deployable, reqID, depID string) error
 
 		// PostRequest sends a request to a Singularity cluster to initiate
 		PostRequest(d sous.Deployable, reqID string) error
@@ -93,6 +93,9 @@ func (r *deployer) Rectify(pair *sous.DeployablePair) sous.DiffResolution {
 	if pair.Post != nil {
 		postID = pair.Post.ID().String()
 		version = pair.Post.DeploySpec().Version.String()
+	}
+	if pair.UUID == uuid.Nil {
+		pair.UUID = uuid.NewV4()
 	}
 
 	switch k := pair.Kind(); k {
@@ -188,7 +191,9 @@ func (r *deployer) RectifySingleCreate(d *sous.DeployablePair) (err error) {
 	if err = r.Client.PostRequest(*d.Post, reqID); err != nil {
 		return err
 	}
-	return r.Client.Deploy(*d.Post, reqID)
+	depID := computeDeployIDFromUUID(d.Post, d.UUID)
+
+	return r.Client.Deploy(*d.Post, reqID, depID)
 }
 
 func (r *deployer) RectifySingleDelete(d *sous.DeployablePair) (err error) {
@@ -236,7 +241,8 @@ func (r *deployer) RectifySingleModification(pair *sous.DeployablePair) (err err
 
 	if changesDep(pair) {
 		reportDeployerMessage("Deploying", pair, diffs, data, nil, logging.DebugLevel, r.log)
-		if err := r.Client.Deploy(*pair.Post, reqID); err != nil {
+		depID := computeDeployIDFromUUID(pair.Post, pair.UUID)
+		if err := r.Client.Deploy(*pair.Post, reqID, depID); err != nil {
 			return err
 		}
 	} else {
@@ -294,8 +300,12 @@ func MakeRequestID(depID sous.DeploymentID) (string, error) {
 }
 
 func computeDeployID(d *sous.Deployable) string {
+	return computeDeployIDFromUUID(d, uuid.NewV4())
+}
+
+func computeDeployIDFromUUID(d *sous.Deployable, uid uuid.UUID) string {
 	var versionTrunc string
-	uuidEntire := stripDeployID(uuid.NewV4().String())
+	uuidEntire := stripDeployID(uid.String())
 	versionSansMeta := stripMetadata(d.Deployment.SourceID.Version.String())
 	versionEntire := sanitizeDeployID(versionSansMeta)
 

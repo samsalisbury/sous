@@ -1,6 +1,10 @@
 package sous
 
-import "fmt"
+import (
+	"fmt"
+
+	uuid "github.com/satori/go.uuid"
+)
 
 type (
 	// A DeployablePair is a pair of deployables, describing a "before and after"
@@ -10,6 +14,8 @@ type (
 		Prior, Post  *Deployable
 		name         DeploymentID
 		ExecutorData interface{}
+		// Allows us to track a deployable pair over time and across API requests.
+		UUID uuid.UUID
 	}
 
 	// DeployablePairKind describes the disposition of a DeployablePair
