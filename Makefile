@@ -28,7 +28,9 @@ GIT_TAG := $(shell $(TAG_TEST))
 endif
 
 REPO_ROOT := $(shell git rev-parse --show-toplevel)
-SMOKE_TEST_DATA_DIR ?= $(REPO_ROOT)/.smoketest/$(DATE)
+SMOKE_TEST_BASEDIR ?= $(REPO_ROOT)/.smoketest
+SMOKE_TEST_DATA_DIR ?= $(SMOKE_TEST_BASEDIR)/$(DATE)
+SMOKE_TEST_LATEST_LINK ?= $(SMOKE_TEST_BASEDIR)/latest
 SMOKE_TEST_BINARY ?= $(SMOKE_TEST_DATA_DIR)/sous
 
 # install-dev uses DESC and DATE to make a git described, timestamped dev build.
@@ -276,9 +278,16 @@ test-integration: setup-containers
 $(SMOKE_TEST_BINARY):
 	go build -o $@ -tags smoke -ldflags "-X main.VersionString=$(DEV_VERSION)"
 
+$(SMOKE_TEST_LATEST_LINK): $(SMOKE_TEST_DATA_DIR)
+	rm $@ || true
+	ln -s $(SMOKE_TEST_DATA_DIR) $@
+
 .PHONY: test-smoke
-test-smoke: $(SMOKE_TEST_BINARY) setup-containers
-	SMOKE_TEST_BASEDIR=$(SMOKE_TEST_BASEDIR) SOUS_TEST_BINARY=$(SMOKE_TEST_BINARY) SOUS_QA_DESC=$(QA_DESC) go test -tags smoke -v -count 1 ./test/smoke
+test-smoke: $(SMOKE_TEST_BINARY) $(SMOKE_TEST_LATEST_LINK) setup-containers
+	SMOKE_TEST_DATA_DIR=$(SMOKE_TEST_DATA_DIR)/data \
+	SMOKE_TEST_BINARY=$(SMOKE_TEST_BINARY) \
+	SOUS_QA_DESC=$(QA_DESC) \
+	go test -tags smoke -v -count 1 ./test/smoke
 
 $(QA_DESC): sous-qa-setup
 	./sous_qa_setup --compose-dir ./integration/test-registry/ --out-path=$(QA_DESC)

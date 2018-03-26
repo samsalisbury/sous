@@ -82,14 +82,42 @@ func getSousBin(t *testing.T) string {
 	return sousBin
 }
 
-func getDataDir(t *testing.T) string {
+func dirExistsAndIsNotEmpty(t *testing.T, baseDir string) bool {
+	f, err := os.Open(baseDir)
+	if err != nil {
+		if isNotExist(err) {
+			return false
+		}
+		t.Fatalf("Could not check dir not exists or empty: %s", err)
+	}
+	defer func() {
+		if err := f.Close(); err != nil {
+			t.Fatalf("failed to close file handle: %s", err)
+		}
+	}()
+	_, err = f.Readdirnames(1)
+	return err == nil || (err != io.EOF)
+}
+
+// timeGoTestInvoked is used to group test data for tests run
+// via the same go test invocation.
+var timeGoTestInvoked = time.Now().Format(time.RFC3339)
+
+func getDataDir(t *testing.T, testName string) string {
 	baseDir := os.Getenv("SMOKE_TEST_DATA_DIR")
 	from := "$SMOKE_TEST_DATA_DIR"
 	if baseDir == "" {
-		baseDir = os.TempDir()
+		baseDir = path.Join(os.TempDir(), timeGoTestInvoked)
 		from = "$TMPDIR"
 	}
-	baseDir = path.Join(baseDir, time.Now().Format(time.RFC3339))
+
+	baseDir = path.Join(baseDir, testName)
+
+	// Check dir does not exist or is at least empty.
+	if dirExistsAndIsNotEmpty(t, baseDir) {
+		t.Fatalf("Test data dir already exists and is not empty: %q", baseDir)
+	}
+
 	t.Logf("Writing test data to %q (from %s)", baseDir, from)
 	if err := os.MkdirAll(baseDir, 0777); err != nil {
 		t.Fatalf("Failed to create smoke test data dir %q: %s", baseDir, err)
@@ -105,7 +133,7 @@ func addURLsToState(state *sous.State, envDesc desc.EnvDesc) {
 	state.Defs.DockerRepo = envDesc.RegistryName()
 }
 
-func setupEnv(t *testing.T) Fixture {
+func setupEnv(t *testing.T, testName string) Fixture {
 	t.Helper()
 	if testing.Short() {
 		t.Skipf("-short flag present")
@@ -113,7 +141,9 @@ func setupEnv(t *testing.T) Fixture {
 	stopPIDs(t)
 	sousBin := getSousBin(t)
 	envDesc := getEnvDesc(t)
-	baseDir := getDataDir(t)
+	baseDir := getDataDir(t, testName)
+
+	resetSingularity(t, envDesc.SingularityURL())
 
 	state := sous.StateFixture(sous.StateFixtureOpts{
 		ClusterCount:  3,

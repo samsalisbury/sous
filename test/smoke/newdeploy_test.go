@@ -13,7 +13,7 @@ import (
 )
 
 func TestSousNewdeploy(t *testing.T) {
-	f := setupEnv(t)
+	f := setupEnv(t, "TestSousNewdeploy")
 
 	dockerfile := `FROM alpine
 CMD if [ -z "$T" ]; then T=2; fi; echo -n "Sleeping ${T}s..."; sleep $T; echo "Done"; echo "Listening on :$PORT0"; while true; do echo -e "HTTP/1.1 200 OK\n\n$(date)" | nc -l -p $PORT0; done
