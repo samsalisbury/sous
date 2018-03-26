@@ -212,6 +212,16 @@ func mkCMD(dir, name string, args ...string) *exec.Cmd {
 	c := exec.Command(name, args...)
 	c.Dir = dir
 	c.Env = os.Environ()
+	// Isolate git...
+	c.Env = append(c.Env,
+		"GIT_CONFIG_NOSYSTEM=yes",
+		"HOME=/nowhere",
+		"PREFIX=/nowhere",
+		"GIT_COMMITTER_NAME=Tester",
+		"GIT_COMMITTER_EMAIL=tester@example.com",
+		"GIT_AUTHOR_NAME=Tester",
+		"GIT_AUTHOR_EMAIL=tester@example.com",
+	)
 	return c
 }
 
