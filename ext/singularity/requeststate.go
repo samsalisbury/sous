@@ -80,9 +80,6 @@ func (r *deployer) checkPendingList(d *sous.Deployable, client singClient, depID
 	}
 
 	messages.ReportLogFieldsMessageToConsole(
-		fmt.Sprintf("Watching pending deployments for deploy ID: %s", depID),
-		logging.ExtraDebug1Level, r.log, depID)
-	messages.ReportLogFieldsMessageToConsole(
 		fmt.Sprintf("There are %d pending deploys: %s", len(pending), strings.Join(pds, ", ")),
 		logging.ExtraDebug1Level, r.log, depID)
 
