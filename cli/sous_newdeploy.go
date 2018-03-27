@@ -101,7 +101,28 @@ func (sd *SousNewDeploy) Execute(args []string) cmdr.Result {
 			return cmdr.InternalErrorf("Failed to create polling client: %s", err)
 		}
 		pollTime := sd.Config.PollIntervalForClient
-		return PollDeployQueue(location, client, pollTime, sd.LogSink)
+
+		p := mpb.New()
+
+		// initialize bar with dynamic total and initial total guess = 80
+		bar := p.AddBar(100,
+			// indicate that total is dynamic
+			mpb.BarDynamicTotal(),
+			// trigger total auto increment by 1, when 18 % remains till bar completion
+			mpb.BarAutoIncrTotal(18, 1),
+			mpb.PrependDecorators(
+				decor.CountersNoUnit("%d / %d", 12, 0),
+			),
+			mpb.AppendDecorators(
+				decor.Percentage(5, 0),
+			),
+		)
+		result := PollDeployQueue(location, client, pollTime, bar, sd.LogSink)
+
+		bar.Complete()
+		p.Wait()
+		p.RemoveBar(bar)
+		return result
 	}
 	return cmdr.Successf("Desired version for %q in cluster %q already %q",
 		sd.TargetManifestID, cluster, sd.DeployFilterFlags.Tag)
@@ -114,55 +135,14 @@ func timeTrack(start time.Time) string {
 }
 
 // PollDeployQueue is used to poll server on status of Single Deployment.
-func PollDeployQueue(location string, client restful.HTTPClient, pollAtempts int, log logging.LogSink) cmdr.Result {
+func PollDeployQueue(location string, client restful.HTTPClient, pollAtempts int, bar *mpb.Bar, log logging.LogSink) cmdr.Result {
 	start := time.Now()
 	response := dto.R11nResponse{}
-	p := mpb.New()
-
-	// initialize bar with dynamic total and initial total guess = 80
-	bar := p.AddBar(100,
-		// indicate that total is dynamic
-		mpb.BarDynamicTotal(),
-		// trigger total auto increment by 1, when 18 % remains till bar completion
-		mpb.BarAutoIncrTotal(18, 1),
-		mpb.PrependDecorators(
-			decor.CountersNoUnit("%d / %d", 12, 0),
-		),
-		mpb.AppendDecorators(
-			decor.Percentage(5, 0),
-		),
-	)
-	/*
-		totalUpd1 := make(chan struct{})
-		totalUpd2 := make(chan struct{})
-		go func() {
-			<-totalUpd1
-			// intermediate not final total update
-			bar.SetTotal(200, false)
-			<-totalUpd2
-			// final total update
-			bar.SetTotal(300, true)
-		}()
-
-		max := 200 * time.Millisecond
-		for i := 0; i < 300; i++ {
-			if i == 140 {
-				close(totalUpd1)
-			}
-			if i == 250 {
-				close(totalUpd2)
-			}
-			time.Sleep(time.Duration(rand.Intn(10)+1) * max / 10)
-			bar.Increment()
-		}
-		p.Wait()
-	*/
 	location = "http://" + location
 
 	for i := 0; i < pollAtempts; i++ {
 		bar.IncrBy(5)
 		if _, err := client.Retrieve(location, nil, &response, nil); err != nil {
-			bar.Complete()
 			return cmdr.InternalErrorf("\n\tFailed to deploy: %s duration: %s\n", err, timeTrack(start))
 		}
 
@@ -175,7 +155,6 @@ func PollDeployQueue(location string, client restful.HTTPClient, pollAtempts int
 		queuePosition := response.QueuePosition
 
 		if response.Resolution != nil && response.Resolution.Error != nil {
-			bar.Complete()
 			return cmdr.InternalErrorf("\n\tFailed to deploy: %s duration: %s\n", response.Resolution.Error, timeTrack(start))
 		}
 
@@ -184,13 +163,9 @@ func PollDeployQueue(location string, client restful.HTTPClient, pollAtempts int
 
 			if checkFinished(*response.Resolution) {
 				if checkResolutionSuccess(*response.Resolution) {
-					bar.Complete()
-					p.Wait()
-					p.RemoveBar(bar)
 					return cmdr.Successf("\n\tDeployment Complete %s, %s, duration: %s\n",
 						response.Resolution.DeploymentID.String(), response.Resolution.DeployState.SourceID.Version, timeTrack(start))
 				}
-				bar.Complete()
 				//exit out to error handler
 				return cmdr.InternalErrorf("Failed to deploy %s: %s", location, response.Resolution.Error)
 			}
@@ -198,8 +173,6 @@ func PollDeployQueue(location string, client restful.HTTPClient, pollAtempts int
 		}
 		time.Sleep(1 * time.Second)
 	}
-	bar.Complete()
-	p.Wait()
 	return cmdr.InternalErrorf("Failed to deploy %s after %d attempts for duration: %s\n", location, pollAtempts, timeTrack(start))
 }
 
