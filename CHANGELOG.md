@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
+## [Unreleased](//github.com/opentable/sous/compare/0.5.77...HEAD)
+
+### Added
+* All: Add smoke test of the newdeploy cli
 
 ## [0.5.77](//github.com/opentable/sous/compare/0.5.76...0.5.77)
 

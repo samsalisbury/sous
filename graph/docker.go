@@ -1,4 +1,4 @@
-//+build !integration
+//+build !smoke
 
 package graph
 
