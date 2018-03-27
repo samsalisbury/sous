@@ -260,6 +260,7 @@ func baseDeployment() *sous.Deployment {
 
 func matchedPair(t *testing.T, startDep *sous.Deployment) *sous.DeployablePair {
 	reqID := "dummy-request"
+	depID := "dummy-deploy"
 	dockerName := "dummy-docker-image"
 	// This happens in DiskStateManager on Read.
 	flaws := startDep.Validate()
@@ -279,7 +280,7 @@ func matchedPair(t *testing.T, startDep *sous.Deployment) *sous.DeployablePair {
 	req := &dtos.SingularityRequest{}
 	jsonRoundtrip(t, aReq, req)
 
-	aDepReq, err := buildDeployRequest(deployable, reqID, map[string]string{})
+	aDepReq, err := buildDeployRequest(deployable, reqID, depID, map[string]string{})
 	assert.NoError(t, err)
 	assert.NotNil(t, aDepReq)
 

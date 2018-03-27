@@ -18,6 +18,7 @@ func TestBuildDeployRequest(t *testing.T) {
 	require := require.New(t)
 
 	rID := "expectedRID"
+	dID := "expectedDID"
 	dr, err := buildDeployRequest(sous.Deployable{
 		BuildArtifact: &sous.BuildArtifact{
 			Name: "an-image",
@@ -38,10 +39,11 @@ func TestBuildDeployRequest(t *testing.T) {
 				BaseURL: "http://cluster",
 			},
 		},
-	}, rID, map[string]string{})
+	}, rID, dID, map[string]string{})
 	require.NoError(err)
 	assert.NotNil(dr)
 	assert.Equal(dr.Deploy.RequestId, rID)
+	assert.Equal(dr.Deploy.Id, dID)
 }
 
 func TestDockerMetadataSet(t *testing.T) {
@@ -53,6 +55,7 @@ func TestDockerMetadataSet(t *testing.T) {
 	}
 
 	rID := "expectedRID"
+	dID := "expectedDID"
 	dr, err := buildDeployRequest(sous.Deployable{
 		BuildArtifact: &sous.BuildArtifact{
 			Name: "an-image",
@@ -73,7 +76,7 @@ func TestDockerMetadataSet(t *testing.T) {
 				BaseURL: "http://cluster",
 			},
 		},
-	}, rID, md)
+	}, rID, dID, md)
 
 	if err != nil {
 		t.Fatal(err)

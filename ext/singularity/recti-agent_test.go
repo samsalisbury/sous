@@ -92,7 +92,7 @@ func TestFailOnNilBuildArtifact(t *testing.T) {
 	r := sous.NewDummyRegistry()
 	d := sous.Deployable{}
 	ra := NewRectiAgent(r)
-	err := ra.Deploy(d, "testReq")
+	err := ra.Deploy(d, "testReq", "testDep")
 	if err != nil {
 		t.Logf("Correctly returned an error upon encountering: %#v", err)
 	} else {
@@ -163,7 +163,7 @@ func TestContainerStartupOptions(t *testing.T) {
 	d.Startup.CheckReadyURIPath = checkReadyPath
 	d.Startup.Timeout = checkReadyTimeout
 
-	dr, err := buildDeployRequest(d, "fake-request-id", map[string]string{})
+	dr, err := buildDeployRequest(d, "fake-request-id", "fake-deploy-id", map[string]string{})
 	if err != nil {
 		t.Fatal(err)
 	}
