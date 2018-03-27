@@ -102,6 +102,7 @@ func (sd *SousNewDeploy) Execute(args []string) cmdr.Result {
 		}
 		pollTime := sd.Config.PollIntervalForClient
 
+		messages.ReportLogFieldsMessageToConsole("\n", logging.InformationLevel, sd.LogSink)
 		p := mpb.New()
 
 		// initialize bar with dynamic total and initial total guess = 80

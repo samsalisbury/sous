@@ -418,6 +418,12 @@
 			"revisionTime": "2018-03-15T22:50:40Z"
 		},
 		{
+			"checksumSHA1": "6xG3x/i+ncRYM1TB17NfH8J09/c=",
+			"path": "github.com/vbauerster/mpb/cwriter",
+			"revision": "44b3ab598678a5954168e726db2af310f43d3bd8",
+			"revisionTime": "2018-03-15T22:50:40Z"
+		},
+		{
 			"checksumSHA1": "yJTuQBr6RdJxzch213oH1lRr1rc=",
 			"path": "github.com/vbauerster/mpb/decor",
 			"revision": "44b3ab598678a5954168e726db2af310f43d3bd8",
