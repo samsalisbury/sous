@@ -6,20 +6,24 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
+## [Unreleased](//github.com/opentable/sous/compare/0.5.77...HEAD)
 
-## [Unreleased](//github.com/opentable/sous/compare/0.5.76...HEAD)
+### Added
+* All: Add smoke test of the newdeploy cli
+
+## [0.5.77](//github.com/opentable/sous/compare/0.5.76...0.5.77)
 
 ### Added
 * Server: Single deployment rectification now waits for a reports a DeployState.
 * Server: Single deployment name cache harvests - hopefully will further speed deployments.
-* All: Add smoke test of the newdeploy cli
+* Server: pending state workaround for Singularity
 
 ### Fixed
 * Server: /deploy-queue-item now returns correct queue position and Resolution field.
 * Server: /single-deployment validation now correctly validates only after taking
   into consideration default values.
 * Server: integration tests disregard failed deployments as blockers in certain cases
-
+* Server: deployment operations are tracked by a UUID across API requests.
 
 ## [0.5.76](//github.com/opentable/sous/compare/0.5.72...0.5.76)
 

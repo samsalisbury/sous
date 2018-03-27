@@ -65,7 +65,7 @@ func mapResources(r sous.Resources) dtoMap {
 }
 
 // Deploy sends requests to Singularity to make a deployment happen
-func (ra *RectiAgent) Deploy(d sous.Deployable, reqID string) error {
+func (ra *RectiAgent) Deploy(d sous.Deployable, reqID, depID string) error {
 	if d.BuildArtifact == nil {
 		return &sous.MissingImageNameError{Cause: fmt.Errorf("Missing BuildArtifact on Deployable")}
 	}
@@ -76,7 +76,7 @@ func (ra *RectiAgent) Deploy(d sous.Deployable, reqID string) error {
 		return err
 	}
 	messages.ReportLogFieldsMessage("Deploying instance", logging.DebugLevel, Log, d, reqID)
-	depReq, err := buildDeployRequest(d, reqID, labels)
+	depReq, err := buildDeployRequest(d, reqID, depID, labels)
 	if err != nil {
 		return err
 	}
@@ -86,14 +86,8 @@ func (ra *RectiAgent) Deploy(d sous.Deployable, reqID string) error {
 	return err
 }
 
-func buildDeployRequest(d sous.Deployable, reqID string, metadata map[string]string) (*dtos.SingularityDeployRequest, error) {
+func buildDeployRequest(d sous.Deployable, reqID, depID string, metadata map[string]string) (*dtos.SingularityDeployRequest, error) {
 	var depReq swaggering.Fielder
-	var depID string
-	if d.SchedulerDID != "" {
-		depID = d.SchedulerDID
-	} else {
-		depID = computeDeployID(&d)
-	}
 	dockerImage := d.BuildArtifact.Name
 	r := d.Deployment.DeployConfig.Resources
 	e := d.Deployment.DeployConfig.Env

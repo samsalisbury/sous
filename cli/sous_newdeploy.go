@@ -29,7 +29,7 @@ type SousNewDeploy struct {
 	dryrunOption      string
 	waitStable        bool
 	User              sous.User
-	graph.PossiblyInvalidConfig
+	graph.LocalSousConfig
 }
 
 func init() { TopLevelCommands["newdeploy"] = &SousNewDeploy{} }

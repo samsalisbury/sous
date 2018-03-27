@@ -3,12 +3,12 @@ package singularity
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/logging/messages"
 	"github.com/pkg/errors"
+	uuid "github.com/satori/go.uuid"
 )
 
 // Status implements sous.Deployer on deployer.
@@ -27,37 +27,20 @@ func (r *deployer) Status(reg sous.Registry, clusters sous.Clusters, pair *sous.
 		return nil, errors.Errorf("No cluster found for %q. Known are: %q.", clusterName, clusters.Names())
 	}
 
+	if pair.UUID == uuid.Nil {
+		pair.UUID = uuid.NewV4()
+	}
+	depID := computeDeployIDFromUUID(pair.Post, pair.UUID)
+
 	client := r.buildSingClient(url)
 
-	log := logging.Log
-	messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("\nWatching pending deployments for deploy ID: %s", pair.Post.SchedulerDID), logging.ExtraDebug1Level, log, pair.Post.SchedulerDID)
-	counter := 0
-
-WAIT_FOR_NOT_PENDING:
-
-	pending, err := client.GetPendingDeploys()
-
-	if err != nil {
-		return nil, malformedResponse{"Getting pending deploys:" + err.Error()}
-	}
-	pds := make([]string, len(pending))
-	for i, p := range pending {
-		pds[i] = p.DeployMarker.DeployId
-	}
-
-	messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("\nCounter: %d - There are %d pending deploys: %s", counter, len(pending), strings.Join(pds, ", ")), logging.ExtraDebug1Level, log, pair.Post.SchedulerDID)
-
-	for _, p := range pending {
-		if p.DeployMarker.DeployId == pair.Post.SchedulerDID && counter < 600 {
-			counter = counter + 1
-			time.Sleep(2 * time.Second) //this is what OTPL does
-			goto WAIT_FOR_NOT_PENDING
-		}
-	}
+	messages.ReportLogFieldsMessageToConsole(
+		fmt.Sprintf("Watching pending deployments for deploy ID: %s", depID),
+		logging.ExtraDebug1Level, r.log, depID)
 
 	reqParent, err := client.GetRequest(reqID, false) //don't use the web cache
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "getting request")
 	}
 
 	singReq := SingReq{
@@ -69,6 +52,13 @@ WAIT_FOR_NOT_PENDING:
 	tgt, err := BuildDeployment(reg, clusters, singReq, r.log)
 
 	tgt.SchedulerURL = fmt.Sprintf("http://%s/request/%s", url, reqID)
+	if !tgt.Status.Failed() {
+		status, err := r.checkPendingList(pair.Post, client, depID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "getting pending state")
+		}
+		tgt.Status = status
+	}
 
 	return &tgt, errors.Wrapf(err, "getting request state")
 }
@@ -76,4 +66,30 @@ WAIT_FOR_NOT_PENDING:
 func (r *deployer) getRequestID(d *sous.Deployable) (string, error) {
 	// TODO: add a cache of known Deployables to their Requests (and current state...)
 	return computeRequestID(d)
+}
+
+func (r *deployer) checkPendingList(d *sous.Deployable, client singClient, depID string) (sous.DeployStatus, error) {
+	pending, err := client.GetPendingDeploys()
+
+	if err != nil {
+		return sous.DeployStatusAny, malformedResponse{"Getting pending deploys:" + err.Error()}
+	}
+	pds := make([]string, len(pending))
+	for i, p := range pending {
+		pds[i] = p.DeployMarker.DeployId
+	}
+
+	messages.ReportLogFieldsMessageToConsole(
+		fmt.Sprintf("Watching pending deployments for deploy ID: %s", depID),
+		logging.ExtraDebug1Level, r.log, depID)
+	messages.ReportLogFieldsMessageToConsole(
+		fmt.Sprintf("There are %d pending deploys: %s", len(pending), strings.Join(pds, ", ")),
+		logging.ExtraDebug1Level, r.log, depID)
+
+	for _, p := range pending {
+		if p.DeployMarker.DeployId == depID {
+			return sous.DeployStatusPending, nil
+		}
+	}
+	return sous.DeployStatusActive, nil
 }
