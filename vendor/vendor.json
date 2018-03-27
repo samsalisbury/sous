@@ -412,6 +412,18 @@
 			"revisionTime": "2017-08-16T17:57:46Z"
 		},
 		{
+			"checksumSHA1": "UHY0Gig+aywAbXiZSyXZWY4pGhA=",
+			"path": "github.com/vbauerster/mpb",
+			"revision": "44b3ab598678a5954168e726db2af310f43d3bd8",
+			"revisionTime": "2018-03-15T22:50:40Z"
+		},
+		{
+			"checksumSHA1": "yJTuQBr6RdJxzch213oH1lRr1rc=",
+			"path": "github.com/vbauerster/mpb/decor",
+			"revision": "44b3ab598678a5954168e726db2af310f43d3bd8",
+			"revisionTime": "2018-03-15T22:50:40Z"
+		},
+		{
 			"checksumSHA1": "FvjFAsGryjeu76HSh28J2+CYGcs=",
 			"path": "github.com/xrash/smetrics",
 			"revision": "1a0de75d2e90a30c613537d9fbb67ee060c9cab9",
