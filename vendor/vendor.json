@@ -236,6 +236,12 @@
 			"revisionTime": "2017-11-26T05:04:59Z"
 		},
 		{
+			"checksumSHA1": "w5RcOnfv5YDr3j2bd1YydkPiZx4=",
+			"path": "github.com/mattn/go-isatty",
+			"revision": "6ca4dbf54d38eea1a992b3c722a76a5d1c4cb25c",
+			"revisionTime": "2017-11-07T05:05:31Z"
+		},
+		{
 			"checksumSHA1": "kUqagcesbbz7A2eCwDYntlvrEqs=",
 			"path": "github.com/mattn/go-sqlite3",
 			"revision": "696e2e43cb00dcb1acaf6073e01493e3c4197b75",
@@ -410,6 +416,24 @@
 			"path": "github.com/tracer0tong/kafkalogrus",
 			"revision": "ddfc7dbef6a8a3f9fd20c8286e9bfdb99bf9f69e",
 			"revisionTime": "2017-08-16T17:57:46Z"
+		},
+		{
+			"checksumSHA1": "UHY0Gig+aywAbXiZSyXZWY4pGhA=",
+			"path": "github.com/vbauerster/mpb",
+			"revision": "44b3ab598678a5954168e726db2af310f43d3bd8",
+			"revisionTime": "2018-03-15T22:50:40Z"
+		},
+		{
+			"checksumSHA1": "6xG3x/i+ncRYM1TB17NfH8J09/c=",
+			"path": "github.com/vbauerster/mpb/cwriter",
+			"revision": "44b3ab598678a5954168e726db2af310f43d3bd8",
+			"revisionTime": "2018-03-15T22:50:40Z"
+		},
+		{
+			"checksumSHA1": "yJTuQBr6RdJxzch213oH1lRr1rc=",
+			"path": "github.com/vbauerster/mpb/decor",
+			"revision": "44b3ab598678a5954168e726db2af310f43d3bd8",
+			"revisionTime": "2018-03-15T22:50:40Z"
 		},
 		{
 			"checksumSHA1": "FvjFAsGryjeu76HSh28J2+CYGcs=",

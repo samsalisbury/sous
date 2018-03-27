@@ -3,6 +3,7 @@ package cli
 import (
 	"flag"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/opentable/sous/config"
@@ -15,6 +16,9 @@ import (
 	"github.com/opentable/sous/util/logging/messages"
 	"github.com/opentable/sous/util/restful"
 	"github.com/samsalisbury/semv"
+	"github.com/vbauerster/mpb"
+	"github.com/vbauerster/mpb/decor"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 // SousNewDeploy has the same interface as SousDeploy, but uses the new
@@ -99,7 +103,36 @@ func (sd *SousNewDeploy) Execute(args []string) cmdr.Result {
 			return cmdr.InternalErrorf("Failed to create polling client: %s", err)
 		}
 		pollTime := sd.Config.PollIntervalForClient
-		return PollDeployQueue(location, client, pollTime, sd.LogSink)
+
+		messages.ReportLogFieldsMessageToConsole("\n", logging.InformationLevel, sd.LogSink)
+		p := mpb.New()
+
+		var bar *mpb.Bar
+		bar = nil
+		if terminal.IsTerminal(int(os.Stdin.Fd())) {
+			// initialize bar with dynamic total and initial total guess = 80
+			bar = p.AddBar(100,
+				// indicate that total is dynamic
+				mpb.BarDynamicTotal(),
+				// trigger total auto increment by 1, when 18 % remains till bar completion
+				mpb.BarAutoIncrTotal(18, 1),
+				mpb.PrependDecorators(
+					decor.CountersNoUnit("%d / %d", 12, 0),
+				),
+				mpb.AppendDecorators(
+					decor.Percentage(5, 0),
+				),
+			)
+		}
+
+		result := PollDeployQueue(location, client, pollTime, bar, sd.LogSink)
+
+		if terminal.IsTerminal(int(os.Stdin.Fd())) && bar != nil {
+			bar.Complete()
+			p.Wait()
+			p.RemoveBar(bar)
+		}
+		return result
 	}
 	return cmdr.Successf("Desired version for %q in cluster %q already %q",
 		sd.TargetManifestID, cluster, sd.DeployFilterFlags.Tag)
@@ -112,19 +145,17 @@ func timeTrack(start time.Time) string {
 }
 
 // PollDeployQueue is used to poll server on status of Single Deployment.
-func PollDeployQueue(location string, client restful.HTTPClient, pollAtempts int, log logging.LogSink) cmdr.Result {
+func PollDeployQueue(location string, client restful.HTTPClient, pollAtempts int, bar *mpb.Bar, log logging.LogSink) cmdr.Result {
 	start := time.Now()
 	response := dto.R11nResponse{}
 	location = "http://" + location
 
 	for i := 0; i < pollAtempts; i++ {
+		if bar != nil {
+			bar.IncrBy(5)
+		}
 		if _, err := client.Retrieve(location, nil, &response, nil); err != nil {
 			return cmdr.InternalErrorf("\n\tFailed to deploy: %s duration: %s\n", err, timeTrack(start))
-		}
-
-		if i%10 == 0 {
-			msg := fmt.Sprintf("\nPollDeployQueue called waiting for created response... %s elapsed", timeTrack(start))
-			messages.ReportLogFieldsMessageToConsole(msg, logging.InformationLevel, log, location, response)
 		}
 
 		queuePosition := response.QueuePosition
