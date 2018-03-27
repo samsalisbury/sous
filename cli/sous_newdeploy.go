@@ -142,7 +142,9 @@ func PollDeployQueue(location string, client restful.HTTPClient, pollAtempts int
 	location = "http://" + location
 
 	for i := 0; i < pollAtempts; i++ {
-		bar.IncrBy(5)
+		if bar != nil {
+			bar.IncrBy(5)
+		}
 		if _, err := client.Retrieve(location, nil, &response, nil); err != nil {
 			return cmdr.InternalErrorf("\n\tFailed to deploy: %s duration: %s\n", err, timeTrack(start))
 		}
