@@ -265,15 +265,6 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 		scenario.assertStringBody(t, wantErr)
 	})
 
-	t.Run("no change necessary", func(t *testing.T) {
-		body, query := makeBodyAndQuery(t)
-		scenario := setup(body, query)
-		scenario.exercise()
-
-		scenario.assertNoR11nQueued(t)
-		scenario.assertStatus(t, 200)
-	})
-
 	t.Run("change version", func(t *testing.T) {
 		body, query := makeBodyAndQuery(t)
 		body.Deployment.Version = semv.MustParse("2.0.0")
