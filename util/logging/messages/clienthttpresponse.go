@@ -1,7 +1,10 @@
 package messages
 
 import (
+	"bytes"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -29,6 +32,17 @@ type HTTPLogEntry struct {
 	dur            time.Duration
 }
 
+var httpLogFile io.Writer
+
+func init() {
+	f, err := ioutil.TempFile("", "http-log")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Logging HTTP bodies to %q\n", f.Name())
+	httpLogFile = f
+}
+
 // ReportClientHTTPRequest reports a response recieved by Sous as a client.
 // n.b. this interface subject to change
 func ReportClientHTTPRequest(logger logging.LogSink, message string, rq *http.Request, resName string) {
@@ -39,6 +53,12 @@ func ReportClientHTTPRequest(logger logging.LogSink, message string, rq *http.Re
 
 // ReportClientHTTPResponse reports a response recieved by Sous as a client.
 func ReportClientHTTPResponse(logger logging.LogSink, message string, rz *http.Response, resName string, dur time.Duration) {
+	fmt.Fprintf(httpLogFile, "\n=== %s %s -> %s ===\n\n", rz.Request.Method, rz.Request.URL.String(), rz.Status)
+	b := &bytes.Buffer{}
+	tee := io.TeeReader(rz.Body, b)
+	io.Copy(httpLogFile, tee)
+	rz.Body = ioutil.NopCloser(b)
+
 	m := buildHTTPLogMessage(false, true, message, rz.Request, rz.StatusCode, rz.ContentLength, resName, dur)
 	m.ExcludeMe()
 	logging.Deliver(m, logger)
