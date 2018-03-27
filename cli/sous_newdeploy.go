@@ -105,11 +105,11 @@ func (sd *SousNewDeploy) Execute(args []string) cmdr.Result {
 		pollTime := sd.Config.PollIntervalForClient
 
 		messages.ReportLogFieldsMessageToConsole("\n", logging.InformationLevel, sd.LogSink)
-		p := mpb.New()
 
+		var p *mpb.Progress
 		var bar *mpb.Bar
-		bar = nil
 		if terminal.IsTerminal(int(os.Stdin.Fd())) {
+			p = mpb.New()
 			// initialize bar with dynamic total and initial total guess = 80
 			bar = p.AddBar(100,
 				// indicate that total is dynamic
@@ -127,7 +127,7 @@ func (sd *SousNewDeploy) Execute(args []string) cmdr.Result {
 
 		result := PollDeployQueue(location, client, pollTime, bar, sd.LogSink)
 
-		if terminal.IsTerminal(int(os.Stdin.Fd())) && bar != nil {
+		if terminal.IsTerminal(int(os.Stdin.Fd())) && bar != nil && p != nil {
 			bar.Complete()
 			p.Wait()
 			p.RemoveBar(bar)
