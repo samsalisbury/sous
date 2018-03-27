@@ -3,6 +3,7 @@ package cli
 import (
 	"flag"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/opentable/sous/config"
@@ -17,6 +18,7 @@ import (
 	"github.com/samsalisbury/semv"
 	"github.com/vbauerster/mpb"
 	"github.com/vbauerster/mpb/decor"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 // SousNewDeploy has the same interface as SousDeploy, but uses the new
@@ -105,24 +107,31 @@ func (sd *SousNewDeploy) Execute(args []string) cmdr.Result {
 		messages.ReportLogFieldsMessageToConsole("\n", logging.InformationLevel, sd.LogSink)
 		p := mpb.New()
 
-		// initialize bar with dynamic total and initial total guess = 80
-		bar := p.AddBar(100,
-			// indicate that total is dynamic
-			mpb.BarDynamicTotal(),
-			// trigger total auto increment by 1, when 18 % remains till bar completion
-			mpb.BarAutoIncrTotal(18, 1),
-			mpb.PrependDecorators(
-				decor.CountersNoUnit("%d / %d", 12, 0),
-			),
-			mpb.AppendDecorators(
-				decor.Percentage(5, 0),
-			),
-		)
+		var bar *mpb.Bar
+		bar = nil
+		if terminal.IsTerminal(int(os.Stdin.Fd())) {
+			// initialize bar with dynamic total and initial total guess = 80
+			bar = p.AddBar(100,
+				// indicate that total is dynamic
+				mpb.BarDynamicTotal(),
+				// trigger total auto increment by 1, when 18 % remains till bar completion
+				mpb.BarAutoIncrTotal(18, 1),
+				mpb.PrependDecorators(
+					decor.CountersNoUnit("%d / %d", 12, 0),
+				),
+				mpb.AppendDecorators(
+					decor.Percentage(5, 0),
+				),
+			)
+		}
+
 		result := PollDeployQueue(location, client, pollTime, bar, sd.LogSink)
 
-		bar.Complete()
-		p.Wait()
-		p.RemoveBar(bar)
+		if terminal.IsTerminal(int(os.Stdin.Fd())) && bar != nil {
+			bar.Complete()
+			p.Wait()
+			p.RemoveBar(bar)
+		}
 		return result
 	}
 	return cmdr.Successf("Desired version for %q in cluster %q already %q",
