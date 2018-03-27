@@ -3,6 +3,7 @@ package singularity
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/opentable/go-singularity/dtos"
@@ -86,6 +87,7 @@ func (cr *canRetryRequest) name() string {
 }
 
 func (db *deploymentBuilder) canRetry(err error) error {
+	log.Println(err)
 	if err == nil || !db.isRetryable(err) {
 		return err
 	}
@@ -111,6 +113,7 @@ func BuildDeployment(reg sous.ImageLabeller, clusters sous.Clusters, req SingReq
 }
 
 func (db *deploymentBuilder) completeConstruction() error {
+	log.Printf("Starting completeConstruction")
 	wrapError := func(fn func() error, msgStr string) func() error {
 		return func() error {
 			return errors.Wrap(fn(), msgStr)
@@ -185,8 +188,11 @@ func (db *deploymentBuilder) determineDeployStatus() error {
 	if rds.PendingDeploy != nil {
 		db.Target.Status = sous.DeployStatusPending
 		db.depMarker = rds.PendingDeploy
+	} else {
+		db.Target.Status = sous.DeployStatusActive
+		db.depMarker = rds.ActiveDeploy
 	}
-	// if there's no Pending deploy, we'll use the top of history in preference to Active
+	// if there's no Pending deploy, PendingDeploycwe'll use the top of history in preference to Active
 	// Consider: we might collect both and compare timestamps, but the active is
 	// going to be the top of the history anyway unless there's been a more
 	// recent failed deploy

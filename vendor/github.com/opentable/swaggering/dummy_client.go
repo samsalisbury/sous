@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 )
 
 type (
@@ -50,7 +51,7 @@ func makeStarvedChannelError(kind, m, p string, pp, qp urlParams, b ...DTO) *Sta
 }
 
 func (e *StarvedChannelError) Error() string {
-	return fmt.Sprintf("No %s resp for %s %s params: %v %v body: %s", e.kind, e.m, e.p, e.pp, e.qp, e.bodyT)
+	return fmt.Sprintf("No %s response for %s %s params: %v %v body: %s", e.kind, e.m, e.p, e.pp, e.qp, e.bodyT)
 }
 
 // NewChannelDummy returns a pair of a DummyClient and a DummyControl.
@@ -63,6 +64,7 @@ func NewChannelDummy() (DummyClient, DummyControl) {
 
 	clnt := DummyClient{
 		NextDTO: func(m, p string, pp, qp urlParams, b ...DTO) (DTO, error) {
+			log.Println(m, p, pp, qp)
 			select {
 			case dr := <-ctrl.dtos:
 				return dr.dto, dr.err
@@ -75,7 +77,7 @@ func NewChannelDummy() (DummyClient, DummyControl) {
 			case sr := <-ctrl.simples:
 				return sr.body, sr.err
 			default:
-				return "", makeStarvedChannelError("dto", m, p, pp, qp, b...)
+				return "", makeStarvedChannelError("simple", m, p, pp, qp, b...)
 			}
 		},
 	}
