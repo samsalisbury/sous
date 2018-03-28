@@ -28,6 +28,7 @@ type Fixture struct {
 	EnvDesc desc.EnvDesc
 	Cluster TestCluster
 	Client  TestClient
+	BaseDir string
 }
 
 type TestCluster struct {
@@ -82,7 +83,72 @@ func getSousBin(t *testing.T) string {
 	return sousBin
 }
 
+// makeEmptyDir safely creates an empty dir "dir" inside baseDir and returns the
+// full path.
+func makeEmptyDir(t *testing.T, baseDir, dir string) string {
+	t.Helper()
+	dir = path.Join(baseDir, dir)
+	if dirExistsAndIsNotEmpty(t, dir) {
+		t.Fatalf("dir %q already exists and is not empty", dir)
+	}
+	if err := os.RemoveAll(dir); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(dir, 0777); err != nil {
+		t.Fatal(err)
+	}
+	return dir
+}
+
+type GitRepoSpec struct {
+	UserName, UserEmail, OriginURL string
+}
+
+func makeGitRepo(t *testing.T, baseDir, dir string, spec GitRepoSpec) string {
+	dir = makeEmptyDir(t, baseDir, dir)
+	if err := doCMD(dir, "git", "init"); err != nil {
+		t.Fatalf("git init failed in %q: %s", dir, err)
+	}
+	if err := doCMD(dir, "git", "remote", "add", "origin", "git@github.com:opentable/bogus/repo.git"); err != nil {
+		t.Fatalf("git remote add failed in %q: %s", dir, err)
+	}
+	if err := doCMD(dir, "git", "config", "user.name", "Sous User"); err != nil {
+		t.Fatalf("git config failed in %q: %s", dir, err)
+	}
+	if err := doCMD(dir, "git", "config", "user.email", "sous-user@example.com"); err != nil {
+		t.Fatalf("git config failed in %q: %s", dir, err)
+	}
+	return dir
+}
+
+// makeFile attempts to write bytes to baseDir/fileName and returns the full
+// path to the file. It assumes the directory baseDir already exists and
+// contains no file named fileName, and will fail otherwise.
+func makeFile(t *testing.T, baseDir, fileName string, bytes []byte) string {
+	filePath := path.Join(baseDir, fileName)
+	if _, err := os.Open(filePath); err != nil {
+		if !isNotExist(err) {
+			t.Fatalf("unable to check if file %q exists: %s", filePath, err)
+		}
+	} else {
+		t.Fatalf("file %q already exists", filePath)
+	}
+
+	if err := ioutil.WriteFile(filePath, bytes, 0777); err != nil {
+		t.Fatalf("unable to write file %q: %s", filePath, err)
+	}
+	return filePath
+}
+
+// makeFileString is a convenience wrapper around makeFile, using string s
+// as the bytes to be written.
+func makeFileString(t *testing.T, baseDir, fileName string, s string) string {
+	t.Helper()
+	return makeFile(t, baseDir, fileName, []byte(s))
+}
+
 func dirExistsAndIsNotEmpty(t *testing.T, baseDir string) bool {
+	t.Helper()
 	f, err := os.Open(baseDir)
 	if err != nil {
 		if isNotExist(err) {
@@ -174,6 +240,7 @@ func setupEnv(t *testing.T, testName string) Fixture {
 	return Fixture{
 		Cluster: *c,
 		Client:  client,
+		BaseDir: baseDir,
 	}
 }
 
@@ -227,6 +294,13 @@ func (f *Fixture) Stop(t *testing.T) {
 func (c *TestCluster) Stop(t *testing.T) {
 	t.Helper()
 	stopPIDs(t)
+}
+
+func mustDoCMD(t *testing.T, dir, name string, args ...string) {
+	t.Helper()
+	if err := doCMD(dir, name, args...); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func doCMD(dir, name string, args ...string) error {
@@ -583,4 +657,13 @@ func (c *TestClient) Run(t *testing.T, args ...string) (string, error) {
 		fmt.Fprintln(os.Stderr, err)
 	}
 	return out.String(), err
+}
+
+func (c *TestClient) MustRun(t *testing.T, args ...string) string {
+	t.Helper()
+	out, err := c.Run(t, args...)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return out
 }
