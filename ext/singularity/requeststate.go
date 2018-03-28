@@ -3,6 +3,7 @@ package singularity
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
@@ -80,7 +81,7 @@ func (r *deployer) checkPendingList(d *sous.Deployable, client singClient, depID
 	}
 
 	messages.ReportLogFieldsMessageToConsole(
-		fmt.Sprintf("There are %d pending deploys: %s", len(pending), strings.Join(pds, ", ")),
+		fmt.Sprintf("%s: There are %d pending deploys: %s", time.Now().Format(time.RFC850), len(pending), strings.Join(pds, ", ")),
 		logging.ExtraDebug1Level, r.log, depID)
 
 	for _, p := range pending {
