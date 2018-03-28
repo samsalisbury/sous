@@ -31,7 +31,7 @@ func TestSousNewdeploy(t *testing.T) {
 
 	// Dump sous version & config.
 	t.Logf("Sous version: %s", sous.MustRun(t, "version"))
-	sous.MustRun("config")
+	sous.MustRun(t, "config")
 
 	// cd into project dir
 	sous.Dir = projectDir
@@ -62,5 +62,5 @@ func TestSousNewdeploy(t *testing.T) {
 		args = append([]string{"-d"}, args...)
 	}
 
-	sous.MustRun(t, append([]string{"newdeploy"}, args...))
+	sous.MustRun(t, append([]string{"newdeploy"}, args...)...)
 }
