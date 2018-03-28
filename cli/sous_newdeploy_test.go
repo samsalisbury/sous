@@ -65,7 +65,7 @@ func TestPollDeployQueue_success_created(t *testing.T) {
 	httpClient := createMockHTTPClient()
 	httpClient.SetRZBody(createDeployResult(-1, "created", 2))
 
-	result := PollDeployQueue("127.0.0.1:1234/deploy-queue-item", httpClient, 1, log)
+	result := PollDeployQueue("127.0.0.1:1234/deploy-queue-item", httpClient, 1, nil, log)
 	assert.Equal(t, 0, result.ExitCode(), "created should return 0 exit code")
 }
 
@@ -73,7 +73,7 @@ func TestPollDeployQueue_success_updated(t *testing.T) {
 	httpClient := createMockHTTPClient()
 	httpClient.SetRZBody(createDeployResult(-1, "updated", 2))
 
-	result := PollDeployQueue("127.0.0.1:1234/deploy-queue-item", httpClient, 1, log)
+	result := PollDeployQueue("127.0.0.1:1234/deploy-queue-item", httpClient, 1, nil, log)
 	assert.Equal(t, 0, result.ExitCode(), "updated should return 0 exit code")
 }
 
@@ -101,7 +101,7 @@ func TestPollDeployQueue_fail(t *testing.T) {
 	location := "127.0.0.1:8888/deploy-queue-item?action=bb836990-5ab2-4eab-9f52-ad3fd555539b&cluster=dev-ci-sf&flavor=&offset=&repo=github.com%2Fopentable%2Fsous-demo"
 
 	client, _ := restful.NewClient("", log, nil)
-	result := PollDeployQueue(location, client, 10, log)
+	result := PollDeployQueue(location, client, 10, nil, log)
 
 	t.Logf("poll result %v", result)
 	assert.Equal(t, 70, result.ExitCode(), "This should fail")

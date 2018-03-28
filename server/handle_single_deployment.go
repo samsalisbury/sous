@@ -147,16 +147,17 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 	if !ok {
 		return psd.err(404, "No manifest with ID %q.", did.ManifestID)
 	}
-	original, ok := m.Deployments[did.Cluster]
+	_, ok = m.Deployments[did.Cluster]
 	if !ok {
 		return psd.err(404, "Manifest %q has no deployment for cluster %q.",
 			did.ManifestID, did.Cluster)
 	}
 
-	different, _ := psd.Body.Deployment.Diff(original)
-	if !different {
-		return psd.ok(200, nil)
-	}
+	//This check really only is seeing if GDM has this version, think we just want to deploy always
+	//different, _ := psd.Body.Deployment.Diff(original)
+	//if !different {
+	//	return psd.ok(200, nil)
+	//}
 
 	m.Deployments[did.Cluster] = *psd.Body.Deployment
 

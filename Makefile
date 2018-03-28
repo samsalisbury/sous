@@ -27,6 +27,12 @@ else
 GIT_TAG := $(shell $(TAG_TEST))
 endif
 
+REPO_ROOT := $(shell git rev-parse --show-toplevel)
+SMOKE_TEST_BASEDIR ?= $(REPO_ROOT)/.smoketest
+SMOKE_TEST_DATA_DIR ?= $(SMOKE_TEST_BASEDIR)/$(DATE)
+SMOKE_TEST_LATEST_LINK ?= $(SMOKE_TEST_BASEDIR)/latest
+SMOKE_TEST_BINARY ?= $(SMOKE_TEST_DATA_DIR)/sous
+
 # install-dev uses DESC and DATE to make a git described, timestamped dev build.
 DESC := $(shell git describe)
 DATE := $(shell date +%Y-%m-%dT%H-%M-%S)
@@ -140,7 +146,7 @@ gitlog:
 install-dev:
 	brew uninstall opentable/public/sous || true
 	rm "$$(which sous)" || true
-	go install -tags integration -ldflags "-X main.VersionString=$(DEV_VERSION)"
+	go install -ldflags "-X main.VersionString=$(DEV_VERSION)"
 	echo "Now run 'hash -r && sous version' to make sure you are using the dev version of sous."
 
 homebrew:
@@ -266,12 +272,22 @@ test-integration: setup-containers
 	@echo Set INTEGRATION_TEST_TIMEOUT to override.
 	@echo
 	@echo
-	SOUS_QA_DESC=$(QA_DESC) go test -timeout $(INTEGRATION_TEST_TIMEOUT) $(EXTRA_GO_FLAGS)  $(TEST_VERBOSE) ./integration --tags=integration
+	SOUS_QA_DESC=$(QA_DESC) go test -count 1 -timeout $(INTEGRATION_TEST_TIMEOUT) $(EXTRA_GO_FLAGS)  $(TEST_VERBOSE) ./integration --tags=integration
 	@date
 
+$(SMOKE_TEST_BINARY):
+	go build -o $@ -tags smoke -ldflags "-X main.VersionString=$(DEV_VERSION)"
+
+$(SMOKE_TEST_LATEST_LINK): $(SMOKE_TEST_DATA_DIR)
+	rm $@ || true
+	ln -s $(SMOKE_TEST_DATA_DIR) $@
+
 .PHONY: test-smoke
-test-smoke: install-dev $(QA_DESC)
-	SOUS_QA_DESC=$(QA_DESC) go test -tags smoke -v -count 1 ./test/smoke 
+test-smoke: $(SMOKE_TEST_BINARY) $(SMOKE_TEST_LATEST_LINK) setup-containers
+	SMOKE_TEST_DATA_DIR=$(SMOKE_TEST_DATA_DIR)/data \
+	SMOKE_TEST_BINARY=$(SMOKE_TEST_BINARY) \
+	SOUS_QA_DESC=$(QA_DESC) \
+	go test -tags smoke -v -count 1 ./test/smoke
 
 $(QA_DESC): sous-qa-setup
 	./sous_qa_setup --compose-dir ./integration/test-registry/ --out-path=$(QA_DESC)
