@@ -23,6 +23,7 @@ func TestGetDepSetWorks(t *testing.T) {
 
 		co.FeedDTO(&dtos.SingularityRequestParentList{
 			&dtos.SingularityRequestParent{
+				State: dtos.SingularityRequestParentRequestStateACTIVE,
 				RequestDeployState: &dtos.SingularityRequestDeployState{
 					ActiveDeploy: &dtos.SingularityDeployMarker{
 						DeployId:  "testdep",

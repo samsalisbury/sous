@@ -210,6 +210,8 @@ func TestBuildDeployment_failed_deploy(t *testing.T) {
 	req := SingReq{
 		SourceURL: url,
 		ReqParent: &dtos.SingularityRequestParent{
+			State: dtos.SingularityRequestParentRequestStateSYSTEM_COOLDOWN,
+
 			RequestDeployState: &dtos.SingularityRequestDeployState{
 				ActiveDeploy: &dtos.SingularityDeployMarker{},
 			},
@@ -272,7 +274,7 @@ func TestBuildDeployment_failed_deploy(t *testing.T) {
 	expected.ClusterName = "left"
 
 	assert.Equal(t, actual.ClusterName, expected.ClusterName)
-	assert.Equal(t, actual.Status, expected.Status)
+	assert.Equal(t, actual.Status, expected.Status, "Expected %s got %s", expected.Status, actual.Status)
 }
 
 func TestBuildingRequestID(t *testing.T) {
@@ -318,6 +320,7 @@ func TestBuildDeployment_determineDeployStatus_pendingonly(t *testing.T) {
 	db := &deploymentBuilder{
 		req: SingReq{
 			ReqParent: &dtos.SingularityRequestParent{
+				State: dtos.SingularityRequestParentRequestStateACTIVE,
 				RequestDeployState: &dtos.SingularityRequestDeployState{
 					PendingDeploy: &depMarker,
 				},
@@ -345,6 +348,7 @@ func TestBuildDeployment_determineDeployStatus_activeAndPending(t *testing.T) {
 	db := &deploymentBuilder{
 		req: SingReq{
 			ReqParent: &dtos.SingularityRequestParent{
+				State: dtos.SingularityRequestParentRequestStateACTIVE,
 				RequestDeployState: &dtos.SingularityRequestDeployState{
 					PendingDeploy: &depMarker,
 					ActiveDeploy:  &otherDepMarker,

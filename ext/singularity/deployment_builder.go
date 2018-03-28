@@ -166,13 +166,6 @@ func (db *deploymentBuilder) basics() error {
 // If there is a Pending deploy, as far as Sous is concerned, that's "to
 // come" - we optimistically assume it will become Active, and that's the
 // Deployment we should consider live.
-//
-// (At some point in the future we may want to be able to report the "live"
-// deployment - at best based on this we could infer that a previous GDM
-// entry was running. (consider several quick updates, though...(but
-// Singularity semantics mean that each of them that was actually resolved
-// would have been Active however briefly (but Sous would accept GDM updates
-// arbitrarily quickly as compared to resolve completions...))))
 func (db *deploymentBuilder) determineDeployStatus() error {
 	rp := db.req.ReqParent
 	if rp == nil {
@@ -185,17 +178,21 @@ func (db *deploymentBuilder) determineDeployStatus() error {
 		return malformedResponse{"Singularity response didn't include a deploy state. ReqId: " + reqID(rp)}
 	}
 
-	if rds.PendingDeploy != nil {
+	switch {
+	default:
+		db.Target.Status = sous.DeployStatusAny
+	case rp.State != dtos.SingularityRequestParentRequestStateACTIVE &&
+		rp.State != dtos.SingularityRequestParentRequestStateDEPLOYING_TO_UNPAUSE:
+		db.Target.Status = sous.DeployStatusAny
+	case rds.PendingDeploy != nil:
 		db.Target.Status = sous.DeployStatusPending
 		db.depMarker = rds.PendingDeploy
-	} else {
+		db.deploy = rp.PendingDeploy
+	case rds.ActiveDeploy != nil:
 		db.Target.Status = sous.DeployStatusActive
 		db.depMarker = rds.ActiveDeploy
+		db.deploy = rp.ActiveDeploy
 	}
-	// if there's no Pending deploy, PendingDeploycwe'll use the top of history in preference to Active
-	// Consider: we might collect both and compare timestamps, but the active is
-	// going to be the top of the history anyway unless there's been a more
-	// recent failed deploy
 	return nil
 }
 
@@ -237,6 +234,10 @@ func (db *deploymentBuilder) retrieveHistoricDeploy() error {
 }
 
 func (db *deploymentBuilder) retrieveLiveDeploy() error {
+	if db.deploy != nil {
+		// handled already
+		return nil
+	}
 	// !!! makes HTTP req
 	sing := db.req.Sing
 	dh, err := sing.GetDeploy(db.depMarker.RequestId, db.depMarker.DeployId)
@@ -252,6 +253,10 @@ func (db *deploymentBuilder) retrieveLiveDeploy() error {
 }
 
 func (db *deploymentBuilder) extractDeployFromDeployHistory() error {
+	if db.deploy != nil {
+		// have a deploy already from the request
+		return nil
+	}
 	db.deploy = db.history.Deploy
 	if db.deploy == nil {
 		return malformedResponse{"Singularity deploy history included no deploy"}
@@ -274,6 +279,10 @@ func (db *deploymentBuilder) sousDeployCheck() error {
 }
 
 func (db *deploymentBuilder) determineStatus() error {
+	if db.Target.Status != sous.DeployStatusAny {
+		// handled already
+		return nil
+	}
 	if db.history.DeployResult == nil {
 		db.Target.Status = sous.DeployStatusPending
 		return nil
@@ -323,6 +332,7 @@ func (db *deploymentBuilder) extractArtifactName() error {
 func (db *deploymentBuilder) retrieveImageLabels() error {
 	// XXX coupled to Docker registry as ImageMapper
 	// !!! HTTP request
+	// XXX for unlabelled images, we need to handle this somehow...
 	labels, err := db.registry.ImageLabels(db.imageName)
 	if err != nil {
 		return malformedResponse{err.Error()}

@@ -1,0 +1,197 @@
+{
+  "request": {
+    "id": "sous_demo---dev_ci_sf-5d44a1d1d9b70dcfa342154f47ffd2be",
+    "requestType": "SERVICE",
+    "owners": [],
+    "instances": 1
+  },
+  "state": "ACTIVE",
+  "requestDeployState": {
+    "requestId": "sous_demo---dev_ci_sf-5d44a1d1d9b70dcfa342154f47ffd2be",
+    "activeDeploy": {
+      "requestId": "sous_demo---dev_ci_sf-5d44a1d1d9b70dcfa342154f47ffd2be",
+      "deployId": "0_0_51_lh_d55f8f29220e4617b140ac559bf99c6e",
+      "timestamp": 1522088320936
+    },
+    "pendingDeploy": {
+      "requestId": "sous_demo---dev_ci_sf-5d44a1d1d9b70dcfa342154f47ffd2be",
+      "deployId": "0_1_78_cfff904210204af289d13130eed5ac2b",
+      "timestamp": 1522177662033
+    }
+  },
+  "activeDeploy": {
+    "requestId": "sous_demo---dev_ci_sf-5d44a1d1d9b70dcfa342154f47ffd2be",
+    "id": "0_0_51_lh_d55f8f29220e4617b140ac559bf99c6e",
+    "containerInfo": {
+      "type": "DOCKER",
+      "volumes": [],
+      "docker": {
+        "image": "docker-ci-sf.otenv.com/sous-demo@sha256:60c060e135a9ddd89206b6b08802f54d919fc556503921a2a939cb2b883eb2bd",
+        "privileged": false,
+        "network": "BRIDGE",
+        "portMappings": [],
+        "forcePullImage": false,
+        "dockerParameters": []
+      }
+    },
+    "resources": {
+      "cpus": 0.1,
+      "memoryMb": 100,
+      "numPorts": 1,
+      "diskMb": 0
+    },
+    "env": {
+      "OT_DISCO_INIT_URL": "discovery-ci-sf.otenv.com",
+      "OT_ENV": "dev-ci-sf",
+      "OT_ENV_LOCATION": "sf",
+      "OT_ENV_TYPE": "ci"
+    },
+    "metadata": {
+      "com.opentable.sous.clustername": "dev-ci-sf",
+      "com.opentable.sous.flavor": "",
+      "com.opentable.sous.repo_offset": "",
+      "com.opentable.sous.repo_url": "github.com/opentable/sous-demo",
+      "com.opentable.sous.revision": "618536ade78b9a30de9d0a67d34f9c03bad8ca84",
+      "com.opentable.sous.version": "0.0.51-lh"
+    },
+    "healthcheck": {
+      "uri": "/health",
+      "portIndex": 0,
+      "protocol": "HTTP",
+      "startupTimeoutSeconds": 10,
+      "startupDelaySeconds": 60,
+      "startupIntervalSeconds": 1,
+      "intervalSeconds": 1,
+      "responseTimeoutSeconds": 5,
+      "maxRetries": 120,
+      "failureStatusCodes": [
+        500,
+        503
+      ]
+    }
+  },
+  "pendingDeploy": {
+    "requestId": "sous_demo---dev_ci_sf-5d44a1d1d9b70dcfa342154f47ffd2be",
+    "id": "0_1_78_cfff904210204af289d13130eed5ac2b",
+    "containerInfo": {
+      "type": "DOCKER",
+      "volumes": [],
+      "docker": {
+        "image": "docker.otenv.com/sous-demo@sha256:4f3c63d522fb22c873d5e1e27f1d3f56e21a47f56a7ca6d018e346fcd01bab1d",
+        "privileged": false,
+        "network": "BRIDGE",
+        "portMappings": [],
+        "forcePullImage": false,
+        "dockerParameters": []
+      }
+    },
+    "resources": {
+      "cpus": 0.1,
+      "memoryMb": 100,
+      "numPorts": 1,
+      "diskMb": 0
+    },
+    "env": {
+      "OT_DISCO_INIT_URL": "discovery-ci-sf.otenv.com",
+      "OT_ENV": "dev-ci-sf",
+      "OT_ENV_LOCATION": "sf",
+      "OT_ENV_TYPE": "ci"
+    },
+    "metadata": {
+      "com.opentable.sous.clustername": "dev-ci-sf",
+      "com.opentable.sous.flavor": "",
+      "com.opentable.sous.repo_offset": "",
+      "com.opentable.sous.repo_url": "github.com/opentable/sous-demo",
+      "com.opentable.sous.revision": "a52eb9c11829c94f4baebb7eaa8e5de0aaa53b43",
+      "com.opentable.sous.version": "0.1.78"
+    },
+    "healthcheck": {
+      "uri": "/health",
+      "portIndex": 0,
+      "protocol": "HTTP",
+      "startupTimeoutSeconds": 10,
+      "startupDelaySeconds": 60,
+      "startupIntervalSeconds": 1,
+      "intervalSeconds": 1,
+      "responseTimeoutSeconds": 5,
+      "maxRetries": 120,
+      "failureStatusCodes": [
+        500,
+        503
+      ]
+    }
+  },
+  "pendingDeployState": {
+    "deployMarker": {
+      "requestId": "sous_demo---dev_ci_sf-5d44a1d1d9b70dcfa342154f47ffd2be",
+      "deployId": "0_1_78_cfff904210204af289d13130eed5ac2b",
+      "timestamp": 1522177662033
+    },
+    "currentDeployState": "WAITING",
+    "deployProgress": {
+      "targetActiveInstances": 1,
+      "currentActiveInstances": 0,
+      "deployInstanceCountPerStep": 1,
+      "deployStepWaitTimeMs": 0,
+      "stepComplete": false,
+      "autoAdvanceDeploySteps": true,
+      "failedDeployTasks": [],
+      "timestamp": 1522177662033
+    }
+  },
+  "taskIds": {
+    "healthy": [
+      {
+        "requestId": "sous_demo---dev_ci_sf-5d44a1d1d9b70dcfa342154f47ffd2be",
+        "deployId": "0_0_51_lh_d55f8f29220e4617b140ac559bf99c6e",
+        "startedAt": 1522106302877,
+        "instanceNo": 1,
+        "host": "mesos_slave37_qa_sf.qasql.opentable.com",
+        "sanitizedHost": "mesos_slave37_qa_sf.qasql.opentable.com",
+        "sanitizedRackId": "FIXME",
+        "rackId": "FIXME",
+        "id": "sous_demo---dev_ci_sf-5d44a1d1d9b70dcfa342154f47ffd2be-0_0_51_lh_d55f8f29220e4617b140ac559bf99c6e-1522106302877-1-mesos_slave37_qa_sf.qasql.opentable.com-FIXME"
+      }
+    ],
+    "notYetHealthy": [
+      {
+        "requestId": "sous_demo---dev_ci_sf-5d44a1d1d9b70dcfa342154f47ffd2be",
+        "deployId": "0_1_78_cfff904210204af289d13130eed5ac2b",
+        "startedAt": 1522177662112,
+        "instanceNo": 1,
+        "host": "mesos_slave27_qa_sf.qasql.opentable.com",
+        "sanitizedHost": "mesos_slave27_qa_sf.qasql.opentable.com",
+        "sanitizedRackId": "FIXME",
+        "rackId": "FIXME",
+        "id": "sous_demo---dev_ci_sf-5d44a1d1d9b70dcfa342154f47ffd2be-0_1_78_cfff904210204af289d13130eed5ac2b-1522177662112-1-mesos_slave27_qa_sf.qasql.opentable.com-FIXME"
+      }
+    ],
+    "pending": [],
+    "cleaning": []
+  },
+  "lastHistory": {
+    "createdAt": 1522177662001,
+    "eventType": "UPDATED",
+    "request": {
+      "id": "sous_demo---dev_ci_sf-5d44a1d1d9b70dcfa342154f47ffd2be",
+      "requestType": "SERVICE",
+      "owners": [],
+      "instances": 1
+    }
+  },
+  "mostRecentTask": {
+    "taskId": {
+      "requestId": "sous_demo---dev_ci_sf-5d44a1d1d9b70dcfa342154f47ffd2be",
+      "deployId": "0_0_51_lh_d55f8f29220e4617b140ac559bf99c6e",
+      "startedAt": 1522106302877,
+      "instanceNo": 1,
+      "host": "mesos_slave37_qa_sf.qasql.opentable.com",
+      "sanitizedHost": "mesos_slave37_qa_sf.qasql.opentable.com",
+      "sanitizedRackId": "FIXME",
+      "rackId": "FIXME",
+      "id": "sous_demo---dev_ci_sf-5d44a1d1d9b70dcfa342154f47ffd2be-0_0_51_lh_d55f8f29220e4617b140ac559bf99c6e-1522106302877-1-mesos_slave37_qa_sf.qasql.opentable.com-FIXME"
+    },
+    "updatedAt": 1522106370724,
+    "lastTaskState": "TASK_RUNNING"
+  }
+}
