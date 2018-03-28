@@ -7,66 +7,34 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path"
 	"strings"
 	"testing"
 )
 
+const simpleServer = `
+FROM alpine
+CMD if [ -z "$T" ]; then T=2; fi; echo -n "Sleeping ${T}s..."; sleep $T; echo "Done"; echo "Listening on :$PORT0"; while true; do echo -e "HTTP/1.1 200 OK\n\n$(date)" | nc -l -p $PORT0; done`
+
 func TestSousNewdeploy(t *testing.T) {
 	f := setupEnv(t, "TestSousNewdeploy")
 
-	dockerfile := `FROM alpine
-CMD if [ -z "$T" ]; then T=2; fi; echo -n "Sleeping ${T}s..."; sleep $T; echo "Done"; echo "Listening on :$PORT0"; while true; do echo -e "HTTP/1.1 200 OK\n\n$(date)" | nc -l -p $PORT0; done
-`
+	projectDir := makeGitRepo(t, f.BaseDir, "projects/project1", GitRepoSpec{
+		UserName:  "Sous User 1",
+		UserEmail: "sous-user1@example.com",
+		OriginURL: "git@github.com:opentable/bogus/repo1",
+	})
 
-	projectDir := path.Join(os.TempDir(), "project1")
-	if err := os.RemoveAll(projectDir); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.MkdirAll(projectDir, 0777); err != nil {
-		t.Fatal(err)
-	}
-	dockerfilePath := path.Join(projectDir, "Dockerfile")
-	if err := ioutil.WriteFile(dockerfilePath, []byte(dockerfile), 0777); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := func() error {
-		gdmDir := projectDir
-		if err := doCMD(gdmDir, "git", "init"); err != nil {
-			return err
-		}
-		if err := doCMD(gdmDir, "git", "config", "user.name", "Sous User"); err != nil {
-			return err
-		}
-		if err := doCMD(gdmDir, "git", "config", "user.email", "sous-user@example.com"); err != nil {
-			return err
-		}
-		if err := doCMD(gdmDir, "git", "add", "Dockerfile"); err != nil {
-			return err
-		}
-		if err := doCMD(gdmDir, "git", "commit", "-am", "add Dockerfile"); err != nil {
-			return err
-		}
-		if err := doCMD(gdmDir, "git", "remote", "add", "origin", "git@github.com:opentable/bogus/repo.git"); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		t.Fatal(err)
-	}
+	makeFileString(t, projectDir, "Dockerfile", simpleServer)
+	mustDoCMD(t, projectDir, "git", "add", "Dockerfile")
+	mustDoCMD(t, projectDir, "git", "commit", "-am", "Add Dockerfile")
 
 	sous := f.Client
 
-	if _, err := sous.Run(t, "version"); err != nil {
-		t.Fatal(err)
-	}
+	sous.MustRun(t, "version")
 
 	// sous init
 	sous.Dir = projectDir
-	if _, err := sous.Run(t, "init"); err != nil {
-		t.Fatal(err)
-	}
+	sous.MustRun(t, "init")
 
 	// sous manifest get > manifest
 	manifestGetCmd := sous.Cmd(t, "manifest", "get")
