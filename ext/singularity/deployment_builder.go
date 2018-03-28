@@ -3,7 +3,6 @@ package singularity
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/opentable/go-singularity/dtos"
@@ -87,7 +86,6 @@ func (cr *canRetryRequest) name() string {
 }
 
 func (db *deploymentBuilder) canRetry(err error) error {
-	log.Println(err)
 	if err == nil || !db.isRetryable(err) {
 		return err
 	}
@@ -113,7 +111,6 @@ func BuildDeployment(reg sous.ImageLabeller, clusters sous.Clusters, req SingReq
 }
 
 func (db *deploymentBuilder) completeConstruction() error {
-	log.Printf("Starting completeConstruction")
 	wrapError := func(fn func() error, msgStr string) func() error {
 		return func() error {
 			return errors.Wrap(fn(), msgStr)
