@@ -128,6 +128,8 @@ func (sd *SousNewDeploy) Execute(args []string) cmdr.Result {
 		result := PollDeployQueue(location, client, pollTime, bar, sd.LogSink)
 
 		if terminal.IsTerminal(int(os.Stdin.Fd())) && bar != nil && p != nil {
+			bar.SetTotal(100, true)
+			bar.Incr(100)
 			bar.Complete()
 			p.Wait()
 			p.RemoveBar(bar)
