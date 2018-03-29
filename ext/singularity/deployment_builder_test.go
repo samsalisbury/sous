@@ -25,12 +25,20 @@ func (fake *fakeImageLabeller) ImageLabels(imageName string) (labels map[string]
 
 func TestBuildDeployment_errors(t *testing.T) {
 	url := "http://example.com/singularity"
-	reqParent := &dtos.SingularityRequestParent{}
+	reqParent := &dtos.SingularityRequestParent{
+		RequestDeployState: &dtos.SingularityRequestDeployState{},
+	}
 	testClusters := sous.Clusters{
 		"left":  &sous.Cluster{Name: "left", BaseURL: url},
 		"right": &sous.Cluster{Name: "right", BaseURL: url},
 	}
 	fakeSing, c := newSingClientSpy()
+
+	cannedRequest := &dtos.SingularityRequestParent{
+		RequestDeployState: &dtos.SingularityRequestDeployState{},
+	}
+	c.cannedRequest(cannedRequest)
+
 	cannedDep := &dtos.SingularityDeployHistory{}
 	c.cannedDeploy(cannedDep)
 
@@ -136,6 +144,10 @@ func TestBuildDeployment(t *testing.T) {
 
 	log, _ := logging.NewLogSinkSpy()
 
+	cannedRequest := &dtos.SingularityRequestParent{
+		RequestDeployState: &dtos.SingularityRequestDeployState{},
+	}
+
 	cannedDep := &dtos.SingularityDeployHistory{
 		DeployResult: &dtos.SingularityDeployResult{
 			DeployState: dtos.SingularityDeployResultDeployStateSUCCEEDED,
@@ -168,6 +180,8 @@ func TestBuildDeployment(t *testing.T) {
 		},
 	}
 	fakeSing, fsc := newSingClientSpy()
+
+	fsc.cannedRequest(cannedRequest)
 	fsc.cannedDeploy(cannedDep)
 
 	req.Sing = fakeSing
@@ -223,6 +237,10 @@ func TestBuildDeployment_failed_deploy(t *testing.T) {
 		},
 	}
 
+	cannedRequest := &dtos.SingularityRequestParent{
+		RequestDeployState: &dtos.SingularityRequestDeployState{},
+	}
+
 	cannedDep := &dtos.SingularityDeployHistory{
 		//DEPLOY_RESULT=$(jq -r .deployResult.deployState < $DEPLOY_STATE)
 		//$DEPLOY_RESULT = SUCCEEDED
@@ -251,6 +269,7 @@ func TestBuildDeployment_failed_deploy(t *testing.T) {
 	}
 
 	fakeSing, fsc := newSingClientSpy()
+	fsc.cannedRequest(cannedRequest)
 	fsc.cannedDeploy(cannedDep)
 
 	req.Sing = fakeSing

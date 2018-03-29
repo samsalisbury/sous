@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+
+	"github.com/davecgh/go-spew/spew"
 )
 
 type (
@@ -99,10 +101,12 @@ func (c DummyControl) FeedSimple(body string, err error) {
 func (dc *DummyClient) DTORequest(rn string, pop DTO, m, p string, pp, qp urlParams, b ...DTO) error {
 	dto, err := dc.NextDTO(m, p, pp, qp, b...)
 	if err != nil {
+		spew.Dump(err)
 		return err
 	}
 	err = pop.Absorb(dto)
 	if err != nil {
+		spew.Dump(err)
 		return err
 	}
 	return nil

@@ -38,7 +38,22 @@ func TestGetDepSetWorks(t *testing.T) {
 			},
 		}, nil)
 
-		co.FeedDTO(&dtos.SingularityDeployHistory{}, nil)
+		co.FeedDTO(&dtos.SingularityRequestParent{
+			State: dtos.SingularityRequestParentRequestStateACTIVE,
+			RequestDeployState: &dtos.SingularityRequestDeployState{
+				ActiveDeploy: &dtos.SingularityDeployMarker{
+					DeployId:  "testdep",
+					RequestId: "testreq",
+				},
+			},
+			Request: &dtos.SingularityRequest{
+				Id:          "testreq",
+				RequestType: dtos.SingularityRequestRequestTypeSERVICE,
+				Owners:      swaggering.StringList{"jlester@opentable.com"},
+			},
+		}, nil)
+
+		co.FeedDTO(&dtos.SingularityDeployHistoryList{}, nil)
 
 		whip[url] = co
 		return cl
