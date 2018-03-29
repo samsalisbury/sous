@@ -2,11 +2,13 @@ package messages
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -32,15 +34,17 @@ type HTTPLogEntry struct {
 	dur            time.Duration
 }
 
-var httpLogFile io.Writer
+var httpLogFile = ioutil.Discard
 
 func init() {
-	f, err := ioutil.TempFile("", "http-log")
-	if err != nil {
-		panic(err)
+	if test, debug := flag.CommandLine.Lookup("test.count"), os.Getenv("SOUS_DEBUG_SERVER"); test != nil || debug != "" {
+		f, err := ioutil.TempFile("", "http-log")
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("Logging HTTP bodies to %q\n", f.Name())
+		httpLogFile = f
 	}
-	fmt.Printf("Logging HTTP bodies to %q\n", f.Name())
-	httpLogFile = f
 }
 
 // ReportClientHTTPRequest reports a response recieved by Sous as a client.

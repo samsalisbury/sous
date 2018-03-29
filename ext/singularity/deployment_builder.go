@@ -118,6 +118,7 @@ func (db *deploymentBuilder) completeConstruction() error {
 	}
 	return firsterr.Returned(
 		wrapError(db.basics, "Failed to extract basic information from original request."),
+		wrapError(db.getFullRequestParent, "Failed to retrieve full RequestParent DTO."),
 		wrapError(db.determineDeployStatus, "Failed to determine deploy status."),
 		wrapError(db.retrieveDeployHistory, "Failed to retrieve SingularityDeployHistory from SingularityRequestParent."),
 		wrapError(db.extractDeployFromDeployHistory, "Failed to extract SingularityDeploy from SingularityDeployHistory."),
@@ -160,6 +161,20 @@ func (db *deploymentBuilder) basics() error {
 	return nil
 }
 
+func (db *deploymentBuilder) getFullRequestParent() error {
+	if db.req.ReqParent.ActiveDeploy != nil || db.req.ReqParent.PendingDeploy != nil {
+		// already have useful info
+		return nil
+	}
+
+	rp, err := db.req.Sing.GetRequest(db.reqID, false)
+	if err != nil {
+		return err
+	}
+	db.req.ReqParent = rp
+	return nil
+}
+
 // If there is a Pending deploy, as far as Sous is concerned, that's "to
 // come" - we optimistically assume it will become Active, and that's the
 // Deployment we should consider live.
@@ -185,10 +200,17 @@ func (db *deploymentBuilder) determineDeployStatus() error {
 		db.Target.Status = sous.DeployStatusPending
 		db.depMarker = rds.PendingDeploy
 		db.deploy = rp.PendingDeploy
-	case rds.ActiveDeploy != nil:
-		db.Target.Status = sous.DeployStatusActive
-		db.depMarker = rds.ActiveDeploy
-		db.deploy = rp.ActiveDeploy
+		/*
+			XXX(jdl) This doesn't work, because as of 0.19, S9y Request responses
+			don't include enough information to distinguish successfully deployed
+			requests from fallbacks. There are promising fields in 0.20, so we
+			should revisit.
+
+			case rds.ActiveDeploy != nil:
+				db.Target.Status = sous.DeployStatusActive
+				db.depMarker = rds.ActiveDeploy
+				db.deploy = rp.ActiveDeploy
+		*/
 	}
 	return nil
 }

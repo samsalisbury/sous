@@ -16,24 +16,27 @@ type (
 
 // New creates a new readDebugger that wraps a ReadCloser.
 func New(rc io.Reader, log func([]byte, int, error)) io.ReadCloser {
-	return &readDebugger{
-		wrapped: rc,
-		read:    []byte{},
-		log:     log,
+	switch r := rc.(type) {
+	default:
+		return &readDebugger{
+			wrapped: rc,
+			read:    []byte{},
+			log:     log,
+		}
+	case *readDebugger:
+		return r
 	}
 }
 
 // Read implements Reader on readDebugger.
 func (rd *readDebugger) Read(p []byte) (int, error) {
 	n, err := rd.wrapped.Read(p)
-	/*
-		rd.read = append(rd.read, p[:n]...)
-		rd.count += n
-		if err != nil {
-			rd.log(rd.read, rd.count, err)
-			rd.logged = true
-		}
-	*/
+	rd.read = append(rd.read, p[:n]...)
+	rd.count += n
+	if err != nil {
+		rd.log(rd.read, rd.count, err)
+		rd.logged = true
+	}
 	return n, err
 }
 

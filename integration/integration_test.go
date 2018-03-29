@@ -388,6 +388,7 @@ func (suite *integrationSuite) TestFailedDeployFollowingSuccessfulDeploy() {
 	registerAndDeploy(ip, clusterName, repoName, sourceRepo, "succeedthenfail-fail", "2.0.0-fail", ports, sous.Startup{SkipCheck: true})
 
 	deployState = suite.waitUntilSettledStatus(clusters, sourceRepo)
+	suite.dumpLogs()
 	suite.statusIs(deployState, sous.DeployStatusFailed)
 }
 
