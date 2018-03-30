@@ -24,6 +24,9 @@ vars:
   GROUP_ID:
     sh: id -g
   USER_NAME: postgres
+  SOUS_TC_PACKAGES:
+    sh: make export-SOUS_TC_PACKAGES
+
 tasks:
 
   print:
@@ -46,7 +49,19 @@ tasks:
       - echo "GROUP_ID = {{.GROUP_ID}}"
       - echo "USER_NAME = {{.USER_NAME}}"
       - echo "TC_TEMP_DIR= {{.TC_TEMP_DIR}}"
+      - echo "SOUS_TC_PACKAGES = {{.SOUS_TC_PACKAGES}}"
     silent: true
+
+  test-cli:
+    cmds:
+      - mkdir -p "{{.TC_TEMP_DIR}}/src/github.com/opentable/sous"
+      - cp -r ./vendor/* "{{.TC_TEMP_DIR}}/src"
+      - cp -r ./* "{{.TC_TEMP_DIR}}/src/github.com/opentable/sous"
+      - docker run --rm -v "{{.TC_TEMP_DIR}}":/go -v $PWD:/app -w /app golang:1.10 go test -race -v github.com/opentable/sous/cli
+
+  test:
+    cmds:
+      - docker run --rm -v $PWD:/go/src/github.com/opentable/sous -v /go/src/github.com/opentable/sous golang:1.10 go test -race -v {{.SOUS_TC_PACKAGES}} | docker run -i xjewer/go-test-teamcity
 
   teamcity:
     deps: [postgres-start-tc]
