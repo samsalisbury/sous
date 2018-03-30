@@ -26,13 +26,15 @@ import (
 // watching the returned rectification URL.
 type SousNewDeploy struct {
 	DeployFilterFlags config.DeployFilterFlags `inject:"optional"`
-	StateReader       graph.StateReader
-	HTTPClient        *graph.ClusterSpecificHTTPClient
-	TargetManifestID  graph.TargetManifestID
-	LogSink           graph.LogSink
-	dryrunOption      string
-	waitStable        bool
-	User              sous.User
+
+	ResolveFilter      *graph.RefinedResolveFilter
+	StateReader        graph.StateReader
+	HTTPClient         *graph.ClusterSpecificHTTPClient
+	TargetDeploymentID graph.TargetDeploymentID
+	LogSink            graph.LogSink
+	dryrunOption       string
+	waitStable         bool
+	User               sous.User
 	graph.LocalSousConfig
 }
 
@@ -71,17 +73,13 @@ func (sd *SousNewDeploy) RegisterOn(psy Addable) {
 
 // Execute creates the new deployment.
 func (sd *SousNewDeploy) Execute(args []string) cmdr.Result {
-
-	cluster := sd.DeployFilterFlags.Cluster
-
-	newVersion, err := semv.Parse(sd.DeployFilterFlags.Tag)
+	newVersion, err := sd.ResolveFilter.TagVersion()
 	if err != nil {
-		return cmdr.UsageErrorf("not semver: -tag %s", sd.DeployFilterFlags.Tag)
+		return EnsureErrorResult(err)
 	}
 
 	d := server.SingleDeploymentBody{}
-	q := sd.TargetManifestID.QueryMap()
-	q["cluster"] = cluster
+	q := sd.TargetDeploymentID.QueryMap()
 	updater, err := sd.HTTPClient.Retrieve("./single-deployment", q, &d, nil)
 	if err != nil {
 		return cmdr.InternalErrorf("Failed to retrieve current deployment: %s", err)
