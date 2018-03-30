@@ -65,6 +65,8 @@ tasks:
   test:
     deps: [postgres-start-tc]
     cmds:
+      - git config user.email "test@test.com"
+      - git config user.name "test test"
       - docker run --rm -v $PWD:/go/src/github.com/opentable/sous -w /go/src/github.com/opentable/sous golang:1.10 go test -race -v {{.HARD_CODE}}
 
   teamcity:
