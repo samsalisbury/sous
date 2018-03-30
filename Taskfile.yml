@@ -89,7 +89,14 @@ tasks:
       - docker stop postgres > /dev/null 2>&1 || true
 
   postgres-start:
-    desc: start docker postgres
+    desc: create db and liquibase
+    deps: [postgres-start-image]
+    cmds:
+      - docker run postgres:10.3 createdb -h {{.HOSTNAME}} -p {.PGPORT}} -U {{.USER_NAME}} -w {{.TEST_DB_NAME}} > /dev/null 2>&1 || true
+      - docker run --rm -e CHANGELOG_FILE=changelog.xml -v $PWD/database:/changelogs -e "URL={{.LIQUIBASE_TEST_URL}}" docker.otenv.com/liquibase:0.0.6
+
+  postgres-start-image:
+    desc: start docker postgres docker
     cmds:
       - |
         if ! (docker run postgres:10.3 pg_isready -h {{.HOSTNAME}} -p {{.PGPORT}} -U {{.USER_NAME}}); then
@@ -98,6 +105,4 @@ tasks:
           docker run --name postgres -p {{.PGPORT}}:5432 --rm --user {{.USER_ID}}:{{.GROUP_ID}} -v /etc/passwd:/etc/passwd:ro -v {{.DEV_DOCKER_POSTGRES_DATA_DIR}}:/var/lib/postgresql/data postgres:10.3 &
           until docker run postgres:10.3 pg_isready -h {{.HOSTNAME}} -p {{.PGPORT}} -U {{.USER_NAME}}; do sleep 1; done
         fi
-      - docker run postgres:10.3 createdb -h {{.HOSTNAME}} -p {{.PGPORT}} -U {{.USER_NAME}} -w {{.TEST_DB_NAME}} > /dev/null 2>&1 || true
-      - docker run --rm -e CHANGELOG_FILE=changelog.xml -v $PWD/database:/changelogs -e "URL={{.LIQUIBASE_TEST_URL}}" docker.otenv.com/liquibase:0.0.6
 
