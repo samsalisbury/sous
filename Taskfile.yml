@@ -83,6 +83,11 @@ tasks:
     cmds:
       - make test-integration
 
+  postgres-stop:
+    desc: stop docker postgres
+    cmds:
+      - docker stop postgres
+
   postgres-start:
     desc: start docker postgres
     cmds:
