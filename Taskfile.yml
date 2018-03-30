@@ -62,7 +62,7 @@ tasks:
   test:
     deps: [postgres-start-tc]
     cmds:
-      - docker run --rm -v $PWD:/go/src/github.com/opentable/sous -v /go/src/github.com/opentable/sous golang:1.10 go test -race -v {{.SOUS_TC_PACKAGES}} | docker run -i xjewer/go-test-teamcity
+      - docker run --rm -v $PWD:/go/src/github.com/opentable/sous -w /go/src/github.com/opentable/sous golang:1.10 go test -race -v {{.SOUS_TC_PACKAGES}} | docker run -i xjewer/go-test-teamcity
 
   teamcity:
     deps: [postgres-start-tc]
