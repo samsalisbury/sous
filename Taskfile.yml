@@ -26,6 +26,8 @@ vars:
   USER_NAME: postgres
   SOUS_TC_PACKAGES:
     sh: make export-SOUS_TC_PACKAGES
+  HARD_CODE: github.com/opentable/sous/cli github.com/opentable/sous/cli/actions github.com/opentable/sous/cli/tests github.com/opentable/sous/config github.com/opentable/sous/ext/docker github.com/opentable/sous/ext/git github.com/opentable/sous/ext/github github.com/opentable/sous/ext/otpl github.com/opentable/sous/ext/singularity github.com/opentable/sous/ext/storage github.com/opentable/sous/graph github.com/opentable/sous/lib github.com/opentable/sous/server github.com/opentable/sous/test github.com/opentable/sous/test/smoke github.com/opentable/sous/util/blueprints/cmap github.com/opentable/sous/util/cmdr github.com/opentable/sous/util/configloader github.com/opentable/sous/util/docker_registry github.com/opentable/sous/util/firsterr github.com/opentable/sous/util/logging github.com/opentable/sous/util/logging/messages github.com/opentable/sous/util/restful github.com/opentable/sous/util/restful/restfultest github.com/opentable/sous/util/shell github.com/opentable/sous/util/shelltest github.com/opentable/sous/util/sqlgen github.com/opentable/sous/util/validator github.com/opentable/sous/util/whitespace github.com/opentable/sous/util/yaml
+
 
 tasks:
 
@@ -50,6 +52,7 @@ tasks:
       - echo "USER_NAME = {{.USER_NAME}}"
       - echo "TC_TEMP_DIR= {{.TC_TEMP_DIR}}"
       - echo "SOUS_TC_PACKAGES = {{.SOUS_TC_PACKAGES}}"
+      - echo "HARD_CODE = {{.HARD_CODE}}"
     silent: true
 
   test-cli:
@@ -62,7 +65,7 @@ tasks:
   test:
     deps: [postgres-start-tc]
     cmds:
-      - docker run --rm -v $PWD:/go/src/github.com/opentable/sous -w /go/src/github.com/opentable/sous golang:1.10 go test -race -v {{.SOUS_TC_PACKAGES}} | docker run -i xjewer/go-test-teamcity
+      - docker run --rm -v $PWD:/go/src/github.com/opentable/sous -w /go/src/github.com/opentable/sous golang:1.10 go test -race -v {{.HARD_CODE}}
 
   teamcity:
     deps: [postgres-start-tc]
