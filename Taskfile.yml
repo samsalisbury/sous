@@ -49,7 +49,7 @@ tasks:
     silent: true
 
   teamcity:
-    deps: [postgres-start]
+    deps: [postgres-start-tc]
     desc: runs make test-unit-tc for teamcity unit test run
     cmds:
       - TC_TEMP_DIR="{{.TC_TEMP_DIR}}" make test-unit-tc
@@ -97,7 +97,7 @@ tasks:
 
   postgres-start:
     cmds:
-      - docker run postgres:10.3 createdb -h {{.HOSTNAME}} -p {{.PGPORT}} -U {{.USER_NAME}} -w {{.TEST_DB_NAME}}
+      - docker run --net=host postgres:10.3 createdb -h {{.HOSTNAME}} -p {{.PGPORT}} -U {{.USER_NAME}} -w {{.TEST_DB_NAME}}
       - docker run --rm -e CHANGELOG_FILE=changelog.xml -v $PWD/database:/changelogs -e "URL={{.LIQUIBASE_TEST_URL}}" docker.otenv.com/liquibase:0.0.6
 
   postgres-start-image-tc:
