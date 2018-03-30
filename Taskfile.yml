@@ -1,0 +1,98 @@
+version: '2'
+
+expansions: 10
+vars:
+  PGPORT: 6543
+  HOSTNAME:
+    sh: hostname
+  XDG_DATA_HOME:
+    sh: echo "$HOME/.local/share"
+  DEV_DOCKER_POSTGRES_DIR: "{{.XDG_DATA_HOME}}/sous/postgres_docker"
+  DEV_DOCKER_POSTGRES_DATA_DIR: "{{.DEV_DOCKER_POSTGRES_DIR}}/data"
+  DB_NAME: sous
+  TEST_DB_NAME: sous_test_template
+  LIQUIBASE_DEFAULTS: ./dev_support/liquibase/liquibase.properties
+  LIQUIBASE_SERVER: "jdbc:postgresql://{{.HOSTNAME}}:{{.PGPORT}}"
+  LIQUIBASE_SHARED_FLAGS: --changeLogFile=database/changelog.xml --defaultsFile=./dev_support/liquibase/liquibase.properties
+  LIQUIBASE_URL: "{{.LIQUIBASE_SERVER}}/{{.DB_NAME}}?user=postgres"
+  LIQUIBASE_FLAGS: "--url {{.LIQUIBASE_URL}} {{.LIQUIBASE_SHARED_FLAGS}}"
+  LIQUIBASE_TEST_URL: "{{.LIQUIBASE_SERVER}}/{{.TEST_DB_NAME}}?user=postgres"
+  LIQUIBASE_TEST_FLAGS: "--url {{.LIQUIBASE_TEST_URL}} {{.LIQUIBASE_SHARED_FLAGS}}"
+  TC_TEMP_DIR: "/tmp/sous_{{uuidv4}}"
+  USER_ID:
+    sh: id -u
+  GROUP_ID:
+    sh: id -g
+  USER_NAME: postgres
+tasks:
+
+  print:
+    cmds:
+      - echo "PGPORT = {{.PGPORT}}"
+      - echo "HOSTNAME = {{.HOSTNAME}}"
+      - echo "XDG_DATA_HOME = {{.XDG_DATA_HOME}}"
+      - echo "DEV_DOCKER_POSTGRES_DIR = {{.DEV_DOCKER_POSTGRES_DIR}}"
+      - echo "DEV_DOCKER_POSTGRES_DATA_DIR = {{.DEV_DOCKER_POSTGRES_DATA_DIR}}"
+      - echo "DB_NAME = {{.DB_NAME}}"
+      - echo "TEST_DB_NAME = {{.TEST_DB_NAME}}"
+      - echo "LIQUIBASE_DEFAULTS = {{.LIQUIBASE_DEFAULTS}}"
+      - echo "LIQUIBASE_SERVER = {{.LIQUIBASE_SERVER}}"
+      - echo "LIQUIBASE_SHARED_FLAGS = {{.LIQUIBASE_SHARED_FLAGS}}"
+      - echo "LIQUIBASE_URL = {{.LIQUIBASE_URL}}"
+      - echo "LIQUIBASE_FLAGS = {{.LIQUIBASE_FLAGS}}"
+      - echo "LIQUIBASE_TEST_URL = {{.LIQUIBASE_TEST_URL}}"
+      - echo "LIQUIBASE_TEST_FLAGS = {{.LIQUIBASE_TEST_FLAGS}}"
+      - echo "USER_ID = {{.USER_ID}}"
+      - echo "GROUP_ID = {{.GROUP_ID}}"
+      - echo "USER_NAME = {{.USER_NAME}}"
+      - echo "TC_TEMP_DIR= {{.TC_TEMP_DIR}}"
+    silent: true
+
+  teamcity:
+    deps: [postgres-start]
+    desc: runs make test-unit-tc for teamcity unit test run
+    cmds:
+      - TC_TEMP_DIR="{{.TC_TEMP_DIR}}" make test-unit-tc
+
+  install:
+    desc: runs make install-dev
+    cmds:
+      - make install-dev
+
+  unit:
+    deps: [postgres-start]
+    desc: runs make test-unit (with no postgres start)
+    cmds:
+      - make test-unit-no-postgres-setup
+
+  clean-containers:
+    desc: runs make clean-running-containers
+    cmds:
+      - make clean-running-containers
+
+  containers:
+    desc: runs docker-compose up on test-registry folder, also cleans containers first
+    deps: [clean-containers]
+    dir: ./integration/test-registry
+    cmds:
+      - docker-compose up -d
+
+  integration:
+    desc: cleans, docker-compose, then runs make test-integration
+    deps: [containers]
+    cmds:
+      - make test-integration
+
+  postgres-start:
+    desc: start docker postgres
+    cmds:
+      - |
+        if ! (docker run postgres:10.3 pg_isready -h {{.HOSTNAME}} -p {{.PGPORT}} -U {{.USER_NAME}}); then
+          rm -rf {{.DEV_DOCKER_POSTGRES_DATA_DIR}} &&
+          install -d -m 0700 {{.DEV_DOCKER_POSTGRES_DATA_DIR}} &&
+          docker run --name postgres -p {{.PGPORT}}:5432 --rm --user {{.USER_ID}}:{{.GROUP_ID}} -v /etc/passwd:/etc/passwd:ro -v {{.DEV_DOCKER_POSTGRES_DATA_DIR}}:/var/lib/postgresql/data postgres:10.3 &
+          until docker run postgres:10.3 pg_isready -h {{.HOSTNAME}} -p {{.PGPORT}} -U {{.USER_NAME}}; do sleep 1; done
+        fi
+      - docker run postgres:10.3 createdb -h {{.HOSTNAME}} -p {{.PGPORT}} -U {{.USER_NAME}} -w {{.TEST_DB_NAME}} > /dev/null 2>&1 || true
+      - docker run --rm -e CHANGELOG_FILE=changelog.xml -v $PWD/database:/changelogs -e "URL={{.LIQUIBASE_TEST_URL}}" docker.otenv.com/liquibase:0.0.6
+

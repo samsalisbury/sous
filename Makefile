@@ -76,6 +76,7 @@ SOUS_PACKAGES_WITH_TESTS:= $(shell go list -f '{{if len .TestGoFiles}}{{.ImportP
 SOUS_CONTAINER_IMAGES:= "docker images | egrep '127.0.0.1:5000|testregistry_'"
 TC_TEMP_DIR ?= /tmp/sous
 
+print-%  : ; @echo $* = $($*)
 help:
 	@echo --- options:
 	@echo make clean
@@ -249,12 +250,14 @@ test-metalinter: install-linters
 test-gofmt:
 	bin/check-gofmt
 
-test-unit: postgres-test-prepare
+test-unit-no-postgres-setup:
 	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -timeout 3m -race $(SOUS_PACKAGES_WITH_TESTS)
+
+test-unit: postgres-test-prepare test-unit-no-postgres-setup
 
 # Note, the TEMP DIR was needed for the volume mounting, tried to coalesce in the source folder but go kept picking up
 # the other source files and would create bad imports so used temp directory instead
-test-unit-tc: postgres-test-prepare
+test-unit-tc:
 	rm -rf $(TC_TEMP_DIR)
 	mkdir $(TC_TEMP_DIR)
 	mkdir $(TC_TEMP_DIR)/src
