@@ -4,7 +4,7 @@ expansions: 10
 vars:
   PGPORT: 6543
   HOSTNAME:
-    sh: echo "$teamcity.agent.name"
+    sh: echo "$AGENT"
   XDG_DATA_HOME:
     sh: echo "$HOME/.local/share"
   DEV_DOCKER_POSTGRES_DIR: "{{.XDG_DATA_HOME}}/sous/postgres_docker"
