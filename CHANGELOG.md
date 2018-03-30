@@ -6,11 +6,13 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
-
 ## [Unreleased](//github.com/opentable/sous/compare/0.5.81...HEAD)
 
 ### Fixed
 * Client: the flags for newdeploy were misleading. Updated flag parsing and error handling.
+
+### Changed
+* Server: Interactions with Singularity unified and simplified.
 
 ## [0.5.78](//github.com/opentable/sous/compare/0.5.77...0.5.78)
 

@@ -25,12 +25,20 @@ func (fake *fakeImageLabeller) ImageLabels(imageName string) (labels map[string]
 
 func TestBuildDeployment_errors(t *testing.T) {
 	url := "http://example.com/singularity"
-	reqParent := &dtos.SingularityRequestParent{}
+	reqParent := &dtos.SingularityRequestParent{
+		RequestDeployState: &dtos.SingularityRequestDeployState{},
+	}
 	testClusters := sous.Clusters{
 		"left":  &sous.Cluster{Name: "left", BaseURL: url},
 		"right": &sous.Cluster{Name: "right", BaseURL: url},
 	}
 	fakeSing, c := newSingClientSpy()
+
+	cannedRequest := &dtos.SingularityRequestParent{
+		RequestDeployState: &dtos.SingularityRequestDeployState{},
+	}
+	c.cannedRequest(cannedRequest)
+
 	cannedDep := &dtos.SingularityDeployHistory{}
 	c.cannedDeploy(cannedDep)
 
@@ -136,6 +144,10 @@ func TestBuildDeployment(t *testing.T) {
 
 	log, _ := logging.NewLogSinkSpy()
 
+	cannedRequest := &dtos.SingularityRequestParent{
+		RequestDeployState: &dtos.SingularityRequestDeployState{},
+	}
+
 	cannedDep := &dtos.SingularityDeployHistory{
 		DeployResult: &dtos.SingularityDeployResult{
 			DeployState: dtos.SingularityDeployResultDeployStateSUCCEEDED,
@@ -168,6 +180,8 @@ func TestBuildDeployment(t *testing.T) {
 		},
 	}
 	fakeSing, fsc := newSingClientSpy()
+
+	fsc.cannedRequest(cannedRequest)
 	fsc.cannedDeploy(cannedDep)
 
 	req.Sing = fakeSing
@@ -210,6 +224,8 @@ func TestBuildDeployment_failed_deploy(t *testing.T) {
 	req := SingReq{
 		SourceURL: url,
 		ReqParent: &dtos.SingularityRequestParent{
+			State: dtos.SingularityRequestParentRequestStateSYSTEM_COOLDOWN,
+
 			RequestDeployState: &dtos.SingularityRequestDeployState{
 				ActiveDeploy: &dtos.SingularityDeployMarker{},
 			},
@@ -219,6 +235,10 @@ func TestBuildDeployment_failed_deploy(t *testing.T) {
 				Owners:      swaggering.StringList{"jlester@opentable.com"},
 			},
 		},
+	}
+
+	cannedRequest := &dtos.SingularityRequestParent{
+		RequestDeployState: &dtos.SingularityRequestDeployState{},
 	}
 
 	cannedDep := &dtos.SingularityDeployHistory{
@@ -249,6 +269,7 @@ func TestBuildDeployment_failed_deploy(t *testing.T) {
 	}
 
 	fakeSing, fsc := newSingClientSpy()
+	fsc.cannedRequest(cannedRequest)
 	fsc.cannedDeploy(cannedDep)
 
 	req.Sing = fakeSing
@@ -272,7 +293,7 @@ func TestBuildDeployment_failed_deploy(t *testing.T) {
 	expected.ClusterName = "left"
 
 	assert.Equal(t, actual.ClusterName, expected.ClusterName)
-	assert.Equal(t, actual.Status, expected.Status)
+	assert.Equal(t, actual.Status, expected.Status, "Expected %s got %s", expected.Status, actual.Status)
 }
 
 func TestBuildingRequestID(t *testing.T) {
@@ -318,6 +339,7 @@ func TestBuildDeployment_determineDeployStatus_pendingonly(t *testing.T) {
 	db := &deploymentBuilder{
 		req: SingReq{
 			ReqParent: &dtos.SingularityRequestParent{
+				State: dtos.SingularityRequestParentRequestStateACTIVE,
 				RequestDeployState: &dtos.SingularityRequestDeployState{
 					PendingDeploy: &depMarker,
 				},
@@ -345,6 +367,7 @@ func TestBuildDeployment_determineDeployStatus_activeAndPending(t *testing.T) {
 	db := &deploymentBuilder{
 		req: SingReq{
 			ReqParent: &dtos.SingularityRequestParent{
+				State: dtos.SingularityRequestParentRequestStateACTIVE,
 				RequestDeployState: &dtos.SingularityRequestDeployState{
 					PendingDeploy: &depMarker,
 					ActiveDeploy:  &otherDepMarker,

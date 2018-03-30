@@ -23,6 +23,7 @@ func TestGetDepSetWorks(t *testing.T) {
 
 		co.FeedDTO(&dtos.SingularityRequestParentList{
 			&dtos.SingularityRequestParent{
+				State: dtos.SingularityRequestParentRequestStateACTIVE,
 				RequestDeployState: &dtos.SingularityRequestDeployState{
 					ActiveDeploy: &dtos.SingularityDeployMarker{
 						DeployId:  "testdep",
@@ -37,27 +38,22 @@ func TestGetDepSetWorks(t *testing.T) {
 			},
 		}, nil)
 
-		co.FeedDTO(&dtos.SingularityDeployHistoryList{
-			{
-				Deploy: &dtos.SingularityDeploy{
-					Metadata: map[string]string{
-						"com.opentable.sous.clustername": "left",
-					},
-					Id: "testdep",
-					ContainerInfo: &dtos.SingularityContainerInfo{
-						Type:   dtos.SingularityContainerInfoSingularityContainerTypeDOCKER,
-						Docker: &dtos.SingularityDockerInfo{},
-						Volumes: dtos.SingularityVolumeList{
-							&dtos.SingularityVolume{
-								HostPath:      "/onhost",
-								ContainerPath: "/indocker",
-								Mode:          dtos.SingularityVolumeSingularityDockerVolumeModeRW,
-							},
-						},
-					},
-					Resources: &dtos.Resources{},
+		co.FeedDTO(&dtos.SingularityRequestParent{
+			State: dtos.SingularityRequestParentRequestStateACTIVE,
+			RequestDeployState: &dtos.SingularityRequestDeployState{
+				ActiveDeploy: &dtos.SingularityDeployMarker{
+					DeployId:  "testdep",
+					RequestId: "testreq",
 				},
-			}}, nil)
+			},
+			Request: &dtos.SingularityRequest{
+				Id:          "testreq",
+				RequestType: dtos.SingularityRequestRequestTypeSERVICE,
+				Owners:      swaggering.StringList{"jlester@opentable.com"},
+			},
+		}, nil)
+
+		co.FeedDTO(&dtos.SingularityDeployHistoryList{}, nil)
 
 		whip[url] = co
 		return cl
