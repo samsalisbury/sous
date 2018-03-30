@@ -15,7 +15,6 @@ import (
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/logging/messages"
 	"github.com/opentable/sous/util/restful"
-	"github.com/samsalisbury/semv"
 	"github.com/vbauerster/mpb"
 	"github.com/vbauerster/mpb/decor"
 	"golang.org/x/crypto/ssh/terminal"
@@ -32,7 +31,6 @@ type SousNewDeploy struct {
 	HTTPClient         *graph.ClusterSpecificHTTPClient
 	TargetDeploymentID graph.TargetDeploymentID
 	LogSink            graph.LogSink
-	dryrunOption       string
 	waitStable         bool
 	User               sous.User
 	graph.LocalSousConfig
@@ -42,38 +40,36 @@ func init() { TopLevelCommands["newdeploy"] = &SousNewDeploy{} }
 
 const sousNewDeployHelp = `deploys a new version into a particular cluster
 
-usage: sous newdeploy -cluster <name> -tag <semver>
-
-EXPERIMENTAL COMMAND: This may or may not yet do what it says on the tin.
-Feel free to try it out, but if it breaks, you get to keep both pieces.
+usage: sous newdeploy [(options)]
 
 sous deploy will deploy the version tag for this application in the named
 cluster.
-`
+
+BETA: This is the new way to do deployments in Sous. In the near future,
+we will be switching 'sous deploy' to work this way. While we're confident
+about it's behavior, we're still watching to be sure that it works properly.
+
+Feel free to try it out, and contact the Sous team if you have problems.`
 
 // Help returns the help string for this command.
 func (sd *SousNewDeploy) Help() string { return sousNewDeployHelp }
 
 // AddFlags adds the flags for sous init.
 func (sd *SousNewDeploy) AddFlags(fs *flag.FlagSet) {
-	MustAddFlags(fs, &sd.DeployFilterFlags, DeployFilterFlagsHelp)
+	MustAddFlags(fs, &sd.DeployFilterFlags, NewDeployFilterFlagsHelp)
 
 	fs.BoolVar(&sd.waitStable, "wait-stable", true,
 		"wait for the deploy to complete before returning (otherwise, use --wait-stable=false)")
-	fs.StringVar(&sd.dryrunOption, "dry-run", "none",
-		"prevent rectify from actually changing things - "+
-			"values are none,scheduler,registry,both")
 }
 
 // RegisterOn adds flag options to the graph.
 func (sd *SousNewDeploy) RegisterOn(psy Addable) {
-	psy.Add(graph.DryrunNeither)
 	psy.Add(&sd.DeployFilterFlags)
 }
 
 // Execute creates the new deployment.
 func (sd *SousNewDeploy) Execute(args []string) cmdr.Result {
-	newVersion, err := sd.ResolveFilter.TagVersion()
+	newVersion, err := (*sous.ResolveFilter)(sd.ResolveFilter).TagVersion()
 	if err != nil {
 		return EnsureErrorResult(err)
 	}
@@ -92,6 +88,10 @@ func (sd *SousNewDeploy) Execute(args []string) cmdr.Result {
 	updateResponse, err := updater.Update(d, sd.User.HTTPHeaders())
 	if err != nil {
 		return cmdr.InternalErrorf("Failed to update deployment: %s", err)
+	}
+
+	if !sd.waitStable {
+		return cmdr.Success("Deploy %q requested of server. Exiting optimistically.", sd.TargetDeploymentID)
 	}
 
 	if location := updateResponse.Location(); location != "" {
@@ -134,8 +134,8 @@ func (sd *SousNewDeploy) Execute(args []string) cmdr.Result {
 		}
 		return result
 	}
-	return cmdr.Successf("Desired version for %q in cluster %q already %q",
-		sd.TargetManifestID, cluster, sd.DeployFilterFlags.Tag)
+	return cmdr.Successf("Desired version for %q already %q",
+		sd.TargetDeploymentID, sd.DeployFilterFlags.Tag)
 
 }
 

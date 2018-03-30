@@ -47,4 +47,6 @@ var (
 	RectifyFilterFlagsHelp = repoFlagHelp + offsetFlagHelp + flavorFlagHelp + clusterFlagHelp + allFlagHelp
 	// DeployFilterFlagsHelp is the text and config for deploy flags
 	DeployFilterFlagsHelp = repoFlagHelp + offsetFlagHelp + flavorFlagHelp + clusterFlagHelp + allFlagHelp + tagFlagHelp
+	// NewDeployFilterFlagsHelp is the text and config for deploy flags
+	NewDeployFilterFlagsHelp = repoFlagHelp + offsetFlagHelp + flavorFlagHelp + clusterFlagHelp + tagFlagHelp
 )

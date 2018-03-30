@@ -82,7 +82,7 @@ func newTargetManifestID(rrf *RefinedResolveFilter) (TargetManifestID, error) {
 	if rrf == nil {
 		return TargetManifestID{}, errors.Errorf("nil ResolveFilter")
 	}
-	repo, err := rff.Repo.Value()
+	repo, err := rrf.Repo.Value()
 	if err != nil {
 		return TargetManifestID{}, errors.Wrapf(err, "repo")
 	}
