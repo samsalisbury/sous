@@ -86,7 +86,7 @@ tasks:
   postgres-stop:
     desc: stop docker postgres
     cmds:
-      - docker stop postgres
+      - docker stop postgres > /dev/null 2>&1 || true
 
   postgres-start:
     desc: start docker postgres
@@ -94,7 +94,7 @@ tasks:
       - |
         if ! (docker run postgres:10.3 pg_isready -h {{.HOSTNAME}} -p {{.PGPORT}} -U {{.USER_NAME}}); then
           rm -rf {{.DEV_DOCKER_POSTGRES_DATA_DIR}} &&
-          install -d -m 0700 {{.DEV_DOCKER_POSTGRES_DATA_DIR}} &&
+          install -d -m 0700 {{.DEV_DOCKER_POSTGRES_DATA_DIR}} &
           docker run --name postgres -p {{.PGPORT}}:5432 --rm --user {{.USER_ID}}:{{.GROUP_ID}} -v /etc/passwd:/etc/passwd:ro -v {{.DEV_DOCKER_POSTGRES_DATA_DIR}}:/var/lib/postgresql/data postgres:10.3 &
           until docker run postgres:10.3 pg_isready -h {{.HOSTNAME}} -p {{.PGPORT}} -U {{.USER_NAME}}; do sleep 1; done
         fi
