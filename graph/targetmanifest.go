@@ -1,6 +1,8 @@
 package graph
 
 import (
+	"fmt"
+
 	sous "github.com/opentable/sous/lib"
 	"github.com/pkg/errors"
 )
@@ -45,15 +47,15 @@ func newRefinedResolveFilter(f *sous.ResolveFilter, discovered *SourceContextDis
 
 func newTargetDeploymentID(rrf *RefinedResolveFilter) (TargetDeploymentID, error) {
 	if rrf == nil {
-		return TargetDeploymentID{}, errors.Errorf("nil ResolveFilter")
+		return TargetDeploymentID{}, fmt.Errorf("nil ResolveFilter")
 	}
 	repo, err := rrf.Repo.Value()
 	if err != nil {
-		return TargetDeploymentID{}, errors.Wrapf(err, "repo")
+		return TargetDeploymentID{}, fmt.Errorf("repo: %s", err)
 	}
 	cluster, err := rrf.Cluster.Value()
 	if err != nil {
-		return TargetDeploymentID{}, errors.Wrapf(err, "cluster")
+		return TargetDeploymentID{}, fmt.Errorf("cluster: %s", err)
 	}
 
 	return TargetDeploymentID{
@@ -80,11 +82,11 @@ func (td TargetDeploymentID) QueryMap() map[string]string {
 
 func newTargetManifestID(rrf *RefinedResolveFilter) (TargetManifestID, error) {
 	if rrf == nil {
-		return TargetManifestID{}, errors.Errorf("nil ResolveFilter")
+		return TargetManifestID{}, fmt.Errorf("nil ResolveFilter")
 	}
 	repo, err := rrf.Repo.Value()
 	if err != nil {
-		return TargetManifestID{}, errors.Wrapf(err, "repo")
+		return TargetManifestID{}, fmt.Errorf("repo: %s", err)
 	}
 
 	return TargetManifestID{

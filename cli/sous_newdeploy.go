@@ -65,6 +65,7 @@ func (sd *SousNewDeploy) AddFlags(fs *flag.FlagSet) {
 // RegisterOn adds flag options to the graph.
 func (sd *SousNewDeploy) RegisterOn(psy Addable) {
 	psy.Add(&sd.DeployFilterFlags)
+	psy.Add(graph.DryrunNeither)
 }
 
 // Execute creates the new deployment.
