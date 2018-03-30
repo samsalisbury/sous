@@ -92,12 +92,18 @@ tasks:
     desc: create db and liquibase
     cmds:
       - task: postgres-start-image-tc
-      - task: postgres-start
+      - task: postgres-start-base
         vars: {HOSTNAME: localhost}
 
   postgres-start:
+    desc: start postgres (not teamcity)
     cmds:
-      - docker run --net=host postgres:10.3 createdb -h {{.HOSTNAME}} -p {{.PGPORT}} -U {{.USER_NAME}} -w {{.TEST_DB_NAME}}
+      - task: postgres-start-image
+      - task: postgres-start-base
+
+  postgres-start-base:
+    cmds:
+      - docker run --net=host postgres:10.3 createdb -h {{.HOSTNAME}} -p {{.PGPORT}} -U {{.USER_NAME}} -w {{.TEST_DB_NAME}} > /dev/null 2>&1 || true
       - docker run --net=host --rm -e CHANGELOG_FILE=changelog.xml -v $PWD/database:/changelogs -e "URL={{.LIQUIBASE_TEST_URL}}" docker.otenv.com/liquibase:0.0.6
 
   postgres-start-image-tc:
