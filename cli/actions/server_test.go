@@ -18,9 +18,9 @@ func TestEnsureGDMExists(t *testing.T) {
 		path       string
 		createFile bool
 	}{
-	//	{"does-not-exist", false},
-	//	{"empty-source-location", false},
-	//	{"nonempty-source-location", true},
+		{"does-not-exist", false},
+		{"empty-source-location", false},
+		{"nonempty-source-location", true},
 	}
 
 	//Setup Test Data
