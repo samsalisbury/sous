@@ -2,8 +2,6 @@ package singularity
 
 import (
 	"fmt"
-	"strings"
-	"time"
 
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
@@ -53,41 +51,10 @@ func (r *deployer) Status(reg sous.Registry, clusters sous.Clusters, pair *sous.
 	tgt, err := BuildDeployment(reg, clusters, singReq, r.log)
 
 	tgt.SchedulerURL = fmt.Sprintf("http://%s/request/%s", url, reqID)
-	if !tgt.Status.Failed() {
-		status, err := r.checkPendingList(pair.Post, client, depID)
-		if err != nil {
-			return nil, errors.Wrapf(err, "getting pending state")
-		}
-		tgt.Status = status
-	}
-
 	return &tgt, errors.Wrapf(err, "getting request state")
 }
 
 func (r *deployer) getRequestID(d *sous.Deployable) (string, error) {
 	// TODO: add a cache of known Deployables to their Requests (and current state...)
 	return computeRequestID(d)
-}
-
-func (r *deployer) checkPendingList(d *sous.Deployable, client singClient, depID string) (sous.DeployStatus, error) {
-	pending, err := client.GetPendingDeploys()
-
-	if err != nil {
-		return sous.DeployStatusAny, malformedResponse{"Getting pending deploys:" + err.Error()}
-	}
-	pds := make([]string, len(pending))
-	for i, p := range pending {
-		pds[i] = p.DeployMarker.DeployId
-	}
-
-	messages.ReportLogFieldsMessageToConsole(
-		fmt.Sprintf("%s: There are %d pending deploys: %s", time.Now().Format(time.RFC850), len(pending), strings.Join(pds, ", ")),
-		logging.ExtraDebug1Level, r.log, depID)
-
-	for _, p := range pending {
-		if p.DeployMarker.DeployId == depID {
-			return sous.DeployStatusPending, nil
-		}
-	}
-	return sous.DeployStatusActive, nil
 }

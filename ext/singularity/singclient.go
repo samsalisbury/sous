@@ -54,6 +54,11 @@ func (spy singClientSpy) GetPendingDeploys() (dtos.SingularityPendingDeployList,
 	return res.Get(0).(dtos.SingularityPendingDeployList), res.Error(1)
 }
 
+func (ctrl singClientSpyController) cannedRequest(answer *dtos.SingularityRequestParent) {
+	ctrl.MatchMethod("GetRequest", spies.AnyArgs, answer, nil)
+	ctrl.MatchMethod("GetRequests", spies.AnyArgs, dtos.SingularityRequestParentList{answer}, nil)
+}
+
 func (ctrl singClientSpyController) cannedDeploy(cannedAnswer *dtos.SingularityDeployHistory) {
 	ctrl.MatchMethod("GetDeploy", spies.AnyArgs, cannedAnswer, nil)
 	ctrl.MatchMethod("GetDeploys", spies.AnyArgs, dtos.SingularityDeployHistoryList{cannedAnswer}, nil)

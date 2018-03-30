@@ -44,7 +44,7 @@ func (suite *integrationSuite) deploymentWithRepo(clusterNames []string, repo st
 	for _, name := range clusterNames {
 		clusters[name] = &sous.Cluster{BaseURL: SingularityURL}
 	}
-	suite.T().Logf("Calling RunningDeployments for clusters %#v", clusters)
+	//suite.T().Logf("Calling RunningDeployments for clusters %#v", clusters)
 	deps, err := suite.deployer.RunningDeployments(suite.nameCache, clusters)
 	if suite.NoError(err) {
 		return deps, suite.findRepo(deps, repo)
@@ -225,7 +225,6 @@ func (suite *integrationSuite) depsCount(deps map[sous.DeploymentID]*sous.Deploy
 	if suite.Len(deps, count, "Expected there to be %d deployments, but there are %d: \nDeployState map:\n%+#v", count, len(deps), deps) {
 		return true
 	}
-	suite.dumpLogs()
 	return false
 }
 
