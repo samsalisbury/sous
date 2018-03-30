@@ -60,6 +60,7 @@ tasks:
       - docker run --rm -v "{{.TC_TEMP_DIR}}":/go -v $PWD:/app -w /app golang:1.10 go test -race -v github.com/opentable/sous/cli
 
   test:
+    deps: [postgres-start-tc]
     cmds:
       - docker run --rm -v $PWD:/go/src/github.com/opentable/sous -v /go/src/github.com/opentable/sous golang:1.10 go test -race -v {{.SOUS_TC_PACKAGES}} | docker run -i xjewer/go-test-teamcity
 
