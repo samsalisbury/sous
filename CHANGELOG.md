@@ -8,6 +8,9 @@ with respect to its command line interface and HTTP interface.
 
 ## [Unreleased](//github.com/opentable/sous/compare/0.5.81...HEAD)
 
+### Fixed
+* Client: the flags for newdeploy were misleading. Updated flag parsing and error handling.
+
 ### Changed
 * Server: Interactions with Singularity unified and simplified.
 

@@ -95,6 +95,9 @@ type (
 	// userSelectedOTPLDeployManifest is a set of otpl-deploy configured deploy
 	// specs that the user has explicitly selected. (May be empty.)
 	userSelectedOTPLDeployManifest struct{ *sous.Manifest }
+	// TargetDeploymentID is the manifest ID being targeted, after resolving all
+	// context and flags.
+	TargetDeploymentID sous.DeploymentID
 	// TargetManifestID is the manifest ID being targeted, after resolving all
 	// context and flags.
 	TargetManifestID sous.ManifestID
@@ -266,6 +269,7 @@ func AddInternals(graph adder) {
 		newUserSelectedOTPLDeploySpecs,
 		newRefinedResolveFilter,
 		newTargetManifestID,
+		newTargetDeploymentID,
 		newResolveFilter,
 		newResolver,
 		newAutoResolver,

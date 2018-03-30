@@ -3,6 +3,7 @@ package sous
 import (
 	"fmt"
 
+	"github.com/pkg/errors"
 	"github.com/samsalisbury/semv"
 )
 
@@ -50,6 +51,14 @@ func (matcher ResolveFieldMatcher) ValueOr(def string) string {
 	return *matcher.Match
 }
 
+// Value returns the match value or else returns a descriptive error.
+func (matcher ResolveFieldMatcher) Value() (string, error) {
+	if matcher.All() {
+		return "", fmt.Errorf("field not specified")
+	}
+	return *matcher.Match, nil
+}
+
 func (rf *ResolveFilter) matchRepo(repo string) bool {
 	return rf.Repo.match(repo)
 }
@@ -87,6 +96,15 @@ func (rf *ResolveFilter) SetTag(tag string) error {
 
 	rf.Tag = NewResolveFieldMatcher(tagVersion.Format(semv.Complete))
 	return nil
+}
+
+// TagVersion gets the semv parsed from the tag. It returns whatever parsing errors there might be.
+func (rf *ResolveFilter) TagVersion() (semv.Version, error) {
+	tag, err := rf.Tag.Value()
+	if err != nil {
+		return semv.Version{}, errors.Wrapf(err, "tag")
+	}
+	return semv.Parse(tag)
 }
 
 // All returns true if the ResolveFilter would allow All deployments.
