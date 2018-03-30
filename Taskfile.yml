@@ -4,7 +4,7 @@ expansions: 10
 vars:
   PGPORT: 6543
   HOSTNAME:
-    sh: echo "$AGENT"
+    sh: hostname
   XDG_DATA_HOME:
     sh: echo "$HOME/.local/share"
   DEV_DOCKER_POSTGRES_DIR: "{{.XDG_DATA_HOME}}/sous/postgres_docker"
@@ -88,17 +88,22 @@ tasks:
     cmds:
       - docker stop postgres > /dev/null 2>&1 || true
 
-  postgres-start:
+  postgres-start-tc:
     desc: create db and liquibase
     cmds:
       - task: postgres-start-image-tc
-      - docker run --net=host postgres:10.3 createdb -h {{.HOSTNAME}} -p {{.PGPORT}} -U {{.USER_NAME}} -w {{.TEST_DB_NAME}}
+      - task: postgres-start
+        vars: {HOSTNAME: localhost}
+
+  postgres-start:
+    cmds:
+      - docker run postgres:10.3 createdb -h {{.HOSTNAME}} -p {{.PGPORT}} -U {{.USER_NAME}} -w {{.TEST_DB_NAME}}
       - docker run --rm -e CHANGELOG_FILE=changelog.xml -v $PWD/database:/changelogs -e "URL={{.LIQUIBASE_TEST_URL}}" docker.otenv.com/liquibase:0.0.6
 
   postgres-start-image-tc:
     desc: start docker postgres docker
-    deps: [postgres-stop]
     cmds:
+      - task: postgres-stop
       - rm -rf {{.DEV_DOCKER_POSTGRES_DATA_DIR}}
       - install -d -m 0700 {{.DEV_DOCKER_POSTGRES_DATA_DIR}}
       - docker run -d --name postgres -p {{.PGPORT}}:5432 --rm --user {{.USER_ID}}:{{.GROUP_ID}} -v /etc/passwd:/etc/passwd:ro -v {{.DEV_DOCKER_POSTGRES_DATA_DIR}}:/var/lib/postgresql/data postgres:10.3
