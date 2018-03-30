@@ -92,7 +92,7 @@ tasks:
     desc: create db and liquibase
     deps: [postgres-start-image-tc]
     cmds:
-      - docker run postgres:10.3 createdb -h {{.HOSTNAME}} -p {{.PGPORT}} -U {{.USER_NAME}} -w {{.TEST_DB_NAME}}
+      - docker run --net=host postgres:10.3 createdb -h {{.HOSTNAME}} -p {{.PGPORT}} -U {{.USER_NAME}} -w {{.TEST_DB_NAME}}
       - docker run --rm -e CHANGELOG_FILE=changelog.xml -v $PWD/database:/changelogs -e "URL={{.LIQUIBASE_TEST_URL}}" docker.otenv.com/liquibase:0.0.6
 
   postgres-start-image-tc:
@@ -101,7 +101,7 @@ tasks:
     cmds:
       - rm -rf {{.DEV_DOCKER_POSTGRES_DATA_DIR}}
       - install -d -m 0700 {{.DEV_DOCKER_POSTGRES_DATA_DIR}}
-      - docker run -d --name postgres -p {{.PGPORT}}:5432 --rm --user {{.USER_ID}}:{{.GROUP_ID}} -v /etc/passwd:/etc/passwd:ro -v {{.DEV_DOCKER_POSTGRES_DATA_DIR}}:/var/lib/postgresql/data postgres:10.3
+      - docker run --net=host -d --name postgres -p {{.PGPORT}}:5432 --rm --user {{.USER_ID}}:{{.GROUP_ID}} -v /etc/passwd:/etc/passwd:ro -v {{.DEV_DOCKER_POSTGRES_DATA_DIR}}:/var/lib/postgresql/data postgres:10.3
       - sleep 10
 
   postgres-start-image:
