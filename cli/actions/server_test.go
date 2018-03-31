@@ -8,7 +8,6 @@ import (
 	"path"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/util/logging"
 )
@@ -50,7 +49,6 @@ func TestEnsureGDMExists(t *testing.T) {
 		c := exec.Command("git", args...)
 		c.Dir = gdmSourceRepo
 		if err := c.Run(); err != nil {
-			spew.Dump(err)
 			t.Fatal(err)
 		}
 	}

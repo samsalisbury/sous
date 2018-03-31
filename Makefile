@@ -252,21 +252,10 @@ test-metalinter: install-linters
 test-gofmt:
 	bin/check-gofmt
 
-test-unit-no-postgres-setup:
+test-unit: postgres-test-prepare
 	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -timeout 3m -race $(SOUS_PACKAGES_WITH_TESTS)
 
-test-unit: postgres-test-prepare test-unit-no-postgres-setup
-
-# Note, the TEMP DIR was needed for the volume mounting, tried to coalesce in the source folder but go kept picking up
-# the other source files and would create bad imports so used temp directory instead
-test-unit-tc:
-	rm -rf $(TC_TEMP_DIR)
-	mkdir $(TC_TEMP_DIR)
-	mkdir $(TC_TEMP_DIR)/src
-	cp -r ./vendor/* $(TC_TEMP_DIR)/src
-	mkdir $(TC_TEMP_DIR)/src/github.com/opentable/sous
-	cp -r ./* $(TC_TEMP_DIR)/src/github.com/opentable/sous
-	docker run --rm -v $(TC_TEMP_DIR):/go -v $(PWD):/app -w /app golang:1.10 go test -race -v $(SOUS_TC_PACKAGES) | docker run -i xjewer/go-test-teamcity
+test-unit: postgres-test-prepare
 
 test-integration: setup-containers
 	@echo
