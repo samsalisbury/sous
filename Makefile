@@ -252,10 +252,10 @@ test-metalinter: install-linters
 test-gofmt:
 	bin/check-gofmt
 
-test-unit: postgres-test-prepare
+test-unit-base:
 	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -timeout 3m -race $(SOUS_PACKAGES_WITH_TESTS)
 
-test-unit: postgres-test-prepare
+test-unit: postgres-test-prepare test-unit-base
 
 test-integration: setup-containers
 	@echo

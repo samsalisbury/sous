@@ -56,7 +56,7 @@ tasks:
     silent: true
 
   test:
-    deps: [postgres-start-tc]
+    deps: [postgres-start]
     cmds:
       - docker run --rm -v $PWD:/go/src/github.com/opentable/sous -w /go/src/github.com/opentable/sous golang:1.10 go test -v -race {{.HARD_CODE}}
 
@@ -69,7 +69,7 @@ tasks:
     deps: [postgres-start]
     desc: runs make test-unit (with no postgres start)
     cmds:
-      - make test-unit-no-postgres-setup
+      - make test-unit-base
 
   clean-containers:
     desc: runs make clean-running-containers
@@ -94,25 +94,19 @@ tasks:
     cmds:
       - docker stop postgres > /dev/null 2>&1 || true
 
-  postgres-start-tc:
-    desc: create db and liquibase
-    cmds:
-      - task: postgres-start-image-tc
-      - task: postgres-start-base
-        vars: {HOSTNAME: localhost}
-
   postgres-start:
-    desc: start postgres (not teamcity)
+    desc: create db and liquibase
     cmds:
       - task: postgres-start-image
       - task: postgres-start-base
+        vars: {HOSTNAME: localhost}
 
   postgres-start-base:
     cmds:
       - docker run --net=host postgres:10.3 createdb -h {{.HOSTNAME}} -p {{.PGPORT}} -U {{.USER_NAME}} -w {{.TEST_DB_NAME}} > /dev/null 2>&1 || true
       - docker run --net=host --rm -e CHANGELOG_FILE=changelog.xml -v $PWD/database:/changelogs -e "URL={{.LIQUIBASE_TEST_URL}}" docker.otenv.com/liquibase:0.0.6
 
-  postgres-start-image-tc:
+  postgres-start-image:
     desc: start docker postgres docker
     cmds:
       - task: postgres-stop
@@ -120,15 +114,4 @@ tasks:
       - install -d -m 0700 {{.DEV_DOCKER_POSTGRES_DATA_DIR}}
       - docker run -d --name postgres -p {{.PGPORT}}:5432 --rm --user {{.USER_ID}}:{{.GROUP_ID}} -v /etc/passwd:/etc/passwd:ro -v {{.DEV_DOCKER_POSTGRES_DATA_DIR}}:/var/lib/postgresql/data postgres:10.3
       - sleep 2
-
-  postgres-start-image:
-    desc: start docker postgres docker
-    cmds:
-      - |
-        if ! (docker run postgres:10.3 pg_isready -h {{.HOSTNAME}} -p {{.PGPORT}} -U {{.USER_NAME}}); then
-          rm -rf {{.DEV_DOCKER_POSTGRES_DATA_DIR}} &&
-          install -d -m 0700 {{.DEV_DOCKER_POSTGRES_DATA_DIR}} &
-          docker run --name postgres -p {{.PGPORT}}:5432 --rm --user {{.USER_ID}}:{{.GROUP_ID}} -v /etc/passwd:/etc/passwd:ro -v {{.DEV_DOCKER_POSTGRES_DATA_DIR}}:/var/lib/postgresql/data postgres:10.3 &
-          until docker run postgres:10.3 pg_isready -h {{.HOSTNAME}} -p {{.PGPORT}} -U {{.USER_NAME}}; do sleep 1; done
-        fi
 
