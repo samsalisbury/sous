@@ -109,6 +109,13 @@ type (
 		*sous.ManifestID
 		*sous.SourceContext
 	}
+	// ServerListData collects responses from /servers
+	ServerListData struct {
+		Servers []struct {
+			ClusterName string
+			URL         string
+		}
+	}
 )
 
 const (
@@ -539,35 +546,27 @@ func newServerHandler(g *SousGraph, ComponentLocator server.ComponentLocator, me
 	return ServerHandler{handler}
 }
 
+func newServerListData(c HTTPClient) (ServerListData, error) {
+	serverList := ServerListData{}
+	_, err := c.Retrieve("./servers", nil, &serverList, nil)
+	return serverList, err
+}
+
 // newClusterSpecificHTTPClient returns an HTTP client configured to talk to
 // the cluster defined by DeployFilterFlags.
 // Otherwise it returns nil, and emits some warnings.
-func newClusterSpecificHTTPClient(c HTTPClient, rff *RefinedResolveFilter, log LogSink) (*ClusterSpecificHTTPClient, error) {
-
-	// These 2 types are copied from server/data.go
-	type NameData struct {
-		ClusterName string
-		URL         string
-	}
-	type ServerListData struct {
-		Servers []NameData
-	}
-
+func newClusterSpecificHTTPClient(serverList ServerListData, rff *RefinedResolveFilter, log LogSink) (*ClusterSpecificHTTPClient, error) {
 	cluster, err := rff.Cluster.Value()
 	if err != nil {
 		return nil, fmt.Errorf("cluster: %s", err) // errors.Wrapf && cli don't play nice
 	}
 
-	serverList := ServerListData{}
-	_, err = c.Retrieve("./servers", nil, &serverList, nil)
-	if err != nil {
-		return nil, err
-	}
 	messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Server List retrieved %v", serverList), logging.ExtraDebug1Level, log, serverList, cluster)
 	var serverURL string
 	for _, s := range serverList.Servers {
 		if s.ClusterName == cluster {
 			serverURL = s.URL
+			break
 		}
 	}
 	if serverURL == "" {

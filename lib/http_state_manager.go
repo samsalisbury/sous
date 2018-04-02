@@ -23,42 +23,6 @@ type (
 	}
 )
 
-func wrapDeployments(source Deployments) gdmWrapper {
-	data := gdmWrapper{Deployments: make([]*Deployment, 0)}
-	for _, d := range source.Snapshot() {
-		data.Deployments = append(data.Deployments, d)
-	}
-	return data
-}
-
-// EmptyReceiver implements Comparable on gdmWrapper
-func (g *gdmWrapper) EmptyReceiver() restful.Comparable {
-	return &gdmWrapper{Deployments: []*Deployment{}}
-}
-
-// VariancesFrom implements Comparable on gdmWrapper
-func (g *gdmWrapper) VariancesFrom(other restful.Comparable) restful.Variances {
-	switch og := other.(type) {
-	default:
-		return restful.Variances{"Not a gdmWrapper"}
-	case *gdmWrapper:
-		return g.unwrap().VariancesFrom(og.unwrap())
-	}
-}
-
-func (g *gdmWrapper) unwrap() *Deployments {
-	ds := NewDeployments(g.Deployments...)
-	return &ds
-}
-
-func (g *gdmWrapper) manifests(defs Defs) (Manifests, error) {
-	ds := NewDeployments()
-	for _, d := range g.Deployments {
-		ds.Add(d)
-	}
-	return ds.RawManifests(defs)
-}
-
 // NewHTTPStateManager creates a new HTTPStateManager.
 func NewHTTPStateManager(client restful.HTTPClient) *HTTPStateManager {
 	return &HTTPStateManager{HTTPClient: client}
@@ -105,6 +69,16 @@ func (hsm *HTTPStateManager) WriteState(s *State, u User) error {
 	return hsm.putDeployments(wds)
 }
 
+// ReadCluster implements ClusterManager on HTTPStateManager.
+func (hsm *HTTPStateManager) ReadCluster(clusterName string) (Deployments, error) {
+	panic("not implemented")
+}
+
+// WriteCluster implements ClusterManager on HTTPStateManager.
+func (hsm *HTTPStateManager) WriteCluster(clusterName string, deps Deployments, user User) error {
+	panic("not implemented")
+}
+
 ////
 
 func (hsm *HTTPStateManager) getDefs() (Defs, error) {
@@ -143,4 +117,40 @@ func (m *Manifest) VariancesFrom(c restful.Comparable) (vs restful.Variances) {
 
 	_, diffs := m.Diff(o)
 	return restful.Variances(diffs)
+}
+
+func wrapDeployments(source Deployments) gdmWrapper {
+	data := gdmWrapper{Deployments: make([]*Deployment, 0)}
+	for _, d := range source.Snapshot() {
+		data.Deployments = append(data.Deployments, d)
+	}
+	return data
+}
+
+// EmptyReceiver implements Comparable on gdmWrapper
+func (g *gdmWrapper) EmptyReceiver() restful.Comparable {
+	return &gdmWrapper{Deployments: []*Deployment{}}
+}
+
+// VariancesFrom implements Comparable on gdmWrapper
+func (g *gdmWrapper) VariancesFrom(other restful.Comparable) restful.Variances {
+	switch og := other.(type) {
+	default:
+		return restful.Variances{"Not a gdmWrapper"}
+	case *gdmWrapper:
+		return g.unwrap().VariancesFrom(og.unwrap())
+	}
+}
+
+func (g *gdmWrapper) unwrap() *Deployments {
+	ds := NewDeployments(g.Deployments...)
+	return &ds
+}
+
+func (g *gdmWrapper) manifests(defs Defs) (Manifests, error) {
+	ds := NewDeployments()
+	for _, d := range g.Deployments {
+		ds.Add(d)
+	}
+	return ds.RawManifests(defs)
 }
