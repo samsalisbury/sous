@@ -195,12 +195,13 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 		}
 	}
 
-	didQuery := func(repo, offset, cluster, flavor string) map[string]string {
+	didQuery := func(repo, offset, cluster, flavor, force string) map[string]string {
 		return map[string]string{
 			"repo":    repo,
 			"offset":  offset,
 			"cluster": cluster,
 			"flavor":  flavor,
+			"force":   force,
 		}
 	}
 
@@ -222,7 +223,7 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 		if !ok {
 			t.Fatal("Setup failed to get DeploySpec.")
 		}
-		query := didQuery(m.Source.Repo, m.Source.Dir, "cluster1", m.Flavor)
+		query := didQuery(m.Source.Repo, m.Source.Dir, "cluster1", m.Flavor, "false")
 
 		return &SingleDeploymentBody{Deployment: &dep}, query
 	}
@@ -236,7 +237,7 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 	})
 
 	t.Run("body parsing error", func(t *testing.T) {
-		scenario := setup(nil, didQuery("github.com/opentable/something", "", "cluster", ""))
+		scenario := setup(nil, didQuery("github.com/opentable/something", "", "cluster", "", "false"))
 		scenario.exercise()
 
 		scenario.assertStatus(t, 400)

@@ -216,6 +216,7 @@ func (suite integrationServerTests) TestPUTSingleDeployment() {
 		"repo":    "github.com/opentable/sous",
 		"offset":  "",
 		"tag":     "1.0.1",
+		"force":   "false",
 	}
 	data := server.SingleDeploymentBody{}
 	rez, err = suite.client.Retrieve("/single-deployment", params, &data, nil)
