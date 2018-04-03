@@ -239,6 +239,7 @@ func loadMap(fielder swaggering.Fielder, m dtoMap) swaggering.Fielder {
 }
 
 var notInIDre = regexp.MustCompile(`[-/]`)
+var justTag = regexp.MustCompile(`^.*:`)
 
 func startInstance(url, clusterName, imageName, repoName string, ports []int32, startup sous.Startup) error {
 	did := sous.DeploymentID{
@@ -281,7 +282,8 @@ func startInstance(url, clusterName, imageName, repoName string, ports []int32, 
 		"Image": imageName,
 	}).(*dtos.SingularityDockerInfo)
 
-	deployID := "TESTGENERATED_" + singularity.StripDeployID(uuid.NewV4().String())
+	tag := justTag.ReplaceAllString(imageName, ``)
+	deployID := singularity.StripDeployID(fmt.Sprintf("TEST_%s_%s", tag, uuid.NewV4().String()))
 	depMap := dtoMap{
 		"Metadata": map[string]string{
 			"com.opentable.sous.clustername": clusterName,

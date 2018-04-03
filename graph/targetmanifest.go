@@ -1,6 +1,8 @@
 package graph
 
 import (
+	"fmt"
+
 	sous "github.com/opentable/sous/lib"
 	"github.com/pkg/errors"
 )
@@ -43,17 +45,53 @@ func newRefinedResolveFilter(f *sous.ResolveFilter, discovered *SourceContextDis
 	return (*RefinedResolveFilter)(rrf), nil
 }
 
+func newTargetDeploymentID(rrf *RefinedResolveFilter) (TargetDeploymentID, error) {
+	if rrf == nil {
+		return TargetDeploymentID{}, fmt.Errorf("nil ResolveFilter")
+	}
+	repo, err := rrf.Repo.Value()
+	if err != nil {
+		return TargetDeploymentID{}, fmt.Errorf("repo: %s", err)
+	}
+	cluster, err := rrf.Cluster.Value()
+	if err != nil {
+		return TargetDeploymentID{}, fmt.Errorf("cluster: %s", err)
+	}
+
+	return TargetDeploymentID{
+		ManifestID: sous.ManifestID{
+			Source: sous.SourceLocation{
+				Repo: repo,
+				Dir:  rrf.Offset.ValueOr(""),
+			},
+			Flavor: rrf.Flavor.ValueOr(""),
+		},
+		Cluster: cluster,
+	}, nil
+}
+
+// QueryMap returns a map suitable to use as an HTTP get parameter map to idenitfy a deployment.
+func (td TargetDeploymentID) QueryMap() map[string]string {
+	deployQuery := map[string]string{}
+	deployQuery["repo"] = td.ManifestID.Source.Repo
+	deployQuery["cluster"] = td.Cluster
+	deployQuery["offset"] = td.ManifestID.Source.Dir
+	deployQuery["flavor"] = td.ManifestID.Flavor
+	return deployQuery
+}
+
 func newTargetManifestID(rrf *RefinedResolveFilter) (TargetManifestID, error) {
 	if rrf == nil {
-		return TargetManifestID{}, errors.Errorf("nil ResolveFilter")
+		return TargetManifestID{}, fmt.Errorf("nil ResolveFilter")
 	}
-	if rrf.Repo.All() {
-		return TargetManifestID{}, errors.Errorf("empty Repo")
+	repo, err := rrf.Repo.Value()
+	if err != nil {
+		return TargetManifestID{}, fmt.Errorf("repo: %s", err)
 	}
 
 	return TargetManifestID{
 		Source: sous.SourceLocation{
-			Repo: rrf.Repo.ValueOr(""),
+			Repo: repo,
 			Dir:  rrf.Offset.ValueOr(""),
 		},
 		Flavor: rrf.Flavor.ValueOr(""),

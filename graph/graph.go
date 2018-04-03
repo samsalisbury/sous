@@ -95,6 +95,9 @@ type (
 	// userSelectedOTPLDeployManifest is a set of otpl-deploy configured deploy
 	// specs that the user has explicitly selected. (May be empty.)
 	userSelectedOTPLDeployManifest struct{ *sous.Manifest }
+	// TargetDeploymentID is the manifest ID being targeted, after resolving all
+	// context and flags.
+	TargetDeploymentID sous.DeploymentID
 	// TargetManifestID is the manifest ID being targeted, after resolving all
 	// context and flags.
 	TargetManifestID sous.ManifestID
@@ -266,6 +269,7 @@ func AddInternals(graph adder) {
 		newUserSelectedOTPLDeploySpecs,
 		newRefinedResolveFilter,
 		newTargetManifestID,
+		newTargetDeploymentID,
 		newResolveFilter,
 		newResolver,
 		newAutoResolver,
@@ -538,7 +542,7 @@ func newServerHandler(g *SousGraph, ComponentLocator server.ComponentLocator, me
 // newClusterSpecificHTTPClient returns an HTTP client configured to talk to
 // the cluster defined by DeployFilterFlags.
 // Otherwise it returns nil, and emits some warnings.
-func newClusterSpecificHTTPClient(c HTTPClient, dff *config.DeployFilterFlags, log LogSink) (*ClusterSpecificHTTPClient, error) {
+func newClusterSpecificHTTPClient(c HTTPClient, rff *RefinedResolveFilter, log LogSink) (*ClusterSpecificHTTPClient, error) {
 
 	// These 2 types are copied from server/data.go
 	type NameData struct {
@@ -549,12 +553,16 @@ func newClusterSpecificHTTPClient(c HTTPClient, dff *config.DeployFilterFlags, l
 		Servers []NameData
 	}
 
+	cluster, err := rff.Cluster.Value()
+	if err != nil {
+		return nil, fmt.Errorf("cluster: %s", err) // errors.Wrapf && cli don't play nice
+	}
+
 	serverList := ServerListData{}
-	_, err := c.Retrieve("./servers", nil, &serverList, nil)
+	_, err = c.Retrieve("./servers", nil, &serverList, nil)
 	if err != nil {
 		return nil, err
 	}
-	cluster := dff.Cluster
 	messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Server List retrieved %v", serverList), logging.ExtraDebug1Level, log, serverList, cluster)
 	var serverURL string
 	for _, s := range serverList.Servers {
