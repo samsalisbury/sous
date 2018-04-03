@@ -129,6 +129,7 @@ func injectedStateManager(t *testing.T, cfg *config.Config) *StateManager {
 	g.Add(newUser)
 	g.Add(LogSink{logging.SilentLogSet()})
 	g.Add(MetricsHandler{})
+	g.Add(ServerListData{})
 	g.Add(newStateManager)
 	g.Add(LocalSousConfig{Config: cfg})
 	g.Add(newServerComponentLocator)
@@ -147,6 +148,7 @@ func injectedStateManager(t *testing.T, cfg *config.Config) *StateManager {
 	g.Add(newAutoResolver)
 	g.Add(newServerHandler)
 	g.Add(newHTTPClient)
+	g.Add(newHTTPClientBundle)
 	g.Add(NewR11nQueueSet)
 	g.Add(g)
 

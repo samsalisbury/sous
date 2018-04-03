@@ -64,6 +64,8 @@ type (
 	LocalDockerClient struct{ docker_registry.Client }
 	// HTTPClient wraps the sous.HTTPClient interface
 	HTTPClient struct{ restful.HTTPClient }
+	// ClientBundle collects HTTPClients per server.
+	ClientBundle map[string]restful.HTTPClient
 	// ClusterSpecificHTTPClient wraps the sous.HTTPClient interface
 	ClusterSpecificHTTPClient struct{ restful.HTTPClient }
 	// ServerHandler wraps the http.Handler for the sous server
@@ -226,6 +228,7 @@ func AddNetwork(graph adder) {
 	graph.Add(
 		newDockerClient,
 		newServerHandler,
+		newHTTPStateManager,
 	)
 }
 
@@ -285,6 +288,7 @@ func AddInternals(graph adder) {
 		newServerComponentLocator,
 		newHTTPClient,
 		newServerListData,
+		newHTTPClientBundle,
 		newClusterSpecificHTTPClient,
 		NewR11nQueueSet,
 	)
@@ -553,11 +557,6 @@ func newServerListData(c HTTPClient) (ServerListData, error) {
 	return serverList, err
 }
 
-type (
-	// ClientBundle collects HTTPClients per server.
-	ClientBundle map[string]restful.HTTPClient
-)
-
 func newHTTPClientBundle(serverList ServerListData, log LogSink) (ClientBundle, error) {
 	bundle := ClientBundle{}
 	for _, s := range serverList.Servers {
@@ -574,27 +573,15 @@ func newHTTPClientBundle(serverList ServerListData, log LogSink) (ClientBundle, 
 // newClusterSpecificHTTPClient returns an HTTP client configured to talk to
 // the cluster defined by DeployFilterFlags.
 // Otherwise it returns nil, and emits some warnings.
-func newClusterSpecificHTTPClient(serverList ServerListData, rff *RefinedResolveFilter, log LogSink) (*ClusterSpecificHTTPClient, error) {
+func newClusterSpecificHTTPClient(clients ClientBundle, rff *RefinedResolveFilter, log LogSink) (*ClusterSpecificHTTPClient, error) {
 	cluster, err := rff.Cluster.Value()
 	if err != nil {
 		return nil, fmt.Errorf("cluster: %s", err) // errors.Wrapf && cli don't play nice
 	}
 
-	messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Server List retrieved %v", serverList), logging.ExtraDebug1Level, log, serverList, cluster)
-	var serverURL string
-	for _, s := range serverList.Servers {
-		if s.ClusterName == cluster {
-			serverURL = s.URL
-			break
-		}
-	}
-	if serverURL == "" {
+	cl, has := clients[cluster]
+	if !has {
 		return nil, fmt.Errorf("no server for cluster %q", cluster)
-	}
-	messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Using server %s", serverURL), logging.ExtraDebug1Level, log, serverURL)
-	cl, err := restful.NewClient(serverURL, log.Child("http-client"))
-	if err != nil {
-		return nil, err
 	}
 	return &ClusterSpecificHTTPClient{HTTPClient: cl}, nil
 }

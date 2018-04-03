@@ -7,6 +7,7 @@ import (
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/server"
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/restful"
 	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -118,11 +119,13 @@ func TestUpdateRetryLoop(t *testing.T) {
 	cl, control, err := server.TestingInMemoryClient()
 	require.NoError(t, err)
 
+	hsm := sous.NewHTTPStateManager(cl, map[string]restful.HTTPClient{"test": cl})
+
 	control.State.Manifests.Add(mani)
 
 	ls := logging.SilentLogSet()
 
-	deps, err := updateRetryLoop(ls, cl, sourceID, depID, user)
+	deps, err := updateRetryLoop(ls, hsm, sourceID, depID, user)
 
 	assert.NoError(t, err)
 	assert.Equal(t, 1, deps.Len())
@@ -136,6 +139,8 @@ func TestUpdateRetryLoop(t *testing.T) {
 func TestSousUpdate_Execute(t *testing.T) {
 	cl, control, err := server.TestingInMemoryClient()
 	require.NoError(t, err)
+
+	hsm := sous.NewHTTPStateManager(cl, map[string]restful.HTTPClient{"test": cl})
 
 	manifest := sous.Manifest{
 		Source: sous.SourceLocation{
@@ -197,12 +202,12 @@ func TestSousUpdate_Execute(t *testing.T) {
 
 	su := Update{
 		//StateManager:  &graph.StateManager{dsm},
-		Manifest:      &manifest,
-		GDM:           gdm,
-		Client:        cl,
-		ResolveFilter: filter,
-		User:          sous.User{},
-		Log:           control.Log,
+		Manifest:         &manifest,
+		GDM:              gdm,
+		HTTPStateManager: hsm,
+		ResolveFilter:    filter,
+		User:             sous.User{},
+		Log:              control.Log,
 	}
 	assert.NoError(t, su.Do())
 }
