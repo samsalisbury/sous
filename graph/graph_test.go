@@ -124,6 +124,7 @@ func TestComponentLocatorInjection(t *testing.T) {
 }
 
 func injectedStateManager(t *testing.T, cfg *config.Config) *StateManager {
+	rff := &RefinedResolveFilter{Cluster: sous.NewResolveFieldMatcher("test")}
 	g := newSousGraph()
 	g.Add(semv.MustParse("9.9.9"))
 	g.Add(newUser)
@@ -150,6 +151,7 @@ func injectedStateManager(t *testing.T, cfg *config.Config) *StateManager {
 	g.Add(newHTTPClient)
 	g.Add(newHTTPClientBundle)
 	g.Add(NewR11nQueueSet)
+	g.Add(rff)
 	g.Add(g)
 
 	smRcvr := struct {
@@ -182,7 +184,8 @@ func TestStateManagerSelectsServer(t *testing.T) {
 func TestStateManagerSelectsDuplex(t *testing.T) {
 	smgr := injectedStateManager(t, &config.Config{Server: "", StateLocation: "/tmp/sous"})
 
-	if _, ok := smgr.StateManager.(*storage.DuplexStateManager); !ok {
+	_, ok := smgr.StateManager.(*storage.DuplexStateManager)
+	if !ok {
 		t.Errorf("Injected %#v which isn't a DuplexStateManager", smgr.StateManager)
 	}
 }

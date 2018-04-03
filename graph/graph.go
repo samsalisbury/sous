@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"database/sql"
 	"fmt"
 	"io"
 	"io/ioutil" //ok
@@ -600,12 +601,15 @@ func newHTTPClient(c LocalSousConfig, user sous.User, srvr ServerHandler, log Lo
 	return HTTPClient{HTTPClient: cl}, err
 }
 
-func newServerStateManager(c LocalSousConfig, log LogSink) *ServerStateManager {
+func newServerStateManager(c LocalSousConfig, rff *RefinedResolveFilter, log LogSink) *ServerStateManager {
 	var secondary sous.StateManager
 	db, err := c.Database.DB()
 	if err == nil {
-		secondary = storage.NewPostgresStateManager(db, log.Child("database"))
-	} else {
+		secondary, err = newDistributedStorage(db, c, rff, log)
+	}
+
+	// Either DB not configured, or problems setting up dispatcher...
+	if err != nil {
 		logging.ReportError(log, errors.Wrapf(err, "connecting to database with %#v", c.Database))
 		secondary = storage.NewLogOnlyStateManager(log.Child("database"))
 	}
@@ -616,13 +620,34 @@ func newServerStateManager(c LocalSousConfig, log LogSink) *ServerStateManager {
 	return &ServerStateManager{StateManager: duplex}
 }
 
+func newDistributedStorage(db *sql.DB, c LocalSousConfig, rff *RefinedResolveFilter, log LogSink) (sous.StateManager, error) {
+	localName, err := rff.Cluster.Value()
+	if err != nil {
+		return nil, fmt.Errorf("cluster: %s", err) // errors.Wrapf && cli don't play nice
+	}
+
+	local := storage.NewPostgresStateManager(db, log.Child("database"))
+	list := ClientBundle{}
+	clusterNames := []string{}
+	for n, u := range c.SiblingURLs {
+		cl, err := restful.NewClient(u, log.Child(n+".http-client"))
+		if err != nil {
+			return nil, err
+		}
+		list[n] = cl
+		clusterNames = append(clusterNames, n)
+	}
+	hsm := sous.NewHTTPStateManager(list[localName], list)
+	return sous.NewDispatchStateManager(localName, clusterNames, local, hsm), nil
+}
+
 // newStateManager returns a wrapped sous.HTTPStateManager if cl is not nil.
 // Otherwise it returns a wrapped sous.GitStateManager, for local git based GDM.
 // If it returns a sous.GitStateManager, it emits a warning log.
-func newStateManager(cl HTTPClient, c LocalSousConfig, bundle ClientBundle, log LogSink) *StateManager {
+func newStateManager(cl HTTPClient, c LocalSousConfig, bundle ClientBundle, rff *RefinedResolveFilter, log LogSink) *StateManager {
 	if c.Server == "" {
 		messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Using local state stored at %s", c.StateLocation), logging.WarningLevel, log, c.StateLocation)
-		return &StateManager{StateManager: newServerStateManager(c, log).StateManager}
+		return &StateManager{StateManager: newServerStateManager(c, rff, log).StateManager}
 	}
 	hsm := sous.NewHTTPStateManager(cl, bundle)
 	return &StateManager{StateManager: hsm}
