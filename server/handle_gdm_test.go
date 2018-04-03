@@ -3,6 +3,7 @@ package server
 import (
 	"testing"
 
+	"github.com/opentable/sous/dto"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
 	"github.com/stretchr/testify/assert"
@@ -19,7 +20,7 @@ func TestHandlesGDMGet(t *testing.T) {
 	data, status := th.Exchange()
 	//assert.Equal(w.Header().Get("Etag"), etag)
 	assert.Equal(status, 200)
-	assert.Len(data.(GDMWrapper).Deployments, 0)
+	assert.Len(data.(dto.GDMWrapper).Deployments, 0)
 }
 
 func TestReturnFlawMsg_nil_flaws(t *testing.T) {

@@ -24,23 +24,23 @@ func (di *SousGraph) GetUpdate(dff config.DeployFilterFlags, otpl config.OTPLFla
 	di.guardedAdd("Dryrun", DryrunNeither)
 
 	updateScoop := struct {
-		Manifest      TargetManifest
-		GDM           CurrentGDM
-		Client        HTTPClient
-		ResolveFilter *RefinedResolveFilter
-		User          sous.User
-		LogSink       LogSink
+		Manifest         TargetManifest
+		GDM              CurrentGDM
+		HTTPStateManager *sous.HTTPStateManager
+		ResolveFilter    *RefinedResolveFilter
+		User             sous.User
+		LogSink          LogSink
 	}{}
 	if err := di.Inject(&updateScoop); err != nil {
 		return nil, err
 	}
 	return &actions.Update{
-		Manifest:      updateScoop.Manifest.Manifest,
-		GDM:           updateScoop.GDM.Deployments,
-		Client:        updateScoop.Client.HTTPClient,
-		ResolveFilter: (*sous.ResolveFilter)(updateScoop.ResolveFilter),
-		User:          updateScoop.User,
-		Log:           updateScoop.LogSink.LogSink,
+		Manifest:         updateScoop.Manifest.Manifest,
+		GDM:              updateScoop.GDM.Deployments,
+		HTTPStateManager: updateScoop.HTTPStateManager,
+		ResolveFilter:    (*sous.ResolveFilter)(updateScoop.ResolveFilter),
+		User:             updateScoop.User,
+		Log:              updateScoop.LogSink.LogSink,
 	}, nil
 }
 

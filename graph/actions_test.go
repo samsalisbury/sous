@@ -47,7 +47,7 @@ func TestActionUpdate(t *testing.T) {
 	// these need more specific tests than "NotNil"
 	require.NotNil(t, update.GDM)
 	require.NotNil(t, update.User)
-	require.NotNil(t, update.Client)
+	require.NotNil(t, update.HTTPStateManager)
 }
 
 func TestActionPollStatus(t *testing.T) {

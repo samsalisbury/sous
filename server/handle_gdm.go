@@ -7,6 +7,7 @@ import (
 	"sort"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/opentable/sous/dto"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
@@ -51,7 +52,7 @@ func (gr *GDMResource) Get(_ *restful.RouteMap, writer http.ResponseWriter, _ *h
 func (h *GETGDMHandler) Exchange() (interface{}, int) {
 	reportDebugHandleGDMMessage(fmt.Sprintf("Get GDM Handler Exchange with GDM: %v", h.GDM), nil, nil, h.LogSink)
 
-	data := GDMWrapper{Deployments: make([]*sous.Deployment, 0)}
+	data := dto.GDMWrapper{Deployments: make([]*sous.Deployment, 0)}
 	deps, err := h.GDM.Deployments()
 	if err != nil {
 		return err, http.StatusInternalServerError
@@ -86,7 +87,7 @@ func (gr *GDMResource) Put(_ *restful.RouteMap, _ http.ResponseWriter, req *http
 func (h *PUTGDMHandler) Exchange() (interface{}, int) {
 	reportDebugHandleGDMMessage(fmt.Sprintf("Put GDM Handler Exchange with GDM: %v", h.GDM), nil, nil, h.LogSink)
 
-	data := GDMWrapper{}
+	data := dto.GDMWrapper{}
 	dec := json.NewDecoder(h.Request.Body)
 	dec.Decode(&data)
 	deps := sous.NewDeployments(data.Deployments...)

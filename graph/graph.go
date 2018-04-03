@@ -284,6 +284,7 @@ func AddInternals(graph adder) {
 		newStatusPoller,
 		newServerComponentLocator,
 		newHTTPClient,
+		newServerListData,
 		newClusterSpecificHTTPClient,
 		NewR11nQueueSet,
 	)
@@ -552,6 +553,24 @@ func newServerListData(c HTTPClient) (ServerListData, error) {
 	return serverList, err
 }
 
+type (
+	// ClientBundle collects HTTPClients per server.
+	ClientBundle map[string]restful.HTTPClient
+)
+
+func newHTTPClientBundle(serverList ServerListData, log LogSink) (ClientBundle, error) {
+	bundle := ClientBundle{}
+	for _, s := range serverList.Servers {
+		client, err := restful.NewClient(s.URL, log.Child(s.ClusterName+".http-client"))
+		if err != nil {
+			return nil, err
+		}
+
+		bundle[s.ClusterName] = client
+	}
+	return bundle, nil
+}
+
 // newClusterSpecificHTTPClient returns an HTTP client configured to talk to
 // the cluster defined by DeployFilterFlags.
 // Otherwise it returns nil, and emits some warnings.
@@ -613,13 +632,17 @@ func newServerStateManager(c LocalSousConfig, log LogSink) *ServerStateManager {
 // newStateManager returns a wrapped sous.HTTPStateManager if cl is not nil.
 // Otherwise it returns a wrapped sous.GitStateManager, for local git based GDM.
 // If it returns a sous.GitStateManager, it emits a warning log.
-func newStateManager(cl HTTPClient, c LocalSousConfig, log LogSink) *StateManager {
+func newStateManager(cl HTTPClient, c LocalSousConfig, bundle ClientBundle, log LogSink) *StateManager {
 	if c.Server == "" {
 		messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Using local state stored at %s", c.StateLocation), logging.WarningLevel, log, c.StateLocation)
 		return &StateManager{StateManager: newServerStateManager(c, log).StateManager}
 	}
-	hsm := sous.NewHTTPStateManager(cl)
+	hsm := sous.NewHTTPStateManager(cl, bundle)
 	return &StateManager{StateManager: hsm}
+}
+
+func newHTTPStateManager(cl HTTPClient, bundle ClientBundle) *sous.HTTPStateManager {
+	return sous.NewHTTPStateManager(cl, bundle)
 }
 
 func newStatusPoller(cl HTTPClient, rf *RefinedResolveFilter, user sous.User, logs LogSink) *sous.StatusPoller {
