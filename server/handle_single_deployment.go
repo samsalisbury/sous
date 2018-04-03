@@ -62,6 +62,11 @@ func (sdr *SingleDeploymentResource) newSingleDeploymentHandler(req *http.Reques
 	}
 }
 
+func (sdh *SingleDeploymentHandler) force() (force bool, err error) {
+	qv := restful.QueryValues{Values: sdh.req.URL.Query()}
+	return forceFromValues(qv)
+}
+
 func (sdh *SingleDeploymentHandler) depID() (sous.DeploymentID, error) {
 	qv := restful.QueryValues{Values: sdh.req.URL.Query()}
 	return deploymentIDFromValues(qv)
@@ -133,6 +138,11 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 		return psd.err(400, "Cannot decode Deployment ID: %s.", err)
 	}
 
+	force, err := psd.force()
+	if err != nil {
+		return psd.err(400, "Cannot parse force from client: %s", err)
+	}
+
 	if err := json.NewDecoder(psd.req.Body).Decode(&psd.Body); err != nil {
 		return psd.err(400, "Error parsing body: %s.", err)
 	}
@@ -147,17 +157,16 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 	if !ok {
 		return psd.err(404, "No manifest with ID %q.", did.ManifestID)
 	}
-	_, ok = m.Deployments[did.Cluster]
+	original, ok := m.Deployments[did.Cluster]
 	if !ok {
 		return psd.err(404, "Manifest %q has no deployment for cluster %q.",
 			did.ManifestID, did.Cluster)
 	}
 
-	//This check really only is seeing if GDM has this version, think we just want to deploy always
-	//different, _ := psd.Body.Deployment.Diff(original)
-	//if !different {
-	//	return psd.ok(200, nil)
-	//}
+	different, _ := psd.Body.Deployment.Diff(original)
+	if !different && !force {
+		return psd.ok(200, nil)
+	}
 
 	m.Deployments[did.Cluster] = *psd.Body.Deployment
 
