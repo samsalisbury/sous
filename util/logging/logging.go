@@ -88,7 +88,6 @@ package logging
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
@@ -108,12 +107,6 @@ type (
 	// LogSet is the stopgap for a decent injectable logger
 	//
 	LogSet struct {
-		Debug  logwrapper
-		Info   logwrapper
-		Warn   logwrapper
-		Notice logwrapper
-		Vomit  logwrapper
-
 		level   Level
 		name    string
 		appRole string
@@ -134,10 +127,6 @@ type (
 		graphiteConfig  *graphite.Config
 		extraConsole    io.Writer
 	}
-
-	// A temporary type until we can stop using the LogSet loggers directly
-	// XXX remove and fix accesses to Debug, Info, etc. to be Debugf etc
-	logwrapper func(string, ...interface{})
 )
 
 //RetrieveMetaData used to help retrieve more info for logging about a func
@@ -159,21 +148,6 @@ func RetrieveMetaData(f func()) (name string, uid string) {
 // want metrics in a component, you need to add an injected LogSet. c.f.
 // ext/docker/image_mapping.go
 var Log = func() LogSet { return *(SilentLogSet().Child("GLOBAL").(*LogSet)) }()
-
-// To be deprecated: Printf is part of the holdover from stdlib logging
-func (w logwrapper) Printf(f string, vs ...interface{}) {
-	w(f, vs...)
-}
-
-// To be deprecated: Print is part of the holdover from stdlib logging
-func (w logwrapper) Print(vs ...interface{}) {
-	w(fmt.Sprint(vs...))
-}
-
-// To be deprecated: Println is part of the holdover from stdlib logging
-func (w logwrapper) Println(vs ...interface{}) {
-	w(fmt.Sprint(vs...))
-}
 
 // SilentLogSet returns a logset that discards everything by default
 func SilentLogSet() *LogSet {
@@ -259,12 +233,6 @@ func newls(name string, role string, level Level, bundle *dumpBundle) *LogSet {
 		level:      level,
 		dumpBundle: bundle,
 	}
-
-	ls.Warn = logwrapper(func(f string, as ...interface{}) { ls.Warnf(f, as...) })
-	ls.Notice = ls.Warn
-	ls.Info = ls.Warn
-	ls.Debug = logwrapper(func(f string, as ...interface{}) { ls.Debugf(f, as...) })
-	ls.Vomit = logwrapper(func(f string, as ...interface{}) { ls.Vomitf(f, as...) })
 
 	return ls
 }
@@ -420,32 +388,6 @@ func (ls LogSet) Console() WriteDoner {
 // ExtraConsole implements LogSink on LogSet
 func (ls LogSet) ExtraConsole() WriteDoner {
 	return nopDoner(ls.extraConsole)
-}
-
-// xxx phase 2 of complete transition: remove these methods in favor of specific messages
-
-// Vomitf logs a message at ExtraDebug1Level.
-// To be deprecated: part of the old stdlib log hack
-func (ls LogSet) Vomitf(f string, as ...interface{}) {
-	m := NewGenericMsg(ExtraDebug1Level, fmt.Sprintf(f, as...), nil, false)
-	m.ExcludeMe()
-	Deliver(m, ls)
-}
-
-// Debugf logs a message a DebugLevel.
-// To be deprecated: part of the old stdlib log hack
-func (ls LogSet) Debugf(f string, as ...interface{}) {
-	m := NewGenericMsg(DebugLevel, fmt.Sprintf(f, as...), nil, false)
-	m.ExcludeMe()
-	Deliver(m, ls)
-}
-
-// Warnf logs a message at WarningLevel.
-// To be deprecated: part of the old stdlib log hack
-func (ls LogSet) Warnf(f string, as ...interface{}) {
-	m := NewGenericMsg(WarningLevel, fmt.Sprintf(f, as...), nil, false)
-	m.ExcludeMe()
-	Deliver(m, ls)
 }
 
 func (ls LogSet) imposeLevel() {

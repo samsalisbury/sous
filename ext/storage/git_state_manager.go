@@ -10,6 +10,7 @@ import (
 
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 	"github.com/pborman/uuid"
 	"github.com/pkg/errors"
 )
@@ -73,11 +74,11 @@ func (gsm *GitStateManager) gitOut(cmd ...string) (string, error) {
 	}
 	out, err := git.CombinedOutput()
 	if err == nil {
-		logging.Log.Debug.Printf("%+v: success", git.Args)
+		messages.ReportLogFieldsMessage("success", logging.DebugLevel, logging.Log, git.Args)
 	} else {
-		logging.Log.Debug.Printf("%+v: error: %v", git.Args, err)
+		messages.ReportLogFieldsMessage("error", logging.DebugLevel, logging.Log, err)
 	}
-	logging.Log.Vomit.Print("git: " + string(out))
+	messages.ReportLogFieldsMessage("git", logging.ExtraDebug1Level, logging.Log, string(out))
 	return string(out), errors.Wrapf(err, strings.Join(git.Args, " ")+": "+string(out))
 }
 
@@ -219,19 +220,19 @@ func (gsm *GitStateManager) WriteState(s *sous.State, u sous.User) error {
 			// Success.
 			return nil
 		}
-		logging.Log.Debug.Printf("git push failed; trying again (%d attempts left): %s", remainingAttempts, err)
+		messages.ReportLogFieldsMessage("git push failed; trying again with # attempts left", logging.DebugLevel, logging.Log, remainingAttempts, err)
 		gsm.reset(tn)
 		if err := gsm.git("pull"); err != nil {
 			return err
 		}
 		if err := gsm.git("cherry-pick", newTag); err != nil {
 			// If cherry-pick fails, then there's a real conflict.
-			logging.Log.Warn.Printf("attempt to rectify conflicts with git cherry-pick failed: %s", err)
+			messages.ReportLogFieldsMessage("attempt to rectify conflicts with git cherry-pick failed", logging.WarningLevel, logging.Log, err)
 			if err := gsm.git("cherry-pick", "--abort"); err != nil {
-				logging.Log.Warn.Printf("cherry-pick --abort failed: %s", err)
+				messages.ReportLogFieldsMessage("cherry-pick --abort failed", logging.WarningLevel, logging.Log, err)
 				return err
 			}
-			logging.Log.Debug.Printf("Successfully cherry-picked new changes, re-attempting push.")
+			messages.ReportLogFieldsMessage("Successfully cherry-picked new changes, re-attempting push.", logging.DebugLevel, logging.Log)
 		}
 	}
 	return fmt.Errorf("unable to merge changes")

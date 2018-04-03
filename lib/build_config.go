@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 )
 
 type (
@@ -133,7 +134,7 @@ func (c *BuildConfig) NewContext() *BuildContext {
 
 func (c *BuildConfig) chooseRemoteURL() string {
 	if c.Repo == "" {
-		logging.Log.Debug.Printf("Using best guess: % #v", c.Context.Source.PrimaryRemoteURL)
+		messages.ReportLogFieldsMessage("Using best guest", logging.DebugLevel, logging.Log, c.Context.Source.PrimaryRemoteURL)
 		return c.Context.Source.PrimaryRemoteURL
 	}
 	return c.Repo
@@ -237,7 +238,7 @@ func (c *BuildConfig) Advisories(ctx *BuildContext) []string {
 		if !hasTag {
 			advs = append(advs, string(EphemeralTag))
 		} else if s.NearestTagRevision != s.Revision {
-			logging.Log.Debug.Printf("%s != %s", s.NearestTagRevision, s.Revision)
+			messages.ReportLogFieldsMessage("NearestTagRevision != Revision", logging.DebugLevel, logging.Log, s.NearestTagRevision, s.Revision)
 			advs = append(advs, string(TagNotHead))
 		}
 	}
