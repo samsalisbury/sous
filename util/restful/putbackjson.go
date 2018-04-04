@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"io/ioutil"
+
+	"github.com/pkg/errors"
 )
 
 type jsonMap map[string]interface{}
@@ -23,20 +26,20 @@ type jsonMap map[string]interface{}
 // baseBuf should contain a round-trip to the DTO captured when the original was received.
 // changedBuf should contain the serialization of the updated DTO
 //
-func putbackJSON(originalBuf, baseBuf, changedBuf io.Reader) *bytes.Buffer {
+func putbackJSON(originalBuf, baseBuf, changedBuf io.Reader) (*bytes.Buffer, error) {
 	var original, base, changed jsonMap
 	if err := mapDecode(originalBuf, &original); err != nil {
-		panic(err)
+		return nil, err
 	}
 	if err := mapDecode(baseBuf, &base); err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	if err := mapDecode(changedBuf, &changed); err != nil {
-		panic(err)
+		return nil, err
 	}
 	original = applyChanges(base, changed, original)
-	return encodeJSON(original)
+	return encodeJSON(original), nil
 }
 
 // mutates base
@@ -130,7 +133,11 @@ func same(left, right interface{}) bool {
 }
 
 func mapDecode(buf io.Reader, into *jsonMap) error {
-	return json.NewDecoder(buf).Decode(into)
+	capture := &bytes.Buffer{}
+	buf = io.TeeReader(buf, capture)
+	err := json.NewDecoder(buf).Decode(into)
+	ioutil.ReadAll(buf)
+	return errors.Wrapf(err, capture.String())
 }
 
 func encodeJSON(from interface{}) *bytes.Buffer {

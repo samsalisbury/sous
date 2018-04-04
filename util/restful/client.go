@@ -311,7 +311,11 @@ func (client *LiveHTTPClient) buildRequest(method, url string, headers map[strin
 	if rqBody != nil {
 		JSON = encodeJSON(rqBody)
 		if resource != nil {
-			JSON = putbackJSON(resource.body, resource.resourceJSON, JSON)
+			var err error
+			JSON, err = putbackJSON(resource.body, resource.resourceJSON, JSON)
+			if err != nil {
+				return nil, err
+			}
 		}
 		messages.ReportLogFieldsMessage("JSON Body", logging.DebugLevel, client.LogSink, JSON.String())
 	}
