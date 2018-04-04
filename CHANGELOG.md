@@ -24,6 +24,7 @@ with respect to its command line interface and HTTP interface.
 
 ### Added
 * All: Add smoke test of the newdeploy cli
+* All: Added docker run of posgtres and liquibase via task a go task executer
 
 ## [0.5.77](//github.com/opentable/sous/compare/0.5.76...0.5.77)
 
