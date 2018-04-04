@@ -25,7 +25,7 @@
 
 package logging
 
-//go:generate env
+//go:generate pwd
 
 import (
 	"bytes"
