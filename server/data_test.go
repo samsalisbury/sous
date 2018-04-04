@@ -5,11 +5,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/opentable/sous/dto"
 	sous "github.com/opentable/sous/lib"
 )
 
 func TestGDMWrapperAddHeaders(t *testing.T) {
-	wrapper := GDMWrapper{
+	wrapper := dto.GDMWrapper{
 		Deployments: []*sous.Deployment{
 			sous.DeploymentFixture("sequenced-repo"),
 			sous.DeploymentFixture("sequenced-repo"),

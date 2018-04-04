@@ -1,5 +1,7 @@
 package sous
 
+import "github.com/nyarly/spies"
+
 type (
 	// StateReader knows how to read state.
 	StateReader interface {
@@ -23,6 +25,16 @@ type (
 		WriteErr              error
 		ReadErr               error
 	}
+
+	// StateManagerSpy is a spy implementation of StateManager.
+	StateManagerSpy struct {
+		spy *spies.Spy
+	}
+
+	// StateManagerController is the controller for a spy implementation of StateManager.
+	StateManagerController struct {
+		*spies.Spy
+	}
 )
 
 // NewDummyStateManager returns a dummy StateManager, suitable for testing.
@@ -41,4 +53,23 @@ func (sm *DummyStateManager) WriteState(s *State, u User) error {
 	sm.WriteCount++
 	*sm.State = *s
 	return sm.WriteErr
+}
+
+// NewStateManagerSpy creates a StateManager spy.
+func NewStateManagerSpy() (StateManager, StateManagerController) {
+	spy := spies.NewSpy()
+
+	return StateManagerSpy{spy: spy}, StateManagerController{Spy: spy}
+}
+
+// ReadState implements StateManager on StateManagerSpy.
+func (spy StateManagerSpy) ReadState() (*State, error) {
+	res := spy.spy.Called()
+	return res.Get(0).(*State), res.Error(1)
+}
+
+// WriteState implements StateManager on StateManagerSpy.
+func (spy StateManagerSpy) WriteState(s *State, u User) error {
+	res := spy.spy.Called(s, u)
+	return res.Error(0)
 }

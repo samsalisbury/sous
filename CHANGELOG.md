@@ -9,6 +9,7 @@ with respect to its command line interface and HTTP interface.
 ## [Unreleased](//github.com/opentable/sous/compare/0.5.81...HEAD)
 
 ### Added
+* Server: DB state operations are distributed over HTTP to their appropriate cluster.
 * Client: add -force flag for newdeploy.  Defaults to false if not present, if true, no matter
   what GDM says, will submit to queue for deploy.
   

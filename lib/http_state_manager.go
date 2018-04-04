@@ -16,7 +16,9 @@ type (
 		cached   *State
 		gdmState restful.Updater
 		restful.HTTPClient
-		User User
+		clusterClients  map[string]restful.HTTPClient
+		clusterUpdaters map[string]restful.UpdateDeleter
+		User            User
 	}
 
 	gdmWrapper struct {
@@ -24,45 +26,13 @@ type (
 	}
 )
 
-func wrapDeployments(source Deployments) gdmWrapper {
-	data := gdmWrapper{Deployments: make([]*Deployment, 0)}
-	for _, d := range source.Snapshot() {
-		data.Deployments = append(data.Deployments, d)
-	}
-	return data
-}
-
-// EmptyReceiver implements Comparable on gdmWrapper
-func (g *gdmWrapper) EmptyReceiver() restful.Comparable {
-	return &gdmWrapper{Deployments: []*Deployment{}}
-}
-
-// VariancesFrom implements Comparable on gdmWrapper
-func (g *gdmWrapper) VariancesFrom(other restful.Comparable) restful.Variances {
-	switch og := other.(type) {
-	default:
-		return restful.Variances{"Not a gdmWrapper"}
-	case *gdmWrapper:
-		return g.unwrap().VariancesFrom(og.unwrap())
-	}
-}
-
-func (g *gdmWrapper) unwrap() *Deployments {
-	ds := NewDeployments(g.Deployments...)
-	return &ds
-}
-
-func (g *gdmWrapper) manifests(defs Defs) (Manifests, error) {
-	ds := NewDeployments()
-	for _, d := range g.Deployments {
-		ds.Add(d)
-	}
-	return ds.RawManifests(defs)
-}
-
 // NewHTTPStateManager creates a new HTTPStateManager.
-func NewHTTPStateManager(client restful.HTTPClient) *HTTPStateManager {
-	return &HTTPStateManager{HTTPClient: client}
+func NewHTTPStateManager(client restful.HTTPClient, clusterClients map[string]restful.HTTPClient) *HTTPStateManager {
+	return &HTTPStateManager{
+		HTTPClient:      client,
+		clusterClients:  clusterClients,
+		clusterUpdaters: map[string]restful.UpdateDeleter{},
+	}
 }
 
 // ReadState implements StateReader for HTTPStateManager.
@@ -106,6 +76,41 @@ func (hsm *HTTPStateManager) WriteState(s *State, u User) error {
 	return hsm.putDeployments(wds)
 }
 
+// ReadCluster implements ClusterManager on HTTPStateManager.
+func (hsm *HTTPStateManager) ReadCluster(clusterName string) (Deployments, error) {
+	client, ok := hsm.clusterClients[clusterName]
+	if !ok {
+		return Deployments{}, errors.Errorf("no cluster known by name %s", clusterName)
+	}
+	data := gdmWrapper{Deployments: []*Deployment{}}
+	up, err := client.Retrieve("./state/deployments", nil, &data, nil)
+	if err != nil {
+		return Deployments{}, err
+	}
+	hsm.clusterUpdaters[clusterName] = up
+
+	return NewDeployments(data.Deployments...), nil
+}
+
+// WriteCluster implements ClusterManager on HTTPStateManager.
+func (hsm *HTTPStateManager) WriteCluster(clusterName string, deps Deployments, user User) error {
+	up, ok := hsm.clusterUpdaters[clusterName]
+	if !ok {
+		_, err := hsm.ReadCluster(clusterName)
+		if err != nil {
+			return err
+		}
+		up = hsm.clusterUpdaters[clusterName]
+	}
+	data := wrapDeployments(deps)
+	up, err := up.Update(&data, user.HTTPHeaders())
+	if err != nil {
+		return err
+	}
+	hsm.clusterUpdaters[clusterName] = up
+	return nil
+}
+
 ////
 
 func (hsm *HTTPStateManager) getDefs() (Defs, error) {
@@ -144,4 +149,40 @@ func (m *Manifest) VariancesFrom(c restful.Comparable) (vs restful.Variances) {
 
 	_, diffs := m.Diff(o)
 	return restful.Variances(diffs)
+}
+
+func wrapDeployments(source Deployments) gdmWrapper {
+	data := gdmWrapper{Deployments: make([]*Deployment, 0)}
+	for _, d := range source.Snapshot() {
+		data.Deployments = append(data.Deployments, d)
+	}
+	return data
+}
+
+// EmptyReceiver implements Comparable on gdmWrapper
+func (g *gdmWrapper) EmptyReceiver() restful.Comparable {
+	return &gdmWrapper{Deployments: []*Deployment{}}
+}
+
+// VariancesFrom implements Comparable on gdmWrapper
+func (g *gdmWrapper) VariancesFrom(other restful.Comparable) restful.Variances {
+	switch og := other.(type) {
+	default:
+		return restful.Variances{"Not a gdmWrapper"}
+	case *gdmWrapper:
+		return g.unwrap().VariancesFrom(og.unwrap())
+	}
+}
+
+func (g *gdmWrapper) unwrap() *Deployments {
+	ds := NewDeployments(g.Deployments...)
+	return &ds
+}
+
+func (g *gdmWrapper) manifests(defs Defs) (Manifests, error) {
+	ds := NewDeployments()
+	for _, d := range g.Deployments {
+		ds.Add(d)
+	}
+	return ds.RawManifests(defs)
 }
