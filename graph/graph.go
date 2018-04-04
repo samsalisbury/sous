@@ -574,8 +574,8 @@ func newHTTPClientBundle(serverList ServerListData, log LogSink) (ClientBundle, 
 // newClusterSpecificHTTPClient returns an HTTP client configured to talk to
 // the cluster defined by DeployFilterFlags.
 // Otherwise it returns nil, and emits some warnings.
-func newClusterSpecificHTTPClient(clients ClientBundle, rff *RefinedResolveFilter, log LogSink) (*ClusterSpecificHTTPClient, error) {
-	cluster, err := rff.Cluster.Value()
+func newClusterSpecificHTTPClient(clients ClientBundle, rf *sous.ResolveFilter, log LogSink) (*ClusterSpecificHTTPClient, error) {
+	cluster, err := rf.Cluster.Value()
 	if err != nil {
 		return nil, fmt.Errorf("cluster: %s", err) // errors.Wrapf && cli don't play nice
 	}
@@ -601,11 +601,11 @@ func newHTTPClient(c LocalSousConfig, user sous.User, srvr ServerHandler, log Lo
 	return HTTPClient{HTTPClient: cl}, err
 }
 
-func newServerStateManager(c LocalSousConfig, rff *RefinedResolveFilter, log LogSink) *ServerStateManager {
+func newServerStateManager(c LocalSousConfig, rf *sous.ResolveFilter, log LogSink) *ServerStateManager {
 	var secondary sous.StateManager
 	db, err := c.Database.DB()
 	if err == nil {
-		secondary, err = newDistributedStorage(db, c, rff, log)
+		secondary, err = newDistributedStorage(db, c, rf, log)
 	}
 
 	// Either DB not configured, or problems setting up dispatcher...
@@ -620,8 +620,8 @@ func newServerStateManager(c LocalSousConfig, rff *RefinedResolveFilter, log Log
 	return &ServerStateManager{StateManager: duplex}
 }
 
-func newDistributedStorage(db *sql.DB, c LocalSousConfig, rff *RefinedResolveFilter, log LogSink) (sous.StateManager, error) {
-	localName, err := rff.Cluster.Value()
+func newDistributedStorage(db *sql.DB, c LocalSousConfig, rf *sous.ResolveFilter, log LogSink) (sous.StateManager, error) {
+	localName, err := rf.Cluster.Value()
 	if err != nil {
 		return nil, fmt.Errorf("cluster: %s", err) // errors.Wrapf && cli don't play nice
 	}
@@ -644,10 +644,10 @@ func newDistributedStorage(db *sql.DB, c LocalSousConfig, rff *RefinedResolveFil
 // newStateManager returns a wrapped sous.HTTPStateManager if cl is not nil.
 // Otherwise it returns a wrapped sous.GitStateManager, for local git based GDM.
 // If it returns a sous.GitStateManager, it emits a warning log.
-func newStateManager(cl HTTPClient, c LocalSousConfig, bundle ClientBundle, rff *RefinedResolveFilter, log LogSink) *StateManager {
+func newStateManager(cl HTTPClient, c LocalSousConfig, bundle ClientBundle, rf *sous.ResolveFilter, log LogSink) *StateManager {
 	if c.Server == "" {
 		messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Using local state stored at %s", c.StateLocation), logging.WarningLevel, log, c.StateLocation)
-		return &StateManager{StateManager: newServerStateManager(c, rff, log).StateManager}
+		return &StateManager{StateManager: newServerStateManager(c, rf, log).StateManager}
 	}
 	hsm := sous.NewHTTPStateManager(cl, bundle)
 	return &StateManager{StateManager: hsm}
