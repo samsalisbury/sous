@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 	"github.com/opentable/sous/util/restful"
 	"github.com/pkg/errors"
 )
@@ -59,7 +60,7 @@ func (hsm *HTTPStateManager) WriteState(s *State, u User) error {
 	if len(flaws) > 0 {
 		return errors.Errorf("Invalid update to state: %v", flaws)
 	}
-	logging.Log.Debug.Printf("Writing state via HTTP.")
+	messages.ReportLogFieldsMessage("Writing state via HTTP", logging.DebugLevel, logging.Log)
 	if hsm.gdmState == nil {
 		_, err := hsm.ReadState()
 		if err != nil {

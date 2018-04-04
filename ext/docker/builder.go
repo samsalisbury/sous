@@ -8,6 +8,8 @@ import (
 
 	"github.com/nyarly/inlinefiles/templatestore"
 	"github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 	"github.com/opentable/sous/util/shell"
 )
 
@@ -80,11 +82,11 @@ func (b *Builder) Register(br *sous.BuildResult) error {
 }
 
 func (b *Builder) debug(msg string) {
-	Log.Debug.Printf(msg)
+	messages.ReportLogFieldsMessage(msg, logging.DebugLevel, logging.Log)
 }
 
 func (b *Builder) info(msg string) {
-	Log.Info.Printf(msg)
+	messages.ReportLogFieldsMessage(msg, logging.InformationLevel, logging.Log)
 }
 
 func (b *Builder) applyMetadata(bp *sous.BuildProduct) error {

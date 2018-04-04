@@ -8,9 +8,6 @@ import (
 
 type (
 	logSet interface {
-		Vomitf(format string, a ...interface{})
-		Debugf(format string, a ...interface{})
-		Warnf(format string, a ...interface{})
 	}
 
 	silentLogSet   struct{}
@@ -23,14 +20,6 @@ type (
 func PlaceholderLogger() logSet {
 	return &silentLogSet{}
 }
-
-func (sl *silentLogSet) Warnf(string, ...interface{})  {}
-func (sl *silentLogSet) Debugf(string, ...interface{}) {}
-func (sl *silentLogSet) Vomitf(string, ...interface{}) {}
-
-func (l *fallbackLogger) Warnf(f string, as ...interface{})  { fmt.Printf(f+"\n", as...) }
-func (l *fallbackLogger) Debugf(f string, as ...interface{}) { fmt.Printf(f+"\n", as...) }
-func (l *fallbackLogger) Vomitf(f string, as ...interface{}) { fmt.Printf(f+"\n", as...) }
 
 func (l *fallbackLogger) Child(name string) logging.LogSink {
 	return l

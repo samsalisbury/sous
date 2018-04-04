@@ -6,6 +6,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 	"github.com/samsalisbury/semv"
 )
 
@@ -52,7 +53,7 @@ func (rd *RegistryDumper) TabbedHeaders() string {
 // Entries emits the list of entries for the Resgistry
 func (rd *RegistryDumper) Entries() (de []DumperEntry, err error) {
 	ss, err := rd.Registry.ListSourceIDs()
-	logging.Log.Vomit.Printf("%#v", ss)
+	messages.ReportLogFieldsMessage("List Source IDS", logging.ExtraDebug1Level, logging.Log, ss)
 	if err != nil {
 		return
 	}
@@ -62,9 +63,7 @@ func (rd *RegistryDumper) Entries() (de []DumperEntry, err error) {
 		if err != nil {
 			return nil, err
 		}
-		logging.Log.Vomit.Printf("%#v", s)
-		logging.Log.Vomit.Printf("%#v", a)
-
+		messages.ReportLogFieldsMessage("Source Id and Artifact", logging.ExtraDebug1Level, logging.Log, s, a)
 		de = append(de, DumperEntry{SourceID: s, BuildArtifact: a})
 	}
 

@@ -5,6 +5,7 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 	"github.com/pkg/errors"
 )
 
@@ -112,7 +113,7 @@ func (dc *DeployConfig) String() string {
 
 // Equal is used to compare DeployConfigs
 func (dc *DeployConfig) Equal(o DeployConfig) bool {
-	logging.Log.Vomit.Printf("%+ v ?= %+ v", dc, o)
+	messages.ReportLogFieldsMessage("checking equal", logging.ExtraDebug1Level, logging.Log, dc, o)
 	diff, _ := dc.Diff(o)
 	return !diff
 }
@@ -180,37 +181,37 @@ func (dc DeployConfig) Clone() (c DeployConfig) {
 
 // Equal compares Envs
 func (e Env) Equal(o Env) bool {
-	logging.Log.Vomit.Printf("Envs: %+ v ?= %+ v", e, o)
+	messages.ReportLogFieldsMessage("Envs", logging.ExtraDebug1Level, logging.Log, e, o)
 	if len(e) != len(o) {
-		logging.Log.Vomit.Printf("Envs: %+ v != %+ v (%d != %d)", e, o, len(e), len(o))
+		messages.ReportLogFieldsMessage("Envs !=", logging.ExtraDebug1Level, logging.Log, e, o, len(e), len(o))
 		return false
 	}
 
 	for name, value := range e {
 		if ov, ok := o[name]; !ok || ov != value {
-			logging.Log.Vomit.Printf("Envs: %+ v != %+ v [%q] %q != %q", e, o, name, value, ov)
+			messages.ReportLogFieldsMessage("Envs: !=", logging.ExtraDebug1Level, logging.Log, e, o, name, value, ov)
 			return false
 		}
 	}
-	logging.Log.Vomit.Printf("Envs: %+ v == %+ v !", e, o)
+	messages.ReportLogFieldsMessage("Envs: == !", logging.ExtraDebug1Level, logging.Log, e, o)
 	return true
 }
 
 // Equal compares Metadatas
 func (e Metadata) Equal(o Metadata) bool {
-	logging.Log.Vomit.Printf("Metadatas: %+ v ?= %+ v", e, o)
+	messages.ReportLogFieldsMessage("Metadatas: ?=", logging.ExtraDebug1Level, logging.Log, e, o)
 	if len(e) != len(o) {
-		logging.Log.Vomit.Printf("Metadatas: %+ v != %+ v (%d != %d)", e, o, len(e), len(o))
+		messages.ReportLogFieldsMessage("Metadatas: !=", logging.ExtraDebug1Level, logging.Log, e, o, len(e), len(o))
 		return false
 	}
 
 	for name, value := range e {
 		if ov, ok := o[name]; !ok || ov != value {
-			logging.Log.Vomit.Printf("Metadatas: %+ v != %+ v [%q] %q != %q", e, o, name, value, ov)
+			messages.ReportLogFieldsMessage("Metadatas: != !=", logging.ExtraDebug1Level, logging.Log, e, o, name, value, ov)
 			return false
 		}
 	}
-	logging.Log.Vomit.Printf("Metadatas: %+ v == %+ v !", e, o)
+	messages.ReportLogFieldsMessage("Metadatas: == !", logging.ExtraDebug1Level, logging.Log, e, o)
 	return true
 }
 

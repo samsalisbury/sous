@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 	"github.com/samsalisbury/semv"
 )
 
@@ -82,7 +83,7 @@ func (sc *SourceContext) Version() SourceID {
 		},
 		Version: v,
 	}
-	logging.Log.Debug.Printf("Version: % #v", sv)
+	messages.ReportLogFieldsMessage("Version", logging.DebugLevel, logging.Log, sv)
 	return sv
 }
 

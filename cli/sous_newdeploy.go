@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/opentable/sous/config"
@@ -24,14 +25,14 @@ import (
 // PUT /single-deployment endpoint to begin the deployment, and polls by
 // watching the returned rectification URL.
 type SousNewDeploy struct {
-	DeployFilterFlags config.DeployFilterFlags `inject:"optional"`
-
+	DeployFilterFlags  config.DeployFilterFlags `inject:"optional"`
 	ResolveFilter      *graph.RefinedResolveFilter
 	StateReader        graph.StateReader
 	HTTPClient         *graph.ClusterSpecificHTTPClient
 	TargetDeploymentID graph.TargetDeploymentID
 	LogSink            graph.LogSink
 	waitStable         bool
+	force              bool
 	User               sous.User
 	graph.LocalSousConfig
 }
@@ -58,6 +59,8 @@ func (sd *SousNewDeploy) Help() string { return sousNewDeployHelp }
 func (sd *SousNewDeploy) AddFlags(fs *flag.FlagSet) {
 	MustAddFlags(fs, &sd.DeployFilterFlags, NewDeployFilterFlagsHelp)
 
+	fs.BoolVar(&sd.force, "force", false,
+		"force deploy no matter if GDM already is at the correct version")
 	fs.BoolVar(&sd.waitStable, "wait-stable", true,
 		"wait for the deploy to complete before returning (otherwise, use --wait-stable=false)")
 }
@@ -77,6 +80,8 @@ func (sd *SousNewDeploy) Execute(args []string) cmdr.Result {
 
 	d := server.SingleDeploymentBody{}
 	q := sd.TargetDeploymentID.QueryMap()
+	q["force"] = strconv.FormatBool(sd.force)
+
 	updater, err := sd.HTTPClient.Retrieve("./single-deployment", q, &d, nil)
 	if err != nil {
 		return cmdr.InternalErrorf("Failed to retrieve current deployment: %s", err)

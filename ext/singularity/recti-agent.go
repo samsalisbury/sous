@@ -112,7 +112,7 @@ func buildDeployRequest(d sous.Deployable, reqID, depID string, metadata map[str
 	vs := dtos.SingularityVolumeList{}
 	for _, v := range vols {
 		if v == nil {
-			Log.Warn.Printf("nil volume")
+			messages.ReportLogFieldsMessage("nil volume", logging.WarningLevel, logging.Log)
 			continue
 		}
 		sv, err := swaggering.LoadMap(&dtos.SingularityVolume{}, dtoMap{

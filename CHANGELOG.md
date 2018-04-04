@@ -10,11 +10,15 @@ with respect to its command line interface and HTTP interface.
 
 ### Added
 * Server: DB state operations are distributed over HTTP to their appropriate cluster.
+* Client: add -force flag for newdeploy.  Defaults to false if not present, if true, no matter
+  what GDM says, will submit to queue for deploy.
+  
 ### Fixed
 * Client: the flags for newdeploy were misleading. Updated flag parsing and error handling.
 
 ### Changed
 * Server: Interactions with Singularity unified and simplified.
+* All: Removed legacy Debug, Warn, Vomit logging infrastructure
 
 ## [0.5.78](//github.com/opentable/sous/compare/0.5.77...0.5.78)
 

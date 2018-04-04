@@ -2,6 +2,7 @@ package sous
 
 import (
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 )
 
 type (
@@ -26,13 +27,13 @@ func NewDummyRectificationClient() *DummyRectificationClient {
 
 // SetLogger sets the logger for the client
 func (drc *DummyRectificationClient) SetLogger(l logging.LogSink) {
-	l.Warnf("dummy begin")
 	drc.logger = l
+	drc.logf("dummy begin")
 }
 
 func (drc *DummyRectificationClient) logf(f string, v ...interface{}) {
 	if drc.logger != nil {
-		drc.logger.Warnf(f, v...)
+		messages.ReportLogFieldsMessage(f, logging.WarningLevel, drc.logger, v...)
 	}
 }
 
