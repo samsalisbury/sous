@@ -8,6 +8,10 @@ with respect to its command line interface and HTTP interface.
 
 ## [Unreleased](//github.com/opentable/sous/compare/0.5.81...HEAD)
 
+### Added
+* Client: add -force flag for newdeploy.  Defaults to false if not present, if true, no matter
+  what GDM says, will submit to queue for deploy.
+  
 ### Fixed
 * Client: the flags for newdeploy were misleading. Updated flag parsing and error handling.
 

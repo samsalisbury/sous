@@ -1,6 +1,8 @@
 package server
 
 import (
+	"strconv"
+
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/firsterr"
 	"github.com/opentable/sous/util/restful"
@@ -25,6 +27,19 @@ func manifestIDFromValues(qv restful.QueryValues) (sous.ManifestID, error) {
 		},
 		Flavor: f,
 	}, nil
+}
+
+func forceFromValues(qv restful.QueryValues) (force bool, err error) {
+	f, err := qv.Single("force")
+	if err != nil {
+		return force, err
+	}
+
+	if force, err = strconv.ParseBool(f); err != nil {
+		return force, err
+	}
+
+	return force, nil
 }
 
 func deploymentIDFromValues(qv restful.QueryValues) (sous.DeploymentID, error) {
