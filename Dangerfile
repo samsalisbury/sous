@@ -4,9 +4,13 @@ modified_app_files = git.modified_files.grep(/(?<!_test)\.go$/)
 
 modified_app_files = modified_app_files.find_all do |file|
   diff = git.diff_for_file(file)
-  significant_lines = diff.patch.lines[5..-1].grep_v(%r{^(?: |[+-]\s*(?://|$)|@@)})
-
-  !significant_lines.empty?
+  interesting_lines = diff.patch.lines[5..-1]
+  if !interesting_lines.nil?
+    significant_lines = interesting_lines.grep_v(%r{^(?: |[+-]\s*(?://|$)|@@)})
+    !significant_lines.empty?
+  else
+    false
+  end
 end
 app_changed = !modified_app_files.empty?
 
