@@ -10,6 +10,7 @@ import (
 	"github.com/opentable/sous/util/docker_registry"
 	"github.com/opentable/sous/util/firsterr"
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 	"github.com/pkg/errors"
 )
 
@@ -55,7 +56,7 @@ func (sbp *SplitBuildpack) Detect(ctx *sous.BuildContext) (*sous.DetectResult, e
 		return nil, errors.Errorf("%s does not exist", dfPath)
 	}
 
-	logging.Log.Debug.Printf("Inspecting Dockerfile at %q.", dfPath)
+	messages.ReportLogFieldsMessage("Inspecting Dockerfile", logging.DebugLevel, logging.Log, dfPath)
 
 	ast, err := parseDockerfile(ctx.Sh.Abs(dfPath))
 	if err != nil {

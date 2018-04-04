@@ -8,6 +8,7 @@ import (
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/docker_registry"
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 )
 
 type splitDetector struct {
@@ -47,23 +48,23 @@ func (sd *splitDetector) absorbDockerfile() error {
 
 func (sd *splitDetector) fetchFromRunSpec() error {
 	for _, f := range sd.froms {
-		logging.Log.Debug.Printf("Fetching FROM %q...", f.Value)
+		messages.ReportLogFieldsMessage("Fetching", logging.DebugLevel, logging.Log, f.Value)
 		md, err := sd.registry.GetImageMetadata(f.Value, "")
 		if err != nil {
-			logging.Log.Debug.Printf("Error fetching %q: %v.", f.Value, err)
+			messages.ReportLogFieldsMessage("Error fetching", logging.DebugLevel, logging.Log, f.Value, err)
 			continue
 		}
 
 		if path, ok := md.Env[SOUS_RUN_IMAGE_SPEC]; ok {
-			logging.Log.Debug.Printf("RunSpec path %q found in %q", path, f.Value)
+			messages.ReportLogFieldsMessage("RunSpec path found", logging.DebugLevel, logging.Log, path, f.Value)
 			sd.runspecPath = path
 		}
 
 		buf := bytes.NewBufferString(strings.Join(md.OnBuild, "\n"))
 		ast, err := parseDocker(buf)
-		logging.Log.Debug.Printf("Parsing ONBUILD from %q.", f.Value)
+		messages.ReportLogFieldsMessage("Parsing ONBUILD", logging.DebugLevel, logging.Log, f.Value)
 		if err != nil {
-			logging.Log.Debug.Printf("Error while parsing ONBUILD from %q: %#v.", f.Value, err)
+			messages.ReportLogFieldsMessage("Error while parsing ONBUILD", logging.DebugLevel, logging.Log, f.Value, err)
 			return err
 		}
 		return sd.absorbDocker(ast)
@@ -74,7 +75,7 @@ func (sd *splitDetector) fetchFromRunSpec() error {
 func (sd *splitDetector) processEnv() error {
 	for _, e := range sd.envs {
 		if e.Value == SOUS_RUN_IMAGE_SPEC {
-			logging.Log.Debug.Printf("RunSpec path %q found Dockerfile ENV or ONBUILD ENV", e.Next.Value)
+			messages.ReportLogFieldsMessage("RunSpec path found Dockerfile ENV or ONBUILD ENV", logging.DebugLevel, logging.Log, e.Next.Value)
 			sd.runspecPath = e.Next.Value
 		}
 	}

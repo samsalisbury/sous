@@ -135,7 +135,7 @@ func (sp *StatusPoller) subPollers(clusters *serverListData, deps Deployments) (
 	for _, s := range clusters.Servers {
 		// skip clusters the user isn't interested in
 		if !sp.ResolveFilter.FilterClusterName(s.ClusterName) {
-			logging.Log.Vomitf("%s not requested for polling", s.ClusterName)
+			messages.ReportLogFieldsMessage("Not rquested for polling", logging.ExtraDebug1Level, sp.logs, s.ClusterName)
 			continue
 		}
 		// skip clusters that there's no current intention of deploying into

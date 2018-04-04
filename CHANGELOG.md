@@ -13,6 +13,7 @@ with respect to its command line interface and HTTP interface.
 
 ### Changed
 * Server: Interactions with Singularity unified and simplified.
+* All: Removed legacy Debug, Warn, Vomit logging infrastructure
 
 ## [0.5.78](//github.com/opentable/sous/compare/0.5.77...0.5.78)
 

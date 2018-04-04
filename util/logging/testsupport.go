@@ -68,25 +68,6 @@ func (lss logSinkSpy) LogMessage(lvl Level, msg LogMessage) {
 	lss.spy.Called(lvl, msg)
 }
 
-// These do what LogSet does so that it'll be easier to replace the interface
-func (lss logSinkSpy) Vomitf(f string, as ...interface{}) {
-	m := NewGenericMsg(ExtraDebug1Level, fmt.Sprintf(f, as...), nil, false)
-	m.ExcludeMe()
-	Deliver(m, lss)
-}
-
-func (lss logSinkSpy) Debugf(f string, as ...interface{}) {
-	m := NewGenericMsg(DebugLevel, fmt.Sprintf(f, as...), nil, false)
-	m.ExcludeMe()
-	Deliver(m, lss)
-}
-
-func (lss logSinkSpy) Warnf(f string, as ...interface{}) {
-	m := NewGenericMsg(WarningLevel, fmt.Sprintf(f, as...), nil, false)
-	m.ExcludeMe()
-	Deliver(m, lss)
-}
-
 func (lss logSinkSpy) Child(name string) LogSink {
 	lss.spy.Called(name)
 	return lss //easier than managing a whole new lss

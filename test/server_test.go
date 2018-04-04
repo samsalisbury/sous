@@ -37,9 +37,6 @@ type (
 	dummyLogger struct{}
 )
 
-func (dummyLogger) Warnf(string, ...interface{})  {}
-func (dummyLogger) Debugf(string, ...interface{}) {}
-func (dummyLogger) Vomitf(string, ...interface{}) {}
 func (dummyLogger) ExpHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("This should be some metrics here."))

@@ -105,7 +105,7 @@ func NewResolveRecorder(intended Deployments, ls logging.LogSink, f func(*Resolv
 				rr.status.Log = append(rr.status.Log, rez)
 				if rez.Error != nil {
 					rr.status.Errs.Causes = append(rr.status.Errs.Causes, ErrorWrapper{error: rez.Error})
-					logging.Log.Debug.Printf("resolve error = %+v\n", rez.Error)
+					messages.ReportLogFieldsMessage("resolve error", logging.DebugLevel, logging.Log, rez.Error)
 				}
 			})
 		}

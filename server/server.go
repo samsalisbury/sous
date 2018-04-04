@@ -39,8 +39,7 @@ type (
 func (ctx ComponentLocator) liveState() *sous.State {
 	state, err := ctx.StateManager.ReadState()
 	if os.IsNotExist(errors.Cause(err)) || storage.IsGSMError(err) {
-		ctx.Warnf("error reading state:", err)
-		ctx.Warnf("defaulting to empty state")
+		messages.ReportLogFieldsMessage("error reading state, defaulting to empty state", logging.WarningLevel, ctx.LogSink, err)
 		return sous.NewState()
 	}
 	if err != nil {
