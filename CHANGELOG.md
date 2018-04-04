@@ -6,13 +6,17 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
+## [Unreleased](//github.com/opentable/sous/compare/0.5.83...HEAD)
+### Fixed
+* Server: badly formatted requests should no longer panic the HTTP client.
+
 ## [0.5.82](//github.com/opentable/sous/compare/0.5.81...0.5.82)
 
 ### Added
 * Server: DB state operations are distributed over HTTP to their appropriate cluster.
 * Client: add -force flag for newdeploy.  Defaults to false if not present, if true, no matter
   what GDM says, will submit to queue for deploy.
-  
+
 ### Fixed
 * Client: the flags for newdeploy were misleading. Updated flag parsing and error handling.
 
