@@ -284,7 +284,6 @@ func (l logFieldsMessage) reportLogFieldsMessage(logSink logging.LogSink, items 
 	for _, item := range items {
 		if sm, is := item.(logging.EachFielder); is {
 			l.submessages = append(l.submessages, sm)
-			continue
 		}
 		l.extractID(item)
 		fields, types, jsonRep := defaultStructInfo(item)
