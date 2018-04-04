@@ -153,8 +153,11 @@ type (
 		WriteExtraToConsole(console io.Writer)
 	}
 
+	// A FieldName is the well-known name of a structured logging field.
+	FieldName string
+
 	// FieldReportFn is used by LogMessages to report their fields.
-	FieldReportFn func(string, interface{})
+	FieldReportFn func(FieldName, interface{})
 
 	// error interface{}
 )
