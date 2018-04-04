@@ -56,7 +56,7 @@ func (msg *genericMsg) EachField(f FieldReportFn) {
 		f("@loglov3-otl", "sous-generic-v1")
 	}
 	for k, v := range msg.fields {
-		f(k, v)
+		f(FieldName(k), v)
 	}
 	msg.CallerInfo.EachField(f)
 }

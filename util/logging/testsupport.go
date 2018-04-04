@@ -156,7 +156,7 @@ func (lsc LogSinkController) DumpLogs(t *testing.T) {
 			line = line + lm.Message()
 			line = line + " "
 
-			lm.EachField(func(name string, val interface{}) {
+			lm.EachField(func(name FieldName, val interface{}) {
 				if name == "call-stack-trace" {
 					return
 				}
@@ -226,6 +226,24 @@ func getTestFunctionCallInfo(varFds []string, fixed map[string]interface{}) map[
 	return fixed
 }
 
+// xxx we should require that callers for AssertReportFields et al pass a []FieldName, but in the meantime...
+func castToFieldNames(s []string) []FieldName {
+	fn := []FieldName{}
+	for _, str := range s {
+		fn = append(fn, FieldName(str))
+	}
+	return fn
+}
+
+// xxx this is stopgap so that we can use []FieldName.
+func CastFN(fns []FieldName) []string {
+	ss := []string{}
+	for _, fn := range fns {
+		ss = append(ss, string(fn))
+	}
+	return ss
+}
+
 // AssertReportFields calls it's log argument, and then asserts that a LogMessage
 // reported in that function conforms to the two fields arguments passed.
 // Use it to test "reportXXX" functions, since it tests for panics in the
@@ -270,12 +288,14 @@ func AssertMessageFields(t *testing.T, msg EachFielder, variableFields []string,
 	rawAssertMessageFields(t, msg, variableFields, getTestFunctionCallInfo(variableFields, fixedFields))
 }
 
-func rawAssertMessageFields(t *testing.T, msg EachFielder, variableFields []string, fixedFields map[string]interface{}) {
+func rawAssertMessageFields(t *testing.T, msg EachFielder, variableFieldStrings []string, fixedFields map[string]interface{}) {
 	t.Helper()
 
-	actualFields := map[string]interface{}{}
+	variableFields := castToFieldNames(variableFieldStrings)
 
-	msg.EachField(func(name string, value interface{}) {
+	actualFields := map[FieldName]interface{}{}
+
+	msg.EachField(func(name FieldName, value interface{}) {
 		assert.NotContains(t, actualFields, name) //don't clobber a field
 		actualFields[name] = value
 		switch name {
@@ -312,7 +332,7 @@ func rawAssertMessageFields(t *testing.T, msg EachFielder, variableFields []stri
 			"fields": map[string]interface{}{},
 		}
 
-		msg.EachField(func(n string, v interface{}) {
+		msg.EachField(func(n FieldName, v interface{}) {
 			switch n {
 			case "call-stack-line-number", "call-stack-function", "call-stack-file", "@timestamp", "thread-name", "@loglov3-otl":
 				return
@@ -322,17 +342,17 @@ func rawAssertMessageFields(t *testing.T, msg EachFielder, variableFields []stri
 				t.Errorf("Don't know the OTL type for %v %[1]t", v)
 				return
 			case string:
-				otl["fields"].(map[string]interface{})[n] = map[string]interface{}{"type": "string", "optional": true}
+				otl["fields"].(map[FieldName]interface{})[n] = map[FieldName]interface{}{"type": "string", "optional": true}
 			case bool:
-				otl["fields"].(map[string]interface{})[n] = map[string]interface{}{"type": "boolean", "optional": true}
+				otl["fields"].(map[FieldName]interface{})[n] = map[FieldName]interface{}{"type": "boolean", "optional": true}
 			case int32, uint32:
-				otl["fields"].(map[string]interface{})[n] = map[string]interface{}{"type": "int", "optional": true}
+				otl["fields"].(map[FieldName]interface{})[n] = map[FieldName]interface{}{"type": "int", "optional": true}
 			case int, uint, int64, uint64:
-				otl["fields"].(map[string]interface{})[n] = map[string]interface{}{"type": "long", "optional": true}
+				otl["fields"].(map[FieldName]interface{})[n] = map[FieldName]interface{}{"type": "long", "optional": true}
 			case float32, float64:
-				otl["fields"].(map[string]interface{})[n] = map[string]interface{}{"type": "float", "optional": true}
+				otl["fields"].(map[FieldName]interface{})[n] = map[FieldName]interface{}{"type": "float", "optional": true}
 			case time.Time:
-				otl["fields"].(map[string]interface{})[n] = map[string]interface{}{"type": "timestamp", "optional": true}
+				otl["fields"].(map[FieldName]interface{})[n] = map[FieldName]interface{}{"type": "timestamp", "optional": true}
 			}
 		})
 

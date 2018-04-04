@@ -25,6 +25,8 @@
 
 package logging
 
+//go:generate env
+
 import (
 	"bytes"
 	"flag"
