@@ -23,12 +23,12 @@ type (
 		HTTPClient interface {
 			Create(urlPath string, qParms map[string]string, rqBody interface{}, headers map[string]string) error
 			Retrieve(urlPath string, qParms map[string]string, rzBody interface{}, headers map[string]string) (Updater, error)
-			Delete(urlPath string, qParms map[string]string, from *resourceState, headers map[string]string) error
 		}
 
 		// An Updater captures the state of a retrieved resource so that it can be updated later.
 		Updater interface {
 			Update(params map[string]string, body Comparable, headers map[string]string) error
+			Delete(urlPath string, qParms map[string]string, from *resourceState, headers map[string]string) error
 		}
 	*/
 )
