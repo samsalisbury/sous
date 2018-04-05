@@ -284,7 +284,6 @@ func (l logFieldsMessage) reportLogFieldsMessage(logSink logging.LogSink, items 
 	for _, item := range items {
 		if sm, is := item.(logging.EachFielder); is {
 			l.submessages = append(l.submessages, sm)
-			continue
 		}
 		l.extractID(item)
 		fields, types, jsonRep := defaultStructInfo(item)
@@ -334,7 +333,6 @@ func (l logFieldsMessage) Message() string {
 //EachField will make sure individual fields are added for OTL
 func (l logFieldsMessage) EachField(fn logging.FieldReportFn) {
 
-	fn("@loglov3-otl", "sous-generic-v1")
 	fn("sous-fields", strings.Join(removeDuplicates(l.Fields), ","))
 	fn("sous-types", strings.Join(removeDuplicates(l.Types), ","))
 
@@ -355,4 +353,7 @@ func (l logFieldsMessage) EachField(fn logging.FieldReportFn) {
 	for _, sm := range l.submessages {
 		sm.EachField(fn)
 	}
+
+	//In case anyone override the otl field with submessages.  Adding it at the end
+	fn("@loglov3-otl", "sous-generic-v1")
 }

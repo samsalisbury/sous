@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/opentable/sous/util/logging"
 	"github.com/pkg/errors"
 	"github.com/samsalisbury/semv"
 )
@@ -21,6 +22,11 @@ type (
 		Dir string
 	}
 )
+
+func (sl *SourceLocation) EachField(f logging.FieldReportFn) {
+	f("sous-source-location-repo", sl.Repo)
+	f("sous-source-location-dir", sl.Dir)
+}
 
 // NewSourceLocation creates a new SourceLocation from strings.
 func NewSourceLocation(repoURL, repoOffset string) SourceLocation {
