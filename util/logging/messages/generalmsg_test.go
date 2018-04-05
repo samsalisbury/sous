@@ -119,11 +119,12 @@ func TestReportLogFieldsMessage_Submessage(t *testing.T) {
 		map[string]interface{}{
 			"@loglov3-otl":        constants.SousGenericV1,
 			"call-stack-function": "github.com/opentable/sous/util/logging/messages.TestReportLogFieldsMessage_Submessage",
-			"sous-fields":         "",
+			"sous-fields":         "field,testSubmessage",
 			"sous-id-values":      "",
 			"sous-ids":            "",
-			"sous-types":          "",
+			"sous-types":          "testSubmessage",
 			"test-field":          42,
+			"json-value":          "{\"message\":{\"array\":[\"(messages.testSubmessage) {\\n field: (int) 42\\n}\\n\"]}}",
 		},
 	)
 }
