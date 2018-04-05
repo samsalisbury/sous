@@ -1,5 +1,7 @@
 package logging
 
+import "github.com/opentable/sous/util/logging/constants"
+
 type kafkaSendErrorMessage struct {
 	callerInfo CallerInfo
 	err        error
@@ -27,7 +29,7 @@ func (msg *kafkaSendErrorMessage) Message() string {
 }
 
 func (msg *kafkaSendErrorMessage) EachField(f FieldReportFn) {
-	f("@loglov3-otl", "sous-generic-v1")
+	f("@loglov3-otl", constants.SousGenericV1)
 	msg.callerInfo.EachField(f)
 	f("error", msg.err.Error())
 }

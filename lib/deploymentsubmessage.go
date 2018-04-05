@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/constants"
 )
 
 type deploymentSubmessage struct {
@@ -28,13 +29,27 @@ func (msg *deploymentSubmessage) EachField(f logging.FieldReportFn) {
 	if d == nil {
 		return
 	}
-	f(msg.prefix+"-clustername", d.ClusterName)
-	f(msg.prefix+"-repo", d.SourceID.Location.Repo)
-	f(msg.prefix+"-offset", d.SourceID.Location.Dir)
-	f(msg.prefix+"-tag", d.SourceID.Version.String())
-	f(msg.prefix+"-flavor", d.Flavor)
-	f(msg.prefix+"-owners", strings.Join(d.Owners.Slice(), ","))
-	f(msg.prefix+"-kind", string(d.Kind))
+
+	switch msg.prefix {
+	default:
+		f(constants.FieldName("sous-unknown-type-type"), msg.prefix)
+	case "sous-prior":
+		f(constants.SousPriorClustername, d.ClusterName)
+		f(constants.SousPriorRepo, d.SourceID.Location.Repo)
+		f(constants.SousPriorOffset, d.SourceID.Location.Dir)
+		f(constants.SousPriorTag, d.SourceID.Version.String())
+		f(constants.SousPriorFlavor, d.Flavor)
+		f(constants.SousPriorOwners, strings.Join(d.Owners.Slice(), ","))
+		f(constants.SousPriorKind, string(d.Kind))
+	case "sous-post":
+		f(constants.SousPostClustername, d.ClusterName)
+		f(constants.SousPostRepo, d.SourceID.Location.Repo)
+		f(constants.SousPostOffset, d.SourceID.Location.Dir)
+		f(constants.SousPostTag, d.SourceID.Version.String())
+		f(constants.SousPostFlavor, d.Flavor)
+		f(constants.SousPostOwners, strings.Join(d.Owners.Slice(), ","))
+		f(constants.SousPostKind, string(d.Kind))
+	}
 
 	msg.deployConfigFields(f)
 }
@@ -57,21 +72,40 @@ func (msg *deploymentSubmessage) deployConfigFields(f logging.FieldReportFn) {
 		}
 		return strings.Join(strs, ",")
 	}
-
-	f(msg.prefix+"-resources", marshal("resources", dc.Resources))
-	f(msg.prefix+"-metadata", marshal("metadata", dc.Metadata))
-	f(msg.prefix+"-env", marshal("env", dc.Env))
-	f(msg.prefix+"-numinstances", dc.NumInstances)
-	f(msg.prefix+"-volumes", marshal("volumes", dc.Volumes))
-	f(msg.prefix+"-startup-skipcheck", dc.Startup.SkipCheck)
-	f(msg.prefix+"-startup-connectdelay", dc.Startup.ConnectDelay)
-	f(msg.prefix+"-startup-timeout", dc.Startup.Timeout)
-	f(msg.prefix+"-startup-connectinterval", dc.Startup.ConnectInterval)
-	f(msg.prefix+"-checkready-protocol", dc.Startup.CheckReadyProtocol)
-	f(msg.prefix+"-checkready-uripath", dc.Startup.CheckReadyURIPath)
-	f(msg.prefix+"-checkready-portindex", dc.Startup.CheckReadyPortIndex)
-	f(msg.prefix+"-checkready-failurestatuses", failureStatsAsStrings(dc.Startup.CheckReadyFailureStatuses))
-	f(msg.prefix+"-checkready-uritimeout", dc.Startup.CheckReadyURITimeout)
-	f(msg.prefix+"-checkready-interval", dc.Startup.CheckReadyInterval)
-	f(msg.prefix+"-checkready-retries", dc.Startup.CheckReadyRetries)
+	switch msg.prefix {
+	case "sous-prior":
+		f(constants.SousPriorResources, marshal("resources", dc.Resources))
+		f(constants.SousPriorMetadata, marshal("metadata", dc.Metadata))
+		f(constants.SousPriorEnv, marshal("env", dc.Env))
+		f(constants.SousPriorNuminstances, dc.NumInstances)
+		f(constants.SousPriorVolumes, marshal("volumes", dc.Volumes))
+		f(constants.SousPriorStartupSkipcheck, dc.Startup.SkipCheck)
+		f(constants.SousPriorStartupConnectdelay, dc.Startup.ConnectDelay)
+		f(constants.SousPriorStartupTimeout, dc.Startup.Timeout)
+		f(constants.SousPriorStartupConnectinterval, dc.Startup.ConnectInterval)
+		f(constants.SousPriorCheckreadyProtocol, dc.Startup.CheckReadyProtocol)
+		f(constants.SousPriorCheckreadyUripath, dc.Startup.CheckReadyURIPath)
+		f(constants.SousPriorCheckreadyPortindex, dc.Startup.CheckReadyPortIndex)
+		f(constants.SousPriorCheckreadyFailurestatuses, failureStatsAsStrings(dc.Startup.CheckReadyFailureStatuses))
+		f(constants.SousPriorCheckreadyUritimeout, dc.Startup.CheckReadyURITimeout)
+		f(constants.SousPriorCheckreadyInterval, dc.Startup.CheckReadyInterval)
+		f(constants.SousPriorCheckreadyRetries, dc.Startup.CheckReadyRetries)
+	case "sous-post":
+		f(constants.SousPostResources, marshal("resources", dc.Resources))
+		f(constants.SousPostMetadata, marshal("metadata", dc.Metadata))
+		f(constants.SousPostEnv, marshal("env", dc.Env))
+		f(constants.SousPostNuminstances, dc.NumInstances)
+		f(constants.SousPostVolumes, marshal("volumes", dc.Volumes))
+		f(constants.SousPostStartupSkipcheck, dc.Startup.SkipCheck)
+		f(constants.SousPostStartupConnectdelay, dc.Startup.ConnectDelay)
+		f(constants.SousPostStartupTimeout, dc.Startup.Timeout)
+		f(constants.SousPostStartupConnectinterval, dc.Startup.ConnectInterval)
+		f(constants.SousPostCheckreadyProtocol, dc.Startup.CheckReadyProtocol)
+		f(constants.SousPostCheckreadyUripath, dc.Startup.CheckReadyURIPath)
+		f(constants.SousPostCheckreadyPortindex, dc.Startup.CheckReadyPortIndex)
+		f(constants.SousPostCheckreadyFailurestatuses, failureStatsAsStrings(dc.Startup.CheckReadyFailureStatuses))
+		f(constants.SousPostCheckreadyUritimeout, dc.Startup.CheckReadyURITimeout)
+		f(constants.SousPostCheckreadyInterval, dc.Startup.CheckReadyInterval)
+		f(constants.SousPostCheckreadyRetries, dc.Startup.CheckReadyRetries)
+	}
 }

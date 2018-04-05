@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/constants"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -25,7 +26,7 @@ func TestReportClientHTTPResponseFields_assertReport(t *testing.T) {
 	logging.AssertMessageFields(t, message,
 		logging.StandardVariableFields,
 		map[string]interface{}{
-			"@loglov3-otl":    "sous-http-v1",
+			"@loglov3-otl":    constants.SousHttpV1,
 			"incoming":        true,
 			"resource-family": "example-api",
 			"method":          "GET",
@@ -57,7 +58,7 @@ func TestReportClientHTTPRequestFields(t *testing.T) {
 		},
 		logging.StandardVariableFields,
 		map[string]interface{}{
-			"@loglov3-otl":    "sous-http-v1",
+			"@loglov3-otl":    constants.SousHttpV1,
 			"incoming":        false,
 			"resource-family": "example-api",
 			"method":          "GET",
@@ -80,7 +81,7 @@ func TestReportServerHTTPRequestFields(t *testing.T) {
 		},
 		logging.StandardVariableFields,
 		map[string]interface{}{
-			"@loglov3-otl":    "sous-http-v1",
+			"@loglov3-otl":    constants.SousHttpV1,
 			"incoming":        true,
 			"resource-family": "example-api",
 			"method":          "GET",
@@ -103,7 +104,7 @@ func TestReportClientHTTPResponseFields(t *testing.T) {
 		},
 		logging.StandardVariableFields,
 		map[string]interface{}{
-			"@loglov3-otl":    "sous-http-v1",
+			"@loglov3-otl":    constants.SousHttpV1,
 			"incoming":        true,
 			"resource-family": "example-api",
 			"method":          "GET",
@@ -126,7 +127,7 @@ func TestReportServerHTTPResponseFields(t *testing.T) {
 		},
 		logging.StandardVariableFields,
 		map[string]interface{}{
-			"@loglov3-otl":    "sous-http-v1",
+			"@loglov3-otl":    constants.SousHttpV1,
 			"incoming":        false,
 			"resource-family": "example-api",
 			"method":          "GET",
@@ -149,7 +150,7 @@ func TestReportServerHTTPRespondingFields(t *testing.T) {
 		},
 		logging.StandardVariableFields,
 		map[string]interface{}{
-			"@loglov3-otl":    "sous-http-v1",
+			"@loglov3-otl":    constants.SousHttpV1,
 			"incoming":        false,
 			"resource-family": "example-api",
 			"method":          "PUT",

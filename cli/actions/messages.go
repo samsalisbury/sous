@@ -7,6 +7,7 @@ import (
 
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/constants"
 	"github.com/pkg/errors"
 )
 
@@ -83,7 +84,7 @@ func (msg updateMessage) Message() string {
 }
 
 func (msg updateMessage) EachField(fn logging.FieldReportFn) {
-	fn("@loglov3-otl", "sous-update-v1")
+	fn("@loglov3-otl", constants.SousUpdateV1)
 	msg.callerInfo.EachField(fn)
 	msg.interval.EachField(fn)
 

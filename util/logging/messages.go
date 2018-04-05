@@ -25,13 +25,15 @@
 
 package logging
 
-//go:generate pwd
+//go:generate go-loglov3-gen -loglov3-dir $LOGLOV3_DIR
 
 import (
 	"bytes"
 	"flag"
 	"io"
 	"time"
+
+	"github.com/opentable/sous/util/logging/constants"
 )
 
 type (
@@ -155,11 +157,8 @@ type (
 		WriteExtraToConsole(console io.Writer)
 	}
 
-	// A FieldName is the well-known name of a structured logging field.
-	FieldName string
-
 	// FieldReportFn is used by LogMessages to report their fields.
-	FieldReportFn func(FieldName, interface{})
+	FieldReportFn func(constants.FieldName, interface{})
 
 	// error interface{}
 )

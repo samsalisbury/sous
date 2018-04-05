@@ -11,6 +11,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/fatih/structs"
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/constants"
 )
 
 //InnerLogger interface is used if struct wants to provide it's own way of returns fields, types, and json string
@@ -334,7 +335,7 @@ func (l logFieldsMessage) Message() string {
 //EachField will make sure individual fields are added for OTL
 func (l logFieldsMessage) EachField(fn logging.FieldReportFn) {
 
-	fn("@loglov3-otl", "sous-generic-v1")
+	fn("@loglov3-otl", constants.SousGenericV1)
 	fn("sous-fields", strings.Join(removeDuplicates(l.Fields), ","))
 	fn("sous-types", strings.Join(removeDuplicates(l.Types), ","))
 

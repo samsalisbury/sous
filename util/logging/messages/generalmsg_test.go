@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/constants"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -22,7 +23,7 @@ func TestReportLogFieldsMessage_Complete(t *testing.T) {
 			"sous-fields":    "Basic,Kafka,Graphite,Config,Level,DisableConsole,ExtraConsole,Enabled,DefaultLevel,Topic,Brokers,BrokerList,Server",
 			"sous-types":     "Config,string,bool",
 			"json-value":     "{\"message\":{\"array\":[\"(logging.Config) {\\n Basic: (struct { Level string \\\"env:\\\\\\\"SOUS_LOGGING_LEVEL\\\\\\\"\\\"; DisableConsole bool; ExtraConsole bool \\\"env:\\\\\\\"SOUS_EXTRA_CONSOLE\\\\\\\"\\\" }) {\\n  Level: (string) \\\"\\\",\\n  DisableConsole: (bool) false,\\n  ExtraConsole: (bool) false\\n },\\n Kafka: (struct { Enabled bool; DefaultLevel string \\\"env:\\\\\\\"SOUS_KAFKA_LOG_LEVEL\\\\\\\"\\\"; Topic string \\\"env:\\\\\\\"SOUS_KAFKA_TOPIC\\\\\\\"\\\"; Brokers []string; BrokerList string \\\"env:\\\\\\\"SOUS_KAFKA_BROKERS\\\\\\\"\\\" }) {\\n  Enabled: (bool) false,\\n  DefaultLevel: (string) \\\"\\\",\\n  Topic: (string) (len=10) \\\"test-topic\\\",\\n  Brokers: ([]string) \\u003cnil\\u003e,\\n  BrokerList: (string) (len=23) \\\"broker1,broker2,broker3\\\"\\n },\\n Graphite: (struct { Enabled bool; Server string \\\"env:\\\\\\\"SOUS_GRAPHITE_SERVER\\\\\\\"\\\" }) {\\n  Enabled: (bool) false,\\n  Server: (string) \\\"\\\"\\n }\\n}\\n\"]}}",
-			"@loglov3-otl":   "sous-generic-v1",
+			"@loglov3-otl":   constants.SousGenericV1,
 			"sous-ids":       "",
 			"sous-id-values": "",
 		})
@@ -37,7 +38,7 @@ func TestReportLogFieldsMessage_NoInterface(t *testing.T) {
 		map[string]interface{}{
 			"sous-fields":    "",
 			"sous-types":     "",
-			"@loglov3-otl":   "sous-generic-v1",
+			"@loglov3-otl":   constants.SousGenericV1,
 			"sous-ids":       "",
 			"sous-id-values": "",
 		})
@@ -53,7 +54,7 @@ func TestReportLogFieldsMessage_String(t *testing.T) {
 			"sous-fields":    "",
 			"sous-types":     "string",
 			"json-value":     "{\"message\":{\"array\":[\"{\\\"string\\\":{\\\"string\\\":\\\"simple string\\\"}}\"]}}",
-			"@loglov3-otl":   "sous-generic-v1",
+			"@loglov3-otl":   constants.SousGenericV1,
 			"sous-ids":       "",
 			"sous-id-values": "",
 		})
@@ -73,7 +74,7 @@ func TestReportLogFieldsMessage_StructAndString(t *testing.T) {
 			"sous-types":     "Config,string,bool",
 			"json-value":     "{\"message\":{\"array\":[\"(logging.Config) {\\n Basic: (struct { Level string \\\"env:\\\\\\\"SOUS_LOGGING_LEVEL\\\\\\\"\\\"; DisableConsole bool; ExtraConsole bool \\\"env:\\\\\\\"SOUS_EXTRA_CONSOLE\\\\\\\"\\\" }) {\\n  Level: (string) \\\"\\\",\\n  DisableConsole: (bool) false,\\n  ExtraConsole: (bool) false\\n },\\n Kafka: (struct { Enabled bool; DefaultLevel string \\\"env:\\\\\\\"SOUS_KAFKA_LOG_LEVEL\\\\\\\"\\\"; Topic string \\\"env:\\\\\\\"SOUS_KAFKA_TOPIC\\\\\\\"\\\"; Brokers []string; BrokerList string \\\"env:\\\\\\\"SOUS_KAFKA_BROKERS\\\\\\\"\\\" }) {\\n  Enabled: (bool) false,\\n  DefaultLevel: (string) \\\"\\\",\\n  Topic: (string) (len=10) \\\"test-topic\\\",\\n  Brokers: ([]string) \\u003cnil\\u003e,\\n  BrokerList: (string) (len=23) \\\"broker1,broker2,broker3\\\"\\n },\\n Graphite: (struct { Enabled bool; Server string \\\"env:\\\\\\\"SOUS_GRAPHITE_SERVER\\\\\\\"\\\" }) {\\n  Enabled: (bool) false,\\n  Server: (string) \\\"\\\"\\n }\\n}\\n\",\"{\\\"string\\\":{\\\"string\\\":\\\"simple string\\\"}}\"]}}",
 			"sous-fields":    "Basic,Kafka,Graphite,Config,Level,DisableConsole,ExtraConsole,Enabled,DefaultLevel,Topic,Brokers,BrokerList,Server",
-			"@loglov3-otl":   "sous-generic-v1",
+			"@loglov3-otl":   constants.SousGenericV1,
 			"sous-ids":       "",
 			"sous-id-values": "",
 		})
@@ -95,7 +96,7 @@ func TestReportLogFieldsMessage_TwoStructs(t *testing.T) {
 		map[string]interface{}{
 			"sous-types":     "Config,string,bool,*Response,int,Header,int64,*Request,*ConnectionState",
 			"sous-fields":    "Basic,Kafka,Graphite,Config,Level,DisableConsole,ExtraConsole,Enabled,DefaultLevel,Topic,Brokers,BrokerList,Server,Status,StatusCode,Proto,ProtoMajor,ProtoMinor,Header,Body,ContentLength,TransferEncoding,Close,Uncompressed,Trailer,Request,TLS,Response",
-			"@loglov3-otl":   "sous-generic-v1",
+			"@loglov3-otl":   constants.SousGenericV1,
 			"sous-ids":       "",
 			"sous-id-values": "",
 		})
@@ -116,7 +117,7 @@ func TestReportLogFieldsMessage_Submessage(t *testing.T) {
 		},
 		logging.StandardVariableFields,
 		map[string]interface{}{
-			"@loglov3-otl":        "sous-generic-v1",
+			"@loglov3-otl":        constants.SousGenericV1,
 			"call-stack-function": "github.com/opentable/sous/util/logging/messages.TestReportLogFieldsMessage_Submessage",
 			"sous-fields":         "",
 			"sous-id-values":      "",
@@ -144,7 +145,7 @@ func TestReportLogFieldsMessage_CyclicalReference(t *testing.T) {
 		map[string]interface{}{
 			"sous-fields":  "Child,LogData,Parent",
 			"sous-types":   "Parent,*Parent,string",
-			"@loglov3-otl": "sous-generic-v1",
+			"@loglov3-otl": constants.SousGenericV1,
 		})
 }
 
@@ -160,7 +161,7 @@ func TestReportLogFieldsMessage_error(t *testing.T) {
 			"sous-fields":    "",
 			"sous-types":     "error",
 			"json-value":     "{\"message\":{\"array\":[\"{\\\"error\\\":{\\\"error\\\":\\\"error msg\\\"}}\"]}}",
-			"@loglov3-otl":   "sous-generic-v1",
+			"@loglov3-otl":   constants.SousGenericV1,
 			"sous-ids":       "",
 			"sous-id-values": "",
 		})
@@ -229,6 +230,6 @@ func TestReportLogFieldsMessageWithIDs_TwoIds(t *testing.T) {
 			"sous-fields":  "TestInnerID,Cluster,TestID,Source,Repo,Dir,Location",
 			"sous-types":   "*TestID,TestInnerID,Location,string",
 			"sous-ids":     "TestID,TestInnerID",
-			"@loglov3-otl": "sous-generic-v1",
+			"@loglov3-otl": constants.SousGenericV1,
 		})
 }

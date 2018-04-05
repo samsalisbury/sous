@@ -8,6 +8,7 @@ import (
 
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/constants"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	// it's a SQL db driver. This is how you do that.
@@ -70,7 +71,7 @@ func TestPostgresStateManagerWriteState_success(t *testing.T) {
 	logging.AssertMessageFields(t, message, append(
 		append(logging.StandardVariableFields, logging.IntervalVariableFields...), "call-stack-function", "sous-sql-query", "sous-sql-rows"),
 		map[string]interface{}{
-			"@loglov3-otl": "sous-sql",
+			"@loglov3-otl": constants.SousSql,
 		})
 
 	suite.require.NoError(suite.manager.WriteState(s, testUser))

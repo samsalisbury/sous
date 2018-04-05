@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/constants"
 )
 
 type (
@@ -236,7 +237,7 @@ func (msg resourceMessage) composeMsg() string {
 }
 
 func (msg resourceMessage) EachField(f logging.FieldReportFn) {
-	f("@loglov3-otl", "sous-generic-v1")
+	f("@loglov3-otl", constants.SousGenericV1)
 	f("sous-resource-ports", msg.ports)
 	f("sous-resource-cpus", msg.cpus)
 	f("sous-resource-memory", msg.memory)

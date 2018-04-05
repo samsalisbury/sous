@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/constants"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -100,7 +101,7 @@ func TestClientRetrieve(t *testing.T) {
 	assert.Equal(logLvl, logging.ExtraDebug1Level)
 
 	fixedFields := map[string]interface{}{
-		"@loglov3-otl":    "sous-http-v1",
+		"@loglov3-otl":    constants.SousHttpV1,
 		"body-size":       int64(0),
 		"incoming":        true,
 		"method":          "GET",

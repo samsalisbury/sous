@@ -3,6 +3,8 @@ package logging
 import (
 	"fmt"
 	"io"
+
+	"github.com/opentable/sous/util/logging/constants"
 )
 
 type genericMsg struct {
@@ -53,10 +55,10 @@ func NewGenericMsg(lvl Level, msg string, fields map[string]interface{}, console
 func (msg *genericMsg) EachField(f FieldReportFn) {
 	// XXX belongs maybe in the top level structured message engine
 	if _, hasSchema := msg.fields["@loglov3-otl"]; !hasSchema {
-		f("@loglov3-otl", "sous-generic-v1")
+		f("@loglov3-otl", constants.SousGenericV1)
 	}
 	for k, v := range msg.fields {
-		f(FieldName(k), v)
+		f(constants.FieldName(k), v)
 	}
 	msg.CallerInfo.EachField(f)
 }

@@ -3,6 +3,8 @@ package logging
 import (
 	"fmt"
 	"io"
+
+	"github.com/opentable/sous/util/logging/constants"
 )
 
 type errorMessage struct {
@@ -56,7 +58,7 @@ func (msg *errorMessage) WriteToConsole(console io.Writer) {
 }
 
 func (msg *errorMessage) EachField(fn FieldReportFn) {
-	fn("@loglov3-otl", "sous-error-v1")
+	fn("@loglov3-otl", constants.SousErrorV1)
 	msg.CallerInfo.EachField(fn)
 	fn("sous-error-msg", msg.err.Error())
 	fn("sous-error-backtrace", fmt.Sprintf("%+v", msg.err))

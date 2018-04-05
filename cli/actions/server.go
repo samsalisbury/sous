@@ -12,6 +12,7 @@ import (
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/server"
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/constants"
 	"github.com/opentable/sous/util/shell"
 	"github.com/samsalisbury/semv"
 )
@@ -121,7 +122,7 @@ func (msg serverMessage) Message() string {
 }
 
 func (msg serverMessage) EachField(f logging.FieldReportFn) {
-	f("@loglov3-otl", "sous-generic-v1")
+	f("@loglov3-otl", constants.SousGenericV1)
 	f("sous-listen-address", msg.listenAddress)
 	f("filter-cluster", msg.deployFilterFlags.Cluster)
 	f("filter-flavor", msg.deployFilterFlags.Flavor)

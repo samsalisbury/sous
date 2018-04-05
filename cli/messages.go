@@ -6,6 +6,7 @@ import (
 
 	"github.com/opentable/sous/util/cmdr"
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/constants"
 )
 
 type invocationMessage struct {
@@ -37,7 +38,7 @@ func (msg *invocationMessage) Message() string {
 }
 
 func (msg *invocationMessage) EachField(f logging.FieldReportFn) {
-	f("@loglov3-otl", "sous-cli-v1")
+	f("@loglov3-otl", constants.SousCliV1)
 	msg.callerInfo.EachField(f)
 	msg.interval.EachField(f)
 	f("arguments", fmt.Sprintf("%q", msg.args))
@@ -74,7 +75,7 @@ func (msg *cliResultMessage) Message() string {
 }
 
 func (msg *cliResultMessage) EachField(f logging.FieldReportFn) {
-	f("@loglov3-otl", "sous-cli-v1")
+	f("@loglov3-otl", constants.SousCliV1)
 	msg.callerInfo.EachField(f)
 	msg.interval.EachField(f)
 	f("arguments", fmt.Sprintf("%q", msg.args))

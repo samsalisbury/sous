@@ -18,6 +18,7 @@ import (
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/docker_registry"
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/constants"
 	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/suite"
 )
@@ -506,8 +507,8 @@ func (suite *integrationSuite) TestResolve() {
 	dispositions := []string{}
 	for _, call := range logController.CallsTo("LogMessage") {
 		if lm, is := call.PassedArgs().Get(1).(logging.LogMessage); is {
-			lm.EachField(func(name string, val interface{}) {
-				if disp, is := val.(string); is && name == "sous-diff-disposition" {
+			lm.EachField(func(name constants.FieldName, val interface{}) {
+				if disp, is := val.(string); is && name == constants.SousDiffDisposition {
 					dispositions = append(dispositions, disp)
 				}
 			})
@@ -519,8 +520,8 @@ func (suite *integrationSuite) TestResolve() {
 		log.Printf("All log messages:\n")
 		for _, call := range logController.CallsTo("LogMessage") {
 			if msg, is := call.PassedArgs().Get(1).(logging.LogMessage); is {
-				m := map[string]interface{}{}
-				msg.EachField(func(k string, v interface{}) {
+				m := map[constants.FieldName]interface{}{}
+				msg.EachField(func(k constants.FieldName, v interface{}) {
 					m[k] = v
 				})
 				m["message"] = msg.Message()

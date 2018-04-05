@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/opentable/sous/util/logging/constants"
 )
 
 type silentMessageError struct {
@@ -33,7 +34,7 @@ func (msg *silentMessageError) MetricsTo(metrics MetricsSink) {
 }
 
 func (msg *silentMessageError) EachField(f FieldReportFn) {
-	f("@loglov3-otl", "sous-generic-v1")
+	f("@loglov3-otl", constants.SousGenericV1)
 	msg.CallerInfo.EachField(f)
 }
 
