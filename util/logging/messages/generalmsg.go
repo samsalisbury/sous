@@ -357,5 +357,5 @@ func (l logFieldsMessage) EachField(fn logging.FieldReportFn) {
 	}
 
 	//In case anyone override the otl field with submessages.  Adding it at the end
-	fn("@loglov3-otl", "sous-generic-v1")
+	fn("@loglov3-otl", constants.SousGenericV1)
 }
