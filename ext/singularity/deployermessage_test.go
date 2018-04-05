@@ -6,6 +6,7 @@ import (
 
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/constants"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -49,7 +50,7 @@ func TestDeployerMessageNilCheck(t *testing.T) {
 	logMessage := logCalls[0].PassedArgs().Get(1).(deployerMessage)
 
 	expectedFields := map[string]interface{}{
-		"@loglov3-otl": "sous-rectifier-singularity-v1",
+		"@loglov3-otl": constants.SousRectifierSingularityV1,
 		"sous-diffs":   "",
 	}
 
@@ -125,7 +126,7 @@ func TestDiffResolutionMessage(t *testing.T) {
 	logMessage := logCalls[0].PassedArgs().Get(1).(diffResolutionMessage)
 
 	expectedFields := map[string]interface{}{
-		"@loglov3-otl":                 "sous-diff-resolution-v1",
+		"@loglov3-otl":                 constants.SousDiffResolution,
 		"sous-deployment-id":           diffRes.DeploymentID.String(),
 		"sous-manifest-id":             diffRes.DeploymentID.ManifestID.String(),
 		"sous-resolution-description":  string(diffRes.Desc),
@@ -144,7 +145,7 @@ func TestDiffResolutionMessage(t *testing.T) {
 
 func defaultExpectedFields() map[string]interface{} {
 	return map[string]interface{}{
-		"@loglov3-otl":                          "sous-rectifier-singularity-v1",
+		"@loglov3-otl":                          constants.SousRectifierSingularityV1,
 		"sous-request-id":                       requestID,
 		"sous-diffs":                            "",
 		"sous-deployment-id":                    ":",

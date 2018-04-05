@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/constants"
 )
 
 type (
@@ -107,7 +108,7 @@ func (msg *pollerStartMessage) Message() string {
 }
 
 func (msg *pollerStartMessage) EachField(f logging.FieldReportFn) {
-	f("@loglov3-otl", "sous-status-polling-v1")
+	f("@loglov3-otl", constants.SousStatusPollingV1)
 	msg.callerInfo.EachField(f)
 	pollerFields(f, msg.poller)
 }
@@ -130,7 +131,7 @@ func (msg *pollerResolvedMessage) Message() string {
 }
 
 func (msg *pollerResolvedMessage) EachField(f logging.FieldReportFn) {
-	f("@loglov3-otl", "sous-status-polling-v1")
+	f("@loglov3-otl", constants.SousStatusPollingV1)
 	msg.callerInfo.EachField(f)
 	pollerFields(f, msg.poller)
 	f("deploy-status", msg.status.String())
@@ -173,7 +174,7 @@ func (msg *pollerStatusMessage) Message() string {
 }
 
 func (msg *pollerStatusMessage) EachField(f logging.FieldReportFn) {
-	f("@loglov3-otl", "sous-status-polling-v1")
+	f("@loglov3-otl", constants.SousStatusPollingV1)
 	msg.callerInfo.EachField(f)
 	pollerFields(f, msg.poller)
 	f("deploy-status", msg.poller.status.String())
@@ -209,7 +210,7 @@ func (msg *subreportMessage) Message() string {
 }
 
 func (msg *subreportMessage) EachField(f logging.FieldReportFn) {
-	f("@loglov3-otl", "sous-polling-subresult-v1")
+	f("@loglov3-otl", constants.SousPollingSubresultV1)
 	msg.callerInfo.EachField(f)
 	pollerFields(f, msg.poller)
 	resultFields(f, msg.update)

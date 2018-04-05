@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/nyarly/spies"
+	"github.com/opentable/sous/util/logging/constants"
 	"github.com/opentable/sous/util/yaml"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -156,7 +157,7 @@ func (lsc LogSinkController) DumpLogs(t *testing.T) {
 			line = line + lm.Message()
 			line = line + " "
 
-			lm.EachField(func(name string, val interface{}) {
+			lm.EachField(func(name constants.FieldName, val interface{}) {
 				if name == "call-stack-trace" {
 					return
 				}
@@ -226,6 +227,24 @@ func getTestFunctionCallInfo(varFds []string, fixed map[string]interface{}) map[
 	return fixed
 }
 
+// xxx we should require that callers for AssertReportFields et al pass a []FieldName, but in the meantime...
+func castToFieldNames(s []string) []constants.FieldName {
+	fn := []constants.FieldName{}
+	for _, str := range s {
+		fn = append(fn, constants.FieldName(str))
+	}
+	return fn
+}
+
+// xxx this is stopgap so that we can use []FieldName.
+func CastFN(fns []constants.FieldName) []string {
+	ss := []string{}
+	for _, fn := range fns {
+		ss = append(ss, string(fn))
+	}
+	return ss
+}
+
 // AssertReportFields calls it's log argument, and then asserts that a LogMessage
 // reported in that function conforms to the two fields arguments passed.
 // Use it to test "reportXXX" functions, since it tests for panics in the
@@ -266,16 +285,25 @@ func AssertReport(t *testing.T, log func(LogSink)) (LogSinkController, LogMessag
 func AssertMessageFields(t *testing.T, msg EachFielder, variableFields []string, fixedFields map[string]interface{}) {
 	t.Helper()
 
-	assert.Contains(t, fixedFields, "@loglov3-otl", "Structured log entries need @loglov3-otl or will be DLQ'd")
+	if assert.Contains(t, fixedFields, "@loglov3-otl", "Structured log entries need @loglov3-otl or will be DLQ'd") {
+		assert.IsType(t, constants.OTLName(""), fixedFields["@loglov3-otl"], "Unknown OTL name!")
+	}
 	rawAssertMessageFields(t, msg, variableFields, getTestFunctionCallInfo(variableFields, fixedFields))
 }
 
-func rawAssertMessageFields(t *testing.T, msg EachFielder, variableFields []string, fixedFields map[string]interface{}) {
+func rawAssertMessageFields(t *testing.T, msg EachFielder, variableFieldStrings []string, fixedStringFields map[string]interface{}) {
 	t.Helper()
 
-	actualFields := map[string]interface{}{}
+	variableFields := castToFieldNames(variableFieldStrings)
 
-	msg.EachField(func(name string, value interface{}) {
+	actualFields := map[constants.FieldName]interface{}{}
+
+	fixedFields := map[constants.FieldName]interface{}{}
+	for n, v := range fixedStringFields {
+		fixedFields[constants.FieldName(n)] = v
+	}
+
+	msg.EachField(func(name constants.FieldName, value interface{}) {
 		assert.NotContains(t, actualFields, name) //don't clobber a field
 		actualFields[name] = value
 		switch name {
@@ -296,8 +324,12 @@ func rawAssertMessageFields(t *testing.T, msg EachFielder, variableFields []stri
 	// If the test passes, write a proposed OTL to a tempfile and report the path.
 	// These are super useful for updating the logging schemas,
 	// and get us a long way toward aligning our fields with theirs.
-	if _, hasOTL := actualFields["@loglov3-otl"]; !t.Failed() && hasOTL {
-		tmpfile, err := ioutil.TempFile("", actualFields["@loglov3-otl"].(string))
+	if otl, hasOTL := actualFields["@loglov3-otl"]; !t.Failed() && hasOTL {
+		otlFN, is := otl.(constants.OTLName)
+		if !is {
+			t.Fatal("@loglov3-otl fields is not an OTLName!")
+		}
+		tmpfile, err := ioutil.TempFile("", string(otlFN))
 		if err != nil {
 			t.Logf("Problem trying to open file to write proposed OTL: %v", err)
 			return
@@ -312,7 +344,7 @@ func rawAssertMessageFields(t *testing.T, msg EachFielder, variableFields []stri
 			"fields": map[string]interface{}{},
 		}
 
-		msg.EachField(func(n string, v interface{}) {
+		msg.EachField(func(n constants.FieldName, v interface{}) {
 			switch n {
 			case "call-stack-line-number", "call-stack-function", "call-stack-file", "@timestamp", "thread-name", "@loglov3-otl":
 				return
@@ -322,17 +354,17 @@ func rawAssertMessageFields(t *testing.T, msg EachFielder, variableFields []stri
 				t.Errorf("Don't know the OTL type for %v %[1]t", v)
 				return
 			case string:
-				otl["fields"].(map[string]interface{})[n] = map[string]interface{}{"type": "string", "optional": true}
+				otl["fields"].(map[string]interface{})[string(n)] = map[string]interface{}{"type": "string", "optional": true}
 			case bool:
-				otl["fields"].(map[string]interface{})[n] = map[string]interface{}{"type": "boolean", "optional": true}
+				otl["fields"].(map[string]interface{})[string(n)] = map[string]interface{}{"type": "boolean", "optional": true}
 			case int32, uint32:
-				otl["fields"].(map[string]interface{})[n] = map[string]interface{}{"type": "int", "optional": true}
+				otl["fields"].(map[string]interface{})[string(n)] = map[string]interface{}{"type": "int", "optional": true}
 			case int, uint, int64, uint64:
-				otl["fields"].(map[string]interface{})[n] = map[string]interface{}{"type": "long", "optional": true}
+				otl["fields"].(map[string]interface{})[string(n)] = map[string]interface{}{"type": "long", "optional": true}
 			case float32, float64:
-				otl["fields"].(map[string]interface{})[n] = map[string]interface{}{"type": "float", "optional": true}
+				otl["fields"].(map[string]interface{})[string(n)] = map[string]interface{}{"type": "float", "optional": true}
 			case time.Time:
-				otl["fields"].(map[string]interface{})[n] = map[string]interface{}{"type": "timestamp", "optional": true}
+				otl["fields"].(map[string]interface{})[string(n)] = map[string]interface{}{"type": "timestamp", "optional": true}
 			}
 		})
 

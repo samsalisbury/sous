@@ -11,6 +11,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/fatih/structs"
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/constants"
 )
 
 //InnerLogger interface is used if struct wants to provide it's own way of returns fields, types, and json string
@@ -284,6 +285,7 @@ func (l logFieldsMessage) reportLogFieldsMessage(logSink logging.LogSink, items 
 	for _, item := range items {
 		if sm, is := item.(logging.EachFielder); is {
 			l.submessages = append(l.submessages, sm)
+			continue
 		}
 		l.extractID(item)
 		fields, types, jsonRep := defaultStructInfo(item)
@@ -355,5 +357,5 @@ func (l logFieldsMessage) EachField(fn logging.FieldReportFn) {
 	}
 
 	//In case anyone override the otl field with submessages.  Adding it at the end
-	fn("@loglov3-otl", "sous-generic-v1")
+	fn("@loglov3-otl", constants.SousGenericV1)
 }

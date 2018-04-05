@@ -3,6 +3,8 @@ package logging
 import (
 	"fmt"
 	"testing"
+
+	"github.com/opentable/sous/util/logging/constants"
 )
 
 func TestErrorMessage(t *testing.T) {
@@ -10,7 +12,7 @@ func TestErrorMessage(t *testing.T) {
 	AssertMessageFields(t, msg, StandardVariableFields, map[string]interface{}{
 		//pkg/errors errors will yield a backtrace here
 		"sous-error-backtrace": "just an error",
-		"@loglov3-otl":         "sous-error-v1",
+		"@loglov3-otl":         constants.SousErrorV1,
 		"sous-error-msg":       "just an error",
 	})
 }

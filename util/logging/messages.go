@@ -25,11 +25,15 @@
 
 package logging
 
+//go:generate go-loglov3-gen -loglov3-dir $LOGLOV3_DIR
+
 import (
 	"bytes"
 	"flag"
 	"io"
 	"time"
+
+	"github.com/opentable/sous/util/logging/constants"
 )
 
 type (
@@ -154,7 +158,7 @@ type (
 	}
 
 	// FieldReportFn is used by LogMessages to report their fields.
-	FieldReportFn func(string, interface{})
+	FieldReportFn func(constants.FieldName, interface{})
 
 	// error interface{}
 )

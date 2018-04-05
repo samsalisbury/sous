@@ -1,17 +1,21 @@
 package logging
 
-import "github.com/pborman/uuid"
+import (
+	"github.com/opentable/sous/util/logging/constants"
+	"github.com/pborman/uuid"
+)
 
 // LogMessage records a message to one or more structured logs
 func (ls LogSet) LogMessage(lvl Level, msg LogMessage) {
 	logto := ls.logrus.WithField("severity", lvl.String())
 
-	ls.eachField(func(name string, value interface{}) {
-		logto = logto.WithField(name, value)
+	ls.eachField(func(name constants.FieldName, value interface{}) {
+		logto = logto.WithField(string(name), value)
 	})
 
-	msg.EachField(func(name string, value interface{}) {
-		logto = logto.WithField(name, value)
+	msg.EachField(func(name constants.FieldName, value interface{}) {
+		enforceSchema(name, value)
+		logto = logto.WithField(string(name), value)
 	})
 
 	logto.Message = msg.Message()
@@ -45,4 +49,10 @@ func (ls LogSet) eachField(f FieldReportFn) {
 	f("@uuid", uuid.New())
 
 	ls.appIdent.EachField(f)
+}
+
+func enforceSchema(name constants.FieldName, val interface{}) {
+	if false {
+		panic("bad logging")
+	}
 }
