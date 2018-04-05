@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -179,13 +180,19 @@ func PollDeployQueue(location string, client restful.HTTPClient, pollAtempts int
 						response.Resolution.DeploymentID.String(), response.Resolution.DeployState.SourceID.Version, timeTrack(start))
 				}
 				//exit out to error handler
-				return cmdr.InternalErrorf("Failed to deploy %s: %s", location, response.Resolution.Error)
+				return cmdr.InternalErrorf("Failed to deploy %s: %s : %s", location, response.Resolution.Error, response.Resolution.DeployState.ExecutorMessage)
 			}
 
 		}
 		time.Sleep(1 * time.Second)
 	}
-	return cmdr.InternalErrorf("Failed to deploy %s after %d attempts for duration: %s\n", location, pollAtempts, timeTrack(start))
+
+	responseJSON := ""
+	if b, err := json.Marshal(response); err == nil {
+		responseJSON = string(b)
+	}
+
+	return cmdr.InternalErrorf("Failed to deploy %s after %d attempts for duration: %s\n Response: %s\n", location, pollAtempts, timeTrack(start), responseJSON)
 }
 
 func checkFinished(resolution sous.DiffResolution) bool {
