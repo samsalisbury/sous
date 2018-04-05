@@ -109,45 +109,22 @@ func buildHTTPLogMessage(
 		qps[k] = strings.Join(v, ",")
 	}
 
-	m := newHTTPLogEntry(
-		message,
-		server,
-		response,
-		resName,
-		rq.Method,
-		url.String(),
-		statusCode,
-		rq.ContentLength,
-		responseContentLength,
-		dur,
-	)
-	m.ExcludeMe()
-	m.ExcludePathPattern("github.com/opentable/swaggering")     // XXX should be more local
-	m.ExcludePathPattern("github.com/opentable/go-singularity") // XXX should be more local
-	return m
-}
-
-func newHTTPLogEntry(
-	message string,
-	server, response bool,
-	resName, method, urlstring string,
-	status int,
-	rqSize, rzSize int64,
-	dur time.Duration,
-) *HTTPLogEntry {
-	u, err := url.Parse(urlstring)
-	if err != nil {
-		u = &url.URL{}
-	}
+	method := rq.Method
+	urlstring := url.String()
+	rqSize := rq.ContentLength
 
 	lvl := logging.InformationLevel
-	if status < 400 {
+	if statusCode < 300 {
 		lvl = logging.ExtraDebug1Level
 	}
 
+	ci := logging.GetCallerInfo(logging.NotHere())
+	ci.ExcludePathPattern("github.com/opentable/swaggering")     // XXX should be more local
+	ci.ExcludePathPattern("github.com/opentable/go-singularity") // XXX should be more local
+
 	return &HTTPLogEntry{
 		Level:      lvl,
-		CallerInfo: logging.GetCallerInfo(logging.NotHere()),
+		CallerInfo: ci,
 
 		message:        message,
 		serverSide:     server,
@@ -155,12 +132,12 @@ func newHTTPLogEntry(
 		resourceFamily: resName,
 		method:         method,
 		url:            urlstring,
-		server:         u.Host,
-		path:           u.Path,
-		parms:          u.RawQuery,
-		status:         status,
+		server:         url.Host,
+		path:           url.Path,
+		parms:          url.RawQuery,
+		status:         statusCode,
 		requestSize:    rqSize,
-		responseSize:   rzSize,
+		responseSize:   responseContentLength,
 		dur:            dur,
 	}
 }
