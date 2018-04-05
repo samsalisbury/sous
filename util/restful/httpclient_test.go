@@ -48,7 +48,7 @@ func TestPutbackJSON(t *testing.T) {
 		"e": {"a": "a"}
 	}`)
 
-	outB := putbackJSON(origB, baseB, updatedB)
+	outB, _ := putbackJSON(origB, baseB, updatedB)
 
 	// Comparing orginal to output
 	mapped := map[string]interface{}{}

@@ -75,14 +75,17 @@ func (ra *RectiAgent) Deploy(d sous.Deployable, reqID, depID string) error {
 	if err != nil {
 		return err
 	}
-	messages.ReportLogFieldsMessage("Deploying instance", logging.DebugLevel, Log, d, reqID)
+	messages.ReportLogFieldsMessage("Build deploying instance", logging.DebugLevel, Log, d, reqID)
 	depReq, err := buildDeployRequest(d, reqID, depID, labels)
 	if err != nil {
 		return err
 	}
 
-	messages.ReportLogFieldsMessage("Deploy req", logging.DebugLevel, Log, depReq)
+	messages.ReportLogFieldsMessage("Sending Deploy req to singularity Client", logging.DebugLevel, Log, depReq)
 	_, err = ra.singularityClient(clusterURI).Deploy(depReq)
+	if err != nil {
+		messages.ReportLogFieldsMessage("Singularity client returned following error", logging.WarningLevel, Log, depReq, reqID, err)
+	}
 	return err
 }
 

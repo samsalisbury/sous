@@ -106,6 +106,8 @@ func (r *deployer) Rectify(pair *sous.DeployablePair) sous.DiffResolution {
 		if pair.Post.Status == sous.DeployStatusFailed {
 			resolution.Error = sous.WrapResolveError(&sous.FailedStatusError{})
 		}
+
+		messages.ReportLogFieldsMessage("SameKind", logging.InformationLevel, r.log, postID, version, resolution)
 		return resolution
 	case sous.AddedKind:
 		messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Starting an AddedKind %s:%s", postID, version), logging.ExtraDebug1Level, r.log, pair)
@@ -125,6 +127,7 @@ func (r *deployer) Rectify(pair *sous.DeployablePair) sous.DiffResolution {
 		} else {
 			result.Desc = sous.CreateDiff
 		}
+		messages.ReportLogFieldsMessage("Result of create", logging.InformationLevel, r.log, postID, version, result)
 		reportDiffResolutionMessage("Result of create", result, logging.InformationLevel, r.log)
 		return result
 	case sous.RemovedKind:
@@ -137,6 +140,7 @@ func (r *deployer) Rectify(pair *sous.DeployablePair) sous.DiffResolution {
 			result.Desc = sous.DeleteDiff
 		}
 		reportDiffResolutionMessage("Result of delete", result, logging.InformationLevel, r.log)
+		messages.ReportLogFieldsMessage("Result of delete", logging.InformationLevel, r.log, postID, version, result)
 		return result
 	case sous.ModifiedKind:
 		result := sous.DiffResolution{DeploymentID: pair.ID()}
@@ -155,6 +159,7 @@ func (r *deployer) Rectify(pair *sous.DeployablePair) sous.DiffResolution {
 			result.Desc = sous.ModifyDiff
 		}
 		reportDiffResolutionMessage("Result of modify", result, logging.InformationLevel, r.log)
+		messages.ReportLogFieldsMessage("Result of modify", logging.InformationLevel, r.log, postID, version, result)
 		return result
 	}
 }
