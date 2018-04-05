@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
+## [Unreleased](//github.com/opentable/sous/compare/0.5.85...HEAD)
+### Added
+* Client: Display more information incase timeout of sous newdeploy.  Also show Executor Message if failed deploy.
 
 ## [0.5.85](//github.com/opentable/sous/compare/0.5.84...0.5.85)
 ### Added
