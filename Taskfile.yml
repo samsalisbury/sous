@@ -27,7 +27,7 @@ vars:
   SOUS_TC_PACKAGES:
     sh: make export-SOUS_TC_PACKAGES
   HARD_CODE: github.com/opentable/sous/cli github.com/opentable/sous/cli/tests github.com/opentable/sous/config github.com/opentable/sous/ext/docker github.com/opentable/sous/ext/git github.com/opentable/sous/ext/github github.com/opentable/sous/ext/otpl github.com/opentable/sous/ext/singularity github.com/opentable/sous/ext/storage github.com/opentable/sous/graph github.com/opentable/sous/lib github.com/opentable/sous/server github.com/opentable/sous/test github.com/opentable/sous/test/smoke github.com/opentable/sous/util/blueprints/cmap github.com/opentable/sous/util/cmdr github.com/opentable/sous/util/configloader github.com/opentable/sous/util/docker_registry github.com/opentable/sous/util/firsterr github.com/opentable/sous/util/logging github.com/opentable/sous/util/logging/messages github.com/opentable/sous/util/restful github.com/opentable/sous/util/restful/restfultest github.com/opentable/sous/util/shell github.com/opentable/sous/util/shelltest github.com/opentable/sous/util/sqlgen github.com/opentable/sous/util/validator github.com/opentable/sous/util/whitespace github.com/opentable/sous/util/yaml
-
+  UNIT_TEST_RUN: docker run --rm -v $PWD:/go/src/github.com/opentable/sous -w /go/src/github.com/opentable/sous golang:1.10 go test -v -race
 
 tasks:
 
@@ -53,22 +53,24 @@ tasks:
       - echo "TC_TEMP_DIR= {{.TC_TEMP_DIR}}"
       - echo "SOUS_TC_PACKAGES = {{.SOUS_TC_PACKAGES}}"
       - echo "HARD_CODE = {{.HARD_CODE}}"
+      - echo "UNIT_TEST_RUN = {{.UNIT_TEST_RUN}}"
     silent: true
-
-  test:
-    deps: [postgres-start]
-    cmds:
-      - docker run --rm -v $PWD:/go/src/github.com/opentable/sous -w /go/src/github.com/opentable/sous golang:1.10 go test -v -race {{.HARD_CODE}}
-
-  test-tc:
-    deps: [postgres-start]
-    cmds:
-      - docker run --rm -v $PWD:/go/src/github.com/opentable/sous -w /go/src/github.com/opentable/sous golang:1.10 go test -v -race {{.HARD_CODE}} | ./bin/gotest-to-teamcity
 
   install:
     desc: runs make install-dev
     cmds:
       - make install-dev
+
+  test:
+    deps: [postgres-start]
+    cmds:
+      - "{{.UNIT_TEST_RUN}} {{.HARD_CODE}}"
+
+  test-tc:
+    deps: [postgres-start]
+    cmds:
+      - "{{.UNIT_TEST_RUN}} {{.HARD_CODE}} | ./bin/gotest-to-teamcity"
+
 
   unit:
     deps: [postgres-start]
