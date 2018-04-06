@@ -96,6 +96,11 @@ tasks:
     cmds:
       - docker-compose up -d
 
+  integration-tc:
+    desc: runs test-integration from make file
+    cmds:
+      - make test-integration
+
   integration:
     desc: cleans, docker-compose, then runs make test-integration
     deps: [containers]
