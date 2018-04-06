@@ -118,5 +118,5 @@ tasks:
       - rm -rf {{.DEV_DOCKER_POSTGRES_DATA_DIR}}
       - install -d -m 0700 {{.DEV_DOCKER_POSTGRES_DATA_DIR}}
       - docker run -d --name postgres -p {{.PGPORT}}:5432 --rm --user {{.USER_ID}}:{{.GROUP_ID}} -v /etc/passwd:/etc/passwd:ro -v {{.DEV_DOCKER_POSTGRES_DATA_DIR}}:/var/lib/postgresql/data postgres:10.3
-      - sleep 2
+      - sleep 5
 
