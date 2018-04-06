@@ -75,9 +75,9 @@ func (suite *integrationSuite) manifest(nc *docker.NameCache, drepo, containerDi
 		suite.FailNow("setup failed to get source ID: %s", err)
 	}
 
-	checkReadyPath := "/health"
+	//checkReadyPath := "/health"
 
-	checkReadyTimeout := 500
+	//checkReadyTimeout := 500
 
 	return &sous.Manifest{
 		Source: sous.SourceLocation{
@@ -89,10 +89,11 @@ func (suite *integrationSuite) manifest(nc *docker.NameCache, drepo, containerDi
 			"test-cluster": sous.DeploySpec{
 				DeployConfig: sous.DeployConfig{
 					Startup: sous.Startup{
-						CheckReadyProtocol:   "HTTP",
-						CheckReadyURIPath:    checkReadyPath,
-						CheckReadyURITimeout: checkReadyTimeout,
-						Timeout:              checkReadyTimeout,
+						SkipCheck: true,
+						//CheckReadyProtocol:   "HTTP",
+						//CheckReadyURIPath:    checkReadyPath,
+						//CheckReadyURITimeout: checkReadyTimeout,
+						//Timeout:              checkReadyTimeout,
 					},
 					Resources:    sous.Resources{"cpus": "0.1", "memory": "100", "ports": "1"},
 					Env:          sous.Env{"repo": drepo}, //map[s]s
