@@ -41,7 +41,7 @@ func init() {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Fprintf(os.Stderr, "Logging HTTP bodies to %q\n (test: %#v debug: %#v)", f.Name(), test, debug)
+		fmt.Fprintf(os.Stderr, "Logging HTTP bodies to %q\n", f.Name())
 		httpLogFile = f
 	}
 }
