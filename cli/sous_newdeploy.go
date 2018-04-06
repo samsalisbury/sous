@@ -180,7 +180,7 @@ func PollDeployQueue(location string, client restful.HTTPClient, pollAtempts int
 						response.Resolution.DeploymentID.String(), response.Resolution.DeployState.SourceID.Version, timeTrack(start))
 				}
 				//exit out to error handler
-				return cmdr.InternalErrorf("Failed to deploy %s: %s : %s", location, response.Resolution.Error, response.Resolution.DeployState.ExecutorMessage)
+				return cmdr.InternalErrorf("Failed to deploy %s: %s", location, response.Resolution.Error)
 			}
 
 		}
