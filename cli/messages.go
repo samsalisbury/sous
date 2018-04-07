@@ -9,72 +9,72 @@ import (
 )
 
 type invocationMessage struct {
-	callerInfo CallerInfo
+	callerInfo logging.CallerInfo
 	args       []string
-	interval   MessageInterval
+	interval   logging.MessageInterval
 }
 
-func reportInvocation(ls LogSink, start time.Time, args []string) {
+func reportInvocation(ls logging.LogSink, start time.Time, args []string) {
 	msg := newInvocationMessage(args, start)
 	msg.callerInfo.ExcludeMe()
-	Deliver(msg, ls)
+	logging.Deliver(msg, ls)
 }
 
 func newInvocationMessage(args []string, start time.Time) *invocationMessage {
 	return &invocationMessage{
-		callerInfo: GetCallerInfo(NotHere()),
+		callerInfo: logging.GetCallerInfo(logging.NotHere()),
 		args:       args,
-		interval:   CompleteInterval(start),
+		interval:   logging.CompleteInterval(start),
 	}
 }
 
-func (msg *invocationMessage) DefaultLevel() Level {
-	return InformationLevel
+func (msg *invocationMessage) DefaultLevel() logging.Level {
+	return logging.InformationLevel
 }
 
 func (msg *invocationMessage) Message() string {
 	return "Invoked"
 }
 
-func (msg *invocationMessage) EachField(f FieldReportFn) {
-	f("@loglov3-otl", SousCliV1)
+func (msg *invocationMessage) EachField(f logging.FieldReportFn) {
+	f("@loglov3-otl", logging.SousCliV1)
 	msg.callerInfo.EachField(f)
 	msg.interval.EachField(f)
 	f("arguments", fmt.Sprintf("%q", msg.args))
 }
 
 type cliResultMessage struct {
-	callerInfo CallerInfo
+	callerInfo logging.CallerInfo
 	args       []string
 	res        cmdr.Result
-	interval   MessageInterval
+	interval   logging.MessageInterval
 }
 
-func reportCLIResult(logsink LogSink, args []string, start time.Time, res cmdr.Result) {
+func reportCLIResult(logsink logging.LogSink, args []string, start time.Time, res cmdr.Result) {
 	msg := newCLIResult(args, start, res)
 	msg.callerInfo.ExcludeMe()
-	Deliver(msg, logsink)
+	logging.Deliver(msg, logsink)
 }
 
 func newCLIResult(args []string, start time.Time, res cmdr.Result) *cliResultMessage {
 	return &cliResultMessage{
-		callerInfo: GetCallerInfo(NotHere()),
+		callerInfo: logging.GetCallerInfo(logging.NotHere()),
 		args:       args,
 		res:        res,
-		interval:   CompleteInterval(start),
+		interval:   logging.CompleteInterval(start),
 	}
 }
 
-func (msg *cliResultMessage) DefaultLevel() Level {
-	return InformationLevel
+func (msg *cliResultMessage) DefaultLevel() logging.Level {
+	return logging.InformationLevel
 }
 
 func (msg *cliResultMessage) Message() string {
 	return fmt.Sprintf("Returned result: %q", msg.res)
 }
 
-func (msg *cliResultMessage) EachField(f FieldReportFn) {
-	f("@loglov3-otl", SousCliV1)
+func (msg *cliResultMessage) EachField(f logging.FieldReportFn) {
+	f("@loglov3-otl", logging.SousCliV1)
 	msg.callerInfo.EachField(f)
 	msg.interval.EachField(f)
 	f("arguments", fmt.Sprintf("%q", msg.args))

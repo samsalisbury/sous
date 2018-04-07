@@ -21,23 +21,23 @@ func PlaceholderLogger() logSet {
 	return &silentLogSet{}
 }
 
-func (l *fallbackLogger) Child(name string) LogSink {
+func (l *fallbackLogger) Child(name string) logging.LogSink {
 	return l
 }
 
-func (l *fallbackLogger) LogMessage(lvl Level, msg LogMessage) {
+func (l *fallbackLogger) LogMessage(lvl logging.Level, msg logging.LogMessage) {
 	fmt.Printf("%s %#v\n", lvl, msg)
 }
 
-func (l *fallbackLogger) Metrics() MetricsSink {
+func (l *fallbackLogger) Metrics() logging.MetricsSink {
 	panic("not implemented")
 }
 
-func (l *fallbackLogger) Console() WriteDoner {
+func (l *fallbackLogger) Console() logging.WriteDoner {
 	panic("not implemented")
 }
 
-func (l *fallbackLogger) ExtraConsole() WriteDoner {
+func (l *fallbackLogger) ExtraConsole() logging.WriteDoner {
 	panic("not implemented")
 }
 

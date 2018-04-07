@@ -317,3 +317,7 @@ func ConsoleError(msg ConsoleMessage) string {
 func (lvl Level) DefaultLevel() Level {
 	return lvl
 }
+
+func (n OTLName) EachField(f FieldReportFn) {
+	f(Loglov3Otl, n)
+}

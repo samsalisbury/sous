@@ -49,13 +49,13 @@ type (
 	liveClient struct {
 		ctx   context.Context
 		xport *http.Transport
-		log   LogSink
+		log   logging.LogSink
 		Registries
 	}
 
 	httpClient struct {
 		http *http.Client
-		log  LogSink
+		log  logging.LogSink
 	}
 
 	// Registries is a map+Mutex
@@ -142,7 +142,7 @@ func (rs *Registries) DeleteRegistry(n string) error {
 }
 
 // NewClient builds a new client
-func NewClient(log LogSink) Client {
+func NewClient(log logging.LogSink) Client {
 	xport := &http.Transport{}
 	if extraCA := os.Getenv("SOUS_EXTRA_DOCKER_CA"); extraCA != "" {
 		pemBytes, err := ioutil.ReadFile(extraCA)
@@ -404,7 +404,7 @@ func (c *liveClient) metadataForImage(regHost string, ref reference.Named, etag 
  */
 
 // All returns all tag// NewRepository creates a new Repository for the given repository name and base URL.
-func newRegistry(baseURL string, transport http.RoundTripper, log LogSink) (*registry, error) {
+func newRegistry(baseURL string, transport http.RoundTripper, log logging.LogSink) (*registry, error) {
 	ub, err := v2.NewURLBuilderFromString(baseURL, false)
 	if err != nil {
 		return nil, err

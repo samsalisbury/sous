@@ -17,7 +17,7 @@ type (
 		User            User
 		statePerCluster map[string]*pollerState
 		status          ResolveState
-		logs            LogSink
+		logs            logging.LogSink
 		results         chan pollResult
 	}
 
@@ -68,7 +68,7 @@ type (
 const PollTimeout = 500 * time.Millisecond
 
 // NewStatusPoller returns a new *StatusPoller.
-func NewStatusPoller(cl restful.HTTPClient, rf *ResolveFilter, user User, logs LogSink) *StatusPoller {
+func NewStatusPoller(cl restful.HTTPClient, rf *ResolveFilter, user User, logs logging.LogSink) *StatusPoller {
 	return &StatusPoller{
 		HTTPClient:    cl,
 		ResolveFilter: rf,
@@ -117,7 +117,7 @@ func (sp *StatusPoller) waitForever() (ResolveState, error) {
 	deps = deps.Filter(sp.ResolveFilter.FilterDeployment)
 	if deps.Len() == 0 {
 		// No deployments match the filter, bail out now.
-		messages.ReportLogFieldsMessage("No deployments from /gdm matched", DebugLevel, sp.logs, sp.ResolveFilter)
+		messages.ReportLogFieldsMessage("No deployments from /gdm matched", logging.DebugLevel, sp.logs, sp.ResolveFilter)
 		return ResolveNotIntended, nil
 	}
 
@@ -135,19 +135,19 @@ func (sp *StatusPoller) subPollers(clusters *serverListData, deps Deployments) (
 	for _, s := range clusters.Servers {
 		// skip clusters the user isn't interested in
 		if !sp.ResolveFilter.FilterClusterName(s.ClusterName) {
-			messages.ReportLogFieldsMessage("Not rquested for polling", ExtraDebug1Level, sp.logs, s.ClusterName)
+			messages.ReportLogFieldsMessage("Not rquested for polling", logging.ExtraDebug1Level, sp.logs, s.ClusterName)
 			continue
 		}
 		// skip clusters that there's no current intention of deploying into
 		if _, intended := deps.Single(func(d *Deployment) bool {
 			return d.ClusterName == s.ClusterName
 		}); !intended {
-			messages.ReportLogFieldsMessage("No intention in GDM for deploy", DebugLevel, sp.logs, s.ClusterName, sp.ResolveFilter)
+			messages.ReportLogFieldsMessage("No intention in GDM for deploy", logging.DebugLevel, sp.logs, s.ClusterName, sp.ResolveFilter)
 			continue
 		}
-		messages.ReportLogFieldsMessage("Starting poller against", DebugLevel, sp.logs, s)
+		messages.ReportLogFieldsMessage("Starting poller against", logging.DebugLevel, sp.logs, s)
 		// Kick off a separate process to issue HTTP requests against this cluster.
-		sub, err := newSubPoller(s.ClusterName, s.URL, sp.ResolveFilter, sp.User, Log)
+		sub, err := newSubPoller(s.ClusterName, s.URL, sp.ResolveFilter, sp.User, sp.logs.Child(s.ClusterName))
 		if err != nil {
 			return nil, err
 		}

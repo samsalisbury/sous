@@ -16,12 +16,12 @@ type Client struct {
 }
 
 // NewClient builds a new Client
-func NewClient(apiBase string, loggerOpt ...LogSink) (client *Client) {
-	var logger LogSink
+func NewClient(apiBase string, loggerOpt ...logging.LogSink) (client *Client) {
+	var logger logging.LogSink
 	if len(loggerOpt) > 0 {
 		logger = loggerOpt[0]
 	} else {
-		logger = SilentLogSet()
+		logger = logging.SilentLogSet()
 	}
 
 	return &Client{&swaggering.GenericClient{

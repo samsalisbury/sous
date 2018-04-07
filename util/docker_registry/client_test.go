@@ -22,7 +22,7 @@ func TestRegistries(t *testing.T) {
 func TestNewClient(t *testing.T) {
 	assert := assert.New(t)
 
-	c := NewClient(SilentLogSet())
+	c := NewClient(logging.SilentLogSet())
 	assert.NotNil(c)
 	c.Cancel()
 }

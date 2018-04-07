@@ -65,7 +65,7 @@ func TestPutbackJSON(t *testing.T) {
 
 func TestClientRetrieve(t *testing.T) {
 	assert := assert.New(t)
-	lt, ctrl := NewLogSinkSpy()
+	lt, ctrl := logging.NewLogSinkSpy()
 
 	s := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		rw.Write([]byte("{}"))
@@ -84,7 +84,7 @@ func TestClientRetrieve(t *testing.T) {
 
 	var testIndex int
 	for i, v := range logCalls {
-		logmsg := v.PassedArgs().Get(1).(LogMessage)
+		logmsg := v.PassedArgs().Get(1).(logging.LogMessage)
 
 		msg := logmsg.Message()
 
@@ -94,13 +94,13 @@ func TestClientRetrieve(t *testing.T) {
 		}
 	}
 
-	logLvl := logCalls[testIndex].PassedArgs().Get(0).(Level)
-	tstmsg := logCalls[testIndex].PassedArgs().Get(1).(LogMessage)
+	logLvl := logCalls[testIndex].PassedArgs().Get(0).(logging.Level)
+	tstmsg := logCalls[testIndex].PassedArgs().Get(1).(logging.LogMessage)
 
-	assert.Equal(logLvl, ExtraDebug1Level)
+	assert.Equal(logLvl, logging.ExtraDebug1Level)
 
 	fixedFields := map[string]interface{}{
-		"@loglov3-otl":    SousHttpV1,
+		"@loglov3-otl":    logging.SousHttpV1,
 		"body-size":       int64(0),
 		"incoming":        true,
 		"method":          "GET",
@@ -113,13 +113,13 @@ func TestClientRetrieve(t *testing.T) {
 
 	var variableFields []string
 	variableFields = append(
-		StandardVariableFields,
+		logging.StandardVariableFields,
 		"url",          // depends on the httptest server's random port
 		"url-hostname", // likewise
 		"duration",
 		"call-stack-function", // live log entries are squirrelly
 	)
-	AssertMessageFields(t, tstmsg, variableFields, fixedFields)
+	logging.AssertMessageFields(t, tstmsg, variableFields, fixedFields)
 }
 
 func dig(m interface{}, index ...interface{}) interface{} {

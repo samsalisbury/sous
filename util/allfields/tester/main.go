@@ -9,5 +9,5 @@ import (
 func main() {
 	ast := allfields.ParseDir("lib/")
 	tree := allfields.ExtractTree(ast, "Deployment")
-	messages.ReportLogFieldsMessage("Dump", ExtraDebug1Level, Log, allfields.ConfirmTree(tree, ast, "Diff"))
+	messages.ReportLogFieldsMessage("Dump", logging.ExtraDebug1Level, logging.Log, allfields.ConfirmTree(tree, ast, "Diff"))
 }
