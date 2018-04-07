@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/opentable/sous/util/logging"
-	"github.com/opentable/sous/util/logging/constants"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -66,7 +65,7 @@ func TestPutbackJSON(t *testing.T) {
 
 func TestClientRetrieve(t *testing.T) {
 	assert := assert.New(t)
-	lt, ctrl := logging.NewLogSinkSpy()
+	lt, ctrl := NewLogSinkSpy()
 
 	s := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		rw.Write([]byte("{}"))
@@ -85,7 +84,7 @@ func TestClientRetrieve(t *testing.T) {
 
 	var testIndex int
 	for i, v := range logCalls {
-		logmsg := v.PassedArgs().Get(1).(logging.LogMessage)
+		logmsg := v.PassedArgs().Get(1).(LogMessage)
 
 		msg := logmsg.Message()
 
@@ -95,13 +94,13 @@ func TestClientRetrieve(t *testing.T) {
 		}
 	}
 
-	logLvl := logCalls[testIndex].PassedArgs().Get(0).(logging.Level)
-	tstmsg := logCalls[testIndex].PassedArgs().Get(1).(logging.LogMessage)
+	logLvl := logCalls[testIndex].PassedArgs().Get(0).(Level)
+	tstmsg := logCalls[testIndex].PassedArgs().Get(1).(LogMessage)
 
-	assert.Equal(logLvl, logging.ExtraDebug1Level)
+	assert.Equal(logLvl, ExtraDebug1Level)
 
 	fixedFields := map[string]interface{}{
-		"@loglov3-otl":    constants.SousHttpV1,
+		"@loglov3-otl":    SousHttpV1,
 		"body-size":       int64(0),
 		"incoming":        true,
 		"method":          "GET",
@@ -114,13 +113,13 @@ func TestClientRetrieve(t *testing.T) {
 
 	var variableFields []string
 	variableFields = append(
-		logging.StandardVariableFields,
+		StandardVariableFields,
 		"url",          // depends on the httptest server's random port
 		"url-hostname", // likewise
 		"duration",
 		"call-stack-function", // live log entries are squirrelly
 	)
-	logging.AssertMessageFields(t, tstmsg, variableFields, fixedFields)
+	AssertMessageFields(t, tstmsg, variableFields, fixedFields)
 }
 
 func dig(m interface{}, index ...interface{}) interface{} {

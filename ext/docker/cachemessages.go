@@ -5,7 +5,6 @@ import (
 
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
-	"github.com/opentable/sous/util/logging/constants"
 )
 
 type (
@@ -48,7 +47,7 @@ func (msg cacheHitMessage) Message() string {
 }
 
 func (msg cacheHitMessage) EachField(f logging.FieldReportFn) {
-	f("@loglov3-otl", constants.SousCacheMessageV1)
+	f("@loglov3-otl", logging.SousCacheMessageV1)
 	msg.CallerInfo.EachField(f)
 	f("sous-source-id", fmt.Sprintf("%+v", msg.source))
 	f("sous-image-name", msg.imageName)
@@ -73,7 +72,7 @@ func (msg cacheMissMessage) Message() string {
 }
 
 func (msg cacheMissMessage) EachField(f logging.FieldReportFn) {
-	f("@loglov3-otl", constants.SousCacheMessageV1)
+	f("@loglov3-otl", logging.SousCacheMessageV1)
 	msg.CallerInfo.EachField(f)
 	f("sous-source-id", fmt.Sprintf("%+v", msg.source))
 	f("sous-image-name", msg.imageName)
@@ -98,7 +97,7 @@ func (msg cacheErrorMessage) Message() string {
 }
 
 func (msg cacheErrorMessage) EachField(f logging.FieldReportFn) {
-	f("@loglov3-otl", constants.SousCacheMessageV1)
+	f("@loglov3-otl", logging.SousCacheMessageV1)
 	msg.CallerInfo.EachField(f)
 	f("sous-source-id", fmt.Sprintf("%+v", msg.source))
 	f("error", msg.err.Error())

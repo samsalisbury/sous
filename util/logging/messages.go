@@ -25,15 +25,14 @@
 
 package logging
 
-//go:generate go-loglov3-gen -loglov3-dir $LOGLOV3_DIR
+// go get github.com/opentable/go-loglov3-gen (private repo)
+//go:generate go-loglov3-gen -loglov3-dir $LOGLOV3_DIR -output-dir .
 
 import (
 	"bytes"
 	"flag"
 	"io"
 	"time"
-
-	"github.com/opentable/sous/util/logging/constants"
 )
 
 type (
@@ -125,6 +124,7 @@ type (
 		RecommendedLevel() Level
 	}
 
+	// Submessage is not a complete message on its own
 	Submessage interface {
 		EachFielder
 		LevelRecommender
@@ -158,10 +158,18 @@ type (
 	}
 
 	// FieldReportFn is used by LogMessages to report their fields.
-	FieldReportFn func(constants.FieldName, interface{})
+	FieldReportFn func(FieldName, interface{})
 
-	// error interface{}
+	// FieldReporter is an interface.
+	FieldReporter interface {
+		ReportField(FieldName, interface{})
+	}
 )
+
+// ReportField implements FieldReporter on FieldReportFn.
+func (frf FieldReportFn) ReportField(f FieldName, v interface{}) {
+	frf(f, v)
+}
 
 /*
   A static analysis approach here would:

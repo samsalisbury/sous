@@ -2,7 +2,6 @@ package sous
 
 import (
 	"github.com/opentable/sous/util/logging"
-	"github.com/opentable/sous/util/logging/constants"
 )
 
 type deployableMessage struct {
@@ -20,7 +19,7 @@ func (msg *deployableMessage) Message() string {
 }
 
 func (msg *deployableMessage) EachField(f logging.FieldReportFn) {
-	f("@loglov3-otl", constants.SousDeploymentDiff)
+	f("@loglov3-otl", logging.SousDeploymentDiff)
 	msg.callerInfo.EachField(f)
 	msg.pairmessage.EachField(f)
 }

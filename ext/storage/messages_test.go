@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/opentable/sous/util/logging"
-	"github.com/opentable/sous/util/logging/constants"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/mock"
 )
@@ -17,7 +16,7 @@ func TestSQLMessageError(t *testing.T) {
 	})
 
 	logging.AssertMessageFields(t, message, append(logging.StandardVariableFields, logging.IntervalVariableFields...), map[string]interface{}{
-		"@loglov3-otl":         constants.SousSql,
+		"@loglov3-otl":         logging.SousSql,
 		"call-stack-function":  "github.com/opentable/sous/ext/storage.TestSQLMessageError",
 		"sous-sql-query":       "insert into test-table (x,y,z) = (1,2,3)",
 		"sous-sql-rows":        1,
@@ -37,7 +36,7 @@ func TestSQLMessageWrite(t *testing.T) {
 	})
 
 	logging.AssertMessageFields(t, message, append(logging.StandardVariableFields, logging.IntervalVariableFields...), map[string]interface{}{
-		"@loglov3-otl":        constants.SousSql,
+		"@loglov3-otl":        logging.SousSql,
 		"call-stack-function": "github.com/opentable/sous/ext/storage.TestSQLMessageWrite",
 		"sous-sql-query":      "insert into test-table (x,y,z) = (1,2,3)",
 		"sous-sql-rows":       1,
@@ -56,7 +55,7 @@ func TestSQLMessageRead(t *testing.T) {
 	})
 
 	logging.AssertMessageFields(t, message, append(logging.StandardVariableFields, logging.IntervalVariableFields...), map[string]interface{}{
-		"@loglov3-otl":        constants.SousSql,
+		"@loglov3-otl":        logging.SousSql,
 		"call-stack-function": "github.com/opentable/sous/ext/storage.TestSQLMessageRead",
 		"sous-sql-query":      "select * from test-table",
 		"sous-sql-rows":       100,

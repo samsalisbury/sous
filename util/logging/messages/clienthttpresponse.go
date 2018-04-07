@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/opentable/sous/util/logging"
-	"github.com/opentable/sous/util/logging/constants"
 )
 
 // HTTPLogEntry struct to hold log entry messages
@@ -193,7 +192,7 @@ func (msg *HTTPLogEntry) EachField(f logging.FieldReportFn) {
 func (msg *HTTPLogEntry) EachFieldWithoutCallerInfo(f logging.FieldReportFn) {
 	// Could be simpler, but this is a precursor to logging the "isResponse" field
 	incoming := (msg.serverSide && !msg.isResponse) || (!msg.serverSide && msg.isResponse)
-	f("@loglov3-otl", constants.SousHttpV1)
+	f("@loglov3-otl", logging.SousHttpV1)
 	f("resource-family", msg.resourceFamily)
 	f("incoming", incoming)
 	f("method", msg.method)

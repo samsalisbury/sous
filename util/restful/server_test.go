@@ -99,7 +99,7 @@ func justBytes(b []byte, e error) io.ReadCloser {
 
 func TestRenderDataCanaries(t *testing.T) {
 	rr := httptest.NewRecorder()
-	ls, _ := logging.NewLogSinkSpy()
+	ls, _ := NewLogSinkSpy()
 	ph := &StatusMiddleware{
 		LogSink: ls,
 	}
@@ -135,7 +135,7 @@ type PutConditionalsSuite struct {
 }
 
 func (t *PutConditionalsSuite) SetupTest() {
-	t.server = httptest.NewServer(testRouteMap().BuildRouter(logging.SilentLogSet()))
+	t.server = httptest.NewServer(testRouteMap().BuildRouter(SilentLogSet()))
 
 	t.client = &http.Client{}
 }

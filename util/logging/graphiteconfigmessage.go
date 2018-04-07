@@ -4,7 +4,6 @@ import (
 	"time"
 
 	graphite "github.com/cyberdelia/go-metrics-graphite"
-	"github.com/opentable/sous/util/logging/constants"
 )
 
 type graphiteConfigMessage struct {
@@ -32,7 +31,7 @@ func (gcm graphiteConfigMessage) Message() string {
 }
 
 func (gcm graphiteConfigMessage) EachField(f FieldReportFn) {
-	f("@loglov3-otl", constants.SousGraphiteConfigV1)
+	f("@loglov3-otl", SousGraphiteConfigV1)
 	gcm.CallerInfo.EachField(f)
 	if gcm.cfg == nil {
 		f("sous-successful-connection", false)

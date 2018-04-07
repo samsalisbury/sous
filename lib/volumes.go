@@ -5,7 +5,6 @@ import (
 	"io"
 
 	"github.com/opentable/sous/util/logging"
-	"github.com/opentable/sous/util/logging/constants"
 )
 
 type (
@@ -138,6 +137,6 @@ func (msg volumeMessage) composeMsg() string {
 }
 
 func (msg volumeMessage) EachField(f logging.FieldReportFn) {
-	f("@loglov3-otl", constants.SousGenericV1)
+	f("@loglov3-otl", logging.SousGenericV1)
 	msg.CallerInfo.EachField(f)
 }

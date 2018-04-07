@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/opentable/sous/util/logging"
-	"github.com/opentable/sous/util/logging/constants"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -40,7 +39,7 @@ func TestResolveCompleteMessage(t *testing.T) {
 
 	fixedFields := map[string]interface{}{
 		"error-count":  1,
-		"@loglov3-otl": constants.SousResolutionResultV1,
+		"@loglov3-otl": logging.SousResolutionResultV1,
 	}
 
 	logging.AssertMessageFields(t, msg, append(logging.StandardVariableFields, logging.IntervalVariableFields...), fixedFields)

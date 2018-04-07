@@ -40,7 +40,7 @@ var gciOnce sync.Once
 
 // GetCallerInfo captures a CallerInfo based on where it's called.
 // It's very common to call this like:
-//   GetCallerInfo(logging.NotHere())
+//   GetCallerInfo(NotHere())
 // which excludes the function that actually calls GetCallerInfo
 // (usually a message constructor) from the logged call stack.
 func GetCallerInfo(excluding ...Excluder) CallerInfo {

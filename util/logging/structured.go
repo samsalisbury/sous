@@ -1,7 +1,6 @@
 package logging
 
 import (
-	"github.com/opentable/sous/util/logging/constants"
 	"github.com/pborman/uuid"
 )
 
@@ -9,11 +8,11 @@ import (
 func (ls LogSet) LogMessage(lvl Level, msg LogMessage) {
 	logto := ls.logrus.WithField("severity", lvl.String())
 
-	ls.eachField(func(name constants.FieldName, value interface{}) {
+	ls.eachField(func(name FieldName, value interface{}) {
 		logto = logto.WithField(string(name), value)
 	})
 
-	msg.EachField(func(name constants.FieldName, value interface{}) {
+	msg.EachField(func(name FieldName, value interface{}) {
 		enforceSchema(name, value)
 		logto = logto.WithField(string(name), value)
 	})
@@ -51,7 +50,7 @@ func (ls LogSet) eachField(f FieldReportFn) {
 	ls.appIdent.EachField(f)
 }
 
-func enforceSchema(name constants.FieldName, val interface{}) {
+func enforceSchema(name FieldName, val interface{}) {
 	if false {
 		panic("bad logging")
 	}

@@ -7,7 +7,6 @@ import (
 
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
-	"github.com/opentable/sous/util/logging/constants"
 	"github.com/samsalisbury/semv"
 )
 
@@ -39,7 +38,7 @@ func TestUpdateBeginMessage(t *testing.T) {
 	)
 
 	fixedFields := map[string]interface{}{
-		"@loglov3-otl": constants.SousUpdateV1,
+		"@loglov3-otl": logging.SousUpdateV1,
 		"source-id":    "github.com/opentable/example,1.2.7,first",
 		"deploy-id":    "test-example:github.com/opentable/example,first~vanilla",
 		"user-email":   "jdoe@example.com",
@@ -96,7 +95,7 @@ func TestUpdateSuccessMessage(t *testing.T) {
 	)
 
 	fixedFields := map[string]interface{}{
-		"@loglov3-otl": constants.SousUpdateV1,
+		"@loglov3-otl": logging.SousUpdateV1,
 		"source-id":    "github.com/opentable/example,1.2.7,first",
 		"deploy-id":    "test-example:github.com/opentable/example,first~vanilla",
 		"user-email":   "jdoe@example.com",
@@ -135,7 +134,7 @@ func TestUpdateErrorMessage(t *testing.T) {
 	)
 
 	fixedFields := map[string]interface{}{
-		"@loglov3-otl": constants.SousUpdateV1,
+		"@loglov3-otl": logging.SousUpdateV1,
 		"source-id":    "github.com/opentable/example,1.2.7,first",
 		"deploy-id":    "test-example:github.com/opentable/example,first~vanilla",
 		"user-email":   "jdoe@example.com",

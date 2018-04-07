@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/opentable/sous/util/logging"
-	"github.com/opentable/sous/util/logging/constants"
 )
 
 func TestDiffRezMessage(t *testing.T) {
@@ -24,7 +23,7 @@ func TestDiffRezMessage(t *testing.T) {
 	}
 
 	logging.AssertMessageFields(t, msg, logging.StandardVariableFields, map[string]interface{}{
-		"@loglov3-otl":                 constants.SousDiffResolution,
+		"@loglov3-otl":                 logging.SousDiffResolution,
 		"sous-resolution-errortype":    "*errors.errorString",
 		"sous-resolution-errormessage": "dumb test error",
 		"sous-deployment-id":           "test-cluster:github.com/opentable/example",

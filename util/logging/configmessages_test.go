@@ -6,7 +6,6 @@ import (
 	"time"
 
 	graphite "github.com/cyberdelia/go-metrics-graphite"
-	"github.com/opentable/sous/util/logging/constants"
 )
 
 func TestGraphiteConfigMessage(t *testing.T) {
@@ -25,7 +24,7 @@ func TestGraphiteConfigMessage(t *testing.T) {
 	AssertMessageFields(t, msg, StandardVariableFields, map[string]interface{}{
 		"graphite-flush-interval":    int64(30000000),
 		"graphite-server-address":    "169.169.13.13:3636",
-		"@loglov3-otl":               constants.SousGraphiteConfigV1,
+		"@loglov3-otl":               SousGraphiteConfigV1,
 		"sous-successful-connection": true,
 	})
 

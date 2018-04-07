@@ -28,7 +28,7 @@ type (
 		routeMap      *RouteMap
 		router        *httprouter.Router
 		statusHandler *StatusMiddleware
-		logging.LogSink
+		LogSink
 	}
 
 	// ResponseWriter wraps the the http.ResponseWriter interface.
@@ -40,7 +40,7 @@ type (
 	// ExchangeLogger wraps and logs the exchange.
 	ExchangeLogger struct {
 		Exchanger Exchanger
-		logging.LogSink
+		LogSink
 		*http.Request
 		httprouter.Params
 	}
@@ -67,9 +67,9 @@ func (xlog *ExchangeLogger) Exchange() (data interface{}, status int) {
 				if xlog.Request != nil {
 					url = xlog.Request.RequestURI
 				}
-				logging.ReportError(xlog.LogSink, errors.Wrapf(pe, "%q\n%s", url, string(debug.Stack())))
+				ReportError(xlog.LogSink, errors.Wrapf(pe, "%q\n%s", url, string(debug.Stack())))
 			} else {
-				messages.ReportLogFieldsMessage("Panic while processing request", logging.WarningLevel, xlog.LogSink, p, xlog.Request)
+				messages.ReportLogFieldsMessage("Panic while processing request", WarningLevel, xlog.LogSink, p, xlog.Request)
 			}
 			panic(p)
 		}
@@ -80,7 +80,7 @@ func (xlog *ExchangeLogger) Exchange() (data interface{}, status int) {
 type loggingResponseWriter struct {
 	http.ResponseWriter
 	req          *http.Request
-	log          logging.LogSink
+	log          LogSink
 	resourceName string
 	start        time.Time
 	statusCode   int
@@ -106,7 +106,7 @@ func (lrw loggingResponseWriter) sendLog() {
 	messages.ReportServerHTTPResponding(lrw.log, "responding", lrw.req, lrw.statusCode, contentLength, lrw.resourceName, time.Now().Sub(lrw.start))
 }
 
-func wrapResponseWriter(logsink logging.LogSink, resName string, rq *http.Request, rw http.ResponseWriter) *loggingResponseWriter {
+func wrapResponseWriter(logsink LogSink, resName string, rq *http.Request, rw http.ResponseWriter) *loggingResponseWriter {
 	return &loggingResponseWriter{
 		ResponseWriter: rw,
 		req:            rq,

@@ -98,7 +98,7 @@ func BuildRouteMap(f func(RouteEntryBuilder)) *RouteMap {
 	return &rm
 }
 
-func (rm *RouteMap) buildMetaHandler(r *httprouter.Router, ls logging.LogSink) *MetaHandler {
+func (rm *RouteMap) buildMetaHandler(r *httprouter.Router, ls LogSink) *MetaHandler {
 	ph := &StatusMiddleware{LogSink: ls, gatelatch: os.Getenv("GATELATCH")}
 	mh := &MetaHandler{
 		routeMap:      rm,
@@ -112,7 +112,7 @@ func (rm *RouteMap) buildMetaHandler(r *httprouter.Router, ls logging.LogSink) *
 }
 
 // BuildRouter builds a returns an http.Handler based on some constant configuration
-func (rm *RouteMap) BuildRouter(ls logging.LogSink) http.Handler {
+func (rm *RouteMap) BuildRouter(ls LogSink) http.Handler {
 	r := httprouter.New()
 	mh := rm.buildMetaHandler(r, ls)
 
@@ -166,7 +166,7 @@ func (doex *defaultOptionsExchanger) Exchange() (interface{}, int) {
 
 // SingleExchanger returns a single exchanger for the given exchange factory
 // and injector factory. Can be useful in testing or trickier integrations.
-func (rm *RouteMap) SingleExchanger(factory ExchangeFactory, gf func() Injector, ls logging.LogSink) Exchanger {
+func (rm *RouteMap) SingleExchanger(factory ExchangeFactory, gf func() Injector, ls LogSink) Exchanger {
 	r := httprouter.New()
 	w := httptest.NewRecorder()
 	rq := httptest.NewRequest("GET", "/", nil)

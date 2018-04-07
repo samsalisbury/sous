@@ -6,7 +6,6 @@ import (
 
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
-	"github.com/opentable/sous/util/logging/constants"
 )
 
 type sqlMessage struct {
@@ -55,7 +54,7 @@ func (msg *sqlMessage) Message() string {
 
 // EachField implements LogMessage on sqlMessage
 func (msg *sqlMessage) EachField(fn logging.FieldReportFn) {
-	fn("@loglov3-otl", constants.SousSql)
+	fn("@loglov3-otl", logging.SousSql)
 	msg.CallerInfo.EachField(fn)
 	msg.MessageInterval.EachField(fn)
 	fn("sous-sql-query", msg.sql)
@@ -148,7 +147,7 @@ func (dir direction) String() string {
 
 // EachField implements LogMessage on storeMessage.
 func (msg *storeMessage) EachField(fn logging.FieldReportFn) {
-	fn("@loglov3-otl", constants.SousGenericV1)
+	fn("@loglov3-otl", logging.SousGenericV1)
 	msg.CallerInfo.EachField(fn)
 	msg.MessageInterval.EachField(fn)
 	if msg.err != nil {

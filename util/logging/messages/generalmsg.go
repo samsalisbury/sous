@@ -11,7 +11,6 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/fatih/structs"
 	"github.com/opentable/sous/util/logging"
-	"github.com/opentable/sous/util/logging/constants"
 )
 
 //InnerLogger interface is used if struct wants to provide it's own way of returns fields, types, and json string
@@ -190,6 +189,7 @@ type logFieldsMessage struct {
 	serverConsole      bool
 	withIDs            bool
 	idsMap             map[string]string
+	items              []interface{}
 }
 
 func (l logFieldsMessage) WriteToConsole(console io.Writer) {
@@ -235,7 +235,7 @@ func (l logFieldsMessage) returnIDs() (ids string, values string) {
 func (l logFieldsMessage) composeMsg() string {
 	return l.msg
 }
-func buildLogFieldsMessage(msg string, console bool, withIDs bool, loglvl logging.Level) logFieldsMessage {
+func buildLogFieldsMessage(msg string, console bool, withIDs bool, loglvl logging.Level, items ...interface{}) logFieldsMessage {
 	logMessage := logFieldsMessage{
 		CallerInfo:         logging.GetCallerInfo(logging.NotHere()),
 		Level:              loglvl,
@@ -245,6 +245,7 @@ func buildLogFieldsMessage(msg string, console bool, withIDs bool, loglvl loggin
 		msg:                msg,
 		console:            console,
 		withIDs:            withIDs,
+		items:              items,
 	}
 
 	logMessage.idsMap = make(map[string]string)
@@ -258,42 +259,24 @@ func buildLogFieldsMessage(msg string, console bool, withIDs bool, loglvl loggin
 
 //ReportLogFieldsMessageWithIDs report message with Ids
 func ReportLogFieldsMessageWithIDs(msg string, loglvl logging.Level, logSink logging.LogSink, items ...interface{}) {
-	logMessage := buildLogFieldsMessage(msg, false, true, loglvl)
+	logMessage := buildLogFieldsMessage(msg, false, true, loglvl, items...)
 	logMessage.CallerInfo.ExcludeMe()
-	logMessage.reportLogFieldsMessage(logSink, items...)
+	logging.Deliver(logMessage, logSink)
 
 }
 
 //ReportLogFieldsMessageToConsole report message to console
 func ReportLogFieldsMessageToConsole(msg string, loglvl logging.Level, logSink logging.LogSink, items ...interface{}) {
-	logMessage := buildLogFieldsMessage(msg, true, false, loglvl)
+	logMessage := buildLogFieldsMessage(msg, true, false, loglvl, items...)
 	logMessage.CallerInfo.ExcludeMe()
-	logMessage.reportLogFieldsMessage(logSink, items...)
+	logging.Deliver(logMessage, logSink)
 }
 
 //ReportLogFieldsMessage generate a logFieldsMessage log entry
 func ReportLogFieldsMessage(msg string, loglvl logging.Level, logSink logging.LogSink, items ...interface{}) {
-	logMessage := buildLogFieldsMessage(msg, false, true, loglvl)
+	logMessage := buildLogFieldsMessage(msg, false, true, loglvl, items...)
 	logMessage.CallerInfo.ExcludeMe()
-
-	logMessage.reportLogFieldsMessage(logSink, items...)
-}
-
-func (l logFieldsMessage) reportLogFieldsMessage(logSink logging.LogSink, items ...interface{}) {
-	l.CallerInfo.ExcludeMe()
-
-	for _, item := range items {
-		if sm, is := item.(logging.EachFielder); is {
-			l.submessages = append(l.submessages, sm)
-			continue
-		}
-		l.extractID(item)
-		fields, types, jsonRep := defaultStructInfo(item)
-		l.addFields(fields...)
-		l.addTypes(types...)
-		l.addJSON(jsonRep)
-	}
-	logging.Deliver(l, logSink)
+	logging.Deliver(logMessage, logSink)
 }
 
 func (l *logFieldsMessage) addJSON(json string) {
@@ -332,11 +315,40 @@ func (l logFieldsMessage) Message() string {
 	return l.composeMsg()
 }
 
+func harvestFields(fn logging.FieldReportFn, efs ...logging.EachFielder) {
+	for _, ef := range efs {
+		ef.EachField(fn)
+	}
+}
+
 //EachField will make sure individual fields are added for OTL
 func (l logFieldsMessage) EachField(fn logging.FieldReportFn) {
+	fields := []string{}
+	types := []string{}
 
-	fn("sous-fields", strings.Join(removeDuplicates(l.Fields), ","))
-	fn("sous-types", strings.Join(removeDuplicates(l.Types), ","))
+	efs := []logging.EachFielder{}
+	others := []interface{}{}
+
+	for _, item := range l.items {
+		switch it := item.(type) {
+		default:
+			others = append(others, it)
+		case logging.EachFielder:
+			efs = append(efs, it)
+		}
+	}
+
+	for _, item := range others {
+		fs, ts, jsonRep := defaultStructInfo(item)
+		fields = append(fields, fs...)
+		types = append(types, ts...)
+
+		l.extractID(item)
+		l.addJSON(jsonRep)
+	}
+
+	fn("sous-fields", strings.Join(removeDuplicates(fields), ","))
+	fn("sous-types", strings.Join(removeDuplicates(types), ","))
 
 	if l.withIDs {
 		ids, values := l.returnIDs()
@@ -348,14 +360,7 @@ func (l logFieldsMessage) EachField(fn logging.FieldReportFn) {
 		if n, err := l.jsonObj.ArrayCount("message", "array"); n > 0 && err == nil {
 			fn("json-value", l.jsonObj.String())
 		}
-
-	}
-	l.CallerInfo.EachField(fn)
-
-	for _, sm := range l.submessages {
-		sm.EachField(fn)
 	}
 
-	//In case anyone override the otl field with submessages.  Adding it at the end
-	fn("@loglov3-otl", constants.SousGenericV1)
+	harvestFields(fn, append(efs, l.CallerInfo, logging.SousGenericV1)...)
 }

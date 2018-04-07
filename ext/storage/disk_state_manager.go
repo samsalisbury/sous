@@ -20,7 +20,6 @@ import (
 	"github.com/opentable/hy"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
-	"github.com/opentable/sous/util/logging/constants"
 	"github.com/opentable/sous/util/yaml"
 	"github.com/pkg/errors"
 )
@@ -172,7 +171,7 @@ func (msg diskStateManagerMessage) composeMsg() string {
 }
 
 func (msg diskStateManagerMessage) EachField(f logging.FieldReportFn) {
-	f("@loglov3-otl", constants.SousGenericV1)
+	f("@loglov3-otl", logging.SousGenericV1)
 
 	flaws := msg.flawsMessage.ReturnFlawMsg()
 

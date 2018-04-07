@@ -5,7 +5,6 @@ import (
 
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
-	"github.com/opentable/sous/util/logging/constants"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -32,7 +31,7 @@ func TestHandlesStatusGet(t *testing.T) {
 	assert.Contains(msg.Message(), "Reporting statuses")
 
 	fixedFields := map[string]interface{}{
-		"@loglov3-otl": constants.SousGenericV1,
+		"@loglov3-otl": logging.SousGenericV1,
 	}
 
 	// treating call-stack-function as variable because the changes to function names could affect it

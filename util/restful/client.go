@@ -25,7 +25,7 @@ type (
 	LiveHTTPClient struct {
 		serverURL *url.URL
 		http.Client
-		logging.LogSink
+		LogSink
 		commonHeaders http.Header
 	}
 
@@ -116,7 +116,7 @@ func Retryable(err error) bool {
 }
 
 // NewClient returns a new LiveHTTPClient for a particular serverURL.
-func NewClient(serverURL string, ls logging.LogSink, headers ...map[string]string) (*LiveHTTPClient, error) {
+func NewClient(serverURL string, ls LogSink, headers ...map[string]string) (*LiveHTTPClient, error) {
 	u, err := url.Parse(serverURL)
 
 	client := &LiveHTTPClient{
@@ -136,7 +136,7 @@ func NewClient(serverURL string, ls logging.LogSink, headers ...map[string]strin
 }
 
 // NewInMemoryClient wraps a MemoryListener in a restful.Client
-func NewInMemoryClient(handler http.Handler, ls logging.LogSink, headers ...map[string]string) (HTTPClient, error) {
+func NewInMemoryClient(handler http.Handler, ls LogSink, headers ...map[string]string) (HTTPClient, error) {
 	u, err := url.Parse("http://in.memory.server")
 	if err != nil {
 		return nil, err
@@ -317,7 +317,7 @@ func (client *LiveHTTPClient) buildRequest(method, url string, headers map[strin
 				return nil, err
 			}
 		}
-		messages.ReportLogFieldsMessage("JSON Body", logging.DebugLevel, client.LogSink, JSON.String())
+		messages.ReportLogFieldsMessage("JSON Body", DebugLevel, client.LogSink, JSON.String())
 	}
 
 	rq, err := http.NewRequest(method, url, JSON)
@@ -365,7 +365,7 @@ func (client *LiveHTTPClient) getBody(rz *http.Response, rzBody interface{}, err
 
 	b, e := ioutil.ReadAll(rz.Body)
 	if e != nil {
-		messages.ReportLogFieldsMessage("error reading from body", logging.DebugLevel, client.LogSink, e)
+		messages.ReportLogFieldsMessage("error reading from body", DebugLevel, client.LogSink, e)
 		b = []byte{}
 	}
 

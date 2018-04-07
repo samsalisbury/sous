@@ -15,7 +15,7 @@ type (
 	// A StatusMiddleware processes panics into 500s and other status codes.
 	StatusMiddleware struct {
 		gatelatch string
-		logging.LogSink
+		LogSink
 	}
 )
 
@@ -27,7 +27,7 @@ func (ph *StatusMiddleware) errorBody(status int, rq *http.Request, w io.Writer,
 
 	if header := rq.Header.Get("X-Gatelatch"); header != ph.gatelatch {
 		w.Write([]byte(fmt.Sprintf("%s\n", data)))
-		messages.ReportLogFieldsMessage("Gatelatch header didn't match gatelatch env", logging.WarningLevel, ph.LogSink, ph.gatelatch, header)
+		messages.ReportLogFieldsMessage("Gatelatch header didn't match gatelatch env", WarningLevel, ph.LogSink, ph.gatelatch, header)
 		return
 	}
 
@@ -60,7 +60,7 @@ func (ph *StatusMiddleware) HandlePanic(w http.ResponseWriter, r *http.Request, 
 	if ph.LogSink == nil {
 		ph.LogSink = &fallbackLogger{}
 	}
-	messages.ReportLogFieldsMessage("Recovered, returned 500", logging.WarningLevel, ph.LogSink, recovered)
+	messages.ReportLogFieldsMessage("Recovered, returned 500", WarningLevel, ph.LogSink, recovered)
 	ph.errorBody(http.StatusInternalServerError, r, w, nil, recovered.(error), stack)
 	// XXX in a dev mode, print the panic in the response body
 	// (normal ops it might leak secure data)
