@@ -55,27 +55,15 @@ func (id *applicationID) seq() uint64 {
 }
 
 func (id *applicationID) EachField(f FieldReportFn) {
-	f("sequence-number", id.seq())
-	f("ot-env", id.otenv)
-	f("ot-env-type", id.otenvtype)
-	f("ot-env-location", id.otenvlocation)
-	f("host", id.host)
-	f("instance-no", id.instanceno)
-	f("application-version", id.applicationversion)
-	f("singularity-task-id", id.singularitytaskid)
-	f("service-type", "sous")
-
-	/*
-		  ot-env: string            # machine environment, prod-sc
-		  ot-env-type: string       # environment type, prod
-		  ot-env-location: string   # machine location, sc
-		  host: string              # server host name
-		  sequence-number: long     # counter for the messages sent by the logger since the app started
-		  instance-no:              # singularity instance number
-			service-type:             # mostly meant to match the discovery service name
-		  application-version:      # distinguish the deployment that's logging; e.g. TC id, package.json...
-		  singularity-task-id:
-	*/
+	f(SequenceNumber, id.seq())
+	f(OtEnv, id.otenv)
+	f(OtEnvType, id.otenvtype)
+	f(OtEnvLocation, id.otenvlocation)
+	f(Host, id.host)
+	f(InstanceNo, id.instanceno)
+	f(ApplicationVersion, id.applicationversion)
+	f(SingularityTaskId, id.singularitytaskid)
+	f(ServiceType, "sous")
 }
 
 func (id *applicationID) metricsScope() string {

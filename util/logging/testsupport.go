@@ -64,8 +64,8 @@ func NewLogSinkSpy() (LogSink, LogSinkController) {
 	return logSinkSpy{spy: spy}, ctrl
 }
 
-func (lss logSinkSpy) LogMessage(lvl Level, msg LogMessage) {
-	lss.spy.Called(lvl, msg)
+func (lss logSinkSpy) Fields(items []EachFielder) {
+	lss.spy.Called(items)
 }
 
 func (lss logSinkSpy) Child(name string) LogSink {
