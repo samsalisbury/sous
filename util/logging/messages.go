@@ -210,11 +210,15 @@ func Deliver(message interface{}, logger LogSink, options ...func() bool) {
 		return (strings.HasSuffix(os.Args[0], ".test"))
 	}()
 
+	// options are used in util/logging/panic_test.go
+	// xxx: only?
 	for _, op := range options {
 		testFlag = op()
 	}
 
-	defer loggingPanicsShouldntCrashTheApp(logger, message, testFlag)
+	if !testFlag {
+		defer loggingPanicsShouldntCrashTheApp(logger, message)
+	}
 
 	if lm, is := message.(LogMessage); is {
 		silent = false
@@ -247,12 +251,9 @@ type loggingPanicFakeMessage struct {
 // granted that logging can be set up in the first place,
 // problems with a logging message should not crash the whole app
 // therefore: recover the panic do the simplest thing that will be logged,
-func loggingPanicsShouldntCrashTheApp(ls LogSink, msg interface{}, testFlag bool) {
-
-	if testFlag == false {
-		if rec := recover(); rec != nil {
-			Deliver(loggingPanicFakeMessage{msg}, ls)
-		}
+func loggingPanicsShouldntCrashTheApp(ls LogSink, msg interface{}) {
+	if rec := recover(); rec != nil {
+		Deliver(loggingPanicFakeMessage{msg}, ls)
 	}
 }
 

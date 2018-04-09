@@ -189,8 +189,6 @@ type TestID struct {
 }
 
 func TestExtractIDs_TwoIds(t *testing.T) {
-	l := buildLogFieldsMessage("this is a test", false, true, logging.ExtraDebug1Level)
-
 	d := &TestID{
 		TestInnerID: TestInnerID{
 			Source: Location{
@@ -201,17 +199,19 @@ func TestExtractIDs_TwoIds(t *testing.T) {
 		Cluster: "test-cluster",
 	}
 
-	l.extractID(d)
-	assert.Equal(t, 2, len(l.idsMap))
+	sf := assembleStrayFields(true, d)
+
+	assert.Len(t, sf.ids, 2)
+	assert.Len(t, sf.values, 2)
 }
 
 func TestExtractIDs_NoIds(t *testing.T) {
-	l := buildLogFieldsMessage("this is a test", false, true, logging.ExtraDebug1Level)
-
 	foo := "hello"
-	l.extractID(foo)
 
-	assert.Equal(t, 0, len(l.idsMap))
+	sf := assembleStrayFields(true, foo)
+
+	assert.Len(t, sf.ids, 0)
+	assert.Len(t, sf.values, 0)
 }
 
 //TestReportLogFieldsMessageWithIDs_TwoIds making json-value and id-values variable because ptr to ID, addresses change
