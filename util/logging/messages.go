@@ -30,8 +30,9 @@ package logging
 
 import (
 	"bytes"
-	"flag"
 	"io"
+	"os"
+	"strings"
 	"time"
 )
 
@@ -206,10 +207,7 @@ func Deliver(message interface{}, logger LogSink, options ...func() bool) {
 
 	//determine if function running under test, allow overwritten value from options functions
 	testFlag := func() bool {
-		if flag.Lookup("test.v") != nil {
-			return true
-		}
-		return false
+		return (strings.HasSuffix(os.Args[0], ".test"))
 	}()
 
 	for _, op := range options {

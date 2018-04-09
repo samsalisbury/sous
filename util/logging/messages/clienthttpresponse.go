@@ -2,7 +2,6 @@ package messages
 
 import (
 	"bytes"
-	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -36,7 +35,7 @@ type HTTPLogEntry struct {
 var httpLogFile = ioutil.Discard
 
 func init() {
-	if test, debug := flag.CommandLine.Lookup("test.count"), os.Getenv("SOUS_DEBUG_SERVER"); test != nil || debug != "" {
+	if test, debug := strings.HasSuffix(os.Args[0], ".test"), os.Getenv("SOUS_DEBUG_SERVER"); test || debug != "" {
 		f, err := ioutil.TempFile("", "http-log")
 		if err != nil {
 			panic(err)

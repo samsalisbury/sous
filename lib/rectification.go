@@ -104,7 +104,18 @@ func (r *Rectification) awaitDone(d Deployer, reg Registry, rf *ResolveFilter, s
 		}
 		if s.Final() && s.SourceID.Equal(r.Pair.Post.SourceID) {
 			r.Lock()
+
 			r.Resolution.DeployState = s
+
+			//If failed to deploy, make sure to include executor message in resolution error
+			if r.Resolution.DeployState.Status != DeployStatusActive && r.Resolution.DeployState.ExecutorMessage != "" {
+				if r.Resolution.Error == nil {
+					r.Resolution.Error = &ErrorWrapper{error: fmt.Errorf("%s", r.Resolution.DeployState.ExecutorMessage)}
+				} else {
+					r.Resolution.Error = &ErrorWrapper{error: fmt.Errorf("%s:%s", r.Resolution.Error.Error(), r.Resolution.DeployState.ExecutorMessage)}
+				}
+			}
+
 			r.Unlock()
 			return
 		}
