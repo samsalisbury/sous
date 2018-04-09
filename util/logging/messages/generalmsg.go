@@ -198,17 +198,6 @@ func (l logFieldsMessage) WriteToConsole(console io.Writer) {
 	}
 }
 
-func (l logFieldsMessage) WriteExtraToConsole(console io.Writer) {
-	if l.console {
-		if l.jsonObj != nil {
-			fmt.Fprintf(console, "%s\n", l.jsonObj.StringIndent("", " "))
-		}
-
-		fmt.Fprintf(console, "Fields: %s\n", strings.Join(l.Fields, ","))
-		fmt.Fprintf(console, "Types: %s\n", strings.Join(l.Types, ","))
-	}
-}
-
 func (l logFieldsMessage) returnIDs() (ids string, values string) {
 
 	idsSlice := []string{}
@@ -315,12 +304,6 @@ func (l logFieldsMessage) Message() string {
 	return l.composeMsg()
 }
 
-func harvestFields(fn logging.FieldReportFn, efs ...logging.EachFielder) {
-	for _, ef := range efs {
-		ef.EachField(fn)
-	}
-}
-
 //EachField will make sure individual fields are added for OTL
 func (l logFieldsMessage) EachField(fn logging.FieldReportFn) {
 	fields := []string{}
@@ -347,18 +330,18 @@ func (l logFieldsMessage) EachField(fn logging.FieldReportFn) {
 		l.addJSON(jsonRep)
 	}
 
-	fn("sous-fields", strings.Join(removeDuplicates(fields), ","))
-	fn("sous-types", strings.Join(removeDuplicates(types), ","))
+	fn(logging.SousFields, strings.Join(removeDuplicates(fields), ","))
+	fn(logging.SousTypes, strings.Join(removeDuplicates(types), ","))
 
 	if l.withIDs {
 		ids, values := l.returnIDs()
-		fn("sous-ids", ids)
-		fn("sous-id-values", values)
+		fn(logging.SousIds, ids)
+		fn(logging.SousIdValues, values)
 	}
 
 	if l.jsonObj != nil {
 		if n, err := l.jsonObj.ArrayCount("message", "array"); n > 0 && err == nil {
-			fn("json-value", l.jsonObj.String())
+			fn(logging.JsonValue, l.jsonObj.String())
 		}
 	}
 

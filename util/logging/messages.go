@@ -152,23 +152,15 @@ type (
 		WriteToConsole(console io.Writer)
 	}
 
-	// A ExtraConsoleMessage has messages to report to a local human operator (c.f. Deliver)
-	ExtraConsoleMessage interface {
-		WriteExtraToConsole(console io.Writer)
-	}
-
 	// FieldReportFn is used by LogMessages to report their fields.
 	FieldReportFn func(FieldName, interface{})
-
-	// FieldReporter is an interface.
-	FieldReporter interface {
-		ReportField(FieldName, interface{})
-	}
 )
 
-// ReportField implements FieldReporter on FieldReportFn.
-func (frf FieldReportFn) ReportField(f FieldName, v interface{}) {
-	frf(f, v)
+// All calls EachField on each of the arguments.
+func (frf FieldReportFn) All(efs ...EachFielder) {
+	for _, ef := range efs {
+		ef.EachField(frf)
+	}
 }
 
 /*
@@ -242,9 +234,6 @@ func Deliver(message interface{}, logger LogSink, options ...func() bool) {
 	if cm, is := message.(ConsoleMessage); is {
 		silent = false
 		cm.WriteToConsole(logger.Console())
-		if xm, is := message.(ExtraConsoleMessage); is {
-			xm.WriteExtraToConsole(logger.ExtraConsole())
-		}
 	}
 
 	if _, dont := message.(*silentMessageError); silent && !dont {
@@ -318,6 +307,7 @@ func (lvl Level) DefaultLevel() Level {
 	return lvl
 }
 
+// EachField implements EachFielder on OTLName.
 func (n OTLName) EachField(f FieldReportFn) {
 	f(Loglov3Otl, n)
 }
