@@ -343,7 +343,7 @@ func loggingPanicsShouldntCrashTheApp(ls LogSink, msg interface{}) {
 			panic(rec)
 		}
 		loops--
-		Deliver(loggingPanicFakeMessage{msg}, ls)
+		NewDeliver(ls, loggingPanicFakeMessage{msg})
 	}
 }
 

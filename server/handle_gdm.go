@@ -154,7 +154,7 @@ func reportHandleGDMMessage(msg string, f []sous.Flaw, err error, log logging.Lo
 		},
 		debug: isDebug,
 	}
-	logging.Deliver(msgLog, log)
+	logging.NewDeliver(log, msgLog)
 }
 
 func (msg handleGDMMessage) DefaultLevel() logging.Level {

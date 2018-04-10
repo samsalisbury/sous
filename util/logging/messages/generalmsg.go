@@ -26,7 +26,7 @@ type (
 func ReportLogFieldsMessageWithIDs(msg string, loglvl logging.Level, logSink logging.LogSink, items ...interface{}) {
 	logMessage := buildLogFieldsMessage(msg, false, true, loglvl, items...)
 	logMessage.CallerInfo.ExcludeMe()
-	logging.Deliver(logMessage, logSink)
+	logging.NewDeliver(logSink, logMessage)
 
 }
 
@@ -34,14 +34,14 @@ func ReportLogFieldsMessageWithIDs(msg string, loglvl logging.Level, logSink log
 func ReportLogFieldsMessageToConsole(msg string, loglvl logging.Level, logSink logging.LogSink, items ...interface{}) {
 	logMessage := buildLogFieldsMessage(msg, true, false, loglvl, items...)
 	logMessage.CallerInfo.ExcludeMe()
-	logging.Deliver(logMessage, logSink)
+	logging.NewDeliver(logSink, logMessage)
 }
 
 //ReportLogFieldsMessage generate a logFieldsMessage log entry
 func ReportLogFieldsMessage(msg string, loglvl logging.Level, logSink logging.LogSink, items ...interface{}) {
 	logMessage := buildLogFieldsMessage(msg, false, true, loglvl, items...)
 	logMessage.CallerInfo.ExcludeMe()
-	logging.Deliver(logMessage, logSink)
+	logging.NewDeliver(logSink, logMessage)
 }
 
 func buildLogFieldsMessage(msg string, console bool, withIDs bool, loglvl logging.Level, items ...interface{}) logFieldsMessage {

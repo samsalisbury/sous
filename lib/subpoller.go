@@ -279,7 +279,7 @@ func reportSubPollerMessage(msg string, log logging.LogSink, flags ...bool) {
 		isConsoleMsg: consoleMsg,
 		isErrorMsg:   errorMsg,
 	}
-	logging.Deliver(msgLog, log)
+	logging.NewDeliver(log, msgLog)
 }
 
 func (msg subPollerMessage) WriteToConsole(console io.Writer) {

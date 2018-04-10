@@ -36,25 +36,25 @@ type (
 func reportPollerStart(logsink logging.LogSink, poller *StatusPoller) {
 	msg := newPollerStartMessage(poller)
 	msg.callerInfo.ExcludeMe()
-	logging.Deliver(msg, logsink)
+	logging.NewDeliver(logsink, msg)
 }
 
 func reportPollerResolved(logsink logging.LogSink, sp *StatusPoller, status ResolveState, err error) {
 	msg := newPollerResolvedMessage(sp, status, err)
 	msg.callerInfo.ExcludeMe()
-	logging.Deliver(msg, logsink)
+	logging.NewDeliver(logsink, msg)
 }
 
 func reportPollerStatus(logsink logging.LogSink, poller *StatusPoller, old ResolveState) {
 	msg := newPollerStatusMessage(poller, old)
 	msg.callerInfo.ExcludeMe()
-	logging.Deliver(msg, logsink)
+	logging.NewDeliver(logsink, msg)
 }
 
 func reportSubreport(logsink logging.LogSink, poller *StatusPoller, update pollResult) {
 	msg := newSubreportMessage(poller, update)
 	msg.callerInfo.ExcludeMe()
-	logging.Deliver(msg, logsink)
+	logging.NewDeliver(logsink, msg)
 }
 
 func resultFields(f logging.FieldReportFn, update pollResult) {

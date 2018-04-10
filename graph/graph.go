@@ -387,11 +387,11 @@ func newSourceContextDiscovery(sh LocalWorkDirShell, ls LogSink) *SourceContextD
 	detected := c.NearestTagName
 	annotated, err := g.Client.NearestAnnotatedTag()
 
-	logging.Deliver(logging.NewGenericMsg(logging.InformationLevel, "source context tag", map[string]interface{}{
+	logging.NewDeliver(ls, logging.NewGenericMsg(logging.InformationLevel, "source context tag", map[string]interface{}{
 		"detected-tag":              detected,
 		"nearest-annotated-tag":     annotated,
 		"detected-equals-annotated": (detected == annotated),
-	}, false), ls)
+	}, false))
 
 	return &SourceContextDiscovery{
 		Error:         err,

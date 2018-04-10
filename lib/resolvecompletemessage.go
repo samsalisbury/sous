@@ -18,7 +18,7 @@ func reportResolverStatus(logger logging.LogSink, status *ResolveStatus) {
 		MessageInterval: logging.NewInterval(status.Started, status.Finished),
 		status:          status,
 	}
-	logging.Deliver(msg, logger)
+	logging.NewDeliver(logger, msg)
 }
 
 func (msg resolveCompleteMessage) MetricsTo(m logging.MetricsSink) {

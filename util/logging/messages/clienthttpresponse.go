@@ -50,7 +50,7 @@ func init() {
 func ReportClientHTTPRequest(logger logging.LogSink, message string, rq *http.Request, resName string) {
 	m := buildHTTPLogMessage(false, false, message, rq, 0, 0, resName, 0)
 	m.ExcludeMe()
-	logging.Deliver(m, logger)
+	logging.NewDeliver(logger, m)
 }
 
 // ReportClientHTTPResponse reports a response recieved by Sous as a client.
@@ -65,7 +65,7 @@ func ReportClientHTTPResponse(logger logging.LogSink, message string, rz *http.R
 
 	m := buildHTTPLogMessage(false, true, message, rz.Request, rz.StatusCode, rz.ContentLength, resName, dur)
 	m.ExcludeMe()
-	logging.Deliver(m, logger)
+	logging.NewDeliver(logger, m)
 }
 
 // ReportServerHTTPRequest reports a response recieved by Sous as a client.
@@ -73,21 +73,21 @@ func ReportClientHTTPResponse(logger logging.LogSink, message string, rz *http.R
 func ReportServerHTTPRequest(logger logging.LogSink, message string, rq *http.Request, resName string) {
 	m := buildHTTPLogMessage(true, false, message, rq, 0, 0, resName, 0)
 	m.ExcludeMe()
-	logging.Deliver(m, logger)
+	logging.NewDeliver(logger, m)
 }
 
 // ReportServerHTTPResponse reports a response recieved by Sous as a client.
 func ReportServerHTTPResponse(logger logging.LogSink, message string, rz *http.Response, resName string, dur time.Duration) {
 	m := buildHTTPLogMessage(true, true, message, rz.Request, rz.StatusCode, rz.ContentLength, resName, dur)
 	m.ExcludeMe()
-	logging.Deliver(m, logger)
+	logging.NewDeliver(logger, m)
 }
 
 // ReportServerHTTPResponding reports a response to a request - this is useful in cases where a ResponseWriter is encapsulating the actual response.
 func ReportServerHTTPResponding(logger logging.LogSink, message string, req *http.Request, status int, responseContentLength int64, resName string, dur time.Duration) {
 	m := buildHTTPLogMessage(true, true, message, req, status, responseContentLength, resName, dur)
 	m.ExcludeMe()
-	logging.Deliver(m, logger)
+	logging.NewDeliver(logger, m)
 }
 
 func buildHTTPLogMessage(

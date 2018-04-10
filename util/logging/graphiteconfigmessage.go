@@ -16,7 +16,7 @@ func reportGraphiteConfig(cfg *graphite.Config, ls LogSink) {
 		CallerInfo: GetCallerInfo(NotHere()),
 		cfg:        cfg,
 	}
-	Deliver(msg, ls)
+	NewDeliver(ls, msg)
 }
 
 func (gcm graphiteConfigMessage) DefaultLevel() Level {

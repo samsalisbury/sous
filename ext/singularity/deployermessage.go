@@ -33,7 +33,7 @@ func reportDeployerMessage(
 		taskData:   taskData,
 		error:      error,
 	}
-	logging.Deliver(msg, logger)
+	logging.NewDeliver(logger, msg)
 }
 
 func (msg deployerMessage) Message() string {

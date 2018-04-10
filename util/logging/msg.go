@@ -27,7 +27,7 @@ func ReportMsg(logger LogSink, lvl Level, msg string, console ...bool) {
 	}
 	m := NewGenericMsg(lvl, msg, nil, useConsole)
 	m.ExcludeMe()
-	Deliver(m, logger)
+	NewDeliver(logger, m)
 }
 
 func (msg *genericMsg) WriteToConsole(console io.Writer) {
