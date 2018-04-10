@@ -19,7 +19,7 @@ func reportKafkaConfig(hook *kafkaSink, cfg Config, ls LogSink) {
 		topic:      cfg.Kafka.Topic,
 	}
 	msg.ExcludeMe()
-	NewDeliver(ls, msg)
+	Deliver(ls, msg)
 }
 
 func (kcm kafkaConfigurationMessage) DefaultLevel() Level {

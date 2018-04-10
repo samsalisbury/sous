@@ -135,7 +135,7 @@ func reportDiskStateManagerMessage(msg string, f []sous.Flaw, err error, log log
 		flawsMessage: sous.FlawMessage{Flaws: f},
 		debug:        isDebug,
 	}
-	logging.NewDeliver(log, msgLog)
+	logging.Deliver(log, msgLog)
 }
 
 func (msg diskStateManagerMessage) WriteToConsole(console io.Writer) {

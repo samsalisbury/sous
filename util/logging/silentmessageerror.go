@@ -16,7 +16,7 @@ type silentMessageError struct {
 func reportSilentMessage(logger LogSink, message interface{}) {
 	m := newSilentMessageError(message)
 	m.ExcludeMe()
-	NewDeliver(logger, m)
+	Deliver(logger, m)
 }
 
 func newSilentMessageError(message interface{}) *silentMessageError {

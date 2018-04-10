@@ -22,7 +22,7 @@ func TestLogMessagePanicking(t *testing.T) {
 	log, ctrl := NewLogSinkSpy(true)
 
 	assert.NotPanics(t, func() {
-		NewDeliver(log, terribadLogMessage{})
+		Deliver(log, terribadLogMessage{})
 	})
 
 	calls := ctrl.CallsTo("Fields")

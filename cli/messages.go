@@ -17,7 +17,7 @@ type invocationMessage struct {
 func reportInvocation(ls logging.LogSink, start time.Time, args []string) {
 	msg := newInvocationMessage(args, start)
 	msg.callerInfo.ExcludeMe()
-	logging.NewDeliver(ls, msg)
+	logging.Deliver(ls, msg)
 }
 
 func newInvocationMessage(args []string, start time.Time) *invocationMessage {
@@ -53,7 +53,7 @@ type cliResultMessage struct {
 func reportCLIResult(logsink logging.LogSink, args []string, start time.Time, res cmdr.Result) {
 	msg := newCLIResult(args, start, res)
 	msg.callerInfo.ExcludeMe()
-	logging.NewDeliver(logsink, msg)
+	logging.Deliver(logsink, msg)
 }
 
 func newCLIResult(args []string, start time.Time, res cmdr.Result) *cliResultMessage {

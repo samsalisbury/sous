@@ -20,7 +20,7 @@ func (log loggingProcessor) doLog(dp *DeployablePair) {
 	}
 	msg.callerInfo.ExcludeMe()
 
-	logging.NewDeliver(log.ls, msg)
+	logging.Deliver(log.ls, msg)
 }
 
 func (log loggingProcessor) HandleResolution(rez *DiffResolution) {
@@ -28,5 +28,5 @@ func (log loggingProcessor) HandleResolution(rez *DiffResolution) {
 		resolution: rez,
 		callerInfo: logging.GetCallerInfo(logging.NotHere()),
 	}
-	logging.NewDeliver(log.ls, msg)
+	logging.Deliver(log.ls, msg)
 }

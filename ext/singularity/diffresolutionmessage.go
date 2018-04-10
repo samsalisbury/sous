@@ -19,7 +19,7 @@ func reportDiffResolutionMessage(message string, diffRes sous.DiffResolution, le
 		msg:            message,
 		diffResolution: diffRes,
 	}
-	logging.NewDeliver(logger, msg)
+	logging.Deliver(logger, msg)
 }
 
 func (msg diffResolutionMessage) EachField(f logging.FieldReportFn) {

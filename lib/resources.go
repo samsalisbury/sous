@@ -215,7 +215,7 @@ func reportResourceMessage(msg string, r Resources, log logging.LogSink, debug .
 		memory:     memory,
 		isDebugMsg: debugStmt,
 	}
-	logging.NewDeliver(log, msgLog)
+	logging.Deliver(log, msgLog)
 }
 
 func (msg resourceMessage) DefaultLevel() logging.Level {

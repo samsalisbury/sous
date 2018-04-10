@@ -53,7 +53,7 @@
 //  func ReportExample(field string, sink LogSink) {
 //    msg := newExampleMessage(field)
 //    msg.CallerInfo.ExcludeMe() // this filters out ReportExample from the logged call stack
-//    NewDeliver(msg, sink) // this is the important part
+//    Deliver(msg, sink) // this is the important part
 //  }
 //
 //  func newExampleMessage(field string) *exampleMessage {

@@ -64,7 +64,7 @@ func updateRetryLoop(ls logging.LogSink,
 	start := time.Now()
 
 	for tries := 0; tries < tryLimit; tries++ {
-		logging.NewDeliver(ls, newUpdateBeginMessage(tries, sid, did, user, start))
+		logging.Deliver(ls, newUpdateBeginMessage(tries, sid, did, user, start))
 
 		state, err := sm.ReadState()
 		if err != nil {
@@ -73,7 +73,7 @@ func updateRetryLoop(ls logging.LogSink,
 		manifest, ok := state.Manifests.Get(mid)
 		if !ok {
 			err := fmt.Errorf("no manifest found for %q - try 'sous init' first", mid)
-			logging.NewDeliver(ls, newUpdateErrorMessage(tries, sid, did, user, start, err))
+			logging.Deliver(ls, newUpdateErrorMessage(tries, sid, did, user, start, err))
 			return sous.NewDeployments(), err
 		}
 
@@ -81,29 +81,29 @@ func updateRetryLoop(ls logging.LogSink,
 
 		gdm, err := state.Deployments()
 		if err != nil {
-			logging.NewDeliver(ls, newUpdateErrorMessage(tries, sid, did, user, start, err))
+			logging.Deliver(ls, newUpdateErrorMessage(tries, sid, did, user, start, err))
 			return sous.NewDeployments(), err
 		}
 
 		if err := updateState(state, gdm, sid, did); err != nil {
-			logging.NewDeliver(ls, newUpdateErrorMessage(tries, sid, did, user, start, err))
+			logging.Deliver(ls, newUpdateErrorMessage(tries, sid, did, user, start, err))
 			return sous.NewDeployments(), err
 		}
 		if err := sm.WriteState(state, user); err != nil {
 			if !restful.Retryable(err) {
-				logging.NewDeliver(ls, newUpdateErrorMessage(tries, sid, did, user, start, err))
+				logging.Deliver(ls, newUpdateErrorMessage(tries, sid, did, user, start, err))
 				return sous.NewDeployments(), err
 			}
 
 			continue
 		}
 
-		logging.NewDeliver(ls, newUpdateSuccessMessage(tries, sid, did, manifest, user, start))
+		logging.Deliver(ls, newUpdateSuccessMessage(tries, sid, did, manifest, user, start))
 		return gdm, nil
 	}
 
 	err := errors.Errorf("Tried %d to update %v - %v", tryLimit, sid, did)
-	logging.NewDeliver(ls, newUpdateErrorMessage(tryLimit, sid, did, user, start, err))
+	logging.Deliver(ls, newUpdateErrorMessage(tryLimit, sid, did, user, start, err))
 	return sous.NewDeployments(), err
 }
 

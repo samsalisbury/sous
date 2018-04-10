@@ -104,7 +104,7 @@ func reportServerMessage(msg string, filterFlags config.DeployFilterFlags, liste
 		listenAddress:     listenAddress,
 	}
 	msgLog.ExcludeMe()
-	logging.NewDeliver(log, msgLog)
+	logging.Deliver(log, msgLog)
 }
 
 func (msg serverMessage) WriteToConsole(console io.Writer) {

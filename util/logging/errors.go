@@ -30,7 +30,7 @@ func ReportError(sink LogSink, err error, console ...bool) {
 
 	msg := newErrorMessage(err, useConsole)
 	msg.CallerInfo.ExcludeMe()
-	NewDeliver(sink, msg)
+	Deliver(sink, msg)
 }
 
 func newErrorMessage(err error, console bool) *errorMessage {

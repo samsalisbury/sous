@@ -110,7 +110,7 @@ func reportVolumeMessage(msg string, a Volumes, b Volumes, log logging.LogSink, 
 		isDebugMsg:   debugStmt,
 		isConsoleMsg: console,
 	}
-	logging.NewDeliver(log, msgLog)
+	logging.Deliver(log, msgLog)
 }
 
 func (msg volumeMessage) WriteToConsole(console io.Writer) {

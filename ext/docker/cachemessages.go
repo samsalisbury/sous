@@ -35,7 +35,7 @@ func reportCacheHit(logger logging.LogSink, sid sous.SourceID, name string) {
 		source:     sid,
 		imageName:  name,
 	}
-	logging.NewDeliver(logger, msg)
+	logging.Deliver(logger, msg)
 }
 
 func (msg cacheHitMessage) MetricsTo(ms logging.MetricsSink) {
@@ -60,7 +60,7 @@ func reportCacheMiss(logger logging.LogSink, sid sous.SourceID, name string) {
 		source:     sid,
 		imageName:  name,
 	}
-	logging.NewDeliver(logger, msg)
+	logging.Deliver(logger, msg)
 }
 
 func (msg cacheMissMessage) MetricsTo(ms logging.MetricsSink) {
@@ -85,7 +85,7 @@ func reportCacheError(logger logging.LogSink, sid sous.SourceID, err error) {
 		source:     sid,
 		err:        err,
 	}
-	logging.NewDeliver(logger, msg)
+	logging.Deliver(logger, msg)
 }
 
 func (msg cacheErrorMessage) MetricsTo(ms logging.MetricsSink) {
