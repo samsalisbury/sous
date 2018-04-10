@@ -17,36 +17,55 @@ func TestReportClientHTTPResponseFields_assertReport(t *testing.T) {
 		ReportClientHTTPResponse(logger, "test", res, "example-api", time.Millisecond*30)
 	})
 
-	assert.Equal(t, control.CallsTo("LogMessage")[0].PassedArgs().Get(0), logging.ExtraDebug1Level)
+	assert.Len(t, control.CallsTo("Fields"), 1)
 	assert.Len(t, control.Metrics.CallsTo("UpdateTimer"), 3)
 	assert.Len(t, control.Metrics.CallsTo("UpdateSample"), 6)
 	assert.Len(t, control.Metrics.CallsTo("IncCounter"), 3)
 
-	logging.AssertMessageFields(t, message,
+	logging.AssertMessageFieldlist(t, message,
 		logging.StandardVariableFields,
 		map[string]interface{}{
-			"@loglov3-otl":    logging.SousHttpV1,
-			"incoming":        true,
-			"resource-family": "example-api",
-			"method":          "GET",
-			"url":             "http://example.com/api?a=a",
-			"url-hostname":    "example.com",
-			"url-pathname":    "/api",
-			"url-querystring": "a=a",
-			"duration":        int64(30000),
-			"body-size":       int64(0),
-			"response-size":   int64(123),
-			"status":          200,
+			"@loglov3-otl":       logging.SousHttpV1,
+			"call-stack-message": "Client <- test",
+			"severity":           logging.ExtraDebug1Level,
+			"incoming":           true,
+			"resource-family":    "example-api",
+			"method":             "GET",
+			"url":                "http://example.com/api?a=a",
+			"url-hostname":       "example.com",
+			"url-pathname":       "/api",
+			"url-querystring":    "a=a",
+			"duration":           int64(30000),
+			"body-size":          int64(0),
+			"response-size":      int64(123),
+			"status":             200,
 		})
 }
 
 func TestReportClientHTTPResponseFields_InfoLevelOnErrors(t *testing.T) {
 	res := buildHTTPResponse(t, "GET", "http://example.com/api?a=a", 401, 0, 123)
-	control, _ := logging.AssertReport(t, func(logger logging.LogSink) {
-		ReportClientHTTPResponse(logger, "test", res, "example-api", time.Millisecond*30)
-	})
+	logging.AssertReportFields(t,
+		func(logger logging.LogSink) {
+			ReportClientHTTPResponse(logger, "test", res, "example-api", time.Millisecond*30)
+		},
+		logging.StandardVariableFields,
+		map[string]interface{}{
+			"@loglov3-otl":       logging.SousHttpV1,
+			"call-stack-message": "Client <- test",
+			"severity":           logging.InformationLevel,
+			"incoming":           true,
+			"resource-family":    "example-api",
+			"method":             "GET",
+			"url":                "http://example.com/api?a=a",
+			"url-hostname":       "example.com",
+			"url-pathname":       "/api",
+			"url-querystring":    "a=a",
+			"duration":           int64(30000),
+			"body-size":          int64(0),
+			"response-size":      int64(123),
+			"status":             401,
+		})
 
-	assert.Equal(t, control.CallsTo("LogMessage")[0].PassedArgs().Get(0), logging.InformationLevel)
 }
 
 func TestReportClientHTTPRequestFields(t *testing.T) {
@@ -57,18 +76,20 @@ func TestReportClientHTTPRequestFields(t *testing.T) {
 		},
 		logging.StandardVariableFields,
 		map[string]interface{}{
-			"@loglov3-otl":    logging.SousHttpV1,
-			"incoming":        false,
-			"resource-family": "example-api",
-			"method":          "GET",
-			"url":             "http://example.com/api?a=a",
-			"url-hostname":    "example.com",
-			"url-pathname":    "/api",
-			"url-querystring": "a=a",
-			"duration":        int64(0),
-			"body-size":       int64(0),
-			"response-size":   int64(0),
-			"status":          0,
+			"@loglov3-otl":       logging.SousHttpV1,
+			"call-stack-message": "Client -> test",
+			"severity":           logging.ExtraDebug1Level,
+			"incoming":           false,
+			"resource-family":    "example-api",
+			"method":             "GET",
+			"url":                "http://example.com/api?a=a",
+			"url-hostname":       "example.com",
+			"url-pathname":       "/api",
+			"url-querystring":    "a=a",
+			"duration":           int64(0),
+			"body-size":          int64(0),
+			"response-size":      int64(0),
+			"status":             0,
 		})
 }
 
@@ -80,18 +101,20 @@ func TestReportServerHTTPRequestFields(t *testing.T) {
 		},
 		logging.StandardVariableFields,
 		map[string]interface{}{
-			"@loglov3-otl":    logging.SousHttpV1,
-			"incoming":        true,
-			"resource-family": "example-api",
-			"method":          "GET",
-			"url":             "http://example.com/api?a=a",
-			"url-hostname":    "example.com",
-			"url-pathname":    "/api",
-			"url-querystring": "a=a",
-			"duration":        int64(0),
-			"body-size":       int64(0),
-			"response-size":   int64(0),
-			"status":          0,
+			"@loglov3-otl":       logging.SousHttpV1,
+			"call-stack-message": "-> Server test",
+			"severity":           logging.ExtraDebug1Level,
+			"incoming":           true,
+			"resource-family":    "example-api",
+			"method":             "GET",
+			"url":                "http://example.com/api?a=a",
+			"url-hostname":       "example.com",
+			"url-pathname":       "/api",
+			"url-querystring":    "a=a",
+			"duration":           int64(0),
+			"body-size":          int64(0),
+			"response-size":      int64(0),
+			"status":             0,
 		})
 }
 
@@ -103,18 +126,20 @@ func TestReportClientHTTPResponseFields(t *testing.T) {
 		},
 		logging.StandardVariableFields,
 		map[string]interface{}{
-			"@loglov3-otl":    logging.SousHttpV1,
-			"incoming":        true,
-			"resource-family": "example-api",
-			"method":          "GET",
-			"url":             "http://example.com/api?a=a",
-			"url-hostname":    "example.com",
-			"url-pathname":    "/api",
-			"url-querystring": "a=a",
-			"duration":        int64(30000),
-			"body-size":       int64(0),
-			"response-size":   int64(123),
-			"status":          200,
+			"@loglov3-otl":       logging.SousHttpV1,
+			"call-stack-message": "Client <- test",
+			"severity":           logging.ExtraDebug1Level,
+			"incoming":           true,
+			"resource-family":    "example-api",
+			"method":             "GET",
+			"url":                "http://example.com/api?a=a",
+			"url-hostname":       "example.com",
+			"url-pathname":       "/api",
+			"url-querystring":    "a=a",
+			"duration":           int64(30000),
+			"body-size":          int64(0),
+			"response-size":      int64(123),
+			"status":             200,
 		})
 }
 
@@ -126,18 +151,20 @@ func TestReportServerHTTPResponseFields(t *testing.T) {
 		},
 		logging.StandardVariableFields,
 		map[string]interface{}{
-			"@loglov3-otl":    logging.SousHttpV1,
-			"incoming":        false,
-			"resource-family": "example-api",
-			"method":          "GET",
-			"url":             "http://example.com/api?a=a",
-			"url-hostname":    "example.com",
-			"url-pathname":    "/api",
-			"url-querystring": "a=a",
-			"duration":        int64(30000),
-			"body-size":       int64(0),
-			"response-size":   int64(123),
-			"status":          200,
+			"@loglov3-otl":       logging.SousHttpV1,
+			"call-stack-message": "<- Server test",
+			"severity":           logging.ExtraDebug1Level,
+			"incoming":           false,
+			"resource-family":    "example-api",
+			"method":             "GET",
+			"url":                "http://example.com/api?a=a",
+			"url-hostname":       "example.com",
+			"url-pathname":       "/api",
+			"url-querystring":    "a=a",
+			"duration":           int64(30000),
+			"body-size":          int64(0),
+			"response-size":      int64(123),
+			"status":             200,
 		})
 }
 
@@ -149,18 +176,20 @@ func TestReportServerHTTPRespondingFields(t *testing.T) {
 		},
 		logging.StandardVariableFields,
 		map[string]interface{}{
-			"@loglov3-otl":    logging.SousHttpV1,
-			"incoming":        false,
-			"resource-family": "example-api",
-			"method":          "PUT",
-			"url":             "http://example.com/api?a=a",
-			"url-hostname":    "example.com",
-			"url-pathname":    "/api",
-			"url-querystring": "a=a",
-			"duration":        int64(30),
-			"body-size":       int64(20),
-			"response-size":   int64(123),
-			"status":          200,
+			"@loglov3-otl":       logging.SousHttpV1,
+			"call-stack-message": "<- Server test",
+			"severity":           logging.ExtraDebug1Level,
+			"incoming":           false,
+			"resource-family":    "example-api",
+			"method":             "PUT",
+			"url":                "http://example.com/api?a=a",
+			"url-hostname":       "example.com",
+			"url-pathname":       "/api",
+			"url-querystring":    "a=a",
+			"duration":           int64(30),
+			"body-size":          int64(20),
+			"response-size":      int64(123),
+			"status":             200,
 		})
 }
 

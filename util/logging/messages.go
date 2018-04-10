@@ -182,7 +182,7 @@ func (frf FieldReportFn) All(efs ...EachFielder) {
 
 // EachField implements EachFielder on MessageField.
 func (m MessageField) EachField(fn FieldReportFn) {
-	fn(CallStackMessage, m)
+	fn(CallStackMessage, string(m))
 }
 
 // WriteToConsole implements ConsoleMessage on ToConsole.

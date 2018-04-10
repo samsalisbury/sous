@@ -22,13 +22,15 @@ func TestDeployerMessage(t *testing.T) {
 
 	reportDeployerMessage("test", pair, nil, taskData, nil, logging.InformationLevel, logger)
 
-	logCalls := control.CallsTo("LogMessage")
-	require.Len(t, logCalls, 1)
-	assert.Equal(t, logCalls[0].PassedArgs().Get(0), logging.InformationLevel)
+	logCalls := control.CallsTo("Fields")
+	if require.Len(t, logCalls, 1) {
+		fields := logCalls.PassedArgs.Get(0).([]EachFielder)
 
-	logMessage := logCalls[0].PassedArgs().Get(1).(deployerMessage)
+		assert.Contains(t, fields, logging.InformationLevel)
+		logMessage := fields[2].(deployerMessage)
 
-	logging.AssertMessageFields(t, logMessage, logging.StandardVariableFields, defaultExpectedFields())
+		logging.AssertMessageFields(t, logMessage, logging.StandardVariableFields, defaultExpectedFields())
+	}
 
 	//weak check on WriteToConsole
 	// these messages don't mean anything to most operators.

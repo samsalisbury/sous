@@ -250,7 +250,7 @@ func CastFN(fns []FieldName) []string {
 // reporting function as well.
 func AssertReportFields(t *testing.T, log func(LogSink), variableFields []string, fixedFields map[string]interface{}) {
 	_, message := AssertReport(t, log)
-	AssertMessageFields(t, message, variableFields, getTestFunctionCallInfo(variableFields, fixedFields))
+	AssertMessageFieldlist(t, message, variableFields, getTestFunctionCallInfo(variableFields, fixedFields))
 }
 
 // AssertReport calls its 'log' argument with a log sink, extracts a LogMessage
@@ -258,16 +258,16 @@ func AssertReportFields(t *testing.T, log func(LogSink), variableFields []string
 // In general, prefer AssertReportFields, but if you need to further test e.g.
 // metrics delivery, calling AssertReport and then AssertMessageFields can be
 // a good way to do that.
-func AssertReport(t *testing.T, log func(LogSink)) (LogSinkController, LogMessage) {
+func AssertReport(t *testing.T, log func(LogSink)) (LogSinkController, []EachFielder) {
 	sink, ctrl := NewLogSinkSpy()
 
 	require.NotPanics(t, func() {
 		log(sink)
 	})
 
-	logCalls := ctrl.CallsTo("LogMessage")
+	logCalls := ctrl.CallsTo("Fields")
 	require.Len(t, logCalls, 1)
-	message := logCalls[0].PassedArgs().Get(1).(LogMessage)
+	message := logCalls[0].PassedArgs().Get(0).([]EachFielder)
 
 	return ctrl, message
 }
@@ -283,14 +283,25 @@ func AssertReport(t *testing.T, log func(LogSink)) (LogSinkController, LogMessag
 // See also the StandardVariableFields and IntervalVariableFields convenience variables.
 func AssertMessageFields(t *testing.T, msg EachFielder, variableFields []string, fixedFields map[string]interface{}) {
 	t.Helper()
+	assertOTL(t, fixedFields)
+	rawAssertMessageFields(t, []EachFielder{msg}, variableFields, getTestFunctionCallInfo(variableFields, fixedFields))
+}
 
+// AssertMessageFieldlist is a testing function. It works like the legacy AssertMessageFields,
+// but accepts a list of EachFielder, more in line with the new logging interface.
+func AssertMessageFieldlist(t *testing.T, msgs []EachFielder, variableFields []string, fixedFields map[string]interface{}) {
+	t.Helper()
+	assertOTL(t, fixedFields)
+	rawAssertMessageFields(t, msgs, variableFields, getTestFunctionCallInfo(variableFields, fixedFields))
+}
+
+func assertOTL(t *testing.T, fixedFields map[string]interface{}) {
 	if assert.Contains(t, fixedFields, "@loglov3-otl", "Structured log entries need @loglov3-otl or will be DLQ'd") {
 		assert.IsType(t, OTLName(""), fixedFields["@loglov3-otl"], "Unknown OTL name!")
 	}
-	rawAssertMessageFields(t, msg, variableFields, getTestFunctionCallInfo(variableFields, fixedFields))
 }
 
-func rawAssertMessageFields(t *testing.T, msg EachFielder, variableFieldStrings []string, fixedStringFields map[string]interface{}) {
+func rawAssertMessageFields(t *testing.T, items []EachFielder, variableFieldStrings []string, fixedStringFields map[string]interface{}) {
 	t.Helper()
 
 	variableFields := castToFieldNames(variableFieldStrings)
@@ -302,16 +313,18 @@ func rawAssertMessageFields(t *testing.T, msg EachFielder, variableFieldStrings 
 		fixedFields[FieldName(n)] = v
 	}
 
-	msg.EachField(func(name FieldName, value interface{}) {
-		assert.NotContains(t, actualFields, name) //don't clobber a field
-		actualFields[name] = value
-		switch name {
-		case "@timestamp", "started-at", "finished-at": // known timestamp fields
-			if assert.IsType(t, "", value) {
-				assert.Regexp(t, `.*Z$`, value.(string), "%s: %q not in UTC!", name, value)
+	for _, msg := range items {
+		msg.EachField(func(name FieldName, value interface{}) {
+			assert.NotContains(t, actualFields, name) //don't clobber a field
+			actualFields[name] = value
+			switch name {
+			case "@timestamp", "started-at", "finished-at": // known timestamp fields
+				if assert.IsType(t, "", value) {
+					assert.Regexp(t, `.*Z$`, value.(string), "%s: %q not in UTC!", name, value)
+				}
 			}
-		}
-	})
+		})
+	}
 
 	for _, f := range variableFields {
 		assert.Contains(t, actualFields, f)
@@ -343,29 +356,33 @@ func rawAssertMessageFields(t *testing.T, msg EachFielder, variableFieldStrings 
 			"fields": map[string]interface{}{},
 		}
 
-		msg.EachField(func(n FieldName, v interface{}) {
-			switch n {
-			case "call-stack-line-number", "call-stack-function", "call-stack-file", "@timestamp", "thread-name", "@loglov3-otl":
-				return
-			}
-			switch v.(type) {
-			default:
-				t.Errorf("Don't know the OTL type for %v %[1]t", v)
-				return
-			case string:
-				otl["fields"].(map[string]interface{})[string(n)] = map[string]interface{}{"type": "string", "optional": true}
-			case bool:
-				otl["fields"].(map[string]interface{})[string(n)] = map[string]interface{}{"type": "boolean", "optional": true}
-			case int32, uint32:
-				otl["fields"].(map[string]interface{})[string(n)] = map[string]interface{}{"type": "int", "optional": true}
-			case int, uint, int64, uint64:
-				otl["fields"].(map[string]interface{})[string(n)] = map[string]interface{}{"type": "long", "optional": true}
-			case float32, float64:
-				otl["fields"].(map[string]interface{})[string(n)] = map[string]interface{}{"type": "float", "optional": true}
-			case time.Time:
-				otl["fields"].(map[string]interface{})[string(n)] = map[string]interface{}{"type": "timestamp", "optional": true}
-			}
-		})
+		for _, msg := range items {
+			msg.EachField(func(n FieldName, v interface{}) {
+				switch n {
+				case "call-stack-line-number", "call-stack-function", "call-stack-file", "@timestamp", "thread-name", "@loglov3-otl":
+					return
+				}
+				switch v.(type) {
+				default:
+					t.Errorf("Don't know the OTL type for %v %[1]t", v)
+					return
+				case Level:
+					otl["fields"].(map[string]interface{})[string(n)] = map[string]interface{}{"type": "string"}
+				case string:
+					otl["fields"].(map[string]interface{})[string(n)] = map[string]interface{}{"type": "string", "optional": true}
+				case bool:
+					otl["fields"].(map[string]interface{})[string(n)] = map[string]interface{}{"type": "boolean", "optional": true}
+				case int32, uint32:
+					otl["fields"].(map[string]interface{})[string(n)] = map[string]interface{}{"type": "int", "optional": true}
+				case int, uint, int64, uint64:
+					otl["fields"].(map[string]interface{})[string(n)] = map[string]interface{}{"type": "long", "optional": true}
+				case float32, float64:
+					otl["fields"].(map[string]interface{})[string(n)] = map[string]interface{}{"type": "float", "optional": true}
+				case time.Time:
+					otl["fields"].(map[string]interface{})[string(n)] = map[string]interface{}{"type": "timestamp", "optional": true}
+				}
+			})
+		}
 
 		b, err := yaml.Marshal(otl)
 		if err != nil {

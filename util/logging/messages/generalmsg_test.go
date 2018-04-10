@@ -26,12 +26,14 @@ func TestReportLogFieldsMessage_Complete(t *testing.T) {
 		},
 		logging.StandardVariableFields,
 		map[string]interface{}{
-			"sous-fields":    "Basic,Kafka,Graphite,Config,Level,DisableConsole,ExtraConsole,Enabled,DefaultLevel,Topic,Brokers,BrokerList,Server",
-			"sous-types":     "Config,string,bool",
-			"json-value":     "{\"message\":{\"array\":[\"(logging.Config) {\\n Basic: (struct { Level string \\\"env:\\\\\\\"SOUS_LOGGING_LEVEL\\\\\\\"\\\"; DisableConsole bool; ExtraConsole bool \\\"env:\\\\\\\"SOUS_EXTRA_CONSOLE\\\\\\\"\\\" }) {\\n  Level: (string) \\\"\\\",\\n  DisableConsole: (bool) false,\\n  ExtraConsole: (bool) false\\n },\\n Kafka: (struct { Enabled bool; DefaultLevel string \\\"env:\\\\\\\"SOUS_KAFKA_LOG_LEVEL\\\\\\\"\\\"; Topic string \\\"env:\\\\\\\"SOUS_KAFKA_TOPIC\\\\\\\"\\\"; Brokers []string; BrokerList string \\\"env:\\\\\\\"SOUS_KAFKA_BROKERS\\\\\\\"\\\" }) {\\n  Enabled: (bool) false,\\n  DefaultLevel: (string) \\\"\\\",\\n  Topic: (string) (len=10) \\\"test-topic\\\",\\n  Brokers: ([]string) \\u003cnil\\u003e,\\n  BrokerList: (string) (len=23) \\\"broker1,broker2,broker3\\\"\\n },\\n Graphite: (struct { Enabled bool; Server string \\\"env:\\\\\\\"SOUS_GRAPHITE_SERVER\\\\\\\"\\\" }) {\\n  Enabled: (bool) false,\\n  Server: (string) \\\"\\\"\\n }\\n}\\n\"]}}",
-			"@loglov3-otl":   logging.SousGenericV1,
-			"sous-ids":       "",
-			"sous-id-values": "",
+			"@loglov3-otl":       logging.SousGenericV1,
+			"severity":           logging.DebugLevel,
+			"call-stack-message": "This is test message",
+			"sous-fields":        "Basic,Kafka,Graphite,Config,Level,DisableConsole,ExtraConsole,Enabled,DefaultLevel,Topic,Brokers,BrokerList,Server",
+			"sous-types":         "Config,string,bool",
+			"json-value":         "{\"message\":{\"array\":[\"(logging.Config) {\\n Basic: (struct { Level string \\\"env:\\\\\\\"SOUS_LOGGING_LEVEL\\\\\\\"\\\"; DisableConsole bool; ExtraConsole bool \\\"env:\\\\\\\"SOUS_EXTRA_CONSOLE\\\\\\\"\\\" }) {\\n  Level: (string) \\\"\\\",\\n  DisableConsole: (bool) false,\\n  ExtraConsole: (bool) false\\n },\\n Kafka: (struct { Enabled bool; DefaultLevel string \\\"env:\\\\\\\"SOUS_KAFKA_LOG_LEVEL\\\\\\\"\\\"; Topic string \\\"env:\\\\\\\"SOUS_KAFKA_TOPIC\\\\\\\"\\\"; Brokers []string; BrokerList string \\\"env:\\\\\\\"SOUS_KAFKA_BROKERS\\\\\\\"\\\" }) {\\n  Enabled: (bool) false,\\n  DefaultLevel: (string) \\\"\\\",\\n  Topic: (string) (len=10) \\\"test-topic\\\",\\n  Brokers: ([]string) \\u003cnil\\u003e,\\n  BrokerList: (string) (len=23) \\\"broker1,broker2,broker3\\\"\\n },\\n Graphite: (struct { Enabled bool; Server string \\\"env:\\\\\\\"SOUS_GRAPHITE_SERVER\\\\\\\"\\\" }) {\\n  Enabled: (bool) false,\\n  Server: (string) \\\"\\\"\\n }\\n}\\n\"]}}",
+			"sous-ids":           "",
+			"sous-id-values":     "",
 		})
 }
 
@@ -42,11 +44,13 @@ func TestReportLogFieldsMessage_NoInterface(t *testing.T) {
 		},
 		logging.StandardVariableFields,
 		map[string]interface{}{
-			"sous-fields":    "",
-			"sous-types":     "",
-			"@loglov3-otl":   logging.SousGenericV1,
-			"sous-ids":       "",
-			"sous-id-values": "",
+			"@loglov3-otl":       logging.SousGenericV1,
+			"severity":           logging.DebugLevel,
+			"call-stack-message": "This is test message no interface",
+			"sous-fields":        "",
+			"sous-types":         "",
+			"sous-ids":           "",
+			"sous-id-values":     "",
 		})
 }
 
@@ -57,12 +61,14 @@ func TestReportLogFieldsMessage_String(t *testing.T) {
 		},
 		logging.StandardVariableFields,
 		map[string]interface{}{
-			"sous-fields":    "",
-			"sous-types":     "string",
-			"json-value":     "{\"message\":{\"array\":[\"{\\\"string\\\":{\\\"string\\\":\\\"simple string\\\"}}\"]}}",
-			"@loglov3-otl":   logging.SousGenericV1,
-			"sous-ids":       "",
-			"sous-id-values": "",
+			"@loglov3-otl":       logging.SousGenericV1,
+			"severity":           logging.DebugLevel,
+			"call-stack-message": "This is test message passing just a string",
+			"sous-fields":        "",
+			"sous-types":         "string",
+			"json-value":         "{\"message\":{\"array\":[\"{\\\"string\\\":{\\\"string\\\":\\\"simple string\\\"}}\"]}}",
+			"sous-ids":           "",
+			"sous-id-values":     "",
 		})
 }
 
@@ -77,12 +83,14 @@ func TestReportLogFieldsMessage_StructAndString(t *testing.T) {
 		},
 		logging.StandardVariableFields,
 		map[string]interface{}{
-			"sous-types":     "Config,string,bool",
-			"json-value":     "{\"message\":{\"array\":[\"(logging.Config) {\\n Basic: (struct { Level string \\\"env:\\\\\\\"SOUS_LOGGING_LEVEL\\\\\\\"\\\"; DisableConsole bool; ExtraConsole bool \\\"env:\\\\\\\"SOUS_EXTRA_CONSOLE\\\\\\\"\\\" }) {\\n  Level: (string) \\\"\\\",\\n  DisableConsole: (bool) false,\\n  ExtraConsole: (bool) false\\n },\\n Kafka: (struct { Enabled bool; DefaultLevel string \\\"env:\\\\\\\"SOUS_KAFKA_LOG_LEVEL\\\\\\\"\\\"; Topic string \\\"env:\\\\\\\"SOUS_KAFKA_TOPIC\\\\\\\"\\\"; Brokers []string; BrokerList string \\\"env:\\\\\\\"SOUS_KAFKA_BROKERS\\\\\\\"\\\" }) {\\n  Enabled: (bool) false,\\n  DefaultLevel: (string) \\\"\\\",\\n  Topic: (string) (len=10) \\\"test-topic\\\",\\n  Brokers: ([]string) \\u003cnil\\u003e,\\n  BrokerList: (string) (len=23) \\\"broker1,broker2,broker3\\\"\\n },\\n Graphite: (struct { Enabled bool; Server string \\\"env:\\\\\\\"SOUS_GRAPHITE_SERVER\\\\\\\"\\\" }) {\\n  Enabled: (bool) false,\\n  Server: (string) \\\"\\\"\\n }\\n}\\n\",\"{\\\"string\\\":{\\\"string\\\":\\\"simple string\\\"}}\"]}}",
-			"sous-fields":    "Basic,Kafka,Graphite,Config,Level,DisableConsole,ExtraConsole,Enabled,DefaultLevel,Topic,Brokers,BrokerList,Server",
-			"@loglov3-otl":   logging.SousGenericV1,
-			"sous-ids":       "",
-			"sous-id-values": "",
+			"@loglov3-otl":       logging.SousGenericV1,
+			"severity":           logging.DebugLevel,
+			"call-stack-message": "This is test message",
+			"sous-types":         "Config,string,bool",
+			"json-value":         "{\"message\":{\"array\":[\"(logging.Config) {\\n Basic: (struct { Level string \\\"env:\\\\\\\"SOUS_LOGGING_LEVEL\\\\\\\"\\\"; DisableConsole bool; ExtraConsole bool \\\"env:\\\\\\\"SOUS_EXTRA_CONSOLE\\\\\\\"\\\" }) {\\n  Level: (string) \\\"\\\",\\n  DisableConsole: (bool) false,\\n  ExtraConsole: (bool) false\\n },\\n Kafka: (struct { Enabled bool; DefaultLevel string \\\"env:\\\\\\\"SOUS_KAFKA_LOG_LEVEL\\\\\\\"\\\"; Topic string \\\"env:\\\\\\\"SOUS_KAFKA_TOPIC\\\\\\\"\\\"; Brokers []string; BrokerList string \\\"env:\\\\\\\"SOUS_KAFKA_BROKERS\\\\\\\"\\\" }) {\\n  Enabled: (bool) false,\\n  DefaultLevel: (string) \\\"\\\",\\n  Topic: (string) (len=10) \\\"test-topic\\\",\\n  Brokers: ([]string) \\u003cnil\\u003e,\\n  BrokerList: (string) (len=23) \\\"broker1,broker2,broker3\\\"\\n },\\n Graphite: (struct { Enabled bool; Server string \\\"env:\\\\\\\"SOUS_GRAPHITE_SERVER\\\\\\\"\\\" }) {\\n  Enabled: (bool) false,\\n  Server: (string) \\\"\\\"\\n }\\n}\\n\",\"{\\\"string\\\":{\\\"string\\\":\\\"simple string\\\"}}\"]}}",
+			"sous-fields":        "Basic,Kafka,Graphite,Config,Level,DisableConsole,ExtraConsole,Enabled,DefaultLevel,Topic,Brokers,BrokerList,Server",
+			"sous-ids":           "",
+			"sous-id-values":     "",
 		})
 }
 
@@ -100,11 +108,13 @@ func TestReportLogFieldsMessage_TwoStructs(t *testing.T) {
 		},
 		append(logging.StandardVariableFields, "json-value"),
 		map[string]interface{}{
-			"sous-types":     "Config,string,bool,*Response,int,Header,int64,*Request,*ConnectionState",
-			"sous-fields":    "Basic,Kafka,Graphite,Config,Level,DisableConsole,ExtraConsole,Enabled,DefaultLevel,Topic,Brokers,BrokerList,Server,Status,StatusCode,Proto,ProtoMajor,ProtoMinor,Header,Body,ContentLength,TransferEncoding,Close,Uncompressed,Trailer,Request,TLS,Response",
-			"@loglov3-otl":   logging.SousGenericV1,
-			"sous-ids":       "",
-			"sous-id-values": "",
+			"@loglov3-otl":       logging.SousGenericV1,
+			"severity":           logging.DebugLevel,
+			"call-stack-message": "This is test message",
+			"sous-types":         "Config,string,bool,*Response,int,Header,int64,*Request,*ConnectionState",
+			"sous-fields":        "Basic,Kafka,Graphite,Config,Level,DisableConsole,ExtraConsole,Enabled,DefaultLevel,Topic,Brokers,BrokerList,Server,Status,StatusCode,Proto,ProtoMajor,ProtoMinor,Header,Body,ContentLength,TransferEncoding,Close,Uncompressed,Trailer,Request,TLS,Response",
+			"sous-ids":           "",
+			"sous-id-values":     "",
 		})
 }
 
@@ -124,6 +134,8 @@ func TestReportLogFieldsMessage_Submessage(t *testing.T) {
 		logging.StandardVariableFields,
 		map[string]interface{}{
 			"@loglov3-otl":        logging.SousGenericV1,
+			"severity":            logging.DebugLevel,
+			"call-stack-message":  "Only a test",
 			"call-stack-function": "github.com/opentable/sous/util/logging/messages.TestReportLogFieldsMessage_Submessage",
 			"sous-fields":         "",
 			"sous-id-values":      "",
@@ -150,9 +162,11 @@ func TestReportLogFieldsMessage_CyclicalReference(t *testing.T) {
 		},
 		append(logging.StandardVariableFields, "json-value"),
 		map[string]interface{}{
-			"sous-fields":  "Child,LogData,Parent",
-			"sous-types":   "Parent,*Parent,string",
-			"@loglov3-otl": logging.SousGenericV1,
+			"@loglov3-otl":       logging.SousGenericV1,
+			"severity":           logging.DebugLevel,
+			"call-stack-message": "This is test message",
+			"sous-fields":        "Child,LogData,Parent",
+			"sous-types":         "Parent,*Parent,string",
 		})
 }
 
@@ -165,12 +179,14 @@ func TestReportLogFieldsMessage_error(t *testing.T) {
 		},
 		logging.StandardVariableFields,
 		map[string]interface{}{
-			"sous-fields":    "",
-			"sous-types":     "error",
-			"json-value":     "{\"message\":{\"array\":[\"{\\\"error\\\":{\\\"error\\\":\\\"error msg\\\"}}\"]}}",
-			"@loglov3-otl":   logging.SousGenericV1,
-			"sous-ids":       "",
-			"sous-id-values": "",
+			"@loglov3-otl":       logging.SousGenericV1,
+			"severity":           logging.DebugLevel,
+			"call-stack-message": "This is test message",
+			"sous-fields":        "",
+			"sous-types":         "error",
+			"json-value":         "{\"message\":{\"array\":[\"{\\\"error\\\":{\\\"error\\\":\\\"error msg\\\"}}\"]}}",
+			"sous-ids":           "",
+			"sous-id-values":     "",
 		})
 }
 
@@ -234,9 +250,11 @@ func TestReportLogFieldsMessageWithIDs_TwoIds(t *testing.T) {
 		},
 		append(logging.StandardVariableFields, variableFields...),
 		map[string]interface{}{
-			"sous-fields":  "TestInnerID,Cluster,TestID,Source,Repo,Dir,Location",
-			"sous-types":   "*TestID,TestInnerID,Location,string",
-			"sous-ids":     "TestID,TestInnerID",
-			"@loglov3-otl": logging.SousGenericV1,
+			"@loglov3-otl":       logging.SousGenericV1,
+			"severity":           logging.DebugLevel,
+			"call-stack-message": "This is test message",
+			"sous-fields":        "TestInnerID,Cluster,TestID,Source,Repo,Dir,Location",
+			"sous-types":         "*TestID,TestInnerID,Location,string",
+			"sous-ids":           "TestID,TestInnerID",
 		})
 }
