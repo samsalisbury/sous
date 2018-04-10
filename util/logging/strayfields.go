@@ -20,9 +20,6 @@ type strayFields struct {
 
 func assembleStrayFields(items ...interface{}) strayFields {
 	sf := &strayFields{}
-	if _, err := sf.jsonObj.Array("message", "array"); err != nil {
-		fmt.Println("Failed to add object array: ", err.Error())
-	}
 	for _, item := range items {
 		sf.addItem(item)
 	}
@@ -81,9 +78,6 @@ func (sf *strayFields) addRedundants(extras map[FieldName][]interface{}) {
 func (sf *strayFields) addJSON(json string) {
 	if sf.jsonObj == nil {
 		sf.jsonObj = gabs.New()
-		if _, err := sf.jsonObj.Array("message", "array"); err != nil {
-			fmt.Println("error:", err)
-		}
 	}
 	if err := sf.jsonObj.ArrayAppend(json, "message", "array"); err != nil {
 		fmt.Println("error: ", err)

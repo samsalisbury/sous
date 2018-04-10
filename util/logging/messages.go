@@ -35,6 +35,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/davecgh/go-spew/spew"
 )
 
 type (
@@ -82,6 +84,9 @@ type (
 
 		// AtExit() does last-minute cleanup of stuff
 		AtExit()
+
+		// ForceDefer is used during testing to suspend the "panic during testing" behavior.
+		ForceDefer() bool
 	}
 
 	// A MetricsSink is passed into a MetricsMessage's MetricsTo(), so that the
@@ -239,16 +244,17 @@ func NewDeliver(logger LogSink, messages ...interface{}) {
 	if logger == nil {
 		panic("null logger")
 	}
-	items := partitionItems(messages)
 
 	//determine if function running under test, allow overwritten value from options functions
-	testFlag := func() bool {
-		return (strings.HasSuffix(os.Args[0], ".test"))
-	}()
+	testFlag := strings.HasSuffix(os.Args[0], ".test")
+	if logger.ForceDefer() {
+		testFlag = false
+	}
 
 	if !testFlag {
 		defer loggingPanicsShouldntCrashTheApp(logger, messages)
 	}
+	items := partitionItems(messages)
 
 	logger.Fields(items.eachFielders)
 
@@ -301,11 +307,13 @@ func partitionItems(items []interface{}) partitionedItems {
 			others = append(others, item)
 		}
 	}
-	if len(others) > 0 {
+	if !l.silent() && len(others) > 0 {
 		l.eachFielders = append(l.eachFielders, assembleStrayFields(others...))
 	}
 	return l
 }
+
+var loops = 2
 
 func (i partitionedItems) silent() bool {
 	if len(i.eachFielders) > 0 {
@@ -330,6 +338,11 @@ type loggingPanicFakeMessage struct {
 // therefore: recover the panic do the simplest thing that will be logged,
 func loggingPanicsShouldntCrashTheApp(ls LogSink, msg interface{}) {
 	if rec := recover(); rec != nil {
+		spew.Dump(msg)
+		if loops <= 0 {
+			panic(rec)
+		}
+		loops--
 		Deliver(loggingPanicFakeMessage{msg}, ls)
 	}
 }

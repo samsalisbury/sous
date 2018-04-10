@@ -14,5 +14,5 @@ func TestSilentMessageError(t *testing.T) {
 		assert.Len(t, ctrl.Console.CallsTo("Write"), 1)
 	}
 
-	assert.Len(t, ctrl.CallsTo("LogMessage"), 1)
+	assert.Len(t, ctrl.CallsTo("Fields"), 1)
 }

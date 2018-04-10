@@ -32,7 +32,8 @@ type (
 	}
 
 	logSinkSpy struct {
-		spy *spies.Spy
+		spy    *spies.Spy
+		defers bool
 	}
 
 	// LogSinkController allows testing code to manipulate and inspect the spies
@@ -46,7 +47,7 @@ type (
 
 // NewLogSinkSpy returns a spy/controller pair for testing purposes.
 // (see LogSet for a general purpose implementation of LogSink)
-func NewLogSinkSpy() (LogSink, LogSinkController) {
+func NewLogSinkSpy(def ...bool) (LogSink, LogSinkController) {
 	spy := spies.NewSpy()
 
 	console, cc := NewWriteDonerSpy()
@@ -61,7 +62,12 @@ func NewLogSinkSpy() (LogSink, LogSinkController) {
 	ctrl.MatchMethod("ExtraConsole", spies.AnyArgs, console)
 	ctrl.MatchMethod("Metrics", spies.AnyArgs, metrics)
 
-	return logSinkSpy{spy: spy}, ctrl
+	d := false
+	if len(def) > 0 {
+		d = def[0]
+	}
+
+	return logSinkSpy{spy: spy, defers: d}, ctrl
 }
 
 func (lss logSinkSpy) Fields(items []EachFielder) {
@@ -86,6 +92,10 @@ func (lss logSinkSpy) ExtraConsole() WriteDoner {
 func (lss logSinkSpy) Metrics() MetricsSink {
 	res := lss.spy.Called()
 	return res.Get(0).(MetricsSink)
+}
+
+func (lss logSinkSpy) ForceDefer() bool {
+	return lss.defers
 }
 
 func (lss logSinkSpy) AtExit() {

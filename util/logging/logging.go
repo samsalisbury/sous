@@ -274,6 +274,11 @@ func (ls LogSet) AtExit() {
 	}
 }
 
+// ForceDefer returns false to register the "normal" behavior of LogSet.
+func (ls LogSet) ForceDefer() bool {
+	return false
+}
+
 func logrusFormatter() logrus.Formatter {
 	return &logrus.JSONFormatter{
 		DisableTimestamp: true, //we capture the timestamp when message created
