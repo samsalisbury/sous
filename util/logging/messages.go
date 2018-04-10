@@ -326,8 +326,6 @@ func partitionItems(items []interface{}) partitionedItems {
 	return l
 }
 
-var loops = 2
-
 func (i partitionedItems) silent() bool {
 	if len(i.eachFielders) > 0 {
 		return false
@@ -351,11 +349,6 @@ type loggingPanicFakeMessage struct {
 // therefore: recover the panic do the simplest thing that will be logged,
 func loggingPanicsShouldntCrashTheApp(ls LogSink, msg interface{}) {
 	if rec := recover(); rec != nil {
-		spew.Dump(msg)
-		if loops <= 0 {
-			panic(rec)
-		}
-		loops--
 		Deliver(ls, loggingPanicFakeMessage{msg})
 	}
 }
