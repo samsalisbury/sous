@@ -15,8 +15,10 @@ func TestSQLMessageError(t *testing.T) {
 		reportSQLMessage(log, start, "test-table", write, "insert into test-table (x,y,z) = (1,2,3)", 1, errors.New("the database exploded"))
 	})
 
-	logging.AssertMessageFields(t, message, append(logging.StandardVariableFields, logging.IntervalVariableFields...), map[string]interface{}{
+	logging.AssertMessageFieldlist(t, message, append(logging.StandardVariableFields, logging.IntervalVariableFields...), map[string]interface{}{
 		"@loglov3-otl":         logging.SousSql,
+		"call-stack-message":   "the database exploded",
+		"severity":             logging.WarningLevel,
 		"call-stack-function":  "github.com/opentable/sous/ext/storage.TestSQLMessageError",
 		"sous-sql-query":       "insert into test-table (x,y,z) = (1,2,3)",
 		"sous-sql-rows":        1,
@@ -35,8 +37,10 @@ func TestSQLMessageWrite(t *testing.T) {
 		reportSQLMessage(log, start, "test-table", write, "insert into test-table (x,y,z) = (1,2,3)", 1, nil)
 	})
 
-	logging.AssertMessageFields(t, message, append(logging.StandardVariableFields, logging.IntervalVariableFields...), map[string]interface{}{
+	logging.AssertMessageFieldlist(t, message, append(logging.StandardVariableFields, logging.IntervalVariableFields...), map[string]interface{}{
 		"@loglov3-otl":        logging.SousSql,
+		"call-stack-message":  "SQL query",
+		"severity":            logging.InformationLevel,
 		"call-stack-function": "github.com/opentable/sous/ext/storage.TestSQLMessageWrite",
 		"sous-sql-query":      "insert into test-table (x,y,z) = (1,2,3)",
 		"sous-sql-rows":       1,
@@ -54,8 +58,10 @@ func TestSQLMessageRead(t *testing.T) {
 		reportSQLMessage(log, start, "test-table", read, "select * from test-table", 100, nil)
 	})
 
-	logging.AssertMessageFields(t, message, append(logging.StandardVariableFields, logging.IntervalVariableFields...), map[string]interface{}{
+	logging.AssertMessageFieldlist(t, message, append(logging.StandardVariableFields, logging.IntervalVariableFields...), map[string]interface{}{
 		"@loglov3-otl":        logging.SousSql,
+		"call-stack-message":  "SQL query",
+		"severity":            logging.InformationLevel,
 		"call-stack-function": "github.com/opentable/sous/ext/storage.TestSQLMessageRead",
 		"sous-sql-query":      "select * from test-table",
 		"sous-sql-rows":       100,

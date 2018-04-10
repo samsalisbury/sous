@@ -12,9 +12,9 @@ func TestDeliversDiffMessages(t *testing.T) {
 	proc := loggingProcessor{ls: spy}
 	proc.doLog(&DeployablePair{})
 
-	assert.Len(t, ctrl.CallsTo("LogMessage"), 1)
+	assert.Len(t, ctrl.CallsTo("Fields"), 1)
 	// message for errors
 
 	proc.HandleResolution(&DiffResolution{})
-	assert.Len(t, ctrl.CallsTo("LogMessage"), 2)
+	assert.Len(t, ctrl.CallsTo("Fields"), 2)
 }

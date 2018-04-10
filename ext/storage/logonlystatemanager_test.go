@@ -18,5 +18,5 @@ func TestLogOnlyStateManager(t *testing.T) {
 	err = sm.WriteState(sous.NewState(), sous.User{})
 	assert.NoError(t, err)
 
-	assert.Len(t, ctrl.Calls(), 2)
+	assert.Len(t, ctrl.Calls(), 4)
 }

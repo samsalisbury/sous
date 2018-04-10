@@ -47,3 +47,7 @@ func (l *fallbackLogger) ExtraConsole() logging.WriteDoner {
 }
 
 func (l *fallbackLogger) AtExit() {}
+
+func (l fallbackLogger) ForceDefer() bool {
+	return false
+}

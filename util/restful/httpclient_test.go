@@ -79,36 +79,43 @@ func TestClientRetrieve(t *testing.T) {
 	ctrl.DumpLogs(t)
 	require.NoError(t, err)
 
-	logCalls := ctrl.CallsTo("LogMessage")
+	logCalls := ctrl.CallsTo("Fields")
 	assert.Contains(up.(*resourceState).qparms, "query")
 
-	var testIndex int
+	testIndex := -1
 	for i, v := range logCalls {
-		logmsg := v.PassedArgs().Get(1).(logging.LogMessage)
+		logfields := v.PassedArgs().Get(0).([]logging.EachFielder)
 
-		msg := logmsg.Message()
+		for _, f := range logfields {
+			if logmsg, is := f.(logging.LogMessage); is {
+				msg := logmsg.Message()
 
-		if strings.Contains(msg, "Client <- body:") {
-			testIndex = i
-			break
+				if strings.Contains(msg, "Client <- body:") {
+					testIndex = i
+					break
+				}
+			}
 		}
 	}
 
-	logLvl := logCalls[testIndex].PassedArgs().Get(0).(logging.Level)
-	tstmsg := logCalls[testIndex].PassedArgs().Get(1).(logging.LogMessage)
+	if testIndex < 0 {
+		t.Fatal("Couldn't find a log message!")
+	}
 
-	assert.Equal(logLvl, logging.ExtraDebug1Level)
+	tstmsg := logCalls[testIndex].PassedArgs().Get(0).([]logging.EachFielder)
 
 	fixedFields := map[string]interface{}{
-		"@loglov3-otl":    logging.SousHttpV1,
-		"body-size":       int64(0),
-		"incoming":        true,
-		"method":          "GET",
-		"resource-family": "",
-		"response-size":   int64(2),
-		"status":          200,
-		"url-pathname":    "/path",
-		"url-querystring": "query=present",
+		"@loglov3-otl":       logging.SousHttpV1,
+		"severity":           logging.ExtraDebug1Level,
+		"call-stack-message": "Client <- body: 2 bytes, {} (read err: <nil>)",
+		"body-size":          int64(0),
+		"incoming":           true,
+		"method":             "GET",
+		"resource-family":    "",
+		"response-size":      int64(2),
+		"status":             200,
+		"url-pathname":       "/path",
+		"url-querystring":    "query=present",
 	}
 
 	var variableFields []string
@@ -119,7 +126,7 @@ func TestClientRetrieve(t *testing.T) {
 		"duration",
 		"call-stack-function", // live log entries are squirrelly
 	)
-	logging.AssertMessageFields(t, tstmsg, variableFields, fixedFields)
+	logging.AssertMessageFieldlist(t, tstmsg, variableFields, fixedFields)
 }
 
 func dig(m interface{}, index ...interface{}) interface{} {
