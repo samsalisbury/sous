@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 	"github.com/pkg/errors"
 )
 
@@ -57,6 +58,16 @@ func (f *DeployFilterFlags) BuildFilter(parseSL func(string) (sous.SourceLocatio
 	}
 
 	return rf, nil
+}
+
+// EachField implements logging.EachFielder on DeployFilterFlags.
+func (f DeployFilterFlags) EachField(fn func(logging.FieldName, interface{})) {
+	fn(logging.FilterCluster, f.Cluster)
+	fn(logging.FilterFlavor, f.Flavor)
+	fn(logging.FilterOffset, f.Offset)
+	fn(logging.FilterRepo, f.Repo)
+	fn(logging.FilterRevision, f.Revision)
+	fn(logging.FilterTag, f.Tag)
 }
 
 func buildFieldMatcher(config string, all bool) sous.ResolveFieldMatcher {

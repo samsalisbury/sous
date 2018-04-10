@@ -172,6 +172,11 @@ type (
 	// A MessageField is a quick wrapper for string with EachField.
 	MessageField string
 
+	kv struct {
+		k FieldName
+		v interface{}
+	}
+
 	// ToConsole allows quick creation of Console messages.
 	ToConsole struct {
 		msg fmt.Stringer
@@ -185,9 +190,22 @@ func (frf FieldReportFn) All(efs ...EachFielder) {
 	}
 }
 
+// KV creates a single-entry EachFielder with the FieldName as the name.
+func KV(n FieldName, v interface{}) EachFielder {
+	return kv{k: n, v: v}
+}
+
+func (p kv) EachField(fn FieldReportFn) {
+	fn(p.k, p.v)
+}
+
 // EachField implements EachFielder on MessageField.
 func (m MessageField) EachField(fn FieldReportFn) {
 	fn(CallStackMessage, string(m))
+}
+
+func (m MessageField) String() string {
+	return string(m)
 }
 
 // WriteToConsole implements ConsoleMessage on ToConsole.
