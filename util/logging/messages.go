@@ -223,7 +223,7 @@ func nopDoner(w io.Writer) WriteDoner {
 
 func (writeDoner) Done() {}
 
-// Deliver is the core of the logging messages design.
+// NewDeliver is the core of the logging messages design.
 //
 // The message argument may implement
 // any of LogMessage, MetricsMessage or ConsoleMessage, and the
@@ -235,11 +235,6 @@ func (writeDoner) Done() {}
 //
 // The upshot is that messages can be Delivered on the spot and
 // later determine what facilities are appropriate.
-func Deliver(message interface{}, logger LogSink, options ...func() bool) {
-	NewDeliver(logger, []interface{}{message}...)
-}
-
-// NewDeliver allows general list of value based logging.
 func NewDeliver(logger LogSink, messages ...interface{}) {
 	if logger == nil {
 		panic("null logger")
