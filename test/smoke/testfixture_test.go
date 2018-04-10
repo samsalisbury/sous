@@ -60,3 +60,8 @@ func setupEnv(t *testing.T, testName string) Fixture {
 		BaseDir: baseDir,
 	}
 }
+
+func (f *Fixture) Stop(t *testing.T) {
+	t.Helper()
+	f.Cluster.Stop(t)
+}

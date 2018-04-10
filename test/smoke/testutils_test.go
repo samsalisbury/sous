@@ -4,11 +4,13 @@ package smoke
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
+	"strings"
 	"testing"
 	"time"
 
@@ -139,4 +141,54 @@ func addURLsToState(state *sous.State, envDesc desc.EnvDesc) {
 		c.BaseURL = envDesc.SingularityURL()
 	}
 	state.Defs.DockerRepo = envDesc.RegistryName()
+}
+
+func mustDoCMD(t *testing.T, dir, name string, args ...string) {
+	t.Helper()
+	if err := doCMD(dir, name, args...); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func doCMD(dir, name string, args ...string) error {
+	c := mkCMD(dir, name, args...)
+	if o, err := c.CombinedOutput(); err != nil {
+		return fmt.Errorf("command %q %v in dir %q failed: %v; output was:\n%s",
+			name, args, dir, err, string(o))
+	}
+	return nil
+}
+
+func mkCMD(dir, name string, args ...string) *exec.Cmd {
+	c := exec.Command(name, args...)
+	c.Dir = dir
+	c.Env = os.Environ()
+	// Isolate git...
+	c.Env = append(c.Env,
+		"GIT_CONFIG_NOSYSTEM=yes",
+		"HOME=/nowhere",
+		"PREFIX=/nowhere",
+		"GIT_COMMITTER_NAME=Tester",
+		"GIT_COMMITTER_EMAIL=tester@example.com",
+		"GIT_AUTHOR_NAME=Tester",
+		"GIT_AUTHOR_EMAIL=tester@example.com",
+	)
+	return c
+}
+
+// testing os.ErrNotExist seems to not work in the majority of cases,
+// at least on Darwin.
+// TODO SS: Find out why...
+func isNotExist(err error) bool {
+	if err == nil {
+		panic("cannot check nil error")
+	}
+	return err == os.ErrNotExist ||
+		strings.Contains(err.Error(), "no such file or directory")
+}
+
+func closeFile(t *testing.T, f *os.File) {
+	if err := f.Close(); err != nil {
+		t.Errorf("failed to close %s: %s", pidFile, err)
+	}
 }
