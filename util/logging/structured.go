@@ -18,12 +18,12 @@ func (ls LogSet) Fields(items []EachFielder) {
 	redundantFields := map[FieldName][]interface{}{}
 	haveRedundant := false
 
+	var hasOTL, hasLevel, hasMessage bool
+
 	items = append(items, ls.appIdent, ls.entryID())
 	level := WarningLevel
-	hasLevel := false
 
 	messages := []string{}
-	hasMessage := false
 
 	var strays *strayFields
 
@@ -41,7 +41,10 @@ func (ls LogSet) Fields(items []EachFielder) {
 					return
 				}
 				redundantFields[name] = []interface{}{}
-				logto.WithField(string(name), value)
+				if name == Loglov3Otl {
+					hasOTL = true
+				}
+				logto = logto.WithField(string(name), value)
 			case Severity:
 				newLevel, is := value.(Level)
 				if !is {
@@ -61,6 +64,11 @@ func (ls LogSet) Fields(items []EachFielder) {
 				messages = append(messages, fmt.Sprintf("%s", value))
 			}
 		})
+	}
+
+	if !hasOTL {
+		messages = append(messages, "No OTL provided")
+		logto = logto.WithField(string(Loglov3Otl), SousGenericV1)
 	}
 
 	if !hasMessage {
