@@ -45,7 +45,7 @@ func SetupTest(t *testing.T) *PostgresStateManagerSuite {
 	if np, set := os.LookupEnv("PGPORT"); set {
 		port = np
 	}
-	connstr := fmt.Sprintf("dbname=sous_test host=localhost user=postgres port=%s sslmode=disable", port)
+	connstr := fmt.Sprintf("dbname=sous_test host=localhost port=%s sslmode=disable", port)
 	if suite.db, err = sql.Open("postgres", connstr); err != nil {
 		suite.FailNow("Error establishing test-assertion DB connection.", "Error: %v", err)
 	}
@@ -70,7 +70,9 @@ func TestPostgresStateManagerWriteState_success(t *testing.T) {
 	logging.AssertMessageFieldlist(t, message, append(
 		append(logging.StandardVariableFields, logging.IntervalVariableFields...), "call-stack-function", "sous-sql-query", "sous-sql-rows"),
 		map[string]interface{}{
-			"@loglov3-otl": logging.SousSql,
+			"@loglov3-otl":       logging.SousSql,
+			"severity":           logging.InformationLevel,
+			"call-stack-message": "SQL query",
 		})
 
 	suite.require.NoError(suite.manager.WriteState(s, testUser))

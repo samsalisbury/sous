@@ -86,13 +86,13 @@ func setupDBErr() (*sql.DB, error) {
 	if np, set := os.LookupEnv("PGPORT"); set {
 		port = np
 	}
-	connstr := fmt.Sprintf("dbname=sous_test_template host=localhost port=%s user=postgres sslmode=disable", port)
+	connstr := fmt.Sprintf("dbname=sous_test_template host=localhost port=%s sslmode=disable", port)
 	setupDB, err := sql.Open("postgres", connstr)
 	if err != nil {
 		return nil, fmt.Errorf("Error setting up test database Error: %v. Did you already `make postgres-test-prepare`?", err)
 	}
 	if _, err := setupDB.Exec("drop database sous_test"); err != nil && !isNoDBError(err) {
-		return nil, fmt.Errorf("Error dropping old test database connstr %q err %v", connstr, err)
+		return nil, fmt.Errorf("Error dropping old test database: connstr %q err %v", connstr, err)
 	}
 	if _, err := setupDB.Exec("create database sous_test template sous_test_template"); err != nil {
 		return nil, fmt.Errorf("Error creating test database connstr %q err %v", connstr, err)
@@ -101,8 +101,8 @@ func setupDBErr() (*sql.DB, error) {
 		return nil, fmt.Errorf("Error closing DB manipulation connection connstr %q err %v", connstr, err)
 	}
 	db, err := PostgresConfig{
-		DBName:   "sous_test",
-		User:     "postgres",
+		DBName: "sous_test",
+		//User:     "postgres",
 		Password: "",
 		Host:     "localhost",
 		Port:     port,
