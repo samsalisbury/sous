@@ -5,7 +5,6 @@ import (
 
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
-	"github.com/opentable/sous/util/logging/constants"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -22,21 +21,17 @@ func TestHandlesStatusGet(t *testing.T) {
 	}
 	data, status := th.Exchange()
 
-	logCalls := control.CallsTo("LogMessage")
+	logCalls := control.CallsTo("Fields")
 	require.Len(t, logCalls, 1)
-
-	logLvl := logCalls[0].PassedArgs().Get(0).(logging.Level)
-	msg := logCalls[0].PassedArgs().Get(1).(logging.LogMessage)
-
-	assert.Equal(logLvl, logging.DebugLevel)
-	assert.Contains(msg.Message(), "Reporting statuses")
+	msgs := logCalls[0].PassedArgs().Get(0).([]logging.EachFielder)
 
 	fixedFields := map[string]interface{}{
-		"@loglov3-otl": constants.SousGenericV1,
+		"@loglov3-otl": logging.SousGenericV1,
+		"severity":     logging.DebugLevel,
 	}
 
 	// treating call-stack-function as variable because the changes to function names could affect it
-	logging.AssertMessageFields(t, msg, append(logging.StandardVariableFields, "call-stack-function"), fixedFields)
+	logging.AssertMessageFieldlist(t, msgs, append(logging.StandardVariableFields, "call-stack-function", "call-stack-message"), fixedFields)
 
 	assert.Equal(status, 200)
 	assert.Len(data.(statusData).Deployments, 0)

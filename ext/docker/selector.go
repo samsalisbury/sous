@@ -48,7 +48,7 @@ func reportStrategyChoice(choice string, log logging.LogSink) {
 		choice:     choice,
 		CallerInfo: logging.GetCallerInfo(logging.NotHere()),
 	}
-	logging.Deliver(msg, log)
+	logging.Deliver(log, msg)
 }
 
 func (msg strategyChoiceMessage) WriteToConsole(console io.Writer) {

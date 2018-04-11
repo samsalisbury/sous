@@ -7,12 +7,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
 ## [Unreleased](//github.com/opentable/sous/compare/0.5.85...HEAD)
+### Added
+* Server: more flexible, agile logging API.
 ### Changed
 * Client: Display more information in case timeout of sous newdeploy.  Also show Executor Message if failed deploy.
 
 ## [0.5.85](//github.com/opentable/sous/compare/0.5.84...0.5.85)
 ### Added
-* Server: Logging fields now pulled from generated constants.
+* Server: Logging fields now pulled from generated logging.
 
 ## [0.5.84](//github.com/opentable/sous/compare/0.5.83...0.5.84)
 ### Fixed

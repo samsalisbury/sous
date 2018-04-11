@@ -3,7 +3,6 @@ package singularity
 import (
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
-	"github.com/opentable/sous/util/logging/constants"
 )
 
 type diffResolutionMessage struct {
@@ -20,11 +19,11 @@ func reportDiffResolutionMessage(message string, diffRes sous.DiffResolution, le
 		msg:            message,
 		diffResolution: diffRes,
 	}
-	logging.Deliver(msg, logger)
+	logging.Deliver(logger, msg)
 }
 
 func (msg diffResolutionMessage) EachField(f logging.FieldReportFn) {
-	f("@loglov3-otl", constants.SousDiffResolution)
+	f("@loglov3-otl", logging.SousDiffResolution)
 	f("sous-deployment-id", msg.diffResolution.DeploymentID.String())
 	f("sous-manifest-id", msg.diffResolution.ManifestID.String())
 	f("sous-resolution-description", string(msg.diffResolution.Desc))

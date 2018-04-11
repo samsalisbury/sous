@@ -4,7 +4,6 @@ import (
 	"time"
 
 	graphite "github.com/cyberdelia/go-metrics-graphite"
-	"github.com/opentable/sous/util/logging/constants"
 )
 
 type graphiteConfigMessage struct {
@@ -17,7 +16,7 @@ func reportGraphiteConfig(cfg *graphite.Config, ls LogSink) {
 		CallerInfo: GetCallerInfo(NotHere()),
 		cfg:        cfg,
 	}
-	Deliver(msg, ls)
+	Deliver(ls, msg)
 }
 
 func (gcm graphiteConfigMessage) DefaultLevel() Level {
@@ -32,7 +31,7 @@ func (gcm graphiteConfigMessage) Message() string {
 }
 
 func (gcm graphiteConfigMessage) EachField(f FieldReportFn) {
-	f("@loglov3-otl", constants.SousGraphiteConfigV1)
+	f("@loglov3-otl", SousGraphiteConfigV1)
 	gcm.CallerInfo.EachField(f)
 	if gcm.cfg == nil {
 		f("sous-successful-connection", false)

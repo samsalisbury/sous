@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/opentable/sous/util/logging"
-	"github.com/opentable/sous/util/logging/constants"
 	"github.com/opentable/sous/util/restful"
 	"github.com/pkg/errors"
 )
@@ -280,7 +279,7 @@ func reportSubPollerMessage(msg string, log logging.LogSink, flags ...bool) {
 		isConsoleMsg: consoleMsg,
 		isErrorMsg:   errorMsg,
 	}
-	logging.Deliver(msgLog, log)
+	logging.Deliver(log, msgLog)
 }
 
 func (msg subPollerMessage) WriteToConsole(console io.Writer) {
@@ -309,6 +308,6 @@ func (msg subPollerMessage) composeMsg() string {
 }
 
 func (msg subPollerMessage) EachField(f logging.FieldReportFn) {
-	f("@loglov3-otl", constants.SousGenericV1)
+	f("@loglov3-otl", logging.SousGenericV1)
 	msg.CallerInfo.EachField(f)
 }

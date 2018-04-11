@@ -2,13 +2,12 @@ package sous
 
 import (
 	"github.com/opentable/sous/util/logging"
-	"github.com/opentable/sous/util/logging/constants"
 )
 
 type deployableSubmessage struct {
 	deployable    *Deployable
 	deploymentSub logging.EachFielder
-	fields        map[string]constants.FieldName
+	fields        map[string]logging.FieldName
 }
 
 // NewDeployableSubmessage creates a new EachFielder that produces fields for a Deployable..
@@ -25,25 +24,25 @@ func NewDeployableSubmessage(prefix string, dep *Deployable) logging.EachFielder
 
 	switch prefix {
 	default:
-		smsg.fields = map[string]constants.FieldName{
+		smsg.fields = map[string]logging.FieldName{
 			"artifact-name":      "unknown-artifact-name",
 			"artifact-type":      "unknown-artifact-type",
 			"artifact-qualities": "unknown-artifact-qualities",
 			"status":             "unknown-status",
 		}
 	case "sous-prior":
-		smsg.fields = map[string]constants.FieldName{
-			"artifact-name":      constants.SousPriorArtifactName,
-			"artifact-type":      constants.SousPriorArtifactType,
-			"artifact-qualities": constants.SousPriorArtifactQualities,
-			"status":             constants.SousPriorStatus,
+		smsg.fields = map[string]logging.FieldName{
+			"artifact-name":      logging.SousPriorArtifactName,
+			"artifact-type":      logging.SousPriorArtifactType,
+			"artifact-qualities": logging.SousPriorArtifactQualities,
+			"status":             logging.SousPriorStatus,
 		}
 	case "sous-post":
-		smsg.fields = map[string]constants.FieldName{
-			"artifact-name":      constants.SousPostArtifactName,
-			"artifact-type":      constants.SousPostArtifactType,
-			"artifact-qualities": constants.SousPostArtifactQualities,
-			"status":             constants.SousPostStatus,
+		smsg.fields = map[string]logging.FieldName{
+			"artifact-name":      logging.SousPostArtifactName,
+			"artifact-type":      logging.SousPostArtifactType,
+			"artifact-qualities": logging.SousPostArtifactQualities,
+			"status":             logging.SousPostStatus,
 		}
 	}
 

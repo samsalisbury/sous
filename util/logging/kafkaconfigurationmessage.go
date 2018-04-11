@@ -2,8 +2,6 @@ package logging
 
 import (
 	"strings"
-
-	"github.com/opentable/sous/util/logging/constants"
 )
 
 type kafkaConfigurationMessage struct {
@@ -21,7 +19,7 @@ func reportKafkaConfig(hook *kafkaSink, cfg Config, ls LogSink) {
 		topic:      cfg.Kafka.Topic,
 	}
 	msg.ExcludeMe()
-	Deliver(msg, ls)
+	Deliver(ls, msg)
 }
 
 func (kcm kafkaConfigurationMessage) DefaultLevel() Level {
@@ -36,7 +34,7 @@ func (kcm kafkaConfigurationMessage) Message() string {
 }
 
 func (kcm kafkaConfigurationMessage) EachField(f FieldReportFn) {
-	f("@loglov3-otl", constants.SousKafkaConfigV1)
+	f("@loglov3-otl", SousKafkaConfigV1)
 	kcm.CallerInfo.EachField(f)
 	if kcm.hook == nil {
 		f("sous-successful-connection", false)

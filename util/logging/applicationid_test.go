@@ -32,7 +32,7 @@ func TestApplicationIdMessageFields(t *testing.T) {
 
 		// rawAssertMessageFields because ApplicationID is used to support other
 		// messages - it isn't a fully-fledged structured log entry itself
-		rawAssertMessageFields(t, apid, variableFields, fixedFields)
+		rawAssertMessageFields(t, []EachFielder{apid}, variableFields, fixedFields)
 	})
 
 	t.Run("MetricsScope", func(t *testing.T) {

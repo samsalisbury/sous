@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"github.com/opentable/sous/util/logging"
-	"github.com/opentable/sous/util/logging/constants"
 )
 
 type (
@@ -216,7 +215,7 @@ func reportResourceMessage(msg string, r Resources, log logging.LogSink, debug .
 		memory:     memory,
 		isDebugMsg: debugStmt,
 	}
-	logging.Deliver(msgLog, log)
+	logging.Deliver(log, msgLog)
 }
 
 func (msg resourceMessage) DefaultLevel() logging.Level {
@@ -237,7 +236,7 @@ func (msg resourceMessage) composeMsg() string {
 }
 
 func (msg resourceMessage) EachField(f logging.FieldReportFn) {
-	f("@loglov3-otl", constants.SousGenericV1)
+	f("@loglov3-otl", logging.SousGenericV1)
 	f("sous-resource-ports", msg.ports)
 	f("sous-resource-cpus", msg.cpus)
 	f("sous-resource-memory", msg.memory)

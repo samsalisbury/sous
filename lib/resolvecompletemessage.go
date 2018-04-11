@@ -2,7 +2,6 @@ package sous
 
 import (
 	"github.com/opentable/sous/util/logging"
-	"github.com/opentable/sous/util/logging/constants"
 )
 
 type resolveCompleteMessage struct {
@@ -19,7 +18,7 @@ func reportResolverStatus(logger logging.LogSink, status *ResolveStatus) {
 		MessageInterval: logging.NewInterval(status.Started, status.Finished),
 		status:          status,
 	}
-	logging.Deliver(msg, logger)
+	logging.Deliver(logger, msg)
 }
 
 func (msg resolveCompleteMessage) MetricsTo(m logging.MetricsSink) {
@@ -48,7 +47,7 @@ func (msg resolveCompleteMessage) Message() string {
 }
 
 func (msg resolveCompleteMessage) EachField(f logging.FieldReportFn) {
-	f("@loglov3-otl", constants.SousResolutionResultV1)
+	f("@loglov3-otl", logging.SousResolutionResultV1)
 	f("error-count", len(msg.status.Errs.Causes))
 	msg.CallerInfo.EachField(f)
 	msg.MessageInterval.EachField(f)

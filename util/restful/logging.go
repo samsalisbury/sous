@@ -25,8 +25,13 @@ func (l *fallbackLogger) Child(name string) logging.LogSink {
 	return l
 }
 
-func (l *fallbackLogger) LogMessage(lvl logging.Level, msg logging.LogMessage) {
-	fmt.Printf("%s %#v\n", lvl, msg)
+func (l *fallbackLogger) Fields(items []logging.EachFielder) {
+	fmt.Printf("Log entry:\n")
+	for _, i := range items {
+		i.EachField(func(n logging.FieldName, v interface{}) {
+			fmt.Printf("%s %#v\n", n, v)
+		})
+	}
 }
 
 func (l *fallbackLogger) Metrics() logging.MetricsSink {
@@ -42,3 +47,7 @@ func (l *fallbackLogger) ExtraConsole() logging.WriteDoner {
 }
 
 func (l *fallbackLogger) AtExit() {}
+
+func (l fallbackLogger) ForceDefer() bool {
+	return false
+}

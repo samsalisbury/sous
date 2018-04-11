@@ -8,28 +8,26 @@ import (
 
 type terribadLogMessage struct{}
 
-func (msg terribadLogMessage) DefaultLevel() Level {
-	panic("terribad!")
-}
-
 func (msg terribadLogMessage) Message() string {
-	panic("so much terrible")
+	panic("never panic while logging; it's not worth crashing the app!")
 }
-
+func (msg terribadLogMessage) DefaultLevel() Level {
+	panic("never panic while logging; it's not worth crashing the app!")
+}
 func (msg terribadLogMessage) EachField(fn FieldReportFn) {
 	panic("never panic while logging; it's not worth crashing the app!")
 }
 
 func TestLogMessagePanicking(t *testing.T) {
-	log, ctrl := NewLogSinkSpy()
+	log, ctrl := NewLogSinkSpy(true)
 
 	assert.NotPanics(t, func() {
-		noTestFunc := func() bool { return false }
-		Deliver(terribadLogMessage{}, log, noTestFunc)
+		Deliver(log, terribadLogMessage{})
 	})
 
-	calls := ctrl.CallsTo("LogMessage")
-	if assert.Len(t, calls, 1) {
-		assert.IsType(t, &silentMessageError{}, calls[0].PassedArgs().Get(1))
+	calls := ctrl.CallsTo("Fields")
+	if assert.Len(t, calls, 2) {
+		fields := calls[1].PassedArgs().Get(0).([]EachFielder)
+		assert.IsType(t, &silentMessageError{}, fields[2])
 	}
 }

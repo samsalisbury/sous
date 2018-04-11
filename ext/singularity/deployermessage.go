@@ -3,7 +3,6 @@ package singularity
 import (
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
-	"github.com/opentable/sous/util/logging/constants"
 )
 
 type deployerMessage struct {
@@ -34,7 +33,7 @@ func reportDeployerMessage(
 		taskData:   taskData,
 		error:      error,
 	}
-	logging.Deliver(msg, logger)
+	logging.Deliver(logger, msg)
 }
 
 func (msg deployerMessage) Message() string {
@@ -42,7 +41,7 @@ func (msg deployerMessage) Message() string {
 }
 
 func (msg deployerMessage) EachField(f logging.FieldReportFn) {
-	f("@loglov3-otl", constants.SousRectifierSingularityV1)
+	f("@loglov3-otl", logging.SousRectifierSingularityV1)
 	f("sous-diffs", msg.diffs.String())
 	if msg.taskData != nil {
 		f("sous-request-id", msg.taskData.requestID)

@@ -633,7 +633,7 @@ func reportTableMetrics(logger logging.LogSink, db *sql.DB) {
 	msg := tableMetrics{
 		DB: db,
 	}
-	logging.Deliver(msg, logger)
+	logging.Deliver(logger, msg)
 }
 
 func sqlExec(db *sql.DB, sql string) error {

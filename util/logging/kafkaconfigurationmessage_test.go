@@ -2,8 +2,6 @@ package logging
 
 import (
 	"testing"
-
-	"github.com/opentable/sous/util/logging/constants"
 )
 
 func TestReportKafkaConfiguration_Zero(t *testing.T) {
@@ -16,7 +14,9 @@ func TestReportKafkaConfiguration_Zero(t *testing.T) {
 		},
 		StandardVariableFields,
 		map[string]interface{}{
-			"@loglov3-otl":               constants.SousKafkaConfigV1,
+			"@loglov3-otl":               SousKafkaConfigV1,
+			"severity":                   InformationLevel,
+			"call-stack-message":         "Not connecting to Kafka.",
 			"sous-successful-connection": false,
 		})
 }
@@ -33,11 +33,13 @@ func TestReportKafkaConfiguration_Complete(t *testing.T) {
 		},
 		StandardVariableFields,
 		map[string]interface{}{
+			"@loglov3-otl":               SousKafkaConfigV1,
+			"severity":                   InformationLevel,
+			"call-stack-message":         "Connecting to Kafka",
 			"kafka-logging-topic":        "test-topic",
 			"kafka-brokers":              "broker1,broker2,broker3",
 			"kafka-logging-levels":       "CriticalLevel",
 			"kafka-logger-id":            "",
-			"@loglov3-otl":               constants.SousKafkaConfigV1,
 			"sous-successful-connection": true,
 		})
 }

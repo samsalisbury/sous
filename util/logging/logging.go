@@ -45,33 +45,33 @@
 //
 // An example log message might look like this:
 //  type exampleMessage struct {
-//    logging.CallerInfo
-//    logging.Level
+//    CallerInfo
+//    Level
 //    myField string
 //  }
 //
-//  func ReportExample(field string, sink logging.LogSink) {
+//  func ReportExample(field string, sink LogSink) {
 //    msg := newExampleMessage(field)
 //    msg.CallerInfo.ExcludeMe() // this filters out ReportExample from the logged call stack
-//    logging.Deliver(sink, msg) // this is the important part
+//    Deliver(msg, sink) // this is the important part
 //  }
 //
 //  func newExampleMessage(field string) *exampleMessage {
 //    return &exampleMessage{
-//      CallerInfo: logging.GetCallerInfo(logging.NotHere()), // this formula captures the call point, while excluding the constructor
-//      Level: logging.DebugLevel,
+//      CallerInfo: GetCallerInfo(NotHere()), // this formula captures the call point, while excluding the constructor
+//      Level: DebugLevel,
 //      myField: field,
 //    }
 //  }
 //
-//  // func (msg *exampleMessage) DefaultLevel() logging.Level { ... }
+//  // func (msg *exampleMessage) DefaultLevel() Level { ... }
 //  // we could define this method, or let the embedded Level handle it.
 //
 //  func (msg *exampleMessage) Message() {
 //    return msg.myField
 //  }
 //
-//  func (msg *exampleMessage) EachField(f logging.FieldReportFn) {
+//  func (msg *exampleMessage) EachField(f FieldReportFn) {
 //    f("@loglov3-otl", "example-message") // a requirement of our local ELK
 //    msg.CallerInfo.EachField(f) // so that the CallerInfo can register its fields
 //    f("my-field", msg.myField)
@@ -272,6 +272,11 @@ func (ls LogSet) AtExit() {
 	if ls.dumpBundle.kafkaSink != nil {
 		ls.dumpBundle.kafkaSink.closedown()
 	}
+}
+
+// ForceDefer returns false to register the "normal" behavior of LogSet.
+func (ls LogSet) ForceDefer() bool {
+	return false
 }
 
 func logrusFormatter() logrus.Formatter {

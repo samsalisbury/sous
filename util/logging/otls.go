@@ -1,4 +1,4 @@
-package constants
+package logging
 
 type OTLName string
 

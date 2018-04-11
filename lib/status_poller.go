@@ -147,7 +147,7 @@ func (sp *StatusPoller) subPollers(clusters *serverListData, deps Deployments) (
 		}
 		messages.ReportLogFieldsMessage("Starting poller against", logging.DebugLevel, sp.logs, s)
 		// Kick off a separate process to issue HTTP requests against this cluster.
-		sub, err := newSubPoller(s.ClusterName, s.URL, sp.ResolveFilter, sp.User, logging.Log)
+		sub, err := newSubPoller(s.ClusterName, s.URL, sp.ResolveFilter, sp.User, sp.logs.Child(s.ClusterName))
 		if err != nil {
 			return nil, err
 		}

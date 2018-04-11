@@ -1,57 +1,136 @@
 package logging
 
 import (
-	"github.com/opentable/sous/util/logging/constants"
+	"fmt"
+	"strings"
+
 	"github.com/pborman/uuid"
+	"github.com/sirupsen/logrus"
 )
 
-// LogMessage records a message to one or more structured logs
-func (ls LogSet) LogMessage(lvl Level, msg LogMessage) {
-	logto := ls.logrus.WithField("severity", lvl.String())
+type entryID struct {
+	id, name, uuid string
+}
 
-	ls.eachField(func(name constants.FieldName, value interface{}) {
-		logto = logto.WithField(string(name), value)
-	})
+// Fields implements LogSink on LogSet.
+func (ls LogSet) Fields(items []EachFielder) {
+	logto := logrus.NewEntry(ls.logrus)
+	redundantFields := map[FieldName][]interface{}{}
+	haveRedundant := false
 
-	msg.EachField(func(name constants.FieldName, value interface{}) {
-		enforceSchema(name, value)
-		logto = logto.WithField(string(name), value)
-	})
+	var hasOTL, hasLevel, hasMessage bool
 
-	logto.Message = msg.Message()
-	err := ls.dumpBundle.sendToKafka(lvl, logto)
-	if _, isKafkaSend := msg.(*kafkaSendErrorMessage); err != nil && !isKafkaSend {
-		reportKafkaSendError(ls, err)
+	items = append(items, ls.appIdent, ls.entryID())
+	level := WarningLevel
+
+	messages := []string{}
+
+	var strays *strayFields
+
+	for _, item := range items {
+		if s, is := item.(strayFields); is {
+			strays = &s
+			continue
+		}
+		item.EachField(func(name FieldName, value interface{}) {
+			switch name {
+			default:
+				if list, yes := redundantFields[name]; yes {
+					redundantFields[name] = append(list, value)
+					haveRedundant = true
+					return
+				}
+				redundantFields[name] = []interface{}{}
+				if name == Loglov3Otl {
+					hasOTL = true
+				}
+				logto = logto.WithField(string(name), value)
+			case Severity:
+				newLevel, is := value.(Level)
+				if !is {
+					return
+				}
+				hasLevel = true
+				if !hasLevel {
+					level = newLevel
+					return
+				}
+				if level < newLevel {
+					level = newLevel
+				}
+				messages = append(messages, "Redundant serverity")
+			case CallStackMessage:
+				hasMessage = true
+				messages = append(messages, fmt.Sprintf("%s", value))
+			}
+		})
 	}
 
-	switch lvl {
+	if !hasOTL {
+		messages = append(messages, "No OTL provided")
+		logto = logto.WithField(string(Loglov3Otl), SousGenericV1)
+	}
+
+	if !hasMessage {
+		messages = append(messages, "No message provided")
+	}
+
+	if !hasLevel {
+		messages = append(messages, "No level provided")
+	}
+
+	if haveRedundant {
+		if strays == nil {
+			s := assembleStrayFields()
+			strays = &s
+		}
+		strays.addRedundants(redundantFields)
+	}
+
+	if strays != nil {
+		strays.EachField(func(name FieldName, value interface{}) {
+			logto.WithField(string(name), value)
+		})
+	}
+
+	switch level {
 	default:
-		logto.Printf("unknown Level: %d - %q", lvl, msg.Message())
+		logto.Printf("unknown Level: %d - %q", level, strings.Join(messages, "\n"))
 	case CriticalLevel:
-		logto.Error(msg.Message())
+		logto.Error(strings.Join(messages, "\n"))
 	case WarningLevel:
-		logto.Warn(msg.Message())
+		logto.Warn(strings.Join(messages, "\n"))
 	case InformationLevel:
-		logto.Info(msg.Message())
+		logto.Info(strings.Join(messages, "\n"))
 	case DebugLevel:
-		logto.Debug(msg.Message())
+		logto.Debug(strings.Join(messages, "\n"))
 	case ExtraDebug1Level:
-		logto.Debug(msg.Message())
+		logto.Debug(strings.Join(messages, "\n"))
 	}
+
 }
-func (ls LogSet) eachField(f FieldReportFn) {
+
+func (ls LogSet) entryID() entryID {
+	id := entryID{
+		id:   "sous",
+		name: ls.name,
+		uuid: uuid.New(),
+	}
+
 	if ls.appRole != "" {
-		f("component-id", "sous-"+ls.appRole)
-	} else {
-		f("component-id", "sous")
+		id.id = "sous-" + ls.appRole
 	}
-	f("logger-name", ls.name)
-	f("@uuid", uuid.New())
 
-	ls.appIdent.EachField(f)
+	return id
 }
 
-func enforceSchema(name constants.FieldName, val interface{}) {
+func (id entryID) EachField(f FieldReportFn) {
+	f(ComponentId, id.id)
+	f(LoggerName, id.name)
+	f(Uuid, id.uuid)
+}
+
+func enforceSchema(name FieldName, val interface{}) {
 	if false {
 		panic("bad logging")
 	}

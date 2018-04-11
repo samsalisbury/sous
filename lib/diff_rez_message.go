@@ -2,7 +2,6 @@ package sous
 
 import (
 	"github.com/opentable/sous/util/logging"
-	"github.com/opentable/sous/util/logging/constants"
 )
 
 type diffRezMessage struct {
@@ -19,7 +18,7 @@ func (msg diffRezMessage) Message() string {
 }
 
 func (msg diffRezMessage) EachField(f logging.FieldReportFn) {
-	f("@loglov3-otl", constants.SousDiffResolution)
+	f("@loglov3-otl", logging.SousDiffResolution)
 	msg.callerInfo.EachField(f)
 	f("sous-deployment-id", msg.resolution.DeploymentID.String())
 	f("sous-manifest-id", msg.resolution.ManifestID.String())

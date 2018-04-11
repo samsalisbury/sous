@@ -240,7 +240,7 @@ legendary: coverage
 
 test: test-gofmt test-staticcheck test-unit test-integration
 
-test-dev: test-staticcheck test-unit
+test-dev: test-gofmt test-staticcheck test-unit-base
 
 test-staticcheck: install-staticcheck
 	staticcheck -ignore "$$(cat staticcheck.ignore)" $(SOUS_PACKAGES)

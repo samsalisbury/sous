@@ -10,7 +10,6 @@ import (
 	"github.com/opentable/sous/dto"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
-	"github.com/opentable/sous/util/logging/constants"
 	"github.com/opentable/sous/util/restful"
 )
 
@@ -155,7 +154,7 @@ func reportHandleGDMMessage(msg string, f []sous.Flaw, err error, log logging.Lo
 		},
 		debug: isDebug,
 	}
-	logging.Deliver(msgLog, log)
+	logging.Deliver(log, msgLog)
 }
 
 func (msg handleGDMMessage) DefaultLevel() logging.Level {
@@ -185,7 +184,7 @@ func (msg handleGDMMessage) composeMsg() string {
 }
 
 func (msg handleGDMMessage) EachField(f logging.FieldReportFn) {
-	f("@loglov3-otl", constants.SousGenericV1)
+	f("@loglov3-otl", logging.SousGenericV1)
 
 	flaws := msg.flawsMessage.ReturnFlawMsg()
 
