@@ -16,7 +16,7 @@ type Fixture struct {
 	BaseDir string
 }
 
-func setupEnv(t *testing.T, testName string) Fixture {
+func setupEnv(t *testing.T) Fixture {
 	t.Helper()
 	if testing.Short() {
 		t.Skipf("-short flag present")
@@ -24,7 +24,7 @@ func setupEnv(t *testing.T, testName string) Fixture {
 	stopPIDs(t)
 	sousBin := getSousBin(t)
 	envDesc := getEnvDesc(t)
-	baseDir := getDataDir(t, testName)
+	baseDir := getDataDir(t)
 
 	resetSingularity(t, envDesc.SingularityURL())
 
