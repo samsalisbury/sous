@@ -5,7 +5,6 @@ package smoke
 import (
 	"bytes"
 	"io/ioutil"
-	"os"
 	"strings"
 	"testing"
 )
@@ -14,16 +13,17 @@ const simpleServer = `
 FROM alpine
 CMD if [ -z "$T" ]; then T=2; fi; echo -n "Sleeping ${T}s..."; sleep $T; echo "Done"; echo "Listening on :$PORT0"; while true; do echo -e "HTTP/1.1 200 OK\n\n$(date)" | nc -l -p $PORT0; done`
 
-func TestSousNewdeploy(t *testing.T) {
-	f := setupEnv(t, "TestSousNewdeploy")
-
+// setupProject creates a brand new git repo containing the provided Dockerfile,
+// runs sous init, then manifest get/set to bump instances to 1 in all clusters.
+func setupProject(t *testing.T, f Fixture, dockerfile string) TestClient {
+	t.Helper()
 	// Setup project git repo.
 	projectDir := makeGitRepo(t, f.BaseDir, "projects/project1", GitRepoSpec{
 		UserName:  "Sous User 1",
 		UserEmail: "sous-user1@example.com",
 		OriginURL: "git@github.com:opentable/bogus/repo1",
 	})
-	makeFileString(t, projectDir, "Dockerfile", simpleServer)
+	makeFileString(t, projectDir, "Dockerfile", dockerfile)
 	mustDoCMD(t, projectDir, "git", "add", "Dockerfile")
 	mustDoCMD(t, projectDir, "git", "commit", "-m", "Add Dockerfile")
 
@@ -36,31 +36,43 @@ func TestSousNewdeploy(t *testing.T) {
 	// cd into project dir
 	sous.Dir = projectDir
 
-	// sous init
-	sous.MustRun(t, "init")
+	return sous
+}
 
-	// sous manifest get > manifest
-	manifest := sous.MustRun(t, "manifest", "get")
+func TestSousNewdeploy(t *testing.T) {
 
-	// edit manifest
-	manifest = strings.Replace(manifest, "NumInstances: 0", "NumInstances: 1", -1)
+	t.Run("simple", func(t *testing.T) {
+		f := setupEnv(t)
+		sous := setupProject(t, f, simpleServer)
+		// Prepare manifest.
+		sous.MustRun(t, "init")
+		manifest := sous.MustRun(t, "manifest", "get")
+		manifest = strings.Replace(manifest, "NumInstances: 0", "NumInstances: 1", -1)
+		manifestSetCmd := sous.Cmd(t, "manifest", "set")
+		manifestSetCmd.Stdin = ioutil.NopCloser(bytes.NewReader([]byte(manifest)))
+		if out, err := manifestSetCmd.CombinedOutput(); err != nil {
+			t.Fatalf("manifest set failed: %s; output:\n%s", err, out)
+		}
+		// Build and deploy.
+		sous.MustRun(t, "build", "-tag", "1.2.3")
+		sous.MustRun(t, "newdeploy", "-cluster", "cluster1", "-tag", "1.2.3")
+	})
 
-	// sous manifest set < manifest
-	manifestSetCmd := sous.Cmd(t, "manifest", "set")
-	manifestSetCmd.Stdin = ioutil.NopCloser(bytes.NewReader([]byte(manifest)))
-	if out, err := manifestSetCmd.CombinedOutput(); err != nil {
-		t.Fatalf("manifest set failed: %s; output:\n%s", err, out)
-	}
+	t.Run("flavors", func(t *testing.T) {
+		f := setupEnv(t)
+		sous := setupProject(t, f, simpleServer)
+		flavor := "flavor1"
+		// Prepare manifest.
+		sous.MustRun(t, "init", "-flavor", flavor)
+		manifest := sous.MustRun(t, "manifest", "get", "-flavor", flavor)
+		manifest = strings.Replace(manifest, "NumInstances: 0", "NumInstances: 1", -1)
+		manifestSetCmd := sous.Cmd(t, "manifest", "set", "-flavor", flavor)
+		manifestSetCmd.Stdin = ioutil.NopCloser(bytes.NewReader([]byte(manifest)))
+		if out, err := manifestSetCmd.CombinedOutput(); err != nil {
+			t.Fatalf("manifest set failed: %s; output:\n%s", err, out)
+		}
+		sous.MustRun(t, "build", "-tag", "1.2.3")
+		sous.MustRun(t, "newdeploy", "-cluster", "cluster1", "-tag", "1.2.3", "-flavor", flavor)
+	})
 
-	// sous build
-	sous.MustRun(t, "build", "-tag", "1.2.3")
-
-	// sous newdeploy
-	clientDebug := os.Getenv("SOUS_CLIENT_DEBUG") == "true"
-	args := []string{"-cluster", "cluster1", "-tag", "1.2.3"}
-	if clientDebug {
-		args = append([]string{"-d"}, args...)
-	}
-
-	sous.MustRun(t, append([]string{"newdeploy"}, args...)...)
 }

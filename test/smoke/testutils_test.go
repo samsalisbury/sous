@@ -113,7 +113,7 @@ func dirExistsAndIsNotEmpty(t *testing.T, baseDir string) bool {
 	return err == nil || (err != io.EOF)
 }
 
-func getDataDir(t *testing.T, testName string) string {
+func getDataDir(t *testing.T) string {
 	baseDir := os.Getenv("SMOKE_TEST_DATA_DIR")
 	from := "$SMOKE_TEST_DATA_DIR"
 	if baseDir == "" {
@@ -121,7 +121,7 @@ func getDataDir(t *testing.T, testName string) string {
 		from = "$TMPDIR"
 	}
 
-	baseDir = path.Join(baseDir, testName)
+	baseDir = path.Join(baseDir, t.Name())
 
 	// Check dir does not exist or is at least empty.
 	if dirExistsAndIsNotEmpty(t, baseDir) {
