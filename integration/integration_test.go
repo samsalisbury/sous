@@ -505,26 +505,29 @@ func (suite *integrationSuite) TestResolve() {
 	}
 
 	dispositions := []string{}
-	for _, call := range logController.CallsTo("LogMessage") {
-		if lm, is := call.PassedArgs().Get(1).(logging.LogMessage); is {
-			lm.EachField(func(name logging.FieldName, val interface{}) {
-				if disp, is := val.(string); is && name == logging.SousDiffDisposition {
-					dispositions = append(dispositions, disp)
-				}
-			})
+	for _, call := range logController.CallsTo("Fields") {
+		if lms, is := call.PassedArgs().Get(0).([]logging.EachFielder); is {
+			for _, lm := range lms {
+				lm.EachField(func(name logging.FieldName, val interface{}) {
+					if disp, is := val.(string); is && name == logging.SousDiffDisposition {
+						dispositions = append(dispositions, disp)
+					}
+				})
+			}
 		}
 	}
 	sort.Strings(dispositions)
 	expectedDispositions := []string{"added", "added", "removed", "removed", "removed", "removed"}
 	if !suite.Equal(expectedDispositions, dispositions) {
 		log.Printf("All log messages:\n")
-		for _, call := range logController.CallsTo("LogMessage") {
-			if msg, is := call.PassedArgs().Get(1).(logging.LogMessage); is {
+		for _, call := range logController.CallsTo("Fields") {
+			if msgs, is := call.PassedArgs().Get(0).([]logging.EachFielder); is {
 				m := map[logging.FieldName]interface{}{}
-				msg.EachField(func(k logging.FieldName, v interface{}) {
-					m[k] = v
-				})
-				m["message"] = msg.Message()
+				for _, msg := range msgs {
+					msg.EachField(func(k logging.FieldName, v interface{}) {
+						m[k] = v
+					})
+				}
 				log.Print(spew.Sprintf("%#v", m))
 			} else {
 				log.Printf("NOT A LOG MESSAGE: %+#v", call.PassedArgs().Get(1))
