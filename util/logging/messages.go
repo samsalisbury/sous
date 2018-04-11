@@ -177,7 +177,11 @@ type (
 
 	// ToConsole allows quick creation of Console messages.
 	ToConsole struct {
-		msg fmt.Stringer
+		msg interface{}
+	}
+
+	consoleMessage struct {
+		ToConsole
 	}
 )
 
@@ -212,8 +216,17 @@ func (tc ToConsole) WriteToConsole(c io.Writer) {
 }
 
 // Console marks a string as being suitable for console output.
-func Console(m fmt.Stringer) ToConsole {
+func Console(m interface{}) ToConsole {
 	return ToConsole{msg: m}
+}
+
+// ConsoleAndMessage wraps a string such that it will be both a console output and the primary message of a log entry.
+func ConsoleAndMessage(m interface{}) consoleMessage {
+	return consoleMessage{ToConsole{msg: m}}
+}
+
+func (m consoleMessage) EachField(fn FieldReportFn) {
+	fn(CallStackMessage, fmt.Sprintf("%s", m.msg))
 }
 
 /*
