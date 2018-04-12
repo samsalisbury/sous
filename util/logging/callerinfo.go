@@ -111,7 +111,7 @@ func (info CallerInfo) EachField(f FieldReportFn) {
 	if frame.File == "" {
 		f(CallStackFile, "<unknown>")
 	} else {
-		f(CallStackFile, fmt.Sprint("%s:%d", frame.File, frame.Line))
+		f(CallStackFile, fmt.Sprintf("%s:%d", frame.File, frame.Line))
 	}
 
 	f(CallStackLineNumber, frame.Line)

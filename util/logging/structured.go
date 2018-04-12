@@ -49,7 +49,7 @@ func (ls LogSet) Fields(items []EachFielder) {
 	redundants := redundantFields{fs: map[FieldName][]interface{}{}}
 
 	items = append(items, ls.appIdent, ls.entryID())
-	level := WarningLevel
+	level := ExtraDebug1Level
 
 	messages := []string{}
 
@@ -75,7 +75,7 @@ func (ls LogSet) Fields(items []EachFielder) {
 				if !is {
 					return
 				}
-				if level < newLevel {
+				if newLevel < level {
 					level = newLevel
 				}
 			case CallStackMessage:
@@ -95,6 +95,7 @@ func (ls LogSet) Fields(items []EachFielder) {
 
 	if !redundants.any(Severity) {
 		messages = append(messages, "No level provided")
+		level = WarningLevel
 	}
 
 	if redundants.have {
