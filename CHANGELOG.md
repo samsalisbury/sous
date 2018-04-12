@@ -11,6 +11,7 @@ with respect to its command line interface and HTTP interface.
 * Server: more flexible, agile logging API.
 ### Changed
 * Client: Display more information in case timeout of sous newdeploy.  Also show Executor Message if failed deploy.
+* Server: cleanups to logging output
 
 ## [0.5.85](//github.com/opentable/sous/compare/0.5.84...0.5.85)
 ### Added
