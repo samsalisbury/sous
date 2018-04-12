@@ -35,7 +35,7 @@ func reportKafkaConfig(hook *kafkaSink, cfg Config, ls LogSink) {
 		SousKafkaConfigV1,
 		InformationLevel,
 		GetCallerInfo(NotHere()),
-		MessageField("Connecting to Kafka"),
+		ConsoleAndMessage("Connecting to Kafka"),
 		KV(SousSuccessfulConnection, true),
 		KV(KafkaLoggingTopic, cfg.Kafka.Topic),
 		KV(KafkaBrokers, strings.Join(cfg.getBrokers(), ",")),
