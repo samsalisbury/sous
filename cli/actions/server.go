@@ -91,7 +91,7 @@ func ensureGDMExists(repo, localPath string, filterFlags config.DeployFilterFlag
 func reportServerMessage(msg string, filterFlags config.DeployFilterFlags, addr string, log logging.LogSink) {
 	logging.Deliver(log,
 		logging.SousGenericV1,
-		logging.Console(logging.MessageField(msg)),
+		logging.ConsoleAndMessage(msg),
 		logging.WarningLevel,
 		logging.GetCallerInfo(logging.NotHere()),
 		filterFlags,

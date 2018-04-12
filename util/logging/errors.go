@@ -22,15 +22,16 @@ func ReportErrorConsole(sink LogSink, err error) {
 // If you need more information than "an error occurred", consider using a
 // different structured message.
 func ReportError(sink LogSink, err error, console ...bool) {
-
-	useConsole := false
+	var msg interface{}
+	msg = MessageField(err.Error())
 	if len(console) > 0 {
-		useConsole = console[0]
+		msg = ConsoleAndMessage(err)
 	}
 
-	msg := newErrorMessage(err, useConsole)
-	msg.CallerInfo.ExcludeMe()
-	Deliver(sink, msg)
+	Deliver(sink, SousErrorV1, WarningLevel, msg, GetCallerInfo(NotHere()),
+		KV(SousErrorMsg, err.Error()),
+		KV(SousErrorBacktrace, fmt.Sprintf("%+v", err)),
+	)
 }
 
 func newErrorMessage(err error, console bool) *errorMessage {
