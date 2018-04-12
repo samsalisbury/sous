@@ -25,7 +25,7 @@ func reportKafkaConfig(hook *kafkaSink, cfg Config, ls LogSink) {
 			SousKafkaConfigV1,
 			WarningLevel,
 			GetCallerInfo(NotHere()),
-			ConsoleAndMessage("Not connecting to Kafka."),
+			MessageField("Not connecting to Kafka."),
 			KV(SousSuccessfulConnection, false),
 		)
 		return
