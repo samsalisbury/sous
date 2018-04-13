@@ -115,19 +115,27 @@ func (ls LogSet) Fields(items []EachFielder) {
 		})
 	}
 
+	message := strings.Join(messages, "\n")
+
+	logto.Message = message
+	err := ls.dumpBundle.sendToKafka(level, logto)
+	if err != nil {
+		Deliver(ls, Console(err)) //won't re-enter Fields
+	}
+
 	switch level {
 	default:
-		logto.Printf("unknown Level: %d - %q", level, strings.Join(messages, "\n"))
+		logto.Printf("unknown Level: %d - %q", level, message)
 	case CriticalLevel:
-		logto.Error(strings.Join(messages, "\n"))
+		logto.Error(message)
 	case WarningLevel:
-		logto.Warn(strings.Join(messages, "\n"))
+		logto.Warn(message)
 	case InformationLevel:
-		logto.Info(strings.Join(messages, "\n"))
+		logto.Info(message)
 	case DebugLevel:
-		logto.Debug(strings.Join(messages, "\n"))
+		logto.Debug(message)
 	case ExtraDebug1Level:
-		logto.Debug(strings.Join(messages, "\n"))
+		logto.Debug(message)
 	}
 
 }
