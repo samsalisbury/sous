@@ -32,8 +32,7 @@ install:
 - make postgres-create-testdb
 script:
 - bundle exec danger
-- make test-smoke
-- make -j2 test
+- make -j4 test test-smoke
 - make reject-wip
 after_script:
 - docker ps || true
