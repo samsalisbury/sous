@@ -430,7 +430,7 @@ func newBuildContext(wd LocalWorkDirShell, c *sous.SourceContext) *sous.BuildCon
 	return &sous.BuildContext{Sh: sh, Source: *c}
 }
 
-func newBuildConfig(f *config.DeployFilterFlags, p *config.PolicyFlags, bc *sous.BuildContext) *sous.BuildConfig {
+func newBuildConfig(ls logging.LogSet, f *config.DeployFilterFlags, p *config.PolicyFlags, bc *sous.BuildContext) *sous.BuildConfig {
 	offset := f.Offset
 	if offset == "" {
 		offset = bc.Source.OffsetDir
@@ -443,6 +443,7 @@ func newBuildConfig(f *config.DeployFilterFlags, p *config.PolicyFlags, bc *sous
 		Strict:     p.Strict,
 		ForceClone: p.ForceClone,
 		Context:    bc,
+		LogSet:     ls,
 	}
 	cfg.Resolve()
 
