@@ -41,8 +41,8 @@ var printConfigWarningOnce sync.Once
 // RawConfig is a config.Config that's been read from disk but not validated.
 type RawConfig PossiblyInvalidConfig
 
-func newRawConfig(u config.LocalUser, defaultConfig DefaultConfig, gcl *ConfigLoader) (RawConfig, error) {
-	v, err := newPossiblyInvalidConfig(u.ConfigFile(), defaultConfig, gcl)
+func newRawConfig(ls LogSink, u config.LocalUser, defaultConfig DefaultConfig, gcl *ConfigLoader) (RawConfig, error) {
+	v, err := newPossiblyInvalidConfig(ls, u.ConfigFile(), defaultConfig, gcl)
 	return RawConfig(v), initErr(err, "reading config file")
 }
 
@@ -66,7 +66,7 @@ func newConfigLoader(ls logging.LogSink) *ConfigLoader {
 	return &ConfigLoader{ConfigLoader: cl}
 }
 
-func newPossiblyInvalidConfig(path string, defaultConfig DefaultConfig, gcl *ConfigLoader) (PossiblyInvalidConfig, error) {
+func newPossiblyInvalidConfig(ls LogSink, path string, defaultConfig DefaultConfig, gcl *ConfigLoader) (PossiblyInvalidConfig, error) {
 	cl := gcl.ConfigLoader
 
 	pic := defaultConfig
@@ -89,7 +89,10 @@ func newPossiblyInvalidConfig(path string, defaultConfig DefaultConfig, gcl *Con
 			logging.ReportErrorConsole(logging.Log, errors.Wrapf(err, "Newly initialised config file is invalid"))
 			logging.ReportConsoleMsg(logging.Log, logging.WarningLevel, fmt.Sprintf("Please correct the issue by editing %s", path))
 		}
-		lsc := &LocalSousConfig{pic.Config}
+		lsc := &LocalSousConfig{
+			Config:  pic.Config,
+			LogSink: ls,
+		}
 		lsc.Save(path)
 		logging.ReportConsoleMsg(logging.Log, logging.InformationLevel, fmt.Sprintf("initialized config file: %s", path))
 	}()
@@ -168,13 +171,13 @@ func (c *LocalSousConfig) Bytes() []byte {
 
 // GetValue retreives and returns a particular value from the configuration
 func (c *LocalSousConfig) GetValue(name string) (string, error) {
-	v, err := configloader.New().GetValue(c.Config, name)
+	v, err := configloader.New(c.LogSink).GetValue(c.Config, name)
 	return fmt.Sprint(v), err
 }
 
 // SetValue stores a particular value on the config
 func (c *LocalSousConfig) SetValue(path, name, value string) error {
-	if err := configloader.New().SetValidValue(c.Config, name, value); err != nil {
+	if err := configloader.New(c.LogSink).SetValidValue(c.Config, name, value); err != nil {
 		return err
 	}
 	return c.Save(path)

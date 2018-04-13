@@ -15,7 +15,7 @@ type (
 		Repo, Offset, Tag, Revision string
 		Strict, ForceClone          bool
 		Context                     *BuildContext
-		LogSet                      logging.LogSet
+		LogSink                     logging.LogSink
 	}
 
 	// An AdvisoryName is the type for advisory tokens.
@@ -135,7 +135,7 @@ func (c *BuildConfig) NewContext() *BuildContext {
 
 func (c *BuildConfig) chooseRemoteURL() string {
 	if c.Repo == "" {
-		messages.ReportLogFieldsMessage("Using best guest", logging.DebugLevel, c.LogSet, c.Context.Source.PrimaryRemoteURL)
+		messages.ReportLogFieldsMessage("Using best guest", logging.DebugLevel, c.LogSink, c.Context.Source.PrimaryRemoteURL)
 		return c.Context.Source.PrimaryRemoteURL
 	}
 	return c.Repo
@@ -239,7 +239,7 @@ func (c *BuildConfig) Advisories(ctx *BuildContext) []string {
 		if !hasTag {
 			advs = append(advs, string(EphemeralTag))
 		} else if s.NearestTagRevision != s.Revision {
-			messages.ReportLogFieldsMessage("NearestTagRevision != Revision", logging.DebugLevel, c.LogSet, s.NearestTagRevision, s.Revision)
+			messages.ReportLogFieldsMessage("NearestTagRevision != Revision", logging.DebugLevel, c.LogSink, s.NearestTagRevision, s.Revision)
 			advs = append(advs, string(TagNotHead))
 		}
 	}

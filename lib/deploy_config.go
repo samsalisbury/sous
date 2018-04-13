@@ -113,7 +113,6 @@ func (dc *DeployConfig) String() string {
 
 // Equal is used to compare DeployConfigs
 func (dc *DeployConfig) Equal(o DeployConfig) bool {
-	messages.ReportLogFieldsMessage("checking equal", logging.ExtraDebug1Level, logging.Log, dc, o)
 	diff, _ := dc.Diff(o)
 	return !diff
 }
@@ -181,19 +180,15 @@ func (dc DeployConfig) Clone() (c DeployConfig) {
 
 // Equal compares Envs
 func (e Env) Equal(o Env) bool {
-	messages.ReportLogFieldsMessage("Envs", logging.ExtraDebug1Level, logging.Log, e, o)
 	if len(e) != len(o) {
-		messages.ReportLogFieldsMessage("Envs !=", logging.ExtraDebug1Level, logging.Log, e, o, len(e), len(o))
 		return false
 	}
 
 	for name, value := range e {
 		if ov, ok := o[name]; !ok || ov != value {
-			messages.ReportLogFieldsMessage("Envs: !=", logging.ExtraDebug1Level, logging.Log, e, o, name, value, ov)
 			return false
 		}
 	}
-	messages.ReportLogFieldsMessage("Envs: == !", logging.ExtraDebug1Level, logging.Log, e, o)
 	return true
 }
 

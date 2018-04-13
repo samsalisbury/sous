@@ -47,7 +47,10 @@ type (
 	ProfilingServer bool
 
 	// LocalSousConfig is the configuration for Sous.
-	LocalSousConfig struct{ *config.Config }
+	LocalSousConfig struct {
+		*config.Config
+		LogSink LogSink
+	}
 	// LocalWorkDir is the user's current working directory when they invoke Sous.
 	LocalWorkDir string
 	// LocalWorkDirShell is a shell for working in the user's current working
@@ -430,7 +433,7 @@ func newBuildContext(wd LocalWorkDirShell, c *sous.SourceContext) *sous.BuildCon
 	return &sous.BuildContext{Sh: sh, Source: *c}
 }
 
-func newBuildConfig(ls logging.LogSet, f *config.DeployFilterFlags, p *config.PolicyFlags, bc *sous.BuildContext) *sous.BuildConfig {
+func newBuildConfig(ls LogSink, f *config.DeployFilterFlags, p *config.PolicyFlags, bc *sous.BuildContext) *sous.BuildConfig {
 	offset := f.Offset
 	if offset == "" {
 		offset = bc.Source.OffsetDir
@@ -443,14 +446,14 @@ func newBuildConfig(ls logging.LogSet, f *config.DeployFilterFlags, p *config.Po
 		Strict:     p.Strict,
 		ForceClone: p.ForceClone,
 		Context:    bc,
-		LogSet:     ls,
+		LogSink:    ls,
 	}
 	cfg.Resolve()
 
 	return &cfg
 }
 
-func newBuildManager(ls logging.LogSink, bc *sous.BuildConfig, sl sous.Selector, lb sous.Labeller, rg sous.Registrar) *sous.BuildManager {
+func newBuildManager(ls LogSink, bc *sous.BuildConfig, sl sous.Selector, lb sous.Labeller, rg sous.Registrar) *sous.BuildManager {
 	return &sous.BuildManager{
 		BuildConfig: bc,
 		Selector:    sl,

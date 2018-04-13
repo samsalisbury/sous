@@ -3,6 +3,7 @@ package sous
 import (
 	"testing"
 
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/shell"
 	"github.com/stretchr/testify/assert"
 )
@@ -37,6 +38,7 @@ func TestPresentExplicitRepo(t *testing.T) {
 				},
 			},
 		},
+		LogSink: logging.SilentLogSet(),
 	}
 
 	ctx := bc.NewContext()
@@ -59,6 +61,7 @@ func TestMissingExplicitRepo(t *testing.T) {
 				},
 			},
 		},
+		LogSink: logging.SilentLogSet(),
 	}
 
 	ctx := bc.NewContext()
@@ -83,6 +86,7 @@ func TestAbsentRepoConfig(t *testing.T) {
 				},
 			},
 		},
+		LogSink: logging.SilentLogSet(),
 	}
 
 	ctx := bc.NewContext()
@@ -105,6 +109,7 @@ func TestNoRepo(t *testing.T) {
 				},
 			},
 		},
+		LogSink: logging.SilentLogSet(),
 	}
 
 	ctx := bc.NewContext()
@@ -124,6 +129,7 @@ func TestNotRequestedRevision(t *testing.T) {
 				Revision: "100100100",
 			},
 		},
+		LogSink: logging.SilentLogSet(),
 	}
 
 	ctx := bc.NewContext()
@@ -143,6 +149,7 @@ func TestUsesRequestedTag(t *testing.T) {
 				Revision: "abcd",
 			},
 		},
+		LogSink: logging.SilentLogSet(),
 	}
 
 	ctx := bc.NewContext()
@@ -159,6 +166,7 @@ func TestAdvisesOfDefaultVersion(t *testing.T) {
 				Revision: "abcd",
 			},
 		},
+		LogSink: logging.SilentLogSet(),
 	}
 
 	ctx := bc.NewContext()
@@ -182,6 +190,7 @@ func TestTagNotHead(t *testing.T) {
 				},
 			},
 		},
+		LogSink: logging.SilentLogSet(),
 	}
 
 	ctx := bc.NewContext()
@@ -204,6 +213,7 @@ func TestEphemeralTag(t *testing.T) {
 				NearestTagRevision: "3541",
 			},
 		},
+		LogSink: logging.SilentLogSet(),
 	}
 	/*
 		bc := BuildConfig{
@@ -251,6 +261,7 @@ func TestContextualization(t *testing.T) {
 				NearestTagRevision: "3541",
 			},
 		},
+		LogSink: logging.SilentLogSet(),
 	}
 
 	ctx := bc.NewContext()
@@ -298,6 +309,7 @@ func TestSetsOffset(t *testing.T) {
 				NearestTagRevision: "def0",
 			},
 		},
+		LogSink: logging.SilentLogSet(),
 	}
 
 	ctx := bc.NewContext()
@@ -314,6 +326,7 @@ func TestDirtyWorkspaceAdvisory(t *testing.T) {
 				DirtyWorkingTree: true,
 			},
 		},
+		LogSink: logging.SilentLogSet(),
 	}
 
 	ctx := bc.NewContext()
@@ -332,6 +345,7 @@ func TestUnpushedRevisionAdvisory(t *testing.T) {
 				RevisionUnpushed: true,
 			},
 		},
+		LogSink: logging.SilentLogSet(),
 	}
 
 	ctx := bc.NewContext()
@@ -350,6 +364,7 @@ func TestPermissiveGuard(t *testing.T) {
 				RevisionUnpushed: true,
 			},
 		},
+		LogSink: logging.SilentLogSet(),
 	}
 
 	ctx := bc.NewContext()
@@ -381,6 +396,7 @@ func TestProductionReady(t *testing.T) {
 				},
 			},
 		},
+		LogSink: logging.SilentLogSet(),
 	}
 
 	ctx := bc.NewContext()
@@ -389,7 +405,9 @@ func TestProductionReady(t *testing.T) {
 }
 
 func TestBuildConfig_GuardRegister(t *testing.T) {
-	c := &BuildConfig{}
+	c := &BuildConfig{
+		LogSink: logging.SilentLogSet(),
+	}
 	bc := &BuildContext{}
 	bc.Advisories = []string{"dirty workspace"}
 	err := c.GuardRegister(contextualizedResults(bc))
