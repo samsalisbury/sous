@@ -19,7 +19,7 @@ type strayFields struct {
 }
 
 func assembleStrayFields(items ...interface{}) strayFields {
-	sf := &strayFields{}
+	sf := &strayFields{jsonObj: gabs.New()}
 	for _, item := range items {
 		sf.addItem(item)
 	}
@@ -34,14 +34,12 @@ func (sf strayFields) EachField(fn FieldReportFn) {
 	fn(SousIds, strings.Join(removeDuplicates(sf.ids), ","))
 	fn(SousIdValues, strings.Join(removeDuplicates(sf.values), ","))
 
-	if sf.jsonObj != nil {
-		n, err := sf.jsonObj.ArrayCount("message", "array")
-		if err != nil {
-			return
-		}
-		if n > 0 || sf.hasRedundants() {
-			fn(JsonValue, sf.jsonObj.String())
-		}
+	n, err := sf.jsonObj.ArrayCount("message", "array")
+	if err != nil {
+		return
+	}
+	if n > 0 || sf.hasRedundants() {
+		fn(JsonValue, sf.jsonObj.String())
 	}
 }
 
@@ -85,9 +83,6 @@ func (sf *strayFields) hasRedundants() bool {
 }
 
 func (sf *strayFields) addJSON(json string) {
-	if sf.jsonObj == nil {
-		sf.jsonObj = gabs.New()
-	}
 	sf.jsonObj.Array("message", "array") // error if already exists - which is okay
 	if err := sf.jsonObj.ArrayAppend(json, "message", "array"); err != nil {
 		fmt.Println("error: ", err)
