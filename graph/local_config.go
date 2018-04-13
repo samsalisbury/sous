@@ -61,8 +61,8 @@ func newLocalSousConfig(pic PossiblyInvalidConfig) (v LocalSousConfig, err error
 	return v, errors.Wrapf(err, "tip: run 'sous config' to see and manipulate your configuration")
 }
 
-func newConfigLoader() *ConfigLoader {
-	cl := configloader.New()
+func newConfigLoader(ls logging.LogSink) *ConfigLoader {
+	cl := configloader.New(ls.Child("configloader"))
 	return &ConfigLoader{ConfigLoader: cl}
 }
 
