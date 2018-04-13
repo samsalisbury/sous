@@ -62,7 +62,7 @@ func (r *Resolver) queueDiffs(dcs *DeployableChans, results chan DiffResolution)
 				logging.ExtraDebug1Level, r.ls, p)
 			continue
 		}
-		sr := NewRectification(*p)
+		sr := NewRectification(*p, r.ls)
 		messages.ReportLogFieldsMessageWithIDs("Adding to queue-set", logging.ExtraDebug1Level, r.ls, p, sr)
 		queued, ok := r.QueueSet.PushIfEmpty(sr)
 		if !ok {

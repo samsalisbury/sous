@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/nyarly/spies"
+	"github.com/opentable/sous/util/logging"
 )
 
 func TestSingleRectification_Resolve_completes(t *testing.T) {
@@ -12,11 +13,13 @@ func TestSingleRectification_Resolve_completes(t *testing.T) {
 	// This test just checks that SingleRectification.Resolve actually
 	// completes.
 
+	log, _ := logging.NewLogSinkSpy()
 	sr := NewRectification(DeployablePair{
 		Post: &Deployable{
 			Deployment: &Deployment{},
 		},
-	})
+	}, log,
+	)
 
 	done := make(chan struct{})
 	dpr, c := NewDeployerSpy()
