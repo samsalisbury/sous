@@ -78,6 +78,9 @@ type (
 	MetricsHandler struct{ http.Handler }
 	// LogSink wraps logging.LogSink
 	LogSink struct{ logging.LogSink }
+	// DefaultLogSink depends only on a semv.Version so can be used prior to reading
+	// any configuration.
+	DefaultLogSink struct{ logging.LogSink }
 	// ClusterManager simply wraps the sous.ClusterManager interface
 	ClusterManager struct{ sous.ClusterManager }
 	// StateManager simply wraps the sous.StateManager interface
@@ -187,6 +190,7 @@ func AddLogs(graph adder) {
 	graph.Add(
 		newLogSet,
 		newLogSink,
+		newDefaultLogSink,
 		newMetricsHandler,
 	)
 }
@@ -343,6 +347,10 @@ func newLogSet(v semv.Version, config PossiblyInvalidConfig) (*logging.LogSet, e
 		return ls, initErr(err, "validating logging configuration")
 	}
 	return ls, nil
+}
+
+func newDefaultLogSink(v semv.Version) DefaultLogSink {
+	return DefaultLogSink{LogSink: logging.NewLogSet(v, "", "", os.Stderr)}
 }
 
 func newLogSink(v *config.Verbosity, set *logging.LogSet) LogSink {

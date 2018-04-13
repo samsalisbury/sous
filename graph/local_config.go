@@ -41,12 +41,12 @@ var printConfigWarningOnce sync.Once
 // RawConfig is a config.Config that's been read from disk but not validated.
 type RawConfig PossiblyInvalidConfig
 
-func newRawConfig(ls LogSink, u config.LocalUser, defaultConfig DefaultConfig, gcl *ConfigLoader) (RawConfig, error) {
+func newRawConfig(ls DefaultLogSink, u config.LocalUser, defaultConfig DefaultConfig, gcl *ConfigLoader) (RawConfig, error) {
 	v, err := newPossiblyInvalidConfig(ls, u.ConfigFile(), defaultConfig, gcl)
 	return RawConfig(v), initErr(err, "reading config file")
 }
 
-func newPossiblyInvalidLocalSousConfig(raw RawConfig, stderr ErrWriter) PossiblyInvalidConfig {
+func newPossiblyInvalidLocalSousConfig(ls DefaultLogSink, raw RawConfig, stderr ErrWriter) PossiblyInvalidConfig {
 	v := PossiblyInvalidConfig(raw)
 	if err := v.Validate(); err != nil {
 		printConfigWarningOnce.Do(func() {
@@ -61,12 +61,12 @@ func newLocalSousConfig(pic PossiblyInvalidConfig) (v LocalSousConfig, err error
 	return v, errors.Wrapf(err, "tip: run 'sous config' to see and manipulate your configuration")
 }
 
-func newConfigLoader(ls logging.LogSink) *ConfigLoader {
+func newConfigLoader(ls DefaultLogSink) *ConfigLoader {
 	cl := configloader.New(ls.Child("configloader"))
 	return &ConfigLoader{ConfigLoader: cl}
 }
 
-func newPossiblyInvalidConfig(ls LogSink, path string, defaultConfig DefaultConfig, gcl *ConfigLoader) (PossiblyInvalidConfig, error) {
+func newPossiblyInvalidConfig(ls DefaultLogSink, path string, defaultConfig DefaultConfig, gcl *ConfigLoader) (PossiblyInvalidConfig, error) {
 	cl := gcl.ConfigLoader
 
 	pic := defaultConfig
@@ -91,7 +91,7 @@ func newPossiblyInvalidConfig(ls LogSink, path string, defaultConfig DefaultConf
 		}
 		lsc := &LocalSousConfig{
 			Config:  pic.Config,
-			LogSink: ls,
+			LogSink: LogSink{LogSink: ls.LogSink},
 		}
 		lsc.Save(path)
 		logging.ReportConsoleMsg(logging.Log, logging.InformationLevel, fmt.Sprintf("initialized config file: %s", path))
