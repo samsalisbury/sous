@@ -272,9 +272,11 @@ test-integration: setup-containers
 $(SMOKE_TEST_BINARY):
 	go build -o $@ -tags smoke -ldflags "-X main.VersionString=$(DEV_VERSION)"
 
+$(SMOKE_TEST_DATA_DIR):
+	mkdir -p $@
+
 $(SMOKE_TEST_LATEST_LINK): $(SMOKE_TEST_DATA_DIR)
-	rm $@ || true
-	ln -s $(SMOKE_TEST_DATA_DIR) $@
+	ln -sf $^ $<
 
 .PHONY: test-smoke
 test-smoke: $(SMOKE_TEST_BINARY) $(SMOKE_TEST_LATEST_LINK) setup-containers
