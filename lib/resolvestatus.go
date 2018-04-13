@@ -79,6 +79,19 @@ func (rez DiffResolution) String() string {
 	return fmt.Sprintf("%s %s %v", rez.DeploymentID, rez.Desc, rez.Error)
 }
 
+// EachField implements EachFielder on DiffResolution.
+func (rez DiffResolution) EachField(f logging.FieldReportFn) {
+	f(logging.SousDeploymentId, rez.DeploymentID.String())
+	f(logging.SousManifestId, rez.ManifestID.String())
+	f(logging.SousResolutionDescription, string(rez.Desc))
+	if rez.Error == nil {
+		return
+	}
+	marshallable := buildMarshableError(rez.Error.error)
+	f(logging.SousResolutionErrortype, marshallable.Type)
+	f(logging.SousResolutionErrormessage, marshallable.String)
+}
+
 // NewResolveRecorder creates a new ResolveRecorder and calls f with it as its
 // argument. It then returns that ResolveRecorder immediately.
 func NewResolveRecorder(intended Deployments, ls logging.LogSink, f func(*ResolveRecorder)) *ResolveRecorder {

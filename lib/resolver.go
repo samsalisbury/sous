@@ -63,26 +63,37 @@ func (r *Resolver) queueDiffs(dcs *DeployableChans, results chan DiffResolution)
 			continue
 		}
 		sr := NewRectification(*p, r.ls)
-		messages.ReportLogFieldsMessageWithIDs("Adding to queue-set", logging.ExtraDebug1Level, r.ls, p, sr)
+		r.reportQSWait("Adding to queue set", logging.NotHere(), sr)
 		queued, ok := r.QueueSet.PushIfEmpty(sr)
 		if !ok {
-			messages.ReportLogFieldsMessageWithIDs("Failed to queue", logging.ExtraDebug1Level, r.ls, p, sr)
+			r.reportQSWait("Failed to queue", logging.NotHere(), sr)
 			reportR11nAnomaly(r.ls, sr, r11nDroppedQueueNotEmpty)
 			continue
 		}
 		wg.Add(1)
 		go func(p *DeployablePair) {
 			defer wg.Done()
-			messages.ReportLogFieldsMessageWithIDs("Inserting to QueueSet.Wait", logging.ExtraDebug1Level, r.ls, queued.ID, p, sr)
+			r.reportQSWait("Inserting to QueueSet.Wait", logging.NotHere(), queued.ID, sr)
 			result, ok := r.QueueSet.Wait(p.ID(), queued.ID)
 			if !ok {
-				messages.ReportLogFieldsMessageWithIDs("Failed to QueueSet.Wait", logging.ExtraDebug1Level, r.ls, queued.ID, p, sr)
+				r.reportQSWait("Failed to QueueSet.Wait", logging.NotHere(), queued.ID, sr)
 				reportR11nAnomaly(r.ls, sr, r11nWentMissing)
 			}
 			results <- result
 		}(p)
 	}
 	wg.Wait()
+}
+
+// this is close to a generic deliver. Adding a level argument and handling the extra layer of exclusion is all it would take...
+func (r *Resolver) reportQSWait(msg string, notThere logging.Excluder, fields ...interface{}) {
+	logging.Deliver(r.ls,
+		append([]interface{}{
+			logging.SousGenericV1,
+			logging.ExtraDebug1Level,
+			logging.GetCallerInfo(notThere, logging.NotHere()),
+			logging.MessageField(msg),
+		}, fields...)...)
 }
 
 // Begin is similar to Resolve, except that it returns a ResolveRecorder almost

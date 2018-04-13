@@ -40,6 +40,12 @@ func NewRectification(dp DeployablePair, l logging.LogSink) *Rectification {
 	}
 }
 
+// EachField implements logging.EachFielder on Rectification.
+func (r *Rectification) EachField(fn logging.FieldReportFn) {
+	r.Pair.EachField(fn)
+	r.Resolution.EachField(fn)
+}
+
 // Begin begins applying sr.Pair using d Deployer. Call Result to get the
 // result. Begin can be called multiple times but performs its function only
 // once.

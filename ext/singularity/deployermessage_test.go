@@ -2,6 +2,7 @@ package singularity
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/opentable/sous/lib"
@@ -103,13 +104,8 @@ func TestDiffResolutionMessage(t *testing.T) {
 			},
 			Cluster: "pp-sf",
 		},
-		Desc: "description goes here",
-		Error: &sous.ErrorWrapper{
-			MarshallableError: sous.MarshallableError{
-				Type:   "bad",
-				String: "error",
-			},
-		},
+		Desc:  "description goes here",
+		Error: sous.WrapResolveError(fmt.Errorf("bad")),
 	}
 
 	reportDiffResolutionMessage("test", diffRes, logging.InformationLevel, logger)
@@ -125,8 +121,8 @@ func TestDiffResolutionMessage(t *testing.T) {
 		"sous-deployment-id":           diffRes.DeploymentID.String(),
 		"sous-manifest-id":             diffRes.DeploymentID.ManifestID.String(),
 		"sous-resolution-description":  string(diffRes.Desc),
-		"sous-resolution-errormessage": diffRes.Error.String,
-		"sous-resolution-errortype":    diffRes.Error.Type,
+		"sous-resolution-errormessage": "bad",
+		"sous-resolution-errortype":    "*errors.errorString",
 	}
 
 	logging.AssertMessageFieldlist(t, fields, logging.StandardVariableFields, expectedFields)
