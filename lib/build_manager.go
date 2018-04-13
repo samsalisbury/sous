@@ -17,6 +17,7 @@ type (
 		Selector
 		Labeller
 		Registrar
+		LogSet logging.LogSet
 	}
 )
 
@@ -45,7 +46,7 @@ func (m *BuildManager) Build() (*BuildResult, error) {
 // advisories; warns about the advisories and does not register otherwise.
 func (m *BuildManager) RegisterAndWarnAdvisories(br *BuildResult) error {
 	if err := m.BuildConfig.GuardRegister(br); err != nil {
-		logging.ReportError(logging.Log, err)
+		logging.ReportError(m.LogSet, err)
 	}
 	return m.Register(br)
 }

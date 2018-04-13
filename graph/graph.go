@@ -450,12 +450,13 @@ func newBuildConfig(ls logging.LogSet, f *config.DeployFilterFlags, p *config.Po
 	return &cfg
 }
 
-func newBuildManager(bc *sous.BuildConfig, sl sous.Selector, lb sous.Labeller, rg sous.Registrar) *sous.BuildManager {
+func newBuildManager(ls logging.LogSink, bc *sous.BuildConfig, sl sous.Selector, lb sous.Labeller, rg sous.Registrar) *sous.BuildManager {
 	return &sous.BuildManager{
 		BuildConfig: bc,
 		Selector:    sl,
 		Labeller:    lb,
 		Registrar:   rg,
+		LogSink:     ls,
 	}
 }
 
