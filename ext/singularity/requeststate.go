@@ -4,8 +4,6 @@ import (
 	"fmt"
 
 	sous "github.com/opentable/sous/lib"
-	"github.com/opentable/sous/util/logging"
-	"github.com/opentable/sous/util/logging/messages"
 	"github.com/pkg/errors"
 	uuid "github.com/satori/go.uuid"
 )
@@ -29,13 +27,8 @@ func (r *deployer) Status(reg sous.Registry, clusters sous.Clusters, pair *sous.
 	if pair.UUID == uuid.Nil {
 		pair.UUID = uuid.NewV4()
 	}
-	depID := computeDeployIDFromUUID(pair.Post, pair.UUID)
 
 	client := r.buildSingClient(url)
-
-	messages.ReportLogFieldsMessageToConsole(
-		fmt.Sprintf("Watching pending deployments for deploy ID: %s", depID),
-		logging.ExtraDebug1Level, r.log, depID)
 
 	reqParent, err := client.GetRequest(reqID, false) //don't use the web cache
 	if err != nil {

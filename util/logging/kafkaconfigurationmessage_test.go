@@ -15,7 +15,7 @@ func TestReportKafkaConfiguration_Zero(t *testing.T) {
 		StandardVariableFields,
 		map[string]interface{}{
 			"@loglov3-otl":               SousKafkaConfigV1,
-			"severity":                   InformationLevel,
+			"severity":                   WarningLevel,
 			"call-stack-message":         "Not connecting to Kafka.",
 			"sous-successful-connection": false,
 		})
