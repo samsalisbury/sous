@@ -3,6 +3,8 @@ package configloader
 import (
 	"os"
 	"testing"
+
+	"github.com/opentable/sous/util/logging"
 )
 
 type TestConfig struct {
@@ -26,7 +28,7 @@ func (tc *TestConfig) FillDefaults() error {
 }
 
 func TestLoad(t *testing.T) {
-	cl := New()
+	cl := New(logging.SilentLogSet())
 	c := TestConfig{}
 	if err := cl.Load(&c, "testdata/test_config.yaml"); err != nil {
 		t.Fatal(err)
@@ -38,7 +40,7 @@ func TestLoad(t *testing.T) {
 }
 
 func TestLoad_Defaults(t *testing.T) {
-	cl := New()
+	cl := New(logging.SilentLogSet())
 	c := TestConfig{}
 	if err := cl.Load(&c, "testdata/test_empty_config.yaml"); err != nil {
 		t.Fatal(err)
@@ -50,7 +52,7 @@ func TestLoad_Defaults(t *testing.T) {
 }
 
 func TestLoad_Env(t *testing.T) {
-	cl := New()
+	cl := New(logging.SilentLogSet())
 	c := TestConfig{}
 
 	expected := "other value"
@@ -75,7 +77,7 @@ func TestLoad_Env(t *testing.T) {
 }
 
 func TestLoad_EmptyEnv(t *testing.T) {
-	cl := New()
+	cl := New(logging.SilentLogSet())
 	c := TestConfig{}
 
 	expected := ""
@@ -95,7 +97,7 @@ func TestLoad_EmptyEnv(t *testing.T) {
 }
 
 func TestLoad_Map(t *testing.T) {
-	cl := New()
+	cl := New(logging.SilentLogSet())
 	c := TestedMap{}
 
 	s := `{"env1": "foo", "env2": "bar"}`

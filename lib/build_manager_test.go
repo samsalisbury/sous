@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/opentable/sous/util/logging"
 )
 
 func rootedBuildManager(root, offset string) *BuildManager {
@@ -17,6 +19,7 @@ func rootedBuildManager(root, offset string) *BuildManager {
 				},
 			},
 		},
+		LogSink: logging.SilentLogSet(),
 	}
 }
 
@@ -127,6 +130,7 @@ func TestBuildManager_RegisterAndWarnAdvisories_withAdvisories(t *testing.T) {
 	br := contextualizedResults(bc)
 	m := &BuildManager{
 		Registrar: FakeRegistrar{},
+		LogSink:   logging.SilentLogSet(),
 	}
 	if err := m.RegisterAndWarnAdvisories(br); err != nil {
 		t.Fatal(err)

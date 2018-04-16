@@ -190,6 +190,10 @@ func TestStateManagerSelectsDuplex(t *testing.T) {
 	}
 }
 
+var silentLogSink = DefaultLogSink{LogSink: nonDefaultSilentLogSink}
+
+var nonDefaultSilentLogSink = LogSink{LogSink: logging.SilentLogSet()}
+
 func TestNewBuildConfig(t *testing.T) {
 	f := &config.DeployFilterFlags{}
 	p := &config.PolicyFlags{}
@@ -210,7 +214,7 @@ func TestNewBuildConfig(t *testing.T) {
 		},
 	}
 
-	cfg := newBuildConfig(f, p, bc)
+	cfg := newBuildConfig(nonDefaultSilentLogSink, f, p, bc)
 	if cfg.Tag != `1.2.3` {
 		t.Errorf("Build config's tag wasn't 1.2.3: %#v", cfg.Tag)
 	}

@@ -47,7 +47,10 @@ type (
 	ProfilingServer bool
 
 	// LocalSousConfig is the configuration for Sous.
-	LocalSousConfig struct{ *config.Config }
+	LocalSousConfig struct {
+		*config.Config
+		LogSink LogSink
+	}
 	// LocalWorkDir is the user's current working directory when they invoke Sous.
 	LocalWorkDir string
 	// LocalWorkDirShell is a shell for working in the user's current working
@@ -75,6 +78,9 @@ type (
 	MetricsHandler struct{ http.Handler }
 	// LogSink wraps logging.LogSink
 	LogSink struct{ logging.LogSink }
+	// DefaultLogSink depends only on a semv.Version so can be used prior to reading
+	// any configuration.
+	DefaultLogSink struct{ logging.LogSink }
 	// ClusterManager simply wraps the sous.ClusterManager interface
 	ClusterManager struct{ sous.ClusterManager }
 	// StateManager simply wraps the sous.StateManager interface
@@ -184,6 +190,7 @@ func AddLogs(graph adder) {
 	graph.Add(
 		newLogSet,
 		newLogSink,
+		newDefaultLogSink,
 		newMetricsHandler,
 	)
 }
@@ -342,6 +349,10 @@ func newLogSet(v semv.Version, config PossiblyInvalidConfig) (*logging.LogSet, e
 	return ls, nil
 }
 
+func newDefaultLogSink(v semv.Version) DefaultLogSink {
+	return DefaultLogSink{LogSink: logging.NewLogSet(v, "", "", os.Stderr)}
+}
+
 func newLogSink(v *config.Verbosity, set *logging.LogSet) LogSink {
 	//set.Configure(v.LoggingConfiguration())
 	v.UpdateLevel(set)
@@ -430,7 +441,7 @@ func newBuildContext(wd LocalWorkDirShell, c *sous.SourceContext) *sous.BuildCon
 	return &sous.BuildContext{Sh: sh, Source: *c}
 }
 
-func newBuildConfig(f *config.DeployFilterFlags, p *config.PolicyFlags, bc *sous.BuildContext) *sous.BuildConfig {
+func newBuildConfig(ls LogSink, f *config.DeployFilterFlags, p *config.PolicyFlags, bc *sous.BuildContext) *sous.BuildConfig {
 	offset := f.Offset
 	if offset == "" {
 		offset = bc.Source.OffsetDir
@@ -443,18 +454,20 @@ func newBuildConfig(f *config.DeployFilterFlags, p *config.PolicyFlags, bc *sous
 		Strict:     p.Strict,
 		ForceClone: p.ForceClone,
 		Context:    bc,
+		LogSink:    ls,
 	}
 	cfg.Resolve()
 
 	return &cfg
 }
 
-func newBuildManager(bc *sous.BuildConfig, sl sous.Selector, lb sous.Labeller, rg sous.Registrar) *sous.BuildManager {
+func newBuildManager(ls LogSink, bc *sous.BuildConfig, sl sous.Selector, lb sous.Labeller, rg sous.Registrar) *sous.BuildManager {
 	return &sous.BuildManager{
 		BuildConfig: bc,
 		Selector:    sl,
 		Labeller:    lb,
 		Registrar:   rg,
+		LogSink:     ls,
 	}
 }
 

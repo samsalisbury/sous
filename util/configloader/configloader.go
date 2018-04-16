@@ -17,8 +17,8 @@ import (
 )
 
 // New returns a new ConfigLoader.
-func New() ConfigLoader {
-	return &configLoader{}
+func New(ls logging.LogSink) ConfigLoader {
+	return &configLoader{LogSink: ls}
 }
 
 type (
@@ -49,7 +49,7 @@ type (
 	}
 
 	configLoader struct {
-		// Log is called with debug level logs about how values are resolved.
+		LogSink logging.LogSink
 	}
 )
 
@@ -64,7 +64,7 @@ func (cl *configLoader) Load(target interface{}, filePath string) error {
 		}
 		// I'd like to say "override with e.g. SOUS_CONFIG_FILE", but the
 		// construction of the path happens elsewhere.
-		messages.ReportLogFieldsMessage("No config file found using defaults.", logging.InformationLevel, logging.Log, filePath)
+		messages.ReportLogFieldsMessage("No config file found using defaults.", logging.InformationLevel, cl.LogSink, filePath)
 	} else {
 		if err := cl.loadYAMLFile(target, filePath); err != nil {
 			return err
@@ -185,7 +185,7 @@ func (cl *configLoader) overrideField(sf reflect.StructField, originalVal reflec
 	if !present {
 		return nil
 	}
-	messages.ReportLogFieldsMessage("Environment configuration OVERRIDE", logging.DebugLevel, logging.Log, envName, envVal)
+	messages.ReportLogFieldsMessage("Environment configuration OVERRIDE", logging.DebugLevel, cl.LogSink, envName, envVal)
 	var finalVal reflect.Value
 	switch originalVal.Interface().(type) {
 	default:
