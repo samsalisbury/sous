@@ -30,7 +30,7 @@ func (r *redundantFields) check(n FieldName, v interface{}) bool {
 }
 
 func (r *redundantFields) softCheck(n FieldName, v interface{}) bool {
-	if list, yes := r.fs[n]; yes {
+	if _, yes := r.fs[n]; yes {
 		return true
 	}
 	r.fs[n] = []interface{}{}
@@ -92,7 +92,7 @@ func (ls LogSet) Fields(items []EachFielder) {
 		})
 	}
 
-	for _, item := range ls.context {
+	for _, item := range ls.ctxFields {
 		item.EachField(func(name FieldName, value interface{}) {
 			// context fields get overridden
 			if redundants.softCheck(name, value) {
