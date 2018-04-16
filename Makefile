@@ -276,7 +276,8 @@ $(SMOKE_TEST_DATA_DIR):
 	mkdir -p $@
 
 $(SMOKE_TEST_LATEST_LINK): $(SMOKE_TEST_DATA_DIR)
-	ln -sf $^ $<
+	rm $@
+	ln -sv $< $@
 
 .PHONY: test-smoke
 test-smoke: $(SMOKE_TEST_BINARY) $(SMOKE_TEST_LATEST_LINK) setup-containers
