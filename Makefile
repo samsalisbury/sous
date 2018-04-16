@@ -243,8 +243,10 @@ test: test-gofmt test-staticcheck test-unit test-integration
 test-dev: test-gofmt test-staticcheck test-unit-base
 
 test-staticcheck: install-staticcheck
-	staticcheck -ignore "$$(cat staticcheck.ignore)" $(SOUS_PACKAGES) || (echo "FAIL: staticcheck" && false)
-	staticcheck -tags integration -ignore "$$(cat staticcheck.ignore)" github.com/opentable/sous/integration || (echo "FAIL: staticcheck" && false)
+	echo "staticcheck -ignore "$$(cat staticcheck.ignore)" $(SOUS_PACKAGES)"
+	@staticcheck -ignore "$$(cat staticcheck.ignore)" $(SOUS_PACKAGES) || (echo "FAIL: staticcheck" && false)
+	echo "staticcheck -tags integration -ignore "$$(cat staticcheck.ignore)" github.com/opentable/sous/integration"
+	@staticcheck -tags integration -ignore "$$(cat staticcheck.ignore)" github.com/opentable/sous/integration || (echo "FAIL: staticcheck" && false)
 
 test-metalinter: install-linters
 	gometalinter --config gometalinter.json ./...
