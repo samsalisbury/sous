@@ -19,7 +19,7 @@ type strayFields struct {
 }
 
 func assembleStrayFields(items ...interface{}) strayFields {
-	sf := &strayFields{}
+	sf := &strayFields{jsonObj: gabs.New()}
 	for _, item := range items {
 		sf.addItem(item)
 	}
@@ -34,18 +34,12 @@ func (sf strayFields) EachField(fn FieldReportFn) {
 	fn(SousIds, strings.Join(removeDuplicates(sf.ids), ","))
 	fn(SousIdValues, strings.Join(removeDuplicates(sf.values), ","))
 
-	if sf.jsonObj != nil {
-		n, err := sf.jsonObj.ArrayCount("message", "array")
-		if err != nil {
-			return
-		}
-		m, err := sf.jsonObj.ArrayCount("message", "redundant")
-		if err != nil {
-			return
-		}
-		if n > 0 || m > 0 {
-			fn(JsonValue, sf.jsonObj.String())
-		}
+	n, err := sf.jsonObj.ArrayCount("message", "array")
+	if err != nil {
+		return
+	}
+	if n > 0 || sf.hasRedundants() {
+		fn(JsonValue, sf.jsonObj.String())
 	}
 }
 
@@ -58,27 +52,38 @@ func (sf *strayFields) addItem(item interface{}) {
 }
 
 func (sf *strayFields) addRedundants(extras map[FieldName][]interface{}) {
-	obj, err := sf.jsonObj.Object("message", "redundant")
-	if err != nil {
-		return
-	}
 	for n, vs := range extras {
-		arr, err := obj.Array(string(n))
-		if err != nil {
-			return
-		}
+		name := string(n)
+		sf.jsonObj.Array("message", "redundant", name)
 		for _, v := range vs {
-			if err := arr.ArrayAppend(v); err != nil {
+			if err := sf.jsonObj.ArrayAppend(v, "message", "redundant", name); err != nil {
 				return
 			}
 		}
 	}
 }
 
-func (sf *strayFields) addJSON(json string) {
-	if sf.jsonObj == nil {
-		sf.jsonObj = gabs.New()
+func (sf *strayFields) hasRedundants() bool {
+	reds, err := sf.jsonObj.Object("message", "redundant")
+	if err != nil {
+		return false
 	}
+
+	cs, err := reds.Children()
+	if err != nil {
+		return false
+	}
+
+	for _, c := range cs {
+		if n, err := c.ArrayCount(); err == nil && n > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+func (sf *strayFields) addJSON(json string) {
+	sf.jsonObj.Array("message", "array") // error if already exists - which is okay
 	if err := sf.jsonObj.ArrayAppend(json, "message", "array"); err != nil {
 		fmt.Println("error: ", err)
 	}

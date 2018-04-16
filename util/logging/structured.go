@@ -19,7 +19,7 @@ type (
 	}
 )
 
-func (r redundantFields) check(n FieldName, v interface{}) bool {
+func (r *redundantFields) check(n FieldName, v interface{}) bool {
 	if list, yes := r.fs[n]; yes {
 		r.fs[n] = append(list, v)
 		r.have = true

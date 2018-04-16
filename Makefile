@@ -243,8 +243,8 @@ test: test-gofmt test-staticcheck test-unit test-integration
 test-dev: test-gofmt test-staticcheck test-unit-base
 
 test-staticcheck: install-staticcheck
-	staticcheck -ignore "$$(cat staticcheck.ignore)" $(SOUS_PACKAGES)
-	staticcheck -tags integration -ignore "$$(cat staticcheck.ignore)" github.com/opentable/sous/integration
+	staticcheck -ignore "$$(cat staticcheck.ignore)" $(SOUS_PACKAGES) || (echo "FAIL: staticcheck" && false)
+	staticcheck -tags integration -ignore "$$(cat staticcheck.ignore)" github.com/opentable/sous/integration || (echo "FAIL: staticcheck" && false)
 
 test-metalinter: install-linters
 	gometalinter --config gometalinter.json ./...
@@ -271,6 +271,9 @@ test-integration: setup-containers
 
 $(SMOKE_TEST_BINARY):
 	go build -o $@ -tags smoke -ldflags "-X main.VersionString=$(DEV_VERSION)"
+
+$(SMOKE_TEST_DATA_DIR):
+	mkdir -p $@
 
 $(SMOKE_TEST_LATEST_LINK): $(SMOKE_TEST_DATA_DIR)
 	ln -sfn $< $@

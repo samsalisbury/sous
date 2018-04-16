@@ -1,5 +1,6 @@
 package singularity
 
+// XXX deprecated - remove in favor of bare Delivers
 import (
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
@@ -24,14 +25,9 @@ func reportDiffResolutionMessage(message string, diffRes sous.DiffResolution, le
 
 func (msg diffResolutionMessage) EachField(f logging.FieldReportFn) {
 	f("@loglov3-otl", logging.SousDiffResolution)
-	f("sous-deployment-id", msg.diffResolution.DeploymentID.String())
-	f("sous-manifest-id", msg.diffResolution.ManifestID.String())
-	f("sous-resolution-description", string(msg.diffResolution.Desc))
-	if msg.diffResolution.Error != nil {
-		f("sous-resolution-errormessage", msg.diffResolution.Error.String)
-		f("sous-resolution-errortype", msg.diffResolution.Error.Type)
-	}
 	msg.CallerInfo.EachField(f)
+
+	msg.diffResolution.EachField(f)
 }
 
 func (msg diffResolutionMessage) Message() string {
