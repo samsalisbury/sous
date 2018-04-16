@@ -110,6 +110,7 @@ type (
 		level   Level
 		name    string
 		appRole string
+		context []EachFielder
 
 		metrics metrics.Registry
 		*dumpBundle

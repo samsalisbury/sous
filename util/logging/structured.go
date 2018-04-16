@@ -29,6 +29,14 @@ func (r *redundantFields) check(n FieldName, v interface{}) bool {
 	return false
 }
 
+func (r *redundantFields) softCheck(n FieldName, v interface{}) bool {
+	if list, yes := r.fs[n]; yes {
+		return true
+	}
+	r.fs[n] = []interface{}{}
+	return false
+}
+
 func (r redundantFields) extra(n FieldName) bool {
 	vs, have := r.fs[n]
 	if !have {
@@ -81,6 +89,16 @@ func (ls LogSet) Fields(items []EachFielder) {
 			case CallStackMessage:
 				messages = append(messages, fmt.Sprintf("%s", value))
 			}
+		})
+	}
+
+	for _, item := range ls.context {
+		item.EachField(func(name FieldName, value interface{}) {
+			// context fields get overridden
+			if redundants.softCheck(name, value) {
+				return
+			}
+			logto = logto.WithField(string(name), value)
 		})
 	}
 
