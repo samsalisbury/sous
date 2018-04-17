@@ -4,42 +4,26 @@ import (
 	"strings"
 )
 
-type kafkaConfigurationMessage struct {
-	CallerInfo
-	hook    *kafkaSink
-	brokers []string
-	topic   string
-}
-
-func reportKafkaConfig(hook *kafkaSink, cfg Config, ls LogSink) {
-	msg := kafkaConfigurationMessage{
-		CallerInfo: GetCallerInfo(),
-		hook:       hook,
-		brokers:    cfg.getBrokers(),
-		topic:      cfg.Kafka.Topic,
-	}
-	msg.ExcludeMe()
-
-	if hook == nil {
-		Deliver(ls,
-			SousKafkaConfigV1,
-			WarningLevel,
-			GetCallerInfo(NotHere()),
-			MessageField("Not connecting to Kafka."),
-			KV(SousSuccessfulConnection, false),
-		)
-		return
+func reportKafkaConfig(hook kafkaSink, cfg Config, ls LogSink) {
+	msg := ConsoleAndMessage("Not connecting to Kafka.")
+	lvl := WarningLevel
+	succ := false
+	id := ""
+	if hook != nil && hook.live() {
+		msg = ConsoleAndMessage("Connecting to Kafka")
+		lvl = InformationLevel
+		succ = true
+		id = hook.id()
 	}
 
 	Deliver(ls,
 		SousKafkaConfigV1,
-		InformationLevel,
 		GetCallerInfo(NotHere()),
-		ConsoleAndMessage("Connecting to Kafka"),
-		KV(SousSuccessfulConnection, true),
+		lvl,
+		msg,
+		KV(SousSuccessfulConnection, succ),
 		KV(KafkaLoggingTopic, cfg.Kafka.Topic),
 		KV(KafkaBrokers, strings.Join(cfg.getBrokers(), ",")),
-		KV(KafkaLoggerId, hook.ID()),
-		KV(KafkaLoggingLevels, hook.level.String()),
+		KV(KafkaLoggerId, id),
 	)
 }

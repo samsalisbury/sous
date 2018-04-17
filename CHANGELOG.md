@@ -9,6 +9,7 @@ with respect to its command line interface and HTTP interface.
 ## [Unreleased](//github.com/opentable/sous/compare/0.5.85...HEAD)
 ### Added
 * Server: more flexible, agile logging API.
+* Server: logging API includes adding context fields to child loggers.
 ### Changed
 * Client: Display more information in case timeout of sous newdeploy.  Also show Executor Message if failed deploy.
 * Server: cleanups to logging output

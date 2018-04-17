@@ -107,9 +107,10 @@ type (
 	// LogSet is the stopgap for a decent injectable logger
 	//
 	LogSet struct {
-		level   Level
-		name    string
-		appRole string
+		level     Level
+		name      string
+		appRole   string
+		ctxFields []EachFielder
 
 		metrics metrics.Registry
 		*dumpBundle
@@ -122,7 +123,7 @@ type (
 		err, defaultErr io.Writer
 		logrus          *logrus.Logger
 		liveConfig      *Config
-		kafkaSink       *kafkaSink
+		kafkaSink       kafkaSink
 		graphiteCancel  func()
 		graphiteConfig  *graphite.Config
 		extraConsole    io.Writer
@@ -177,9 +178,10 @@ func NewLogSet(version semv.Version, name string, role string, err io.Writer) *L
 }
 
 // Child produces a child logset, namespaced under "name".
-func (ls LogSet) Child(name string) LogSink {
+func (ls LogSet) Child(name string, context ...EachFielder) LogSink {
 	child := newls(ls.name+"."+name, ls.appRole, ls.level, ls.dumpBundle)
 	child.metrics = metrics.NewPrefixedChildRegistry(ls.metrics, name+".")
+	child.ctxFields = append(context, ls.ctxFields...)
 	return child
 }
 
@@ -211,8 +213,8 @@ func newdb(vrsn semv.Version, err io.Writer, lgrs *logrus.Logger) *dumpBundle {
 	}
 }
 
-func (db *dumpBundle) replaceKafka(sink *kafkaSink) {
-	var old *kafkaSink
+func (db *dumpBundle) replaceKafka(sink kafkaSink) {
+	var old kafkaSink
 	old, db.kafkaSink = db.kafkaSink, sink
 	if old != nil {
 		old.closedown()
@@ -297,7 +299,7 @@ func (ls LogSet) configureKafka(cfg Config) error {
 		return nil
 	}
 
-	sink, err := newKafkaSink("kafkahook",
+	sink, err := newLiveKafkaSink("kafkahook",
 		cfg.getKafkaLevel(),
 		logrusFormatter(),
 		cfg.getBrokers(),
