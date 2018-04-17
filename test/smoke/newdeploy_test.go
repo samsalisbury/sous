@@ -39,20 +39,38 @@ func setupProject(t *testing.T, f Fixture, dockerfile string) TestClient {
 	return sous
 }
 
+func initProjectNoFlavor(t *testing.T, sous TestClient) {
+	t.Helper()
+	// Prepare manifest.
+	sous.MustRun(t, "init")
+	manifest := sous.MustRun(t, "manifest", "get")
+	manifest = strings.Replace(manifest, "NumInstances: 0", "NumInstances: 1", -1)
+	manifestSetCmd := sous.Cmd(t, "manifest", "set")
+	manifestSetCmd.Stdin = ioutil.NopCloser(bytes.NewReader([]byte(manifest)))
+	if out, err := manifestSetCmd.CombinedOutput(); err != nil {
+		t.Fatalf("manifest set failed: %s; output:\n%s", err, out)
+	}
+}
+
+func initProjectWithFlavor(t *testing.T, sous TestClient, flavor string) {
+	t.Helper()
+	// Prepare manifest.
+	sous.MustRun(t, "init", "-flavor", flavor)
+	manifest := sous.MustRun(t, "manifest", "get", "-flavor", flavor)
+	manifest = strings.Replace(manifest, "NumInstances: 0", "NumInstances: 1", -1)
+	manifestSetCmd := sous.Cmd(t, "manifest", "set", "-flavor", flavor)
+	manifestSetCmd.Stdin = ioutil.NopCloser(bytes.NewReader([]byte(manifest)))
+	if out, err := manifestSetCmd.CombinedOutput(); err != nil {
+		t.Fatalf("manifest set failed: %s; output:\n%s", err, out)
+	}
+}
+
 func TestSousNewdeploy(t *testing.T) {
 
 	t.Run("simple", func(t *testing.T) {
 		f := setupEnv(t)
 		sous := setupProject(t, f, simpleServer)
-		// Prepare manifest.
-		sous.MustRun(t, "init")
-		manifest := sous.MustRun(t, "manifest", "get")
-		manifest = strings.Replace(manifest, "NumInstances: 0", "NumInstances: 1", -1)
-		manifestSetCmd := sous.Cmd(t, "manifest", "set")
-		manifestSetCmd.Stdin = ioutil.NopCloser(bytes.NewReader([]byte(manifest)))
-		if out, err := manifestSetCmd.CombinedOutput(); err != nil {
-			t.Fatalf("manifest set failed: %s; output:\n%s", err, out)
-		}
+		initProjectNoFlavor(t, sous)
 		// Build and deploy.
 		sous.MustRun(t, "build", "-tag", "1.2.3")
 		sous.MustRun(t, "newdeploy", "-cluster", "cluster1", "-tag", "1.2.3")
@@ -62,15 +80,7 @@ func TestSousNewdeploy(t *testing.T) {
 		f := setupEnv(t)
 		sous := setupProject(t, f, simpleServer)
 		flavor := "flavor1"
-		// Prepare manifest.
-		sous.MustRun(t, "init", "-flavor", flavor)
-		manifest := sous.MustRun(t, "manifest", "get", "-flavor", flavor)
-		manifest = strings.Replace(manifest, "NumInstances: 0", "NumInstances: 1", -1)
-		manifestSetCmd := sous.Cmd(t, "manifest", "set", "-flavor", flavor)
-		manifestSetCmd.Stdin = ioutil.NopCloser(bytes.NewReader([]byte(manifest)))
-		if out, err := manifestSetCmd.CombinedOutput(); err != nil {
-			t.Fatalf("manifest set failed: %s; output:\n%s", err, out)
-		}
+		initProjectWithFlavor(t, sous, flavor)
 		sous.MustRun(t, "build", "-tag", "1.2.3")
 		sous.MustRun(t, "newdeploy", "-cluster", "cluster1", "-tag", "1.2.3", "-flavor", flavor)
 	})
