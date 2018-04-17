@@ -8,15 +8,22 @@ import (
 	sing "github.com/opentable/go-singularity"
 )
 
-// ResetSingularity clears out the state from the integration singularity service
-// Call it (with and extra call deferred) anywhere integration tests use Singularity
-func resetSingularity(t *testing.T, singularityURL string) {
+type Singularity struct {
+	URL    string
+	client *sing.Client
+}
+
+func NewSingularity(baseURL string) *Singularity {
+	return &Singularity{URL: baseURL, client: sing.NewClient(baseURL)}
+}
+
+func (s *Singularity) Reset(t *testing.T) {
+	t.Helper()
 	const pollLimit = 30
 	const retryLimit = 3
 	t.Log("Resetting Singularity...")
-	singClient := sing.NewClient(singularityURL)
 
-	reqList, err := singClient.GetRequests(false)
+	reqList, err := s.client.GetRequests(false)
 	if err != nil {
 		panic(err)
 	}
@@ -24,7 +31,7 @@ func resetSingularity(t *testing.T, singularityURL string) {
 	// Singularity is sometimes not actually deleting a request until the second attempt...
 	for j := retryLimit; j >= 0; j-- {
 		for _, r := range reqList {
-			_, err := singClient.DeleteRequest(r.Request.Id, nil)
+			_, err := s.client.DeleteRequest(r.Request.Id, nil)
 			if err != nil {
 				panic(err)
 			}
@@ -33,7 +40,7 @@ func resetSingularity(t *testing.T, singularityURL string) {
 		log.Printf("Singularity resetting: Issued deletes for %d requests. Awaiting confirmation they've quit.", len(reqList))
 
 		for i := pollLimit; i > 0; i-- {
-			reqList, err = singClient.GetRequests(false)
+			reqList, err = s.client.GetRequests(false)
 			if err != nil {
 				panic(err)
 			}

@@ -10,10 +10,11 @@ import (
 )
 
 type Fixture struct {
-	EnvDesc desc.EnvDesc
-	Cluster TestCluster
-	Client  TestClient
-	BaseDir string
+	EnvDesc     desc.EnvDesc
+	Cluster     TestCluster
+	Client      TestClient
+	BaseDir     string
+	Singularity *Singularity
 }
 
 func setupEnv(t *testing.T) Fixture {
@@ -26,7 +27,9 @@ func setupEnv(t *testing.T) Fixture {
 	envDesc := getEnvDesc(t)
 	baseDir := getDataDir(t)
 
-	resetSingularity(t, envDesc.SingularityURL())
+	singularity := NewSingularity(envDesc.SingularityURL())
+
+	singularity.Reset(t)
 
 	state := sous.StateFixture(sous.StateFixtureOpts{
 		ClusterCount:  3,
@@ -55,9 +58,10 @@ func setupEnv(t *testing.T) Fixture {
 	}
 
 	return Fixture{
-		Cluster: *c,
-		Client:  client,
-		BaseDir: baseDir,
+		Cluster:     *c,
+		Client:      client,
+		BaseDir:     baseDir,
+		Singularity: singularity,
 	}
 }
 
