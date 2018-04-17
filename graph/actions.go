@@ -23,7 +23,7 @@ func (di *SousGraph) GetUpdate(dff config.DeployFilterFlags, otpl config.OTPLFla
 	di.guardedAdd("OTPLFlags", &otpl)
 	di.guardedAdd("Dryrun", DryrunNeither)
 
-	updateScoop := struct {
+	scoop := struct {
 		Manifest         TargetManifest
 		GDM              CurrentGDM
 		HTTPStateManager *sous.HTTPStateManager
@@ -31,16 +31,46 @@ func (di *SousGraph) GetUpdate(dff config.DeployFilterFlags, otpl config.OTPLFla
 		User             sous.User
 		LogSink          LogSink
 	}{}
-	if err := di.Inject(&updateScoop); err != nil {
+	if err := di.Inject(&scoop); err != nil {
 		return nil, err
 	}
 	return &actions.Update{
-		Manifest:         updateScoop.Manifest.Manifest,
-		GDM:              updateScoop.GDM.Deployments,
-		HTTPStateManager: updateScoop.HTTPStateManager,
-		ResolveFilter:    (*sous.ResolveFilter)(updateScoop.ResolveFilter),
-		User:             updateScoop.User,
-		Log:              updateScoop.LogSink.LogSink,
+		Manifest:         scoop.Manifest.Manifest,
+		GDM:              scoop.GDM.Deployments,
+		HTTPStateManager: scoop.HTTPStateManager,
+		ResolveFilter:    (*sous.ResolveFilter)(scoop.ResolveFilter),
+		User:             scoop.User,
+		Log:              scoop.LogSink.LogSink,
+	}, nil
+}
+
+// GetDeploy constructs a Deploy Actions.
+func (di *SousGraph) GetDeploy(dff config.DeployFilterFlags, force, waitStable bool) (actions.Action, error) {
+	di.guardedAdd("Dryrun", DryrunNeither)
+	di.guardedAdd("DeployFilterFlags", &dff)
+
+	scoop := struct {
+		ResolveFilter    *RefinedResolveFilter
+		HTTP             ClusterSpecificHTTPClient
+		DeploymentID     TargetDeploymentID
+		HTTPStateManager *sous.HTTPStateManager
+		LogSink          LogSink
+		User             sous.User
+		Config           SousConfig
+	}{}
+	if err := di.Inject(&scoop); err != nil {
+		return nil, err
+	}
+	return &actions.Update{
+		ResolveFilter:      (*sous.ResolveFilter)(scoop.ResolveFilter),
+		HTTPClient:         scoop.HTTP.HTTPClient,
+		TargetDeploymentID: sous.DeploymentID(scoop.DeploymentID),
+		StateReader:        scoop.HTTPStateManager,
+		LogSink:            scoop.LogSink.LogSink,
+		User:               scoop.User,
+		Config:             config.Config(scoop.Config),
+		Force:              force,
+		WaitStable:         waitStable,
 	}, nil
 }
 

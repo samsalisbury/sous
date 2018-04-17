@@ -70,16 +70,6 @@ func newTargetDeploymentID(rrf *RefinedResolveFilter) (TargetDeploymentID, error
 	}, nil
 }
 
-// QueryMap returns a map suitable to use as an HTTP get parameter map to idenitfy a deployment.
-func (td TargetDeploymentID) QueryMap() map[string]string {
-	deployQuery := map[string]string{}
-	deployQuery["repo"] = td.ManifestID.Source.Repo
-	deployQuery["cluster"] = td.Cluster
-	deployQuery["offset"] = td.ManifestID.Source.Dir
-	deployQuery["flavor"] = td.ManifestID.Flavor
-	return deployQuery
-}
-
 func newTargetManifestID(rrf *RefinedResolveFilter) (TargetManifestID, error) {
 	if rrf == nil {
 		return TargetManifestID{}, fmt.Errorf("nil ResolveFilter")

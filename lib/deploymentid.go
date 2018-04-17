@@ -52,3 +52,13 @@ func (did *DeploymentID) Digest() []byte {
 func (did DeploymentID) String() string {
 	return did.Cluster + ":" + did.ManifestID.String()
 }
+
+// QueryMap returns a map suitable to use as an HTTP get parameter map to idenitfy a deployment.
+func (did DeploymentID) QueryMap() map[string]string {
+	deployQuery := map[string]string{}
+	deployQuery["repo"] = did.ManifestID.Source.Repo
+	deployQuery["cluster"] = did.Cluster
+	deployQuery["offset"] = did.ManifestID.Source.Dir
+	deployQuery["flavor"] = did.ManifestID.Flavor
+	return deployQuery
+}
