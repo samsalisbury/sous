@@ -28,15 +28,23 @@ func assembleStrayFields(items ...interface{}) strayFields {
 
 // EachField defines EachFielder on strayFields
 func (sf strayFields) EachField(fn FieldReportFn) {
-	fn(SousFields, strings.Join(removeDuplicates(sf.fields), ","))
-	fn(SousTypes, strings.Join(removeDuplicates(sf.types), ","))
+	if len(sf.fields) > 0 {
+		fn(SousFields, strings.Join(removeDuplicates(sf.fields), ","))
+	}
+	if len(sf.types) > 0 {
+		fn(SousTypes, strings.Join(removeDuplicates(sf.types), ","))
+	}
 
-	fn(SousIds, strings.Join(removeDuplicates(sf.ids), ","))
-	fn(SousIdValues, strings.Join(removeDuplicates(sf.values), ","))
+	if len(sf.ids) > 0 {
+		fn(SousIds, strings.Join(removeDuplicates(sf.ids), ","))
+	}
+	if len(sf.values) > 0 {
+		fn(SousIdValues, strings.Join(removeDuplicates(sf.values), ","))
+	}
 
 	n, err := sf.jsonObj.ArrayCount("message", "array")
 	if err != nil {
-		return
+		n = 0
 	}
 	if n > 0 || sf.hasRedundants() {
 		fn(JsonValue, sf.jsonObj.String())
@@ -53,6 +61,9 @@ func (sf *strayFields) addItem(item interface{}) {
 
 func (sf *strayFields) addRedundants(extras map[FieldName][]interface{}) {
 	for n, vs := range extras {
+		if len(vs) == 0 {
+			continue
+		}
 		name := string(n)
 		sf.jsonObj.Array("message", "redundant", name)
 		for _, v := range vs {
@@ -64,10 +75,7 @@ func (sf *strayFields) addRedundants(extras map[FieldName][]interface{}) {
 }
 
 func (sf *strayFields) hasRedundants() bool {
-	reds, err := sf.jsonObj.Object("message", "redundant")
-	if err != nil {
-		return false
-	}
+	reds := sf.jsonObj.Search("message", "redundant")
 
 	cs, err := reds.Children()
 	if err != nil {

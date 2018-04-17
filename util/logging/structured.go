@@ -29,6 +29,14 @@ func (r *redundantFields) check(n FieldName, v interface{}) bool {
 	return false
 }
 
+func (r *redundantFields) softCheck(n FieldName, v interface{}) bool {
+	if _, yes := r.fs[n]; yes {
+		return true
+	}
+	r.fs[n] = []interface{}{}
+	return false
+}
+
 func (r redundantFields) extra(n FieldName) bool {
 	vs, have := r.fs[n]
 	if !have {
@@ -84,6 +92,16 @@ func (ls LogSet) Fields(items []EachFielder) {
 		})
 	}
 
+	for _, item := range ls.ctxFields {
+		item.EachField(func(name FieldName, value interface{}) {
+			// context fields get overridden
+			if redundants.softCheck(name, value) {
+				return
+			}
+			logto = logto.WithField(string(name), value)
+		})
+	}
+
 	if !redundants.any(Loglov3Otl) {
 		messages = append(messages, "No OTL provided")
 		logto = logto.WithField(string(Loglov3Otl), SousGenericV1)
@@ -111,7 +129,7 @@ func (ls LogSet) Fields(items []EachFielder) {
 
 	if strays != nil {
 		strays.EachField(func(name FieldName, value interface{}) {
-			logto.WithField(string(name), value)
+			logto = logto.WithField(string(name), value)
 		})
 	}
 
