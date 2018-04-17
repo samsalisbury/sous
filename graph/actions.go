@@ -45,8 +45,8 @@ func (di *SousGraph) GetUpdate(dff config.DeployFilterFlags, otpl config.OTPLFla
 }
 
 // GetDeploy constructs a Deploy Actions.
-func (di *SousGraph) GetDeploy(dff config.DeployFilterFlags, force, waitStable bool) (actions.Action, error) {
-	di.guardedAdd("Dryrun", DryrunNeither)
+func (di *SousGraph) GetDeploy(dff config.DeployFilterFlags, dryrun string, force, waitStable bool) (actions.Action, error) {
+	di.guardedAdd("Dryrun", DryrunOption(dryrun))
 	di.guardedAdd("DeployFilterFlags", &dff)
 
 	scoop := struct {

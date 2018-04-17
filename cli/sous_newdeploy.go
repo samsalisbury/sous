@@ -12,10 +12,12 @@ import (
 // PUT /single-deployment endpoint to begin the deployment, and polls by
 // watching the returned rectification URL.
 type SousNewDeploy struct {
-	SousGraph         *graph.SousGraph
+	SousGraph *graph.SousGraph
+
 	DeployFilterFlags config.DeployFilterFlags `inject:"optional"`
 	waitStable        bool
 	force             bool
+	dryrunOption      string
 }
 
 func init() { TopLevelCommands["newdeploy"] = &SousNewDeploy{} }
@@ -42,11 +44,14 @@ func (sd *SousNewDeploy) AddFlags(fs *flag.FlagSet) {
 		"force deploy no matter if GDM already is at the correct version")
 	fs.BoolVar(&sd.waitStable, "wait-stable", true,
 		"wait for the deploy to complete before returning (otherwise, use --wait-stable=false)")
+	fs.StringVar(&sd.dryrunOption, "dry-run", "none",
+		"prevent rectify from actually changing things - "+
+			"values are none,scheduler,registry,both")
 }
 
 // Execute creates the new deployment.
 func (sd *SousNewDeploy) Execute(args []string) cmdr.Result {
-	deploy, err := sd.SousGraph.GetDeploy(sd.DeployFilterFlags, sd.force, sd.waitStable)
+	deploy, err := sd.SousGraph.GetDeploy(sd.DeployFilterFlags, sd.dryrunOption, sd.force, sd.waitStable)
 	if err != nil {
 		return cmdr.EnsureErrorResult(err)
 	}
