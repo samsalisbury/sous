@@ -30,5 +30,5 @@ func TestLogSetContext(t *testing.T) {
 	assert.Equal(t, 20, data["override"])
 	assert.Equal(t, 1, data["child-value"])
 	assert.Equal(t, "test.child.grandchild", data["logger-name"])
-	assert.Equal(t, `{"message":{"array":[],"redundant":{"logged":["extra"]}}}`, data["json-value"])
+	assert.Equal(t, `{"message":{"redundant":{"logged":["extra"]}}}`, data["json-value"])
 }

@@ -42,10 +42,9 @@ func (sf strayFields) EachField(fn FieldReportFn) {
 		fn(SousIdValues, strings.Join(removeDuplicates(sf.values), ","))
 	}
 
-	sf.jsonObj.Array("message", "array") // error if already exists - which is okay
 	n, err := sf.jsonObj.ArrayCount("message", "array")
 	if err != nil {
-		return
+		n = 0
 	}
 	if n > 0 || sf.hasRedundants() {
 		fn(JsonValue, sf.jsonObj.String())
