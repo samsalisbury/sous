@@ -11,7 +11,6 @@ import (
 	"github.com/opentable/sous/dto"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/server"
-	"github.com/opentable/sous/util/cmdr"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/logging/messages"
 	"github.com/opentable/sous/util/restful"
@@ -55,7 +54,7 @@ func (sd *Deploy) Do() error {
 
 	updateResponse, err := updater.Update(d, sd.User.HTTPHeaders())
 	if err != nil {
-		return cmdr.InternalErrorf("Failed to update deployment: %s", err)
+		return errors.Wrap(err, "Failed to update deployment")
 	}
 
 	if !sd.WaitStable {
@@ -126,13 +125,13 @@ func (sd *Deploy) pollDeployQueue(location string, pollAtempts int, bar *mpb.Bar
 			bar.IncrBy(5)
 		}
 		if _, err := sd.HTTPClient.Retrieve(location, nil, &response, nil); err != nil {
-			return cmdr.InternalErrorf("\n\tFailed to deploy: %s duration: %s\n", err, timeTrack(start))
+			return errors.Wrapf(err, "Failed to deploy, duration: %s", timeTrack(start))
 		}
 
 		queuePosition := response.QueuePosition
 
 		if response.Resolution != nil && response.Resolution.Error != nil {
-			return cmdr.InternalErrorf("\n\tFailed to deploy: %s duration: %s\n", response.Resolution.Error, timeTrack(start))
+			return errors.Wrapf(response.Resolution.Error, "Failed to deploy, duration: %s\n", timeTrack(start))
 		}
 
 		if queuePosition < 0 && response.Resolution != nil &&
@@ -174,22 +173,7 @@ func checkFinished(resolution sous.DiffResolution) bool {
 	}
 }
 
-/*
-const (
-	// DeployStatusAny represents any deployment status.
-0	DeployStatusAny DeployStatus = iota
-	// DeployStatusPending means the deployment has been requested in the
-	// cluster, but is not yet running.
-1	DeployStatusPending
-	// DeployStatusActive means the deployment is up and running.
-2	DeployStatusActive
-	// DeployStatusFailed means the deployment has failed.
-3	DeployStatusFailed
-)
-For now treating everything but Active as return failed, could look to changin in future
-*/
 func checkResolutionSuccess(resolution sous.DiffResolution) bool {
-	//We know 3 is a failure and 2 is a success so far
 	switch resolution.DeployState.Status {
 	default:
 		return false
