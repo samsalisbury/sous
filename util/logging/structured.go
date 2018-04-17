@@ -129,7 +129,7 @@ func (ls LogSet) Fields(items []EachFielder) {
 
 	if strays != nil {
 		strays.EachField(func(name FieldName, value interface{}) {
-			logto.WithField(string(name), value)
+			logto = logto.WithField(string(name), value)
 		})
 	}
 
