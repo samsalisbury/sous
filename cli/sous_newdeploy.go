@@ -1,31 +1,18 @@
 package cli
 
 import (
-	"encoding/json"
 	"flag"
-	"fmt"
-	"os"
-	"strconv"
-	"time"
 
 	"github.com/opentable/sous/config"
-	"github.com/opentable/sous/dto"
 	"github.com/opentable/sous/graph"
-	sous "github.com/opentable/sous/lib"
-	"github.com/opentable/sous/server"
 	"github.com/opentable/sous/util/cmdr"
-	"github.com/opentable/sous/util/logging"
-	"github.com/opentable/sous/util/logging/messages"
-	"github.com/opentable/sous/util/restful"
-	"github.com/vbauerster/mpb"
-	"github.com/vbauerster/mpb/decor"
-	"golang.org/x/crypto/ssh/terminal"
 )
 
 // SousNewDeploy has the same interface as SousDeploy, but uses the new
 // PUT /single-deployment endpoint to begin the deployment, and polls by
 // watching the returned rectification URL.
 type SousNewDeploy struct {
+	SousGraph         *graph.SousGraph
 	DeployFilterFlags config.DeployFilterFlags `inject:"optional"`
 	waitStable        bool
 	force             bool
@@ -59,7 +46,7 @@ func (sd *SousNewDeploy) AddFlags(fs *flag.FlagSet) {
 
 // Execute creates the new deployment.
 func (sd *SousNewDeploy) Execute(args []string) cmdr.Result {
-	deploy, err := ss.SousGraph.GetDeploy(sd.DeployFilterFlags, sd.force, sd.waitStable)
+	deploy, err := sd.SousGraph.GetDeploy(sd.DeployFilterFlags, sd.force, sd.waitStable)
 	if err != nil {
 		return cmdr.EnsureErrorResult(err)
 	}

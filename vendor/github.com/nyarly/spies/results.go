@@ -4,6 +4,7 @@ import "github.com/stretchr/testify/mock"
 
 type (
 	results interface {
+		Present() bool
 		Get(index int) interface{}
 		GetOr(int, interface{}) interface{}
 		String(indexOrNil ...int) string
@@ -19,8 +20,16 @@ type (
 	}
 )
 
+func (r presentResult) Present() bool {
+	return true
+}
+
 func (r presentResult) GetOr(i int, _ interface{}) interface{} {
 	return r.Arguments.Get(i)
+}
+
+func (r missingResult) Present() bool {
+	return false
 }
 
 func (r missingResult) GetOr(_ int, it interface{}) interface{} {

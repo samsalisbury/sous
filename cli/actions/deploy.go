@@ -30,7 +30,7 @@ type Deploy struct {
 	LogSink            logging.LogSink
 	User               sous.User
 	Force, WaitStable  bool
-	config.Config
+	*config.Config
 }
 
 // Do implements Action on Deploy.

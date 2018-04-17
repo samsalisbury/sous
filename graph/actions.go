@@ -56,19 +56,19 @@ func (di *SousGraph) GetDeploy(dff config.DeployFilterFlags, force, waitStable b
 		HTTPStateManager *sous.HTTPStateManager
 		LogSink          LogSink
 		User             sous.User
-		Config           SousConfig
+		Config           LocalSousConfig
 	}{}
 	if err := di.Inject(&scoop); err != nil {
 		return nil, err
 	}
-	return &actions.Update{
+	return &actions.Deploy{
 		ResolveFilter:      (*sous.ResolveFilter)(scoop.ResolveFilter),
 		HTTPClient:         scoop.HTTP.HTTPClient,
 		TargetDeploymentID: sous.DeploymentID(scoop.DeploymentID),
 		StateReader:        scoop.HTTPStateManager,
 		LogSink:            scoop.LogSink.LogSink,
 		User:               scoop.User,
-		Config:             config.Config(scoop.Config),
+		Config:             scoop.Config.Config,
 		Force:              force,
 		WaitStable:         waitStable,
 	}, nil
