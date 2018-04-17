@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"strings"
+
+	"github.com/opentable/sous/util/logging"
 )
 
 // A DeploymentID identifies a deployment.
@@ -61,4 +63,10 @@ func (did DeploymentID) QueryMap() map[string]string {
 	deployQuery["offset"] = did.ManifestID.Source.Dir
 	deployQuery["flavor"] = did.ManifestID.Flavor
 	return deployQuery
+}
+
+// EachField implements logging.EachFielder on DeploymentID.
+func (did DeploymentID) EachField(fn logging.FieldReportFn) {
+	fn(logging.SousDeploymentId, did.String())
+	did.ManifestID.EachField(fn)
 }
