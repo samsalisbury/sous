@@ -9,6 +9,7 @@ import (
 	"github.com/opentable/sous/util/docker_registry"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/logging/messages"
+	"fmt"
 )
 
 type splitDetector struct {
@@ -46,13 +47,24 @@ func (sd *splitDetector) absorbDockerfile() error {
 	return sd.absorbDocker(sd.rootAst)
 }
 
-func (sd *splitDetector) fetchFromRunSpec() error {
+func (sd *splitDetector) fetchFromRunSpec(ctx *sous.BuildContext) error {
 	for _, f := range sd.froms {
 		messages.ReportLogFieldsMessage("Fetching", logging.DebugLevel, logging.Log, f.Value)
 		md, err := sd.registry.GetImageMetadata(f.Value, "")
 		if err != nil {
 			messages.ReportLogFieldsMessage("Error fetching", logging.DebugLevel, logging.Log, f.Value, err)
-			continue
+			cmd := []interface{}{"image", "inspect", f.Value} //"--format={{.Config.OnBuild}}{{.Config.Env}}",
+			//docker image inspect docker.otenv.com/sous-otj-autobuild:local
+			output, _ := ctx.Sh.Stdout("docker", cmd...)
+			fmt.Println("stdout : ", output)
+
+			buf := bytes.NewBufferString(output)
+			ast, _ := parseDocker(buf)
+			return sd.absorbDocker(ast)
+			//md = output
+			//if err != nil {
+				//continue
+			//}
 		}
 
 		if path, ok := md.Env[SOUS_RUN_IMAGE_SPEC]; ok {

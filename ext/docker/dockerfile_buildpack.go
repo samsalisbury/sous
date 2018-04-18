@@ -83,8 +83,10 @@ func (d *DockerfileBuildpack) Build(c *sous.BuildContext) (*sous.BuildResult, er
 	if offset == "" {
 		offset = "."
 	}
-
-	cmd := []interface{}{"build", "--pull"}
+	fmt.Println("INSIDE THE BUILDER.. CHANGE THIS TO RUN!!")
+	//	cmd := []interface{}{"run", "--mount", "source=cache,target=/cache", "0.0.1-test:latest"}
+	//cmd := []interface{}{"build", "--pull"}
+	cmd := []interface{}{"build"}
 	r := dr.Data.(detectData)
 	if r.HasAppVersionArg {
 		v := c.Version().Version
@@ -106,6 +108,8 @@ func (d *DockerfileBuildpack) Build(c *sous.BuildContext) (*sous.BuildResult, er
 	if match == nil {
 		return nil, fmt.Errorf("Couldn't find container id in:\n%s", output)
 	}
+	fmt.Println("match")
+	fmt.Println(match)
 
 	return &sous.BuildResult{
 		Elapsed:  time.Since(start),
