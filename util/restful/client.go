@@ -164,15 +164,6 @@ func buildHeaders(maybeHeaders []map[string]string) http.Header {
 	return hs
 }
 
-func (client *LiveHTTPClient) getRequest(ctx context.Context, method string, urlPath string, qParms map[string]string, qBody interface{}, headers map[string]string) (*http.Request, error) {
-	url, err := client.buildURL(urlPath, qParms)
-	rq, err := client.buildRequest(method, url, headers, nil, qBody, err)
-	if ctx != nil {
-		rq = rq.WithContext(ctx)
-	}
-	return rq, err
-}
-
 // ****
 
 // Retrieve makes a GET request on urlPath, after transforming qParms into ?&=
@@ -186,9 +177,9 @@ func (client *LiveHTTPClient) Retrieve(urlPath string, qParms map[string]string,
 
 //RetrieveCtx Add context to Retrieve to ability to cancel
 func (client *LiveHTTPClient) RetrieveCtx(ctx context.Context, urlPath string, qParms map[string]string, rzBody interface{}, headers map[string]string) (UpdateDeleter, error) {
-	rq, err := client.getRequest(ctx, "GET", urlPath, qParms, nil, headers)
+	rq, err := client.constructRequest(ctx, "GET", urlPath, qParms, nil, headers)
 	rz, err := client.sendRequest(rq, err)
-	state, err := client.getBody(rz, rzBody, err)
+	state, err := client.extractBody(rz, rzBody, err)
 	return client.enrichState(state, urlPath, qParms), errors.Wrapf(err, "Retrieve %s params: %v", urlPath, qParms)
 }
 
@@ -200,9 +191,9 @@ func (client *LiveHTTPClient) Create(urlPath string, qParms map[string]string, q
 
 //CreateCtx Add context to Create to ability to cancel
 func (client *LiveHTTPClient) CreateCtx(ctx context.Context, urlPath string, qParms map[string]string, qBody interface{}, headers map[string]string) (UpdateDeleter, error) {
-	rq, err := client.getRequest(ctx, "PUT", urlPath, qParms, qBody, addNoMatchStar(headers))
+	rq, err := client.constructRequest(ctx, "PUT", urlPath, qParms, qBody, addNoMatchStar(headers))
 	rz, err := client.sendRequest(rq, err)
-	state, err := client.getBody(rz, nil, err)
+	state, err := client.extractBody(rz, nil, err)
 	return client.enrichState(state, urlPath, qParms), errors.Wrapf(err, "Create %s params: %v", urlPath, qParms)
 }
 
@@ -221,7 +212,7 @@ func (client *LiveHTTPClient) delete(urlPath string, qParms map[string]string, f
 		etag := from.etag
 		rq, err := client.buildRequest("DELETE", url, addIfMatch(headers, etag), nil, nil, err)
 		rz, err := client.sendRequest(rq, err)
-		_, err = client.getBody(rz, nil, err)
+		_, err = client.extractBody(rz, nil, err)
 		return err
 	}(), "Delete %s params: %v", urlPath, qParms)
 }
@@ -233,7 +224,7 @@ func (client *LiveHTTPClient) update(urlPath string, qParms map[string]string, f
 		etag := from.etag
 		rq, err := client.buildRequest("PUT", url, addIfMatch(headers, etag), from, qBody, err)
 		rz, err := client.sendRequest(rq, err)
-		state, err = client.getBody(rz, nil, err)
+		state, err = client.extractBody(rz, nil, err)
 		client.enrichState(state, urlPath, qParms)
 		if state != nil {
 			state.headers = rz.Header
@@ -311,7 +302,11 @@ func (client *LiveHTTPClient) buildRequest(method, url string, headers map[strin
 	if rqBody != nil {
 		JSON = encodeJSON(rqBody)
 		if resource != nil {
-			JSON = putbackJSON(resource.body, resource.resourceJSON, JSON)
+			var err error
+			JSON, err = putbackJSON(resource.body, resource.resourceJSON, JSON)
+			if err != nil {
+				return nil, err
+			}
 		}
 		messages.ReportLogFieldsMessage("JSON Body", logging.DebugLevel, client.LogSink, JSON.String())
 	}
@@ -341,19 +336,28 @@ func (client *LiveHTTPClient) updateHeaders(rq *http.Request, headers map[string
 	}
 }
 
+func (client *LiveHTTPClient) constructRequest(ctx context.Context, method string, urlPath string, qParms map[string]string, qBody interface{}, headers map[string]string) (*http.Request, error) {
+	url, err := client.buildURL(urlPath, qParms)
+	rq, err := client.buildRequest(method, url, headers, nil, qBody, err)
+	if ctx != nil {
+		rq = rq.WithContext(ctx)
+	}
+	return rq, err
+}
+
 func (client *LiveHTTPClient) sendRequest(rq *http.Request, ierr error) (*http.Response, error) {
 	if ierr != nil {
 		return nil, ierr
 	}
 	// needs to be fixed in coming log update
-	rz, err := client.httpRequest(rq)
+	rz, err := client.performHTTPRequest(rq)
 	if err != nil {
 		return rz, err
 	}
 	return rz, err
 }
 
-func (client *LiveHTTPClient) getBody(rz *http.Response, rzBody interface{}, err error) (*resourceState, error) {
+func (client *LiveHTTPClient) extractBody(rz *http.Response, rzBody interface{}, err error) (*resourceState, error) {
 	if err != nil {
 		return nil, err
 	}
@@ -361,7 +365,7 @@ func (client *LiveHTTPClient) getBody(rz *http.Response, rzBody interface{}, err
 
 	b, e := ioutil.ReadAll(rz.Body)
 	if e != nil {
-		messages.ReportLogFieldsMessage("error reading from body", logging.DebugLevel, client.LogSink, e)
+		logging.ReportError(client.LogSink, errors.Wrap(e, "error reading from body"))
 		b = []byte{}
 	}
 
@@ -400,7 +404,7 @@ func bodyMessage(b []byte, n int, err error) string {
 	return fmt.Sprintf("body: %d bytes, %s (read err: %v)", n, comp.String(), err)
 }
 
-func (client *LiveHTTPClient) httpRequest(req *http.Request) (*http.Response, error) {
+func (client *LiveHTTPClient) performHTTPRequest(req *http.Request) (*http.Response, error) {
 	if req.Body == nil {
 		messages.ReportClientHTTPRequest(client.LogSink, "<empty request body>", req, "")
 	} else {
@@ -415,6 +419,9 @@ func (client *LiveHTTPClient) httpRequest(req *http.Request) (*http.Response, er
 	recvTime := time.Now()
 	rqDur := recvTime.Sub(sendTime)
 
+	if err != nil {
+		logging.ReportError(client.LogSink, errors.Wrapf(err, "error performing HTTP request %s %q", req.Method, req.URL.String()))
+	}
 	if rz == nil {
 		return rz, err
 	}

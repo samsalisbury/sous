@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 )
 
 type (
@@ -14,6 +15,7 @@ type (
 		Repo, Offset, Tag, Revision string
 		Strict, ForceClone          bool
 		Context                     *BuildContext
+		LogSink                     logging.LogSink
 	}
 
 	// An AdvisoryName is the type for advisory tokens.
@@ -63,6 +65,35 @@ const (
 	DirtyWS = AdvisoryName(`dirty workspace`)
 )
 
+// AllAdvisories returns all advisories.
+func AllAdvisories() []AdvisoryName {
+	return []AdvisoryName{
+		NotService,
+		IsBuilder,
+		UnknownRepo,
+		NoRepoAdv,
+		NotRequestedRevision,
+		Unversioned,
+		TagMismatch,
+		TagNotHead,
+		EphemeralTag,
+		UnpushedRev,
+		BogusRev,
+		DirtyWS,
+	}
+}
+
+// AllAdvisoryStrings is similar to AllAdvisories except it casts them to
+// strings.
+func AllAdvisoryStrings() []string {
+	as := AllAdvisories()
+	s := make([]string, len(as))
+	for i, a := range as {
+		s[i] = string(a)
+	}
+	return s
+}
+
 // NewContext returns a new BuildContext updated based on the user's intent as expressed in the Config
 func (c *BuildConfig) NewContext() *BuildContext {
 	ctx := c.Context
@@ -104,7 +135,7 @@ func (c *BuildConfig) NewContext() *BuildContext {
 
 func (c *BuildConfig) chooseRemoteURL() string {
 	if c.Repo == "" {
-		logging.Log.Debug.Printf("Using best guess: % #v", c.Context.Source.PrimaryRemoteURL)
+		messages.ReportLogFieldsMessage("Using best guest", logging.DebugLevel, c.LogSink, c.Context.Source.PrimaryRemoteURL)
 		return c.Context.Source.PrimaryRemoteURL
 	}
 	return c.Repo
@@ -208,7 +239,7 @@ func (c *BuildConfig) Advisories(ctx *BuildContext) []string {
 		if !hasTag {
 			advs = append(advs, string(EphemeralTag))
 		} else if s.NearestTagRevision != s.Revision {
-			logging.Log.Debug.Printf("%s != %s", s.NearestTagRevision, s.Revision)
+			messages.ReportLogFieldsMessage("NearestTagRevision != Revision", logging.DebugLevel, c.LogSink, s.NearestTagRevision, s.Revision)
 			advs = append(advs, string(TagNotHead))
 		}
 	}

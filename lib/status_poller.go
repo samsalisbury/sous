@@ -135,7 +135,7 @@ func (sp *StatusPoller) subPollers(clusters *serverListData, deps Deployments) (
 	for _, s := range clusters.Servers {
 		// skip clusters the user isn't interested in
 		if !sp.ResolveFilter.FilterClusterName(s.ClusterName) {
-			logging.Log.Vomitf("%s not requested for polling", s.ClusterName)
+			messages.ReportLogFieldsMessage("Not rquested for polling", logging.ExtraDebug1Level, sp.logs, s.ClusterName)
 			continue
 		}
 		// skip clusters that there's no current intention of deploying into
@@ -147,7 +147,7 @@ func (sp *StatusPoller) subPollers(clusters *serverListData, deps Deployments) (
 		}
 		messages.ReportLogFieldsMessage("Starting poller against", logging.DebugLevel, sp.logs, s)
 		// Kick off a separate process to issue HTTP requests against this cluster.
-		sub, err := newSubPoller(s.ClusterName, s.URL, sp.ResolveFilter, sp.User, logging.Log)
+		sub, err := newSubPoller(s.ClusterName, s.URL, sp.ResolveFilter, sp.User, sp.logs.Child(s.ClusterName))
 		if err != nil {
 			return nil, err
 		}

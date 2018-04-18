@@ -16,6 +16,7 @@ tags
 var/
 .cleanprotect
 *.test
+.smoketest/
 
 
 ## Github/Gitignore: JetBrains
@@ -86,3 +87,4 @@ fabric.properties
 
 # ctags files
 .tags
+.vagrant/

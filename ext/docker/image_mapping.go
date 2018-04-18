@@ -129,6 +129,24 @@ func (nc *NameCache) Warmup(r string) error {
 	return nil
 }
 
+func (nc *NameCache) warmupSingle(sid sous.SourceID) error {
+	in := versionTag(nc.DockerRegistryHost, sid, "")
+
+	a := NewBuildArtifact(in, strpairs{})
+	gsid, err := nc.GetSourceID(a)
+
+	if err != nil {
+		return nil
+	}
+
+	if !sid.Equal(gsid) {
+		return errors.Errorf("Fetched %q for image name %q, was looking for %q", gsid, in, sid)
+	}
+
+	return nil
+
+}
+
 // ImageLabels gets the labels for an image name.
 func (nc *NameCache) ImageLabels(in string) (map[string]string, error) {
 	a := NewBuildArtifact(in, nil)
@@ -191,11 +209,13 @@ func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
 		return sid, nil
 	}
 	if err != nil {
+		messages.ReportLogFieldsMessage("No docker image found: "+err.Error(), logging.ExtraDebug1Level, nc.Log, in, sid, err)
 		return sid, err
 	}
 
 	newSID, err := SourceIDFromLabels(md.Labels)
 	if err != nil {
+		messages.ReportLogFieldsMessage("SourceIDFromLabels failed: "+err.Error(), logging.ExtraDebug1Level, nc.Log, in, sid, err)
 		return sid, err
 	}
 
@@ -265,11 +285,15 @@ func (nc *NameCache) getImageNameFromCache(sid sous.SourceID) (string, strpairs,
 }
 
 func (nc *NameCache) getImageNameAfterHarvest(sid sous.SourceID) (string, strpairs, error) {
-	if err := nc.harvest(sid.Location); err != nil {
-		messages.ReportLogFieldsMessage("getImageName: harvest err", logging.WarningLevel, nc.Log, err)
-		return "", nil, err
+	if err := nc.warmupSingle(sid); err == nil {
+		return nc.getImageNameFromCache(sid)
 	}
-	return nc.getImageNameFromCache(sid)
+	err := nc.harvest(sid.Location)
+	if err == nil {
+		return nc.getImageNameFromCache(sid)
+	}
+	messages.ReportLogFieldsMessage("getImageName: harvest err", logging.WarningLevel, nc.Log, err)
+	return "", nil, err
 }
 
 func qualitiesFromLabels(lm map[string]string) []sous.Quality {
@@ -609,7 +633,7 @@ func reportTableMetrics(logger logging.LogSink, db *sql.DB) {
 	msg := tableMetrics{
 		DB: db,
 	}
-	logging.Deliver(msg, logger)
+	logging.Deliver(logger, msg)
 }
 
 func sqlExec(db *sql.DB, sql string) error {

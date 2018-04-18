@@ -12,22 +12,8 @@ type DeployState struct {
 	Status          DeployStatus
 	ExecutorMessage string
 	ExecutorData    interface{}
+	SchedulerURL    string
 }
-
-// DeployStatus represents the status of a deployment in an external cluster.
-type DeployStatus int
-
-const (
-	// DeployStatusAny represents any deployment status.
-	DeployStatusAny DeployStatus = iota
-	// DeployStatusPending means the deployment has been requested in the
-	// cluster, but is not yet running.
-	DeployStatusPending
-	// DeployStatusActive means the deployment is up and running.
-	DeployStatusActive
-	// DeployStatusFailed means the deployment has failed.
-	DeployStatusFailed
-)
 
 func (ds DeployState) String() string {
 	return fmt.Sprintf("DEPLOYMENT:%s STATUS:%s EXECUTORDATA:%v", ds.Deployment.String(), ds.Status, ds.ExecutorData)
@@ -47,6 +33,18 @@ func (ds DeployStates) IgnoringStatus() Deployments {
 		deployments.Set(key, &value.Deployment)
 	}
 	return deployments
+}
+
+// Final reports whether we should expect this DeployState to be finished -
+// in other words, DeployState.Final() -> false implies that a subsequent
+// DeployState will have a different status; polling components will want to poll again.
+func (ds DeployState) Final() bool {
+	switch ds.Status {
+	default:
+		return false
+	case DeployStatusActive, DeployStatusFailed:
+		return true
+	}
 }
 
 // Diff computes the list of differences between two DeployStates and returns

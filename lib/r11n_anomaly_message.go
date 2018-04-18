@@ -84,5 +84,5 @@ func newR11nAnomalyMessage(r *Rectification, anomaly r11nAnomaly) *r11nAnomalyMe
 }
 
 func reportR11nAnomaly(ls logging.LogSink, r *Rectification, anomaly r11nAnomaly) {
-	logging.Deliver(newR11nAnomalyMessage(r, anomaly), ls)
+	logging.Deliver(ls, newR11nAnomalyMessage(r, anomaly))
 }

@@ -38,7 +38,7 @@ func TestUpdateBeginMessage(t *testing.T) {
 	)
 
 	fixedFields := map[string]interface{}{
-		"@loglov3-otl": "sous-update-v1",
+		"@loglov3-otl": logging.SousUpdateV1,
 		"source-id":    "github.com/opentable/example,1.2.7,first",
 		"deploy-id":    "test-example:github.com/opentable/example,first~vanilla",
 		"user-email":   "jdoe@example.com",
@@ -95,7 +95,7 @@ func TestUpdateSuccessMessage(t *testing.T) {
 	)
 
 	fixedFields := map[string]interface{}{
-		"@loglov3-otl": "sous-update-v1",
+		"@loglov3-otl": logging.SousUpdateV1,
 		"source-id":    "github.com/opentable/example,1.2.7,first",
 		"deploy-id":    "test-example:github.com/opentable/example,first~vanilla",
 		"user-email":   "jdoe@example.com",
@@ -134,7 +134,7 @@ func TestUpdateErrorMessage(t *testing.T) {
 	)
 
 	fixedFields := map[string]interface{}{
-		"@loglov3-otl": "sous-update-v1",
+		"@loglov3-otl": logging.SousUpdateV1,
 		"source-id":    "github.com/opentable/example,1.2.7,first",
 		"deploy-id":    "test-example:github.com/opentable/example,first~vanilla",
 		"user-email":   "jdoe@example.com",

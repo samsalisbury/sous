@@ -45,33 +45,33 @@
 //
 // An example log message might look like this:
 //  type exampleMessage struct {
-//    logging.CallerInfo
-//    logging.Level
+//    CallerInfo
+//    Level
 //    myField string
 //  }
 //
-//  func ReportExample(field string, sink logging.LogSink) {
+//  func ReportExample(field string, sink LogSink) {
 //    msg := newExampleMessage(field)
 //    msg.CallerInfo.ExcludeMe() // this filters out ReportExample from the logged call stack
-//    logging.Deliver(sink, msg) // this is the important part
+//    Deliver(msg, sink) // this is the important part
 //  }
 //
 //  func newExampleMessage(field string) *exampleMessage {
 //    return &exampleMessage{
-//      CallerInfo: logging.GetCallerInfo(logging.NotHere()), // this formula captures the call point, while excluding the constructor
-//      Level: logging.DebugLevel,
+//      CallerInfo: GetCallerInfo(NotHere()), // this formula captures the call point, while excluding the constructor
+//      Level: DebugLevel,
 //      myField: field,
 //    }
 //  }
 //
-//  // func (msg *exampleMessage) DefaultLevel() logging.Level { ... }
+//  // func (msg *exampleMessage) DefaultLevel() Level { ... }
 //  // we could define this method, or let the embedded Level handle it.
 //
 //  func (msg *exampleMessage) Message() {
 //    return msg.myField
 //  }
 //
-//  func (msg *exampleMessage) EachField(f logging.FieldReportFn) {
+//  func (msg *exampleMessage) EachField(f FieldReportFn) {
 //    f("@loglov3-otl", "example-message") // a requirement of our local ELK
 //    msg.CallerInfo.EachField(f) // so that the CallerInfo can register its fields
 //    f("my-field", msg.myField)
@@ -88,7 +88,6 @@ package logging
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
@@ -108,15 +107,10 @@ type (
 	// LogSet is the stopgap for a decent injectable logger
 	//
 	LogSet struct {
-		Debug  logwrapper
-		Info   logwrapper
-		Warn   logwrapper
-		Notice logwrapper
-		Vomit  logwrapper
-
-		level   Level
-		name    string
-		appRole string
+		level     Level
+		name      string
+		appRole   string
+		ctxFields []EachFielder
 
 		metrics metrics.Registry
 		*dumpBundle
@@ -129,15 +123,11 @@ type (
 		err, defaultErr io.Writer
 		logrus          *logrus.Logger
 		liveConfig      *Config
-		kafkaSink       *kafkaSink
+		kafkaSink       kafkaSink
 		graphiteCancel  func()
 		graphiteConfig  *graphite.Config
 		extraConsole    io.Writer
 	}
-
-	// A temporary type until we can stop using the LogSet loggers directly
-	// XXX remove and fix accesses to Debug, Info, etc. to be Debugf etc
-	logwrapper func(string, ...interface{})
 )
 
 //RetrieveMetaData used to help retrieve more info for logging about a func
@@ -159,21 +149,6 @@ func RetrieveMetaData(f func()) (name string, uid string) {
 // want metrics in a component, you need to add an injected LogSet. c.f.
 // ext/docker/image_mapping.go
 var Log = func() LogSet { return *(SilentLogSet().Child("GLOBAL").(*LogSet)) }()
-
-// To be deprecated: Printf is part of the holdover from stdlib logging
-func (w logwrapper) Printf(f string, vs ...interface{}) {
-	w(f, vs...)
-}
-
-// To be deprecated: Print is part of the holdover from stdlib logging
-func (w logwrapper) Print(vs ...interface{}) {
-	w(fmt.Sprint(vs...))
-}
-
-// To be deprecated: Println is part of the holdover from stdlib logging
-func (w logwrapper) Println(vs ...interface{}) {
-	w(fmt.Sprint(vs...))
-}
 
 // SilentLogSet returns a logset that discards everything by default
 func SilentLogSet() *LogSet {
@@ -203,9 +178,10 @@ func NewLogSet(version semv.Version, name string, role string, err io.Writer) *L
 }
 
 // Child produces a child logset, namespaced under "name".
-func (ls LogSet) Child(name string) LogSink {
+func (ls LogSet) Child(name string, context ...EachFielder) LogSink {
 	child := newls(ls.name+"."+name, ls.appRole, ls.level, ls.dumpBundle)
 	child.metrics = metrics.NewPrefixedChildRegistry(ls.metrics, name+".")
+	child.ctxFields = append(context, ls.ctxFields...)
 	return child
 }
 
@@ -237,8 +213,8 @@ func newdb(vrsn semv.Version, err io.Writer, lgrs *logrus.Logger) *dumpBundle {
 	}
 }
 
-func (db *dumpBundle) replaceKafka(sink *kafkaSink) {
-	var old *kafkaSink
+func (db *dumpBundle) replaceKafka(sink kafkaSink) {
+	var old kafkaSink
 	old, db.kafkaSink = db.kafkaSink, sink
 	if old != nil {
 		old.closedown()
@@ -259,12 +235,6 @@ func newls(name string, role string, level Level, bundle *dumpBundle) *LogSet {
 		level:      level,
 		dumpBundle: bundle,
 	}
-
-	ls.Warn = logwrapper(func(f string, as ...interface{}) { ls.Warnf(f, as...) })
-	ls.Notice = ls.Warn
-	ls.Info = ls.Warn
-	ls.Debug = logwrapper(func(f string, as ...interface{}) { ls.Debugf(f, as...) })
-	ls.Vomit = logwrapper(func(f string, as ...interface{}) { ls.Vomitf(f, as...) })
 
 	return ls
 }
@@ -306,6 +276,11 @@ func (ls LogSet) AtExit() {
 	}
 }
 
+// ForceDefer returns false to register the "normal" behavior of LogSet.
+func (ls LogSet) ForceDefer() bool {
+	return false
+}
+
 func logrusFormatter() logrus.Formatter {
 	return &logrus.JSONFormatter{
 		DisableTimestamp: true, //we capture the timestamp when message created
@@ -324,7 +299,7 @@ func (ls LogSet) configureKafka(cfg Config) error {
 		return nil
 	}
 
-	sink, err := newKafkaSink("kafkahook",
+	sink, err := newLiveKafkaSink("kafkahook",
 		cfg.getKafkaLevel(),
 		logrusFormatter(),
 		cfg.getBrokers(),
@@ -420,32 +395,6 @@ func (ls LogSet) Console() WriteDoner {
 // ExtraConsole implements LogSink on LogSet
 func (ls LogSet) ExtraConsole() WriteDoner {
 	return nopDoner(ls.extraConsole)
-}
-
-// xxx phase 2 of complete transition: remove these methods in favor of specific messages
-
-// Vomitf logs a message at ExtraDebug1Level.
-// To be deprecated: part of the old stdlib log hack
-func (ls LogSet) Vomitf(f string, as ...interface{}) {
-	m := NewGenericMsg(ExtraDebug1Level, fmt.Sprintf(f, as...), nil, false)
-	m.ExcludeMe()
-	Deliver(m, ls)
-}
-
-// Debugf logs a message a DebugLevel.
-// To be deprecated: part of the old stdlib log hack
-func (ls LogSet) Debugf(f string, as ...interface{}) {
-	m := NewGenericMsg(DebugLevel, fmt.Sprintf(f, as...), nil, false)
-	m.ExcludeMe()
-	Deliver(m, ls)
-}
-
-// Warnf logs a message at WarningLevel.
-// To be deprecated: part of the old stdlib log hack
-func (ls LogSet) Warnf(f string, as ...interface{}) {
-	m := NewGenericMsg(WarningLevel, fmt.Sprintf(f, as...), nil, false)
-	m.ExcludeMe()
-	Deliver(m, ls)
 }
 
 func (ls LogSet) imposeLevel() {

@@ -236,10 +236,22 @@
 			"revisionTime": "2017-11-26T05:04:59Z"
 		},
 		{
+			"checksumSHA1": "w5RcOnfv5YDr3j2bd1YydkPiZx4=",
+			"path": "github.com/mattn/go-isatty",
+			"revision": "6ca4dbf54d38eea1a992b3c722a76a5d1c4cb25c",
+			"revisionTime": "2017-11-07T05:05:31Z"
+		},
+		{
 			"checksumSHA1": "kUqagcesbbz7A2eCwDYntlvrEqs=",
 			"path": "github.com/mattn/go-sqlite3",
 			"revision": "696e2e43cb00dcb1acaf6073e01493e3c4197b75",
 			"revisionTime": "2018-02-18T13:15:52Z"
+		},
+		{
+			"checksumSHA1": "DcYIZnMiq/Tj22/ge9os3NwOhs4=",
+			"path": "github.com/mitchellh/go-ps",
+			"revision": "4fdf99ab29366514c69ccccddab5dc58b8d84062",
+			"revisionTime": "2017-03-09T13:30:38Z"
 		},
 		{
 			"checksumSHA1": "8qtroQuabLt2WML4Oh/Qzgp9mW8=",
@@ -248,10 +260,10 @@
 			"revisionTime": "2016-12-10T01:35:37Z"
 		},
 		{
-			"checksumSHA1": "rY2ZER+lvtS5q3NinS8P8CAgBWo=",
+			"checksumSHA1": "yEnhHK9KxxB1An+6DPAi+1Amyik=",
 			"path": "github.com/nyarly/spies",
-			"revision": "0bdf1ab08cec840664dc0d09c2e76a6bc8f4e10a",
-			"revisionTime": "2018-02-14T22:50:20Z"
+			"revision": "c9a7360a32910e8e1bf44fbb57a021e35dc13611",
+			"revisionTime": "2018-04-17T22:03:05Z"
 		},
 		{
 			"checksumSHA1": "P8IObWuKUIAiaXku4KmZbxfJDGs=",
@@ -320,10 +332,10 @@
 			"revisionTime": "2016-11-28T21:05:44Z"
 		},
 		{
-			"checksumSHA1": "C14YBofViq1naOZy+MgYnd7V0nA=",
+			"checksumSHA1": "4krAfHiJ6MMLbtnySsbkopc4+dE=",
 			"path": "github.com/samsalisbury/psyringe",
-			"revision": "bf48489e3f670992e749ebf6f3b3a729b3d864f0",
-			"revisionTime": "2018-02-20T13:36:34Z"
+			"revision": "bc674db6e95c63c8370999d380750c48b9b309a9",
+			"revisionTime": "2018-02-22T10:34:06Z"
 		},
 		{
 			"checksumSHA1": "HlLNyPqfD8bdWbEjcV3wPzTemc8=",
@@ -404,6 +416,24 @@
 			"path": "github.com/tracer0tong/kafkalogrus",
 			"revision": "ddfc7dbef6a8a3f9fd20c8286e9bfdb99bf9f69e",
 			"revisionTime": "2017-08-16T17:57:46Z"
+		},
+		{
+			"checksumSHA1": "UHY0Gig+aywAbXiZSyXZWY4pGhA=",
+			"path": "github.com/vbauerster/mpb",
+			"revision": "44b3ab598678a5954168e726db2af310f43d3bd8",
+			"revisionTime": "2018-03-15T22:50:40Z"
+		},
+		{
+			"checksumSHA1": "6xG3x/i+ncRYM1TB17NfH8J09/c=",
+			"path": "github.com/vbauerster/mpb/cwriter",
+			"revision": "44b3ab598678a5954168e726db2af310f43d3bd8",
+			"revisionTime": "2018-03-15T22:50:40Z"
+		},
+		{
+			"checksumSHA1": "yJTuQBr6RdJxzch213oH1lRr1rc=",
+			"path": "github.com/vbauerster/mpb/decor",
+			"revision": "44b3ab598678a5954168e726db2af310f43d3bd8",
+			"revisionTime": "2018-03-15T22:50:40Z"
 		},
 		{
 			"checksumSHA1": "FvjFAsGryjeu76HSh28J2+CYGcs=",

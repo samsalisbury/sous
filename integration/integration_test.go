@@ -5,6 +5,7 @@ package integration
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"os"
 	"sort"
 	"testing"
@@ -43,7 +44,7 @@ func (suite *integrationSuite) deploymentWithRepo(clusterNames []string, repo st
 	for _, name := range clusterNames {
 		clusters[name] = &sous.Cluster{BaseURL: SingularityURL}
 	}
-	suite.T().Logf("Calling RunningDeployments for clusters %#v", clusters)
+	//suite.T().Logf("Calling RunningDeployments for clusters %#v", clusters)
 	deps, err := suite.deployer.RunningDeployments(suite.nameCache, clusters)
 	if suite.NoError(err) {
 		return deps, suite.findRepo(deps, repo)
@@ -64,13 +65,18 @@ func (suite *integrationSuite) findRepo(deps sous.DeployStates, repo string) sou
 
 func (suite *integrationSuite) manifest(nc *docker.NameCache, drepo, containerDir, sourceURL, version string) *sous.Manifest {
 	in := BuildImageName(drepo, version)
-	BuildAndPushContainer(containerDir, in)
+	if err := BuildAndPushContainer(containerDir, in); err != nil {
+		suite.FailNow("setup failed to build and push container for %q: %s", in, err)
+	}
 
-	nc.GetSourceID(docker.NewBuildArtifact(in, nil))
+	_, err := nc.GetSourceID(docker.NewBuildArtifact(in, nil))
+	if err != nil {
+		suite.FailNow("setup failed to get source ID: %s", err)
+	}
 
-	checkReadyPath := "/health"
+	//checkReadyPath := "/health"
 
-	checkReadyTimeout := 500
+	//checkReadyTimeout := 500
 
 	return &sous.Manifest{
 		Source: sous.SourceLocation{
@@ -82,10 +88,11 @@ func (suite *integrationSuite) manifest(nc *docker.NameCache, drepo, containerDi
 			"test-cluster": sous.DeploySpec{
 				DeployConfig: sous.DeployConfig{
 					Startup: sous.Startup{
-						CheckReadyProtocol:   "HTTP",
-						CheckReadyURIPath:    checkReadyPath,
-						CheckReadyURITimeout: checkReadyTimeout,
-						Timeout:              checkReadyTimeout,
+						SkipCheck: true,
+						//CheckReadyProtocol:   "HTTP",
+						//CheckReadyURIPath:    checkReadyPath,
+						//CheckReadyURITimeout: checkReadyTimeout,
+						//Timeout:              checkReadyTimeout,
 					},
 					Resources:    sous.Resources{"cpus": "0.1", "memory": "100", "ports": "1"},
 					Env:          sous.Env{"repo": drepo}, //map[s]s
@@ -165,6 +172,7 @@ func (suite *integrationSuite) BeforeTest(suiteName, testName string) {
 }
 
 func (suite *integrationSuite) deployDefaultContainers() {
+	suite.T().Log("Deploying default containers.")
 	nilStartup := sous.Startup{SkipCheck: true}
 	timeout := 500
 	startup := sous.Startup{
@@ -180,6 +188,7 @@ func (suite *integrationSuite) deployDefaultContainers() {
 
 	// This deployment fails immediately, and never results in a successful deployment at that singularity request.
 	registerAndDeploy(ip, "test-cluster", "supposed-to-fail", "github.com/opentable/homer-says-doh", "fails-labels", "1-fails", []int32{}, nilStartup)
+	suite.T().Log("Deploying default containers; waiting for singularity.")
 	WaitForSingularity()
 }
 
@@ -217,7 +226,6 @@ func (suite *integrationSuite) depsCount(deps map[sous.DeploymentID]*sous.Deploy
 	if suite.Len(deps, count, "Expected there to be %d deployments, but there are %d: \nDeployState map:\n%+#v", count, len(deps), deps) {
 		return true
 	}
-	suite.dumpLogs()
 	return false
 }
 
@@ -406,8 +414,11 @@ func (suite *integrationSuite) TestMissingImage() {
 	}
 
 	// ****
-	qs := graph.NewR11nQueueSet(suite.deployer, suite.nameCache)
-	r := sous.NewResolver(suite.deployer, suite.nameCache, &sous.ResolveFilter{}, logging.SilentLogSet(), qs)
+	rf := &sous.ResolveFilter{}
+	sr := sous.NewDummyStateManager()
+	sr.State = &stateOne
+	qs := graph.NewR11nQueueSet(suite.deployer, suite.nameCache, rf, &graph.ServerStateManager{sr})
+	r := sous.NewResolver(suite.deployer, suite.nameCache, rf, logging.SilentLogSet(), qs)
 
 	deploymentsOne, err := stateOne.Deployments()
 	suite.Require().NoError(err)
@@ -463,8 +474,11 @@ func (suite *integrationSuite) TestResolve() {
 	logsink, logController := logging.NewLogSinkSpy()
 
 	// ****
-	qs := graph.NewR11nQueueSet(suite.deployer, suite.nameCache)
-	r := sous.NewResolver(suite.deployer, suite.nameCache, &sous.ResolveFilter{}, logsink, qs)
+	rf := &sous.ResolveFilter{}
+	sr := sous.NewDummyStateManager()
+	sr.State = &stateOneTwo
+	qs := graph.NewR11nQueueSet(suite.deployer, suite.nameCache, rf, &graph.ServerStateManager{sr})
+	r := sous.NewResolver(suite.deployer, suite.nameCache, rf, logsink, qs)
 
 	suite.T().Log("Begining OneTwo")
 	err = r.Begin(deploymentsOneTwo, clusterDefs.Clusters).Wait()
@@ -491,29 +505,33 @@ func (suite *integrationSuite) TestResolve() {
 	}
 
 	dispositions := []string{}
-	for _, call := range logController.CallsTo("LogMessage") {
-		if lm, is := call.PassedArgs().Get(1).(logging.LogMessage); is {
-			lm.EachField(func(name string, val interface{}) {
-				if disp, is := val.(string); is && name == "sous-diff-disposition" {
-					dispositions = append(dispositions, disp)
-				}
-			})
+	for _, call := range logController.CallsTo("Fields") {
+		if lms, is := call.PassedArgs().Get(0).([]logging.EachFielder); is {
+			for _, lm := range lms {
+				lm.EachField(func(name logging.FieldName, val interface{}) {
+					if disp, is := val.(string); is && name == logging.SousDiffDisposition {
+						dispositions = append(dispositions, disp)
+					}
+				})
+			}
 		}
 	}
 	sort.Strings(dispositions)
-	expectedDispositions := []string{"added", "added", "removed", "removed", "removed", "removed"}
+	expectedDispositions := []string{"added", "added", "added", "added", "added", "added", "removed", "removed", "removed", "removed"}
 	if !suite.Equal(expectedDispositions, dispositions) {
-		suite.T().Logf("All log messages:\n")
-		for _, call := range logController.CallsTo("LogMessage") {
-			if msg, is := call.PassedArgs().Get(1).(logging.LogMessage); is {
-				m := map[string]interface{}{}
-				msg.EachField(func(k string, v interface{}) {
-					m[k] = v
-				})
-				m["message"] = msg.Message()
-				suite.T().Log(spew.Sprintf("%#v", m))
+		log.Println(expectedDispositions, dispositions)
+		log.Printf("All log messages:\n")
+		for _, call := range logController.CallsTo("Fields") {
+			if msgs, is := call.PassedArgs().Get(0).([]logging.EachFielder); is {
+				m := map[logging.FieldName]interface{}{}
+				for _, msg := range msgs {
+					msg.EachField(func(k logging.FieldName, v interface{}) {
+						m[k] = v
+					})
+				}
+				log.Print(spew.Sprintf("%#v", m))
 			} else {
-				suite.T().Logf("NOT A LOG MESSAGE: %+#v", call.PassedArgs().Get(1))
+				log.Printf("NOT A LOG MESSAGE: %+#v", call.PassedArgs().Get(1))
 			}
 
 		}
@@ -521,7 +539,7 @@ func (suite *integrationSuite) TestResolve() {
 	}
 
 	// ****
-	suite.T().Log("Resolving from one+two to two+three")
+	log.Print("Resolving from one+two to two+three")
 
 	// XXX Let's hope this is a temporary solution to a testing issue
 	// The problem is laid out in DCOPS-7625
@@ -529,24 +547,26 @@ func (suite *integrationSuite) TestResolve() {
 		client := singularity.NewRectiAgent(suite.nameCache)
 		deployer := singularity.NewDeployer(client, logging.SilentLogSet())
 
-		qs := graph.NewR11nQueueSet(suite.deployer, suite.nameCache)
-		r := sous.NewResolver(deployer, suite.nameCache, &sous.ResolveFilter{}, logging.SilentLogSet(), qs)
+		rf := &sous.ResolveFilter{}
+		sr := sous.NewDummyStateManager()
+		sr.State = &stateOneTwo
+		qs := graph.NewR11nQueueSet(suite.deployer, suite.nameCache, rf, &graph.ServerStateManager{sr})
+		r := sous.NewResolver(deployer, suite.nameCache, rf, logging.SilentLogSet(), qs)
 
-		err = r.Begin(deploymentsTwoThree, clusterDefs.Clusters).Wait()
-		if err != nil {
-			//suite.Require().NotRegexp(`Pending deploy already in progress`, err.Error())
-			suffix := `           this is dumb but it would suck to panic during tests
+		err := r.Begin(deploymentsTwoThree, clusterDefs.Clusters).Wait()
+		if !sous.AnyTransientResolveErrors(err) {
+			break
+		}
+
+		//suite.Require().NotRegexp(`Pending deploy already in progress`, err.Error())
+		suffix := `           this is dumb but it would suck to panic during tests
                                                                             what
 																																						  is
 																																							up
 																																					gofmt?
 			                                                                          `
-			suite.T().Logf("Singularity error:%s... - will try %d more times", spew.Sdump(err)[0:len(suffix)], tries)
-			time.Sleep(2 * time.Second)
-		} else {
-			// err was nil, so no need to keep retrying.
-			break
-		}
+		log.Printf("Singularity error:%s... - will try %d more times", spew.Sdump(err)[0:len(suffix)], tries)
+		time.Sleep(2 * time.Second)
 	}
 
 	suite.Require().NoError(err)

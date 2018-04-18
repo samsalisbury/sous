@@ -2,11 +2,11 @@ package singularity
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -22,13 +22,11 @@ func TestDeployerMessage(t *testing.T) {
 
 	reportDeployerMessage("test", pair, nil, taskData, nil, logging.InformationLevel, logger)
 
-	logCalls := control.CallsTo("LogMessage")
+	logCalls := control.CallsTo("Fields")
 	require.Len(t, logCalls, 1)
-	assert.Equal(t, logCalls[0].PassedArgs().Get(0), logging.InformationLevel)
+	fields := logCalls[0].PassedArgs().Get(0).([]logging.EachFielder)
 
-	logMessage := logCalls[0].PassedArgs().Get(1).(deployerMessage)
-
-	logging.AssertMessageFields(t, logMessage, logging.StandardVariableFields, defaultExpectedFields())
+	logging.AssertMessageFieldlist(t, fields, logging.StandardVariableFields, defaultExpectedFields())
 
 	//weak check on WriteToConsole
 	// these messages don't mean anything to most operators.
@@ -42,18 +40,17 @@ func TestDeployerMessageNilCheck(t *testing.T) {
 
 	reportDeployerMessage("test", nil, nil, nil, nil, logging.InformationLevel, logger)
 
-	logCalls := control.CallsTo("LogMessage")
-	require.Len(t, logCalls, 1)
-	assert.Equal(t, logCalls[0].PassedArgs().Get(0), logging.InformationLevel)
-
-	logMessage := logCalls[0].PassedArgs().Get(1).(deployerMessage)
+	logCalls := control.CallsTo("Fields")
+	logMessages := logCalls[0].PassedArgs().Get(0).([]logging.EachFielder)
 
 	expectedFields := map[string]interface{}{
-		"@loglov3-otl": "sous-rectifier-singularity-v1",
-		"sous-diffs":   "",
+		"@loglov3-otl":       logging.SousRectifierSingularityV1,
+		"severity":           logging.InformationLevel,
+		"call-stack-message": "test",
+		"sous-diffs":         "",
 	}
 
-	logging.AssertMessageFields(t, logMessage, logging.StandardVariableFields, expectedFields)
+	logging.AssertMessageFieldlist(t, logMessages, logging.StandardVariableFields, expectedFields)
 }
 
 func TestDeployerMessageError(t *testing.T) {
@@ -68,10 +65,10 @@ func TestDeployerMessageError(t *testing.T) {
 
 	reportDeployerMessage("test", pair, nil, taskData, err, logging.InformationLevel, logger)
 
-	logCalls := control.CallsTo("LogMessage")
-	logMessage := logCalls[0].PassedArgs().Get(1).(deployerMessage)
+	logCalls := control.CallsTo("Fields")
+	logMessages := logCalls[0].PassedArgs().Get(0).([]logging.EachFielder)
 
-	logging.AssertMessageFields(t, logMessage, logging.StandardVariableFields, expectedFields)
+	logging.AssertMessageFieldlist(t, logMessages, logging.StandardVariableFields, expectedFields)
 }
 
 func TestDeployerMessageDiffs(t *testing.T) {
@@ -87,10 +84,10 @@ func TestDeployerMessageDiffs(t *testing.T) {
 
 	reportDeployerMessage("test", pair, diffs, taskData, nil, logging.InformationLevel, logger)
 
-	logCalls := control.CallsTo("LogMessage")
-	logMessage := logCalls[0].PassedArgs().Get(1).(deployerMessage)
+	logCalls := control.CallsTo("Fields")
+	fields := logCalls[0].PassedArgs().Get(0).([]logging.EachFielder)
 
-	logging.AssertMessageFields(t, logMessage, logging.StandardVariableFields, expectedFields)
+	logging.AssertMessageFieldlist(t, fields, logging.StandardVariableFields, expectedFields)
 }
 
 func TestDiffResolutionMessage(t *testing.T) {
@@ -107,33 +104,28 @@ func TestDiffResolutionMessage(t *testing.T) {
 			},
 			Cluster: "pp-sf",
 		},
-		Desc: "description goes here",
-		Error: &sous.ErrorWrapper{
-			MarshallableError: sous.MarshallableError{
-				Type:   "bad",
-				String: "error",
-			},
-		},
+		Desc:  "description goes here",
+		Error: sous.WrapResolveError(fmt.Errorf("bad")),
 	}
 
 	reportDiffResolutionMessage("test", diffRes, logging.InformationLevel, logger)
 
-	logCalls := control.CallsTo("LogMessage")
+	logCalls := control.CallsTo("Fields")
 	require.Len(t, logCalls, 1)
-	assert.Equal(t, logCalls[0].PassedArgs().Get(0), logging.InformationLevel)
-
-	logMessage := logCalls[0].PassedArgs().Get(1).(diffResolutionMessage)
+	fields := logCalls[0].PassedArgs().Get(0).([]logging.EachFielder)
 
 	expectedFields := map[string]interface{}{
-		"@loglov3-otl":                 "sous-diff-resolution-v1",
+		"@loglov3-otl":                 logging.SousDiffResolution,
+		"severity":                     logging.InformationLevel,
+		"call-stack-message":           "test",
 		"sous-deployment-id":           diffRes.DeploymentID.String(),
 		"sous-manifest-id":             diffRes.DeploymentID.ManifestID.String(),
 		"sous-resolution-description":  string(diffRes.Desc),
-		"sous-resolution-errormessage": diffRes.Error.String,
-		"sous-resolution-errortype":    diffRes.Error.Type,
+		"sous-resolution-errormessage": "bad",
+		"sous-resolution-errortype":    "*errors.errorString",
 	}
 
-	logging.AssertMessageFields(t, logMessage, logging.StandardVariableFields, expectedFields)
+	logging.AssertMessageFieldlist(t, fields, logging.StandardVariableFields, expectedFields)
 
 	//weak check on WriteToConsole
 	// these messages don't mean anything to most operators.
@@ -144,7 +136,9 @@ func TestDiffResolutionMessage(t *testing.T) {
 
 func defaultExpectedFields() map[string]interface{} {
 	return map[string]interface{}{
-		"@loglov3-otl":                          "sous-rectifier-singularity-v1",
+		"@loglov3-otl":                          logging.SousRectifierSingularityV1,
+		"severity":                              logging.InformationLevel,
+		"call-stack-message":                    "test",
 		"sous-request-id":                       requestID,
 		"sous-diffs":                            "",
 		"sous-deployment-id":                    ":",

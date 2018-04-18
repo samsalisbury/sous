@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/opentable/sous/config"
+	"github.com/opentable/sous/dto"
 	"github.com/opentable/sous/ext/storage"
 	"github.com/opentable/sous/graph"
 	sous "github.com/opentable/sous/lib"
@@ -148,7 +149,7 @@ func (suite inmemServerSuite) TearDownTest() {
 
 func (suite integrationServerTests) TestOverallRouter() {
 
-	gdm := server.GDMWrapper{}
+	gdm := dto.GDMWrapper{}
 	updater, err := suite.client.Retrieve("./gdm", nil, &gdm, suite.user.HTTPHeaders())
 	suite.NoError(err)
 
@@ -177,14 +178,14 @@ func (suite integrationServerTests) TestUpdateServers() {
 }
 
 func (suite integrationServerTests) TestUpdateStateDeployments_Precondition() {
-	data := server.GDMWrapper{Deployments: []*sous.Deployment{}}
+	data := dto.GDMWrapper{Deployments: []*sous.Deployment{}}
 	res, err := suite.client.Create("./state/deployments", nil, &data, nil)
 	suite.errorMatches(err, `^Create \./state/deployments params: map\[\]: 412 Precondition Failed: resource present for If-None-Match=\*!`)
 	suite.Nil(res)
 }
 
 func (suite integrationServerTests) TestUpdateStateDeployments_Update() {
-	data := server.GDMWrapper{}
+	data := dto.GDMWrapper{}
 
 	updater, err := suite.client.Retrieve("./state/deployments", nil, &data, nil)
 	suite.NoError(err)
@@ -216,6 +217,7 @@ func (suite integrationServerTests) TestPUTSingleDeployment() {
 		"repo":    "github.com/opentable/sous",
 		"offset":  "",
 		"tag":     "1.0.1",
+		"force":   "false",
 	}
 	data := server.SingleDeploymentBody{}
 	rez, err = suite.client.Retrieve("/single-deployment", params, &data, nil)

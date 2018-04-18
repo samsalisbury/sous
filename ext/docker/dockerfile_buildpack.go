@@ -8,6 +8,7 @@ import (
 
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 )
 
 // DockerfileBuildpack is a simple buildpack for building projects using
@@ -65,7 +66,7 @@ func (d *DockerfileBuildpack) Detect(c *sous.BuildContext) (*sous.DetectResult, 
 	}
 	hasAppVersion := appVersionPattern.MatchString(df)
 	hasAppRevision := appRevisionPattern.MatchString(df)
-	logging.Log.Debug.Printf("Detected a dockerfile at %q. Accepts version: %t, accepts revision: %t", dfPath, hasAppVersion, hasAppRevision)
+	messages.ReportLogFieldsMessage("Detected a dockerfile, accepts version and revision", logging.DebugLevel, logging.Log, dfPath, hasAppVersion, hasAppRevision)
 	result := &sous.DetectResult{Compatible: true, Data: detectData{
 		HasAppVersionArg:  hasAppVersion,
 		HasAppRevisionArg: hasAppRevision,

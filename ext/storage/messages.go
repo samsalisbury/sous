@@ -33,7 +33,7 @@ func newSQLMessage(started time.Time, mainTable string, dir direction, sql strin
 func reportSQLMessage(log logging.LogSink, started time.Time, mainTable string, dir direction, sql string, rowcount int, err error) {
 	msg := newSQLMessage(started, mainTable, dir, sql, rowcount, err)
 	msg.ExcludeMe()
-	logging.Deliver(msg, log)
+	logging.Deliver(log, msg)
 }
 
 // DefaultLevel implements LogMessage on sqlMessage
@@ -54,7 +54,7 @@ func (msg *sqlMessage) Message() string {
 
 // EachField implements LogMessage on sqlMessage
 func (msg *sqlMessage) EachField(fn logging.FieldReportFn) {
-	fn("@loglov3-otl", "sous-sql")
+	fn("@loglov3-otl", logging.SousSql)
 	msg.CallerInfo.EachField(fn)
 	msg.MessageInterval.EachField(fn)
 	fn("sous-sql-query", msg.sql)
@@ -95,13 +95,13 @@ const (
 func reportReading(log logging.LogSink, started time.Time, state *sous.State, err error) {
 	msg := newStoreMessage(started, read, state, err)
 	msg.CallerInfo.ExcludeMe()
-	logging.Deliver(msg, log)
+	logging.Deliver(log, msg)
 }
 
 func reportWriting(log logging.LogSink, started time.Time, state *sous.State, err error) {
 	msg := newStoreMessage(started, write, state, err)
 	msg.CallerInfo.ExcludeMe()
-	logging.Deliver(msg, log)
+	logging.Deliver(log, msg)
 }
 
 func newStoreMessage(started time.Time, dir direction, state *sous.State, err error) *storeMessage {
@@ -147,7 +147,7 @@ func (dir direction) String() string {
 
 // EachField implements LogMessage on storeMessage.
 func (msg *storeMessage) EachField(fn logging.FieldReportFn) {
-	fn("@loglov3-otl", "sous-storage")
+	fn("@loglov3-otl", logging.SousGenericV1)
 	msg.CallerInfo.EachField(fn)
 	msg.MessageInterval.EachField(fn)
 	if msg.err != nil {

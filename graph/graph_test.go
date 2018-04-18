@@ -124,11 +124,13 @@ func TestComponentLocatorInjection(t *testing.T) {
 }
 
 func injectedStateManager(t *testing.T, cfg *config.Config) *StateManager {
+	rff := &RefinedResolveFilter{Cluster: sous.NewResolveFieldMatcher("test")}
 	g := newSousGraph()
 	g.Add(semv.MustParse("9.9.9"))
 	g.Add(newUser)
 	g.Add(LogSink{logging.SilentLogSet()})
 	g.Add(MetricsHandler{})
+	g.Add(ServerListData{})
 	g.Add(newStateManager)
 	g.Add(LocalSousConfig{Config: cfg})
 	g.Add(newServerComponentLocator)
@@ -147,7 +149,9 @@ func injectedStateManager(t *testing.T, cfg *config.Config) *StateManager {
 	g.Add(newAutoResolver)
 	g.Add(newServerHandler)
 	g.Add(newHTTPClient)
+	g.Add(newHTTPClientBundle)
 	g.Add(NewR11nQueueSet)
+	g.Add(rff)
 	g.Add(g)
 
 	smRcvr := struct {
@@ -180,10 +184,15 @@ func TestStateManagerSelectsServer(t *testing.T) {
 func TestStateManagerSelectsDuplex(t *testing.T) {
 	smgr := injectedStateManager(t, &config.Config{Server: "", StateLocation: "/tmp/sous"})
 
-	if _, ok := smgr.StateManager.(*storage.DuplexStateManager); !ok {
+	_, ok := smgr.StateManager.(*storage.DuplexStateManager)
+	if !ok {
 		t.Errorf("Injected %#v which isn't a DuplexStateManager", smgr.StateManager)
 	}
 }
+
+var silentLogSink = DefaultLogSink{LogSink: nonDefaultSilentLogSink}
+
+var nonDefaultSilentLogSink = LogSink{LogSink: logging.SilentLogSet()}
 
 func TestNewBuildConfig(t *testing.T) {
 	f := &config.DeployFilterFlags{}
@@ -205,7 +214,7 @@ func TestNewBuildConfig(t *testing.T) {
 		},
 	}
 
-	cfg := newBuildConfig(f, p, bc)
+	cfg := newBuildConfig(nonDefaultSilentLogSink, f, p, bc)
 	if cfg.Tag != `1.2.3` {
 		t.Errorf("Build config's tag wasn't 1.2.3: %#v", cfg.Tag)
 	}

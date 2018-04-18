@@ -47,18 +47,15 @@ dChans := intendedSet.Diff(existingSet)
 type (
 	deployer struct {
 		Client        rectificationClient
-		singFac       func(string) *singularity.Client
+		singFac       func(string) singClient
 		ReqsPerServer int
 		log           logging.LogSink
 	}
 
-	// DeployerOption is an option for configuring singularity deployers.
-	DeployerOption func(*deployer)
-
 	// rectificationClient abstracts the raw interactions with Singularity.
 	rectificationClient interface {
 		// Deploy creates a new deploy on a particular requeust
-		Deploy(d sous.Deployable, reqID string) error
+		Deploy(d sous.Deployable, reqID, depID string) error
 
 		// PostRequest sends a request to a Singularity cluster to initiate
 		PostRequest(d sous.Deployable, reqID string) error
@@ -88,15 +85,19 @@ func NewDeployer(c rectificationClient, ls logging.LogSink, options ...DeployerO
 	return d
 }
 
-// OptMaxHTTPReqsPerServer overrides the DefaultMaxHTTPConcurrencyPerServer
-// for this server.
-func OptMaxHTTPReqsPerServer(n int) DeployerOption {
-	return func(d *deployer) { d.ReqsPerServer = n }
-}
-
 // Rectify invokes actions to ensure that the real world matches pair.Post,
 // given that it currently matches pair.Prior.
 func (r *deployer) Rectify(pair *sous.DeployablePair) sous.DiffResolution {
+	postID := ""
+	version := ""
+	if pair.Post != nil {
+		postID = pair.Post.ID().String()
+		version = pair.Post.DeploySpec().Version.String()
+	}
+	if pair.UUID == uuid.Nil {
+		pair.UUID = uuid.NewV4()
+	}
+
 	switch k := pair.Kind(); k {
 	default:
 		panic(fmt.Sprintf("unrecognised kind %q", k))
@@ -105,9 +106,11 @@ func (r *deployer) Rectify(pair *sous.DeployablePair) sous.DiffResolution {
 		if pair.Post.Status == sous.DeployStatusFailed {
 			resolution.Error = sous.WrapResolveError(&sous.FailedStatusError{})
 		}
+
+		messages.ReportLogFieldsMessage("SameKind", logging.InformationLevel, r.log, postID, version, resolution)
 		return resolution
 	case sous.AddedKind:
-		messages.ReportLogFieldsMessageToConsole("Starting an AddedKind", logging.ExtraDebug1Level, r.log, pair)
+		messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Starting an AddedKind %s:%s", postID, version), logging.ExtraDebug1Level, r.log, pair)
 		result := sous.DiffResolution{DeploymentID: pair.ID()}
 		if err := r.RectifySingleCreate(pair); err != nil {
 			result.Desc = "not created"
@@ -124,10 +127,11 @@ func (r *deployer) Rectify(pair *sous.DeployablePair) sous.DiffResolution {
 		} else {
 			result.Desc = sous.CreateDiff
 		}
+		messages.ReportLogFieldsMessage("Result of create", logging.InformationLevel, r.log, postID, version, result)
 		reportDiffResolutionMessage("Result of create", result, logging.InformationLevel, r.log)
 		return result
 	case sous.RemovedKind:
-		messages.ReportLogFieldsMessageToConsole("Starting an RemoveKind", logging.ExtraDebug1Level, r.log, pair)
+		messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Starting an RemoveKind %s:%s", postID, version), logging.ExtraDebug1Level, r.log, pair)
 		result := sous.DiffResolution{DeploymentID: pair.ID()}
 		if err := r.RectifySingleDelete(pair); err != nil {
 			result.Error = sous.WrapResolveError(&sous.DeleteError{Deployment: pair.Prior.Deployment.Clone(), Err: err})
@@ -136,10 +140,11 @@ func (r *deployer) Rectify(pair *sous.DeployablePair) sous.DiffResolution {
 			result.Desc = sous.DeleteDiff
 		}
 		reportDiffResolutionMessage("Result of delete", result, logging.InformationLevel, r.log)
+		messages.ReportLogFieldsMessage("Result of delete", logging.InformationLevel, r.log, postID, version, result)
 		return result
 	case sous.ModifiedKind:
 		result := sous.DiffResolution{DeploymentID: pair.ID()}
-		messages.ReportLogFieldsMessageToConsole("Starting a ModifiedKind", logging.ExtraDebug1Level, r.log, pair)
+		messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Starting a ModifiedKind %s:%s", postID, version), logging.ExtraDebug1Level, r.log, pair)
 		if err := r.RectifySingleModification(pair); err != nil {
 			dp := &sous.DeploymentPair{
 				Prior: pair.Prior.Deployment.Clone(),
@@ -154,15 +159,16 @@ func (r *deployer) Rectify(pair *sous.DeployablePair) sous.DiffResolution {
 			result.Desc = sous.ModifyDiff
 		}
 		reportDiffResolutionMessage("Result of modify", result, logging.InformationLevel, r.log)
+		messages.ReportLogFieldsMessage("Result of modify", logging.InformationLevel, r.log, postID, version, result)
 		return result
 	}
 }
 
-func (r *deployer) SetSingularityFactory(fn func(string) *singularity.Client) {
+func (r *deployer) SetSingularityFactory(fn func(string) singClient) {
 	r.singFac = fn
 }
 
-func (r *deployer) buildSingClient(url string) *singularity.Client {
+func (r *deployer) buildSingClient(url string) singClient {
 	if r.singFac == nil {
 		return singularity.NewClient(url, r.log)
 	}
@@ -190,7 +196,9 @@ func (r *deployer) RectifySingleCreate(d *sous.DeployablePair) (err error) {
 	if err = r.Client.PostRequest(*d.Post, reqID); err != nil {
 		return err
 	}
-	return r.Client.Deploy(*d.Post, reqID)
+	depID := computeDeployIDFromUUID(d.Post, d.UUID)
+
+	return r.Client.Deploy(*d.Post, reqID, depID)
 }
 
 func (r *deployer) RectifySingleDelete(d *sous.DeployablePair) (err error) {
@@ -212,43 +220,36 @@ func (r *deployer) RectifySingleDelete(d *sous.DeployablePair) (err error) {
 
 func (r *deployer) RectifySingleModification(pair *sous.DeployablePair) (err error) {
 	different, diffs := pair.Post.Deployment.Diff(pair.Prior.Deployment)
-	if !different {
-		reportDeployerMessage("Attempting to rectify empty diff",
-			pair, diffs, nil, nil, logging.WarningLevel, r.log)
+	if different {
+		reportDeployerMessage("Rectifying modified diffs", pair, diffs, nil, nil, logging.InformationLevel, r.log)
+	} else {
+		reportDeployerMessage("Attempting to rectify empty diff", pair, diffs, nil, nil, logging.WarningLevel, r.log)
 	}
-
-	reportDeployerMessage("Rectifying modified diffs", pair, diffs, nil, nil, logging.InformationLevel, r.log)
 
 	defer rectifyRecover(pair, "RectifySingleModification", &err)
 
 	data, ok := pair.ExecutorData.(*singularityTaskData)
 	if !ok {
-		err := errors.Errorf("Modification record %#v doesn't contain Singularity compatible data: was %T\n\t%#v", pair.ID(), data, pair)
-		reportDeployerMessage("Error modification not compatible with Singularity", pair, diffs, nil, err, logging.WarningLevel, r.log)
-		return err
+		return errors.Errorf("Modification record %#v doesn't contain Singularity compatible data: was %T\n\t%#v", pair.ID(), data, pair)
 	}
 	reqID := data.requestID
 
-	//changesApplied := false
 	reportDeployerMessage("Operating on request", pair, diffs, data, nil, logging.ExtraDebug1Level, r.log)
 	if changesReq(pair) {
 		reportDeployerMessage("Updating request", pair, diffs, data, nil, logging.DebugLevel, r.log)
 		if err := r.Client.PostRequest(*pair.Post, reqID); err != nil {
-			reportDeployerMessage("Error posting request to Singularity", pair, diffs, data, err, logging.WarningLevel, r.log)
 			return err
 		}
-		//changesApplied = true
 	} else {
 		reportDeployerMessage("No change to Singularity request required", pair, diffs, data, nil, logging.DebugLevel, r.log)
 	}
 
 	if changesDep(pair) {
 		reportDeployerMessage("Deploying", pair, diffs, data, nil, logging.DebugLevel, r.log)
-		if err := r.Client.Deploy(*pair.Post, reqID); err != nil {
-			reportDeployerMessage(err.Error(), pair, diffs, data, nil, logging.WarningLevel, r.log)
+		depID := computeDeployIDFromUUID(pair.Post, pair.UUID)
+		if err := r.Client.Deploy(*pair.Post, reqID, depID); err != nil {
 			return err
 		}
-		//changesApplied = true
 	} else {
 		reportDeployerMessage("No change to Singularity deployment required", pair, diffs, data, nil, logging.DebugLevel, r.log)
 	}
@@ -304,8 +305,12 @@ func MakeRequestID(depID sous.DeploymentID) (string, error) {
 }
 
 func computeDeployID(d *sous.Deployable) string {
+	return computeDeployIDFromUUID(d, uuid.NewV4())
+}
+
+func computeDeployIDFromUUID(d *sous.Deployable, uid uuid.UUID) string {
 	var versionTrunc string
-	uuidEntire := stripDeployID(uuid.NewV4().String())
+	uuidEntire := stripDeployID(uid.String())
 	versionSansMeta := stripMetadata(d.Deployment.SourceID.Version.String())
 	versionEntire := sanitizeDeployID(versionSansMeta)
 

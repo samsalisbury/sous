@@ -2,7 +2,6 @@ package actions
 
 import (
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -89,46 +88,13 @@ func ensureGDMExists(repo, localPath string, filterFlags config.DeployFilterFlag
 	return nil
 }
 
-type serverMessage struct {
-	logging.CallerInfo
-	msg               string
-	deployFilterFlags config.DeployFilterFlags
-	listenAddress     string
-}
-
-func reportServerMessage(msg string, filterFlags config.DeployFilterFlags, listenAddress string, log logging.LogSink) {
-	msgLog := serverMessage{
-		msg:               msg,
-		CallerInfo:        logging.GetCallerInfo(logging.NotHere()),
-		deployFilterFlags: filterFlags,
-		listenAddress:     listenAddress,
-	}
-	msgLog.ExcludeMe()
-	logging.Deliver(msgLog, log)
-}
-
-func (msg serverMessage) WriteToConsole(console io.Writer) {
-	console.Write([]byte(msg.msg))
-	console.Write([]byte("\n"))
-}
-
-func (msg serverMessage) DefaultLevel() logging.Level {
-	return logging.WarningLevel
-}
-
-func (msg serverMessage) Message() string {
-	return msg.msg
-}
-
-func (msg serverMessage) EachField(f logging.FieldReportFn) {
-	f("@loglov3-otl", "sous-generic-v1")
-	f("sous-listen-address", msg.listenAddress)
-	f("filter-cluster", msg.deployFilterFlags.Cluster)
-	f("filter-flavor", msg.deployFilterFlags.Flavor)
-	f("filter-offset", msg.deployFilterFlags.Offset)
-	f("filter-repo", msg.deployFilterFlags.Repo)
-	f("filter-revision", msg.deployFilterFlags.Revision)
-	f("filter-tag", msg.deployFilterFlags.Tag)
-
-	msg.CallerInfo.EachField(f)
+func reportServerMessage(msg string, filterFlags config.DeployFilterFlags, addr string, log logging.LogSink) {
+	logging.Deliver(log,
+		logging.SousGenericV1,
+		logging.ConsoleAndMessage(msg),
+		logging.WarningLevel,
+		logging.GetCallerInfo(logging.NotHere()),
+		filterFlags,
+		logging.KV(logging.SousListenAddress, addr),
+	)
 }

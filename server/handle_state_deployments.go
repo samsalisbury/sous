@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/opentable/sous/dto"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/restful"
 )
@@ -55,7 +56,7 @@ func (res *StateDeploymentResource) Put(_ *restful.RouteMap, _ http.ResponseWrit
 
 // Exchange implements restful.Exchanger on GETStateDeployments
 func (gsd *GETStateDeployments) Exchange() (interface{}, int) {
-	data := GDMWrapper{Deployments: []*sous.Deployment{}}
+	data := dto.GDMWrapper{Deployments: []*sous.Deployment{}}
 	deps, err := gsd.cluster.ReadCluster(gsd.clusterName)
 	if err != nil {
 		return err, http.StatusInternalServerError
@@ -70,7 +71,7 @@ func (gsd *GETStateDeployments) Exchange() (interface{}, int) {
 
 // Exchange implements Exchanger on PUTStateDeployments
 func (psd *PUTStateDeployments) Exchange() (interface{}, int) {
-	data := GDMWrapper{}
+	data := dto.GDMWrapper{}
 	dec := json.NewDecoder(psd.req.Body)
 	err := dec.Decode(&data)
 	if err != nil {

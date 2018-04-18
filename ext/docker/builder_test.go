@@ -42,10 +42,14 @@ func TestTagStrings(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assert.Equal("/sous/docker:1.2.3", versionName(sid, ""))
-	assert.Equal("/sous/docker-builder:1.2.3", versionName(sid, "builder"))
-	assert.Equal("/sous/docker:zdeadbeef-1976-09-28T07.00.00", revisionName(sid, "", time.Unix(212742000, 0)))
-	assert.Equal("/sous/docker-builder:zdeadbeef-1976-09-28T07.00.00", revisionName(sid, "builder", time.Unix(212742000, 0)))
+	theTime := time.Unix(212742000, 0)
+
+	assert.Equal("sous/docker:1.2.3", versionName(sid, ""))
+	assert.Equal("sous/docker-builder:1.2.3", versionName(sid, "builder"))
+	assert.Equal("sous/docker:zdeadbeef-1976-09-28T07.00.00", revisionName(sid, "", theTime))
+	assert.Equal("sous/docker-builder:zdeadbeef-1976-09-28T07.00.00", revisionName(sid, "builder", theTime))
+	assert.Equal("docker.example.com/sous/docker:1.2.3", versionTag("docker.example.com", sid, ""))
+	assert.Equal("docker.example.com/sous/docker-builder:zdeadbeef-1976-09-28T07.00.00", revisionTag("docker.example.com", sid, "builder", theTime))
 }
 
 func TestBuilderApplyMetadata(t *testing.T) {

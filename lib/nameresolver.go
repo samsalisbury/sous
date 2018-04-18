@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 	"github.com/pkg/errors"
 )
 
@@ -38,15 +39,13 @@ func (names *nameResolver) HandlePairs(dp *DeployablePair) (*DeployablePair, *Di
 	case AddedKind, ModifiedKind:
 		var newImageNameResolution *DiffResolution
 		newImageName, newImageNameResolution = resolveName(names.registry, intended)
-		logging.Log.Vomit.Printf("%s deployment processed, needs artifact: %#v", dp.Kind(), intended)
+		messages.ReportLogFieldsMessage("Deployment processed, needs artifact", logging.ExtraDebug1Level, logging.Log, dp.Kind(), intended)
 		if err := newImageNameResolution; err != nil {
-			logging.Log.Info.Printf("Unable to %s %q: %s", action, intended.ID(), err)
-			logging.Log.Debug.Printf("Failed to %s %q: % #v", action, intended.ID(), intended)
+			messages.ReportLogFieldsMessage("Unable to perform action", logging.InformationLevel, logging.Log, action, intended.ID(), err)
 			return nil, err
 		}
 		if newImageName == nil {
-			logging.Log.Info.Printf("Unable to %s deployment %q: no artifact for SourceID %q", action, intended.ID(), intended.SourceID)
-			logging.Log.Debug.Printf("Failed to %s %q: % #v", action, intended.ID(), intended)
+			messages.ReportLogFieldsMessage("Unable to perform action no artifact for SourceID", logging.InformationLevel, logging.Log, action, intended.ID(), intended.SourceID)
 			return nil, &DiffResolution{
 				DeploymentID: dp.ID(),
 				Desc:         "not created",
@@ -77,7 +76,7 @@ func resolveName(r Registry, d *Deployable) (*Deployable, *DiffResolution) {
 
 func guardImage(r Registry, d *Deployment) (*BuildArtifact, error) {
 	if d.NumInstances == 0 {
-		logging.Log.Info.Printf("Deployment %q has 0 instances, skipping artifact check.", d.ID())
+		messages.ReportLogFieldsMessage("Deployment has 0 instances, skipping artifact check", logging.InformationLevel, logging.Log, d.ID())
 		return nil, nil
 	}
 	art, err := r.GetArtifact(d.SourceID)

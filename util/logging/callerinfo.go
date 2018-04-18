@@ -40,7 +40,7 @@ var gciOnce sync.Once
 
 // GetCallerInfo captures a CallerInfo based on where it's called.
 // It's very common to call this like:
-//   GetCallerInfo(logging.NotHere())
+//   GetCallerInfo(NotHere())
 // which excludes the function that actually calls GetCallerInfo
 // (usually a message constructor) from the logged call stack.
 func GetCallerInfo(excluding ...Excluder) CallerInfo {
@@ -98,9 +98,9 @@ func (info CallerInfo) EachField(f FieldReportFn) {
 		}
 	}
 
-	f("@timestamp", info.callTime.UTC().Format(time.RFC3339))
-	f("thread-name", info.goroutineID)
-	f("call-stack-trace", stack)
+	f(Timestamp, info.callTime.UTC().Format(time.RFC3339))
+	f(ThreadName, info.goroutineID)
+	f(CallStackTrace, stack)
 
 	if frame.Function == "" {
 		f("call-stack-function", "<unknown>")
@@ -109,12 +109,12 @@ func (info CallerInfo) EachField(f FieldReportFn) {
 	}
 
 	if frame.File == "" {
-		f("call-stack-file", "<unknown>")
+		f(CallStackFile, "<unknown>")
 	} else {
-		f("call-stack-file", frame.File)
+		f(CallStackFile, fmt.Sprintf("%s:%d", frame.File, frame.Line))
 	}
 
-	f("call-stack-line-number", frame.Line)
+	f(CallStackLineNumber, frame.Line)
 }
 
 var localFnRE = regexp.MustCompile(`\.func\d+$`)

@@ -23,7 +23,7 @@ func TestDeployableMessage(t *testing.T) {
 	}
 
 	fields := map[string]interface{}{
-		"@loglov3-otl":          "sous-deployment-diff",
+		"@loglov3-otl":          logging.SousDeploymentDiff,
 		"sous-deployment-id":    "cluster-1:github.com/opentable/example",
 		"sous-diff-disposition": "same",
 		"sous-deployment-diffs": "No detailed diff because pairwise diff kind is \"same\"",
@@ -199,7 +199,7 @@ func TestDiffMessages_knownpanic(t *testing.T) {
 	}
 
 	fixedFields := map[string]interface{}{
-		"@loglov3-otl":          "sous-deployment-diff",
+		"@loglov3-otl":          logging.SousDeploymentDiff,
 		"call-stack-function":   "github.com/opentable/sous/lib.TestDiffMessages_knownpanic", //XXX Not sure why this would be "unknown"
 		"sous-deployment-id":    ":",
 		"sous-diff-disposition": "same",
@@ -269,7 +269,7 @@ func TestDeployableMessage_incomplete(t *testing.T) {
 	}
 
 	fixedFields := map[string]interface{}{
-		"@loglov3-otl": "sous-deployment-diff",
+		"@loglov3-otl": logging.SousDeploymentDiff,
 	}
 
 	logging.AssertMessageFields(t, msg, logging.StandardVariableFields, fixedFields)

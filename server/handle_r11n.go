@@ -6,6 +6,7 @@ import (
 	"net/url"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/opentable/sous/dto"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/restful"
 )
@@ -88,15 +89,17 @@ func (h *GETR11nHandler) Exchange() (interface{}, int) {
 		rez = nil
 	}
 
-	return r11nResponse{
+	return dto.R11nResponse{
 		QueuePosition: qr.Pos,
 		Resolution:    rez,
 	}, http.StatusOK
 }
 
+/*
 type r11nResponse struct {
 	QueuePosition int
 	// Pointer here is just to allow nil which is a clearer indication of
 	// "nothing to see here" than a JSON-marshalled zero value would be.
 	Resolution *sous.DiffResolution
 }
+*/

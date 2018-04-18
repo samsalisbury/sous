@@ -62,6 +62,11 @@ func (sdr *SingleDeploymentResource) newSingleDeploymentHandler(req *http.Reques
 	}
 }
 
+func (sdh *SingleDeploymentHandler) force() (force bool, err error) {
+	qv := restful.QueryValues{Values: sdh.req.URL.Query()}
+	return forceFromValues(qv)
+}
+
 func (sdh *SingleDeploymentHandler) depID() (sous.DeploymentID, error) {
 	qv := restful.QueryValues{Values: sdh.req.URL.Query()}
 	return deploymentIDFromValues(qv)
@@ -103,7 +108,7 @@ func (h *GETSingleDeploymentHandler) Exchange() (interface{}, int) {
 		return h.err(404, "Manifest %q has no deployment for cluster %q.", m.ID(), did.Cluster)
 	}
 
-	h.Body.Deployment = dep
+	h.Body.Deployment = &dep
 
 	return h.ok(200, nil)
 }
@@ -133,16 +138,20 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 		return psd.err(400, "Cannot decode Deployment ID: %s.", err)
 	}
 
+	force, err := psd.force()
+	if err != nil {
+		return psd.err(400, "Cannot parse force from client: %s", err)
+	}
+
 	if err := json.NewDecoder(psd.req.Body).Decode(&psd.Body); err != nil {
 		return psd.err(400, "Error parsing body: %s.", err)
 	}
 
-	messages.ReportLogFieldsMessageToConsole("Exchange PutSingleDeplymentHandler", logging.ExtraDebug1Level, psd.log, did, psd.Body)
-
-	flaws := psd.Body.Deployment.Validate()
-	if len(flaws) > 0 {
-		return psd.err(400, "Invalid deployment: %q", flaws)
+	if psd.Body.Deployment == nil {
+		return psd.err(400, "Body.Deployment is nil.")
 	}
+
+	messages.ReportLogFieldsMessageToConsole("Exchange PutSingleDeplymentHandler", logging.ExtraDebug1Level, psd.log, did, psd.Body)
 
 	m, ok := psd.GDM.Manifests.Get(did.ManifestID)
 	if !ok {
@@ -155,11 +164,11 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 	}
 
 	different, _ := psd.Body.Deployment.Diff(original)
-	if !different {
+	if !different && !force {
 		return psd.ok(200, nil)
 	}
 
-	m.Deployments[did.Cluster] = psd.Body.Deployment
+	m.Deployments[did.Cluster] = *psd.Body.Deployment
 
 	user := sous.User(psd.GetUser(psd.req))
 
@@ -183,10 +192,18 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 
 	r := sous.NewRectification(sous.DeployablePair{Post: &sous.Deployable{
 		Deployment: newDeployment,
-	}})
+	}}, psd.log.Child("r11n"))
+
 	r.Pair.SetID(did)
 
-	messages.ReportLogFieldsMessageToConsole("Pushing following onto queue", logging.ExtraDebug1Level, psd.log, r)
+	postID := ""
+	version := ""
+	if r.Pair.Post != nil {
+		postID = r.Pair.Post.ID().String()
+		version = r.Pair.Post.DeploySpec().Version.String()
+	}
+
+	messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Pushing following onto queue %s:%s", postID, version), logging.ExtraDebug1Level, psd.log, r)
 
 	qr, ok := psd.QueueSet.Push(r)
 	if !ok {

@@ -35,6 +35,10 @@ const (
 	ExtremeLevel
 )
 
+func (lvl Level) EachField(fn FieldReportFn) {
+	fn(Severity, lvl)
+}
+
 func levelFromString(name string) Level {
 	name = strings.ToLower(name)
 	plusLevel := name + "level"

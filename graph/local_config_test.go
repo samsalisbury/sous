@@ -7,6 +7,7 @@ import (
 
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/util/configloader"
+	"github.com/opentable/sous/util/logging"
 )
 
 func remove(path string) error {
@@ -27,9 +28,9 @@ func TestNewConfig(t *testing.T) {
 		}
 	}()
 
-	gcl := newConfigLoader()
+	gcl := newConfigLoader(silentLogSink)
 
-	written, err := newPossiblyInvalidConfig(path, DefaultConfig{&config.Config{}}, gcl)
+	written, err := newPossiblyInvalidConfig(silentLogSink, path, DefaultConfig{&config.Config{}}, gcl)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -37,7 +38,7 @@ func TestNewConfig(t *testing.T) {
 		t.Fatal("Config file not created:", path, ":", err)
 	}
 
-	read, err := newPossiblyInvalidConfig(path, DefaultConfig{&config.Config{}}, gcl)
+	read, err := newPossiblyInvalidConfig(silentLogSink, path, DefaultConfig{&config.Config{}}, gcl)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -52,7 +53,7 @@ func TestNewConfig(t *testing.T) {
 func TestLoadConfig(t *testing.T) {
 	path := "./testdata/config.yaml"
 
-	cl := configloader.New()
+	cl := configloader.New(logging.SilentLogSet())
 	config := config.Config{}
 	err := cl.Load(&config, path)
 

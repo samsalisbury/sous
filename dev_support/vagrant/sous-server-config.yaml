@@ -1,0 +1,11 @@
+SiblingURLs:
+  cluster1: http://localhost:4646
+  cluster2: http://localhost:5757
+Docker:
+  RegistryHost: "127.0.0.1"
+Logging:
+  Basic:
+    Level: critical
+User:
+  Name: Sous Server User
+  Email: sous-server-user@example.com

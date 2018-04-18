@@ -116,7 +116,7 @@ func TestSubPoller_ComputeState(t *testing.T) {
 			t.Errorf("sub.computeState(%v, %v) -> %v != %v", intent, current, actual, expected)
 		}
 
-		logCalls := control.CallsTo("LogMessage")
+		logCalls := control.CallsTo("Fields")
 		require.Len(t, logCalls, numLogMessageCalls)
 
 	}

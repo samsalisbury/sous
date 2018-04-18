@@ -25,10 +25,15 @@
 
 package logging
 
+// go get github.com/opentable/go-loglov3-gen (private repo)
+//go:generate go-loglov3-gen -loglov3-dir $LOGLOV3_DIR -output-dir .
+
 import (
 	"bytes"
-	"flag"
+	"fmt"
 	"io"
+	"os"
+	"strings"
 	"time"
 )
 
@@ -58,21 +63,13 @@ type (
 
 	*/
 
-	TemporaryOldStyleLogging interface {
-		Debugf(f string, as ...interface{})
-		Vomitf(f string, as ...interface{})
-		Warnf(f string, as ...interface{})
-	}
-
 	// A LogSink can be used in Deliver to send messages for logging.
 	LogSink interface {
-		TemporaryOldStyleLogging
+		// Child returns a namespaced child, with a set of EachFielders for context.
+		Child(name string, context ...EachFielder) LogSink
 
-		// Child returns a namespaced child
-		Child(name string) LogSink
-
-		// LogMessage is used to record structured LogMessages
-		LogMessage(Level, LogMessage)
+		// Fields is used to record the name/value fields of a structured message.
+		Fields([]EachFielder)
 
 		// Metrics returns a MetricsSink, which will be used to record MetricsMessages.
 		Metrics() MetricsSink
@@ -85,6 +82,9 @@ type (
 
 		// AtExit() does last-minute cleanup of stuff
 		AtExit()
+
+		// ForceDefer is used during testing to suspend the "panic during testing" behavior.
+		ForceDefer() bool
 	}
 
 	// A MetricsSink is passed into a MetricsMessage's MetricsTo(), so that the
@@ -129,19 +129,27 @@ type (
 		RecommendedLevel() Level
 	}
 
+	// Submessage is not a complete message on its own
 	Submessage interface {
 		EachFielder
 		LevelRecommender
 	}
 
-	// A LogMessage has structured data to report to the structured log server (c.f. Deliver).
-	// Almost every implementation of LogMessage should include a CallerInfo.
-	LogMessage interface {
+	// OldLogMessage captures a deprecated interface
+	// prefer instead to use EachFielder and include Severity and Message fields.
+	// Don't do both though; make a clean break with this interface.
+	OldLogMessage interface {
 		// The severity level of this message, potentially (in the future) manipulated
 		// by dynamic rules.
 		DefaultLevel() Level
 		// A simple textual message describing the logged event. Usually hardcoded (or almost so.)
 		Message() string
+	}
+
+	// A LogMessage has structured data to report to the structured log server (c.f. Deliver).
+	// Almost every implementation of LogMessage should include a CallerInfo.
+	LogMessage interface {
+		OldLogMessage
 		// Called to report the individual fields for this message.
 		EachField(fn FieldReportFn)
 	}
@@ -156,16 +164,70 @@ type (
 		WriteToConsole(console io.Writer)
 	}
 
-	// A ExtraConsoleMessage has messages to report to a local human operator (c.f. Deliver)
-	ExtraConsoleMessage interface {
-		WriteExtraToConsole(console io.Writer)
+	// FieldReportFn is used by LogMessages to report their fields.
+	FieldReportFn func(FieldName, interface{})
+
+	// A MessageField is a quick wrapper for string with EachField.
+	MessageField string
+
+	kv struct {
+		k FieldName
+		v interface{}
 	}
 
-	// FieldReportFn is used by LogMessages to report their fields.
-	FieldReportFn func(string, interface{})
+	// ToConsole allows quick creation of Console messages.
+	ToConsole struct {
+		msg interface{}
+	}
 
-	// error interface{}
+	consoleMessage struct {
+		ToConsole
+	}
 )
+
+// All calls EachField on each of the arguments.
+func (frf FieldReportFn) All(efs ...EachFielder) {
+	for _, ef := range efs {
+		ef.EachField(frf)
+	}
+}
+
+// KV creates a single-entry EachFielder with the FieldName as the name.
+func KV(n FieldName, v interface{}) EachFielder {
+	return kv{k: n, v: v}
+}
+
+func (p kv) EachField(fn FieldReportFn) {
+	fn(p.k, p.v)
+}
+
+// EachField implements EachFielder on MessageField.
+func (m MessageField) EachField(fn FieldReportFn) {
+	fn(CallStackMessage, string(m))
+}
+
+func (m MessageField) String() string {
+	return string(m)
+}
+
+// WriteToConsole implements ConsoleMessage on ToConsole.
+func (tc ToConsole) WriteToConsole(c io.Writer) {
+	fmt.Fprintf(c, fmt.Sprintf("%s\n", tc.msg))
+}
+
+// Console marks a string as being suitable for console output.
+func Console(m interface{}) ToConsole {
+	return ToConsole{msg: m}
+}
+
+// ConsoleAndMessage wraps a string such that it will be both a console output and the primary message of a log entry.
+func ConsoleAndMessage(m interface{}) consoleMessage {
+	return consoleMessage{ToConsole{msg: m}}
+}
+
+func (m consoleMessage) EachField(fn FieldReportFn) {
+	fn(CallStackMessage, fmt.Sprintf("%s", m.msg))
+}
 
 /*
   A static analysis approach here would:
@@ -202,50 +264,90 @@ func (writeDoner) Done() {}
 //
 // The upshot is that messages can be Delivered on the spot and
 // later determine what facilities are appropriate.
-func Deliver(message interface{}, logger LogSink, options ...func() bool) {
+func Deliver(logger LogSink, messages ...interface{}) {
 	if logger == nil {
 		panic("null logger")
 	}
-	silent := true
 
 	//determine if function running under test, allow overwritten value from options functions
-	testFlag := func() bool {
-		if flag.Lookup("test.v") != nil {
-			return true
-		}
-		return false
-	}()
-
-	for _, op := range options {
-		testFlag = op()
+	testFlag := strings.HasSuffix(os.Args[0], ".test")
+	if logger.ForceDefer() {
+		testFlag = false
+	}
+	if !testFlag {
+		defer loggingPanicsShouldntCrashTheApp(logger, messages)
 	}
 
-	defer loggingPanicsShouldntCrashTheApp(logger, message, testFlag)
+	items := partitionItems(messages)
 
-	if lm, is := message.(LogMessage); is {
-		silent = false
-		Level := getLevel(lm)
-		logger.LogMessage(Level, lm)
-	}
+	logger.Fields(items.eachFielders)
 
-	if mm, is := message.(MetricsMessage); is {
-		silent = false
-		metrics := logger.Metrics()
+	metrics := logger.Metrics()
+	for _, mm := range items.metricsMessages {
 		mm.MetricsTo(metrics)
-		metrics.Done()
+	}
+	metrics.Done()
+
+	for _, cm := range items.consoleMessages {
+		cm.WriteToConsole(logger.Console())
 	}
 
-	if cm, is := message.(ConsoleMessage); is {
-		silent = false
-		cm.WriteToConsole(logger.Console())
-		if xm, is := message.(ExtraConsoleMessage); is {
-			xm.WriteExtraToConsole(logger.ExtraConsole())
+	if _, dont := messages[0].(*silentMessageError); items.silent() && !dont {
+		reportSilentMessage(logger, messages)
+	}
+}
+
+type partitionedItems struct {
+	eachFielders    []EachFielder
+	consoleMessages []ConsoleMessage
+	metricsMessages []MetricsMessage
+}
+
+// holding item partitioning to logging time.
+func partitionItems(items []interface{}) partitionedItems {
+	l := partitionedItems{}
+	others := []interface{}{}
+
+	for _, item := range items {
+		ef, isef := item.(EachFielder)
+		olm, isolm := item.(OldLogMessage)
+		cm, iscm := item.(ConsoleMessage)
+		mm, ismm := item.(MetricsMessage)
+		if isef {
+			if isolm {
+				m := olm.Message()
+				lvl := olm.DefaultLevel()
+				l.eachFielders = append(l.eachFielders, MessageField(m), lvl)
+			}
+			l.eachFielders = append(l.eachFielders, ef)
+		}
+		if iscm {
+			l.consoleMessages = append(l.consoleMessages, cm)
+		}
+		if ismm {
+			l.metricsMessages = append(l.metricsMessages, mm)
+		}
+		if !(isef || iscm || ismm) {
+			others = append(others, item)
 		}
 	}
-
-	if _, dont := message.(*silentMessageError); silent && !dont {
-		reportSilentMessage(logger, message)
+	if !l.silent() && len(others) > 0 {
+		l.eachFielders = append(l.eachFielders, assembleStrayFields(others...))
 	}
+	return l
+}
+
+func (i partitionedItems) silent() bool {
+	if len(i.eachFielders) > 0 {
+		return false
+	}
+	if len(i.consoleMessages) > 0 {
+		return false
+	}
+	if len(i.metricsMessages) > 0 {
+		return false
+	}
+	return true
 }
 
 // a fake "message" designed to trigger the well-tested silentMessageError
@@ -256,12 +358,9 @@ type loggingPanicFakeMessage struct {
 // granted that logging can be set up in the first place,
 // problems with a logging message should not crash the whole app
 // therefore: recover the panic do the simplest thing that will be logged,
-func loggingPanicsShouldntCrashTheApp(ls LogSink, msg interface{}, testFlag bool) {
-
-	if testFlag == false {
-		if rec := recover(); rec != nil {
-			Deliver(loggingPanicFakeMessage{msg}, ls)
-		}
+func loggingPanicsShouldntCrashTheApp(ls LogSink, msg interface{}) {
+	if rec := recover(); rec != nil {
+		Deliver(ls, loggingPanicFakeMessage{msg})
 	}
 }
 
@@ -312,4 +411,9 @@ func ConsoleError(msg ConsoleMessage) string {
 // DefaultLevel is a convenience - by embedding a Level, a message can partially implement LogMessage
 func (lvl Level) DefaultLevel() Level {
 	return lvl
+}
+
+// EachField implements EachFielder on OTLName.
+func (n OTLName) EachField(f FieldReportFn) {
+	f(Loglov3Otl, n)
 }

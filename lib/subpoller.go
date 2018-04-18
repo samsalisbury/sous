@@ -279,7 +279,7 @@ func reportSubPollerMessage(msg string, log logging.LogSink, flags ...bool) {
 		isConsoleMsg: consoleMsg,
 		isErrorMsg:   errorMsg,
 	}
-	logging.Deliver(msgLog, log)
+	logging.Deliver(log, msgLog)
 }
 
 func (msg subPollerMessage) WriteToConsole(console io.Writer) {
@@ -308,6 +308,6 @@ func (msg subPollerMessage) composeMsg() string {
 }
 
 func (msg subPollerMessage) EachField(f logging.FieldReportFn) {
-	f("@loglov3-otl", "sous-generic-v1")
+	f("@loglov3-otl", logging.SousGenericV1)
 	msg.CallerInfo.EachField(f)
 }

@@ -6,11 +6,57 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
+## [Unreleased](//github.com/opentable/sous/compare/0.5.85...HEAD)
+### Added
+* Server: more flexible, agile logging API.
+* Server: logging API includes adding context fields to child loggers.
+* All: updated to enable better running of tests in teamcity
+### Changed
+* Client: `sous deploy` and `sous newdeploy` now synonyms. Expect `sous newdeploy` to be removed.
+* Client: Display more information in case timeout of sous newdeploy.  Also show Executor Message if failed deploy.
+* Server: cleanups to logging output
 
-## [Unreleased](//github.com/opentable/sous/compare/0.5.76...HEAD)
+## [0.5.85](//github.com/opentable/sous/compare/0.5.84...0.5.85)
+### Added
+* Server: Logging fields now pulled from generated logging.
+
+## [0.5.84](//github.com/opentable/sous/compare/0.5.83...0.5.84)
+### Fixed
+* Server: badly formatted requests should no longer panic the HTTP client.
+
+## [0.5.82](//github.com/opentable/sous/compare/0.5.81...0.5.82)
+
+### Added
+* Server: DB state operations are distributed over HTTP to their appropriate cluster.
+* Client: add -force flag for newdeploy.  Defaults to false if not present, if true, no matter
+  what GDM says, will submit to queue for deploy.
+
+### Fixed
+* Client: the flags for newdeploy were misleading. Updated flag parsing and error handling.
+
+### Changed
+* Server: Interactions with Singularity unified and simplified.
+* All: Removed legacy Debug, Warn, Vomit logging infrastructure
+
+## [0.5.78](//github.com/opentable/sous/compare/0.5.77...0.5.78)
+
+### Added
+* All: Add smoke test of the newdeploy cli
+* All: Added docker run of posgtres and liquibase via task a go task executer
+
+## [0.5.77](//github.com/opentable/sous/compare/0.5.76...0.5.77)
+
+### Added
+* Server: Single deployment rectification now waits for a reports a DeployState.
+* Server: Single deployment name cache harvests - hopefully will further speed deployments.
+* Server: pending state workaround for Singularity
 
 ### Fixed
 * Server: /deploy-queue-item now returns correct queue position and Resolution field.
+* Server: /single-deployment validation now correctly validates only after taking
+  into consideration default values.
+* Server: integration tests disregard failed deployments as blockers in certain cases
+* Server: deployment operations are tracked by a UUID across API requests.
 
 ## [0.5.76](//github.com/opentable/sous/compare/0.5.72...0.5.76)
 

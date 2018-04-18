@@ -36,25 +36,25 @@ type (
 func reportPollerStart(logsink logging.LogSink, poller *StatusPoller) {
 	msg := newPollerStartMessage(poller)
 	msg.callerInfo.ExcludeMe()
-	logging.Deliver(msg, logsink)
+	logging.Deliver(logsink, msg)
 }
 
 func reportPollerResolved(logsink logging.LogSink, sp *StatusPoller, status ResolveState, err error) {
 	msg := newPollerResolvedMessage(sp, status, err)
 	msg.callerInfo.ExcludeMe()
-	logging.Deliver(msg, logsink)
+	logging.Deliver(logsink, msg)
 }
 
 func reportPollerStatus(logsink logging.LogSink, poller *StatusPoller, old ResolveState) {
 	msg := newPollerStatusMessage(poller, old)
 	msg.callerInfo.ExcludeMe()
-	logging.Deliver(msg, logsink)
+	logging.Deliver(logsink, msg)
 }
 
 func reportSubreport(logsink logging.LogSink, poller *StatusPoller, update pollResult) {
 	msg := newSubreportMessage(poller, update)
 	msg.callerInfo.ExcludeMe()
-	logging.Deliver(msg, logsink)
+	logging.Deliver(logsink, msg)
 }
 
 func resultFields(f logging.FieldReportFn, update pollResult) {
@@ -107,7 +107,7 @@ func (msg *pollerStartMessage) Message() string {
 }
 
 func (msg *pollerStartMessage) EachField(f logging.FieldReportFn) {
-	f("@loglov3-otl", "sous-status-polling-v1")
+	f("@loglov3-otl", logging.SousStatusPollingV1)
 	msg.callerInfo.EachField(f)
 	pollerFields(f, msg.poller)
 }
@@ -130,7 +130,7 @@ func (msg *pollerResolvedMessage) Message() string {
 }
 
 func (msg *pollerResolvedMessage) EachField(f logging.FieldReportFn) {
-	f("@loglov3-otl", "sous-status-polling-v1")
+	f("@loglov3-otl", logging.SousStatusPollingV1)
 	msg.callerInfo.EachField(f)
 	pollerFields(f, msg.poller)
 	f("deploy-status", msg.status.String())
@@ -173,7 +173,7 @@ func (msg *pollerStatusMessage) Message() string {
 }
 
 func (msg *pollerStatusMessage) EachField(f logging.FieldReportFn) {
-	f("@loglov3-otl", "sous-status-polling-v1")
+	f("@loglov3-otl", logging.SousStatusPollingV1)
 	msg.callerInfo.EachField(f)
 	pollerFields(f, msg.poller)
 	f("deploy-status", msg.poller.status.String())
@@ -209,7 +209,7 @@ func (msg *subreportMessage) Message() string {
 }
 
 func (msg *subreportMessage) EachField(f logging.FieldReportFn) {
-	f("@loglov3-otl", "sous-polling-subresult-v1")
+	f("@loglov3-otl", logging.SousPollingSubresultV1)
 	msg.callerInfo.EachField(f)
 	pollerFields(f, msg.poller)
 	resultFields(f, msg.update)

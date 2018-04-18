@@ -49,6 +49,12 @@ type (
 		Desc ResolutionType
 		// Error captures the error (if any) encountered during diff resolution
 		Error *ErrorWrapper
+
+		// DeployState is the state of this deployment as running.
+		DeployState *DeployState
+
+		// SchedulerURL is a URL where this deployment can be seen.
+		SchedulerURL string
 	}
 
 	// ResolutionType marks the kind of a DiffResolution
@@ -71,6 +77,19 @@ const (
 
 func (rez DiffResolution) String() string {
 	return fmt.Sprintf("%s %s %v", rez.DeploymentID, rez.Desc, rez.Error)
+}
+
+// EachField implements EachFielder on DiffResolution.
+func (rez DiffResolution) EachField(f logging.FieldReportFn) {
+	f(logging.SousDeploymentId, rez.DeploymentID.String())
+	f(logging.SousManifestId, rez.ManifestID.String())
+	f(logging.SousResolutionDescription, string(rez.Desc))
+	if rez.Error == nil {
+		return
+	}
+	marshallable := buildMarshableError(rez.Error.error)
+	f(logging.SousResolutionErrortype, marshallable.Type)
+	f(logging.SousResolutionErrormessage, marshallable.String)
 }
 
 // NewResolveRecorder creates a new ResolveRecorder and calls f with it as its
@@ -99,7 +118,7 @@ func NewResolveRecorder(intended Deployments, ls logging.LogSink, f func(*Resolv
 				rr.status.Log = append(rr.status.Log, rez)
 				if rez.Error != nil {
 					rr.status.Errs.Causes = append(rr.status.Errs.Causes, ErrorWrapper{error: rez.Error})
-					logging.Log.Debug.Printf("resolve error = %+v\n", rez.Error)
+					messages.ReportLogFieldsMessage("resolve error", logging.DebugLevel, logging.Log, rez.Error)
 				}
 			})
 		}

@@ -17,7 +17,7 @@ type invocationMessage struct {
 func reportInvocation(ls logging.LogSink, start time.Time, args []string) {
 	msg := newInvocationMessage(args, start)
 	msg.callerInfo.ExcludeMe()
-	logging.Deliver(msg, ls)
+	logging.Deliver(ls, msg)
 }
 
 func newInvocationMessage(args []string, start time.Time) *invocationMessage {
@@ -37,7 +37,7 @@ func (msg *invocationMessage) Message() string {
 }
 
 func (msg *invocationMessage) EachField(f logging.FieldReportFn) {
-	f("@loglov3-otl", "sous-cli-v1")
+	f("@loglov3-otl", logging.SousCliV1)
 	msg.callerInfo.EachField(f)
 	msg.interval.EachField(f)
 	f("arguments", fmt.Sprintf("%q", msg.args))
@@ -53,7 +53,7 @@ type cliResultMessage struct {
 func reportCLIResult(logsink logging.LogSink, args []string, start time.Time, res cmdr.Result) {
 	msg := newCLIResult(args, start, res)
 	msg.callerInfo.ExcludeMe()
-	logging.Deliver(msg, logsink)
+	logging.Deliver(logsink, msg)
 }
 
 func newCLIResult(args []string, start time.Time, res cmdr.Result) *cliResultMessage {
@@ -74,7 +74,7 @@ func (msg *cliResultMessage) Message() string {
 }
 
 func (msg *cliResultMessage) EachField(f logging.FieldReportFn) {
-	f("@loglov3-otl", "sous-cli-v1")
+	f("@loglov3-otl", logging.SousCliV1)
 	msg.callerInfo.EachField(f)
 	msg.interval.EachField(f)
 	f("arguments", fmt.Sprintf("%q", msg.args))

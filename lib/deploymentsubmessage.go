@@ -28,13 +28,27 @@ func (msg *deploymentSubmessage) EachField(f logging.FieldReportFn) {
 	if d == nil {
 		return
 	}
-	f(msg.prefix+"-clustername", d.ClusterName)
-	f(msg.prefix+"-repo", d.SourceID.Location.Repo)
-	f(msg.prefix+"-offset", d.SourceID.Location.Dir)
-	f(msg.prefix+"-tag", d.SourceID.Version.String())
-	f(msg.prefix+"-flavor", d.Flavor)
-	f(msg.prefix+"-owners", strings.Join(d.Owners.Slice(), ","))
-	f(msg.prefix+"-kind", string(d.Kind))
+
+	switch msg.prefix {
+	default:
+		f(logging.FieldName("sous-unknown-type-type"), msg.prefix)
+	case "sous-prior":
+		f(logging.SousPriorClustername, d.ClusterName)
+		f(logging.SousPriorRepo, d.SourceID.Location.Repo)
+		f(logging.SousPriorOffset, d.SourceID.Location.Dir)
+		f(logging.SousPriorTag, d.SourceID.Version.String())
+		f(logging.SousPriorFlavor, d.Flavor)
+		f(logging.SousPriorOwners, strings.Join(d.Owners.Slice(), ","))
+		f(logging.SousPriorKind, string(d.Kind))
+	case "sous-post":
+		f(logging.SousPostClustername, d.ClusterName)
+		f(logging.SousPostRepo, d.SourceID.Location.Repo)
+		f(logging.SousPostOffset, d.SourceID.Location.Dir)
+		f(logging.SousPostTag, d.SourceID.Version.String())
+		f(logging.SousPostFlavor, d.Flavor)
+		f(logging.SousPostOwners, strings.Join(d.Owners.Slice(), ","))
+		f(logging.SousPostKind, string(d.Kind))
+	}
 
 	msg.deployConfigFields(f)
 }
@@ -57,21 +71,40 @@ func (msg *deploymentSubmessage) deployConfigFields(f logging.FieldReportFn) {
 		}
 		return strings.Join(strs, ",")
 	}
-
-	f(msg.prefix+"-resources", marshal("resources", dc.Resources))
-	f(msg.prefix+"-metadata", marshal("metadata", dc.Metadata))
-	f(msg.prefix+"-env", marshal("env", dc.Env))
-	f(msg.prefix+"-numinstances", dc.NumInstances)
-	f(msg.prefix+"-volumes", marshal("volumes", dc.Volumes))
-	f(msg.prefix+"-startup-skipcheck", dc.Startup.SkipCheck)
-	f(msg.prefix+"-startup-connectdelay", dc.Startup.ConnectDelay)
-	f(msg.prefix+"-startup-timeout", dc.Startup.Timeout)
-	f(msg.prefix+"-startup-connectinterval", dc.Startup.ConnectInterval)
-	f(msg.prefix+"-checkready-protocol", dc.Startup.CheckReadyProtocol)
-	f(msg.prefix+"-checkready-uripath", dc.Startup.CheckReadyURIPath)
-	f(msg.prefix+"-checkready-portindex", dc.Startup.CheckReadyPortIndex)
-	f(msg.prefix+"-checkready-failurestatuses", failureStatsAsStrings(dc.Startup.CheckReadyFailureStatuses))
-	f(msg.prefix+"-checkready-uritimeout", dc.Startup.CheckReadyURITimeout)
-	f(msg.prefix+"-checkready-interval", dc.Startup.CheckReadyInterval)
-	f(msg.prefix+"-checkready-retries", dc.Startup.CheckReadyRetries)
+	switch msg.prefix {
+	case "sous-prior":
+		f(logging.SousPriorResources, marshal("resources", dc.Resources))
+		f(logging.SousPriorMetadata, marshal("metadata", dc.Metadata))
+		f(logging.SousPriorEnv, marshal("env", dc.Env))
+		f(logging.SousPriorNuminstances, dc.NumInstances)
+		f(logging.SousPriorVolumes, marshal("volumes", dc.Volumes))
+		f(logging.SousPriorStartupSkipcheck, dc.Startup.SkipCheck)
+		f(logging.SousPriorStartupConnectdelay, dc.Startup.ConnectDelay)
+		f(logging.SousPriorStartupTimeout, dc.Startup.Timeout)
+		f(logging.SousPriorStartupConnectinterval, dc.Startup.ConnectInterval)
+		f(logging.SousPriorCheckreadyProtocol, dc.Startup.CheckReadyProtocol)
+		f(logging.SousPriorCheckreadyUripath, dc.Startup.CheckReadyURIPath)
+		f(logging.SousPriorCheckreadyPortindex, dc.Startup.CheckReadyPortIndex)
+		f(logging.SousPriorCheckreadyFailurestatuses, failureStatsAsStrings(dc.Startup.CheckReadyFailureStatuses))
+		f(logging.SousPriorCheckreadyUritimeout, dc.Startup.CheckReadyURITimeout)
+		f(logging.SousPriorCheckreadyInterval, dc.Startup.CheckReadyInterval)
+		f(logging.SousPriorCheckreadyRetries, dc.Startup.CheckReadyRetries)
+	case "sous-post":
+		f(logging.SousPostResources, marshal("resources", dc.Resources))
+		f(logging.SousPostMetadata, marshal("metadata", dc.Metadata))
+		f(logging.SousPostEnv, marshal("env", dc.Env))
+		f(logging.SousPostNuminstances, dc.NumInstances)
+		f(logging.SousPostVolumes, marshal("volumes", dc.Volumes))
+		f(logging.SousPostStartupSkipcheck, dc.Startup.SkipCheck)
+		f(logging.SousPostStartupConnectdelay, dc.Startup.ConnectDelay)
+		f(logging.SousPostStartupTimeout, dc.Startup.Timeout)
+		f(logging.SousPostStartupConnectinterval, dc.Startup.ConnectInterval)
+		f(logging.SousPostCheckreadyProtocol, dc.Startup.CheckReadyProtocol)
+		f(logging.SousPostCheckreadyUripath, dc.Startup.CheckReadyURIPath)
+		f(logging.SousPostCheckreadyPortindex, dc.Startup.CheckReadyPortIndex)
+		f(logging.SousPostCheckreadyFailurestatuses, failureStatsAsStrings(dc.Startup.CheckReadyFailureStatuses))
+		f(logging.SousPostCheckreadyUritimeout, dc.Startup.CheckReadyURITimeout)
+		f(logging.SousPostCheckreadyInterval, dc.Startup.CheckReadyInterval)
+		f(logging.SousPostCheckreadyRetries, dc.Startup.CheckReadyRetries)
+	}
 }

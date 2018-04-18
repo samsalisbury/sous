@@ -43,33 +43,57 @@ func NewResolver(d Deployer, r Registry, rf *ResolveFilter, ls logging.LogSink, 
 func (r *Resolver) queueDiffs(dcs *DeployableChans, results chan DiffResolution) {
 	var wg sync.WaitGroup
 	for p := range dcs.Pairs {
-		p := p
 		if p.Post == nil {
 			err := fmt.Errorf("queueDiffs called with nil Pair.Post in the chan")
 			logging.ReportError(r.ls, err)
 			continue
 		}
-		sr := NewRectification(*p)
-		messages.ReportLogFieldsMessageWithIDs("Adding to queue-set", logging.ExtraDebug1Level, r.ls, p, sr)
+		// SameKind == "no diffs" meaning a no-op; do not add to queue.
+		if p.Kind() == SameKind {
+			messages.ReportLogFieldsMessageWithIDs("Not adding equal diff",
+				logging.ExtraDebug1Level, r.ls, p)
+			continue
+		}
+		// Zero instances or version 0.0.0 on brand new deployments is a no-op,
+		// so do not add to queue.
+		if p.Kind() == AddedKind && (p.Post.NumInstances == 0 ||
+			p.Post.DeploySpec().Version.String() == "0.0.0") {
+			messages.ReportLogFieldsMessageWithIDs("Not adding uninitialized new diff",
+				logging.ExtraDebug1Level, r.ls, p)
+			continue
+		}
+		sr := NewRectification(*p, r.ls)
+		r.reportQSWait("Adding to queue set", logging.NotHere(), sr)
 		queued, ok := r.QueueSet.PushIfEmpty(sr)
 		if !ok {
-			messages.ReportLogFieldsMessageWithIDs("Failed to queue", logging.ExtraDebug1Level, r.ls, p, sr)
+			r.reportQSWait("Failed to queue", logging.NotHere(), sr)
 			reportR11nAnomaly(r.ls, sr, r11nDroppedQueueNotEmpty)
 			continue
 		}
 		wg.Add(1)
 		go func(p *DeployablePair) {
 			defer wg.Done()
-			messages.ReportLogFieldsMessageWithIDs("Inserting to QueueSet.Wait", logging.ExtraDebug1Level, r.ls, queued.ID, p, sr)
+			r.reportQSWait("Inserting to QueueSet.Wait", logging.NotHere(), queued.ID, sr)
 			result, ok := r.QueueSet.Wait(p.ID(), queued.ID)
 			if !ok {
-				messages.ReportLogFieldsMessageWithIDs("Failed to QueueSet.Wait", logging.ExtraDebug1Level, r.ls, queued.ID, p, sr)
+				r.reportQSWait("Failed to QueueSet.Wait", logging.NotHere(), queued.ID, sr)
 				reportR11nAnomaly(r.ls, sr, r11nWentMissing)
 			}
 			results <- result
 		}(p)
 	}
 	wg.Wait()
+}
+
+// this is close to a generic deliver. Adding a level argument and handling the extra layer of exclusion is all it would take...
+func (r *Resolver) reportQSWait(msg string, notThere logging.Excluder, fields ...interface{}) {
+	logging.Deliver(r.ls,
+		append([]interface{}{
+			logging.SousGenericV1,
+			logging.ExtraDebug1Level,
+			logging.GetCallerInfo(notThere, logging.NotHere()),
+			logging.MessageField(msg),
+		}, fields...)...)
 }
 
 // Begin is similar to Resolve, except that it returns a ResolveRecorder almost

@@ -16,7 +16,7 @@ type silentMessageError struct {
 func reportSilentMessage(logger LogSink, message interface{}) {
 	m := newSilentMessageError(message)
 	m.ExcludeMe()
-	Deliver(m, logger)
+	Deliver(logger, m)
 }
 
 func newSilentMessageError(message interface{}) *silentMessageError {
@@ -33,7 +33,7 @@ func (msg *silentMessageError) MetricsTo(metrics MetricsSink) {
 }
 
 func (msg *silentMessageError) EachField(f FieldReportFn) {
-	f("@loglov3-otl", "sous-generic-v1")
+	f("@loglov3-otl", SousGenericV1)
 	msg.CallerInfo.EachField(f)
 }
 

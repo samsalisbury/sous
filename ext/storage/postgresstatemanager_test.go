@@ -45,7 +45,7 @@ func SetupTest(t *testing.T) *PostgresStateManagerSuite {
 	if np, set := os.LookupEnv("PGPORT"); set {
 		port = np
 	}
-	connstr := fmt.Sprintf("dbname=sous_test host=localhost user=postgres port=%s sslmode=disable", port)
+	connstr := fmt.Sprintf("dbname=sous_test host=localhost port=%s sslmode=disable", port)
 	if suite.db, err = sql.Open("postgres", connstr); err != nil {
 		suite.FailNow("Error establishing test-assertion DB connection.", "Error: %v", err)
 	}
@@ -64,13 +64,15 @@ func TestPostgresStateManagerWriteState_success(t *testing.T) {
 	}
 	suite.Equal(int64(4), suite.pluckSQL("select count(*) from deployments"))
 
-	assert.Len(t, suite.logs.CallsTo("LogMessage"), 13)
-	message := suite.logs.CallsTo("LogMessage")[0].PassedArgs().Get(1).(logging.LogMessage)
+	assert.Len(t, suite.logs.CallsTo("Fields"), 13)
+	message := suite.logs.CallsTo("Fields")[0].PassedArgs().Get(0).([]logging.EachFielder)
 	// XXX This message deserves its own test
-	logging.AssertMessageFields(t, message, append(
+	logging.AssertMessageFieldlist(t, message, append(
 		append(logging.StandardVariableFields, logging.IntervalVariableFields...), "call-stack-function", "sous-sql-query", "sous-sql-rows"),
 		map[string]interface{}{
-			"@loglov3-otl": "sous-sql",
+			"@loglov3-otl":       logging.SousSql,
+			"severity":           logging.InformationLevel,
+			"call-stack-message": "SQL query",
 		})
 
 	suite.require.NoError(suite.manager.WriteState(s, testUser))

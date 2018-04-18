@@ -1,0 +1,58 @@
+{
+  "deployMarker": {
+    "requestId": "sous_demo---dev_ci_sf-5d44a1d1d9b70dcfa342154f47ffd2be",
+    "deployId": "0_1_78_cfff904210204af289d13130eed5ac2b",
+    "timestamp": 1522177662033
+  },
+  "deploy": {
+    "requestId": "sous_demo---dev_ci_sf-5d44a1d1d9b70dcfa342154f47ffd2be",
+    "id": "0_1_78_cfff904210204af289d13130eed5ac2b",
+    "containerInfo": {
+      "type": "DOCKER",
+      "volumes": [],
+      "docker": {
+        "image": "docker.otenv.com/sous-demo@sha256:4f3c63d522fb22c873d5e1e27f1d3f56e21a47f56a7ca6d018e346fcd01bab1d",
+        "privileged": false,
+        "network": "BRIDGE",
+        "portMappings": [],
+        "forcePullImage": false,
+        "dockerParameters": []
+      }
+    },
+    "resources": {
+      "cpus": 0.1,
+      "memoryMb": 100,
+      "numPorts": 1,
+      "diskMb": 0
+    },
+    "env": {
+      "OT_DISCO_INIT_URL": "discovery-ci-sf.otenv.com",
+      "OT_ENV": "dev-ci-sf",
+      "OT_ENV_LOCATION": "sf",
+      "OT_ENV_TYPE": "ci"
+    },
+    "metadata": {
+      "com.opentable.sous.clustername": "dev-ci-sf",
+      "com.opentable.sous.flavor": "",
+      "com.opentable.sous.repo_offset": "",
+      "com.opentable.sous.repo_url": "github.com/opentable/sous-demo",
+      "com.opentable.sous.revision": "a52eb9c11829c94f4baebb7eaa8e5de0aaa53b43",
+      "com.opentable.sous.version": "0.1.78"
+    },
+    "healthcheck": {
+      "uri": "/health",
+      "portIndex": 0,
+      "protocol": "HTTP",
+      "startupTimeoutSeconds": 10,
+      "startupDelaySeconds": 60,
+      "startupIntervalSeconds": 1,
+      "intervalSeconds": 1,
+      "responseTimeoutSeconds": 5,
+      "maxRetries": 120,
+      "failureStatusCodes": [
+        500,
+        503
+      ]
+    }
+  }
+}

@@ -23,13 +23,11 @@ func TestDiffRezMessage(t *testing.T) {
 	}
 
 	logging.AssertMessageFields(t, msg, logging.StandardVariableFields, map[string]interface{}{
-		"@loglov3-otl":                 "sous-diff-resolution",
+		"@loglov3-otl":                 logging.SousDiffResolution,
 		"sous-resolution-errortype":    "*errors.errorString",
 		"sous-resolution-errormessage": "dumb test error",
 		"sous-deployment-id":           "test-cluster:github.com/opentable/example",
 		"sous-manifest-id":             "github.com/opentable/example",
-		"sous-diff-source-type":        "global rectifier",
-		"sous-diff-source-user":        "unknown",
 		"sous-resolution-description":  "updated",
 	})
 }

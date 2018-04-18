@@ -65,7 +65,7 @@ func mapResources(r sous.Resources) dtoMap {
 }
 
 // Deploy sends requests to Singularity to make a deployment happen
-func (ra *RectiAgent) Deploy(d sous.Deployable, reqID string) error {
+func (ra *RectiAgent) Deploy(d sous.Deployable, reqID, depID string) error {
 	if d.BuildArtifact == nil {
 		return &sous.MissingImageNameError{Cause: fmt.Errorf("Missing BuildArtifact on Deployable")}
 	}
@@ -75,20 +75,22 @@ func (ra *RectiAgent) Deploy(d sous.Deployable, reqID string) error {
 	if err != nil {
 		return err
 	}
-	messages.ReportLogFieldsMessage("Deploying instance", logging.DebugLevel, Log, d, reqID)
-	depReq, err := buildDeployRequest(d, reqID, labels)
+	messages.ReportLogFieldsMessage("Build deploying instance", logging.DebugLevel, Log, d, reqID)
+	depReq, err := buildDeployRequest(d, reqID, depID, labels)
 	if err != nil {
 		return err
 	}
 
-	messages.ReportLogFieldsMessage("Deploy req", logging.DebugLevel, Log, depReq)
+	messages.ReportLogFieldsMessage("Sending Deploy req to singularity Client", logging.DebugLevel, Log, depReq)
 	_, err = ra.singularityClient(clusterURI).Deploy(depReq)
+	if err != nil {
+		messages.ReportLogFieldsMessage("Singularity client returned following error", logging.WarningLevel, Log, depReq, reqID, err)
+	}
 	return err
 }
 
-func buildDeployRequest(d sous.Deployable, reqID string, metadata map[string]string) (*dtos.SingularityDeployRequest, error) {
+func buildDeployRequest(d sous.Deployable, reqID, depID string, metadata map[string]string) (*dtos.SingularityDeployRequest, error) {
 	var depReq swaggering.Fielder
-	depID := computeDeployID(&d)
 	dockerImage := d.BuildArtifact.Name
 	r := d.Deployment.DeployConfig.Resources
 	e := d.Deployment.DeployConfig.Env
@@ -113,7 +115,7 @@ func buildDeployRequest(d sous.Deployable, reqID string, metadata map[string]str
 	vs := dtos.SingularityVolumeList{}
 	for _, v := range vols {
 		if v == nil {
-			Log.Warn.Printf("nil volume")
+			messages.ReportLogFieldsMessage("nil volume", logging.WarningLevel, logging.Log)
 			continue
 		}
 		sv, err := swaggering.LoadMap(&dtos.SingularityVolume{}, dtoMap{

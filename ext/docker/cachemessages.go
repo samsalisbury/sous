@@ -35,7 +35,7 @@ func reportCacheHit(logger logging.LogSink, sid sous.SourceID, name string) {
 		source:     sid,
 		imageName:  name,
 	}
-	logging.Deliver(msg, logger)
+	logging.Deliver(logger, msg)
 }
 
 func (msg cacheHitMessage) MetricsTo(ms logging.MetricsSink) {
@@ -47,7 +47,7 @@ func (msg cacheHitMessage) Message() string {
 }
 
 func (msg cacheHitMessage) EachField(f logging.FieldReportFn) {
-	f("@loglov3-otl", "sous-cache-message-v1")
+	f("@loglov3-otl", logging.SousCacheMessageV1)
 	msg.CallerInfo.EachField(f)
 	f("sous-source-id", fmt.Sprintf("%+v", msg.source))
 	f("sous-image-name", msg.imageName)
@@ -60,7 +60,7 @@ func reportCacheMiss(logger logging.LogSink, sid sous.SourceID, name string) {
 		source:     sid,
 		imageName:  name,
 	}
-	logging.Deliver(msg, logger)
+	logging.Deliver(logger, msg)
 }
 
 func (msg cacheMissMessage) MetricsTo(ms logging.MetricsSink) {
@@ -72,7 +72,7 @@ func (msg cacheMissMessage) Message() string {
 }
 
 func (msg cacheMissMessage) EachField(f logging.FieldReportFn) {
-	f("@loglov3-otl", "sous-cache-message-v1")
+	f("@loglov3-otl", logging.SousCacheMessageV1)
 	msg.CallerInfo.EachField(f)
 	f("sous-source-id", fmt.Sprintf("%+v", msg.source))
 	f("sous-image-name", msg.imageName)
@@ -85,7 +85,7 @@ func reportCacheError(logger logging.LogSink, sid sous.SourceID, err error) {
 		source:     sid,
 		err:        err,
 	}
-	logging.Deliver(msg, logger)
+	logging.Deliver(logger, msg)
 }
 
 func (msg cacheErrorMessage) MetricsTo(ms logging.MetricsSink) {
@@ -97,7 +97,7 @@ func (msg cacheErrorMessage) Message() string {
 }
 
 func (msg cacheErrorMessage) EachField(f logging.FieldReportFn) {
-	f("@loglov3-otl", "sous-cache-message-v1")
+	f("@loglov3-otl", logging.SousCacheMessageV1)
 	msg.CallerInfo.EachField(f)
 	f("sous-source-id", fmt.Sprintf("%+v", msg.source))
 	f("error", msg.err.Error())

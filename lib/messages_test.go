@@ -39,7 +39,7 @@ func TestPollerStartMessage(t *testing.T) {
 	msg := newPollerStartMessage(poller)
 
 	fixedFields := map[string]interface{}{
-		"@loglov3-otl":    "sous-status-polling-v1",
+		"@loglov3-otl":    logging.SousStatusPollingV1,
 		"user-name":       "Jane Doe",
 		"user-email":      "jdoe@example.com",
 		"filter-repo":     "github.com/opentable/example",
@@ -91,7 +91,7 @@ func TestPollerSubreportMessage(t *testing.T) {
 	msg := newSubreportMessage(poller, update)
 
 	fixedFields := map[string]interface{}{
-		"@loglov3-otl":      "sous-polling-subresult-v1",
+		"@loglov3-otl":      logging.SousPollingSubresultV1,
 		"user-name":         "Jane Doe",
 		"user-email":        "jdoe@example.com",
 		"filter-repo":       "github.com/opentable/example",
@@ -136,7 +136,7 @@ func TestPollerStatusMessage(t *testing.T) {
 	msg := newPollerStatusMessage(poller, ResolveInProgress)
 
 	fixedFields := map[string]interface{}{
-		"@loglov3-otl":    "sous-status-polling-v1",
+		"@loglov3-otl":    logging.SousStatusPollingV1,
 		"user-name":       "Jane Doe",
 		"user-email":      "jdoe@example.com",
 		"filter-repo":     "github.com/opentable/example",
@@ -179,7 +179,7 @@ func TestPollerResolvedMessage(t *testing.T) {
 	msg := newPollerResolvedMessage(poller, ResolveComplete, fmt.Errorf("not really an error just want some attention"))
 
 	fixedFields := map[string]interface{}{
-		"@loglov3-otl":    "sous-status-polling-v1",
+		"@loglov3-otl":    logging.SousStatusPollingV1,
 		"user-name":       "Jane Doe",
 		"user-email":      "jdoe@example.com",
 		"filter-repo":     "github.com/opentable/example",

@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 	"github.com/pkg/errors"
 	"github.com/samsalisbury/semv"
 )
@@ -57,7 +59,7 @@ func Labels(sid sous.SourceID) map[string]string {
 	return labels
 }
 
-var stripRE = regexp.MustCompile("^([[:alpha:]]+://)?(github.com(/opentable)?)?")
+var stripRE = regexp.MustCompile("^([[:alpha:]]+://)?(github.com(/opentable(/)?)?)?")
 
 func imageRepoName(sl sous.SourceLocation, kind string) string {
 	name := sl.Repo
@@ -99,18 +101,18 @@ func revisionName(sid sous.SourceID, kind string, time time.Time) string {
 
 func fullRepoName(registryHost string, sl sous.SourceLocation, kind string) string {
 	frn := filepath.Join(registryHost, imageRepoName(sl, kind))
-	Log.Debug.Printf("Repo name: % #v => %q", sl, frn)
+	messages.ReportLogFieldsMessage("Repo name", logging.DebugLevel, logging.Log, sl, frn)
 	return frn
 }
 
 func versionTag(registryHost string, v sous.SourceID, kind string) string {
 	verTag := filepath.Join(registryHost, versionName(v, kind))
-	Log.Debug.Printf("Version tag: % #v => %s", v, verTag)
+	messages.ReportLogFieldsMessage("Version Tag", logging.DebugLevel, logging.Log, verTag)
 	return verTag
 }
 
 func revisionTag(registryHost string, v sous.SourceID, kind string, time time.Time) string {
 	revTag := filepath.Join(registryHost, revisionName(v, kind, time))
-	Log.Debug.Printf("RevisionTag: % #v => %s", v, revTag)
+	messages.ReportLogFieldsMessage("RevisionTag", logging.DebugLevel, logging.Log, revTag)
 	return revTag
 }

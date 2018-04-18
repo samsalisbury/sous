@@ -1,46 +1,29 @@
 package logging
 
-import "strings"
+import (
+	"strings"
+)
 
-type kafkaConfigurationMessage struct {
-	CallerInfo
-	hook    *kafkaSink
-	brokers []string
-	topic   string
-}
-
-func reportKafkaConfig(hook *kafkaSink, cfg Config, ls LogSink) {
-	msg := kafkaConfigurationMessage{
-		CallerInfo: GetCallerInfo(),
-		hook:       hook,
-		brokers:    cfg.getBrokers(),
-		topic:      cfg.Kafka.Topic,
+func reportKafkaConfig(hook kafkaSink, cfg Config, ls LogSink) {
+	msg := ConsoleAndMessage("Not connecting to Kafka.")
+	lvl := WarningLevel
+	succ := false
+	id := ""
+	if hook != nil && hook.live() {
+		msg = ConsoleAndMessage("Connecting to Kafka")
+		lvl = InformationLevel
+		succ = true
+		id = hook.id()
 	}
-	msg.ExcludeMe()
-	Deliver(msg, ls)
-}
 
-func (kcm kafkaConfigurationMessage) DefaultLevel() Level {
-	return InformationLevel
-}
-
-func (kcm kafkaConfigurationMessage) Message() string {
-	if kcm.hook == nil {
-		return "Not connecting to Kafka."
-	}
-	return "Connecting to Kafka"
-}
-
-func (kcm kafkaConfigurationMessage) EachField(f FieldReportFn) {
-	f("@loglov3-otl", "sous-kafka-config-v1")
-	kcm.CallerInfo.EachField(f)
-	if kcm.hook == nil {
-		f("sous-successful-connection", false)
-		return
-	}
-	f("sous-successful-connection", true)
-	f("kafka-logging-topic", kcm.topic)
-	f("kafka-brokers", strings.Join(kcm.brokers, ","))
-	f("kafka-logger-id", kcm.hook.ID())
-	f("kafka-logging-levels", kcm.hook.level.String())
+	Deliver(ls,
+		SousKafkaConfigV1,
+		GetCallerInfo(NotHere()),
+		lvl,
+		msg,
+		KV(SousSuccessfulConnection, succ),
+		KV(KafkaLoggingTopic, cfg.Kafka.Topic),
+		KV(KafkaBrokers, strings.Join(cfg.getBrokers(), ",")),
+		KV(KafkaLoggerId, id),
+	)
 }

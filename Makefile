@@ -27,10 +27,18 @@ else
 GIT_TAG := $(shell $(TAG_TEST))
 endif
 
+REPO_ROOT := $(shell git rev-parse --show-toplevel)
+SMOKE_TEST_BASEDIR ?= $(REPO_ROOT)/.smoketest
+SMOKE_TEST_DATA_DIR ?= $(SMOKE_TEST_BASEDIR)/$(DATE)
+SMOKE_TEST_LATEST_LINK ?= $(SMOKE_TEST_BASEDIR)/latest
+SMOKE_TEST_BINARY ?= $(SMOKE_TEST_DATA_DIR)/sous
+
 # install-dev uses DESC and DATE to make a git described, timestamped dev build.
 DESC := $(shell git describe)
 DATE := $(shell date +%Y-%m-%dT%H-%M-%S)
 DEV_VERSION := "$(DESC)-devbuild-$(DATE)"
+
+SOUS_BIN_PATH := $(shell which sous 2> /dev/null || echo $$GOPATH/bin/sous)
 
 # Sous releases are tagged with format v0.0.0. semv library
 # does not understand the v prefix, so this lops it off.
@@ -63,11 +71,15 @@ LINUX_TARBALL := $(LINUX_RELEASE_DIR).tar.gz
 CONCAT_XGO_ARGS := -go $(GO_VERSION) -branch master -deps $(SQLITE_URL) --dest $(BIN_DIR) --ldflags $(FLAGS)
 COVER_DIR := /tmp/sous-cover
 TEST_VERBOSE := $(if $(VERBOSE),-v,)
+TEST_TEAMCITY := $(if $(TEAMCITY),| ./dev_support/gotest-to-teamcity)
 SOUS_PACKAGES:= $(shell go list -f '{{.ImportPath}}' ./... | grep -v 'vendor')
 SOUS_PACKAGES_WITH_TESTS:= $(shell go list -f '{{if len .TestGoFiles}}{{.ImportPath}}{{end}}' ./...)
+SOUS_TC_PACKAGES=$(shell docker run --rm -v $(PWD):/go/src/github.com/opentable/sous -w /go/src/github.com/opentable/sous golang:1.10 go list -f '{{if len .TestGoFiles}}{{.ImportPath}}{{end}}' ./... | sed 's/_\/app/github.com\/opentable\/sous/')
 SOUS_CONTAINER_IMAGES:= "docker images | egrep '127.0.0.1:5000|testregistry_'"
 TC_TEMP_DIR ?= /tmp/sous
 
+print-%  : ; @echo $* = $($*)
+export-% : ; @echo $($*)
 help:
 	@echo --- options:
 	@echo make clean
@@ -102,6 +114,18 @@ build-debug-darwin:
 	mkdir -p $(BIN_DIR)
 	xgo $(CONCAT_XGO_ARGS) --targets=darwin/amd64 -out darwin ./
 	mv ./artifacts/bin/darwin* ./artifacts/bin/sous-darwin-$(SOUS_VERSION)
+
+install-debug-linux: build-debug-linux
+	rm $(SOUS_BIN_PATH) || true
+	cp ./artifacts/bin/sous-linux-$(SOUS_VERSION) $(SOUS_BIN_PATH)
+	cp ./artifacts/bin/sous-linux-$(SOUS_VERSION) ./artifacts/bin/sous-$(SOUS_VERSION)
+	sous version
+
+install-debug-darwin: build-debug-darwin
+	brew uninstall opentable/public/sous || true
+	rm $(SOUS_BIN_PATH) || true
+	cp ./artifacts/bin/sous-darwin-$(SOUS_VERSION) $(SOUS_BIN_PATH)
+	sous version
 
 clean:
 	rm -rf $(COVER_DIR)
@@ -217,11 +241,13 @@ legendary: coverage
 
 test: test-gofmt test-staticcheck test-unit test-integration
 
-test-dev: test-staticcheck test-unit
+test-dev: test-gofmt test-staticcheck test-unit-base
 
 test-staticcheck: install-staticcheck
-	staticcheck -ignore "$$(cat staticcheck.ignore)" $(SOUS_PACKAGES)
-	staticcheck -tags integration -ignore "$$(cat staticcheck.ignore)" github.com/opentable/sous/integration
+	echo "staticcheck -ignore "$$(cat staticcheck.ignore)" $(SOUS_PACKAGES)"
+	@staticcheck -ignore "$$(cat staticcheck.ignore)" $(SOUS_PACKAGES) || (echo "FAIL: staticcheck" && false)
+	echo "staticcheck -tags integration -ignore "$$(cat staticcheck.ignore)" github.com/opentable/sous/integration"
+	@staticcheck -tags integration -ignore "$$(cat staticcheck.ignore)" github.com/opentable/sous/integration || (echo "FAIL: staticcheck" && false)
 
 test-metalinter: install-linters
 	gometalinter --config gometalinter.json ./...
@@ -229,19 +255,10 @@ test-metalinter: install-linters
 test-gofmt:
 	bin/check-gofmt
 
-test-unit: postgres-test-prepare
-	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -timeout 3m -race $(SOUS_PACKAGES_WITH_TESTS)
+test-unit-base:
+	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -timeout 3m -race $(SOUS_PACKAGES_WITH_TESTS) $(TEST_TEAMCITY)
 
-# Note, the TEMP DIR was needed for the volume mounting, tried to coalesce in the source folder but go kept picking up
-# the other source files and would create bad imports so used temp directory instead
-test-unit-tc: postgres-test-prepare
-	rm -rf $(TC_TEMP_DIR)
-	mkdir $(TC_TEMP_DIR)
-	mkdir $(TC_TEMP_DIR)/src
-	cp -r ./vendor/* $(TC_TEMP_DIR)/src
-	mkdir $(TC_TEMP_DIR)/src/github.com/opentable/sous
-	cp -r ./* $(TC_TEMP_DIR)/src/github.com/opentable/sous
-	docker run --rm -v $(TC_TEMP_DIR):/go -v $(PWD):/app -w /app golang:1.10 go test -race -v $(SOUS_PACKAGES_WITH_TESTS) | docker run -i xjewer/go-test-teamcity
+test-unit: postgres-test-prepare test-unit-base
 
 test-integration: setup-containers
 	@echo
@@ -252,13 +269,29 @@ test-integration: setup-containers
 	@echo Set INTEGRATION_TEST_TIMEOUT to override.
 	@echo
 	@echo
-	SOUS_QA_DESC=$(QA_DESC) go test -timeout $(INTEGRATION_TEST_TIMEOUT) $(EXTRA_GO_FLAGS)  $(TEST_VERBOSE) ./integration --tags=integration
+	SOUS_QA_DESC=$(QA_DESC) go test -count 1 -timeout $(INTEGRATION_TEST_TIMEOUT) $(EXTRA_GO_FLAGS)  $(TEST_VERBOSE) ./integration --tags=integration $(TEST_TEAMCITY)
 	@date
+
+$(SMOKE_TEST_BINARY):
+	go build -o $@ -tags smoke -ldflags "-X main.VersionString=$(DEV_VERSION)"
+
+$(SMOKE_TEST_DATA_DIR):
+	mkdir -p $@
+
+$(SMOKE_TEST_LATEST_LINK): $(SMOKE_TEST_DATA_DIR)
+	ln -sfn $< $@
+
+.PHONY: test-smoke
+test-smoke: $(SMOKE_TEST_BINARY) $(SMOKE_TEST_LATEST_LINK) setup-containers
+	SMOKE_TEST_DATA_DIR=$(SMOKE_TEST_DATA_DIR)/data \
+	SMOKE_TEST_BINARY=$(SMOKE_TEST_BINARY) \
+	SOUS_QA_DESC=$(QA_DESC) \
+	go test -tags smoke -v -count 1 ./test/smoke $(TEST_TEAMCITY)
 
 $(QA_DESC): sous-qa-setup
 	./sous_qa_setup --compose-dir ./integration/test-registry/ --out-path=$(QA_DESC)
 
-setup-containers:  $(QA_DESC)
+setup-containers: $(QA_DESC)
 
 test-cli: setup-containers linux-build
 	rm -rf integration/raw_shell_output/0*
@@ -336,6 +369,7 @@ postgres-clean: postgres-stop
 	install-fpm install-jfrog install-ggen install-build-tools legendary release \
 	semvertagchk test test-gofmt test-integration setup-containers test-unit \
 	reject-wip wip staticcheck postgres-start postgres-stop postgres-connect \
-	postgres-clean postgres-create-testdb build-debug homebrew install-gotags
+	postgres-clean postgres-create-testdb build-debug homebrew install-gotags \
+	install-debug-linux install-debug-darwin
 
 #liquibase --url jdbc:postgresql://127.0.0.1:6543/sous --changeLogFile=database/changelog.xml update

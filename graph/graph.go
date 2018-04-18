@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"database/sql"
 	"fmt"
 	"io"
 	"io/ioutil" //ok
@@ -46,7 +47,10 @@ type (
 	ProfilingServer bool
 
 	// LocalSousConfig is the configuration for Sous.
-	LocalSousConfig struct{ *config.Config }
+	LocalSousConfig struct {
+		*config.Config
+		LogSink LogSink
+	}
 	// LocalWorkDir is the user's current working directory when they invoke Sous.
 	LocalWorkDir string
 	// LocalWorkDirShell is a shell for working in the user's current working
@@ -64,6 +68,8 @@ type (
 	LocalDockerClient struct{ docker_registry.Client }
 	// HTTPClient wraps the sous.HTTPClient interface
 	HTTPClient struct{ restful.HTTPClient }
+	// ClientBundle collects HTTPClients per server.
+	ClientBundle map[string]restful.HTTPClient
 	// ClusterSpecificHTTPClient wraps the sous.HTTPClient interface
 	ClusterSpecificHTTPClient struct{ restful.HTTPClient }
 	// ServerHandler wraps the http.Handler for the sous server
@@ -72,6 +78,9 @@ type (
 	MetricsHandler struct{ http.Handler }
 	// LogSink wraps logging.LogSink
 	LogSink struct{ logging.LogSink }
+	// DefaultLogSink depends only on a semv.Version so can be used prior to reading
+	// any configuration.
+	DefaultLogSink struct{ logging.LogSink }
 	// ClusterManager simply wraps the sous.ClusterManager interface
 	ClusterManager struct{ sous.ClusterManager }
 	// StateManager simply wraps the sous.StateManager interface
@@ -95,6 +104,9 @@ type (
 	// userSelectedOTPLDeployManifest is a set of otpl-deploy configured deploy
 	// specs that the user has explicitly selected. (May be empty.)
 	userSelectedOTPLDeployManifest struct{ *sous.Manifest }
+	// TargetDeploymentID is the manifest ID being targeted, after resolving all
+	// context and flags.
+	TargetDeploymentID sous.DeploymentID
 	// TargetManifestID is the manifest ID being targeted, after resolving all
 	// context and flags.
 	TargetManifestID sous.ManifestID
@@ -105,6 +117,13 @@ type (
 		Error error
 		*sous.ManifestID
 		*sous.SourceContext
+	}
+	// ServerListData collects responses from /servers
+	ServerListData struct {
+		Servers []struct {
+			ClusterName string
+			URL         string
+		}
 	}
 )
 
@@ -171,6 +190,7 @@ func AddLogs(graph adder) {
 	graph.Add(
 		newLogSet,
 		newLogSink,
+		newDefaultLogSink,
 		newMetricsHandler,
 	)
 }
@@ -216,6 +236,7 @@ func AddNetwork(graph adder) {
 	graph.Add(
 		newDockerClient,
 		newServerHandler,
+		newHTTPStateManager,
 	)
 }
 
@@ -266,6 +287,7 @@ func AddInternals(graph adder) {
 		newUserSelectedOTPLDeploySpecs,
 		newRefinedResolveFilter,
 		newTargetManifestID,
+		newTargetDeploymentID,
 		newResolveFilter,
 		newResolver,
 		newAutoResolver,
@@ -273,6 +295,8 @@ func AddInternals(graph adder) {
 		newStatusPoller,
 		newServerComponentLocator,
 		newHTTPClient,
+		newServerListData,
+		newHTTPClientBundle,
 		newClusterSpecificHTTPClient,
 		NewR11nQueueSet,
 	)
@@ -325,6 +349,10 @@ func newLogSet(v semv.Version, config PossiblyInvalidConfig) (*logging.LogSet, e
 	return ls, nil
 }
 
+func newDefaultLogSink(v semv.Version) DefaultLogSink {
+	return DefaultLogSink{LogSink: logging.NewLogSet(v, "", "", os.Stderr)}
+}
+
 func newLogSink(v *config.Verbosity, set *logging.LogSet) LogSink {
 	//set.Configure(v.LoggingConfiguration())
 	v.UpdateLevel(set)
@@ -370,11 +398,11 @@ func newSourceContextDiscovery(sh LocalWorkDirShell, ls LogSink) *SourceContextD
 	detected := c.NearestTagName
 	annotated, err := g.Client.NearestAnnotatedTag()
 
-	logging.Deliver(logging.NewGenericMsg(logging.InformationLevel, "source context tag", map[string]interface{}{
+	logging.Deliver(ls, logging.NewGenericMsg(logging.InformationLevel, "source context tag", map[string]interface{}{
 		"detected-tag":              detected,
 		"nearest-annotated-tag":     annotated,
 		"detected-equals-annotated": (detected == annotated),
-	}, false), ls)
+	}, false))
 
 	return &SourceContextDiscovery{
 		Error:         err,
@@ -413,7 +441,7 @@ func newBuildContext(wd LocalWorkDirShell, c *sous.SourceContext) *sous.BuildCon
 	return &sous.BuildContext{Sh: sh, Source: *c}
 }
 
-func newBuildConfig(f *config.DeployFilterFlags, p *config.PolicyFlags, bc *sous.BuildContext) *sous.BuildConfig {
+func newBuildConfig(ls LogSink, f *config.DeployFilterFlags, p *config.PolicyFlags, bc *sous.BuildContext) *sous.BuildConfig {
 	offset := f.Offset
 	if offset == "" {
 		offset = bc.Source.OffsetDir
@@ -426,18 +454,20 @@ func newBuildConfig(f *config.DeployFilterFlags, p *config.PolicyFlags, bc *sous
 		Strict:     p.Strict,
 		ForceClone: p.ForceClone,
 		Context:    bc,
+		LogSink:    ls,
 	}
 	cfg.Resolve()
 
 	return &cfg
 }
 
-func newBuildManager(bc *sous.BuildConfig, sl sous.Selector, lb sous.Labeller, rg sous.Registrar) *sous.BuildManager {
+func newBuildManager(ls LogSink, bc *sous.BuildConfig, sl sous.Selector, lb sous.Labeller, rg sous.Registrar) *sous.BuildManager {
 	return &sous.BuildManager{
 		BuildConfig: bc,
 		Selector:    sl,
 		Labeller:    lb,
 		Registrar:   rg,
+		LogSink:     ls,
 	}
 }
 
@@ -521,10 +551,6 @@ func newDeployer(dryrun DryrunOption, nc lazyNameCache, ls LogSink, c LocalSousC
 	), nil
 }
 
-func newDockerClient(ls LogSink) LocalDockerClient {
-	return LocalDockerClient{docker_registry.NewClient(ls.Child("docker-client"))}
-}
-
 func newServerHandler(g *SousGraph, ComponentLocator server.ComponentLocator, metrics MetricsHandler, log LogSink) ServerHandler {
 	var handler http.Handler
 
@@ -539,40 +565,37 @@ func newServerHandler(g *SousGraph, ComponentLocator server.ComponentLocator, me
 	return ServerHandler{handler}
 }
 
+func newServerListData(c HTTPClient) (ServerListData, error) {
+	serverList := ServerListData{}
+	_, err := c.Retrieve("./servers", nil, &serverList, nil)
+	return serverList, err
+}
+
+func newHTTPClientBundle(serverList ServerListData, log LogSink) (ClientBundle, error) {
+	bundle := ClientBundle{}
+	for _, s := range serverList.Servers {
+		client, err := restful.NewClient(s.URL, log.Child(s.ClusterName+".http-client"))
+		if err != nil {
+			return nil, err
+		}
+
+		bundle[s.ClusterName] = client
+	}
+	return bundle, nil
+}
+
 // newClusterSpecificHTTPClient returns an HTTP client configured to talk to
 // the cluster defined by DeployFilterFlags.
 // Otherwise it returns nil, and emits some warnings.
-func newClusterSpecificHTTPClient(c HTTPClient, dff *config.DeployFilterFlags, log LogSink) (*ClusterSpecificHTTPClient, error) {
-
-	// These 2 types are copied from server/data.go
-	type NameData struct {
-		ClusterName string
-		URL         string
-	}
-	type ServerListData struct {
-		Servers []NameData
-	}
-
-	serverList := ServerListData{}
-	_, err := c.Retrieve("./servers", nil, &serverList, nil)
+func newClusterSpecificHTTPClient(clients ClientBundle, rf *sous.ResolveFilter, log LogSink) (*ClusterSpecificHTTPClient, error) {
+	cluster, err := rf.Cluster.Value()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("cluster: %s", err) // errors.Wrapf && cli don't play nice
 	}
-	cluster := dff.Cluster
-	messages.ReportLogFieldsMessageToConsole("Server List retrieved", logging.ExtraDebug1Level, log, serverList, cluster)
-	var serverURL string
-	for _, s := range serverList.Servers {
-		if s.ClusterName == cluster {
-			serverURL = s.URL
-		}
-	}
-	if serverURL == "" {
+
+	cl, has := clients[cluster]
+	if !has {
 		return nil, fmt.Errorf("no server for cluster %q", cluster)
-	}
-	messages.ReportLogFieldsMessageToConsole("Using server", logging.ExtraDebug1Level, log, serverURL)
-	cl, err := restful.NewClient(serverURL, log.Child("http-client"))
-	if err != nil {
-		return nil, err
 	}
 	return &ClusterSpecificHTTPClient{HTTPClient: cl}, nil
 }
@@ -591,12 +614,15 @@ func newHTTPClient(c LocalSousConfig, user sous.User, srvr ServerHandler, log Lo
 	return HTTPClient{HTTPClient: cl}, err
 }
 
-func newServerStateManager(c LocalSousConfig, log LogSink) *ServerStateManager {
+func newServerStateManager(c LocalSousConfig, rf *sous.ResolveFilter, log LogSink) *ServerStateManager {
 	var secondary sous.StateManager
 	db, err := c.Database.DB()
 	if err == nil {
-		secondary = storage.NewPostgresStateManager(db, log.Child("database"))
-	} else {
+		secondary, err = newDistributedStorage(db, c, rf, log)
+	}
+
+	// Either DB not configured, or problems setting up dispatcher...
+	if err != nil {
 		logging.ReportError(log, errors.Wrapf(err, "connecting to database with %#v", c.Database))
 		secondary = storage.NewLogOnlyStateManager(log.Child("database"))
 	}
@@ -607,16 +633,41 @@ func newServerStateManager(c LocalSousConfig, log LogSink) *ServerStateManager {
 	return &ServerStateManager{StateManager: duplex}
 }
 
+func newDistributedStorage(db *sql.DB, c LocalSousConfig, rf *sous.ResolveFilter, log LogSink) (sous.StateManager, error) {
+	localName, err := rf.Cluster.Value()
+	if err != nil {
+		return nil, fmt.Errorf("cluster: %s", err) // errors.Wrapf && cli don't play nice
+	}
+
+	local := storage.NewPostgresStateManager(db, log.Child("database"))
+	list := ClientBundle{}
+	clusterNames := []string{}
+	for n, u := range c.SiblingURLs {
+		cl, err := restful.NewClient(u, log.Child(n+".http-client"))
+		if err != nil {
+			return nil, err
+		}
+		list[n] = cl
+		clusterNames = append(clusterNames, n)
+	}
+	hsm := sous.NewHTTPStateManager(list[localName], list)
+	return sous.NewDispatchStateManager(localName, clusterNames, local, hsm), nil
+}
+
 // newStateManager returns a wrapped sous.HTTPStateManager if cl is not nil.
 // Otherwise it returns a wrapped sous.GitStateManager, for local git based GDM.
 // If it returns a sous.GitStateManager, it emits a warning log.
-func newStateManager(cl HTTPClient, c LocalSousConfig, log LogSink) *StateManager {
+func newStateManager(cl HTTPClient, c LocalSousConfig, bundle ClientBundle, rf *sous.ResolveFilter, log LogSink) *StateManager {
 	if c.Server == "" {
-		messages.ReportLogFieldsMessageToConsole("Using local state stored at", logging.WarningLevel, log, c.StateLocation)
-		return &StateManager{StateManager: newServerStateManager(c, log).StateManager}
+		messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Using local state stored at %s", c.StateLocation), logging.WarningLevel, log, c.StateLocation)
+		return &StateManager{StateManager: newServerStateManager(c, rf, log).StateManager}
 	}
-	hsm := sous.NewHTTPStateManager(cl)
+	hsm := sous.NewHTTPStateManager(cl, bundle)
 	return &StateManager{StateManager: hsm}
+}
+
+func newHTTPStateManager(cl HTTPClient, bundle ClientBundle) *sous.HTTPStateManager {
+	return sous.NewHTTPStateManager(cl, bundle)
 }
 
 func newStatusPoller(cl HTTPClient, rf *RefinedResolveFilter, user sous.User, logs LogSink) *sous.StatusPoller {

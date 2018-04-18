@@ -8,7 +8,7 @@ type kafkaSendErrorMessage struct {
 func reportKafkaSendError(logsink LogSink, err error) {
 	msg := newKafkaSendErrorMessage(err)
 	msg.callerInfo.ExcludeMe()
-	Deliver(msg, logsink)
+	Deliver(logsink, msg)
 }
 
 func newKafkaSendErrorMessage(err error) *kafkaSendErrorMessage {
@@ -27,7 +27,7 @@ func (msg *kafkaSendErrorMessage) Message() string {
 }
 
 func (msg *kafkaSendErrorMessage) EachField(f FieldReportFn) {
-	f("@loglov3-otl", "sous-generic-v1")
+	f("@loglov3-otl", SousGenericV1)
 	msg.callerInfo.EachField(f)
 	f("error", msg.err.Error())
 }

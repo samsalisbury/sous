@@ -110,7 +110,7 @@ func reportVolumeMessage(msg string, a Volumes, b Volumes, log logging.LogSink, 
 		isDebugMsg:   debugStmt,
 		isConsoleMsg: console,
 	}
-	logging.Deliver(msgLog, log)
+	logging.Deliver(log, msgLog)
 }
 
 func (msg volumeMessage) WriteToConsole(console io.Writer) {
@@ -137,6 +137,6 @@ func (msg volumeMessage) composeMsg() string {
 }
 
 func (msg volumeMessage) EachField(f logging.FieldReportFn) {
-	f("@loglov3-otl", "sous-generic-v1")
+	f("@loglov3-otl", logging.SousGenericV1)
 	msg.CallerInfo.EachField(f)
 }

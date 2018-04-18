@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/opentable/sous/dto"
 	sous "github.com/opentable/sous/lib"
 )
 
@@ -342,7 +343,7 @@ func TestGETR11nHandler_Exchange_afterprocessing(t *testing.T) {
 
 type R11nHandlerAsserts struct{}
 
-func (a R11nHandlerAsserts) wantNilResolution(t *testing.T, r r11nResponse) {
+func (a R11nHandlerAsserts) wantNilResolution(t *testing.T, r dto.R11nResponse) {
 	t.Helper()
 	if r.Resolution != nil {
 		t.Errorf("want nil Resolution; got %#v", r.Resolution)
@@ -361,7 +362,7 @@ func (a R11nHandlerAsserts) wantStringReponse(t *testing.T, body interface{}, wa
 	}
 }
 
-func (a R11nHandlerAsserts) wantStandardResolution(t *testing.T, r r11nResponse) {
+func (a R11nHandlerAsserts) wantStandardResolution(t *testing.T, r dto.R11nResponse) {
 	t.Helper()
 	if r.Resolution == nil {
 		t.Errorf("got nil resolution")
@@ -389,19 +390,32 @@ func (a R11nHandlerAsserts) wantStatus200(t *testing.T, gotStatus int) {
 	}
 }
 
-func (a R11nHandlerAsserts) wantR11nResponse(t *testing.T, body interface{}) r11nResponse {
-	r, ok := body.(r11nResponse)
+func (a R11nHandlerAsserts) wantR11nResponse(t *testing.T, body interface{}) dto.R11nResponse {
+	r, ok := body.(dto.R11nResponse)
 	if !ok {
 		t.Fatal("got a %T; want a r11nResponse", body)
 	}
 	return r
 }
 
-func (a R11nHandlerAsserts) wantQueuePos(t *testing.T, r r11nResponse, wantPos int) {
+func (a R11nHandlerAsserts) wantQueuePos(t *testing.T, r dto.R11nResponse, wantPos int) {
 	t.Helper()
 	gotPos := r.QueuePosition
-	if gotPos != wantPos {
-		t.Errorf("got queue position %d; want %d", gotPos, wantPos)
+	switch {
+	case wantPos < 0:
+		if gotPos >= 0 {
+			t.Errorf("want queue pos < 0, got %d", gotPos)
+		}
+	case wantPos == 0:
+		if gotPos != 0 {
+			t.Errorf("want queue pos == 0, got %d", gotPos)
+		}
+	case wantPos > 0:
+		if gotPos <= 0 {
+			t.Errorf("want queue pos > 0, got %d", gotPos)
+		}
+	default:
+		panic("I don't understand how numbers work")
 	}
 }
 
@@ -476,7 +490,7 @@ func TestGETR11nHandler_Exchange_wait_success(t *testing.T) {
 		if got.status != wantStatus {
 			t.Errorf("got status %d; want %d", got.status, wantStatus)
 		}
-		gotBody := got.body.(r11nResponse)
+		gotBody := got.body.(dto.R11nResponse)
 		if gotBody.Resolution == nil {
 			t.Fatalf("unexpected nil Resolution")
 		}

@@ -11,7 +11,7 @@ func TestInvocationMessage(t *testing.T) {
 	msg := newInvocationMessage([]string{"testing", "test"}, time.Now())
 
 	fixedFields := map[string]interface{}{
-		"@loglov3-otl": "sous-cli-v1",
+		"@loglov3-otl": logging.SousCliV1,
 		"arguments":    `["testing" "test"]`,
 	}
 
@@ -47,7 +47,7 @@ func TestResultMessage(t *testing.T) {
 	*/
 
 	fixedFields := map[string]interface{}{
-		"@loglov3-otl": "sous-cli-v1",
+		"@loglov3-otl": logging.SousCliV1,
 		"arguments":    `["testing" "test"]`,
 		"exit-code":    1,
 	}

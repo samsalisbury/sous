@@ -135,7 +135,7 @@ func reportDiskStateManagerMessage(msg string, f []sous.Flaw, err error, log log
 		flawsMessage: sous.FlawMessage{Flaws: f},
 		debug:        isDebug,
 	}
-	logging.Deliver(msgLog, log)
+	logging.Deliver(log, msgLog)
 }
 
 func (msg diskStateManagerMessage) WriteToConsole(console io.Writer) {
@@ -171,7 +171,7 @@ func (msg diskStateManagerMessage) composeMsg() string {
 }
 
 func (msg diskStateManagerMessage) EachField(f logging.FieldReportFn) {
-	f("@loglov3-otl", "sous-generic-v1")
+	f("@loglov3-otl", logging.SousGenericV1)
 
 	flaws := msg.flawsMessage.ReturnFlawMsg()
 

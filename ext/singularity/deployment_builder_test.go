@@ -14,22 +14,10 @@ import (
 )
 
 type (
-	fakeSingClient struct {
-		cannedAnswer *dtos.SingularityDeployHistory
-	}
-
 	fakeImageLabeller struct {
 		cannedAnswer map[string]string
 	}
 )
-
-func (fake *fakeSingClient) GetDeploy(requestID string, deployID string) (*dtos.SingularityDeployHistory, error) {
-	return fake.cannedAnswer, nil
-}
-
-func (fake *fakeSingClient) GetDeploys(requestID string, count, page int32) (dtos.SingularityDeployHistoryList, error) {
-	return dtos.SingularityDeployHistoryList{fake.cannedAnswer}, nil
-}
 
 func (fake *fakeImageLabeller) ImageLabels(imageName string) (labels map[string]string, err error) {
 	return fake.cannedAnswer, nil
@@ -37,14 +25,23 @@ func (fake *fakeImageLabeller) ImageLabels(imageName string) (labels map[string]
 
 func TestBuildDeployment_errors(t *testing.T) {
 	url := "http://example.com/singularity"
-	reqParent := &dtos.SingularityRequestParent{}
+	reqParent := &dtos.SingularityRequestParent{
+		RequestDeployState: &dtos.SingularityRequestDeployState{},
+	}
 	testClusters := sous.Clusters{
 		"left":  &sous.Cluster{Name: "left", BaseURL: url},
 		"right": &sous.Cluster{Name: "right", BaseURL: url},
 	}
-	fakeSing := &fakeSingClient{
-		cannedAnswer: &dtos.SingularityDeployHistory{},
+	fakeSing, c := newSingClientSpy()
+
+	cannedRequest := &dtos.SingularityRequestParent{
+		RequestDeployState: &dtos.SingularityRequestDeployState{},
 	}
+	c.cannedRequest(cannedRequest)
+
+	cannedDep := &dtos.SingularityDeployHistory{}
+	c.cannedDeploy(cannedDep)
+
 	fakeReg := &fakeImageLabeller{
 		cannedAnswer: map[string]string{},
 	}
@@ -72,19 +69,19 @@ func TestBuildDeployment_errors(t *testing.T) {
 	_, err = BuildDeployment(fakeReg, testClusters, req, log)
 	assert.Error(t, err)
 
-	fakeSing.cannedAnswer.Deploy = &dtos.SingularityDeploy{}
+	cannedDep.Deploy = &dtos.SingularityDeploy{}
 	_, err = BuildDeployment(fakeReg, testClusters, req, log)
 	assert.Error(t, err)
 
-	fakeSing.cannedAnswer.Deploy.ContainerInfo = &dtos.SingularityContainerInfo{}
+	cannedDep.Deploy.ContainerInfo = &dtos.SingularityContainerInfo{}
 	_, err = BuildDeployment(fakeReg, testClusters, req, log)
 	assert.Error(t, err)
 
-	fakeSing.cannedAnswer.Deploy.ContainerInfo.Type = "DOCKER"
+	cannedDep.Deploy.ContainerInfo.Type = "DOCKER"
 	_, err = BuildDeployment(fakeReg, testClusters, req, log)
 	assert.Error(t, err)
 
-	fakeSing.cannedAnswer.Deploy.ContainerInfo.Docker = &dtos.SingularityDockerInfo{Image: "image-name"}
+	cannedDep.Deploy.ContainerInfo.Docker = &dtos.SingularityDockerInfo{Image: "image-name"}
 	_, err = BuildDeployment(fakeReg, testClusters, req, log)
 	assert.Error(t, err)
 
@@ -103,7 +100,7 @@ func TestBuildDeployment_errors(t *testing.T) {
 	_, err = BuildDeployment(fakeReg, testClusters, req, log)
 	assert.Error(t, err)
 
-	fakeSing.cannedAnswer.Deploy.Metadata = map[string]string{
+	cannedDep.Deploy.Metadata = map[string]string{
 		"com.opentable.sous.clustername": "left",
 		"com.opentable.sous.flavor":      "vanilla",
 	}
@@ -111,7 +108,7 @@ func TestBuildDeployment_errors(t *testing.T) {
 	_, err = BuildDeployment(fakeReg, testClusters, req, log)
 	assert.Error(t, err)
 
-	fakeSing.cannedAnswer.Deploy.Resources = &dtos.Resources{}
+	cannedDep.Deploy.Resources = &dtos.Resources{}
 	_, err = BuildDeployment(fakeReg, testClusters, req, log)
 	assert.Error(t, err)
 
@@ -119,7 +116,7 @@ func TestBuildDeployment_errors(t *testing.T) {
 	_, err = BuildDeployment(fakeReg, testClusters, req, log)
 	assert.Error(t, err)
 
-	fakeSing.cannedAnswer.DeployMarker = &dtos.SingularityDeployMarker{}
+	cannedDep.DeployMarker = &dtos.SingularityDeployMarker{}
 	_, err = BuildDeployment(fakeReg, testClusters, req, log)
 	assert.NoError(t, err)
 }
@@ -147,39 +144,45 @@ func TestBuildDeployment(t *testing.T) {
 
 	log, _ := logging.NewLogSinkSpy()
 
-	fakeSing := &fakeSingClient{
-		cannedAnswer: &dtos.SingularityDeployHistory{
-			DeployResult: &dtos.SingularityDeployResult{
-				DeployState: dtos.SingularityDeployResultDeployStateSUCCEEDED,
+	cannedRequest := &dtos.SingularityRequestParent{
+		RequestDeployState: &dtos.SingularityRequestDeployState{},
+	}
+
+	cannedDep := &dtos.SingularityDeployHistory{
+		DeployResult: &dtos.SingularityDeployResult{
+			DeployState: dtos.SingularityDeployResultDeployStateSUCCEEDED,
+		},
+		DeployMarker: &dtos.SingularityDeployMarker{},
+		Deploy: &dtos.SingularityDeploy{
+			Metadata: map[string]string{
+				"com.opentable.sous.clustername": "left",
+				"com.opentable.sous.flavor":      "vanilla",
 			},
-			DeployMarker: &dtos.SingularityDeployMarker{},
-			Deploy: &dtos.SingularityDeploy{
-				Metadata: map[string]string{
-					"com.opentable.sous.clustername": "left",
-					"com.opentable.sous.flavor":      "vanilla",
-				},
 
-				Healthcheck: &dtos.HealthcheckOptions{
-					Uri: "/health-report",
-					ResponseTimeoutSeconds: 350,
-					StartupTimeoutSeconds:  700,
-				},
+			Healthcheck: &dtos.HealthcheckOptions{
+				Uri: "/health-report",
+				ResponseTimeoutSeconds: 350,
+				StartupTimeoutSeconds:  700,
+			},
 
-				ContainerInfo: &dtos.SingularityContainerInfo{
-					Type:   "DOCKER",
-					Docker: &dtos.SingularityDockerInfo{Image: "image-name"},
-					Volumes: dtos.SingularityVolumeList{
-						&dtos.SingularityVolume{
-							HostPath:      "hostpath",
-							ContainerPath: "containerpath",
-							Mode:          dtos.SingularityVolumeSingularityDockerVolumeModeRW,
-						},
+			ContainerInfo: &dtos.SingularityContainerInfo{
+				Type:   "DOCKER",
+				Docker: &dtos.SingularityDockerInfo{Image: "image-name"},
+				Volumes: dtos.SingularityVolumeList{
+					&dtos.SingularityVolume{
+						HostPath:      "hostpath",
+						ContainerPath: "containerpath",
+						Mode:          dtos.SingularityVolumeSingularityDockerVolumeModeRW,
 					},
 				},
-				Resources: &dtos.Resources{},
 			},
+			Resources: &dtos.Resources{},
 		},
 	}
+	fakeSing, fsc := newSingClientSpy()
+
+	fsc.cannedRequest(cannedRequest)
+	fsc.cannedDeploy(cannedDep)
 
 	req.Sing = fakeSing
 
@@ -221,6 +224,8 @@ func TestBuildDeployment_failed_deploy(t *testing.T) {
 	req := SingReq{
 		SourceURL: url,
 		ReqParent: &dtos.SingularityRequestParent{
+			State: dtos.SingularityRequestParentRequestStateSYSTEM_COOLDOWN,
+
 			RequestDeployState: &dtos.SingularityRequestDeployState{
 				ActiveDeploy: &dtos.SingularityDeployMarker{},
 			},
@@ -232,34 +237,40 @@ func TestBuildDeployment_failed_deploy(t *testing.T) {
 		},
 	}
 
-	fakeSing := &fakeSingClient{
-		cannedAnswer: &dtos.SingularityDeployHistory{
-			//DEPLOY_RESULT=$(jq -r .deployResult.deployState < $DEPLOY_STATE)
-			//$DEPLOY_RESULT = SUCCEEDED
-			DeployResult: &dtos.SingularityDeployResult{
-				DeployState: dtos.SingularityDeployResultDeployStateFAILED,
+	cannedRequest := &dtos.SingularityRequestParent{
+		RequestDeployState: &dtos.SingularityRequestDeployState{},
+	}
+
+	cannedDep := &dtos.SingularityDeployHistory{
+		//DEPLOY_RESULT=$(jq -r .deployResult.deployState < $DEPLOY_STATE)
+		//$DEPLOY_RESULT = SUCCEEDED
+		DeployResult: &dtos.SingularityDeployResult{
+			DeployState: dtos.SingularityDeployResultDeployStateFAILED,
+		},
+		DeployMarker: &dtos.SingularityDeployMarker{},
+		Deploy: &dtos.SingularityDeploy{
+			Metadata: map[string]string{
+				"com.opentable.sous.clustername": "left",
+				"com.opentable.sous.flavor":      "",
 			},
-			DeployMarker: &dtos.SingularityDeployMarker{},
-			Deploy: &dtos.SingularityDeploy{
-				Metadata: map[string]string{
-					"com.opentable.sous.clustername": "left",
-					"com.opentable.sous.flavor":      "",
-				},
-				ContainerInfo: &dtos.SingularityContainerInfo{
-					Type:   "DOCKER",
-					Docker: &dtos.SingularityDockerInfo{Image: "image-name"},
-					Volumes: dtos.SingularityVolumeList{
-						&dtos.SingularityVolume{
-							HostPath:      "hostpath",
-							ContainerPath: "containerpath",
-							Mode:          dtos.SingularityVolumeSingularityDockerVolumeModeRW,
-						},
+			ContainerInfo: &dtos.SingularityContainerInfo{
+				Type:   "DOCKER",
+				Docker: &dtos.SingularityDockerInfo{Image: "image-name"},
+				Volumes: dtos.SingularityVolumeList{
+					&dtos.SingularityVolume{
+						HostPath:      "hostpath",
+						ContainerPath: "containerpath",
+						Mode:          dtos.SingularityVolumeSingularityDockerVolumeModeRW,
 					},
 				},
-				Resources: &dtos.Resources{},
 			},
+			Resources: &dtos.Resources{},
 		},
 	}
+
+	fakeSing, fsc := newSingClientSpy()
+	fsc.cannedRequest(cannedRequest)
+	fsc.cannedDeploy(cannedDep)
 
 	req.Sing = fakeSing
 
@@ -282,7 +293,7 @@ func TestBuildDeployment_failed_deploy(t *testing.T) {
 	expected.ClusterName = "left"
 
 	assert.Equal(t, actual.ClusterName, expected.ClusterName)
-	assert.Equal(t, actual.Status, expected.Status)
+	assert.Equal(t, actual.Status, expected.Status, "Expected %s got %s", expected.Status, actual.Status)
 }
 
 func TestBuildingRequestID(t *testing.T) {
@@ -328,6 +339,7 @@ func TestBuildDeployment_determineDeployStatus_pendingonly(t *testing.T) {
 	db := &deploymentBuilder{
 		req: SingReq{
 			ReqParent: &dtos.SingularityRequestParent{
+				State: dtos.SingularityRequestParentRequestStateACTIVE,
 				RequestDeployState: &dtos.SingularityRequestDeployState{
 					PendingDeploy: &depMarker,
 				},
@@ -355,6 +367,7 @@ func TestBuildDeployment_determineDeployStatus_activeAndPending(t *testing.T) {
 	db := &deploymentBuilder{
 		req: SingReq{
 			ReqParent: &dtos.SingularityRequestParent{
+				State: dtos.SingularityRequestParentRequestStateACTIVE,
 				RequestDeployState: &dtos.SingularityRequestDeployState{
 					PendingDeploy: &depMarker,
 					ActiveDeploy:  &otherDepMarker,

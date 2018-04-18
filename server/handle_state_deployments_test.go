@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/nyarly/spies"
+	"github.com/opentable/sous/dto"
 	sous "github.com/opentable/sous/lib"
 )
 
@@ -29,7 +30,7 @@ func TestGetStateDeployments(t *testing.T) {
 		t.Fatalf("Expected 200 status, got %d", status)
 	}
 
-	gdm, is := data.(GDMWrapper)
+	gdm, is := data.(dto.GDMWrapper)
 	if !is {
 		t.Fatalf("Expected response body to be a GDMWrapper, was %T", data)
 	}
@@ -45,7 +46,7 @@ func TestGetStateDeployments(t *testing.T) {
 
 func TestPutStateDeployments(t *testing.T) {
 	cm, ctrl := sous.NewClusterManagerSpy()
-	gdm := GDMWrapper{
+	gdm := dto.GDMWrapper{
 		Deployments: []*sous.Deployment{
 			sous.DeploymentFixture("sequenced-repo"),
 			sous.DeploymentFixture("sequenced-repo"),

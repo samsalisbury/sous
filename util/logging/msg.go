@@ -27,7 +27,7 @@ func ReportMsg(logger LogSink, lvl Level, msg string, console ...bool) {
 	}
 	m := NewGenericMsg(lvl, msg, nil, useConsole)
 	m.ExcludeMe()
-	Deliver(m, logger)
+	Deliver(logger, m)
 }
 
 func (msg *genericMsg) WriteToConsole(console io.Writer) {
@@ -53,10 +53,10 @@ func NewGenericMsg(lvl Level, msg string, fields map[string]interface{}, console
 func (msg *genericMsg) EachField(f FieldReportFn) {
 	// XXX belongs maybe in the top level structured message engine
 	if _, hasSchema := msg.fields["@loglov3-otl"]; !hasSchema {
-		f("@loglov3-otl", "sous-generic-v1")
+		f("@loglov3-otl", SousGenericV1)
 	}
 	for k, v := range msg.fields {
-		f(k, v)
+		f(FieldName(k), v)
 	}
 	msg.CallerInfo.EachField(f)
 }

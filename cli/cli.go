@@ -141,7 +141,7 @@ func NewSousCLI(di *graph.SousGraph, s *Sous, out, errout io.Writer) (*CLI, erro
 			err = errors.Cause(err)
 			causeStr := err.Error()
 			if originalErr != causeStr {
-				logging.Log.Debugf("%v\n", originalErr)
+				messages.ReportLogFieldsMessage("Error occurred", logging.DebugLevel, logging.Log, originalErr)
 			}
 		}
 		return EnsureErrorResult(err)

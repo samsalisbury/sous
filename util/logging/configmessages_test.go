@@ -24,7 +24,7 @@ func TestGraphiteConfigMessage(t *testing.T) {
 	AssertMessageFields(t, msg, StandardVariableFields, map[string]interface{}{
 		"graphite-flush-interval":    int64(30000000),
 		"graphite-server-address":    "169.169.13.13:3636",
-		"@loglov3-otl":               "sous-graphite-config-v1",
+		"@loglov3-otl":               SousGraphiteConfigV1,
 		"sous-successful-connection": true,
 	})
 

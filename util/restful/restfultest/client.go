@@ -5,6 +5,7 @@ import (
 
 	"github.com/nyarly/spies"
 	"github.com/opentable/sous/util/restful"
+	"github.com/pkg/errors"
 )
 
 type (
@@ -23,12 +24,12 @@ type (
 		HTTPClient interface {
 			Create(urlPath string, qParms map[string]string, rqBody interface{}, headers map[string]string) error
 			Retrieve(urlPath string, qParms map[string]string, rzBody interface{}, headers map[string]string) (Updater, error)
-			Delete(urlPath string, qParms map[string]string, from *resourceState, headers map[string]string) error
 		}
 
 		// An Updater captures the state of a retrieved resource so that it can be updated later.
 		Updater interface {
 			Update(params map[string]string, body Comparable, headers map[string]string) error
+			Delete(urlPath string, qParms map[string]string, from *resourceState, headers map[string]string) error
 		}
 	*/
 )
@@ -75,7 +76,10 @@ func (c *HTTPClientSpy) Retrieve(url string, ps map[string]string, bd interface{
 	res := c.Called(url, ps, bd, hs)
 	roundtrip(res.Get(0), bd)
 
-	return res.Get(1).(restful.UpdateDeleter), res.Error(2)
+	if res.Present() {
+		return res.Get(1).(restful.UpdateDeleter), res.Error(2)
+	}
+	return nil, errors.Errorf("404: No Spy result defined for %s", url)
 }
 
 // Update is a spy implementation of the restful.UpdateDeleter.Update method

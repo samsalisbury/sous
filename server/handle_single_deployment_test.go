@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -78,7 +79,7 @@ func TestSingleDeploymentResource(t *testing.T) {
 }
 
 type psdhExScenario struct {
-	handler      restful.Exchanger
+	handler      *PUTSingleDeploymentHandler
 	stateManager *sous.DummyStateManager
 	gdm          *sous.State
 	response     interface{}
@@ -137,7 +138,7 @@ func (scn psdhExScenario) assertR11nQueued(t *testing.T) {
 	t.Helper()
 	calls := scn.queueSet.CallsTo("Push")
 	if len(calls) == 0 {
-		t.Errorf("Expected that a recitification would be queued, but none were.")
+		t.Errorf("Expected that a rectification would be queued, but none were.")
 	}
 }
 
@@ -146,7 +147,7 @@ func (scn psdhExScenario) assertNoR11nQueued(t *testing.T) {
 	piecalls := scn.queueSet.CallsTo("PushIfEmpty")
 	pcalls := scn.queueSet.CallsTo("Push")
 	if len(piecalls) != 0 || len(pcalls) != 0 {
-		t.Errorf("Expected that no recitification would be queued, but one was.")
+		t.Errorf("Expected that no rectification would be queued, but one was.")
 	}
 }
 
@@ -185,26 +186,27 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 
 		rw := httptest.NewRecorder()
 
-		psd := r.Put(rm, rw, req, nil)
+		psd := r.Put(rm, rw, req, nil).(*PUTSingleDeploymentHandler)
 
 		return &psdhExScenario{
 			handler:      psd,
 			stateManager: sm,
 			queueSet:     qsCtrl,
-			gdm:          psd.(*PUTSingleDeploymentHandler).GDM,
+			gdm:          psd.GDM,
 		}
 	}
 
-	didQuery := func(repo, offset, cluster, flavor string) map[string]string {
+	didQuery := func(repo, offset, cluster, flavor, force string) map[string]string {
 		return map[string]string{
 			"repo":    repo,
 			"offset":  offset,
 			"cluster": cluster,
 			"flavor":  flavor,
+			"force":   force,
 		}
 	}
 
-	makeBodyAndQuery := func(t *testing.T) (*SingleDeploymentBody, map[string]string) {
+	makeBodyAndQuery := func(t *testing.T, force bool) (*SingleDeploymentBody, map[string]string) {
 		t.Helper()
 		m, ok := sous.DefaultStateFixture().Manifests.Get(
 			sous.ManifestID{
@@ -222,9 +224,10 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 		if !ok {
 			t.Fatal("Setup failed to get DeploySpec.")
 		}
-		query := didQuery(m.Source.Repo, m.Source.Dir, "cluster1", m.Flavor)
+		fstr := strconv.FormatBool(force)
+		query := didQuery(m.Source.Repo, m.Source.Dir, "cluster1", m.Flavor, fstr)
 
-		return &SingleDeploymentBody{Deployment: dep}, query
+		return &SingleDeploymentBody{Deployment: &dep}, query
 	}
 
 	t.Run("query parsing error", func(t *testing.T) {
@@ -236,15 +239,15 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 	})
 
 	t.Run("body parsing error", func(t *testing.T) {
-		scenario := setup(nil, didQuery("github.com/opentable/something", "", "cluster", ""))
+		scenario := setup(nil, didQuery("github.com/opentable/something", "", "cluster", "", "false"))
 		scenario.exercise()
 
 		scenario.assertStatus(t, 400)
-		scenario.assertStringBody(t, `Invalid deployment`)
+		scenario.assertStringBody(t, `Body.Deployment is nil.`)
 	})
 
 	t.Run("no matching deployment", func(t *testing.T) {
-		body, query := makeBodyAndQuery(t)
+		body, query := makeBodyAndQuery(t, false)
 		scenario := setup(body, query)
 		mid := sous.ManifestID{
 			Source: sous.SourceLocation{
@@ -265,17 +268,8 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 		scenario.assertStringBody(t, wantErr)
 	})
 
-	t.Run("no change necessary", func(t *testing.T) {
-		body, query := makeBodyAndQuery(t)
-		scenario := setup(body, query)
-		scenario.exercise()
-
-		scenario.assertNoR11nQueued(t)
-		scenario.assertStatus(t, 200)
-	})
-
 	t.Run("change version", func(t *testing.T) {
-		body, query := makeBodyAndQuery(t)
+		body, query := makeBodyAndQuery(t, false)
 		body.Deployment.Version = semv.MustParse("2.0.0")
 		scenario := setup(body, query)
 		qr := &sous.QueuedR11n{
@@ -292,7 +286,7 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 	})
 
 	t.Run("WriteDeployment error", func(t *testing.T) {
-		body, query := makeBodyAndQuery(t)
+		body, query := makeBodyAndQuery(t, false)
 		body.Deployment.NumInstances = 7
 		scenario := setup(body, query)
 
@@ -305,7 +299,7 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 	})
 
 	t.Run("PushToQueueSet error", func(t *testing.T) {
-		body, query := makeBodyAndQuery(t)
+		body, query := makeBodyAndQuery(t, false)
 		body.Deployment.NumInstances = 7
 		scenario := setup(body, query)
 		scenario.queueSet.MatchMethod("Push", spies.AnyArgs, &sous.QueuedR11n{}, false)
@@ -315,4 +309,38 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 		scenario.assertStatus(t, 409)
 		scenario.assertStringBody(t, "Queue full, please try again later.")
 	})
+
+	t.Run("same_version_force_false", func(t *testing.T) {
+		body, query := makeBodyAndQuery(t, false)
+		body.Deployment.Version = semv.MustParse("1.0.0")
+		scenario := setup(body, query)
+		qr := &sous.QueuedR11n{
+			ID: "actionid1",
+		}
+		scenario.queueSet.MatchMethod("Push", spies.AnyArgs, qr, true)
+		scenario.exercise()
+
+		//GDM correct, returns 200
+		scenario.assertStatus(t, 200)
+	})
+
+	t.Run("same_version_force_true", func(t *testing.T) {
+		body, query := makeBodyAndQuery(t, true)
+
+		//same version, force true, redeploy
+		body.Deployment.Version = semv.MustParse("1.0.0")
+		scenario := setup(body, query)
+		qr := &sous.QueuedR11n{
+			ID: "actionid1",
+		}
+		scenario.queueSet.MatchMethod("Push", spies.AnyArgs, qr, true)
+		scenario.exercise()
+
+		scenario.assertStatus(t, 201)
+		scenario.assertDeploymentWritten(t)
+		scenario.assertR11nQueued(t)
+		scenario.assertHeader(t, "Location",
+			"sous.example.com/deploy-queue-item?action=actionid1&cluster=cluster1&flavor=flavor1&offset=dir1&repo=github.com%2Fuser1%2Frepo1")
+	})
+
 }
