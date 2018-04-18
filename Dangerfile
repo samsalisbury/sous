@@ -1,3 +1,31 @@
+# vim: ft=ruby:
+#
+def check_for_debug
+  git.diff.reject do |file|
+    file.path =~ /_test.go$/
+  end.each do |file|
+    file.patch.each_line do |patch_line|
+      if /^\+[^+].*(spew\.Pr|spew\.Du|spew.\Fp|spew\.Fd)/ =~ patch_line
+        fail "Debugging output: #{patch_line} (there may be others)"
+        return
+      end
+    end
+  end
+end
+
+def check_lgtm(image_url: nil, https_image_only: false)
+  return unless status_report[:errors].length.zero? &&
+    status_report[:warnings].length.zero?
+
+  markdown(<<-lgtm.gsub(%r[^[ ]*(?=\S)]m, ""))
+  # LGTM!
+
+  No errors, no warnings. :shipit:
+  lgtm
+end
+
+# BEGIN
+
 # Sometimes it's a README fix, or something like that - which isn't relevant for
 # including in a project's CHANGELOG for example
 modified_app_files = git.modified_files.grep(/(?<!_test)\.go$/)
@@ -42,18 +70,5 @@ if !(prose.mdspell_installed? and prose.proselint_installed?)
   message "mdspell or proselint not available - prose not linted"
 end
 
-lgtm.check_lgtm
-
-def check_for_debug
-  git.diff.reject do |file|
-    file.path =~ /_test.go$/
-  end.each do |file|
-    file.patch.each_line do |patch_line|
-      if /^\+[^+].*(spew\.Pr|spew\.Du|spew.\Fp|spew\.Fd)/ =~ patch_line
-        fail "Debugging output: #{patch_line} (there may be others)"
-        return
-      end
-    end
-  end
-end
+check_lgtm
 check_for_debug
