@@ -51,7 +51,7 @@ func (di *SousGraph) GetDeploy(dff config.DeployFilterFlags, dryrun string, forc
 
 	scoop := struct {
 		ResolveFilter    *RefinedResolveFilter
-		HTTP             ClusterSpecificHTTPClient
+		HTTP             *ClusterSpecificHTTPClient
 		DeploymentID     TargetDeploymentID
 		HTTPStateManager *sous.HTTPStateManager
 		LogSink          LogSink
