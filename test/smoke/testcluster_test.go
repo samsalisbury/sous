@@ -27,34 +27,8 @@ func newSmokeTestFixture(state *sous.State, baseDir string) (*TestCluster, error
 		return nil, err
 	}
 
-	gdmDir := path.Join(baseDir, "remote-gdm-temp")
-	if err := os.MkdirAll(gdmDir, 0777); err != nil {
-		return nil, err
-	}
-
-	dsm := storage.NewDiskStateManager(gdmDir)
-	if err := dsm.WriteState(state, sous.User{}); err != nil {
-		return nil, err
-	}
-
-	if err := doCMD(gdmDir, "git", "init"); err != nil {
-		return nil, err
-	}
-	if err := doCMD(gdmDir, "git", "config", "user.name", "Sous Test"); err != nil {
-		return nil, err
-	}
-	if err := doCMD(gdmDir, "git", "config", "user.email", "soustest@example.com"); err != nil {
-		return nil, err
-	}
-	if err := doCMD(gdmDir, "git", "add", "."); err != nil {
-		return nil, err
-	}
-	if err := doCMD(gdmDir, "git", "commit", "-a", "-m", "initial commit"); err != nil {
-		return nil, err
-	}
-
-	gdmDir2 := path.Join(baseDir, "remote-gdm")
-	if err := doCMD(gdmDir+"/..", "git", "clone", "--bare", gdmDir, gdmDir2); err != nil {
+	gdmDir := path.Join(baseDir, "remote-gdm")
+	if err := createRemoteGDM(gdmDir, state); err != nil {
 		return nil, err
 	}
 
@@ -71,10 +45,46 @@ func newSmokeTestFixture(state *sous.State, baseDir string) (*TestCluster, error
 	}
 	return &TestCluster{
 		BaseDir:      baseDir,
-		RemoteGDMDir: gdmDir2,
+		RemoteGDMDir: gdmDir,
 		Count:        count,
 		Instances:    instances,
 	}, nil
+}
+
+func createRemoteGDM(gdmDir string, state *sous.State) error {
+
+	gdmDir2 := gdmDir
+	gdmDir = gdmDir + "-temp"
+
+	if err := os.MkdirAll(gdmDir, 0777); err != nil {
+		return err
+	}
+
+	dsm := storage.NewDiskStateManager(gdmDir)
+	if err := dsm.WriteState(state, sous.User{}); err != nil {
+		return err
+	}
+
+	if err := doCMD(gdmDir, "git", "init"); err != nil {
+		return err
+	}
+	if err := doCMD(gdmDir, "git", "config", "user.name", "Sous Test"); err != nil {
+		return err
+	}
+	if err := doCMD(gdmDir, "git", "config", "user.email", "soustest@example.com"); err != nil {
+		return err
+	}
+	if err := doCMD(gdmDir, "git", "add", "."); err != nil {
+		return err
+	}
+	if err := doCMD(gdmDir, "git", "commit", "-a", "-m", "initial commit"); err != nil {
+		return err
+	}
+
+	if err := doCMD(gdmDir+"/..", "git", "clone", "--bare", gdmDir, gdmDir2); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (c *TestCluster) Configure(envDesc desc.EnvDesc) error {
