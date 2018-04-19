@@ -14,7 +14,6 @@ import (
 // ManifestSet is an Action for setting a manifest
 type ManifestSet struct {
 	sous.ManifestID
-	restful.HTTPClient
 	InReader      io.Reader
 	ResolveFilter *sous.ResolveFilter
 	logging.LogSink

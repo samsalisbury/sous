@@ -52,7 +52,6 @@ func (di *SousGraph) GetManifestSet(dff config.DeployFilterFlags, up *restful.Up
 	di.guardedAdd("Dryrun", DryrunNeither)
 	scoop := struct {
 		Tmid TargetManifestID
-		HC   HTTPClient
 		RF   *RefinedResolveFilter
 		LS   LogSink
 		U    sous.User
@@ -65,7 +64,6 @@ func (di *SousGraph) GetManifestSet(dff config.DeployFilterFlags, up *restful.Up
 	return &actions.ManifestSet{
 		User:          scoop.U,
 		ManifestID:    mid,
-		HTTPClient:    scoop.HC.HTTPClient,
 		InReader:      in,
 		ResolveFilter: rf,
 		LogSink:       scoop.LS.LogSink.Child("manifest-set", rf, mid),
