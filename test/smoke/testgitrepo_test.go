@@ -13,13 +13,13 @@ func makeGitRepo(t *testing.T, baseDir, dir string, spec GitRepoSpec) string {
 	if err := doCMD(dir, "git", "init"); err != nil {
 		t.Fatalf("git init failed in %q: %s", dir, err)
 	}
-	if err := doCMD(dir, "git", "remote", "add", "origin", "git@github.com:opentable/bogus/repo.git"); err != nil {
+	if err := doCMD(dir, "git", "remote", "add", "origin", spec.OriginURL); err != nil {
 		t.Fatalf("git remote add failed in %q: %s", dir, err)
 	}
-	if err := doCMD(dir, "git", "config", "user.name", "Sous User"); err != nil {
+	if err := doCMD(dir, "git", "config", "user.name", spec.UserName); err != nil {
 		t.Fatalf("git config failed in %q: %s", dir, err)
 	}
-	if err := doCMD(dir, "git", "config", "user.email", "sous-user@example.com"); err != nil {
+	if err := doCMD(dir, "git", "config", "user.email", spec.UserEmail); err != nil {
 		t.Fatalf("git config failed in %q: %s", dir, err)
 	}
 	return dir
