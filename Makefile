@@ -35,6 +35,10 @@ SMOKE_TEST_BINARY ?= $(SMOKE_TEST_DATA_DIR)/sous
 
 # install-dev uses DESC and DATE to make a git described, timestamped dev build.
 DESC := $(shell git describe)
+ifneq ($(shell echo $(DESC) | grep -E '^\d+\.\d+\.\d+'),$(DESC))
+DESC := 0.0.0-$(DESC)
+endif
+
 DATE := $(shell date +%Y-%m-%dT%H-%M-%S)
 DEV_VERSION := "$(DESC)-devbuild-$(DATE)"
 
@@ -142,7 +146,7 @@ clean-container-certs:
 
 clean-running-containers:
 	@if (( $$(docker ps -q | wc -l) > 0 )); then echo 'found running containers, killing:'; docker ps -q | xargs docker kill; fi
-	@if (( $$(docker ps -aq | wc -l) > 0 )); then echo 'found container instances, deleting:'; docker ps -aq | xargs docker rm; fi
+	@if (( $$(docker ps -aq | wc -l) > 0 )); then echo 'found container instances, deleting:'; docker ps -aq | xargs docker rm --volumes; fi
 
 gitlog:
 	git log `git describe --abbrev=0`..HEAD
@@ -286,7 +290,11 @@ test-smoke: $(SMOKE_TEST_BINARY) $(SMOKE_TEST_LATEST_LINK) setup-containers
 	SMOKE_TEST_DATA_DIR=$(SMOKE_TEST_DATA_DIR)/data \
 	SMOKE_TEST_BINARY=$(SMOKE_TEST_BINARY) \
 	SOUS_QA_DESC=$(QA_DESC) \
-	go test -tags smoke -v -count 1 ./test/smoke $(TEST_TEAMCITY)
+	go test  $(EXTRA_GO_TEST_FLAGS) -tags smoke -v -count 1 ./test/smoke $(TEST_TEAMCITY)
+
+.PHONY: test-smoke-nofail
+test-smoke-nofail:
+	EXCLUDE_KNOWN_FAILING_TESTS=YES $(MAKE) test-smoke
 
 $(QA_DESC): sous-qa-setup
 	./sous_qa_setup --compose-dir ./integration/test-registry/ --out-path=$(QA_DESC)
