@@ -35,6 +35,10 @@ SMOKE_TEST_BINARY ?= $(SMOKE_TEST_DATA_DIR)/sous
 
 # install-dev uses DESC and DATE to make a git described, timestamped dev build.
 DESC := $(shell git describe)
+ifneq ($(shell echo $(DESC) | grep -E '^\d+\.\d+\.\d+'),$(DESC))
+DESC := 0.0.0-$(DESC)
+endif
+
 DATE := $(shell date +%Y-%m-%dT%H-%M-%S)
 DEV_VERSION := "$(DESC)-devbuild-$(DATE)"
 
