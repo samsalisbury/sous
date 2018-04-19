@@ -48,14 +48,16 @@ func (s *Singularity) PauseRequestForDeployment(t *testing.T, did sous.Deploymen
 	})
 
 	waitFor(t, "tasks to stop", 30*time.Second, 2*time.Second, func() error {
-		h, err := s.client.GetActiveDeployTasks(reqID, depID)
-		if err != nil {
-			return err
+		for {
+			h, err := s.client.GetActiveDeployTasks(reqID, depID)
+			if err != nil {
+				return err
+			}
+			if len(h) != 0 {
+				return fmt.Errorf("%d tasks running", len(h))
+			}
+			return nil //lint:ignore SA4004 fails static check here
 		}
-		if len(h) != 0 {
-			return fmt.Errorf("%d tasks running", len(h))
-		}
-		return nil
 	})
 }
 
