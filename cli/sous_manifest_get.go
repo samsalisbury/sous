@@ -30,7 +30,8 @@ func (smg *SousManifestGet) AddFlags(fs *flag.FlagSet) {
 
 // Execute implements Executor on SousManifestGet.
 func (smg *SousManifestGet) Execute(args []string) cmdr.Result {
-	mg, err := smg.SousGraph.GetManifestGet(smg.DeployFilterFlags, os.Stdout, func(restful.Updater) {})
+	var up restful.Updater
+	mg, err := smg.SousGraph.GetManifestGet(smg.DeployFilterFlags, os.Stdout, &up)
 	if err != nil {
 		return EnsureErrorResult(err)
 	}

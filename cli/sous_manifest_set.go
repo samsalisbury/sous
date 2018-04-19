@@ -35,14 +35,12 @@ func (smg *SousManifestSet) AddFlags(fs *flag.FlagSet) {
 // Execute implements part of the cmdr interfaces.
 func (smg *SousManifestSet) Execute(args []string) cmdr.Result {
 	var up restful.Updater
-	get, err := smg.SousGraph.GetManifestGet(smg.DeployFilterFlags, ioutil.Discard, func(u restful.Updater) {
-		up = u
-	})
+	get, err := smg.SousGraph.GetManifestGet(smg.DeployFilterFlags, ioutil.Discard, &up)
 	if err != nil {
 		return cmdr.EnsureErrorResult(err)
 	}
 
-	set, err := smg.SousGraph.GetManifestSet(smg.DeployFilterFlags, up, os.Stdin)
+	set, err := smg.SousGraph.GetManifestSet(smg.DeployFilterFlags, &up, os.Stdin)
 	if err != nil {
 		return cmdr.EnsureErrorResult(err)
 	}

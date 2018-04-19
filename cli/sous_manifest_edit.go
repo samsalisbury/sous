@@ -10,6 +10,7 @@ import (
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/util/cmdr"
 	"github.com/opentable/sous/util/restful"
+	"github.com/pkg/errors"
 )
 
 // SousManifestEdit defines the `sous manifest edit` command.
@@ -39,24 +40,22 @@ func (sme *SousManifestEdit) Execute(args []string) cmdr.Result {
 		return EnsureErrorResult(err)
 	}
 
-	get, err := sme.SousGraph.GetManifestGet(sme.DeployFilterFlags, file, func(u restful.Updater) {
-		up = u
-	})
+	get, err := sme.SousGraph.GetManifestGet(sme.DeployFilterFlags, file, &up)
 	if err != nil {
 		return EnsureErrorResult(err)
 	}
 
-	set, err := sme.SousGraph.GetManifestSet(sme.DeployFilterFlags, up, file)
+	set, err := sme.SousGraph.GetManifestSet(sme.DeployFilterFlags, &up, file)
 	if err != nil {
 		return EnsureErrorResult(err)
 	}
 
 	if err := get.Do(); err != nil {
-		return EnsureErrorResult(err)
+		return EnsureErrorResult(errors.Wrapf(err, "getting manifest into %s", file.Name()))
 	}
 
 	if err := doEdit(file.Name()); err != nil {
-		return EnsureErrorResult(err)
+		return EnsureErrorResult(errors.Wrapf(err, "editing file at %s", file.Name()))
 	}
 
 	if _, err := file.Seek(0, 0); err != nil {
@@ -77,5 +76,8 @@ func doEdit(path string) error {
 		editCmd = "vi"
 	}
 	editor := exec.Command(editCmd, path)
+	editor.Stdin = os.Stdin
+	editor.Stdout = os.Stdout
+
 	return editor.Run()
 }

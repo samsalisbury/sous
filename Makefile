@@ -33,10 +33,10 @@ SMOKE_TEST_DATA_DIR ?= $(SMOKE_TEST_BASEDIR)/$(DATE)
 SMOKE_TEST_LATEST_LINK ?= $(SMOKE_TEST_BASEDIR)/latest
 SMOKE_TEST_BINARY ?= $(SMOKE_TEST_DATA_DIR)/sous
 
-# install-dev uses DESC and DATE to make a git described, timestamped dev build.
-DESC := $(shell git describe)
+# install-dev uses DEV_DESC and DATE to make a git described, timestamped dev build.
+DEV_DESC ?= $(shell git describe)
 DATE := $(shell date +%Y-%m-%dT%H-%M-%S)
-DEV_VERSION := "$(DESC)-devbuild-$(DATE)"
+DEV_VERSION := "$(DEV_DESC)-devbuild-$(DATE)"
 
 SOUS_BIN_PATH := $(shell which sous 2> /dev/null || echo $$GOPATH/bin/sous)
 

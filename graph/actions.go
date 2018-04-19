@@ -20,12 +20,11 @@ func (di *SousGraph) guardedAdd(guardName string, value interface{}) {
 }
 
 // GetManifestGet injects a ManifestGet instances.
-func (di *SousGraph) GetManifestGet(dff config.DeployFilterFlags, out io.Writer, upCap func(restful.Updater)) (actions.Action, error) {
+func (di *SousGraph) GetManifestGet(dff config.DeployFilterFlags, out io.Writer, upCap *restful.Updater) (actions.Action, error) {
 	di.guardedAdd("DeployFilterFlags", &dff)
 	di.guardedAdd("Dryrun", DryrunNeither)
 
 	scoop := struct {
-		Dff  config.DeployFilterFlags
 		RF   *RefinedResolveFilter
 		Tmid TargetManifestID
 		HC   HTTPClient
@@ -34,41 +33,43 @@ func (di *SousGraph) GetManifestGet(dff config.DeployFilterFlags, out io.Writer,
 	if err := di.Inject(&scoop); err != nil {
 		return nil, err
 	}
+
+	rf := (*sous.ResolveFilter)(scoop.RF)
+	mid := sous.ManifestID(scoop.Tmid)
 	return &actions.ManifestGet{
-		DeployFilterFlags: scoop.Dff,
-		ResolveFilter:     (*sous.ResolveFilter)(scoop.RF),
-		TargetManifestID:  sous.ManifestID(scoop.Tmid),
-		HTTPClient:        scoop.HC.HTTPClient,
-		LogSink:           scoop.L.LogSink,
-		OutWriter:         out,
-		UpdaterCapture:    upCap,
+		ResolveFilter:    rf,
+		TargetManifestID: mid,
+		HTTPClient:       scoop.HC.HTTPClient,
+		LogSink:          scoop.L.LogSink.Child("manifest-get", rf, mid),
+		OutWriter:        out,
+		UpdaterCapture:   upCap,
 	}, nil
 }
 
 // GetManifestSet injects a ManifestSet instance.
-func (di *SousGraph) GetManifestSet(dff config.DeployFilterFlags, up restful.Updater, in io.Reader) (actions.Action, error) {
+func (di *SousGraph) GetManifestSet(dff config.DeployFilterFlags, up *restful.Updater, in io.Reader) (actions.Action, error) {
 	di.guardedAdd("DeployFilterFlags", &dff)
 	di.guardedAdd("Dryrun", DryrunNeither)
 	scoop := struct {
-		Dff  config.DeployFilterFlags
 		Tmid TargetManifestID
 		HC   HTTPClient
-		RF   RefinedResolveFilter
+		RF   *RefinedResolveFilter
 		LS   LogSink
 		U    sous.User
 	}{}
 	if err := di.Inject(&scoop); err != nil {
 		return nil, err
 	}
+	mid := sous.ManifestID(scoop.Tmid)
+	rf := (*sous.ResolveFilter)(scoop.RF)
 	return &actions.ManifestSet{
-		DeployFilterFlags: scoop.Dff,
-		User:              scoop.U,
-		ManifestID:        sous.ManifestID(scoop.Tmid),
-		HTTPClient:        scoop.HC.HTTPClient,
-		InReader:          in,
-		ResolveFilter:     sous.ResolveFilter(scoop.RF),
-		LogSink:           scoop.LS.LogSink,
-		Updater:           up,
+		User:          scoop.U,
+		ManifestID:    mid,
+		HTTPClient:    scoop.HC.HTTPClient,
+		InReader:      in,
+		ResolveFilter: rf,
+		LogSink:       scoop.LS.LogSink.Child("manifest-set", rf, mid),
+		Updater:       up,
 	}, nil
 }
 

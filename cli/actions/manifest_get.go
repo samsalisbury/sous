@@ -3,7 +3,6 @@ package actions
 import (
 	"io"
 
-	"github.com/opentable/sous/config"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/logging/messages"
@@ -14,13 +13,12 @@ import (
 
 // A ManifestGet is an Action that fetches a manifest.
 type ManifestGet struct {
-	config.DeployFilterFlags
 	ResolveFilter    *sous.ResolveFilter
 	TargetManifestID sous.ManifestID
 	HTTPClient       restful.HTTPClient
 	LogSink          logging.LogSink
 	OutWriter        io.Writer
-	UpdaterCapture   func(restful.Updater)
+	UpdaterCapture   *restful.Updater
 }
 
 // Do implements Action on ManifestGet.
@@ -31,8 +29,9 @@ func (mg *ManifestGet) Do() error {
 	if err != nil {
 		return errors.Errorf("No manifest matched by %v yet. See `sous init` (%v)", mg.ResolveFilter, err)
 	}
-	mg.UpdaterCapture(up)
-	messages.ReportLogFieldsMessage("Sous manifest in Execute", logging.ExtraDebug1Level, mg.LogSink, mani)
+	(*mg.UpdaterCapture) = up
+
+	messages.ReportLogFieldsMessage("Sous manifest in Execute", logging.ExtraDebug1Level, mg.LogSink, mani.ID())
 
 	yml, err := yaml.Marshal(mani)
 	if err != nil {

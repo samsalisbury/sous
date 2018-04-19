@@ -5,12 +5,12 @@ import (
 )
 
 func reportKafkaConfig(hook kafkaSink, cfg Config, ls LogSink) {
-	msg := ConsoleAndMessage("Not connecting to Kafka.")
+	msg := MessageField("Not connecting to Kafka.")
 	lvl := WarningLevel
 	succ := false
 	id := ""
 	if hook != nil && hook.live() {
-		msg = ConsoleAndMessage("Connecting to Kafka")
+		msg = MessageField("Connecting to Kafka")
 		lvl = InformationLevel
 		succ = true
 		id = hook.id()

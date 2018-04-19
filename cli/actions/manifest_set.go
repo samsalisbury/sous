@@ -4,7 +4,6 @@ import (
 	"io"
 	"io/ioutil"
 
-	"github.com/opentable/sous/config"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/logging/messages"
@@ -14,14 +13,13 @@ import (
 
 // ManifestSet is an Action for setting a manifest
 type ManifestSet struct {
-	config.DeployFilterFlags `inject:"optional"`
 	sous.ManifestID
 	restful.HTTPClient
 	InReader      io.Reader
-	ResolveFilter sous.ResolveFilter
+	ResolveFilter *sous.ResolveFilter
 	logging.LogSink
 	User    sous.User
-	Updater restful.Updater
+	Updater *restful.Updater
 }
 
 // Do implements the Action interface on ManifestSet
@@ -38,7 +36,7 @@ func (ms *ManifestSet) Do() error {
 
 	messages.ReportLogFieldsMessage("Manifest in Execute", logging.ExtraDebug1Level, ms.LogSink, yml)
 
-	_, err = ms.Updater.Update(&yml, nil)
+	_, err = (*ms.Updater).Update(&yml, nil)
 	if err != nil {
 		return err
 	}

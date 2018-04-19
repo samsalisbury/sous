@@ -7,6 +7,7 @@ import (
 
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/restful"
 	"github.com/opentable/sous/util/restful/restfultest"
 	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/assert"
@@ -16,6 +17,7 @@ func TestManifestGet(t *testing.T) {
 	out := &bytes.Buffer{}
 	project1 := sous.SourceLocation{Repo: "github.com/user/project"}
 
+	var up restful.Updater
 	cl, control := restfultest.NewHTTPClientSpy()
 	smg := &ManifestGet{
 		TargetManifestID: sous.ManifestID{
@@ -26,8 +28,9 @@ func TestManifestGet(t *testing.T) {
 		},
 		HTTPClient: cl,
 
-		OutWriter: out,
-		LogSink:   logging.NewLogSet(semv.MustParse("0.0.0"), "", "", os.Stderr),
+		OutWriter:      out,
+		LogSink:        logging.NewLogSet(semv.MustParse("0.0.0"), "", "", os.Stderr),
+		UpdaterCapture: &up,
 	}
 
 	control.Any(
