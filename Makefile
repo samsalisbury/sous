@@ -294,7 +294,7 @@ test-smoke: $(SMOKE_TEST_BINARY) $(SMOKE_TEST_LATEST_LINK) setup-containers
 
 .PHONY: test-smoke-nofail
 test-smoke-nofail:
-EXCLUDE_KNOWN_FAILING_TESTS=YES $(MAKE) test-smoke
+	EXCLUDE_KNOWN_FAILING_TESTS=YES $(MAKE) test-smoke
 
 $(QA_DESC): sous-qa-setup
 	./sous_qa_setup --compose-dir ./integration/test-registry/ --out-path=$(QA_DESC)
