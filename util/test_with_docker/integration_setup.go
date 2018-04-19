@@ -136,8 +136,8 @@ func rebuildService(dir, name string, env []string) error {
 }
 
 func servicesRunning(timeout time.Duration, ip net.IP, services map[string]uint) bool {
-	log.Println("servicesRunning func started...")
-	defer log.Println("servicesRunning func finished...")
+	log.Println("servicesRunning func started...", time.Now())
+	defer func() { log.Println("servicesRunning func finished...", time.Now()) }()
 	var serviceChecks []ReadyFn
 
 	for name, port := range services {
