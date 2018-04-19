@@ -56,7 +56,7 @@ func (s *Singularity) PauseRequestForDeployment(t *testing.T, did sous.Deploymen
 			if len(h) != 0 {
 				return fmt.Errorf("%d tasks running", len(h))
 			}
-			return nil
+			return nil //lint:ignore SA4004 fails static check here
 		}
 	})
 }
