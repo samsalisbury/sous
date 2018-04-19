@@ -3,6 +3,7 @@ package sous
 import (
 	"fmt"
 
+	"github.com/opentable/sous/util/logging"
 	"github.com/pkg/errors"
 	"github.com/samsalisbury/semv"
 )
@@ -213,4 +214,14 @@ func (rf *ResolveFilter) FilterManifestID(m ManifestID) bool {
 	return rf.matchRepo(m.Source.Repo) &&
 		rf.matchOffset(m.Source.Dir) &&
 		rf.matchFlavor(m.Flavor)
+}
+
+// EachField implement logging.EachFielder on ResolveFilter.
+func (rf *ResolveFilter) EachField(fn logging.FieldReportFn) {
+	fn(logging.FilterCluster, rf.Cluster.ValueOr("*"))
+	fn(logging.FilterRepo, rf.Repo.ValueOr("*"))
+	fn(logging.FilterRevision, rf.Revision.ValueOr("*"))
+	fn(logging.FilterFlavor, rf.Flavor.ValueOr("*"))
+	fn(logging.FilterOffset, rf.Offset.ValueOr("*"))
+	fn(logging.FilterTag, rf.Tag.ValueOr("*"))
 }

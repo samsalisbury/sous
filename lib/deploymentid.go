@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"strings"
+
+	"github.com/opentable/sous/util/logging"
 )
 
 // A DeploymentID identifies a deployment.
@@ -51,4 +53,20 @@ func (did *DeploymentID) Digest() []byte {
 
 func (did DeploymentID) String() string {
 	return did.Cluster + ":" + did.ManifestID.String()
+}
+
+// QueryMap returns a map suitable to use as an HTTP get parameter map to idenitfy a deployment.
+func (did DeploymentID) QueryMap() map[string]string {
+	deployQuery := map[string]string{}
+	deployQuery["repo"] = did.ManifestID.Source.Repo
+	deployQuery["cluster"] = did.Cluster
+	deployQuery["offset"] = did.ManifestID.Source.Dir
+	deployQuery["flavor"] = did.ManifestID.Flavor
+	return deployQuery
+}
+
+// EachField implements logging.EachFielder on DeploymentID.
+func (did DeploymentID) EachField(fn logging.FieldReportFn) {
+	fn(logging.SousDeploymentId, did.String())
+	did.ManifestID.EachField(fn)
 }

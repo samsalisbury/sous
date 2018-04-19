@@ -21,7 +21,7 @@ func PlaceholderLogger() logSet {
 	return &silentLogSet{}
 }
 
-func (l *fallbackLogger) Child(name string) logging.LogSink {
+func (l *fallbackLogger) Child(name string, ctx ...logging.EachFielder) logging.LogSink {
 	return l
 }
 

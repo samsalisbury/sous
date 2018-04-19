@@ -101,24 +101,6 @@
     };
     version = "5.5.3";
   };
-  danger-lgtm = {
-    dependencies = ["danger-plugin-api"];
-    source = {
-      remotes = ["https://rubygems.org"];
-      sha256 = "0x6glrypxr1jvwnjp9zg462f614kb01zx9rmr15pkxljz0yg8yx5";
-      type = "gem";
-    };
-    version = "0.1.1";
-  };
-  danger-plugin-api = {
-    dependencies = ["danger"];
-    source = {
-      remotes = ["https://rubygems.org"];
-      sha256 = "1lrvz082nk19h3aphbqzqy6micpfsn7gw5b0vd0zpgczq7rg9wx0";
-      type = "gem";
-    };
-    version = "1.0.0";
-  };
   danger-prose = {
     dependencies = ["danger"];
     source = {

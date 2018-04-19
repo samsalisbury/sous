@@ -2,7 +2,6 @@ package cli
 
 import (
 	"flag"
-	"fmt"
 
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
@@ -13,18 +12,17 @@ import (
 type SousDeploy struct {
 	SousGraph *graph.SousGraph
 
-	Config            graph.LocalSousConfig
-	CLI               *CLI
 	DeployFilterFlags config.DeployFilterFlags `inject:"optional"`
-	dryrunOption      string
 	waitStable        bool
+	force             bool
+	dryrunOption      string
 }
 
 func init() { TopLevelCommands["deploy"] = &SousDeploy{} }
 
 const sousDeployHelp = `deploys a new version into a particular cluster
 
-usage: sous deploy -cluster <name> -tag <semver>
+usage: sous deploy (options)
 
 sous deploy will deploy the version tag for this application in the named
 cluster.
@@ -35,8 +33,10 @@ func (sd *SousDeploy) Help() string { return sousDeployHelp }
 
 // AddFlags adds the flags for sous init.
 func (sd *SousDeploy) AddFlags(fs *flag.FlagSet) {
-	MustAddFlags(fs, &sd.DeployFilterFlags, DeployFilterFlagsHelp)
+	MustAddFlags(fs, &sd.DeployFilterFlags, NewDeployFilterFlagsHelp)
 
+	fs.BoolVar(&sd.force, "force", false,
+		"force deploy no matter if GDM already is at the correct version")
 	fs.BoolVar(&sd.waitStable, "wait-stable", true,
 		"wait for the deploy to complete before returning (otherwise, use --wait-stable=false)")
 	fs.StringVar(&sd.dryrunOption, "dry-run", "none",
@@ -46,39 +46,13 @@ func (sd *SousDeploy) AddFlags(fs *flag.FlagSet) {
 
 // Execute fulfills the cmdr.Executor interface.
 func (sd *SousDeploy) Execute(args []string) cmdr.Result {
-	otplFlags := config.OTPLFlags{}
-	update, err := sd.SousGraph.GetUpdate(sd.DeployFilterFlags, otplFlags)
+	deploy, err := sd.SousGraph.GetDeploy(sd.DeployFilterFlags, sd.dryrunOption, sd.force, sd.waitStable)
 	if err != nil {
 		return cmdr.EnsureErrorResult(err)
 	}
-	if err := update.Do(); err != nil {
-		return cmdr.EnsureErrorResult(err)
+
+	if err := deploy.Do(); err != nil {
+		return EnsureErrorResult(err)
 	}
-
-	// Running serverless, so run rectify.
-	if sd.Config.Server == "" {
-		rectify, err := sd.SousGraph.GetRectify(sd.dryrunOption, sd.DeployFilterFlags)
-		if err != nil {
-			return cmdr.EnsureErrorResult(err)
-		}
-		if err := rectify.Do(); err != nil {
-			return cmdr.EnsureErrorResult(err)
-		}
-		return cmdr.Success("Successfully rectified")
-	}
-
-	if sd.waitStable {
-		fmt.Fprintf(sd.CLI.Out, "Waiting for server to report that deploy has stabilized...\n")
-
-		poll, err := sd.SousGraph.GetPollStatus(sd.dryrunOption, sd.DeployFilterFlags)
-		if err != nil {
-			return cmdr.EnsureErrorResult(err)
-		}
-		if err := poll.Do(); err != nil {
-			return cmdr.EnsureErrorResult(err)
-		}
-		return cmdr.Success("")
-	}
-	return cmdr.Successf("Deploy in process.")
-
+	return cmdr.Success("Done.")
 }

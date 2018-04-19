@@ -3,6 +3,8 @@ package sous
 import (
 	"bytes"
 	"fmt"
+
+	"github.com/opentable/sous/util/logging"
 )
 
 // ManifestID identifies a manifest by its SourceLocation and optional Flavor.
@@ -79,4 +81,10 @@ func (mid *ManifestID) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		return err
 	}
 	return mid.UnmarshalText([]byte(s))
+}
+
+// EachField implements logging.EachFielder on DeploymentID.
+func (mid ManifestID) EachField(fn logging.FieldReportFn) {
+	fn(logging.SousManifestId, mid.String())
+	mid.Source.EachField(fn)
 }

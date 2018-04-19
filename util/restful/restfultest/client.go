@@ -5,6 +5,7 @@ import (
 
 	"github.com/nyarly/spies"
 	"github.com/opentable/sous/util/restful"
+	"github.com/pkg/errors"
 )
 
 type (
@@ -75,7 +76,10 @@ func (c *HTTPClientSpy) Retrieve(url string, ps map[string]string, bd interface{
 	res := c.Called(url, ps, bd, hs)
 	roundtrip(res.Get(0), bd)
 
-	return res.Get(1).(restful.UpdateDeleter), res.Error(2)
+	if res.Present() {
+		return res.Get(1).(restful.UpdateDeleter), res.Error(2)
+	}
+	return nil, errors.Errorf("404: No Spy result defined for %s", url)
 }
 
 // Update is a spy implementation of the restful.UpdateDeleter.Update method
