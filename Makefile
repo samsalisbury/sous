@@ -141,7 +141,7 @@ clean-container-certs:
 
 clean-running-containers:
 	@if (( $$(docker ps -q | wc -l) > 0 )); then echo 'found running containers, killing:'; docker ps -q | xargs docker kill; fi
-	@if (( $$(docker ps -aq | wc -l) > 0 )); then echo 'found container instances, deleting:'; docker ps -aq | xargs docker rm; fi
+	@if (( $$(docker ps -aq | wc -l) > 0 )); then echo 'found container instances, deleting:'; docker ps -aq | xargs docker rm --volumes; fi
 
 gitlog:
 	git log `git describe --abbrev=0`..HEAD
@@ -286,6 +286,10 @@ test-smoke: $(SMOKE_TEST_BINARY) $(SMOKE_TEST_LATEST_LINK) setup-containers
 	SMOKE_TEST_BINARY=$(SMOKE_TEST_BINARY) \
 	SOUS_QA_DESC=$(QA_DESC) \
 	go test $(EXTRA_GO_TEST_FLAGS) -tags smoke -v -count 1 ./test/smoke
+
+.PHONY: test-smoke-nofail
+test-smoke-nofail:
+	EXCLUDE_KNOWN_FAILING_TESTS=YES $(MAKE) test-smoke
 
 $(QA_DESC): sous-qa-setup
 	./sous_qa_setup --compose-dir ./integration/test-registry/ --out-path=$(QA_DESC)
