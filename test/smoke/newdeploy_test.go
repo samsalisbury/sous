@@ -112,7 +112,6 @@ func TestSousNewdeploy(t *testing.T) {
 		f := setupEnv(t)
 		sous := setupProject(t, f, simpleServer)
 		initProjectNoFlavor(t, sous)
-		// Build and deploy.
 		sous.MustRun(t, "build", "-tag", "1.2.3")
 		sous.MustRun(t, "newdeploy", "-cluster", "cluster1", "-tag", "1.2.3")
 	})
@@ -126,8 +125,7 @@ func TestSousNewdeploy(t *testing.T) {
 		sous.MustRun(t, "newdeploy", "-cluster", "cluster1", "-tag", "1.2.3", "-flavor", flavor)
 	})
 
-	t.Run("deploy-pause-faildeploy-unpause-deploy", func(t *testing.T) {
-		t.Skipf("Failing")
+	t.Run("pause-unpause", func(t *testing.T) {
 		f := setupEnv(t)
 		sous := setupProject(t, f, simpleServer)
 		initProjectNoFlavor(t, sous)
@@ -138,6 +136,7 @@ func TestSousNewdeploy(t *testing.T) {
 		f.Singularity.PauseRequestForDeployment(t, deploymentID(defaultManifestID(), "cluster1"))
 		sous.MustFail(t, "newdeploy", "-cluster", "cluster1", "-tag", "2")
 		f.Singularity.UnpauseRequestForDeployment(t, deploymentID(defaultManifestID(), "cluster1"))
+		knownToFailHere(t)
 		sous.MustRun(t, "newdeploy", "-cluster", "cluster1", "-tag", "3")
 	})
 }
