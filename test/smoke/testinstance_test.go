@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"os"
 	"os/exec"
 	"path"
@@ -28,8 +29,24 @@ func makeInstance(i int, clusterName, baseDir string) (*Instance, error) {
 	stateDir := path.Join(baseDir, "state")
 	configDir := path.Join(baseDir, "config")
 	logDir := path.Join(baseDir, "logs")
+	port := 6600 + i
+	address := ""
+	success := false
+	for port < 9000 || success == true {
+		address = fmt.Sprintf("127.0.0.1:%d", port)
+		if _, err := net.Listen("tcp", address); err != nil {
+			port = port + 1
+		} else {
+			success = true
+		}
+	}
+
+	if success == false {
+		return nil, fmt.Errorf("Failed to find a port to bind to")
+	}
+
 	return &Instance{
-		Addr:        fmt.Sprintf("127.0.0.1:%d", 6600+i),
+		Addr:        address,
 		ClusterName: clusterName,
 		StateDir:    stateDir,
 		ConfigDir:   configDir,
