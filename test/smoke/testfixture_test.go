@@ -96,7 +96,7 @@ func setupEnv(t *testing.T) Fixture {
 
 	addURLsToState(state, envDesc)
 
-	c, err := newSmokeTestFixture(state, baseDir)
+	c, err := newSmokeTestFixture(t, state, baseDir)
 	if err != nil {
 		t.Fatalf("setting up test cluster: %s", err)
 	}

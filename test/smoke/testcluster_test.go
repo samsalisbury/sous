@@ -22,7 +22,7 @@ type TestCluster struct {
 	Instances    []*Instance
 }
 
-func newSmokeTestFixture(state *sous.State, baseDir string) (*TestCluster, error) {
+func newSmokeTestFixture(t *testing.T, state *sous.State, baseDir string) (*TestCluster, error) {
 	if err := os.MkdirAll(baseDir, 0777); err != nil {
 		return nil, err
 	}
@@ -33,11 +33,11 @@ func newSmokeTestFixture(state *sous.State, baseDir string) (*TestCluster, error
 	}
 
 	count := len(state.Defs.Clusters)
-
+	addrs := freePortAddrs(t, "127.0.0.1", count, 6601, 9000)
 	instances := make([]*Instance, count)
 	for i := 0; i < count; i++ {
 		clusterName := state.Defs.Clusters.Names()[i]
-		inst, err := makeInstance(i, clusterName, baseDir)
+		inst, err := makeInstance(t, i, clusterName, baseDir, addrs[i])
 		if err != nil {
 			return nil, errors.Wrapf(err, "making test instance %d", i)
 		}
