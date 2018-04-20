@@ -75,6 +75,10 @@ TEST_TEAMCITY := $(if $(TEAMCITY),| ./dev_support/gotest-to-teamcity)
 SOUS_PACKAGES:= $(shell go list -f '{{.ImportPath}}' ./... | grep -v 'vendor')
 SOUS_PACKAGES_WITH_TESTS:= $(shell go list -f '{{if len .TestGoFiles}}{{.ImportPath}}{{end}}' ./...)
 SOUS_TC_PACKAGES=$(shell docker run --rm -v $(PWD):/go/src/github.com/opentable/sous -w /go/src/github.com/opentable/sous golang:1.10 go list -f '{{if len .TestGoFiles}}{{.ImportPath}}{{end}}' ./... | sed 's/_\/app/github.com\/opentable\/sous/')
+
+GO_FILES := $(shell find . -regex '.*\.go')
+GO_PROJECT_FILES := $(shell find . -type d -name vendor -prune -o -regex '.*\.go')
+
 SOUS_CONTAINER_IMAGES:= "docker images | egrep '127.0.0.1:5000|testregistry_'"
 TC_TEMP_DIR ?= /tmp/sous
 
@@ -230,14 +234,16 @@ wip:
 	git add workinprogress
 	git commit --squash=HEAD -m "Making WIP" --no-gpg-sign --no-verify
 
-coverage: $(COVER_DIR)
-	engulf -s --coverdir=$(COVER_DIR) \
-		--exclude '/vendor,integration/?,/bin/?,/dev_support/?,/util/test_with_docker/?,/examples/?,/util/cmdr/cmdr-example/?'\
-		--exclude-files='raw_client.go$$,_generated.go$$'\
-		--merge-base=_merged.txt ./...
 
-legendary: coverage
-	legendary --hitlist .cadre/coverage.vim /tmp/sous-cover/*_merged.txt
+$(COVER_DIR)/count_merged.txt: $(COVER_DIR) $(GO_FILES)
+	go test -covermode=count -coverprofile=$(COVER_DIR)/count_merged.txt ./...
+
+.cadre/coverage.vim: $(COVER_DIR)/count_merged.txt
+	legendary --hitlist --limit 20 $@ $<
+
+coverage: $(COVER_DIR)/count_merged.txt
+
+legendary: .cadre/coverage.vim
 
 test: test-gofmt test-staticcheck test-unit test-integration
 
