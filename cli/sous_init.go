@@ -57,11 +57,28 @@ func (si *SousInit) AddFlags(fs *flag.FlagSet) {
 	MustAddFlags(fs, &si.Flags, OtplFlagsHelp)
 	fs.StringVar(&si.DeployFilterFlags.Flavor, "flavor", "", flavorFlagHelp)
 	fs.StringVar(&si.DeployFilterFlags.Cluster, "cluster", "", clusterFlagHelp)
+	fs.StringVar(&si.DeployFilterFlags.Kind, "kind", "", kindFlagHelp)
 	fs.BoolVar(&si.DryRunFlag, "dryrun", false, "print out the created manifest but do not save it")
 }
 
 // Execute fulfills the cmdr.Executor interface
 func (si *SousInit) Execute(args []string) cmdr.Result {
+
+	kind := sous.ManifestKind(si.DeployFilterFlags.Kind)
+	kindOk := false
+
+	switch kind {
+	case sous.ManifestKindService:
+		kindOk = true
+	case sous.ManifestKindScheduled:
+		kindOk = true
+	default:
+		kindOk = false
+	}
+
+	if kindOk == false {
+		return cmdr.UsageErrorf("kind not defined, pick one of %s or %s", sous.ManifestKindScheduled, sous.ManifestKindService)
+	}
 
 	cluster := si.DeployFilterFlags.Cluster
 
@@ -70,6 +87,8 @@ func (si *SousInit) Execute(args []string) cmdr.Result {
 	}
 
 	m := si.Target.Manifest
+
+	m.Kind = kind
 
 	if cluster != "" {
 		m.Deployments = sous.DeploySpecs{cluster: m.Deployments[cluster]}
