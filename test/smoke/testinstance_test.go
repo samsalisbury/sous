@@ -32,7 +32,7 @@ func makeInstance(i int, clusterName, baseDir string) (*Instance, error) {
 	port := 6600 + i
 	address := ""
 	success := false
-	for port < 9000 || success == true {
+	for port < 9000 && !success {
 		address = fmt.Sprintf("127.0.0.1:%d", port)
 		if _, err := net.Listen("tcp", address); err != nil {
 			port = port + 1
