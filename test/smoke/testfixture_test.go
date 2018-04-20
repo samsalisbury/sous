@@ -4,7 +4,6 @@ package smoke
 
 import (
 	"testing"
-	"time"
 
 	"github.com/opentable/sous/dev_support/sous_qa_setup/desc"
 	sous "github.com/opentable/sous/lib"
@@ -32,8 +31,6 @@ func newTestFixture(t *testing.T) TestFixture {
 	singularity := NewSingularity(envDesc.SingularityURL())
 
 	singularity.Reset(t)
-
-	time.Sleep(5 * time.Second)
 
 	state := sous.StateFixture(sous.StateFixtureOpts{
 		ClusterCount:  3,
