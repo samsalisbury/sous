@@ -48,7 +48,7 @@ func (sd *splitDetector) absorbDockerfile() error {
 	return sd.absorbDocker(sd.rootAst)
 }
 
-func (sd *splitDetector) fetchFromRunSpec(ctx *sous.BuildContext) error {
+func (sd *splitDetector) fetchFromRunSpec() error {
 	for _, f := range sd.froms {
 		messages.ReportLogFieldsMessage("Fetching", logging.DebugLevel, logging.Log, f.Value)
 		md, err := sd.registry.GetImageMetadata(f.Value, "")
@@ -97,24 +97,37 @@ func (sd *splitDetector) result() *sous.DetectResult {
 	return &sous.DetectResult{Compatible: false}
 }
 
-func inspectImageForEnv(sh shell.Shell, imageName string) string {
-	cmd := []interface{}{"image", "inspect", "--format={{.Config.Env}}", imageName}
-	//"--format={{.Config.OnBuild}}{{.Config.Env}}",
+func (sd *splitDetector) checkLocalImage(ctx *sous.BuildContext) error {
+	if sd.runspecPath == "" {
+		for _, f := range sd.froms {
+			imageName := f.Value
+			imageEnv := inspectImage(ctx.Sh, imageName)
+			envs := parseImageOutput(imageEnv)
+			sd.runspecPath = envs[SOUS_RUN_IMAGE_SPEC]
+		}
+	}
+	return nil
+}
+
+func inspectImage(sh shell.Shell, imageName string) string {
+	cmd := []interface{}{"image", "inspect", "--format={{.Config.OnBuild}}{{.Config.Env}}", imageName}
 	//docker image inspect docker.otenv.com/sous-otj-autobuild:local
 	output, _ := sh.Stdout("docker", cmd...)
 	return output
 }
 
-func parsePartialEnv(input string) map[string]string {
+func parseImageOutput(input string) map[string]string {
 	envs := make(map[string]string)
-	input = strings.TrimPrefix(input, "[")
-	input = strings.TrimSuffix(input, "]")
+	input = strings.Replace(input, "[", " ", -1)
+	input = strings.Replace(input, "]", " ", -1)
 	envSlice := strings.Split(input, " ")
 	for _, env := range envSlice {
 		envSplit := strings.Split(env, "=")
-		key := envSplit[0]
-		val := envSplit[1]
-		envs[key] = val
+		if len(envSplit) == 2 {
+			key := envSplit[0]
+			val := envSplit[1]
+			envs[key] = val
+		}
 	}
 	return envs
 }
