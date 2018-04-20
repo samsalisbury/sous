@@ -15,7 +15,7 @@ import (
 
 type Fixture struct {
 	EnvDesc     desc.EnvDesc
-	Cluster     TestCluster
+	Cluster     TestBunchOfSousServers
 	Client      TestClient
 	BaseDir     string
 	Singularity *Singularity
@@ -96,7 +96,7 @@ func setupEnv(t *testing.T) Fixture {
 
 	addURLsToState(state, envDesc)
 
-	c, err := newSmokeTestFixture(t, state, baseDir)
+	c, err := newBunchOfSousServers(t, state, baseDir)
 	if err != nil {
 		t.Fatalf("setting up test cluster: %s", err)
 	}

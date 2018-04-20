@@ -15,14 +15,14 @@ import (
 	"github.com/pkg/errors"
 )
 
-type TestCluster struct {
+type TestBunchOfSousServers struct {
 	BaseDir      string
 	RemoteGDMDir string
 	Count        int
 	Instances    []*Instance
 }
 
-func newSmokeTestFixture(t *testing.T, state *sous.State, baseDir string) (*TestCluster, error) {
+func newBunchOfSousServers(t *testing.T, state *sous.State, baseDir string) (*TestBunchOfSousServers, error) {
 	if err := os.MkdirAll(baseDir, 0777); err != nil {
 		return nil, err
 	}
@@ -43,7 +43,7 @@ func newSmokeTestFixture(t *testing.T, state *sous.State, baseDir string) (*Test
 		}
 		instances[i] = inst
 	}
-	return &TestCluster{
+	return &TestBunchOfSousServers{
 		BaseDir:      baseDir,
 		RemoteGDMDir: gdmDir,
 		Count:        count,
@@ -87,7 +87,7 @@ func createRemoteGDM(gdmDir string, state *sous.State) error {
 	return nil
 }
 
-func (c *TestCluster) Configure(envDesc desc.EnvDesc) error {
+func (c *TestBunchOfSousServers) Configure(envDesc desc.EnvDesc) error {
 	siblingURLs := make(map[string]string, c.Count)
 	for _, i := range c.Instances {
 		siblingURLs[i.ClusterName] = "http://" + i.Addr
@@ -113,7 +113,7 @@ func (c *TestCluster) Configure(envDesc desc.EnvDesc) error {
 	return nil
 }
 
-func (c *TestCluster) Start(t *testing.T, sousBin string) error {
+func (c *TestBunchOfSousServers) Start(t *testing.T, sousBin string) error {
 	for j, i := range c.Instances {
 		if err := i.Start(t, sousBin); err != nil {
 			return errors.Wrapf(err, "instance%d", j)
@@ -121,7 +121,7 @@ func (c *TestCluster) Start(t *testing.T, sousBin string) error {
 	}
 	return nil
 }
-func (c *TestCluster) Stop(t *testing.T) {
+func (c *TestBunchOfSousServers) Stop(t *testing.T) {
 	t.Helper()
 	stopPIDs(t)
 }
