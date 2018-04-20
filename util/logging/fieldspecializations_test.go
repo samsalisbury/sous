@@ -14,7 +14,7 @@ func TestCPUResourceField(t *testing.T) {
 	enc.Encode(map[string]interface{}{"test": CPUResourceField(2)})
 
 	t.Log(buf.String())
-	assert.Regexp(t, `2[.]0`, buf.String())
+	assert.Regexp(t, `{"test":2[.]0`, buf.String())
 }
 
 func TestMemoryResourceField(t *testing.T) {
@@ -23,5 +23,5 @@ func TestMemoryResourceField(t *testing.T) {
 	enc.Encode(map[string]interface{}{"test": MemResourceField(200)})
 
 	t.Log(buf.String())
-	assert.Regexp(t, `200`, buf.String())
+	assert.Regexp(t, `{"test":200}`, buf.String())
 }
