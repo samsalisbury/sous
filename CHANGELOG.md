@@ -8,6 +8,7 @@ with respect to its command line interface and HTTP interface.
 
 ## [Unreleased](//github.com/opentable/sous/compare/0.5.85...HEAD)
 ### Added
+* Client: `sous manifest edit` covers 90% of the manifest get/set use case, more easily.
 * Server: more flexible, agile logging API.
 * Server: logging API includes adding context fields to child loggers.
 * All: updated to enable better running of tests in teamcity

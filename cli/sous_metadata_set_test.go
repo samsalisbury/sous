@@ -12,7 +12,7 @@ import (
 
 func TestMetadataSet(t *testing.T) {
 	cl, control := restfultest.NewHTTPClientSpy()
-	mani := testManifest("with-metadata")
+	mani := sous.ManifestFixture("with-metadata")
 	rf := sous.ResolveFilter{
 		Repo:    sous.NewResolveFieldMatcher(mani.Source.Repo),
 		Cluster: sous.NewResolveFieldMatcher("cluster-1"),
@@ -28,11 +28,11 @@ func TestMetadataSet(t *testing.T) {
 	control.MatchMethod(
 		"Retrieve",
 		spies.Once(),
-		testManifest("with-metadata"), updater, nil,
+		sous.ManifestFixture("with-metadata"), updater, nil,
 	)
 	control.Any(
 		"Retrieve",
-		testManifest("with-metadata"), restfultest.DummyUpdater(), nil,
+		sous.ManifestFixture("with-metadata"), restfultest.DummyUpdater(), nil,
 	)
 	upctl.Any(
 		"Update",
@@ -48,7 +48,7 @@ func TestMetadataSet(t *testing.T) {
 	}
 	if assert.Len(t, upctl.Calls(), 1) {
 		args := upctl.Calls()[0].PassedArgs()
-		orig := testManifest("with-metadata")
+		orig := sous.ManifestFixture("with-metadata")
 		mani := args.Get(0).(*sous.Manifest)
 		assert.Equal(t, "development", mani.Deployments["cluster-1"].Metadata["BuildBranch"])
 		assert.NotEqual(t,

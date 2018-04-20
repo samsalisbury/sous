@@ -45,6 +45,15 @@ func (mid ManifestID) String() string {
 	return mid.Source.String() + f
 }
 
+// QueryMap returns a map suitable for use with the HTTP API.
+func (mid ManifestID) QueryMap() map[string]string {
+	manifestQuery := map[string]string{}
+	manifestQuery["repo"] = mid.Source.Repo
+	manifestQuery["offset"] = mid.Source.Dir
+	manifestQuery["flavor"] = mid.Flavor
+	return manifestQuery
+}
+
 // MarshalText implements encoding.TextMarshaler.
 // This is important for serialising maps that use ManifestID as a key.
 func (mid ManifestID) MarshalText() ([]byte, error) {

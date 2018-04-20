@@ -70,7 +70,7 @@ func runCommand(t *testing.T, args []string, dff config.DeployFilterFlags) strin
 
 	control.Any(
 		"Retrieve",
-		testManifest("with-metadata"), restfultest.DummyUpdater(), nil,
+		sous.ManifestFixture("with-metadata"), restfultest.DummyUpdater(), nil,
 	)
 	res := smg.Execute(args)
 	assert.Equal(t, 0, res.ExitCode())
@@ -105,6 +105,6 @@ func makeTestState() *sous.State {
 				"cluster-2": cluster2,
 			},
 		},
-		Manifests: sous.NewManifests(testManifest("with-metadata")),
+		Manifests: sous.NewManifests(sous.ManifestFixture("with-metadata")),
 	}
 }

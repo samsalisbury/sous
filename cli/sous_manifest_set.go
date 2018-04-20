@@ -3,25 +3,17 @@ package cli
 import (
 	"flag"
 	"io/ioutil"
+	"os"
 
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
-	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
-	"github.com/opentable/sous/util/logging"
-	"github.com/opentable/sous/util/logging/messages"
-	"github.com/opentable/sous/util/yaml"
-	"github.com/pkg/errors"
+	"github.com/opentable/sous/util/restful"
 )
 
 type SousManifestSet struct {
 	config.DeployFilterFlags `inject:"optional"`
-	graph.TargetManifestID
-	graph.HTTPClient
-	graph.InReader
-	ResolveFilter graph.RefinedResolveFilter `inject:"optional"`
-	graph.LogSink
-	User sous.User
+	SousGraph                *graph.SousGraph
 }
 
 func init() { ManifestSubcommands["set"] = &SousManifestSet{} }
@@ -32,40 +24,33 @@ do note: this does *replace* the manifest;
 there's some validation, but you can make drastic changes easily
 `
 
+// Help implements part of the cmdr interfaces.
 func (*SousManifestSet) Help() string { return sousManifestHelp }
 
+// AddFlags implements part of the cmdr interfaces.
 func (smg *SousManifestSet) AddFlags(fs *flag.FlagSet) {
 	MustAddFlags(fs, &smg.DeployFilterFlags, ManifestFilterFlagsHelp)
 }
 
-func (smg *SousManifestSet) RegisterOn(psy Addable) {
-	psy.Add(graph.DryrunNeither)
-	psy.Add(&smg.DeployFilterFlags)
-}
-
+// Execute implements part of the cmdr interfaces.
 func (smg *SousManifestSet) Execute(args []string) cmdr.Result {
-	mani := sous.Manifest{}
-	up, err := smg.HTTPClient.Retrieve("/manifest", smg.TargetManifestID.QueryMap(), &mani, nil)
-
+	var up restful.Updater
+	get, err := smg.SousGraph.GetManifestGet(smg.DeployFilterFlags, ioutil.Discard, &up)
 	if err != nil {
-		return EnsureErrorResult(errors.Errorf("No manifest matched by %v yet. See `sous init` (%v)", smg.ResolveFilter, err))
+		return cmdr.EnsureErrorResult(err)
 	}
 
-	yml := sous.Manifest{}
-	bytes, err := ioutil.ReadAll(smg.InReader)
+	set, err := smg.SousGraph.GetManifestSet(smg.DeployFilterFlags, &up, os.Stdin)
 	if err != nil {
-		return EnsureErrorResult(err)
-	}
-	err = yaml.Unmarshal(bytes, &yml)
-	if err != nil {
-		return EnsureErrorResult(err)
+		return cmdr.EnsureErrorResult(err)
 	}
 
-	messages.ReportLogFieldsMessage("Manifest in Execute", logging.ExtraDebug1Level, smg.LogSink, yml)
+	if err := get.Do(); err != nil {
+		return cmdr.EnsureErrorResult(err)
+	}
 
-	_, err = up.Update(&yml, nil)
-	if err != nil {
-		return EnsureErrorResult(err)
+	if err := set.Do(); err != nil {
+		return cmdr.EnsureErrorResult(err)
 	}
 
 	return cmdr.Success()

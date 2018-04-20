@@ -1,11 +1,13 @@
 package graph
 
 import (
+	"io"
 	"os"
 
 	"github.com/opentable/sous/cli/actions"
 	"github.com/opentable/sous/config"
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/restful"
 	"github.com/samsalisbury/semv"
 )
 
@@ -15,6 +17,58 @@ func (di *SousGraph) guardedAdd(guardName string, value interface{}) {
 	}
 	di.addGuards[guardName] = true
 	di.Add(value)
+}
+
+// GetManifestGet injects a ManifestGet instances.
+func (di *SousGraph) GetManifestGet(dff config.DeployFilterFlags, out io.Writer, upCap *restful.Updater) (actions.Action, error) {
+	di.guardedAdd("DeployFilterFlags", &dff)
+	di.guardedAdd("Dryrun", DryrunNeither)
+
+	scoop := struct {
+		RF   *RefinedResolveFilter
+		Tmid TargetManifestID
+		HC   HTTPClient
+		L    LogSink
+	}{}
+	if err := di.Inject(&scoop); err != nil {
+		return nil, err
+	}
+
+	rf := (*sous.ResolveFilter)(scoop.RF)
+	mid := sous.ManifestID(scoop.Tmid)
+	return &actions.ManifestGet{
+		ResolveFilter:    rf,
+		TargetManifestID: mid,
+		HTTPClient:       scoop.HC.HTTPClient,
+		LogSink:          scoop.L.LogSink.Child("manifest-get", rf, mid),
+		OutWriter:        out,
+		UpdaterCapture:   upCap,
+	}, nil
+}
+
+// GetManifestSet injects a ManifestSet instance.
+func (di *SousGraph) GetManifestSet(dff config.DeployFilterFlags, up *restful.Updater, in io.Reader) (actions.Action, error) {
+	di.guardedAdd("DeployFilterFlags", &dff)
+	di.guardedAdd("Dryrun", DryrunNeither)
+	scoop := struct {
+		Tmid TargetManifestID
+		RF   *RefinedResolveFilter
+		LS   LogSink
+		U    sous.User
+	}{}
+	if err := di.Inject(&scoop); err != nil {
+		return nil, err
+	}
+	mid := sous.ManifestID(scoop.Tmid)
+	rf := (*sous.ResolveFilter)(scoop.RF)
+	return &actions.ManifestSet{
+		User:          scoop.U,
+		ManifestID:    mid,
+		InReader:      in,
+		ResolveFilter: rf,
+		LogSink:       scoop.LS.LogSink.Child("manifest-set", rf, mid),
+		Updater:       up,
+	}, nil
 }
 
 // GetUpdate returns an update Action.
