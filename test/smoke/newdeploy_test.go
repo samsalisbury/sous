@@ -18,7 +18,7 @@ CMD if [ -z "$T" ]; then T=2; fi; echo -n "Sleeping ${T}s..."; sleep $T; echo "D
 // setupProject creates a brand new git repo containing the provided Dockerfile,
 // commits that Dockerfile, runs 'sous version' and 'sous config', and returns a
 // sous TestClient in the project directory.
-func setupProject(t *testing.T, f Fixture, dockerfile string) TestClient {
+func setupProject(t *testing.T, f TestFixture, dockerfile string) TestClient {
 	t.Helper()
 	// Setup project git repo.
 	projectDir := makeGitRepo(t, f.BaseDir, "projects/project1", GitRepoSpec{
@@ -109,7 +109,7 @@ func defaultDeploymentID() sous.DeploymentID {
 func TestSousNewdeploy(t *testing.T) {
 
 	t.Run("simple", func(t *testing.T) {
-		f := setupEnv(t)
+		f := newTestFixture(t)
 		sous := setupProject(t, f, simpleServer)
 		initProjectNoFlavor(t, sous)
 		sous.MustRun(t, "build", "-tag", "1.2.3")
@@ -117,7 +117,7 @@ func TestSousNewdeploy(t *testing.T) {
 	})
 
 	t.Run("flavors", func(t *testing.T) {
-		f := setupEnv(t)
+		f := newTestFixture(t)
 		sous := setupProject(t, f, simpleServer)
 		flavor := "flavor1"
 		initProjectWithFlavor(t, sous, flavor)
@@ -126,7 +126,7 @@ func TestSousNewdeploy(t *testing.T) {
 	})
 
 	t.Run("pause-unpause", func(t *testing.T) {
-		f := setupEnv(t)
+		f := newTestFixture(t)
 		sous := setupProject(t, f, simpleServer)
 		initProjectNoFlavor(t, sous)
 		sous.MustRun(t, "build", "-tag", "1")

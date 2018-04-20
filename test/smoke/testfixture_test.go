@@ -3,76 +3,21 @@
 package smoke
 
 import (
-	"bufio"
-	"fmt"
-	"os"
 	"testing"
-	"time"
 
 	"github.com/opentable/sous/dev_support/sous_qa_setup/desc"
 	sous "github.com/opentable/sous/lib"
 )
 
-type Fixture struct {
+type TestFixture struct {
 	EnvDesc     desc.EnvDesc
-	Cluster     TestCluster
+	Cluster     TestBunchOfSousServers
 	Client      TestClient
 	BaseDir     string
 	Singularity *Singularity
 }
 
-var originalStdout = os.Stdout
-var originalStderr = os.Stderr
-
-func prefixWithTestName(t *testing.T) {
-	t.Helper()
-	outReader, outWriter, err := os.Pipe()
-	if err != nil {
-		t.Fatalf("Setting up output prefix: %s", err)
-	}
-	errReader, errWriter, err := os.Pipe()
-	if err != nil {
-		t.Fatalf("Setting up output prefix: %s", err)
-	}
-	os.Stdout = outWriter
-	os.Stderr = errWriter
-	go func() {
-		defer func() {
-			if err := outReader.Close(); err != nil {
-				t.Fatalf("Failed to close outReader: %s", err)
-			}
-			if err := outWriter.Close(); err != nil {
-				t.Fatalf("Failed to close outWriter: %s", err)
-			}
-		}()
-		scanner := bufio.NewScanner(outReader)
-		for scanner.Scan() {
-			if err := scanner.Err(); err != nil {
-				t.Fatalf("Error prefixing stdout: %s", err)
-			}
-			fmt.Fprintf(originalStdout, "%s::stdout > %s\n", t.Name(), scanner.Text())
-		}
-	}()
-	go func() {
-		defer func() {
-			if err := errReader.Close(); err != nil {
-				t.Fatalf("Failed to close errReader: %s", err)
-			}
-			if err := errWriter.Close(); err != nil {
-				t.Fatalf("Failed to close errWriter: %s", err)
-			}
-		}()
-		scanner := bufio.NewScanner(errReader)
-		for scanner.Scan() {
-			if err := scanner.Err(); err != nil {
-				t.Fatalf("Error prefixing stderr: %s", err)
-			}
-			fmt.Fprintf(originalStderr, "%s::stderr > %s\n", t.Name(), scanner.Text())
-		}
-	}()
-}
-
-func setupEnv(t *testing.T) Fixture {
+func newTestFixture(t *testing.T) TestFixture {
 	t.Helper()
 	if testing.Short() {
 		t.Skipf("-short flag present")
@@ -87,8 +32,6 @@ func setupEnv(t *testing.T) Fixture {
 
 	singularity.Reset(t)
 
-	time.Sleep(5 * time.Second)
-
 	state := sous.StateFixture(sous.StateFixtureOpts{
 		ClusterCount:  3,
 		ManifestCount: 3,
@@ -96,7 +39,7 @@ func setupEnv(t *testing.T) Fixture {
 
 	addURLsToState(state, envDesc)
 
-	c, err := newSmokeTestFixture(state, baseDir)
+	c, err := newBunchOfSousServers(t, state, baseDir)
 	if err != nil {
 		t.Fatalf("setting up test cluster: %s", err)
 	}
@@ -115,7 +58,7 @@ func setupEnv(t *testing.T) Fixture {
 		t.Fatal(err)
 	}
 
-	return Fixture{
+	return TestFixture{
 		Cluster:     *c,
 		Client:      client,
 		BaseDir:     baseDir,
@@ -123,7 +66,7 @@ func setupEnv(t *testing.T) Fixture {
 	}
 }
 
-func (f *Fixture) Stop(t *testing.T) {
+func (f *TestFixture) Stop(t *testing.T) {
 	t.Helper()
 	f.Cluster.Stop(t)
 }
