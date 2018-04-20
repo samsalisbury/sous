@@ -47,7 +47,7 @@ func setupProject(t *testing.T, f TestFixture, dockerfile string) TestClient {
 func initProjectNoFlavor(t *testing.T, sous TestClient) {
 	t.Helper()
 	// Prepare manifest.
-	sous.MustRun(t, "init")
+	sous.MustRun(t, "init", "-kind", "http-service")
 	manifest := sous.MustRun(t, "manifest", "get")
 	manifest = strings.Replace(manifest, "NumInstances: 0", "NumInstances: 1", -1)
 	manifestSetCmd := sous.Cmd(t, "manifest", "set")
@@ -62,7 +62,7 @@ func initProjectNoFlavor(t *testing.T, sous TestClient) {
 func initProjectWithFlavor(t *testing.T, sous TestClient, flavor string) {
 	t.Helper()
 	// Prepare manifest.
-	sous.MustRun(t, "init", "-flavor", flavor)
+	sous.MustRun(t, "init", "-kind", "http-service", "-flavor", flavor)
 	manifest := sous.MustRun(t, "manifest", "get", "-flavor", flavor)
 	manifest = strings.Replace(manifest, "NumInstances: 0", "NumInstances: 1", -1)
 	manifestSetCmd := sous.Cmd(t, "manifest", "set", "-flavor", flavor)
