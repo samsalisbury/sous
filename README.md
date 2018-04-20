@@ -6,6 +6,8 @@ If you just want to use Sous to build and deploy your code, follow the [installa
 
 For contribution guidelines, see [here](./doc/contributions.md).
 
+Teamcity Links are internal to opentable, please rely on Travis for build statuses from outside opentable.
+
 [View documentation in the doc/ directory.](https://github.com/opentable/sous/tree/master/doc)
 
 # Using Sous

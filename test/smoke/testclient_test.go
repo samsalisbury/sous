@@ -104,3 +104,11 @@ func (c *TestClient) MustRun(t *testing.T, args ...string) string {
 	}
 	return out
 }
+
+func (c *TestClient) MustFail(t *testing.T, args ...string) {
+	t.Helper()
+	_, err := c.Run(t, args...)
+	if err == nil {
+		t.Fatalf("command should have failed: sous %s", args)
+	}
+}

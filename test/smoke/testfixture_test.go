@@ -9,24 +9,28 @@ import (
 	sous "github.com/opentable/sous/lib"
 )
 
-type Fixture struct {
-	EnvDesc desc.EnvDesc
-	Cluster TestCluster
-	Client  TestClient
-	BaseDir string
+type TestFixture struct {
+	EnvDesc     desc.EnvDesc
+	Cluster     TestBunchOfSousServers
+	Client      TestClient
+	BaseDir     string
+	Singularity *Singularity
 }
 
-func setupEnv(t *testing.T) Fixture {
+func newTestFixture(t *testing.T) TestFixture {
 	t.Helper()
 	if testing.Short() {
 		t.Skipf("-short flag present")
 	}
+	prefixWithTestName(t)
 	stopPIDs(t)
 	sousBin := getSousBin(t)
 	envDesc := getEnvDesc(t)
 	baseDir := getDataDir(t)
 
-	resetSingularity(t, envDesc.SingularityURL())
+	singularity := NewSingularity(envDesc.SingularityURL())
+
+	singularity.Reset(t)
 
 	state := sous.StateFixture(sous.StateFixtureOpts{
 		ClusterCount:  3,
@@ -35,7 +39,7 @@ func setupEnv(t *testing.T) Fixture {
 
 	addURLsToState(state, envDesc)
 
-	c, err := newSmokeTestFixture(state, baseDir)
+	c, err := newBunchOfSousServers(t, state, baseDir)
 	if err != nil {
 		t.Fatalf("setting up test cluster: %s", err)
 	}
@@ -54,14 +58,15 @@ func setupEnv(t *testing.T) Fixture {
 		t.Fatal(err)
 	}
 
-	return Fixture{
-		Cluster: *c,
-		Client:  client,
-		BaseDir: baseDir,
+	return TestFixture{
+		Cluster:     *c,
+		Client:      client,
+		BaseDir:     baseDir,
+		Singularity: singularity,
 	}
 }
 
-func (f *Fixture) Stop(t *testing.T) {
+func (f *TestFixture) Stop(t *testing.T) {
 	t.Helper()
 	f.Cluster.Stop(t)
 }
