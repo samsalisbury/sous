@@ -10,7 +10,7 @@ import (
 	sous "github.com/opentable/sous/lib"
 )
 
-type Fixture struct {
+type TestFixture struct {
 	EnvDesc     desc.EnvDesc
 	Cluster     TestBunchOfSousServers
 	Client      TestClient
@@ -18,7 +18,7 @@ type Fixture struct {
 	Singularity *Singularity
 }
 
-func setupEnv(t *testing.T) Fixture {
+func newTestFixture(t *testing.T) TestFixture {
 	t.Helper()
 	if testing.Short() {
 		t.Skipf("-short flag present")
@@ -61,7 +61,7 @@ func setupEnv(t *testing.T) Fixture {
 		t.Fatal(err)
 	}
 
-	return Fixture{
+	return TestFixture{
 		Cluster:     *c,
 		Client:      client,
 		BaseDir:     baseDir,
@@ -69,7 +69,7 @@ func setupEnv(t *testing.T) Fixture {
 	}
 }
 
-func (f *Fixture) Stop(t *testing.T) {
+func (f *TestFixture) Stop(t *testing.T) {
 	t.Helper()
 	f.Cluster.Stop(t)
 }
