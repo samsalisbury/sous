@@ -34,6 +34,17 @@ func TestSousVersion(t *testing.T) {
 	term.Stdout.ShouldHaveLineContaining("sous version")
 }
 
+func TestSous_Init(t *testing.T) {
+	term := NewTerminal(t, `0.0.0`)
+
+	term.RunCommand("sous init")
+
+	term.Stdout.ShouldHaveNumLines(0)
+	term.Stderr.ShouldHaveNumLines(1)
+
+	term.Stderr.ShouldHaveExactLine("kind not defined, pick one of scheduled or http-service")
+}
+
 func TestSousConfig_validConfig(t *testing.T) {
 	term := NewTerminal(t, "0.0.0")
 
