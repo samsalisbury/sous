@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"os"
 	"os/exec"
 	"path"
@@ -200,4 +201,42 @@ func closeFile(t *testing.T, f *os.File) {
 	if err := f.Close(); err != nil {
 		t.Errorf("failed to close %s: %s", pidFile, err)
 	}
+}
+
+// freePortAddrs returns n listenable addresses on the ip provided in the
+// range min-max. Note that it does not guarantee they are still free by the
+// time you come to bind to them, but makes that more likely by binding and then
+// unbinding from them.
+func freePortAddrs(t *testing.T, ip string, n, min, max int) []string {
+	t.Helper()
+	ports := make(map[int]net.Listener, n)
+	addrs := make([]string, n)
+	// First bind to all the ports...
+	port := min
+NEXT_PORT:
+	for i := 0; i < n; i++ {
+		if port > max {
+			port = min
+		}
+		for ; port <= max; port++ {
+			addr := fmt.Sprintf("%s:%d", ip, port)
+			listener, err := net.Listen("tcp", addr)
+			if err != nil {
+				port = port + 1
+				continue
+			}
+			addrs[i] = addr
+			ports[port] = listener
+			continue NEXT_PORT
+		}
+		t.Fatalf("Unable to find a free port.")
+	}
+	// Now release them all. It's now a race to get our desired things
+	// listening on these addresses.
+	for _, l := range ports {
+		if err := l.Close(); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return addrs
 }
