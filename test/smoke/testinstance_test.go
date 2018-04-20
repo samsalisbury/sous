@@ -23,13 +23,14 @@ type Instance struct {
 	LogDir              string
 }
 
-func makeInstance(i int, clusterName, baseDir string) (*Instance, error) {
+func makeInstance(t *testing.T, i int, clusterName, baseDir, addr string) (*Instance, error) {
 	baseDir = path.Join(baseDir, fmt.Sprintf("instance%d", i))
 	stateDir := path.Join(baseDir, "state")
 	configDir := path.Join(baseDir, "config")
 	logDir := path.Join(baseDir, "logs")
+
 	return &Instance{
-		Addr:        fmt.Sprintf("127.0.0.1:%d", 6600+i),
+		Addr:        addr,
 		ClusterName: clusterName,
 		StateDir:    stateDir,
 		ConfigDir:   configDir,
