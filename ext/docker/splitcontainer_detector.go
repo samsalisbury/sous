@@ -9,7 +9,7 @@ import (
 	"github.com/opentable/sous/util/docker_registry"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/logging/messages"
-	"fmt"
+	"github.com/opentable/sous/util/shell"
 )
 
 type splitDetector struct {
@@ -19,6 +19,7 @@ type splitDetector struct {
 	rootAst                 *parser.Node
 	froms                   []*parser.Node
 	envs                    []*parser.Node
+	fallbackEnv             map[string]string
 }
 
 func (sd *splitDetector) absorbDocker(ast *parser.Node) error {
@@ -53,18 +54,9 @@ func (sd *splitDetector) fetchFromRunSpec(ctx *sous.BuildContext) error {
 		md, err := sd.registry.GetImageMetadata(f.Value, "")
 		if err != nil {
 			messages.ReportLogFieldsMessage("Error fetching", logging.DebugLevel, logging.Log, f.Value, err)
-			cmd := []interface{}{"image", "inspect", f.Value} //"--format={{.Config.OnBuild}}{{.Config.Env}}",
-			//docker image inspect docker.otenv.com/sous-otj-autobuild:local
-			output, _ := ctx.Sh.Stdout("docker", cmd...)
-			fmt.Println("stdout : ", output)
-
-			buf := bytes.NewBufferString(output)
-			ast, _ := parseDocker(buf)
-			return sd.absorbDocker(ast)
-			//md = output
-			//if err != nil {
-				//continue
-			//}
+			if err != nil {
+				continue
+			}
 		}
 
 		if path, ok := md.Env[SOUS_RUN_IMAGE_SPEC]; ok {
@@ -103,4 +95,26 @@ func (sd *splitDetector) result() *sous.DetectResult {
 		}}
 	}
 	return &sous.DetectResult{Compatible: false}
+}
+
+func inspectImageForEnv(sh shell.Shell, imageName string) string {
+	cmd := []interface{}{"image", "inspect", "--format={{.Config.Env}}", imageName}
+	//"--format={{.Config.OnBuild}}{{.Config.Env}}",
+	//docker image inspect docker.otenv.com/sous-otj-autobuild:local
+	output, _ := sh.Stdout("docker", cmd...)
+	return output
+}
+
+func parsePartialEnv(input string) map[string]string {
+	envs := make(map[string]string)
+	input = strings.TrimPrefix(input, "[")
+	input = strings.TrimSuffix(input, "]")
+	envSlice := strings.Split(input, " ")
+	for _, env := range envSlice {
+		envSplit := strings.Split(env, "=")
+		key := envSplit[0]
+		val := envSplit[1]
+		envs[key] = val
+	}
+	return envs
 }

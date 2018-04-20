@@ -72,7 +72,7 @@ func (sbp *SplitBuildpack) Detect(ctx *sous.BuildContext) (*sous.DetectResult, e
 
 	err = firsterr.Returned(
 		detector.absorbDockerfile,
-		func()(error){return detector.fetchFromRunSpec(ctx) },
+		func() error { return detector.fetchFromRunSpec(ctx) },
 		//detector.fetchFromRunSpec,
 		detector.processEnv,
 	)
