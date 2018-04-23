@@ -67,10 +67,17 @@ func (si *SousInit) Execute(args []string) cmdr.Result {
 	kind := sous.ManifestKind(si.DeployFilterFlags.Kind)
 	kindOk := false
 
+	m := si.Target.Manifest
+
 	switch kind {
 	case sous.ManifestKindService:
 		kindOk = true
 	case sous.ManifestKindScheduled:
+		kindOk = true
+		for _, v := range m.Deployments {
+			v.DeployConfig.Startup.SkipCheck = true
+		}
+	case sous.ManifestKindOnDemand:
 		kindOk = true
 	default:
 		kindOk = false
@@ -86,13 +93,15 @@ func (si *SousInit) Execute(args []string) cmdr.Result {
 		return cmdr.UsageErrorf("cluster %q not defined, pick one of: %s", cluster, si.State.Defs.Clusters)
 	}
 
-	m := si.Target.Manifest
-
 	m.Kind = kind
 
 	if cluster != "" {
-		m.Deployments = sous.DeploySpecs{cluster: m.Deployments[cluster]}
+		ds := sous.DeploySpecs{cluster: m.Deployments[cluster]}
+		m.Deployments = ds
+		//dsc := m.Deployments[cluster]
+		//dsc.DeployConfig.Startup = s
 	}
+
 	if si.DryRunFlag {
 		return SuccessYAML(m)
 	}
