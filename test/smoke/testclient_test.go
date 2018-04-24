@@ -68,15 +68,19 @@ func (c *TestClient) Configure(server, dockerReg string) error {
 	return nil
 }
 
-func (c *TestClient) Cmd(t *testing.T, args ...string) *exec.Cmd {
+func (c *TestClient) Cmd(t *testing.T, subcmd string, f *sousFlags, args ...string) *exec.Cmd {
 	t.Helper()
-	cmd := mkCMD(c.Dir, c.BinPath, args...)
+	allArgs := strings.Split(subcmd, " ")
+	allArgs = append(allArgs, f.Args()...)
+	allArgs = append(allArgs, args...)
+
+	cmd := mkCMD(c.Dir, c.BinPath, allArgs...)
 	cmd.Env = append(cmd.Env, fmt.Sprintf("SOUS_CONFIG_DIR=%s", c.ConfigDir))
 	return cmd
 }
 
-func (c *TestClient) Run(t *testing.T, args ...string) (string, error) {
-	cmd := c.Cmd(t, args...)
+func (c *TestClient) Run(t *testing.T, subcmd string, f *sousFlags, args ...string) (string, error) {
+	cmd := c.Cmd(t, subcmd, f, args...)
 	fmt.Fprintf(os.Stderr, "SOUS_CONFIG_DIR = %q\n", c.ConfigDir)
 	fmt.Fprintf(os.Stderr, "running sous in %q: %s\n", c.Dir, args)
 	// Add quotes to args with spaces for printing.
@@ -96,19 +100,29 @@ func (c *TestClient) Run(t *testing.T, args ...string) (string, error) {
 	return out.String(), err
 }
 
-func (c *TestClient) MustRun(t *testing.T, args ...string) string {
+func (c *TestClient) MustRun(t *testing.T, subcmd string, f *sousFlags, args ...string) string {
 	t.Helper()
-	out, err := c.Run(t, args...)
+	out, err := c.Run(t, subcmd, f, args...)
 	if err != nil {
 		t.Fatal(err)
 	}
 	return out
 }
 
-func (c *TestClient) MustFail(t *testing.T, args ...string) {
+func (c *TestClient) MustFail(t *testing.T, subcmd string, f *sousFlags, args ...string) {
 	t.Helper()
-	_, err := c.Run(t, args...)
+	_, err := c.Run(t, subcmd, f, args...)
 	if err == nil {
 		t.Fatalf("command should have failed: sous %s", args)
+	}
+}
+
+func (c *TestClient) TransformManifestAsString(t *testing.T, getSetFlags *sousFlags, f func(manifest string) string) {
+	manifest := c.MustRun(t, "manifest get", getSetFlags)
+	manifest = f(manifest)
+	manifestSetCmd := c.Cmd(t, "manifest set", getSetFlags)
+	manifestSetCmd.Stdin = ioutil.NopCloser(bytes.NewReader([]byte(manifest)))
+	if out, err := manifestSetCmd.CombinedOutput(); err != nil {
+		t.Fatalf("manifest set failed: %s; output:\n%s", err, out)
 	}
 }

@@ -25,11 +25,7 @@ func NewSingularity(baseURL string) *Singularity {
 }
 
 func (s *Singularity) PauseRequestForDeployment(t *testing.T, did sous.DeploymentID) {
-	reqID, err := singularity.MakeRequestID(did)
-	if err != nil {
-		t.Fatalf("making singularity request ID: %s", err)
-	}
-
+	reqID := mustGetReqID(t, did)
 	if _, err := s.client.Pause(reqID, nil); err != nil {
 		t.Fatal(err)
 	}
@@ -62,11 +58,7 @@ func (s *Singularity) PauseRequestForDeployment(t *testing.T, did sous.Deploymen
 }
 
 func (s *Singularity) UnpauseRequestForDeployment(t *testing.T, did sous.DeploymentID) {
-	reqID, err := singularity.MakeRequestID(did)
-	if err != nil {
-		t.Fatalf("making singularity request ID: %s", err)
-	}
-
+	reqID := mustGetReqID(t, did)
 	if _, err := s.client.Unpause(reqID, nil); err != nil {
 		t.Fatal(err)
 	}
@@ -81,6 +73,23 @@ func (s *Singularity) UnpauseRequestForDeployment(t *testing.T, did sous.Deploym
 		}
 		return nil
 	})
+}
+
+func (s *Singularity) GetRequestForDeployment(t *testing.T, did sous.DeploymentID) *dtos.SingularityRequestParent {
+	reqID := mustGetReqID(t, did)
+	req, err := s.client.GetRequest(reqID, false)
+	if err != nil {
+		t.Fatalf("getting request: %s", err)
+	}
+	return req
+}
+
+func mustGetReqID(t *testing.T, did sous.DeploymentID) string {
+	reqID, err := singularity.MakeRequestID(did)
+	if err != nil {
+		t.Fatalf("making singularity request ID: %s", err)
+	}
+	return reqID
 }
 
 func waitFor(t *testing.T, what string, timeout, interval time.Duration, f func() error) {

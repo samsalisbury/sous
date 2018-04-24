@@ -3,8 +3,6 @@
 package smoke
 
 import (
-	"bytes"
-	"io/ioutil"
 	"strings"
 	"testing"
 
@@ -33,8 +31,8 @@ func setupProject(t *testing.T, f TestFixture, dockerfile string) TestClient {
 	sous := f.Client
 
 	// Dump sous version & config.
-	t.Logf("Sous version: %s", sous.MustRun(t, "version"))
-	sous.MustRun(t, "config")
+	t.Logf("Sous version: %s", sous.MustRun(t, "version", nil))
+	sous.MustRun(t, "config", nil)
 
 	// cd into project dir
 	sous.Dir = projectDir
@@ -42,34 +40,39 @@ func setupProject(t *testing.T, f TestFixture, dockerfile string) TestClient {
 	return sous
 }
 
-// initProjectNoFlavor runs sous init, then manifest get/set to bump instances
-// to 1 in all clusters.
-func initProjectNoFlavor(t *testing.T, sous TestClient) {
-	t.Helper()
-	// Prepare manifest.
-	sous.MustRun(t, "init", "-kind", "http-service")
-	manifest := sous.MustRun(t, "manifest", "get")
-	manifest = strings.Replace(manifest, "NumInstances: 0", "NumInstances: 1", -1)
-	manifestSetCmd := sous.Cmd(t, "manifest", "set")
-	manifestSetCmd.Stdin = ioutil.NopCloser(bytes.NewReader([]byte(manifest)))
-	if out, err := manifestSetCmd.CombinedOutput(); err != nil {
-		t.Fatalf("manifest set failed: %s; output:\n%s", err, out)
-	}
+type sousFlags struct {
+	kind    string
+	flavor  string
+	cluster string
+	repo    string
+	offset  string
+	tag     string
 }
 
-// initProjectWithFlavor is very similar to initProjectNoFlavor except it
-// creates and operates on a manifest with the provided flavor.
-func initProjectWithFlavor(t *testing.T, sous TestClient, flavor string) {
-	t.Helper()
-	// Prepare manifest.
-	sous.MustRun(t, "init", "-kind", "http-service", "-flavor", flavor)
-	manifest := sous.MustRun(t, "manifest", "get", "-flavor", flavor)
-	manifest = strings.Replace(manifest, "NumInstances: 0", "NumInstances: 1", -1)
-	manifestSetCmd := sous.Cmd(t, "manifest", "set", "-flavor", flavor)
-	manifestSetCmd.Stdin = ioutil.NopCloser(bytes.NewReader([]byte(manifest)))
-	if out, err := manifestSetCmd.CombinedOutput(); err != nil {
-		t.Fatalf("manifest set failed: %s; output:\n%s", err, out)
+func (f *sousFlags) Args() []string {
+	if f == nil {
+		return nil
 	}
+	var out []string
+	if f.kind != "" {
+		out = append(out, "-kind", f.kind)
+	}
+	if f.flavor != "" {
+		out = append(out, "-flavor", f.flavor)
+	}
+	if f.cluster != "" {
+		out = append(out, "-cluster", f.cluster)
+	}
+	if f.repo != "" {
+		out = append(out, "-repo", f.repo)
+	}
+	if f.offset != "" {
+		out = append(out, "-offset", f.offset)
+	}
+	if f.tag != "" {
+		out = append(out, "-tag", f.tag)
+	}
+	return out
 }
 
 func defaultManifestID() sous.ManifestID {
@@ -111,32 +114,42 @@ func TestSousNewdeploy(t *testing.T) {
 	t.Run("simple", func(t *testing.T) {
 		f := newTestFixture(t)
 		sous := setupProject(t, f, simpleServer)
-		initProjectNoFlavor(t, sous)
-		sous.MustRun(t, "build", "-tag", "1.2.3")
-		sous.MustRun(t, "newdeploy", "-cluster", "cluster1", "-tag", "1.2.3")
+		sous.MustRun(t, "init", nil, "-kind", "http-service")
+		sous.TransformManifestAsString(t, nil, func(manifest string) string {
+			return strings.Replace(manifest, "NumInstances: 0", "NumInstances: 1", -1)
+		})
+		sous.MustRun(t, "build", nil, "-tag", "1.2.3")
+		sous.MustRun(t, "newdeploy", nil, "-cluster", "cluster1", "-tag", "1.2.3")
 	})
 
 	t.Run("flavors", func(t *testing.T) {
 		f := newTestFixture(t)
 		sous := setupProject(t, f, simpleServer)
 		flavor := "flavor1"
-		initProjectWithFlavor(t, sous, flavor)
-		sous.MustRun(t, "build", "-tag", "1.2.3")
-		sous.MustRun(t, "newdeploy", "-cluster", "cluster1", "-tag", "1.2.3", "-flavor", flavor)
+		flavorFlag := &sousFlags{flavor: flavor}
+		sous.MustRun(t, "init", flavorFlag, "-kind", "http-service")
+		sous.TransformManifestAsString(t, flavorFlag, func(manifest string) string {
+			return strings.Replace(manifest, "NumInstances: 0", "NumInstances: 1", -1)
+		})
+		sous.MustRun(t, "build", nil, "-tag", "1.2.3")
+		sous.MustRun(t, "newdeploy", flavorFlag, "-cluster", "cluster1", "-tag", "1.2.3")
 	})
 
 	t.Run("pause-unpause", func(t *testing.T) {
 		f := newTestFixture(t)
 		sous := setupProject(t, f, simpleServer)
-		initProjectNoFlavor(t, sous)
-		sous.MustRun(t, "build", "-tag", "1")
-		sous.MustRun(t, "build", "-tag", "2")
-		sous.MustRun(t, "build", "-tag", "3")
-		sous.MustRun(t, "newdeploy", "-cluster", "cluster1", "-tag", "1")
+		sous.MustRun(t, "init", nil, "-kind", "http-service")
+		sous.TransformManifestAsString(t, nil, func(manifest string) string {
+			return strings.Replace(manifest, "NumInstances: 0", "NumInstances: 1", -1)
+		})
+		sous.MustRun(t, "build", nil, "-tag", "1")
+		sous.MustRun(t, "build", nil, "-tag", "2")
+		sous.MustRun(t, "build", nil, "-tag", "3")
+		sous.MustRun(t, "newdeploy", nil, "-cluster", "cluster1", "-tag", "1")
 		f.Singularity.PauseRequestForDeployment(t, deploymentID(defaultManifestID(), "cluster1"))
-		sous.MustFail(t, "newdeploy", "-cluster", "cluster1", "-tag", "2")
+		sous.MustFail(t, "newdeploy", nil, "-cluster", "cluster1", "-tag", "2")
 		f.Singularity.UnpauseRequestForDeployment(t, deploymentID(defaultManifestID(), "cluster1"))
 		knownToFailHere(t)
-		sous.MustRun(t, "newdeploy", "-cluster", "cluster1", "-tag", "3")
+		sous.MustRun(t, "newdeploy", nil, "-cluster", "cluster1", "-tag", "3")
 	})
 }
