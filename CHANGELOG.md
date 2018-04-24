@@ -9,6 +9,7 @@ with respect to its command line interface and HTTP interface.
 ## [Unreleased](//github.com/opentable/sous/compare/0.5.85...HEAD)
 ### Added
 * Server: more flexible, agile logging API.
+* Client: add -dev flag, at the moment just affects checking for local images
 ### Changed
 * Client: Display more information in case timeout of sous newdeploy.  Also show Executor Message if failed deploy.
 
