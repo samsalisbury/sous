@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface.
 
+
+## [Unreleased](//github.com/opentable/sous/compare/0.5.86...HEAD)
+### Added
+
+### Changed
+* Client: error is returned if manifest set is sent a different source location
+
 ## [0.5.86](//github.com/opentable/sous/compare/0.5.85...0.5.86)
 ### Added
 * Client: `sous manifest edit` covers 90% of the manifest get/set use case, more easily.
