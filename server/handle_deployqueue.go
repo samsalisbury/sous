@@ -5,6 +5,7 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 )
 
@@ -27,7 +28,7 @@ func newDeployQueueResource(ctx ComponentLocator) *DeployQueueResource {
 }
 
 // Get returns a configured GETDeployQueueHandler.
-func (r *DeployQueueResource) Get(_ *restful.RouteMap, _ http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
+func (r *DeployQueueResource) Get(_ *restful.RouteMap, _ logging.LogSink, _ http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
 	qv := restful.QueryValues{Values: req.URL.Query()}
 	did, didErr := deploymentIDFromValues(qv)
 	return &GETDeployQueueHandler{

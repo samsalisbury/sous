@@ -33,7 +33,8 @@ func TestSingleDeploymentResource(t *testing.T) {
 	t.Run("Get()", func(t *testing.T) {
 		req := httptest.NewRequest("GET", "http://sous.example.com/single-deployment", nil)
 
-		gex := r.Get(rm, rw, req, nil)
+		ls, _ := logging.NewLogSinkSpy()
+		gex := r.Get(rm, ls, rw, req, nil)
 
 		if gex == nil {
 			t.Fatalf("r.Get returned nil")
@@ -53,7 +54,8 @@ func TestSingleDeploymentResource(t *testing.T) {
 
 	t.Run("Put()", func(t *testing.T) {
 		req := httptest.NewRequest("PUT", "http://sous.example.com/single-deployment", bytes.NewBufferString("{}"))
-		pex := r.Put(rm, rw, req, nil)
+		ls, _ := logging.NewLogSinkSpy()
+		pex := r.Put(rm, ls, rw, req, nil)
 		if pex == nil {
 			t.Fatalf("r.Put returned nil")
 		}
@@ -186,7 +188,8 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 
 		rw := httptest.NewRecorder()
 
-		psd := r.Put(rm, rw, req, nil).(*PUTSingleDeploymentHandler)
+		ls, _ := logging.NewLogSinkSpy()
+		psd := r.Put(rm, ls, rw, req, nil).(*PUTSingleDeploymentHandler)
 
 		return &psdhExScenario{
 			handler:      psd,

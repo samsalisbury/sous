@@ -21,7 +21,7 @@ type (
 
 	// An ExchangeFactory builds an Exchanger -
 	// they're used to configure the RouteMap
-	ExchangeFactory func(*RouteMap, http.ResponseWriter, *http.Request, httprouter.Params) Exchanger
+	ExchangeFactory func(*RouteMap, logging.LogSink, http.ResponseWriter, *http.Request, httprouter.Params) Exchanger
 
 	routeEntry struct {
 		Name, Path string
@@ -41,22 +41,22 @@ type (
 
 	// Getable tags ResourceFamilies that respond to GET
 	Getable interface {
-		Get(*RouteMap, http.ResponseWriter, *http.Request, httprouter.Params) Exchanger
+		Get(*RouteMap, logging.LogSink, http.ResponseWriter, *http.Request, httprouter.Params) Exchanger
 	}
 
 	// Putable tags ResourceFamilies that respond to PUT
 	Putable interface {
-		Put(*RouteMap, http.ResponseWriter, *http.Request, httprouter.Params) Exchanger
+		Put(*RouteMap, logging.LogSink, http.ResponseWriter, *http.Request, httprouter.Params) Exchanger
 	}
 
 	// Deleteable tags ResourceFamilies that respond to DELETE
 	Deleteable interface {
-		Delete(*RouteMap, http.ResponseWriter, *http.Request, httprouter.Params) Exchanger
+		Delete(*RouteMap, logging.LogSink, http.ResponseWriter, *http.Request, httprouter.Params) Exchanger
 	}
 
 	// Optionsable tags ResourceFamilies that respond to OPTIONS
 	Optionsable interface {
-		Options(*RouteMap, http.ResponseWriter, *http.Request, httprouter.Params) Exchanger
+		Options(*RouteMap, logging.LogSink, http.ResponseWriter, *http.Request, httprouter.Params) Exchanger
 	}
 	/*
 		Postable interface {
@@ -155,7 +155,7 @@ func defaultOptions(res Resource) ExchangeFactory {
 		ex.methods = append(ex.methods, "DELETE")
 	}
 
-	return func(*RouteMap, http.ResponseWriter, *http.Request, httprouter.Params) Exchanger {
+	return func(*RouteMap, logging.LogSink, http.ResponseWriter, *http.Request, httprouter.Params) Exchanger {
 		return ex
 	}
 }
@@ -173,7 +173,7 @@ func (rm *RouteMap) SingleExchanger(factory ExchangeFactory, gf func() Injector,
 
 	mh := rm.buildMetaHandler(r, ls)
 
-	return mh.injectedHandler(factory, w, rq, httprouter.Params{})
+	return mh.injectedHandler(factory, "single", w, rq, httprouter.Params{})
 }
 
 // KV (Key/Value) is a convenience type for URIFor.

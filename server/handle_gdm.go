@@ -41,9 +41,9 @@ func newGDMResource(ctx ComponentLocator) *GDMResource {
 }
 
 // Get implements Getable on GDMResource
-func (gr *GDMResource) Get(_ *restful.RouteMap, writer http.ResponseWriter, _ *http.Request, _ httprouter.Params) restful.Exchanger {
+func (gr *GDMResource) Get(_ *restful.RouteMap, ls logging.LogSink, writer http.ResponseWriter, _ *http.Request, _ httprouter.Params) restful.Exchanger {
 	return &GETGDMHandler{
-		LogSink: gr.context.LogSink,
+		LogSink: ls,
 		GDM:     gr.context.liveState(),
 	}
 }
@@ -73,10 +73,10 @@ func (h *GETGDMHandler) Exchange() (interface{}, int) {
 }
 
 // Put implements Putable on GDMResource
-func (gr *GDMResource) Put(_ *restful.RouteMap, _ http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
+func (gr *GDMResource) Put(_ *restful.RouteMap, ls logging.LogSink, _ http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
 	return &PUTGDMHandler{
 		Request:      req,
-		LogSink:      gr.context.LogSink,
+		LogSink:      ls,
 		GDM:          gr.context.liveState(),
 		StateManager: gr.context.StateManager,
 		User:         gr.GetUser(req),

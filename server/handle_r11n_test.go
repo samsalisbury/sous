@@ -9,6 +9,7 @@ import (
 
 	"github.com/opentable/sous/dto"
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 )
 
 // TestNewR11nResource checks that the same queue set passed to the
@@ -21,7 +22,8 @@ func TestNewR11nResource(t *testing.T) {
 	dq := newR11nResource(c)
 	rm := routemap(c)
 
-	got := dq.Get(rm, nil, &http.Request{URL: &url.URL{}}, nil).(*GETR11nHandler)
+	ls, _ := logging.NewLogSinkSpy()
+	got := dq.Get(rm, ls, nil, &http.Request{URL: &url.URL{}}, nil).(*GETR11nHandler)
 	if got.QueueSet != qs {
 		t.Errorf("got different queueset")
 	}
@@ -87,7 +89,8 @@ func TestR11nResource_Get_no_errors(t *testing.T) {
 			c := ComponentLocator{}
 			rm := routemap(c)
 
-			got := dr.Get(rm, nil, req, nil).(*GETR11nHandler)
+			ls, _ := logging.NewLogSinkSpy()
+			got := dr.Get(rm, ls, nil, req, nil).(*GETR11nHandler)
 
 			gotDID := got.DeploymentID
 			if gotDID != tc.wantDID {
