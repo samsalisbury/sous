@@ -6,12 +6,18 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/opentable/go-singularity/dtos"
 	sous "github.com/opentable/sous/lib"
 )
 
 const simpleServer = `
 FROM alpine
 CMD if [ -z "$T" ]; then T=2; fi; echo -n "Sleeping ${T}s..."; sleep $T; echo "Done"; echo "Listening on :$PORT0"; while true; do echo -e "HTTP/1.1 200 OK\n\n$(date)" | nc -l -p $PORT0; done`
+
+const sleeper = `
+FROM alpine
+CMD sleep 10
+`
 
 // setupProject creates a brand new git repo containing the provided Dockerfile,
 // commits that Dockerfile, runs 'sous version' and 'sous config', and returns a
@@ -28,16 +34,16 @@ func setupProject(t *testing.T, f TestFixture, dockerfile string) TestClient {
 	mustDoCMD(t, projectDir, "git", "add", "Dockerfile")
 	mustDoCMD(t, projectDir, "git", "commit", "-m", "Add Dockerfile")
 
-	sous := f.Client
+	client := f.Client
 
 	// Dump sous version & config.
-	t.Logf("Sous version: %s", sous.MustRun(t, "version", nil))
-	sous.MustRun(t, "config", nil)
+	t.Logf("Sous version: %s", client.MustRun(t, "version", nil))
+	client.MustRun(t, "config", nil)
 
 	// cd into project dir
-	sous.Dir = projectDir
+	client.Dir = projectDir
 
-	return sous
+	return client
 }
 
 type sousFlags struct {
@@ -75,37 +81,12 @@ func (f *sousFlags) Args() []string {
 	return out
 }
 
-func defaultManifestID() sous.ManifestID {
-	return sous.ManifestID{
-		Source: sous.SourceLocation{
-			Dir:  "",
-			Repo: "github.com/user1/repo1",
-		},
-		Flavor: "",
-	}
-}
-
-func manifestID(repo, dir, flavor string) sous.ManifestID {
-	return sous.ManifestID{
-		Source: sous.SourceLocation{
-			Dir:  dir,
-			Repo: repo,
-		},
-		Flavor: flavor,
-	}
-}
-
-func deploymentID(mid sous.ManifestID, cluster string) sous.DeploymentID {
-	return sous.DeploymentID{
-		ManifestID: mid,
-		Cluster:    cluster,
-	}
-}
-
-func defaultDeploymentID() sous.DeploymentID {
-	return sous.DeploymentID{
-		ManifestID: defaultManifestID(),
-		Cluster:    "cluster1",
+func assertActiveStatus(t *testing.T, f TestFixture, did sous.DeploymentID) {
+	req := f.Singularity.GetRequestForDeployment(t, did)
+	gotStatus := req.State
+	wantStatus := dtos.SingularityRequestParentRequestStateACTIVE
+	if gotStatus != wantStatus {
+		t.Fatalf("got status %v; want %v", gotStatus, wantStatus)
 	}
 }
 
@@ -113,43 +94,103 @@ func TestSousNewdeploy(t *testing.T) {
 
 	t.Run("simple", func(t *testing.T) {
 		f := newTestFixture(t)
-		sous := setupProject(t, f, simpleServer)
-		sous.MustRun(t, "init", nil, "-kind", "http-service")
-		sous.TransformManifestAsString(t, nil, func(manifest string) string {
+		client := setupProject(t, f, simpleServer)
+		client.MustRun(t, "init", nil, "-kind", "http-service")
+		client.TransformManifestAsString(t, nil, func(manifest string) string {
 			return strings.Replace(manifest, "NumInstances: 0", "NumInstances: 1", -1)
 		})
-		sous.MustRun(t, "build", nil, "-tag", "1.2.3")
-		sous.MustRun(t, "newdeploy", nil, "-cluster", "cluster1", "-tag", "1.2.3")
+		client.MustRun(t, "build", nil, "-tag", "1.2.3")
+		client.MustRun(t, "newdeploy", nil, "-cluster", "cluster1", "-tag", "1.2.3")
+
+		did := sous.DeploymentID{
+			ManifestID: sous.ManifestID{
+				Source: sous.SourceLocation{
+					Repo: "github.com/user1/repo1",
+				},
+			},
+			Cluster: "cluster1",
+		}
+		assertActiveStatus(t, f, did)
 	})
 
 	t.Run("flavors", func(t *testing.T) {
 		f := newTestFixture(t)
-		sous := setupProject(t, f, simpleServer)
+		client := setupProject(t, f, simpleServer)
 		flavor := "flavor1"
 		flavorFlag := &sousFlags{flavor: flavor}
-		sous.MustRun(t, "init", flavorFlag, "-kind", "http-service")
-		sous.TransformManifestAsString(t, flavorFlag, func(manifest string) string {
+		client.MustRun(t, "init", flavorFlag, "-kind", "http-service")
+		client.TransformManifestAsString(t, flavorFlag, func(manifest string) string {
 			return strings.Replace(manifest, "NumInstances: 0", "NumInstances: 1", -1)
 		})
-		sous.MustRun(t, "build", nil, "-tag", "1.2.3")
-		sous.MustRun(t, "newdeploy", flavorFlag, "-cluster", "cluster1", "-tag", "1.2.3")
+		client.MustRun(t, "build", nil, "-tag", "1.2.3")
+		client.MustRun(t, "newdeploy", flavorFlag, "-cluster", "cluster1", "-tag", "1.2.3")
+
+		did := sous.DeploymentID{
+			ManifestID: sous.ManifestID{
+				Source: sous.SourceLocation{
+					Repo: "github.com/user1/repo1",
+				},
+				Flavor: flavor,
+			},
+			Cluster: "cluster1",
+		}
+
+		assertActiveStatus(t, f, did)
 	})
 
 	t.Run("pause-unpause", func(t *testing.T) {
 		f := newTestFixture(t)
-		sous := setupProject(t, f, simpleServer)
-		sous.MustRun(t, "init", nil, "-kind", "http-service")
-		sous.TransformManifestAsString(t, nil, func(manifest string) string {
+		client := setupProject(t, f, simpleServer)
+		client.MustRun(t, "init", nil, "-kind", "http-service")
+		client.TransformManifestAsString(t, nil, func(manifest string) string {
 			return strings.Replace(manifest, "NumInstances: 0", "NumInstances: 1", -1)
 		})
-		sous.MustRun(t, "build", nil, "-tag", "1")
-		sous.MustRun(t, "build", nil, "-tag", "2")
-		sous.MustRun(t, "build", nil, "-tag", "3")
-		sous.MustRun(t, "newdeploy", nil, "-cluster", "cluster1", "-tag", "1")
-		f.Singularity.PauseRequestForDeployment(t, deploymentID(defaultManifestID(), "cluster1"))
-		sous.MustFail(t, "newdeploy", nil, "-cluster", "cluster1", "-tag", "2")
-		f.Singularity.UnpauseRequestForDeployment(t, deploymentID(defaultManifestID(), "cluster1"))
+		client.MustRun(t, "build", nil, "-tag", "1")
+		client.MustRun(t, "build", nil, "-tag", "2")
+		client.MustRun(t, "build", nil, "-tag", "3")
+		client.MustRun(t, "newdeploy", nil, "-cluster", "cluster1", "-tag", "1")
+
+		did := sous.DeploymentID{
+			ManifestID: sous.ManifestID{
+				Source: sous.SourceLocation{
+					Repo: "github.com/user1/repo1",
+				},
+			},
+			Cluster: "cluster1",
+		}
+		assertActiveStatus(t, f, did)
+
+		f.Singularity.PauseRequestForDeployment(t, did)
+		client.MustFail(t, "newdeploy", nil, "-cluster", "cluster1", "-tag", "2")
+		f.Singularity.UnpauseRequestForDeployment(t, did)
 		knownToFailHere(t)
-		sous.MustRun(t, "newdeploy", nil, "-cluster", "cluster1", "-tag", "3")
+		client.MustRun(t, "newdeploy", nil, "-cluster", "cluster1", "-tag", "3")
+	})
+
+	t.Run("scheduled", func(t *testing.T) {
+		f := newTestFixture(t)
+		client := setupProject(t, f, sleeper)
+		client.MustRun(t, "init", nil, "-kind", "scheduled")
+		//client.TransformManifestAsString(t, nil, func(manifest string) string {
+		//	return strings.Replace(manifest, "NumInstances: 0", "NumInstances: 1", -1)
+		//})
+		client.MustRun(t, "build", nil, "-tag", "1.2.3")
+		client.MustRun(t, "newdeploy", nil, "-cluster", "cluster1", "-tag", "1.2.3")
+
+		did := sous.DeploymentID{
+			ManifestID: sous.ManifestID{
+				Source: sous.SourceLocation{
+					Repo: "github.com/user1/repo1",
+				},
+			},
+			Cluster: "cluster1",
+		}
+
+		req := f.Singularity.GetRequestForDeployment(t, did)
+		gotType := req.Request.RequestType
+		wantType := dtos.SingularityRequestRequestTypeSCHEDULED
+		if gotType != wantType {
+			t.Errorf("got request type %v; want %v", gotType, wantType)
+		}
 	})
 }
