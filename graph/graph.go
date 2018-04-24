@@ -572,11 +572,15 @@ func newServerListData(c HTTPClient) (ServerListData, error) {
 	return serverList, err
 }
 
-func newHTTPClientBundle(serverList ServerListData, log LogSink) (ClientBundle, error) {
+func newRequestID() sous.TraceID {
+	tid := uuid.NewV4()
+	return sous.TraceID(tid.String())
+}
+
+func newHTTPClientBundle(serverList ServerListData, tid sous.TraceID, log LogSink) (ClientBundle, error) {
 	bundle := ClientBundle{}
 	for _, s := range serverList.Servers {
-		tid := uuid.NewV4()
-		client, err := restful.NewClient(s.URL, log.Child(s.ClusterName+".http-client"), map[string]string{"OT-RequestId": tid.String()})
+		client, err := restful.NewClient(s.URL, log.Child(s.ClusterName+".http-client"), map[string]string{"OT-RequestId": tid})
 		if err != nil {
 			return nil, err
 		}
@@ -604,7 +608,7 @@ func newClusterSpecificHTTPClient(clients ClientBundle, rf *sous.ResolveFilter, 
 
 // newHTTPClient returns an HTTP client if c.Server is not empty.
 // Otherwise it returns nil, and emits some warnings.
-func newHTTPClient(c LocalSousConfig, user sous.User, srvr ServerHandler, log LogSink) (HTTPClient, error) {
+func newHTTPClient(c LocalSousConfig, user sous.User, srvr ServerHandler, tid sous.TraceID, log LogSink) (HTTPClient, error) {
 	if c.Server == "" {
 		messages.ReportLogFieldsMessageToConsole("No server set, Sous is running in server or workstation mode.", logging.WarningLevel, log)
 		messages.ReportLogFieldsMessageToConsole("Configure a server like this: sous config server http://some.sous.server", logging.WarningLevel, log)
@@ -612,8 +616,7 @@ func newHTTPClient(c LocalSousConfig, user sous.User, srvr ServerHandler, log Lo
 		return HTTPClient{HTTPClient: cl}, err
 	}
 	messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Using server %s", c.Server), logging.ExtraDebug1Level, log)
-	tid := uuid.NewV4()
-	cl, err := restful.NewClient(c.Server, log.Child("http-client"), map[string]string{"OT-RequestId": tid.String()})
+	cl, err := restful.NewClient(c.Server, log.Child("http-client"), map[string]string{"OT-RequestId": tid})
 	return HTTPClient{HTTPClient: cl}, err
 }
 
