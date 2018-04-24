@@ -25,6 +25,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/samsalisbury/psyringe"
 	"github.com/samsalisbury/semv"
+	uuid "github.com/satori/go.uuid"
 )
 
 type (
@@ -574,7 +575,8 @@ func newServerListData(c HTTPClient) (ServerListData, error) {
 func newHTTPClientBundle(serverList ServerListData, log LogSink) (ClientBundle, error) {
 	bundle := ClientBundle{}
 	for _, s := range serverList.Servers {
-		client, err := restful.NewClient(s.URL, log.Child(s.ClusterName+".http-client"))
+		tid := uuid.NewV4()
+		client, err := restful.NewClient(s.URL, log.Child(s.ClusterName+".http-client"), map[string]string{"OT-RequestId": tid.String()})
 		if err != nil {
 			return nil, err
 		}
@@ -610,7 +612,8 @@ func newHTTPClient(c LocalSousConfig, user sous.User, srvr ServerHandler, log Lo
 		return HTTPClient{HTTPClient: cl}, err
 	}
 	messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Using server %s", c.Server), logging.ExtraDebug1Level, log)
-	cl, err := restful.NewClient(c.Server, log.Child("http-client"))
+	tid := uuid.NewV4()
+	cl, err := restful.NewClient(c.Server, log.Child("http-client"), map[string]string{"OT-RequestId": tid.String()})
 	return HTTPClient{HTTPClient: cl}, err
 }
 
@@ -643,6 +646,7 @@ func newDistributedStorage(db *sql.DB, c LocalSousConfig, rf *sous.ResolveFilter
 	list := ClientBundle{}
 	clusterNames := []string{}
 	for n, u := range c.SiblingURLs {
+		// XXX not immediately clear how to conserve the request id through the distributed storage.
 		cl, err := restful.NewClient(u, log.Child(n+".http-client"))
 		if err != nil {
 			return nil, err
