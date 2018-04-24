@@ -39,9 +39,9 @@ after_script:
 - docker ps || true
 - docker logs testregistry_master_1 || true
 - docker logs testregistry_slave_1 || true
-#after_success:
-#- make coverage
-#- bin/codecov -f /tmp/sous-cover/count_merged.txt
+after_success:
+- make coverage
+- bin/codecov -f /tmp/sous-cover/count_merged.txt
 env:
   global:
   - PGPORT=5432
