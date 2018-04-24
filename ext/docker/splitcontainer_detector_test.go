@@ -13,18 +13,18 @@ var pathEnv = "[PATH=/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbi
 func Test_parseImageOutput(t *testing.T) {
 	inputEnv := fullEnv
 	envs := parseImageOutput(inputEnv)
-	assert.Equal(t, len(envs), 13)
+	assert.Len(t, envs, 13)
 	assert.Equal(t, "/run_spec.json", envs[SOUS_RUN_IMAGE_SPEC])
 	assert.Equal(t, "$PRODUCT/run_spec.json", envs["SOUS_RUN_IMAGE_SPEC_OUTPUT"])
 
 	inputEnv = pathEnv
 	envs = parseImageOutput(inputEnv)
-	assert.Equal(t, 12, len(envs))
+	assert.Len(t, envs, 12)
 	assert.Equal(t, "/run_spec.json", envs[SOUS_RUN_IMAGE_SPEC])
 
 	inputEnv = ""
 	envs = parseImageOutput(inputEnv)
-	assert.Equal(t, 0, len(envs))
+	assert.Len(t, envs, 0)
 }
 
 func Test_inspectImage(t *testing.T) {
@@ -52,5 +52,5 @@ func Test_inspectImageForOnBuild(t *testing.T) {
 
 	imageOnBuild := inspectImage(sh, "docker.otenv.com/sous-otj-autobuild:local")
 	envs := parseImageOutput(imageOnBuild)
-	assert.Equal(t, 13, len(envs))
+	assert.Len(t, envs, 13)
 }
