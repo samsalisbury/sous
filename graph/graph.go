@@ -166,6 +166,7 @@ func BuildBaseGraph(version semv.Version, in io.Reader, out, err io.Writer) *Sou
 	graph := newSousGraph()
 	graph.Add(
 		version,
+		sous.TraceID(uuid.NewV4().String()),
 		func() InReader { return in },
 		func() OutWriter { return out },
 		func() ErrWriter { return err },
@@ -334,8 +335,8 @@ func newRegistryDumper(r sous.Registry) *sous.RegistryDumper {
 //
 // If handed invalid config, we emit a warning on stderr and proceed with a
 // default LogSet.
-func newLogSet(v semv.Version, config PossiblyInvalidConfig) (*logging.LogSet, error) {
-	ls := logging.NewLogSet(v, "", "", os.Stderr)
+func newLogSet(v semv.Version, config PossiblyInvalidConfig, tid sous.TraceID) (*logging.LogSet, error) {
+	ls := logging.NewLogSet(v, "", "", os.Stderr, tid)
 	if configErr := config.Logging.Validate(); configErr != nil {
 		// No need to warn here, this is handled by PIC constructor.
 		config.Logging = logging.Config{}
@@ -572,15 +573,10 @@ func newServerListData(c HTTPClient) (ServerListData, error) {
 	return serverList, err
 }
 
-func newRequestID() sous.TraceID {
-	tid := uuid.NewV4()
-	return sous.TraceID(tid.String())
-}
-
 func newHTTPClientBundle(serverList ServerListData, tid sous.TraceID, log LogSink) (ClientBundle, error) {
 	bundle := ClientBundle{}
 	for _, s := range serverList.Servers {
-		client, err := restful.NewClient(s.URL, log.Child(s.ClusterName+".http-client"), map[string]string{"OT-RequestId": tid})
+		client, err := restful.NewClient(s.URL, log.Child(s.ClusterName+".http-client"), map[string]string{"OT-RequestId": string(tid)})
 		if err != nil {
 			return nil, err
 		}
@@ -616,7 +612,7 @@ func newHTTPClient(c LocalSousConfig, user sous.User, srvr ServerHandler, tid so
 		return HTTPClient{HTTPClient: cl}, err
 	}
 	messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Using server %s", c.Server), logging.ExtraDebug1Level, log)
-	cl, err := restful.NewClient(c.Server, log.Child("http-client"), map[string]string{"OT-RequestId": tid})
+	cl, err := restful.NewClient(c.Server, log.Child("http-client"), map[string]string{"OT-RequestId": string(tid)})
 	return HTTPClient{HTTPClient: cl}, err
 }
 
