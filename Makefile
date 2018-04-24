@@ -248,9 +248,6 @@ wip:
 	git commit --squash=HEAD -m "Making WIP" --no-gpg-sign --no-verify
 
 
-$(COVER_DIR)/count_merged.txt: $(COVER_DIR) $(GO_FILES)
-	go test -covermode=count -coverprofile=$(COVER_DIR)/count_merged.txt ./...
-
 .cadre/coverage.vim: $(COVER_DIR)/count_merged.txt
 	legendary --hitlist --limit 20 $@ $<
 
@@ -274,10 +271,17 @@ test-metalinter: install-linters
 test-gofmt:
 	bin/check-gofmt
 
-test-unit-base:
-	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -timeout 3m -race $(SOUS_PACKAGES_WITH_TESTS) $(TEST_TEAMCITY)
+test-unit-base: $(COVER_DIR) $(GO_FILES)
+	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) \
+		-covermode=atomic -coverprofile=$(COVER_DIR)/count_merged.txt \
+		-timeout 3m -race $(SOUS_PACKAGES_WITH_TESTS) $(TEST_TEAMCITY)
 
 test-unit: postgres-test-prepare test-unit-base
+
+$(COVER_DIR)/count_merged.txt: $(COVER_DIR) $(GO_FILES)
+	go test \
+		-covermode=count -coverprofile=$(COVER_DIR)/count_merged.txt \
+		$(SOUS_PACKAGES_WITH_TESTS)
 
 test-integration: setup-containers
 	@echo
