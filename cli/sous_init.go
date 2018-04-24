@@ -66,6 +66,7 @@ func (si *SousInit) Execute(args []string) cmdr.Result {
 
 	kind := sous.ManifestKind(si.DeployFilterFlags.Kind)
 	kindOk := false
+	skipHealth := false
 
 	m := si.Target.Manifest
 
@@ -75,6 +76,22 @@ func (si *SousInit) Execute(args []string) cmdr.Result {
 	case sous.ManifestKindScheduled:
 		kindOk = true
 
+		skipHealth = true
+
+	case sous.ManifestKindOnDemand:
+		kindOk = true
+
+		skipHealth = true
+
+	default:
+		kindOk = false
+	}
+
+	if kindOk == false {
+		return cmdr.UsageErrorf("kind not defined, pick one of %s or %s", sous.ManifestKindScheduled, sous.ManifestKindService)
+	}
+
+	if skipHealth == true {
 		var dsm map[string]sous.DeploySpec
 		dsm = make(map[string]sous.DeploySpec)
 
@@ -85,15 +102,6 @@ func (si *SousInit) Execute(args []string) cmdr.Result {
 		}
 
 		m.Deployments = dsm
-
-	case sous.ManifestKindOnDemand:
-		kindOk = true
-	default:
-		kindOk = false
-	}
-
-	if kindOk == false {
-		return cmdr.UsageErrorf("kind not defined, pick one of %s or %s", sous.ManifestKindScheduled, sous.ManifestKindService)
 	}
 
 	cluster := si.DeployFilterFlags.Cluster
