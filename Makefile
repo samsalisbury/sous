@@ -27,16 +27,29 @@ else
 GIT_TAG := $(shell $(TAG_TEST))
 endif
 
+# TODO SS: Find out why this is necessary.
+# Note: The Darwin test is arbitrary; simply "running on macOS" is probably not the problem,
+# but right now this is not necessary on any of the Linux machines in dev or CI.
+ifeq ($(shell uname),Darwin)
+DESTROY_SINGULARITY_BETWEEN_SMOKE_TEST_CASES ?= YES
+else
+DESTROY_SINGULARITY_BETWEEN_SMOKE_TEST_CASES ?= NO
+endif
+
 REPO_ROOT := $(shell git rev-parse --show-toplevel)
 SMOKE_TEST_BASEDIR ?= $(REPO_ROOT)/.smoketest
 SMOKE_TEST_DATA_DIR ?= $(SMOKE_TEST_BASEDIR)/$(DATE)
 SMOKE_TEST_LATEST_LINK ?= $(SMOKE_TEST_BASEDIR)/latest
 SMOKE_TEST_BINARY ?= $(SMOKE_TEST_DATA_DIR)/sous
 
-# install-dev uses DESC and DATE to make a git described, timestamped dev build.
-DESC := $(shell git describe)
+# install-dev uses DEV_DESC and DATE to make a git described, timestamped dev build.
+DEV_DESC ?= $(shell git describe)
+ifneq ($(shell echo $(DEV_DESC) | grep -E '^\d+\.\d+\.\d+'),$(DEV_DESC))
+DEV_DESC := 0.0.0-$(DEV_DESC)
+endif
+
 DATE := $(shell date +%Y-%m-%dT%H-%M-%S)
-DEV_VERSION := "$(DESC)-devbuild-$(DATE)"
+DEV_VERSION := "$(DEV_DESC)-devbuild-$(DATE)"
 
 SOUS_BIN_PATH := $(shell which sous 2> /dev/null || echo $$GOPATH/bin/sous)
 
@@ -71,9 +84,14 @@ LINUX_TARBALL := $(LINUX_RELEASE_DIR).tar.gz
 CONCAT_XGO_ARGS := -go $(GO_VERSION) -branch master -deps $(SQLITE_URL) --dest $(BIN_DIR) --ldflags $(FLAGS)
 COVER_DIR := /tmp/sous-cover
 TEST_VERBOSE := $(if $(VERBOSE),-v,)
+TEST_TEAMCITY := $(if $(TEAMCITY),| ./dev_support/gotest-to-teamcity)
 SOUS_PACKAGES:= $(shell go list -f '{{.ImportPath}}' ./... | grep -v 'vendor')
 SOUS_PACKAGES_WITH_TESTS:= $(shell go list -f '{{if len .TestGoFiles}}{{.ImportPath}}{{end}}' ./...)
 SOUS_TC_PACKAGES=$(shell docker run --rm -v $(PWD):/go/src/github.com/opentable/sous -w /go/src/github.com/opentable/sous golang:1.10 go list -f '{{if len .TestGoFiles}}{{.ImportPath}}{{end}}' ./... | sed 's/_\/app/github.com\/opentable\/sous/')
+
+GO_FILES := $(shell find . -regex '.*\.go')
+GO_PROJECT_FILES := $(shell find . -type d -name vendor -prune -o -regex '.*\.go')
+
 SOUS_CONTAINER_IMAGES:= "docker images | egrep '127.0.0.1:5000|testregistry_'"
 TC_TEMP_DIR ?= /tmp/sous
 
@@ -141,7 +159,7 @@ clean-container-certs:
 
 clean-running-containers:
 	@if (( $$(docker ps -q | wc -l) > 0 )); then echo 'found running containers, killing:'; docker ps -q | xargs docker kill; fi
-	@if (( $$(docker ps -aq | wc -l) > 0 )); then echo 'found container instances, deleting:'; docker ps -aq | xargs docker rm; fi
+	@if (( $$(docker ps -aq | wc -l) > 0 )); then echo 'found container instances, deleting:'; docker ps -aq | xargs docker rm --volumes; fi
 
 gitlog:
 	git log `git describe --abbrev=0`..HEAD
@@ -229,22 +247,26 @@ wip:
 	git add workinprogress
 	git commit --squash=HEAD -m "Making WIP" --no-gpg-sign --no-verify
 
-coverage: $(COVER_DIR)
-	engulf -s --coverdir=$(COVER_DIR) \
-		--exclude '/vendor,integration/?,/bin/?,/dev_support/?,/util/test_with_docker/?,/examples/?,/util/cmdr/cmdr-example/?'\
-		--exclude-files='raw_client.go$$,_generated.go$$'\
-		--merge-base=_merged.txt ./...
 
-legendary: coverage
-	legendary --hitlist .cadre/coverage.vim /tmp/sous-cover/*_merged.txt
+$(COVER_DIR)/count_merged.txt: $(COVER_DIR) $(GO_FILES)
+	go test -covermode=count -coverprofile=$(COVER_DIR)/count_merged.txt ./...
+
+.cadre/coverage.vim: $(COVER_DIR)/count_merged.txt
+	legendary --hitlist --limit 20 $@ $<
+
+coverage: $(COVER_DIR)/count_merged.txt
+
+legendary: .cadre/coverage.vim
 
 test: test-gofmt test-staticcheck test-unit test-integration
 
 test-dev: test-gofmt test-staticcheck test-unit-base
 
 test-staticcheck: install-staticcheck
-	staticcheck -ignore "$$(cat staticcheck.ignore)" $(SOUS_PACKAGES)
-	staticcheck -tags integration -ignore "$$(cat staticcheck.ignore)" github.com/opentable/sous/integration
+	echo "staticcheck -ignore "$$(cat staticcheck.ignore)" $(SOUS_PACKAGES)"
+	@staticcheck -ignore "$$(cat staticcheck.ignore)" $(SOUS_PACKAGES) || (echo "FAIL: staticcheck" && false)
+	echo "staticcheck -tags integration -ignore "$$(cat staticcheck.ignore)" github.com/opentable/sous/integration"
+	@staticcheck -tags integration -ignore "$$(cat staticcheck.ignore)" github.com/opentable/sous/integration || (echo "FAIL: staticcheck" && false)
 
 test-metalinter: install-linters
 	gometalinter --config gometalinter.json ./...
@@ -253,7 +275,7 @@ test-gofmt:
 	bin/check-gofmt
 
 test-unit-base:
-	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -timeout 3m -race $(SOUS_PACKAGES_WITH_TESTS)
+	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -timeout 3m -race $(SOUS_PACKAGES_WITH_TESTS) $(TEST_TEAMCITY)
 
 test-unit: postgres-test-prepare test-unit-base
 
@@ -266,22 +288,29 @@ test-integration: setup-containers
 	@echo Set INTEGRATION_TEST_TIMEOUT to override.
 	@echo
 	@echo
-	SOUS_QA_DESC=$(QA_DESC) go test -count 1 -timeout $(INTEGRATION_TEST_TIMEOUT) $(EXTRA_GO_FLAGS)  $(TEST_VERBOSE) ./integration --tags=integration
+	SOUS_QA_DESC=$(QA_DESC) go test -count 1 -timeout $(INTEGRATION_TEST_TIMEOUT) $(EXTRA_GO_FLAGS)  $(TEST_VERBOSE) ./integration --tags=integration $(TEST_TEAMCITY)
 	@date
 
 $(SMOKE_TEST_BINARY):
 	go build -o $@ -tags smoke -ldflags "-X main.VersionString=$(DEV_VERSION)"
 
+$(SMOKE_TEST_DATA_DIR):
+	mkdir -p $@
+
 $(SMOKE_TEST_LATEST_LINK): $(SMOKE_TEST_DATA_DIR)
-	rm $@ || true
-	ln -s $(SMOKE_TEST_DATA_DIR) $@
+	ln -sfn $< $@
 
 .PHONY: test-smoke
 test-smoke: $(SMOKE_TEST_BINARY) $(SMOKE_TEST_LATEST_LINK) setup-containers
 	SMOKE_TEST_DATA_DIR=$(SMOKE_TEST_DATA_DIR)/data \
 	SMOKE_TEST_BINARY=$(SMOKE_TEST_BINARY) \
 	SOUS_QA_DESC=$(QA_DESC) \
-	go test -tags smoke -v -count 1 ./test/smoke
+	DESTROY_SINGULARITY_BETWEEN_SMOKE_TEST_CASES=$(DESTROY_SINGULARITY_BETWEEN_SMOKE_TEST_CASES) \
+	go test  $(EXTRA_GO_TEST_FLAGS) -tags smoke -v -count 1 ./test/smoke $(TEST_TEAMCITY)
+
+.PHONY: test-smoke-nofail
+test-smoke-nofail:
+	EXCLUDE_KNOWN_FAILING_TESTS=YES $(MAKE) test-smoke
 
 $(QA_DESC): sous-qa-setup
 	./sous_qa_setup --compose-dir ./integration/test-registry/ --out-path=$(QA_DESC)

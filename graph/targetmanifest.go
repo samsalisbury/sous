@@ -70,16 +70,6 @@ func newTargetDeploymentID(rrf *RefinedResolveFilter) (TargetDeploymentID, error
 	}, nil
 }
 
-// QueryMap returns a map suitable to use as an HTTP get parameter map to idenitfy a deployment.
-func (td TargetDeploymentID) QueryMap() map[string]string {
-	deployQuery := map[string]string{}
-	deployQuery["repo"] = td.ManifestID.Source.Repo
-	deployQuery["cluster"] = td.Cluster
-	deployQuery["offset"] = td.ManifestID.Source.Dir
-	deployQuery["flavor"] = td.ManifestID.Flavor
-	return deployQuery
-}
-
 func newTargetManifestID(rrf *RefinedResolveFilter) (TargetManifestID, error) {
 	if rrf == nil {
 		return TargetManifestID{}, fmt.Errorf("nil ResolveFilter")
@@ -96,15 +86,6 @@ func newTargetManifestID(rrf *RefinedResolveFilter) (TargetManifestID, error) {
 		},
 		Flavor: rrf.Flavor.ValueOr(""),
 	}, nil
-}
-
-// QueryMap returns a map suitable for use with the HTTP API.
-func (mid TargetManifestID) QueryMap() map[string]string {
-	manifestQuery := map[string]string{}
-	manifestQuery["repo"] = mid.Source.Repo
-	manifestQuery["offset"] = mid.Source.Dir
-	manifestQuery["flavor"] = mid.Flavor
-	return manifestQuery
 }
 
 func newTargetManifest(auto userSelectedOTPLDeployManifest, tmid TargetManifestID, s *sous.State) TargetManifest {
@@ -139,6 +120,16 @@ func newTargetManifest(auto userSelectedOTPLDeployManifest, tmid TargetManifestI
 	fls := m.Validate()
 	sous.RepairAll(fls)
 	return TargetManifest{m}
+}
+
+// QueryMap returns a map suitable for use with the HTTP API.
+// xxx This needed to be defined on both TargetManifestID and sous.ManifestID - I don't understand why.
+func (mid TargetManifestID) QueryMap() map[string]string {
+	manifestQuery := map[string]string{}
+	manifestQuery["repo"] = mid.Source.Repo
+	manifestQuery["offset"] = mid.Source.Dir
+	manifestQuery["flavor"] = mid.Flavor
+	return manifestQuery
 }
 
 func defaultDeploySpecs(clusters sous.Clusters) sous.DeploySpecs {

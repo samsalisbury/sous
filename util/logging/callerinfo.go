@@ -98,9 +98,9 @@ func (info CallerInfo) EachField(f FieldReportFn) {
 		}
 	}
 
-	f("@timestamp", info.callTime.UTC().Format(time.RFC3339))
-	f("thread-name", info.goroutineID)
-	f("call-stack-trace", stack)
+	f(Timestamp, info.callTime.UTC().Format(time.RFC3339))
+	f(ThreadName, info.goroutineID)
+	f(CallStackTrace, stack)
 
 	if frame.Function == "" {
 		f("call-stack-function", "<unknown>")
@@ -109,12 +109,12 @@ func (info CallerInfo) EachField(f FieldReportFn) {
 	}
 
 	if frame.File == "" {
-		f("call-stack-file", "<unknown>")
+		f(CallStackFile, "<unknown>")
 	} else {
-		f("call-stack-file", frame.File)
+		f(CallStackFile, fmt.Sprintf("%s:%d", frame.File, frame.Line))
 	}
 
-	f("call-stack-line-number", frame.Line)
+	f(CallStackLineNumber, frame.Line)
 }
 
 var localFnRE = regexp.MustCompile(`\.func\d+$`)

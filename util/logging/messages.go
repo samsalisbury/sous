@@ -65,8 +65,8 @@ type (
 
 	// A LogSink can be used in Deliver to send messages for logging.
 	LogSink interface {
-		// Child returns a namespaced child
-		Child(name string) LogSink
+		// Child returns a namespaced child, with a set of EachFielders for context.
+		Child(name string, context ...EachFielder) LogSink
 
 		// Fields is used to record the name/value fields of a structured message.
 		Fields([]EachFielder)
@@ -212,7 +212,7 @@ func (m MessageField) String() string {
 
 // WriteToConsole implements ConsoleMessage on ToConsole.
 func (tc ToConsole) WriteToConsole(c io.Writer) {
-	fmt.Fprintf(c, fmt.Sprintf("%s/n", tc.msg))
+	fmt.Fprintf(c, fmt.Sprintf("%s\n", tc.msg))
 }
 
 // Console marks a string as being suitable for console output.
@@ -274,10 +274,10 @@ func Deliver(logger LogSink, messages ...interface{}) {
 	if logger.ForceDefer() {
 		testFlag = false
 	}
-
 	if !testFlag {
 		defer loggingPanicsShouldntCrashTheApp(logger, messages)
 	}
+
 	items := partitionItems(messages)
 
 	logger.Fields(items.eachFielders)

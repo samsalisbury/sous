@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/opentable/sous/util/logging"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -17,6 +18,7 @@ type Rectification struct {
 	sync.RWMutex
 	Resolution DiffResolution
 
+	log    logging.LogSink
 	uuid   uuid.UUID
 	once   sync.Once
 	ctx    context.Context
@@ -25,7 +27,7 @@ type Rectification struct {
 
 // NewRectification is used to rectify differences on a single Deployment.
 // After this its useful life is over.
-func NewRectification(dp DeployablePair) *Rectification {
+func NewRectification(dp DeployablePair, l logging.LogSink) *Rectification {
 	c, cancel := context.WithCancel(context.Background())
 	u := uuid.NewV4()
 
@@ -34,7 +36,14 @@ func NewRectification(dp DeployablePair) *Rectification {
 		ctx:    c,
 		cancel: cancel,
 		uuid:   u,
+		log:    l,
 	}
+}
+
+// EachField implements logging.EachFielder on Rectification.
+func (r *Rectification) EachField(fn logging.FieldReportFn) {
+	r.Pair.EachField(fn)
+	r.Resolution.EachField(fn)
 }
 
 // Begin begins applying sr.Pair using d Deployer. Call Result to get the
@@ -93,6 +102,14 @@ func (r *Rectification) awaitDone(d Deployer, reg Registry, rf *ResolveFilter, s
 
 	end, ec := context.WithTimeout(r.ctx, 20*time.Minute)
 	defer ec()
+
+	logging.Deliver(r.log,
+		logging.SousGenericV1,
+		logging.GetCallerInfo(logging.NotHere()),
+		logging.ExtraDebug1Level,
+		logging.ConsoleAndMessage(fmt.Sprintf("Watching pending deployments for deploy ID: %s", r.Pair.Post.Deployment.SourceID)),
+		r.Pair,
+	)
 
 	for {
 		s, err := r.pollOnce(d, reg, clusters)

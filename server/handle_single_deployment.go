@@ -192,7 +192,7 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 
 	r := sous.NewRectification(sous.DeployablePair{Post: &sous.Deployable{
 		Deployment: newDeployment,
-	}})
+	}}, psd.log.Child("r11n"))
 
 	r.Pair.SetID(did)
 

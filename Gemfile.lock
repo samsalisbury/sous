@@ -31,10 +31,6 @@ GEM
       no_proxy_fix
       octokit (~> 4.7)
       terminal-table (~> 1)
-    danger-lgtm (0.1.1)
-      danger-plugin-api (~> 1.0)
-    danger-plugin-api (1.0.0)
-      danger (> 2.0)
     danger-prose (2.0.3)
       danger
     dotenv (2.2.1)
@@ -103,10 +99,9 @@ PLATFORMS
 
 DEPENDENCIES
   danger
-  danger-lgtm
   danger-prose
   fpm
   mdspell
 
 BUNDLED WITH
-   1.14.4
+   1.14.6
