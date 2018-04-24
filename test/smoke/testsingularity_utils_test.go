@@ -1,3 +1,5 @@
+//+build smoke
+
 package smoke
 
 import (
@@ -122,6 +124,7 @@ func waitFor(t *testing.T, what string, timeout, interval time.Duration, f func(
 
 func (s *Singularity) Reset(t *testing.T) {
 	t.Helper()
+
 	const pollLimit = 30
 	const retryLimit = 3
 	t.Log("Resetting Singularity...")
@@ -149,6 +152,20 @@ func (s *Singularity) Reset(t *testing.T) {
 			}
 			if len(reqList) == 0 {
 				log.Printf("Singularity successfully reset.")
+
+				if os.Getenv("DESTROY_SINGULARITY_BETWEEN_SMOKE_TEST_CASES") == "YES" {
+					// Destroy the Singularity container completely,
+					// then bring it back up, then sleep for 10s.
+					// TODO SS: Figure out why this is necessary on my machine:
+					// (MacOS 10.13.4; Docker machine; Docker 17.12.0-ce)
+					fmt.Fprintf(os.Stderr, "DESTROY_SINGULARITY_BETWEEN_SMOKE_TEST_CASES=YES\n")
+					fmt.Fprintf(os.Stderr, "Destroying singularity scheduler...\n")
+					mustDoCMD(t, "../../integration/test-registry", "docker-compose", "rm", "-s", "-f", "-v", "scheduler")
+					fmt.Fprintf(os.Stderr, "Re-creating singularity scheduler...\n")
+					mustDoCMD(t, "../../integration/test-registry", "docker-compose", "up", "-d", "scheduler")
+					fmt.Fprintf(os.Stderr, "Sleeping 10s...\n")
+					time.Sleep(10 * time.Second)
+				}
 				return
 			}
 			time.Sleep(time.Second)
