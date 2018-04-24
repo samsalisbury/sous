@@ -12,7 +12,6 @@ let
 in
   stdenv.mkDerivation {
     name = "sous-env";
-    #src = ./.;
 
     buildInputs = with pkgs; [ rubyEnv proselint postgresql100 liquibase go ];
   }

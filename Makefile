@@ -27,6 +27,15 @@ else
 GIT_TAG := $(shell $(TAG_TEST))
 endif
 
+# TODO SS: Find out why this is necessary.
+# Note: The Darwin test is arbitrary; simply "running on macOS" is probably not the problem,
+# but right now this is not necessary on any of the Linux machines in dev or CI.
+ifeq ($(shell uname),Darwin)
+DESTROY_SINGULARITY_BETWEEN_SMOKE_TEST_CASES ?= YES
+else
+DESTROY_SINGULARITY_BETWEEN_SMOKE_TEST_CASES ?= NO
+endif
+
 REPO_ROOT := $(shell git rev-parse --show-toplevel)
 SMOKE_TEST_BASEDIR ?= $(REPO_ROOT)/.smoketest
 SMOKE_TEST_DATA_DIR ?= $(SMOKE_TEST_BASEDIR)/$(DATE)
@@ -239,9 +248,6 @@ wip:
 	git commit --squash=HEAD -m "Making WIP" --no-gpg-sign --no-verify
 
 
-$(COVER_DIR)/count_merged.txt: $(COVER_DIR) $(GO_FILES)
-	go test -covermode=count -coverprofile=$(COVER_DIR)/count_merged.txt ./...
-
 .cadre/coverage.vim: $(COVER_DIR)/count_merged.txt
 	legendary --hitlist --limit 20 $@ $<
 
@@ -265,10 +271,17 @@ test-metalinter: install-linters
 test-gofmt:
 	bin/check-gofmt
 
-test-unit-base:
-	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -timeout 3m -race $(SOUS_PACKAGES_WITH_TESTS) $(TEST_TEAMCITY)
+test-unit-base: $(COVER_DIR) $(GO_FILES)
+	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) \
+		-covermode=atomic -coverprofile=$(COVER_DIR)/count_merged.txt \
+		-timeout 3m -race $(SOUS_PACKAGES_WITH_TESTS) $(TEST_TEAMCITY)
 
 test-unit: postgres-test-prepare test-unit-base
+
+$(COVER_DIR)/count_merged.txt: $(COVER_DIR) $(GO_FILES)
+	go test \
+		-covermode=count -coverprofile=$(COVER_DIR)/count_merged.txt \
+		$(SOUS_PACKAGES_WITH_TESTS)
 
 test-integration: setup-containers
 	@echo
@@ -296,6 +309,7 @@ test-smoke: $(SMOKE_TEST_BINARY) $(SMOKE_TEST_LATEST_LINK) setup-containers
 	SMOKE_TEST_DATA_DIR=$(SMOKE_TEST_DATA_DIR)/data \
 	SMOKE_TEST_BINARY=$(SMOKE_TEST_BINARY) \
 	SOUS_QA_DESC=$(QA_DESC) \
+	DESTROY_SINGULARITY_BETWEEN_SMOKE_TEST_CASES=$(DESTROY_SINGULARITY_BETWEEN_SMOKE_TEST_CASES) \
 	go test  $(EXTRA_GO_TEST_FLAGS) -tags smoke -v -count 1 ./test/smoke $(TEST_TEAMCITY)
 
 .PHONY: test-smoke-nofail
