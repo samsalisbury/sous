@@ -171,9 +171,13 @@ func TestSousNewdeploy(t *testing.T) {
 		f := newTestFixture(t)
 		client := setupProject(t, f, sleeper)
 		client.MustRun(t, "init", nil, "-kind", "scheduled")
-		//client.TransformManifestAsString(t, nil, func(manifest string) string {
-		//	return strings.Replace(manifest, "NumInstances: 0", "NumInstances: 1", -1)
-		//})
+		client.TransformManifest(t, nil, func(m sous.Manifest) sous.Manifest {
+			d := m.Deployments["cluster1"]
+			d.NumInstances = 1
+			d.Schedule = "*/5 * * * *"
+			m.Deployments["cluster1"] = d
+			return m
+		})
 		client.MustRun(t, "build", nil, "-tag", "1.2.3")
 		client.MustRun(t, "newdeploy", nil, "-cluster", "cluster1", "-tag", "1.2.3")
 
