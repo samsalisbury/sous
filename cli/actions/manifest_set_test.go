@@ -15,8 +15,45 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestManifestSet_ErrorOnSourceLocation(t *testing.T) {
+	project1 := sous.SourceLocation{Repo: "github.com/user/randomprojectnotmatching"}
+
+	mid := sous.ManifestID{
+		Source: sous.SourceLocation{
+			Repo: project1.Repo,
+		},
+	}
+
+	//this will not match the source location, therefore should error on update
+	mani := sous.ManifestFixture("simple")
+
+	mani.Flavor = "vanilla"
+	yml, err := yaml.Marshal(mani)
+	require.NoError(t, err)
+	in := bytes.NewBuffer(yml)
+
+	updater, upctl := restfultest.NewUpdateSpy()
+
+	upctl.Any(
+		"Update",
+		nil,
+	)
+
+	up := updater.(restful.Updater)
+
+	sms := &ManifestSet{
+		ManifestID: mid,
+
+		InReader: in,
+		LogSink:  logging.NewLogSet(semv.MustParse("0.0.0"), "", "", os.Stderr),
+		Updater:  &up,
+	}
+
+	assert.Error(t, sms.Do(), "this should error since source is different")
+}
+
 func TestManifestSet(t *testing.T) {
-	project1 := sous.SourceLocation{Repo: "github.com/user/project"}
+	project1 := sous.SourceLocation{Repo: "github.com/opentable/project-one"}
 
 	mid := sous.ManifestID{
 		Source: sous.SourceLocation{

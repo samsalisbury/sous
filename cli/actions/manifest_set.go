@@ -1,6 +1,7 @@
 package actions
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 
@@ -34,6 +35,10 @@ func (ms *ManifestSet) Do() error {
 	}
 
 	messages.ReportLogFieldsMessage("Manifest in Execute", logging.ExtraDebug1Level, ms.LogSink, yml)
+
+	if ms.ManifestID.Source.Repo != yml.Source.Repo {
+		return fmt.Errorf("sous does not support changing source location, please use sous init")
+	}
 
 	_, err = (*ms.Updater).Update(&yml, nil)
 	if err != nil {
