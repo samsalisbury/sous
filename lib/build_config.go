@@ -13,7 +13,7 @@ type (
 	// BuildConfig captures the user's intent as they build a repo.
 	BuildConfig struct {
 		Repo, Offset, Tag, Revision string
-		Strict, ForceClone          bool
+		Strict, ForceClone, Dev     bool
 		Context                     *BuildContext
 		LogSink                     logging.LogSink
 	}
@@ -125,6 +125,7 @@ func (c *BuildConfig) NewContext() *BuildContext {
 			RemoteURLs:         sc.RemoteURLs,
 			DirtyWorkingTree:   sc.DirtyWorkingTree,
 			RevisionUnpushed:   sc.RevisionUnpushed,
+			DevBuild:           c.Dev,
 		},
 	}
 

@@ -70,12 +70,21 @@ func (sbp *SplitBuildpack) Detect(ctx *sous.BuildContext) (*sous.DetectResult, e
 		envs:     []*parser.Node{},
 	}
 
-	err = firsterr.Returned(
-		detector.absorbDockerfile,
-		detector.fetchFromRunSpec,
-		func() error { return detector.checkLocalImage(ctx) },
-		detector.processEnv,
-	)
+	// check the local image for dev build
+	if ctx.Source.DevBuild {
+		err = firsterr.Returned(
+			detector.absorbDockerfile,
+			detector.fetchFromRunSpec,
+			func() error { return detector.checkLocalImage(ctx) },
+			detector.processEnv,
+		)
+	} else {
+		err = firsterr.Returned(
+			detector.absorbDockerfile,
+			detector.fetchFromRunSpec,
+			detector.processEnv,
+		)
+	}
 
 	sbp.detected = detector.result()
 
