@@ -17,14 +17,14 @@ gitserver:
 
 # FROM HERE DOWN: Singularity test setup
 zk:
-  image: bobrik/zookeeper
+  image: zookeeper:3.4
   net: host
   environment:
-    ZK_CONFIG: tickTime=2000,initLimit=10,syncLimit=5,maxClientCnxns=128,forceSync=no,clientPort=2181
+    ZK_CONFIG: tickTime=2000,initLimit=10,syncLimit=5,maxClientCnxns=128,forceSync=yes,clientPort=2181
     ZK_ID: 1
 
 master:
-  image: mesosphere/mesos-master:1.1.1
+  image: mesosphere/mesos-master:1.3.1
   net: host
   environment:
     MESOS_ZK: zk://localhost:2181/mesos
@@ -36,7 +36,7 @@ master:
     MESOS_ROLES: "OPS"
 
 slave:
-  image: hubspot/singularityexecutorslave:0.19.0-SNAPSHOT
+  image: hubspot/singularityexecutorslave:0.19.2
   command: mesos-slave
   net: host
   environment:
