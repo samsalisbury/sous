@@ -112,7 +112,10 @@ func (sd *splitDetector) checkLocalImage(ctx *sous.BuildContext) error {
 func inspectImage(sh shell.Shell, imageName string) string {
 	cmd := []interface{}{"image", "inspect", "--format={{.Config.OnBuild}}{{.Config.Env}}", imageName}
 	//docker image inspect docker.otenv.com/sous-otj-autobuild:local
-	output, _ := sh.Stdout("docker", cmd...)
+	output, err := sh.Stdout("docker", cmd...)
+	if err != nil {
+		return ""
+	}
 	return output
 }
 
