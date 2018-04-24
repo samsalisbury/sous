@@ -1,5 +1,5 @@
-{ pkgs ? import ~/dev/nixpkgs {} }:
-#{ pkgs ? import <nixpkgs> {} }:
+#{ pkgs ? import ~/dev/nixpkgs {} }:
+{ pkgs ? import <nixpkgs> {} }:
 
 let
   inherit (pkgs) lib stdenv bundlerEnv;
@@ -13,11 +13,5 @@ in
   stdenv.mkDerivation {
     name = "sous-env";
 
-    buildInputs = [
-      rubyEnv
-      pkgs.proselint
-      pkgs.postgresql100
-      pkgs.liquibase
-      pkgs.go
-    ];
+    buildInputs = with pkgs; [ rubyEnv proselint postgresql100 liquibase go ];
   }

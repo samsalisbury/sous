@@ -8,11 +8,20 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestResourceField(t *testing.T) {
+func TestCPUResourceField(t *testing.T) {
 	buf := &bytes.Buffer{}
 	enc := json.NewEncoder(buf)
-	enc.Encode(map[string]interface{}{"test": resourceField(2)})
+	enc.Encode(map[string]interface{}{"test": CPUResourceField(2)})
 
 	t.Log(buf.String())
-	assert.Regexp(t, `2[.]0`, buf.String())
+	assert.Regexp(t, `{"test":2[.]0`, buf.String())
+}
+
+func TestMemoryResourceField(t *testing.T) {
+	buf := &bytes.Buffer{}
+	enc := json.NewEncoder(buf)
+	enc.Encode(map[string]interface{}{"test": MemResourceField(200)})
+
+	t.Log(buf.String())
+	assert.Regexp(t, `{"test":200}`, buf.String())
 }
