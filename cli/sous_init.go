@@ -74,9 +74,18 @@ func (si *SousInit) Execute(args []string) cmdr.Result {
 		kindOk = true
 	case sous.ManifestKindScheduled:
 		kindOk = true
-		for _, v := range m.Deployments {
-			v.DeployConfig.Startup.SkipCheck = true
+
+		var dsm map[string]sous.DeploySpec
+		dsm = make(map[string]sous.DeploySpec)
+
+		for k := range m.Deployments {
+			ds := m.Deployments[k]
+			ds.Startup.SkipCheck = true
+			dsm[k] = ds
 		}
+
+		m.Deployments = dsm
+
 	case sous.ManifestKindOnDemand:
 		kindOk = true
 	default:
@@ -98,8 +107,6 @@ func (si *SousInit) Execute(args []string) cmdr.Result {
 	if cluster != "" {
 		ds := sous.DeploySpecs{cluster: m.Deployments[cluster]}
 		m.Deployments = ds
-		//dsc := m.Deployments[cluster]
-		//dsc.DeployConfig.Startup = s
 	}
 
 	if si.DryRunFlag {
