@@ -68,18 +68,24 @@ func (c *TestClient) Configure(server, dockerReg string) error {
 	return nil
 }
 
-func (c *TestClient) Cmd(t *testing.T, subcmd string, f *sousFlags, args ...string) *exec.Cmd {
-	t.Helper()
+// allArgs produces a []string representing all args determined by the sous
+// subcommand, sous flags and any other args.
+func allArgs(subcmd string, f *sousFlags, args []string) []string {
 	allArgs := strings.Split(subcmd, " ")
 	allArgs = append(allArgs, f.Args()...)
 	allArgs = append(allArgs, args...)
+	return allArgs
+}
 
-	cmd := mkCMD(c.Dir, c.BinPath, allArgs...)
+func (c *TestClient) Cmd(t *testing.T, subcmd string, f *sousFlags, args ...string) *exec.Cmd {
+	t.Helper()
+	cmd := mkCMD(c.Dir, c.BinPath, allArgs(subcmd, f, args)...)
 	cmd.Env = append(cmd.Env, fmt.Sprintf("SOUS_CONFIG_DIR=%s", c.ConfigDir))
 	return cmd
 }
 
 func (c *TestClient) Run(t *testing.T, subcmd string, f *sousFlags, args ...string) (string, error) {
+	t.Helper()
 	cmd := c.Cmd(t, subcmd, f, args...)
 	fmt.Fprintf(os.Stderr, "SOUS_CONFIG_DIR = %q\n", c.ConfigDir)
 	fmt.Fprintf(os.Stderr, "running sous in %q: %s\n", c.Dir, args)
@@ -92,7 +98,7 @@ func (c *TestClient) Run(t *testing.T, subcmd string, f *sousFlags, args ...stri
 	out := &bytes.Buffer{}
 	cmd.Stdout = io.MultiWriter(os.Stdout, out)
 	cmd.Stderr = os.Stderr
-	fmt.Fprintf(os.Stderr, "==> sous %s\n", strings.Join(args, " "))
+	fmt.Fprintf(os.Stderr, "==> sous %s\n", strings.Join(allArgs(subcmd, f, args), " "))
 	err := cmd.Run()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -122,6 +128,24 @@ func (c *TestClient) TransformManifestAsString(t *testing.T, getSetFlags *sousFl
 	manifest = f(manifest)
 	manifestSetCmd := c.Cmd(t, "manifest set", getSetFlags)
 	manifestSetCmd.Stdin = ioutil.NopCloser(bytes.NewReader([]byte(manifest)))
+	if out, err := manifestSetCmd.CombinedOutput(); err != nil {
+		t.Fatalf("manifest set failed: %s; output:\n%s", err, out)
+	}
+}
+
+func (c *TestClient) TransformManifest(t *testing.T, getSetFlags *sousFlags, f func(m sous.Manifest) sous.Manifest) {
+	manifest := c.MustRun(t, "manifest get", getSetFlags)
+	var m sous.Manifest
+	if err := yaml.Unmarshal([]byte(manifest), &m); err != nil {
+		t.Fatalf("manifest get returned invalid YAML: %s\nInvalid YAML was:\n%s", err, manifest)
+	}
+	m = f(m)
+	manifestBytes, err := yaml.Marshal(m)
+	if err != nil {
+		t.Fatalf("failed to marshal updated manifest: %s\nInvalid manifest was:\n% #v", err, m)
+	}
+	manifestSetCmd := c.Cmd(t, "manifest set", getSetFlags)
+	manifestSetCmd.Stdin = ioutil.NopCloser(bytes.NewReader(manifestBytes))
 	if out, err := manifestSetCmd.CombinedOutput(); err != nil {
 		t.Fatalf("manifest set failed: %s; output:\n%s", err, out)
 	}
