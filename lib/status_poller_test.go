@@ -14,6 +14,7 @@ import (
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 	"github.com/samsalisbury/semv"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -147,6 +148,75 @@ func (i isFinished) String() string {
 		return "finished"
 	}
 	return "not finished"
+}
+
+func TestStatusPoller_LogNoCalls(t *testing.T) {
+
+	logsink, ctrl := logging.NewLogSinkSpy()
+
+	sp := &StatusPoller{
+		logs: logsink,
+		statePerCluster: map[string]*pollerState{
+			"one": &pollerState{
+				LastResult: pollResult{stat: ResolveNotPolled},
+			},
+			"two": &pollerState{
+				LastResult: pollResult{stat: ResolveNotPolled},
+			},
+		},
+		status: ResolveNotPolled,
+	}
+
+	pr := sp.statePerCluster["one"].LastResult
+
+	sp.nextSubStatus(pr)
+
+	assert.Len(t, ctrl.CallsTo("Fields"), 0)
+
+	sp.updateStatus()
+
+	assert.Len(t, ctrl.CallsTo("Fields"), 0)
+
+}
+
+func TestStatusPoller_LogCalled(t *testing.T) {
+
+	logsink, ctrl := logging.NewLogSinkSpy()
+
+	sp := &StatusPoller{
+		logs: logsink,
+		statePerCluster: map[string]*pollerState{
+			"one": &pollerState{
+				LastResult: pollResult{stat: ResolveNotPolled},
+			},
+			"two": &pollerState{
+				LastResult: pollResult{stat: ResolveNotPolled},
+			},
+		},
+		status: ResolveNotPolled,
+	}
+
+	result := func(clusterName, resolveID string, status ResolveState) pollResult {
+		result := pollResult{
+			url:       clusterName,
+			stat:      status,
+			resolveID: resolveID,
+		}
+		return result
+	}
+
+	first := "2017-10-18T14:29:37.115976034Z"
+
+	pr := result("one", first, ResolveFailed)
+
+	sp.nextSubStatus(pr)
+
+	assert.Len(t, ctrl.CallsTo("Fields"), 1)
+
+	sp.updateStatus()
+
+	assert.Len(t, ctrl.CallsTo("Fields"), 3)
+
 }
 
 func TestStatusPoller_updateState(t *testing.T) {
