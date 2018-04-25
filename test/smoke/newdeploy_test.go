@@ -110,7 +110,10 @@ func TestSousNewdeploy(t *testing.T) {
 			},
 			Cluster: "cluster1",
 		}
+
 		assertActiveStatus(t, f, did)
+		assertSingularityRequestTypeService(t, f, did)
+		assertNonNilHealthCheckOnLatestDeploy(t, f, did)
 	})
 
 	t.Run("flavors", func(t *testing.T) {
@@ -136,6 +139,8 @@ func TestSousNewdeploy(t *testing.T) {
 		}
 
 		assertActiveStatus(t, f, did)
+		assertSingularityRequestTypeService(t, f, did)
+		assertNonNilHealthCheckOnLatestDeploy(t, f, did)
 	})
 
 	t.Run("pause-unpause", func(t *testing.T) {
@@ -159,12 +164,17 @@ func TestSousNewdeploy(t *testing.T) {
 			Cluster: "cluster1",
 		}
 		assertActiveStatus(t, f, did)
+		assertNonNilHealthCheckOnLatestDeploy(t, f, did)
+		assertSingularityRequestTypeService(t, f, did)
 
 		f.Singularity.PauseRequestForDeployment(t, did)
 		client.MustFail(t, "newdeploy", nil, "-cluster", "cluster1", "-tag", "2")
 		f.Singularity.UnpauseRequestForDeployment(t, did)
+
 		knownToFailHere(t)
+
 		client.MustRun(t, "newdeploy", nil, "-cluster", "cluster1", "-tag", "3")
+		assertActiveStatus(t, f, did)
 	})
 
 	t.Run("scheduled", func(t *testing.T) {
@@ -190,11 +200,46 @@ func TestSousNewdeploy(t *testing.T) {
 			Cluster: "cluster1",
 		}
 
-		req := f.Singularity.GetRequestForDeployment(t, did)
-		gotType := req.Request.RequestType
-		wantType := dtos.SingularityRequestRequestTypeSCHEDULED
-		if gotType != wantType {
-			t.Errorf("got request type %v; want %v", gotType, wantType)
-		}
+		assertSingularityRequestTypeScheduled(t, f, did)
+		assertActiveStatus(t, f, did)
+		assertNilHealthCheckOnLatestDeploy(t, f, did)
 	})
+}
+
+func assertSingularityRequestTypeScheduled(t *testing.T, f TestFixture, did sous.DeploymentID) {
+	t.Helper()
+	req := f.Singularity.GetRequestForDeployment(t, did)
+	gotType := req.Request.RequestType
+	wantType := dtos.SingularityRequestRequestTypeSCHEDULED
+	if gotType != wantType {
+		t.Errorf("got request type %v; want %v", gotType, wantType)
+	}
+}
+
+func assertSingularityRequestTypeService(t *testing.T, f TestFixture, did sous.DeploymentID) {
+	t.Helper()
+	req := f.Singularity.GetRequestForDeployment(t, did)
+	gotType := req.Request.RequestType
+	wantType := dtos.SingularityRequestRequestTypeSERVICE
+	if gotType != wantType {
+		t.Errorf("got request type %v; want %v", gotType, wantType)
+	}
+}
+
+func assertNilHealthCheckOnLatestDeploy(t *testing.T, f TestFixture, did sous.DeploymentID) {
+	t.Helper()
+	dep := f.Singularity.GetLatestDeployForDeployment(t, did)
+	gotHealthcheck := dep.Deploy.Healthcheck
+	if gotHealthcheck != nil {
+		t.Fatalf("got Healthcheck = %v; want nil", gotHealthcheck)
+	}
+}
+
+func assertNonNilHealthCheckOnLatestDeploy(t *testing.T, f TestFixture, did sous.DeploymentID) {
+	t.Helper()
+	dep := f.Singularity.GetLatestDeployForDeployment(t, did)
+	gotHealthcheck := dep.Deploy.Healthcheck
+	if gotHealthcheck == nil {
+		t.Fatalf("got nil Healthcheck")
+	}
 }

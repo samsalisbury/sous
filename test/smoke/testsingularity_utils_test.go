@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sort"
 	"testing"
 	"time"
 
@@ -25,6 +26,7 @@ func NewSingularity(baseURL string) *Singularity {
 }
 
 func (s *Singularity) PauseRequestForDeployment(t *testing.T, did sous.DeploymentID) {
+	t.Helper()
 	reqID := mustGetReqID(t, did)
 	if _, err := s.client.Pause(reqID, nil); err != nil {
 		t.Fatal(err)
@@ -58,6 +60,7 @@ func (s *Singularity) PauseRequestForDeployment(t *testing.T, did sous.Deploymen
 }
 
 func (s *Singularity) UnpauseRequestForDeployment(t *testing.T, did sous.DeploymentID) {
+	t.Helper()
 	reqID := mustGetReqID(t, did)
 	if _, err := s.client.Unpause(reqID, nil); err != nil {
 		t.Fatal(err)
@@ -76,6 +79,7 @@ func (s *Singularity) UnpauseRequestForDeployment(t *testing.T, did sous.Deploym
 }
 
 func (s *Singularity) GetRequestForDeployment(t *testing.T, did sous.DeploymentID) *dtos.SingularityRequestParent {
+	t.Helper()
 	reqID := mustGetReqID(t, did)
 	req, err := s.client.GetRequest(reqID, false)
 	if err != nil {
@@ -84,7 +88,34 @@ func (s *Singularity) GetRequestForDeployment(t *testing.T, did sous.DeploymentI
 	return req
 }
 
+func (s *Singularity) GetLatestDeployForDeployment(t *testing.T, did sous.DeploymentID) *dtos.SingularityDeployHistory {
+	t.Helper()
+	reqID := mustGetReqID(t, did)
+	deps, err := s.client.GetDeploys(reqID, 100, 0)
+	if err != nil {
+		t.Fatalf("getting deployments for request: %s", err)
+	}
+	if len(deps) == 0 {
+		t.Fatalf("zero deployments for request %q", reqID)
+	}
+
+	// Sort by timestamp descending.
+	sort.Slice(deps, func(i, j int) bool {
+		return deps[i].DeployMarker.Timestamp > deps[j].DeployMarker.Timestamp
+	})
+
+	// Fetch the actual deploy (this one has a nil Deploy field.
+	deployID := deps[0].DeployMarker.DeployId
+	dep, err := s.client.GetDeploy(reqID, deployID)
+	if err != nil {
+		t.Fatalf("getting deploy detail for %q", deployID)
+	}
+
+	return dep
+}
+
 func mustGetReqID(t *testing.T, did sous.DeploymentID) string {
+	t.Helper()
 	reqID, err := singularity.MakeRequestID(did)
 	if err != nil {
 		t.Fatalf("making singularity request ID: %s", err)
