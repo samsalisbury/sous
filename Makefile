@@ -386,6 +386,9 @@ postgres-stop:
 postgres-connect:
 	psql -h localhost -p $(PGPORT) sous
 
+postgres-validate-schema:
+	liquibase $(LIQUIBASE_FLAGS) validate
+
 postgres-update-schema: postgres-start
 	liquibase $(LIQUIBASE_FLAGS) update
 
