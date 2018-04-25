@@ -36,7 +36,7 @@ func (ms *ManifestSet) Do() error {
 
 	messages.ReportLogFieldsMessage("Manifest in Execute", logging.ExtraDebug1Level, ms.LogSink, yml)
 
-	if ms.ManifestID.Source.Repo != yml.Source.Repo {
+	if ms.ManifestID != yml.ID() {
 		return fmt.Errorf("sous does not support changing source location, please use sous init")
 	}
 
