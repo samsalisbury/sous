@@ -11,6 +11,7 @@ with respect to its command line interface and HTTP interface
 * Both: Sous commands that communicate with the server add a request ID header to trace the request.
 
 ### Changed
+* Client: `sous init` now requires -kind flag which is either 'scheduled' or 'http-service'
 * Client: error is returned if manifest set is sent a different source location
 
 

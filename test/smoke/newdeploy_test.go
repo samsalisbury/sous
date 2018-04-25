@@ -3,17 +3,21 @@
 package smoke
 
 import (
-	"bytes"
-	"io/ioutil"
 	"strings"
 	"testing"
 
+	"github.com/opentable/go-singularity/dtos"
 	sous "github.com/opentable/sous/lib"
 )
 
 const simpleServer = `
 FROM alpine
 CMD if [ -z "$T" ]; then T=2; fi; echo -n "Sleeping ${T}s..."; sleep $T; echo "Done"; echo "Listening on :$PORT0"; while true; do echo -e "HTTP/1.1 200 OK\n\n$(date)" | nc -l -p $PORT0; done`
+
+const sleeper = `
+FROM alpine
+CMD echo -n Sleeping for 10s...; sleep 10; echo Done
+`
 
 // setupProject creates a brand new git repo containing the provided Dockerfile,
 // commits that Dockerfile, runs 'sous version' and 'sous config', and returns a
@@ -30,79 +34,59 @@ func setupProject(t *testing.T, f TestFixture, dockerfile string) TestClient {
 	mustDoCMD(t, projectDir, "git", "add", "Dockerfile")
 	mustDoCMD(t, projectDir, "git", "commit", "-m", "Add Dockerfile")
 
-	sous := f.Client
+	client := f.Client
 
 	// Dump sous version & config.
-	t.Logf("Sous version: %s", sous.MustRun(t, "version"))
-	sous.MustRun(t, "config")
+	t.Logf("Sous version: %s", client.MustRun(t, "version", nil))
+	client.MustRun(t, "config", nil)
 
 	// cd into project dir
-	sous.Dir = projectDir
+	client.Dir = projectDir
 
-	return sous
+	return client
 }
 
-// initProjectNoFlavor runs sous init, then manifest get/set to bump instances
-// to 1 in all clusters.
-func initProjectNoFlavor(t *testing.T, sous TestClient) {
-	t.Helper()
-	// Prepare manifest.
-	sous.MustRun(t, "init")
-	manifest := sous.MustRun(t, "manifest", "get")
-	manifest = strings.Replace(manifest, "NumInstances: 0", "NumInstances: 1", -1)
-	manifestSetCmd := sous.Cmd(t, "manifest", "set")
-	manifestSetCmd.Stdin = ioutil.NopCloser(bytes.NewReader([]byte(manifest)))
-	if out, err := manifestSetCmd.CombinedOutput(); err != nil {
-		t.Fatalf("manifest set failed: %s; output:\n%s", err, out)
+type sousFlags struct {
+	kind    string
+	flavor  string
+	cluster string
+	repo    string
+	offset  string
+	tag     string
+}
+
+func (f *sousFlags) Args() []string {
+	if f == nil {
+		return nil
 	}
-}
-
-// initProjectWithFlavor is very similar to initProjectNoFlavor except it
-// creates and operates on a manifest with the provided flavor.
-func initProjectWithFlavor(t *testing.T, sous TestClient, flavor string) {
-	t.Helper()
-	// Prepare manifest.
-	sous.MustRun(t, "init", "-flavor", flavor)
-	manifest := sous.MustRun(t, "manifest", "get", "-flavor", flavor)
-	manifest = strings.Replace(manifest, "NumInstances: 0", "NumInstances: 1", -1)
-	manifestSetCmd := sous.Cmd(t, "manifest", "set", "-flavor", flavor)
-	manifestSetCmd.Stdin = ioutil.NopCloser(bytes.NewReader([]byte(manifest)))
-	if out, err := manifestSetCmd.CombinedOutput(); err != nil {
-		t.Fatalf("manifest set failed: %s; output:\n%s", err, out)
+	var out []string
+	if f.kind != "" {
+		out = append(out, "-kind", f.kind)
 	}
-}
-
-func defaultManifestID() sous.ManifestID {
-	return sous.ManifestID{
-		Source: sous.SourceLocation{
-			Dir:  "",
-			Repo: "github.com/user1/repo1",
-		},
-		Flavor: "",
+	if f.flavor != "" {
+		out = append(out, "-flavor", f.flavor)
 	}
-}
-
-func manifestID(repo, dir, flavor string) sous.ManifestID {
-	return sous.ManifestID{
-		Source: sous.SourceLocation{
-			Dir:  dir,
-			Repo: repo,
-		},
-		Flavor: flavor,
+	if f.cluster != "" {
+		out = append(out, "-cluster", f.cluster)
 	}
-}
-
-func deploymentID(mid sous.ManifestID, cluster string) sous.DeploymentID {
-	return sous.DeploymentID{
-		ManifestID: mid,
-		Cluster:    cluster,
+	if f.repo != "" {
+		out = append(out, "-repo", f.repo)
 	}
+	if f.offset != "" {
+		out = append(out, "-offset", f.offset)
+	}
+	if f.tag != "" {
+		out = append(out, "-tag", f.tag)
+	}
+	return out
 }
 
-func defaultDeploymentID() sous.DeploymentID {
-	return sous.DeploymentID{
-		ManifestID: defaultManifestID(),
-		Cluster:    "cluster1",
+func assertActiveStatus(t *testing.T, f TestFixture, did sous.DeploymentID) {
+	req := f.Singularity.GetRequestForDeployment(t, did)
+	gotStatus := req.State
+	wantStatus := dtos.SingularityRequestParentRequestStateACTIVE
+	if gotStatus != wantStatus {
+		t.Fatalf("got status %v; want %v", gotStatus, wantStatus)
 	}
 }
 
@@ -110,33 +94,152 @@ func TestSousNewdeploy(t *testing.T) {
 
 	t.Run("simple", func(t *testing.T) {
 		f := newTestFixture(t)
-		sous := setupProject(t, f, simpleServer)
-		initProjectNoFlavor(t, sous)
-		sous.MustRun(t, "build", "-tag", "1.2.3")
-		sous.MustRun(t, "newdeploy", "-cluster", "cluster1", "-tag", "1.2.3")
+		client := setupProject(t, f, simpleServer)
+		client.MustRun(t, "init", nil, "-kind", "http-service")
+		client.TransformManifestAsString(t, nil, func(manifest string) string {
+			return strings.Replace(manifest, "NumInstances: 0", "NumInstances: 1", -1)
+		})
+		client.MustRun(t, "build", nil, "-tag", "1.2.3")
+		client.MustRun(t, "newdeploy", nil, "-cluster", "cluster1", "-tag", "1.2.3")
+
+		did := sous.DeploymentID{
+			ManifestID: sous.ManifestID{
+				Source: sous.SourceLocation{
+					Repo: "github.com/user1/repo1",
+				},
+			},
+			Cluster: "cluster1",
+		}
+
+		assertActiveStatus(t, f, did)
+		assertSingularityRequestTypeService(t, f, did)
+		assertNonNilHealthCheckOnLatestDeploy(t, f, did)
 	})
 
 	t.Run("flavors", func(t *testing.T) {
 		f := newTestFixture(t)
-		sous := setupProject(t, f, simpleServer)
+		client := setupProject(t, f, simpleServer)
 		flavor := "flavor1"
-		initProjectWithFlavor(t, sous, flavor)
-		sous.MustRun(t, "build", "-tag", "1.2.3")
-		sous.MustRun(t, "newdeploy", "-cluster", "cluster1", "-tag", "1.2.3", "-flavor", flavor)
+		flavorFlag := &sousFlags{flavor: flavor}
+		client.MustRun(t, "init", flavorFlag, "-kind", "http-service")
+		client.TransformManifestAsString(t, flavorFlag, func(manifest string) string {
+			return strings.Replace(manifest, "NumInstances: 0", "NumInstances: 1", -1)
+		})
+		client.MustRun(t, "build", nil, "-tag", "1.2.3")
+		client.MustRun(t, "newdeploy", flavorFlag, "-cluster", "cluster1", "-tag", "1.2.3")
+
+		did := sous.DeploymentID{
+			ManifestID: sous.ManifestID{
+				Source: sous.SourceLocation{
+					Repo: "github.com/user1/repo1",
+				},
+				Flavor: flavor,
+			},
+			Cluster: "cluster1",
+		}
+
+		assertActiveStatus(t, f, did)
+		assertSingularityRequestTypeService(t, f, did)
+		assertNonNilHealthCheckOnLatestDeploy(t, f, did)
 	})
 
 	t.Run("pause-unpause", func(t *testing.T) {
 		f := newTestFixture(t)
-		sous := setupProject(t, f, simpleServer)
-		initProjectNoFlavor(t, sous)
-		sous.MustRun(t, "build", "-tag", "1")
-		sous.MustRun(t, "build", "-tag", "2")
-		sous.MustRun(t, "build", "-tag", "3")
-		sous.MustRun(t, "newdeploy", "-cluster", "cluster1", "-tag", "1")
-		f.Singularity.PauseRequestForDeployment(t, deploymentID(defaultManifestID(), "cluster1"))
-		sous.MustFail(t, "newdeploy", "-cluster", "cluster1", "-tag", "2")
-		f.Singularity.UnpauseRequestForDeployment(t, deploymentID(defaultManifestID(), "cluster1"))
+		client := setupProject(t, f, simpleServer)
+		client.MustRun(t, "init", nil, "-kind", "http-service")
+		client.TransformManifestAsString(t, nil, func(manifest string) string {
+			return strings.Replace(manifest, "NumInstances: 0", "NumInstances: 1", -1)
+		})
+		client.MustRun(t, "build", nil, "-tag", "1")
+		client.MustRun(t, "build", nil, "-tag", "2")
+		client.MustRun(t, "build", nil, "-tag", "3")
+		client.MustRun(t, "newdeploy", nil, "-cluster", "cluster1", "-tag", "1")
+
+		did := sous.DeploymentID{
+			ManifestID: sous.ManifestID{
+				Source: sous.SourceLocation{
+					Repo: "github.com/user1/repo1",
+				},
+			},
+			Cluster: "cluster1",
+		}
+		assertActiveStatus(t, f, did)
+		assertNonNilHealthCheckOnLatestDeploy(t, f, did)
+		assertSingularityRequestTypeService(t, f, did)
+
+		f.Singularity.PauseRequestForDeployment(t, did)
+		client.MustFail(t, "newdeploy", nil, "-cluster", "cluster1", "-tag", "2")
+		f.Singularity.UnpauseRequestForDeployment(t, did)
+
 		knownToFailHere(t)
-		sous.MustRun(t, "newdeploy", "-cluster", "cluster1", "-tag", "3")
+
+		client.MustRun(t, "newdeploy", nil, "-cluster", "cluster1", "-tag", "3")
+		assertActiveStatus(t, f, did)
 	})
+
+	t.Run("scheduled", func(t *testing.T) {
+		f := newTestFixture(t)
+		client := setupProject(t, f, sleeper)
+		client.MustRun(t, "init", nil, "-kind", "scheduled")
+		client.TransformManifest(t, nil, func(m sous.Manifest) sous.Manifest {
+			d := m.Deployments["cluster1"]
+			d.NumInstances = 1
+			d.Schedule = "*/5 * * * *"
+			m.Deployments["cluster1"] = d
+			return m
+		})
+		client.MustRun(t, "build", nil, "-tag", "1.2.3")
+		client.MustRun(t, "newdeploy", nil, "-cluster", "cluster1", "-tag", "1.2.3")
+
+		did := sous.DeploymentID{
+			ManifestID: sous.ManifestID{
+				Source: sous.SourceLocation{
+					Repo: "github.com/user1/repo1",
+				},
+			},
+			Cluster: "cluster1",
+		}
+
+		assertSingularityRequestTypeScheduled(t, f, did)
+		assertActiveStatus(t, f, did)
+		assertNilHealthCheckOnLatestDeploy(t, f, did)
+	})
+}
+
+func assertSingularityRequestTypeScheduled(t *testing.T, f TestFixture, did sous.DeploymentID) {
+	t.Helper()
+	req := f.Singularity.GetRequestForDeployment(t, did)
+	gotType := req.Request.RequestType
+	wantType := dtos.SingularityRequestRequestTypeSCHEDULED
+	if gotType != wantType {
+		t.Errorf("got request type %v; want %v", gotType, wantType)
+	}
+}
+
+func assertSingularityRequestTypeService(t *testing.T, f TestFixture, did sous.DeploymentID) {
+	t.Helper()
+	req := f.Singularity.GetRequestForDeployment(t, did)
+	gotType := req.Request.RequestType
+	wantType := dtos.SingularityRequestRequestTypeSERVICE
+	if gotType != wantType {
+		t.Errorf("got request type %v; want %v", gotType, wantType)
+	}
+}
+
+func assertNilHealthCheckOnLatestDeploy(t *testing.T, f TestFixture, did sous.DeploymentID) {
+	t.Helper()
+	dep := f.Singularity.GetLatestDeployForDeployment(t, did)
+	gotHealthcheck := dep.Deploy.Healthcheck
+	if gotHealthcheck != nil {
+		t.Fatalf("got Healthcheck = %v; want nil", gotHealthcheck)
+	}
+}
+
+func assertNonNilHealthCheckOnLatestDeploy(t *testing.T, f TestFixture, did sous.DeploymentID) {
+	t.Helper()
+	dep := f.Singularity.GetLatestDeployForDeployment(t, did)
+	gotHealthcheck := dep.Deploy.Healthcheck
+	if gotHealthcheck == nil {
+		t.Fatalf("got nil Healthcheck")
+	}
 }
