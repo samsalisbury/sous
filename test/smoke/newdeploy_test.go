@@ -16,7 +16,7 @@ CMD if [ -z "$T" ]; then T=2; fi; echo -n "Sleeping ${T}s..."; sleep $T; echo "D
 
 const sleeper = `
 FROM alpine
-CMD sleep 10
+CMD echo -n Sleeping for 10s...; sleep 10; echo Done
 `
 
 // setupProject creates a brand new git repo containing the provided Dockerfile,
