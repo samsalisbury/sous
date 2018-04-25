@@ -64,13 +64,11 @@ func action() int {
 
 	defer cleanUpLogging(mainGraph, preParseLogSet)
 
-	c, err := cli.NewSousCLI(mainGraph, Sous, os.Stdout, os.Stderr)
+	c, err := cli.NewSousCLI(mainGraph, Sous, preParseLogSet, os.Stdout, os.Stderr)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return InitializationFailedExitCode
 	}
-	// This LogSink is replaced after the Parsed event fires on the CLI.
-	c.LogSink = preParseLogSet
 
 	return c.Invoke(os.Args).ExitCode()
 }

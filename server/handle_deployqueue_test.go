@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 )
 
 func makeRequestWithQuery(t *testing.T, query string) *http.Request {
@@ -28,7 +29,9 @@ func TestNewDeployQueueResource(t *testing.T) {
 	rm := routemap(c)
 	dq := newDeployQueueResource(c)
 
-	got := dq.Get(rm, nil, &http.Request{URL: &url.URL{}}, nil).(*GETDeployQueueHandler)
+	ls, _ := logging.NewLogSinkSpy()
+
+	got := dq.Get(rm, ls, nil, &http.Request{URL: &url.URL{}}, nil).(*GETDeployQueueHandler)
 	if got.QueueSet != qs {
 		t.Errorf("got different queueset")
 	}
@@ -99,10 +102,11 @@ func TestDeployQueueResource_Get_no_errors(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			c := ComponentLocator{}
 			rm := routemap(c)
+			ls, _ := logging.NewLogSinkSpy()
 
 			dr := &DeployQueueResource{}
 			req := makeRequestWithQuery(t, tc.query)
-			got := dr.Get(rm, nil, req, nil).(*GETDeployQueueHandler)
+			got := dr.Get(rm, ls, nil, req, nil).(*GETDeployQueueHandler)
 
 			gotDID := got.DeploymentID
 			if gotDID != tc.wantDID {
@@ -138,7 +142,8 @@ func TestDeployQueueResource_Get_DeploymentID_errors(t *testing.T) {
 			rm := routemap(c)
 			dr := &DeployQueueResource{}
 			req := makeRequestWithQuery(t, tc.query)
-			got := dr.Get(rm, nil, req, nil).(*GETDeployQueueHandler)
+			ls, _ := logging.NewLogSinkSpy()
+			got := dr.Get(rm, ls, nil, req, nil).(*GETDeployQueueHandler)
 
 			gotDIDErr := got.DeploymentIDErr
 			if gotDIDErr == nil || gotDIDErr.Error() != tc.wantDIDErr {

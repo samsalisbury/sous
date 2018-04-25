@@ -25,6 +25,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/samsalisbury/psyringe"
 	"github.com/samsalisbury/semv"
+	uuid "github.com/satori/go.uuid"
 )
 
 type (
@@ -165,6 +166,7 @@ func BuildBaseGraph(version semv.Version, in io.Reader, out, err io.Writer) *Sou
 	graph := newSousGraph()
 	graph.Add(
 		version,
+		sous.TraceID(uuid.NewV4().String()),
 		func() InReader { return in },
 		func() OutWriter { return out },
 		func() ErrWriter { return err },
@@ -333,8 +335,8 @@ func newRegistryDumper(r sous.Registry) *sous.RegistryDumper {
 //
 // If handed invalid config, we emit a warning on stderr and proceed with a
 // default LogSet.
-func newLogSet(v semv.Version, config PossiblyInvalidConfig) (*logging.LogSet, error) {
-	ls := logging.NewLogSet(v, "", "", os.Stderr)
+func newLogSet(v semv.Version, config PossiblyInvalidConfig, tid sous.TraceID) (*logging.LogSet, error) {
+	ls := logging.NewLogSet(v, "", "", os.Stderr, tid)
 	if configErr := config.Logging.Validate(); configErr != nil {
 		// No need to warn here, this is handled by PIC constructor.
 		config.Logging = logging.Config{}
@@ -571,10 +573,10 @@ func newServerListData(c HTTPClient) (ServerListData, error) {
 	return serverList, err
 }
 
-func newHTTPClientBundle(serverList ServerListData, log LogSink) (ClientBundle, error) {
+func newHTTPClientBundle(serverList ServerListData, tid sous.TraceID, log LogSink) (ClientBundle, error) {
 	bundle := ClientBundle{}
 	for _, s := range serverList.Servers {
-		client, err := restful.NewClient(s.URL, log.Child(s.ClusterName+".http-client"))
+		client, err := restful.NewClient(s.URL, log.Child(s.ClusterName+".http-client"), map[string]string{"OT-RequestId": string(tid)})
 		if err != nil {
 			return nil, err
 		}
@@ -602,7 +604,7 @@ func newClusterSpecificHTTPClient(clients ClientBundle, rf *sous.ResolveFilter, 
 
 // newHTTPClient returns an HTTP client if c.Server is not empty.
 // Otherwise it returns nil, and emits some warnings.
-func newHTTPClient(c LocalSousConfig, user sous.User, srvr ServerHandler, log LogSink) (HTTPClient, error) {
+func newHTTPClient(c LocalSousConfig, user sous.User, srvr ServerHandler, tid sous.TraceID, log LogSink) (HTTPClient, error) {
 	if c.Server == "" {
 		messages.ReportLogFieldsMessageToConsole("No server set, Sous is running in server or workstation mode.", logging.WarningLevel, log)
 		messages.ReportLogFieldsMessageToConsole("Configure a server like this: sous config server http://some.sous.server", logging.WarningLevel, log)
@@ -610,7 +612,7 @@ func newHTTPClient(c LocalSousConfig, user sous.User, srvr ServerHandler, log Lo
 		return HTTPClient{HTTPClient: cl}, err
 	}
 	messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Using server %s", c.Server), logging.ExtraDebug1Level, log)
-	cl, err := restful.NewClient(c.Server, log.Child("http-client"))
+	cl, err := restful.NewClient(c.Server, log.Child("http-client"), map[string]string{"OT-RequestId": string(tid)})
 	return HTTPClient{HTTPClient: cl}, err
 }
 
@@ -643,6 +645,7 @@ func newDistributedStorage(db *sql.DB, c LocalSousConfig, rf *sous.ResolveFilter
 	list := ClientBundle{}
 	clusterNames := []string{}
 	for n, u := range c.SiblingURLs {
+		// XXX not immediately clear how to conserve the request id through the distributed storage.
 		cl, err := restful.NewClient(u, log.Child(n+".http-client"))
 		if err != nil {
 			return nil, err

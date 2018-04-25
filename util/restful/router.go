@@ -56,7 +56,15 @@ type (
 	HeaderAdder interface {
 		AddHeaders(header http.Header)
 	}
+
+	// A TraceID is the header to add to requests for tracing purposes.
+	TraceID string
 )
+
+// EachField implements EachFielder on TraceID
+func (tid TraceID) EachField(fn logging.FieldReportFn) {
+	fn(logging.RequestId, tid)
+}
 
 // Exchange implements Exchanger on ExchangeLogger.
 func (xlog *ExchangeLogger) Exchange() (data interface{}, status int) {
@@ -120,7 +128,7 @@ func wrapResponseWriter(logsink logging.LogSink, resName string, rq *http.Reques
 func (mh *MetaHandler) genericHandling(resName string, factory ExchangeFactory, rw http.ResponseWriter, r *http.Request, p httprouter.Params) (*loggingResponseWriter, interface{}, int) {
 	messages.ReportServerHTTPRequest(mh.LogSink, "received", r, resName)
 	w := wrapResponseWriter(mh.LogSink, resName, r, rw)
-	h := mh.injectedHandler(factory, w, r, p)
+	h := mh.injectedHandler(factory, resName, w, r, p)
 	data, status := h.Exchange()
 	if ha, is := data.(HeaderAdder); is {
 		ha.AddHeaders(w.Header())
@@ -202,7 +210,7 @@ func (mh *MetaHandler) PutHandling(resName string, factory ExchangeFactory) http
 				return
 			}
 		}
-		h := mh.injectedHandler(factory, w, r, p)
+		h := mh.injectedHandler(factory, resName, w, r, p)
 		data, status := h.Exchange()
 		if ha, is := data.(HeaderAdder); is {
 			ha.AddHeaders(w.Header())
@@ -218,19 +226,22 @@ func (mh *MetaHandler) InstallPanicHandler() {
 	}
 }
 
-func (mh *MetaHandler) buildLogger(h Exchanger, r *http.Request, p httprouter.Params) *ExchangeLogger {
+func (mh *MetaHandler) buildLogger(h Exchanger, ls logging.LogSink, r *http.Request, p httprouter.Params) *ExchangeLogger {
 	return &ExchangeLogger{
-		LogSink:   mh.LogSink,
+		LogSink:   ls,
 		Exchanger: h,
 		Request:   r,
 		Params:    p,
 	}
 }
 
-func (mh *MetaHandler) injectedHandler(factory ExchangeFactory, w http.ResponseWriter, r *http.Request, p httprouter.Params) Exchanger {
-	h := factory(mh.routeMap, w, r, p)
+func (mh *MetaHandler) injectedHandler(factory ExchangeFactory, resName string, w http.ResponseWriter, r *http.Request, p httprouter.Params) Exchanger {
+	tid := r.Header.Get("OT-RequestId")
+	ls := mh.LogSink.Child(resName, TraceID(tid))
 
-	return mh.buildLogger(h, r, p)
+	h := factory(mh.routeMap, ls, w, r, p)
+
+	return mh.buildLogger(h, ls, r, p)
 }
 
 func (mh *MetaHandler) writeHeaders(status int, w *loggingResponseWriter, r *http.Request, data interface{}) {

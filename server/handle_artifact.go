@@ -7,6 +7,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/firsterr"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 	"github.com/samsalisbury/semv"
 )
@@ -31,7 +32,7 @@ func newArtifactResource(ctx ComponentLocator) *ArtifactResource {
 }
 
 // Put implements Putable on ArtifactResource, which marks it as accepting PUT requests
-func (ar *ArtifactResource) Put(_ *restful.RouteMap, _ http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
+func (ar *ArtifactResource) Put(_ *restful.RouteMap, _ logging.LogSink, _ http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
 	return &PUTArtifactHandler{
 		Request:     req,
 		QueryValues: ar.ParseQuery(req),

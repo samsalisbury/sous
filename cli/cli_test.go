@@ -27,9 +27,8 @@ func prepareCommand(t *testing.T, cl []string) (*CLI, *cmdr.PreparedExecution, f
 	}
 	lss := &logSetScoop{}
 	di.MustInject(lss)
-	c, err := NewSousCLI(di, s, stdout, stderr)
+	c, err := NewSousCLI(di, s, lss.LogSet, stdout, stderr)
 	require.NoError(err)
-	c.LogSink = lss.LogSet
 
 	exe, err := c.Prepare(cl)
 	require.NoError(err)
@@ -314,7 +313,8 @@ func TestInvokeWithUnknownFlags(t *testing.T) {
 
 	s := &Sous{Version: semv.MustParse(`1.2.3`)}
 	di := graph.BuildTestGraph(semv.Version{}, stdin, stdout, stderr)
-	c, err := NewSousCLI(di, s, stdout, stderr)
+	ls, _ := logging.NewLogSinkSpy()
+	c, err := NewSousCLI(di, s, ls, stdout, stderr)
 	require.NoError(err)
 
 	c.Invoke([]string{`sous`, `-cobblers`})

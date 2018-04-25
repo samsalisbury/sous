@@ -8,6 +8,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/opentable/sous/dto"
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 )
 
@@ -41,7 +42,7 @@ func r11nIDFromRoute(r *http.Request) (sous.R11nID, error) {
 }
 
 // Get returns a configured GETR11nHandler.
-func (r *R11nResource) Get(_ *restful.RouteMap, _ http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
+func (r *R11nResource) Get(_ *restful.RouteMap, _ logging.LogSink, _ http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
 	did, didErr := deploymentIDFromValues(restful.QueryValues{Values: req.URL.Query()})
 	rid, ridErr := r11nIDFromRoute(req)
 	wait := req.URL.Query().Get("wait") == "true"

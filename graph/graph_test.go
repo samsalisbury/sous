@@ -14,6 +14,7 @@ import (
 	"github.com/opentable/sous/util/shell"
 	"github.com/samsalisbury/psyringe"
 	"github.com/samsalisbury/semv"
+	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -127,6 +128,7 @@ func injectedStateManager(t *testing.T, cfg *config.Config) *StateManager {
 	rff := &RefinedResolveFilter{Cluster: sous.NewResolveFieldMatcher("test")}
 	g := newSousGraph()
 	g.Add(semv.MustParse("9.9.9"))
+	g.Add(sous.TraceID(uuid.NewV4().String()))
 	g.Add(newUser)
 	g.Add(LogSink{logging.SilentLogSet()})
 	g.Add(MetricsHandler{})
