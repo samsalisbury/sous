@@ -68,43 +68,26 @@ func (si *SousInit) AddFlags(fs *flag.FlagSet) {
 func (si *SousInit) Execute(args []string) cmdr.Result {
 
 	kind := sous.ManifestKind(si.flags.Kind)
-	kindOk := false
-	skipHealth := false
-
-	m := si.Target.Manifest
+	var skipHealth bool
 
 	switch kind {
-	case sous.ManifestKindService:
-		kindOk = true
-	case sous.ManifestKindScheduled:
-		kindOk = true
-
-		skipHealth = true
-
-	case sous.ManifestKindOnDemand:
-		kindOk = true
-
-		skipHealth = true
-
 	default:
-		kindOk = false
-	}
-
-	if kindOk == false {
 		return cmdr.UsageErrorf("kind not defined, pick one of %s or %s", sous.ManifestKindScheduled, sous.ManifestKindService)
+	case sous.ManifestKindService:
+		skipHealth = false
+	case sous.ManifestKindScheduled, sous.ManifestKindOnDemand:
+		skipHealth = true
 	}
 
-	if skipHealth == true {
-		var dsm map[string]sous.DeploySpec
-		dsm = make(map[string]sous.DeploySpec)
-
-		for k := range m.Deployments {
-			ds := m.Deployments[k]
-			ds.Startup.SkipCheck = true
-			dsm[k] = ds
+	m := si.Target.Manifest
+	if skipHealth {
+		for k, d := range m.Deployments {
+			// Set the entire 'Startup' so it only has one non-zero field.
+			d.Startup = sous.Startup{
+				SkipCheck: true,
+			}
+			m.Deployments[k] = d
 		}
-
-		m.Deployments = dsm
 	}
 
 	cluster := si.DeployFilterFlags.Cluster
