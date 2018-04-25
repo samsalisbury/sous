@@ -12,6 +12,7 @@ with respect to its command line interface and HTTP interface.
 
 ### Changed
 * Client: error is returned if manifest set is sent a different source location
+* All: don't log when status poller hasn't changed
 
 ## [0.5.86](//github.com/opentable/sous/compare/0.5.85...0.5.86)
 ### Added
