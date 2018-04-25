@@ -19,7 +19,6 @@ type DeployFilterFlags struct {
 	Tag      string
 	Revision string
 	Cluster  string
-	Kind     string
 	All      bool
 }
 

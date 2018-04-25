@@ -21,6 +21,9 @@ type SousInit struct {
 	State       *sous.State
 	StateWriter graph.StateWriter
 	User        sous.User
+	flags       struct {
+		Kind string
+	}
 }
 
 func init() { TopLevelCommands["init"] = &SousInit{} }
@@ -57,14 +60,14 @@ func (si *SousInit) AddFlags(fs *flag.FlagSet) {
 	MustAddFlags(fs, &si.Flags, OtplFlagsHelp)
 	fs.StringVar(&si.DeployFilterFlags.Flavor, "flavor", "", flavorFlagHelp)
 	fs.StringVar(&si.DeployFilterFlags.Cluster, "cluster", "", clusterFlagHelp)
-	fs.StringVar(&si.DeployFilterFlags.Kind, "kind", "", kindFlagHelp)
+	fs.StringVar(&si.flags.Kind, "kind", "", kindFlagHelp)
 	fs.BoolVar(&si.DryRunFlag, "dryrun", false, "print out the created manifest but do not save it")
 }
 
 // Execute fulfills the cmdr.Executor interface
 func (si *SousInit) Execute(args []string) cmdr.Result {
 
-	kind := sous.ManifestKind(si.DeployFilterFlags.Kind)
+	kind := sous.ManifestKind(si.flags.Kind)
 	kindOk := false
 	skipHealth := false
 
