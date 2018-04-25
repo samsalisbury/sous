@@ -91,15 +91,26 @@ func (cli *CLI) Invoke(args []string) cmdr.Result {
 	return res
 }
 
+func getLogSet(graph *graph.SousGraph) *logging.LogSet {
+	type logSetScoop struct {
+		*logging.LogSet
+	}
+	lss := &logSetScoop{}
+	graph.MustInject(lss)
+	return lss.LogSet
+}
+
 // NewSousCLI creates a new Sous cli app.
-func NewSousCLI(di *graph.SousGraph, s *Sous, out, errout io.Writer) (*CLI, error) {
+func NewSousCLI(di *graph.SousGraph, s *Sous, earlyLogging logging.LogSink, out, errout io.Writer) (*CLI, error) {
 
 	stdout := cmdr.NewOutput(out)
 	stderr := cmdr.NewOutput(errout)
 
 	verbosity := &config.Verbosity{}
 
-	cli := &CLI{}
+	cli := &CLI{
+		LogSink: earlyLogging,
+	}
 
 	cli.CLI = &cmdr.CLI{
 		Root: s,
@@ -126,6 +137,7 @@ func NewSousCLI(di *graph.SousGraph, s *Sous, out, errout io.Writer) (*CLI, erro
 		if registrant, ok := cmd.(Registrant); ok {
 			registrant.RegisterOn(cli.graph)
 		}
+		cli.LogSink = getLogSet(cli.graph)
 		return nil
 	}
 

@@ -5,6 +5,7 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 )
 
@@ -25,7 +26,7 @@ func newAllDeployQueuesResource(ctx ComponentLocator) *AllDeployQueuesResource {
 }
 
 // Get returns a configured GETAllDeployQueuesHandler.
-func (r *AllDeployQueuesResource) Get(_ *restful.RouteMap, _ http.ResponseWriter, _ *http.Request, _ httprouter.Params) restful.Exchanger {
+func (r *AllDeployQueuesResource) Get(_ *restful.RouteMap, _ logging.LogSink, _ http.ResponseWriter, _ *http.Request, _ httprouter.Params) restful.Exchanger {
 	return &GETAllDeployQueuesHandler{
 		QueueSet: r.context.QueueSet,
 	}

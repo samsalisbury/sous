@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 	"github.com/samsalisbury/semv"
 )
@@ -28,7 +29,7 @@ func newHealthResource(loc ComponentLocator) *healthResource {
 	return &healthResource{locator: loc}
 }
 
-func (hr *healthResource) Get(*restful.RouteMap, http.ResponseWriter, *http.Request, httprouter.Params) restful.Exchanger {
+func (hr *healthResource) Get(*restful.RouteMap, logging.LogSink, http.ResponseWriter, *http.Request, httprouter.Params) restful.Exchanger {
 	return &getHealthHandler{
 		version: hr.locator.Version,
 	}

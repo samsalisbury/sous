@@ -158,7 +158,7 @@ func SilentLogSet() *LogSet {
 }
 
 // NewLogSet builds a new Logset that feeds to the listed writers
-func NewLogSet(version semv.Version, name string, role string, err io.Writer) *LogSet {
+func NewLogSet(version semv.Version, name string, role string, err io.Writer, context ...EachFielder) *LogSet {
 	// logrus uses a pool for entries, which means we probably really should only have one.
 	// this means that output configuration and level limiting is global to the logset and
 	// its children.
@@ -169,6 +169,8 @@ func NewLogSet(version semv.Version, name string, role string, err io.Writer) *L
 
 	ls := newls(name, role, CriticalLevel, bundle) //level constrains Kafka output
 	ls.imposeLevel()
+
+	ls.ctxFields = context
 
 	// use sous.<env>.<region>.*, he said
 	// sous. comes from the GraphiteConfig "Prefix" field.

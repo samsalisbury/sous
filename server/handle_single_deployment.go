@@ -53,12 +53,12 @@ func newSingleDeploymentResource(cl ComponentLocator) *SingleDeploymentResource 
 	}
 }
 
-func (sdr *SingleDeploymentResource) newSingleDeploymentHandler(req *http.Request, rw http.ResponseWriter, gdm *sous.State) SingleDeploymentHandler {
+func (sdr *SingleDeploymentResource) newSingleDeploymentHandler(ls logging.LogSink, req *http.Request, rw http.ResponseWriter, gdm *sous.State) SingleDeploymentHandler {
 	return SingleDeploymentHandler{
 		responseWriter: rw,
 		req:            req,
 		GDM:            gdm,
-		log:            sdr.context.LogSink,
+		log:            ls,
 	}
 }
 
@@ -73,9 +73,9 @@ func (sdh *SingleDeploymentHandler) depID() (sous.DeploymentID, error) {
 }
 
 // Put returns a configured put single deployment handler.
-func (sdr *SingleDeploymentResource) Put(rm *restful.RouteMap, rw http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
+func (sdr *SingleDeploymentResource) Put(rm *restful.RouteMap, ls logging.LogSink, rw http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
 	gdm := sdr.context.liveState()
-	sdh := sdr.newSingleDeploymentHandler(req, rw, gdm)
+	sdh := sdr.newSingleDeploymentHandler(ls, req, rw, gdm)
 	return &PUTSingleDeploymentHandler{
 		SingleDeploymentHandler: sdh,
 		QueueSet:                sdr.context.QueueSet,
@@ -85,9 +85,9 @@ func (sdr *SingleDeploymentResource) Put(rm *restful.RouteMap, rw http.ResponseW
 }
 
 // Get returns a configured get single deployment handler.
-func (sdr *SingleDeploymentResource) Get(rm *restful.RouteMap, rw http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
+func (sdr *SingleDeploymentResource) Get(rm *restful.RouteMap, ls logging.LogSink, rw http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
 	gdm := sdr.context.liveState()
-	sdh := sdr.newSingleDeploymentHandler(req, rw, gdm)
+	sdh := sdr.newSingleDeploymentHandler(ls, req, rw, gdm)
 	return &GETSingleDeploymentHandler{SingleDeploymentHandler: sdh}
 }
 

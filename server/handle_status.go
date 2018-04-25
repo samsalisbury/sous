@@ -5,6 +5,7 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 )
 
@@ -31,7 +32,7 @@ func newStatusResource(ctx ComponentLocator) *StatusResource {
 }
 
 // Get implements Getable on StatusResource.
-func (sr *StatusResource) Get(*restful.RouteMap, http.ResponseWriter, *http.Request, httprouter.Params) restful.Exchanger {
+func (sr *StatusResource) Get(*restful.RouteMap, logging.LogSink, http.ResponseWriter, *http.Request, httprouter.Params) restful.Exchanger {
 	return &StatusHandler{
 		AutoResolver:  sr.context.AutoResolver,
 		ResolveFilter: sr.context.ResolveFilter,

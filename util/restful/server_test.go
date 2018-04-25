@@ -45,14 +45,14 @@ func newTestResource(data string) *TestResource {
 	return &TestResource{Data: data}
 }
 
-func (tr *TestResource) Get(rm *RouteMap, write http.ResponseWriter, req *http.Request, ps httprouter.Params) Exchanger {
+func (tr *TestResource) Get(rm *RouteMap, _ logging.LogSink, write http.ResponseWriter, req *http.Request, ps httprouter.Params) Exchanger {
 	return &TestGetExchanger{
 		TestResource: tr,
 		Params:       ps,
 		QueryValues:  tr.ParseQuery(req),
 	}
 }
-func (tr *TestResource) Put(rm *RouteMap, write http.ResponseWriter, req *http.Request, ps httprouter.Params) Exchanger {
+func (tr *TestResource) Put(rm *RouteMap, _ logging.LogSink, write http.ResponseWriter, req *http.Request, ps httprouter.Params) Exchanger {
 	return &TestPutExchanger{
 		TestResource: tr,
 		Request:      req,

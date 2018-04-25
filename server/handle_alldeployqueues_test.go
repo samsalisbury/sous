@@ -7,6 +7,7 @@ import (
 	"time"
 
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 	"github.com/pborman/uuid"
 )
 
@@ -20,7 +21,9 @@ func TestNewAllDeployQueuesResource(t *testing.T) {
 	adq := newAllDeployQueuesResource(c)
 	rm := routemap(c)
 
-	got := adq.Get(rm, nil, &http.Request{URL: &url.URL{}}, nil).(*GETAllDeployQueuesHandler)
+	ls, _ := logging.NewLogSinkSpy()
+
+	got := adq.Get(rm, ls, nil, &http.Request{URL: &url.URL{}}, nil).(*GETAllDeployQueuesHandler)
 	if got.QueueSet != qs {
 		t.Errorf("got different queueset")
 	}
