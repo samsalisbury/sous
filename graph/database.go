@@ -2,12 +2,12 @@ package graph
 
 import "database/sql"
 
-type maybeDatabase struct {
-	db  *sql.DB
-	err error
+type MaybeDatabase struct {
+	Db  *sql.DB
+	Err error
 }
 
-func newMaybeDatabase(c LocalSousConfig) maybeDatabase {
+func newMaybeDatabase(c LocalSousConfig) MaybeDatabase {
 	db, err := c.Database.DB()
-	return maybeDatabase{db: db, err: err}
+	return MaybeDatabase{Db: db, Err: err}
 }

@@ -23,7 +23,7 @@ type PostgresStateManagerSuite struct {
 	logs    logging.LogSinkController
 }
 
-func SetupTest(t *testing.T) *PostgresStateManagerSuite {
+func SetupTest(t *testing.T, name string) *PostgresStateManagerSuite {
 	var err error
 
 	t.Helper()
@@ -34,7 +34,7 @@ func SetupTest(t *testing.T) *PostgresStateManagerSuite {
 		require:    require.New(t),
 	}
 
-	db := sous.SetupDB(t)
+	db := sous.SetupDB(t, name)
 
 	sink, ctrl := logging.NewLogSinkSpy()
 	suite.manager = NewPostgresStateManager(db, sink)
@@ -53,7 +53,7 @@ func SetupTest(t *testing.T) *PostgresStateManagerSuite {
 }
 
 func TestPostgresStateManagerWriteState_success(t *testing.T) {
-	suite := SetupTest(t)
+	suite := SetupTest(t, "state_mngr_write_success")
 
 	s := exampleState()
 

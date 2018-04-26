@@ -7,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func newLazyNameCache(cfg LocalSousConfig, mdb maybeDatabase, ls LogSink, cl LocalDockerClient) lazyNameCache {
+func newLazyNameCache(cfg LocalSousConfig, mdb MaybeDatabase, ls LogSink, cl LocalDockerClient) lazyNameCache {
 	return func() (*docker.NameCache, error) {
 		theNameCacheOnce.Do(func() {
 			theNameCache, theNameCacheErr = generateNameCache(cfg, mdb, ls, cl)
@@ -27,10 +27,10 @@ var theNameCache *docker.NameCache
 var theNameCacheErr error
 
 // generateNameCache generates a brand new *docker.NameCache.
-func generateNameCache(cfg LocalSousConfig, mdb maybeDatabase, ls LogSink, cl LocalDockerClient) (*docker.NameCache, error) {
-	if mdb.err != nil {
-		return nil, errors.Wrap(err, "building name cache DB")
+func generateNameCache(cfg LocalSousConfig, mdb MaybeDatabase, ls LogSink, cl LocalDockerClient) (*docker.NameCache, error) {
+	if mdb.Err != nil {
+		return nil, errors.Wrap(mdb.Err, "building name cache DB")
 	}
 	drh := cfg.Docker.RegistryHost
-	return docker.NewNameCache(drh, cl.Client, ls.Child("docker-images"), mdb.db)
+	return docker.NewNameCache(drh, cl.Client, ls.Child("docker-images"), mdb.Db)
 }

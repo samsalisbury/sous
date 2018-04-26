@@ -19,9 +19,7 @@ const (
 
 // DefaultConfig builds a default configuration for this user
 func (u *LocalUser) DefaultConfig() Config {
-	c := DefaultConfig()
-	c.Docker.DatabaseConnection = filepath.Join(u.ConfigDir(), "data.db")
-	return c
+	return DefaultConfig()
 }
 
 // ConfigDir returns the directory we should use to store Sous configuration data

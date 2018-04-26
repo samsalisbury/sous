@@ -90,16 +90,18 @@ func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State,
 		return nil
 	}
 
-	if err := execInsertDeployments(ctx, log, tx, alldeps, "clusters", `on conflict {{.Candidates}} do update set {{.NonCandidates}} = {{.NSNonCandidates "excluded"}}`, func(fields sqlgen.FieldSet, dep *sous.Deployment) {
-		c := dep.Cluster
-		s := c.Startup
-		fields.Row(func(r sqlgen.RowDef) {
-			r.CF("?", "name", dep.ClusterName)
-			r.FD("?", "kind", c.Kind)
-			r.FD("?", "base_url", c.BaseURL)
-			startupFields(r, "crdef", s)
-		})
-	}); err != nil {
+	if err := execInsertDeployments(ctx, log, tx, alldeps, "clusters",
+		`on conflict {{.Candidates}} do update set {{.NonCandidates}} = {{.NSNonCandidates "excluded"}}`,
+		func(fields sqlgen.FieldSet, dep *sous.Deployment) {
+			c := dep.Cluster
+			s := c.Startup
+			fields.Row(func(r sqlgen.RowDef) {
+				r.CF("?", "name", dep.ClusterName)
+				r.FD("?", "kind", c.Kind)
+				r.FD("?", "base_url", c.BaseURL)
+				startupFields(r, "crdef", s)
+			})
+		}); err != nil {
 		return nil
 	}
 
@@ -273,6 +275,7 @@ func execInsertDeployments(
 	for _, d := range ds.Snapshot() {
 		fn(fields, d)
 	}
+
 	if !fields.Potent() {
 		return nil
 	}

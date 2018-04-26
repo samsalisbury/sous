@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/lib/pq"
+	_ "github.com/lib/pq" // need to load the postgres driver
 	"github.com/opentable/sous/util/logging"
 )
 

@@ -17,7 +17,7 @@ func TestDuplexWrite(t *testing.T) {
 	clobberDir(t, "testdata/result")
 	PrepareTestGitRepo(t, s, "testdata/remote", "testdata/out")
 
-	db := sous.SetupDB(t)
+	db := sous.SetupDB(t, "duplex_write")
 	defer db.Close()
 
 	log, _ := logging.NewLogSinkSpy()
@@ -50,7 +50,7 @@ func TestDuplexReadState(t *testing.T) {
 	s := exampleState()
 	PrepareTestGitRepo(t, s, "testdata/remote", "testdata/out")
 
-	db := sous.SetupDB(t)
+	db := sous.SetupDB(t, "duplex_read")
 	defer db.Close()
 	log, _ := logging.NewLogSinkSpy()
 	gsm := NewGitStateManager(NewDiskStateManager("testdata/out"))

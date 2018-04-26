@@ -68,6 +68,8 @@ func TestWriteState(t *testing.T) {
 		t.Fatal("State manager double is empty")
 	}
 
+	db := sous.SetupDB(t, "http_smgr_write")
+
 	di := graph.BuildBaseGraph(semv.Version{}, &bytes.Buffer{}, os.Stderr, os.Stderr)
 	graph.AddNetwork(di)
 
@@ -84,6 +86,7 @@ func TestWriteState(t *testing.T) {
 
 		func() *graph.ServerStateManager { return &graph.ServerStateManager{StateManager: &sm} },
 		func() *graph.ConfigLoader { return graph.NewTestConfigLoader("") },
+		func() graph.MaybeDatabase { return graph.MaybeDatabase{Db: db, Err: nil} },
 	)
 
 	serverScoop := struct{ Handler graph.ServerHandler }{}

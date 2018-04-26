@@ -52,7 +52,7 @@
       <column name="etag" type="TEXT">
         <constraints nullable="false"/>
       </column>
-      <column name="canonicalName" type="TEXT">
+      <column name="canonicalname" type="TEXT">
         <constraints nullable="false" unique="true" />
       </column>
       <column name="version" type="TEXT">

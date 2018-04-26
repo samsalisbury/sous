@@ -617,11 +617,17 @@ func newHTTPClient(c LocalSousConfig, user sous.User, srvr ServerHandler, tid so
 	return HTTPClient{HTTPClient: cl}, err
 }
 
-func newServerStateManager(c LocalSousConfig, mdb maybeDatabase, rf *sous.ResolveFilter, log LogSink) *ServerStateManager {
+func newServerStateManager(c LocalSousConfig, mdb MaybeDatabase, rf *sous.ResolveFilter, log LogSink) (*ServerStateManager, error) {
 	var secondary sous.StateManager
-	if mdb.err == nil {
-		secondary, err = newDistributedStorage(mdb.db, c, rf, log)
+	var err error
+	if mdb.Err == nil {
+		secondary, err = newDistributedStorage(mdb.Db, c, rf, log)
+		if err != nil {
+			return nil, err
+		}
+
 	} else {
+		err = mdb.Err
 		// Either DB not configured, or problems setting up dispatcher...
 		logging.ReportError(log, errors.Wrapf(err, "connecting to database with %#v", c.Database))
 		secondary = storage.NewLogOnlyStateManager(log.Child("database"))
@@ -630,7 +636,7 @@ func newServerStateManager(c LocalSousConfig, mdb maybeDatabase, rf *sous.Resolv
 	dm := storage.NewDiskStateManager(c.StateLocation)
 	gm := storage.NewGitStateManager(dm)
 	duplex := storage.NewDuplexStateManager(gm, secondary, log.Child("duplex-state"))
-	return &ServerStateManager{StateManager: duplex}
+	return &ServerStateManager{StateManager: duplex}, nil
 }
 
 func newDistributedStorage(db *sql.DB, c LocalSousConfig, rf *sous.ResolveFilter, log LogSink) (sous.StateManager, error) {
@@ -658,10 +664,14 @@ func newDistributedStorage(db *sql.DB, c LocalSousConfig, rf *sous.ResolveFilter
 // newStateManager returns a wrapped sous.HTTPStateManager if cl is not nil.
 // Otherwise it returns a wrapped sous.GitStateManager, for local git based GDM.
 // If it returns a sous.GitStateManager, it emits a warning log.
-func newStateManager(cl HTTPClient, c LocalSousConfig, bundle ClientBundle, rf *sous.ResolveFilter, log LogSink) *StateManager {
+func newStateManager(cl HTTPClient, c LocalSousConfig, mdb MaybeDatabase, bundle ClientBundle, rf *sous.ResolveFilter, log LogSink) *StateManager {
 	if c.Server == "" {
 		messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Using local state stored at %s", c.StateLocation), logging.WarningLevel, log, c.StateLocation)
-		return &StateManager{StateManager: newServerStateManager(c, rf, log).StateManager}
+		ssm, err := newServerStateManager(c, mdb, rf, log)
+		if err != nil {
+			panic(err)
+		}
+		return &StateManager{StateManager: ssm.StateManager}
 	}
 	hsm := sous.NewHTTPStateManager(cl, bundle)
 	return &StateManager{StateManager: hsm}

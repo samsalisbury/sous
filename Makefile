@@ -57,6 +57,8 @@ SOUS_BIN_PATH := $(shell which sous 2> /dev/null || echo $$GOPATH/bin/sous)
 # does not understand the v prefix, so this lops it off.
 SOUS_VERSION ?= $(shell echo $(GIT_TAG) | sed 's/^v//')
 
+DB_NAME ?= sous
+
 ifeq ($(shell git diff-index --quiet HEAD ; echo $$?),0)
 COMMIT := $(shell git rev-parse HEAD)
 else
@@ -384,7 +386,7 @@ postgres-stop:
 	pg_ctl stop -D $(DEV_POSTGRES_DATA_DIR) || true
 
 postgres-connect:
-	psql -h localhost -p $(PGPORT) sous
+	psql -h localhost -p $(PGPORT) $(DB_NAME)
 
 postgres-validate-schema:
 	liquibase $(LIQUIBASE_FLAGS) validate
