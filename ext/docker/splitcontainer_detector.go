@@ -110,7 +110,7 @@ func (sd *splitDetector) checkLocalImage(ctx *sous.BuildContext) error {
 }
 
 func inspectImage(sh shell.Shell, imageName string) string {
-	cmd := []interface{}{"image", "inspect", "--format={{.Config.OnBuild}}{{.Config.Env}}", imageName}
+	cmd := []interface{}{"image", "inspect", "--format={{printf \"%q %q\" .Config.OnBuild .Config.Env}}", imageName}
 	//docker image inspect docker.otenv.com/sous-otj-autobuild:local
 	output, err := sh.Stdout("docker", cmd...)
 	if err != nil {
@@ -121,15 +121,28 @@ func inspectImage(sh shell.Shell, imageName string) string {
 
 func parseImageOutput(input string) map[string]string {
 	envs := make(map[string]string)
-	input = strings.Replace(input, "[", " ", -1)
-	input = strings.Replace(input, "]", " ", -1)
-	envSlice := strings.Split(input, " ")
-	for _, env := range envSlice {
+	input = strings.Replace(input, "[", "", -1)
+	input = strings.Replace(input, "]", "", -1)
+	elementSlice := strings.Split(input, "\" \"")
+	for _, env := range elementSlice {
+		if strings.Index(env, "ENV") >= 0 {
+			//remove env
+			env = strings.Replace(env, "ENV", "", 1)
+
+		}
+		env = strings.Trim(env, "\" ")
 		envSplit := strings.Split(env, "=")
 		if len(envSplit) == 2 {
 			key := envSplit[0]
 			val := envSplit[1]
 			envs[key] = val
+		} else {
+			envSplit := strings.Split(env, " ")
+			if len(envSplit) == 2 {
+				key := envSplit[0]
+				val := envSplit[1]
+				envs[key] = val
+			}
 		}
 	}
 	return envs

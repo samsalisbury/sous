@@ -7,13 +7,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var fullEnv = "[ENV BUILD_ROOT /app ENV PRODUCT $BUILD_ROOT/product ENV SOUS_RUN_IMAGE_SPEC_OUTPUT=$PRODUCT/run_spec.json WORKDIR $BUILD_ROOT COPY ./ ./ CMD mvn -B deploy][PATH=/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/bin APP_BASE=/srv APP_REL=app CONFIG_REL=config BOOTSTRAP_REL=bootstrap JAR_REL=app/main.jar APP_DIR=/srv/app CONFIG_DIR=/srv/config BOOTSTRAP_DIR=/srv/bootstrap OT_JAR=/srv/app/main.jar GNUPGHOME=/srv/config/gnupg SOUS_RUN_IMAGE_SPEC=/run_spec.json]"
-var pathEnv = "[PATH=/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/bin APP_BASE=/srv APP_REL=app CONFIG_REL=config BOOTSTRAP_REL=bootstrap JAR_REL=app/main.jar APP_DIR=/srv/app CONFIG_DIR=/srv/config BOOTSTRAP_DIR=/srv/bootstrap OT_JAR=/srv/app/main.jar GNUPGHOME=/srv/config/gnupg SOUS_RUN_IMAGE_SPEC=/run_spec.json]"
+var fullEnv = "[\"ENV BUILD_ROOT /app\" \"ENV PRODUCT $BUILD_ROOT/product\" \"ENV SOUS_RUN_IMAGE_SPEC_OUTPUT=$PRODUCT/run_spec.json\" \"WORKDIR $BUILD_ROOT\" \"COPY ./ ./\" \"CMD mvn -B deploy\"] [\"PATH=/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/bin\" \"APP_BASE=/srv\" \"APP_REL=app\" \"CONFIG_REL=config\" \"BOOTSTRAP_REL=bootstrap\" \"JAR_REL=app/main.jar\" \"APP_DIR=/srv/app\" \"CONFIG_DIR=/srv/config\" \"BOOTSTRAP_DIR=/srv/bootstrap\" \"OT_JAR=/srv/app/main.jar\" \"GNUPGHOME=/srv/config/gnupg\" \"SOUS_RUN_IMAGE_SPEC=/run_spec.json\"]"
+var pathEnv = "[\"PATH=/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/bin\" \"APP_BASE=/srv\" \"APP_REL=app\" \"CONFIG_REL=config\" \"BOOTSTRAP_REL=bootstrap\" \"JAR_REL=app/main.jar\" \"APP_DIR=/srv/app\" \"CONFIG_DIR=/srv/config\" \"BOOTSTRAP_DIR=/srv/bootstrap\" \"OT_JAR=/srv/app/main.jar\" \"GNUPGHOME=/srv/config/gnupg\" \"SOUS_RUN_IMAGE_SPEC=/run_spec.json\"]"
 
 func Test_parseImageOutput(t *testing.T) {
 	inputEnv := fullEnv
 	envs := parseImageOutput(inputEnv)
-	assert.Len(t, envs, 13)
+	//assert.Len(t, envs, 13)
+	assert.Equal(t, len(envs), 16)
 	assert.Equal(t, "/run_spec.json", envs[SOUS_RUN_IMAGE_SPEC])
 	assert.Equal(t, "$PRODUCT/run_spec.json", envs["SOUS_RUN_IMAGE_SPEC_OUTPUT"])
 
@@ -52,5 +53,5 @@ func Test_inspectImageForOnBuild(t *testing.T) {
 
 	imageOnBuild := inspectImage(sh, "docker.otenv.com/sous-otj-autobuild:local")
 	envs := parseImageOutput(imageOnBuild)
-	assert.Len(t, envs, 13)
+	assert.Equal(t, len(envs), 16)
 }
