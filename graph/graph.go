@@ -216,6 +216,7 @@ func AddShells(graph adder) {
 func AddFilesystem(graph adder) {
 	graph.Add(
 		newConfigLoader,
+		newMaybeDatabase, // we need to be able to progress in the absence of a DB.
 		newServerStateManager,
 	)
 }
@@ -616,15 +617,12 @@ func newHTTPClient(c LocalSousConfig, user sous.User, srvr ServerHandler, tid so
 	return HTTPClient{HTTPClient: cl}, err
 }
 
-func newServerStateManager(c LocalSousConfig, rf *sous.ResolveFilter, log LogSink) *ServerStateManager {
+func newServerStateManager(c LocalSousConfig, mdb maybeDatabase, rf *sous.ResolveFilter, log LogSink) *ServerStateManager {
 	var secondary sous.StateManager
-	db, err := c.Database.DB()
-	if err == nil {
-		secondary, err = newDistributedStorage(db, c, rf, log)
-	}
-
-	// Either DB not configured, or problems setting up dispatcher...
-	if err != nil {
+	if mdb.err == nil {
+		secondary, err = newDistributedStorage(mdb.db, c, rf, log)
+	} else {
+		// Either DB not configured, or problems setting up dispatcher...
 		logging.ReportError(log, errors.Wrapf(err, "connecting to database with %#v", c.Database))
 		secondary = storage.NewLogOnlyStateManager(log.Child("database"))
 	}

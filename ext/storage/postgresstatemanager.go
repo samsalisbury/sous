@@ -71,11 +71,3 @@ func (c PostgresConfig) DB() (*sql.DB, error) {
 	}
 	return db, nil
 }
-
-func isNoDBError(err error) bool {
-	pqerr, is := err.(*pq.Error)
-	if !is {
-		return false
-	}
-	return pqerr.Code == "3D000" // invalid_catalog_name per https://www.postgresql.org/docs/current/static/errcodes-appendix.html
-}

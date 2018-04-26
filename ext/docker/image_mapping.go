@@ -1,27 +1,21 @@
 package docker
 
 import (
-	"bytes"
-	"crypto/sha256"
 	"database/sql"
-	"encoding/base64"
 	"fmt"
 	"io"
 	"regexp"
 	"strings"
 	"sync"
 	"text/tabwriter"
-	"time"
 
 	"github.com/docker/distribution"
 	"github.com/docker/distribution/reference"
-	"github.com/pkg/errors"
-	// triggers the loading of sqlite3 as a database driver
-	sqlite "github.com/mattn/go-sqlite3"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/docker_registry"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/logging/messages"
+	"github.com/pkg/errors"
 	"github.com/samsalisbury/semv"
 )
 
@@ -68,16 +62,6 @@ func NewBuildArtifact(imageName string, qstrs strpairs) *sous.BuildArtifact {
 	return &sous.BuildArtifact{Name: imageName, Type: "docker", Qualities: qs}
 }
 
-// InMemory configures SQLite to use an in-memory database
-// The dummy file allows multiple goroutines see the same in-memory DB
-const InMemory = "file:dummy.db?mode=memory&cache=shared"
-
-// InMemoryConnection builds a connection string based on a base name
-// This is mostly useful for testing, so that we can have separate cache DBs per test
-func InMemoryConnection(base string) string {
-	return "file:" + base + "?mode=memory&cache=shared"
-}
-
 func (e NoImageNameFound) Error() string {
 	return fmt.Sprintf("No image name for %v", e.SourceID)
 }
@@ -91,6 +75,7 @@ func (e NotModifiedErr) Error() string {
 }
 
 // NewNameCache builds a new name cache.
+// XXX remove error return value
 func NewNameCache(drh string, cl docker_registry.Client, ls logging.LogSink, db *sql.DB) (*NameCache, error) {
 	nc := &NameCache{
 		RegistryClient:     cl,
@@ -98,7 +83,7 @@ func NewNameCache(drh string, cl docker_registry.Client, ls logging.LogSink, db 
 		DockerRegistryHost: drh,
 		Log:                ls,
 	}
-	return nc, nc.GroomDatabase()
+	return nc, nil
 }
 
 // ListSourceIDs lists all the known SourceIDs.
@@ -359,181 +344,9 @@ func (nc *NameCache) harvest(sl sous.SourceLocation) error {
 	return nil
 }
 
-func union(left, right []string) []string {
-	set := make(map[string]struct{})
-	for _, s := range left {
-		set[s] = struct{}{}
-	}
-
-	for _, s := range right {
-		set[s] = struct{}{}
-	}
-
-	res := make([]string, 0, len(set))
-
-	for k := range set {
-		res = append(res, k)
-	}
-
-	return res
-}
-
 // DBConfig is a database configuration for a NameCache.
 type DBConfig struct {
 	Driver, Connection string
-}
-
-var schema = []string{
-	"pragma foreign_keys = ON;",
-
-	"create table _database_metadata_(" +
-		"name text not null unique on conflict replace" +
-		", value text" +
-		");",
-
-	"create table docker_repo_name(" +
-		"repo_name_id integer primary key autoincrement" +
-		", name text not null" +
-		", constraint upsertable unique (name)" +
-		");",
-
-	"create table docker_search_location(" +
-		"location_id integer primary key autoincrement" +
-		", repo text not null" +
-		", offset text not null" +
-		", constraint upsertable unique (repo, offset)" +
-		");",
-
-	"create table repo_through_location(" +
-		"repo_name_id references docker_repo_name" +
-		"    not null" +
-		", location_id references docker_search_location" +
-		"    not null" +
-		",  primary key (repo_name_id, location_id)" +
-		");",
-
-	"create table docker_search_metadata(" +
-		"metadata_id integer primary key autoincrement" +
-		", location_id references docker_search_location" +
-		"    not null" +
-		", etag text not null" +
-		", canonicalName text not null" +
-		", version text not null" +
-		", constraint upsertable unique (location_id, version)" +
-		", constraint canonical unique (canonicalName)" +
-		");",
-
-	"create table docker_search_name(" +
-		"name_id integer primary key autoincrement" +
-		", metadata_id references docker_search_metadata" +
-		"    on delete cascade not null" +
-		", name text not null unique" +
-		");",
-
-	// "qualities" includes advisories. assuming that assertions will also
-	// be represented here
-	"create table docker_image_qualities(" +
-		"assertion_id integer primary key autoincrement" +
-		", metadata_id references docker_search_metadata" +
-		"    on delete cascade" +
-		", quality text not null" +
-		", kind text not null" +
-		", constraint upsertable unique (metadata_id, quality, kind) on conflict ignore" +
-		");",
-}
-
-var schemaFingerprint = fingerPrintSchema(schema)
-
-var registerSQLOnce = &sync.Once{}
-
-// GetDatabase initialises a new database for a NameCache.
-func GetDatabase(cfg *DBConfig) (*sql.DB, error) {
-	driver := "sqlite3_sous"
-	conn := InMemory
-	if cfg != nil {
-		if cfg.Driver != "" {
-			driver = cfg.Driver
-		}
-		if cfg.Connection != "" {
-			conn = cfg.Connection
-		}
-	}
-
-	if driver == "sqlite3" {
-		driver = "sqlite3_sous"
-	}
-
-	registerSQLOnce.Do(func() {
-		sql.Register(driver, &sqlite.SQLiteDriver{
-			ConnectHook: func(conn *sqlite.SQLiteConn) error {
-				err := conn.RegisterFunc("semverEqual", semverEqual, true)
-				return err
-			},
-		})
-	})
-
-	db, err := sql.Open(driver, conn) //only call once
-	return db, errors.Wrapf(err, "get DB/open: %v", cfg)
-}
-
-func semverEqual(a, b string) (bool, error) {
-	if a == b {
-		return true, nil
-	}
-	aVer, err := semv.Parse(a)
-	if err != nil {
-		return false, err
-	}
-	bVer, err := semv.Parse(b)
-	if err != nil {
-		return false, err
-	}
-	return aVer.Equals(bVer), nil
-}
-
-var testMtx = sync.Mutex{}
-
-// GroomDatabase ensures that the database to back the cache is the correct schema
-func (nc *NameCache) GroomDatabase() error {
-	db := nc.DB
-	var err error
-	var tgp string
-	nc.groomOnce.Do(func() {
-		queryErr := db.QueryRow("select value from _database_metadata_ where name = 'fingerprint';").Scan(&tgp)
-		if queryErr != nil || tgp != schemaFingerprint {
-			repos := nc.captureRepos(db)
-
-			nc.clobber(db)
-
-			for _, cmd := range schema {
-				if err = sqlExec(db, cmd); err != nil {
-					messages.ReportLogFieldsMessage("error in sqlExec", logging.ExtraDebug1Level, nc.Log, err)
-					return
-				}
-			}
-			if _, err = db.Exec("insert into _database_metadata_ (name, value) values"+
-				" ('fingerprint', ?),"+
-				" ('created', ?);",
-				schemaFingerprint, time.Now().UTC().Format(time.UnixDate)); err != nil {
-				return
-			}
-			for _, r := range repos {
-				if err = nc.Warmup(r); err != nil {
-					return
-				}
-			}
-		}
-	})
-
-	return errors.Wrapf(err, "groom DB: %v", db)
-}
-
-func (nc *NameCache) clobber(db *sql.DB) {
-	messages.ReportLogFieldsMessage("DB Clobbering time!", logging.DebugLevel, nc.Log)
-	sqlExec(db, "PRAGMA writable_schema = 1;")
-	sqlExec(db, "delete from sqlite_master where type in ('table', 'index', 'trigger');")
-	sqlExec(db, "PRAGMA writable_schema = 0;")
-	sqlExec(db, "vacuum;")
 }
 
 func (nc *NameCache) captureRepos(db *sql.DB) (repos []string) {
@@ -549,18 +362,6 @@ func (nc *NameCache) captureRepos(db *sql.DB) (repos []string) {
 		repos = append(repos, repo)
 	}
 	return
-}
-
-func fingerPrintSchema(schema []string) string {
-	h := sha256.New()
-	for i, s := range schema {
-		fmt.Fprintf(h, "%d:%s\n", i, s)
-	}
-	buf := &bytes.Buffer{}
-	b6 := base64.NewEncoder(base64.StdEncoding, buf)
-	b6.Write(h.Sum([]byte(``)))
-	b6.Close()
-	return buf.String()
 }
 
 func (nc *NameCache) dumpRows(io io.Writer, sql string) {
@@ -716,8 +517,7 @@ func (nc *NameCache) dbInsert(sid sous.SourceID, in, etag string, quals []sous.Q
 		return errors.Wrapf(err, "inserting (%d, %d) into repo_through_location", nid, id)
 	}
 
-	versionString := sid.Version.Format(semv.Complete)
-	messages.ReportLogFieldsMessage("Inserting metadata id, etag, name, version", logging.ExtraDebug1Level, nc.Log, id, etag, in, versionString)
+	messages.ReportLogFieldsMessage("Inserting metadata id, etag, name, version", logging.ExtraDebug1Level, nc.Log, id, etag, in, versionString(sid.Version))
 
 	id, err = nc.ensureInDB(
 		"select metadata_id from docker_search_metadata  where canonicalName = $1",
@@ -741,6 +541,10 @@ func (nc *NameCache) dbInsert(sid sous.SourceID, in, etag string, quals []sous.Q
 
 	messages.ReportLogFieldsMessage("Inserting search name", logging.ExtraDebug1Level, nc.Log, id, in)
 	return nc.dbAddNamesForID(id, []string{in})
+}
+
+func versionString(v semv.Version) string {
+	return v.Format(semv.Complete)
 }
 
 func (nc *NameCache) dbAddNamesForID(id int64, ins []string) error {
@@ -858,6 +662,10 @@ func (nc *NameCache) dbQueryOnSourceID(sid sous.SourceID) (cn string, ins []stri
 	return
 }
 
+func (nc *NameCache) log(msg string, lvl logging.Level, data ...interface{}) {
+	logging.Deliver(nc.Log, append([]interface{}{logging.MessageField(msg), lvl}, data...)...)
+}
+
 func (nc *NameCache) dbQueryCNameforSourceID(sid sous.SourceID) (cn string, ins []string, err error) {
 	rows, err := nc.DB.Query("select docker_search_metadata.canonicalName, "+
 		"docker_search_name.name "+
@@ -867,10 +675,10 @@ func (nc *NameCache) dbQueryCNameforSourceID(sid sous.SourceID) (cn string, ins 
 		"where "+
 		"docker_search_location.repo = $1 and "+
 		"docker_search_location.offset = $2 and "+
-		"semverEqual(docker_search_metadata.version, $3)",
-		sid.Location.Repo, sid.Location.Dir, sid.Version.String())
+		"docker_search_metadata.version = $3",
+		sid.Location.Repo, sid.Location.Dir, versionString(sid.Version))
 
-	messages.ReportLogFieldsMessage("Selecting", logging.ExtraDebug1Level, nc.Log, sid.Location.Repo, sid.Location.Dir, sid.Version.String())
+	nc.log("Selecting", logging.ExtraDebug1Level, sid)
 
 	if err == sql.ErrNoRows {
 		err = errors.Wrap(NoImageNameFound{sid}, "")
