@@ -74,8 +74,8 @@ func (lss logSinkSpy) Fields(items []EachFielder) {
 	lss.spy.Called(items)
 }
 
-func (lss logSinkSpy) Child(name string) LogSink {
-	lss.spy.Called(name)
+func (lss logSinkSpy) Child(name string, ctx ...EachFielder) LogSink {
+	lss.spy.Called(name, ctx)
 	return lss //easier than managing a whole new lss
 }
 

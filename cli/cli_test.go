@@ -196,8 +196,7 @@ func TestInvokeManifestGet(t *testing.T) {
 	assert.NotNil(exe)
 	maniGet, good := exe.Cmd.(*SousManifestGet)
 	require.True(good)
-	assert.NotNil(maniGet.HTTPClient.HTTPClient)
-	assert.NotNil(maniGet.LogSink)
+	assert.NotNil(maniGet.DeployFilterFlags)
 }
 
 func TestInvokeManifestSet(t *testing.T) {
@@ -207,8 +206,7 @@ func TestInvokeManifestSet(t *testing.T) {
 	assert.NotNil(exe)
 	maniSet, good := exe.Cmd.(*SousManifestSet)
 	require.True(good)
-	assert.NotNil(maniSet.HTTPClient.HTTPClient)
-	assert.NotNil(maniSet.LogSink)
+	assert.NotNil(maniSet.DeployFilterFlags)
 }
 
 func TestInvokeServer(t *testing.T) {

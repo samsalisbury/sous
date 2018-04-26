@@ -3,6 +3,7 @@ package sous
 import (
 	"fmt"
 
+	"github.com/opentable/sous/util/logging"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -79,4 +80,10 @@ func (dp *DeployablePair) SameResolution() DiffResolution {
 		Desc:         desc,
 		Error:        err,
 	}
+}
+
+// EachField implements logging.EachFielder on DeployablePair.
+func (dp *DeployablePair) EachField(fn logging.FieldReportFn) {
+	sub := NewDeployablePairSubmessage(dp)
+	sub.EachField(fn)
 }

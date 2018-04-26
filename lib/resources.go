@@ -187,9 +187,9 @@ func reportDebugResourceMessage(msg string, r Resources, log logging.LogSink) {
 }
 
 func reportResourceMessage(msg string, r Resources, log logging.LogSink, debug ...bool) {
-	debugStmt := false
-	if len(debug) > 0 {
-		debugStmt = debug[0]
+	lvl := logging.WarningLevel
+	if len(debug) > 0 && debug[0] {
+		lvl = logging.DebugLevel
 	}
 
 	//not going to call Ports/Cpus/Memory to get values since those functions actually call reportResourceMessage
@@ -198,47 +198,24 @@ func reportResourceMessage(msg string, r Resources, log logging.LogSink, debug .
 		ports64, _ := strconv.ParseInt(portStr, 10, 32)
 		ports = int32(ports64)
 	}
-	var memory float64
+	var memory logging.MemResourceField
 	if memStr, present := r["memory"]; present {
-		memory, _ = strconv.ParseFloat(memStr, 64)
+		mf, _ := strconv.ParseFloat(memStr, 64)
+		memory = logging.MemResourceField(mf)
 	}
-	var cpus float64
+	var cpus logging.CPUResourceField
 	if cpuStr, present := r["cpus"]; present {
-		cpus, _ = strconv.ParseFloat(cpuStr, 64)
+		cf, _ := strconv.ParseFloat(cpuStr, 64)
+		cpus = logging.CPUResourceField(cf)
 	}
 
-	msgLog := resourceMessage{
-		msg:        msg,
-		CallerInfo: logging.GetCallerInfo(logging.NotHere()),
-		ports:      ports,
-		cpus:       cpus,
-		memory:     memory,
-		isDebugMsg: debugStmt,
-	}
-	logging.Deliver(log, msgLog)
-}
-
-func (msg resourceMessage) DefaultLevel() logging.Level {
-	level := logging.WarningLevel
-	if msg.isDebugMsg {
-		level = logging.DebugLevel
-	}
-
-	return level
-}
-
-func (msg resourceMessage) Message() string {
-	return msg.composeMsg()
-}
-
-func (msg resourceMessage) composeMsg() string {
-	return fmt.Sprintf("%s: ports %v, cpus %v memory %v", msg.msg, msg.ports, msg.cpus, msg.memory)
-}
-
-func (msg resourceMessage) EachField(f logging.FieldReportFn) {
-	f("@loglov3-otl", logging.SousGenericV1)
-	f("sous-resource-ports", msg.ports)
-	f("sous-resource-cpus", msg.cpus)
-	f("sous-resource-memory", msg.memory)
-	msg.CallerInfo.EachField(f)
+	logging.Deliver(log,
+		logging.SousGenericV1,
+		lvl,
+		logging.GetCallerInfo(logging.NotHere()),
+		logging.MessageField(fmt.Sprintf("%s: ports %v, cpus %v memory %v", msg, ports, cpus, memory)),
+		logging.KV(logging.SousResourcePorts, ports),
+		memory,
+		cpus,
+	)
 }

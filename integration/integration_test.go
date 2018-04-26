@@ -517,8 +517,9 @@ func (suite *integrationSuite) TestResolve() {
 		}
 	}
 	sort.Strings(dispositions)
-	expectedDispositions := []string{"added", "added", "removed", "removed", "removed", "removed"}
+	expectedDispositions := []string{"added", "added", "added", "added", "added", "added", "removed", "removed", "removed", "removed"}
 	if !suite.Equal(expectedDispositions, dispositions) {
+		log.Println(expectedDispositions, dispositions)
 		log.Printf("All log messages:\n")
 		for _, call := range logController.CallsTo("Fields") {
 			if msgs, is := call.PassedArgs().Get(0).([]logging.EachFielder); is {

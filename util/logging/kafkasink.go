@@ -6,27 +6,41 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
+	"github.com/nyarly/spies"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
-// kafkaSink
-type kafkaSink struct {
-	id           string
-	defaultTopic string
-	level        Level
-	formatter    logrus.Formatter
-	producer     sarama.AsyncProducer
-	exit         sync.WaitGroup
-}
+type (
+	kafkaSink interface {
+		live() bool
+		id() string
+		shouldSend(lvl Level) bool
+		send(lvl Level, entry *logrus.Entry) error
+		closedown()
+	}
 
-func newKafkaSink(
+	liveKafkaSink struct {
+		idstring     string
+		defaultTopic string
+		level        Level
+		formatter    logrus.Formatter
+		producer     sarama.AsyncProducer
+		exit         sync.WaitGroup
+	}
+
+	kafkaSinkSpy struct {
+		spy *spies.Spy
+	}
+)
+
+func newLiveKafkaSink(
 	id string,
 	level Level,
 	formatter logrus.Formatter,
 	brokers []string,
 	defaultTopic string,
-	injectHostname bool) (*kafkaSink, error) {
+	injectHostname bool) (*liveKafkaSink, error) {
 
 	var err error
 	var producer sarama.AsyncProducer
@@ -39,8 +53,8 @@ func newKafkaSink(
 		return nil, err
 	}
 
-	sink := &kafkaSink{
-		id:           id,
+	sink := &liveKafkaSink{
+		idstring:     id,
 		defaultTopic: defaultTopic,
 		level:        level,
 		formatter:    formatter,
@@ -66,15 +80,28 @@ func newKafkaSink(
 	return sink, nil
 }
 
-func (sink *kafkaSink) ID() string {
-	return sink.id
+func (sink *liveKafkaSink) live() bool {
+	return sink != nil
 }
 
-func (sink *kafkaSink) shouldSend(lvl Level) bool {
+func (sink *liveKafkaSink) id() string {
+	if sink == nil {
+		return ""
+	}
+	return sink.idstring
+}
+
+func (sink *liveKafkaSink) shouldSend(lvl Level) bool {
+	if sink == nil {
+		return false
+	}
 	return lvl <= sink.level
 }
 
-func (sink *kafkaSink) send(lvl Level, entry *logrus.Entry) error {
+func (sink *liveKafkaSink) send(lvl Level, entry *logrus.Entry) error {
+	if sink == nil {
+		return nil
+	}
 	var partitionKey sarama.ByteEncoder
 	var b []byte
 	var err error
@@ -108,7 +135,38 @@ func (sink *kafkaSink) send(lvl Level, entry *logrus.Entry) error {
 	return nil
 }
 
-func (sink *kafkaSink) closedown() {
+func (sink *liveKafkaSink) closedown() {
+	if sink == nil {
+		return
+	}
 	sink.producer.AsyncClose()
 	sink.exit.Wait()
+}
+
+func newKafkaSinkSpy() (kafkaSinkSpy, *spies.Spy) {
+	spy := spies.NewSpy()
+	return kafkaSinkSpy{spy: spy}, spy
+}
+
+func (spy kafkaSinkSpy) live() bool {
+	res := spy.spy.Called()
+	return res.GetOr(0, true).(bool)
+}
+
+func (spy kafkaSinkSpy) id() string {
+	res := spy.spy.Called()
+	return res.String(0)
+}
+
+func (spy kafkaSinkSpy) shouldSend(lvl Level) bool {
+	res := spy.spy.Called(lvl)
+	return res.GetOr(0, true).(bool)
+}
+
+func (spy kafkaSinkSpy) send(lvl Level, entry *logrus.Entry) error {
+	res := spy.spy.Called(lvl, entry)
+	return res.Error(0)
+}
+func (spy kafkaSinkSpy) closedown() {
+	spy.spy.Called()
 }
