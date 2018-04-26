@@ -19,6 +19,7 @@ type (
 		status          ResolveState
 		logs            logging.LogSink
 		results         chan pollResult
+		oldStatus       ResolveState
 	}
 
 	pollerState struct {
@@ -192,8 +193,10 @@ func (sp *StatusPoller) nextSubStatus(update pollResult) {
 	} else {
 		sp.statePerCluster[update.url] = &pollerState{LastResult: update}
 	}
+	if sp.statePerCluster[update.url].LastResult != update {
+		reportSubreport(sp.logs, sp, update)
+	}
 	sp.statePerCluster[update.url].LastResult = update
-	reportSubreport(sp.logs, sp, update)
 }
 
 func (sp *StatusPoller) finished() bool {
@@ -202,9 +205,12 @@ func (sp *StatusPoller) finished() bool {
 }
 
 func (sp *StatusPoller) updateStatus() {
-	oldStatus := sp.status
+	currentStatus := sp.status
 	sp.status = sp.computeStatus()
-	reportPollerStatus(sp.logs, sp, oldStatus)
+	if !(sp.status.String() == sp.oldStatus.String() && sp.status.Prose() == sp.oldStatus.Prose()) {
+		reportPollerStatus(sp.logs, sp, currentStatus)
+	}
+	sp.oldStatus = sp.status
 }
 
 func (sp *StatusPoller) computeStatus() ResolveState {
