@@ -45,9 +45,12 @@ func SetupTest(t *testing.T, name string) *PostgresStateManagerSuite {
 	if np, set := os.LookupEnv("PGPORT"); set {
 		port = np
 	}
-	connstr := fmt.Sprintf("dbname=sous_test host=localhost port=%s sslmode=disable", port)
+	connstr := fmt.Sprintf("dbname=sous_test_%s host=localhost port=%s sslmode=disable", name, port)
 	if suite.db, err = sql.Open("postgres", connstr); err != nil {
-		suite.FailNow("Error establishing test-assertion DB connection.", "Error: %v", err)
+		suite.FailNow("Error establishing test-assertion DB connection at %q.", "Error: %v", connstr, err)
+	}
+	if err := suite.db.Ping(); err != nil {
+		suite.FailNow("Error checking test-assertion DB connection to %q.", "Error: %v", connstr, err)
 	}
 	return suite
 }

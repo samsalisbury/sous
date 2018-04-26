@@ -79,20 +79,22 @@ func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State,
 	alldeps.Len(),
 	*/
 
-	if err := execInsertDeployments(ctx, log, tx, alldeps, "components", "on conflict do nothing", func(fields sqlgen.FieldSet, dep *sous.Deployment) {
-		fields.Row(func(r sqlgen.RowDef) {
-			r.FD("?", "repo", dep.SourceID.Location.Repo)
-			r.FD("?", "dir", dep.SourceID.Location.Dir)
-			r.FD("?", "flavor", dep.Flavor)
-			r.FD("?", "kind", dep.Kind)
-		})
-	}); err != nil {
+	ins := sqlgen.NewInserter(ctx, log, tx)
+
+	if err := ins.Exec("components", "on conflict do nothing",
+		deploymentsFieldSetter(alldeps, func(fields sqlgen.FieldSet, dep *sous.Deployment) {
+			fields.Row(func(r sqlgen.RowDef) {
+				r.FD("?", "repo", dep.SourceID.Location.Repo)
+				r.FD("?", "dir", dep.SourceID.Location.Dir)
+				r.FD("?", "flavor", dep.Flavor)
+				r.FD("?", "kind", dep.Kind)
+			})
+		})); err != nil {
 		return nil
 	}
 
-	if err := execInsertDeployments(ctx, log, tx, alldeps, "clusters",
-		`on conflict {{.Candidates}} do update set {{.NonCandidates}} = {{.NSNonCandidates "excluded"}}`,
-		func(fields sqlgen.FieldSet, dep *sous.Deployment) {
+	if err := ins.Exec("clusters", `on conflict {{.Candidates}} do update set {{.NonCandidates}} = {{.NSNonCandidates "excluded"}}`,
+		deploymentsFieldSetter(alldeps, func(fields sqlgen.FieldSet, dep *sous.Deployment) {
 			c := dep.Cluster
 			s := c.Startup
 			fields.Row(func(r sqlgen.RowDef) {
@@ -101,7 +103,7 @@ func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State,
 				r.FD("?", "base_url", c.BaseURL)
 				startupFields(r, "crdef", s)
 			})
-		}); err != nil {
+		})); err != nil {
 		return nil
 	}
 
@@ -109,105 +111,113 @@ func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State,
 	// otherwise it would be impossible to return to a previous state for a
 	// manifest. Since rollback is a concrete use case, we do not want e.g.
 	// "ON CONFLICT DO NOTHING", since there would be a previous identical state.
-	if err := execInsertDeployments(ctx, log, tx, updates, "deployments", "", func(fields sqlgen.FieldSet, dep *sous.Deployment) {
-		s := dep.Startup
-		fields.Row(func(r sqlgen.RowDef) {
-			compID(r, dep)
-			clusterID(r, dep)
-			r.FD("?", "versionstring", dep.SourceID.Version.String())
-			r.FD("?", "num_instances", dep.NumInstances)
-			r.FD("?", "schedule_string", dep.Schedule)
-			r.FD("?", "lifecycle", "active")
-			startupFields(r, "cr", s)
-		})
-	}); err != nil {
+	if err := ins.Exec("deployments", "",
+		deploymentsFieldSetter(updates, func(fields sqlgen.FieldSet, dep *sous.Deployment) {
+			s := dep.Startup
+			fields.Row(func(r sqlgen.RowDef) {
+				compID(r, dep)
+				clusterID(r, dep)
+				r.FD("?", "versionstring", dep.SourceID.Version.String())
+				r.FD("?", "num_instances", dep.NumInstances)
+				r.FD("?", "schedule_string", dep.Schedule)
+				r.FD("?", "lifecycle", "active")
+				startupFields(r, "cr", s)
+			})
+		})); err != nil {
 		return err
 	}
 
 	// see above - this is the conterpart insert for "deletes", which we're
 	// tombstoning here.
-	if err := execInsertDeployments(ctx, log, tx, deletes, "deployments", "", func(fields sqlgen.FieldSet, dep *sous.Deployment) {
-		s := dep.Startup
-		fields.Row(func(r sqlgen.RowDef) {
-			compID(r, dep)
-			clusterID(r, dep)
-			r.FD("?", "versionstring", dep.SourceID.Version.String())
-			r.FD("?", "num_instances", dep.NumInstances)
-			r.FD("?", "schedule_string", dep.Schedule)
-			r.FD("?", "lifecycle", "decommisioned")
-			startupFields(r, "cr", s)
-		})
-	}); err != nil {
-		return err
-	}
-
-	if err := execInsertDeployments(ctx, log, tx, updates, "owners", "on conflict do nothing", func(fields sqlgen.FieldSet, dep *sous.Deployment) {
-		for ownername := range dep.Owners {
+	if err := ins.Exec("deployments", "",
+		deploymentsFieldSetter(deletes, func(fields sqlgen.FieldSet, dep *sous.Deployment) {
+			s := dep.Startup
 			fields.Row(func(r sqlgen.RowDef) {
-				r.FD("?", "email", ownername)
+				compID(r, dep)
+				clusterID(r, dep)
+				r.FD("?", "versionstring", dep.SourceID.Version.String())
+				r.FD("?", "num_instances", dep.NumInstances)
+				r.FD("?", "schedule_string", dep.Schedule)
+				r.FD("?", "lifecycle", "decommisioned")
+				startupFields(r, "cr", s)
 			})
-		}
-	}); err != nil {
+		})); err != nil {
 		return err
 	}
 
-	if err := execInsertDeployments(ctx, log, tx, updates, "component_owners", "on conflict do nothing", func(fields sqlgen.FieldSet, dep *sous.Deployment) {
-		for ownername := range dep.Owners {
-			fields.Row(func(row sqlgen.RowDef) {
-				compID(row, dep)
-				ownerID(row, ownername)
-			})
-		}
-	}); err != nil {
+	if err := ins.Exec("owners", "on conflict do nothing",
+		deploymentsFieldSetter(updates, func(fields sqlgen.FieldSet, dep *sous.Deployment) {
+			for ownername := range dep.Owners {
+				fields.Row(func(r sqlgen.RowDef) {
+					r.FD("?", "email", ownername)
+				})
+			}
+		})); err != nil {
 		return err
 	}
 
-	if err := execInsertDeployments(ctx, log, tx, updates, "envs", "on conflict do nothing", func(fields sqlgen.FieldSet, dep *sous.Deployment) {
-		for key, value := range dep.Env {
-			fields.Row(func(row sqlgen.RowDef) {
-				depID(row, dep)
-				row.FD("?", "key", key)
-				row.FD("?", "value", value)
-			})
-		}
-	}); err != nil {
+	if err := ins.Exec("component_owners", "on conflict do nothing",
+		deploymentsFieldSetter(updates, func(fields sqlgen.FieldSet, dep *sous.Deployment) {
+			for ownername := range dep.Owners {
+				fields.Row(func(row sqlgen.RowDef) {
+					compID(row, dep)
+					ownerID(row, ownername)
+				})
+			}
+		})); err != nil {
 		return err
 	}
 
-	if err := execInsertDeployments(ctx, log, tx, updates, "resources", "on conflict do nothing", func(fields sqlgen.FieldSet, dep *sous.Deployment) {
-		for key, value := range dep.Resources {
-			fields.Row(func(row sqlgen.RowDef) {
-				depID(row, dep)
-				row.FD("?", "resource_name", key)
-				row.FD("?", "resource_value", value)
-			})
-		}
-	}); err != nil {
+	if err := ins.Exec("envs", "on conflict do nothing",
+		deploymentsFieldSetter(updates, func(fields sqlgen.FieldSet, dep *sous.Deployment) {
+			for key, value := range dep.Env {
+				fields.Row(func(row sqlgen.RowDef) {
+					depID(row, dep)
+					row.FD("?", "key", key)
+					row.FD("?", "value", value)
+				})
+			}
+		})); err != nil {
 		return err
 	}
 
-	if err := execInsertDeployments(ctx, log, tx, updates, "metadatas", "on conflict do nothing", func(fields sqlgen.FieldSet, dep *sous.Deployment) {
-		for key, value := range dep.Metadata {
-			fields.Row(func(row sqlgen.RowDef) {
-				depID(row, dep)
-				row.FD("?", "name", key)
-				row.FD("?", "value", value)
-			})
-		}
-	}); err != nil {
+	if err := ins.Exec("resources", "on conflict do nothing",
+		deploymentsFieldSetter(updates, func(fields sqlgen.FieldSet, dep *sous.Deployment) {
+			for key, value := range dep.Resources {
+				fields.Row(func(row sqlgen.RowDef) {
+					depID(row, dep)
+					row.FD("?", "resource_name", key)
+					row.FD("?", "resource_value", value)
+				})
+			}
+		})); err != nil {
 		return err
 	}
 
-	if err := execInsertDeployments(ctx, log, tx, updates, "volumes", "on conflict do nothing", func(fields sqlgen.FieldSet, dep *sous.Deployment) {
-		for _, volume := range dep.Volumes {
-			fields.Row(func(row sqlgen.RowDef) {
-				depID(row, dep)
-				row.FD("?", "host", volume.Host)
-				row.FD("?", "container", volume.Container)
-				row.FD("?", "mode", volume.Mode)
-			})
-		}
-	}); err != nil {
+	if err := ins.Exec("metadatas", "on conflict do nothing",
+		deploymentsFieldSetter(updates, func(fields sqlgen.FieldSet, dep *sous.Deployment) {
+			for key, value := range dep.Metadata {
+				fields.Row(func(row sqlgen.RowDef) {
+					depID(row, dep)
+					row.FD("?", "name", key)
+					row.FD("?", "value", value)
+				})
+			}
+		})); err != nil {
+		return err
+	}
+
+	if err := ins.Exec("volumes", "on conflict do nothing",
+		deploymentsFieldSetter(updates, func(fields sqlgen.FieldSet, dep *sous.Deployment) {
+			for _, volume := range dep.Volumes {
+				fields.Row(func(row sqlgen.RowDef) {
+					depID(row, dep)
+					row.FD("?", "host", volume.Host)
+					row.FD("?", "container", volume.Container)
+					row.FD("?", "mode", volume.Mode)
+				})
+			}
+		})); err != nil {
 		return err
 	}
 
@@ -260,30 +270,10 @@ func startupFields(r sqlgen.RowDef, prefix string, s sous.Startup) {
 	r.FD("?", prefix+"_failure_statuses", pq.Array(statuses))
 }
 
-func execInsertDeployments(
-	ctx context.Context,
-	log logging.LogSink,
-	tx *sql.Tx,
-
-	ds sous.Deployments,
-	table string,
-	conflict string,
-	fn func(sqlgen.FieldSet, *sous.Deployment),
-) error {
-
-	fields := sqlgen.NewFieldset()
-	for _, d := range ds.Snapshot() {
-		fn(fields, d)
+func deploymentsFieldSetter(ds sous.Deployments, eachDep func(sqlgen.FieldSet, *sous.Deployment)) func(sqlgen.FieldSet) {
+	return func(fields sqlgen.FieldSet) {
+		for _, d := range ds.Snapshot() {
+			eachDep(fields, d)
+		}
 	}
-
-	if !fields.Potent() {
-		return nil
-	}
-	start := time.Now()
-
-	sql := fields.InsertSQL(table, conflict)
-	_, err := tx.ExecContext(ctx, sql, fields.InsertValues()...)
-	reportSQLMessage(log, start, table, write, sql, fields.RowCount(), err)
-
-	return err
 }
