@@ -259,7 +259,7 @@ legendary: .cadre/coverage.vim
 
 test: test-gofmt test-staticcheck test-unit test-integration
 
-test-dev: test-gofmt test-staticcheck test-unit-base
+test-dev: test-gofmt test-staticcheck test-unit-base legendary
 
 test-staticcheck: install-staticcheck
 	echo "staticcheck -ignore "$$(cat staticcheck.ignore)" $(SOUS_PACKAGES)"

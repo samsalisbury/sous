@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io/ioutil"
 	"log"
+	"os"
 	"testing"
 
 	"github.com/opentable/sous/config"
@@ -107,6 +108,18 @@ func TestComponentLocatorInjection(t *testing.T) {
 	logcfg.Kafka.BrokerList = "kafka.example.com:9292"
 	logcfg.Graphite.Enabled = true
 	logcfg.Graphite.Server = "localhost:3333"
+
+	port := "6543"
+	if ps, got := os.LookupEnv("PGPORT"); got {
+		port = ps
+	}
+
+	sous.SetupDB(t, "graph")
+
+	rawConfig.Database.Host = "localhost"
+	rawConfig.Database.Port = port
+	rawConfig.Database.DBName = "sous_test_graph"
+
 	tg.Replace(rawConfig)
 
 	scoop := struct{ server.ComponentLocator }{}
