@@ -12,11 +12,17 @@ import (
 
 const simpleServer = `
 FROM alpine
-CMD if [ -z "$T" ]; then T=2; fi; echo -n "Sleeping ${T}s..."; sleep $T; echo "Done"; echo "Listening on :$PORT0"; while true; do echo -e "HTTP/1.1 200 OK\n\n$(date)" | nc -l -p $PORT0; done`
+CMD if [ -z "$T" ]; then T=2; fi; echo -n "Sleeping ${T}s..."; sleep $T; echo "Done"; echo "Listening on :$PORT0"; while true; do echo -e "HTTP/1.1 200 OK\n\n$(date)" | nc -l -p $PORT0; done
+`
 
 const sleeper = `
 FROM alpine
 CMD echo -n Sleeping for 10s...; sleep 10; echo Done
+`
+
+const failer = `
+FROM alpine
+CMD echo -n Failing in 10s...; sleep 10; echo Failed; exit 1
 `
 
 // setupProject creates a brand new git repo containing the provided Dockerfile,
@@ -101,6 +107,30 @@ func TestSousNewdeploy(t *testing.T) {
 		})
 		client.MustRun(t, "build", nil, "-tag", "1.2.3")
 		client.MustRun(t, "newdeploy", nil, "-cluster", "cluster1", "-tag", "1.2.3")
+
+		did := sous.DeploymentID{
+			ManifestID: sous.ManifestID{
+				Source: sous.SourceLocation{
+					Repo: "github.com/user1/repo1",
+				},
+			},
+			Cluster: "cluster1",
+		}
+
+		assertActiveStatus(t, f, did)
+		assertSingularityRequestTypeService(t, f, did)
+		assertNonNilHealthCheckOnLatestDeploy(t, f, did)
+	})
+
+	t.Run("fails", func(t *testing.T) {
+		f := newTestFixture(t)
+		client := setupProject(t, f, failer)
+		client.MustRun(t, "init", nil, "-kind", "http-service")
+		client.TransformManifestAsString(t, nil, func(manifest string) string {
+			return strings.Replace(manifest, "NumInstances: 0", "NumInstances: 1", -1)
+		})
+		client.MustRun(t, "build", nil, "-tag", "1.2.3")
+		client.MustFail(t, "newdeploy", nil, "-cluster", "cluster1", "-tag", "1.2.3")
 
 		did := sous.DeploymentID{
 			ManifestID: sous.ManifestID{
