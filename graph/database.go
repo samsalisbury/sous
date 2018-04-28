@@ -1,18 +1,12 @@
 package graph
 
 import (
-	"database/sql"
-
+	sous "github.com/opentable/sous/lib"
 	"github.com/pkg/errors"
 )
 
-type MaybeDatabase struct {
-	Db  *sql.DB
-	Err error
-}
-
-func newMaybeDatabase(c LocalSousConfig) MaybeDatabase {
+func newMaybeDatabase(c LocalSousConfig) sous.MaybeDatabase {
 	db, err := c.Database.DB()
 
-	return MaybeDatabase{Db: db, Err: errors.Wrapf(err, "%#v", c.Database)}
+	return sous.MaybeDatabase{Db: db, Err: errors.Wrapf(err, "%#v", c.Database)}
 }

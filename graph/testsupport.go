@@ -25,18 +25,22 @@ type (
 const defaultConfig = ""
 
 // DefaultTestGraph results a SousGraph suitable for testing without worrying about details.
-func DefaultTestGraph() *SousGraph {
+func DefaultTestGraph(name string) *SousGraph {
 	stdin := ioutil.NopCloser(bytes.NewReader(nil))
-	return BuildTestGraph(semv.MustParse("1.1.1"), stdin, ioutil.Discard, ioutil.Discard)
+	return BuildTestGraph(name, semv.MustParse("1.1.1"), stdin, ioutil.Discard, ioutil.Discard)
 }
 
 // BuildTestGraph builds a standard graph suitable for testing
-func BuildTestGraph(v semv.Version, in io.Reader, out, err io.Writer) *SousGraph {
-	return TestGraphWithConfig(v, in, out, err, defaultConfig)
+func BuildTestGraph(name string, v semv.Version, in io.Reader, out, err io.Writer) *SousGraph {
+	return TestGraphWithConfig(name, v, in, out, err, defaultConfig)
 }
 
 // TestGraphWithConfig accepts a custom Sous config string
-func TestGraphWithConfig(v semv.Version, in io.Reader, out, err io.Writer, cfg string) *SousGraph {
+func TestGraphWithConfig(name string, v semv.Version, in io.Reader, out, err io.Writer, cfg string) *SousGraph {
+	db, err := SetupDB(name)
+	if err != nil {
+		panic(err)
+	}
 
 	graph := BuildGraph(v, in, out, err)
 
@@ -56,6 +60,7 @@ func TestGraphWithConfig(v semv.Version, in io.Reader, out, err io.Writer, cfg s
 	testGraph.Replace(newDummyDockerClient)
 	testGraph.Replace(newServerHandler)
 	testGraph.Replace(newServerStateManager)
+	testGraph.Replace(MaybeDatabase{Db: db})
 
 	// Add config.
 	testGraph.Add(configYAML(cfg))

@@ -125,7 +125,7 @@ func TestComponentLocatorInjection(t *testing.T) {
 
 	scoop := struct{ server.ComponentLocator }{}
 
-	g.MustInject(&scoop)
+	tg.MustInject(&scoop)
 
 	locator := scoop.ComponentLocator
 
