@@ -114,11 +114,12 @@ func TestComponentLocatorInjection(t *testing.T) {
 		port = ps
 	}
 
-	sous.SetupDB(t, "graph")
+	name := "componentlocatorinjection"
+	sous.SetupDB(t, name)
 
 	rawConfig.Database.Host = "localhost"
 	rawConfig.Database.Port = port
-	rawConfig.Database.DBName = "sous_test_graph"
+	rawConfig.Database.DBName = "sous_test_" + name
 
 	tg.Replace(rawConfig)
 
