@@ -86,7 +86,7 @@ func TestWriteState(t *testing.T) {
 
 		func() *graph.ServerStateManager { return &graph.ServerStateManager{StateManager: &sm} },
 		func() *graph.ConfigLoader { return graph.NewTestConfigLoader("") },
-		func() graph.MaybeDatabase { return graph.MaybeDatabase{Db: db, Err: nil} },
+		graph.MaybeDatabase{Db: db, Err: nil},
 	)
 
 	serverScoop := struct{ Handler graph.ServerHandler }{}

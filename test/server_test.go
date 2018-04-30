@@ -55,7 +55,7 @@ func (suite serverTests) prepare(extras ...interface{}) http.Handler {
 
 	storage.PrepareTestGitRepo(suite.T(), s, remotepath, outpath)
 
-	g := graph.TestGraphWithConfig(semv.Version{}, &bytes.Buffer{}, os.Stdout, os.Stdout,
+	g := graph.TestGraphWithConfig(suite.T(), semv.Version{}, &bytes.Buffer{}, os.Stdout, os.Stdout,
 		"StateLocation: '"+outpath+"'\n")
 	g.Add(extras...)
 

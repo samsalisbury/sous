@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"io"
 	"io/ioutil"
+	"strings"
+	"testing"
 
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/docker_registry"
@@ -25,30 +27,30 @@ type (
 const defaultConfig = ""
 
 // DefaultTestGraph results a SousGraph suitable for testing without worrying about details.
-func DefaultTestGraph(name string) *SousGraph {
+func DefaultTestGraph(t *testing.T) *SousGraph {
 	stdin := ioutil.NopCloser(bytes.NewReader(nil))
-	return BuildTestGraph(name, semv.MustParse("1.1.1"), stdin, ioutil.Discard, ioutil.Discard)
+	return BuildTestGraph(t, semv.MustParse("1.1.1"), stdin, ioutil.Discard, ioutil.Discard)
 }
 
 // BuildTestGraph builds a standard graph suitable for testing
-func BuildTestGraph(name string, v semv.Version, in io.Reader, out, err io.Writer) *SousGraph {
-	return TestGraphWithConfig(name, v, in, out, err, defaultConfig)
+func BuildTestGraph(t *testing.T, v semv.Version, in io.Reader, out, err io.Writer) *SousGraph {
+	return TestGraphWithConfig(t, v, in, out, err, defaultConfig)
 }
 
 // TestGraphWithConfig accepts a custom Sous config string
-func TestGraphWithConfig(name string, v semv.Version, in io.Reader, out, err io.Writer, cfg string) *SousGraph {
-	db, err := SetupDB(name)
-	if err != nil {
-		panic(err)
-	}
+func TestGraphWithConfig(t *testing.T, v semv.Version, in io.Reader, out, err io.Writer, cfg string) *SousGraph {
 
 	graph := BuildGraph(v, in, out, err)
 
+	dbName := strings.Replace(strings.ToLower(t.Name()), "test", "", -1)
+	db := sous.SetupDB(t, dbName)
+
 	// Add missing stuff to the graph (these are things that come from early
 	// initialization in main.go.
-	graph.Add(func() logging.LogSink {
-		return logging.SilentLogSet()
-	})
+	graph.Add(
+		func() logging.LogSink { return logging.SilentLogSet() },
+		MaybeDatabase{Db: db, Err: nil},
+	)
 
 	// testGraph methods affect graph as well.
 	testGraph := psyringe.TestPsyringe{Psyringe: graph.Psyringe}
@@ -60,7 +62,6 @@ func TestGraphWithConfig(name string, v semv.Version, in io.Reader, out, err io.
 	testGraph.Replace(newDummyDockerClient)
 	testGraph.Replace(newServerHandler)
 	testGraph.Replace(newServerStateManager)
-	testGraph.Replace(MaybeDatabase{Db: db})
 
 	// Add config.
 	testGraph.Add(configYAML(cfg))

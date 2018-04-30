@@ -150,7 +150,6 @@ func injectedStateManager(t *testing.T, cfg *config.Config) *StateManager {
 	g.Add(newStateManager)
 	g.Add(LocalSousConfig{Config: cfg})
 	g.Add(newServerComponentLocator)
-	g.Add(newResolveFilter)
 	g.Add(newSourceHostChooser)
 	g.Add(DryrunBoth)
 	g.Add(newDeployer)
@@ -168,7 +167,9 @@ func injectedStateManager(t *testing.T, cfg *config.Config) *StateManager {
 	g.Add(newHTTPClientBundle)
 	g.Add(NewR11nQueueSet)
 	g.Add(rff)
+	g.Add((*sous.ResolveFilter)(rff))
 	g.Add(g)
+	g.Add(MaybeDatabase{})
 
 	smRcvr := struct {
 		Sm *StateManager
