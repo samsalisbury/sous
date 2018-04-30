@@ -71,13 +71,13 @@ func action() int {
 		return InitializationFailedExitCode
 	}
 	scoop := struct {
-		traceID sous.TraceID
+		TraceID sous.TraceID
 	}{}
 
 	result := c.Invoke(os.Args)
 
-	if err := mainGraph.Inject(&scoop); err == nil && scoop.traceID != "" {
-		returnMsg := fmt.Sprintf("otrequest-id %s", scoop.traceID)
+	if err := mainGraph.Inject(&scoop); err == nil && scoop.TraceID != "" {
+		returnMsg := fmt.Sprintf("Request ID:\n\t%s", scoop.TraceID)
 		fmt.Fprintln(os.Stderr, returnMsg)
 	}
 
