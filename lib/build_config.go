@@ -63,7 +63,7 @@ const (
 	// untracked files present, or that one or more tracked files were modified
 	// since the last commit.
 	DirtyWS = AdvisoryName(`dirty workspace`)
-	// Developer build, image was built with the dev flag true, only enables local image
+	// DeveloperBuild, image was built with the dev flag true, only enables local image
 	// detection at the moment.
 	DeveloperBuild = AdvisoryName(`developer build`)
 )
