@@ -53,6 +53,9 @@ func (r redundantFields) any(n FieldName) bool {
 
 // Fields implements LogSink on LogSet.
 func (ls LogSet) Fields(items []EachFielder) {
+	if len(items) == 0 {
+		return
+	}
 	logto := logrus.NewEntry(ls.logrus)
 	redundants := redundantFields{fs: map[FieldName][]interface{}{}}
 
