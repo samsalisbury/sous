@@ -63,6 +63,9 @@ const (
 	// untracked files present, or that one or more tracked files were modified
 	// since the last commit.
 	DirtyWS = AdvisoryName(`dirty workspace`)
+	// Developer build, image was built with the dev flag true, only enables local image
+	// detection at the moment.
+	DeveloperBuild = AdvisoryName(`developer build`)
 )
 
 // AllAdvisories returns all advisories.
@@ -80,6 +83,7 @@ func AllAdvisories() []AdvisoryName {
 		UnpushedRev,
 		BogusRev,
 		DirtyWS,
+		DeveloperBuild,
 	}
 }
 
@@ -251,6 +255,10 @@ func (c *BuildConfig) Advisories(ctx *BuildContext) []string {
 
 	if s.RevisionUnpushed {
 		advs = append(advs, string(UnpushedRev))
+	}
+
+	if c.Dev {
+		advs = append(advs, string(DeveloperBuild))
 	}
 
 	return advs
