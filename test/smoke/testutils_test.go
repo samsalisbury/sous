@@ -84,6 +84,7 @@ func makeEmptyDir(t *testing.T, baseDir, dir string) string {
 // path to the file. It assumes the directory baseDir already exists and
 // contains no file named fileName, and will fail otherwise.
 func makeFile(t *testing.T, baseDir, fileName string, bytes []byte) string {
+	t.Helper()
 	filePath := path.Join(baseDir, fileName)
 	if _, err := os.Open(filePath); err != nil {
 		if !isNotExist(err) {
@@ -99,11 +100,60 @@ func makeFile(t *testing.T, baseDir, fileName string, bytes []byte) string {
 	return filePath
 }
 
+func openFileAppendOnly(t *testing.T, baseDir, fileName string) *os.File {
+	t.Helper()
+	time.Sleep(time.Second)
+	filePath := path.Join(baseDir, fileName)
+	assertDirNotExists(t, filePath)
+	if !fileExists(t, filePath) {
+		makeFile(t, baseDir, fileName, nil)
+	}
+	file, err := os.OpenFile(filePath,
+		os.O_APPEND|os.O_WRONLY|os.O_SYNC, 0x777)
+	if err != nil {
+		t.Fatalf("opening file for append: %s", err)
+	}
+	return file
+}
+
 // makeFileString is a convenience wrapper around makeFile, using string s
 // as the bytes to be written.
 func makeFileString(t *testing.T, baseDir, fileName string, s string) string {
 	t.Helper()
 	return makeFile(t, baseDir, fileName, []byte(s))
+}
+
+func fileExists(t *testing.T, filePath string) bool {
+	t.Helper()
+	s, err := os.Stat(filePath)
+	if err == nil {
+		return s.Mode().IsRegular()
+	}
+	if isNotExist(err) {
+		return false
+	}
+	t.Fatalf("checking if file exists: %s", err)
+	return false
+}
+
+func assertDirNotExists(t *testing.T, filePath string) {
+	t.Helper()
+	if dirExists(t, filePath) {
+		t.Fatalf("%s exists and is a directory", filePath)
+	}
+}
+
+func dirExists(t *testing.T, filePath string) bool {
+	t.Helper()
+	s, err := os.Stat(filePath)
+	if err == nil {
+		return s.IsDir()
+	}
+	if isNotExist(err) {
+		return false
+	}
+	t.Fatalf("checking if dir exists: %s", err)
+	return false
 }
 
 func dirExistsAndIsNotEmpty(t *testing.T, baseDir string) bool {
@@ -172,7 +222,6 @@ func doCMD(dir, name string, args ...string) error {
 
 func mkCMD(dir, name string, args ...string) *exec.Cmd {
 	c := exec.Command(name, args...)
-	c.Dir = dir
 	c.Env = os.Environ()
 	// Isolate git...
 	c.Env = append(c.Env,
@@ -184,6 +233,7 @@ func mkCMD(dir, name string, args ...string) *exec.Cmd {
 		"GIT_AUTHOR_NAME=Tester",
 		"GIT_AUTHOR_EMAIL=tester@example.com",
 	)
+	c.Dir = dir
 	return c
 }
 
@@ -198,9 +248,25 @@ func isNotExist(err error) bool {
 		strings.Contains(err.Error(), "no such file or directory")
 }
 
-func closeFile(t *testing.T, f *os.File) {
+func closeFile(t *testing.T, f *os.File) (ok bool) {
+	t.Helper()
 	if err := f.Close(); err != nil {
-		t.Errorf("failed to close %s: %s", pidFile, err)
+		t.Errorf("failed to close %s: %s", f.Name(), err)
+		return false
+	}
+	return true
+}
+
+func closeFiles(t *testing.T, fs ...*os.File) {
+	t.Helper()
+	var closeFailed bool
+	for _, f := range fs {
+		if !closeFile(t, f) {
+			closeFailed = true
+		}
+	}
+	if closeFailed {
+		t.Fatalf("failed to close some files, see above")
 	}
 }
 
@@ -242,10 +308,7 @@ NEXT_PORT:
 	return addrs
 }
 
-var originalStdout = os.Stdout
-var originalStderr = os.Stderr
-
-func prefixWithTestName(t *testing.T) {
+func prefixWithTestName(t *testing.T) (prefixedOut, prefixedErr io.Writer) {
 	t.Helper()
 	outReader, outWriter, err := os.Pipe()
 	if err != nil {
@@ -255,8 +318,6 @@ func prefixWithTestName(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Setting up output prefix: %s", err)
 	}
-	os.Stdout = outWriter
-	os.Stderr = errWriter
 	go func() {
 		defer func() {
 			if err := outReader.Close(); err != nil {
@@ -271,7 +332,7 @@ func prefixWithTestName(t *testing.T) {
 			if err := scanner.Err(); err != nil {
 				t.Fatalf("Error prefixing stdout: %s", err)
 			}
-			fmt.Fprintf(originalStdout, "%s::stdout > %s\n", t.Name(), scanner.Text())
+			fmt.Fprintf(os.Stdout, "%s::stdout > %s\n", t.Name(), scanner.Text())
 		}
 	}()
 	go func() {
@@ -288,7 +349,8 @@ func prefixWithTestName(t *testing.T) {
 			if err := scanner.Err(); err != nil {
 				t.Fatalf("Error prefixing stderr: %s", err)
 			}
-			fmt.Fprintf(originalStderr, "%s::stderr > %s\n", t.Name(), scanner.Text())
+			fmt.Fprintf(os.Stderr, "%s::stderr > %s\n", t.Name(), scanner.Text())
 		}
 	}()
+	return outWriter, errWriter
 }

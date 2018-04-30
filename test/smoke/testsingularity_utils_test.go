@@ -17,8 +17,9 @@ import (
 )
 
 type Singularity struct {
-	URL    string
-	client *sing.Client
+	URL           string
+	client        *sing.Client
+	ClusterSuffix string
 }
 
 func NewSingularity(baseURL string) *Singularity {
@@ -27,7 +28,7 @@ func NewSingularity(baseURL string) *Singularity {
 
 func (s *Singularity) PauseRequestForDeployment(t *testing.T, did sous.DeploymentID) {
 	t.Helper()
-	reqID := mustGetReqID(t, did)
+	reqID := s.mustGetReqID(t, did)
 	if _, err := s.client.Pause(reqID, nil); err != nil {
 		t.Fatal(err)
 	}
@@ -61,7 +62,7 @@ func (s *Singularity) PauseRequestForDeployment(t *testing.T, did sous.Deploymen
 
 func (s *Singularity) UnpauseRequestForDeployment(t *testing.T, did sous.DeploymentID) {
 	t.Helper()
-	reqID := mustGetReqID(t, did)
+	reqID := s.mustGetReqID(t, did)
 	if _, err := s.client.Unpause(reqID, nil); err != nil {
 		t.Fatal(err)
 	}
@@ -80,7 +81,7 @@ func (s *Singularity) UnpauseRequestForDeployment(t *testing.T, did sous.Deploym
 
 func (s *Singularity) GetRequestForDeployment(t *testing.T, did sous.DeploymentID) *dtos.SingularityRequestParent {
 	t.Helper()
-	reqID := mustGetReqID(t, did)
+	reqID := s.mustGetReqID(t, did)
 	req, err := s.client.GetRequest(reqID, false)
 	if err != nil {
 		t.Fatalf("getting request: %s", err)
@@ -90,7 +91,7 @@ func (s *Singularity) GetRequestForDeployment(t *testing.T, did sous.DeploymentI
 
 func (s *Singularity) GetLatestDeployForDeployment(t *testing.T, did sous.DeploymentID) *dtos.SingularityDeployHistory {
 	t.Helper()
-	reqID := mustGetReqID(t, did)
+	reqID := s.mustGetReqID(t, did)
 	deps, err := s.client.GetDeploys(reqID, 100, 0)
 	if err != nil {
 		t.Fatalf("getting deployments for request: %s", err)
@@ -114,8 +115,9 @@ func (s *Singularity) GetLatestDeployForDeployment(t *testing.T, did sous.Deploy
 	return dep
 }
 
-func mustGetReqID(t *testing.T, did sous.DeploymentID) string {
+func (s *Singularity) mustGetReqID(t *testing.T, did sous.DeploymentID) string {
 	t.Helper()
+	did.Cluster = did.Cluster + s.ClusterSuffix
 	reqID, err := singularity.MakeRequestID(did)
 	if err != nil {
 		t.Fatalf("making singularity request ID: %s", err)

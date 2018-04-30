@@ -3,7 +3,7 @@
 package smoke
 
 import (
-	"strings"
+	"sync/atomic"
 	"testing"
 
 	"github.com/opentable/go-singularity/dtos"
@@ -25,10 +25,34 @@ FROM alpine
 CMD echo -n Failing in 10s...; sleep 10; echo Failed; exit 1
 `
 
+func setMemAndCPUForAll(ds sous.DeploySpecs) sous.DeploySpecs {
+	for c := range ds {
+		ds[c].Resources["memory"] = "1"
+		ds[c].Resources["cpus"] = "0.001"
+	}
+	return ds
+}
+
+func setMinimalMemAndCPUNumInst1(m sous.Manifest) sous.Manifest {
+	return transformEachDeployment(m, func(d sous.DeploySpec) sous.DeploySpec {
+		d.Resources["memory"] = "1"
+		d.Resources["cpus"] = "0.001"
+		d.NumInstances = 1
+		return d
+	})
+}
+
+func transformEachDeployment(m sous.Manifest, f func(sous.DeploySpec) sous.DeploySpec) sous.Manifest {
+	for c, d := range m.Deployments {
+		m.Deployments[c] = f(d)
+	}
+	return m
+}
+
 // setupProject creates a brand new git repo containing the provided Dockerfile,
 // commits that Dockerfile, runs 'sous version' and 'sous config', and returns a
 // sous TestClient in the project directory.
-func setupProject(t *testing.T, f TestFixture, dockerfile string) TestClient {
+func setupProject(t *testing.T, f TestFixture, dockerfile string) *TestClient {
 	t.Helper()
 	// Setup project git repo.
 	projectDir := makeGitRepo(t, f.BaseDir, "projects/project1", GitRepoSpec{
@@ -42,12 +66,13 @@ func setupProject(t *testing.T, f TestFixture, dockerfile string) TestClient {
 
 	client := f.Client
 
+	// cd into project dir
+	client.Dir = projectDir
+	client.ClusterSuffix = f.ClusterSuffix
+
 	// Dump sous version & config.
 	t.Logf("Sous version: %s", client.MustRun(t, "version", nil))
 	client.MustRun(t, "config", nil)
-
-	// cd into project dir
-	client.Dir = projectDir
 
 	return client
 }
@@ -98,16 +123,32 @@ func assertActiveStatus(t *testing.T, f TestFixture, did sous.DeploymentID) {
 
 func TestSousDeploy(t *testing.T) {
 
+	resetSingularity(t)
+
+	stopPIDs(t)
+
+	// numFreeAddrs determines the maximum number of parallel sous servers
+	// that can be run by the tests. At some point this may need to be increased.
+	numFreeAddrs := 128
+	freeAddrs := freePortAddrs(t, "127.0.0.1", numFreeAddrs, 6601, 9000)
+	var nextAddrIndex int64
+	nextAddr := func() string {
+		i := atomic.AddInt64(&nextAddrIndex, 1)
+		if i == int64(numFreeAddrs) {
+			panic("ran out of free ports; increase numFreeAddrs")
+		}
+		return freeAddrs[i]
+	}
+
 	for _, deployCommand := range []string{"newdeploy", "deploy"} {
 		t.Run(deployCommand, func(t *testing.T) {
+			t.Parallel()
 
 			t.Run("simple", func(t *testing.T) {
-				f := newTestFixture(t)
+				f := newTestFixture(t, nextAddr)
 				client := setupProject(t, f, simpleServer)
 				client.MustRun(t, "init", nil, "-kind", "http-service")
-				client.TransformManifestAsString(t, nil, func(manifest string) string {
-					return strings.Replace(manifest, "NumInstances: 0", "NumInstances: 1", -1)
-				})
+				client.TransformManifest(t, nil, setMinimalMemAndCPUNumInst1)
 				client.MustRun(t, "build", nil, "-tag", "1.2.3")
 				client.MustRun(t, deployCommand, nil, "-cluster", "cluster1", "-tag", "1.2.3")
 
@@ -126,12 +167,10 @@ func TestSousDeploy(t *testing.T) {
 			})
 
 			t.Run("fails", func(t *testing.T) {
-				f := newTestFixture(t)
+				f := newTestFixture(t, nextAddr)
 				client := setupProject(t, f, failer)
 				client.MustRun(t, "init", nil, "-kind", "http-service")
-				client.TransformManifestAsString(t, nil, func(manifest string) string {
-					return strings.Replace(manifest, "NumInstances: 0", "NumInstances: 1", -1)
-				})
+				client.TransformManifest(t, nil, setMinimalMemAndCPUNumInst1)
 				client.MustRun(t, "build", nil, "-tag", "1.2.3")
 				client.MustFail(t, deployCommand, nil, "-cluster", "cluster1", "-tag", "1.2.3")
 
@@ -150,14 +189,12 @@ func TestSousDeploy(t *testing.T) {
 			})
 
 			t.Run("flavors", func(t *testing.T) {
-				f := newTestFixture(t)
+				f := newTestFixture(t, nextAddr)
 				client := setupProject(t, f, simpleServer)
 				flavor := "flavor1"
 				flavorFlag := &sousFlags{flavor: flavor}
 				client.MustRun(t, "init", flavorFlag, "-kind", "http-service")
-				client.TransformManifestAsString(t, flavorFlag, func(manifest string) string {
-					return strings.Replace(manifest, "NumInstances: 0", "NumInstances: 1", -1)
-				})
+				client.TransformManifest(t, flavorFlag, setMinimalMemAndCPUNumInst1)
 				client.MustRun(t, "build", nil, "-tag", "1.2.3")
 				client.MustRun(t, deployCommand, flavorFlag, "-cluster", "cluster1", "-tag", "1.2.3")
 
@@ -177,12 +214,10 @@ func TestSousDeploy(t *testing.T) {
 			})
 
 			t.Run("pause-unpause", func(t *testing.T) {
-				f := newTestFixture(t)
+				f := newTestFixture(t, nextAddr)
 				client := setupProject(t, f, simpleServer)
 				client.MustRun(t, "init", nil, "-kind", "http-service")
-				client.TransformManifestAsString(t, nil, func(manifest string) string {
-					return strings.Replace(manifest, "NumInstances: 0", "NumInstances: 1", -1)
-				})
+				client.TransformManifest(t, nil, setMinimalMemAndCPUNumInst1)
 				client.MustRun(t, "build", nil, "-tag", "1")
 				client.MustRun(t, "build", nil, "-tag", "2")
 				client.MustRun(t, "build", nil, "-tag", "3")
@@ -211,14 +246,18 @@ func TestSousDeploy(t *testing.T) {
 			})
 
 			t.Run("scheduled", func(t *testing.T) {
-				f := newTestFixture(t)
+				f := newTestFixture(t, nextAddr)
 				client := setupProject(t, f, sleeper)
 				client.MustRun(t, "init", nil, "-kind", "scheduled")
 				client.TransformManifest(t, nil, func(m sous.Manifest) sous.Manifest {
-					d := m.Deployments["cluster1"]
+					clusterName := "cluster1" + f.ClusterSuffix
+					d := m.Deployments[clusterName]
 					d.NumInstances = 1
 					d.Schedule = "*/5 * * * *"
-					m.Deployments["cluster1"] = d
+					m.Deployments[clusterName] = d
+
+					m.Deployments = setMemAndCPUForAll(m.Deployments)
+
 					return m
 				})
 				client.MustRun(t, "build", nil, "-tag", "1.2.3")
