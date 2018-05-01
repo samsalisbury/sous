@@ -3,6 +3,7 @@ package shell
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 
 	"github.com/nyarly/spies"
@@ -128,6 +129,20 @@ func (c *TestCommandController) ResultSuccess(out, err string) {
 	c.MatchMethod("Result", spies.AnyArgs, res, nil)
 	c.MatchMethod("SucceedResult", spies.AnyArgs, res, nil)
 	c.MatchMethod("Succeed", spies.AnyArgs, nil)
+	c.MatchMethod("Stdout", spies.AnyArgs, out, nil)
+	c.MatchMethod("Stderr", spies.AnyArgs, err, nil)
+}
+
+func (c *TestCommandController) ResultFailure(out, err string) {
+	ob := &Output{bytes.NewBufferString(out)}
+	eb := &Output{bytes.NewBufferString(err)}
+	cb := &Output{bytes.NewBufferString(out + err)}
+	newErr := errors.New(err)
+	res := &Result{Command: c.cmd, Stdout: ob, Stderr: eb, Combined: cb, Err: newErr, ExitCode: 1}
+
+	c.MatchMethod("Result", spies.AnyArgs, res, nil)
+	c.MatchMethod("SucceedResult", spies.AnyArgs, res, newErr)
+	c.MatchMethod("Succeed", spies.AnyArgs, newErr)
 	c.MatchMethod("Stdout", spies.AnyArgs, out, nil)
 	c.MatchMethod("Stderr", spies.AnyArgs, err, nil)
 }

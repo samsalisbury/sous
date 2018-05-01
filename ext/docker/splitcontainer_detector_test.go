@@ -40,7 +40,7 @@ func Test_inspectImage(t *testing.T) {
 func Test_inspectImage_not_found(t *testing.T) {
 	sh, ctl := shell.NewTestShell()
 	_, cctl := ctl.CmdFor("docker", "image")
-	cctl.ResultSuccess("", "")
+	cctl.ResultFailure("", "Image Not Found")
 
 	imageEnv := inspectImage(sh, "docker.otenv.com/sous-otj-autobuild:bogus")
 	assert.Equal(t, "", imageEnv)
