@@ -42,6 +42,15 @@ func setMinimalMemAndCPUNumInst1(m sous.Manifest) sous.Manifest {
 	})
 }
 
+func setMinimalMemAndCPUNumInst0(m sous.Manifest) sous.Manifest {
+	return transformEachDeployment(m, func(d sous.DeploySpec) sous.DeploySpec {
+		d.Resources["memory"] = "1"
+		d.Resources["cpus"] = "0.001"
+		d.NumInstances = 0
+		return d
+	})
+}
+
 func transformEachDeployment(m sous.Manifest, f func(sous.DeploySpec) sous.DeploySpec) sous.Manifest {
 	for c, d := range m.Deployments {
 		m.Deployments[c] = f(d)
@@ -149,6 +158,28 @@ func TestSousDeploy(t *testing.T) {
 				client := setupProject(t, f, simpleServer)
 				client.MustRun(t, "init", nil, "-kind", "http-service")
 				client.TransformManifest(t, nil, setMinimalMemAndCPUNumInst1)
+				client.MustRun(t, "build", nil, "-tag", "1.2.3")
+				client.MustRun(t, deployCommand, nil, "-cluster", "cluster1", "-tag", "1.2.3")
+
+				did := sous.DeploymentID{
+					ManifestID: sous.ManifestID{
+						Source: sous.SourceLocation{
+							Repo: "github.com/user1/repo1",
+						},
+					},
+					Cluster: "cluster1",
+				}
+
+				assertActiveStatus(t, f, did)
+				assertSingularityRequestTypeService(t, f, did)
+				assertNonNilHealthCheckOnLatestDeploy(t, f, did)
+			})
+
+			t.Run("zero", func(t *testing.T) {
+				f := newTestFixture(t, nextAddr)
+				client := setupProject(t, f, simpleServer)
+				client.MustRun(t, "init", nil, "-kind", "http-service")
+				client.TransformManifest(t, nil, setMinimalMemAndCPUNumInst0)
 				client.MustRun(t, "build", nil, "-tag", "1.2.3")
 				client.MustRun(t, deployCommand, nil, "-cluster", "cluster1", "-tag", "1.2.3")
 
