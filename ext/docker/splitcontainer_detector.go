@@ -19,7 +19,6 @@ type splitDetector struct {
 	rootAst                 *parser.Node
 	froms                   []*parser.Node
 	envs                    []*parser.Node
-	fallbackEnv             map[string]string
 }
 
 func (sd *splitDetector) absorbDocker(ast *parser.Node) error {
