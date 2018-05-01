@@ -22,12 +22,17 @@ with respect to its command line interface and HTTP interface
 * All: don't log when status poller hasn't changed
 
 
+## [Unreleased](//github.com/opentable/sous/compare/0.5.86...HEAD)
+### Added
+* Client: add -dev flag, at the moment just affects checking for local images
+
 ## [0.5.86](//github.com/opentable/sous/compare/0.5.85...0.5.86)
 ### Added
 * Client: `sous manifest edit` covers 90% of the manifest get/set use case, more easily.
 * Server: more flexible, agile logging API.
 * Server: logging API includes adding context fields to child loggers.
 * All: updated to enable better running of tests in teamcity
+
 ### Changed
 * Client: `sous deploy` and `sous newdeploy` now synonyms. Expect `sous newdeploy` to be removed.
 * Client: Display more information in case timeout of sous newdeploy.  Also show Executor Message if failed deploy.

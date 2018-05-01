@@ -25,6 +25,7 @@ type (
 		RemoteURLs                           []string
 		DirtyWorkingTree                     bool
 		RevisionUnpushed                     bool
+		DevBuild                             bool
 	}
 	// Tag represents a revision control commit tag.
 	Tag struct {

@@ -455,6 +455,7 @@ func newBuildConfig(ls LogSink, f *config.DeployFilterFlags, p *config.PolicyFla
 		Revision:   f.Revision,
 		Strict:     p.Strict,
 		ForceClone: p.ForceClone,
+		Dev:        p.Dev,
 		Context:    bc,
 		LogSink:    ls,
 	}
