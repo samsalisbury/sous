@@ -133,6 +133,7 @@ func (c *TestCommandController) ResultSuccess(out, err string) {
 	c.MatchMethod("Stderr", spies.AnyArgs, err, nil)
 }
 
+// ResultFailure see above but unsuccessfully
 func (c *TestCommandController) ResultFailure(out, err string) {
 	ob := &Output{bytes.NewBufferString(out)}
 	eb := &Output{bytes.NewBufferString(err)}
