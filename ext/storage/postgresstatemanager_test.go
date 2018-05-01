@@ -34,7 +34,8 @@ func SetupTest(t *testing.T, name string) *PostgresStateManagerSuite {
 		require:    require.New(t),
 	}
 
-	db := sous.SetupDB(t, name)
+	db := sous.SetupDB(t)
+	defer sous.ReleaseDB(t)
 
 	sink, ctrl := logging.NewLogSinkSpy()
 	suite.manager = NewPostgresStateManager(db, sink)

@@ -108,7 +108,15 @@ func (f fieldset) conflictClause(templ string) string {
 }
 
 func (f fieldset) columns() string {
-	return "(" + strings.Join(f.colnames, ",") + ")"
+	return "(" + strings.Join(f.quotedColnames(), ",") + ")"
+}
+
+func (f fieldset) quotedColnames() []string {
+	qcns := []string{}
+	for _, cn := range f.colnames {
+		qcns = append(qcns, `"`+cn+`"`)
+	}
+	return qcns
 }
 
 // Candidates returns the index candidate columns for this fieldset.

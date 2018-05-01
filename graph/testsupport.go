@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"io"
 	"io/ioutil"
-	"strings"
 	"testing"
 
 	sous "github.com/opentable/sous/lib"
@@ -42,14 +41,13 @@ func TestGraphWithConfig(t *testing.T, v semv.Version, in io.Reader, out, err io
 
 	graph := BuildGraph(v, in, out, err)
 
-	dbName := strings.Replace(strings.ToLower(t.Name()), "test", "", -1)
-	db := sous.SetupDB(t, dbName)
+	db := sous.SetupDB(t)
+	defer sous.ReleaseDB(t)
 
 	// Add missing stuff to the graph (these are things that come from early
 	// initialization in main.go.
 	graph.Add(
 		func() logging.LogSink { return logging.SilentLogSet() },
-		MaybeDatabase{Db: db, Err: nil},
 	)
 
 	// testGraph methods affect graph as well.
@@ -62,6 +60,7 @@ func TestGraphWithConfig(t *testing.T, v semv.Version, in io.Reader, out, err io
 	testGraph.Replace(newDummyDockerClient)
 	testGraph.Replace(newServerHandler)
 	testGraph.Replace(newServerStateManager)
+	testGraph.Replace(MaybeDatabase{Db: db, Err: nil})
 
 	// Add config.
 	testGraph.Add(configYAML(cfg))

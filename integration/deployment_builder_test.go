@@ -38,7 +38,8 @@ func TestBuildDeployments(t *testing.T) {
 	drc := docker_registry.NewClient(log)
 	drc.BecomeFoolishlyTrusting()
 
-	db := sous.SetupDB(t, "build_deps")
+	db := sous.SetupDB(t)
+	defer sous.ReleaseDB(t)
 
 	appLocation := "testhelloreq"
 	clusterNick := "tcluster"

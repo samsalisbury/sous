@@ -81,7 +81,7 @@ func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State,
 
 	ins := sqlgen.NewInserter(ctx, log, tx)
 
-	if err := ins.Exec("components", "on conflict do nothing",
+	if err := ins.Exec("components", sqlgen.DoNothing,
 		deploymentsFieldSetter(alldeps, func(fields sqlgen.FieldSet, dep *sous.Deployment) {
 			fields.Row(func(r sqlgen.RowDef) {
 				r.FD("?", "repo", dep.SourceID.Location.Repo)
@@ -93,7 +93,7 @@ func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State,
 		return nil
 	}
 
-	if err := ins.Exec("clusters", `on conflict {{.Candidates}} do update set {{.NonCandidates}} = {{.NSNonCandidates "excluded"}}`,
+	if err := ins.Exec("clusters", sqlgen.Upsert,
 		deploymentsFieldSetter(alldeps, func(fields sqlgen.FieldSet, dep *sous.Deployment) {
 			c := dep.Cluster
 			s := c.Startup
@@ -145,7 +145,7 @@ func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State,
 		return err
 	}
 
-	if err := ins.Exec("owners", "on conflict do nothing",
+	if err := ins.Exec("owners", sqlgen.DoNothing,
 		deploymentsFieldSetter(updates, func(fields sqlgen.FieldSet, dep *sous.Deployment) {
 			for ownername := range dep.Owners {
 				fields.Row(func(r sqlgen.RowDef) {
@@ -156,7 +156,7 @@ func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State,
 		return err
 	}
 
-	if err := ins.Exec("component_owners", "on conflict do nothing",
+	if err := ins.Exec("component_owners", sqlgen.DoNothing,
 		deploymentsFieldSetter(updates, func(fields sqlgen.FieldSet, dep *sous.Deployment) {
 			for ownername := range dep.Owners {
 				fields.Row(func(row sqlgen.RowDef) {
@@ -168,7 +168,7 @@ func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State,
 		return err
 	}
 
-	if err := ins.Exec("envs", "on conflict do nothing",
+	if err := ins.Exec("envs", sqlgen.DoNothing,
 		deploymentsFieldSetter(updates, func(fields sqlgen.FieldSet, dep *sous.Deployment) {
 			for key, value := range dep.Env {
 				fields.Row(func(row sqlgen.RowDef) {
@@ -181,7 +181,7 @@ func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State,
 		return err
 	}
 
-	if err := ins.Exec("resources", "on conflict do nothing",
+	if err := ins.Exec("resources", sqlgen.DoNothing,
 		deploymentsFieldSetter(updates, func(fields sqlgen.FieldSet, dep *sous.Deployment) {
 			for key, value := range dep.Resources {
 				fields.Row(func(row sqlgen.RowDef) {
@@ -194,7 +194,7 @@ func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State,
 		return err
 	}
 
-	if err := ins.Exec("metadatas", "on conflict do nothing",
+	if err := ins.Exec("metadatas", sqlgen.DoNothing,
 		deploymentsFieldSetter(updates, func(fields sqlgen.FieldSet, dep *sous.Deployment) {
 			for key, value := range dep.Metadata {
 				fields.Row(func(row sqlgen.RowDef) {
@@ -207,7 +207,7 @@ func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State,
 		return err
 	}
 
-	if err := ins.Exec("volumes", "on conflict do nothing",
+	if err := ins.Exec("volumes", sqlgen.DoNothing,
 		deploymentsFieldSetter(updates, func(fields sqlgen.FieldSet, dep *sous.Deployment) {
 			for _, volume := range dep.Volumes {
 				fields.Row(func(row sqlgen.RowDef) {

@@ -106,7 +106,8 @@ func (suite *integrationSuite) manifest(nc *docker.NameCache, drepo, containerDi
 }
 
 func (suite *integrationSuite) newNameCache(name string) *docker.NameCache {
-	db := sous.SetupDB(suite.T(), name)
+	db := sous.SetupDB(suite.T())
+	defer sous.ReleaseDB(suite.T())
 
 	cache, err := docker.NewNameCache(registryName, suite.registry, logging.SilentLogSet(), db)
 	suite.Require().NoError(err)

@@ -68,7 +68,8 @@ func TestWriteState(t *testing.T) {
 		t.Fatal("State manager double is empty")
 	}
 
-	db := sous.SetupDB(t, "http_smgr_write")
+	db := sous.SetupDB(t)
+	defer sous.ReleaseDB(t)
 
 	di := graph.BuildBaseGraph(semv.Version{}, &bytes.Buffer{}, os.Stderr, os.Stderr)
 	graph.AddNetwork(di)

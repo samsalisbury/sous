@@ -23,7 +23,8 @@ func TestHarvestGuessedRepo(t *testing.T) {
 	dc := docker_registry.NewDummyClient()
 
 	host := "docker.repo.io"
-	nc, err := NewNameCache(host, dc, logging.SilentLogSet(), sous.SetupDB(t, "guessed_repo"))
+	nc, err := NewNameCache(host, dc, logging.SilentLogSet(), sous.SetupDB(t))
+	defer sous.ReleaseDB(t)
 	assert.NoError(err)
 
 	sl := sous.SourceLocation{
@@ -45,7 +46,8 @@ func TestRoundTrip(t *testing.T) {
 	host := "docker.repo.io"
 	base := "ot/wackadoo"
 
-	nc, err := NewNameCache(host, dc, logging.SilentLogSet(), sous.SetupDB(t, "roundtrip"))
+	nc, err := NewNameCache(host, dc, logging.SilentLogSet(), sous.SetupDB(t))
+	defer sous.ReleaseDB(t)
 	assert.NoError(err)
 
 	sv := sous.MustNewSourceID("https://github.com/opentable/wackadoo", "nested/there", "1.2.3")
@@ -94,7 +96,8 @@ func TestCanonicalizesToConfiguredRegistry(t *testing.T) {
 	dockerCache := "nearby-docker-cache.repo.io"
 	base := "ot/wackadoo"
 
-	nc, err := NewNameCache(dockerCache, dc, logging.SilentLogSet(), sous.SetupDB(t, "canonsucceeds"))
+	nc, err := NewNameCache(dockerCache, dc, logging.SilentLogSet(), sous.SetupDB(t))
+	defer sous.ReleaseDB(t)
 	assert.NoError(err)
 
 	in := base + ":version-1.2.3"
@@ -153,7 +156,8 @@ func TestLeavesRegistryUnchangedWhenUnknown(t *testing.T) {
 	dockerCache := "nearby-docker-cache.repo.io"
 	base := "ot/wackadoo"
 
-	nc, err := NewNameCache(dockerCache, dc, logging.SilentLogSet(), sous.SetupDB(t, "canonsucceeds"))
+	nc, err := NewNameCache(dockerCache, dc, logging.SilentLogSet(), sous.SetupDB(t))
+	defer sous.ReleaseDB(t)
 	assert.NoError(err)
 
 	in := base + ":version-1.2.3"
@@ -200,7 +204,8 @@ func TestHarvestAlso(t *testing.T) {
 	base := "ot/wackadoo"
 	repo := "github.com/opentable/test-app"
 
-	nc, err := NewNameCache(host, dc, logging.SilentLogSet(), sous.SetupDB(t, "harvest_also"))
+	nc, err := NewNameCache(host, dc, logging.SilentLogSet(), sous.SetupDB(t))
+	defer sous.ReleaseDB(t)
 	assert.NoError(err)
 
 	stuffBA := func(n, v string) sous.SourceID {
@@ -248,7 +253,8 @@ func TestSecondCanonicalName(t *testing.T) {
 
 	host := "docker.repo.io"
 	base := "ot/wackadoo"
-	nc, err := NewNameCache(host, dc, logging.SilentLogSet(), sous.SetupDB(t, "secondCN"))
+	nc, err := NewNameCache(host, dc, logging.SilentLogSet(), sous.SetupDB(t))
+	defer sous.ReleaseDB(t)
 	require.NoError(t, err)
 
 	repo := "github.com/opentable/test-app"
@@ -297,7 +303,8 @@ func TestHarvesting(t *testing.T) {
 
 	host := "docker.repo.io"
 	base := "wackadoo/nested/there"
-	nc, err := NewNameCache(host, dc, logging.SilentLogSet(), sous.SetupDB(t, "harvesting"))
+	nc, err := NewNameCache(host, dc, logging.SilentLogSet(), sous.SetupDB(t))
+	defer sous.ReleaseDB(t)
 	assert.NoError(err)
 
 	v := "1.2.3"
@@ -352,7 +359,8 @@ func TestRecordAdvisories(t *testing.T) {
 	dc := docker_registry.NewDummyClient()
 	host := "docker.repo.io"
 	base := "ot/wackadoo"
-	nc, err := NewNameCache(host, dc, logging.SilentLogSet(), sous.SetupDB(t, "advisories"))
+	nc, err := NewNameCache(host, dc, logging.SilentLogSet(), sous.SetupDB(t))
+	defer sous.ReleaseDB(t)
 	require.NoError(err)
 	v := "1.2.3"
 	sv := sous.MustNewSourceID("https://github.com/opentable/wackadoo", "nested/there", v)
@@ -377,7 +385,8 @@ func TestDump(t *testing.T) {
 	io := &bytes.Buffer{}
 
 	dc := docker_registry.NewDummyClient()
-	nc, err := NewNameCache("", dc, logging.SilentLogSet(), sous.SetupDB(t, "dump"))
+	nc, err := NewNameCache("", dc, logging.SilentLogSet(), sous.SetupDB(t))
+	defer sous.ReleaseDB(t)
 	assert.NoError(err)
 
 	nc.dump(io)
@@ -387,7 +396,8 @@ func TestDump(t *testing.T) {
 func TestMissingName(t *testing.T) {
 	assert := assert.New(t)
 	dc := docker_registry.NewDummyClient()
-	nc, err := NewNameCache("", dc, logging.SilentLogSet(), sous.SetupDB(t, "missing"))
+	nc, err := NewNameCache("", dc, logging.SilentLogSet(), sous.SetupDB(t))
+	defer sous.ReleaseDB(t)
 	assert.NoError(err)
 
 	v := "4.5.6"

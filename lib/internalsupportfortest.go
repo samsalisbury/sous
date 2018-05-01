@@ -4,8 +4,10 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/lib/pq"
 )
 
@@ -13,14 +15,29 @@ import (
 // existence of a properly migrated 'sous_test_template' directory. Each test
 // should provide a unique name for its DB instance so that they'll be
 // independent.
-func SetupDB(t *testing.T, name string) *sql.DB {
+func SetupDB(t *testing.T) *sql.DB {
 	t.Helper()
+	spew.Dump(dbconns)
+	name := strings.Replace(strings.ToLower(t.Name()), "test", "", -1)
+	t.Logf("Creating DB for %s called sous_test_%s", t.Name(), name)
 	db, err := setupDBErr(name)
 	if err != nil {
 		t.Skipf("setupDB failed: %s", err)
 	}
 	return db
 }
+
+// ReleaseDB should be called in any test that called SetupDB (even indirectly)
+func ReleaseDB(t *testing.T) {
+	name := strings.Replace(strings.ToLower(t.Name()), "test", "", -1)
+	dbName := "sous_test_" + name
+	if db, has := dbconns[dbName]; has {
+		db.Close() //ignoring error
+		delete(dbconns, dbName)
+	}
+}
+
+var dbconns = map[string]*sql.DB{}
 
 func setupDBErr(name string) (*sql.DB, error) {
 	port := "6543"
@@ -55,6 +72,7 @@ func setupDBErr(name string) (*sql.DB, error) {
 	if err := db.Ping(); err != nil {
 		return nil, fmt.Errorf("Checking connection to DB at %q: %v", connstr, err)
 	}
+	dbconns[dbName] = db
 
 	return db, nil
 }

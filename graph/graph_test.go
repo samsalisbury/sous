@@ -115,7 +115,8 @@ func TestComponentLocatorInjection(t *testing.T) {
 	}
 
 	name := "componentlocatorinjection"
-	sous.SetupDB(t, name)
+	sous.SetupDB(t)
+	defer sous.ReleaseDB(t)
 
 	rawConfig.Database.Host = "localhost"
 	rawConfig.Database.Port = port
