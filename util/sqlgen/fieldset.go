@@ -3,9 +3,9 @@ package sqlgen
 import (
 	"bytes"
 	"fmt"
-	"html/template"
 	"regexp"
 	"strings"
+	"text/template"
 )
 
 type (
@@ -111,12 +111,20 @@ func (f fieldset) columns() string {
 	return "(" + strings.Join(f.quotedColnames(), ",") + ")"
 }
 
-func (f fieldset) quotedColnames() []string {
+func quoteColumn(col string) string {
+	return `"` + col + `"`
+}
+
+func quoteColumns(cols []string) []string {
 	qcns := []string{}
-	for _, cn := range f.colnames {
-		qcns = append(qcns, `"`+cn+`"`)
+	for _, cn := range cols {
+		qcns = append(qcns, quoteColumn(cn))
 	}
 	return qcns
+}
+
+func (f fieldset) quotedColnames() []string {
+	return quoteColumns(f.colnames)
 }
 
 // Candidates returns the index candidate columns for this fieldset.
@@ -128,7 +136,7 @@ func (f fieldset) candidates() string {
 	colnames := []string{}
 	for _, name := range f.colnames {
 		if f.coldefs[name].candidate {
-			colnames = append(colnames, name)
+			colnames = append(colnames, quoteColumn(name))
 		}
 	}
 	return "(" + strings.Join(colnames, ",") + ")"
@@ -154,7 +162,7 @@ func (f fieldset) noncandidates() string {
 	colnames := []string{}
 	for _, name := range f.colnames {
 		if !f.coldefs[name].candidate {
-			colnames = append(colnames, name)
+			colnames = append(colnames, quoteColumn(name))
 		}
 	}
 	return "(" + strings.Join(colnames, ",") + ")"

@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
-	"regexp"
 	"strings"
 	"sync"
 	"text/tabwriter"
@@ -349,21 +348,6 @@ type DBConfig struct {
 	Driver, Connection string
 }
 
-func (nc *NameCache) captureRepos(db *sql.DB) (repos []string) {
-	res, err := db.Query("select name from docker_repo_name;")
-	if err != nil {
-		messages.ReportLogFieldsMessage("captureRepos", logging.WarningLevel, nc.Log, err)
-		return
-	}
-	defer res.Close()
-	for res.Next() {
-		var repo string
-		res.Scan(&repo)
-		repos = append(repos, repo)
-	}
-	return
-}
-
 func (nc *NameCache) dumpRows(io io.Writer, sql string) {
 	fmt.Fprintln(io, sql)
 	rows, err := nc.DB.Query(sql)
@@ -401,7 +385,6 @@ func (nc *NameCache) dumpRows(io io.Writer, sql string) {
 }
 
 func (nc *NameCache) dump(io io.Writer) {
-	nc.dumpRows(io, "select * from _database_metadata_")
 	nc.dumpRows(io, "select * from docker_repo_name")
 	nc.dumpRows(io, "select * from docker_search_location")
 	nc.dumpRows(io, "select * from repo_through_location")
@@ -437,198 +420,10 @@ func reportTableMetrics(logger logging.LogSink, db *sql.DB) {
 	logging.Deliver(logger, msg)
 }
 
-func sqlExec(db *sql.DB, sql string) error {
-	if _, err := db.Exec(sql); err != nil {
-		return fmt.Errorf("Error: %s in SQL: %s", err, sql)
-	}
-	return nil
-}
-
-var sqlBindingRE = regexp.MustCompile(`[$]\d+`)
-
-func (nc *NameCache) ensureInDB(sel, ins string, args ...interface{}) (id int64, err error) {
-	selN := len(sqlBindingRE.FindAllString(sel, -1))
-	insN := len(sqlBindingRE.FindAllString(ins, -1))
-	if selN > len(args) {
-		return 0, errors.Errorf("only %d args when %d needed for %q", len(args), selN, sel)
-	}
-	if insN > len(args) {
-		return 0, errors.Errorf("only %d args when %d needed for %q", len(args), insN, ins)
-	}
-
-	nc.Lock()
-	defer nc.Unlock()
-	row := nc.DB.QueryRow(sel, args[0:selN]...)
-	err = row.Scan(&id)
-	if err == nil {
-		messages.ReportLogFieldsMessage("Found", logging.ExtraDebug1Level, nc.Log, id, sel, args)
-		return
-	}
-
-	if errors.Cause(err) != sql.ErrNoRows {
-		return 0, errors.Wrapf(err, "getting id with %q %v", sel, args[0:selN])
-	}
-
-	nr, err := nc.DB.Exec(ins, args[0:insN]...)
-	if err != nil {
-		return 0, errors.Wrapf(err, "inserting new value: %q %v", ins, args[0:insN])
-	}
-	id, err = nr.LastInsertId()
-
-	messages.ReportLogFieldsMessage("Made with", logging.ExtraDebug1Level, nc.Log, err, id, ins)
-	return id, errors.Wrapf(err, "getting id of new value: %q %v", ins, args[0:insN])
-}
-
 func versionString(v semv.Version) string {
 	return v.Format(semv.Complete)
 }
 
-func (nc *NameCache) dbQueryOnName(in string) (etag, repo, offset, version, cname string, err error) {
-	row := nc.DB.QueryRow("select "+
-		"docker_search_metadata.etag, "+
-		"docker_search_location.repo, "+
-		"docker_search_location.offset, "+
-		"docker_search_metadata.version, "+
-		"docker_search_metadata.canonicalName "+
-		"from "+
-		"docker_search_name natural join docker_search_metadata "+
-		"natural join docker_search_location "+
-		"where docker_search_name.name = $1", in)
-	err = row.Scan(&etag, &repo, &offset, &version, &cname)
-	if err == sql.ErrNoRows {
-		err = NoSourceIDFound{imageName(in)}
-	}
-	return
-}
-
-func (nc *NameCache) dbQueryOnSL(sl sous.SourceLocation) (rs []string, err error) {
-	rows, err := nc.DB.Query("select docker_repo_name.name "+
-		"from "+
-		"docker_repo_name natural join repo_through_location "+
-		"  natural join docker_search_location "+
-		"where "+
-		"docker_search_location.repo = $1 and "+
-		"docker_search_location.offset = $2",
-		string(sl.Repo), string(sl.Dir))
-
-	if err == sql.ErrNoRows {
-		return []string{}, err
-	}
-	if err != nil {
-		return []string{}, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var r string
-		rows.Scan(&r)
-		rs = append(rs, r)
-	}
-	err = rows.Err()
-	if len(rs) == 0 {
-		err = fmt.Errorf("no repos found for %+v", sl)
-	}
-	return
-}
-
-func (nc *NameCache) dbQueryAllSourceIds() (ids []sous.SourceID, err error) {
-	rows, err := nc.DB.Query("select docker_search_location.repo, " +
-		"docker_search_location.offset, " +
-		"docker_search_metadata.version " +
-		"from " +
-		"docker_search_location natural join docker_search_metadata")
-	if err != nil {
-		return
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var r, o, v string
-		rows.Scan(&r, &o, &v)
-		ids = append(ids, sous.SourceID{
-			Location: sous.SourceLocation{
-				Repo: r, Dir: o,
-			},
-			Version: semv.MustParse(v),
-		})
-	}
-	err = rows.Err()
-	return
-}
-
-type strpairs []strpair
-type strpair [2]string
-
-func (nc *NameCache) dbQueryOnSourceID(sid sous.SourceID) (cn string, ins []string, quals strpairs, err error) {
-	cn, ins, err = nc.dbQueryCNameforSourceID(sid)
-	if err != nil {
-		return
-	}
-	quals, err = nc.dbQueryQualsForCName(cn)
-	return
-}
-
 func (nc *NameCache) log(msg string, lvl logging.Level, data ...interface{}) {
 	logging.Deliver(nc.Log, append([]interface{}{logging.MessageField(msg), lvl}, data...)...)
-}
-
-func (nc *NameCache) dbQueryCNameforSourceID(sid sous.SourceID) (cn string, ins []string, err error) {
-	rows, err := nc.DB.Query("select docker_search_metadata.canonicalName, "+
-		"docker_search_name.name "+
-		"from "+
-		"docker_search_name natural join docker_search_metadata "+
-		"natural join docker_search_location "+
-		"where "+
-		"docker_search_location.repo = $1 and "+
-		"docker_search_location.offset = $2 and "+
-		"docker_search_metadata.version = $3",
-		sid.Location.Repo, sid.Location.Dir, versionString(sid.Version))
-
-	nc.log("Selecting", logging.ExtraDebug1Level, sid)
-
-	if err == sql.ErrNoRows {
-		err = errors.Wrap(NoImageNameFound{sid}, "")
-		return
-	}
-	if err != nil {
-		return
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var in string
-		rows.Scan(&cn, &in)
-		ins = append(ins, in)
-	}
-	err = rows.Err()
-	if len(ins) == 0 {
-		err = errors.Wrap(NoImageNameFound{sid}, "")
-	}
-
-	return
-}
-
-func (nc *NameCache) dbQueryQualsForCName(cn string) (quals strpairs, err error) {
-	rows, err := nc.DB.Query("select"+
-		" docker_image_qualities.quality,"+
-		" docker_image_qualities.kind"+
-		"   from"+
-		" docker_image_qualities natural join docker_search_metadata"+
-		" where"+
-		" docker_search_metadata.canonicalName = $1", cn)
-
-	if err != nil {
-		return
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var pr strpair
-		rows.Scan(&pr[0], &pr[1])
-		quals = append(quals, pr)
-	}
-	err = rows.Err()
-
-	return
-
 }
