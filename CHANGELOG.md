@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface
 
+## [Unreleased](//github.com/opentable/sous/compare/0.5.86...HEAD)
+### Added
+* Client: add -dev flag, at the moment just affects checking for local images
+* Client: return a better message if manifestid wasn't found
+
 ## [0.5.91](//github.com/opentable/sous/compare/0.5.88...0.5.91)
 ### Added
 * Client: Added a footer after command execution that if present, will display the request id that
@@ -22,9 +27,6 @@ with respect to its command line interface and HTTP interface
 * All: don't log when status poller hasn't changed
 
 
-## [Unreleased](//github.com/opentable/sous/compare/0.5.86...HEAD)
-### Added
-* Client: add -dev flag, at the moment just affects checking for local images
 
 ## [0.5.86](//github.com/opentable/sous/compare/0.5.85...0.5.86)
 ### Added
