@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/lib/pq"
 )
 
@@ -17,7 +17,6 @@ import (
 // independent.
 func SetupDB(t *testing.T) *sql.DB {
 	t.Helper()
-	spew.Dump(dbconns)
 	name := strings.Replace(strings.ToLower(t.Name()), "test", "", -1)
 	t.Logf("Creating DB for %s called sous_test_%s", t.Name(), name)
 	db, err := setupDBErr(name)
@@ -38,6 +37,28 @@ func ReleaseDB(t *testing.T) {
 }
 
 var dbconns = map[string]*sql.DB{}
+var adminConn *sql.DB
+
+var setupAdminConn = sync.Once{}
+
+func getAdminConn() (*sql.DB, error) {
+	var err error
+	setupAdminConn.Do(func() {
+		port := "6543"
+		if np, set := os.LookupEnv("PGPORT"); set {
+			port = np
+		}
+		connstr := fmt.Sprintf("dbname=sous_test_template host=localhost port=%s sslmode=disable", port)
+		adminConn, err = sql.Open("postgres", connstr)
+	})
+	if err != nil {
+		return nil, err
+	}
+	if adminConn == nil {
+		return nil, fmt.Errorf("no admin SQL connection")
+	}
+	return adminConn, err
+}
 
 func setupDBErr(name string) (*sql.DB, error) {
 	port := "6543"
@@ -46,31 +67,28 @@ func setupDBErr(name string) (*sql.DB, error) {
 	}
 	dbName := "sous_test_" + name
 	if dbName == "sous_test_template" {
-		return nil, fmt.Errorf("Cannot use test name %q because the DB name %q is used as the template.", name, dbName)
+		return nil, fmt.Errorf("cannot use test name %q because the DB name %q is used as the template", name, dbName)
 	}
-	connstr := fmt.Sprintf("dbname=sous_test_template host=localhost port=%s sslmode=disable", port)
-	setupDB, err := sql.Open("postgres", connstr)
+	setupDB, err := getAdminConn()
+
 	if err != nil {
-		return nil, fmt.Errorf("Error setting up test database %q Error: %v. Did you already `make postgres-test-prepare`?", dbName, err)
+		return nil, fmt.Errorf("error setting up test database %q Error: %v. Did you already `make postgres-test-prepare`?", dbName, err)
 	}
 	if _, err := setupDB.Exec("drop database " + dbName); err != nil && !isNoDBError(err) {
-		return nil, fmt.Errorf("Error dropping old test database %q: connstr %q err %v", dbName, connstr, err)
+		return nil, fmt.Errorf("error dropping old test database %q: err %v", dbName, err)
 	}
 	if _, err := setupDB.Exec("create database " + dbName + " template sous_test_template"); err != nil {
-		return nil, fmt.Errorf("Error creating test database connstr %q err %v", connstr, err)
-	}
-	if err := setupDB.Close(); err != nil {
-		return nil, fmt.Errorf("Error closing DB manipulation connection connstr %q err %v", connstr, err)
+		return nil, fmt.Errorf("error creating test database err %v", err)
 	}
 
-	connstr = fmt.Sprintf("dbname=%s host=localhost port=%s sslmode=disable", dbName, port)
+	connstr := fmt.Sprintf("dbname=%s host=localhost port=%s sslmode=disable", dbName, port)
 
 	db, err := sql.Open("postgres", connstr)
 	if err != nil {
-		return nil, fmt.Errorf("Connecting to test sql.DB, error: %v", err)
+		return nil, fmt.Errorf("connecting to test sql.DB, error: %v", err)
 	}
 	if err := db.Ping(); err != nil {
-		return nil, fmt.Errorf("Checking connection to DB at %q: %v", connstr, err)
+		return nil, fmt.Errorf("checking connection to DB at %q: %v", connstr, err)
 	}
 	dbconns[dbName] = db
 

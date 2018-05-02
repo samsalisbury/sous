@@ -68,6 +68,7 @@ func TestClientRetrieve(t *testing.T) {
 	lt, ctrl := logging.NewLogSinkSpy()
 
 	s := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		rw.Header().Set("Content-Type", "application/json")
 		rw.Write([]byte("{}"))
 	}))
 
