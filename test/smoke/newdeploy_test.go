@@ -175,7 +175,7 @@ func TestSousDeploy(t *testing.T) {
 				assertNonNilHealthCheckOnLatestDeploy(t, f, did)
 			})
 
-			t.Run("zero", func(t *testing.T) {
+			t.Run("zero-instances", func(t *testing.T) {
 				f := newTestFixture(t, nextAddr)
 				client := setupProject(t, f, simpleServer)
 				client.MustRun(t, "init", nil, "-kind", "http-service")

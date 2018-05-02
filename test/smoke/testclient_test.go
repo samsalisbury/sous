@@ -106,19 +106,51 @@ func (c *TestClient) Cmd(t *testing.T, subcmd string, f *sousFlags, args ...stri
 	return cmd
 }
 
-func (c *TestClient) Run(t *testing.T, subcmd string, f *sousFlags, args ...string) (string, error) {
+// Add quotes to args with spaces for printing.
+func quotedArgs(args []string) []string {
+	out := make([]string, len(args))
+	for i, a := range args {
+		if strings.Contains(a, " ") {
+			out[i] = `"` + a + `"`
+		} else {
+			out[i] = a
+		}
+	}
+	return out
+}
+
+func quotedArgsString(args []string) string {
+	return strings.Join(quotedArgs(args), " ")
+}
+
+type ExecutedCMD struct {
+	Subcmd                   string
+	Args                     []string
+	Stdout, Stderr, Combined *bytes.Buffer
+}
+
+// String returns something looking like a shell invocation of this command.
+func (e *ExecutedCMD) String() string {
+	return fmt.Sprintf("sous %s %s", e.Subcmd, quotedArgsString(e.Args))
+}
+
+func newExecutedCMD(subcmd string, args []string) *ExecutedCMD {
+	return &ExecutedCMD{
+		Subcmd:   subcmd,
+		Args:     args,
+		Stdout:   &bytes.Buffer{},
+		Stderr:   &bytes.Buffer{},
+		Combined: &bytes.Buffer{},
+	}
+}
+
+func (c *TestClient) Run(t *testing.T, subcmd string, f *sousFlags, args ...string) (*ExecutedCMD, error) {
 	t.Helper()
 	cmd := c.Cmd(t, subcmd, f, args...)
 	stdout, stderr := prefixWithTestName(t)
 	fmt.Fprintf(stderr, "SOUS_CONFIG_DIR = %q\n", c.ConfigDir)
 	fmt.Fprintf(stdout, "running sous in %q: %s\n", c.Dir, args)
-	// Add quotes to args with spaces for printing.
-	for i, a := range args {
-		if strings.Contains(a, " ") {
-			args[i] = `"` + a + `"`
-		}
-	}
-
+	args = quotedArgs(args)
 	outFile, errFile, combinedFile :=
 		openFileAppendOnly(t, c.LogDir, "stdout"),
 		openFileAppendOnly(t, c.LogDir, "stderr"),
@@ -128,9 +160,10 @@ func (c *TestClient) Run(t *testing.T, subcmd string, f *sousFlags, args ...stri
 
 	allFiles := io.MultiWriter(outFile, errFile, combinedFile)
 
-	out := &bytes.Buffer{}
-	cmd.Stdout = io.MultiWriter(stdout, outFile, combinedFile, out)
-	cmd.Stderr = io.MultiWriter(stderr, errFile, combinedFile)
+	executed := newExecutedCMD(subcmd, args)
+
+	cmd.Stdout = io.MultiWriter(stdout, outFile, combinedFile, executed.Stdout, executed.Combined)
+	cmd.Stderr = io.MultiWriter(stderr, errFile, combinedFile, executed.Stderr, executed.Combined)
 	prettyCmd := fmt.Sprintf("$ sous %s\n", strings.Join(allArgs(subcmd, f, args), " "))
 	fmt.Fprintf(os.Stderr, "==> %s", prettyCmd)
 	relPath, err := filepath.Rel(c.BaseDir, cmd.Dir)
@@ -142,16 +175,18 @@ func (c *TestClient) Run(t *testing.T, subcmd string, f *sousFlags, args ...stri
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 	}
-	return out.String(), err
+	return executed, err
 }
 
+// MustRun fails the test if the command fails; else returns the stdout from the command.
 func (c *TestClient) MustRun(t *testing.T, subcmd string, f *sousFlags, args ...string) string {
 	t.Helper()
-	out, err := c.Run(t, subcmd, f, args...)
+	executed, err := c.Run(t, subcmd, f, args...)
 	if err != nil {
+		t.Logf("Command failed: %s; output:\n%s", executed, executed.Combined)
 		t.Fatal(err)
 	}
-	return out
+	return executed.Stdout.String()
 }
 
 func (c *TestClient) MustFail(t *testing.T, subcmd string, f *sousFlags, args ...string) {
