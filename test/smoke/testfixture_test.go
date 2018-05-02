@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"sync"
 	"testing"
 
 	"github.com/opentable/sous/dev_support/sous_qa_setup/desc"
@@ -22,28 +21,11 @@ type TestFixture struct {
 	// ClusterSuffix is used to add a suffix to each generated cluster name.
 	// This can be used to segregate parallel tests.
 	ClusterSuffix string
+	Parent        *ParallelTestFixture
+	TestName      string
 }
 
-func resetSingularity(t *testing.T) {
-	envDesc := getEnvDesc(t)
-	singularity := NewSingularity(envDesc.SingularityURL())
-	singularity.Reset(t)
-}
-
-var testNames = map[string]struct{}{}
-var testNamesMu sync.Mutex
-
-func assertUniqueTestName(t *testing.T) {
-	name := t.Name()
-	testNamesMu.Lock()
-	defer testNamesMu.Unlock()
-	if _, ok := testNames[name]; ok {
-		t.Fatalf("duplicate test name: %q", name)
-	}
-	testNames[name] = struct{}{}
-}
-
-func newTestFixture(t *testing.T, nextAddr func() string) TestFixture {
+func newTestFixture(t *testing.T, parent *ParallelTestFixture, nextAddr func() string) TestFixture {
 	t.Helper()
 	t.Parallel()
 	if testing.Short() {
@@ -53,10 +35,8 @@ func newTestFixture(t *testing.T, nextAddr func() string) TestFixture {
 	envDesc := getEnvDesc(t)
 	baseDir := getDataDir(t)
 
-	assertUniqueTestName(t)
 	clusterSuffix := strings.Replace(t.Name(), "/", "_", -1)
 	fmt.Fprintf(os.Stdout, "Cluster suffix: %s", clusterSuffix)
-	//t.Skipf("Cluster suffix: %q", clusterSuffix)
 
 	singularity := NewSingularity(envDesc.SingularityURL())
 	singularity.ClusterSuffix = clusterSuffix
@@ -94,10 +74,17 @@ func newTestFixture(t *testing.T, nextAddr func() string) TestFixture {
 		BaseDir:       baseDir,
 		Singularity:   singularity,
 		ClusterSuffix: clusterSuffix,
+		Parent:        parent,
+		TestName:      t.Name(),
 	}
 }
 
 func (f *TestFixture) Stop(t *testing.T) {
 	t.Helper()
 	f.Cluster.Stop(t)
+}
+
+func (f *TestFixture) ReportSuccess(t *testing.T) {
+	t.Helper()
+	f.Parent.recordTestPassed(t)
 }

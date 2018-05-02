@@ -3,7 +3,6 @@
 package smoke
 
 import (
-	"sync/atomic"
 	"testing"
 
 	"github.com/opentable/go-singularity/dtos"
@@ -132,29 +131,17 @@ func assertActiveStatus(t *testing.T, f TestFixture, did sous.DeploymentID) {
 
 func TestSousDeploy(t *testing.T) {
 
-	resetSingularity(t)
-
-	stopPIDs(t)
-
-	// numFreeAddrs determines the maximum number of parallel sous servers
-	// that can be run by the tests. At some point this may need to be increased.
-	numFreeAddrs := 128
-	freeAddrs := freePortAddrs(t, "127.0.0.1", numFreeAddrs, 6601, 9000)
-	var nextAddrIndex int64
-	nextAddr := func() string {
-		i := atomic.AddInt64(&nextAddrIndex, 1)
-		if i == int64(numFreeAddrs) {
-			panic("ran out of free ports; increase numFreeAddrs")
-		}
-		return freeAddrs[i]
-	}
+	pf := newParallelTestFixture(t, PTFOpts{
+		NumFreeAddrs: 128,
+	})
 
 	for _, deployCommand := range []string{"newdeploy", "deploy"} {
 		t.Run(deployCommand, func(t *testing.T) {
 			t.Parallel()
 
 			t.Run("simple", func(t *testing.T) {
-				f := newTestFixture(t, nextAddr)
+				f := pf.NewIsolatedFixture(t)
+				defer f.ReportSuccess(t)
 				client := setupProject(t, f, simpleServer)
 				client.MustRun(t, "init", nil, "-kind", "http-service")
 				client.TransformManifest(t, nil, setMinimalMemAndCPUNumInst1)
@@ -176,7 +163,8 @@ func TestSousDeploy(t *testing.T) {
 			})
 
 			t.Run("zero-instances", func(t *testing.T) {
-				f := newTestFixture(t, nextAddr)
+				f := pf.NewIsolatedFixture(t)
+				defer f.ReportSuccess(t)
 				client := setupProject(t, f, simpleServer)
 				client.MustRun(t, "init", nil, "-kind", "http-service")
 				client.TransformManifest(t, nil, setMinimalMemAndCPUNumInst0)
@@ -201,7 +189,8 @@ func TestSousDeploy(t *testing.T) {
 			})
 
 			t.Run("fails", func(t *testing.T) {
-				f := newTestFixture(t, nextAddr)
+				f := pf.NewIsolatedFixture(t)
+				defer f.ReportSuccess(t)
 				client := setupProject(t, f, failer)
 				client.MustRun(t, "init", nil, "-kind", "http-service")
 				client.TransformManifest(t, nil, setMinimalMemAndCPUNumInst1)
@@ -223,7 +212,8 @@ func TestSousDeploy(t *testing.T) {
 			})
 
 			t.Run("flavors", func(t *testing.T) {
-				f := newTestFixture(t, nextAddr)
+				f := pf.NewIsolatedFixture(t)
+				defer f.ReportSuccess(t)
 				client := setupProject(t, f, simpleServer)
 				flavor := "flavor1"
 				flavorFlag := &sousFlags{flavor: flavor}
@@ -248,7 +238,8 @@ func TestSousDeploy(t *testing.T) {
 			})
 
 			t.Run("pause-unpause", func(t *testing.T) {
-				f := newTestFixture(t, nextAddr)
+				f := pf.NewIsolatedFixture(t)
+				defer f.ReportSuccess(t)
 				client := setupProject(t, f, simpleServer)
 				client.MustRun(t, "init", nil, "-kind", "http-service")
 				client.TransformManifest(t, nil, setMinimalMemAndCPUNumInst1)
@@ -280,7 +271,8 @@ func TestSousDeploy(t *testing.T) {
 			})
 
 			t.Run("scheduled", func(t *testing.T) {
-				f := newTestFixture(t, nextAddr)
+				f := pf.NewIsolatedFixture(t)
+				defer f.ReportSuccess(t)
 				client := setupProject(t, f, sleeper)
 				client.MustRun(t, "init", nil, "-kind", "scheduled")
 				client.TransformManifest(t, nil, func(m sous.Manifest) sous.Manifest {
@@ -312,6 +304,13 @@ func TestSousDeploy(t *testing.T) {
 			})
 		})
 	}
+
+	// This test is not parallel so it runs after all the others
+	// have completed, printing the summary as the last line of
+	// output.
+	t.Run("PrintSummary", func(t *testing.T) {
+		pf.PrintSummary(t)
+	})
 }
 
 func assertSingularityRequestTypeScheduled(t *testing.T, f TestFixture, did sous.DeploymentID) {
