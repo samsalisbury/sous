@@ -161,6 +161,12 @@ clean-running-containers:
 	@if (( $$(docker ps -q | wc -l) > 0 )); then echo 'found running containers, killing:'; docker ps -q | xargs docker kill; fi
 	@if (( $$(docker ps -aq | wc -l) > 0 )); then echo 'found container instances, deleting:'; docker ps -aq | xargs docker rm --volumes; fi
 
+.PHONY: stop-qa-env
+stop-qa-env: ## Stops and removes all docker-compose containers.
+	# Redirect output to /dev/null because if gives confusing output when nothing to do.
+	@cd integration/test-registry && docker-compose rm -sf >/dev/null 2>&1 || { echo Failed to stop containers; exit 1; }
+	[ -f "$(QA_DESC)" ] && { rm -f $(QA_DESC); }
+
 gitlog:
 	git log `git describe --abbrev=0`..HEAD
 
