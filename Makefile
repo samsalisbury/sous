@@ -312,7 +312,7 @@ $(SMOKE_TEST_LATEST_LINK): $(SMOKE_TEST_DATA_DIR)
 
 .PHONY: test-smoke-compiles
 test-smoke-compiles: ## Checks that the smoke tests compile.
-	go test -c -tags smoke ./test/smoke && rm smoke.test
+	@go test -c -o /dev/null -tags smoke ./test/smoke && echo Smoke tests compiled.
 
 .PHONY: test-smoke
 test-smoke: test-smoke-compiles $(SMOKE_TEST_BINARY) $(SMOKE_TEST_LATEST_LINK) setup-containers
