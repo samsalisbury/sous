@@ -108,6 +108,10 @@ func (h *GETSingleDeploymentHandler) Exchange() (interface{}, int) {
 		return h.err(404, "Manifest %q has no deployment for cluster %q.", m.ID(), did.Cluster)
 	}
 
+	if dep.NumInstances == 0 {
+		return h.err(400, "Cannot deploy, current num instances set to zero, please update manifest.")
+	}
+
 	h.Body.Deployment = &dep
 
 	return h.ok(200, nil)
