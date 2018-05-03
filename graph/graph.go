@@ -525,7 +525,11 @@ func newRegistrar(db *docker.Builder) sous.Registrar {
 	return db
 }
 
-func newRegistry(graph *SousGraph, nc lazyNameCache, dryrun DryrunOption) (sous.Registry, error) {
+func newRegistry(graph *SousGraph, nc lazyNameCache, dryrun DryrunOption, c LocalSousConfig) (sous.Registry, error) {
+	if c.Server != "" {
+		// We only need a real registry when running in server mode.
+		return nil, nil
+	}
 	if dryrun == DryrunBoth || dryrun == DryrunRegistry {
 		return sous.NewDummyRegistry(), nil
 	}
@@ -533,6 +537,10 @@ func newRegistry(graph *SousGraph, nc lazyNameCache, dryrun DryrunOption) (sous.
 }
 
 func newDeployer(dryrun DryrunOption, nc lazyNameCache, ls LogSink, c LocalSousConfig) (sous.Deployer, error) {
+	if c.Server != "" {
+		// We only need a real deployer when running in server mode.
+		return nil, nil
+	}
 	// Eventually, based on configuration, we may make different decisions here.
 	if dryrun == DryrunBoth || dryrun == DryrunScheduler {
 		drc := sous.NewDummyRectificationClient()
@@ -544,12 +552,12 @@ func newDeployer(dryrun DryrunOption, nc lazyNameCache, ls LogSink, c LocalSousC
 		), nil
 	}
 	// We need the real name cache.
-	nameCache, err := nc()
+	labeller, err := nc()
 	if err != nil {
 		return nil, err
 	}
 	return singularity.NewDeployer(
-		singularity.NewRectiAgent(nameCache),
+		singularity.NewRectiAgent(labeller),
 		ls,
 		singularity.OptMaxHTTPReqsPerServer(c.MaxHTTPConcurrencySingularity),
 	), nil
