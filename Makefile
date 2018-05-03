@@ -15,7 +15,6 @@ LIQUIBASE_SHARED_FLAGS = --changeLogFile=database/changelog.xml --defaultsFile=.
 LIQUIBASE_FLAGS := --url $(LIQUIBASE_SERVER)/$(DB_NAME) $(LIQUIBASE_SHARED_FLAGS)
 LIQUIBASE_TEST_FLAGS := --url $(LIQUIBASE_SERVER)/$(TEST_DB_NAME) $(LIQUIBASE_SHARED_FLAGS)
 
-SQLITE_URL := https://sqlite.org/2017/sqlite-autoconf-3160200.tar.gz
 GO_VERSION := 1.10
 DESCRIPTION := "Sous is a tool for building, testing, and deploying applications, using Docker, Mesos, and Singularity."
 URL := https://github.com/opentable/sous
@@ -83,7 +82,7 @@ LINUX_RELEASE_DIR := sous-linux-amd64_$(SOUS_VERSION)
 RELEASE_DIRS := $(DARWIN_RELEASE_DIR) $(LINUX_RELEASE_DIR)
 DARWIN_TARBALL := $(DARWIN_RELEASE_DIR).tar.gz
 LINUX_TARBALL := $(LINUX_RELEASE_DIR).tar.gz
-CONCAT_XGO_ARGS := -go $(GO_VERSION) -branch master -deps $(SQLITE_URL) --dest $(BIN_DIR) --ldflags $(FLAGS)
+CONCAT_XGO_ARGS := -go $(GO_VERSION) -branch master --dest $(BIN_DIR) --ldflags $(FLAGS)
 COVER_DIR := /tmp/sous-cover
 TEST_VERBOSE := $(if $(VERBOSE),-v,)
 TEST_TEAMCITY := $(if $(TEAMCITY),| ./dev_support/gotest-to-teamcity)

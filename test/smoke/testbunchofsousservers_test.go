@@ -98,7 +98,6 @@ func (c *TestBunchOfSousServers) Configure(envDesc desc.EnvDesc) error {
 			SiblingURLs:   siblingURLs,
 			Docker: docker.Config{
 				RegistryHost: envDesc.RegistryName(),
-				//DatabaseDriver:     "sqlite3_sous" + i.ClusterName,
 				//DatabaseConnection: "file:dummy_" + i.ClusterName + ".db?mode=memory&cache=shared",
 			},
 			User: sous.User{
