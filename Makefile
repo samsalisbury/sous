@@ -163,9 +163,9 @@ clean-running-containers:
 
 .PHONY: stop-qa-env
 stop-qa-env: ## Stops and removes all docker-compose containers.
-	# Redirect output to /dev/null because if gives confusing output when nothing to do.
+	@echo Stopping QA environment... # Redirect output to /dev/null because it gives confusing output when nothing to do.
 	@cd integration/test-registry && docker-compose rm -sf >/dev/null 2>&1 || { echo Failed to stop containers; exit 1; }
-	[ -f "$(QA_DESC)" ] && { rm -f $(QA_DESC); }
+	@if [ -f "$(QA_DESC)" ]; then rm -f $(QA_DESC); fi
 
 gitlog:
 	git log `git describe --abbrev=0`..HEAD
