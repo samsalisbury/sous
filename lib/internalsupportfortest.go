@@ -26,6 +26,7 @@ func SetupDB(t *testing.T, optidx ...int) *sql.DB {
 	return db
 }
 
+// DBNameForTest returns a database name based on the test name.
 func DBNameForTest(t *testing.T, optidx ...int) string {
 	t.Helper()
 	return "sous_test_" + dbNameRoot(t, optidx...)
@@ -43,6 +44,7 @@ func ReleaseDB(t *testing.T, optidx ...int) {
 func dbNameRoot(t *testing.T, optidx ...int) string {
 	name := strings.Replace(strings.ToLower(t.Name()), "test", "", -1)
 	name = strings.Replace(name, "/", "_", -1)
+	name = strings.Replace(name, "-", "_", -1)
 	if len(optidx) > 0 {
 		return fmt.Sprintf("%s_%d", name, optidx[0])
 	}
