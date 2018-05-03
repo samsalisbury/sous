@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface
 
+## [Unreleased](//github.com/opentable/sous/compare/0.5.91...HEAD)
+* Server: Postgres is now required for the server to operate.
+* Both: SQLite is removed as a dependency of Sous.
+
 ## [0.5.91](//github.com/opentable/sous/compare/0.5.88...0.5.91)
 ### Added
 * Client: Added a footer after command execution that if present, will display the request id that
