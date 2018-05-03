@@ -15,9 +15,9 @@ import (
 // existence of a properly migrated 'sous_test_template' directory. Each test
 // should provide a unique name for its DB instance so that they'll be
 // independent.
-func SetupDB(t *testing.T) *sql.DB {
+func SetupDB(t *testing.T, optidx ...int) *sql.DB {
 	t.Helper()
-	name := strings.Replace(strings.ToLower(t.Name()), "test", "", -1)
+	name := dbNameRoot(t, optidx...)
 	t.Logf("Creating DB for %s called sous_test_%s", t.Name(), name)
 	db, err := setupDBErr(name)
 	if err != nil {
@@ -26,14 +26,26 @@ func SetupDB(t *testing.T) *sql.DB {
 	return db
 }
 
+func DBNameForTest(t *testing.T, optidx ...int) string {
+	t.Helper()
+	return "sous_test_" + dbNameRoot(t, optidx...)
+}
+
 // ReleaseDB should be called in any test that called SetupDB (even indirectly)
-func ReleaseDB(t *testing.T) {
-	name := strings.Replace(strings.ToLower(t.Name()), "test", "", -1)
-	dbName := "sous_test_" + name
-	if db, has := dbconns[dbName]; has {
+func ReleaseDB(t *testing.T, optidx ...int) {
+	name := dbNameRoot(t, optidx...)
+	if db, has := dbconns[name]; has {
 		db.Close() //ignoring error
-		delete(dbconns, dbName)
+		delete(dbconns, name)
 	}
+}
+
+func dbNameRoot(t *testing.T, optidx ...int) string {
+	name := strings.Replace(strings.ToLower(t.Name()), "test", "", -1)
+	if len(optidx) > 0 {
+		return fmt.Sprintf("%s_%d", name, optidx[0])
+	}
+	return name
 }
 
 var dbconns = map[string]*sql.DB{}
@@ -90,7 +102,7 @@ func setupDBErr(name string) (*sql.DB, error) {
 	if err := db.Ping(); err != nil {
 		return nil, fmt.Errorf("checking connection to DB at %q: %v", connstr, err)
 	}
-	dbconns[dbName] = db
+	dbconns[name] = db
 
 	return db, nil
 }

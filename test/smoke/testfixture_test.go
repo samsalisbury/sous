@@ -74,7 +74,7 @@ func newTestFixture(t *testing.T, nextAddr func() string) TestFixture {
 		t.Fatalf("setting up test cluster: %s", err)
 	}
 
-	if err := c.Configure(envDesc); err != nil {
+	if err := c.Configure(t, envDesc); err != nil {
 		t.Fatalf("configuring test cluster: %s", err)
 	}
 
