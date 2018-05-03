@@ -206,7 +206,7 @@ func (c *TestClient) Run(t *testing.T, subcmd string, f *sousFlags, args ...stri
 	fmt.Fprintf(os.Stderr, "==> %s", prettyCmd)
 	relPath := mustGetRelPath(t, c.BaseDir, cmd.Dir)
 	fmt.Fprintf(allFiles, "%s %s", relPath, prettyCmd)
-	err := runWithTimeout(cmd, cancel, 2*time.Minute)
+	err := runWithTimeout(cmd, cancel, 3*time.Minute)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 	}
