@@ -63,7 +63,7 @@ func transformEachDeployment(m sous.Manifest, f func(sous.DeploySpec) sous.Deplo
 func setupProject(t *testing.T, f TestFixture, dockerfile string) *TestClient {
 	t.Helper()
 	// Setup project git repo.
-	projectDir := makeGitRepo(t, f.BaseDir, "projects/project1", GitRepoSpec{
+	projectDir := makeGitRepo(t, f.Client.BaseDir, "projects/project1", GitRepoSpec{
 		UserName:  "Sous User 1",
 		UserEmail: "sous-user1@example.com",
 		OriginURL: "git@github.com:user1/repo1.git",

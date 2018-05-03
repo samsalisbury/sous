@@ -21,11 +21,12 @@ type Instance struct {
 	ClusterName         string
 	Proc                *os.Process
 	LogDir              string
-	Num                 int
+	// Num is the instance number for display purposes.
+	Num int
 }
 
 func makeInstance(t *testing.T, i int, clusterName, baseDir, addr string) (*Instance, error) {
-	baseDir = path.Join(baseDir, fmt.Sprintf("instance%d", i))
+	baseDir = path.Join(baseDir, fmt.Sprintf("instance%d", i+1))
 	stateDir := path.Join(baseDir, "state")
 	configDir := path.Join(baseDir, "config")
 	logDir := path.Join(baseDir, "logs")
@@ -36,7 +37,7 @@ func makeInstance(t *testing.T, i int, clusterName, baseDir, addr string) (*Inst
 		StateDir:    stateDir,
 		ConfigDir:   configDir,
 		LogDir:      logDir,
-		Num:         i,
+		Num:         i + 1,
 	}, nil
 }
 

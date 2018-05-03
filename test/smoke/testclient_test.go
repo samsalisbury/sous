@@ -150,7 +150,7 @@ func (c *TestClient) Run(t *testing.T, subcmd string, f *sousFlags, args ...stri
 	t.Helper()
 	cmd, cancel := c.Cmd(t, subcmd, f, args...)
 	defer cancel()
-	stdout, stderr := prefixWithTestName(t, "client")
+	stdout, stderr := prefixWithTestName(t, "client1")
 	fmt.Fprintf(stderr, "SOUS_CONFIG_DIR = %q\n", c.ConfigDir)
 	fmt.Fprintf(stdout, "running sous in %q: %s\n", c.Dir, args)
 	args = quotedArgs(args)
