@@ -5,24 +5,24 @@ package smoke
 import (
 	"testing"
 
-	"github.com/opentable/go-singularity/dtos"
 	sous "github.com/opentable/sous/lib"
 )
 
-const simpleServer = `
+// Define some Dockerfiles for use in tests.
+const (
+	simpleServer = `
 FROM alpine
 CMD if [ -z "$T" ]; then T=2; fi; echo -n "Sleeping ${T}s..."; sleep $T; echo "Done"; echo "Listening on :$PORT0"; while true; do echo -e "HTTP/1.1 200 OK\n\n$(date)" | nc -l -p $PORT0; done
 `
-
-const sleeper = `
+	sleeper = `
 FROM alpine
 CMD echo -n Sleeping for 10s...; sleep 10; echo Done
 `
-
-const failer = `
+	failer = `
 FROM alpine
 CMD echo -n Failing in 10s...; sleep 10; echo Failed; exit 1
 `
+)
 
 // setupProject creates a brand new git repo containing the provided Dockerfile,
 // commits that Dockerfile, runs 'sous version' and 'sous config', and returns a
@@ -50,15 +50,6 @@ func setupProject(t *testing.T, f TestFixture, dockerfile string) *TestClient {
 	client.MustRun(t, "config", nil)
 
 	return client
-}
-
-func assertActiveStatus(t *testing.T, f TestFixture, did sous.DeploymentID) {
-	req := f.Singularity.GetRequestForDeployment(t, did)
-	gotStatus := req.State
-	wantStatus := dtos.SingularityRequestParentRequestStateACTIVE
-	if gotStatus != wantStatus {
-		t.Fatalf("got status %v; want %v", gotStatus, wantStatus)
-	}
 }
 
 func TestSousDeploy(t *testing.T) {
@@ -243,42 +234,4 @@ func TestSousDeploy(t *testing.T) {
 	t.Run("PrintSummary", func(t *testing.T) {
 		pf.PrintSummary(t)
 	})
-}
-
-func assertSingularityRequestTypeScheduled(t *testing.T, f TestFixture, did sous.DeploymentID) {
-	t.Helper()
-	req := f.Singularity.GetRequestForDeployment(t, did)
-	gotType := req.Request.RequestType
-	wantType := dtos.SingularityRequestRequestTypeSCHEDULED
-	if gotType != wantType {
-		t.Errorf("got request type %v; want %v", gotType, wantType)
-	}
-}
-
-func assertSingularityRequestTypeService(t *testing.T, f TestFixture, did sous.DeploymentID) {
-	t.Helper()
-	req := f.Singularity.GetRequestForDeployment(t, did)
-	gotType := req.Request.RequestType
-	wantType := dtos.SingularityRequestRequestTypeSERVICE
-	if gotType != wantType {
-		t.Errorf("got request type %v; want %v", gotType, wantType)
-	}
-}
-
-func assertNilHealthCheckOnLatestDeploy(t *testing.T, f TestFixture, did sous.DeploymentID) {
-	t.Helper()
-	dep := f.Singularity.GetLatestDeployForDeployment(t, did)
-	gotHealthcheck := dep.Deploy.Healthcheck
-	if gotHealthcheck != nil {
-		t.Fatalf("got Healthcheck = %v; want nil", gotHealthcheck)
-	}
-}
-
-func assertNonNilHealthCheckOnLatestDeploy(t *testing.T, f TestFixture, did sous.DeploymentID) {
-	t.Helper()
-	dep := f.Singularity.GetLatestDeployForDeployment(t, did)
-	gotHealthcheck := dep.Deploy.Healthcheck
-	if gotHealthcheck == nil {
-		t.Fatalf("got nil Healthcheck")
-	}
 }
