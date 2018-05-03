@@ -21,6 +21,7 @@ type Instance struct {
 	ClusterName         string
 	Proc                *os.Process
 	LogDir              string
+	Num                 int
 }
 
 func makeInstance(t *testing.T, i int, clusterName, baseDir, addr string) (*Instance, error) {
@@ -35,6 +36,7 @@ func makeInstance(t *testing.T, i int, clusterName, baseDir, addr string) (*Inst
 		StateDir:    stateDir,
 		ConfigDir:   configDir,
 		LogDir:      logDir,
+		Num:         i,
 	}, nil
 }
 
@@ -78,21 +80,23 @@ func (i *Instance) RunCmd(t *testing.T, binPath string, args ...string) (*exec.C
 	cmd := exec.Command(binPath, args...)
 	cmd.Env = os.Environ()
 	cmd.Env = append(cmd.Env, fmt.Sprintf("SOUS_CONFIG_DIR=%s", i.ConfigDir))
-	stderr, err := os.Create(path.Join(i.LogDir, "stderr"))
+	stderrFile, err := os.Create(path.Join(i.LogDir, "stderr"))
 	if err != nil {
 		return cmd, err
 	}
-	stdout, err := os.Create(path.Join(i.LogDir, "stdout"))
+	stdoutFile, err := os.Create(path.Join(i.LogDir, "stdout"))
 	if err != nil {
 		return cmd, err
 	}
-	combined, err := os.Create(path.Join(i.LogDir, "combined"))
+	combinedFile, err := os.Create(path.Join(i.LogDir, "combined"))
 	if err != nil {
 		return cmd, err
 	}
 
-	cmd.Stdout = io.MultiWriter(stdout, combined, os.Stdout)
-	cmd.Stderr = io.MultiWriter(stderr, combined, os.Stderr)
+	stdout, stderr := prefixWithTestName(t, fmt.Sprintf("instance%d", i.Num))
+
+	cmd.Stdout = io.MultiWriter(stdout, stdoutFile, combinedFile)
+	cmd.Stderr = io.MultiWriter(stderr, stderrFile, combinedFile)
 
 	return cmd, cmd.Start()
 }

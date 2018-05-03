@@ -4,6 +4,7 @@ package smoke
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -13,6 +14,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/ext/docker"
@@ -98,12 +100,12 @@ func insertClusterSuffix(args []string, suffix string) []string {
 	return args
 }
 
-func (c *TestClient) Cmd(t *testing.T, subcmd string, f *sousFlags, args ...string) *exec.Cmd {
+func (c *TestClient) Cmd(t *testing.T, subcmd string, f *sousFlags, args ...string) (*exec.Cmd, context.CancelFunc) {
 	t.Helper()
 	args = insertClusterSuffix(args, c.ClusterSuffix)
-	cmd := mkCMD(c.Dir, c.BinPath, allArgs(subcmd, f, args)...)
+	cmd, cancel := mkCMD(c.Dir, c.BinPath, allArgs(subcmd, f, args)...)
 	cmd.Env = append(cmd.Env, fmt.Sprintf("SOUS_CONFIG_DIR=%s", c.ConfigDir))
-	return cmd
+	return cmd, cancel
 }
 
 // Add quotes to args with spaces for printing.
@@ -146,8 +148,9 @@ func newExecutedCMD(subcmd string, args []string) *ExecutedCMD {
 
 func (c *TestClient) Run(t *testing.T, subcmd string, f *sousFlags, args ...string) (*ExecutedCMD, error) {
 	t.Helper()
-	cmd := c.Cmd(t, subcmd, f, args...)
-	stdout, stderr := prefixWithTestName(t)
+	cmd, cancel := c.Cmd(t, subcmd, f, args...)
+	defer cancel()
+	stdout, stderr := prefixWithTestName(t, "client")
 	fmt.Fprintf(stderr, "SOUS_CONFIG_DIR = %q\n", c.ConfigDir)
 	fmt.Fprintf(stdout, "running sous in %q: %s\n", c.Dir, args)
 	args = quotedArgs(args)
@@ -166,16 +169,36 @@ func (c *TestClient) Run(t *testing.T, subcmd string, f *sousFlags, args ...stri
 	cmd.Stderr = io.MultiWriter(stderr, errFile, combinedFile, executed.Stderr, executed.Combined)
 	prettyCmd := fmt.Sprintf("$ sous %s\n", strings.Join(allArgs(subcmd, f, args), " "))
 	fmt.Fprintf(os.Stderr, "==> %s", prettyCmd)
-	relPath, err := filepath.Rel(c.BaseDir, cmd.Dir)
-	if err != nil {
-		t.Fatalf("getting relative dir: %s", err)
-	}
-	fmt.Fprintf(allFiles, "%s %s", relPath, prettyCmd)
-	err = cmd.Run()
+	relPath := mustGetRelPath(t, c.BaseDir, cmd.Dir)
+	fmt.Fprintf(allFiles, "%s $ %s", relPath, prettyCmd)
+	err := runWithTimeout(cmd, cancel, 2*time.Minute)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 	}
 	return executed, err
+}
+
+func runWithTimeout(cmd *exec.Cmd, cancel context.CancelFunc, timeout time.Duration) error {
+	defer cancel()
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- cmd.Run()
+	}()
+	go func() {
+		<-time.After(timeout)
+		errCh <- fmt.Errorf("command timed out after %s:\nsous %s", timeout,
+			quotedArgsString(cmd.Args))
+	}()
+	return <-errCh
+}
+
+func mustGetRelPath(t *testing.T, base, target string) string {
+	t.Helper()
+	relPath, err := filepath.Rel(base, target)
+	if err != nil {
+		t.Fatalf("getting relative dir: %s", err)
+	}
+	return relPath
 }
 
 // MustRun fails the test if the command fails; else returns the stdout from the command.
@@ -204,7 +227,8 @@ func (c *TestClient) MustFail(t *testing.T, subcmd string, f *sousFlags, args ..
 func (c *TestClient) TransformManifestAsString(t *testing.T, getSetFlags *sousFlags, f func(manifest string) string) {
 	manifest := c.MustRun(t, "manifest get", getSetFlags)
 	manifest = f(manifest)
-	manifestSetCmd := c.Cmd(t, "manifest set", getSetFlags)
+	manifestSetCmd, cancel := c.Cmd(t, "manifest set", getSetFlags)
+	defer cancel()
 	manifestSetCmd.Stdin = ioutil.NopCloser(bytes.NewReader([]byte(manifest)))
 	if out, err := manifestSetCmd.CombinedOutput(); err != nil {
 		t.Fatalf("manifest set failed: %s; output:\n%s", err, out)
@@ -223,7 +247,8 @@ func (c *TestClient) TransformManifest(t *testing.T, getSetFlags *sousFlags, f f
 	if err != nil {
 		t.Fatalf("failed to marshal updated manifest: %s\nInvalid manifest was:\n% #v", err, m)
 	}
-	manifestSetCmd := c.Cmd(t, "manifest set", getSetFlags)
+	manifestSetCmd, cancel := c.Cmd(t, "manifest set", getSetFlags)
+	defer cancel()
 	manifestSetCmd.Stdin = ioutil.NopCloser(bytes.NewReader(manifestBytes))
 	if out, err := manifestSetCmd.CombinedOutput(); err != nil {
 		t.Fatalf("manifest set failed: %s; output:\n%s", err, out)
