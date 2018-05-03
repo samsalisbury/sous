@@ -42,6 +42,7 @@ func ReleaseDB(t *testing.T, optidx ...int) {
 
 func dbNameRoot(t *testing.T, optidx ...int) string {
 	name := strings.Replace(strings.ToLower(t.Name()), "test", "", -1)
+	name = strings.Replace(name, "/", "_", -1)
 	if len(optidx) > 0 {
 		return fmt.Sprintf("%s_%d", name, optidx[0])
 	}
@@ -72,7 +73,11 @@ func getAdminConn() (*sql.DB, error) {
 	return adminConn, err
 }
 
+var dbsetupMutex = sync.Mutex{}
+
 func setupDBErr(name string) (*sql.DB, error) {
+	dbsetupMutex.Lock()
+	defer dbsetupMutex.Unlock()
 	port := "6543"
 	if np, set := os.LookupEnv("PGPORT"); set {
 		port = np
