@@ -55,7 +55,7 @@ func newTargetDeploymentID(rrf *RefinedResolveFilter) (TargetDeploymentID, error
 	}
 	cluster, err := rrf.Cluster.Value()
 	if err != nil {
-		return TargetDeploymentID{}, fmt.Errorf("cluster: %s", err)
+		return TargetDeploymentID{}, fmt.Errorf("Setting up target deployment: cluster: %s", err)
 	}
 
 	return TargetDeploymentID{

@@ -510,7 +510,7 @@ func newSelector(regClient LocalDockerClient, log LogSink) sous.Selector {
 	return docker.NewBuildStrategySelector(log.Child("docker-build-strategy"), regClient)
 }
 
-func newDockerBuilder(cfg LocalSousConfig, nc *docker.NameCache, ctx *sous.SourceContext, source LocalWorkDirShell, scratch ScratchDirShell) (*docker.Builder, error) {
+func newDockerBuilder(cfg LocalSousConfig, nc sous.Inserter, ctx *sous.SourceContext, source LocalWorkDirShell, scratch ScratchDirShell) (*docker.Builder, error) {
 	drh := cfg.Docker.RegistryHost
 	source.Sh = source.Sh.Clone().(*shell.Sh)
 	source.Sh.LongRunning(true)
@@ -595,7 +595,7 @@ func newHTTPClientBundle(serverList ServerListData, tid sous.TraceID, log LogSin
 func newClusterSpecificHTTPClient(clients ClientBundle, rf *sous.ResolveFilter, log LogSink) (*ClusterSpecificHTTPClient, error) {
 	cluster, err := rf.Cluster.Value()
 	if err != nil {
-		return nil, fmt.Errorf("cluster: %s", err) // errors.Wrapf && cli don't play nice
+		return nil, fmt.Errorf("Setting up HTTP client: cluster: %s", err) // errors.Wrapf && cli don't play nice
 	}
 
 	cl, has := clients[cluster]
@@ -644,7 +644,7 @@ func newServerStateManager(c LocalSousConfig, mdb MaybeDatabase, rf *sous.Resolv
 func newDistributedStorage(db *sql.DB, c LocalSousConfig, rf *sous.ResolveFilter, log LogSink) (sous.StateManager, error) {
 	localName, err := rf.Cluster.Value()
 	if err != nil {
-		return nil, fmt.Errorf("cluster: %s", err) // errors.Wrapf && cli don't play nice
+		return nil, fmt.Errorf("Setting up distributed storage: cluster: %s", err) // errors.Wrapf && cli don't play nice
 	}
 
 	local := storage.NewPostgresStateManager(db, log.Child("database"))
@@ -722,11 +722,12 @@ func NewCurrentGDM(state *sous.State) (CurrentGDM, error) {
 // The funcs named makeXXX below are used to create specific implementations of
 // sous native types.
 
-func newInserter(cfg LocalSousConfig, nc lazyNameCache) (sous.Inserter, error) {
+func newInserter(cfg LocalSousConfig, nc lazyNameCache, tid sous.TraceID, log LogSink) (sous.Inserter, error) {
 	if cfg.Server == "" {
 		return nc()
 	}
-	return sous.NewHTTPNameInserter(cfg.Server)
+	cl, err := restful.NewClient(cfg.Server, log.Child("http-client"), map[string]string{"OT-RequestId": string(tid)})
+	return sous.NewHTTPNameInserter(cl, tid, log.LogSink), err
 }
 
 // initErr returns nil if error is nil, otherwise an initialisation error.
