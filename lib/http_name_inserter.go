@@ -20,7 +20,7 @@ func NewHTTPNameInserter(server string) (*HTTPNameInserter, error) {
 	u, err := url.Parse(server)
 	return &HTTPNameInserter{
 		serverURL: u,
-	}, errors.Wrapf(err, "new state manager")
+	}, errors.Wrapf(err, "new artifact name inserter")
 }
 
 // Insert implements Inserter for HTTPNameInserter

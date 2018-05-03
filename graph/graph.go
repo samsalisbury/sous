@@ -526,23 +526,16 @@ func newRegistrar(db *docker.Builder) sous.Registrar {
 }
 
 func newRegistry(graph *SousGraph, nc lazyNameCache, dryrun DryrunOption, c LocalSousConfig) (sous.Registry, error) {
-	if c.Server != "" {
-		// We only need a real registry when running in server mode.
-		return nil, nil
+	// We only need a real registry when running in server or workstation mode.
+	if c.Server == "" && dryrun != DryrunBoth && dryrun != DryrunRegistry {
+		return nc()
 	}
-	if dryrun == DryrunBoth || dryrun == DryrunRegistry {
-		return sous.NewDummyRegistry(), nil
-	}
-	return nc()
+	return sous.NewDummyRegistry(), nil
 }
 
 func newDeployer(dryrun DryrunOption, nc lazyNameCache, ls LogSink, c LocalSousConfig) (sous.Deployer, error) {
-	if c.Server != "" {
-		// We only need a real deployer when running in server mode.
-		return nil, nil
-	}
 	// Eventually, based on configuration, we may make different decisions here.
-	if dryrun == DryrunBoth || dryrun == DryrunScheduler {
+	if dryrun == DryrunBoth || dryrun == DryrunScheduler || c.Server != "" {
 		drc := sous.NewDummyRectificationClient()
 		drc.SetLogger(ls.Child("rectify"))
 		return singularity.NewDeployer(
