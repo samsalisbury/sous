@@ -85,6 +85,7 @@ func (d *DockerfileBuildpack) Build(c *sous.BuildContext) (*sous.BuildResult, er
 	}
 
 	cmd := []interface{}{"build", "--pull"}
+
 	r := dr.Data.(detectData)
 	if r.HasAppVersionArg {
 		v := c.Version().Version

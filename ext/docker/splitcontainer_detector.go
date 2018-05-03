@@ -9,6 +9,7 @@ import (
 	"github.com/opentable/sous/util/docker_registry"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/logging/messages"
+	"github.com/opentable/sous/util/shell"
 )
 
 type splitDetector struct {
@@ -52,7 +53,9 @@ func (sd *splitDetector) fetchFromRunSpec() error {
 		md, err := sd.registry.GetImageMetadata(f.Value, "")
 		if err != nil {
 			messages.ReportLogFieldsMessage("Error fetching", logging.DebugLevel, logging.Log, f.Value, err)
-			continue
+			if err != nil {
+				continue
+			}
 		}
 
 		if path, ok := md.Env[SOUS_RUN_IMAGE_SPEC]; ok {
@@ -91,4 +94,55 @@ func (sd *splitDetector) result() *sous.DetectResult {
 		}}
 	}
 	return &sous.DetectResult{Compatible: false}
+}
+
+func (sd *splitDetector) checkLocalImage(ctx *sous.BuildContext) error {
+	if sd.runspecPath == "" {
+		for _, f := range sd.froms {
+			imageName := f.Value
+			imageEnv := inspectImage(ctx.Sh, imageName)
+			envs := parseImageOutput(imageEnv)
+			sd.runspecPath = envs[SOUS_RUN_IMAGE_SPEC]
+		}
+	}
+	return nil
+}
+
+func inspectImage(sh shell.Shell, imageName string) string {
+	cmd := []interface{}{"image", "inspect", "--format={{printf \"%q %q\" .Config.OnBuild .Config.Env}}", imageName}
+	//docker image inspect docker.otenv.com/sous-otj-autobuild:local
+	result, err := sh.Cmd("docker", cmd...).SucceedResult()
+	if err != nil {
+		return ""
+	}
+	return result.Stdout.String()
+}
+
+func parseImageOutput(input string) map[string]string {
+	envs := make(map[string]string)
+	input = strings.Replace(input, "[", "", -1)
+	input = strings.Replace(input, "]", "", -1)
+	elementSlice := strings.Split(input, "\" \"")
+	for _, env := range elementSlice {
+		if strings.Index(env, "ENV") >= 0 {
+			//remove env
+			env = strings.Replace(env, "ENV", "", 1)
+
+		}
+		env = strings.Trim(env, "\" ")
+		envSplit := strings.Split(env, "=")
+		if len(envSplit) == 2 {
+			key := envSplit[0]
+			val := envSplit[1]
+			envs[key] = val
+		} else {
+			envSplit := strings.Split(env, " ")
+			if len(envSplit) == 2 {
+				key := envSplit[0]
+				val := envSplit[1]
+				envs[key] = val
+			}
+		}
+	}
+	return envs
 }
