@@ -8,7 +8,6 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
-	"time"
 )
 
 // PTFOpts are options for a ParallelTestFixture.
@@ -83,15 +82,5 @@ func (pf *ParallelTestFixture) PrintSummary(t *testing.T) {
 func (pf *ParallelTestFixture) NewIsolatedFixture(t *testing.T) TestFixture {
 	t.Helper()
 	pf.recordTestStarted(t)
-	timeout := time.Minute
-	f := newTestFixture(t, pf, pf.NextAddr)
-	go func() {
-		<-time.After(timeout)
-		pf.testNamesPassedMu.Lock()
-		defer pf.testNamesPassedMu.Unlock()
-		if _, ok := pf.testNamesPassed[t.Name()]; !ok {
-			t.Fatalf("Timed out after %s", timeout)
-		}
-	}()
-	return f
+	return newTestFixture(t, pf, pf.NextAddr)
 }
