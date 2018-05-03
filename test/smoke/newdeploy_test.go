@@ -59,6 +59,7 @@ func TestSousDeploy(t *testing.T) {
 	})
 
 	for _, deployCommand := range []string{"newdeploy", "deploy"} {
+		deployCommand := deployCommand
 		t.Run(deployCommand, func(t *testing.T) {
 			t.Parallel()
 
@@ -228,10 +229,5 @@ func TestSousDeploy(t *testing.T) {
 		})
 	}
 
-	// This test is not parallel so it runs after all the others
-	// have completed, printing the summary as the last line of
-	// output.
-	t.Run("PrintSummary", func(t *testing.T) {
-		pf.PrintSummary(t)
-	})
+	pf.PrintSummary(t)
 }
