@@ -53,18 +53,18 @@ func (hni *HTTPNameInserter) Insert(sid SourceID, in, etag string, qs []Quality)
 	}
 
 	wg := sync.WaitGroup{}
-	errs := make(chan error)
+	errs := make(chan error, len(hni.clients))
 	for _, cl := range hni.clients {
 		wg.Add(1)
 		go func(client restful.HTTPClient) {
 			defer wg.Done()
 			art := &BuildArtifact{Name: in, Type: "docker", Qualities: qs}
-			_, err := client.Create("./artifacts", simplifyQV(sid.QueryValues()), art, nil)
+			_, err := client.Create("./artifact", simplifyQV(sid.QueryValues()), art, nil)
 			errs <- err
 		}(cl)
 	}
 
-	wg.Done()
+	wg.Wait()
 	select {
 	default:
 		return nil
