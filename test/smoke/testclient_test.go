@@ -170,7 +170,7 @@ func (c *TestClient) Run(t *testing.T, subcmd string, f *sousFlags, args ...stri
 	prettyCmd := fmt.Sprintf("$ sous %s\n", strings.Join(allArgs(subcmd, f, args), " "))
 	fmt.Fprintf(os.Stderr, "==> %s", prettyCmd)
 	relPath := mustGetRelPath(t, c.BaseDir, cmd.Dir)
-	fmt.Fprintf(allFiles, "%s $ %s", relPath, prettyCmd)
+	fmt.Fprintf(allFiles, "%s %s", relPath, prettyCmd)
 	err := runWithTimeout(cmd, cancel, 2*time.Minute)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -187,7 +187,7 @@ func runWithTimeout(cmd *exec.Cmd, cancel context.CancelFunc, timeout time.Durat
 	go func() {
 		<-time.After(timeout)
 		errCh <- fmt.Errorf("command timed out after %s:\nsous %s", timeout,
-			quotedArgsString(cmd.Args))
+			quotedArgsString(cmd.Args[1:]))
 	}()
 	return <-errCh
 }
