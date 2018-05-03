@@ -8,12 +8,17 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 
 	ps "github.com/mitchellh/go-ps"
 )
 
+var pidMutex sync.Mutex
+
 func writePID(t *testing.T, pid int) {
+	pidMutex.Lock()
+	defer pidMutex.Unlock()
 	psProc, err := ps.FindProcess(pid)
 	if err != nil {
 		t.Fatalf("cannot inspect proc %d: %s", pid, err)
@@ -50,6 +55,8 @@ func writePID(t *testing.T, pid int) {
 }
 
 func stopPIDs(t *testing.T) {
+	pidMutex.Lock()
+	defer pidMutex.Unlock()
 	t.Helper()
 	d, err := ioutil.ReadFile(pidFile)
 	if err != nil {

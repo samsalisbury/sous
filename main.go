@@ -11,6 +11,7 @@ import (
 	"github.com/opentable/sous/cli"
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
+	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
 )
 
@@ -69,8 +70,18 @@ func action() int {
 		fmt.Fprintln(os.Stderr, err)
 		return InitializationFailedExitCode
 	}
+	scoop := struct {
+		TraceID sous.TraceID
+	}{}
 
-	return c.Invoke(os.Args).ExitCode()
+	result := c.Invoke(os.Args)
+
+	if err := mainGraph.Inject(&scoop); err == nil && scoop.TraceID != "" {
+		returnMsg := fmt.Sprintf("Request ID:\n\t%s", scoop.TraceID)
+		fmt.Fprintln(os.Stderr, returnMsg)
+	}
+
+	return result.ExitCode()
 }
 
 func cleanUpLogging(mainGraph *graph.SousGraph, preParseLogSet *logging.LogSet) {

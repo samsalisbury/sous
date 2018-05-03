@@ -10,6 +10,7 @@ import (
 type StateFixtureOpts struct {
 	ClusterCount  int
 	ManifestCount int
+	ClusterSuffix string
 }
 
 // DefaultStateFixture provides a dummy state for tests by calling
@@ -47,7 +48,7 @@ func StateFixture(o StateFixtureOpts) *State {
 	c := Clusters{}
 	// For each cluster add it to defs and add a deployment to each manifest.
 	for clusterN := 0; clusterN < o.ClusterCount; clusterN++ {
-		clusterName := fmt.Sprintf("cluster%d", clusterN)
+		clusterName := fmt.Sprintf("cluster%d%s", clusterN, o.ClusterSuffix)
 		c[clusterName] = &Cluster{
 			Name:    clusterName,
 			Kind:    "singularity",

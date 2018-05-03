@@ -305,8 +305,12 @@ $(SMOKE_TEST_DATA_DIR):
 $(SMOKE_TEST_LATEST_LINK): $(SMOKE_TEST_DATA_DIR)
 	ln -sfn $< $@
 
+.PHONY: test-smoke-compiles
+test-smoke-compiles: ## Checks that the smoke tests compile.
+	go test -c -tags smoke ./test/smoke && rm smoke.test
+
 .PHONY: test-smoke
-test-smoke: $(SMOKE_TEST_BINARY) $(SMOKE_TEST_LATEST_LINK) setup-containers
+test-smoke: test-smoke-compiles $(SMOKE_TEST_BINARY) $(SMOKE_TEST_LATEST_LINK) setup-containers
 	SMOKE_TEST_DATA_DIR=$(SMOKE_TEST_DATA_DIR)/data \
 	SMOKE_TEST_BINARY=$(SMOKE_TEST_BINARY) \
 	SOUS_QA_DESC=$(QA_DESC) \

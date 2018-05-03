@@ -53,17 +53,11 @@ func TestManifestSet_ErrorOnSourceLocation(t *testing.T) {
 }
 
 func TestManifestSet(t *testing.T) {
-	project1 := sous.SourceLocation{Repo: "github.com/opentable/project-one"}
-
-	mid := sous.ManifestID{
-		Source: sous.SourceLocation{
-			Repo: project1.Repo,
-		},
-	}
-
 	mani := sous.ManifestFixture("simple")
-
 	mani.Flavor = "vanilla"
+
+	mid := mani.ID()
+
 	yml, err := yaml.Marshal(mani)
 	require.NoError(t, err)
 	in := bytes.NewBuffer(yml)

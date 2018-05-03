@@ -17,6 +17,10 @@ const (
 	-flavor FLAVOR
 		flavor is a short string used to differentiate alternative deployments`
 
+	kindFlagHelp = `
+	-kind KIND
+		kind is mandatory field "http-service" or "scheduled" which represents type of deployment`
+
 	tagFlagHelp = `
 	-tag TAG_NAME
 		source code revision tag`

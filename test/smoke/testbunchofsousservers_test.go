@@ -22,7 +22,7 @@ type TestBunchOfSousServers struct {
 	Instances    []*Instance
 }
 
-func newBunchOfSousServers(t *testing.T, state *sous.State, baseDir string) (*TestBunchOfSousServers, error) {
+func newBunchOfSousServers(t *testing.T, state *sous.State, baseDir string, nextFreeAddr func() string) (*TestBunchOfSousServers, error) {
 	if err := os.MkdirAll(baseDir, 0777); err != nil {
 		return nil, err
 	}
@@ -33,11 +33,10 @@ func newBunchOfSousServers(t *testing.T, state *sous.State, baseDir string) (*Te
 	}
 
 	count := len(state.Defs.Clusters)
-	addrs := freePortAddrs(t, "127.0.0.1", count, 6601, 9000)
 	instances := make([]*Instance, count)
 	for i := 0; i < count; i++ {
 		clusterName := state.Defs.Clusters.Names()[i]
-		inst, err := makeInstance(t, i, clusterName, baseDir, addrs[i])
+		inst, err := makeInstance(t, i, clusterName, baseDir, nextFreeAddr())
 		if err != nil {
 			return nil, errors.Wrapf(err, "making test instance %d", i)
 		}

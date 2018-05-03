@@ -21,6 +21,9 @@ type SousInit struct {
 	State       *sous.State
 	StateWriter graph.StateWriter
 	User        sous.User
+	flags       struct {
+		Kind string
+	}
 }
 
 func init() { TopLevelCommands["init"] = &SousInit{} }
@@ -57,11 +60,35 @@ func (si *SousInit) AddFlags(fs *flag.FlagSet) {
 	MustAddFlags(fs, &si.Flags, OtplFlagsHelp)
 	fs.StringVar(&si.DeployFilterFlags.Flavor, "flavor", "", flavorFlagHelp)
 	fs.StringVar(&si.DeployFilterFlags.Cluster, "cluster", "", clusterFlagHelp)
+	fs.StringVar(&si.flags.Kind, "kind", "", kindFlagHelp)
 	fs.BoolVar(&si.DryRunFlag, "dryrun", false, "print out the created manifest but do not save it")
 }
 
 // Execute fulfills the cmdr.Executor interface
 func (si *SousInit) Execute(args []string) cmdr.Result {
+
+	kind := sous.ManifestKind(si.flags.Kind)
+	var skipHealth bool
+
+	switch kind {
+	default:
+		return cmdr.UsageErrorf("kind not defined, pick one of %s or %s", sous.ManifestKindScheduled, sous.ManifestKindService)
+	case sous.ManifestKindService:
+		skipHealth = false
+	case sous.ManifestKindScheduled, sous.ManifestKindOnDemand:
+		skipHealth = true
+	}
+
+	m := si.Target.Manifest
+	if skipHealth {
+		for k, d := range m.Deployments {
+			// Set the entire 'Startup' so it only has one non-zero field.
+			d.Startup = sous.Startup{
+				SkipCheck: true,
+			}
+			m.Deployments[k] = d
+		}
+	}
 
 	cluster := si.DeployFilterFlags.Cluster
 
@@ -69,11 +96,13 @@ func (si *SousInit) Execute(args []string) cmdr.Result {
 		return cmdr.UsageErrorf("cluster %q not defined, pick one of: %s", cluster, si.State.Defs.Clusters)
 	}
 
-	m := si.Target.Manifest
+	m.Kind = kind
 
 	if cluster != "" {
-		m.Deployments = sous.DeploySpecs{cluster: m.Deployments[cluster]}
+		ds := sous.DeploySpecs{cluster: m.Deployments[cluster]}
+		m.Deployments = ds
 	}
+
 	if si.DryRunFlag {
 		return SuccessYAML(m)
 	}
