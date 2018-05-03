@@ -32,6 +32,41 @@ type TestClient struct {
 	ClusterSuffix string
 }
 
+type sousFlags struct {
+	kind    string
+	flavor  string
+	cluster string
+	repo    string
+	offset  string
+	tag     string
+}
+
+func (f *sousFlags) Args() []string {
+	if f == nil {
+		return nil
+	}
+	var out []string
+	if f.kind != "" {
+		out = append(out, "-kind", f.kind)
+	}
+	if f.flavor != "" {
+		out = append(out, "-flavor", f.flavor)
+	}
+	if f.cluster != "" {
+		out = append(out, "-cluster", f.cluster)
+	}
+	if f.repo != "" {
+		out = append(out, "-repo", f.repo)
+	}
+	if f.offset != "" {
+		out = append(out, "-offset", f.offset)
+	}
+	if f.tag != "" {
+		out = append(out, "-tag", f.tag)
+	}
+	return out
+}
+
 func makeClient(baseDir, sousBin string) *TestClient {
 	baseDir = path.Join(baseDir, "client1")
 	return &TestClient{
