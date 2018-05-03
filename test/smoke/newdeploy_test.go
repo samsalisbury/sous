@@ -94,22 +94,7 @@ func TestSousDeploy(t *testing.T) {
 				client.TransformManifest(t, nil, setMinimalMemAndCPUNumInst0)
 				client.MustRun(t, "build", nil, "-tag", "1.2.3")
 
-				knownToFailHere(t)
-
-				client.MustRun(t, deployCommand, nil, "-cluster", "cluster1", "-tag", "1.2.3")
-
-				did := sous.DeploymentID{
-					ManifestID: sous.ManifestID{
-						Source: sous.SourceLocation{
-							Repo: "github.com/user1/repo1",
-						},
-					},
-					Cluster: "cluster1",
-				}
-
-				assertActiveStatus(t, f, did)
-				assertSingularityRequestTypeService(t, f, did)
-				assertNonNilHealthCheckOnLatestDeploy(t, f, did)
+				client.MustFail(t, deployCommand, nil, "-cluster", "cluster1", "-tag", "1.2.3")
 			})
 
 			t.Run("fails", func(t *testing.T) {
