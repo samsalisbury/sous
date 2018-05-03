@@ -24,39 +24,6 @@ FROM alpine
 CMD echo -n Failing in 10s...; sleep 10; echo Failed; exit 1
 `
 
-func setMemAndCPUForAll(ds sous.DeploySpecs) sous.DeploySpecs {
-	for c := range ds {
-		ds[c].Resources["memory"] = "1"
-		ds[c].Resources["cpus"] = "0.001"
-	}
-	return ds
-}
-
-func setMinimalMemAndCPUNumInst1(m sous.Manifest) sous.Manifest {
-	return transformEachDeployment(m, func(d sous.DeploySpec) sous.DeploySpec {
-		d.Resources["memory"] = "1"
-		d.Resources["cpus"] = "0.001"
-		d.NumInstances = 1
-		return d
-	})
-}
-
-func setMinimalMemAndCPUNumInst0(m sous.Manifest) sous.Manifest {
-	return transformEachDeployment(m, func(d sous.DeploySpec) sous.DeploySpec {
-		d.Resources["memory"] = "1"
-		d.Resources["cpus"] = "0.001"
-		d.NumInstances = 0
-		return d
-	})
-}
-
-func transformEachDeployment(m sous.Manifest, f func(sous.DeploySpec) sous.DeploySpec) sous.Manifest {
-	for c, d := range m.Deployments {
-		m.Deployments[c] = f(d)
-	}
-	return m
-}
-
 // setupProject creates a brand new git repo containing the provided Dockerfile,
 // commits that Dockerfile, runs 'sous version' and 'sous config', and returns a
 // sous TestClient in the project directory.
