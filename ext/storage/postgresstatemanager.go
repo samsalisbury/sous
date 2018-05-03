@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/davecgh/go-spew/spew"
 	_ "github.com/lib/pq" // need to load the postgres driver
 	"github.com/opentable/sous/util/logging"
 )
@@ -64,7 +63,6 @@ func (c PostgresConfig) connStr() string {
 // DB returns a database connection based on this config
 func (c PostgresConfig) DB() (*sql.DB, error) {
 	str := c.connStr()
-	spew.Dump(str)
 	db, err := sql.Open("postgres", str)
 	if err != nil {
 		return nil, err
