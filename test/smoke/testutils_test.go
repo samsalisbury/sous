@@ -4,6 +4,7 @@ package smoke
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -212,7 +213,8 @@ func mustDoCMD(t *testing.T, dir, name string, args ...string) {
 }
 
 func doCMD(dir, name string, args ...string) error {
-	c := mkCMD(dir, name, args...)
+	c, cancel := mkCMD(dir, name, args...)
+	defer cancel()
 	if o, err := c.CombinedOutput(); err != nil {
 		return fmt.Errorf("command %q %v in dir %q failed: %v; output was:\n%s",
 			name, args, dir, err, string(o))
@@ -220,8 +222,11 @@ func doCMD(dir, name string, args ...string) error {
 	return nil
 }
 
-func mkCMD(dir, name string, args ...string) *exec.Cmd {
-	c := exec.Command(name, args...)
+var perCommandTimeout = 5 * time.Minute
+
+func mkCMD(dir, name string, args ...string) (*exec.Cmd, context.CancelFunc) {
+	ctx, cancel := context.WithTimeout(context.Background(), perCommandTimeout)
+	c := exec.CommandContext(ctx, name, args...)
 	c.Env = os.Environ()
 	// Isolate git...
 	c.Env = append(c.Env,
@@ -234,7 +239,7 @@ func mkCMD(dir, name string, args ...string) *exec.Cmd {
 		"GIT_AUTHOR_EMAIL=tester@example.com",
 	)
 	c.Dir = dir
-	return c
+	return c, cancel
 }
 
 // testing os.ErrNotExist seems to not work in the majority of cases,
@@ -308,7 +313,7 @@ NEXT_PORT:
 	return addrs
 }
 
-func prefixWithTestName(t *testing.T) (prefixedOut, prefixedErr io.Writer) {
+func prefixWithTestName(t *testing.T, label string) (prefixedOut, prefixedErr io.Writer) {
 	t.Helper()
 	outReader, outWriter, err := os.Pipe()
 	if err != nil {
@@ -332,7 +337,7 @@ func prefixWithTestName(t *testing.T) (prefixedOut, prefixedErr io.Writer) {
 			if err := scanner.Err(); err != nil {
 				t.Fatalf("Error prefixing stdout: %s", err)
 			}
-			fmt.Fprintf(os.Stdout, "%s::stdout > %s\n", t.Name(), scanner.Text())
+			fmt.Fprintf(os.Stdout, "%s:%s:stdout > %s\n", t.Name(), label, scanner.Text())
 		}
 	}()
 	go func() {
@@ -349,7 +354,7 @@ func prefixWithTestName(t *testing.T) (prefixedOut, prefixedErr io.Writer) {
 			if err := scanner.Err(); err != nil {
 				t.Fatalf("Error prefixing stderr: %s", err)
 			}
-			fmt.Fprintf(os.Stderr, "%s::stderr > %s\n", t.Name(), scanner.Text())
+			fmt.Fprintf(os.Stderr, "%s:%s:stderr > %s\n", t.Name(), label, scanner.Text())
 		}
 	}()
 	return outWriter, errWriter

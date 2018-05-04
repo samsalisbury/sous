@@ -163,6 +163,10 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 			did.ManifestID, did.Cluster)
 	}
 
+	if psd.Body.Deployment.NumInstances == 0 {
+		return psd.err(400, "Cannot deploy: NumInstances is 0 for this deployment. Please update your manifest to NumInstances > 0 to enable deploying.")
+	}
+
 	different, _ := psd.Body.Deployment.Diff(original)
 	if !different && !force {
 		return psd.ok(200, nil)
