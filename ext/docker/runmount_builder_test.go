@@ -20,18 +20,32 @@ func TestRunmountBuilder_Build(t *testing.T) {
 	assert.Equal(t, "cabba9edeadbeef", buildID)
 }
 
-func TestRunmountBuilder_Run(t *testing.T) {
+func TestRunmountBuilder_Runmount(t *testing.T) {
 	sh, _ := shell.Default()
 	ctx := sous.BuildContext{
 		Sh: sh,
 	}
-	err := run(ctx, "193fede9eafd")
-	if err != nil {
-		fmt.Println("err : ", err)
-	}
-	assert.FailNow(t, "")
-}
+	buildID := "3d9fac8b3558"
+	// err := run(ctx, buildID)
+	// if err != nil {
+	// 	fmt.Println("err : ", err)
+	// }
 
-func TestRunmountBuilder_ExtractRunSpec(t *testing.T) {
-	path
+	//artifacts should be built now grab them
+	tempDir, err := setupTempDir()
+	fmt.Println("err : ", err)
+	fmt.Println("tempDir : ", tempDir)
+
+	buildContainerID, err := createMountContainer(ctx, buildID)
+	fmt.Println("err : ", err)
+	fmt.Println("buildContainerID : ", buildContainerID)
+
+	runSpec, err := extractRunSpec(ctx, tempDir, buildContainerID)
+	fmt.Println("err : ", err)
+	fmt.Println("runSpec : ", runSpec)
+
+	err = validateRunSpec(runSpec)
+	fmt.Println("err : ", err)
+
+	assert.FailNow(t, "")
 }
