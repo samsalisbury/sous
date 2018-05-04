@@ -108,10 +108,6 @@ func (h *GETSingleDeploymentHandler) Exchange() (interface{}, int) {
 		return h.err(404, "Manifest %q has no deployment for cluster %q.", m.ID(), did.Cluster)
 	}
 
-	if dep.NumInstances == 0 {
-		return h.err(400, "Cannot deploy, current num instances set to zero, please update manifest.")
-	}
-
 	h.Body.Deployment = &dep
 
 	return h.ok(200, nil)
@@ -165,6 +161,10 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 	if !ok {
 		return psd.err(404, "Manifest %q has no deployment for cluster %q.",
 			did.ManifestID, did.Cluster)
+	}
+
+	if psd.Body.Deployment.NumInstances == 0 {
+		return psd.err(400, "Cannot deploy: NumInstances is 0 for this deployment. Please update your manifest to NumInstances > 0 to enable deploying.")
 	}
 
 	different, _ := psd.Body.Deployment.Diff(original)
