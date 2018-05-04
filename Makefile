@@ -1,19 +1,20 @@
 SHELL := /usr/bin/env bash
 
 XDG_DATA_HOME ?= $(HOME)/.local/share
-DEV_POSTGRES_DIR ?= $(XDG_DATA_HOME)/sous/postgres
+DEV_POSTGRES_DIR ?= $(XDG_DATA_HOME)/sous/postgres_docker
 DEV_POSTGRES_DATA_DIR ?= $(DEV_POSTGRES_DIR)/data
 PGPORT ?= 6543
+USER_ID ?= $(shell id -u)
+GROUP_ID ?= $(shell id -g)
 
 DB_NAME = sous
 TEST_DB_NAME = sous_test_template
 
 LIQUIBASE_DEFAULTS := ./dev_support/liquibase/liquibase.properties
 LIQUIBASE_SERVER := jdbc:postgresql://localhost:$(PGPORT)
-LIQUIBASE_SHARED_FLAGS = --changeLogFile=database/changelog.xml --defaultsFile=./dev_support/liquibase/liquibase.properties
 
-LIQUIBASE_FLAGS := --url $(LIQUIBASE_SERVER)/$(DB_NAME) $(LIQUIBASE_SHARED_FLAGS)
-LIQUIBASE_TEST_FLAGS := --url $(LIQUIBASE_SERVER)/$(TEST_DB_NAME) $(LIQUIBASE_SHARED_FLAGS)
+LIQUIBASE_FLAGS := $(LIQUIBASE_SERVER)/$(DB_NAME)?user=postgres
+LIQUIBASE_TEST_FLAGS := $(LIQUIBASE_SERVER)/$(TEST_DB_NAME)?user=postgres
 
 SQLITE_URL := https://sqlite.org/2017/sqlite-autoconf-3160200.tar.gz
 GO_VERSION := 1.10
@@ -283,7 +284,7 @@ test-unit-base: $(COVER_DIR) $(GO_FILES)
 		-covermode=atomic -coverprofile=$(COVER_DIR)/count_merged.txt \
 		-timeout 3m -race $(SOUS_PACKAGES_WITH_TESTS) $(TEST_TEAMCITY)
 
-test-unit: postgres-test-prepare test-unit-base
+test-unit: postgres-start test-unit-base
 
 $(COVER_DIR)/count_merged.txt: $(COVER_DIR) $(GO_FILES)
 	go test \
@@ -371,30 +372,17 @@ artifacts/sous_$(SOUS_VERSION)_amd64.deb: artifacts/$(LINUX_RELEASE_DIR)/sous
 	fpm -s dir -t deb -n sous -v $(SOUS_VERSION) --description $(DESCRIPTION) --url $(URL) artifacts/$(LINUX_RELEASE_DIR)/sous=/usr/bin/sous
 	mv sous_$(SOUS_VERSION)_amd64.deb artifacts/
 
-$(DEV_POSTGRES_DATA_DIR):
-	@if [ -d "$@" ]; then exit 0; fi
-	install -d -m 0700 $@
-	initdb $@
-
-$(DEV_POSTGRES_DATA_DIR)/postgresql.conf: $(DEV_POSTGRES_DATA_DIR) dev_support/postgres/postgresql.conf
-	cp dev_support/postgres/postgresql.conf $@
-
-postgres-start: $(DEV_POSTGRES_DATA_DIR)/postgresql.conf
-	if ! (pg_isready -h localhost -p $(PGPORT)); then \
-		postgres -D $(DEV_POSTGRES_DATA_DIR) -p $(PGPORT) & \
-		until pg_isready -h localhost -p $(PGPORT); do sleep 1; done \
-	fi
-	createdb -h localhost -p $(PGPORT) $(DB_NAME) > /dev/null 2>&1 || true
-	liquibase $(LIQUIBASE_FLAGS) update
-
-postgres-test-prepare: $(DEV_POSTGRES_DATA_DIR)/postgresql.conf postgres-create-testdb
-
-postgres-create-testdb: postgres-start
-	createdb -h localhost -p $(PGPORT) $(TEST_DB_NAME) > /dev/null 2>&1 || true
-	liquibase $(LIQUIBASE_TEST_FLAGS) update
+postgres-start:
+	docker stop postgres > /dev/null 2>&1 || true
+	rm -rf $(DEV_POSTGRES_DATA_DIR)
+	install -d -m 0700 $(DEV_POSTGRES_DATA_DIR)
+	docker run -d --name postgres -p $(PGPORT):5432 --rm --user $(USER_ID):$(GROUP_ID) -v /etc/passwd:/etc/passwd:ro -v $(DEV_POSTGRES_DATA_DIR):/var/lib/postgresql/data postgres:10.3
+	sleep 5
+	docker run --net=host postgres:10.3 createdb -h localhost -p $(PGPORT) -U postgres -w $(TEST_DB_NAME) > /dev/null 2>&1 || true
+	docker run --net=host --rm -e CHANGELOG_FILE=changelog.xml -v $(PWD)/database:/changelogs -e "URL=$(LIQUIBASE_TEST_FLAGS)" docker.otenv.com/liquibase:0.0.6
 
 postgres-stop:
-	pg_ctl stop -D $(DEV_POSTGRES_DATA_DIR) || true
+	docker stop postgres > /dev/null 2>&1 || true
 
 postgres-connect:
 	psql -h localhost -p $(PGPORT) sous
