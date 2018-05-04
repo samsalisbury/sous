@@ -1,6 +1,7 @@
 package docker
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"io"
@@ -216,7 +217,7 @@ func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
 		}
 	}
 
-	messages.ReportLogFieldsMessage("Recording with etag as cannical for", logging.ExtraDebug1Level, nc.Log, fullCanon, md.Etag, newSID)
+	messages.ReportLogFieldsMessage("Recording with etag as canonical for", logging.ExtraDebug1Level, nc.Log, fullCanon, md.Etag, newSID)
 	err = nc.dbInsert(newSID, fullCanon, md.Etag, qualities)
 	if err != nil {
 		messages.ReportLogFieldsMessage("Err recording", logging.DebugLevel, nc.Log, fullCanon, err)
@@ -348,9 +349,9 @@ type DBConfig struct {
 	Driver, Connection string
 }
 
-func (nc *NameCache) dumpRows(io io.Writer, sql string) {
+func (nc *NameCache) dumpRows(io io.Writer, tx *sql.Tx, sql string) {
 	fmt.Fprintln(io, sql)
-	rows, err := nc.DB.Query(sql)
+	rows, err := tx.Query(sql)
 	if err != nil {
 		panic(err)
 	}
@@ -384,13 +385,24 @@ func (nc *NameCache) dumpRows(io io.Writer, sql string) {
 	fmt.Fprintln(io, "")
 }
 
+func (nc *NameCache) dumpTx(io io.Writer, tx *sql.Tx) {
+	nc.dumpRows(io, tx, "select * from docker_repo_name")
+	nc.dumpRows(io, tx, "select * from docker_search_location")
+	nc.dumpRows(io, tx, "select * from repo_through_location")
+	nc.dumpRows(io, tx, "select * from docker_search_metadata")
+	nc.dumpRows(io, tx, "select * from docker_search_name")
+	nc.dumpRows(io, tx, "select * from docker_image_qualities")
+}
+
 func (nc *NameCache) dump(io io.Writer) {
-	nc.dumpRows(io, "select * from docker_repo_name")
-	nc.dumpRows(io, "select * from docker_search_location")
-	nc.dumpRows(io, "select * from repo_through_location")
-	nc.dumpRows(io, "select * from docker_search_metadata")
-	nc.dumpRows(io, "select * from docker_search_name")
-	nc.dumpRows(io, "select * from docker_image_qualities")
+	ctx := context.TODO()
+	tx, err := nc.DB.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead, ReadOnly: false})
+	if err != nil {
+		return
+	}
+	defer tx.Rollback() // we commit before returning...
+
+	nc.dumpTx(io, tx)
 }
 
 type tableMetrics struct {
@@ -425,5 +437,7 @@ func versionString(v semv.Version) string {
 }
 
 func (nc *NameCache) log(msg string, lvl logging.Level, data ...interface{}) {
-	logging.Deliver(nc.Log, append([]interface{}{logging.MessageField(msg), lvl}, data...)...)
+	logging.Deliver(nc.Log, append([]interface{}{
+		logging.SousGenericV1, logging.MessageField(msg), lvl, logging.GetCallerInfo(logging.NotHere()),
+	}, data...)...)
 }

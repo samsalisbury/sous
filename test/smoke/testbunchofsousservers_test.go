@@ -117,6 +117,7 @@ func (c *TestBunchOfSousServers) Configure(t *testing.T, envDesc desc.EnvDesc) e
 				Email: "sous-" + i.ClusterName + "@example.com",
 			},
 		}
+		config.Logging.Basic.Level = "debug"
 		if err := i.Configure(config, c.RemoteGDMDir); err != nil {
 			return errors.Wrapf(err, "configuring instance %d", i)
 		}

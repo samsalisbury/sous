@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"os"
 
 	"github.com/docker/distribution/reference"
 	sous "github.com/opentable/sous/lib"
@@ -65,10 +66,11 @@ func (nc *NameCache) dbInsert(sid sous.SourceID, in, etag string, quals []sous.Q
 		return err
 	}
 
+	nc.dumpTx(os.Stderr, tx)
 	if err := ins.Exec("docker_search_metadata", sqlgen.Upsert, sqlgen.SingleRow(func(r sqlgen.RowDef) {
 		r.CF("?", "canonicalname", in)
-		r.KV("etag", etag)
 		r.KV("version", versionString(sid.Version))
+		r.KV("etag", etag)
 		locID(r, sid)
 	})); err != nil {
 		return err
@@ -131,6 +133,11 @@ func nameID(r sqlgen.RowDef, ref reference.Named) {
 
 func locID(r sqlgen.RowDef, sid sous.SourceID) {
 	r.FD(`(select location_id from docker_search_location
+	where "repo" = ? and "offset" = ?)`, "location_id", sid.Location.Repo, sid.Location.Dir)
+}
+
+func candLocID(r sqlgen.RowDef, sid sous.SourceID) {
+	r.CF(`(select location_id from docker_search_location
 	where "repo" = ? and "offset" = ?)`, "location_id", sid.Location.Repo, sid.Location.Dir)
 }
 

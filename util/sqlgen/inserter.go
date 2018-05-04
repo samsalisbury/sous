@@ -45,7 +45,7 @@ func (ins inserter) Exec(table string, conflict string, fn func(FieldSet)) error
 
 	sql := fields.InsertSQL(table, conflict)
 	_, err := ins.tx.ExecContext(ins.ctx, sql, fields.InsertValues()...)
-	reportSQLMessage(ins.log, start, table, write, sql, fields.RowCount(), err)
+	reportSQLMessage(ins.log, start, table, write, sql, fields.RowCount(), err, fields.InsertValues()...)
 
 	return errors.Wrapf(err, "Executing %q", sql)
 }

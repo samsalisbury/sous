@@ -1,6 +1,7 @@
 package sqlgen
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -16,15 +17,26 @@ type (
 		sql       string
 		rowcount  int
 		err       error
+		val       valueList
 	}
 
 	direction uint
+
+	valueList []interface{}
 )
 
 const (
 	read direction = iota
 	write
 )
+
+func (vl valueList) EachField(fn logging.FieldReportFn) {
+	str := ""
+	for _, v := range vl {
+		str = fmt.Sprintf("%s %q", str, v)
+	}
+	fn(logging.Arguments, str[1:])
+}
 
 func (dir direction) String() string {
 	if dir == write {
@@ -44,9 +56,12 @@ func newSQLMessage(started time.Time, mainTable string, dir direction, sql strin
 	}
 }
 
-func reportSQLMessage(log logging.LogSink, started time.Time, mainTable string, dir direction, sql string, rowcount int, err error) {
+func reportSQLMessage(log logging.LogSink, started time.Time, mainTable string, dir direction, sql string, rowcount int, err error, vals ...interface{}) {
 	msg := newSQLMessage(started, mainTable, dir, sql, rowcount, err)
 	msg.ExcludeMe()
+	if len(vals) > 0 {
+		msg.val = valueList(vals)
+	}
 	logging.Deliver(log, msg)
 }
 
@@ -75,6 +90,9 @@ func (msg *sqlMessage) EachField(fn logging.FieldReportFn) {
 	fn("sous-sql-rows", msg.rowcount)
 	if msg.err != nil {
 		fn("sous-sql-errreturned", msg.err.Error())
+	}
+	if msg.val != nil {
+		msg.val.EachField(fn)
 	}
 }
 
