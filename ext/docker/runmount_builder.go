@@ -1,7 +1,9 @@
 package docker
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
 	"path"
 
 	sous "github.com/opentable/sous/lib"
@@ -37,9 +39,25 @@ func run(ctx sous.BuildContext, buildID string) error {
 		return err
 	}
 	fmt.Println("output : ", output)
+
 	// TODO LH need to figure out what the end state of this should be.
+	// Think it needs to detect failure, should test this and return error
 	return nil
 
+}
+
+// need to create the container with the mount and then copy out of it
+// docker create --mount source=product,target=/app/product ubuntu
+// docker cp dee415777a6814df428f4de6a182bf3e545c608306e67e0505aee4676cb16c4a:app/product/. tmp/test/.
+func extractRunSpec(ctx sous.BuildContext, runSpecPath string) (MulitImageRunSpec, error) {
+	specF, err := os.Open(runSpecPath)
+	if err != nill {
+		return "", err
+	}
+
+	runSpec = MultiImageRunSpec{}
+	dec := json.NewDecoder(&specF)
+	return runSpec
 }
 
 func getDockerFilePath(ctx sous.BuildContext) string {

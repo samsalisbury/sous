@@ -1,6 +1,7 @@
 package docker
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/opentable/sous/lib"
@@ -17,4 +18,20 @@ func TestRunmountBuilder_Build(t *testing.T) {
 	}
 	buildID, _ := build(ctx)
 	assert.Equal(t, "cabba9edeadbeef", buildID)
+}
+
+func TestRunmountBuilder_Run(t *testing.T) {
+	sh, _ := shell.Default()
+	ctx := sous.BuildContext{
+		Sh: sh,
+	}
+	err := run(ctx, "193fede9eafd")
+	if err != nil {
+		fmt.Println("err : ", err)
+	}
+	assert.FailNow(t, "")
+}
+
+func TestRunmountBuilder_ExtractRunSpec(t *testing.T) {
+	path
 }
