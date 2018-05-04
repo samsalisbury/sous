@@ -386,7 +386,7 @@ func (client *LiveHTTPClient) extractBody(rz *http.Response, rzBody interface{},
 			resourceJSON: bytes.NewBuffer(rzJSON),
 		}, errors.Wrapf(err, "processing response body")
 	case rz.StatusCode < 200 || rz.StatusCode >= 300:
-		return nil, errors.Errorf("%s: %s (%v)", rz.Status, string(b), b)
+		return nil, errors.Errorf("%s: %s", rz.Status, string(b))
 	case rz.StatusCode == http.StatusConflict:
 		return nil, errors.Wrap(retryableError(fmt.Sprintf("%s: %#v", rz.Status, string(b))), "getBody")
 	}
