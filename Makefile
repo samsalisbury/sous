@@ -41,6 +41,7 @@ SMOKE_TEST_BASEDIR ?= $(REPO_ROOT)/.smoketest
 SMOKE_TEST_DATA_DIR ?= $(SMOKE_TEST_BASEDIR)/$(DATE)
 SMOKE_TEST_LATEST_LINK ?= $(SMOKE_TEST_BASEDIR)/latest
 SMOKE_TEST_BINARY ?= $(SMOKE_TEST_DATA_DIR)/sous
+SMOKE_TEST_TIMEOUT ?= 15m
 
 # install-dev uses DEV_DESC and DATE to make a git described, timestamped dev build.
 DEV_DESC ?= $(shell git describe)
@@ -160,6 +161,12 @@ clean-container-certs:
 clean-running-containers:
 	@if (( $$(docker ps -q | wc -l) > 0 )); then echo 'found running containers, killing:'; docker ps -q | xargs docker kill; fi
 	@if (( $$(docker ps -aq | wc -l) > 0 )); then echo 'found container instances, deleting:'; docker ps -aq | xargs docker rm --volumes; fi
+
+.PHONY: stop-qa-env
+stop-qa-env: ## Stops and removes all docker-compose containers.
+	@echo Stopping QA environment... # Redirect output to /dev/null because it gives confusing output when nothing to do.
+	@cd integration/test-registry && docker-compose rm -sf >/dev/null 2>&1 || { echo Failed to stop containers; exit 1; }
+	@if [ -f "$(QA_DESC)" ]; then rm -f $(QA_DESC); fi
 
 gitlog:
 	git log `git describe --abbrev=0`..HEAD
@@ -306,19 +313,21 @@ $(SMOKE_TEST_LATEST_LINK): $(SMOKE_TEST_DATA_DIR)
 
 .PHONY: test-smoke-compiles
 test-smoke-compiles: ## Checks that the smoke tests compile.
-	go test -c -tags smoke ./test/smoke && rm smoke.test
+	@go test -c -o /dev/null -tags smoke ./test/smoke && echo Smoke tests compiled.
 
 .PHONY: test-smoke
 test-smoke: test-smoke-compiles $(SMOKE_TEST_BINARY) $(SMOKE_TEST_LATEST_LINK) setup-containers
+	@echo "Smoke tests running; time out in $(SMOKE_TEST_TIMEOUT)..."
+	ulimit -n 2048 && \
 	SMOKE_TEST_DATA_DIR=$(SMOKE_TEST_DATA_DIR)/data \
 	SMOKE_TEST_BINARY=$(SMOKE_TEST_BINARY) \
 	SOUS_QA_DESC=$(QA_DESC) \
 	DESTROY_SINGULARITY_BETWEEN_SMOKE_TEST_CASES=$(DESTROY_SINGULARITY_BETWEEN_SMOKE_TEST_CASES) \
-	go test  $(EXTRA_GO_TEST_FLAGS) -tags smoke -v -count 1 ./test/smoke $(TEST_TEAMCITY)
+	go test $(EXTRA_GO_TEST_FLAGS) -timeout $(SMOKE_TEST_TIMEOUT) -tags smoke -v -count 1 ./test/smoke $(TEST_TEAMCITY)
 
 .PHONY: test-smoke-nofail
 test-smoke-nofail:
-	EXCLUDE_KNOWN_FAILING_TESTS=YES $(MAKE) test-smoke
+	EXCLUDE_KNOWN_FAILING_TESTS=YES SMOKE_TEST_TIMEOUT=10m $(MAKE) test-smoke
 
 $(QA_DESC): sous-qa-setup
 	./sous_qa_setup --compose-dir ./integration/test-registry/ --out-path=$(QA_DESC)
