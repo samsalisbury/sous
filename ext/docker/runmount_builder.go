@@ -21,7 +21,7 @@ func build(ctx sous.BuildContext) (string, error) {
 	// 	cmd = append(cmd, "--pull")
 	// }
 
-	cmd = append(cmd, getDockerFilePath(ctx))
+	cmd = append(cmd, getOffsetDir(ctx))
 
 	output, err := ctx.Sh.Stdout("docker", cmd...)
 	if err != nil {
@@ -113,11 +113,22 @@ func validateRunSpec(runSpec MultiImageRunSpec) error {
 	return nil
 }
 
+func getOffsetDir(ctx sous.BuildContext) string {
+	offset := ctx.Source.OffsetDir
+	if offset == "" {
+		offset = "."
+	}
+	return offset
+}
+
 func getDockerFilePath(ctx sous.BuildContext) string {
 	workDir := "."
+	fmt.Println("offset : ", ctx.Source.OffsetDir)
 	if offset := ctx.Source.OffsetDir; offset != "" {
 		workDir = offset
 	}
+	fmt.Println("workDir : ", workDir)
+
 	dockerFilePath := path.Join(workDir, "Dockerfile")
 	return dockerFilePath
 }
