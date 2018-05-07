@@ -21,7 +21,11 @@ func SetupDB(t *testing.T, optidx ...int) *sql.DB {
 	t.Logf("Creating DB for %s called sous_test_%s", t.Name(), name)
 	db, err := setupDBErr(name)
 	if err != nil {
-		t.Skipf("setupDB failed: %s", err)
+		if os.Getenv("SOUS_TEST_NODB") != "" {
+			t.Skipf("setupDB failed: %s", err)
+			return nil
+		}
+		t.Fatalf("Error creating test DB: %v (Set SOUS_TEST_NODB=yes) to skip tests that rely on the DB", err)
 	}
 	return db
 }

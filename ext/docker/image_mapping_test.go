@@ -57,6 +57,10 @@ func TestRoundTrip(t *testing.T) {
 	err = nc.Insert(sv, in, digest, []sous.Quality{})
 	assert.NoError(err)
 
+	// inserts should be idempotent
+	err = nc.Insert(sv, in, digest, []sous.Quality{})
+	assert.NoError(err)
+
 	cn, err := nc.GetCanonicalName(in)
 	if assert.NoError(err) {
 		assert.Equal(in, cn)

@@ -182,7 +182,7 @@ func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
 		dockerRef, err := reference.Parse(in)
 
 		if r, isRef := dockerRef.(reference.Digested); err == nil && isRef {
-			messages.ReportLogFieldsMessage("Image name has digest: using know source ID", logging.DebugLevel, nc.Log, r, sid)
+			messages.ReportLogFieldsMessage("Image name has digest: using knows source ID", logging.DebugLevel, nc.Log, r, sid)
 			return sid, nil
 		}
 	}
@@ -213,7 +213,7 @@ func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
 		_, err := nc.RegistryClient.GetImageMetadata(fullCanon, md.Etag)
 		if err != nil && !meansBodyUnchanged(err) {
 			fullCanon = md.Registry + "/" + md.CanonicalName
-			messages.ReportLogFieldsMessage("Docker image not found, levaing as", logging.DebugLevel, nc.Log, md.CanonicalName, nc.DockerRegistryHost, fullCanon)
+			messages.ReportLogFieldsMessage("Docker image not found, leaving as", logging.DebugLevel, nc.Log, md.CanonicalName, nc.DockerRegistryHost, fullCanon)
 		}
 	}
 
