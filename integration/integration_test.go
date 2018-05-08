@@ -97,7 +97,7 @@ func (suite *integrationSuite) manifest(nc *docker.NameCache, drepo, containerDi
 					Resources:    sous.Resources{"cpus": "0.1", "memory": "100", "ports": "1"},
 					Env:          sous.Env{"repo": drepo}, //map[s]s
 					NumInstances: 1,
-					Volumes:      sous.Volumes{{"/tmp", "/tmp", sous.VolumeMode("RO")}},
+					Volumes:      sous.Volumes{{"/tmp", "/tmp", sous.VolumeMode("RO"), nil}},
 				},
 				Version: semv.MustParse(version),
 			},
