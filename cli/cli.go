@@ -28,9 +28,6 @@ func GeneralErrorf(format string, a ...interface{}) cmdr.ErrorResult {
 
 // EnsureErrorResult is a convenience for returning from a command.
 func EnsureErrorResult(err error) cmdr.ErrorResult {
-	var ls logging.LogSink
-	ls = logging.Log
-	messages.ReportLogFieldsMessage("Error:", logging.DebugLevel, ls, err)
 	return cmdr.EnsureErrorResult(err)
 }
 
@@ -153,7 +150,7 @@ func NewSousCLI(di *graph.SousGraph, s *Sous, earlyLogging logging.LogSink, out,
 			err = errors.Cause(err)
 			causeStr := err.Error()
 			if originalErr != causeStr {
-				messages.ReportLogFieldsMessage("Error occurred", logging.DebugLevel, logging.Log, originalErr)
+				messages.ReportLogFieldsMessage("Error occurred", logging.DebugLevel, getLogSet(cli.graph), originalErr)
 			}
 		}
 		return EnsureErrorResult(err)
