@@ -82,19 +82,19 @@ func newPossiblyInvalidConfig(ls DefaultLogSink, path string, defaultConfig Defa
 			return
 		}
 		// Since this is initialisation, let's get the user to confirm some stuff...
-		userInitConfig(pic.Config)
+		userInitConfig(ls, pic.Config)
 		if err := pic.Validate(); err != nil {
 			// If the config is invalid, warn but write it anyway and allow the
 			// user to correct it themselves.
-			logging.ReportErrorConsole(logging.Log, errors.Wrapf(err, "Newly initialised config file is invalid"))
-			logging.ReportConsoleMsg(logging.Log, logging.WarningLevel, fmt.Sprintf("Please correct the issue by editing %s", path))
+			logging.ReportErrorConsole(ls, errors.Wrapf(err, "Newly initialised config file is invalid"))
+			logging.ReportConsoleMsg(ls, logging.WarningLevel, fmt.Sprintf("Please correct the issue by editing %s", path))
 		}
 		lsc := &LocalSousConfig{
 			Config:  pic.Config,
 			LogSink: LogSink{LogSink: ls.LogSink},
 		}
 		lsc.Save(path)
-		logging.ReportConsoleMsg(logging.Log, logging.InformationLevel, fmt.Sprintf("initialized config file: %s", path))
+		logging.ReportConsoleMsg(ls, logging.InformationLevel, fmt.Sprintf("initialized config file: %s", path))
 	}()
 	_, err := os.Stat(path)
 	if os.IsNotExist(err) {
@@ -108,7 +108,7 @@ func newPossiblyInvalidConfig(ls DefaultLogSink, path string, defaultConfig Defa
 	return PossiblyInvalidConfig{Config: pic.Config}, cl.Load(pic.Config, path)
 }
 
-func userInput(prompt, vDefault, eg string, v *string) {
+func userInput(ls logging.LogSink, prompt, vDefault, eg string, v *string) {
 	if vDefault == "" {
 		fmt.Printf("%s (e.g. %q): ", prompt, eg)
 	} else {
@@ -117,7 +117,7 @@ func userInput(prompt, vDefault, eg string, v *string) {
 	reader := bufio.NewReader(os.Stdin)
 	in, err := reader.ReadString('\n')
 	if err != nil {
-		logging.ReportErrorConsole(logging.Log, errors.Wrapf(err, "Failed to read input"))
+		logging.ReportErrorConsole(ls, errors.Wrapf(err, "Failed to read input"))
 		return
 	}
 	// Strip the newline and any other whitespace.
@@ -128,17 +128,17 @@ func userInput(prompt, vDefault, eg string, v *string) {
 	*v = in
 }
 
-func userInitConfig(c *config.Config) {
+func userInitConfig(ls logging.LogSink, c *config.Config) {
 	if !terminal.IsTerminal(int(os.Stdout.Fd())) {
-		logging.ReportConsoleMsg(logging.Log, logging.WarningLevel, "Unable to run interactive configuration; stdout isn't attached to a terminal.")
+		logging.ReportConsoleMsg(ls, logging.WarningLevel, "Unable to run interactive configuration; stdout isn't attached to a terminal.")
 		return
 	}
 	if !terminal.IsTerminal(int(os.Stdin.Fd())) {
-		logging.ReportConsoleMsg(logging.Log, logging.WarningLevel, "Unable to run interactive configuration; stdin isn't attached to a terminal.")
+		logging.ReportConsoleMsg(ls, logging.WarningLevel, "Unable to run interactive configuration; stdin isn't attached to a terminal.")
 		return
 	}
 	if os.Getenv("TASK_HOST") != "" { // XXX This is terrible, but the terminal check fails (which breaks the Mesos servers)
-		logging.ReportConsoleMsg(logging.Log, logging.WarningLevel, "Refusing to run interactive configuration; TASK_HOST is set.")
+		logging.ReportConsoleMsg(ls, logging.WarningLevel, "Refusing to run interactive configuration; TASK_HOST is set.")
 		return
 	}
 	fmt.Println(`
@@ -147,9 +147,9 @@ func userInitConfig(c *config.Config) {
 	If you don't know some of the answers don't worry, you can use 'sous config'
 	on the command line to change them later.
 	`)
-	userInput("Your email address", c.User.Email, "name@mycompany.com", &c.User.Email)
-	userInput("Your full name", c.User.Name, "Alfie Noakes", &c.User.Name)
-	userInput("Your company's primary sous server URL", c.Server, "http://sous.mycompany.com", &c.Server)
+	userInput(ls, "Your email address", c.User.Email, "name@mycompany.com", &c.User.Email)
+	userInput(ls, "Your full name", c.User.Name, "Alfie Noakes", &c.User.Name)
+	userInput(ls, "Your company's primary sous server URL", c.Server, "http://sous.mycompany.com", &c.Server)
 
 	fmt.Println("All done, thanks!")
 }
