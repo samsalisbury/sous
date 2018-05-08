@@ -19,6 +19,7 @@ func TestBuildDeployRequest(t *testing.T) {
 
 	rID := "expectedRID"
 	dID := "expectedDID"
+	ls, _ := logging.NewLogSinkSpy()
 	dr, err := buildDeployRequest(sous.Deployable{
 		BuildArtifact: &sous.BuildArtifact{
 			Name: "an-image",
@@ -39,7 +40,7 @@ func TestBuildDeployRequest(t *testing.T) {
 				BaseURL: "http://cluster",
 			},
 		},
-	}, rID, dID, map[string]string{})
+	}, rID, dID, map[string]string{}, ls)
 	require.NoError(err)
 	assert.NotNil(dr)
 	assert.Equal(dr.Deploy.RequestId, rID)
@@ -56,6 +57,7 @@ func TestDockerMetadataSet(t *testing.T) {
 
 	rID := "expectedRID"
 	dID := "expectedDID"
+	ls, _ := logging.NewLogSinkSpy()
 	dr, err := buildDeployRequest(sous.Deployable{
 		BuildArtifact: &sous.BuildArtifact{
 			Name: "an-image",
@@ -76,7 +78,7 @@ func TestDockerMetadataSet(t *testing.T) {
 				BaseURL: "http://cluster",
 			},
 		},
-	}, rID, dID, md)
+	}, rID, dID, md, ls)
 
 	if err != nil {
 		t.Fatal(err)

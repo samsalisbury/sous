@@ -273,14 +273,16 @@ func matchedPair(t *testing.T, startDep *sous.Deployment) *sous.DeployablePair {
 		},
 	}
 
-	_, aReq, err := singRequestFromDeployment(startDep, reqID)
+	ls, _ := logging.NewLogSinkSpy()
+
+	_, aReq, err := singRequestFromDeployment(startDep, reqID, ls)
 	assert.NoError(t, err)
 	assert.NotNil(t, aReq)
 
 	req := &dtos.SingularityRequest{}
 	jsonRoundtrip(t, aReq, req)
 
-	aDepReq, err := buildDeployRequest(deployable, reqID, depID, map[string]string{})
+	aDepReq, err := buildDeployRequest(deployable, reqID, depID, map[string]string{}, ls)
 	assert.NoError(t, err)
 	assert.NotNil(t, aDepReq)
 
