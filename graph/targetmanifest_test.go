@@ -30,7 +30,8 @@ func TestNewUserSelectedOTPLDeploySpecs(t *testing.T) {
 				detected.Manifests = sous.NewManifests()
 			}
 			ls, _ := logging.NewLogSinkSpy()
-			ds, err := newUserSelectedOTPLDeploySpecs(detected, TargetManifestID{}, &Flags, state, ls)
+			graphWrapper := LogSink{ls}
+			ds, err := newUserSelectedOTPLDeploySpecs(detected, TargetManifestID{}, &Flags, state, graphWrapper)
 			assert.NoError(t, err)
 			assert.Equal(t, ExpectedManifest, ds.Manifest)
 		})
@@ -112,7 +113,8 @@ func TestNewUserSelectedOTPLDeploySpecs_Errors(t *testing.T) {
 				detected.Manifests = sous.NewManifests()
 			}
 			ls, _ := logging.NewLogSinkSpy()
-			ds, err := newUserSelectedOTPLDeploySpecs(detected, TargetManifestID{}, &Flags, state, ls)
+			graphWrapper := LogSink{ls}
+			ds, err := newUserSelectedOTPLDeploySpecs(detected, TargetManifestID{}, &Flags, state, graphWrapper)
 			assert.Nil(t, ds.Manifest)
 			require.Error(t, err)
 			assert.Equal(t, err.Error(), ExpectedErr)

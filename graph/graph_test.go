@@ -56,6 +56,7 @@ func TestBuildGraph(t *testing.T) {
 	g.Add(&config.DeployFilterFlags{})
 	g.Add(&config.PolicyFlags{}) //provided by SousBuild
 	g.Add(&config.OTPLFlags{})   //provided by SousInit and SousDeploy
+	g.Add()
 
 	if err := g.Test(); err != nil {
 		t.Fatalf("invalid graph: %s", err)

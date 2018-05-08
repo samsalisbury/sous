@@ -25,7 +25,7 @@ func newUserSelectedOTPLDeploySpecs(
 	tmid TargetManifestID,
 	flags *config.OTPLFlags,
 	state *sous.State,
-	ls logging.LogSink,
+	ls LogSink,
 ) (userSelectedOTPLDeployManifest, error) {
 	var nowt userSelectedOTPLDeployManifest
 
