@@ -249,6 +249,15 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 		scenario.assertStringBody(t, `Body.Deployment is nil.`)
 	})
 
+	t.Run("nonexistent cluster", func(t *testing.T) {
+		body, query := makeBodyAndQuery(t, false)
+		query["cluster"] = "nonexistent_cluster"
+		scenario := setup(body, query)
+		scenario.exercise()
+		scenario.assertStatus(t, 404)
+		scenario.assertStringBody(t, `Cluster "nonexistent_cluster" not defined.`)
+	})
+
 	t.Run("no matching deployment", func(t *testing.T) {
 		body, query := makeBodyAndQuery(t, false)
 		scenario := setup(body, query)
