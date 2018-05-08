@@ -6,6 +6,7 @@ import (
 
 	"github.com/opentable/sous/config"
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -28,8 +29,8 @@ func TestNewUserSelectedOTPLDeploySpecs(t *testing.T) {
 			} else {
 				detected.Manifests = sous.NewManifests()
 			}
-
-			ds, err := newUserSelectedOTPLDeploySpecs(detected, TargetManifestID{}, &Flags, state)
+			ls, _ := logging.NewLogSinkSpy()
+			ds, err := newUserSelectedOTPLDeploySpecs(detected, TargetManifestID{}, &Flags, state, ls)
 			assert.NoError(t, err)
 			assert.Equal(t, ExpectedManifest, ds.Manifest)
 		})
@@ -110,8 +111,8 @@ func TestNewUserSelectedOTPLDeploySpecs_Errors(t *testing.T) {
 			} else {
 				detected.Manifests = sous.NewManifests()
 			}
-
-			ds, err := newUserSelectedOTPLDeploySpecs(detected, TargetManifestID{}, &Flags, state)
+			ls, _ := logging.NewLogSinkSpy()
+			ds, err := newUserSelectedOTPLDeploySpecs(detected, TargetManifestID{}, &Flags, state, ls)
 			assert.Nil(t, ds.Manifest)
 			require.Error(t, err)
 			assert.Equal(t, err.Error(), ExpectedErr)
