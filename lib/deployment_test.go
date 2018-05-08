@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/opentable/sous/util/allfields"
+	"github.com/opentable/sous/util/logging"
 	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/assert"
 )
@@ -51,9 +52,11 @@ func TestDeploymentDiffAnalysis(t *testing.T) {
 
 func TestDeploymentClone(t *testing.T) {
 	vers := semv.MustParse("1.2.3-test+thing")
+
+	log, _ := logging.NewLogSinkSpy()
 	vols := Volumes{
-		{"h", "c", "RO"},
-		{"h2", "c2", "RW"},
+		{"h", "c", "RO", &log},
+		{"h2", "c2", "RW", &log},
 	}
 	original := &Deployment{
 		DeployConfig: DeployConfig{
@@ -106,13 +109,14 @@ func TestBuildDeployment(t *testing.T) {
 		Owners: []string{"test@testerson.com"},
 		Kind:   ManifestKindService,
 	}
+	log, _ := logging.NewLogSinkSpy()
 	sp := DeploySpec{
 		DeployConfig: DeployConfig{
 			Resources:    Resources{},
 			Env:          Env{},
 			NumInstances: 3,
 			Volumes: Volumes{
-				&Volume{"h", "c", "RO"},
+				&Volume{"h", "c", "RO", &log},
 			},
 		},
 		Version:     semv.MustParse("1.2.3"),

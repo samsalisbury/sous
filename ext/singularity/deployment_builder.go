@@ -420,6 +420,7 @@ func (db *deploymentBuilder) unpackDeployConfig() error {
 				Host:      v.HostPath,
 				Container: v.ContainerPath,
 				Mode:      sous.VolumeMode(v.Mode),
+				Log:       &db.log,
 			})
 	}
 	messages.ReportLogFieldsMessage("Volumes", logging.ExtraDebug1Level, db.log, db.reqID, db.Target.DeployConfig.Volumes)

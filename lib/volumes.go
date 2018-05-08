@@ -12,6 +12,7 @@ type (
 	Volume struct {
 		Host, Container string
 		Mode            VolumeMode
+		Log             *logging.LogSink
 	}
 
 	// Volumes represents a list of volume mappings
@@ -30,17 +31,25 @@ const (
 
 // Equal is used to compare Volumes pairs
 func (vs Volumes) Equal(o Volumes) bool {
+	if len(o) == len(vs) && len(o) == 0 {
+		return true
+	}
+
+	var ls *logging.LogSink
+	if len(o) > 0 && o[0].Log != nil {
+		ls = o[0].Log
+	}
 	if len(vs) != len(o) {
-		reportDebugVolumeMessage("Volume lengths differ", o, vs, logging.Log)
+		reportDebugVolumeMessage("Volume lengths differ", o, vs, ls)
 		return false
 	}
 	c := append(Volumes{}, o...)
-	reportDebugVolumeMessage("compairing:", c, vs, logging.Log)
+	reportDebugVolumeMessage("compairing:", c, vs, ls)
 
 	for _, v := range vs {
 		m := false
 		for i, ov := range c {
-			reportDebugVolumeMessage("compairing:", append(Volumes{}, v), append(Volumes{}, ov), logging.Log)
+			reportDebugVolumeMessage("compairing:", append(Volumes{}, v), append(Volumes{}, ov), ls)
 			if v.Equal(ov) {
 				m = true
 				if i < len(c) {
@@ -51,14 +60,14 @@ func (vs Volumes) Equal(o Volumes) bool {
 			}
 		}
 		if !m {
-			reportDebugVolumeMessage("missing volume:", append(Volumes{}, v), Volumes{}, logging.Log)
+			reportDebugVolumeMessage("missing volume:", append(Volumes{}, v), Volumes{}, ls)
 			return false
 		}
 	}
 	if len(c) == 0 {
 		return true
 	}
-	reportDebugVolumeMessage("missing volume:", c, Volumes{}, logging.Log)
+	reportDebugVolumeMessage("missing volume:", c, Volumes{}, ls)
 	return false
 }
 
@@ -84,15 +93,19 @@ type volumeMessage struct {
 	isConsoleMsg bool
 }
 
-func reportConsoleVolumeMessage(msg string, a Volumes, b Volumes, log logging.LogSink) {
+func reportConsoleVolumeMessage(msg string, a Volumes, b Volumes, log *logging.LogSink) {
 	reportVolumeMessage(msg, a, b, log, false, true)
 }
 
-func reportDebugVolumeMessage(msg string, a Volumes, b Volumes, log logging.LogSink) {
+func reportDebugVolumeMessage(msg string, a Volumes, b Volumes, log *logging.LogSink) {
 	reportVolumeMessage(msg, a, b, log, true)
 }
 
-func reportVolumeMessage(msg string, a Volumes, b Volumes, log logging.LogSink, flags ...bool) {
+func reportVolumeMessage(msg string, a Volumes, b Volumes, log *logging.LogSink, flags ...bool) {
+	if log == nil {
+		return
+	}
+
 	debugStmt := false
 	console := false
 	if len(flags) > 0 {
@@ -110,7 +123,7 @@ func reportVolumeMessage(msg string, a Volumes, b Volumes, log logging.LogSink, 
 		isDebugMsg:   debugStmt,
 		isConsoleMsg: console,
 	}
-	logging.Deliver(log, msgLog)
+	logging.Deliver(*log, msgLog)
 }
 
 func (msg volumeMessage) WriteToConsole(console io.Writer) {

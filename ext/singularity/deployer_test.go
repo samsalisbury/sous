@@ -523,7 +523,8 @@ func TestChangesDep(t *testing.T) {
 	}
 
 	changed = baseDep.Clone()
-	changed.Volumes = append(changed.Volumes, &sous.Volume{})
+	ls, _ := logging.NewLogSinkSpy()
+	changed.Volumes = append(changed.Volumes, &sous.Volume{Log: &ls})
 	if !changesDep(testPair(changed)) {
 		t.Error("Change to volumes on deployment reported as no change")
 	}
