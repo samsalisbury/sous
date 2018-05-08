@@ -47,9 +47,9 @@ func (msg *sqlMessage) DefaultLevel() logging.Level {
 // Message implements LogMessage on sqlMessage
 func (msg *sqlMessage) Message() string {
 	if msg.err == nil {
-		return "SQL query"
+		return "SQL query succeeded; main table: " + msg.mainTable
 	}
-	return msg.err.Error()
+	return "SQL query failed: " + msg.err.Error()
 }
 
 // EachField implements LogMessage on sqlMessage
