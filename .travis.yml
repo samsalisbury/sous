@@ -25,7 +25,7 @@ after_success:
 - bin/codecov -f /tmp/sous-cover/count_merged.txt
 env:
   global:
-  - PGPORT=6543
+  - PGPORT=5432
   - GIT_AUTHOR_NAME=SousCI
   - GIT_COMMITTER_NAME=SousCI
   - GIT_AUTHOR_EMAIL=sous@nowhere.in.particular.com
