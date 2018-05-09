@@ -22,14 +22,14 @@ func fixtureDeployFilterFlags() config.DeployFilterFlags {
 	}
 }
 
-func fixtureGraph() *SousGraph {
-	graph := DefaultTestGraph()
+func fixtureGraph(t *testing.T) *SousGraph {
+	graph := DefaultTestGraph(t)
 	graph.Add(&config.Verbosity{})
 	return graph
 }
 
 func TestActionUpdate(t *testing.T) {
-	fg := fixtureGraph()
+	fg := fixtureGraph(t)
 	flags := fixtureDeployFilterFlags()
 	action, err := fg.GetUpdate(flags, config.OTPLFlags{})
 	require.NoError(t, err)
@@ -51,7 +51,7 @@ func TestActionUpdate(t *testing.T) {
 }
 
 func TestActionPollStatus(t *testing.T) {
-	fg := fixtureGraph()
+	fg := fixtureGraph(t)
 	fg.Add(fixtureDeployFilterFlags())
 
 	action, err := fg.GetPollStatus("both", fixtureDeployFilterFlags())
@@ -65,7 +65,7 @@ func TestActionPollStatus(t *testing.T) {
 }
 
 func TestActionRectify(t *testing.T) {
-	fg := fixtureGraph()
+	fg := fixtureGraph(t)
 	fg.Add(fixtureDeployFilterFlags())
 	action, err := fg.GetRectify("none", fixtureDeployFilterFlags())
 	require.NoError(t, err)
@@ -82,7 +82,7 @@ func TestActionRectify(t *testing.T) {
 func TestActionRectifyDryruns(t *testing.T) {
 	testDryRun := func(which string, expectedRegistryType sous.Registry) {
 		t.Run("dryrun is "+which, func(t *testing.T) {
-			fg := fixtureGraph()
+			fg := fixtureGraph(t)
 			fg.Add(fixtureDeployFilterFlags())
 			action, err := fg.GetRectify(which, fixtureDeployFilterFlags())
 			require.NoError(t, err)

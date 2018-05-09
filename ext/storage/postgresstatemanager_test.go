@@ -23,7 +23,7 @@ type PostgresStateManagerSuite struct {
 	logs    logging.LogSinkController
 }
 
-func SetupTest(t *testing.T) *PostgresStateManagerSuite {
+func SetupTest(t *testing.T, name string) *PostgresStateManagerSuite {
 	var err error
 
 	t.Helper()
@@ -34,7 +34,7 @@ func SetupTest(t *testing.T) *PostgresStateManagerSuite {
 		require:    require.New(t),
 	}
 
-	db := setupDB(t)
+	db := sous.SetupDB(t)
 
 	sink, ctrl := logging.NewLogSinkSpy()
 	suite.manager = NewPostgresStateManager(db, sink)
@@ -45,15 +45,19 @@ func SetupTest(t *testing.T) *PostgresStateManagerSuite {
 	if np, set := os.LookupEnv("PGPORT"); set {
 		port = np
 	}
-	connstr := fmt.Sprintf("dbname=sous_test host=localhost port=%s sslmode=disable", port)
+	connstr := fmt.Sprintf("dbname=sous_test_%s host=localhost port=%s sslmode=disable", name, port)
 	if suite.db, err = sql.Open("postgres", connstr); err != nil {
-		suite.FailNow("Error establishing test-assertion DB connection.", "Error: %v", err)
+		suite.FailNow("Error establishing test-assertion DB connection at %q.", "Error: %v", connstr, err)
+	}
+	if err := suite.db.Ping(); err != nil {
+		suite.FailNow("Error checking test-assertion DB connection to %q.", "Error: %v", connstr, err)
 	}
 	return suite
 }
 
 func TestPostgresStateManagerWriteState_success(t *testing.T) {
-	suite := SetupTest(t)
+	suite := SetupTest(t, "postgresstatemanagerwriate_success") // because s/test//g
+	defer sous.ReleaseDB(t)
 
 	s := exampleState()
 

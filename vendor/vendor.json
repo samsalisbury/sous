@@ -242,12 +242,6 @@
 			"revisionTime": "2017-11-07T05:05:31Z"
 		},
 		{
-			"checksumSHA1": "kUqagcesbbz7A2eCwDYntlvrEqs=",
-			"path": "github.com/mattn/go-sqlite3",
-			"revision": "696e2e43cb00dcb1acaf6073e01493e3c4197b75",
-			"revisionTime": "2018-02-18T13:15:52Z"
-		},
-		{
 			"checksumSHA1": "DcYIZnMiq/Tj22/ge9os3NwOhs4=",
 			"path": "github.com/mitchellh/go-ps",
 			"revision": "4fdf99ab29366514c69ccccddab5dc58b8d84062",

@@ -12,6 +12,10 @@ with respect to its command line interface and HTTP interface
 * Client: add -dev flag, at the moment just affects checking for local images
 * Client: return a better message if manifestid wasn't found
 
+### Changed
+* Server: Postgres is now required for the server to operate.
+* Both: SQLite is removed as a dependency of Sous.
+
 ## [0.5.91](//github.com/opentable/sous/compare/0.5.88...0.5.91)
 ### Added
 * Client: Added a footer after command execution that if present, will display the request id that

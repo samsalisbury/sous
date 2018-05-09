@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
+
+  <changeSet author="judson" id="1">
+    <createTable tableName="docker_repo_name">
+      <column autoIncrement="true" name="repo_name_id" type="SERIAL">
+        <constraints primaryKey="true" />
+      </column>
+      <column name="name" type="TEXT">
+        <constraints nullable="false" unique="true"/>
+      </column>
+    </createTable>
+  </changeSet>
+
+  <changeSet author="judson" id="2">
+    <createTable tableName="docker_search_location">
+      <column autoIncrement="true" name="location_id" type="SERIAL">
+        <constraints primaryKey="true" />
+      </column>
+      <column name="repo" type="TEXT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="offset" type="TEXT">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+    <addUniqueConstraint columnNames="repo, offset" tableName="docker_search_location"/>
+  </changeSet>
+
+  <changeSet author="judson" id="3">
+    <createTable tableName="repo_through_location">
+      <column name="repo_name_id" type="INT">
+        <constraints primaryKey="true" nullable="false"
+          references="docker_repo_name" foreignKeyName="repo_name_id" deleteCascade="true"/>
+      </column>
+      <column name="location_id" type="INT">
+        <constraints primaryKey="true" nullable="false"
+          references="docker_search_location" foreignKeyName="location_id" deleteCascade="true"/>
+      </column>
+    </createTable>
+  </changeSet>
+
+  <changeSet author="judson" id="4">
+    <createTable tableName="docker_search_metadata">
+      <column name="metadata_id" autoIncrement="true" type="SERIAL">
+        <constraints primaryKey="true" />
+      </column>
+      <column name="location_id" type="INT">
+        <constraints nullable="false"
+          references="docker_search_location" foreignKeyName="location_id" deleteCascade="true"/>
+      </column>
+      <column name="etag" type="TEXT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="canonicalname" type="TEXT">
+        <constraints nullable="false" unique="true" />
+      </column>
+      <column name="version" type="TEXT">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+    <addUniqueConstraint columnNames="location_id, version" tableName="docker_search_metadata"/>
+  </changeSet>
+
+  <changeSet author="judson" id="5">
+    <createTable tableName="docker_search_name">
+      <column name="name_id" autoIncrement="true" type="SERIAL">
+        <constraints primaryKey="true" />
+      </column>
+      <column name="metadata_id" type="INT">
+        <constraints nullable="false"
+          references="docker_search_metadata" foreignKeyName="metadata_id" deleteCascade="true"/>
+      </column>
+      <column name="name" type="TEXT">
+        <constraints nullable="false" unique="true" />
+      </column>
+    </createTable>
+  </changeSet>
+
+  <changeSet author="judson" id="6">
+    <createTable tableName="docker_image_qualities">
+      <column name="assertion_id" autoIncrement="true" type="SERIAL">
+        <constraints primaryKey="true" />
+      </column>
+      <column name="metadata_id" type="INT">
+        <constraints nullable="false"
+          references="docker_search_metadata" foreignKeyName="metadata_id" deleteCascade="true"/>
+      </column>
+      <column name="quality" type="TEXT">
+        <constraints nullable="false" />
+      </column>
+      <column name="kind" type="TEXT">
+        <constraints nullable="false" />
+      </column>
+    </createTable>
+    <addUniqueConstraint columnNames="metadata_id, quality, kind" tableName="docker_image_qualities"/>
+  </changeSet>
+</databaseChangeLog>

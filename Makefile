@@ -49,10 +49,13 @@ LIQUIBASE_SERVER := jdbc:postgresql://localhost:$(PGPORT)
 LIQUIBASE_FLAGS := $(LIQUIBASE_SERVER)/$(DB_NAME)?user=postgres
 LIQUIBASE_TEST_FLAGS := $(LIQUIBASE_SERVER)/$(TEST_DB_NAME)?user=postgres
 
-SQLITE_URL := https://sqlite.org/2017/sqlite-autoconf-3160200.tar.gz
 GO_VERSION := 1.10
 DESCRIPTION := "Sous is a tool for building, testing, and deploying applications, using Docker, Mesos, and Singularity."
 URL := https://github.com/opentable/sous
+
+ifneq ($(GO_TEST_RUN),)
+EXTRA_GO_TEST_FLAGS := $(EXTRA_GO_TEST_FLAGS) -run $(GO_TEST_RUN)
+endif
 
 TAG_TEST := git describe --exact-match --abbrev=0 2>/dev/null
 ifeq ($(shell $(TAG_TEST) ; echo $$?), 128)
@@ -92,6 +95,8 @@ SOUS_BIN_PATH := $(shell which sous 2> /dev/null || echo $$GOPATH/bin/sous)
 # does not understand the v prefix, so this lops it off.
 SOUS_VERSION ?= $(shell echo $(GIT_TAG) | sed 's/^v//')
 
+DB_NAME ?= sous
+
 ifeq ($(shell git diff-index --quiet HEAD ; echo $$?),0)
 COMMIT := $(shell git rev-parse HEAD)
 else
@@ -116,7 +121,7 @@ LINUX_RELEASE_DIR := sous-linux-amd64_$(SOUS_VERSION)
 RELEASE_DIRS := $(DARWIN_RELEASE_DIR) $(LINUX_RELEASE_DIR)
 DARWIN_TARBALL := $(DARWIN_RELEASE_DIR).tar.gz
 LINUX_TARBALL := $(LINUX_RELEASE_DIR).tar.gz
-CONCAT_XGO_ARGS := -go $(GO_VERSION) -branch master -deps $(SQLITE_URL) --dest $(BIN_DIR) --ldflags $(FLAGS)
+CONCAT_XGO_ARGS := -go $(GO_VERSION) -branch master --dest $(BIN_DIR) --ldflags $(FLAGS)
 COVER_DIR := /tmp/sous-cover
 TEST_VERBOSE := $(if $(VERBOSE),-v,)
 TEST_TEAMCITY := $(if $(TEAMCITY),| ./dev_support/gotest-to-teamcity)
@@ -298,7 +303,7 @@ legendary: .cadre/coverage.vim
 
 test: test-gofmt test-staticcheck test-unit test-integration
 
-test-dev: test-gofmt test-staticcheck test-unit-base
+test-dev: test-gofmt test-staticcheck test-unit-base legendary
 
 test-staticcheck: install-staticcheck
 	echo "staticcheck -ignore "$$(cat staticcheck.ignore)" $(SOUS_PACKAGES)"
@@ -365,7 +370,12 @@ test-smoke: test-smoke-compiles $(SMOKE_TEST_BINARY) $(SMOKE_TEST_LATEST_LINK) s
 test-smoke-nofail:
 	EXCLUDE_KNOWN_FAILING_TESTS=YES SMOKE_TEST_TIMEOUT=10m $(MAKE) test-smoke
 
-$(QA_DESC): sous-qa-setup
+.PHONY: docker-is-working
+docker-is-working:
+	@docker ps > /dev/null || { echo "'docker ps' failed; please ensure it succeeds and try again."; exit 1; } # Only redirects stdout to dev/null so we still see error messages.
+	@echo "'docker ps' succeeded"
+
+$(QA_DESC): docker-is-working sous-qa-setup
 	./sous_qa_setup --compose-dir ./integration/test-registry/ --out-path=$(QA_DESC)
 
 setup-containers: $(QA_DESC)
@@ -425,6 +435,9 @@ postgres-stop:
 
 postgres-connect:
 	psql -h $(DOCKER_HOST_IP) -p $(PGPORT) sous
+
+postgres-validate-schema:
+	liquibase $(LIQUIBASE_FLAGS) validate
 
 postgres-update-schema: postgres-start
 	liquibase $(LIQUIBASE_FLAGS) update

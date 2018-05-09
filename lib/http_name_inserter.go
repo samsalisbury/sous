@@ -1,54 +1,82 @@
 package sous
 
 import (
-	"bytes"
-	"encoding/json"
-	"net/http"
 	"net/url"
+	"sync"
 
-	"github.com/pkg/errors"
+	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/restful"
 )
 
-// An HTTPNameInserter sends its inserts to the configured HTTP server
-type HTTPNameInserter struct {
-	serverURL *url.URL
-	http.Client
-}
+type (
+	// An HTTPNameInserter sends its inserts to the configured HTTP server
+	HTTPNameInserter struct {
+		tid     TraceID
+		client  restful.HTTPClient
+		clients map[string]restful.HTTPClient
+		log     logging.LogSink
+	}
+)
 
 // NewHTTPNameInserter creates a new HTTPNameInserter
-func NewHTTPNameInserter(server string) (*HTTPNameInserter, error) {
-	u, err := url.Parse(server)
-	return &HTTPNameInserter{
-		serverURL: u,
-	}, errors.Wrapf(err, "new state manager")
+func NewHTTPNameInserter(client restful.HTTPClient, tid TraceID, log logging.LogSink) *HTTPNameInserter {
+	return &HTTPNameInserter{client: client, tid: tid, log: log}
+}
+
+func (hni *HTTPNameInserter) getClients() error {
+	if hni.clients != nil {
+		return nil
+	}
+	serverList := serverListData{}
+	_, err := hni.client.Retrieve("./servers", nil, &serverList, nil)
+	if err != nil {
+		return err
+	}
+
+	bundle := map[string]restful.HTTPClient{}
+	for _, s := range serverList.Servers {
+		client, err := restful.NewClient(s.URL, hni.log.Child(s.ClusterName+".http-client"), map[string]string{"OT-RequestId": string(hni.tid)})
+		if err != nil {
+			return err
+		}
+
+		bundle[s.ClusterName] = client
+	}
+	hni.clients = bundle
+	return nil
 }
 
 // Insert implements Inserter for HTTPNameInserter
 func (hni *HTTPNameInserter) Insert(sid SourceID, in, etag string, qs []Quality) error {
-	url, err := hni.serverURL.Parse("./artifact")
-	if err != nil {
-		return errors.Wrapf(err, "http insert name: %s for %v", in, sid)
-	}
-	url.RawQuery = sid.QueryValues().Encode()
-	art := &BuildArtifact{Name: in, Type: "docker", Qualities: qs}
-	buf := &bytes.Buffer{}
-	enc := json.NewEncoder(buf)
-	err = enc.Encode(art)
-	if err != nil {
-		return errors.Wrapf(err, "http insert name %s, encoding %v", in, art)
+	if err := hni.getClients(); err != nil {
+		return err
 	}
 
-	req, err := http.NewRequest("PUT", url.String(), buf)
-	if err != nil {
-		return errors.Wrapf(err, "http insert name %s, building request for %s/%v", in, url, art)
+	wg := sync.WaitGroup{}
+	errs := make(chan error, len(hni.clients))
+	for _, cl := range hni.clients {
+		wg.Add(1)
+		go func(client restful.HTTPClient) {
+			defer wg.Done()
+			art := &BuildArtifact{Name: in, Type: "docker", Qualities: qs}
+			_, err := client.Create("./artifact", simplifyQV(sid.QueryValues()), art, nil)
+			errs <- err
+		}(cl)
 	}
 
-	rz, err := hni.Client.Do(req)
-	if err != nil {
-		return errors.Wrapf(err, "http insert name %s, sending %v", in, req)
-	}
-	if rz.StatusCode >= 200 && rz.StatusCode < 300 {
+	wg.Wait()
+	select {
+	default:
 		return nil
+	case err := <-errs:
+		return err
 	}
-	return errors.Errorf("Received %s when attempting %v", rz.Status, req)
+}
+
+func simplifyQV(qvs url.Values) map[string]string {
+	s := map[string]string{}
+	for n, vs := range qvs {
+		s[n] = vs[0]
+	}
+	return s
 }

@@ -153,6 +153,10 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 
 	messages.ReportLogFieldsMessageToConsole("Exchange PutSingleDeplymentHandler", logging.ExtraDebug1Level, psd.log, did, psd.Body)
 
+	if _, clusterOK := psd.GDM.Defs.Clusters[did.Cluster]; !clusterOK {
+		return psd.err(404, "Cluster %q not defined.", did.Cluster)
+	}
+
 	m, ok := psd.GDM.Manifests.Get(did.ManifestID)
 	if !ok {
 		return psd.err(404, "No manifest with ID %q.", did.ManifestID)

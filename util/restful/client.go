@@ -389,6 +389,8 @@ func (client *LiveHTTPClient) extractBody(rz *http.Response, rzBody interface{},
 		return nil, errors.Errorf("%s: %s", rz.Status, string(b))
 	case rz.StatusCode == http.StatusConflict:
 		return nil, errors.Wrap(retryableError(fmt.Sprintf("%s: %#v", rz.Status, string(b))), "getBody")
+	case rz.Header.Get("Content-Type") != "application/json" && len(b) > 0:
+		return nil, errors.Errorf("%s: Not JSON response: %q\n'%s'", rz.Status, rz.Header.Get("Content-Type"), string(b))
 	}
 
 }

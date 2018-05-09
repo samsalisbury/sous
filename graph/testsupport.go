@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io"
 	"io/ioutil"
+	"testing"
 
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/docker_registry"
@@ -25,26 +26,29 @@ type (
 const defaultConfig = ""
 
 // DefaultTestGraph results a SousGraph suitable for testing without worrying about details.
-func DefaultTestGraph() *SousGraph {
+func DefaultTestGraph(t *testing.T) *SousGraph {
 	stdin := ioutil.NopCloser(bytes.NewReader(nil))
-	return BuildTestGraph(semv.MustParse("1.1.1"), stdin, ioutil.Discard, ioutil.Discard)
+	return BuildTestGraph(t, semv.MustParse("1.1.1"), stdin, ioutil.Discard, ioutil.Discard)
 }
 
 // BuildTestGraph builds a standard graph suitable for testing
-func BuildTestGraph(v semv.Version, in io.Reader, out, err io.Writer) *SousGraph {
-	return TestGraphWithConfig(v, in, out, err, defaultConfig)
+func BuildTestGraph(t *testing.T, v semv.Version, in io.Reader, out, err io.Writer) *SousGraph {
+	return TestGraphWithConfig(t, v, in, out, err, defaultConfig)
 }
 
 // TestGraphWithConfig accepts a custom Sous config string
-func TestGraphWithConfig(v semv.Version, in io.Reader, out, err io.Writer, cfg string) *SousGraph {
+func TestGraphWithConfig(t *testing.T, v semv.Version, in io.Reader, out, err io.Writer, cfg string) *SousGraph {
 
 	graph := BuildGraph(v, in, out, err)
 
+	db := sous.SetupDB(t)
+	defer sous.ReleaseDB(t)
+
 	// Add missing stuff to the graph (these are things that come from early
 	// initialization in main.go.
-	graph.Add(func() logging.LogSink {
-		return logging.SilentLogSet()
-	})
+	graph.Add(
+		func() logging.LogSink { return logging.SilentLogSet() },
+	)
 
 	// testGraph methods affect graph as well.
 	testGraph := psyringe.TestPsyringe{Psyringe: graph.Psyringe}
@@ -56,6 +60,7 @@ func TestGraphWithConfig(v semv.Version, in io.Reader, out, err io.Writer, cfg s
 	testGraph.Replace(newDummyDockerClient)
 	testGraph.Replace(newServerHandler)
 	testGraph.Replace(newServerStateManager)
+	testGraph.Replace(MaybeDatabase{Db: db, Err: nil})
 
 	// Add config.
 	testGraph.Add(configYAML(cfg))

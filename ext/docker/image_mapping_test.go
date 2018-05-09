@@ -3,11 +3,9 @@ package docker
 import (
 	"bytes"
 	"crypto/sha256"
-	"database/sql"
 	"encoding/hex"
 	"fmt"
 	"os"
-	"os/exec"
 	"testing"
 
 	"github.com/nyarly/spies"
@@ -19,72 +17,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func inMemoryDB(name string) *sql.DB {
-	db, err := GetDatabase(&DBConfig{"sqlite3_sous", InMemoryConnection(name)})
-	if err != nil {
-		panic(err)
-	}
-	return db
-}
-
-func BenchmarkFPSchema(b *testing.B) {
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		fingerPrintSchema(schema)
-	}
-}
-
-func BenchmarkRecreateDB(b *testing.B) {
-	exec.Command("rm", "-rf", "testdata").Run()
-	os.MkdirAll("testdata", os.ModeDir|os.ModePerm)
-	defer func() {
-		b.StopTimer()
-		exec.Command("rm", "-rf", "testdata").Run()
-	}()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		_, err := GetDatabase(&DBConfig{"sqlite3_sous", "testdata/test.db"})
-		if err != nil {
-			b.Log(err)
-		}
-	}
-}
-
-func BenchmarkCreateDB(b *testing.B) {
-	exec.Command("rm", "-rf", "testdata").Run()
-	os.MkdirAll("testdata", os.ModeDir|os.ModePerm)
-	defer func() {
-		b.StopTimer()
-		exec.Command("rm", "-rf", "testdata").Run()
-	}()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		dbName := fmt.Sprintf("testdata/test%d.db", i)
-		_, err := GetDatabase(&DBConfig{"sqlite3_sous", dbName})
-		if err != nil {
-			b.Log(err)
-		}
-	}
-}
-
-func BenchmarkCreateInMemoryDB(b *testing.B) {
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		dbName := fmt.Sprintf("inmemory%d.db", i)
-		_, err := GetDatabase(&DBConfig{"sqlite3_sous", InMemoryConnection(dbName)})
-		if err != nil {
-			b.Log(err)
-		}
-	}
-}
-
 func TestHarvestGuessedRepo(t *testing.T) {
 	assert := assert.New(t)
 
 	dc := docker_registry.NewDummyClient()
 
 	host := "docker.repo.io"
-	nc, err := NewNameCache(host, dc, logging.SilentLogSet(), inMemoryDB("guessed_repo"))
+	nc, err := NewNameCache(host, dc, logging.SilentLogSet(), sous.SetupDB(t))
+	defer sous.ReleaseDB(t)
 	assert.NoError(err)
 
 	sl := sous.SourceLocation{
@@ -106,13 +46,18 @@ func TestRoundTrip(t *testing.T) {
 	host := "docker.repo.io"
 	base := "ot/wackadoo"
 
-	nc, err := NewNameCache(host, dc, logging.SilentLogSet(), inMemoryDB("roundtrip"))
+	nc, err := NewNameCache(host, dc, logging.SilentLogSet(), sous.SetupDB(t))
+	defer sous.ReleaseDB(t)
 	assert.NoError(err)
 
 	sv := sous.MustNewSourceID("https://github.com/opentable/wackadoo", "nested/there", "1.2.3")
 
 	in := base + ":version-1.2.3"
 	digest := "sha256:012345678901234567890123456789AB012345678901234567890123456789AB"
+	err = nc.Insert(sv, in, digest, []sous.Quality{})
+	assert.NoError(err)
+
+	// inserts should be idempotent
 	err = nc.Insert(sv, in, digest, []sous.Quality{})
 	assert.NoError(err)
 
@@ -155,7 +100,8 @@ func TestCanonicalizesToConfiguredRegistry(t *testing.T) {
 	dockerCache := "nearby-docker-cache.repo.io"
 	base := "ot/wackadoo"
 
-	nc, err := NewNameCache(dockerCache, dc, logging.SilentLogSet(), inMemoryDB("canonsucceeds"))
+	nc, err := NewNameCache(dockerCache, dc, logging.SilentLogSet(), sous.SetupDB(t))
+	defer sous.ReleaseDB(t)
 	assert.NoError(err)
 
 	in := base + ":version-1.2.3"
@@ -214,7 +160,8 @@ func TestLeavesRegistryUnchangedWhenUnknown(t *testing.T) {
 	dockerCache := "nearby-docker-cache.repo.io"
 	base := "ot/wackadoo"
 
-	nc, err := NewNameCache(dockerCache, dc, logging.SilentLogSet(), inMemoryDB("canonsucceeds"))
+	nc, err := NewNameCache(dockerCache, dc, logging.SilentLogSet(), sous.SetupDB(t))
+	defer sous.ReleaseDB(t)
 	assert.NoError(err)
 
 	in := base + ":version-1.2.3"
@@ -261,7 +208,8 @@ func TestHarvestAlso(t *testing.T) {
 	base := "ot/wackadoo"
 	repo := "github.com/opentable/test-app"
 
-	nc, err := NewNameCache(host, dc, logging.SilentLogSet(), inMemoryDB("harvest_also"))
+	nc, err := NewNameCache(host, dc, logging.SilentLogSet(), sous.SetupDB(t))
+	defer sous.ReleaseDB(t)
 	assert.NoError(err)
 
 	stuffBA := func(n, v string) sous.SourceID {
@@ -309,7 +257,8 @@ func TestSecondCanonicalName(t *testing.T) {
 
 	host := "docker.repo.io"
 	base := "ot/wackadoo"
-	nc, err := NewNameCache(host, dc, logging.SilentLogSet(), inMemoryDB("secondCN"))
+	nc, err := NewNameCache(host, dc, logging.SilentLogSet(), sous.SetupDB(t))
+	defer sous.ReleaseDB(t)
 	require.NoError(t, err)
 
 	repo := "github.com/opentable/test-app"
@@ -358,7 +307,8 @@ func TestHarvesting(t *testing.T) {
 
 	host := "docker.repo.io"
 	base := "wackadoo/nested/there"
-	nc, err := NewNameCache(host, dc, logging.SilentLogSet(), inMemoryDB("harvesting"))
+	nc, err := NewNameCache(host, dc, logging.SilentLogSet(), sous.SetupDB(t))
+	defer sous.ReleaseDB(t)
 	assert.NoError(err)
 
 	v := "1.2.3"
@@ -413,7 +363,8 @@ func TestRecordAdvisories(t *testing.T) {
 	dc := docker_registry.NewDummyClient()
 	host := "docker.repo.io"
 	base := "ot/wackadoo"
-	nc, err := NewNameCache(host, dc, logging.SilentLogSet(), inMemoryDB("advisories"))
+	nc, err := NewNameCache(host, dc, logging.SilentLogSet(), sous.SetupDB(t))
+	defer sous.ReleaseDB(t)
 	require.NoError(err)
 	v := "1.2.3"
 	sv := sous.MustNewSourceID("https://github.com/opentable/wackadoo", "nested/there", v)
@@ -438,7 +389,8 @@ func TestDump(t *testing.T) {
 	io := &bytes.Buffer{}
 
 	dc := docker_registry.NewDummyClient()
-	nc, err := NewNameCache("", dc, logging.SilentLogSet(), inMemoryDB("dump"))
+	nc, err := NewNameCache("", dc, logging.SilentLogSet(), sous.SetupDB(t))
+	defer sous.ReleaseDB(t)
 	assert.NoError(err)
 
 	nc.dump(io)
@@ -448,7 +400,8 @@ func TestDump(t *testing.T) {
 func TestMissingName(t *testing.T) {
 	assert := assert.New(t)
 	dc := docker_registry.NewDummyClient()
-	nc, err := NewNameCache("", dc, logging.SilentLogSet(), inMemoryDB("missing"))
+	nc, err := NewNameCache("", dc, logging.SilentLogSet(), sous.SetupDB(t))
+	defer sous.ReleaseDB(t)
 	assert.NoError(err)
 
 	v := "4.5.6"
@@ -459,18 +412,4 @@ func TestMissingName(t *testing.T) {
 	name, _, err := nc.getImageName(sv)
 	assert.Equal("", name)
 	assert.Error(err)
-}
-
-func TestUnion(t *testing.T) {
-	assert := assert.New(t)
-
-	left := []string{"a", "b", "c"}
-	right := []string{"b", "c", "d"}
-
-	all := union(left, right)
-	assert.Equal(len(all), 4)
-	assert.Contains(all, "a")
-	assert.Contains(all, "b")
-	assert.Contains(all, "c")
-	assert.Contains(all, "d")
 }

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io/ioutil"
 	"log"
+	"os"
 	"testing"
 
 	"github.com/opentable/sous/config"
@@ -96,7 +97,7 @@ func TestComponentLocatorInjection(t *testing.T) {
 
 	g.Add(DryrunBoth)
 	g.Add(&config.Verbosity{})
-	g.Add(&config.DeployFilterFlags{})
+	g.Add(&config.DeployFilterFlags{Cluster: "test"})
 
 	tg := &psyringe.TestPsyringe{Psyringe: g.Psyringe}
 	rawConfig := RawConfig{Config: &config.Config{}}
@@ -107,11 +108,25 @@ func TestComponentLocatorInjection(t *testing.T) {
 	logcfg.Kafka.BrokerList = "kafka.example.com:9292"
 	logcfg.Graphite.Enabled = true
 	logcfg.Graphite.Server = "localhost:3333"
+
+	port := "6543"
+	if ps, got := os.LookupEnv("PGPORT"); got {
+		port = ps
+	}
+
+	name := "componentlocatorinjection"
+	sous.SetupDB(t)
+	defer sous.ReleaseDB(t)
+
+	rawConfig.Database.Host = "localhost"
+	rawConfig.Database.Port = port
+	rawConfig.Database.DBName = "sous_test_" + name
+
 	tg.Replace(rawConfig)
 
 	scoop := struct{ server.ComponentLocator }{}
 
-	g.MustInject(&scoop)
+	tg.MustInject(&scoop)
 
 	locator := scoop.ComponentLocator
 
@@ -136,7 +151,6 @@ func injectedStateManager(t *testing.T, cfg *config.Config) *StateManager {
 	g.Add(newStateManager)
 	g.Add(LocalSousConfig{Config: cfg})
 	g.Add(newServerComponentLocator)
-	g.Add(newResolveFilter)
 	g.Add(newSourceHostChooser)
 	g.Add(DryrunBoth)
 	g.Add(newDeployer)
@@ -154,7 +168,9 @@ func injectedStateManager(t *testing.T, cfg *config.Config) *StateManager {
 	g.Add(newHTTPClientBundle)
 	g.Add(NewR11nQueueSet)
 	g.Add(rff)
+	g.Add((*sous.ResolveFilter)(rff))
 	g.Add(g)
+	g.Add(MaybeDatabase{})
 
 	smRcvr := struct {
 		Sm *StateManager

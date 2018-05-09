@@ -38,13 +38,8 @@ func TestBuildDeployments(t *testing.T) {
 	drc := docker_registry.NewClient(log)
 	drc.BecomeFoolishlyTrusting()
 
-	db, err := docker.GetDatabase(&docker.DBConfig{
-		Driver:     "sqlite3_sous",
-		Connection: docker.InMemoryConnection("testresolve"),
-	})
-	if err != nil {
-		panic(err)
-	}
+	db := sous.SetupDB(t)
+	defer sous.ReleaseDB(t)
 
 	appLocation := "testhelloreq"
 	clusterNick := "tcluster"
