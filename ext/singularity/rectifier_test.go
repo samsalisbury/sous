@@ -259,17 +259,15 @@ func TestModify(t *testing.T) {
 	before := "1.2.3-test"
 	after := "2.3.4-new"
 
-	logger, _ := logging.NewLogSinkSpy()
-
 	pair := baseDeployablePair()
 
 	pair.Prior.Deployment.SourceID.Version = semv.MustParse(before)
 	pair.Prior.Deployment.DeployConfig.NumInstances = 1
-	pair.Prior.Deployment.DeployConfig.Volumes = sous.Volumes{{"host", "container", "RO", &logger}}
+	pair.Prior.Deployment.DeployConfig.Volumes = sous.Volumes{{"host", "container", "RO"}}
 
 	pair.Post.Deployment.SourceID.Version = semv.MustParse(after)
 	pair.Post.Deployment.DeployConfig.NumInstances = 24
-	pair.Post.Deployment.DeployConfig.Volumes = sous.Volumes{{"host", "container", "RW", &logger}}
+	pair.Post.Deployment.DeployConfig.Volumes = sous.Volumes{{"host", "container", "RW"}}
 	pair.Post.BuildArtifact.Name = "2.3.4"
 
 	mods := make(chan *sous.DeployablePair, 1)
