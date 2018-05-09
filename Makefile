@@ -7,17 +7,11 @@ PGPORT ?= 6543
 USER_ID ?= $(shell id -u)
 GROUP_ID ?= $(shell id -g)
 
-
-DOCKER_HOST_IP_PARSED ?= $(shell echo "$(DOCKER_HOST)" | grep -E -o '(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)')
-DOCKER_HOST_LOCALHOST := localhost
-DOCKER_HOST_IP := $(if $(DOCKER_HOST_IP_PARSED),$(DOCKER_HOST_IP_PARSED),$(DOCKER_HOST_LOCALHOST))
-
-
 DB_NAME = sous
 TEST_DB_NAME = sous_test_template
 
 LIQUIBASE_DEFAULTS := ./dev_support/liquibase/liquibase.properties
-LIQUIBASE_SERVER := jdbc:postgresql://$(DOCKER_HOST_IP):$(PGPORT)
+LIQUIBASE_SERVER := jdbc:postgresql://localhost:$(PGPORT)
 
 LIQUIBASE_FLAGS := $(LIQUIBASE_SERVER)/$(DB_NAME)?user=postgres
 LIQUIBASE_TEST_FLAGS := $(LIQUIBASE_SERVER)/$(TEST_DB_NAME)?user=postgres
@@ -384,14 +378,14 @@ postgres-start:
 	install -d -m 0700 $(DEV_POSTGRES_DATA_DIR)
 	docker run -d --name postgres -p $(PGPORT):5432 --rm --user $(USER_ID):$(GROUP_ID) -v /etc/passwd:/etc/passwd:ro -v $(DEV_POSTGRES_DATA_DIR):/var/lib/postgresql/data postgres:10.3
 	sleep 5
-	docker run --net=host postgres:10.3 createdb -h $(DOCKER_HOST_IP) -p $(PGPORT) -U postgres -w $(TEST_DB_NAME) > /dev/null 2>&1 || true
+	docker run --net=host postgres:10.3 createdb -h localhost -p $(PGPORT) -U postgres -w $(TEST_DB_NAME) > /dev/null 2>&1 || true
 	docker run --net=host --rm -e CHANGELOG_FILE=changelog.xml -v $(PWD)/database:/changelogs -e "URL=$(LIQUIBASE_TEST_FLAGS)" jcastillo/liquibase:0.0.7
 
 postgres-stop:
 	docker stop postgres > /dev/null 2>&1 || true
 
 postgres-connect:
-	psql -h $(DOCKER_HOST_IP) -p $(PGPORT) sous
+	psql -h localhost -p $(PGPORT) sous
 
 postgres-update-schema: postgres-start
 	liquibase $(LIQUIBASE_FLAGS) update
