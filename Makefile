@@ -18,14 +18,14 @@ endef
 
 define START_POSTGRES
 docker ps
-@if [ $(POSTGRES_CONTAINER_RUNNING) = NO ]; then docker run -d --name $(POSTGRES_CONTAINER_NAME) -p $(PGPORT):5432 -v $(POSTGRES_DATA_VOLUME):/var/lib/postgresql/data postgres:10.3 && echo -n Postgres container started; else echo -n Postgres container already running; fi; echo ": $(POSTGRES_CONTAINER_NAME)"
+@if [ $(POSTGRES_CONTAINER_RUNNING) = NO ]; then docker run -d --name $(POSTGRES_CONTAINER_NAME) -p $(PGPORT):5432 -v $(POSTGRES_DATA_VOLUME_NAME):/var/lib/postgresql/data postgres:10.3 && echo -n Postgres container started; else echo -n Postgres container already running; fi; echo ": $(POSTGRES_CONTAINER_NAME)"
 sleep 5
 docker run --net=host postgres:10.3 createdb -h localhost -p $(PGPORT) -U postgres -w $(TEST_DB_NAME)
 docker run --net=host --rm -e CHANGELOG_FILE=changelog.xml -v $(PWD)/database:/changelogs -e "URL=$(LIQUIBASE_TEST_FLAGS)" jcastillo/liquibase:0.0.7
 endef
 
 define DELETE_POSTGRES_DATA
-@if [ $(POSTGRES_DATA_VOLUME_EXISTS) = YES ]; then docker volume rm $(POSTGRES_DATA_VOLUME_NAME) && echo Postgres data volume deleted: $(POSTGRES_CONTAINER_NAME); else echo Postgres data volume does not exist.; fi
+@if [ $(POSTGRES_DATA_VOLUME_EXISTS) = YES ]; then docker volume rm $(POSTGRES_DATA_VOLUME_NAME) && echo Postgres data volume deleted: $(POSTGRES_DATA_VOLUME_NAME); else echo Postgres data volume does not exist.; fi
 endef
 
 XDG_DATA_HOME ?= $(HOME)/.local/share
