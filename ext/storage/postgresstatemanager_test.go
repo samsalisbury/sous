@@ -35,7 +35,6 @@ func SetupTest(t *testing.T, name string) *PostgresStateManagerSuite {
 	}
 
 	db := sous.SetupDB(t)
-	defer sous.ReleaseDB(t)
 
 	sink, ctrl := logging.NewLogSinkSpy()
 	suite.manager = NewPostgresStateManager(db, sink)
@@ -57,7 +56,8 @@ func SetupTest(t *testing.T, name string) *PostgresStateManagerSuite {
 }
 
 func TestPostgresStateManagerWriteState_success(t *testing.T) {
-	suite := SetupTest(t, "state_mngr_write_success")
+	suite := SetupTest(t, "postgresstatemanagerwriate_success") // because s/test//g
+	defer sous.ReleaseDB(t)
 
 	s := exampleState()
 

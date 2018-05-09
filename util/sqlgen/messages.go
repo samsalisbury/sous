@@ -44,6 +44,7 @@ func (dir direction) String() string {
 	}
 	return "read"
 }
+
 func newSQLMessage(started time.Time, mainTable string, dir direction, sql string, rowcount int, err error) *sqlMessage {
 	return &sqlMessage{
 		CallerInfo:      logging.GetCallerInfo(logging.NotHere()),
@@ -56,8 +57,29 @@ func newSQLMessage(started time.Time, mainTable string, dir direction, sql strin
 	}
 }
 
-func reportSQLMessage(log logging.LogSink, started time.Time, mainTable string, dir direction, sql string, rowcount int, err error, vals ...interface{}) {
-	msg := newSQLMessage(started, mainTable, dir, sql, rowcount, err)
+// ReportSelect traces SQL selects
+func ReportSelect(log logging.LogSink, started time.Time, mainTable string, sql string, rowcount int, err error, vals ...interface{}) {
+	msg := newSQLMessage(started, mainTable, read, sql, rowcount, err)
+	msg.ExcludeMe()
+	if len(vals) > 0 {
+		msg.val = valueList(vals)
+	}
+	logging.Deliver(log, msg)
+}
+
+// ReportInsert traces SQL inserts
+func ReportInsert(log logging.LogSink, started time.Time, mainTable string, sql string, rowcount int, err error, vals ...interface{}) {
+	msg := newSQLMessage(started, mainTable, write, sql, rowcount, err)
+	msg.ExcludeMe()
+	if len(vals) > 0 {
+		msg.val = valueList(vals)
+	}
+	logging.Deliver(log, msg)
+}
+
+// ReportUpdate traces SQL updates
+func ReportUpdate(log logging.LogSink, started time.Time, mainTable string, sql string, rowcount int, err error, vals ...interface{}) {
+	msg := newSQLMessage(started, mainTable, write, sql, rowcount, err)
 	msg.ExcludeMe()
 	if len(vals) > 0 {
 		msg.val = valueList(vals)

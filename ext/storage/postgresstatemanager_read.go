@@ -8,6 +8,7 @@ import (
 	"github.com/lib/pq"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/sqlgen"
 	"github.com/pkg/errors"
 	"github.com/samsalisbury/semv"
 )
@@ -291,21 +292,21 @@ func loadTable(ctx context.Context, log logging.LogSink, tx *sql.Tx, mainTable s
 	start := time.Now()
 	rows, err := tx.QueryContext(ctx, sql)
 	if err != nil {
-		reportSQLMessage(log, start, mainTable, read, sql, rowcount, err)
+		sqlgen.ReportSelect(log, start, mainTable, sql, rowcount, err)
 		return errors.Wrapf(err, "loadTable %q", sql)
 	}
 	defer rows.Close()
 	for rows.Next() {
 		rowcount++
 		if err := pack(rows); err != nil {
-			reportSQLMessage(log, start, mainTable, read, sql, rowcount, err)
+			sqlgen.ReportSelect(log, start, mainTable, sql, rowcount, err)
 			return errors.Wrapf(err, "sql %q", sql)
 		}
 	}
 	if err := rows.Err(); err != nil {
-		reportSQLMessage(log, start, mainTable, read, sql, rowcount, err)
+		sqlgen.ReportSelect(log, start, mainTable, sql, rowcount, err)
 		return errors.Wrapf(err, "loadTable query error %q", sql)
 	}
-	reportSQLMessage(log, start, mainTable, read, sql, rowcount, nil)
+	sqlgen.ReportSelect(log, start, mainTable, sql, rowcount, nil)
 	return nil
 }

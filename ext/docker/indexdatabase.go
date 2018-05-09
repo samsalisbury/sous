@@ -5,11 +5,11 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/docker/distribution/reference"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
-	"github.com/opentable/sous/util/logging/messages"
 	"github.com/opentable/sous/util/sqlgen"
 	"github.com/pkg/errors"
 	"github.com/samsalisbury/semv"
@@ -18,7 +18,7 @@ import (
 func (nc *NameCache) captureRepos(db *sql.DB) (repos []string) {
 	res, err := db.Query("select name from docker_repo_name;")
 	if err != nil {
-		messages.ReportLogFieldsMessage("captureRepos", logging.WarningLevel, nc.Log, err)
+		nc.log("captureRepos", logging.WarningLevel, err)
 		return
 	}
 	defer res.Close()
@@ -233,34 +233,38 @@ func (nc *NameCache) dbQueryOnSourceID(sid sous.SourceID) (cn string, ins []stri
 }
 
 func (nc *NameCache) dbQueryCNameforSourceID(sid sous.SourceID) (cn string, ins []string, err error) {
-	rows, err := nc.DB.Query("select docker_search_metadata.canonicalname, "+
-		"docker_search_name.name "+
-		"from "+
-		"docker_search_name natural join docker_search_metadata "+
-		"natural join docker_search_location "+
-		"where "+
-		"docker_search_location.repo = $1 and "+
-		"docker_search_location.offset = $2 and "+
-		"docker_search_metadata.version = $3",
-		sid.Location.Repo, sid.Location.Dir, versionString(sid.Version))
+	start := time.Now()
+	query := "select docker_search_metadata.canonicalname, " +
+		"docker_search_name.name " +
+		"from " +
+		"docker_search_name natural join docker_search_metadata " +
+		"natural join docker_search_location " +
+		"where " +
+		"docker_search_location.repo = $1 and " +
+		"docker_search_location.offset = $2 and " +
+		"docker_search_metadata.version = $3"
+	rows, err := nc.DB.Query(query, sid.Location.Repo, sid.Location.Dir, versionString(sid.Version))
 
-	nc.log("Selecting", logging.ExtraDebug1Level, sid)
-
-	if err == sql.ErrNoRows {
-		err = errors.Wrap(NoImageNameFound{sid}, "")
-		return
-	}
 	if err != nil {
+		sqlgen.ReportSelect(nc.Log, start, "docker_search_metadata", query, 0, err,
+			sid.Location.Repo, sid.Location.Dir, versionString(sid.Version))
+		if err == sql.ErrNoRows {
+			err = errors.Wrap(NoImageNameFound{sid}, "")
+		}
 		return
 	}
 	defer rows.Close()
 
+	rowcount := 0
 	for rows.Next() {
+		rowcount++
 		var in string
 		rows.Scan(&cn, &in)
 		ins = append(ins, in)
 	}
 	err = rows.Err()
+	sqlgen.ReportSelect(nc.Log, start, "docker_search_metadata", query, rowcount, err,
+		sid.Location.Repo, sid.Location.Dir, versionString(sid.Version))
 	if len(ins) == 0 {
 		err = errors.Wrap(NoImageNameFound{sid}, "")
 	}

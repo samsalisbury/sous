@@ -164,6 +164,19 @@ func NewLogSet(version semv.Version, name string, role string, err io.Writer, co
 	// its children.
 	lgrs := logrus.New()
 	lgrs.Out = err
+	if useTerse := os.Getenv("SOUS_TERSE_LOGGING"); useTerse != "" { //XXX config this
+		f := newTerseFormatter(
+			[]FieldName{SousSqlRows, SousSqlQuery, Status, Url},
+			[]FieldName{CallStackTrace, CallStackCode, CallStackFile,
+				CallStackLineNumber, CallStackMessage, ComponentId,
+				FieldName("call-stack-function"), SousIds, SousIdValues,
+				SousFields, SousTypes, Timestamp, Host, InstanceNo, OtEnv, OtEnvFlavor,
+				OtEnvLocation, OtEnvType, ThreadName, Uuid, ApplicationVersion,
+				ServiceType, SingularityTaskId, JsonValue, SousErrorBacktrace},
+		)
+		f.StackTraceField = string(CallStackTrace)
+		lgrs.Formatter = f
+	}
 
 	bundle := newdb(version, err, lgrs)
 

@@ -1,25 +1,25 @@
-package storage
+package sqlgen
 
 import (
+	"errors"
 	"testing"
 	"time"
 
 	"github.com/opentable/sous/util/logging"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/mock"
 )
 
 func TestSQLMessageError(t *testing.T) {
 	start := time.Now()
 	spy, message := logging.AssertReport(t, func(log logging.LogSink) {
-		reportSQLMessage(log, start, "test-table", write, "insert into test-table (x,y,z) = (1,2,3)", 1, errors.New("the database exploded"))
+		ReportInsert(log, start, "test-table", "insert into test-table (x,y,z) = (1,2,3)", 1, errors.New("the database exploded"))
 	})
 
 	logging.AssertMessageFieldlist(t, message, append(logging.StandardVariableFields, logging.IntervalVariableFields...), map[string]interface{}{
 		"@loglov3-otl":         logging.SousSql,
 		"call-stack-message":   "the database exploded",
 		"severity":             logging.WarningLevel,
-		"call-stack-function":  "github.com/opentable/sous/ext/storage.TestSQLMessageError",
+		"call-stack-function":  "github.com/opentable/sous/util/sqlgen.TestSQLMessageError",
 		"sous-sql-query":       "insert into test-table (x,y,z) = (1,2,3)",
 		"sous-sql-rows":        1,
 		"sous-sql-errreturned": "the database exploded",
@@ -34,14 +34,14 @@ func TestSQLMessageError(t *testing.T) {
 func TestSQLMessageWrite(t *testing.T) {
 	start := time.Now()
 	spy, message := logging.AssertReport(t, func(log logging.LogSink) {
-		reportSQLMessage(log, start, "test-table", write, "insert into test-table (x,y,z) = (1,2,3)", 1, nil)
+		ReportInsert(log, start, "test-table", "insert into test-table (x,y,z) = (1,2,3)", 1, nil)
 	})
 
 	logging.AssertMessageFieldlist(t, message, append(logging.StandardVariableFields, logging.IntervalVariableFields...), map[string]interface{}{
 		"@loglov3-otl":        logging.SousSql,
 		"call-stack-message":  "SQL query",
 		"severity":            logging.InformationLevel,
-		"call-stack-function": "github.com/opentable/sous/ext/storage.TestSQLMessageWrite",
+		"call-stack-function": "github.com/opentable/sous/util/sqlgen.TestSQLMessageWrite",
 		"sous-sql-query":      "insert into test-table (x,y,z) = (1,2,3)",
 		"sous-sql-rows":       1,
 	})
@@ -55,14 +55,14 @@ func TestSQLMessageWrite(t *testing.T) {
 func TestSQLMessageRead(t *testing.T) {
 	start := time.Now()
 	spy, message := logging.AssertReport(t, func(log logging.LogSink) {
-		reportSQLMessage(log, start, "test-table", read, "select * from test-table", 100, nil)
+		ReportSelect(log, start, "test-table", "select * from test-table", 100, nil)
 	})
 
 	logging.AssertMessageFieldlist(t, message, append(logging.StandardVariableFields, logging.IntervalVariableFields...), map[string]interface{}{
 		"@loglov3-otl":        logging.SousSql,
 		"call-stack-message":  "SQL query",
 		"severity":            logging.InformationLevel,
-		"call-stack-function": "github.com/opentable/sous/ext/storage.TestSQLMessageRead",
+		"call-stack-function": "github.com/opentable/sous/util/sqlgen.TestSQLMessageRead",
 		"sous-sql-query":      "select * from test-table",
 		"sous-sql-rows":       100,
 	})

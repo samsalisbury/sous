@@ -59,6 +59,12 @@ func (vs Volumes) Clone() Volumes {
 	return vols
 }
 
+//EachField implements EachFielder
+func (d Deployment) EachField(f logging.FieldReportFn) {
+	sm := NewDeploymentSubmessage("", &d)
+	sm.EachField(f)
+}
+
 func (d *Deployment) String() string {
 	if d == nil {
 		return "<nil>"

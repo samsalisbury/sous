@@ -163,16 +163,16 @@ func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
 	in := a.Name
 	var sid sous.SourceID
 
-	messages.ReportLogFieldsMessage("Getting source ID for", logging.ExtraDebug1Level, nc.Log, in)
+	nc.log("Getting source ID for", logging.ExtraDebug1Level, in)
 
 	etag, repo, offset, version, _, err := nc.dbQueryOnName(in)
 	if nif, ok := err.(NoSourceIDFound); ok {
-		messages.ReportLogFieldsMessage("err.(NoSourceIDFound)", logging.ExtraDebug1Level, nc.Log, nif)
+		nc.log("Error: no source ID found", logging.ExtraDebug1Level, nif, a)
 	} else if err != nil {
-		messages.ReportLogFieldsMessage("GetSourceID error", logging.WarningLevel, nc.Log, err)
+		nc.log("GetSourceID error", logging.WarningLevel, err)
 		return sous.SourceID{}, err
 	} else {
-		messages.ReportLogFieldsMessage("Found", logging.ExtraDebug1Level, nc.Log, repo, offset, version, etag)
+		nc.log("Found", logging.ExtraDebug1Level, repo, offset, version, etag)
 
 		sid, err = sous.NewSourceID(repo, offset, version)
 		if err != nil {
@@ -182,25 +182,25 @@ func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
 		dockerRef, err := reference.Parse(in)
 
 		if r, isRef := dockerRef.(reference.Digested); err == nil && isRef {
-			messages.ReportLogFieldsMessage("Image name has digest: using knows source ID", logging.DebugLevel, nc.Log, r, sid)
+			nc.log("Image name has digest: using knows source ID", logging.DebugLevel, r, sid)
 			return sid, nil
 		}
 	}
 
 	md, err := nc.RegistryClient.GetImageMetadata(in, etag)
-	messages.ReportLogFieldsMessage("md and err", logging.ExtraDebug1Level, nc.Log, md, err)
+	nc.log("md and err", logging.ExtraDebug1Level, md, err)
 	if meansBodyUnchanged(err) {
-		messages.ReportLogFieldsMessage("Image Name and SourceID", logging.ExtraDebug1Level, nc.Log, in, sid)
+		nc.log("Image Name and SourceID", logging.ExtraDebug1Level, in, sid)
 		return sid, nil
 	}
 	if err != nil {
-		messages.ReportLogFieldsMessage("No docker image found: "+err.Error(), logging.ExtraDebug1Level, nc.Log, in, sid, err)
+		nc.log("No docker image found: "+err.Error(), logging.ExtraDebug1Level, in, sid, err)
 		return sid, err
 	}
 
 	newSID, err := SourceIDFromLabels(md.Labels)
 	if err != nil {
-		messages.ReportLogFieldsMessage("SourceIDFromLabels failed: "+err.Error(), logging.ExtraDebug1Level, nc.Log, in, sid, err)
+		nc.log("SourceIDFromLabels failed: "+err.Error(), logging.ExtraDebug1Level, in, sid, err)
 		return sid, err
 	}
 
@@ -213,14 +213,14 @@ func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
 		_, err := nc.RegistryClient.GetImageMetadata(fullCanon, md.Etag)
 		if err != nil && !meansBodyUnchanged(err) {
 			fullCanon = md.Registry + "/" + md.CanonicalName
-			messages.ReportLogFieldsMessage("Docker image not found, leaving as", logging.DebugLevel, nc.Log, md.CanonicalName, nc.DockerRegistryHost, fullCanon)
+			nc.log("Docker image not found, leaving as", logging.DebugLevel, md.CanonicalName, nc.DockerRegistryHost, fullCanon)
 		}
 	}
 
-	messages.ReportLogFieldsMessage("Recording with etag as canonical for", logging.ExtraDebug1Level, nc.Log, fullCanon, md.Etag, newSID)
+	nc.log("Recording with etag as canonical for", logging.ExtraDebug1Level, fullCanon, md.Etag, newSID)
 	err = nc.dbInsert(newSID, fullCanon, md.Etag, qualities)
 	if err != nil {
-		messages.ReportLogFieldsMessage("Err recording", logging.DebugLevel, nc.Log, fullCanon, err)
+		nc.log("Err recording", logging.DebugLevel, fullCanon, err)
 		return sid, err
 	}
 
@@ -229,14 +229,14 @@ func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
 		names = append(names, nc.DockerRegistryHost+"/"+n)
 	}
 	err = nc.dbAddNames(nc.DockerRegistryHost+"/"+md.CanonicalName, names)
-	messages.ReportLogFieldsMessage("Recorded additional names", logging.ExtraDebug1Level, nc.Log, md.AllNames, fullCanon, nc.DockerRegistryHost, err)
+	nc.log("Recorded additional names", logging.ExtraDebug1Level, md.AllNames, fullCanon, nc.DockerRegistryHost, err)
 	if err != nil && mirrored {
 		err = nc.dbAddNames(md.Registry+"/"+md.CanonicalName, names)
-		messages.ReportLogFieldsMessage("Recorded mirrored names", logging.ExtraDebug1Level, nc.Log, md.AllNames, md.Registry+"/"+md.CanonicalName, md.Registry, err)
+		nc.log("Recorded mirrored names", logging.ExtraDebug1Level, md.AllNames, md.Registry+"/"+md.CanonicalName, md.Registry, err)
 	}
 
 	reportTableMetrics(nc.Log, nc.DB)
-	messages.ReportLogFieldsMessage("Images name (updated Source ID:)", logging.DebugLevel, nc.Log, in, newSID)
+	nc.log("Images name (updated Source ID:)", logging.DebugLevel, in, newSID)
 	return newSID, err
 }
 
@@ -437,7 +437,5 @@ func versionString(v semv.Version) string {
 }
 
 func (nc *NameCache) log(msg string, lvl logging.Level, data ...interface{}) {
-	logging.Deliver(nc.Log, append([]interface{}{
-		logging.SousGenericV1, logging.MessageField(msg), lvl, logging.GetCallerInfo(logging.NotHere()),
-	}, data...)...)
+	log(nc.Log, msg, lvl, data...)
 }
