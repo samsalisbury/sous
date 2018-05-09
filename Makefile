@@ -8,12 +8,25 @@ POSTGRES_DATA_VOLUME_EXISTS := YES
 endif
 
 POSTGRES_CONTAINER_NAME ?= sous_dev_postgres
-POSTGRES_CONTAINER_ID := $(shell docker ps -q --no-trunc --filter name=^/$(POSTGRES_CONTAINER_NAME)$$)
-ifeq ($(POSTGRES_CONTAINER_ID),)
-POSTGRES_CONTAINER_RUNNING := NO
-else
-POSTGRES_CONTAINER_RUNNING := YES
-endif
+POSTGRES_CONTAINER_ID = $(shell docker ps -q --no-trunc --filter name=^/$(POSTGRES_CONTAINER_NAME)$$)
+POSTGRES_CONTAINER_RUNNING = $(shell if [ "$(POSTGRES_CONTAINER_ID)" = "" ]; then echo NO; else echo YES; fi)
+
+define STOP_POSTGRES
+docker ps
+@if [ $(POSTGRES_CONTAINER_RUNNING) = YES ]; then docker stop $(POSTGRES_CONTAINER_NAME) && echo Waiting for postgres to stop...; echo Container exited with code $$(docker wait $(POSTGRES_CONTAINER_ID)); echo Postgres container stopped: $(POSTGRES_CONTAINER_NAME); docker rm $(POSTGRES_CONTAINER_ID) && echo Used postgres container deleted.; else echo Postgres container not running.; fi
+endef
+
+define START_POSTGRES
+docker ps
+@if [ $(POSTGRES_CONTAINER_RUNNING) = NO ]; then docker run -d --name $(POSTGRES_CONTAINER_NAME) -p $(PGPORT):5432 -v $(POSTGRES_DATA_VOLUME):/var/lib/postgresql/data postgres:10.3 && echo -n Postgres container started; else echo -n Postgres container already running; fi; echo ": $(POSTGRES_CONTAINER_NAME)"
+sleep 5
+docker run --net=host postgres:10.3 createdb -h localhost -p $(PGPORT) -U postgres -w $(TEST_DB_NAME)
+docker run --net=host --rm -e CHANGELOG_FILE=changelog.xml -v $(PWD)/database:/changelogs -e "URL=$(LIQUIBASE_TEST_FLAGS)" jcastillo/liquibase:0.0.7
+endef
+
+define DELETE_POSTGRES_DATA
+@if [ $(POSTGRES_DATA_VOLUME_EXISTS) = YES ]; then docker volume rm $(POSTGRES_DATA_VOLUME_NAME) && echo Postgres data volume deleted: $(POSTGRES_CONTAINER_NAME); else echo Postgres data volume does not exist.; fi
+endef
 
 XDG_DATA_HOME ?= $(HOME)/.local/share
 DEV_POSTGRES_DIR ?= $(XDG_DATA_HOME)/sous/postgres_docker
@@ -304,7 +317,9 @@ test-unit-base: $(COVER_DIR) $(GO_FILES)
 		-covermode=atomic -coverprofile=$(COVER_DIR)/count_merged.txt \
 		-timeout 3m -race $(SOUS_PACKAGES_WITH_TESTS) $(TEST_TEAMCITY)
 
-test-unit: postgres-start test-unit-base
+test-unit:
+	$(MAKE) postgres-clean-restart
+	$(MAKE) test-unit-base
 
 $(COVER_DIR)/count_merged.txt: $(COVER_DIR) $(GO_FILES)
 	go test \
@@ -393,15 +408,20 @@ artifacts/sous_$(SOUS_VERSION)_amd64.deb: artifacts/$(LINUX_RELEASE_DIR)/sous
 	mv sous_$(SOUS_VERSION)_amd64.deb artifacts/
 
 postgres-start:
-	if [ $(POSTGRES_CONTAINER_RUNNING) = YES ]; then docker stop $(POSTGRES_CONTAINER_NAME); fi
-	if [ $(POSTGRES_DATA_VOLUME_EXISTS) = YES ]; then docker volume rm $(POSTGRES_DATA_VOLUME_NAME); fi
-	docker run -d --name $(POSTGRES_CONTAINER_NAME) -p $(PGPORT):5432 --rm -v $(POSTGRES_DATA_VOLUME):/var/lib/postgresql/data postgres:10.3
-	sleep 5
-	docker run --net=host postgres:10.3 createdb -h localhost -p $(PGPORT) -U postgres -w $(TEST_DB_NAME)
-	docker run --net=host --rm -e CHANGELOG_FILE=changelog.xml -v $(PWD)/database:/changelogs -e "URL=$(LIQUIBASE_TEST_FLAGS)" jcastillo/liquibase:0.0.7
+	$(START_POSTGRES)
+
+.PHONY: postgres-restart
+postgres-restart:
+	$(MAKE) postgres-stop
+	$(MAKE) postgres-start
+
+.PHONY: postgres-clean-restart
+postgres-clean-restart:
+	$(MAKE) postgres-clean
+	$(MAKE) postgres-start
 
 postgres-stop:
-	docker stop postgres > /dev/null 2>&1 || true
+	$(STOP_POSTGRES)
 
 postgres-connect:
 	psql -h $(DOCKER_HOST_IP) -p $(PGPORT) sous
@@ -410,7 +430,7 @@ postgres-update-schema: postgres-start
 	liquibase $(LIQUIBASE_FLAGS) update
 
 postgres-clean: postgres-stop
-	rm -r "$(DEV_POSTGRES_DIR)"
+	$(DELETE_POSTGRES_DATA)
 
 .PHONY: artifactory clean clean-containers clean-container-certs \
 	clean-running-containers clean-container-images coverage deb-build \
