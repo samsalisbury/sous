@@ -67,7 +67,7 @@ func getAdminConn() (*sql.DB, error) {
 		if np, set := os.LookupEnv("PGPORT"); set {
 			port = np
 		}
-		connstr := fmt.Sprintf("dbname=sous_test_template host=localhost port=%s sslmode=disable", port)
+		connstr := fmt.Sprintf("dbname=sous_test_template host=localhost port=%s sslmode=disable user=postgres", port)
 		adminConn, err = sql.Open("postgres", connstr)
 	})
 	if err != nil {
@@ -104,7 +104,7 @@ func setupDBErr(name string) (*sql.DB, error) {
 		return nil, fmt.Errorf("error creating test database err %v", err)
 	}
 
-	connstr := fmt.Sprintf("dbname=%s host=localhost port=%s sslmode=disable", dbName, port)
+	connstr := fmt.Sprintf("dbname=%s host=localhost port=%s sslmode=disable user=postgres", dbName, port)
 
 	db, err := sql.Open("postgres", connstr)
 	if err != nil {
