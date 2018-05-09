@@ -47,5 +47,18 @@ func TestRunmountBuilder_Runmount(t *testing.T) {
 	err = validateRunSpec(runSpec)
 	fmt.Println("err : ", err)
 
+	subBuilders, err := constructImageBuilders(runSpec)
+	fmt.Println("err : ", err)
+	fmt.Println("subBuilders : ", *subBuilders[0])
+
+	err = extractFiles(ctx, buildContainerID, tempDir, subBuilders)
+	fmt.Println("err : ", err)
+
+	err = teardownBuildContainer(ctx, buildContainerID)
+	fmt.Println("err : ", err)
+
+	err = templateDockerfile(ctx, tempDir, subBuilders)
+	fmt.Println("templateDockerfile err : ", err)
+
 	assert.FailNow(t, "")
 }

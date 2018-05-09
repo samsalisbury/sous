@@ -48,5 +48,15 @@ func (rmbp *RunmountBuildpack) Build(ctx *sous.BuildContext) (*sous.BuildResult,
 	err = validateRunSpec(runspec)
 	fmt.Println("err : ", err)
 
+	subBuilders, err := constructImageBuilders(runspec)
+	fmt.Println("err : ", err)
+	fmt.Println("subBuilders : ", *subBuilders[0])
+
+	err = extractFiles(*ctx, buildContainerID, tempDir, subBuilders)
+	fmt.Println("err : ", err)
+
+	err = teardownBuildContainer(*ctx, buildContainerID)
+	fmt.Println("err : ", err)
+
 	return buildResult, nil
 }

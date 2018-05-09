@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html/template"
+	"io"
 	"io/ioutil"
 	"os"
 	"path"
@@ -11,6 +13,8 @@ import (
 	"strings"
 
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 )
 
 func build(ctx sous.BuildContext) (string, error) {
@@ -111,6 +115,86 @@ func validateRunSpec(runSpec MultiImageRunSpec) error {
 		return errors.New(msg)
 	}
 	return nil
+}
+
+func constructImageBuilders(runSpec MultiImageRunSpec) ([]*runnableBuilder, error) {
+	rs := runSpec.Normalized()
+	subBuilders := []*runnableBuilder{}
+
+	for _, spec := range rs.Images {
+		subBuilders = append(subBuilders, &runnableBuilder{
+			RunSpec:      spec,
+			splitBuilder: nil,
+		})
+	}
+
+	return subBuilders, nil
+}
+
+func extractFiles(ctx sous.BuildContext, buildContainerID string, buildDir string, runnableBuilders []*runnableBuilder) error {
+
+	for _, builder := range runnableBuilders {
+		for _, inst := range builder.RunSpec.Files {
+			// needs to copy to the per-target build directory
+			fromPath := fmt.Sprintf("%s:%s", buildContainerID, inst.Source.Dir)
+			toPath := filepath.Join(buildDir, inst.Destination.Dir)
+
+			err := os.MkdirAll(filepath.Dir(toPath), os.ModePerm)
+			if err != nil {
+				return err
+			}
+			fmt.Println("fromPath : ", fromPath)
+			fmt.Println("toPath : ", toPath)
+			_, err = ctx.Sh.Stdout("docker", "cp", fromPath, toPath)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func teardownBuildContainer(ctx sous.BuildContext, buildContainerID string) error {
+	_, err := ctx.Sh.Stdout("docker", "rm", buildContainerID)
+	return err
+}
+
+func templateDockerfile(ctx sous.BuildContext, buildDir string, runnableBuilders []*runnableBuilder) error {
+	for _, builder := range runnableBuilders {
+		dockerfile, err := os.Create(filepath.Join(buildDir, "Dockerfile"))
+		if err != nil {
+			return err
+		}
+		defer dockerfile.Close()
+
+		err = templateDockerfileBytes(dockerfile, builder)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func templateDockerfileBytes(dockerfile io.Writer, builder *runnableBuilder) error {
+	messages.ReportLogFieldsMessage("Templating Dockerfile from", logging.DebugLevel, logging.Log, builder, builder.RunSpec)
+
+	tmpl, err := template.New("Dockerfile").Parse(`
+	FROM {{.RunSpec.Image.From}}
+	{{range .RunSpec.Files }}
+	COPY {{.Destination.Dir}} {{.Destination.Dir}}
+	{{end}}
+	ENV {{.VersionConfig}} {{.RevisionConfig}}
+	CMD [
+	{{- range $n, $part := .RunSpec.Exec -}}
+	  {{if $n}}, {{- end -}}"{{.}}"
+	{{- end -}}
+	]
+	`)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("builder : %v", builder)
+	return tmpl.Execute(dockerfile, builder)
 }
 
 func getOffsetDir(ctx sous.BuildContext) string {
