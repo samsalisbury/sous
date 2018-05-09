@@ -146,7 +146,7 @@ func TestSousDeploy(t *testing.T) {
 				assertNonNilHealthCheckOnLatestDeploy(t, f, did)
 			})
 
-			t.Run("pause-unpause", func(t *testing.T) {
+			/*t.Run("pause-unpause", func(t *testing.T) {
 				f := pf.NewIsolatedFixture(t)
 				defer f.ReportSuccess(t)
 				client := setupProject(t, f, simpleServer)
@@ -177,7 +177,7 @@ func TestSousDeploy(t *testing.T) {
 
 				client.MustRun(t, deployCommand, nil, "-cluster", "cluster1", "-tag", "3")
 				assertActiveStatus(t, f, did)
-			})
+			})*/
 
 			t.Run("scheduled", func(t *testing.T) {
 				f := pf.NewIsolatedFixture(t)
