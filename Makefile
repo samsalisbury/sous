@@ -379,7 +379,7 @@ postgres-start:
 	docker run -d --name postgres -p $(PGPORT):5432 --rm --user $(USER_ID):$(GROUP_ID) -v /etc/passwd:/etc/passwd:ro -v $(DEV_POSTGRES_DATA_DIR):/var/lib/postgresql/data postgres:10.3
 	sleep 5
 	docker run --net=host postgres:10.3 createdb -h localhost -p $(PGPORT) -U postgres -w $(TEST_DB_NAME) > /dev/null 2>&1 || true
-	docker run --net=host --rm -e CHANGELOG_FILE=changelog.xml -v $(PWD)/database:/changelogs -e "URL=$(LIQUIBASE_TEST_FLAGS)" jcastillo/liquibase:0.0.7
+	docker run --net=host --rm -e CHANGELOG_FILE=changelog.xml -v $(PWD)/database:/changelogs -e "URL=$(LIQUIBASE_TEST_FLAGS)" docker.otenv.com/liquibase:0.0.6
 
 postgres-stop:
 	docker stop postgres > /dev/null 2>&1 || true
