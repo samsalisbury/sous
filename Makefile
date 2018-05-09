@@ -128,6 +128,9 @@ TEST_TEAMCITY := $(if $(TEAMCITY),| ./dev_support/gotest-to-teamcity)
 SOUS_PACKAGES:= $(shell go list -f '{{.ImportPath}}' ./... | grep -v 'vendor')
 SOUS_PACKAGES_WITH_TESTS:= $(shell go list -f '{{if len .TestGoFiles}}{{.ImportPath}}{{end}}' ./...)
 SOUS_TC_PACKAGES=$(shell docker run --rm -v $(PWD):/go/src/github.com/opentable/sous -w /go/src/github.com/opentable/sous golang:1.10 go list -f '{{if len .TestGoFiles}}{{.ImportPath}}{{end}}' ./... | sed 's/_\/app/github.com\/opentable\/sous/')
+DOCKER_BUILD_CMDS_LINUX := docker run --rm --user $(USER_ID):$(GROUP_ID) -v /etc/passwd:/etc/passwd:ro -e GOOS=linux -e GOARCH=amd64 -v $(PWD):/go/src/github.com/opentable/sous -w /go/src/github.com/opentable/sous golang:1.10 go build -v -ldflags $(FLAGS) -o artifacts/bin/sous-linux-amd64
+DOCKER_BUILD_CMDS_DARWIN := docker run --rm --user $(USER_ID):$(GROUP_ID) -v /etc/passwd:/etc/passwd:ro -e GOOS=darwin -e GOARCH=amd64 -v $(PWD):/go/src/github.com/opentable/sous -w /go/src/github.com/opentable/sous golang:1.10 go build -v -ldflags $(FLAGS) -o artifacts/bin/sous-darwin-amd64
+
 
 GO_FILES := $(shell find . -regex '.*\.go')
 GO_PROJECT_FILES := $(shell find . -type d -name vendor -prune -o -regex '.*\.go')
@@ -156,20 +159,21 @@ help:
 	@echo
 	@echo "Add VERBOSE=1 for tons of extra output."
 
+.PHONY: build-debug-linux build-debug-darwin
 build-debug: build-debug-linux build-debug-darwin
 
 build-debug-linux:
 	@if [[ $(SOUS_VERSION) != *"debug" ]]; then echo 'missing debug at the end of semv, please add'; exit -1; fi
 	echo "building debug version" $(SOUS_VERSION) "to" $(BIN_DIR) "with" $(CONCAT_XGO_ARGS)
 	mkdir -p $(BIN_DIR)
-	xgo $(CONCAT_XGO_ARGS) --targets=linux/amd64 ./
+	$(DOCKER_BUILD_CMDS_LINUX)
 	mv ./artifacts/bin/sous-linux-amd64 ./artifacts/bin/sous-linux-$(SOUS_VERSION)
 
 build-debug-darwin:
 	@if [[ $(SOUS_VERSION) != *"debug" ]]; then echo 'missing debug at the end of semv, please add'; exit -1; fi
 	echo "building debug version" $(SOUS_VERSION) "to" $(BIN_DIR) "with" $(CONCAT_XGO_ARGS)
 	mkdir -p $(BIN_DIR)
-	xgo $(CONCAT_XGO_ARGS) --targets=darwin/amd64 -out darwin ./
+	$(DOCKER_BUILD_CMDS_DARWIN)
 	mv ./artifacts/bin/darwin* ./artifacts/bin/sous-darwin-$(SOUS_VERSION)
 
 install-debug-linux: build-debug-linux
@@ -239,9 +243,6 @@ install-ggen:
 install-stringer:
 	go get golang.org/x/tools/cmd/stringer
 
-install-xgo:
-	go get github.com/karalabe/xgo
-
 install-govendor:
 	go get github.com/kardianos/govendor
 
@@ -263,7 +264,7 @@ install-linters: install-metalinter
 install-gotags:
 	go get -u github.com/jstemmer/gotags
 
-install-build-tools: install-xgo install-govendor install-engulf install-staticcheck
+install-build-tools: install-govendor install-engulf install-staticcheck
 
 generate-ctags: install-gotags
 	gotags -R -f .tags .
@@ -395,6 +396,7 @@ artifacts/$(DARWIN_RELEASE_DIR)/sous:
 	cp README.md artifacts/$(DARWIN_RELEASE_DIR)
 	cp LICENSE artifacts/$(DARWIN_RELEASE_DIR)
 	mkdir -p $(BIN_DIR)
+
 	xgo $(CONCAT_XGO_ARGS) --targets=darwin/amd64  ./
 	mv $(BIN_DIR)/sous-darwin-10.6-amd64 $@
 
