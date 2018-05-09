@@ -1,5 +1,20 @@
 SHELL := /usr/bin/env bash
 
+POSTGRES_DATA_VOLUME_NAME ?= sous_dev_postgres_data
+ifeq ($(shell docker volume ls -q --filter name=^$(POSTGRES_DATA_VOLUME_NAME)$$),)
+POSTGRES_DATA_VOLUME_EXISTS := NO
+else
+POSTGRES_DATA_VOLUME_EXISTS := YES
+endif
+
+POSTGRES_CONTAINER_NAME ?= sous_dev_postgres
+POSTGRES_CONTAINER_ID := $(shell docker ps -q --no-trunc --filter name=^/$(POSTGRES_CONTAINER_NAME)$$)
+ifeq ($(POSTGRES_CONTAINER_ID),)
+POSTGRES_CONTAINER_RUNNING := NO
+else
+POSTGRES_CONTAINER_RUNNING := YES
+endif
+
 XDG_DATA_HOME ?= $(HOME)/.local/share
 DEV_POSTGRES_DIR ?= $(XDG_DATA_HOME)/sous/postgres_docker
 DEV_POSTGRES_DATA_DIR ?= $(DEV_POSTGRES_DIR)/data
@@ -16,8 +31,7 @@ DOCKER_HOST_IP := $(if $(DOCKER_HOST_IP_PARSED),$(DOCKER_HOST_IP_PARSED),$(DOCKE
 DB_NAME = sous
 TEST_DB_NAME = sous_test_template
 
-LIQUIBASE_DEFAULTS := ./dev_support/liquibase/liquibase.properties
-LIQUIBASE_SERVER := jdbc:postgresql://$(DOCKER_HOST_IP):$(PGPORT)
+LIQUIBASE_SERVER := jdbc:postgresql://localhost:$(PGPORT)
 
 LIQUIBASE_FLAGS := $(LIQUIBASE_SERVER)/$(DB_NAME)?user=postgres
 LIQUIBASE_TEST_FLAGS := $(LIQUIBASE_SERVER)/$(TEST_DB_NAME)?user=postgres
@@ -379,12 +393,11 @@ artifacts/sous_$(SOUS_VERSION)_amd64.deb: artifacts/$(LINUX_RELEASE_DIR)/sous
 	mv sous_$(SOUS_VERSION)_amd64.deb artifacts/
 
 postgres-start:
-	docker stop postgres > /dev/null 2>&1 || true
-	rm -rf $(DEV_POSTGRES_DATA_DIR)
-	install -d -m 0700 $(DEV_POSTGRES_DATA_DIR)
-	docker run -d --name postgres -p $(PGPORT):5432 --rm --user $(USER_ID):$(GROUP_ID) -v /etc/passwd:/etc/passwd:ro -v $(DEV_POSTGRES_DATA_DIR):/var/lib/postgresql/data postgres:10.3
+	if [ $(POSTGRES_CONTAINER_RUNNING) = YES ]; then docker stop $(POSTGRES_CONTAINER_NAME); fi
+	if [ $(POSTGRES_DATA_VOLUME_EXISTS) = YES ]; then docker volume rm $(POSTGRES_DATA_VOLUME_NAME); fi
+	docker run -d --name $(POSTGRES_CONTAINER_NAME) -p $(PGPORT):5432 --rm -v $(POSTGRES_DATA_VOLUME):/var/lib/postgresql/data postgres:10.3
 	sleep 5
-	docker run --net=host postgres:10.3 createdb -h $(DOCKER_HOST_IP) -p $(PGPORT) -U postgres -w $(TEST_DB_NAME) > /dev/null 2>&1 || true
+	docker run --net=host postgres:10.3 createdb -h localhost -p $(PGPORT) -U postgres -w $(TEST_DB_NAME)
 	docker run --net=host --rm -e CHANGELOG_FILE=changelog.xml -v $(PWD)/database:/changelogs -e "URL=$(LIQUIBASE_TEST_FLAGS)" jcastillo/liquibase:0.0.7
 
 postgres-stop:
