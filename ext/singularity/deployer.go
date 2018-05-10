@@ -176,9 +176,12 @@ func (r *deployer) buildSingClient(url string) singClient {
 }
 
 func rectifyRecover(d interface{}, f string, err *error) {
+
+	log := *(logging.SilentLogSet().Child("rectifyRecover").(*logging.LogSet))
+
 	if r := recover(); r != nil {
 		stack := string(debug.Stack())
-		messages.ReportLogFieldsMessage("Panic", logging.WarningLevel, logging.Log, d, f, err, r, stack)
+		messages.ReportLogFieldsMessage("Panic", logging.WarningLevel, log, d, f, err, r, stack)
 		*err = errors.Errorf("Panicked: %s; stack trace:\n%s", r, stack)
 	}
 }

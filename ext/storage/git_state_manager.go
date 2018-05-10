@@ -54,6 +54,10 @@ func (gsm *GitStateManager) git(cmd ...string) error {
 	return err
 }
 
+func (gsm *GitStateManager) log() logging.LogSink {
+	return *(logging.SilentLogSet().Child("GitStateManager").(*logging.LogSet))
+}
+
 func (gsm *GitStateManager) gitOut(cmd ...string) (string, error) {
 	if !gsm.isRepo() {
 		return "", gsmError("not in a git repo")
@@ -74,11 +78,11 @@ func (gsm *GitStateManager) gitOut(cmd ...string) (string, error) {
 	}
 	out, err := git.CombinedOutput()
 	if err == nil {
-		messages.ReportLogFieldsMessage("success", logging.DebugLevel, logging.Log, git.Args)
+		messages.ReportLogFieldsMessage("success", logging.DebugLevel, gsm.log(), git.Args)
 	} else {
-		messages.ReportLogFieldsMessage("error", logging.DebugLevel, logging.Log, err)
+		messages.ReportLogFieldsMessage("error", logging.DebugLevel, gsm.log(), err)
 	}
-	messages.ReportLogFieldsMessage("git", logging.ExtraDebug1Level, logging.Log, string(out))
+	messages.ReportLogFieldsMessage("git", logging.ExtraDebug1Level, gsm.log(), string(out))
 	return string(out), errors.Wrapf(err, strings.Join(git.Args, " ")+": "+string(out))
 }
 
@@ -220,19 +224,19 @@ func (gsm *GitStateManager) WriteState(s *sous.State, u sous.User) error {
 			// Success.
 			return nil
 		}
-		messages.ReportLogFieldsMessage("git push failed; trying again with # attempts left", logging.DebugLevel, logging.Log, remainingAttempts, err)
+		messages.ReportLogFieldsMessage("git push failed; trying again with # attempts left", logging.DebugLevel, gsm.log(), remainingAttempts, err)
 		gsm.reset(tn)
 		if err := gsm.git("pull"); err != nil {
 			return err
 		}
 		if err := gsm.git("cherry-pick", newTag); err != nil {
 			// If cherry-pick fails, then there's a real conflict.
-			messages.ReportLogFieldsMessage("attempt to rectify conflicts with git cherry-pick failed", logging.WarningLevel, logging.Log, err)
+			messages.ReportLogFieldsMessage("attempt to rectify conflicts with git cherry-pick failed", logging.WarningLevel, gsm.log(), err)
 			if err := gsm.git("cherry-pick", "--abort"); err != nil {
-				messages.ReportLogFieldsMessage("cherry-pick --abort failed", logging.WarningLevel, logging.Log, err)
+				messages.ReportLogFieldsMessage("cherry-pick --abort failed", logging.WarningLevel, gsm.log(), err)
 				return err
 			}
-			messages.ReportLogFieldsMessage("Successfully cherry-picked new changes, re-attempting push.", logging.DebugLevel, logging.Log)
+			messages.ReportLogFieldsMessage("Successfully cherry-picked new changes, re-attempting push.", logging.DebugLevel, gsm.log())
 		}
 	}
 	return fmt.Errorf("unable to merge changes")

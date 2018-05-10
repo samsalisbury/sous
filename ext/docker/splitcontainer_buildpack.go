@@ -49,6 +49,10 @@ func parseDockerfile(path string) (*parser.Node, error) {
 	return parseDocker(f)
 }
 
+func (sbp *SplitBuildpack) log() logging.LogSink {
+	return *(logging.SilentLogSet().Child("SplitBuildpack").(*logging.LogSet))
+}
+
 // Detect implements Buildpack on SplitBuildpack
 func (sbp *SplitBuildpack) Detect(ctx *sous.BuildContext) (*sous.DetectResult, error) {
 	dfPath := filepath.Join(ctx.Source.OffsetDir, "Dockerfile")
@@ -56,7 +60,7 @@ func (sbp *SplitBuildpack) Detect(ctx *sous.BuildContext) (*sous.DetectResult, e
 		return nil, errors.Errorf("%s does not exist", dfPath)
 	}
 
-	messages.ReportLogFieldsMessage("Inspecting Dockerfile", logging.DebugLevel, logging.Log, dfPath)
+	messages.ReportLogFieldsMessage("Inspecting Dockerfile", logging.DebugLevel, sbp.log(), dfPath)
 
 	ast, err := parseDockerfile(ctx.Sh.Abs(dfPath))
 	if err != nil {

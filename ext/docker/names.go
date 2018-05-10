@@ -99,20 +99,24 @@ func revisionName(sid sous.SourceID, kind string, time time.Time) string {
 	return strings.Join([]string{imageRepoName(sid.Location, kind), labelStr}, ":")
 }
 
+func namesLog() logging.LogSink {
+	return *(logging.SilentLogSet().Child("names").(*logging.LogSet))
+}
+
 func fullRepoName(registryHost string, sl sous.SourceLocation, kind string) string {
 	frn := filepath.Join(registryHost, imageRepoName(sl, kind))
-	messages.ReportLogFieldsMessage("Repo name", logging.DebugLevel, logging.Log, sl, frn)
+	messages.ReportLogFieldsMessage("Repo name", logging.DebugLevel, namesLog(), sl, frn)
 	return frn
 }
 
 func versionTag(registryHost string, v sous.SourceID, kind string) string {
 	verTag := filepath.Join(registryHost, versionName(v, kind))
-	messages.ReportLogFieldsMessage("Version Tag", logging.DebugLevel, logging.Log, verTag)
+	messages.ReportLogFieldsMessage("Version Tag", logging.DebugLevel, namesLog(), verTag)
 	return verTag
 }
 
 func revisionTag(registryHost string, v sous.SourceID, kind string, time time.Time) string {
 	revTag := filepath.Join(registryHost, revisionName(v, kind, time))
-	messages.ReportLogFieldsMessage("RevisionTag", logging.DebugLevel, logging.Log, revTag)
+	messages.ReportLogFieldsMessage("RevisionTag", logging.DebugLevel, namesLog(), revTag)
 	return revTag
 }

@@ -53,6 +53,10 @@ func (hsm *HTTPStateManager) ReadState() (*State, error) {
 	return hsm.cached.Clone(), nil
 }
 
+func (hsm *HTTPStateManager) log() logging.LogSink {
+	return *(logging.SilentLogSet().Child("HTTPStateManager").(*logging.LogSet))
+}
+
 // WriteState implements StateWriter for HTTPStateManager.
 func (hsm *HTTPStateManager) WriteState(s *State, u User) error {
 	hsm.User = u
@@ -60,7 +64,7 @@ func (hsm *HTTPStateManager) WriteState(s *State, u User) error {
 	if len(flaws) > 0 {
 		return errors.Errorf("Invalid update to state: %v", flaws)
 	}
-	messages.ReportLogFieldsMessage("Writing state via HTTP", logging.DebugLevel, logging.Log)
+	messages.ReportLogFieldsMessage("Writing state via HTTP", logging.DebugLevel, hsm.log())
 	if hsm.gdmState == nil {
 		_, err := hsm.ReadState()
 		if err != nil {

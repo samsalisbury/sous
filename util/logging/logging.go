@@ -148,7 +148,7 @@ func RetrieveMetaData(f func()) (name string, uid string) {
 // Notice that the global LotSet doesn't have metrics available - when you
 // want metrics in a component, you need to add an injected LogSet. c.f.
 // ext/docker/image_mapping.go
-var Log = func() LogSet { return *(SilentLogSet().Child("GLOBAL").(*LogSet)) }()
+//var Log = func() LogSet { return *(SilentLogSet().Child("GLOBAL").(*LogSet)) }()
 
 // SilentLogSet returns a logset that discards everything by default
 func SilentLogSet() *LogSet {

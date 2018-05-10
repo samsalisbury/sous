@@ -7,7 +7,8 @@ import (
 )
 
 func main() {
+	log := *(logging.SilentLogSet().Child("tester").(*logging.LogSet))
 	ast := allfields.ParseDir("lib/")
 	tree := allfields.ExtractTree(ast, "Deployment")
-	messages.ReportLogFieldsMessage("Dump", logging.ExtraDebug1Level, logging.Log, allfields.ConfirmTree(tree, ast, "Diff"))
+	messages.ReportLogFieldsMessage("Dump", logging.ExtraDebug1Level, log, allfields.ConfirmTree(tree, ast, "Diff"))
 }

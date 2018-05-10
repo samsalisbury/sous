@@ -52,6 +52,10 @@ func NewDockerfileBuildpack() *DockerfileBuildpack {
 
 var successfulBuildRE = regexp.MustCompile(`Successfully built (\w+)`)
 
+func (d *DockerfileBuildpack) log() logging.LogSink {
+	return *(logging.SilentLogSet().Child("DockerfileBuildpack").(*logging.LogSet))
+}
+
 // Detect detects if c has a Dockerfile or not.
 func (d *DockerfileBuildpack) Detect(c *sous.BuildContext) (*sous.DetectResult, error) {
 	dfPath := filepath.Join(c.Source.OffsetDir, "Dockerfile")
@@ -66,7 +70,7 @@ func (d *DockerfileBuildpack) Detect(c *sous.BuildContext) (*sous.DetectResult, 
 	}
 	hasAppVersion := appVersionPattern.MatchString(df)
 	hasAppRevision := appRevisionPattern.MatchString(df)
-	messages.ReportLogFieldsMessage("Detected a dockerfile, accepts version and revision", logging.DebugLevel, logging.Log, dfPath, hasAppVersion, hasAppRevision)
+	messages.ReportLogFieldsMessage("Detected a dockerfile, accepts version and revision", logging.DebugLevel, d.log(), dfPath, hasAppVersion, hasAppRevision)
 	result := &sous.DetectResult{Compatible: true, Data: detectData{
 		HasAppVersionArg:  hasAppVersion,
 		HasAppRevisionArg: hasAppRevision,

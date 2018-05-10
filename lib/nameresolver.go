@@ -25,6 +25,10 @@ func HandlePairsByRegistry(r Registry, dp *DeployablePair) (*DeployablePair, *Di
 	return names.HandlePairs(dp)
 }
 
+func (names *nameResolver) log() logging.LogSink {
+	return *(logging.SilentLogSet().Child("nameResolver").(*logging.LogSet))
+}
+
 func (names *nameResolver) HandlePairs(dp *DeployablePair) (*DeployablePair, *DiffResolution) {
 	intended := dp.Post
 	action := dp.Kind().ResolveVerb()
@@ -39,13 +43,13 @@ func (names *nameResolver) HandlePairs(dp *DeployablePair) (*DeployablePair, *Di
 	case AddedKind, ModifiedKind:
 		var newImageNameResolution *DiffResolution
 		newImageName, newImageNameResolution = resolveName(names.registry, intended)
-		messages.ReportLogFieldsMessage("Deployment processed, needs artifact", logging.ExtraDebug1Level, logging.Log, dp.Kind(), intended)
+		messages.ReportLogFieldsMessage("Deployment processed, needs artifact", logging.ExtraDebug1Level, names.log(), dp.Kind(), intended)
 		if err := newImageNameResolution; err != nil {
-			messages.ReportLogFieldsMessage("Unable to perform action", logging.InformationLevel, logging.Log, action, intended.ID(), err)
+			messages.ReportLogFieldsMessage("Unable to perform action", logging.InformationLevel, names.log(), action, intended.ID(), err)
 			return nil, err
 		}
 		if newImageName == nil {
-			messages.ReportLogFieldsMessage("Unable to perform action no artifact for SourceID", logging.InformationLevel, logging.Log, action, intended.ID(), intended.SourceID)
+			messages.ReportLogFieldsMessage("Unable to perform action no artifact for SourceID", logging.InformationLevel, names.log(), action, intended.ID(), intended.SourceID)
 			return nil, &DiffResolution{
 				DeploymentID: dp.ID(),
 				Desc:         "not created",
@@ -76,7 +80,7 @@ func resolveName(r Registry, d *Deployable) (*Deployable, *DiffResolution) {
 
 func guardImage(r Registry, d *Deployment) (*BuildArtifact, error) {
 	if d.NumInstances == 0 {
-		messages.ReportLogFieldsMessage("Deployment has 0 instances, skipping artifact check", logging.InformationLevel, logging.Log, d.ID())
+		messages.ReportLogFieldsMessage("Deployment has 0 instances, skipping artifact check", logging.InformationLevel, d.log(), d.ID())
 		return nil, nil
 	}
 	art, err := r.GetArtifact(d.SourceID)

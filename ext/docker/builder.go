@@ -22,6 +22,7 @@ type (
 		DockerRegistryHost        string
 		SourceShell, ScratchShell shell.Shell
 		Pack                      sous.Buildpack
+		log                       logging.LogSink
 	}
 	// BuildTarget represents a single target within a Build.
 	BuildTarget interface {
@@ -39,6 +40,7 @@ func NewBuilder(nc sous.Inserter, drh string, sourceShell, scratchShell shell.Sh
 		DockerRegistryHost: drh,
 		SourceShell:        sourceShell,
 		ScratchShell:       scratchShell,
+		log:                *(logging.SilentLogSet().Child("Volumes").(*logging.LogSet)),
 	}
 
 	files, err := scratchShell.List()
@@ -82,11 +84,11 @@ func (b *Builder) Register(br *sous.BuildResult) error {
 }
 
 func (b *Builder) debug(msg string) {
-	messages.ReportLogFieldsMessage(msg, logging.DebugLevel, logging.Log)
+	messages.ReportLogFieldsMessage(msg, logging.DebugLevel, b.log)
 }
 
 func (b *Builder) info(msg string) {
-	messages.ReportLogFieldsMessage(msg, logging.InformationLevel, logging.Log)
+	messages.ReportLogFieldsMessage(msg, logging.InformationLevel, b.log)
 }
 
 func (b *Builder) applyMetadata(bp *sous.BuildProduct) error {

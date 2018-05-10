@@ -60,8 +60,12 @@ func (rb *runnableBuilder) extractFiles() error {
 	return nil
 }
 
+func (rb *runnableBuilder) log() logging.LogSink {
+	return *(logging.SilentLogSet().Child("runnableBuilder").(*logging.LogSet))
+}
+
 func (rb *runnableBuilder) templateDockerfileBytes(dockerfile io.Writer) error {
-	messages.ReportLogFieldsMessage("Templating Dockerfile from", logging.DebugLevel, logging.Log, rb, rb.RunSpec)
+	messages.ReportLogFieldsMessage("Templating Dockerfile from", logging.DebugLevel, rb.log(), rb, rb.RunSpec)
 
 	tmpl, err := template.New("Dockerfile").Parse(`
 	FROM {{.RunSpec.Image.From}}
