@@ -38,13 +38,10 @@ DOCKER_HOST_IP := $(if $(DOCKER_HOST_IP_PARSED),$(DOCKER_HOST_IP_PARSED),$(DOCKE
 
 DB_NAME = sous
 TEST_DB_NAME = sous_test_template
-
-LIQUIBASE_DEFAULTS := ./dev_support/liquibase/liquibase.properties
 LIQUIBASE_SERVER := jdbc:postgresql://localhost:$(PGPORT)
-LIQUIBASE_SHARED_FLAGS = --changeLogFile=database/changelog.xml --defaultsFile=./dev_support/liquibase/liquibase.properties
 
-LIQUIBASE_FLAGS := --url $(LIQUIBASE_SERVER)/$(DB_NAME) $(LIQUIBASE_SHARED_FLAGS)
-LIQUIBASE_TEST_FLAGS := --url $(LIQUIBASE_SERVER)/$(TEST_DB_NAME) $(LIQUIBASE_SHARED_FLAGS)
+LIQUIBASE_FLAGS := $(LIQUIBASE_SERVER)/$(DB_NAME)?user=postgres
+LIQUIBASE_TEST_FLAGS := $(LIQUIBASE_SERVER)/$(TEST_DB_NAME)?user=postgres
 
 GO_VERSION := 1.10
 DESCRIPTION := "Sous is a tool for building, testing, and deploying applications, using Docker, Mesos, and Singularity."
@@ -416,10 +413,10 @@ artifacts/sous_$(SOUS_VERSION)_amd64.deb: artifacts/$(LINUX_RELEASE_DIR)/sous
 
 postgres-start:
 	docker ps
-	if ! (pg_isready -h localhost -p $(PGPORT)); then \
+	if ! (docker run --net=host postgres:10.3 pg_isready -h $(DOCKER_HOST_IP) -p $(PGPORT)); then \
 		docker run -d --name $(POSTGRES_CONTAINER_NAME) -p $(PGPORT):5432 -v $(POSTGRES_DATA_VOLUME_NAME):/var/lib/postgresql/data postgres:10.3;\
 		echo Waiting until Postgres completes booting...;\
-		until pg_isready -h localhost -p $(PGPORT); do sleep 1; done;\
+		until docker run --net=host postgres:10.3 pg_isready -h $(DOCKER_HOST_IP) -p $(PGPORT); do sleep 1; done;\
 		echo Postgres container started;\
 	fi;\
 	docker run --net=host postgres:10.3 createdb -h localhost -p $(PGPORT) -U postgres -w $(TEST_DB_NAME);\

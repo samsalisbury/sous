@@ -67,7 +67,7 @@ func getAdminConn() (*sql.DB, error) {
 		if np, set := os.LookupEnv("PGPORT"); set {
 			port = np
 		}
-		connstr := fmt.Sprintf("dbname=sous_test_template host=localhost port=%s sslmode=disable", port)
+		connstr := fmt.Sprintf("dbname=sous_test_template host=localhost user=postgres port=%s sslmode=disable", port)
 		adminConn, err = sql.Open("postgres", connstr)
 	})
 	if err != nil {
