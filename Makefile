@@ -17,11 +17,6 @@ docker ps
 endef
 
 define START_POSTGRES
-docker ps
-@if [ $(POSTGRES_CONTAINER_RUNNING) = NO ]; then docker run -d --name $(POSTGRES_CONTAINER_NAME) -p $(PGPORT):5432 -v $(POSTGRES_DATA_VOLUME_NAME):/var/lib/postgresql/data postgres:10.3 && echo -n Postgres container started; else echo -n Postgres container already running; fi; echo ": $(POSTGRES_CONTAINER_NAME)"
-sleep 5
-docker run --net=host postgres:10.3 createdb -h localhost -p $(PGPORT) -U postgres -w $(TEST_DB_NAME)
-docker run --net=host --rm -e CHANGELOG_FILE=changelog.xml -v $(PWD)/database:/changelogs -e "URL=$(LIQUIBASE_TEST_FLAGS)" jcastillo/liquibase:0.0.7
 endef
 
 define DELETE_POSTGRES_DATA
@@ -43,7 +38,6 @@ DOCKER_HOST_IP := $(if $(DOCKER_HOST_IP_PARSED),$(DOCKER_HOST_IP_PARSED),$(DOCKE
 
 DB_NAME = sous
 TEST_DB_NAME = sous_test_template
-
 LIQUIBASE_SERVER := jdbc:postgresql://localhost:$(PGPORT)
 
 LIQUIBASE_FLAGS := $(LIQUIBASE_SERVER)/$(DB_NAME)?user=postgres
@@ -358,7 +352,7 @@ test-smoke-compiles: ## Checks that the smoke tests compile.
 	@go test -c -o /dev/null -tags smoke ./test/smoke && echo Smoke tests compiled.
 
 .PHONY: test-smoke
-test-smoke: test-smoke-compiles $(SMOKE_TEST_BINARY) $(SMOKE_TEST_LATEST_LINK) setup-containers
+test-smoke: test-smoke-compiles $(SMOKE_TEST_BINARY) $(SMOKE_TEST_LATEST_LINK) setup-containers postgres-clean-restart
 	@echo "Smoke tests running; time out in $(SMOKE_TEST_TIMEOUT)..."
 	ulimit -n 2048 && \
 	SMOKE_TEST_DATA_DIR=$(SMOKE_TEST_DATA_DIR)/data \
@@ -420,7 +414,15 @@ artifacts/sous_$(SOUS_VERSION)_amd64.deb: artifacts/$(LINUX_RELEASE_DIR)/sous
 	mv sous_$(SOUS_VERSION)_amd64.deb artifacts/
 
 postgres-start:
-	$(START_POSTGRES)
+	docker ps
+	if ! (docker run --net=host postgres:10.3 pg_isready -h $(DOCKER_HOST_IP) -p $(PGPORT)); then \
+		docker run -d --name $(POSTGRES_CONTAINER_NAME) -p $(PGPORT):5432 -v $(POSTGRES_DATA_VOLUME_NAME):/var/lib/postgresql/data postgres:10.3;\
+		echo Waiting until Postgres completes booting...;\
+		until docker run --net=host postgres:10.3 pg_isready -h $(DOCKER_HOST_IP) -p $(PGPORT); do sleep 1; done;\
+		echo Postgres container started;\
+	fi;\
+	docker run --net=host postgres:10.3 createdb -h localhost -p $(PGPORT) -U postgres -w $(TEST_DB_NAME);\
+	docker run --net=host --rm -e CHANGELOG_FILE=changelog.xml -v $(PWD)/database:/changelogs -e "URL=$(LIQUIBASE_TEST_FLAGS)" jcastillo/liquibase:0.0.7
 
 .PHONY: postgres-restart
 postgres-restart:
@@ -436,7 +438,7 @@ postgres-stop:
 	$(STOP_POSTGRES)
 
 postgres-connect:
-	psql -h $(DOCKER_HOST_IP) -p $(PGPORT) sous
+	psql -h $(DOCKER_HOST_IP) -p $(PGPORT) $(DB_NAME)
 
 postgres-validate-schema:
 	liquibase $(LIQUIBASE_FLAGS) validate
