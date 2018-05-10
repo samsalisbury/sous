@@ -70,6 +70,10 @@ func NormalizedOffset(root, workdir string) (string, error) {
 	return relDir, nil
 }
 
+func (sc *SourceContext) log() logging.LogSink {
+	return *(logging.SilentLogSet().Child("SourceContext").(*logging.LogSet))
+}
+
 // Version returns the SourceID.
 func (sc *SourceContext) Version() SourceID {
 	v := nearestVersion(append([]Tag{sc.NearestTag}, sc.Tags...))
@@ -84,7 +88,7 @@ func (sc *SourceContext) Version() SourceID {
 		},
 		Version: v,
 	}
-	messages.ReportLogFieldsMessage("Version", logging.DebugLevel, logging.Log, sv)
+	messages.ReportLogFieldsMessage("Version", logging.DebugLevel, sc.log(), sv)
 	return sv
 }
 

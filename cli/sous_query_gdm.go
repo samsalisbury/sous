@@ -38,7 +38,11 @@ func (*SousQueryGDM) RegisterOn(psy Addable) {
 
 // Execute defines the behavior of `sous query gdm`
 func (sb *SousQueryGDM) Execute(args []string) cmdr.Result {
-	messages.ReportLogFieldsMessage("snapshot", logging.ExtraDebug1Level, logging.Log, sb.GDM.Snapshot())
+	messages.ReportLogFieldsMessage("snapshot", logging.ExtraDebug1Level, sb.log(), sb.GDM.Snapshot())
 	sous.DumpDeployments(os.Stdout, sb.GDM.Deployments)
 	return cmdr.Success()
+}
+
+func (sb *SousQueryGDM) log() logging.LogSink {
+	return *(logging.SilentLogSet().Child("SousQueryGDM").(*logging.LogSet))
 }
