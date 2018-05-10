@@ -104,7 +104,7 @@ func setupDBErr(name string) (*sql.DB, error) {
 		return nil, fmt.Errorf("error creating test database err %v", err)
 	}
 
-	connstr := fmt.Sprintf("dbname=%s host=localhost port=%s sslmode=disable", dbName, port)
+	connstr := fmt.Sprintf("dbname=%s host=localhost user=postgres port=%s sslmode=disable", dbName, port)
 
 	db, err := sql.Open("postgres", connstr)
 	if err != nil {
