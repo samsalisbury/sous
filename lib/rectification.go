@@ -51,14 +51,24 @@ func (r *Rectification) EachField(fn logging.FieldReportFn) {
 // once.
 func (r *Rectification) Begin(d Deployer, reg Registry, rf *ResolveFilter, stateReader StateReader) {
 	r.once.Do(func() {
-		go func() {
-			defer r.cancel()
-
-			r.rectify(d, reg)
-			r.awaitDone(d, reg, rf, stateReader)
-
-		}()
+		go r.enact(d, reg, rf, stateReader)
 	})
+}
+
+func (r *Rectification) enact(d Deployer, reg Registry, rf *ResolveFilter, stateReader StateReader) {
+	defer r.cancel()
+	r.rectify(d, reg)
+	if r.Resolution.Error != nil {
+		logging.Deliver(r.log,
+			logging.SousGenericV1,
+			logging.GetCallerInfo(logging.NotHere()),
+			logging.WarningLevel,
+			logging.ConsoleAndMessage(fmt.Sprintf("Rectification failed: %s", r.Resolution.Error)),
+			r.Pair,
+		)
+		return
+	}
+	r.awaitDone(d, reg, rf, stateReader)
 }
 
 func (r *Rectification) rectify(d Deployer, reg Registry) {
@@ -116,6 +126,12 @@ func (r *Rectification) awaitDone(d Deployer, reg Registry, rf *ResolveFilter, s
 		if err != nil {
 			r.Lock()
 			r.Resolution.Error = &ErrorWrapper{error: err}
+			r.Unlock()
+			return
+		}
+		if s == nil {
+			r.Lock()
+			r.Resolution.Error = &ErrorWrapper{error: fmt.Errorf("pollOnce returned nil status")}
 			r.Unlock()
 			return
 		}
