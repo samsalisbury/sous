@@ -30,6 +30,7 @@ type (
 	DiskStateManager struct {
 		BaseDir string
 		Codec   *hy.Codec
+		log     logging.LogSink
 	}
 )
 
@@ -41,18 +42,18 @@ func NewDiskStateManager(baseDir string) *DiskStateManager {
 		c.MarshalFunc = yaml.Marshal
 		c.UnmarshalFunc = yaml.Unmarshal
 	})
-	return &DiskStateManager{Codec: c, BaseDir: baseDir}
+	return &DiskStateManager{Codec: c, BaseDir: baseDir, log: *(logging.SilentLogSet().Child("NewDiskStateManager").(*logging.LogSet))}
 }
 
-func repairState(s *sous.State) error {
+func repairState(s *sous.State, log logging.LogSink) error {
 
 	for _, m := range s.Manifests.Snapshot() {
 		sort.Strings(m.Owners)
 	}
-	reportDebugDiskStateManagerMessage("Validating State", nil, nil, logging.Log)
+	reportDebugDiskStateManagerMessage("Validating State", nil, nil, log)
 
 	flaws := s.Validate()
-	reportDebugDiskStateManagerMessage("Repairng State flaws", flaws, nil, logging.Log)
+	reportDebugDiskStateManagerMessage("Repairng State flaws", flaws, nil, log)
 
 	_, es := sous.RepairAll(flaws)
 
@@ -70,7 +71,7 @@ func repairState(s *sous.State) error {
 func (dsm *DiskStateManager) ReadState() (*sous.State, error) {
 	// TODO: Allow state dir to be passed as flag in sous/cli.
 	// TODO: Consider returning a error to indicate if the state dir exists at all.
-	reportDebugDiskStateManagerMessage("Reading state from disk", nil, nil, logging.Log)
+	reportDebugDiskStateManagerMessage("Reading state from disk", nil, nil, dsm.log)
 	s := sous.NewState()
 	err := dsm.Codec.Read(dsm.BaseDir, s)
 	if err != nil {
@@ -94,7 +95,7 @@ func (dsm *DiskStateManager) ReadState() (*sous.State, error) {
 			}
 		}
 	}
-	if e := repairState(s); e != nil {
+	if e := repairState(s, dsm.log); e != nil {
 		return nil, e
 	}
 	return s, nil
@@ -102,10 +103,10 @@ func (dsm *DiskStateManager) ReadState() (*sous.State, error) {
 
 // WriteState records the entire intended state of the world to a dir.
 func (dsm *DiskStateManager) WriteState(s *sous.State, u sous.User) error {
-	if e := repairState(s); e != nil {
+	if e := repairState(s, dsm.log); e != nil {
 		return e
 	}
-	reportDebugDiskStateManagerMessage("Writing state to disk", nil, nil, logging.Log)
+	reportDebugDiskStateManagerMessage("Writing state to disk", nil, nil, dsm.log)
 	return dsm.Codec.Write(dsm.BaseDir, s)
 }
 

@@ -345,9 +345,6 @@ func newLogSet(v semv.Version, config PossiblyInvalidConfig, tid sous.TraceID) (
 	if err := ls.Configure(config.Logging); err != nil {
 		return ls, initErr(err, "validating logging configuration")
 	}
-	if err := logging.Log.Configure(config.Logging); err != nil {
-		return ls, initErr(err, "validating logging configuration")
-	}
 	return ls, nil
 }
 
