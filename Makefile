@@ -1,19 +1,53 @@
 SHELL := /usr/bin/env bash
 
+POSTGRES_DATA_VOLUME_NAME ?= sous_dev_postgres_data
+ifeq ($(shell docker volume ls -q --filter name=^$(POSTGRES_DATA_VOLUME_NAME)$$),)
+POSTGRES_DATA_VOLUME_EXISTS := NO
+else
+POSTGRES_DATA_VOLUME_EXISTS := YES
+endif
+
+POSTGRES_CONTAINER_NAME ?= sous_dev_postgres
+POSTGRES_CONTAINER_ID = $(shell docker ps -q --no-trunc --filter name=^/$(POSTGRES_CONTAINER_NAME)$$)
+POSTGRES_CONTAINER_RUNNING = $(shell if [ "$(POSTGRES_CONTAINER_ID)" = "" ]; then echo NO; else echo YES; fi)
+
+define STOP_POSTGRES
+docker ps
+@if [ $(POSTGRES_CONTAINER_RUNNING) = YES ]; then docker stop $(POSTGRES_CONTAINER_NAME) && echo Waiting for postgres to stop...; echo Container exited with code $$(docker wait $(POSTGRES_CONTAINER_ID)); echo Postgres container stopped: $(POSTGRES_CONTAINER_NAME); docker rm $(POSTGRES_CONTAINER_ID) && echo Used postgres container deleted.; else echo Postgres container not running.; fi
+endef
+
+define START_POSTGRES
+docker ps
+@if [ $(POSTGRES_CONTAINER_RUNNING) = NO ]; then docker run -d --name $(POSTGRES_CONTAINER_NAME) -p $(PGPORT):5432 -v $(POSTGRES_DATA_VOLUME_NAME):/var/lib/postgresql/data postgres:10.3 && echo -n Postgres container started; else echo -n Postgres container already running; fi; echo ": $(POSTGRES_CONTAINER_NAME)"
+sleep 5
+docker run --net=host postgres:10.3 createdb -h localhost -p $(PGPORT) -U postgres -w $(TEST_DB_NAME)
+docker run --net=host --rm -e CHANGELOG_FILE=changelog.xml -v $(PWD)/database:/changelogs -e "URL=$(LIQUIBASE_TEST_FLAGS)" jcastillo/liquibase:0.0.7
+endef
+
+define DELETE_POSTGRES_DATA
+@if [ $(POSTGRES_DATA_VOLUME_EXISTS) = YES ]; then docker volume rm $(POSTGRES_DATA_VOLUME_NAME) && echo Postgres data volume deleted: $(POSTGRES_DATA_VOLUME_NAME); else echo Postgres data volume does not exist.; fi
+endef
+
 XDG_DATA_HOME ?= $(HOME)/.local/share
-DEV_POSTGRES_DIR ?= $(XDG_DATA_HOME)/sous/postgres
+DEV_POSTGRES_DIR ?= $(XDG_DATA_HOME)/sous/postgres_docker
 DEV_POSTGRES_DATA_DIR ?= $(DEV_POSTGRES_DIR)/data
 PGPORT ?= 6543
+USER_ID ?= $(shell id -u)
+GROUP_ID ?= $(shell id -g)
+
+
+DOCKER_HOST_IP_PARSED ?= $(shell echo "$(DOCKER_HOST)" | grep -E -o '(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)')
+DOCKER_HOST_LOCALHOST := localhost
+DOCKER_HOST_IP := $(if $(DOCKER_HOST_IP_PARSED),$(DOCKER_HOST_IP_PARSED),$(DOCKER_HOST_LOCALHOST))
+
 
 DB_NAME = sous
 TEST_DB_NAME = sous_test_template
 
-LIQUIBASE_DEFAULTS := ./dev_support/liquibase/liquibase.properties
 LIQUIBASE_SERVER := jdbc:postgresql://localhost:$(PGPORT)
-LIQUIBASE_SHARED_FLAGS = --changeLogFile=database/changelog.xml --defaultsFile=./dev_support/liquibase/liquibase.properties
 
-LIQUIBASE_FLAGS := --url $(LIQUIBASE_SERVER)/$(DB_NAME) $(LIQUIBASE_SHARED_FLAGS)
-LIQUIBASE_TEST_FLAGS := --url $(LIQUIBASE_SERVER)/$(TEST_DB_NAME) $(LIQUIBASE_SHARED_FLAGS)
+LIQUIBASE_FLAGS := $(LIQUIBASE_SERVER)/$(DB_NAME)?user=postgres
+LIQUIBASE_TEST_FLAGS := $(LIQUIBASE_SERVER)/$(TEST_DB_NAME)?user=postgres
 
 SQLITE_URL := https://sqlite.org/2017/sqlite-autoconf-3160200.tar.gz
 GO_VERSION := 1.10
@@ -283,7 +317,9 @@ test-unit-base: $(COVER_DIR) $(GO_FILES)
 		-covermode=atomic -coverprofile=$(COVER_DIR)/count_merged.txt \
 		-timeout 3m -race $(SOUS_PACKAGES_WITH_TESTS) $(TEST_TEAMCITY)
 
-test-unit: postgres-test-prepare test-unit-base
+test-unit:
+	$(MAKE) postgres-clean-restart
+	$(MAKE) test-unit-base
 
 $(COVER_DIR)/count_merged.txt: $(COVER_DIR) $(GO_FILES)
 	go test \
@@ -371,39 +407,30 @@ artifacts/sous_$(SOUS_VERSION)_amd64.deb: artifacts/$(LINUX_RELEASE_DIR)/sous
 	fpm -s dir -t deb -n sous -v $(SOUS_VERSION) --description $(DESCRIPTION) --url $(URL) artifacts/$(LINUX_RELEASE_DIR)/sous=/usr/bin/sous
 	mv sous_$(SOUS_VERSION)_amd64.deb artifacts/
 
-$(DEV_POSTGRES_DATA_DIR):
-	@if [ -d "$@" ]; then exit 0; fi
-	install -d -m 0700 $@
-	initdb $@
+postgres-start:
+	$(START_POSTGRES)
 
-$(DEV_POSTGRES_DATA_DIR)/postgresql.conf: $(DEV_POSTGRES_DATA_DIR) dev_support/postgres/postgresql.conf
-	cp dev_support/postgres/postgresql.conf $@
+.PHONY: postgres-restart
+postgres-restart:
+	$(MAKE) postgres-stop
+	$(MAKE) postgres-start
 
-postgres-start: $(DEV_POSTGRES_DATA_DIR)/postgresql.conf
-	if ! (pg_isready -h localhost -p $(PGPORT)); then \
-		postgres -D $(DEV_POSTGRES_DATA_DIR) -p $(PGPORT) & \
-		until pg_isready -h localhost -p $(PGPORT); do sleep 1; done \
-	fi
-	createdb -h localhost -p $(PGPORT) $(DB_NAME) > /dev/null 2>&1 || true
-	liquibase $(LIQUIBASE_FLAGS) update
-
-postgres-test-prepare: $(DEV_POSTGRES_DATA_DIR)/postgresql.conf postgres-create-testdb
-
-postgres-create-testdb: postgres-start
-	createdb -h localhost -p $(PGPORT) $(TEST_DB_NAME) > /dev/null 2>&1 || true
-	liquibase $(LIQUIBASE_TEST_FLAGS) update
+.PHONY: postgres-clean-restart
+postgres-clean-restart:
+	$(MAKE) postgres-clean
+	$(MAKE) postgres-start
 
 postgres-stop:
-	pg_ctl stop -D $(DEV_POSTGRES_DATA_DIR) || true
+	$(STOP_POSTGRES)
 
 postgres-connect:
-	psql -h localhost -p $(PGPORT) sous
+	psql -h $(DOCKER_HOST_IP) -p $(PGPORT) sous
 
 postgres-update-schema: postgres-start
 	liquibase $(LIQUIBASE_FLAGS) update
 
 postgres-clean: postgres-stop
-	rm -r "$(DEV_POSTGRES_DIR)"
+	$(DELETE_POSTGRES_DATA)
 
 .PHONY: artifactory clean clean-containers clean-container-certs \
 	clean-running-containers clean-container-images coverage deb-build \
@@ -413,4 +440,3 @@ postgres-clean: postgres-stop
 	postgres-clean postgres-create-testdb build-debug homebrew install-gotags \
 	install-debug-linux install-debug-darwin
 
-#liquibase --url jdbc:postgresql://127.0.0.1:6543/sous --changeLogFile=database/changelog.xml update
