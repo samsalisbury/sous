@@ -16,7 +16,7 @@ import (
 // should provide a unique name for its DB instance so that they'll be
 // independent.
 func SetupDB(t *testing.T, optidx ...int) *sql.DB {
-	t.Helper()
+	//t.Helper()
 	name := dbNameRoot(t, optidx...)
 	t.Logf("Creating DB for %s called sous_test_%s", t.Name(), name)
 	db, err := setupDBErr(name)
@@ -38,6 +38,7 @@ func DBNameForTest(t *testing.T, optidx ...int) string {
 
 // ReleaseDB should be called in any test that called SetupDB (even indirectly)
 func ReleaseDB(t *testing.T, optidx ...int) {
+	t.Helper()
 	name := dbNameRoot(t, optidx...)
 	if db, has := dbconns[name]; has {
 		db.Close() //ignoring error
@@ -68,7 +69,7 @@ func getAdminConn() (*sql.DB, error) {
 		if np, set := os.LookupEnv("PGPORT"); set {
 			port = np
 		}
-		connstr := fmt.Sprintf("dbname=sous_test_template host=localhost user=postgres port=%s sslmode=disable", port)
+		connstr := fmt.Sprintf("dbname=postgres host=localhost user=postgres port=%s sslmode=disable", port)
 		adminConn, err = sql.Open("postgres", connstr)
 	})
 	if err != nil {
@@ -94,10 +95,10 @@ func setupDBErr(name string) (*sql.DB, error) {
 		return nil, fmt.Errorf("cannot use test name %q because the DB name %q is used as the template", name, dbName)
 	}
 	setupDB, err := getAdminConn()
-
 	if err != nil {
 		return nil, fmt.Errorf("error setting up test database %q Error: %v. Did you already `make postgres-test-prepare`?", dbName, err)
 	}
+
 	if _, err := setupDB.Exec("drop database " + dbName); err != nil && !isNoDBError(err) {
 		return nil, fmt.Errorf("error dropping old test database %q: err %v", dbName, err)
 	}
