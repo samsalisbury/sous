@@ -49,6 +49,7 @@ func dbNameRoot(t *testing.T, optidx ...int) string {
 	name := strings.Replace(strings.ToLower(t.Name()), "test", "", -1)
 	name = strings.Replace(name, "/", "_", -1)
 	name = strings.Replace(name, "-", "_", -1)
+	name = strings.Replace(name, ":", "_", -1)
 	if len(optidx) > 0 {
 		return fmt.Sprintf("%s_%d", name, optidx[0])
 	}

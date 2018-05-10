@@ -16,7 +16,6 @@ import (
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/logging/messages"
 	"github.com/pkg/errors"
-	"github.com/samsalisbury/semv"
 )
 
 type (
@@ -430,10 +429,6 @@ func reportTableMetrics(logger logging.LogSink, db *sql.DB) {
 		DB: db,
 	}
 	logging.Deliver(logger, msg)
-}
-
-func versionString(v semv.Version) string {
-	return v.Format(semv.Complete)
 }
 
 func (nc *NameCache) log(msg string, lvl logging.Level, data ...interface{}) {

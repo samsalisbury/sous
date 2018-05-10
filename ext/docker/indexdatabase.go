@@ -30,10 +30,14 @@ func (nc *NameCache) captureRepos(db *sql.DB) (repos []string) {
 	return
 }
 
+func versionString(v semv.Version) string {
+	return v.Format(semv.MMPPre)
+}
+
 func (nc *NameCache) dbInsert(sid sous.SourceID, in, etag string, quals []sous.Quality) error {
 	ref, err := reference.ParseNamed(in)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "name: %q", in)
 	}
 
 	ctx := context.TODO()
@@ -72,7 +76,8 @@ func (nc *NameCache) dbInsert(sid sous.SourceID, in, etag string, quals []sous.Q
 		r.KV("etag", etag)
 		locID(r, sid)
 	})); err != nil {
-		return err
+		// other errors should also get wrapped
+		return errors.Wrapf(err, "canonicalname:%q version:%q etag:%q repo:%q dir:%q", in, sid.Version, etag, sid.Location.Repo, sid.Location.Dir)
 	}
 
 	if err := ins.Exec("docker_image_qualities", sqlgen.DoNothing, func(fs sqlgen.FieldSet) {

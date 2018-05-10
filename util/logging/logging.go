@@ -166,7 +166,7 @@ func NewLogSet(version semv.Version, name string, role string, err io.Writer, co
 	lgrs.Out = err
 	if useTerse := os.Getenv("SOUS_TERSE_LOGGING"); useTerse != "" { //XXX config this
 		f := newTerseFormatter(
-			[]FieldName{SousSqlRows, SousSqlQuery, Status, Url},
+			[]FieldName{SousSqlRows, SousSqlQuery, Status, Method, Url},
 			[]FieldName{CallStackTrace, CallStackCode, CallStackFile,
 				CallStackLineNumber, CallStackMessage, ComponentId,
 				FieldName("call-stack-function"), SousIds, SousIdValues,
