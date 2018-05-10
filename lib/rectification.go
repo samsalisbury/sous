@@ -51,14 +51,15 @@ func (r *Rectification) EachField(fn logging.FieldReportFn) {
 // once.
 func (r *Rectification) Begin(d Deployer, reg Registry, rf *ResolveFilter, stateReader StateReader) {
 	r.once.Do(func() {
-		go func() {
-			defer r.cancel()
-
-			r.rectify(d, reg)
-			r.awaitDone(d, reg, rf, stateReader)
-
-		}()
+		go r.enact(d, reg, rf, stateReader)
 	})
+}
+
+func (r *Rectification) enact(d Deployer, reg Registry, rf *ResolveFilter, stateReader StateReader) {
+	defer r.cancel()
+	r.rectify(d, reg)
+	r.awaitDone(d, reg, rf, stateReader)
+
 }
 
 func (r *Rectification) rectify(d Deployer, reg Registry) {
