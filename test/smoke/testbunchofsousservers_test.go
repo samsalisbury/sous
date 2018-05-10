@@ -105,6 +105,7 @@ func (c *TestBunchOfSousServers) Configure(t *testing.T, envDesc desc.EnvDesc) e
 			SiblingURLs:   siblingURLs,
 			Database: storage.PostgresConfig{
 				DBName: dbname,
+				User:   "postgres",
 				Host:   "localhost",
 				Port:   dbport,
 			},
