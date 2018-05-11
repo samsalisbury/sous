@@ -19,6 +19,7 @@ type (
 		clusterClients  map[string]restful.HTTPClient
 		clusterUpdaters map[string]restful.UpdateDeleter
 		User            User
+		log             logging.LogSink
 	}
 
 	gdmWrapper struct {
@@ -27,11 +28,12 @@ type (
 )
 
 // NewHTTPStateManager creates a new HTTPStateManager.
-func NewHTTPStateManager(client restful.HTTPClient, clusterClients map[string]restful.HTTPClient) *HTTPStateManager {
+func NewHTTPStateManager(client restful.HTTPClient, clusterClients map[string]restful.HTTPClient, ls logging.LogSink) *HTTPStateManager {
 	return &HTTPStateManager{
 		HTTPClient:      client,
 		clusterClients:  clusterClients,
 		clusterUpdaters: map[string]restful.UpdateDeleter{},
+		log: ls,
 	}
 }
 
@@ -53,10 +55,6 @@ func (hsm *HTTPStateManager) ReadState() (*State, error) {
 	return hsm.cached.Clone(), nil
 }
 
-func (hsm *HTTPStateManager) log() logging.LogSink {
-	return *(logging.SilentLogSet().Child("HTTPStateManager").(*logging.LogSet))
-}
-
 // WriteState implements StateWriter for HTTPStateManager.
 func (hsm *HTTPStateManager) WriteState(s *State, u User) error {
 	hsm.User = u
@@ -64,7 +62,7 @@ func (hsm *HTTPStateManager) WriteState(s *State, u User) error {
 	if len(flaws) > 0 {
 		return errors.Errorf("Invalid update to state: %v", flaws)
 	}
-	messages.ReportLogFieldsMessage("Writing state via HTTP", logging.DebugLevel, hsm.log())
+	messages.ReportLogFieldsMessage("Writing state via HTTP", logging.DebugLevel, hsm.log)
 	if hsm.gdmState == nil {
 		_, err := hsm.ReadState()
 		if err != nil {
@@ -130,7 +128,7 @@ func (hsm *HTTPStateManager) getManifests(defs Defs) (Manifests, error) {
 		return Manifests{}, errors.Wrapf(err, "getting manifests")
 	}
 	hsm.gdmState = state
-	return gdm.manifests(defs, hsm.log())
+	return gdm.manifests(defs, hsm.log)
 }
 
 func (hsm *HTTPStateManager) putDeployments(new Deployments) error {

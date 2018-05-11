@@ -46,7 +46,7 @@ func setupDispatchStateManager(t *testing.T) dispatchSMScenario {
 
 	ls, _ := logging.NewLogSinkSpy()
 
-	remote := NewHTTPStateManager(whole, clients)
+	remote := NewHTTPStateManager(whole, clients, ls)
 
 	dsm := NewDispatchStateManager(localCluster, clusters, local, remote, ls)
 

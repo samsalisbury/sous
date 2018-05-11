@@ -100,7 +100,7 @@ func TestWriteState(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	hsm := sous.NewHTTPStateManager(cl, map[string]restful.HTTPClient{"test": cl})
+	hsm := sous.NewHTTPStateManager(cl, map[string]restful.HTTPClient{"test": cl}, logger)
 
 	originalState, err := hsm.ReadState()
 	if err != nil {

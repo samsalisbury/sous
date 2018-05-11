@@ -121,11 +121,10 @@ func TestUpdateRetryLoop(t *testing.T) {
 	cl, control, err := server.TestingInMemoryClient()
 	require.NoError(t, err)
 
-	hsm := sous.NewHTTPStateManager(cl, map[string]restful.HTTPClient{"test": cl})
+	ls := logging.SilentLogSet()
+	hsm := sous.NewHTTPStateManager(cl, map[string]restful.HTTPClient{"test": cl}, ls)
 
 	control.State.Manifests.Add(mani)
-
-	ls := logging.SilentLogSet()
 
 	deps, err := updateRetryLoop(ls, hsm, sourceID, depID, user)
 
@@ -142,7 +141,8 @@ func TestSousUpdate_Execute(t *testing.T) {
 	cl, control, err := server.TestingInMemoryClient()
 	require.NoError(t, err)
 
-	hsm := sous.NewHTTPStateManager(cl, map[string]restful.HTTPClient{"test": cl})
+	ls, _ := logging.NewLogSinkSpy()
+	hsm := sous.NewHTTPStateManager(cl, map[string]restful.HTTPClient{"test": cl}, ls)
 
 	manifest := sous.Manifest{
 		Source: sous.SourceLocation{

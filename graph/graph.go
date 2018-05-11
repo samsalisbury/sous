@@ -651,7 +651,7 @@ func newDistributedStorage(db *sql.DB, c LocalSousConfig, rf *sous.ResolveFilter
 		list[n] = cl
 		clusterNames = append(clusterNames, n)
 	}
-	hsm := sous.NewHTTPStateManager(list[localName], list)
+	hsm := sous.NewHTTPStateManager(list[localName], list, log.Child("http-state-manager"))
 	return sous.NewDispatchStateManager(localName, clusterNames, local, hsm, log.Child("state-manager")), nil
 }
 
@@ -663,12 +663,12 @@ func newStateManager(cl HTTPClient, c LocalSousConfig, bundle ClientBundle, rf *
 		messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Using local state stored at %s", c.StateLocation), logging.WarningLevel, log, c.StateLocation)
 		return &StateManager{StateManager: newServerStateManager(c, rf, log).StateManager}
 	}
-	hsm := sous.NewHTTPStateManager(cl, bundle)
+	hsm := sous.NewHTTPStateManager(cl, bundle, log.Child("http-state-manager"))
 	return &StateManager{StateManager: hsm}
 }
 
-func newHTTPStateManager(cl HTTPClient, bundle ClientBundle) *sous.HTTPStateManager {
-	return sous.NewHTTPStateManager(cl, bundle)
+func newHTTPStateManager(cl HTTPClient, bundle ClientBundle, log LogSink) *sous.HTTPStateManager {
+	return sous.NewHTTPStateManager(cl, bundle, log.Child("http-state-manager"))
 }
 
 func newStatusPoller(cl HTTPClient, rf *RefinedResolveFilter, user sous.User, logs LogSink) *sous.StatusPoller {
