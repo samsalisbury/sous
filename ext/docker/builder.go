@@ -34,13 +34,13 @@ type (
 // NewBuilder creates a new build using source code in the working
 // directory of sourceShell, and using the working dir of scratchShell as
 // temporary storage.
-func NewBuilder(nc sous.Inserter, drh string, sourceShell, scratchShell shell.Shell) (*Builder, error) {
+func NewBuilder(nc sous.Inserter, drh string, sourceShell, scratchShell shell.Shell, ls logging.LogSink) (*Builder, error) {
 	b := &Builder{
 		ImageMapper:        nc,
 		DockerRegistryHost: drh,
 		SourceShell:        sourceShell,
 		ScratchShell:       scratchShell,
-		log:                *(logging.SilentLogSet().Child("Volumes").(*logging.LogSet)),
+		log:                ls,
 	}
 
 	files, err := scratchShell.List()
@@ -147,10 +147,10 @@ func (b *Builder) recordName(bp *sous.BuildProduct) error {
 
 // VersionTag computes an image tag from a SourceVersion's version
 func (b *Builder) VersionTag(v sous.SourceID, kind string) string {
-	return versionTag(b.DockerRegistryHost, v, kind)
+	return versionTag(b.DockerRegistryHost, v, kind, b.log)
 }
 
 // RevisionTag computes an image tag from a SourceVersion's revision id
 func (b *Builder) RevisionTag(v sous.SourceID, kind string, time time.Time) string {
-	return revisionTag(b.DockerRegistryHost, v, kind, time)
+	return revisionTag(b.DockerRegistryHost, v, kind, time, b.log)
 }

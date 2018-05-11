@@ -130,7 +130,7 @@ func (nc *NameCache) Warmup(r string) error {
 }
 
 func (nc *NameCache) warmupSingle(sid sous.SourceID) error {
-	in := versionTag(nc.DockerRegistryHost, sid, "")
+	in := versionTag(nc.DockerRegistryHost, sid, "", nc.Log)
 
 	a := NewBuildArtifact(in, strpairs{})
 	gsid, err := nc.GetSourceID(a)
@@ -337,7 +337,7 @@ func (nc *NameCache) harvest(sl sous.SourceLocation) error {
 		messages.ReportLogFieldsMessage("Err looking up repos for location - proceeding with guessed repo", logging.WarningLevel, nc.Log, sl, err)
 		repos = []string{}
 	}
-	guessed := fullRepoName(nc.DockerRegistryHost, sl, "")
+	guessed := fullRepoName(nc.DockerRegistryHost, sl, "", nc.Log)
 	knowGuess := false
 
 	messages.ReportLogFieldsMessage("Attempting to harvest repos", logging.ExtraDebug1Level, nc.Log, repos)

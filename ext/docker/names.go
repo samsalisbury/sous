@@ -99,24 +99,20 @@ func revisionName(sid sous.SourceID, kind string, time time.Time) string {
 	return strings.Join([]string{imageRepoName(sid.Location, kind), labelStr}, ":")
 }
 
-func namesLog() logging.LogSink {
-	return *(logging.SilentLogSet().Child("names").(*logging.LogSet))
-}
-
-func fullRepoName(registryHost string, sl sous.SourceLocation, kind string) string {
+func fullRepoName(registryHost string, sl sous.SourceLocation, kind string, ls logging.LogSink) string {
 	frn := filepath.Join(registryHost, imageRepoName(sl, kind))
-	messages.ReportLogFieldsMessage("Repo name", logging.DebugLevel, namesLog(), sl, frn)
+	messages.ReportLogFieldsMessage("Repo name", logging.DebugLevel, ls, sl, frn)
 	return frn
 }
 
-func versionTag(registryHost string, v sous.SourceID, kind string) string {
+func versionTag(registryHost string, v sous.SourceID, kind string, ls logging.LogSink) string {
 	verTag := filepath.Join(registryHost, versionName(v, kind))
-	messages.ReportLogFieldsMessage("Version Tag", logging.DebugLevel, namesLog(), verTag)
+	messages.ReportLogFieldsMessage("Version Tag", logging.DebugLevel, ls, verTag)
 	return verTag
 }
 
-func revisionTag(registryHost string, v sous.SourceID, kind string, time time.Time) string {
+func revisionTag(registryHost string, v sous.SourceID, kind string, time time.Time, ls logging.LogSink) string {
 	revTag := filepath.Join(registryHost, revisionName(v, kind, time))
-	messages.ReportLogFieldsMessage("RevisionTag", logging.DebugLevel, namesLog(), revTag)
+	messages.ReportLogFieldsMessage("RevisionTag", logging.DebugLevel, ls, revTag)
 	return revTag
 }
