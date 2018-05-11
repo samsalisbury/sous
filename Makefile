@@ -364,6 +364,10 @@ test-smoke-compiles: ## Checks that the smoke tests compile.
 test-smoke: test-smoke-compiles $(SMOKE_TEST_BINARY) $(SMOKE_TEST_LATEST_LINK) setup-containers postgres-clean-restart
 	@echo "Smoke tests running; time out in $(SMOKE_TEST_TIMEOUT)..."
 	ulimit -n 2048 && \
+	PGHOST=$(PGHOST) \
+	PGPORT=$(PGPORT) \
+	SOUS_PG_HOST=$(PGHOST) \
+	SOUS_PG_PORT=$(PGPORT) \
 	SMOKE_TEST_DATA_DIR=$(SMOKE_TEST_DATA_DIR)/data \
 	SMOKE_TEST_BINARY=$(SMOKE_TEST_BINARY) \
 	SOUS_QA_DESC=$(QA_DESC) \
