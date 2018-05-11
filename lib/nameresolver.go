@@ -11,22 +11,19 @@ import (
 
 type nameResolver struct {
 	registry Registry
+	log      logging.LogSink
 }
 
 // ResolveNames resolves diffs.
-func (d *DeployableChans) ResolveNames(ctx context.Context, r Registry) *DeployableChans {
-	names := &nameResolver{registry: r}
+func (d *DeployableChans) ResolveNames(ctx context.Context, r Registry, ls logging.LogSink) *DeployableChans {
+	names := &nameResolver{registry: r, log: ls}
 
 	return d.Pipeline(ctx, names)
 }
 
-func HandlePairsByRegistry(r Registry, dp *DeployablePair) (*DeployablePair, *DiffResolution) {
-	names := &nameResolver{registry: r}
+func HandlePairsByRegistry(r Registry, dp *DeployablePair, ls logging.LogSink) (*DeployablePair, *DiffResolution) {
+	names := &nameResolver{registry: r, log: ls}
 	return names.HandlePairs(dp)
-}
-
-func (names *nameResolver) log() logging.LogSink {
-	return *(logging.SilentLogSet().Child("nameResolver").(*logging.LogSet))
 }
 
 func (names *nameResolver) HandlePairs(dp *DeployablePair) (*DeployablePair, *DiffResolution) {
@@ -42,14 +39,14 @@ func (names *nameResolver) HandlePairs(dp *DeployablePair) (*DeployablePair, *Di
 		// don't care about docker names
 	case AddedKind, ModifiedKind:
 		var newImageNameResolution *DiffResolution
-		newImageName, newImageNameResolution = resolveName(names.registry, intended, names.log())
-		messages.ReportLogFieldsMessage("Deployment processed, needs artifact", logging.ExtraDebug1Level, names.log(), dp.Kind(), intended)
+		newImageName, newImageNameResolution = resolveName(names.registry, intended, names.log)
+		messages.ReportLogFieldsMessage("Deployment processed, needs artifact", logging.ExtraDebug1Level, names.log, dp.Kind(), intended)
 		if err := newImageNameResolution; err != nil {
-			messages.ReportLogFieldsMessage("Unable to perform action", logging.InformationLevel, names.log(), action, intended.ID(), err)
+			messages.ReportLogFieldsMessage("Unable to perform action", logging.InformationLevel, names.log, action, intended.ID(), err)
 			return nil, err
 		}
 		if newImageName == nil {
-			messages.ReportLogFieldsMessage("Unable to perform action no artifact for SourceID", logging.InformationLevel, names.log(), action, intended.ID(), intended.SourceID)
+			messages.ReportLogFieldsMessage("Unable to perform action no artifact for SourceID", logging.InformationLevel, names.log, action, intended.ID(), intended.SourceID)
 			return nil, &DiffResolution{
 				DeploymentID: dp.ID(),
 				Desc:         "not created",

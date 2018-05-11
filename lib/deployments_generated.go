@@ -5,8 +5,6 @@ package sous
 import (
 	"fmt"
 	"sync"
-
-	"github.com/opentable/sous/util/logging"
 )
 
 // Deployments is a wrapper around map[DeployID]*Deployment
@@ -14,10 +12,6 @@ import (
 type Deployments struct {
 	mu *sync.RWMutex
 	m  map[DeploymentID](*Deployment)
-}
-
-func (d Deployments) log() logging.LogSink {
-	return *(logging.SilentLogSet().Child("Deployments").(*logging.LogSet))
 }
 
 // MakeDeployments creates a new Deployments with capacity set.

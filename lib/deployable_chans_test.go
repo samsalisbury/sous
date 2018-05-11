@@ -102,7 +102,8 @@ func (nrs *NameResolveTestSuite) TestResolveNameSkipped() {
 }
 
 func (nrs *NameResolveTestSuite) TestResolveNameStartChannel() {
-	nrs.depChans = nrs.diffChans.ResolveNames(context.Background(), nrs.reg)
+	ls, _ := logging.NewLogSinkSpy()
+	nrs.depChans = nrs.diffChans.ResolveNames(context.Background(), nrs.reg, ls)
 	nrs.diffChans.Pairs <- nrs.makeTestDepPair(nil, nrs.makeTestDep())
 
 	select {
@@ -118,7 +119,8 @@ func (nrs *NameResolveTestSuite) TestResolveNameStartChannel() {
 }
 
 func (nrs *NameResolveTestSuite) TestResolveNameUpdateChannel() {
-	nrs.depChans = nrs.diffChans.ResolveNames(context.Background(), nrs.reg)
+	ls, _ := logging.NewLogSinkSpy()
+	nrs.depChans = nrs.diffChans.ResolveNames(context.Background(), nrs.reg, ls)
 
 	pair := &DeployablePair{
 		Prior: nrs.makeTestDep(),
@@ -142,7 +144,8 @@ func (nrs *NameResolveTestSuite) TestResolveNameUpdateChannel() {
 
 func (nrs *NameResolveTestSuite) TestResolveNameStartChannelUnresolved() {
 	nrs.reg.FeedArtifact(nil, fmt.Errorf("not found"))
-	nrs.depChans = nrs.diffChans.ResolveNames(context.Background(), nrs.reg)
+	ls, _ := logging.NewLogSinkSpy()
+	nrs.depChans = nrs.diffChans.ResolveNames(context.Background(), nrs.reg, ls)
 	nrs.diffChans.Pairs <- nrs.makeTestDepPair(nil, nrs.makeTestDep())
 
 	select {
@@ -157,7 +160,9 @@ func (nrs *NameResolveTestSuite) TestResolveNameStartChannelUnresolved() {
 
 func (nrs *NameResolveTestSuite) TestResolveNameStopChannelUnresolved() {
 	nrs.reg.FeedArtifact(nil, fmt.Errorf("not found"))
-	nrs.depChans = nrs.diffChans.ResolveNames(context.Background(), nrs.reg)
+
+	ls, _ := logging.NewLogSinkSpy()
+	nrs.depChans = nrs.diffChans.ResolveNames(context.Background(), nrs.reg, ls)
 	nrs.diffChans.Pairs <- nrs.makeTestDepPair(nrs.makeTestDep(), nil)
 
 	select {

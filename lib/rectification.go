@@ -63,7 +63,7 @@ func (r *Rectification) Begin(d Deployer, reg Registry, rf *ResolveFilter, state
 
 func (r *Rectification) rectify(d Deployer, reg Registry) {
 	if r.Pair.Post.BuildArtifact == nil {
-		pair, diff := HandlePairsByRegistry(reg, &r.Pair)
+		pair, diff := HandlePairsByRegistry(reg, &r.Pair, r.log)
 		if diff != nil && diff.Error != nil {
 			r.Lock()
 			r.Resolution.Error = WrapResolveError(diff.Error)
