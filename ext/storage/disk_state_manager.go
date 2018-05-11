@@ -36,13 +36,13 @@ type (
 
 // NewDiskStateManager returns a new DiskStateManager configured to read and
 // write from a filesystem tree containing YAML files.
-func NewDiskStateManager(baseDir string) *DiskStateManager {
+func NewDiskStateManager(baseDir string, ls logging.LogSink) *DiskStateManager {
 	c := hy.NewCodec(func(c *hy.Codec) {
 		c.FileExtension = "yaml"
 		c.MarshalFunc = yaml.Marshal
 		c.UnmarshalFunc = yaml.Unmarshal
 	})
-	return &DiskStateManager{Codec: c, BaseDir: baseDir, log: *(logging.SilentLogSet().Child("NewDiskStateManager").(*logging.LogSet))}
+	return &DiskStateManager{Codec: c, BaseDir: baseDir, log: ls}
 }
 
 func repairState(s *sous.State, log logging.LogSink) error {

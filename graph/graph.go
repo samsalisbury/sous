@@ -627,8 +627,8 @@ func newServerStateManager(c LocalSousConfig, rf *sous.ResolveFilter, log LogSin
 		secondary = storage.NewLogOnlyStateManager(log.Child("database"))
 	}
 
-	dm := storage.NewDiskStateManager(c.StateLocation)
-	gm := storage.NewGitStateManager(dm)
+	dm := storage.NewDiskStateManager(c.StateLocation, log.Child("disk-state-manager"))
+	gm := storage.NewGitStateManager(dm, log.Child("git-state-manager"))
 	duplex := storage.NewDuplexStateManager(gm, secondary, log.Child("duplex-state"))
 	return &ServerStateManager{StateManager: duplex}
 }

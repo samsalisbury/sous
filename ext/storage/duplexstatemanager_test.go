@@ -23,7 +23,7 @@ func TestDuplexWrite(t *testing.T) {
 	defer db.Close()
 
 	log, _ := logging.NewLogSinkSpy()
-	gsm := NewGitStateManager(NewDiskStateManager("testdata/out"))
+	gsm := NewGitStateManager(NewDiskStateManager("testdata/out", logging.SilentLogSet()), logging.SilentLogSet())
 	psm := NewPostgresStateManager(db, log)
 	dupsm := NewDuplexStateManager(gsm, psm, log)
 
@@ -55,7 +55,7 @@ func TestDuplexReadState(t *testing.T) {
 	db := setupDB(t)
 	defer db.Close()
 	log, _ := logging.NewLogSinkSpy()
-	gsm := NewGitStateManager(NewDiskStateManager("testdata/out"))
+	gsm := NewGitStateManager(NewDiskStateManager("testdata/out", logging.SilentLogSet()), logging.SilentLogSet())
 	psm := NewPostgresStateManager(db, log)
 
 	dupsm := NewDuplexStateManager(gsm, psm, log)

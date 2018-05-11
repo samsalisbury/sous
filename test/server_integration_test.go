@@ -57,7 +57,7 @@ func (suite *integrationServerTests) prepare() (logging.LogSink, http.Handler, f
 		filepath.Join(temp, "remote"),
 		filepath.Join(temp, "out")
 
-	dsm := storage.NewDiskStateManager(sourcepath)
+	dsm := storage.NewDiskStateManager(sourcepath, logging.SilentLogSet())
 	s, err := dsm.ReadState()
 	suite.Require().NoError(err)
 

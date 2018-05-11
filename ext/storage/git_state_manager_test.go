@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/yaml"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
@@ -22,7 +23,7 @@ func TestGitStateManager_WriteState_success(t *testing.T) {
 	clobberDir(t, "testdata/result")
 	PrepareTestGitRepo(t, s, "testdata/remote", "testdata/out")
 
-	gsm := NewGitStateManager(NewDiskStateManager("testdata/out"))
+	gsm := NewGitStateManager(NewDiskStateManager("testdata/out", logging.SilentLogSet()), logging.SilentLogSet())
 
 	require.NoError(gsm.WriteState(s, testUser))
 
@@ -47,7 +48,7 @@ func TestGitStateManager_WriteState_multiple_manifests(t *testing.T) {
 
 	s := exampleState()
 	PrepareTestGitRepo(t, s, "testdata/remote", "testdata/out")
-	gsm := NewGitStateManager(NewDiskStateManager("testdata/out"))
+	gsm := NewGitStateManager(NewDiskStateManager("testdata/out", logging.SilentLogSet()), logging.SilentLogSet())
 
 	// Modify one of the manifests.
 	m, ok := s.Manifests.Any(func(m *sous.Manifest) bool { return m.Source.Repo == "github.com/opentable/sous" })
@@ -81,7 +82,7 @@ func TestGitReadState(t *testing.T) {
 
 	s := exampleState()
 	PrepareTestGitRepo(t, s, "testdata/remote", "testdata/out")
-	gsm := NewGitStateManager(NewDiskStateManager("testdata/out"))
+	gsm := NewGitStateManager(NewDiskStateManager("testdata/out", logging.SilentLogSet()), logging.SilentLogSet())
 
 	actual, err := gsm.ReadState()
 	require.NoError(err)
@@ -148,8 +149,8 @@ func setupManagers(t *testing.T) (clone *GitStateManager, remote *DiskStateManag
 	runScript(t, `git config user.email sous@opentable.com
 	git config user.name Sous`, `testdata/target`)
 
-	gsm := NewGitStateManager(NewDiskStateManager("testdata/target"))
-	dsm := NewDiskStateManager(`testdata/origin`)
+	gsm := NewGitStateManager(NewDiskStateManager("testdata/target", logging.SilentLogSet()), logging.SilentLogSet())
+	dsm := NewDiskStateManager(`testdata/origin`, logging.SilentLogSet())
 
 	return gsm, dsm
 }
@@ -314,7 +315,7 @@ func TestGitRemoteDelete(t *testing.T) {
 }
 
 func TestGitReadState_empty(t *testing.T) {
-	gsm := NewGitStateManager(NewDiskStateManager("testdata/nonexistent"))
+	gsm := NewGitStateManager(NewDiskStateManager("testdata/nonexistent", logging.SilentLogSet()), logging.SilentLogSet())
 	actual, err := gsm.ReadState()
 	if err != nil && !os.IsNotExist(errors.Cause(err)) {
 		t.Fatal(err)

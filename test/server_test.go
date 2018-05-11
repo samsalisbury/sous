@@ -14,6 +14,7 @@ import (
 	"github.com/opentable/sous/ext/storage"
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/server"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/suite"
@@ -49,7 +50,7 @@ func (suite serverTests) prepare(extras ...interface{}) http.Handler {
 		"../ext/storage/testdata/remote",
 		"../ext/storage/testdata/out"
 
-	dsm := storage.NewDiskStateManager(sourcepath)
+	dsm := storage.NewDiskStateManager(sourcepath, logging.SilentLogSet())
 	s, err := dsm.ReadState()
 	suite.Require().NoError(err)
 

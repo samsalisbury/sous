@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/yaml"
 	"github.com/pkg/errors"
 	"github.com/samsalisbury/semv"
@@ -19,7 +20,7 @@ func TestWriteState(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	dsm := NewDiskStateManager("testdata/out")
+	dsm := NewDiskStateManager("testdata/out", logging.SilentLogSet())
 
 	if err := dsm.WriteState(s, sous.User{}); err != nil {
 		t.Fatal(err)
@@ -51,7 +52,7 @@ func TestWriteState_out_of_order_owners(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	dsm := NewDiskStateManager("testdata/out")
+	dsm := NewDiskStateManager("testdata/out", logging.SilentLogSet())
 
 	if err := dsm.WriteState(s, sous.User{}); err != nil {
 		t.Fatal(err)
@@ -68,7 +69,7 @@ func TestWriteState_out_of_order_owners(t *testing.T) {
 
 func TestReadState(t *testing.T) {
 
-	dsm := NewDiskStateManager("testdata/in")
+	dsm := NewDiskStateManager("testdata/in", logging.SilentLogSet())
 
 	actual, err := dsm.ReadState()
 	if err != nil {
@@ -97,7 +98,7 @@ func TestReadState(t *testing.T) {
 }
 
 func TestReadState_empty(t *testing.T) {
-	dsm := NewDiskStateManager("testdata/nonexistent")
+	dsm := NewDiskStateManager("testdata/nonexistent", logging.SilentLogSet())
 	actual, err := dsm.ReadState()
 	if err != nil && !os.IsNotExist(errors.Cause(err)) {
 		t.Fatal(err)
