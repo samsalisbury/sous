@@ -8,8 +8,6 @@ import (
 	"path/filepath"
 
 	"github.com/opentable/sous/lib"
-	"github.com/opentable/sous/util/logging"
-	"github.com/opentable/sous/util/logging/messages"
 )
 
 type runnableBuilder struct {
@@ -60,13 +58,7 @@ func (rb *runnableBuilder) extractFiles() error {
 	return nil
 }
 
-func (rb *runnableBuilder) log() logging.LogSink {
-	return *(logging.SilentLogSet().Child("runnableBuilder").(*logging.LogSet))
-}
-
 func (rb *runnableBuilder) templateDockerfileBytes(dockerfile io.Writer) error {
-	messages.ReportLogFieldsMessage("Templating Dockerfile from", logging.DebugLevel, rb.log(), rb, rb.RunSpec)
-
 	tmpl, err := template.New("Dockerfile").Parse(`
 	FROM {{.RunSpec.Image.From}}
 	{{range .RunSpec.Files }}
