@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"flag"
 	"fmt"
 
 	"github.com/opentable/sous/config"
@@ -11,25 +12,31 @@ import (
 
 // SousHarvest is the description of the `sous query gdm` command
 type SousHarvest struct {
-	*sous.State
-	sous.Registry
-	graph.ErrWriter
+	State             *sous.State
+	Registry          sous.Registry
+	ErrWriter         graph.ErrWriter
+	DeployFilterFlags config.DeployFilterFlags `inject:"optional"`
 }
 
 func init() { TopLevelCommands["harvest"] = &SousHarvest{} }
 
 const sousHarvestHelp = `Retrieve data from images in an artifact repostiory
 
-usage: sous harvest <repo>...
+usage: sous harvest -cluster <cluster> <repo>...
 `
 
 // Help prints the help
 func (*SousHarvest) Help() string { return sousHarvestHelp }
 
 // RegisterOn implements Registrar on SousHarvest
-func (*SousHarvest) RegisterOn(psy Addable) {
+func (sh *SousHarvest) RegisterOn(psy Addable) {
 	psy.Add(graph.DryrunNeither)
-	psy.Add(&config.DeployFilterFlags{})
+	psy.Add(&sh.DeployFilterFlags)
+}
+
+// AddFlags adds the -cluster flag.
+func (sh *SousHarvest) AddFlags(fs *flag.FlagSet) {
+	fs.StringVar(&sh.DeployFilterFlags.Cluster, "cluster", "", "cluster to harvest to")
 }
 
 // Execute defines the behavior of `sous query gdm`

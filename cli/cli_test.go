@@ -239,7 +239,7 @@ func TestInvokeVersion(t *testing.T) {
 func TestInvokeHarvest(t *testing.T) {
 	assert := assert.New(t)
 
-	exe := justCommand(t, []string{`sous`, `harvest`, `sms-continual-test`})
+	exe := justCommand(t, []string{`sous`, `harvest`, `-cluster`, `blah`, `sms-continual-test`})
 	assert.NotNil(exe)
 	assert.Len(exe.Args, 1)
 }
