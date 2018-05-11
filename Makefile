@@ -23,6 +23,8 @@ define DELETE_POSTGRES_DATA
 @if [ $(POSTGRES_DATA_VOLUME_EXISTS) = YES ]; then docker volume rm $(POSTGRES_DATA_VOLUME_NAME) && echo Postgres data volume deleted: $(POSTGRES_DATA_VOLUME_NAME); else echo Postgres data volume does not exist.; fi
 endef
 
+SOUS_TERSE_LOGGING ?= YES
+
 XDG_DATA_HOME ?= $(HOME)/.local/share
 DEV_POSTGRES_DIR ?= $(XDG_DATA_HOME)/sous/postgres_docker
 DEV_POSTGRES_DATA_DIR ?= $(DEV_POSTGRES_DIR)/data
@@ -201,6 +203,10 @@ stop-qa-env: ## Stops and removes all docker-compose containers.
 	@cd integration/test-registry && docker-compose rm -sf >/dev/null 2>&1 || { echo Failed to stop containers; exit 1; }
 	@if [ -f "$(QA_DESC)" ]; then rm -f $(QA_DESC); fi
 
+.PHONY: start-qa-env
+start-qa-env: setup-containers
+
+
 gitlog:
 	git log `git describe --abbrev=0`..HEAD
 
@@ -358,6 +364,7 @@ test-smoke: test-smoke-compiles $(SMOKE_TEST_BINARY) $(SMOKE_TEST_LATEST_LINK) s
 	SMOKE_TEST_BINARY=$(SMOKE_TEST_BINARY) \
 	SOUS_QA_DESC=$(QA_DESC) \
 	DESTROY_SINGULARITY_BETWEEN_SMOKE_TEST_CASES=$(DESTROY_SINGULARITY_BETWEEN_SMOKE_TEST_CASES) \
+	SOUS_TERSE_LOGGING=$(SOUS_TERSE_LOGGING) \
 	go test $(EXTRA_GO_TEST_FLAGS) -timeout $(SMOKE_TEST_TIMEOUT) -tags smoke -v -count 1 ./test/smoke $(TEST_TEAMCITY)
 
 .PHONY: test-smoke-nofail
