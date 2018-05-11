@@ -29,7 +29,7 @@ func (s *selector) SelectBuildpack(ctx *sous.BuildContext) (sous.Buildpack, erro
 		return sbp, nil
 	}
 
-	dfbp := NewDockerfileBuildpack()
+	dfbp := NewDockerfileBuildpack(s.log)
 	dr, err = dfbp.Detect(ctx)
 	if err == nil && dr.Compatible {
 		reportStrategyChoice("simple dockerfile", s.log)

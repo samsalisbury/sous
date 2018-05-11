@@ -62,7 +62,7 @@ func (suite *buildingTestSuite) TestSplitContainer() {
 
 	//return fmt.Sprintf("%s/%s:%s", registryName, reponame, tag)
 	reg := docker_registry.NewClient(logging.SilentLogSet())
-	sbp := docker.NewSplitBuildpack(reg)
+	sbp := docker.NewSplitBuildpack(reg, logging.SilentLogSet())
 
 	sh, err := shell.DefaultInDir("testdata/split_test")
 	suite.Require().NoError(err)
