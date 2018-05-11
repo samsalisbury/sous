@@ -176,6 +176,12 @@ func NewLogSet(version semv.Version, name string, role string, err io.Writer, co
 		)
 		f.StackTraceField = string(CallStackTrace)
 		lgrs.Formatter = f
+	} else if useTerse == "MSGONLY" {
+		f := newTerseFormatter(
+			[]FieldName{},
+			[]FieldName{"*"},
+		)
+		lgrs.Formatter = f
 	}
 
 	bundle := newdb(version, err, lgrs)

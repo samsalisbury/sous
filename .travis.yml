@@ -25,7 +25,7 @@ after_success:
 - bin/codecov -f /tmp/sous-cover/count_merged.txt
 env:
   global:
-  - SOUS_TERSE_LOGGING=NO
+  - SOUS_TERSE_LOGGING=MSGONLY
   - PGPORT=6543
   - GIT_AUTHOR_NAME=SousCI
   - GIT_COMMITTER_NAME=SousCI
