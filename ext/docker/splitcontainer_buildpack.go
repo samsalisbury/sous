@@ -72,6 +72,7 @@ func (sbp *SplitBuildpack) Detect(ctx *sous.BuildContext) (*sous.DetectResult, e
 		registry: sbp.registry,
 		froms:    []*parser.Node{},
 		envs:     []*parser.Node{},
+		ls:       sbp.log(),
 	}
 
 	// check the local image for dev build

@@ -19,6 +19,7 @@ type splitDetector struct {
 	rootAst                 *parser.Node
 	froms                   []*parser.Node
 	envs                    []*parser.Node
+	ls                      logging.LogSink
 }
 
 func (sd *splitDetector) absorbDocker(ast *parser.Node) error {
@@ -47,31 +48,27 @@ func (sd *splitDetector) absorbDockerfile() error {
 	return sd.absorbDocker(sd.rootAst)
 }
 
-func (sd *splitDetector) log() logging.LogSink {
-	return *(logging.SilentLogSet().Child("splitDetector").(*logging.LogSet))
-}
-
 func (sd *splitDetector) fetchFromRunSpec() error {
 	for _, f := range sd.froms {
-		messages.ReportLogFieldsMessage("Fetching", logging.DebugLevel, sd.log(), f.Value)
+		messages.ReportLogFieldsMessage("Fetching", logging.DebugLevel, sd.ls, f.Value)
 		md, err := sd.registry.GetImageMetadata(f.Value, "")
 		if err != nil {
-			messages.ReportLogFieldsMessage("Error fetching", logging.DebugLevel, sd.log(), f.Value, err)
+			messages.ReportLogFieldsMessage("Error fetching", logging.DebugLevel, sd.ls, f.Value, err)
 			if err != nil {
 				continue
 			}
 		}
 
 		if path, ok := md.Env[SOUS_RUN_IMAGE_SPEC]; ok {
-			messages.ReportLogFieldsMessage("RunSpec path found", logging.DebugLevel, sd.log(), path, f.Value)
+			messages.ReportLogFieldsMessage("RunSpec path found", logging.DebugLevel, sd.ls, path, f.Value)
 			sd.runspecPath = path
 		}
 
 		buf := bytes.NewBufferString(strings.Join(md.OnBuild, "\n"))
 		ast, err := parseDocker(buf)
-		messages.ReportLogFieldsMessage("Parsing ONBUILD", logging.DebugLevel, sd.log(), f.Value)
+		messages.ReportLogFieldsMessage("Parsing ONBUILD", logging.DebugLevel, sd.ls, f.Value)
 		if err != nil {
-			messages.ReportLogFieldsMessage("Error while parsing ONBUILD", logging.DebugLevel, sd.log(), f.Value, err)
+			messages.ReportLogFieldsMessage("Error while parsing ONBUILD", logging.DebugLevel, sd.ls, f.Value, err)
 			return err
 		}
 		return sd.absorbDocker(ast)
@@ -82,7 +79,7 @@ func (sd *splitDetector) fetchFromRunSpec() error {
 func (sd *splitDetector) processEnv() error {
 	for _, e := range sd.envs {
 		if e.Value == SOUS_RUN_IMAGE_SPEC {
-			messages.ReportLogFieldsMessage("RunSpec path found Dockerfile ENV or ONBUILD ENV", logging.DebugLevel, sd.log(), e.Next.Value)
+			messages.ReportLogFieldsMessage("RunSpec path found Dockerfile ENV or ONBUILD ENV", logging.DebugLevel, sd.ls, e.Next.Value)
 			sd.runspecPath = e.Next.Value
 		}
 	}
