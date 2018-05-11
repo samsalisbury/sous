@@ -19,6 +19,7 @@ type (
 	SplitBuildpack struct {
 		registry docker_registry.Client
 		detected *sous.DetectResult
+		log      logging.LogSink
 	}
 )
 
@@ -26,9 +27,10 @@ type (
 const SOUS_RUN_IMAGE_SPEC = "SOUS_RUN_IMAGE_SPEC"
 
 // NewSplitBuildpack returns a new SplitBuildpack
-func NewSplitBuildpack(r docker_registry.Client) *SplitBuildpack {
+func NewSplitBuildpack(r docker_registry.Client, ls logging.LogSink) *SplitBuildpack {
 	return &SplitBuildpack{
 		registry: r,
+		log:      ls,
 	}
 }
 
@@ -49,10 +51,6 @@ func parseDockerfile(path string) (*parser.Node, error) {
 	return parseDocker(f)
 }
 
-func (sbp *SplitBuildpack) log() logging.LogSink {
-	return *(logging.SilentLogSet().Child("SplitBuildpack").(*logging.LogSet))
-}
-
 // Detect implements Buildpack on SplitBuildpack
 func (sbp *SplitBuildpack) Detect(ctx *sous.BuildContext) (*sous.DetectResult, error) {
 	dfPath := filepath.Join(ctx.Source.OffsetDir, "Dockerfile")
@@ -60,7 +58,7 @@ func (sbp *SplitBuildpack) Detect(ctx *sous.BuildContext) (*sous.DetectResult, e
 		return nil, errors.Errorf("%s does not exist", dfPath)
 	}
 
-	messages.ReportLogFieldsMessage("Inspecting Dockerfile", logging.DebugLevel, sbp.log(), dfPath)
+	messages.ReportLogFieldsMessage("Inspecting Dockerfile", logging.DebugLevel, sbp.log, dfPath)
 
 	ast, err := parseDockerfile(ctx.Sh.Abs(dfPath))
 	if err != nil {
@@ -72,7 +70,7 @@ func (sbp *SplitBuildpack) Detect(ctx *sous.BuildContext) (*sous.DetectResult, e
 		registry: sbp.registry,
 		froms:    []*parser.Node{},
 		envs:     []*parser.Node{},
-		ls:       sbp.log(),
+		ls:       sbp.log,
 	}
 
 	// check the local image for dev build
