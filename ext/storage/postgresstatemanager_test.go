@@ -10,7 +10,7 @@ import (
 	"github.com/opentable/sous/util/logging"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	// it's a SQL db driver. This is how you do that.
+	// It's a SQL db driver. This is how you do that.
 	_ "github.com/lib/pq"
 )
 
@@ -21,6 +21,19 @@ type PostgresStateManagerSuite struct {
 	manager *PostgresStateManager
 	db      *sql.DB
 	logs    logging.LogSinkController
+}
+
+func connstrForDBNamedf(nameFormat string, a ...interface{}) string {
+	port := os.Getenv("PGPORT")
+	if port == "" {
+		port = "6543"
+	}
+	host := os.Getenv("PGHOST")
+	if host == "" {
+		host = "localhost"
+	}
+	name := fmt.Sprintf(nameFormat, a...)
+	return fmt.Sprintf("host=%s port=%s dbname=%s user=postgres sslmode=disable", host, port, name)
 }
 
 func SetupTest(t *testing.T, name string) *PostgresStateManagerSuite {
@@ -41,11 +54,7 @@ func SetupTest(t *testing.T, name string) *PostgresStateManagerSuite {
 
 	suite.logs = ctrl
 
-	port := "6543"
-	if np, set := os.LookupEnv("PGPORT"); set {
-		port = np
-	}
-	connstr := fmt.Sprintf("dbname=sous_test_%s host=localhost user=postgres port=%s sslmode=disable", name, port)
+	connstr := connstrForDBNamedf("sous_test_%s", name)
 	if suite.db, err = sql.Open("postgres", connstr); err != nil {
 		suite.FailNow("Error establishing test-assertion DB connection at %q.", "Error: %v", connstr, err)
 	}

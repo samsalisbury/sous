@@ -62,15 +62,22 @@ var adminConn *sql.DB
 
 var setupAdminConn = sync.Once{}
 
+func connstrForDBNamed(name string) string {
+	port := os.Getenv("PGPORT")
+	if port == "" {
+		port = "6543"
+	}
+	host := os.Getenv("PGHOST")
+	if host == "" {
+		host = "localhost"
+	}
+	return fmt.Sprintf("host=%s port=%s dbname=%s user=postgres sslmode=disable", host, port, name)
+}
+
 func getAdminConn() (*sql.DB, error) {
 	var err error
 	setupAdminConn.Do(func() {
-		port := "6543"
-		if np, set := os.LookupEnv("PGPORT"); set {
-			port = np
-		}
-		connstr := fmt.Sprintf("dbname=postgres host=localhost user=postgres port=%s sslmode=disable", port)
-		adminConn, err = sql.Open("postgres", connstr)
+		adminConn, err = sql.Open("postgres", connstrForDBNamed("postgres"))
 	})
 	if err != nil {
 		return nil, err
@@ -86,10 +93,6 @@ var dbsetupMutex = sync.Mutex{}
 func setupDBErr(name string) (*sql.DB, error) {
 	dbsetupMutex.Lock()
 	defer dbsetupMutex.Unlock()
-	port := "6543"
-	if np, set := os.LookupEnv("PGPORT"); set {
-		port = np
-	}
 	dbName := "sous_test_" + name
 	if dbName == "sous_test_template" {
 		return nil, fmt.Errorf("cannot use test name %q because the DB name %q is used as the template", name, dbName)
@@ -106,7 +109,7 @@ func setupDBErr(name string) (*sql.DB, error) {
 		return nil, fmt.Errorf("error creating test database err %v", err)
 	}
 
-	connstr := fmt.Sprintf("dbname=%s host=localhost user=postgres port=%s sslmode=disable", dbName, port)
+	connstr := connstrForDBNamed(dbName)
 
 	db, err := sql.Open("postgres", connstr)
 	if err != nil {
