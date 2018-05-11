@@ -5,9 +5,6 @@ package sous
 import (
 	"fmt"
 	"strings"
-
-	"github.com/opentable/sous/util/logging"
-	"github.com/opentable/sous/util/logging/messages"
 )
 
 type (
@@ -187,10 +184,6 @@ func (diffs Differences) String() string {
 	return strings.Join(diffs, "\n")
 }
 
-func (d *Deployment) log() logging.LogSink {
-	return *(logging.SilentLogSet().Child("Deployment").(*logging.LogSet))
-}
-
 // Diff returns the differences between this deployment and another.
 func (d *Deployment) Diff(o *Deployment) (bool, Differences) {
 	if d.ID() != o.ID() {
@@ -230,10 +223,5 @@ func (d *Deployment) Diff(o *Deployment) (bool, Differences) {
 	_, configDiffs := d.DeployConfig.Diff(o.DeployConfig)
 	diffs = append(diffs, configDiffs...)
 
-	messages.ReportLogFieldsMessage("Differences", logging.DebugLevel, d.log(),
-		NewDeploymentSubmessage("sous-prior", d),
-		NewDeploymentSubmessage("sous-post", o),
-		diffs,
-	)
 	return len(diffs) != 0, diffs
 }

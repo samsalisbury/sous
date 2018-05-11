@@ -130,7 +130,7 @@ func (hsm *HTTPStateManager) getManifests(defs Defs) (Manifests, error) {
 		return Manifests{}, errors.Wrapf(err, "getting manifests")
 	}
 	hsm.gdmState = state
-	return gdm.manifests(defs)
+	return gdm.manifests(defs, hsm.log())
 }
 
 func (hsm *HTTPStateManager) putDeployments(new Deployments) error {
@@ -183,10 +183,10 @@ func (g *gdmWrapper) unwrap() *Deployments {
 	return &ds
 }
 
-func (g *gdmWrapper) manifests(defs Defs) (Manifests, error) {
+func (g *gdmWrapper) manifests(defs Defs, log logging.LogSink) (Manifests, error) {
 	ds := NewDeployments()
 	for _, d := range g.Deployments {
 		ds.Add(d)
 	}
-	return ds.RawManifests(defs)
+	return ds.RawManifests(defs, log)
 }

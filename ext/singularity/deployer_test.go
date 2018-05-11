@@ -155,8 +155,9 @@ func TestMakeRequestID_Collisions(t *testing.T) {
 func TestRectifyRecover(t *testing.T) {
 	var err error
 	expectedPrefix := "Panicked: What's that coming over the hill?!; stack trace:\n"
+	ls, _ := logging.NewLogSinkSpy()
 	func() {
-		defer rectifyRecover("something", "TestRectifyRecover", &err)
+		defer rectifyRecover("something", "TestRectifyRecover", &err, ls)
 		panic("What's that coming over the hill?!")
 	}()
 	if err == nil {

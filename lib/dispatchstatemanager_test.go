@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/nyarly/spies"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 	"github.com/opentable/sous/util/restful/restfultest"
 	"github.com/stretchr/testify/assert"
@@ -43,9 +44,11 @@ func setupDispatchStateManager(t *testing.T) dispatchSMScenario {
 		"right": right,
 	}
 
+	ls, _ := logging.NewLogSinkSpy()
+
 	remote := NewHTTPStateManager(whole, clients)
 
-	dsm := NewDispatchStateManager(localCluster, clusters, local, remote)
+	dsm := NewDispatchStateManager(localCluster, clusters, local, remote, ls)
 
 	return dispatchSMScenario{
 		dsm: dsm,

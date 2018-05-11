@@ -7,8 +7,6 @@ import (
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
-	"github.com/opentable/sous/util/logging"
-	"github.com/opentable/sous/util/logging/messages"
 )
 
 // SousQueryGDM is the description of the `sous query gdm` command
@@ -38,11 +36,6 @@ func (*SousQueryGDM) RegisterOn(psy Addable) {
 
 // Execute defines the behavior of `sous query gdm`
 func (sb *SousQueryGDM) Execute(args []string) cmdr.Result {
-	messages.ReportLogFieldsMessage("snapshot", logging.ExtraDebug1Level, sb.log(), sb.GDM.Snapshot())
 	sous.DumpDeployments(os.Stdout, sb.GDM.Deployments)
 	return cmdr.Success()
-}
-
-func (sb *SousQueryGDM) log() logging.LogSink {
-	return *(logging.SilentLogSet().Child("SousQueryGDM").(*logging.LogSet))
 }

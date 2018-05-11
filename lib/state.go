@@ -4,6 +4,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/opentable/sous/util/logging"
 	"github.com/pkg/errors"
 )
 
@@ -226,7 +227,7 @@ func (s *State) Validate() []Flaw {
 }
 
 // UpdateDeployments upserts ds into the State
-func (s *State) UpdateDeployments(ds ...*Deployment) error {
+func (s *State) UpdateDeployments(log logging.LogSink, ds ...*Deployment) error {
 	stateDeps, err := s.Deployments()
 	if err != nil {
 		return err
@@ -236,7 +237,7 @@ func (s *State) UpdateDeployments(ds ...*Deployment) error {
 		stateDeps.Set(d.ID(), d)
 	}
 
-	newManifests, err := stateDeps.PutbackManifests(s.Defs, s.Manifests)
+	newManifests, err := stateDeps.PutbackManifests(s.Defs, s.Manifests, log)
 	if err != nil {
 		return err
 	}

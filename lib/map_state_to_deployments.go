@@ -31,7 +31,7 @@ func (ms Manifests) Deployments(defs Defs) (Deployments, error) {
 }
 
 // PutbackManifests creates manifests from deployments.
-func (ds Deployments) PutbackManifests(defs Defs, olds Manifests) (Manifests, error) {
+func (ds Deployments) PutbackManifests(defs Defs, olds Manifests, log logging.LogSink) (Manifests, error) {
 	ms := NewManifests()
 	for _, k := range ds.Keys() {
 		d, _ := ds.Get(k)
@@ -77,16 +77,16 @@ func (ds Deployments) PutbackManifests(defs Defs, olds Manifests) (Manifests, er
 				continue
 			}
 			if string(clusterVal) == v {
-				messages.ReportLogFieldsMessage("Redundant environment definition", logging.DebugLevel, d.log(), k, v)
+				messages.ReportLogFieldsMessage("Redundant environment definition", logging.DebugLevel, log, k, v)
 				if was && hadSpec {
 					if _, present := oldSpec.Env[k]; present {
-						messages.ReportLogFieldsMessage("Env pair present in existing manifest: retained", logging.DebugLevel, d.log(), k, v)
+						messages.ReportLogFieldsMessage("Env pair present in existing manifest: retained", logging.DebugLevel, log, k, v)
 					} else {
-						messages.ReportLogFieldsMessage("Env pair absent in existing manifest: deleted", logging.DebugLevel, d.log(), k, v)
+						messages.ReportLogFieldsMessage("Env pair absent in existing manifest: deleted", logging.DebugLevel, log, k, v)
 						delete(spec.Env, k)
 					}
 				} else {
-					messages.ReportLogFieldsMessage("Manifest or cluster absent in existing manifest list: deleted", logging.DebugLevel, d.log(), mid, d.ClusterName, k, v)
+					messages.ReportLogFieldsMessage("Manifest or cluster absent in existing manifest list: deleted", logging.DebugLevel, log, mid, d.ClusterName, k, v)
 					delete(spec.Env, k)
 				}
 			}
@@ -111,7 +111,7 @@ func (ds Deployments) PutbackManifests(defs Defs, olds Manifests) (Manifests, er
 // RawManifests creates manifests from deployments.
 // "raw" because it's brand new - it doesn't maintain certain essential state over time.
 // For almost all uses, you want PutbackManifests
-func (ds Deployments) RawManifests(defs Defs) (Manifests, error) {
+func (ds Deployments) RawManifests(defs Defs, log logging.LogSink) (Manifests, error) {
 	ms := NewManifests()
 	for _, k := range ds.Keys() {
 		d, _ := ds.Get(k)
@@ -143,7 +143,7 @@ func (ds Deployments) RawManifests(defs Defs) (Manifests, error) {
 				continue
 			}
 			if string(clusterVal) == v {
-				messages.ReportLogFieldsMessage("Redundant environment definition", logging.DebugLevel, d.log(), k, v)
+				messages.ReportLogFieldsMessage("Redundant environment definition", logging.DebugLevel, log, k, v)
 			}
 		}
 		m.Deployments[d.ClusterName] = spec

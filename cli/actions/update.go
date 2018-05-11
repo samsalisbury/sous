@@ -85,7 +85,7 @@ func updateRetryLoop(ls logging.LogSink,
 			return sous.NewDeployments(), err
 		}
 
-		if err := updateState(state, gdm, sid, did); err != nil {
+		if err := updateState(state, gdm, sid, did, ls); err != nil {
 			logging.Deliver(ls, newUpdateErrorMessage(tries, sid, did, user, start, err))
 			return sous.NewDeployments(), err
 		}
@@ -107,7 +107,7 @@ func updateRetryLoop(ls logging.LogSink,
 	return sous.NewDeployments(), err
 }
 
-func updateState(s *sous.State, gdm sous.Deployments, sid sous.SourceID, did sous.DeploymentID) error {
+func updateState(s *sous.State, gdm sous.Deployments, sid sous.SourceID, did sous.DeploymentID, log logging.LogSink) error {
 	deployment, ok := gdm.Get(did)
 	if !ok {
 		deployment = &sous.Deployment{}
@@ -116,5 +116,5 @@ func updateState(s *sous.State, gdm sous.Deployments, sid sous.SourceID, did sou
 	deployment.SourceID = sid
 	deployment.ClusterName = did.Cluster
 
-	return s.UpdateDeployments(deployment)
+	return s.UpdateDeployments(log, deployment)
 }

@@ -1,25 +1,30 @@
 package sous
 
-import "github.com/pkg/errors"
+import (
+	"github.com/opentable/sous/util/logging"
+	"github.com/pkg/errors"
+)
 
 // A DispatchStateManager handles dispatching data requests to local or remote datastores.
 type DispatchStateManager struct {
 	local    StateManager
 	clusters map[string]ClusterManager
+	log      logging.LogSink
 }
 
 // NewDispatchStateManager builds a DispatchStateManager.
-func NewDispatchStateManager(localCluster string, clusters []string, local StateManager, remote ClusterManager) *DispatchStateManager {
+func NewDispatchStateManager(localCluster string, clusters []string, local StateManager, remote ClusterManager, ls logging.LogSink) *DispatchStateManager {
 	dsm := &DispatchStateManager{
 		local:    local,
 		clusters: map[string]ClusterManager{},
+		log:      ls,
 	}
 	for _, n := range clusters {
 		dsm.clusters[n] = remote
 	}
 	switch lcm := local.(type) {
 	default:
-		dsm.clusters[localCluster] = MakeClusterManager(local)
+		dsm.clusters[localCluster] = MakeClusterManager(local, ls)
 	case ClusterManager:
 		dsm.clusters[localCluster] = lcm
 	}
@@ -41,7 +46,7 @@ func (dsm *DispatchStateManager) ReadState() (*State, error) {
 		for _, d := range c.Snapshot() {
 			ds = append(ds, d)
 		}
-		if err := baseState.UpdateDeployments(ds...); err != nil {
+		if err := baseState.UpdateDeployments(dsm.log, ds...); err != nil {
 			return nil, errors.Wrapf(err, cn)
 		}
 	}

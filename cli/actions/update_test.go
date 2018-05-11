@@ -53,7 +53,9 @@ var updateStateTests = []struct {
 func TestUpdateState(t *testing.T) {
 	for _, test := range updateStateTests {
 		sid := sous.MustNewSourceID(test.DID.ManifestID.Source.Repo, test.DID.ManifestID.Source.Dir, "1.0.0")
-		err := updateState(test.State, test.GDM, sid, test.DID)
+
+		ls, _ := logging.NewLogSinkSpy()
+		err := updateState(test.State, test.GDM, sid, test.DID, ls)
 		if err != nil {
 			if test.ExpectedErr == "" {
 				t.Error(err)

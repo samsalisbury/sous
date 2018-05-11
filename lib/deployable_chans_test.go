@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/opentable/sous/util/logging"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -75,7 +76,8 @@ func (nrs *NameResolveTestSuite) TearDownTest() {
 }
 
 func (nrs *NameResolveTestSuite) TestResolveNameGood() {
-	da, err := resolveName(nrs.reg, nrs.makeTestDep())
+	ls, _ := logging.NewLogSinkSpy()
+	da, err := resolveName(nrs.reg, nrs.makeTestDep(), ls)
 	nrs.NotNil(da)
 	nrs.Nil(err)
 }
@@ -83,7 +85,8 @@ func (nrs *NameResolveTestSuite) TestResolveNameGood() {
 func (nrs *NameResolveTestSuite) TestResolveNameBad() {
 	nrs.reg.FeedArtifact(nil, fmt.Errorf("badness"))
 
-	da, err := resolveName(nrs.reg, nrs.makeTestDep())
+	ls, _ := logging.NewLogSinkSpy()
+	da, err := resolveName(nrs.reg, nrs.makeTestDep(), ls)
 	nrs.Nil(da.BuildArtifact)
 	nrs.Error(err.Error)
 }
@@ -92,7 +95,8 @@ func (nrs *NameResolveTestSuite) TestResolveNameSkipped() {
 	noInstances := nrs.makeTestDep()
 	noInstances.DeployConfig.NumInstances = 0
 
-	da, err := resolveName(nrs.reg, noInstances)
+	ls, _ := logging.NewLogSinkSpy()
+	da, err := resolveName(nrs.reg, noInstances, ls)
 	nrs.Nil(da.BuildArtifact)
 	nrs.Nil(err)
 }

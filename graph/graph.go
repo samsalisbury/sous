@@ -324,8 +324,8 @@ func newSourceHostChooser() sous.SourceHostChooser {
 	}
 }
 
-func newRegistryDumper(r sous.Registry) *sous.RegistryDumper {
-	return sous.NewRegistryDumper(r)
+func newRegistryDumper(r sous.Registry, ls LogSink) *sous.RegistryDumper {
+	return sous.NewRegistryDumper(r, ls)
 }
 
 // newLogSet relies only on PossiblyInvalidConfig because we need to initialise
@@ -652,7 +652,7 @@ func newDistributedStorage(db *sql.DB, c LocalSousConfig, rf *sous.ResolveFilter
 		clusterNames = append(clusterNames, n)
 	}
 	hsm := sous.NewHTTPStateManager(list[localName], list)
-	return sous.NewDispatchStateManager(localName, clusterNames, local, hsm), nil
+	return sous.NewDispatchStateManager(localName, clusterNames, local, hsm, log.Child("state-manager")), nil
 }
 
 // newStateManager returns a wrapped sous.HTTPStateManager if cl is not nil.

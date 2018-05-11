@@ -1,6 +1,9 @@
 package sous
 
-import "github.com/nyarly/spies"
+import (
+	"github.com/nyarly/spies"
+	"github.com/opentable/sous/util/logging"
+)
 
 type (
 	// ClusterManager reads and writes deployments as scoped by cluster
@@ -14,7 +17,8 @@ type (
 	}
 
 	clusterManagerDecorator struct {
-		sm StateManager
+		sm  StateManager
+		log logging.LogSink
 	}
 )
 
@@ -36,8 +40,8 @@ func (cm clusterManagerSpy) WriteCluster(clusterName string, deps Deployments, u
 
 // MakeClusterManager wraps a StateManager in a ClusterManager. This is the easy way to get a ClusterManager;
 // It's assumed that more effecient ClusterManager implementations could be added to specific StateManagers.
-func MakeClusterManager(sm StateManager) ClusterManager {
-	return &clusterManagerDecorator{sm: sm}
+func MakeClusterManager(sm StateManager, ls logging.LogSink) ClusterManager {
+	return &clusterManagerDecorator{sm: sm, log: ls}
 }
 
 // ReadCluster implements ClusterManager on the MakeClusterManager implementation
@@ -75,7 +79,7 @@ func (deco *clusterManagerDecorator) WriteCluster(clusterName string, wds Deploy
 	for _, d := range deps.Merge(wds).Snapshot() {
 		ds = append(ds, d)
 	}
-	err = state.UpdateDeployments(ds...)
+	err = state.UpdateDeployments(deco.log, ds...)
 	if err != nil {
 		return err
 	}

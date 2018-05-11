@@ -175,9 +175,7 @@ func (r *deployer) buildSingClient(url string) singClient {
 	return r.singFac(url)
 }
 
-func rectifyRecover(d interface{}, f string, err *error) {
-
-	log := *(logging.SilentLogSet().Child("rectifyRecover").(*logging.LogSet))
+func rectifyRecover(d interface{}, f string, err *error, log logging.LogSink) {
 
 	if r := recover(); r != nil {
 		stack := string(debug.Stack())
@@ -188,7 +186,7 @@ func rectifyRecover(d interface{}, f string, err *error) {
 
 func (r *deployer) RectifySingleCreate(d *sous.DeployablePair) (err error) {
 	reportDeployerMessage("Rectifying creation", d, nil, nil, nil, logging.InformationLevel, r.log)
-	defer rectifyRecover(d, "RectifySingleCreate", &err)
+	defer rectifyRecover(d, "RectifySingleCreate", &err, r.log)
 	if err != nil {
 		return err
 	}
@@ -205,7 +203,7 @@ func (r *deployer) RectifySingleCreate(d *sous.DeployablePair) (err error) {
 }
 
 func (r *deployer) RectifySingleDelete(d *sous.DeployablePair) (err error) {
-	defer rectifyRecover(d, "RectifySingleDelete", &err)
+	defer rectifyRecover(d, "RectifySingleDelete", &err, r.log)
 	data, ok := d.ExecutorData.(*singularityTaskData)
 	if !ok {
 		return errors.Errorf("Delete record %#v doesn't contain Singularity compatible data: was %T\n\t%#v", d.ID(), data, d)
@@ -229,7 +227,7 @@ func (r *deployer) RectifySingleModification(pair *sous.DeployablePair) (err err
 		reportDeployerMessage("Attempting to rectify empty diff", pair, diffs, nil, nil, logging.WarningLevel, r.log)
 	}
 
-	defer rectifyRecover(pair, "RectifySingleModification", &err)
+	defer rectifyRecover(pair, "RectifySingleModification", &err, r.log)
 
 	data, ok := pair.ExecutorData.(*singularityTaskData)
 	if !ok {
