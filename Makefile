@@ -322,7 +322,7 @@ test-gofmt:
 test-unit-base: $(COVER_DIR) $(GO_FILES)
 	PGHOST=$(PGHOST) \
 	PGPORT=$(PGPORT) \
-	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) \
+	go test $(EXTRA_GO_TEST_FLAGS) $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) \
 		-covermode=atomic -coverprofile=$(COVER_DIR)/count_merged.txt \
 		-timeout 3m -race $(SOUS_PACKAGES_WITH_TESTS) $(TEST_TEAMCITY)
 
