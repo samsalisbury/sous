@@ -33,7 +33,7 @@ func NewHTTPStateManager(client restful.HTTPClient, clusterClients map[string]re
 		HTTPClient:      client,
 		clusterClients:  clusterClients,
 		clusterUpdaters: map[string]restful.UpdateDeleter{},
-		log: ls,
+		log:             ls,
 	}
 }
 
