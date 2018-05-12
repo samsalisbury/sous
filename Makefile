@@ -1,4 +1,4 @@
-SHELL := /usr/bin/env bash
+HELL := /usr/bin/env bash
 
 POSTGRES_DATA_VOLUME_NAME ?= sous_dev_postgres_data
 ifeq ($(shell docker volume ls -q --filter name=^$(POSTGRES_DATA_VOLUME_NAME)$$),)
@@ -17,16 +17,13 @@ docker ps
 endef
 
 define START_POSTGRES
-docker ps
-@if [ $(POSTGRES_CONTAINER_RUNNING) = NO ]; then docker run -d --name $(POSTGRES_CONTAINER_NAME) -p $(PGPORT):5432 -v $(POSTGRES_DATA_VOLUME_NAME):/var/lib/postgresql/data postgres:10.3 && echo -n Postgres container started; else echo -n Postgres container already running; fi; echo ": $(POSTGRES_CONTAINER_NAME)"
-sleep 5
-docker run --net=host postgres:10.3 createdb -h localhost -p $(PGPORT) -U postgres -w $(TEST_DB_NAME)
-docker run --net=host --rm -e CHANGELOG_FILE=changelog.xml -v $(PWD)/database:/changelogs -e "URL=$(LIQUIBASE_TEST_FLAGS)" jcastillo/liquibase:0.0.7
 endef
 
 define DELETE_POSTGRES_DATA
 @if [ $(POSTGRES_DATA_VOLUME_EXISTS) = YES ]; then docker volume rm $(POSTGRES_DATA_VOLUME_NAME) && echo Postgres data volume deleted: $(POSTGRES_DATA_VOLUME_NAME); else echo Postgres data volume does not exist.; fi
 endef
+
+SOUS_TERSE_LOGGING ?= YES
 
 XDG_DATA_HOME ?= $(HOME)/.local/share
 DEV_POSTGRES_DIR ?= $(XDG_DATA_HOME)/sous/postgres_docker
@@ -40,19 +37,23 @@ DOCKER_HOST_IP_PARSED ?= $(shell echo "$(DOCKER_HOST)" | grep -E -o '(25[0-5]|2[
 DOCKER_HOST_LOCALHOST := localhost
 DOCKER_HOST_IP := $(if $(DOCKER_HOST_IP_PARSED),$(DOCKER_HOST_IP_PARSED),$(DOCKER_HOST_LOCALHOST))
 
+PGHOST := $(DOCKER_HOST_IP)
+
 
 DB_NAME = sous
 TEST_DB_NAME = sous_test_template
-
 LIQUIBASE_SERVER := jdbc:postgresql://localhost:$(PGPORT)
 
 LIQUIBASE_FLAGS := $(LIQUIBASE_SERVER)/$(DB_NAME)?user=postgres
 LIQUIBASE_TEST_FLAGS := $(LIQUIBASE_SERVER)/$(TEST_DB_NAME)?user=postgres
 
-SQLITE_URL := https://sqlite.org/2017/sqlite-autoconf-3160200.tar.gz
 GO_VERSION := 1.10
 DESCRIPTION := "Sous is a tool for building, testing, and deploying applications, using Docker, Mesos, and Singularity."
 URL := https://github.com/opentable/sous
+
+ifneq ($(GO_TEST_RUN),)
+EXTRA_GO_TEST_FLAGS := $(EXTRA_GO_TEST_FLAGS) -run $(GO_TEST_RUN)
+endif
 
 TAG_TEST := git describe --exact-match --abbrev=0 2>/dev/null
 ifeq ($(shell $(TAG_TEST) ; echo $$?), 128)
@@ -92,6 +93,8 @@ SOUS_BIN_PATH := $(shell which sous 2> /dev/null || echo $$GOPATH/bin/sous)
 # does not understand the v prefix, so this lops it off.
 SOUS_VERSION ?= $(shell echo $(GIT_TAG) | sed 's/^v//')
 
+DB_NAME ?= sous
+
 ifeq ($(shell git diff-index --quiet HEAD ; echo $$?),0)
 COMMIT := $(shell git rev-parse HEAD)
 else
@@ -116,7 +119,7 @@ LINUX_RELEASE_DIR := sous-linux-amd64_$(SOUS_VERSION)
 RELEASE_DIRS := $(DARWIN_RELEASE_DIR) $(LINUX_RELEASE_DIR)
 DARWIN_TARBALL := $(DARWIN_RELEASE_DIR).tar.gz
 LINUX_TARBALL := $(LINUX_RELEASE_DIR).tar.gz
-CONCAT_XGO_ARGS := -go $(GO_VERSION) -branch master -deps $(SQLITE_URL) --dest $(BIN_DIR) --ldflags $(FLAGS)
+CONCAT_XGO_ARGS := -go $(GO_VERSION) -branch master --dest $(BIN_DIR) --ldflags $(FLAGS)
 COVER_DIR := /tmp/sous-cover
 TEST_VERBOSE := $(if $(VERBOSE),-v,)
 TEST_TEAMCITY := $(if $(TEAMCITY),| ./dev_support/gotest-to-teamcity)
@@ -201,6 +204,10 @@ stop-qa-env: ## Stops and removes all docker-compose containers.
 	@echo Stopping QA environment... # Redirect output to /dev/null because it gives confusing output when nothing to do.
 	@cd integration/test-registry && docker-compose rm -sf >/dev/null 2>&1 || { echo Failed to stop containers; exit 1; }
 	@if [ -f "$(QA_DESC)" ]; then rm -f $(QA_DESC); fi
+
+.PHONY: start-qa-env
+start-qa-env: setup-containers
+
 
 gitlog:
 	git log `git describe --abbrev=0`..HEAD
@@ -298,7 +305,7 @@ legendary: .cadre/coverage.vim
 
 test: test-gofmt test-staticcheck test-unit test-integration
 
-test-dev: test-gofmt test-staticcheck test-unit-base
+test-dev: test-gofmt test-staticcheck test-unit-base legendary
 
 test-staticcheck: install-staticcheck
 	echo "staticcheck -ignore "$$(cat staticcheck.ignore)" $(SOUS_PACKAGES)"
@@ -313,7 +320,9 @@ test-gofmt:
 	bin/check-gofmt
 
 test-unit-base: $(COVER_DIR) $(GO_FILES)
-	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) \
+	PGHOST=$(PGHOST) \
+	PGPORT=$(PGPORT) \
+	go test $(EXTRA_GO_TEST_FLAGS) $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) \
 		-covermode=atomic -coverprofile=$(COVER_DIR)/count_merged.txt \
 		-timeout 3m -race $(SOUS_PACKAGES_WITH_TESTS) $(TEST_TEAMCITY)
 
@@ -352,20 +361,30 @@ test-smoke-compiles: ## Checks that the smoke tests compile.
 	@go test -c -o /dev/null -tags smoke ./test/smoke && echo Smoke tests compiled.
 
 .PHONY: test-smoke
-test-smoke: test-smoke-compiles $(SMOKE_TEST_BINARY) $(SMOKE_TEST_LATEST_LINK) setup-containers
+test-smoke: test-smoke-compiles $(SMOKE_TEST_BINARY) $(SMOKE_TEST_LATEST_LINK) setup-containers postgres-clean-restart
 	@echo "Smoke tests running; time out in $(SMOKE_TEST_TIMEOUT)..."
 	ulimit -n 2048 && \
+	PGHOST=$(PGHOST) \
+	PGPORT=$(PGPORT) \
+	SOUS_PG_HOST=$(PGHOST) \
+	SOUS_PG_PORT=$(PGPORT) \
 	SMOKE_TEST_DATA_DIR=$(SMOKE_TEST_DATA_DIR)/data \
 	SMOKE_TEST_BINARY=$(SMOKE_TEST_BINARY) \
 	SOUS_QA_DESC=$(QA_DESC) \
 	DESTROY_SINGULARITY_BETWEEN_SMOKE_TEST_CASES=$(DESTROY_SINGULARITY_BETWEEN_SMOKE_TEST_CASES) \
+	SOUS_TERSE_LOGGING=$(SOUS_TERSE_LOGGING) \
 	go test $(EXTRA_GO_TEST_FLAGS) -timeout $(SMOKE_TEST_TIMEOUT) -tags smoke -v -count 1 ./test/smoke $(TEST_TEAMCITY)
 
 .PHONY: test-smoke-nofail
 test-smoke-nofail:
 	EXCLUDE_KNOWN_FAILING_TESTS=YES SMOKE_TEST_TIMEOUT=10m $(MAKE) test-smoke
 
-$(QA_DESC): sous-qa-setup
+.PHONY: docker-is-working
+docker-is-working:
+	@docker ps > /dev/null || { echo "'docker ps' failed; please ensure it succeeds and try again."; exit 1; } # Only redirects stdout to dev/null so we still see error messages.
+	@echo "'docker ps' succeeded"
+
+$(QA_DESC): docker-is-working sous-qa-setup
 	./sous_qa_setup --compose-dir ./integration/test-registry/ --out-path=$(QA_DESC)
 
 setup-containers: $(QA_DESC)
@@ -408,7 +427,14 @@ artifacts/sous_$(SOUS_VERSION)_amd64.deb: artifacts/$(LINUX_RELEASE_DIR)/sous
 	mv sous_$(SOUS_VERSION)_amd64.deb artifacts/
 
 postgres-start:
-	$(START_POSTGRES)
+	if ! (docker run --net=host postgres:10.3 pg_isready -h $(DOCKER_HOST_IP) -p $(PGPORT)); then \
+		docker run -d --name $(POSTGRES_CONTAINER_NAME) -p $(PGPORT):5432 -v $(POSTGRES_DATA_VOLUME_NAME):/var/lib/postgresql/data postgres:10.3;\
+		echo Waiting until Postgres completes booting...;\
+		until docker run --net=host postgres:10.3 pg_isready -h $(DOCKER_HOST_IP) -p $(PGPORT); do sleep 1; done;\
+		echo Postgres container started;\
+	fi;
+	docker run --net=host postgres:10.3 createdb -h localhost -p $(PGPORT) -U postgres -w $(TEST_DB_NAME)
+	docker run --net=host --rm -e CHANGELOG_FILE=changelog.xml -v $(PWD)/database:/changelogs -e "URL=$(LIQUIBASE_TEST_FLAGS)" jcastillo/liquibase:0.0.7
 
 .PHONY: postgres-restart
 postgres-restart:
@@ -424,7 +450,10 @@ postgres-stop:
 	$(STOP_POSTGRES)
 
 postgres-connect:
-	psql -h $(DOCKER_HOST_IP) -p $(PGPORT) sous
+	psql -h $(DOCKER_HOST_IP) -p $(PGPORT) --username=postgres $(DB_NAME)
+
+postgres-validate-schema:
+	liquibase $(LIQUIBASE_FLAGS) validate
 
 postgres-update-schema: postgres-start
 	liquibase $(LIQUIBASE_FLAGS) update
