@@ -23,7 +23,7 @@ type (
 	}
 )
 
-const defaultConfig = ""
+const defaultConfig = "Server: http://sous.example.com"
 
 // DefaultTestGraph results a SousGraph suitable for testing without worrying about details.
 func DefaultTestGraph(t *testing.T) *SousGraph {

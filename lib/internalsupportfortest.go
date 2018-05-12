@@ -18,15 +18,15 @@ import (
 func SetupDB(t *testing.T, optidx ...int) *sql.DB {
 	//t.Helper()
 	name := dbNameRoot(t, optidx...)
-	t.Logf("Creating DB for %s called sous_test_%s", t.Name(), name)
 	db, err := setupDBErr(name)
 	if err != nil {
 		if os.Getenv("SOUS_TEST_NODB") != "" {
-			t.Skipf("setupDB failed: %s", err)
+			t.Skipf("setupDB failed for %q: %s", name, err)
 			return nil
 		}
-		t.Fatalf("Error creating test DB: %v (Set SOUS_TEST_NODB=yes) to skip tests that rely on the DB", err)
+		t.Fatalf("Error creating test DB %q: %v (Set SOUS_TEST_NODB=yes) to skip tests that rely on the DB", name, err)
 	}
+	t.Logf("Created DB for %s called sous_test_%s", t.Name(), name)
 	return db
 }
 

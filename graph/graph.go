@@ -609,28 +609,28 @@ func newClusterSpecificHTTPClient(clients ClientBundle, rf *sous.ResolveFilter, 
 // Otherwise it returns nil, and emits some warnings.
 func newHTTPClient(c LocalSousConfig, user sous.User, srvr ServerHandler, tid sous.TraceID, log LogSink) (HTTPClient, error) {
 	if c.Server == "" {
-		messages.ReportLogFieldsMessageToConsole("No server set, Sous is running in server or workstation mode.", logging.WarningLevel, log)
+		messages.ReportLogFieldsMessageToConsole("No server set, but Sous needs to communicate with a server for this command.", logging.WarningLevel, log)
 		messages.ReportLogFieldsMessageToConsole("Configure a server like this: sous config server http://some.sous.server", logging.WarningLevel, log)
-		cl, err := restful.NewInMemoryClient(srvr.Handler, log.Child("local-http"))
-		return HTTPClient{HTTPClient: cl}, err
+		return HTTPClient{}, errors.New("no server configured")
 	}
 	messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Using server %s", c.Server), logging.ExtraDebug1Level, log)
 	cl, err := restful.NewClient(c.Server, log.Child("http-client"), map[string]string{"OT-RequestId": string(tid)})
 	return HTTPClient{HTTPClient: cl}, err
 }
 
+func newInMemoryClient(srvr ServerHandler, log LogSink) (HTTPClient, error) {
+	cl, err := restful.NewInMemoryClient(srvr.Handler, log.Child("local-http"))
+	return HTTPClient{HTTPClient: cl}, err
+}
+
 func newServerStateManager(c LocalSousConfig, mdb MaybeDatabase, rf *sous.ResolveFilter, log LogSink) (*ServerStateManager, error) {
 	var secondary sous.StateManager
-	var err error
-	if mdb.Err == nil {
+	err := mdb.Err
+	if err == nil {
 		secondary, err = newDistributedStorage(mdb.Db, c, rf, log)
-		if err != nil {
-			return nil, err
-		}
+	}
 
-	} else {
-		err = mdb.Err
-		// Either DB not configured, or problems setting up dispatcher...
+	if err != nil { // because DB Err wasn't nil, or distributed didn't set up well
 		logging.ReportError(log, errors.Wrapf(err, "connecting to database with %#v", c.Database))
 		secondary = storage.NewLogOnlyStateManager(log.Child("database"))
 	}
@@ -659,6 +659,7 @@ func newDistributedStorage(db *sql.DB, c LocalSousConfig, rf *sous.ResolveFilter
 		list[n] = cl
 		clusterNames = append(clusterNames, n)
 	}
+	// XXX the first arg is used to get e.g. defs. Should be at least an in memory client for these purposes.
 	hsm := sous.NewHTTPStateManager(list[localName], list)
 	return sous.NewDispatchStateManager(localName, clusterNames, local, hsm), nil
 }
@@ -666,7 +667,7 @@ func newDistributedStorage(db *sql.DB, c LocalSousConfig, rf *sous.ResolveFilter
 // newStateManager returns a wrapped sous.HTTPStateManager if cl is not nil.
 // Otherwise it returns a wrapped sous.GitStateManager, for local git based GDM.
 // If it returns a sous.GitStateManager, it emits a warning log.
-func newStateManager(cl HTTPClient, c LocalSousConfig, mdb MaybeDatabase, bundle ClientBundle, rf *sous.ResolveFilter, log LogSink) *StateManager {
+func newStateManager(cl HTTPClient, c LocalSousConfig, mdb MaybeDatabase, tid sous.TraceID, rf *sous.ResolveFilter, log LogSink) *StateManager {
 	if c.Server == "" {
 		messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Using local state stored at %s", c.StateLocation), logging.WarningLevel, log, c.StateLocation)
 		ssm, err := newServerStateManager(c, mdb, rf, log)
@@ -675,12 +676,12 @@ func newStateManager(cl HTTPClient, c LocalSousConfig, mdb MaybeDatabase, bundle
 		}
 		return &StateManager{StateManager: ssm.StateManager}
 	}
-	hsm := sous.NewHTTPStateManager(cl, bundle)
+	hsm := sous.NewHTTPStateManager(cl, tid)
 	return &StateManager{StateManager: hsm}
 }
 
-func newHTTPStateManager(cl HTTPClient, bundle ClientBundle) *sous.HTTPStateManager {
-	return sous.NewHTTPStateManager(cl, bundle)
+func newHTTPStateManager(cl HTTPClient, tid sous.TraceID) *sous.HTTPStateManager {
+	return sous.NewHTTPStateManager(cl, tid)
 }
 
 func newStatusPoller(cl HTTPClient, rf *RefinedResolveFilter, user sous.User, logs LogSink) *sous.StatusPoller {
