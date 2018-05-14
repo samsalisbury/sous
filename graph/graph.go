@@ -623,11 +623,11 @@ func newInMemoryClient(srvr ServerHandler, log LogSink) (HTTPClient, error) {
 	return HTTPClient{HTTPClient: cl}, err
 }
 
-func newServerStateManager(c LocalSousConfig, mdb MaybeDatabase, rf *sous.ResolveFilter, log LogSink) (*ServerStateManager, error) {
+func newServerStateManager(c LocalSousConfig, mdb MaybeDatabase, tid sous.TraceID, rf *sous.ResolveFilter, log LogSink) (*ServerStateManager, error) {
 	var secondary sous.StateManager
 	err := mdb.Err
 	if err == nil {
-		secondary, err = newDistributedStorage(mdb.Db, c, rf, log)
+		secondary, err = newDistributedStorage(mdb.Db, c, tid, rf, log)
 	}
 
 	if err != nil { // because DB Err wasn't nil, or distributed didn't set up well
@@ -641,7 +641,7 @@ func newServerStateManager(c LocalSousConfig, mdb MaybeDatabase, rf *sous.Resolv
 	return &ServerStateManager{StateManager: duplex}, nil
 }
 
-func newDistributedStorage(db *sql.DB, c LocalSousConfig, rf *sous.ResolveFilter, log LogSink) (sous.StateManager, error) {
+func newDistributedStorage(db *sql.DB, c LocalSousConfig, tid sous.TraceID, rf *sous.ResolveFilter, log LogSink) (sous.StateManager, error) {
 	localName, err := rf.Cluster.Value()
 	if err != nil {
 		return nil, fmt.Errorf("Setting up distributed storage: cluster: %s", err) // errors.Wrapf && cli don't play nice
@@ -660,7 +660,7 @@ func newDistributedStorage(db *sql.DB, c LocalSousConfig, rf *sous.ResolveFilter
 		clusterNames = append(clusterNames, n)
 	}
 	// XXX the first arg is used to get e.g. defs. Should be at least an in memory client for these purposes.
-	hsm := sous.NewHTTPStateManager(list[localName], list)
+	hsm := sous.NewHTTPStateManager(list[localName], tid)
 	return sous.NewDispatchStateManager(localName, clusterNames, local, hsm), nil
 }
 
@@ -670,7 +670,7 @@ func newDistributedStorage(db *sql.DB, c LocalSousConfig, rf *sous.ResolveFilter
 func newStateManager(cl HTTPClient, c LocalSousConfig, mdb MaybeDatabase, tid sous.TraceID, rf *sous.ResolveFilter, log LogSink) *StateManager {
 	if c.Server == "" {
 		messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Using local state stored at %s", c.StateLocation), logging.WarningLevel, log, c.StateLocation)
-		ssm, err := newServerStateManager(c, mdb, rf, log)
+		ssm, err := newServerStateManager(c, mdb, tid, rf, log)
 		if err != nil {
 			panic(err)
 		}

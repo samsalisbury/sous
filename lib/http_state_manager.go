@@ -82,7 +82,7 @@ func (hsm *HTTPStateManager) WriteState(s *State, u User) error {
 func (hsm *HTTPStateManager) ReadCluster(clusterName string) (Deployments, error) {
 	client, err := hsm.getClusterClient(clusterName)
 	if err != nil {
-		return Deployment{}, err
+		return Deployments{}, err
 	}
 	data := gdmWrapper{Deployments: []*Deployment{}}
 	up, err := client.Retrieve("./state/deployments", nil, &data, nil)
@@ -118,11 +118,11 @@ func (hsm *HTTPStateManager) buildClientBundle() error {
 
 func (hsm *HTTPStateManager) getClusterClient(clusterName string) (restful.HTTPClient, error) {
 	if err := hsm.buildClientBundle(); err != nil {
-		return err
+		return nil, err
 	}
 	client, ok := hsm.clusterClients[clusterName]
 	if !ok {
-		return Deployments{}, errors.Errorf("no cluster known by name %s", clusterName)
+		return nil, errors.Errorf("no cluster known by name %s", clusterName)
 	}
 	return client, nil
 }

@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/nyarly/spies"
-	"github.com/opentable/sous/util/restful"
 	"github.com/opentable/sous/util/restful/restfultest"
 	"github.com/stretchr/testify/assert"
 )
@@ -26,24 +25,23 @@ func setupDispatchStateManager(t *testing.T) dispatchSMScenario {
 	local, lc := NewStateManagerSpy()
 	lc.MatchMethod("ReadState", spies.AnyArgs, state, nil)
 
-	lup, lupc := restfultest.NewUpdateSpy()
-	left, rlc := restfultest.NewHTTPClientSpy()
-	rlc.MatchMethod("Retrieve", spies.AnyArgs, state, lup, nil)
+	/*
+		lup, lupc := restfultest.NewUpdateSpy()
+		left, rlc := restfultest.NewHTTPClientSpy()
+		rlc.MatchMethod("Retrieve", spies.AnyArgs, state, lup, nil)
 
-	rup, rupc := restfultest.NewUpdateSpy()
-	right, rrc := restfultest.NewHTTPClientSpy()
-	rrc.MatchMethod("Retrieve", spies.AnyArgs, state, rup, nil)
+		rup, rupc := restfultest.NewUpdateSpy()
+		right, rrc := restfultest.NewHTTPClientSpy()
+		rrc.MatchMethod("Retrieve", spies.AnyArgs, state, rup, nil)
+	*/
 
 	wup, wupc := restfultest.NewUpdateSpy()
 	whole, rwc := restfultest.NewHTTPClientSpy()
 	rwc.MatchMethod("Retrieve", spies.AnyArgs, state, wup, nil)
 
-	clients := map[string]restful.HTTPClient{
-		"left":  left,
-		"right": right,
-	}
+	tid := TraceID("testtrace")
 
-	remote := NewHTTPStateManager(whole, clients)
+	remote := NewHTTPStateManager(whole, tid)
 
 	dsm := NewDispatchStateManager(localCluster, clusters, local, remote)
 
@@ -51,13 +49,13 @@ func setupDispatchStateManager(t *testing.T) dispatchSMScenario {
 		dsm: dsm,
 		httpClients: map[string]*spies.Spy{
 			"whole": rwc,
-			"left":  rlc,
-			"right": rrc,
+			//"left":  rlc,
+			//"right": rrc,
 		},
 		httpUpdaters: map[string]*spies.Spy{
 			"whole": wupc,
-			"left":  lupc,
-			"right": rupc,
+			//"left":  lupc,
+			//"right": rupc,
 		},
 		local: lc,
 	}
