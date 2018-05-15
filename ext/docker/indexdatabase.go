@@ -18,7 +18,7 @@ import (
 func (nc *NameCache) captureRepos(db *sql.DB) (repos []string) {
 	res, err := db.Query("select name from docker_repo_name;")
 	if err != nil {
-		nc.log("captureRepos", logging.WarningLevel, err)
+		nc.logger("captureRepos", logging.WarningLevel, err)
 		return
 	}
 	defer res.Close()
@@ -48,7 +48,7 @@ func (nc *NameCache) dbInsert(sid sous.SourceID, in, etag string, quals []sous.Q
 
 	defer tx.Rollback() // we commit before returning...
 
-	ins := sqlgen.NewInserter(ctx, nc.Log, tx)
+	ins := sqlgen.NewInserter(ctx, nc.log, tx)
 
 	if err := ins.Exec("docker_repo_name", sqlgen.DoNothing, sqlgen.SingleRow(func(r sqlgen.RowDef) {
 		r.KV("name", ref.Name())
@@ -112,7 +112,7 @@ func (nc *NameCache) dbAddNames(in string, names []string) error {
 
 	defer tx.Rollback() // we commit before returning...
 
-	ins := sqlgen.NewInserter(ctx, nc.Log, tx)
+	ins := sqlgen.NewInserter(ctx, nc.log, tx)
 
 	if err := addSearchNames(ins, in, names); err != nil {
 		return err
@@ -251,7 +251,7 @@ func (nc *NameCache) dbQueryCNameforSourceID(sid sous.SourceID) (cn string, ins 
 	rows, err := nc.DB.Query(query, sid.Location.Repo, sid.Location.Dir, versionString(sid.Version))
 
 	if err != nil {
-		sqlgen.ReportSelect(nc.Log, start, "docker_search_metadata", query, 0, err,
+		sqlgen.ReportSelect(nc.log, start, "docker_search_metadata", query, 0, err,
 			sid.Location.Repo, sid.Location.Dir, versionString(sid.Version))
 		if err == sql.ErrNoRows {
 			err = errors.Wrap(NoImageNameFound{sid}, "")
@@ -268,7 +268,7 @@ func (nc *NameCache) dbQueryCNameforSourceID(sid sous.SourceID) (cn string, ins 
 		ins = append(ins, in)
 	}
 	err = rows.Err()
-	sqlgen.ReportSelect(nc.Log, start, "docker_search_metadata", query, rowcount, err,
+	sqlgen.ReportSelect(nc.log, start, "docker_search_metadata", query, rowcount, err,
 		sid.Location.Repo, sid.Location.Dir, versionString(sid.Version))
 	if len(ins) == 0 {
 		err = errors.Wrap(NoImageNameFound{sid}, "")

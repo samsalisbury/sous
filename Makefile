@@ -1,4 +1,4 @@
-SHELL := /usr/bin/env bash
+HELL := /usr/bin/env bash
 
 POSTGRES_DATA_VOLUME_NAME ?= sous_dev_postgres_data
 ifeq ($(shell docker volume ls -q --filter name=^$(POSTGRES_DATA_VOLUME_NAME)$$),)
@@ -469,4 +469,3 @@ postgres-clean: postgres-stop
 	postgres-clean postgres-create-testdb build-debug homebrew install-gotags \
 	install-debug-linux install-debug-darwin
 
-#liquibase --url jdbc:postgresql://127.0.0.1:6543/sous --changeLogFile=database/changelog.xml update

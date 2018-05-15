@@ -25,7 +25,7 @@ func main() {
 	}
 
 	imageName := parsed["<image-name>"].(string)
-	client := docker_registry.NewClient(logging.SilentLogSet())
+	client := docker_registry.NewClient(logging.SilentLogSet()) //TODO:  Not sure if this is appropriate
 	if _, ok := parsed["--insecure"]; ok {
 		client.BecomeFoolishlyTrusting()
 	}

@@ -325,8 +325,8 @@ func newSourceHostChooser() sous.SourceHostChooser {
 	}
 }
 
-func newRegistryDumper(r sous.Registry) *sous.RegistryDumper {
-	return sous.NewRegistryDumper(r)
+func newRegistryDumper(r sous.Registry, ls LogSink) *sous.RegistryDumper {
+	return sous.NewRegistryDumper(r, ls)
 }
 
 // newLogSet relies only on PossiblyInvalidConfig because we need to initialise
@@ -344,9 +344,6 @@ func newLogSet(v semv.Version, config PossiblyInvalidConfig, tid sous.TraceID) (
 	}
 
 	if err := ls.Configure(config.Logging); err != nil {
-		return ls, initErr(err, "validating logging configuration")
-	}
-	if err := logging.Log.Configure(config.Logging); err != nil {
 		return ls, initErr(err, "validating logging configuration")
 	}
 	return ls, nil
@@ -510,11 +507,11 @@ func newSelector(regClient LocalDockerClient, log LogSink) sous.Selector {
 	return docker.NewBuildStrategySelector(log.Child("docker-build-strategy"), regClient)
 }
 
-func newDockerBuilder(cfg LocalSousConfig, nc sous.Inserter, ctx *sous.SourceContext, source LocalWorkDirShell, scratch ScratchDirShell) (*docker.Builder, error) {
+func newDockerBuilder(cfg LocalSousConfig, nc sous.Inserter, ctx *sous.SourceContext, source LocalWorkDirShell, scratch ScratchDirShell, log LogSink) (*docker.Builder, error) {
 	drh := cfg.Docker.RegistryHost
 	source.Sh = source.Sh.Clone().(*shell.Sh)
 	source.Sh.LongRunning(true)
-	return docker.NewBuilder(nc, drh, source.Sh, scratch.Sh)
+	return docker.NewBuilder(nc, drh, source.Sh, scratch.Sh, log.Child("docker-builder"))
 }
 
 func newLabeller(db *docker.Builder) sous.Labeller {
@@ -550,7 +547,7 @@ func newDeployer(dryrun DryrunOption, nc lazyNameCache, ls LogSink, c LocalSousC
 		return nil, err
 	}
 	return singularity.NewDeployer(
-		singularity.NewRectiAgent(labeller),
+		singularity.NewRectiAgent(labeller, ls),
 		ls,
 		singularity.OptMaxHTTPReqsPerServer(c.MaxHTTPConcurrencySingularity),
 	), nil
@@ -635,8 +632,8 @@ func newServerStateManager(c LocalSousConfig, mdb MaybeDatabase, tid sous.TraceI
 		secondary = storage.NewLogOnlyStateManager(log.Child("database"))
 	}
 
-	dm := storage.NewDiskStateManager(c.StateLocation)
-	gm := storage.NewGitStateManager(dm)
+	dm := storage.NewDiskStateManager(c.StateLocation, log.Child("disk-state-manager"))
+	gm := storage.NewGitStateManager(dm, log.Child("git-state-manager"))
 	duplex := storage.NewDuplexStateManager(gm, secondary, log.Child("duplex-state"))
 	return &ServerStateManager{StateManager: duplex}, nil
 }
@@ -660,8 +657,8 @@ func newDistributedStorage(db *sql.DB, c LocalSousConfig, tid sous.TraceID, rf *
 		clusterNames = append(clusterNames, n)
 	}
 	// XXX the first arg is used to get e.g. defs. Should be at least an in memory client for these purposes.
-	hsm := sous.NewHTTPStateManager(list[localName], tid)
-	return sous.NewDispatchStateManager(localName, clusterNames, local, hsm), nil
+	hsm := sous.NewHTTPStateManager(list[localName], tid, log.Child("http-state-manager"))
+	return sous.NewDispatchStateManager(localName, clusterNames, local, hsm, log.Child("state-manager")), nil
 }
 
 // newStateManager returns a wrapped sous.HTTPStateManager if cl is not nil.
@@ -676,12 +673,12 @@ func newStateManager(cl HTTPClient, c LocalSousConfig, mdb MaybeDatabase, tid so
 		}
 		return &StateManager{StateManager: ssm.StateManager}
 	}
-	hsm := sous.NewHTTPStateManager(cl, tid)
+	hsm := sous.NewHTTPStateManager(cl, tid, log.Child("http-state-manager"))
 	return &StateManager{StateManager: hsm}
 }
 
-func newHTTPStateManager(cl HTTPClient, tid sous.TraceID) *sous.HTTPStateManager {
-	return sous.NewHTTPStateManager(cl, tid)
+func newHTTPStateManager(cl HTTPClient, tid sous.TraceID, log LogSink) *sous.HTTPStateManager {
+	return sous.NewHTTPStateManager(cl, tid, log.Child("http-state-manager"))
 }
 
 func newStatusPoller(cl HTTPClient, rf *RefinedResolveFilter, user sous.User, logs LogSink) *sous.StatusPoller {

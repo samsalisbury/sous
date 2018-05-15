@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/shell"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -44,12 +45,14 @@ func TestTagStrings(t *testing.T) {
 
 	theTime := time.Unix(212742000, 0)
 
+	ls := logging.SilentLogSet()
+
 	assert.Equal("sous/docker:1.2.3", versionName(sid, ""))
 	assert.Equal("sous/docker-builder:1.2.3", versionName(sid, "builder"))
 	assert.Equal("sous/docker:zdeadbeef-1976-09-28T07.00.00", revisionName(sid, "", theTime))
 	assert.Equal("sous/docker-builder:zdeadbeef-1976-09-28T07.00.00", revisionName(sid, "builder", theTime))
-	assert.Equal("docker.example.com/sous/docker:1.2.3", versionTag("docker.example.com", sid, ""))
-	assert.Equal("docker.example.com/sous/docker-builder:zdeadbeef-1976-09-28T07.00.00", revisionTag("docker.example.com", sid, "builder", theTime))
+	assert.Equal("docker.example.com/sous/docker:1.2.3", versionTag("docker.example.com", sid, "", ls))
+	assert.Equal("docker.example.com/sous/docker-builder:zdeadbeef-1976-09-28T07.00.00", revisionTag("docker.example.com", sid, "builder", theTime, ls))
 }
 
 func TestBuilderApplyMetadata(t *testing.T) {
@@ -59,7 +62,7 @@ func TestBuilderApplyMetadata(t *testing.T) {
 
 	nc := sous.NewInserterSpy()
 
-	b, err := NewBuilder(nc, "docker.example.com", srcSh, scratchSh)
+	b, err := NewBuilder(nc, "docker.example.com", srcSh, scratchSh, logging.SilentLogSet())
 	require.NoError(t, err)
 
 	br := &sous.BuildResult{

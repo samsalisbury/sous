@@ -73,11 +73,11 @@ func (nrs *NameResolveTestSuite) SetupTest() {
 }
 
 func (nrs *NameResolveTestSuite) TearDownTest() {
-	logging.Log.BeQuiet()
 }
 
 func (nrs *NameResolveTestSuite) TestResolveNameGood() {
-	da, err := resolveName(nrs.reg, nrs.makeTestDep())
+	ls, _ := logging.NewLogSinkSpy()
+	da, err := resolveName(nrs.reg, nrs.makeTestDep(), ls)
 	nrs.NotNil(da)
 	nrs.Nil(err)
 }
@@ -85,7 +85,8 @@ func (nrs *NameResolveTestSuite) TestResolveNameGood() {
 func (nrs *NameResolveTestSuite) TestResolveNameBad() {
 	nrs.reg.FeedArtifact(nil, fmt.Errorf("badness"))
 
-	da, err := resolveName(nrs.reg, nrs.makeTestDep())
+	ls, _ := logging.NewLogSinkSpy()
+	da, err := resolveName(nrs.reg, nrs.makeTestDep(), ls)
 	nrs.Nil(da.BuildArtifact)
 	nrs.Error(err.Error)
 }
@@ -94,13 +95,15 @@ func (nrs *NameResolveTestSuite) TestResolveNameSkipped() {
 	noInstances := nrs.makeTestDep()
 	noInstances.DeployConfig.NumInstances = 0
 
-	da, err := resolveName(nrs.reg, noInstances)
+	ls, _ := logging.NewLogSinkSpy()
+	da, err := resolveName(nrs.reg, noInstances, ls)
 	nrs.Nil(da.BuildArtifact)
 	nrs.Nil(err)
 }
 
 func (nrs *NameResolveTestSuite) TestResolveNameStartChannel() {
-	nrs.depChans = nrs.diffChans.ResolveNames(context.Background(), nrs.reg)
+	ls, _ := logging.NewLogSinkSpy()
+	nrs.depChans = nrs.diffChans.ResolveNames(context.Background(), nrs.reg, ls)
 	nrs.diffChans.Pairs <- nrs.makeTestDepPair(nil, nrs.makeTestDep())
 
 	select {
@@ -116,7 +119,8 @@ func (nrs *NameResolveTestSuite) TestResolveNameStartChannel() {
 }
 
 func (nrs *NameResolveTestSuite) TestResolveNameUpdateChannel() {
-	nrs.depChans = nrs.diffChans.ResolveNames(context.Background(), nrs.reg)
+	ls, _ := logging.NewLogSinkSpy()
+	nrs.depChans = nrs.diffChans.ResolveNames(context.Background(), nrs.reg, ls)
 
 	pair := &DeployablePair{
 		Prior: nrs.makeTestDep(),
@@ -140,7 +144,8 @@ func (nrs *NameResolveTestSuite) TestResolveNameUpdateChannel() {
 
 func (nrs *NameResolveTestSuite) TestResolveNameStartChannelUnresolved() {
 	nrs.reg.FeedArtifact(nil, fmt.Errorf("not found"))
-	nrs.depChans = nrs.diffChans.ResolveNames(context.Background(), nrs.reg)
+	ls, _ := logging.NewLogSinkSpy()
+	nrs.depChans = nrs.diffChans.ResolveNames(context.Background(), nrs.reg, ls)
 	nrs.diffChans.Pairs <- nrs.makeTestDepPair(nil, nrs.makeTestDep())
 
 	select {
@@ -155,7 +160,9 @@ func (nrs *NameResolveTestSuite) TestResolveNameStartChannelUnresolved() {
 
 func (nrs *NameResolveTestSuite) TestResolveNameStopChannelUnresolved() {
 	nrs.reg.FeedArtifact(nil, fmt.Errorf("not found"))
-	nrs.depChans = nrs.diffChans.ResolveNames(context.Background(), nrs.reg)
+
+	ls, _ := logging.NewLogSinkSpy()
+	nrs.depChans = nrs.diffChans.ResolveNames(context.Background(), nrs.reg, ls)
 	nrs.diffChans.Pairs <- nrs.makeTestDepPair(nrs.makeTestDep(), nil)
 
 	select {

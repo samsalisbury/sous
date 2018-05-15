@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 )
 
 var testUser = sous.User{Name: "Test User", Email: "test@user.com"}
@@ -31,7 +32,7 @@ func PrepareTestGitRepo(t *testing.T, s *sous.State, remotepath, outpath string)
 	runCmd(t, outpath, "git", "config", "user.name", "sous-test@testing.example.com")
 	runCmd(t, outpath, "git", "remote", "add", "origin", "file://"+remoteAbs)
 
-	dsm := NewDiskStateManager(outpath)
+	dsm := NewDiskStateManager(outpath, logging.SilentLogSet())
 	dsm.WriteState(s, testUser)
 
 	runCmd(t, outpath, "git", "add", ".")

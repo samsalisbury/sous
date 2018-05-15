@@ -12,6 +12,7 @@ import (
 	"github.com/opentable/sous/ext/docker"
 	"github.com/opentable/sous/ext/storage"
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 	"github.com/pkg/errors"
 )
 
@@ -59,7 +60,7 @@ func createRemoteGDM(gdmDir string, state *sous.State) error {
 		return err
 	}
 
-	dsm := storage.NewDiskStateManager(gdmDir)
+	dsm := storage.NewDiskStateManager(gdmDir, logging.SilentLogSet())
 	if err := dsm.WriteState(state, sous.User{}); err != nil {
 		return err
 	}

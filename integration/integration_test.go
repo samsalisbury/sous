@@ -163,7 +163,7 @@ func (suite *integrationSuite) BeforeTest(suiteName, testName string) {
 
 	suite.T().Logf("New name cache for %q", testName)
 	suite.nameCache = suite.newNameCache(testName)
-	suite.client = singularity.NewRectiAgent(suite.nameCache)
+	suite.client = singularity.NewRectiAgent(suite.nameCache, logset)
 	suite.deployer = singularity.NewDeployer(suite.client, logset)
 }
 
@@ -540,7 +540,7 @@ func (suite *integrationSuite) TestResolve() {
 	// XXX Let's hope this is a temporary solution to a testing issue
 	// The problem is laid out in DCOPS-7625
 	for tries := 100; tries > 0; tries-- {
-		client := singularity.NewRectiAgent(suite.nameCache)
+		client := singularity.NewRectiAgent(suite.nameCache, logsink)
 		deployer := singularity.NewDeployer(client, logging.SilentLogSet())
 
 		rf := &sous.ResolveFilter{}

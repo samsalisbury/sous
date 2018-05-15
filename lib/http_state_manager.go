@@ -29,11 +29,12 @@ type (
 )
 
 // NewHTTPStateManager creates a new HTTPStateManager.
-func NewHTTPStateManager(client restful.HTTPClient, tid TraceID) *HTTPStateManager {
+func NewHTTPStateManager(client restful.HTTPClient, tid TraceID, ls logging.LogSink) *HTTPStateManager {
 	return &HTTPStateManager{
 		HTTPClient:      client,
 		tid:             tid,
 		clusterUpdaters: map[string]restful.UpdateDeleter{},
+		log:             ls,
 	}
 }
 
@@ -62,7 +63,7 @@ func (hsm *HTTPStateManager) WriteState(s *State, u User) error {
 	if len(flaws) > 0 {
 		return errors.Errorf("Invalid update to state: %v", flaws)
 	}
-	messages.ReportLogFieldsMessage("Writing state via HTTP", logging.DebugLevel, logging.Log)
+	messages.ReportLogFieldsMessage("Writing state via HTTP", logging.DebugLevel, hsm.log)
 	if hsm.gdmState == nil {
 		_, err := hsm.ReadState()
 		if err != nil {
@@ -161,7 +162,7 @@ func (hsm *HTTPStateManager) getManifests(defs Defs) (Manifests, error) {
 		return Manifests{}, errors.Wrapf(err, "getting manifests")
 	}
 	hsm.gdmState = state
-	return gdm.manifests(defs)
+	return gdm.manifests(defs, hsm.log)
 }
 
 func (hsm *HTTPStateManager) putDeployments(new Deployments) error {
@@ -214,10 +215,10 @@ func (g *gdmWrapper) unwrap() *Deployments {
 	return &ds
 }
 
-func (g *gdmWrapper) manifests(defs Defs) (Manifests, error) {
+func (g *gdmWrapper) manifests(defs Defs, log logging.LogSink) (Manifests, error) {
 	ds := NewDeployments()
 	for _, d := range g.Deployments {
 		ds.Add(d)
 	}
-	return ds.RawManifests(defs)
+	return ds.RawManifests(defs, log)
 }

@@ -15,6 +15,7 @@ import (
 // their own Dockerfile.
 type DockerfileBuildpack struct {
 	detected *sous.DetectResult
+	log      logging.LogSink
 }
 
 const (
@@ -46,8 +47,8 @@ type detectData struct {
 }
 
 // NewDockerfileBuildpack creates a Dockerfile buildpack
-func NewDockerfileBuildpack() *DockerfileBuildpack {
-	return &DockerfileBuildpack{}
+func NewDockerfileBuildpack(ls logging.LogSink) *DockerfileBuildpack {
+	return &DockerfileBuildpack{log: ls}
 }
 
 var successfulBuildRE = regexp.MustCompile(`Successfully built (\w+)`)
@@ -66,7 +67,7 @@ func (d *DockerfileBuildpack) Detect(c *sous.BuildContext) (*sous.DetectResult, 
 	}
 	hasAppVersion := appVersionPattern.MatchString(df)
 	hasAppRevision := appRevisionPattern.MatchString(df)
-	messages.ReportLogFieldsMessage("Detected a dockerfile, accepts version and revision", logging.DebugLevel, logging.Log, dfPath, hasAppVersion, hasAppRevision)
+	messages.ReportLogFieldsMessage("Detected a dockerfile, accepts version and revision", logging.DebugLevel, d.log, dfPath, hasAppVersion, hasAppRevision)
 	result := &sous.DetectResult{Compatible: true, Data: detectData{
 		HasAppVersionArg:  hasAppVersion,
 		HasAppRevisionArg: hasAppRevision,

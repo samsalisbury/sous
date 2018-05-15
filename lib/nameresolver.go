@@ -11,17 +11,18 @@ import (
 
 type nameResolver struct {
 	registry Registry
+	log      logging.LogSink
 }
 
 // ResolveNames resolves diffs.
-func (d *DeployableChans) ResolveNames(ctx context.Context, r Registry) *DeployableChans {
-	names := &nameResolver{registry: r}
+func (d *DeployableChans) ResolveNames(ctx context.Context, r Registry, ls logging.LogSink) *DeployableChans {
+	names := &nameResolver{registry: r, log: ls}
 
 	return d.Pipeline(ctx, names)
 }
 
-func HandlePairsByRegistry(r Registry, dp *DeployablePair) (*DeployablePair, *DiffResolution) {
-	names := &nameResolver{registry: r}
+func HandlePairsByRegistry(r Registry, dp *DeployablePair, ls logging.LogSink) (*DeployablePair, *DiffResolution) {
+	names := &nameResolver{registry: r, log: ls}
 	return names.HandlePairs(dp)
 }
 
@@ -38,14 +39,14 @@ func (names *nameResolver) HandlePairs(dp *DeployablePair) (*DeployablePair, *Di
 		// don't care about docker names
 	case AddedKind, ModifiedKind:
 		var newImageNameResolution *DiffResolution
-		newImageName, newImageNameResolution = resolveName(names.registry, intended)
-		messages.ReportLogFieldsMessage("Deployment processed, needs artifact", logging.ExtraDebug1Level, logging.Log, dp.Kind(), intended)
+		newImageName, newImageNameResolution = resolveName(names.registry, intended, names.log)
+		messages.ReportLogFieldsMessage("Deployment processed, needs artifact", logging.ExtraDebug1Level, names.log, dp.Kind(), intended)
 		if err := newImageNameResolution; err != nil {
-			messages.ReportLogFieldsMessage("Unable to perform action", logging.InformationLevel, logging.Log, action, intended.ID(), err)
+			messages.ReportLogFieldsMessage("Unable to perform action", logging.InformationLevel, names.log, action, intended.ID(), err)
 			return nil, err
 		}
 		if newImageName == nil {
-			messages.ReportLogFieldsMessage("Unable to perform action no artifact for SourceID", logging.InformationLevel, logging.Log, action, intended.ID(), intended.SourceID)
+			messages.ReportLogFieldsMessage("Unable to perform action no artifact for SourceID", logging.InformationLevel, names.log, action, intended.ID(), intended.SourceID)
 			return nil, &DiffResolution{
 				DeploymentID: dp.ID(),
 				Desc:         "not created",
@@ -57,13 +58,13 @@ func (names *nameResolver) HandlePairs(dp *DeployablePair) (*DeployablePair, *Di
 	return &DeployablePair{ExecutorData: dp.ExecutorData, name: dp.name, Prior: dp.Prior, Post: newImageName}, nil
 }
 
-func resolveName(r Registry, d *Deployable) (*Deployable, *DiffResolution) {
+func resolveName(r Registry, d *Deployable, log logging.LogSink) (*Deployable, *DiffResolution) {
 	if d == nil {
 		return nil, &DiffResolution{
 			Error: &ErrorWrapper{error: fmt.Errorf("nil deployable")},
 		}
 	}
-	art, err := guardImage(r, d.Deployment)
+	art, err := guardImage(r, d.Deployment, log)
 	if err != nil {
 		return d, &DiffResolution{
 			DeploymentID: d.ID(),
@@ -74,9 +75,9 @@ func resolveName(r Registry, d *Deployable) (*Deployable, *DiffResolution) {
 	return d, nil
 }
 
-func guardImage(r Registry, d *Deployment) (*BuildArtifact, error) {
+func guardImage(r Registry, d *Deployment, log logging.LogSink) (*BuildArtifact, error) {
 	if d.NumInstances == 0 {
-		messages.ReportLogFieldsMessage("Deployment has 0 instances, skipping artifact check", logging.InformationLevel, logging.Log, d.ID())
+		messages.ReportLogFieldsMessage("Deployment has 0 instances, skipping artifact check", logging.InformationLevel, log, d.ID())
 		return nil, nil
 	}
 	art, err := r.GetArtifact(d.SourceID)

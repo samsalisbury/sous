@@ -16,8 +16,8 @@ func newServerComponentLocator(
 	v semv.Version,
 	qs *sous.R11nQueueSet,
 ) server.ComponentLocator {
-	cm := sous.MakeClusterManager(sm.StateManager)
-	dm := sous.MakeDeploymentManager(sm.StateManager)
+	cm := sous.MakeClusterManager(sm.StateManager, ls)
+	dm := sous.MakeDeploymentManager(sm.StateManager, ls)
 	return server.ComponentLocator{
 
 		LogSink:           ls.LogSink,

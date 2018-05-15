@@ -52,7 +52,9 @@ var updateStateTests = []struct {
 func TestUpdateState(t *testing.T) {
 	for _, test := range updateStateTests {
 		sid := sous.MustNewSourceID(test.DID.ManifestID.Source.Repo, test.DID.ManifestID.Source.Dir, "1.0.0")
-		err := updateState(test.State, test.GDM, sid, test.DID)
+
+		ls, _ := logging.NewLogSinkSpy()
+		err := updateState(test.State, test.GDM, sid, test.DID, ls)
 		if err != nil {
 			if test.ExpectedErr == "" {
 				t.Error(err)
@@ -118,13 +120,12 @@ func TestUpdateRetryLoop(t *testing.T) {
 	cl, control, err := server.TestingInMemoryClient()
 	require.NoError(t, err)
 
+	ls := logging.SilentLogSet()
 	tid := sous.TraceID("test-trace")
 
-	hsm := sous.NewHTTPStateManager(cl, tid)
+	hsm := sous.NewHTTPStateManager(cl, tid, ls)
 
 	control.State.Manifests.Add(mani)
-
-	ls := logging.SilentLogSet()
 
 	deps, err := updateRetryLoop(ls, hsm, sourceID, depID, user)
 
@@ -140,8 +141,8 @@ func TestUpdateRetryLoop(t *testing.T) {
 func TestSousUpdate_Execute(t *testing.T) {
 	cl, control, err := server.TestingInMemoryClient()
 	require.NoError(t, err)
-
-	hsm := sous.NewHTTPStateManager(cl, sous.TraceID("test-trace"))
+	ls, _ := logging.NewLogSinkSpy()
+	hsm := sous.NewHTTPStateManager(cl, sous.TraceID("test-trace"), ls)
 
 	manifest := sous.Manifest{
 		Source: sous.SourceLocation{

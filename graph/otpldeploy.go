@@ -25,6 +25,7 @@ func newUserSelectedOTPLDeploySpecs(
 	tmid TargetManifestID,
 	flags *config.OTPLFlags,
 	state *sous.State,
+	ls LogSink,
 ) (userSelectedOTPLDeployManifest, error) {
 	var nowt userSelectedOTPLDeployManifest
 
@@ -49,7 +50,7 @@ func newUserSelectedOTPLDeploySpecs(
 	} else {
 		flavors := detected.Manifests.Flavors()
 		if flags.Flavor == "" {
-			defer messages.ReportLogFieldsMessageToConsole("use the -flavor flat to pick a flavor", logging.WarningLevel, logging.Log)
+			defer messages.ReportLogFieldsMessageToConsole("use the -flavor flag to pick a flavor", logging.WarningLevel, ls)
 		}
 		return nowt, fmt.Errorf("flavor %q not detected; pick from: %q", flags.Flavor, flavors)
 	}
@@ -66,7 +67,7 @@ func newUserSelectedOTPLDeploySpecs(
 	deploySpecs := sous.DeploySpecs{}
 	for clusterName, spec := range detectedManifest.Deployments {
 		if _, ok := state.Defs.Clusters[clusterName]; !ok {
-			messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("otpl-deploy config for cluster %q ignored", clusterName), logging.WarningLevel, logging.Log)
+			messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("otpl-deploy config for cluster %q ignored", clusterName), logging.WarningLevel, ls)
 			continue
 		}
 		deploySpecs[clusterName] = spec

@@ -153,12 +153,14 @@ func TestHandlesManifestPut(t *testing.T) {
 	req, err := http.NewRequest("PUT", "", buf)
 	require.NoError(err)
 
+	log, _ := logging.NewLogSinkSpy()
+
 	th := &PUTManifestHandler{
 		Request:     req,
 		StateWriter: writer,
 		State:       state,
 		QueryValues: restful.QueryValues{Values: q},
-		LogSink:     logging.Log,
+		LogSink:     log,
 	}
 
 	data, status := th.Exchange()
