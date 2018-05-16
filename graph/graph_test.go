@@ -124,6 +124,9 @@ func TestComponentLocatorInjection(t *testing.T) {
 	rawConfig.Database.DBName = "sous_test_" + name
 
 	tg.Replace(rawConfig)
+	tg.Replace(func() sous.Inserter {
+		return sous.NewInserterSpy()
+	})
 
 	scoop := struct{ server.ComponentLocator }{}
 
