@@ -54,6 +54,7 @@ URL := https://github.com/opentable/sous
 ifneq ($(GO_TEST_RUN),)
 EXTRA_GO_TEST_FLAGS := $(EXTRA_GO_TEST_FLAGS) -run $(GO_TEST_RUN)
 endif
+GO_TEST_IMPORT_PATH ?= ./...
 
 TAG_TEST := git describe --exact-match --abbrev=0 2>/dev/null
 ifeq ($(shell $(TAG_TEST) ; echo $$?), 128)
@@ -124,7 +125,7 @@ COVER_DIR := /tmp/sous-cover
 TEST_VERBOSE := $(if $(VERBOSE),-v,)
 TEST_TEAMCITY := $(if $(TEAMCITY),| ./dev_support/gotest-to-teamcity)
 SOUS_PACKAGES:= $(shell go list -f '{{.ImportPath}}' ./... | grep -v 'vendor')
-SOUS_PACKAGES_WITH_TESTS:= $(shell go list -f '{{if len .TestGoFiles}}{{.ImportPath}}{{end}}' ./...)
+GO_TEST_PATHS ?= $(shell go list -f '{{if len .TestGoFiles}}{{.ImportPath}}{{end}}' ./...)
 SOUS_TC_PACKAGES=$(shell docker run --rm -v $(PWD):/go/src/github.com/opentable/sous -w /go/src/github.com/opentable/sous golang:1.10 go list -f '{{if len .TestGoFiles}}{{.ImportPath}}{{end}}' ./... | sed 's/_\/app/github.com\/opentable\/sous/')
 
 GO_FILES := $(shell find . -regex '.*\.go')
@@ -324,7 +325,7 @@ test-unit-base: $(COVER_DIR) $(GO_FILES)
 	PGPORT=$(PGPORT) \
 	go test $(EXTRA_GO_TEST_FLAGS) $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) \
 		-covermode=atomic -coverprofile=$(COVER_DIR)/count_merged.txt \
-		-timeout 3m -race $(SOUS_PACKAGES_WITH_TESTS) $(TEST_TEAMCITY)
+		-timeout 3m -race $(GO_TEST_PATHS) $(TEST_TEAMCITY)
 
 test-unit:
 	$(MAKE) postgres-clean-restart
@@ -333,7 +334,7 @@ test-unit:
 $(COVER_DIR)/count_merged.txt: $(COVER_DIR) $(GO_FILES)
 	go test \
 		-covermode=count -coverprofile=$(COVER_DIR)/count_merged.txt \
-		$(SOUS_PACKAGES_WITH_TESTS)
+		$(GO_TEST_PATHS)
 
 test-integration: setup-containers
 	@echo
