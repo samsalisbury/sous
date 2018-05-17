@@ -86,9 +86,6 @@ func TestActionRectifyDryruns(t *testing.T) {
 			fg := fixtureGraph(t)
 			fg.Add(fixtureDeployFilterFlags())
 			tg := psyringe.TestPsyringe{Psyringe: fg.Psyringe}
-			tg.Replace(func() StateReader {
-				return StateReader{StateReader: sous.NewDummyStateManager()}
-			})
 			tg.Replace(LocalSousConfig{
 				Config: &config.Config{Server: sousServerURL},
 			})

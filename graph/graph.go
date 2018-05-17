@@ -84,9 +84,9 @@ type (
 	DefaultLogSink struct{ logging.LogSink }
 	// ClusterManager simply wraps the sous.ClusterManager interface
 	ClusterManager struct{ sous.ClusterManager }
-	// StateManager simply wraps the sous.StateManager interface
-	StateManager struct{ sous.StateManager }
-	// ServerStateManager simply wraps the sous.StateManager interface
+	// ClientStateManager wraps the sous.StateManager interface and is used by non-server sous commands
+	ClientStateManager struct{ sous.StateManager }
+	// ServerStateManager wraps the sous.StateManager interface and is used by `sous server`
 	ServerStateManager struct{ sous.StateManager }
 	// StateReader wraps a storage.StateReader.
 	StateReader struct{ sous.StateReader }
@@ -145,7 +145,6 @@ func BuildGraph(v semv.Version, in io.Reader, out, err io.Writer) *SousGraph {
 	graph := BuildBaseGraph(v, in, out, err)
 	AddFilesystem(graph)
 	AddNetwork(graph)
-	AddState(graph)
 	graph.Add(newUser)
 	return graph
 }
@@ -240,6 +239,7 @@ func AddNetwork(graph adder) {
 		newDockerClient,
 		newServerHandler,
 		newHTTPStateManager,
+		newClientStateManager,
 	)
 }
 
@@ -260,15 +260,6 @@ func AddSingularity(graph adder) {
 	)
 }
 
-// AddState adds state reader and writers to the graph.
-func AddState(graph adder) {
-	graph.Add(
-		newStateManager,
-		newLocalStateReader,
-		newLocalStateWriter,
-	)
-}
-
 // AddInternals adds the dependency contructors that are internal to Sous.
 func AddInternals(graph adder) {
 	// internal to Sous
@@ -283,8 +274,6 @@ func AddInternals(graph adder) {
 		newSourceContext,
 		newSourceContextDiscovery,
 		newSourceHostChooser,
-		NewCurrentState,
-		NewCurrentGDM,
 		newTargetManifest,
 		newDetectedOTPLConfig,
 		newUserSelectedOTPLDeploySpecs,
@@ -664,17 +653,12 @@ func newDistributedStorage(db *sql.DB, c LocalSousConfig, tid sous.TraceID, rf *
 // newStateManager returns a wrapped sous.HTTPStateManager if cl is not nil.
 // Otherwise it returns a wrapped sous.GitStateManager, for local git based GDM.
 // If it returns a sous.GitStateManager, it emits a warning log.
-func newStateManager(cl HTTPClient, c LocalSousConfig, mdb MaybeDatabase, tid sous.TraceID, rf *sous.ResolveFilter, log LogSink) *StateManager {
+func newClientStateManager(cl HTTPClient, c LocalSousConfig, mdb MaybeDatabase, tid sous.TraceID, rf *sous.ResolveFilter, log LogSink) (*ClientStateManager, error) {
 	if c.Server == "" {
-		messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Using local state stored at %s", c.StateLocation), logging.WarningLevel, log, c.StateLocation)
-		ssm, err := newServerStateManager(c, mdb, tid, rf, log)
-		if err != nil {
-			panic(err)
-		}
-		return &StateManager{StateManager: ssm.StateManager}
+		return nil, errors.New("no server configured for state managment")
 	}
 	hsm := sous.NewHTTPStateManager(cl, tid, log.Child("http-state-manager"))
-	return &StateManager{StateManager: hsm}
+	return &ClientStateManager{StateManager: hsm}, nil
 }
 
 func newHTTPStateManager(cl HTTPClient, tid sous.TraceID, log LogSink) *sous.HTTPStateManager {
@@ -690,6 +674,8 @@ func newStatusPoller(cl HTTPClient, rf *RefinedResolveFilter, user sous.User, lo
 	return sous.NewStatusPoller(cl, (*sous.ResolveFilter)(rf), user, logs.Child("status-poller"))
 }
 
+/*
+XXX these are complicating injection
 func newLocalStateReader(sm *StateManager) StateReader {
 	return StateReader{sm}
 }
@@ -716,6 +702,7 @@ func NewCurrentGDM(state *sous.State) (CurrentGDM, error) {
 	}
 	return CurrentGDM{deployments}, initErr(err, "expanding state")
 }
+*/
 
 // The funcs named makeXXX below are used to create specific implementations of
 // sous native types.

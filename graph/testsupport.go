@@ -61,6 +61,7 @@ func TestGraphWithConfig(t *testing.T, v semv.Version, in io.Reader, out, err io
 	testGraph.Replace(newServerHandler)
 	testGraph.Replace(newServerStateManager)
 	testGraph.Replace(MaybeDatabase{Db: db, Err: nil})
+	testGraph.Replace(newDummyHTTPClient)
 
 	// Add config.
 	testGraph.Add(configYAML(cfg))
