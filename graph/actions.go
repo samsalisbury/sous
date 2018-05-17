@@ -71,6 +71,22 @@ func (di *SousGraph) GetManifestSet(dff config.DeployFilterFlags, up *restful.Up
 	}, nil
 }
 
+// GetPlumbingNormalizeGDM
+func (di *SousGraph) GetPlumbingNormalizeGDM(stateLocation string) (actions.Action, error) {
+	scoop := struct {
+		LS   LogSink
+		User sous.User
+	}{}
+	if err := di.Inject(&scoop); err != nil {
+		return nil, err
+	}
+	return &actions.PlumbNormalizeGDM{
+		User:          scoop.User,
+		StateLocation: stateLocation,
+		Log:           scoop.LS.LogSink.Child("plumbing-normalize-gdm"),
+	}, nil
+}
+
 // GetUpdate returns an update Action.
 func (di *SousGraph) GetUpdate(dff config.DeployFilterFlags, otpl config.OTPLFlags) (actions.Action, error) {
 	di.guardedAdd("DeployFilterFlags", &dff)
