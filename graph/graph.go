@@ -88,6 +88,10 @@ type (
 	ClientStateManager struct{ sous.StateManager }
 	// ServerStateManager wraps the sous.StateManager interface and is used by `sous server`
 	ServerStateManager struct{ sous.StateManager }
+
+	gitStateManager  struct{ sous.StateManager }
+	diskStateManager struct{ sous.StateManager }
+
 	// StateReader wraps a storage.StateReader.
 	StateReader struct{ sous.StateReader }
 	// StateWriter wraps a storage.StateWriter, and should be configured to
@@ -215,7 +219,9 @@ func AddShells(graph adder) {
 func AddFilesystem(graph adder) {
 	graph.Add(
 		newConfigLoader,
-		newMaybeDatabase, // we need to be able to progress in the absence of a DB.
+		newMaybeDatabase,           // we need to be able to progress in the absence of a DB.
+		newGitStateManagerFactory,  // provides a seam for testing
+		newDiskStateManagerFactory, // provides a seam for testing
 		newServerStateManager,
 	)
 }
@@ -609,7 +615,7 @@ func newInMemoryClient(srvr ServerHandler, log LogSink) (HTTPClient, error) {
 	return HTTPClient{HTTPClient: cl}, err
 }
 
-func newServerStateManager(c LocalSousConfig, mdb MaybeDatabase, tid sous.TraceID, rf *sous.ResolveFilter, log LogSink) (*ServerStateManager, error) {
+func newServerStateManager(c LocalSousConfig, mdb MaybeDatabase, tid sous.TraceID, rf *sous.ResolveFilter, log LogSink, gmf gitStateManagerFactory) (*ServerStateManager, error) {
 	var secondary sous.StateManager
 	err := mdb.Err
 	if err == nil {
@@ -621,10 +627,24 @@ func newServerStateManager(c LocalSousConfig, mdb MaybeDatabase, tid sous.TraceI
 		secondary = storage.NewLogOnlyStateManager(log.Child("database"))
 	}
 
-	dm := storage.NewDiskStateManager(c.StateLocation, log.Child("disk-state-manager"))
-	gm := storage.NewGitStateManager(dm, log.Child("git-state-manager"))
-	duplex := storage.NewDuplexStateManager(gm, secondary, log.Child("duplex-state"))
+	duplex := storage.NewDuplexStateManager(gmf(), secondary, log.Child("duplex-state"))
 	return &ServerStateManager{StateManager: duplex}, nil
+}
+
+type gitStateManagerFactory func() gitStateManager
+
+func newGitStateManagerFactory(dmf diskStateManagerFactory, log LogSink) gitStateManagerFactory {
+	return func() gitStateManager {
+		return gitStateManager{storage.NewGitStateManager(dmf(), log.Child("git-state-manager"))}
+	}
+}
+
+type diskStateManagerFactory func() *storage.DiskStateManager
+
+func newDiskStateManagerFactory(c LocalSousConfig, log LogSink) diskStateManagerFactory {
+	return func() *storage.DiskStateManager {
+		return storage.NewDiskStateManager(c.StateLocation, log.Child("disk-state-manager"))
+	}
 }
 
 func newDistributedStorage(db *sql.DB, c LocalSousConfig, tid sous.TraceID, rf *sous.ResolveFilter, log LogSink) (sous.StateManager, error) {
@@ -655,7 +675,7 @@ func newDistributedStorage(db *sql.DB, c LocalSousConfig, tid sous.TraceID, rf *
 // If it returns a sous.GitStateManager, it emits a warning log.
 func newClientStateManager(cl HTTPClient, c LocalSousConfig, mdb MaybeDatabase, tid sous.TraceID, rf *sous.ResolveFilter, log LogSink) (*ClientStateManager, error) {
 	if c.Server == "" {
-		return nil, errors.New("no server configured for state managment")
+		return nil, errors.New("no server configured for state management")
 	}
 	hsm := sous.NewHTTPStateManager(cl, tid, log.Child("http-state-manager"))
 	return &ClientStateManager{StateManager: hsm}, nil

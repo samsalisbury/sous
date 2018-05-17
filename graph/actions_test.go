@@ -7,6 +7,7 @@ import (
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/ext/docker"
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 	"github.com/samsalisbury/psyringe"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -26,6 +27,23 @@ func fixtureDeployFilterFlags() config.DeployFilterFlags {
 func fixtureGraph(t *testing.T) *SousGraph {
 	graph := DefaultTestGraph(t)
 	graph.Add(&config.Verbosity{})
+	tg := psyringe.TestPsyringe{Psyringe: graph.Psyringe}
+	tg.Replace(LocalSousConfig{
+		Config: &config.Config{Server: "not empty"},
+	})
+	tg.Replace(func() lazyNameCache {
+		return func() (*docker.NameCache, error) {
+			return &docker.NameCache{}, nil
+		}
+	})
+	tg.Replace(func(ls LogSink) gitStateManagerFactory {
+		return func() gitStateManager {
+			return gitStateManager{sous.NewDummyStateManager()}
+		}
+	})
+	tg.Replace(func() LogSink {
+		return LogSink{logging.SilentLogSet()}
+	})
 	return graph
 }
 
@@ -88,11 +106,6 @@ func TestActionRectifyDryruns(t *testing.T) {
 			tg := psyringe.TestPsyringe{Psyringe: fg.Psyringe}
 			tg.Replace(LocalSousConfig{
 				Config: &config.Config{Server: sousServerURL},
-			})
-			tg.Replace(func() lazyNameCache {
-				return func() (*docker.NameCache, error) {
-					return &docker.NameCache{}, nil
-				}
 			})
 			action, err := fg.GetRectify(which, fixtureDeployFilterFlags())
 			require.NoError(t, err)

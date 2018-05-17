@@ -138,7 +138,7 @@ func (di *SousGraph) GetRectify(dryrun string, dff config.DeployFilterFlags) (ac
 	scoop := struct {
 		LogSink  LogSink
 		Resolver *sous.Resolver
-		SM       *ClientStateManager
+		SM       *ServerStateManager
 	}{}
 
 	if err := di.Inject(&scoop); err != nil {

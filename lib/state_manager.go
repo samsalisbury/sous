@@ -65,7 +65,7 @@ func NewStateManagerSpy() (StateManager, StateManagerController) {
 // NewStateManagerSpyFor returns a spy/controller pair that will return the given state for calls to Read
 func NewStateManagerSpyFor(state *State) (StateManager, StateManagerController) {
 	sm, sc := NewStateManagerSpy()
-	sc.MatchMethod("Read", spies.AnyArgs, state, nil)
+	sc.MatchMethod("ReadState", spies.AnyArgs, state, nil)
 	return sm, sc
 }
 
