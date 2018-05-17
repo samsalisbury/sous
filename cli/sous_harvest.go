@@ -12,7 +12,7 @@ import (
 
 // SousHarvest is the description of the `sous query gdm` command
 type SousHarvest struct {
-	State             *sous.State
+	StateManager      *graph.ClientStateManager
 	Registry          sous.Registry
 	ErrWriter         graph.ErrWriter
 	DeployFilterFlags config.DeployFilterFlags `inject:"optional"`
@@ -45,10 +45,13 @@ func (sh *SousHarvest) Execute(args []string) cmdr.Result {
 		return cmdr.EnsureErrorResult(fmt.Errorf("need an argument to harvest"))
 	}
 
-	var err error
+	state, err := sh.StateManager.ReadState()
+	if err != nil {
+		return EnsureErrorResult(err)
+	}
+
 	for _, repoName := range args {
-		err = sh.Registry.Warmup(sh.State.Defs.DockerRepo + "/" + repoName)
-		if err != nil {
+		if err := sh.Registry.Warmup(state.Defs.DockerRepo + "/" + repoName); err != nil {
 			break
 		}
 	}
