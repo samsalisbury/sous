@@ -49,7 +49,7 @@ func ReleaseDB(t *testing.T, optidx ...int) {
 }
 
 func dbNameRoot(t *testing.T, optidx ...int) string {
-	name := strings.Replace(strings.ToLower(t.Name()), "test", "", -1)
+	name := strings.ToLower(t.Name())
 	name = strings.Replace(name, "/", "_", -1)
 	name = strings.Replace(name, "-", "_", -1)
 	name = strings.Replace(name, ":", "_", -1)
