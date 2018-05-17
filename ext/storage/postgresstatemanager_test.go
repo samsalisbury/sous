@@ -54,7 +54,7 @@ func SetupTest(t *testing.T, name string) *PostgresStateManagerSuite {
 
 	suite.logs = ctrl
 
-	connstr := connstrForDBNamedf("sous_test_%s", name)
+	connstr := connstrForDBNamedf("test%s", name)
 	if suite.db, err = sql.Open("postgres", connstr); err != nil {
 		suite.FailNow("Error establishing test-assertion DB connection at %q.", "Error: %v", connstr, err)
 	}
@@ -65,7 +65,7 @@ func SetupTest(t *testing.T, name string) *PostgresStateManagerSuite {
 }
 
 func TestPostgresStateManagerWriteState_success(t *testing.T) {
-	suite := SetupTest(t, "postgresstatemanagerwriate_success") // because s/test//g
+	suite := SetupTest(t, "postgresstatemanagerwritestate_success") // because s/test//g
 	defer sous.ReleaseDB(t)
 
 	s := exampleState()
