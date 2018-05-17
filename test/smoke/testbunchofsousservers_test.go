@@ -98,6 +98,11 @@ func (c *TestBunchOfSousServers) Configure(t *testing.T, envDesc desc.EnvDesc) e
 		dbport = np
 	}
 
+	host := "localhost"
+	if h, set := os.LookupEnv("PGHOST"); set {
+		host = h
+	}
+
 	for n, i := range c.Instances {
 		sous.SetupDB(t, n)
 		dbname := sous.DBNameForTest(t, n)
@@ -107,7 +112,7 @@ func (c *TestBunchOfSousServers) Configure(t *testing.T, envDesc desc.EnvDesc) e
 			Database: storage.PostgresConfig{
 				DBName: dbname,
 				User:   "postgres",
-				Host:   "localhost",
+				Host:   host,
 				Port:   dbport,
 			},
 			Docker: docker.Config{

@@ -117,7 +117,12 @@ func TestComponentLocatorInjection(t *testing.T) {
 	sous.SetupDB(t)
 	defer sous.ReleaseDB(t)
 
-	rawConfig.Database.Host = "localhost"
+	host := "localhost"
+	if h, got := os.LookupEnv("PGHOST"); got {
+		host = h
+	}
+
+	rawConfig.Database.Host = host
 	rawConfig.Database.Port = port
 	rawConfig.Database.DBName = "sous_test_" + name
 
