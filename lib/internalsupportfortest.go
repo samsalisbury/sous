@@ -18,6 +18,8 @@ import (
 func SetupDB(t *testing.T, optidx ...int) *sql.DB {
 	//t.Helper()
 	name := dbNameRoot(t, optidx...)
+
+	t.Logf("Creating DB for %s called %s ...", t.Name(), name)
 	db, err := setupDBErr(name)
 	if err != nil {
 		if os.Getenv("SOUS_TEST_NODB") != "" {
@@ -26,14 +28,14 @@ func SetupDB(t *testing.T, optidx ...int) *sql.DB {
 		}
 		t.Fatalf("Error creating test DB %q: %v (Set SOUS_TEST_NODB=yes) to skip tests that rely on the DB", name, err)
 	}
-	t.Logf("Created DB for %s called sous_test_%s", t.Name(), name)
+	t.Logf("Created %s.", name)
 	return db
 }
 
 // DBNameForTest returns a database name based on the test name.
 func DBNameForTest(t *testing.T, optidx ...int) string {
 	t.Helper()
-	return "sous_test_" + dbNameRoot(t, optidx...)
+	return dbNameRoot(t, optidx...)
 }
 
 // ReleaseDB should be called in any test that called SetupDB (even indirectly)
@@ -62,18 +64,6 @@ var adminConn *sql.DB
 
 var setupAdminConn = sync.Once{}
 
-func connstrForDBNamed(name string) string {
-	port := os.Getenv("PGPORT")
-	if port == "" {
-		port = "6543"
-	}
-	host := os.Getenv("PGHOST")
-	if host == "" {
-		host = "localhost"
-	}
-	return fmt.Sprintf("host=%s port=%s dbname=%s user=postgres sslmode=disable", host, port, name)
-}
-
 func getAdminConn() (*sql.DB, error) {
 	var err error
 	setupAdminConn.Do(func() {
@@ -90,11 +80,23 @@ func getAdminConn() (*sql.DB, error) {
 
 var dbsetupMutex = sync.Mutex{}
 
+func connstrForDBNamed(name string) string {
+	port := os.Getenv("PGPORT")
+	if port == "" {
+		port = "6543"
+	}
+	host := os.Getenv("PGHOST")
+	if host == "" {
+		host = "localhost"
+	}
+	return fmt.Sprintf("host=%s port=%s dbname=%s user=postgres sslmode=disable", host, port, name)
+}
+
 func setupDBErr(name string) (*sql.DB, error) {
 	dbsetupMutex.Lock()
 	defer dbsetupMutex.Unlock()
-	dbName := "sous_test_" + name
-	if dbName == "sous_test_template" {
+	dbName := name
+	if dbName == "sous_test_template" || dbName == "sous" {
 		return nil, fmt.Errorf("cannot use test name %q because the DB name %q is used as the template", name, dbName)
 	}
 	setupDB, err := getAdminConn()

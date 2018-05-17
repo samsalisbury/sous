@@ -45,6 +45,7 @@ TEST_DB_NAME = sous_test_template
 LIQUIBASE_SERVER := jdbc:postgresql://localhost:$(PGPORT)
 
 LIQUIBASE_FLAGS := $(LIQUIBASE_SERVER)/$(DB_NAME)?user=postgres
+LIQUIBASE_DEV_FLAGS := $(LIQUIBASE_SERVER)/sous?user=postgres
 LIQUIBASE_TEST_FLAGS := $(LIQUIBASE_SERVER)/$(TEST_DB_NAME)?user=postgres
 
 GO_VERSION := 1.10
@@ -325,7 +326,7 @@ test-unit-base: $(COVER_DIR) $(GO_FILES)
 	PGPORT=$(PGPORT) \
 	go test $(EXTRA_GO_TEST_FLAGS) $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) \
 		-covermode=atomic -coverprofile=$(COVER_DIR)/count_merged.txt \
-		-timeout 3m -race $(GO_TEST_PATHS) $(TEST_TEAMCITY)
+		-timeout 12m -race $(GO_TEST_PATHS) $(TEST_TEAMCITY)
 
 test-unit:
 	$(MAKE) postgres-clean-restart
@@ -434,6 +435,8 @@ postgres-start:
 		until docker run --net=host postgres:10.3 pg_isready -h $(DOCKER_HOST_IP) -p $(PGPORT); do sleep 1; done;\
 		echo Postgres container started;\
 	fi;
+	docker run --net=host postgres:10.3 createdb -h localhost -p $(PGPORT) -U postgres -w sous
+	docker run --net=host --rm -e CHANGELOG_FILE=changelog.xml -v $(PWD)/database:/changelogs -e "URL=$(LIQUIBASE_DEV_FLAGS)" jcastillo/liquibase:0.0.7
 	docker run --net=host postgres:10.3 createdb -h localhost -p $(PGPORT) -U postgres -w $(TEST_DB_NAME)
 	docker run --net=host --rm -e CHANGELOG_FILE=changelog.xml -v $(PWD)/database:/changelogs -e "URL=$(LIQUIBASE_TEST_FLAGS)" jcastillo/liquibase:0.0.7
 
@@ -469,4 +472,3 @@ postgres-clean: postgres-stop
 	reject-wip wip staticcheck postgres-start postgres-stop postgres-connect \
 	postgres-clean postgres-create-testdb build-debug homebrew install-gotags \
 	install-debug-linux install-debug-darwin
-

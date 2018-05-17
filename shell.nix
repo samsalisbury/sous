@@ -13,5 +13,5 @@ in
   stdenv.mkDerivation {
     name = "sous-env";
 
-    buildInputs = with pkgs; [ rubyEnv proselint postgresql100 liquibase go ];
+    buildInputs = with pkgs; [ rubyEnv proselint postgresql100 pg_top liquibase go ];
   }
